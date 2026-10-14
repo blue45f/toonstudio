@@ -14,7 +14,9 @@ const previewModelSource = read("./studio-unified-asset-preview.ts");
 const insertModelSource = read("./studio-insert-hub-model.ts");
 const lazySource = read("./studio-unified-asset-lazy-ui.ts");
 const createModeGroupsSource = read("./StudioToolBeltCreateModeGroups.tsx");
-const globalsSource = read("../../app/styles/globals.css");
+// 스튜디오 전용 규칙의 정본은 studio-route.css다(globals.css 머리말 정책 — 스튜디오
+// 규칙은 그쪽에만 두고 스튜디오 라우트 청크에서만 로드한다).
+const studioRouteSource = read("../../app/styles/studio-route.css");
 const floatingLayoutsSource = read("./studio-floating-menu-layouts.ts");
 
 describe("Studio asset workspace boundaries", () => {
@@ -141,8 +143,8 @@ describe("Studio asset workspace boundaries", () => {
     expect(workspaceSource).not.toContain(
       "lg:grid-cols-[11rem_minmax(22rem,1fr)_20rem]",
     );
-    expect(globalsSource).toContain("container-name: studio-asset-workspace");
-    expect(globalsSource).toContain("@container studio-asset-workspace (min-width: 46rem)");
-    expect(globalsSource).toContain("@container studio-asset-workspace (min-width: 64rem)");
+    expect(studioRouteSource).toContain("container-name: studio-asset-workspace");
+    expect(studioRouteSource).toContain("@container studio-asset-workspace (min-width: 46rem)");
+    expect(studioRouteSource).toContain("@container studio-asset-workspace (min-width: 64rem)");
   });
 });

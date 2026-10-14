@@ -54,7 +54,7 @@ describe("studio brush product profiles", () => {
     if (!item) throw new Error("Missing showcase brush");
     const terms = studioBrushProductProfileSearchTerms(item).join(" ");
 
-    expect(terms).toContain("Krita");
+    expect(terms).toContain("WebGPU Tilt Ribbon");
     expect(terms).toContain("Bristle Dynamics");
     expect(terms).toContain("개별 강모");
     expect(terms).toContain("리넨 결");

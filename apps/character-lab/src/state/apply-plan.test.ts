@@ -61,7 +61,7 @@ function recipeAllSlots(): CharacterRecipe {
   const base = createDefaultRecipe();
   return {
     ...base,
-    slots: { ...base.slots, "face-shape": "face-shape/round", body: "body/tall", hair: "hair/twin-tail", accessory: "accessory/cap", expression: "expression/joy", pose: "pose/wave", "hand-pose": "hand-pose/fist" },
+    slots: { ...base.slots, "face-shape": "face-shape/round", body: "body/tall", hair: "hair/twin-tail", top: "top/tee", bottom: "bottom/jeans", shoes: "shoes/sneakers", accessory: "accessory/cap", expression: "expression/joy", pose: "pose/wave", "hand-pose": "hand-pose/fist" },
     face: { jawWidth: 0.4, chinLength: -0.3, eyeSize: 0.2 },
     body: { height: 0.7, legLength: 0.5, waist: -0.1 },
     expression: { mouthSmile: 0.9, jawOpen: 0.3 },
@@ -301,7 +301,7 @@ describe("state/apply-plan", () => {
       const recipe = createKitDefaultRecipe();
       const plan = planWithPreset(recipe, "hair/twin-tail", hairPartial, CATALOG);
       expect(plan.unsupported).toEqual([{ slot: "hair", presetId: "hair/twin-tail", reasonKo: TWIN_TAIL_MISSING }]);
-      expect(recipe.slots.hair).toBe("hair/soft-bob");
+      expect(recipe.slots.hair).toBeNull();
     });
   });
 
@@ -326,7 +326,8 @@ describe("state/apply-plan", () => {
       const plan = createApplyPlanner({ partLayout: layout })(createKitDefaultRecipe(), ALL_AVAILABLE_CAPABILITIES, CATALOG);
       expect(plan.parts).toHaveLength(15);
       expect(plan.parts.map((p) => p.partId)).toEqual(roles.map((role) => rolePartId(role)));
-      expect(plan.parts.find((p) => p.partId === rolePartId("hair"))?.visible).toBe(true);
+      // 키트 기본값은 hair 미선택(null)이라 헤어 파츠는 숨김으로 계획된다(2026-10-14 기본 슬롯 정본).
+      expect(plan.parts.find((p) => p.partId === rolePartId("hair"))?.visible).toBe(false);
       expect(plan.parts.find((p) => p.partId === rolePartId("underwear"))?.visible).toBe(true);
     });
 
@@ -347,10 +348,11 @@ describe("state/apply-plan", () => {
       const plan = planApply(recipe, ALL_AVAILABLE_CAPABILITIES, CATALOG);
       expect(plan.unsupported).toEqual([]);
       const visibleRoles = DEFAULT_PART_LAYOUT.filter((_, index) => plan.parts[index]?.visible).map((entry) => entry.role);
-      expect(visibleRoles).toContain("hair");
-      expect(visibleRoles).toContain("top");
-      expect(visibleRoles).toContain("bottom");
-      expect(visibleRoles).toContain("shoes");
+      // 키트 기본값에서 hair·top·bottom·shoes는 미선택(null)이라 숨김이다(2026-10-14 기본 슬롯 정본).
+      expect(visibleRoles).not.toContain("hair");
+      expect(visibleRoles).not.toContain("top");
+      expect(visibleRoles).not.toContain("bottom");
+      expect(visibleRoles).not.toContain("shoes");
       expect(visibleRoles).toContain("iris");
       expect(visibleRoles).not.toContain("accessory");
     });

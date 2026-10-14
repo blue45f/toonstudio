@@ -113,7 +113,7 @@ export function MarketResourceReleaseHistory({ resourceId }: MarketResourceRelea
       }
       requestGenerationRef.current += 1;
     };
-  }, [resourceId, retryGeneration]);
+  }, [resourceId, retryGeneration, t]);
 
   const loadMore = useCallback(() => {
     if (state.status !== "ready" || !state.page.hasMore) return;
@@ -149,7 +149,7 @@ export function MarketResourceReleaseHistory({ resourceId }: MarketResourceRelea
       setLoadingMore(false);
       setLoadMoreError(historyErrorMessage(error, t("market.releaseHistory.loadFailed", "릴리스 이력을 불러오지 못했습니다.")));
     });
-  }, [resourceId, state]);
+  }, [resourceId, state, t]);
 
   return (
     <section

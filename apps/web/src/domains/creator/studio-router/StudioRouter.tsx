@@ -1,4 +1,4 @@
-import "../../../app/styles/studio-route.css";
+import "../../../shared/styles/studio-route.css";
 
 import { Suspense } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";

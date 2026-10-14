@@ -80,7 +80,7 @@ export function useMarketResourceDetail(id: string | undefined): MarketResourceD
       controller.abort();
       if (generationRef.current === generation) generationRef.current += 1;
     };
-  }, [id, reloadToken]);
+  }, [id, reloadToken, t]);
 
   const reload = useCallback(() => {
     setReloadToken((token) => token + 1);

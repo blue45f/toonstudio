@@ -10,7 +10,10 @@ import { POSER_FINGER_BONES, pickNaturalIdlePose } from "../studio-pose-presets"
 
 (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
 
-const MODEL = { id: "avatar-a", name: "하arin", file: "apps/web/public/vrm/AvatarSample_A.vrm" };
+// AvatarSample_A.vrm was removed from the repo for rights reasons (VRoidPreset terms are
+// not CC0 and prohibit bundled redistribution — see apps/web/public/vrm/LICENSES.md).
+// Sendagaya_Shino.vrm is the license-cleared CC0 VRoid beta sample from the same family.
+const MODEL = { id: "sendagaya-shino", name: "시노", file: "apps/web/public/vrm/Sendagaya_Shino.vrm" };
 
 async function load(file: string) {
   const buf = fs.readFileSync(path.resolve(file)).buffer;

@@ -29,10 +29,13 @@ function packagePlanFixture(): AuthoredPackagePlan {
 }
 
 /** 레시피의 키트 소스와 슬롯 선택으로 만든 실제 키트 계획(합성 manifest) */
+// 남성 제공분은 2026-10-14 제외 결정 전의 필수 세트를 명시한다(정본 필수 파츠는 irises만으로 축소됨)
+const MALE_PRESETS = ["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"];
+
 function kitPlanOf(recipe: CharacterRecipe): KitPlan {
   const source = recipe.source;
   if (source.kind !== "kit") throw new Error("키트 소스 레시피여야 합니다.");
-  const built = buildKitPlanDetailed(kitManifestFixture(), source, recipe.slots);
+  const built = buildKitPlanDetailed(kitManifestFixture({ malePresets: MALE_PRESETS }), source, recipe.slots);
   if (!built.ok) throw new Error(built.failure.reasonKo);
   return built.plan;
 }
@@ -395,7 +398,8 @@ describe("app/shell/apply-loop", () => {
   });
 
   it("키트 sourceKeyOf는 베이스·키트 버전과 파츠 선택(kitGeometryKey와 같은 형식)을 키에 넣고, 파츠가 바뀌면 키가 바뀐다", () => {
-    const recipe = createKitDefaultRecipe();
+    const base = createKitDefaultRecipe();
+    const recipe = { ...base, slots: { ...base.slots, hair: "hair/soft-bob" as const, top: "top/tee" as const, bottom: "bottom/jeans" as const, shoes: "shoes/sneakers" as const } };
     const key = sourceKeyOf({ kind: "kit", plan: kitPlanOf(recipe) });
     expect(JSON.parse(key)).toEqual({
       kind: "kit",
@@ -411,7 +415,8 @@ describe("app/shell/apply-loop", () => {
   });
 
   it("키트 소스는 파츠 선택(지오메트리)이 바뀔 때만 다시 만들고, 색·셰이딩·morph 슬롯은 플랜만 다시 적용한다", async () => {
-    const store = createMockLabStore({ recipe: createKitDefaultRecipe() });
+    const initial = createKitDefaultRecipe();
+    const store = createMockLabStore({ recipe: { ...initial, slots: { ...initial.slots, hair: "hair/soft-bob" } } });
     const session = createMockEngineSession();
     const engine = createMockEngine();
     const built: string[] = [];

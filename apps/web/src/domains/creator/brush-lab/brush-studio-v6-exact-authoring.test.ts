@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program, nextBrushStudioV6Seed, normalizeBrushStudioV6Program } from "./brush-studio-v6-engine";
+import { BRUSH_STUDIO_V6_FULL_CAPABILITIES, BRUSH_STUDIO_V6_RECIPES, analyzeBrushStudioV6Program, createBrushStudioV6Program, nextBrushStudioV6Seed, normalizeBrushStudioV6Program } from "./brush-studio-v6-engine";
 import { createBrushStudioV6MaterialReceipt } from "./brush-studio-v6-material-receipt";
 import { createBrushStudioV6ExactEditorProgram, serializeBrushStudioV6Authoring } from "./brush-studio-v6-authoring-document";
 import { parseBrushStudioV6Import, createBrushStudioV6EditHistory, reduceBrushStudioV6EditHistory } from "./brush-studio-v6-experiments";
@@ -12,7 +12,16 @@ const fixture = () => createBrushStudioV6MaterialReceipt(createBrushStudioV6Prog
 describe("exact material authoring instead of recipe approximation", () => {
   it.each(BRUSH_STUDIO_V6_RECIPES.map((recipe) => [recipe.id, recipe] as const))(
     "preserves %s through editor, JSON and product receipt", (_id, recipe) => {
-      const original = createBrushStudioV6MaterialReceipt(recipe.create());
+      // Recipes blocked under the default permissive-only profile (Mixbox,
+      // inkwash, copyleft nodes) can only be receipted under an explicit
+      // opt-in profile — the same partition the persistence suite applies.
+      // The default profile's refusal itself is covered there and in the
+      // commercial-block suite; this sweep verifies authoring fidelity.
+      const created = recipe.create();
+      const runnableByDefault = analyzeBrushStudioV6Program(created, BRUSH_STUDIO_V6_FULL_CAPABILITIES).providerPlan.valid;
+      const original = runnableByDefault
+        ? createBrushStudioV6MaterialReceipt(created)
+        : createBrushStudioV6MaterialReceipt(created, "noncommercial-full");
       const before = structuredClone(original);
       const program = createBrushStudioV6ExactEditorProgram(original, "exact-test", "원본");
       const restored = parseBrushStudioV6Import(serializeBrushStudioV6Authoring(program));
@@ -40,7 +49,7 @@ describe("exact material authoring instead of recipe approximation", () => {
 
   it("applies only explicit current-tool values without retaining a previous brush", () => {
     const a = fixture();
-    const b = createBrushStudioV6MaterialReceipt(createBrushStudioV6Program("mineral-bloom"));
+    const b = createBrushStudioV6MaterialReceipt(createBrushStudioV6Program("mineral-bloom"), "noncommercial-full");
     const tool = { strokeWidth: 53, color: "#ABCDEF", brushOpacity: 0 };
     const first = createBrushStudioV6ExactEditorProgram(a, "a", "A", tool);
     createBrushStudioV6ExactEditorProgram(b, "b", "B");

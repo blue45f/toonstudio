@@ -26,7 +26,12 @@ describe("authored/kit-plan — 계획 생성", () => {
   const manifest = kitManifestFixture();
 
   it("기본 레시피(키트 기본 슬롯)는 베이스 + 선택 파츠를 슬롯 순서로 담는다", () => {
-    const plan = expectPlan(buildKitPlan(manifest, FEMALE, KIT_DEFAULT_SLOTS));
+    // 2026-10-14 제외 결정으로 기본 슬롯의 hair·top·bottom·shoes는 null이라 기본 계획은 베이스 + 홍채만 담는다
+    const defaults = expectPlan(buildKitPlan(manifest, FEMALE, KIT_DEFAULT_SLOTS));
+    expect(defaults.parts.map((part) => part.id)).toEqual(["base/female", "irises/round-large"]);
+    expect(defaults.parts.map((part) => part.slot)).toEqual([null, "irises"]);
+
+    const plan = expectPlan(buildKitPlan(manifest, FEMALE, { ...KIT_DEFAULT_SLOTS, hair: "hair/soft-bob", top: "top/tee", bottom: "bottom/jeans", shoes: "shoes/sneakers" }));
     expect(plan.parts.map((part) => part.id)).toEqual(["base/female", "hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"]);
     expect(plan.parts.map((part) => part.kind)).toEqual(["base", "part", "part", "part", "part", "part"]);
     expect(plan.parts.map((part) => part.slot)).toEqual([null, "hair", "top", "bottom", "shoes", "irises"]);
@@ -52,8 +57,9 @@ describe("authored/kit-plan — 계획 생성", () => {
   });
 
   it("레시피에서 온 슬롯 객체의 키 순서와 상관없이 파츠 순서는 슬롯 정의 순서다", () => {
-    const reversed = Object.fromEntries([...Object.entries(KIT_DEFAULT_SLOTS)].reverse());
-    const plan = expectPlan(buildKitPlan(manifest, FEMALE, { ...reversed, accessory: "accessory/glasses" }));
+    const full = { ...KIT_DEFAULT_SLOTS, hair: "hair/soft-bob", top: "top/tee", bottom: "bottom/jeans", shoes: "shoes/sneakers", accessory: "accessory/glasses" };
+    const reversed = Object.fromEntries([...Object.entries(full)].reverse());
+    const plan = expectPlan(buildKitPlan(manifest, FEMALE, { ...reversed }));
     expect(plan.parts.slice(1).map((part) => part.slot)).toEqual([...KIT_PART_SLOTS]);
     expect(plan.parts.at(-1)?.id).toBe("irises/round-large");
     expect(plan.parts[5]?.id).toBe("accessory/glasses");
@@ -71,7 +77,7 @@ describe("authored/kit-plan — 계획 생성", () => {
   });
 
   it("null·undefined 슬롯은 파츠를 만들지 않는다(accessory 비움)", () => {
-    const plan = expectPlan(buildKitPlan(manifest, FEMALE, { ...KIT_DEFAULT_SLOTS, accessory: null, hair: undefined, irises: null }));
+    const plan = expectPlan(buildKitPlan(manifest, FEMALE, { ...KIT_DEFAULT_SLOTS, top: "top/tee", bottom: "bottom/jeans", shoes: "shoes/sneakers", accessory: null, hair: undefined, irises: null }));
     expect(plan.parts.map((part) => part.id)).toEqual(["base/female", "top/tee", "bottom/jeans", "shoes/sneakers"]);
     expect(plan.hairLodPolicy.preferredLod).toBe(0);
   });
@@ -87,7 +93,7 @@ describe("authored/kit-plan — 계획 생성", () => {
   });
 
   it("재질은 계획에 쓰이는 것만 담는다", () => {
-    const plan = expectPlan(buildKitPlan(manifest, FEMALE, { ...KIT_DEFAULT_SLOTS, accessory: "accessory/glasses" }));
+    const plan = expectPlan(buildKitPlan(manifest, FEMALE, { ...KIT_DEFAULT_SLOTS, hair: "hair/soft-bob", top: "top/tee", bottom: "bottom/jeans", shoes: "shoes/sneakers", accessory: "accessory/glasses" }));
     expect(Object.keys(plan.materials).sort()).toEqual(
       [
         "ts_accessory_glasses",
@@ -113,9 +119,11 @@ describe("authored/kit-plan — 계획 생성", () => {
   });
 
   it("헤어 LOD 정책: 기본 0, 선호가 있으면 그 이하 중 가장 가까운 LOD, 존재하는 최대를 넘지 않는다", () => {
-    expect(expectPlan(buildKitPlan(manifest, FEMALE, KIT_DEFAULT_SLOTS)).hairLodPolicy).toEqual({ preferredLod: 0 });
-    expect(expectPlan(buildKitPlan(manifest, FEMALE, KIT_DEFAULT_SLOTS, { preferredHairLod: 1 })).hairLodPolicy).toEqual({ preferredLod: 1 });
-    expect(expectPlan(buildKitPlan(manifest, FEMALE, KIT_DEFAULT_SLOTS, { preferredHairLod: 9 })).hairLodPolicy).toEqual({ preferredLod: 2 });
+    // 클램프는 계획에 헤어 파츠가 있을 때만 의미가 있어 헤어를 명시 선택한다(기본 슬롯은 null)
+    const withHair = { ...KIT_DEFAULT_SLOTS, hair: "hair/soft-bob" };
+    expect(expectPlan(buildKitPlan(manifest, FEMALE, withHair)).hairLodPolicy).toEqual({ preferredLod: 0 });
+    expect(expectPlan(buildKitPlan(manifest, FEMALE, withHair, { preferredHairLod: 1 })).hairLodPolicy).toEqual({ preferredLod: 1 });
+    expect(expectPlan(buildKitPlan(manifest, FEMALE, withHair, { preferredHairLod: 9 })).hairLodPolicy).toEqual({ preferredLod: 2 });
   });
 
   it("관절 오프셋·스켈레톤·영역 범위·능력 맵·라이선스를 매니페스트에서 그대로 싣는다", () => {

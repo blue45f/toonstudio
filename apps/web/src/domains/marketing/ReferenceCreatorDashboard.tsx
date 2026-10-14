@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronRight, FolderKanban, PencilLine, Plus, Search } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronRight, FolderKanban, PencilLine, Plus, Search } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
@@ -11,18 +11,22 @@ import { DiscoverHomePreview } from "@/domains/catalog/public/DiscoverHomePrevie
 
 import { HomeCoreStudios } from "./HomeCoreStudios";
 import { HomeLunaPanel } from "./HomeLunaPanel";
-import { HomePersonalStrip } from "./HomePersonalStrip";
+import { HomeNowCard } from "./HomeNowCard";
 import { ServiceFlowNext } from "./public/intro-primitives";
 import { ReferenceEditorPreview } from "./ReferenceEditorPreview";
 import { HOME_EXAMPLES, HOME_LEARN_MORE, HOME_QUICK_STARTS, homeArt } from "./reference-home-content";
 import "./reference-creator-dashboard.css";
 
 /**
- * 공개 홈(/)은 얇게 유지한다: 첫 화면은 포스터 히어로(아이디어 입력이 1차 행동,
- * 우측 패널에 Luna 창작 안내)와 시작 카드까지만, 예시·작업실 입구는 아래 섹션으로 나눈다.
- * 로그인해도 홈은 그대로이고 개인 동선은 히어로 아래 스트립으로만 얹는다.
- * 읽기 동선은 히어로 바로 아래 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄)까지만
- * 얹는다 — 레일 전체와 검색은 /discover·/search가 소유한다.
+ * 공개 홈(/)은 BLUEPRINT §3.3의 4밴드로 조립한다(data-home-band):
+ * ① 히어로(포스터 + 통합 입력이 1차 행동, 우측 패널에 Luna 창작 안내)
+ * ② 이어하기 — 로그인하면 지금 할 일 카드(HomeNowCard, 읽는 동안·실패하면 개인
+ *    스트립으로 폴백), 게스트에게는 예시 작품 선반이 이 밴드의 주인공이다.
+ * ③ 작품 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄)까지만 얹는다 —
+ *    레일 전체와 검색은 /discover·/search가 소유한다.
+ * ④ 더 알아보기 — 시작 카드·핵심 작업실·편집기 미리보기·챕터 링크는 접힌
+ *    밴드(details.rd-more) 아래로 내려 첫 화면을 얇게 유지한다.
+ * 로그인해도 홈의 골격은 그대로이고 개인 동선은 ② 밴드로만 얹는다.
  */
 export function ReferenceCreatorDashboard() {
   const bi = useBilingualLocalizer("domains.marketing.ReferenceCreatorDashboard");
@@ -42,81 +46,92 @@ export function ReferenceCreatorDashboard() {
     navigate(text ? `/story-lab?idea=${encodeURIComponent(text)}` : "/story-lab");
   };
   return <div className="reference-dashboard" data-reference-dashboard="true">
-    {/* 히어로는 SpectacleHero 부품이 소유한다 (S3-15). rd-* 클래스는 표면 마감이 이긴다. */}
-    <SpectacleHero
-      className="rd-poster"
-      artClassName="rd-poster-art"
-      innerClassName="rd-poster-inner"
-      copyClassName="rd-story"
-      eyebrowClassName="rd-eyebrow"
-      ledeClassName="rd-intro"
-      titleId="creator-hero-title"
-      art={{
-        src: "/brand/illustrated-20260928/hero.webp",
-        srcSet: "/brand/illustrated-20260928/hero-320.webp 320w, /brand/illustrated-20260928/hero-640.webp 640w, /brand/illustrated-20260928/hero.webp 677w",
-        sizes: "100vw",
-      }}
-      beforeTitle={<p className="rd-brand"><ToonStudioWordmark /><small>Stories Come to Life</small></p>}
-      eyebrow={bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}
-      title={<>{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></>}
-      lede={bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}
-      aside={<HomeLunaPanel />}
-    >
-          <form className="rd-idea" onSubmit={submitInput}>
-            <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
-              <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
-                <PencilLine size={14} aria-hidden="true" /><span>{bi("이야기 만들기", "Create a story")}</span>
-              </button>
-              <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
-                <Search size={14} aria-hidden="true" /><span>{bi("작품 찾기", "Find stories")}</span>
-              </button>
-            </div>
-            <label className="sr-only" htmlFor="rd-idea-input">{searching ? bi("작품 검색", "Story search") : bi("아이디어 입력", "Idea input")}</label>
-            <input
-              id="rd-idea-input"
-              value={idea}
-              onChange={(event) => setIdea(event.target.value)}
-              placeholder={searching
-                ? bi("작품명·작가·태그로 찾아보세요", "Search by title, creator or tag")
-                : bi("아이디어를 입력해보세요 (예: 비 오는 날의 첫사랑)", "Type an idea (e.g. first love on a rainy day)")}
-              maxLength={200}
-              autoComplete="off"
-              enterKeyHint={searching ? "search" : undefined}
-            />
-            <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
-          </form>
-    </SpectacleHero>
-    <HomePersonalStrip />
-    <RevealOnScroll variant="fade" className="rd-discover">
+    <div data-home-band="hero">
+      {/* 히어로는 SpectacleHero 부품이 소유한다 (S3-15). rd-* 클래스는 표면 마감이 이긴다. */}
+      <SpectacleHero
+        className="rd-poster"
+        artClassName="rd-poster-art"
+        innerClassName="rd-poster-inner"
+        copyClassName="rd-story"
+        eyebrowClassName="rd-eyebrow"
+        ledeClassName="rd-intro"
+        titleId="creator-hero-title"
+        art={{
+          src: "/brand/illustrated-20260928/hero.webp",
+          srcSet: "/brand/illustrated-20260928/hero-320.webp 320w, /brand/illustrated-20260928/hero-640.webp 640w, /brand/illustrated-20260928/hero.webp 677w",
+          sizes: "100vw",
+        }}
+        beforeTitle={<p className="rd-brand"><ToonStudioWordmark /><small>Stories Come to Life</small></p>}
+        eyebrow={bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}
+        title={<>{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></>}
+        lede={bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}
+        aside={<HomeLunaPanel />}
+      >
+            <form className="rd-idea" onSubmit={submitInput}>
+              <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
+                <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
+                  <PencilLine size={14} aria-hidden="true" /><span>{bi("이야기 만들기", "Create a story")}</span>
+                </button>
+                <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
+                  <Search size={14} aria-hidden="true" /><span>{bi("작품 찾기", "Find stories")}</span>
+                </button>
+              </div>
+              <label className="sr-only" htmlFor="rd-idea-input">{searching ? bi("작품 검색", "Story search") : bi("아이디어 입력", "Idea input")}</label>
+              <input
+                id="rd-idea-input"
+                value={idea}
+                onChange={(event) => setIdea(event.target.value)}
+                placeholder={searching
+                  ? bi("작품명·작가·태그로 찾아보세요", "Search by title, creator or tag")
+                  : bi("아이디어를 입력해보세요 (예: 비 오는 날의 첫사랑)", "Type an idea (e.g. first love on a rainy day)")}
+                maxLength={200}
+                autoComplete="off"
+                enterKeyHint={searching ? "search" : undefined}
+              />
+              <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
+            </form>
+      </SpectacleHero>
+    </div>
+    <div data-home-band="continue">
+      <HomeNowCard />
+      <RevealOnScroll>
+      <section className="rd-examples" aria-labelledby="rd-examples-title">
+        <div className="rd-examples-heading"><h2 id="rd-examples-title">{bi("예시 작품", "Example works")}</h2><Link href="/studio"><FolderKanban size={13} aria-hidden="true" />{bi("내 프로젝트", "My projects")}<ChevronRight size={13} aria-hidden="true" /></Link></div>
+        <div className="rd-example-shelf">{HOME_EXAMPLES.map((example) => <div className="rd-example-cover" key={example.image}><img src={homeArt(example.image, 320)} alt="" width={180} height={120} decoding="async" /><span>{bi(example.ko, example.en)}<small>{bi(example.metaKo, example.metaEn)}</small></span></div>)}<Link className="rd-new-project" href="/create"><Plus size={22} aria-hidden="true" /><span>{bi("작품 시작하기", "Start a work")}</span></Link></div>
+      </section>
+      </RevealOnScroll>
+    </div>
+    <RevealOnScroll variant="fade" className="rd-discover" data-home-band="discover">
       <DiscoverHomePreview />
     </RevealOnScroll>
-    <RevealOnScroll>
-    <nav id="creator-start" className="rd-quick" aria-labelledby="creator-toolkit-title">
-      <div className="rd-section-heading">
-        <h2 id="creator-toolkit-title" tabIndex={-1}>{bi("무엇부터 시작할까요?", "Where would you like to start?")}</h2>
-        <span aria-hidden="true">START CREATING</span>
-      </div>
-      <div className="rd-quick-grid">{HOME_QUICK_STARTS.map((item) => <Link key={item.href} href={item.href}><img src={homeArt(item.image, 320)} alt="" width={240} height={144} decoding="async" /><strong>{bi(item.ko, item.en)}</strong><small>{bi(item.detailKo, item.detailEn)}</small></Link>)}</div>
-    </nav>
-    </RevealOnScroll>
-    <RevealOnScroll>
-    <section className="rd-examples" aria-labelledby="rd-examples-title">
-      <div className="rd-examples-heading"><h2 id="rd-examples-title">{bi("예시 작품", "Example works")}</h2><Link href="/studio"><FolderKanban size={13} aria-hidden="true" />{bi("내 프로젝트", "My projects")}<ChevronRight size={13} aria-hidden="true" /></Link></div>
-      <div className="rd-example-shelf">{HOME_EXAMPLES.map((example) => <div className="rd-example-cover" key={example.image}><img src={homeArt(example.image, 320)} alt="" width={180} height={120} decoding="async" /><span>{bi(example.ko, example.en)}<small>{bi(example.metaKo, example.metaEn)}</small></span></div>)}<Link className="rd-new-project" href="/create"><Plus size={22} aria-hidden="true" /><span>{bi("작품 시작하기", "Start a work")}</span></Link></div>
-    </section>
-    </RevealOnScroll>
-    <RevealOnScroll>
-      <HomeCoreStudios />
-    </RevealOnScroll>
-    <RevealOnScroll>
-      <ReferenceEditorPreview />
-    </RevealOnScroll>
-    <RevealOnScroll variant="fade" className="rd-flow-next">
-      <ServiceFlowNext current="home" title={bi("처음이라면 서비스 소개부터", "New here? Start with the introduction")} />
-    </RevealOnScroll>
-    <nav className="rd-chapters" aria-label={bi("서비스 더 알아보기", "Learn more about ToonStudio")}>
-      <span className="rd-chapters-label">{bi("더 알아보기", "Learn more")}</span>
-      {HOME_LEARN_MORE.map((link) => <Link key={link.href} href={link.href}>{bi(link.ko, link.en)}<ArrowRight size={14} aria-hidden="true" /></Link>)}
-    </nav>
+    <details className="rd-more" data-home-band="more">
+      <summary className="rd-more-summary">
+        <span>{bi("더 알아보기", "Learn more")}</span>
+        <small>{bi("시작 카드·핵심 작업실·에디터 미리보기·서비스 소개", "Start cards, core studios, editor preview and introduction")}</small>
+        <ChevronDown size={16} aria-hidden="true" />
+      </summary>
+      <RevealOnScroll>
+      <nav id="creator-start" className="rd-quick" aria-labelledby="creator-toolkit-title">
+        <div className="rd-section-heading">
+          <h2 id="creator-toolkit-title" tabIndex={-1}>{bi("무엇부터 시작할까요?", "Where would you like to start?")}</h2>
+          <span aria-hidden="true">START CREATING</span>
+        </div>
+        <div className="rd-quick-grid">{HOME_QUICK_STARTS.map((item) => <Link key={item.href} href={item.href}><img src={homeArt(item.image, 320)} alt="" width={240} height={144} decoding="async" /><strong>{bi(item.ko, item.en)}</strong><small>{bi(item.detailKo, item.detailEn)}</small></Link>)}</div>
+      </nav>
+      </RevealOnScroll>
+      <RevealOnScroll>
+        <HomeCoreStudios />
+      </RevealOnScroll>
+      <RevealOnScroll>
+        <ReferenceEditorPreview />
+      </RevealOnScroll>
+      <RevealOnScroll variant="fade" className="rd-flow-next">
+        <ServiceFlowNext current="home" title={bi("처음이라면 서비스 소개부터", "New here? Start with the introduction")} />
+      </RevealOnScroll>
+      <nav className="rd-chapters" aria-label={bi("서비스 더 알아보기", "Learn more about ToonStudio")}>
+        <span className="rd-chapters-label">{bi("더 알아보기", "Learn more")}</span>
+        {HOME_LEARN_MORE.map((link) => <Link key={link.href} href={link.href}>{bi(link.ko, link.en)}<ArrowRight size={14} aria-hidden="true" /></Link>)}
+      </nav>
+    </details>
   </div>;
 }

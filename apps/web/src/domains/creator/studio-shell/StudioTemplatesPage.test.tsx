@@ -23,7 +23,7 @@ describe("StudioTemplatesPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: /무엇을 만들지만 고르세요|Choose what you want to make/u })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /무엇을 만들지 고르세요|Choose what you want to make/u })).toBeTruthy();
     const search = screen.getByRole("searchbox");
     fireEvent.change(search, { target: { value: "피칭" } });
 

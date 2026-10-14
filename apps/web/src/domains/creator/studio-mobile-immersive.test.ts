@@ -24,7 +24,13 @@ const studioMobileEditingDockSource = readFileSync(
   "utf8",
 );
 const studioChromeSource = readFileSync(new URL("./studio-chrome-ui.tsx", import.meta.url), "utf8");
-const studioGlobalsSource = readFileSync(new URL("../../app/styles/globals.css", import.meta.url), "utf8");
+// 스튜디오 실행 시 함께 적용되는 스타일 전체가 검사 대상이다: 전역 규칙(globals.css —
+// 앱 툴팁 레이어 등)과 스튜디오 전용 규칙의 정본인 studio-route.css를 합쳐 읽는다.
+// 스튜디오 규칙은 globals.css 머리말 정책상 studio-route.css에만 둔다.
+const studioGlobalsSource = [
+  readFileSync(new URL("../../app/styles/globals.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../../app/styles/studio-route.css", import.meta.url), "utf8"),
+].join("\n");
 
 function memoryStorage(initial?: string) {
   const values = new Map<string, string>();
@@ -98,16 +104,18 @@ describe("Studio mobile immersive preference", () => {
   });
 
   it("clears a temporary inspector override when entering the super-simple layout", () => {
+    // 밀도 세터는 전용 런타임 모듈로 분리됐다 — useStudioPreferencesRuntime은
+    // app-settings 상태·영속만 소유하고 세터는 이 모듈에서 위임받는다.
     const preferencesSource = readFileSync(
       new URL(
-        "./studio-cuttoon-editor/runtime/useStudioPreferencesRuntime.ts",
+        "./studio-cuttoon-editor/runtime/useStudioUiDensityPreference.ts",
         import.meta.url,
       ),
       "utf8",
     );
     const densitySetter = preferencesSource.slice(
       preferencesSource.indexOf("const setStudioUiDensity ="),
-      preferencesSource.indexOf("const commitAppSettings ="),
+      preferencesSource.indexOf("const setUiAdvancedToolsExpanded ="),
     );
     expect(densitySetter).toContain('if (mode === "focus" && !appSettingsRef.current.general.colorPanelPinned) closeRightPanelForFocusModeRef.current();');
     // The host owns the panel state the runtime hook closes over.

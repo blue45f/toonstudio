@@ -10,7 +10,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { DEFAULT_FRAMING, DEFAULT_SHADING, KIT_HIDEABLE_REGION_IDS, KIT_REQUIRED_PRESETS, rolePartId } from "../contracts";
+import { DEFAULT_FRAMING, DEFAULT_SHADING, KIT_HIDEABLE_REGION_IDS, rolePartId } from "../contracts";
 import { hexToSrgb01 } from "../shared/color";
 import { GLB_CHUNK_BIN, GLB_CHUNK_JSON, GLB_MAGIC, GLB_VERSION, parseGlb } from "../testing/minimal-glb";
 import { applyPlanFixture } from "../testing/recipe-fixtures";
@@ -28,7 +28,11 @@ import type { Material } from "@babylonjs/core/Materials/material.js";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
-const REQUIRED: readonly PresetId[] = KIT_REQUIRED_PRESETS;
+/**
+ * 이 파일의 기본 파츠 집합. 정본 `KIT_REQUIRED_PRESETS`는 2026-10-14 제외 결정으로 irises만으로 축소됐지만,
+ * 엔진 통합 검증은 파츠가 실제로 올라간 구성이 전제라 결정 전의 필수 5종을 테스트가 명시한다.
+ */
+const REQUIRED: readonly PresetId[] = ["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"];
 /** 합성 키트의 고정색 틴트(fixture가 fixed 재질에 넣는 값) */
 const FIXED_HEX = "#f2f2f4";
 

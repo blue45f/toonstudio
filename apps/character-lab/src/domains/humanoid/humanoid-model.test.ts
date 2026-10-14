@@ -69,7 +69,8 @@ const BARE_SLOTS: Partial<Record<SlotKind, null>> = { hair: null, top: null, bot
 describe("buildHumanoidModel — 기본 레시피(세분 1, 기본 레시피는 액세서리 없음)", () => {
   let model: ProceduralHumanoidModel;
   beforeAll(() => {
-    model = build(recipeWithSlots({ bottom: "bottom/pleated-skirt" })).model;
+    // 기본 슬롯의 hair·top·shoes는 2026-10-14 제외 결정으로 null이라, 의상 파츠가 있는 구성은 슬롯을 명시한다(액세서리만 없음)
+    model = build(recipeWithSlots({ hair: "hair/soft-bob", top: "top/tee", bottom: "bottom/pleated-skirt", shoes: "shoes/sneakers" })).model;
   });
 
   it("역할 순서로 파츠 14개를 내고 모든 파츠가 validateMeshPartData를 통과한다", () => {

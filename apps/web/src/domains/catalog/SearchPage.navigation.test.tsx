@@ -8,6 +8,9 @@ import { SearchPage } from "./SearchPage";
 vi.mock("@/shared/lib/i18n", () => ({
   useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: "en" }),
   useT: () => (key: string) => key,
+  // SearchPage가 side-effect로 평가하는 search-i18n.ts가 모듈 스코프에서 호출한다.
+  registerI18nLocaleEntries: (_locale: string, _entries: Readonly<Record<string, string>>) => undefined,
+  registerI18nEnglishSourceEntries: (_entries: Readonly<Record<string, string>>) => undefined,
 }));
 vi.mock("@/shared/components/search-explorer", async () => {
   const { useState } = await import("react");

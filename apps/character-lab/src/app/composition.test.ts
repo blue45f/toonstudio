@@ -27,7 +27,9 @@ function kitOverrides(): NonNullable<CompositionOverrides["kit"]> & { readonly l
     loads: () => loads,
     loadManifest: async () => {
       loads += 1;
-      return { ok: true, manifest: kitManifestFixture() };
+      // 남성 베이스 제공분은 이 파일의 남성 시나리오(일부 헤어·의상 제공, 나머지는 "남성 핏 미제작")가 전제하는 집합을 명시한다.
+      // 합성 fixture 전용 지정이며 실제 키트의 필수 파츠(KIT_REQUIRED_PRESETS)와는 무관하다.
+      return { ok: true, manifest: kitManifestFixture({ malePresets: ["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"] }) };
     },
     buildPlan: buildKitPlanDetailed,
   };
@@ -201,7 +203,8 @@ describe("app/composition", () => {
     expect(engine.loadedSources.map((source) => source.kind)).toEqual(["kit"]);
     const first = engine.loadedSources[0];
     if (first?.kind !== "kit") throw new Error("키트 소스가 올라가야 합니다.");
-    expect(first.plan.parts.map((part) => part.id)).toEqual(["base/female", "hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"]);
+    // 키트 기본 선택은 hair·top·bottom·shoes 미선택(null)이라 기본 구성은 베이스 + 필수 파츠(irises)뿐이다(2026-10-14 기본 슬롯 정본).
+    expect(first.plan.parts.map((part) => part.id)).toEqual(["base/female", "irises/round-large"]);
     // 여성 키트는 15슬롯 전부 지원이라 플랜에 미지원 사유가 없다
     expect(engine.appliedPlans).toHaveLength(1);
     expect(engine.appliedPlans[0]?.unsupported).toEqual([]);

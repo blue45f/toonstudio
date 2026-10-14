@@ -474,6 +474,11 @@ describe("bootstrap SQL and repository contract", () => {
       "0106_studio_godot_space_layout",
       "0107_studio_godot_space_background",
       "0108_studio_project_library",
+      "0109_production_organization",
+      "0110_stage_consensus_gate",
+      "0111_studio_op_log",
+      "0112_production_team_audit_read",
+      "0113_production_episode_voice_commentary",
     ]);
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([

@@ -38,8 +38,8 @@ export function StudioStoryboardArtHandoffPanel({
 }: StudioStoryboardArtHandoffPanelProps) {
   if (beats.length === 0) return null;
 
-  let handoff: ReturnType<typeof deriveStoryboardArtHandoff> | null = null;
-  let href: string | null = null;
+  let handoff: ReturnType<typeof deriveStoryboardArtHandoff> | null;
+  let href: string | null;
   try {
     const bound = bindBeatsToEpisode(beats, episodeId);
     const plan = planStudioStoryboard(bound);

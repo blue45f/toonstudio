@@ -277,7 +277,7 @@ export async function resolveStcProfile(
   if (!provider) {
     return Object.freeze({ kind: "manual", profile: createManualStcProfile(), reason: "no-provider" });
   }
-  let profile: StcFaceFeatureProfile | null = null;
+  let profile: StcFaceFeatureProfile | null;
   try {
     profile = await provider.analyze({ previewRef });
   } catch {

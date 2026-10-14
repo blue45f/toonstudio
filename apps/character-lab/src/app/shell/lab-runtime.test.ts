@@ -25,7 +25,7 @@ function canvasStub(): HTMLCanvasElement {
 }
 
 /** 합성 키트를 돌려주는 가짜 로더(실제 계획 빌더 사용). `control.fail`이면 kit.json fetch 실패를 흉내 낸다. */
-function fakeKit(): { readonly kit: KitPlanRegistryDeps; readonly loads: () => number; readonly control: { fail: boolean } } {
+function fakeKit(malePresets?: readonly string[]): { readonly kit: KitPlanRegistryDeps; readonly loads: () => number; readonly control: { fail: boolean } } {
   const control = { fail: false };
   let loads = 0;
   return {
@@ -35,7 +35,7 @@ function fakeKit(): { readonly kit: KitPlanRegistryDeps; readonly loads: () => n
       loadManifest: async () => {
         loads += 1;
         if (control.fail) return { ok: false, failure: failVisible("kit-manifest-fetch-failed", "키트 manifest(kit.json)를 불러오지 못했습니다(404).", undefined, 1) };
-        return { ok: true, manifest: kitManifestFixture() };
+        return { ok: true, manifest: kitManifestFixture(malePresets ? { malePresets } : {}) };
       },
       buildPlan: buildKitPlanDetailed,
       now: () => 1,
@@ -169,7 +169,8 @@ describe("app/shell/lab-runtime", () => {
     expect(engine.loadedSources.map((source) => source.kind)).toEqual(["kit"]);
     const source = engine.loadedSources[0];
     if (source?.kind !== "kit") throw new Error("키트 소스여야 합니다.");
-    expect(source.plan.parts.map((part) => part.id)).toEqual(["base/female", "hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"]);
+    // 기본 레시피 슬롯은 2026-10-14 제외 결정으로 hair·top·bottom·shoes가 null이라 계획은 베이스 + 홍채만 담는다
+    expect(source.plan.parts.map((part) => part.id)).toEqual(["base/female", "irises/round-large"]);
     expect(store.getState().capabilities).toBe(source.plan.capabilities);
     expect(store.events.filter((event) => event.type === "source/capabilities")).toHaveLength(1);
     expect(runtime.applyLoop.settled()).toBe(true);
@@ -331,7 +332,8 @@ describe("app/shell/lab-runtime", () => {
   });
 
   it("프리셋 단위로 미제공인 카드(남성 베이스의 미제작 헤어 등)는 썸네일을 요청하지 않는다", async () => {
-    const { kit } = fakeKit();
+    // 정본 필수 파츠는 irises만이라, "남성이 일부 헤어를 제공"하는 전제는 fixture에 명시한다
+    const { kit } = fakeKit(["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"]);
     const engine = createMockEngine({ thumbnailSources: true });
     const { runtime, store } = createMockRuntime({
       engine,
@@ -382,8 +384,8 @@ describe("app/shell/lab-runtime", () => {
     runtime.thumbnails.request(accessoryIds[0] as ThumbnailRequest["presetId"]);
     await runtime.thumbnails.idle();
     expect(engine.calls.filter((call) => call.method === "renderThumbnail" && accessoryIds.includes((call.args[0] as ThumbnailRequest).presetId))).toHaveLength(0);
-    // 제공되는 슬롯의 카드는 그대로 그려진다
-    expect(requested).toContain("hair/soft-bob");
+    // 제공되는 슬롯의 카드는 그대로 그려진다(남성에게 제공되는 파츠는 홍채뿐이다)
+    expect(requested).toContain("irises/round-large");
     expect(store.getState().failures).toEqual([]);
     runtime.dispose();
   });

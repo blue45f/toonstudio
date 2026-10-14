@@ -157,7 +157,7 @@ function SavedBrushStrokePreview({ brush }: { brush: StudioSavedBrush }) {
         width={(SAVED_PREVIEW_WIDTH - 1) / 2}
         height={SAVED_PREVIEW_HEIGHT - 1}
         rx={5}
-        fill="oklch(0.9 0.008 70)"
+        fill="var(--color-raised)"
       />
       <rect
         x={SAVED_PREVIEW_WIDTH / 2}
@@ -165,7 +165,7 @@ function SavedBrushStrokePreview({ brush }: { brush: StudioSavedBrush }) {
         width={(SAVED_PREVIEW_WIDTH - 1) / 2}
         height={SAVED_PREVIEW_HEIGHT - 1}
         rx={5}
-        fill="oklch(0.19 0.009 68)"
+        fill="var(--color-reader-panel)"
       />
       <rect
         x={0.5}
@@ -174,7 +174,8 @@ function SavedBrushStrokePreview({ brush }: { brush: StudioSavedBrush }) {
         height={SAVED_PREVIEW_HEIGHT - 1}
         rx={5}
         fill="none"
-        stroke="oklch(0.42 0.013 64 / 0.7)"
+        stroke="var(--color-fg-3)"
+        strokeOpacity={0.7}
       />
       {dots.length > 0 ? (
         <g fill={brush.color} opacity={opacity}>

@@ -233,7 +233,8 @@ describe("GLB 내보내기: 키트 소스(조립된 장면 + morph weights + 몸
   });
 
   it("가려진 몸 삼각형은 내보낸 GLB에서 빠진다(보이는 삼각형을 이은 프리미티브 하나), 가림이 없으면 몸 전체가 나온다", async () => {
-    const dressed = await exportKit(KIT_REQUIRED_PRESETS);
+    // 가림을 만드는 의상 파츠(상의·하의·신발)를 명시한다. 필수 파츠 상수(KIT_REQUIRED_PRESETS)와 무관한 시나리오 전제다.
+    const dressed = await exportKit(["top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"]);
     // 합성 몸은 영역당 삼각형 2개(인덱스 6): neck / forearm.L~hand.R / calf.L·R 세 구간
     expect(bodyPrimitiveCounts(dressed.json)).toEqual([42]);
     const bare = await exportKit([]);

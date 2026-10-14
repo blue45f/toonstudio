@@ -20,6 +20,7 @@ const PUBLIC_ROUTE_SOURCE_FILES = [
   "apps/web/src/app/routes/groups/catalog.routes.tsx",
   "apps/web/src/app/routes/groups/community.routes.tsx",
   "apps/web/src/app/routes/groups/creator.routes.tsx",
+  "apps/web/src/app/routes/groups/creator-showcase-routes.tsx",
   "apps/web/src/app/routes/groups/creator-resources.routes.tsx",
   "apps/web/src/app/routes/groups/experience.routes.tsx",
   "apps/web/src/app/routes/groups/legal.routes.tsx",
@@ -187,7 +188,8 @@ describe("site directory experience contracts", () => {
 
   it("redirects legacy create detail pages to their canonical showcase pages", () => {
     // O-04 일원화: /create 상세는 페이지를 공유하지 않고 정식 /showcase 주소로 리다이렉트한다.
-    const routes = readFileSync("apps/web/src/app/routes/groups/creator.routes.tsx", "utf8");
+    // 라우트 그룹 분리(호스트 래칫) 이후 이 리다이렉트들은 creator-showcase-routes.tsx가 소유한다.
+    const routes = readFileSync("apps/web/src/app/routes/groups/creator-showcase-routes.tsx", "utf8");
 
     for (const [legacy, canonical] of [
       ["/create/challenges", "/showcase/challenges"],

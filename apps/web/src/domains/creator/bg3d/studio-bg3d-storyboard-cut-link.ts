@@ -145,13 +145,6 @@ function requireVec3(value: unknown, label: string): StudioBg3dVec3 {
   return [value[0] as number, value[1] as number, value[2] as number];
 }
 
-function optionalVec3(
-  value: unknown,
-  label: string,
-): StudioBg3dVec3 | undefined {
-  return value === undefined ? undefined : requireVec3(value, label);
-}
-
 function validateCamera(value: unknown): StudioBg3dCameraSettings {
   if (!isRecord(value)) fail("카메라 정보가 올바르지 않습니다.");
   const fov = value.fovDegrees;
