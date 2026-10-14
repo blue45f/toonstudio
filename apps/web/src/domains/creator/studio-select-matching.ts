@@ -31,6 +31,7 @@ const ELEMENT_TYPE_LABELS: Record<El["type"], string> = {
   frame: "프레임",
   focusLines: "집중선",
   speedLines: "스피드라인",
+  adjustment: "조정 레이어",
 };
 
 function normalizeColor(value: string | undefined): string | null {

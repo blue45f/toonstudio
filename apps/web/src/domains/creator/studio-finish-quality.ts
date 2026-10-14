@@ -230,6 +230,7 @@ function elementLabel(element: El): string {
     frame: "컷 프레임",
     focusLines: "집중선",
     speedLines: "속도선",
+    adjustment: "조정 레이어",
   };
   return labels[element.type];
 }

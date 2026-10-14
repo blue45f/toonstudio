@@ -64,6 +64,7 @@ const TYPE_LABELS: Readonly<Record<El["type"], string>> = Object.freeze({
   frame: "프레임",
   focusLines: "집중선",
   speedLines: "스피드라인",
+  adjustment: "조정 레이어",
 });
 
 function currentLayerName(element: El): string {

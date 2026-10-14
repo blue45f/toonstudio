@@ -62,7 +62,7 @@ import {
   type StudioProjectPlanningState,
 } from "./studio-planning-store";
 
-export type StudioProjectStoryPlanningView = "episodes" | "characters";
+export type StudioProjectStoryPlanningView = "episodes" | "characters" | "world" | "timeline";
 
 export function StudioProjectStoryPlanning({
   projectId,

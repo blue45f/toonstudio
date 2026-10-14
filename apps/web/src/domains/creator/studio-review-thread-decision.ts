@@ -18,7 +18,7 @@ import { canonicalStudioCommentAnchorKey } from "./studio-comments";
 import type { StudioTeamCommentThread } from "./studio-team-comment-client";
 
 /** 스레드가 묶이는 주제 종류. frame이 웹툰의 "컷"이다. */
-export type ReviewThreadSubjectKind = "page" | "cut" | "element" | "pin" | "pdf-page";
+export type ReviewThreadSubjectKind = "page" | "cut" | "element" | "pin" | "pdf-page" | "compare-image";
 
 /** 컷/주제 단위 주제 식별. UI는 pageId·frameId를 실제 표시명으로 바꿔 단다. */
 export interface ReviewThreadSubject {

@@ -353,9 +353,9 @@ const NAV_SURFACES_BY_STAGE: Readonly<Record<EpisodeStageId, readonly Production
     plan: Object.freeze(["planning"]),
     storyboard: Object.freeze(["production"]),
     art: Object.freeze(["manuscripts"]),
-    lettering: Object.freeze([]),
+    lettering: Object.freeze<readonly ProductionProjectSurface[]>([]),
     review: Object.freeze(["review", "handoff"]),
-    publish: Object.freeze([]),
+    publish: Object.freeze<readonly ProductionProjectSurface[]>([]),
     operate: Object.freeze(["episodes", "control", "activity", "schedule"]),
   });
 

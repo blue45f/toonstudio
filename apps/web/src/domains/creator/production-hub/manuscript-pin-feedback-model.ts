@@ -8,6 +8,7 @@
 
 import type {
   StudioCommentAnchor,
+  StudioCommentDrawing,
   StudioCommentReference,
   StudioCommentsDocument,
   StudioCommentThread,
@@ -50,10 +51,10 @@ export interface ManuscriptPinAssigneeOption {
 
 export type ManuscriptPinInput = Omit<ManuscriptPin, "number">;
 
-/** 전체 / 미해결 / 필수 수정(긴급) / 해결됨 / 내 핀 / 내 담당 */
-export type ManuscriptPinFilter = "all" | "open" | "urgent" | "resolved" | "mine" | "assigned";
+/** 전체 / 미해결 / 필수 수정(긴급) / 해결됨 / 내 핀 / 내 담당 / 미읽음 */
+export type ManuscriptPinFilter = "all" | "open" | "urgent" | "resolved" | "mine" | "assigned" | "unread";
 
-export const MANUSCRIPT_PIN_FILTERS: readonly ManuscriptPinFilter[] = ["all", "open", "urgent", "resolved", "mine", "assigned"] as const;
+export const MANUSCRIPT_PIN_FILTERS: readonly ManuscriptPinFilter[] = ["all", "open", "urgent", "resolved", "mine", "assigned", "unread"] as const;
 
 /** 좌표를 0..1 범위로 클램프 */
 export function clampPinCoordinate(value: number): number {
@@ -90,6 +91,9 @@ export function filterManuscriptPins<T extends ManuscriptPin>(
     case "assigned":
       if (!currentActorId) return [];
       return pins.filter((pin) => pin.assigneeId === currentActorId);
+    case "unread":
+      if (!currentActorId) return [];
+      return pins.filter((pin) => isManuscriptPinUnread(pin, currentActorId));
     case "all":
     default:
       return [...pins];
@@ -293,7 +297,7 @@ export interface ManuscriptPinFeedbackPin extends ManuscriptPin {
   /** 멘션된 표시 이름 목록 */
   readonly mentions: readonly string[];
   /** 스레드의 그리기 주석. 없는 스레드는 null이다. */
-  readonly drawing: StudioCommentDrawing | null;
+  readonly drawing?: StudioCommentDrawing | null;
 }
 
 export interface ManuscriptPinFeedbackReply {

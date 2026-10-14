@@ -125,6 +125,15 @@ export interface StudioReferencePanelProps {
   onOpenDetached?: () => void;
   /** Starts a page-owned, non-destructive trace guide from the effective selected asset. */
   onStartDrawingPractice?: (request: StudioDrawingPracticeStartRequest) => void;
+  /** Episode-team board scope. Absent on personal boards — team UI stays hidden. */
+  boardScope?: {
+    readonly kind: "episode-team" | "personal";
+    readonly episodeLabel?: string;
+  };
+  /** Copies the effective selection to the episode team board. Shown only on personal boards. */
+  onCopyToEpisodeBoard?: () => void;
+  /** Sends the effective selection to the compare-review surface. */
+  onSendItemToCompare?: (item: StudioReferenceBoardItem, asset: StudioAsset | null) => void;
   /** Test/runtime injection seam; product defaults to the shared SQLite/OPFS authority. */
   acquirePreferences?: () => Promise<StudioReferencePanelPreferencesRepository>;
 }
