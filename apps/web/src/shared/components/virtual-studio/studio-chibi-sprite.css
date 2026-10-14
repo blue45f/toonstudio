@@ -1,5 +1,5 @@
-.studio-chibi{--studio-chibi-size:92px;position:relative;display:inline-grid;width:var(--studio-chibi-size);height:calc(var(--studio-chibi-size)*1.32);place-items:end center;transform:scaleX(var(--studio-chibi-flip,1));transform-origin:50% 100%;filter:drop-shadow(0 9px 8px rgb(0 0 0/.35));will-change:transform}
-.studio-chibi svg{display:block;width:100%;height:100%;overflow:visible}
+.studio-chibi{--studio-chibi-size:92px;position:relative;display:inline-grid;width:var(--studio-chibi-size);height:calc(var(--studio-chibi-size)*1.32);place-items:end center;transform:scaleX(var(--studio-chibi-flip,1));transform-origin:50% 100%;filter:drop-shadow(0 9px 8px rgb(0 0 0/.35)) drop-shadow(0 1px 0 rgb(255 255 255/.12));will-change:transform;shape-rendering:geometricPrecision}
+.studio-chibi svg{display:block;width:100%;height:100%;overflow:visible;image-rendering:auto}
 .studio-chibi-shadow{fill:rgb(15 15 22/.28);filter:blur(1.4px)}
 .studio-chibi-body,.studio-chibi-head,.studio-chibi-arm,.studio-chibi-legs,.studio-chibi-accessory,.studio-chibi-prop{transform-box:fill-box;transform-origin:center}
 .studio-chibi[data-motion=idle] .studio-chibi-body{animation:studio-chibi-idle 2.7s ease-in-out infinite}

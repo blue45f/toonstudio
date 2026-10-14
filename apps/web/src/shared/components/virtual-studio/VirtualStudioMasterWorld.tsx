@@ -144,10 +144,15 @@ export function VirtualStudioMasterBackdrop() {
     <div className="vs-master-reference-backdrop" aria-hidden="true">
       <img
         src="/assets/virtual-studio/production-v2/master-central-lossless.webp"
+        srcSet="/assets/virtual-studio/production-v2/master-central-lossless.webp 1x"
+        sizes="100vw"
+        fetchPriority="high"
+        decoding="async"
         alt=""
         draggable={false}
-        className="vs-master-reference-image"
+        className="vs-master-reference-image vs-master-reference-image--hd"
       />
+      <span className="vs-master-cinematic-grade" />
     </div>
   );
 }

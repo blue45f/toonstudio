@@ -111,6 +111,7 @@ import {
 } from "./studio-virtual-space-art-style";
 import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
 import { createStudioTextureLod, type StudioTextureLodRuntime } from "./studio-virtual-space-texture-lod";
+import { studioHdSpriteProfile } from "./studio-virtual-space-hd-sprite-pipeline";
 import { StudioUserZoomRuntime } from "./studio-virtual-space-user-zoom";
 import { StudioCameraPanRuntime, bindStudioCameraGestures } from "./studio-virtual-space-camera-pan";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
@@ -982,6 +983,19 @@ export function StudioVirtualSpacePhaserCanvas({
         // 화면 밀도를 재서 반감 사본을 GPU 텍스처에 올린다. 픽셀 아트(NEAREST)와 캔버스 렌더러는 그대로 둔다.
         textureLod = createStudioTextureLod(this, { pixelated: artProfile.pixelated });
         cleanup.push(() => textureLod?.dispose());
+        // HD 스프라이트 파이프라인(v9): DPR·이펙트 레벨로 SD/HD/ULTRA를 골라 진단에 남긴다.
+        // 실제 샘플링 전환은 textureLod가 맡고, 그림자·광원 값은 CSS/조명 런타임과 공유한다.
+        try {
+          const hd = studioHdSpriteProfile({
+            dpr: globalThis.devicePixelRatio || 1,
+            viewportWidth: parent.clientWidth || 1280,
+            pixelated: artProfile.pixelated,
+            reducedMotion: reducedMotion.matches,
+            effectLevel: experienceRef.current.effectLevel === "low" ? "low" : experienceRef.current.effectLevel === "high" ? "high" : "medium",
+          });
+          parent.dataset.hdSpriteTier = hd.tier;
+          parent.dataset.hdSpriteSampling = hd.sampling;
+        } catch { /* 진단 실패는 엔진 실패로 취급하지 않는다 */ }
         for (const [key, atlas] of sceneArtAtlases) {
           if (this.textures.exists(key) && !registerStudioSceneAtlas(this.textures.get(key), atlas)) {
             failedTextures.add(key);
