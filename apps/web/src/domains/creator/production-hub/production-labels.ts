@@ -17,12 +17,15 @@ import type {
   PlanningDocumentStatus,
   ProductionProjectAggregate,
   ProductionRoleType,
+  ProductionScopeKind,
+  ProductionTaskStatus,
   ReviewDecisionValue,
   ReviewLane,
   Submission,
 } from "@toonstudio/core/production";
 
 import type { ProductionTone } from "./production-ui";
+import type { EpisodeDeadlineHealth } from "./production-episode-operations";
 import type { ProductionClientCommand } from "./production-api";
 import type { ProductionProjectAccess } from "./production-dashboard-api";
 
@@ -45,14 +48,23 @@ function pick<K extends string>(
 
 /** 공정 이름표. 팀 공정 설정에 이름이 있으면 그 이름이 우선한다. */
 export const PRODUCTION_PROCESS_LABELS: Readonly<Record<string, BilingualLabel>> = Object.freeze({
+  planning: { ko: "기획", en: "Planning" },
   "story-lock": { ko: "스토리", en: "Story" },
   storyboard: { ko: "콘티", en: "Storyboard" },
+  "name-board": { ko: "네임", en: "Name board" },
   sketch: { ko: "스케치·데생", en: "Sketch" },
   "line-art": { ko: "선화", en: "Line art" },
+  ink: { ko: "펜화", en: "Inking" },
   background: { ko: "배경", en: "Background" },
+  "background-draft": { ko: "배경 원화", en: "Background art" },
+  "background-compose": { ko: "배경 합성", en: "Background composite" },
   undercolor: { ko: "밑색", en: "Undercolor" },
   color: { ko: "채색", en: "Color" },
+  tone: { ko: "톤·마무리", en: "Tone finish" },
   lettering: { ko: "식자", en: "Lettering" },
+  "first-proof": { ko: "1차 교정", en: "First proof" },
+  "proof-revision": { ko: "수정 반영", en: "Proof revision" },
+  "final-proof": { ko: "최종 검수", en: "Final review" },
   "rights-preflight": { ko: "권리 점검", en: "Rights check" },
   "joint-proof": { ko: "최종 교정", en: "Final proof" },
   publication: { ko: "게시 준비", en: "Publishing" },
@@ -85,6 +97,17 @@ export function productionProcessLabel(
   if (step) return step.name;
   const label = PRODUCTION_PROCESS_LABELS[canonical];
   return label ? localize(label.ko, label.en) : processKey;
+}
+
+/**
+ * 팀 설정과 무관한 공정 표시 이름 — 내부 코드를 화면에 내보내지 않는다.
+ * 별칭(story·thumbnail)은 정본 키로 접은 뒤 이름표에서 찾고,
+ * 이름표에 없는 키는 대체 이름(기타 공정)으로 돌려준다.
+ */
+export function productionProcessDisplayLabel(processKey: string, localize: ProductionLocalize): string {
+  const label = PRODUCTION_PROCESS_LABELS[canonicalProductionProcessKey(processKey)];
+  if (label) return localize(label.ko, label.en);
+  return localize("기타 공정", "Other step");
 }
 
 /**
@@ -456,4 +479,74 @@ export function productionAssignmentName(
   const assignment = aggregate.assignments.find((entry) => entry.id === assignmentId);
   const party = assignment ? aggregate.parties.find((entry) => entry.id === assignment.partyId) : undefined;
   return party?.publicDisplayName ?? assignmentId;
+}
+
+/**
+ * 일정·회차 운영 라벨 정본 (schedule-labels-canonical).
+ * ProductionScheduleWorkspace와 ProductionEpisodeOperationsWorkspace가 쓰던
+ * 로컬 STATUS_LABEL 계열을 한곳으로 모은다 — 화면에 로컬 맵을 두지 않는다.
+ */
+export const TASK_STATUS_LABELS: Readonly<Record<ProductionTaskStatus, BilingualLabel>> = Object.freeze({
+  draft: { ko: "초안", en: "Draft" },
+  "needs-input": { ko: "입력 필요", en: "Input needed" },
+  ready: { ko: "시작 가능", en: "Ready to start" },
+  "in-progress": { ko: "진행 중", en: "In progress" },
+  "internal-review": { ko: "내부 검수", en: "Internal review" },
+  "external-review": { ko: "외부 검수", en: "External review" },
+  "changes-requested": { ko: "수정 요청", en: "Changes requested" },
+  "conditionally-approved": { ko: "조건부 승인", en: "Conditionally approved" },
+  approved: { ko: "승인", en: "Approved" },
+  done: { ko: "완료", en: "Done" },
+  blocked: { ko: "차단", en: "Blocked" },
+  paused: { ko: "일시 중지", en: "Paused" },
+  cancelled: { ko: "취소", en: "Cancelled" },
+  "out-of-scope": { ko: "범위 밖", en: "Out of scope" },
+});
+
+export function taskStatusLabel(status: ProductionTaskStatus, localize: ProductionLocalize): string {
+  return pick(TASK_STATUS_LABELS, status, localize);
+}
+
+export const SCOPE_KIND_LABELS: Readonly<Record<ProductionScopeKind, BilingualLabel>> = Object.freeze({
+  project: { ko: "프로젝트", en: "Project" },
+  season: { ko: "시즌", en: "Season" },
+  episode: { ko: "회차", en: "Episode" },
+  scene: { ko: "장면", en: "Scene" },
+  "scroll-segment": { ko: "스크롤", en: "Scroll segment" },
+  cut: { ko: "컷", en: "Cut" },
+  "layer-group": { ko: "레이어 그룹", en: "Layer group" },
+  asset: { ko: "에셋", en: "Asset" },
+  deliverable: { ko: "산출물", en: "Deliverable" },
+});
+
+export function scopeKindLabel(kind: ProductionScopeKind, localize: ProductionLocalize): string {
+  return pick(SCOPE_KIND_LABELS, kind, localize);
+}
+
+/** 일정 위험 5단계 — 예측·예상은 근거가 있을 때만, 초과는 실제 기한을 넘겼을 때만. */
+export type ScheduleRiskLevel = "normal" | "attention" | "predicted" | "forecast" | "overdue";
+
+export const SCHEDULE_RISK_LABELS: Readonly<Record<ScheduleRiskLevel, BilingualLabel>> = Object.freeze({
+  normal: { ko: "정상", en: "Normal" },
+  attention: { ko: "주의", en: "Attention" },
+  predicted: { ko: "예측 위험", en: "Predicted risk" },
+  forecast: { ko: "예상 초과", en: "Forecast overrun" },
+  overdue: { ko: "기한 초과", en: "Overdue" },
+});
+
+export function scheduleRiskLabel(risk: ScheduleRiskLevel, localize: ProductionLocalize): string {
+  return pick(SCHEDULE_RISK_LABELS, risk, localize);
+}
+
+export const EPISODE_DEADLINE_HEALTH_LABELS: Readonly<Record<EpisodeDeadlineHealth, BilingualLabel>> =
+  Object.freeze({
+    published: { ko: "공개 완료", en: "Published" },
+    critical: { ko: "즉시 조치", en: "Immediate action" },
+    risk: { ko: "일정 주의", en: "Schedule risk" },
+    healthy: { ko: "일정 정상", en: "On schedule" },
+    unplanned: { ko: "마감 미정", en: "Unscheduled" },
+  });
+
+export function episodeDeadlineHealthLabel(health: EpisodeDeadlineHealth, localize: ProductionLocalize): string {
+  return pick(EPISODE_DEADLINE_HEALTH_LABELS, health, localize);
 }

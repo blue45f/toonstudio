@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { COLLABORATION_ROLES } from "../../../../../packages/core/src/collaboration";
+import { COLLABORATION_ROLES } from "../../../../../../packages/core/src/collaboration";
 
 import {
   COLLABORATION_ROLE_PROCESS_MAP,

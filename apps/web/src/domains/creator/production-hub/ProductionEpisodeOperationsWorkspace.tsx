@@ -34,9 +34,15 @@ import {
   type EpisodeOperationsRow,
 } from "./production-episode-operations";
 import type { ProductionClientCommand } from "./production-api";
+import {
+  episodeDeadlineHealthLabel,
+  episodeStateLabel,
+  type ProductionLocalize,
+} from "./production-labels";
 import { ProductionStageDeadlinePlan } from "./ProductionStageDeadlinePlan";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 interface ProductionEpisodeOperationsWorkspaceProps {
@@ -46,36 +52,6 @@ interface ProductionEpisodeOperationsWorkspaceProps {
 }
 
 type Filter = "active" | "attention" | "all";
-
-const EPISODE_STATE_LABELS: Readonly<Record<EpisodeCollaboration["state"], string>> = {
-  "episode-planning": "회차 기획",
-  "story-drafting": "스토리 초안",
-  "story-review": "스토리 검수",
-  "story-ready-for-art": "작화 준비",
-  "art-clarification": "작화 질문",
-  thumbnailing: "콘티 제작",
-  "thumbnail-joint-review": "공동 콘티 검수",
-  "thumbnail-locked": "콘티 확정",
-  "final-art-production": "최종 작화",
-  "lettering-and-integration": "식자·통합",
-  "joint-proof": "공동 교정",
-  "publish-ready": "공개 준비",
-  published: "공개됨",
-  blocked: "막힘",
-  "paused-health": "건강 사유 휴식",
-  "paused-contract": "계약 보류",
-  "change-request-open": "변경 요청 중",
-  "creator-replacement": "창작자 교체",
-  cancelled: "취소",
-};
-
-const HEALTH_LABELS: Readonly<Record<EpisodeDeadlineHealth, string>> = {
-  published: "공개 완료",
-  critical: "즉시 조치",
-  risk: "일정 주의",
-  healthy: "일정 정상",
-  unplanned: "마감 미정",
-};
 
 const HEALTH_STYLES: Readonly<Record<EpisodeDeadlineHealth, string>> = {
   published: "border-good/35 bg-good/10 text-good",
@@ -148,13 +124,13 @@ function MetricCard({
   );
 }
 
-function HealthBadge({ health }: { readonly health: EpisodeDeadlineHealth }) {
+function HealthBadge({ health, bt }: { readonly health: EpisodeDeadlineHealth; readonly bt: ProductionLocalize }) {
   return (
     <span className={cn(
       "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold",
       HEALTH_STYLES[health],
     )}>
-      {HEALTH_LABELS[health]}
+      {episodeDeadlineHealthLabel(health, bt)}
     </span>
   );
 }
@@ -183,6 +159,7 @@ function EpisodeOperationsCard({
 }) {
   const [releaseDraft, setReleaseDraft] = useState(toDateTimeLocal(row.releaseAt));
   const [saving, setSaving] = useState(false);
+  const bt = useBilingual("ProductionEpisodeOperationsWorkspace.labels");
   const releaseChanged = releaseDraft !== toDateTimeLocal(row.releaseAt);
   const attention = row.health === "critical" || row.health === "risk";
   const episodeLabel = row.episodeNumber ? `${row.episodeNumber}화` : row.episode.episodeId;
@@ -233,8 +210,8 @@ function EpisodeOperationsCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-lg bg-raised px-2 py-1 text-xs font-black text-accent">{episodeLabel}</span>
-            <HealthBadge health={row.health} />
-            <span className="text-xs text-fg-3">{EPISODE_STATE_LABELS[row.episode.state]}</span>
+            <HealthBadge health={row.health} bt={bt} />
+            <span className="text-xs text-fg-3">{episodeStateLabel(row.episode.state, bt)}</span>
           </div>
           <h3 className="mt-2 truncate text-lg font-black text-fg">{row.title}</h3>
           <p className="mt-1 text-xs text-fg-2">

@@ -230,3 +230,171 @@ export function productionSurfacePath(projectId: string, surface: ProductionProj
 export function productionEpisodeRoomPath(projectId: string, episodeId: string): string {
   return `/production/projects/${encodeURIComponent(projectId)}/episodes/${encodeURIComponent(episodeId)}`;
 }
+
+/**
+ * 회차 제작 단계 — 기획→콘티→작화→식자·연출→검수→게시→운영.
+ * 파이프라인 레일·인계 카드·프로젝트 내비가 공유하는 순서 정본이다.
+ * 단계를 새로 만들지 않고, 순서와 명칭은 여기서만 정한다.
+ */
+export type EpisodeStageId =
+  | "plan"
+  | "storyboard"
+  | "art"
+  | "lettering"
+  | "review"
+  | "publish"
+  | "operate";
+
+export interface EpisodeStageDefinition {
+  readonly id: EpisodeStageId;
+  readonly label: BilingualLabel;
+  /** 그 단계에서 가장 먼저 할 일 — 레일의 다음 행동과 내비의 대리 진입에 쓴다. */
+  readonly primaryAction: {
+    readonly label: BilingualLabel;
+    readonly target: ProductionSurfaceTarget;
+  };
+}
+
+const EPISODE_STAGE_CONTENT: Readonly<Record<EpisodeStageId, Omit<EpisodeStageDefinition, "id">>> =
+  Object.freeze({
+    plan: {
+      label: { ko: "기획", en: "Planning" },
+      primaryAction: {
+        label: { ko: "기획 보기", en: "See the plan" },
+        target: { kind: "surface", surface: "planning" },
+      },
+    },
+    storyboard: {
+      label: { ko: "콘티", en: "Storyboard" },
+      primaryAction: {
+        label: { ko: "공정 보드 열기", en: "Open the board" },
+        target: { kind: "surface", surface: "production" },
+      },
+    },
+    art: {
+      label: { ko: "작화", en: "Artwork" },
+      primaryAction: {
+        label: { ko: "원고 보기", en: "See the artwork" },
+        target: { kind: "surface", surface: "manuscripts" },
+      },
+    },
+    lettering: {
+      label: { ko: "식자·연출", en: "Lettering" },
+      primaryAction: {
+        label: { ko: "원고 확인하기", en: "Check the lettering" },
+        target: { kind: "surface", surface: "manuscripts" },
+      },
+    },
+    review: {
+      label: { ko: "검수", en: "Review" },
+      primaryAction: {
+        label: { ko: "검수 보기", en: "See the review" },
+        target: { kind: "surface", surface: "review" },
+      },
+    },
+    publish: {
+      label: { ko: "게시", en: "Publish" },
+      primaryAction: {
+        label: { ko: "게시 명령 센터 열기", en: "Open the publish center" },
+        target: { kind: "path", path: "/studio/publish" },
+      },
+    },
+    operate: {
+      label: { ko: "운영", en: "Operate" },
+      primaryAction: {
+        label: { ko: "회차 운영 보기", en: "See episode operations" },
+        target: { kind: "surface", surface: "episodes" },
+      },
+    },
+  });
+
+/** 단계 순서 — 레일 정렬·인계 이전 단계 판정·내비 그룹 순서의 단일 정본. */
+export const EPISODE_STAGE_ORDER: readonly EpisodeStageId[] = Object.freeze([
+  "plan",
+  "storyboard",
+  "art",
+  "lettering",
+  "review",
+  "publish",
+  "operate",
+]);
+
+export const EPISODE_STAGES: readonly EpisodeStageDefinition[] = Object.freeze(
+  EPISODE_STAGE_ORDER.map((id) => ({ id, ...EPISODE_STAGE_CONTENT[id] })),
+);
+
+export function episodeStageDefinition(id: EpisodeStageId): EpisodeStageDefinition {
+  const definition = EPISODE_STAGES.find((stage) => stage.id === id);
+  if (!definition) throw new Error(`Unknown episode stage: ${id}`);
+  return definition;
+}
+
+/** 내비 그룹 id — 일곱 단계 또는 관리 묶음. */
+export type ProductionNavGroupId = EpisodeStageId | "management";
+
+export interface ProductionNavStageGroup {
+  readonly id: EpisodeStageId;
+  readonly stage: EpisodeStageDefinition;
+  /** 이 단계 그룹에 직접 들어가는 화면. 전용 화면이 없는 단계는 빈 배열이다. */
+  readonly surfaces: readonly ProductionSurfaceDefinition[];
+}
+
+export interface ProductionNavModel {
+  /** 개요는 그룹에 속하지 않고 상단에 고정된다. */
+  readonly overview: ProductionSurfaceDefinition;
+  readonly stageGroups: readonly ProductionNavStageGroup[];
+  readonly managementLabel: BilingualLabel;
+  readonly managementSurfaces: readonly ProductionSurfaceDefinition[];
+}
+
+/** 단계별 소속 화면 — 모든 화면이 정확히 한 곳에만 든다(개요·관리 제외). */
+const NAV_SURFACES_BY_STAGE: Readonly<Record<EpisodeStageId, readonly ProductionProjectSurface[]>> =
+  Object.freeze({
+    plan: Object.freeze(["planning"]),
+    storyboard: Object.freeze(["production"]),
+    art: Object.freeze(["manuscripts"]),
+    lettering: Object.freeze([]),
+    review: Object.freeze(["review", "handoff"]),
+    publish: Object.freeze([]),
+    operate: Object.freeze(["episodes", "control", "activity", "schedule"]),
+  });
+
+const NAV_MANAGEMENT_SURFACES: readonly ProductionProjectSurface[] = Object.freeze([
+  "procurement",
+  "rights",
+  "settings",
+]);
+
+export const PRODUCTION_NAV_MODEL: ProductionNavModel = Object.freeze({
+  overview: productionSurfaceDefinition("overview"),
+  stageGroups: Object.freeze(
+    EPISODE_STAGE_ORDER.map((id) =>
+      Object.freeze({
+        id,
+        stage: episodeStageDefinition(id),
+        surfaces: Object.freeze(NAV_SURFACES_BY_STAGE[id].map((surface) => productionSurfaceDefinition(surface))),
+      }),
+    ),
+  ),
+  managementLabel: Object.freeze({ ko: "관리", en: "Management" }),
+  managementSurfaces: Object.freeze(NAV_MANAGEMENT_SURFACES.map((surface) => productionSurfaceDefinition(surface))),
+});
+
+/** 화면이 속한 내비 그룹. 개요는 고정이라 그룹이 없다. */
+export function productionNavGroupIdForSurface(surface: ProductionProjectSurface): ProductionNavGroupId | null {
+  if (surface === "overview") return null;
+  for (const stageId of EPISODE_STAGE_ORDER) {
+    if (NAV_SURFACES_BY_STAGE[stageId].includes(surface)) return stageId;
+  }
+  return "management";
+}
+
+/** 처음 펼칠 내비 그룹 — 지금 단계가 있으면 그 단계, 없으면 활성 화면의 그룹, 그것도 없으면 기획. */
+export function productionNavInitialOpenGroup(
+  currentStageId?: EpisodeStageId | null,
+  activeSurface?: ProductionProjectSurface | null,
+): ProductionNavGroupId {
+  if (currentStageId) return currentStageId;
+  if (activeSurface) return productionNavGroupIdForSurface(activeSurface) ?? "plan";
+  return "plan";
+}
