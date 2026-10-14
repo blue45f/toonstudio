@@ -51,6 +51,21 @@ export type SiteNavigationLocale = "ko" | "en";
 export type SiteNavigationContext = "studio" | "spectrum";
 export type SiteNavigationText = Record<SiteNavigationLocale, string>;
 
+export type SiteNavigationTier = "primary" | "contextual" | "directory";
+
+/** 노출 대상 — public은 비로그인, signed-in은 로그인, team은 팀 소속, project는 담당 회차 보유. */
+export type SiteNavigationAudience = "public" | "signed-in" | "team" | "project";
+
+/** 항목 성격 — 디렉터리 표면에서창작 목적지만 1차 블록으로 올린다. */
+export type SiteNavigationKind =
+  | "destination"
+  | "workspace"
+  | "creation"
+  | "discovery"
+  | "social"
+  | "personal"
+  | "reference";
+
 export interface SiteNavigationItem {
   id: string;
   href: string;
@@ -58,6 +73,9 @@ export interface SiteNavigationItem {
   description: SiteNavigationText;
   icon: LucideIcon;
   exact?: boolean;
+  kind: SiteNavigationKind;
+  tier: SiteNavigationTier;
+  audience: SiteNavigationAudience;
 }
 
 /** 핵심 여정 4단계. 지도는 하나이고, 현재 여정에 맞는 구간만 강조가 바뀐다. */
@@ -83,11 +101,17 @@ const item = (
   koDescription: string,
   enDescription: string,
   exact = false,
+  kind: SiteNavigationKind = "reference",
+  tier: SiteNavigationTier = "contextual",
+  audience: SiteNavigationAudience = "public",
 ): SiteNavigationItem => ({
   id,
   href,
   icon,
   exact,
+  kind,
+  tier,
+  audience,
   label: { ko, en },
   description: { ko: koDescription, en: enDescription },
 });
@@ -97,6 +121,9 @@ const primaryItem = (
   routeId: SitePrimaryRouteId,
   icon: LucideIcon,
   exact = false,
+  kind: SiteNavigationKind = "reference",
+  tier: SiteNavigationTier = "contextual",
+  audience: SiteNavigationAudience = "public",
 ): SiteNavigationItem => {
   const definition = primarySiteRouteAuthority(routeId);
   return item(
@@ -108,6 +135,9 @@ const primaryItem = (
     definition.description.ko,
     definition.description.en,
     exact,
+    kind,
+    tier,
+    audience,
   );
 };
 
@@ -122,9 +152,9 @@ const primaryItem = (
  * 두 내비는 컨텍스트상 동시에 보이지 않으며, 라벨이 항상 함께 보인다.
  */
 export const SITE_NAVIGATION_ITEMS = {
-  workspaceHome: primaryItem("workspace-home", "workspace-home", Home, true),
-  workspaceTeam: primaryItem("workspace-team", "workspace-team", Users),
-  workspaceHub: primaryItem("workspace-hub", "workspace-hub", Shapes),
+  workspaceHome: primaryItem("workspace-home", "workspace-home", Home, true, "workspace", "primary", "signed-in"),
+  workspaceTeam: primaryItem("workspace-team", "workspace-team", Users, false, "workspace", "contextual", "team"),
+  workspaceHub: primaryItem("workspace-hub", "workspace-hub", Shapes, false, "workspace", "contextual", "public"),
   // 지도 차원 라벨 구분 (2026-10-14 결정): 디렉터리 표면(모바일 메뉴·전체 메뉴·⌘K)에서는
   // personal 그룹 안에서 workspaceHome("내 홈", /home)과 이 항목이 나란히 놓인다.
   // 둘 다 "홈"으로 읽히면 목적지를 고를 수 없으므로, 공개 홈("/")의 정본 라벨을
@@ -140,9 +170,9 @@ export const SITE_NAVIGATION_ITEMS = {
     "Site home",
     "작품 탐색과 서비스 소개",
     "Discover stories and explore the service",
-    true,
+    true, "reference", "primary", "public",
   ),
-  production: primaryItem("production", "production", Workflow, true),
+  production: primaryItem("production", "production", Workflow, true, "destination", "contextual", "project"),
   // 작품 시작의 정문은 /create 시작 시트 하나다. /studio/new는 시트에서
   // "새 작품"을 골랐을 때 닿는 2단계 생성 양식이라 내비가 직접 가리키지 않는다.
   make: item(
@@ -153,11 +183,11 @@ export const SITE_NAVIGATION_ITEMS = {
     "Start a work",
     "새 작품·템플릿·이어가기를 한 화면에서 고르기",
     "Start new, begin from a template or continue — in one place",
-    true,
+    true, "creation", "contextual", "public",
   ),
-  studio: primaryItem("studio", "studio-home", Palette, true),
-  studioAssets: primaryItem("studio-assets", "studio-assets", Layers),
-  publish: primaryItem("publish", "studio-publish", PackageCheck),
+  studio: primaryItem("studio", "studio-home", Palette, true, "creation", "primary", "public"),
+  studioAssets: primaryItem("studio-assets", "studio-assets", Layers, false, "creation", "contextual", "public"),
+  publish: primaryItem("publish", "studio-publish", PackageCheck, false, "creation", "contextual", "public"),
   learn: item(
     "learn",
     "/learn",
@@ -166,6 +196,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Learn",
     "처음 시작부터 전문 제작과 문제 해결까지",
     "From first steps to professional workflows and troubleshooting",
+    false, "reference", "primary", "public",
   ),
   technology: item(
     "technology",
@@ -184,6 +215,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Webtoon",
     "컷·말풍선·대사를 한 화면에서",
     "Arrange panels, dialogue and balloons",
+    false, "creation", "contextual", "public",
   ),
   shaper: item(
     "shaper",
@@ -193,6 +225,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Character",
     "캐릭터·표정·포즈와 3D 참고",
     "Build characters, expressions, poses and 3D reference",
+    false, "creation", "contextual", "public",
   ),
   virtualStudio: item(
     "virtual-studio",
@@ -202,6 +235,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Virtual studio",
     "내 캐릭터로 걷고 만나고 함께 작업하는 공간",
     "Walk, meet and work together as your character",
+    false, "destination", "contextual", "signed-in",
   ),
   market: item(
     "market",
@@ -211,6 +245,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Materials market",
     "호환성과 사용 권리를 확인하고 새 에셋 탐색",
     "Discover assets with compatibility and rights information",
+    false, "discovery", "primary", "public",
   ),
   gallery: item(
     "gallery",
@@ -220,6 +255,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Showcase",
     "다른 창작자의 작품과 제작 흐름",
     "Meet creators and their work",
+    false, "discovery", "contextual", "public",
   ),
   explore: item(
     "explore",
@@ -229,6 +265,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Discover",
     "검색·취향·추천에서 원하는 작품 발견",
     "Find stories through search, taste and recommendations",
+    false, "discovery", "primary", "public",
   ),
   ranking: item(
     "ranking",
@@ -238,6 +275,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Rankings",
     "기간과 지표별 인기 흐름",
     "See trends across periods and signals",
+    false, "discovery", "contextual", "public",
   ),
   calendar: item(
     "calendar",
@@ -247,6 +285,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Release calendar",
     "요일별 신작과 연재 일정",
     "Track releases by day",
+    false, "discovery", "contextual", "public",
   ),
   recommend: item(
     "recommend",
@@ -256,6 +295,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Recommendations",
     "지금 취향에 맞는 작품",
     "Find stories matched to your taste",
+    false, "discovery", "contextual", "public",
   ),
   now: item(
     "now",
@@ -265,6 +305,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Daily inspiration",
     "빈 화면의 부담을 줄이는 짧은 창작 시작",
     "A small creative prompt to overcome the blank page",
+    false, "discovery", "contextual", "public",
   ),
   fortune: item(
     "fortune",
@@ -274,6 +315,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Fortune",
     "오늘의 운세·별자리·사주·궁합·타로·독서 처방",
     "Explore daily fortune, zodiac, saju, compatibility, tarot and reading prescriptions",
+    false, "reference", "directory", "public",
   ),
   bg3d: item(
     "bg3d",
@@ -283,6 +325,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Background · 3D",
     "장면·카메라·원근을 잡아 배경 완성",
     "Frame scenes, cameras and perspective to finish backgrounds",
+    false, "creation", "contextual", "public",
   ),
   research: item(
     "research",
@@ -292,6 +335,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Research desk",
     "출처·작품·트렌드 자료를 창작 소재와 판단으로 연결",
     "Turn sourced references, works and trends into creative direction",
+    false, "reference", "contextual", "public",
   ),
   opportunities: item(
     "opportunities",
@@ -301,6 +345,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Opportunities",
     "공모전·지원사업·제작 기회",
     "Find contests, programs and opportunities",
+    false, "social", "contextual", "public",
   ),
   insights: item(
     "insights",
@@ -310,6 +355,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Trends",
     "장르·플랫폼 흐름을 데이터로",
     "Read genre and platform trends",
+    false, "reference", "contextual", "public",
   ),
   reviews: item(
     "reviews",
@@ -319,8 +365,9 @@ export const SITE_NAVIGATION_ITEMS = {
     "Reviews",
     "작품을 깊게 읽고 기록하기",
     "Read and write thoughtful reviews",
+    false, "social", "contextual", "public",
   ),
-  collaborate: item("collaborate", "/collaborate", Briefcase, "구인·의뢰", "Collaborate", "웹툰 팀원 모집·작업 의뢰·작업자 홍보", "Find teammates, commission work and share your skills"),
+  collaborate: item("collaborate", "/collaborate", Briefcase, "구인·의뢰", "Collaborate", "웹툰 팀원 모집·작업 의뢰·작업자 홍보", "Find teammates, commission work and share your skills", false, "social", "contextual", "public"),
   community: item(
     "community",
     "/community",
@@ -329,6 +376,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Community",
     "창작과 감상을 함께 나누기",
     "Share creation and discovery",
+    false, "social", "primary", "public",
   ),
   play: item(
     "play",
@@ -338,6 +386,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Playground",
     "가볍게 즐기는 인터랙티브 콘텐츠",
     "Enjoy playful interactive content",
+    false, "social", "contextual", "public",
   ),
   library: item(
     "library",
@@ -347,6 +396,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "My library",
     "저장한 작품과 취향을 한곳에서",
     "Keep saved stories and taste in one place",
+    false, "personal", "contextual", "signed-in",
   ),
   notifications: item(
     "notifications",
@@ -356,6 +406,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Notifications",
     "연재·제공처 변화·제작 업무를 한곳에서",
     "Release, availability and production updates in one place",
+    false, "personal", "contextual", "signed-in",
   ),
   growthLab: item(
     "growth-lab",
@@ -365,6 +416,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Growth lab",
     "썸네일·제목 실험과 익명 독자 퍼널",
     "Thumbnail and title experiments with aggregate audience funnels",
+    false, "creation", "contextual", "public",
   ),
   me: item(
     "me",
@@ -374,6 +426,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "My space",
     "작품·활동·프로필과 계정 관리",
     "Works, activity, profile and account",
+    false, "personal", "contextual", "signed-in",
   ),
   settings: item(
     "settings",
@@ -383,6 +436,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "Settings",
     "언어·데이터·서비스 환경",
     "Language, data and service preferences",
+    false, "personal", "contextual", "signed-in",
   ),
   allMenu: item(
     "all-menu",
@@ -392,7 +446,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "All menu",
     "모든 기능과 신규 콘텐츠를 한곳에서",
     "Open every tool, destination and new experience",
-    true,
+    true, "reference", "primary", "public",
   ),
   help: item(
     "help",
@@ -593,4 +647,145 @@ export function siteNavigationLocale(locale: string): SiteNavigationLocale {
 
 export function siteNavigationText(text: SiteNavigationText, locale: string): string {
   return text[siteNavigationLocale(locale)];
+}
+
+export interface SiteNavigationExposureContext {
+  readonly signedIn: boolean;
+  readonly hasTeam: boolean;
+  readonly hasProject: boolean;
+  readonly isSeller: boolean;
+}
+
+export const DIRECTORY_NAVIGATION_EXPOSURE_CONTEXT: SiteNavigationExposureContext = Object.freeze({
+  signedIn: true,
+  hasTeam: true,
+  hasProject: true,
+  isSeller: true,
+});
+
+export const NAVIGATION_TIER_RANK: Readonly<Record<SiteNavigationTier, number>> = Object.freeze({
+  primary: 0,
+  contextual: 1,
+  directory: 2,
+});
+
+function navigationAudienceSatisfied(
+  audience: SiteNavigationAudience,
+  context: SiteNavigationExposureContext,
+): boolean {
+  switch (audience) {
+    case "public":
+      return true;
+    case "signed-in":
+      return context.signedIn;
+    case "team":
+      return context.hasTeam;
+    case "project":
+      return context.hasProject;
+  }
+}
+
+function isDirectorySurfaceContext(context: SiteNavigationExposureContext): boolean {
+  return (
+    context === DIRECTORY_NAVIGATION_EXPOSURE_CONTEXT
+    || (context.signedIn && context.hasTeam && context.hasProject && context.isSeller)
+  );
+}
+
+export function effectiveNavigationTier(
+  item: SiteNavigationItem,
+  context: SiteNavigationExposureContext,
+): SiteNavigationTier {
+  if (item.tier === "directory") return "directory";
+  if (isDirectorySurfaceContext(context)) {
+    if (item.tier === "primary") return "primary";
+    return item.kind === "destination" ? "primary" : "contextual";
+  }
+  if (!navigationAudienceSatisfied(item.audience, context)) return "directory";
+  return item.tier;
+}
+
+const SITE_NAVIGATION_BY_ID: ReadonlyMap<string, SiteNavigationItem> = new Map(
+  Object.values(SITE_NAVIGATION_ITEMS).map((item) => [item.id, item] as const),
+);
+
+function navigationItemById(id: string): SiteNavigationItem {
+  const item = SITE_NAVIGATION_BY_ID.get(id);
+  if (!item) throw new Error(`Unknown site navigation item: ${id}`);
+  return item;
+}
+
+/**
+ * 정본 디렉터리 순서 — 그룹 전개 순서와 같다. 그룹에 없는
+ * 전체 메뉴·유틸리티 항목은 맨 뒤에 둔다. tier 블록 정렬과
+ * 그룹 전개가 같은 순서를 공유하므로, 평면형과 그룹형을 펼친
+ * tier 블록이 항상 디렉터리 순서와 일치한다.
+ */
+const DIRECTORY_TAIL_IDS: readonly string[] = Object.freeze([
+  "all-menu",
+  "me",
+  "settings",
+  "notifications",
+  "help",
+]);
+
+export function directoryNavigationOrder(): readonly SiteNavigationItem[] {
+  const items: SiteNavigationItem[] = [];
+  for (const group of SITE_NAVIGATION_GROUPS) items.push(...group.items);
+  for (const id of DIRECTORY_TAIL_IDS) items.push(navigationItemById(id));
+  return Object.freeze(items);
+}
+
+export interface SiteNavigationTierResolution {
+  readonly primary: readonly SiteNavigationItem[];
+  readonly contextual: readonly SiteNavigationItem[];
+  readonly directory: readonly SiteNavigationItem[];
+}
+
+export function resolveNavigationFor(context: SiteNavigationExposureContext): SiteNavigationTierResolution {
+  const primary: SiteNavigationItem[] = [];
+  const contextual: SiteNavigationItem[] = [];
+  const directory: SiteNavigationItem[] = [];
+  for (const item of directoryNavigationOrder()) {
+    const tier = effectiveNavigationTier(item, context);
+    if (tier === "primary") primary.push(item);
+    else if (tier === "contextual") contextual.push(item);
+    else directory.push(item);
+  }
+  return Object.freeze({
+    primary: Object.freeze(primary),
+    contextual: Object.freeze(contextual),
+    directory: Object.freeze(directory),
+  });
+}
+
+export function resolveNavigationGroupsFor(
+  context: SiteNavigationExposureContext = DIRECTORY_NAVIGATION_EXPOSURE_CONTEXT,
+): readonly SiteNavigationGroup[] {
+  const orderIndex = new Map(directoryNavigationOrder().map((item, index) => [item.id, index]));
+  const rankOf = (item: SiteNavigationItem): number =>
+    NAVIGATION_TIER_RANK[effectiveNavigationTier(item, context)];
+  const at = (item: SiteNavigationItem): number => orderIndex.get(item.id) ?? Number.MAX_SAFE_INTEGER;
+  return Object.freeze(
+    SITE_NAVIGATION_GROUPS.map((group) =>
+      Object.freeze({
+        ...group,
+        items: Object.freeze(
+          [...group.items].sort((a, b) => rankOf(a) - rankOf(b) || at(a) - at(b)),
+        ),
+      }),
+    ),
+  );
+}
+
+export function resolveNavigationOrder(
+  context: SiteNavigationExposureContext = DIRECTORY_NAVIGATION_EXPOSURE_CONTEXT,
+): readonly SiteNavigationItem[] {
+  const orderIndex = new Map(directoryNavigationOrder().map((item, index) => [item.id, index]));
+  const rankOf = (item: SiteNavigationItem): number =>
+    NAVIGATION_TIER_RANK[effectiveNavigationTier(item, context)];
+  const at = (item: SiteNavigationItem): number => orderIndex.get(item.id) ?? Number.MAX_SAFE_INTEGER;
+  return Object.freeze(
+    [...directoryNavigationOrder()].sort((a, b) => rankOf(a) - rankOf(b) || at(a) - at(b)),
+  );
 }

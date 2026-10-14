@@ -20,7 +20,7 @@ describe("studio-first navigation contract", () => {
   });
   it("uses the same five labels on mobile and desktop", () => {
     expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.id)).toEqual(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.id));
-    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.label.ko)).toEqual(["내 홈", "제작", "탐색", "커뮤니티", "전체 메뉴"]);
+    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.label.ko)).toEqual(["작업 홈", "제작", "탐색", "커뮤니티", "전체 메뉴"]);
   });
   it.each(["/", "/home", "/team", "/hub"])("does not duplicate workspace chrome with a promotional scene on %s", (path) => {
     expect(supportsRoutePurposeScene(path)).toBe(false);
