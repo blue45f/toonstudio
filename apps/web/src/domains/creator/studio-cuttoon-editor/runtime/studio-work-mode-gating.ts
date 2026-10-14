@@ -18,12 +18,12 @@
  *    density verdict, so the all/full render is pixel-identical to the
  *    pre-gating render.
  */
-import type { StudioUiChromeRegion, StudioUiFirstScreenExposure } from "./studio-ui-density";
+import type { StudioUiChromeRegion, StudioUiFirstScreenExposure } from "../../studio-ui-density";
 import {
   studioWorkModeExposure,
   type StudioWorkMode,
   type StudioWorkModeExposure,
-} from "./studio-work-mode";
+} from "../../studio-work-mode";
 
 export type StudioChromeGateExposure = "visible" | "folded" | "hidden";
 

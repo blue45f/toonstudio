@@ -17,7 +17,7 @@ import {
 import {
   composeStudioChromeExposure,
   type StudioChromeGateExposure,
-} from "../../studio-work-mode-gating";
+} from "./studio-work-mode-gating";
 
 interface UseStudioWorkModePreferenceOptions {
   /**
