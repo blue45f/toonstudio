@@ -310,10 +310,28 @@ function assignmentRecommendationUrgency(task: ProductionTask, nowMs: number): n
   return 3;
 }
 
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type ProductionManagementTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: ProductionManagementTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
 export function deriveAssignmentRecommendations(
   aggregate: ProductionProjectAggregate,
   now = new Date(),
   workload: readonly AssignmentWorkload[] = deriveAssignmentWorkload(aggregate, now),
+  translate: ProductionManagementTranslate = defaultTranslate,
 ): readonly AssignmentRecommendation[] {
   const workloadByAssignmentId = new Map(workload.map((entry) => [entry.assignment.id, entry]));
   const nowIso = now.toISOString();
@@ -378,7 +396,7 @@ export function deriveAssignmentRecommendations(
       ];
       if (eligible.length > 1) reasons.push(`후보 ${eligible.length}명 중 예상 부하가 가장 낮습니다.`);
       if (selected.projectedLoadPercent > 100) {
-        reasons.push("배정 후 예상 부하가 100%를 넘어 일정 조정 또는 작업 분할이 필요합니다.");
+        reasons.push(translate("productionHub.management.overloadReason", "배정 후 예상 부하가 100%를 넘어 일정 조정 또는 작업 분할이 필요합니다."));
       }
       return [{
         task,
@@ -538,8 +556,10 @@ function buildActions(input: {
   readonly workload: readonly AssignmentWorkload[];
   readonly assignmentRecommendations: readonly AssignmentRecommendation[];
   readonly riskIntelligence: ProductionRiskIntelligence;
+  readonly translate?: ProductionManagementTranslate;
 }): readonly ManagementAction[] {
   const { aggregate, lens, now, episodeRows, workload, assignmentRecommendations, riskIntelligence } = input;
+  const translate = input.translate ?? defaultTranslate;
   const nowMs = now.getTime();
   const projectBase = `/production/projects/${encodeURIComponent(aggregate.projectId)}`;
   const actions: ManagementAction[] = [];
@@ -628,7 +648,7 @@ function buildActions(input: {
         title: task.title,
         detail: recommendation
           ? `${productionDepartment(departmentKey).label} · ${recommendation.candidateName} 추천 · 예상 ${recommendation.projectedLoadPercent}%`
-          : `${productionDepartment(departmentKey).label} · 책임자 미배정 · 적합 후보 없음`,
+          : translate("productionHub.management.unassignedNoCandidate", "{department} · 책임자 미배정 · 적합 후보 없음", { department: productionDepartment(departmentKey).label }),
         actionLabel: recommendation ? "담당자 추천 확인" : "담당 역할 보강",
         href: recommendation ? `${projectBase}/overview#assignment-recommendations` : `${projectBase}/settings`,
         dueAt: task.dueAt,
@@ -763,18 +783,22 @@ export function deriveProductionManagementOverview(
   input: {
     readonly now?: Date;
     readonly roleLens?: ProductionManagementLens;
+    /** 개요 문구 번역자. 미지정 시 한국어 원문을 쓴다. */
+    readonly translate?: ProductionManagementTranslate;
   } = {},
 ): ProductionManagementOverview {
   const now = input.now ?? new Date();
   const roleLens = input.roleLens ?? "producer";
+  const translate = input.translate ?? defaultTranslate;
   const operations = deriveProductionOperationsOverview(aggregate, now);
   const episodeRows = deriveManagementEpisodeRows(operations.rows);
   const workload = deriveAssignmentWorkload(aggregate, now);
-  const assignmentRecommendations = deriveAssignmentRecommendations(aggregate, now, workload);
+  const assignmentRecommendations = deriveAssignmentRecommendations(aggregate, now, workload, translate);
   const riskIntelligence = deriveProductionRiskIntelligence(aggregate, {
     now,
     workload,
     operations,
+    translate,
   });
   const nowMs = now.getTime();
   const openTasks = aggregate.tasks.filter((task) => !isClosed(task));
@@ -812,13 +836,13 @@ export function deriveProductionManagementOverview(
   if (blockedTaskCount > 0) healthReasons.push(`차단·입력 대기 업무 ${blockedTaskCount}개`);
   if (blockingQuestionCount > 0) healthReasons.push(`제작 차단 질문 ${blockingQuestionCount}개`);
   if (overloadedAssignmentCount > 0) healthReasons.push(`기본 가용량 초과 ${overloadedAssignmentCount}명`);
-  if (uncoveredUnassignedTaskCount > 0) healthReasons.push(`배정 가능 인력 없음 ${uncoveredUnassignedTaskCount}개`);
+  if (uncoveredUnassignedTaskCount > 0) healthReasons.push(translate("productionHub.management.noAssignableMember", "배정 가능 인력 없음 {count}개", { count: uncoveredUnassignedTaskCount }));
   if (reviewTaskCount > 0) healthReasons.push(`검수·수정 대기 ${reviewTaskCount}개`);
   if (operations.unplannedCount > 0) healthReasons.push(`게시 마감 미설정 ${operations.unplannedCount}개`);
   if (riskIntelligence.predictedOverrunTaskCount > 0) healthReasons.push(`예측 마감 초과 ${riskIntelligence.predictedOverrunTaskCount}개`);
   if (riskIntelligence.dependencyBottleneckCount > 0) healthReasons.push(`의존성 병목 ${riskIntelligence.dependencyBottleneckCount}개`);
   if (riskIntelligence.revisionGapCount > 0) healthReasons.push(`Revision 연결 누락 ${riskIntelligence.revisionGapCount}개`);
-  if (healthReasons.length === 0) healthReasons.push("현재 기준으로 차단·지연·과부하가 없습니다.");
+  if (healthReasons.length === 0) healthReasons.push(translate("productionHub.management.healthy", "현재 기준으로 차단·지연·과부하가 없습니다."));
 
   return {
     healthScore,
@@ -835,6 +859,7 @@ export function deriveProductionManagementOverview(
       workload,
       assignmentRecommendations,
       riskIntelligence,
+      translate,
     }),
     episodeRows,
     workload,

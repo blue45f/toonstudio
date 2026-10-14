@@ -45,6 +45,7 @@ export function ProductionTaskBulkEditor({
   onSaved,
 }: Props) {
   const t = useT();
+  const modelTranslate = (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback);
   useProductionCopy();
   const [snapshots] = useState(tasks);
   const [edit, setEdit] = useState(INITIAL_PRODUCTION_BULK_EDIT);
@@ -60,7 +61,7 @@ export function ProductionTaskBulkEditor({
   let plan: ProductionBulkEditPlan | null = null;
   let problem: string | null = null;
   try {
-    plan = buildProductionBulkEditPlan(aggregate, snapshots, edit, at);
+    plan = buildProductionBulkEditPlan(aggregate, snapshots, edit, at, modelTranslate);
   } catch (cause) {
     problem =
       cause instanceof Error
@@ -107,7 +108,8 @@ export function ProductionTaskBulkEditor({
         aggregate,
         snapshots,
         edit,
-        new Date().toISOString()
+        new Date().toISOString(),
+        modelTranslate
       );
       if (!currentPlan.tasks.length) throw new Error(t("productionHub.taskBulk.emptyChanges", "변경할 작업이 없습니다."));
       await execute(

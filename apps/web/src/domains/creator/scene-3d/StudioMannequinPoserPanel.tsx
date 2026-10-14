@@ -147,6 +147,7 @@ import {
   type StudioMannequinProjection,
   type StudioMannequinSceneHandle,
 } from "./studio-mannequin-scene";
+import type { StudioMannequinLightingRig } from "./studio-mannequin-lighting";
 import {
   disposeStudioMannequinPoseLandmarker,
   getStudioMannequinWebcamErrorMessage,
@@ -1201,6 +1202,8 @@ export function StudioMannequinPoserPanel({
   const dialogTitleId = useId();
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<StudioMannequinSceneHandle | null>(null);
+  /** 매직 포저 라이팅 스튜디오가 마지막으로 적용한 릭 — 씬 재생성 시 initialLightingRig로 복원한다. */
+  const lightingRigRef = useRef<StudioMannequinLightingRig | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [stateRepository] = useState(getProductStudioMannequinStateSqliteRepository);
 
@@ -1313,6 +1316,8 @@ export function StudioMannequinPoserPanel({
    * - setPose → 히스토리 기록 후 pose 상태로 반영 (effect가 실제 씬에 동기화)
    * - getPose → 현재 pose 상태
    * - setJointRotation → 관절 슬라이더와 동일한 경로로 pose 상태에 반영
+   * - setLightingRig → 실제 씬 핸들의 setLightingRig로 직행해 뷰포트 조명을 교체
+   *   (조명은 pose 상태와 무관한 렌더 상태라 React 상태를 거치지 않는다)
    * 어댑터가 항상 제공되므로 매직 포저의 `scene` 미전달 no-op 경로를 타지 않는다.
    */
   const magicPoserScene = useMemo<StudioMagicPoserScene>(
@@ -1328,6 +1333,12 @@ export function StudioMannequinPoserPanel({
           }),
         );
       },
+      setLightingRig: (rig: StudioMannequinLightingRig) => {
+        lightingRigRef.current = rig;
+        sceneRef.current?.setLightingRig(rig);
+      },
+      getLightingRig: () =>
+        sceneRef.current?.getLightingRig() ?? lightingRigRef.current,
     }),
     [commitPose, commitPoseWithHistory],
   );
@@ -1839,6 +1850,7 @@ export function StudioMannequinPoserPanel({
         container,
         initialSpec: buildStudioMannequinSpec(stateRef.current.params),
         initialPose: stateRef.current.pose,
+        initialLightingRig: lightingRigRef.current,
         onSelectJoint: (jointId) => setSelectedJointId(jointId),
         onPoseEdited: (editedPose) => {
           poseFromSceneRef.current = true;

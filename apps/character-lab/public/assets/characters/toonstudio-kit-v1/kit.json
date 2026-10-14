@@ -22,7 +22,7 @@
     "rootScale": 1
   },
   "provenance": {
-    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종은 상업 이용 증빙이 확정되지 않아 2026-10-14 이 키트에서 제외했습니다. 제외한 변형은 파츠마다 미제공 사유로 선언했고, GLB 파일은 저장소에서 삭제합니다. 제외 기록·생성 id·복원 조건은 apps/character-lab/docs/hyper3d-terms-record.md §9·§10에 남겼습니다.",
+    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종은 상업 이용 증빙이 확정되지 않아 2026-10-14 이 키트에서 제외했습니다. 2026-10-15에는 출처 기록이 없던 남성 변형 15종을 메시 통계(정점·삼각형 수)와 생성 기록으로 대조해 같은 생성물의 남성 베이스 리타깃으로 판정하고 추가로 제외했습니다(제외 총 48종). 제외한 변형은 파츠마다 미제공 사유로 선언했고, GLB 파일은 저장소에서 삭제합니다. 제외 기록·생성 id·복원 조건은 apps/character-lab/docs/hyper3d-terms-record.md §9~§11에 남겼습니다.",
     "noticeFile": "NOTICE.md",
     "sources": [
       {
@@ -3469,77 +3469,10 @@
     {
       "id": "hair/hime-cut",
       "slot": "hair",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/hair/hime-cut.glb",
-            "bytes": 792756,
-            "sha256": "0c42edace32c37e6dcb6e18e0ce1c507718925245a77a9bc3115a3310a15b05d"
-          },
-          "meshes": [
-            {
-              "node": "TS_AuthoredHair_hime-cut_LOD0",
-              "role": "hair",
-              "material": "ts_hair_hime-cut",
-              "triangles": 5673,
-              "vertices": 2884,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ],
-              "lod": 0
-            },
-            {
-              "node": "TS_AuthoredHair_hime-cut_LOD1",
-              "role": "hair",
-              "material": "ts_hair_hime-cut",
-              "triangles": 3539,
-              "vertices": 1817,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ],
-              "lod": 1
-            },
-            {
-              "node": "TS_AuthoredHair_hime-cut_LOD2",
-              "role": "hair",
-              "material": "ts_hair_hime-cut",
-              "triangles": 2239,
-              "vertices": 1167,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ],
-              "lod": 2
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
@@ -3554,126 +3487,19 @@
     {
       "id": "hair/twin-tail",
       "slot": "hair",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/hair/twin-tail.glb",
-            "bytes": 678860,
-            "sha256": "94e354b4cb4a518a17daf9ab7eed5cbc75d5122c82fd485263dd0f7fbae8ec76"
-          },
-          "meshes": [
-            {
-              "node": "TS_AuthoredHair_twin-tail_LOD0",
-              "role": "hair",
-              "material": "ts_hair_twin-tail",
-              "triangles": 4381,
-              "vertices": 2229,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ],
-              "lod": 0
-            },
-            {
-              "node": "TS_AuthoredHair_twin-tail_LOD1",
-              "role": "hair",
-              "material": "ts_hair_twin-tail",
-              "triangles": 3349,
-              "vertices": 1713,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ],
-              "lod": 1
-            },
-            {
-              "node": "TS_AuthoredHair_twin-tail_LOD2",
-              "role": "hair",
-              "material": "ts_hair_twin-tail",
-              "triangles": 2049,
-              "vertices": 1063,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ],
-              "lod": 2
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "top/tee",
       "slot": "top",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/top/tee.glb",
-            "bytes": 568740,
-            "sha256": "b6a15a196a0be825037756414ce988f941aaaadfc1075168c5064525fa3bcb5c"
-          },
-          "meshes": [
-            {
-              "node": "TS_Top_tee",
-              "role": "top",
-              "material": "ts_top_tee",
-              "triangles": 6500,
-              "vertices": 3628,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": [
-            "neck"
-          ]
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
@@ -3715,427 +3541,82 @@
     {
       "id": "bottom/jeans",
       "slot": "bottom",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/bottom/jeans.glb",
-            "bytes": 477024,
-            "sha256": "a2b983a9f47bfb6e561110b4d0dc781f6af2a468376ffca62d6e8418c196da4f"
-          },
-          "meshes": [
-            {
-              "node": "TS_Bottom_jeans",
-              "role": "bottom",
-              "material": "ts_bottom_jeans",
-              "triangles": 6500,
-              "vertices": 3881,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": [
-            "thigh.L",
-            "thigh.R"
-          ]
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "bottom/shorts",
       "slot": "bottom",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/bottom/shorts.glb",
-            "bytes": 292320,
-            "sha256": "04345f5996f5b695c55add678b1b3d062a9779b492fde8c093922c6b76aa0041"
-          },
-          "meshes": [
-            {
-              "node": "TS_Bottom_shorts",
-              "role": "bottom",
-              "material": "ts_bottom_shorts",
-              "triangles": 4000,
-              "vertices": 2250,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "bottom/pleated-skirt",
       "slot": "bottom",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/bottom/pleated-skirt.glb",
-            "bytes": 615264,
-            "sha256": "71419311e2be2b1ad03cece278f1d989252d2d56cc21261b84e828717d69cb92"
-          },
-          "meshes": [
-            {
-              "node": "TS_Bottom_pleated-skirt",
-              "role": "bottom",
-              "material": "ts_bottom_pleated-skirt",
-              "triangles": 8000,
-              "vertices": 5046,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "bottom/long-skirt",
       "slot": "bottom",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/bottom/long-skirt.glb",
-            "bytes": 576556,
-            "sha256": "8e948841cbcd1165a51077f15e34fed0029d54912e0b3330d148d0245779a905"
-          },
-          "meshes": [
-            {
-              "node": "TS_Bottom_long-skirt",
-              "role": "bottom",
-              "material": "ts_bottom_long-skirt",
-              "triangles": 8000,
-              "vertices": 4930,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "bottom/slacks",
       "slot": "bottom",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/bottom/slacks.glb",
-            "bytes": 466352,
-            "sha256": "b1f3bd6074112b347e7f0001f3a3e23c31902417f8c330300e73bf806756771a"
-          },
-          "meshes": [
-            {
-              "node": "TS_Bottom_slacks",
-              "role": "bottom",
-              "material": "ts_bottom_slacks",
-              "triangles": 6498,
-              "vertices": 3682,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "shoes/sneakers",
       "slot": "shoes",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/shoes/sneakers.glb",
-            "bytes": 409080,
-            "sha256": "4eea08f6eabb5a28c746bcab9668e42c9ec328e54ed6a9b5f4cec71eefd8a34a"
-          },
-          "meshes": [
-            {
-              "node": "TS_Shoes_sneakers",
-              "role": "shoes",
-              "material": "ts_shoes_sneakers",
-              "triangles": 5000,
-              "vertices": 3327,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "shoes/loafers",
       "slot": "shoes",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/shoes/loafers.glb",
-            "bytes": 372464,
-            "sha256": "49e7c9ddcc1f3416924c32c47b58e84ce5a939e0f2a3c9d71816c331e2ba42d0"
-          },
-          "meshes": [
-            {
-              "node": "TS_Shoes_loafers",
-              "role": "shoes",
-              "material": "ts_shoes_loafers",
-              "triangles": 5000,
-              "vertices": 2953,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "shoes/boots",
       "slot": "shoes",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/shoes/boots.glb",
-            "bytes": 406076,
-            "sha256": "d4a569b70367602377cc9337aaa952e85511f1d5020cc4937167bd9f33510538"
-          },
-          "meshes": [
-            {
-              "node": "TS_Shoes_boots",
-              "role": "shoes",
-              "material": "ts_shoes_boots",
-              "triangles": 4998,
-              "vertices": 3548,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "shoes/sandals",
       "slot": "shoes",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/shoes/sandals.glb",
-            "bytes": 392564,
-            "sha256": "57a5cfa2c36088dbf396f2769bc5140202a1061c6eb2189a83448816b8438fd6"
-          },
-          "meshes": [
-            {
-              "node": "TS_Shoes_sandals",
-              "role": "shoes",
-              "material": "ts_shoes_sandals",
-              "triangles": 5000,
-              "vertices": 3252,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:armLength:+",
-                "param:armLength:-",
-                "param:shoulderWidth:+",
-                "param:shoulderWidth:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-",
-                "param:hip:+",
-                "param:hip:-",
-                "param:waist:+",
-                "param:waist:-",
-                "param:chestDepth:+",
-                "param:chestDepth:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
@@ -4204,75 +3685,19 @@
     {
       "id": "accessory/ribbon",
       "slot": "accessory",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/accessory/ribbon.glb",
-            "bytes": 306468,
-            "sha256": "27b19cfd2403cf00be9dbd0933f868fba2b98d15c7dd53102e72bf920338e2fe"
-          },
-          "meshes": [
-            {
-              "node": "TS_Accessory_ribbon",
-              "role": "accessory",
-              "material": "ts_accessory_ribbon",
-              "triangles": 2500,
-              "vertices": 1620,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
       "id": "accessory/cap",
       "slot": "accessory",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/accessory/cap.glb",
-            "bytes": 351336,
-            "sha256": "5b49e9ac8c30e89dbdf8a8d33dcd0c8e7319e1bcf847b673534738fafb7720ca"
-          },
-          "meshes": [
-            {
-              "node": "TS_Accessory_cap",
-              "role": "accessory",
-              "material": "ts_accessory_cap",
-              "triangles": 3499,
-              "vertices": 1955,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
@@ -4404,38 +3829,10 @@
     {
       "id": "accessory/headphones",
       "slot": "accessory",
-      "variants": {
-        "male": {
-          "file": {
-            "path": "parts/male/accessory/headphones.glb",
-            "bytes": 342076,
-            "sha256": "c76b440d65c54692adaa64b6b133899ba4e86721cb0f2172f784718f9c05915e"
-          },
-          "meshes": [
-            {
-              "node": "TS_Accessory_headphones",
-              "role": "accessory",
-              "material": "ts_accessory_headphones",
-              "triangles": 3500,
-              "vertices": 2147,
-              "skinned": true,
-              "morphs": [
-                "param:height:+",
-                "param:height:-",
-                "param:legLength:+",
-                "param:legLength:-",
-                "param:neckLength:+",
-                "param:neckLength:-",
-                "param:headSize:+",
-                "param:headSize:-"
-              ]
-            }
-          ],
-          "hides": []
-        }
-      },
+      "variants": {},
       "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
+        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+        "male": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
       }
     },
     {
@@ -5719,34 +5116,29 @@
         "status": "available"
       },
       "hair": {
-        "status": "partial",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다.",
-        "unavailablePresets": {
-          "hair/short-layered": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "hair/soft-bob": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "hair/romance-long": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "hair/action-pony": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "hair/wolf-layered": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다."
-        }
+        "status": "unavailable",
+        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
       },
       "top": {
+        "status": "unavailable",
+        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+      },
+      "bottom": {
+        "status": "unavailable",
+        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+      },
+      "shoes": {
+        "status": "unavailable",
+        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+      },
+      "accessory": {
         "status": "partial",
         "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다.",
         "unavailablePresets": {
-          "top/hoodie": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "top/shirt": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "top/blazer": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "top/sailor": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다."
+          "accessory/ribbon": "Hyper3D(Rodin) 파생 프리셋(여성용 생성물의 남성 리타깃)으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
+          "accessory/cap": "Hyper3D(Rodin) 파생 프리셋(여성용 생성물의 남성 리타깃)으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
+          "accessory/headphones": "Hyper3D(Rodin) 파생 프리셋(여성용 생성물의 남성 리타깃)으로 상업 이용 증빙이 확정되지 않아 제외했습니다."
         }
-      },
-      "bottom": {
-        "status": "available"
-      },
-      "shoes": {
-        "status": "available"
-      },
-      "accessory": {
-        "status": "available"
       },
       "irises": {
         "status": "available"

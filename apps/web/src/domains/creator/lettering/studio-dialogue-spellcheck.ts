@@ -264,6 +264,647 @@ const MISSPELLINGS: readonly MisspellingEntry[] = [
     message: "소망의 뜻이면 '바램'이 아니라 '바람'이 표준이에요.",
     severity: "info",
   },
+
+  // ── 사전 확장(2차): 무모호 오기 100+ 목표분 ──────────────────────────
+  // 문맥 판별이 필요한 항목(안/않·던지/든지·맞히다/맡기다 식 교정 방향이
+  // 갈리는 경우)은 계속 제외한다. 오탐 0이 검출률보다 우선이다.
+  // -려고 오용 — ㄹ어간 정형(살려고·만들려고)은 넣지 않았다.
+  {
+    pattern: /할려고/g,
+    replacement: "하려고",
+    message: "'할려고'이 아니라 '하려고'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /될려고/g,
+    replacement: "되려고",
+    message: "'될려고'이 아니라 '되려고'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /갈려고/g,
+    replacement: "가려고",
+    message: "'갈려고'이 아니라 '가려고'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /볼려고/g,
+    replacement: "보려고",
+    message: "'볼려고'이 아니라 '보려고'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /줄려고/g,
+    replacement: "주려고",
+    message: "'줄려고'이 아니라 '주려고'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /올려고/g,
+    replacement: "오려고",
+    message: "'올려고'이 아니라 '오려고'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /먹을려고/g,
+    replacement: "먹으려고",
+    message: "'먹을려고'이 아니라 '먹으려고'로 써요.",
+    severity: "warning",
+  },
+  // '-께' 말끝 추가분 — 위 1차분과 같은 규약(동사 어간 한정).
+  {
+    pattern: /볼께/g,
+    replacement: "볼게",
+    message: "'볼께'이 아니라 '볼게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /올께/g,
+    replacement: "올게",
+    message: "'올께'이 아니라 '올게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /먹을께/g,
+    replacement: "먹을게",
+    message: "'먹을께'이 아니라 '먹을게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /기다릴께/g,
+    replacement: "기다릴게",
+    message: "'기다릴께'이 아니라 '기다릴게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /만날께/g,
+    replacement: "만날게",
+    message: "'만날께'이 아니라 '만날게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /보낼께/g,
+    replacement: "보낼게",
+    message: "'보낼께'이 아니라 '보낼게'로 써요.",
+    severity: "warning",
+  },
+  // 드러나다 계열 — '들어-'로 시작하는 정형은 없다.
+  {
+    pattern: /들어나다/g,
+    replacement: "드러나다",
+    message: "'들어나다'이 아니라 '드러나다'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /들어났/g,
+    replacement: "드러났",
+    message: "'들어났'이 아니라 '드러났'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /들어내다/g,
+    replacement: "드러내다",
+    message: "'들어내다'이 아니라 '드러내다'로 써요.",
+    severity: "warning",
+  },
+  // 요새·웬일 — '왠지'는 정형이라 건드리지 않는다.
+  {
+    pattern: /요세/g,
+    replacement: "요새",
+    message: "'요세'이 아니라 '요새'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /왠일/g,
+    replacement: "웬일",
+    message: "'왠일'이 아니라 '웬일'로 써요.",
+    severity: "warning",
+  },
+  // 명사 오기 — 정형과 음절이 겹치지 않는 것만.
+  {
+    pattern: /역활/g,
+    replacement: "역할",
+    message: "'역활'이 아니라 '역할'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /궁굼/g,
+    replacement: "궁금",
+    message: "'궁굼'이 아니라 '궁금'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /닭계장/g,
+    replacement: "닭개장",
+    message: "'닭계장'이 아니라 '닭개장'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /육계장/g,
+    replacement: "육개장",
+    message: "'육계장'이 아니라 '육개장'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /미싯가루/g,
+    replacement: "미숫가루",
+    message: "'미싯가루'이 아니라 '미숫가루'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /삭월세/g,
+    replacement: "사글세",
+    message: "'삭월세'이 아니라 '사글세'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /댓가/g,
+    replacement: "대가",
+    message: "'댓가'이 아니라 '대가'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /짜집기/g,
+    replacement: "짜깁기",
+    message: "'짜집기'이 아니라 '짜깁기'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /짜투리/g,
+    replacement: "자투리",
+    message: "'짜투리'이 아니라 '자투리'로 써요.",
+    severity: "warning",
+  },
+  // 부사 '-이' 정형인데 '-히'로 잘못 쓰는 경우.
+  {
+    pattern: /곰곰히/g,
+    replacement: "곰곰이",
+    message: "'곰곰히'이 아니라 '곰곰이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /뚜렷히/g,
+    replacement: "뚜렷이",
+    message: "'뚜렷히'이 아니라 '뚜렷이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /번번히/g,
+    replacement: "번번이",
+    message: "'번번히'이 아니라 '번번이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /깊숙히/g,
+    replacement: "깊숙이",
+    message: "'깊숙히'이 아니라 '깊숙이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /빽빽히/g,
+    replacement: "빽빽이",
+    message: "'빽빽히'이 아니라 '빽빽이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /촘촘히/g,
+    replacement: "촘촘이",
+    message: "'촘촘히'이 아니라 '촘촘이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /틈틈히/g,
+    replacement: "틈틈이",
+    message: "'틈틈히'이 아니라 '틈틈이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /곳곳히/g,
+    replacement: "곳곳이",
+    message: "'곳곳히'이 아니라 '곳곳이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /샅샅히/g,
+    replacement: "샅샅이",
+    message: "'샅샅히'이 아니라 '샅샅이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /낱낱히/g,
+    replacement: "낱낱이",
+    message: "'낱낱히'이 아니라 '낱낱이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /족족히/g,
+    replacement: "족족이",
+    message: "'족족히'이 아니라 '족족이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /듬직히/g,
+    replacement: "듬직이",
+    message: "'듬직히'이 아니라 '듬직이'로 써요.",
+    severity: "warning",
+  },
+  // 부사 '-히' 정형인데 '-이'로 잘못 쓰는 경우(솔직히·꼼꼼히 부류).
+  {
+    pattern: /솔직이/g,
+    replacement: "솔직히",
+    message: "'솔직이'이 아니라 '솔직히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /꼼꼼이/g,
+    replacement: "꼼꼼히",
+    message: "'꼼꼼이'이 아니라 '꼼꼼히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /가만이/g,
+    replacement: "가만히",
+    message: "'가만이'이 아니라 '가만히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /조용이/g,
+    replacement: "조용히",
+    message: "'조용이'이 아니라 '조용히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /편안이/g,
+    replacement: "편안히",
+    message: "'편안이'이 아니라 '편안히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /무사이/g,
+    replacement: "무사히",
+    message: "'무사이'이 아니라 '무사히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /대단이/g,
+    replacement: "대단히",
+    message: "'대단이'이 아니라 '대단히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /특별이/g,
+    replacement: "특별히",
+    message: "'특별이'이 아니라 '특별히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /확실이/g,
+    replacement: "확실히",
+    message: "'확실이'이 아니라 '확실히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /당연이/g,
+    replacement: "당연히",
+    message: "'당연이'이 아니라 '당연히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /갑작이/g,
+    replacement: "갑자기",
+    message: "'갑작이'이 아니라 '갑자기'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /천천이/g,
+    replacement: "천천히",
+    message: "'천천이'이 아니라 '천천히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /단단이/g,
+    replacement: "단단히",
+    message: "'단단이'이 아니라 '단단히'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /튼튼이/g,
+    replacement: "튼튼히",
+    message: "'튼튼이'이 아니라 '튼튼히'로 써요.",
+    severity: "warning",
+  },
+  // 기타 명사·부사 어간 오기.
+  {
+    pattern: /나즈막히/g,
+    replacement: "나지막이",
+    message: "'나즈막히'이 아니라 '나지막이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /나즈막(?!히)/g,
+    replacement: "나지막",
+    message: "'나즈막'이 아니라 '나지막'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /두리뭉실/g,
+    replacement: "두루뭉술",
+    message: "'두리뭉실'이 아니라 '두루뭉술'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /귀뜸/g,
+    replacement: "귀띔",
+    message: "'귀뜸'이 아니라 '귀띔'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /눈꼽/g,
+    replacement: "눈곱",
+    message: "'눈꼽'이 아니라 '눈곱'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /눈쌀/g,
+    replacement: "눈살",
+    message: "'눈쌀'이 아니라 '눈살'로 써요.",
+    severity: "warning",
+  },
+  // 부사·연결 표현 오기.
+  {
+    pattern: /도데체/g,
+    replacement: "도대체",
+    message: "'도데체'이 아니라 '도대체'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /어짜피/g,
+    replacement: "어차피",
+    message: "'어짜피'이 아니라 '어차피'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /하마트면/g,
+    replacement: "하마터면",
+    message: "'하마트면'이 아니라 '하마터면'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /단언컨데/g,
+    replacement: "단언컨대",
+    message: "'단언컨데'이 아니라 '단언컨대'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /애시당초/g,
+    replacement: "애초",
+    message: "'애시당초'이 아니라 '애초'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /여지껏/g,
+    replacement: "여태껏",
+    message: "'여지껏'이 아니라 '여태껏'로 써요.",
+    severity: "warning",
+  },
+  // 설렘·헤매 계열 — '헤메'는 '헤메다·헤메이다'의 어간 오기를 함께 잡는다.
+  {
+    pattern: /설레임/g,
+    replacement: "설렘",
+    message: "'설레임'이 아니라 '설렘'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /설레이다/g,
+    replacement: "설레다",
+    message: "'설레이다'이 아니라 '설레다'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /헤메/g,
+    replacement: "헤매",
+    message: "'헤메'이 아니라 '헤매'로 써요.",
+    severity: "warning",
+  },
+  // 외래어 표기 오기 — 표준 표기가 하나로 정해진 것만.
+  {
+    pattern: /메세지/g,
+    replacement: "메시지",
+    message: "'메세지'이 아니라 '메시지'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /메신져/g,
+    replacement: "메신저",
+    message: "'메신져'이 아니라 '메신저'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /컨닝/g,
+    replacement: "커닝",
+    message: "'컨닝'이 아니라 '커닝'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /케익/g,
+    replacement: "케이크",
+    message: "'케익'이 아니라 '케이크'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /쥬스/g,
+    replacement: "주스",
+    message: "'쥬스'이 아니라 '주스'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /빠마/g,
+    replacement: "파마",
+    message: "'빠마'이 아니라 '파마'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /리모컨/g,
+    replacement: "리모콘",
+    message: "'리모컨'이 아니라 '리모콘'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /에어콘/g,
+    replacement: "에어컨",
+    message: "'에어콘'이 아니라 '에어컨'로 써요.",
+    severity: "warning",
+  },
+  // 불규칙 활용 오기 — 활용형 자체가 존재하지 않는 형태만.
+  {
+    pattern: /잠궈/g,
+    replacement: "잠가",
+    message: "'잠궈'이 아니라 '잠가'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /잠궜/g,
+    replacement: "잠갔",
+    message: "'잠궜'이 아니라 '잠갔'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /담궈/g,
+    replacement: "담가",
+    message: "'담궈'이 아니라 '담가'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /담궜/g,
+    replacement: "담갔",
+    message: "'담궜'이 아니라 '담갔'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /치뤄/g,
+    replacement: "치러",
+    message: "'치뤄'이 아니라 '치러'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /치뤘/g,
+    replacement: "치렀",
+    message: "'치뤘'이 아니라 '치렀'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /부셔/g,
+    replacement: "부숴",
+    message: "'부셔'이 아니라 '부숴'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /건내/g,
+    replacement: "건네",
+    message: "'건내'이 아니라 '건네'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /갖어/g,
+    replacement: "가져",
+    message: "'갖어'이 아니라 '가져'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /맡히다/g,
+    replacement: "맡기다",
+    message: "'맡히다'이 아니라 '맡기다'로 써요.",
+    severity: "warning",
+  },
+  // 형용사 어간 오기.
+  {
+    pattern: /이쁘/g,
+    replacement: "예쁘",
+    message: "'이쁘'이 아니라 '예쁘'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /이뻐/g,
+    replacement: "예뻐",
+    message: "'이뻐'이 아니라 '예뻐'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /기엽/g,
+    replacement: "귀엽",
+    message: "'기엽'이 아니라 '귀엽'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /짓굿/g,
+    replacement: "짓궂",
+    message: "'짓굿'이 아니라 '짓궂'로 써요.",
+    severity: "warning",
+  },
+  // '-대로' 오기 — 장소 '데'와 문맥 판별이 필요한 경우는 넣지 않았다.
+  {
+    pattern: /마음데로/g,
+    replacement: "마음대로",
+    message: "'마음데로'이 아니라 '마음대로'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /제멋데로/g,
+    replacement: "제멋대로",
+    message: "'제멋데로'이 아니라 '제멋대로'로 써요.",
+    severity: "warning",
+  },
+  // 기타 무모호 오기.
+  {
+    pattern: /익숙치/g,
+    replacement: "익숙지",
+    message: "'익숙치'이 아니라 '익숙지'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /오랜동안/g,
+    replacement: "오랫동안",
+    message: "'오랜동안'이 아니라 '오랫동안'로 써요.",
+    severity: "warning",
+  },
+  // '-에요' 오용 — 앞말이 정해진 고정 형태만.
+  {
+    pattern: /거에요/g,
+    replacement: "거예요",
+    message: "'거에요'이 아니라 '거예요'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /아니예요/g,
+    replacement: "아니에요",
+    message: "'아니예요'이 아니라 '아니에요'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /무엇에요/g,
+    replacement: "무엇이에요",
+    message: "'무엇에요'이 아니라 '무엇이에요'로 써요.",
+    severity: "warning",
+  },
+  // 어떡·어쨌든 계열.
+  {
+    pattern: /어떻하/g,
+    replacement: "어떡하",
+    message: "'어떻하'이 아니라 '어떡하'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /어쨋든/g,
+    replacement: "어쨌든",
+    message: "'어쨋든'이 아니라 '어쨌든'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /어쨌던/g,
+    replacement: "어쨌든",
+    message: "'어쨌던'이 아니라 '어쨌든'로 써요.",
+    severity: "warning",
+  },
+  // 붓다 활용 오기.
+  {
+    pattern: /붇어/g,
+    replacement: "부어",
+    message: "'붇어'이 아니라 '부어'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /붇다/g,
+    replacement: "붓다",
+    message: "'붇다'이 아니라 '붓다'로 써요.",
+    severity: "warning",
+  },
+  // 기타 무모호 오기.
+  {
+    pattern: /(^|\s)만히/g,
+    replacement: "$1많이",
+    message: "'만히'이 아니라 '많이'로 써요.",
+    severity: "warning",
+  },
 ];
 
 // ── 규칙 2: 띄어쓰기 휴리스틱 ──────────────────────────────────────────────

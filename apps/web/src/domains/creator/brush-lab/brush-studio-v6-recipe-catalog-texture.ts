@@ -77,8 +77,8 @@ export const BRUSH_STUDIO_V6_TEXTURE_RECIPE_SEEDS: readonly BrushStudioV6RecipeS
       {
         slots: {
           motion: "motion-brush-inertia",
-          carrier: "carrier-krita-hairy",
-          tip: "tip-pigment-normal",
+          carrier: "carrier-webgpu-ribbon",
+          tip: "tip-round-sdf",
           surface: "surface-linen",
           deposition: "deposit-oil",
           pickup: "pickup-pigment-reservoir",
@@ -124,10 +124,10 @@ export const BRUSH_STUDIO_V6_TEXTURE_RECIPE_SEEDS: readonly BrushStudioV6RecipeS
       {
         slots: {
           carrier: "carrier-libmypaint-dabs",
-          tip: "tip-krita-dual",
+          tip: "tip-grain-exemplar",
           surface: "surface-printmaking",
           deposition: "deposit-dry",
-          pickup: "pickup-krita-smudge",
+          pickup: "pickup-pigment-reservoir",
           physics: ["physics-dry-contact"],
           finish: ["finish-grain"],
           output: "output-contact-canvas-svg",

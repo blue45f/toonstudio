@@ -5,6 +5,7 @@ import {
   StudioAdvancedRulerPanel,
   StudioIsometricGridPanel,
   StudioPerspectivePanel,
+  StudioRulersPanel,
 } from "./studio-page-lazy-ui";
 import { StudioInspectorSection } from "./StudioInspectorSection";
 
@@ -15,6 +16,7 @@ import type {
 import type { StudioIsometricPrimitiveSpec } from "./studio-isometric-primitive-contract";
 import type { LayerGroup } from "./studio-layers";
 import type { VanishingPoint } from "./studio-perspective-guide";
+import type { StudioPerspectiveGuideState } from "./drawing/StudioRulersPanel";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -159,6 +161,8 @@ interface StudioInspectorRulersSectionProps {
   resetIsometricOrigin: () => void;
   insertIsometricPrimitive: (spec: StudioIsometricPrimitiveSpec) => Promise<void>;
   insertIsometricSolid: () => void;
+  /** 원근 가이드(소실점 격자) 패널 콜백 — 없으면 가이드 패널을 렌더하지 않는다. */
+  onPerspectiveGuideChange?: (state: StudioPerspectiveGuideState) => void;
   addAdvancedRuler: (type: StudioAdvancedRuler["type"]) => void;
   patchAdvancedRuler: (id: string, patch: Partial<StudioAdvancedRuler>) => void;
   removeAdvancedRuler: (id: string) => void;
@@ -181,6 +185,7 @@ export function StudioInspectorRulersSection({
   isometricOriginY,
   advancedRulers,
   groups,
+  onPerspectiveGuideChange,
   setPerspectiveRulerActive,
   addVanishingPointHandler,
   removeVanishingPointHandler,
@@ -268,6 +273,15 @@ export function StudioInspectorRulersSection({
           onSetActiveSnap={setActiveAdvancedRuler}
         />
       </Suspense>
+      {onPerspectiveGuideChange ? (
+        <Suspense fallback={null}>
+          <StudioRulersPanel
+            perspectiveOnly
+            perspectiveCanvasSize={{ width: CANVAS_W, height: canvasH }}
+            onPerspectiveGuideChange={onPerspectiveGuideChange}
+          />
+        </Suspense>
+      ) : null}
     </StudioInspectorSection>
   );
 }

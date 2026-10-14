@@ -168,3 +168,59 @@ export const EMPTY_STATE_GUIDES = {
 } as const satisfies Record<string, EmptyStateGuide>;
 
 export type EmptyStateGuideId = keyof typeof EMPTY_STATE_GUIDES;
+
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type ProductionUxKitTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: ProductionUxKitTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
+const EMPTY_STATE_GUIDE_KEYS: Readonly<
+  Record<EmptyStateGuideId, { readonly title: string; readonly guide: string; readonly actionLabel: string }>
+> = {
+  "board-empty": {
+    title: "productionHub.uxKit.boardEmpty.title",
+    guide: "productionHub.uxKit.boardEmpty.guide",
+    actionLabel: "productionHub.uxKit.boardEmpty.action",
+  },
+  "board-filtered": {
+    title: "productionHub.uxKit.boardFiltered.title",
+    guide: "productionHub.uxKit.boardFiltered.guide",
+    actionLabel: "productionHub.uxKit.boardFiltered.action",
+  },
+  "review-empty": {
+    title: "productionHub.uxKit.reviewEmpty.title",
+    guide: "productionHub.uxKit.reviewEmpty.guide",
+    actionLabel: "productionHub.uxKit.reviewEmpty.action",
+  },
+  "team-empty": {
+    title: "productionHub.uxKit.teamEmpty.title",
+    guide: "productionHub.uxKit.teamEmpty.guide",
+    actionLabel: "productionHub.uxKit.teamEmpty.action",
+  },
+};
+
+/** 빈 상태 가이드를 번역자 주입으로 해소한다. 미주입 시 기존 상수와 동일하게 한국어 원문을 돌려준다. */
+export function productionEmptyStateGuide(
+  id: EmptyStateGuideId,
+  translate: ProductionUxKitTranslate = defaultTranslate,
+): EmptyStateGuide {
+  const base = EMPTY_STATE_GUIDES[id];
+  const keys = EMPTY_STATE_GUIDE_KEYS[id];
+  return {
+    title: translate(keys.title, base.title),
+    guide: translate(keys.guide, base.guide),
+    actionLabel: translate(keys.actionLabel, base.actionLabel),
+  };
+}

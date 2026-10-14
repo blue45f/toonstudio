@@ -70,6 +70,7 @@ export interface StudioMainMenuSurfaceHandlerBundle {
   readonly openBackground3dFromMenu: () => unknown;
   readonly openWebtoonAssistant?: () => unknown;
   readonly openAiSuperSuite?: () => unknown;
+  readonly sendCurrentPageToCompareReview?: () => unknown;
 }
 
 /** Names on the left are the menu contract; names on the right are the host's. */
@@ -119,5 +120,6 @@ export function bindStudioMainMenuSurfaceActions(
     openBackground3d: actions.openBackground3dFromMenu,
     openWebtoonAssistant: actions.openWebtoonAssistant,
     openAiSuperSuite: actions.openAiSuperSuite,
+    sendPageToCompareReview: actions.sendCurrentPageToCompareReview,
   };
 }

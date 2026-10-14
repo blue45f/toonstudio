@@ -2,17 +2,28 @@ import { describe, expect, it } from "vitest";
 
 import { createStudioPerspectiveRuler } from "./studio-rulers";
 import {
+  buildPerspectiveAuxiliarySegments,
+  buildPerspectiveDisplaySegments,
   buildPerspectiveGridSegments,
+  buildPerspectiveGuideSegments,
   buildVanishingGuideLines,
   clipGuideLineToCanvas,
   createDefaultPerspectiveGuide,
+  createPerspectiveGuideFromScenePreset,
+  isPerspectiveScenePresetId,
   normalizePerspectiveGuide,
+  normalizePerspectiveGridDensity,
+  PERSPECTIVE_GRID_DENSITY_DIVISIONS,
+  PERSPECTIVE_SCENE_PRESETS,
+  perspectiveGridDivisionsForDensity,
   perspectiveGuideFromPerspectiveRuler,
   perspectiveKindForPointCount,
+  perspectiveScenePresetById,
   perspectiveVanishingPoints,
   projectPointToLine,
   snapPointToGuides,
   vanishingPointsFromPerspectiveGuide,
+  warpPerspectivePointForFisheye,
 } from "./studio-perspective-guide";
 
 const CANVAS = { width: 320, height: 240 } as const;
@@ -184,5 +195,250 @@ describe("studio-rulers 브리지", () => {
     expect(
       perspectiveGuideFromPerspectiveRuler({ vanishingPoints: [] }),
     ).toBeNull();
+  });
+});
+
+describe("장면 프리셋 (PERSPECTIVE_SCENE_PRESETS)", () => {
+  it("프리셋 6종이 있고 id가 유일하며 종류·수평선이 정합하다", () => {
+    expect(PERSPECTIVE_SCENE_PRESETS).toHaveLength(6);
+    const ids = PERSPECTIVE_SCENE_PRESETS.map((preset) => preset.id);
+    expect(new Set(ids).size).toBe(6);
+    for (const preset of PERSPECTIVE_SCENE_PRESETS) {
+      expect(isPerspectiveScenePresetId(preset.id)).toBe(true);
+      expect(preset.left.yRatio).toBeCloseTo(preset.horizonYRatio);
+      if (preset.right) {
+        expect(preset.right.yRatio).toBeCloseTo(preset.horizonYRatio);
+      }
+      const guide = createPerspectiveGuideFromScenePreset(preset.id, CANVAS);
+      expect(guide).not.toBeNull();
+      expect(guide!.kind).toBe(preset.kind);
+      expect(normalizePerspectiveGuide(guide!)).toEqual(guide);
+      const segments = buildPerspectiveGridSegments({ guide: guide!, canvas: CANVAS });
+      expect(segments.length).toBeGreaterThan(0);
+    }
+    expect(isPerspectiveScenePresetId("nope")).toBe(false);
+    expect(perspectiveScenePresetById("nope")).toBeNull();
+    expect(createPerspectiveGuideFromScenePreset("nope", CANVAS)).toBeNull();
+  });
+
+  it("복도 프리셋은 중앙 1점·수평선 0.46 배치다", () => {
+    const guide = createPerspectiveGuideFromScenePreset("corridor", CANVAS)!;
+    expect(guide.kind).toBe("one-point");
+    expect(guide.left!.x).toBeCloseTo(160);
+    expect(guide.left!.y).toBeCloseTo(110.4);
+    expect(guide.right).toBeUndefined();
+    expect(guide.vertical).toBeUndefined();
+  });
+
+  it("거리 프리셋은 비대칭 2점이고 좌·우 소실점이 수평선 높이를 공유한다", () => {
+    const guide = createPerspectiveGuideFromScenePreset("street", CANVAS)!;
+    expect(guide.kind).toBe("two-point");
+    expect(guide.left!.y).toBeCloseTo(guide.right!.y);
+    expect(Math.abs(guide.left!.x - 160)).not.toBeCloseTo(
+      Math.abs(guide.right!.x - 160),
+    );
+  });
+
+  it("올려보기는 수평선이 아래·수직 소실점이 위, 내려보기는 그 반대다", () => {
+    const up = createPerspectiveGuideFromScenePreset("high-rise-up", CANVAS)!;
+    expect(up.kind).toBe("three-point");
+    expect(up.left!.y).toBeGreaterThan(CANVAS.height / 2);
+    expect(up.vertical!.y).toBeLessThan(0);
+    expect(up.vertical!.x).toBeCloseTo(160);
+
+    const down = createPerspectiveGuideFromScenePreset("overlook-down", CANVAS)!;
+    expect(down.kind).toBe("three-point");
+    expect(down.left!.y).toBeLessThan(CANVAS.height / 2);
+    expect(down.vertical!.y).toBeGreaterThan(CANVAS.height);
+  });
+
+  it("프리셋 가이드는 캔버스 크기에 비례하고, 유효하지 않은 캔버스는 null", () => {
+    const big = createPerspectiveGuideFromScenePreset("corridor", {
+      width: 640,
+      height: 480,
+    })!;
+    expect(big.left!.x).toBeCloseTo(320);
+    expect(big.left!.y).toBeCloseTo(220.8);
+    expect(
+      createPerspectiveGuideFromScenePreset("corridor", { width: 0, height: 240 }),
+    ).toBeNull();
+    expect(
+      createPerspectiveGuideFromScenePreset("corridor", {
+        width: Number.NaN,
+        height: 240,
+      }),
+    ).toBeNull();
+  });
+
+  it("프리셋 격자에서도 스냅이 동작한다 (복도 수평선으로 투영)", () => {
+    const guide = createPerspectiveGuideFromScenePreset("corridor", CANVAS)!;
+    const segments = buildPerspectiveGridSegments({ guide, canvas: CANVAS });
+    const snapped = snapPointToGuides({ x: 100, y: 115 }, segments, 10);
+    expect(snapped).not.toBeNull();
+    expect(snapped!.y).toBeCloseTo(110.4, 5);
+  });
+});
+
+describe("격자 밀도", () => {
+  it("밀도 이름과 divisions 매핑이 안정적이고, 모르는 값은 standard", () => {
+    expect(PERSPECTIVE_GRID_DENSITY_DIVISIONS).toEqual({
+      sparse: 3,
+      standard: 6,
+      dense: 10,
+      fine: 16,
+    });
+    expect(perspectiveGridDivisionsForDensity("dense")).toBe(10);
+    expect(perspectiveGridDivisionsForDensity(undefined)).toBe(6);
+    expect(normalizePerspectiveGridDensity("fine")).toBe("fine");
+    expect(normalizePerspectiveGridDensity("huge")).toBe("standard");
+  });
+
+  it("밀도가 오르면 세그먼트가 늘고, standard는 종전 기본값과 같다", () => {
+    const guide = createDefaultPerspectiveGuide("two-point", CANVAS);
+    const count = (density: "sparse" | "standard" | "dense" | "fine") =>
+      buildPerspectiveGridSegments({ guide, canvas: CANVAS, density }).length;
+    expect(count("sparse")).toBeLessThan(count("standard"));
+    expect(count("standard")).toBeLessThan(count("dense"));
+    expect(count("dense")).toBeLessThan(count("fine"));
+    expect(
+      buildPerspectiveGridSegments({ guide, canvas: CANVAS, density: "standard" }),
+    ).toEqual(buildPerspectiveGridSegments({ guide, canvas: CANVAS }));
+    expect(
+      buildVanishingGuideLines({
+        guide,
+        canvas: CANVAS,
+        anchor: { x: 160, y: 120 },
+        density: "fine",
+        divisions: 3,
+      }),
+    ).toEqual(
+      buildVanishingGuideLines({
+        guide,
+        canvas: CANVAS,
+        anchor: { x: 160, y: 120 },
+        divisions: 3,
+      }),
+    );
+  });
+});
+
+describe("피쉬아이 표시 모드", () => {
+  const guide = createDefaultPerspectiveGuide("two-point", CANVAS);
+
+  it("linear(기본)는 종전 격자와 완전히 동일하다", () => {
+    expect(buildPerspectiveDisplaySegments({ guide, canvas: CANVAS })).toEqual(
+      buildPerspectiveGridSegments({ guide, canvas: CANVAS }),
+    );
+    expect(
+      buildPerspectiveDisplaySegments({
+        guide,
+        canvas: CANVAS,
+        displayMode: "fisheye",
+        fisheyeStrength: 0,
+      }),
+    ).toEqual(buildPerspectiveGridSegments({ guide, canvas: CANVAS }));
+  });
+
+  it("fisheye는 세그먼트가 늘고 전부 캔버스 안에 있으며 직선과 달라진다", () => {
+    const linear = buildPerspectiveDisplaySegments({ guide, canvas: CANVAS });
+    const fish = buildPerspectiveDisplaySegments({
+      guide,
+      canvas: CANVAS,
+      displayMode: "fisheye",
+    });
+    expect(fish.length).toBeGreaterThan(linear.length);
+    expect(fish).not.toEqual(linear);
+    for (const segment of fish) {
+      for (const point of [segment.from, segment.to]) {
+        expect(point.x).toBeGreaterThanOrEqual(-1e-6);
+        expect(point.x).toBeLessThanOrEqual(CANVAS.width + 1e-6);
+        expect(point.y).toBeGreaterThanOrEqual(-1e-6);
+        expect(point.y).toBeLessThanOrEqual(CANVAS.height + 1e-6);
+      }
+    }
+  });
+
+  it("왜곡된 중간점은 원래 직선의 현(chord)에서 벗어난다 — 곡선이다", () => {
+    const warpedFrom = warpPerspectivePointForFisheye({ x: 0, y: 40 }, CANVAS, 0.6);
+    const warpedTo = warpPerspectivePointForFisheye({ x: 320, y: 40 }, CANVAS, 0.6);
+    const warpedMid = warpPerspectivePointForFisheye({ x: 160, y: 40 }, CANVAS, 0.6);
+    const chordMidY = (warpedFrom.y + warpedTo.y) / 2;
+    expect(Math.abs(warpedMid.y - chordMidY)).toBeGreaterThan(1);
+    expect(warpPerspectivePointForFisheye({ x: 160, y: 120 }, CANVAS, 1)).toEqual({
+      x: 160,
+      y: 120,
+    });
+  });
+
+  it("곡선 근사 세그먼트에도 snapPointToGuides가 붙는다", () => {
+    const fish = buildPerspectiveDisplaySegments({
+      guide,
+      canvas: CANVAS,
+      displayMode: "fisheye",
+    });
+    const target = fish[Math.floor(fish.length / 2)];
+    const mid = {
+      x: (target.from.x + target.to.x) / 2 + 2,
+      y: (target.from.y + target.to.y) / 2 + 2,
+    };
+    expect(snapPointToGuides(mid, fish, 10)).not.toBeNull();
+  });
+});
+
+describe("보조 격자 (동심원·방사)", () => {
+  it("none·유효하지 않은 캔버스는 빈 배열이다", () => {
+    expect(
+      buildPerspectiveAuxiliarySegments({ canvas: CANVAS, kind: "none" }),
+    ).toEqual([]);
+    expect(
+      buildPerspectiveAuxiliarySegments({
+        canvas: { width: 0, height: 0 },
+        kind: "radial",
+      }),
+    ).toEqual([]);
+  });
+
+  it("동심원은 auxiliary 패밀리로 캔버스 안에서만 그려진다", () => {
+    const segments = buildPerspectiveAuxiliarySegments({
+      canvas: CANVAS,
+      kind: "concentric",
+    });
+    expect(segments.length).toBeGreaterThan(40);
+    expect(new Set(segments.map((s) => s.family))).toEqual(new Set(["auxiliary"]));
+    for (const segment of segments) {
+      for (const point of [segment.from, segment.to]) {
+        expect(point.x).toBeGreaterThanOrEqual(-1e-6);
+        expect(point.x).toBeLessThanOrEqual(CANVAS.width + 1e-6);
+        expect(point.y).toBeGreaterThanOrEqual(-1e-6);
+        expect(point.y).toBeLessThanOrEqual(CANVAS.height + 1e-6);
+      }
+    }
+  });
+
+  it("방사는 스포크 수만큼의 직선을 중심 기준으로 만든다", () => {
+    const segments = buildPerspectiveAuxiliarySegments({
+      canvas: CANVAS,
+      kind: "radial",
+      spokes: 8,
+    });
+    expect(segments).toHaveLength(8);
+    expect(new Set(segments.map((s) => s.family))).toEqual(new Set(["auxiliary"]));
+  });
+
+  it("통합 빌더는 기본값에서 종전 격자와 같고, 보조를 켜면 auxiliary가 붙는다", () => {
+    const guide = createDefaultPerspectiveGuide("two-point", CANVAS);
+    expect(buildPerspectiveGuideSegments({ guide, canvas: CANVAS })).toEqual(
+      buildPerspectiveGridSegments({ guide, canvas: CANVAS }),
+    );
+    const withAux = buildPerspectiveGuideSegments({
+      guide,
+      canvas: CANVAS,
+      options: { auxiliaryKind: "radial" },
+    });
+    expect(withAux.length).toBeGreaterThan(
+      buildPerspectiveGridSegments({ guide, canvas: CANVAS }).length,
+    );
+    expect(withAux.some((s) => s.family === "auxiliary")).toBe(true);
+    expect(withAux.some((s) => s.family === "horizon")).toBe(true);
   });
 });

@@ -356,9 +356,61 @@ describe("P2P huddle consent and delivery", () => {
       expect(configuration?.iceServers).toEqual(getStudioIceServers());
       const urls = (configuration?.iceServers ?? [])
         .flatMap((server) => (server.urls === undefined ? [] : [server.urls].flat()));
-      // TURN은 비용 리스크로 쓰지 않는다(2026-10-11 결정). 자격 발급 경로도 없다.
+      // 기본 구성은 STUN 전용이다(2026-10-11 결정). 서버 자격 발급 경로는 없고,
+      // TURN은 운영자가 빌드 env로 자체 coturn을 지정한 경우에만 붙는다.
       expect(urls).toEqual(["stun:stun.cloudflare.com:3478"]);
       expect(urls.some((url) => url.startsWith("turn:"))).toBe(false);
+    });
+
+    it("운영자 coturn 지정 시 ICE 구성에 TURN이 붙고 실패 문구도 그 사실에 맞춘다", () => {
+      vi.stubEnv("VITE_STUDIO_TURN_URLS", "turn:coturn.example.com:3478");
+      vi.stubEnv("VITE_STUDIO_TURN_USERNAME", "toonstudio");
+      vi.stubEnv("VITE_STUDIO_TURN_CREDENTIAL", "secret");
+      try {
+        let clock = 10_000;
+        const { peer, restartIce, changeConnectionState } = mediaPeerStub();
+        const createPeerConnection = vi.fn((_configuration: RTCConfiguration) => peer);
+        const controller = huddleWithMediaPeer({ createPeerConnection, now: () => clock });
+        const urls = (createPeerConnection.mock.calls[0]?.[0]?.iceServers ?? [])
+          .flatMap((server) => (server.urls === undefined ? [] : [server.urls].flat()));
+        expect(urls).toContain("turn:coturn.example.com:3478");
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+          clock += 5_000;
+          changeConnectionState("failed");
+        }
+        expect(restartIce).toHaveBeenCalledTimes(3);
+        expect(controller.snapshot().error).toContain("설정된 중계(TURN) 서버를 통해서도 연결하지 못했습니다");
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it("음성만으로 다시 시도는 카메라를 끄고 소진된 ICE 예산을 리셋해 재시작한다", async () => {
+      let clock = 10_000;
+      const { peer, restartIce, changeConnectionState } = mediaPeerStub();
+      const video = track("video");
+      const controller = huddleWithMediaPeer({
+        createPeerConnection: () => peer,
+        now: () => clock,
+        getUserMedia: vi.fn(async () => stream([video])),
+        createStream: stream,
+      });
+      await controller.setVideo("camera");
+      expect(controller.snapshot().camera).toBe(true);
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        clock += 5_000;
+        changeConnectionState("failed");
+      }
+      expect(restartIce).toHaveBeenCalledTimes(3);
+      expect(controller.snapshot().error).toContain("자동 복구하지 못했습니다");
+      expect(controller.snapshot().failedPeerCount).toBe(1);
+
+      controller.retryFailedAudioOnly();
+
+      expect(video.stop).toHaveBeenCalledOnce();
+      expect(controller.snapshot().camera).toBe(false);
+      expect(restartIce).toHaveBeenCalledTimes(4);
+      expect(controller.snapshot().error).toContain("음성만으로 다시 연결하는 중");
     });
   });
 
@@ -628,5 +680,35 @@ describe("consented conversation media isolation", () => {
       conversationId: "conversation-one", memberIds: ["a", "b"],
     }));
     expect(controller.snapshot().peers).toEqual([]);
+  });
+});
+
+describe("P2P huddle 정원 안내", () => {
+  const D: StudioLiveParticipant = { sessionId: "d", displayName: "작가 D", role: "editor" };
+  const E: StudioLiveParticipant = { sessionId: "e", displayName: "작가 E", role: "editor" };
+  const F: StudioLiveParticipant = { sessionId: "f", displayName: "작가 F", role: "editor" };
+
+  it("정원을 넘긴 참여자를 조용히 버리지 않고 대기 인원으로 세어 보여준다", () => {
+    const receiveRef: { current: ((sender: StudioLiveParticipant, raw: string) => void) | null } = { current: null };
+    const port: StudioLiveDirectPort = {
+      getPeers: () => [B, C, D, E, F],
+      send: () => true,
+      subscribe: (listener) => { receiveRef.current = listener; return () => undefined; },
+    };
+    const controller = new StudioP2pHuddleController(A, port);
+    sessions.push(controller);
+    controller.start();
+    const state = (p: StudioLiveParticipant) => JSON.stringify({
+      kind: "state", epoch: `epoch-${p.sessionId}`, muted: true, camera: false, sharing: false, hand: false,
+    });
+    for (const p of [B, C, D, E, F]) receiveRef.current?.(p, state(p));
+    expect(controller.snapshot().peers).toHaveLength(3);
+    expect(controller.snapshot().overflowPeerCount).toBe(2);
+
+    receiveRef.current?.(B, JSON.stringify({ kind: "left", epoch: "epoch-b" }));
+    expect(controller.snapshot().peers).toHaveLength(2);
+    receiveRef.current?.(E, state(E));
+    expect(controller.snapshot().peers).toHaveLength(3);
+    expect(controller.snapshot().overflowPeerCount).toBe(1);
   });
 });

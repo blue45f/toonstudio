@@ -3,7 +3,7 @@
  * 스택형 조정 레이어 UI — StudioLayerStylePanel 옆에 붙는 순수 프레젠테이션 컴포넌트.
  *
  * - `StudioAdjustmentLayerCreateMenu`: 레이어 패널의 "조정 레이어 추가" 메뉴.
- *   조정 종류 13종을 고르면 onCreate(kind)로 생성만 요청한다(실제 삽입은 호스트가
+ *   조정 종류 16종을 고르면 onCreate(kind)로 생성만 요청한다(실제 삽입은 호스트가
  *   `createAdjustmentEl` + `insertAdjustmentLayer`로 수행).
  * - `StudioAdjustmentLayerPanel`: 선택된 조정 레이어의 인스펙터. 활성 토글,
  *   불투명도, 블렌드 모드, "아래 레이어에만 적용(클립)" 토글, 위/아래 순서 이동,
@@ -55,6 +55,12 @@ export const ADJUSTMENT_LAYER_KIND_OPTIONS: readonly StudioAdjustmentKind[] = [
   "invert",
   "posterize",
   "threshold",
+  // PSD 전수 대응(2026-10-15)으로 추가된 종류 — 실행기가 있어 메뉴에 올린다.
+  // color-lookup은 LUT 데이터가 없으면 항등이라 생성 메뉴에서는 제외한다
+  // (가져온 레이어의 표시·편집은 라벨 Record가 담당한다).
+  "black-white",
+  "photo-filter",
+  "selective-color",
 ];
 
 export function StudioAdjustmentLayerCreateMenu({

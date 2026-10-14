@@ -5,7 +5,7 @@ import {
 } from "./studio-p2p-huddle-protocol";
 import type { StudioLiveParticipant } from "../studio-live-collaboration-protocol";
 import type { StudioLiveDirectPort } from "../studio-live-direct-port";
-import { getStudioIceServers } from "../studio-ice-configuration";
+import { getStudioIceServers, iceServersIncludeTurn } from "../studio-ice-configuration";
 
 export interface HuddleMessage {
   id: string; author: string; name: string; text: string; self: boolean; at: number;
@@ -21,6 +21,10 @@ export interface HuddleSnapshot extends HuddleState {
   peers: HuddlePeer[]; messages: HuddleMessage[]; localStream: MediaStream | null;
   availablePeers: number; error: string | null; closed: boolean;
   cameraFacing: HuddleCameraFacingMode;
+  /** 정원(HUDDLE_MAX_REMOTE_PEERS)이 차서 아직 들어오지 못한 참여자 수. */
+  overflowPeerCount: number;
+  /** 직접 연결이 failed 상태인 상대 수. 음성 우선 재시도 안내의 근거가 된다. */
+  failedPeerCount: number;
 }
 type HuddleSignalPacket = Extract<HuddlePacket, { kind: "description" | "ice" }>;
 
@@ -28,7 +32,7 @@ interface Link {
   pc: RTCPeerConnection; audio: RTCRtpSender; video: RTCRtpSender;
   makingOffer: boolean; ignoreOffer: boolean; settingAnswer: boolean;
   pendingIce: RTCIceCandidateInit[]; queue: Promise<void>; epoch: string; pendingSignals: number;
-  iceRestartAttempts: number; lastIceRestartAt: number;
+  iceRestartAttempts: number; lastIceRestartAt: number; hasTurn: boolean;
 }
 export interface HuddleDependencies {
   createPeerConnection?: (config: RTCConfiguration) => RTCPeerConnection;
@@ -49,6 +53,7 @@ export interface HuddleDependencies {
 export class StudioP2pHuddleController {
   private readonly epoch: string;
   private readonly peers = new Map<string, HuddlePeer>();
+  private readonly overflowSeenAt = new Map<string, number>();
   private readonly links = new Map<string, Link>();
   private readonly deferredSignals = new Map<string, HuddleSignalPacket[]>();
   private mediaPeerScope: Set<string> | null = null;
@@ -89,7 +94,9 @@ export class StudioP2pHuddleController {
     return { ...this.state, peers: [...this.peers.values()].map((p) => ({ ...p })),
       messages: this.messages.map((m) => ({ ...m, targets: [...m.targets], sent: [...m.sent], received: [...m.received] })),
       localStream: this.localStream, availablePeers: this.eligiblePeers().length,
-      error: this.error, closed: this.closed, cameraFacing: this.cameraFacing };
+      error: this.error, closed: this.closed, cameraFacing: this.cameraFacing,
+      overflowPeerCount: this.overflowSeenAt.size,
+      failedPeerCount: [...this.peers.values()].filter((p) => p.connection === "failed").length };
   }
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener); return () => { this.listeners.delete(listener); };
@@ -135,6 +142,9 @@ export class StudioP2pHuddleController {
     for (const [id, peer] of this.peers) {
       if (!available.has(id) || this.now() - peer.lastSeen > 12_000) this.removePeer(id);
       else if (peer.reactionUntil < this.now()) peer.reaction = null;
+    }
+    for (const [id, seenAt] of this.overflowSeenAt) {
+      if (!available.has(id) || this.now() - seenAt > 12_000) this.overflowSeenAt.delete(id);
     }
     for (const [id, link] of this.links) {
       if (link.pc.connectionState === "failed" || link.pc.connectionState === "disconnected") {
@@ -191,12 +201,19 @@ export class StudioP2pHuddleController {
     const id = sender.sessionId;
     let peer = this.peers.get(id);
     const fresh = !peer || peer.epoch !== packet.epoch;
-    if (!peer && this.peers.size >= HUDDLE_MAX_REMOTE_PEERS) return;
+    if (!peer && this.peers.size >= HUDDLE_MAX_REMOTE_PEERS) {
+      // 정원 초과 상대를 조용히 버리지 않고 기록해 화면이 "가득 참"을 알릴 수 있게 한다.
+      // 상대는 주기적으로 state를 다시 보내므로 자리가 비면 다음 안내에서 자동으로 들어온다.
+      this.overflowSeenAt.set(id, this.now());
+      this.emit();
+      return;
+    }
     if (peer && fresh) this.removePeer(id);
     if (fresh) {
       peer = { participant: sender, epoch: packet.epoch, lastSeen: this.now(), stream: null,
         connection: "idle", reaction: null, reactionUntil: 0, ...this.state };
       this.peers.set(id, peer);
+      this.overflowSeenAt.delete(id);
     }
     if (!peer) return;
     Object.assign(peer, { muted: packet.muted, camera: packet.camera,
@@ -265,7 +282,8 @@ export class StudioP2pHuddleController {
       const link: Link = { pc, audio: pc.addTransceiver("audio", { direction: "sendrecv" }).sender,
         video: pc.addTransceiver("video", { direction: "sendrecv" }).sender, makingOffer: false,
         ignoreOffer: false, settingAnswer: false, pendingIce: [], queue: Promise.resolve(), epoch: peer.epoch, pendingSignals: 0,
-        iceRestartAttempts: 0, lastIceRestartAt: 0 };
+        iceRestartAttempts: 0, lastIceRestartAt: 0,
+        hasTurn: iceServersIncludeTurn(configuration.iceServers ?? []) };
       this.links.set(id, link);
       pc.onicecandidate = ({ candidate }) => {
         if (candidate && this.links.get(id) === link) this.send(id,
@@ -322,9 +340,12 @@ export class StudioP2pHuddleController {
     const now = this.now();
     if (now - link.lastIceRestartAt < 4_000) return false;
     if (link.iceRestartAttempts >= 3) {
-      // ICE 구성은 Cloudflare STUN 전용이다(2026-10-11 결정으로 TURN 중계는 쓰지
+      // 기본 ICE 구성은 Cloudflare STUN 전용이다(2026-10-11 결정으로 TURN 중계는 쓰지
       // 않는다). 직접 연결이 막힌 네트워크에서는 복구할 다른 경로가 없음을 사실대로 말한다.
-      this.error = "직접 통화 연결을 자동 복구하지 못했습니다. 네트워크를 확인하거나 P2P 대화에 다시 참여해 주세요. 중계(TURN) 서버를 사용하지 않아 직접 연결만 시도합니다.";
+      // 운영자가 자체 coturn을 지정한 링크에서는 그 사실에 맞게 문구를 바꾼다.
+      this.error = link.hasTurn
+        ? "직접 통화 연결을 자동 복구하지 못했습니다. 네트워크를 확인하거나 P2P 대화에 다시 참여해 주세요. 설정된 중계(TURN) 서버를 통해서도 연결하지 못했습니다."
+        : "직접 통화 연결을 자동 복구하지 못했습니다. 네트워크를 확인하거나 P2P 대화에 다시 참여해 주세요. 중계(TURN) 서버를 사용하지 않아 직접 연결만 시도합니다.";
       return false;
     }
     link.lastIceRestartAt = now;
@@ -355,6 +376,27 @@ export class StudioP2pHuddleController {
         this.restartLinkIce(id, link);
       }
     }
+  }
+  /**
+   * 음성 우선 폴백: 카메라를 끄고 실패한 링크만 다시 시도한다. 영상 대역폭을
+   * 버리면 빡빡한 NAT·방화벽 환경에서도 음성이 붙을 여지가 생기고, 자동 복구
+   * 예산(ICE 재시작 3회)은 사용자의 명시적 재시도이므로 여기서 리셋한다.
+   */
+  retryFailedAudioOnly(): void {
+    if (this.closed) return;
+    const hadVideo = this.videoTrack !== null;
+    if (hadVideo) this.stopTrack("video");
+    let retried = 0;
+    for (const [id, link] of this.links) {
+      const state = link.pc.connectionState;
+      if (state !== "failed" && state !== "disconnected") continue;
+      link.iceRestartAttempts = 0;
+      link.lastIceRestartAt = 0;
+      if (this.restartLinkIce(id, link)) retried += 1;
+    }
+    if (hadVideo) this.publishMedia();
+    if (retried > 0) this.error = "카메라를 끄고 음성만으로 다시 연결하는 중입니다.";
+    this.emit();
   }
   private deferSignal(id: string, packet: HuddleSignalPacket): void {
     const queue = this.deferredSignals.get(id) ?? [];
@@ -497,6 +539,7 @@ export class StudioP2pHuddleController {
   private removePeer(id: string): void {
     this.closeLink(id);
     this.deferredSignals.delete(id);
+    this.overflowSeenAt.delete(id);
     this.peers.delete(id); this.inboundChat.delete(id);
   }
   close(): void {
@@ -508,6 +551,7 @@ export class StudioP2pHuddleController {
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null; this.unsubscribe?.(); this.unsubscribe = null;
     for (const id of [...this.peers.keys()]) this.removePeer(id);
+    this.overflowSeenAt.clear();
     this.deferredSignals.clear();
     this.messages.length = 0; this.seen.clear(); this.blocked.clear();
     this.emit(); this.listeners.clear();

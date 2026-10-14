@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { dbPool } from "../../platform/database";
+import { PrivateObjectStorageModule } from "../../platform/adapters/private-object-storage/private-object-storage.module";
 import { TeamWorkspaceController } from "./team-workspace.controller";
 import { PRODUCTION_TEAM_POOL, TeamWorkspaceRepository } from "./team-workspace.repository";
 import { ProductionCollaborationController } from "./production-collaboration.controller";
@@ -10,9 +11,15 @@ import { ProductionCollaborationService } from "./production-collaboration.servi
 import { ProductionIntegrationService } from "./production-integration.service";
 import { PresenceController } from "./presence.controller";
 import { PresenceService } from "./presence.service";
+import { ProductionVoiceCommentaryController } from "./production-voice-commentary.controller";
+import { ProductionVoiceCommentaryRepository } from "./production-voice-commentary.repository";
+import { ProductionVoiceCommentaryService } from "./production-voice-commentary.service";
+
+const privateObjectStorageModule = PrivateObjectStorageModule.fromEnvironment(process.env);
 
 @Module({
-  controllers: [ProductionCollaborationController, ProductionIntegrationController, TeamWorkspaceController, PresenceController],
+  imports: [...(privateObjectStorageModule ? [privateObjectStorageModule] : [])],
+  controllers: [ProductionCollaborationController, ProductionIntegrationController, TeamWorkspaceController, PresenceController, ProductionVoiceCommentaryController],
   providers: [
     { provide: PRODUCTION_TEAM_POOL, useValue: dbPool },
     PresenceService,
@@ -21,6 +28,8 @@ import { PresenceService } from "./presence.service";
     ProductionCollaborationService,
     ProductionIntegrationRepository,
     ProductionIntegrationService,
+    ProductionVoiceCommentaryRepository,
+    ProductionVoiceCommentaryService,
   ],
   exports: [ProductionCollaborationService],
 })

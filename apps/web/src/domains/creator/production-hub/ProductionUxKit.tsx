@@ -2,10 +2,11 @@ import { useEffect, useId, useState, type ReactNode } from "react";
 import { Check, ChevronLeft, ChevronRight, CircleHelp, Users, X } from "lucide-react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import {
-  EMPTY_STATE_GUIDES,
+  productionEmptyStateGuide,
   PRODUCTION_HUB_TOUR_STEPS,
   PRODUCTION_TOUR_STORAGE_KEY,
   canGoNextWizardStep,
@@ -291,7 +292,8 @@ export function ProductionGuideEmptyState({
   readonly onAction?: () => void;
   readonly actionHref?: string;
 }) {
-  const guide = EMPTY_STATE_GUIDES[guideId];
+  const t = useT();
+  const guide = productionEmptyStateGuide(guideId, (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback));
   return (
     <section
       className="rounded-3xl border border-dashed border-line bg-card/60 p-6 text-center sm:p-8"

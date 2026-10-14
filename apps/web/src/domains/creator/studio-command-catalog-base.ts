@@ -262,7 +262,8 @@ export const STUDIO_COMMAND_SOURCES: Readonly<
     // 2026-09-04: 3D ▸ 캐릭터 셰이퍼(프리셋 우선 캐릭터 작업실) 추가 (191 → 192).
     // 2026-09-08: editable recent-stroke correction.
     // 2026-09-17: 독립 Canvas 메뉴의 규격 가이드 + 현재 캔버스 플랫폼 규격 4행 추가 (194 → 199).
-    measuredCount: 199,
+    // 2026-10-15: 협업 ▸ 현재 페이지를 비교 검수로 보내기 추가 (199 → 200).
+    measuredCount: 200,
   },
   "edit-menu": {
     label: "편집 메뉴 명령 테이블",
@@ -504,10 +505,11 @@ export const STUDIO_MENU_ITEM_INVENTORY: readonly string[] = Object.freeze([
   "3d/char",
   "3d/character",
   "3d/sculpt",
-  // collaboration (4) — Wave E doors + ephemeral whiteboard
+  // collaboration (5) — Wave E doors + ephemeral whiteboard + 비교 검수 보내기
   "collaboration/team",
   "collaboration/comments",
   "collaboration/page-review",
+  "collaboration/send-to-compare",
   "collaboration/ephemeral-board",
   // window (13) — lifted out of view and insert; the command bar toggle (§15.3
   // Action Bar, CSP 커맨드 바) joined when the menubar history cluster became a
@@ -2480,6 +2482,13 @@ export const STUDIO_COMMAND_CATALOG: readonly StudioCommandCatalogEntry[] =
       labels: [ko("페이지 검토 · 승인"), en("Page review and approval")],
       aliases: [ps("Review"), ours("페이지 검토")],
       origins: [menu("collaboration/page-review")],
+    }),
+    defineCommand({
+      id: "collaboration.send-to-compare",
+      labels: [ko("현재 페이지를 비교 검수로 보내기"), en("Send current page to comparison review")],
+      aliases: [ours("비교 검수 보내기")],
+      origins: [menu("collaboration/send-to-compare")],
+      note: "현재 페이지 캡처를 workId 비교 수신함에 넣고, 회차 룸이 비교 풀 reference로 합친다.",
     }),
     defineCommand({
       id: "collaboration.ephemeral-board",

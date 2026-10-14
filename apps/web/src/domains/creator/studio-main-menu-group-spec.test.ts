@@ -194,7 +194,9 @@ describe("§15.3 menu group spec", () => {
       // 정확히 기록해 메뉴 item claim 을 제거했고, 위 합계는 최신 main 전체를 다시 측정한 값이다.
       // 2026-09-06: 별도 사용자 매뉴얼 문(help/user-manual, #794)은 §15.3 행이 없어 extras(38 → 39).
       // Recent-stroke correction is a shipped extra alongside the drawing-assist mode.
-      extras: 41,
+      // 2026-10-15: 협업 ▸ 현재 페이지를 비교 검수로 보내기(collaboration/send-to-compare)가
+      // 메뉴 문을 얻어 extras(41 → 42). §15.3 행이 없는 우리 동선이라 has가 아닌 extras다.
+      extras: 42,
     });
   });
 

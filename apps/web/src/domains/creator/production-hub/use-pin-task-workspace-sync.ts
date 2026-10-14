@@ -73,8 +73,10 @@ export interface PinTaskWorkspaceSync {
 export function usePinTaskWorkspaceSync(input: {
   readonly aggregate: ProductionProjectAggregate;
   readonly isDemo: boolean;
+  /** 댓글이 사는 회차. 핀 할 일에 기록돼 인박스에서 이 회차 룸으로 되돌아간다. */
+  readonly episodeId: string;
 }): PinTaskWorkspaceSync {
-  const { aggregate, isDemo } = input;
+  const { aggregate, isDemo, episodeId } = input;
   const chainRef = useRef<Promise<void>>(Promise.resolve());
   const clientIdRef = useRef<string>(createStudioProductionClientId());
 
@@ -87,11 +89,13 @@ export function usePinTaskWorkspaceSync(input: {
         const fallback = stored ?? createEmptyProductionWorkspace(scopeKey);
         const probe = applyPinTaskSyncToWorkspace(fallback, document, {
           resolveAssigneeId: (source) => resolveWorkspaceAssigneeId(aggregate, fallback, source),
+          episodeId,
         });
         if (!probe.result.changed) return;
         const next = await commitStudioProductionWorkspace(scopeKey, fallback, (current) =>
           applyPinTaskSyncToWorkspace(current, document, {
             resolveAssigneeId: (source) => resolveWorkspaceAssigneeId(aggregate, current, source),
+            episodeId,
           }).workspace);
         try {
           const channel = new BroadcastChannel(`${STUDIO_PRODUCTION_NAMESPACE}:${scopeKey}`);
@@ -106,7 +110,7 @@ export function usePinTaskWorkspaceSync(input: {
     };
     chainRef.current = chainRef.current.then(run, run);
     return chainRef.current;
-  }, [aggregate, isDemo]);
+  }, [aggregate, isDemo, episodeId]);
 
   return { syncPinTasksFromDocument };
 }

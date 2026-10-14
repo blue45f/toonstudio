@@ -32,6 +32,7 @@ import {
 import { isStudioBrushCursorMode, shouldShowStudioBrushCursor } from "../canvas/studio-canvas-cursor";
 import { bubbleShapeCanvasPointToLocal, hasCustomBubbleShape, moveBubbleShapePoint } from "../lettering/studio-bubble-custom-shape";
 import { beginStudioAdvancedFillTap, endStudioAdvancedFillTap, moveStudioAdvancedFillTap } from "../studio-advanced-fill-tap";
+import { colorDropGestureView, endColorDropSession } from "../studio-colordrop-gesture";
 import { endStudioLassoFillDrag } from "../studio-lasso-fill-gesture";
 import { resolveActiveStudioAdvancedRuler, type StudioAdvancedRuler } from "../studio-advanced-ruler-document";
 import { snapStudioAdvancedRulerStrokePoint } from "../studio-advanced-ruler-snap";
@@ -247,6 +248,9 @@ export function bindStudioCuttoonStagePointersUp(
     activeGroupIdRef,
     advancedFillAbortRef,
     advancedFillTapGestureRef,
+    advancedFillColorDropRef,
+    setAdvancedFillColorDropView,
+    runAdvancedFillColorDropCommit,
     advancedFillLassoDragRef,
     runAdvancedFillLassoPath,
     advancedFillTapPayloadRef,
@@ -452,6 +456,18 @@ export function bindStudioCuttoonStagePointersUp(
       }
       const payload = advancedFillTapPayloadRef.current;
       if (!outcome.gesture) advancedFillTapPayloadRef.current = null;
+      if (advancedFillColorDropRef.current) {
+        const dropEnd = endColorDropSession(advancedFillColorDropRef.current, pointerId);
+        advancedFillColorDropRef.current = dropEnd.session;
+        setAdvancedFillColorDropView(colorDropGestureView(dropEnd.session));
+        if (dropEnd.outcome.type === "commit" && payload && !advancedFillAbortRef.current) {
+          // 드래그로 확정된 허용 오차로 실행한다. 탭 인식기는 8px 초과 이동에서
+          // 스스로 실행을 막으므로 탭 채우기와 이중 실행되지 않는다.
+          void runAdvancedFillColorDropCommit(payload, dropEnd.outcome.tolerance);
+          return;
+        }
+        // restore(취소성 종료)는 손댈 것이 없다 — 드래그 중 설정을 바꾼 적이 없다.
+      }
       if (outcome.execute && payload && !advancedFillAbortRef.current) {
         void runAdvancedFillAt(payload.position, payload.frame);
       }

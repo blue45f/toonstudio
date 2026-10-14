@@ -230,12 +230,16 @@ export interface StudioInspectorAsideProps {
   onCommandSearchHostReadyChange?: (ready: boolean) => void;
   activeSavedBrushId: string | null;
   advancedRulers: StudioAdvancedRulerDocument;
+  onDrawingPerspectiveGuideChange: (
+    state: import("./drawing/StudioRulersPanel").StudioPerspectiveGuideState,
+  ) => void;
   activeSurfaceReviewLocked: boolean;
   advancedFillActive: boolean;
   advancedFillBusy: boolean;
   advancedFillPreview: StudioAdvancedFillPreview | null;
   advancedFillReferenceLayerCount: number;
   advancedFillSettings: StudioAdvancedFillSettings;
+  advancedFillColorDropView: import("./studio-colordrop-gesture").ColorDropGestureView | null;
   advancedFillStatus: string | null;
   advancedFillUnsupportedReason: string | null;
   advancedFillVisibleRasterCount: number;
@@ -479,6 +483,7 @@ export interface StudioInspectorAsideProps {
   setExtendedBlendMode: import("react").Dispatch<import("react").SetStateAction<StudioExtendedBlendModeId>>;
   setExtendedBlendOpacity: import("react").Dispatch<import("react").SetStateAction<number>>;
   applyPathBooleanCombine: (op: StudioPathBooleanOp) => void;
+  applyPathBooleanCombineSync: (op: StudioPathBooleanOp) => void;
   applyPaperVectorRefinement: (operation: "simplify" | "smooth") => void;
   cancelPaperVectorRefinement: () => void;
   enterQuickMask: () => void;

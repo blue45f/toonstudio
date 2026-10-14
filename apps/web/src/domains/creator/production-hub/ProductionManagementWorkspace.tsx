@@ -3,6 +3,7 @@ import {
   translateCurrentStaticSourceText,
   useBilingual,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import {
   Activity,
   AlertTriangle,
@@ -302,9 +303,15 @@ export function ProductionManagementWorkspace({
   now,
 }: ProductionManagementWorkspaceProps) {
   const bt = useBilingual("ProductionManagementWorkspace.activity");
+  const i18nT = useT();
+  const modelTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? i18nT(key, values, fallback) : i18nT(key, fallback),
+    [i18nT],
+  );
   const overview = useMemo(
-    () => deriveProductionManagementOverview(aggregate, { now: now ?? new Date(), roleLens }),
-    [aggregate, now, roleLens],
+    () => deriveProductionManagementOverview(aggregate, { now: now ?? new Date(), roleLens, translate: modelTranslate }),
+    [aggregate, now, roleLens, modelTranslate],
   );
   const [actionFilter, setActionFilter] = useState<ActionFilter>("all");
   const [assigningTaskId, setAssigningTaskId] = useState<string | null>(null);

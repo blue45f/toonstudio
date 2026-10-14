@@ -11,9 +11,11 @@ afterEach(cleanup);
 
 describe("version-free presentation with stable execution identity", () => {
   it("shows provider names without exposing or mutating revision identifiers", () => {
+    // Mixbox is noncommercial: binding it requires the noncommercial-full
+    // profile since the default profile became permissive-only (P0).
     const plan = planBrushStudioV6ProviderRuntime([
       brushStudioV6Node("pigment-spectral-js"), brushStudioV6Node("pigment-mixbox"),
-    ]);
+    ], "noncommercial-full");
     const before = JSON.stringify(plan);
     expect(plan.valid).toBe(true);
     expect(plan.bindings).toEqual(expect.arrayContaining([

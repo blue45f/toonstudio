@@ -6,6 +6,10 @@
  * - 공백 구간 셀은 data-gap + "공백" 표식으로, 몰린 회차는 행 머리 배지로 표시한다.
  *   색만으로 구분하지 않고 텍스트 표식을 함께 둔다.
  * - 회차 머리를 누르면 onSelectEpisode 로 줄거리 편집 대상을 바꾼다 (연결 콜백 선택).
+ * - 회차 성과 오버레이(선택 prop `episodeMetrics`): 실집계가 연결된 경우에만
+ *   회차 머리 옆에 조회·잔존 배지를 겹친다. 연결 전·로딩·실패 상태에서는
+ *   숫자를 만들지 않고 상태 한 줄만 보여 주며, prop 이 없으면 기존 화면과
+ *   완전히 동일하다 (studio-episode-metrics-overlay.ts 의 정직성 규칙).
  */
 import { useMemo } from "react";
 import type { SeasonPlan } from "@toonstudio/core/production";
@@ -17,6 +21,12 @@ import {
   seasonBeatBoardHints,
   type SeasonBeatAssignment,
 } from "./studio-season-beat-board";
+import {
+  buildEpisodeMetricsOverlay,
+  episodeMetricsFeedbackHints,
+  episodeMetricsStatusLine,
+  type EpisodeMetricsLoad,
+} from "./studio-episode-metrics-overlay";
 
 export interface StudioSeasonBeatBoardProps {
   readonly season: SeasonPlan;
@@ -25,6 +35,11 @@ export interface StudioSeasonBeatBoardProps {
   readonly assignments?: readonly SeasonBeatAssignment[];
   readonly beatsByEpisodeId?: Readonly<Record<string, readonly StudioStoryBeat[]>>;
   readonly onSelectEpisode?: (episodeId: string) => void;
+  /**
+   * 회차 성과(실집계) 입력. 호스트가 resolveEpisodeMetricsLoad 로 접어서 넘긴다.
+   * 없거나 live 가 아니면 어떤 성과 숫자도 표시하지 않는다.
+   */
+  readonly episodeMetrics?: EpisodeMetricsLoad | null;
 }
 
 export function StudioSeasonBeatBoard({
@@ -34,17 +49,41 @@ export function StudioSeasonBeatBoard({
   assignments,
   beatsByEpisodeId,
   onSelectEpisode,
+  episodeMetrics,
 }: StudioSeasonBeatBoardProps) {
   const board = useMemo(
     () => buildSeasonBeatBoard({ season, plans, characters, assignments, beatsByEpisodeId }),
     [season, plans, characters, assignments, beatsByEpisodeId],
   );
   const hints = useMemo(() => seasonBeatBoardHints(board), [board]);
+  // 성과 오버레이는 선택 입력이다. 실패·연결 전이어도 보드 계산과 무관하게
+  // 빈 오버레이로 접히므로 기존 기획 흐름을 깨지 않는다.
+  const metricsOverlay = useMemo(
+    () =>
+      episodeMetrics
+        ? buildEpisodeMetricsOverlay(board.rows, episodeMetrics)
+        : null,
+    [board.rows, episodeMetrics],
+  );
+  const metricsHints = useMemo(
+    () => (metricsOverlay ? episodeMetricsFeedbackHints(metricsOverlay) : []),
+    [metricsOverlay],
+  );
+  const metricsByEpisodeId = useMemo(
+    () =>
+      new Map(
+        (metricsOverlay?.entries ?? []).map((entry) => [entry.episodeId, entry] as const),
+      ),
+    [metricsOverlay],
+  );
 
   return (
     <section aria-label="시즌 비트 보드">
       <h2>시즌 비트 보드</h2>
       <p>회차마다 누가 어떤 비트를 맡는지 한눈에 봐요. 오래 비는 캐릭터와 비트가 몰린 회차가 바로 보여요.</p>
+      {metricsOverlay && (
+        <p role="status">{episodeMetricsStatusLine(metricsOverlay)}</p>
+      )}
 
       {characters.length === 0 ? (
         <p>캐릭터가 아직 없어요. 캐릭터 시트에서 인물을 만들면 그 캐릭터가 열로 나타나요.</p>
@@ -80,6 +119,15 @@ export function StudioSeasonBeatBoard({
                     )}
                     {row.crowded ? " · 비트 몰림" : ""}
                     {row.bare ? " · 비트 없음" : ""}
+                    {(() => {
+                      const entry = metricsByEpisodeId.get(row.episodeId);
+                      return entry?.badge ? (
+                        <span data-episode-metrics={row.episodeNumber} title={entry.detail ?? undefined}>
+                          {" · "}
+                          {entry.badge}
+                        </span>
+                      ) : null;
+                    })()}
                   </th>
                   {row.cells.map((cell) => (
                     <td
@@ -103,6 +151,13 @@ export function StudioSeasonBeatBoard({
           {hints.length > 0 && (
             <ul aria-label="배분 점검">
               {hints.map((hint) => (
+                <li key={hint}>{hint}</li>
+              ))}
+            </ul>
+          )}
+          {metricsHints.length > 0 && (
+            <ul aria-label="성과 피드백">
+              {metricsHints.map((hint) => (
                 <li key={hint}>{hint}</li>
               ))}
             </ul>

@@ -43,6 +43,9 @@ describe("Brush Studio V6 quality authority", () => {
       const analysis = analyzeBrushStudioV6Program(
         recipe.create(),
         BRUSH_STUDIO_V6_FULL_CAPABILITIES,
+        // Authored Mixbox recipes target the noncommercial-full profile; the
+        // default profile is permissive-only (P0) and blocks them by design.
+        "noncommercial-full",
       );
       expect(analysis.providerPlan.valid, `${recipe.id}: ${analysis.providerPlan.blockedNodeIds.join(", ")}`)
         .toBe(true);
@@ -96,7 +99,7 @@ describe("Brush Studio V6 quality authority", () => {
       "pigment",
       "pigment-mixbox",
     );
-    const analysis = analyzeBrushStudioV6Program(mixbox, BRUSH_STUDIO_V6_FULL_CAPABILITIES);
+    const analysis = analyzeBrushStudioV6Program(mixbox, BRUSH_STUDIO_V6_FULL_CAPABILITIES, "noncommercial-full");
     expect(analysis.valid).toBe(true);
     expect(analysis.rightsProfile).toBe("noncommercial");
     expect(analysis.issues.some((entry) =>
@@ -114,8 +117,16 @@ describe("Brush Studio V6 quality authority", () => {
     expect(permissive.valid).toBe(false);
     expect(permissive.issues.some((entry) => entry.id === "license-pigment-mixbox"))
       .toBe(true);
+    // Copyleft exemplar is synthetic: the authored presets that used the
+    // copyleft adapters were remapped to internal nodes (license resolution),
+    // so no catalog preset is copyleft-only anymore.
+    const copyleftProgram = replaceBrushStudioV6Slot(
+      createBrushStudioV6Program("clean-ink"),
+      "tip",
+      "tip-krita-dual",
+    );
     const sourceAvailable = analyzeBrushStudioV6Program(
-      createBrushStudioV6Program("oil-hair-mixer"),
+      copyleftProgram,
       BRUSH_STUDIO_V6_FULL_CAPABILITIES,
       "source-available",
     );
@@ -169,8 +180,15 @@ describe("Brush Studio V6 quality authority", () => {
   });
 
   it("keeps WASM carriers isolated from fused WebGPU passes", () => {
-    const analysis = analyzeBrushStudioV6Program(createBrushStudioV6Program("oil-hair-mixer"), BRUSH_STUDIO_V6_FULL_CAPABILITIES);
-    expect(analysis.passes.some((entry) => entry.domain === "wasm-worker" && entry.nodeIds.includes("carrier-krita-hairy"))).toBe(true);
+    // Fixture uses the permissive WASM carrier: oil-hair-mixer itself was
+    // remapped off the copyleft Krita carrier (license resolution).
+    const wasmCarrierProgram = replaceBrushStudioV6Slot(
+      createBrushStudioV6Program("oil-hair-mixer"),
+      "carrier",
+      "carrier-libmypaint-dabs",
+    );
+    const analysis = analyzeBrushStudioV6Program(wasmCarrierProgram, BRUSH_STUDIO_V6_FULL_CAPABILITIES);
+    expect(analysis.passes.some((entry) => entry.domain === "wasm-worker" && entry.nodeIds.includes("carrier-libmypaint-dabs"))).toBe(true);
     expect(analysis.passes.some((entry) => entry.domain === "webgpu" && entry.nodeIds.includes("physics-bristle"))).toBe(true);
   });
 

@@ -56,11 +56,11 @@ export const BRUSH_STUDIO_V7_ADVANCED_RECIPE_SEEDS: readonly BrushStudioV6Recipe
     tuning: { size: 34, opacity: 0.94, flow: 0.82, friction: 0.88, viscosity: 0.34, reservoir: 0.58, bristleStrands: 44, bristleIterations: 3, surfaceTooth: 0.58 },
   }),
   defineBrushStudioV6RecipeSeed("v7-raking-light-impasto", "레이킹 라이트 캔버스 임파스토", "임파스토·조명", "로드된 강모 능선마다 고정 사광의 밝기와 그림자가 달라지는 저스트랜드 임파스토", {
-    slots: { motion: "motion-brush-inertia", carrier: "carrier-webgpu-ribbon", tip: "tip-pigment-normal", surface: "surface-v7-canvas-heavy", deposition: "deposit-oil", pickup: "pickup-pigment-reservoir", pigment: "pigment-open-km", physics: ["physics-bristle", "physics-height"], finish: ["finish-relief", "finish-directional-relief"] },
+    slots: { motion: "motion-brush-inertia", carrier: "carrier-webgpu-ribbon", tip: "tip-chisel-sdf", surface: "surface-v7-canvas-heavy", deposition: "deposit-oil", pickup: "pickup-pigment-reservoir", pigment: "pigment-open-km", physics: ["physics-bristle", "physics-height"], finish: ["finish-relief", "finish-directional-relief"] },
     tuning: { size: 88, opacity: 0.98, flow: 0.92, pickup: 0.46, reservoir: 0.92, friction: 0.5, viscosity: 0.82, bristleStrands: 38, bristleIterations: 3, plasticity: 0.82, relief: 1, gloss: 0.72, surfaceTooth: 0.74 },
   }),
   defineBrushStudioV6RecipeSeed("v7-crosslight-gesso-bristle", "크로스라이트 젯소 브리슬", "임파스토·조명", "고마찰 짧은 강모가 젯소 릿지를 가로지르며 교차 능선과 방향성 명암을 만드는 브러시", {
-    slots: { carrier: "carrier-webgpu-ribbon", tip: "tip-pigment-normal", surface: "surface-v7-gesso-brush", deposition: "deposit-oil", pickup: "pickup-pigment-reservoir", pigment: "pigment-spectral", physics: ["physics-bristle", "physics-height"], finish: ["finish-directional-relief"] },
+    slots: { carrier: "carrier-webgpu-ribbon", tip: "tip-chisel-sdf", surface: "surface-v7-gesso-brush", deposition: "deposit-oil", pickup: "pickup-pigment-reservoir", pigment: "pigment-spectral", physics: ["physics-bristle", "physics-height"], finish: ["finish-directional-relief"] },
     tuning: { size: 68, opacity: 0.96, flow: 0.82, pickup: 0.3, reservoir: 0.78, friction: 0.96, viscosity: 0.58, bristleStrands: 26, bristleIterations: 3, plasticity: 0.7, relief: 0.86, gloss: 0.4, surfaceTooth: 0.9 },
   }),
   defineBrushStudioV6RecipeSeed("v7-metallic-stone-relief", "스톤 메탈릭 릴리프", "임파스토·조명", "석분 위 얇은 메탈릭 페인트가 릿지 방향에 따라 반짝임과 음영을 교차시키는 릴리프", {

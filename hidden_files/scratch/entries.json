@@ -1,0 +1,723 @@
+[
+ {
+  "group": "려고",
+  "wrong": "할려고",
+  "right": "하려고",
+  "pattern": "할려고",
+  "repl": "하려고"
+ },
+ {
+  "group": "려고",
+  "wrong": "될려고",
+  "right": "되려고",
+  "pattern": "될려고",
+  "repl": "되려고"
+ },
+ {
+  "group": "려고",
+  "wrong": "갈려고",
+  "right": "가려고",
+  "pattern": "갈려고",
+  "repl": "가려고"
+ },
+ {
+  "group": "려고",
+  "wrong": "볼려고",
+  "right": "보려고",
+  "pattern": "볼려고",
+  "repl": "보려고"
+ },
+ {
+  "group": "려고",
+  "wrong": "줄려고",
+  "right": "주려고",
+  "pattern": "줄려고",
+  "repl": "주려고"
+ },
+ {
+  "group": "려고",
+  "wrong": "올려고",
+  "right": "오려고",
+  "pattern": "올려고",
+  "repl": "오려고"
+ },
+ {
+  "group": "려고",
+  "wrong": "먹을려고",
+  "right": "먹으려고",
+  "pattern": "먹을려고",
+  "repl": "먹으려고"
+ },
+ {
+  "group": "께",
+  "wrong": "볼께",
+  "right": "볼게",
+  "pattern": "볼께",
+  "repl": "볼게"
+ },
+ {
+  "group": "께",
+  "wrong": "올께",
+  "right": "올게",
+  "pattern": "올께",
+  "repl": "올게"
+ },
+ {
+  "group": "께",
+  "wrong": "먹을께",
+  "right": "먹을게",
+  "pattern": "먹을께",
+  "repl": "먹을게"
+ },
+ {
+  "group": "께",
+  "wrong": "기다릴께",
+  "right": "기다릴게",
+  "pattern": "기다릴께",
+  "repl": "기다릴게"
+ },
+ {
+  "group": "께",
+  "wrong": "만날께",
+  "right": "만날게",
+  "pattern": "만날께",
+  "repl": "만날게"
+ },
+ {
+  "group": "께",
+  "wrong": "보낼께",
+  "right": "보낼게",
+  "pattern": "보낼께",
+  "repl": "보낼게"
+ },
+ {
+  "group": "드러",
+  "wrong": "들어나다",
+  "right": "드러나다",
+  "pattern": "들어나다",
+  "repl": "드러나다"
+ },
+ {
+  "group": "드러",
+  "wrong": "들어났",
+  "right": "드러났",
+  "pattern": "들어났",
+  "repl": "드러났"
+ },
+ {
+  "group": "드러",
+  "wrong": "들어내다",
+  "right": "드러내다",
+  "pattern": "들어내다",
+  "repl": "드러내다"
+ },
+ {
+  "group": "요새웬",
+  "wrong": "요세",
+  "right": "요새",
+  "pattern": "요세",
+  "repl": "요새"
+ },
+ {
+  "group": "요새웬",
+  "wrong": "왠일",
+  "right": "웬일",
+  "pattern": "왠일",
+  "repl": "웬일"
+ },
+ {
+  "group": "명사",
+  "wrong": "역활",
+  "right": "역할",
+  "pattern": "역활",
+  "repl": "역할"
+ },
+ {
+  "group": "명사",
+  "wrong": "궁굼",
+  "right": "궁금",
+  "pattern": "궁굼",
+  "repl": "궁금"
+ },
+ {
+  "group": "명사",
+  "wrong": "닭계장",
+  "right": "닭개장",
+  "pattern": "닭계장",
+  "repl": "닭개장"
+ },
+ {
+  "group": "명사",
+  "wrong": "육계장",
+  "right": "육개장",
+  "pattern": "육계장",
+  "repl": "육개장"
+ },
+ {
+  "group": "명사",
+  "wrong": "미싯가루",
+  "right": "미숫가루",
+  "pattern": "미싯가루",
+  "repl": "미숫가루"
+ },
+ {
+  "group": "명사",
+  "wrong": "삭월세",
+  "right": "사글세",
+  "pattern": "삭월세",
+  "repl": "사글세"
+ },
+ {
+  "group": "명사",
+  "wrong": "댓가",
+  "right": "대가",
+  "pattern": "댓가",
+  "repl": "대가"
+ },
+ {
+  "group": "명사",
+  "wrong": "짜집기",
+  "right": "짜깁기",
+  "pattern": "짜집기",
+  "repl": "짜깁기"
+ },
+ {
+  "group": "명사",
+  "wrong": "짜투리",
+  "right": "자투리",
+  "pattern": "짜투리",
+  "repl": "자투리"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "곰곰히",
+  "right": "곰곰이",
+  "pattern": "곰곰히",
+  "repl": "곰곰이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "뚜렷히",
+  "right": "뚜렷이",
+  "pattern": "뚜렷히",
+  "repl": "뚜렷이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "번번히",
+  "right": "번번이",
+  "pattern": "번번히",
+  "repl": "번번이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "깊숙히",
+  "right": "깊숙이",
+  "pattern": "깊숙히",
+  "repl": "깊숙이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "빽빽히",
+  "right": "빽빽이",
+  "pattern": "빽빽히",
+  "repl": "빽빽이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "촘촘히",
+  "right": "촘촘이",
+  "pattern": "촘촘히",
+  "repl": "촘촘이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "틈틈히",
+  "right": "틈틈이",
+  "pattern": "틈틈히",
+  "repl": "틈틈이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "곳곳히",
+  "right": "곳곳이",
+  "pattern": "곳곳히",
+  "repl": "곳곳이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "샅샅히",
+  "right": "샅샅이",
+  "pattern": "샅샅히",
+  "repl": "샅샅이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "낱낱히",
+  "right": "낱낱이",
+  "pattern": "낱낱히",
+  "repl": "낱낱이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "족족히",
+  "right": "족족이",
+  "pattern": "족족히",
+  "repl": "족족이"
+ },
+ {
+  "group": "히이부사",
+  "wrong": "듬직히",
+  "right": "듬직이",
+  "pattern": "듬직히",
+  "repl": "듬직이"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "솔직이",
+  "right": "솔직히",
+  "pattern": "솔직이",
+  "repl": "솔직히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "꼼꼼이",
+  "right": "꼼꼼히",
+  "pattern": "꼼꼼이",
+  "repl": "꼼꼼히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "가만이",
+  "right": "가만히",
+  "pattern": "가만이",
+  "repl": "가만히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "조용이",
+  "right": "조용히",
+  "pattern": "조용이",
+  "repl": "조용히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "편안이",
+  "right": "편안히",
+  "pattern": "편안이",
+  "repl": "편안히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "무사이",
+  "right": "무사히",
+  "pattern": "무사이",
+  "repl": "무사히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "대단이",
+  "right": "대단히",
+  "pattern": "대단이",
+  "repl": "대단히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "특별이",
+  "right": "특별히",
+  "pattern": "특별이",
+  "repl": "특별히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "확실이",
+  "right": "확실히",
+  "pattern": "확실이",
+  "repl": "확실히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "당연이",
+  "right": "당연히",
+  "pattern": "당연이",
+  "repl": "당연히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "갑작이",
+  "right": "갑자기",
+  "pattern": "갑작이",
+  "repl": "갑자기"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "천천이",
+  "right": "천천히",
+  "pattern": "천천이",
+  "repl": "천천히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "단단이",
+  "right": "단단히",
+  "pattern": "단단이",
+  "repl": "단단히"
+ },
+ {
+  "group": "이히부사",
+  "wrong": "튼튼이",
+  "right": "튼튼히",
+  "pattern": "튼튼이",
+  "repl": "튼튼히"
+ },
+ {
+  "group": "기타명사",
+  "wrong": "나즈막히",
+  "right": "나지막이",
+  "pattern": "나즈막히",
+  "repl": "나지막이"
+ },
+ {
+  "group": "기타명사",
+  "wrong": "나즈막",
+  "right": "나지막",
+  "pattern": "나즈막(?!히)",
+  "repl": "나지막"
+ },
+ {
+  "group": "기타명사",
+  "wrong": "두리뭉실",
+  "right": "두루뭉술",
+  "pattern": "두리뭉실",
+  "repl": "두루뭉술"
+ },
+ {
+  "group": "기타명사",
+  "wrong": "귀뜸",
+  "right": "귀띔",
+  "pattern": "귀뜸",
+  "repl": "귀띔"
+ },
+ {
+  "group": "기타명사",
+  "wrong": "눈꼽",
+  "right": "눈곱",
+  "pattern": "눈꼽",
+  "repl": "눈곱"
+ },
+ {
+  "group": "기타명사",
+  "wrong": "눈쌀",
+  "right": "눈살",
+  "pattern": "눈쌀",
+  "repl": "눈살"
+ },
+ {
+  "group": "부사",
+  "wrong": "도데체",
+  "right": "도대체",
+  "pattern": "도데체",
+  "repl": "도대체"
+ },
+ {
+  "group": "부사",
+  "wrong": "어짜피",
+  "right": "어차피",
+  "pattern": "어짜피",
+  "repl": "어차피"
+ },
+ {
+  "group": "부사",
+  "wrong": "하마트면",
+  "right": "하마터면",
+  "pattern": "하마트면",
+  "repl": "하마터면"
+ },
+ {
+  "group": "부사",
+  "wrong": "단언컨데",
+  "right": "단언컨대",
+  "pattern": "단언컨데",
+  "repl": "단언컨대"
+ },
+ {
+  "group": "부사",
+  "wrong": "애시당초",
+  "right": "애초",
+  "pattern": "애시당초",
+  "repl": "애초"
+ },
+ {
+  "group": "부사",
+  "wrong": "여지껏",
+  "right": "여태껏",
+  "pattern": "여지껏",
+  "repl": "여태껏"
+ },
+ {
+  "group": "설렘헤매",
+  "wrong": "설레임",
+  "right": "설렘",
+  "pattern": "설레임",
+  "repl": "설렘"
+ },
+ {
+  "group": "설렘헤매",
+  "wrong": "설레이다",
+  "right": "설레다",
+  "pattern": "설레이다",
+  "repl": "설레다"
+ },
+ {
+  "group": "설렘헤매",
+  "wrong": "헤메",
+  "right": "헤매",
+  "pattern": "헤메",
+  "repl": "헤매"
+ },
+ {
+  "group": "외래어",
+  "wrong": "메세지",
+  "right": "메시지",
+  "pattern": "메세지",
+  "repl": "메시지"
+ },
+ {
+  "group": "외래어",
+  "wrong": "메신져",
+  "right": "메신저",
+  "pattern": "메신져",
+  "repl": "메신저"
+ },
+ {
+  "group": "외래어",
+  "wrong": "컨닝",
+  "right": "커닝",
+  "pattern": "컨닝",
+  "repl": "커닝"
+ },
+ {
+  "group": "외래어",
+  "wrong": "케익",
+  "right": "케이크",
+  "pattern": "케익",
+  "repl": "케이크"
+ },
+ {
+  "group": "외래어",
+  "wrong": "쥬스",
+  "right": "주스",
+  "pattern": "쥬스",
+  "repl": "주스"
+ },
+ {
+  "group": "외래어",
+  "wrong": "빠마",
+  "right": "파마",
+  "pattern": "빠마",
+  "repl": "파마"
+ },
+ {
+  "group": "외래어",
+  "wrong": "리모컨",
+  "right": "리모콘",
+  "pattern": "리모컨",
+  "repl": "리모콘"
+ },
+ {
+  "group": "외래어",
+  "wrong": "에어콘",
+  "right": "에어컨",
+  "pattern": "에어콘",
+  "repl": "에어컨"
+ },
+ {
+  "group": "활용",
+  "wrong": "잠궈",
+  "right": "잠가",
+  "pattern": "잠궈",
+  "repl": "잠가"
+ },
+ {
+  "group": "활용",
+  "wrong": "잠궜",
+  "right": "잠갔",
+  "pattern": "잠궜",
+  "repl": "잠갔"
+ },
+ {
+  "group": "활용",
+  "wrong": "담궈",
+  "right": "담가",
+  "pattern": "담궈",
+  "repl": "담가"
+ },
+ {
+  "group": "활용",
+  "wrong": "담궜",
+  "right": "담갔",
+  "pattern": "담궜",
+  "repl": "담갔"
+ },
+ {
+  "group": "활용",
+  "wrong": "치뤄",
+  "right": "치러",
+  "pattern": "치뤄",
+  "repl": "치러"
+ },
+ {
+  "group": "활용",
+  "wrong": "치뤘",
+  "right": "치렀",
+  "pattern": "치뤘",
+  "repl": "치렀"
+ },
+ {
+  "group": "활용",
+  "wrong": "부셔",
+  "right": "부숴",
+  "pattern": "부셔",
+  "repl": "부숴"
+ },
+ {
+  "group": "활용",
+  "wrong": "건내",
+  "right": "건네",
+  "pattern": "건내",
+  "repl": "건네"
+ },
+ {
+  "group": "활용",
+  "wrong": "갖어",
+  "right": "가져",
+  "pattern": "갖어",
+  "repl": "가져"
+ },
+ {
+  "group": "활용",
+  "wrong": "맡히다",
+  "right": "맡기다",
+  "pattern": "맡히다",
+  "repl": "맡기다"
+ },
+ {
+  "group": "형용사",
+  "wrong": "이쁘",
+  "right": "예쁘",
+  "pattern": "이쁘",
+  "repl": "예쁘"
+ },
+ {
+  "group": "형용사",
+  "wrong": "이뻐",
+  "right": "예뻐",
+  "pattern": "이뻐",
+  "repl": "예뻐"
+ },
+ {
+  "group": "형용사",
+  "wrong": "기엽",
+  "right": "귀엽",
+  "pattern": "기엽",
+  "repl": "귀엽"
+ },
+ {
+  "group": "형용사",
+  "wrong": "짓굿",
+  "right": "짓궂",
+  "pattern": "짓굿",
+  "repl": "짓궂"
+ },
+ {
+  "group": "대로",
+  "wrong": "마음데로",
+  "right": "마음대로",
+  "pattern": "마음데로",
+  "repl": "마음대로"
+ },
+ {
+  "group": "대로",
+  "wrong": "제멋데로",
+  "right": "제멋대로",
+  "pattern": "제멋데로",
+  "repl": "제멋대로"
+ },
+ {
+  "group": "기타",
+  "wrong": "익숙치",
+  "right": "익숙지",
+  "pattern": "익숙치",
+  "repl": "익숙지"
+ },
+ {
+  "group": "기타",
+  "wrong": "오랜동안",
+  "right": "오랫동안",
+  "pattern": "오랜동안",
+  "repl": "오랫동안"
+ },
+ {
+  "group": "에요",
+  "wrong": "거에요",
+  "right": "거예요",
+  "pattern": "거에요",
+  "repl": "거예요"
+ },
+ {
+  "group": "에요",
+  "wrong": "아니예요",
+  "right": "아니에요",
+  "pattern": "아니예요",
+  "repl": "아니에요"
+ },
+ {
+  "group": "에요",
+  "wrong": "무엇에요",
+  "right": "무엇이에요",
+  "pattern": "무엇에요",
+  "repl": "무엇이에요"
+ },
+ {
+  "group": "어떡",
+  "wrong": "어떻하",
+  "right": "어떡하",
+  "pattern": "어떻하",
+  "repl": "어떡하"
+ },
+ {
+  "group": "어떡",
+  "wrong": "어쨋든",
+  "right": "어쨌든",
+  "pattern": "어쨋든",
+  "repl": "어쨌든"
+ },
+ {
+  "group": "어떡",
+  "wrong": "어쨌던",
+  "right": "어쨌든",
+  "pattern": "어쨌던",
+  "repl": "어쨌든"
+ },
+ {
+  "group": "붇",
+  "wrong": "붇어",
+  "right": "부어",
+  "pattern": "붇어",
+  "repl": "부어"
+ },
+ {
+  "group": "붇",
+  "wrong": "붇다",
+  "right": "붓다",
+  "pattern": "붇다",
+  "repl": "붓다"
+ },
+ {
+  "group": "기타",
+  "wrong": "만히",
+  "right": "많이",
+  "pattern": "(^|\\s)만히",
+  "repl": "$1많이"
+ }
+]

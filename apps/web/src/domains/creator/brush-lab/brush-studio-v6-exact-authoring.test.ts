@@ -141,7 +141,9 @@ describe("exact material authoring instead of recipe approximation", () => {
 
   it("refuses a profile conflict instead of adopting a different profile on autosave", () => {
     const document = JSON.parse(serializeBrushStudioV6Authoring(createBrushStudioV6Program()));
-    document.licenseProfile = "permissive-only";
+    // Tamper with a profile that differs from the serialized (default) one:
+    // the default profile is permissive-only since the P0 license decision.
+    document.licenseProfile = "noncommercial-full";
     expect(() => parseBrushStudioV6Import(JSON.stringify(document))).toThrow(/실행 정보/u);
   });
 

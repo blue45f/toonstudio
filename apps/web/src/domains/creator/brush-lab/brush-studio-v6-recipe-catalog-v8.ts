@@ -49,7 +49,7 @@ export const BRUSH_STUDIO_V8_RECIPE_SEEDS: readonly BrushStudioV6RecipeSeed[] =
         slots: {
           motion: "motion-direct",
           carrier: "carrier-libmypaint-dabs",
-          tip: "tip-krita-dual",
+          tip: "tip-grain-exemplar",
           surface: "surface-printmaking",
           deposition: "deposit-dry",
           physics: ["physics-dry-contact"],

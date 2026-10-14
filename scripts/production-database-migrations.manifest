@@ -110,3 +110,4 @@ apps/api/src/platform/database/migrations/0109_production_organization.sql
 apps/api/src/platform/database/migrations/0110_stage_consensus_gate.sql
 apps/api/src/platform/database/migrations/0111_studio_op_log.sql
 apps/api/src/platform/database/migrations/0112_production_team_audit_read.sql
+apps/api/src/platform/database/migrations/0113_production_episode_voice_commentary.sql

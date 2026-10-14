@@ -81,6 +81,7 @@ export function ProductionPageManifestBuilder({
   readonly canEdit: boolean;
 }) {
   const t = useT();
+  const modelTranslate = (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback);
   const [params, setParams] = useSearchParams();
   const explicitSource = params.get("builderSourceReview");
   const compatibleCandidates = useMemo(() => candidates.filter((candidate) => candidate.processType === "image"), [candidates]);
@@ -144,7 +145,7 @@ export function ProductionPageManifestBuilder({
     setProgress(0);
     setNotice("");
     try {
-      const all = await collectProductionReviewManifestPages(source);
+      const all = await collectProductionReviewManifestPages(source, { translate: modelTranslate });
       setPages(all);
       setBaseline(all);
       setSelectedIndex(0);
@@ -169,6 +170,7 @@ export function ProductionPageManifestBuilder({
         artifactId: targetProcess.artifact.id,
         title: targetProcess.artifact.title,
         pages,
+        translate: modelTranslate,
         onProgress: ({ completedFiles, totalFiles }) => setProgress(Math.round((completedFiles / Math.max(1, totalFiles)) * 100)),
       });
       setLastArchive(result);

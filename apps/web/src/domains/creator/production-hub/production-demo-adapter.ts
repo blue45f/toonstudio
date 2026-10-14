@@ -23,6 +23,24 @@ import {
 import type { ProductionClientCommand } from "./production-api";
 import { createProductionDemoProject, PRODUCTION_DEMO_ANCHOR_AT } from "./production-demo";
 
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type ProductionDemoTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: ProductionDemoTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
+
 function replaceById<T extends { readonly id: string }>(values: readonly T[], value: T): readonly T[] {
   const found = values.some((entry) => entry.id === value.id);
   return found
@@ -33,6 +51,7 @@ function replaceById<T extends { readonly id: string }>(values: readonly T[], va
 export function reduceProductionDemoCommand(
   aggregate: ProductionProjectAggregate,
   command: ProductionClientCommand,
+  translate: ProductionDemoTranslate = defaultTranslate,
 ): ProductionProjectAggregate {
   const base = { ...aggregate, revision: aggregate.revision + 1, updatedAt: new Date().toISOString() };
   switch (command.type) {
@@ -88,13 +107,13 @@ export function reduceProductionDemoCommand(
     case "upsert-episode":
       return { ...base, episodes: replaceById(aggregate.episodes, command.episode) };
     case "configure-workflow": {
-      if ((aggregate.workflowProfile?.revision ?? 0) !== command.expectedWorkflowRevision) throw new Error("공정 설정이 변경되었습니다.");
+      if ((aggregate.workflowProfile?.revision ?? 0) !== command.expectedWorkflowRevision) throw new Error(translate("productionHub.demo.workflowChanged", "공정 설정이 변경되었습니다."));
       const issues = validateProductionWorkflowProfile(aggregate, command.profile);
       if (issues.length) throw new Error(issues.join("\n"));
       return { ...base, workflowProfile: command.profile };
     }
     case "instantiate-workflow": {
-      if (aggregate.workflowProfile?.revision !== command.workflowRevision) throw new Error("공정 설정이 변경되었습니다.");
+      if (aggregate.workflowProfile?.revision !== command.workflowRevision) throw new Error(translate("productionHub.demo.workflowChanged", "공정 설정이 변경되었습니다."));
       const tasks = buildProductionWorkflowTasks(aggregate, command.episodeId, command.instanceId, base.updatedAt);
       return { ...base, tasks: [...aggregate.tasks, ...tasks] };
     }
@@ -105,11 +124,11 @@ export function reduceProductionDemoCommand(
     case "upsert-task":
       return { ...base, tasks: replaceById(aggregate.tasks, command.task) };
     case "upsert-task-batch": {
-      if ((command.expectedAbsentTaskIds ?? []).some((id) => aggregate.tasks.some((task) => task.id === id))) throw new Error("같은 작업이 이미 저장되었습니다. 최신 작업을 확인하세요.");
+      if ((command.expectedAbsentTaskIds ?? []).some((id) => aggregate.tasks.some((task) => task.id === id))) throw new Error(translate("productionHub.demo.taskAlreadySaved", "같은 작업이 이미 저장되었습니다. 최신 작업을 확인하세요."));
       for (const expected of command.expectedTasks ?? []) {
         const current = aggregate.tasks.find((task) => task.id === expected.id);
         if (!current || JSON.stringify(current) !== JSON.stringify(expected)) {
-          throw new Error("다른 변경이 감지되어 작업 묶음을 안전하게 적용하지 않았습니다.");
+          throw new Error(translate("productionHub.demo.batchConflict", "다른 변경이 감지되어 작업 묶음을 안전하게 적용하지 않았습니다."));
         }
       }
       const tasks = command.tasks.reduce<readonly ProductionTask[]>(
@@ -119,7 +138,7 @@ export function reduceProductionDemoCommand(
       return { ...base, tasks };
     }
     case "upsert-episode-operations": {
-      if ((aggregate.workflowProfile || command.expectedWorkflowRevision !== undefined) && (aggregate.workflowProfile?.revision ?? 0) !== command.expectedWorkflowRevision) throw new Error("제작 공정이 변경되었습니다. 최신 설정에서 일정을 다시 확인하세요.");
+      if ((aggregate.workflowProfile || command.expectedWorkflowRevision !== undefined) && (aggregate.workflowProfile?.revision ?? 0) !== command.expectedWorkflowRevision) throw new Error(translate("productionHub.demo.workflowChangedSchedule", "제작 공정이 변경되었습니다. 최신 설정에서 일정을 다시 확인하세요."));
       const episodes = command.episode
         ? replaceById(aggregate.episodes, command.episode)
         : aggregate.episodes;
@@ -206,9 +225,9 @@ export function reduceProductionDemoCommand(
       return { ...base, riskResponses: replaceById(aggregate.riskResponses, command.response) };
     case "transition-risk-response": {
       const response = aggregate.riskResponses.find((entry) => entry.id === command.responseId);
-      if (!response) throw new Error("상태를 변경할 위험 대응을 찾을 수 없습니다.");
+      if (!response) throw new Error(translate("productionHub.demo.riskResponseNotFound", "상태를 변경할 위험 대응을 찾을 수 없습니다."));
       if (command.expectedResponseRevision !== undefined && command.expectedResponseRevision !== (response.revision ?? 0)) {
-        throw new Error("위험 대응 revision이 현재 값과 일치하지 않습니다.");
+        throw new Error(translate("productionHub.demo.riskResponseRevisionMismatch", "위험 대응 revision이 현재 값과 일치하지 않습니다."));
       }
       const next = transitionProductionRiskResponse(response, command.toStatus, {
         at: new Date().toISOString(),
@@ -345,8 +364,8 @@ export function resetProductionDemoSession(): void {
 
 export const productionDemoAdapter = {
   create: () => openProductionDemoSession(),
-  reduce: (current: ProductionProjectAggregate, command: ProductionClientCommand): ProductionProjectAggregate => {
-    const next = evaluateProductionDemoRiskState(reduceProductionDemoCommand(current, command));
+  reduce: (current: ProductionProjectAggregate, command: ProductionClientCommand, translate?: ProductionDemoTranslate): ProductionProjectAggregate => {
+    const next = evaluateProductionDemoRiskState(reduceProductionDemoCommand(current, command, translate));
     const issues = validateProductionWorkflowMutation(current, next);
     if (issues.length) throw new Error(issues.join("\n"));
     demoSession = next;

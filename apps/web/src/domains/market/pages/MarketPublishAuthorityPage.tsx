@@ -29,6 +29,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { VisualStepGuide } from "@/shared/components/VisualStepGuide";
 import { cn } from "@/shared/lib/utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import Link from "@/shared/navigation/router-link";
 import {
@@ -65,6 +66,12 @@ function PublishStepArt({ children }: { readonly children: ReactNode }) {
 
 export function MarketPublishAuthorityPage() {
   const t = useBilingual("MarketPublishAuthorityPage");
+  const i18nT = useT();
+  const authorityTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? i18nT(key, values, fallback) : i18nT(key, fallback),
+    [i18nT],
+  );
   useDocumentTitle(t("에셋 등록 · 툰스튜디오 에셋", "Register asset · ToonStudio Assets"));
   useMetaDescription(
     t(
@@ -115,8 +122,8 @@ export function MarketPublishAuthorityPage() {
 
   const parsed = useMemo(
     () => parseAuthoritativeMarketManifest(manifestText,
-      updateParent?.id === updateTarget && updateParent?.publisherId === userId ? updateParent : null),
-    [manifestText, updateParent, updateTarget, userId],
+      updateParent?.id === updateTarget && updateParent?.publisherId === userId ? updateParent : null, authorityTranslate),
+    [manifestText, updateParent, updateTarget, userId, authorityTranslate],
   );
 
   function beginSourceRequest(): number {

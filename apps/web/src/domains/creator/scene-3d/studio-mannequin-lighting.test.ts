@@ -74,6 +74,8 @@ describe("studio mannequin lighting", () => {
       const rig = applyStudioMannequinTimeOfDay(preset);
       expect(rig.lights.length).toBeGreaterThan(0);
       expect(rig.lights.length).toBeLessThanOrEqual(STUDIO_MANNEQUIN_MAX_LIGHTS);
+      // 프리셋 식별자가 릭에 그대로 실려야 스튜디오 활성 표시와 씬 동기화가 어긋나지 않는다.
+      expect(rig.timeOfDay).toBe(preset);
     }
   });
 
@@ -118,6 +120,23 @@ describe("studio mannequin lighting", () => {
     expect(dawn.lights[0]?.castShadow).toBe(true);
     expect(dawn.lights[1]?.kind).toBe("point");
     expect(dawn.lights[1]?.castShadow).toBe(false);
+  });
+
+  it("시간대 프리셋 4종 모두 기본 계획이 아닌 전용 계획으로 변환됩니다", () => {
+    for (const preset of ["dawn", "noon", "dusk", "night"] as const) {
+      const rig = applyStudioMannequinTimeOfDay(preset);
+      const plan = resolveStudioMannequinLightingPlan(rig);
+      expect(plan.isDefault, preset).toBe(false);
+      expect(plan.shadowsEnabled, preset).toBe(rig.shadowsEnabled);
+      expect(plan.lights, preset).toHaveLength(rig.lights.length);
+      plan.lights.forEach((planLight, index) => {
+        const rigLight = rig.lights[index];
+        expect(planLight.kind).toBe(rigLight?.kind);
+        expect(planLight.intensity).toBe(rigLight?.intensity);
+        expect(planLight.color).toBe(rigLight?.color);
+        expect(planLight.position).toEqual(rigLight?.position);
+      });
+    }
   });
 
   it("LT 연동 명암 힌트가 주광 방향과 대비를 돌립니다", () => {

@@ -265,7 +265,9 @@ describe("V6 brush experiments in the workbench", () => {
   it("shows pinned provider identities and noncommercial/GPL adapter boundaries", () => {
     localStorage.setItem(
       "toonstudio.brush-program-v6:test",
-      JSON.stringify(createBrushStudioV6Program("mixbox-oil-bristle")),
+      // The Mixbox catalog brush is bound under its target profile; the
+      // default profile is permissive-only since the P0 license decision.
+      JSON.stringify({ ...createBrushStudioV6Program("mixbox-oil-bristle"), licenseProfile: "noncommercial-full" }),
     );
     render(<StudioBrushV6Workbench scope="test" />);
     fireEvent.click(screen.getByRole("button", { name: "전문가 설정" }));

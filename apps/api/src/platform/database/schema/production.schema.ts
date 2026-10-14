@@ -14,6 +14,8 @@ import {
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
+import type { LocatedPrivateObjectReference } from "../../adapters/private-object-storage/private-object-storage.contract";
+import type { ProductionVoiceCommentaryTrackMeta } from "../../../modules/production-collaboration/production-voice-commentary.dto";
 import { users } from "./auth.schema";
 import { creatorWorks } from "./creator.schema";
 
@@ -301,6 +303,55 @@ export const productionPushSubscriptions = pgTable(
     check(
       "production_push_subscription_expiry_check",
       sql`${table.expirationTime} is null or ${table.expirationTime} >= 0`,
+    ),
+  ],
+);
+
+export const productionEpisodeVoiceCommentaries = pgTable(
+  "production_episode_voice_commentary",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("projectId")
+      .notNull()
+      .references(() => productionProjects.id, { onDelete: "cascade" }),
+    episodeId: text("episodeId").notNull(),
+    authorUserId: text("authorUserId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    track: jsonb("track").$type<ProductionVoiceCommentaryTrackMeta>().notNull(),
+    durationMs: integer("durationMs").notNull(),
+    contentType: text("contentType").notNull(),
+    byteLength: integer("byteLength").notNull(),
+    sha256: text("sha256").notNull(),
+    objectReference: jsonb("objectReference").$type<LocatedPrivateObjectReference>().notNull(),
+    requestHash: text("requestHash").notNull(),
+    operationId: text("operationId").notNull(),
+    createdAt: timestamp("createdAt", { mode: "date", withTimezone: true }).notNull(),
+    expiresAt: timestamp("expiresAt", { mode: "date", withTimezone: true }).notNull(),
+    deletedAt: timestamp("deletedAt", { mode: "date", withTimezone: true }),
+    deleteOperationId: text("deleteOperationId"),
+  },
+  (table) => [
+    unique("production_episode_voice_commentary_operation_unique").on(table.authorUserId, table.operationId),
+    index("idx_production_episode_voice_commentary_episode").on(
+      table.projectId,
+      table.episodeId,
+      table.createdAt.desc(),
+    ),
+    index("idx_production_episode_voice_commentary_expiry").on(table.expiresAt),
+    check(
+      "production_episode_voice_commentary_hashes_check",
+      sql`${table.sha256} ~ '^[a-f0-9]{64}$' and ${table.requestHash} ~ '^[a-f0-9]{64}$'`,
+    ),
+    check(
+      "production_episode_voice_commentary_track_check",
+      sql`jsonb_typeof(${table.track}) = 'object'
+        and ${table.track}->>'id' = ${table.id}
+        and ${table.track}->>'episodeId' = ${table.episodeId}`,
+    ),
+    check(
+      "production_episode_voice_commentary_retention_check",
+      sql`${table.expiresAt} > ${table.createdAt} and ${table.expiresAt} <= ${table.createdAt} + interval '30 days'`,
     ),
   ],
 );

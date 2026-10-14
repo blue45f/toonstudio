@@ -27,6 +27,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   advancedFillPreview: any;
   advancedFillReferenceLayerCount: any;
   advancedFillSettings: any;
+  advancedFillColorDropView: any;
   advancedFillStatus: any;
   advancedFillUnsupportedReason: any;
   advancedFillVisibleRasterCount: any;
@@ -68,6 +69,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   applyExtendedBlendMergeDown: any;
   applyPaperVectorRefinement: any;
   applyPathBooleanCombine: any;
+  applyPathBooleanCombineSync: any;
   applyPendingInterchangeImport: any;
   applyPixelSelectionHistoryCommand: any;
   applyQuickComicInput: any;

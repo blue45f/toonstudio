@@ -32,6 +32,7 @@ import {
 import { isStudioBrushCursorMode, shouldShowStudioBrushCursor } from "../canvas/studio-canvas-cursor";
 import { bubbleShapeCanvasPointToLocal, hasCustomBubbleShape, moveBubbleShapePoint } from "../lettering/studio-bubble-custom-shape";
 import { beginStudioAdvancedFillTap, endStudioAdvancedFillTap, moveStudioAdvancedFillTap } from "../studio-advanced-fill-tap";
+import { colorDropGestureView, endColorDropSession } from "../studio-colordrop-gesture";
 import { resolveActiveStudioAdvancedRuler, type StudioAdvancedRuler } from "../studio-advanced-ruler-document";
 import { snapStudioAdvancedRulerStrokePoint } from "../studio-advanced-ruler-snap";
 import { CANVAS_W } from "../studio-assets";
@@ -244,6 +245,8 @@ export function bindStudioCuttoonStagePointersFinish(
 ) {
   const {
     advancedFillTapGestureRef,
+    advancedFillColorDropRef,
+    setAdvancedFillColorDropView,
     advancedFillTapPayloadRef,
     advancedFillTouchPanRef,
     advancedRulerSnapRef,
@@ -919,6 +922,11 @@ export function bindStudioCuttoonStagePointersFinish(
         advancedFillTouchPanRef.current = null;
       }
       if (!outcome.gesture) advancedFillTapPayloadRef.current = null;
+      if (advancedFillColorDropRef.current) {
+        const dropEnd = endColorDropSession(advancedFillColorDropRef.current, pointerId, true);
+        advancedFillColorDropRef.current = dropEnd.session;
+        setAdvancedFillColorDropView(colorDropGestureView(dropEnd.session));
+      }
       return;
     }
     if (cancelCanvasGroupDrag()) return;

@@ -121,7 +121,27 @@ interface RiskDerivationInput {
   readonly now?: Date;
   readonly workload?: readonly ProductionRiskWorkloadEntry[];
   readonly operations?: ProductionOperationsOverview;
+  /** 신호 문구 번역자. 미지정 시 한국어 원문을 쓴다. */
+  readonly translate?: ProductionRiskIntelligenceTranslate;
 }
+
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type ProductionRiskIntelligenceTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: ProductionRiskIntelligenceTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -351,6 +371,7 @@ function buildTaskSignals(
   aggregate: ProductionProjectAggregate,
   forecasts: ReadonlyMap<string, TaskForecast>,
   workload: readonly ProductionRiskWorkloadEntry[],
+  translate: ProductionRiskIntelligenceTranslate,
 ): ProductionRiskSignal[] {
   const workloadByAssignment = new Map(workload.map((entry) => [entry.assignment.id, entry] as const));
   const result: ProductionRiskSignal[] = [];
@@ -383,7 +404,7 @@ function buildTaskSignals(
         kind: "blocker",
         score,
         title: task.title,
-        summary: blocked ? "현재 작업이 차단되어 후속 공정의 시작 시점이 밀립니다." : "필수 입력이 없어 실제 작업을 시작할 수 없습니다.",
+        summary: blocked ? translate("productionHub.riskSignal.blockerBlocked", "현재 작업이 차단되어 후속 공정의 시작 시점이 밀립니다.") : translate("productionHub.riskSignal.blockerNeedsInput", "필수 입력이 없어 실제 작업을 시작할 수 없습니다."),
         causes: [
           `현재 상태: ${statusLabel(task.status)}`,
           forecast.unresolvedDependencies.length > 0
@@ -463,7 +484,7 @@ function buildTaskSignals(
           causes: [
             dependencyTitles.join(" · "),
             forecast.dependencyCycle
-              ? "순환 의존성이 감지되어 자동 완료 예측을 신뢰할 수 없음"
+              ? translate("productionHub.riskSignal.dependencyCycleCause", "순환 의존성이 감지되어 자동 완료 예측을 신뢰할 수 없음")
               : `선행 작업 예상 종료까지 약 ${Math.ceil(forecast.dependencyFinishDays)}일`,
           ],
           impact: forecast.projectedDelayDays
@@ -495,10 +516,10 @@ function buildTaskSignals(
         score,
         title: missingOwner ? `${task.title} 책임자 미배정` : `${task.title} 담당자 과부하`,
         summary: missingOwner
-          ? "열린 작업에 책임자가 없어 시작·완료 예측을 확정할 수 없습니다."
+          ? translate("productionHub.riskSignal.capacityNoOwner", "열린 작업에 책임자가 없어 시작·완료 예측을 확정할 수 없습니다.")
           : `담당자의 향후 14일 작업량이 최대 ${maxLoad}%입니다.`,
         causes: missingOwner
-          ? ["assignmentIds가 비어 있음", `예상 공수 ${taskLikelyHours(task)}h`]
+          ? [translate("productionHub.riskSignal.capacityNoAssigneesCause", "assignmentIds가 비어 있음"), `예상 공수 ${taskLikelyHours(task)}h`]
           : assignmentLoads
             .sort((left, right) => right.loadPercent - left.loadPercent)
             .slice(0, 2)
@@ -554,10 +575,10 @@ function buildTaskSignals(
         score,
         title: `${task.title} 검수 병목`,
         summary: missingReviewer
-          ? "검수 담당자가 없어 승인·수정 결정을 시작할 수 없습니다."
+          ? translate("productionHub.riskSignal.reviewNoReviewer", "검수 담당자가 없어 승인·수정 결정을 시작할 수 없습니다.")
           : `마감이 가까운 상태에서 ${statusLabel(task.status)} 단계에 머물러 있습니다.`,
         causes: [
-          missingReviewer ? "reviewerAssignmentIds가 비어 있음" : `검수 담당 ${task.reviewerAssignmentIds.length}명`,
+          missingReviewer ? translate("productionHub.riskSignal.reviewNoReviewerCause", "reviewerAssignmentIds가 비어 있음") : `검수 담당 ${task.reviewerAssignmentIds.length}명`,
           task.dueAt ? `마감까지 약 ${Math.max(0, Math.ceil(forecast.dueDays ?? 0))}일` : "검수 마감 미정",
         ],
         impact: "검수 결정이 늦어지면 수정 작업과 승인본 고정 시간이 함께 줄어듭니다.",
@@ -582,8 +603,8 @@ function buildTaskSignals(
         title: `${task.title} 입력·산출물 연결 누락`,
         summary: "업무가 실제 Studio revision 또는 산출물과 완전히 연결되지 않았습니다.",
         causes: [
-          ...(missingInputRevision ? ["선행 작업이 있지만 inputRevisionRefs가 비어 있음"] : []),
-          ...(missingOutput ? ["outputDeliverableIds가 비어 있음"] : []),
+          ...(missingInputRevision ? [translate("productionHub.riskSignal.revisionInputMissingCause", "선행 작업이 있지만 inputRevisionRefs가 비어 있음")] : []),
+          ...(missingOutput ? [translate("productionHub.riskSignal.revisionOutputMissingCause", "outputDeliverableIds가 비어 있음")] : []),
         ],
         impact: "작업 상태가 완료되어도 어떤 입력으로 무엇을 만들었는지 증명하거나 안전하게 되돌리기 어렵습니다.",
         mitigations: [
@@ -602,6 +623,7 @@ function buildTaskSignals(
 function buildClarificationSignals(
   aggregate: ProductionProjectAggregate,
   now: Date,
+  translate: ProductionRiskIntelligenceTranslate,
 ): ProductionRiskSignal[] {
   const nowMs = now.getTime();
   return aggregate.clarifications
@@ -620,7 +642,7 @@ function buildClarificationSignals(
         score: 76 + dueUrgency(dueDays),
         confidence: "high",
         title: entry.question,
-        summary: "차단 질문의 결정이 기록되기 전까지 관련 제작 작업을 안전하게 확정할 수 없습니다.",
+        summary: translate("productionHub.riskSignal.clarificationBlocked", "차단 질문의 결정이 기록되기 전까지 관련 제작 작업을 안전하게 확정할 수 없습니다."),
         causes: [
           `상태 ${entry.status === "answered" ? "답변됨·결정 대기" : "답변 대기"}`,
           entry.dueAt ? `결정 기한 ${entry.dueAt.slice(0, 10)}` : "결정 기한 미정",
@@ -746,8 +768,8 @@ export function deriveProductionRiskIntelligence(
   const workload = input.workload ?? [];
   const forecasts = forecastTasks(aggregate, now, workload);
   const signals = [
-    ...buildTaskSignals(aggregate, forecasts, workload),
-    ...buildClarificationSignals(aggregate, now),
+    ...buildTaskSignals(aggregate, forecasts, workload, input.translate ?? defaultTranslate),
+    ...buildClarificationSignals(aggregate, now, input.translate ?? defaultTranslate),
     ...buildReleaseSignal(aggregate, input.operations),
     ...buildRegisteredSignals(aggregate),
   ].sort(signalSort);

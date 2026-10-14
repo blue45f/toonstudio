@@ -141,4 +141,10 @@ export interface StudioMainMenuSurfaceActions {
   openWebtoonAssistant?: () => unknown;
   /** AI 웹툰 생성 슈퍼 스위트 — 툰필터 화풍 변환, 음영 어시스트, 프롬프트 증강, 콘티 디렉터, 감정 말풍선. */
   openAiSuperSuite?: () => unknown;
+  /**
+   * 협업 ▸ 현재 페이지를 비교 검수로 보내기 — 현재 페이지 캡처를 workId 키
+   * 비교 수신함에 넣고, 회차 룸이 마운트 때 비교 풀 reference로 합친다.
+   * 호스트 핸들러가 없는 표면(테스트 픽스처 등)에서는 항목이 조용히 닫힌다.
+   */
+  sendPageToCompareReview?: () => unknown;
 }

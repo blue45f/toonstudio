@@ -10,6 +10,23 @@ import {
   normalizeCreatorMarketplaceLegacySemver,
 } from "@/shared/lib/creator-marketplace-semver";
 
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type MarketProductionFitTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: MarketProductionFitTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
 export const MARKET_PRODUCTION_PROFILE_STORAGE_KEY =
   "toonstudio.market.production-fit.v1" as const;
 export const MARKET_PRODUCTION_PROFILE_VERSION = 1 as const;
@@ -354,8 +371,9 @@ export function isMarketProductionStudioVersionValid(value: string): boolean {
 
 export function marketProductionEngineLabel(
   engine: MarketProductionProfileEngine | CreatorMarketplaceResourceEngine,
+  translate: MarketProductionFitTranslate = defaultTranslate,
 ): string {
-  return engine === "any" ? "렌더러 제한 없음" : ENGINE_LABELS[engine];
+  return engine === "any" ? translate("market.fit.engineAny", "렌더러 제한 없음") : ENGINE_LABELS[engine];
 }
 
 function engineEvidence(record: CreatorMarketplaceResourceRecord): string {
@@ -365,81 +383,85 @@ function engineEvidence(record: CreatorMarketplaceResourceRecord): string {
 function studioVersionCheck(
   record: CreatorMarketplaceResourceRecord,
   profile: MarketProductionProfile,
+  translate: MarketProductionFitTranslate,
 ): MarketProductionFitCheck {
+  const label = translate("market.fit.check.version", "Studio 버전");
   const minimum = normalizeCreatorMarketplaceLegacySemver(record.minimumStudioVersion);
   if (!minimum) {
     return {
       id: "studio-version",
-      label: "Studio 버전",
+      label,
       status: "review",
-      summary: "리소스의 최소 버전을 판정할 수 없습니다.",
+      summary: translate("market.fit.versionUnknown", "리소스의 최소 버전을 판정할 수 없습니다."),
       evidence: `manifest: ${record.minimumStudioVersion}`,
     };
   }
   if (!profile.studioVersion) {
     return {
       id: "studio-version",
-      label: "Studio 버전",
+      label,
       status: "review",
-      summary: "현재 Studio 버전을 입력하면 설치 가능 여부를 판정합니다.",
-      evidence: `최소 v${minimum}`,
+      summary: translate("market.fit.versionInputNeeded", "현재 Studio 버전을 입력하면 설치 가능 여부를 판정합니다."),
+      evidence: translate("market.fit.evidenceMin", "최소 v{minimum}", { minimum }),
     };
   }
   if (!isCreatorMarketplaceSemver(profile.studioVersion)) {
     return {
       id: "studio-version",
-      label: "Studio 버전",
+      label,
       status: "review",
-      summary: "현재 버전을 SemVer 형식으로 다시 입력해 주세요.",
-      evidence: `입력 ${profile.studioVersion} · 최소 v${minimum}`,
+      summary: translate("market.fit.versionInvalidFormat", "현재 버전을 SemVer 형식으로 다시 입력해 주세요."),
+      evidence: translate("market.fit.evidenceInput", "입력 {current} · 최소 v{minimum}", { current: profile.studioVersion, minimum }),
     };
   }
   if (compareCreatorMarketplaceSemver(profile.studioVersion, minimum) < 0) {
     return {
       id: "studio-version",
-      label: "Studio 버전",
+      label,
       status: "block",
-      summary: `Studio v${minimum} 이상이 필요합니다.`,
-      evidence: `현재 v${profile.studioVersion} · 최소 v${minimum}`,
+      summary: translate("market.fit.versionTooLow", "Studio v{minimum} 이상이 필요합니다.", { minimum }),
+      evidence: translate("market.fit.evidenceCurrent", "현재 v{current} · 최소 v{minimum}", { current: profile.studioVersion, minimum }),
     };
   }
   return {
     id: "studio-version",
-    label: "Studio 버전",
+    label,
     status: "pass",
-    summary: "선택한 Studio 버전에서 사용할 수 있습니다.",
-    evidence: `현재 v${profile.studioVersion} · 최소 v${minimum}`,
+    summary: translate("market.fit.versionPass", "선택한 Studio 버전에서 사용할 수 있습니다."),
+    evidence: translate("market.fit.evidenceCurrent", "현재 v{current} · 최소 v{minimum}", { current: profile.studioVersion, minimum }),
   };
 }
 
 function engineCheck(
   record: CreatorMarketplaceResourceRecord,
   profile: MarketProductionProfile,
+  translate: MarketProductionFitTranslate,
 ): MarketProductionFitCheck {
+  const label = translate("market.fit.check.engine", "렌더러");
   const evidence = engineEvidence(record);
   if (profile.engine === "any") {
     return {
       id: "engine",
-      label: "렌더러",
+      label,
       status: "pass",
-      summary: "렌더러 제한을 적용하지 않았습니다.",
+      summary: translate("market.fit.engineUnrestricted", "렌더러 제한을 적용하지 않았습니다."),
       evidence: `manifest: ${evidence}`,
     };
   }
   if (!record.compatibility.engines.includes(profile.engine)) {
     return {
       id: "engine",
-      label: "렌더러",
+      label,
       status: "block",
-      summary: `${ENGINE_LABELS[profile.engine]} 호환 선언이 없습니다.`,
+      summary: translate("market.fit.engineMissing", "{engine} 호환 선언이 없습니다.", { engine: ENGINE_LABELS[profile.engine] }),
       evidence: `manifest: ${evidence}`,
     };
   }
   return {
     id: "engine",
-    label: "렌더러",
+    label,
     status: "pass",
-    summary: `${ENGINE_LABELS[profile.engine]} 호환이 선언되어 있습니다.`,
+    summary: translate("market.fit.enginePass", "{engine} 호환이 선언되어 있습니다.", { engine: ENGINE_LABELS[profile.engine] }),
     evidence: `manifest: ${evidence}`,
   };
 }
@@ -447,25 +469,26 @@ function engineCheck(
 function licenseCheck(
   record: CreatorMarketplaceResourceRecord,
   profile: MarketProductionProfile,
+  translate: MarketProductionFitTranslate,
 ): MarketProductionFitCheck {
   const capability = LICENSE_CAPABILITIES[record.license];
   const label = LICENSE_LABELS[record.license];
   if (profile.usage === "commercial" && !capability.commercialUse) {
     return {
       id: "license",
-      label: "이용 범위",
+      label: translate("market.fit.check.license", "이용 범위"),
       status: "block",
-      summary: "상업 연재 조건과 맞지 않는 비상업 전용 사용권입니다.",
+      summary: translate("market.fit.licenseBlocked", "상업 연재 조건과 맞지 않는 비상업 전용 사용권입니다."),
       evidence: label,
     };
   }
   return {
     id: "license",
-    label: "이용 범위",
+    label: translate("market.fit.check.license", "이용 범위"),
     status: "pass",
     summary: profile.usage === "commercial"
-      ? "상업 작품 사용이 허용된 사용권입니다."
-      : "선택한 비상업 검토 범위에서 사용할 수 있습니다.",
+      ? translate("market.fit.licenseCommercialPass", "상업 작품 사용이 허용된 사용권입니다.")
+      : translate("market.fit.licenseNoncommercialPass", "선택한 비상업 검토 범위에서 사용할 수 있습니다."),
     evidence: label,
   };
 }
@@ -473,40 +496,42 @@ function licenseCheck(
 function attributionCheck(
   record: CreatorMarketplaceResourceRecord,
   profile: MarketProductionProfile,
+  translate: MarketProductionFitTranslate,
 ): MarketProductionFitCheck {
+  const label = translate("market.fit.check.attribution", "저작자 표시");
   const required = LICENSE_CAPABILITIES[record.license].attributionRequired;
   if (!required) {
     return {
       id: "attribution",
-      label: "저작자 표시",
+      label,
       status: "pass",
-      summary: "이 사용권은 저작자 표시를 필수로 요구하지 않습니다.",
+      summary: translate("market.fit.attributionNotRequired", "이 사용권은 저작자 표시를 필수로 요구하지 않습니다."),
       evidence: LICENSE_LABELS[record.license],
     };
   }
   if (!record.attributionText.trim()) {
     return {
       id: "attribution",
-      label: "저작자 표시",
+      label,
       status: "review",
-      summary: "표시는 필요하지만 manifest에 사용할 문구가 없습니다.",
-      evidence: `${LICENSE_LABELS[record.license]} · 표시 문구 없음`,
+      summary: translate("market.fit.attributionTextMissing", "표시는 필요하지만 manifest에 사용할 문구가 없습니다."),
+      evidence: translate("market.fit.attributionEvidenceMissing", "{license} · 표시 문구 없음", { license: LICENSE_LABELS[record.license] }),
     };
   }
   if (!profile.attributionSupported) {
     return {
       id: "attribution",
-      label: "저작자 표시",
+      label,
       status: "block",
-      summary: "현재 배포 흐름에서 필수 표시를 유지할 수 없습니다.",
+      summary: translate("market.fit.attributionUnsupported", "현재 배포 흐름에서 필수 표시를 유지할 수 없습니다."),
       evidence: record.attributionText,
     };
   }
   return {
     id: "attribution",
-    label: "저작자 표시",
+    label,
     status: "pass",
-    summary: "필수 표시 문구를 작품 크레딧에 보존할 수 있습니다.",
+    summary: translate("market.fit.attributionPass", "필수 표시 문구를 작품 크레딧에 보존할 수 있습니다."),
     evidence: record.attributionText,
   };
 }
@@ -514,39 +539,41 @@ function attributionCheck(
 function aiDisclosureCheck(
   record: CreatorMarketplaceResourceRecord,
   profile: MarketProductionProfile,
+  translate: MarketProductionFitTranslate,
 ): MarketProductionFitCheck {
+  const label = translate("market.fit.check.ai", "AI 포함 여부");
   if (!record.containsAi) {
     return {
       id: "ai-disclosure",
-      label: "AI 포함 여부",
+      label,
       status: "pass",
-      summary: "manifest가 AI 미포함으로 선언되어 있습니다.",
+      summary: translate("market.fit.aiNonePass", "manifest가 AI 미포함으로 선언되어 있습니다."),
       evidence: "containsAi: false",
     };
   }
   if (profile.aiPolicy === "exclude") {
     return {
       id: "ai-disclosure",
-      label: "AI 포함 여부",
+      label,
       status: "block",
-      summary: "AI 포함 리소스를 제외하는 제작 정책과 충돌합니다.",
+      summary: translate("market.fit.aiBlocked", "AI 포함 리소스를 제외하는 제작 정책과 충돌합니다."),
       evidence: "containsAi: true",
     };
   }
   if (profile.aiPolicy === "review") {
     return {
       id: "ai-disclosure",
-      label: "AI 포함 여부",
+      label,
       status: "review",
-      summary: "AI 포함 범위와 권리 설명을 적용 전에 확인하세요.",
+      summary: translate("market.fit.aiReview", "AI 포함 범위와 권리 설명을 적용 전에 확인하세요."),
       evidence: "containsAi: true",
     };
   }
   return {
     id: "ai-disclosure",
-    label: "AI 포함 여부",
+    label,
     status: "pass",
-    summary: "현재 제작 정책은 AI 포함 리소스를 허용합니다.",
+    summary: translate("market.fit.aiAllowedPass", "현재 제작 정책은 AI 포함 리소스를 허용합니다."),
     evidence: "containsAi: true",
   };
 }
@@ -554,30 +581,32 @@ function aiDisclosureCheck(
 function provenanceCheck(
   record: CreatorMarketplaceResourceRecord,
   profile: MarketProductionProfile,
+  translate: MarketProductionFitTranslate,
 ): MarketProductionFitCheck {
+  const label = translate("market.fit.check.provenance", "출처");
   if (record.provenance.origin === "original") {
     return {
       id: "provenance",
-      label: "출처",
+      label,
       status: "pass",
-      summary: "배급자가 직접 만든 원본으로 선언했습니다.",
+      summary: translate("market.fit.provenanceOriginalPass", "배급자가 직접 만든 원본으로 선언했습니다."),
       evidence: "origin: original · authoredByPublisher: true",
     };
   }
   if (profile.provenancePolicy === "original-only") {
     return {
       id: "provenance",
-      label: "출처",
+      label,
       status: "block",
-      summary: "배급자 원본만 허용하는 제작 정책과 충돌합니다.",
+      summary: translate("market.fit.provenanceBlocked", "배급자 원본만 허용하는 제작 정책과 충돌합니다."),
       evidence: `${record.provenance.sourceName} · ${record.provenance.sourceLicenseUrl}`,
     };
   }
   return {
     id: "provenance",
-    label: "출처",
+    label,
     status: "pass",
-    summary: "원 출처와 사용권 원문 링크가 함께 기록되어 있습니다.",
+    summary: translate("market.fit.provenancePass", "원 출처와 사용권 원문 링크가 함께 기록되어 있습니다."),
     evidence: `${record.provenance.sourceName} · ${record.provenance.sourceLicenseUrl}`,
   };
 }
@@ -585,28 +614,30 @@ function provenanceCheck(
 function deliveryCheck(
   record: CreatorMarketplaceResourceRecord,
   profile: MarketProductionProfile,
+  translate: MarketProductionFitTranslate,
 ): MarketProductionFitCheck {
+  const label = translate("market.fit.check.delivery", "전달 방식");
   const modes = Array.from(new Set(record.entries.map((entry) => entry.delivery.mode)));
   const builtinCount = record.entries.filter(
     (entry) => entry.delivery.mode === "builtin-ref",
   ).length;
-  const evidence = `${record.entries.length}개 항목 · ${modes.join(", ")}`;
+  const evidence = translate("market.fit.deliveryEvidence", "{count}개 항목 · {modes}", { count: record.entries.length, modes: modes.join(", ") });
   if (profile.deliveryPolicy === "self-contained" && builtinCount > 0) {
     return {
       id: "delivery",
-      label: "전달 방식",
+      label,
       status: "block",
-      summary: `내장 참조 ${builtinCount}개가 있어 독립 패키지 조건을 충족하지 않습니다.`,
+      summary: translate("market.fit.deliveryBlocked", "내장 참조 {count}개가 있어 독립 패키지 조건을 충족하지 않습니다.", { count: builtinCount }),
       evidence,
     };
   }
   return {
     id: "delivery",
-    label: "전달 방식",
+    label,
     status: "pass",
     summary: profile.deliveryPolicy === "self-contained"
-      ? "모든 항목이 패키지 안에 포함된 portable 정의입니다."
-      : "manifest에 기록된 전달 방식을 허용합니다.",
+      ? translate("market.fit.deliverySelfContainedPass", "모든 항목이 패키지 안에 포함된 portable 정의입니다.")
+      : translate("market.fit.deliveryPass", "manifest에 기록된 전달 방식을 허용합니다."),
     evidence,
   };
 }
@@ -614,16 +645,17 @@ function deliveryCheck(
 export function evaluateMarketProductionFit(
   record: CreatorMarketplaceResourceRecord,
   profileInput: MarketProductionProfile,
+  translate: MarketProductionFitTranslate = defaultTranslate,
 ): MarketProductionFitEvaluation {
   const profile = parseMarketProductionProfile(profileInput);
   const checks = Object.freeze([
-    studioVersionCheck(record, profile),
-    engineCheck(record, profile),
-    licenseCheck(record, profile),
-    attributionCheck(record, profile),
-    aiDisclosureCheck(record, profile),
-    provenanceCheck(record, profile),
-    deliveryCheck(record, profile),
+    studioVersionCheck(record, profile, translate),
+    engineCheck(record, profile, translate),
+    licenseCheck(record, profile, translate),
+    attributionCheck(record, profile, translate),
+    aiDisclosureCheck(record, profile, translate),
+    provenanceCheck(record, profile, translate),
+    deliveryCheck(record, profile, translate),
   ]);
   const passCount = checks.filter((check) => check.status === "pass").length;
   const reviewCount = checks.filter((check) => check.status === "review").length;
@@ -641,8 +673,8 @@ export function evaluateMarketProductionFit(
       passCount,
       reviewCount,
       blockCount,
-      headline: "현재 제작 조건에서는 적용 차단",
-      guidance: "차단된 조건을 바꾸거나 다른 리소스를 선택한 뒤 획득을 진행하세요.",
+      headline: translate("market.fit.headlineBlocked", "현재 제작 조건에서는 적용 차단"),
+      guidance: translate("market.fit.guidanceBlocked", "차단된 조건을 바꾸거나 다른 리소스를 선택한 뒤 획득을 진행하세요."),
     };
   }
   if (status === "review") {
@@ -652,8 +684,8 @@ export function evaluateMarketProductionFit(
       passCount,
       reviewCount,
       blockCount,
-      headline: "적용 전 확인 필요",
-      guidance: "확인 항목을 검토한 뒤 리소스 상세의 획득·적용 단계를 진행하세요.",
+      headline: translate("market.fit.headlineReview", "적용 전 확인 필요"),
+      guidance: translate("market.fit.guidanceReview", "확인 항목을 검토한 뒤 리소스 상세의 획득·적용 단계를 진행하세요."),
     };
   }
   return {
@@ -662,8 +694,8 @@ export function evaluateMarketProductionFit(
     passCount,
     reviewCount,
     blockCount,
-    headline: "현재 제작 조건과 일치",
-    guidance: "manifest 기준의 사전점검을 통과했습니다. 실제 적용 전 미리보기를 확인하세요.",
+    headline: translate("market.fit.headlineReady", "현재 제작 조건과 일치"),
+    guidance: translate("market.fit.guidanceReady", "manifest 기준의 사전점검을 통과했습니다. 실제 적용 전 미리보기를 확인하세요."),
   };
 }
 
@@ -676,11 +708,12 @@ const FIT_STATUS_ORDER: Readonly<Record<MarketProductionFitStatus, number>> = {
 export function evaluateAndSortMarketProductionRecords(
   records: readonly CreatorMarketplaceResourceRecord[],
   profile: MarketProductionProfile,
+  translate: MarketProductionFitTranslate = defaultTranslate,
 ): readonly MarketProductionFitRecord[] {
   return records
     .map((record) => ({
       record,
-      evaluation: evaluateMarketProductionFit(record, profile),
+      evaluation: evaluateMarketProductionFit(record, profile, translate),
     }))
     .sort((left, right) => {
       const statusDifference = FIT_STATUS_ORDER[left.evaluation.status]

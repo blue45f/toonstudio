@@ -3,7 +3,7 @@ import { MessageCircle, Mic, MicOff, Video, MonitorUp, PhoneOff, Hand, VolumeX, 
 import { formatI18nTemplate, translateCurrentStaticSourceText, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useStudioLiveCollaboration } from "../studio-live-collaboration-context";
 import { StudioP2pCreativeHuddleController as StudioP2pHuddleController, type CreativeHuddleSnapshot as HuddleSnapshot } from "./studio-p2p-creative-huddle-controller";
-import { HUDDLE_REACTIONS, HUDDLE_TEXT_LIMIT } from "./studio-p2p-huddle-protocol";
+import { HUDDLE_MAX_REMOTE_PEERS, HUDDLE_REACTIONS, HUDDLE_TEXT_LIMIT } from "./studio-p2p-huddle-protocol";
 import { STUDIO_P2P_HUDDLE_OPEN_EVENT, STUDIO_P2P_HUDDLE_CLOSE_EVENT, notifyStudioP2pHuddleClosed, normalizeStudioP2pHuddleOpenDetail, type StudioP2pHuddleOpenDetail, type StudioP2pHuddleCloseDetail } from "./studio-p2p-huddle-events";
 import { StudioP2pMediaTile as MediaTile, P2P_CONTROL_CLASS as controlClass } from "./StudioP2pMediaTile";
 import { StudioP2pActivitiesPanel } from "./StudioP2pActivitiesPanel";
@@ -215,6 +215,7 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
           <button className={controlClass} type="button" disabled={!canJoin} aria-describedby={!canJoin ? "studio-huddle-unavailable" : undefined} onClick={join}>{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "동의하고 P2P 채팅 참여")}</button>
         </div> : <>
           <p className="text-xs text-fg-2" role="status">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "나 포함 ")}{(snapshot?.peers.length ?? 0) + 1}{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "명 참여 · 연결 가능 ")}{snapshot?.availablePeers ?? 0}{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "명")}</p>
+          {(snapshot?.overflowPeerCount ?? 0) > 0 && <p role="status" className="text-xs text-warn">{formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "통화 정원 {v0}명이 가득 차 {v1}명이 아직 참여하지 못하고 있습니다. 직접 연결 보호를 위한 상한이며, 자리가 나면 자동으로 참여합니다."), { v0: String(HUDDLE_MAX_REMOTE_PEERS + 1), v1: String(snapshot?.overflowPeerCount ?? 0) })}</p>}
           {proximityPeerIds.current ? <p className="rounded-lg bg-accent-soft px-2 py-1.5 text-[11px] font-semibold text-accent" data-studio-p2p-proximity-scope="true" data-studio-p2p-conversation={conversation.current?.id}>{conversation.current ? bt("수락한 대화 참여자에게만 연결합니다.", "Only accepted conversation members are connected.") : translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "가상 스튜디오 근처 대화 · 가까운 팀원만 직접 연결")}</p> : null}
           {!mediaAvailable && <p role="status" className="text-xs text-warn">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "이 브라우저는 카메라·마이크를 지원하지 않습니다. 지원하는 브라우저에서 같은 작업실을 열어 주세요. 채팅·활동은 계속 사용할 수 있습니다.")}</p>}
           <div className="grid grid-cols-3 gap-1.5">
@@ -243,6 +244,7 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
               <Hand size={14} />{snapshot?.hand ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "손 내리기") : translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "손들기")}</button>
             <button className={controlClass} type="button" onClick={leave}><PhoneOff size={14} />{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "나가기")}</button>
           </div>
+          {(snapshot?.failedPeerCount ?? 0) > 0 && <button className={controlClass} type="button" onClick={() => controller.current?.retryFailedAudioOnly()}>{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "연결 실패 · 카메라 끄고 음성만으로 다시 시도")}</button>}
           {room?.direct && !conversation.current && <StudioP2pVirtualStudio
             self={room.participant}
             port={room.direct}
