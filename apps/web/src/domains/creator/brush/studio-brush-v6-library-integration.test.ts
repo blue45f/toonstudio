@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE } from "../brush-lab/brush-studio-v6-license-profile";
 import { BRUSH_STUDIO_V6_RECIPE_SEEDS } from "../brush-lab/brush-studio-v6-recipe-catalog";
 import { isStudioBrushEngineProgramWireValue } from "../../../shared/lib/studio-brush-material-program-contract";
 import {
@@ -20,6 +21,7 @@ import {
   STUDIO_V6_BRUSH_CATALOG_COUNT,
   STUDIO_V6_BRUSH_CATALOG_ITEMS,
 } from "./studio-brush-v6-catalog";
+import { studioV6BrushCatalogSelectionBlock } from "./studio-brush-v6-catalog-runtime";
 
 const expectedV6RecipeCount = BRUSH_STUDIO_V6_RECIPE_SEEDS.length;
 
@@ -73,6 +75,24 @@ describe("Studio V6 complete brush library integration", () => {
   it("materializes all V6 rows with exact no-fallback provider receipts", async () => {
     for (const item of STUDIO_V6_BRUSH_CATALOG_ITEMS) {
       const selection = await materializeStudioBrushCatalogSelection(item.id);
+      if (!selection) {
+        // 라이선스 P0: 기본 프로필(permissive-only) 밖의 재료를 쓰는 행은 카탈로그에
+        // 남아 있되 제공되지 않는다 — 선택은 null이고 차단 사유가 레코드로 조회돼야
+        // 한다. 게이트가 조용히 풀리거나 사유 없이 비면 여기서 실패한다.
+        const block = studioV6BrushCatalogSelectionBlock(item.id);
+        expect(block, item.id).not.toBeNull();
+        expect(block?.catalogId).toBe(item.id);
+        expect(block?.licenseProfile).toBe(BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE);
+        expect(block?.blockedNodeIds.length).toBeGreaterThan(0);
+        expect(
+          block?.blockedNodes.every(({ reason }) => reason === "license-profile"),
+          item.id,
+        ).toBe(true);
+        expect(block?.reason).toContain(block?.blockedNodeIds[0] ?? "");
+        expect(await materializeStudioBrushCatalogSelection(item.id)).toBeNull();
+        continue;
+      }
+      expect(studioV6BrushCatalogSelectionBlock(item.id), item.id).toBeNull();
       expect(selection, item.id).not.toBeNull();
       expect(selection?.catalogId).toBe(item.id);
       expect(selection?.runtimeBrushId).toBe("brush");

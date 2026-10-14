@@ -13,24 +13,11 @@ import {
   removeLastStudioBg3dTexturePaintStroke,
   type StudioBg3dPaintCanvas,
   type StudioBg3dTexturePaint,
+  type StudioBg3dTexturePaintBrush,
   type StudioBg3dTexturePaintStroke,
 } from "./studio-bg3d-texture-paint";
 
 import type { BgPrimitive } from "../studio-background-3d-primitives";
-
-/** 호스트(뷰포트 포인터 핸들러)와 패널이 공유하는 브러시 상태. */
-export interface StudioBg3dTexturePaintBrush {
-  readonly color: string;
-  /** 브러시 지름(UV 단위). */
-  readonly size: number;
-  readonly opacity: number;
-}
-
-export const DEFAULT_STUDIO_BG3D_TEXTURE_PAINT_BRUSH: StudioBg3dTexturePaintBrush = {
-  color: "#e11d48",
-  size: 0.04,
-  opacity: 1,
-};
 
 const BRUSH_SWATCHES = [
   "#e11d48",

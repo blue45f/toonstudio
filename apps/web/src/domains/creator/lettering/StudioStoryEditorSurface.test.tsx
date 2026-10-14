@@ -2,11 +2,11 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-afterEach(() => cleanup());
-
 import type { DialoguePageLike } from "./studio-dialogue-batch";
 import { applyStoryEditorDrafts, type StoryEditorDraft } from "./studio-story-editor";
 import { StudioStoryEditorSurface } from "./StudioStoryEditorSurface";
+
+afterEach(() => cleanup());
 
 function threePages(): DialoguePageLike[] {
   return [

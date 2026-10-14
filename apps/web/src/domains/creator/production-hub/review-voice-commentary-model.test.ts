@@ -4,6 +4,7 @@ import {
   createVoiceCommentaryTrack,
   finishVoiceRecording,
   formatVoiceTime,
+  mergeVoiceCommentaryTracks,
   parseVoiceCommentaryTrack,
   recordVoiceKeyframe,
   serializeVoiceCommentaryTrack,
@@ -84,6 +85,24 @@ describe("review-voice-commentary-model", () => {
     expect(parseVoiceCommentaryTrack(serializeVoiceCommentaryTrack(blob))?.audio).toBeNull();
     expect(parseVoiceCommentaryTrack("{broken")).toBeNull();
     expect(parseVoiceCommentaryTrack(null)).toBeNull();
+  });
+
+  it("서버 목록 병합은 같은 id를 서버본으로 교체하고 세션 전용 트랙을 보존한다", () => {
+    const base = {
+      episodeId: "ep-1", authorName: "검수자", createdAt: "2026-10-14T00:00:00Z", durationMs: 1000,
+      keyframes: [{ atMs: 0, view: viewA, pinThreadIds: [] }],
+    };
+    const staleServer = createVoiceCommentaryTrack({ ...base, id: "v1", audio: { kind: "server", url: "https://example.invalid/old.webm", mimeType: "audio/webm", byteSize: 10 } });
+    const sessionOnly = createVoiceCommentaryTrack({ ...base, id: "v2", audio: { kind: "blob", url: "blob:https://example.invalid/x", mimeType: null, byteSize: 10 } });
+    const freshServer = createVoiceCommentaryTrack({ ...base, id: "v1", audio: { kind: "server", url: "https://example.invalid/new.webm", mimeType: "audio/webm", byteSize: 10 } });
+    const newServer = createVoiceCommentaryTrack({ ...base, id: "v3", audio: { kind: "server", url: "https://example.invalid/v3.webm", mimeType: "audio/webm", byteSize: 10 } });
+
+    const merged = mergeVoiceCommentaryTracks([staleServer, sessionOnly], [freshServer, newServer]);
+    expect(merged.map((track) => track.id)).toEqual(["v1", "v2", "v3"]);
+    expect(merged[0]?.audio?.url).toBe("https://example.invalid/new.webm");
+    expect(merged[1]).toBe(sessionOnly);
+    // 빈 서버 목록은 세션 상태를 그대로 돌려준다(복사본).
+    expect(mergeVoiceCommentaryTracks([sessionOnly], [])).toEqual([sessionOnly]);
   });
 
   it("녹화 종료 헬퍼와 시간 표기가 동작한다", () => {

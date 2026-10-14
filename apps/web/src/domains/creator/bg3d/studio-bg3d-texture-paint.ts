@@ -38,6 +38,20 @@ export const STUDIO_BG3D_TEXTURE_PAINT_MAX_BRUSH_SIZE = 0.5;
 export const STUDIO_BG3D_TEXTURE_PAINT_RESOLUTIONS = [256, 512, 1024] as const;
 export const STUDIO_BG3D_TEXTURE_PAINT_DEFAULT_RESOLUTION = 512;
 export const STUDIO_BG3D_TEXTURE_PAINT_PNG_MIME = "image/png" as const;
+/** 호스트(뷰포트 포인터 핸들러)와 패널이 공유하는 브러시 상태. */
+export interface StudioBg3dTexturePaintBrush {
+  readonly color: string;
+  /** 브러시 지름(UV 단위). */
+  readonly size: number;
+  readonly opacity: number;
+}
+
+export const DEFAULT_STUDIO_BG3D_TEXTURE_PAINT_BRUSH: StudioBg3dTexturePaintBrush = {
+  color: "#e11d48",
+  size: 0.04,
+  opacity: 1,
+};
+
 /** 획 점열 최소 간격(UV). 이보다 가까운 포인터 샘플은 버려 점열 폭증을 막는다. */
 const MIN_POINT_DISTANCE = 0.0015;
 

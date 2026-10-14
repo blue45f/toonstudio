@@ -8,7 +8,7 @@
  * (StudioShadowHighlightPanel과 같은 패턴), 생성 콜백은 요약 1회 호출.
  */
 import { Sun, WandSparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { StudioPanelChip, StudioSectionHeader, StudioSliderRow } from "./studio-panel-ui";
 import {
@@ -65,10 +65,15 @@ export function StudioShadingAssistPanel({
   // options 객체는 렌더마다 새로 만들어지므로 값 자체를 문자열 키로 비교한다.
   const optionsKey = `${options.azimuthDeg}|${options.strength}|${options.coverage}|${options.softness}|${options.toneSteps}|${options.shadowColor.join(",")}`;
   const [result, setResult] = useState<{ text: string; key: string } | null>(null);
+  // optionsKey는 도착 시점 스냅샷 용도라, 최신 키를 ref로 따라가며 아래 effect는
+  // lastResult 변화에만 반응한다. 동기화 effect가 같은 커밋에서 먼저 실행되므로
+  // 스냅샷에 쓰이는 키는 기존 클로저 방식과 항상 같다.
+  const optionsKeyRef = useRef(optionsKey);
   useEffect(() => {
-    if (lastResult) setResult({ text: lastResult, key: optionsKey });
-    // optionsKey는 도착 시점 스냅샷 용도라 의존성에서 제외한다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    optionsKeyRef.current = optionsKey;
+  });
+  useEffect(() => {
+    if (lastResult) setResult({ text: lastResult, key: optionsKeyRef.current });
   }, [lastResult]);
   const visibleResult = result && result.key === optionsKey ? result.text : null;
 

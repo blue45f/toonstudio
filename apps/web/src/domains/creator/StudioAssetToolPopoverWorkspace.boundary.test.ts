@@ -16,7 +16,7 @@ const lazySource = read("./studio-unified-asset-lazy-ui.ts");
 const createModeGroupsSource = read("./StudioToolBeltCreateModeGroups.tsx");
 // 스튜디오 전용 규칙의 정본은 studio-route.css다(globals.css 머리말 정책 — 스튜디오
 // 규칙은 그쪽에만 두고 스튜디오 라우트 청크에서만 로드한다).
-const studioRouteSource = read("../../app/styles/studio-route.css");
+const studioRouteSource = read("../../shared/styles/studio-route.css");
 const floatingLayoutsSource = read("./studio-floating-menu-layouts.ts");
 
 describe("Studio asset workspace boundaries", () => {

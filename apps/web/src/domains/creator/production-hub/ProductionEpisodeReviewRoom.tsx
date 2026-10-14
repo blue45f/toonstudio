@@ -47,11 +47,15 @@ import { usePinTaskWorkspaceSync } from "./use-pin-task-workspace-sync";
 import { ProcessCompareViewer } from "./ProcessCompareViewer";
 import type { ProductionManuscriptProcess } from "./production-manuscript-model";
 import { ProductionPagePresence } from "./ProductionPagePresence";
-import { uploadProductionVoiceCommentary } from "./production-voice-commentary-api";
+import {
+  listProductionVoiceCommentaries,
+  uploadProductionVoiceCommentary,
+} from "./production-voice-commentary-api";
 import { useServerPresenceSync } from "./use-server-presence-sync";
 import { ReviewSessionBar } from "./ReviewSessionBar";
 import { ReviewVoiceCommentaryPanel, type VoiceViewCapture } from "./ReviewVoiceCommentaryPanel";
 import {
+  mergeVoiceCommentaryTracks,
   voiceTracksForEpisode,
   type VoiceCommentaryTrack,
   type VoiceViewSnapshot,
@@ -522,9 +526,34 @@ export function ProductionEpisodeReviewRoom({
   //   트랙을 세션 상태에 그대로 보관한다 — 이 탭 안에서만 미리듣기가 되고
   //   새로고침하면 사라지며, 모델의 parse가 blob 오디오를 복원 대상에서
   //   제외하는 정책과 같은 한계다.
+  // - 목록(진입 시): 실제 프로젝트면 같은 엔드포인트의 목록(query)을 룸
+  //   마운트 때 불러와 서버 트랙을 세션 상태에 병합한다
+  //   (mergeVoiceCommentaryTracks — 같은 id는 서명 URL이 새로 발급된
+  //   서버본 우선, 목록에 없는 세션 트랙은 보존). 로딩·실패는 패널의
+  //   loading/error 표면으로 알리고, 실패해도 세션 보관과 녹음은 유지된다.
   const [voiceTracks, setVoiceTracks] = useState<readonly VoiceCommentaryTrack[]>([]);
   const [voicePanelOpen, setVoicePanelOpen] = useState(false);
   const [voicePinIds, setVoicePinIds] = useState<readonly string[]>([]);
+  const [voiceListState, setVoiceListState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  useEffect(() => {
+    if (isDemo) return;
+    const controller = new AbortController();
+    setVoiceListState("loading");
+    void (async () => {
+      try {
+        const { items } = await listProductionVoiceCommentaries(aggregate.projectId, episodeId, controller.signal);
+        if (controller.signal.aborted) return;
+        setVoiceTracks((previous) => mergeVoiceCommentaryTracks(previous, items.map((item) => item.track)));
+        setVoiceListState("ready");
+      } catch {
+        if (controller.signal.aborted) return;
+        // 목록을 못 불러와도 이 탭의 세션 보관 트랙과 녹음은 그대로 동작한다.
+        setVoiceListState("error");
+      }
+    })();
+    return () => controller.abort();
+  }, [aggregate.projectId, episodeId, isDemo]);
   // 패널은 녹화 중 500ms 간격으로 captureView를 부른다. 콜백 정체성이 매
   // 렌더마다 바뀌면 샘플링 타이머가 계속 리셋되므로, 최신 상태는 ref로 읽는다.
   const voiceCaptureRef = useRef({ tab, comments, compareItems });
@@ -1222,6 +1251,10 @@ export function ProductionEpisodeReviewRoom({
             <ReviewVoiceCommentaryPanel
               episodeId={episodeId}
               tracks={episodeVoiceTracks}
+              loading={voiceListState === "loading"}
+              error={voiceListState === "error"
+                ? bt("서버에 저장된 해설을 불러오지 못했습니다. 이 탭에서 녹음한 해설은 계속 들을 수 있고, 다시 불러오려면 회차 룸을 새로고침하세요.", "Couldn't load commentary saved on the server. Recordings from this tab still play; reload the episode room to load again.")
+                : null}
               authorName={selfActorName}
               authorId={selfActorId}
               readOnly={!canEdit}

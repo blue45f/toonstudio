@@ -49,7 +49,9 @@ export function DiscoverHomePreview() {
 
   return (
     <section aria-labelledby="discover-home-preview-title" className="flex flex-col gap-8">
-      <header data-section-heading="" className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      {/* 제목 묶음은 페이지 배너가 아니라 구간 머리글이므로 <header>를 쓰지 않는다 —
+          배너 랜드마크는 사이트 크롬만의 몫이라는 홈 계약(대시보드 테스트)을 지킨다. */}
+      <div data-section-heading="" className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <p className="eyebrow mb-1.5 flex items-center gap-2 text-accent">DISCOVER</p>
           <h2 id="discover-home-preview-title" data-section-title="" className="text-pretty text-xl font-bold tracking-tight text-fg sm:text-2xl">
@@ -72,7 +74,7 @@ export function DiscoverHomePreview() {
           {viewAllLabel}
           <ArrowRight size={14} aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5" />
         </Link>
-      </header>
+      </div>
       <DiscoverSpotlight snapshot={snapshot} loading={home.loading} />
       <DiscoverWeekdayRail snapshot={snapshot} loading={home.loading} actionLabel={viewAllLabel} />
     </section>

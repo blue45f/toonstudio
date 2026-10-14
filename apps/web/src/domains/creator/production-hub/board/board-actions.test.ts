@@ -46,6 +46,12 @@ function setup(initial: ProductionProjectAggregate = smallBoardFixture(), option
       ops.splice(0, ops.length, ...ops.filter((op) => op.id !== id));
     },
     bt: (ko) => ko,
+    // G4 모델 번역자 스텁: 사전 없이 한국어 폴백을 그대로 돌려주되 {param} 보간은 모델 기본값과 동일하게 처리한다.
+    translate: (_key, fallback, values) =>
+      !values
+        ? fallback
+        : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+            Object.hasOwn(values, token) ? String(values[token]) : placeholder),
     show: (toast) => toasts.push(toast),
     announce: (message) => notices.push(message),
     onOpenWorkflow: options.onOpenWorkflow,

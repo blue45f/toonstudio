@@ -21,18 +21,32 @@
  * 합쳐져 빌더에 공급되고, 허브·진단 소스 갱신 이벤트에도 다시 읽는다.
  * 적용 시에는 패치의 referencedSettingIds와 이름으로 푼 seedSettingRefs를
  * 회차 플랜에 함께 저장해 단계 인계 카드가 출처를 표시할 수 있게 한다.
+ *
+ * 누적 변경 (planning-boards-host-mount): episodes 표면 아래에 시즌 비트 보드와
+ * 캐릭터 커버리지 맵을 실제로 장착한다. 두 보드의 입력은 이 표면이 이미 쥐고
+ * 있는 데이터(시즌·회차 플랜·바이블 캐릭터)로만 공급하고, 회차 성과는
+ * 애널리틱스 실집계를 resolveEpisodeMetricsLoad 로 접어 오버레이로 함께 넘긴다.
+ * 비트 보드·커버리지 맵에서 회차를 고르면 줄거리 편집 대상이 그 회차로 바뀐다
+ * (StudioEpisodeStoryPage 의 controlled 선택으로 공유).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   STUDIO_PROJECT_DIAGNOSTIC_SOURCE_UPDATED_EVENT,
   parseStudioProjectDiagnosticSource,
 } from "../studio-project-diagnostic-source-store";
 import type { StudioProjectDiagnosticSource } from "../studio-project-diagnostics";
+import type { CreatorAnalyticsResponse } from "../analytics/types";
+import type { StudioStoryCharacter } from "../studio-story-bible";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 import { ensureStudioProjectWorkspaceState } from "../studio-project-workspace-store";
+import { useApiResource } from "@/platform/use-api-resource";
+import { StudioCharacterCoverageMap } from "./StudioCharacterCoverageMap";
 import { StudioCharacterSheetPanel } from "./StudioCharacterSheetPanel";
 import { StudioEpisodeStoryPage } from "./StudioEpisodeStoryPage";
+import { StudioSeasonBeatBoard } from "./StudioSeasonBeatBoard";
+import type { CharacterAppearanceRecord } from "./studio-character-coverage";
+import { resolveEpisodeMetricsLoad } from "./studio-episode-metrics-overlay";
 import {
   upsertStoryCharacterProfile,
   upsertStoryCharacterRelation,
@@ -85,6 +99,11 @@ function loadPlanning(projectId: string): StudioProjectPlanningState | null {
   }
 }
 
+/** 비트 보드·커버리지 맵의 열·행이 되는 바이블 캐릭터. 소스가 없으면 빈 목록. */
+function loadBibleCharacters(projectId: string): readonly StudioStoryCharacter[] {
+  return loadStorySource(projectId)?.story.bible.characters ?? [];
+}
+
 /**
  * 씨앗 빌더 설정 인용의 전체 공급 — 진단 소스(바이블+캐릭터 시트)와
  * 세계관 허브 항목을 어댑터로 합친다 (소스가 없으면 빈 목록으로 안전 동작).
@@ -112,10 +131,17 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
   const [settingRefs, setSettingRefs] = useState<readonly StorySeedSettingRef[]>(
     () => seedSettingRefs(projectId),
   );
+  const [bibleCharacters, setBibleCharacters] = useState<readonly StudioStoryCharacter[]>(
+    () => loadBibleCharacters(projectId),
+  );
+  // 보드에서 고른 회차 — 줄거리 편집 대상과 공유한다. 아직 고른 적이 없으면
+  // 줄거리 표면이 내부 기본값(첫 회차)을 쓴다.
+  const [pickedEpisodeId, setPickedEpisodeId] = useState<string | null>(null);
 
   useEffect(() => {
     setPlanning(loadPlanning(projectId));
     setSettingRefs(seedSettingRefs(projectId));
+    setBibleCharacters(loadBibleCharacters(projectId));
     const onUpdated = (event: Event) => {
       if (!(event instanceof CustomEvent)) return;
       const next = readStudioProjectPlanning(window.localStorage, projectId);
@@ -123,6 +149,7 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
     };
     const onSettingsUpdated = () => {
       setSettingRefs(seedSettingRefs(projectId));
+      setBibleCharacters(loadBibleCharacters(projectId));
     };
     window.addEventListener(STUDIO_PLANNING_UPDATED_EVENT, onUpdated);
     // 세계관 허브 항목·캐릭터 시트가 바뀌면 인용 목록도 그 자리에서 갱신한다.
@@ -140,6 +167,34 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
       );
     };
   }, [projectId]);
+
+  // 회차 성과(실집계) — 애널리틱스와 같은 API를 기본 기간(30일)으로 읽어 두 보드의
+  // 오버레이로 넘긴다. 프로젝트↔시리즈 매핑은 아직 없어 seriesId 없이 호출하고
+  // (API의 기본 시리즈 동작), 404·목 응답이면 어댑터가 숫자를 만들지 않는
+  // 상태로 접는다 (episode-metrics-planning-feedback 명세의 호스트 패턴).
+  const metricsResource = useApiResource<CreatorAnalyticsResponse>(
+    "/api/creator/analytics?period=30d",
+    "회차 성과를 불러오지 못했습니다.",
+  );
+  const episodeMetrics = resolveEpisodeMetricsLoad(metricsResource);
+
+  // 커버리지 맵의 등장 기록은 회차 플랜의 등장 태그(characterRefs)가 정본이다.
+  // 컷·의상·표정 실측이 없는 태그 기록이라 모델 계약대로 cutCount 0
+  // ("등장은 했으나 컷 수 미상")과 나머지 null 로만 채운다 — 값을 지어내지 않는다.
+  const appearances = useMemo<readonly CharacterAppearanceRecord[]>(
+    () =>
+      (planning?.plans ?? []).flatMap((plan) =>
+        plan.characterRefs.map((characterId) => ({
+          episodeId: plan.episodeId,
+          characterId,
+          costumeId: null,
+          appearanceId: null,
+          expression: null,
+          cutCount: 0,
+        })),
+      ),
+    [planning],
+  );
 
   if (!planning) return null;
 
@@ -186,7 +241,27 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
         season={planning.season}
         plans={planning.plans}
         onSavePlan={handleSavePlan}
+        selectedEpisodeId={pickedEpisodeId ?? undefined}
+        onSelectEpisode={setPickedEpisodeId}
       />
+      <div className="mt-4">
+        <StudioSeasonBeatBoard
+          season={planning.season}
+          plans={planning.plans}
+          characters={bibleCharacters}
+          episodeMetrics={episodeMetrics}
+          onSelectEpisode={setPickedEpisodeId}
+        />
+      </div>
+      <div className="mt-4">
+        <StudioCharacterCoverageMap
+          characters={bibleCharacters}
+          episodes={planning.plans}
+          appearances={appearances}
+          episodeMetrics={episodeMetrics}
+          onOpenEpisode={setPickedEpisodeId}
+        />
+      </div>
     </div>
   );
 }

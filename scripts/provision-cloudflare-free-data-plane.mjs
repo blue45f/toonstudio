@@ -16,6 +16,7 @@ const FREE_DATABASE_LIMIT = 10;
 const FREE_DATABASE_BYTES = 500_000_000;
 const FREE_ACCOUNT_BYTES = 5_000_000_000;
 const ANALYTICS_V1_SHA256 = "5fca80a5d267e9433224702f4f382a0a43df6184ab30670867e92609f31f85b3";
+const ANALYTICS_V2_SHA256 = "e7beb58add8f451fd08336b92752590f5d8750178e23891ed840f8fd0a9e2120";
 const ANALYTICS_UNUSED_INDEXES = [
   "traffic_page_view_session_occurred_idx",
   "traffic_page_view_visitor_occurred_idx",
@@ -78,30 +79,61 @@ function loadSchemaDefinition(entry) {
   } finally { database.close(); }
 }
 
-function analyticsUpgrade(definition) {
-  const from = loadSchemaDefinition({ ...definition, migrationId: "analytics-buffer-v1",
-    schemaFiles: ["migrations/analytics-buffer-v1.sql", "migrations/traffic-analytics-v1.sql"] });
-  if (from.sha256 !== ANALYTICS_V1_SHA256) fail("이미 적용한 analytics v1 SQL 스냅샷이 변경되었습니다. 업그레이드를 중단합니다.");
-  const sql = readFileSync(resolve(D1_DIRECTORY, "migrations/analytics-buffer-v2.sql"), "utf8");
-  const statements = sql.replace(/--[^\n]*/g, "").split(";").map((part) => part.trim()).filter(Boolean);
-  if (JSON.stringify(statements) !== JSON.stringify(ANALYTICS_UNUSED_INDEXES.map((name) => `DROP INDEX ${name}`))) {
-    fail("analytics v2는 검토한 미사용 인덱스 6개만 제거할 수 있습니다.");
+function loadAnalyticsSnapshot(definition, migrationId, schemaFiles, sha256) {
+  const snapshot = loadSchemaDefinition({ ...definition, migrationId, schemaFiles });
+  if (snapshot.sha256 !== sha256) {
+    fail(`이미 적용한 ${migrationId} SQL 스냅샷이 변경되었습니다. 업그레이드를 중단합니다.`);
   }
+  return snapshot;
+}
+
+function parseUpgradeStatements(sql) {
+  return sql.replace(/--[^\n]*/g, "").split(";").map((part) => part.trim()).filter(Boolean);
+}
+
+function verifyUpgradeResult(from, sql, target) {
   const database = new DatabaseSync(":memory:");
   try {
     database.exec(`${from.sql}\n${CHECKPOINT_SQL}\n${sql}`);
-    if (JSON.stringify(normalizedSchema(database.prepare(SCHEMA_QUERY).all())) !== JSON.stringify(definition.expectedSchema)) {
-      fail("analytics v1에서 v2로의 업그레이드 결과와 새 DB 스키마가 다릅니다.");
+    if (JSON.stringify(normalizedSchema(database.prepare(SCHEMA_QUERY).all())) !== JSON.stringify(target.expectedSchema)) {
+      fail(`analytics ${from.migrationId}에서 ${target.migrationId}로의 업그레이드 결과와 ${target.migrationId} 스키마가 다릅니다.`);
     }
   } finally { database.close(); }
-  return { from, statements };
+}
+
+function analyticsUpgrades(definition) {
+  const v1 = loadAnalyticsSnapshot(definition, "analytics-buffer-v1",
+    ["migrations/analytics-buffer-v1.sql", "migrations/traffic-analytics-v1.sql"], ANALYTICS_V1_SHA256);
+  const v2 = loadAnalyticsSnapshot(definition, "analytics-buffer-v2",
+    ["migrations/analytics-buffer-v2-snapshot.sql", "migrations/traffic-analytics-v2-snapshot.sql"],
+    ANALYTICS_V2_SHA256);
+  const v2Sql = readFileSync(resolve(D1_DIRECTORY, "migrations/analytics-buffer-v2.sql"), "utf8");
+  const drops = parseUpgradeStatements(v2Sql);
+  if (JSON.stringify(drops) !== JSON.stringify(ANALYTICS_UNUSED_INDEXES.map((name) => `DROP INDEX ${name}`))) {
+    fail("analytics v2는 검토한 미사용 인덱스 6개만 제거할 수 있습니다.");
+  }
+  verifyUpgradeResult(v1, v2Sql, v2);
+  const v3Sql = readFileSync(resolve(D1_DIRECTORY, "migrations/analytics-buffer-v3.sql"), "utf8");
+  const creates = parseUpgradeStatements(v3Sql);
+  const normalizedCreates = creates.map((statement) => statement.replace(/\s+/g, " "));
+  if (creates.length !== 2
+    || !normalizedCreates[0].startsWith("CREATE TABLE IF NOT EXISTS traffic_web_vital (")
+    || !normalizedCreates[0].endsWith(")")
+    || normalizedCreates[1] !== "CREATE INDEX IF NOT EXISTS traffic_web_vital_occurred_at_idx ON traffic_web_vital (occurred_at DESC)") {
+    fail("analytics v3는 검토한 traffic_web_vital 테이블과 인덱스만 추가할 수 있습니다.");
+  }
+  verifyUpgradeResult(v2, v3Sql, definition);
+  return { steps: [
+    { from: v1, statements: drops, description: "미사용 인덱스 6개 제거" },
+    { from: v2, statements: creates, description: "traffic_web_vital 테이블과 인덱스 추가" },
+  ] };
 }
 
 export function loadCloudflareFreeDataPlaneManifest() {
   const manifest = JSON.parse(readFileSync(resolve(D1_DIRECTORY, "databases.json"), "utf8"));
   const expected = [
     ["d1-edge-index", "toonstudio-edge-index", ["edge-index.sql"], "edge-index-v1"],
-    ["d1-analytics-buffer", "toonspectrum-analytics-buffer", ["analytics-buffer.sql", "traffic-analytics.sql"], "analytics-buffer-v2"],
+    ["d1-analytics-buffer", "toonspectrum-analytics-buffer", ["analytics-buffer.sql", "traffic-analytics.sql"], "analytics-buffer-v3"],
   ];
   if (manifest.version !== "toonstudio.cloudflare-free-data-plane.v1"
     || manifest.quotaScope !== "cloudflare-account"
@@ -116,7 +148,7 @@ export function loadCloudflareFreeDataPlaneManifest() {
     databases: manifest.databases.map((entry) => {
       const definition = loadSchemaDefinition(entry);
       return entry.shardId === "d1-analytics-buffer"
-        ? { ...definition, upgrade: analyticsUpgrade(definition) } : definition;
+        ? { ...definition, upgrade: analyticsUpgrades(definition) } : definition;
     }),
   };
 }
@@ -253,11 +285,12 @@ async function verifyDatabase(client, database, definition, allowUpgrade = false
   if (!schema.some((entry) => entry.name === CHECKPOINT_TABLE && entry.type === "table")) {
     fail(`${definition.name}: 소유권 checkpoint 없는 동명 DB입니다. 기존 데이터를 자동으로 인수하거나 덮어쓰지 않습니다.`);
   }
-  const candidates = [definition, ...(allowUpgrade && definition.upgrade ? [definition.upgrade.from] : [])];
+  const candidates = [definition, ...(allowUpgrade && definition.upgrade
+    ? definition.upgrade.steps.map((step) => step.from).reverse() : [])];
   const actualSchema = JSON.stringify(normalizedSchema(schema));
   const matched = candidates.find((candidate) => actualSchema === JSON.stringify(candidate.expectedSchema));
   if (!matched) {
-    fail(`${definition.name}: schema가 manifest와 다릅니다. 수정하거나 재적용하지 않았습니다. 기존 analytics v1은 --upgrade --database=analytics-buffer로만 갱신합니다.`);
+    fail(`${definition.name}: schema가 manifest와 다릅니다. 수정하거나 재적용하지 않았습니다. 기존 analytics 구버전은 --upgrade --database=analytics-buffer로만 갱신합니다.`);
   }
   const checkpoints = (await query(client, database.uuid, {
     sql: `SELECT migration_id, shard_id, schema_sha256 FROM ${CHECKPOINT_TABLE} LIMIT 2`,
@@ -271,8 +304,14 @@ async function verifyDatabase(client, database, definition, allowUpgrade = false
   return matched.migrationId;
 }
 
-async function upgradeDatabase(client, database, definition) {
-  const from = definition.upgrade.from;
+async function upgradeDatabase(client, database, definition, currentMigrationId) {
+  const steps = definition.upgrade.steps;
+  const startIndex = steps.findIndex((step) => step.from.migrationId === currentMigrationId);
+  if (startIndex < 0) {
+    fail(`${definition.name}: 업그레이드 시작 버전을 확인하지 못했습니다. --check로 원격 상태를 확인하세요.`);
+  }
+  const from = steps[startIndex].from;
+  const statements = steps.slice(startIndex).flatMap((step) => step.statements);
   // 사전 조회 뒤 checkpoint가 바뀌었으면 NOT NULL 위반으로 batch 전체를 중단한다.
   // 정상 경로에서는 INSERT가 0행을 써서 별도 guard 테이블이나 인덱스를 만들지 않는다.
   const assertCheckpoint = `INSERT INTO ${CHECKPOINT_TABLE} (migration_id, shard_id, schema_sha256)
@@ -281,12 +320,12 @@ SELECT NULL, NULL, NULL WHERE
 (SELECT 1 FROM ${CHECKPOINT_TABLE} WHERE migration_id = ? AND shard_id = ? AND schema_sha256 = ?)`;
   const results = await query(client, database.uuid, { batch: [
     { sql: assertCheckpoint, params: [from.migrationId, from.shardId, from.sha256] },
-    ...definition.upgrade.statements.map((sql) => ({ sql })),
+    ...statements.map((sql) => ({ sql })),
     { sql: `UPDATE ${CHECKPOINT_TABLE} SET migration_id = ?, schema_sha256 = ?, applied_at = CURRENT_TIMESTAMP
 WHERE migration_id = ? AND shard_id = ? AND schema_sha256 = ?`,
     params: [definition.migrationId, definition.sha256, from.migrationId, from.shardId, from.sha256] },
   ] });
-  if (results.length !== definition.upgrade.statements.length + 2) {
+  if (results.length !== statements.length + 2) {
     fail("D1 upgrade batch 응답이 불완전합니다. 재시도하지 말고 --check로 원격 상태를 확인하세요.");
   }
   await verifyDatabase(client, database, definition);
@@ -378,7 +417,7 @@ export async function provisionCloudflareFreeDataPlane(mode, {
       ] });
       await verifyDatabase(client, database, definition);
     } else if (upgraded) {
-      await upgradeDatabase(client, database, definition);
+      await upgradeDatabase(client, database, definition, state.versions.get(definition.name));
     }
     result.push({ shardId: definition.shardId, name: definition.name,
       databaseId: database.uuid, schemaSha256: definition.sha256, migrationId: definition.migrationId, created, upgraded });
@@ -395,12 +434,15 @@ function planText(selectedDatabase) {
   return [
     `Cloudflare Workers Free 확인 후 선택한 D1 ${definitions.length}개만 생성하거나 검증합니다.`,
     ...definitions.map((entry) => `${entry.name}: ${entry.schemaFiles.join(", ")} (${entry.migrationId})`),
-    ...definitions.filter((entry) => entry.upgrade).map((entry) =>
-      `명시적 upgrade: ${entry.upgrade.from.migrationId} (${entry.upgrade.from.sha256}) → ${entry.migrationId} (${entry.sha256}), 미사용 인덱스 ${entry.upgrade.statements.length}개 제거`),
+    ...definitions.filter((entry) => entry.upgrade).flatMap((entry) =>
+      entry.upgrade.steps.map((step, index, steps) => {
+        const target = steps[index + 1]?.from ?? entry;
+        return `명시적 upgrade: ${step.from.migrationId} (${step.from.sha256}) → ${target.migrationId} (${target.sha256}), ${step.description}`;
+      })),
     "실제 소비자가 준비된 DB만 --database=analytics-buffer 또는 --database=edge-index로 선택할 수 있습니다.",
     "무료 quota는 계정 공유입니다. DB 수를 늘려도 읽기·쓰기 무료량이 늘지 않습니다.",
     "--check는 목록·설정·schema/checkpoint만 읽고, --apply는 새 DB에만 schema를 적용합니다.",
-    "기존 analytics v1은 --upgrade --database=analytics-buffer로 전체 DDL·checkpoint를 검증한 뒤 원자 batch 한 번으로 v2로 갱신합니다.",
+    "기존 analytics v1·v2는 --upgrade --database=analytics-buffer로 전체 DDL·checkpoint를 검증한 뒤 원자 batch 한 번으로 v3로 갱신합니다.",
     "CLOUDFLARE_ACCOUNT_ID와 CLOUDFLARE_API_TOKEN 환경변수가 필요합니다.",
     `적용 확인: TOONSPECTRUM_CLOUDFLARE_FREE_DATA_CONFIRMATION=${CONFIRMATION}`,
     "플랜 API로 확인할 수 없으면 TOONSPECTRUM_CLOUDFLARE_FREE_PLAN_REVIEW_JSON에 검토한 accountId, workersPlan=free, checkedAt(24시간 이내)을 명시하세요.",

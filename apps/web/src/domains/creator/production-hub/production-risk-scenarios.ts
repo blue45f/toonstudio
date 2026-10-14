@@ -15,6 +15,7 @@ import {
 import {
   deriveProductionRiskIntelligence,
   type ProductionRiskIntelligence,
+  type ProductionRiskIntelligenceTranslate,
   type ProductionRiskSignal,
 } from "./production-risk-intelligence";
 
@@ -69,6 +70,8 @@ interface DeriveScenarioInput {
   readonly signal: ProductionRiskSignal;
   readonly intelligence: ProductionRiskIntelligence;
   readonly now?: Date;
+  /** 시나리오 비교용으로 다시 도출하는 위험 신호 문구 번역자. 미지정 시 한국어 원문. */
+  readonly translate?: ProductionRiskIntelligenceTranslate;
 }
 
 function round(value: number, digits = 1): number {
@@ -129,10 +132,11 @@ function applyTaskUpdates(
 function deriveIntelligence(
   aggregate: ProductionProjectAggregate,
   now: Date,
+  translate?: ProductionRiskIntelligenceTranslate,
 ): ProductionRiskIntelligence {
   const operations = deriveProductionOperationsOverview(aggregate, now);
   const workload = deriveAssignmentWorkload(aggregate, now);
-  return deriveProductionRiskIntelligence(aggregate, { now, operations, workload });
+  return deriveProductionRiskIntelligence(aggregate, { now, operations, workload, translate });
 }
 
 function taskDelay(
@@ -189,10 +193,11 @@ function evaluateScenario(input: {
   readonly canApplyDirectly: boolean;
   readonly applyLabel: string;
   readonly caution: string;
+  readonly translate?: ProductionRiskIntelligenceTranslate;
 }): ProductionRecoveryScenario {
   const targetTaskId = input.signal.taskId!;
   const nextAggregate = applyTaskUpdates(input.aggregate, input.updates);
-  const nextIntelligence = deriveIntelligence(nextAggregate, input.now);
+  const nextIntelligence = deriveIntelligence(nextAggregate, input.now, input.translate);
   const baseline = scenarioMetrics(
     input.baselineIntelligence,
     input.signal.id,
@@ -295,6 +300,7 @@ export function deriveProductionRecoveryScenarios(
       now,
       baselineIntelligence: input.intelligence,
       signal: input.signal,
+      translate: input.translate,
       kind: "extend-deadline",
       idSuffix: "extend-2d",
       title: "마감 2일 재조정",
@@ -317,6 +323,7 @@ export function deriveProductionRecoveryScenarios(
       now,
       baselineIntelligence: input.intelligence,
       signal: input.signal,
+      translate: input.translate,
       kind: "add-support",
       idSuffix: `support-${support.assignment.id}`,
       title: `${support.name} 지원 배정`,
@@ -341,6 +348,7 @@ export function deriveProductionRecoveryScenarios(
       now,
       baselineIntelligence: input.intelligence,
       signal: input.signal,
+      translate: input.translate,
       kind: "resolve-blocker",
       idSuffix: "resolve-blocker",
       title: "막힌 입력 즉시 확정",
@@ -367,6 +375,7 @@ export function deriveProductionRecoveryScenarios(
       now,
       baselineIntelligence: input.intelligence,
       signal: input.signal,
+      translate: input.translate,
       kind: "fast-track-dependency",
       idSuffix: `dependency-${dependency.id}`,
       title: `${dependency.title} 우선 완료`,
@@ -389,6 +398,7 @@ export function deriveProductionRecoveryScenarios(
       now,
       baselineIntelligence: input.intelligence,
       signal: input.signal,
+      translate: input.translate,
       kind: "split-scope",
       idSuffix: "split-20",
       title: "작업 범위 20% 분리",

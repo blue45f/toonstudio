@@ -28,6 +28,7 @@ import {
 import { ProductionAvatarStack, ProductionPill, type ProductionTone } from "./production-ui";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 const STATUS_TONE: Readonly<Record<ProductionTaskStatus, ProductionTone>> = {
@@ -149,6 +150,12 @@ export function ProductionBoardTaskCard({
 }: Props) {
   useProductionCopy();
   const bt = useBilingual("ProductionBoardTaskCard");
+  const i18nT = useT();
+  const modelTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? i18nT(key, values, fallback) : i18nT(key, fallback),
+    [i18nT],
+  );
   const [probe, setProbe] = useState(false);
   const [panel, setPanel] = useState<"none" | "due" | "assignees">("none");
   const movable = canEdit && !UNMOVABLE.has(task.status);
@@ -211,11 +218,11 @@ export function ProductionBoardTaskCard({
     return new Map(
       BOARD_MOVE_TARGETS.flatMap((status) => {
         if (status === task.status) return [];
-        const preview = previewProductionBoardMove(aggregate, [task.id], status, at);
+        const preview = previewProductionBoardMove(aggregate, [task.id], status, at, modelTranslate);
         return preview.allowed ? [] : [[status, preview.reason] as const];
       }),
     );
-  }, [aggregate, movable, now, probe, task.id, task.status]);
+  }, [aggregate, movable, now, probe, task.id, task.status, modelTranslate]);
   return (
     <article
       ref={articleRef}

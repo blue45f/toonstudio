@@ -1,7 +1,8 @@
 import { CheckCircle2, Download, FileArchive, LoaderCircle, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import {
@@ -13,6 +14,7 @@ import {
   buildProductionPageManifestArchive,
   collectProductionReviewManifestPages,
   downloadProductionPageManifestArchive,
+  type ProductionPageManifestTranslate,
 } from "./production-page-manifest-archive";
 
 export function ProductionQuickExportPanel({
@@ -29,6 +31,12 @@ export function ProductionQuickExportPanel({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [notice, setNotice] = useState("");
+  const i18nT = useT();
+  const manifestTranslate: ProductionPageManifestTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? i18nT(key, values, fallback) : i18nT(key, fallback),
+    [i18nT],
+  );
   const reviewApproved = candidate?.review.status === "approved";
   const approvedForFinal = productionReviewMatchesApprovedFinal(candidate, process);
 
@@ -38,13 +46,14 @@ export function ProductionQuickExportPanel({
     setProgress(0);
     setNotice("");
     try {
-      const pages = await collectProductionReviewManifestPages(candidate);
+      const pages = await collectProductionReviewManifestPages(candidate, { translate: manifestTranslate });
       const result = await buildProductionPageManifestArchive({
         projectId,
         workId,
         artifactId: process.artifact.id,
         title: `${process.artifact.title}-${approvedForFinal ? "approved" : "review"}`,
         pages,
+        translate: manifestTranslate,
         onProgress: ({ completedFiles, totalFiles }) => setProgress(Math.round((completedFiles / Math.max(1, totalFiles)) * 100)),
       });
       downloadProductionPageManifestArchive(result);
