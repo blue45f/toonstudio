@@ -3,6 +3,7 @@ import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } 
 
 import type { StudioAdvancedFillPreview } from "./studio-advanced-fill-preview";
 import type { StudioAdvancedFillTapGesture } from "./studio-advanced-fill-tap";
+import type { ColorDropSession } from "./studio-colordrop-gesture";
 import type { StudioLassoFillDragSession } from "./studio-lasso-fill-gesture";
 import type { Tool } from "./studio-editor-tool-model";
 import type { SelectionFrame } from "./studio-selection-tools";
@@ -17,6 +18,9 @@ interface StudioAdvancedFillRunRefs {
    * 이 ref를 모른 채 refs 가방을 만들어도 컴파일·동작이 깨지지 않게 하기 위해서다. 제공하는
    * 지점(페이지 ctx)에서는 항상 채워지며, 헬퍼들은 있을 때만 함께 비운다. */
   readonly advancedFillLassoDragRef?: MutableRefObject<StudioLassoFillDragSession | null>;
+  /** ColorDrop(허용 오차 드래그) 세션. 래소와 같은 이유로 선택 필드다 — 제공하는
+   * 지점(페이지 ctx)에서는 항상 채워지며, 헬퍼들은 있을 때만 함께 비운다. */
+  readonly advancedFillColorDropRef?: MutableRefObject<ColorDropSession | null>;
   readonly advancedFillTapPayloadRef: MutableRefObject<{
     position: { x: number; y: number };
     frame: SelectionFrame;
@@ -37,6 +41,7 @@ function invalidateStudioAdvancedFillRun(refs: StudioAdvancedFillRunRefs): void 
 /** 탭/터치 팬 제스처 상태를 비운다(원본 3줄과 동일). */
 function clearStudioAdvancedFillGesture(refs: StudioAdvancedFillRunRefs): void {
   if (refs.advancedFillLassoDragRef) refs.advancedFillLassoDragRef.current = null;
+  if (refs.advancedFillColorDropRef) refs.advancedFillColorDropRef.current = null;
   refs.advancedFillTapGestureRef.current = null;
   refs.advancedFillTapPayloadRef.current = null;
   refs.advancedFillTouchPanRef.current = null;
@@ -81,6 +86,7 @@ function abortStudioAdvancedFillOnUnmount(refs: StudioAdvancedFillRunRefs): void
   refs.advancedFillRunIdRef.current += 1;
   refs.advancedFillAbortRef.current?.abort();
   if (refs.advancedFillLassoDragRef) refs.advancedFillLassoDragRef.current = null;
+  if (refs.advancedFillColorDropRef) refs.advancedFillColorDropRef.current = null;
   refs.advancedFillTapGestureRef.current = null;
   refs.advancedFillTapPayloadRef.current = null;
   refs.advancedFillTouchPanRef.current = null;
@@ -148,6 +154,7 @@ export function useStudioAdvancedFill(ctx: StudioAdvancedFillContext): void {
     advancedFillTapGestureRef,
     advancedFillTapPayloadRef,
     advancedFillLassoDragRef,
+    advancedFillColorDropRef,
     advancedFillAutoArmTargetRef,
     advancedFillTouchPanRef,
     advancedFillColorRef,
@@ -163,6 +170,7 @@ export function useStudioAdvancedFill(ctx: StudioAdvancedFillContext): void {
       advancedFillTapGestureRef,
       advancedFillTapPayloadRef,
       advancedFillLassoDragRef,
+      advancedFillColorDropRef,
       advancedFillTouchPanRef,
     });
     clearStudioAdvancedFillGesture({
@@ -171,6 +179,7 @@ export function useStudioAdvancedFill(ctx: StudioAdvancedFillContext): void {
       advancedFillTapGestureRef,
       advancedFillTapPayloadRef,
       advancedFillLassoDragRef,
+      advancedFillColorDropRef,
       advancedFillTouchPanRef,
     });
     setAdvancedFillActive(false);
@@ -210,6 +219,7 @@ export function useStudioAdvancedFill(ctx: StudioAdvancedFillContext): void {
       advancedFillTapGestureRef,
       advancedFillTapPayloadRef,
       advancedFillLassoDragRef,
+      advancedFillColorDropRef,
       advancedFillTouchPanRef,
     });
     clearStudioAdvancedFillGesture({
@@ -218,6 +228,7 @@ export function useStudioAdvancedFill(ctx: StudioAdvancedFillContext): void {
       advancedFillTapGestureRef,
       advancedFillTapPayloadRef,
       advancedFillLassoDragRef,
+      advancedFillColorDropRef,
       advancedFillTouchPanRef,
     });
     setAdvancedFillActive(false);
@@ -260,6 +271,7 @@ export function useStudioAdvancedFill(ctx: StudioAdvancedFillContext): void {
       advancedFillTapGestureRef,
       advancedFillTapPayloadRef,
       advancedFillLassoDragRef,
+      advancedFillColorDropRef,
       advancedFillTouchPanRef,
     });
     setAdvancedFillBusy(false);

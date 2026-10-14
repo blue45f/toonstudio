@@ -27,7 +27,10 @@ describe("Brush Editor product save", () => {
     expect(saved.enginePrograms?.material?.version).toBe(2);
     expect(saved.enginePrograms?.material?.runtime).toMatchObject({
       fallbackPolicy: "none",
-      licenseProfile: "noncommercial-full",
+      // oil-hair-mixer was remapped off the copyleft adapters (license
+      // resolution), so it now saves under the default permissive-only
+      // profile instead of requiring noncommercial-full.
+      licenseProfile: "permissive-only",
     });
     expect(repository.getById).toHaveBeenLastCalledWith(saved.id);
     expect(saved.pressureCurve).toBe(1);

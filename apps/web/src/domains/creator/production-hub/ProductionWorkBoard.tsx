@@ -53,6 +53,7 @@ import {
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 interface Props {
@@ -104,6 +105,12 @@ function ProductionWorkBoardForProject({
 }: Props) {
   useProductionCopy();
   const bt = useBilingual("ProductionWorkBoard.interactions");
+  const i18nT = useT();
+  const modelTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? i18nT(key, values, fallback) : i18nT(key, fallback),
+    [i18nT],
+  );
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => readProductionBoardFilters(params), [params]);
   const layout = readProductionBoardLayout(params);
@@ -208,6 +215,7 @@ function ProductionWorkBoardForProject({
     begin,
     settle,
     bt,
+    translate: modelTranslate,
     onOpenWorkflow: canManage ? openWorkflow : undefined,
   });
 
@@ -375,7 +383,7 @@ function ProductionWorkBoardForProject({
     if (outside.length === 0) {
       return { column, allowed: true, reason: bt("같은 열에서 순서만 바꿉니다", "Only reorders within this column"), wip: [] as { text: string; over: boolean }[] };
     }
-    const preview = previewProductionBoardMove(aggregate, outside, column.target, new Date(now).toISOString());
+    const preview = previewProductionBoardMove(aggregate, outside, column.target, new Date(now).toISOString(), modelTranslate);
     const wip = boardWipForMove(aggregate, outside, column.target, bt)
       .filter((entry) => entry.limit !== null)
       .map((entry) => ({
@@ -383,7 +391,7 @@ function ProductionWorkBoardForProject({
         over: entry.limit !== null && entry.count + entry.incoming > entry.limit,
       }));
     return { column, allowed: preview.allowed, reason: preview.reason, wip };
-  }, [aggregate, bt, drag, dropColumns, now]);
+  }, [aggregate, bt, drag, dropColumns, now, modelTranslate]);
   const dropFor = (columnId: string, laneId: string | null) =>
     drag?.target && dragPreview && drag.target.columnId === columnId && (laneId === null || drag.target.laneId === laneId)
       ? { beforeId: drag.target.beforeId, allowed: dragPreview.allowed, reason: dragPreview.reason, wip: dragPreview.wip }

@@ -49,6 +49,12 @@ import {
   STUDIO_MANNEQUIN_OUTLINE_MODE_DEFAULT,
   type StudioMannequinOutlineMode,
 } from "./studio-mannequin-readability";
+import {
+  resolveStudioMannequinLightingPlan,
+  type StudioMannequinLightingPlan,
+  type StudioMannequinLightingRig,
+  type StudioMannequinSceneLightPlan,
+} from "./studio-mannequin-lighting";
 
 export type StudioMannequinProjection = "perspective" | "orthographic";
 
@@ -66,6 +72,14 @@ export interface StudioMannequinCaptureResult {
    */
   readonly displayWidth?: number;
   readonly displayHeight?: number;
+  /**
+   * 캡처 시점에 뷰포트에 실제로 마운트돼 있던 조명 스냅샷. 캡처 이미지가 어떤
+   * 조명으로 렌더됐는지 결과만으로 대조할 수 있게 한다(캡처 일치 검증용).
+   * `readStudioMannequinLightingSnapshot`이 THREE 조명 객체에서 읽어낸 값과
+   * 같은 모양이며, 순수 경로(`resolveStudioMannequinCaptureResult` 직접 호출)
+   * 에서 생략하면 필드 자체가 붙지 않는다.
+   */
+  readonly lighting?: StudioMannequinLightingSnapshot;
 }
 
 /**
@@ -79,8 +93,9 @@ export function resolveStudioMannequinCaptureResult(input: {
   readonly height: number;
   readonly displayWidth: number;
   readonly displayHeight: number;
+  readonly lighting?: StudioMannequinLightingSnapshot;
 }): StudioMannequinCaptureResult {
-  const { pngDataUrl, width, height, displayWidth, displayHeight } = input;
+  const { pngDataUrl, width, height, displayWidth, displayHeight, lighting } = input;
   const displayValid =
     Number.isFinite(displayWidth)
     && displayWidth > 0
@@ -88,9 +103,10 @@ export function resolveStudioMannequinCaptureResult(input: {
     && displayHeight > 0
     && displayWidth <= width
     && displayHeight <= height;
+  const lightingPart = lighting ? { lighting } : {};
   return displayValid
-    ? { pngDataUrl, width, height, displayWidth, displayHeight }
-    : { pngDataUrl, width, height };
+    ? { pngDataUrl, width, height, displayWidth, displayHeight, ...lightingPart }
+    : { pngDataUrl, width, height, ...lightingPart };
 }
 
 export interface StudioMannequinSceneOptions {
@@ -101,6 +117,8 @@ export interface StudioMannequinSceneOptions {
   readonly initialOutlineMode?: StudioMannequinOutlineMode;
   /** 선택 관절 가동범위 아크 표시 초기값(기본 true). */
   readonly initialShowJointRangeArc?: boolean;
+  /** 라이팅 스튜디오 릭 초기값. 없거나 조명이 비어 있으면 기존 고정 3점 리그로 시작한다. */
+  readonly initialLightingRig?: StudioMannequinLightingRig | null;
   /** 뷰포트에서 몸통/팔다리를 클릭해 관절을 고르면 호출된다(빈 곳 클릭 시 null). */
   readonly onSelectJoint?: (jointId: StudioMannequinJointId | null) => void;
   /** IK 또는 직접 관절 드래그가 끝날 때 최종 포즈로 1회 호출된다(프레임당 React 갱신 금지 계약). */
@@ -120,6 +138,17 @@ export interface StudioMannequinSceneHandle {
   getOutlineMode(): StudioMannequinOutlineMode;
   setShowJointRangeArc(show: boolean): void;
   getShowJointRangeArc(): boolean;
+  /**
+   * 라이팅 스튜디오 릭을 실제 뷰포트 조명으로 교체한다. null이거나 조명이 빈
+   * 릭이면 기존 고정 3점 리그로 돌아간다. 교체 즉시 다음 프레임에 반영된다.
+   */
+  setLightingRig(rig: StudioMannequinLightingRig | null): void;
+  /** 마지막으로 적용한 릭(미적용이면 null). */
+  getLightingRig(): StudioMannequinLightingRig | null;
+  /** 현재 마운트된 조명 계획(릭을 변환한 값). */
+  getLightingPlan(): StudioMannequinLightingPlan;
+  /** 현재 THREE 조명 객체에서 읽어낸 실측 스냅샷(캡처 결과의 lighting과 같은 값). */
+  getLightingSnapshot(): StudioMannequinLightingSnapshot;
   setCameraPreset(preset: "front" | "side" | "back" | "top" | "high" | "low"): void;
   setProjection(projection: StudioMannequinProjection): void;
   getProjection(): StudioMannequinProjection;
@@ -318,6 +347,207 @@ export function resolveStudioMannequinPointerRotation(
   return clampStudioMannequinJointRotation(input.jointId, next);
 }
 
+
+// ── 라이팅 릭 마운트 ─────────────────────────────────────────────────────
+// `resolveStudioMannequinLightingPlan`의 계획을 실제 THREE 조명 객체로 만드는
+// 층이다. WebGL 렌더러가 없어도 그룹 생성·교체·실측이 가능해, 릭 교체가
+// 뷰포트 조명 상태로 전파되는 경로를 단위 테스트로 그대로 검증할 수 있다.
+// 씬 핸들의 setLightingRig도 정확히 이 함수들을 통해서만 조명을 교체한다.
+
+/** 마운트된 조명 1개의 실측 스냅샷(계획 스냅샷과 같은 모양). */
+export interface StudioMannequinMountedLightSnapshot {
+  readonly kind: StudioMannequinSceneLightPlan["kind"];
+  readonly intensity: number;
+  /** 16진 색상 문자열(#rrggbb, 소문자). */
+  readonly color: string;
+  readonly position: StudioMannequinVec3;
+  readonly angle?: number;
+  readonly penumbra?: number;
+  readonly distance?: number;
+  readonly castShadow: boolean;
+}
+
+/** 마운트된 라이팅 전체의 실측 스냅샷 — 캡처 결과의 lighting 필드와 같은 모양. */
+export interface StudioMannequinLightingSnapshot {
+  readonly hemisphere: {
+    readonly skyColor: string;
+    readonly groundColor: string;
+    readonly intensity: number;
+  } | null;
+  readonly lights: readonly StudioMannequinMountedLightSnapshot[];
+  readonly shadowsEnabled: boolean;
+  readonly isDefault: boolean;
+}
+
+interface StudioMannequinLightingGroupUserData {
+  studioMannequinShadowsEnabled?: boolean;
+  studioMannequinIsDefault?: boolean;
+}
+
+/** 계획을 스냅샷으로 변환한다(순수). 실측 스냅샷과 대조하는 기준값이다. */
+export function snapshotStudioMannequinLightingPlan(
+  plan: StudioMannequinLightingPlan,
+): StudioMannequinLightingSnapshot {
+  return {
+    hemisphere: plan.hemisphere ? { ...plan.hemisphere } : null,
+    lights: plan.lights.map((light) => ({
+      kind: light.kind,
+      intensity: light.intensity,
+      color: light.color.toLowerCase(),
+      position: [light.position[0], light.position[1], light.position[2]] as const,
+      ...(light.angle !== undefined ? { angle: light.angle } : {}),
+      ...(light.penumbra !== undefined ? { penumbra: light.penumbra } : {}),
+      ...(light.distance !== undefined ? { distance: light.distance } : {}),
+      castShadow: light.castShadow,
+    })),
+    shadowsEnabled: plan.shadowsEnabled,
+    isDefault: plan.isDefault,
+  };
+}
+
+function configureStudioMannequinShadow(
+  light: THREE.DirectionalLight | THREE.SpotLight,
+): void {
+  light.castShadow = true;
+  light.shadow.mapSize.set(2048, 2048);
+  light.shadow.camera.near = 0.1;
+  light.shadow.camera.far = 12;
+  if (light instanceof THREE.DirectionalLight) {
+    light.shadow.camera.left = -2.6;
+    light.shadow.camera.right = 2.6;
+    light.shadow.camera.top = 3.2;
+    light.shadow.camera.bottom = -0.4;
+  }
+  light.shadow.bias = -0.0002;
+  light.shadow.normalBias = 0.018;
+}
+
+/** 계획 조명 1개를 실제 THREE 조명 객체로 만든다. */
+export function createStudioMannequinLightingObject(
+  spec: StudioMannequinSceneLightPlan,
+): THREE.Light {
+  let light: THREE.Light;
+  if (spec.kind === "spot") {
+    const spot = new THREE.SpotLight(
+      spec.color,
+      spec.intensity,
+      spec.distance ?? 0,
+      spec.angle ?? 0.5,
+      spec.penumbra ?? 0.45,
+    );
+    if (spec.castShadow) configureStudioMannequinShadow(spot);
+    light = spot;
+  } else if (spec.kind === "point") {
+    // 계획 단계에서 point는 castShadow가 항상 false다(큐브 섀도맵 예산).
+    light = new THREE.PointLight(spec.color, spec.intensity, spec.distance ?? 0);
+  } else {
+    const directional = new THREE.DirectionalLight(spec.color, spec.intensity);
+    if (spec.castShadow) configureStudioMannequinShadow(directional);
+    light = directional;
+  }
+  light.position.set(spec.position[0], spec.position[1], spec.position[2]);
+  light.name = `studio-mannequin-light:${spec.kind}`;
+  return light;
+}
+
+function disposeStudioMannequinLightObject(object: THREE.Object3D): void {
+  if (
+    object instanceof THREE.DirectionalLight
+    || object instanceof THREE.SpotLight
+    || object instanceof THREE.PointLight
+  ) {
+    object.shadow.map?.dispose();
+    object.shadow.map = null;
+  }
+}
+
+/**
+ * 그룹 안의 조명을 계획대로 통째로 교체한다. 기존 조명의 섀도맵은 반납하고,
+ * 그룹 userData에 계획 메타(shadowsEnabled/isDefault)를 남겨 실측 때 돌려준다.
+ */
+export function replaceStudioMannequinLightingGroup(
+  group: THREE.Group,
+  plan: StudioMannequinLightingPlan,
+): void {
+  for (const child of [...group.children]) {
+    group.remove(child);
+    disposeStudioMannequinLightObject(child);
+  }
+  if (plan.hemisphere) {
+    const hemisphere = new THREE.HemisphereLight(
+      plan.hemisphere.skyColor,
+      plan.hemisphere.groundColor,
+      plan.hemisphere.intensity,
+    );
+    hemisphere.name = "studio-mannequin-light:hemisphere";
+    group.add(hemisphere);
+  }
+  for (const spec of plan.lights) group.add(createStudioMannequinLightingObject(spec));
+  const userData = group.userData as StudioMannequinLightingGroupUserData;
+  userData.studioMannequinShadowsEnabled = plan.shadowsEnabled;
+  userData.studioMannequinIsDefault = plan.isDefault;
+}
+
+/** 계획으로 라이팅 그룹을 새로 만든다(씬 마운트·테스트 공용 진입점). */
+export function mountStudioMannequinLightingGroup(
+  plan: StudioMannequinLightingPlan,
+): THREE.Group {
+  const group = new THREE.Group();
+  group.name = "studio-mannequin-lighting-rig";
+  replaceStudioMannequinLightingGroup(group, plan);
+  return group;
+}
+
+function toHexColor(color: THREE.Color): string {
+  return `#${color.getHexString()}`;
+}
+
+/** 마운트된 그룹에서 실제 조명 값을 읽어낸다 — 계획이 아니라 객체가 진실이다. */
+export function readStudioMannequinLightingSnapshot(
+  group: THREE.Group,
+): StudioMannequinLightingSnapshot {
+  let hemisphere: StudioMannequinLightingSnapshot["hemisphere"] = null;
+  const lights: StudioMannequinMountedLightSnapshot[] = [];
+  for (const child of group.children) {
+    if (child instanceof THREE.HemisphereLight) {
+      hemisphere = {
+        skyColor: toHexColor(child.color),
+        groundColor: toHexColor(child.groundColor),
+        intensity: child.intensity,
+      };
+      continue;
+    }
+    if (!(child instanceof THREE.Light)) continue;
+    const position = child.position.toArray();
+    const base = {
+      intensity: child.intensity,
+      color: toHexColor(child.color),
+      position: [position[0] ?? 0, position[1] ?? 0, position[2] ?? 0] as const,
+      castShadow: child.castShadow,
+    };
+    if (child instanceof THREE.SpotLight) {
+      lights.push({
+        ...base,
+        kind: "spot",
+        angle: child.angle,
+        penumbra: child.penumbra,
+        distance: child.distance,
+      });
+    } else if (child instanceof THREE.PointLight) {
+      lights.push({ ...base, kind: "point", distance: child.distance });
+    } else if (child instanceof THREE.DirectionalLight) {
+      lights.push({ ...base, kind: "directional" });
+    }
+  }
+  const userData = group.userData as StudioMannequinLightingGroupUserData;
+  return {
+    hemisphere,
+    lights,
+    shadowsEnabled: userData.studioMannequinShadowsEnabled ?? true,
+    isDefault: userData.studioMannequinIsDefault ?? false,
+  };
+}
+
 /** 4스텝 절차 생성 툰 그라디언트 — 외부 matcap 에셋 없이 CSP 인형풍 셰이딩을 만든다. */
 function createToonGradientTexture(): THREE.DataTexture {
   const data = new Uint8Array([88, 88, 88, 255, 148, 148, 148, 255, 208, 208, 208, 255, 244, 244, 244, 255]);
@@ -492,25 +722,15 @@ export function createStudioMannequinScene(
 
   const scene = new THREE.Scene();
 
-  // 조명 — warm-ink 팔레트에 맞춘 은은한 3점 구성.
-  const hemisphere = new THREE.HemisphereLight(0xfff4e6, 0x38322b, 0.95);
-  const keyLight = new THREE.DirectionalLight(0xffffff, 1.45);
-  keyLight.position.set(2.4, 4.2, 3.1);
-  keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(2048, 2048);
-  keyLight.shadow.camera.near = 0.1;
-  keyLight.shadow.camera.far = 12;
-  keyLight.shadow.camera.left = -2.6;
-  keyLight.shadow.camera.right = 2.6;
-  keyLight.shadow.camera.top = 3.2;
-  keyLight.shadow.camera.bottom = -0.4;
-  keyLight.shadow.bias = -0.0002;
-  keyLight.shadow.normalBias = 0.018;
-  const fillLight = new THREE.DirectionalLight(0xffe9d4, 0.42);
-  fillLight.position.set(-2.2, 1.6, -2.4);
-  const rimLight = new THREE.DirectionalLight(0xcfe8ff, 0.28);
-  rimLight.position.set(-1.6, 2.8, 3.5);
-  scene.add(hemisphere, keyLight, fillLight, rimLight);
+  // 조명 — 라이팅 스튜디오 릭을 계획으로 변환해 그룹으로 마운트한다. 릭이
+  // 없거나 비어 있으면 계획이 기존 고정 3점 리그와 픽셀 단위로 같아, 스튜디오를
+  // 열기 전 초기 화면은 예전과 달라지지 않는다.
+  let currentLightingRig: StudioMannequinLightingRig | null =
+    options.initialLightingRig ?? null;
+  let currentLightingPlan = resolveStudioMannequinLightingPlan(currentLightingRig);
+  const lightingGroup = mountStudioMannequinLightingGroup(currentLightingPlan);
+  renderer.shadowMap.enabled = currentLightingPlan.shadowsEnabled;
+  scene.add(lightingGroup);
 
   // 바닥 그리드와 접지 그림자(캡처 시 숨김).
   const helpers = new THREE.Group();
@@ -1236,6 +1456,8 @@ export function createStudioMannequinScene(
     // 논리 뷰 크기는 인코딩 await 중 리사이즈로 바뀔 수 있으니 래스터 계산 시점에 스냅샷한다.
     const displayWidth = viewWidth;
     const displayHeight = viewHeight;
+    // 캡처가 어떤 조명으로 렌더되는지, 마운트된 조명 객체에서 실측해 결과에 싣는다.
+    const lighting = readStudioMannequinLightingSnapshot(lightingGroup);
 
     // 헬퍼(그리드·IK 핸들)와 선택 틴트는 참고용 이미지에 굽지 않는다.
     const previousSelection = selectedJointId;
@@ -1266,7 +1488,32 @@ export function createStudioMannequinScene(
       height,
       displayWidth,
       displayHeight,
+      lighting,
     });
+  }
+
+  /**
+   * 릭을 뷰포트 조명으로 교체하는 유일한 경로다. 계획을 다시 만들고 그룹을
+   * 통째로 교체한 뒤, 그림자 on/off가 바뀌었으면 이미 컴파일된 머티리얼이
+   * 새 섀도 설정을 타도록 needsUpdate를 찍는다(shadowMap.enabled 토글은
+   * 머티리얼 재컴파일 없이는 반영되지 않는다).
+   */
+  function applyLightingRig(rig: StudioMannequinLightingRig | null): void {
+    currentLightingRig = rig;
+    const plan = resolveStudioMannequinLightingPlan(rig);
+    const shadowsToggled = plan.shadowsEnabled !== currentLightingPlan.shadowsEnabled;
+    currentLightingPlan = plan;
+    replaceStudioMannequinLightingGroup(lightingGroup, plan);
+    renderer.shadowMap.enabled = plan.shadowsEnabled;
+    if (shadowsToggled) {
+      scene.traverse((object) => {
+        const mesh = object as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const material of materials) material.needsUpdate = true;
+      });
+    }
+    invalidate();
   }
 
   // ── 핸들 구성 ────────────────────────────────────────────────────────────
@@ -1353,6 +1600,19 @@ export function createStudioMannequinScene(
     getShowJointRangeArc() {
       return showJointRangeArc;
     },
+    setLightingRig(rig) {
+      if (disposed) return;
+      applyLightingRig(rig);
+    },
+    getLightingRig() {
+      return currentLightingRig;
+    },
+    getLightingPlan() {
+      return currentLightingPlan;
+    },
+    getLightingSnapshot() {
+      return readStudioMannequinLightingSnapshot(lightingGroup);
+    },
     setCameraPreset(preset) {
       if (disposed) return;
       const frame = resolveStudioMannequinCameraFrame(spec.heightM, preset);
@@ -1418,6 +1678,10 @@ export function createStudioMannequinScene(
       renderer.domElement.removeEventListener("dblclick", handleDoubleClick);
       controls?.dispose();
       controls = null;
+      for (const child of [...lightingGroup.children]) {
+        disposeStudioMannequinLightObject(child);
+      }
+      lightingGroup.removeFromParent();
       disposeMannequinGraph();
       clearJointRangeArc();
       rangeArcLineMaterial.dispose();

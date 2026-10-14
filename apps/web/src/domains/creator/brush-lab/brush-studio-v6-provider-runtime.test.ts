@@ -26,7 +26,9 @@ function nodes(program: BrushStudioV6Program) {
 
 describe("Brush Studio V6 provider runtime", () => {
   it("pins every Mixbox/Krita-compatible oil node without a fallback ladder", () => {
-    const plan = planBrushStudioV6ProviderRuntime(nodes(createBrushStudioV6Program("mixbox-oil-bristle")));
+    // Binding all three external adapters is only admissible under the
+    // noncommercial-full profile; the default profile is permissive-only (P0).
+    const plan = planBrushStudioV6ProviderRuntime(nodes(createBrushStudioV6Program("mixbox-oil-bristle")), "noncommercial-full");
     expect(plan).toMatchObject({ version: 2, fallbackPolicy: "none", valid: true, blockedNodeIds: [] });
     expect(plan.bindings.map((entry) => entry.providerId)).toEqual(expect.arrayContaining([
       "mixbox-js-v2",
@@ -88,10 +90,15 @@ describe("Brush Studio V6 provider runtime", () => {
   });
 
   it("keeps manifest and material execution admission in one source of truth", () => {
-    for (const recipeId of [
-      "clean-ink", "natural-calligraphy", "mixbox-watercolor-bloom", "mixbox-oil-bristle",
-    ]) {
-      const plan = planBrushStudioV6ProviderRuntime(nodes(createBrushStudioV6Program(recipeId)));
+    // Mixbox catalog recipes are admitted under their target profile
+    // (noncommercial-full); the default profile stays permissive-only (P0).
+    for (const [recipeId, profile] of [
+      ["clean-ink", undefined],
+      ["natural-calligraphy", undefined],
+      ["mixbox-watercolor-bloom", "noncommercial-full"],
+      ["mixbox-oil-bristle", "noncommercial-full"],
+    ] as const) {
+      const plan = planBrushStudioV6ProviderRuntime(nodes(createBrushStudioV6Program(recipeId)), profile);
       expect(plan.valid, recipeId).toBe(true);
       expect(plan.bindings.every((binding) => binding.productPath === "material-contact")).toBe(true);
     }

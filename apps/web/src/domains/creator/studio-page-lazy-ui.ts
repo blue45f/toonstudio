@@ -335,6 +335,10 @@ const StudioPerspectivePanel = lazyRetry(
   () => import("./StudioPerspectivePanel").then((mod) => ({ default: mod.StudioPerspectivePanel })),
   "StudioPerspectivePanel"
 );
+const StudioRulersPanel = lazyRetry(
+  () => import("./drawing/StudioRulersPanel").then((mod) => ({ default: mod.StudioRulersPanel })),
+  "StudioRulersPanel"
+);
 const StudioIsometricGridPanel = lazyRetry(
   () => import("./StudioIsometricGridPanel").then((mod) => ({ default: mod.StudioIsometricGridPanel })),
   "StudioIsometricGridPanel"
@@ -919,6 +923,7 @@ export {
   StudioSmartShapeEditDialog,
   StudioRasterAssetGrid,
   StudioRasterCrdtSurface,
+  StudioRulersPanel,
   StudioReferencePanel,
   StudioRemoteCursorOverlay,
   StudioPointCommentComposer,

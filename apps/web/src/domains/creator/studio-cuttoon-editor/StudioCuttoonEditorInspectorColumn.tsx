@@ -33,10 +33,12 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
     advancedFillPreview,
     advancedFillReferenceLayerCount,
     advancedFillSettings,
+    advancedFillColorDropView,
     advancedFillStatus,
     advancedFillUnsupportedReason,
     advancedFillVisibleRasterCount,
     advancedRulers,
+    onDrawingPerspectiveGuideChange,
     aiColorizeBusy,
     aiColorizeError,
     aiColorizePrompt,
@@ -44,6 +46,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
     applyExtendedBlendMergeDown,
     applyPaperVectorRefinement,
     applyPathBooleanCombine,
+    applyPathBooleanCombineSync,
     applyPixelSelectionHistoryCommand,
     autoColorCanvasSeedHit,
     autoColorCanvasSeedHits,
@@ -474,12 +477,14 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           onCommandSearchHostReadyChange={commandSearch.onHostReadyChange}
           activeSavedBrushId={activeSavedBrushId}
           advancedRulers={advancedRulers}
+          onDrawingPerspectiveGuideChange={onDrawingPerspectiveGuideChange}
           activeSurfaceReviewLocked={activeSurfaceReviewLocked}
           advancedFillActive={advancedFillActive}
           advancedFillBusy={advancedFillBusy}
           advancedFillPreview={advancedFillPreview}
           advancedFillReferenceLayerCount={advancedFillReferenceLayerCount}
           advancedFillSettings={advancedFillSettings}
+          advancedFillColorDropView={advancedFillColorDropView}
           advancedFillStatus={advancedFillStatus}
           advancedFillUnsupportedReason={advancedFillUnsupportedReason}
           advancedFillVisibleRasterCount={advancedFillVisibleRasterCount}
@@ -818,6 +823,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
             marqueeIds.map((id) => elementById.get(id)).filter((el): el is El => Boolean(el))
           )}
           applyPathBooleanCombine={(op) => void applyPathBooleanCombine(op)}
+          applyPathBooleanCombineSync={(op) => void applyPathBooleanCombineSync(op)}
           paperVectorRefinementBusy={paperVectorRefinementBusy}
           paperVectorRefinementUnavailableReason={
             paperVectorRefinementUnavailableReason

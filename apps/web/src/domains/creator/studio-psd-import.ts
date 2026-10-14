@@ -1,11 +1,17 @@
 /** PSD 원본 픽셀, 폴더 경로와 클리핑을 보존하는 교환 경계.
- * 효과·조정·격리 그룹을 임의 재현하지 않고 원본 합성본과 편집 레이어를 함께 준비한다.
+ * 조정 레이어는 파라미터를 변환해 Studio 조정 레이어 명세(adjustmentLayers)로
+ * 복원하고, 효과·격리 그룹은 임의 재현하지 않고 원본 합성본과 편집 레이어를 함께 준비한다.
  * ag-psd의 앞→뒤 순서를 Studio의 뒤→앞 순서로 반전한다.
  */
 
 import { readPsd, type BlendMode, type Layer, type Psd, type ReadOptions } from "ag-psd";
 
 import { studioGroupsFromPsdElements, type StudioPsdFolder } from "./export/studio-psd-folder-structure";
+import {
+  convertPsdAdjustmentLayer,
+  type StudioPsdAdjustmentConversion,
+  type StudioPsdConvertedAdjustment,
+} from "./studio-psd-adjustment-import";
 import { planStudioPsdEditableText } from "./export/studio-psd-text-import";
 import type { El } from "./studio-element-model";
 import type { LayerGroup } from "./studio-layers";
@@ -50,6 +56,34 @@ export interface PsdImportedElement {
   clipBelow?: true;
 }
 
+/**
+ * PSD 조정 레이어를 버리지 않고 복원한 Studio 조정 레이어 명세.
+ * 스택형 조정 레이어 모델(layer/studio-adjustment-layer.ts)의 spec 재료이며,
+ * 호스트는 stackIndex 로 래스터 레이어와의 상대 순서를 복원해 문서에 삽입한다.
+ */
+export interface PsdImportedAdjustmentLayer {
+  id: string;
+  /** PSD 레이어 이름(flatten 의 "레이어 N" 폴백 포함). */
+  name: string;
+  /** 변환된 Studio 조정 종류 — StudioAdjustmentKind 와 동일 유니온. */
+  kind: StudioPsdConvertedAdjustment["kind"];
+  /** 비파괴 조정 파라미터(변환 모듈이 채운 값 그대로). */
+  parameters: StudioPsdConvertedAdjustment["parameters"];
+  /** 변환 과정의 근사·생략 메모(없으면 빈 배열). */
+  notes: readonly string[];
+  /** flatten 된 Studio z-order(뒤→앞) 전체 목록에서의 위치. */
+  stackIndex: number;
+  /** 그룹×자신 누적 불투명도(0..1). 1이면 필드 생략(PsdImportedElement 관례). */
+  opacity?: number;
+  /** studio El.blendMode 문자열. "source-over"(기본)면 필드 생략. */
+  blendMode?: string;
+  /** 자신 또는 조상 그룹이 숨김이면 true. 아니면 필드 자체를 생략. */
+  hidden?: true;
+  /** PSD에서 아래 레이어에 클리핑된 조정 레이어면 true. */
+  clipBelow?: true;
+  psdFolderPath?: readonly StudioPsdFolder[];
+}
+
 export interface PsdImportResult {
   /** Original decoded layer pixels, not preservation of every PSD editing feature. */
   layerPixelStorage?: "native-png";
@@ -60,6 +94,9 @@ export interface PsdImportResult {
   editableTextElements?: El[];
   /** PSD에 저장된 합성 이미지. 임의 효과 엔진으로 재구성하지 않는다. */
   compositeElement?: PsdImportedElement;
+  /** 변환 가능한 PSD 조정 레이어를 복원한 명세(Studio z-order). 변환 불가 종류는
+   *  여기에 없고 skipped·lossManifest 에 종류별 사유와 함께 기록된다. */
+  adjustmentLayers?: PsdImportedAdjustmentLayer[];
   /** 원본 파일 바이트는 적용 시 CAS에 보존하고 프로젝트에는 참조만 넣는다. */
   originalFile?: File;
   /** 원본 PSD 캔버스 크기(스케일 반영 전) — 새 페이지 생성 시 canvasH 계산에 필요. */
@@ -206,6 +243,9 @@ export interface FlattenedPsdLayer {
   folderPath: readonly StudioPsdFolder[];
   /** 이 레이어를 건너뛰어야 하는 이유(있으면 canvas 를 읽지 않고 skipped 에만 기록). */
   skipReason?: "adjustment" | "no-canvas" | "empty-bounds";
+  /** layer.adjustment 가 있으면 그 파라미터의 변환 결과 — 변환 가능하면 importPsdFile 이
+   *  조정 레이어로 복원하고, 불가하면 종류별 미지원 사유를 리포트에 쓴다. */
+  adjustmentConversion?: StudioPsdAdjustmentConversion;
 }
 
 interface RawFlattenedLeaf {
@@ -218,6 +258,7 @@ interface RawFlattenedLeaf {
   hidden: boolean;
   folderPath: readonly StudioPsdFolder[];
   skipReason?: FlattenedPsdLayer["skipReason"];
+  adjustmentConversion?: StudioPsdAdjustmentConversion;
 }
 
 function clamp01(n: number): number {
@@ -254,16 +295,22 @@ function flattenInto(
     const height = (layer.bottom ?? top) - top;
 
     let skipReason: RawFlattenedLeaf["skipReason"];
+    let adjustmentConversion: StudioPsdAdjustmentConversion | undefined;
     if (layer.adjustment) {
-      // 조정 레이어는 래스터 내용이 없다 — canvas 존재 여부와 무관하게 즉시 제외.
+      // 조정 레이어는 래스터 내용이 없어 이미지 요소로는 만들지 않는다 — 대신 파라미터를
+      // 여기서 변환해 실어 보내고, importPsdFile 이 조정 레이어로 복원한다.
       skipReason = "adjustment";
+      adjustmentConversion = convertPsdAdjustmentLayer(layer.adjustment);
     } else if (width <= 0 || height <= 0) {
       skipReason = "empty-bounds";
     } else if (!layer.canvas) {
       skipReason = "no-canvas";
     }
 
-    out.push({ layer, left, top, width, height, opacity, hidden, folderPath, skipReason });
+    out.push({
+      layer, left, top, width, height, opacity, hidden, folderPath, skipReason,
+      ...(adjustmentConversion ? { adjustmentConversion } : {}),
+    });
   }
 }
 
@@ -272,7 +319,7 @@ function flattenInto(
  * **Studio 순서(뒤→앞, 배열 앞쪽이 배경)로 이미 뒤집힌** 리프 레이어 목록을 반환한다(studio-psd-
  * export.ts 가 반대 방향으로 하는 `[...layers].reverse()`와 정확히 대칭). adjustment 레이어
  * (layer.adjustment 존재)는 래스터 내용이 없으므로 skipReason:"adjustment" 로 표시하고 canvas 를
- * 읽지 않는다. 이름 없는 레이어는 최종 Studio 순서 기준 순번으로 "레이어 N" 폴백을 받는다
+ * 읽지 않는 대신, 변환 결과(adjustmentConversion)를 함께 실어 복원 재료로 쓴다. 이름 없는 레이어는 최종 Studio 순서 기준 순번으로 "레이어 N" 폴백을 받는다
  * (studio-psd-export.ts 의 elementLabel 과 동일한 fallback 관례).
  */
 export function flattenPsdLayers(psd: Psd): FlattenedPsdLayer[] {
@@ -825,13 +872,35 @@ function psdImportLossManifest(
       "연결/포함 원본은 원본 PSD에서 별도로 보관하세요.",
     ));
   }
-  const adjustmentCount = flattened.filter((entry) => entry.skipReason === "adjustment").length;
-  if (adjustmentCount > 0) {
+  const adjustmentEntries = flattened.filter((entry) => entry.skipReason === "adjustment");
+  const convertedAdjustments = adjustmentEntries.filter(
+    (entry) => entry.adjustmentConversion?.status === "converted",
+  );
+  const unsupportedAdjustments = adjustmentEntries.filter(
+    (entry) => entry.adjustmentConversion?.status !== "converted",
+  );
+  if (convertedAdjustments.length > 0) {
+    const kinds = [...new Set(convertedAdjustments.map((entry) =>
+      entry.adjustmentConversion?.status === "converted" ? entry.adjustmentConversion.kind : "",
+    ))].filter(Boolean).join("·");
+    decisions.push(psdDecision(
+      "adjustment-layer",
+      "preserved",
+      convertedAdjustments.length,
+      `조정 레이어 ${convertedAdjustments.length.toLocaleString("ko-KR")}개를 비파괴 파라미터 그대로 Studio 조정 레이어로 복원합니다(${kinds}).`,
+    ));
+  }
+  if (unsupportedAdjustments.length > 0) {
+    const reasons = unsupportedAdjustments.map((entry) =>
+      entry.adjustmentConversion?.status === "unsupported"
+        ? `${entry.adjustmentConversion.psdType}: ${entry.adjustmentConversion.reason}`
+        : `${entry.name}: 변환 결과 없음`,
+    ).join(" / ");
     decisions.push(psdDecision(
       "adjustment-layer",
       "dropped",
-      adjustmentCount,
-      `조정 레이어 ${adjustmentCount.toLocaleString("ko-KR")}개는 비파괴 파라미터와 합성 결과를 가져오지 않습니다.`,
+      unsupportedAdjustments.length,
+      `변환할 수 없는 조정 레이어 ${unsupportedAdjustments.length.toLocaleString("ko-KR")}개는 가져오지 않습니다 — ${reasons}`,
     ));
   }
   const effectsCount = usable.filter((entry) => !!entry.layer.effects).length;
@@ -1010,16 +1079,43 @@ export async function importPsdFile(
   };
   const encodedPng = createPsdEncodedPngAccountant();
 
+  const adjustmentLayers: PsdImportedAdjustmentLayer[] = [];
   let completedLayers = 0;
   reportStudioPsdImportProgress(options, "layers", 0, flattened.length);
-  for (const entry of flattened) {
+  for (const [stackIndex, entry] of flattened.entries()) {
     throwIfStudioPsdImportAborted(options.signal);
     // Let cancel/input events run between batches without reducing source quality.
     if (completedLayers % 4 === 0) await new Promise<void>((resolve) => setTimeout(resolve, 0));
     throwIfStudioPsdImportAborted(options.signal);
     reportStudioPsdImportProgress(options, "layers", completedLayers++, flattened.length);
     if (entry.skipReason === "adjustment") {
-      skipped.push(`${entry.name}: 조정 레이어라 제외됨`);
+      const conversion = entry.adjustmentConversion;
+      if (conversion?.status === "converted") {
+        const restored: PsdImportedAdjustmentLayer = {
+          id: createImportedLayerId(),
+          name: entry.name,
+          kind: conversion.kind,
+          parameters: conversion.parameters,
+          notes: conversion.notes,
+          stackIndex,
+        };
+        if (entry.opacity < 1) restored.opacity = entry.opacity;
+        const blendMode = mapPsdBlendMode(entry.layer.blendMode);
+        if (blendMode !== "source-over") restored.blendMode = blendMode;
+        if (entry.hidden) restored.hidden = true;
+        if (entry.layer.clipping) restored.clipBelow = true;
+        if (entry.folderPath.length > 0) restored.psdFolderPath = entry.folderPath;
+        adjustmentLayers.push(restored);
+        for (const note of conversion.notes) {
+          skipped.push(`${entry.name}: 조정 레이어 변환 메모 — ${note}`);
+        }
+      } else {
+        const reason = conversion?.status === "unsupported"
+          ? conversion.reason
+          : "변환 결과가 없습니다.";
+        const psdType = conversion?.status === "unsupported" ? conversion.psdType : "알 수 없음";
+        skipped.push(`${entry.name}: 조정 레이어(${psdType})는 변환할 수 없어 제외됨 — ${reason}`);
+      }
       continue;
     }
     if (entry.skipReason === "empty-bounds") {
@@ -1198,7 +1294,7 @@ export async function importPsdFile(
   }
   if (groupWarnings.length) lossMetrics.unsupportedBlendModes += groupWarnings.length;
   reportStudioPsdImportProgress(options, "complete", flattened.length, flattened.length);
-  if (elements.length === 0 && skipped.length === 0) {
+  if (elements.length === 0 && adjustmentLayers.length === 0 && skipped.length === 0) {
     skipped.push("PSD에서 가져올 레이어를 찾지 못했어요.");
   }
 
@@ -1208,6 +1304,7 @@ export async function importPsdFile(
     layerPixelStorage: "native-png",
     encodedPngMemory: encodedPng.snapshot(),
     elements,
+    ...(adjustmentLayers.length > 0 ? { adjustmentLayers } : {}),
     groups: studioGroupsFromPsdElements(elements),
     editableTextElements,
     ...(compositeElement ? { compositeElement } : {}),

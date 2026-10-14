@@ -135,6 +135,12 @@ export interface PinTaskSyncContext {
   readonly resolveAssigneeId?: (source: PinTaskSource) => string | null;
   /** 핀 생성 시각에서 날짜를 뽑을 수 없을 때 쓸 기한 (YYYY-MM-DD) */
   readonly fallbackDue?: string;
+  /**
+   * 동기화하는 댓글 문서가 사는 회차. 핀 할 일에 `pinEpisodeId`로 기록해
+   * 과제 인박스에서 해당 회차 룸으로 되돌아갈 수 있게 한다.
+   * 지정하지 않으면 기존 할 일에 기록된 값을 유지한다.
+   */
+  readonly episodeId?: string | null;
 }
 
 function dueDateFromCreatedAt(createdAt: string, fallbackDue: string | undefined): string {
@@ -183,6 +189,7 @@ export function buildPinTask(
     dependencyIds: [],
     assigneeIds: assigneeId ? [assigneeId] : [],
     reviewerIds: [],
+    ...(context?.episodeId ? { pinEpisodeId: context.episodeId } : {}),
   };
 }
 
@@ -209,17 +216,28 @@ function refreshPinTask(
   const title = pinTaskTitle(source);
   const owner = source.assigneeName ?? source.authorName;
   const priority = source.status === "urgent" ? "urgent" : "normal";
+  const pinEpisodeId = context?.episodeId ?? existing.pinEpisodeId;
   if (
     existing.title === title
     && existing.owner === owner
     && existing.priority === priority
     && existing.status === status
     && existing.progress === progress
+    && existing.pinEpisodeId === pinEpisodeId
     && sameIds(existing.assigneeIds ?? [], assigneeIds)
   ) {
     return existing;
   }
-  return { ...existing, title, owner, priority, status, progress, assigneeIds };
+  return {
+    ...existing,
+    title,
+    owner,
+    priority,
+    status,
+    progress,
+    assigneeIds,
+    ...(pinEpisodeId ? { pinEpisodeId } : {}),
+  };
 }
 
 export interface PinTaskSyncResult {

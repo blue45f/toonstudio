@@ -1,0 +1,17 @@
+PASS checkDialogueSpelling > 빈 말풍선은 error, 빈 텍스트는 warning으로 알린다
+PASS checkDialogueSpelling > 자주 틀리는 표기를 잡고 고치기 후보를 제시한다
+PASS checkDialogueSpelling > 띄어 쓴 의존명사는 건드리지 않고 붙은 경우만 잡는다
+PASS checkDialogueSpelling > 문장부호 앞 공백과 연속 공백을 잡는다
+PASS checkDialogueSpelling > 짧은 대답의 반복은 중복으로 치지 않고, 긴 대사의 복사는 잡는다
+PASS checkDialogueSpelling > 같은 어절 반복을 잡되 의성어는 제외한다
+PASS checkDialogueSpelling > 긴 말풍선과 긴 한 줄을 경고한다
+PASS checkDialogueSpelling > 숨김 대사는 기본 제외, 옵션을 주면 포함한다
+PASS checkDialogueSpelling > 잠긴 대사도 검사한다(읽기는 잠금과 무관)
+PASS checkDialogueSpelling > 규칙을 끄면 그 규칙의 지적이 사라진다
+PASS checkDialogueSpelling > 요약은 심각도·규칙별 건수를 집계한다
+PASS checkDialogueSpelling > '-께' 말끝(요 없는 형태)도 잡되, 존댓말 조사 '께'는 지적하지 않는다
+PASS checkDialogueSpelling — 사전 확장(무모호 100+) > 대표 오기 표본 세트 전수(128건)를 검출하고 교체안이 정확하다
+PASS checkDialogueSpelling — 사전 확장(무모호 100+) > 정상 문장 세트(31건)에서는 맞춤법 지적이 0건이다(오탐 0)
+PASS checkDialogueSpelling — 사전 확장(무모호 100+) > 확장 항목의 고치기 후보를 적용하면 표준 표기가 된다
+
+== RESULT: 15 passed, 0 failed ==

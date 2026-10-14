@@ -253,6 +253,22 @@ const safeI18nStorage = {
   },
 };
 
+// 언어 설정은 사용자가 명시적으로 바꿀 때만 저장한다(lazy-write). persist 미들웨어는 첫 로드·
+// rehydration·번들 revision 갱신 같은 상태 변경마다 저장소에 쓰는데, 그러면 언어를 건드린 적 없는
+// 표면에서도 `toonstudio-lang` 키가 생겨 "이 기기에 아무것도 저장하지 않는다"는 계약(조직 홈페이지
+// 등)을 깼다. 읽기는 항상 허용하므로 기존 저장값 복원 동작과 저장 포맷은 그대로 유지된다.
+let langStorageWriteEnabled = false;
+
+const lazyLangStorage = {
+  getItem: (name: string): string | null => safeI18nStorage.getItem(name),
+  setItem: (name: string, value: string): void => {
+    if (langStorageWriteEnabled) safeI18nStorage.setItem(name, value);
+  },
+  removeItem: (name: string): void => {
+    safeI18nStorage.removeItem(name);
+  },
+};
+
 export const useI18n = create<I18nState>()(
   persist(
     (set) => ({
@@ -261,13 +277,16 @@ export const useI18n = create<I18nState>()(
       setLang: (lang) => {
         const normalized = resolveSelectableLocale(lang);
         applyDocumentLocale(normalized);
+        // 이후의 쓰기는 전부 사용자가 고른 언어 값을 담으므로 세션 동안 허용한다.
+        // 언어를 명시적으로 바꾼 적이 없으면 어떤 상태 변경도 저장소에 닿지 않는다.
+        langStorageWriteEnabled = true;
         set({ lang: normalized });
         void loadRuntimeTranslationBundle(normalized);
       },
     }),
     {
       name: "toonstudio-lang",
-      storage: createJSONStorage(() => safeI18nStorage),
+      storage: createJSONStorage(() => lazyLangStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
           const normalized = resolveSelectableLocale(state.lang || FALLBACK_LANG);

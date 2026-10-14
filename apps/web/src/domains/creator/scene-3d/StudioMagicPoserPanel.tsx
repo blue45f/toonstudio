@@ -15,7 +15,7 @@
  * - MP8: VRM 표정 블렌드셰이프 콤보·강도
  */
 
-import { useMemo, useRef, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { Hand, Pin, Redo2, Undo2 } from "lucide-react";
 
 import {
@@ -126,6 +126,14 @@ export interface StudioMagicPoserScene {
     side: "left" | "right",
     curls: Partial<Record<StudioMannequinFingerName, number>>,
   ) => void;
+  /**
+   * 라이팅 스튜디오 릭(MP3)을 실제 뷰포트 조명으로 교체한다. 실제 씬 핸들의
+   * `setLightingRig`를 그대로 넘기면 됩니다. 없으면 릭은 패널 상태와
+   * LT 명암 힌트만 갱신하고 뷰포트 조명은 바뀌지 않습니다.
+   */
+  readonly setLightingRig?: (rig: StudioMannequinLightingRig) => void;
+  /** 씬에 현재 적용된 릭 조회(선택). */
+  readonly getLightingRig?: () => StudioMannequinLightingRig | null;
 }
 
 export interface StudioMagicPoserPanelProps {
@@ -444,6 +452,13 @@ export function StudioMagicPoserPanel({
     return `주광 명암 ${contrastPct}% · 그림자 ${hint.shadows ? "켬" : "끔"}`;
   }, [lightingRig]);
 
+  // MP3 실연결: 릭이 바뀔 때마다(마운트·시간대 프리셋·그림자 토글) 씬 핸들로
+  // 그대로 전달한다. 이전에는 패널 상태만 바뀌고 실제 뷰포트 조명은 고정
+  // 3점 리그로 남아 있어, 스튜디오 설정과 화면이 어긋나는 격차가 있었다.
+  useEffect(() => {
+    scene?.setLightingRig?.(lightingRig);
+  }, [scene, lightingRig]);
+
   const historyDescription = useMemo(
     () => describeStudioPoseHistory(historySnapshot),
     [historySnapshot],
@@ -581,7 +596,8 @@ export function StudioMagicPoserPanel({
   }
 
   function handleTimeOfDay(time: StudioMannequinTimeOfDay): void {
-    // 시간대 프리셋은 릭을 통째로 교체한다 (인자 1개).
+    // 시간대 프리셋은 릭을 통째로 교체한다 (인자 1개). 교체된 릭은 위
+    // useEffect가 씬 핸들의 setLightingRig로 전달해 뷰포트에 반영한다.
     setLightingRig(applyStudioMannequinTimeOfDay(time));
   }
 
@@ -897,6 +913,11 @@ export function StudioMagicPoserPanel({
               <dd>{toneHint}</dd>
             </div>
           </dl>
+          <p role="status" className="mt-2 text-[0.66rem] text-fg-3">
+            {scene.setLightingRig
+              ? "조명 변경이 3D 뷰포트 조명에 실시간으로 반영됩니다."
+              : "이 호스트는 조명을 뷰포트에 연결하지 않아 LT 명암 힌트만 갱신됩니다."}
+          </p>
         </section>
       )}
 

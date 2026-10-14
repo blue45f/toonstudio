@@ -17,6 +17,7 @@ import {
   previewProductionBoardMove,
   previewProductionBoardRevert,
   type ProductionBoardMovePreview,
+  type ProductionBoardMoveTranslate,
 } from "../production-board-move-preview";
 import type { ProductionLocalize } from "../production-labels";
 
@@ -32,6 +33,8 @@ export interface BoardActionContext {
   readonly begin: (patches: ReadonlyMap<string, ProductionTaskPatch>, added?: readonly ProductionTask[]) => number;
   readonly settle: (id: number) => void;
   readonly bt: ProductionLocalize;
+  /** 이동 미리 보기 사유 문구 번역자. 없으면 모델 기본값(한국어 원문)을 쓴다. */
+  readonly translate?: ProductionBoardMoveTranslate;
   readonly show: (toast: Omit<BoardToastMessage, "id">) => void;
   readonly announce: (message: string) => void;
   /** 공정 설정 열기(한도 경고에서 바로 조정하도록). 권한이 없으면 undefined. */
@@ -79,7 +82,7 @@ export function createBoardActions(getContext: () => BoardActionContext): BoardA
       await ctx.execute({ type: "transition-task-batch", transitions: preview.transitions }, commit.message);
       ctx.announce(commit.message);
       const after = applyOptimisticOps(ctx.aggregate, [{ id: 0, patches, added: [] }]);
-      const revert = commit.offerUndo ? previewProductionBoardRevert(after, preview.transitions, new Date().toISOString()) : null;
+      const revert = commit.offerUndo ? previewProductionBoardRevert(after, preview.transitions, new Date().toISOString(), ctx.translate) : null;
       ctx.show({
         tone: "success",
         message: commit.message,
@@ -111,7 +114,7 @@ export function createBoardActions(getContext: () => BoardActionContext): BoardA
 
   const undoTransitions = async (moved: readonly ProductionTaskTransition[]): Promise<void> => {
     const ctx = getContext();
-    const preview = previewProductionBoardRevert(ctx.aggregate, moved, new Date().toISOString());
+    const preview = previewProductionBoardRevert(ctx.aggregate, moved, new Date().toISOString(), ctx.translate);
     if (!preview.allowed) {
       ctx.show({ tone: "warning", message: ctx.bt("이제는 되돌릴 수 없습니다", "Can't undo anymore"), detail: preview.reason });
       return;
@@ -126,7 +129,7 @@ export function createBoardActions(getContext: () => BoardActionContext): BoardA
   const moveStatus: BoardActions["moveStatus"] = async (ids, status, move) => {
     const ctx = getContext();
     if (!ctx.canEdit) return false;
-    const preview = previewProductionBoardMove(ctx.aggregate, ids, status, new Date().toISOString());
+    const preview = previewProductionBoardMove(ctx.aggregate, ids, status, new Date().toISOString(), ctx.translate);
     if (!preview.allowed) {
       const first = boardWipOverflow(boardWipForMove(ctx.aggregate, ids, status, ctx.bt))[0];
       ctx.show({

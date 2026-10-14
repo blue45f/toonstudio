@@ -5,6 +5,7 @@ import { evaluateMarketProductionFit } from "../models/market-production-fit";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 interface MarketProductionFitBadgeProps {
@@ -37,7 +38,9 @@ export function MarketProductionFitBadge({
   showCounts = false,
 }: MarketProductionFitBadgeProps) {
   const { profile } = useMarketProductionProfile();
-  const evaluation = evaluateMarketProductionFit(record, profile);
+  const t = useT();
+  const fitTranslate = (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback);
+  const evaluation = evaluateMarketProductionFit(record, profile, fitTranslate);
   const meta = STATUS_META[evaluation.status];
   const Icon = meta.icon;
   const issueSummary = evaluation.checks

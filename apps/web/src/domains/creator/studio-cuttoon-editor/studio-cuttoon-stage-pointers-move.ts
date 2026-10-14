@@ -34,6 +34,7 @@ import {
 import { isStudioBrushCursorMode, shouldShowStudioBrushCursor } from "../canvas/studio-canvas-cursor";
 import { bubbleShapeCanvasPointToLocal, hasCustomBubbleShape, moveBubbleShapePoint } from "../lettering/studio-bubble-custom-shape";
 import { beginStudioAdvancedFillTap, endStudioAdvancedFillTap, moveStudioAdvancedFillTap } from "../studio-advanced-fill-tap";
+import { colorDropGestureView, moveColorDropSession } from "../studio-colordrop-gesture";
 import { moveStudioLassoFillDrag } from "../studio-lasso-fill-gesture";
 import { resolveActiveStudioAdvancedRuler, type StudioAdvancedRuler } from "../studio-advanced-ruler-document";
 import { snapStudioAdvancedRulerStrokePoint } from "../studio-advanced-ruler-snap";
@@ -246,6 +247,8 @@ export function bindStudioCuttoonStagePointersMove(
 ) {
   const {
     advancedFillTapGestureRef,
+    advancedFillColorDropRef,
+    setAdvancedFillColorDropView,
     advancedFillLassoDragRef,
     advancedFillTouchPanRef,
     autoColorScribbleCanvasArmed,
@@ -473,6 +476,19 @@ export function bindStudioCuttoonStagePointersMove(
           clientPoint,
         );
         advancedFillTapGestureRef.current = gesture;
+        if (advancedFillColorDropRef.current) {
+          // ColorDrop 드래그 — 설정을 바꾸면 미리보기가 무효화되므로 드래그 중에는
+          // 세션과 패널 표시(퍼센트)만 따라가고, 실행은 pointerup 커밋에서 일어난다.
+          const dropMove = moveColorDropSession(
+            advancedFillColorDropRef.current,
+            pointerId,
+            clientPoint,
+          );
+          advancedFillColorDropRef.current = dropMove.session;
+          if (dropMove.previewTolerance !== null) {
+            setAdvancedFillColorDropView(colorDropGestureView(dropMove.session));
+          }
+        }
         const pan = advancedFillTouchPanRef.current;
         if (
           pointerEvent.pointerType === "touch" &&

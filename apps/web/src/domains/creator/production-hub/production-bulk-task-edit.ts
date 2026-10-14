@@ -6,6 +6,23 @@ import {
   type RoleAssignment,
 } from "@toonstudio/core/production";
 
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type ProductionBulkTaskEditTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: ProductionBulkTaskEditTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
 export interface ProductionBulkTaskEdit {
   readonly priority: "keep" | NonNullable<ProductionTask["priority"]>;
   readonly assigneeMode: "keep" | "replace" | "clear";
@@ -62,18 +79,19 @@ export function buildProductionBulkEditPlan(
   aggregate: ProductionProjectAggregate,
   snapshots: readonly ProductionTask[],
   edit: ProductionBulkTaskEdit,
-  at: string
+  at: string,
+  translate: ProductionBulkTaskEditTranslate = defaultTranslate
 ): ProductionBulkEditPlan {
   if (
     !snapshots.length ||
     snapshots.length > 200 ||
     new Set(snapshots.map((task) => task.id)).size !== snapshots.length
   ) {
-    throw new Error("중복 없이 1~200개 작업을 선택하세요.");
+    throw new Error(translate("productionHub.bulkEdit.selectRange", "중복 없이 1~200개 작업을 선택하세요."));
   }
   const now = Date.parse(at);
   if (!Number.isFinite(now))
-    throw new Error("작업 변경 시각을 확인할 수 없습니다.");
+    throw new Error(translate("productionHub.bulkEdit.timeUnverifiable", "작업 변경 시각을 확인할 수 없습니다."));
   const currentById = new Map(aggregate.tasks.map((task) => [task.id, task]));
   for (const snapshot of snapshots) {
     const current = currentById.get(snapshot.id);
@@ -84,11 +102,11 @@ export function buildProductionBulkEditPlan(
         stableProductionFingerprint(snapshot)
     ) {
       throw new Error(
-        "선택한 작업이 변경되었습니다. 편집을 닫고 최신 작업을 다시 선택하세요."
+        translate("productionHub.bulkEdit.taskChanged", "선택한 작업이 변경되었습니다. 편집을 닫고 최신 작업을 다시 선택하세요.")
       );
     }
     if (!isProductionTaskBulkEditable(current))
-      throw new Error("승인·완료·보관된 작업은 일괄 편집할 수 없습니다.");
+      throw new Error(translate("productionHub.bulkEdit.closedNotEditable", "승인·완료·보관된 작업은 일괄 편집할 수 없습니다."));
   }
   const assignment = aggregate.assignments.find(
     (entry) => entry.id === edit.assignmentId
@@ -99,14 +117,14 @@ export function buildProductionBulkEditPlan(
       !snapshots.every((task) => assignmentCanOwn(assignment, task, now)))
   ) {
     throw new Error(
-      "선택한 모든 작업의 범위와 활동 기간에 맞는 담당자를 선택하세요."
+      translate("productionHub.bulkEdit.assigneeMismatch", "선택한 모든 작업의 범위와 활동 기간에 맞는 담당자를 선택하세요.")
     );
   }
   if (
     edit.deadlineMode === "set" &&
     (!edit.dueAt || !Number.isFinite(Date.parse(edit.dueAt)))
   ) {
-    throw new Error("새 마감 일시를 입력하세요.");
+    throw new Error(translate("productionHub.bulkEdit.dueRequired", "새 마감 일시를 입력하세요."));
   }
   const tasks: ProductionTask[] = [];
   const expectedTasks: ProductionTask[] = [];

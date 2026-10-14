@@ -14,9 +14,9 @@ export const BRUSH_STUDIO_V6_SHOWCASE_RECIPE_SEEDS: readonly BrushStudioV6Recipe
   ),
   defineBrushStudioV6RecipeSeed(
     "linen-dry-bristle", "리넨 드라이 강모", "유화·강모",
-    "Krita 강모와 높이장을 리넨 결 위에 얹어 마른 붓 갈라짐과 물감 융기를 함께 표현",
+    "개별 강모와 높이장을 리넨 결 위에 얹어 마른 붓 갈라짐과 물감 융기를 함께 표현",
     { slots: {
-      motion: "motion-brush-inertia", carrier: "carrier-krita-hairy", tip: "tip-pigment-normal",
+      motion: "motion-brush-inertia", carrier: "carrier-webgpu-ribbon", tip: "tip-chisel-sdf",
       surface: "surface-linen", deposition: "deposit-oil", pickup: "pickup-pigment-reservoir",
       pigment: "pigment-open-km", physics: ["physics-dry-contact", "physics-bristle", "physics-height"],
       pattern: "pattern-none", finish: ["finish-grain", "finish-relief"], output: "output-contact-canvas-svg",
@@ -37,11 +37,11 @@ export const BRUSH_STUDIO_V6_SHOWCASE_RECIPE_SEEDS: readonly BrushStudioV6Recipe
       absorbency: 0.7, diffusion: 0.68, granulation: 0.9, reactionRate: 0.46, edgeDarkening: 0.54 } },
   ),
   defineBrushStudioV6RecipeSeed(
-    "velvet-dual-gouache", "벨벳 듀얼 과슈", "과슈·듀얼촉",
-    "libmypaint 다브와 Krita 듀얼 촉을 결합해 매트한 불투명 면 안에 미세한 섬유 결을 남김",
+    "velvet-dual-gouache", "벨벳 과슈", "과슈",
+    "libmypaint 다브와 그레인 촉을 결합해 매트한 불투명 면 안에 미세한 섬유 결을 남김",
     { slots: {
-      motion: "motion-adaptive-ema", carrier: "carrier-libmypaint-dabs", tip: "tip-krita-dual",
-      surface: "surface-kent", deposition: "deposit-dry", pickup: "pickup-krita-smudge",
+      motion: "motion-adaptive-ema", carrier: "carrier-libmypaint-dabs", tip: "tip-grain-exemplar",
+      surface: "surface-kent", deposition: "deposit-dry", pickup: "pickup-pigment-reservoir",
       pigment: "pigment-spectral", physics: ["physics-dry-contact"], pattern: "pattern-none",
       finish: ["finish-grain"], output: "output-contact-canvas-svg",
     }, tuning: { size: 24, opacity: 0.94, flow: 0.8, spacing: 0.07, friction: 0.62,

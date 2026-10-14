@@ -7,14 +7,28 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import {
+  createStudioMannequinLightingObject,
+  mountStudioMannequinLightingGroup,
+  readStudioMannequinLightingSnapshot,
+  replaceStudioMannequinLightingGroup,
   resolveStudioMannequinCameraFrame,
   resolveStudioMannequinCaptureResult,
   resolveStudioMannequinEnvironmentIntensity,
   resolveStudioMannequinPointerRotation,
+  snapshotStudioMannequinLightingPlan,
   STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT,
   STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_MAX,
   type StudioMannequinCameraPreset,
 } from "./studio-mannequin-scene";
+import {
+  addStudioMannequinLight,
+  applyStudioMannequinTimeOfDay,
+  createStudioMannequinLightingRig,
+  resolveStudioMannequinLightingPlan,
+  setStudioMannequinShadows,
+  STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN,
+  type StudioMannequinTimeOfDay,
+} from "./studio-mannequin-lighting";
 import { getStudioMannequinJointLimit } from "./studio-mannequin-model";
 
 const PNG = "data:image/png;base64,AAAA";
@@ -235,5 +249,142 @@ describe("resolveStudioMannequinPointerRotation", () => {
       viewportHeight: Number.NEGATIVE_INFINITY,
     });
     expect(broken.every(Number.isFinite)).toBe(true);
+  });
+});
+
+describe("mannequin lighting live wiring (rig -> mounted THREE lights)", () => {
+  it("기본 계획은 기존 고정 3점 리그와 같은 조명을 마운트한다", () => {
+    const group = mountStudioMannequinLightingGroup(STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN);
+    const snapshot = readStudioMannequinLightingSnapshot(group);
+    expect(snapshot).toEqual(snapshotStudioMannequinLightingPlan(STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN));
+    expect(snapshot.isDefault).toBe(true);
+    expect(snapshot.hemisphere).toEqual({ skyColor: "#fff4e6", groundColor: "#38322b", intensity: 0.95 });
+    expect(snapshot.lights.map((light) => light.intensity)).toEqual([1.45, 0.42, 0.28]);
+    expect(group.children).toHaveLength(4); // 헤미스피어 + 방향광 3개
+  });
+
+  it.each(["dawn", "noon", "dusk", "night"] as const satisfies readonly StudioMannequinTimeOfDay[])(
+    "시간대 프리셋 %s의 rig가 마운트된 조명 객체에 그대로 전파된다",
+    (preset) => {
+      const rig = applyStudioMannequinTimeOfDay(preset);
+      const plan = resolveStudioMannequinLightingPlan(rig);
+      const group = mountStudioMannequinLightingGroup(plan);
+      // 계획이 아니라 실제 THREE 객체에서 읽은 값이 계획과 일치해야 실연결이다.
+      expect(readStudioMannequinLightingSnapshot(group)).toEqual(
+        snapshotStudioMannequinLightingPlan(plan),
+      );
+      expect(readStudioMannequinLightingSnapshot(group).isDefault).toBe(false);
+    },
+  );
+
+  it("황혼 프리셋은 spot의 각도·거리와 색까지 뷰포트 조명에 반영된다", () => {
+    const group = mountStudioMannequinLightingGroup(
+      resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("dusk")),
+    );
+    const snapshot = readStudioMannequinLightingSnapshot(group);
+    expect(snapshot.lights[0]).toEqual({
+      kind: "directional",
+      intensity: 2.8,
+      color: "#ff7a4d",
+      position: [-4, 1, 2],
+      castShadow: true,
+    });
+    expect(snapshot.lights[1]).toEqual({
+      kind: "spot",
+      intensity: 1.2,
+      color: "#ffd9a0",
+      position: [3, 2.5, 3],
+      angle: 0.5,
+      penumbra: 0.45,
+      distance: 10,
+      castShadow: false,
+    });
+    const spot = group.children.find((child) => child instanceof THREE.SpotLight);
+    expect(spot).toBeInstanceOf(THREE.SpotLight);
+  });
+
+  it("그룹 교체(replace)가 이전 프리셋 조명을 남기지 않고 새 rig로 갈아끼운다", () => {
+    const group = mountStudioMannequinLightingGroup(
+      resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("noon")),
+    );
+    expect(readStudioMannequinLightingSnapshot(group).lights).toHaveLength(1);
+    replaceStudioMannequinLightingGroup(
+      group,
+      resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("night")),
+    );
+    const snapshot = readStudioMannequinLightingSnapshot(group);
+    expect(snapshot).toEqual(
+      snapshotStudioMannequinLightingPlan(
+        resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("night")),
+      ),
+    );
+    expect(snapshot.shadowsEnabled).toBe(false);
+    expect(snapshot.lights.every((light) => !light.castShadow)).toBe(true);
+    // 정오의 강한 키 라이트(3.5)가 잔존하지 않는다.
+    expect(snapshot.lights.some((light) => light.intensity === 3.5)).toBe(false);
+    expect(group.children).toHaveLength(3); // 헤미스피어 + point + directional
+  });
+
+  it("사용자 정의 rig(추가 조명·그림자 off)도 같은 경로로 반영된다", () => {
+    let rig = createStudioMannequinLightingRig();
+    rig = addStudioMannequinLight(rig, {
+      kind: "point",
+      intensity: 7,
+      color: "#123456",
+      position: [1, 2, 3],
+      distance: 4,
+    });
+    rig = setStudioMannequinShadows(rig, false);
+    const plan = resolveStudioMannequinLightingPlan(rig);
+    const group = mountStudioMannequinLightingGroup(plan);
+    const snapshot = readStudioMannequinLightingSnapshot(group);
+    expect(snapshot).toEqual(snapshotStudioMannequinLightingPlan(plan));
+    expect(snapshot.lights[0]).toMatchObject({
+      kind: "point",
+      intensity: 7,
+      color: "#123456",
+      position: [1, 2, 3],
+      distance: 4,
+      castShadow: false,
+    });
+    expect(snapshot.shadowsEnabled).toBe(false);
+  });
+
+  it("그림자를 만드는 조명은 섀도맵(2048)과 카메라 범위를 갖춘 directional이다", () => {
+    const plan = resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("noon"));
+    const key = plan.lights[0];
+    expect(key).toBeDefined();
+    const object = createStudioMannequinLightingObject(key!);
+    expect(object).toBeInstanceOf(THREE.DirectionalLight);
+    const directional = object as THREE.DirectionalLight;
+    expect(directional.castShadow).toBe(true);
+    expect(directional.shadow.mapSize.x).toBe(2048);
+    expect(directional.shadow.camera.left).toBe(-2.6);
+    expect(directional.shadow.camera.top).toBe(3.2);
+  });
+
+  it("캡처 결과는 마운트된 조명 스냅샷을 포함하고, 생략 시 기존 모양을 유지한다", () => {
+    const group = mountStudioMannequinLightingGroup(
+      resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("dawn")),
+    );
+    const lighting = readStudioMannequinLightingSnapshot(group);
+    const withLighting = resolveStudioMannequinCaptureResult({
+      pngDataUrl: PNG,
+      width: 1280,
+      height: 960,
+      displayWidth: 640,
+      displayHeight: 480,
+      lighting,
+    });
+    expect(withLighting.lighting).toEqual(lighting);
+    expect(withLighting.lighting?.lights[0]?.color).toBe("#ffb37a");
+    const withoutLighting = resolveStudioMannequinCaptureResult({
+      pngDataUrl: PNG,
+      width: 1280,
+      height: 960,
+      displayWidth: 640,
+      displayHeight: 480,
+    });
+    expect("lighting" in withoutLighting).toBe(false);
   });
 });

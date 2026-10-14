@@ -249,4 +249,66 @@
 
 복원 절차: §9의 증빙 3종을 같은 문서에 첨부한 뒤, 이 절의 변경을 되돌린다(출처 33개와 변형 33개 복원, 기본값·필수 집합 복원, GLB 재반입). 생성 id와 원본 해시는 §9 표와 키트 폴더 `NOTICE.md` 원천 3 기록에 보존돼 있다.
 
-남은 확인 사항: `-male` 출처 항목이 없는 남성 변형 15개(hair/hime-cut·hair/twin-tail, top/tee, bottom 5종, shoes 4종, accessory/ribbon·cap·headphones의 남성 변형)는 키트 회계상 33종에 포함되지 않아 이번 제외에서 남겼다. 다만 §7의 기록(남성 청바지 생성 시도 실패 후 로컬 보정 등)상 여성용 파생물을 남성 베이스로 리타깃한 것일 가능성을 배제할 수 없으므로, 소유자가 생성 경위를 확인해 파생으로 판명되면 같은 방식으로 제외할 것을 권한다.
+남은 확인 사항: `-male` 출처 항목이 없는 남성 변형 15개(hair/hime-cut·hair/twin-tail, top/tee, bottom 5종, shoes 4종, accessory/ribbon·cap·headphones의 남성 변형)는 키트 회계상 33종에 포함되지 않아 이번 제외에서 남겼다. 다만 §7의 기록(남성 청바지 생성 시도 실패 후 로컬 보정 등)상 여성용 파생물을 남성 베이스로 리타깃한 것일 가능성을 배제할 수 없으므로, 소유자가 생성 경위를 확인해 파생으로 판명되면 같은 방식으로 제외할 것을 권한다. → **2026-10-15 §11에서 판정·제외를 완료했다.**
+
+## 11. 남성 변형 15종 리타깃 판정과 추가 제외 (2026-10-15)
+
+§10의 남은 확인 사항을 닫는다. 소유자가 판단을 위임해(2026-10-15), 생성 경위를 기억이 아니라 저장소 증거로 판정했다.
+
+### 판정 방법
+
+1. **메시 통계 대조**: 제외 전 `kit.json`(커밋 `0c17d71d0`)의 여성 파생 변형 스펙(LOD별 정점·삼각형 수, 파일 바이트, SHA-256)과 현행 남성 변형 스펙을 1:1로 대조했다.
+2. **대조군 보정**: 독립 생성물끼리는 스펙이 얼마나 벌어지는지 기준을 먼저 잡았다. 별도 남성 생성이 실제로 있었던 9쌍(위 §9.1의 `-male` 출처 파츠)은 정점 수가 LOD0 기준 20~914개, 파일 크기가 −15.9%~+9.9% 차이 났다(Rodin 생성은 확률적이라 독립 생성물은 통계가 일치할 수 없다). 반대로 절차 생성 원본 1개를 양 베이스에 얹는 클린 파츠(accessory/glasses·earrings·choker, irises 5종 — `proc_accessories.py` 등 원본)는 정점·삼각형이 완전 일치한다. 즉 통계 일치는 "같은 지오메트리 공유"의 서명이고, 그 지오메트리의 출처가 무엇인지가 판정을 가른다.
+3. **생성 기록 대조**: `tools/blender/character_kit/hyper3d_generations.json`(110건)에는 남성 전용 생성이 있었던 파츠마다 기록이 있다(`hoodie-m-v3`·`shirt-m-v3`·`hair-short3m` 등 — §9.1의 `-male` 출처 9종과 정확히 대응). 의심 15종에는 남성 생성 기록이 **한 건도 없고**, 파트마다 여성용으로 쓰인 생성 1건만 있다. §7대로 남성 청바지 생성 시도는 `INSUFFICIENT_BALANCE`로 실패했고 이후 "새 생성 없이 로컬 보정으로 마무리"했다.
+
+### 판정: 15종 전부 리타깃 (파생)
+
+여성 쪽 지오메트리는 Rodin 생성물이고(§9.1 출처), 남성 쪽은 그와 통계가 일치하는 같은 지오메트리이며, 독립 생성의 경위(기록)가 없다. 남성 변형이 원본일 가능성은 배제된다 — 공유 지오메트리의 원천이 Rodin 출력뿐이기 때문이다. SHA-256이 여성 원본과 같은 경우는 없었다(전부 재스킨·재베이크로 파일은 다르다). 세부 수치(여성 → 남성):
+
+| 파츠 | 정점 수 | 삼각형 수 | 바이트 |
+| --- | --- | --- | --- |
+| hair/hime-cut | 2884/1817/1167 → 동일 | 5655/3521/2221 → +18/+18/+18 | 792,252 → 792,756 (+0.06%) |
+| hair/twin-tail | 2227/1711/1061 → +2/+2/+2 | 4360/3328/2028 → +21/+21/+21 | 677,780 → 678,860 (+0.16%) |
+| top/tee | 3628 → 동일 | 6500 → 동일 | 564,044 → 568,740 (+0.83%) |
+| bottom/jeans | 3881 → 동일 | 6500 → 동일 | 476,580 → 477,024 (+0.09%) |
+| bottom/shorts | 2250 → 동일 | 4000 → 동일 | 293,408 → 292,320 (−0.37%) |
+| bottom/pleated-skirt | 5046 → 동일 | 8000 → 동일 | 614,892 → 615,264 (+0.06%) |
+| bottom/long-skirt | 4930 → 동일 | 8000 → 동일 | 573,752 → 576,556 (+0.49%) |
+| bottom/slacks | 3682 → 동일 | 6498 → 동일 | 466,548 → 466,352 (−0.04%) |
+| shoes/sneakers | 3327 → 동일 | 5000 → 동일 | 408,992 → 409,080 (+0.02%) |
+| shoes/loafers | 2953 → 동일 | 5000 → 동일 | 372,380 → 372,464 (+0.02%) |
+| shoes/boots | 3548 → 동일 | 4998 → 동일 | 405,992 → 406,076 (+0.02%) |
+| shoes/sandals | 3252 → 동일 | 5000 → 동일 | 392,480 → 392,564 (+0.02%) |
+| accessory/ribbon | 1620 → 동일 | 2500 → 동일 | 306,384 → 306,468 (+0.03%) |
+| accessory/cap | 1955 → 동일 | 3499 → 동일 | 351,248 → 351,336 (+0.03%) |
+| accessory/headphones | 2147 → 동일 | 3500 → 동일 | 341,996 → 342,076 (+0.02%) |
+
+헤어 2종의 균일한 소폭 차이(히메컷 삼각형 +18 전 LOD, 트윈테일 정점 +2·삼각형 +21 전 LOD)는 리타깃 과정의 국소 편집(이음매 분할·소형 추가)이 LOD 재생성으로 전파된 흔적으로 읽힌다. 경계 케이스로 보지 않는다 — 대조군의 독립 생성 발산(정점 수백 개·바이트 최대 15.9%)과 자릿수 단위로 다르고, 생성 기록 부재와 함께 보면 같은 지오메트리라는 결론만 남는다.
+
+### 처리
+
+- `kit.json`: 남성 변형 15개를 제거하고 파츠마다 `unavailable.male`에 리타깃 판정 사유를 선언했다(계약 D11 방식). `slotCapabilities.male`은 규칙 판정(`deriveKitCapabilities`)과 일치시켰다 — hair·top·bottom·shoes는 제공 0종이라 `unavailable`, accessory는 클린 3종(glasses·earrings·choker)만 남아 `partial` + `unavailablePresets` 3종. `provenance.summaryKo`에 2026-10-15 추가 제외(총 48종)를 반영했다. `KIT_REQUIRED_PRESETS`·`KIT_DEFAULT_SLOTS`는 이미 해당 슬롯이 비어 있어 변경이 없다.
+- 파생 GLB 파일 15개를 저장소에서 삭제한다(아래 목록). §10과 같은 이유로 manifest 변경과 같은 커밋에 넣어야 한다.
+- 검증(2026-10-15, main 실물 기준 하네스): 편집본 `kit.json` `parseKitManifest` ok, 선언 능력과 규칙 판정의 차이 0건(양 베이스), contracts 테스트 94건·appearance-presets 8건 통과.
+
+삭제하는 파일:
+
+- `parts/male/hair/hime-cut.glb`
+- `parts/male/hair/twin-tail.glb`
+- `parts/male/top/tee.glb`
+- `parts/male/bottom/jeans.glb`
+- `parts/male/bottom/shorts.glb`
+- `parts/male/bottom/pleated-skirt.glb`
+- `parts/male/bottom/long-skirt.glb`
+- `parts/male/bottom/slacks.glb`
+- `parts/male/shoes/sneakers.glb`
+- `parts/male/shoes/loafers.glb`
+- `parts/male/shoes/boots.glb`
+- `parts/male/shoes/sandals.glb`
+- `parts/male/accessory/ribbon.glb`
+- `parts/male/accessory/cap.glb`
+- `parts/male/accessory/headphones.glb`
+
+복원 절차: §9의 증빙 3종이 첨부되면 §10 복원과 함께 이 절의 변경도 되돌린다(남성 변형 15개와 `slotCapabilities` 선언 복원, GLB 재반입). 제외한 남성 변형의 파일 해시는 제외 전 `kit.json`(커밋 `0c17d71d0` 및 §10 직전 상태)에 보존돼 있다.
+
+이 판정으로 남성 베이스는 hair·top·bottom·shoes 프리셋이 전무해진다(베이스 자체와 얼굴·몸·홍채·클린 액세서리 3종은 유지). 후속으로 CC0/오리지널 남성 의상·헤어·신발 제작이 필요하다(§10의 여성 쪽 후속과 같은 과제).

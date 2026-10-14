@@ -195,6 +195,8 @@ export function setStudioMannequinShadows(
 /**
  * 시간대 프리셋으로 릭을 통째로 교체합니다.
  * 웹툰 명암 레퍼런스용 대표 조명 배치입니다.
+ * 반환 릭의 `timeOfDay`는 반드시 요청한 프리셋과 같습니다 — 스튜디오 UI의
+ * 활성 프리셋 표시와 씬 핸들(`setLightingRig`) 동기화가 이 필드를 기준으로 합니다.
  */
 export function applyStudioMannequinTimeOfDay(
   preset: StudioMannequinTimeOfDay,
@@ -213,6 +215,7 @@ export function applyStudioMannequinTimeOfDay(
           { kind: "point", intensity: 0.6, color: "#7a9bff", position: [2, 2, -2], distance: 8 },
         ),
         shadowsEnabled: true,
+        timeOfDay: preset,
       };
     case "noon":
       return {
@@ -223,6 +226,7 @@ export function applyStudioMannequinTimeOfDay(
           position: [0.5, 5, 1],
         }),
         shadowsEnabled: true,
+        timeOfDay: preset,
       };
     case "dusk":
       return {
@@ -236,6 +240,7 @@ export function applyStudioMannequinTimeOfDay(
           { kind: "spot", intensity: 1.2, color: "#ffd9a0", position: [3, 2.5, 3], angle: 0.5, distance: 10 },
         ),
         shadowsEnabled: true,
+        timeOfDay: preset,
       };
     case "night":
       return {
@@ -250,6 +255,7 @@ export function applyStudioMannequinTimeOfDay(
           { kind: "directional", intensity: 0.4, color: "#33415e", position: [0, 4, -3] },
         ),
         shadowsEnabled: false,
+        timeOfDay: preset,
       };
   }
 }

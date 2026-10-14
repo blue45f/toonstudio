@@ -68,6 +68,11 @@ export function ProductionStudioRevisionBridgePanel({
   execute,
 }: Props) {
   const t = useT();
+  const modelTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? t(key, values, fallback) : t(key, fallback),
+    [t],
+  );
   const [state, setState] = useState<BridgeState>({ kind: "idle" });
   const [pinningTaskIds, setPinningTaskIds] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -116,8 +121,9 @@ export function ProductionStudioRevisionBridgePanel({
       aggregate,
       state.data.project,
       state.data.revisionsByArtifact,
+      modelTranslate,
     );
-  }, [aggregate, state]);
+  }, [aggregate, state, modelTranslate]);
 
   const pinOne = useCallback(async (
     taskId: string,
@@ -298,7 +304,7 @@ export function ProductionStudioRevisionBridgePanel({
                           "rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold",
                           statusTone(binding.status),
                         )}>
-                          {bridgeStatusLabel(binding.status)}
+                          {bridgeStatusLabel(binding.status, modelTranslate)}
                         </span>
                         <span className="text-[0.6875rem] font-semibold text-fg-3">
                           {binding.department ?? "공정 미분류"}

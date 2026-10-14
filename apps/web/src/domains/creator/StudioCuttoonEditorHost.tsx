@@ -226,6 +226,10 @@ import {
   type StudioAdvancedFillSettings,
 } from "./studio-advanced-fill-settings";
 import type { StudioAdvancedFillTapGesture } from "./studio-advanced-fill-tap";
+import type {
+  ColorDropGestureView,
+  ColorDropSession,
+} from "./studio-colordrop-gesture";
 import type { StudioAdvancedRuler } from "./studio-advanced-ruler-document";
 import type { StudioAdvancedRulerSnapState } from "./studio-advanced-ruler-snap";
 
@@ -11696,6 +11700,9 @@ export function StudioCuttoonEditor({
   const advancedFillAbortRef = useRef<AbortController | null>(null);
   const advancedFillApplyingRef = useRef(false);
   const advancedFillTapGestureRef = useRef<StudioAdvancedFillTapGesture | null>(null);
+  const advancedFillColorDropRef = useRef<ColorDropSession | null>(null);
+  const [advancedFillColorDropView, setAdvancedFillColorDropView] =
+    useState<ColorDropGestureView | null>(null);
   const advancedFillLassoDragRef = useRef<StudioLassoFillDragSession | null>(null);
   const advancedFillTapPayloadRef = useRef<{
     position: { x: number; y: number };
@@ -11756,6 +11763,7 @@ export function StudioCuttoonEditor({
     advancedFillAbortRef,
     advancedFillTapGestureRef,
     advancedFillTapPayloadRef,
+    advancedFillColorDropRef,
     advancedFillAutoArmTargetRef,
     advancedFillTouchPanRef,
     advancedFillColorRef,
@@ -17243,6 +17251,7 @@ const puppetWarpArmed =
   const {
     applyPaperVectorRefinement,
     applyPathBooleanCombine,
+    applyPathBooleanCombineSync,
   } = createStudioPageVectorOps({
     paperVectorRefinementUnavailableReason,
     selected,
@@ -21851,6 +21860,8 @@ const puppetWarpArmed =
 
   function clearAdvancedFillTapGesture() {
     advancedFillTapGestureRef.current = null;
+    advancedFillColorDropRef.current = null;
+    setAdvancedFillColorDropView(null);
     advancedFillTapPayloadRef.current = null;
     advancedFillTouchPanRef.current = null;
   }
@@ -22207,6 +22218,30 @@ const puppetWarpArmed =
   };
   const runAdvancedFillAt = bindStudioAdvancedFillRun(studioAdvancedFillRunHost);
   const runAdvancedFillLassoPath = bindStudioLassoFillRun(studioAdvancedFillRunHost);
+
+  // ColorDrop 커밋 — 드래그로 확정된 허용 오차를 새 설정으로 기억(영속 저장 포함)하고
+  // 그 값으로 즉시 실행한다. updateAdvancedFillSettings와 달리 진행 중 계산을 무효화하지
+  // 않는다: 지금 실행할 채우기 자체가 그 계산이기 때문이다. 실행 가방은 바인딩 시점에
+  // 값을 고정하므로, 이번 렌더의 가방에 새 설정만 덮어 다시 바인딩한다.
+  function runAdvancedFillColorDropCommit(
+    payload: { position: { x: number; y: number }; frame: SelectionFrame },
+    tolerance: number,
+  ) {
+    const next: StudioAdvancedFillSettings = {
+      ...advancedFillSettingsRef.current,
+      tolerance,
+    };
+    advancedFillUserRevisionRef.current += 1;
+    advancedFillSettingsRef.current = next;
+    setAdvancedFillSettingsState(next);
+    void acquireProductStudioUiPreferencesRepository()
+      .then((repository) => repository.saveAdvancedFillSettings(next))
+      .catch(() => setAppSettingsPersistenceState("session-only"));
+    return bindStudioAdvancedFillRun({
+      ...studioAdvancedFillRunHost,
+      advancedFillSettings: next,
+    })(payload.position, payload.frame);
+  }
 
   // ── 이미지 크롭 적용 — 원본 자연 해상도로 잘라 data URL 교체(파괴적, 히스토리 1건) ──
   // 크롭 후에도 화면상 위치가 유지되도록 src 와 요소 프레임(x/y/width/height)을 한 번의
@@ -23162,6 +23197,10 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     activeSurfaceReviewLockedRef,
     advancedFillAbortRef,
     advancedFillActive,
+    advancedFillColorDropRef,
+    advancedFillSettingsRef,
+    setAdvancedFillColorDropView,
+    runAdvancedFillColorDropCommit,
     advancedFillLassoDragRef,
     advancedFillLassoEnabled: advancedFillSettings.lassoFill,
     advancedFillTapGestureRef,
@@ -25270,6 +25309,7 @@ function clearSelectionForEdit() {
       openProductionBible: () => setProductionBibleOpen(true),
       openWebtoonAssistant: () => setWebtoonAssistantOpen(true),
       openAiSuperSuite: () => setAiSuperSuiteOpen(true),
+      sendCurrentPageToCompareReview,
       openQuickStart: () => setQuickStartOpen(true),
       openPublishPackage: () => setPublishPackageOpen(true),
       openPublishPreflight: () => setPublishPreflightOpen(true),
@@ -28126,6 +28166,7 @@ function clearSelectionForEdit() {
       advancedFillPreview={advancedFillPreview}
       advancedFillReferenceLayerCount={advancedFillReferenceLayerCount}
       advancedFillSettings={advancedFillSettings}
+      advancedFillColorDropView={advancedFillColorDropView}
       advancedFillStatus={advancedFillStatus}
       advancedFillUnsupportedReason={advancedFillUnsupportedReason}
       advancedFillVisibleRasterCount={advancedFillVisibleRasterCount}
@@ -28173,6 +28214,7 @@ function clearSelectionForEdit() {
       applyExtendedBlendMergeDown={applyExtendedBlendMergeDown}
       applyPaperVectorRefinement={applyPaperVectorRefinement}
       applyPathBooleanCombine={applyPathBooleanCombine}
+      applyPathBooleanCombineSync={applyPathBooleanCombineSync}
       applyPendingInterchangeImport={applyPendingInterchangeImport}
       applyPixelSelectionHistoryCommand={applyPixelSelectionHistoryCommand}
       applyQuickComicInput={applyQuickComicInput}

@@ -580,7 +580,7 @@ export const STUDIO_MENU_GROUP_SPEC: readonly StudioMenuGroupSpec[] = Object.fre
       gap("Review Session", "Writer Room 의 검토 화면이 근사치이며 만화 ▸ Writer Room 이 연다."),
       gap("Audit Log", "팀 활동 피드가 근사치이고 감사 로그 규격은 없다."),
     ],
-    extras: [],
+    extras: [ours("collaboration/send-to-compare", "현재 페이지를 비교 검수로 — §15.3 행 없는 우리 동선.")],
   },
   {
     id: "window",

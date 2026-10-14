@@ -32,6 +32,7 @@ import {
 import { isStudioBrushCursorMode, shouldShowStudioBrushCursor } from "../canvas/studio-canvas-cursor";
 import { bubbleShapeCanvasPointToLocal, hasCustomBubbleShape, moveBubbleShapePoint } from "../lettering/studio-bubble-custom-shape";
 import { beginStudioAdvancedFillTap, endStudioAdvancedFillTap, moveStudioAdvancedFillTap } from "../studio-advanced-fill-tap";
+import { beginColorDropSession } from "../studio-colordrop-gesture";
 import { beginStudioLassoFillDrag } from "../studio-lasso-fill-gesture";
 import { resolveActiveStudioAdvancedRuler, type StudioAdvancedRuler } from "../studio-advanced-ruler-document";
 import { snapStudioAdvancedRulerStrokePoint } from "../studio-advanced-ruler-snap";
@@ -244,6 +245,8 @@ export function bindStudioCuttoonStagePointersDownArmed(
 ) {
   const {
     advancedFillTapGestureRef,
+    advancedFillColorDropRef,
+    advancedFillSettingsRef,
     advancedFillLassoDragRef,
     advancedFillLassoEnabled,
     advancedFillTapPayloadRef,
@@ -457,6 +460,20 @@ export function bindStudioCuttoonStagePointersDownArmed(
             isPrimary: pointerEvent.isPrimary,
           });
           advancedFillTapGestureRef.current = gesture;
+          if (pointerEvent.pointerType !== "touch") {
+            // ColorDrop(허용 오차 드래그) 세션 — 탭 제스처와 같은 포인터를 따라간다.
+            // 터치는 한 손가락 팬/스크롤 보호(advancedFillTouchPanRef)가 우선이라 시작하지 않는다.
+            advancedFillColorDropRef.current = beginColorDropSession(
+              advancedFillColorDropRef.current,
+              {
+                pointerId,
+                point: clientPoint,
+                button: pointerEvent.button,
+                isPrimary: pointerEvent.isPrimary,
+              },
+              advancedFillSettingsRef.current?.tolerance,
+            );
+          }
           if (
             pointerEvent.pointerType === "touch" &&
             gesture.primaryPointerId === pointerId &&

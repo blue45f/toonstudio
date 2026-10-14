@@ -16,6 +16,7 @@ import { MarketProductionProfileEditor } from "./MarketProductionProfileEditor";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
@@ -50,7 +51,9 @@ const CHECK_META = {
 
 export function MarketProductionFitWorkbench({ record, className }: MarketProductionFitWorkbenchProps) {
   const { profile, updateProfile, resetProfile, persistenceAvailable } = useMarketProductionProfile();
-  const evaluation = evaluateMarketProductionFit(record, profile);
+  const t = useT();
+  const fitTranslate = (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback);
+  const evaluation = evaluateMarketProductionFit(record, profile, fitTranslate);
   const statusMeta = STATUS_META[evaluation.status];
   const StatusIcon = statusMeta.icon;
   const license = marketLicenseMeta(record.license);

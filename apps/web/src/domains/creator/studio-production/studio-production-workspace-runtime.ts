@@ -125,6 +125,11 @@ export interface ProductionTask {
   readonly blockedReason?: string;
   /** Exact saved review and optional existing handoff; it does not grant review access. */
   readonly reviewRef?: StudioReviewTaskReference;
+  /**
+   * 검수 핀 동기화가 기록한 소속 회차 ID(핀 할 일 전용). 과제 인박스에서
+   * 해당 회차 룸으로 되돌아가는 링크에만 쓰며, 없으면 회차 목록으로 이동한다.
+   */
+  readonly pinEpisodeId?: string;
 }
 
 export interface ProductionReviewIssue {
@@ -406,6 +411,8 @@ function parseTask(value: unknown): ProductionTask | null {
   const reviewerIds = parseIdentityList(value.reviewerIds ?? []);
   const blockedReason = optionalString(value.blockedReason, MAX_TEXT_LENGTH);
   const reviewRef = value.reviewRef === undefined ? undefined : studioReviewTaskReferenceSchema.safeParse(value.reviewRef);
+  // 핀 회차 링크는 부가 정보다 — 형식이 깨졌으면 조용히 버리고 할 일 자체는 살린다.
+  const pinEpisodeId = optionalIdentity(value.pinEpisodeId);
   if (
     !id
     || !title
@@ -447,6 +454,7 @@ function parseTask(value: unknown): ProductionTask | null {
     reviewerIds,
     blockedReason,
     ...(reviewRef?.success ? { reviewRef: reviewRef.data } : {}),
+    ...(pinEpisodeId ? { pinEpisodeId } : {}),
   };
 }
 

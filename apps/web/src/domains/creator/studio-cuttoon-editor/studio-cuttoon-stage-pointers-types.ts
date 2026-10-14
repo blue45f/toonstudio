@@ -19,6 +19,10 @@ export type StudioCuttoonStagePointersHost = {
   advancedFillLassoEnabled: any;
   advancedFillTouchPanRef: any;
   advancedFillVirtualTarget: any;
+  advancedFillColorDropRef: any;
+  advancedFillSettingsRef: any;
+  setAdvancedFillColorDropView: any;
+  runAdvancedFillColorDropCommit: any;
   advancedRulerSnapRef: any;
   announceDrawingShortcut: any;
   appSettingsRef: any;

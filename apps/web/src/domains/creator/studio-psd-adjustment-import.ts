@@ -15,17 +15,20 @@
  *  2. 대상 레이어 효과 그래프(`filter/studio-adjustment-effect-graph.ts`)의
  *     조정 노드 파라미터
  *
- * 대응 종류가 없는 PSD 조정(black & white, photo filter, selective color,
- * color lookup)은 status:"unsupported" 로 돌려주되 원본 type 을 보존해, 리포트가
- * "버려짐"이 아니라 종류 단위로 정확해지게 한다.
- *
- * 확장 판정(2026-10-14, PSD 미지원 10종 확장 검토): brightness/contrast·
- * exposure·vibrance·invert·posterize·threshold 6종은 기존 픽셀 실행기가 있어
- * Studio 조정 종류로 승격했다(실행: filter/studio-adjustment-executor.ts).
- * 나머지 4종은 전용 실행기가 없어(흑백은 채널 믹서 단색과 파라미터 형태가 다르고,
- * 포토 필터는 이름이 같은 요소 필드와 규약 대조가 끝나지 않았고, 선택 색상은
- * CMYK 보정 실행기가 없으며, 컬러 룩업은 LUT 바이너리 보존이 필요) unsupported를
- * 유지한다 — 종류만 늘리고 실행이 비는 상태를 만들지 않기 위함이다.
+ * 전수 대응(2026-10-15): ag-psd 조정 16종 전부를 변환한다. 남은 4종도 전용
+ * 실행기를 새로 붙여 승격했다(실행: filter/studio-adjustment-executor.ts) —
+ *  - black & white → black-white: 6색 가중을 헥스콘 분해로 실행(순수 앵커 색은
+ *    슬라이더 %가 정확히 재현되고, 무채색은 항등). 틴트는 근사로 고지한다.
+ *  - photo filter → photo-filter: 기존 studio-photo-filter 엔진의 파라미터
+ *    규약(color #hex·density 0..100·preserveLuminosity)이 PSD와 정확히 같음을
+ *    대조해 위임 실행한다(무손실).
+ *  - selective color → selective-color: 9범위 CMYK를 전부 보존하고, 실행은
+ *    색상 섹터 분류 + 상대/절대 CMYK 보정 근사(notes로 고지).
+ *  - color lookup → color-lookup: 조회 종류·파일명·LUT 바이트를 보존한다.
+ *    내장 데이터가 .cube 텍스트면 3D LUT를 실제로 실행하고, 데이터가 없거나
+ *    프로파일형이면 픽셀은 항등이되 파라미터는 보존한다(notes로 고지).
+ * 알 수 없는 미래 종류만 status:"unsupported" 로 돌려주되 원본 type 을 보존해,
+ * 리포트가 "버려짐"이 아니라 종류 단위로 정확해지게 한다.
  *
  * 순수·결정적: DOM/ag-psd 런타임에 닿지 않고 타입만 빌린다.
  */
@@ -240,12 +243,104 @@ function convertThreshold(
   return { status: "converted", kind: "threshold", parameters, notes: [] };
 }
 
-const UNSUPPORTED_REASONS: Readonly<Record<string, string>> = {
-  "black & white": "흑백 조정 종류가 Studio 조정 모델에 아직 없습니다(채널 믹서 단색으로 근사 가능).",
-  "photo filter": "포토 필터 조정 종류가 Studio 조정 모델에 아직 없습니다.",
-  "color lookup": "컬러 룩업(3D LUT)은 LUT 파일 보존이 필요해 이 변환층 범위 밖입니다.",
-  "selective color": "선택 색상 조정 종류가 Studio 조정 모델에 아직 없습니다.",
+const BW_RANGES = ["reds", "yellows", "greens", "cyans", "blues", "magentas"] as const;
+/** Photoshop 흑백 기본 가중 — 필드가 비어 있는 조정에서 실행기 기본값으로 쓴다. */
+const BW_DEFAULTS: Readonly<Record<(typeof BW_RANGES)[number], number>> = {
+  reds: 40, yellows: 60, greens: 40, cyans: 60, blues: 20, magentas: 80,
 };
+
+function convertBlackAndWhite(
+  adjustment: Extract<AdjustmentLayer, { type: "black & white" }>,
+): StudioPsdConvertedAdjustment {
+  const parameters: Record<string, number | string | boolean | readonly number[]> = {};
+  const notes: string[] = [];
+  for (const name of BW_RANGES) parameters[name] = adjustment[name] ?? BW_DEFAULTS[name];
+  if (typeof adjustment.useTint === "boolean") parameters.useTint = adjustment.useTint;
+  const tint = colorToHex(adjustment.tintColor);
+  if (tint) parameters.tintColor = tint;
+  else if (adjustment.tintColor) notes.push("RGB가 아닌 틴트 색상이 있어 틴트는 가져오지 않았습니다.");
+  if (adjustment.useTint) notes.push("흑백 틴트는 Studio 실행기의 근사로 적용됩니다.");
+  return { status: "converted", kind: "black-white", parameters, notes };
+}
+
+function convertPhotoFilter(
+  adjustment: Extract<AdjustmentLayer, { type: "photo filter" }>,
+): StudioPsdConvertedAdjustment {
+  const parameters: Record<string, number | string | boolean | readonly number[]> = {};
+  const notes: string[] = [];
+  const hex = colorToHex(adjustment.color);
+  if (hex) parameters.color = hex;
+  else {
+    // Photoshop 기본 워밍 필터 색 — 색이 없으면 실행기 기본값과 같은 값을 채운다.
+    parameters.color = "#ec8a00";
+    notes.push("포토 필터 색상이 없어 기본 워밍 색(#ec8a00)으로 가져왔습니다.");
+  }
+  parameters.density = adjustment.density ?? 25;
+  parameters.preserveLuminosity = adjustment.preserveLuminosity ?? true;
+  return { status: "converted", kind: "photo-filter", parameters, notes };
+}
+
+const SELECTIVE_RANGES = [
+  "reds", "yellows", "greens", "cyans", "blues", "magentas", "whites", "neutrals", "blacks",
+] as const;
+
+function convertSelectiveColor(
+  adjustment: Extract<AdjustmentLayer, { type: "selective color" }>,
+): StudioPsdConvertedAdjustment {
+  const parameters: Record<string, number | string | boolean | readonly number[]> = {};
+  parameters.mode = adjustment.mode ?? "relative";
+  for (const name of SELECTIVE_RANGES) {
+    const values = adjustment[name];
+    if (!values) continue;
+    parameters[`range.${name}`] = [values.c ?? 0, values.m ?? 0, values.y ?? 0, values.k ?? 0];
+  }
+  return {
+    status: "converted",
+    kind: "selective-color",
+    parameters,
+    notes: ["선택 색상은 색상 섹터 분류 기준 CMYK 근사로 적용됩니다(파라미터는 무손실 보존)."],
+  };
+}
+
+/** LUT 바이트 보존 상한 — 이보다 큰 내장 데이터는 파라미터만 남기고 notes로 고지한다. */
+export const PSD_COLOR_LOOKUP_MAX_PRESERVED_BYTES = 1_048_576;
+
+function bytesToNumberArray(bytes: Uint8Array | undefined): readonly number[] | undefined {
+  if (!bytes || bytes.length === 0 || bytes.length > PSD_COLOR_LOOKUP_MAX_PRESERVED_BYTES) return undefined;
+  return Array.from(bytes);
+}
+
+function convertColorLookup(
+  adjustment: Extract<AdjustmentLayer, { type: "color lookup" }>,
+): StudioPsdConvertedAdjustment {
+  const parameters: Record<string, number | string | boolean | readonly number[]> = {};
+  const notes: string[] = [];
+  if (adjustment.lookupType) parameters.lookupType = adjustment.lookupType;
+  if (adjustment.name) parameters.name = adjustment.name;
+  if (adjustment.lut3DFileName) parameters.lut3DFileName = adjustment.lut3DFileName;
+  if (adjustment.lutFormat) parameters.lutFormat = adjustment.lutFormat;
+  if (adjustment.dataOrder) parameters.dataOrder = adjustment.dataOrder;
+  if (adjustment.tableOrder) parameters.tableOrder = adjustment.tableOrder;
+  if (typeof adjustment.dither === "boolean") parameters.dither = adjustment.dither;
+  const lutBytes = bytesToNumberArray(adjustment.lut3DFileData);
+  if (lutBytes) parameters.lutBytes = lutBytes;
+  const profileBytes = bytesToNumberArray(adjustment.profile);
+  if (profileBytes) parameters.profileBytes = profileBytes;
+  if (adjustment.lut3DFileData && !lutBytes) {
+    notes.push(`내장 LUT 데이터(${adjustment.lut3DFileData.length}바이트)가 보존 상한을 넘어 파라미터만 가져왔습니다 — 픽셀에는 적용되지 않습니다.`);
+  } else if (adjustment.profile && !profileBytes) {
+    notes.push("프로파일 데이터가 보존 상한을 넘어 파라미터만 가져왔습니다 — 픽셀에는 적용되지 않습니다.");
+  } else if (!lutBytes && !profileBytes) {
+    notes.push("LUT 데이터가 PSD에 내장돼 있지 않아 파라미터만 보존했습니다 — 픽셀에는 적용되지 않습니다.");
+  } else if (profileBytes && !lutBytes) {
+    notes.push("프로파일형 컬러 룩업은 파라미터만 보존했습니다 — 픽셀에는 적용되지 않습니다.");
+  } else if (adjustment.lutFormat && adjustment.lutFormat !== "cube") {
+    notes.push(`${adjustment.lutFormat} 형식 LUT는 바이트만 보존했습니다 — 픽셀 적용은 .cube 형식만 지원합니다.`);
+  }
+  return { status: "converted", kind: "color-lookup", parameters, notes };
+}
+
+const UNSUPPORTED_REASONS: Readonly<Record<string, string>> = {};
 
 /**
  * ag-psd 조정 레이어 1건을 Studio 조정으로 변환한다.
@@ -281,6 +376,14 @@ export function convertPsdAdjustmentLayer(
       return convertPosterize(adjustment);
     case "threshold":
       return convertThreshold(adjustment);
+    case "black & white":
+      return convertBlackAndWhite(adjustment);
+    case "photo filter":
+      return convertPhotoFilter(adjustment);
+    case "selective color":
+      return convertSelectiveColor(adjustment);
+    case "color lookup":
+      return convertColorLookup(adjustment);
     default:
       return {
         status: "unsupported",

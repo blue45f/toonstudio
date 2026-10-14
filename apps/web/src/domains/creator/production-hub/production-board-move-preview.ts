@@ -6,6 +6,23 @@ import type {
   ProductionTaskTransition,
 } from "@toonstudio/core/production";
 
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type ProductionBoardMoveTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: ProductionBoardMoveTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
 export interface ProductionBoardMovePreview {
   readonly allowed: boolean;
   readonly reason: string;
@@ -20,12 +37,13 @@ function evaluate(
   aggregate: ProductionProjectAggregate,
   transitions: readonly ProductionTaskTransition[],
   at: string,
+  translate: ProductionBoardMoveTranslate,
 ): ProductionBoardMovePreview {
   try {
     const changed = transitionProductionTaskBatch(aggregate, transitions, at);
-    return { allowed: true, reason: "이동 가능", transitions, changed };
+    return { allowed: true, reason: translate("productionHub.boardMove.available", "이동 가능"), transitions, changed };
   } catch (cause) {
-    return DENIED(cause instanceof Error ? cause.message : "이동 조건을 확인하지 못했습니다.");
+    return DENIED(cause instanceof Error ? cause.message : translate("productionHub.boardMove.checkFailed", "이동 조건을 확인하지 못했습니다."));
   }
 }
 
@@ -35,19 +53,20 @@ export function previewProductionBoardMove(
   ids: readonly string[],
   target: ProductionTaskStatus,
   at: string,
+  translate: ProductionBoardMoveTranslate = defaultTranslate,
 ): ProductionBoardMovePreview {
   if (!ids.length || ids.length > 200 || new Set(ids).size !== ids.length) {
-    return DENIED("이동할 작업을 중복 없이 1~200개 선택하세요.");
+    return DENIED(translate("productionHub.boardMove.selectRange", "이동할 작업을 중복 없이 1~200개 선택하세요."));
   }
   const byId = new Map(aggregate.tasks.map((task) => [task.id, task]));
   const transitions: ProductionTaskTransition[] = [];
   for (const id of ids) {
     const task = byId.get(id);
-    if (!task) return DENIED("작업이 변경되었습니다. 최신 보드에서 다시 선택하세요.");
+    if (!task) return DENIED(translate("productionHub.boardMove.taskChanged", "작업이 변경되었습니다. 최신 보드에서 다시 선택하세요."));
     if (task.status !== target) transitions.push({ taskId: id, fromStatus: task.status, toStatus: target });
   }
-  if (!transitions.length) return DENIED("이미 같은 상태입니다.");
-  return evaluate(aggregate, transitions, at);
+  if (!transitions.length) return DENIED(translate("productionHub.boardMove.alreadySameStatus", "이미 같은 상태입니다."));
+  return evaluate(aggregate, transitions, at, translate);
 }
 
 /**
@@ -59,14 +78,15 @@ export function previewProductionBoardRevert(
   aggregate: ProductionProjectAggregate,
   moved: readonly ProductionTaskTransition[],
   at: string,
+  translate: ProductionBoardMoveTranslate = defaultTranslate,
 ): ProductionBoardMovePreview {
-  if (!moved.length) return DENIED("되돌릴 이동이 없습니다.");
+  if (!moved.length) return DENIED(translate("productionHub.boardMove.noRevertTarget", "되돌릴 이동이 없습니다."));
   const byId = new Map(aggregate.tasks.map((task) => [task.id, task]));
   const reversed: ProductionTaskTransition[] = [];
   for (const move of moved) {
     const task = byId.get(move.taskId);
-    if (!task || task.status !== move.toStatus) return DENIED("그 사이 작업이 바뀌어 되돌릴 수 없습니다.");
+    if (!task || task.status !== move.toStatus) return DENIED(translate("productionHub.boardMove.revertTaskChanged", "그 사이 작업이 바뀌어 되돌릴 수 없습니다."));
     reversed.push({ taskId: move.taskId, fromStatus: move.toStatus, toStatus: move.fromStatus });
   }
-  return evaluate(aggregate, reversed, at);
+  return evaluate(aggregate, reversed, at, translate);
 }

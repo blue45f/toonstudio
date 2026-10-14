@@ -286,11 +286,53 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     expect(result.skipped).toEqual([]);
   });
 
-  it("조정 레이어는 요소를 만들지 않고 알림만 남긴다", async () => {
+  it("조정 레이어는 이미지 요소가 아니라 조정 레이어 명세로 복원된다", async () => {
     const psd = samplePsd([leaf({ name: "톤보정", adjustment: { type: "invert" } })]);
     const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(psd));
     expect(result.elements).toHaveLength(0);
-    expect(result.skipped).toEqual(["톤보정: 조정 레이어라 제외됨"]);
+    expect(result.skipped).toEqual([]);
+    expect(result.adjustmentLayers).toHaveLength(1);
+    expect(result.adjustmentLayers?.[0]).toMatchObject({
+      name: "톤보정",
+      kind: "invert",
+      parameters: {},
+      stackIndex: 0,
+    });
+    expect(result.lossManifest?.decisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        feature: "adjustment-layer",
+        disposition: "preserved",
+        count: 1,
+      }),
+    ]));
+  });
+
+  it("전수 대응 4종(흑백·포토 필터·선택 색상·컬러 룩업)도 조정 레이어로 복원된다", async () => {
+    const psd = samplePsd([
+      leaf({ name: "흑백1", adjustment: { type: "black & white", reds: 40, yellows: 60, greens: 40, cyans: 60, blues: 20, magentas: 80 } }),
+      leaf({ name: "필터1", adjustment: { type: "photo filter", color: { r: 236, g: 138, b: 0 }, density: 25, preserveLuminosity: true } }),
+      leaf({ name: "선택1", adjustment: { type: "selective color", mode: "absolute", reds: { c: 10, m: 0, y: 0, k: 0 } } }),
+      leaf({ name: "룩업1", adjustment: { type: "color lookup", lookupType: "3dlut", lut3DFileName: "look.cube" } }),
+    ]);
+    const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(psd));
+    expect(result.adjustmentLayers?.map((layer) => layer.kind)).toEqual([
+      "color-lookup", "selective-color", "photo-filter", "black-white",
+    ]);
+    // Studio z-order(뒤→앞) 기준 stackIndex가 flatten 순서를 그대로 반영한다.
+    expect(result.adjustmentLayers?.map((layer) => layer.stackIndex)).toEqual([0, 1, 2, 3]);
+    // 데이터 없는 컬러 룩업과 근사인 선택 색상은 침묵하지 않고 메모가 알림에 남는다.
+    expect(result.skipped.join(" ")).toContain("파라미터만 보존");
+    expect(result.skipped.join(" ")).toContain("선택 색상");
+  });
+
+  it("알 수 없는 조정 종류는 종류·사유와 함께 제외가 보고된다", async () => {
+    const psd = samplePsd([
+      leaf({ name: "미래조정", adjustment: { type: "mystery" } as never }),
+    ]);
+    const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(psd));
+    expect(result.adjustmentLayers).toBeUndefined();
+    expect(result.skipped).toHaveLength(1);
+    expect(result.skipped[0]).toContain("mystery");
     expect(result.lossManifest?.decisions).toEqual(expect.arrayContaining([
       expect.objectContaining({
         feature: "adjustment-layer",

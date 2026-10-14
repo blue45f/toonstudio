@@ -29,6 +29,7 @@ import type { MarketProductionFitStatus } from "../models/market-production-fit"
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import {
   CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS,
 } from "@/shared/lib/creator-marketplace-resource-contract";
@@ -55,6 +56,12 @@ function filterClass(active: boolean): string {
 
 export function MarketFitLabPage() {
   const t = useBilingual("MarketFitLabPage");
+  const i18nT = useT();
+  const fitTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? i18nT(key, values, fallback) : i18nT(key, fallback),
+    [i18nT],
+  );
   const marketFitDescription = t(
     "현재 제작 환경과 서버 manifest를 대조해 웹툰 리소스의 Studio 버전, 렌더러, 사용권, AI 공개, 출처와 전달 방식을 사전점검하세요.",
     "Pre-check webtoon resources against your current production environment and the server manifest: Studio version, renderer, license, AI disclosure, provenance, and delivery method.",
@@ -90,8 +97,8 @@ export function MarketFitLabPage() {
   });
 
   const evaluated = useMemo(
-    () => evaluateAndSortMarketProductionRecords(page.items, profile),
-    [page.items, profile],
+    () => evaluateAndSortMarketProductionRecords(page.items, profile, fitTranslate),
+    [page.items, profile, fitTranslate],
   );
   const counts = useMemo(() => ({
     all: evaluated.length,

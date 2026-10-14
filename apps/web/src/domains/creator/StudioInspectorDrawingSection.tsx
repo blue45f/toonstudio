@@ -67,6 +67,7 @@ export function StudioInspectorDrawingSection({
     addProceduralArtisticBrushRaster,
     addVanishingPointHandler,
     advancedRulers,
+    onDrawingPerspectiveGuideChange,
     alignPerspectiveToEyeLevel,
     announceDrawingShortcut,
     applyBrushDefaultRestoreTransaction,
@@ -574,6 +575,7 @@ export function StudioInspectorDrawingSection({
                   isometricOriginY={isometricOriginY}
                   advancedRulers={advancedRulers}
                   groups={groups}
+                  onPerspectiveGuideChange={onDrawingPerspectiveGuideChange}
                   setPerspectiveRulerActive={setPerspectiveRulerActive}
                   addVanishingPointHandler={addVanishingPointHandler}
                   removeVanishingPointHandler={removeVanishingPointHandler}

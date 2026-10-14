@@ -50,6 +50,7 @@ export function StudioInspectorAsideBody(props: StudioInspectorAsideProps) {
     pathBooleanBusy,
     pathBooleanInspectorUnavailableReason,
     applyPathBooleanCombine,
+    applyPathBooleanCombineSync,
   } = model;
   const hasMultiSelection =
     inspectorContentMode === "selection" && marqueeIds.length > 1;
@@ -174,6 +175,9 @@ export function StudioInspectorAsideBody(props: StudioInspectorAsideProps) {
                   busy={pathBooleanBusy}
                   unavailableReason={pathBooleanInspectorUnavailableReason}
                   onApply={(op) => applyPathBooleanCombine(op)}
+                  fastCombineSection={applyPathBooleanCombineSync
+                    ? { onApply: (op) => applyPathBooleanCombineSync(op) }
+                    : null}
                 />
               </Suspense>
             </div>

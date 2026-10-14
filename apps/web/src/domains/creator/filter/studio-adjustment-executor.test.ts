@@ -112,8 +112,12 @@ describe("studio adjustment executor — 신규 6종 실행", () => {
     expect(normalizeThresholdLevel({})).toBe(128);
   });
 
-  it("디스패치: 신규 6종만 true, 기존 종류는 적용한 척하지 않고 false + 무변경", () => {
-    expect([...STUDIO_ADJUSTMENT_EXECUTOR_KINDS]).toEqual([...NEW_KINDS]);
+  it("디스패치: 실행기 담당 10종(기존 6종 + 전수 대응 4종), 기존 종류는 적용한 척하지 않고 false + 무변경", () => {
+    // 전수 대응(2026-10-15): black-white·photo-filter·selective-color·color-lookup이
+    // 실행기 목록에 합류했다 — 세부 실행 단언은 studio-adjustment-executor-expansion.test.ts.
+    expect([...STUDIO_ADJUSTMENT_EXECUTOR_KINDS]).toEqual([
+      ...NEW_KINDS, "black-white", "photo-filter", "selective-color", "color-lookup",
+    ]);
     for (const kind of ["levels", "curves", "hsl", "color-balance", "channel-mixer", "gradient-map", "lab"] as const) {
       const img = makeImg([[10, 20, 30, 255]]);
       expect(applyStudioAdjustmentPixels(img, kind, {})).toBe(false);

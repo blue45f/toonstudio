@@ -57,6 +57,23 @@ function boolParam(
   return typeof value === "boolean" ? value : undefined;
 }
 
+
+function hexToRgbColor(hex: string | undefined): { r: number; g: number; b: number } | undefined {
+  if (!hex) return undefined;
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex);
+  if (!m) return undefined;
+  const packed = Number.parseInt(m[1]!, 16);
+  return { r: (packed >> 16) & 0xff, g: (packed >> 8) & 0xff, b: packed & 0xff };
+}
+
+function strParam(
+  parameters: StudioPsdAdjustmentParameters,
+  key: string,
+): string | undefined {
+  const value = parameters[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 function convertLevels(
   parameters: StudioPsdAdjustmentParameters,
 ): Extract<AdjustmentLayer, { type: "levels" }> {
@@ -281,6 +298,85 @@ function convertThreshold(
   return adjustment;
 }
 
+
+const BW_RANGES = ["reds", "yellows", "greens", "cyans", "blues", "magentas"] as const;
+const SELECTIVE_RANGES = [
+  "reds", "yellows", "greens", "cyans", "blues", "magentas", "whites", "neutrals", "blacks",
+] as const;
+
+function convertBlackWhite(
+  parameters: StudioPsdAdjustmentParameters,
+): Extract<AdjustmentLayer, { type: "black & white" }> {
+  const adjustment: Extract<AdjustmentLayer, { type: "black & white" }> = { type: "black & white" };
+  for (const name of BW_RANGES) {
+    const v = numParam(parameters, name);
+    if (v !== undefined) adjustment[name] = v;
+  }
+  const useTint = boolParam(parameters, "useTint");
+  if (useTint !== undefined) adjustment.useTint = useTint;
+  const tint = hexToRgbColor(strParam(parameters, "tintColor"));
+  if (tint) adjustment.tintColor = tint;
+  return adjustment;
+}
+
+function convertPhotoFilter(
+  parameters: StudioPsdAdjustmentParameters,
+): Extract<AdjustmentLayer, { type: "photo filter" }> {
+  const adjustment: Extract<AdjustmentLayer, { type: "photo filter" }> = { type: "photo filter" };
+  const color = hexToRgbColor(strParam(parameters, "color"));
+  if (color) adjustment.color = color;
+  const density = numParam(parameters, "density");
+  if (density !== undefined) adjustment.density = density;
+  const preserve = boolParam(parameters, "preserveLuminosity");
+  if (preserve !== undefined) adjustment.preserveLuminosity = preserve;
+  return adjustment;
+}
+
+function convertSelectiveColor(
+  parameters: StudioPsdAdjustmentParameters,
+): Extract<AdjustmentLayer, { type: "selective color" }> {
+  const adjustment: Extract<AdjustmentLayer, { type: "selective color" }> = { type: "selective color" };
+  const mode = strParam(parameters, "mode");
+  if (mode === "relative" || mode === "absolute") adjustment.mode = mode;
+  for (const name of SELECTIVE_RANGES) {
+    const range = parameters[`range.${name}`];
+    if (!Array.isArray(range) || range.length < 4) continue;
+    adjustment[name] = { c: range[0]!, m: range[1]!, y: range[2]!, k: range[3]! };
+  }
+  return adjustment;
+}
+
+function convertColorLookup(
+  parameters: StudioPsdAdjustmentParameters,
+): Extract<AdjustmentLayer, { type: "color lookup" }> {
+  const adjustment: Extract<AdjustmentLayer, { type: "color lookup" }> = { type: "color lookup" };
+  const lookupType = strParam(parameters, "lookupType");
+  if (lookupType === "3dlut" || lookupType === "abstractProfile" || lookupType === "deviceLinkProfile") {
+    adjustment.lookupType = lookupType;
+  }
+  const name = strParam(parameters, "name");
+  if (name !== undefined) adjustment.name = name;
+  const fileName = strParam(parameters, "lut3DFileName");
+  if (fileName !== undefined) adjustment.lut3DFileName = fileName;
+  const lutFormat = strParam(parameters, "lutFormat");
+  if (lutFormat === "look" || lutFormat === "cube" || lutFormat === "3dl") adjustment.lutFormat = lutFormat;
+  const dataOrder = strParam(parameters, "dataOrder");
+  if (dataOrder === "rgb" || dataOrder === "bgr") adjustment.dataOrder = dataOrder;
+  const tableOrder = strParam(parameters, "tableOrder");
+  if (tableOrder === "rgb" || tableOrder === "bgr") adjustment.tableOrder = tableOrder;
+  const dither = boolParam(parameters, "dither");
+  if (dither !== undefined) adjustment.dither = dither;
+  const lutBytes = parameters.lutBytes;
+  if (Array.isArray(lutBytes) && lutBytes.length > 0) {
+    adjustment.lut3DFileData = Uint8Array.from(lutBytes);
+  }
+  const profileBytes = parameters.profileBytes;
+  if (Array.isArray(profileBytes) && profileBytes.length > 0) {
+    adjustment.profile = Uint8Array.from(profileBytes);
+  }
+  return adjustment;
+}
+
 const UNSUPPORTED_REASONS: Readonly<Partial<Record<StudioAdjustmentKind, string>>> = {
   lab: "Lab 조정은 PSD 조정 레이어에 대응 종류가 없어 네이티브 조정 레이어로 기록할 수 없습니다.",
 };
@@ -319,6 +415,14 @@ export function convertStudioAdjustmentToPsd(
       return { status: "converted", adjustment: convertPosterize(parameters) };
     case "threshold":
       return { status: "converted", adjustment: convertThreshold(parameters) };
+    case "black-white":
+      return { status: "converted", adjustment: convertBlackWhite(parameters) };
+    case "photo-filter":
+      return { status: "converted", adjustment: convertPhotoFilter(parameters) };
+    case "selective-color":
+      return { status: "converted", adjustment: convertSelectiveColor(parameters) };
+    case "color-lookup":
+      return { status: "converted", adjustment: convertColorLookup(parameters) };
     default:
       return {
         status: "unsupported",

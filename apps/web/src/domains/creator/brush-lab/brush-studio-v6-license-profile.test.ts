@@ -10,7 +10,7 @@ import {
 
 describe("V6 brush engine license profile", () => {
   it("enables GPL and noncommercial providers only in the declared profiles", () => {
-    expect(BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE).toBe("noncommercial-full");
+    expect(BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE).toBe("permissive-only");
     expect(brushStudioV6LicenseProfileAllows("permissive-only", "permissive")).toBe(true);
     expect(brushStudioV6LicenseProfileAllows("permissive-only", "copyleft")).toBe(false);
     expect(brushStudioV6LicenseProfileAllows("permissive-only", "noncommercial")).toBe(false);

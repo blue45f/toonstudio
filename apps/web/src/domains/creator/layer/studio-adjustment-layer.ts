@@ -165,6 +165,10 @@ export const STUDIO_ADJUSTMENT_KIND_LABELS: Readonly<Record<StudioAdjustmentKind
   invert: "반전",
   posterize: "포스터리제이션",
   threshold: "임계값",
+  "black-white": "흑백",
+  "photo-filter": "사진 필터",
+  "selective-color": "선택 색상",
+  "color-lookup": "컬러 룩업",
 };
 
 export function defaultAdjustmentLayerName(kind: StudioAdjustmentKind): string {

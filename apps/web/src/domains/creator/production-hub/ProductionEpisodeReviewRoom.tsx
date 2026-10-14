@@ -47,6 +47,7 @@ import { usePinTaskWorkspaceSync } from "./use-pin-task-workspace-sync";
 import { ProcessCompareViewer } from "./ProcessCompareViewer";
 import type { ProductionManuscriptProcess } from "./production-manuscript-model";
 import { ProductionPagePresence } from "./ProductionPagePresence";
+import { uploadProductionVoiceCommentary } from "./production-voice-commentary-api";
 import { useServerPresenceSync } from "./use-server-presence-sync";
 import { ReviewSessionBar } from "./ReviewSessionBar";
 import { ReviewVoiceCommentaryPanel, type VoiceViewCapture } from "./ReviewVoiceCommentaryPanel";
@@ -336,7 +337,7 @@ export function ProductionEpisodeReviewRoom({
   // 바뀔 때마다 동기화하면 모든 이벤트가 빠짐없이 할 일에 닿는다.
   // 진입 시 1회 실행으로 동기화 이전에 만들어진 핀도 소급 등록된다.
   // 잠금에 막힌 변경은 setComments에 닿지 않아 동기화도 일어나지 않는다.
-  const { syncPinTasksFromDocument } = usePinTaskWorkspaceSync({ aggregate, isDemo });
+  const { syncPinTasksFromDocument } = usePinTaskWorkspaceSync({ aggregate, isDemo, episodeId });
   useEffect(() => {
     if (!comments) return;
     void syncPinTasksFromDocument(comments);
@@ -512,14 +513,15 @@ export function ProductionEpisodeReviewRoom({
   //   룸 패널에 적용하며, 큐가 가리키는 핀을 아래 요약 목록으로 하이라이트한다.
   //   비교 뷰어(ProcessCompareViewer)의 페인·뷰포트는 내부 상태라 호스트에서
   //   강제 적용할 수 없어, 비교 표면 적용은 탭 전환+핀 하이라이트까지가 범위다.
-  // - onSaveTrack(저장): production-hub에서 이 룸이 닿을 수 있는 서버 오디오
-  //   업로드 경로는 없다(레포의 검수 음성 노트 API는 project-graph 식별자와
-  //   전사를 필수로 요구해 회차 룸 props로는 호출할 수 없다). 그래서 서버 정책이
-  //   확정되기 전까지는 패널이 만든 blob 참조 트랙을 이 룸의 세션 상태에
-  //   보관한다 — 이 탭 안에서만 미리듣기가 되고 새로고침하면 사라지며, 모델의
-  //   parse가 blob 오디오를 복원 대상에서 제외하는 정책과 같은 한계다. 정책이
-  //   확정되면 handleSaveVoiceTrack에서 audioBlob을 업로드하고 track.audio를
-  //   kind:"server" 참조로 교체해 같은 상태에 넣으면 된다.
+  // - onSaveTrack(저장): 실제 프로젝트에서는 제작 모듈의 회차 음성 해설
+  //   엔드포인트(POST /production/projects/:projectId/episodes/:episodeId/
+  //   voice-commentaries)로 업로드해 서버 저장 트랙으로 교체한다. 검수 음성
+  //   노트 API는 project-graph 식별자·전사를 필수로 요구해 이 룸에서는 쓸 수
+  //   없어, 같은 운영 정책(5MB·보유 기본 14일/최대 30일·서명 읽기)을 따르는
+  //   전용 경로를 둔다. 데모이거나 업로드가 실패하면 패널이 만든 blob 참조
+  //   트랙을 세션 상태에 그대로 보관한다 — 이 탭 안에서만 미리듣기가 되고
+  //   새로고침하면 사라지며, 모델의 parse가 blob 오디오를 복원 대상에서
+  //   제외하는 정책과 같은 한계다.
   const [voiceTracks, setVoiceTracks] = useState<readonly VoiceCommentaryTrack[]>([]);
   const [voicePanelOpen, setVoicePanelOpen] = useState(false);
   const [voicePinIds, setVoicePinIds] = useState<readonly string[]>([]);
@@ -584,12 +586,27 @@ export function ProductionEpisodeReviewRoom({
   }, [setTab]);
 
   const handleSaveVoiceTrack = useCallback((track: VoiceCommentaryTrack, audioBlob: Blob | null) => {
-    // 서버 저장 정책 확정 지점: 여기서 audioBlob을 업로드해 track.audio를
-    // kind:"server" 참조로 교체한 뒤 저장한다. 지금은 blob 참조 그대로 세션 보관.
-    void audioBlob;
+    // 먼저 세션에 넣어 이 탭에서 바로 재생할 수 있게 하고, 실제 프로젝트면
+    // 서버 저장을 이어 시도한다. 성공하면 서버가 재구성한 트랙(kind:"server"
+    // 참조 + 서명 URL)으로 교체하고, 실패하면 blob 세션 보관이 폴백으로 남는다.
     setVoiceTracks((previous) => [...previous.filter((kept) => kept.id !== track.id), track]);
     setVoicePanelOpen(true);
-  }, []);
+    if (!audioBlob || isDemo) return;
+    void (async () => {
+      try {
+        const { view } = await uploadProductionVoiceCommentary({
+          projectId: aggregate.projectId,
+          episodeId,
+          operationId: `episode-voice-commentary:${track.id}`,
+          track,
+          file: audioBlob,
+        });
+        setVoiceTracks((previous) => [...previous.filter((kept) => kept.id !== track.id), view.track]);
+      } catch {
+        // 서버 저장 실패(권한·용량·네트워크) — 세션 보관이 폴백으로 유지된다.
+      }
+    })();
+  }, [aggregate.projectId, episodeId, isDemo]);
 
   const handleOpenVoicePin = useCallback((threadId: string) => {
     setVoicePinIds([threadId]);

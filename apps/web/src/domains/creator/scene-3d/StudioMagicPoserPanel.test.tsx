@@ -11,6 +11,7 @@ import {
   createStudioMannequinRestPose,
   type StudioMannequinPose,
 } from "./studio-mannequin-poses";
+import type { StudioMannequinLightingRig } from "./studio-mannequin-lighting";
 import type {
   StudioMannequinJointId,
   StudioMannequinVec3,
@@ -20,6 +21,7 @@ function createSceneStub(): StudioMagicPoserScene & {
   setPose: ReturnType<typeof vi.fn>;
   getPose: ReturnType<typeof vi.fn>;
   setJointRotation: ReturnType<typeof vi.fn>;
+  setLightingRig: ReturnType<typeof vi.fn>;
 } {
   return {
     setPose: vi.fn<(pose: StudioMannequinPose) => void>(),
@@ -27,6 +29,7 @@ function createSceneStub(): StudioMagicPoserScene & {
     setJointRotation: vi.fn<
       (jointId: StudioMannequinJointId, rotation: StudioMannequinVec3) => void
     >(),
+    setLightingRig: vi.fn<(rig: StudioMannequinLightingRig) => void>(),
   };
 }
 
@@ -84,6 +87,46 @@ describe("StudioMagicPoserPanel", () => {
     expect(
       screen.getByText("LT 명암 힌트", { selector: "dt" }),
     ).toBeTruthy();
+  });
+
+  it("마운트와 시간대 프리셋이 씬 setLightingRig로 전달된다 (MP3 실연결)", () => {
+    const scene = createSceneStub();
+    render(<StudioMagicPoserPanel scene={scene} />);
+    // 마운트 시점의 초기(빈) 릭도 씬에 동기화된다.
+    expect(scene.setLightingRig).toHaveBeenCalledWith(
+      expect.objectContaining({ lights: [], timeOfDay: "noon", shadowsEnabled: true }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "조명" }));
+    expect(screen.getByText(/뷰포트 조명에 실시간으로 반영/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "황혼" }));
+    expect(scene.setLightingRig).toHaveBeenLastCalledWith(
+      expect.objectContaining({ timeOfDay: "dusk", shadowsEnabled: true }),
+    );
+    const duskRig = scene.setLightingRig.mock.lastCall?.[0] as StudioMannequinLightingRig;
+    expect(duskRig.lights).toHaveLength(2);
+    expect(duskRig.lights[0]).toMatchObject({ kind: "directional", color: "#ff7a4d" });
+    // 전 프리셋이 같은 경로로 전달된다.
+    for (const [label, timeOfDay] of [
+      ["새벽", "dawn"],
+      ["정오", "noon"],
+      ["밤", "night"],
+    ] as const) {
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      expect(scene.setLightingRig).toHaveBeenLastCalledWith(
+        expect.objectContaining({ timeOfDay }),
+      );
+    }
+  });
+
+  it("그림자 토글이 씬 setLightingRig로 전달된다 (MP3 실연결)", () => {
+    const scene = createSceneStub();
+    render(<StudioMagicPoserPanel scene={scene} />);
+    fireEvent.click(screen.getByRole("button", { name: "조명" }));
+    fireEvent.click(screen.getByRole("button", { name: "황혼" }));
+    fireEvent.click(screen.getByRole("button", { name: "그림자 켬" }));
+    expect(scene.setLightingRig).toHaveBeenLastCalledWith(
+      expect.objectContaining({ timeOfDay: "dusk", shadowsEnabled: false }),
+    );
   });
 
   it("카메라 북마크를 저장하고 불러온다 (MP4)", () => {

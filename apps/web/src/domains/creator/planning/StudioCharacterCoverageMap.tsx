@@ -12,6 +12,11 @@
  * 데이터는 전부 props 다. 선택 상태는 controlled(selectedCharacterId)를
  * 우선하고, 없으면 내부 상태로 동작한다 (캐릭터 시트 패널이 선택을 공유할 때
  * controlled 로 붙는다).
+ *
+ * 회차 성과 오버레이(선택 prop `episodeMetrics`): 실집계가 연결된 경우에만
+ * 회차 열 머리 아래에 조회·잔존 배지를 겹친다. 연결 전·로딩·실패에서는
+ * 숫자를 만들지 않고 상태 한 줄만 보여 주며, prop 이 없으면 기존 화면과
+ * 완전히 동일하다 (studio-episode-metrics-overlay.ts 의 정직성 규칙).
  */
 import { useMemo, useState } from "react";
 import type { StudioStoryCharacter } from "../studio-story-bible";
@@ -22,6 +27,11 @@ import {
   type CharacterAppearanceRecord,
   type CoverageEpisodeRef,
 } from "./studio-character-coverage";
+import {
+  buildEpisodeMetricsOverlay,
+  episodeMetricsStatusLine,
+  type EpisodeMetricsLoad,
+} from "./studio-episode-metrics-overlay";
 
 export interface StudioCharacterCoverageMapProps {
   readonly characters: readonly StudioStoryCharacter[];
@@ -37,6 +47,11 @@ export interface StudioCharacterCoverageMapProps {
   readonly onOpenEpisode?: (episodeId: string) => void;
   /** 이 회차 수 이상 기록에 없으면 "오래 안 나왔어요"로 모은다. 기본 5. */
   readonly gapThreshold?: number;
+  /**
+   * 회차 성과(실집계) 입력. 호스트가 resolveEpisodeMetricsLoad 로 접어서 넘긴다.
+   * 없거나 live 가 아니면 어떤 성과 숫자도 표시하지 않는다.
+   */
+  readonly episodeMetrics?: EpisodeMetricsLoad | null;
 }
 
 export function StudioCharacterCoverageMap({
@@ -49,10 +64,27 @@ export function StudioCharacterCoverageMap({
   onSelectCharacter,
   onOpenEpisode,
   gapThreshold = 5,
+  episodeMetrics,
 }: StudioCharacterCoverageMapProps) {
   const coverage = useMemo(
     () => buildCharacterCoverage(characters, episodes, appearances),
     [characters, episodes, appearances],
+  );
+  // 성과 오버레이는 선택 입력이다. 실패·연결 전이어도 커버리지 계산과 무관하게
+  // 빈 오버레이로 접히므로 기존 기획 흐름을 깨지 않는다.
+  const metricsOverlay = useMemo(
+    () =>
+      episodeMetrics
+        ? buildEpisodeMetricsOverlay(coverage.episodes, episodeMetrics)
+        : null,
+    [coverage.episodes, episodeMetrics],
+  );
+  const metricsByEpisodeId = useMemo(
+    () =>
+      new Map(
+        (metricsOverlay?.entries ?? []).map((entry) => [entry.episodeId, entry] as const),
+      ),
+    [metricsOverlay],
   );
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(
     characters[0]?.id ?? null,
@@ -89,6 +121,9 @@ export function StudioCharacterCoverageMap({
           회차마다 누가 어떤 모습으로 나왔는지 모아 봤어요. 오래 안 나온 캐릭터를 다시
           그릴 때, 마지막 모습을 여기서 확인하세요.
         </p>
+        {metricsOverlay && (
+          <p role="status">{episodeMetricsStatusLine(metricsOverlay)}</p>
+        )}
       </header>
 
       {coverage.latestRecordedEpisodeNumber === null && (
@@ -134,6 +169,15 @@ export function StudioCharacterCoverageMap({
                   `${episode.episodeNumber}화`
                 )}
                 {episode.hasAnyRecord ? "" : " (기록 없음)"}
+                {(() => {
+                  const entry = metricsByEpisodeId.get(episode.episodeId);
+                  return entry?.badge ? (
+                    <span data-episode-metrics={episode.episodeNumber} title={entry.detail ?? undefined}>
+                      {" · "}
+                      {entry.badge}
+                    </span>
+                  ) : null;
+                })()}
               </th>
             ))}
             <th scope="col">합계</th>

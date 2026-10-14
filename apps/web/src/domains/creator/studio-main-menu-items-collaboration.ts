@@ -16,7 +16,7 @@
  * `studio-main-menu-group-spec.ts`.
  */
 
-import { ClipboardCheck, MessagesSquare, Presentation, Users } from "lucide-react";
+import { ArrowLeftRight, ClipboardCheck, MessagesSquare, Presentation, Users } from "lucide-react";
 
 import type { StudioMainMenuItemContext } from "./studio-main-menu-contract";
 import type { StudioMainMenuItem } from "./studio-main-menu-model";
@@ -58,6 +58,17 @@ export function buildStudioCollaborationMenuItems({
         : undefined,
       onSelect: () => {
         ui.openPageReview();
+      },
+    },
+    {
+      id: "send-to-compare",
+      commandId: "collaboration.send-to-compare",
+      label: "현재 페이지를 비교 검수로 보내기",
+      icon: ArrowLeftRight,
+      onSelect: () => {
+        // 핸들러가 스스로 작품 미연결 등을 공지하므로 항목은 상시 활성이다.
+        // 표면 액션이 없는 호스트에서는 조용히 닫힌다.
+        ui.sendPageToCompareReview?.();
       },
     },
     {

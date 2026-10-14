@@ -11,6 +11,13 @@
  *   호스트는 그 세그먼트를 캔버스에 그리고 studio-perspective-pen-snap 으로
  *   펜 입력을 스냅한다. 꺼져 있으면 이 섹션은 접혀 있고 어떤 콜백도
  *   나가지 않아 기존 동작과 완전히 동일하다(기본값 꺼짐).
+ * - 원근 가이드 확장: 장면 프리셋 6종(복도·실내 코너·거리·넓은 광장·
+ *   고층 올려보기·내려보기), 격자 밀도 4단계, 피쉬아이 곡선 표시,
+ *   보조 격자(동심원·방사). 전부 켠 상태에서만 나타나고, 기본값
+ *   (프리셋 없음·보통 밀도·직선·보조 없음)은 종전 상태와 동일하다.
+ *   상태에는 presetId/gridDensity/displayMode/auxiliaryKind 가 함께
+ *   나가므로 호스트가 실제 캔버스 크기로 다시 만들 때도 같은 옵션을
+ *   buildPerspectiveGuideSegments 에 넘기면 된다.
  * - 대칭 그리기: 모드(수직/수평/4방향/방사형) + 축·각도·분할 수 조절
  *
  * 접근성: 정적 SVG 프리뷰(role="img" + aria-label), 토글은 aria-pressed,
@@ -38,13 +45,20 @@ import {
   type StudioRulerKind,
 } from "./studio-rulers";
 import {
-  buildPerspectiveGridSegments,
+  buildPerspectiveGuideSegments,
   createDefaultPerspectiveGuide,
+  createPerspectiveGuideFromScenePreset,
+  PERSPECTIVE_GRID_DENSITIES,
+  PERSPECTIVE_SCENE_PRESETS,
   PERSPECTIVE_KINDS,
   perspectiveVanishingPoints,
   type GuideLine,
+  type PerspectiveAuxiliaryGuideKind,
+  type PerspectiveGridDensity,
   type PerspectiveGuide,
+  type PerspectiveGuideDisplayMode,
   type PerspectiveKind,
+  type PerspectiveScenePresetId,
 } from "./studio-perspective-guide";
 import {
   STUDIO_SYMMETRY_FOLDS_MAX,
@@ -85,8 +99,9 @@ const KIND_CARD_META: ReadonlyArray<{
  * enabled=false 이면 segments는 항상 빈 배열이고, 호스트는 오버레이를
  * 그리지 않으며 펜 스냅 세션도 열지 않는다(기존 동작과 동일).
  * segments는 패널 좌표 공간(기본 320×240)으로 자른 격자이며, 호스트가
- * 실제 캔버스 크기로 다시 만들려면 guide + buildPerspectiveGridSegments
- * (studio-perspective-guide)를 쓰면 된다.
+ * 실제 캔버스 크기로 다시 만들려면 guide + buildPerspectiveGuideSegments
+ * (studio-perspective-guide)에 gridDensity/displayMode/auxiliaryKind
+ * 옵션을 함께 넘기면 된다.
  */
 export interface StudioPerspectiveGuideState {
   readonly enabled: boolean;
@@ -94,6 +109,14 @@ export interface StudioPerspectiveGuideState {
   readonly snapEnabled: boolean;
   readonly guide: PerspectiveGuide;
   readonly segments: readonly GuideLine[];
+  /** 적용된 장면 프리셋. 1/2/3점 수동 선택이면 null. */
+  readonly presetId?: PerspectiveScenePresetId | null;
+  /** 격자 밀도. 기본 "standard"(종전 divisions와 동일). */
+  readonly gridDensity?: PerspectiveGridDensity;
+  /** 표시 모드. "fisheye"면 segments는 곡선 근사 폴리라인이다. */
+  readonly displayMode?: PerspectiveGuideDisplayMode;
+  /** 보조 격자 종류. 기본 "none". */
+  readonly auxiliaryKind?: PerspectiveAuxiliaryGuideKind;
 }
 
 export interface StudioRulersPanelProps {
@@ -105,8 +128,16 @@ export interface StudioRulersPanelProps {
   readonly initialPerspectiveGuideEnabled?: boolean;
   /** 원근 가이드 초기 투시 종류. 기본 "two-point". */
   readonly initialPerspectiveKind?: PerspectiveKind;
-  /** 원근 가이드 초기 상태 전체(종류보다 우선). */
+  /** 원근 가이드 초기 상태 전체(프리셋·종류보다 우선). */
   readonly initialPerspectiveGuide?: PerspectiveGuide;
+  /** 원근 가이드 초기 장면 프리셋(초기 상태 전체보다 낮고 종류보다 높다). */
+  readonly initialPerspectivePresetId?: PerspectiveScenePresetId;
+  /** 원근 가이드 초기 격자 밀도. 기본 "standard". */
+  readonly initialPerspectiveGridDensity?: PerspectiveGridDensity;
+  /** 원근 가이드 초기 표시 모드. 기본 "linear". */
+  readonly initialPerspectiveDisplayMode?: PerspectiveGuideDisplayMode;
+  /** 원근 가이드 초기 보조 격자. 기본 "none". */
+  readonly initialPerspectiveAuxiliaryKind?: PerspectiveAuxiliaryGuideKind;
   /** 원근 가이드 격자를 만들 캔버스 크기. 기본 320×240(패널 좌표 공간). */
   readonly perspectiveCanvasSize?: {
     readonly width: number;
@@ -115,6 +146,12 @@ export interface StudioRulersPanelProps {
   readonly onPerspectiveGuideChange?: (
     state: StudioPerspectiveGuideState,
   ) => void;
+  /**
+   * 원근 가이드 섹션만 렌더한다(인스펙터 자 섹션 마운트용). 자 목록·대칭은
+   * 인스펙터의 전용 섹션이 이미 실연결로 제공하므로 중복 렌더를 막는다.
+   * 기본 false — 기존 전체 패널 렌더와 동일.
+   */
+  readonly perspectiveOnly?: boolean;
 }
 
 function RulerPreview({
@@ -254,8 +291,13 @@ export function StudioRulersPanel({
   initialPerspectiveGuideEnabled = false,
   initialPerspectiveKind = "two-point",
   initialPerspectiveGuide,
+  initialPerspectivePresetId,
+  initialPerspectiveGridDensity = "standard",
+  initialPerspectiveDisplayMode = "linear",
+  initialPerspectiveAuxiliaryKind = "none",
   perspectiveCanvasSize,
   onPerspectiveGuideChange,
+  perspectiveOnly = false,
 }: StudioRulersPanelProps): ReactElement {
   const tx = (ko: string, en: string): string =>
     translateBilingualPair(SCOPE, ko, en);
@@ -279,32 +321,111 @@ export function StudioRulersPanel({
   const [perspectiveGuide, setPerspectiveGuide] = useState<PerspectiveGuide>(
     () =>
       initialPerspectiveGuide ??
+      (initialPerspectivePresetId
+        ? createPerspectiveGuideFromScenePreset(
+            initialPerspectivePresetId,
+            perspectiveCanvas,
+          )
+        : null) ??
       createDefaultPerspectiveGuide(initialPerspectiveKind, perspectiveCanvas),
   );
+  const [perspectivePresetId, setPerspectivePresetId] =
+    useState<PerspectiveScenePresetId | null>(
+      initialPerspectiveGuide ? null : (initialPerspectivePresetId ?? null),
+    );
+  const [perspectiveGridDensity, setPerspectiveGridDensity] =
+    useState<PerspectiveGridDensity>(initialPerspectiveGridDensity);
+  const [perspectiveDisplayMode, setPerspectiveDisplayMode] =
+    useState<PerspectiveGuideDisplayMode>(initialPerspectiveDisplayMode);
+  const [perspectiveAuxiliaryKind, setPerspectiveAuxiliaryKind] =
+    useState<PerspectiveAuxiliaryGuideKind>(initialPerspectiveAuxiliaryKind);
+
+  interface PerspectiveExtras {
+    readonly presetId: PerspectiveScenePresetId | null;
+    readonly gridDensity: PerspectiveGridDensity;
+    readonly displayMode: PerspectiveGuideDisplayMode;
+    readonly auxiliaryKind: PerspectiveAuxiliaryGuideKind;
+  }
+
+  const currentPerspectiveExtras = (): PerspectiveExtras => ({
+    presetId: perspectivePresetId,
+    gridDensity: perspectiveGridDensity,
+    displayMode: perspectiveDisplayMode,
+    auxiliaryKind: perspectiveAuxiliaryKind,
+  });
 
   const buildPerspectiveState = (
     enabled: boolean,
     snapEnabled: boolean,
     guide: PerspectiveGuide,
+    extras: PerspectiveExtras,
   ): StudioPerspectiveGuideState => ({
     enabled,
     snapEnabled,
     guide,
+    presetId: extras.presetId,
+    gridDensity: extras.gridDensity,
+    displayMode: extras.displayMode,
+    auxiliaryKind: extras.auxiliaryKind,
     segments: enabled
-      ? buildPerspectiveGridSegments({ guide, canvas: perspectiveCanvas })
+      ? buildPerspectiveGuideSegments({
+          guide,
+          canvas: perspectiveCanvas,
+          options: {
+            density: extras.gridDensity,
+            displayMode: extras.displayMode,
+            auxiliaryKind: extras.auxiliaryKind,
+          },
+        })
       : [],
   });
+
+  const emitPerspectiveFull = (
+    enabled: boolean,
+    snapEnabled: boolean,
+    guide: PerspectiveGuide,
+    extras: PerspectiveExtras,
+  ): void => {
+    setPerspectiveEnabled(enabled);
+    setPerspectiveSnapEnabled(snapEnabled);
+    setPerspectiveGuide(guide);
+    setPerspectivePresetId(extras.presetId);
+    setPerspectiveGridDensity(extras.gridDensity);
+    setPerspectiveDisplayMode(extras.displayMode);
+    setPerspectiveAuxiliaryKind(extras.auxiliaryKind);
+    onPerspectiveGuideChange?.(
+      buildPerspectiveState(enabled, snapEnabled, guide, extras),
+    );
+  };
 
   const emitPerspective = (
     enabled: boolean,
     snapEnabled: boolean,
     guide: PerspectiveGuide,
   ): void => {
-    setPerspectiveEnabled(enabled);
-    setPerspectiveSnapEnabled(snapEnabled);
-    setPerspectiveGuide(guide);
-    onPerspectiveGuideChange?.(
-      buildPerspectiveState(enabled, snapEnabled, guide),
+    emitPerspectiveFull(enabled, snapEnabled, guide, currentPerspectiveExtras());
+  };
+
+  /** 장면 프리셋 적용 — 소실점/수평선 배치를 한 번에 바꾼다. */
+  const applyPerspectivePreset = (presetId: PerspectiveScenePresetId): void => {
+    const guide = createPerspectiveGuideFromScenePreset(
+      presetId,
+      perspectiveCanvas,
+    );
+    if (!guide) return;
+    emitPerspectiveFull(true, perspectiveSnapEnabled, guide, {
+      ...currentPerspectiveExtras(),
+      presetId,
+    });
+  };
+
+  /** 1/2/3점 수동 선택 — 프리셋 적용 표시는 해제된다. */
+  const applyPerspectiveKind = (kind: PerspectiveKind): void => {
+    emitPerspectiveFull(
+      true,
+      perspectiveSnapEnabled,
+      createDefaultPerspectiveGuide(kind, perspectiveCanvas),
+      { ...currentPerspectiveExtras(), presetId: null },
     );
   };
 
@@ -326,6 +447,29 @@ export function StudioRulersPanel({
     perspectiveEnabled,
     perspectiveSnapEnabled,
     perspectiveGuide,
+    currentPerspectiveExtras(),
+  );
+
+  const perspectiveDensityLabel = (density: PerspectiveGridDensity): string =>
+    tx(
+      { sparse: "성김", standard: "보통", dense: "촘촘", fine: "아주 촘촘" }[
+        density
+      ],
+      { sparse: "Sparse", standard: "Standard", dense: "Dense", fine: "Fine" }[
+        density
+      ],
+    );
+
+  const perspectiveAuxiliaryLabel = (
+    kind: PerspectiveAuxiliaryGuideKind,
+  ): string =>
+    tx(
+      { none: "없음", concentric: "동심원", radial: "방사" }[kind],
+      { none: "None", concentric: "Concentric", radial: "Radial" }[kind],
+    );
+
+  const activePerspectivePreset = PERSPECTIVE_SCENE_PRESETS.find(
+    (preset) => preset.id === perspectivePresetId,
   );
 
   const kindName = (kind: StudioRulerKind): string =>
@@ -419,9 +563,10 @@ export function StudioRulersPanel({
 
   return (
     <section
-      aria-label={tx("자 & 대칭 그리기", "Rulers & Symmetry")}
+      aria-label={perspectiveOnly ? tx("원근 가이드", "Perspective guide") : tx("자 & 대칭 그리기", "Rulers & Symmetry")}
       className="w-full rounded-2xl border border-line bg-card p-4 text-fg"
     >
+      {!perspectiveOnly && (<>
       <h2 className="text-sm font-bold">{tx("자 & 대칭 그리기", "Rulers & Symmetry")}</h2>
       <p className="mt-1 text-xs leading-5 text-fg-2">
         {tx(
@@ -550,6 +695,7 @@ export function StudioRulersPanel({
           ))}
         </ul>
       )}
+      </>)}
 
       {/* 원근 가이드 */}
       <div className="mt-4 flex items-center justify-between gap-2">
@@ -602,14 +748,11 @@ export function StudioRulersPanel({
               <button
                 key={kind}
                 type="button"
-                aria-pressed={perspectiveGuide.kind === kind}
-                onClick={() =>
-                  emitPerspective(
-                    true,
-                    perspectiveSnapEnabled,
-                    createDefaultPerspectiveGuide(kind, perspectiveCanvas),
-                  )
+                aria-pressed={
+                  perspectivePresetId === null &&
+                  perspectiveGuide.kind === kind
                 }
+                onClick={() => applyPerspectiveKind(kind)}
                 className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
                   perspectiveGuide.kind === kind
                     ? "border-[#4f9cf9] bg-[#4f9cf9]/15 text-fg"
@@ -649,6 +792,130 @@ export function StudioRulersPanel({
               {tx("그리기 스냅", "Drawing snap")}
             </button>
           </div>
+          <div
+            className="flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={tx("장면 프리셋", "Scene presets")}
+          >
+            {PERSPECTIVE_SCENE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                aria-pressed={perspectivePresetId === preset.id}
+                onClick={() => applyPerspectivePreset(preset.id)}
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                  perspectivePresetId === preset.id
+                    ? "border-[#4f9cf9] bg-[#4f9cf9]/15 text-fg"
+                    : "border-line bg-card text-fg-2 hover:text-fg"
+                }`}
+              >
+                {tx(preset.labelKo, preset.labelEn)}
+              </button>
+            ))}
+          </div>
+          {activePerspectivePreset && (
+            <p className="text-[0.68rem] leading-4 text-fg-3">
+              {tx(
+                activePerspectivePreset.descriptionKo,
+                activePerspectivePreset.descriptionEn,
+              )}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div
+              className="flex flex-wrap gap-1.5"
+              role="group"
+              aria-label={tx("격자 밀도", "Grid density")}
+            >
+              {PERSPECTIVE_GRID_DENSITIES.map((density) => (
+                <button
+                  key={density}
+                  type="button"
+                  aria-pressed={perspectiveGridDensity === density}
+                  onClick={() =>
+                    emitPerspectiveFull(
+                      true,
+                      perspectiveSnapEnabled,
+                      perspectiveGuide,
+                      { ...currentPerspectiveExtras(), gridDensity: density },
+                    )
+                  }
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                    perspectiveGridDensity === density
+                      ? "border-[#4f9cf9] bg-[#4f9cf9]/15 text-fg"
+                      : "border-line bg-card text-fg-2 hover:text-fg"
+                  }`}
+                >
+                  {perspectiveDensityLabel(density)}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              aria-pressed={perspectiveDisplayMode === "fisheye"}
+              aria-label={
+                perspectiveDisplayMode === "fisheye"
+                  ? tx("피쉬아이 곡선 끄기", "Turn off fisheye curves")
+                  : tx("피쉬아이 곡선 켜기", "Turn on fisheye curves")
+              }
+              title={
+                perspectiveDisplayMode === "fisheye"
+                  ? tx("피쉬아이 곡선 끄기", "Turn off fisheye curves")
+                  : tx("피쉬아이 곡선 켜기", "Turn on fisheye curves")
+              }
+              onClick={() =>
+                emitPerspectiveFull(
+                  true,
+                  perspectiveSnapEnabled,
+                  perspectiveGuide,
+                  {
+                    ...currentPerspectiveExtras(),
+                    displayMode:
+                      perspectiveDisplayMode === "fisheye"
+                        ? "linear"
+                        : "fisheye",
+                  },
+                )
+              }
+              className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                perspectiveDisplayMode === "fisheye"
+                  ? "border-[#4f9cf9] bg-[#4f9cf9]/15 text-fg"
+                  : "border-line bg-card text-fg-2 hover:text-fg"
+              }`}
+            >
+              {tx("피쉬아이 곡선", "Fisheye curves")}
+            </button>
+          </div>
+          <div
+            className="flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={tx("보조 격자", "Auxiliary grid")}
+          >
+            {(
+              ["none", "concentric", "radial"] as readonly PerspectiveAuxiliaryGuideKind[]
+            ).map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                aria-pressed={perspectiveAuxiliaryKind === kind}
+                onClick={() =>
+                  emitPerspectiveFull(
+                    true,
+                    perspectiveSnapEnabled,
+                    perspectiveGuide,
+                    { ...currentPerspectiveExtras(), auxiliaryKind: kind },
+                  )
+                }
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                  perspectiveAuxiliaryKind === kind
+                    ? "border-[#4f9cf9] bg-[#4f9cf9]/15 text-fg"
+                    : "border-line bg-card text-fg-2 hover:text-fg"
+                }`}
+              >
+                {perspectiveAuxiliaryLabel(kind)}
+              </button>
+            ))}
+          </div>
           <svg
             viewBox={`0 0 ${perspectiveCanvas.width} ${perspectiveCanvas.height}`}
             role="img"
@@ -665,9 +932,15 @@ export function StudioRulersPanel({
                 y1={segment.from.y}
                 x2={segment.to.x}
                 y2={segment.to.y}
-                stroke="#f59e0b"
+                stroke={segment.family === "auxiliary" ? "#22b8a8" : "#f59e0b"}
                 strokeWidth="1"
-                opacity={segment.family === "horizon" ? "0.9" : "0.55"}
+                opacity={
+                  segment.family === "horizon"
+                    ? "0.9"
+                    : segment.family === "auxiliary"
+                      ? "0.4"
+                      : "0.55"
+                }
               />
             ))}
             {perspectiveVanishingPoints(perspectiveGuide).map(
@@ -696,6 +969,7 @@ export function StudioRulersPanel({
         </div>
       )}
 
+      {!perspectiveOnly && (<>
       {/* 대칭 그리기 */}
       <h3 className="mt-4 text-xs font-bold text-fg-2">{tx("대칭 그리기", "Mirror drawing")}</h3>
       <p className="mt-1 text-[0.72rem] leading-5 text-fg-3">
@@ -792,6 +1066,7 @@ export function StudioRulersPanel({
           </p>
         </div>
       )}
+      </>)}
     </section>
   );
 }

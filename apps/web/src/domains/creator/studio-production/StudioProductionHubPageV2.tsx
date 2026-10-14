@@ -54,6 +54,7 @@ import {
   productionWorkspaceHasContent,
   resolveStudioProductionWorkspaceMode,
   studioProductionWorkspaceCapabilities,
+  type ProductionTask,
   type ProductionVersionSnapshot,
   type ProductionWorkspace,
   type StudioProductionWorkspaceMode,
@@ -70,6 +71,12 @@ import {
   StudioProductionOperationsPanel,
   type StudioProductionRoleCandidate,
 } from "./StudioProductionOperationsPanel";
+import { CreatorRoleTaskInbox } from "./CreatorRoleTaskInbox";
+import { getProductionProjectByWork } from "../production-hub/production-api";
+import {
+  productionEpisodeRoomPath,
+  productionSurfacePath,
+} from "../production-hub/production-project-surfaces";
 import { StudioProductionReviewBoard } from "./StudioProductionReviewBoard";
 import { StudioProductionTaskBoard } from "./StudioProductionTaskBoard";
 import {
@@ -674,6 +681,35 @@ function StudioProductionHubWorkspace({
           / workspace.tasks.length,
       );
 
+  // 역할 과제 인박스의 "내 역할" — 워크스페이스 역할 배정 중 내 계정에 걸린 역할들.
+  const myActiveRoles = useMemo(
+    () => (workspace.roleAssignments ?? [])
+      .filter((assignment) => myProfile !== null && assignment.memberId === myProfile.id)
+      .flatMap((assignment) => assignment.roles),
+    [workspace.roleAssignments, myProfile],
+  );
+
+  // 핀 할 일 클릭 — 동기화가 기록한 회차(pinEpisodeId)가 있으면 그 회차 룸으로,
+  // 없으면(기록 도입 전 핀) 같은 작품의 회차 목록으로 이동한다. 작품→제작 프로젝트
+  // 해석은 서버 조회가 필요해 실패하면 공지로 남긴다.
+  const openPinTask = useCallback((task: ProductionTask) => {
+    if (mode === "demo" || !serverWorkId) {
+      setNotice("검수 핀이 있는 회차로 이동하려면 저장된 작품에서 열어 주세요.");
+      return;
+    }
+    void (async () => {
+      try {
+        const record = await getProductionProjectByWork(serverWorkId);
+        const projectId = record.aggregate.projectId;
+        navigate(task.pinEpisodeId
+          ? productionEpisodeRoomPath(projectId, task.pinEpisodeId)
+          : productionSurfacePath(projectId, "episodes"));
+      } catch {
+        setNotice("연결된 제작 프로젝트를 찾지 못해 회차 룸으로 이동하지 못했습니다.");
+      }
+    })();
+  }, [mode, navigate, serverWorkId]);
+
   const addTask = () => void commit((current) => ({
     ...current,
     tasks: [
@@ -994,6 +1030,12 @@ function StudioProductionHubWorkspace({
               </div>
             </Card>
             </div>
+            <CreatorRoleTaskInbox
+              workspace={workspace}
+              currentUserId={myProfile?.id ?? null}
+              activeRoles={myActiveRoles}
+              onOpenPinTask={openPinTask}
+            />
             <StudioProductionOperationsPanel
               workspace={workspace}
               canEdit={capabilities.canEdit && !loadError && persistence !== "loading" && persistence !== "saving"}

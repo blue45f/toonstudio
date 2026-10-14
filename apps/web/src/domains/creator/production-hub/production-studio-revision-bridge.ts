@@ -14,6 +14,23 @@ import type {
   StudioProjectRevisionRecord,
 } from "../project-graph/studio-project-graph-client";
 
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type ProductionRevisionBridgeTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: ProductionRevisionBridgeTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
 export type ProductionStudioBindingStatus =
   | "bound"
   | "stale"
@@ -209,6 +226,7 @@ function taskBinding(
   source: ProductionRevisionBindingSource,
   task: ProductionTask,
   candidates: readonly StudioRevisionCandidate[],
+  translate: ProductionRevisionBridgeTranslate,
 ): ProductionTaskRevisionBinding {
   const department = inferProductionTaskDepartment(task, source.assignments);
   const matched = findExactCandidate(candidates, task.inputRevisionRefs);
@@ -220,7 +238,7 @@ function taskBinding(
       department,
       matched,
       recommended,
-      reason: `${matched.artifactTitle} ${matched.revisionRef.id}에 고정됨`,
+      reason: translate("productionHub.revisionBinding.bound", "{title} {revisionId}에 고정됨", { title: matched.artifactTitle, revisionId: matched.revisionRef.id }),
     };
   }
   if (containsStaleStudioRef(candidates, task.inputRevisionRefs)) {
@@ -230,7 +248,7 @@ function taskBinding(
       department,
       matched: null,
       recommended,
-      reason: "Studio revision ID는 같지만 digest 또는 lineage가 다릅니다.",
+      reason: translate("productionHub.revisionBinding.stale", "Studio revision ID는 같지만 digest 또는 lineage가 다릅니다."),
     };
   }
   if (!recommended) {
@@ -240,7 +258,7 @@ function taskBinding(
       department,
       matched: null,
       recommended: null,
-      reason: "작업 범위와 공정에 맞는 Studio 산출물 revision이 없습니다.",
+      reason: translate("productionHub.revisionBinding.noCompatible", "작업 범위와 공정에 맞는 Studio 산출물 revision이 없습니다."),
     };
   }
   return {
@@ -249,13 +267,16 @@ function taskBinding(
     department,
     matched: null,
     recommended,
-    reason: `${recommended.artifactTitle}의 ${recommended.approved ? "승인" : "최신"} revision을 고정할 수 있습니다.`,
+    reason: recommended.approved
+      ? translate("productionHub.revisionBinding.unboundApproved", "{title}의 승인 revision을 고정할 수 있습니다.", { title: recommended.artifactTitle })
+      : translate("productionHub.revisionBinding.unboundLatest", "{title}의 최신 revision을 고정할 수 있습니다.", { title: recommended.artifactTitle }),
   };
 }
 
 function submissionBinding(
   submission: Submission,
   candidates: readonly StudioRevisionCandidate[],
+  translate: ProductionRevisionBridgeTranslate,
 ): ProductionSubmissionRevisionBinding {
   const matched = findExactCandidate(candidates, [submission.revisionRef]);
   if (matched) {
@@ -263,7 +284,7 @@ function submissionBinding(
       submission,
       status: "bound",
       matched,
-      reason: `${matched.artifactTitle} ${matched.revisionRef.id} 제출본`,
+      reason: translate("productionHub.revisionBinding.submissionBound", "{title} {revisionId} 제출본", { title: matched.artifactTitle, revisionId: matched.revisionRef.id }),
     };
   }
   if (containsStaleStudioRef(candidates, [submission.revisionRef])) {
@@ -271,14 +292,14 @@ function submissionBinding(
       submission,
       status: "stale",
       matched: null,
-      reason: "제출 revision의 digest 또는 lineage가 Studio 정본과 다릅니다.",
+      reason: translate("productionHub.revisionBinding.submissionStale", "제출 revision의 digest 또는 lineage가 Studio 정본과 다릅니다."),
     };
   }
   return {
     submission,
     status: "unbound",
     matched: null,
-    reason: "제출 revision을 현재 Studio ProjectGraph에서 찾을 수 없습니다.",
+    reason: translate("productionHub.revisionBinding.submissionNotFound", "제출 revision을 현재 Studio ProjectGraph에서 찾을 수 없습니다."),
   };
 }
 
@@ -286,11 +307,12 @@ export function auditProductionStudioRevisionBindings(
   source: ProductionRevisionBindingSource,
   project: StudioProjectGraphSnapshot,
   revisionsByArtifact: Readonly<Record<string, readonly StudioProjectRevisionRecord[]>>,
+  translate: ProductionRevisionBridgeTranslate = defaultTranslate,
 ): ProductionStudioRevisionAudit {
   const candidates = createStudioRevisionCandidates(project, revisionsByArtifact);
-  const tasks = source.tasks.map((task) => taskBinding(source, task, candidates));
+  const tasks = source.tasks.map((task) => taskBinding(source, task, candidates, translate));
   const submissions = source.submissions.map((submission) =>
-    submissionBinding(submission, candidates));
+    submissionBinding(submission, candidates, translate));
   return Object.freeze({
     workMatches: source.workId === project.workId,
     candidates,
@@ -320,11 +342,14 @@ export function pinProductionTaskToStudioRevision(
   });
 }
 
-export function bridgeStatusLabel(status: ProductionStudioBindingStatus): string {
+export function bridgeStatusLabel(
+  status: ProductionStudioBindingStatus,
+  translate: ProductionRevisionBridgeTranslate = defaultTranslate,
+): string {
   switch (status) {
-    case "bound": return "정본 연결";
-    case "stale": return "불일치";
-    case "unbound": return "연결 필요";
-    case "no-compatible-revision": return "산출물 필요";
+    case "bound": return translate("productionHub.revisionBinding.statusBound", "정본 연결");
+    case "stale": return translate("productionHub.revisionBinding.statusStale", "불일치");
+    case "unbound": return translate("productionHub.revisionBinding.statusUnbound", "연결 필요");
+    case "no-compatible-revision": return translate("productionHub.revisionBinding.statusNoCompatible", "산출물 필요");
   }
 }

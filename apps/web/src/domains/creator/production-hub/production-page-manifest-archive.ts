@@ -9,6 +9,24 @@ import { manifestPageFromPreview, type ProductionManifestPage, type ProductionRe
 
 const encoder = new TextEncoder();
 
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type ProductionPageManifestTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: ProductionPageManifestTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
+
 export const PRODUCTION_PAGE_MANIFEST_SCHEMA = "toonstudio.page-manifest.v1";
 export const PRODUCTION_PAGE_MANIFEST_MIME = "application/vnd.comicbook+zip";
 
@@ -23,6 +41,8 @@ export interface ProductionPageManifestArchiveInput {
   readonly onProgress?: StudioPackageArchiveBuildOptions["onProgress"];
   readonly fetcher?: typeof fetch;
   readonly archiveBuilder?: typeof buildStudioPackageArchiveBlob;
+  /** 아카이브 오류 문구 번역자. 미지정 시 한국어 원문을 쓴다. */
+  readonly translate?: ProductionPageManifestTranslate;
 }
 
 export interface ProductionPageManifestArchiveResult {
@@ -118,11 +138,12 @@ async function fetchVerifiedPage(
   now: number,
   fetcher: typeof fetch,
   signal: AbortSignal | undefined,
+  translate: ProductionPageManifestTranslate,
 ): Promise<Blob> {
   if (page.expiresAt <= now) {
     throw new ProductionPageManifestArchiveError(
       "LEASE_EXPIRED",
-      `${index + 1}페이지의 고정 미리보기 권한 시간이 지났습니다. 페이지 목록을 새로 확인해 주세요.`,
+      translate("productionHub.pageManifestArchive.leaseExpired", "{page}페이지의 고정 미리보기 권한 시간이 지났습니다. 페이지 목록을 새로 확인해 주세요.", { page: index + 1 }),
       index,
     );
   }
@@ -136,7 +157,7 @@ async function fetchVerifiedPage(
   if (!response.ok) {
     throw new ProductionPageManifestArchiveError(
       "SOURCE_UNAVAILABLE",
-      `${index + 1}페이지의 고정 원고를 불러오지 못했습니다.`,
+      translate("productionHub.pageManifestArchive.pageLoadFailed", "{page}페이지의 고정 원고를 불러오지 못했습니다.", { page: index + 1 }),
       index,
     );
   }
@@ -144,7 +165,7 @@ async function fetchVerifiedPage(
   if (contentType && contentType !== page.mediaType) {
     throw new ProductionPageManifestArchiveError(
       "SOURCE_MEDIA_MISMATCH",
-      `${index + 1}페이지의 파일 형식이 고정 검수 정보와 다릅니다.`,
+      translate("productionHub.pageManifestArchive.mediaMismatch", "{page}페이지의 파일 형식이 고정 검수 정보와 다릅니다.", { page: index + 1 }),
       index,
     );
   }
@@ -152,7 +173,7 @@ async function fetchVerifiedPage(
   if (blob.size !== page.byteLength) {
     throw new ProductionPageManifestArchiveError(
       "SOURCE_SIZE_MISMATCH",
-      `${index + 1}페이지의 파일 크기가 고정 검수 정보와 다릅니다.`,
+      translate("productionHub.pageManifestArchive.sizeMismatch", "{page}페이지의 파일 크기가 고정 검수 정보와 다릅니다.", { page: index + 1 }),
       index,
     );
   }
@@ -160,7 +181,7 @@ async function fetchVerifiedPage(
   if (sha256HexPortable(bytes) !== page.sha256) {
     throw new ProductionPageManifestArchiveError(
       "SOURCE_HASH_MISMATCH",
-      `${index + 1}페이지의 무결성 검증에 실패했습니다.`,
+      translate("productionHub.pageManifestArchive.hashMismatch", "{page}페이지의 무결성 검증에 실패했습니다.", { page: index + 1 }),
       index,
     );
   }
@@ -173,8 +194,10 @@ export async function collectProductionReviewManifestPages(
     readonly signal?: AbortSignal;
     readonly loader?: typeof getStudioVirtualSpaceReviewPreview;
     readonly maxPages?: number;
+    readonly translate?: ProductionPageManifestTranslate;
   } = {},
 ): Promise<readonly ProductionManifestPage[]> {
+  const translate = options.translate ?? defaultTranslate;
   const loader = options.loader ?? getStudioVirtualSpaceReviewPreview;
   const maxPages = Math.max(1, Math.min(1_100, options.maxPages ?? 1_000));
   const pages: ProductionManifestPage[] = [];
@@ -186,7 +209,7 @@ export async function collectProductionReviewManifestPages(
     if (!result.ok) {
       throw new ProductionPageManifestArchiveError(
         "SOURCE_UNAVAILABLE",
-        "고정 검수본의 전체 페이지 목록을 확인하지 못했습니다.",
+        translate("productionHub.pageManifestArchive.listLoadFailed", "고정 검수본의 전체 페이지 목록을 확인하지 못했습니다."),
       );
     }
     for (const preview of result.previews) {
@@ -194,14 +217,14 @@ export async function collectProductionReviewManifestPages(
       if (pages.length > maxPages) {
         throw new ProductionPageManifestArchiveError(
           "SOURCE_UNAVAILABLE",
-          `빠른 출력은 한 번에 ${maxPages.toLocaleString("ko-KR")}페이지까지 지원합니다.`,
+          translate("productionHub.pageManifestArchive.pageLimit", "빠른 출력은 한 번에 {maxPages}페이지까지 지원합니다.", { maxPages: maxPages.toLocaleString("ko-KR") }),
         );
       }
     }
     cursor = result.nextCursor;
     if (cursor) {
       if (cursors.has(cursor)) {
-        throw new ProductionPageManifestArchiveError("SOURCE_UNAVAILABLE", "페이지 목록 커서가 반복되어 출력을 중단했습니다.");
+        throw new ProductionPageManifestArchiveError("SOURCE_UNAVAILABLE", translate("productionHub.pageManifestArchive.cursorRepeated", "페이지 목록 커서가 반복되어 출력을 중단했습니다."));
       }
       cursors.add(cursor);
     }
@@ -213,7 +236,7 @@ export async function buildProductionPageManifestArchive(
   input: ProductionPageManifestArchiveInput,
 ): Promise<ProductionPageManifestArchiveResult> {
   if (input.pages.length === 0) {
-    throw new ProductionPageManifestArchiveError("EMPTY_MANIFEST", "버전에 포함할 페이지를 한 장 이상 선택해 주세요.");
+    throw new ProductionPageManifestArchiveError("EMPTY_MANIFEST", (input.translate ?? defaultTranslate)("productionHub.pageManifestArchive.emptySelection", "버전에 포함할 페이지를 한 장 이상 선택해 주세요."));
   }
   const now = input.now ?? new Date();
   const nowMs = now.getTime();
@@ -225,7 +248,7 @@ export async function buildProductionPageManifestArchive(
 
   for (const [index, page] of input.pages.entries()) {
     input.signal?.throwIfAborted();
-    const blob = await fetchVerifiedPage(page, index, nowMs, fetcher, input.signal);
+    const blob = await fetchVerifiedPage(page, index, nowMs, fetcher, input.signal, input.translate ?? defaultTranslate);
     const path = `pages/${String(index + 1).padStart(4, "0")}.${extension(page.mediaType)}`;
     pageEntries.push({ path, data: blob });
     contentBytes += blob.size;

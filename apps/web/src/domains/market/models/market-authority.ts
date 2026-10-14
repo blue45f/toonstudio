@@ -12,6 +12,23 @@ import {
   type CreatorMarketplaceResourceIdentity,
 } from "@/shared/lib/creator-marketplace-resource-contract";
 
+/**
+ * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
+ * 주입이 없으면 한국어 원문(폴백)을 그대로 돌려줘 기존 호출부·테스트와 동일하게 동작한다.
+ */
+export type MarketAuthorityTranslate = (
+  key: string,
+  fallback: string,
+  values?: Readonly<Record<string, string | number>>,
+) => string;
+
+const defaultTranslate: MarketAuthorityTranslate = (_key, fallback, values) =>
+  !values
+    ? fallback
+    : fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+        Object.hasOwn(values, token) ? String(values[token]) : placeholder,
+      );
+
 export type MarketManifestParseResult =
   | Readonly<{ state: "empty"; manifest: null; message: string }>
   | Readonly<{ state: "invalid"; manifest: null; message: string }>
@@ -142,14 +159,14 @@ function sha256Hex(value: string): string {
   return Array.from(hash, (word) => word.toString(16).padStart(8, "0")).join("");
 }
 
-function authoringPackageId(draftId: string): string {
+function authoringPackageId(draftId: string, translate: MarketAuthorityTranslate): string {
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/u.test(draftId)) {
-    throw new Error("초안 식별자가 없습니다. 워크숍에서 저작 초안을 다시 내보내 주세요.");
+    throw new Error(translate("market.authority.draftIdMissing", "초안 식별자가 없습니다. 워크숍에서 저작 초안을 다시 내보내 주세요."));
   }
   return `community/brush/${sha256Hex(`brush\u0000${draftId}`).slice(0, 32)}`;
 }
 
-function authoringLicense(rights: Record<string, unknown>): CreatorMarketplaceResourceLicense {
+function authoringLicense(rights: Record<string, unknown>, translate: MarketAuthorityTranslate): CreatorMarketplaceResourceLicense {
   const value = rights.license === "free" || rights.license === "commercial"
     ? "toonspectrum-standard" : rights.license;
   if (
@@ -159,14 +176,14 @@ function authoringLicense(rights: Record<string, unknown>): CreatorMarketplaceRe
     || value === "cc-by-nc-4.0"
   ) {
     if (value !== "cc-by-nc-4.0" && rights.commercialUse !== true) {
-      throw new Error("상업 이용을 허용하지 않은 초안을 상업 이용 가능한 사용권으로 게시할 수 없습니다. 선택한 권리에 맞는 공개 manifest를 내보내 주세요.");
+      throw new Error(translate("market.authority.commercialNotAllowed", "상업 이용을 허용하지 않은 초안을 상업 이용 가능한 사용권으로 게시할 수 없습니다. 선택한 권리에 맞는 공개 manifest를 내보내 주세요."));
     }
     if (value !== "toonspectrum-standard" && rights.redistribution !== true) {
-      throw new Error("재배포를 허용하지 않은 초안을 재배포 가능한 사용권으로 게시할 수 없습니다. 선택한 권리에 맞는 공개 manifest를 내보내 주세요.");
+      throw new Error(translate("market.authority.redistributionNotAllowed", "재배포를 허용하지 않은 초안을 재배포 가능한 사용권으로 게시할 수 없습니다. 선택한 권리에 맞는 공개 manifest를 내보내 주세요."));
     }
     return value;
   }
-  throw new Error("개인 사용·사용자 정의 등 지원하지 않는 사용권은 자동 변환할 수 없습니다. 선택한 권리에 맞는 공개 manifest를 내보내 주세요.");
+  throw new Error(translate("market.authority.licenseUnsupported", "개인 사용·사용자 정의 등 지원하지 않는 사용권은 자동 변환할 수 없습니다. 선택한 권리에 맞는 공개 manifest를 내보내 주세요."));
 }
 
 export function authoringUpdateResourceId(source: string): string | null {
@@ -221,46 +238,47 @@ function authoringBrushSnapshot(value: Record<string, unknown>): CreatorMarketpl
 function convertAuthoringEnvelope(
   value: Record<string, unknown>,
   updateParent: CreatorMarketplaceResourceIdentity | null,
+  translate: MarketAuthorityTranslate,
 ): CreatorMarketplaceResourceManifest {
   if (
     value.format !== "toonstudio.creator-marketplace-authoring"
     || value.schemaVersion !== 2
   ) {
-    throw new Error("지원하는 Studio 저작 envelope가 아닙니다.");
+    throw new Error(translate("market.authority.envelopeUnsupported", "지원하는 Studio 저작 envelope가 아닙니다."));
   }
 
   const resource = isRecord(value.resource) ? value.resource : {};
   if (resource.kind !== "brush") {
     throw new Error(
-      "이 저작 envelope 종류는 아직 공개 manifest 자동 변환을 지원하지 않습니다. Studio에서 해당 종류의 공개 manifest를 내보내 주세요.",
+      translate("market.authority.kindUnsupported", "이 저작 envelope 종류는 아직 공개 manifest 자동 변환을 지원하지 않습니다. Studio에서 해당 종류의 공개 manifest를 내보내 주세요."),
     );
   }
   const rights = isRecord(value.rights) ? value.rights : {};
   if (rights.originalWorkAttested !== true || rights.previewRightsAttested !== true) {
-    throw new Error("워크숍에서 원본 제작 권리와 미리보기 미디어 권리를 모두 확인해 주세요.");
+    throw new Error(translate("market.authority.rightsUnconfirmed", "워크숍에서 원본 제작 권리와 미리보기 미디어 권리를 모두 확인해 주세요."));
   }
   if (rights.containsThirdPartyContent === true) {
     throw new Error(
-      "제3자 콘텐츠가 포함된 저작 초안은 출처 URL과 원본 사용권 URL을 갖춘 공개 manifest로 별도 내보내야 합니다.",
+      translate("market.authority.thirdPartyNeedsManifest", "제3자 콘텐츠가 포함된 저작 초안은 출처 URL과 원본 사용권 URL을 갖춘 공개 manifest로 별도 내보내야 합니다."),
     );
   }
 
   const title = boundedText(text(resource.title), 80);
-  if (!title) throw new Error("워크숍 에셋 이름을 입력해 주세요.");
+  if (!title) throw new Error(translate("market.authority.titleRequired", "워크숍 에셋 이름을 입력해 주세요."));
   const release = isRecord(value.release) ? value.release : {};
   let packageId: string;
   if (release.mode === "update") {
     const parentId = CreatorMarketplaceResourceIdentitySchema.shape.id.safeParse(release.previousResourceId);
-    if (!parentId.success) throw new Error("업데이트할 기존 릴리스 식별자를 확인해 주세요.");
+    if (!parentId.success) throw new Error(translate("market.authority.previousReleaseInvalid", "업데이트할 기존 릴리스 식별자를 확인해 주세요."));
     if (!updateParent || updateParent.id !== parentId.data) {
-      throw new Error("업데이트할 기존 에셋을 서버에서 확인한 뒤 게시할 수 있습니다.");
+      throw new Error(translate("market.authority.previousReleaseUnverified", "업데이트할 기존 에셋을 서버에서 확인한 뒤 게시할 수 있습니다."));
     }
-    if (updateParent.kind !== resource.kind) throw new Error("업데이트 대상과 초안의 에셋 종류가 다릅니다.");
+    if (updateParent.kind !== resource.kind) throw new Error(translate("market.authority.kindMismatch", "업데이트 대상과 초안의 에셋 종류가 다릅니다."));
     packageId = updateParent.packageId;
   } else if (release.mode === "new") {
-    packageId = authoringPackageId(text(resource.draftId));
+    packageId = authoringPackageId(text(resource.draftId), translate);
   } else {
-    throw new Error("새 에셋 또는 기존 에셋 업데이트 중 게시 방식을 선택해 주세요.");
+    throw new Error(translate("market.authority.releaseModeRequired", "새 에셋 또는 기존 에셋 업데이트 중 게시 방식을 선택해 주세요."));
   }
   const compatibility = isRecord(value.compatibility) ? value.compatibility : {};
   const technical = isRecord(value.technical) ? value.technical : {};
@@ -289,7 +307,7 @@ function convertAuthoringEnvelope(
     resourceVersion: text(release.version) || "1.0.0",
     minimumStudioVersion: text(compatibility.minAppVersion) || "1.0.0",
     tags: uniqueTags(resource.tags),
-    license: authoringLicense(rights),
+    license: authoringLicense(rights, translate),
     attributionText: text(rights.attributionText),
     containsAi: technical.containsAi === true,
     rightsConfirmed: true,
@@ -318,13 +336,14 @@ function convertAuthoringEnvelope(
 export function parseAuthoritativeMarketManifest(
   source: string,
   updateParent: CreatorMarketplaceResourceIdentity | null = null,
+  translate: MarketAuthorityTranslate = defaultTranslate,
 ): MarketManifestParseResult {
   const normalized = source.trim();
   if (!normalized) {
     return {
       state: "empty",
       manifest: null,
-      message: "Studio에서 만든 manifest JSON을 불러오세요.",
+      message: translate("market.authority.empty", "Studio에서 만든 manifest JSON을 불러오세요."),
     };
   }
 
@@ -335,7 +354,7 @@ export function parseAuthoritativeMarketManifest(
     return {
       state: "invalid",
       manifest: null,
-      message: "JSON 형식을 해석할 수 없습니다. 파일 내용과 쉼표를 확인해 주세요.",
+      message: translate("market.authority.invalidJson", "JSON 형식을 해석할 수 없습니다. 파일 내용과 쉼표를 확인해 주세요."),
     };
   }
 
@@ -344,17 +363,17 @@ export function parseAuthoritativeMarketManifest(
     return {
       state: "valid",
       manifest: result.data,
-      message: `v${result.data.resourceVersion} · ${result.data.entries.length}개 항목 · 서버 게시 준비 완료`,
+      message: translate("market.authority.validReady", "v{version} · {count}개 항목 · 서버 게시 준비 완료", { version: result.data.resourceVersion, count: result.data.entries.length }),
     };
   }
 
   if (isRecord(value) && value.format === "toonstudio.creator-marketplace-authoring") {
     try {
-      const manifest = convertAuthoringEnvelope(value, updateParent);
+      const manifest = convertAuthoringEnvelope(value, updateParent, translate);
       return {
         state: "valid",
         manifest,
-        message: `Brush Studio 저작 초안을 v${manifest.resourceVersion} 공개 manifest로 변환했습니다 · 서버 게시 준비 완료`,
+        message: translate("market.authority.convertedReady", "Brush Studio 저작 초안을 v{version} 공개 manifest로 변환했습니다 · 서버 게시 준비 완료", { version: manifest.resourceVersion }),
       };
     } catch (caught) {
       return {
@@ -362,7 +381,7 @@ export function parseAuthoritativeMarketManifest(
         manifest: null,
         message: caught instanceof Error && caught.message.trim()
           ? caught.message
-          : "Studio 저작 초안을 공개 manifest로 변환하지 못했습니다.",
+          : translate("market.authority.convertFailed", "Studio 저작 초안을 공개 manifest로 변환하지 못했습니다."),
       };
     }
   }
@@ -377,7 +396,7 @@ export function parseAuthoritativeMarketManifest(
   return {
     state: "invalid",
     manifest: null,
-    message: detail || "manifest 검증을 통과하지 못했습니다.",
+    message: detail || translate("market.authority.validationFailed", "manifest 검증을 통과하지 못했습니다."),
   };
 }
 

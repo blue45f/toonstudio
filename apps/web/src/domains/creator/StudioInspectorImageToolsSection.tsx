@@ -93,6 +93,7 @@ export function StudioInspectorSelectedImageTools({
     advancedFillPreview,
     advancedFillReferenceLayerCount,
     advancedFillSettings,
+    advancedFillColorDropView,
     advancedFillStatus,
     advancedFillUnsupportedReason,
     advancedFillVisibleRasterCount,
@@ -411,6 +412,7 @@ export function StudioInspectorSelectedImageTools({
                         busy={advancedFillBusy}
                         fillColor={color}
                         settings={advancedFillSettings}
+                        colorDropGesture={advancedFillColorDropView}
                         referenceLayerCount={advancedFillReferenceLayerCount}
                         visibleRasterCount={advancedFillVisibleRasterCount}
                         selectedIsReference={selected?.type === "image" ? selected.fillReference === true : false}
