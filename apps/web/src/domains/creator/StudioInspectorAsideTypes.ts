@@ -18,6 +18,7 @@ import type {
 import type { ProductBrushLibraryRepository } from "./brush/studio-brush-library-sqlite-repository";
 import type { StudioDrawingPaletteLayout } from "./brush/studio-drawing-palettes";
 import type { PaperGrainKind } from "./brush/studio-paper-texture";
+import type { StudioStabilizerMode } from "./brush/studio-stroke-stabilizer";
 import type { FilterMaskPaintMode } from "./filter/studio-filter-mask";
 import type { StudioFilterKind } from "./filter/studio-filter-menu";
 import type { LayerMaskPaintMode } from "./layer/studio-layer-mask";
@@ -86,7 +87,7 @@ export interface StudioInspectorAsideHandlers {
   ) => Promise<boolean>;
   activateCanvasTool: (tool: "select" | "draw", drawMode?: DrawMode) => void;
   activatePixelSelectionToolFromInspector: (
-    kind: StudioInspectorPixelSelectionToolId,
+    kind: StudioInspectorPixelSelectionToolId | "quick-select",
   ) => void;
   addProceduralArtisticBrushRaster: (src: string, width: number, height: number, name: string, targetPageId: string, targetMasterEditMode: boolean) => boolean;
   replaceDrawWithHokusaiNaturalMedia: StudioHokusaiNaturalMediaReplaceHandler;
@@ -533,7 +534,7 @@ export interface StudioInspectorAsideProps {
   setWetMixWetness: import("react").Dispatch<import("react").SetStateAction<number>>;
   setSnapEnabled: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setStabilizer: import("react").Dispatch<import("react").SetStateAction<number>>;
-  setStabilizerMode: import("react").Dispatch<import("react").SetStateAction<"standard" | "adaptive" | "precision">>;
+  setStabilizerMode: import("react").Dispatch<import("react").SetStateAction<StudioStabilizerMode>>;
   setStampTuning: import("react").Dispatch<import("react").SetStateAction<{ flow: number; hardness: number; minSize: number; } | null>>;
   setStrokeWidth: import("react").Dispatch<import("react").SetStateAction<number>>;
   setSymmetryCenterX: import("react").Dispatch<import("react").SetStateAction<number>>;
@@ -581,7 +582,7 @@ export interface StudioInspectorAsideProps {
   wetMixWetness: number;
   snapEnabled: boolean;
   stabilizer: number;
-  stabilizerMode: "standard" | "adaptive" | "precision";
+  stabilizerMode: StudioStabilizerMode;
   stampTuning: { flow: number; hardness: number; minSize: number; } | null;
   strokeWidth: number;
   symmetryCenterX: number;

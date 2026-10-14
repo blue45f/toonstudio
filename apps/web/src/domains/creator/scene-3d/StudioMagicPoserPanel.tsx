@@ -973,7 +973,7 @@ export function StudioMagicPoserPanel({
                 <button
                   type="button"
                   onClick={() => setBookmarks((prev) => removeStudioCameraBookmark(prev, bookmark.id))}
-                  className="rounded border px-2 py-0.5 text-fg-3 hover:border-red-400"
+                  className="rounded border px-2 py-0.5 text-fg-3 hover:border-danger"
                   aria-label={`${bookmark.name} 삭제`}
                 >
                   삭제

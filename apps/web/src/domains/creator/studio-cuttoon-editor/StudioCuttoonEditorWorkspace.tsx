@@ -265,7 +265,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
               onClick={() => setUiAdvancedToolsExpanded?.(true)}
               aria-label="접힌 도구 레일 펼치기"
               title="이 단계에서는 도구 레일을 접어 둡니다. 펼치면 바로 쓸 수 있어요."
-              className="min-h-11 rounded-full border border-line px-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-panel-2"
+              className="min-h-11 rounded-full border border-line px-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-panel"
             >
               도구 펼치기
             </button>
