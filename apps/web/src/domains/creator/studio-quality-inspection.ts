@@ -358,6 +358,8 @@ function elementBounds(el: El): Bounds | null {
     }
     case "draw":
       return drawBounds(el);
+    default:
+      return null;
   }
 }
 

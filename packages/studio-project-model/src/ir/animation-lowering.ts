@@ -33,8 +33,12 @@ export interface AnimationFrameComposition {
 
 /**
  * Quadratic easing family. `hold` steps: the outgoing keyframe's value is kept
- * until the next keyframe's exact frame.
+ * until the next keyframe's exact frame. Back easings use the standard
+ * overshoot constant; `custom` has no quadratic meaning here so it passes
+ * through linearly (bezier sampling lives in sampleAnimationEasing).
  */
+const EASE_BACK_OVERSHOOT = 1.70158;
+
 function applyEasing(easing: AnimationKeyframeIR["easing"], t: number): number {
   switch (easing) {
     case "hold":
@@ -47,6 +51,17 @@ function applyEasing(easing: AnimationKeyframeIR["easing"], t: number): number {
       return 1 - (1 - t) * (1 - t);
     case "ease-in-out":
       return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+    case "ease-in-back": {
+      const overshoot = EASE_BACK_OVERSHOOT + 1;
+      return overshoot * t * t * t - EASE_BACK_OVERSHOOT * t * t;
+    }
+    case "ease-out-back": {
+      const overshoot = EASE_BACK_OVERSHOOT + 1;
+      const distance = t - 1;
+      return 1 + overshoot * distance * distance * distance + EASE_BACK_OVERSHOOT * distance * distance;
+    }
+    default:
+      return t;
   }
 }
 

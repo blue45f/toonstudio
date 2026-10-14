@@ -181,6 +181,8 @@ function paintKey(element: El): string | null {
     case "image":
     case "sticker":
       return null;
+    default:
+      return null;
   }
 }
 
@@ -218,6 +220,8 @@ function typographyKey(element: El): string | null {
     case "focusLines":
     case "speedLines":
       return null;
+    default:
+      return null;
   }
 }
 
@@ -234,6 +238,8 @@ function sourceAvailable(element: El): boolean {
     case "frame":
     case "focusLines":
     case "speedLines":
+      return false;
+    default:
       return false;
   }
 }
@@ -279,6 +285,8 @@ function sameSource(source: El, candidate: El): boolean {
     case "frame":
     case "focusLines":
     case "speedLines":
+      return false;
+    default:
       return false;
   }
 }

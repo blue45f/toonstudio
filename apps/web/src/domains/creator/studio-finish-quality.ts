@@ -299,6 +299,8 @@ function elementBox(element: El): ElementBox | null {
       };
     case "draw":
       return pointBox(element.points);
+    default:
+      return null;
   }
 }
 
