@@ -151,7 +151,7 @@ function rectEl(id: string, x1: number, y1: number, x2: number, y2: number): Dra
     id,
     type: "draw",
     kind: "rect",
-    shapeParams: { cornerRadius: 0 },
+    shapeParams: { cornerRadius: 0, starPoints: 5, starInnerRatio: 0.5, polygonSides: 6 },
     points: [x1, y1, x2, y2],
     stroke: "#111111",
     strokeWidth: 2,

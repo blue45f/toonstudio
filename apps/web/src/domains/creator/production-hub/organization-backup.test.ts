@@ -28,7 +28,7 @@ function team(id: string, name: string): TeamWorkspaceDetail {
       { userId: "user-b", displayName: "민지", role: "member", joinedAt: "2026-09-02T00:00:00.000Z" },
       { userId: "user-a", displayName: "희준", role: "owner", joinedAt: "2026-09-01T00:00:00.000Z" },
     ],
-    projects: [{ id: `proj-${id}`, workId: `work-${id}`, title: `${name} 작품` }],
+    projects: [{ id: `proj-${id}`, workId: `work-${id}`, title: `${name} 작품`, ownerUserId: "user-owner" }],
     invites: [{ id: `inv-${id}`, email: "guest@example.com", role: "guest", expiresAt: "2026-10-20T00:00:00.000Z" }],
   };
 }

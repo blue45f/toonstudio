@@ -44,7 +44,7 @@ interface FakeDetail {
   linkedWorkspaceIds: string[];
 }
 
-function summary(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function summary(overrides: Record<string, unknown> = {}): Record<string, unknown> & { revision: number } {
   return {
     id: "org-1", name: "희준 스튜디오", kind: "studio", description: "웹툰 제작",
     ownerUserId: "owner", revision: 0, role: "owner",

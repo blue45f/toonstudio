@@ -25261,7 +25261,7 @@ function clearSelectionForEdit() {
     quickMaskArmed,
     eyedropperArmed: eyedropperActive,
     quickShapeActive,
-    pixelSelectionTool: pixelToolArmed ? pixelTool : null,
+    pixelSelectionTool: pixelToolArmed ? (pixelTool === "quick-select" ? "wand" : pixelTool) : null,
   });
   // §15.3 rows whose feature shipped behind a panel and whose only door was the
   // 프로젝트 센터 sheet, the mobile-only tool belt or an inspector tab. Bundled
@@ -28708,9 +28708,9 @@ function clearSelectionForEdit() {
       quickMaskTintCanvas={quickMaskTintCanvas}
       quickMaskTintColor={quickMaskTintColor}
       quickMaskTintOpacity={quickMaskTintOpacity}
+      quickShapeActive={quickShapeActive}
       quickSelectTolerance={quickSelectTolerance}
       onCorrectCurrentStroke={studioMainMenuActions.openSmartShapeEditor}
-      quickShapeActive={quickShapeActive}
       railMoreOpen={railMoreOpen}
       rasterFavoriteOnly={rasterFavoriteOnly}
       rasterRetouchTargetAvailable={rasterRetouchTargetAvailable}

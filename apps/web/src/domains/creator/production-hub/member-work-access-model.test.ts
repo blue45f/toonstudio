@@ -22,6 +22,7 @@ const project = (patch: Partial<TeamWorkspaceProject>): TeamWorkspaceProject => 
   id: "project-a",
   workId: "work-a",
   title: "검수 원고",
+  ownerUserId: "user-1",
   ...patch,
 });
 

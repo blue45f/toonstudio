@@ -24,6 +24,8 @@ export type StudioCuttoonEditorViewSessionRest = {
   readerPreviewOpen: boolean;
   setReaderPreviewOpen: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   quickShapeActive: any;
+  quickSelectTolerance: any;
+  setQuickSelectTolerance: any;
   onCorrectCurrentStroke?: () => void;
   railMoreOpen: any;
   rasterFavoriteOnly: any;

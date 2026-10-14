@@ -69,8 +69,8 @@ export interface StudioCharacterRelationshipInput {
   readonly memo: string;
 }
 
-const KIND_TAG_PATTERN = /\((갈등|동맹|가족|연인|기타)\)\s*$/u;
-const TARGET_SEPARATOR_PATTERN = /^([^:—–-]+?)\s*(?:—|–|:|-)\s*(.*)$/su;
+const KIND_TAG_PATTERN = /\((갈등|동맹|가족|연인|기타)\)\s*$/;
+const TARGET_SEPARATOR_PATTERN = /^([^:—–-]+?)\s*(?:—|–|:|-)\s*([\s\S]*)$/;
 
 /**
  * Keyword inference is only a drafting aid for legacy text. Family and lover keywords are

@@ -318,6 +318,7 @@ export function projectStudioCanvasCommentPins(options: {
     if (
       thread.resolved
       || thread.anchor.type === "pdf-page"
+      || thread.anchor.type === "compare-image"
       || thread.anchor.pageId !== options.pageId
     ) continue;
     const preview = studioCommentThreadPreview(thread);

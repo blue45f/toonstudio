@@ -464,8 +464,8 @@ function bubbleEl(over: Partial<Extract<SvgExportEl, { type: "bubble" }>> = {}):
 // ---------------------------------------------------------------------------
 
 describe("El 유니온 구조 호환", () => {
-  it("StudioPage El이 SvgExportEl로 그대로 대입된다(tsc 게이트)", () => {
-    const acceptEl = (el: El): SvgExportEl => el;
+  it("보정 레이어를 제외한 StudioPage El은 SvgExportEl로 대입된다(tsc 게이트)", () => {
+    const acceptEl = (el: Exclude<El, { type: "adjustment" }>): SvgExportEl => el;
     expect(typeof acceptEl).toBe("function");
   });
 });

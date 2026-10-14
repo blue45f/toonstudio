@@ -47,12 +47,12 @@ describe("StudioPitchDocumentCard", () => {
   it("applies the document to slides only when something is written", () => {
     const { onApplyToSlides } = renderCard();
     const applyButton = screen.getByRole("button", { name: "슬라이드로 반영" });
-    expect(applyButton).toBeDisabled();
+    expect((applyButton as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.change(screen.getByRole("textbox", { name: "시놉시스" }), {
       target: { value: "꿈을 대신 꾸는 상담소의 이야기" },
     });
-    expect(applyButton).not.toBeDisabled();
+    expect((applyButton as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(applyButton);
 
     expect(onApplyToSlides).toHaveBeenCalledTimes(1);

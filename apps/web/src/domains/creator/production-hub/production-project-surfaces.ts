@@ -350,13 +350,13 @@ export interface ProductionNavModel {
 /** 단계별 소속 화면 — 모든 화면이 정확히 한 곳에만 든다(개요·관리 제외). */
 const NAV_SURFACES_BY_STAGE: Readonly<Record<EpisodeStageId, readonly ProductionProjectSurface[]>> =
   Object.freeze({
-    plan: Object.freeze(["planning"]),
-    storyboard: Object.freeze(["production"]),
-    art: Object.freeze(["manuscripts"]),
+    plan: Object.freeze<readonly ProductionProjectSurface[]>(["planning"]),
+    storyboard: Object.freeze<readonly ProductionProjectSurface[]>(["production"]),
+    art: Object.freeze<readonly ProductionProjectSurface[]>(["manuscripts"]),
     lettering: Object.freeze<readonly ProductionProjectSurface[]>([]),
-    review: Object.freeze(["review", "handoff"]),
+    review: Object.freeze<readonly ProductionProjectSurface[]>(["review", "handoff"]),
     publish: Object.freeze<readonly ProductionProjectSurface[]>([]),
-    operate: Object.freeze(["episodes", "control", "activity", "schedule"]),
+    operate: Object.freeze<readonly ProductionProjectSurface[]>(["episodes", "control", "activity", "schedule"]),
   });
 
 const NAV_MANAGEMENT_SURFACES: readonly ProductionProjectSurface[] = Object.freeze([

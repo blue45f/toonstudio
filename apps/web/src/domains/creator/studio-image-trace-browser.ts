@@ -210,9 +210,13 @@ export async function traceStudioRasterImageViaWorker(
     width: maxX - minX,
     height: maxY - minY,
   });
+  const bezierSvg = svg;
+  const bezierSegmentCount = 0;
   return Object.freeze({
     elements: Object.freeze(elements),
     svg,
+    bezierSvg,
+    bezierSegmentCount,
     layerCount: layers.length,
     pieceCount: elements.length,
     contourCount,

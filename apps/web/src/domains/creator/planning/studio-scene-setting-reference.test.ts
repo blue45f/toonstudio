@@ -23,6 +23,10 @@ function loreEntry(partial: Partial<StudioLoreEntry> & { id: string }): StudioLo
     characterIds: [],
     origin: "authored",
     ...partial,
+    status: partial.status ?? "confirmed",
+    version: partial.version ?? 1,
+    appliesToWorkIds: partial.appliesToWorkIds ?? [],
+    appliesToSeasonLabels: partial.appliesToSeasonLabels ?? [],
   };
 }
 

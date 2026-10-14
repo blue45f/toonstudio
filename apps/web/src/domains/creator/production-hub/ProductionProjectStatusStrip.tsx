@@ -107,7 +107,7 @@ export function ProductionProjectStatusStrip({ aggregate }: { readonly aggregate
           ) : null}
         </Link>
       ) : null}
-      <span className="ms-auto inline-flex items-center gap-2">
+      {nextAction ? <span className="ms-auto inline-flex items-center gap-2">
         <span className="hidden text-[0.6875rem] font-black uppercase tracking-[0.14em] text-fg-3 sm:inline">
           {bt("지금 할 일", "Next up")}
         </span>
@@ -115,7 +115,7 @@ export function ProductionProjectStatusStrip({ aggregate }: { readonly aggregate
           {nextAction.label}
           <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
-      </span>
+      </span> : null}
     </section>
   );
 }

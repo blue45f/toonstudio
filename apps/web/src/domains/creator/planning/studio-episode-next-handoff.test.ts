@@ -76,7 +76,7 @@ describe("deriveNextEpisodeOpeningDraft", () => {
   it("훅 설계 nextOpening이 있으면 cliffhanger보다 우선 인용한다", () => {
     const withHook: PreviousEpisodePlanLike = {
       ...ep1,
-      hookDesign: { nextOpening: "문이 열리며 낯선 손님이 들어선다" },
+      hookDesign: { lastSceneQuestion: "문 너머에는 누가 있을까?", nextOpening: "문이 열리며 낯선 손님이 들어선다" },
     };
     const draft = deriveNextEpisodeOpeningDraft(withHook);
     expect(draft?.sourceField).toBe("nextOpening");

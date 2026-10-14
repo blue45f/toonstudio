@@ -553,7 +553,6 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       metrics={effectivePropRigMetrics}
                       rigRevision={proportionRigRevision}
                       lockedBones={lockedPoseBones}
-                      limitProximity={jointLimitProximity}
                       capturePaused={isCapturing}
                       disabled={webcamActive || broadcastPreviewActive || persistentIkReconciling || jointHandleInteracting || isViewportHandIkDragging || texturePaintInteractionEnabled}
                     />
@@ -602,7 +601,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                   })}
                   <mesh ref={groundShadowRef} position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.48, 0.82, 1]} renderOrder={-1}>
                     <circleGeometry args={[1, 72]} />
-                    <meshBasicMaterial color="#3c2b20" transparent opacity={0.18} depthWrite={false} side={THREE.DoubleSide} />
+                    <meshBasicMaterial color="var(--color-fg-2)" transparent opacity={0.18} depthWrite={false} side={THREE.DoubleSide} />
                   </mesh>
                   <OrbitControls
                     makeDefault

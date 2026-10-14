@@ -40,6 +40,12 @@ const PAGE_COMPOSITE_FILTER_MAX_PIXELS = 4 * 1024 * 1024;
 const PAGE_COMPOSITE_FILTER_MAX_PNG_BYTES = 4 * 1024 * 1024;
 const UTF8_ENCODER = new TextEncoder();
 
+function svgExportElements(elements: readonly El[]): readonly Exclude<El, { type: "adjustment" }>[] {
+  return elements.filter(
+    (element): element is Exclude<El, { type: "adjustment" }> => element.type !== "adjustment",
+  );
+}
+
 export interface StudioEditableRasterCopyInput {
   readonly pageId: string;
   readonly width: number;
@@ -479,6 +485,7 @@ function elementContributesVisiblePixels(element: El): boolean {
       || ((element.strokeWidth ?? 3) > 0 && !fullyTransparentCssColor(element.stroke ?? "#16100c"))
       || Boolean(element.bg);
   }
+  if (element.type === "adjustment") return false;
   return element.width > 0
     && element.height > 0
     && element.strokeWidth > 0
@@ -844,7 +851,7 @@ function analyzeStudioRasterPreparationSources(
   const exported = preparedExport ?? exportPageToSvg({
     width: input.width,
     height: input.height,
-    elements: visibleContributing,
+    elements: svgExportElements(visibleContributing),
     groups,
     theme: input.theme,
     transparentBg: !(input.hasPageBackground ?? true),
@@ -1146,7 +1153,7 @@ function finalizeStudioEditableRasterCopyPlan(
   const sourceAnalysis = analyzeStudioRasterPreparationSources({
     width: candidate.width,
     height: candidate.height,
-    elements: candidate.sourceElements,
+    elements: svgExportElements(candidate.sourceElements),
     groups: candidate.groups,
     theme: candidate.theme,
     bg: candidate.bg,
@@ -1239,7 +1246,7 @@ function editableRasterCopyVectorInput(
   return {
     width: candidate.width,
     height: candidate.height,
-    elements: candidate.sourceElements,
+    elements: svgExportElements(candidate.sourceElements),
     groups: candidate.groups,
     theme: candidate.theme,
     transparentBg: !candidate.includeBackground,
@@ -1281,7 +1288,7 @@ export async function renderStudioEditableRasterCopy(
   const result = await renderVectorReference({
     width: plan.width,
     height: plan.height,
-    elements: plan.sourceElements,
+    elements: svgExportElements(plan.sourceElements),
     groups: plan.groups,
     theme: plan.theme,
     transparentBg: !plan.includeBackground,

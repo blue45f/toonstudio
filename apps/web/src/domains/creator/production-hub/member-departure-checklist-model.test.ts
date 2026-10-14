@@ -7,7 +7,7 @@ function member(overrides: Partial<TeamWorkspaceMember> = {}): TeamWorkspaceMemb
   return { userId: "u-mina", displayName: "민아", role: "member", joinedAt: "2026-09-01T00:00:00.000Z", ...overrides };
 }
 
-function detail(projects: readonly { id: string; workId: string; title: string }[] = [{ id: "p1", workId: "w1", title: "달빛 연대기" }]): TeamWorkspaceDetail {
+function detail(projects: readonly { id: string; workId: string; title: string; ownerUserId: string }[] = [{ id: "p1", workId: "w1", title: "달빛 연대기", ownerUserId: "u-owner" }]): TeamWorkspaceDetail {
   return {
     workspace: {
       id: "team-a", name: "스튜디오 팀", ownerUserId: "u-owner", revision: 3, role: "owner",
@@ -62,8 +62,8 @@ describe("buildDepartureChecklist", () => {
 
   it("신호가 일부 작품만 덮으면 전체를 확인한 것으로 치지 않는다", () => {
     const two = detail([
-      { id: "p1", workId: "w1", title: "작품1" },
-      { id: "p2", workId: "w2", title: "작품2" },
+      { id: "p1", workId: "w1", title: "작품1", ownerUserId: "u-owner" },
+      { id: "p2", workId: "w2", title: "작품2", ownerUserId: "u-owner" },
     ]);
     const signals: MemberWorkSignal[] = [{ projectId: "p1", openAssignedTaskCount: 0, reviewWaitingTaskCount: 0 }];
     const checklist = buildDepartureChecklist({ detail: two, member: member(), action: "remove", workSignals: signals });

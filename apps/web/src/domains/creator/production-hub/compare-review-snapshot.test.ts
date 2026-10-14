@@ -39,7 +39,7 @@ const NOW = "2026-10-14T00:00:00.000Z";
 function sessionWithPool(): CompareSession {
   const base = createEmptyCompareSession("ep-1");
   const revision = poolItemFromProcessCompareItem(
-    { id: "p1::r1", processId: "p1", processLabel: "선화", kind: "image", revisionId: "r1", revisionLabel: "v5", revisionIndex: 5, statusTone: "ready", imageUrl: "https://example.com/a.png", createdAt: NOW },
+    { id: "p1::r1", processId: "p1", processLabel: "선화", kind: "image", revisionId: "r1", revisionLabel: "v5", revisionIndex: 5, statusTone: "ready", imageUrl: "https://example.com/a.png", createdAt: NOW, source: { kind: "revision", processId: "p1", revisionId: "r1" }, sourceKind: "revision", originNote: null },
     "me",
     NOW,
   );
