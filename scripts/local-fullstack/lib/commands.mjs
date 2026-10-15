@@ -6,7 +6,7 @@
  */
 
 import { spawn, spawnSync } from "node:child_process";
-import { chmodSync, closeSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, closeSync, existsSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 
@@ -57,6 +57,7 @@ import {
 } from "./postgres.mjs";
 import { httpProbe, isPortFree, isProcessAlive, processMatches, waitFor, waitForPortFree } from "./processes.mjs";
 import { computeSchemaFingerprint, resolveReleaseSha, runBootstrap } from "./schema.mjs";
+import { scanForSecrets } from "./secret-scan.mjs";
 import { parseSeedResult } from "./seed.mjs";
 import { ensureStackDirectories, hasStackMarker, openLog, patchState, readState, withStackLock } from "./state.mjs";
 import {
@@ -766,40 +767,6 @@ export async function commandE2e(options) {
   return code === 0 ? EXIT.ok : EXIT.failure;
 }
 
-/** 로그·산출물에 비밀값이 남았는지 검사한다(값은 출력하지 않고 키 이름·건수만 보고). */
-export function scanForSecrets({ secrets, targets }) {
-  const findings = [];
-  const visit = (path) => {
-    let info;
-    try {
-      info = statSync(path);
-    } catch {
-      return;
-    }
-    if (info.isDirectory()) {
-      for (const entry of readdirSync(path)) {
-        if (entry === "node_modules" || entry === ".git") continue;
-        visit(join(path, entry));
-      }
-      return;
-    }
-    if (!info.isFile() || info.size > 256 * 1024 * 1024) return;
-    const content = readFileSync(path);
-    for (const secret of secrets) {
-      if (!secret.value || secret.value.length < 6) continue;
-      let count = 0;
-      let index = content.indexOf(secret.value);
-      while (index !== -1) {
-        count += 1;
-        index = content.indexOf(secret.value, index + secret.value.length);
-      }
-      if (count > 0) findings.push({ path, key: secret.key, count });
-    }
-  };
-  for (const target of targets) visit(target);
-  return findings;
-}
-
 export async function commandLeakcheck(options) {
   const context = loadContext(options);
   const values = context.existing;
@@ -820,3 +787,4 @@ export async function commandLeakcheck(options) {
   return EXIT.failure;
 }
 
+export { scanForSecrets };

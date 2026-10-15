@@ -766,6 +766,7 @@
     "tests/benchmarks/harness/vrm-surface-brush-browser.ts": 816,
     "tests/benchmarks/harness/wgsl-pipeline-cache-browser.ts": 885,
     "tests/fault-injection/v12-runtime-fault-harness.ts": 1375,
+    "tools/godot-3d-poc/measure/run.mjs": 940,
     "tools/toonbridge/server.mjs": 819
   },
   "tsNoCheck": [
@@ -841,6 +842,13 @@
         "apps/web/src/domains/creator/storyworld/studio-storyworld-causality.ts",
         "apps/web/src/domains/creator/studio-shell/StudioProjectShellPage.tsx",
         "apps/web/src/shared/components/search-explorer.tsx"
+      ]
+    },
+    {
+      "date": "2026-10-15",
+      "reason": "Godot 3D PoC 측정 하니스(운영 코드 아님) — 증거 JSON 재현용 단일 실행 스크립트이며 스위트별 분할은 측정 재현성 재검증이 필요해 별도 변경으로 미룬다",
+      "files": [
+        "tools/godot-3d-poc/measure/run.mjs"
       ]
     }
   ]
