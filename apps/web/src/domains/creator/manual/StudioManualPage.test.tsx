@@ -29,6 +29,8 @@ describe("StudioManualPage", () => {
     const topics = screen.getByRole("region", { name: "기능별 매뉴얼" });
     expect(within(topics).getAllByRole("article")).toHaveLength(7);
     expect(within(topics).getByRole("link", { name: /애니 OST·장면 BGM 만들기/u }).getAttribute("href")).toBe("/studio/manual/music-ost");
+    // 읽는 문서가 없는 홈의 "스튜디오 열기"는 복귀 맥락 없이 스튜디오 홈으로 간다.
+    expect(screen.getByRole("link", { name: /스튜디오 열기/u }).getAttribute("href")).toBe("/studio");
   });
 
   it("searches literally, highlights matches and offers suggestions when nothing matches", () => {

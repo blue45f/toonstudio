@@ -7,7 +7,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { SectionArt } from "@/shared/components/section-art";
 
 import { ManualArticleView } from "./ManualArticleView";
-import { manualWorkspaceHref } from "./manual-deep-link";
+import { manualStudioHref } from "./manual-deep-link";
 import { ManualHomeView, ManualSearchResults } from "./ManualHomeView";
 import { ManualCategoryIcon } from "./ManualCategoryIcon";
 import { MANUAL_CATEGORIES, MANUAL_UPDATED } from "./studio-manual-data";
@@ -131,7 +131,7 @@ export function StudioManualPage() {
           <span className="manual-brand-icon" aria-hidden="true"><BookOpen size={18} /></span>
           <span>{bt("사용자 매뉴얼", "User guide")}<small>ToonStudio User Guide</small></span>
         </Link>
-        <a className="manual-open" href={article ? manualWorkspaceHref(article) : "/studio"} target="_blank" rel="noopener noreferrer">
+        <a className="manual-open" href={manualStudioHref(article)} target="_blank" rel="noopener noreferrer">
           {bt("스튜디오 열기", "Open Studio")}<span className="manual-sr-only">{bt(" (새 탭)", " (new tab)")}</span><ExternalLink size={15} aria-hidden="true" />
         </a>
       </header>

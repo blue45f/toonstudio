@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { parseReturnContext } from "@/shared/navigation/return-context";
 
-import { manualSectionToolHref, manualWorkspaceHref } from "./manual-deep-link";
+import { manualSectionToolHref, manualStudioHref, manualWorkspaceHref } from "./manual-deep-link";
 
 describe("manual-deep-link (S2-9 매뉴얼 도착 지점)", () => {
   it("carries the return-context contract on workspace links", () => {
@@ -16,6 +16,21 @@ describe("manual-deep-link (S2-9 매뉴얼 도착 지점)", () => {
       returnTo: "/studio/manual/music-ost",
       intent: "manual-deep-link",
     });
+  });
+
+  it("opens the Studio home from the header, apart from the article workspace link", () => {
+    const href = manualStudioHref({ id: "music-ost" });
+    // 이름 그대로 스튜디오 홈이다 — 문서 작업 공간(/studio/assets/audio)과 같은 곳을 가리키지 않는다.
+    expect(href).toBe("/studio?returnTo=%2Fstudio%2Fmanual%2Fmusic-ost&intent=manual-deep-link");
+    expect(href).not.toBe(manualWorkspaceHref({ id: "music-ost", workspace: "/studio/assets/audio" }));
+    const search = href.slice(href.indexOf("?"));
+    expect(parseReturnContext(search)).toEqual({
+      returnTo: "/studio/manual/music-ost",
+      intent: "manual-deep-link",
+    });
+    // 문서 목록(읽는 문서 없음)에서는 맥락 없이 스튜디오 홈으로 간다.
+    expect(manualStudioHref(undefined)).toBe("/studio");
+    expect(manualStudioHref(null)).toBe("/studio");
   });
 
   it("keeps the section anchor as execution context on section tool links", () => {
