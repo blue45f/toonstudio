@@ -1,4 +1,7 @@
-import { localHalfExtentsForPrimitiveKind } from "./studio-bg3d-object-ops";
+import {
+  localHalfExtentsForPrimitiveKind,
+  rotateVectorEulerXyz,
+} from "./studio-bg3d-object-ops";
 
 import type {
   BgPrimitive,
@@ -95,31 +98,6 @@ function snapDistance(distance: number, step: number | undefined): number {
   return Math.round(distance / (step as number)) * (step as number);
 }
 
-function rotateLocalVector(
-  vector: readonly [number, number, number],
-  rotation: readonly [number, number, number],
-): [number, number, number] {
-  const rx = finiteOr(rotation[0], 0);
-  const ry = finiteOr(rotation[1], 0);
-  const rz = finiteOr(rotation[2], 0);
-
-  let [x, y, z] = vector;
-
-  const cosX = Math.cos(rx);
-  const sinX = Math.sin(rx);
-  [y, z] = [y * cosX - z * sinX, y * sinX + z * cosX];
-
-  const cosY = Math.cos(ry);
-  const sinY = Math.sin(ry);
-  [x, z] = [x * cosY + z * sinY, -x * sinY + z * cosY];
-
-  const cosZ = Math.cos(rz);
-  const sinZ = Math.sin(rz);
-  [x, y] = [x * cosZ - y * sinZ, x * sinZ + y * cosZ];
-
-  return [x, y, z];
-}
-
 /**
  * Plans a SketchUp-style face Push/Pull for bounded primitives.
  *
@@ -204,7 +182,8 @@ export function planStudioBg3dPushPull(
   const faceSign = input.face === "positive" ? 1 : -1;
   const localCenterOffset: [number, number, number] = [0, 0, 0];
   localCenterOffset[axisIndex] = faceSign * appliedDistance * 0.5;
-  const worldCenterOffset = rotateLocalVector(
+  // Three.js default Euler order (XYZ) — the same convention the viewport uses for `rotation`.
+  const worldCenterOffset = rotateVectorEulerXyz(
     localCenterOffset,
     primitive.rotation,
   );
