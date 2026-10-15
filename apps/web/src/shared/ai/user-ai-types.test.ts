@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isPrivateOrLocalAiHostname,
   normalizeUserAiConfiguration,
   resolvedUserAiRoutes,
   userAiRoutingSettings,
+  validateUserAiBaseUrl,
   validateUserAiPath,
 } from "./user-ai-types";
 
@@ -122,5 +124,44 @@ describe("unified cloud AI configuration", () => {
     })).toThrow(/연결 대상/u);
     expect(() => validateUserAiPath("/jobs/../admin")).toThrow(/상대 경로/u);
     expect(() => validateUserAiPath("//other.example/path")).toThrow(/상대 경로/u);
+  });
+});
+
+describe("클라우드 AI 주소의 사설망 판정", () => {
+  // WHATWG URL 은 IPv4 매핑 주소를 16진 두 묶음([::ffff:7f00:1])으로, 끝 점은 그대로 돌려준다.
+  // 판정은 URL 이 돌려주는 정규형 호스트 이름 기준이어야 우회되지 않는다.
+  it.each([
+    "https://[::ffff:127.0.0.1]/v1",
+    "https://[::ffff:10.0.0.1]/v1",
+    "https://[::ffff:192.168.0.10]/v1",
+    "https://[::ffff:169.254.169.254]/v1",
+    "https://[::ffff:172.16.0.1]/v1",
+    "https://[::127.0.0.1]/v1",
+    "https://[64:ff9b::7f00:1]/v1",
+    "https://[2002:7f00:1::]/v1",
+    "https://[fec0::1]/v1",
+    "https://[ff02::1]/v1",
+    "https://localhost./v1",
+    "https://printer.local./v1",
+    "https://router.internal./v1",
+    "https://127.1/v1",
+    "https://0x7f.1/v1",
+    "https://2130706433/v1",
+  ])("사설·루프백으로 향하는 표기는 모두 거부한다: %s", (baseUrl) => {
+    expect(() => validateUserAiBaseUrl(baseUrl)).toThrow(/공개 HTTPS/u);
+    expect(isPrivateOrLocalAiHostname(new URL(baseUrl).hostname)).toBe(true);
+  });
+
+  it.each([
+    "https://api.openai.com/v1",
+    "https://openrouter.ai/api/v1",
+    "https://fcm.googleapis.com/v1",
+    "https://fdaa.example.com/v1",
+    "https://[2606:4700:4700::1111]/v1",
+    "https://[::ffff:8.8.8.8]/v1",
+    "https://[2002:808:808::]/v1",
+    "https://example.com./v1",
+  ])("공개 주소는 계속 허용한다: %s", (baseUrl) => {
+    expect(() => validateUserAiBaseUrl(baseUrl)).not.toThrow();
   });
 });

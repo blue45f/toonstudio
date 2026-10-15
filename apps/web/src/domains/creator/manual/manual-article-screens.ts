@@ -22,6 +22,17 @@ export interface ManualSectionTool {
 }
 
 export const MANUAL_ARTICLE_SCREENS: Readonly<Record<string, ManualArticleScreen>> = {
+  // 한 화 완성 흐름: 번호는 작업 순서(저장 상태 → 컷 구성 → 도구 → 레이어 → 캔버스)를 따른다.
+  // 기획·검수처럼 편집기 밖에서 하는 단계에는 위치를 붙이지 않는다(null).
+  "episode-flow": {
+    surface: "editor",
+    focus: ["topbar", "pages", "tools", "panel", "canvas"],
+    steps: {
+      "plan-storyboard": ["topbar", null, "pages", "pages"],
+      "draw-color": ["tools", "panel", "canvas"],
+      "finish-publish": ["panel", "tools", null, "topbar"],
+    },
+  },
   "getting-started": {
     surface: "editor",
     focus: ["tools", "panel", "canvas", "topbar"],

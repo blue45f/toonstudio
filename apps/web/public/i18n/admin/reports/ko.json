@@ -12,7 +12,7 @@
   "admin.reports.filterDismissed": "기각됨",
   "admin.reports.filterPending": "대기 중",
   "admin.reports.filterResolved": "조치 완료",
-  "admin.reports.loadError": "신고 목록 로딩 실패",
+  "admin.reports.loadError": "신고 목록을 불러오지 못했습니다. 잠시 후 다시 시도하세요.",
   "admin.reports.loading": "신고 항목 로딩 중...",
   "admin.reports.notePrefix": "관리자 처리 메모:",
   "admin.reports.reason": "신고 사유:",

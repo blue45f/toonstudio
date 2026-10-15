@@ -18,6 +18,9 @@ import {
   resolveSelectableLocale,
 } from "@/shared/lib/i18n";
 import { APP_I18N_BUILT_IN_LOCALES } from "@/shared/lib/i18n-locale-catalog";
+// search.* 사전은 앱 셸이 아니라 검색 표면 모듈이 평가될 때 등록된다(wave7 3단계).
+// 아래 폴백·런타임 번역 검사가 쓰는 search.title 을 셸 사전에 의존하지 않고 직접 등록해 둔다.
+import "@/shared/components/search-i18n";
 import "@/domains/creator/studio-app-settings-center-i18n";
 import { getRuntimeTranslationPendingKeys } from "../i18n-runtime-translation";
 

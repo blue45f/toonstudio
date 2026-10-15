@@ -20,8 +20,8 @@ The route is:
 
 The page publishes review-date-bound implementation counts and tests them against the repository:
 
-- 64 dedicated `*.worker.ts` entries;
-- 58 `*worker-client.ts` boundaries;
+- 68 dedicated `*.worker.ts` entries;
+- 62 `*worker-client.ts` boundaries;
 - 9 non-test service-worker runtime modules;
 - 2 browser-local inference runtimes: ONNX Runtime Web and MediaPipe Tasks Vision;
 - 8 allowlisted Blender MCP commands;

@@ -566,7 +566,7 @@ describe("CharacterShaperReferenceDrawer photo and webcam tabs", () => {
   it("모델 준비 실패를 권한 거부와 구분하고 이미 동의한 세션만 직접 재시작한다", () => {
     const h = makeHost({ webcamError: "추적 준비 실패", webcamErrorStage: "engine", webcamConsentGranted: true });
     renderDrawer({ mode: "webcam", h });
-    expect(screen.getByRole("alert").textContent).toContain("추적 모델을 준비하지 못했습니다.");
+    expect(screen.getByRole("alert").textContent).toContain("추적 모델을 준비하지 못했어요.");
     expect(screen.getByRole("alert").textContent).not.toContain("사이트 설정");
     fireEvent.click(screen.getByRole("button", { name: "카메라 다시 시도" }));
     expect(h.setWebcamActive).toHaveBeenCalledWith(true);

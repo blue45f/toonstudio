@@ -81,7 +81,7 @@ describe("useOptimisticProductionCommand", () => {
     });
 
     expect(rollback).toHaveBeenCalledTimes(1);
-    expect(mockedToast).toHaveBeenCalledWith(expect.stringContaining("실패했습니다"), { tone: "error" });
+    expect(mockedToast).toHaveBeenCalledWith(expect.stringContaining("실패했어요"), { tone: "error" });
     expect(result.current.isPending("k")).toBe(false);
   });
 

@@ -692,7 +692,7 @@ sequenceDiagram
 flowchart TB
   hooks["<b>① 내 컴퓨터 · 커밋과 푸시</b><br/>커밋엔 하네스·lint·비밀값, 푸시엔 경계·타입<br/>Husky · commitlint · lint-staged · Secretlint"]
   ci["<b>② PR · CI core 7개 잡</b><br/>lint·타입·회귀 5샤드·성능·접근성·빌드·DB(스튜디오 검수), 모두 실제 성공<br/>GitHub Actions · Vitest · Playwright"]
-  ratchet["<b>③ 구조 래칫</b><br/>import 17규칙 · 파일 수 · 경고 수 · 번들 크기 · 새 파일 1,000줄(전체 시험)"]
+  ratchet["<b>③ 구조 래칫</b><br/>import 17규칙 · 파일 수 · 경고 수 · 번들 크기 · 새 파일 800줄"]
   tests["<b>④ 접근성과 시험의 정직성</b><br/>axe 스모크 · 직렬 레인 · 시험 수집 하한<br/>axe-core · Playwright · Vitest"]
   security["<b>⑤ 보안과 공급망</b><br/>비밀값 스캔 · audit(야간·수동) · CodeQL(PR·주 1회)<br/>Secretlint · pnpm audit · CodeQL"]
   build["<b>⑥ 빌드·배포 스크립트 검사</b><br/>프리캐시 예산 · CSP · 헤더 --check · sw.js · Zod와 기배포 SQL 고정"]

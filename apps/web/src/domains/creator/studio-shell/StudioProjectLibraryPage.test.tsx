@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import { serializeStudioAutosave, studioAutosaveKey } from "../studio-autosave";
+import { EXAMPLE_PROJECT_ID, EXAMPLE_PROJECT_TITLE } from "../studio-example-project-content";
 import {
   studioExactResumeStorageKey,
   writeStudioExactResumeContext,
@@ -23,6 +24,7 @@ import {
   ensureStudioSaveProfile,
   readStudioSaveProfiles,
 } from "../save-first/studio-save-profile";
+import { SAMPLE_PROJECT_ID, SAMPLE_PROJECT_TITLE } from "../studio-sample-manuscript-content";
 import { StudioProjectLibraryPage } from "./StudioProjectLibraryPage";
 
 function temporaryWorkRegion(): HTMLElement {
@@ -198,6 +200,29 @@ describe("StudioProjectLibraryPage", () => {
     expect(within(card as HTMLElement).getByRole("link", { name: "이어서 작업" }).getAttribute("href")).toBe(
       `/studio/p/${project.id}/d/${document.id}?focus=cut%3A44&language=ko-KR&resume=latest&version=approved-9&workspace=comic`,
     );
+  });
+
+  it("seeds the example project and the sample manuscript on first entry and lists them as recent work in the lobby", async () => {
+    render(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+
+    // 빈 기기의 첫 진입: 예제 프로젝트와 샘플 원고가 한 번씩 심긴다(StudioCreatorLobby.test.tsx 는 이 시딩을 꺼서 로비 규칙만 본다).
+    await waitFor(() => {
+      expect(readStudioProjectLibrary(window.localStorage).projects.map((project) => project.id).sort())
+        .toEqual([EXAMPLE_PROJECT_ID, SAMPLE_PROJECT_ID].sort());
+    });
+    // 로비는 심긴 작품도 같은 규칙으로 "최근 프로젝트"에 올린다.
+    const lobby = screen.getByRole("region", { name: /툰스튜디오 크리에이터 로비|ToonStudio creator lobby/u });
+    const recent = await within(lobby).findByRole("region", { name: /최근 프로젝트|Recent projects/u });
+    await waitFor(() => {
+      const labels = within(recent).getAllByRole("link", { name: /이어서 작업$|^Continue /u })
+        .map((link) => link.getAttribute("aria-label") ?? "");
+      expect(labels.some((label) => label.includes(EXAMPLE_PROJECT_TITLE))).toBe(true);
+      expect(labels.some((label) => label.includes(SAMPLE_PROJECT_TITLE))).toBe(true);
+    });
   });
 
   it("restores every project from Trash in one action", async () => {

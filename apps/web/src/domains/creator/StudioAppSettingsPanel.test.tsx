@@ -99,7 +99,7 @@ describe("StudioAppSettingsPanel", () => {
     );
     const sessionOnly = renderSettings("general", "session-only").html;
     expect(sessionOnly).toContain('role="alert"');
-    expect(sessionOnly).toContain("설정을 이 기기에 저장하지 못해 현재 창에서만 적용됩니다.");
+    expect(sessionOnly).toContain("설정을 이 기기에 저장하지 못해 현재 창에서만 적용돼요. 브라우저의 저장 공간 설정을 확인해 주세요.");
     expect(sessionOnly).toContain("설정 다시 저장");
   });
 

@@ -272,7 +272,7 @@ export function StudioFinishingEffectsPanel({
       )}
 
       {(error ?? candidate.error) && (
-        <p role="alert" className="text-[11px] text-red-500">
+        <p role="alert" className="text-[11px] text-danger">
           {error ?? candidate.error}
         </p>
       )}

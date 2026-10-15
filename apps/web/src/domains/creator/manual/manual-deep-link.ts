@@ -31,6 +31,22 @@ export function manualWorkspaceHref(article: Pick<ManualArticle, "id" | "workspa
   });
 }
 
+const STUDIO_HOME_PATH = "/studio";
+
+/**
+ * 매뉴얼 머리띠의 "스튜디오 열기" 주소. 이름 그대로 스튜디오 홈을 연다 — 문서별 작업 공간은
+ * 머리말·하단의 전용 버튼("OST 만들기 열기" 등, manualWorkspaceHref)이 맡으므로 두 링크가
+ * 같은 곳을 가리키지 않는다. 문서를 읽는 중이면 그 문서로 돌아올 복귀 맥락을 싣고,
+ * 문서 목록(매뉴얼 홈)에서는 맥락 없이 /studio 로 간다.
+ */
+export function manualStudioHref(article: Pick<ManualArticle, "id"> | null | undefined): string {
+  if (!article) return STUDIO_HOME_PATH;
+  return buildReturnContextHref(STUDIO_HOME_PATH, {
+    returnTo: manualArticleHref(article.id),
+    intent: "manual-deep-link",
+  });
+}
+
 /**
  * 섹션 단위 도구 바로가기가 여는 주소에 복귀 맥락을 실은 값.
  * 도구 href의 해시(예: `#music-import`, `#ai-director`)는 도착 표면의 실행

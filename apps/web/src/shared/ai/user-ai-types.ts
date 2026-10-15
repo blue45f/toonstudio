@@ -1,9 +1,11 @@
+import { isPrivateOrLocalAiHostname } from "./ai-host-policy";
 import {
   inferLegacyUserAiCostPolicy,
   USER_AI_COST_POLICIES,
   type UserAiCostPolicy,
 } from "./free-ai-policy";
 
+export { isPrivateOrLocalAiHostname } from "./ai-host-policy";
 export type { UserAiCostPolicy } from "./free-ai-policy";
 
 /** Cloud AI capabilities share one vault and one deterministic routing policy. */
@@ -146,50 +148,6 @@ export const EMPTY_AI_CONNECTION: UserAiConnection = {
     priority: 100,
   }],
 };
-
-function privateIpv4(hostname: string): boolean {
-  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/u.test(hostname)) return false;
-  const octets = hostname.split(".").map(Number);
-  if (octets.some((value) => value < 0 || value > 255)) return true;
-  const [a, b] = octets;
-  return a === 0
-    || a === 10
-    || a === 127
-    || (a === 100 && b >= 64 && b <= 127)
-    || (a === 169 && b === 254)
-    || (a === 172 && b >= 16 && b <= 31)
-    || (a === 192 && b === 168)
-    || (a === 198 && (b === 18 || b === 19))
-    || a >= 224;
-}
-
-export function isPrivateOrLocalAiHostname(value: string): boolean {
-  const hostname = value.trim().toLowerCase().replace(/^\[|\]$/gu, "");
-  if (!hostname) return true;
-  if (
-    hostname === "localhost"
-    || hostname === "0.0.0.0"
-    || hostname.endsWith(".localhost")
-    || hostname.endsWith(".local")
-    || hostname.endsWith(".lan")
-    || hostname.endsWith(".internal")
-  ) {
-    return true;
-  }
-  if (privateIpv4(hostname)) return true;
-  if (!hostname.includes(":")) return false;
-  return hostname === "::"
-    || hostname === "::1"
-    || hostname.startsWith("fc")
-    || hostname.startsWith("fd")
-    || /^fe[89ab]/u.test(hostname)
-    || hostname.startsWith("::ffff:0:")
-    || hostname.startsWith("::ffff:10.")
-    || hostname.startsWith("::ffff:127.")
-    || hostname.startsWith("::ffff:169.254.")
-    || hostname.startsWith("::ffff:172.")
-    || hostname.startsWith("::ffff:192.168.");
-}
 
 export function validateUserAiBaseUrl(value: string): string {
   const url = new URL(value.trim());

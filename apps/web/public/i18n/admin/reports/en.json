@@ -12,7 +12,7 @@
   "admin.reports.filterDismissed": "Dismissed",
   "admin.reports.filterPending": "Pending",
   "admin.reports.filterResolved": "Action Taken",
-  "admin.reports.loadError": "Failed to load reports",
+  "admin.reports.loadError": "Failed to load the report list. Please try again in a moment.",
   "admin.reports.loading": "Loading report items...",
   "admin.reports.notePrefix": "Administrator Note:",
   "admin.reports.reason": "Reason:",

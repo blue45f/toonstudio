@@ -38,6 +38,17 @@ export const VARIANTS = {
   tr: { dir: "web-threads", headers: { ...COOP, "cross-origin-embedder-policy": "require-corp" }, cache: false },
 };
 
+/**
+ * root 안으로 해석되는 경로만 돌려준다. 상위 이동(..)·절대 경로·구간 하나 안에 인코딩된 구분자(..%2F)는 null.
+ * 요청 경로를 구간별로 디코드해 ".." 구간만 거르는 방식은 "../../x" 한 구간을 놓쳐 루트 밖 파일을 내줬다.
+ */
+export function resolveInside(root, relative) {
+  if (typeof root !== "string" || root === "") return null;
+  const base = path.resolve(root);
+  const target = path.resolve(base, relative);
+  return target === base || target.startsWith(`${base}${path.sep}`) ? target : null;
+}
+
 function sendFile(request, response, file, extraHeaders, packed) {
   if (!file || !existsSync(file) || statSync(file).isDirectory()) {
     response.writeHead(404, { "content-type": "text/plain" });
@@ -82,7 +93,7 @@ export async function startServers(options) {
     for (const variant of Object.values(VARIANTS)) {
       if (!variant.compress) continue;
       for (const name of ["index.wasm", "index.js"]) {
-        const file = path.join(options.buildDir, variant.dir, name);
+        const file = path.resolve(options.buildDir, variant.dir, name);
         if (!existsSync(file) || packedFiles.has(file)) continue;
         const raw = readFileSync(file);
         packedFiles.set(file, brotliCompressSync(raw, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 9, [zlibConstants.BROTLI_PARAM_SIZE_HINT]: raw.length } }));
@@ -100,28 +111,30 @@ export async function startServers(options) {
     if (parts[0] === "g" && VARIANTS[parts[1]]) {
       const variant = VARIANTS[parts[1]];
       const rest = parts.slice(2).join("/") || "index.html";
-      const target = path.join(options.buildDir, variant.dir, rest);
-      sendFile(request, response, target, { ...variant.headers, ...(variant.cache ? cacheable : noStore) }, variant.compress ? packedFiles.get(target) : undefined);
+      const target = resolveInside(path.join(options.buildDir, variant.dir), rest);
+      sendFile(request, response, target, { ...variant.headers, ...(variant.cache ? cacheable : noStore) }, variant.compress && target ? packedFiles.get(target) : undefined);
       return;
     }
     if (parts[0] === "fixtures") {
-      sendFile(request, response, options.fixtureRoots[parts[1]] ?? (options.fixtureDirs ?? []).map((dir) => path.join(dir, parts[1] ?? "")).find((candidate) => existsSync(candidate)), noStore);
+      const name = parts[1] ?? "";
+      const mapped = Object.hasOwn(options.fixtureRoots ?? {}, name) ? options.fixtureRoots[name] : undefined;
+      sendFile(request, response, mapped ?? (options.fixtureDirs ?? []).map((dir) => resolveInside(dir, name)).find((candidate) => candidate !== null && existsSync(candidate)), noStore);
       return;
     }
     if (parts[0] === "three") {
       const iso = url.searchParams.get("iso");
       const headers = iso ? { ...COOP, "cross-origin-embedder-policy": iso } : {};
-      sendFile(request, response, path.join(options.threeBundleDir, parts.slice(1).join("/") || "index.html"), { ...headers, ...noStore });
+      sendFile(request, response, resolveInside(options.threeBundleDir, parts.slice(1).join("/") || "index.html"), { ...headers, ...noStore });
       return;
     }
     if (parts[0] === "vendor" && parts[1] === "three") {
-      sendFile(request, response, path.join(options.threeVendorDir, parts.slice(2).join("/")), cacheable);
+      sendFile(request, response, resolveInside(options.threeVendorDir, parts.slice(2).join("/")), cacheable);
       return;
     }
     if (parts[0] === "host") {
       const iso = url.searchParams.get("iso");
       const headers = iso && iso !== "none" ? { ...COOP, "cross-origin-embedder-policy": iso } : {};
-      sendFile(request, response, path.join(options.hostDir, parts.slice(1).join("/") || "embed.html"), { ...headers, ...noStore });
+      sendFile(request, response, resolveInside(options.hostDir, parts.slice(1).join("/") || "embed.html"), { ...headers, ...noStore });
       return;
     }
     response.writeHead(404, { "content-type": "text/plain" });

@@ -11,6 +11,8 @@ import { useApp } from "@/shared/lib/store";
 const api = vi.hoisted(() => ({
   listProductionProjects: vi.fn(),
   getProductionPersonalInbox: vi.fn(),
+  getProductionProjectCollabRecord: vi.fn(),
+  listStudioTeamComments: vi.fn(),
 }));
 
 vi.mock("./production-dashboard-api", async (importOriginal) => {
@@ -19,8 +21,42 @@ vi.mock("./production-dashboard-api", async (importOriginal) => {
     ...actual,
     listProductionProjects: (...args: unknown[]) => api.listProductionProjects(...args),
     getProductionPersonalInbox: (...args: unknown[]) => api.getProductionPersonalInbox(...args),
+    getProductionProjectCollabRecord: (...args: unknown[]) => api.getProductionProjectCollabRecord(...args),
   };
 });
+
+vi.mock("../studio-team-comment-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../studio-team-comment-client")>();
+  return {
+    ...actual,
+    listStudioTeamComments: (...args: unknown[]) => api.listStudioTeamComments(...args),
+  };
+});
+
+/** 협업 알림 투영이 읽는 프로젝트 기록의 최소 형태: 내가 맡은 배정과 나를 언급한 서버 알림 1건. */
+const collabRecord = {
+  aggregate: {
+    projectId: "project-risk",
+    title: "위험한 연재작",
+    parties: [{ id: "party-me", accountUserId: "user-portfolio", publicDisplayName: "나" }],
+    assignments: [{ id: "assignment-me", partyId: "party-me", status: "active" }],
+    notifications: [{
+      id: "notification-mention",
+      assignmentId: "assignment-me",
+      type: "mention",
+      title: "18화 12컷에서 나를 언급했어요",
+      body: "선화 톤을 한 번 봐 주세요",
+      href: "/production/projects/project-risk/episodes/episode-18?thread=thread-1",
+      urgency: "normal",
+      sourceType: "team-comment",
+      sourceId: "thread-1",
+      status: "unread",
+      createdAt: "2026-09-17T01:00:00.000Z",
+    }],
+    reviewDecisions: [],
+    handoffs: [],
+  },
+};
 
 function resetUser(userId: string | null) {
   useApp.setState({ userId, sessionToken: userId ? "session-token" : null });
@@ -66,6 +102,8 @@ describe("ProductionLandingPage portfolio", () => {
       }],
       counts: { dueToday: 0, inProgress: 1, review: 0, ready: 0, waitingInput: 0, blockingOthers: 0 },
     });
+    api.getProductionProjectCollabRecord.mockResolvedValue(collabRecord);
+    api.listStudioTeamComments.mockResolvedValue({ items: [] });
   });
 
   afterEach(() => {
@@ -88,5 +126,23 @@ describe("ProductionLandingPage portfolio", () => {
       .toBe("/production/projects/project-risk/overview");
     await waitFor(() => expect(api.listProductionProjects).toHaveBeenCalledTimes(1));
     expect(api.getProductionPersonalInbox).toHaveBeenCalledTimes(1);
+  });
+
+  it("협업 알림은 전체 제작 API 대신 얇은 대시보드 클라이언트로 프로젝트 기록을 읽어 인박스에 모은다", async () => {
+    render(<MemoryRouter><ProductionLandingPage /></MemoryRouter>);
+
+    expect(await screen.findByText("18화 12컷에서 나를 언급했어요")).toBeTruthy();
+    expect(api.getProductionProjectCollabRecord).toHaveBeenCalledWith("project-risk");
+    expect(api.listStudioTeamComments).toHaveBeenCalledWith("work-risk", expect.objectContaining({ status: "all" }));
+  });
+
+  it("한 프로젝트의 기록을 못 읽어도 포트폴리오와 작업함은 그대로 보이고 알림은 빈 상태로 남는다", async () => {
+    api.getProductionProjectCollabRecord.mockRejectedValue(new Error("network"));
+    render(<MemoryRouter><ProductionLandingPage /></MemoryRouter>);
+
+    expect(await screen.findByText("내 통합 작업함")).toBeTruthy();
+    await waitFor(() => expect(api.getProductionProjectCollabRecord).toHaveBeenCalledWith("project-risk"));
+    expect(await screen.findByText(/아직 협업 알림이 없습니다/u)).toBeTruthy();
+    expect(screen.queryByText("18화 12컷에서 나를 언급했어요")).toBeNull();
   });
 });

@@ -52,9 +52,9 @@ describe("Studio collaboration route gateways", () => {
     );
 
     expect(document.querySelector("[data-studio-collaboration-gateway]")).toBeNull();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("에셋");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("소재");
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
-    fireEvent.click(screen.getByRole("button", { name: "에셋을 사용할 Studio 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "소재를 사용할 Studio 열기" }));
     expect(onOpenStudio).toHaveBeenCalledOnce();
   });
 });

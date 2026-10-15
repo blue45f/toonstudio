@@ -144,6 +144,56 @@ describe("MarketSellerPage", () => {
     expect(screen.getByText("내가 등록한 리스팅이에요.")).toBeTruthy();
   });
 
+  it("제목 없이 다음을 누르면 첫 단계에 머물며 오류를 알리고 해당 칸으로 포커스를 옮긴다", () => {
+    signIn(SELLER);
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getByRole("alert").textContent).toBe("제목을 입력하세요.");
+    const title = screen.getByLabelText("제목");
+    expect(title.getAttribute("aria-invalid")).toBe("true");
+    expect(title.getAttribute("aria-describedby")).toBe(screen.getByRole("alert").id);
+    expect(document.activeElement).toBe(title);
+    expect(document.querySelector('[aria-current="step"]')?.textContent).toContain("기본 정보");
+  });
+
+  it("가격이 최소보다 낮으면 설명·가격 단계에서 막히고, 이전으로 돌아가도 입력은 유지된다", () => {
+    signIn(SELLER);
+    mount();
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "유지될 제목" } });
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    fireEvent.change(screen.getByLabelText("포인트 가격"), { target: { value: "5" } });
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getByRole("alert").textContent).toBe("가격은 최소 10P부터예요.");
+    expect(document.querySelector('[aria-current="step"]')?.textContent).toContain("설명·가격");
+    expect(document.activeElement).toBe(screen.getByLabelText("포인트 가격"));
+
+    fireEvent.click(screen.getByRole("button", { name: "이전" }));
+    // 단계를 옮기면 이전 오류 안내는 거두고, 먼저 입력한 값은 그대로 남는다.
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByDisplayValue("유지될 제목")).toBe(screen.getByLabelText("제목"));
+    expect(document.querySelector('[aria-current="step"]')?.textContent).toContain("기본 정보");
+  });
+
+  it("확인 단계는 입력한 값을 요약해 보여 주고, 폼 제출(Enter)은 다음 단계와 같게 동작한다", () => {
+    signIn(SELLER);
+    mount();
+    const form = screen.getByRole("form", { name: "새 리스팅 등록" });
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "요약될 브러시" } });
+    fireEvent.submit(form);
+    expect(document.querySelector('[aria-current="step"]')?.textContent).toContain("설명·가격");
+    fireEvent.change(screen.getByLabelText("포인트 가격"), { target: { value: "150" } });
+    fireEvent.submit(form);
+
+    expect(document.querySelector('[aria-current="step"]')?.textContent).toContain("확인·등록");
+    expect(screen.getByText("요약될 브러시")).toBeTruthy();
+    expect(screen.getByText("브러시")).toBeTruthy();
+    expect(screen.getByText("150P")).toBeTruthy();
+    expect(screen.getByText("설명 없음")).toBeTruthy();
+    // 마지막 단계의 제출만 리스팅을 만든다 — 그 전까지는 저장된 리스팅이 없다.
+    expect(screen.getByRole("button", { name: "리스팅 등록" })).toBeTruthy();
+    expect(screen.queryByText(/리스팅을 등록했어요/)).toBeNull();
+  });
+
   it("구매자가 포인트로 사면 소유 중으로 바뀌고 판매 원장에 기록된다", () => {
     seedListing(100);
     signIn(BUYER);

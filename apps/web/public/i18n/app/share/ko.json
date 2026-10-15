@@ -23,12 +23,12 @@
   "share.social.telegram": "텔레그램",
   "share.social.email": "이메일",
   "share.status.shared": "공유를 완료했어요.",
-  "share.status.failed": "기기 공유를 열지 못했어요.",
+  "share.status.failed": "기기 공유를 열지 못했어요. 잠시 후 다시 시도해 주세요.",
   "share.status.kakaoOpened": "카카오톡 공유 화면을 열었어요.",
-  "share.status.kakaoFailed": "카카오톡 공유를 열지 못했어요.",
+  "share.status.kakaoFailed": "카카오톡 공유를 열지 못했어요. 잠시 후 다시 시도해 주세요.",
   "share.status.copied": "공유 링크를 복사했어요.",
-  "share.status.copyFailed": "링크를 복사하지 못했어요.",
+  "share.status.copyFailed": "링크를 복사하지 못했어요. 직접 복사해 주세요.",
   "share.status.channelOpened": "선택한 공유 화면을 열었어요.",
   "share.status.emailOpened": "메일 앱을 열었어요.",
-  "share.status.qrFailed": "QR 코드를 만들지 못했어요."
+  "share.status.qrFailed": "QR 코드를 만들지 못했어요. 잠시 후 다시 시도해 주세요."
 }

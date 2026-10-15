@@ -255,7 +255,7 @@ describe("ProductionManuscriptWorkspace", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "고정 원고 피드백" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "요청한 고정 검수본을 찾을 수 없습니다" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "요청한 고정 검수본을 찾을 수 없어요" })).toBeTruthy();
     expect(screen.queryByText("PINNED REVIEW PANEL review-image")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /12화 편집 검수/u }));
@@ -276,7 +276,7 @@ describe("ProductionManuscriptWorkspace", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "고정 원고 피드백" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "요청한 원고·검수본 조합을 찾을 수 없습니다" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "요청한 원고·검수본 조합을 찾을 수 없어요" })).toBeTruthy();
     expect(screen.queryByText("PINNED REVIEW PANEL review-image")).toBeNull();
     expect(screen.queryByRole("button", { name: /12화 편집 검수/u })).toBeNull();
 

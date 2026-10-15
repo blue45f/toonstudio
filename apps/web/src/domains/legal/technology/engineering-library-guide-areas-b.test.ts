@@ -59,6 +59,25 @@ describe("라이브러리 해설 영역 5~8 · 숫자 주장", () => {
     for (const match of build.matchAll(/(\d+) (?:pnpm |library )?patches/gu)) expect(Number(match[1])).toBe(patches);
   });
 
+  it("override 개수를 말하는 해설 문구는 영역 밖(아틀라스·지도)까지 모두 pnpm-workspace.yaml 의 현재 값이다", () => {
+    // override 개수는 여러 해설이 되풀이해 적는다. 영역 5~8 만 대조하면 나머지가 조용히 낡으므로(50개로 남은 사례),
+    // 기술 해설 폴더의 모든 본문에서 "override(s) N" · "N (pnpm) overrides" · "N of them today" 의 N 을 한꺼번에 센 값과 맞춘다.
+    const workspace = parse(read("pnpm-workspace.yaml")) as { overrides?: Record<string, string> };
+    const overrides = Object.keys(workspace.overrides ?? {}).length;
+    const directory = "apps/web/src/domains/legal/technology";
+    const stated: string[] = [];
+    const stale: string[] = [];
+    for (const file of readdirSync(directory)) {
+      if (!file.endsWith(".ts") || /\.test\./u.test(file)) continue;
+      for (const match of read(join(directory, file)).matchAll(/overrides? (\d+)|(\d+) (?:pnpm )?overrides|(\d+) of them today/giu)) {
+        stated.push(`${file}: ${match[0]}`);
+        if (Number(match[1] ?? match[2] ?? match[3]) !== overrides) stale.push(`${file}: "${match[0]}" (현재 ${overrides}개)`);
+      }
+    }
+    expect(stated.length, "override 개수를 말하는 문구가 하나도 없으면 이 대조가 헛돈다").toBeGreaterThan(0);
+    expect(stale).toEqual([]);
+  });
+
   it("Cloudflare Worker 먼저-실행 경로 개수와 Render 무료 플랜·수동 배포가 설정과 같다", () => {
     const wrangler = read("deploy/cloudflare-static/wrangler.jsonc").replace(/^\s*\/\/.*$/gmu, "");
     const block = /"run_worker_first"\s*:\s*\[([\s\S]*?)\]/u.exec(wrangler)?.[1] ?? "";

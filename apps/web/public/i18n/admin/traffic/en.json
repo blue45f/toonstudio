@@ -16,7 +16,7 @@
   "admin.traffic.export": "Export CSV",
   "admin.traffic.lastUpdated": "Last updated",
   "admin.traffic.live": "LIVE",
-  "admin.traffic.loadError": "Traffic data could not be loaded",
+  "admin.traffic.loadError": "Couldn't load traffic data. Please try again in a moment.",
   "admin.traffic.noData": "No real visit data has been collected yet.",
   "admin.traffic.noDataDesc": "Collection starts with public page visits after deployment. Admin routes and browsers with privacy signals enabled are excluded.",
   "admin.traffic.page": "Page",

@@ -9,7 +9,11 @@ import { CAMPUS_DISTRICTS } from "@/shared/lib/spatial-campus/campus-model";
 const directory = fileURLToPath(new URL("../routes/groups/", import.meta.url));
 const routes: { id: string; path: string }[] = [];
 const literal = (node: ts.Node | undefined): string | null => node && ts.isStringLiteral(node) ? node.text : null;
-for (const file of readdirSync(directory).filter((name) => /\.routes?\.tsx$/u.test(name))) {
+// 라우트 표 모듈: `*.routes.tsx`·`*.route.tsx` 와, 그룹 파일의 줄 수 상한 때문에 따로 뗀 `*-routes.tsx`
+// (creator-showcase-routes.tsx 의 /showcase·/create 12개). 뗀 표를 못 읽으면 등록된 라우트가 분류 대상에서 조용히 빠진다.
+// 라우트 요소만 담은 `*-route.tsx`(learn-recipes-route 등)는 id·path 표가 없어 대상이 아니다.
+const ROUTE_TABLE_FILE = /(?:\.routes?|-routes)\.tsx$/u;
+for (const file of readdirSync(directory).filter((name) => ROUTE_TABLE_FILE.test(name))) {
   const source = ts.createSourceFile(file, readFileSync(`${directory}/${file}`, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const visit = (node: ts.Node) => {
     if (ts.isObjectLiteralExpression(node)) {

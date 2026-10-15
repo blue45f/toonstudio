@@ -4,22 +4,26 @@ import { describe, expect, it } from "vitest";
 import { StudioWorkModeBar } from "./StudioWorkModeBar";
 
 describe("StudioWorkModeBar", () => {
-  it("모드 6종 버튼과 현재 모드 설명을 렌더한다", () => {
+  it("모드 7종 버튼과 현재 모드 설명을 렌더한다", () => {
     const html = renderToStaticMarkup(
       <StudioWorkModeBar mode="draw" onModeChange={() => undefined} />,
     );
-    for (const label of ["전체", "콘티", "스케치·선화", "채색", "식자", "효과·마감"]) {
-      expect(html).toContain(label);
+    // 파이프라인은 채색 뒤에 후보정이 끼고 마지막 단계 이름은 "마감"이다(studio-work-mode.ts).
+    for (const label of ["전체", "콘티", "스케치·선화", "채색", "후보정", "식자", "마감"]) {
+      expect(html).toContain(`>${label}</button>`);
     }
+    expect(html.match(/role="tab"/g)?.length ?? 0).toBe(7);
     expect(html).toContain('aria-selected="true"');
     expect(html).toContain("그리는 단계예요");
   });
 
   it("다음 단계 버튼은 파이프라인 다음 모드를 가리킨다", () => {
-    const html = renderToStaticMarkup(
-      <StudioWorkModeBar mode="color" onModeChange={() => undefined} />,
-    );
-    expect(html).toContain("다음 단계: 식자");
+    const next = (mode: "color" | "post" | "lettering") =>
+      renderToStaticMarkup(<StudioWorkModeBar mode={mode} onModeChange={() => undefined} />);
+    // 채색 다음은 후보정, 후보정 다음이 식자, 식자 다음이 마감이다.
+    expect(next("color")).toContain("다음 단계: 후보정");
+    expect(next("post")).toContain("다음 단계: 식자");
+    expect(next("lettering")).toContain("다음 단계: 마감");
   });
 
   it("마감 모드에서는 다음 단계 버튼이 없다", () => {

@@ -7,7 +7,7 @@
   "admin.plans.edit": "플랜 수정",
   "admin.plans.empty": "등록된 플랜이 없어요. 새 플랜으로 추가하세요.",
   "admin.plans.interval": "결제 주기(일)",
-  "admin.plans.loadError": "플랜을 불러오지 못했어요",
+  "admin.plans.loadError": "플랜을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
   "admin.plans.name": "이름 *",
   "admin.plans.new": "새 플랜",
   "admin.plans.perks": "혜택(쉼표로 구분)",

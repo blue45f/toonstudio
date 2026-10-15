@@ -1,5 +1,5 @@
 {
-  "admin.gate.errorTitle": "Failed to Load Console",
+  "admin.gate.errorTitle": "Couldn't load the console. Please try again in a moment.",
   "admin.gate.forbiddenBody": "This account lacks admin permissions. Contact an operator if required.",
   "admin.gate.forbiddenTitle": "Admin Permission Required",
   "admin.gate.guestBody": "Admin console requires authentication. Please sign in.",

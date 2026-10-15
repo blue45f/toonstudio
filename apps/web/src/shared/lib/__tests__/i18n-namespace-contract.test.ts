@@ -31,13 +31,16 @@ const ASSET_DIRECTORY = path.resolve(process.cwd(), "apps/web/public", "i18n", "
 const ASSET_LOCALES = [...APP_I18N_ASSET_LOCALES];
 
 /**
- * Frozen legacy exceptions: these three namespaces predate the contract and
- * publish only de/es/fr/ja/zh/zh-hant assets while ko/en live in code (the
- * reversed direction). Unifying them is tracked separately; this list may
- * only shrink. The ratchet below fails as soon as one of them satisfies the
- * contract, so a fixed namespace cannot stay exempt by accident.
+ * Legacy exceptions to the contract. `contact`, `fortune` and `play` used to
+ * publish only de/es/fr/ja/zh/zh-hant assets while ko/en lived in code (the
+ * reversed direction). They now publish the ko/en canonical pair and every
+ * shipped locale like any other namespace (2026-10-14, c5913641), so they left
+ * this list as the guide requires (apps/web/I18N_GUIDE.md §5). The list is
+ * empty and must stay empty: adding an exception here is forbidden, and a
+ * namespace that regresses to the reversed shape fails the full-contract
+ * assertion below instead of being exempted.
  */
-const LEGACY_REVERSED_NAMESPACES = ["contact", "fortune", "play"];
+const LEGACY_REVERSED_NAMESPACES: readonly string[] = [];
 
 /**
  * Source files for surfaces created under the contract. A new surface adds
@@ -187,16 +190,28 @@ describe("published app namespaces follow the key-based contract", () => {
     expect(Object.fromEntries(failures)).toEqual({});
   });
 
-  it("keeps the legacy exception list frozen and honest", () => {
-    expect([...LEGACY_REVERSED_NAMESPACES].sort()).toEqual(["contact", "fortune", "play"]);
+  it("keeps the legacy exception list empty and honest", () => {
+    // The exception list may only shrink and it is now empty; a new exception
+    // is forbidden (I18N_GUIDE §5). Every exempted namespace must still be
+    // reversed, so an entry that already satisfies the contract fails here.
+    expect(LEGACY_REVERSED_NAMESPACES).toEqual([]);
     for (const namespace of LEGACY_REVERSED_NAMESPACES) {
       const violations = checkI18nNamespaceContract(readNamespaceSnapshot(namespace), {
         assetLocales: ASSET_LOCALES,
       });
-      // Still reversed: the exception is still needed. Once a namespace is
-      // unified it must leave this list — remove it and this ratchet passes
-      // through the full-contract assertion above instead.
       expect(rulesOf(violations)).toContain("missing-canonical-locale");
+    }
+  });
+
+  it("publishes the unified ko/en pair for the namespaces that used to be reversed", () => {
+    // Anti-regression for the three former exceptions: they must keep passing
+    // the same contract as every other namespace, which the full-contract
+    // assertion proves, and they must still be published at all.
+    for (const namespace of ["contact", "fortune", "play"]) {
+      expect(directoryNamespaces).toContain(namespace);
+      const snapshot = readNamespaceSnapshot(namespace);
+      expect(snapshot.ko, `${namespace} must publish ko`).toBeDefined();
+      expect(snapshot.en, `${namespace} must publish en`).toBeDefined();
     }
   });
 });

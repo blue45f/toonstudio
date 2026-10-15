@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Couldn't load updates.",
+  "changelog.loadError": "Couldn't load updates. Please try again in a moment.",
   "changelog.empty": "No update logs posted yet."
 }

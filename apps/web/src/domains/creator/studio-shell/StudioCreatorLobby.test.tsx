@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useLocation } from "react-router-dom";
 
 import {
@@ -19,6 +19,13 @@ import {
   studioLobbyRecentProjects,
 } from "./studio-creator-lobby-model";
 import { STUDIO_PROJECT_TITLE_MAX_LENGTH } from "./studio-project-title";
+
+// 라이브러리 화면은 첫 진입에서 예제 프로젝트와 샘플 원고를 로컬 저장소에 함께 심고(마운트 시딩),
+// 로비는 그 작품도 "최근 프로젝트"로 보여 준다. 시딩과 로비의 맞물림은 StudioProjectLibraryPage.test.tsx 가
+// 실제 카드로 확인하므로, 여기서는 로비 자체의 규칙(작품 없음 상태·최근 순서·5개 상한)만 보도록
+// 시딩 카드를 끈다 — 켜 두면 방금 심긴 예제·샘플이 항상 가장 최근 작품으로 섞여 들어온다.
+vi.mock("../workspace/StudioExampleProjectBanner", () => ({ StudioExampleProjectBanner: () => null }));
+vi.mock("../workspace/StudioSampleManuscriptCard", () => ({ StudioSampleManuscriptCard: () => null }));
 
 const ORIGIN = "https://toonstudio.test";
 

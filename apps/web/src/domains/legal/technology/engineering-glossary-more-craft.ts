@@ -17,8 +17,8 @@ export const GLOSSARY_MORE_CRAFT: readonly GlossaryTerm[] = [
       "Like a ratchet wrench that turns only one way: it advances when tightening and catches so it never slips back.",
     ),
     inToonstudio: t(
-      "파일 크기 래칫(shared/lib/__tests__/file-size-ratchet.test.ts)은 단일 파일이 비대해지는 일을 막으려는 것입니다. StudioCuttoonEditorHost.tsx 는 테스트 주석에 29,642줄까지 커졌다고 적혀 있고 지금도 약 2만 9천 줄로 가장 큰 파일입니다. 새 파일은 1,000줄이 상한이고, 베이스라인(현재 327개 파일)의 기존 큰 파일은 기록된 줄 수 이상 자랄 수 없으며 줄이면 같은 변경에서 숫자도 낮춥니다.",
-      "The file-size ratchet (shared/lib/__tests__/file-size-ratchet.test.ts) exists to stop single files from ballooning. A test comment says StudioCuttoonEditorHost.tsx once grew to 29,642 lines, and it is still the biggest file at roughly 29,000 lines. New files are capped at 1,000 lines, existing big files in the baseline (327 entries now) cannot grow past their recorded size, and when one shrinks the number is lowered in the same change.",
+      "파일 크기 래칫(scripts/check-source-file-size.mjs, 전체 시험에서는 shared/lib/__tests__/file-size-ratchet.test.ts)은 단일 파일이 비대해지는 일을 막으려는 것입니다. StudioCuttoonEditorHost.tsx 는 테스트 주석에 29,642줄까지 커졌다고 적혀 있고 지금도 약 2만 9천 줄로 가장 큰 파일입니다. 새 파일은 800줄이 상한이고, 기준선(scripts/source-file-size-baseline.json)에 기록된 기존 초과 파일은 기록된 줄 수 이상 자랄 수 없으며 줄이면 --tighten 으로 같은 변경에서 숫자도 낮춥니다.",
+      "The file-size ratchet (scripts/check-source-file-size.mjs, and shared/lib/__tests__/file-size-ratchet.test.ts in the full tests) exists to stop single files from ballooning. A test comment says StudioCuttoonEditorHost.tsx once grew to 29,642 lines, and it is still the biggest file at roughly 29,000 lines. New files are capped at 800 lines, existing oversized files in the baseline (scripts/source-file-size-baseline.json) cannot grow past their recorded size, and when one shrinks the number is lowered with --tighten in the same change.",
     ),
     chapters: ["quality", "quality-gates"],
   },

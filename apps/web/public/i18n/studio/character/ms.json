@@ -120,5 +120,10 @@
   "studio.character.workspace.showTools": "Expand editing tools",
   "studio.character.workspace.focusModel": "View model larger",
   "studio.character.workspace.tools": "Tools",
-  "studio.character.workspace.expand": "Enlarge"
+  "studio.character.workspace.expand": "Enlarge",
+  "studio.character.shelf.interactionHintTouch": "Touch: tap to apply right away. Scrolling alone will not change it.",
+  "studio.character.shelf.interactionHintMouse": "Mouse: hover to preview in 3D. Nothing is saved until you click.",
+  "studio.character.shelf.interactionHintKeyboard": "Keyboard: use the arrow keys to preview in 3D. Nothing is saved until you press Enter.",
+  "studio.character.shelf.shapeNote": "The shape pictures on cards may differ from the actual character.",
+  "studio.character.shelf.favoritesNote": "Favorites are stored in this browser only."
 }

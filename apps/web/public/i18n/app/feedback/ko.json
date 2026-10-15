@@ -1,5 +1,5 @@
 {
-  "feedback.loadError": "설문을 불러오지 못했어요",
+  "feedback.loadError": "설문을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
   "feedback.thankYou": "소중한 의견 감사합니다",
   "feedback.anonymousNote": "의견은 익명으로 처리돼요",
   "feedback.notAtAll": "전혀 아니다",

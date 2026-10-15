@@ -4,6 +4,12 @@ import {
   type StudioSpecialistProviderDescriptor,
 } from "./render/studio-wasm-provider-registry";
 import { sha256HexPortable } from "./studio-sha256";
+import {
+  cssUrlTargets,
+  hasEventHandlerAttribute,
+  hasForbiddenSvgElement,
+  imageElementTags,
+} from "./svg-safety/studio-svg-source-scan";
 
 export const STUDIO_RESVG_PROVIDER_REVISION = 1 as const;
 
@@ -184,15 +190,9 @@ interface PreparedRenderRequest {
 const LANGUAGE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/u;
 const BACKGROUND_PATTERN =
   /^(?:transparent|#[0-9a-f]{3,8}|rgba?\([0-9.,%+\-\s]+\)|hsla?\([0-9.,%+\-\s]+\))$/iu;
-const FORBIDDEN_ELEMENT_PATTERN =
-  /<\s*\/?\s*(?:script|foreignObject|iframe|object|embed|audio|video|canvas|frame|frameset|portal)\b/iu;
-const EVENT_ATTRIBUTE_PATTERN = /\bon[a-z0-9_-]+\s*=/iu;
 const HREF_ATTRIBUTE_PATTERN =
   /\b(?:href|xlink:href)\s*=\s*(["'])([\s\S]*?)\1/giu;
 const ANY_HREF_ATTRIBUTE_PATTERN = /\b(?:href|xlink:href)\s*=/giu;
-const URL_FUNCTION_PATTERN =
-  /url\(\s*(["']?)([\s\S]*?)\1\s*\)/giu;
-const IMAGE_ELEMENT_PATTERN = /<\s*(?:image|feImage)\b[\s\S]*?>/giu;
 const DATA_RASTER_IMAGE_PATTERN =
   /^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=\s]+$/iu;
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10] as const;
@@ -302,8 +302,8 @@ function sanitizeSvg(
     unsafe("SVG declarations and processing instructions are not allowed.");
   }
   if (
-    FORBIDDEN_ELEMENT_PATTERN.test(normalized)
-    || EVENT_ATTRIBUTE_PATTERN.test(normalized)
+    hasForbiddenSvgElement(normalized)
+    || hasEventHandlerAttribute(normalized)
     || /\bxml:base\s*=/iu.test(normalized)
     || /(?:javascript|vbscript)\s*:/iu.test(normalized)
     || /@(?:import|font-face|namespace)\b/iu.test(normalized)
@@ -323,20 +323,19 @@ function sanitizeSvg(
       unsafe("SVG contains a disallowed href resource.");
     }
   }
-  for (const match of normalized.matchAll(URL_FUNCTION_PATTERN)) {
-    const target = decodeXmlReferences(match[2] ?? "").trim();
+  for (const rawTarget of cssUrlTargets(normalized)) {
+    const target = decodeXmlReferences(rawTarget).trim();
     if (!target.startsWith("#") || target.length === 1) {
       unsafe("SVG contains a disallowed CSS URL resource.");
     }
   }
 
-  const imageElements = [...normalized.matchAll(IMAGE_ELEMENT_PATTERN)];
+  const imageElements = imageElementTags(normalized);
   if (imagePolicy === "deny" && imageElements.length > 0) {
     unsafe("SVG image elements are disabled by policy.");
   }
   if (imagePolicy === "embedded-raster-data") {
-    for (const match of imageElements) {
-      const tag = match[0];
+    for (const tag of imageElements) {
       const href = [...tag.matchAll(HREF_ATTRIBUTE_PATTERN)][0]?.[2];
       if (!href || !allowedHref(href, imagePolicy) || href.trim().startsWith("#")) {
         unsafe("SVG image elements require embedded raster data.");

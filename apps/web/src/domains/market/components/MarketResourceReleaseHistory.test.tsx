@@ -108,7 +108,7 @@ describe("MarketResourceReleaseHistory", () => {
 
     expect(await screen.findByText(/선택한 v2\.0\.0 릴리스는 현재 목록에서 내려갔습니다/u))
       .toBeTruthy();
-    expect(screen.getByText("현재 공개된 이전 릴리스가 없습니다.")).toBeTruthy();
+    expect(screen.getByText("현재 공개된 이전 릴리스가 없어요.")).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
     expect(document.body.innerHTML).not.toContain(`/market/resource/${SELECTED_ID}`);
   });

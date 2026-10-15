@@ -34,7 +34,7 @@
 | --- | --- |
 | 카드 계약 | `engineering-atlas-types.ts` |
 | 카드 집계 | `engineering-atlas-content.ts` — 분야별 모듈을 모아 분야 순서로 정렬한다. 카드 내용은 두지 않는다. |
-| 카드 원본 | `engineering-atlas-<분야>.ts` + 주제별 보조 파일(`-<분야>-*.ts`). 한 파일은 1,000줄 미만이다(줄 수 래칫). |
+| 카드 원본 | `engineering-atlas-<분야>.ts` + 주제별 보조 파일(`-<분야>-*.ts`). 새 파일은 800줄 이하다(소스 파일 크기 래칫, `pnpm run check:source-file-size`). |
 | 지도 계약·메타 | `engineering-map-types.ts`(`ENGINEERING_MAP_META`는 허브 타일처럼 가벼운 곳이 행 데이터를 불러오지 않고 쓰는 요약) |
 | 지도 원본 | `engineering-map-<id>.ts`(본체·열·도식), 행은 `engineering-map-<id>-rows*.ts` |
 | 도식 | `engineering-diagram-types.ts`(계약·한도), `engineering-diagram-layout.ts`(배치 엔진), `engineering-diagram-validate.ts`(검증기), `EngineeringDiagramView.tsx`(SVG 렌더러), `EngineeringDiagramFrame.tsx`("크게 보기" 대화상자) |
@@ -107,7 +107,7 @@
 
 ## 9. 새 카드·행을 추가하는 방법
 
-1. 분야에 맞는 보조 파일(또는 새 보조 파일)에 `EngineeringAtlasEntry`를 추가하고 분야 모듈의 배열에 잇는다. 새 파일은 1,000줄을 넘기지 않는다.
+1. 분야에 맞는 보조 파일(또는 새 보조 파일)에 `EngineeringAtlasEntry`를 추가하고 분야 모듈의 배열에 잇는다. 새 파일은 800줄을 넘기지 않는다.
 2. 코드를 직접 열어 사실을 확인한다. 확인하지 못한 것은 `pitfall`에 "미확인"으로 적고 상태를 낮춘다.
 3. 도식을 먼저 짜고(`validateEngineeringDiagram`) 샘플을 `verify: "types"`로 쓴다.
 4. 링크는 응답을 확인한 공식 주소만 쓴다.
@@ -124,7 +124,8 @@ pnpm exec vitest run \
   apps/web/src/domains/legal/technology/engineering-diagram.test.ts \
   apps/web/src/domains/legal/technology/engineering-map-content.test.ts \
   apps/web/src/domains/legal/technology/EngineeringAtlasPage.test.tsx
-# 파일 줄 수 래칫
+# 파일 줄 수 래칫(CLI 게이트와 전체 시험 쪽 집행)
+pnpm run check:source-file-size
 pnpm exec vitest run apps/web/src/shared/lib/__tests__/file-size-ratchet.test.ts
 ```
 

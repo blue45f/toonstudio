@@ -90,15 +90,21 @@ describe("locale completeness report (catalog generation)", () => {
 });
 
 describe("translation-in-progress marking (picker contract)", () => {
-  it("marks locales under the completeness threshold, including asset locales above the old floor", () => {
+  it("marks locales under the completeness threshold, whatever side of the translated floor they sit on", () => {
     expect(isAppI18nTranslationInProgress("en")).toBe(false);
     expect(isAppI18nTranslationInProgress("ko")).toBe(false);
-    // ja clears the 0.5 translated floor but sits near half completeness.
-    expect(APP_I18N_LOCALE_TRANSLATED_RATIO.ja).toBeGreaterThanOrEqual(0.5);
+    // ja sits near half completeness, far under the 0.9 threshold, so it is marked.
     expect(APP_I18N_LOCALE_TRANSLATED_RATIO.ja).toBeLessThan(
       APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD,
     );
     expect(isAppI18nTranslationInProgress("ja")).toBe(true);
+    // The flag is exactly "under the completeness threshold" for every published locale, so a locale
+    // that clears the 0.5 translated floor (none do since 2026-10-15) is still marked until 0.9.
+    for (const [locale, ratio] of Object.entries(APP_I18N_LOCALE_TRANSLATED_RATIO)) {
+      expect(isAppI18nTranslationInProgress(locale), locale).toBe(
+        ratio < APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD,
+      );
+    }
     // No published asset at all is the extreme case of in progress, never "probably fine".
     expect(getAppI18nCompletenessRatio("cy")).toBe(0);
     expect(isAppI18nTranslationInProgress("cy")).toBe(true);
