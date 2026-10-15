@@ -1,10 +1,25 @@
 /**
- * Studio 3D SketchUp-Style Inference & Measurement Engine
+ * Studio 3D SketchUp-Style Inference & Measurement Engine — 호환 어댑터.
  *
- * 건축 배경, 소품 및 마네킹 배치를 위한 정밀 기하 추론(Inference) 엔진입니다.
- * Endpoint, Midpoint, Center, Edge-Nearest, Face-Centroid, Intersection,
- * Perpendicular, Parallel, Tangent, Axis Lock(X/Y/Z) 및 3D 치수/각도 측정 도구를 완벽 지원합니다.
+ * 후보 선택·호버 기준점 정렬·격자 스냅의 계산은 단일 추론 파이프라인
+ * (`bg3d/studio-bg3d-inference-engine.ts`)이 하고, 이 클래스는 기존 공개 API(월드 거리 허용오차,
+ * `InferenceType` 이름, 한국어 라벨, `guideRay`)를 그대로 지키기 위한 매핑만 남긴다.
+ * 선분 최근접점·중간점 같은 기하 보조는 파이프라인의 수학 모듈을 쓴다.
+ * 3D 치수/각도 측정과 경계 상자 계산은 이 파일 고유 기능이다.
+ *
+ * 변경 이력: 호버 기준점 정렬의 "가장 먼저 맞은 축" 선택 대신 파이프라인의 "가장 가까운 정렬선" 규칙을 쓴다.
  */
+
+import { resolveStudioBg3dAdhocInference } from "../bg3d/studio-bg3d-inference-adhoc";
+import {
+  STUDIO_BG3D_INFERENCE_AXIS_STYLE,
+  STUDIO_BG3D_INFERENCE_KIND_STYLE,
+  studioBg3dInferenceAxisVector,
+} from "../bg3d/studio-bg3d-inference-kinds";
+import { closestPointOnLine, closestPointOnSegment, distance, midpoint } from "../bg3d/studio-bg3d-inference-math";
+
+import type { StudioBg3dInferenceAxis } from "../bg3d/studio-bg3d-inference-kinds";
+import type { StudioBg3dInferenceVec3 } from "../bg3d/studio-bg3d-inference-math";
 
 export type InferenceType =
   | "endpoint"
@@ -76,6 +91,29 @@ export interface BoundingBox3DResult {
   volume: number; // m³
 }
 
+/** 허용오차(월드 m)를 화면 px 임계값으로 바꿀 때 쓰는 기준 px. 허용오차 = 이 px × px당 월드 길이. */
+const TOLERANCE_PX = 10;
+
+const AXIS_LABELS: Readonly<Record<StudioBg3dInferenceAxis, string>> = Object.freeze({
+  x: "X축 정렬 (Red Axis)",
+  y: "Y축 정렬 (Green Axis)",
+  z: "Z축 정렬 (Blue Axis)",
+});
+
+const AXIS_TYPES: Readonly<Record<StudioBg3dInferenceAxis, InferenceType>> = Object.freeze({
+  x: "axis-x",
+  y: "axis-y",
+  z: "axis-z",
+});
+
+function toVec(point: Point3D): StudioBg3dInferenceVec3 {
+  return [point.x, point.y, point.z];
+}
+
+function toPoint(vector: StudioBg3dInferenceVec3): Point3D {
+  return { x: vector[0], y: vector[1], z: vector[2] };
+}
+
 export class Studio3DInferenceEngine {
   private snapTolerance: number;
   private activeAxisLock: "x" | "y" | "z" | "none" = "none";
@@ -103,7 +141,7 @@ export class Studio3DInferenceEngine {
    */
   public registerHoverReference(point: Point3D): void {
     const isDuplicate = this.hoveredReferencePoints.some(
-      (p) => Math.hypot(p.x - point.x, p.y - point.y, p.z - point.z) < 0.05,
+      (p) => distance(toVec(p), toVec(point)) < 0.05,
     );
     if (!isDuplicate) {
       this.hoveredReferencePoints.push({ ...point });
@@ -119,155 +157,94 @@ export class Studio3DInferenceEngine {
 
   /**
    * 커서 위치에서 가장 적합한 스냅 포인트를 판별합니다.
+   * 우선순위는 후보 점 > 호버 기준점 정렬 > 격자이며, 모두 단일 추론 파이프라인이 고른다.
    */
   public findBestSnap(
     cursor: Point3D,
     candidates: InferenceCandidate[],
     gridSize = 0.5,
   ): InferenceSnapResult | null {
-    let effectiveCursor = { ...cursor };
+    let effectiveCursor = toVec(cursor);
 
-    // 1단계: 축 잠금(Axis Lock) 적용
-    if (this.activeAxisLock !== "none" && this.hoveredReferencePoints.length > 0) {
-      const ref = this.hoveredReferencePoints[this.hoveredReferencePoints.length - 1];
-      if (this.activeAxisLock === "x") {
-        effectiveCursor = { x: cursor.x, y: ref.y, z: ref.z };
-      } else if (this.activeAxisLock === "y") {
-        effectiveCursor = { x: ref.x, y: cursor.y, z: ref.z };
-      } else if (this.activeAxisLock === "z") {
-        effectiveCursor = { x: ref.x, y: ref.y, z: cursor.z };
-      }
+    // 축 잠금: 마지막 호버 기준점을 지나는 축선 위로 커서를 투영한다 (축 방향 성분만 남긴다).
+    const lastReference = this.hoveredReferencePoints[this.hoveredReferencePoints.length - 1];
+    if (this.activeAxisLock !== "none" && lastReference) {
+      effectiveCursor = closestPointOnLine(
+        effectiveCursor,
+        toVec(lastReference),
+        studioBg3dInferenceAxisVector(this.activeAxisLock),
+      ).point;
     }
 
-    let bestResult: InferenceSnapResult | null = null;
-    let minDistance = this.snapTolerance;
+    const outcome = resolveStudioBg3dAdhocInference({
+      // 후보의 종류(type)는 호출자가 붙인 이름일 뿐이라 파이프라인에는 모두 끝점으로 넘기고, 결과에서 되돌린다.
+      points: candidates.map((candidate, index) => ({
+        id: `candidate-${index}`,
+        point: toVec(candidate.point),
+        label: candidate.label,
+        kind: "endpoint" as const,
+      })),
+      cursorPoint: effectiveCursor,
+      worldPerPixel: this.snapTolerance / TOLERANCE_PX,
+      hoverReferences: this.hoveredReferencePoints.map(toVec),
+      grid: gridSize > 0 ? { step: gridSize } : null,
+      thresholds: { pointPx: TOLERANCE_PX, edgePx: TOLERANCE_PX, alignPx: TOLERANCE_PX },
+      enabledKinds: new Set(["endpoint", "from-point", "grid"]),
+    });
+    if (!outcome.ok) return null;
+    const { result } = outcome;
+    const snappedDistance = distance(effectiveCursor, result.point);
 
-    // 2단계: 후보 기하점(Candidate Points) 스냅 평가
-    for (const cand of candidates) {
-      const dist = Math.hypot(
-        effectiveCursor.x - cand.point.x,
-        effectiveCursor.y - cand.point.y,
-        effectiveCursor.z - cand.point.z,
-      );
-
-      if (dist < minDistance) {
-        minDistance = dist;
-        bestResult = {
-          snappedPoint: { ...cand.point },
-          type: cand.type,
-          label: cand.label,
-          distance: dist,
-          guideRay: this.resolveGuideRay(cand.type, cand.point),
-        };
-      }
-    }
-
-    // 3단계: 임시 기준점(Hover Reference)과의 정렬 추론(X/Y/Z Alignment Rays)
-    if (!bestResult && this.hoveredReferencePoints.length > 0) {
-      for (const ref of this.hoveredReferencePoints) {
-        // X축 정렬
-        const distX = Math.hypot(effectiveCursor.y - ref.y, effectiveCursor.z - ref.z);
-        if (distX < this.snapTolerance && Math.abs(effectiveCursor.x - ref.x) > 0.05) {
-          bestResult = {
-            snappedPoint: { x: effectiveCursor.x, y: ref.y, z: ref.z },
-            type: "axis-x",
-            label: "X축 정렬 (Red Axis)",
-            distance: distX,
-            guideRay: { origin: ref, direction: { x: 1, y: 0, z: 0 }, colorHex: "#e63946" },
-          };
-          break;
-        }
-
-        // Y축 정렬
-        const distY = Math.hypot(effectiveCursor.x - ref.x, effectiveCursor.z - ref.z);
-        if (distY < this.snapTolerance && Math.abs(effectiveCursor.y - ref.y) > 0.05) {
-          bestResult = {
-            snappedPoint: { x: ref.x, y: effectiveCursor.y, z: ref.z },
-            type: "axis-y",
-            label: "Y축 정렬 (Green Axis)",
-            distance: distY,
-            guideRay: { origin: ref, direction: { x: 0, y: 1, z: 0 }, colorHex: "#2a9d8f" },
-          };
-          break;
-        }
-
-        // Z축 정렬
-        const distZ = Math.hypot(effectiveCursor.x - ref.x, effectiveCursor.y - ref.y);
-        if (distZ < this.snapTolerance && Math.abs(effectiveCursor.z - ref.z) > 0.05) {
-          bestResult = {
-            snappedPoint: { x: ref.x, y: ref.y, z: effectiveCursor.z },
-            type: "axis-z",
-            label: "Z축 정렬 (Blue Axis)",
-            distance: distZ,
-            guideRay: { origin: ref, direction: { x: 0, y: 0, z: 1 }, colorHex: "#457b9d" },
-          };
-          break;
-        }
-      }
-    }
-
-    // 4단계: 그리드 스냅 폴백
-    if (!bestResult && gridSize > 0) {
-      const snappedGrid: Point3D = {
-        x: Math.round(effectiveCursor.x / gridSize) * gridSize,
-        y: Math.round(effectiveCursor.y / gridSize) * gridSize,
-        z: Math.round(effectiveCursor.z / gridSize) * gridSize,
+    if (result.kind === "endpoint") {
+      const index = Number(result.sourceIds[0]?.replace("candidate-", ""));
+      const candidate = candidates[index];
+      if (!candidate) return null;
+      return {
+        snappedPoint: { ...candidate.point },
+        type: candidate.type,
+        label: candidate.label,
+        distance: snappedDistance,
+        guideRay: this.resolveGuideRay(candidate.type, candidate.point),
       };
-
-      const gridDist = Math.hypot(
-        effectiveCursor.x - snappedGrid.x,
-        effectiveCursor.y - snappedGrid.y,
-        effectiveCursor.z - snappedGrid.z,
-      );
-
-      if (gridDist < this.snapTolerance) {
-        bestResult = {
-          snappedPoint: snappedGrid,
-          type: "grid",
-          label: `격자 (${gridSize}m)`,
-          distance: gridDist,
-        };
-      }
     }
-
-    return bestResult;
+    if (result.kind === "from-point" && result.axis && result.alignmentOrigin) {
+      const axis = result.axis;
+      const direction = studioBg3dInferenceAxisVector(axis);
+      return {
+        snappedPoint: toPoint(result.point),
+        type: AXIS_TYPES[axis],
+        label: AXIS_LABELS[axis],
+        distance: snappedDistance,
+        guideRay: {
+          origin: toPoint(result.alignmentOrigin),
+          direction: toPoint(direction),
+          colorHex: STUDIO_BG3D_INFERENCE_AXIS_STYLE[axis].hex,
+        },
+      };
+    }
+    if (result.kind === "grid") {
+      return {
+        snappedPoint: toPoint(result.point),
+        type: "grid",
+        label: `격자 (${gridSize}m)`,
+        distance: snappedDistance,
+      };
+    }
+    return null;
   }
 
   /**
    * 두 점 사이의 중간점(Midpoint) 계산
    */
   public computeMidpoint(p1: Point3D, p2: Point3D): Point3D {
-    return {
-      x: (p1.x + p2.x) / 2,
-      y: (p1.y + p2.y) / 2,
-      z: (p1.z + p2.z) / 2,
-    };
+    return toPoint(midpoint(toVec(p1), toVec(p2)));
   }
 
   /**
    * 선분 위의 가장 가까운 점(Nearest Point on Edge) 계산
    */
   public computeNearestPointOnSegment(point: Point3D, segment: LineSegment3D): Point3D {
-    const ab = {
-      x: segment.end.x - segment.start.x,
-      y: segment.end.y - segment.start.y,
-      z: segment.end.z - segment.start.z,
-    };
-    const ap = {
-      x: point.x - segment.start.x,
-      y: point.y - segment.start.y,
-      z: point.z - segment.start.z,
-    };
-
-    const abLenSq = ab.x * ab.x + ab.y * ab.y + ab.z * ab.z;
-    if (abLenSq === 0) return { ...segment.start };
-
-    const t = Math.max(0, Math.min(1, (ap.x * ab.x + ap.y * ab.y + ap.z * ab.z) / abLenSq));
-    return {
-      x: segment.start.x + ab.x * t,
-      y: segment.start.y + ab.y * t,
-      z: segment.start.z + ab.z * t,
-    };
+    return toPoint(closestPointOnSegment(toVec(point), toVec(segment.start), toVec(segment.end)).point);
   }
 
   /**
@@ -358,17 +335,19 @@ export class Studio3DInferenceEngine {
   private resolveGuideRay(type: InferenceType, point: Point3D): { origin: Point3D; direction: Point3D; colorHex: string } | undefined {
     switch (type) {
       case "axis-x":
-        return { origin: point, direction: { x: 1, y: 0, z: 0 }, colorHex: "#e63946" };
       case "axis-y":
-        return { origin: point, direction: { x: 0, y: 1, z: 0 }, colorHex: "#2a9d8f" };
-      case "axis-z":
-        return { origin: point, direction: { x: 0, y: 0, z: 1 }, colorHex: "#457b9d" };
+      case "axis-z": {
+        const axis = type.slice(-1) as StudioBg3dInferenceAxis;
+        return {
+          origin: point,
+          direction: toPoint(studioBg3dInferenceAxisVector(axis)),
+          colorHex: STUDIO_BG3D_INFERENCE_AXIS_STYLE[axis].hex,
+        };
+      }
       case "endpoint":
-        return { origin: point, direction: { x: 0, y: 1, z: 0 }, colorHex: "#2ec4b6" };
       case "midpoint":
-        return { origin: point, direction: { x: 0, y: 1, z: 0 }, colorHex: "#3a86ff" };
       case "center":
-        return { origin: point, direction: { x: 0, y: 1, z: 0 }, colorHex: "#8338ec" };
+        return { origin: point, direction: { x: 0, y: 1, z: 0 }, colorHex: STUDIO_BG3D_INFERENCE_KIND_STYLE[type].hex };
       default:
         return undefined;
     }
