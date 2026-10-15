@@ -1138,7 +1138,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
           </Link> : null}
         </div>
         {requestedReviewMissing && !selectedProcess ? <div className="mt-5 rounded-2xl border border-warn/35 bg-warn/10 p-6" role="alert">
-          <h3 className="font-black text-fg">{t("productionHub.manuscript.reviewPairNotFound", "요청한 원고·검수본 조합을 찾을 수 없습니다")}</h3>
+          <h3 className="font-black text-fg">{t("productionHub.manuscript.reviewPairNotFound", "요청한 원고·검수본 조합을 찾을 수 없어요")}</h3>
           <p className="mt-1 text-sm leading-6 text-fg-2">다른 공정이나 검수본으로 자동 대체하지 않았습니다. 원고 공정 목록에서 확인할 대상을 다시 선택하세요.</p>
           <button
             type="button"

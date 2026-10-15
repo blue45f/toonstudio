@@ -301,7 +301,7 @@ for (const fixture of [
       }, null, 2));
       throw error;
     }
-    await expect(page.getByRole("heading", { name: "요청한 원고·검수본 조합을 찾을 수 없습니다" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "요청한 원고·검수본 조합을 찾을 수 없어요" })).toBeVisible();
     await expect(page.getByText(/다른 공정이나 검수본으로 자동 대체하지 않았습니다/u)).toBeVisible();
     assert.equal(
       apiRequests.some(({ label, pathname }) => label === fixture.label && /\/reviews\/review-image(?:\/|$)/u.test(pathname)),
