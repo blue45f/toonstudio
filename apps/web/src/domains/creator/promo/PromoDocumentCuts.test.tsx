@@ -225,6 +225,21 @@ describe("적용", () => {
     expect(screen.getByText(/아직 불러온 컷 묶음이 없어요/u)).toBeTruthy();
   });
 
+  it("적용하거나 취소하면 사라진 버튼 대신 파일 입력으로 포커스를 돌려 준다", async () => {
+    renderCuts();
+    await loadFile(bundleFile(fourCuts()));
+    applyButton().focus();
+    expect(document.activeElement).toBe(applyButton());
+    fireEvent.click(applyButton());
+    expect(document.activeElement).toBe(fileInput());
+
+    await loadFile(bundleFile(fourCuts()));
+    const cancel = screen.getByRole("button", { name: "취소" });
+    cancel.focus();
+    fireEvent.click(cancel);
+    expect(document.activeElement).toBe(fileInput());
+  });
+
   it("바깥에서 잠그면 입력과 버튼이 모두 잠긴다", async () => {
     const view = render(<PromoDocumentCuts project={projectOf()} disabled={false} onApply={vi.fn()} />);
     await loadFile(bundleFile(fourCuts()));
@@ -243,8 +258,11 @@ describe("읽기 실패와 빈 묶음", () => {
     await loadFile(bundleFile([]));
     expect(screen.getByText(/이 묶음에는 컷이 없어요/u)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /적용/u })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+    const close = screen.getByRole("button", { name: "닫기" });
+    close.focus();
+    fireEvent.click(close);
     expect(screen.getByText(/아직 불러온 컷 묶음이 없어요/u)).toBeTruthy();
+    expect(document.activeElement).toBe(fileInput());
   });
 
   it("JSON이 아니면 이유와 함께 다시 시도·다른 파일 선택을 주고, 다시 시도하면 같은 파일을 다시 읽는다", async () => {

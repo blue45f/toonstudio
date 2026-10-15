@@ -79,6 +79,8 @@ export function PromoDocumentCuts({ project, disabled, onApply }: {
     setError("");
     setApplyError("");
     setFileName("");
+    // 방금 누른 버튼(적용·취소·닫기)이 화면에서 사라진다. 키보드 사용자의 포커스가 문서 처음으로 튀지 않게 파일 입력으로 돌려 둔다.
+    inputRef.current?.focus();
   };
   const changeMode = (next: PromoCutApplyMode) => {
     setMode(next);
@@ -184,7 +186,7 @@ export function PromoDocumentCuts({ project, disabled, onApply }: {
                 <li key={draft.cut.id}>
                   <fieldset className="promo-cut-draft" data-included={draft.include}>
                     <legend>{formatI18nTemplate(bt("읽기 순서 {order} · 페이지 {page}", "Reading order {order} · page {page}"), { order: index + 1, page: draft.cut.pageIndex + 1 })}</legend>
-                    <img className="promo-cut-thumb" src={draft.cut.image} alt={formatI18nTemplate(bt("컷 {order} 미리보기 (페이지 {page})", "Cut {order} preview (page {page})"), { order: index + 1, page: draft.cut.pageIndex + 1 })} />
+                    <img className="promo-cut-thumb" src={draft.cut.image} decoding="async" alt={formatI18nTemplate(bt("컷 {order} 미리보기 (페이지 {page})", "Cut {order} preview (page {page})"), { order: index + 1, page: draft.cut.pageIndex + 1 })} />
                     <div className="promo-cut-fields">
                       <label className="promo-toggle" htmlFor={`${cutId}-include`}>
                         <input id={`${cutId}-include`} type="checkbox" checked={draft.include} disabled={busy || full} onChange={(event) => setDrafts((current) => togglePromoCutDraft(current, draft.cut.id, event.target.checked, capacity))} />
