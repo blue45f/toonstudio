@@ -377,12 +377,15 @@ function readTextTag(bytes: Uint8Array, tag: StudioIccTag | undefined): string |
     const length = readUint32(bytes, tag.offset + 20);
     const offset = readUint32(bytes, tag.offset + 24);
     if (offset + length > tag.size) return null;
-    // UTF-16BE.
+    // UTF-16BE. 끝의 NUL 은 읽기 전에 길이에서 뗀다. 문자열 끝 NUL 을 `/\0+$/` 로 떼면 앞쪽에 NUL 이 길게 이어진
+    // 프로파일에서 시작점마다 그 열을 다시 읽어 입력 길이의 제곱 시간이 된다.
+    let units = Math.floor(length / 2);
+    while (units > 0 && readUint16(bytes, tag.offset + offset + (units - 1) * 2) === 0) units -= 1;
     let out = "";
-    for (let i = 0; i + 1 < length; i += 2) {
-      out += String.fromCharCode(readUint16(bytes, tag.offset + offset + i));
+    for (let i = 0; i < units; i += 1) {
+      out += String.fromCharCode(readUint16(bytes, tag.offset + offset + i * 2));
     }
-    return out.replace(/\0+$/u, "");
+    return out;
   }
   return null;
 }
