@@ -289,7 +289,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  S(["소스 코드<br/>TypeScript · React"]) --> N["pnpm 설치<br/>패치 7 · override 50"]
+  S(["소스 코드<br/>TypeScript · React"]) --> N["pnpm 설치<br/>패치 7 · override 54"]
   N --> V["Vite 8 빌드<br/>청크 분리 · 지연 로드"]
   V --> T1["Vitest<br/>단위·계약 테스트"]
   V --> T2["Playwright<br/>실제 브라우저 · axe"]
@@ -307,7 +307,7 @@ flowchart LR
 
 1. **무거운 엔진은 필요할 때만, 새면 빌드가 실패** — 3D·CRDT 같은 큰 엔진은 이름 붙인 지연 로드 청크로 나누고, 첫 화면 번들로 돌아오면 `check-studio-bundle`이 빌드를 실패시킨다. 청크 이름을 잘못 붙여 번들이 커져 되돌린 기록도 설정 주석에 남아 있다.
 2. **검사는 층으로 나눠 서로 다른 실패를 잡는다** — Vitest는 화면·API·Worker·스크립트 단위를, Playwright는 실제 브라우저의 접근성(axe)을, 정책 스크립트는 번들·라이선스·경계 규칙을 지킨다. CI는 작업 여러 개로 나뉘어 돈다.
-3. **고쳐 쓴 곳은 기록으로 남긴다** — pnpm 패치 7개와 override 50개는 `pnpm-workspace.yaml`에, 포크 2개(braces·wgpu-toon)는 저장소 안 폴더에 둔다. 빌드가 라이선스 고지문을 만들고 허용 목록 밖 라이선스는 감사에서 실패한다(wasm-vips 내장 LGPL은 생성 고지에 MIT로만 나온다).
+3. **고쳐 쓴 곳은 기록으로 남긴다** — pnpm 패치 7개와 override 54개는 `pnpm-workspace.yaml`에, 포크 2개(braces·wgpu-toon)는 저장소 안 폴더에 둔다. 빌드가 라이선스 고지문을 만들고 허용 목록 밖 라이선스는 감사에서 실패한다(wasm-vips 내장 LGPL은 생성 고지에 MIT로만 나온다).
 4. **내보내기는 기기 안에서, 까다로운 부품은 따로** — PDF 작업대(pdf-lib)와 영상 도구(Remotion)는 작품 내보내기가 아니라 앱 화면 안의 별도 작업대이고, wasm-vips(LGPL 구성요소)는 final 내보내기에서만 dynamic import로, Remotion은 `/product-tour` 경로에서만 불러온다. ADR-0008은 LGPL 계층의 배포 형태를 법무 검토 후 확정한다고 적는다.
 
 | 이름 | 하는 일 | 왜 골랐나(요약) | 대가·주의 | 라이선스 | 상태 |
@@ -315,7 +315,7 @@ flowchart LR
 | Vite | 소스를 해시 붙은 파일로 묶고 무거운 엔진은 지연 로드 청크로 나눈다(React Compiler·서비스 워커 생성 포함) | 이름 붙인 청크와 지연 로드 경계를 설정으로 고정해 첫 화면 번들 검사를 빌드 결과(manifest)로 자동화. 번들러는 Rolldown 1.0.3 | React Compiler 변환이 빌드 시간의 91%를 쓴 측정(2026-08-08), 청크 이름을 잘못 붙여 되돌린 적 두 번. 다른 번들러와 비교한 문서는 못 찾음 | MIT | 운영 경로 |
 | Vitest | 화면·API·Worker·스크립트 테스트를 한 설정으로 | 수집 루트를 명시하고 루트별 파일 수 하한을 두어 테스트가 조용히 줄어도 CI가 알아챈다. 운영 DB 주소는 테스트가 물려받지 않게 막음 | 실제 브라우저의 GPU·OPFS·WASM을 대신하지 못해 Playwright·실측 하니스가 따로 필요. 시간을 재는 테스트는 별도 설정 | MIT | 운영 경로 |
 | Playwright | 핵심 화면을 실제 Chromium으로 열어 axe-core로 접근성 검사 | 접근성·화면 깨짐은 단위 테스트로 안 잡힌다. PR마다 핵심 라우트(데스크톱 10·모바일 4)만 검사하고 전수 감사는 수동 | 접근성의 일부만 잡는다(키보드 순서·대체 텍스트의 뜻은 사람). 비로그인·개발 서버 기준. axe 검사기는 MPL-2.0(개발 전용) | Apache-2.0 | 운영 경로 |
-| pnpm patch | 패치 7개와 override 50개를 한곳에 모아 설치할 때 자동 적용 | 운영 CSP가 unsafe-eval을 열지 않아 `new Function`을 쓰는 라이브러리 3곳을 CSP를 풀지 않고 고쳐 쓴다. 포크보다 변경 범위가 작다 | 정확한 버전에 묶여 올릴 때마다 다시 써야 한다. 원본에 보낸 PR은 저장소에서 못 찾음 | 원본 라이선스를 따름 | 운영 경로 |
+| pnpm patch | 패치 7개와 override 54개를 한곳에 모아 설치할 때 자동 적용 | 운영 CSP가 unsafe-eval을 열지 않아 `new Function`을 쓰는 라이브러리 3곳을 CSP를 풀지 않고 고쳐 쓴다. 포크보다 변경 범위가 작다 | 정확한 버전에 묶여 올릴 때마다 다시 써야 한다. 원본에 보낸 PR은 저장소에서 못 찾음 | 원본 라이선스를 따름 | 운영 경로 |
 | wasm-vips | 한 변 8192px를 넘는 초대형 페이지를 최종 내보낼 때 Lanczos3로 축소 | Quality Lab 실측(2026-08-07, 2048→512)에서 PSNR 27.26dB·SSIM 0.9887로 CanvasKit 두 방식(25.31/0.9834, 23.78/0.9768)보다 높았다 | CanvasKit보다 느리다(Quality Lab 1회 측정 약 124ms 대 15~30ms, M2 Max 1대. 워밍업 뒤 20회 벤치에선 p50 약 16.4ms라 콜드 1회 수치). 래퍼만 MIT, 내장 libvips·glib·libheif 등은 LGPLv3이며 생성 고지에는 MIT로만 나온다 — 상업 배포 조건은 별도 확인 | MIT | 운영 경로 |
 | ag-psd | 요소별 레이어 PSD 내보내기, PSD·ABR 가져오기 | 웹툰 작가가 Photoshop에서 요소별로 다시 고칠 수 있어야 해 각 요소를 실제 그린 픽셀 그대로 레이어에 담는다 | 회전·세로쓰기·곡선·효과 글자는 래스터로 남는다. 패치 1개(ABR 오류 경로)의 전용 회귀 테스트는 못 찾음 | MIT | 운영 경로 |
 | pdf-lib | 이미 있는 PDF를 합치고 돌리고 나누는 PDF 작업대(썸네일은 pdf.js) | 원고 PDF를 서버에 올리지 않고 브라우저에서 다룬다. 작품의 PDF 내보내기는 외부 라이브러리 없이 직접 조립하는 엔진이 맡는다 | 암호가 걸린 PDF는 열지 못한다(복호화는 범위 밖) | MIT | 운영 경로 |
