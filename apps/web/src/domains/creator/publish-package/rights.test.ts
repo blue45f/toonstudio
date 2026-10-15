@@ -4,7 +4,7 @@ import {
   DEFAULT_STUDIO_PUBLISH_PACKAGE_AI_TRAINING,
   normalizeStudioPublishPackageAiTraining,
   readStudioPublishPackageRights,
-} from "./studio-publish-package-rights";
+} from "./rights";
 
 describe("게시 패키지 rights.aiTraining 읽기", () => {
   it("기본값은 미지정이다", () => {

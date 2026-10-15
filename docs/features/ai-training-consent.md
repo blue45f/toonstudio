@@ -139,7 +139,7 @@ API 경계(`apps/api`)는 코드 변경이 필요 없었고 다음 사실을 테
 pnpm exec vitest run \
   packages/contracts/src/creator-community-ai-training.test.ts \
   apps/web/src/domains/creator/ai-training-consent \
-  apps/web/src/domains/creator/studio-publish-package-rights.test.ts \
+  apps/web/src/domains/creator/publish-package/rights.test.ts \
   apps/web/src/domains/creator/publish/StudioPublishPackageAiSection.test.tsx \
   apps/web/src/domains/creator/StudioPublicationRightsControls.test.tsx \
   apps/web/src/domains/creator/PublishedWorkReader.test.tsx \

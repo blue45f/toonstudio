@@ -8,7 +8,7 @@
  *
  * planner(`studio-publish-package.ts`)와 지연 로드되는 manifest 런타임이 함께 쓰는 leaf 모듈이다.
  */
-import { isRecord } from "./studio-publish-package-primitives";
+import { isRecord } from "./primitives";
 
 import {
   DEFAULT_CREATOR_COMMUNITY_AI_TRAINING_CONSENT,
