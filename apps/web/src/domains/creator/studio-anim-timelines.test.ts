@@ -83,7 +83,7 @@ describe("다중 타임라인 집합", () => {
   });
 
   it("복제는 트랙·클립까지 새 id로 깊은 복사하고 원본과 독립이다", () => {
-    let set = baseSet();
+    const set = baseSet();
     const timeline = set.timelines[0]!;
     const withClip: AnimTimelineSet = {
       ...set,

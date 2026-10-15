@@ -98,7 +98,7 @@ const LEGACY_START = "<!-- legacy-appendix:start -->";
 const LEGACY_END = "<!-- legacy-appendix:end -->";
 
 /** 기존 3D 문서에서 보존 원고(부록)를 꺼낸다. 생성본이면 마커 사이를, 원본이면 첫 ## 제목부터 끝까지를 취한다. */
-function extractLegacyAppendix(current, generatedThreeArticles) {
+function extractLegacyAppendix(current) {
   const start = current.indexOf(LEGACY_START);
   const end = current.indexOf(LEGACY_END);
   if (start !== -1 && end > start) return current.slice(start + LEGACY_START.length, end).trim();
@@ -136,7 +136,7 @@ function renderThreeManual(currentThreeDoc) {
     "",
   ];
   for (const article of threeArticles) lines.push(...renderArticle(article, slugOf, 2));
-  lines.push(LEGACY_START, extractLegacyAppendix(currentThreeDoc, threeArticles), LEGACY_END, "");
+  lines.push(LEGACY_START, extractLegacyAppendix(currentThreeDoc), LEGACY_END, "");
   return lines.join("\n");
 }
 

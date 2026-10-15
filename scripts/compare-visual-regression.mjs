@@ -52,6 +52,9 @@ if (baselineNames === null || actualNames === null) {
 await mkdir(diffDir, { recursive: true });
 
 const pairs = pairScreenshotsByName(baselineNames, actualNames, { baselineDir, actualDir, diffDir });
+/** 판정 객체에서 리포트로 옮기지 않을 절대경로 필드. */
+const ABSOLUTE_PATH_KEYS = new Set(["baselinePath", "actualPath", "diffPath"]);
+
 const verdicts = [];
 for (const pair of pairs) {
   if (pair.missing) {
@@ -69,7 +72,8 @@ for (const pair of pairs) {
   }
   const verdict = await compareScreenshotWithOdiff(pair.baselinePath, pair.actualPath, pair.diffPath, { maxDiffPercentage });
   // 리포트에 절대경로를 남기지 않는다 — 같은 입력이면 리포트 바이트까지 재현돼야 한다.
-  const { baselinePath: _baseline, actualPath: _actual, diffPath: _diff, ...portable } = verdict;
+  // 구조 분해로 버리면 미사용 변수가 되므로, 키 순서를 그대로 둔 채 경로 필드만 걸러낸다.
+  const portable = Object.fromEntries(Object.entries(verdict).filter(([key]) => !ABSOLUTE_PATH_KEYS.has(key)));
   verdicts.push({ name: pair.name, ...portable });
 }
 
