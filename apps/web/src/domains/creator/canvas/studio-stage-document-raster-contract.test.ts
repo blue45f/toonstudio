@@ -640,12 +640,16 @@ describe("every stage raster read goes through a choke point", () => {
     // 의도적 변경(2026-08, B-09): handleSave 의 페이지 캡처 읽기(stage.toDataURL)는
     // studio-page-save-pipeline.ts 로 추출됐다 — 같은 초크 포인트 규칙을 두 파일에
     // 적용한다(기존 7 = StudioPage 6 + save pipeline 1).
+    // 의도적 변경(2026-10, 비교 검수로 보내기): 호스트의 sendCurrentPageToCompareReview 가 현재
+    // 페이지 전체를 읽는다(stage.toDataURL). 이 읽기는 readStageInDocumentView 안에서만 일어나
+    // 초크 포인트 규칙을 지킨다(아래 창 검사가 증명). 그래서 StudioPage 쪽 기대 읽기 수를
+    // 6 → 7 로 올렸다(총 8 = StudioPage 7 + save pipeline 1).
     const savePipelineSource = readFileSync(
       new URL("../studio-page-save-pipeline.ts", import.meta.url),
       "utf8"
     );
     const scannedSources = [
-      { source: editorSource, expectedReads: 6 },
+      { source: editorSource, expectedReads: 7 },
       { source: savePipelineSource, expectedReads: 1 },
     ];
     for (const { source: scannedSource, expectedReads } of scannedSources) {
