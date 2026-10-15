@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { STORYWORLD_DEMO_PROJECT, type StoryworldProject } from "../studio-storyworld-causality";
 import { StudioStoryPlausibilityManuscript } from "./StudioStoryPlausibilityManuscript";
+import type { ManuscriptNameSources } from "./studio-story-manuscript-names";
 import { MANUSCRIPT_MAX_CHARS } from "./studio-story-manuscript-extractor";
 import { manuscriptFingerprint } from "./studio-story-manuscript-project";
 import { storyworldManuscriptStore } from "./studio-story-manuscript-store";
@@ -49,12 +50,16 @@ interface Props {
   readonly onCreate?: CreateFn;
   readonly onCancel?: () => void;
   readonly onExportCurrent?: () => void;
+  readonly nameSources?: ManuscriptNameSources;
+  readonly nameNotices?: readonly string[];
 }
 
-function renderFlow({ project = EXISTING, isExampleSeed = false, onCreate = vi.fn<CreateFn>(), onCancel = vi.fn(), onExportCurrent = vi.fn() }: Props = {}) {
+function renderFlow({ project = EXISTING, isExampleSeed = false, onCreate = vi.fn<CreateFn>(), onCancel = vi.fn(), onExportCurrent = vi.fn(), nameSources, nameNotices }: Props = {}) {
   return render(
     <StudioStoryPlausibilityManuscript
       isExampleSeed={isExampleSeed}
+      {...(nameSources ? { nameSources } : {})}
+      {...(nameNotices ? { nameNotices } : {})}
       now={() => new Date("2026-10-15T09:30:00.000Z")}
       onCancel={onCancel}
       onCreate={onCreate}
@@ -298,5 +303,61 @@ describe("원고로 시작하기: 확인과 초안 만들기", () => {
     expect(created?.id).toBe("manuscript-draft");
     expect(created?.characters).toEqual([]);
     expect(created?.scenes).toHaveLength(1);
+  });
+});
+
+describe("원고로 시작하기: 등록된 이름", () => {
+  const BLANK: StoryworldProject = makeStory("blank", "빈 문서", { characters: [], scenes: [] });
+  const BIBLE: ManuscriptNameSources = {
+    bibleCharacters: [{ id: "c-1", name: "하은", aliases: ["은이"] }, { id: "c-2", name: "도진", aliases: [] }],
+    bibleLocations: [{ id: "l-1", name: "기억 시장" }],
+    loreLocations: [{ id: "p-1", name: "별빛 거리", aliases: ["별길"] }],
+  };
+  const NAMED_TEXT = ["장면 1", "은이가 기억 시장을 걸었다. 도진이 불렀다.", "", "* * *", "", "장면 2", "하은은 별길로 접어들었다."].join("\n");
+
+  it("스토리 바이블·세계관 설정에 등록된 이름 수를 알려 준다", () => {
+    renderFlow({ project: BLANK, nameSources: BIBLE });
+    expect(screen.getByText(/찾을 수 있는 이름: 인물 2명 · 장소 2곳/u)).toBeTruthy();
+    expect(screen.getByText(/등록된 이름과 글자가 같을 때만 찾아요/u)).toBeTruthy();
+  });
+
+  it("등록된 이름이 하나도 없으면 장면 경계와 시간 표현만 찾는다고 알린다", () => {
+    renderFlow({ project: BLANK });
+    expect(screen.getByText(/등록된 인물·장소 이름이 없어서 장면 경계와 시간 표현만 찾아요/u)).toBeTruthy();
+  });
+
+  it("이름을 읽다가 막힌 저장소가 있으면 그 사실을 알린다", () => {
+    renderFlow({ project: BLANK, nameNotices: ["스토리 바이블을 읽지 못해서 바이블에 등록된 인물·장소 이름은 쓰지 않았어요."] });
+    expect(screen.getByRole("status", { name: "이름을 읽으면서 알게 된 점" }).textContent).toContain("스토리 바이블을 읽지 못해서");
+  });
+
+  it("문서가 비어 있어도 바이블 이름의 글자 일치로 등장인물과 장소를 찾고, 만든 문서에 바이블 id로 남긴다", async () => {
+    const onCreate = vi.fn<CreateFn>();
+    renderFlow({ project: BLANK, nameSources: BIBLE, onCreate });
+    await toPreview(NAMED_TEXT);
+    const scenes = screen.getAllByRole("listitem").filter((item) => item.classList.contains("plausibility-ms__scene"));
+    expect(scenes).toHaveLength(2);
+    const [first, second] = scenes;
+    if (!first || !second) throw new Error("장면이 부족합니다.");
+    expect(within(first).getByRole("button", { name: "하은 빼기" })).toBeTruthy();
+    expect(within(first).getByRole("button", { name: "도진 빼기" })).toBeTruthy();
+    expect(within(second).getByRole("button", { name: "하은 빼기" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "이대로 계속" }));
+    fireEvent.click(screen.getByRole("button", { name: "초안 만들기" }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
+    const created = onCreate.mock.calls[0]?.[0];
+    expect(created?.characters.map((character) => [character.id, character.name])).toEqual([["c-1", "하은"], ["c-2", "도진"]]);
+    expect(created?.characters[0]?.aliases).toEqual(["은이"]);
+    expect(created?.scenes.map((scene) => scene.locationId)).toEqual(["기억 시장", "별빛 거리"]);
+    expect(created?.scenes.map((scene) => scene.participantIds)).toEqual([["c-1", "c-2"], ["c-1"]]);
+  });
+
+  it("처음 보여 준 예시 이야기의 인물 이름은 작가의 원고에서 찾지 않는다", async () => {
+    renderFlow({ project: STORYWORLD_DEMO_PROJECT, isExampleSeed: true });
+    expect(screen.getByText(/등록된 인물·장소 이름이 없어서/u)).toBeTruthy();
+    await toPreview("장면 1\n하은이 도진에게 말했다.");
+    const [scene] = screen.getAllByRole("listitem").filter((item) => item.classList.contains("plausibility-ms__scene"));
+    if (!scene) throw new Error("장면이 없습니다.");
+    expect(within(scene).getByText("확정된 인물이 없어요")).toBeTruthy();
   });
 });

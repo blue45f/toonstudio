@@ -27,6 +27,7 @@ import {
   type ManuscriptDraftOverride,
   type ManuscriptDraftOverrides,
 } from "./studio-story-manuscript-project";
+import { EMPTY_MANUSCRIPT_NAME_SOURCES, type ManuscriptNameSources } from "./studio-story-manuscript-names";
 import { storyworldManuscriptStore } from "./studio-story-manuscript-store";
 import {
   MANUSCRIPT_BOUNDARY_LABELS,
@@ -46,6 +47,10 @@ export interface ManuscriptFlowProps {
   readonly onExportCurrent: () => void;
   readonly onCreate: (project: StoryworldProject, message: string) => void;
   readonly onCancel: () => void;
+  /** 스토리 바이블·세계관 설정에 등록된 이름. 문서가 비어 있는 새 작품에서도 원고의 인물·장소를 찾게 해 준다. */
+  readonly nameSources?: ManuscriptNameSources;
+  /** 이름을 읽으면서 알게 된 점(읽지 못한 저장소). */
+  readonly nameNotices?: readonly string[];
 }
 
 type Step = "paste" | "preview" | "confirm";
@@ -62,7 +67,12 @@ function hasContent(project: StoryworldProject): boolean {
 
 export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
   const { project } = props;
-  const register = useMemo(() => buildManuscriptRegister({ project }), [project]);
+  const nameSources = props.nameSources ?? EMPTY_MANUSCRIPT_NAME_SOURCES;
+  // 처음 보여 준 예시 이야기의 인물·장소는 작가의 원고와 상관이 없으므로 이름 찾기에 쓰지 않는다.
+  const register = useMemo(
+    () => buildManuscriptRegister({ project: props.isExampleSeed ? null : project, ...nameSources }),
+    [project, props.isExampleSeed, nameSources],
+  );
   const [step, setStep] = useState<Step>("paste");
   const [text, setText] = useState("");
   const [extraction, setExtraction] = useState<ManuscriptExtraction | null>(null);
@@ -207,6 +217,16 @@ export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
           <p aria-live="polite" className="plausibility-hint" role="status">
             {text.length.toLocaleString("ko-KR")}자{tooLong ? ` · ${(text.length - MANUSCRIPT_MAX_CHARS).toLocaleString("ko-KR")}자 넘었어요. 나눠서 넣어 주세요.` : ""}
           </p>
+          <p className="plausibility-hint" role="note">
+            {characterEntries.length + locationEntries.length === 0
+              ? "등록된 인물·장소 이름이 없어서 장면 경계와 시간 표현만 찾아요. 스토리 바이블이나 세계관 설정에 인물과 장소를 등록하면 등장인물과 장소도 찾아 드려요."
+              : `찾을 수 있는 이름: 인물 ${characterEntries.length}명 · 장소 ${locationEntries.length}곳. 스토리월드 설정, 스토리 바이블, 세계관 설정에 등록된 이름과 글자가 같을 때만 찾아요.`}
+          </p>
+          {(props.nameNotices ?? []).length > 0 ? (
+            <ul aria-label="이름을 읽으면서 알게 된 점" className="plausibility-sources" role="status">
+              {(props.nameNotices ?? []).map((notice) => <li className="plausibility-hint" key={notice}>{notice}</li>)}
+            </ul>
+          ) : null}
           <details className="plausibility-details">
             <summary>어떤 표시로 장면을 나누나요?</summary>
             <ul className="plausibility-sources">
