@@ -83,6 +83,11 @@ const homeDashboardCss = readFileSync(
   "utf8",
 );
 const globalsCss = readFileSync(new URL("./globals.css", import.meta.url), "utf8");
+// 스튜디오 전용 규칙은 CSS 분리로 globals.css가 아니라 이 시트가 정본이다 (docs/perf/bundle-gate.md CSS 예산 절).
+const studioRouteCss = readFileSync(
+  new URL("../../shared/styles/studio-route.css", import.meta.url),
+  "utf8",
+);
 const learningHubCss = readFileSync(
   new URL("../../domains/learn/learning-hub.css", import.meta.url),
   "utf8",
@@ -480,17 +485,18 @@ describe("홈 치수 토큰화 계약 (L5)", () => {
  * 에디터 예외 선언 계약 (BLUEPRINT §5.1 (3)·§5.2 (3), §5.3 L6).
  * 에디터 크롬 44px·도구 레일 48px은 공용 치수 체계로 수렴하지 않는 도메인 고유값이다.
  * 판정은 문서화다: 예외 목록이 layout-tokens.ts에 명시되고, 목록의 값이 선언처
- * (globals.css의 [data-studio-editor="true"] 범위)와 글자 단위로 일치하며,
+ * (shared/styles/studio-route.css의 [data-studio-editor="true"] 범위 — CSS 분리 이후
+ * 스튜디오 전용 규칙의 정본)와 글자 단위로 일치하며,
  * 공용 토큰 체계(sitewide --layout-*·LAYOUT_DIMENSIONS)에는 이 값들이 섞여 들어가지 않는다.
  */
 describe("에디터 예외 선언 계약 (L6)", () => {
   const exceptionsBlock = tsBlock(layoutTokens, "export const LAYOUT_EDITOR_EXCEPTIONS");
-  /** globals.css에서 [data-studio-editor="true"] 선언 블록 하나만 잘라낸다. */
+  /** studio-route.css에서 [data-studio-editor="true"] 선언 블록 하나만 잘라낸다. */
   const editorScope = (() => {
-    const start = globalsCss.indexOf('[data-studio-editor="true"] {');
+    const start = studioRouteCss.indexOf('[data-studio-editor="true"] {');
     if (start < 0) return "";
-    const end = globalsCss.indexOf("\n}", start);
-    return globalsCss.slice(start, end < 0 ? undefined : end);
+    const end = studioRouteCss.indexOf("\n}", start);
+    return studioRouteCss.slice(start, end < 0 ? undefined : end);
   })();
 
   it("예외 목록이 토큰 파일에 명시되고 선언처 CSS 값과 글자 단위로 같다", () => {
@@ -501,9 +507,11 @@ describe("에디터 예외 선언 계약 (L6)", () => {
   });
 
   it("에디터 크롬 변수는 에디터 범위에서만 선언되고 공용 선언처에는 없다", () => {
-    // 선언은 globals.css 전체에서도 에디터 범위 블록의 각 1회뿐이다.
-    expect(assignments(globalsCss, "--studio-chrome-h")).toEqual(["2.75rem"]);
-    expect(assignments(globalsCss, "--studio-rail-w")).toEqual(["3rem"]);
+    // 선언은 studio-route.css 전체에서도 에디터 범위 블록의 각 1회뿐이고, 전역 시트에는 없다.
+    expect(assignments(studioRouteCss, "--studio-chrome-h")).toEqual(["2.75rem"]);
+    expect(assignments(studioRouteCss, "--studio-rail-w")).toEqual(["3rem"]);
+    expect(assignments(globalsCss, "--studio-chrome-h")).toEqual([]);
+    expect(assignments(globalsCss, "--studio-rail-w")).toEqual([]);
     // 공용 치수 선언처(sitewide)와 공용 토큰 목록에는 에디터 고유값이 들어가지 않는다.
     expect(assignments(sitewide, "--studio-chrome-h")).toEqual([]);
     expect(assignments(sitewide, "--studio-rail-w")).toEqual([]);
@@ -585,6 +593,8 @@ describe("브레이크포인트 표준 경계 계약 (BP)", () => {
     "learning-hub.css": learningHubCss,
     "reference-creator-dashboard.css": homeDashboardCss,
     "market-library-experience.css": marketLibraryExperience,
+    // 분리 전 globals.css 안에 있던 스튜디오 규칙이 스캔 밖으로 빠지지 않게 새 정본도 스캔한다.
+    "studio-route.css": studioRouteCss,
   } as const;
 
   /** 파일별 잔존 전용 지점 (2026-10-13 실측·수렴 후). 감소 방향으로만 갱신한다. */
@@ -602,6 +612,7 @@ describe("브레이크포인트 표준 경계 계약 (BP)", () => {
     "learning-hub.css": [],
     "reference-creator-dashboard.css": [599, 899, 1199, 1200],
     "market-library-experience.css": [700, 1150],
+    "studio-route.css": [],
   };
 
   it("토큰 파일의 표준 5개와 max-width 동반값이 고정된다", () => {

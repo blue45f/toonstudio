@@ -618,7 +618,7 @@ export function ExplorePage() {
 
         <section aria-label="탐색 결과">
         {loading ? (
-          <div className="grid grid-cols-2 gap-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: 10 }).map((_, index) => (
               <div key={index} className="space-y-3">
                 <span className="skeleton block aspect-[3/4] rounded-xl" />
@@ -635,7 +635,7 @@ export function ExplorePage() {
           />
         ) : results.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
               {shown.map((title) => (
                 <TitleCard key={title.id} title={title} />
               ))}

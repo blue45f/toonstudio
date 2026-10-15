@@ -157,11 +157,16 @@
   --unified-route-accent-soft: var(--unified-accent-soft);
 }
 
-/* 공개 페이지의 1320px 외곽 폭에는 좌우 여백을 포함한다. 편집기는 자체 밀도를 유지한다. */
+/*
+ * 폭·거터는 sitewide-visual-ux.css의 --layout-* 단일 선언처를 별칭으로 참조만 한다
+ * (BLUEPRINT §5.2 (1)·(2), §5.3 L0·L1): 공개 페이지(경험 범위)는 standard 폭 82.5rem(1320px,
+ * 좌우 여백 포함)이고 거터는 16/24/32px 3단계 --layout-gutter 하나다. 리터럴을 여기서 다시
+ * 정의하지 않는다. 편집기는 자체 밀도를 유지한다.
+ */
 [data-site-experience] {
-  --site-content-max: 82.5rem;
-  --site-page-gutter: clamp(1rem, 3vw, 2.5rem);
-  --site-reading-max: 48rem;
+  --site-content-max: var(--layout-content-standard);
+  --site-page-gutter: var(--layout-gutter);
+  --site-reading-max: var(--layout-content-reading);
   --site-heading-space: clamp(1.5rem, 3vw, 2.5rem);
   --site-heading-size: clamp(1.875rem, 3.5vw, 3rem);
   --site-section-title-size: clamp(1.25rem, 2vw, 1.75rem);

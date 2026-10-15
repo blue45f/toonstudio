@@ -8,6 +8,7 @@ const entrySource = read("../../app/main.tsx");
 const routeStageSource = read("../../app/routes/route-stage.tsx");
 const appRouterSource = read("../../app/routes/AppRouter.tsx");
 const contractCss = read("../../app/styles/unified-theme-contract.css");
+const sitewideCss = read("../../app/styles/sitewide-visual-ux.css");
 const themeSource = read("../../shared/lib/theme-presets.ts");
 const editorCss = read("../../domains/creator/studio-shell/studio-visual-identity-v2.css");
 const containerSource = read("./container.tsx");
@@ -51,9 +52,13 @@ describe("unified theme contract", () => {
 
   it("공개 페이지의 공통 폭을 선언적 컨테이너에 적용하고 읽기 폭을 별도로 유지한다", () => {
     expect(containerSource).toContain("data-page-container={size}");
-    expect(contractCss).toContain("--site-content-max: 82.5rem");
-    expect(contractCss).toContain("--site-page-gutter: clamp(1rem, 3vw, 2.5rem)");
-    expect(contractCss).toContain("--site-reading-max: 48rem");
+    // 폭·거터 리터럴은 sitewide-visual-ux.css의 --layout-* 한 곳이고 unified 계약은 별칭으로 참조만 한다
+    // (BLUEPRINT §5.2 (1)·(2), §5.3 L0·L1). 단일 선언·TS 미러와의 글자 단위 대조는 layout-token-contract가 고정한다.
+    expect(contractCss).toContain("--site-content-max: var(--layout-content-standard)");
+    expect(contractCss).toContain("--site-page-gutter: var(--layout-gutter)");
+    expect(contractCss).toContain("--site-reading-max: var(--layout-content-reading)");
+    expect(sitewideCss).toContain("--layout-content-standard: 82.5rem");
+    expect(sitewideCss).toContain("--layout-content-reading: 48rem");
     expect(contractCss).toContain("env(safe-area-inset-left)");
     expect(contractCss).toContain("env(safe-area-inset-right)");
 
