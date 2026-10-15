@@ -150,7 +150,7 @@ export function StudioStoryEditorSurface({
       <div className="flex flex-wrap items-center gap-2 border-b border-line/60 px-3 py-2">
         <p className="text-xs font-bold text-fg">
           스토리 에디터
-          <span className="ml-1.5 font-medium text-fg-4">
+          <span className="ml-1.5 font-medium text-fg-3">
             {view.groups.length}페이지 · 대사 {view.totalCount}개
           </span>
         </p>
@@ -201,7 +201,7 @@ export function StudioStoryEditorSurface({
                     지금 편집 중
                   </span>
                 ) : null}
-                <span className="font-medium text-fg-4">{group.rows.length}개</span>
+                <span className="font-medium text-fg-3">{group.rows.length}개</span>
               </p>
               <div className="mt-1.5 space-y-2">
                 {group.rows.map((row) => {
@@ -232,7 +232,7 @@ export function StudioStoryEditorSurface({
                         >
                           {row.pageLabel} · {row.orderInPage}번째
                         </button>
-                        <span className="text-[0.56rem] font-medium text-fg-4">{row.typeLabel}</span>
+                        <span className="text-[0.56rem] font-medium text-fg-3">{row.typeLabel}</span>
                         {changed ? (
                           <span className="rounded-full border border-accent/40 bg-accent-soft px-1.5 py-px text-[0.54rem] font-semibold text-accent">
                             바뀜 · 저장 전
@@ -269,15 +269,14 @@ export function StudioStoryEditorSurface({
                         onChange={(event) =>
                           setEdits((prev) => ({ ...prev, [row.id]: event.target.value }))
                         }
-                        onSelect={(event) =>
+                        onSelect={(event) => {
+                          // 갱신 함수는 핸들러가 끝난 뒤 실행될 수 있어 그때는 currentTarget 이 null 이다. 값을 먼저 읽어 둔다.
+                          const { selectionStart, selectionEnd } = event.currentTarget;
                           setSelectionByItem((prev) => ({
                             ...prev,
-                            [row.id]: {
-                              start: event.currentTarget.selectionStart ?? 0,
-                              end: event.currentTarget.selectionEnd ?? 0,
-                            },
-                          }))
-                        }
+                            [row.id]: { start: selectionStart ?? 0, end: selectionEnd ?? 0 },
+                          }));
+                        }}
                         aria-label={`${row.pageLabel} ${row.orderInPage}번째 대사 편집`}
                         className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-panel px-2 py-1.5 text-[0.7rem] leading-relaxed text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
                       />
@@ -398,7 +397,7 @@ export function StudioStoryEditorSurface({
         {lastResult ? (
           <div className="mt-3 rounded-xl border border-line bg-card/55 p-2.5" aria-live="polite">
             <p className="flex items-center gap-1.5 text-[0.66rem] font-bold text-fg">
-              <Check size={13} aria-hidden className="text-emerald-500" />
+              <Check size={13} aria-hidden className="text-good" />
               저장 결과 · {lastResult.applied.length}개 반영
               {lastResult.changedPageIds.length > 0
                 ? ` (${lastResult.changedPageIds.length}페이지)`

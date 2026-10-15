@@ -863,10 +863,10 @@ export function StudioRolePersonalizationCenter({
                   <input
                     type="checkbox"
                     checked={onboardingVisibility[key]}
-                    onChange={(event) => setOnboardingVisibility((current) => ({
-                      ...current,
-                      [key]: event.currentTarget.checked,
-                    }))}
+                    onChange={(event) => {
+                      const { checked } = event.currentTarget;
+                      setOnboardingVisibility((current) => ({ ...current, [key]: checked }));
+                    }}
                     className="mt-0.5 size-4 accent-[var(--accent)]"
                   />
                   <span>

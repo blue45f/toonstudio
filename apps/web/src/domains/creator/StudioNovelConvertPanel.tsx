@@ -414,7 +414,7 @@ export function StudioNovelConvertPanel({
           </span>
           <button
             type="button"
-            className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-35"
+            className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-35"
             disabled={!sourceText.trim()}
             onClick={() => runConvert(sourceText)}
           >
@@ -480,12 +480,10 @@ export function StudioNovelConvertPanel({
                         id={`novel-speaker-link-${speaker.name}`}
                         className={SMALL_FIELD_CLASS}
                         value={link}
-                        onChange={(event) =>
-                          setSpeakerLinks((current) => ({
-                            ...current,
-                            [speaker.name]: event.currentTarget.value,
-                          }))
-                        }
+                        onChange={(event) => {
+                          const { value } = event.currentTarget;
+                          setSpeakerLinks((current) => ({ ...current, [speaker.name]: value }));
+                        }}
                       >
                         <option value="auto">
                           자동 — {autoMatch ? `${autoMatch.name}으로 연결` : "일치하는 인물 없음"}
@@ -541,11 +539,10 @@ export function StudioNovelConvertPanel({
                   className={`${SMALL_FIELD_CLASS} min-w-52 flex-1`}
                   placeholder={`장면 ${sceneIndex + 1} 제목 (비우면 첫 지문으로 표시)`}
                   value={scene.title}
-                  onChange={(event) =>
-                    setDraft((current) =>
-                      current ? renameNovelScene(current, scene.id, event.currentTarget.value) : current
-                    )
-                  }
+                  onChange={(event) => {
+                    const { value } = event.currentTarget;
+                    setDraft((current) => (current ? renameNovelScene(current, scene.id, value) : current));
+                  }}
                 />
                 <span className="text-[0.68rem] text-fg-3">컷 {scene.cuts.length}개</span>
               </div>
@@ -595,7 +592,7 @@ export function StudioNovelConvertPanel({
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-35"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-35"
                 disabled={hasExistingContent && !overwriteConfirmed}
                 onClick={applyDraft}
               >
