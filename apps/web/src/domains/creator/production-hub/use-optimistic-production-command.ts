@@ -58,7 +58,7 @@ export function useOptimisticProductionCommand({
         setPendingKeys(new Set(pendingRef.current));
       }
     },
-    [execute],
+    [execute, t],
   );
 
   const isPending = useCallback((key: string) => pendingKeys.has(key), [pendingKeys]);

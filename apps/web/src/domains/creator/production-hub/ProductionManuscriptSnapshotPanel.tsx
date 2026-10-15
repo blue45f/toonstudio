@@ -240,7 +240,7 @@ export function ProductionManuscriptSnapshotPanel({
     setNotice(`${created.name} 스냅샷을 저장했습니다. 메모는 목록에서 언제든 수정할 수 있습니다.`);
     refresh();
     requestSync();
-  }, [artifactId, memoDraft, process.headRevision, refresh, requestSync]);
+  }, [artifactId, memoDraft, process.headRevision, refresh, requestSync, t]);
 
   const commitMemo = useCallback((snapshotId: string, memo: string) => {
     setSnapshots(updateProductionManuscriptSnapshotMemo(artifactId, snapshotId, memo));

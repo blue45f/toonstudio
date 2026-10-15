@@ -69,6 +69,23 @@ describe("FortuneQuickToday", () => {
     expect(compute).toHaveBeenCalledTimes(2);
   });
 
+  it("실패 사유 문구가 없으면 기본 안내 문구를 보여주고, 효과가 렌더마다 다시 돌지 않는다", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const compute = vi.fn((): never => {
+      throw new Error("");
+    });
+    render(<FortuneQuickToday date="2026-10-14" compute={compute} />);
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeTruthy();
+    });
+    expect(screen.getByRole("alert").textContent).toContain(
+      "오늘의 운세를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+    );
+    expect(screen.getByRole("button", { name: /다시 시도/ })).toBeTruthy();
+    // 로케일 파생 함수(tx)를 의존성에 넣으면 렌더마다 산출이 반복된다 — 실패 한 번에 호출은 한 번이다.
+    expect(compute).toHaveBeenCalledTimes(1);
+  });
+
   it("산출 결과가 없으면 빈 상태를 보여준다", async () => {
     const compute = vi.fn(() => null);
     render(<FortuneQuickToday date="2026-10-14" compute={compute} />);
