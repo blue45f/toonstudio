@@ -359,8 +359,10 @@ describe("/shaper registration", () => {
       '{ id: "creator-character-shaper", path: "/shaper", element: <Navigate to={studioRoutePath("asset-character-new")} replace /> }',
     );
     expect(readRepoFile("apps/web/src/app/routes/route-titles.ts")).toContain('"/shaper": "route.shaper"');
-    expect(readRepoFile("apps/web/src/app/routes/route-manifest.ts")).toContain(
-      '{ path: "/shaper", label: "route.shaper" }',
+    // 라우트 거버넌스(route-manifest.ts, BLUEPRINT §1.3)는 모든 표면에 정본 그룹·역할·tier·stage 선언을 요구한다.
+    // 항목의 값 검증은 route-governance.test.ts 가 맡고, 여기서는 /shaper 가 네 필드를 모두 선언한 채 등록됐는지만 본다.
+    expect(readRepoFile("apps/web/src/app/routes/route-manifest.ts")).toMatch(
+      /\{ path: "\/shaper", label: "route\.shaper", canonicalSurfaceId: "[a-z-]+", surfaceRole: "[^"]+", tier: "[a-z-]+", stage: "[a-z-]+" \}/u,
     );
     // Editors stay in site navigation, not in the indexable SEO sitemap.
     const staticRoutes = readRepoFile("scripts/build-static-catalog.ts")
@@ -374,10 +376,13 @@ describe("/shaper registration", () => {
     expect(readRepoFile("apps/web/src/app/routes/groups/creator.routes.tsx")).toContain('path: studioRoutePath("asset-character-new"), element: <CharacterShaperLandingPage />');
     expect(navigation).toContain("I.studioAssets");
     expect(readRepoFile("apps/web/src/domains/legal/site-directory-data.ts")).toContain('"/studio/assets/characters/new"');
-    // Desktop footer and context-aware mobile menus share the centralized navigation authority.
-    expect(readRepoFile("apps/web/src/shared/components/site-footer.tsx")).toContain("SITE_NAVIGATION_GROUPS.map");
+    // Desktop footer and mobile menus (and the command palette) share one centralized navigation authority:
+    // both ask the same policy function, resolveNavigationGroupsFor(), for the ordered groups they render.
+    const footer = readRepoFile("apps/web/src/shared/components/site-footer.tsx");
+    expect(footer).toContain("resolveNavigationGroupsFor()");
+    expect(footer).toContain("navigationGroups.map");
     const mobileNavigation = readRepoFile("apps/web/src/shared/components/site-header-mobile-nav.tsx");
-    expect(mobileNavigation).toContain("siteNavigationGroupsForPath(pathname)");
+    expect(mobileNavigation).toContain("resolveNavigationGroupsFor()");
     expect(mobileNavigation).toContain("navigationGroups.map");
   });
 

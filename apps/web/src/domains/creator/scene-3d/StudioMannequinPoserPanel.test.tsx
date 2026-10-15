@@ -386,9 +386,12 @@ describe("StudioMannequinPoserPanel", () => {
     vi.mocked(sceneHandle.setPose).mockClear();
 
     fireEvent.click(screen.getByRole("button", { name: "테스트 사진 포즈 적용" }));
+    // 포즈 탭에는 프리셋 개수 안내(role=status)도 함께 있어 status 가 하나가 아니다 — 사진 포즈 결과는 내용으로 골라 읽는다.
+    const photoPoseStatus = () =>
+      screen.getAllByRole("status").find((node) => node.textContent?.includes("사진 포즈 적용됨"));
     await waitFor(() => {
-      expect(screen.getByRole("status").textContent).toContain("관절");
-      expect(screen.getByRole("status").textContent).toContain("신뢰도 90%");
+      expect(photoPoseStatus()?.textContent).toContain("관절");
+      expect(photoPoseStatus()?.textContent).toContain("신뢰도 90%");
       expect(sceneHandle.setPose).toHaveBeenCalledTimes(1);
     });
     const applied = vi.mocked(sceneHandle.setPose).mock.calls[0]?.[0];

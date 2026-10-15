@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { resolveStudioMannequinOutlineVisible } from "./studio-mannequin-readability";
+
 const source = readFileSync(new URL("./studio-mannequin-scene.ts", import.meta.url), "utf8");
 
 describe("3D mannequin direct-manipulation runtime boundary", () => {
@@ -26,7 +28,12 @@ describe("3D mannequin direct-manipulation runtime boundary", () => {
     expect(source).toContain("new THREE.CylinderGeometry(");
     expect(source).toContain("const hasAnatomicalTaper");
     expect(source).toContain("side: THREE.BackSide");
-    expect(source).toContain('outline.visible = currentMaterialStyle === "shaded"');
+    // 윤곽선 표시 여부는 읽기성 헬퍼 한 곳이 정한다 — 메시를 만들 때와 스타일·모드를 바꿀 때 모두 그 헬퍼를 거쳐야 한다.
+    expect(source.match(/outline\.visible = resolveStudioMannequinOutlineVisible\(\{/gu)).toHaveLength(2);
+    expect(source).toContain("style: currentMaterialStyle,");
+    // 기존 규칙("shaded 스타일에서만 윤곽선")은 auto 모드가 그대로 유지한다.
+    expect(resolveStudioMannequinOutlineVisible({ mode: "auto", style: "shaded", role: "body" })).toBe(true);
+    expect(resolveStudioMannequinOutlineVisible({ mode: "auto", style: "wood", role: "body" })).toBe(false);
     expect(source).toContain("renderer.shadowMap.type = THREE.PCFSoftShadowMap");
     expect(source).toContain('addEventListener("dblclick", handleDoubleClick)');
   });
