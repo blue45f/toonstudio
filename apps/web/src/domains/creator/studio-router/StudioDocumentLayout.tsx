@@ -10,7 +10,7 @@ import {
 } from "../live/studio-live-jam-session";
 import { StudioDocumentWorkspaceDock } from "../studio-shell/StudioDocumentWorkspaceDock";
 import { StudioDocumentWorkspaceSwitcher } from "../studio-shell/StudioDocumentWorkspaceSwitcher";
-import { StudioEpisodeStageChipSlot } from "../studio-shell/StudioEpisodeStageChip";
+import { StudioEpisodeStageChipSlot } from "../studio-shell/StudioEpisodeStageChipSlot";
 import { StudioMarketplaceReturnNotice } from "../studio-shell/StudioMarketplaceReturnNotice";
 import { ReturnContextBanner } from "../ReturnContextBanner";
 import { startStudioConnectivityRuntime } from "../offline/studio-connectivity";
