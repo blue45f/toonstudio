@@ -118,6 +118,18 @@ overrides:
   # drizzle-kit의 구형 설정 로더에 포함된 esbuild 0.18에는 보안 백포트가
   # 없어, 트리에 이미 있는 0.25 수정 버전으로 좁혀 실제 TS 로더를 검증한다.
   '@esbuild-kit/core-utils>esbuild': 0.25.12
+  # 2026-10-15 신규 공개 취약점 6건. 모두 개발 전용 @lhci/cli(Lighthouse CI)의 전이 의존성이며 운영 번들에는
+  # 들어가지 않지만, 저장소 정책상 pnpm audit 은 개발 의존성까지 예외 없이 통과해야 한다.
+  # tmp(GHSA-ph9p-34f9-6g65, GHSA-52f5-9888-hmc6)와 basic-ftp(GHSA-c475-qrg2-pj4r)는 수정 릴리스로 올린다.
+  'tmp@<0.2.6': 0.2.7
+  'basic-ftp@<6.2.1': 6.2.3
+  # sprintf-js(GHSA-hp3w-g68c-fv3c)는 수정 릴리스가 아직 없다. 유일한 소비자는 js-yaml 3 의 CLI 전용 argparse 1 이고
+  # js-yaml 라이브러리 코드는 argparse 를 쓰지 않으므로, argparse 2(sprintf-js 비의존)로 수렴시켜 트리에서 제거한다.
+  'argparse@<2': 2.0.1
+  # extract-zip(GHSA-jmr9-qjv8-65gv, GHSA-7pqw-9j4j-h8q3)도 수정 릴리스가 없다. 유일한 소비자는 @puppeteer/browsers 2.x 의
+  # 브라우저 설치 경로이고 Lighthouse CI 는 설치된 Chrome 을 쓴다. 취약 코드를 호출 즉시 실패하는 대체본으로 바꾼다.
+  # 업스트림이 수정 릴리스를 내면 이 줄과 patches/extract-zip-disabled 를 지우고 레지스트리 버전으로 되돌린다.
+  'extract-zip@<=2.0.1': 'file:patches/extract-zip-disabled'
 
 # eslint-plugin-jsx-a11y 6.10.2 is the current release and has not yet widened
 # its peer range for ESLint 10. The repository executes the plugin under

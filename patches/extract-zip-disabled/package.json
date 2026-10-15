@@ -1,0 +1,16 @@
+{
+  "name": "extract-zip",
+  "description": "ToonStudio 보안 대체본: extract-zip 2.0.1 의 심볼릭 링크 경로 탈출 취약점(GHSA-jmr9-qjv8-65gv, GHSA-7pqw-9j4j-h8q3)에 수정 릴리스가 없어 취약 코드를 호출하면 즉시 실패하는 코드로 바꾼다. 사유와 제거 조건은 README.md 참고.",
+  "version": "2.0.1+toonstudio.disabled",
+  "private": true,
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "main": "index.js",
+  "types": "index.d.ts",
+  "engines": {
+    "node": ">=10.17"
+  }
+}
