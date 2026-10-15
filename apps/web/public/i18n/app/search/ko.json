@@ -54,7 +54,7 @@
   "search.explorer.refresh": "갱신",
   "search.explorer.loading": "로딩 중",
   "search.explorer.resultCount": "{count}개 작품",
-  "search.explorer.noResult": "결과가 없습니다",
+  "search.explorer.noResult": "결과가 없어요",
   "search.explorer.recent": "최근 검색",
   "search.explorer.recent.clearAll": "전체 지우기",
   "search.explorer.recent.delete": "최근 검색어 {query} 삭제",

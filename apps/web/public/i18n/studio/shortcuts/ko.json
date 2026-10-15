@@ -46,6 +46,6 @@
   "studio.shortcuts.keys.shiftArrowKeys": "⇧ + 방향키",
   "studio.shortcuts.keys.commandWheel": "⌘ + 휠",
   "studio.shortcuts.keys.spaceDrag": "Space + 드래그",
-  "studio.shortcuts.notice": "Windows·Linux에서는 ⌘ 대신 Ctrl, ⌥ 대신 Alt를 사용하세요. 입력창·대화상자·검토 또는 협업 잠금 중에는 드로잉 단축키가 비활성화됩니다.",
+  "studio.shortcuts.notice": "Windows·Linux에서는 ⌘ 대신 Ctrl, ⌥ 대신 Alt를 사용하세요. 입력창·대화상자·검토 또는 협업 잠금 중에는 드로잉 단축키가 비활성화돼요.",
   "studio.shortcuts.close": "단축키 도움말 닫기"
 }

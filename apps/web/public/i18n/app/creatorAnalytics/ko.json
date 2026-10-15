@@ -1,6 +1,6 @@
 {
   "creatorAnalytics.dropOff.episodeSuffix": "화",
-  "creatorAnalytics.dropOff.none": "급격한 이탈 지점이 없어요. 연재 흐름이 안정적입니다.",
+  "creatorAnalytics.dropOff.none": "급격한 이탈 지점이 없어요. 연재 흐름이 안정적이에요.",
   "creatorAnalytics.dropOff.title": "이탈 지점",
   "creatorAnalytics.dropOff.worstSuffix": "에서 독자가 떨어졌어요",
   "creatorAnalytics.empty": "표시할 데이터가 없습니다.",
@@ -29,7 +29,7 @@
   "creatorAnalytics.period.90d": "90일",
   "creatorAnalytics.periodLabel": "기간",
   "creatorAnalytics.retention.eyebrow": "RETENTION CURVE",
-  "creatorAnalytics.retention.insight": "빨간 지점이 독자가 크게 떨어진 회차입니다. 그 회차의 도입부·전개를 먼저 점검하세요.",
+  "creatorAnalytics.retention.insight": "빨간 지점이 독자가 크게 떨어진 회차예요. 그 회차의 도입부·전개를 먼저 점검하세요.",
   "creatorAnalytics.retention.title": "회차별 리텐션 곡선",
   "creatorAnalytics.retry": "다시 시도",
   "creatorAnalytics.seriesLabel": "시리즈",

@@ -1,7 +1,7 @@
 {
   "studio.commandBar.aria": "빠른 명령 바",
   "studio.commandBar.settings": "명령 바 설정",
-  "studio.commandBar.settingsDescription": "메뉴바 아래 명령 바의 슬롯 구성과 표시 여부를 바꿉니다.",
+  "studio.commandBar.settingsDescription": "메뉴바 아래 명령 바의 슬롯 구성과 표시 여부를 바꿔요.",
   "studio.commandBar.settingsTip": "자주 쓰는 명령을 앞쪽 슬롯에 두면 손이 가장 빨리 닿아요.",
   "studio.commandBar.settingsClose": "명령 바 설정 닫기",
   "studio.commandBar.settingsStorageNote": "슬롯 구성은 이 브라우저의 작업공간 설정에 저장돼요.",

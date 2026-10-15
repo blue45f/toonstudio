@@ -6,7 +6,7 @@
   "paywall.creatorPage.disable": "끄기",
   "paywall.creatorPage.disabled": "꺼짐",
   "paywall.creatorPage.documentTitle": "얼리 액세스 관리 - 툰스튜디오",
-  "paywall.creatorPage.emptyBody": "작품에 얼리 액세스를 켜면 후원자와 멤버가 먼저 회차를 보고, 기간이 지나면 전체 무료로 전환됩니다.",
+  "paywall.creatorPage.emptyBody": "작품에 얼리 액세스를 켜면 후원자와 멤버가 먼저 회차를 보고, 기간이 지나면 전체 무료로 전환돼요.",
   "paywall.creatorPage.emptyTitle": "설정된 얼리 액세스 정책이 없어요",
   "paywall.creatorPage.enable": "켜기",
   "paywall.creatorPage.enabled": "켜짐",
@@ -31,7 +31,7 @@
   "paywall.creatorPage.titleNamePlaceholder": "예: 달빛 연대기",
   "paywall.gate.becomeSupporter": "서포터 되기",
   "paywall.gate.freeIn": "{days}일 후 전체 무료",
-  "paywall.gate.lockedBody": "이 회차는 서포터에게 먼저 공개됩니다. 기다리면 무료로 볼 수 있어요.",
+  "paywall.gate.lockedBody": "이 회차는 서포터에게 먼저 공개돼요. 기다리면 무료로 볼 수 있어요.",
   "paywall.gate.lockedTitle": "얼리 액세스 회차",
   "paywall.gate.supporterNote": "후원하거나 멤버십에 가입하면 바로 볼 수 있어요.",
   "paywall.preview.disabledNote": "정책이 꺼져 있어 독자에게는 모든 회차가 전체 공개로 보여요.",
@@ -45,7 +45,7 @@
   "paywall.preview.supporter": "서포터",
   "paywall.preview.supporterOpen": "지금 볼 수 있어요",
   "paywall.preview.title": "독자 뷰 미리보기",
-  "paywall.titleNotice.body": "이 작품은 서포터에게 {days}일 먼저 공개됩니다. 기다리면 무료로 볼 수 있어요.",
+  "paywall.titleNotice.body": "이 작품은 서포터에게 {days}일 먼저 공개돼요. 기다리면 무료로 볼 수 있어요.",
   "paywall.titleNotice.label": "얼리 액세스 안내",
   "paywall.titleNotice.title": "서포터 얼리 액세스 운영 중"
 }
