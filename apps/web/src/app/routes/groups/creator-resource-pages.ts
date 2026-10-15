@@ -4,8 +4,9 @@ export const CatalogResearchPage = lazyRetry(
   () => import("@/domains/creator-resources/CatalogResearchPage").then((module) => ({ default: module.CatalogResearchPage })),
   "CatalogResearchPage",
 );
+// /research 는 앱 계층 래퍼를 거쳐 문장 허브의 "AI로 다듬기"(선택 기능)를 주입받는다.
 export const CreatorHubPage = lazyRetry(
-  () => import("@/domains/creator-resources/CreatorHubPage").then((module) => ({ default: module.CreatorHubPage })),
+  () => import("./research-home-route").then((module) => ({ default: module.ResearchHomeRoute })),
   "CreatorHubPage",
 );
 export const NowPage = lazyRetry(
