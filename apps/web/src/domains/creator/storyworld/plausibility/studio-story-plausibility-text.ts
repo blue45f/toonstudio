@@ -29,14 +29,19 @@ export function objectJosa(word: string): string {
   return `${word}${josa(word, "을", "를")}`;
 }
 
-/** "시장으로" / "금고로" / "서울로" — 받침이 없거나 ㄹ 받침이면 "로", 그 밖에는 "으로". */
-export function directionJosa(word: string): string {
+/** 조사만 돌려준다. 받침이 없거나 ㄹ 받침이면 "로", 그 밖에는 "으로". directionSuffix("시장") === "으로" */
+export function directionSuffix(word: string): string {
   const last = Array.from(word.trim()).at(-1);
-  if (!last) return `${word}로`;
+  if (!last) return "로";
   const code = last.charCodeAt(0);
-  if (code < 0xac00 || code > 0xd7a3) return `${word}로`;
+  if (code < 0xac00 || code > 0xd7a3) return "로";
   const batchim = (code - 0xac00) % 28;
-  return batchim === 0 || batchim === 8 ? `${word}로` : `${word}으로`;
+  return batchim === 0 || batchim === 8 ? "로" : "으로";
+}
+
+/** "시장으로" / "금고로" / "서울로" */
+export function directionJosa(word: string): string {
+  return `${word}${directionSuffix(word)}`;
 }
 
 /** ‘이름’ 형태로 감싼다. */

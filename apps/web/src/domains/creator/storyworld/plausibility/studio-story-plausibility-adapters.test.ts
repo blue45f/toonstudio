@@ -14,7 +14,7 @@ import {
 } from "./studio-story-plausibility-adapters-planning";
 import { createPlausibilityContext } from "./studio-story-plausibility-context";
 import { DOJIN, HAEUN, makeStory } from "./studio-story-plausibility-golden-fixtures";
-import { directionJosa, josa, objectJosa, subjectJosa, topicJosa } from "./studio-story-plausibility-text";
+import { directionJosa, directionSuffix, josa, objectJosa, subjectJosa, topicJosa } from "./studio-story-plausibility-text";
 
 const continuityProject: StoryworldProject = makeStory("c", "연속성", {
   characters: [HAEUN, DOJIN, { id: "mina", name: "미나" }],
@@ -247,5 +247,8 @@ describe("한국어 조사 도우미", () => {
     expect(directionJosa("서울")).toBe("서울로");
     expect(directionJosa("")).toBe("로");
     expect(directionJosa("Room")).toBe("Room로");
+    expect(directionSuffix("해결함")).toBe("으로");
+    expect(directionSuffix("나중에")).toBe("로");
+    expect(directionSuffix("의도된 설정")).toBe("으로");
   });
 });

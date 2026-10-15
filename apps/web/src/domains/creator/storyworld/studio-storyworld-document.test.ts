@@ -123,6 +123,20 @@ describe("스토리월드 문서 읽기: 새 선택 필드", () => {
     expect(Array.from(scene?.plausibility?.motives?.[0]?.note ?? "")).toHaveLength(500);
   });
 
+  it("원고 사본 표시(copy)는 그대로 받고, 길면 자르며, 공백뿐이면 버린다", () => {
+    const kept = normalizeStoryworldProject(withScene({ source: { excerpt: "x", boundary: "start", copy: "  fp-3f9a1c  " } }));
+    expect(kept.scenes[0]?.source?.copy).toBe("fp-3f9a1c");
+    const clipped = normalizeStoryworldProject(withScene({ source: { excerpt: "x", boundary: "start", copy: "가".repeat(500) } }));
+    expect(Array.from(clipped.scenes[0]?.source?.copy ?? "")).toHaveLength(120);
+    const blank = normalizeStoryworldProject(withScene({ source: { excerpt: "x", boundary: "start", copy: "   " } }));
+    expect(blank.scenes[0]?.source).not.toHaveProperty("copy");
+  });
+
+  it("원고 사본 표시(copy)가 문자열이 아니면 위치를 알려 거절한다", () => {
+    expect(() => normalizeStoryworldProject(withScene({ source: { excerpt: "x", boundary: "start", copy: 7 } })))
+      .toThrow("scenes[0].source.copy");
+  });
+
   it("장면 성격은 정해진 순서로 중복 없이 정리한다", () => {
     const project = normalizeStoryworldProject(withScene({ plausibility: { roles: ["resolution", "decision", "resolution"] } }));
     expect(project.scenes[0]?.plausibility?.roles).toEqual(["decision", "resolution"]);
