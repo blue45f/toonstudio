@@ -92,7 +92,11 @@ describe("계약서 검토 체크리스트 데이터", () => {
   it("지체상금 항목은 표준계약서에 없는 조항이므로 ‘있을 때’ 주의로 분류한다", () => {
     const penalty = CONTRACT_REVIEW_ITEMS.find((item) => item.id === "delay-penalty");
     expect(penalty?.attention).toBe("when-present");
-    expect(penalty?.standard.ko).toContain("‘지체상금’이라는 조항이 없다");
+    // 해설집 본문 전체를 글자 검색해 ‘지체상금’·‘위약금’·‘패널티’가 없음을 확인한 결과를 적은 문장이다.
+    expect(penalty?.standard.ko).toContain("‘지체상금’·‘위약금’·‘패널티’라는 표현이 나오지 않고");
+    expect(penalty?.standard.ko).toContain("마감 지연에 돈을 물리는 조항은 없다");
+    // 제6조는 쌍방 의무다 — 서비스 제공업자 쪽 의무만 적지 않는다.
+    expect(penalty?.standard.ko).toContain("양쪽 모두");
     // 확인하지 못한 법률 사실을 단정하지 않는다: 금액·한도 같은 숫자를 지어내지 않는다.
     expect(penalty?.standard.ko).not.toMatch(/\d+\s*%/u);
   });

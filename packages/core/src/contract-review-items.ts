@@ -3,7 +3,8 @@
  *
  * 쓰는 규칙:
  * - 항목의 `standard` 문장은 아래 `CONTRACT_REVIEW_SOURCES` 문서를 직접 읽고 확인한 내용만 적는다.
- *   조항 번호·쪽수는 해설집(PDF 99쪽)에 실린 표준계약서 전문과 해설을 기준으로 한다.
+ *   조항 번호는 해설집(PDF 99쪽)에 실린 표준계약서 전문과 해설을, 쪽수는 그 문서 하단에 인쇄된
+ *   쪽 번호를 기준으로 한다(2026-10-15 PDF 본문을 글자 단위로 추출해 조항·쪽을 대조했다).
  * - 확인하지 못한 법률 사실, 특정 계약서에 대한 판단, 효력 단정은 쓰지 않는다.
  * - 이 목록은 2024년 6월 13일 고시본과 2025년 해설집 기준이다. 이후 개정은 확인하지 못했다.
  */
@@ -54,8 +55,8 @@ export const CONTRACT_REVIEW_SOURCES: readonly ContractReviewSource[] = Object.f
     documentDate: "2025-06-13",
     checkedOn: CONTRACT_REVIEW_CHECKED_ON,
     note: t(
-      "PDF 99쪽. 이 체크리스트의 조항 번호와 쪽수는 이 문서에 실린 표준계약서 전문과 해설을 기준으로 한다. 날짜는 문체부가 이 날부터 배포한다고 알린 것으로 보도된 날(2025-05-29 보도)이다.",
-      "99-page PDF. Article numbers and page numbers in this checklist follow the full contract text and commentary printed in it. The date is the distribution start date that MCST was reported to have announced (press report of 2025-05-29).",
+      "PDF 99쪽(펼침면 구성이라 한 PDF 쪽에 인쇄 쪽 두 개가 담겨 있다). 이 체크리스트의 ‘해설집 N쪽’은 문서 하단에 인쇄된 쪽 번호이고, 조항 번호는 이 문서에 실린 표준계약서 전문과 해설을 기준으로 한다. 날짜는 문체부가 이 날부터 배포한다고 알린 것으로 보도된 날(2025-05-29 보도)이다.",
+      "99 PDF pages laid out as two-page spreads, so each PDF page holds two printed pages. “Commentary p. N” in this checklist is the page number printed at the foot of the page, and article numbers follow the full contract text and commentary in the document. The date is the distribution start date that MCST was reported to have announced (press report of 2025-05-29).",
     ),
   }),
   Object.freeze<ContractReviewSource>({
@@ -259,8 +260,8 @@ export const CONTRACT_REVIEW_ITEMS: readonly ContractReviewItem[] = Object.freez
       "Is there a clause that charges money or reduces fees or revenue when a manuscript is late (penalty, liquidated damages)?",
     ),
     standard: t(
-      "해설집에 실린 표준 웹툰 연재계약서(별표3) 전문에는 ‘지체상금’이라는 조항이 없다. 인도 기일은 제7조 제1항에 따라 서비스 제공업자의 동의를 얻어 바꿀 수 있고, 동의 없이 인도하지 않으면 계약 위반 책임을 질 수 있다고 해설한다. 위반이 계속될 때는 일정 기간을 정해 이행을 요구한 뒤 해지할 수 있고(제22조), 고의 또는 과실로 계약을 위반하면 손해를 배상한다(제23조). 천재지변 같은 불가항력으로 의무를 이행하지 못하면 서로 책임을 면제한다(제24조). 서비스 제공업자가 정당한 이유 없이 원고 수령을 거부하거나 연재를 지연·중단하는 것도 금지된다(제6조). 문화체육관광부 2018-02-12 보도자료는 작가들이 ‘원고 지연에 대한 과도한 과금(패널티)’ 등을 고충으로 제기했다고 적는다.",
-      "The full text of the standard serialization contract (Annex 3) in the commentary has no “liquidated damages for delay” clause. Under Art. 7(1) the delivery date can move with the service provider’s consent, and failing to deliver without consent can be a breach, the commentary explains. Continued breach leads to a demand to perform within a set period and then termination (Art. 22); a party that breaches intentionally or negligently pays damages (Art. 23); force majeure releases both sides (Art. 24). The service provider is likewise barred from refusing delivery or delaying or stopping serialization without cause (Art. 6). A 2018-02-12 MCST press release lists “excessive charges (penalties) for late manuscripts” among creators’ complaints.",
+      "해설집 본문(PDF 99쪽)에는 ‘지체상금’·‘위약금’·‘패널티’라는 표현이 나오지 않고, 표준 웹툰 연재계약서(별표3)에도 마감 지연에 돈을 물리는 조항은 없다. 인도 기일은 제7조 제1항에 따라 서비스 제공업자의 동의를 얻어 바꿀 수 있고, 동의 없이 인도하지 않으면 계약 위반 책임을 질 수 있다고 해설한다. 제6조는 양쪽 모두 정당한 이유 없이 원고 수령·창작·인도를 거부하거나 연재를 지연·중단해서는 안 된다고 정하며, 위반하면 불가항력 등(제24조)에 해당하지 않는 한 계약 위반 책임을 질 수 있다고 해설한다. 위반이 계속될 때는 일정 기간을 정해 이행을 요구한 뒤 해지할 수 있고(제22조), 고의 또는 과실로 계약을 위반하면 손해를 배상한다(제23조). 천재지변 같은 불가항력으로 의무를 이행하지 못하면 서로 책임을 면제한다(제24조). 문화체육관광부 2018-02-12 보도자료는 작가들이 ‘원고 지연에 대한 과도한 과금(패널티)’ 등을 고충으로 제기했다고 적는다.",
+      "No wording for liquidated damages for delay, a contract penalty or a penalty appears in the text of the commentary (99 PDF pages), and the standard serialization contract (Annex 3) has no clause charging money for a late manuscript. Under Art. 7(1) the delivery date can move with the service provider’s consent, and failing to deliver without consent can be a breach, the commentary explains. Art. 6 bars both sides from refusing delivery or receipt, or delaying or stopping serialization, without justification, and the commentary says a breach can carry liability unless force majeure or similar (Art. 24) applies. Continued breach leads to a demand to perform within a set period and then termination (Art. 22); a party that breaches intentionally or negligently pays damages (Art. 23); force majeure releases both sides (Art. 24). A 2018-02-12 MCST press release lists “excessive charges (penalties) for late manuscripts” among creators’ complaints.",
     ),
     lookFor: [
       t("지체상금·위약금·패널티·감액 같은 표현이 있는지", "Any wording such as penalty, liquidated damages, deduction or reduction?"),
@@ -347,8 +348,8 @@ export const CONTRACT_REVIEW_ITEMS: readonly ContractReviewItem[] = Object.freez
       "Does it state the revenue split and how the sales figure it applies to is calculated?",
     ),
     standard: t(
-      "제10조 제1항은 저작권자와 서비스 제공업자가 순 매출액을 RS(수익분배) 비율(저작권자:서비스 제공업자 ○○%:○○%)에 따라 나누도록 한다. ‘총 매출액’은 작품 이용으로 생긴 금액 전체이고 ‘순 매출액’은 총 매출액에서 세금, 앱마켓 수수료, 결제·환불 수수료 등을 공제한 금액이다(제2조 제14·15호). 해설집은 ‘등’을 지우고 공제 항목을 분명히 적는 것이 분쟁을 줄이며, 공제 범위는 서면 합의로 달리 정할 수 있다고 적는다. 연재 계약이 끝나도 작품이 서비스되는 동안에는 RS 비율에 따라 계속 나눈다(제10조 제4항). 정책브리핑도 수익 배분 방식·비율을 창작자가 명확히 이해하게 한다고 안내한다.",
-      "Article 10(1) has the parties split net sales by the RS ratio (author : service provider, ○○% : ○○%). “Gross sales” is everything earned from using the work; “net sales” is gross sales minus taxes, app-market fees, payment and refund fees and similar (Art. 2 nos. 14–15). The commentary says deleting the open-ended “etc.” and listing each deduction reduces disputes, and the deductions can be changed by written agreement. Even after serialization ends, revenue keeps being split at the RS ratio while the work is on sale (Art. 10(4)). The policy briefing likewise says the split and ratio should be clear to creators.",
+      "제10조 제1항은 저작권자와 서비스 제공업자가 순 매출액을 RS(수익분배) 비율(저작권자:서비스 제공업자 ○○%:○○%)에 따라 나누도록 한다. ‘총 매출액’은 작품 이용으로 생긴 금액 전체이고 ‘순 매출액’은 총 매출액에서 세금, 앱마켓 수수료, 결제·환불 수수료 등을 공제한 금액이다(제2조 제14·15호). 해설집은 ‘등’을 지우고 공제 항목을 분명히 적는 것이 분쟁을 줄이며, 공제 범위는 서면 합의로 달리 정할 수 있다고 적는다. 연재 계약이 끝나도 작품이 서비스되는 동안에는 RS 비율에 따라 계속 나눈다(제10조 제4항). 정책브리핑도 계약 체결 당사자가 수익 배분 방식·비율을 명확하게 이해할 수 있게 한다고 안내한다.",
+      "Article 10(1) has the parties split net sales by the RS ratio (author : service provider, ○○% : ○○%). “Gross sales” is everything earned from using the work; “net sales” is gross sales minus taxes, app-market fees, payment and refund fees and similar (Art. 2 nos. 14–15). The commentary says deleting the open-ended “etc.” and listing each deduction reduces disputes, and the deductions can be changed by written agreement. Even after serialization ends, revenue keeps being split at the RS ratio while the work is on sale (Art. 10(4)). The policy briefing likewise says the contracting parties should be able to understand the split method and ratio clearly.",
     ),
     lookFor: [
       t("RS 비율 숫자(저작권자:플랫폼)가 분명한지", "Is the RS ratio (author : platform) stated clearly?"),
@@ -378,14 +379,14 @@ export const CONTRACT_REVIEW_ITEMS: readonly ContractReviewItem[] = Object.freez
       "Does it say in what order fees and costs are deducted from revenue, and what happens when the fee exceeds revenue (a shortfall)?",
     ),
     standard: t(
-      "제10조 제2항은 제9조로 지급한 대금의 공제 방식을 비워 두고 당사자가 합의해 적도록 한다. 해설집 부록은 (1) 회차당 대가를 공제하지 않는 방식·수익 분배 비율 적용 전에 공제하는 방식·적용 후에 공제하는 방식, (2) 회차당 비용도 같은 세 가지, (3) 회차당 대가가 수익보다 많을 때 적자를 월말에 탕감·연재 종료 때 탕감·탕감하지 않음으로 나눠 설명하고, ‘선차감 MG·후차감 MG’ 같은 호칭은 지양하며 이 세 요소를 확인하라고 권한다. 예시(연재료 100만 원, 회차 총매출 200만 원, 저작권자 비율 80%, 비용 20만 원)에서는 공제 방식에 따라 244만 원·164만 원·144만 원으로 달라진다. 중간에 CP사가 있으면 정산이 두 번 일어난다.",
-      "Article 10(2) leaves the deduction method for the Art. 9 payment blank for the parties to fill in. The commentary’s appendix distinguishes (1) not deducting the per-episode fee, deducting it before applying the revenue-share ratio, or after; (2) the same three options for per-episode costs; and (3) when the fee exceeds revenue, forgiving the shortfall monthly, forgiving it at the end of serialization, or never; it advises avoiding labels like “pre-deduction MG / post-deduction MG” and checking these three factors. In its example (fee 1,000,000 KRW, gross sales 2,000,000, author ratio 80%, costs 200,000) the author’s income differs: 2,440,000, 1,640,000 or 1,440,000 KRW depending on the method. With an agency (CP) in between, settlement happens twice.",
+      "제10조 제2항은 제9조로 지급한 대금의 공제 방식을 비워 두고 당사자가 합의해 적도록 한다. 해설집 부록은 (1) 회차당 대가를 공제하지 않는 방식·수익 분배 비율 적용 전에 공제하는 방식·적용 후에 공제하는 방식, (2) 회차당 비용도 같은 세 가지, (3) 회차당 대가가 수익보다 많을 때 적자를 월말에 탕감·연재 종료 때 탕감·탕감하지 않음으로 나눠 설명하고, ‘선차감 MG·후차감 MG’ 같은 호칭은 지양하며 이 세 요소를 확인하라고 권한다. 예시(연재료 100만 원, 회차 총매출 200만 원, 저작권자 비율 80%, 비용 20만 원)에서는 공제 방식에 따라 244만 원·164만 원·144만 원으로 달라진다. 서비스 제공업자와 저작권자 사이에 중간 유통업자(CP사)가 있으면 계산이 한 단계 늘어나고, 한 단계는 선차감이고 다른 단계는 후차감일 수도 있다고 해설한다.",
+      "Article 10(2) leaves the deduction method for the Art. 9 payment blank for the parties to fill in. The commentary’s appendix distinguishes (1) not deducting the per-episode fee, deducting it before applying the revenue-share ratio, or after; (2) the same three options for per-episode costs; and (3) when the fee exceeds revenue, forgiving the shortfall monthly, forgiving it at the end of serialization, or never; it advises avoiding labels like “pre-deduction MG / post-deduction MG” and checking these three factors. In its example (fee 1,000,000 KRW, gross sales 2,000,000, author ratio 80%, costs 200,000) the author’s income differs: 2,440,000, 1,640,000 or 1,440,000 KRW depending on the method. With an intermediary distributor (a “CP company”) between the service provider and the author, the commentary says the calculation gains one more step, and one step may deduct before the split while the other deducts after.",
     ),
     lookFor: [
       t("연재료를 수익 분배 전에 공제하는지, 후에 공제하는지, 공제하지 않는지", "Is the fee deducted before the split, after it, or not at all?"),
       t("수수료·환불 같은 비용이 어느 단계에서 공제되는지", "At which step are costs such as fees and refunds deducted?"),
       t("연재료가 수익보다 많은 달의 적자가 다음 달로 넘어가는지, 언제 없어지는지", "Does a shortfall carry over, and when is it cleared?"),
-      t("중간에 CP(에이전시)가 있다면 정산이 두 번 일어나는지, 각각의 비율은 얼마인지", "With an agency in between, are there two settlements and what are the ratios?"),
+      t("중간에 CP사(중간 유통업자)가 있다면 단계마다 비율과 공제 순서가 각각 어떻게 되는지", "If an intermediary (CP company) is involved, what are the ratio and the deduction order at each step?"),
     ],
     attention: "when-absent",
     attentionNote: t(
@@ -395,7 +396,7 @@ export const CONTRACT_REVIEW_ITEMS: readonly ContractReviewItem[] = Object.freez
     standardCore: true,
     references: [
       serial("제10조 제2항 · 해설집 63쪽", "Art. 10(2) · commentary p. 63"),
-      ref("standard-contracts-commentary", "부록 ‘완전원고 대가 계산 방식’ · 해설집 76~79쪽", "Appendix on complete-manuscript fee calculation · commentary pp. 76–79"),
+      ref("standard-contracts-commentary", "부록 ‘완전원고 대가 계산 방식’ · 해설집 76~83쪽(계산 예시는 79쪽)", "Appendix on complete-manuscript fee calculation · commentary pp. 76–83 (worked example on p. 79)"),
     ],
   }),
   item({
