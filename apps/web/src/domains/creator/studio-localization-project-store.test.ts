@@ -4,9 +4,17 @@ import { createStudioLocalizationUnit, transitionStudioLocalizationUnit } from "
 import {
   parseStudioLocalizationProjectDocument,
   projectLocalizationDiagnostics,
+  readStudioLocalizationCharacterCards,
   readStudioLocalizationProject,
+  studioLocalizationProjectStorageKey,
+  STUDIO_LOCALIZATION_PROJECT_UPDATED_EVENT,
+  updateStudioLocalizationCharacterCards,
   writeStudioLocalizationProject,
 } from "./studio-localization-project-store";
+import {
+  patchStudioTranslationCard,
+  setStudioTranslationSpeaker,
+} from "./lettering/studio-translation-character-card-edit";
 
 function memoryStorage(): Storage {
   const values = new Map<string, string>();
@@ -106,5 +114,106 @@ describe("Studio localization project store", () => {
         warningIssueCount: 0,
       }),
     ]);
+  });
+});
+
+describe("Studio localization project store — 번역 인물 카드", () => {
+  const unitsDocument = (units = [baseUnit()]) => ({
+    schemaVersion: 1 as const,
+    projectId: "project-12",
+    units,
+    updatedAt: "2026-09-11T03:00:00.000Z",
+  });
+
+  it("카드 필드가 없던 기존 문서(v1)도 그대로 유효하고, 카드는 빈 집합으로 읽힌다(역호환)", () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      studioLocalizationProjectStorageKey("project-12"),
+      JSON.stringify(unitsDocument()),
+    );
+    const document = readStudioLocalizationProject(storage, "project-12");
+    expect(document.units).toHaveLength(1);
+    expect(document.characterCards).toBeUndefined();
+    expect(readStudioLocalizationCharacterCards(storage, "project-12")).toEqual({
+      schemaVersion: 1,
+      cards: [],
+      speakers: {},
+    });
+  });
+
+  it("카드를 저장해도 번역 단위는 그대로이고, 같은 키·같은 갱신 이벤트를 쓴다", () => {
+    const storage = memoryStorage();
+    writeStudioLocalizationProject(storage, unitsDocument());
+    const events: Event[] = [];
+    const target = { dispatchEvent: (event: Event) => (events.push(event), true) };
+
+    const next = updateStudioLocalizationCharacterCards(
+      storage,
+      "project-12",
+      (cards) => patchStudioTranslationCard(cards, "yuna", { name: "유나", register: "polite" }),
+      target,
+    );
+
+    expect(next.units).toHaveLength(1);
+    expect(next.characterCards?.cards[0]).toMatchObject({ characterId: "yuna", register: "polite" });
+    expect(events).toHaveLength(1);
+    expect(events[0]?.type).toBe(STUDIO_LOCALIZATION_PROJECT_UPDATED_EVENT);
+    expect(readStudioLocalizationProject(storage, "project-12")).toEqual(next);
+  });
+
+  it("카드를 모르는 호출부(번역 단위만 저장)가 문서를 저장해도 저장된 카드를 지우지 않는다", () => {
+    const storage = memoryStorage();
+    writeStudioLocalizationProject(storage, unitsDocument());
+    updateStudioLocalizationCharacterCards(storage, "project-12", (cards) =>
+      setStudioTranslationSpeaker(cards, "b1", { speakerId: "yuna", listenerId: null }),
+    );
+
+    // 현지화 패널의 저장 경로: characterCards 없이 units 만 넘긴다.
+    const saved = writeStudioLocalizationProject(storage, unitsDocument([baseUnit("line-1"), baseUnit("line-2")]));
+
+    expect(saved.units).toHaveLength(2);
+    expect(saved.characterCards?.speakers.b1).toEqual({ speakerId: "yuna", listenerId: null });
+    expect(readStudioLocalizationCharacterCards(storage, "project-12").speakers.b1).toBeDefined();
+  });
+
+  it("빈 카드 집합을 명시하면 카드를 비울 수 있다", () => {
+    const storage = memoryStorage();
+    updateStudioLocalizationCharacterCards(storage, "project-12", (cards) =>
+      patchStudioTranslationCard(cards, "yuna", { name: "유나", register: "casual" }),
+    );
+    writeStudioLocalizationProject(storage, {
+      ...unitsDocument(),
+      characterCards: { schemaVersion: 1, cards: [], speakers: {} },
+    });
+    expect(readStudioLocalizationCharacterCards(storage, "project-12").cards).toEqual([]);
+  });
+
+  it("변경이 없으면 저장도 이벤트도 없다", () => {
+    const storage = memoryStorage();
+    const events: Event[] = [];
+    const target = { dispatchEvent: (event: Event) => (events.push(event), true) };
+    updateStudioLocalizationCharacterCards(storage, "project-12", (cards) => cards, target);
+    expect(events).toHaveLength(0);
+    expect(storage.getItem(studioLocalizationProjectStorageKey("project-12"))).toBeNull();
+  });
+
+  it("읽을 수 없는 카드(알 수 없는 버전)만 버리고 번역 작업은 지킨다", () => {
+    const parsed = parseStudioLocalizationProjectDocument(
+      { ...unitsDocument(), characterCards: { schemaVersion: 9, cards: [{ characterId: "x" }] } },
+      "project-12",
+    );
+    expect(parsed?.units).toHaveLength(1);
+    expect(parsed?.characterCards).toBeUndefined();
+  });
+
+  it("상한을 넘는 갱신은 파서를 거쳐 저장 경로에서도 잘린다", () => {
+    const storage = memoryStorage();
+    const saved = updateStudioLocalizationCharacterCards(storage, "project-12", (cards) =>
+      patchStudioTranslationCard(cards, "yuna", {
+        name: "유나",
+        bannedTerms: Array.from({ length: 80 }, (_, index) => ({ term: `금지${index}`, locale: "" })),
+      }),
+    );
+    expect(saved.characterCards?.cards[0]?.bannedTerms.length).toBe(32);
   });
 });
