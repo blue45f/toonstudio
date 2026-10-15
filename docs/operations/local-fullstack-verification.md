@@ -123,14 +123,16 @@ node scripts/local-fullstack/cli.mjs reset --yes  # DB 데이터 삭제(다시 �
 | 비밀 누출 | `leakcheck`(비밀 9종 × 로그·상태·실행 기록)와, 별도로 `grep -rlF -f <(비밀값)` 으로 하네스 로그·상태 파일·실행 기록·이 세션의 명령 출력 기록·커밋 대상 파일을 검사해 이메일·사용자 ID·비밀번호·서명키 2종·DB URL 2종(전체 문자열과 URL 안의 비밀번호) 일치 0건(고정 기본값인 DB 역할 이름은 소스 상수·로그에 있는 것이 정상이라 비밀로 보지 않는다). 비밀 파일 권한 600, `.gitignore:36 (.env*)` 로 무시됨, 메인 작업트리 `git status` 에 나타나지 않음 |
 | 운영 보호(호출 셸) | 호출 셸에 로컬이 아닌 호스트(`.invalid` 예약 도메인)의 가짜 `DATABASE_URL` 을 둔 실제 실행: `up`(`--dry-run` 포함)·`db:start`·`schema`·`seed`·`api:start`·`web:start`·`status`·`smoke`·`e2e` 10개 모두 종료 코드 3. 메시지에 호스트 이름만 있고 사용자·비밀번호는 없음, 접속·DNS 오류 출력 없음(가드가 먼저 종료), 비밀 파일과 스택 디렉터리의 파일 목록·mtime 불변. 다른 변수 이름(`MIGRATION_DATABASE_URL`·`PRODUCTION_DATABASE_DIRECT_URL`·`TEST_DATABASE_URL`·`STUDIO_LIVE_POSTGRES_URL`)과 형식이 잘못된 값도 종료 코드 3, 로컬 호스트 값은 통과. 같은 환경에서 `down --dry-run`·`reset --dry-run`·`leakcheck` 는 종료 코드 0, `check` 는 "환경변수 DB 설정" FAIL 행 |
 | 최종 코드 재확인 | 위 보호 장치를 넣은 최종 코드로 `up` 18초(종료 코드 0, 데이터 보존 재시작) → `smoke` 12/12 PASS → `e2e` 1 passed(21초) → `leakcheck` 누출 없음 → `down` 3초(웹·API·PostgreSQL 정상 종료, 남은 프로세스·열린 포트 없음) |
-| 단위 테스트 | `node --test scripts/local-fullstack/lib/*.test.mjs scripts/local-fullstack/*.test.mjs` 11개 파일 160건 통과(운영 호스트 가드·쿼리 우회·userinfo 위장·호출 셸 환경변수 가드·환경 허용 목록·reset·leakcheck·스모크 판정 포함) |
+| 단위 테스트 | `node --test scripts/local-fullstack/lib/*.test.mjs scripts/local-fullstack/*.test.mjs` 11개 파일 160건 통과(운영 호스트 가드·쿼리 우회·userinfo 위장·호출 셸 환경변수 가드·환경 허용 목록·reset·leakcheck·스모크 판정 포함). 루트 설정의 `pnpm exec vitest run scripts/local-fullstack`(공유 무거운 작업 잠금 대기열을 거쳐 실행)도 11개 파일 160건 통과 |
 | 저장소 검증 | `pnpm harness:check`·`pnpm harness:verify`(변경이 `.mjs`·`.md` 뿐이라 typecheck 분류 아님: 하네스 무결성, 하네스 테스트 5건, lockfile 무결성, 변경 파일 27개 lint) 통과. `harness:verify` 의 Secretlint 단계는 대상 파일이 없다고 보고해서, 새 파일 29개를 `node scripts/secretlint-files.mjs -- <파일>` 로 따로 검사해 통과했다. `package.json`·`pnpm-lock.yaml`·`pnpm-workspace.yaml` 무변경 |
 | 문서 검증 | 이 문서가 있는 sparse worktree 에서 `node scripts/validate-documentation.mjs` 를 실행하면 15건이 실패하지만 모두 다른 문서가 가리키는 `apps/web/public/*` 링크(sparse 체크아웃에서 제외된 경로)이고 이 문서·README 관련 항목은 없다. 이 문서가 없는 비-sparse 메인 트리에서는 921개 문서가 통과한다. 이 문서를 포함한 전체 트리 검증은 실행하지 않았다 |
 
 ## 남은 한계
 
-- 기본 CI 와 `package.json` 스크립트에 연결하지 않았다(저장소 `package.json` 변경 금지 범위). 단위 테스트는
-  `node --test scripts/local-fullstack/lib/*.test.mjs scripts/local-fullstack/*.test.mjs` 또는 루트 `vitest` 로 실행한다.
+- 하네스 자체(`up`·`smoke`·`e2e`)는 `package.json` 스크립트와 CI 작업에 연결하지 않았다(저장소 `package.json` 변경 금지 범위).
+  단위 테스트는 루트 `vitest.config.ts` 의 수집 루트에 `scripts` 가 있어 루트 단위 테스트 실행(`vitest run`)에 자동으로 포함되고,
+  `node --test scripts/local-fullstack/lib/*.test.mjs scripts/local-fullstack/*.test.mjs` 로도 실행할 수 있다. 브라우저 스펙은 루트 vitest 에서
+  제외되어 있고, 환경변수 게이트가 없으면 스펙 자체가 skip 한다(전용 설정으로 실행해 `1 skipped` 확인. 기본 `playwright.config.ts` 로는 실행하지 않았다).
 - 브라우저 스모크 스펙은 `.ts` 변경이 `pnpm harness:verify` 의 전체 typecheck 분류를 일으키지 않도록 `.mjs` 로 두었다.
 - Linux x64 외 플랫폼, 번들 Chromium 설치 경로, 장시간 안정성(수 시간 연속 실행)은 검증하지 않았다.
 - `pnpm local:test`(`scripts/local-test-stack.mjs`)와 기능이 일부 겹치지만 서로 수정하지 않았고, 두 도구를 하나로 합치는 정리는 하지 않았다.

@@ -187,8 +187,13 @@ node --test scripts/local-fullstack/lib/*.test.mjs scripts/local-fullstack/*.tes
 ```
 
 가드(운영 호스트·쿼리 우회·userinfo 위장·호출 셸의 DB 환경변수), 비밀 파일 병합·권한, 갱신 규칙, 프로세스 종료, 스모크 판정(모의 API 로
-결함 주입), CLI 의 운영 보호(부작용 없이 종료 코드 3)·reset·leakcheck 를 검증한다. 이 파일들은 `vitest`/`node:test` 어느 쪽으로도 실행되지만, 아직 `package.json` 스크립트나
-CI 에는 연결하지 않았다(저장소 `package.json` 변경 금지 범위).
+결함 주입), CLI 의 운영 보호(부작용 없이 종료 코드 3)·reset·leakcheck 를 검증한다.
+
+이 파일들은 `node:test` 와 `vitest` 양쪽에서 실행된다. 루트 `vitest.config.ts` 의 수집 루트에 `scripts` 가 들어 있어서 루트 단위 테스트
+실행(`pnpm test:root`, 곧 `vitest run`)에도 자동으로 포함된다. 루트 설정으로 `pnpm exec vitest run scripts/local-fullstack` 를 실행해
+11개 파일 160건 통과를 확인했다. 테스트는 실제 PostgreSQL 기동이나 npm 설치 없이 임시 디렉터리·loopback 모의 서버·합성 값만 쓴다.
+하네스 자체(`up`·`smoke`·`e2e`)는 `package.json` 스크립트나 CI 작업에 연결하지 않았다(저장소 `package.json` 변경 금지 범위).
+브라우저 스펙(`e2e/`)은 루트 vitest 에서 제외되어 있다.
 
 ## 문제 해결
 
