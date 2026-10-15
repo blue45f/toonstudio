@@ -1,3 +1,5 @@
+import { isPrivateOrLocalAiHostname } from "./ai-host-policy";
+
 export const USER_AI_COST_POLICIES = [
   "unverified",
   "provider-free-tier",
@@ -193,35 +195,6 @@ function normalizedApiPath(url: URL): string {
   return url.pathname.replace(/\/+$/u, "") || "/";
 }
 
-function privateOrLocalHostname(value: string): boolean {
-  const hostname = value.toLowerCase().replace(/^\[|\]$/gu, "");
-  if (
-    hostname === "localhost"
-    || hostname === "0.0.0.0"
-    || hostname.endsWith(".localhost")
-    || hostname.endsWith(".local")
-    || hostname.endsWith(".lan")
-    || hostname.endsWith(".internal")
-    || hostname === "::1"
-    || hostname === "::"
-    || hostname.startsWith("fc")
-    || hostname.startsWith("fd")
-    || /^fe[89ab]/u.test(hostname)
-  ) {
-    return true;
-  }
-  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/u.test(hostname)) return false;
-  const [a, b] = hostname.split(".").map(Number);
-  return a === 0
-    || a === 10
-    || a === 127
-    || (a === 100 && b >= 64 && b <= 127)
-    || (a === 169 && b === 254)
-    || (a === 172 && b >= 16 && b <= 31)
-    || (a === 192 && b === 168)
-    || a >= 224;
-}
-
 function unsafeCloudUrl(url: URL): boolean {
   return Boolean(
     url.protocol !== "https:"
@@ -229,7 +202,7 @@ function unsafeCloudUrl(url: URL): boolean {
     || url.password
     || url.search
     || url.hash
-    || privateOrLocalHostname(url.hostname),
+    || isPrivateOrLocalAiHostname(url.hostname),
   );
 }
 
@@ -248,7 +221,7 @@ function capabilityModelIssue(
 
 export function isLoopbackAiUrl(value: string): boolean {
   const url = parsedUrl(value);
-  return Boolean(url && privateOrLocalHostname(url.hostname));
+  return Boolean(url && isPrivateOrLocalAiHostname(url.hostname));
 }
 
 export function isOpenRouterFreeModel(model: string): boolean {
