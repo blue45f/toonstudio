@@ -74,7 +74,12 @@ describe("automatic raster publication feature gate", () => {
     expect(source).toContain("revokeStudioRasterHandoffRef.current()");
     expect(source).toContain("projectStudioRasterOverlayElements({");
     expect(source).toContain("resolveStudioRasterHandoffProjection({");
-    expect(source.match(/readStudioAuthoritativeStageFrame\(\{/gu)).toHaveLength(3);
+    // 스테이지 캡처는 전부 권위 프레임 판독(래스터 핸드오프 해제 → 스테이지 재그리기 → 판독)을 거친다.
+    // 호스트의 캡처 지점 4곳: captureAnimFrame, captureTimelineKeyframe,
+    // sendCurrentPageToCompareReview(비교 검수로 보내기, 2026-10-15 6faf6cd5), saveElementAsEmeresLibraryItem.
+    // 새 캡처 지점이 생기면 이 개수와 위 목록을 함께 갱신해 권위 프레임 경로를 우회하지 않게 한다.
+    expect(source.match(/readStudioAuthoritativeStageFrame\(\{/gu)).toHaveLength(4);
+    expect(source.match(/revokeRasterHandoff: \(\) => revokeStudioRasterHandoffRef\.current\(\)/gu)).toHaveLength(4);
     // 마퀴 프리뷰는 임페러티브 Konva Rect 로 옮겨졌고, 게이트는 저빈도 활성 불리언만 본다.
     expect(source).toMatch(/marqueeActive\s*\|\|\s*userGuides\.length\s*>\s*0/u);
   });

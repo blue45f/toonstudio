@@ -44,8 +44,10 @@ describe("StudioPage lazy precision stabilizer product boundary", () => {
     expect(append).toMatch(
       /drawingPredictionPreviewRef\.current\s*\?\s*precisionBridge\.preview\([\s\S]*:\s*precisionBridge\.commit\(/u
     );
+    // 권위 상태(안정화 상태와 도출 필압 계수)는 같은 커밋 전용 가드 안에서만 전진한다.
+    // 가드 안에는 줄 주석이 끼어 있을 수 있다(weighted 모드의 추 테이퍼 설명).
     expect(append).toMatch(
-      /if \(!drawingPredictionPreviewRef\.current\) \{\s*drawingStabilizerRef\.current = stabilized\.state;\s*\}/u
+      /if \(!drawingPredictionPreviewRef\.current\) \{\s*drawingStabilizerRef\.current = stabilized\.state;(?:\s*\/\/[^\n]*)*\s*pressure = pressure \* \(stabilized\.derivedPressure \?\? 1\);\s*\}/u
     );
     expect(append).toContain("stabilizeStudioStrokeSample(");
     expect(append).toMatch(
