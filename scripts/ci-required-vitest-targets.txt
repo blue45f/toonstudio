@@ -8,6 +8,7 @@ apps/api/src/modules/admin/admin-traffic-query.test.ts
 apps/api/src/modules/admin/admin-traffic.service.test.ts
 apps/api/src/modules/auth/anonymous-client-limit.test.ts
 apps/api/src/modules/auth/auth-client-ip.test.ts
+apps/api/src/modules/business-inquiry/business-inquiry.rate-limit.test.ts
 apps/api/src/modules/catalog/catalog-pagination.test.ts
 apps/api/src/modules/catalog/catalog-public-cache.interceptor.test.ts
 apps/api/src/modules/catalog/catalog-search-cache.test.ts
@@ -43,6 +44,7 @@ apps/api/src/modules/studio-project-graph/studio-review-preview.test.ts
 apps/api/src/modules/studio-project-graph/studio-session-evidence-projection.test.ts
 apps/api/src/modules/studio-project-graph/studio-session-evidence.service.test.ts
 apps/api/src/modules/studio-virtual-space-decoration/studio-virtual-space-decoration.schema.test.ts
+apps/api/src/modules/supporter-payment/supporter-payment.rate-limit.test.ts
 apps/api/src/modules/traffic-analytics/traffic-analytics-d1.client.test.ts
 apps/api/src/modules/traffic-analytics/traffic-analytics-d1.repository.test.ts
 apps/api/src/modules/traffic-analytics/traffic-analytics-repository.provider.test.ts
