@@ -2,7 +2,7 @@ import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 
 import { PRODUCTION_GOOGLE_DRIVE_ARTIFACTS } from "./production-integration-artifacts";
-import { normalizeProductionRedirectPath } from "./production-integration-redirect";
+import { normalizeProductionRedirectPath } from "./production-integration-oauth-guard";
 import { parseWebPushEndpoint } from "./production-web-push-network";
 
 const IdentitySchema = z

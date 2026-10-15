@@ -14,7 +14,7 @@ import {
   Req,
 } from "@nestjs/common";
 
-import { createAnonymousClientLimiter } from "../../platform/http/anonymous-client-limit";
+import { createAnonymousClientLimiter } from "../auth/anonymous-client-limit";
 
 import { CreatorEcosystemService } from "./creator-ecosystem.service";
 

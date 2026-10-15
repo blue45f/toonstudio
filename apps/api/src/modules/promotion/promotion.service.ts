@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, HttpExcepti
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { PROMOTION_KINDS, PROMOTION_STAGES, PROMOTION_GENRES, promotionCursor, promotionKey, promotionRecord, promotionText, validatePromotion } from "../../../../../packages/core/src/promotion";
 import { db, promotionBookmarks, promotionPosts, promotionReports, users } from "../../platform/database";
-import { userFacingException } from "../../platform/http/user-facing-error";
+import { userFacingException } from "../creator/user-facing-error";
 import { isOfficialUser } from "../../server/feedback";
 import { escapeLikePattern } from "../../server/sql-like";
 import type { PromotionPost } from "../../../../../packages/core/src/promotion";

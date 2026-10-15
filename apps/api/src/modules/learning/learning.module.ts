@@ -1,6 +1,6 @@
 import { Controller, Get, Header, Injectable, Module, Query, Req } from "@nestjs/common";
 
-import { createAnonymousClientLimiter } from "../../platform/http/anonymous-client-limit";
+import { createAnonymousClientLimiter } from "../auth/anonymous-client-limit";
 
 import type { Request } from "express";
 

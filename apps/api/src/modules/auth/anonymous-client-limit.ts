@@ -4,8 +4,8 @@ import {
   resolveRequestClientIp,
   type AuthClientIpEnvironment,
   type AuthClientIpRequest,
-} from "../../modules/auth/auth-client-ip";
-import { LocalAuthRateLimiter } from "../../modules/auth/auth-rate-limit";
+} from "./auth-client-ip";
+import { LocalAuthRateLimiter } from "./auth-rate-limit";
 
 export interface AnonymousClientLimiterOptions {
   /** 한도를 나누는 이름. 같은 이름은 같은 버킷을 쓴다. */

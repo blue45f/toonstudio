@@ -17,7 +17,7 @@ import {
 
 import { buildAffiliateUrl } from "@toonstudio/contracts/affiliate";
 import { coverImagePolicy } from "../../../../../packages/core/src/catalog";
-import { sanitizeLogValue } from "../../platform/http/log-safe";
+import { sanitizeLogValue } from "../../logging/log-safe";
 import { getAppConfig, isAdminUser } from "../../server/app-config";
 
 import { searchParamsFromBody } from "../../../../../packages/core/src/search-pagination";

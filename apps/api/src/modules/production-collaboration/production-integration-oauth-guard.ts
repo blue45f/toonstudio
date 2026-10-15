@@ -1,3 +1,5 @@
+import { ForbiddenException } from "@nestjs/common";
+
 const REDIRECT_PROBE_ORIGIN = "https://toonstudio.invalid";
 
 /** 제작 워크스페이스 OAuth 연동이 끝난 뒤 돌아올 수 있는 앱 내부 경로의 뿌리. */
@@ -41,4 +43,36 @@ export function normalizeProductionRedirectPath(value: string): string | null {
     return null;
   }
   return `${pathname}${url.search}`;
+}
+
+/**
+ * 앱 내부 이동 경로에 쿼리를 덧붙인다. 저장된 상태 행의 값도 호출마다 다시 검증해, 정규화 뒤
+ * 스킴 상대 URL이 되는 값이 콜백 응답으로 나가지 못하게 한다. 검증에 실패하면 /production 으로 보낸다.
+ */
+export function appendProductionRedirectQuery(
+  path: string,
+  values: Record<string, string>,
+): string {
+  const safePath = normalizeProductionRedirectPath(path) ?? PRODUCTION_REDIRECT_ROOT;
+  const url = new URL(safePath, REDIRECT_PROBE_ORIGIN);
+  for (const [key, value] of Object.entries(values)) {
+    url.searchParams.set(key, value);
+  }
+  return `${url.pathname}${url.search}`;
+}
+
+/**
+ * 콜백을 연 브라우저의 검증된 세션 사용자가 연결을 시작한 사용자와 같을 때만 통과시킨다
+ * (SameSite=Lax 쿠키는 Google 에서 돌아오는 최상위 GET 이동에 실려 온다). 이 바인딩이 없으면
+ * 공격자가 자기 프로젝트용 state 로 만든 동의 URL을 피해자가 완료하는 것만으로 피해자의 Google
+ * 자격증명(calendar·gmail.compose·drive.file)이 공격자 프로젝트에 연결된다.
+ */
+export function assertGoogleCallbackViewer(
+  viewerUserId: string | undefined,
+  startedByUserId: string,
+): void {
+  if (viewerUserId && viewerUserId === startedByUserId) return;
+  throw new ForbiddenException(
+    "Google 연결은 시작한 계정으로 로그인한 브라우저에서만 완료할 수 있습니다. 다시 로그인한 뒤 연결을 새로 시작해 주세요.",
+  );
 }

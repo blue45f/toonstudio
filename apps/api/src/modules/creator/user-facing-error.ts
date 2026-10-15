@@ -1,6 +1,6 @@
 import { BadRequestException, type HttpException } from "@nestjs/common";
 
-import { isDatabaseAvailabilityError } from "./database-availability";
+import { isDatabaseAvailabilityError } from "../../platform/http/database-availability";
 
 const POSTGRES_SQLSTATE = /^[0-9A-Z]{5}$/u;
 const DRIVER_ERROR_NAMES: ReadonlySet<string> = new Set([

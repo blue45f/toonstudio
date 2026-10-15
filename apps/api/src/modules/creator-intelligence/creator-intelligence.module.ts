@@ -19,7 +19,7 @@ import {
 import { PrivateObjectStorageModule } from "../../platform/adapters/private-object-storage/private-object-storage.module";
 import { UpstashCoordinationModule } from "../../platform/adapters/upstash-coordination/upstash-coordination.module";
 import { UPSTASH_COORDINATION_PORT } from "../../platform/adapters/upstash-coordination/upstash-coordination.port";
-import { createAnonymousClientLimiter } from "../../platform/http/anonymous-client-limit";
+import { createAnonymousClientLimiter } from "../auth/anonymous-client-limit";
 import {
   studioRemoteReferenceDnsResolverProvider,
   studioRemoteReferenceHttpRequesterProvider,

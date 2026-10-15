@@ -22,7 +22,7 @@ import {
 import { rateLimit } from "@toonstudio/contracts/rate-limit";
 import { StudioLinked3dPassAssetFenceError } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
 import { StudioRealtimeRevocationService } from "../../platform/adapters/studio-realtime-revocation/studio-realtime-revocation.client";
-import { userFacingException } from "../../platform/http/user-facing-error";
+import { userFacingException } from "./user-facing-error";
 import {
   MEMBERSHIP_REWARD_SERVICE,
   type MembershipRewardService,
