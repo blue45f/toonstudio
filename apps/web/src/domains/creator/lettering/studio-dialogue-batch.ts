@@ -78,7 +78,7 @@ export function isDialogueElement(
   return (el.type === "bubble" || el.type === "text") && typeof el.text === "string";
 }
 
-type SpatialFrame = {
+export type SpatialFrame = {
   id: string;
   sourceIndex: number;
   order: number | null;
@@ -121,7 +121,8 @@ function compareExplicitOrderThenPosition(
   );
 }
 
-function collectSpatialFrames(elements: readonly DialogueElementLike[]): SpatialFrame[] {
+/** 페이지의 컷(프레임)을 읽기 순서(명시 order → 위→아래 → 왼→오른)로 나열한다. 크기가 없는 프레임은 뺀다. */
+export function collectSpatialFrames(elements: readonly DialogueElementLike[]): SpatialFrame[] {
   return elements
     .flatMap((el, sourceIndex): SpatialFrame[] => {
       if (el.type !== "frame") return [];
@@ -147,7 +148,8 @@ function collectSpatialFrames(elements: readonly DialogueElementLike[]): Spatial
     .sort((left, right) => compareExplicitOrderThenPosition(left, right));
 }
 
-function inferredFrameRank(el: DialogueElementLike, frames: readonly SpatialFrame[]): number {
+/** 요소가 속한 컷의 순번. 어느 컷에도 없으면 frames.length, 컷이 하나도 없으면 0이다. */
+export function inferredFrameRank(el: DialogueElementLike, frames: readonly SpatialFrame[]): number {
   if (frames.length === 0) return 0;
   if (el.frameId) {
     const explicitRank = frames.findIndex((frame) => frame.id === el.frameId);
