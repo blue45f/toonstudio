@@ -125,7 +125,7 @@
 
 ### 2.1 코드 구성
 
-모든 새 코드는 `apps/web/src/domains/creator/storyworld/` 아래에 있다. 아래 표의 파일은 따로 적지 않은 한 `plausibility/` 폴더 안에 있고, 접두사 `studio-story-plausibility-`는 `…`로 줄여 적었다.
+새 코드는 대부분 `apps/web/src/domains/creator/storyworld/` 아래에 있고, 예외는 프로젝트 준비도의 안내 한 줄(`studio-shell/`)뿐이다. 아래 표의 파일은 따로 적지 않은 한 `plausibility/` 폴더 안에 있고, 접두사 `studio-story-plausibility-`는 `…`로 줄여 적었다.
 
 | 구분 | 파일 | 하는 일 |
 | --- | --- | --- |
@@ -337,6 +337,7 @@
 ### 6.5 되돌리기
 
 허브 안에서 한 일(처리 기록, 질문지 답, 원고 초안 만들기)은 "방금 한 일 되돌리기"로 한 동작씩 되돌린다. 항목은 함수가 아니라 이전 값을 담은 자료라서 테스트할 수 있다.
+문서를 되돌릴 때는 이전 문서를 **예시 데이터 표시까지 그대로** 복원한다. 예시 이야기에서 처음 질문지에 답한 뒤 되돌리면 예시 상태로 돌아가므로, 예시 내용이 작가가 만든 설정처럼 남아 준비도에 반영되는 일이 없다(`StudioStoryworldLabPage.plausibility.test.tsx`가 확인).
 **이 되돌리기는 허브가 열려 있는 동안 허브 안에서만 동작하며 편집기의 Studio History와 연결되어 있지 않다.** Studio History는 캔버스 문서의 명령 저널에 묶여 있고
 (`studio-pages-history-command-journal` 등), 스토리월드 문서는 편집기 문서와 따로 저장되며 랩 화면에는 History 패널도 없다. 합류하려면 스토리월드 문서를 편집기 명령 체계로 옮기는 별도 설계가 필요하다(10절).
 그래서 해결 선택지는 이동과 "안내문 복사/수동 적용"으로 제한했고, 어떤 선택지도 문서를 자동으로 바꾸지 않는다.
@@ -420,7 +421,6 @@
 | 질문지 | `…questions.test.ts`, `…question-drafts.test.ts` |
 | 컴포넌트 | `StudioStoryPlausibilityHub.test.tsx`(필터·키보드·처리 기록·오류/재시도·내보내기·빈 상태), `…Manuscript.test.tsx`, `…Questionnaire.test.tsx`, `studio-story-plausibility.css.test.ts` |
 | 통합 | `StudioStoryworldLabPage.plausibility.test.tsx`, `StudioStoryworldRoute.test.tsx`, `studio-storyworld-route.test.ts`, `StudioProjectReadinessPanel.test.tsx`, `studio-storyworld-document.test.ts`(1판 문서 역호환), `studio-storyworld-issue-dispositions.test.ts` |
-
 | 문서 | `studio-story-plausibility-docs.test.ts` — 이 문서의 골든 표(점검 가능 범위 포함)·점수식·점검표가 코드와 어긋나면 실패 |
 
 실행: `pnpm exec vitest run apps/web/src/domains/creator/storyworld apps/web/src/domains/creator/studio-router apps/web/src/domains/creator/studio-shell/StudioProjectReadinessPanel.test.tsx`
