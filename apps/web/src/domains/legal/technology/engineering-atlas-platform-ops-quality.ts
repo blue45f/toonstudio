@@ -109,13 +109,12 @@ const MODULE_BOUNDARY_RATCHET: EngineeringAtlasEntry = {
     {
       feature: t("같은 발상의 다른 래칫 (폴더별 파일 수 · 경고 수 · 파일 크기)", "Sibling ratchets (files per folder, warnings, file size)"),
       role: t(
-        "소스 레이아웃 래칫은 폴더별 파일 수와 린트 경고 상한을, 파일 크기 테스트(전체 시험·로컬 pnpm test, core 필수 대상 아님)는 신규 파일 1,000줄과 기존 거대 파일 327개의 기록 줄 수를 천장으로 삼습니다.",
-        "The source-layout ratchet caps files per folder and lint warnings, and the file-size test (full tests and local pnpm test, not required by core) caps new files at 1,000 lines and 327 existing giants at their recorded line counts.",
+        "소스 레이아웃 래칫은 폴더별 파일 수와 린트 경고 상한을, 파일 크기 래칫(core 의 typecheck 잡이 의존성 설치 전에 먼저 돌리고 전체 시험도 같은 기준선을 읽음)은 신규 파일 800줄과 기존 초과 파일의 기록 줄 수를 천장으로 삼습니다.",
+        "The source-layout ratchet caps files per folder and lint warnings, and the file-size ratchet (run first by the core typecheck job before dependencies are installed, and read by the full tests too) caps new files at 800 lines and existing oversized files at their recorded line counts.",
       ),
       paths: [
-        "config/architecture-source-ratchet.json",
-        "scripts/validate-source-layout.mjs",
-        "apps/web/src/shared/lib/__tests__/file-size-ratchet.test.ts",
+        "config/architecture-source-ratchet.json", "scripts/validate-source-layout.mjs", "scripts/check-source-file-size.mjs",
+        "scripts/source-file-size-baseline.json", "apps/web/src/shared/lib/__tests__/file-size-ratchet.test.ts",
       ],
     },
   ],
@@ -667,7 +666,7 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       {
         id: "static",
         label: t("static · 코어 지정 테스트", "static · tests named by core"),
-        sub: t("394줄 목록 → 약 1,100여 개(약 17%), 5개 샤드", "394-line list, roughly 1,100 files (17%), 5 shards"),
+        sub: t("395줄 목록 → 약 1,100여 개(약 17%), 5개 샤드", "395-line list, roughly 1,100 files (17%), 5 shards"),
         tone: "neutral",
       },
       {
@@ -706,8 +705,8 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
     {
       feature: t("코어 회귀 샤드 (큐레이션 테스트)", "Core regression shards (curated tests)"),
       role: t(
-        "ci-required-vitest-targets.txt의 394줄을 5개 샤드로 결정적으로 나눠 돌립니다. product 샤드는 아키텍처·CSP·수집 하한 검사도 함께 실행합니다.",
-        "The 394 lines of ci-required-vitest-targets.txt are split deterministically into five shards. The product shard also runs the architecture, CSP and collection-floor checks.",
+        "ci-required-vitest-targets.txt의 395줄을 5개 샤드로 결정적으로 나눠 돌립니다. product 샤드는 아키텍처·CSP·수집 하한 검사도 함께 실행합니다.",
+        "The 395 lines of ci-required-vitest-targets.txt are split deterministically into five shards. The product shard also runs the architecture, CSP and collection-floor checks.",
       ),
       paths: ["scripts/ci-required-vitest-targets.txt", "scripts/ci-core-regression-shards-impl.mjs"],
     },
@@ -905,7 +904,7 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       source: "scripts/verify-toolchain-coverage.mjs",
     },
     {
-      value: "394",
+      value: "395",
       label: t("코어 게이트가 직접 지정한 Vitest 대상 줄 수", "Lines of Vitest targets named directly by the core gate"),
       source: "scripts/ci-required-vitest-targets.txt",
     },

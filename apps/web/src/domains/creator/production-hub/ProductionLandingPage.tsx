@@ -22,6 +22,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import {
   getProductionPersonalInbox,
+  getProductionProjectCollabRecord,
   listProductionProjects,
   type ProductionPersonalInboxItem,
   type ProductionProjectSummary,
@@ -47,7 +48,6 @@ import {
   loadCollabInboxReadIds,
   saveCollabInboxReadIds,
 } from "./collab-notification-landing-source";
-import { getProductionProject } from "./production-api";
 import { listStudioTeamComments } from "../studio-team-comment-client";
 
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -460,7 +460,7 @@ export function ProductionLandingPage() {
     ];
     void Promise.allSettled(
       projects.flatMap((project) => [
-        getProductionProject(project.projectId).then((record) => {
+        getProductionProjectCollabRecord(project.projectId).then((record) => {
           const projected = collabEventsFromProjectAggregate(record.aggregate, userId);
           events.push(...projected.events);
           projected.serverReadIds.forEach((id) => readIds.add(id));

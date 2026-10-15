@@ -130,8 +130,16 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     expect(JSON.stringify(rest)).not.toMatch(/bound by the same SHA/iu);
   });
 
-  it(`quality-gates: 잡 7개·규칙 17개·새 파일 1,000줄·접근성 시나리오가 설정과 같다 — ${hint}`, () => {
-    expect(read("apps/web/src/shared/lib/__tests__/file-size-ratchet.test.ts")).toContain("NEW_FILE_MAX_LINES = 1000");
+  it(`quality-gates: 잡 7개·규칙 17개·새 파일 줄 수 상한·접근성 시나리오가 설정과 같다 — ${hint}`, () => {
+    // 새 파일 줄 수 상한은 기준선 한 곳(scripts/source-file-size-baseline.json 의 limit)에만 있다. 구간이 말한 값(한·영)이 그 값과 같아야 한다.
+    const sizeLimit = (JSON.parse(read("scripts/source-file-size-baseline.json")) as { limit: number }).limit;
+    expect(Number.isInteger(sizeLimit) && sizeLimit > 0).toBe(true);
+    const gateText = JSON.stringify(sectionOf("quality-gates"));
+    expect(gateText).toContain(`새 파일 ${sizeLimit.toLocaleString("en-US")}줄`);
+    expect(gateText).toContain(`${sizeLimit.toLocaleString("en-US")}-line new files`);
+    expect(gateText).toContain("scripts/check-source-file-size.mjs");
+    // CI core 의 typecheck 잡이 의존성 설치 전에 이 래칫을 돌린다.
+    expect(read(".github/workflows/ci.yml")).toContain("run: node scripts/check-source-file-size.mjs");
     const spec = read("e2e/a11y-smoke.spec.ts");
     expect(quotedItems(spec, /DESKTOP_A11Y_ROUTES = \[([^\]]*)\]/u)).toHaveLength(10);
     expect(quotedItems(spec, /MOBILE_A11Y_ROUTES = \[([^\]]*)\]/u)).toHaveLength(4);

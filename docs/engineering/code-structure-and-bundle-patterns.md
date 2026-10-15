@@ -56,6 +56,12 @@
 - `pnpm run validate:architecture` 안에 두 검사가 연결되어 있다. `.husky/pre-push`가 이 명령을 이미 실행하므로 **푸시 전에 자동으로 돈다**.
 - CI: `.github/workflows/ci.yml`의 `typecheck` job(Core preflight and application typecheck)에서 의존성 설치 전에 파일 크기 래칫, 설치 직후 typecheck 이전에 진입 그래프 래칫이 돈다.
   `static` job의 product shard도 `validate:architecture`로 한 번 더 실행하므로 로컬 `pnpm run validate:architecture`와 CI가 같은 검사를 한다.
+- 전체 시험(`pnpm test`, Full Test Diagnostic): `apps/web/src/shared/lib/__tests__/file-size-ratchet.test.ts`가 같은 판정 함수(`scripts/lib/source-file-size-*.mjs`)와 같은 기준선을 읽어 규칙을 한 번 더 확인한다. 이 시험은 상한이나 기준선을 따로 두지 않는다.
+
+파일 크기 규칙의 기준선은 `scripts/source-file-size-baseline.json` 한 곳이다. 2026-10-15 이전에는 위 시험이 웹 소스만 "새 파일 1,000줄"과 별도 기준선(`file-size-ratchet-baseline.json`, 327개)으로 세었다(폐기된 옛 방식).
+그 기준선은 이 게이트가 생긴 뒤에도 갱신되지 않아 기록 줄 수를 넘긴 파일 48개와 천장이 없는 1,000줄 초과 파일 13개가 쌓였고, CI가 지키는 이 게이트와 서로 다른 말을 했다. 그래서 시험이 이 게이트의 판정 함수와 기준선을 그대로 읽도록 합쳤다.
+합친 결과 새 파일 상한은 1,000줄에서 800줄로 조여졌고 대상은 웹 소스에서 저장소 전체 소스로 넓어졌다. 이 게이트의 규칙과 판정 코드는 바꾸지 않았고, 기준선은 줄어든 4개 파일의 값만 `--tighten`으로 낮췄다.
+옛 기준선보다 천장이 높은 파일 48개는 모두 옛 시험이 이미 넘겨서 실패시키던 파일이며, 새 기준선이 실측 줄 수(여유분 0)로 기록한 값을 따른다.
 
 두 가드레일은 소스와 `git ls-files`만 필요하고 `docs/`나 정적 자산을 읽지 않는다. 파일 크기 래칫은 의존성 설치 전에도 실행되며,
 CI의 sparse checkout(자산·`docs/` 제외)에서 체크아웃되지 않은 파일은 건너뛴다. 기준선의 해당 항목은 위반이 아니라 "정리 가능"으로만 보고된다.

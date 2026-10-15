@@ -351,13 +351,17 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-workers", claim: "apps/web/src 의 *.worker.ts 가 65개", needles: ["65개"],
+    lesson: "seminar-workers", claim: "apps/web/src 의 *.worker.ts 개수(저장소에서 센 값)", needles: ["워커 스크립트는 apps/web/src에"],
     check: () => {
+      // 개수는 하드코딩하지 않고 저장소에서 센다. 대본(한국어·영어)이 말한 개수와 같아야 한다.
       let count = 0;
       walkFiles(repo("apps", "web", "src"), (file) => {
         if (file.endsWith(".worker.ts")) count += 1;
       });
-      expect(count).toBe(65);
+      expect(count).toBeGreaterThan(0);
+      const script = lessons.find((candidate) => candidate.id === "seminar-workers")?.script;
+      expect(script?.ko).toContain(`워커 스크립트는 apps/web/src에 ${count}개`);
+      expect(script?.en).toContain(`There are ${count} worker scripts under apps/web/src`);
     },
   },
   {
