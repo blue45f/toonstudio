@@ -63,6 +63,7 @@ const LEGACY_CROSS_DOMAIN_ALIASES = new Map([
 
 const NESTED_USER_FACING_DESTINATIONS = [
   "/learn",
+  "/learn/contract-checklist",
   "/learn/glossary",
   "/learn/records",
   "/learn/studio",
