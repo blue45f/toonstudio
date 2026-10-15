@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useId, useMemo } from "react";
 
+import { CreatorAiTrainingBadgeFor } from "./ai-training-consent/CreatorAiTrainingBadge";
 import {
   createStudioPublishReceipt,
   studioPublishReceiptFileName,
@@ -151,6 +152,14 @@ export function StudioPublishResultReceipt({
           <dt className="text-fg-3">페이지</dt>
           <dd className="numeral mt-0.5 font-semibold text-fg">{details?.pages.length ?? "확인 중"}</dd>
         </div>
+        {details ? (
+          <div className="min-w-0 sm:col-span-2">
+            <dt className="text-fg-3">AI 학습 표기</dt>
+            <dd className="mt-1">
+              <CreatorAiTrainingBadgeFor community={details.community} />
+            </dd>
+          </div>
+        ) : null}
         {details?.source?.revisionId ? (
           <div className="min-w-0 sm:col-span-2">
             <dt className="text-fg-3">원본 revision</dt>

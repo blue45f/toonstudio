@@ -109,6 +109,7 @@ import {
   writeStudioPublicationCover,
 } from "./studio-publication-cover";
 import { StudioPublicationControls } from "./StudioPublicationControls";
+import { CreatorAiTrainingBadgeFor } from "./ai-training-consent/CreatorAiTrainingBadge";
 import { StudioPublicationRightsControls } from "./StudioPublicationRightsControls";
 import {
   StudioPublishContextBanner,
@@ -117,6 +118,7 @@ import {
 import { StudioPublishVisualJourney } from "./StudioPublishVisualJourney";
 import { StudioPublishAccountReviewCard } from "./StudioPublishAccountReviewCard";
 import { StudioPublishResultReceipt } from "./StudioPublishResultReceipt";
+import { projectStudioPublishReceiptCommunity } from "./studio-publish-receipt-data";
 import {
   resolveStudioPublishEnvironment,
   resolveStudioPublisherIdentity,
@@ -1482,15 +1484,7 @@ export function StudioPublishingCommandCenter({
       height: page.height,
     })),
     source: readCreatorPublicationSource(baseDoc),
-    community: {
-      kind: communityMetadata.kind,
-      provenance: communityMetadata.provenance,
-      portfolio: communityMetadata.portfolio,
-      downloadAllowed: communityMetadata.downloadAllowed,
-      trainingAllowed: communityMetadata.trainingAllowed,
-      attributionText: communityMetadata.attributionText,
-      altText: communityMetadata.altText,
-    },
+    community: projectStudioPublishReceiptCommunity(communityMetadata),
     rights: {
       comments: directive.comments,
       allowRemix: directive.allowRemix,
@@ -1968,6 +1962,7 @@ export function StudioPublishingCommandCenter({
           <StudioPublicationRightsControls
             metadata={communityMetadata}
             issues={preflight.issues}
+            published={Boolean(workId)}
             disabled={mutationLocked || !policyEditable}
             onChange={(next) => {
               setCommunityMetadata(next);
@@ -2023,7 +2018,8 @@ export function StudioPublishingCommandCenter({
                 <div className="flex items-start gap-3 py-2.5"><dt className="w-20 shrink-0 text-fg-3">리믹스</dt><dd className="font-medium text-fg">{directive.allowRemix ? "허용" : "차단"}</dd></div>
                 <div className="flex items-start gap-3 py-2.5"><dt className="w-20 shrink-0 text-fg-3">독자 등급</dt><dd className="font-medium text-fg">{directive.contentRating === "all" ? "전체 이용" : directive.contentRating === "teen" ? "청소년 주의" : "성인 대상"}</dd></div>
                 <div className="flex items-start gap-3 py-2.5"><dt className="w-20 shrink-0 text-fg-3">제작 방식</dt><dd className="font-medium text-fg">{communityMetadata.provenance === "human" ? "직접 제작" : communityMetadata.provenance === "ai_assisted" ? "AI 보조 사용" : communityMetadata.provenance === "agent_assisted" ? "AI 에이전트 협업" : communityMetadata.provenance === "ai_generated" ? "AI 생성 중심" : "혼합 제작"}</dd></div>
-                <div className="flex items-start gap-3 py-2.5"><dt className="w-20 shrink-0 text-fg-3">활용 허용</dt><dd className="font-medium text-fg">다운로드 {communityMetadata.downloadAllowed ? "허용" : "비허용"} · AI 학습 {communityMetadata.trainingAllowed ? "허용" : "비허용"}</dd></div>
+                <div className="flex items-start gap-3 py-2.5"><dt className="w-20 shrink-0 text-fg-3">다운로드</dt><dd className="font-medium text-fg">독자 다운로드 {communityMetadata.downloadAllowed ? "허용" : "비허용"}</dd></div>
+                <div className="flex items-start gap-3 py-2.5"><dt className="w-20 shrink-0 text-fg-3">AI 학습</dt><dd className="min-w-0"><CreatorAiTrainingBadgeFor community={communityMetadata} variant="detail" /></dd></div>
                 <div className="flex items-start gap-3 py-2.5"><dt className="w-20 shrink-0 text-fg-3">표지</dt><dd className="font-medium text-fg">{coverPage?.name ?? "미선택"} · 3:4 크롭</dd></div>
               </dl>
             </section>

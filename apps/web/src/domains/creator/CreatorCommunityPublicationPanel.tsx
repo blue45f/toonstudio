@@ -15,6 +15,7 @@ import {
   CREATOR_COMMUNITY_KIND_LABEL,
   CREATOR_COMMUNITY_PROVENANCE_LABEL,
 } from "./creator-community-labels";
+import { CreatorAiTrainingConsentField } from "./ai-training-consent/CreatorAiTrainingConsentField";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn, relativeDate } from "@/shared/lib/utils";
@@ -24,7 +25,9 @@ import {
   CREATOR_COMMUNITY_FEEDBACK_TOPICS,
   CREATOR_COMMUNITY_PROVENANCES,
   readCreatorCommunityMetadata,
+  resolveCreatorCommunityAiTraining,
   validateCreatorCommunityMetadata,
+  withCreatorCommunityAiTraining,
   writeCreatorCommunityMetadata,
   type CreatorCommunityContentDescriptor,
   type CreatorCommunityContentKind,
@@ -289,7 +292,7 @@ export function CreatorCommunityPublicationPanel({
             </label>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2">
             <label className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-canvas px-3 text-xs text-fg-2">
               <input
                 type="checkbox"
@@ -312,21 +315,17 @@ export function CreatorCommunityPublicationPanel({
               />
               독자 다운로드 허용
             </label>
-            <label className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-canvas px-3 text-xs text-fg-2">
-              <input
-                type="checkbox"
-                checked={metadata.trainingAllowed}
-                onChange={(event) => setMetadata((current) => ({
-                  ...current,
-                  trainingAllowed: event.target.checked,
-                }))}
-              />
-              AI 학습 사용 허용
-            </label>
           </div>
           <p className="text-[0.7rem] leading-relaxed text-fg-3">
             가상 전시관에는 이 항목을 선택한 공개 작품만 배치됩니다. 저장만 한 초안이나 비공개 원본은 표시되지 않으며, 이 선택 자체가 작품을 공개하지도 않습니다.
           </p>
+
+          <CreatorAiTrainingConsentField
+            value={resolveCreatorCommunityAiTraining(metadata)}
+            disabled={saving}
+            published={work.status === "published"}
+            onChange={(consent) => setMetadata((current) => withCreatorCommunityAiTraining(current, consent))}
+          />
 
           <fieldset className="space-y-2">
             <legend className="text-xs font-semibold text-fg">콘텐츠 설명자</legend>

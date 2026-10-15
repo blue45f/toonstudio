@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
+import { CreatorAiTrainingBadge } from "./ai-training-consent/CreatorAiTrainingBadge";
 import {
   resolveCreatorPublicationPageKey,
   type CreatorPublicationPageCommand,
@@ -22,7 +23,9 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 
 import type { WorkFxSettings } from "./studio-motion-fx";
 import {
+  DEFAULT_CREATOR_COMMUNITY_AI_TRAINING_CONSENT,
   creatorCommunityPageAltText,
+  type CreatorCommunityAiTrainingConsent,
   type CreatorCommunityContentKind,
 } from "@/shared/lib/creator-community-publication-contract";
 import type { CreatorPublicationReadingDirection } from "@/shared/lib/creator-publication-contract";
@@ -36,6 +39,11 @@ interface PublishedWorkReaderProps {
   isOwner: boolean;
   altText: string;
   contentKind: CreatorCommunityContentKind;
+  /**
+   * 작가가 밝힌 AI 학습 허용 표기. 값이 없는 구버전 응답은 호출자가 `resolveCreatorCommunityAiTraining`으로
+   * 읽어 넘기고, 생략하면 "미지정"이다(허용으로 해석하지 않는다).
+   */
+  aiTraining?: CreatorCommunityAiTrainingConsent;
 }
 
 function nextPageIndex(
@@ -209,6 +217,7 @@ export function PublishedWorkReader({
   isOwner,
   altText,
   contentKind,
+  aiTraining = DEFAULT_CREATOR_COMMUNITY_AI_TRAINING_CONSENT,
 }: PublishedWorkReaderProps) {
   const maturePolicyKey = policy.requiresMatureConfirmation
     ? `${workId}:mature`
@@ -247,6 +256,7 @@ export function PublishedWorkReader({
           <ShieldAlert size={12} aria-hidden />
           {policy.contentRatingLabel}
         </span>
+        <CreatorAiTrainingBadge consent={aiTraining} />
         {!policy.commentsAllowed && (
           <span className="inline-flex items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-[0.7rem] font-semibold text-fg-3">
             <MessageCircleOff size={12} aria-hidden />

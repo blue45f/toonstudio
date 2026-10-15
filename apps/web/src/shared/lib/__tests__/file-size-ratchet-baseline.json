@@ -54,7 +54,7 @@
   "domains/creator/character-shaper/CharacterShaperInspector.tsx": 1040,
   "domains/creator/character-shaper/useCharacterShaperBinding.ts": 1147,
   "domains/creator/components/StudioToolHintPreview.tsx": 2785,
-  "domains/creator/CreateWorkPage.tsx": 1131,
+  "domains/creator/CreateWorkPage.tsx": 1108,
   "domains/creator/drawing/StudioTextureToneLab.tsx": 1264,
   "domains/creator/export/studio-motion-export.ts": 1037,
   "domains/creator/export/studio-out-of-core-export-provider.ts": 1911,
