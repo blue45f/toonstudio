@@ -104,6 +104,9 @@ __pycache__/
 
 # 정적 카탈로그 빌드 산출물 (git 소스는 apps/api/data/catalog.json.gz). pnpm catalog:gen 으로 생성.
 /apps/web/public/data/
+# 로케일 카탈로그 생성기(scripts/generate-app-i18n-catalog.mjs)가 카탈로그와 함께 쓰는 완성도 보고서.
+# 정본은 i18n-locale-catalog.ts 라서 추적하지 않는다(apps/web/I18N_GUIDE.md §6).
+/apps/web/src/shared/lib/i18n-locale-completeness-report.json
 *.db-wal
 *.db-shm
 
