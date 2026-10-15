@@ -15,7 +15,6 @@ import {
   LoaderCircle,
   PackageCheck,
   ShieldCheck,
-  Sparkles,
   X,
   XCircle,
 } from "lucide-react";
@@ -38,7 +37,6 @@ import {
   type StudioPublishArtifactPlan,
   type StudioPublishArtifactRole,
   type StudioPublishArtifactState,
-  type StudioPublishPackageAiUsage,
   type StudioPublishPackageDestination,
   type StudioPublishPackageFormat,
   type StudioPublishPackageImageMimeType,
@@ -48,6 +46,8 @@ import {
   type StudioPublishPackageSettings,
   type StudioPublishThumbnailSlot,
 } from "./studio-publish-package";
+import { StudioPublishPackageAiSection } from "./publish/StudioPublishPackageAiSection";
+import { AI_USAGE_META } from "./publish/studio-publish-package-ai-usage-meta";
 import {
   STUDIO_REVIEW_PDF_PROFILE_IDS,
   STUDIO_REVIEW_PDF_PROFILES,
@@ -113,21 +113,6 @@ const THUMBNAIL_LABELS: Record<StudioPublishThumbnailSlot, string> = {
   "series-banner": "시리즈 배너",
 };
 
-const AI_USAGE_META: Record<StudioPublishPackageAiUsage, { label: string; description: string }> = {
-  none: {
-    label: "사용 안 함",
-    description: "게시물 제작에 AI 보조·생성 결과를 사용하지 않았습니다.",
-  },
-  assisted: {
-    label: "AI 보조",
-    description: "기획·교정·참고 등 일부 과정에 사용하고 사람이 최종 결정했습니다.",
-  },
-  generated: {
-    label: "AI 생성 포함",
-    description: "게시 이미지나 텍스트에 생성 결과가 직접 포함됩니다.",
-  },
-};
-
 const ARTIFACT_ROLE_LABELS: Record<StudioPublishArtifactRole, string> = {
   "episode-image": "회차 이미지",
   thumbnail: "썸네일",
@@ -165,7 +150,7 @@ const FIELD_CLASS =
 const BUTTON_CLASS =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45";
 const PRIMARY_BUTTON_CLASS =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-accent bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:border-line disabled:bg-raised disabled:text-fg-3";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-accent bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:border-line disabled:bg-raised disabled:text-fg-3";
 const ICON_BUTTON_CLASS =
   "grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-3 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const VISIBLE_ISSUE_LIMIT = 200;
@@ -407,11 +392,9 @@ export function StudioPublishPackagePanel({
 }: StudioPublishPackagePanelProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<PanelTab>("settings");
-  const disclosureId = useId();
   const creditsId = useId();
   const destinationId = useId();
   const reviewPdfProfileId = useId();
-  const aiUsageIdPrefix = useId();
   const preset = plan.preset;
   const supportedFormats = (Object.keys(FORMAT_LABELS) as OutputFormat[]).filter((format) =>
     preset.episode.allowedMimeTypes.includes(FORMAT_MIME[format])
@@ -858,80 +841,14 @@ export function StudioPublishPackagePanel({
 
               <div className="my-5 border-t border-line" />
 
-              <section aria-labelledby="publish-ai-title">
-                <div className="flex items-start gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-cool/10 text-cool">
-                    <Sparkles size={17} aria-hidden />
-                  </span>
-                  <div>
-                    <h3 id="publish-ai-title" className="text-sm font-bold text-fg">AI 사용 공개</h3>
-                    <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
-                      사용 여부는 자동 추정하지 않습니다. 창작자가 실제 제작 과정을 기준으로 직접 선택합니다.
-                    </p>
-                  </div>
-                </div>
-                <fieldset className="mt-3">
-                  <legend className="sr-only">AI 사용 범위</legend>
-                  <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-card/25">
-                    {(["none", "assisted", "generated"] as const).map((usage) => {
-                      const meta = AI_USAGE_META[usage];
-                      return (
-                        <label
-                          key={usage}
-                          htmlFor={`${aiUsageIdPrefix}-${usage}`}
-                          aria-label={meta.label}
-                          className="flex min-h-14 cursor-pointer items-start gap-3 px-3 py-3 transition-colors hover:bg-raised/45"
-                        >
-                          <input
-                            id={`${aiUsageIdPrefix}-${usage}`}
-                            type="radio"
-                            name="publish-package-ai-usage"
-                            value={usage}
-                            checked={settings.aiUsage === usage}
-                            onChange={() => updateSettings({ aiUsage: usage })}
-                            className="mt-0.5 size-5 shrink-0 accent-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                          />
-                          <span>
-                            <span className="block text-xs font-semibold text-fg">{meta.label}</span>
-                            <span className="mt-0.5 block text-[0.7rem] leading-relaxed text-fg-3">
-                              {meta.description}
-                            </span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-
-                {settings.aiUsage !== "none" && (
-                  <label htmlFor={disclosureId} className="mt-3 block text-xs font-semibold text-fg-2">
-                    공개 고지 문구 <span className="text-bad">필수</span>
-                    <textarea
-                      id={disclosureId}
-                      value={settings.aiDisclosure}
-                      onChange={(event) => updateSettings({ aiDisclosure: event.target.value })}
-                      maxLength={STUDIO_PUBLISH_PACKAGE_LIMITS.maxDisclosureCodeUnits}
-                      rows={4}
-                      placeholder="예: 배경 아이디어 탐색에 AI를 보조적으로 사용했으며, 최종 구성과 작화는 작가가 직접 완성했습니다."
-                      className={`${FIELD_CLASS} mt-1.5 min-h-28 resize-y leading-relaxed`}
-                      aria-invalid={plan.errors.some((issue) => issue.code === "AI_DISCLOSURE_REQUIRED")}
-                    />
-                    <span className="mt-1 flex justify-between gap-3 text-[0.65rem] font-normal text-fg-3">
-                      <span>독자가 이해할 수 있게 사용 범위와 최종 결정 주체를 적으세요.</span>
-                      <span className="shrink-0 tabular-nums">
-                        {settings.aiDisclosure.length}/{STUDIO_PUBLISH_PACKAGE_LIMITS.maxDisclosureCodeUnits}
-                      </span>
-                    </span>
-                  </label>
-                )}
-
-                {preset.aiPolicy === "generated-prohibited" && settings.aiUsage === "generated" && (
-                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-bad/35 bg-bad/10 px-3 py-2 text-[0.7rem] leading-relaxed text-bad">
-                    <XCircle size={15} className="mt-0.5 shrink-0" aria-hidden />
-                    현재 벤치마크한 {preset.label} 정책에서는 AI 생성 콘텐츠 게시가 금지됩니다. 공식 원문을 직접 확인하세요.
-                  </div>
-                )}
-              </section>
+              <StudioPublishPackageAiSection
+                settings={settings}
+                onChange={updateSettings}
+                presetLabel={preset.label}
+                generatedProhibited={preset.aiPolicy === "generated-prohibited"}
+                disclosureInvalid={plan.errors.some((issue) => issue.code === "AI_DISCLOSURE_REQUIRED")}
+                fieldClassName={FIELD_CLASS}
+              />
 
               <div className="my-5 border-t border-line" />
 
@@ -1118,8 +1035,8 @@ export function StudioPublishPackagePanel({
                       공개 manifest 경계
                     </h3>
                     <p className="mt-0.5 max-w-[70ch] text-xs leading-relaxed text-fg-3">
-                      다운로드되는 manifest에는 파일 역할·공개 파일명·규격·체크섬·검증 결과만 포함합니다. 내부 source ID,
-                      로컬 경로, API 키, 원문 프롬프트와 공급자 요청 ID는 포함하지 않습니다.
+                      다운로드되는 manifest에는 파일 역할·공개 파일명·규격·체크섬·검증 결과와 작가가 밝힌 AI 사용 고지·AI 학습 허용
+                      표기만 포함합니다. 내부 source ID, 로컬 경로, API 키, 원문 프롬프트와 공급자 요청 ID는 포함하지 않습니다.
                     </p>
                   </div>
                 </div>

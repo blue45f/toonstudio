@@ -141,6 +141,7 @@ describe("publish package settings and file names", () => {
       includeCredits: false,
       aiUsage: "assisted",
       aiDisclosure: expect.any(String),
+      aiTraining: "unspecified",
       policyReviewConfirmed: true,
       thumbnailSafetyConfirmed: true,
     });
@@ -736,5 +737,124 @@ describe("privacy-safe manifest migration and serialization", () => {
       { ...actual[0], mimeType: "application/json" },
       ...actual.slice(1),
     ])).toThrow("형식이 manifest와 다릅니다");
+  });
+});
+
+describe("AI 학습 허용 표기(rights.aiTraining)", () => {
+  it("설정의 기본값은 미지정이고 알 수 없는 값·누락은 모두 미지정으로 읽는다", () => {
+    expect(DEFAULT_STUDIO_PUBLISH_PACKAGE_SETTINGS.aiTraining).toBe("unspecified");
+    expect(normalizeStudioPublishPackageSettings({}).aiTraining).toBe("unspecified");
+    expect(normalizeStudioPublishPackageSettings(null).aiTraining).toBe("unspecified");
+    for (const junk of ["yes", "ALLOWED", true, 1, null, {}, []]) {
+      expect(normalizeStudioPublishPackageSettings({ aiTraining: junk }).aiTraining).toBe("unspecified");
+    }
+    // 이 필드가 없던 시절에 저장된 설정(레거시 별칭 포함)도 허용으로 읽지 않는다.
+    expect(
+      normalizeStudioPublishPackageSettings({ platform: "tapas", aiContent: "assisted", aiTrainingAllowed: true })
+        .aiTraining,
+    ).toBe("unspecified");
+  });
+
+  it("세 값은 정규화를 거쳐 그대로 유지되고 직렬화 왕복에서도 보존된다", () => {
+    for (const aiTraining of ["unspecified", "allowed", "prohibited"] as const) {
+      const settings = normalizeStudioPublishPackageSettings({ aiTraining });
+      expect(settings.aiTraining).toBe(aiTraining);
+      expect(
+        normalizeStudioPublishPackageSettings(JSON.parse(serializeStudioPublishPackageSettings(settings)))
+          .aiTraining,
+      ).toBe(aiTraining);
+    }
+  });
+
+  it("계획된 manifest 는 설정의 표기를 rights 로 싣고 기본은 미지정이다", () => {
+    expect(planStudioPublishPackage(validInput("generic")).manifest.rights).toEqual({
+      aiTraining: "unspecified",
+    });
+    for (const aiTraining of ["allowed", "prohibited"] as const) {
+      const input = validInput("webtoon");
+      input.settings = { ...completeSettings("webtoon"), aiTraining };
+      expect(planStudioPublishPackage(input).manifest.rights).toEqual({ aiTraining });
+    }
+  });
+
+  it("표기 값은 내보내기 가능 여부나 검증 이슈를 바꾸지 않는다(차단 조건이 아니라 의사 표시)", () => {
+    const baseline = planStudioPublishPackage(validInput("webtoon"));
+    for (const aiTraining of ["unspecified", "allowed", "prohibited"] as const) {
+      const input = validInput("webtoon");
+      input.settings = { ...completeSettings("webtoon"), aiTraining };
+      const plan = planStudioPublishPackage(input);
+      expect(plan.canExport).toBe(baseline.canExport);
+      expect(plan.issues.map((issue) => issue.code)).toEqual(
+        baseline.issues.map((issue) => issue.code),
+      );
+      expect(plan.artifacts.map((artifact) => artifact.role)).toEqual(
+        baseline.artifacts.map((artifact) => artifact.role),
+      );
+    }
+  });
+
+  it("공개 manifest 직렬화 왕복에서 표기를 보존하고 rights 에는 aiTraining 만 둔다", () => {
+    const input = validInput("tapas");
+    input.settings = { ...completeSettings("tapas"), aiTraining: "prohibited" };
+    const manifest = planStudioPublishPackage(input).manifest;
+    const serialized = serializeStudioPublishPackageManifest(manifest);
+    expect(JSON.parse(serialized)).toMatchObject({ rights: { aiTraining: "prohibited" } });
+    expect(parseStudioPublishPackageManifest(serialized)).toEqual(manifest);
+    expect(Object.keys(parseStudioPublishPackageManifest(serialized).rights)).toEqual(["aiTraining"]);
+  });
+
+  it("rights 가 없는 기존 v1 manifest 는 미지정으로 읽고 version 은 그대로 1이다", () => {
+    const planned = planStudioPublishPackage(validInput("generic")).manifest;
+    const { rights: _omitted, ...legacy } = planned;
+    const parsed = parseStudioPublishPackageManifest(legacy);
+    expect(parsed.version).toBe(STUDIO_PUBLISH_PACKAGE_VERSION);
+    expect(parsed.rights).toEqual({ aiTraining: "unspecified" });
+    expect(parseStudioPublishPackageManifest({ platform: "tapas", title: "옛 시리즈" }).rights).toEqual({
+      aiTraining: "unspecified",
+    });
+  });
+
+  it("manifest 를 읽을 때 근거 없는 값은 허용으로 읽지 않고 알 수 없는 키는 버린다", () => {
+    const planned = planStudioPublishPackage(validInput("generic")).manifest;
+    for (const rights of [
+      "allowed",
+      ["allowed"],
+      null,
+      { aiTraining: "ALLOWED" },
+      { aiTraining: true },
+      { allowed: true },
+      { trainingAllowed: true },
+    ]) {
+      expect(parseStudioPublishPackageManifest({ ...planned, rights }).rights).toEqual({
+        aiTraining: "unspecified",
+      });
+    }
+    // 최상위에 놓인 값은 신뢰하지 않는다.
+    expect(parseStudioPublishPackageManifest({ ...planned, aiTraining: "allowed" }).rights).toEqual({
+      aiTraining: "unspecified",
+    });
+    const sanitized = parseStudioPublishPackageManifest({
+      ...planned,
+      rights: { aiTraining: "allowed", licenseUrl: "https://example.test", note: "private" },
+    });
+    expect(sanitized.rights).toEqual({ aiTraining: "allowed" });
+    expect(serializeStudioPublishPackageManifest(sanitized)).not.toContain("licenseUrl");
+  });
+
+  it("실제 렌더 결과로 확정(finalize)해도 표기를 유지한다", () => {
+    const input = validInput("webtoon");
+    input.settings = { ...completeSettings("webtoon"), aiTraining: "allowed" };
+    const planned = planStudioPublishPackage(input).manifest;
+    const actual = planned.artifacts
+      .filter(({ role }) => role !== "manifest")
+      .map((artifact, index) => ({
+        fileName: artifact.fileName,
+        mimeType: artifact.mimeType ?? "application/octet-stream",
+        byteSize: 1_000 + index,
+        sha256: String(index + 1).padStart(64, "a").slice(-64),
+      }));
+    expect(finalizeStudioPublishPackageManifest(planned, actual).rights).toEqual({
+      aiTraining: "allowed",
+    });
   });
 });
