@@ -36,6 +36,9 @@ async function fixtures(page: Page, unavailable = false) {
 test("recruitment filters, detail and creator link", async ({ page }) => {
   await fixtures(page); await page.goto("/collaborate");
   await expect(page.getByRole("heading", { name: "선화 보조 작업자를 구합니다" })).toBeVisible();
+  // 작업 분야·보수·방식·상태 선택은 "상세 조건" 접이식 영역 안에 있다. 사용자처럼 먼저 펼친 뒤 고른다.
+  await page.getByText("상세 조건", { exact: true }).click();
+  await expect(page.getByLabel("작업 분야", { exact: true })).toBeVisible();
   await page.getByLabel("작업 분야", { exact: true }).selectOption("background");
   await expect(page).toHaveURL(/role=background/u);
   await page.getByRole("link", { name: "선화 보조 작업자를 구합니다" }).click();
@@ -71,7 +74,10 @@ test("promotion discovery and consent-gated trailer", async ({ page }) => {
 });
 test("storage failure stays an error rather than a fake empty list", async ({ page }) => {
   await fixtures(page, true); await page.goto("/collaborate");
-  await expect(page.getByRole("alert")).toContainText("연결하지 못했어요");
+  // 저장소 오류(503)는 서버 본문을 그대로 노출하지 않고 플랫폼 표준 안내(api-error.ts)로 바뀌어 보인다.
+  const alert = page.getByRole("alert");
+  await expect(alert.getByRole("heading", { name: "공고 목록을 지금 불러올 수 없어요" })).toBeVisible();
+  await expect(alert).toContainText("일부 온라인 기능을 일시적으로 사용할 수 없습니다. 입력한 내용은 그대로 유지됩니다.");
   await expect(page.getByRole("button", { name: "다시 불러오기", exact: true })).toBeVisible();
   await expect(page.getByText("조건에 맞는 공고가 아직 없어요.")).toHaveCount(0);
 });
