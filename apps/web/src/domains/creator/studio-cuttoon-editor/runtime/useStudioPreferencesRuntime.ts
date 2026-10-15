@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   defaultStudioAppSettings,
@@ -97,16 +92,14 @@ export function useStudioPreferencesRuntime({
       });
   }, []);
 
-  // Companion modules replace app settings through this single path so the ref and the state
-  // never diverge — the ref is owned (and written) here, not by the module that receives it.
+  // Companion modules replace settings through this path so the ref (owned and written here) and state never diverge.
   const replaceAppSettings = useCallback((next: StudioAppSettings): void => {
     appSettingsRef.current = next;
     setAppSettings(next);
   }, []);
 
-  // Density mode, advanced-tools expansion, and first-screen exposure live in
-  // their own runtime module; this hook only wires them to the shared
-  // app-settings ref and persistence owned here.
+  // Density mode, advanced-tools expansion, and first-screen exposure live in their own
+  // runtime module; this hook only wires them to the shared ref and persistence owned here.
   const {
     setStudioUiDensity,
     setUiAdvancedToolsExpanded,
