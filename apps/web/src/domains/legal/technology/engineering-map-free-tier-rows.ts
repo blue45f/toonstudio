@@ -737,8 +737,8 @@ export const FREE_TIER_DEVICE_AND_TOOL_ROWS: readonly EngineeringMapRow[] = [
     name: "GitHub Actions",
     cells: {
       use: t(
-        "코드를 합치기 전에 타입·린트·테스트·빌드·접근성 검사를 자동으로 돌립니다(워크플로 98개). 운영 배포는 일부러 여기서 하지 않고, 배포 명령이 workflow에 들어오면 검사기가 실패시킵니다.",
-        "Runs type, lint, test, build and accessibility checks automatically before code is merged (98 workflows). Production deploys are deliberately not done here, and a policy checker fails the build if a deploy command enters a workflow.",
+        "코드를 합치기 전에 타입·린트·테스트·빌드·접근성 검사를 자동으로 돌립니다(워크플로 101개). 운영 배포는 일부러 여기서 하지 않고, 배포 명령이 workflow에 들어오면 검사기가 실패시킵니다.",
+        "Runs type, lint, test, build and accessibility checks automatically before code is merged (101 workflows). Production deploys are deliberately not done here, and a policy checker fails the build if a deploy command enters a workflow.",
       ),
       limit: t(
         `${NO_RECORD_KO}. 우리 상한: 정기 진단 매트릭스당 병렬 2개(2026-09-20 결정), 유료 러너는 별도 승인 없이 쓰지 않음. 정책 비율 0.8.`,

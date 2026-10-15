@@ -667,7 +667,7 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       {
         id: "static",
         label: t("static · 코어 지정 테스트", "static · tests named by core"),
-        sub: t("394줄 목록 → 약 1,100여 개(약 17%), 5개 샤드", "394-line list, roughly 1,100 files (17%), 5 shards"),
+        sub: t("395줄 목록 → 약 1,100여 개(약 17%), 5개 샤드", "395-line list, roughly 1,100 files (17%), 5 shards"),
         tone: "neutral",
       },
       {
@@ -706,8 +706,8 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
     {
       feature: t("코어 회귀 샤드 (큐레이션 테스트)", "Core regression shards (curated tests)"),
       role: t(
-        "ci-required-vitest-targets.txt의 394줄을 5개 샤드로 결정적으로 나눠 돌립니다. product 샤드는 아키텍처·CSP·수집 하한 검사도 함께 실행합니다.",
-        "The 394 lines of ci-required-vitest-targets.txt are split deterministically into five shards. The product shard also runs the architecture, CSP and collection-floor checks.",
+        "ci-required-vitest-targets.txt의 395줄을 5개 샤드로 결정적으로 나눠 돌립니다. product 샤드는 아키텍처·CSP·수집 하한 검사도 함께 실행합니다.",
+        "The 395 lines of ci-required-vitest-targets.txt are split deterministically into five shards. The product shard also runs the architecture, CSP and collection-floor checks.",
       ),
       paths: ["scripts/ci-required-vitest-targets.txt", "scripts/ci-core-regression-shards-impl.mjs"],
     },
@@ -905,7 +905,7 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       source: "scripts/verify-toolchain-coverage.mjs",
     },
     {
-      value: "394",
+      value: "395",
       label: t("코어 게이트가 직접 지정한 Vitest 대상 줄 수", "Lines of Vitest targets named directly by the core gate"),
       source: "scripts/ci-required-vitest-targets.txt",
     },

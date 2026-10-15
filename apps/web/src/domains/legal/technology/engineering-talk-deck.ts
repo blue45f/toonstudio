@@ -32,7 +32,7 @@ export type {
 } from "./engineering-talk-types";
 
 /** 이 발표의 수치·사실을 코드와 설정으로 확인을 끝낸 날짜. 콘텐츠 테스트가 수치를 소스와 대조한다. */
-export const TALK_FACTS_REVIEWED_AT = "2026-10-08";
+export const TALK_FACTS_REVIEWED_AT = "2026-10-15";
 
 export const TALK_SECTIONS = [
   { id: "opening", title: t("문제 정의", "The problem") },
