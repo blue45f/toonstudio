@@ -3,8 +3,11 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import test from "node:test";
 import { fileURLToPath } from "node:url";
+
+// 이 파일은 루트 Vitest 수집 대상이면서 `pnpm test:unconnected-code`(node --test)로도 직접 돌려야 하므로,
+// 러너에 따라 테스트 등록 함수를 바꾼다. node:test 의 test 만 쓰면 Vitest 가 스위트를 찾지 못해 파일 전체가 실패한다.
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const scriptPath = resolve(dirname(fileURLToPath(import.meta.url)), "check-unconnected-code.mjs");
 
