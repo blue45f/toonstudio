@@ -231,7 +231,7 @@ export const CATALOGUE_GROUPS: readonly CatalogueGroup[] = [
       "전체 레이아웃",
       "패널 접어 넓게",
       "캔버스만",
-      "템플릿 · 에셋",
+      "템플릿 · 소재", // 한국어 메뉴 사전 studio.mainMenu.item.insert.template (쉬운 말 정비로 "에셋" → "소재")
       "참고 이미지 창",
       "멀티 디스플레이 작업공간…",
     ],
@@ -462,7 +462,7 @@ export const MENU_DRIVEN_POPOVERS: {
 }[] = [
   {
     groupId: "window",
-    item: "템플릿 · 에셋",
+    item: "템플릿 · 소재",
     expectVisible: ["템플릿", "이메레스", "장면", "클립", "효과"],
   },
   {
@@ -851,7 +851,7 @@ async function assertMainMenus(page: Page, evidenceDir?: string): Promise<string
               const where = presented.composite
                 ? `${presented.title} ▸ ${section.caption}`
                 : presented.title;
-              failures.push(`${spec.label} [${where}] 항목 없음: ${item}`);
+              failures.push(`${spec.label} [${where}] 항목 없음: ${item} (메뉴에 보이는 행: ${frame.itemRows.map((row) => row.replace(/\s+/gu, " ")).join(" | ")})`);
             }
           }
           if (section.id === "3d") {
