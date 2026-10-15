@@ -58,8 +58,9 @@ function parseIndex(raw: string | null): readonly ManuscriptCopyInfo[] {
     return [];
   }
   if (!isRecord(value) || value.version !== 1 || !Array.isArray(value.copies)) return [];
+  const rawCopies: readonly unknown[] = value.copies;
   const copies: ManuscriptCopyInfo[] = [];
-  for (const item of value.copies) {
+  for (const item of rawCopies) {
     if (!isRecord(item)) continue;
     const { copyId, length, chunks, savedAtIso } = item;
     if (

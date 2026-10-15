@@ -111,13 +111,16 @@ function orderedActiveScenes(project: StoryworldProject): readonly StoryworldSce
 }
 
 export function plausibilitySceneProgress(scene: StoryworldScene): PlausibilitySceneProgress {
-  const statuses = {} as Record<StoryworldQuestionId, PlausibilityQuestionStatus>;
-  let handled = 0;
-  for (const question of PLAUSIBILITY_QUESTION_IDS) {
-    const status = plausibilityQuestionStatus(scene, question);
-    statuses[question] = status;
-    if (status !== "unanswered") handled += 1;
-  }
+  // 질문이 늘면 이 객체가 타입 오류로 먼저 알려 준다(모든 질문 id를 빠짐없이 적어야 한다).
+  const statuses: Record<StoryworldQuestionId, PlausibilityQuestionStatus> = {
+    roles: plausibilityQuestionStatus(scene, "roles"),
+    motive: plausibilityQuestionStatus(scene, "motive"),
+    cause: plausibilityQuestionStatus(scene, "cause"),
+    information: plausibilityQuestionStatus(scene, "information"),
+    coincidence: plausibilityQuestionStatus(scene, "coincidence"),
+    consequence: plausibilityQuestionStatus(scene, "consequence"),
+  };
+  const handled = PLAUSIBILITY_QUESTION_IDS.filter((question) => statuses[question] !== "unanswered").length;
   const total = PLAUSIBILITY_QUESTION_IDS.length;
   return { sceneId: scene.id, statuses, handled, total, complete: handled === total };
 }
@@ -138,7 +141,11 @@ export function plausibilityQuestionnaireProgress(project: StoryworldProject): P
 
 /** 값이 undefined인 키를 지운다. undefined 키가 남으면 같은 내용의 문서가 다른 지문을 갖게 된다. */
 function compact<T extends object>(value: T): T {
-  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
+  const copy = { ...value };
+  for (const key in copy) {
+    if (copy[key] === undefined) delete copy[key];
+  }
+  return copy;
 }
 
 function mapScene(

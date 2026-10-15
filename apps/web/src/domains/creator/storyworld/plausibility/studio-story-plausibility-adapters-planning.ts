@@ -99,6 +99,8 @@ export function adaptPromiseLedger(
   input: PlausibilityPromiseInput,
 ): readonly PlausibilityFinding[] {
   const findings: PlausibilityFinding[] = [];
+  // 약속·회수 장부는 장면이 아니라 회차와 약속에 걸려 있어서 장면 id가 없다.
+  const noScenes: readonly string[] = [];
   for (const warning of input.warnings) {
     const title = input.entryTitles[warning.entryId] ?? warning.entryId;
     const evidence: PlausibilityEvidence[] = [{ kind: "ledger", id: warning.entryId, label: title, detail: "약속·회수 장부" }];
@@ -109,7 +111,7 @@ export function adaptPromiseLedger(
       message: warning.message,
       evidence,
       options: [optionInfo("promise-ledger", "제작 바이블에서 약속 고치기", "편집기의 제작 바이블 대화상자 '약속·회수' 패널에서 연결과 마감을 고칩니다.")],
-      sceneIds: [] as readonly string[],
+      sceneIds: noScenes,
     };
     switch (warning.code) {
       case "PAYOFF_BEFORE_SEED":

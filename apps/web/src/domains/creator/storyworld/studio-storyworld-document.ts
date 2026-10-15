@@ -41,6 +41,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Array.isArray는 unknown을 any[]로 좁혀서 원소가 any가 된다. 원소를 unknown으로 두려고 따로 둔 좁히기 함수. */
+function isUnknownArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+
 function assertString(value: unknown, path: string): asserts value is string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new Error(`${path}는 비어 있지 않은 문자열이어야 합니다.`);
@@ -56,7 +61,7 @@ function assertFiniteNumber(value: unknown, path: string): asserts value is numb
 function assertOptionalStringArray(record: Record<string, unknown>, key: string, path: string): void {
   const value = record[key];
   if (value === undefined) return;
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || item.length === 0)) {
+  if (!isUnknownArray(value) || value.some((item) => typeof item !== "string" || item.length === 0)) {
     throw new Error(`${path}.${key}는 문자열 배열이어야 합니다.`);
   }
 }
@@ -69,7 +74,7 @@ function assertOptionalRecordArray(
 ): void {
   const value = record[key];
   if (value === undefined) return;
-  if (!Array.isArray(value)) throw new Error(`${path}.${key}는 배열이어야 합니다.`);
+  if (!isUnknownArray(value)) throw new Error(`${path}.${key}는 배열이어야 합니다.`);
   value.forEach((item, index) => {
     if (!isRecord(item)) throw new Error(`${path}.${key}[${index}]는 객체여야 합니다.`);
     validate(item, `${path}.${key}[${index}]`);
@@ -133,7 +138,7 @@ function assertStoryworldFact(value: unknown, path: string): void {
 function assertScenePlausibility(value: unknown, path: string): void {
   if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
   if (value.roles !== undefined) {
-    if (!Array.isArray(value.roles)) throw new Error(`${path}.roles는 배열이어야 합니다.`);
+    if (!isUnknownArray(value.roles)) throw new Error(`${path}.roles는 배열이어야 합니다.`);
     value.roles.forEach((role, index) => assertOneOf(role, ROLE_VALUES, `${path}.roles[${index}]`));
   }
   if (value.answers !== undefined) {
@@ -207,7 +212,7 @@ function assertStoryworldScene(value: unknown, path: string): void {
   });
   assertOptionalRecordArray(value, "reveals", path, (item, itemPath) => {
     assertString(item.factId, `${itemPath}.factId`);
-    if (!Array.isArray(item.audiences) || item.audiences.some((audience) =>
+    if (!isUnknownArray(item.audiences) || item.audiences.some((audience) =>
       typeof audience !== "string" || audience.length === 0
     )) {
       throw new Error(`${itemPath}.audiences는 문자열 배열이어야 합니다.`);
@@ -271,7 +276,7 @@ function uniqueStrings(values: readonly unknown[], maxItems: number, maxLength: 
 
 function cleanPlausibility(value: Record<string, unknown>): Record<string, unknown> {
   const next: Record<string, unknown> = {};
-  if (Array.isArray(value.roles)) {
+  if (isUnknownArray(value.roles)) {
     const roles = uniqueStrings(value.roles, ROLE_VALUES.length, 20);
     next.roles = ROLE_VALUES.filter((role) => roles.includes(role));
   }
@@ -285,7 +290,7 @@ function cleanPlausibility(value: Record<string, unknown>): Record<string, unkno
     }
     next.answers = answers;
   }
-  if (Array.isArray(value.motives)) {
+  if (isUnknownArray(value.motives)) {
     next.motives = value.motives.filter(isRecord).slice(0, MAX_MOTIVES).map((motive) => ({
       characterId: motive.characterId,
       basis: motive.basis,
@@ -294,7 +299,7 @@ function cleanPlausibility(value: Record<string, unknown>): Record<string, unkno
     }));
   }
   if (isRecord(value.coincidence)) {
-    const clueSceneIds = Array.isArray(value.coincidence.clueSceneIds)
+    const clueSceneIds = isUnknownArray(value.coincidence.clueSceneIds)
       ? uniqueStrings(value.coincidence.clueSceneIds, 12, 120)
       : [];
     next.coincidence = {
@@ -306,7 +311,7 @@ function cleanPlausibility(value: Record<string, unknown>): Record<string, unkno
 }
 
 function cleanSource(value: Record<string, unknown>): Record<string, unknown> {
-  const timeCues = Array.isArray(value.timeCues)
+  const timeCues = isUnknownArray(value.timeCues)
     ? uniqueStrings(value.timeCues, MAX_TIME_CUES, MAX_TIME_CUE_LENGTH)
     : [];
   return {
@@ -324,7 +329,7 @@ function cleanScene(scene: Record<string, unknown>): Record<string, unknown> {
   const next: Record<string, unknown> = { ...scene };
   if (isRecord(scene.plausibility)) next.plausibility = cleanPlausibility(scene.plausibility);
   if (isRecord(scene.source)) next.source = cleanSource(scene.source);
-  if (Array.isArray(scene.statedAges)) next.statedAges = scene.statedAges.slice(0, MAX_STATED_AGES);
+  if (isUnknownArray(scene.statedAges)) next.statedAges = scene.statedAges.slice(0, MAX_STATED_AGES);
   return next;
 }
 
@@ -342,7 +347,7 @@ export function normalizeStoryworldProject(value: unknown): StoryworldProject {
   }
   assertString(value.id, "project.id");
   assertString(value.title, "project.title");
-  if (!Array.isArray(value.characters) || !Array.isArray(value.facts) || !Array.isArray(value.scenes)) {
+  if (!isUnknownArray(value.characters) || !isUnknownArray(value.facts) || !isUnknownArray(value.scenes)) {
     throw new Error("characters, facts, scenes는 배열이어야 합니다.");
   }
   if (
@@ -356,7 +361,7 @@ export function normalizeStoryworldProject(value: unknown): StoryworldProject {
   value.facts.forEach((item, index) => assertStoryworldFact(item, `facts[${index}]`));
   value.scenes.forEach((item, index) => assertStoryworldScene(item, `scenes[${index}]`));
   if (value.setupContracts !== undefined) {
-    if (!Array.isArray(value.setupContracts)) throw new Error("setupContracts는 배열이어야 합니다.");
+    if (!isUnknownArray(value.setupContracts)) throw new Error("setupContracts는 배열이어야 합니다.");
     value.setupContracts.forEach((item, index) => {
       const path = `setupContracts[${index}]`;
       if (!isRecord(item)) throw new Error(`${path}는 객체여야 합니다.`);
@@ -367,7 +372,7 @@ export function normalizeStoryworldProject(value: unknown): StoryworldProject {
     });
   }
   if (value.motifs !== undefined) {
-    if (!Array.isArray(value.motifs)) throw new Error("motifs는 배열이어야 합니다.");
+    if (!isUnknownArray(value.motifs)) throw new Error("motifs는 배열이어야 합니다.");
     value.motifs.forEach((item, index) => {
       const path = `motifs[${index}]`;
       if (!isRecord(item)) throw new Error(`${path}는 객체여야 합니다.`);

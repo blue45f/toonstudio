@@ -69,10 +69,12 @@ function assertDispositionRecord(value: unknown): asserts value is Record<string
 export function parseStoryworldIssueDispositions(text: string, scopeKey: string): StoryworldIssueDispositionDocument {
   const raw: unknown = JSON.parse(text);
   assertDispositionRecord(raw);
-  if (raw["version"] !== 1 || !Array.isArray(raw["dispositions"])) {
+  const rawDispositions: unknown = raw["dispositions"];
+  if (raw["version"] !== 1 || !Array.isArray(rawDispositions)) {
     throw new Error("스토리월드 이슈 처리 기록의 버전이 올바르지 않습니다.");
   }
-  const dispositions = raw["dispositions"].map((entry) => {
+  const entries: readonly unknown[] = rawDispositions;
+  const dispositions = entries.map((entry) => {
     assertDispositionRecord(entry);
     const issueKey = entry["issueKey"];
     const status = entry["status"];

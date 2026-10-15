@@ -63,7 +63,7 @@ export const PLAUSIBILITY_SCORE_WEIGHTS = Object.freeze({
 export const PLAUSIBILITY_SCORE_FORMULA =
   "개연성 점수 = 100 − Σ 범주별 감점 (범주마다 최대 40점). "
   + "범주별 감점 = 오류 건수 × 15 + 확정 경고 × 6 + 추정 경고 × 3 + 제안 × 1. "
-  + "처리 기록에서 해결함·의도된 설정으로 표시한 발견은 감점하지 않습니다.";
+  + "처리 기록에서 ‘해결함’·‘의도된 설정’·‘무시함’으로 표시한 발견은 감점하지 않고, ‘나중에’로 미룬 발견은 그대로 감점합니다.";
 
 /** 자동으로 판정하지 못하는 영역. 화면과 내보내기에 그대로 적는다. */
 export const PLAUSIBILITY_LIMITS: readonly string[] = Object.freeze([
