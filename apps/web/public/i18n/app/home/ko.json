@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "연재 플랫폼",
   "home.hero.stats.genres": "장르 스펙트럼",
   "home.hero.stats.reviews": "독자 리뷰",
-  "home.loadError": "홈 데이터를 불러오지 못했습니다.",
+  "home.loadError": "홈을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
   "home.creatorTitle": "아이디어를 첫 장면으로"
 }

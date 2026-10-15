@@ -8,7 +8,7 @@
   "admin.dashboard.groupCommunity": "Community",
   "admin.dashboard.groupMonetization": "Revenue",
   "admin.dashboard.groupUsers": "Users",
-  "admin.dashboard.loadError": "Failed to load metrics",
+  "admin.dashboard.loadError": "Couldn't load metrics. Please try again in a moment.",
   "admin.dashboard.paidAmount": "Settled Amount",
   "admin.dashboard.pendingAmount": "Pending Amount",
   "admin.dashboard.pendingSettlements": "Pending Settlements",

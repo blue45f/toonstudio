@@ -11,7 +11,7 @@
   "admin.announcements.levelCritical": "Critical",
   "admin.announcements.levelInfo": "Info",
   "admin.announcements.levelWarning": "Warning",
-  "admin.announcements.loadError": "Failed to load announcement list.",
+  "admin.announcements.loadError": "Failed to load announcements. Please try again in a moment.",
   "admin.announcements.loading": "Loading announcements...",
   "admin.announcements.modalTitle": "Create New Announcement / Banner",
   "admin.announcements.placementBanner": "Top Banner",

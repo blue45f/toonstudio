@@ -7,7 +7,7 @@
   "admin.plans.edit": "Edit Plan",
   "admin.plans.empty": "No registered plans. Click New Plan to add one.",
   "admin.plans.interval": "Interval (Days)",
-  "admin.plans.loadError": "Failed to load plans",
+  "admin.plans.loadError": "Couldn't load plans. Please try again in a moment.",
   "admin.plans.name": "Name *",
   "admin.plans.new": "New Plan",
   "admin.plans.perks": "Perks (comma-separated)",

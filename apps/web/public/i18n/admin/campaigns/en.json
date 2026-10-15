@@ -15,7 +15,7 @@
   "admin.campaigns.inputTargetWon": "Target Amount (KRW)",
   "admin.campaigns.inputTitle": "Title *",
   "admin.campaigns.inputTitleId": "Title ID (Optional)",
-  "admin.campaigns.loadError": "Failed to load campaigns.",
+  "admin.campaigns.loadError": "Failed to load campaigns. Please try again in a moment.",
   "admin.campaigns.new": "New Campaign",
   "admin.campaigns.planId": "Plan ID (Optional)",
   "admin.campaigns.raisedWon": "Raised Amount (KRW)",

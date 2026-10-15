@@ -9,7 +9,7 @@
   "studio.vrmPoser.notice.deletePoseSaveFailed": "포즈 삭제를 이 기기에 저장하지 못했습니다.",
   "studio.vrmPoser.notice.dismiss": "닫기",
   "studio.vrmPoser.notice.exportPosesFailed": "포즈 내보내기에 실패했습니다.",
-  "studio.vrmPoser.notice.importFileReadFailed": "파일 읽기 또는 파싱에 실패했습니다.",
+  "studio.vrmPoser.notice.importFileReadFailed": "파일을 읽지 못했어요. 포즈 파일(.json)이 맞는지 확인해 주세요.",
   "studio.vrmPoser.notice.importPosesEmpty": "가져올 수 있는 유효한 포즈 데이터가 없습니다.",
   "studio.vrmPoser.notice.importPosesSaveFailed": "가져온 포즈를 검증하거나 저장하지 못했습니다.",
   "studio.vrmPoser.notice.pasteFullStateEmpty": "전체 상태 데이터 없음",

@@ -7,7 +7,7 @@
   "admin.members.colRole": "Role",
   "admin.members.colStatus": "Status",
   "admin.members.countShowing": "Showing {count} members",
-  "admin.members.delete": "Delete",
+  "admin.members.delete": "Remove member",
   "admin.members.desc": "Search registered members and adjust roles (User, Creator, Operator, Admin).",
   "admin.members.empty": "No members found matching the criteria.",
   "admin.members.eyebrow": "ADMIN · MEMBERS",

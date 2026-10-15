@@ -11,7 +11,7 @@
   "ageGate.yearSuffix": "년",
   "ageGate.monthSuffix": "월",
   "ageGate.daySuffix": "일",
-  "ageGate.deniedMessage": "연령 기준을 통과하지 못했습니다.",
+  "ageGate.deniedMessage": "입력한 생년월일로는 성인 확인이 되지 않았어요. 생년월일을 다시 확인해 주세요.",
   "ageGate.cancel": "취소",
   "ageGate.confirm": "확인"
 }

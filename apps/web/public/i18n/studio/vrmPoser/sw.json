@@ -34,5 +34,5 @@
   "studio.vrmPoser.notice.sharedPoseApplied": "Applied the shared pose '{name}'.",
   "studio.vrmPoser.notice.sharedPoseDeleted": "The shared pose was deleted successfully.",
   "studio.vrmPoser.notice.sharedPoseLoadFailed": "Could not load the shared pose.",
-  "studio.vrmPoser.notice.sharedPoseMissing3dSettings": "This pose asset does not include 3D setup information."
+  "studio.vrmPoser.notice.sharedPoseMissing3dSettings": "This pose material does not include 3D setup information."
 }
