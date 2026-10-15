@@ -47,5 +47,7 @@
   "revenue.source.early-access": "Эрт унших эрх",
   "revenue.source.market": "Зах зээлийн борлуулалт",
   "revenue.source.membership": "Гишүүнчлэл",
-  "revenue.source.tips": "Урамшуулал"
+  "revenue.source.tips": "Урамшуулал",
+  "revenue.payout.notAvailableBody": "Payout requests aren't actually being received yet, and any account details you enter are not stored. When requests open, you'll be able to apply right here and track your request history and status.",
+  "revenue.payout.notAvailableTitle": "Payout requests aren't available yet"
 }

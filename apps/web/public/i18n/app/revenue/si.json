@@ -47,5 +47,7 @@
   "revenue.source.early-access": "Early access",
   "revenue.source.market": "Market sales",
   "revenue.source.membership": "Membership",
-  "revenue.source.tips": "Tips"
+  "revenue.source.tips": "Tips",
+  "revenue.payout.notAvailableBody": "Payout requests aren't actually being received yet, and any account details you enter are not stored. When requests open, you'll be able to apply right here and track your request history and status.",
+  "revenue.payout.notAvailableTitle": "Payout requests aren't available yet"
 }
