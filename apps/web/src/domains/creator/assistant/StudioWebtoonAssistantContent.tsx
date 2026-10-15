@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertTriangle,
   BookOpen,
   Check,
@@ -68,8 +69,13 @@ import {
   type ReaderScrollSpeedProfile,
 } from "./webtoon-scroll-pacing-simulator";
 import { WebtoonSfxLexiconEngine, type SfxCategory } from "./webtoon-sfx-lexicon";
+import { StudioWebtoonTensionMapEntry } from "./StudioWebtoonTensionMapEntry";
+import { useTensionMapDraft } from "./use-tension-map-draft";
+import { WebtoonPerspectiveGuidePreview } from "./WebtoonPerspectiveGuidePreview";
 
 import type { ReactNode } from "react";
+
+import type { PageState } from "../studio-page-state";
 
 import type {
   StudioWebtoonAssistantPanel,
@@ -84,6 +90,7 @@ import { formatNumber } from "@toonstudio/core/format";
 export type AssistantActiveTab =
   | "spec-slicer"
   | "scroll-pacing"
+  | "tension-map"
   | "sfx-lexicon"
   | "color-harmony"
   | "focus-timer"
@@ -96,6 +103,7 @@ const TITLE_ID = `${TAB_ID_PREFIX}-title`;
 const ASSISTANT_TABS: readonly StudioWorkbenchTab[] = [
   { id: "spec-slicer", label: "플랫폼 규격 & 슬라이서", icon: Scissors },
   { id: "scroll-pacing", label: "스크롤 페이싱 시뮬레이터", icon: Smartphone },
+  { id: "tension-map", label: "텐션 맵 (감정·사건 곡선)", icon: Activity },
   { id: "sfx-lexicon", label: "효과음·의성어 사전", icon: Type },
   { id: "color-harmony", label: "피부/그림자 컬러 조화", icon: Palette },
   { id: "focus-timer", label: "마감 & 포커스플로우", icon: Timer },
@@ -173,6 +181,10 @@ export interface StudioWebtoonAssistantModalProps {
   readonly protectedRegions?: readonly StudioWebtoonAssistantProtectedRegion[];
   readonly panels?: readonly StudioWebtoonAssistantPanel[];
   readonly onInsertSfxText?: (text: string) => void;
+  /** 텐션 맵의 포즈 추천을 적용할 문서. 셋이 모두 있어야 `적용` 버튼이 나타난다(적용은 편집기 페이지 히스토리 커밋). */
+  readonly pages?: readonly PageState[];
+  readonly currentPageId?: string;
+  readonly onCommitPages?: (nextPages: PageState[]) => boolean;
 }
 
 export function StudioWebtoonAssistantModal({
@@ -183,6 +195,9 @@ export function StudioWebtoonAssistantModal({
   protectedRegions = [],
   panels = [],
   onInsertSfxText,
+  pages,
+  currentPageId,
+  onCommitPages,
 }: StudioWebtoonAssistantModalProps) {
   // 저장된 선택 상태는 마운트 시 한 번만 읽는다. 화면 카탈로그로 한 번 걸러서
   // 은퇴한 id 가 빈 패널을 만들지 않게 한다(studio-workbench-prefs 계약).
@@ -206,6 +221,9 @@ export function StudioWebtoonAssistantModal({
 
   const dialogRef = useRef<HTMLElement | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
+
+  // 텐션 맵에 넣은 출처·대본은 센터를 닫았다 열어도 남도록 탭 본문 바깥(여기)에서 들고 있는다.
+  const tensionMapDraft = useTensionMapDraft();
 
   // Tab 1: Spec & Slicer State
   const specValidator = useMemo(() => new WebtoonPlatformSpecValidator(), []);
@@ -448,7 +466,7 @@ export function StudioWebtoonAssistantModal({
                 웹툰 창작 보조 센터 (Webtoon Creator Assistant)
               </h2>
               <p className="text-[0.68rem] text-fg-3">
-                플랫폼 규격 검사 · 스크롤 페이싱 · 효과음 · 컬러 · 포커스 타이머 · 크로키 · 작업 맥락 학습
+                플랫폼 규격 검사 · 스크롤 페이싱 · 텐션 맵 · 효과음 · 컬러 · 포커스 타이머 · 크로키 · 작업 맥락 학습
               </p>
             </div>
           </div>
@@ -1306,62 +1324,7 @@ export function StudioWebtoonAssistantModal({
                 </div>
 
                 {/* Selected guide preview — 선택이 실제 출력을 바꾼다 */}
-                <div className="mt-1 flex flex-col gap-2 rounded-lg border border-line bg-card p-2.5 sm:flex-row sm:items-center">
-                  <svg
-                    viewBox="0 0 160 90"
-                    role="img"
-                    aria-label={`${perspectiveShortLabel(perspectiveGuide.label)} 가이드 미리보기`}
-                    className="h-24 w-full shrink-0 rounded border border-line/60 bg-canvas text-accent sm:w-40"
-                  >
-                    <g
-                      transform={`rotate(${perspectiveGuide.tiltAngleDeg} 80 45)`}
-                      stroke="currentColor"
-                      fill="none"
-                    >
-                      <line
-                        x1={-40}
-                        x2={200}
-                        y1={90 * perspectiveGuide.horizonRatioY}
-                        y2={90 * perspectiveGuide.horizonRatioY}
-                        strokeWidth={1.4}
-                      />
-                      {perspectiveVanishingPoints(perspectiveGuide).map((point) => (
-                        <g key={`${point.x}-${point.y}`}>
-                          <circle cx={point.x} cy={point.y} r={3} strokeWidth={1.2} />
-                          <line
-                            x1={point.x}
-                            y1={point.y}
-                            x2={80}
-                            y2={45}
-                            strokeWidth={0.6}
-                            strokeDasharray="3 3"
-                            opacity={0.7}
-                          />
-                        </g>
-                      ))}
-                    </g>
-                  </svg>
-                  <dl className="grid flex-1 grid-cols-3 gap-2 text-center text-[0.62rem]">
-                    <div className="rounded border border-line bg-raised p-1.5">
-                      <dt className="text-fg-3">지평선 위치</dt>
-                      <dd className="mt-0.5 font-mono font-bold text-fg">
-                        {Math.round(perspectiveGuide.horizonRatioY * 100)}%
-                      </dd>
-                    </div>
-                    <div className="rounded border border-line bg-raised p-1.5">
-                      <dt className="text-fg-3">화면 기울기</dt>
-                      <dd className="mt-0.5 font-mono font-bold text-fg">
-                        {perspectiveGuide.tiltAngleDeg}°
-                      </dd>
-                    </div>
-                    <div className="rounded border border-line bg-raised p-1.5">
-                      <dt className="text-fg-3">소실점</dt>
-                      <dd className="mt-0.5 font-mono font-bold text-fg">
-                        {perspectiveGuide.vanishingPointCount}점
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
+                <WebtoonPerspectiveGuidePreview guide={perspectiveGuide} />
               </div>
             </div>
           )}
@@ -1373,30 +1336,19 @@ export function StudioWebtoonAssistantModal({
               focusStage={timerState.activeStage}
             />
           )}
+
+          {/* 텐션 맵: 첫 활성화 때만 불러오고, 이후에는 탭을 떠나도 입력을 유지한다 */}
+          <StudioWebtoonTensionMapEntry
+            active={activeTab === "tension-map"}
+            panels={panels}
+            draft={tensionMapDraft}
+            pages={pages}
+            currentPageId={currentPageId}
+            onCommitPages={onCommitPages}
+          />
         </div>
       </section>
     </div>,
     document.body,
   );
-}
-
-/** 라벨 앞머리(괄호 앞)만 뽑아 짧은 접근성 이름으로 쓴다. */
-function perspectiveShortLabel(label: string): string {
-  const head = label.split("(")[0];
-  return head.trim() === "" ? label : head.trim();
-}
-
-/** 소실점 좌표. 개수에 따라 수평 2점 + (3점이면) 지평선 반대편 수직 소실점을 얹는다. */
-function perspectiveVanishingPoints(guide: {
-  horizonRatioY: number;
-  vanishingPointCount: 1 | 2 | 3;
-}): readonly { x: number; y: number }[] {
-  const horizonY = 90 * guide.horizonRatioY;
-  if (guide.vanishingPointCount === 1) return [{ x: 80, y: horizonY }];
-  const horizontal = [
-    { x: 12, y: horizonY },
-    { x: 148, y: horizonY },
-  ];
-  if (guide.vanishingPointCount === 2) return horizontal;
-  return [...horizontal, { x: 80, y: guide.horizonRatioY < 0.5 ? 86 : 4 }];
 }

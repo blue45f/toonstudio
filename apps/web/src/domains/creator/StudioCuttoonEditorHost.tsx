@@ -29334,10 +29334,10 @@ function clearSelectionForEdit() {
         <StudioWebtoonAssistantModal
           open={webtoonAssistantOpen}
           onClose={() => setWebtoonAssistantOpen(false)}
-          canvasWidth={CANVAS_W}
-          canvasHeight={canvasH}
+          canvasWidth={CANVAS_W} canvasHeight={canvasH}
           protectedRegions={webtoonAssistantDocumentAnalysis.protectedRegions}
           panels={webtoonAssistantDocumentAnalysis.panels}
+          pages={pages} currentPageId={currentPageId} onCommitPages={commitPages}
         />
         {aiSuperSuiteOpen !== null ? (
           <Suspense fallback={aiSuperSuiteOpen ? (
