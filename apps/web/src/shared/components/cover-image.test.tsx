@@ -2,13 +2,8 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  COVER_GRID_SIZES,
-  COVER_LOAD_TIMEOUT_MS,
-  CoverImage,
-  coverGridPriority,
-  resolveCoverSizes,
-} from "./cover-image";
+import { COVER_LOAD_TIMEOUT_MS, CoverImage } from "./cover-image";
+import { COVER_GRID_SIZES, coverGridPriority, resolveCoverSizes } from "./cover-image-sizing";
 
 vi.mock("@/platform/environment/use-app-config", () => ({
   useAppConfig: () => ({ showCovers: true }),

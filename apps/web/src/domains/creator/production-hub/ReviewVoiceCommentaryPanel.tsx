@@ -40,6 +40,17 @@ type RecorderState =
   | { readonly kind: "unsupported"; readonly reason: string }
   | { readonly kind: "error"; readonly message: string };
 
+/**
+ * 해설에는 전사가 없어, 검수 음성 메모·부스 테이크와 같은 방식으로 "누가 남긴 해설인가"를
+ * 해설 길이만큼 한 줄 자막(WebVTT)으로 단다. 말한 내용을 지어내지 않는다.
+ */
+function commentaryCaptionTrack(label: string, durationMs: number): string {
+  const totalSec = Math.max(1, Math.ceil(durationMs / 1000));
+  const end = `${String(Math.floor(totalSec / 60)).padStart(2, "0")}:${String(totalSec % 60).padStart(2, "0")}.000`;
+  const body = `WEBVTT\n\n00:00.000 --> ${end}\n${label.replace(/[\r\n]+/gu, " ")}\n`;
+  return `data:text/vtt;charset=utf-8,${encodeURIComponent(body)}`;
+}
+
 function recorderSupported(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -277,7 +288,15 @@ export function ReviewVoiceCommentaryPanel({
               onEnded={() => setPlaying(false)}
               onPause={() => setPlaying(false)}
               onPlay={() => setPlaying(true)}
-            />
+            >
+              <track
+                kind="captions"
+                src={commentaryCaptionTrack(`${selected.authorName} · 음성 해설`, selected.durationMs)}
+                srcLang="ko"
+                label="해설 정보"
+                default
+              />
+            </audio>
           ) : (
             <p style={{ fontSize: 12, opacity: 0.7 }}>이 해설의 음성은 아직 서버에 저장되지 않아 재생할 수 없습니다. 위치 기록은 아래 목록으로 확인할 수 있습니다.</p>
           )}

@@ -2,7 +2,7 @@
 
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
   createStudioProject,
@@ -145,5 +145,69 @@ describe("CreateStartPage (작품 시작 시트)", () => {
 
     expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
     expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
+  });
+});
+
+/** 지연 로딩된 질문형 인터뷰를 기다리는 시간 — 부하가 큰 CI에서 첫 로딩이 기본 1초를 넘길 수 있다. */
+const LAZY_FLOW_WAIT = { timeout: 10_000 } as const;
+
+describe("CreateStartPage — 내 이야기 의도 카드", () => {
+  // 질문형 인터뷰는 지연 로딩이다. 모듈 그래프를 먼저 데워 두어 첫 로딩 시간이 개별 테스트에 섞이지 않게 한다.
+  beforeAll(async () => {
+    await import("./my-story/MyStoryStartFlow");
+  }, 60_000);
+
+  it("레인 위에 ‘내 이야기로 시작하기’ 카드와 주제 6종 링크가 있다", () => {
+    renderStartSheet("/create");
+
+    const card = screen.getByRole("heading", { name: "내 이야기로 시작하기" }).closest("section");
+    expect(card).not.toBeNull();
+    const cta = within(card as HTMLElement).getByRole("link", { name: /내 이야기 풀어내기/ });
+    expect(cta.getAttribute("href")).toBe("/create?intent=my-story");
+    const topics = within(within(card as HTMLElement).getByRole("list", { name: "이야기 주제 바로 고르기" })).getAllByRole("link");
+    expect(topics.map((link) => link.textContent)).toEqual(["회고", "가족", "동네", "경력", "안전 수칙", "금융 상식"]);
+    expect(topics.map((link) => link.getAttribute("href"))).toEqual([
+      "/create?intent=my-story&topic=retrospective",
+      "/create?intent=my-story&topic=family",
+      "/create?intent=my-story&topic=neighborhood",
+      "/create?intent=my-story&topic=career",
+      "/create?intent=my-story&topic=safety",
+      "/create?intent=my-story&topic=finance",
+    ]);
+    // 개인 정보 안심 문구: 이 기기에만 임시 저장.
+    expect(within(card as HTMLElement).getByText(/이 기기에만 임시 저장돼요/)).toBeTruthy();
+    // 카드가 기존 다섯 레인을 대신하지 않는다.
+    expect(screen.getByRole("link", { name: /이야기부터 시작하기/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /가져와서 시작하기/ })).toBeTruthy();
+  });
+
+  it("?intent=my-story면 레인 대신 질문형 인터뷰를 열고 돌아가는 링크를 둔다", async () => {
+    renderStartSheet("/create?intent=my-story");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" }, LAZY_FLOW_WAIT)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "다른 시작 방법 보기" }).getAttribute("href")).toBe("/create");
+    expect(screen.queryByRole("heading", { name: "작품 시작하기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /콘티부터 시작하기/ })).toBeNull();
+    expect(screen.getByRole("heading", { name: "어떤 이야기를 남기고 싶나요?" })).toBeTruthy();
+  });
+
+  it("topic을 알려 주면 그 주제의 첫 질문으로 바로 시작한다", async () => {
+    renderStartSheet("/create?intent=my-story&topic=safety");
+
+    expect(await screen.findByText("질문 1 / 6", undefined, LAZY_FLOW_WAIT)).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: /어떤 장소나 상황에서 일어나는 일인가요/ })).toBeTruthy();
+  });
+
+  it("모르는 topic은 무시하고 주제 선택 화면을 보여 준다", async () => {
+    renderStartSheet("/create?intent=my-story&topic=nope");
+
+    expect(await screen.findByRole("heading", { name: "어떤 이야기를 남기고 싶나요?" }, LAZY_FLOW_WAIT)).toBeTruthy();
+  });
+
+  it("모르는 intent 값은 일반 시작 시트로 취급한다", () => {
+    renderStartSheet("/create?intent=other");
+
+    expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" })).toBeNull();
   });
 });

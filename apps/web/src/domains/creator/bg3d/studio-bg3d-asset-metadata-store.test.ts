@@ -24,6 +24,7 @@ import {
   updateStudioBg3dAssetRights,
   updateStudioBg3dAssetTags,
 } from "./studio-bg3d-asset-metadata-store";
+import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
 
 const HASH_A = `sha256:${"a".repeat(64)}` as const;
 const HASH_B = `sha256:${"b".repeat(64)}` as const;
@@ -117,6 +118,27 @@ afterEach(() => {
 });
 
 describe("studio BG3D asset metadata IndexedDB store", () => {
+  it("persists a SketchUp import report with the row and keeps it through user edits", async () => {
+    const factory = new IDBFactory();
+    const record = metadata(HASH_A, { format: "skp", name: "방 모델", skpImport: createSkpReportFixture() });
+    expect(record.skpImport).toBeDefined();
+
+    await putStudioBg3dAssetMetadataAtomically([record], storeOptions(factory));
+    expect(await readRaw(factory, HASH_A)).toMatchObject({
+      format: "skp",
+      skpImport: { kind: "toonstudio-bg3d-skp-import-report", version: 1 },
+    });
+    expect((await getStudioBg3dAssetMetadata(HASH_A, storeOptions(factory)))?.skpImport)
+      .toEqual(createSkpReportFixture());
+
+    await updateStudioBg3dAssetTags(HASH_A, ["거실"], { ...storeOptions(factory), now: 20 });
+    await updateStudioBg3dAssetFavorite(HASH_A, true, { ...storeOptions(factory), now: 30 });
+    const edited = await getStudioBg3dAssetMetadata(HASH_A, storeOptions(factory));
+    expect(edited).toMatchObject({ tags: ["거실"], favorite: true });
+    expect(edited?.skpImport).toEqual(createSkpReportFixture());
+    expect((await listStudioBg3dAssetMetadata(storeOptions(factory)))[0]?.skpImport?.counts.triangles).toBe(80);
+  });
+
   it("creates a versioned contentHash-keyed store and atomically persists canonical V1/V2 rows", async () => {
     const factory = new IDBFactory();
     const legacy = {

@@ -30,13 +30,13 @@ import {
   collectDialogueItems,
   dialogueExcerpt,
   dialogueItemTypeLabel,
-  filterDialogueItems,
   planDialogueReplace,
   type DialogueBatchItem,
   type DialoguePageLike,
   type DialogueReplacePlan,
   type DialogueReplaceScope,
 } from "./lettering/studio-dialogue-batch";
+import { filterDialogueItems } from "./lettering/studio-dialogue-batch-search";
 import {
   parseStudioDialogueInterchange,
   serializeStudioDialogueInterchange,
@@ -796,7 +796,7 @@ export function StudioDialogueBatchPanel({
       <div className="flex items-center justify-between gap-2 border-b border-line/60 px-3 py-2">
         <p className="text-xs font-bold text-fg">
           대사 일괄 편집
-          <span className="ml-1.5 font-medium text-fg-4">{items.length}개</span>
+          <span className="ml-1.5 font-medium">{items.length}개</span>
         </p>
         <button
           type="button"
@@ -822,7 +822,7 @@ export function StudioDialogueBatchPanel({
         >
           <FileText size={14} aria-hidden />
           번역·대본 파일
-          <span className="ml-auto text-[0.6rem] font-medium text-fg-4">9종</span>
+          <span className="ml-auto text-[0.6rem] font-medium">9종</span>
           <ChevronDown
             size={14}
             aria-hidden
@@ -890,7 +890,7 @@ export function StudioDialogueBatchPanel({
                 />
               </label>
             </div>
-            <p className="text-[0.6rem] leading-relaxed text-fg-4">
+            <p className="text-[0.6rem] leading-relaxed">
               ID가 있는 JSON/CSV는 가장 정확합니다. FDX는 적용 전 구조 손실을 확인하며,
               SRT·VTT는 캔버스 좌표가 없어 순서로 연결합니다.
             </p>
@@ -930,7 +930,7 @@ export function StudioDialogueBatchPanel({
                       key={String(label)}
                       className="rounded-lg border border-line/70 bg-panel/65 px-2 py-1.5"
                     >
-                      <dt className="text-fg-4">{label}</dt>
+                      <dt>{label}</dt>
                       <dd className="mt-0.5 font-bold tabular-nums text-fg">{value}</dd>
                     </div>
                   ))}
@@ -963,13 +963,13 @@ export function StudioDialogueBatchPanel({
                               {item.sourceType} · {item.preview}
                             </strong>
                           </div>
-                          <p className="mt-0.5 pl-1 text-fg-4">{item.detail}</p>
+                          <p className="mt-0.5 pl-1">{item.detail}</p>
                         </div>
                       ))}
                     {pendingFdxImport.parsed.lossPreview.items.filter(
                       (item) => item.disposition !== "mapped"
                     ).length > 12 ? (
-                      <p className="px-1.5 py-1 text-[0.56rem] text-fg-4">
+                      <p className="px-1.5 py-1 text-[0.56rem]">
                         나머지{" "}
                         {pendingFdxImport.parsed.lossPreview.items.filter(
                           (item) => item.disposition !== "mapped"
@@ -1009,7 +1009,7 @@ export function StudioDialogueBatchPanel({
                     {interchangeBusy ? "적용 중" : "확인하고 적용"}
                   </button>
                 </div>
-                <p className="text-[0.56rem] leading-relaxed text-fg-4">
+                <p className="text-[0.56rem] leading-relaxed">
                   적용은 문서 기록 한 번으로 반영되며 실행 취소 한 번으로 되돌릴 수 있습니다.
                 </p>
               </section>
@@ -1089,11 +1089,11 @@ export function StudioDialogueBatchPanel({
               "일치하는 대사가 없어요."
             )}
             {plan.lockedSkipped > 0 && (
-              <span className="text-fg-4"> · 잠긴 요소 {plan.lockedSkipped}개 제외</span>
+              <span> · 잠긴 요소 {plan.lockedSkipped}개 제외</span>
             )}
           </p>
         ) : (
-          <p className="text-[0.62rem] leading-snug text-fg-4">
+          <p className="text-[0.62rem] leading-snug">
             찾을 문구를 입력하면 바꾸기 전에 매치 수를 미리 보여줘요.
           </p>
         )}
@@ -1105,7 +1105,7 @@ export function StudioDialogueBatchPanel({
             "flex min-h-11 w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
             plan.totalCount > 0
               ? "bg-accent text-on-accent hover:opacity-90"
-              : "cursor-not-allowed bg-card text-fg-4"
+              : "cursor-not-allowed bg-card"
           )}
         >
           <Replace size={12} /> 모두 바꾸기
@@ -1238,7 +1238,7 @@ export function StudioDialogueBatchPanel({
                 {formatStatus.text}
               </p>
             ) : (
-              <p className="text-[0.58rem] leading-snug text-fg-4">
+              <p className="text-[0.58rem] leading-snug">
                 서식·말풍선 변환은 문서에 바로 저장되며 실행 취소 1회로 되돌립니다.
               </p>
             )}
@@ -1414,7 +1414,7 @@ export function StudioDialogueBatchPanel({
       {/* 대사 목록 — 클릭=캔버스 선택, 텍스트는 그 자리에서 수정. */}
       <div className="px-3 py-2.5">
         <div className="relative mb-2">
-          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-fg-4" aria-hidden />
+          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2" aria-hidden />
           <input
             type="text"
             value={listQuery}
@@ -1425,12 +1425,12 @@ export function StudioDialogueBatchPanel({
           />
         </div>
         {items.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed text-fg-4">
+          <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed">
             아직 말풍선·텍스트가 없어요. 상단 도구의 말풍선 메뉴에서 대사를 넣으면 여기에서 한꺼번에
             고칠 수 있어요.
           </p>
         ) : shown.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed text-fg-4">
+          <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed">
             검색과 일치하는 대사가 없어요.
           </p>
         ) : (
@@ -1472,12 +1472,12 @@ export function StudioDialogueBatchPanel({
                           {dialogueItemTypeLabel(item)}
                         </button>
                         {item.locked && (
-                          <span className="shrink-0 rounded border border-line px-1 text-[0.55rem] text-fg-4">
+                          <span className="shrink-0 rounded border border-line px-1 text-[0.55rem]">
                             잠김
                           </span>
                         )}
                         {item.hidden && (
-                          <span className="shrink-0 rounded border border-line px-1 text-[0.55rem] text-fg-4">
+                          <span className="shrink-0 rounded border border-line px-1 text-[0.55rem]">
                             숨김
                           </span>
                         )}
@@ -1656,7 +1656,7 @@ export function StudioDialogueBatchPanel({
                                     onPointerDown={(event) => event.preventDefault()}
                                     onClick={() => applyRubyAtSelection(item)}
                                     disabled={!(rubyReadingByItem[item.id] ?? "").trim()}
-                                    className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-2 text-[0.64rem] font-semibold text-on-accent hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-2 text-[0.64rem] font-semibold text-on-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
                                     title="선택한 글자에 루비(후리가나)를 답니다"
                                   >
                                     루비 달기
@@ -1704,7 +1704,7 @@ export function StudioDialogueBatchPanel({
                               <button
                                 type="button"
                                 onClick={() => transferElement(item, "move")}
-                                className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-2 text-[0.64rem] font-semibold text-on-accent hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-2 text-[0.64rem] font-semibold text-on-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
                               >
                                 <ArrowRight size={13} aria-hidden /> 이동
                               </button>
@@ -1729,7 +1729,7 @@ export function StudioDialogueBatchPanel({
       </div>
       </div>
 
-      <p className="border-t border-line/60 px-3 py-1.5 text-[0.58rem] leading-snug text-fg-4">
+      <p className="border-t border-line/60 px-3 py-1.5 text-[0.58rem] leading-snug">
         ⌘/Ctrl+Enter 저장 후 다음 · Shift와 함께 누르면 이전 · ⋯에서 나누기·합치기·페이지 이동을 할 수 있어요.
       </p>
     </section>

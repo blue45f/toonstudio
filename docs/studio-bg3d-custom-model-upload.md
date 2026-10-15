@@ -378,10 +378,10 @@ useEffect(() => {
 
 ## 14. 현재 형식 지원과 남은 범위
 
-- **SketchUp `.skp` 자체는 파싱하지 않는다.** `.skp`는 비공개 바이너리 포맷이라 브라우저에서
-  직접 열 수 없다 — 대신 SketchUp에서 GLB/glTF/OBJ 등 현재 지원하는 표준 형식으로 내보낸다
-  (사용자가 SketchUp에서 "내보내기"로 만든 파일을 업로드하는 흐름). "스케치업 대응"이라는
-  이 스튜디오의 3D 배경 도구 취지(도형 블록아웃)와 일관된 범위 설정.
+- **SketchUp `.skp`는 OpenSKP로 브라우저 안에서 GLB로 변환해 가져온다(부분 지원, 2026-10-15 기준).**
+  비공식 파서라 모든 파일이 변환되지는 않으므로, 실패하면 SketchUp에서 GLB/glTF/OBJ 등 표준 형식으로
+  내보내 가져오는 흐름을 안내한다. 지원 범위·한계·오류 분류·단위 확인·변환 보고서 계약은
+  [`features/skp-import.md`](features/skp-import.md)를 따른다.
 - **멀티파일 glTF와 OBJ/MTL은 지원한다.** 업로드 UI에서 기본 모델과 BIN·MTL·PNG·JPEG·WebP
   연결 파일을 함께 선택하면, 안전한 로컬 상대 경로만 해석하고 외부 네트워크 참조는 거부한 뒤
   canonical self-contained GLB로 변환·검증해 라이브러리에 저장한다.

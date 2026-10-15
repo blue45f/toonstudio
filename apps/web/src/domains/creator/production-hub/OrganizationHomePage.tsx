@@ -123,7 +123,6 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
     })();
     return () => { active = false; };
     // 선택 조직은 ref로 유지한다 — 새로고침 때 선택이 풀리지 않게 하기 위해서다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bt, userId, refresh]);
 
   async function switchOrganization(id: string) {

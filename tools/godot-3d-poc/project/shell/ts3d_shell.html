@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+	<!--
+		ToonStudio Godot 3D PoC 전용 HTML 셸.
+		뼈대는 Godot 4.4.1 공식 웹 export 템플릿(godot.html, MIT, (c) Godot Engine contributors)을 따르고
+		다음 세 가지만 더했다: (1) 계측 훅(wasm 컴파일·메모리 생성 시각), (2) 단독 실행용 호스트 브리지 기본 구현,
+		(3) 서비스 워커 분기 제거(PWA 미사용). 엔진 코드(index.js / index.wasm)는 수정하지 않는다.
+	-->
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>$GODOT_PROJECT_NAME</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: white;
+	background-color: $GODOT_SPLASH_COLOR;
+	overflow: hidden;
+	touch-action: none;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status, #status-splash, #status-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+#status, #status-splash {
+	top: 0;
+	bottom: 0;
+}
+
+#status {
+	background-color: $GODOT_SPLASH_COLOR;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+}
+
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
+}
+
+#status-splash.show-image--false {
+	display: none;
+}
+
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
+}
+
+#status-progress, #status-notice {
+	display: none;
+}
+
+#status-progress {
+	bottom: 10%;
+	width: 50%;
+	margin: 0 auto;
+}
+
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	z-index: 1;
+}
+		</style>
+		$GODOT_HEAD_INCLUDE
+		<script>
+/*
+ * 계측 훅. 반드시 엔진 스크립트보다 먼저 실행된다.
+ * - window.__ts3dMarks.t: 이름별 performance.now() 시각(ms, 탐색 시작 기준)
+ * - window.__ts3dWasm: WebAssembly.Memory 인스턴스와 compile/instantiate 구간
+ * 전역 WebAssembly API 를 감싸 기록만 하며 반환값·예외는 그대로 전달한다.
+ */
+(function () {
+	const marks = (window.__ts3dMarks = { timeOrigin: performance.timeOrigin, t: {} });
+	window.__ts3dMark = function (name) {
+		if (!(name in marks.t)) {
+			marks.t[name] = performance.now();
+		}
+	};
+	window.__ts3dMark('shell-head');
+
+	const wasm = (window.__ts3dWasm = { memories: [], instances: [], spans: [] });
+	if (typeof WebAssembly === 'undefined') {
+		return;
+	}
+	const OriginalMemory = WebAssembly.Memory;
+	WebAssembly.Memory = function (descriptor) {
+		const memory = new OriginalMemory(descriptor);
+		wasm.memories.push(memory);
+		return memory;
+	};
+	WebAssembly.Memory.prototype = OriginalMemory.prototype;
+
+	['instantiateStreaming', 'instantiate', 'compileStreaming', 'compile'].forEach(function (name) {
+		const original = WebAssembly[name];
+		if (typeof original !== 'function') {
+			return;
+		}
+		WebAssembly[name] = function () {
+			const span = { name: name, start: performance.now() };
+			wasm.spans.push(span);
+			const result = original.apply(WebAssembly, arguments);
+			return result.then(function (value) {
+				span.end = performance.now();
+				if (value && value.instance && value.instance.exports) {
+					wasm.instances.push(value.instance);
+				} else if (value && value.exports) {
+					wasm.instances.push(value);
+				}
+				return value;
+			}, function (error) {
+				span.end = performance.now();
+				span.error = String(error);
+				throw error;
+			});
+		};
+	});
+}());
+		</script>
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
+
+		<noscript>
+			Your browser does not support JavaScript.
+		</noscript>
+
+		<div id="status">
+			<img id="status-splash" class="$GODOT_SPLASH_CLASSES" src="$GODOT_SPLASH" alt="">
+			<progress id="status-progress"></progress>
+			<div id="status-notice"></div>
+		</div>
+
+		<script src="$GODOT_URL"></script>
+		<script>
+window.__ts3dMark('engine-js-ready');
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+/*
+ * 호스트 브리지 기본 구현(단독 실행·진단용).
+ * 셸이 iframe 으로 임베드하면 부모 창이 window.__ts3dHost 를 먼저 등록하므로 이 블록은 건드리지 않는다.
+ * 계약은 apps/web 의 window.__tsvsHost 와 같은 모양이다: Godot -> 호스트는 JSON 문자열 하나(onEvent),
+ * 이진 결과는 base64 문자열(onBinary). 호스트 -> Godot 은 이 창의 window.__ts3d_command(json) 하나다.
+ */
+(function installDefaultHost() {
+	let hostWindow = window;
+	try {
+		if (window.parent && window.parent !== window) {
+			hostWindow = window.parent;
+		}
+	} catch (error) {
+		hostWindow = window;
+	}
+	if (hostWindow.__ts3dHost) {
+		return;
+	}
+	const events = (hostWindow.__ts3dEvents = []);
+	const binaries = (hostWindow.__ts3dBinaries = []);
+	hostWindow.__ts3dHost = {
+		onEvent: function (json) {
+			const event = JSON.parse(json);
+			event.hostReceivedAt = performance.now();
+			events.push(event);
+		},
+		onBinary: function (id, name, base64) {
+			binaries.push({ id: id, name: name, base64Length: base64.length, hostReceivedAt: performance.now() });
+		},
+	};
+}());
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusNotice = document.getElementById('status-notice');
+
+	let initializing = true;
+	let statusMode = '';
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		window.__ts3dBootError = err instanceof Error ? err.message : String(err);
+		window.__ts3dMark('boot-failed');
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('An unknown error occurred.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+	window.__ts3dMissingFeatures = missing;
+	window.__ts3dThreadsEnabled = GODOT_THREADS_ENABLED;
+
+	if (missing.length !== 0) {
+		const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
+		displayFailureNotice(missingMsg + missing.join('\n'));
+	} else {
+		window.__ts3dMark('start-game');
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
+				}
+			},
+		}).then(() => {
+			window.__ts3dMark('start-game-resolved');
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>

@@ -4,11 +4,14 @@ import {
   CREATOR_COMMUNITY_KIND_LABEL,
   CREATOR_COMMUNITY_PROVENANCE_LABEL,
 } from "./creator-community-labels";
+import { CreatorAiTrainingConsentField } from "./ai-training-consent/CreatorAiTrainingConsentField";
 
 import type { StudioPublicationPreflightIssue } from "./studio-publication-preflight";
 import {
   CREATOR_COMMUNITY_CONTENT_KINDS,
   CREATOR_COMMUNITY_PROVENANCES,
+  resolveCreatorCommunityAiTraining,
+  withCreatorCommunityAiTraining,
   type CreatorCommunityContentKind,
   type CreatorCommunityMetadata,
   type CreatorCommunityProvenance,
@@ -19,6 +22,12 @@ export interface StudioPublicationRightsControlsProps {
   readonly metadata: CreatorCommunityMetadata;
   readonly disabled?: boolean;
   readonly issues?: readonly StudioPublicationPreflightIssue[];
+  /**
+   * 이미 저장된 작품을 고치는 중이면 AI 학습 표기 변경이 다음 게시부터 반영될 수 있음을 알린다.
+   * 게시 센터는 저장 여부(`workId`)만 알 수 있어 초안도 포함해 보수적으로 넘기며, 문구는
+   * "이미 게시한 작품은"이라는 조건형이라 초안에서도 사실과 어긋나지 않는다.
+   */
+  readonly published?: boolean;
   readonly onChange: (next: CreatorCommunityMetadata) => void;
 }
 
@@ -42,11 +51,13 @@ export function StudioPublicationRightsControls({
   metadata,
   disabled = false,
   issues = [],
+  published = false,
   onChange,
 }: StudioPublicationRightsControlsProps) {
   const relevantIssues = issues.filter((issue) => issue.path.startsWith("community."));
   const nonHuman = metadata.provenance !== "human";
-  const attributionRequired = nonHuman || metadata.downloadAllowed || metadata.trainingAllowed;
+  const aiTraining = resolveCreatorCommunityAiTraining(metadata);
+  const attributionRequired = nonHuman || metadata.downloadAllowed || aiTraining === "allowed";
 
   return (
     <section
@@ -155,7 +166,7 @@ export function StudioPublicationRightsControls({
         </label>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <label className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-canvas px-3 text-xs text-fg-2">
           <input
             type="checkbox"
@@ -178,18 +189,15 @@ export function StudioPublicationRightsControls({
           />
           <Download size={13} aria-hidden /> 독자 다운로드 허용
         </label>
-        <label className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-canvas px-3 text-xs text-fg-2">
-          <input
-            type="checkbox"
-            checked={metadata.trainingAllowed}
-            disabled={disabled}
-            onChange={(event) => onChange(updateMetadata(metadata, {
-              trainingAllowed: event.target.checked,
-            }))}
-          />
-          <Bot size={13} aria-hidden /> AI 학습 사용 허용
-        </label>
       </div>
+
+      <CreatorAiTrainingConsentField
+        className="mt-3"
+        value={aiTraining}
+        disabled={disabled}
+        published={published}
+        onChange={(consent) => onChange(withCreatorCommunityAiTraining(metadata, consent))}
+      />
 
       {relevantIssues.length > 0 ? (
         <ul className="mt-3 space-y-2" aria-label="접근성 및 권리 확인 사항">

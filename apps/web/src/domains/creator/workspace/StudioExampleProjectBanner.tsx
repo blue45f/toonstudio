@@ -234,10 +234,10 @@ export function StudioExampleProjectBanner() {
           const done = journey.doneIds.includes(step.id as ExampleJourneyStepId);
           return (
             <li key={step.id} className="rounded-2xl border border-line px-4 py-3">
-              <label className="flex cursor-pointer items-start gap-2.5">
+              <label className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2.5">
                 <input
                   type="checkbox"
-                  className="mt-1 shrink-0"
+                  className="row-span-2 mt-1 shrink-0"
                   checked={done}
                   onChange={() => {
                     try {
@@ -252,14 +252,12 @@ export function StudioExampleProjectBanner() {
                     }
                   }}
                 />
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1.5 text-sm font-black text-fg">
-                    {done ? <Check size={14} aria-hidden="true" /> : null}
-                    {bt(step.titleKo, step.titleEn)}
-                  </span>
-                  <span className="mt-0.5 block text-xs leading-5 text-fg-3">
-                    {bt(step.hintKo, step.hintEn)}
-                  </span>
+                <span className="flex min-w-0 items-center gap-1.5 text-sm font-black text-fg">
+                  {done ? <Check size={14} aria-hidden="true" /> : null}
+                  {bt(step.titleKo, step.titleEn)}
+                </span>
+                <span className="mt-0.5 block min-w-0 text-xs leading-5 text-fg-3">
+                  {bt(step.hintKo, step.hintEn)}
                 </span>
               </label>
               <Link

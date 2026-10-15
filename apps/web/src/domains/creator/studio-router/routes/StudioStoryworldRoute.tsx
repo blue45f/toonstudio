@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { StudioRouteLoading } from "../../StudioLazySurfaceFallback";
 
@@ -20,9 +21,11 @@ type StudioStoryworldRouteProps = {
 /** The router owns document identity; this leaf owns the asynchronous page boundary. */
 export function StudioStoryworldRoute(props: StudioStoryworldRouteProps) {
   const t = useT();
+  const [params] = useSearchParams();
+  const initialView = params.get("view") === "plausibility" ? "plausibility" : null;
   return (
     <Suspense fallback={<StudioRouteLoading label={t("studio.canvas.shell.loadingStoryworldLab", "스토리월드 인과관계 랩을 여는 중...")} />}>
-      <StudioStoryworldLabPage {...props} />
+      <StudioStoryworldLabPage {...props} initialView={initialView} />
     </Suspense>
   );
 }

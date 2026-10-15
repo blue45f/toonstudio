@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -116,5 +117,86 @@ describe("studio-bg3d-push-pull", () => {
     expect(studioBg3dPushPullAxes("tube")).toEqual(["y"]);
     expect(studioBg3dPushPullAxes("sphere")).toEqual([]);
     expect(studioBg3dPushPullAxes("plane")).toEqual([]);
+  });
+});
+
+// ── 다축 회전: Three.js XYZ Euler(R = Rx·Ry·Rz) 기준 ─────────────────────────
+// 한 축만 도는 경우에는 어떤 합성 순서든 결과가 같아서 위 테스트들이 순서 오류를 잡지 못했다.
+type Triple = readonly [number, number, number];
+
+const MULTI_AXIS_ROTATIONS: readonly Triple[] = [
+  [0.4, -0.7, 0.9],
+  [Math.PI / 6, Math.PI / 4, Math.PI / 3],
+  [-1.2, 0.5, 2.4],
+  [0.1, 0.2, 0.3],
+];
+
+const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
+
+/** 박스 한 면의 월드 중심. 박스 로컬 반치수는 0.5 이므로 스케일을 곱해 면 중심을 구한다. */
+function worldFaceCenter(
+  transform: { position: Triple; rotation: Triple; scale: Triple },
+  axis: "x" | "y" | "z",
+  sign: 1 | -1,
+): THREE.Vector3 {
+  const index = AXIS_INDEX[axis];
+  const local: [number, number, number] = [0, 0, 0];
+  local[index] = sign * 0.5 * transform.scale[index];
+  return new THREE.Vector3(local[0], local[1], local[2])
+    .applyEuler(new THREE.Euler(transform.rotation[0], transform.rotation[1], transform.rotation[2], "XYZ"))
+    .add(new THREE.Vector3(transform.position[0], transform.position[1], transform.position[2]));
+}
+
+describe("studio-bg3d-push-pull — 다축 회전(Three.js XYZ Euler)", () => {
+  for (const rotation of MULTI_AXIS_ROTATIONS) {
+    for (const axis of ["x", "y", "z"] as const) {
+      for (const face of ["positive", "negative"] as const) {
+        it(`회전 [${rotation.map((v) => v.toFixed(2)).join(", ")}] · ${axis} ${face} 면: 선택 면만 월드 법선 방향으로 이동하고 반대 면은 제자리다`, () => {
+          const primitive = box({ position: [1, 2, -3], rotation: [...rotation], scale: [1.5, 0.8, 2] });
+          const distance = 0.8;
+          const result = planStudioBg3dPushPull(primitive, { axis, face, distance });
+          expect(result.ok).toBe(true);
+          if (!result.ok) return;
+
+          const selectedSign = face === "positive" ? 1 : -1;
+          const oppositeSign = selectedSign === 1 ? -1 : 1;
+          const before = { position: primitive.position as Triple, rotation, scale: primitive.scale as Triple };
+          const after = {
+            position: result.patch.position as Triple,
+            rotation,
+            scale: result.patch.scale as Triple,
+          };
+
+          const oppositeBefore = worldFaceCenter(before, axis, oppositeSign);
+          const oppositeAfter = worldFaceCenter(after, axis, oppositeSign);
+          expect(oppositeAfter.distanceTo(oppositeBefore)).toBeLessThan(1e-9);
+
+          const axisUnit: [number, number, number] = [0, 0, 0];
+          axisUnit[AXIS_INDEX[axis]] = selectedSign;
+          const worldNormal = new THREE.Vector3(axisUnit[0], axisUnit[1], axisUnit[2]).applyEuler(
+            new THREE.Euler(rotation[0], rotation[1], rotation[2], "XYZ"),
+          );
+          const expectedMove = worldNormal.multiplyScalar(result.appliedDistance);
+          const selectedMove = worldFaceCenter(after, axis, selectedSign).sub(worldFaceCenter(before, axis, selectedSign));
+          expect(selectedMove.distanceTo(expectedMove)).toBeLessThan(1e-9);
+        });
+      }
+    }
+  }
+
+  it("중심 이동량은 Three.js 로 회전한 로컬 법선의 절반 거리다", () => {
+    const rotation: Triple = [0.4, -0.7, 0.9];
+    const result = planStudioBg3dPushPull(
+      box({ position: [0, 0, 0], rotation: [...rotation] }),
+      { axis: "z", face: "positive", distance: 1.2 },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const expected = new THREE.Vector3(0, 0, 0.6).applyEuler(
+      new THREE.Euler(rotation[0], rotation[1], rotation[2], "XYZ"),
+    );
+    expect(result.patch.position[0]).toBeCloseTo(expected.x, 10);
+    expect(result.patch.position[1]).toBeCloseTo(expected.y, 10);
+    expect(result.patch.position[2]).toBeCloseTo(expected.z, 10);
   });
 });

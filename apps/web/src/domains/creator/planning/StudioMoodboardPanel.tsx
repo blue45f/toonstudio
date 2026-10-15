@@ -348,7 +348,7 @@ function AddCardForm({
       return;
     }
     if (draft.kind === "link") {
-      let valid = false;
+      let valid: boolean;
       try {
         const url = new URL(value);
         valid = url.protocol === "http:" || url.protocol === "https:";

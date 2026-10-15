@@ -145,10 +145,16 @@ jobs:
           node-version: 24
           cache: pnpm
       - name: Verify mandatory CI wiring before installing dependencies
-        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs
+        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs
       - name: Verify deduplicated PR workflow policy
         run: python3 scripts/verify-pr-workflow-fanout.py
+      # 의존성 설치 전에 끝나는 파일 크기 래칫: 새 파일 줄 수 상한, 기록된 초과 파일 증가 금지, 새 @ts-nocheck 금지(상한 값은 기준선 한 곳에만 둔다).
+      - name: Source file size ratchet (no build, dependency-free)
+        run: node scripts/check-source-file-size.mjs
       - run: pnpm install --frozen-lockfile --prefer-offline
+      # 빌드 없이 Studio 진입 그래프의 정적 성장을 원인 import 와 함께 알린다(typecheck 보다 먼저 몇 초 안에 실패).
+      - name: Studio entry graph ratchet (static imports only, no build)
+        run: pnpm run check:studio-eager-graph
       - name: Restore TypeScript incremental state
         id: typescript-cache
         uses: actions/cache/restore@v4

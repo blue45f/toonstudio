@@ -1,0 +1,3783 @@
+{
+ "label": "4.4.1",
+ "schema": 1,
+ "startedAt": "2026-10-15T03:23:26.483Z",
+ "environment": {
+  "date": "2026-10-15T03:23:29.785Z",
+  "node": "v24.21.0",
+  "platform": "linux 6.18.44-fc-v114 x64",
+  "cpus": 4,
+  "cpuModel": "Intel(R) Xeon(R) Processor",
+  "totalMemMiB": 16093,
+  "chromium": "141.0.7390.37",
+  "webgl": {
+   "webgl2": true,
+   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "maxTextureSize": 8192,
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+   "hardwareConcurrency": 4,
+   "webgpu": "undefined"
+  },
+  "software": "소프트웨어 렌더링(SwiftShader). 실제 GPU 아님",
+  "viewport": {
+   "width": 960,
+   "height": 540
+  },
+  "repeat": 5,
+  "godotLabel": "4.4.1",
+  "buildFiles": {
+   "web/index.wasm": {
+    "bytes": 43699190,
+    "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+   },
+   "web/index.js": {
+    "bytes": 317142,
+    "sha256": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31"
+   },
+   "web/index.pck": {
+    "bytes": 55632,
+    "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+   },
+   "web-threads/index.wasm": {
+    "bytes": 41848195,
+    "sha256": "06e279b5d08a8888fc6c670b12d48c0e953bb526429ce521f2e17ec91fc15286"
+   },
+   "web-threads/index.js": {
+    "bytes": 370560,
+    "sha256": "dd8b42107108b4bc30c21eec8b2bb75e21b389f79b6e5d6553c7483eac284a33"
+   },
+   "web-threads/index.pck": {
+    "bytes": 55632,
+    "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+   }
+  },
+  "loadAverageAtStart": [
+   2.57,
+   4.17,
+   6.68
+  ]
+ },
+ "suites": {
+  "compare": {
+   "note": "같은 GLB·카메라·툰 3단 + 픽셀 외곽선 2px·960x540·MSAA 없음. 탐색 시작 -> GLB 가 그려진 첫 프레임까지(ms, 로컬 서버라 네트워크 시간은 거의 0)와 이후 프레임, 메모리.",
+   "models": {
+    "synthetic-character": {
+     "godot": {
+      "ok": true,
+      "triangles": 1664,
+      "modelFirstFrameMs": {
+       "n": 5,
+       "median": 1524.8,
+       "mad": 69.4,
+       "min": 1455.4,
+       "max": 2709.4
+      },
+      "engineFirstFrameMs": {
+       "n": 5,
+       "median": 1033.3,
+       "mad": 39,
+       "min": 994.3,
+       "max": 2072.3
+      },
+      "loadMs": {
+       "n": 5,
+       "median": 101.1,
+       "mad": 3.1,
+       "min": 95.6,
+       "max": 131.9
+      },
+      "parseMs": {
+       "n": 5,
+       "median": 10.799,
+       "mad": 1.699,
+       "min": 8.5,
+       "max": 39.8
+      },
+      "generateMs": {
+       "n": 5,
+       "median": 5.5,
+       "mad": 0.4,
+       "min": 4.701,
+       "max": 6.199
+      },
+      "frameMsMedian": {
+       "n": 5,
+       "median": 20.833,
+       "mad": 0.133,
+       "min": 20.7,
+       "max": 22.222
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 38.44,
+       "mad": 0,
+       "min": 38.44,
+       "max": 38.44
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 89.8,
+       "mad": 0.23,
+       "min": 89.57,
+       "max": 91.25
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1431,
+       "mad": 9.6,
+       "min": 1419,
+       "max": 1464.1
+      },
+      "rssByTypeSample": {
+       "browser": 586.4,
+       "zygote": 119,
+       "gpu-process": 152.9,
+       "utility": 228.2,
+       "renderer": 354.1
+      }
+     },
+     "three": {
+      "triangles": 1664,
+      "drawCalls": 12,
+      "modelFirstFrameMs": {
+       "n": 5,
+       "median": 115.7,
+       "mad": 7.8,
+       "min": 97.2,
+       "max": 146.2
+      },
+      "fetchMs": {
+       "n": 5,
+       "median": 4.2,
+       "mad": 0.3,
+       "min": 3.7,
+       "max": 4.7
+      },
+      "parseMs": {
+       "n": 5,
+       "median": 8.5,
+       "mad": 0.5,
+       "min": 8,
+       "max": 14.8
+      },
+      "buildMs": {
+       "n": 5,
+       "median": 1.2,
+       "mad": 0.1,
+       "min": 1.1,
+       "max": 1.5
+      },
+      "frameMsMedian": {
+       "n": 5,
+       "median": 16.7,
+       "mad": 0,
+       "min": 16.6,
+       "max": 16.7
+      },
+      "jsHeapMiB": {
+       "n": 5,
+       "median": 5.635,
+       "mad": 0.06,
+       "min": 5.445,
+       "max": 5.695
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1149.5,
+       "mad": 3.7,
+       "min": 1145,
+       "max": 1166.3
+      },
+      "rssByTypeSample": {
+       "browser": 589.5,
+       "zygote": 119.6,
+       "gpu-process": 120.8,
+       "utility": 148.9,
+       "renderer": 187.4
+      }
+     }
+    },
+    "orion-avatar": {
+     "godot": {
+      "ok": true,
+      "triangles": 14604,
+      "modelFirstFrameMs": {
+       "n": 5,
+       "median": 2017.3,
+       "mad": 170.3,
+       "min": 1847,
+       "max": 3124.7
+      },
+      "engineFirstFrameMs": {
+       "n": 5,
+       "median": 1090.9,
+       "mad": 60.9,
+       "min": 983.3,
+       "max": 1938.5
+      },
+      "loadMs": {
+       "n": 5,
+       "median": 354.9,
+       "mad": 20.5,
+       "min": 334.4,
+       "max": 484.1
+      },
+      "parseMs": {
+       "n": 5,
+       "median": 169.1,
+       "mad": 11.6,
+       "min": 157.5,
+       "max": 236.1
+      },
+      "generateMs": {
+       "n": 5,
+       "median": 73.5,
+       "mad": 14,
+       "min": 59,
+       "max": 101.7
+      },
+      "frameMsMedian": {
+       "n": 5,
+       "median": 30,
+       "mad": 1.066,
+       "min": 28.934,
+       "max": 33.234
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 95.81,
+       "mad": 0,
+       "min": 95.81,
+       "max": 95.81
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 108.82,
+       "mad": 0.01,
+       "min": 108.8,
+       "max": 152.56
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1516.6,
+       "mad": 0.9,
+       "min": 1515.7,
+       "max": 1528.2
+      },
+      "rssByTypeSample": {
+       "browser": 571.9,
+       "zygote": 120.2,
+       "gpu-process": 188.1,
+       "utility": 228.3,
+       "renderer": 407.3
+      }
+     },
+     "three": {
+      "triangles": 14604,
+      "drawCalls": 22,
+      "modelFirstFrameMs": {
+       "n": 5,
+       "median": 485.9,
+       "mad": 30.6,
+       "min": 449.2,
+       "max": 622
+      },
+      "fetchMs": {
+       "n": 5,
+       "median": 19.5,
+       "mad": 2.7,
+       "min": 16.8,
+       "max": 84
+      },
+      "parseMs": {
+       "n": 5,
+       "median": 51.8,
+       "mad": 3.7,
+       "min": 48.1,
+       "max": 102.9
+      },
+      "buildMs": {
+       "n": 5,
+       "median": 20.7,
+       "mad": 4.7,
+       "min": 15.8,
+       "max": 25.7
+      },
+      "frameMsMedian": {
+       "n": 5,
+       "median": 17.1,
+       "mad": 0.2,
+       "min": 16.6,
+       "max": 18.8
+      },
+      "jsHeapMiB": {
+       "n": 5,
+       "median": 47.654,
+       "mad": 0.242,
+       "min": 47.413,
+       "max": 48.836
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1262.6,
+       "mad": 0.2,
+       "min": 1262.4,
+       "max": 1265.1
+      },
+      "rssByTypeSample": {
+       "browser": 572.9,
+       "zygote": 119.3,
+       "gpu-process": 161.5,
+       "utility": 148.1,
+       "renderer": 260.8
+      }
+     }
+    },
+    "studio-room": {
+     "godot": {
+      "ok": true,
+      "triangles": 254771,
+      "modelFirstFrameMs": {
+       "n": 5,
+       "median": 2229.7,
+       "mad": 64.7,
+       "min": 2165,
+       "max": 3640.4
+      },
+      "engineFirstFrameMs": {
+       "n": 5,
+       "median": 1081.5,
+       "mad": 32.5,
+       "min": 971.7,
+       "max": 1915.7
+      },
+      "loadMs": {
+       "n": 5,
+       "median": 396.8,
+       "mad": 41.1,
+       "min": 355.7,
+       "max": 567.9
+      },
+      "parseMs": {
+       "n": 5,
+       "median": 212,
+       "mad": 21.701,
+       "min": 190.299,
+       "max": 324.6
+      },
+      "generateMs": {
+       "n": 5,
+       "median": 33.701,
+       "mad": 0.201,
+       "min": 33.5,
+       "max": 34.9
+      },
+      "frameMsMedian": {
+       "n": 5,
+       "median": 127.778,
+       "mad": 0.944,
+       "min": 126.833,
+       "max": 133.333
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 115,
+       "mad": 0,
+       "min": 115,
+       "max": 115
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 132.49,
+       "mad": 6.06,
+       "min": 126.43,
+       "max": 174.19
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1549.5,
+       "mad": 1.2,
+       "min": 1547.2,
+       "max": 1550.7
+      },
+      "rssByTypeSample": {
+       "browser": 572.9,
+       "zygote": 120.4,
+       "gpu-process": 205.3,
+       "utility": 228.4,
+       "renderer": 420.2
+      }
+     },
+     "three": {
+      "triangles": 254771,
+      "drawCalls": 290,
+      "modelFirstFrameMs": {
+       "n": 5,
+       "median": 414.8,
+       "mad": 10.4,
+       "min": 358.7,
+       "max": 441.6
+      },
+      "fetchMs": {
+       "n": 5,
+       "median": 37.4,
+       "mad": 6.9,
+       "min": 30.5,
+       "max": 78.5
+      },
+      "parseMs": {
+       "n": 5,
+       "median": 132.8,
+       "mad": 19,
+       "min": 104.8,
+       "max": 153.3
+      },
+      "buildMs": {
+       "n": 5,
+       "median": 5.4,
+       "mad": 0.4,
+       "min": 5,
+       "max": 6.4
+      },
+      "frameMsMedian": {
+       "n": 5,
+       "median": 64.9,
+       "mad": 2.7,
+       "min": 61.9,
+       "max": 73.4
+      },
+      "jsHeapMiB": {
+       "n": 5,
+       "median": 26.99,
+       "mad": 0.97,
+       "min": 25.641,
+       "max": 27.979
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1247.3,
+       "mad": 0.6,
+       "min": 1245.4,
+       "max": 1247.9
+      },
+      "rssByTypeSample": {
+       "browser": 572.3,
+       "zygote": 120.1,
+       "gpu-process": 138.9,
+       "utility": 148.7,
+       "renderer": 266.2
+      }
+     }
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     2.57,
+     4.17,
+     6.68
+    ],
+    "loadAverageAfter": [
+     4.32,
+     4.36,
+     6.49
+    ],
+    "seconds": 99.9
+   }
+  },
+  "glb": {
+   "note": "같은 페이지에서 방법별로 반복 로드. parse/generate/toon 은 Godot 쪽 측정(ms), acquire 는 바이트 확보(HTTP/복사), total 은 명령 전송~응답.",
+   "models": {
+    "synthetic-character": {
+     "model": {
+      "aabb": [
+       -0.389999985694885,
+       0.100000001490116,
+       -0.239999994635582,
+       0.779999971389771,
+       1.6599999666214,
+       0.479999989271164
+      ],
+      "blendShapes": 0,
+      "bones": 0,
+      "meshInstances": 6,
+      "nodes": 8,
+      "skeletons": 0,
+      "surfaces": 6,
+      "textures": 0,
+      "triangles": 1664,
+      "vertices": 986
+     },
+     "verification": {
+      "trianglesMatch": true,
+      "expectedTriangles": 1664,
+      "godotTriangles": 1664,
+      "aabbMaxAbsDiff": 0
+     },
+     "methods": {
+      "url-64k": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 112.8,
+        "mad": 2.1,
+        "min": 107.9,
+        "max": 116
+       },
+       "jsFetch": {
+        "n": 0
+       },
+       "acquire": {
+        "n": 5,
+        "median": 107.299,
+        "mad": 2.998,
+        "min": 84.801,
+        "max": 111.6
+       },
+       "parse": {
+        "n": 5,
+        "median": 3.201,
+        "mad": 0.801,
+        "min": 1.301,
+        "max": 10.5
+       },
+       "generate": {
+        "n": 5,
+        "median": 0.4,
+        "mad": 0.001,
+        "min": 0.3,
+        "max": 7.4
+       },
+       "toon": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0,
+        "min": 0.1,
+        "max": 5.1
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 111,
+        "jsFetchMs": null,
+        "acquireMs": 84.801,
+        "parseMs": 10.5,
+        "generateMs": 7.4,
+        "toonMs": 5.1,
+        "error": null
+       },
+       "errors": []
+      },
+      "url-8m": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 119.7,
+        "mad": 9.4,
+        "min": 110.3,
+        "max": 149.8
+       },
+       "jsFetch": {
+        "n": 0
+       },
+       "acquire": {
+        "n": 5,
+        "median": 116.8,
+        "mad": 5.7,
+        "min": 107.299,
+        "max": 144.301
+       },
+       "parse": {
+        "n": 5,
+        "median": 2,
+        "mad": 1,
+        "min": 1,
+        "max": 5
+       },
+       "generate": {
+        "n": 5,
+        "median": 0.5,
+        "mad": 0.1,
+        "min": 0.299,
+        "max": 0.701
+       },
+       "toon": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0.1,
+        "min": 0,
+        "max": 3.4
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 132.59999999962747,
+        "jsFetchMs": null,
+        "acquireMs": 122.199,
+        "parseMs": 5,
+        "generateMs": 0.701,
+        "toonMs": 3.4,
+        "error": null
+       },
+       "errors": []
+      },
+      "inbox-no-eval": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 2.7,
+        "mad": 0.6,
+        "min": 2.1,
+        "max": 4.5
+       },
+       "jsFetch": {
+        "n": 5,
+        "median": 63,
+        "mad": 2,
+        "min": 58.3,
+        "max": 87.3
+       },
+       "acquire": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0.1,
+        "min": 0,
+        "max": 0.8
+       },
+       "parse": {
+        "n": 5,
+        "median": 1.4,
+        "mad": 0.4,
+        "min": 1,
+        "max": 2.5
+       },
+       "generate": {
+        "n": 5,
+        "median": 0.4,
+        "mad": 0.001,
+        "min": 0.299,
+        "max": 0.6
+       },
+       "toon": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0.001,
+        "min": 0,
+        "max": 0.101
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 4.5,
+        "jsFetchMs": 87.30000000074506,
+        "acquireMs": 0.8,
+        "parseMs": 2.299,
+        "generateMs": 0.4,
+        "toonMs": 0.1,
+        "error": null
+       },
+       "errors": []
+      },
+      "inbox-eval": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 3.2,
+        "mad": 1.1,
+        "min": 2.1,
+        "max": 5.8
+       },
+       "jsFetch": {
+        "n": 5,
+        "median": 70.9,
+        "mad": 4.8,
+        "min": 44.1,
+        "max": 90.1
+       },
+       "acquire": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.299
+       },
+       "parse": {
+        "n": 5,
+        "median": 1.2,
+        "mad": 0.1,
+        "min": 1.1,
+        "max": 2.299
+       },
+       "generate": {
+        "n": 5,
+        "median": 0.701,
+        "mad": 0.199,
+        "min": 0.4,
+        "max": 1.699
+       },
+       "toon": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0.1,
+        "min": 0,
+        "max": 0.201
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 5.800000000745058,
+        "jsFetchMs": 90.10000000149012,
+        "acquireMs": 0.299,
+        "parseMs": 1.301,
+        "generateMs": 1.699,
+        "toonMs": 0.101,
+        "error": null
+       },
+       "errors": []
+      }
+     },
+     "afterLoads": {
+      "wasmMemoryMiB": 38.44,
+      "jsHeapUsedMiB": 92.39,
+      "rssTotalMiB": 1494.4,
+      "videoMemMiB": 11.76,
+      "textureMemMiB": 3.6
+     }
+    },
+    "orion-avatar": {
+     "model": {
+      "aabb": [
+       -0.868276000022888,
+       -0.00192856986541301,
+       -0.152342408895493,
+       1.73659420013428,
+       1.71316063404083,
+       0.341560184955597
+      ],
+      "blendShapes": 56,
+      "bones": 70,
+      "meshInstances": 10,
+      "nodes": 16,
+      "skeletons": 1,
+      "surfaces": 11,
+      "textures": 1,
+      "triangles": 14604,
+      "vertices": 16070
+     },
+     "verification": {
+      "trianglesMatch": true,
+      "expectedTriangles": 14604,
+      "godotTriangles": 14604,
+      "aabbMaxAbsDiff": null
+     },
+     "methods": {
+      "url-64k": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 2231.3,
+        "mad": 6.3,
+        "min": 1350.3,
+        "max": 2237.6
+       },
+       "jsFetch": {
+        "n": 0
+       },
+       "acquire": {
+        "n": 5,
+        "median": 2068.699,
+        "mad": 25.301,
+        "min": 1094.699,
+        "max": 2094
+       },
+       "parse": {
+        "n": 5,
+        "median": 121.8,
+        "mad": 18.7,
+        "min": 101.101,
+        "max": 162.1
+       },
+       "generate": {
+        "n": 5,
+        "median": 36.701,
+        "mad": 0.701,
+        "min": 36,
+        "max": 87.601
+       },
+       "toon": {
+        "n": 5,
+        "median": 0.199,
+        "mad": 0.099,
+        "min": 0.1,
+        "max": 1.1
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 1350.2999999988824,
+        "jsFetchMs": null,
+        "acquireMs": 1094.699,
+        "parseMs": 162.1,
+        "generateMs": 87.601,
+        "toonMs": 1.1,
+        "error": null
+       },
+       "errors": []
+      },
+      "url-8m": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 366.2,
+        "mad": 4.2,
+        "min": 362,
+        "max": 599.8
+       },
+       "jsFetch": {
+        "n": 0
+       },
+       "acquire": {
+        "n": 5,
+        "median": 221.801,
+        "mad": 1.4,
+        "min": 213.5,
+        "max": 438.699
+       },
+       "parse": {
+        "n": 5,
+        "median": 104.9,
+        "mad": 3.701,
+        "min": 101.199,
+        "max": 116.801
+       },
+       "generate": {
+        "n": 5,
+        "median": 37.299,
+        "mad": 0.6,
+        "min": 35.901,
+        "max": 56.3
+       },
+       "toon": {
+        "n": 5,
+        "median": 0.199,
+        "mad": 0.098,
+        "min": 0.099,
+        "max": 0.3
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 599.8000000007451,
+        "jsFetchMs": null,
+        "acquireMs": 438.699,
+        "parseMs": 102.899,
+        "generateMs": 56.3,
+        "toonMs": 0.2,
+        "error": null
+       },
+       "errors": []
+      },
+      "inbox-no-eval": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 141.9,
+        "mad": 1,
+        "min": 140.9,
+        "max": 155.6
+       },
+       "jsFetch": {
+        "n": 5,
+        "median": 127.5,
+        "mad": 2.7,
+        "min": 124.8,
+        "max": 139.9
+       },
+       "acquire": {
+        "n": 5,
+        "median": 0.599,
+        "mad": 0.099,
+        "min": 0.5,
+        "max": 1.101
+       },
+       "parse": {
+        "n": 5,
+        "median": 103.6,
+        "mad": 1.6,
+        "min": 102,
+        "max": 109
+       },
+       "generate": {
+        "n": 5,
+        "median": 36.5,
+        "mad": 0.401,
+        "min": 36.099,
+        "max": 44.9
+       },
+       "toon": {
+        "n": 5,
+        "median": 0.2,
+        "mad": 0.001,
+        "min": 0.1,
+        "max": 0.301
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 150.10000000149012,
+        "jsFetchMs": 126,
+        "acquireMs": 1,
+        "parseMs": 109,
+        "generateMs": 37.901,
+        "toonMs": 0.199,
+        "error": null
+       },
+       "errors": []
+      },
+      "inbox-eval": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 151.5,
+        "mad": 2.3,
+        "min": 146.5,
+        "max": 178
+       },
+       "jsFetch": {
+        "n": 5,
+        "median": 145.4,
+        "mad": 15.4,
+        "min": 130,
+        "max": 183.8
+       },
+       "acquire": {
+        "n": 5,
+        "median": 0.599,
+        "mad": 0.002,
+        "min": 0.5,
+        "max": 0.601
+       },
+       "parse": {
+        "n": 5,
+        "median": 107.801,
+        "mad": 1.901,
+        "min": 100.6,
+        "max": 130.6
+       },
+       "generate": {
+        "n": 5,
+        "median": 38.2,
+        "mad": 1.6,
+        "min": 36.299,
+        "max": 44.799
+       },
+       "toon": {
+        "n": 5,
+        "median": 0.201,
+        "mad": 0,
+        "min": 0.101,
+        "max": 0.201
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 153.59999999962747,
+        "jsFetchMs": 130,
+        "acquireMs": 0.6,
+        "parseMs": 100.6,
+        "generateMs": 38.5,
+        "toonMs": 0.199,
+        "error": null
+       },
+       "errors": []
+      }
+     },
+     "afterLoads": {
+      "wasmMemoryMiB": 95.81,
+      "jsHeapUsedMiB": 112.85,
+      "rssTotalMiB": 1709.4,
+      "videoMemMiB": 35.62,
+      "textureMemMiB": 16.93
+     }
+    },
+    "studio-room": {
+     "model": {
+      "aabb": [
+       -4.64999961853027,
+       -0.100000001490116,
+       -3.65000009536743,
+       9.29999923706055,
+       3.39999985694885,
+       9.92699432373047
+      ],
+      "blendShapes": 0,
+      "bones": 0,
+      "meshInstances": 98,
+      "nodes": 99,
+      "skeletons": 0,
+      "surfaces": 145,
+      "textures": 9,
+      "triangles": 254771,
+      "vertices": 247022
+     },
+     "verification": {
+      "trianglesMatch": true,
+      "expectedTriangles": 254771,
+      "godotTriangles": 254771,
+      "aabbMaxAbsDiff": null
+     },
+     "methods": {
+      "url-64k": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 18060.4,
+        "mad": 439.6,
+        "min": 2043.4,
+        "max": 18938.3
+       },
+       "jsFetch": {
+        "n": 0
+       },
+       "acquire": {
+        "n": 5,
+        "median": 17812.6,
+        "mad": 254.099,
+        "min": 1774.201,
+        "max": 18511.301
+       },
+       "parse": {
+        "n": 5,
+        "median": 250.1,
+        "mad": 23.399,
+        "min": 226.701,
+        "max": 404.7
+       },
+       "generate": {
+        "n": 5,
+        "median": 23.3,
+        "mad": 5.7,
+        "min": 17.6,
+        "max": 33.1
+       },
+       "toon": {
+        "n": 5,
+        "median": 2.2,
+        "mad": 0.3,
+        "min": 1.1,
+        "max": 2.801
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 2043.3999999985099,
+        "jsFetchMs": null,
+        "acquireMs": 1774.201,
+        "parseMs": 230.4,
+        "generateMs": 31.799,
+        "toonMs": 2.801,
+        "error": null
+       },
+       "errors": []
+      },
+      "url-8m": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 1801.1,
+        "mad": 51.4,
+        "min": 1584,
+        "max": 1852.5
+       },
+       "jsFetch": {
+        "n": 0
+       },
+       "acquire": {
+        "n": 5,
+        "median": 1533.801,
+        "mad": 97.599,
+        "min": 1359.099,
+        "max": 1631.4
+       },
+       "parse": {
+        "n": 5,
+        "median": 229,
+        "mad": 14.699,
+        "min": 182.6,
+        "max": 243.699
+       },
+       "generate": {
+        "n": 5,
+        "median": 19.8,
+        "mad": 1.3,
+        "min": 16.5,
+        "max": 37.199
+       },
+       "toon": {
+        "n": 5,
+        "median": 1.2,
+        "mad": 0.101,
+        "min": 1,
+        "max": 1.301
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 1584,
+        "jsFetchMs": null,
+        "acquireMs": 1359.099,
+        "parseMs": 182.6,
+        "generateMs": 37.199,
+        "toonMs": 1.301,
+        "error": null
+       },
+       "errors": []
+      },
+      "inbox-no-eval": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 242.7,
+        "mad": 2.7,
+        "min": 240,
+        "max": 279.4
+       },
+       "jsFetch": {
+        "n": 5,
+        "median": 1016.8,
+        "mad": 152.6,
+        "min": 587.3,
+        "max": 1254.1
+       },
+       "acquire": {
+        "n": 5,
+        "median": 1.599,
+        "mad": 0.398,
+        "min": 1.201,
+        "max": 4.1
+       },
+       "parse": {
+        "n": 5,
+        "median": 220.1,
+        "mad": 1.6,
+        "min": 218.5,
+        "max": 253.799
+       },
+       "generate": {
+        "n": 5,
+        "median": 16.601,
+        "mad": 0.501,
+        "min": 16.1,
+        "max": 18.199
+       },
+       "toon": {
+        "n": 5,
+        "median": 1.201,
+        "mad": 0.201,
+        "min": 0.9,
+        "max": 1.7
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 279.3999999985099,
+        "jsFetchMs": 1036.800000000745,
+        "acquireMs": 4.1,
+        "parseMs": 253.799,
+        "generateMs": 17.801,
+        "toonMs": 1.299,
+        "error": null
+       },
+       "errors": []
+      },
+      "inbox-eval": {
+       "ok": true,
+       "total": {
+        "n": 5,
+        "median": 248.1,
+        "mad": 2,
+        "min": 246.1,
+        "max": 304.7
+       },
+       "jsFetch": {
+        "n": 5,
+        "median": 1050,
+        "mad": 43.1,
+        "min": 998.9,
+        "max": 1145
+       },
+       "acquire": {
+        "n": 5,
+        "median": 2.1,
+        "mad": 0.699,
+        "min": 1.4,
+        "max": 6.201
+       },
+       "parse": {
+        "n": 5,
+        "median": 227.4,
+        "mad": 4.9,
+        "min": 222.5,
+        "max": 282.5
+       },
+       "generate": {
+        "n": 5,
+        "median": 16.4,
+        "mad": 0.4,
+        "min": 16,
+        "max": 20.799
+       },
+       "toon": {
+        "n": 5,
+        "median": 1.201,
+        "mad": 0.3,
+        "min": 0.901,
+        "max": 3.799
+       },
+       "first": {
+        "ok": true,
+        "totalMs": 277.30000000074506,
+        "jsFetchMs": 1050,
+        "acquireMs": 6.201,
+        "parseMs": 245,
+        "generateMs": 20.799,
+        "toonMs": 1.201,
+        "error": null
+       },
+       "errors": []
+      }
+     },
+     "afterLoads": {
+      "wasmMemoryMiB": 115,
+      "jsHeapUsedMiB": 149.73,
+      "rssTotalMiB": 1761.3,
+      "videoMemMiB": 41.63,
+      "textureMemMiB": 30.6
+     }
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     4.32,
+     4.36,
+     6.49
+    ],
+    "loadAverageAfter": [
+     4.34,
+     4.3,
+     6.19
+    ],
+    "seconds": 127.4
+   }
+  },
+  "ext": {
+   "note": "같은 GLB 를 Godot 4.4.1 GLTFDocument 와 Three(+Meshopt/Draco/KTX2 디코더)로 연다.",
+   "godot": {
+    "synthetic-character.glb": {
+     "renderCheck": {
+      "uniqueColorsSampled": 225,
+      "coveredRatio": 0.135
+     },
+     "ok": true,
+     "error": null,
+     "errorCode": null,
+     "extensionsRequired": [],
+     "triangles": 1664,
+     "texturesReported": 0,
+     "consoleErrors": []
+    },
+    "ext-meshopt.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'EXT_meshopt_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?",
+      "ERROR: glTF: Can't import file '', required extension 'KHR_mesh_quantization' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "ext-quantized.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'KHR_mesh_quantization' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "ext-draco.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'KHR_draco_mesh_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "ext-basisu.glb": {
+     "renderCheck": {
+      "uniqueColorsSampled": 1358,
+      "coveredRatio": 0.135
+     },
+     "ok": true,
+     "error": null,
+     "errorCode": null,
+     "extensionsRequired": [
+      "KHR_texture_basisu"
+     ],
+     "triangles": 1664,
+     "texturesReported": 1,
+     "consoleErrors": []
+    },
+    "declared-khr_draco_mesh_compression.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'KHR_draco_mesh_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "declared-khr_texture_basisu.glb": {
+     "renderCheck": null,
+     "ok": true,
+     "error": null,
+     "errorCode": null,
+     "extensionsRequired": [
+      "KHR_texture_basisu"
+     ],
+     "triangles": 1664,
+     "texturesReported": 0,
+     "consoleErrors": []
+    },
+    "declared-ext_meshopt_compression.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'EXT_meshopt_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "declared-khr_mesh_quantization.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'KHR_mesh_quantization' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    }
+   },
+   "three": [
+    {
+     "url": "/fixtures/synthetic-character.glb",
+     "ok": true,
+     "ms": 7.900000000372529,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/ext-meshopt.glb",
+     "ok": true,
+     "ms": 5.800000000745058,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/ext-quantized.glb",
+     "ok": true,
+     "ms": 3.199999999254942,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/ext-draco.glb",
+     "ok": true,
+     "ms": 59.5,
+     "triangles": 1616,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/ext-basisu.glb",
+     "ok": true,
+     "ms": 80.5,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 6
+    },
+    {
+     "url": "/fixtures/declared-khr_draco_mesh_compression.glb",
+     "ok": true,
+     "ms": 6,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/declared-khr_texture_basisu.glb",
+     "ok": true,
+     "ms": 3.300000000745058,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/declared-ext_meshopt_compression.glb",
+     "ok": true,
+     "ms": 6,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/declared-khr_mesh_quantization.glb",
+     "ok": true,
+     "ms": 3.900000000372529,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    }
+   ],
+   "godotSupportedExtensions": [
+    "EXT_texture_webp",
+    "GODOT_single_root",
+    "KHR_animation_pointer",
+    "KHR_lights_punctual",
+    "KHR_materials_emissive_strength",
+    "KHR_materials_pbrSpecularGlossiness",
+    "KHR_materials_unlit",
+    "KHR_texture_basisu",
+    "KHR_texture_transform",
+    "OMI_collider",
+    "OMI_physics_body",
+    "OMI_physics_shape"
+   ],
+   "_meta": {
+    "loadAverageBefore": [
+     4.34,
+     4.3,
+     6.19
+    ],
+    "loadAverageAfter": [
+     4.31,
+     4.3,
+     6.18
+    ],
+    "seconds": 6.8
+   }
+  },
+  "twopoint": {
+   "note": "수직 모서리(높이 3m) 위·아래 점의 화면 x 차이(px), 타깃의 화면 중심 오차(px), 저장소 공식과 엔진 frustum_offset 에서 역산한 lensShiftY 비교. 960x540.",
+   "cases": [
+    {
+     "case": {
+      "distance": 10,
+      "fovDegrees": 40,
+      "pitch": 20,
+      "yaw": 0
+     },
+     "pitchedMaxVerticalEdgeDxPx": 19.079,
+     "twoPointMaxVerticalEdgeDxPx": 0,
+     "pitchedTargetErrPx": 0,
+     "twoPointTargetErrPx": 0.000031,
+     "formulaLensShiftY": 0.499999996,
+     "formulaLensShiftYUnclamped": 0.5,
+     "clampedByDocumentLimit": false,
+     "engineLensShiftY": 0.5
+    },
+    {
+     "case": {
+      "distance": 8,
+      "fovDegrees": 50,
+      "pitch": 12,
+      "yaw": 25
+     },
+     "pitchedMaxVerticalEdgeDxPx": 16.8944,
+     "twoPointMaxVerticalEdgeDxPx": 0,
+     "pitchedTargetErrPx": 0,
+     "twoPointTargetErrPx": 0,
+     "formulaLensShiftY": 0.22791448,
+     "formulaLensShiftYUnclamped": 0.227914,
+     "clampedByDocumentLimit": false,
+     "engineLensShiftY": 0.227914476
+    },
+    {
+     "case": {
+      "distance": 14,
+      "fovDegrees": 35,
+      "pitch": 30,
+      "yaw": -40
+     },
+     "pitchedMaxVerticalEdgeDxPx": 15.5293,
+     "twoPointMaxVerticalEdgeDxPx": 0,
+     "pitchedTargetErrPx": 0,
+     "twoPointTargetErrPx": 0,
+     "formulaLensShiftY": 0.915560582,
+     "formulaLensShiftYUnclamped": 0.915561,
+     "clampedByDocumentLimit": false,
+     "engineLensShiftY": 0.915560644
+    },
+    {
+     "case": {
+      "distance": 9,
+      "fovDegrees": 60,
+      "pitch": -15,
+      "yaw": 70
+     },
+     "pitchedMaxVerticalEdgeDxPx": 12.7959,
+     "twoPointMaxVerticalEdgeDxPx": 0,
+     "pitchedTargetErrPx": 0,
+     "twoPointTargetErrPx": 0,
+     "formulaLensShiftY": -0.232050831,
+     "formulaLensShiftYUnclamped": -0.232051,
+     "clampedByDocumentLimit": false,
+     "engineLensShiftY": -0.232050832
+    },
+    {
+     "case": {
+      "distance": 12,
+      "fovDegrees": 24,
+      "pitch": 45,
+      "yaw": 120
+     },
+     "pitchedMaxVerticalEdgeDxPx": 35.3855,
+     "twoPointMaxVerticalEdgeDxPx": 0,
+     "pitchedTargetErrPx": 0.000043,
+     "twoPointTargetErrPx": 190.249878,
+     "formulaLensShiftY": 2,
+     "formulaLensShiftYUnclamped": 2.352315,
+     "clampedByDocumentLimit": true,
+     "engineLensShiftY": 2
+    },
+    {
+     "case": {
+      "distance": 6,
+      "fovDegrees": 90,
+      "pitch": 5,
+      "yaw": -75
+     },
+     "pitchedMaxVerticalEdgeDxPx": 5.9476,
+     "twoPointMaxVerticalEdgeDxPx": 0,
+     "pitchedTargetErrPx": 0,
+     "twoPointTargetErrPx": 0,
+     "formulaLensShiftY": 0.043744331,
+     "formulaLensShiftYUnclamped": 0.043744,
+     "clampedByDocumentLimit": false,
+     "engineLensShiftY": 0.043744328
+    },
+    {
+     "case": {
+      "distance": 11,
+      "fovDegrees": 45,
+      "pitch": -35,
+      "yaw": 10
+     },
+     "pitchedMaxVerticalEdgeDxPx": 24.5329,
+     "twoPointMaxVerticalEdgeDxPx": 0,
+     "pitchedTargetErrPx": 0.000031,
+     "twoPointTargetErrPx": 0,
+     "formulaLensShiftY": -0.845225281,
+     "formulaLensShiftYUnclamped": -0.845225,
+     "clampedByDocumentLimit": false,
+     "engineLensShiftY": -0.845225287
+    },
+    {
+     "case": {
+      "distance": 16,
+      "fovDegrees": 30,
+      "pitch": 60,
+      "yaw": 180
+     },
+     "pitchedMaxVerticalEdgeDxPx": 25.7357,
+     "twoPointMaxVerticalEdgeDxPx": 0,
+     "pitchedTargetErrPx": 0,
+     "twoPointTargetErrPx": 665.307495,
+     "formulaLensShiftY": 2,
+     "formulaLensShiftYUnclamped": 3.232051,
+     "clampedByDocumentLimit": true,
+     "engineLensShiftY": 2
+    }
+   ],
+   "maxTwoPointDxPx": 0,
+   "minPitchedDxPx": 5.94757080078125,
+   "maxLensShiftDiff": 6.230589200129089e-8,
+   "render": {
+    "pitched": {
+     "dxPx": 23,
+     "rows": [
+      {
+       "centroidX": 654.5,
+       "expectedX": 654.699584960938,
+       "height": 1.2,
+       "y": 388.198028564453
+      },
+      {
+       "centroidX": 677.5,
+       "expectedX": 677.620971679688,
+       "height": 4.8,
+       "y": 136.293823242188
+      }
+     ]
+    },
+    "twoPoint": {
+     "dxPx": 0,
+     "rows": [
+      {
+       "centroidX": 677.5,
+       "expectedX": 677.356811523438,
+       "height": 1.2,
+       "y": 412.096893310547
+      },
+      {
+       "centroidX": 677.5,
+       "expectedX": 677.356811523438,
+       "height": 4.8,
+       "y": 127.90306854248
+      }
+     ]
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     4.31,
+     4.3,
+     6.18
+    ],
+    "loadAverageAfter": [
+     4.28,
+     4.29,
+     6.16
+    ],
+    "seconds": 2.6
+   }
+  },
+  "bridge": {
+   "note": "JS 호스트 -> Godot -> JS 호스트 왕복(ms). 호스트 쪽 performance.now 로 잰다. 크기는 바이트.",
+   "standalone": {
+    "pingRttMs": {
+     "n": 35,
+     "median": 0.2,
+     "mad": 0.1,
+     "min": 0.1,
+     "max": 0.3
+    },
+    "jsonEcho": {
+     "1024": {
+      "rttMs": {
+       "n": 5,
+       "median": 0.2,
+       "mad": 0,
+       "min": 0.2,
+       "max": 0.4
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 0,
+       "mad": 0,
+       "min": 0,
+       "max": 0
+      },
+      "receivedChars": 1069
+     },
+     "65536": {
+      "rttMs": {
+       "n": 5,
+       "median": 1.2,
+       "mad": 0.1,
+       "min": 1.1,
+       "max": 1.7
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 0.599,
+       "mad": 0.099,
+       "min": 0.5,
+       "max": 0.9
+      },
+      "receivedChars": 65581
+     },
+     "1048576": {
+      "rttMs": {
+       "n": 5,
+       "median": 16.8,
+       "mad": 0.2,
+       "min": 16.4,
+       "max": 33.6
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 8.301,
+       "mad": 0.099,
+       "min": 8.2,
+       "max": 25.1
+      },
+      "receivedChars": 1048621
+     },
+     "8388608": {
+      "rttMs": {
+       "n": 5,
+       "median": 152.2,
+       "mad": 9.1,
+       "min": 142.2,
+       "max": 333.3
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 75.699,
+       "mad": 4.399,
+       "min": 71.3,
+       "max": 256.3
+      },
+      "receivedChars": 8388653
+     }
+    },
+    "binaryIn": {
+     "no-eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 4.2,
+        "mad": 0.3,
+        "min": 3.9,
+        "max": 5.6
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0.1,
+        "min": 0,
+        "max": 0.601
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 3.799,
+        "mad": 0.199,
+        "min": 3.6,
+        "max": 4.299
+       },
+       "allShaMatch": true,
+       "bytes": 1048576,
+       "firstCopyMs": 0.6
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 29.7,
+        "mad": 0.2,
+        "min": 29.1,
+        "max": 30.1
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 1.1,
+        "mad": 0.299,
+        "min": 0.801,
+        "max": 1.801
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 28.1,
+        "mad": 0.1,
+        "min": 27.799,
+        "max": 28.201
+       },
+       "allShaMatch": true,
+       "bytes": 8388608,
+       "firstCopyMs": 1.4
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 119.7,
+        "mad": 2.5,
+        "min": 116.5,
+        "max": 132.2
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 5.7,
+        "mad": 0.999,
+        "min": 4.701,
+        "max": 9.4
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 111,
+        "mad": 0.5,
+        "min": 110.5,
+        "max": 126.799
+       },
+       "allShaMatch": true,
+       "bytes": 33554432,
+       "firstCopyMs": 7.3
+      }
+     },
+     "eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 4.1,
+        "mad": 0.1,
+        "min": 3.8,
+        "max": 4.3
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.101,
+        "mad": 0.001,
+        "min": 0.1,
+        "max": 0.5
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 3.699,
+        "mad": 0.102,
+        "min": 3.5,
+        "max": 3.801
+       },
+       "allShaMatch": true,
+       "bytes": 1048576,
+       "firstCopyMs": 0.5
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 29.5,
+        "mad": 0.1,
+        "min": 29.4,
+        "max": 34.7
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 1.199,
+        "mad": 0.099,
+        "min": 0.799,
+        "max": 1.601
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 28,
+        "mad": 0.1,
+        "min": 27.9,
+        "max": 33.401
+       },
+       "allShaMatch": true,
+       "bytes": 8388608,
+       "firstCopyMs": 1.6
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 123.4,
+        "mad": 2.4,
+        "min": 115.5,
+        "max": 127.3
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 6.4,
+        "mad": 1.701,
+        "min": 4.6,
+        "max": 12.9
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 114.1,
+        "mad": 3.4,
+        "min": 110.5,
+        "max": 118.401
+       },
+       "allShaMatch": true,
+       "bytes": 33554432,
+       "firstCopyMs": 6.6
+      }
+     }
+    },
+    "binaryOut": {
+     "0.25MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 5.2,
+       "mad": 0.2,
+       "min": 5,
+       "max": 15.8
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 1.2,
+       "mad": 0.001,
+       "min": 1.1,
+       "max": 1.701
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 0.7,
+       "mad": 0,
+       "min": 0.7,
+       "max": 6.7
+      },
+      "base64Chars": 349528,
+      "expansion": 1.333,
+      "allShaMatch": true
+     },
+     "1MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 26.3,
+       "mad": 1.5,
+       "min": 20.3,
+       "max": 27.8
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 4.701,
+       "mad": 0.002,
+       "min": 4.699,
+       "max": 9.4
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 3.9,
+       "mad": 0.5,
+       "min": 3.4,
+       "max": 9.6
+      },
+      "base64Chars": 1398104,
+      "expansion": 1.333,
+      "allShaMatch": true
+     },
+     "4MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 90.3,
+       "mad": 7,
+       "min": 83.3,
+       "max": 99.2
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 19.5,
+       "mad": 0.5,
+       "min": 19,
+       "max": 22.399
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 16.6,
+       "mad": 1.6,
+       "min": 15,
+       "max": 19.9
+      },
+      "base64Chars": 5592408,
+      "expansion": 1.333,
+      "allShaMatch": true
+     }
+    }
+   },
+   "iframe": {
+    "pingRttMs": {
+     "n": 35,
+     "median": 0.2,
+     "mad": 0,
+     "min": 0.1,
+     "max": 1.4
+    },
+    "jsonEcho": {
+     "1024": {
+      "rttMs": {
+       "n": 5,
+       "median": 0.3,
+       "mad": 0.1,
+       "min": 0.2,
+       "max": 0.6
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 0,
+       "mad": 0,
+       "min": 0,
+       "max": 0.2
+      },
+      "receivedChars": 1069
+     },
+     "65536": {
+      "rttMs": {
+       "n": 5,
+       "median": 1.4,
+       "mad": 0.3,
+       "min": 1.1,
+       "max": 2.2
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 0.5,
+       "mad": 0,
+       "min": 0.5,
+       "max": 0.8
+      },
+      "receivedChars": 65581
+     },
+     "1048576": {
+      "rttMs": {
+       "n": 5,
+       "median": 19.8,
+       "mad": 2.3,
+       "min": 16.2,
+       "max": 23.9
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 8.7,
+       "mad": 0.4,
+       "min": 8.3,
+       "max": 15.1
+      },
+      "receivedChars": 1048621
+     },
+     "8388608": {
+      "rttMs": {
+       "n": 5,
+       "median": 175.4,
+       "mad": 11.6,
+       "min": 161.5,
+       "max": 237
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 91.3,
+       "mad": 10.9,
+       "min": 78.3,
+       "max": 162.8
+      },
+      "receivedChars": 8388653
+     }
+    },
+    "binaryIn": {
+     "no-eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 0.8,
+        "mad": 0.2,
+        "min": 0.6,
+        "max": 20.9
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.6
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.5,
+        "mad": 0.2,
+        "min": 0.3,
+        "max": 19.7
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0.6
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 1,
+        "mad": 0.4,
+        "min": 0.6,
+        "max": 1.8
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0,
+        "min": 0,
+        "max": 0.1
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.5,
+        "mad": 0.1,
+        "min": 0.4,
+        "max": 0.9
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0.1
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 1.5,
+        "mad": 0.2,
+        "min": 0.8,
+        "max": 1.7
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.1
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.9,
+        "mad": 0.1,
+        "min": 0.4,
+        "max": 1
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0
+      }
+     },
+     "eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 0.9,
+        "mad": 0.1,
+        "min": 0.6,
+        "max": 2.2
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0.1,
+        "min": 0,
+        "max": 1.3
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.6,
+        "mad": 0.1,
+        "min": 0.4,
+        "max": 0.7
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 1.3
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 0.8,
+        "mad": 0.2,
+        "min": 0.6,
+        "max": 1.5
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.1
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.5,
+        "mad": 0.1,
+        "min": 0.4,
+        "max": 0.8
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 1.4,
+        "mad": 0.1,
+        "min": 0.8,
+        "max": 2
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0.1,
+        "min": 0,
+        "max": 0.2
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.5,
+        "mad": 0,
+        "min": 0.5,
+        "max": 1.6
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0
+      }
+     }
+    },
+    "binaryOut": {
+     "0.25MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 12.4,
+       "mad": 5.7,
+       "min": 5,
+       "max": 18.1
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 1.2,
+       "mad": 0.1,
+       "min": 1.1,
+       "max": 12.5
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 0.9,
+       "mad": 0.2,
+       "min": 0.7,
+       "max": 3.4
+      },
+      "base64Chars": 349528,
+      "expansion": 1.333,
+      "allShaMatch": true
+     },
+     "1MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 20.4,
+       "mad": 0.7,
+       "min": 19.7,
+       "max": 38.1
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 4.7,
+       "mad": 0.2,
+       "min": 4.5,
+       "max": 20.4
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 3.5,
+       "mad": 0.2,
+       "min": 3.3,
+       "max": 4
+      },
+      "base64Chars": 1398104,
+      "expansion": 1.333,
+      "allShaMatch": true
+     },
+     "4MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 85.5,
+       "mad": 1.4,
+       "min": 84.1,
+       "max": 147.2
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 20.4,
+       "mad": 1.1,
+       "min": 18.5,
+       "max": 75.4
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 14.5,
+       "mad": 0.2,
+       "min": 14.3,
+       "max": 17
+      },
+      "base64Chars": 5592408,
+      "expansion": 1.333,
+      "allShaMatch": true
+     }
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     4.28,
+     4.29,
+     6.16
+    ],
+    "loadAverageAfter": [
+     4.39,
+     4.29,
+     6.12
+    ],
+    "seconds": 21.5
+   }
+  },
+  "capture": {
+   "note": "패스별 시간은 Godot 쪽 측정(렌더 + GPU 읽기), png_* 는 PNG 인코딩, 호스트 디코드는 base64 -> 바이트 변환 시간.",
+   "models": {
+    "orion-avatar": {
+     "model": {
+      "aabb": [
+       -0.868276000022888,
+       -0.00192856986541301,
+       -0.152342408895493,
+       1.73659420013428,
+       1.71316063404083,
+       0.341560184955597
+      ],
+      "blendShapes": 56,
+      "bones": 70,
+      "meshInstances": 10,
+      "nodes": 16,
+      "skeletons": 1,
+      "surfaces": 11,
+      "textures": 1,
+      "triangles": 14604,
+      "vertices": 16070
+     },
+     "sizes": {
+      "512x512": {
+       "ok": true,
+       "error": null,
+       "firstRttMs": 1498.7,
+       "firstTotalGodotMs": 835.6,
+       "rttMs": {
+        "n": 4,
+        "median": 227.6,
+        "mad": 7.65,
+        "min": 218.1,
+        "max": 268.8
+       },
+       "totalGodotMs": {
+        "n": 4,
+        "median": 224.95,
+        "mad": 8.15,
+        "min": 214.6,
+        "max": 266.1
+       },
+       "warmNote": "rttMs/totalGodotMs/perPassMs 는 첫 실행(셰이더 컴파일·인코딩 진단 포함)을 제외한 중앙값이다.",
+       "perPassMs": {
+        "beauty": {
+         "n": 4,
+         "median": 21.8,
+         "mad": 2.9,
+         "min": 16.899,
+         "max": 30.901
+        },
+        "depth": {
+         "n": 4,
+         "median": 12.851,
+         "mad": 1.15,
+         "min": 10.201,
+         "max": 14.3
+        },
+        "normal": {
+         "n": 4,
+         "median": 10.95,
+         "mad": 0.75,
+         "min": 9.7,
+         "max": 12.601
+        },
+        "ndl": {
+         "n": 4,
+         "median": 15.351,
+         "mad": 1.499,
+         "min": 9.4,
+         "max": 17.399
+        },
+        "line": {
+         "n": 4,
+         "median": 13.4,
+         "mad": 0.849,
+         "min": 11.901,
+         "max": 15.9
+        },
+        "tone": {
+         "n": 4,
+         "median": 15.7,
+         "mad": 0.4,
+         "min": 15.201,
+         "max": 16.199
+        },
+        "png_beauty": {
+         "n": 4,
+         "median": 12,
+         "mad": 0.05,
+         "min": 11.901,
+         "max": 13
+        },
+        "png_depth": {
+         "n": 4,
+         "median": 14.701,
+         "mad": 0.1,
+         "min": 14.5,
+         "max": 14.901
+        },
+        "png_normal": {
+         "n": 4,
+         "median": 10.5,
+         "mad": 0,
+         "min": 10.5,
+         "max": 10.6
+        },
+        "png_line": {
+         "n": 4,
+         "median": 9.551,
+         "mad": 0.051,
+         "min": 9.5,
+         "max": 9.7
+        },
+        "png_tone": {
+         "n": 4,
+         "median": 10.301,
+         "mad": 0.001,
+         "min": 10.299,
+         "max": 10.399
+        }
+       },
+       "base64EncodeMs": {
+        "n": 4,
+        "median": 0.499,
+        "mad": 0,
+        "min": 0.4,
+        "max": 0.499
+       },
+       "pngBytes": {
+        "beauty": 39626,
+        "depth": 40144,
+        "normal": 16283,
+        "line": 4464,
+        "tone": 11133
+       },
+       "validity": [
+        {
+         "name": "beauty",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.0635,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "depth",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.0555,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "normal",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.0555,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "line",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.0123,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "tone",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.0297,
+         "pngSignatureOk": true
+        }
+       ],
+       "diag": {
+        "codedRangeMaxError": 0,
+        "threeD": [
+         {
+          "actual": 0,
+          "expected": 0
+         },
+         {
+          "actual": 12,
+          "expected": 16
+         },
+         {
+          "actual": 64,
+          "expected": 64
+         },
+         {
+          "actual": 128,
+          "expected": 128
+         },
+         {
+          "actual": 200,
+          "expected": 200
+         },
+         {
+          "actual": 255,
+          "expected": 255
+         }
+        ],
+        "toeBelow": 17,
+        "twoD": [
+         {
+          "actual": [
+           0,
+           255,
+           0
+          ],
+          "expected": [
+           0,
+           255,
+           0
+          ]
+         },
+         {
+          "actual": [
+           16,
+           239,
+           48
+          ],
+          "expected": [
+           16,
+           239,
+           48
+          ]
+         },
+         {
+          "actual": [
+           64,
+           191,
+           192
+          ],
+          "expected": [
+           64,
+           191,
+           192
+          ]
+         },
+         {
+          "actual": [
+           128,
+           127,
+           128
+          ],
+          "expected": [
+           128,
+           127,
+           128
+          ]
+         },
+         {
+          "actual": [
+           200,
+           55,
+           88
+          ],
+          "expected": [
+           200,
+           55,
+           88
+          ]
+         },
+         {
+          "actual": [
+           255,
+           0,
+           253
+          ],
+          "expected": [
+           255,
+           0,
+           253
+          ]
+         }
+        ],
+        "twoDMaxError": 0
+       }
+      },
+      "960x540": {
+       "ok": true,
+       "error": null,
+       "firstRttMs": 287.7,
+       "firstTotalGodotMs": 284.2,
+       "rttMs": {
+        "n": 4,
+        "median": 268.65,
+        "mad": 3.15,
+        "min": 264.5,
+        "max": 298.1
+       },
+       "totalGodotMs": {
+        "n": 4,
+        "median": 266.25,
+        "mad": 3.201,
+        "min": 262.099,
+        "max": 295.5
+       },
+       "warmNote": "rttMs/totalGodotMs/perPassMs 는 첫 실행(셰이더 컴파일·인코딩 진단 포함)을 제외한 중앙값이다.",
+       "perPassMs": {
+        "beauty": {
+         "n": 4,
+         "median": 20.4,
+         "mad": 0.8,
+         "min": 19.401,
+         "max": 29.6
+        },
+        "depth": {
+         "n": 4,
+         "median": 13.151,
+         "mad": 0.899,
+         "min": 11,
+         "max": 14.699
+        },
+        "normal": {
+         "n": 4,
+         "median": 12.85,
+         "mad": 0.65,
+         "min": 12,
+         "max": 14.701
+        },
+        "ndl": {
+         "n": 4,
+         "median": 12.349,
+         "mad": 1.1,
+         "min": 11.199,
+         "max": 15.4
+        },
+        "line": {
+         "n": 4,
+         "median": 18.6,
+         "mad": 1.85,
+         "min": 16.699,
+         "max": 38.5
+        },
+        "tone": {
+         "n": 4,
+         "median": 13.401,
+         "mad": 1.2,
+         "min": 11.5,
+         "max": 22.1
+        },
+        "png_beauty": {
+         "n": 4,
+         "median": 21.199,
+         "mad": 0,
+         "min": 21,
+         "max": 21.199
+        },
+        "png_depth": {
+         "n": 4,
+         "median": 22.95,
+         "mad": 0.05,
+         "min": 22.9,
+         "max": 23
+        },
+        "png_normal": {
+         "n": 4,
+         "median": 19.801,
+         "mad": 0.15,
+         "min": 19.6,
+         "max": 29.799
+        },
+        "png_line": {
+         "n": 4,
+         "median": 18.45,
+         "mad": 0.05,
+         "min": 18.301,
+         "max": 18.5
+        },
+        "png_tone": {
+         "n": 4,
+         "median": 19.05,
+         "mad": 0.05,
+         "min": 18.899,
+         "max": 19.101
+        }
+       },
+       "base64EncodeMs": {
+        "n": 4,
+        "median": 0.551,
+        "mad": 0.049,
+        "min": 0.502,
+        "max": 0.601
+       },
+       "pngBytes": {
+        "beauty": 46158,
+        "depth": 46244,
+        "normal": 18589,
+        "line": 5825,
+        "tone": 13295
+       },
+       "validity": [
+        {
+         "name": "beauty",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0355,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "depth",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0312,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "normal",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0312,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "line",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0066,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "tone",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0166,
+         "pngSignatureOk": true
+        }
+       ],
+       "diag": null
+      },
+      "1920x1080": {
+       "ok": true,
+       "error": null,
+       "firstRttMs": 832.2,
+       "firstTotalGodotMs": 825.8,
+       "rttMs": {
+        "n": 2,
+        "median": 824.8,
+        "mad": 61,
+        "min": 763.8,
+        "max": 885.8
+       },
+       "totalGodotMs": {
+        "n": 2,
+        "median": 816.85,
+        "mad": 62.95,
+        "min": 753.9,
+        "max": 879.799
+       },
+       "warmNote": "rttMs/totalGodotMs/perPassMs 는 첫 실행(셰이더 컴파일·인코딩 진단 포함)을 제외한 중앙값이다.",
+       "perPassMs": {
+        "beauty": {
+         "n": 2,
+         "median": 46.05,
+         "mad": 1.55,
+         "min": 44.5,
+         "max": 47.6
+        },
+        "depth": {
+         "n": 2,
+         "median": 28.8,
+         "mad": 0.3,
+         "min": 28.5,
+         "max": 29.099
+        },
+        "normal": {
+         "n": 2,
+         "median": 30.65,
+         "mad": 0.749,
+         "min": 29.901,
+         "max": 31.399
+        },
+        "ndl": {
+         "n": 2,
+         "median": 29.8,
+         "mad": 0.7,
+         "min": 29.099,
+         "max": 30.5
+        },
+        "line": {
+         "n": 2,
+         "median": 129.051,
+         "mad": 67.45,
+         "min": 61.601,
+         "max": 196.5
+        },
+        "tone": {
+         "n": 2,
+         "median": 58.7,
+         "mad": 4.901,
+         "min": 53.799,
+         "max": 63.6
+        },
+        "png_beauty": {
+         "n": 2,
+         "median": 84.55,
+         "mad": 1.95,
+         "min": 82.6,
+         "max": 86.5
+        },
+        "png_depth": {
+         "n": 2,
+         "median": 93.8,
+         "mad": 1.7,
+         "min": 92.1,
+         "max": 95.5
+        },
+        "png_normal": {
+         "n": 2,
+         "median": 78.45,
+         "mad": 2.35,
+         "min": 76.099,
+         "max": 80.8
+        },
+        "png_line": {
+         "n": 2,
+         "median": 73.4,
+         "mad": 0.999,
+         "min": 72.4,
+         "max": 74.399
+        },
+        "png_tone": {
+         "n": 2,
+         "median": 75.85,
+         "mad": 0.95,
+         "min": 74.9,
+         "max": 76.8
+        }
+       },
+       "base64EncodeMs": {
+        "n": 2,
+        "median": 1.902,
+        "mad": 0.1,
+        "min": 1.802,
+        "max": 2.002
+       },
+       "pngBytes": {
+        "beauty": 158823,
+        "depth": 149254,
+        "normal": 45137,
+        "line": 16771,
+        "tone": 47591
+       },
+       "validity": [
+        {
+         "name": "beauty",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0334,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "depth",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0312,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "normal",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0312,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "line",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0048,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "tone",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0166,
+         "pngSignatureOk": true
+        }
+       ],
+       "diag": null
+      }
+     }
+    },
+    "studio-room": {
+     "model": {
+      "aabb": [
+       -4.64999961853027,
+       -0.100000001490116,
+       -3.65000009536743,
+       9.29999923706055,
+       3.39999985694885,
+       9.92699432373047
+      ],
+      "blendShapes": 0,
+      "bones": 0,
+      "meshInstances": 98,
+      "nodes": 99,
+      "skeletons": 0,
+      "surfaces": 145,
+      "textures": 9,
+      "triangles": 254771,
+      "vertices": 247022
+     },
+     "sizes": {
+      "512x512": {
+       "ok": true,
+       "error": null,
+       "firstRttMs": 3325.3,
+       "firstTotalGodotMs": 1015.4,
+       "rttMs": {
+        "n": 4,
+        "median": 813.85,
+        "mad": 11.25,
+        "min": 693.8,
+        "max": 833.8
+       },
+       "totalGodotMs": {
+        "n": 4,
+        "median": 806.55,
+        "mad": 12.7,
+        "min": 691.399,
+        "max": 830.799
+       },
+       "warmNote": "rttMs/totalGodotMs/perPassMs 는 첫 실행(셰이더 컴파일·인코딩 진단 포함)을 제외한 중앙값이다.",
+       "perPassMs": {
+        "beauty": {
+         "n": 4,
+         "median": 184.7,
+         "mad": 12.299,
+         "min": 158.701,
+         "max": 205.799
+        },
+        "depth": {
+         "n": 4,
+         "median": 75.9,
+         "mad": 3.701,
+         "min": 59.1,
+         "max": 81.201
+        },
+        "normal": {
+         "n": 4,
+         "median": 73.85,
+         "mad": 9.15,
+         "min": 62.799,
+         "max": 114.4
+        },
+        "ndl": {
+         "n": 4,
+         "median": 71.851,
+         "mad": 7.15,
+         "min": 63.701,
+         "max": 81.5
+        },
+        "line": {
+         "n": 4,
+         "median": 16.951,
+         "mad": 4.65,
+         "min": 10.301,
+         "max": 34.199
+        },
+        "tone": {
+         "n": 4,
+         "median": 13.25,
+         "mad": 0.599,
+         "min": 7.299,
+         "max": 14.199
+        },
+        "png_beauty": {
+         "n": 4,
+         "median": 10.25,
+         "mad": 0.2,
+         "min": 10,
+         "max": 10.9
+        },
+        "png_depth": {
+         "n": 4,
+         "median": 24.6,
+         "mad": 0.1,
+         "min": 24.401,
+         "max": 25.1
+        },
+        "png_normal": {
+         "n": 4,
+         "median": 9.95,
+         "mad": 0.1,
+         "min": 9.8,
+         "max": 10.201
+        },
+        "png_line": {
+         "n": 4,
+         "median": 9.849,
+         "mad": 0.099,
+         "min": 9.701,
+         "max": 10.1
+        },
+        "png_tone": {
+         "n": 4,
+         "median": 11.5,
+         "mad": 0.05,
+         "min": 11.4,
+         "max": 11.6
+        }
+       },
+       "base64EncodeMs": {
+        "n": 4,
+        "median": 0.651,
+        "mad": 0.049,
+        "min": 0.601,
+        "max": 1.5
+       },
+       "pngBytes": {
+        "beauty": 4355,
+        "depth": 64158,
+        "normal": 3398,
+        "line": 2928,
+        "tone": 14455
+       },
+       "validity": [
+        {
+         "name": "beauty",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.1771,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "depth",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.1718,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "normal",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.1718,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "line",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.0133,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "tone",
+         "width": 512,
+         "height": 512,
+         "nonTransparentRatio": 0.0409,
+         "pngSignatureOk": true
+        }
+       ],
+       "diag": {
+        "codedRangeMaxError": 0,
+        "threeD": [
+         {
+          "actual": 0,
+          "expected": 0
+         },
+         {
+          "actual": 12,
+          "expected": 16
+         },
+         {
+          "actual": 64,
+          "expected": 64
+         },
+         {
+          "actual": 128,
+          "expected": 128
+         },
+         {
+          "actual": 200,
+          "expected": 200
+         },
+         {
+          "actual": 255,
+          "expected": 255
+         }
+        ],
+        "toeBelow": 17,
+        "twoD": [
+         {
+          "actual": [
+           0,
+           255,
+           0
+          ],
+          "expected": [
+           0,
+           255,
+           0
+          ]
+         },
+         {
+          "actual": [
+           16,
+           239,
+           48
+          ],
+          "expected": [
+           16,
+           239,
+           48
+          ]
+         },
+         {
+          "actual": [
+           64,
+           191,
+           192
+          ],
+          "expected": [
+           64,
+           191,
+           192
+          ]
+         },
+         {
+          "actual": [
+           128,
+           127,
+           128
+          ],
+          "expected": [
+           128,
+           127,
+           128
+          ]
+         },
+         {
+          "actual": [
+           200,
+           55,
+           88
+          ],
+          "expected": [
+           200,
+           55,
+           88
+          ]
+         },
+         {
+          "actual": [
+           255,
+           0,
+           253
+          ],
+          "expected": [
+           255,
+           0,
+           253
+          ]
+         }
+        ],
+        "twoDMaxError": 0
+       }
+      },
+      "960x540": {
+       "ok": true,
+       "error": null,
+       "firstRttMs": 949.3,
+       "firstTotalGodotMs": 937.9,
+       "rttMs": {
+        "n": 4,
+        "median": 793.25,
+        "mad": 24.75,
+        "min": 734,
+        "max": 818.4
+       },
+       "totalGodotMs": {
+        "n": 4,
+        "median": 789.101,
+        "mad": 23.95,
+        "min": 730.9,
+        "max": 813.5
+       },
+       "warmNote": "rttMs/totalGodotMs/perPassMs 는 첫 실행(셰이더 컴파일·인코딩 진단 포함)을 제외한 중앙값이다.",
+       "perPassMs": {
+        "beauty": {
+         "n": 4,
+         "median": 170.85,
+         "mad": 10.65,
+         "min": 159.1,
+         "max": 185.4
+        },
+        "depth": {
+         "n": 4,
+         "median": 70.1,
+         "mad": 1.9,
+         "min": 66.7,
+         "max": 80.9
+        },
+        "normal": {
+         "n": 4,
+         "median": 75.551,
+         "mad": 2.1,
+         "min": 64.7,
+         "max": 78
+        },
+        "ndl": {
+         "n": 4,
+         "median": 80.25,
+         "mad": 6.75,
+         "min": 65.9,
+         "max": 87.599
+        },
+        "line": {
+         "n": 4,
+         "median": 34.7,
+         "mad": 8.1,
+         "min": 21.4,
+         "max": 59.701
+        },
+        "tone": {
+         "n": 4,
+         "median": 19.601,
+         "mad": 3.8,
+         "min": 15.4,
+         "max": 34.4
+        },
+        "png_beauty": {
+         "n": 4,
+         "median": 19.55,
+         "mad": 0.1,
+         "min": 19.4,
+         "max": 20.5
+        },
+        "png_depth": {
+         "n": 4,
+         "median": 33.151,
+         "mad": 0.15,
+         "min": 32.9,
+         "max": 33.4
+        },
+        "png_normal": {
+         "n": 4,
+         "median": 19.5,
+         "mad": 0.1,
+         "min": 19,
+         "max": 19.601
+        },
+        "png_line": {
+         "n": 4,
+         "median": 19.3,
+         "mad": 0.001,
+         "min": 19.099,
+         "max": 19.3
+        },
+        "png_tone": {
+         "n": 4,
+         "median": 20.901,
+         "mad": 0.15,
+         "min": 20.7,
+         "max": 21.299
+        }
+       },
+       "base64EncodeMs": {
+        "n": 4,
+        "median": 1.398,
+        "mad": 0.5,
+        "min": 0.699,
+        "max": 2.501
+       },
+       "pngBytes": {
+        "beauty": 5384,
+        "depth": 78109,
+        "normal": 4452,
+        "line": 4006,
+        "tone": 17116
+       },
+       "validity": [
+        {
+         "name": "beauty",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0996,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "depth",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0966,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "normal",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0966,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "line",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0071,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "tone",
+         "width": 960,
+         "height": 540,
+         "nonTransparentRatio": 0.0231,
+         "pngSignatureOk": true
+        }
+       ],
+       "diag": null
+      },
+      "1920x1080": {
+       "ok": true,
+       "error": null,
+       "firstRttMs": 2311.8,
+       "firstTotalGodotMs": 2287.7,
+       "rttMs": {
+        "n": 2,
+        "median": 1726.15,
+        "mad": 13.85,
+        "min": 1712.3,
+        "max": 1740
+       },
+       "totalGodotMs": {
+        "n": 2,
+        "median": 1717.5,
+        "mad": 16.099,
+        "min": 1701.4,
+        "max": 1733.599
+       },
+       "warmNote": "rttMs/totalGodotMs/perPassMs 는 첫 실행(셰이더 컴파일·인코딩 진단 포함)을 제외한 중앙값이다.",
+       "perPassMs": {
+        "beauty": {
+         "n": 2,
+         "median": 290.25,
+         "mad": 68.45,
+         "min": 221.799,
+         "max": 358.7
+        },
+        "depth": {
+         "n": 2,
+         "median": 133.45,
+         "mad": 8.95,
+         "min": 124.5,
+         "max": 142.4
+        },
+        "normal": {
+         "n": 2,
+         "median": 156.151,
+         "mad": 36.05,
+         "min": 120.101,
+         "max": 192.201
+        },
+        "ndl": {
+         "n": 2,
+         "median": 146.2,
+         "mad": 4.1,
+         "min": 142.1,
+         "max": 150.299
+        },
+        "line": {
+         "n": 2,
+         "median": 224.1,
+         "mad": 96.801,
+         "min": 127.299,
+         "max": 320.901
+        },
+        "tone": {
+         "n": 2,
+         "median": 122.5,
+         "mad": 28,
+         "min": 94.5,
+         "max": 150.5
+        },
+        "png_beauty": {
+         "n": 2,
+         "median": 80.601,
+         "mad": 3.2,
+         "min": 77.4,
+         "max": 83.801
+        },
+        "png_depth": {
+         "n": 2,
+         "median": 124.75,
+         "mad": 0.849,
+         "min": 123.901,
+         "max": 125.6
+        },
+        "png_normal": {
+         "n": 2,
+         "median": 79.1,
+         "mad": 1.7,
+         "min": 77.4,
+         "max": 80.8
+        },
+        "png_line": {
+         "n": 2,
+         "median": 76.501,
+         "mad": 0.7,
+         "min": 75.801,
+         "max": 77.201
+        },
+        "png_tone": {
+         "n": 2,
+         "median": 83,
+         "mad": 1.1,
+         "min": 81.899,
+         "max": 84.1
+        }
+       },
+       "base64EncodeMs": {
+        "n": 2,
+        "median": 2.649,
+        "mad": 1.052,
+        "min": 1.597,
+        "max": 3.7
+       },
+       "pngBytes": {
+        "beauty": 14882,
+        "depth": 255388,
+        "normal": 12965,
+        "line": 12546,
+        "tone": 60053
+       },
+       "validity": [
+        {
+         "name": "beauty",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0982,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "depth",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0966,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "normal",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0966,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "line",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0038,
+         "pngSignatureOk": true
+        },
+        {
+         "name": "tone",
+         "width": 1920,
+         "height": 1080,
+         "nonTransparentRatio": 0.0231,
+         "pngSignatureOk": true
+        }
+       ],
+       "diag": null
+      }
+     }
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     4.39,
+     4.29,
+     6.12
+    ],
+    "loadAverageAfter": [
+     4.69,
+     4.42,
+     6.02
+    ],
+    "seconds": 75.7
+   }
+  },
+  "bench": {
+   "note": "12삼각형 박스 N 개를 한 번의 드로로 그린다. SwiftShader 소프트웨어 렌더링이라 프레임 시간은 상대 비교용이다.",
+   "godot": {
+    "1000": {
+     "setupMs": {
+      "n": 3,
+      "median": 12.7,
+      "mad": 4,
+      "min": 5.4,
+      "max": 16.7
+     },
+     "frameMsMedian": {
+      "n": 3,
+      "median": 61.35,
+      "mad": 2.9,
+      "min": 58.45,
+      "max": 68.95
+     },
+     "firstFrameMs": {
+      "n": 3,
+      "median": 0.5,
+      "mad": 0,
+      "min": 0.399,
+      "max": 0.5
+     },
+     "drawCalls": 1,
+     "primitivesInFrame": 12000,
+     "videoMemBytes": 12371319,
+     "wasmMemoryDeltaMiB": {
+      "n": 3,
+      "median": 0,
+      "mad": 0,
+      "min": 0,
+      "max": 0
+     },
+     "rssTotalMiB": {
+      "n": 3,
+      "median": 1465,
+      "mad": 2.9,
+      "min": 1462.1,
+      "max": 1468.9
+     }
+    },
+    "10000": {
+     "setupMs": {
+      "n": 3,
+      "median": 19,
+      "mad": 1.2,
+      "min": 17.8,
+      "max": 70.2
+     },
+     "frameMsMedian": {
+      "n": 3,
+      "median": 358.75,
+      "mad": 7.149,
+      "min": 308.7,
+      "max": 365.9
+     },
+     "firstFrameMs": {
+      "n": 3,
+      "median": 0.5,
+      "mad": 0.1,
+      "min": 0.4,
+      "max": 0.7
+     },
+     "drawCalls": 1,
+     "primitivesInFrame": 120000,
+     "videoMemBytes": 12947319,
+     "wasmMemoryDeltaMiB": {
+      "n": 3,
+      "median": 6.44,
+      "mad": 0,
+      "min": 6.44,
+      "max": 6.44
+     },
+     "rssTotalMiB": {
+      "n": 3,
+      "median": 1464.6,
+      "mad": 1,
+      "min": 1463.6,
+      "max": 1470.2
+     }
+    },
+    "100000": {
+     "setupMs": {
+      "n": 3,
+      "median": 185.1,
+      "mad": 73.2,
+      "min": 105.901,
+      "max": 258.3
+     },
+     "frameMsMedian": {
+      "n": 3,
+      "median": 3092.6,
+      "mad": 149.55,
+      "min": 2943.05,
+      "max": 3305.1
+     },
+     "firstFrameMs": {
+      "n": 3,
+      "median": 6.2,
+      "mad": 1.2,
+      "min": 4.3,
+      "max": 7.4
+     },
+     "drawCalls": 1,
+     "primitivesInFrame": 1200000,
+     "videoMemBytes": 18707319,
+     "wasmMemoryDeltaMiB": {
+      "n": 3,
+      "median": 47.81,
+      "mad": 0,
+      "min": 47.81,
+      "max": 47.81
+     },
+     "rssTotalMiB": {
+      "n": 3,
+      "median": 1465.8,
+      "mad": 1.5,
+      "min": 1462.7,
+      "max": 1467.3
+     }
+    }
+   },
+   "three": {
+    "1000": {
+     "setupMs": {
+      "n": 3,
+      "median": 1.8,
+      "mad": 0.2,
+      "min": 1.6,
+      "max": 2.5
+     },
+     "frameMsMedian": {
+      "n": 3,
+      "median": 21.05,
+      "mad": 1.6,
+      "min": 17.85,
+      "max": 22.65
+     },
+     "firstFrameMs": {
+      "n": 3,
+      "median": 12.1,
+      "mad": 0.7,
+      "min": 11.3,
+      "max": 12.8
+     },
+     "drawCalls": 1,
+     "triangles": 12000,
+     "heapMiB": {
+      "n": 3,
+      "median": 5.79,
+      "mad": 0.029,
+      "min": 5.669,
+      "max": 5.819
+     },
+     "rssTotalMiB": {
+      "n": 3,
+      "median": 1152.5,
+      "mad": 2,
+      "min": 1150.5,
+      "max": 1164.1
+     }
+    },
+    "10000": {
+     "setupMs": {
+      "n": 3,
+      "median": 5.9,
+      "mad": 0.3,
+      "min": 4.6,
+      "max": 6.2
+     },
+     "frameMsMedian": {
+      "n": 3,
+      "median": 193.55,
+      "mad": 38.55,
+      "min": 150.2,
+      "max": 232.1
+     },
+     "firstFrameMs": {
+      "n": 3,
+      "median": 16.9,
+      "mad": 3.5,
+      "min": 13.4,
+      "max": 30.3
+     },
+     "drawCalls": 1,
+     "triangles": 120000,
+     "heapMiB": {
+      "n": 3,
+      "median": 5.35,
+      "mad": 0.029,
+      "min": 5.198,
+      "max": 5.379
+     },
+     "rssTotalMiB": {
+      "n": 3,
+      "median": 1164.9,
+      "mad": 0,
+      "min": 1164.9,
+      "max": 1165
+     }
+    },
+    "100000": {
+     "setupMs": {
+      "n": 3,
+      "median": 18.3,
+      "mad": 2.6,
+      "min": 15.7,
+      "max": 55.5
+     },
+     "frameMsMedian": {
+      "n": 3,
+      "median": 1611.25,
+      "mad": 102.3,
+      "min": 1417.65,
+      "max": 1713.55
+     },
+     "firstFrameMs": {
+      "n": 3,
+      "median": 60.6,
+      "mad": 24,
+      "min": 35.1,
+      "max": 84.6
+     },
+     "drawCalls": 1,
+     "triangles": 1200000,
+     "heapMiB": {
+      "n": 3,
+      "median": 12.539,
+      "mad": 0.382,
+      "min": 11.595,
+      "max": 12.92
+     },
+     "rssTotalMiB": {
+      "n": 3,
+      "median": 1192.4,
+      "mad": 0.3,
+      "min": 1188.9,
+      "max": 1192.7
+     }
+    }
+   },
+   "godotSetupPath10k": {
+    "bufferMs": {
+     "n": 3,
+     "median": 7.701,
+     "mad": 0.301,
+     "min": 7.4,
+     "max": 16
+    },
+    "perInstanceCallMs": {
+     "n": 3,
+     "median": 7.399,
+     "mad": 0.3,
+     "min": 7.099,
+     "max": 7.799
+    },
+    "note": "10,000 인스턴스 설정 시간(생성+채우기). 한 페이지에서 두 경로를 교대로 4쌍 실행하고 첫 쌍은 버렸다."
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     4.69,
+     4.42,
+     6.02
+    ],
+    "loadAverageAfter": [
+     3.78,
+     4.24,
+     5.75
+    ],
+    "seconds": 122.9
+   }
+  }
+ },
+ "finishedAt": "2026-10-15T03:31:06.658Z"
+}

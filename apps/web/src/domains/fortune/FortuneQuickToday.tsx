@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 import { getCurrentUiLocale, translateAuthoredSourceText } from "@/shared/lib/i18n-bilingual-copy";
@@ -39,6 +39,12 @@ export function FortuneQuickToday({ date, onContinue, compute = buildQuickTodayF
   const [quick, setQuick] = useState<QuickTodayFortune | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // tx는 렌더마다 새로 만들어지는 로케일 파생 함수라 의존성에 넣으면 효과가 매 렌더 다시 돈다.
+  // 에러 문구를 만들 때만 Effect Event 로 최신 로케일 값을 읽는다 (FortuneGlobalHoroscope와 같은 방식).
+  const loadFailedMessage = useEffectEvent(() =>
+    tx("오늘의 운세를 불러오지 못했어요. 잠시 후 다시 시도해 주세요."),
+  );
+
   useEffect(() => {
     let alive = true;
     setStatus("loading");
@@ -63,7 +69,7 @@ export function FortuneQuickToday({ date, onContinue, compute = buildQuickTodayF
         setErrorMsg(
           error instanceof Error && error.message
             ? error.message
-            : tx("오늘의 운세를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.")
+            : loadFailedMessage()
         );
         setStatus("error");
       }
@@ -72,8 +78,6 @@ export function FortuneQuickToday({ date, onContinue, compute = buildQuickTodayF
       alive = false;
       clearTimeout(timer);
     };
-    // tx는 로케일 파생 함수라 의존성에서 제외한다 (FortuneGlobalHoroscope와 같은 방식).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateStr, attempt, compute]);
 
   const retry = () => setAttempt((n) => n + 1);

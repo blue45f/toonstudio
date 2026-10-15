@@ -166,35 +166,40 @@ export function halfExtentsFromSize(size: Bg3dVec3): Bg3dMutableVec3 {
   ];
 }
 
-function rotateLocalPoint(
-  local: Bg3dVec3,
-  rotation: Bg3dVec3
-): Bg3dMutableVec3 {
-  // XYZ Euler (Three.js default) applied to a local point.
-  const [rx, ry, rz] = rotation;
-  let x = local[0];
-  let y = local[1];
-  let z = local[2];
+/**
+ * Rotates a vector by a Three.js default `XYZ` Euler (radians): R = Rx · Ry · Rz, so the vector
+ * sees Z first, then Y, then X. The matrix entries are the ones `Matrix4.makeRotationFromEuler`
+ * builds for order `XYZ`, which keeps this engine-free helper numerically consistent (to floating-point
+ * rounding) with what the viewport renders for `object.rotation`.
+ *
+ * A single non-zero axis gives the same result in every composition order, which is how an
+ * X → Y → Z (= `ZYX`) sequence once slipped through yaw-only tests. Non-finite rotation or vector
+ * components are treated as 0 so callers never propagate NaN into transforms.
+ */
+export function rotateVectorEulerXyz(vector: Bg3dVec3, rotation: Bg3dVec3): Bg3dMutableVec3 {
+  const x = isFiniteNumber(vector[0]) ? vector[0] : 0;
+  const y = isFiniteNumber(vector[1]) ? vector[1] : 0;
+  const z = isFiniteNumber(vector[2]) ? vector[2] : 0;
+  const rx = isFiniteNumber(rotation[0]) ? rotation[0] : 0;
+  const ry = isFiniteNumber(rotation[1]) ? rotation[1] : 0;
+  const rz = isFiniteNumber(rotation[2]) ? rotation[2] : 0;
 
-  const cx = Math.cos(rx);
-  const sx = Math.sin(rx);
-  let y1 = y * cx - z * sx;
-  let z1 = y * sx + z * cx;
-  y = y1;
-  z = z1;
+  const a = Math.cos(rx);
+  const b = Math.sin(rx);
+  const c = Math.cos(ry);
+  const d = Math.sin(ry);
+  const e = Math.cos(rz);
+  const f = Math.sin(rz);
+  const ae = a * e;
+  const af = a * f;
+  const be = b * e;
+  const bf = b * f;
 
-  const cy = Math.cos(ry);
-  const sy = Math.sin(ry);
-  let x1 = x * cy + z * sy;
-  z1 = -x * sy + z * cy;
-  x = x1;
-  z = z1;
-
-  const cz = Math.cos(rz);
-  const sz = Math.sin(rz);
-  x1 = x * cz - y * sz;
-  y1 = x * sz + y * cz;
-  return [x1, y1, z];
+  return [
+    c * e * x - c * f * y + d * z,
+    (af + be * d) * x + (ae - bf * d) * y - b * c * z,
+    (bf - ae * d) * x + (be + af * d) * y + a * c * z,
+  ];
 }
 
 /**
@@ -219,11 +224,7 @@ export function worldAabbHalfExtents(
   for (const ox of [-1, 1] as const) {
     for (const oy of [-1, 1] as const) {
       for (const oz of [-1, 1] as const) {
-        const world = rotateLocalPoint([hx * ox, hy * oy, hz * oz], [
-          isFiniteNumber(rotation[0]) ? rotation[0] : 0,
-          isFiniteNumber(rotation[1]) ? rotation[1] : 0,
-          isFiniteNumber(rotation[2]) ? rotation[2] : 0,
-        ]);
+        const world = rotateVectorEulerXyz([hx * ox, hy * oy, hz * oz], rotation);
         maxX = Math.max(maxX, Math.abs(world[0]));
         maxY = Math.max(maxY, Math.abs(world[1]));
         maxZ = Math.max(maxZ, Math.abs(world[2]));

@@ -80,6 +80,7 @@ breaking change는 헤더의 `!` 또는 `BREAKING CHANGE:` footer로 표시한�
 - 교차 앱 테스트는 `tests/integration`에 둔다.
 - 앱 전용 설정은 해당 앱 디렉터리가 소유한다.
 - 안정된 마이그레이션 조각이 완료되면 ratchet을 실제 수치로 낮춘다.
+- 새 파일은 800줄을 넘기지 않고 Studio 진입 그래프의 정적 성장은 지연 로딩으로 막는다. 패턴과 분해 절차는 `docs/engineering/code-structure-and-bundle-patterns.md`를 따른다.
 - Studio는 문서·명령·history·저장·렌더링 권위를 우선하며 범용 폴더로 평탄화하지 않는다.
 
 자세한 경계는 `ARCHITECTURE.md`와 `docs/README.md`를 따른다.
@@ -89,7 +90,9 @@ breaking change는 헤더의 `!` 또는 `BREAKING CHANGE:` footer로 표시한�
 | 명령 | 용도 |
 | --- | --- |
 | `pnpm run validate:documentation` | 현재 문서, 내부 링크와 폐기 경로 검사 |
-| `pnpm run validate:architecture` | 저장소·source·dependency·문서 경계 검사 |
+| `pnpm run validate:architecture` | 저장소·source·dependency·문서 경계와 파일 크기·Studio 진입 그래프 ratchet 검사 |
+| `pnpm run check:source-file-size` | 소스 파일 크기 ratchet(새 파일 800줄 상한, 기록된 초과 파일 증가·새 `@ts-nocheck` 금지) |
+| `pnpm run check:studio-eager-graph` | Studio 진입 그래프 ratchet(빌드 없이 정적 import 성장을 원인 import와 함께 보고) |
 | `pnpm lint:strict` | import·JSX 접근성을 포함한 전체 ESLint |
 | `pnpm typecheck` | 애플리케이션과 API TypeScript 검사 |
 | `pnpm quality:imports` | Knip 미해결 import·미선언 의존성 검사 |

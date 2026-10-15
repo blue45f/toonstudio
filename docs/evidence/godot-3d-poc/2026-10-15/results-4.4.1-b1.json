@@ -1,0 +1,1402 @@
+{
+ "label": "4.4.1",
+ "schema": 1,
+ "startedAt": "2026-10-15T02:46:29.722Z",
+ "environment": {
+  "date": "2026-10-15T02:46:31.889Z",
+  "node": "v24.21.0",
+  "platform": "linux 6.18.44-fc-v114 x64",
+  "cpus": 4,
+  "cpuModel": "Intel(R) Xeon(R) Processor",
+  "totalMemMiB": 16093,
+  "chromium": "141.0.7390.37",
+  "webgl": {
+   "webgl2": true,
+   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "maxTextureSize": 8192,
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+   "hardwareConcurrency": 4,
+   "webgpu": "undefined"
+  },
+  "software": "소프트웨어 렌더링(SwiftShader). 실제 GPU 아님",
+  "viewport": {
+   "width": 960,
+   "height": 540
+  },
+  "repeat": 5,
+  "godotLabel": "4.4.1",
+  "buildFiles": {
+   "web/index.wasm": {
+    "bytes": 43699190,
+    "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+   },
+   "web/index.js": {
+    "bytes": 317142,
+    "sha256": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31"
+   },
+   "web/index.pck": {
+    "bytes": 55632,
+    "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+   },
+   "web-threads/index.wasm": {
+    "bytes": 41848195,
+    "sha256": "06e279b5d08a8888fc6c670b12d48c0e953bb526429ce521f2e17ec91fc15286"
+   },
+   "web-threads/index.js": {
+    "bytes": 370560,
+    "sha256": "dd8b42107108b4bc30c21eec8b2bb75e21b389f79b6e5d6553c7483eac284a33"
+   },
+   "web-threads/index.pck": {
+    "bytes": 54176,
+    "sha256": "8e186a9e526deb5788a0bfbb3203743e0b4f5d5e11cf96010b1fb708eb926ef0"
+   }
+  },
+  "loadAverageAtStart": [
+   7.88,
+   10.35,
+   10.18
+  ]
+ },
+ "suites": {
+  "sizes": {
+   "note": "gzip 레벨 9, brotli 품질 9(저장소 sidecar 생성과 같은 설정). 전송 시간이 아니라 파일 크기다.",
+   "godot": {
+    "web": {
+     "index.wasm": {
+      "raw": 43699190,
+      "gzip9": 9481133,
+      "brotli9": 7280573
+     },
+     "index.pck": {
+      "raw": 55632,
+      "gzip9": 48582,
+      "brotli9": 48118
+     },
+     "index.js": {
+      "raw": 317142,
+      "gzip9": 80554,
+      "brotli9": 74379
+     },
+     "index.html": {
+      "raw": 7974,
+      "gzip9": 3415,
+      "brotli9": 3099
+     }
+    },
+    "web-threads": {
+     "index.wasm": {
+      "raw": 41848195,
+      "gzip9": 9401488,
+      "brotli9": 7232026
+     },
+     "index.pck": {
+      "raw": 54176,
+      "gzip9": 47342,
+      "brotli9": 46870
+     },
+     "index.js": {
+      "raw": 370560,
+      "gzip9": 89517,
+      "brotli9": 81839
+     },
+     "index.html": {
+      "raw": 7775,
+      "gzip9": 3363,
+      "brotli9": 3060
+     }
+    }
+   },
+   "productionBuildsInRepo": {
+    "godot-space": {
+     "index.wasm": {
+      "raw": 43699190,
+      "gzip9": 9481133,
+      "brotli9": 7280573,
+      "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+     },
+     "index.pck": {
+      "raw": 448624,
+      "gzip9": 443298,
+      "brotli9": 442438
+     },
+     "index.js": {
+      "raw": 317142,
+      "gzip9": 80554,
+      "brotli9": 74379
+     }
+    },
+    "play-godot": {
+     "index.wasm": {
+      "raw": 43699190,
+      "gzip9": 9481133,
+      "brotli9": 7280573,
+      "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+     },
+     "index.pck": {
+      "raw": 386016,
+      "gzip9": 299301,
+      "brotli9": 294959
+     },
+     "index.js": {
+      "raw": 317142,
+      "gzip9": 80554,
+      "brotli9": 74379
+     }
+    },
+    "cuts-godot": {
+     "index.wasm": {
+      "raw": 43699190,
+      "gzip9": 9481133,
+      "brotli9": 7280573,
+      "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+     },
+     "index.pck": {
+      "raw": 1132080,
+      "gzip9": 1100243,
+      "brotli9": 1097509
+     },
+     "index.js": {
+      "raw": 317142,
+      "gzip9": 80554,
+      "brotli9": 74379
+     }
+    }
+   },
+   "threeBundles": {
+    "full": {
+     "raw": 845754,
+     "gzip9": 201212,
+     "brotli9": 179318
+    },
+    "min": {
+     "raw": 735790,
+     "gzip9": 163384,
+     "brotli9": 145338
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     7.88,
+     10.35,
+     10.18
+    ],
+    "loadAverageAfter": [
+     5.98,
+     9.71,
+     9.98
+    ],
+    "seconds": 24.4
+   }
+  },
+  "cold": {
+   "note": "매 반복마다 새 브라우저(캐시·V8 코드 캐시 없음). 시각은 탐색 시작 기준 ms.",
+   "baselineEmptyWebgl": {
+    "rssTotalMiB": {
+     "n": 3,
+     "median": 1033.2,
+     "mad": 1.2,
+     "min": 1031.1,
+     "max": 1034.4
+    },
+    "byTypeSample": {
+     "browser": 508.1,
+     "zygote": 120.9,
+     "gpu-process": 99.8,
+     "utility": 144.8,
+     "renderer": 159.5
+    },
+    "note": "빈 페이지 + WebGL2 컨텍스트(SwiftShader GPU 프로세스 포함). 엔진 메모리의 바닥값이다."
+   },
+   "variants": {
+    "n": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 84.9,
+       "mad": 36.7,
+       "min": 48.2,
+       "max": 284.5
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 835.9,
+       "mad": 343.4,
+       "min": 479.2,
+       "max": 1795.8
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 1988.9,
+       "mad": 369.8,
+       "min": 1409.5,
+       "max": 3779.6
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 2069.3,
+       "mad": 344.1,
+       "min": 1452.1,
+       "max": 4002.3
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 2169,
+       "mad": 445,
+       "min": 1567,
+       "max": 4367
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 32,
+       "mad": 0,
+       "min": 32,
+       "max": 32
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 83.19,
+       "mad": 0.01,
+       "min": 83.17,
+       "max": 83.22
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1369.1,
+       "mad": 8.7,
+       "min": 1358.6,
+       "max": 1386.9
+      },
+      "uaMemoryMiB": {
+       "n": 0
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": false,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": false,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 4002.3,
+       "wasmInstantiateMs": 1795.8,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1358.6
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2069.3,
+       "wasmInstantiateMs": 835.9,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1360.4
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1452.1,
+       "wasmInstantiateMs": 479.2,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1372.6
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1743.9,
+       "wasmInstantiateMs": 492.5,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1386.9
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2413.4,
+       "wasmInstantiateMs": 892,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1369.1
+      }
+     ]
+    },
+    "ni": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 136.065,
+       "mad": 13.7,
+       "min": 57.67,
+       "max": 149.765
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 665.7,
+       "mad": 200.645,
+       "min": 465.055,
+       "max": 1245.61
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 2172.97,
+       "mad": 419.02,
+       "min": 1207.63,
+       "max": 3293.27
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 2248.05,
+       "mad": 415.79,
+       "min": 1240.19,
+       "max": 3354.245
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 2566,
+       "mad": 622,
+       "min": 1299,
+       "max": 3456
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 32,
+       "mad": 0,
+       "min": 32,
+       "max": 32
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 40.84,
+       "mad": 0.2,
+       "min": 40.64,
+       "max": 82.32
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1347.9,
+       "mad": 5.6,
+       "min": 1342.3,
+       "max": 1363.3
+      },
+      "uaMemoryMiB": {
+       "n": 5,
+       "median": 46.27,
+       "mad": 0.01,
+       "min": 46.26,
+       "max": 46.34
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": false,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": true,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2248.1,
+       "wasmInstantiateMs": 665.7,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1363.3
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2387,
+       "wasmInstantiateMs": 936.5,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1342.3
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1240.2,
+       "wasmInstantiateMs": 465.1,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1354.4
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1832.3,
+       "wasmInstantiateMs": 509.6,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1347.9
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3354.2,
+       "wasmInstantiateMs": 1245.6,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1343.1
+      }
+     ]
+    },
+    "nr": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 72.695,
+       "mad": 24.995,
+       "min": 47.7,
+       "max": 240.53
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 489.725,
+       "mad": 94.75,
+       "min": 394.975,
+       "max": 911.51
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 1504.175,
+       "mad": 371.135,
+       "min": 1133.04,
+       "max": 2126.45
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 1553.19,
+       "mad": 387.62,
+       "min": 1165.57,
+       "max": 2169.36
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 1630,
+       "mad": 405,
+       "min": 1225,
+       "max": 2270
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 32,
+       "mad": 0,
+       "min": 32,
+       "max": 32
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 40.94,
+       "mad": 0.3,
+       "min": 40.64,
+       "max": 82.31
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1359.3,
+       "mad": 10,
+       "min": 1349.3,
+       "max": 1390.2
+      },
+      "uaMemoryMiB": {
+       "n": 5,
+       "median": 46.31,
+       "mad": 0.02,
+       "min": 46.25,
+       "max": 46.33
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": false,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": true,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1553.2,
+       "wasmInstantiateMs": 476.5,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1359.3
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2012,
+       "wasmInstantiateMs": 591.5,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1351.9
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1165.6,
+       "wasmInstantiateMs": 395,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1390.2
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2169.4,
+       "wasmInstantiateMs": 911.5,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1349.3
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1341.3,
+       "wasmInstantiateMs": 489.7,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1387.4
+      }
+     ]
+    },
+    "t": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "boot-error": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 90.2,
+       "mad": 20.5,
+       "min": 61,
+       "max": 144
+      },
+      "wasmInstantiateMs": {
+       "n": 0
+      },
+      "readyMs": {
+       "n": 0
+      },
+      "firstFrameMs": {
+       "n": 0
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 149,
+       "mad": 26,
+       "min": 94,
+       "max": 193
+      },
+      "wasmMemoryMiB": {
+       "n": 0
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 2.8,
+       "mad": 0,
+       "min": 2.8,
+       "max": 2.8
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1053.8,
+       "mad": 0.4,
+       "min": 1051.2,
+       "max": 1054.4
+      },
+      "uaMemoryMiB": {
+       "n": 0
+      }
+     },
+     "sample": null,
+     "isolated": false,
+     "missingFeatures": [
+      "Cross-Origin Isolation - Check that the web server configuration sends the correct headers.",
+      "SharedArrayBuffer - Check that the web server configuration sends the correct headers."
+     ],
+     "bootError": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers.",
+     "firstErrors": [
+      {
+       "type": "error",
+       "text": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers."
+      }
+     ],
+     "runs": [
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1053.5
+      },
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1054.2
+      },
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1051.2
+      },
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1054.4
+      },
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1053.8
+      }
+     ]
+    },
+    "ti": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 98.84,
+       "mad": 11.92,
+       "min": 75.21,
+       "max": 154.845
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 1195.71,
+       "mad": 326.695,
+       "min": 768.885,
+       "max": 1782.505
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 2847.265,
+       "mad": 187.915,
+       "min": 2206.38,
+       "max": 3535.9
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 2924.09,
+       "mad": 74.265,
+       "min": 2298.025,
+       "max": 3641.665
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 3020,
+       "mad": 32,
+       "min": 2383,
+       "max": 3854
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 38.44,
+       "mad": 0,
+       "min": 38.44,
+       "max": 38.44
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 9.09,
+       "mad": 0.16,
+       "min": 8.89,
+       "max": 49.06
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1391.9,
+       "mad": 1,
+       "min": 1388.6,
+       "max": 1393.1
+      },
+      "uaMemoryMiB": {
+       "n": 0
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": true,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": true,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3641.7,
+       "wasmInstantiateMs": 1782.5,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1388.6
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2298,
+       "wasmInstantiateMs": 768.9,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1391.9
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2849.8,
+       "wasmInstantiateMs": 1103.7,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1393.1
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2924.1,
+       "wasmInstantiateMs": 1195.7,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1391.7
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2935.6,
+       "wasmInstantiateMs": 1522.4,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1392.9
+      }
+     ]
+    },
+    "tr": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 108.52,
+       "mad": 36.25,
+       "min": 72.27,
+       "max": 250.3
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 1473.95,
+       "mad": 608.585,
+       "min": 521.5,
+       "max": 2709.35
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 3655.775,
+       "mad": 942.425,
+       "min": 1430.715,
+       "max": 4598.2
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 3798,
+       "mad": 876.315,
+       "min": 1478.535,
+       "max": 4674.315
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 4091,
+       "mad": 895,
+       "min": 1605,
+       "max": 4986
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 38.44,
+       "mad": 0,
+       "min": 38.44,
+       "max": 38.44
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 9.17,
+       "mad": 0.33,
+       "min": 8.84,
+       "max": 49.09
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1389.1,
+       "mad": 1,
+       "min": 1386.8,
+       "max": 1391.5
+      },
+      "uaMemoryMiB": {
+       "n": 0
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": true,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": true,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3848.9,
+       "wasmInstantiateMs": 1474,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1389.1
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3798,
+       "wasmInstantiateMs": 1673.5,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1391.5
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2507.1,
+       "wasmInstantiateMs": 865.4,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1386.8
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 4674.3,
+       "wasmInstantiateMs": 2709.4,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1388.7
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1478.5,
+       "wasmInstantiateMs": 521.5,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1390.1
+      }
+     ]
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     5.98,
+     9.71,
+     9.98
+    ],
+    "loadAverageAfter": [
+     10.26,
+     9.53,
+     9.63
+    ],
+    "seconds": 415.1
+   }
+  },
+  "warm": {
+   "note": "같은 브라우저 컨텍스트에서 같은 주소로 다시 탐색. HTTP 캐시 허용(max-age=3600). 첫 항목은 캐시를 채우는 콜드 실행.",
+   "runs": [
+    {
+     "index": 0,
+     "kind": "cold-fill",
+     "firstFrameMs": 2041.4,
+     "wasmInstantiateMs": 871.8,
+     "engineJsReadyMs": 68.4,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 1,
+     "kind": "warm",
+     "firstFrameMs": 2429.4,
+     "wasmInstantiateMs": 1159.1,
+     "engineJsReadyMs": 27.2,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 2,
+     "kind": "warm",
+     "firstFrameMs": 1869,
+     "wasmInstantiateMs": 748.5,
+     "engineJsReadyMs": 34.3,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 3,
+     "kind": "warm",
+     "firstFrameMs": 1244.7,
+     "wasmInstantiateMs": 351.9,
+     "engineJsReadyMs": 37.8,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 4,
+     "kind": "warm",
+     "firstFrameMs": 1181.1,
+     "wasmInstantiateMs": 295.8,
+     "engineJsReadyMs": 31.8,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 5,
+     "kind": "warm",
+     "firstFrameMs": 1251.8,
+     "wasmInstantiateMs": 285.8,
+     "engineJsReadyMs": 33.9,
+     "wasmTransfer": 43699490
+    }
+   ],
+   "coldFill": {
+    "index": 0,
+    "kind": "cold-fill",
+    "firstFrameMs": 2041.4,
+    "wasmInstantiateMs": 871.8,
+    "engineJsReadyMs": 68.4,
+    "wasmTransfer": 43699490
+   },
+   "warmSummary": {
+    "firstFrameMs": {
+     "n": 5,
+     "median": 1251.8,
+     "mad": 70.7,
+     "min": 1181.1,
+     "max": 2429.4
+    },
+    "wasmInstantiateMs": {
+     "n": 5,
+     "median": 351.9,
+     "mad": 66.1,
+     "min": 285.8,
+     "max": 1159.1
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     10.26,
+     9.53,
+     9.63
+    ],
+    "loadAverageAfter": [
+     9.85,
+     9.47,
+     9.61
+    ],
+    "seconds": 12.4
+   }
+  },
+  "coi": {
+   "note": "iframe 임베드 시나리오. 운영 /studio 와 godot-space 는 COOP same-origin + COEP credentialless 를 쓴다(config/http-response-headers.json).",
+   "scenarios": [
+    {
+     "name": "부모 격리 없음 + 단일 스레드 스테이지",
+     "iso": "none",
+     "stage": "n",
+     "runs": [
+      {
+       "outcome": "ok",
+       "wallMs": 2506,
+       "parentIsolated": false,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": false,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "ok",
+       "wallMs": 2705,
+       "parentIsolated": false,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": false,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "ok",
+       "wallMs": 2572,
+       "parentIsolated": false,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": false,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      }
+     ],
+     "outcomes": [
+      "ok"
+     ]
+    },
+    {
+     "name": "부모 격리 없음 + 스레드 스테이지(격리 헤더 있음)",
+     "iso": "none",
+     "stage": "ti",
+     "runs": [
+      {
+       "outcome": "boot-error",
+       "wallMs": 294,
+       "parentIsolated": false,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": false,
+       "bootError": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers.",
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers."
+        }
+       ]
+      },
+      {
+       "outcome": "boot-error",
+       "wallMs": 218,
+       "parentIsolated": false,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": false,
+       "bootError": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers.",
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers."
+        },
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "boot-error",
+       "wallMs": 207,
+       "parentIsolated": false,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": false,
+       "bootError": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers.",
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers."
+        },
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      }
+     ],
+     "outcomes": [
+      "boot-error"
+     ]
+    },
+    {
+     "name": "부모 COEP credentialless + 스레드 스테이지(credentialless)",
+     "iso": "credentialless",
+     "stage": "ti",
+     "runs": [
+      {
+       "outcome": "ok",
+       "wallMs": 2714,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "ok",
+       "wallMs": 2785,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "ok",
+       "wallMs": 3097,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      }
+     ],
+     "outcomes": [
+      "ok"
+     ]
+    },
+    {
+     "name": "부모 COEP credentialless + 단일 스레드 스테이지(COEP 헤더 없음)",
+     "iso": "credentialless",
+     "stage": "n",
+     "runs": [
+      {
+       "outcome": "timeout",
+       "wallMs": 443,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": null,
+       "bootError": "frame-inaccessible",
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+         "type": "pageerror",
+         "text": "SecurityError: Failed to read a named property '__ts3dBootError' from 'Window': Blocked a frame with origin \"http://127.0.0.1:33625\" from accessing a cross-origin frame."
+        }
+       ]
+      },
+      {
+       "outcome": "timeout",
+       "wallMs": 243,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": null,
+       "bootError": "frame-inaccessible",
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "timeout",
+       "wallMs": 339,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": null,
+       "bootError": "frame-inaccessible",
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      }
+     ],
+     "outcomes": [
+      "timeout"
+     ]
+    },
+    {
+     "name": "부모 COEP credentialless + 단일 스레드 스테이지(credentialless)",
+     "iso": "credentialless",
+     "stage": "ni",
+     "runs": [
+      {
+       "outcome": "ok",
+       "wallMs": 2625,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "ok",
+       "wallMs": 1623,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "ok",
+       "wallMs": 1626,
+       "parentIsolated": true,
+       "img": {
+        "loaded": true,
+        "w": 1
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      }
+     ],
+     "outcomes": [
+      "ok"
+     ]
+    },
+    {
+     "name": "부모 COEP require-corp + 스레드 스테이지(require-corp)",
+     "iso": "require-corp",
+     "stage": "tr",
+     "runs": [
+      {
+       "outcome": "ok",
+       "wallMs": 1821,
+       "parentIsolated": true,
+       "img": {
+        "loaded": false
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOriginAfterDefaultedToSameOriginByCoep"
+        },
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "ok",
+       "wallMs": 2206,
+       "parentIsolated": true,
+       "img": {
+        "loaded": false
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOriginAfterDefaultedToSameOriginByCoep"
+        },
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      },
+      {
+       "outcome": "ok",
+       "wallMs": 2135,
+       "parentIsolated": true,
+       "img": {
+        "loaded": false
+       },
+       "frameIsolated": true,
+       "bootError": null,
+       "consoleErrors": [
+        {
+         "type": "error",
+         "text": "Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOriginAfterDefaultedToSameOriginByCoep"
+        },
+        {
+         "type": "error",
+         "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+       ]
+      }
+     ],
+     "outcomes": [
+      "ok"
+     ]
+    }
+   ],
+   "_meta": {
+    "loadAverageBefore": [
+     9.85,
+     9.47,
+     9.61
+    ],
+    "loadAverageAfter": [
+     10.83,
+     9.86,
+     9.74
+    ],
+    "seconds": 47.4
+   }
+  }
+ },
+ "finishedAt": "2026-10-15T02:54:51.231Z"
+}

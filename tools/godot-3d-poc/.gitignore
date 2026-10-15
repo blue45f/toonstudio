@@ -1,0 +1,9 @@
+# 재생성 가능한 산출물·바이너리는 저장소에 넣지 않는다(docs/adr/0028 공급망 정책, README.md 참고).
+/build/
+/.cache/
+/project/.godot/
+/project/*.translation
+*.wasm
+*.pck
+*.glb
+*.tpz

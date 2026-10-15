@@ -4,35 +4,43 @@
 // 3) live load            -> badges with real numbers + drop-off feedback hint
 // 4) error load           -> surfaces still render their planning content
 import { renderToString } from "react-dom/server";
-import { StudioSeasonBeatBoard } from "./run/apps/web/src/domains/creator/planning/StudioSeasonBeatBoard";
-import { StudioCharacterCoverageMap } from "./run/apps/web/src/domains/creator/planning/StudioCharacterCoverageMap";
-import type { EpisodeMetricsLoad } from "./run/apps/web/src/domains/creator/planning/studio-episode-metrics-overlay";
 
-const season: any = {
+import { StudioCharacterCoverageMap } from "./run/apps/web/src/domains/creator/planning/StudioCharacterCoverageMap";
+import { StudioSeasonBeatBoard } from "./run/apps/web/src/domains/creator/planning/StudioSeasonBeatBoard";
+
+import type { EpisodeMetricsLoad } from "./run/apps/web/src/domains/creator/planning/studio-episode-metrics-overlay";
+import type { ComponentProps } from "react";
+
+// 픽스처 타입은 표면의 실제 props 에서 파생한다 — 계약이 바뀌면 이 스모크도 타입 단계에서 어긋남을 드러낸다.
+type BeatBoardProps = ComponentProps<typeof StudioSeasonBeatBoard>;
+type CoverageMapProps = ComponentProps<typeof StudioCharacterCoverageMap>;
+type AnalyticsResponse = NonNullable<EpisodeMetricsLoad["response"]>;
+
+const season: BeatBoardProps["season"] = {
   id: "sp-1", projectId: "p-1", seasonId: "season-1", revision: 1, status: "draft",
   title: "시즌 1", goal: "목표", plotArc: [], characterArcRefs: [],
   episodeOrder: ["ep-1", "ep-2", "ep-3"], targetEpisodeCount: 3,
   releaseStartsAt: null, releaseCadenceDays: null, budgetCapMinor: null, currency: null,
   approvedByAssignmentIds: [], createdAt: "2026-10-14T00:00:00.000Z",
 };
-const plans: any[] = [1, 2, 3].map((n) => ({
+const plans: BeatBoardProps["plans"] = [1, 2, 3].map((n) => ({
   id: `plan-${n}`, projectId: "p-1", seasonId: "season-1", episodeId: `ep-${n}`,
   episodeNumber: n, revision: 1, status: "draft", title: `${n}화 제목`,
   logline: `${n}화 한 줄`, openingHook: "", coreConflict: "", turningPoints: [],
   cliffhanger: "", characterRefs: ["char-mina"], locationRefs: [], targetCutCount: 40,
   targetScrollHeightPx: 12000, dialogueDensity: "medium", difficulty: 2, riskIds: [],
   narrativeRevisionRef: null, approvedByAssignmentIds: [], createdAt: "2026-10-14T00:00:00.000Z",
-  synopsis: `${n}화 줄거리`, goal: "", emotionalArc: null,
+  synopsis: `${n}화 줄거리`, goal: "",
 }));
-const characters: any[] = [
+const characters: BeatBoardProps["characters"] = [
   { id: "char-mina", name: "미나", aliases: [], defaultCostumeId: null, defaultAppearanceId: null },
 ];
 const episodes = plans.map((p) => ({ episodeId: p.episodeId, episodeNumber: p.episodeNumber, title: p.title }));
-const appearances: any[] = [
+const appearances: CoverageMapProps["appearances"] = [
   { episodeId: "ep-1", characterId: "char-mina", costumeId: null, appearanceId: null, expression: null, cutCount: 12 },
 ];
 
-const liveResponse: any = {
+const liveResponse: AnalyticsResponse = {
   seriesId: "s-1", period: "30d", generatedAt: "2026-10-15T00:00:00.000Z", mock: false,
   kpis: [], trafficSources: [], dropOffEpisodes: [3], series: [],
   retention: [

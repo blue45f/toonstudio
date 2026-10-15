@@ -39,6 +39,7 @@ import {
   CreatorCommunityPublicationPanel,
   CreatorWorkReportControl,
 } from "./CreatorCommunityPublicationPanel";
+import { CreatorWorkRightsAside } from "./ai-training-consent/CreatorWorkRightsAside";
 import { PublishedWorkReader } from "./PublishedWorkReader";
 import {
   creatorProfileHref,
@@ -68,6 +69,7 @@ import {
   compactPublicShareDescription,
   publicShareImageUrl,
 } from "@/shared/lib/public-share-policy";
+import { resolveCreatorCommunityAiTraining } from "@/shared/lib/creator-community-publication-contract";
 import { readCreatorPublicationSource } from "@toonstudio/contracts/creator-publication-integrity";
 import { useApp } from "@/shared/lib/store";
 import { cn, formatCount, relativeDate } from "@/shared/lib/utils";
@@ -784,33 +786,7 @@ export function CreateWorkPage() {
         )}
 
         {(work.community || publicationSource) && (
-          <aside
-            className="mt-4 rounded-xl border border-line bg-card/55 px-3.5 py-3 text-xs leading-relaxed text-fg-2"
-            aria-label="제작 출처와 이용 조건"
-          >
-            <p className="font-semibold text-fg">제작 출처와 이용 조건</p>
-            {publicationSource?.disclosure && (
-              <p className="mt-1 whitespace-pre-wrap">{publicationSource.disclosure}</p>
-            )}
-            {work.community?.attributionText && (
-              <p className="mt-1 whitespace-pre-wrap text-fg-3">
-                {work.community.attributionText}
-              </p>
-            )}
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {publicationSource?.revisionId && (
-                <span className="rounded-full border border-line bg-canvas px-2 py-0.5">
-                  원본 revision {publicationSource.revisionId}
-                </span>
-              )}
-              <span className="rounded-full border border-line bg-canvas px-2 py-0.5">
-                다운로드 {work.community?.downloadAllowed ? "허용" : "비허용"}
-              </span>
-              <span className="rounded-full border border-line bg-canvas px-2 py-0.5">
-                AI 학습 {work.community?.trainingAllowed ? "허용" : "비허용"}
-              </span>
-            </div>
-          </aside>
+          <CreatorWorkRightsAside community={work.community} source={publicationSource} />
         )}
 
         {work.tags.length > 0 && (
@@ -989,6 +965,7 @@ export function CreateWorkPage() {
         isOwner={readerView ? false : work.isOwner}
         altText={work.community?.altText ?? ""}
         contentKind={work.community?.kind ?? "webtoon_episode"}
+        aiTraining={resolveCreatorCommunityAiTraining(work.community)}
       />
 
       {ownerControlsVisible ? (

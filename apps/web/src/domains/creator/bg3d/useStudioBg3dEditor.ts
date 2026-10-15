@@ -6,6 +6,7 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { useStudioBg3dInplaceTools } from "./useStudioBg3dInplaceTools";
+import { useStudioBg3dInferenceHost } from "./useStudioBg3dInferenceHost";
 import { isStudioBg3dPhysicsTransientPhase } from "./studio-bg3d-physics-ui";
 import { useStudioBg3dEditorState } from "./useStudioBg3dEditorState";
 import { bindStudioBg3dEditorViewModel } from "./studio-bg3d-editor-view-model";
@@ -86,6 +87,14 @@ export function useStudioBg3dEditor(props) {
     replace: h.replaceCanonicalDocumentState, commitHistory: h.commitImmediateHistoryTransition,
     notify: () => h.setRefTick((value) => value + 1),
   });
+  // SketchUp식 추론: 줄자 세션·장면 색인·기즈모 이동 스냅을 서비스 하나로 묶는다.
+  const inference = useStudioBg3dInferenceHost(h);
+  h.inferenceService = inference.service;
+  h.inferenceDrag = inference.drag;
+  h.inferencePointerToolActive = inference.pointerToolActive;
+  h.handleInferenceCameraChange = inference.onCameraChange;
+  h.pickInferencePoint = inference.pickPoint;
+  h.inferPlacementTarget = inference.inferPlacementTarget;
   bindStudioBg3dEditorSceneGraph(h);
 
   const outlinerMutationDependencies = {

@@ -107,7 +107,8 @@ describe("webtoon production collaboration UI", () => {
       "/production/projects/sample-project/rights",
       "/production/projects/sample-project/settings",
     ]);
-    expect(within(nav).getByRole("link", { name: /원고에서 식자하기/u })).toBeTruthy();
+    // 두 링크의 라벨은 단계 정의(EPISODE_STAGES)의 primaryAction 라벨이 정본이다.
+    expect(within(nav).getByRole("link", { name: /원고 확인하기/u })).toBeTruthy();
     expect(within(nav).getByRole("link", { name: /게시 명령 센터 열기/u })).toBeTruthy();
     // 시작 상태에서는 그룹 하나(현재 단계 그룹)만 펼쳐진다. 관리는 아래에 접혀 있다.
     const groups = Array.from(nav.querySelectorAll("details"));

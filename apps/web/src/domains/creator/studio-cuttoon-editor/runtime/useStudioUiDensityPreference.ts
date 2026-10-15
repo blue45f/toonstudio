@@ -22,7 +22,11 @@ interface UseStudioUiDensityPreferenceOptions {
   /** Explicit launch hint captured once by the preferences runtime. */
   readonly launchDensity: StudioLaunchDensity | null;
   readonly appSettingsRef: { current: StudioAppSettings };
-  readonly setAppSettings: (next: StudioAppSettings) => void;
+  /**
+   * Replaces the shared app-settings ref and React state together. The parent runtime owns both,
+   * so this module writes through it instead of mutating the ref it receives as an argument.
+   */
+  readonly replaceAppSettings: (next: StudioAppSettings) => void;
   readonly persistAppSettings: (next: StudioAppSettings) => void;
   readonly closeRightPanelForFocusModeRef: { current: () => void };
 }
@@ -38,7 +42,7 @@ interface UseStudioUiDensityPreferenceOptions {
 export function useStudioUiDensityPreference({
   launchDensity,
   appSettingsRef,
-  setAppSettings,
+  replaceAppSettings,
   persistAppSettings,
   closeRightPanelForFocusModeRef,
 }: UseStudioUiDensityPreferenceOptions) {
@@ -65,10 +69,9 @@ export function useStudioUiDensityPreference({
     const next = current.general.densityMode === mode
       ? current
       : { ...current, general: { ...current.general, densityMode: mode } };
-    appSettingsRef.current = next;
-    if (next !== current) setAppSettings(next);
+    if (next !== current) replaceAppSettings(next);
     persistAppSettings(next);
-  }, [appSettingsRef, closeRightPanelForFocusModeRef, persistAppSettings, setAppSettings]);
+  }, [appSettingsRef, closeRightPanelForFocusModeRef, persistAppSettings, replaceAppSettings]);
 
   const setUiAdvancedToolsExpanded = useCallback((expanded: boolean): void => {
     setUiAdvancedToolsExpandedState(expanded);

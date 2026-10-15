@@ -63,7 +63,7 @@ export function useProductionVersionActivity(input: {
       },
     );
     return () => controller.abort();
-  }, [enabled, aggregate, viewerUserId, attempt]);
+  }, [enabled, aggregate, viewerUserId, attempt, t]);
 
   return { state, retry };
 }

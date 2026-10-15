@@ -596,7 +596,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
     } finally {
       if (current === generation.current) setLoading(false);
     }
-  }, [aggregate.workId, isDemo]);
+  }, [aggregate.workId, isDemo, t]);
 
   useEffect(() => {
     void load();

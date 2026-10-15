@@ -10,6 +10,8 @@ import {
   resolveStudioBg3dMinimumOrbitDistance,
 } from "./studio-bg3d-camera-application";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
+import { StudioBg3dInferenceController } from "./StudioBg3dInferenceController";
+import { StudioBg3dInferenceOverlay } from "./StudioBg3dInferenceOverlay";
 import { StudioBg3dHdriEnvironment } from "./StudioBg3dHdriEnvironment";
 import {
   isStudioBg3dHdriEnvironmentActive,
@@ -399,6 +401,18 @@ export function bindStudioBg3dEditorSceneGraph(h) {
           onPointPreview={updateMeasurementPreview}
         />
       ) : null}
+      {!immersiveSceneActive && h.inferenceService ? (
+        <Fragment>
+          {/* View 포털 안에서 실제 렌더 카메라로 포인터를 레이로 바꾼다. 사면 뷰는 카메라가 여럿이라 알리지 않는다. */}
+          <StudioBg3dInferenceController
+            service={h.inferenceService}
+            active={Boolean(h.inferencePointerToolActive) && !effectiveIsQuadView}
+            objectsRef={primitiveObjectsRef}
+            {...(effectiveIsQuadView ? {} : { onCameraChange: h.handleInferenceCameraChange })}
+          />
+          <StudioBg3dInferenceOverlay service={h.inferenceService} capturing={isCapturing} />
+        </Fragment>
+      ) : null}
       {!immersiveSceneActive && placementSession.phase === "preview" && placementPreviewAsset ? (
         <BgPlacementPreview asset={placementPreviewAsset} preview={placementSession} />
       ) : null}
@@ -444,6 +458,8 @@ export function bindStudioBg3dEditorSceneGraph(h) {
                 dragInitialFirstTransformRef.current = {
                   worldMatrix: firstObj.matrixWorld.clone(),
                 };
+                // 이동 모드: 끝점·중간점·중심·상자 면 스냅 세션을 연다 (Alt = 스냅 끄기).
+                if (transformMode === "translate") h.inferenceDrag?.begin(firstObj);
               }
               dragInitialSelectedTransformsRef.current.clear();
               for (const id of selectedIds) {
@@ -458,10 +474,13 @@ export function bindStudioBg3dEditorSceneGraph(h) {
             }}
             onMouseUp={() => {
               setIsTransforming(false);
-              if (!snapSettings.enabled) return;
+              const dragEnd = h.inferenceDrag?.end();
+              // 기하 스냅으로 맞춘 위치를 눈금 증분 스냅이 다시 흩트리지 않게 한다.
+              if (!snapSettings.enabled || dragEnd?.lastSnapped) return;
               applyMultiSelectDelta(true);
             }}
-            onObjectChange={() => {
+            onObjectChange={(event) => {
+              if (transformMode === "translate") h.inferenceDrag?.update(event?.target?.axis ?? null);
               applyMultiSelectDelta(false);
             }}
           />

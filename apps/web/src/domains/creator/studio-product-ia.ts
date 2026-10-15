@@ -121,7 +121,7 @@ export const STUDIO_CAPABILITY_REGISTRY: readonly StudioCapabilityDefinition[] =
       { id: "story-lab-route", role: "legacy" },
       { id: "storyworld-route", role: "legacy" },
     ],
-    aliases: ["스토리 연구실", "storyworld", "writer room", "리서치"],
+    aliases: ["스토리 연구실", "storyworld", "writer room", "리서치", "개연성 점검", "스토리 점검", "plausibility"],
   },
   {
     id: "asset.library",

@@ -25,7 +25,7 @@ export function ProductionSurfaceHeader({
   readonly surface: ProductionProjectSurface;
 }) {
   const bt = useBilingual("ProductionSurfaceHeader");
-  const definition = productionSurfaceDefinition(surface);
+  const definition = useMemo(() => productionSurfaceDefinition(surface), [surface]);
   const Icon = definition.icon;
   // 개요의 다음 행동은 평소 공정 보드지만, 기획 문서가 비어 있으면 기획이 먼저다.
   // 개요 대시보드의 "지금 할 일"과 같은 규칙(productionPlanningIsEmpty)을 써서

@@ -69,10 +69,14 @@
     "verify:backend-capability-worker": "node scripts/canary-backend-capability-worker.mjs",
     "verify:csp": "node scripts/verify-static-csp.mjs apps/web/index.html",
     "verify:character-kit": "tsx scripts/verify-character-kit.mjs",
-    "validate:architecture": "node scripts/validate-architecture.mjs && pnpm run validate:documentation && pnpm run validate:source-layout && pnpm run validate:app-boundaries",
+    "validate:architecture": "node scripts/validate-architecture.mjs && pnpm run validate:documentation && pnpm run validate:source-layout && pnpm run validate:app-boundaries && pnpm run check:source-file-size && pnpm run check:studio-eager-graph",
     "verify:toolchain-coverage": "node scripts/verify-toolchain-coverage.mjs",
     "check:studio-bundle": "node scripts/check-studio-bundle.mjs",
+    "check:source-file-size": "node scripts/check-source-file-size.mjs",
+    "check:studio-eager-graph": "node scripts/check-studio-eager-graph.mjs",
+    "test:code-structure-gates": "node --test scripts/check-source-file-size.test.mjs scripts/check-studio-eager-graph.test.mjs scripts/code-structure-gates-contract.test.mjs",
     "check:type-coverage": "type-coverage --at-least 95",
+    "check:type-coverage:full": "node scripts/type-coverage-shards.mjs",
     "bundle:visualize": "BUNDLE_VISUALIZER=1 NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
     "ci": "pnpm run verify:pnpm-lockfile && pnpm run test:pnpm-lockfile && pnpm run test:local-test-stack && pnpm run test:lint-strict-budget && pnpm run verify:i18n-builtins && pnpm run validate:architecture && pnpm run verify:free-infrastructure && pnpm run verify:cloudflare-apex-redirect && pnpm run verify:cloudflare-static && pnpm run verify:csp && pnpm run verify:toolchain-coverage && pnpm run verify:studio-competitor-capabilities && pnpm run verify:studio-3d-web-authoring && pnpm run verify:mobile-native-media && pnpm run lint:ci && pnpm run typecheck && pnpm run test && pnpm run test:toonbridge && pnpm run verify:cloudflare-realtime && pnpm run build && pnpm run check:studio-bundle && pnpm run audit:licenses && pnpm run build:all",
     "sonar": "sonar-scanner",
@@ -466,6 +470,12 @@
     "wesl": "^0.7.28",
     "wrangler": "4.116.0",
     "yaml": "2.9.0"
+  },
+  "typeCoverage": {
+    "project": "tsconfig.type-coverage.json",
+    "ignoreFiles": [
+      "apps/web/src/domains/creator/**"
+    ]
   },
   "lint-staged": {
     "*.{js,mjs,ts,tsx,mts,cts}": [

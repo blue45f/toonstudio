@@ -804,7 +804,7 @@ export function applyProcessComparePreset(
     ?? paneCurrent;
   if (!current) return { ok: false, preset, reason: "no-current" };
 
-  let counterpart: ProcessCompareItem | null = null;
+  let counterpart: ProcessCompareItem | null;
   if (preset === "previous-episode") {
     counterpart = matchProcessComparePresetPage(
       items.filter((item) => item.sourceKind === "page" && item.id !== current.id),

@@ -3,7 +3,7 @@ import { playSfx, triggerParticleBurst } from "@toonstudio/core/fx";
 import { AvailabilityDots, PlatformTags } from "./availability";
 import { bestPricing } from "./availability-utils";
 import { BookmarkButton } from "./bookmark-button";
-import { coverGridPriority } from "./cover-image";
+import { coverGridPriority } from "./cover-image-sizing";
 import { TitlePoster } from "./title-poster";
 import { CampusObjectSource } from "./spatial-campus/CampusObjectSource";
 import { Card3D } from "./ui/card-3d";

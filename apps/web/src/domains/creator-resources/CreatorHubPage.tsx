@@ -26,6 +26,7 @@ import {
   researchDeskBriefContext,
 } from "./research-desk-session";
 import { buildResearchNotebookMarkdown } from "./research-notebook";
+import { MaterialSentencePanel } from "./material-hub/MaterialSentencePanel";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
 import { SavedBoard } from "./SavedBoard";
 import { useResearchDeskSession } from "./useResearchDeskSession";
@@ -41,6 +42,8 @@ import {
   useBilingual,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+
+import type { CreatorResource } from "@/shared/lib/creator-resources";
 
 import { attributionMarkdown, deadlineLabel, parseWorkspace } from "@/shared/lib/creator-resources";
 
@@ -61,7 +64,15 @@ const HASH_TABS: Readonly<Record<string, DeskTab>> = {
   "#research-export": "board",
 };
 
-export function CreatorHubPage() {
+export interface CreatorHubPageProps {
+  /**
+   * 앱 계층이 주입하는 선택 기능. 문장 허브에서 사용자가 "AI로 다듬기"를 눌렀을 때만 호출된다.
+   * 풀어쓸 수 없으면 null 을 돌려주고, 그러면 규칙 기반 해석을 그대로 둔다.
+   */
+  readonly refineMaterialSentence?: (sentence: string, signal: AbortSignal) => Promise<string | null>;
+}
+
+export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps = {}) {
   useBilingualI18nRevision();
   const bt = useBilingual("CreatorHubPage");
   const navigate = useNavigate();
@@ -117,6 +128,14 @@ export function CreatorHubPage() {
     navigate(researchSearchHref(mode, query));
   }, [navigate, updateResearchSession]);
 
+  // 문장 허브에서 고른 자료를 기존 검색 화면과 같은 규칙으로 장면 보드에 담거나 뺀다.
+  const toggleSavedResource = useCallback((item: CreatorResource) => {
+    void updateWorkspace((value) => {
+      const remove = value.saved.some((saved) => saved.id === item.id);
+      return { ...value, saved: remove ? value.saved.filter((saved) => saved.id !== item.id) : [...value.saved, item] };
+    });
+  }, [updateWorkspace]);
+
   const exportResearchBrief = () => {
     const brief = buildResearchBriefMarkdown(workspace, new Date(), briefContext);
     const synthesis = buildResearchNotebookMarkdown(researchNotebook, workspace.saved);
@@ -161,6 +180,7 @@ export function CreatorHubPage() {
     heroContent={<ResearchSearchPanel session={researchSession} onSessionChange={updateResearchSession} onSearch={launchSearch} />}
     heroAside={<div className="hidden lg:block"><ResearchSceneStudy /></div>}
   >
+    <MaterialSentencePanel saved={workspace.saved} saveDisabled={!ready || !writable || saving} onToggleSaved={toggleSavedResource} refineSentence={refineMaterialSentence} />
     <section className="rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-label={bt("리서치 표면 안내", "Which research surface am I on?")}>
       <p className="text-sm leading-6 text-fg-2 break-keep">
         <strong className="text-fg">{bt("여기는 리서치 데스크", "This is the Research Desk")}</strong>

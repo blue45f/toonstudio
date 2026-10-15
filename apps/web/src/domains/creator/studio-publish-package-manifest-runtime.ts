@@ -20,6 +20,7 @@ import {
   type StudioPublishPackagePublicArtifact,
   type StudioPublishThumbnailSlot,
 } from "./studio-publish-package";
+import { readStudioPublishPackageRights } from "./publish-package/rights";
 
 const ARTIFACT_ROLES = new Set<StudioPublishArtifactRole>([
   "episode-image",
@@ -301,6 +302,8 @@ export function parseStudioPublishPackageManifest(value: unknown): StudioPublish
       usage,
       ...(usage !== "none" && disclosure ? { disclosure } : {}),
     },
+    // `rights`가 없는 기존 v1 manifest와 알 수 없는 값은 모두 미지정으로 읽는다(근거 없이 허용으로 읽지 않는다).
+    rights: readStudioPublishPackageRights(decoded.rights),
     creditsIncluded: artifacts.some((artifact) => artifact.role === "credits"),
     validation: {
       canExport: validationValue.canExport === true && errorCount === 0,

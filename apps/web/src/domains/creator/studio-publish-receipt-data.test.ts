@@ -2,8 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   createStudioPublishReceipt,
+  projectStudioPublishReceiptCommunity,
   studioPublishReceiptFileName,
 } from "./studio-publish-receipt-data";
+
+import {
+  createDefaultCreatorCommunityMetadata,
+  withCreatorCommunityAiTraining,
+} from "@toonstudio/contracts/creator-community-publication-contract";
 
 describe("studio publish receipt data", () => {
   it("records a public and anonymous reader path with source integrity", () => {
@@ -73,6 +79,64 @@ describe("studio publish receipt data", () => {
       anonymousPreviewPath: null,
       revision: null,
       details: null,
+    });
+  });
+
+  it("projects the creator's AI training label into the receipt community block", () => {
+    const base = createDefaultCreatorCommunityMetadata("upload");
+    expect(projectStudioPublishReceiptCommunity(base)).toMatchObject({
+      aiTraining: "unspecified",
+      trainingAllowed: false,
+    });
+    expect(projectStudioPublishReceiptCommunity(withCreatorCommunityAiTraining(base, "allowed")))
+      .toMatchObject({ aiTraining: "allowed", trainingAllowed: true });
+    expect(projectStudioPublishReceiptCommunity(withCreatorCommunityAiTraining(base, "prohibited")))
+      .toMatchObject({ aiTraining: "prohibited", trainingAllowed: false });
+  });
+
+  it("projects only the public community fields and reads legacy metadata conservatively", () => {
+    const { aiTraining: _omitted, ...legacy } = createDefaultCreatorCommunityMetadata("upload");
+    const projected = projectStudioPublishReceiptCommunity({ ...legacy, trainingAllowed: true });
+    expect(projected.aiTraining).toBe("allowed");
+    expect(Object.keys(projected).sort()).toEqual([
+      "aiTraining",
+      "altText",
+      "attributionText",
+      "downloadAllowed",
+      "kind",
+      "portfolio",
+      "provenance",
+      "trainingAllowed",
+    ]);
+    expect(projectStudioPublishReceiptCommunity(legacy).aiTraining).toBe("unspecified");
+  });
+
+  it("keeps the label in the downloadable receipt JSON without changing the schema id", () => {
+    const base = createDefaultCreatorCommunityMetadata("upload");
+    const receipt = createStudioPublishReceipt({
+      kind: "published",
+      workId: "work-1",
+      revision: 3,
+      environment: "production",
+      generatedAt: "2026-10-15T00:00:00.000Z",
+      details: {
+        title: "작품",
+        visibility: "public",
+        publishedAt: "2026-10-15T00:00:00.000Z",
+        pages: [{ name: "page.webp", width: 1280, height: 1600 }],
+        source: null,
+        community: projectStudioPublishReceiptCommunity(
+          withCreatorCommunityAiTraining(base, "prohibited"),
+        ),
+        rights: { comments: "open", allowRemix: true, searchIndexing: true, contentRating: "all" },
+        preflight: { errors: 0, warnings: 0 },
+      },
+    });
+    expect(receipt.schema).toBe("toonstudio.publish-receipt.v1");
+    // 영수증 JSON을 내려받았다가 다시 읽어도 표기가 그대로 남는다.
+    const roundTripped: unknown = JSON.parse(JSON.stringify(receipt));
+    expect(roundTripped).toMatchObject({
+      details: { community: { aiTraining: "prohibited", trainingAllowed: false } },
     });
   });
 });

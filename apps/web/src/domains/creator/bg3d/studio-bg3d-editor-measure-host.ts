@@ -370,8 +370,10 @@ export function attachStudioBg3dEditorMeasureHost(h) {
     };
   }
   h.resolveMeasurementCandidate = resolveMeasurementCandidate;
-  function updateMeasurementPreview(point: StudioBg3dMeasurementVec3): void {
+  function updateMeasurementPreview(rawPoint: StudioBg3dMeasurementVec3): void {
     if (!measurementActiveRef.current || !measurementStartWorld) return;
+    // 추론 서비스가 방금 같은 위치에서 끝점·축 정렬 등을 찾았다면 그 점으로 바꿔 받는다.
+    const point = h.inferenceService ? h.inferenceService.resolveFreshPoint(rawPoint).point : rawPoint;
     const candidate = resolveMeasurementCandidate(point);
     if (!candidate) return;
     setMeasurementDraft(candidate.measurement);
@@ -385,8 +387,15 @@ export function attachStudioBg3dEditorMeasureHost(h) {
     );
   }
   h.updateMeasurementPreview = updateMeasurementPreview;
-  function pickMeasurementPoint(point: StudioBg3dMeasurementVec3): void {
+  function pickMeasurementPoint(
+    rawPoint: StudioBg3dMeasurementVec3,
+    lockedLengthMeters?: number,
+  ): void {
     if (!measurementActiveRef.current) return;
+    // 길이 입력(lockedLengthMeters)은 이미 정확한 끝점이라 추론으로 바꾸지 않는다.
+    const point = lockedLengthMeters === undefined && h.inferenceService
+      ? h.inferenceService.resolveFreshPoint(rawPoint).point
+      : rawPoint;
     if (!measurementStartWorld) {
       setMeasurementStartWorld(point);
       setMeasurementDraft(null);
@@ -394,7 +403,7 @@ export function attachStudioBg3dEditorMeasureHost(h) {
       setMeasurementStatus("시작점을 잡았습니다. 두 번째 점을 움직여 거리와 방향을 확인하세요.");
       return;
     }
-    const candidate = resolveMeasurementCandidate(point);
+    const candidate = resolveMeasurementCandidate(point, lockedLengthMeters);
     if (!candidate) return;
     measurementActiveRef.current = false;
     setMeasurementActive(false);
@@ -409,6 +418,19 @@ export function attachStudioBg3dEditorMeasureHost(h) {
     );
   }
   h.pickMeasurementPoint = pickMeasurementPoint;
+  // Esc: 시작점이 있으면 시작점만 취소하고(도구는 유지), 없으면 줄자를 끈다.
+  function cancelMeasurementStep(): void {
+    if (!measurementActiveRef.current) return;
+    if (measurementStartWorld) {
+      setMeasurementStartWorld(null);
+      setMeasurementDraft(null);
+      setMeasurementInference(null);
+      setMeasurementStatus("시작점을 취소했습니다. 첫 번째 점을 다시 선택하세요.");
+      return;
+    }
+    cancelMeasurement("줄자 측정을 취소했습니다.");
+  }
+  h.cancelMeasurementStep = cancelMeasurementStep;
   function handleMeasurementSurfacePreview(event: ThreeEvent<PointerEvent>): void {
     if (!measurementActiveRef.current || !measurementStartWorld) return;
     const point = readStudioBg3dMeasurementPointFromThreeEvent(event);

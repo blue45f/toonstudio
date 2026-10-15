@@ -9,6 +9,7 @@ media/        결정적인 media·film authoring 도구
 blender/      Blender extension과 asset pipeline
 toonbridge/   로컬 DCC bridge와 command adapter
 creator-runtime/ 독립 복구·공간 reader 제작 도구
+godot-3d-poc/ Godot 4 웹 export 3D 적용 가능성 평가용 실험 PoC(운영 연결·배포 없음, ADR-0028)
 ```
 
 실행 제품은 `apps/`, 선택형 서비스는 `services/`, 교차 앱 테스트와 benchmark는 `tests/`에 둔다.

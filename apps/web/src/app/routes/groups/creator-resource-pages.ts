@@ -4,8 +4,9 @@ export const CatalogResearchPage = lazyRetry(
   () => import("@/domains/creator-resources/CatalogResearchPage").then((module) => ({ default: module.CatalogResearchPage })),
   "CatalogResearchPage",
 );
+// /research 는 앱 계층 래퍼를 거쳐 문장 허브의 "AI로 다듬기"(선택 기능)를 주입받는다.
 export const CreatorHubPage = lazyRetry(
-  () => import("@/domains/creator-resources/CreatorHubPage").then((module) => ({ default: module.CreatorHubPage })),
+  () => import("./research-home-route").then((module) => ({ default: module.ResearchHomeRoute })),
   "CreatorHubPage",
 );
 export const NowPage = lazyRetry(
@@ -164,9 +165,11 @@ export const GlobalBooksPage = lazyRetry(
   () => import("@/domains/creator-resources/GlobalBooksPage").then((module) => ({ default: module.GlobalBooksPage })),
   "GlobalBooksPage",
 );
-export const RecipesPage = lazyRetry(
-  () => import("@/domains/creator-resources/RecipesPage").then((module) => ({ default: module.RecipesPage })),
-  "RecipesPage",
+// 제작 레시피는 학습 셸로 감싼 요소를 한 청크로 지연 로딩한다(셸이 학습 콘텐츠를 끌어오므로
+// 라우트 표가 셸을 정적으로 import하면 앱 진입 번들에 섞인다 — learn-recipes-route.tsx 참조).
+export const LearnRecipesRoute = lazyRetry(
+  () => import("./learn-recipes-route").then((module) => ({ default: module.LearnRecipesRoute })),
+  "LearnRecipesRoute",
 );
 export const StoryLabPage = lazyRetry(
   () => import("@/domains/creator-resources/StoryLabPage").then((module) => ({ default: module.StoryLabPage })),

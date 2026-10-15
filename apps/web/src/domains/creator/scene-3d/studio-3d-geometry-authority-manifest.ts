@@ -100,11 +100,11 @@ export function evaluateFormatCompatibility(sourceFormat: string): Compatibility
     case "SKETCHUP":
       return {
         format: "Trimble SketchUp (.skp)",
-        grade: "C",
-        preservedFeatures: ["Component Hierarchy", "Tags/Layers", "Materials", "Scenes/Cameras"],
-        bakedFeatures: ["Push/Pull Parametrics"],
-        droppedFeatures: ["Native SketchUp Ruby Extensions"],
-        warnings: ["Requires source-app bridge plugin or glTF export converter."],
+        grade: "B",
+        preservedFeatures: ["Triangulated Geometry", "Materials", "Textures (Embedded Within Limits)", "Real-World Scale (Unit Confirmed)"],
+        bakedFeatures: ["Component Instances (Baked To World Space, Merged By Material)", "Push/Pull Parametrics"],
+        droppedFeatures: ["Component Hierarchy (Names Reported Only)", "Tags/Layers Visibility", "Scenes/Cameras", "Native SketchUp Ruby Extensions"],
+        warnings: ["Converted in the browser by the unofficial OpenSKP parser (not Trimble); some files fail, so export GLB/DAE from SketchUp as the fallback."],
       };
     case "BLEND":
     case "BLENDER":

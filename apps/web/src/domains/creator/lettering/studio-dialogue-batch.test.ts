@@ -8,13 +8,13 @@ import {
   countOccurrences,
   dialogueExcerpt,
   dialogueItemTypeLabel,
-  filterDialogueItems,
   isDialogueElement,
   planDialogueReplace,
   replaceOccurrences,
   type DialogueElementLike,
   type DialoguePageLike,
 } from "./studio-dialogue-batch";
+import { filterDialogueItems } from "./studio-dialogue-batch-search";
 
 import type { El } from "../studio-element-model";
 import type { LayerGroup } from "../studio-layers";

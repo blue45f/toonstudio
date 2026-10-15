@@ -13,6 +13,7 @@ import {
   GitBranch,
   Globe2,
   Import,
+  ListChecks,
   Network,
   RefreshCcw,
   Save,
@@ -24,6 +25,7 @@ import {
   XCircle,
 } from "lucide-react";
 import {
+  Suspense,
   useEffect,
   useMemo,
   useRef,
@@ -49,6 +51,10 @@ import {
   type StoryworldIssueDispositionDocument,
   type StoryworldIssueDispositionStatus,
 } from "./studio-storyworld-issue-dispositions";
+import {
+  friendlyStoryworldFileError,
+  parseStoryworldProject,
+} from "./studio-storyworld-document";
 import { projectStoryworldToStudioProjectStory } from "./studio-storyworld-project-projection";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 import {
@@ -72,15 +78,25 @@ import {
 import "./studio-storyworld-lab.css";
 import "../studio-shell/creator-workflow-surfaces.css";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
+
+// 개연성 점검 허브는 처음 열 때 내려받는다. 랩의 다른 탭을 쓰는 사람의 첫 화면을 무겁게 하지 않기 위해서다.
+const StudioStoryPlausibilityHub = lazyRetry(
+  () => import("./plausibility/StudioStoryPlausibilityHub").then((module) => ({ default: module.StudioStoryPlausibilityHub })),
+  "StudioStoryPlausibilityHub",
+);
 
 export interface StudioStoryworldLabPageProps {
   readonly workId: string | null;
   readonly remixSourceWorkId: string | null;
+  /** 주소의 ?view=plausibility 로 들어왔을 때 개연성 점검 탭에서 시작한다. */
+  readonly initialView?: "plausibility" | null;
 }
 
 type StoryworldTab =
+  | "plausibility"
   | "overview"
   | "settings"
   | "universe"
@@ -99,6 +115,7 @@ const TAB_ITEMS: readonly {
   readonly label: string;
   readonly icon: typeof Network;
 }[] = [
+  { id: "plausibility", label: "개연성 점검", icon: ListChecks },
   { id: "overview", label: "대시보드", icon: Network },
   { id: "settings", label: "설정 관리", icon: Settings2 },
   { id: "universe", label: "공유 세계관", icon: Globe2 },
@@ -130,218 +147,6 @@ function authoredStoryworldProject(project: StoryworldProject): StoryworldProjec
 
 function isDemoStoryworldSeed(project: StoryworldProject): boolean {
   return project.metadata?.[STORYWORLD_DEMO_SEED_FLAG] === true;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function assertString(value: unknown, path: string): asserts value is string {
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`${path}는 비어 있지 않은 문자열이어야 합니다.`);
-  }
-}
-
-function assertFiniteNumber(value: unknown, path: string): asserts value is number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new Error(`${path}는 유한한 숫자여야 합니다.`);
-  }
-}
-
-function assertOptionalStringArray(record: Record<string, unknown>, key: string, path: string): void {
-  const value = record[key];
-  if (value === undefined) return;
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || item.length === 0)) {
-    throw new Error(`${path}.${key}는 문자열 배열이어야 합니다.`);
-  }
-}
-
-function assertOptionalRecordArray(
-  record: Record<string, unknown>,
-  key: string,
-  path: string,
-  validate: (item: Record<string, unknown>, itemPath: string) => void,
-): void {
-  const value = record[key];
-  if (value === undefined) return;
-  if (!Array.isArray(value)) throw new Error(`${path}.${key}는 배열이어야 합니다.`);
-  value.forEach((item, index) => {
-    if (!isRecord(item)) throw new Error(`${path}.${key}[${index}]는 객체여야 합니다.`);
-    validate(item, `${path}.${key}[${index}]`);
-  });
-}
-
-function assertOptionalFiniteNumber(record: Record<string, unknown>, key: string, path: string): void {
-  if (record[key] !== undefined) assertFiniteNumber(record[key], `${path}.${key}`);
-}
-
-function assertOptionalString(record: Record<string, unknown>, key: string, path: string): void {
-  if (record[key] !== undefined && typeof record[key] !== "string") {
-    throw new Error(`${path}.${key}는 문자열이어야 합니다.`);
-  }
-}
-
-function assertStoryworldCharacter(value: unknown, path: string): void {
-  if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
-  assertString(value.id, `${path}.id`);
-  assertString(value.name, `${path}.name`);
-  assertOptionalString(value, "goal", path);
-  assertOptionalString(value, "description", path);
-  assertOptionalStringArray(value, "aliases", path);
-  assertOptionalStringArray(value, "tags", path);
-  assertOptionalStringArray(value, "initialFactIds", path);
-  assertOptionalStringArray(value, "secretFactIds", path);
-  if (value.motion !== undefined) {
-    if (!isRecord(value.motion)) throw new Error(`${path}.motion은 객체여야 합니다.`);
-    for (const key of ["reveal", "emphasis", "expressionNotes", "voiceNote"]) {
-      assertOptionalString(value.motion, key, `${path}.motion`);
-    }
-  }
-}
-
-function assertStoryworldFact(value: unknown, path: string): void {
-  if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
-  assertString(value.id, `${path}.id`);
-  assertString(value.label, `${path}.label`);
-  assertString(value.subjectId, `${path}.subjectId`);
-  assertString(value.key, `${path}.key`);
-  assertOptionalString(value, "description", path);
-  assertOptionalFiniteNumber(value, "intendedReaderRevealOrder", path);
-  assertOptionalStringArray(value, "tags", path);
-}
-
-function assertStoryworldScene(value: unknown, path: string): void {
-  if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
-  assertString(value.id, `${path}.id`);
-  assertString(value.title, `${path}.title`);
-  assertOptionalString(value, "description", path);
-  assertOptionalString(value, "locationId", path);
-  assertFiniteNumber(value.order, `${path}.order`);
-  assertOptionalFiniteNumber(value, "timeIndex", path);
-  assertOptionalStringArray(value, "participantIds", path);
-  assertOptionalStringArray(value, "dependsOnSceneIds", path);
-  assertOptionalStringArray(value, "setupIds", path);
-  assertOptionalStringArray(value, "payoffIds", path);
-  assertOptionalStringArray(value, "motifIds", path);
-
-  assertOptionalRecordArray(value, "preconditions", path, (item, itemPath) => {
-    assertString(item.factId, `${itemPath}.factId`);
-    if (item.comparator !== undefined && ![
-      "exists", "not-exists", "equals", "not-equals", "greater-than", "less-than",
-    ].includes(String(item.comparator))) {
-      throw new Error(`${itemPath}.comparator가 지원되지 않습니다.`);
-    }
-  });
-  assertOptionalRecordArray(value, "effects", path, (item, itemPath) => {
-    assertString(item.factId, `${itemPath}.factId`);
-    if (!["set", "delete", "increment", "decrement"].includes(String(item.op))) {
-      throw new Error(`${itemPath}.op가 지원되지 않습니다.`);
-    }
-  });
-  assertOptionalRecordArray(value, "knowledgeUses", path, (item, itemPath) => {
-    assertString(item.characterId, `${itemPath}.characterId`);
-    assertString(item.factId, `${itemPath}.factId`);
-  });
-  assertOptionalRecordArray(value, "reveals", path, (item, itemPath) => {
-    assertString(item.factId, `${itemPath}.factId`);
-    if (!Array.isArray(item.audiences) || item.audiences.some((audience) =>
-      typeof audience !== "string" || audience.length === 0
-    )) {
-      throw new Error(`${itemPath}.audiences는 문자열 배열이어야 합니다.`);
-    }
-  });
-  assertOptionalRecordArray(value, "emotionalBeats", path, (item, itemPath) => {
-    assertString(item.characterId, `${itemPath}.characterId`);
-    assertFiniteNumber(item.valence, `${itemPath}.valence`);
-    assertFiniteNumber(item.arousal, `${itemPath}.arousal`);
-  });
-  assertOptionalRecordArray(value, "localization", path, (item, itemPath) => {
-    assertString(item.locale, `${itemPath}.locale`);
-    assertFiniteNumber(item.sourceCharacters, `${itemPath}.sourceCharacters`);
-    assertFiniteNumber(item.translatedCharacters, `${itemPath}.translatedCharacters`);
-    assertFiniteNumber(item.balloonCapacityCharacters, `${itemPath}.balloonCapacityCharacters`);
-  });
-  assertOptionalRecordArray(value, "assets", path, (item, itemPath) => {
-    assertString(item.assetId, `${itemPath}.assetId`);
-    assertString(item.label, `${itemPath}.label`);
-    if (!["cleared", "restricted", "unknown", "expired"].includes(String(item.licenseStatus))) {
-      throw new Error(`${itemPath}.licenseStatus가 지원되지 않습니다.`);
-    }
-  });
-  if (value.production !== undefined) {
-    if (!isRecord(value.production)) throw new Error(`${path}.production은 객체여야 합니다.`);
-    for (const key of [
-      "drawingMinutes", "letteringMinutes", "renderMinutes", "reviewMinutes", "uniqueAssetCount", "complexity",
-    ]) {
-      assertOptionalFiniteNumber(value.production, key, `${path}.production`);
-    }
-    assertOptionalStringArray(value.production, "assigneeIds", `${path}.production`);
-  }
-  if (value.accessibility !== undefined && !isRecord(value.accessibility)) {
-    throw new Error(`${path}.accessibility는 객체여야 합니다.`);
-  }
-}
-
-function parseStoryworldProject(text: string): StoryworldProject {
-  if (text.length > 1_000_000) throw new Error("스토리월드 JSON은 1MB 이하여야 합니다.");
-  const value: unknown = JSON.parse(text);
-  if (!isRecord(value)) throw new Error("최상위 값은 객체여야 합니다.");
-  if (value.schemaVersion !== STUDIO_STORYWORLD_SCHEMA_VERSION) {
-    throw new Error(`schemaVersion은 ${STUDIO_STORYWORLD_SCHEMA_VERSION}이어야 합니다.`);
-  }
-  assertString(value.id, "project.id");
-  assertString(value.title, "project.title");
-  if (!Array.isArray(value.characters) || !Array.isArray(value.facts) || !Array.isArray(value.scenes)) {
-    throw new Error("characters, facts, scenes는 배열이어야 합니다.");
-  }
-  if (value.characters.length > 64 || value.facts.length > 512 || value.scenes.length > 256) {
-    throw new Error("로컬 분석 한도는 인물 64명, 사실 512개, 장면 256개입니다.");
-  }
-  value.characters.forEach((item, index) => assertStoryworldCharacter(item, `characters[${index}]`));
-  value.facts.forEach((item, index) => assertStoryworldFact(item, `facts[${index}]`));
-  value.scenes.forEach((item, index) => assertStoryworldScene(item, `scenes[${index}]`));
-  if (value.setupContracts !== undefined) {
-    if (!Array.isArray(value.setupContracts)) throw new Error("setupContracts는 배열이어야 합니다.");
-    value.setupContracts.forEach((item, index) => {
-      const path = `setupContracts[${index}]`;
-      if (!isRecord(item)) throw new Error(`${path}는 객체여야 합니다.`);
-      assertString(item.id, `${path}.id`);
-      assertString(item.label, `${path}.label`);
-      assertOptionalFiniteNumber(item, "payoffDueByOrder", path);
-      assertOptionalFiniteNumber(item, "requiredPayoffCount", path);
-    });
-  }
-  if (value.motifs !== undefined) {
-    if (!Array.isArray(value.motifs)) throw new Error("motifs는 배열이어야 합니다.");
-    value.motifs.forEach((item, index) => {
-      const path = `motifs[${index}]`;
-      if (!isRecord(item)) throw new Error(`${path}는 객체여야 합니다.`);
-      assertString(item.id, `${path}.id`);
-      assertString(item.label, `${path}.label`);
-      assertOptionalFiniteNumber(item, "minOccurrences", path);
-      assertOptionalFiniteNumber(item, "maxGapScenes", path);
-    });
-  }
-  assertOptionalFiniteNumber(value, "productionCapacityMinutes", "project");
-  return value as unknown as StoryworldProject;
-}
-
-/**
- * 불러오기 오류를 작가 언어로 바꿉니다. 내부 검사 문구(필드 이름·형식 이름)는
- * 화면에 그대로 내보내지 않고, 무엇이 문제인지와 다음에 할 일을 함께 전합니다.
- */
-function friendlyStoryworldFileError(caught: unknown): string {
-  const raw = caught instanceof Error ? caught.message : "";
-  if (raw.includes("1MB")) {
-    return "설정 파일이 너무 큽니다(1MB 초과). 파일을 나누거나 불필요한 내용을 줄인 뒤 다시 불러와 주세요.";
-  }
-  if (raw.includes("schemaVersion")) {
-    return "이 화면에서 저장한 설정 파일이 아닌 것 같습니다. '설정 파일로 저장'으로 받은 파일을 골랐는지 확인한 뒤 다시 불러와 주세요.";
-  }
-  if (/characters|facts|scenes|setupContracts|motifs/.test(raw)) {
-    return "설정 파일에서 인물·사실·장면 중 빠졌거나 형식이 다른 항목이 있습니다. 원본 파일을 열어 빠진 항목을 채운 뒤 다시 불러와 주세요.";
-  }
-  return "설정 파일을 읽을 수 없습니다. 파일이 손상되지 않았는지 확인하고, 이 화면에서 저장한 설정 파일을 골라 다시 불러와 주세요.";
 }
 
 function projectStorageKey(workId: string | null, remixSourceWorkId: string | null): string {
@@ -798,10 +603,11 @@ function StudioStoryworldLabEditor({
   workId,
   remixSourceWorkId,
   initialProject,
+  initialView = null,
 }: StudioStoryworldLabPageProps & { readonly initialProject: StoryworldProject }) {
   const storageKey = useMemo(() => projectStorageKey(workId, remixSourceWorkId), [workId, remixSourceWorkId]);
   const [project, setProject] = useState<StoryworldProject>(initialProject);
-  const [activeTab, setActiveTab] = useState<StoryworldTab>("overview");
+  const [activeTab, setActiveTab] = useState<StoryworldTab>(initialView === "plausibility" ? "plausibility" : "overview");
   const [settingsFocus, setSettingsFocus] = useState<StoryworldSettingsFocus | null>(null);
   const [issueDispositions, setIssueDispositions] = useState<StoryworldIssueDispositionDocument | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -1003,6 +809,24 @@ function StudioStoryworldLabEditor({
             </div>
           </div>
 
+          {activeTab === "plausibility" ? (
+            <Suspense fallback={<p className="storyworld-empty" role="status">개연성 점검을 여는 중입니다.</p>}>
+              <StudioStoryPlausibilityHub
+                analysis={result}
+                continuityIssues={continuityIssues}
+                dispositions={issueDispositions}
+                isExampleSeed={isDemoStoryworldSeed(project)}
+                onClearDisposition={clearDisposition}
+                onExportProject={exportProject}
+                onOpenSettings={openInSettings}
+                onProjectChange={(next, message, options) => { setProject(options?.restore === true ? next : authoredStoryworldProject(next)); setStatusText(message); }}
+                onSetDisposition={setDisposition}
+                project={project}
+                scopeKey={storageKey}
+                workId={workId}
+              />
+            </Suspense>
+          ) : null}
           {activeTab === "overview" ? <OverviewTab onEditElement={openInSettings} onOpenData={() => setActiveTab("json")} onOpenIssues={() => setActiveTab("issues")} project={project} result={result} /> : null}
           {activeTab === "settings" ? (
             <StudioStoryworldSettings

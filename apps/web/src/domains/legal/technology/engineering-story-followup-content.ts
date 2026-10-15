@@ -34,22 +34,25 @@ export const ENGINEERING_FOLLOWUP_CHAPTERS = [
       en: ".skp is Trimble's proprietary binary format, which browsers cannot read natively. Background material is heavily stocked in SketchUp and its asset ecosystem, and forcing a desktop export to DAE or GLB on every import breaks the flow of finding and placing material.",
     },
     decision: {
-      ko: "변환은 파사드(studio-bg3d-skp-converter.ts) 한곳에 가뒀습니다. openskp를 동적 import로 지연 로드해 buildScene → toGLB 순서로 변환하고, 결과 바이트가 GLB 매직으로 시작할 때만 가져오기(studio-bg3d-model-import.ts의 skp 경로)로 넘깁니다. 실패는 두 종류로 구분해 그대로 드러냅니다. 변환기를 불러오지 못한 경우와 파일 구조를 해석하지 못한 경우이며, 가짜 변환이나 조용한 건너뜀은 없습니다. 변환된 GLB의 선화·음영·밑색 단계 추출은 기존 멀티패스 파이프라인이 맡고, .skp 전용 추출기는 따로 만들지 않았습니다.",
-      en: "Conversion is confined to one facade (studio-bg3d-skp-converter.ts). openskp lazy-loads through a dynamic import, converts buildScene → toGLB, and hands off to import (the skp path in studio-bg3d-model-import.ts) only when the result starts with the GLB magic. Failures surface in two distinct kinds—the converter could not be loaded, or the file structure could not be parsed—with no fake conversion and no silent skip. Stage extraction (linework, shading, base color) for the converted GLB is handled by the existing multipass pipeline; no .skp-specific extractor was built.",
+      ko: "변환은 파사드(studio-bg3d-skp-converter.ts)로 들어가 요청마다 새로 만든 Worker에서 실행하고, 끝나거나 취소·시간 초과(90초)가 되면 Worker를 종료합니다. openskp를 지연 로드해 buildScene → 재질별 병합 → toGLB 순서로 변환하며, 결과가 GLB 컨테이너일 때만 가져오기(studio-bg3d-model-import.ts의 skp 경로)로 넘깁니다. 모델이 수 mm나 수 km로 읽히면 단위(m·cm·mm·inch)를 묻고, 개수·이름·경고를 담은 변환 보고서(v1)를 결과 화면과 자산 정보에 남깁니다. 실패는 일곱 가지로 구분해 각각 내보내기 대안을 안내하며, 가짜 변환이나 조용한 건너뜀은 없습니다. 변환된 GLB의 선화·음영·밑색 단계 추출은 기존 멀티패스 파이프라인이 맡고, .skp 전용 추출기는 따로 만들지 않았습니다.",
+      en: "Conversion enters through one facade (studio-bg3d-skp-converter.ts) and runs in a fresh Worker per request, which is terminated when it finishes or when it is cancelled or times out (90 seconds). openskp lazy-loads and converts buildScene → merge by material → toGLB, and the result reaches import (the skp path in studio-bg3d-model-import.ts) only when it is a GLB container. If the model reads as a few millimetres or a few kilometres, the user is asked for the unit (m, cm, mm, inch), and a versioned conversion report (counts, names, warnings) is kept in the result view and the asset metadata. Failures surface in seven kinds, each with an export alternative, with no fake conversion and no silent skip. Stage extraction (linework, shading, base color) for the converted GLB is handled by the existing multipass pipeline; no .skp-specific extractor was built."
     },
     userValue: {
       ko: "SketchUp으로 만든 배경 소재를 파일을 고르는 그 자리에서 3D 배경으로 가져와 단계 추출까지 이어 갈 수 있습니다.",
       en: "Background material made in SketchUp can be brought in as a 3D set at the moment the file is picked, continuing straight into stage extraction.",
     },
     tradeoff: {
-      ko: "openskp는 젊은 프로젝트라 레거시 .skp 파일 일부는 해석에 실패할 수 있습니다. 그 경우의 대안은 SketchUp에서 DAE·GLB로 내보내 가져오는 것이고, 실패 안내가 이 대안을 함께 보여줍니다. 변환 검증은 openskp 자체 작성기로 만든 실제 .skp 바이트의 왕복까지이며, 시중의 모든 .skp 변형을 대표하지는 않습니다.",
-      en: "openskp is a young project, so some legacy .skp files fail to parse. The fallback is exporting DAE or GLB from SketchUp, and the failure message shows that alternative. Conversion is verified up to a round trip of real .skp bytes produced by openskp's own builder, which does not represent every .skp variant in the wild.",
+      ko: "openskp는 Trimble과 무관한 비공식 파서라 .skp 일부는 해석에 실패할 수 있고, 원본은 데스크톱 32MiB·모바일 16MiB, 변환은 90초로 제한합니다. 장면(카메라)과 애니메이션은 가져오지 않고 숨긴 컴포넌트·태그의 형상은 결과에 들어갈 수 있습니다. 대안은 SketchUp에서 GLB·DAE로 내보내 가져오는 것이며 실패 안내가 함께 보여줍니다. 변환 검증은 openskp 작성기로 만든 .skp 바이트까지이며, 실제 사용자 파일과 브라우저의 대형 파일 성능은 측정하지 않았습니다.",
+      en: "openskp is an unofficial parser unrelated to Trimble, so some .skp files fail to parse; the source is limited to 32 MiB on desktop and 16 MiB on mobile, and conversion to 90 seconds. Scenes (cameras) and animation are not imported, and geometry of hidden components and tags can end up in the result. The fallback is exporting GLB or DAE from SketchUp, and the failure message shows it. Conversion is verified up to .skp bytes produced by openskp's own builder; real user files and large-file performance in a real browser have not been measured.",
     },
-    technologies: ["openskp 1.3.0", "SketchUp .skp", "GLB / glTF", "dynamic import"],
+    technologies: ["openskp 1.3.0", "SketchUp .skp", "GLB / glTF", "Web Workers", "dynamic import"],
     evidence: [
       evidence("code", "apps/web/src/domains/creator/bg3d/studio-bg3d-skp-converter.ts", ".skp → GLB 변환 파사드와 실패 구분", ".skp-to-GLB conversion facade with distinct failures"),
       evidence("test", "apps/web/src/domains/creator/bg3d/studio-bg3d-skp-converter.test.ts", "실제 .skp 바이트의 GLB 변환 왕복 검사", "Round-trip conversion test over real .skp bytes"),
       evidence("code", "apps/web/src/domains/creator/bg3d/studio-bg3d-model-import.ts", "가져오기 파이프라인의 skp 포맷 경로", "The skp format path in the import pipeline"),
+      evidence("code", "apps/web/src/domains/creator/bg3d/studio-bg3d-skp-worker-client.ts", "Worker 변환·취소·시간 제한과 정직한 폴백", "Worker conversion with cancel, time limit and an honest fallback"),
+      evidence("code", "apps/web/src/domains/creator/bg3d/studio-bg3d-skp-import-report.ts", "변환 보고서 v1 스키마(안정 계약)", "The conversion report v1 schema (stable contract)"),
+      evidence("document", "docs/features/skp-import.md", "지원 범위·한계·오류 분류·보고서 계약·법적 고지", "Support, limits, error classes, report contract and legal notes"),
     ],
     reuseSteps: [
       { ko: "독점 포맷은 파사드 한곳에서만 다루고, 변환 결과의 형식(매직 바이트)을 확인한 뒤 기존 파이프라인에 합류시킵니다.", en: "Handle a proprietary format in exactly one facade, verify the converted result's format (magic bytes), and only then join the existing pipeline." },

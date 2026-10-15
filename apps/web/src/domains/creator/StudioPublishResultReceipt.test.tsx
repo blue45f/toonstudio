@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioPublishResultReceipt } from "./StudioPublishResultReceipt";
+import type { StudioPublishReceiptDetails } from "./studio-publish-receipt-data";
 
 afterEach(cleanup);
 
@@ -175,5 +176,91 @@ describe("StudioPublishResultReceipt", () => {
       true,
     );
     expect(screen.getByRole("alert").textContent).toContain("다른 창의 변경");
+  });
+
+  function labeledDetails(
+    community: Partial<StudioPublishReceiptDetails["community"]>,
+  ): StudioPublishReceiptDetails {
+    return {
+      title: "성운의 왕관",
+      visibility: "public",
+      publishedAt: "2026-09-24T10:47:13.708Z",
+      pages: [{ name: "page.webp", width: 1280, height: 1600 }],
+      source: null,
+      community: {
+        kind: "illustration",
+        provenance: "human",
+        portfolio: false,
+        downloadAllowed: false,
+        trainingAllowed: false,
+        attributionText: "",
+        altText: "별빛 왕관을 쓴 판타지 소녀",
+        ...community,
+      },
+      rights: { comments: "open", allowRemix: true, searchIndexing: true, contentRating: "all" },
+      preflight: { errors: 0, warnings: 0 },
+    };
+  }
+
+  it("shows the creator's AI training label in the receipt summary", () => {
+    render(
+      <MemoryRouter>
+        <StudioPublishResultReceipt
+          kind="published"
+          workId="work-label"
+          environment="production"
+          details={labeledDetails({ aiTraining: "prohibited" })}
+          onContinueEditing={() => undefined}
+          onReviewSettings={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("AI 학습 표기")).toBeTruthy();
+    expect(screen.getByText("AI 학습 불허 표기")).toBeTruthy();
+  });
+
+  it("reads a receipt without the label as 'not specified' unless the legacy flag was on", () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <StudioPublishResultReceipt
+          kind="published"
+          workId="work-legacy"
+          environment="production"
+          details={labeledDetails({})}
+          onContinueEditing={() => undefined}
+          onReviewSettings={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("AI 학습 미지정")).toBeTruthy();
+
+    rerender(
+      <MemoryRouter>
+        <StudioPublishResultReceipt
+          kind="published"
+          workId="work-legacy"
+          environment="production"
+          details={labeledDetails({ trainingAllowed: true })}
+          onContinueEditing={() => undefined}
+          onReviewSettings={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("AI 학습 허용 표기")).toBeTruthy();
+  });
+
+  it("omits the label row while the receipt details are not available yet", () => {
+    render(
+      <MemoryRouter>
+        <StudioPublishResultReceipt
+          kind="published"
+          workId="work-pending"
+          environment="production"
+          onContinueEditing={() => undefined}
+          onReviewSettings={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText("AI 학습 표기")).toBeNull();
   });
 });

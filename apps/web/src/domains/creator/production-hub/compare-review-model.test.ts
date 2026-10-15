@@ -354,4 +354,13 @@ describe("검수 프리셋", () => {
     expect(compareLabelNumberToken("12화 34컷")).toBe("34");
     expect(compareLabelNumberToken("버전 없음")).toBeNull();
   });
+
+  it("컷 표기가 붙은 숫자를 우선하고, 컷 표기가 없는 라벨만 첫 숫자로 폴백한다", () => {
+    // 회차 번호가 앞에 오거나 버전 숫자가 뒤에 붙어도 컷 번호를 고른다(공백이 끼어도 같다).
+    expect(compareLabelNumberToken("11화 · 선화 34 컷")).toBe("34");
+    expect(compareLabelNumberToken("34컷 선화 v2")).toBe("34");
+    // 컷 표기가 없는 라벨은 기존처럼 첫 숫자를 쓴다.
+    expect(compareLabelNumberToken("선화 v3")).toBe("3");
+    expect(compareLabelNumberToken("12화 · 선화")).toBe("12");
+  });
 });

@@ -635,7 +635,7 @@ export const PSD_ROUNDTRIP_FIXTURES: readonly PsdRoundtripFixture[] = [
   },
   {
     id: "adjustment-effects",
-    axis: "조정 레이어·레이어 효과 — 제외와 고지",
+    axis: "조정 레이어 복원·레이어 효과 — 고지",
     width: 8,
     height: 8,
     build: () => ({

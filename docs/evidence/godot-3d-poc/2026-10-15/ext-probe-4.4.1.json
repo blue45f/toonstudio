@@ -1,0 +1,304 @@
+{
+ "note": "ext_probe.gd: 폴더의 각 GLB 를 GLTFDocument.append_from_buffer -> generate_scene 으로 연다. headless = --headless, xvfb = xvfb-run + --rendering-driver opengl3 (Mesa 소프트웨어 GL).",
+ "godot": "4.4.1-stable",
+ "headless": {
+  "env": {
+   "adapter": "",
+   "displayDriver": "headless",
+   "engine": "4.4.1-stable (official)",
+   "renderingMethod": "gl_compatibility",
+   "supportedExtensions": [
+    "EXT_texture_webp",
+    "GODOT_single_root",
+    "KHR_animation_pointer",
+    "KHR_lights_punctual",
+    "KHR_materials_emissive_strength",
+    "KHR_materials_pbrSpecularGlossiness",
+    "KHR_materials_unlit",
+    "KHR_texture_basisu",
+    "KHR_texture_transform",
+    "OMI_collider",
+    "OMI_physics_body",
+    "OMI_physics_shape"
+   ]
+  },
+  "files": [
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 46264,
+    "file": "declared-ext_meshopt_compression.glb"
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 46272,
+    "file": "declared-khr_draco_mesh_compression.glb"
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 46260,
+    "file": "declared-khr_mesh_quantization.glb"
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 46256,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "declared-khr_texture_basisu.glb",
+    "images": [],
+    "sceneOk": true
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 47520,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "ext-basisu-etc1s.glb",
+    "images": [
+     {
+      "format": "FORMAT_RGBA8",
+      "height": 128,
+      "width": 128
+     }
+    ],
+    "sceneOk": true
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 68780,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "ext-basisu-uastc-raw.glb",
+    "images": [
+     {
+      "format": "FORMAT_RGBA8",
+      "height": 128,
+      "width": 128
+     }
+    ],
+    "sceneOk": true
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 47360,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "ext-basisu.glb",
+    "images": [
+     {
+      "format": "FORMAT_RGBA8",
+      "height": 128,
+      "width": 128
+     }
+    ],
+    "sceneOk": true
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 11836,
+    "file": "ext-draco.glb"
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 15076,
+    "file": "ext-meshopt.glb"
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 21352,
+    "file": "ext-quantized.glb"
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 46172,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "synthetic-character.glb",
+    "images": [],
+    "sceneOk": true
+   }
+  ],
+  "engineMessages": [
+   "ERROR: glTF: Can't import file '', required extension 'EXT_meshopt_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?",
+   "ERROR: glTF: Can't import file '', required extension 'KHR_draco_mesh_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?",
+   "ERROR: glTF: Can't import file '', required extension 'KHR_mesh_quantization' is not supported. Are you missing a GLTFDocumentExtension plugin?",
+   "WARNING: The load-time scene is not defined in the glTF2 file. Picking the first scene."
+  ],
+  "engineMessageLines": 30
+ },
+ "xvfb": {
+  "env": {
+   "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+   "displayDriver": "X11",
+   "engine": "4.4.1-stable (official)",
+   "renderingMethod": "gl_compatibility",
+   "supportedExtensions": [
+    "EXT_texture_webp",
+    "GODOT_single_root",
+    "KHR_animation_pointer",
+    "KHR_lights_punctual",
+    "KHR_materials_emissive_strength",
+    "KHR_materials_pbrSpecularGlossiness",
+    "KHR_materials_unlit",
+    "KHR_texture_basisu",
+    "KHR_texture_transform",
+    "OMI_collider",
+    "OMI_physics_body",
+    "OMI_physics_shape"
+   ]
+  },
+  "files": [
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 46264,
+    "file": "declared-ext_meshopt_compression.glb"
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 46272,
+    "file": "declared-khr_draco_mesh_compression.glb"
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 46260,
+    "file": "declared-khr_mesh_quantization.glb"
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 46256,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "declared-khr_texture_basisu.glb",
+    "images": [],
+    "sceneOk": true
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 47520,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "ext-basisu-etc1s.glb",
+    "images": [
+     {
+      "format": "FORMAT_RGBA8",
+      "height": 128,
+      "width": 128
+     }
+    ],
+    "sceneOk": true
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 68780,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "ext-basisu-uastc-raw.glb",
+    "images": [
+     {
+      "format": "FORMAT_RGBA8",
+      "height": 128,
+      "width": 128
+     }
+    ],
+    "sceneOk": true
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 47360,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "ext-basisu.glb",
+    "images": [
+     {
+      "format": "FORMAT_RGBA8",
+      "height": 128,
+      "width": 128
+     }
+    ],
+    "sceneOk": true
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 11836,
+    "file": "ext-draco.glb"
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 15076,
+    "file": "ext-meshopt.glb"
+   },
+   {
+    "appendError": "Parse error",
+    "appendOk": false,
+    "bytes": 21352,
+    "file": "ext-quantized.glb"
+   },
+   {
+    "appendError": "OK",
+    "appendOk": true,
+    "bytes": 46172,
+    "counts": {
+     "meshInstances": 6,
+     "nodes": 8,
+     "surfaces": 6
+    },
+    "file": "synthetic-character.glb",
+    "images": [],
+    "sceneOk": true
+   }
+  ],
+  "engineMessages": [
+   "ERROR: glTF: Can't import file '', required extension 'EXT_meshopt_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?",
+   "ERROR: glTF: Can't import file '', required extension 'KHR_draco_mesh_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?",
+   "ERROR: glTF: Can't import file '', required extension 'KHR_mesh_quantization' is not supported. Are you missing a GLTFDocumentExtension plugin?",
+   "WARNING: The load-time scene is not defined in the glTF2 file. Picking the first scene."
+  ],
+  "engineMessageLines": 33
+ }
+}

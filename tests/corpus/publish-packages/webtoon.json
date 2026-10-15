@@ -103,6 +103,9 @@
       "episodeTitle": "첫 번째 단서",
       "seriesTitle": "별빛 탐정단"
     },
+    "rights": {
+      "aiTraining": "unspecified"
+    },
     "schema": "toonstudio.publish-package",
     "totals": {
       "episodeImageCount": 2,
@@ -116,7 +119,7 @@
     },
     "version": 1
   },
-  "manifestSha256": "7e786ae8c915b9d6284ec8301d6b6163d0ee6063bac8ff66d130f26e4880c35e",
+  "manifestSha256": "bdcb49b2460a21de6673cabd59b8c9da95bfe69af85d666634d4371d8b16a329",
   "policySnapshotDate": "2026-07-10",
   "presetRevision": "webtoon-canvas-2026-03",
   "privacyMarkersAbsent": true,

@@ -1,0 +1,74 @@
+{
+ "note": "같은 GDScript(glb_loader.gd, pass_capture.gd)·같은 GLB·같은 카메라를 웹(Chromium SwiftShader)과 네이티브(Xvfb + Mesa llvmpipe)에서 실행한 패스 PNG 의 픽셀 차이. 둘 다 소프트웨어 래스터라이저이며 실GPU 비교가 아니다.",
+ "glb": "orion.glb",
+ "size": [
+  960,
+  540
+ ],
+ "model": {
+  "aabb": [
+   -0.868276000022888,
+   -0.00192856986541301,
+   -0.152342408895493,
+   1.73659420013428,
+   1.71316063404083,
+   0.341560184955597
+  ],
+  "blendShapes": 56,
+  "bones": 70,
+  "meshInstances": 10,
+  "nodes": 16,
+  "skeletons": 1,
+  "surfaces": 11,
+  "textures": 1,
+  "triangles": 14604,
+  "vertices": 16070
+ },
+ "passes": {
+  "beauty": {
+   "width": 960,
+   "height": 540,
+   "differingPixelRatio": 0.015287422839506173,
+   "overEightPixelRatio": 0.0003568672839506173,
+   "meanAbsDiffPerChannel": 0.03630063657407408,
+   "maxAbsDiff": 255,
+   "identical": false
+  },
+  "line": {
+   "width": 960,
+   "height": 540,
+   "differingPixelRatio": 0.00030092592592592595,
+   "overEightPixelRatio": 0.00030092592592592595,
+   "meanAbsDiffPerChannel": 0.01918402777777778,
+   "maxAbsDiff": 255,
+   "identical": false
+  },
+  "tone": {
+   "width": 960,
+   "height": 540,
+   "differingPixelRatio": 0.005466820987654321,
+   "overEightPixelRatio": 0.00013117283950617284,
+   "meanAbsDiffPerChannel": 0.010029899691358025,
+   "maxAbsDiff": 255,
+   "identical": false
+  },
+  "depth": {
+   "width": 960,
+   "height": 540,
+   "differingPixelRatio": 0.030896990740740742,
+   "overEightPixelRatio": 0.025516975308641974,
+   "meanAbsDiffPerChannel": 0.3831688850308642,
+   "maxAbsDiff": 255,
+   "identical": false
+  },
+  "normal": {
+   "width": 960,
+   "height": 540,
+   "differingPixelRatio": 0.0006886574074074074,
+   "overEightPixelRatio": 0.00021797839506172839,
+   "meanAbsDiffPerChannel": 0.011042631172839506,
+   "maxAbsDiff": 255,
+   "identical": false
+  }
+ }
+}

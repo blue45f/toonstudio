@@ -54,6 +54,7 @@ describe("resolveExternalPlatformGuide — 외부 플랫폼 안내 도출", () =
     const guide = resolveExternalPlatformGuide([
       { platformId: "naver-webtoon", pricing: "free", url: "http://comic.naver.com/x" },
       { platformId: "ridi", pricing: "paid", url: "not-a-url" },
+      // secretlint-disable-next-line @secretlint/secretlint-rule-basicauth -- synthetic URL-userinfo rejection fixture
       { platformId: "lezhin", pricing: "paid", url: "https://user:pass@www.lezhin.com/x" },
       { platformId: "munpia", pricing: "paid", url: "javascript:alert(1)" },
     ] as Availability[]);

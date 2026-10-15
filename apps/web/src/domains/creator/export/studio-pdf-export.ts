@@ -25,6 +25,7 @@ import {
   countPrintPdfOutputPages,
   rgbaToCmykBytes,
 } from "./studio-pdf-print-export";
+import { computeBookCoverGeometry, drawBookCover, loadBookCoverFonts } from "./studio-book-cover";
 import { buildBookPrintPdf } from "./studio-book-pdf-export";
 
 import type { WatermarkSettings } from "../studio-watermark";
@@ -248,7 +249,8 @@ export interface PdfPagesRenderOptions {
    * 단행본 조판(판형 프리셋 기준 인쇄용 PDF) — 지정하면 단행본 빌더로 조립하고 안전 영역
    * 경고를 결과에 싣는다. print와 함께 지정하면 throw 한다(패널은 단행본을 우선해
    * 하나만 보낸다). 페이지 캔버스는 판형 비율로 렌더된 것을 전제하되, 비율이 다르면
-   * 경고로 알린다.
+   * 경고로 알린다. book.binding(책 구성)을 주면 여백 안에 맞춤·쪽 번호를 적용하고, binding.cover가
+   * 있으면 작품 제목(title)과 지은이로 글자 표지 한 장을 맨 앞에 붙인다(결과 쪽수에 포함).
    */
   book?: BookPrintRequest;
   onProgress?: (done: number, total: number) => void;
@@ -287,6 +289,44 @@ function createPageCanvas(width: number, height: number): HTMLCanvasElement {
 function releasePageCanvas(canvas: HTMLCanvasElement): void {
   canvas.width = 0;
   canvas.height = 0;
+}
+
+/**
+ * 책 구성의 글자 표지 한 장을 판형(도련 포함) 크기 캔버스에 그려 JPEG 페이지로 만든다.
+ * 한글 제목은 PDF 표준 글꼴로 쓸 수 없어 브라우저 캔버스로 그린 이미지를 쓴다. 캔버스는 즉시 해제한다.
+ */
+async function renderBookCoverPage(args: {
+  book: BookPrintRequest;
+  title: string;
+  quality: number;
+  createCanvas: (width: number, height: number) => HTMLCanvasElement;
+  toJpeg: (canvas: HTMLCanvasElement, quality: number) => Promise<Uint8Array>;
+  releaseCanvas?: (canvas: HTMLCanvasElement) => void;
+}): Promise<BookPdfPage> {
+  const geometry = computeBookCoverGeometry(args.book.spec, args.book.dpi ?? 300);
+  const content = {
+    title: args.title.trim() || "제목 없음",
+    author: args.book.binding?.cover?.author,
+  };
+  await loadBookCoverFonts(content);
+  const canvas = args.createCanvas(geometry.widthPx, geometry.heightPx);
+  try {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("표지 캔버스를 만들지 못했어요. 다시 시도해주세요.");
+    drawBookCover(ctx, geometry, content);
+    return {
+      jpegBytes: await args.toJpeg(canvas, args.quality),
+      width: geometry.widthPx,
+      height: geometry.heightPx,
+      role: "cover",
+    };
+  } finally {
+    try {
+      args.releaseCanvas?.(canvas);
+    } catch {
+      // 메모리 정리는 best-effort다. 인코딩 결과를 정리 오류로 덮어쓰지 않는다.
+    }
+  }
 }
 
 /**
@@ -376,9 +416,29 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
   }
   let pdfBytes: Uint8Array;
   let bookWarnings: readonly BookPrintWarning[] | undefined;
+  let coverPages = 0;
   try {
+    if (options.book?.binding?.cover) {
+      bookPages.unshift(
+        await renderBookCoverPage({
+          book: options.book,
+          title: options.title,
+          quality,
+          createCanvas,
+          toJpeg,
+          releaseCanvas,
+        })
+      );
+      coverPages = 1;
+    }
     if (options.book) {
-      const built = buildBookPrintPdf(bookPages, options.book, { title: options.title });
+      // 호출자는 요소 목록을 본문 쪽 기준으로 준다. 표지가 맨 앞에 붙으면 본문이 한 칸씩 밀리므로
+      // 목록도 같이 밀어, 안전 영역 경고가 엉뚱한 쪽에 붙지 않게 한다.
+      const request: BookPrintRequest =
+        coverPages > 0 && options.book.elementsByPage
+          ? { ...options.book, elementsByPage: [undefined, ...options.book.elementsByPage] }
+          : options.book;
+      const built = buildBookPrintPdf(bookPages, request, { title: options.title });
       pdfBytes = built.bytes;
       bookWarnings = built.warnings;
     } else {
@@ -399,7 +459,7 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
   return {
     blob: new Blob([blobBytes], { type: "application/pdf" }),
     // 스프레드 배열이면 결과 페이지 수는 입력 수가 아니라 펼침면 수다.
-    pageCount: options.print ? countPrintPdfOutputPages(valid.length, options.print) : valid.length,
+    pageCount: options.print ? countPrintPdfOutputPages(valid.length, options.print) : valid.length + coverPages,
     bytes: pdfBytes.length,
     fileName,
     ...(bookWarnings ? { bookWarnings } : {}),

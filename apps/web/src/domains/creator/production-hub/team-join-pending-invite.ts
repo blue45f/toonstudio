@@ -102,7 +102,7 @@ export function loadPendingTeamInvite(
   now: number = Date.now(),
 ): PendingTeamInvite | null {
   if (!storage) return null;
-  let raw: string | null = null;
+  let raw: string | null;
   try {
     raw = storage.getItem(PENDING_TEAM_INVITE_STORAGE_KEY);
   } catch {

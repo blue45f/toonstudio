@@ -1,0 +1,2470 @@
+{
+ "label": "4.4.1",
+ "schema": 1,
+ "startedAt": "2026-10-15T05:12:37.641Z",
+ "environment": {
+  "date": "2026-10-15T05:12:44.210Z",
+  "node": "v24.21.0",
+  "platform": "linux 6.18.44-fc-v114 x64",
+  "cpus": 4,
+  "cpuModel": "Intel(R) Xeon(R) Processor",
+  "totalMemMiB": 16093,
+  "chromium": "141.0.7390.37",
+  "webgl": {
+   "webgl2": true,
+   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "maxTextureSize": 8192,
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+   "hardwareConcurrency": 4,
+   "webgpu": "undefined"
+  },
+  "software": "소프트웨어 렌더링(SwiftShader). 실제 GPU 아님",
+  "viewport": {
+   "width": 960,
+   "height": 540
+  },
+  "repeat": 5,
+  "godotLabel": "4.4.1",
+  "buildFiles": {
+   "web/index.wasm": {
+    "bytes": 43699190,
+    "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+   },
+   "web/index.js": {
+    "bytes": 317142,
+    "sha256": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31"
+   },
+   "web/index.pck": {
+    "bytes": 55632,
+    "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+   },
+   "web-threads/index.wasm": {
+    "bytes": 41848195,
+    "sha256": "06e279b5d08a8888fc6c670b12d48c0e953bb526429ce521f2e17ec91fc15286"
+   },
+   "web-threads/index.js": {
+    "bytes": 370560,
+    "sha256": "dd8b42107108b4bc30c21eec8b2bb75e21b389f79b6e5d6553c7483eac284a33"
+   },
+   "web-threads/index.pck": {
+    "bytes": 55632,
+    "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+   }
+  },
+  "loadAverageAtStart": [
+   9.66,
+   12.25,
+   13.06
+  ]
+ },
+ "suites": {
+  "bridge": {
+   "note": "JS 호스트 -> Godot -> JS 호스트 왕복(ms). 호스트 쪽 performance.now 로 잰다. 크기는 바이트.",
+   "standalone": {
+    "pingRttMs": {
+     "n": 35,
+     "median": 0.2,
+     "mad": 0,
+     "min": 0.1,
+     "max": 0.9
+    },
+    "jsonEcho": {
+     "1024": {
+      "rttMs": {
+       "n": 5,
+       "median": 0.5,
+       "mad": 0.3,
+       "min": 0.2,
+       "max": 4
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 0,
+       "mad": 0,
+       "min": 0,
+       "max": 1.299
+      },
+      "receivedChars": 1069
+     },
+     "65536": {
+      "rttMs": {
+       "n": 5,
+       "median": 2.4,
+       "mad": 0.1,
+       "min": 2.3,
+       "max": 6.3
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 0.599,
+       "mad": 0.099,
+       "min": 0.5,
+       "max": 0.7
+      },
+      "receivedChars": 65581
+     },
+     "1048576": {
+      "rttMs": {
+       "n": 5,
+       "median": 45.2,
+       "mad": 3.8,
+       "min": 35.5,
+       "max": 74.9
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 15.3,
+       "mad": 4.8,
+       "min": 8.601,
+       "max": 46.301
+      },
+      "receivedChars": 1048621
+     },
+     "8388608": {
+      "rttMs": {
+       "n": 5,
+       "median": 360.9,
+       "mad": 56.8,
+       "min": 265,
+       "max": 452.7
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 96.699,
+       "mad": 26.701,
+       "min": 68,
+       "max": 236.601
+      },
+      "receivedChars": 8388653
+     }
+    },
+    "binaryIn": {
+     "view/no-eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 4.3,
+        "mad": 0.2,
+        "min": 4.1,
+        "max": 6.3
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.201,
+        "mad": 0.002,
+        "min": 0.199,
+        "max": 1
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 3.601,
+        "mad": 0.101,
+        "min": 3.5,
+        "max": 4.6
+       },
+       "allShaMatch": true,
+       "bytes": 1048576,
+       "firstCopyMs": 1
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 37.1,
+        "mad": 6,
+        "min": 30.5,
+        "max": 49.1
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 1.201,
+        "mad": 0.1,
+        "min": 1,
+        "max": 1.399
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 35.201,
+        "mad": 6.201,
+        "min": 29,
+        "max": 46.8
+       },
+       "allShaMatch": true,
+       "bytes": 8388608,
+       "firstCopyMs": 1.1
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 146.6,
+        "mad": 7.2,
+        "min": 139.4,
+        "max": 188.3
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 6.201,
+        "mad": 0.801,
+        "min": 4.7,
+        "max": 17
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 139.5,
+        "mad": 11.099,
+        "min": 128.401,
+        "max": 180.199
+       },
+       "allShaMatch": true,
+       "bytes": 33554432,
+       "firstCopyMs": 5.4
+      }
+     },
+     "view/eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 5,
+        "mad": 0.8,
+        "min": 4,
+        "max": 8.3
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.2,
+        "mad": 0.001,
+        "min": 0.199,
+        "max": 0.899
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 3.601,
+        "mad": 0.001,
+        "min": 3.6,
+        "max": 7.601
+       },
+       "allShaMatch": true,
+       "bytes": 1048576,
+       "firstCopyMs": 0.9
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 49.8,
+        "mad": 6.4,
+        "min": 31.8,
+        "max": 56.2
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 1.399,
+        "mad": 0.199,
+        "min": 1.2,
+        "max": 2.5
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 38.3,
+        "mad": 9,
+        "min": 28.201,
+        "max": 51
+       },
+       "allShaMatch": true,
+       "bytes": 8388608,
+       "firstCopyMs": 1.2
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 202.2,
+        "mad": 13.6,
+        "min": 144.1,
+        "max": 218
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 4.8,
+        "mad": 0.099,
+        "min": 4.599,
+        "max": 12.599
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 193.901,
+        "mad": 10.401,
+        "min": 138.599,
+        "max": 212.4
+       },
+       "allShaMatch": true,
+       "bytes": 33554432,
+       "firstCopyMs": 4.7
+      }
+     },
+     "arraybuffer/no-eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 4.2,
+        "mad": 0.2,
+        "min": 4,
+        "max": 8.4
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.2,
+        "mad": 0,
+        "min": 0.1,
+        "max": 0.201
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 3.699,
+        "mad": 0.199,
+        "min": 3.5,
+        "max": 7.8
+       },
+       "allShaMatch": true,
+       "bytes": 1048576,
+       "firstCopyMs": 0.2
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 37.8,
+        "mad": 5.8,
+        "min": 32,
+        "max": 108
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 1.401,
+        "mad": 0.099,
+        "min": 1.2,
+        "max": 1.8
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 35.7,
+        "mad": 5.601,
+        "min": 30.099,
+        "max": 106.3
+       },
+       "allShaMatch": true,
+       "bytes": 8388608,
+       "firstCopyMs": 1.2
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 134.9,
+        "mad": 15.8,
+        "min": 117.8,
+        "max": 150.7
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 4.701,
+        "mad": 0.002,
+        "min": 4.699,
+        "max": 14.2
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 122.101,
+        "mad": 7.2,
+        "min": 112.7,
+        "max": 129.301
+       },
+       "allShaMatch": true,
+       "bytes": 33554432,
+       "firstCopyMs": 6.8
+      }
+     },
+     "arraybuffer/eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 4.8,
+        "mad": 0.4,
+        "min": 4.4,
+        "max": 10.7
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.299,
+        "mad": 0.099,
+        "min": 0.2,
+        "max": 2
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 4,
+        "mad": 0.099,
+        "min": 3.901,
+        "max": 9.901
+       },
+       "allShaMatch": true,
+       "bytes": 1048576,
+       "firstCopyMs": 2
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 35.3,
+        "mad": 4.4,
+        "min": 30.9,
+        "max": 52.4
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 1.7,
+        "mad": 0.4,
+        "min": 1.199,
+        "max": 10.5
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 33.801,
+        "mad": 5.201,
+        "min": 28.6,
+        "max": 41.5
+       },
+       "allShaMatch": true,
+       "bytes": 8388608,
+       "firstCopyMs": 10.5
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 156,
+        "mad": 12.8,
+        "min": 120.2,
+        "max": 195.9
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 6.5,
+        "mad": 0.901,
+        "min": 4.599,
+        "max": 10.099
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 145.301,
+        "mad": 10.1,
+        "min": 113,
+        "max": 188.5
+       },
+       "allShaMatch": true,
+       "bytes": 33554432,
+       "firstCopyMs": 4.6
+      }
+     }
+    },
+    "binaryOut": {
+     "0.25MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 9,
+       "mad": 2.9,
+       "min": 6,
+       "max": 16.7
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 1.2,
+       "mad": 0.099,
+       "min": 1.101,
+       "max": 2.399
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 0.9,
+       "mad": 0.2,
+       "min": 0.7,
+       "max": 4.5
+      },
+      "base64Chars": 349528,
+      "expansion": 1.333,
+      "allShaMatch": true
+     },
+     "1MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 27.2,
+       "mad": 1.9,
+       "min": 21.8,
+       "max": 52.4
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 6.8,
+       "mad": 1.899,
+       "min": 4.901,
+       "max": 9.2
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 5.3,
+       "mad": 1.4,
+       "min": 3.6,
+       "max": 6.7
+      },
+      "base64Chars": 1398104,
+      "expansion": 1.333,
+      "allShaMatch": true
+     },
+     "4MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 137.7,
+       "mad": 17.4,
+       "min": 92.6,
+       "max": 160.9
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 21.099,
+       "mad": 0.799,
+       "min": 20.3,
+       "max": 43.6
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 29.7,
+       "mad": 9.4,
+       "min": 15.5,
+       "max": 80.5
+      },
+      "base64Chars": 5592408,
+      "expansion": 1.333,
+      "allShaMatch": true
+     }
+    }
+   },
+   "iframe": {
+    "pingRttMs": {
+     "n": 35,
+     "median": 0.2,
+     "mad": 0.1,
+     "min": 0.1,
+     "max": 2.2
+    },
+    "jsonEcho": {
+     "1024": {
+      "rttMs": {
+       "n": 5,
+       "median": 0.4,
+       "mad": 0.2,
+       "min": 0.2,
+       "max": 2.9
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 0.101,
+       "mad": 0.101,
+       "min": 0,
+       "max": 2.101
+      },
+      "receivedChars": 1069
+     },
+     "65536": {
+      "rttMs": {
+       "n": 5,
+       "median": 1.4,
+       "mad": 0.2,
+       "min": 1.2,
+       "max": 2.4
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 0.6,
+       "mad": 0.001,
+       "min": 0.5,
+       "max": 0.799
+      },
+      "receivedChars": 65581
+     },
+     "1048576": {
+      "rttMs": {
+       "n": 5,
+       "median": 20.1,
+       "mad": 2.9,
+       "min": 17.2,
+       "max": 87.4
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 8.5,
+       "mad": 0,
+       "min": 8.5,
+       "max": 66.5
+      },
+      "receivedChars": 1048621
+     },
+     "8388608": {
+      "rttMs": {
+       "n": 5,
+       "median": 144.1,
+       "mad": 5,
+       "min": 139.1,
+       "max": 443.5
+      },
+      "godotJsonParseMs": {
+       "n": 5,
+       "median": 68.301,
+       "mad": 0.902,
+       "min": 67.399,
+       "max": 353.5
+      },
+      "receivedChars": 8388653
+     }
+    },
+    "binaryIn": {
+     "view/no-eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 6.2,
+        "mad": 1.3,
+        "min": 4.4,
+        "max": 8.8
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.2,
+        "mad": 0.099,
+        "min": 0.101,
+        "max": 1.2
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 4.399,
+        "mad": 0.5,
+        "min": 3.899,
+        "max": 6.599
+       },
+       "allShaMatch": true,
+       "bytes": 1048576,
+       "firstCopyMs": 1.2
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 43.1,
+        "mad": 12.7,
+        "min": 30.1,
+        "max": 89.8
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 1.2,
+        "mad": 0.1,
+        "min": 1.1,
+        "max": 1.399
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 41.401,
+        "mad": 13.101,
+        "min": 28.101,
+        "max": 84.599
+       },
+       "allShaMatch": true,
+       "bytes": 8388608,
+       "firstCopyMs": 1.2
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 143,
+        "mad": 4.1,
+        "min": 129.9,
+        "max": 147.1
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 7.5,
+        "mad": 2.7,
+        "min": 4.3,
+        "max": 13.2
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 132.601,
+        "mad": 3.002,
+        "min": 124.5,
+        "max": 142.2
+       },
+       "allShaMatch": true,
+       "bytes": 33554432,
+       "firstCopyMs": 4.3
+      }
+     },
+     "view/eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 4.9,
+        "mad": 0.4,
+        "min": 4,
+        "max": 5.4
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.101,
+        "mad": 0,
+        "min": 0.101,
+        "max": 0.799
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 3.901,
+        "mad": 0.3,
+        "min": 3.599,
+        "max": 4.899
+       },
+       "allShaMatch": true,
+       "bytes": 1048576,
+       "firstCopyMs": 0.8
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 36.1,
+        "mad": 3,
+        "min": 33.1,
+        "max": 133.8
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 1.599,
+        "mad": 0.299,
+        "min": 1.101,
+        "max": 3.701
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 32.901,
+        "mad": 1.901,
+        "min": 31,
+        "max": 132.199
+       },
+       "allShaMatch": true,
+       "bytes": 8388608,
+       "firstCopyMs": 1.7
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 144.5,
+        "mad": 24.8,
+        "min": 117.2,
+        "max": 189.3
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 5,
+        "mad": 0.399,
+        "min": 4.5,
+        "max": 7.101
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 138.401,
+        "mad": 23.198,
+        "min": 112.2,
+        "max": 183.699
+       },
+       "allShaMatch": true,
+       "bytes": 33554432,
+       "firstCopyMs": 4.7
+      }
+     },
+     "arraybuffer/no-eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 3.3,
+        "mad": 2.4,
+        "min": 0.7,
+        "max": 36.2
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.1
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 3.099,
+        "mad": 2.498,
+        "min": 0.5,
+        "max": 35.799
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 2.3,
+        "mad": 1.2,
+        "min": 0.9,
+        "max": 3.7
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.1
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 1.899,
+        "mad": 1.199,
+        "min": 0.601,
+        "max": 3.2
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 1,
+        "mad": 0.2,
+        "min": 0.8,
+        "max": 1.5
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.101
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.601,
+        "mad": 0.298,
+        "min": 0.301,
+        "max": 1
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0
+      }
+     },
+     "arraybuffer/eval": {
+      "1MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 0.8,
+        "mad": 0.1,
+        "min": 0.6,
+        "max": 14.8
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0.1,
+        "mad": 0.001,
+        "min": 0,
+        "max": 0.2
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.4,
+        "mad": 0.099,
+        "min": 0.301,
+        "max": 14.399
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0.2
+      },
+      "8MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 0.9,
+        "mad": 0.2,
+        "min": 0.6,
+        "max": 15.4
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.099
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 0.5,
+        "mad": 0.101,
+        "min": 0.399,
+        "max": 15
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0
+      },
+      "32MiB": {
+       "rttMs": {
+        "n": 5,
+        "median": 1.7,
+        "mad": 0.7,
+        "min": 0.9,
+        "max": 15.2
+       },
+       "godotCopyMs": {
+        "n": 5,
+        "median": 0,
+        "mad": 0,
+        "min": 0,
+        "max": 0.101
+       },
+       "godotSha256Ms": {
+        "n": 5,
+        "median": 1,
+        "mad": 0.401,
+        "min": 0.5,
+        "max": 8.3
+       },
+       "allShaMatch": false,
+       "bytes": 0,
+       "firstCopyMs": 0.1
+      }
+     }
+    },
+    "binaryOut": {
+     "0.25MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 6.6,
+       "mad": 1.3,
+       "min": 5.3,
+       "max": 16.5
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 1.101,
+       "mad": 0.101,
+       "min": 1,
+       "max": 2.099
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 0.9,
+       "mad": 0.3,
+       "min": 0.6,
+       "max": 3.4
+      },
+      "base64Chars": 349528,
+      "expansion": 1.333,
+      "allShaMatch": true
+     },
+     "1MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 26.3,
+       "mad": 4.5,
+       "min": 21.4,
+       "max": 51.7
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 6.3,
+       "mad": 1.7,
+       "min": 4.5,
+       "max": 32.301
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 4.1,
+       "mad": 0.3,
+       "min": 3.6,
+       "max": 4.4
+      },
+      "base64Chars": 1398104,
+      "expansion": 1.333,
+      "allShaMatch": true
+     },
+     "4MiB": {
+      "rttMs": {
+       "n": 5,
+       "median": 106.6,
+       "mad": 8.3,
+       "min": 96.1,
+       "max": 119.8
+      },
+      "godotBase64EncodeMs": {
+       "n": 5,
+       "median": 20.2,
+       "mad": 0.301,
+       "min": 19.899,
+       "max": 43.9
+      },
+      "hostBase64DecodeMs": {
+       "n": 5,
+       "median": 16.5,
+       "mad": 1.1,
+       "min": 15.4,
+       "max": 26.2
+      },
+      "base64Chars": 5592408,
+      "expansion": 1.333,
+      "allShaMatch": true
+     }
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     9.66,
+     12.25,
+     13.06
+    ],
+    "loadAverageAfter": [
+     10.85,
+     12.24,
+     13.02
+    ],
+    "seconds": 50.8
+   }
+  },
+  "cold": {
+   "note": "매 반복마다 새 브라우저(캐시·V8 코드 캐시 없음). 시각은 탐색 시작 기준 ms. 라운드 로빈: 반복 i 마다 모든 변형을 한 번씩, 시작 변형을 한 칸씩 돌려 가며 실행해 머신 부하 변화가 변형 사이에 고르게 퍼지게 했다.",
+   "baselineEmptyWebgl": {
+    "rssTotalMiB": {
+     "n": 3,
+     "median": 1074.3,
+     "mad": 0,
+     "min": 1074.3,
+     "max": 1074.9
+    },
+    "byTypeSample": {
+     "browser": 543,
+     "zygote": 119.8,
+     "gpu-process": 101.4,
+     "utility": 145.9,
+     "renderer": 164.2
+    },
+    "note": "빈 페이지 + WebGL2 컨텍스트(SwiftShader GPU 프로세스 포함). 엔진 메모리의 바닥값이다."
+   },
+   "runOrder": [
+    "n,ni,nr,t,ti,tr",
+    "ni,nr,t,ti,tr,n",
+    "nr,t,ti,tr,n,ni",
+    "t,ti,tr,n,ni,nr",
+    "ti,tr,n,ni,nr,t"
+   ],
+   "variants": {
+    "n": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 160.7,
+       "mad": 76.1,
+       "min": 71.1,
+       "max": 281.4
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 1221.8,
+       "mad": 552,
+       "min": 571.1,
+       "max": 2010.1
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 2454.6,
+       "mad": 856.3,
+       "min": 1598.3,
+       "max": 3857.7
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 2642,
+       "mad": 1011.8,
+       "min": 1630.2,
+       "max": 3902.1
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 3117,
+       "mad": 880,
+       "min": 1928,
+       "max": 4042
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 32,
+       "mad": 0,
+       "min": 32,
+       "max": 32
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 83.23,
+       "mad": 0.01,
+       "min": 83.19,
+       "max": 83.25
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1410.8,
+       "mad": 10.2,
+       "min": 1400.6,
+       "max": 1437.8
+      },
+      "uaMemoryMiB": {
+       "n": 0
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": false,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": false,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2278,
+       "wasmInstantiateMs": 1132.5,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1400.6
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3902.1,
+       "wasmInstantiateMs": 2010.1,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1421.8
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2642,
+       "wasmInstantiateMs": 1221.8,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1409.2
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3838.6,
+       "wasmInstantiateMs": 1773.8,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1437.8
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1630.2,
+       "wasmInstantiateMs": 571.1,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1410.8
+      }
+     ]
+    },
+    "ni": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 115.295,
+       "mad": 9.745,
+       "min": 50.41,
+       "max": 180.12
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 680.68,
+       "mad": 165.125,
+       "min": 466.175,
+       "max": 1449.5
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 2083.425,
+       "mad": 186.47,
+       "min": 1463.18,
+       "max": 3049.62
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 2176.97,
+       "mad": 184.77,
+       "min": 1502.055,
+       "max": 3131.67
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 2289,
+       "mad": 192,
+       "min": 1580,
+       "max": 3324
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 32,
+       "mad": 0,
+       "min": 32,
+       "max": 32
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 82.31,
+       "mad": 0.01,
+       "min": 40.64,
+       "max": 82.33
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1416.8,
+       "mad": 24.4,
+       "min": 1392.1,
+       "max": 1450.2
+      },
+      "uaMemoryMiB": {
+       "n": 5,
+       "median": 46.26,
+       "mad": 0.01,
+       "min": 46.25,
+       "max": 46.3
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": false,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": true,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1502.1,
+       "wasmInstantiateMs": 466.2,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1392.1
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2361.7,
+       "wasmInstantiateMs": 680.7,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1438.2
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2177,
+       "wasmInstantiateMs": 845.8,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1450.2
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3131.7,
+       "wasmInstantiateMs": 1449.5,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1416.8
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2097.1,
+       "wasmInstantiateMs": 636.4,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1392.4
+      }
+     ]
+    },
+    "nr": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 133.855,
+       "mad": 23.935,
+       "min": 109.92,
+       "max": 234.11
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 1259.1,
+       "mad": 356.02,
+       "min": 671.305,
+       "max": 2076.105
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 2751.305,
+       "mad": 767.555,
+       "min": 1715.46,
+       "max": 4957.875
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 2849.185,
+       "mad": 769.335,
+       "min": 1763.475,
+       "max": 5281.18
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 2984,
+       "mad": 853,
+       "min": 1888,
+       "max": 5475
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 32,
+       "mad": 0,
+       "min": 32,
+       "max": 32
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 40.69,
+       "mad": 0.05,
+       "min": 40.64,
+       "max": 82.37
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1429.3,
+       "mad": 15,
+       "min": 1393.5,
+       "max": 1444.3
+      },
+      "uaMemoryMiB": {
+       "n": 5,
+       "median": 46.28,
+       "mad": 0.01,
+       "min": 46.27,
+       "max": 46.33
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": false,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": true,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 1763.5,
+       "wasmInstantiateMs": 671.3,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1429.3
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2549.7,
+       "wasmInstantiateMs": 903.1,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1432.3
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 5281.2,
+       "wasmInstantiateMs": 2076.1,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1444.3
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3618.5,
+       "wasmInstantiateMs": 1489.6,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1393.5
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2849.2,
+       "wasmInstantiateMs": 1259.1,
+       "wasmMemoryMiB": 32,
+       "rssTotalMiB": 1407.6
+      }
+     ]
+    },
+    "t": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "boot-error": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 86,
+       "mad": 33.5,
+       "min": 52.5,
+       "max": 214.8
+      },
+      "wasmInstantiateMs": {
+       "n": 0
+      },
+      "readyMs": {
+       "n": 0
+      },
+      "firstFrameMs": {
+       "n": 0
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 119,
+       "mad": 38,
+       "min": 81,
+       "max": 317
+      },
+      "wasmMemoryMiB": {
+       "n": 0
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 2.8,
+       "mad": 0,
+       "min": 2.79,
+       "max": 2.8
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1094.1,
+       "mad": 4.8,
+       "min": 1077.8,
+       "max": 1103.2
+      },
+      "uaMemoryMiB": {
+       "n": 0
+      }
+     },
+     "sample": null,
+     "isolated": false,
+     "missingFeatures": [
+      "Cross-Origin Isolation - Check that the web server configuration sends the correct headers.",
+      "SharedArrayBuffer - Check that the web server configuration sends the correct headers."
+     ],
+     "bootError": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers.",
+     "firstErrors": [
+      {
+       "type": "error",
+       "text": "Error\nThe following features required to run Godot projects on the Web are missing:\nCross-Origin Isolation - Check that the web server configuration sends the correct headers.\nSharedArrayBuffer - Check that the web server configuration sends the correct headers."
+      }
+     ],
+     "runs": [
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1077.8
+      },
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1089.5
+      },
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1098.9
+      },
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1094.1
+      },
+      {
+       "outcome": "boot-error",
+       "firstFrameMs": null,
+       "wasmInstantiateMs": null,
+       "wasmMemoryMiB": null,
+       "rssTotalMiB": 1103.2
+      }
+     ]
+    },
+    "ti": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 113.175,
+       "mad": 7.77,
+       "min": 72.915,
+       "max": 120.945
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 2020.81,
+       "mad": 983.785,
+       "min": 893.685,
+       "max": 3109.835
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 3945.385,
+       "mad": 1034.48,
+       "min": 2290.99,
+       "max": 5707.245
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 4217.75,
+       "mad": 1169.535,
+       "min": 2363.935,
+       "max": 5771.325
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 4335,
+       "mad": 1193,
+       "min": 2441,
+       "max": 6106
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 38.44,
+       "mad": 0,
+       "min": 38.44,
+       "max": 38.44
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 9.04,
+       "mad": 0.07,
+       "min": 8.86,
+       "max": 48.76
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1422.6,
+       "mad": 0.8,
+       "min": 1414.9,
+       "max": 1427.6
+      },
+      "uaMemoryMiB": {
+       "n": 0
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": true,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": true,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3048.2,
+       "wasmInstantiateMs": 1037,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1414.9
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 2363.9,
+       "wasmInstantiateMs": 893.7,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1422.6
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 5771.3,
+       "wasmInstantiateMs": 3109.8,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1423.4
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 4217.8,
+       "wasmInstantiateMs": 2149.4,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1422.1
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 4857.1,
+       "wasmInstantiateMs": 2020.8,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1427.6
+      }
+     ]
+    },
+    "tr": {
+     "summary": {
+      "n": 5,
+      "outcomes": {
+       "ok": 5
+      },
+      "engineJsReadyMs": {
+       "n": 5,
+       "median": 161.925,
+       "mad": 19.285,
+       "min": 124.625,
+       "max": 294.845
+      },
+      "wasmInstantiateMs": {
+       "n": 5,
+       "median": 1606.895,
+       "mad": 98.62,
+       "min": 1508.275,
+       "max": 2053.735
+      },
+      "readyMs": {
+       "n": 5,
+       "median": 3829.23,
+       "mad": 627.095,
+       "min": 2942.255,
+       "max": 4472.515
+      },
+      "firstFrameMs": {
+       "n": 5,
+       "median": 3928.97,
+       "mad": 677.095,
+       "min": 3033.08,
+       "max": 4738.655
+      },
+      "wallToOutcomeMs": {
+       "n": 5,
+       "median": 4171,
+       "mad": 702,
+       "min": 3312,
+       "max": 4873
+      },
+      "wasmMemoryMiB": {
+       "n": 5,
+       "median": 38.44,
+       "mad": 0,
+       "min": 38.44,
+       "max": 38.44
+      },
+      "jsHeapUsedMiB": {
+       "n": 5,
+       "median": 9.16,
+       "mad": 0.13,
+       "min": 8.88,
+       "max": 9.29
+      },
+      "rssTotalMiB": {
+       "n": 5,
+       "median": 1423.9,
+       "mad": 1.2,
+       "min": 1415.6,
+       "max": 1425.2
+      },
+      "uaMemoryMiB": {
+       "n": 0
+      }
+     },
+     "sample": {
+      "version": "4.4.1-stable (official)",
+      "hash": "49a5bc7b616bd04689a2c89e89bda41f50241464",
+      "threads": true,
+      "renderer": "gl_compatibility"
+     },
+     "isolated": true,
+     "missingFeatures": [],
+     "bootError": null,
+     "firstErrors": [],
+     "runs": [
+      {
+       "outcome": "ok",
+       "firstFrameMs": 4386.6,
+       "wasmInstantiateMs": 1747.2,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1415.6
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3251.9,
+       "wasmInstantiateMs": 1606.9,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1424.1
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 4738.7,
+       "wasmInstantiateMs": 2053.7,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1422.7
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3033.1,
+       "wasmInstantiateMs": 1508.3,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1425.2
+      },
+      {
+       "outcome": "ok",
+       "firstFrameMs": 3929,
+       "wasmInstantiateMs": 1595.7,
+       "wasmMemoryMiB": 38.44,
+       "rssTotalMiB": 1423.9
+      }
+     ]
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     10.85,
+     12.24,
+     13.02
+    ],
+    "loadAverageAfter": [
+     11.09,
+     12.04,
+     12.63
+    ],
+    "seconds": 452.6
+   }
+  },
+  "warm": {
+   "note": "같은 브라우저 컨텍스트에서 같은 주소로 다시 탐색. HTTP 캐시 허용(max-age=3600). 첫 항목은 캐시를 채우는 콜드 실행.",
+   "runs": [
+    {
+     "index": 0,
+     "kind": "cold-fill",
+     "firstFrameMs": 2601.4,
+     "wasmInstantiateMs": 1238,
+     "engineJsReadyMs": 49.5,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 1,
+     "kind": "warm",
+     "firstFrameMs": 1726.9,
+     "wasmInstantiateMs": 671.7,
+     "engineJsReadyMs": 36.3,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 2,
+     "kind": "warm",
+     "firstFrameMs": 1429.3,
+     "wasmInstantiateMs": 515.4,
+     "engineJsReadyMs": 41.6,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 3,
+     "kind": "warm",
+     "firstFrameMs": 2130.7,
+     "wasmInstantiateMs": 524.3,
+     "engineJsReadyMs": 37.1,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 4,
+     "kind": "warm",
+     "firstFrameMs": 2446.2,
+     "wasmInstantiateMs": 888.1,
+     "engineJsReadyMs": 37.8,
+     "wasmTransfer": 43699490
+    },
+    {
+     "index": 5,
+     "kind": "warm",
+     "firstFrameMs": 1765.8,
+     "wasmInstantiateMs": 602.9,
+     "engineJsReadyMs": 60.5,
+     "wasmTransfer": 43699490
+    }
+   ],
+   "coldFill": {
+    "index": 0,
+    "kind": "cold-fill",
+    "firstFrameMs": 2601.4,
+    "wasmInstantiateMs": 1238,
+    "engineJsReadyMs": 49.5,
+    "wasmTransfer": 43699490
+   },
+   "warmSummary": {
+    "firstFrameMs": {
+     "n": 5,
+     "median": 1765.8,
+     "mad": 336.5,
+     "min": 1429.3,
+     "max": 2446.2
+    },
+    "wasmInstantiateMs": {
+     "n": 5,
+     "median": 602.9,
+     "mad": 78.6,
+     "min": 515.4,
+     "max": 888.1
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     11.09,
+     12.04,
+     12.63
+    ],
+    "loadAverageAfter": [
+     10.81,
+     11.94,
+     12.59
+    ],
+    "seconds": 15.2
+   }
+  },
+  "revisit": {
+   "note": "방문마다 새 브라우저 프로세스, 같은 영구 프로필(디스크 HTTP 캐시). 서버는 index.wasm·index.js 를 brotli 9 로 압축해 보내고 max-age=3600 으로 캐시를 허용한다. transferSize 0 은 캐시에서 받았다는 뜻이다.",
+   "packedBytes": {
+    "web/index.wasm": 7280573,
+    "web/index.js": 74379
+   },
+   "visits": {
+    "1": {
+     "n": 5,
+     "firstFrameMs": {
+      "n": 5,
+      "median": 2650.3,
+      "mad": 254.4,
+      "min": 1704,
+      "max": 2904.7
+     },
+     "wasmInstantiateMs": {
+      "n": 5,
+      "median": 755.3,
+      "mad": 150.1,
+      "min": 585.5,
+      "max": 1027.1
+     },
+     "wasmFetchEndMs": {
+      "n": 5,
+      "median": 877.8,
+      "mad": 19.2,
+      "min": 662.2,
+      "max": 1020.3
+     },
+     "wasmTransferBytes": [
+      7280873
+     ],
+     "wasmEncodedBytes": [
+      7280573
+     ],
+     "wasmDecodedBytes": [
+      43699190
+     ]
+    },
+    "2": {
+     "n": 5,
+     "firstFrameMs": {
+      "n": 5,
+      "median": 2693,
+      "mad": 311.4,
+      "min": 1955.2,
+      "max": 3072.2
+     },
+     "wasmInstantiateMs": {
+      "n": 5,
+      "median": 1078.9,
+      "mad": 321.6,
+      "min": 567.4,
+      "max": 1400.5
+     },
+     "wasmFetchEndMs": {
+      "n": 5,
+      "median": 939.7,
+      "mad": 185.9,
+      "min": 667.1,
+      "max": 1344.1
+     },
+     "wasmTransferBytes": [
+      0
+     ],
+     "wasmEncodedBytes": [
+      7280573
+     ],
+     "wasmDecodedBytes": [
+      43699190
+     ]
+    },
+    "3": {
+     "n": 5,
+     "firstFrameMs": {
+      "n": 5,
+      "median": 3365.4,
+      "mad": 454.9,
+      "min": 1434.2,
+      "max": 3820.3
+     },
+     "wasmInstantiateMs": {
+      "n": 5,
+      "median": 1010.8,
+      "mad": 440.8,
+      "min": 570,
+      "max": 2184.2
+     },
+     "wasmFetchEndMs": {
+      "n": 5,
+      "median": 1200.5,
+      "mad": 356.5,
+      "min": 588.2,
+      "max": 2379.7
+     },
+     "wasmTransferBytes": [
+      0
+     ],
+     "wasmEncodedBytes": [
+      7280573
+     ],
+     "wasmDecodedBytes": [
+      43699190
+     ]
+    }
+   },
+   "rows": [
+    {
+     "repetition": 1,
+     "visit": 1,
+     "firstFrameMs": 2207.2,
+     "wasmInstantiateMs": 755.3,
+     "wasmFetchEndMs": 858.6,
+     "engineJsReadyMs": 102.8,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 115.70000000298023,
+      "end": 858.6000000014901,
+      "transfer": 7280873,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 70.80000000074506,
+      "end": 83.80000000074506,
+      "transfer": 74679,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 116,
+      "end": 254.5,
+      "transfer": 55932,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 1,
+     "visit": 2,
+     "firstFrameMs": 2693,
+     "wasmInstantiateMs": 1400.5,
+     "wasmFetchEndMs": 1344.1,
+     "engineJsReadyMs": 83.3,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 141,
+      "end": 1344.1000000014901,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 19.100000001490116,
+      "end": 72.89999999850988,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 141.30000000074506,
+      "end": 202.69999999925494,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 1,
+     "visit": 3,
+     "firstFrameMs": 1434.2,
+     "wasmInstantiateMs": 570,
+     "wasmFetchEndMs": 588.2,
+     "engineJsReadyMs": 34.8,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 45,
+      "end": 588.1999999992549,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 16.599999997764826,
+      "end": 32.29999999701977,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 45.29999999701977,
+      "end": 49.599999997764826,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 2,
+     "visit": 1,
+     "firstFrameMs": 1704,
+     "wasmInstantiateMs": 585.5,
+     "wasmFetchEndMs": 662.2,
+     "engineJsReadyMs": 96.7,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 105.69999999925494,
+      "end": 662.1999999992549,
+      "transfer": 7280873,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 48.600000001490116,
+      "end": 84.30000000074506,
+      "transfer": 74679,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 106,
+      "end": 134,
+      "transfer": 55932,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 2,
+     "visit": 2,
+     "firstFrameMs": 2381.6,
+     "wasmInstantiateMs": 567.4,
+     "wasmFetchEndMs": 667.1,
+     "engineJsReadyMs": 128.8,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 151.89999999850988,
+      "end": 667.1000000014901,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 9.699999999254942,
+      "end": 58.600000001490116,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 152.10000000149012,
+      "end": 156.5,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 2,
+     "visit": 3,
+     "firstFrameMs": 3689.5,
+     "wasmInstantiateMs": 2184.2,
+     "wasmFetchEndMs": 2379.7,
+     "engineJsReadyMs": 66.8,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 192,
+      "end": 2379.699999999255,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 14.5,
+      "end": 20.300000000745058,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 192.30000000074506,
+      "end": 267.30000000074506,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 3,
+     "visit": 1,
+     "firstFrameMs": 2860.4,
+     "wasmInstantiateMs": 734.8,
+     "wasmFetchEndMs": 877.8,
+     "engineJsReadyMs": 122.6,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 134.39999999850988,
+      "end": 877.7999999970198,
+      "transfer": 7280873,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 68.69999999925494,
+      "end": 79.19999999925494,
+      "transfer": 74679,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 135,
+      "end": 211.69999999925494,
+      "transfer": 55932,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 3,
+     "visit": 2,
+     "firstFrameMs": 2932.1,
+     "wasmInstantiateMs": 1078.9,
+     "wasmFetchEndMs": 1125.6,
+     "engineJsReadyMs": 138.4,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 149.69999999925494,
+      "end": 1125.6000000014901,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 13.199999999254942,
+      "end": 115.39999999850988,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 150,
+      "end": 190.80000000074506,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 3,
+     "visit": 3,
+     "firstFrameMs": 3820.3,
+     "wasmInstantiateMs": 1869.8,
+     "wasmFetchEndMs": 1557,
+     "engineJsReadyMs": 45.3,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 63,
+      "end": 1557,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 23,
+      "end": 39.19999999925494,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 63.30000000074506,
+      "end": 73.69999999925494,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 4,
+     "visit": 1,
+     "firstFrameMs": 2904.7,
+     "wasmInstantiateMs": 1027.1,
+     "wasmFetchEndMs": 879.8,
+     "engineJsReadyMs": 52,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 59.399999998509884,
+      "end": 879.7999999970198,
+      "transfer": 7280873,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 17.199999999254942,
+      "end": 28.399999998509884,
+      "transfer": 74679,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 59.899999998509884,
+      "end": 97,
+      "transfer": 55932,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 4,
+     "visit": 2,
+     "firstFrameMs": 1955.2,
+     "wasmInstantiateMs": 736.3,
+     "wasmFetchEndMs": 939.7,
+     "engineJsReadyMs": 182.6,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 199,
+      "end": 939.7000000029802,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 37,
+      "end": 153.90000000223517,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 199.90000000223517,
+      "end": 281.1000000014901,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 4,
+     "visit": 3,
+     "firstFrameMs": 1835.1,
+     "wasmInstantiateMs": 835.8,
+     "wasmFetchEndMs": 846.7,
+     "engineJsReadyMs": 25.3,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 37.5,
+      "end": 846.6999999992549,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 11.099999997764826,
+      "end": 21.800000000745058,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 37.69999999925494,
+      "end": 70.39999999850988,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 5,
+     "visit": 1,
+     "firstFrameMs": 2650.3,
+     "wasmInstantiateMs": 905.4,
+     "wasmFetchEndMs": 1020.3,
+     "engineJsReadyMs": 142.8,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 157.19999999925494,
+      "end": 1020.3000000007451,
+      "transfer": 7280873,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 50.100000001490116,
+      "end": 69.19999999925494,
+      "transfer": 74679,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 178.30000000074506,
+      "end": 209.30000000074506,
+      "transfer": 55932,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 5,
+     "visit": 2,
+     "firstFrameMs": 3072.2,
+     "wasmInstantiateMs": 1256.3,
+     "wasmFetchEndMs": 904.6,
+     "engineJsReadyMs": 118.1,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 127.5,
+      "end": 904.5999999977648,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 33.19999999925494,
+      "end": 72.09999999776483,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 130.29999999701977,
+      "end": 165.89999999850988,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    },
+    {
+     "repetition": 5,
+     "visit": 3,
+     "firstFrameMs": 3365.4,
+     "wasmInstantiateMs": 1010.8,
+     "wasmFetchEndMs": 1200.5,
+     "engineJsReadyMs": 172.4,
+     "wasm": {
+      "file": "index.wasm",
+      "start": 190,
+      "end": 1200.5,
+      "transfer": 0,
+      "encoded": 7280573,
+      "decoded": 43699190
+     },
+     "js": {
+      "file": "index.js",
+      "start": 16.5,
+      "end": 169.5,
+      "transfer": 0,
+      "encoded": 74379,
+      "decoded": 317142
+     },
+     "pck": {
+      "file": "index.pck",
+      "start": 191.69999999925494,
+      "end": 203.30000000074506,
+      "transfer": 0,
+      "encoded": 55632,
+      "decoded": 55632
+     },
+     "bootError": null
+    }
+   ],
+   "_meta": {
+    "loadAverageBefore": [
+     10.81,
+     11.94,
+     12.59
+    ],
+    "loadAverageAfter": [
+     13.61,
+     12.47,
+     12.73
+    ],
+    "seconds": 66.5
+   }
+  }
+ },
+ "finishedAt": "2026-10-15T05:22:29.350Z"
+}

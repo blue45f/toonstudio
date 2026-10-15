@@ -7,6 +7,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_PROJECT_DIAGNOSTICS_FAILED_EVENT } from "../studio-project-diagnostic-source-store";
+import { StudioPlausibilityReadinessNote } from "./StudioPlausibilityReadinessNote";
 import { STUDIO_PROJECT_READINESS_REQUEST_EVENT, STUDIO_PROJECT_READINESS_UPDATED_EVENT, parseStudioProjectReadinessSnapshot, readStudioProjectReadinessSnapshot, studioProjectReadinessStorageKey, type StudioProjectReadinessSnapshot } from "../studio-project-readiness-store";
 
 import type { StudioProjectReadinessSectionId, StudioProjectReadinessStatus } from "../studio-project-readiness";
@@ -286,6 +287,7 @@ export function StudioProjectReadinessPanel({
           ))}
         </div>
       ) : null}
+      <StudioPlausibilityReadinessNote projectId={projectId} />
     </section>
   );
 }

@@ -137,3 +137,7 @@ The existing upload safety, shared-document revision/CRDT tests, and creator API
 - No follower notification preference until a durable notification/outbox contract exists.
 - `readingMode`, `readingDirection`, `contentRating`, social metadata, and canonical slug are now durable public contracts and previewed in Studio; consuming every field in the public reader/HTML head can be rolled out independently without another data migration.
 - No SQL migration: the JSON contract is backward compatible and can be rolled back by restoring the creator barrel, route, and scheduler provider while leaving unknown `doc.publication` data inert.
+
+## 관련 문서
+
+- 게시 설정 단계의 권리 항목 중 작품·회차 AI 학습 허용 표기(미지정·불허·허용), 최종 확인 요약, 게시 영수증 표시와 한계: [`features/ai-training-consent.md`](features/ai-training-consent.md)

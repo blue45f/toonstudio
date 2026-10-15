@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PUBLISH_SURFACE_ROLES } from "./publish-surface-guide";
+import { PUBLISH_SURFACE_ROLES } from "./publish-surface-roles";
 
 /**
  * S1-6 게시 2표면 역할 고정 계약 (BLUEPRINT §1.2).

@@ -141,6 +141,74 @@ describe("PublishedWorkReader", () => {
     expect(screen.getByTestId("vertical-reader")).toBeTruthy();
     expect(screen.getByTestId("spatial-webtoon-reader-launcher")).toBeTruthy();
   });
+  it("shows the creator's AI training label next to the reading policy chips", () => {
+    const { rerender } = render(
+      <PublishedWorkReader
+        workId="work-label"
+        pages={["page-1"]}
+        fx={fx}
+        title="작품"
+        policy={policy()}
+        isOwner={false}
+        altText="별빛 왕관을 쓴 소녀"
+        contentKind="webtoon_episode"
+        aiTraining="prohibited"
+      />,
+    );
+    expect(screen.getByText("AI 학습 불허 표기").getAttribute("data-ai-training")).toBe("prohibited");
+
+    rerender(
+      <PublishedWorkReader
+        workId="work-label"
+        pages={["page-1"]}
+        fx={fx}
+        title="작품"
+        policy={policy()}
+        isOwner={false}
+        altText="별빛 왕관을 쓴 소녀"
+        contentKind="webtoon_episode"
+        aiTraining="allowed"
+      />,
+    );
+    expect(screen.getByText("AI 학습 허용 표기").getAttribute("data-ai-training")).toBe("allowed");
+    expect(screen.queryByText("AI 학습 불허 표기")).toBeNull();
+  });
+
+  it("shows 'not specified' rather than a permission when the label is omitted", () => {
+    render(
+      <PublishedWorkReader
+        workId="work-unlabeled"
+        pages={["page-1"]}
+        fx={fx}
+        title="작품"
+        policy={policy()}
+        isOwner={false}
+        altText="별빛 왕관을 쓴 소녀"
+        contentKind="webtoon_episode"
+      />,
+    );
+    expect(screen.getByText("AI 학습 미지정").getAttribute("data-ai-training")).toBe("unspecified");
+    expect(screen.queryByText("AI 학습 허용 표기")).toBeNull();
+  });
+
+  it("keeps the AI training label visible behind the mature-content gate", () => {
+    render(
+      <PublishedWorkReader
+        workId="mature-labeled"
+        pages={["mature-page"]}
+        fx={fx}
+        title="성인 작품"
+        policy={policy({ readingMode: "vertical", contentRating: "mature" })}
+        isOwner={false}
+        altText="성인 장면"
+        contentKind="webtoon_episode"
+        aiTraining="prohibited"
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "성인 대상 콘텐츠입니다" })).toBeTruthy();
+    expect(screen.getByText("AI 학습 불허 표기")).toBeTruthy();
+  });
+
   it("does not promote a one-page illustration into an AR/VR reader flow", () => {
     render(
       <PublishedWorkReader
