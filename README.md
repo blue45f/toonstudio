@@ -269,7 +269,7 @@ pnpm typecheck:admin
 pnpm build:admin            # apps/admin-web/dist/
 pnpm dev:character-lab      # 실험 앱: http://localhost:4176
 pnpm dev:brush-lab          # 실험 앱: http://localhost:4178
-pnpm validate:architecture  # 구조 + source-layout + application boundary ratchet
+pnpm validate:architecture  # 구조 + source-layout + application boundary + 파일 크기·Studio 진입 그래프 ratchet
 pnpm build && pnpm start    # 사용자 웹 프로덕션 프리뷰
 ```
 
