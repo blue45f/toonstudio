@@ -55,7 +55,10 @@ export function synchronizeLegacyI18nAssets(directory = root, { check = false } 
         owner.set(key, namespace);
       }
     }
-    if (bucket === "app") {
+    // app·studio 묶음은 모든 로케일 팩이 같은 키 집합을 가진다(미번역 키는 영어 원문 폴백).
+    // studio-i18n-loader.test.ts 가 75개 팩의 키 수를 한 값으로 고정한다. admin 은 ko/en 이 정본이고
+    // 나머지 로케일은 부분 팩이라 채우지 않는다.
+    if (bucket === "app" || bucket === "studio") {
       const reference = Object.assign({}, ...dictionaries.get("en").values());
       for (const locale of locales) {
         if (locale === "en" || locale === "ko") continue;

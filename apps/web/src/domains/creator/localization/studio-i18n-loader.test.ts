@@ -58,7 +58,12 @@ describe("Studio lazy i18n assets", () => {
       // 사전에 포함됐다(2026-10-01). 75개 팩 모두 같은 키 집합을 가진다.
       // 유니온 웨이브의 마지막 행만 75개 팩 어디에도 키가 없어 `en` 메뉴바에 "극좌표 변환"이 남아
       // 있었다(2026-09-06). 미번역 팩은 위 관례대로 영어 카탈로그 라벨을 든다.
-      expect(Object.keys(dictionary ?? {})).toHaveLength(1_499);
+      // 1_499 → 1_530: 네임스페이스 정본에는 있었지만 평면 팩이 아직 못 따라간 31키를 동기화로
+      // 맞췄다(2026-10-15). Studio 쉘 로딩·경로 오류·소재 진입 안내 studio.canvas.shell.* 26키와
+      // 캐릭터 선반 조작 안내 studio.character.shelf.interactionHint{Touch,Mouse,Keyboard}·
+      // shapeNote·favoritesNote 5키이며, 75개 팩이 모두 같은 키 집합을 가진다. 래칫이므로 이후
+      // 키를 늘리거나 줄이는 변경은 여기서 한 번 더 눈에 띄어야 한다.
+      expect(Object.keys(dictionary ?? {})).toHaveLength(1_530);
     }
     // The mobile dock used to hardcode Korean labels; every pack must now carry the keys that
     // replaced them, so an `en` viewport cannot fall back to Korean chrome.

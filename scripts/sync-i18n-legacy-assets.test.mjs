@@ -72,11 +72,23 @@ test("I18N_GUIDE §3: ko/en만 작성한 신규 네임스페이스의 나머지 
     assert.ok(stale.some((file) => file.endsWith(join("market", "ja.json"))), "누락된 ja 파일이 갱신 대상에 있어야 한다");
     assert.equal(existsSync(join(root, "app/market/ja.json")), false, "check 모드는 파일을 만들지 않는다");
 
+    // studio 묶음: ko/en 에만 새 키가 생기면 나머지 로케일도 같은 키 집합을 유지하도록 영어 폴백을 받는다.
+    write("studio/commandBar/ko.json", { "studio.commandBar.slot": "ko slot", "studio.commandBar.extra": "추가 키" });
+    write("studio/commandBar/en.json", { "studio.commandBar.slot": "en slot", "studio.commandBar.extra": "Extra key" });
+    // admin 묶음은 ko/en 이 정본이고 나머지 로케일은 부분 팩이라 채우지 않는다.
+    write("admin/admin/ko.json", { "admin.title": "ko admin", "admin.extra": "운영 추가" });
+    write("admin/admin/en.json", { "admin.title": "en admin", "admin.extra": "Admin extra" });
+
     synchronizeLegacyI18nAssets(root);
     assert.deepEqual(read("app/market/ja.json"), {
       "market.title": "Market",
       "market.empty": "Nothing here",
     }, "번역이 없는 로케일은 영어 원문 폴백을 받는다");
+    assert.deepEqual(read("studio/commandBar/ja.json"), {
+      "studio.commandBar.slot": "ja slot",
+      "studio.commandBar.extra": "Extra key",
+    }, "studio 팩도 번역이 없는 키는 영어 원문 폴백을 받고 이미 있는 값은 그대로 둔다");
+    assert.deepEqual(read("admin/admin/ja.json"), { "admin.title": "ja admin" }, "admin 은 채우지 않는다");
     assert.equal(read("app/route/ja.json")["route.home"], "ホーム", "이미 번역된 값은 건드리지 않는다");
     assert.equal(read("app/ja.json")["market.title"], "Market", "평면 자산에도 새 키가 반영된다");
     assert.equal(read("app/ja.json")["route.home"], "ホーム");
