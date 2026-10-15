@@ -240,7 +240,11 @@ function parseHttpUrl(raw: string): { readonly ok: true; readonly url: URL } | {
   return { ok: true, url: parsed };
 }
 
-/** 유튜브 시청/공유/shorts/embed URL에서 영상 ID를 뽑아 embed URL을 만든다. */
+/**
+ * 유튜브 시청/공유/shorts/embed URL에서 영상 ID를 뽑아 embed URL을 만든다.
+ * 임베드는 항상 youtube-nocookie.com 이다 — 운영 CSP frame-src 가 이 호스트만 허용하고(www.youtube.com 은
+ * 차단되어 타일 영상이 열리지 않았다), 재생 전에는 추적 쿠키를 심지 않는다.
+ */
 function studioTileYoutubeEmbedUrl(raw: string): string | undefined {
   const parsed = parseHttpUrl(raw);
   if (!parsed.ok) return undefined;
@@ -264,7 +268,7 @@ function studioTileYoutubeEmbedUrl(raw: string): string | undefined {
   })();
   for (const candidate of candidates) {
     if (candidate && YOUTUBE_VIDEO_ID_PATTERN.test(candidate)) {
-      return `https://www.youtube.com/embed/${candidate}`;
+      return `https://www.youtube-nocookie.com/embed/${candidate}`;
     }
   }
   return undefined;

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 import {
   createStudioTilePortalPair,
@@ -87,7 +89,8 @@ describe("createTileEffect 입력 살균", () => {
     ]) {
       const video = created({ kind: "youtube", tileX: 0, tileY: 0, url: raw });
       if (video.effect.kind !== "youtube") throw new Error("유튜브가 아님");
-      expect(video.effect.embedUrl).toBe("https://www.youtube.com/embed/dQw4w9WgXcQ");
+      // 운영 CSP frame-src 는 youtube-nocookie.com 만 허용한다(www.youtube.com 은 차단) — 임베드는 항상 nocookie 호스트다.
+      expect(video.effect.embedUrl).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
     }
     const notYoutube = createTileEffect({ kind: "youtube", tileX: 0, tileY: 0, url: "https://example.com/watch?v=dQw4w9WgXcQ" });
     expect(notYoutube.ok).toBe(false);
@@ -95,6 +98,22 @@ describe("createTileEffect 입력 살균", () => {
     const missing = createTileEffect({ kind: "youtube", tileX: 0, tileY: 0 });
     expect(missing.ok).toBe(false);
     if (!missing.ok) expect(missing.errors[0]?.code).toBe("missing-url");
+  });
+
+  it("유튜브 임베드 출처는 운영 CSP 의 frame-src 가 허용하는 호스트다", () => {
+    const policy = JSON.parse(readFileSync(
+      new URL("../../../../../../config/http-response-headers.json", import.meta.url),
+      "utf8",
+    )) as { headers: { source: string; headers: { key: string; value: string }[] }[] };
+    const csp = policy.headers
+      .find((rule) => rule.source === "/(.*)")
+      ?.headers.find((header) => header.key === "Content-Security-Policy")?.value ?? "";
+    const frameSources = csp.split(";").map((part) => part.trim().split(/\s+/u))
+      .find((parts) => parts[0] === "frame-src")?.slice(1) ?? [];
+    const video = created({ kind: "youtube", tileX: 0, tileY: 0, url: "https://youtu.be/dQw4w9WgXcQ" });
+    if (video.effect.kind !== "youtube") throw new Error("유튜브가 아님");
+    // CSP 에 없는 출처의 iframe 은 운영에서 차단되므로, 임베드 URL 은 허용된 출처(nocookie)만 쓴다.
+    expect(frameSources).toContain(new URL(video.effect.embedUrl).origin);
   });
 
   it("웹링크는 http(s)만 허용하고 나머지는 스킴 오류로 구분한다", () => {
@@ -158,7 +177,7 @@ describe("resolveTileEffectTrigger 발동 판정", () => {
     const zone = resolveTileEffectTrigger(effects, { x: center(12), y: center(12) }, TILE);
     expect(zone).toMatchObject({ kind: "zone", tag: "silent" });
     const youtube = resolveTileEffectTrigger(effects, { x: center(16), y: center(16) }, TILE);
-    expect(youtube).toMatchObject({ kind: "youtube", embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" });
+    expect(youtube).toMatchObject({ kind: "youtube", embedUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ" });
     const weblink = resolveTileEffectTrigger(effects, { x: center(20), y: center(20) }, TILE);
     expect(weblink).toMatchObject({ kind: "weblink", url: "https://toon.example/board" });
   });
