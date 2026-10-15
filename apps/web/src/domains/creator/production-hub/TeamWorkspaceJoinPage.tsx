@@ -7,6 +7,8 @@ import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { getApiErrorMessage } from "@/platform/api";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { TeamWorkspaceInvitePreview } from "@toonstudio/contracts/production-workspace";
+import { OnboardingPackagePanel } from "./OnboardingPackagePanel";
+import { parseProductionRolePresetId, productionRolePreset } from "./production-manuscript-competitive-model";
 import { acceptTeamInvite, previewTeamInvite } from "./team-workspace-api";
 import {
   clearPendingTeamInvite,
@@ -53,6 +55,8 @@ function StepItem({ index, title, description, state }: {
  * 수락 뒤 무엇이 일어나는지를 수락 전에 같은 화면에서 보여 준다. 로그인했고 코드가
  * 완성되면 서버 미리보기로 워크스페이스 이름·부여 역할·초대자·만료도 수락 전에 확인한다
  * (미리보기는 초대받은 이메일과 로그인 이메일이 일치할 때만 열리고, 실패해도 수락은 막지 않는다).
+ * 초대 링크가 온보딩 패키지 프리셋(pkg=)을 싣고 있으면 역할 규칙·참조 컷·일정 규칙을 같은 화면에서
+ * 수락 전에 열람할 수 있다(모르는 프리셋이면 패키지를 숨기고 기존 흐름만 보여 준다).
  * 완성된 코드는 이 탭 세션(sessionStorage)에만 30분 임시 보관한다 — 이메일 인증 등으로
  * 화면을 떠나도 같은 탭으로 돌아오면(인증 복귀가 이 화면 경로로 착지하면) 코드가 복원돼
  * 다시 찾을 필요가 없다. 탭을 닫으면 사라지고 영속 저장소·URL에는 남지 않는다
@@ -66,6 +70,8 @@ export function TeamWorkspaceJoinPage() {
   const [fromLink, setFromLink] = useState(false);
   const [restored, setRestored] = useState(false);
   const [entryContext, setEntryContext] = useState<StudioSpatialInviteContext>({ kind: "team-lobby" });
+  // 초대 링크 프래그먼트(pkg=)가 실어 온 온보딩 패키지 프리셋 힌트. 권한·입장 판정에는 쓰지 않는 표시 전용 값이다.
+  const [packagePresetHint, setPackagePresetHint] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [previewState, setPreviewState] = useState<
@@ -80,7 +86,7 @@ export function TeamWorkspaceJoinPage() {
     const url = new URL(window.location.href);
     const queryToken = url.searchParams.get("token");
     if (!resolved && queryToken && INVITE_TOKEN.test(queryToken.trim())) resolved = queryToken.trim();
-    if (resolved) { setToken(resolved); setFromLink(true); setEntryContext(parsed.context); }
+    if (resolved) { setToken(resolved); setFromLink(true); setEntryContext(parsed.context); setPackagePresetHint(parsed.packagePresetId); }
     else {
       // 링크 없이 다시 착지한 경우(인증 메일 확인 등 전체 이동 후 이 화면 경로로 복귀):
       // 이 탭 세션에 임시 보관해 둔 코드가 있으면 복원한다. URL 토큰이 항상 우선한다.
@@ -119,6 +125,9 @@ export function TeamWorkspaceJoinPage() {
     ? new Date(preview.expiresAt).toLocaleDateString(bt("ko-KR", "en-US"), { year: "numeric", month: "long", day: "numeric" })
     : "";
   const destination = entryDestinationCopy(entryContext);
+  // 모르는 프리셋 힌트는 패키지를 숨기고 기존 흐름만 보여 준다(조작된 값이 화면을 바꾸지 못하게 한다).
+  const onboardingPresetId = parseProductionRolePresetId(packagePresetHint);
+  const onboardingPreset = onboardingPresetId ? productionRolePreset(onboardingPresetId) : null;
   const branches = [
     { href: "/collaborate/positions", title: bt("모집 자리 찾기", "Find open positions"), description: bt("역할·도구·보수로 공개 모집 자리를 찾고 지원해 보세요. 지원이 확정되면 팀 초대가 도착해요.", "Search public openings by role, tools, and pay, then apply. Once accepted, a team invite follows.") },
     { href: "/collaborate", title: bt("구인·의뢰 게시판", "Gigs board"), description: bt("공개 모집 글과 함께할 작업자를 둘러보세요.", "Browse public gig posts and the creators behind them.") },
@@ -168,6 +177,7 @@ export function TeamWorkspaceJoinPage() {
           <Link className="font-semibold underline" to={studioSpatialInviteDestination(entryContext, preview.workspaceId)}>{bt("팀 공간으로 이동", "Open the team space")}</Link></p>
       </div>}
       {previewState.kind === "unavailable" && <p role="status" className="mb-4 rounded-xl border border-line bg-raised px-3 py-2 text-sm leading-6 text-fg-2">{bt("이 코드는 미리보기를 열 수 없어요. 초대받은 이메일로 로그인했는지, 코드가 만료되지 않았는지 확인해 주세요. 코드가 맞다면 아래에서 그대로 수락할 수 있어요.", "This code can't be previewed. Check that you're signed in with the invited email and that the code hasn't expired. If the code is right, you can still accept it below.")}</p>}
+      {onboardingPreset && <div className="mb-4"><OnboardingPackagePanel preset={onboardingPreset} /></div>}
       <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); setBusy(true); setError("");
         void acceptTeamInvite(token.trim()).then((result) => {
           clearPendingTeamInvite();

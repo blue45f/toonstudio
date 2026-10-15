@@ -817,10 +817,16 @@ export type ComparePresetResult =
   | { readonly ok: true; readonly session: CompareSession }
   | { readonly ok: false; readonly reason: "no-current" | "no-counterpart" };
 
-/** 라벨에서 첫 번째 숫자 토큰(컷 번호 등)을 뽑는다. 없으면 null. */
+/**
+ * 라벨에서 컷 번호 토큰을 뽑는다. 풀 라벨은 "12화 34컷"처럼 회차 번호가 앞에 오므로
+ * 맨 앞 숫자를 쓰면 회차 번호(12)를 컷 번호로 오인해 같은 컷 매칭이 깨진다.
+ * 그래서 "컷" 표기가 붙은 숫자(34)를 우선하고, 컷 표기가 없는 라벨에서만 첫 번째 숫자 토큰을
+ * 쓴다. 숫자가 없으면 null.
+ */
 export function compareLabelNumberToken(label: string): string | null {
-  const match = /\d+/.exec(label);
-  return match ? match[0] : null;
+  const cutNumber = /(\d+)\s*컷/u.exec(label)?.[1];
+  if (cutNumber) return cutNumber;
+  return /\d+/.exec(label)?.[0] ?? null;
 }
 
 /**

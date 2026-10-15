@@ -286,6 +286,24 @@ describe("B. 제품 가져오기 (importPsdFile)", () => {
     expect(decisionOf(result, "layer-mask", "preserved")?.count).toBe(2);
   });
 
+  it("adjustment-effects — 조정 레이어는 이미지 요소가 아니라 조정 레이어 명세로 복원된다", async () => {
+    const result = await importFixture(fixtureById("adjustment-effects"));
+    // 조정 레이어는 래스터 요소가 아니다. 비파괴 파라미터를 가진 명세로 복원되고 스택 위치를 유지한다.
+    expect(result.elements.map((element) => element.name)).toEqual(["일반 베이스", "그림자 레이어"]);
+    expect(result.adjustmentLayers).toEqual([
+      expect.objectContaining({
+        name: "밝기 조정",
+        kind: "brightness-contrast",
+        parameters: expect.objectContaining({ brightness: 25, contrast: -10 }),
+        stackIndex: 2,
+      }),
+    ]);
+    expect(decisionOf(result, "adjustment-layer", "preserved")?.count).toBe(1);
+    expect(decisionOf(result, "adjustment-layer", "dropped")).toBeUndefined();
+    // 건너뜀 고지에는 더는 조정 레이어가 없고 레이어 효과(KG-2)만 남는다.
+    expect(result.skipped).toEqual(["그림자 레이어: 레이어 스타일(그림자 등)은 반영되지 않아요"]);
+  });
+
   it("text-basic — 래스터가 보존되고 단순 서식만 숨은 편집본이 생긴다", async () => {
     const result = await importFixture(fixtureById("text-basic"));
     expect(result.elements.map((element) => element.name)).toEqual(["세로 글자", "자막"]);
@@ -511,12 +529,10 @@ describe("D. Studio 텍스트 → PSD descriptor → 다시 가져오기", () =>
 // ── known-gap: 현재 보존되지 않는 속성 (현재 거동을 그대로 고정) ────────────
 
 describe("known-gap — 현재 손실되는 속성 (개선되면 이 절을 갱신할 것)", () => {
-  it("KG-1 조정 레이어는 가져오기에서 제외되고 재내보내기에도 없다", async () => {
-    const { first, second } = await roundtrip(fixtureById("adjustment-effects"));
-    expect(first.skipped).toContain("밝기 조정: 조정 레이어라 제외됨");
-    expect(decisionOf(first, "adjustment-layer", "dropped")?.count).toBe(1);
-    expect(second.elements.map((element) => element.name)).not.toContain("밝기 조정");
-  });
+  // KG-1(조정 레이어가 가져오기에서 제외됨)은 해소됐다: 조정 레이어는 이제 비파괴 파라미터를 가진
+  // 조정 레이어 명세로 복원된다(studio-psd-adjustment-import). 가져오기 계약은 위 B절의
+  // "adjustment-effects" 가, 조정 레이어의 PSD 왕복은 studio-psd-adjustment-roundtrip.test.ts 가 잠근다.
+  // 번호는 다른 문서·보고가 가리킬 수 있어 다시 매기지 않는다.
 
   it("KG-2 레이어 효과는 파라미터가 소실되고 고지만 남는다", async () => {
     const { first, exportedBytes } = await roundtrip(fixtureById("adjustment-effects"));

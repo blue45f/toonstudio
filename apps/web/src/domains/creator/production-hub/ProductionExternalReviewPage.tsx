@@ -14,6 +14,8 @@ import {
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
+// extreview.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./extreview-i18n";
 import {
   getProductionExternalReview,
   submitProductionExternalReview,
