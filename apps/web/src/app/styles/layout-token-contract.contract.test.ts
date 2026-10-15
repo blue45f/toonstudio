@@ -474,10 +474,12 @@ describe("홈 치수 토큰화 계약 (L5)", () => {
     expect(homeDashboardCss).not.toContain("72px");
   });
 
-  it("--rd-* 색 토큰은 치수 토큰화의 대상이 아니라 그대로 유지된다", () => {
+  it("--rd-* 색 토큰은 치수 토큰화의 대상이 아니다 — 테마 색 토큰에 묶인 채 표현 토큰 별칭만 얹힌다", () => {
     expect(homeDashboardCss).toContain("--rd-surface: var(--color-canvas);");
-    expect(homeDashboardCss).toContain("--rd-accent: var(--color-accent);");
-    expect(homeDashboardCss).toContain("--rd-cyan: var(--color-accent-2, var(--color-accent));");
+    // §6.2 (1)(S3-15) 이후 --rd-accent·--rd-cyan은 표현 토큰(--spectacle-*)의 별칭이고,
+    // 폴백이 기존 테마 색 토큰이다. 정확한 할당 목록은 spectacle-tokens 계약이 고정한다.
+    expect(homeDashboardCss).toContain("--rd-accent: var(--spectacle-1, var(--color-accent));");
+    expect(homeDashboardCss).toContain("--rd-cyan: var(--spectacle-2, var(--color-accent-2, var(--color-accent)));");
   });
 });
 

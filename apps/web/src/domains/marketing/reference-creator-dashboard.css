@@ -6,12 +6,13 @@
   --rd-fg: var(--color-fg);
   --rd-muted: var(--color-fg-2);
   --rd-subtle: var(--color-fg-3);
-  --rd-accent: var(--color-accent);
-  --rd-cyan: var(--color-accent-2, var(--color-accent));
+  /* 색은 표현 토큰(--spectacle-*, unified-theme-contract.css)의 별칭이다 — 홈이 자기 색을 발명하지 않는다 (BLUEPRINT §6.2 (1)). */
+  --rd-accent: var(--spectacle-1, var(--color-accent));
+  --rd-cyan: var(--spectacle-2, var(--color-accent-2, var(--color-accent)));
   --rd-border: color-mix(in srgb, var(--color-line-strong) 62%, var(--color-line));
   --rd-accent-soft: var(--color-accent-soft);
   /* 어두운 고정 삽화 위의 전경·카드는 테마와 무관하게 밝은 글자와 짙은 면을 유지한다. */
-  --rd-on-art: oklch(0.97 0.012 285);
+  --rd-on-art: var(--art-on, oklch(0.97 0.012 285));
   --rd-on-art-2: oklch(0.88 0.025 280);
   --rd-art-card: oklch(0.2 0.045 280 / 0.9);
   --rd-art-scrim: oklch(0.12 0.03 275);
