@@ -169,7 +169,19 @@ function flatRingArea(points: readonly number[]): number {
   return Math.abs(sum) / 2;
 }
 
-function makeVectorOps(elements: El[], selectedIds: string[]) {
+/**
+ * 그리기 포인터 전송 계층 대역. 호스트는 항상 전송 계층을 초기화해 두고(미초기화 접근은
+ * requireStudioDrawingPointerTransport 가 던진다) 결합 명령은 활성 포인터 세션 유무만 본다.
+ */
+function pointerTransportDouble(sessionActive: boolean) {
+  return { getSession: () => (sessionActive ? { pointerId: 7 } : null) };
+}
+
+function makeVectorOps(
+  elements: El[],
+  selectedIds: string[],
+  options: { readonly pointerSessionActive?: boolean } = {},
+) {
   const commit = vi.fn((_next: El[], _extra?: unknown, _pageId?: string) => true);
   const setError = vi.fn();
   const setPathBooleanBusy = vi.fn();
@@ -187,7 +199,9 @@ function makeVectorOps(elements: El[], selectedIds: string[]) {
     activePage: { id: "page-1" },
     animTimeline,
     drawingRef: { current: null },
-    drawingPointerTransportRef: { current: null },
+    drawingPointerTransportRef: {
+      current: pointerTransportDouble(options.pointerSessionActive === true),
+    },
     pendingStrokeCommitsRef: { current: null },
     flushPendingStrokeCommitsRef: { current: () => true },
     pathBooleanRunIdRef: { current: 0 },
@@ -288,6 +302,18 @@ describe("applyPathBooleanCombineSync — 명시 선택 동기 결합", () => {
     expect(h.commit).not.toHaveBeenCalled();
     expect(h.setError).toHaveBeenCalledWith(expect.stringContaining("겹치지 않아"));
     expect(h.pathBooleanClientRef.current).toBeNull();
+  });
+
+  it("진행 중인 포인터 세션이 있으면 획을 마친 뒤 결합하도록 안내하고 아무것도 선점하지 않는다", async () => {
+    const base = rectEl("a", 0, 0, 100, 100);
+    const top = rectEl("b", 50, 50, 150, 150);
+    const h = makeVectorOps([base, top] as unknown as El[], ["a", "b"], {
+      pointerSessionActive: true,
+    });
+    await h.ops.applyPathBooleanCombineSync("union");
+    expect(h.commit).not.toHaveBeenCalled();
+    expect(h.setPathBooleanBusy).not.toHaveBeenCalled();
+    expect(h.setError).toHaveBeenCalledWith("현재 획을 마친 뒤 도형을 결합할 수 있어요.");
   });
 
   it("선택이 2개가 아니면 게이트 사유로 종료하고 busy 를 켜지 않는다", async () => {

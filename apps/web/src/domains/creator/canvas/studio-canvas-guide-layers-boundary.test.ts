@@ -130,6 +130,10 @@ const OVERLAY_PROPS = [
   "vanishingPoints",
   "perspectiveEyeLevelY",
   "perspectiveLockHorizon",
+  // 2026-10-15 6faf6cd5: drawing 레인 원근 가이드(1/2/3점 투시 토글)의 격자 선택 props.
+  // 둘 다 선택값이라 비어 있으면 레이어가 렌더되지 않는다. 호출 지점 순서도 이 위치다.
+  "drawingPerspectiveGuideSegments",
+  "drawingPerspectiveGuideVanishingPoints",
   "onPreviewVanishingPoint",
   "onCommitVanishingPoint",
   "onPreviewPerspectiveEyeLevelY",
@@ -171,11 +175,13 @@ describe("Studio canvas guide layer ownership boundary", () => {
       "../studio-kaleidoscope",
       "../studio-page-lazy-ui",
     ]);
+    // 새 원근 가이드 격자 타입(GuideLine·GuidePoint)은 타입 전용 import 라 런타임 의존을 더하지 않는다.
     expect(guides.typeImports).toEqual([
       "../studio-advanced-ruler-document",
       "../studio-frame-folder",
       "../studio-isometric-grid",
       "../studio-perspective-guide",
+      "../drawing/studio-perspective-guide",
       "../studio-smart-guides",
     ]);
     expect(guides.valueImports).not.toContain("../studio-webtoon-guides");

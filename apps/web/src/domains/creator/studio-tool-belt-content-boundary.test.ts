@@ -249,7 +249,7 @@ describe("Studio ToolBelt content module boundary", () => {
     expect(createModeGroups).not.toContain('setTool("draw")');
   });
 
-  it("preserves all 209 props at the single Page call site", () => {
+  it("preserves all 212 props at the single Page call site", () => {
     const editorView = moduleShape("./studio-cuttoon-editor/StudioCuttoonEditorChrome.tsx");
     const toolBelt = moduleShape("./StudioToolBeltContent.tsx");
     const propNames = propertyNames(
@@ -257,11 +257,19 @@ describe("Studio ToolBelt content module boundary", () => {
     ).toSorted();
     const wiredPropNames = findToolBeltJsxAttributes(editorView).toSorted();
 
-    // 209 = 205 + 캐릭터 셰이퍼 툴 벨트 진입점이 더한 characterShaperOpen/setCharacterShaperOpen
-    //     + 독자 미리보기 진입점이 더한 readerPreviewOpen/setReaderPreviewOpen.
-    expect(propNames).toHaveLength(209);
-    expect(wiredPropNames).toHaveLength(209);
+    // 212 = 205 + 캐릭터 셰이퍼 툴 벨트 진입점이 더한 characterShaperOpen/setCharacterShaperOpen
+    //     + 독자 미리보기 진입점이 더한 readerPreviewOpen/setReaderPreviewOpen
+    //     + 작업 모드·첫 화면 노출 판정이 더한 선택 props 3개(workMode, uiAdvancedToolsExpanded,
+    //       uiFirstScreenExposure — 호스트가 세 개 모두 배선한다. workMode 가 없으면 "all" 로 보아
+    //       작업 모드 접힘이 없다).
+    // 개수는 변경을 알아차리게 하는 래칫이고, 계약 본체는 호출 지점이 선언된 props 를 하나도
+    // 빠뜨리거나 더하지 않는다는 아래 동등 단언이다.
+    expect(propNames).toHaveLength(212);
+    expect(wiredPropNames).toHaveLength(212);
     expect(wiredPropNames).toEqual(propNames);
+    expect(propNames).toEqual(
+      expect.arrayContaining(["workMode", "uiAdvancedToolsExpanded", "uiFirstScreenExposure"]),
+    );
   });
 
   // 호출 지점(StudioCuttoonEditorChrome)은 @ts-nocheck라 props 누락을 타입이 잡지 못한다.

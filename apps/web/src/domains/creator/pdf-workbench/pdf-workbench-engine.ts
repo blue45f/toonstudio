@@ -10,6 +10,10 @@
  * (metadata가 있으면 그쪽이 우선). 소스 검사는 읽은 속성을 함께 돌려줘서
  * 화면이 "소스 PDF에 이미 들어 있는 속성"을 표시할 수 있게 한다.
  *
+ * 책갈피: 병합 결과에는 소스 파일마다 책갈피를 만들고 원본 PDF의 목차를 그 아래에
+ * 중첩한다(pdf-workbench-outline). 출력에서 빠진 페이지를 가리키는 항목은 버려지고
+ * 목적지는 출력 페이지 기준으로 옮겨진다. 분할 파일에는 책갈피를 만들지 않는다.
+ *
  * 성능: 출력 계획은 같은 소스의 연속 구간을 한 번의 copyPages로 배치 복사한다
  * (페이지마다 호출하면 수백 페이지 병합에서 호출·순회 비용이 페이지 수만큼 쌓인다).
  * 파싱한 소스 문서는 다운로드 세션 범위에서 재사용한다 — 병합을 다시 받거나
@@ -39,6 +43,12 @@ import {
   type PdfDocumentMetadata,
   type PdfSourceMetadata,
 } from "./pdf-workbench-metadata";
+import {
+  applyPdfOutline,
+  buildPdfMergeOutline,
+  readPdfOutline,
+  type PdfSourceOutlineItem,
+} from "./pdf-workbench-outline";
 
 export type PdfWorkbenchLoadErrorKind = "encrypted" | "invalid";
 
@@ -198,11 +208,32 @@ function resolveOutputMetadata(input: {
   return input.title ? { title: input.title } : {};
 }
 
-/** 계획의 걸음들을 순서대로 복사해 새 문서를 만든다. 소스가 달라도 순서는 계획이다. */
+/**
+ * 병합 결과에 소스 파일별 책갈피를 단다. 소스마다 원본 아웃라인을 읽어(깨졌거나 없으면
+ * 빈 목록 — readPdfOutline이 예외 없이 수렴한다) 순수 계획으로 중첩한 뒤 카탈로그에 심는다.
+ */
+async function applyMergeOutline(
+  cacheSet: DocumentCache,
+  output: PDFDocument,
+  steps: readonly PdfOutputStep[],
+  sources: readonly PdfWorkbenchSource[],
+): Promise<void> {
+  const outlinesBySourceId = new Map<string, readonly PdfSourceOutlineItem[]>();
+  for (const sourceId of new Set(steps.map((step) => step.sourceId))) {
+    outlinesBySourceId.set(sourceId, readPdfOutline(await documentFor(cacheSet, sourceId)));
+  }
+  applyPdfOutline(output, buildPdfMergeOutline({ sources, steps, outlinesBySourceId }));
+}
+
+/**
+ * 계획의 걸음들을 순서대로 복사해 새 문서를 만든다. 소스가 달라도 순서는 계획이다.
+ * `outlineSources`를 주면 그 소스 이름으로 파일별 책갈피를 만든다(병합 전용).
+ */
 async function buildDocumentFromSteps(
   cacheSet: DocumentCache,
   steps: readonly PdfOutputStep[],
   metadata: PdfDocumentMetadata,
+  outlineSources?: readonly PdfWorkbenchSource[],
 ): Promise<Uint8Array> {
   const output = await PDFDocument.create();
   for (const run of groupCopyRuns(steps)) {
@@ -221,6 +252,7 @@ async function buildDocumentFromSteps(
       output.addPage(copied);
     }
   }
+  if (outlineSources) await applyMergeOutline(cacheSet, output, steps, outlineSources);
   // 저장 직전 1회 스탬프 — 속성이 비면 stampPdfMetadata가 no-op이라
   // producer·수정일도 건드리지 않아 기존 출력과 바이트 동작이 달라지지 않는다.
   stampPdfMetadata(output, metadata);
@@ -238,7 +270,12 @@ export async function buildMergedPdfBytes(input: {
 }): Promise<Uint8Array> {
   const steps = buildPdfOutputPlan(input.state);
   if (steps.length === 0) throw new Error("내려받을 페이지가 없어요. 먼저 PDF를 추가해 주세요.");
-  return buildDocumentFromSteps(createDocumentCache(input.bytesBySourceId), steps, resolveOutputMetadata(input));
+  return buildDocumentFromSteps(
+    createDocumentCache(input.bytesBySourceId),
+    steps,
+    resolveOutputMetadata(input),
+    input.state.sources,
+  );
 }
 
 /** 범위마다 파일 하나씩 — [{ name, bytes }]를 돌려준다. */
