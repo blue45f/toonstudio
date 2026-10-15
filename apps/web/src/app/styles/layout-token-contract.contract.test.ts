@@ -83,7 +83,7 @@ const homeDashboardCss = readFileSync(
   "utf8",
 );
 const globalsCss = readFileSync(new URL("./globals.css", import.meta.url), "utf8");
-// 스튜디오 전용 규칙은 CSS 분리로 globals.css가 아니라 이 시트가 정본이다 (docs/perf/bundle-gate.md CSS 예산 절).
+// 스튜디오 전용 규칙은 CSS 분리로 globals.css가 아니라 이 시트가 정본이다 (두 시트의 머리 주석 참고: 스튜디오 라우트 청크에서만 로드).
 const studioRouteCss = readFileSync(
   new URL("../../shared/styles/studio-route.css", import.meta.url),
   "utf8",

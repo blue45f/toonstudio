@@ -97,8 +97,9 @@ export const LAYOUT_ROW_RAIL = {
  * 에디터 예외 선언 (BLUEPRINT §5.1 (3)·§5.2 (3), §5.3 L6).
  * 에디터 크롬 44px·도구 레일 48px은 캔버스 면적 우선이라는 도메인 고유 판단이어서 공용
  * 치수 체계(전역 헤더 60px·작업공간 상단바 64px·레일 96/216px)로 수렴하지 않는다.
- * 판정은 문서화다: 선언처는 globals.css의 `[data-studio-editor="true"]` 범위의
- * `--studio-chrome-h`·`--studio-rail-w` 한 곳이고, 이 값과 글자 단위로 같아야 하며,
+ * 판정은 문서화다: 선언처는 shared/styles/studio-route.css(CSS 분리 이후 스튜디오 전용 규칙의
+ * 정본)의 `[data-studio-editor="true"]` 범위에 있는 `--studio-chrome-h`·`--studio-rail-w`
+ * 한 곳이고, 이 값과 글자 단위로 같아야 하며,
  * 공용 `--layout-*`·`LAYOUT_DIMENSIONS`에는 에디터 고유값을 섞지 않는다.
  */
 export const LAYOUT_EDITOR_EXCEPTIONS = {
