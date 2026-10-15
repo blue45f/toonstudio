@@ -20,11 +20,14 @@
  *      실루엣)이 비로소 실행된다. 이 줄이 없으면 그 셋은 "미실행"으로 집계된다.
  *   ②' 용어집 규칙이 주어졌으면 큐마다 원문·번역문을 대고 충돌을 모은다(§2.5).
  *   ②'' 말풍선 글자·바탕 명도 대비를 큐마다 재다 — MQM 점수에는 넣지 않고 큐에만 싣는다.
+ *   ②카드 인물 카드가 주어졌으면 화자가 지정된 큐에 호칭·존대·고정어·금지어를 대 본다(§2.6) —
+ *       Terminology/Style 오류로 같은 채점기에 합류한다.
  *   ③ 세 갈래를 MQM 오류 입력으로 바꿔 한 번에 채점한다 → 점수가 하나만 존재한다.
  *
  * §1. 입력 모델
  * §2. 타이포그래피 해석 — 전부 위임
  * §2.5 용어집 충돌 → MQM 오류
+ * §2.6 인물 카드 규칙 → MQM 오류 (판정 본체는 studio-localization-qa-character)
  * §3. 회차 실행
  * §4. 차원별 묶음(패널이 그대로 그린다)
  */
@@ -42,6 +45,13 @@ import {
   type BubbleWebtoonTheme,
 } from "./studio-bubble-text-fit";
 import { collectDialogueItems } from "./studio-dialogue-batch";
+import {
+  EMPTY_STUDIO_CHARACTER_QA_SUMMARY,
+  checkStudioTranslationCharacterRules,
+  type StudioCharacterQaCue,
+  type StudioCharacterQaSeverity,
+  type StudioCharacterQaSummary,
+} from "./studio-localization-qa-character";
 import {
   detectStudioMqmTruncationErrors,
   scoreStudioMqmErrors,
@@ -77,6 +87,10 @@ import type {
   BubbleLegibilityReport,
 } from "./studio-bubble-legibility-contrast";
 import type { DialogueElementLike, DialoguePageLike } from "./studio-dialogue-batch";
+import type {
+  StudioTranslationEffectiveCard,
+  StudioTranslationSpeakerAssignment,
+} from "./studio-translation-character-card";
 import type {
   StudioTranslationMemoryGlossaryConflict,
   StudioTranslationMemoryGlossaryRule,
@@ -175,6 +189,18 @@ export interface StudioLocalizationQaOptions {
   readonly includeHidden?: boolean;
   /** 명도 대비 준수 수준. 기본 "AA"(WCAG 1.4.3). */
   readonly legibilityLevel?: BubbleLegibilityLevel;
+  /**
+   * 인물 카드 규칙(호칭 일관성·존대 단계·고정어·금지어). 주면 **화자가 지정된 큐**에만 그 화자의 카드를 댄다 —
+   * 화자를 추정하지 않으므로 지정이 없는 큐는 건너뛰고 그 수를 `character` 에 싣는다. 번역문이 아니라 원문을
+   * 검사하는 중(`targetLocale` 이 원문 예약어)이면 규칙 전체를 건너뛴다.
+   */
+  readonly characterCards?: {
+    readonly cards: readonly StudioTranslationEffectiveCard[];
+    /** 대사 요소 id → 화자·청자. */
+    readonly speakers: Readonly<Record<string, StudioTranslationSpeakerAssignment>>;
+  };
+  /** 인물 카드 규칙의 MQM 심각도 재정의. 기본값은 이 저장소의 정책이다. */
+  readonly characterSeverity?: Partial<StudioCharacterQaSeverity>;
 }
 
 export interface StudioLocalizationQaReport {
@@ -198,6 +224,11 @@ export interface StudioLocalizationQaReport {
   readonly legibilityCheckedCueCount: number;
   /** 그중 임계값을 밑돈 큐 수. */
   readonly legibilityFailCueCount: number;
+  /**
+   * 인물 카드 규칙의 실행 현황. `status` 가 `off` 이거나 규칙을 대 본 큐가 0이면 "인물 규칙 통과"가 아니라
+   * "검사하지 않음"이다 — 오류 0건을 통과로 읽지 않도록 지정/미지정 큐 수와 함께 싣는다.
+   */
+  readonly character: StudioCharacterQaSummary;
   readonly cues: readonly StudioLocalizationQaCue[];
   readonly style: StudioLocalizationStyleLintResult;
   readonly overflow: LocalizationOverflowSummary;
@@ -313,6 +344,12 @@ function glossaryConflictToMqmError(
   };
 }
 
+// ── §2.6 인물 카드 규칙 → MQM 오류 ──────────────────────────────────────────
+//
+// 판정은 전부 `checkStudioTranslationCharacterRules` 가 한다. 여기서는 큐마다 번역문·원문을 모아 건네고
+// 결과 오류를 같은 채점기에 합류시킬 뿐이다. 호칭·고정어·금지어는 Terminology, 존대 단계는 Style —
+// 서브타입 이름은 지어내지 않고 차원만 싣는다(§2.5 와 같은 정책).
+
 // ── §3. 회차 실행 ─────────────────────────────────────────────────────────────
 
 /**
@@ -343,6 +380,7 @@ export function runStudioLocalizationQa(
     ...options.glossarySeverity,
   };
   const glossaryRules = options.glossaryRules ?? [];
+  const characterCues: StudioCharacterQaCue[] = [];
   let skippedCueCount = 0;
   let overflowCheckedCount = 0;
   let glossaryCheckedCueCount = 0;
@@ -384,6 +422,12 @@ export function runStudioLocalizationQa(
     // ②' 용어집 — 원문을 모르면 한 건도 돌지 않는다. 전제(원문)가 없는 판정을 "통과"로
     //     보이지 않으려고, 실제로 대 본 큐 수를 따로 센다.
     const sourceText = options.sourceTextFor?.(item.id);
+    characterCues.push({
+      id: item.id,
+      pageIndex: item.pageIndex,
+      text,
+      ...(sourceText === undefined ? {} : { sourceText }),
+    });
     if (glossaryRules.length > 0 && sourceText !== undefined && sourceText !== "") {
       glossaryCheckedCueCount += 1;
       for (const conflict of findStudioTranslationMemoryGlossaryConflicts({
@@ -432,11 +476,23 @@ export function runStudioLocalizationQa(
 
   const style = lintStudioLocalizationStyle(styleUnits, options.styleOptions);
 
+  // ②카드 — 화자가 지정된 큐에만. 카드를 주지 않았으면 "꺼짐"(status: off)이다.
+  const character = options.characterCards
+    ? checkStudioTranslationCharacterRules({
+        cues: characterCues,
+        cards: options.characterCards.cards,
+        speakers: options.characterCards.speakers,
+        targetLocale: options.targetLocale,
+        ...(options.characterSeverity === undefined ? {} : { severity: options.characterSeverity }),
+      })
+    : null;
+
   // ③ 두 갈래를 한 채점기에 넣는다.
   const errorInputs: StudioMqmErrorInput[] = [
     ...style.findings.map(studioLocalizationStyleFindingToMqmError),
     ...detectStudioMqmTruncationErrors(observations),
     ...glossaryErrors,
+    ...(character?.errors ?? []),
   ];
   const score = scoreStudioMqmErrors(
     errorInputs,
@@ -452,10 +508,26 @@ export function runStudioLocalizationQa(
     glossaryCheckedCueCount,
     legibilityCheckedCueCount,
     legibilityFailCueCount,
+    character: character === null ? EMPTY_STUDIO_CHARACTER_QA_SUMMARY : summaryOf(character),
     cues: Object.freeze(cues),
     style,
     overflow: summarizeLocalizationOverflow(verdicts),
     score,
+  });
+}
+
+/** 판정 결과에서 오류 목록을 뺀 요약만 보고서에 싣는다(오류는 점수 쪽 목록 하나로만 존재한다). */
+function summaryOf(result: StudioCharacterQaSummary): StudioCharacterQaSummary {
+  return Object.freeze({
+    status: result.status,
+    cardCount: result.cardCount,
+    attributedCueCount: result.attributedCueCount,
+    unattributedCueCount: result.unattributedCueCount,
+    ruleCheckedCueCount: result.ruleCheckedCueCount,
+    sourceMissingCueCount: result.sourceMissingCueCount,
+    registerCheckedCueCount: result.registerCheckedCueCount,
+    registerUnclassifiedCueCount: result.registerUnclassifiedCueCount,
+    registerUnsupportedLocale: result.registerUnsupportedLocale,
   });
 }
 

@@ -6,6 +6,12 @@ import {
   studioLocalizationQaGroups,
 } from "./studio-localization-qa";
 
+import {
+  deriveStudioTranslationEffectiveCards,
+  parseStudioTranslationCharacterCardSet,
+  type StudioTranslationSpeakerAssignment,
+} from "./studio-translation-character-card";
+
 import type { BubbleTextMeasurer } from "./studio-bubble-text-fit";
 import type { DialoguePageLike } from "./studio-dialogue-batch";
 
@@ -385,5 +391,130 @@ describe("runStudioLocalizationQa — 말풍선 명도 대비", () => {
         legibilityLevel: "AAA",
       }).cues[0].legibility?.verdict,
     ).toBe("fail");
+  });
+});
+
+describe("runStudioLocalizationQa — §2.6 인물 카드 규칙", () => {
+  const set = parseStudioTranslationCharacterCardSet({
+    schemaVersion: 1,
+    cards: [
+      {
+        characterId: "yuna",
+        origin: "manual",
+        name: "유나",
+        register: "polite",
+        addressTerms: [
+          { listenerId: "minho", sourceTerm: "선배", targetTerm: "Senpai", locale: "en", register: null, avoidTerms: ["Sunbae"] },
+        ],
+        bannedTerms: [{ term: "dude", locale: "" }],
+      },
+      { characterId: "minho", origin: "manual", name: "민호" },
+    ],
+  });
+  if (set === null) throw new Error("fixture");
+  const cards = deriveStudioTranslationEffectiveCards({ bible: null, narrative: null, set });
+  const assigned: Readonly<Record<string, StudioTranslationSpeakerAssignment>> = {
+    b1: { speakerId: "yuna", listenerId: "minho" },
+    b2: { speakerId: "yuna", listenerId: "minho" },
+  };
+  const wide = { width: 600, height: 300, fontSize: 14 };
+  const pages = [
+    page("p1", [
+      bubble({ id: "b1", text: "안녕하세요", ...wide }),
+      bubble({ id: "b2", text: "고마워요, 선배", ...wide }),
+      bubble({ id: "b3", text: "누구세요", ...wide }),
+    ]),
+  ];
+
+  it("카드를 주지 않으면 꺼져 있다 — 기존 동작과 점수가 그대로다", () => {
+    const report = runStudioLocalizationQa(pages, measurer, { targetLocale: "en" });
+    expect(report.character.status).toBe("off");
+    expect(report.character.attributedCueCount).toBe(0);
+  });
+
+  it("화자가 지정된 큐의 인물 규칙 위반이 같은 채점기에 Terminology 오류로 합류하고, 미지정 큐는 건너뛴다", () => {
+    const report = runStudioLocalizationQa(pages, measurer, {
+      targetLocale: "en",
+      translations: new Map([
+        ["b1", "Hi, dude."],
+        ["b2", "Thanks, Sunbae."],
+        ["b3", "Who is this, dude?"],
+      ]),
+      sourceTextFor: (id) => ({ b1: "안녕하세요", b2: "고마워요, 선배", b3: "누구세요" })[id],
+      characterCards: { cards, speakers: assigned },
+    });
+
+    const terminology = report.score.errors.filter((e) => e.dimension === "terminology");
+    expect(terminology.map((e) => [e.cueId, e.evidence?.ruleId])).toEqual(
+      expect.arrayContaining([
+        ["b1", "character/banned-term"],
+        ["b2", "character/address-variant"],
+      ]),
+    );
+    // b3 는 화자가 지정되지 않았다 — 같은 금지어가 있어도 인물 규칙은 적용되지 않는다.
+    expect(report.score.errors.some((e) => e.cueId === "b3" && String(e.evidence?.ruleId).startsWith("character/"))).toBe(false);
+    expect(report.character).toMatchObject({
+      status: "ran",
+      attributedCueCount: 2,
+      unattributedCueCount: 1,
+      ruleCheckedCueCount: 2,
+    });
+    // 점수는 하나뿐이고 차원 묶음에 Terminology 가 나타난다.
+    expect(studioLocalizationQaGroups(report).some((g) => g.rollup.dimension === "terminology")).toBe(true);
+  });
+
+  it("발견의 근거 대사가 큐 색인으로 되짚어진다", () => {
+    const report = runStudioLocalizationQa(pages, measurer, {
+      targetLocale: "en",
+      translations: new Map([
+        ["b1", "Hi, Senpai."],
+        ["b2", "Thanks, Sunbae."],
+      ]),
+      characterCards: { cards, speakers: assigned },
+    });
+    const index = studioLocalizationQaCueIndex(report);
+    const error = report.score.errors.find((e) => e.evidence?.ruleId === "character/address-variant");
+    expect(error?.evidence?.referenceCueId).toBe("b1");
+    expect(index.get(String(error?.evidence?.referenceCueId))?.text).toBe("Hi, Senpai.");
+  });
+
+  it("화자 지정이 하나도 없으면 오류 0건이어도 '검사하지 않음'이 숫자로 드러난다", () => {
+    const report = runStudioLocalizationQa(pages, measurer, {
+      targetLocale: "en",
+      translations: new Map([["b1", "Hi, dude."]]),
+      characterCards: { cards, speakers: {} },
+    });
+    expect(report.score.errors.filter((e) => String(e.evidence?.ruleId).startsWith("character/"))).toEqual([]);
+    expect(report.character).toMatchObject({ status: "ran", attributedCueCount: 0, unattributedCueCount: 3, ruleCheckedCueCount: 0 });
+  });
+
+  it("원문을 검사하는 중에는 인물 규칙을 건너뛴다", () => {
+    const report = runStudioLocalizationQa(pages, measurer, {
+      targetLocale: "source",
+      characterCards: { cards, speakers: assigned },
+    });
+    expect(report.character.status).toBe("source-locale");
+  });
+
+  it("한국어 번역의 존대 단계 위반은 Style 로 채점된다", () => {
+    const report = runStudioLocalizationQa(pages, measurer, {
+      targetLocale: "ko",
+      translations: new Map([["b1", "알았어. 갈게."]]),
+      characterCards: { cards, speakers: assigned },
+    });
+    const style = report.score.errors.filter((e) => e.dimension === "style");
+    expect(style).toHaveLength(1);
+    expect(style[0]).toMatchObject({ cueId: "b1", severity: "major" });
+    expect(report.character.registerCheckedCueCount).toBe(1);
+  });
+
+  it("인물 규칙 심각도는 호출부가 갈아 끼울 수 있다", () => {
+    const report = runStudioLocalizationQa(pages, measurer, {
+      targetLocale: "en",
+      translations: new Map([["b1", "Hi, dude."]]),
+      characterCards: { cards, speakers: assigned },
+      characterSeverity: { bannedTerm: "minor" },
+    });
+    expect(report.score.errors.find((e) => e.evidence?.ruleId === "character/banned-term")?.severity).toBe("minor");
   });
 });
