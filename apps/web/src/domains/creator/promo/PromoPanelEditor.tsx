@@ -3,8 +3,10 @@ import { PROMO_EFFECTS, PROMO_MOTIONS, PROMO_MOTION_LABELS, PROMO_TRANSITIONS, P
 
 import type { PromoPanel, PromoScene } from "./promo-model";
 
-export function PromoPanelEditor({ scene, index, count, disabled, onChange, onMove, onRemove, onDuplicate, onSeek, onSeekFrame, onForeground }: {
+export function PromoPanelEditor({ scene, index, count, maxPanels = PROMO_MAX_PANELS, disabled, onChange, onMove, onRemove, onDuplicate, onSeek, onSeekFrame, onForeground }: {
   scene: PromoScene; index: number; count: number; disabled: boolean;
+  /** 현재 전체 길이의 컷 수 상한(10초는 6컷). 생략하면 기본 상한(12컷)이다. */
+  maxPanels?: number;
   onSeekFrame?: (frame: number) => void;
   onDuplicate?: () => void; onSeek?: () => void; onForeground?: (file: File) => void;
   /** field는 글자·슬라이더 같은 연속 입력만 넘긴다. 버튼·선택 상자는 생략해 실행 취소 한 단계로 남긴다. */
@@ -42,7 +44,7 @@ export function PromoPanelEditor({ scene, index, count, disabled, onChange, onMo
         </details>
         <div className="promo-shot-actions">
           {onSeek ? <button type="button" aria-label={`컷 ${index + 1} 미리보기`} onClick={onSeek}>미리보기</button> : null}
-          {onDuplicate ? <button type="button" aria-label={`컷 ${index + 1} 복제`} disabled={count >= PROMO_MAX_PANELS} onClick={onDuplicate}>복제</button> : null}
+          {onDuplicate ? <button type="button" aria-label={`컷 ${index + 1} 복제`} disabled={count >= maxPanels} onClick={onDuplicate}>복제</button> : null}
           <button type="button" aria-label={`컷 ${index + 1} 앞으로 이동`} disabled={index === 0} onClick={() => onMove(-1)}>앞으로</button>
           <button type="button" aria-label={`컷 ${index + 1} 뒤로 이동`} disabled={index === count - 1} onClick={() => onMove(1)}>뒤로</button>
           <button type="button" aria-label={`컷 ${index + 1} 삭제`} onClick={onRemove}>삭제</button>

@@ -1,10 +1,14 @@
 import { promoGutterCuts } from "./promo-split";
 import { loadPromoImages } from "./promo-canvas";
 import { readPromoFile } from "./promo-media";
-import { promoDataUrl, type PromoPanel } from "./promo-model";
+import { promoDataUrl, PROMO_MAX_PANELS, type PromoPanel } from "./promo-model";
 
-/** Split before downscaling, so long manuscripts do not lose their text resolution. */
-export async function importPromoPanels(file: File, index: number, parts: number | "auto" = 1, signal?: AbortSignal): Promise<PromoPanel[]> {
+/**
+ * Split before downscaling, so long manuscripts do not lose their text resolution.
+ * `maxPanels` is the panel cap of the current video length (6 for the 10-second trailer, 12 otherwise):
+ * an automatic split must never produce more cuts than the project can hold.
+ */
+export async function importPromoPanels(file: File, index: number, parts: number | "auto" = 1, signal?: AbortSignal, maxPanels: number = PROMO_MAX_PANELS): Promise<PromoPanel[]> {
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 10_000_000 || file.size === 0) throw new Error("컷은 10MB 이하 PNG·JPEG·WebP 파일이어야 해요.");
   if (parts !== "auto" && (!Number.isInteger(parts) || parts < 1 || parts > 12)) throw new Error("원고 분할 수가 올바르지 않아요.");
   const src = await readPromoFile(file, signal);
@@ -23,9 +27,9 @@ export async function importPromoPanels(file: File, index: number, parts: number
       const analysis = canvas.getContext("2d", { willReadFrequently: true });
       if (!analysis) throw new Error("이 브라우저에서 여백 분석을 지원하지 않아요.");
       analysis.drawImage(image, 0, 0, canvas.width, canvas.height);
-      cuts = promoGutterCuts(analysis.getImageData(0, 0, canvas.width, canvas.height), image.naturalHeight, 12 - index);
+      cuts = promoGutterCuts(analysis.getImageData(0, 0, canvas.width, canvas.height), image.naturalHeight, maxPanels - index);
     } else cuts = Array.from({ length: parts + 1 }, (_, part) => Math.floor(image.naturalHeight * part / parts));
-    if (index + cuts.length - 1 > 12) throw new Error("최대 12컷까지 추가할 수 있어요. 원본은 변경하지 않았어요.");
+    if (index + cuts.length - 1 > maxPanels) throw new Error(`최대 ${maxPanels}컷까지 추가할 수 있어요. 원본은 변경하지 않았어요.`);
     for (let part = 0; part < cuts.length - 1; part += 1) {
       if (signal?.aborted) throw new DOMException("취소했어요.", "AbortError");
       const top = cuts[part]!;

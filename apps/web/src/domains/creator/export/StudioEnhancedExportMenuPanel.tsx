@@ -27,6 +27,7 @@ import {
   type StudioExportMenuPackageContext,
   type StudioExportMenuPanelProps,
 } from "./StudioExportMenuPanel";
+import { StudioPromoHandoffSection } from "./StudioPromoHandoffSection";
 
 type PackageRunTone = "info" | "good" | "warn";
 
@@ -78,6 +79,8 @@ export function StudioEnhancedExportMenuPanel(
 ) {
   const [qualityPercent, setQualityPercent] = useState(92);
   const [packageBusy, setPackageBusy] = useState(false);
+  // 홍보 쇼츠용 컷 묶음도 같은 페이지 캡처를 쓰므로, 만드는 동안 다른 내보내기를 함께 잠근다.
+  const [promoHandoffBusy, setPromoHandoffBusy] = useState(false);
   const [packageStatus, setPackageStatus] =
     useState<PackageRunStatus | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -211,15 +214,15 @@ export function StudioEnhancedExportMenuPanel(
 
   const statusClass =
     packageStatus?.tone === "good"
-      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+      ? "border-good/30 bg-good/10 text-good"
       : packageStatus?.tone === "warn"
-        ? "border-amber-500/30 bg-amber-500/10 text-amber-100"
+        ? "border-warn/30 bg-warn/10 text-warn"
         : "border-accent/25 bg-accent/10 text-fg-2";
 
   return (
     <StudioExportMenuPanel
       {...props}
-      isExporting={props.isExporting || packageBusy}
+      isExporting={props.isExporting || packageBusy || promoHandoffBusy}
       renderAdditionalExports={(context) => (
       <>
       <PublishSpecAutoOptimizeSection
@@ -230,7 +233,7 @@ export function StudioEnhancedExportMenuPanel(
         exportPresetId={props.exportPresetId}
         exportTitle={props.exportTitle}
         pageCount={props.pageCount}
-        busy={props.isExporting || packageBusy}
+        busy={props.isExporting || packageBusy || promoHandoffBusy}
         canExport={context.canExport}
         pageIndices={context.pageIndices}
         capturePages={context.capturePages}
@@ -359,11 +362,21 @@ export function StudioEnhancedExportMenuPanel(
             </button>
           ) : null}
         </div>
-        <p className="mt-1.5 text-[0.57rem] leading-relaxed text-fg-4">
+        <p className="mt-1.5 text-[0.57rem] leading-relaxed text-fg-3">
           기존 PDF·CBZ·웹툰 연합 스크롤은 그대로 유지됩니다. 이 패키지는
           전달·업로드·장기 보관 전 파일 무결성을 확인해야 할 때 사용하세요.
         </p>
       </section>
+      <StudioPromoHandoffSection
+        context={context}
+        pages={props.dialoguePages}
+        canvasWidth={props.canvasWidth}
+        exportScale={props.exportScale}
+        exportTitle={props.exportTitle}
+        watermark={props.watermark}
+        sourceWorkId={props.sourceWorkId}
+        onBusyChange={setPromoHandoffBusy}
+      />
       </>
       )}
     />
