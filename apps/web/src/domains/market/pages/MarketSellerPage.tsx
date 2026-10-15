@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { MarketGroupBuyCard } from "../components/MarketGroupBuyCard";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
+import { MarketSellerCenterTabs } from "../components/MarketSellerCenterTabs";
 import { MarketSellerDashboard } from "../components/MarketSellerDashboard";
 import { MarketSellerListingCard } from "../components/MarketSellerListingCard";
 import { useMarketGroupBuy } from "../hooks/use-market-group-buy";
@@ -132,15 +133,20 @@ export function MarketSellerPage() {
     <Container size="wide" className="market-library-page py-7 sm:py-10">
       <MarketNavHeader />
       <MarketSectionArtBanner />
+      <MarketSellerCenterTabs active="center" />
 
-      <header className="border-b border-line pb-6">
-        <h1 className="text-xl font-bold text-fg sm:text-2xl">
-          {bt("포인트 판매 · 공동구매", "Point sales & group buys")}
-        </h1>
+      <header className="mt-6 border-b border-line pb-6">
+        <p className="eyebrow text-accent">Creator center</p>
+        <div className="mt-1 flex items-center gap-2">
+          <Store className="size-5 text-accent" aria-hidden="true" />
+          <h1 className="text-xl font-bold text-fg sm:text-2xl">
+            {bt("판매자 센터", "Seller center")}
+          </h1>
+        </div>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2">
           {bt(
-            "창작자가 직접 등록한 소재를 활동 포인트로 사고파는 판매대입니다. 서버 패키지 판매(판매자 센터)와 별개로, 이 브라우저에 등록된 리스팅을 다룹니다. 현금 결제·출금은 없습니다.",
-            "A sales counter where creators list materials directly in this browser and trade them for activity points — separate from the server package seller center. No cash payments or withdrawals.",
+            "판매자 센터의 첫 탭입니다. 창작자가 이 브라우저에 직접 등록한 소재를 활동 포인트로 사고파는 판매대와 공동구매를 한곳에서 다룹니다. 서버에 게시하는 에셋은 ‘에셋 등록’과 ‘패키지 관리’ 탭에서 다룹니다. 현금 결제·출금은 없습니다.",
+            "This is the first tab of the seller center: a counter where creators list materials directly in this browser and trade them for activity points, plus group buys. Assets published to the server live in the Register asset and Package management tabs. No cash payments or withdrawals.",
           )}
         </p>
       </header>
