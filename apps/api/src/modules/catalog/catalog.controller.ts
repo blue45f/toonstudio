@@ -6,6 +6,7 @@ import {
   Inject,
   Get,
   Header,
+  Headers,
   NotFoundException,
   Param,
   Post,
@@ -16,7 +17,8 @@ import {
 
 import { buildAffiliateUrl } from "@toonstudio/contracts/affiliate";
 import { coverImagePolicy } from "../../../../../packages/core/src/catalog";
-import { getAppConfig } from "../../server/app-config";
+import { sanitizeLogValue } from "../../logging/log-safe";
+import { getAppConfig, isAdminUser } from "../../server/app-config";
 
 import { searchParamsFromBody } from "../../../../../packages/core/src/search-pagination";
 
@@ -257,8 +259,16 @@ export class CatalogController {
   @Post("/kmas/merge-on-access")
   @HttpCode(200)
   @Header("Cache-Control", "no-store, max-age=0")
-  async mergeKmasOnAccess(@Query("force") force?: string) {
-    return this.catalogService.mergeKmasOnSiteAccess({ force: force === "1" || force === "true" });
+  async mergeKmasOnAccess(
+    @Query("force") force?: string,
+    @Headers("x-user-id") userId?: string,
+  ) {
+    // force 는 5분 TTL 캐시를 건너뛰고 KMAS 상류 조회(키 사용)를 즉시 다시 실행한다. 익명 호출이
+    // 반복하면 상류 쿼터와 서버 자원을 소진시키므로 관리자 세션에서만 허용하고, 그 외에는 평소
+    // 요청과 같이 캐시를 존중한다. 웹 클라이언트는 force 를 보내지 않는다.
+    const requested = force === "1" || force === "true";
+    const allowed = requested && (await isAdminUser(userId));
+    return this.catalogService.mergeKmasOnSiteAccess({ force: allowed });
   }
 
   @Post("/recommend")
@@ -309,10 +319,12 @@ export class CatalogController {
     const destination = resolveAffiliateDestination(platformId, toUrl);
     if (!destination) return res.status(400).send("unsupported destination url");
 
-    const referrer = req.headers["referer"] || "direct";
-    const userAgent = req.headers["user-agent"] || "unknown";
+    // 쿼리의 줄바꿈은 URL 파서가 걷어내 검증은 통과하므로, 원본 문자열 대신 검증·정규화된 목적지를
+    // 남기고 헤더 값도 한 줄로 정화한다(가짜 로그 줄 삽입 방지).
+    const referrer = sanitizeLogValue(req.headers["referer"] || "direct");
+    const userAgent = sanitizeLogValue(req.headers["user-agent"] || "unknown");
     const timestamp = new Date().toISOString();
-    console.log(`[Affiliate Click] platform=${platformId} timestamp=${timestamp} to=${toUrl} referrer=${referrer} ua=${userAgent}`);
+    console.log(`[Affiliate Click] platform=${platformId} timestamp=${timestamp} to=${sanitizeLogValue(destination)} referrer=${referrer} ua=${userAgent}`);
 
     const finalUrl = buildAffiliateUrl(platformId, destination);
     res.redirect(302, finalUrl);

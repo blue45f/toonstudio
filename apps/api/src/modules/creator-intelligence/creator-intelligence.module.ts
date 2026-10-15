@@ -19,6 +19,7 @@ import {
 import { PrivateObjectStorageModule } from "../../platform/adapters/private-object-storage/private-object-storage.module";
 import { UpstashCoordinationModule } from "../../platform/adapters/upstash-coordination/upstash-coordination.module";
 import { UPSTASH_COORDINATION_PORT } from "../../platform/adapters/upstash-coordination/upstash-coordination.port";
+import { createAnonymousClientLimiter } from "../auth/anonymous-client-limit";
 import {
   studioRemoteReferenceDnsResolverProvider,
   studioRemoteReferenceHttpRequesterProvider,
@@ -67,6 +68,14 @@ function requestSignal(request: Request): {
     dispose: () => request.off("aborted", abort),
   };
 }
+// 로그인 없이 서버 키(Pexels, Pixabay, Freesound 등)로 무료 참고 자료 API를 부르는 조회다. 캐시는 같은
+// 질의만 막으므로 질의를 바꿔 가며 반복하면 공급자 쿼터를 소진시킨다. 네 경로가 한 버킷을 공유한다.
+const freeReferenceLimiter = createAnonymousClientLimiter({
+  name: "creator-intelligence-free-reference",
+  limit: 30,
+  windowMs: 60_000,
+});
+
 @Controller("creator-intelligence")
 export class CreatorIntelligenceController {
   constructor(
@@ -140,25 +149,42 @@ export class CreatorIntelligenceController {
     @Query("q") query: string,
     @Query("page") page?: string,
     @Query("media") media?: string,
+    @Req() request?: Request,
   ) {
+    if (request) freeReferenceLimiter.enforce(request);
     return this.execute(() => this.core.searchReferences(provider, query, page, media));
   }
 
   @Get("scene")
   @Header("Cache-Control", "private, no-store")
-  scene(@Query("place") place: string, @Query("date") date: string) {
+  scene(
+    @Query("place") place: string,
+    @Query("date") date: string,
+    @Req() request?: Request,
+  ) {
+    if (request) freeReferenceLimiter.enforce(request);
     return this.execute(() => this.core.sceneReference(place, date));
   }
 
   @Get("anilist")
   @Header("Cache-Control", "private, no-store")
-  anilist(@Query("q") query: string, @Query("type") type?: string) {
+  anilist(
+    @Query("q") query: string,
+    @Query("type") type?: string,
+    @Req() request?: Request,
+  ) {
+    if (request) freeReferenceLimiter.enforce(request);
     return this.execute(() => this.core.searchAniList(query, type));
   }
 
   @Get("sfx/search")
   @Header("Cache-Control", "private, no-store")
-  soundSearch(@Query("q") query: string, @Query("page") page?: string) {
+  soundSearch(
+    @Query("q") query: string,
+    @Query("page") page?: string,
+    @Req() request?: Request,
+  ) {
+    if (request) freeReferenceLimiter.enforce(request);
     return this.execute(() => this.core.searchSoundEffects(query, page));
   }
 

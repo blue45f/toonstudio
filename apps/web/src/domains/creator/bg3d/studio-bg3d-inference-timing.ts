@@ -4,6 +4,10 @@
  * 포인터 이동 이벤트는 1000Hz 마우스에서 프레임당 수십 번 올 수 있다. 쿼리는 `minIntervalMs`(기본
  * 한 프레임)당 한 번만 돌리고, 그 사이 들어온 샘플은 "마지막 것만" 보류해 다음 프레임에 처리한다.
  * 마지막 샘플은 반드시 처리되므로 커서가 멈춘 위치의 결과가 항상 최신이다.
+ *
+ * 후보 수·셀 수 상한(`STUDIO_BG3D_INFERENCE_BUDGET`)은 순수 쿼리의 비용만 묶는다. 표면 레이캐스트처럼
+ * 장면 크기에 비례하는 비용은 실제로 재어 봐야 알 수 있으므로, 호출자가 처리 한 번의 소요 시간을
+ * `recordCost`로 알리면 간격을 "비용 × 3"(최대 120ms)까지 늘려 추론이 프레임 시간을 독점하지 못하게 한다.
  */
 
 import { STUDIO_BG3D_INFERENCE_BUDGET } from "./studio-bg3d-inference-kinds";
@@ -22,14 +26,32 @@ export interface StudioBg3dInferenceFrameGate<T> {
   takePending(nowMs: number): T | null;
   /** 보류된 샘플이 있을 때, 처리 가능해질 때까지 남은 시간(ms). 없으면 null. */
   nextDelayMs(nowMs: number): number | null;
+  /**
+   * 처리 한 번에 실제로 걸린 시간(ms)을 알린다. 첫 처리는 JIT 워밍업이라 무시하고, 이후 최근 처리들의
+   * 중앙값이 크면 간격을 늘린다. 음수·비유한 값은 무시한다.
+   */
+  recordCost(durationMs: number): void;
+  /** 지금 적용 중인 최소 간격(ms) — 기본 간격 이상, 적응형 상한 이하. */
+  intervalMs(): number;
   reset(): void;
   readonly stats: () => StudioBg3dInferenceFrameGateStats;
+}
+
+/** 정렬한 값의 아래쪽 중앙값 — 짝수 개일 때 작은 쪽을 골라 튀는 값에 덜 끌린다. */
+function lowerMedian(values: readonly number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.floor((sorted.length - 1) / 2)] ?? 0;
 }
 
 export function createStudioBg3dInferenceFrameGate<T>(
   minIntervalMs: number = STUDIO_BG3D_INFERENCE_BUDGET.minFrameIntervalMs,
 ): StudioBg3dInferenceFrameGate<T> {
-  const interval = Number.isFinite(minIntervalMs) && minIntervalMs >= 0 ? minIntervalMs : 16;
+  const baseInterval = Number.isFinite(minIntervalMs) && minIntervalMs >= 0 ? minIntervalMs : 16;
+  const budget = STUDIO_BG3D_INFERENCE_BUDGET;
+  let interval = baseInterval;
+  let warmingUp = true;
+  const recentCosts: number[] = [];
   let lastRunAt = Number.NEGATIVE_INFINITY;
   let hasPending = false;
   let pending: T | null = null;
@@ -38,6 +60,19 @@ export function createStudioBg3dInferenceFrameGate<T>(
   let dropped = 0;
 
   return {
+    recordCost(durationMs) {
+      if (!Number.isFinite(durationMs) || durationMs < 0) return;
+      if (warmingUp) {
+        warmingUp = false;
+        return;
+      }
+      recentCosts.push(durationMs);
+      if (recentCosts.length > budget.costWindow) recentCosts.shift();
+      const scaled = lowerMedian(recentCosts) * budget.costIntervalFactor;
+      // 사용자가 정한 기본 간격이 상한보다 크면 그 값을 존중한다.
+      interval = Math.max(baseInterval, Math.min(budget.maxAdaptiveFrameIntervalMs, scaled));
+    },
+    intervalMs: () => interval,
     offer(sample, nowMs) {
       offered += 1;
       if (nowMs - lastRunAt >= interval) {

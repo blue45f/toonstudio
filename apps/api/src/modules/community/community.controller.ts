@@ -17,6 +17,8 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 
+import { resolveRequestClientIp } from "../auth/auth-client-ip";
+
 import { CommunityService } from "./community.service";
 
 import type { Request } from "express";
@@ -66,12 +68,10 @@ interface ReplyPayload {
   spoiler?: unknown;
 }
 
+// 속도 제한 키에 쓰는 클라이언트 신원. 클라이언트가 보낸 X-Forwarded-For 첫 값이나
+// X-Real-IP 는 요청마다 바꿀 수 있으므로 신뢰 프록시 정책(AUTH_TRUSTED_PROXY_*)을 거친다.
 function parseIp(req: Request): string {
-  const xff = req.headers["x-forwarded-for"];
-  if (typeof xff === "string" && xff.trim()) return xff.split(",")[0].trim();
-  const real = req.headers["x-real-ip"];
-  if (typeof real === "string" && real.trim()) return real.trim();
-  return req.socket?.remoteAddress ?? "unknown";
+  return resolveRequestClientIp(req);
 }
 
 function enforceUserOrError(userId: string | null | undefined) {

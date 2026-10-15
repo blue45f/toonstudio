@@ -8,9 +8,22 @@ import {
   Param,
   Post,
   Query,
+  Req,
 } from "@nestjs/common";
 
+import { createAnonymousClientLimiter } from "../auth/anonymous-client-limit";
+
 import { SupporterPaymentService } from "./supporter-payment.service";
+
+import type { Request } from "express";
+
+// 로그인 없이 DB 에 주문 행을 만드는 경로다. 서비스의 한도는 모든 클라이언트가 함께 쓰는 전역
+// 한도라서 한 클라이언트가 채우면 다른 후원자가 막히므로, 그보다 훨씬 낮은 클라이언트별 한도를 둔다.
+const createOrderLimiter = createAnonymousClientLimiter({
+  name: "supporter-payment-create-order",
+  limit: 10,
+  windowMs: 10 * 60_000,
+});
 
 @Controller()
 export class SupporterPaymentController {
@@ -41,7 +54,8 @@ export class SupporterPaymentController {
 
   @Post("supporter-payments/orders")
   @Header("Cache-Control", "no-store, max-age=0")
-  async createOrder(@Body() body: unknown) {
+  async createOrder(@Body() body: unknown, @Req() request?: Request) {
+    if (request) createOrderLimiter.enforce(request);
     return this.service.createOrder(body);
   }
 

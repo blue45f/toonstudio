@@ -63,7 +63,8 @@ export function StudioBg3dInferenceKeyboardPicker({
 
   /** 옵션별 핸들러 대신 목록에서 위임해 처리한다 — 키보드 처리가 목록 하나에 모인다. */
   const handleClick = (event: MouseEvent<HTMLUListElement>) => {
-    const option = (event.target as HTMLElement).closest<HTMLElement>("[data-option-index]");
+    const origin = event.target;
+    const option = origin instanceof Element ? origin.closest<HTMLElement>("[data-option-index]") : null;
     const index = option ? Number(option.dataset["optionIndex"]) : Number.NaN;
     if (!Number.isInteger(index)) return;
     setActiveIndex(index);

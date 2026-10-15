@@ -1,5 +1,10 @@
 import { sendProtectedWebhook } from "./production-webhook-network";
 import webPush from "web-push";
+import {
+  createPublicOnlyHttpsAgent,
+  parseWebPushEndpoint,
+  WEB_PUSH_REQUEST_TIMEOUT_MS,
+} from "./production-web-push-network";
 
 import {
   canonicalJson,
@@ -92,6 +97,13 @@ async function sendNtfy(
   );
   return { sent: 1, removedEndpointHashes: [], providerResponse: response ?? {} };
 }
+class WebPushEndpointRejectedError extends Error {
+  constructor() {
+    super("web_push_endpoint_rejected");
+    this.name = "WebPushEndpointRejectedError";
+  }
+}
+
 async function sendWebPush(
   config: ProductionIntegrationConfig,
   notification: ProductionIntegrationNotification,
@@ -110,11 +122,16 @@ async function sendWebPush(
     url: notification.url ?? "/production",
     tag: "toonstudio-production",
   });
+  // 구독 endpoint 는 사용자가 등록한 값이다. 등록 시 검증을 통과하지 못한 과거 데이터는 요청 없이
+  // 정리 대상으로 돌려주고, 나머지는 공개 주소로만 접속하는 전용 에이전트로 전송한다.
+  const agent = createPublicOnlyHttpsAgent();
   const results = await Promise.allSettled(
     subscriptions.map(async (subscription) => {
+      const endpoint = parseWebPushEndpoint(subscription.endpoint);
+      if (!endpoint) throw new WebPushEndpointRejectedError();
       await webPush.sendNotification(
         {
-          endpoint: subscription.endpoint,
+          endpoint: endpoint.href,
           expirationTime: subscription.expirationTime,
           keys: {
             p256dh: subscription.p256dh,
@@ -122,17 +139,30 @@ async function sendWebPush(
           },
         },
         payload,
-        { TTL: 24 * 60 * 60, urgency: "normal" },
+        {
+          TTL: 24 * 60 * 60,
+          urgency: "normal",
+          agent,
+          timeout: WEB_PUSH_REQUEST_TIMEOUT_MS,
+        },
       );
       return subscription.endpointHash;
     }),
   );
+  agent.destroy();
   const removedEndpointHashes: string[] = [];
   let sent = 0;
   for (let index = 0; index < results.length; index += 1) {
     const result = results[index];
     const subscription = subscriptions[index];
     if (!result || !subscription) continue;
+    if (
+      result.status === "rejected"
+      && result.reason instanceof WebPushEndpointRejectedError
+    ) {
+      removedEndpointHashes.push(subscription.endpointHash);
+      continue;
+    }
     if (result.status === "fulfilled") {
       sent += 1;
       continue;

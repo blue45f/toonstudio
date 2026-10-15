@@ -77,6 +77,17 @@ describe("키 소유권 판정", () => {
     ).toBe(true);
   });
 
+  it("패널 폭 조절 분할선(role=separator)은 ←/→ 를 스스로 쓰므로 축 잠금이 가로채지 않는다", () => {
+    // 전문 작업공간의 분할선은 ←/→ 로 폭을 바꾸고 Shift 로 큰 걸음을 쓴다.
+    const splitter = target("DIV", {}, {}, ['[role="separator"]']);
+    expect(resolveStudioBg3dInferenceKeyContext(splitter, "ArrowLeft", "")).toEqual({
+      fromVcb: false,
+      foreignEditable: false,
+      widgetOwnsArrows: true,
+    });
+    expect(resolveStudioBg3dInferenceKeyContext(splitter, "ArrowRight", "").widgetOwnsArrows).toBe(true);
+  });
+
   it("우리 입력창: ↑/↓ 는 항상 잠금 키, ←/→ 는 입력이 비어 있을 때만 잠금 키", () => {
     const vcb = target("INPUT", { [STUDIO_BG3D_INFERENCE_VCB_ATTRIBUTE]: "true" }, { type: "text" });
     expect(resolveStudioBg3dInferenceKeyContext(vcb, "ArrowRight", "")).toEqual({

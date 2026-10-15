@@ -207,6 +207,12 @@ jobs:
             exit 1
           fi
       - name: Upload 3D assets
+        # 입력값을 ${{ }} 로 스크립트에 직접 끼워 넣으면 따옴표·$()가 명령으로 실행된다(스크립트 주입).
+        # 값은 env 로만 넘기고 아래에서는 "$NAME" 으로 읽는다.
+        env:
+          UPLOAD_INPUT_ASSET_TYPE: ${{ github.event.inputs.asset_type }}
+          UPLOAD_INPUT_WORK_ID: ${{ github.event.inputs.work_id }}
+          UPLOAD_INPUT_ENVIRONMENT: ${{ github.event.inputs.environment }}
         run: |
           set -euo pipefail
           ARGS=()
@@ -231,20 +237,20 @@ jobs:
           if [ "${STUDIO_NO_PROBE_VRM:-false}" = "true" ] || [ "${STUDIO_NO_PROBE_VRM:-false}" = "1" ]; then
             ARGS+=(--no-probe-vrm)
           fi
-          if [ "${{ github.event.inputs.auto_demo_login }}" = "true" ] || [ "${{ github.event.inputs.auto_demo_login }}" = "1" ]; then
+          if [ "${STUDIO_AUTO_DEMO_LOGIN:-}" = "true" ] || [ "${STUDIO_AUTO_DEMO_LOGIN:-}" = "1" ]; then
             ARGS+=(--auto-demo-login)
           fi
-          if [ "${{ github.event.inputs.asset_type }}" != "auto" ]; then
-            ARGS+=(--type "${{ github.event.inputs.asset_type }}")
+          if [ "${UPLOAD_INPUT_ASSET_TYPE:-auto}" != "auto" ]; then
+            ARGS+=(--type "${UPLOAD_INPUT_ASSET_TYPE}")
           fi
-          if [ -n "${{ github.event.inputs.work_id }}" ]; then
-            ARGS+=(--work-id "${{ github.event.inputs.work_id }}")
+          if [ -n "${UPLOAD_INPUT_WORK_ID:-}" ]; then
+            ARGS+=(--work-id "${UPLOAD_INPUT_WORK_ID}")
           elif [ -n "${STUDIO_WORK_TITLE:-}" ]; then
             ARGS+=(--work-title "${STUDIO_WORK_TITLE}")
           fi
           pnpm run studio:upload-assets -- "${ARGS[@]}"
-          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+          if [ "${UPLOAD_INPUT_ENVIRONMENT:-}" = "production" ]; then
             echo "프로덕션 배치 업로드가 완료되었습니다."
           else
-            echo "${{ github.event.inputs.environment }} 배치 업로드가 완료되었습니다."
+            echo "${UPLOAD_INPUT_ENVIRONMENT:-} 배치 업로드가 완료되었습니다."
           fi

@@ -249,7 +249,9 @@ describe("StudioBg3dInferenceKeyboardPicker — 포인터 없이 점 고르기",
   it("옵션을 클릭해도 같은 결과를 낸다", () => {
     const { onPick } = setup();
     fireEvent.click(screen.getByRole("button", { name: /키보드로 점 고르기/u }));
-    fireEvent.click(within(screen.getByRole("listbox")).getAllByRole("option")[2]!);
+    const third = within(screen.getByRole("listbox")).getAllByRole("option")[2];
+    expect(third).toBeDefined();
+    if (third) fireEvent.click(third);
     expect(onPick).toHaveBeenCalledTimes(1);
   });
 

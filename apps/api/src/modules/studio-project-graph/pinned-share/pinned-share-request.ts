@@ -4,6 +4,7 @@ import type { Request } from "express";
 import { TOONSPECTRUM_CSRF_HEADER, TOONSPECTRUM_CSRF_HEADER_VALUE } from "@toonstudio/contracts/security/csrf";
 
 import { isAllowedCsrfOrigin, isSameRequestOrigin } from "../../../csrf-middleware";
+import { resolveRequestClientIp } from "../../auth/auth-client-ip";
 import { LocalAuthRateLimiter } from "../../auth/auth-rate-limit";
 
 const limiter = new LocalAuthRateLimiter({ maximumIdentities: 10_000 });
@@ -16,7 +17,7 @@ export function requirePinnedShareBrowserOrigin(req: Request): void {
 }
 /** Bounded process-local admission; durable per-share feedback quotas are enforced in PostgreSQL. */
 export function limitPinnedShareRequest(req: Request, kind: "read" | "image" | "comment", accessKey = "") {
-  const source = req.ip ?? req.socket?.remoteAddress ?? "unknown";
+  const source = resolveRequestClientIp(req);
   const limit = kind === "image" ? 40 : kind === "comment" ? 20 : 120;
   const key = (value: string) => createHash("sha256").update(`pinned-share:${kind}:${value}`).digest("hex");
   const subjects = [key(`address:${source}`), ...(accessKey ? [key(`access:${accessKey}`)] : [])];
