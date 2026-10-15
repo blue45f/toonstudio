@@ -180,7 +180,8 @@ describe("workspace import path", () => {
   });
 
   it("imports real VRM when fixture present", () => {
-    const path = resolve(process.cwd(), "apps/web/public/vrm/AvatarSample_A.vrm");
+    // AvatarSample_A.vrm 은 권리 사유로 저장소에서 제거돼 가드가 항상 건너뛰었다 — CC0 대체 픽스처로 다시 실행한다.
+    const path = resolve(process.cwd(), "apps/web/public/vrm/Sendagaya_Shino.vrm");
     if (!existsSync(path)) return;
     let ws = createStudioHybridDccWorkspace("vrm-ws");
     ws = workspaceImportBytes(ws, "a.vrm", new Uint8Array(readFileSync(path)));

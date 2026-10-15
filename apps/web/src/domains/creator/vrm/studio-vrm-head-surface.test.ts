@@ -30,7 +30,21 @@ function fixture(name: string): Promise<VRM> {
   return pending;
 }
 
-for (const filename of ["sample.vrm", "AvatarSample_B.vrm"]) {
+/**
+ * AvatarSample_B.vrm 은 권리 사유(VRoidPreset 약관은 CC0 아님)로 저장소에서 제거됐다 — apps/web/public/vrm/LICENSES.md.
+ * B 는 "눈 본이 있고 머리카락이 정수리 위로 솟은" VRM0 모델 하나로 두 분기를 함께 덮고 있었다.
+ * 저장소의 CC0 모델 중에는 그 두 성질을 함께 가진 것이 없어 성질별로 나눠 대체한다(분기마다 커버리지는 그대로다).
+ * - sample.vrm(VRM1)·Sendagaya_Shibu.vrm(VRM0, VRoid 베타 CC0): 눈 본이 있어 실제 눈 높이 경로를 덮는다.
+ * - Anna.vrm(VRM0, 100Avatars R3 CC0): 눈 본이 없어 눈 높이 유도 경로를, 머리카락이 정수리보다 높이 솟아
+ *   hairClearanceRequired 분기를 덮는다.
+ */
+const FIXTURES = [
+  { filename: "sample.vrm", eyeBones: true, hairClearance: false },
+  { filename: "Sendagaya_Shibu.vrm", eyeBones: true, hairClearance: false },
+  { filename: "Anna.vrm", eyeBones: false, hairClearance: true },
+] as const;
+
+for (const { filename, eyeBones, hairClearance } of FIXTURES) {
   describe(`surface-derived wearable fit: ${filename}`, () => {
     it("measures the skull surface instead of the neck-to-head pivot gap", async () => {
       const vrm = await fixture(filename);
@@ -41,7 +55,7 @@ for (const filename of ["sample.vrm", "AvatarSample_B.vrm"]) {
       expect(surface.eyeDistance).toBeGreaterThan(0.06);
       expect(surface.eyeDistance).toBeLessThan(0.10);
       expect(["derived", "measured"]).toContain(surface.eyeDistanceSource);
-      expect(Boolean(surface.faceSocket.hairClearanceRequired)).toBe(filename === "AvatarSample_B.vrm");
+      expect(Boolean(surface.faceSocket.hairClearanceRequired)).toBe(hairClearance);
       expect(surface.faceSocket.surfaceCrownHeight).toBeGreaterThan(0.18);
       expect(surface.faceSocket.surfaceCrownHeight).toBeLessThan(0.28);
       expect(measureVrmPropRigMetrics(vrm).head).toBeCloseTo(surface.head, 5);
@@ -52,8 +66,22 @@ for (const filename of ["sample.vrm", "AvatarSample_B.vrm"]) {
       const metrics = measureVrmPropRigMetrics(vrm);
       const head = vrm.humanoid.getNormalizedBoneNode("head")!;
       const eyes = ["leftEye", "rightEye"] as const;
-      const eyeY = eyes.map((name) => head.worldToLocal(vrm.humanoid.getNormalizedBoneNode(name)!.getWorldPosition(new Vector3())).y);
-      expect(metrics.faceSocket.position[1]).toBeCloseTo((eyeY[0]! + eyeY[1]!) / 2, 5);
+      const eyeNodes = eyes.flatMap((name) => {
+        const node = vrm.humanoid.getNormalizedBoneNode(name);
+        return node ? [node] : [];
+      });
+      // 픽스처의 성질을 명시해, 모델이 바뀌어도 조용히 다른 경로를 타며 통과하지 않게 한다.
+      expect(eyeNodes.length === eyes.length).toBe(eyeBones);
+      if (eyeBones) {
+        const eyeY = eyeNodes.map((node) => head.worldToLocal(node.getWorldPosition(new Vector3())).y);
+        expect(metrics.faceSocket.position[1]).toBeCloseTo(eyeY.reduce((sum, y) => sum + y, 0) / eyeY.length, 5);
+      } else {
+        // 눈 본이 없으면 정수리 높이에서 눈 높이를 유도한다 — 목 피벗이 아니라 얼굴 한가운데쯤이어야 한다.
+        const crown = metrics.faceSocket.surfaceCrownHeight ?? 0;
+        expect(crown).toBeGreaterThan(0.18);
+        expect(metrics.faceSocket.position[1]).toBeGreaterThan(crown * 0.45);
+        expect(metrics.faceSocket.position[1]).toBeLessThan(crown * 0.65);
+      }
       const world = head.localToWorld(new Vector3(...metrics.faceSocket.position));
       expect(world.z - head.getWorldPosition(new Vector3()).z).toBeGreaterThan(0.05);
       const expectedYaw = vrm.meta.metaVersion === "0" ? Math.PI : 0;

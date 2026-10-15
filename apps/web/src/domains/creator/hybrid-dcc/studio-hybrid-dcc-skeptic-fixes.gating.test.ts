@@ -383,7 +383,9 @@ describe("VP4 model-build ops: undo round-trip + reload topology", () => {
 
 describe("CHR-001 real GLB/VRM + OBJ import pipeline", () => {
   it("parses real VRM/GLB fixture into SceneIR with non-zero counts and report fields", () => {
-    const vrmPath = resolve(process.cwd(), "apps/web/public/vrm/AvatarSample_A.vrm");
+    // AvatarSample_A.vrm 은 권리 사유(VRoidPreset 약관은 CC0 아님)로 저장소에서 제거됐다 — apps/web/public/vrm/LICENSES.md.
+    // 같은 계열의 CC0 베타 샘플 Sendagaya_Shino.vrm 이 대체 픽스처다(다른 VRM 테스트도 같은 대체를 쓴다).
+    const vrmPath = resolve(process.cwd(), "apps/web/public/vrm/Sendagaya_Shino.vrm");
     expect(existsSync(vrmPath)).toBe(true);
     const bytes = new Uint8Array(readFileSync(vrmPath));
 
