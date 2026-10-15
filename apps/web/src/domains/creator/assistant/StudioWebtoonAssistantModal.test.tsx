@@ -4,6 +4,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 import {
   STUDIO_WORKBENCH_PREFS_STORAGE_KEY,
   defaultStudioWorkbenchPrefs,
@@ -12,6 +14,8 @@ import {
 import { StudioWebtoonAssistantModal } from "./StudioWebtoonAssistantContent";
 import { WebtoonCroquisPoseGuide } from "./webtoon-croquis-pose-guide";
 import { WEBTOON_PLATFORM_SPECS } from "./webtoon-platform-spec-validator";
+
+import type { PageState } from "../studio-page-state";
 
 const PREFIX = "studio-webtoon-assistant";
 
@@ -26,6 +30,13 @@ function seedPrefs(patch: {
   });
   globalThis.localStorage.setItem(STUDIO_WORKBENCH_PREFS_STORAGE_KEY, raw);
   return raw;
+}
+
+/** 탭 버튼을 안정된 id 로 집는다 — 탭 순서가 바뀌어도 시험이 깨지지 않는다. */
+function tabById(id: string): HTMLElement {
+  const element = document.getElementById(`${PREFIX}-tab-${id}`);
+  if (!element) throw new Error(`탭을 찾을 수 없어요: ${id}`);
+  return element;
 }
 
 function readPrefs() {
@@ -75,7 +86,7 @@ describe("StudioWebtoonAssistantModal — shell", () => {
     expect(document.body.style.overflow).toBe("hidden");
   });
 
-  it("keeps the whole canvas content and 7 feature tabs reachable", () => {
+  it("keeps the whole canvas content and 8 feature tabs reachable", () => {
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
 
     expect(screen.getByText(/웹툰 창작 보조 센터/)).toBeTruthy();
@@ -83,6 +94,7 @@ describe("StudioWebtoonAssistantModal — shell", () => {
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       "플랫폼 규격 & 슬라이서",
       "스크롤 페이싱 시뮬레이터",
+      "텐션 맵 (감정·사건 곡선)",
       "효과음·의성어 사전",
       "피부/그림자 컬러 조화",
       "마감 & 포커스플로우",
@@ -115,16 +127,20 @@ describe("StudioWebtoonAssistantModal — shell", () => {
     expect(document.body.style.overflow).toBe("");
   });
 
-  it("uses only themed status tokens — no raw palette or OS-bound dark: variants", () => {
+  it("uses only themed status tokens — no raw palette or OS-bound dark: variants", async () => {
     // 원색 팔레트는 라이트·고대비 테마에서 따라오지 않고, `dark:` 는 이 저장소에서
     // OS 설정(prefers-color-scheme)에 걸린다 — 앱 테마는 :root[data-theme] 로 바뀐다.
     const rawPalette =
       /\b(?:bg|text|border|ring|outline|fill|stroke|from|via|to|decoration|shadow)-(?:emerald|amber|rose|slate|zinc|gray|neutral|stone|sky|indigo|red|green|yellow|blue|violet)-\d/;
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
 
-    // 일곱 탭을 모두 렌더해 본다 — 비활성 탭의 마크업은 검사 범위 밖으로 새기 쉽다.
+    // 여덟 탭을 모두 렌더해 본다 — 비활성 탭의 마크업은 검사 범위 밖으로 새기 쉽다.
     for (const tab of screen.getAllByRole("tab")) {
       fireEvent.click(tab);
+      if (tab.id === `${PREFIX}-tab-tension-map`) {
+        // 텐션 맵 본문은 지연 로드 청크다 — 불러온 뒤의 실제 마크업을 검사한다.
+        await screen.findByTestId("studio-tension-map-tab", {}, { timeout: 15_000 });
+      }
       const markup = screen.getByTestId("studio-webtoon-assistant-modal").outerHTML;
       expect(markup).not.toMatch(rawPalette);
       expect(markup).not.toContain("dark:");
@@ -155,6 +171,7 @@ describe("StudioWebtoonAssistantModal — tab accessibility", () => {
       "-1",
       "-1",
       "-1",
+      "-1",
     ]);
   });
 
@@ -171,9 +188,8 @@ describe("StudioWebtoonAssistantModal — tab accessibility", () => {
   it("recommends Academy material from the previously used assistant tool", () => {
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
 
-    const tabs = screen.getAllByRole("tab");
-    fireEvent.click(tabs[1]);
-    fireEvent.click(tabs[6]);
+    fireEvent.click(tabById("scroll-pacing"));
+    fireEvent.click(tabById("learning"));
 
     expect(screen.getByTestId("studio-contextual-learning-panel")).toBeTruthy();
     expect(screen.getByText("스크롤 · 콘티 연출")).toBeTruthy();
@@ -186,12 +202,12 @@ describe("StudioWebtoonAssistantModal — tab accessibility", () => {
     const { rerender } = render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
     expect(screen.getByText(/현재 원고에서 컷을 찾지 못함/)).toBeTruthy();
 
-    fireEvent.click(screen.getAllByRole("tab")[1]);
+    fireEvent.click(tabById("scroll-pacing"));
     expect(screen.getByText(/현재 원고에서 컷을 찾지 못함/)).toBeTruthy();
     expect(screen.getByText("페이싱 건강도 점수")).toBeTruthy();
 
     rerender(<StudioWebtoonAssistantModal open onClose={() => {}} />);
-    fireEvent.click(screen.getAllByRole("tab")[0]);
+    fireEvent.click(tabById("spec-slicer"));
     expect(screen.getByText(/현재 원고에서 컷을 찾지 못함/)).toBeTruthy();
   });
 });
@@ -199,7 +215,7 @@ describe("StudioWebtoonAssistantModal — tab accessibility", () => {
 describe("StudioWebtoonAssistantModal — SFX search", () => {
   it("teaches the empty state instead of rendering a blank grid", () => {
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
-    fireEvent.click(screen.getAllByRole("tab")[2]);
+    fireEvent.click(tabById("sfx-lexicon"));
 
     expect(screen.getByText(/검색 결과 \d+건/)).toBeTruthy();
 
@@ -218,7 +234,7 @@ describe("StudioWebtoonAssistantModal — SFX search", () => {
     });
 
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
-    fireEvent.click(screen.getAllByRole("tab")[2]);
+    fireEvent.click(tabById("sfx-lexicon"));
     fireEvent.click(screen.getAllByText("텍스트 복사")[0]);
 
     expect(await screen.findByText("복사 실패")).toBeTruthy();
@@ -233,7 +249,7 @@ describe("StudioWebtoonAssistantModal — SFX search", () => {
     });
 
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
-    fireEvent.click(screen.getAllByRole("tab")[2]);
+    fireEvent.click(tabById("sfx-lexicon"));
     fireEvent.click(screen.getAllByText("텍스트 복사")[0]);
 
     expect(await screen.findByText("복사됨")).toBeTruthy();
@@ -251,7 +267,7 @@ describe("StudioWebtoonAssistantModal — croquis metronome", () => {
         <StudioWebtoonAssistantModal open onClose={() => {}} />
       </StrictMode>,
     );
-    fireEvent.click(screen.getAllByRole("tab")[5]);
+    fireEvent.click(tabById("croquis-pose"));
     fireEvent.click(screen.getByText("시작"));
 
     const baseline = advance.mock.calls.length;
@@ -269,7 +285,7 @@ describe("StudioWebtoonAssistantModal — croquis metronome", () => {
     const advance = vi.spyOn(WebtoonCroquisPoseGuide.prototype, "getRandomPose");
 
     const { rerender } = render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
-    fireEvent.click(screen.getAllByRole("tab")[5]);
+    fireEvent.click(tabById("croquis-pose"));
     fireEvent.click(screen.getByText("시작"));
     act(() => {
       vi.advanceTimersByTime(5_000);
@@ -284,7 +300,7 @@ describe("StudioWebtoonAssistantModal — croquis metronome", () => {
     expect(advance.mock.calls.length).toBe(baseline);
 
     rerender(<StudioWebtoonAssistantModal open onClose={() => {}} />);
-    fireEvent.click(screen.getAllByRole("tab")[5]);
+    fireEvent.click(tabById("croquis-pose"));
     expect(screen.getByText("55s")).toBeTruthy();
   });
 });
@@ -307,7 +323,7 @@ describe("StudioWebtoonAssistantModal — preference round-trip", () => {
     expect(selected?.id).toBe(`${PREFIX}-tab-croquis-pose`);
     expect(screen.getByText("180s")).toBeTruthy();
 
-    fireEvent.click(screen.getAllByRole("tab")[0]);
+    fireEvent.click(tabById("spec-slicer"));
     const lezhinName = WEBTOON_PLATFORM_SPECS["lezhin-comics"].name;
     const lezhinButton = screen
       .getAllByRole("button")
@@ -329,7 +345,7 @@ describe("StudioWebtoonAssistantModal — preference round-trip", () => {
     seedPrefs({ aiSuite: { styleId: "sibling-owned-style" } });
 
     render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
-    fireEvent.click(screen.getAllByRole("tab")[4]);
+    fireEvent.click(tabById("focus-timer"));
 
     await waitFor(() => {
       expect(readPrefs()?.assistant.activeTab).toBe("focus-timer");
@@ -341,5 +357,95 @@ describe("StudioWebtoonAssistantModal — preference round-trip", () => {
     const seeded = seedPrefs({ assistant: { activeTab: "sfx-lexicon" } });
     render(<StudioWebtoonAssistantModal open={false} onClose={() => {}} />);
     expect(globalThis.localStorage.getItem(STUDIO_WORKBENCH_PREFS_STORAGE_KEY)).toBe(seeded);
+  });
+});
+
+describe("StudioWebtoonAssistantModal — tension map tab", () => {
+  beforeEach(() => {
+    useI18n.getState().setLang("ko");
+  });
+
+  const TENSION_TEST_ID = "studio-tension-map-tab";
+  const pagesFixture: PageState[] = [
+    { id: "p1", elements: [], bg: "paper", bgGrad: null, canvasH: 1200 },
+    { id: "p2", elements: [], bg: "paper", bgGrad: null, canvasH: 1200, name: "표지 컷" },
+  ];
+
+  async function openTensionMap() {
+    fireEvent.click(tabById("tension-map"));
+    await screen.findByTestId(TENSION_TEST_ID, {}, { timeout: 15_000 });
+  }
+
+  it("draws nothing of the tension map until the tab is opened, then loads it on demand", async () => {
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+    expect(screen.queryByTestId(TENSION_TEST_ID)).toBeNull();
+    await openTensionMap();
+    expect(screen.getByText(/휴리스틱 추정/)).toBeTruthy();
+  });
+
+  it("reopens on the tension map when that was the last tab used", async () => {
+    seedPrefs({ assistant: { activeTab: "tension-map" } });
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+    await screen.findByTestId(TENSION_TEST_ID, {}, { timeout: 15_000 });
+    const selected = screen
+      .getAllByRole("tab")
+      .find((tab) => tab.getAttribute("aria-selected") === "true");
+    expect(selected?.id).toBe(`${PREFIX}-tab-tension-map`);
+  });
+
+  it("hands the open document to the tab so a pose reaches the editor's page commit only when the artist presses apply", async () => {
+    const onCommitPages = vi.fn((next: PageState[]) => next.length > 0);
+    render(
+      <StudioWebtoonAssistantModal
+        open
+        onClose={() => {}}
+        pages={pagesFixture}
+        currentPageId="p2"
+        onCommitPages={onCommitPages}
+      />,
+    );
+    await openTensionMap();
+    fireEvent.click(screen.getAllByRole("button", { name: "예시 대본 넣기" })[0]);
+    const applyButtons = await screen.findAllByRole(
+      "button",
+      { name: /^'표지 컷'에 적용: / },
+      { timeout: 15_000 },
+    );
+    // 곡선을 그리고 추천을 보여 주는 동안에는 문서를 건드리지 않는다
+    expect(onCommitPages).not.toHaveBeenCalled();
+
+    fireEvent.click(applyButtons[0]);
+    expect(onCommitPages).toHaveBeenCalledTimes(1);
+    const committed = onCommitPages.mock.calls[0][0];
+    expect(committed.map((entry) => entry.id)).toEqual(["p1", "p2"]);
+    expect(committed[0]).toBe(pagesFixture[0]);
+    expect(committed[1]).toMatchObject({ id: "p2", posePresetId: expect.any(String) });
+    expect(pagesFixture[1]).not.toHaveProperty("posePresetId");
+  });
+
+  it("keeps the typed script and the chosen source when the center is closed and reopened, like the neighbouring tabs keep their input", async () => {
+    const { rerender } = render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+    await openTensionMap();
+    const script = () => screen.getByLabelText(/콘티 대본 \(한 줄이 한 컷\)/) as HTMLTextAreaElement;
+    fireEvent.change(script(), { target: { value: "첫 장면\n둘째 장면" } });
+
+    rerender(<StudioWebtoonAssistantModal open={false} onClose={() => {}} />);
+    expect(screen.queryByTestId(TENSION_TEST_ID)).toBeNull();
+
+    rerender(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+    await screen.findByTestId(TENSION_TEST_ID, {}, { timeout: 15_000 });
+    expect(script().value).toBe("첫 장면\n둘째 장면");
+    expect(screen.getAllByRole("tab").find((tab) => tab.getAttribute("aria-selected") === "true")?.id).toBe(
+      `${PREFIX}-tab-tension-map`,
+    );
+  });
+
+  it("still suggests poses, without any apply button, when the caller gives no way to commit", async () => {
+    render(<StudioWebtoonAssistantModal open onClose={() => {}} />);
+    await openTensionMap();
+    fireEvent.click(screen.getAllByRole("button", { name: "예시 대본 넣기" })[0]);
+    await screen.findByTestId("cut-pose-suggestion-list", {}, { timeout: 15_000 });
+    expect(screen.queryAllByRole("button", { name: /에 적용/ })).toHaveLength(0);
+    expect(screen.getByTestId("cut-pose-no-target")).toBeTruthy();
   });
 });

@@ -4,6 +4,7 @@ import type { WebtoonProductionStage } from "./webtoon-focus-timer";
 export type StudioAssistantLearningTool =
   | "spec-slicer"
   | "scroll-pacing"
+  | "tension-map"
   | "sfx-lexicon"
   | "color-harmony"
   | "focus-timer"
@@ -76,6 +77,13 @@ const TOOL_FOCUS: Readonly<Record<Exclude<StudioAssistantLearningTool, "focus-ti
     reason: "스크롤 페이싱을 다듬는 중이라 컷 호흡과 콘티 자료를 우선합니다.",
     primarySteps: ["storyboard"],
     secondarySteps: ["story", "lettering"],
+  },
+  "tension-map": {
+    id: "tension-map",
+    label: "감정 곡선 · 콘티 연출",
+    reason: "컷별 긴장도 곡선을 살피는 중이라 콘티와 이야기 구성 자료를 우선합니다.",
+    primarySteps: ["storyboard", "story"],
+    secondarySteps: ["character", "lettering"],
   },
   "sfx-lexicon": {
     id: "lettering",
