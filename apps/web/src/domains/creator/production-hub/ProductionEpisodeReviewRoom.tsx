@@ -166,7 +166,12 @@ export function ProductionEpisodeReviewRoom({
       : [],
     [bt, isDemo],
   );
-  const approver = resolveEpisodeApprover(aggregate, episodeId, { isDemo, roleLens, viewerAssignmentId });
+  // 승인 주체는 같은 입력이면 같은 값이다. 메모로 고정해 두면 여기서 파생되는 신원 값(selfActorId 등)을
+  // 아래 수동 메모의 의존성으로 안전하게 쓸 수 있다(React Compiler 가 "나중에 바뀔 수 있는 값"으로 보지 않는다).
+  const approver = useMemo(
+    () => resolveEpisodeApprover(aggregate, episodeId, { isDemo, roleLens, viewerAssignmentId }),
+    [aggregate, episodeId, isDemo, roleLens, viewerAssignmentId],
+  );
   const assigneeOptions = useMemo(() => episodeRoomAssigneeOptions(aggregate, bt), [aggregate, bt]);
 
   // 비교 검수(CompareReviewRoom) 전용 댓글 문서. 원고 핀 문서와 분리해 소유하고,
