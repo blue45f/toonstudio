@@ -29,14 +29,14 @@ async function withTemporaryDirectory(work) {
   }
 }
 
-function startSleeper(directory, script) {
+function startSleeper(directory, script, extraEnv = {}) {
   const descriptor = openSync(join(directory, "child.log"), "a");
   try {
     return spawnDetached({
       command: process.execPath,
       args: ["-e", script],
       cwd: directory,
-      env: { PATH: process.env.PATH ?? "" },
+      env: { PATH: process.env.PATH ?? "", ...extraEnv },
       logDescriptor: descriptor,
     });
   } finally {
@@ -118,8 +118,9 @@ describe("spawnDetached / terminateProcess", () => {
       // 핸들러가 설치되기 전에 신호가 도착하면 기본 동작으로 바로 종료("stopped")돼 시험이 성립하지 않는다.
       // 부하가 큰 머신에서는 Node 시작이 느릴 수 있으므로 고정 대기 대신 자식이 준비 파일을 쓸 때까지 기다린다.
       const readyFile = join(directory, "sigterm-ignored.ready");
-      const script = `process.on('SIGTERM', () => {}); require('node:fs').writeFileSync(${JSON.stringify(readyFile)}, 'ready'); setInterval(() => {}, 1000)`;
-      const { pid } = startSleeper(directory, script);
+      // 경로를 코드 문자열에 끼워 넣지 않고 환경 변수로 넘긴다(코드 구성에 값이 섞이지 않게 한다).
+      const script = "process.on('SIGTERM', () => {}); require('node:fs').writeFileSync(process.env.READY_FILE, 'ready'); setInterval(() => {}, 1000)";
+      const { pid } = startSleeper(directory, script, { READY_FILE: readyFile });
       for (let attempt = 0; attempt < 200 && !existsSync(readyFile); attempt += 1) await delay(50);
       assert.ok(existsSync(readyFile), "자식이 SIGTERM 무시 핸들러를 설치하지 못했습니다");
       assert.equal(await terminateProcess(pid, { graceMs: 400 }), "killed");
