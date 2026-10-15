@@ -819,7 +819,7 @@ function StudioStoryworldLabEditor({
                 onClearDisposition={clearDisposition}
                 onExportProject={exportProject}
                 onOpenSettings={openInSettings}
-                onProjectChange={(next, message) => { setProject(authoredStoryworldProject(next)); setStatusText(message); }}
+                onProjectChange={(next, message, options) => { setProject(options?.restore === true ? next : authoredStoryworldProject(next)); setStatusText(message); }}
                 onSetDisposition={setDisposition}
                 project={project}
                 scopeKey={storageKey}

@@ -10,12 +10,16 @@ import type { StoryworldContinuityIssue } from "../studio-storyworld-continuity"
 import type { ManuscriptLoadResult } from "./studio-story-manuscript-store";
 import { buildPlausibilityReport } from "./studio-story-plausibility-report";
 import { loadPlausibilityExtras } from "./studio-story-plausibility-sources";
+import type { PlausibilitySummaryStore } from "./studio-story-plausibility-summary";
 import type { PlausibilityReport } from "./studio-story-plausibility-types";
 
 export interface PlausibilityRunDeps {
   readonly now: () => Date;
+  /** 복선 장부·세계관 설정·기획·바이블을 읽는 저장소. 읽기 전용이다. */
   readonly storage: StudioProjectDiagnosticSourceStorage | null;
   readonly loadManuscript: (scopeKey: string, copyId: string) => Promise<ManuscriptLoadResult>;
+  /** 준비도 패널이 읽을 점검 요약을 남길 저장소를 얻는다(공용 SQLite). 없으면 요약을 남기지 않는다. */
+  readonly acquireSummaryStore?: () => Promise<PlausibilitySummaryStore>;
   readonly yieldToHost?: () => Promise<void>;
 }
 
