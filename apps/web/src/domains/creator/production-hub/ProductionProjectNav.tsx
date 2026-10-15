@@ -153,7 +153,7 @@ function NavGroup({
           <span className="truncate">{label}</span>
           {current ? (
             <span className="shrink-0 rounded-full border border-line bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-bold text-accent">
-              {bt("지금 단계", "Now")}
+              {bt("지금 단계", "Current")}
             </span>
           ) : null}
         </span>
