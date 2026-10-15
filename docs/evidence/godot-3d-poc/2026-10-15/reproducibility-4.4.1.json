@@ -1,0 +1,46 @@
+{
+ "measuredAt": "2026-10-15",
+ "purpose": "빈 캐시에서 fetch-engine.sh -> build.sh 를 다시 실행했을 때 산출물이 측정에 쓴 빌드와 바이트 단위로 같은지 확인한다(빌드 재현성, 공급망).",
+ "commands": [
+  "GODOT_POC_CACHE=<빈 폴더> bash tools/godot-3d-poc/scripts/fetch-engine.sh",
+  "GODOT_POC_CACHE=<같은 폴더> POC_BUILD_DIR=<새 폴더> bash tools/godot-3d-poc/scripts/build.sh"
+ ],
+ "environment": "컨테이너(Linux x86_64, 4 vCPU), 네트워크는 GitHub 릴리스 다운로드, 공식 Godot 4.4.1-stable 편집기 바이너리로 --headless import/export.",
+ "fetchEngine": {
+  "wallSeconds": 16.7,
+  "sha512Verification": "Godot_v4.4.1-stable_linux.x86_64.zip: OK, Godot_v4.4.1-stable_export_templates.tpz: OK (checksums/SHA512-SUMS.4.4.1-stable.txt)",
+  "extracted": "엔진 실행 파일 + templates/web_*.zip 8개와 version.txt 만(다른 플랫폼 템플릿은 풀지 않음), 검증 뒤 아카이브 삭제"
+ },
+ "build": {
+  "wallSeconds": 44.4
+ },
+ "compareWith": "측정에 쓴 tools/godot-3d-poc/build (results-4.4.1-b*.json 의 environment.buildFiles 와 같은 파일)",
+ "files": {
+  "web/index.wasm": {
+   "bytes": 43699190,
+   "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+  },
+  "web/index.pck": {
+   "bytes": 55632,
+   "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+  },
+  "web/index.js": {
+   "bytes": 317142,
+   "sha256": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31"
+  },
+  "web-threads/index.wasm": {
+   "bytes": 41848195,
+   "sha256": "06e279b5d08a8888fc6c670b12d48c0e953bb526429ce521f2e17ec91fc15286"
+  },
+  "web-threads/index.pck": {
+   "bytes": 55632,
+   "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+  },
+  "web-threads/index.js": {
+   "bytes": 370560,
+   "sha256": "dd8b42107108b4bc30c21eec8b2bb75e21b389f79b6e5d6553c7483eac284a33"
+  }
+ },
+ "allIdentical": true,
+ "note": "파일 해시는 측정에 쓴 빌드의 값이다. 빈 캐시 빌드의 6개 산출물 sha256 이 이 값과 모두 일치했다. 또한 GDScript 주석만 바꾼 소스를 기존 캐시에서 다시 빌드해도 pck 가 같았다(주석은 바이너리 토큰에 들어가지 않는다)."
+}

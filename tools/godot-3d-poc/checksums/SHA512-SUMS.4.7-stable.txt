@@ -1,0 +1,4 @@
+# 출처: https://github.com/godotengine/godot/releases/download/4.7-stable/SHA512-SUMS.txt (2026-10-15 확인)
+# 4.4.1 과의 비교 측정(wasm 크기·PoC 재실행)에만 쓴 두 항목이다. 운영 엔진은 4.4.1 이다.
+1035dfde4edcc2472bb0c0b9610ce3ee9302642c2b9957e9066372f9f6bb759ab250c8887551a66f0bc5f51bbd9a58bb45e33a0f29844e97615a9b1138c1120e  Godot_v4.7-stable_export_templates.tpz
+b639ca9c1ddea39bb3df89bd5283a51ca6047467abe6b25e9436566f2b2082ede633025073989ecf39c7d5d3c2493d80ea13e3af6dd5e261bbf89e462d6d2214  Godot_v4.7-stable_linux.x86_64.zip

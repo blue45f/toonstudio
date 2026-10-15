@@ -1,0 +1,90 @@
+{
+ "note": "make-fixtures.mjs 가 만든 합성 GLB 의 크기·sha256. 같은 입력이면 다시 만들어도 바이트가 같다(2026-10-15 두 번 생성해 확인). ktx2 필드는 KTX2 헤더에서 읽은 값이다(supercompressionScheme 0 없음, 1 BasisLZ, 2 Zstd / colorModel 163 ETC1S, 166 UASTC).",
+ "generatedWith": "make-fixtures.mjs",
+ "files": {
+  "declared-ext_meshopt_compression.glb": {
+   "bytes": 46264,
+   "sha256": "bd85e424b3c04e5f22363d76217fdef76831dae07be16acd07068c01528e9843",
+   "kind": "declared-only",
+   "extension": "EXT_meshopt_compression"
+  },
+  "declared-khr_draco_mesh_compression.glb": {
+   "bytes": 46272,
+   "sha256": "80c9edb92f0c55359da7fc0e785c2f0e6da69bf17b9e8cd7b068134793474524",
+   "kind": "declared-only",
+   "extension": "KHR_draco_mesh_compression"
+  },
+  "declared-khr_mesh_quantization.glb": {
+   "bytes": 46260,
+   "sha256": "6e213ec9effa6ddc3d234b9561dca399a8b3eedbc12fdac249e9393ee2726427",
+   "kind": "declared-only",
+   "extension": "KHR_mesh_quantization"
+  },
+  "declared-khr_texture_basisu.glb": {
+   "bytes": 46256,
+   "sha256": "9fa0957b2dd588664f4a3beafb4d48828165d212048a821ff1681481e90529a4",
+   "kind": "declared-only",
+   "extension": "KHR_texture_basisu"
+  },
+  "ext-basisu-etc1s.glb": {
+   "bytes": 47520,
+   "sha256": "3d773539aed058352c2c828026ba8d2186d44c35842b45d371dcda3a3f2c2679",
+   "kind": "real-ktx2-etc1s-basislz",
+   "extension": "KHR_texture_basisu",
+   "ktx2": {
+    "bytes": 963,
+    "levels": 8,
+    "supercompressionScheme": 1,
+    "colorModel": 163
+   }
+  },
+  "ext-basisu-uastc-raw.glb": {
+   "bytes": 68780,
+   "sha256": "aa889788c14f26fa8bbe3c6c48ad58fdeb071935378a0ea986236e78e37dfb6a",
+   "kind": "real-ktx2-uastc-raw",
+   "extension": "KHR_texture_basisu",
+   "ktx2": {
+    "bytes": 22224,
+    "levels": 8,
+    "supercompressionScheme": 0,
+    "colorModel": 166
+   }
+  },
+  "ext-basisu.glb": {
+   "bytes": 47360,
+   "sha256": "dd175f7d0af3cd5437a0822b3399c879b0e936f937148104748f49f22d393540",
+   "kind": "real-ktx2-uastc-zstd",
+   "extension": "KHR_texture_basisu",
+   "ktx2": {
+    "bytes": 808,
+    "levels": 8,
+    "supercompressionScheme": 2,
+    "colorModel": 166
+   }
+  },
+  "ext-draco.glb": {
+   "bytes": 11836,
+   "sha256": "b7b62b91c78da19a2be694f7059e2e9d6d04ca8bc4b1be4339e7f362f2933e78",
+   "kind": "real-compression",
+   "extension": "KHR_draco_mesh_compression"
+  },
+  "ext-meshopt.glb": {
+   "bytes": 15076,
+   "sha256": "5baf96684fee46c64bdee4aa7ff16534d822a9faf8939e20671290bcd5ced00f",
+   "kind": "real-compression",
+   "extension": "EXT_meshopt_compression"
+  },
+  "ext-quantized.glb": {
+   "bytes": 21352,
+   "sha256": "6bd1ad09a0de2ffc16005c14441eb63e26d490a06d67909a9e0ef60e0a2c8b75",
+   "kind": "real-quantization",
+   "extension": "KHR_mesh_quantization"
+  },
+  "synthetic-character.glb": {
+   "bytes": 46172,
+   "sha256": "cf208f1e42585d308719002f11c3922b761276b3599eef4552a2a70c51e162df",
+   "kind": "plain"
+  }
+ },
+ "skipped": {}
+}
