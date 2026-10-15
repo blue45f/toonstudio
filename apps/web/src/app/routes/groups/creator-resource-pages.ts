@@ -164,9 +164,11 @@ export const GlobalBooksPage = lazyRetry(
   () => import("@/domains/creator-resources/GlobalBooksPage").then((module) => ({ default: module.GlobalBooksPage })),
   "GlobalBooksPage",
 );
-export const RecipesPage = lazyRetry(
-  () => import("@/domains/creator-resources/RecipesPage").then((module) => ({ default: module.RecipesPage })),
-  "RecipesPage",
+// 제작 레시피는 학습 셸로 감싼 요소를 한 청크로 지연 로딩한다(셸이 학습 콘텐츠를 끌어오므로
+// 라우트 표가 셸을 정적으로 import하면 앱 진입 번들에 섞인다 — learn-recipes-route.tsx 참조).
+export const LearnRecipesRoute = lazyRetry(
+  () => import("./learn-recipes-route").then((module) => ({ default: module.LearnRecipesRoute })),
+  "LearnRecipesRoute",
 );
 export const StoryLabPage = lazyRetry(
   () => import("@/domains/creator-resources/StoryLabPage").then((module) => ({ default: module.StoryLabPage })),

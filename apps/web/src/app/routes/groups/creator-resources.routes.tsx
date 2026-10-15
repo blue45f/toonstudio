@@ -1,6 +1,5 @@
 import { Navigate } from "react-router-dom";
 
-import { LearnSectionShell } from "@/domains/learn/public/learn-section-shell";
 import { defineAppRoutes } from "../app-route-definition";
 import {
   CatalogResearchPage,
@@ -36,7 +35,7 @@ import {
   OpenDataAmbientCgPage,
   OpenDataNeisPage,
   GlobalBooksPage,
-  RecipesPage,
+  LearnRecipesRoute,
   StoryLabPage,
   OpenCreationPage,
   SourcesPage,
@@ -91,8 +90,9 @@ export const creatorResourcesRoutes = defineAppRoutes([
   { id: "resources-references", path: "/creator-hub/references", element: <Navigate to="/research/assets" replace /> },
   { id: "resources-opportunities", path: "/opportunities", element: <OpportunitiesPage /> },
   // 제작 레시피는 /learn 아래에 사는 학습 화면이다 — LearnPage 밖 라우트라 학습 셸을
-  // 라우트 레이어에서 감싼다(셸의 공개 경계는 learn/public 배럴이 소유한다).
-  { id: "resources-recipes", path: "/learn/recipes", element: <LearnSectionShell><RecipesPage /></LearnSectionShell> },
+  // 라우트 레이어에서 감싼다(셸의 공개 경계는 learn/public 배럴이 소유한다). 셸·레시피를
+  // 한 요소(LearnRecipesRoute)로 지연 로딩해 학습 콘텐츠가 앱 진입 번들에 섞이지 않게 한다.
+  { id: "resources-recipes", path: "/learn/recipes", element: <LearnRecipesRoute /> },
   { id: "resources-story", path: "/story-lab", element: <StoryLabPage /> },
   { id: "resources-works", path: "/discover/works", element: <WorksPage /> },
   { id: "resources-sources", path: "/insights/resources", element: <SourcesPage /> },
