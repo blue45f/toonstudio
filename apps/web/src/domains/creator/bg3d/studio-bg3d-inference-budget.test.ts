@@ -198,6 +198,101 @@ describe("프레임 스로틀", () => {
   });
 });
 
+describe("프레임 스로틀 — 실제 처리 비용에 맞춘 적응형 간격", () => {
+  const BASE = STUDIO_BG3D_INFERENCE_BUDGET.minFrameIntervalMs;
+  const FACTOR = STUDIO_BG3D_INFERENCE_BUDGET.costIntervalFactor;
+  const CAP = STUDIO_BG3D_INFERENCE_BUDGET.maxAdaptiveFrameIntervalMs;
+
+  it("첫 처리는 워밍업이라 무시하고, 이후 비용이 크면 간격이 비용의 3배로 늘어난다", () => {
+    const gate = createStudioBg3dInferenceFrameGate<number>(BASE);
+    expect(gate.intervalMs()).toBe(BASE);
+    gate.recordCost(90);
+    expect(gate.intervalMs()).toBe(BASE);
+    gate.recordCost(20);
+    expect(gate.intervalMs()).toBe(20 * FACTOR);
+    // 늘어난 간격은 실제 게이트에도 적용된다: 20ms 뒤에는 아직 보류, 60ms 뒤에는 처리.
+    expect(gate.offer(1, 1_000)).toBe("run");
+    expect(gate.offer(2, 1_020)).toBe("defer");
+    expect(gate.nextDelayMs(1_020)).toBe(40);
+    expect(gate.takePending(1_059)).toBeNull();
+    expect(gate.takePending(1_060)).toBe(2);
+  });
+
+  it("비용이 다시 줄면 기본 간격으로 돌아온다", () => {
+    const gate = createStudioBg3dInferenceFrameGate<number>(BASE);
+    gate.recordCost(1);
+    for (let i = 0; i < 5; i += 1) gate.recordCost(20);
+    expect(gate.intervalMs()).toBe(20 * FACTOR);
+    // 최근 5개의 중앙값이 내려갈 때까지(가벼운 처리 3번) 간격이 남아 있다가 돌아온다.
+    gate.recordCost(1);
+    gate.recordCost(1);
+    expect(gate.intervalMs()).toBe(20 * FACTOR);
+    gate.recordCost(1);
+    expect(gate.intervalMs()).toBe(BASE);
+  });
+
+  it("한두 번 튀는 비용(JIT·GC)에는 반응하지 않지만 꾸준히 느리면 반응한다", () => {
+    const gate = createStudioBg3dInferenceFrameGate<number>(BASE);
+    for (const cost of [1, 1, 1, 80, 1, 1, 80, 1, 1]) gate.recordCost(cost);
+    expect(gate.intervalMs()).toBe(BASE);
+    for (const cost of [80, 80, 80]) gate.recordCost(cost);
+    expect(gate.intervalMs()).toBe(CAP);
+  });
+
+  it("적응형 간격에는 상한이 있고, 기본 간격이 더 크면 그 값을 존중하며, 비정상 비용은 무시한다", () => {
+    const gate = createStudioBg3dInferenceFrameGate<number>(BASE);
+    gate.recordCost(Number.NaN);
+    gate.recordCost(-5);
+    gate.recordCost(Number.POSITIVE_INFINITY);
+    // 위 값들은 워밍업도 소모하지 않는다 — 다음 값이 워밍업이다.
+    gate.recordCost(500);
+    expect(gate.intervalMs()).toBe(BASE);
+    for (let i = 0; i < 5; i += 1) gate.recordCost(500);
+    expect(gate.intervalMs()).toBe(CAP);
+
+    const wide = createStudioBg3dInferenceFrameGate<number>(CAP + 80);
+    wide.recordCost(1);
+    for (let i = 0; i < 5; i += 1) wide.recordCost(200);
+    expect(wide.intervalMs()).toBe(CAP + 80);
+  });
+
+  it("reset은 보류 샘플만 지우고 장면의 처리 비용 학습은 유지한다", () => {
+    const gate = createStudioBg3dInferenceFrameGate<number>(BASE);
+    gate.recordCost(1);
+    for (let i = 0; i < 5; i += 1) gate.recordCost(30);
+    gate.offer(1, 0);
+    gate.offer(2, 1);
+    gate.reset();
+    expect(gate.takePending(500)).toBeNull();
+    expect(gate.intervalMs()).toBe(30 * FACTOR);
+  });
+
+  it("처리마다 20ms가 걸리는 장면에서 추론이 쓰는 시간은 전체의 약 1/3 안쪽으로 묶인다", () => {
+    const COST_MS = 20;
+    const simulate = (adaptive: boolean) => {
+      const gate = createStudioBg3dInferenceFrameGate<number>(BASE);
+      let clock = 0;
+      let busy = 0;
+      let runs = 0;
+      for (let event = 0; event < 3_000; event += 1) {
+        clock += 1; // 1000Hz 마우스: 이벤트는 1ms마다 온다
+        if (gate.offer(event, clock) !== "run") continue;
+        runs += 1;
+        busy += COST_MS;
+        clock += COST_MS; // 처리하는 동안 시간이 흐른다
+        if (adaptive) gate.recordCost(COST_MS);
+      }
+      return { share: busy / clock, runs };
+    };
+    const fixed = simulate(false);
+    const adaptive = simulate(true);
+    // 고정 간격이면 처리가 끝나자마자 다음 샘플을 또 처리해 거의 모든 시간을 추론이 쓴다.
+    expect(fixed.share).toBeGreaterThan(0.9);
+    expect(adaptive.share).toBeLessThan(0.36);
+    expect(adaptive.runs).toBeLessThan(fixed.runs / 2);
+  });
+});
+
 describe("스크린리더 안내 속도 제한", () => {
   it("같은 key는 반복해서 읽지 않는다", () => {
     const announcer = createStudioBg3dInferenceAnnouncer(450);
