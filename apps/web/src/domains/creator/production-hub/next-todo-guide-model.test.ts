@@ -81,7 +81,7 @@ describe("buildProjectNextTodos", () => {
     // 단계 행동은 단계 정의의 primaryAction을 그대로 쓴다. 동점에서는
     // id 순(ep-1 콘티 → ep-2 작화)으로 deterministic하게 정렬된다.
     const stageItems = guide.items.filter((item) => item.kind === "episode-stage");
-    expect(stageItems.map((item) => item.actionLabel.ko)).toEqual(["공정 보드 열기", "원고 열기"]);
+    expect(stageItems.map((item) => item.actionLabel.ko)).toEqual(["공정 보드 열기", "원고 보기"]);
   });
 
   it("flags an unpublished episode whose planned release is within 3 days", () => {

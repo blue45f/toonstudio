@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProcessCompareViewer } from "./ProcessCompareViewer";
+import { ProcessComparePaneEmptyArt } from "./process-compare-empty-art";
 import { buildProcessCompareItems } from "./process-compare-model";
 
 vi.mock("@/shared/lib/i18n-bilingual-copy", () => ({
@@ -57,26 +58,52 @@ describe("ProcessCompareViewer", () => {
     const items = buildProcessCompareItems([PROCESSES[1]], () => null);
     expect(items).toHaveLength(1);
     render(<ProcessCompareViewer items={items} />);
-    expect(screen.getByText("비교할 공정 결과물이 2개 이상 필요합니다")).toBeTruthy();
+    // 비교 소스는 공정 버전뿐 아니라 지난 회차·레퍼런스·외부 이미지까지 넓어졌다.
+    expect(screen.getByText("비교할 소스가 2개 이상 필요합니다")).toBeTruthy();
   });
 
   it("항목이 2개 미만이면 일러스트·다음 행동 가이드를 보여준다", () => {
     const items = buildProcessCompareItems([PROCESSES[1]], () => null);
     const { container } = render(<ProcessCompareViewer items={items} onClose={() => {}} />);
     expect(container.querySelector(".pcv-empty-art")).toBeTruthy();
-    expect(screen.getByText(/결과물\(리비전\)을 2개 이상 등록/)).toBeTruthy();
+    // 다음 행동 안내: 소스 2개를 채우는 두 길(풀에 쌓기·외부 이미지 추가)을 알려 준다.
+    expect(screen.getByText(/버전·지난 회차·레퍼런스 중 2개 이상이 풀에 있거나.*외부 이미지를 추가하면 바로 나란히 비교/)).toBeTruthy();
     // 핵심 액션 1개: 닫기
     expect(screen.getByRole("button", { name: "닫기" })).toBeTruthy();
   });
 
-  it("빈 페인에는 위쪽 피커를 가리키는 일러스트를 보여준다", () => {
+  it("페인이 바라보던 소스가 풀에서 사라지면 빈 페인 대신 남은 소스로 다시 맞춘다", () => {
     const items = buildProcessCompareItems(PROCESSES, () => null);
     const { container, rerender } = render(<ProcessCompareViewer items={items} />);
-    // 페인이 바라보던 공정이 사라지면 해당 페인은 빈 상태가 된다
+    const pickerLabel = "이 페인에 표시할 공정과 버전 선택";
+    // 기본 페인은 서로 다른 공정의 최신 리비전이다(선화·채색).
+    expect(screen.getAllByLabelText<HTMLSelectElement>(pickerLabel).map((picker) => picker.value))
+      .toEqual(["p-line::r3", "p-color::r4"]);
+    // 페인이 바라보던 공정이 사라져도 풀에 비교 가능한 소스가 남아 있으면 기본 구성으로 다시 맞춘다.
     const fewer = buildProcessCompareItems([PROCESSES[0]], () => null);
     rerender(<ProcessCompareViewer items={fewer} />);
-    expect(container.querySelectorAll(".pcv-empty-art-sm")).toHaveLength(2);
-    expect(screen.getAllByText("위에서 공정과 버전을 선택하세요")).toHaveLength(2);
+    expect(screen.getAllByLabelText<HTMLSelectElement>(pickerLabel).map((picker) => picker.value))
+      .toEqual(["p-storyboard::r2"]);
+    expect(container.querySelectorAll(".pcv-empty-art-sm")).toHaveLength(0);
+    expect(screen.queryByText("위에서 공정과 버전을 선택하세요")).toBeNull();
+  });
+
+  it("풀이 2개 미만으로 줄면 페인 대신 풀 단위 안내로 바뀐다", () => {
+    const items = buildProcessCompareItems(PROCESSES, () => null);
+    const { container, rerender } = render(<ProcessCompareViewer items={items} />);
+    expect(screen.getByTestId("pcv-viewport-1")).toBeTruthy();
+    rerender(<ProcessCompareViewer items={buildProcessCompareItems([PROCESSES[1]], () => null)} />);
+    expect(screen.queryByTestId("pcv-viewport-1")).toBeNull();
+    expect(container.querySelector(".pcv-empty-art")).toBeTruthy();
+    expect(screen.getByText("비교할 소스가 2개 이상 필요합니다")).toBeTruthy();
+  });
+
+  it("빈 페인 일러스트는 위쪽 피커를 가리키는 장식용 SVG다", () => {
+    const { container } = render(<ProcessComparePaneEmptyArt />);
+    const art = container.querySelector("svg.pcv-empty-art.pcv-empty-art-sm");
+    expect(art).toBeTruthy();
+    // 안내 문구는 페인이 텍스트로 따로 주므로 일러스트는 보조기기에서 숨긴다.
+    expect(art?.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("페인 개수를 3·4로 바꿀 수 있다", () => {
@@ -120,9 +147,10 @@ describe("ProcessCompareViewer", () => {
     expect(screen.getByTestId("pcv-blink-b")).toBeTruthy();
   });
 
-  it("동기 스크롤 토글 버튼이 있다", () => {
+  it("배율·이동 잠금 토글 버튼이 있다", () => {
     renderViewer();
-    const toggle = screen.getByRole("button", { name: "동기 스크롤" });
+    // 잠금은 기본으로 켜져 있고(공유 뷰포트+스크롤 동기), 버튼으로 항상 상태가 보인다.
+    const toggle = screen.getByRole("button", { name: "배율·이동 잠금" });
     expect(toggle.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-pressed")).toBe("false");

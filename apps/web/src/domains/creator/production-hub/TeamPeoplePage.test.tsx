@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { initialOperationPolicy, resolveOperationPolicy } from "@toonstudio/contracts/operation-policy";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FREE_USAGE_POLICY } from "@toonstudio/contracts/production-workspace";
@@ -22,6 +22,16 @@ function App({ path = "/team/people" }: { path?: string }) {
     <Route path="/team/people" element={<TeamPeoplePage />} />
     <Route path="/team/people/:workspaceId" element={<TeamPeoplePage />} />
   </Routes></MemoryRouter>;
+}
+/**
+ * 구성원 카드 안으로 범위를 좁힌다. 같은 화면의 작품 접근 패널(MemberWorkAccessPanel)도 구성원마다
+ * 아바타를 그려 title("소유자" 등)이 화면에 둘 이상이므로, 구성원 행의 아바타는 카드 안에서만 찾는다.
+ */
+async function findMembersCard(): Promise<HTMLElement> {
+  const heading = await screen.findByRole("heading", { name: "구성원" });
+  const card = heading.closest("section");
+  if (!card) throw new Error("구성원 카드를 찾지 못했습니다.");
+  return card;
 }
 beforeEach(() => {
   vi.clearAllMocks(); mocks.userId = "owner"; sessionStorage.clear();
@@ -58,13 +68,14 @@ describe("people & access surface (wave 5 T2)", () => {
 
   it("puts members and invite ahead of linked projects on the detail first screen", async () => {
     render(<App path="/team/people/team-a" />);
-    const membersHeading = await screen.findByRole("heading", { name: "구성원" });
+    const membersCard = await findMembersCard();
+    const membersHeading = within(membersCard).getByRole("heading", { name: "구성원" });
     const inviteHeading = screen.getByRole("heading", { name: "구성원 초대" });
     const projectsHeading = screen.getByRole("heading", { name: "연결한 제작 프로젝트" });
     expect(membersHeading.compareDocumentPosition(projectsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(inviteHeading.compareDocumentPosition(projectsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // 구성원 행에 이니셜 아바타가 붙고, 정체성 카드 바로가기가 초대 카드로 연결된다.
-    expect(screen.getByTitle("소유자")).toBeTruthy();
+    expect(within(membersCard).getByTitle("소유자")).toBeTruthy();
     expect(screen.getByRole("link", { name: "사람 초대하기" }).getAttribute("href")).toBe("#team-invite");
     // 초대 발급의 종착점이 합류 시트임을 같은 카드에서 안내한다.
     expect(screen.getByRole("link", { name: "합류 시트 열기" }).getAttribute("href")).toBe("/team/people/join");
@@ -130,11 +141,11 @@ describe("people & access surface (wave 6 T1)", () => {
         <App path="/team/people/team-a" />
       </SessionContext.Provider>,
     );
-    await screen.findByRole("heading", { name: "구성원" });
-    const selfAvatar = screen.getByTitle("소유자");
+    const membersCard = await findMembersCard();
+    const selfAvatar = within(membersCard).getByTitle("소유자");
     expect(selfAvatar.getAttribute("data-avatar-kind")).toBe("photo");
     expect(selfAvatar.querySelector("img")?.getAttribute("src")).toBe("https://images.example/me.webp");
-    const otherAvatar = screen.getByTitle("채색 담당");
+    const otherAvatar = within(membersCard).getByTitle("채색 담당");
     expect(otherAvatar.getAttribute("data-avatar-kind")).toBe("monogram");
     expect(otherAvatar.querySelector("img")).toBeNull();
   });
@@ -145,8 +156,8 @@ describe("people & access surface (wave 6 T1)", () => {
         <App path="/team/people/team-a" />
       </SessionContext.Provider>,
     );
-    await screen.findByRole("heading", { name: "구성원" });
-    const avatar = screen.getByTitle("소유자");
+    const membersCard = await findMembersCard();
+    const avatar = within(membersCard).getByTitle("소유자");
     const img = avatar.querySelector("img");
     expect(img).toBeTruthy();
     fireEvent.error(img as HTMLImageElement);
