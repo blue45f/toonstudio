@@ -4,7 +4,11 @@ import {
   setDialogueReviewStatus,
   updateDialogueTranslationText,
 } from "../lettering/studio-dialogue-review";
-import { dialogueLocalesForPages, dialogueTranslationCoverage } from "../lettering/studio-dialogue-translate";
+import {
+  dialogueLocalesForPages,
+  dialogueTranslationCoverage,
+  type DialogueTranslationCardContextMap,
+} from "../lettering/studio-dialogue-translate";
 import { moveKeyframe, removeKeyframe, removeTrack, resolveTimelineComposite, type AnimationTimelineDoc } from "../studio-anim-tracks";
 import { defaultStudioAppSettings, type StudioAppSettings, type StudioAppSettingsTab } from "../studio-app-settings";
 import { elementLabel } from "../studio-element-label";
@@ -148,7 +152,7 @@ export interface StudioCanvasModalsOverlayProps {
   translateError: string | null;
   translateDraft: Map<string, string> | null;
   setTranslateDraft: import("react").Dispatch<import("react").SetStateAction<Map<string, string> | null>>;
-  executeGenerateTranslations: () => Promise<void>;
+  executeGenerateTranslations: (cardContexts?: DialogueTranslationCardContextMap) => Promise<void>;
   patchTranslateDraft: (id: string, text: string) => void;
   applyTranslationDraft: () => void;
   switchToDialogueLocale: (locale: string) => void;
@@ -481,7 +485,7 @@ export const StudioCanvasModalsBody = memo(function StudioCanvasModalsBody({
             progress={translateProgress}
             error={translateError}
             draft={translateDraft}
-            onGenerate={() => void executeGenerateTranslations()}
+            onGenerate={(cardContexts) => void executeGenerateTranslations(cardContexts)}
             onDraftChange={patchTranslateDraft}
             onApplyDraft={applyTranslationDraft}
             onDiscardDraft={() => setTranslateDraft(null)}
