@@ -117,7 +117,7 @@ ZIP은 기존 작성기의 "store"(압축 없음) 방식이다. 이미지는 이
 | --- | --- |
 | `studio-package-archive.ts` `buildStudioPackageArchiveBlob` | ZIP 조립(store 방식, UTF-8 이름, CRC-32, 진행·취소, 상한) |
 | `studio-crc32-worker-client.ts` | CRC 실행 방식 선택과 Worker 폴백 |
-| `export/studio-pdf-export.ts` `buildPdfFromJpegPages`, `canvasToJpegBytes` | 표지 PDF 쪽 조립 — `studio-review-pdf.ts`와 같은 방식(글자를 캔버스에 그려 JPEG로 넣는다) |
+| `export/studio-pdf-export.ts` `buildPdfFromJpegPages`, `canvasToJpegBytes` | 표지 PDF 쪽 조립 — `studio-review-pdf.ts`가 쓰는 같은 PDF 작성 계층이고 같은 방식(글자를 캔버스에 그려 JPEG로 넣어 한글 폰트 임베드와 PDF 문자열 주입을 피한다) |
 | `export/studio-download-file-name.ts` | 파일 이름(`<제목>-submission-<UTC 시각>.zip`) |
 | `export/studio-episode-byte-budget.ts` `formatStudioByteSize` | 용량 표시 |
 | `export/studio-export.ts` `saveExportBlob` | 저장 |
@@ -125,6 +125,11 @@ ZIP은 기존 작성기의 "store"(압축 없음) 방식이다. 이미지는 이
 | `studio-webtoon-guides.ts` `WEBTOON_WIDTH_STANDARDS` | 폭 기준(네이버 690·카카오 720 등) |
 | `studio-story-bible.ts`, `planning/studio-character-profile.ts` | 캐릭터와 서술형 시트(읽기 전용 투영) |
 | `studio-shell/useStudioProjectWorkspace.ts` | 프로젝트 워크스페이스(스토리 바이블) 읽기 |
+
+직접 재사용하지 않은 가까운 코드와 그 이유:
+
+- **발행 패키지 계획기** (`studio-publish-package.ts`의 `planStudioPublishPackage`, `export/studio-publish-package-export.ts`). 같은 ZIP 작성기를 쓰는 기존 경로지만, 한 회차의 썸네일 슬롯·플랫폼 대상·권리/AI 학습 동의 메타데이터를 다루고 "픽셀을 그리지도 ZIP을 만들지도 않는" 계획기다. 다회차 투고에는 맞지 않아 ZIP 조립·CRC·상한 계층만 재사용했다. 발행 패키지의 권리·AI 학습 동의 메타데이터를 투고 매니페스트에 싣지는 않았다(5절).
+- **검토 PDF 작성기** (`studio-review-pdf.ts`의 `renderStudioReviewPdf`). 문서 페이지를 렌더링해 왼쪽에 검토 레일을 붙이는 작성기라 글만 있는 표지에는 쓸 수 없다. 같은 PDF 작성 계층과 같은 "글자는 그림으로" 방식만 따랐다.
 
 ### 2.8 접근성과 표시
 
@@ -220,6 +225,7 @@ jsdom 시험은 `TextEncoder`·`DOMException`이 다른 전역의 객체를 돌�
 - **게시 작품(클라우드 시리즈)에서 가져오기 어댑터가 없다 (target).** 1절의 이유로 이번 범위에서 제외했다.
 - **이미지는 새로고침하면 다시 골라야 한다 (legacy exception).** 글만 저장한다. 큰 파일을 IndexedDB에 두는 방식은 용량·삭제 정책이 필요해 하지 않았다.
 - **표지 PDF는 글자를 선택·검색할 수 없다 (legacy exception).** 한글 폰트 임베드를 피하려고 `studio-review-pdf`와 같은 방식을 썼다. 그리는 코드는 가짜 캔버스로만 시험했고 **실제 브라우저에서의 모양은 확인하지 않았다.**
+- **발행 패키지의 권리·AI 학습 동의 메타데이터를 싣지 않는다 (target).** 투고처가 권리·AI 사용 표기를 요구하는지는 확인하지 못했고, 이 변경은 매니페스트에 넣지 않았다.
 - **투고처 형식 제한을 점검하지 않는다 (target).** `EXPORT_PRESETS`에는 "네이버 도전만화는 JPG만"처럼 형식 제한 기록이 있지만 검증하지 않았고, 폭과 용량만 점검한다. 용량 기준값도 투고처 최신 안내와 대조하지 못했다.
 - **브라우저 시각 확인을 하지 않았다.** 이 변경의 검증은 단위·컴포넌트 시험(상태·키보드·접근 가능한 이름)이며 라이트/다크/고대비, 좁은 화면의 실제 모양 확인은 이후 UI/UX 단계의 몫이다.
 - **계약 체크리스트는 2024-06-13 고시본·2025년 해설집까지만 대조했다 (legacy exception).** 이후 개정과 표준계약서 HWP 첨부 원문은 확인하지 못했다. 영어 문구는 한국어 원문을 옮긴 안내이며 법적 번역이 아니다.
