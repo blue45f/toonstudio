@@ -56,6 +56,23 @@ const StudioPinnedReviewPanel = lazy(async () => {
   return { default: module.StudioPinnedReviewPanel };
 });
 
+// 투고 패키지는 ZIP·PDF 작성 코드를 끌고 오므로 '만든 파일' 보기를 열 때만 불러온다.
+const StudioSubmissionPackagePanel = lazy(async () => {
+  const module = await import("../submission-package/StudioSubmissionPackagePanel");
+  return { default: module.StudioSubmissionPackagePanel };
+});
+
+function SubmissionPackageFallback() {
+  const bt = useBilingual("studioProjectIntegrated.submissionFallback");
+  return (
+    <div
+      className="min-h-20 animate-pulse rounded-2xl border border-line bg-card/80 motion-reduce:animate-none"
+      role="status"
+      aria-label={bt("투고 패키지 화면을 불러오는 중", "Loading the submission package panel")}
+    />
+  );
+}
+
 function ProjectGraphPanelFallback({ locale: _locale }: { readonly locale: "ko" | "en" }) {
   const bt = useBilingual("studioProjectIntegrated.graphFallback");
   return (
@@ -150,6 +167,12 @@ function SectionWorkflow({
       ) : null}
       {section === "export" && (view === "targets" || view === "packages") ? (
         <StudioIpOpportunityPanel projectId={projectId} />
+      ) : null}
+      {section === "export" && view === "packages" ? (
+        <Suspense fallback={<SubmissionPackageFallback />}>
+          {/* 프로젝트가 바뀌면 다시 만든다 — 작품 소개·회차 칸·고른 이미지가 다른 프로젝트로 섞이면 안 된다. */}
+          <StudioSubmissionPackagePanel key={projectId} projectId={projectId} locale={locale} />
+        </Suspense>
       ) : null}
       {section === "export" ? (
         <StudioExportPanel projectId={projectId} locale={locale} />
