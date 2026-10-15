@@ -7,8 +7,11 @@
 // /studio/templates를 거쳐 ?template=로 추론되고, 가져오기 레인은 양식을 거치지 않는다.
 // 갤러리 본문은 /showcase가 정본이라 이 주소에 갤러리를 중복 배치하지 않고, 갤러리 보기 조건
 // (tab·sort·tag 등)을 단 옛 공유 주소는 조건을 그대로 들고 /showcase로 넘긴다.
-import { ArrowRight, BookOpen, Clapperboard, Clock3, Images, LayoutTemplate, Plus, Upload, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+// "내 이야기" 의도 카드는 도구가 아니라 이야기에서 시작하는 초보자용 안내 흐름의 입구다. 같은 주소의
+// ?intent=my-story[&topic=…]가 질문형 인터뷰(지연 로딩)를 열고, 초안은 기존 대본·콘티 시작 경로로 넘어간다.
+// 별도 라우트를 만들지 않으므로 라우트·내비 계약은 그대로다.
+import { ArrowLeft, ArrowRight, BookHeart, BookOpen, Clapperboard, Clock3, Images, LayoutTemplate, Plus, Upload, Users } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 
 import type { StudioProjectLibraryEntry } from "./studio-project-library-store";
@@ -20,17 +23,33 @@ import {
   studioProjectLibraryTypeLabel,
 } from "./studio-shell/studio-project-library-management-model";
 import { useStudioProjectLibrary } from "./studio-shell/useStudioProjectLibrary";
+import {
+  isMyStoryTemplateId,
+  MY_STORY_TEMPLATE_IDS,
+  MY_STORY_TOPIC_TITLES,
+} from "./my-story/my-story-model";
 
+import { LoadingState } from "@/shared/components/LoadingState";
 import { Container } from "@/shared/components/section";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
+import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { useApp } from "@/shared/lib/store";
 import Link from "@/shared/navigation/router-link";
+
+/** 질문형 인터뷰는 "내 이야기"를 고른 사람만 쓰므로 시작 시트 본문과 분리해 늦게 불러온다. */
+const MyStoryStartFlow = lazyRetry(
+  () => import("./my-story/MyStoryStartFlow").then((module) => ({ default: module.MyStoryStartFlow })),
+  "MyStoryStartFlow",
+);
 
 /** 갤러리 보기 조건 키 — 하나라도 있으면 갤러리 주소로 본다. */
 const GALLERY_VIEW_PARAM_KEYS = ["tab", "sort", "content", "provenance", "tag", "portfolio"] as const;
 const RECENT_PROJECT_LIMIT = 4;
+/** `?intent=` 값 — 질문형 인터뷰 입구. */
+const MY_STORY_INTENT = "my-story";
 
 /** 이 기기의 작품 보관함에서 최근에 연 작품을 읽는다. 읽기 전용 — 열기 기록은 작품 화면이 맡는다. */
 function useRecentStudioProjects(
@@ -90,6 +109,25 @@ export function CreateStartPage() {
     return <Navigate to={`/showcase?${searchParams.toString()}`} replace />;
   }
 
+  // 내 이야기 의도: 시작 레인 대신 질문형 인터뷰를 보여 준다. 모르는 topic 값은 무시한다.
+  if (searchParams.get("intent") === MY_STORY_INTENT) {
+    const requestedTopic = searchParams.get("topic");
+    return (
+      <Container size="wide" className="py-6 sm:py-10">
+        <Link
+          href="/create"
+          className="mb-5 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent"
+        >
+          <ArrowLeft size={15} aria-hidden />
+          {bt("다른 시작 방법 보기", "See other ways to start")}
+        </Link>
+        <Suspense fallback={<LoadingState variant="skeleton" label={bt("내 이야기 질문을 불러오는 중이에요", "Loading your story questions")} />}>
+          <MyStoryStartFlow initialTemplateId={isMyStoryTemplateId(requestedTopic) ? requestedTopic : null} />
+        </Suspense>
+      </Container>
+    );
+  }
+
   return (
     <Container size="wide" className="py-6 sm:py-10">
       <header className="max-w-2xl">
@@ -106,6 +144,50 @@ export function CreateStartPage() {
           )}
         </p>
       </header>
+
+      <section
+        aria-labelledby="create-start-my-story-title"
+        className="mt-8 rounded-2xl border border-accent/40 bg-accent-soft p-5 sm:p-6"
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 max-w-2xl">
+            <span className={CHOICE_ICON_CLASS}>
+              <BookHeart size={22} aria-hidden />
+            </span>
+            <h2 id="create-start-my-story-title" className="mt-4 text-lg font-bold text-fg">
+              {bt("내 이야기로 시작하기", "Start from my story")}
+            </h2>
+            <p className="mt-1.5 text-sm leading-6 text-fg-2">
+              {bt(
+                "무엇을 그릴지 막막하다면 내 경험과 기억부터 적어 보세요. 질문 6~8개에 답하면 4컷·8컷 웹툰 초안이 만들어지고, 답하기 어려운 건 건너뛰어도 돼요.",
+                "If you are unsure what to draw, start by writing down your own experience. Answer 6 to 8 questions to get a 4- or 8-panel webtoon draft, and skip any you would rather not answer.",
+              )}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-fg-3">
+              {bt("쓰는 답변은 이 기기에만 임시 저장돼요", "Your answers are kept only on this device while you write")}
+            </p>
+          </div>
+          <Link
+            href={`/create?intent=${MY_STORY_INTENT}`}
+            className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 shrink-0 gap-2" })}
+          >
+            {bt("내 이야기 풀어내기", "Tell my story")}
+            <ArrowRight size={16} aria-hidden />
+          </Link>
+        </div>
+        <ul aria-label={bt("이야기 주제 바로 고르기", "Pick a story topic directly")} className="mt-4 flex flex-wrap gap-2">
+          {MY_STORY_TEMPLATE_IDS.map((topicId) => (
+            <li key={topicId}>
+              <Link
+                href={`/create?intent=${MY_STORY_INTENT}&topic=${topicId}`}
+                className="fx-press inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 text-sm font-semibold text-fg transition-colors hover:border-accent/60"
+              >
+                {bt(MY_STORY_TOPIC_TITLES[topicId].ko, MY_STORY_TOPIC_TITLES[topicId].en)}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <StaggerReveal className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
         <Link href="/studio/new?lane=idea&start=idea" className={CHOICE_CARD_CLASS}>
