@@ -2,7 +2,7 @@
 
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
   createStudioProject,
@@ -148,7 +148,15 @@ describe("CreateStartPage (작품 시작 시트)", () => {
   });
 });
 
+/** 지연 로딩된 질문형 인터뷰를 기다리는 시간 — 부하가 큰 CI에서 첫 로딩이 기본 1초를 넘길 수 있다. */
+const LAZY_FLOW_WAIT = { timeout: 10_000 } as const;
+
 describe("CreateStartPage — 내 이야기 의도 카드", () => {
+  // 질문형 인터뷰는 지연 로딩이다. 모듈 그래프를 먼저 데워 두어 첫 로딩 시간이 개별 테스트에 섞이지 않게 한다.
+  beforeAll(async () => {
+    await import("./my-story/MyStoryStartFlow");
+  }, 60_000);
+
   it("레인 위에 ‘내 이야기로 시작하기’ 카드와 주제 6종 링크가 있다", () => {
     renderStartSheet("/create");
 
@@ -176,7 +184,7 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
   it("?intent=my-story면 레인 대신 질문형 인터뷰를 열고 돌아가는 링크를 둔다", async () => {
     renderStartSheet("/create?intent=my-story");
 
-    expect(await screen.findByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" }, LAZY_FLOW_WAIT)).toBeTruthy();
     expect(screen.getByRole("link", { name: "다른 시작 방법 보기" }).getAttribute("href")).toBe("/create");
     expect(screen.queryByRole("heading", { name: "작품 시작하기" })).toBeNull();
     expect(screen.queryByRole("link", { name: /콘티부터 시작하기/ })).toBeNull();
@@ -186,14 +194,14 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
   it("topic을 알려 주면 그 주제의 첫 질문으로 바로 시작한다", async () => {
     renderStartSheet("/create?intent=my-story&topic=safety");
 
-    expect(await screen.findByText("질문 1 / 6")).toBeTruthy();
+    expect(await screen.findByText("질문 1 / 6", undefined, LAZY_FLOW_WAIT)).toBeTruthy();
     expect(screen.getByRole("textbox", { name: /어떤 장소나 상황에서 일어나는 일인가요/ })).toBeTruthy();
   });
 
   it("모르는 topic은 무시하고 주제 선택 화면을 보여 준다", async () => {
     renderStartSheet("/create?intent=my-story&topic=nope");
 
-    expect(await screen.findByRole("heading", { name: "어떤 이야기를 남기고 싶나요?" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "어떤 이야기를 남기고 싶나요?" }, LAZY_FLOW_WAIT)).toBeTruthy();
   });
 
   it("모르는 intent 값은 일반 시작 시트로 취급한다", () => {
