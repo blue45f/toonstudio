@@ -54,7 +54,8 @@ describe("studio production server revisions", () => {
   });
 
   it("pins the surfaced retention policy to the server retention of 20 revisions", () => {
-    // 서버 정본: CREATOR_WORK_REVISION_RETENTION (apps/api/src/server/creator-work-revisions.ts)
+    // 서버 정본: API 앱 server 폴더의 creator-work-revisions.ts 의 CREATOR_WORK_REVISION_RETENTION.
+    // 웹의 비통합 시험은 다른 앱의 src 경로를 적지 않는다(앱 경계 래칫이 교차 참조로 센다).
     expect(STUDIO_SERVER_REVISION_RETENTION).toBe(20);
     const row = (revision: number): StudioServerRevisionSummary => ({
       revision,

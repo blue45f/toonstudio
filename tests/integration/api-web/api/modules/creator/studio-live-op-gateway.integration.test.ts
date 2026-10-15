@@ -1,10 +1,13 @@
 /**
  * op 채널 병행 계약 통합 테스트 — 웹 병합 코어 하네스를 게이트웨이 상대로 돌린다.
  *
- * 실제 코드만 쓴다: 게이트웨이 핸들러(submit/sync)·방·FIFO·쿼터는 이 모듈의
- * 프로덕션 파일을, 클라이언트는 웹 코어(StrokeMergeClient)를 그대로 쓴다.
+ * 실제 코드만 쓴다: 게이트웨이 핸들러(submit/sync)·방·FIFO·쿼터는 API 앱 creator
+ * 모듈의 프로덕션 파일을, 클라이언트는 웹 코어(StrokeMergeClient)를 그대로 쓴다.
  * 가짜는 전송(Socket.IO 소켓·방 emit)과 인증 호스트 경계뿐이다 — 기존
  * 게이트웨이 테스트들이 같은 경계를 가짜로 두는 방식과 같다.
+ *
+ * 위치: 웹 소스와 API 소스를 함께 가져오는 시험이라, 앱 사이 직접 import 를 0으로 고정한
+ * 경계 래칫(validate-app-boundaries)이 허용하는 교차 앱 시험 자리(tests/integration)에 둔다.
  *
  * 단언하는 계약:
  *  1. submit → ACK {seq, duplicate:false} + 발신자 제외 방 브로드캐스트,
@@ -22,32 +25,32 @@
 
 import { describe, expect, it } from "vitest";
 
-import { hashMergeState } from "../../../../web/src/domains/creator/live/merge/stroke-merge-core";
-import { StrokeMergeClient } from "../../../../web/src/domains/creator/live/merge/stroke-merge-sync";
-import type {
-  StrokeInput,
-  StrokeOpBody,
-} from "../../../../web/src/domains/creator/live/merge/stroke-merge-types";
 
-import * as opHandlers from "./studio-live-gateway-handlers-op";
+import { StudioLiveCrdtQuotaLimiter } from "../../../../../../apps/api/src/modules/creator/studio-live-crdt-quota";
+import * as opHandlers from "../../../../../../apps/api/src/modules/creator/studio-live-gateway-handlers-op";
 import {
   InMemoryStudioLiveOpLogStore,
   StudioLiveOpRoomRegistry,
   digestStudioLiveOpIds,
   hashStudioLiveOpState,
-} from "./studio-live-op";
-import { StudioLiveCrdtQuotaLimiter } from "./studio-live-crdt-quota";
-import { STUDIO_CRDT_PROTOCOL_VERSION } from "./studio-live.protocol";
+} from "../../../../../../apps/api/src/modules/creator/studio-live-op";
+import { STUDIO_CRDT_PROTOCOL_VERSION } from "../../../../../../apps/api/src/modules/creator/studio-live.protocol";
+import { hashMergeState } from "../../../../../../apps/web/src/domains/creator/live/merge/stroke-merge-core";
+import { StrokeMergeClient } from "../../../../../../apps/web/src/domains/creator/live/merge/stroke-merge-sync";
 
-import type { StudioLiveGatewayHost } from "./studio-live-gateway-host";
-import type { StudioLiveParticipantInternal } from "./studio-live-gateway-constants";
+import type { StudioLiveParticipantInternal } from "../../../../../../apps/api/src/modules/creator/studio-live-gateway-constants";
+import type { StudioLiveGatewayHost } from "../../../../../../apps/api/src/modules/creator/studio-live-gateway-host";
 import type {
   StudioLiveAck,
   StudioLiveOpBroadcast,
   StudioLiveOpSubmitAck,
   StudioLiveOpSyncResult,
   StudioLiveSocket,
-} from "./studio-live.protocol";
+} from "../../../../../../apps/api/src/modules/creator/studio-live.protocol";
+import type {
+  StrokeInput,
+  StrokeOpBody,
+} from "../../../../../../apps/web/src/domains/creator/live/merge/stroke-merge-types";
 
 const WORK_ID = "work-op-1";
 

@@ -3,7 +3,7 @@
   "webToApi": 0,
   "adminToWeb": 0,
   "adminToApi": 0,
-  "apiToWeb": 3,
+  "apiToWeb": 0,
   "apiToAdmin": 0,
   "characterLabToApps": 0,
   "brushLabToApps": 0,
@@ -15,5 +15,5 @@
   "webCrossDomainDeepImport": 76,
   "contractsToApps": 0,
   "contractsForbiddenImport": 0,
-  "crossAppTestOutsideIntegration": 2
+  "crossAppTestOutsideIntegration": 0
 }
