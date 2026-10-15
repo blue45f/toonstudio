@@ -1,4 +1,8 @@
-import { Controller, Get, Header, Injectable, Module, Query } from "@nestjs/common";
+import { Controller, Get, Header, Injectable, Module, Query, Req } from "@nestjs/common";
+
+import { createAnonymousClientLimiter } from "../auth/anonymous-client-limit";
+
+import type { Request } from "express";
 
 const YOUTUBE_SEARCH_ENDPOINT = "https://www.googleapis.com/youtube/v3/search";
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -125,6 +129,14 @@ export class LearningYoutubeService {
   }
 }
 
+// 로그인 없이 서버 키로 YouTube Data API(search.list 는 호출당 100 쿼터 단위)를 부른다. 캐시는 같은
+// 질의만 막으므로 질의를 바꿔 가며 반복하면 하루 쿼터를 금방 소진시킨다. 클라이언트별로 제한한다.
+const youtubeSearchLimiter = createAnonymousClientLimiter({
+  name: "learning-youtube-search",
+  limit: 30,
+  windowMs: 60_000,
+});
+
 @Controller("learning")
 export class LearningController {
   constructor(private readonly youtube: LearningYoutubeService) {}
@@ -134,7 +146,9 @@ export class LearningController {
   searchYouTube(
     @Query("q") query: string | undefined,
     @Query("limit") limit: string | undefined,
+    @Req() request?: Request,
   ) {
+    if (request) youtubeSearchLimiter.enforce(request);
     return this.youtube.search(query, limit);
   }
 }

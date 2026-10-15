@@ -2,6 +2,8 @@ import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 
 import { PRODUCTION_GOOGLE_DRIVE_ARTIFACTS } from "./production-integration-artifacts";
+import { normalizeProductionRedirectPath } from "./production-integration-oauth-guard";
+import { parseWebPushEndpoint } from "./production-web-push-network";
 
 const IdentitySchema = z
   .string()
@@ -21,6 +23,11 @@ export const ProductionIntegrationGoogleStartQuerySchema = z.object({
     .string()
     .max(512)
     .regex(/^\/production(?:\/|$)/u)
+    // 점 세그먼트·역슬래시로 /production 밖(`//host` 포함)으로 정규화되는 값을 막는다.
+    .refine(
+      (value) => normalizeProductionRedirectPath(value) !== null,
+      "redirectPath must stay inside /production after normalization",
+    )
     .default("/production"),
 }).strict();
 
@@ -76,9 +83,12 @@ export const ProductionPushUnsubscribeSchema = z.object({
 }).strict();
 
 export const ProductionPushSubscriptionSchema = z.object({
+  // 서버가 이 주소로 직접 요청을 보내므로 공개 도메인의 표준 포트 HTTPS 푸시 서비스만 허용한다
+  // (내부망, 로컬, 메타데이터, IP 리터럴, 인증 정보, 비표준 포트 거부 - SSRF 방지).
+  // 구독 해제는 서버가 요청을 보내지 않고 해시만 쓰므로 과거 구독도 지울 수 있게 느슨하게 둔다.
   endpoint: z.url().max(4_096).refine(
-    (value) => new URL(value).protocol === "https:",
-    "Push endpoint must use HTTPS",
+    (value) => parseWebPushEndpoint(value) !== null,
+    "Push endpoint must be a public HTTPS push service URL",
   ),
   expirationTime: z.number().int().min(0).nullable().default(null),
   keys: z.object({

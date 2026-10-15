@@ -63,6 +63,11 @@ import {
   ProductionExternalHttpError,
 } from "./production-integration-http";
 import {
+  appendProductionRedirectQuery,
+  assertGoogleCallbackViewer,
+  normalizeProductionRedirectPath,
+} from "./production-integration-oauth-guard";
+import {
   ProductionIntegrationMutationConflictError,
   ProductionIntegrationMutationInFlightError,
   ProductionIntegrationRepository,
@@ -98,14 +103,6 @@ function asRecord(value: unknown): Record<string, unknown> {
     throw new Error("integration provider returned a non-object response");
   }
   return value as Record<string, unknown>;
-}
-
-function appendQuery(path: string, values: Record<string, string>): string {
-  const url = new URL(path, "https://toonstudio.invalid");
-  for (const [key, value] of Object.entries(values)) {
-    url.searchParams.set(key, value);
-  }
-  return `${url.pathname}${url.search}`;
 }
 
 function utcDayStart(now = new Date()): Date {
@@ -473,13 +470,15 @@ export class ProductionIntegrationService {
     if (!this.config.google.configured) {
       throw new BadRequestException("google_workspace_not_configured");
     }
+    const safeRedirectPath = normalizeProductionRedirectPath(redirectPath);
+    if (!safeRedirectPath) throw new BadRequestException("redirectPath는 /production 안의 경로여야 합니다.");
     const state = randomBytes(32).toString("base64url");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1_000);
     await this.repository.createOauthState({
       stateHash: sha256Digest(state),
       projectId,
       actorUserId,
-      redirectPath,
+      redirectPath: safeRedirectPath,
       expiresAt,
     });
     return {
@@ -488,20 +487,21 @@ export class ProductionIntegrationService {
     };
   }
 
-  async googleCallback(input: {
-    readonly state: string;
-    readonly code?: string;
-    readonly error?: string;
-  }) {
+  /** @param viewerUserId 콜백을 연 브라우저의 검증된 세션 사용자. 연결을 시작한 사용자와 다르면 거부한다. */
+  async googleCallback(
+    input: { readonly state: string; readonly code?: string; readonly error?: string },
+    viewerUserId: string | undefined,
+  ) {
     const state = await this.repository.consumeOauthState(
       sha256Digest(input.state),
     );
     if (!state) {
       throw new BadRequestException("Google 연결 요청이 만료되었거나 이미 사용되었습니다.");
     }
+    assertGoogleCallbackViewer(viewerUserId, state.actorUserId);
     if (input.error) {
       return {
-        redirectPath: appendQuery(state.redirectPath, {
+        redirectPath: appendProductionRedirectQuery(state.redirectPath, {
           integration: "google",
           status: "denied",
           error: input.error,
@@ -530,7 +530,7 @@ export class ProductionIntegrationService {
       expiresAt: new Date(credential.expiresAt),
     });
     return {
-      redirectPath: appendQuery(state.redirectPath, {
+      redirectPath: appendProductionRedirectQuery(state.redirectPath, {
         integration: "google",
         status: "connected",
       }),

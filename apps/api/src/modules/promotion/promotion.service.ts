@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, HttpExcepti
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { PROMOTION_KINDS, PROMOTION_STAGES, PROMOTION_GENRES, promotionCursor, promotionKey, promotionRecord, promotionText, validatePromotion } from "../../../../../packages/core/src/promotion";
 import { db, promotionBookmarks, promotionPosts, promotionReports, users } from "../../platform/database";
+import { userFacingException } from "../creator/user-facing-error";
 import { isOfficialUser } from "../../server/feedback";
 import { escapeLikePattern } from "../../server/sql-like";
 import type { PromotionPost } from "../../../../../packages/core/src/promotion";
@@ -114,9 +115,7 @@ export class PromotionService {
     try {
       return await addPromotionComment(id, userId, input);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "댓글을 작성할 수 없어요.",
-      );
+      throw userFacingException(error, "댓글을 작성할 수 없어요.");
     }
   }
 
@@ -128,9 +127,7 @@ export class PromotionService {
     try {
       return await updatePromotionComment(id, commentId, userId, input);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "댓글을 수정할 수 없어요.",
-      );
+      throw userFacingException(error, "댓글을 수정할 수 없어요.");
     }
   }
 
@@ -139,9 +136,7 @@ export class PromotionService {
     try {
       return await deletePromotionComment(id, commentId, userId, canModerate);
     } catch (error) {
-      throw new ForbiddenException(
-        error instanceof Error ? error.message : "댓글을 삭제할 수 없어요.",
-      );
+      throw userFacingException(error, "댓글을 삭제할 수 없어요.", (message) => new ForbiddenException(message));
     }
   }
 
@@ -153,9 +148,7 @@ export class PromotionService {
     try {
       return await togglePromotionCommentLike(id, commentId, userId);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "댓글 반응을 처리할 수 없어요.",
-      );
+      throw userFacingException(error, "댓글 반응을 처리할 수 없어요.");
     }
   }
 

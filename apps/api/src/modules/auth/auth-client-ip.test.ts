@@ -4,6 +4,7 @@ import {
   AuthClientIpConfigurationError,
   resolveAuthClientIp,
   resolveAuthClientIpPolicy,
+  resolveRequestClientIp,
 } from "./auth-client-ip";
 
 describe("AUTH_TRUSTED_PROXY_* 정합성", () => {
@@ -194,5 +195,52 @@ describe("클라이언트 IP 신뢰 경계", () => {
         directPolicy,
       ),
     ).toBe("192.0.2.5");
+  });
+});
+
+describe("resolveRequestClientIp (환경 설정 기반 단일 진입점)", () => {
+  const spoofed = {
+    headers: {
+      "x-forwarded-for": "203.0.113.50",
+      "x-real-ip": "203.0.113.51",
+      "cf-connecting-ip": "203.0.113.52",
+    },
+    socket: { remoteAddress: "198.51.100.7" },
+  };
+
+  it("신뢰 프록시를 설정하지 않으면 전달 헤더를 무시하고 소켓 주소만 쓴다", () => {
+    expect(resolveRequestClientIp(spoofed, {})).toBe("198.51.100.7");
+    expect(resolveRequestClientIp(spoofed, { AUTH_TRUSTED_PROXY_ENABLED: "false" })).toBe(
+      "198.51.100.7",
+    );
+  });
+
+  it("신뢰 프록시로 등록된 피어가 보낸 헤더만 신뢰한다", () => {
+    const environment = {
+      AUTH_TRUSTED_PROXY_ENABLED: "true",
+      AUTH_TRUSTED_PROXY_IPS: "198.51.100.7",
+      AUTH_TRUSTED_CLIENT_IP_HEADER: "x-forwarded-for",
+    };
+    expect(resolveRequestClientIp(spoofed, environment)).toBe("203.0.113.50");
+    expect(
+      resolveRequestClientIp(
+        { ...spoofed, socket: { remoteAddress: "192.0.2.99" } },
+        environment,
+      ),
+    ).toBe("192.0.2.99");
+  });
+
+  it("환경 설정이 잘못되면 헤더를 신뢰하지 않고 소켓 주소로 되돌린다", () => {
+    expect(
+      resolveRequestClientIp(spoofed, {
+        AUTH_TRUSTED_PROXY_ENABLED: "true",
+        AUTH_TRUSTED_PROXY_IPS: "not-an-ip",
+        AUTH_TRUSTED_CLIENT_IP_HEADER: "x-forwarded-for",
+      }),
+    ).toBe("198.51.100.7");
+  });
+
+  it("소켓 정보가 없는 요청은 unknown 으로 수렴한다", () => {
+    expect(resolveRequestClientIp({}, {})).toBe("unknown");
   });
 });
