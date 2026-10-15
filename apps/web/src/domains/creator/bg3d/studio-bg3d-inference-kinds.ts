@@ -171,6 +171,29 @@ export function describeStudioBg3dInferenceAxis(axis: StudioBg3dInferenceAxis): 
   return `${style.label} · ${style.meaning} · ${style.colorName}`;
 }
 
+/** 디자인 토큰 → Tailwind 글자색 클래스. 하드코딩 색 대신 의미 토큰만 쓴다. */
+export const STUDIO_BG3D_INFERENCE_TONE_TEXT_CLASS: Readonly<Record<StudioBg3dInferenceTone, string>> =
+  Object.freeze({
+    good: "text-good",
+    cool: "text-cool",
+    accent: "text-accent",
+    bad: "text-bad",
+    warn: "text-warn",
+    "fg-2": "text-fg-2",
+    "fg-3": "text-fg-3",
+  });
+
+/** 축과 연결된 종류(축 정렬·기준점 연장)는 축 색을, 나머지는 종류 색을 쓴다. */
+export function resolveStudioBg3dInferenceToneTextClass(
+  kind: StudioBg3dInferenceKind,
+  axis: StudioBg3dInferenceAxis | null,
+): string {
+  if (axis && (kind === "axis" || kind === "from-point")) {
+    return STUDIO_BG3D_INFERENCE_TONE_TEXT_CLASS[STUDIO_BG3D_INFERENCE_AXIS_STYLE[axis].tone];
+  }
+  return STUDIO_BG3D_INFERENCE_TONE_TEXT_CLASS[STUDIO_BG3D_INFERENCE_KIND_STYLE[kind].tone];
+}
+
 // ---------------------------------------------------------------------------------------------
 // 임계값과 성능 예산
 // ---------------------------------------------------------------------------------------------

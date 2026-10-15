@@ -269,6 +269,18 @@ describe("Esc 취소와 숫자 입력(VCB)", () => {
     expect(press(start(), "t").handled).toBe(false);
   });
 
+  it("입력창 밖에 쌓인 숫자는 Backspace로 지우고 전역 선택 삭제로 새지 않게 처리한다", () => {
+    const typed = run(start(), { type: "vcb-change", text: "2.4m" });
+    const once = press(typed, "Backspace");
+    expect(once.handled).toBe(true);
+    expect(once.state.vcb.text).toBe("2.4");
+    expect(once.effects).toEqual([{ type: "focus-vcb" }]);
+    expect(press(typed, "Delete").state.vcb.text).toBe("");
+    // 입력이 없으면 가로채지 않고, 입력창 안의 Backspace는 입력창에 맡긴다.
+    expect(press(start(), "Backspace").handled).toBe(false);
+    expect(press(typed, "Backspace", { fromVcb: true }).handled).toBe(false);
+  });
+
   it("Enter로 길이를 적용한다: 잠긴 축 방향과 결과가 가리키던 쪽의 부호를 따른다", () => {
     let state = run(start(), { type: "request-lock", role: "first" }, {
       type: "result",

@@ -402,6 +402,13 @@ function handleKeyDown(
     return submitVcb(state, options);
   }
 
+  // 입력창 밖에서 쌓인 숫자 입력은 Backspace로 지운다. 이 키가 전역 "선택 삭제"로 새지 않게 처리한다.
+  // (입력창 안의 Backspace는 입력창 자신이 지운다.)
+  if ((event.key === "Backspace" || event.key === "Delete") && !event.fromVcb && state.vcb.text !== "") {
+    const text = event.key === "Backspace" ? state.vcb.text.slice(0, -1) : "";
+    return reduction({ ...state, vcb: { text, error: null } }, true, [{ type: "focus-vcb" }]);
+  }
+
   if (!event.widgetOwnsArrows) {
     if (event.key === "ArrowRight") return toggleAxisLock(state, roles.first);
     if (event.key === "ArrowLeft") return toggleAxisLock(state, roles.second);
