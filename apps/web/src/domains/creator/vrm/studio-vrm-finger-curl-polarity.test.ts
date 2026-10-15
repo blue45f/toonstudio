@@ -21,13 +21,19 @@ import {
 
 (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
 
+// AvatarSample_A/B/C.vrm, fem_vroid.vrm and masc_vroid.vrm were removed from the repo
+// for rights reasons (the VRoid preset/sample terms are not CC0 and prohibit bundled
+// redistribution — see apps/web/public/vrm/LICENSES.md). The Sendagaya/Sakurada/Darkness
+// VRoid beta samples below are the license-cleared CC0 replacements from the same sample
+// family; Jimmy (100Avatars, CC0) covers the male-rig slot and was verified to carry the
+// full 30 finger bones this suite reads.
 const CORE = [
   { id: "sample-vrm", name: "루미", file: "apps/web/public/vrm/sample.vrm" },
-  { id: "avatar-a", name: "하린", file: "apps/web/public/vrm/AvatarSample_A.vrm" },
-  { id: "avatar-b", name: "세라", file: "apps/web/public/vrm/AvatarSample_B.vrm" },
-  { id: "avatar-c", name: "유나", file: "apps/web/public/vrm/AvatarSample_C.vrm" },
-  { id: "mio", name: "미오", file: "apps/web/public/vrm/fem_vroid.vrm" },
-  { id: "noa", name: "노아", file: "apps/web/public/vrm/masc_vroid.vrm" },
+  { id: "sendagaya-shino", name: "시노", file: "apps/web/public/vrm/Sendagaya_Shino.vrm" },
+  { id: "sendagaya-shibu", name: "시온", file: "apps/web/public/vrm/Sendagaya_Shibu.vrm" },
+  { id: "sakurada-fumiriya", name: "후미", file: "apps/web/public/vrm/Sakurada_Fumiriya.vrm" },
+  { id: "darkness-shibu", name: "카게", file: "apps/web/public/vrm/Darkness_Shibu.vrm" },
+  { id: "jimmy", name: "지미", file: "apps/web/public/vrm/Jimmy.vrm" },
   { id: "alicia", name: "아리시아", file: "apps/web/public/vrm/AliciaSolid.vrm" },
   { id: "jennifer", name: "제니퍼", file: "apps/web/public/vrm/Jennifer.vrm" },
 ] as const;

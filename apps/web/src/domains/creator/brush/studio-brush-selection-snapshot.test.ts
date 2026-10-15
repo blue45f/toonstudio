@@ -76,7 +76,10 @@ describe("material brush selection transitions", () => {
 
   it("keeps two material slots with the same base id and different pigments independently recallable", () => {
     const a = material();
-    const b = createBrushStudioV6ProductBrush(createBrushStudioV6Program("mineral-bloom"));
+    // mineral-bloom uses private-grant inkwash nodes: created under the explicit
+    // noncommercial-full opt-in (P0 license decision); the default profile
+    // refuses it, as the persistence BLOCKED cases verify.
+    const b = createBrushStudioV6ProductBrush(createBrushStudioV6Program("mineral-bloom"), "noncommercial-full");
     const shared = { brushId: "brush", strokeWidth: 24, brushOpacity: 0.5 };
     const slots = rememberStudioBrushSlot(rememberStudioBrushSlot(emptyStudioBrushSlots(), {
       ...shared, enginePrograms: a.enginePrograms,

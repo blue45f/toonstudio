@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BRUSH_STUDIO_V6_RECIPES } from "../brush-lab/brush-studio-v6-engine";
+import { BRUSH_STUDIO_V6_FULL_CAPABILITIES, BRUSH_STUDIO_V6_RECIPES, analyzeBrushStudioV6Program, type BrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
 import { createBrushStudioV6ProductBrush } from "../brush-lab/brush-studio-v6-product-bridge";
 import { STUDIO_PIXEL_PENCIL_RENDER_MODE } from "../studio-pixel-pencil";
 import { selectStudioLiveStrokeMedia, studioHokusaiLiveStrokeSelected } from "./studio-live-stroke-media-selection";
@@ -15,6 +15,16 @@ const defaults: StudioLiveStrokeMediaSelectionInput = {
   hardwareReady: false,
   rolloutPrefersGpu: false,
 };
+/** Saved programs may carry the explicit "noncommercial-full" opt-in (P0 license
+ * decision). Recipes the default profile cannot execute are created under that
+ * opt-in here, exactly as their saved programs store it; the default profile's
+ * refusal stays covered by the persistence BLOCKED cases. */
+function savedProductBrush(program: BrushStudioV6Program) {
+  return analyzeBrushStudioV6Program(program, BRUSH_STUDIO_V6_FULL_CAPABILITIES).providerPlan.valid
+    ? createBrushStudioV6ProductBrush(program)
+    : createBrushStudioV6ProductBrush(program, "noncommercial-full");
+}
+
 function stroke(overrides: Partial<DrawEl> = {}): DrawEl {
   return {
     id: "admission", type: "draw", kind: "freehand", mode: "pen",
@@ -26,7 +36,7 @@ function stroke(overrides: Partial<DrawEl> = {}): DrawEl {
 describe("live stroke media selection", () => {
   it("pins every saved material recipe ahead of legacy stamp, wet and GPU candidates", () => {
     for (const recipe of BRUSH_STUDIO_V6_RECIPES) {
-      const saved = createBrushStudioV6ProductBrush(recipe.create());
+      const saved = savedProductBrush(recipe.create());
       for (const brush of [saved.brushId, "airbrush-fine", "ink-wash"]) {
         expect(selectStudioLiveStrokeMedia(stroke({
           brush, brushEnginePrograms: saved.enginePrograms!,

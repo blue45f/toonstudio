@@ -17,7 +17,7 @@ const drawOptionsSource = readFileSync(
 );
 // 스튜디오 전용 규칙의 정본은 studio-route.css다 — globals.css 머리말 정책상 스튜디오
 // 규칙은 그쪽에만 두고 스튜디오 라우트 청크에서만 로드한다(docs/perf/bundle-gate.md).
-const studioRouteSource = readFileSync(resolve(process.cwd(), "apps/web/src/app/styles/studio-route.css"), "utf8");
+const studioRouteSource = readFileSync(resolve(process.cwd(), "apps/web/src/shared/styles/studio-route.css"), "utf8");
 
 afterEach(cleanup);
 

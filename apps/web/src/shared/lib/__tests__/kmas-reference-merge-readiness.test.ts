@@ -83,7 +83,15 @@ test("a queued save cannot silently adopt a newer conflict baseline", async () =
 
 test("reference discovery has one labeled route in the public manifest", () => {
   assert.deepEqual(appRoutes.filter((route) => route.path === "/references"), [
-    { path: "/references", label: "route.references" },
+    {
+      path: "/references",
+      label: "route.references",
+      // §1.3 라우트 등록 계약: 모든 공개 라우트는 거버넌스 선언 4종을 필수로 갖는다.
+      canonicalSurfaceId: "discover",
+      surfaceRole: "레퍼런스 — 제작에 쓰는 참고 자료를 모아 보는 표면",
+      tier: "directory",
+      stage: "produce",
+    },
   ]);
 });
 

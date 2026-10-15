@@ -18,7 +18,10 @@
  *  - spec.opacity    ← el.opacity ?? 1 (0..1 클램프)
  *  - spec.blendMode  ← el.blendMode ?? "source-over"
  */
-import type { StudioAdjustmentKind } from "../filter/studio-adjustment-effect-graph";
+import type {
+  StudioAdjustmentEffectGraph,
+  StudioAdjustmentKind,
+} from "../filter/studio-adjustment-effect-graph";
 import type { AdjustmentEl, El } from "../studio-element-model";
 
 import {
@@ -28,7 +31,6 @@ import {
   type StudioAdjustmentLayerSpec,
   type StudioStackEntry,
 } from "./studio-adjustment-layer";
-import type { StudioAdjustmentEffectGraph } from "../filter/studio-adjustment-effect-graph";
 
 export type AdjustmentParameters = Readonly<
   Record<string, number | string | boolean | readonly number[]>

@@ -29,7 +29,7 @@ const studioChromeSource = readFileSync(new URL("./studio-chrome-ui.tsx", import
 // 스튜디오 규칙은 globals.css 머리말 정책상 studio-route.css에만 둔다.
 const studioGlobalsSource = [
   readFileSync(new URL("../../app/styles/globals.css", import.meta.url), "utf8"),
-  readFileSync(new URL("../../app/styles/studio-route.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../../shared/styles/studio-route.css", import.meta.url), "utf8"),
 ].join("\n");
 
 function memoryStorage(initial?: string) {

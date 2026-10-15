@@ -84,7 +84,12 @@ describe("StudioProjectLibraryPage", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /작품 A 복제|Duplicate 작품 A/u }));
     await waitFor(() => {
-      expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(2);
+      // 라이브러리 첫 진입 때 예제·샘플 프로젝트가 함께 심기므로, 전체 개수가 아니라
+      // 작품 A 계열(원본 + 복사본)만 센다.
+      expect(
+        readStudioProjectLibrary(window.localStorage).projects
+          .filter((project) => project.title.startsWith("작품 A")),
+      ).toHaveLength(2);
     });
     await waitFor(() => {
       expect(within(temporaryWorkRegion()).getByText("작품 A 복사본")).toBeTruthy();
@@ -136,10 +141,14 @@ describe("StudioProjectLibraryPage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("img", {
+    const preview = await screen.findByRole("img", {
       name: "썸네일 작품 최근 작업 미리보기",
-    })).toBeTruthy();
-    expect(screen.getByText("최근 자동 저장")).toBeTruthy();
+    });
+    expect(preview).toBeTruthy();
+    // 시딩된 예제·샘플 카드에도 같은 캡션이 붙으므로 이 작품의 카드 안에서 확인한다.
+    const card = preview.closest("article");
+    expect(card).not.toBeNull();
+    expect(within(card as HTMLElement).getByText("최근 자동 저장")).toBeTruthy();
   });
 
   it("continues from the exact document page, selection and viewport context", async () => {
@@ -183,7 +192,10 @@ describe("StudioProjectLibraryPage", () => {
 
     expect(await screen.findByText("최근 위치 기억됨")).toBeTruthy();
     expect(screen.getByText("page-8 · 확대 140% · 선택 1개")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "이어서 작업" }).getAttribute("href")).toBe(
+    // 시딩된 예제·샘플 카드에도 "이어서 작업" 링크가 있으므로 이 작품의 카드 안에서 확인한다.
+    const card = screen.getByRole("heading", { name: "이어보기 작품" }).closest("article");
+    expect(card).not.toBeNull();
+    expect(within(card as HTMLElement).getByRole("link", { name: "이어서 작업" }).getAttribute("href")).toBe(
       `/studio/p/${project.id}/d/${document.id}?focus=cut%3A44&language=ko-KR&resume=latest&version=approved-9&workspace=comic`,
     );
   });

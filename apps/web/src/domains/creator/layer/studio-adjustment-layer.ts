@@ -174,3 +174,38 @@ export const STUDIO_ADJUSTMENT_KIND_LABELS: Readonly<Record<StudioAdjustmentKind
 export function defaultAdjustmentLayerName(kind: StudioAdjustmentKind): string {
   return `${STUDIO_ADJUSTMENT_KIND_LABELS[kind]} 조정 레이어`;
 }
+
+/** 조정 레이어가 고를 수 있는 블렌드 모드(El.blendMode 문자열 규약과 동일). */
+export const ADJUSTMENT_LAYER_BLEND_MODES: readonly { value: string; label: string }[] = [
+  { value: "source-over", label: "보통" },
+  { value: "multiply", label: "곱하기" },
+  { value: "screen", label: "스크린" },
+  { value: "overlay", label: "오버레이" },
+  { value: "soft-light", label: "소프트 라이트" },
+  { value: "hard-light", label: "하드 라이트" },
+  { value: "darken", label: "어둡게" },
+  { value: "lighten", label: "밝게" },
+];
+
+export const ADJUSTMENT_LAYER_KIND_OPTIONS: readonly StudioAdjustmentKind[] = [
+  "levels",
+  "curves",
+  "hsl",
+  "color-balance",
+  "channel-mixer",
+  "gradient-map",
+  "lab",
+  // PSD 확장 판정(2026-10-14)으로 추가된 6종 — 실행기까지 있어 생성 메뉴에 올린다.
+  "brightness-contrast",
+  "exposure",
+  "vibrance",
+  "invert",
+  "posterize",
+  "threshold",
+  // PSD 전수 대응(2026-10-15)으로 추가된 종류 — 실행기가 있어 메뉴에 올린다.
+  // color-lookup은 LUT 데이터가 없으면 항등이라 생성 메뉴에서는 제외한다
+  // (가져온 레이어의 표시·편집은 라벨 Record가 담당한다).
+  "black-white",
+  "photo-filter",
+  "selective-color",
+];

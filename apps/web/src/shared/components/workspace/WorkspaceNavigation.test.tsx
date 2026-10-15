@@ -124,12 +124,12 @@ describe("WorkspaceNavigation 좌측 메뉴", () => {
     }
   });
 
-  it("가상 스튜디오에서는 내 홈 대신 가상 스튜디오 바로가기가 현재 위치다", () => {
+  it("가상 스튜디오에서는 작업 홈 대신 가상 스튜디오 바로가기가 현재 위치다", () => {
     renderAt("/studio/space");
     const shortcuts = screen.getByRole("navigation", { name: "제작 바로가기" });
     expect(within(shortcuts).getByRole("link", { name: "가상 스튜디오" }).getAttribute("aria-current")).toBe("page");
     const nav = screen.getByRole("navigation", { name: "주 메뉴" });
-    expect(within(nav).getByRole("link", { name: "내 홈" }).getAttribute("aria-current")).toBeNull();
+    expect(within(nav).getByRole("link", { name: "작업 홈" }).getAttribute("aria-current")).toBeNull();
   });
 
   it("팀 경로에서는 커뮤니티 대신 팀 바로가기가 현재 위치다", () => {

@@ -1,5 +1,6 @@
 import { stableProductionFingerprint } from "@toonstudio/core/production";
 import { formatI18nTemplate, translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import {
   AlertTriangle,
   ArrowRight,
@@ -25,7 +26,7 @@ import type {
 } from "@toonstudio/core/production";
 
 import type { ProductionClientCommand } from "./production-api";
-import type { ProductionRiskIntelligence } from "./production-risk-intelligence";
+import type { ProductionRiskIntelligence, ProductionRiskIntelligenceTranslate } from "./production-risk-intelligence";
 import {
   deriveProductionRecoveryScenarios,
   type ProductionRecoveryScenario,
@@ -137,6 +138,12 @@ export function ProductionRecoveryScenarioPanel({
   canEdit,
   now,
 }: ProductionRecoveryScenarioPanelProps) {
+  const i18nT = useT();
+  const scenarioTranslate: ProductionRiskIntelligenceTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? i18nT(key, values, fallback) : i18nT(key, fallback),
+    [i18nT],
+  );
   const selectableSignals = useMemo(() => intelligence.signals.filter((signal) =>
     signal.source === "derived"
     && signal.taskId
@@ -171,8 +178,9 @@ export function ProductionRecoveryScenarioPanel({
         signal: selectedSignal,
         intelligence,
         now: now ?? new Date(),
+        translate: scenarioTranslate,
       })
-    : [], [aggregate, intelligence, now, selectedSignal]);
+    : [], [aggregate, intelligence, now, selectedSignal, scenarioTranslate]);
 
   const applyScenario = async (scenario: ProductionRecoveryScenario) => {
     if (!canEdit || !scenario.canApplyDirectly || applyingScenarioId || undoing) return;

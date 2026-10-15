@@ -1,14 +1,24 @@
 import { describe, expect, it } from "vitest";
 
-import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
+import { BRUSH_STUDIO_V6_FULL_CAPABILITIES, BRUSH_STUDIO_V6_RECIPES, analyzeBrushStudioV6Program, createBrushStudioV6Program, type BrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
 import { createBrushStudioV6ProductBrush, brushStudioV6ProductBrushHref } from "../brush-lab/brush-studio-v6-product-bridge";
 import { normalizeBrushStudioV6MaterialConfig, createBrushStudioV6MaterialStroke, mapBrushStudioV6Pressure, mapBrushStudioV6Tilt } from "../brush-lab/brush-studio-v6-material-engine";
 import { normalizeStudioBrushEngineProgramSet, studioBrushEngineProgramSetWithComposition, studioBrushEngineProgramSetWithoutComposition, studioBrushEngineProgramSetWithOil, studioBrushEngineProgramSetWithoutOil } from "./studio-brush-engine-program-set";
 import { sanitizeBrushSnapshot } from "./studio-brush-library";
 import { planStudioMaterialBrush, StudioMaterialBrushPlanner, studioMaterialBrushConfig, studioMaterialBrushBounds, studioMaterialBrushMarksToSvg, type StudioMaterialBrushElement } from "./studio-material-brush-runtime";
 
+/** Saved programs may carry the explicit "noncommercial-full" opt-in (P0 license
+ * decision). Recipes the default profile cannot execute are created under that
+ * opt-in here, exactly as their saved programs store it; the default profile's
+ * refusal stays covered by the persistence BLOCKED cases. */
+function savedProductBrush(program: BrushStudioV6Program) {
+  return analyzeBrushStudioV6Program(program, BRUSH_STUDIO_V6_FULL_CAPABILITIES).providerPlan.valid
+    ? createBrushStudioV6ProductBrush(program)
+    : createBrushStudioV6ProductBrush(program, "noncommercial-full");
+}
+
 function stroke(recipe = "velvet-graphite"): StudioMaterialBrushElement {
-  const brush = createBrushStudioV6ProductBrush(createBrushStudioV6Program(recipe));
+  const brush = savedProductBrush(createBrushStudioV6Program(recipe));
   return {
     points: Array.from({ length: 30 }, (_, i) => [20 + i * 4, 40 + Math.sin(i / 4) * 15]).flat(),
     pressures: Array.from({ length: 30 }, (_, i) => 0.2 + 0.7 * Math.sin(i / 30 * Math.PI)),
@@ -24,7 +34,7 @@ function stroke(recipe = "velvet-graphite"): StudioMaterialBrushElement {
 describe("saved material brush rendering", () => {
   it("persists every editing recipe in the real brush library without dropping the material program", () => {
     for (const recipe of BRUSH_STUDIO_V6_RECIPES) {
-      const saved = createBrushStudioV6ProductBrush(recipe.create());
+      const saved = savedProductBrush(recipe.create());
       const reloaded = sanitizeBrushSnapshot(JSON.parse(JSON.stringify(saved))).snapshot;
       expect(reloaded.enginePrograms?.material, recipe.id).toEqual(saved.enginePrograms?.material);
       expect(planStudioMaterialBrush(stroke(recipe.id)).length, recipe.id).toBeGreaterThan(0);

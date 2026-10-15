@@ -95,15 +95,23 @@ function writes(calls) {
     && !(call.path.endsWith("/query") && /^SELECT/.test(call.body?.sql ?? "")));
 }
 
-function installAnalyticsV1(api) {
+function installAnalyticsSnapshot(api, stepIndex) {
   const definition = loadCloudflareFreeDataPlaneManifest().databases.find((entry) => entry.shardId === "d1-analytics-buffer");
-  const from = definition.upgrade.from;
+  const from = definition.upgrade.steps[stepIndex].from;
   const checkpoint = from.expectedSchema.find((entry) => entry.name === "_toonspectrum_d1_migration");
   const database = api.addDatabase(from.name, `${from.sql}\n${checkpoint.sql};`);
   database.sqlite.prepare("INSERT INTO _toonspectrum_d1_migration (migration_id, shard_id, schema_sha256) VALUES (?, ?, ?)")
     .run(from.migrationId, from.shardId, from.sha256);
   database.sqlite.exec("INSERT INTO traffic_analytics_maintenance VALUES ('retention', 0, 'local-validation')");
   return { database, definition };
+}
+
+function installAnalyticsV1(api) {
+  return installAnalyticsSnapshot(api, 0);
+}
+
+function installAnalyticsV2(api) {
+  return installAnalyticsSnapshot(api, 1);
 }
 
 function schemaRows(sqlite) {
@@ -139,19 +147,34 @@ describe("Cloudflare 무료 D1 구성", () => {
     expect(manifest.databases[0].expectedSchema.some((entry) => entry.name === "edge_catalog_sort_idx")).toBe(true);
   });
 
-  it("v1 SQL 해시를 보존하고 로컬 SQLite에서 v2 계획과 새 baseline이 일치한다", () => {
+  it("버전별 SQL 해시를 보존하고 로컬 SQLite에서 v1→v2→v3 계획이 새 baseline과 일치한다", () => {
     const definition = loadCloudflareFreeDataPlaneManifest().databases[1];
-    expect(definition.migrationId).toBe("analytics-buffer-v2");
-    expect(definition.upgrade.from.sha256).toBe("5fca80a5d267e9433224702f4f382a0a43df6184ab30670867e92609f31f85b3");
-    const removed = definition.upgrade.from.expectedSchema.filter((entry) =>
-      !definition.expectedSchema.some((current) => current.name === entry.name));
+    expect(definition.migrationId).toBe("analytics-buffer-v3");
+    const [step1, step2] = definition.upgrade.steps;
+    expect(step1.from.migrationId).toBe("analytics-buffer-v1");
+    expect(step1.from.sha256).toBe("5fca80a5d267e9433224702f4f382a0a43df6184ab30670867e92609f31f85b3");
+    expect(step2.from.migrationId).toBe("analytics-buffer-v2");
+    expect(step2.from.sha256).toBe("e7beb58add8f451fd08336b92752590f5d8750178e23891ed840f8fd0a9e2120");
+    const removed = step1.from.expectedSchema.filter((entry) =>
+      !step2.from.expectedSchema.some((current) => current.name === entry.name));
     expect(removed).toHaveLength(6);
     expect(removed.every((entry) => entry.type === "index")).toBe(true);
-    expect(new Set(definition.upgrade.statements)).toEqual(new Set(removed.map((entry) => `DROP INDEX ${entry.name}`)));
+    expect(new Set(step1.statements)).toEqual(new Set(removed.map((entry) => `DROP INDEX ${entry.name}`)));
+    expect(step2.statements).toHaveLength(2);
     const sqlite = new DatabaseSync(":memory:"); openDatabases.push(sqlite);
-    sqlite.exec(definition.upgrade.from.sql);
-    sqlite.exec(definition.upgrade.statements.join(";"));
+    sqlite.exec(step1.from.sql);
+    sqlite.exec(step1.statements.join(";"));
     expect(sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='index' AND name LIKE 'traffic_%'").all()).toHaveLength(5);
+    expect(sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='traffic_web_vital'").all()).toHaveLength(0);
+    sqlite.exec(step2.statements.join(";"));
+    expect(sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='traffic_web_vital'").all()).toHaveLength(1);
+    const fresh = new DatabaseSync(":memory:"); openDatabases.push(fresh);
+    fresh.exec(definition.sql);
+    const dump = (database) => database.prepare(
+      "SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' ORDER BY type, name",
+    ).all().map((row) => ({ ...row,
+      sql: row.sql.replace(/\bIF NOT EXISTS\s*/gi, "").replace(/\s+/g, " ").replace(/;$/, "").trim() }));
+    expect(dump(sqlite)).toEqual(dump(fresh));
   });
 
   it("실제 소비자가 있는 analytics DB 하나만 선택해 생성한다", async () => {
@@ -164,10 +187,12 @@ describe("Cloudflare 무료 D1 구성", () => {
     expect(api.databases.size).toBe(1);
     const sqlite = [...api.databases.values()][0].sqlite;
     expect(sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'traffic_%'")
-      .all()).toHaveLength(4);
+      .all()).toHaveLength(5);
+    expect(sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='traffic_web_vital'")
+      .all()).toHaveLength(1);
     expect(sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='trigger' AND name LIKE 'traffic_%'")
       .all()).toHaveLength(2);
-    expect(sqlite.prepare("SELECT migration_id FROM _toonspectrum_d1_migration").get().migration_id).toBe("analytics-buffer-v2");
+    expect(sqlite.prepare("SELECT migration_id FROM _toonspectrum_d1_migration").get().migration_id).toBe("analytics-buffer-v3");
     await provisionCloudflareFreeDataPlane("check", options);
   });
 
@@ -179,15 +204,45 @@ describe("Cloudflare 무료 D1 구성", () => {
     expect(writes(api.calls)).toHaveLength(0);
   });
 
-  it("검증한 v1만 원자 batch 한 번으로 v2로 바꾸며 데이터는 유지한다", async () => {
+  it.each(["check", "apply"])("v2를 %s할 때 묵시적으로 업그레이드하지 않는다", async (mode) => {
+    const api = fakeCloudflare(); installAnalyticsV2(api);
+    await expect(provisionCloudflareFreeDataPlane(mode, {
+      environment, fetchImpl: api.fetchImpl, database: "analytics-buffer",
+    })).rejects.toThrow("--upgrade");
+    expect(writes(api.calls)).toHaveLength(0);
+  });
+
+  it("검증한 v1을 원자 batch 한 번으로 v3로 바꾸며 데이터는 유지한다", async () => {
     const api = fakeCloudflare(); const { database, definition } = installAnalyticsV1(api);
     const options = { environment, fetchImpl: api.fetchImpl, database: "analytics-buffer" };
     const result = await provisionCloudflareFreeDataPlane("upgrade", options);
     expect(result.databases[0]).toMatchObject({ created: false, upgraded: true,
-      migrationId: "analytics-buffer-v2", schemaSha256: definition.sha256 });
+      migrationId: "analytics-buffer-v3", schemaSha256: definition.sha256 });
     expect(writes(api.calls)).toHaveLength(1);
-    expect(writes(api.calls)[0].body.batch).toHaveLength(8);
-    expect(writes(api.calls)[0].body.batch.slice(1, 7).map((entry) => entry.sql)).toEqual(definition.upgrade.statements);
+    expect(writes(api.calls)[0].body.batch).toHaveLength(10);
+    expect(writes(api.calls)[0].body.batch.slice(1, 7).map((entry) => entry.sql)).toEqual(definition.upgrade.steps[0].statements);
+    expect(writes(api.calls)[0].body.batch.slice(7, 9).map((entry) => entry.sql)).toEqual(definition.upgrade.steps[1].statements);
+    expect(database.sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='traffic_web_vital'").all()).toHaveLength(1);
+    expect(database.sqlite.prepare("SELECT lease_token FROM traffic_analytics_maintenance").get().lease_token).toBe("local-validation");
+    const calls = api.calls.length;
+    await provisionCloudflareFreeDataPlane("check", options);
+    const again = await provisionCloudflareFreeDataPlane("upgrade", options);
+    expect(again.databases[0].upgraded).toBe(false);
+    expect(writes(api.calls.slice(calls))).toHaveLength(0);
+  });
+
+  it("검증한 v2를 원자 batch 한 번으로 v3로 바꾸며 데이터는 유지한다", async () => {
+    const api = fakeCloudflare(); const { database, definition } = installAnalyticsV2(api);
+    const options = { environment, fetchImpl: api.fetchImpl, database: "analytics-buffer" };
+    expect(database.sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='traffic_web_vital'").all()).toHaveLength(0);
+    const result = await provisionCloudflareFreeDataPlane("upgrade", options);
+    expect(result.databases[0]).toMatchObject({ created: false, upgraded: true,
+      migrationId: "analytics-buffer-v3", schemaSha256: definition.sha256 });
+    expect(writes(api.calls)).toHaveLength(1);
+    expect(writes(api.calls)[0].body.batch).toHaveLength(4);
+    expect(writes(api.calls)[0].body.batch.slice(1, 3).map((entry) => entry.sql)).toEqual(definition.upgrade.steps[1].statements);
+    expect(database.sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='traffic_web_vital'").all()).toHaveLength(1);
+    expect(database.sqlite.prepare("SELECT name FROM sqlite_schema WHERE type='index' AND name='traffic_web_vital_occurred_at_idx'").all()).toHaveLength(1);
     expect(database.sqlite.prepare("SELECT lease_token FROM traffic_analytics_maintenance").get().lease_token).toBe("local-validation");
     const calls = api.calls.length;
     await provisionCloudflareFreeDataPlane("check", options);
@@ -198,6 +253,16 @@ describe("Cloudflare 무료 D1 구성", () => {
 
   it.each(["schema", "checkpoint"])("v1의 전체 %s가 달라지면 upgrade도 쓰지 않는다", async (kind) => {
     const api = fakeCloudflare(); const { database } = installAnalyticsV1(api);
+    database.sqlite.exec(kind === "schema" ? "CREATE TABLE unexpected_table (id TEXT)"
+      : "UPDATE _toonspectrum_d1_migration SET schema_sha256 = 'stale'");
+    await expect(provisionCloudflareFreeDataPlane("upgrade", {
+      environment, fetchImpl: api.fetchImpl, database: "analytics-buffer",
+    })).rejects.toThrow(kind === "schema" ? "schema가 manifest와" : "migration checkpoint");
+    expect(writes(api.calls)).toHaveLength(0);
+  });
+
+  it.each(["schema", "checkpoint"])("v2의 전체 %s가 달라지면 upgrade도 쓰지 않는다", async (kind) => {
+    const api = fakeCloudflare(); const { database } = installAnalyticsV2(api);
     database.sqlite.exec(kind === "schema" ? "CREATE TABLE unexpected_table (id TEXT)"
       : "UPDATE _toonspectrum_d1_migration SET schema_sha256 = 'stale'");
     await expect(provisionCloudflareFreeDataPlane("upgrade", {

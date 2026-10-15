@@ -166,14 +166,20 @@ export function ProductionScheduleWorkspace({
   const [query, setQuery] = useState("");
   const [assignmentFilter, setAssignmentFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState<"all" | RiskLevel>("all");
+  const riskTranslate = useMemo(
+    () => (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) =>
+      values ? t(key, values, fallback) : t(key, fallback),
+    [t],
+  );
   const riskIntelligence = useMemo(() => {
     const operations = deriveProductionOperationsOverview(aggregate, now);
     return deriveProductionRiskIntelligence(aggregate, {
       now,
       operations,
       workload: deriveAssignmentWorkload(aggregate, now),
+      translate: riskTranslate,
     });
-  }, [aggregate, now]);
+  }, [aggregate, now, riskTranslate]);
   const riskSignalsByTask = useMemo(() => {
     const byTask = new Map<string, ProductionRiskSignal[]>();
     for (const signal of riskIntelligence.signals) {

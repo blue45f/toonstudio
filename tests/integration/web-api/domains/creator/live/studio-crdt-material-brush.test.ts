@@ -4,14 +4,24 @@ import * as Y from "yjs";
 import { hasValidStudioCrdtRootSchema, hasValidStudioCrdtStrokePaintContract } from "../../../../../../apps/api/src/modules/creator/studio-crdt-root-schema";
 import { studioBrushEngineProgramSetFromOil } from "../../../../../../apps/web/src/domains/creator/brush/studio-brush-engine-program-set";
 import { planStudioMaterialBrush, type StudioMaterialBrushElement } from "../../../../../../apps/web/src/domains/creator/brush/studio-material-brush-runtime";
-import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program } from "../../../../../../apps/web/src/domains/creator/brush-lab/brush-studio-v6-engine";
+import { BRUSH_STUDIO_V6_FULL_CAPABILITIES, BRUSH_STUDIO_V6_RECIPES, analyzeBrushStudioV6Program, createBrushStudioV6Program, type BrushStudioV6Program } from "../../../../../../apps/web/src/domains/creator/brush-lab/brush-studio-v6-engine";
 import { createBrushStudioV6ProductBrush } from "../../../../../../apps/web/src/domains/creator/brush-lab/brush-studio-v6-product-bridge";
 import { StudioCrdtDocument, type StudioCrdtDrawStrokePayload } from "../../../../../../apps/web/src/domains/creator/live/studio-crdt-document";
 import { studioCrdtStrokeToDrawElement, studioDrawElementToCrdtStroke, type StudioCrdtCompatibleDrawElement } from "../../../../../../apps/web/src/domains/creator/live/studio-crdt-page-bridge";
 import { STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION } from "../../../../../../apps/web/src/domains/creator/live/studio-crdt-protocol";
 
+/** Saved programs may carry the explicit "noncommercial-full" opt-in (P0 license
+ * decision). Recipes the default profile cannot execute are created under that
+ * opt-in here, exactly as their saved programs store it; the default profile's
+ * refusal stays covered by the persistence BLOCKED cases. */
+function savedProductBrush(program: BrushStudioV6Program) {
+  return analyzeBrushStudioV6Program(program, BRUSH_STUDIO_V6_FULL_CAPABILITIES).providerPlan.valid
+    ? createBrushStudioV6ProductBrush(program)
+    : createBrushStudioV6ProductBrush(program, "noncommercial-full");
+}
+
 function materialStroke(recipe = "oil-hair-mixer"): StudioCrdtCompatibleDrawElement {
-  const saved = createBrushStudioV6ProductBrush(createBrushStudioV6Program(recipe));
+  const saved = savedProductBrush(createBrushStudioV6Program(recipe));
   return {
     id: "material-stroke", type: "draw", kind: "freehand", mode: "pen", brush: saved.brushId,
     points: [10, 20, 35, 30, 70, 15], pressures: [0.2, 0.7, 0.4], tiltXs: [0, 30, 15],

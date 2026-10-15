@@ -338,6 +338,29 @@ export function voiceTracksForEpisode(
   return tracks.filter((t) => t.episodeId === episodeId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+/**
+ * 서버 목록을 세션 상태에 병합한다(룸 진입 시 목록 로드용).
+ * - 같은 id가 있으면 서버본으로 교체한다 — 서버본은 목록 응답마다 서명 URL이
+ *   새로 발급된 것이라, 세션에 남은 만료된 URL보다 항상 서버본이 맞다.
+ * - 서버 목록에 없는 세션 트랙은 그대로 보존한다 — 아직 업로드 전이거나
+ *   업로드에 실패해 세션 폴백으로 남은 녹음, 다른 회차의 트랙이 여기 해당한다.
+ * - 서버에만 있는 트랙은 뒤에 붙인다(표시 순서는 voiceTracksForEpisode가
+ *   createdAt으로 정렬하므로 상태 안의 순서 자체는 의미가 없다).
+ */
+export function mergeVoiceCommentaryTracks(
+  current: readonly VoiceCommentaryTrack[],
+  incoming: readonly VoiceCommentaryTrack[],
+): VoiceCommentaryTrack[] {
+  if (incoming.length === 0) return [...current];
+  const incomingById = new Map(incoming.map((track) => [track.id, track] as const));
+  const merged = current.map((track) => incomingById.get(track.id) ?? track);
+  const knownIds = new Set(current.map((track) => track.id));
+  for (const track of incoming) {
+    if (!knownIds.has(track.id)) merged.push(track);
+  }
+  return merged;
+}
+
 export function formatVoiceTime(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(finiteOr(ms, 0) / 1000));
   const minutes = Math.floor(totalSeconds / 60);

@@ -177,7 +177,9 @@ describe("StudioBrushLibraryPanel", () => {
     expect(html).toContain('data-studio-saved-brush-preview="solid"');
     expect(html).toContain('data-studio-saved-brush-preview-opacity="1"');
     expect(html).toContain('fill="#ff6600"');
-    expect(html).toContain("oklch(0.9 0.008 70)");
+    // 명암 미리보기 배경은 원시 oklch가 아니라 디자인 토큰으로 렌더된다(밝은 면/어두운 면).
+    expect(html).toContain('fill="var(--color-raised)"');
+    expect(html).toContain('fill="var(--color-reader-panel)"');
   });
 
   it("저장한 프로 브러시는 런타임 펜이 아니라 원본 프리셋 이름과 획 스타일로 표시한다", () => {

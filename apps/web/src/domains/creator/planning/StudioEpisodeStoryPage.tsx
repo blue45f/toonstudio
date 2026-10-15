@@ -31,6 +31,13 @@ export interface StudioEpisodeStoryPageProps {
   readonly beatsByEpisodeId?: Readonly<Record<string, readonly StudioStoryBeat[]>>;
   /** 작품 장르 — 전개 제안의 장르 비트 라이브러리 선택에 쓴다. 없으면 공통 라이브러리. */
   readonly genre?: string;
+  /**
+   * 편집 대상 회차의 controlled 선택. 호스트가 비트 보드와 선택을 공유할 때 넘긴다.
+   * undefined 면 내부 상태로 동작한다 (커버리지 맵의 controlled 규약과 동일).
+   */
+  readonly selectedEpisodeId?: string | null;
+  /** 회차가 골라질 때의 알림. 내부 선택과 함께 갱신된다. */
+  readonly onSelectEpisode?: (episodeId: string) => void;
   readonly onSavePlan: (plan: EpisodePlanWithSynopsis) => void;
 }
 
@@ -39,10 +46,19 @@ export function StudioEpisodeStoryPage({
   plans,
   beatsByEpisodeId,
   genre,
+  selectedEpisodeId,
+  onSelectEpisode,
   onSavePlan,
 }: StudioEpisodeStoryPageProps) {
   const arc = useMemo(() => seasonArcView(season, plans), [season, plans]);
-  const [selectedId, setSelectedId] = useState<string | null>(arc.episodes[0]?.episodeId ?? null);
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(
+    arc.episodes[0]?.episodeId ?? null,
+  );
+  const selectedId = selectedEpisodeId !== undefined ? selectedEpisodeId : internalSelectedId;
+  const selectEpisode = (episodeId: string) => {
+    setInternalSelectedId(episodeId);
+    onSelectEpisode?.(episodeId);
+  };
   const selected = plans.find((plan) => plan.episodeId === selectedId) ?? null;
 
   return (
@@ -66,7 +82,7 @@ export function StudioEpisodeStoryPage({
         <ol aria-label="회차 목록">
           {arc.episodes.map((card) => (
             <li key={card.episodeId}>
-              <button type="button" onClick={() => setSelectedId(card.episodeId)}>
+              <button type="button" onClick={() => selectEpisode(card.episodeId)}>
                 {card.episodeNumber}화 {card.title}
                 {card.needsSynopsis ? " · 줄거리 쓰기" : ""}
               </button>

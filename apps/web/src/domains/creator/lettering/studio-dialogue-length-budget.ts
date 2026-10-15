@@ -443,7 +443,7 @@ export function previewDialogueLengthBudget(
       // 원문 확정 — 스냅샷이 있으면 그것이 원문, 번역만 있고 스냅샷이 없으면 단정 불가.
       const entry = page.dialogueI18n?.[el.id];
       const snapshot = entry?.[SOURCE_LOCALE];
-      let sourceText: string | null = null;
+      let sourceText: string | null;
       if (typeof snapshot === "string") {
         sourceText = snapshot;
       } else if (entry && Object.keys(entry).some((key) => key !== SOURCE_LOCALE)) {

@@ -132,7 +132,7 @@
  * 중간·좁은 화면은 기존 타일 열과 하단 탭 바를 그대로 쓴다. */
 .workspace-nav-row-icon{display:none}
 .workspace-nav-shortcuts{display:none}
-@media (min-width:1181px){
+@media (min-width:1280px){
   .workspace-shell{grid-template-columns:216px minmax(0,1fr)}
   .workspace-sidebar{padding:16px 10px;overflow-y:auto}
   .workspace-sidebar .workspace-nav{gap:2px}
@@ -158,7 +158,7 @@
  * 않는다. 아트가 없거나 로드에 실패한 목적지는 타일 상자를 숨기고 기존 줄
  * 아이콘 표시를 그대로 유지한다. 강제 색상 모드에서는 그림을 걷고 줄
  * 아이콘으로 돌아간다. */
-@media (min-width:1181px){
+@media (min-width:1280px){
   .workspace-nav-visual{display:grid;width:30px;height:30px;border-radius:9px;flex:none}
   .workspace-nav-visual>img{width:23px;height:23px}
   .workspace-nav-visual:not(:has(>img)){display:none}
@@ -166,7 +166,7 @@
   .workspace-sidebar .workspace-nav a:has(>.workspace-nav-visual>img) .workspace-nav-row-icon{display:none}
   .workspace-sidebar .workspace-nav-shortcuts a:has(>.workspace-nav-visual>img) .workspace-nav-row-icon{display:none}
 }
-@media (min-width:1181px) and (forced-colors:active){
+@media (min-width:1280px) and (forced-colors:active){
   .workspace-nav-visual{display:none}
   .workspace-sidebar .workspace-nav a:has(>.workspace-nav-visual) .workspace-nav-row-icon{display:block}
   .workspace-sidebar .workspace-nav-shortcuts a:has(>.workspace-nav-visual) .workspace-nav-row-icon{display:block}
