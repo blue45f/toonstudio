@@ -101,6 +101,53 @@ describe("CatalogController affiliate redirection", () => {
   });
 });
 
+describe("CatalogController affiliate click log", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // 쿼리의 줄바꿈은 WHATWG URL 파서가 제거해 검증은 통과하지만, 원본 문자열을 그대로 로그에 쓰면
+  // 공격자가 `[Affiliate Click] ...` 형태의 가짜 로그 줄을 끼워 넣을 수 있다(로그 위조, CWE-117).
+  it("요청 값에 줄바꿈이 있어도 로그는 한 줄이고 검증된 목적지만 남긴다", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const redirect = vi.fn();
+    const forgedTo =
+      "https://ridibooks.com/books/1\n[Affiliate Click] platform=forged to=https://evil.test/steal";
+
+    await createController().redirectAffiliate(
+      "ridi",
+      forgedTo,
+      {
+        headers: {
+          referer: "https://toonstudio.com/a\r\n[Affiliate Click] forged",
+          "user-agent": "agent\u2028second-line",
+        },
+      } as unknown as Request,
+      { redirect } as unknown as Response,
+    );
+
+    expect(redirect).toHaveBeenCalledTimes(1);
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const line = String(logSpy.mock.calls[0]?.[0]);
+    // 한 줄이어야 가짜 `[Affiliate Click]` 기록이 새 로그 레코드로 시작될 수 없다.
+    expect(line).not.toMatch(/[\r\n\u2028\u2029]/u);
+    expect(line.startsWith("[Affiliate Click] platform=ridi timestamp=")).toBe(true);
+    expect(line).not.toContain(" platform=forged");
+  });
+
+  it("지나치게 긴 헤더 값은 잘라서 남긴다", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await createController().redirectAffiliate(
+      "ridi",
+      "https://ridibooks.com/books/1",
+      { headers: { "user-agent": "x".repeat(5_000) } } as unknown as Request,
+      { redirect: vi.fn() } as unknown as Response,
+    );
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    expect(String(logSpy.mock.calls[0]?.[0]).length).toBeLessThan(1_000);
+  });
+});
+
 describe("CatalogController cover SSRF boundary", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
