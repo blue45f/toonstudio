@@ -11,6 +11,7 @@ import type { StoryworldAnalysisResult, StoryworldProject } from "../studio-stor
 import type { StoryworldContinuityIssue } from "../studio-storyworld-continuity";
 import { storyworldManuscriptStore } from "./studio-story-manuscript-store";
 import { runPlausibilityCheck, type PlausibilityRunDeps } from "./studio-story-plausibility-run";
+import { acquireProductPlausibilitySummaryStore } from "./studio-story-plausibility-summary";
 import type { PlausibilityReport } from "./studio-story-plausibility-types";
 
 export type PlausibilityCheckStatus = "loading" | "ready" | "error";
@@ -45,12 +46,13 @@ function browserStorage(): StudioProjectDiagnosticSourceStorage | null {
   }
 }
 
-/** 실제 환경의 의존성: 시스템 시계, 이 브라우저의 저장소, 이 기기의 원고 사본 보관소. */
+/** 실제 환경의 의존성: 시스템 시계, 이 브라우저의 읽기용 저장소, 이 기기의 원고 사본 보관소와 점검 요약 저장소. */
 export function defaultPlausibilityRunDeps(): PlausibilityRunDeps {
   return {
     now: () => new Date(),
     storage: browserStorage(),
     loadManuscript: (scopeKey, copyId) => storyworldManuscriptStore.load(scopeKey, copyId),
+    acquireSummaryStore: acquireProductPlausibilitySummaryStore,
   };
 }
 

@@ -2,14 +2,15 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { writeStudioProjectDiagnosticSource } from "../../studio-project-diagnostic-source-store";
 import type { StoryworldProject } from "../studio-storyworld-causality";
 import type { StoryworldIssueDispositionStatus } from "../studio-storyworld-issue-dispositions";
 import { PLAUSIBILITY_EXAMPLE_PROJECT } from "./studio-story-plausibility-example";
-import { HUB_NOW, makeHubDeps, memoryStorage } from "./studio-story-plausibility-hub.test-support";
+import { HUB_NOW, bibleCharacter, diagnosticSourceWithBible, makeHubDeps, memoryStorage, memorySummaryStore } from "./studio-story-plausibility-hub.test-support";
 import { HubHarness, type HubHarnessProps } from "./studio-story-plausibility-hub.test-utils";
 import { runPlausibilityCheck } from "./studio-story-plausibility-run";
 import { ARCADIA_FIXTURE } from "./studio-story-plausibility-run.fixtures";
-import { plausibilitySummaryStorageKey } from "./studio-story-plausibility-summary";
+import { plausibilitySummaryKey } from "./studio-story-plausibility-summary";
 
 vi.mock("../universe-store", () => ({ storyworldAuxStore: { load: async () => null, save: async () => undefined } }));
 
@@ -68,6 +69,15 @@ describe("개연성 허브: 리포트", () => {
     expect(within(row(KNOWLEDGE)).getByText("오류")).toBeTruthy();
     expect(within(row(KNOWLEDGE)).getByText("확정")).toBeTruthy();
     expect(within(row(MOTIVE)).getByText("제안")).toBeTruthy();
+  });
+
+  it("점검표 보기에서 아홉 가지 범주와 작가의 질문을 읽을 수 있다", async () => {
+    await renderExample();
+    fireEvent.click(screen.getByText(/점검표 보기/u));
+    const list = screen.getByRole("list", { name: "개연성 점검표" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(9);
+    expect(within(list).getByText(/이 일은 무엇 때문에 일어났고, 그래서 무엇이 달라졌나\?/u)).toBeTruthy();
+    expect(within(list).getByText(/문제가 풀리는 이유가 앞에서 보였나\?/u)).toBeTruthy();
   });
 
   it("점검 가능 범위, 점수, 계산식, 점검 출처, 한계를 함께 보여 준다", async () => {
@@ -269,22 +279,46 @@ describe("개연성 허브: 다시 점검, 오류, 요약", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("작품 id가 있으면 준비도 패널이 읽을 요약을 남기고, 처리 기록을 반영해 갱신한다", async () => {
-    const storage = memoryStorage();
-    await renderExample({ deps: makeHubDeps({ storage }) });
-    const key = plausibilitySummaryStorageKey("work-1");
-    await waitFor(() => expect(storage.map.has(key)).toBe(true));
-    expect(JSON.parse(storage.map.get(key) ?? "{}")).toMatchObject({ errorCount: 2, warningCount: 1, suggestionCount: 1, partial: false, checkedAtIso: HUB_NOW.toISOString() });
+  it("작품 id가 있으면 준비도 패널이 읽을 요약을 공용 저장소에 남기고, 처리 기록을 반영해 갱신한다", async () => {
+    const summary = memorySummaryStore();
+    await renderExample({ deps: makeHubDeps({ acquireSummaryStore: () => Promise.resolve(summary.store) }) });
+    const key = plausibilitySummaryKey("work-1");
+    await waitFor(() => expect(summary.map.has(key)).toBe(true));
+    expect(JSON.parse(summary.map.get(key) ?? "{}")).toMatchObject({ errorCount: 2, warningCount: 1, suggestionCount: 1, partial: false, checkedAtIso: HUB_NOW.toISOString() });
     fireEvent.click(within(detail()).getByRole("button", { name: "해결함" }));
     fireEvent.click(screen.getByRole("button", { name: "‘해결함’으로 기록하기" }));
-    await waitFor(() => expect(JSON.parse(storage.map.get(key) ?? "{}")).toMatchObject({ errorCount: 1 }));
+    await waitFor(() => expect(JSON.parse(summary.map.get(key) ?? "{}")).toMatchObject({ errorCount: 1 }));
+    expect(window.localStorage.length).toBe(0);
   });
 
   it("작품 id가 없으면 요약을 저장하지 않는다", async () => {
-    const storage = memoryStorage();
-    await renderExample({ deps: makeHubDeps({ storage }), workId: null });
+    const summary = memorySummaryStore();
+    await renderExample({ deps: makeHubDeps({ acquireSummaryStore: () => Promise.resolve(summary.store) }), workId: null });
     await act(async () => { await Promise.resolve(); });
-    expect(storage.map.size).toBe(0);
+    expect(summary.map.size).toBe(0);
+  });
+
+  it("예시 이야기를 보는 동안에는 요약을 저장하지 않는다", async () => {
+    const summary = memorySummaryStore();
+    const blank: StoryworldProject = { ...PLAUSIBILITY_EXAMPLE_PROJECT, id: "blank", scenes: [], facts: [] };
+    render(<HubHarness deps={makeHubDeps({ acquireSummaryStore: () => Promise.resolve(summary.store) })} initialProject={blank} />);
+    fireEvent.click(screen.getByRole("button", { name: "예시 이야기로 점검해 보기" }));
+    await screen.findByRole("heading", { name: "점검 범위" });
+    await act(async () => { await Promise.resolve(); });
+    expect(summary.map.size).toBe(0);
+  });
+
+  it("요약을 남기지 못하면 그 사실만 알리고 점검 결과는 그대로 보여 준다", async () => {
+    const deps = makeHubDeps({ acquireSummaryStore: () => Promise.reject(new Error("OPFS 없음")) });
+    await renderExample({ deps });
+    expect(await screen.findByText("프로젝트 준비도에 점검 요약을 남기지 못했어요. 점검 결과에는 영향이 없어요.")).toBeTruthy();
+    expect(row(KNOWLEDGE)).toBeTruthy();
+  });
+
+  it("쓰기가 실패해도(저장소가 거절) 같은 안내를 보인다", async () => {
+    const store = { get: () => Promise.resolve(null), set: () => Promise.reject(new Error("quota")) };
+    await renderExample({ deps: makeHubDeps({ acquireSummaryStore: () => Promise.resolve(store) }) });
+    expect(await screen.findByText(/프로젝트 준비도에 점검 요약을 남기지 못했어요/u)).toBeTruthy();
   });
 });
 
@@ -369,6 +403,29 @@ describe("개연성 허브: 빈 상태와 예시 이야기", () => {
     expect(screen.getByRole("heading", { name: "아직 점검할 장면이 없어요" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "원고로 시작하기" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "예시 이야기로 점검해 보기" })).toBeTruthy();
+  });
+
+  /** 인물도 장면도 없는 새 작품. 등록 이름은 스토리 바이블·세계관 설정에서만 온다. */
+  const blankProject: StoryworldProject = { ...emptyProject, characters: [] };
+
+  it("원고로 시작하기를 열면 이 작품의 스토리 바이블에 등록된 이름을 읽어 알려 준다", () => {
+    const storage = memoryStorage();
+    writeStudioProjectDiagnosticSource(storage, diagnosticSourceWithBible(
+      [bibleCharacter("c-1", "하은"), bibleCharacter("c-2", "도진")],
+      [{ id: "l-1", name: "기억 시장" }],
+    ));
+    render(<HubHarness deps={makeHubDeps({ storage })} initialProject={blankProject} />);
+    fireEvent.click(screen.getByRole("button", { name: "원고로 시작하기" }));
+    expect(screen.getByRole("heading", { name: "원고로 시작하기" })).toBeTruthy();
+    expect(screen.getByText(/찾을 수 있는 이름: 인물 2명 · 장소 1곳/u)).toBeTruthy();
+  });
+
+  it("작품 id가 없는 초안에서는 바이블을 읽지 않고 등록된 이름이 없다고 알린다", () => {
+    const storage = memoryStorage();
+    writeStudioProjectDiagnosticSource(storage, diagnosticSourceWithBible([bibleCharacter("c-1", "하은")], []));
+    render(<HubHarness deps={makeHubDeps({ storage })} initialProject={blankProject} workId={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "원고로 시작하기" }));
+    expect(screen.getByText(/등록된 인물·장소 이름이 없어서 장면 경계와 시간 표현만 찾아요/u)).toBeTruthy();
   });
 
   it("예시 이야기는 읽기 전용으로 열리고, 내 설정으로 돌아갈 수 있다", async () => {

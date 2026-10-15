@@ -21,7 +21,13 @@ import type {
   StoryworldIssueDispositionStatus,
 } from "../studio-storyworld-issue-dispositions";
 import { downloadTextFile } from "./studio-story-plausibility-display";
+import {
+  EMPTY_MANUSCRIPT_NAME_SOURCES,
+  loadManuscriptNameSources,
+  type ManuscriptNameSources,
+} from "./studio-story-manuscript-names";
 import { StudioStoryPlausibilityManuscript } from "./StudioStoryPlausibilityManuscript";
+import { CategoryGuide } from "./StudioStoryPlausibilityParts";
 import { StudioStoryPlausibilityQuestionnaire } from "./StudioStoryPlausibilityQuestionnaire";
 import { StudioStoryPlausibilityReportView } from "./StudioStoryPlausibilityReportView";
 import { defaultPlausibilityRunDeps, usePlausibilityCheck } from "./use-story-plausibility-check";
@@ -58,8 +64,11 @@ export interface StudioStoryPlausibilityHubProps {
   readonly dispositions: StoryworldIssueDispositionDocument | null;
   readonly onSetDisposition: (issueKey: string, status: StoryworldIssueDispositionStatus, note?: string) => void;
   readonly onClearDisposition: (issueKey: string) => void;
-  /** 작가가 확인한 문서 변경(질문지 답, 원고 초안)을 랩에 반영한다. */
-  readonly onProjectChange: (project: StoryworldProject, message: string) => void;
+  /**
+   * 작가가 확인한 문서 변경(질문지 답, 원고 초안)을 랩에 반영한다. `restore`가 true이면 되돌리기라서
+   * 이전 문서를 표시(예시 데이터 여부)까지 그대로 되돌린다. 아니면 작가가 만든 문서로 다룬다.
+   */
+  readonly onProjectChange: (project: StoryworldProject, message: string, options?: { readonly restore?: boolean }) => void;
   readonly onOpenSettings: (target: "scene" | "fact" | "character", id: string) => void;
   /** 지금 설정을 파일로 저장한다. */
   readonly onExportProject: () => void;
@@ -88,6 +97,8 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
   const [undoStack, setUndoStack] = useState<readonly PlausibilityUndoEntry[]>([]);
   const [message, setMessage] = useState("");
   const [includeQuotes, setIncludeQuotes] = useState(true);
+  const [nameSources, setNameSources] = useState<ManuscriptNameSources>(EMPTY_MANUSCRIPT_NAME_SOURCES);
+  const [nameNotices, setNameNotices] = useState<readonly string[]>([]);
 
   const activeProject = exampleMode ? PLAUSIBILITY_EXAMPLE_PROJECT : project;
   const ids = useMemo(() => scopeSceneIds(activeProject, scope), [activeProject, scope]);
@@ -127,12 +138,21 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
     }
   }, [generatedAtIso]);
 
-  // 작품 준비도 패널이 읽을 한 줄 요약을 남긴다(예시 이야기와 작품 없는 초안은 제외).
+  // 작품 준비도 패널이 읽을 한 줄 요약을 남긴다(예시 이야기와 작품 없는 초안은 제외). 저장은 공용 SQLite에 하고,
+  // 실패해도 점검 결과에는 영향이 없다. 남기지 못했다는 사실만 알린다.
   const report = check.report;
+  const acquireSummaryStore = deps.acquireSummaryStore;
+  const [summaryFailed, setSummaryFailed] = useState(false);
   useEffect(() => {
-    if (exampleMode || !workId || !deps.storage || !report || !dispositionView) return;
-    writePlausibilitySummary(deps.storage, workId, plausibilitySnapshotFromReport(report, dispositionView), typeof window === "undefined" ? undefined : window);
-  }, [exampleMode, workId, deps.storage, report, dispositionView]);
+    if (exampleMode || !workId || !acquireSummaryStore || !report || !dispositionView) return;
+    let active = true;
+    const snapshot = plausibilitySnapshotFromReport(report, dispositionView);
+    void acquireSummaryStore()
+      .then((store) => writePlausibilitySummary(store, workId, snapshot, typeof window === "undefined" ? undefined : window))
+      .catch(() => false)
+      .then((saved) => { if (active) setSummaryFailed(!saved); });
+    return () => { active = false; };
+  }, [exampleMode, workId, acquireSummaryStore, report, dispositionView]);
 
   const pushEntry = useCallback((entry: PlausibilityUndoEntry) => setUndoStack((stack) => pushUndo(stack, entry)), []);
 
@@ -165,11 +185,19 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
       if (entry.previous === null) props.onClearDisposition(entry.issueKey);
       else props.onSetDisposition(entry.previous.issueKey, entry.previous.status, entry.previous.note);
     } else {
-      props.onProjectChange(entry.previous, `되돌렸어요: ${entry.label}`);
+      props.onProjectChange(entry.previous, `되돌렸어요: ${entry.label}`, { restore: true });
     }
     setMessage(`되돌렸어요: ${entry.label}`);
   };
   const lastUndo = undoStack.at(-1) ?? null;
+
+  /** 원고로 시작하기를 열 때 스토리 바이블·세계관 설정의 등록 이름을 읽는다(열 때 한 번, 읽기만 한다). */
+  const openManuscript = () => {
+    const loaded = loadManuscriptNameSources({ workId, storage: deps.storage });
+    setNameSources(loaded.sources);
+    setNameNotices(loaded.notices);
+    setMode("manuscript");
+  };
 
   const openQuestionnaire = (sceneId?: string, question?: StoryworldQuestionId) => {
     setFocusScene(sceneId ?? null);
@@ -199,6 +227,8 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
     return (
       <StudioStoryPlausibilityManuscript
         isExampleSeed={props.isExampleSeed}
+        nameNotices={nameNotices}
+        nameSources={nameSources}
         now={deps.now}
         onCancel={() => setMode("report")}
         onCreate={(next, label) => {
@@ -237,7 +267,7 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
             예시 이야기를 열어 보세요. 내 설정은 바뀌지 않아요.
           </p>
           <div className="plausibility-empty__actions">
-            <button className="storyworld-button storyworld-button--primary" onClick={() => setMode("manuscript")} type="button">원고로 시작하기</button>
+            <button className="storyworld-button storyworld-button--primary" onClick={openManuscript} type="button">원고로 시작하기</button>
             <button className="storyworld-button" onClick={() => { setExampleMode(true); setScope(ALL_SCENES_SCOPE); }} type="button">예시 이야기로 점검해 보기</button>
           </div>
         </div>
@@ -254,9 +284,10 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
             이야기가 앞뒤가 맞는지 근거와 함께 확인해요. 원고가 있으면 원고로 시작하고, 없어도 설정만으로 점검할 수 있어요.
             찾은 것은 ‘틀렸다’는 판정이 아니라 작가님께 드리는 질문이에요.
           </p>
+          <CategoryGuide />
         </div>
         <div className="plausibility-hub__actions">
-          <button className="storyworld-button" disabled={exampleMode} onClick={() => setMode("manuscript")} type="button"><FileText aria-hidden size={14} /> 원고로 시작하기</button>
+          <button className="storyworld-button" disabled={exampleMode} onClick={openManuscript} type="button"><FileText aria-hidden size={14} /> 원고로 시작하기</button>
           <button className="storyworld-button" onClick={() => openQuestionnaire()} type="button"><ClipboardList aria-hidden size={14} /> 질문지 열기</button>
           <details className="plausibility-details">
             <summary><Download aria-hidden size={13} /> 내보내기</summary>
@@ -282,6 +313,9 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
       </div>
 
       <p aria-live="polite" className="plausibility-live" role="status">{message}</p>
+      {summaryFailed && !exampleMode ? (
+        <p className="plausibility-hint" role="status">프로젝트 준비도에 점검 요약을 남기지 못했어요. 점검 결과에는 영향이 없어요.</p>
+      ) : null}
 
       {exampleMode ? (
         <div className="plausibility-banner plausibility-banner--example" role="note">
