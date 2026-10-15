@@ -1,0 +1,330 @@
+{
+ "label": "4.7",
+ "schema": 1,
+ "startedAt": "2026-10-15T04:58:10.974Z",
+ "environment": {
+  "date": "2026-10-15T04:58:15.662Z",
+  "node": "v24.21.0",
+  "platform": "linux 6.18.44-fc-v114 x64",
+  "cpus": 4,
+  "cpuModel": "Intel(R) Xeon(R) Processor",
+  "totalMemMiB": 16093,
+  "chromium": "141.0.7390.37",
+  "webgl": {
+   "webgl2": true,
+   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "maxTextureSize": 8192,
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+   "hardwareConcurrency": 4,
+   "webgpu": "undefined"
+  },
+  "software": "소프트웨어 렌더링(SwiftShader). 실제 GPU 아님",
+  "viewport": {
+   "width": 960,
+   "height": 540
+  },
+  "repeat": 1,
+  "godotLabel": "4.7",
+  "buildFiles": {
+   "web/index.wasm": {
+    "bytes": 39509339,
+    "sha256": "7eda98958eb09135a1acb54a4323a00b1a55af1997f15fa1cdc2b93e3df46656"
+   },
+   "web/index.js": {
+    "bytes": 279815,
+    "sha256": "68586d6daafc93c6e697b3fb258976874aa7459b8931165ebb1dc3c9614cc42c"
+   },
+   "web/index.pck": {
+    "bytes": 55780,
+    "sha256": "db162059ef5d91951e6f3cbc8a9f111b9889947000ee5e0ed95c541ec14aa152"
+   },
+   "web-threads/index.wasm": {
+    "bytes": 38814086,
+    "sha256": "5f424353884e68cd480a813678be02e0e4525531764c36002980c1c2c927b0da"
+   },
+   "web-threads/index.js": {
+    "bytes": 314653,
+    "sha256": "e64ece20a0e0e4130dd8fd7cc8399ceb4133864f36586c8d2e33e0200a00d7ea"
+   },
+   "web-threads/index.pck": {
+    "bytes": 55780,
+    "sha256": "db162059ef5d91951e6f3cbc8a9f111b9889947000ee5e0ed95c541ec14aa152"
+   }
+  },
+  "loadAverageAtStart": [
+   14.63,
+   14.9,
+   14.35
+  ]
+ },
+ "suites": {
+  "ext": {
+   "note": "같은 GLB 를 Godot 4.4.1 GLTFDocument 와 Three(+Meshopt/Draco/KTX2 디코더)로 연다.",
+   "godot": {
+    "synthetic-character.glb": {
+     "renderCheck": {
+      "uniqueColorsSampled": 225,
+      "coveredRatio": 0.135
+     },
+     "ok": true,
+     "error": null,
+     "errorCode": null,
+     "extensionsRequired": [],
+     "triangles": 1664,
+     "texturesReported": 0,
+     "consoleErrors": []
+    },
+    "ext-meshopt.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Buffer 1 has no data and cannot be loaded.",
+      "ERROR: glTF: Can't import file '', required extension 'EXT_meshopt_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?",
+      "ERROR: glTF: Can't import file '', required extension 'KHR_mesh_quantization' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "ext-quantized.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'KHR_mesh_quantization' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "ext-draco.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'KHR_draco_mesh_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "ext-basisu.glb": {
+     "renderCheck": {
+      "uniqueColorsSampled": 1358,
+      "coveredRatio": 0.135
+     },
+     "ok": true,
+     "error": null,
+     "errorCode": null,
+     "extensionsRequired": [
+      "KHR_texture_basisu"
+     ],
+     "triangles": 1664,
+     "texturesReported": 1,
+     "consoleErrors": []
+    },
+    "ext-basisu-uastc-raw.glb": {
+     "renderCheck": {
+      "uniqueColorsSampled": 1358,
+      "coveredRatio": 0.135
+     },
+     "ok": true,
+     "error": null,
+     "errorCode": null,
+     "extensionsRequired": [
+      "KHR_texture_basisu"
+     ],
+     "triangles": 1664,
+     "texturesReported": 1,
+     "consoleErrors": []
+    },
+    "ext-basisu-etc1s.glb": {
+     "renderCheck": {
+      "uniqueColorsSampled": 1755,
+      "coveredRatio": 0.135
+     },
+     "ok": true,
+     "error": null,
+     "errorCode": null,
+     "extensionsRequired": [
+      "KHR_texture_basisu"
+     ],
+     "triangles": 1664,
+     "texturesReported": 1,
+     "consoleErrors": []
+    },
+    "declared-khr_draco_mesh_compression.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'KHR_draco_mesh_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "declared-khr_texture_basisu.glb": {
+     "renderCheck": null,
+     "ok": true,
+     "error": null,
+     "errorCode": null,
+     "extensionsRequired": [
+      "KHR_texture_basisu"
+     ],
+     "triangles": 1664,
+     "texturesReported": 0,
+     "consoleErrors": []
+    },
+    "declared-ext_meshopt_compression.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'EXT_meshopt_compression' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    },
+    "declared-khr_mesh_quantization.glb": {
+     "renderCheck": null,
+     "ok": false,
+     "error": "append_from_buffer 실패: Parse error (43)",
+     "errorCode": 43,
+     "extensionsRequired": null,
+     "triangles": null,
+     "texturesReported": null,
+     "consoleErrors": [
+      "ERROR: glTF: Can't import file '', required extension 'KHR_mesh_quantization' is not supported. Are you missing a GLTFDocumentExtension plugin?"
+     ]
+    }
+   },
+   "three": [
+    {
+     "url": "/fixtures/synthetic-character.glb",
+     "ok": true,
+     "ms": 11,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/ext-meshopt.glb",
+     "ok": true,
+     "ms": 28.599999997764826,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/ext-quantized.glb",
+     "ok": true,
+     "ms": 10.5,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/ext-draco.glb",
+     "ok": true,
+     "ms": 177.40000000223517,
+     "triangles": 1616,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/ext-basisu.glb",
+     "ok": true,
+     "ms": 171.19999999925494,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 6
+    },
+    {
+     "url": "/fixtures/ext-basisu-uastc-raw.glb",
+     "ok": true,
+     "ms": 41.399999998509884,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 6
+    },
+    {
+     "url": "/fixtures/ext-basisu-etc1s.glb",
+     "ok": true,
+     "ms": 19.199999999254942,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 6
+    },
+    {
+     "url": "/fixtures/declared-khr_draco_mesh_compression.glb",
+     "ok": true,
+     "ms": 10.800000000745058,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/declared-khr_texture_basisu.glb",
+     "ok": true,
+     "ms": 27.599999997764826,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/declared-ext_meshopt_compression.glb",
+     "ok": true,
+     "ms": 4.300000000745058,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    },
+    {
+     "url": "/fixtures/declared-khr_mesh_quantization.glb",
+     "ok": true,
+     "ms": 5.400000002235174,
+     "triangles": 1664,
+     "meshInstances": 6,
+     "texturedMeshes": 0
+    }
+   ],
+   "godotSupportedExtensions": [
+    "EXT_texture_webp",
+    "GODOT_single_root",
+    "KHR_animation_pointer",
+    "KHR_lights_punctual",
+    "KHR_materials_emissive_strength",
+    "KHR_materials_pbrSpecularGlossiness",
+    "KHR_materials_unlit",
+    "KHR_node_visibility",
+    "KHR_texture_basisu",
+    "KHR_texture_transform",
+    "OMI_collider",
+    "OMI_physics_body",
+    "OMI_physics_shape"
+   ],
+   "_meta": {
+    "loadAverageBefore": [
+     14.63,
+     14.9,
+     14.35
+    ],
+    "loadAverageAfter": [
+     16.44,
+     15.27,
+     14.48
+    ],
+    "seconds": 12
+   }
+  }
+ },
+ "finishedAt": "2026-10-15T04:58:27.647Z"
+}

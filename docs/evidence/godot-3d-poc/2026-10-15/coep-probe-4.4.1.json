@@ -1,0 +1,49 @@
+{
+ "note": "부모 COEP 아래 Godot iframe 의 차단 이유를 CDP Network 이벤트로 본 프로브(measure/coep-probe.mjs). 4.4.1 단일 스레드 빌드, 헤드리스 Chromium 141. 시나리오당 1회.",
+ "scenarios": [
+  {
+   "iso": "credentialless",
+   "stage": "n",
+   "events": [
+    {
+     "kind": "document",
+     "url": "/host/embed.html",
+     "status": 200,
+     "coep": "credentialless"
+    },
+    {
+     "kind": "loadingFailed",
+     "type": "Document",
+     "errorText": "net::ERR_BLOCKED_BY_RESPONSE",
+     "blockedReason": "coep-frame-resource-needs-coep-header"
+    },
+    {
+     "kind": "childFrame",
+     "url": "chrome-error://chromewebdata/"
+    }
+   ]
+  },
+  {
+   "iso": "credentialless",
+   "stage": "ni",
+   "events": [
+    {
+     "kind": "document",
+     "url": "/host/embed.html",
+     "status": 200,
+     "coep": "credentialless"
+    },
+    {
+     "kind": "document",
+     "url": "/g/ni/index.html",
+     "status": 200,
+     "coep": "credentialless"
+    },
+    {
+     "kind": "childFrame",
+     "url": "http://127.0.0.1:33443/g/ni/index.html"
+    }
+   ]
+  }
+ ]
+}

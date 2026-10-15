@@ -1,0 +1,28 @@
+; Engine configuration file.
+; ToonStudio Godot 3D PoC — Godot 4.4.1, GL Compatibility(웹 export 가능한 유일한 렌더러).
+; 실험용이며 운영 앱(apps/web)에 연결되어 있지 않다. 상세: ../README.md
+
+config_version=5
+
+[application]
+
+config/name="ToonStudio Godot 3D PoC"
+config/description="GLB 런타임 로드, 툰 셰이더·외곽선, 2점 투시, 패스 캡처, MultiMesh 벤치, JS 브리지 PoC"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+config/icon="res://icon.svg"
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.92, 0.92, 0.92, 1)
+
+[display]
+
+window/size/viewport_width=960
+window/size/viewport_height=540
+window/vsync/vsync_mode=0
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+anti_aliasing/quality/msaa_3d=0
+environment/defaults/default_clear_color=Color(0.92, 0.92, 0.92, 1)

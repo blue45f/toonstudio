@@ -1,0 +1,78 @@
+{
+	"adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+	"engine": "4.4.1-stable (official)",
+	"generateMs": 161.871,
+	"loadMs": 1044.375,
+	"model": {
+		"aabb": [
+			-0.868276000022888,
+			-0.00192856986541301,
+			-0.152342408895493,
+			1.73659420013428,
+			1.71316087245941,
+			0.341560393571854
+		],
+		"blendShapes": 56,
+		"bones": 70,
+		"meshInstances": 10,
+		"nodes": 16,
+		"skeletons": 1,
+		"surfaces": 11,
+		"textures": 1,
+		"triangles": 14604,
+		"vertices": 16070
+	},
+	"os": "Linux",
+	"parseMs": 875.133,
+	"renderer": "gl_compatibility",
+	"runs": [
+		{
+			"beauty": 165.877,
+			"depth": 421.331,
+			"line": 279.771,
+			"ndl": 582.802,
+			"normal": 685.524,
+			"png_beauty": 17.828,
+			"png_depth": 16.171,
+			"png_line": 12.18,
+			"png_normal": 13.292,
+			"png_tone": 13.904,
+			"tone": 171.671,
+			"total": 2531.704
+		},
+		{
+			"beauty": 14.173,
+			"depth": 9.667,
+			"line": 20.012,
+			"ndl": 7.514,
+			"normal": 6.796,
+			"png_beauty": 14.496,
+			"png_depth": 16.976,
+			"png_line": 12.465,
+			"png_normal": 13.314,
+			"png_tone": 12.842,
+			"tone": 85.639,
+			"total": 242.727
+		},
+		{
+			"beauty": 9.565,
+			"depth": 4.418,
+			"line": 5.871,
+			"ndl": 4.43,
+			"normal": 4.45,
+			"png_beauty": 14.538,
+			"png_depth": 19.929,
+			"png_line": 12.153,
+			"png_normal": 13.081,
+			"png_tone": 12.791,
+			"tone": 15.429,
+			"total": 182.131
+		}
+	],
+	"size": [
+		960,
+		540
+	],
+	"threads": true,
+	"vendor": "Mesa"
+}

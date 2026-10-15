@@ -1,0 +1,393 @@
+{
+ "label": "4.4.1",
+ "schema": 1,
+ "startedAt": "2026-10-15T04:42:45.923Z",
+ "environment": {
+  "date": "2026-10-15T04:42:54.077Z",
+  "node": "v24.21.0",
+  "platform": "linux 6.18.44-fc-v114 x64",
+  "cpus": 4,
+  "cpuModel": "Intel(R) Xeon(R) Processor",
+  "totalMemMiB": 16093,
+  "chromium": "141.0.7390.37",
+  "webgl": {
+   "webgl2": true,
+   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "maxTextureSize": 8192,
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.0.0 Safari/537.36",
+   "hardwareConcurrency": 4,
+   "webgpu": "undefined"
+  },
+  "software": "소프트웨어 렌더링(SwiftShader). 실제 GPU 아님",
+  "viewport": {
+   "width": 960,
+   "height": 540
+  },
+  "repeat": 3,
+  "godotLabel": "4.4.1",
+  "buildFiles": {
+   "web/index.wasm": {
+    "bytes": 43699190,
+    "sha256": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+   },
+   "web/index.js": {
+    "bytes": 317142,
+    "sha256": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31"
+   },
+   "web/index.pck": {
+    "bytes": 55632,
+    "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+   },
+   "web-threads/index.wasm": {
+    "bytes": 41848195,
+    "sha256": "06e279b5d08a8888fc6c670b12d48c0e953bb526429ce521f2e17ec91fc15286"
+   },
+   "web-threads/index.js": {
+    "bytes": 370560,
+    "sha256": "dd8b42107108b4bc30c21eec8b2bb75e21b389f79b6e5d6553c7483eac284a33"
+   },
+   "web-threads/index.pck": {
+    "bytes": 55632,
+    "sha256": "b006ee5b817b74edd644d755fc7c2a22264cbe96819cd832a8cb74e813968afa"
+   }
+  },
+  "loadAverageAtStart": [
+   19.69,
+   15.89,
+   13.36
+  ]
+ },
+ "suites": {
+  "memory": {
+   "note": "같은 페이지에서 단계별로 잰다: 부팅 직후(before) / GLB 로드 + 10 프레임(loaded) / clear-model + 30 프레임(cleared). 소프트웨어 렌더링 브라우저의 값이다.",
+   "models": {
+    "orion-avatar": {
+     "before": {
+      "wasmMemoryMiB": {
+       "n": 3,
+       "median": 32,
+       "mad": 0,
+       "min": 32,
+       "max": 32
+      },
+      "jsHeapUsedMiB": {
+       "n": 3,
+       "median": 83.38,
+       "mad": 0,
+       "min": 83.38,
+       "max": 83.43
+      },
+      "rssTotalMiB": {
+       "n": 3,
+       "median": 1384.7,
+       "mad": 2.9,
+       "min": 1367.4,
+       "max": 1387.6
+      },
+      "videoMemMiB": {
+       "n": 3,
+       "median": 11.74,
+       "mad": 0,
+       "min": 11.74,
+       "max": 11.74
+      },
+      "textureMemMiB": {
+       "n": 3,
+       "median": 3.6,
+       "mad": 0,
+       "min": 3.6,
+       "max": 3.6
+      },
+      "bufferMemMiB": {
+       "n": 3,
+       "median": 8.14,
+       "mad": 0,
+       "min": 8.14,
+       "max": 8.14
+      },
+      "nodeCount": {
+       "n": 3,
+       "median": 10,
+       "mad": 0,
+       "min": 10,
+       "max": 10
+      }
+     },
+     "loaded": {
+      "wasmMemoryMiB": {
+       "n": 3,
+       "median": 95.81,
+       "mad": 0,
+       "min": 95.81,
+       "max": 95.81
+      },
+      "jsHeapUsedMiB": {
+       "n": 3,
+       "median": 109.12,
+       "mad": 0.39,
+       "min": 108.73,
+       "max": 152.45
+      },
+      "rssTotalMiB": {
+       "n": 3,
+       "median": 1465.1,
+       "mad": 5.7,
+       "min": 1455,
+       "max": 1470.8
+      },
+      "videoMemMiB": {
+       "n": 3,
+       "median": 35.62,
+       "mad": 0,
+       "min": 35.62,
+       "max": 35.62
+      },
+      "textureMemMiB": {
+       "n": 3,
+       "median": 16.93,
+       "mad": 0,
+       "min": 16.93,
+       "max": 16.93
+      },
+      "bufferMemMiB": {
+       "n": 3,
+       "median": 18.69,
+       "mad": 0,
+       "min": 18.69,
+       "max": 18.69
+      },
+      "nodeCount": {
+       "n": 3,
+       "median": 29,
+       "mad": 0,
+       "min": 29,
+       "max": 29
+      }
+     },
+     "cleared": {
+      "wasmMemoryMiB": {
+       "n": 3,
+       "median": 95.81,
+       "mad": 0,
+       "min": 95.81,
+       "max": 95.81
+      },
+      "jsHeapUsedMiB": {
+       "n": 3,
+       "median": 109.44,
+       "mad": 0.39,
+       "min": 109.05,
+       "max": 152.78
+      },
+      "rssTotalMiB": {
+       "n": 3,
+       "median": 1467.1,
+       "mad": 0.3,
+       "min": 1458.1,
+       "max": 1467.4
+      },
+      "videoMemMiB": {
+       "n": 3,
+       "median": 11.74,
+       "mad": 0,
+       "min": 11.74,
+       "max": 11.74
+      },
+      "textureMemMiB": {
+       "n": 3,
+       "median": 3.6,
+       "mad": 0,
+       "min": 3.6,
+       "max": 3.6
+      },
+      "bufferMemMiB": {
+       "n": 3,
+       "median": 8.14,
+       "mad": 0,
+       "min": 8.14,
+       "max": 8.14
+      },
+      "nodeCount": {
+       "n": 3,
+       "median": 12,
+       "mad": 0,
+       "min": 12,
+       "max": 12
+      }
+     },
+     "allLoadsOk": true
+    },
+    "studio-room": {
+     "before": {
+      "wasmMemoryMiB": {
+       "n": 3,
+       "median": 32,
+       "mad": 0,
+       "min": 32,
+       "max": 32
+      },
+      "jsHeapUsedMiB": {
+       "n": 3,
+       "median": 83.42,
+       "mad": 0,
+       "min": 83.4,
+       "max": 83.42
+      },
+      "rssTotalMiB": {
+       "n": 3,
+       "median": 1386.9,
+       "mad": 1.3,
+       "min": 1385.6,
+       "max": 1400.2
+      },
+      "videoMemMiB": {
+       "n": 3,
+       "median": 11.74,
+       "mad": 0,
+       "min": 11.74,
+       "max": 11.74
+      },
+      "textureMemMiB": {
+       "n": 3,
+       "median": 3.6,
+       "mad": 0,
+       "min": 3.6,
+       "max": 3.6
+      },
+      "bufferMemMiB": {
+       "n": 3,
+       "median": 8.14,
+       "mad": 0,
+       "min": 8.14,
+       "max": 8.14
+      },
+      "nodeCount": {
+       "n": 3,
+       "median": 10,
+       "mad": 0,
+       "min": 10,
+       "max": 10
+      }
+     },
+     "loaded": {
+      "wasmMemoryMiB": {
+       "n": 3,
+       "median": 115,
+       "mad": 0,
+       "min": 115,
+       "max": 115
+      },
+      "jsHeapUsedMiB": {
+       "n": 3,
+       "median": 126.15,
+       "mad": 0.06,
+       "min": 126.09,
+       "max": 132.31
+      },
+      "rssTotalMiB": {
+       "n": 3,
+       "median": 1505.3,
+       "mad": 6.1,
+       "min": 1496.6,
+       "max": 1511.4
+      },
+      "videoMemMiB": {
+       "n": 3,
+       "median": 41.63,
+       "mad": 0,
+       "min": 41.63,
+       "max": 41.63
+      },
+      "textureMemMiB": {
+       "n": 3,
+       "median": 30.6,
+       "mad": 0,
+       "min": 30.6,
+       "max": 30.6
+      },
+      "bufferMemMiB": {
+       "n": 3,
+       "median": 11.04,
+       "mad": 0,
+       "min": 11.04,
+       "max": 11.04
+      },
+      "nodeCount": {
+       "n": 3,
+       "median": 111,
+       "mad": 0,
+       "min": 111,
+       "max": 111
+      }
+     },
+     "cleared": {
+      "wasmMemoryMiB": {
+       "n": 3,
+       "median": 115,
+       "mad": 0,
+       "min": 115,
+       "max": 115
+      },
+      "jsHeapUsedMiB": {
+       "n": 3,
+       "median": 126.62,
+       "mad": 0.25,
+       "min": 126.37,
+       "max": 132.63
+      },
+      "rssTotalMiB": {
+       "n": 3,
+       "median": 1495.7,
+       "mad": 0.7,
+       "min": 1488.3,
+       "max": 1496.4
+      },
+      "videoMemMiB": {
+       "n": 3,
+       "median": 11.74,
+       "mad": 0,
+       "min": 11.74,
+       "max": 11.74
+      },
+      "textureMemMiB": {
+       "n": 3,
+       "median": 3.6,
+       "mad": 0,
+       "min": 3.6,
+       "max": 3.6
+      },
+      "bufferMemMiB": {
+       "n": 3,
+       "median": 8.14,
+       "mad": 0,
+       "min": 8.14,
+       "max": 8.14
+      },
+      "nodeCount": {
+       "n": 3,
+       "median": 12,
+       "mad": 0,
+       "min": 12,
+       "max": 12
+      }
+     },
+     "allLoadsOk": true
+    }
+   },
+   "_meta": {
+    "loadAverageBefore": [
+     19.69,
+     15.89,
+     13.36
+    ],
+    "loadAverageAfter": [
+     19.76,
+     16.81,
+     13.91
+    ],
+    "seconds": 89.1
+   }
+  }
+ },
+ "finishedAt": "2026-10-15T04:44:23.187Z"
+}

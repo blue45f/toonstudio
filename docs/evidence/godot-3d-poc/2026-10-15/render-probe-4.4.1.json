@@ -1,0 +1,34 @@
+{
+ "measuredAt": "2026-10-15",
+ "command": "bash tools/godot-3d-poc/native/probe-render.sh",
+ "environment": "컨테이너(4 vCPU, GPU 없음), Godot 4.4.1 공식 Linux 편집기 바이너리, Xvfb 가상 디스플레이 + Mesa llvmpipe(LLVM 20.1.2). 소프트웨어 렌더링이라 시간은 성능 증거가 아니다.",
+ "repeats": "2회 실행(스크립트 작성 중 1회, 스크립트로 1회) 결과가 같았다. 아래는 마지막 실행.",
+ "note": "render_probe.gd: 64x64 SubViewport 에 빨간 ColorRect 를 그리고 20 프레임 뒤 중앙 픽셀을 읽는다. headless = --headless, xvfb = xvfb-run + --rendering-driver opengl3 (Mesa 소프트웨어 GL).",
+ "godot": "4.4.1-stable",
+ "headless": {
+  "adapter": "",
+  "centerPixelHex": "n/a",
+  "displayDriver": "headless",
+  "drawsRed": false,
+  "engine": "4.4.1-stable (official)",
+  "framePostDrawSignals": 0,
+  "framesDrawn": 0,
+  "image": "null",
+  "imageEmpty": true,
+  "processFrames": 20,
+  "renderingMethod": "gl_compatibility"
+ },
+ "xvfb": {
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "centerPixelHex": "ff0000",
+  "displayDriver": "X11",
+  "drawsRed": true,
+  "engine": "4.4.1-stable (official)",
+  "framePostDrawSignals": 19,
+  "framesDrawn": 19,
+  "image": "64x64",
+  "imageEmpty": false,
+  "processFrames": 20,
+  "renderingMethod": "gl_compatibility"
+ }
+}
