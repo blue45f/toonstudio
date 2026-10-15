@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { EpisodeStageStepView } from "@/shared/components/episode-stage-stepper";
 
-import { episodeStageChipCurrent } from "./StudioEpisodeStageChip";
+import { episodeStageChipCurrent } from "./studio-episode-stage-chip-current";
 
 function step(id: string, status: EpisodeStageStepView["status"]): EpisodeStageStepView {
   return { id, label: { ko: id, en: id }, status };

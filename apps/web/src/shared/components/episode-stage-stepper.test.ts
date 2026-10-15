@@ -4,7 +4,7 @@ import {
   EPISODE_STAGE_STATUSES,
   EPISODE_STAGE_STATUS_TEXT,
   type EpisodeStageStatus,
-} from "./episode-stage-stepper";
+} from "./episode-stage-status";
 
 describe("EpisodeStageStepper shared contract (S2-4)", () => {
   it("fixes the status vocabulary to exactly four words", () => {

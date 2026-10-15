@@ -17,19 +17,9 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { publishSubstepProgress } from "@/shared/lib/publish-substeps";
 import { cn } from "@/shared/lib/utils";
 
-/** 상태 어휘 4개 — 순서·값이 계약이다. 추가/변경은 단계 모델 전체와 함께만 한다. */
-export const EPISODE_STAGE_STATUSES = ["done", "current", "todo", "unknown"] as const;
+import { EPISODE_STAGE_STATUS_TEXT, type EpisodeStageStatus } from "./episode-stage-status";
 
-export type EpisodeStageStatus = (typeof EPISODE_STAGE_STATUSES)[number];
-
-export const EPISODE_STAGE_STATUS_TEXT: Readonly<
-  Record<EpisodeStageStatus, { readonly ko: string; readonly en: string }>
-> = Object.freeze({
-  done: { ko: "끝남", en: "Done" },
-  current: { ko: "지금 여기", en: "You are here" },
-  todo: { ko: "남음", en: "To do" },
-  unknown: { ko: "확인 불가", en: "Unknown" },
-});
+export type { EpisodeStageStatus };
 
 export type EpisodeStageStepperVariant = "full" | "compact";
 

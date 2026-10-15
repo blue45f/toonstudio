@@ -5,11 +5,11 @@
  * 허브 내부 import(`./EpisodeStageStepper`)를 깨지 않기 위한 얇은 재노출이며,
  * 여기에 표시 로직을 다시 두지 않는다.
  */
+export { EpisodeStageStepper } from "@/shared/components/episode-stage-stepper";
 export {
-  EpisodeStageStepper,
   EPISODE_STAGE_STATUSES,
   EPISODE_STAGE_STATUS_TEXT,
-} from "@/shared/components/episode-stage-stepper";
+} from "@/shared/components/episode-stage-status";
 export type {
   EpisodeStageStatus,
   EpisodeStageStepView,

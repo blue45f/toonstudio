@@ -152,8 +152,8 @@ describe("studio-material-usage", () => {
   describe("persistence (개인 에셋 패턴)", () => {
     it("round-trips through storage and survives re-read", () => {
       const storage = memoryStorage();
-      let ledger = recordMaterialUseInStorage(storage, "user-1", "brush:gpen", "brush", 1_000);
-      ledger = recordMaterialUseInStorage(storage, "user-1", "tone:dot", "tone", 2_000);
+      recordMaterialUseInStorage(storage, "user-1", "brush:gpen", "brush", 1_000);
+      const ledger = recordMaterialUseInStorage(storage, "user-1", "tone:dot", "tone", 2_000);
       expect(recentMaterials(ledger)[0]?.materialId).toBe("tone:dot");
 
       const reloaded = loadMaterialUsageLedger(storage, "user-1");

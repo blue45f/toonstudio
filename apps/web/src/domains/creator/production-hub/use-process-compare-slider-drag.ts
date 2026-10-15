@@ -11,6 +11,8 @@ export interface ProcessCompareSliderDrag {
   /** 현재 슬라이더 위치(%) — aria 값 동기화용. */
   readonly position: number;
   readonly stageRef: React.RefObject<HTMLDivElement | null>;
+  /** 스테이지 요소를 stageRef 에 붙이는 콜백 ref. 다른 ref 와 함께 쓸 때 `.current` 를 직접 쓰지 않게 한다. */
+  readonly attachStage: (el: HTMLDivElement | null) => void;
   readonly handleRef: React.RefObject<HTMLDivElement | null>;
   readonly beforeRef: React.RefObject<HTMLDivElement | null>;
   /** 드래그 중이면 true — 핸들의 data-dragging 속성에 연결한다. */
@@ -29,6 +31,9 @@ export interface ProcessCompareSliderDrag {
  */
 export function useProcessCompareSliderDrag(): ProcessCompareSliderDrag {
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const attachStage = useCallback((el: HTMLDivElement | null) => {
+    stageRef.current = el;
+  }, []);
   const handleRef = useRef<HTMLDivElement | null>(null);
   const beforeRef = useRef<HTMLDivElement | null>(null);
   const [position, setPosition] = useState(50);
@@ -107,6 +112,7 @@ export function useProcessCompareSliderDrag(): ProcessCompareSliderDrag {
   return {
     position,
     stageRef,
+    attachStage,
     handleRef,
     beforeRef,
     isDragging,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { listProductionProjects } from "./production-dashboard-api";
 import { getProductionProject, type ProductionProjectRecord } from "./production-api";
@@ -52,6 +52,12 @@ export function SharedResourcePriorityBoard({
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
 
+  // assetLicenses는 호출자가 고정해 넘기는 등록분이라 값이 바뀌어도 다시 집계하지 않는다.
+  // (기본값 [] 는 렌더마다 새 배열이므로 의존성에 넣으면 무한 재조회가 된다) — 집계 시점의 값을 Effect Event 로 읽는다.
+  const buildBoard = useEffectEvent((aggregates: Parameters<typeof buildSharedResourceBoard>[0]) =>
+    buildSharedResourceBoard(aggregates, { now: new Date(), licenses: assetLicenses }),
+  );
+
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -76,14 +82,13 @@ export function SharedResourcePriorityBoard({
         setError(bt("공유 자원 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.", "Couldn't load shared resources. Please try again shortly."));
         return;
       }
-      setBoard(buildSharedResourceBoard(aggregates, { now: new Date(), licenses: assetLicenses }));
+      setBoard(buildBoard(aggregates));
     })().finally(() => {
       if (active) setLoading(false);
     });
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- assetLicenses는 호출자가 고정해 넘기는 등록분이다.
   }, [bt, refresh]);
 
   if (loading) {

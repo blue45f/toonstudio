@@ -47,17 +47,6 @@ export const PLOT_DEVELOPMENT_STAGES: readonly PlotDevelopmentStage[] = Object.f
   { id: "hook", label: "마무리 훅", intent: "다음 화를 열게 만드는 질문을 남긴다" },
 ]);
 
-const STAGE_INDEX: Readonly<Record<PlotDevelopmentStageId, number>> = Object.freeze({
-  opening: 0,
-  inciting: 1,
-  escalation: 2,
-  midpoint: 3,
-  complication: 4,
-  crisis: 5,
-  climax: 6,
-  hook: 7,
-});
-
 /** 마지막 비트의 신호어 — 개수 추론을 한 단계까지만 보정한다 (지어낸 정밀도 금지). */
 const LATE_SIGNALS = ["반전", "배신", "정체", "밝혀", "드러나", "위기", "절체절명", "대결", "결전", "선택"] as const;
 

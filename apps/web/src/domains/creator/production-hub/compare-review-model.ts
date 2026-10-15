@@ -858,7 +858,7 @@ export function applyComparePreset(
     ?? session.pool[0];
   if (!currentItem) return { ok: false, reason: "no-current" };
 
-  let counterpart: ComparePoolItem | null = null;
+  let counterpart: ComparePoolItem | null;
   if (preset === "previous-episode") {
     counterpart = matchComparePresetPage(
       session.pool.filter((item) => item.source.kind === "page" && item.id !== currentItem.id),

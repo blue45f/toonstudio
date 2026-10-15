@@ -99,9 +99,15 @@ const SOURCE_BADGE: Readonly<Record<ComparePoolItem["source"]["kind"], { readonl
   reference: { ko: "레퍼런스", en: "Reference" },
 };
 
-/** 요소 크기 측정(핀 레이어의 레터박스 보정용). jsdom 등에서는 0을 돌려준다. */
+/**
+ * 요소 크기 측정(핀 레이어의 레터박스 보정용). jsdom 등에서는 0을 돌려준다.
+ * 첫 값은 요소를 붙이는 안정된 콜백 ref 다 — 다른 ref 와 함께 쓸 때 `.current` 를 소비자가 직접 쓰지 않게 한다.
+ */
 function useElementSize<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
+  const attach = useCallback((el: T | null) => {
+    ref.current = el;
+  }, []);
   const [size, setSize] = useState({ width: 0, height: 0 });
   useEffect(() => {
     const el = ref.current;
@@ -113,7 +119,7 @@ function useElementSize<T extends HTMLElement>() {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  return [ref, size] as const;
+  return [attach, size] as const;
 }
 
 interface DraftPin {
@@ -184,13 +190,14 @@ export function CompareReviewViewer({
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
   const [liveMessage, setLiveMessage] = useState("");
+  const composerBodyRef = useRef<HTMLTextAreaElement | null>(null);
   const [naturalSizes, setNaturalSizes] = useState<Readonly<Record<string, { w: number; h: number }>>>({});
 
   const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
   const paneStageRefs = useRef<(HTMLDivElement | null)[]>([]);
   // 차이 계산 훅은 안정적인 ref 객체를 요구한다(렌더마다 새 객체면 효과가 재실행된다).
-  const imgARef = useMemo(() => ({ current: null as HTMLImageElement | null }), []);
-  const imgBRef = useMemo(() => ({ current: null as HTMLImageElement | null }), []);
+  const imgARef = useRef<HTMLImageElement | null>(null);
+  const imgBRef = useRef<HTMLImageElement | null>(null);
   const registerPaneImg = useCallback((index: number, el: HTMLImageElement | null) => {
     imgRefs.current[index] = el;
     if (index === 0) imgARef.current = el;
@@ -233,6 +240,13 @@ export function CompareReviewViewer({
   );
 
   const announce = useCallback((message: string) => setLiveMessage(message), []);
+
+  // 핀 작성 폼은 사용자가 이미지를 눌러 연 직후이므로 내용 입력란으로 포커스를 옮긴다.
+  // autoFocus 속성 대신 폼이 열린 시점에만 명시적으로 옮긴다(열려 있는 동안 핀 위치만 바뀔 때는 건드리지 않는다).
+  const composerOpen = draftPin !== null;
+  useEffect(() => {
+    if (composerOpen) composerBodyRef.current?.focus();
+  }, [composerOpen]);
 
   const handleModeChange = useCallback((next: CompareReviewMode) => {
     onSessionChange(setCompareMode(session, next));
@@ -711,10 +725,10 @@ export function CompareReviewViewer({
           <label className="sr-only" htmlFor="crv-pin-body">{bt("핀 내용", "Pin note")}</label>
           <textarea
             id="crv-pin-body"
+            ref={composerBodyRef}
             value={composerBody}
             onChange={(event) => setComposerBody(event.target.value)}
             rows={2}
-            autoFocus
             placeholder={bt("무엇을 어떻게 고치면 되는지 적어 주세요", "Describe what to change and how")}
             className="w-full rounded-lg border border-line bg-card px-2.5 py-2 text-sm text-fg"
           />
@@ -918,7 +932,10 @@ function StageImage({
   const natural = naturalSizes[src];
   const rect = computeCompareContainRect(stageWidth, stageHeight, natural?.w ?? 0, natural?.h ?? 0);
   return (
+    // 클릭 좌표만 받는 포인터 전용 위임 지점이다(핀 위치·스포이드). 이 래퍼 자체는 컨트롤이 아니며,
+    // 안쪽의 핀 버튼이 키보드로 닿는 상호작용 요소다.
     <div
+      role="presentation"
       className="absolute"
       style={{ left: `${rect.leftPct}%`, top: `${rect.topPct}%`, width: `${rect.widthPct}%`, height: `${rect.heightPct}%` }}
       onClick={onContentClick}
@@ -1013,15 +1030,17 @@ function ComparePaneStage({
   registerStage,
   bt,
 }: ComparePaneStageProps) {
-  const [sizeRef, size] = useElementSize<HTMLDivElement>();
+  const [attachSizeEl, size] = useElementSize<HTMLDivElement>();
   const imgElRef = useRef<HTMLImageElement | null>(null);
   const badgeCopy = item ? SOURCE_BADGE[item.source.kind] : null;
 
   return (
+    // 마우스·터치로 누르거나 키보드 포커스가 페인 안으로 들어오면 그 페인이 "지금 보는 페인"(확대·축소 대상)이 된다.
     <section
       className="min-w-0 rounded-2xl border border-line bg-card"
       aria-label={bt(`비교 페인 ${badge}`, `Compare pane ${badge}`)}
-      onClick={onFocusPane}
+      onPointerDown={onFocusPane}
+      onFocus={onFocusPane}
     >
       <div className="flex items-center gap-2 border-b border-line px-3 py-2">
         <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-[0.6875rem] font-black text-on-accent" aria-hidden="true">
@@ -1048,7 +1067,7 @@ function ComparePaneStage({
       </div>
 
       <div
-        ref={(el) => { sizeRef.current = el; registerStage(el); }}
+        ref={(el) => { attachSizeEl(el); registerStage(el); }}
         className={cn("crv-stage relative w-full overflow-hidden bg-[#101418]", interactive ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing")}
         style={{ height: "min(58vh, 540px)" }}
         onWheel={(event) => {
@@ -1145,7 +1164,7 @@ function LayeredCompareStage({
   registerImg,
   bt,
 }: LayeredCompareStageProps) {
-  const [sizeRef, size] = useElementSize<HTMLDivElement>();
+  const [attachSizeEl, size] = useElementSize<HTMLDivElement>();
   const imgAElRef = useRef<HTMLImageElement | null>(null);
   const imgBElRef = useRef<HTMLImageElement | null>(null);
   const transformCss = comparePaneTransformCss(transform);
@@ -1213,8 +1232,10 @@ function LayeredCompareStage({
   );
 
   return (
+    // 빈 영역 클릭 좌표를 받는 포인터 전용 위임 지점이다. 키보드로 조작하는 요소(슬라이더 핸들·핀 버튼)는 안쪽에 있다.
     <div
-      ref={(el) => { sizeRef.current = el; if (mode === "slider") slider.stageRef.current = el; }}
+      role="presentation"
+      ref={(el) => { attachSizeEl(el); if (mode === "slider") slider.attachStage(el); }}
       className={cn("crv-stage relative w-full overflow-hidden rounded-2xl bg-[#101418]", interactive ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing")}
       style={{ height: "min(58vh, 540px)" }}
       data-testid={`crv-stage-${mode}`}

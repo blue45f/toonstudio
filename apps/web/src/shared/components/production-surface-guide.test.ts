@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PRODUCTION_SURFACE_ROLES } from "./production-surface-guide";
+import { PRODUCTION_SURFACE_ROLES } from "./production-surface-roles";
 
 /**
  * 협업 제작 표면 정본 안내 계약 (pipeline 후보 9).

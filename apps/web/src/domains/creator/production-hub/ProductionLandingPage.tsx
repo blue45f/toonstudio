@@ -431,7 +431,7 @@ export function ProductionLandingPage() {
     return () => {
       active = false;
     };
-  }, [userId, projectsReloadToken]);
+  }, [userId, projectsReloadToken, t]);
 
   /**
    * 통합 협업 알림 투영. 개인 작업함(검수 요청)은 이미 불러온 데이터로 즉시

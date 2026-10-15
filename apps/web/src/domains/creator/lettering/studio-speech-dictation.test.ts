@@ -157,6 +157,21 @@ class FakeRecognition implements SpeechRecognitionLike {
   }
 }
 
+/**
+ * 세션이 `new`로 만든 가짜 인식 객체를 꺼내 검증할 수 있게 생성 순서대로 기록하는 생성자.
+ * 생성자 안에서 `this`를 지역 변수에 담지 않고(no-this-alias) 배열에 등록한다.
+ */
+function createRecordingCtor(): { Ctor: new () => FakeRecognition; instances: FakeRecognition[] } {
+  const instances: FakeRecognition[] = [];
+  class Ctor extends FakeRecognition {
+    constructor() {
+      super();
+      instances.push(this);
+    }
+  }
+  return { Ctor, instances };
+}
+
 describe("createDictationSession — 가짜 인식 객체 통합", () => {
   it("미지원(생성자 없음)이면 supported=false, 시작해도 아무 일 없다", () => {
     const onSnapshot = vi.fn();
@@ -168,13 +183,7 @@ describe("createDictationSession — 가짜 인식 객체 통합", () => {
   });
 
   it("ko-KR·연속·interim으로 설정하고 확정 전사만 onFinalText로 흘린다", () => {
-    let fake: FakeRecognition | null = null;
-    class Ctor extends FakeRecognition {
-      constructor() {
-        super();
-        fake = this;
-      }
-    }
+    const { Ctor, instances } = createRecordingCtor();
     const finals: string[] = [];
     const session = createDictationSession({
       ctor: Ctor,
@@ -182,33 +191,29 @@ describe("createDictationSession — 가짜 인식 객체 통합", () => {
       onFinalText: (t) => finals.push(t),
     });
     session.start();
-    expect(fake!.lang).toBe("ko-KR");
-    expect(fake!.continuous).toBe(true);
-    expect(fake!.interimResults).toBe(true);
+    const [fake] = instances;
+    expect(fake.lang).toBe("ko-KR");
+    expect(fake.continuous).toBe(true);
+    expect(fake.interimResults).toBe(true);
     expect(session.snapshot().status).toBe("listening");
-    fake!.onresult?.(resultEvent([{ isFinal: false, transcript: "중간" }]));
+    fake.onresult?.(resultEvent([{ isFinal: false, transcript: "중간" }]));
     expect(finals).toEqual([]);
-    fake!.onresult?.(resultEvent([{ isFinal: true, transcript: "확정 대사" }]));
+    fake.onresult?.(resultEvent([{ isFinal: true, transcript: "확정 대사" }]));
     expect(finals).toEqual(["확정 대사"]);
     session.start(); // listening 중 이중 시작 — 실제 start() 재호출 금지
-    expect(fake!.startCalls).toBe(1);
+    expect(fake.startCalls).toBe(1);
     session.stop();
     expect(session.snapshot().status).toBe("done");
     session.dispose();
-    expect(fake!.onresult).toBeNull();
+    expect(fake.onresult).toBeNull();
   });
 
   it("권한 오류는 error 상태와 한국어 안내로 표면화된다", () => {
-    let fake: FakeRecognition | null = null;
-    class Ctor extends FakeRecognition {
-      constructor() {
-        super();
-        fake = this;
-      }
-    }
+    const { Ctor, instances } = createRecordingCtor();
     const session = createDictationSession({ ctor: Ctor, onSnapshot: vi.fn(), onFinalText: vi.fn() });
     session.start();
-    fake!.onerror?.({ error: "not-allowed" });
+    const [fake] = instances;
+    fake.onerror?.({ error: "not-allowed" });
     expect(session.snapshot().status).toBe("error");
     expect(session.snapshot().error?.message).toContain("마이크 권한");
   });

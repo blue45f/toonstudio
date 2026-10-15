@@ -1,11 +1,11 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-afterEach(cleanup);
-
 import type { StudioStoryBible } from "../studio-story-bible";
 import { StudioCharacterSheetCitation } from "./StudioCharacterSheetCitation";
 import type { StudioStoryBibleNarrative } from "./studio-character-profile";
+
+afterEach(cleanup);
 
 const bible: StudioStoryBible = {
   projectId: "project-1",

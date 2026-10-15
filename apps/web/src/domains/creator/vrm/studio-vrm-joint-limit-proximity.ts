@@ -3,7 +3,6 @@ import {
   getStudioVrmJointLimit,
   type StudioVrmJointAxis,
   type StudioVrmJointAxisLimit,
-  type StudioVrmJointRotation,
 } from "./studio-vrm-joint-limits";
 import {
   getEffectiveStudioVrmJointLimit,

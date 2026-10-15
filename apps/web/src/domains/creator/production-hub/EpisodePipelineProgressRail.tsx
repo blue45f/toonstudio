@@ -22,7 +22,7 @@ import {
 } from "./episode-pipeline-rail-model";
 import type { ProductionSurfaceTarget } from "./production-project-surfaces";
 
-import { EPISODE_STAGE_STATUS_TEXT } from "@/shared/components/episode-stage-stepper";
+import { EPISODE_STAGE_STATUS_TEXT } from "@/shared/components/episode-stage-status";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";

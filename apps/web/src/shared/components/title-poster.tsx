@@ -1,5 +1,6 @@
 import { AdultOverlay } from "./adult-overlay";
-import { COVER_GRID_SIZES, COVER_HERO_SIZES, CoverImage } from "./cover-image";
+import { CoverImage } from "./cover-image";
+import { COVER_GRID_SIZES, COVER_HERO_SIZES } from "./cover-image-sizing";
 
 import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 

@@ -151,7 +151,7 @@ export function ProductionIntegrationsPanel({
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [aggregate.projectId]);
+  }, [aggregate.projectId, t]);
 
   const run = async (key: string, success: string, action: () => Promise<void>) => {
     setBusy(key);

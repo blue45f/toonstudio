@@ -282,7 +282,9 @@ export function SearchExplorer({
   const loading = search.loading;
   const error = search.failed ? t("search.explorer.error.description") : null;
   const typeCount = search.data?.typeCount ?? { webtoon: 0, webnovel: 0 };
-  const topTags = search.data?.topTags ?? [];
+  // `?? []` 는 데이터가 없을 때 렌더마다 새 배열이라 아래 emptyQuerySuggestions 메모가 매번 깨진다.
+  const searchTopTags = search.data?.topTags;
+  const topTags = useMemo(() => searchTopTags ?? [], [searchTopTags]);
   const catalog = search.data?.catalog ?? null;
 
   // 빈 쿼리 추천 — 인기 검색어(서버 topTags 집계)와 장르 추천 태그(taxonomy GENRES).

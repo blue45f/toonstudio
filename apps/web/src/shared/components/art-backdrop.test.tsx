@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { ART_BACKDROP_SCRIM_BOTTOM, ArtBackdrop, artBackdropBackground } from "./art-backdrop";
+import { ART_BACKDROP_SCRIM_BOTTOM, ArtBackdrop } from "./art-backdrop";
+import { artBackdropBackground } from "./art-backdrop-utils";
 
 vi.mock("./cover-image", () => ({
   CoverImage: ({ src, alt, className }: { src: string; alt: string; className?: string }) => (

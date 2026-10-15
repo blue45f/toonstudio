@@ -13,7 +13,7 @@
  *   등록 콜백이 없는 표면(읽기 전용)에서는 버튼 자체를 숨긴다.
  * 사전이 비어 있으면 검사가 아니라 "먼저 설정·캐릭터가 필요하다"를 안내한다.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 
 import {
   STUDIO_LORE_ENTRY_KINDS,
@@ -85,12 +85,14 @@ export function StudioLoreNameCheckPanel({
   );
 
   // 사전이 바뀌면(등록 직후 등) 이미 검사한 글을 다시 검사해 결과를 최신으로 유지한다.
-  useEffect(() => {
+  // findings·text는 Effect Event 가 읽는다 — 글을 고칠 때마다 다시 검사하지 않고 사전 변경에만 반응한다.
+  const recheckForDictionary = useEffectEvent((nextDictionary: LoreNameDictionary) => {
     if (findings !== null && text.trim()) {
-      setFindings(checkLoreNames(text, dictionary));
+      setFindings(checkLoreNames(text, nextDictionary));
     }
-    // findings·text는 의도적으로 의존성에서 뺀다 — 사전 변경에만 반응한다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    recheckForDictionary(dictionary);
   }, [dictionary]);
 
   const runCheck = () => setFindings(checkLoreNames(text, dictionary));
