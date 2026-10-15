@@ -1,7 +1,7 @@
 # ToonStudio 문서 안내
 
 - 상태: **현재 문서 체계**
-- 최종 갱신: **2026-09-26**
+- 최종 갱신: **2026-10-15**
 
 ## 문서 권위 순서
 
@@ -23,6 +23,7 @@
 | `docs/architecture/` | 현재 구조, 목표 구조, 장기 설계 | 현재 표시 문서만 권위 있음 |
 | `docs/adr/` | 결정 시점의 맥락과 선택 | 결정 기록으로 권위 있음 |
 | `docs/operations/`, `DEPLOY.md` | 운영·배포 정책 | 현재 표시 문서만 권위 있음 |
+| `docs/engineering/` | 코드 구조·번들 경계 등 개발 패턴과 가드레일 해설 | 현재 표시 문서만 권위 있음(가드레일 규칙의 권위는 스크립트와 기준선) |
 | `docs/engines/` | 엔진 역할·핀·품질 계약 | 생성 원장과 현재 표시 문서 우선 |
 | `docs/reports/`, `docs/evidence/` | 특정 commit·실험의 증거 | 해당 시점의 증거이며 현재 구조 문서가 아님 |
 | `docs/rewrite/` | 과거 재구성 감사·계획 | 역사 자료 |
@@ -41,7 +42,8 @@ Studio는 다음 문서를 추가로 본다.
 
 1. [`architecture/studio-current-boundaries.md`](architecture/studio-current-boundaries.md)
 2. [`engines/renderer-roles.md`](engines/renderer-roles.md) — 기계 생성 파일
-3. 관련 `docs/adr/` 결정
+3. [`engineering/code-structure-and-bundle-patterns.md`](engineering/code-structure-and-bundle-patterns.md) — 파일 크기·진입 그래프 가드레일과 분해·지연 로딩 패턴
+4. 관련 `docs/adr/` 결정
 
 실험 앱(`apps/character-lab`, `apps/brush-lab`)은 다음 문서를 추가로 본다.
 

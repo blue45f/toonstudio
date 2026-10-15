@@ -24,6 +24,12 @@
 - 비동기 화면에는 loading, empty, error, retry 상태를 명시한다.
 - 시각 변경은 관련 테스트와 필요 시 스크린샷 또는 브라우저 검증 근거를 남긴다.
 
+## 코드 구조와 번들 경계
+
+- 새 파일은 800줄을 넘기지 않고 기록된 기존 초과 파일에는 줄을 더하지 않는다(`pnpm run check:source-file-size`).
+- Studio 진입 그래프에 금지 도메인(vrm·bg3d·market 등)을 정적으로 끌어오지 않고 무거운 기능은 사용자 의도 시점에 지연 로드한다(`pnpm run check:studio-eager-graph`).
+- 패턴·분해 절차·점검표: [`docs/engineering/code-structure-and-bundle-patterns.md`](../../docs/engineering/code-structure-and-bundle-patterns.md)
+
 ## 검증
 
 - 관련 Vitest/Playwright 테스트를 우선 실행한다.

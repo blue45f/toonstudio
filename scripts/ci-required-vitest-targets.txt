@@ -356,6 +356,7 @@ packages/studio-project-model/src/__tests__/world-publication.test.ts
 packages/studio-project-model/src/__tests__/world-tilemap.test.ts
 scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts
+scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
 scripts/creator-career-confirmation-database-contract.test.mjs
 scripts/creator-hiring-automation-database-contract.test.mjs
