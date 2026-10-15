@@ -185,6 +185,12 @@ export interface BristleTick {
   readonly handleY: number;
   /** 지금 압력의 슬롯 반경(px). */
   readonly spreadRadiusPx: number;
+  /** 손잡이 속도(px/s, f32 미러). 빠른 획의 농도·간격 결합에 쓴다. */
+  readonly handleVX: number;
+  readonly handleVY: number;
+  /** 진행 방향 단위 벡터(저속이면 마지막 방향 유지). dab 회전 추종에 쓴다. */
+  readonly headingX: number;
+  readonly headingY: number;
 }
 
 export interface BristleTickSink {
@@ -482,6 +488,10 @@ export class BristleBrush2D {
       handleX: handle.x,
       handleY: handle.y,
       spreadRadiusPx: r,
+      handleVX: f(handle.vx),
+      handleVY: f(handle.vy),
+      headingX: this.headX,
+      headingY: this.headY,
     };
     this.diagnostics.ticks += 1;
     sink.onTick(tick);
@@ -604,6 +614,10 @@ export class BristleBrush2D {
       handleX: handle?.x ?? 0,
       handleY: handle?.y ?? 0,
       spreadRadiusPx: this.lastSpread,
+      handleVX: f(handle?.vx ?? 0),
+      handleVY: f(handle?.vy ?? 0),
+      headingX: this.headX,
+      headingY: this.headY,
     };
   }
 

@@ -11,9 +11,10 @@ import { Surface } from "../../engine/raster/reference-renderer";
 import { lineStroke } from "../../engine/testing/synthetic-strokes";
 
 import {
-  BRISTLE_BATCH_CAPACITY,
   BRISTLE_DENSITY_FLOOR,
   BRISTLE_FLOW_PRESSURE_FLOOR,
+  BRISTLE_FRAME_DAB_BUDGET,
+  BRISTLE_FRAME_SUBMIT_BUDGET,
   BRISTLE_MAX_ABS_COORD_PX,
   BRISTLE_MIN_DAB_RADIUS_PX,
   BRISTLE_MIN_LOAD,
@@ -65,6 +66,10 @@ function moveTick(n: number, x0: number, x1: number, opts: { pressure?: number; 
     handleX: x1,
     handleY: 0,
     spreadRadiusPx: opts.spread ?? 10,
+    handleVX: 0,
+    handleVY: 0,
+    headingX: 1,
+    headingY: 0,
   };
 }
 
@@ -111,7 +116,10 @@ describe("프로그램 → 붓털 매핑", () => {
     const m = mapProgramToBristle(presetById("ink-g-pen"));
     expect(m.mappedKo.length).toBeGreaterThanOrEqual(4);
     expect(m.unmappedKo.some((t) => t.includes("종이 그레인"))).toBe(true);
-    expect(m.unmappedKo.some((t) => t.includes("건조 끊김"))).toBe(true);
+    expect(m.mappedKo.some((t) => t.includes("건조 끊김"))).toBe(false);
+    const dry = mapProgramToBristle(presetById("ballpoint"));
+    expect(dry.dabResponse.dryBreakup).toBeCloseTo(0.15, 6);
+    expect(dry.mappedKo.some((t) => t.includes("건조 끊김"))).toBe(true);
   });
 
   it("거부 판정: 습식·임파스토·smudge·지우개는 사유가 있고 나머지 건식 프리셋은 null이다", () => {
@@ -394,24 +402,22 @@ describe("BristleDabSynthesizer: 틱 → dab", () => {
     expect(dabs.length).toBe(3);
   });
 
-  it("배치가 가득 차면 자동으로 제출하고 flush는 남은 것을 제출한다(제출 수·dirtyTiles 집계)", () => {
+  it("배치가 예산에 차면 자동으로 제출하고 flush는 남은 것을 제출한다(제출 수·dirtyTiles 집계)", () => {
     const { surface, dabs, submits } = stubSurface();
     const s = synth(surface, 1, 2);
-    // 1 px 간격 근처로 길게 움직여 용량보다 많이 만든다.
-    const total = BRISTLE_BATCH_CAPACITY + 500;
+    // 1 px 간격 근처로 길게 움직여 프레임 예산보다 많이 만든다.
+    const total = BRISTLE_FRAME_DAB_BUDGET + 500;
     const step = Math.max(0.35, 2 * 2 * 0.95 * 0.3);
-    s.onTick(moveTick(1, 0, total * step + 1));
-    expect(submits.length).toBe(1);
-    expect(submits[0]).toBe(BRISTLE_BATCH_CAPACITY);
-    expect(s.pending()).toBeGreaterThan(0);
+    s.onTick(moveTick(1, 0, total * step + 1, { pressure: 1 }));
+    for (const c of submits) expect(c).toBeLessThanOrEqual(BRISTLE_FRAME_SUBMIT_BUDGET);
+    expect(s.stats.dabs).toBe(BRISTLE_FRAME_DAB_BUDGET);
+    expect(s.stats.budgetSkipped).toBe(total - BRISTLE_FRAME_DAB_BUDGET);
     s.flush();
-    expect(submits.length).toBe(2);
     expect(s.pending()).toBe(0);
     expect(dabs.length).toBe(s.stats.dabs);
-    expect(s.stats.submits).toBe(2);
     expect(s.stats.maxDirtyTiles).toBe(3);
     s.flush();
-    expect(submits.length).toBe(2);
+    expect(dabs.length).toBe(s.stats.dabs);
   });
 
   it("실제 Surface에 찍으면 획 레이어에 누적되고 결정적이다(같은 입력 같은 문서)", () => {
@@ -448,6 +454,7 @@ describe("BL-4a 프리셋 응답 합성: dab 반경·경도·그레인·흐름",
       [0, 0.5],
       [1, 1],
     ]),
+    dryBreakup: 0,
   };
 
   function withResponse(surface: Surface, response: BristleDabResponse | null): BristleDabSynthesizer {
@@ -526,7 +533,7 @@ describe("BL-4a 프리셋 응답 합성: dab 반경·경도·그레인·흐름",
     for (const target of targets) {
       const surface = new Surface(128, 64);
       surface.beginStroke(presetById("ink-g-pen"), 1);
-      const response: BristleDabResponse = { fillRatio: bristleFillRatio(n), minRadiusPx: BRISTLE_MIN_DAB_RADIUS_PX, hardness: 1, shapeExp: 2, programFlow: target, grain: null, flowScale: null };
+      const response: BristleDabResponse = { fillRatio: bristleFillRatio(n), minRadiusPx: BRISTLE_MIN_DAB_RADIUS_PX, hardness: 1, shapeExp: 2, programFlow: target, grain: null, flowScale: null, dryBreakup: 0 };
       const synthesizer = new BristleDabSynthesizer(surface, n, 1, 0.1, [0, 0, 0, 1], 7, radiusPx, response);
       const prevX = new Float32Array(n);
       const curX = new Float32Array(n);
@@ -534,7 +541,7 @@ describe("BL-4a 프리셋 응답 합성: dab 반경·경도·그레인·흐름",
       for (let x = 10; x < 118; x += 1) {
         prevX.fill(x);
         curX.fill(x + 1);
-        synthesizer.onTick({ count: n, prevX, prevY: ys, curX, curY: ys, load: new Float32Array(n).fill(1), moved: new Float32Array(n).fill(1), pressure: 1, tMs: 0, handleX: x, handleY: 32, spreadRadiusPx: radiusPx });
+        synthesizer.onTick({ count: n, prevX, prevY: ys, curX, curY: ys, load: new Float32Array(n).fill(1), moved: new Float32Array(n).fill(1), pressure: 1, tMs: 0, handleX: x, handleY: 32, spreadRadiusPx: radiusPx, handleVX: 0, handleVY: 0, headingX: 1, headingY: 0 });
       }
       synthesizer.flush();
       surface.endStroke();
@@ -571,5 +578,118 @@ describe("BL-4a 프리셋 응답 합성: dab 반경·경도·그레인·흐름",
     const m = mapProgramToBristle(pen);
     expect(m.config.bristleRadiusScale).toBeLessThan(1);
     expect(mapProgramToBristle(pen, { brush: { bristleRadiusScale: 2 } }).config.bristleRadiusScale).toBe(2);
+  });
+
+  it("속도 결합: 정지는 배율 1·빠른 획은 농도가 옅어지고 간격이 넓어진다", () => {
+    expect(BristleDabSynthesizer.speedFlowGain(0)).toBe(1);
+    expect(BristleDabSynthesizer.speedStepGain(0)).toBe(1);
+    const fastGain = BristleDabSynthesizer.speedFlowGain(5000);
+    expect(fastGain).toBeLessThan(1);
+    expect(fastGain).toBeGreaterThanOrEqual(0.35);
+    expect(BristleDabSynthesizer.speedStepGain(5000)).toBeGreaterThan(1);
+    expect(BristleDabSynthesizer.speedStepGain(5000)).toBeLessThanOrEqual(1.6);
+    expect(BristleDabSynthesizer.speedFlowGain(Number.NaN)).toBe(1);
+  });
+
+  it("방향 추종: 저속은 둥근 dab·고속은 진행 방향 타원이다", () => {
+    const dabOf = (handleVX: number, headingX: number, headingY: number): DabInstance | undefined => {
+      const { surface, dabs } = stubSurface();
+      const s = synth(surface, 1, 2, 0.3);
+      const ys = new Float32Array([20]);
+      const prevX = new Float32Array([10]);
+      const curX = new Float32Array([14]);
+      s.onTick({ count: 1, prevX, prevY: ys, curX, curY: Float32Array.from(ys), load: new Float32Array([1]), moved: new Float32Array([4]), pressure: 0.8, tMs: 0, handleX: 14, handleY: 20, spreadRadiusPx: 8, handleVX, handleVY: 0, headingX, headingY });
+      s.flush();
+      return dabs[0];
+    };
+    const slow = dabOf(0, 1, 0);
+    expect(slow?.rx).toBeCloseTo(slow?.ry ?? 0, 6);
+    expect(slow?.angle).toBe(0);
+    const fast = dabOf(3000, 0, 1);
+    expect((fast?.rx ?? 0)).toBeGreaterThan(fast?.ry ?? 0);
+    expect(fast?.angle).toBeCloseTo(Math.PI / 2, 6);
+  });
+
+  it("빠른 획은 같은 거리에서 dab가 적고 농도가 옅다(결정성: 같은 입력은 같은 결과)", () => {
+    const run = (vx: number): { count: number; meanFlow: number } => {
+      const { surface, dabs } = stubSurface();
+      const s = synth(surface, 4, 2, 0.3);
+      const n = 4;
+      const ys = new Float32Array(n).fill(20);
+      for (let x = 0; x < 40; x += 2) {
+        const prevX = new Float32Array(n).fill(x);
+        const curX = new Float32Array(n).fill(x + 2);
+        s.onTick({ count: n, prevX, prevY: ys, curX, curY: Float32Array.from(ys), load: new Float32Array(n).fill(1), moved: new Float32Array(n).fill(2), pressure: 0.8, tMs: x, handleX: x, handleY: 20, spreadRadiusPx: 8, handleVX: vx, handleVY: 0, headingX: 1, headingY: 0 });
+      }
+      s.flush();
+      const meanFlow = dabs.reduce((a, d) => a + d.flow, 0) / Math.max(1, dabs.length);
+      return { count: dabs.length, meanFlow };
+    };
+    const slow = run(0);
+    const fast = run(6000);
+    expect(fast.count).toBeLessThanOrEqual(slow.count);
+    expect(fast.meanFlow).toBeLessThan(slow.meanFlow);
+    const again = run(6000);
+    expect(again.count).toBe(fast.count);
+    expect(again.meanFlow).toBeCloseTo(fast.meanFlow, 10);
+  });
+
+  it("건조 끊김: 적재량이 줄수록 dab가 빠지고, 가득 찬 털은 빠지지 않으며, 같은 입력은 같은 결과다", () => {
+    const countFor = (dryBreakup: number, load: number): number => {
+      const { surface } = stubSurface();
+      const s = new BristleDabSynthesizer(surface, 8, 2, 0.1, COLOR, 7, 10, { ...RESPONSE, dryBreakup });
+      const n = 8;
+      const ys = new Float32Array(n).fill(20);
+      for (let x = 0; x < 40; x += 2) {
+        const prevX = new Float32Array(n).fill(x);
+        const curX = new Float32Array(n).fill(x + 2);
+        s.onTick({ count: n, prevX, prevY: ys, curX, curY: Float32Array.from(ys), load: new Float32Array(n).fill(load), moved: new Float32Array(n).fill(2), pressure: 0.8, tMs: x, handleX: x, handleY: 20, spreadRadiusPx: 8, handleVX: 0, handleVY: 0, headingX: 1, headingY: 0 });
+      }
+      s.flush();
+      return s.stats.dabs;
+    };
+    const full = countFor(0, 0.3);
+    expect(countFor(0, 0.3)).toBe(full);
+    expect(countFor(1, 1)).toBe(countFor(0, 1));
+    const broken = countFor(1, 0.1);
+    expect(broken).toBeLessThan(countFor(0, 0.1));
+    expect(countFor(1, 0.1)).toBe(broken);
+    expect(countFor(1, 0.5)).toBeGreaterThan(broken);
+  });
+
+  it("프레임 제출 상한: 한 번의 제출은 예산을 넘지 않고 순서·총량은 보존된다", () => {    const { surface, dabs, submits } = stubSurface();
+    const s = synth(surface, 8, 2, 0.3);
+    const n = 8;
+    const ys = new Float32Array(n).fill(20);
+    for (let x = 0; x < 200; x += 2) {
+      const prevX = new Float32Array(n).fill(x);
+      const curX = new Float32Array(n).fill(x + 2);
+      s.onTick({ count: n, prevX, prevY: ys, curX, curY: Float32Array.from(ys), load: new Float32Array(n).fill(1), moved: new Float32Array(n).fill(2), pressure: 0.8, tMs: x, handleX: x, handleY: 20, spreadRadiusPx: 8, handleVX: 0, handleVY: 0, headingX: 1, headingY: 0 });
+    }
+    s.flush();
+    expect(s.stats.dabs).toBeGreaterThan(BRISTLE_FRAME_SUBMIT_BUDGET);
+    for (const c of submits) expect(c).toBeLessThanOrEqual(BRISTLE_FRAME_SUBMIT_BUDGET);
+    expect(dabs.length).toBe(s.stats.dabs);
+    expect(s.pending()).toBe(0);
+  });
+
+  it("프레임 dab 예산: 한 프레임을 넘으면 건너뛰고, 다음 프레임(beginFrame)에 이어진다", () => {
+    const { surface } = stubSurface();
+    const s = synth(surface, 8, 2, 0.3);
+    const n = 8;
+    const ys = new Float32Array(n).fill(20);
+    const tick = (x: number): BristleTick => {
+      const prevX = new Float32Array(n).fill(x);
+      const curX = new Float32Array(n).fill(x + 2);
+      return { count: n, prevX, prevY: ys, curX, curY: Float32Array.from(ys), load: new Float32Array(n).fill(1), moved: new Float32Array(n).fill(2), pressure: 0.8, tMs: x, handleX: x, handleY: 20, spreadRadiusPx: 8, handleVX: 0, handleVY: 0, headingX: 1, headingY: 0 };
+    };
+    for (let x = 0; x < 4000; x += 2) s.onTick(tick(x));
+    expect(s.stats.budgetSkipped).toBeGreaterThan(0);
+    const capped = s.stats.dabs;
+    expect(capped).toBeLessThanOrEqual(BRISTLE_FRAME_DAB_BUDGET);
+    s.beginFrame();
+    for (let x = 4000; x < 4100; x += 2) s.onTick(tick(x));
+    expect(s.stats.dabs).toBeGreaterThan(capped);
+    s.flush();
   });
 });

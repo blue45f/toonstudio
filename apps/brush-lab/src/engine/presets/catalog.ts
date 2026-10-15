@@ -95,7 +95,7 @@ const PRESET_INPUTS: readonly BrushProgramInput[] = [
     id: "ink-g-pen",
     name: "G펜",
     family: "ink",
-    description: "닙 2차계(ωn 180 rad/s, threshold 0.05, gapMax 6), hardness 1 해석적 AA, 긴 끝 테이퍼.",
+    description: "닙 2차계(ωn 180 rad/s, threshold 0.05, gapMax 6), hardness 1 해석적 AA, 긴 끝 테이퍼. 고압에서 가운데 0.7·양 촉 자리에 진한 홈을 그린다.",
     tip: { kind: "round", sizePx: 8, hardness: 1 },
     paper: NO_PAPER,
     deposition: { model: "dry-stamp", flow: 1, opacity: 1, spacing: 0.08, timeDabsPerSecond: 30, blend: "normal" },
