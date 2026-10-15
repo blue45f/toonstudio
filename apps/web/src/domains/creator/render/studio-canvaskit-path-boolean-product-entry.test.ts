@@ -50,16 +50,29 @@ function moduleEdges(relativePath: string): ModuleEdges {
   return { dynamicImports, source, typeOnlyImports, valueImports };
 }
 
+const SYNC_COMMAND_START = "async function applyPathBooleanCombineSync(op: StudioPathBooleanOp)";
+/** 팩토리 반환문 — 줄바꿈·들여쓰기에 무관하게 세 명령이 모두 노출되는지 본다. */
+const FACTORY_RETURN =
+  /return\s*\{\s*applyPaperVectorRefinement,\s*applyPathBooleanCombine,\s*applyPathBooleanCombineSync,?\s*\};/u;
+
 function pathBooleanHandler(): string {
   // The async command bodies moved verbatim into the StudioPage vector-ops factory module.
+  // 기본(CanvasKit Worker) 결합 본문은 명시 선택 전용 동기(다각형) 결합 명령 직전에서 끝난다.
   const vectorOps = moduleEdges("../studio-page-vector-ops.ts").source;
   const start = vectorOps.indexOf(
     "async function applyPathBooleanCombine(op: StudioPathBooleanOp)",
   );
-  const end = vectorOps.indexOf(
-    "return { applyPaperVectorRefinement, applyPathBooleanCombine };",
-    start,
-  );
+  const end = vectorOps.indexOf(SYNC_COMMAND_START, start);
+  expect(start).toBeGreaterThan(0);
+  expect(end).toBeGreaterThan(start);
+  return vectorOps.slice(start, end);
+}
+
+/** 명시 선택 전용 동기(다각형) 결합 명령 본문 — 팩토리 반환문 직전까지. */
+function syncPolygonHandler(): string {
+  const vectorOps = moduleEdges("../studio-page-vector-ops.ts").source;
+  const start = vectorOps.indexOf(SYNC_COMMAND_START);
+  const end = start < 0 ? -1 : start + vectorOps.slice(start).search(FACTORY_RETURN);
   expect(start).toBeGreaterThan(0);
   expect(end).toBeGreaterThan(start);
   return vectorOps.slice(start, end);
@@ -119,10 +132,28 @@ describe("CanvasKit PathOps product entry boundary", () => {
     expect(handler).not.toContain("polygon-clipping");
     expect(handler).not.toContain("combineStudioShapes(baseSpec, topSpec, op)");
     expect(handler.match(/combineStudioShapesWithCanvasKit\(/gu)).toHaveLength(1);
+    // 같은 모듈의 동기(다각형) 엔진은 패널에서 명시 선택했을 때만 도는 별개 명령이다.
+    // CanvasKit 실패를 받아 자동으로 이어 실행하는 경로가 이 본문에 생기면 안 된다.
+    expect(handler).not.toContain("combineStudioShapesSync");
+    expect(handler).not.toContain("applyPathBooleanCombineSync");
     expect(handler).toContain("if (!result.ok)");
     expect(handler).toContain("pathBooleanClientRef.current?.dispose()");
     expect(handler).toContain("원본 도형을 유지했어요");
     expect(handler).toContain("다른 엔진은 자동으로 실행하지 않았습니다");
+  });
+
+  it("keeps the polygon sync combine an explicit command that never touches the Worker client", () => {
+    const vectorOps = moduleEdges("../studio-page-vector-ops.ts").source;
+    const sync = syncPolygonHandler();
+
+    expect(vectorOps).toMatch(FACTORY_RETURN);
+    expect(sync).toContain("combineStudioShapesSync(");
+    expect(sync).not.toContain("combineStudioShapesWithCanvasKit");
+    expect(sync).not.toContain("studio-quality-worker-client");
+    expect(sync).not.toContain("pathBooleanClientRef.current =");
+    // 단일 commit, Undo 규율은 기본 결합과 같다 — 정점 상한을 넘으면 아무것도 선점하지 않고 기존 경로로 위임한다.
+    expect(sync.match(/\bcommit\(/gu)).toHaveLength(1);
+    expect(sync).toContain("return applyPathBooleanCombine(op);");
   });
 
   it("owns cancellation, Worker lifetime, timeline cleanup, and selection ref synchronization", () => {

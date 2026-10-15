@@ -4,7 +4,8 @@ import {
   readStudioSaveProfiles,
   studioSaveProfileNeedsDestination,
 } from "./save-first/studio-save-profile";
-import { parseStudioAutosave, studioAutosaveKey } from "./studio-autosave";
+import type { StudioSeedAutosave } from "./save-first/studio-seed-autosave-durable";
+import { studioAutosaveKey } from "./studio-autosave";
 import type { PageState } from "./studio-page-state";
 import {
   SAMPLE_DOCUMENT_ID,
@@ -41,9 +42,8 @@ class MemoryStorage {
 
 const AT = "2026-10-14T00:00:00.000Z";
 
-function samplePages(storage: MemoryStorage): PageState[] {
-  const parsed = parseStudioAutosave(storage.getItem(studioAutosaveKey({ workId: SAMPLE_DOCUMENT_ID })));
-  return (parsed?.pagesList ?? []) as unknown as PageState[];
+function seedPages(seed: StudioSeedAutosave): PageState[] {
+  return seed.build().pagesList as unknown as PageState[];
 }
 
 describe("ensureSampleManuscriptSeeded", () => {
@@ -62,8 +62,12 @@ describe("ensureSampleManuscriptSeeded", () => {
     expect(documents).toHaveLength(1);
     expect(documents[0]).toMatchObject({ id: SAMPLE_DOCUMENT_ID, pageCount: 2 });
 
-    const pages = samplePages(storage);
+    if (result.status !== "seeded") throw new Error("expected a seeded result");
+    expect(result.autosave.workId).toBe(SAMPLE_DOCUMENT_ID);
+    const pages = seedPages(result.autosave);
     expect(pages).toHaveLength(2);
+    // 초안은 내구 저장소에 심도록 돌려줄 뿐, 브라우저 저장소(호환 후보)에는 심지 않는다.
+    expect(storage.getItem(studioAutosaveKey({ workId: SAMPLE_DOCUMENT_ID }))).toBeNull();
     expect(pages[0]?.groups?.map((group) => group.id)).toContain("sample-g-tone");
 
     const profile = readStudioSaveProfiles(storage).profiles[SAMPLE_PROJECT_ID];
@@ -71,15 +75,16 @@ describe("ensureSampleManuscriptSeeded", () => {
     expect(studioSaveProfileNeedsDestination(profile!)).toBe(false);
   });
 
-  it("is idempotent and never overwrites a user-touched original autosave", () => {
+  it("is idempotent and never touches a browser record the user already holds", () => {
     const storage = new MemoryStorage();
     ensureSampleManuscriptSeeded(storage, { at: AT });
     const key = studioAutosaveKey({ workId: SAMPLE_DOCUMENT_ID });
-    const edited = storage.getItem(key)!.replace("촤아아", "콰아아");
+    const edited = '{"version":2,"title":"콰아아"}';
     storage.setItem(key, edited);
 
     const again = ensureSampleManuscriptSeeded(storage, { at: AT });
     expect(again.status).toBe("already-seeded");
+    expect(again.status === "already-seeded" ? again.autosave.workId : null).toBe(SAMPLE_DOCUMENT_ID);
     expect(storage.getItem(key)).toBe(edited);
     expect(readStudioProjectLibrary(storage).projects).toHaveLength(1);
   });
@@ -98,7 +103,8 @@ describe("ensureSampleManuscriptSeeded", () => {
 describe("createSampleManuscriptPracticeCopy", () => {
   it("creates a trace copy with the original locked and faded, original untouched", () => {
     const storage = new MemoryStorage();
-    ensureSampleManuscriptSeeded(storage, { at: AT });
+    const sample = ensureSampleManuscriptSeeded(storage, { at: AT });
+    if (sample.status !== "seeded") throw new Error("expected a seeded sample");
     const originalKey = studioAutosaveKey({ workId: SAMPLE_DOCUMENT_ID });
     const originalBefore = storage.getItem(originalKey);
 
@@ -112,16 +118,17 @@ describe("createSampleManuscriptPracticeCopy", () => {
     // 원본은 바이트 단위로 그대로다.
     expect(storage.getItem(originalKey)).toBe(originalBefore);
 
-    const copyPages = (parseStudioAutosave(
-      storage.getItem(studioAutosaveKey({ workId: result.documentId })),
-    )?.pagesList ?? []) as unknown as PageState[];
+    // 사본 초안도 편집기와 같은 소유자 키의 내구 저장소에 심도록 돌려주고, 브라우저 저장소에는 심지 않는다.
+    expect(result.autosave.workId).toBe(result.documentId);
+    expect(storage.getItem(studioAutosaveKey({ workId: result.documentId }))).toBeNull();
+    const copyPages = seedPages(result.autosave);
     expect(copyPages).toHaveLength(2);
     const [firstPage] = copyPages;
     expect(firstPage!.groups?.at(-1)?.name).toContain("내 연습");
     expect(firstPage!.groups?.at(-1)?.locked).toBe(false);
     expect(firstPage!.groups?.slice(0, -1).every((group) => group.locked === true)).toBe(true);
 
-    const originalIds = new Set(samplePages(storage).flatMap((page) => page.elements.map((el) => el.id)));
+    const originalIds = new Set(seedPages(sample.autosave).flatMap((page) => page.elements.map((el) => el.id)));
     for (const page of copyPages) {
       for (const element of page.elements) {
         expect(element.id.endsWith("--sample-practice-1")).toBe(true);
@@ -143,6 +150,10 @@ describe("createSampleManuscriptPracticeCopy", () => {
     const second = createSampleManuscriptPracticeCopy(storage, { at: AT });
     expect(first.status).toBe("created");
     expect(second.status).toBe("already-created");
+    // 이미 있는 사본도 초안을 돌려준다 — 내구 저장소에 기록이 없던 사본이 이어서 복구되도록.
+    if (first.status !== "created" || second.status !== "already-created") return;
+    expect(second.autosave.workId).toBe(first.documentId);
+    expect(second.autosave.build().pagesList).toHaveLength(first.autosave.build().pagesList.length);
     expect(readStudioProjectLibrary(storage).projects).toHaveLength(2);
     expect(findSampleManuscriptPracticeCopy(storage)?.project.id).toBe("sample-practice-1");
   });
@@ -152,9 +163,7 @@ describe("createSampleManuscriptPracticeCopy", () => {
     const result = createSampleManuscriptPracticeCopy(storage, { at: AT, mode: "study" });
     expect(result.status).toBe("created");
     if (result.status !== "created") return;
-    const copyPages = (parseStudioAutosave(
-      storage.getItem(studioAutosaveKey({ workId: result.documentId })),
-    )?.pagesList ?? []) as unknown as PageState[];
+    const copyPages = seedPages(result.autosave);
     const sketch = copyPages[0]!.elements.find((element) => element.groupId?.startsWith("sample-g-sketch"));
     expect(sketch?.locked).toBeUndefined();
     expect(sketch?.opacity).toBe(0.55);

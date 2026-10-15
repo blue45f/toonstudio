@@ -178,21 +178,32 @@ const NODE_KINDS: ReadonlySet<string> = new Set([
   "blend",
   "output",
 ]);
-const ADJUSTMENT_KINDS: ReadonlySet<string> = new Set([
-  "levels",
-  "curves",
-  "hsl",
-  "color-balance",
-  "channel-mixer",
-  "gradient-map",
-  "lab",
-  "brightness-contrast",
-  "exposure",
-  "vibrance",
-  "invert",
-  "posterize",
-  "threshold",
-]);
+/**
+ * 검증이 받아들이는 조정 종류의 단일 표. `Record<StudioAdjustmentKind, true>` 로 선언해
+ * 종류 유니언에 값을 더하고 이 표에 올리지 않으면 컴파일이 실패한다(문자열 집합은 유니언과
+ * 어긋나도 컴파일이 통과해, 새 종류가 검증에서 빠진 채 그래프 생성·변경·직렬화·렌더 계획에서
+ * "adjustment is invalid" 로 던진 적이 있다).
+ */
+const ADJUSTMENT_KIND_REGISTRY: Readonly<Record<StudioAdjustmentKind, true>> = {
+  levels: true,
+  curves: true,
+  hsl: true,
+  "color-balance": true,
+  "channel-mixer": true,
+  "gradient-map": true,
+  lab: true,
+  "brightness-contrast": true,
+  exposure: true,
+  vibrance: true,
+  invert: true,
+  posterize: true,
+  threshold: true,
+  "black-white": true,
+  "photo-filter": true,
+  "selective-color": true,
+  "color-lookup": true,
+};
+const ADJUSTMENT_KINDS: ReadonlySet<string> = new Set(Object.keys(ADJUSTMENT_KIND_REGISTRY));
 const LIVE_EFFECT_KINDS: ReadonlySet<string> = new Set([
   "blur",
   "sharpen",

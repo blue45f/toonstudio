@@ -12,11 +12,12 @@ import { describe, expect, it } from "vitest";
 import {
   addPdfSource,
   createPdfWorkbenchState,
+  parsePdfPageRanges,
   removePdfPage,
   type PdfOutputStep,
   type PdfWorkbenchSource,
 } from "./pdf-workbench-model";
-import { buildMergedPdfBytes, inspectPdfSource } from "./pdf-workbench-engine";
+import { buildMergedPdfBytes, buildSplitPdfFiles, inspectPdfSource } from "./pdf-workbench-engine";
 import {
   applyPdfOutline,
   buildPdfMergeOutline,
@@ -244,4 +245,21 @@ describe("buildMergedPdfBytes 아웃라인 (엔진 통합)", () => {
     expect(flat.find((item) => item.title === "2화")?.sourcePageIndex).toBe(1);
   });
 
+  it("분할 파일에는 책갈피를 만들지 않는다 (병합 전용 기능)", async () => {
+    const { state, bytesBySourceId } = await fixture();
+    const parsed = parsePdfPageRanges("1-3, 4-5", state.pages.length);
+    if (!parsed.ok) throw new Error("범위 파싱 실패");
+    const files = await buildSplitPdfFiles({
+      state,
+      bytesBySourceId,
+      ranges: parsed.ranges,
+      baseName: "합본.pdf",
+    });
+    expect(files).toHaveLength(2);
+    for (const file of files) {
+      const doc = await PDFDocument.load(file.bytes);
+      expect(readPdfOutline(doc)).toEqual([]);
+      expect(doc.catalog.get(PDFName.of("Outlines"))).toBeUndefined();
+    }
+  });
 });

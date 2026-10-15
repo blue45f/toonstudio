@@ -34,6 +34,7 @@ import {
   createStudioVrmSceneDocument,
   normalizeStudioVrmSceneDocument,
 } from "./vrm/studio-vrm-scene-document";
+import { SAMPLE_VRM_ID, isBundledVrmRightsBlocked } from "./vrm/vrm-library";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -1315,12 +1316,14 @@ describe("studio-project-archive", () => {
     }), "PROJECT_INVALID");
   });
 
-  it("레거시 VRM 포저 PNG fragment를 정식 장면으로 변환하고 로컬 모델 의존성은 거부한다", async () => {
+  it("레거시 VRM 포저 PNG fragment를 정식 장면으로 변환하고 로컬·권리 차단 모델 의존성은 거부한다", async () => {
     const raster = pngBytes(43);
+    // 번들 모델은 현재 레지스트리에 실린 기본 샘플로 검증한다. 구 AvatarSample(avatar-a)는
+    // 2026-10-14 권리 판정으로 레지스트리에서 내려가 더 이상 번들 모델이 아니다(아래 거부 단언).
     const legacyPose = {
       tool: "vrm-poser",
-      modelId: "avatar-a",
-      modelName: "하린",
+      modelId: SAMPLE_VRM_ID,
+      modelName: "루미",
       yOffset: 0.12,
       bodyRotationY: 0.35,
       bones: { head: { rotation: [0.1, -0.2, 0.05] } },
@@ -1347,13 +1350,13 @@ describe("studio-project-archive", () => {
     expect(image.src).toBe(dataUrl("image/png", raster));
     expect(image.src).not.toContain("#");
     expect(image.vrmScene).toMatchObject({
-      model: { source: "bundled", id: "avatar-a" },
+      model: { source: "bundled", id: SAMPLE_VRM_ID },
       pose: { yOffset: 0.12, bodyRotationY: 0.35 },
       expressions: { happy: 0.7 },
     });
 
     const currentMetadata = buildVrmPoseDataUrlMetadata({
-      modelId: "avatar-a",
+      modelId: SAMPLE_VRM_ID,
       bones: { head: { rotation: [0.2, -0.1, 0.04] } },
       yOffset: 0.18,
       poseTranslations: {
@@ -1363,7 +1366,7 @@ describe("studio-project-archive", () => {
         spine: [-0.03, 0.06, 0.01],
       },
       bodyRotation: 0.42,
-    }, "하린");
+    }, "루미");
     const currentSrc = `${dataUrl("image/png", raster)}#${encodeURIComponent(JSON.stringify(currentMetadata))}`;
     const currentImported = await importStudioProjectArchive((await buildStudioProjectArchive({
       project: {
@@ -1401,6 +1404,23 @@ describe("studio-project-archive", () => {
           src: `${dataUrl("image/png", raster)}#${encodeURIComponent(JSON.stringify({
             ...legacyPose,
             modelId: "local-indexeddb-model",
+          }))}`,
+        }])],
+      },
+    }), "PROJECT_INVALID");
+
+    // 권리 차단으로 번들에서 내려간 모델은 번들 id 로 조용히 되살리지 않는다.
+    expect(isBundledVrmRightsBlocked("avatar-a")).toBe(true);
+    await expectArchiveError(buildStudioProjectArchive({
+      project: {
+        ...project,
+        pages: [minimalPage([{
+          id: "legacy-rights-blocked-vrm",
+          type: "image",
+          src: `${dataUrl("image/png", raster)}#${encodeURIComponent(JSON.stringify({
+            ...legacyPose,
+            modelId: "avatar-a",
+            modelName: "하린",
           }))}`,
         }])],
       },
