@@ -80,7 +80,7 @@ export function StudioMaterialBrushControls({ material, programSet, currentSnaps
   };
 
   return <section className="space-y-3 rounded-2xl border border-line bg-card/35 p-3" aria-label="커스텀 재료 브러시 설정">
-    <div className="rounded-xl border border-line bg-bg-2/60 p-3">
+    <div className="rounded-xl border border-line bg-raised/60 p-3">
       <h3 className="text-sm font-bold text-fg">{label}</h3>
       <p className="mt-1 text-xs leading-5 text-fg-3">다음 획부터 반영됩니다. 크기·기본 색·불투명도는 브러시의 기본 도구 설정에서 조절하세요.</p>
     </div>
