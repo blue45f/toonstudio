@@ -36,8 +36,10 @@
 <body>
 <script>
   const THEMES = ["aurora", "blossom", "starlight", "dark", "light", "graphite", "midnight", "sepia", "contrast"];
-  const theme = new URLSearchParams(location.search).get("theme") || "aurora";
-  document.documentElement.setAttribute("data-design-theme", THEMES.includes(theme) ? theme : "aurora");
+  // 쿼리 값은 원문을 쓰지 않고 허용 목록의 항목으로만 바꿔 쓴다. 검증 전 원문을 innerHTML 템플릿에 넣으면 링크 한 번으로 DOM XSS 가 된다.
+  const requested = new URLSearchParams(location.search).get("theme");
+  const theme = THEMES.find((name) => name === requested) ?? "aurora";
+  document.documentElement.setAttribute("data-design-theme", theme);
   const TINTS = ["var(--spectacle-3)", "var(--spectacle-2)", "var(--spectacle-1)", "var(--spectacle-3)", "var(--spectacle-1)"];
   const LABELS = ["발견(장르 틴트)", "학습(경로 틴트)", "프로젝트(단계 틴트)", "마켓(카테고리 틴트)", "기본 틴트"];
   const stage = document.createElement("main");

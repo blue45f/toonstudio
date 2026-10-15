@@ -1,4 +1,5 @@
 import { sha256HexPortable } from "./studio-sha256";
+import { hasEventHandlerAttribute } from "./svg-safety/studio-svg-source-scan";
 
 export const STUDIO_SVG_PRODUCT_ROUTE_REVISION = 2 as const;
 export const STUDIO_SVG_PRODUCT_SELECTED_PROVIDER_ID = "vello-svg-native" as const;
@@ -110,7 +111,7 @@ function inputIssue(input: StudioSvgProductInput): string | null {
 function activeOrExternalSvg(svg: string): boolean {
   return (
     /<!doctype\b|<!entity\b|<\s*(?:script|foreignObject|iframe|object|embed)\b/iu.test(svg)
-    || /\bon[a-z0-9_-]+\s*=/iu.test(svg)
+    || hasEventHandlerAttribute(svg)
     || /(?:javascript|vbscript)\s*:/iu.test(svg)
     || /\b(?:href|xlink:href)\s*=\s*["'](?!#|data:image\/(?:png|jpeg|webp|gif);base64,)/iu.test(svg)
     || /url\(\s*["']?(?!#)/iu.test(svg)

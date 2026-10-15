@@ -73,6 +73,20 @@ export const CLOUD_STORAGE_PROVIDERS: Record<CloudStorageProvider, CloudStorageC
 // Google Drive Adapter
 // ---------------------------------------------------------------------------
 
+/** Drive 질의 문법의 문자열 값에서 역슬래시·작은따옴표를 이스케이프해 질의가 바뀌지 않게 한다. */
+function escapeDriveQueryValue(value: string): string {
+  return value.replace(/\\/gu, "\\\\").replace(/'/gu, "\\'");
+}
+
+/** Graph 경로는 구간마다 인코딩하되 구분자(/)만 남긴다. `?`·`#`·`..` 가 URL 구조를 바꾸지 않게 한다. */
+function encodeGraphPath(path: string): string {
+  return path
+    .split("/")
+    .filter((segment) => segment.length > 0)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
 const GOOGLE_SCOPES = "https://www.googleapis.com/auth/drive.file";
 const _GOOGLE_DISCOVERY = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
 
@@ -130,7 +144,7 @@ export async function listGoogleDriveFiles(
 ): Promise<CloudFileMetadata[]> {
   // 1. Find or create the app folder
   const folderQuery = encodeURIComponent(
-    `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`
+    `mimeType='application/vnd.google-apps.folder' and name='${escapeDriveQueryValue(folderName)}' and trashed=false`
   );
   const folderRes = await fetch(
     `https://www.googleapis.com/drive/v3/files?q=${folderQuery}&fields=files(id,name)`,
@@ -178,7 +192,7 @@ export async function uploadToGoogleDrive(
 ): Promise<{ fileId: string; webViewLink: string }> {
   // 1. Ensure app folder exists
   const folderQuery = encodeURIComponent(
-    `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`
+    `mimeType='application/vnd.google-apps.folder' and name='${escapeDriveQueryValue(folderName)}' and trashed=false`
   );
   const folderRes = await fetch(
     `https://www.googleapis.com/drive/v3/files?q=${folderQuery}&fields=files(id)`,
@@ -230,7 +244,7 @@ export async function uploadToGoogleDrive(
 
 export async function downloadFromGoogleDrive(accessToken: string, fileId: string): Promise<Blob> {
   const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   return res.blob();
@@ -265,26 +279,43 @@ export async function authorizeOneDrive(clientId: string): Promise<CloudAuthStat
     }
 
     const interval = setInterval(() => {
+      let hash: string;
       try {
         if (popup.closed) {
           clearInterval(interval);
           reject(new Error("인증이 취소되었습니다."));
           return;
         }
-        const hash = popup.location.hash;
-        if (hash.includes("access_token")) {
-          clearInterval(interval);
-          popup.close();
-          const params = new URLSearchParams(hash.slice(1));
-          resolve({
-            provider: "onedrive",
-            accessToken: params.get("access_token") ?? "",
-            expiresAt: Date.now() + Number(params.get("expires_in") ?? 3600) * 1_000,
-          });
-        }
+        hash = popup.location.hash;
       } catch {
         // Cross-origin — keep polling until popup redirects back
+        return;
       }
+      if (!hash.includes("access_token") && !hash.includes("error=")) return;
+      clearInterval(interval);
+      popup.close();
+      const params = new URLSearchParams(hash.slice(1));
+      const providerError = params.get("error");
+      if (providerError) {
+        reject(new Error(providerError));
+        return;
+      }
+      // 발급한 state 와 다르거나 없는 응답은 우리가 시작한 요청의 결과가 아니다(토큰 주입·로그인 CSRF).
+      if (params.get("state") !== state) {
+        reject(new Error("인증 응답의 state 가 일치하지 않아 중단했습니다."));
+        return;
+      }
+      const accessToken = params.get("access_token");
+      if (!accessToken) {
+        reject(new Error("인증 응답에 액세스 토큰이 없습니다."));
+        return;
+      }
+      const expiresIn = Number(params.get("expires_in") ?? 3600);
+      resolve({
+        provider: "onedrive",
+        accessToken,
+        expiresAt: Date.now() + (Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 3600) * 1_000,
+      });
     }, 300);
   });
 }
@@ -293,7 +324,7 @@ export async function listOneDriveFiles(
   accessToken: string,
   folderPath = "/ToonStudio"
 ): Promise<CloudFileMetadata[]> {
-  const encodedPath = encodeURIComponent(folderPath.replace(/^\//, ""));
+  const encodedPath = encodeGraphPath(folderPath);
   const res = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/root:/${encodedPath}:/children?$select=id,name,size,file,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -334,7 +365,7 @@ export async function uploadToOneDrive(
   blob: Blob,
   folderPath = "/ToonStudio"
 ): Promise<{ fileId: string; webUrl: string }> {
-  const safePath = folderPath.replace(/^\//, "");
+  const safePath = encodeGraphPath(folderPath);
   const encodedName = encodeURIComponent(fileName);
 
   // Simple upload (< 4 MB) — use upload session for larger files
@@ -357,7 +388,7 @@ export async function uploadToOneDrive(
 
 export async function downloadFromOneDrive(accessToken: string, fileId: string): Promise<Blob> {
   const res = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/content`,
+    `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(fileId)}/content`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   return res.blob();

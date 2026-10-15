@@ -103,6 +103,26 @@ function collectSvgFeatures(source: string): readonly string[] {
   return Object.freeze([...features].sort());
 }
 
+// 이벤트 속성 검사. `\bon[a-z0-9_-]+\s*=` 는 `on-on-on-...` 처럼 단어 경계가 잇따르는 덩어리에서 시작점마다
+// 덩어리 끝까지 다시 읽어 입력 길이의 제곱 시간이 된다(CodeQL js/polynomial-redos). 이름 글자 덩어리를 한 번씩만 읽는다.
+// 덩어리 뒤 공백·등호는 모두 선택이라 매칭이 실패하지 않아 되돌림이 없다. 판정은 원래 식과 같다.
+const NAME_RUN_PATTERN = /([a-z0-9_-]+)\s*(=?)/giu;
+const EVENT_NAME_PATTERN = /(?:^|-)on[a-z0-9_-]/iu;
+
+function hasEventHandlerAttribute(source: string): boolean {
+  for (const match of source.matchAll(NAME_RUN_PATTERN)) {
+    if (match[2] === "=" && EVENT_NAME_PATTERN.test(match[1] ?? "")) return true;
+  }
+  return false;
+}
+
+// 문서 밖 CSS 참조 검사. `url\(\s*["']?(?!#)[^)]+\)` 는 공백·따옴표를 되돌려 가며 시도하므로 결국
+// "`url(` 바로 뒤 글자가 `#` 도 `)` 도 아니고 그 뒤에 `)` 가 있다" 와 같다(`url( #a)`·`url('#a')` 도 걸리는 기존 동작 그대로).
+// 마지막 `)` 뒤 꼬리를 잘라 내면 닫는 괄호를 끝내 못 찾는 `url(` 마다 문서 끝까지 읽던 제곱 시간이 사라진다.
+function hasNonLocalCssUrl(source: string): boolean {
+  return /url\((?![#)])/iu.test(source.slice(0, source.lastIndexOf(")") + 1));
+}
+
 /**
  * Security and resource audit performed before ThorVG is initialized. It intentionally forbids
  * every active or externally resolved surface; the provider receives one self-contained string.
@@ -125,13 +145,13 @@ export function auditThorvgSvg(
   if (/<\s*(?:script|foreignobject|iframe|object|embed|audio|video)\b/u.test(lower)) {
     reject("active-content", "active-element");
   }
-  if (/\bon[a-z0-9_-]+\s*=/iu.test(source) || /(?:java|vb)script\s*:/iu.test(source)) {
+  if (hasEventHandlerAttribute(source) || /(?:java|vb)script\s*:/iu.test(source)) {
     reject("active-content", "event-or-script-url");
   }
   if (/\b(?:href|xlink:href)\s*=\s*["'](?!#)[^"']+/iu.test(source)) {
     reject("external-resource", "non-local-href");
   }
-  if (/url\(\s*["']?(?!#)[^)]+\)/iu.test(source) || /@import\b/iu.test(source)) {
+  if (hasNonLocalCssUrl(source) || /@import\b/iu.test(source)) {
     reject("external-resource", "non-local-css-url");
   }
 

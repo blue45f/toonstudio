@@ -1,3 +1,4 @@
+import { createSecureRandomString } from "../../../shared/lib/secure-random-id";
 import { STUDIO_LIVE_JAM_WORK_ID_PREFIX } from "../../../shared/lib/studio-live-jam-scope";
 import { buildStudioLiveShareHref } from "../creator-studio-links";
 import {
@@ -40,11 +41,19 @@ export function readStudioLiveInviteRoleQuery(
   return role === "viewer" || role === "commenter" ? role : null;
 }
 
+const INSTANT_WORK_ID_SALT_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+/**
+ * 즉석 잼 방 ID. 방 ID 가 곧 초대 링크의 일부이므로 기본 난수는 Web Crypto 다(Math.random 은 쓰지 않는다).
+ * `random` 은 결정적 테스트용 주입 지점이다. 형식은 STUDIO_LIVE_JAM_WORK_ID 계약(`…-<base36 4자>`)을 따른다.
+ */
 export function createStudioLiveInstantWorkId(
   now: () => number = Date.now,
-  random: () => number = Math.random
+  random?: () => number
 ): string {
-  const salt = random().toString(36).slice(2, 6).padEnd(4, "0");
+  const salt = random
+    ? random().toString(36).slice(2, 6).padEnd(4, "0")
+    : createSecureRandomString(INSTANT_WORK_ID_SALT_ALPHABET, 4, "라이브 방 ID를 만들 안전한 난수원이 없어요.");
   return `${STUDIO_LIVE_JAM_WORK_ID_PREFIX}${now().toString(36)}-${salt}`;
 }
 

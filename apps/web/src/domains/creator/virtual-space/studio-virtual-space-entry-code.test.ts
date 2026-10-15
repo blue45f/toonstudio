@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildCodeInviteFragment,
@@ -12,6 +12,11 @@ import {
   STUDIO_ENTRY_CODE_LENGTH,
 } from "./studio-virtual-space-entry-code";
 
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
 describe("createEntryCode", () => {
   it("6자리 코드를 만든다", () => {
     const code = createEntryCode();
@@ -23,6 +28,23 @@ describe("createEntryCode", () => {
     for (const char of ["0", "O", "1", "I"]) {
       expect(STUDIO_ENTRY_CODE_ALPHABET).not.toContain(char);
     }
+  });
+
+  it("기본 경로는 Math.random 을 쓰지 않고 Web Crypto 로만 만든다", () => {
+    const random = vi.spyOn(Math, "random").mockImplementation(() => {
+      throw new Error("insecure randomness must not issue entry codes");
+    });
+    const codes = new Set(Array.from({ length: 50 }, () => createEntryCode()));
+    for (const code of codes) expect(isEntryCodeValid(code)).toBe(true);
+    expect(codes.size).toBeGreaterThan(40);
+    expect(random).not.toHaveBeenCalled();
+  });
+
+  it("안전한 난수원이 없으면 Math.random 폴백 없이 실패한다", () => {
+    const random = vi.spyOn(Math, "random");
+    vi.stubGlobal("crypto", undefined);
+    expect(() => createEntryCode()).toThrow();
+    expect(random).not.toHaveBeenCalled();
   });
 
   it("pick 주입 시 결정적으로 생성한다", () => {
