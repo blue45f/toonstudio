@@ -57,6 +57,7 @@ export function MobileFullEditNotice({ surfaceId, surfaceLabel, mobileCapabiliti
   return (
     <aside
       data-testid="mobile-full-edit-notice"
+      data-studio-mobile-full-edit-notice="true"
       aria-label={bt("모바일 편집 안내", "Mobile editing notice")}
       className={cn(
         "fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-[90]",
