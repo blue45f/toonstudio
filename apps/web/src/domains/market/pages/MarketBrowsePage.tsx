@@ -19,6 +19,7 @@ import { MarketCompareShelf } from "../components/MarketCompareShelf";
 import { MarketFamilyPicker } from "../components/MarketFamilyPicker";
 import { MarketViewToggle } from "../components/MarketViewToggle";
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketSentenceSearch } from "../components/MarketSentenceSearch";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
@@ -177,6 +178,12 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
     patchParams({ q: null, tag: null, publisher: null, kind: null, license: null, sort: null });
   }, [cancelPendingSearchCommit, patchParams]);
 
+  // 문장으로 읽은 조건은 기존 URL 필터를 그대로 바꾼다(새 API 없음). 대기 중이던 키워드 반영이 뒤늦게 덮어쓰지 않게 먼저 멈춘다.
+  const applySentenceFilters = useCallback((patch: Readonly<Record<string, string | null>>) => {
+    cancelPendingSearchCommit();
+    patchParams({ ...patch });
+  }, [cancelPendingSearchCommit, patchParams]);
+
   const hasActiveFilters = Boolean(query.search || query.tag || query.publisher || activeKind || activeLicense);
 
   const selectFamily = (family: MarketResourceFamily | null) => {
@@ -246,6 +253,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             </div>
             <button type="submit" className={buttonClass({ variant: "solid", size: "md" })}>{t("검색", "Search")}</button>
           </form>
+          <MarketSentenceSearch onApply={applySentenceFilters} />
         </Container>
       </section>
 
