@@ -13,6 +13,8 @@
 
 import { toDataURL } from "qrcode";
 
+import { createSecureRandomString } from "@/shared/lib/secure-random-id";
+
 /** 혼동 문자(0/O/1/I)를 제외한 32자 알파벳. */
 export const STUDIO_ENTRY_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -28,24 +30,20 @@ const CODE_PATTERN = /^[A-HJ-NP-Z2-9]{6}$/u;
 
 /**
  * 6자리 입장코드 생성. `pick`을 주입하면 결정적으로 생성한다(테스트용).
- * 기본은 crypto.getRandomValues, 실패 시 Math.random 폴백.
+ * 기본은 Web Crypto 거부 표집이며, 안전한 난수원이 없으면 Math.random 으로 대체하지 않고 던진다
+ * (입장코드는 추측되면 안 되는 비밀값이다 — CodeQL js/insecure-randomness, CWE-338).
  */
 export function createEntryCode(pick?: (index: number) => number): string {
-  const alphabet = STUDIO_ENTRY_CODE_ALPHABET;
-  const choose =
-    pick ??
-    ((_index: number): number => {
-      try {
-        const values = new Uint32Array(1);
-        globalThis.crypto.getRandomValues(values);
-        return (values[0] as number) % alphabet.length;
-      } catch {
-        return Math.floor(Math.random() * alphabet.length);
-      }
-    });
+  if (!pick) {
+    return createSecureRandomString(
+      STUDIO_ENTRY_CODE_ALPHABET,
+      STUDIO_ENTRY_CODE_LENGTH,
+      "입장코드를 만들 안전한 난수원이 없어요.",
+    );
+  }
   let code = "";
   for (let index = 0; index < STUDIO_ENTRY_CODE_LENGTH; index += 1) {
-    code += alphabet[choose(index) % alphabet.length];
+    code += STUDIO_ENTRY_CODE_ALPHABET[pick(index) % STUDIO_ENTRY_CODE_ALPHABET.length];
   }
   return code;
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   clearStudioGuestSession,
@@ -14,6 +14,11 @@ import {
 } from "./studio-virtual-space-guest-session";
 
 const TOKEN = "a".repeat(43);
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 function memoryStorage(): StudioGuestSessionStorage & { data: Map<string, string> } {
   const data = new Map<string, string>();
@@ -61,6 +66,25 @@ describe("createStudioGuestSession", () => {
     expect(session.maxUses).toBe(1);
     expect(session.spawn).toEqual({ x: 10, y: 20 });
     expect(isStudioGuestSessionValid(session, now)).toBe(true);
+  });
+
+  it("issues the session id from Web Crypto only (no Math.random)", () => {
+    const random = vi.spyOn(Math, "random").mockImplementation(() => {
+      throw new Error("insecure randomness must not issue session ids");
+    });
+    const first = createStudioGuestSession({ token: TOKEN, spaceId: "p", nickname: "게스트", now: 1000 });
+    const second = createStudioGuestSession({ token: TOKEN, spaceId: "p", nickname: "게스트", now: 1000 });
+    expect(first.sessionId).toMatch(/^[A-Za-z0-9_-]{16}$/u);
+    expect(second.sessionId).toMatch(/^[A-Za-z0-9_-]{16}$/u);
+    expect(first.sessionId).not.toBe(second.sessionId);
+    expect(random).not.toHaveBeenCalled();
+  });
+
+  it("fails closed instead of falling back to Math.random when no secure entropy exists", () => {
+    const random = vi.spyOn(Math, "random");
+    vi.stubGlobal("crypto", undefined);
+    expect(() => createStudioGuestSession({ token: TOKEN, spaceId: "p", nickname: "게스트", now: 1000 })).toThrow();
+    expect(random).not.toHaveBeenCalled();
   });
 
   it("rejects expired sessions", () => {

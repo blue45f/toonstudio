@@ -1,5 +1,7 @@
 import { parseStudioSpatialInviteFragment } from "./studio-spatial-invite-context";
 
+import { createSecureRandomString } from "@/shared/lib/secure-random-id";
+
 export interface StudioGuestInviteSpawn {
   readonly x: number;
   readonly y: number;
@@ -42,20 +44,16 @@ export const STUDIO_GUEST_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 export const STUDIO_GUEST_SESSION_STORAGE_KEY = "toonspectrum:virtual-space-guest:v1";
 const SESSION_ID = /^[A-Za-z0-9_-]{16}$/u;
 
+const SESSION_ID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
+const SESSION_ID_LENGTH = 16;
+
+/** 게스트 세션 ID 는 Web Crypto 로만 만든다. 안전한 난수원이 없으면 Math.random 으로 대체하지 않고 던진다(CWE-338). */
 function randomSessionId(): string {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
-  let id = "";
-  try {
-    const values = new Uint32Array(16);
-    globalThis.crypto.getRandomValues(values);
-    for (const value of values) id += alphabet[value % alphabet.length];
-    return id;
-  } catch {
-    for (let index = 0; index < 16; index++) {
-      id += alphabet[Math.floor(Math.random() * alphabet.length)];
-    }
-    return id;
-  }
+  return createSecureRandomString(
+    SESSION_ID_ALPHABET,
+    SESSION_ID_LENGTH,
+    "게스트 세션 ID를 만들 안전한 난수원이 없어요.",
+  );
 }
 
 function parseSpawn(raw: string | null): StudioGuestInviteSpawn | null {

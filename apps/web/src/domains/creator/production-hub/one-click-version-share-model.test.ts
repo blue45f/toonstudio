@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildVersionShareUrl,
@@ -15,6 +15,11 @@ const ARTIFACT = "test-artifact-ocvs";
 
 beforeEach(() => {
   window.localStorage.clear();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("buildVersionShareUrl", () => {
@@ -66,6 +71,29 @@ describe("createVersionShareLink", () => {
     );
     expect(link?.settings.permission).toBe("view");
     expect(link?.settings.password).toBe("secret123");
+  });
+
+  it("공유 토큰·링크 ID 는 Math.random 없이 Web Crypto 로만 만든다", () => {
+    const random = vi.spyOn(Math, "random").mockImplementation(() => {
+      throw new Error("insecure randomness must not issue share tokens");
+    });
+    const first = createVersionShareLink(ARTIFACT, { snapshotId: "s1", snapshotName: "v1" }, {}, { origin: "https://example.com" });
+    const second = createVersionShareLink(ARTIFACT, { snapshotId: "s2", snapshotName: "v2" }, {}, { origin: "https://example.com" });
+    expect(first?.token).toMatch(/^[A-Za-z0-9_-]{24}$/u);
+    expect(second?.token).toMatch(/^[A-Za-z0-9_-]{24}$/u);
+    expect(first?.token).not.toBe(second?.token);
+    expect(first?.id).toMatch(/^version-share-[0-9a-z]+-[0-9a-f]{12}$/u);
+    expect(first?.url).toBe(`https://example.com/share/version/${first?.token}`);
+    expect(random).not.toHaveBeenCalled();
+  });
+
+  it("안전한 난수원이 없으면 예측 가능한 토큰으로 대체하지 않고 링크를 발급하지 않는다", () => {
+    const random = vi.spyOn(Math, "random");
+    vi.stubGlobal("crypto", undefined);
+    const link = createVersionShareLink(ARTIFACT, { snapshotId: "s1", snapshotName: "v1" }, {}, { origin: "https://example.com" });
+    expect(link).toBeNull();
+    expect(listVersionShareLinks(ARTIFACT)).toHaveLength(0);
+    expect(random).not.toHaveBeenCalled();
   });
 
   it("필수 값이 없으면 null을 반환한다", () => {

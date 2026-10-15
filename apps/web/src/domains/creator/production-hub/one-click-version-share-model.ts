@@ -9,6 +9,8 @@
  * url이 마스킹 표시 전용일 수 있다.
  */
 
+import { createSecureRandomString, createSecureRandomUuid } from "@/shared/lib/secure-random-id";
+
 export type VersionSharePermission = "view" | "comment" | "edit";
 
 export interface VersionShareSettings {
@@ -50,28 +52,22 @@ function storageAvailable(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 }
 
-function newToken(pick?: (index: number) => number): string {
-  const choose = pick ?? ((index: number): number => {
-    void index;
-    try {
-      const values = new Uint32Array(1);
-      globalThis.crypto.getRandomValues(values);
-      return (values[0] as number) % TOKEN_ALPHABET.length;
-    } catch {
-      return Math.floor(Math.random() * TOKEN_ALPHABET.length);
-    }
-  });
-  let token = "";
-  for (let i = 0; i < TOKEN_LENGTH; i += 1) {
-    token += TOKEN_ALPHABET[choose(i) % TOKEN_ALPHABET.length];
-  }
-  return token;
+/**
+ * 링크 토큰은 URL 만 알면 열 수 있는 비밀값이다. Web Crypto 로만 만들고, 안전한 난수원이 없으면
+ * Math.random 으로 대체하지 않고 던진다(CodeQL js/insecure-randomness, CWE-338).
+ */
+function newToken(): string {
+  return createSecureRandomString(
+    TOKEN_ALPHABET,
+    TOKEN_LENGTH,
+    "공유 링크 토큰을 만들 안전한 난수원이 없어요.",
+  );
 }
 
 function newLinkId(): string {
-  const random = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID().replace(/-/gu, "").slice(0, 12)
-    : Math.random().toString(36).slice(2, 14);
+  const random = createSecureRandomUuid("공유 링크 ID를 만들 안전한 난수원이 없어요.")
+    .replace(/-/gu, "")
+    .slice(0, 12);
   return `version-share-${Date.now().toString(36)}-${random}`;
 }
 
@@ -141,7 +137,7 @@ export interface VersionShareLinkSource {
 
 /**
  * 스냅샷에 대한 공유 링크를 발급한다. 같은 스냅샷에 여러 링크를 만들 수 있다
- * (예: 편집부용/외주용으로 권한을 다르게).
+ * (예: 편집부용/외주용으로 권한을 다르게). 필수 값이 없거나 안전한 난수원이 없으면 null.
  */
 export function createVersionShareLink(
   artifactId: string,
@@ -151,13 +147,21 @@ export function createVersionShareLink(
 ): VersionShareLink | null {
   if (!artifactId || !source.snapshotId) return null;
   const normalized = normalizeSettings(settings);
-  const token = overrides?.token ?? newToken();
+  let token: string;
+  let linkId: string;
+  try {
+    token = overrides?.token ?? newToken();
+    linkId = newLinkId();
+  } catch {
+    // 안전한 난수원이 없으면 추측 가능한 링크를 발급하지 않는다.
+    return null;
+  }
   const createdAt = overrides?.now ?? new Date().toISOString();
   const expiresAt = normalized.expiresInDays > 0
     ? new Date(new Date(createdAt).getTime() + normalized.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
   const link: VersionShareLink = Object.freeze({
-    id: newLinkId(),
+    id: linkId,
     artifactId,
     snapshotId: source.snapshotId,
     snapshotName: source.snapshotName,

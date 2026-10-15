@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   createStudioLiveInstantWorkId,
@@ -18,6 +18,11 @@ import {
   withStudioLiveJamRoom,
   type StudioLiveOwnerRoomSessionStorage,
 } from "./studio-live-jam-session";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 function sessionStorageFixture(
   initial: Record<string, string> = {},
@@ -90,6 +95,20 @@ describe("studio live jam session", () => {
       expectsSharedDocument: true,
       draftCollaborationReady: false,
     })).toBe(true);
+  });
+
+  it("creates the default instant room id without Math.random", () => {
+    const random = vi.spyOn(Math, "random").mockImplementation(() => {
+      throw new Error("insecure randomness must not issue live room ids");
+    });
+    const ids = new Set(Array.from({ length: 20 }, () => createStudioLiveInstantWorkId()));
+    for (const id of ids) expect(isStudioLiveJamWorkId(id)).toBe(true);
+    expect(ids.size).toBeGreaterThan(15);
+    expect(random).not.toHaveBeenCalled();
+  });
+
+  it("keeps the injected random source for deterministic callers", () => {
+    expect(createStudioLiveInstantWorkId(() => 1, () => 0.5)).toBe("work-instant-1-i000");
   });
 
   it("distinguishes the instant room owner from a tab that joined the published room", () => {
