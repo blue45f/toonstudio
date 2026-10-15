@@ -149,6 +149,57 @@ export function resolveAuthClientIp(
   return forwarded[0] ?? remoteAddress;
 }
 
+const DIRECT_CLIENT_IP_POLICY: AuthClientIpPolicy = Object.freeze({ mode: "direct" });
+const MAXIMUM_CACHED_ENVIRONMENT_POLICIES = 16;
+const policiesByEnvironment = new Map<string, AuthClientIpPolicy>();
+
+function clientIpEnvironmentKey(environment: AuthClientIpEnvironment): string {
+  return [
+    environment.AUTH_TRUSTED_PROXY_ENABLED,
+    environment.AUTH_TRUSTED_PROXY_IPS,
+    environment.AUTH_TRUSTED_CLIENT_IP_HEADER,
+    environment.AUTH_TRUSTED_PROXY_MAX_FORWARDED_HOPS,
+  ]
+    .map((value) => value ?? "\u0000")
+    .join("\u0001");
+}
+
+function clientIpPolicyFromEnvironment(
+  environment: AuthClientIpEnvironment,
+): AuthClientIpPolicy {
+  const key = clientIpEnvironmentKey(environment);
+  const cached = policiesByEnvironment.get(key);
+  if (cached) return cached;
+  let policy: AuthClientIpPolicy;
+  try {
+    policy = resolveAuthClientIpPolicy(environment);
+  } catch (error) {
+    if (!(error instanceof AuthClientIpConfigurationError)) throw error;
+    // 부팅 시 AuthModule 이 잘못된 설정을 이미 거부한다. 그래도 요청 경로에서는 헤더를
+    // 신뢰하는 쪽으로 열리지 않고 직접 연결 주소만 쓰는 쪽으로 닫는다.
+    policy = DIRECT_CLIENT_IP_POLICY;
+  }
+  if (policiesByEnvironment.size >= MAXIMUM_CACHED_ENVIRONMENT_POLICIES) {
+    policiesByEnvironment.clear();
+  }
+  policiesByEnvironment.set(key, policy);
+  return policy;
+}
+
+/**
+ * 인증 컨트롤러 밖의 요청 단위 속도 제한이 같은 신뢰 경계를 쓰게 하는 단일 진입점이다.
+ *
+ * 클라이언트가 임의로 보낼 수 있는 `X-Forwarded-For`·`X-Real-IP`·`CF-Connecting-IP` 값을
+ * 그대로 신원으로 쓰면 요청마다 값을 바꿔 제한을 우회할 수 있다. `AUTH_TRUSTED_PROXY_*` 로
+ * 명시한 신뢰 프록시가 직접 연결한 요청에서만 전달 헤더를 인정하고, 그 외에는 소켓 주소를 쓴다.
+ */
+export function resolveRequestClientIp(
+  request: AuthClientIpRequest,
+  environment: AuthClientIpEnvironment = process.env,
+): string {
+  return resolveAuthClientIp(request, clientIpPolicyFromEnvironment(environment));
+}
+
 function parseTrustedProxyIps(value: string | undefined): ReadonlySet<string> | null {
   if (typeof value !== "string" || value.trim() === "") return null;
   const entries = value.split(",").map((entry) => normalizeIp(entry));
