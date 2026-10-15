@@ -13,6 +13,7 @@ import {
   inferredFrameRank,
   type DialogueElementLike,
   type DialoguePageLike,
+  type SpatialFrame,
 } from "../lettering/studio-dialogue-batch";
 import {
   PROMO_DOCUMENT_CUTS_MAX,
@@ -124,7 +125,7 @@ export function listStudioPromoCuts(
     const pageFrames = collectSpatialFrames(elements);
     if (pageFrames.length === 0) pagesWithoutFrames.push(pageIndex);
 
-    const records = pageFrames.map((frame) => ({ frame, dialogues: [] as StudioPromoCutDialogue[] }));
+    const records: { frame: SpatialFrame; dialogues: StudioPromoCutDialogue[] }[] = pageFrames.map((frame) => ({ frame, dialogues: [] }));
     const byId = new Map(elements.map((element) => [element.id, element] as const));
     for (const item of collectDialogueItems([{ id: page.id, elements, groups }])) {
       // 숨긴 텍스트는 캡처에도 없으므로 자막 후보에서도 뺀다.

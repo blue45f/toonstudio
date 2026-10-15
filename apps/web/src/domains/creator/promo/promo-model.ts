@@ -40,8 +40,10 @@ export const PROMO_SHORT_SECONDS = 10;
 export const PROMO_SHORT_MAX_PANELS = 6;
 /** 마지막에 항상 포함되는 종료 카드 길이(초). */
 export const PROMO_ENDING_SECONDS = 2;
+/** 좁은 리터럴 합집합(10|15|30|60)을 타입 단언 없이 임의의 숫자와 비교하려고 같은 값을 숫자 목록으로 본 것이다. */
+const PROMO_DURATION_VALUES: readonly number[] = PROMO_DURATIONS;
 export function isPromoSeconds(value: unknown): value is PromoSeconds {
-  return typeof value === "number" && (PROMO_DURATIONS as readonly number[]).includes(value);
+  return typeof value === "number" && PROMO_DURATION_VALUES.includes(value);
 }
 /** 길이별 컷 수 상한 — 10초만 낮고, 15·30·60초는 기존 상한(12컷)을 유지한다. */
 export function promoMaxPanels(seconds: number): number {
