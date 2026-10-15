@@ -96,6 +96,21 @@ describe("StudioManualPage", () => {
     expect(steps[4]?.textContent).toContain("나의 사운드트랙");
   });
 
+  it("maps the episode-flow steps onto the editor screen and leaves off-screen steps unmarked", () => {
+    renderManual("/studio/manual/episode-flow");
+
+    expect(screen.getByRole("figure", { name: /화면에서 찾기 · 스튜디오 편집기/u })).toBeTruthy();
+    const plan = screen.getByRole("region", { name: "1~2단계: 기획과 콘티" });
+    const steps = within(plan).getAllByRole("listitem");
+    expect(steps).toHaveLength(4);
+    const badge = (index: number) => steps[index]?.querySelector(".manual-screen-badge")?.textContent ?? null;
+    // 작품 시작은 상단 바(저장 상태), 콘티는 페이지 스트립 — 기획은 편집기 밖이라 위치를 붙이지 않는다.
+    expect(badge(0)).toBe("1");
+    expect(badge(1)).toBeNull();
+    expect(badge(2)).toBe("2");
+    expect(badge(3)).toBe("2");
+  });
+
   it("offers a section-level shortcut that opens the exact tool in a new tab", () => {
     renderManual("/studio/manual/music-ost");
     const importLink = screen.getByRole("link", { name: /외부 음원 가져오기 열기/u });
