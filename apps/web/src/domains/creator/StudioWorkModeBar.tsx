@@ -1,7 +1,7 @@
 /**
  * 스튜디오 작업 모드 바 — 지금 단계의 도구만 앞에 두는 모드 전환 띠.
  *
- * - 모드 버튼: 전체/콘티/스케치·선화/채색/식자/효과·마감.
+ * - 모드 버튼: 전체/콘티/스케치·선화/채색/후보정/식자/마감.
  * - 단계 제안 배너: 회차 단계 도출값이 현재 모드와 다르면 "바꿀까요?"만 묻고
  *   강제로 바꾸지 않는다 (resolveStudioWorkMode의 제안 규칙과 짝).
  * - 다음 단계 버튼: 파이프라인 순서의 다음 모드로 한 번에 이동.
@@ -55,7 +55,7 @@ export function StudioWorkModeBar({
                 className={
                   selected
                     ? "min-h-9 rounded-full bg-accent px-3 text-sm font-bold text-white"
-                    : "min-h-9 rounded-full border border-line bg-panel px-3 text-sm text-fg-2 transition-colors hover:bg-panel-2"
+                    : "min-h-9 rounded-full border border-line bg-panel px-3 text-sm text-fg-2 transition-colors hover:bg-raised"
                 }
               >
                 {lang === "ko" ? candidateMeta.labelKo : candidateMeta.labelEn}
