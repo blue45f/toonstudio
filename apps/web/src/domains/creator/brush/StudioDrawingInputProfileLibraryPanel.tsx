@@ -235,7 +235,7 @@ export function StudioDrawingInputProfileLibraryPanel({
       </header>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 overscroll-contain">
-        <section className="rounded-xl border border-line/70 bg-bg-2/45 p-2.5">
+        <section className="rounded-xl border border-line/70 bg-raised/45 p-2.5">
           <div className="flex flex-wrap gap-1 text-[0.54rem] font-semibold text-fg-3">
             <span className="rounded bg-card px-1.5 py-1">{modeLabel(currentSnapshot.stabilizerMode)} {currentSnapshot.stabilizer}</span>
             <span className="rounded bg-card px-1.5 py-1">후처리 {currentSnapshot.postCorrection}</span>
@@ -291,7 +291,7 @@ export function StudioDrawingInputProfileLibraryPanel({
                 key={profile.id}
                 className={cn(
                   "flex items-center gap-2 rounded-xl border p-2.5",
-                  active ? "border-accent/50 bg-accent-soft/65" : "border-line bg-bg-2/45",
+                  active ? "border-accent/50 bg-accent-soft/65" : "border-line bg-raised/45",
                 )}
               >
                 <button
@@ -333,7 +333,7 @@ export function StudioDrawingInputProfileLibraryPanel({
         </section>
       </div>
 
-      <footer className="shrink-0 border-t border-line/70 bg-bg-2/60 px-3 py-2.5">
+      <footer className="shrink-0 border-t border-line/70 bg-raised/60 px-3 py-2.5">
         <p className="text-[0.53rem] leading-relaxed text-fg-3" role="status" aria-live="polite">
           {notice}
         </p>
