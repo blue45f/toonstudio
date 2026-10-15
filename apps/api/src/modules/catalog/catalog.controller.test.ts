@@ -5,6 +5,12 @@ import { CatalogService } from "./catalog.service";
 
 import type { Request, Response } from "express";
 
+const { isAdminUser } = vi.hoisted(() => ({ isAdminUser: vi.fn() }));
+vi.mock("../../server/app-config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../server/app-config")>()),
+  isAdminUser,
+}));
+
 const mockCatalogService = {} as unknown as CatalogService;
 
 function createController(): CatalogController {
@@ -363,5 +369,48 @@ describe("CatalogService getHomeData & withKmasImages", () => {
     expect(typeof data.stats.platforms).toBe("number");
     expect(typeof data.stats.genres).toBe("number");
     expect(typeof data.stats.reviews).toBe("number");
+  });
+});
+
+// force 는 5분 TTL 캐시를 건너뛰고 KMAS 상류 조회를 즉시 다시 실행한다. 익명 호출이 반복하면
+// 상류 쿼터와 서버 자원을 소진시키므로 관리자 세션에서만 허용하고, 그 외에는 평소 요청과 같다.
+describe("CatalogController KMAS merge-on-access force", () => {
+  function controllerWithMerge() {
+    const mergeKmasOnSiteAccess = vi.fn().mockResolvedValue({ enabled: true, cached: true });
+    const controller = new CatalogController({ mergeKmasOnSiteAccess } as unknown as CatalogService);
+    return { controller, mergeKmasOnSiteAccess };
+  }
+
+  afterEach(() => isAdminUser.mockReset());
+
+  it.each(["1", "true"])("익명 호출의 force=%s 는 캐시 우회를 일으키지 않는다", async (force) => {
+    isAdminUser.mockResolvedValue(false);
+    const { controller, mergeKmasOnSiteAccess } = controllerWithMerge();
+    await controller.mergeKmasOnAccess(force, undefined);
+    expect(mergeKmasOnSiteAccess).toHaveBeenCalledWith({ force: false });
+  });
+
+  it("관리자가 아닌 로그인 사용자의 force 도 무시한다", async () => {
+    isAdminUser.mockResolvedValue(false);
+    const { controller, mergeKmasOnSiteAccess } = controllerWithMerge();
+    await controller.mergeKmasOnAccess("1", "member-1");
+    expect(isAdminUser).toHaveBeenCalledWith("member-1");
+    expect(mergeKmasOnSiteAccess).toHaveBeenCalledWith({ force: false });
+  });
+
+  it("관리자 세션의 force 는 그대로 전달한다", async () => {
+    isAdminUser.mockResolvedValue(true);
+    const { controller, mergeKmasOnSiteAccess } = controllerWithMerge();
+    await controller.mergeKmasOnAccess("true", "admin-1");
+    expect(mergeKmasOnSiteAccess).toHaveBeenCalledWith({ force: true });
+  });
+
+  it("force 가 없거나 거짓 값이면 관리자 조회 없이 평소 병합으로 처리한다", async () => {
+    const { controller, mergeKmasOnSiteAccess } = controllerWithMerge();
+    await controller.mergeKmasOnAccess(undefined, "admin-1");
+    await controller.mergeKmasOnAccess("0", "admin-1");
+    expect(isAdminUser).not.toHaveBeenCalled();
+    expect(mergeKmasOnSiteAccess).toHaveBeenNthCalledWith(1, { force: false });
+    expect(mergeKmasOnSiteAccess).toHaveBeenNthCalledWith(2, { force: false });
   });
 });

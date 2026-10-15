@@ -6,6 +6,7 @@ import {
   Inject,
   Get,
   Header,
+  Headers,
   NotFoundException,
   Param,
   Post,
@@ -16,7 +17,7 @@ import {
 
 import { buildAffiliateUrl } from "@toonstudio/contracts/affiliate";
 import { coverImagePolicy } from "../../../../../packages/core/src/catalog";
-import { getAppConfig } from "../../server/app-config";
+import { getAppConfig, isAdminUser } from "../../server/app-config";
 
 import { searchParamsFromBody } from "../../../../../packages/core/src/search-pagination";
 
@@ -257,8 +258,16 @@ export class CatalogController {
   @Post("/kmas/merge-on-access")
   @HttpCode(200)
   @Header("Cache-Control", "no-store, max-age=0")
-  async mergeKmasOnAccess(@Query("force") force?: string) {
-    return this.catalogService.mergeKmasOnSiteAccess({ force: force === "1" || force === "true" });
+  async mergeKmasOnAccess(
+    @Query("force") force?: string,
+    @Headers("x-user-id") userId?: string,
+  ) {
+    // force 는 5분 TTL 캐시를 건너뛰고 KMAS 상류 조회(키 사용)를 즉시 다시 실행한다. 익명 호출이
+    // 반복하면 상류 쿼터와 서버 자원을 소진시키므로 관리자 세션에서만 허용하고, 그 외에는 평소
+    // 요청과 같이 캐시를 존중한다. 웹 클라이언트는 force 를 보내지 않는다.
+    const requested = force === "1" || force === "true";
+    const allowed = requested && (await isAdminUser(userId));
+    return this.catalogService.mergeKmasOnSiteAccess({ force: allowed });
   }
 
   @Post("/recommend")
