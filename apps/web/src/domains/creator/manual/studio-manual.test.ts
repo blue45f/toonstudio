@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  STUDIO_BG3D_SKP_CONVERSION_TIMEOUT_MS,
+  STUDIO_BG3D_SKP_MAX_SOURCE_BYTES,
+  STUDIO_BG3D_SKP_MIN_SUPPORTED_MAJOR_VERSION,
+  STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES,
+} from "../bg3d/studio-bg3d-skp-contract";
+
 import { MANUAL_ARTICLES, MANUAL_CATEGORIES, MANUAL_SHORTCUTS, MANUAL_WORKSPACE_LABELS } from "./studio-manual-data";
 import {
   adjacentManualArticles,
@@ -74,6 +81,23 @@ describe("Studio user manual content", () => {
     expect(JSON.stringify(recovery)).toContain("이미지 파일만으로는");
     expect(JSON.stringify(recovery)).toContain("사이트 데이터 삭제");
     expect(JSON.stringify(findManualArticle("troubleshooting"))).toContain("자동으로 실행하지 않습니다");
+  });
+
+  it("documents the SketchUp import limits and the unit question without promising every file converts", () => {
+    const section = findManualArticle("background-3d")?.sections.find((candidate) => candidate.id === "sketchup");
+    expect(section?.title).toContain("SketchUp");
+    const text = JSON.stringify(section);
+    // 문서의 숫자는 변환기가 실제로 적용하는 상수와 같아야 한다.
+    expect(text).toContain(`SketchUp ${2000 + STUDIO_BG3D_SKP_MIN_SUPPORTED_MAJOR_VERSION} 이후`);
+    expect(text).toContain(`데스크톱 ${STUDIO_BG3D_SKP_MAX_SOURCE_BYTES / 1024 / 1024}MiB`);
+    expect(text).toContain(`모바일 ${STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES / 1024 / 1024}MiB`);
+    expect(text).toContain(`${STUDIO_BG3D_SKP_CONVERSION_TIMEOUT_MS / 1000}초`);
+    expect(text).toContain("모델 크기를 확인해 주세요");
+    expect(text).toContain("3D Warehouse");
+    expect(text).toContain("모든 .skp 파일을 변환하지는 못하며");
+    expect(text).toContain("Trimble Inc.의 상표");
+    expect(searchManual("스케치업")[0]?.id).toBe("background-3d");
+    expect(searchManual("skp").map((article) => article.id)).toContain("background-3d");
   });
 
   it("documents shortcut defaults without claiming to read a live user keymap", () => {
