@@ -104,6 +104,14 @@ export const BRUSH_STUDIO_V6_PROVIDER_MANIFEST = Object.freeze([
     integration: "connected", productPath: "material-contact", materialExecution: "native",
     roles: ["pigment", "palette", "pickup"], nodeIds: ["pigment-mixbox"],
   }),
+  // 같은 안료 슬롯의 자체 구현. 코드·계수·격자표를 쓰지 않고 저장소의 KM 파이프라인에서 직접 적합했다.
+  // 서면 합의 식별자·특허 확인이 끝나기 전까지 권리 상태는 문서(docs/features/latent-pigment-mixing.md)를 따른다.
+  provider({
+    id: "toonstudio-latent-pigment-v1", label: "ToonStudio Latent Pigment", version: "1",
+    license: "Project license", rights: "internal", runtime: "javascript",
+    integration: "connected", productPath: "material-contact", materialExecution: "native",
+    roles: ["pigment", "palette"], nodeIds: ["pigment-latent"],
+  }),
   provider({
     id: "spectral-wgm-v1", label: "Spectral WGM", version: "1",
     license: "Project/permissive components", rights: "permissive", runtime: "javascript",
