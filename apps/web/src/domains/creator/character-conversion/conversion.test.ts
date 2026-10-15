@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { promoUnzip } from "../promo/promo-zip";
 import { sha256HexPortable } from "../studio-sha256";
 import { DEFAULT_CONVERSION_SETTINGS, isModelFilename, validateConversionSettings, validateReferenceSet, type CharacterView, type PreparedCharacterImage } from "./conversion-contract";
 import { buildCharacterImageGraph } from "./conversion-graph";
@@ -7,15 +8,6 @@ import { characterCameraPosition, renderCharacterGlb } from "./conversion-render
 import { deriveCharacterPasses, fitSubject, subjectBounds } from "./conversion-raster";
 
 const reference = (view: CharacterView, hash: string = view): PreparedCharacterImage => ({ view, sha256: hash, png: new Uint8Array([1, 2, 3]), width: 512, height: 512, notices: [] });
-function storedZip(bytes: Uint8Array) {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength); const files: Record<string, Uint8Array> = {};
-  for (let offset = 0; view.getUint32(offset, true) === 0x04034b50;) {
-    const size = view.getUint32(offset + 18, true); const nameSize = view.getUint16(offset + 26, true); const extra = view.getUint16(offset + 28, true);
-    const name = new TextDecoder().decode(bytes.subarray(offset + 30, offset + 30 + nameSize)); const start = offset + 30 + nameSize + extra;
-    files[name] = bytes.subarray(start, start + size); offset = start + size;
-  }
-  return files;
-}
 describe("character conversion contracts", () => {
   it("accepts the bounded default recipe", () => expect(() => validateConversionSettings(DEFAULT_CONVERSION_SETTINGS)).not.toThrow());
   it.each([-1, 1.5, NaN, Infinity, 2147483648])("rejects invalid seed %s", (seed) => expect(() => validateConversionSettings({ ...DEFAULT_CONVERSION_SETTINGS, seed })).toThrow());
@@ -75,7 +67,8 @@ describe("local AI graph and reproducible kits", () => {
   it("labels preparation honestly and hashes the exported input", async () => {
     const input = { kind: "shape" as const, engine: "triposr" as const, settings: DEFAULT_CONVERSION_SETTINGS, images: [reference("front")], renders: [] };
     const bytes = await buildCharacterKit(input, new AbortController().signal);
-    const files = storedZip(bytes); const manifest = JSON.parse(new TextDecoder().decode(files["manifest.json"]));
+    // 키트 ZIP 은 promoZip(fflate DEFLATE)이 만든다 — 직접 만든 STORE 파서로 읽으면 압축된 항목이 깨진다. 짝이 되는 promoUnzip 으로 푼다.
+    const files = promoUnzip(bytes); const manifest = JSON.parse(new TextDecoder().decode(files["manifest.json"]));
     expect(manifest.status).toBe("prepared-not-inferred");
     expect(manifest.checksums["input/front.png"]).toBe(sha256HexPortable(files["input/front.png"]));
     expect(new TextDecoder().decode(files["run-character-ai.py"])).toContain("def validate_graph");

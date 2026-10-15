@@ -5060,27 +5060,27 @@
       },
       "hair": {
         "status": "unavailable",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+        "reasonKo": "키트가 female 베이스용 헤어 파츠를 제공하지 않습니다(0/7종)."
       },
       "top": {
         "status": "unavailable",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+        "reasonKo": "키트가 female 베이스용 상의 파츠를 제공하지 않습니다(0/5종)."
       },
       "bottom": {
         "status": "unavailable",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+        "reasonKo": "키트가 female 베이스용 하의 파츠를 제공하지 않습니다(0/5종)."
       },
       "shoes": {
         "status": "unavailable",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+        "reasonKo": "키트가 female 베이스용 신발 파츠를 제공하지 않습니다(0/4종)."
       },
       "accessory": {
         "status": "partial",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다.",
+        "reasonKo": "제공 3/6종, 미제공: ribbon, cap, headphones",
         "unavailablePresets": {
-          "accessory/ribbon": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "accessory/cap": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "accessory/headphones": "Hyper3D(Rodin) 파생 프리셋으로 상업 이용 증빙이 확정되지 않아 제외했습니다."
+          "accessory/ribbon": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+          "accessory/cap": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+          "accessory/headphones": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
         }
       },
       "irises": {
@@ -5117,27 +5117,27 @@
       },
       "hair": {
         "status": "unavailable",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+        "reasonKo": "키트가 male 베이스용 헤어 파츠를 제공하지 않습니다(0/7종)."
       },
       "top": {
         "status": "unavailable",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+        "reasonKo": "키트가 male 베이스용 상의 파츠를 제공하지 않습니다(0/5종)."
       },
       "bottom": {
         "status": "unavailable",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+        "reasonKo": "키트가 male 베이스용 하의 파츠를 제공하지 않습니다(0/5종)."
       },
       "shoes": {
         "status": "unavailable",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다."
+        "reasonKo": "키트가 male 베이스용 신발 파츠를 제공하지 않습니다(0/4종)."
       },
       "accessory": {
         "status": "partial",
-        "reasonKo": "제공 가능한 프리셋이 없습니다. Hyper3D(Rodin) 파생 프리셋을 상업 이용 증빙 미확정으로 제외했습니다.",
+        "reasonKo": "제공 3/6종, 미제공: ribbon, cap, headphones",
         "unavailablePresets": {
-          "accessory/ribbon": "Hyper3D(Rodin) 파생 프리셋(여성용 생성물의 남성 리타깃)으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "accessory/cap": "Hyper3D(Rodin) 파생 프리셋(여성용 생성물의 남성 리타깃)으로 상업 이용 증빙이 확정되지 않아 제외했습니다.",
-          "accessory/headphones": "Hyper3D(Rodin) 파생 프리셋(여성용 생성물의 남성 리타깃)으로 상업 이용 증빙이 확정되지 않아 제외했습니다."
+          "accessory/ribbon": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+          "accessory/cap": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
+          "accessory/headphones": "Hyper3D(Rodin) 파생 파츠(여성용 생성물의 남성 베이스 리타깃)입니다. 상업 이용 증빙이 확정되지 않아 2026-10-15 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
         }
       },
       "irises": {

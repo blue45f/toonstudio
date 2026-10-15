@@ -529,13 +529,12 @@ export const STUDIO_MANNEQUIN_POSE_PRESETS: readonly StudioMannequinPosePreset[]
     id: "hand-chin",
     label: "턱 괴기 (Chin Rest)",
     category: "hand",
+    tags: ["턱괴기", "생각", "고민", "손"],
+    description: "턱을 괴고 생각에 잠긴 손 전용 포즈",
+    scope: "hand-only",
     pose: pose({
-      leftUpperArm: deg3(5, 0, 10),
-      leftLowerArm: deg3(-15, 0, 0),
-      leftHand: deg3(0, 0, 5),
-      rightUpperArm: deg3(25, 0, -25),
-      rightLowerArm: deg3(-115, 0, 0),
-      rightHand: deg3(-15, 0, -10),
+      leftUpperArm: deg3(5, 0, 10), leftLowerArm: deg3(-15, 0, 0), leftHand: deg3(0, 0, 5),
+      rightUpperArm: deg3(25, 0, -25), rightLowerArm: deg3(-115, 0, 0), rightHand: deg3(-15, 0, -10),
     }),
   },
   {

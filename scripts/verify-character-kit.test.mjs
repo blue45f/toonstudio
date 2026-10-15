@@ -67,8 +67,10 @@ const {
 } = contracts;
 const {
   CHECKS,
+  DEFAULT_KIT_ROOT,
   IRIS_RECOLOR_MIN_MEAN_LUMINANCE,
   RECOLOR_MIN_MEAN_LUMINANCE,
+  createDiskSource,
   createMemorySource,
   decodeImageInfo,
   parseCliArgs,
@@ -706,6 +708,16 @@ function jointOffsetTable() {
   return table;
 }
 
+/**
+ * 합성 키트가 GLB까지 싣는 파츠. 나머지 프리셋은 "미제공 사유"만 선언한다.
+ *
+ * 출하 키트의 필수 집합(`KIT_REQUIRED_PRESETS`)은 라이선스 결정으로 줄 수 있다(2026-10-14: Hyper3D 파생 기본 파츠 4종을
+ * 제외해 `irises/round-large`만 남았다). 그러나 V1~V20은 헤어 LOD·의상 따라가기·신발 같은 슬롯별 규칙을 모두 돌려야 하므로,
+ * 합성 키트는 제품 필수 집합과 무관하게 슬롯마다 대표 파츠를 계속 싣는다. 계약이 요구하는 필수 집합은 합쳐 넣어
+ * 필수 파츠가 늘어도 합성 키트가 항상 계약을 통과하게 한다.
+ */
+const SYNTHETIC_PART_IDS = new Set(["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", ...KIT_REQUIRED_PRESETS]);
+
 let pristineKit = null;
 
 /** 합성 키트를 한 번만 만들고 테스트마다 복제해 쓴다. */
@@ -738,7 +750,7 @@ async function buildPristineKit() {
   for (const slot of KIT_PART_SLOTS) {
     for (const name of SLOT_PRESET_IDS[slot]) {
       const id = `${slot}/${name}`;
-      if (!KIT_REQUIRED_PRESETS.includes(id)) {
+      if (!SYNTHETIC_PART_IDS.has(id)) {
         parts.push({ id, slot, variants: {}, unavailable: { female: "여성 핏 미제작", male: "남성 핏 미제작" } });
         continue;
       }
@@ -922,6 +934,17 @@ it("--only는 선택한 검사만 돌리고 GLB 검사를 고르면 V5도 함께
   assert.equal(result.ok, true);
 });
 
+it("출하 키트(apps/character-lab/public/assets/characters/toonstudio-kit-v1)는 V1~V20을 오류 없이 통과한다", async () => {
+  // 합성 키트만 검증하면 출하 kit.json을 손으로 고칠 때(예: 라이선스 정리로 파츠를 뺄 때) 생기는 어긋남을 못 잡는다.
+  // 2026-10-15: slotCapabilities를 손으로 쓴 문구가 규칙 계산(deriveKitCapabilities)과 달라 V17이 실패했지만 어떤 테스트도 몰랐다.
+  assert.ok(existsSync(path.join(DEFAULT_KIT_ROOT, "kit.json")), `출하 키트가 없습니다: ${DEFAULT_KIT_ROOT}`);
+  const result = await verifyKit({ source: createDiskSource(DEFAULT_KIT_ROOT) });
+  const errors = result.findings.filter((finding) => finding.level === "error");
+  assert.deepEqual(errors, [], `출하 키트 검증 오류:\n${JSON.stringify(errors, null, 1)}`);
+  assert.equal(result.ok, true);
+  assert.deepEqual(Object.keys(result.checks), CHECKS.map((check) => check.id));
+});
+
 // ---------------------------------------------------------------- V1
 
 it("V1: kit.json이 없으면 오류이고 JSON이 깨지면 오류다", async () => {
@@ -957,9 +980,12 @@ it("V1: 기본값·kitId·kitVersion이 계약 상수와 다르면 오류다", a
 
 it("V1: 계약 교차 검증 실패(필수 파츠 없음)는 V1에 모두 나온다", async () => {
   const kit = await newKit();
-  delete kit.manifest.parts.find((part) => part.id === "top/tee").variants.female;
+  // 필수 파츠 목록은 제품 계약의 상수가 정한다(하드코딩하면 필수 집합이 바뀔 때 테스트가 낡는다).
+  const required = KIT_REQUIRED_PRESETS[0];
+  assert.ok(required !== undefined, "계약의 필수 파츠 집합이 비어 있으면 이 검사가 의미를 잃는다.");
+  delete kit.manifest.parts.find((part) => part.id === required).variants.female;
   const result = await runVerify(kit, { only: ["V1"] });
-  assertError(result, "V1", "top/tee");
+  assertError(result, "V1", `필수 파츠 ${required}의 female 변형이 없습니다`);
 });
 
 // ---------------------------------------------------------------- V2·V3·V4
@@ -1549,11 +1575,13 @@ it("V15: _Outline 접미 메시 노드는 오류다", async () => {
 
 it("V16: 필수 파츠 변형 없음, 어휘 밖 id, 한글 아닌 미제공 사유를 잡는다", async () => {
   const kit = await newKit();
-  delete kit.manifest.parts.find((part) => part.id === "shoes/sneakers").variants.male;
+  const required = KIT_REQUIRED_PRESETS.at(-1);
+  assert.ok(required !== undefined, "계약의 필수 파츠 집합이 비어 있으면 이 검사가 의미를 잃는다.");
+  delete kit.manifest.parts.find((part) => part.id === required).variants.male;
   kit.manifest.parts.find((part) => part.id === "hair/hime-cut").unavailable.female = "n/a";
   kit.manifest.parts.push({ id: "hair/unknown-style", slot: "hair", variants: {}, unavailable: { female: "없음", male: "없음" } });
   const result = await runVerify(kit, { only: ["V16"] });
-  assertError(result, "V16", "필수 파츠 shoes/sneakers의 male 변형이 없습니다");
+  assertError(result, "V16", `필수 파츠 ${required}의 male 변형이 없습니다`);
   assertError(result, "V16", "hair/hime-cut: female 변형이 없으면");
   assertError(result, "V16", "hair/unknown-style가 프리셋 어휘");
 });

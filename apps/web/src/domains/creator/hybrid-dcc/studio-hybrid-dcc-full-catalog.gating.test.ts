@@ -386,7 +386,8 @@ describe("DOC-007 selective undo + real VRM import still works", () => {
     session = hybridDccSelectiveUndo(session, "local");
     expect(session.state.geometry.records["m1"]).toBeUndefined();
 
-    const vrmPath = resolve(process.cwd(), "apps/web/public/vrm/AvatarSample_A.vrm");
+    // AvatarSample_A.vrm 은 권리 사유로 저장소에서 제거돼 가드가 항상 건너뛰었다 — CC0 대체 픽스처로 다시 실행한다.
+    const vrmPath = resolve(process.cwd(), "apps/web/public/vrm/Sendagaya_Shino.vrm");
     if (existsSync(vrmPath)) {
       const bytes = new Uint8Array(readFileSync(vrmPath));
       const imported = importStudioGlbDocument(bytes, { asVrm: true });

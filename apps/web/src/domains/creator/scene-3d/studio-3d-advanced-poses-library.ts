@@ -348,7 +348,8 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
       { joint: "spine", rotationEulerDeg: [6, -16, 6] },
       { joint: "head", rotationEulerDeg: [4, -24, 8] },
       { joint: "rightUpperArm", rotationEulerDeg: [-44, -20, 0] },
-      { joint: "rightLowerArm", rotationEulerDeg: [118, 0, 0] },
+      // 118° 는 VRM 관절 한계표의 하드 한계(±105°)를 넘는다 — 같은 라이브러리의 romantic-hug 와 같은 80°(소프트 한계)로 맞춘다.
+      { joint: "rightLowerArm", rotationEulerDeg: [80, 0, 0] },
     ],
   },
   // Couple (신규)
@@ -395,8 +396,9 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
     tags: ["앉기", "바닥", "양반다리", "좌식"],
     description: "바닥에 다리를 꼬고 앉은 좌식 컷",
     iconHint: "Armchair",
+    // 골반(hips)은 회전하지 않는다. 마네킹 정본 sit-floor-cross 는 골반을 pelvisOffset 으로 낮출 뿐 회전시키지 않으며,
+    // hips 80° 는 VRM 한계표의 하드 한계(±55°)를 넘고 허벅지를 수직으로 세워 앉은 자세를 깨뜨린다.
     jointRotations: [
-      { joint: "hips", rotationEulerDeg: [80, 0, 0] },
       { joint: "leftUpperLeg", rotationEulerDeg: [-78, 0, 0] },
       { joint: "leftLowerLeg", rotationEulerDeg: [118, 0, 0] },
       { joint: "rightUpperLeg", rotationEulerDeg: [-78, 0, 0] },
@@ -413,13 +415,16 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
     tags: ["앉기", "책상", "엎드리기", "졸기", "학교"],
     description: "의자에 앉아 책상에 상체를 엎드린 학교·사무실 컷",
     iconHint: "Armchair",
+    // 골반(hips)은 회전하지 않는다(마네킹 정본 sit-desk 와 같다). 상체를 책상에 엎드리는 각도는 hips 80° 로 흉내 내지 않고
+    // 정본처럼 spine·chest·neck·head 에 나눠 싣는다 — 각 관절이 VRM 한계표의 소프트 한계 안이다.
     jointRotations: [
-      { joint: "hips", rotationEulerDeg: [80, 0, 0] },
       { joint: "leftUpperLeg", rotationEulerDeg: [-84, 0, 0] },
       { joint: "leftLowerLeg", rotationEulerDeg: [82, 0, 0] },
       { joint: "rightUpperLeg", rotationEulerDeg: [-84, 0, 0] },
       { joint: "rightLowerLeg", rotationEulerDeg: [82, 0, 0] },
-      { joint: "spine", rotationEulerDeg: [34, 0, 0] },
+      { joint: "spine", rotationEulerDeg: [30, 0, 0] },
+      { joint: "chest", rotationEulerDeg: [30, 0, 0] },
+      { joint: "neck", rotationEulerDeg: [20, 0, 0] },
       { joint: "head", rotationEulerDeg: [24, 0, 0] },
     ],
   },
