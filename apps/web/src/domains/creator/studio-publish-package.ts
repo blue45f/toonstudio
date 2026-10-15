@@ -7,6 +7,13 @@
  * the planned renders and re-run validation with the resulting dimensions and byte sizes.
  */
 
+import { isRecord, normalizeText } from "./publish/studio-publish-package-primitives";
+import {
+  DEFAULT_STUDIO_PUBLISH_PACKAGE_AI_TRAINING,
+  normalizeStudioPublishPackageAiTraining,
+  type StudioPublishPackageAiTraining,
+  type StudioPublishPackageRights,
+} from "./publish/studio-publish-package-rights";
 import { normalizeStudioReviewPdfProfileId } from "./studio-review-pdf-profile";
 
 import type { StudioReviewPdfProfileId } from "./studio-review-pdf-profile";
@@ -267,6 +274,8 @@ export interface StudioPublishPackageSettings {
   includeCredits: boolean;
   aiUsage: StudioPublishPackageAiUsage;
   aiDisclosure: string;
+  /** 작가가 밝힌 AI 학습 허용 표기. manifest의 `rights.aiTraining`으로 내보낸다(기본 미지정). */
+  aiTraining: StudioPublishPackageAiTraining;
   policyReviewConfirmed: boolean;
   thumbnailSafetyConfirmed: boolean;
 }
@@ -281,6 +290,7 @@ export const DEFAULT_STUDIO_PUBLISH_PACKAGE_SETTINGS: StudioPublishPackageSettin
   includeCredits: true,
   aiUsage: "none",
   aiDisclosure: "",
+  aiTraining: DEFAULT_STUDIO_PUBLISH_PACKAGE_AI_TRAINING,
   policyReviewConfirmed: false,
   thumbnailSafetyConfirmed: false,
 };
@@ -455,6 +465,8 @@ export interface StudioPublishPackageManifest {
     usage: StudioPublishPackageAiUsage;
     disclosure?: string;
   };
+  /** 작가의 의사 표시일 뿐 별도 계약을 대체하지 않는다. 이 필드가 없는 기존 v1 manifest는 미지정으로 읽는다. */
+  rights: StudioPublishPackageRights;
   creditsIncluded: boolean;
   validation: {
     canExport: boolean;
@@ -514,35 +526,6 @@ const MIME_TO_EXTENSION: Record<StudioPublishPackageImageMimeType, StudioPublish
 const WINDOWS_RESERVED_NAMES = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu;
 const SAFE_SHA256 = /^[a-f0-9]{64}$/u;
 const ISO_TIMESTAMP_MAX_CODE_UNITS = 80;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function stripUnsafeCharacters(value: string): string {
-  let output = "";
-  for (const character of value) {
-    const code = character.codePointAt(0) ?? 0;
-    if (
-      code <= 8 ||
-      code === 11 ||
-      code === 12 ||
-      (code >= 14 && code <= 31) ||
-      code === 127 ||
-      (code >= 0x202a && code <= 0x202e) ||
-      (code >= 0x2066 && code <= 0x2069)
-    ) {
-      continue;
-    }
-    output += character;
-  }
-  return output;
-}
-
-function normalizeText(value: unknown, maxCodeUnits: number): string {
-  if (typeof value !== "string") return "";
-  return stripUnsafeCharacters(value).normalize("NFKC").trim().slice(0, maxCodeUnits);
-}
 
 function normalizeDestination(value: unknown): StudioPublishPackageDestination {
   if (typeof value !== "string") return "generic";
@@ -638,6 +621,7 @@ export function normalizeStudioPublishPackageSettings(value: unknown): StudioPub
       decoded.aiDisclosure ?? decoded.disclosure,
       STUDIO_PUBLISH_PACKAGE_LIMITS.maxDisclosureCodeUnits
     ),
+    aiTraining: normalizeStudioPublishPackageAiTraining(decoded.aiTraining),
     policyReviewConfirmed:
       decoded.policyReviewConfirmed === true || decoded.policyReviewed === true,
     thumbnailSafetyConfirmed:
@@ -1704,6 +1688,7 @@ export function planStudioPublishPackage(input: StudioPublishPackagePlanInput): 
         ? { disclosure: settings.aiDisclosure }
         : {}),
     },
+    rights: { aiTraining: settings.aiTraining },
     creditsIncluded: artifacts.some((artifact) => artifact.role === "credits"),
     validation: { canExport, errorCount: errors.length, warningCount: warnings.length },
   };
