@@ -17,7 +17,7 @@ import {
   studioBg3dInferenceAxisVector,
   studioBg3dInferenceKindLabel,
 } from "./studio-bg3d-inference-kinds";
-import { add, dot, normalize, scale, sub } from "./studio-bg3d-inference-math";
+import { add, dot, nearlyEqual, normalize, scale, sub } from "./studio-bg3d-inference-math";
 import {
   STUDIO_BG3D_LENGTH_INPUT_EXAMPLES,
   STUDIO_BG3D_LENGTH_INPUT_MAX_CHARACTERS,
@@ -507,6 +507,10 @@ export function reduceStudioBg3dInferenceSession(
       return state.vcb.text.trim() === "" ? reduction(state, false) : submitVcb(state, options);
     case "add-hover-reference": {
       if (state.hoverReferences.length >= 4) return reduction(state, false);
+      // 같은 점에 다시 머물러도 기준점 칸을 낭비하지 않는다.
+      if (state.hoverReferences.some((existing) => nearlyEqual(existing, event.point, 1e-6))) {
+        return reduction(state, false);
+      }
       return reduction({ ...state, hoverReferences: [...state.hoverReferences, event.point] }, false);
     }
     case "clear-hover-references":

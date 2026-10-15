@@ -87,6 +87,10 @@ export interface StudioBg3dInferenceBeginOptions {
   readonly grid?: { readonly step: number; readonly origin?: V3 } | null;
   /** 후보에서 뺄 출처(끌고 있는 객체 등). */
   readonly excludeSourceIds?: ReadonlySet<string> | null;
+  /** false면 방향키·Esc·숫자 입력 키 라우팅을 쓰지 않는다 (기즈모 드래그처럼 포인터가 주도하는 도구). 기본 true. */
+  readonly keyboard?: boolean;
+  /** false면 HUD 패널을 그리지 않는다 (마커·안내문만). 기본 true. */
+  readonly hud?: boolean;
 }
 
 export interface StudioBg3dInferenceLiveMessage {
@@ -108,6 +112,7 @@ export interface StudioBg3dInferenceSceneInfo {
 export interface StudioBg3dInferenceServiceSnapshot {
   readonly version: number;
   readonly session: StudioBg3dInferenceSessionState;
+  readonly options: { readonly keyboard: boolean; readonly hud: boolean };
   readonly live: StudioBg3dInferenceLiveMessage;
   /** 기준점에서 현재 결과 점까지의 거리(m). 기준점이 없으면 null. */
   readonly measuredMeters: number | null;
@@ -151,6 +156,8 @@ export interface StudioBg3dInferenceService {
   // 세션
   begin(tool: StudioBg3dInferenceTool, options?: StudioBg3dInferenceBeginOptions): void;
   end(): void;
+  /** 세션이 활성이고 키보드 라우팅을 쓰는 도구인지. */
+  isKeyboardActive(): boolean;
   /** 도구의 클로저가 렌더마다 바뀌는 호스트가 최신 핸들러로 교체한다. */
   setHandlers(handlers: StudioBg3dInferenceEffectHandlers): void;
   isActive(): boolean;
@@ -314,6 +321,7 @@ export function createStudioBg3dInferenceService(
     return Object.freeze({
       version,
       session,
+      options: Object.freeze({ keyboard: beginOptions.keyboard !== false, hud: beginOptions.hud !== false }),
       live,
       measuredMeters: result ? measureStudioBg3dInferenceDistance(session.referencePoint, result.point) : null,
       scene,
@@ -474,6 +482,7 @@ export function createStudioBg3dInferenceService(
       emit();
     },
     isActive: () => session.active,
+    isKeyboardActive: () => session.active && beginOptions.keyboard !== false,
     setReference(point) {
       dispatch({ type: "set-reference", point });
     },

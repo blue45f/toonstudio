@@ -106,6 +106,21 @@ describe("서비스 수명과 스냅샷", () => {
   });
 });
 
+describe("도구 옵션 (keyboard·hud)", () => {
+  it("keyboard:false 도구는 키보드 라우팅 대상이 아니고 hud:false 는 스냅샷에 반영된다", () => {
+    const { service } = createFixture();
+    expect(service.isKeyboardActive()).toBe(false);
+    service.begin("move", { referencePoint: [0, 0, 0], keyboard: false, hud: false });
+    expect(service.isActive()).toBe(true);
+    expect(service.isKeyboardActive()).toBe(false);
+    expect(service.getSnapshot().options).toEqual({ keyboard: false, hud: false });
+    service.end();
+    service.begin("measure", {});
+    expect(service.isKeyboardActive()).toBe(true);
+    expect(service.getSnapshot().options).toEqual({ keyboard: true, hud: true });
+  });
+});
+
 describe("장면 동기화", () => {
   it("같은 장면이면 색인을 다시 만들지 않고, 달라지면 한 번만 다시 만든다", () => {
     const { service } = createFixture();

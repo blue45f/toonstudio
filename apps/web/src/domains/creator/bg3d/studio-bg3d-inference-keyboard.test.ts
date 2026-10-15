@@ -97,7 +97,7 @@ describe("키 소유권 판정", () => {
 });
 
 function fakeWindow() {
-  const listeners = new Map<string, Array<(event: never) => void>>();
+  const listeners = new Map<string, EventListener[]>();
   const win: StudioBg3dInferenceKeyboardWindowLike = {
     addEventListener(type, listener) {
       listeners.set(type, [...(listeners.get(type) ?? []), listener]);
@@ -112,7 +112,7 @@ function fakeWindow() {
     fire(type: string, event: Partial<StudioBg3dInferenceKeyboardEventLike> & { key?: string }) {
       const spies = { preventDefault: vi.fn(), stopPropagation: vi.fn() };
       const full = { key: "", ...event, ...spies } as StudioBg3dInferenceKeyboardEventLike;
-      for (const listener of listeners.get(type) ?? []) listener(full as never);
+      for (const listener of listeners.get(type) ?? []) listener(full as unknown as Event);
       return spies;
     },
   };

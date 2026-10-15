@@ -408,6 +408,16 @@ describe("세션 수명과 보조 함수", () => {
     expect(run(state, { type: "clear-hover-references" }).hoverReferences).toEqual([]);
   });
 
+  it("같은 점에 다시 머물러도 호버 기준점 칸을 중복해 쓰지 않는다", () => {
+    let state = start();
+    state = run(state, { type: "add-hover-reference", point: [1, 0, 0] });
+    state = run(state, { type: "add-hover-reference", point: [1, 0, 0] });
+    state = run(state, { type: "add-hover-reference", point: [1 + 1e-9, 0, 0] });
+    expect(state.hoverReferences).toHaveLength(1);
+    state = run(state, { type: "add-hover-reference", point: [2, 0, 0] });
+    expect(state.hoverReferences).toHaveLength(2);
+  });
+
   it("거리 측정과 길이 적용 보조 함수가 기준점 기준으로 계산한다", () => {
     expect(measureStudioBg3dInferenceDistance(null, [1, 2, 3])).toBeNull();
     expect(measureStudioBg3dInferenceDistance([0, 0, 0], [3, 4, 0])).toBe(5);

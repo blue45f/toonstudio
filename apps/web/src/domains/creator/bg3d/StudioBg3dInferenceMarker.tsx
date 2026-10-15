@@ -71,7 +71,7 @@ export function StudioBg3dInferenceMarker({
       data-shape={style.shape}
       {...(axis ? { "data-axis": axis } : {})}
       className={[
-        "inline-flex items-center",
+        "relative inline-flex items-center",
         resolveStudioBg3dInferenceToneTextClass(kind, axis),
         className ?? "",
       ].join(" ").trim()}
@@ -111,7 +111,7 @@ export function StudioBg3dInferenceMarker({
       {showLabel ? (
         <span
           aria-hidden="true"
-          className="pointer-events-none ml-1.5 whitespace-nowrap rounded-full border border-line bg-panel/95 px-2 py-0.5 text-[0.62rem] font-bold text-fg shadow-md backdrop-blur"
+          className="pointer-events-none absolute left-full top-1/2 ml-1.5 -translate-y-1/2 whitespace-nowrap rounded-full border border-line bg-panel/95 px-2 py-0.5 text-[0.62rem] font-bold text-fg shadow-md backdrop-blur"
         >
           {name}
         </span>

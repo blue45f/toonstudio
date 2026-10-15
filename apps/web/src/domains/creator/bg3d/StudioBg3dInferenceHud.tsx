@@ -144,6 +144,7 @@ export function StudioBg3dInferenceHud({
 }: StudioBg3dInferenceHudProps) {
   const snapshot = useServiceSnapshot(service);
   const { session, live, measuredMeters } = snapshot;
+  const showPanel = session.active && snapshot.options.hud;
   const inputRef = useRef<HTMLInputElement>(null);
   const [focusTick, setFocusTick] = useState(0);
 
@@ -184,7 +185,7 @@ export function StudioBg3dInferenceHud({
       >
         {assertive ? <span key={live.seq}>{live.text}</span> : null}
       </div>
-      {session.active ? (
+      {showPanel ? (
         <div
           role="group"
           aria-label={`${TOOL_LABEL[session.tool]} · 추론과 길이 입력`}

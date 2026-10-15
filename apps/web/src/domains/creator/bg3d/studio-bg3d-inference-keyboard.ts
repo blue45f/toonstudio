@@ -150,7 +150,8 @@ export interface StudioBg3dInferenceKeyboardEventLike {
 
 export interface StudioBg3dInferenceKeyboardService {
   getVcbText(): string;
-  isActive(): boolean;
+  /** 세션이 활성이고 키보드 라우팅을 쓰는 도구인지. */
+  isKeyboardActive(): boolean;
   handleKey(
     phase: "key-down" | "key-up",
     event: StudioBg3dInferenceKeyEvent,
@@ -159,8 +160,8 @@ export interface StudioBg3dInferenceKeyboardService {
 }
 
 export interface StudioBg3dInferenceKeyboardWindowLike {
-  addEventListener(type: string, listener: (event: never) => void, options?: boolean | { capture?: boolean }): void;
-  removeEventListener(type: string, listener: (event: never) => void, options?: boolean | { capture?: boolean }): void;
+  addEventListener(type: string, listener: EventListener, options?: boolean | AddEventListenerOptions): void;
+  removeEventListener(type: string, listener: EventListener, options?: boolean | EventListenerOptions): void;
 }
 
 export interface AttachStudioBg3dInferenceKeyboardOptions {
@@ -194,8 +195,8 @@ export function attachStudioBg3dInferenceKeyboard(
   options: AttachStudioBg3dInferenceKeyboardOptions,
 ): () => void {
   const { service } = options;
-  const onKeyDown = (event: StudioBg3dInferenceKeyboardEventLike) => {
-    if (!service.isActive() || event.isComposing) return;
+  const onKeyDown = ((event: StudioBg3dInferenceKeyboardEventLike) => {
+    if (!service.isKeyboardActive() || event.isComposing) return;
     const context = resolveStudioBg3dInferenceKeyContext(
       event.target as StudioBg3dInferenceKeyTargetLike | null | undefined,
       event.key,
@@ -208,22 +209,22 @@ export function attachStudioBg3dInferenceKeyboard(
       event.preventDefault();
       event.stopPropagation();
     }
-  };
-  const onKeyUp = (event: StudioBg3dInferenceKeyboardEventLike) => {
-    if (!service.isActive()) return;
+  }) as unknown as EventListener;
+  const onKeyUp = ((event: StudioBg3dInferenceKeyboardEventLike) => {
+    if (!service.isKeyboardActive()) return;
     // Shift·Alt를 뗀 것은 입력창 안이든 밖이든 반영해야 "유지"가 풀린다.
     service.handleKey("key-up", toKeyEvent(event, { fromVcb: false, foreignEditable: false, widgetOwnsArrows: false }));
-  };
-  const onBlur = () => service.resetModifiers();
-  const onVisibility = () => service.resetModifiers();
+  }) as unknown as EventListener;
+  const onBlur: EventListener = () => service.resetModifiers();
+  const onVisibility: EventListener = () => service.resetModifiers();
 
-  options.window.addEventListener("keydown", onKeyDown as (event: never) => void, true);
-  options.window.addEventListener("keyup", onKeyUp as (event: never) => void, true);
+  options.window.addEventListener("keydown", onKeyDown, true);
+  options.window.addEventListener("keyup", onKeyUp, true);
   options.window.addEventListener("blur", onBlur, true);
   options.document?.addEventListener("visibilitychange", onVisibility);
   return () => {
-    options.window.removeEventListener("keydown", onKeyDown as (event: never) => void, true);
-    options.window.removeEventListener("keyup", onKeyUp as (event: never) => void, true);
+    options.window.removeEventListener("keydown", onKeyDown, true);
+    options.window.removeEventListener("keyup", onKeyUp, true);
     options.window.removeEventListener("blur", onBlur, true);
     options.document?.removeEventListener("visibilitychange", onVisibility);
   };
