@@ -725,9 +725,10 @@ def main():
     parser.add_argument("--skip-render", action="store_true")
     parser.add_argument("--skip-passes", action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
-    if bpy.app.version < (5, 0, 0):
-        # 컴포지터 노드 그룹 API(Scene.compositing_node_group)는 5.0 에서 도입됐다.
-        raise RuntimeError("Blender 5.0 이상이 필요합니다(현재 " + bpy.app.version_string + ")")
+    if bpy.app.version < (5, 2, 0):
+        # 컴포지터 노드 그룹 API(Scene.compositing_node_group)는 5.0 에서 도입됐지만 이 스크립트가
+        # 확인한 것은 5.2 LTS 다(두 워크플로와 캐릭터 키트 매니페스트도 5.2 를 기준으로 한다).
+        raise RuntimeError("Blender 5.2 이상이 필요합니다(현재 " + bpy.app.version_string + ")")
     names = list(CAMERAS) if args.scenes == "all" else args.scenes.split(",")
     for name in names:
         if name not in CAMERAS:

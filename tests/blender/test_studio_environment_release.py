@@ -188,6 +188,9 @@ class PassCompositorContractTests(unittest.TestCase):
         ):
             self.assertNotRegex(self.source, pattern)
 
+    def test_requires_the_verified_blender_version(self) -> None:
+        self.assertIn("bpy.app.version < (5, 2, 0)", self.source)
+
     def test_depth_and_normal_are_written_without_display_transform(self) -> None:
         self.assertIn('RAW_DATA_PASSES = ("depth", "normal")', self.source)
         self.assertIn("save_as_render = False", self.source)
