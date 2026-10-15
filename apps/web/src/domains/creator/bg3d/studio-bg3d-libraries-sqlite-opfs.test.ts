@@ -41,6 +41,7 @@ import {
   type StudioBg3dLibrariesRunExclusive,
 } from "./studio-bg3d-libraries-sqlite-opfs-authority";
 import { createDefaultStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
+import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
 
 import type {
   StudioLocalDatabase,
@@ -708,6 +709,21 @@ describe("BG3D shared SQLite/OPFS product authority", () => {
       STUDIO_BG3D_LIBRARY_MANIFEST_KEYS.metadata,
     );
     expect(raw).toContain(STUDIO_BG3D_ASSET_METADATA_V12_MANIFEST_KIND);
+  });
+
+  it("keeps a SketchUp import report through the strict V12 manifest round trip", async () => {
+    const database = await openNamedDatabase();
+    const fileSystem = createStudioOpfsMemoryFileSystem();
+    const authority = authorityFor(database, fileSystem);
+    const hash = `sha256:${"c".repeat(64)}` as const;
+    const record = { ...metadata(hash), format: "skp" as const, skpImport: createSkpReportFixture() };
+    await putStudioBg3dAssetMetadataAtomically([record], { authority });
+    expect((await getStudioBg3dAssetMetadata(hash, { authority }))?.skpImport).toEqual(createSkpReportFixture());
+    // 사용자 편집(즐겨찾기)이 같은 매니페스트를 다시 쓰고 읽어도 보고서가 그대로여야 한다.
+    await updateStudioBg3dAssetFavorite(hash, true, { authority, now: 20 });
+    const [listed] = await listStudioBg3dAssetMetadata({ authority });
+    expect(listed).toMatchObject({ contentHash: hash, favorite: true, format: "skp" });
+    expect(listed.skpImport).toEqual(createSkpReportFixture());
   });
 
   it("fails explicitly instead of treating a memory CAS as durable product storage", async () => {

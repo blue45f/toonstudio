@@ -606,7 +606,8 @@ ibisPaint의 [타원자 말풍선 제작](https://ibispaint.com/lecture/index.js
 - **3D 배경 커스텀 모델 업로드** — 최초 배치는 VRM 업로드와 동일한 IndexedDB 저장 아키텍처로
   `.glb`/`.gltf`/`.obj`를 지원했다(에이블러/SketchUp 벤치마크, 커밋 `00addb8`). 현재
   `studio-bg3d-model-import.ts`는 GLB, glTF, OBJ, FBX, DAE, STL, PLY, 3DS와 연결 BIN/MTL/PNG/JPEG/
-  WebP를 검증하고 self-contained canonical GLB로 변환한다. native `.skp`/`.blend` 파싱이나
+  WebP를 검증하고 self-contained canonical GLB로 변환한다. `.skp`는 OpenSKP 브라우저 변환으로
+  부분 지원하며(`docs/features/skp-import.md`), native `.blend` 파싱이나
   Blender급 mesh/UV/sculpt/modifier 제작기는 제공하지 않는다.
 - **3D 배경 씬 템플릿** — "블록아웃 소품 배치"에 머물던 한계를 해소하기 위해, 여러 프리미티브/복합
   프리셋을 미리 정한 배치로 한 번에 생성하는 "완성된 공간" 카탈로그(교실/거리/카페/공원).
@@ -937,8 +938,8 @@ API 키를 등록해야 하는 곳이 AI 어시스트(baseURL/API키/모델)와 
   `createPortal(..., document.body)` 경계를 사용한다. 과거의 `route-stage` stacking-context
   잠재 버그 메모는 해결된 이력으로만 보존한다.
 - **3D 교환 포맷:** `studio-bg3d-model-import.ts`가 GLB/glTF/OBJ/FBX/DAE/STL/PLY/3DS와 연결
-  BIN/MTL/PNG/JPEG/WebP를 검증하고 canonical GLB로 정규화한다. native SKP/BLEND 파싱이나
-  Blender급 authoring은 잔여다.
+  BIN/MTL/PNG/JPEG/WebP를 검증하고 canonical GLB로 정규화한다. SKP는 OpenSKP 브라우저 변환으로
+  부분 지원하며(`docs/features/skp-import.md`), native BLEND 파싱이나 Blender급 authoring은 잔여다.
 - **프레임 시간:** 단일 이미지 프레임 애니메이션에는 프레임별 duration이 있다. 공용
   multi-track timeline은 여전히 global FPS 중심이므로 모든 패널/트랙의 독립 timing override가
   완료됐다고 보지는 않는다.
@@ -989,8 +990,9 @@ Liquify/Content-aware fill/Puppet warp — 위 §2 "3차 배치"(완료) 참고.
   없다.
 - **Semantic AI colorizer:** `studio-auto-color-hints.ts`의 로컬 scribble/connected-region 색 힌트는
   제공한다. 인물·의상·배경 의미를 추론하는 전용 AI 채색 모델은 별도 잔여다.
-- **Native SKP/BLEND와 Blender급 제작:** 넓은 3D 교환 포맷을 canonical GLB로 가져오는 경로와
-  native proprietary authoring은 다른 범위다.
+- **Native BLEND와 Blender급 제작:** 넓은 3D 교환 포맷을 canonical GLB로 가져오는 경로와
+  native proprietary authoring은 다른 범위다. SKP는 OpenSKP 브라우저 변환으로 부분 지원한다
+  (`docs/features/skp-import.md`).
 - **공용 타임라인의 독립 프레임 시간:** 단일 이미지 프레임 duration은 제공하지만 multi-track
   timeline의 전 트랙/패널별 독립 duration 모델은 남아 있다.
 

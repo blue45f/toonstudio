@@ -13,6 +13,7 @@ import {
   sortStudioBg3dAssetMetadata,
   type StudioBg3dAssetMetadata,
 } from "./studio-bg3d-asset-metadata";
+import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
 
 const HASH_A = `sha256:${"a".repeat(64)}` as const;
 const HASH_B = `sha256:${"b".repeat(64)}` as const;
@@ -348,5 +349,130 @@ describe("studio BG3D asset search, facets, and stable sorting", () => {
     expect(result.map(({ contentHash }) => contentHash)).toEqual([HASH_C, HASH_A]);
     expect(Object.isFrozen(result)).toBe(true);
     expect(result.every((item) => Object.isFrozen(item))).toBe(true);
+  });
+});
+
+describe("SketchUp import report in asset metadata", () => {
+  function skpRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      version: 2,
+      contentHash: HASH_A,
+      name: "방 모델",
+      format: "skp",
+      createdAt: 10,
+      updatedAt: 10,
+      byteSize: 2_048,
+      triangles: 80,
+      textures: 0,
+      favorite: false,
+      collections: [],
+      tags: [],
+      rights: { status: "owned", commercialUse: true, teamShareAllowed: false },
+      skpImport: createSkpReportFixture(),
+      ...overrides,
+    };
+  }
+
+  it("accepts skp as an asset format, also as a search facet", () => {
+    const record = normalizeStudioBg3dAssetMetadata(skpRecord());
+    expect(record?.format).toBe("skp");
+    expect(filterStudioBg3dAssetMetadata([record, metadata(HASH_B)], { format: ["skp"] }).map(({ contentHash }) => contentHash))
+      .toEqual([HASH_A]);
+  });
+
+  it("keeps the validated report, deeply frozen, and normalizing it again changes nothing", () => {
+    const record = normalizeStudioBg3dAssetMetadata(skpRecord());
+    expect(record?.skpImport).toEqual(createSkpReportFixture());
+    expect(Object.isFrozen(record?.skpImport)).toBe(true);
+    expect(Object.isFrozen(record?.skpImport?.names)).toBe(true);
+    expect(Object.isFrozen(record?.skpImport?.names.components.items)).toBe(true);
+    // V12 저장소는 저장된 기록을 다시 정규화해 JSON 이 같은지 검사한다.
+    expect(JSON.stringify(normalizeStudioBg3dAssetMetadata(record))).toBe(JSON.stringify(record));
+  });
+
+  it("does not add the field to records without a report, so existing rows are unchanged", () => {
+    const plain = metadata(HASH_C);
+    expect("skpImport" in plain).toBe(false);
+    expect("skpImport" in (normalizeStudioBg3dAssetMetadata(skpRecord({ skpImport: undefined })) ?? {})).toBe(false);
+  });
+
+  it("drops a report that fails the report schema but keeps the rest of the record", () => {
+    const broken = { ...createSkpReportFixture(), version: 2 };
+    const missing = { ...createSkpReportFixture() } as Record<string, unknown>;
+    delete missing.counts;
+    for (const skpImport of [broken, missing, "not a report", 42, null]) {
+      const record = normalizeStudioBg3dAssetMetadata(skpRecord({ skpImport }));
+      expect(record).not.toBeNull();
+      expect(record?.skpImport).toBeUndefined();
+      expect(record?.name).toBe("방 모델");
+    }
+  });
+
+  it("does not persist unknown report fields", () => {
+    const record = normalizeStudioBg3dAssetMetadata(skpRecord({
+      skpImport: { ...createSkpReportFixture(), sourcePath: "C:/Users/me/room.skp", token: "secret" },
+    }));
+    expect(JSON.stringify(record)).not.toContain("room.skp");
+    expect(JSON.stringify(record)).not.toContain("secret");
+  });
+
+  it("filters hostile names and marks the list as shortened instead of rejecting the record", () => {
+    const report = createSkpReportFixture({
+      names: {
+        components: { available: true, items: ["Chair", "<img src=x onerror=alert(1)>", "https://assets.invalid/chair"], total: 3, truncated: false },
+        tags: { available: true, items: ["Layer0"], total: 1, truncated: false },
+        scenes: { available: false, items: [], total: 0, truncated: false },
+      },
+      warnings: [{ code: "texture-missing", severity: "warning", count: 1, detail: "access_token=abc123" }],
+    });
+    const record = normalizeStudioBg3dAssetMetadata(skpRecord({ skpImport: report }));
+    expect(record?.skpImport?.names.components).toEqual({ available: true, items: ["Chair"], total: 3, truncated: true });
+    expect(record?.skpImport?.names.tags).toEqual({ available: true, items: ["Layer0"], total: 1, truncated: false });
+    expect(record?.skpImport?.names.scenes.available).toBe(false);
+    expect(record?.skpImport?.warnings).toEqual([{ code: "texture-missing", severity: "warning", count: 1, detail: null }]);
+    expect(JSON.stringify(record)).not.toContain("onerror");
+    expect(JSON.stringify(record)).not.toContain("https://");
+    expect(JSON.stringify(record)).not.toContain("access_token");
+    expect(JSON.stringify(normalizeStudioBg3dAssetMetadata(record))).toBe(JSON.stringify(record));
+  });
+
+  it("drops a report that is larger than the stored-report limit", () => {
+    const longName = "가".repeat(STUDIO_BG3D_ASSET_METADATA_LIMITS.nameCodePoints);
+    const items = Array.from({ length: 64 }, (_, index) => `${index % 10}${longName.slice(1)}`.slice(0, 160));
+    const heavy = createSkpReportFixture({
+      names: {
+        components: { available: true, items, total: 64, truncated: false },
+        tags: { available: true, items, total: 64, truncated: false },
+        scenes: { available: true, items, total: 64, truncated: false },
+      },
+    });
+    const record = normalizeStudioBg3dAssetMetadata(skpRecord({ skpImport: heavy }));
+    expect(record).not.toBeNull();
+    expect(record?.skpImport).toBeUndefined();
+
+    // 같은 형태라도 이름이 몇 개뿐이면 한도 안이므로 그대로 저장된다(크기 때문에 버려졌음을 확인).
+    const light = createSkpReportFixture({
+      names: {
+        components: { available: true, items: items.slice(0, 2), total: 2, truncated: false },
+        tags: { available: true, items: items.slice(0, 2), total: 2, truncated: false },
+        scenes: { available: true, items: items.slice(0, 2), total: 2, truncated: false },
+      },
+    });
+    expect(normalizeStudioBg3dAssetMetadata(skpRecord({ skpImport: light }))?.skpImport).toBeDefined();
+  });
+
+  it("ignores a report on any other format and on migrated V1 rows", () => {
+    expect(normalizeStudioBg3dAssetMetadata(skpRecord({ format: "glb" }))?.skpImport).toBeUndefined();
+    const migrated = migrateStudioBg3dAssetMetadata({
+      version: 1,
+      contentHash: HASH_B,
+      name: "Legacy Room",
+      format: "skp",
+      createdAt: 20,
+      byteSize: 2_000,
+      skpImport: createSkpReportFixture(),
+    });
+    expect(migrated).toMatchObject({ version: 2, format: "skp" });
+    expect(migrated?.skpImport).toBeUndefined();
   });
 });

@@ -74,6 +74,21 @@
 
 복잡한 장면이 느리다면 작업을 보존하고 표시 객체나 품질을 줄여 비교합니다. 변환 중에는 추가 작업을 반복 실행하기보다 완료 또는 오류 상태를 먼저 확인하세요.
 
+### SketchUp(.skp) 파일 가져오기
+
+3D 모델의 '3D 모델 및 연결 파일 가져오기'에서 .skp 파일을 고르면 브라우저 안에서 GLB로 변환해 가져옵니다. 파일은 외부로 전송되지 않고, 변환은 화면과 분리된 작업 스레드에서 진행되므로 화면이 멈추지 않습니다(작업 스레드를 쓸 수 없는 브라우저에서는 2MiB 이하 파일만 화면 스레드에서 변환하며 잠시 멈출 수 있습니다). 진행 단계와 변환 결과는 가져오기 버튼 아래의 SketchUp 안내 영역에 표시됩니다.
+
+SketchUp 2013 이후 버전에서 저장한 파일을 지원합니다. 데스크톱 32MiB·모바일 16MiB를 넘거나(2021 이후 형식은 압축을 푼 모델 데이터도 같은 기준입니다) 90초 안에 끝나지 않으면 변환을 중단하고, 같은 컴포넌트를 여러 번 배치한 모델은 재질별로 합쳐 가져옵니다. 카메라 장면과 애니메이션은 가져오지 않으며, SketchUp에서 숨긴 컴포넌트나 숨긴 태그의 형상은 결과에 포함될 수 있습니다.
+
+SketchUp은 모델을 항상 인치로 저장합니다. 변환한 모델의 가장 긴 변이 수 mm 이하이거나 수 km 이상으로 읽히면 '모델 크기를 확인해 주세요' 질문이 나타납니다. 모델을 만들 때 쓴 단위(미터·센티미터·밀리미터·인치)를 고르면 실제 크기로 다시 맞추고, 고른 단위와 배율은 변환 보고서에 기록됩니다. 크기가 정상이면 묻지 않고 그대로 가져옵니다.
+
+1. 먼저 '이용 권리 기록'에서 모델의 출처와 이용 조건을 입력합니다. 3D Warehouse에서 받은 모델은 Trimble의 이용 약관과 게시자가 정한 조건을 직접 확인하세요.
+2. .skp 파일을 선택하고 변환이 끝날 때까지 기다립니다. 필요하면 '가져오기 취소'로 중단할 수 있습니다.
+3. 크기 확인 질문이 나오면 단위를 고릅니다. 잘 모르겠다면 '추천'이 붙은 단위로 시작해 인물과 크기를 비교해 보세요.
+4. 가져오기가 끝나면 변환 보고서에서 삼각형·재질 수, 컴포넌트·태그·장면 이름, 경고(텍스처 누락, 면 방향, 숨김 형상)를 확인합니다.
+
+> **참고:** 변환에 실패하면 이유와 함께 SketchUp에서 GLB 또는 DAE로 내보내 가져오는 방법을 안내합니다. 변환기 OpenSKP는 Trimble과 관련 없는 비공식 오픈소스 파서라 모든 .skp 파일을 변환하지는 못하며, SketchUp은 Trimble Inc.의 상표입니다.
+
 관련 문서: [3D 캐릭터와 포즈](#3d-캐릭터와-포즈) · [소재와 템플릿 활용](#undefined) · [필터와 보정](#undefined)
 
 <!-- legacy-appendix:start -->
@@ -319,7 +334,7 @@ ToonStudio Studio의 3D DCC 엔진은 단순히 외부 3D 파일을 불러와 �
 | OBJ | `.obj/.mtl` | A | mesh, UV, normals, basic material |
 | FBX | `.fbx` | B/C | mesh, skin, animation, material subset |
 | DXF | `.dxf` | B | 2D plan, layer, block, polyline |
-| SketchUp | `.skp` | C (등급표 기준) | 배경 3D 에셋 라이브러리는 OpenSKP(MIT)로 브라우저 안에서 GLB로 변환해 가져오며(레거시 파일 일부는 변환에 실패할 수 있어, 그때는 SketchUp에서 DAE·GLB로 내보내 가져옵니다), 변환된 모델은 기존 GLB 경로로 합류합니다. 하이브리드 DCC 가져오기와 등급표(`studio-dcc-format-matrix.ts`·`studio-3d-geometry-authority-manifest.ts`)는 아직 "bridge 필요"로 적혀 있어 코드 안에서도 서로 어긋납니다 |
+| SketchUp | `.skp` | B (등급표 기준) | 배경 3D 에셋 라이브러리가 OpenSKP(MIT, Trimble과 무관한 비공식 파서)로 브라우저 안에서 Worker 변환해 GLB로 가져옵니다. 지원: SketchUp 2013 이후, 변환 후 단위·크기 확인(m/cm/mm/inch), 변환 보고서(삼각형·재질·이름·경고). 한계: 데스크톱 32MiB·모바일 16MiB·90초 제한, 장면(카메라)·애니메이션·태그 숨김은 가져오지 않음, 일부 파일은 변환 실패(SketchUp에서 GLB·DAE로 내보내 가져옵니다). 등급표(`studio-dcc-format-matrix.ts`·`studio-3d-geometry-authority-manifest.ts`)도 같은 내용으로 맞춰져 있으며 상세는 `docs/features/skp-import.md`를 따릅니다 |
 | Blender | `.blend` | C | bridge plugin 필요 |
 | IFC (BIM) | `.ifc` | B | wall, door, window, space semantic |
 | 3MF | `.3mf` | B | mesh, color, 3D print properties |

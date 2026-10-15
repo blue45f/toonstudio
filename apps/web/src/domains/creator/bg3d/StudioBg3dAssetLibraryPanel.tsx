@@ -14,10 +14,12 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 
+import { StudioBg3dSkpImportPanel } from "./StudioBg3dSkpImportPanel";
 import {
   getStudioBg3dEnvironmentAsset,
   isStudioBg3dEnvironmentAssetId,
 } from "./studio-bg3d-environment-catalog";
+import { STUDIO_BG3D_SKP_WAREHOUSE_NOTICE } from "./studio-bg3d-skp-import-copy";
 
 import type { Bg3dModelImportItem, Bg3dModelLibraryEntry } from "./bg3d-model-library";
 
@@ -280,6 +282,7 @@ export function StudioBg3dAssetLibraryPanel({
           <p className="text-[0.68rem] leading-relaxed text-fg-3">
             모델 파일은 외부로 전송하지 않습니다. 출처의 원본 라이선스를 확인하고, 작업에 함께 보관할 권리 정보를 선택하세요.
           </p>
+          <p className="mt-1.5 text-[0.68rem] leading-relaxed text-fg-3">{STUDIO_BG3D_SKP_WAREHOUSE_NOTICE}</p>
           <div className="mt-2 grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="가져올 3D 모델 이용 권리">
             {RIGHTS_PRESETS.map((preset) => (
               <button
@@ -361,8 +364,7 @@ export function StudioBg3dAssetLibraryPanel({
       </details>
       <p className="mt-2 rounded-xl border border-line bg-card/60 px-3 py-2 text-xs leading-relaxed text-fg-3">
         SketchUp에서 내보낸 DAE·OBJ를 포함해 GLB·glTF·FBX·STL·PLY·3DS를 지원합니다. glTF의 BIN/텍스처나 OBJ의 MTL/텍스처도 함께 선택하세요.
-        SketchUp .skp 파일은 브라우저 안에서 OpenSKP(MIT)로 GLB 변환해 가져오며, 변환된 모델은 기존 단계 추출(선화·음영·밑색) 파이프라인을 그대로 탑니다.
-        일부 레거시 .skp는 변환에 실패할 수 있는데, 그 경우 SketchUp에서 DAE·GLB로 내보내 가져와 주세요.
+        SketchUp .skp 파일도 브라우저 안에서 GLB로 변환해 가져오며, 변환된 모델은 기존 단계 추출(선화·음영·밑색) 파이프라인을 그대로 탑니다. 지원 범위와 한계는 아래 안내를 확인하세요.
         외부 네트워크 참조 없이 자체 포함 GLB로 변환하고, Worker에서 SHA-256·파일 구조와 기기별
         삼각형/텍스처 예산을 검사한 뒤 로컬 라이브러리에 저장합니다. Meshopt 압축은 별도 WASM
         Worker에서 풀며 디코딩 후 메모리도 같은 기기 예산으로 제한합니다. KTX2/Basis 텍스처는
@@ -370,6 +372,7 @@ export function StudioBg3dAssetLibraryPanel({
         카드의 GLB 저장은 원본 FBX·OBJ를 확장자만 바꾸는 기능이 아니라, 로컬에서 검증·정규화한
         자체 포함 GLB를 저장 직전에 다시 검사해 내려받는 기능입니다.
       </p>
+      <StudioBg3dSkpImportPanel />
 
       {downloadFeedback ? (
         <p

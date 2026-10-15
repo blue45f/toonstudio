@@ -6,6 +6,13 @@
  */
 
 import { STUDIO_BG3D_GLB_MAX_BYTES } from "./studio-bg3d-glb-validation";
+import {
+  STUDIO_BG3D_SKP_CONVERSION_TIMEOUT_MS,
+  STUDIO_BG3D_SKP_MAIN_THREAD_MAX_BYTES,
+  STUDIO_BG3D_SKP_MAX_SOURCE_BYTES,
+  STUDIO_BG3D_SKP_MIN_SUPPORTED_MAJOR_VERSION,
+  STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES,
+} from "./studio-bg3d-skp-contract";
 
 import type * as THREE from "three";
 
@@ -68,8 +75,13 @@ export type StudioBg3dModelImportErrorCode =
   | "output-too-large"
   | "output-total-too-large"
   | "parse-failed"
+  | "skp-cancelled"
   | "skp-converter-unavailable"
+  | "skp-empty-scene"
   | "skp-parse-failed"
+  | "skp-timeout"
+  | "skp-too-large"
+  | "skp-unsupported-version"
   | "too-many-files"
   | "too-many-models"
   | "total-too-large"
@@ -86,6 +98,10 @@ export type StudioBg3dModelImportErrorCode =
   | "vertex-budget-exceeded"
   | "worker-required"
   | "geometry-memory-too-large";
+
+function mebibytes(bytes: number): number {
+  return bytes / (1024 * 1024);
+}
 
 const ERROR_MESSAGES: Readonly<Record<StudioBg3dModelImportErrorCode, string>> = Object.freeze({
   aborted: "3D 모델 가져오기를 취소했습니다.",
@@ -110,8 +126,13 @@ const ERROR_MESSAGES: Readonly<Record<StudioBg3dModelImportErrorCode, string>> =
   "output-too-large": "변환된 GLB가 100MiB 제한을 초과했습니다. 텍스처나 메시를 최적화해 주세요.",
   "output-total-too-large": "한 번에 변환된 GLB의 총용량은 100MiB를 초과할 수 없습니다. 모델을 나누어 가져와 주세요.",
   "parse-failed": "3D 모델 구조를 해석하지 못했습니다. 원본 파일과 연결 리소스를 확인해 주세요.",
-  "skp-converter-unavailable": ".skp 변환기(OpenSKP)를 불러오지 못해 SketchUp 파일을 가져올 수 없습니다. SketchUp에서 DAE 또는 GLB로 내보낸 뒤 다시 시도해 주세요.",
-  "skp-parse-failed": ".skp 파일 구조를 해석하지 못했습니다. 일부 레거시 SketchUp 파일은 브라우저 변환에 실패할 수 있습니다. SketchUp에서 DAE 또는 GLB로 내보낸 뒤 가져와 주세요.",
+  "skp-cancelled": "SketchUp 변환을 취소했습니다. 장면과 라이브러리는 변경하지 않았습니다.",
+  "skp-converter-unavailable": ".skp 변환기(OpenSKP)를 불러오거나 실행하지 못해 SketchUp 파일을 가져올 수 없습니다. 잠시 후 다시 시도하거나, SketchUp에서 GLB 또는 DAE로 내보낸 뒤 가져와 주세요.",
+  "skp-empty-scene": "SketchUp 파일에서 가져올 형상이 없습니다. 컴포넌트가 모델에 배치돼 있고 숨김 처리되지 않았는지 확인한 뒤, 필요하면 SketchUp에서 GLB 또는 DAE로 내보내 가져와 주세요.",
+  "skp-parse-failed": ".skp 파일 구조를 해석하지 못했습니다. 손상된 파일이거나 SketchUp 형식이 아닐 수 있고, 일부 레거시 SketchUp 파일은 브라우저 변환에 실패할 수 있습니다. SketchUp에서 GLB 또는 DAE로 내보낸 뒤 가져와 주세요.",
+  "skp-timeout": `SketchUp 변환이 제한 시간(${STUDIO_BG3D_SKP_CONVERSION_TIMEOUT_MS / 1000}초)을 넘겨 중단했습니다. 모델이 매우 복잡할 수 있습니다. SketchUp에서 컴포넌트·폴리곤을 줄이거나 GLB 또는 DAE로 내보낸 뒤 가져와 주세요.`,
+  "skp-too-large": `SketchUp(.skp) 파일(2021 이후 형식은 압축을 푼 모델 데이터 포함)이 이 기기에서 변환할 수 있는 크기를 넘었습니다(데스크톱 ${mebibytes(STUDIO_BG3D_SKP_MAX_SOURCE_BYTES)}MiB, 모바일 ${mebibytes(STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES)}MiB, Worker를 쓸 수 없는 브라우저 ${mebibytes(STUDIO_BG3D_SKP_MAIN_THREAD_MAX_BYTES)}MiB). SketchUp에서 쓰지 않는 컴포넌트·텍스처를 정리하거나 GLB 또는 DAE로 내보낸 뒤 가져와 주세요.`,
+  "skp-unsupported-version": `SketchUp ${2000 + STUDIO_BG3D_SKP_MIN_SUPPORTED_MAJOR_VERSION} 이전 버전에서 저장한 파일은 변환할 수 없습니다. 최신 SketchUp에서 파일을 열어 다시 저장하거나 GLB 또는 DAE로 내보낸 뒤 가져와 주세요.`,
   "too-many-files": "한 번에 선택할 수 있는 3D 모델과 연결 리소스는 최대 256개입니다.",
   "too-many-models": "한 번에 가져올 수 있는 3D 모델은 최대 32개입니다.",
   "total-too-large": "한 번에 가져올 파일의 총용량은 300MiB를 초과할 수 없습니다.",

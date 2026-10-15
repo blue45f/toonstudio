@@ -362,10 +362,10 @@ export const GLB_OPTIMIZATION_PIPELINE: EngineeringAtlasEntry = {
     {
       feature: t("SketchUp(.skp) 가져오기", "SketchUp (.skp) import"),
       role: t(
-        "openskp를 지연 로드해 buildScene → toGLB로 바꾸고 GLB 머리말을 확인한 뒤 같은 경로에 합류합니다. 변환기 로드 실패와 파싱 실패를 다른 오류로 알리고, 가짜 변환은 하지 않습니다.",
-        "Lazy-loads openskp, converts via buildScene then toGLB, checks the GLB header and joins the same path. Converter-load failure and parse failure are reported as different errors, with no fake conversion.",
+        "별도 Worker에서 openskp를 지연 로드해 buildScene → 재질별 병합 → toGLB로 바꾸고, 크기가 이상하면 단위를 물은 뒤 같은 경로에 합류합니다. 변환 보고서를 남기고 실패는 일곱 가지로 구분해 알리며, 가짜 변환은 하지 않습니다.",
+        "Lazy-loads openskp in a separate Worker, converts via buildScene, merge by material and toGLB, asks for the unit if the size looks wrong, then joins the same path. It keeps a conversion report and reports failures in seven kinds, with no fake conversion.",
       ),
-      paths: [`${BG3D_DIR}/studio-bg3d-skp-converter.ts`, `${BG3D_DIR}/studio-bg3d-skp-converter.test.ts`],
+      paths: [`${BG3D_DIR}/studio-bg3d-skp-converter.ts`, `${BG3D_DIR}/studio-bg3d-skp-worker-client.ts`, `${BG3D_DIR}/studio-bg3d-skp-converter.test.ts`],
     },
     {
       feature: t("압축 자산 읽기 (meshopt · KTX2)", "Reading compressed assets (meshopt, KTX2)"),

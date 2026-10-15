@@ -48,7 +48,9 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "lucide-react",
       "react",
       "@/shared/lib/i18n-bilingual-copy",
+      "./StudioBg3dSkpImportPanel",
       "./studio-bg3d-environment-catalog",
+      "./studio-bg3d-skp-import-copy",
     ]);
     expect(imports.typeImports).toEqual(["./bg3d-model-library"]);
     expect(imports.dynamicImports).toEqual(["./studio-bg3d-canonical-glb-download"]);

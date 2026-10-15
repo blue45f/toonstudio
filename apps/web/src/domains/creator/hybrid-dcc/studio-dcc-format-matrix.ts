@@ -3,7 +3,7 @@
  * Does not claim parsers for proprietary X grades.
  */
 
-export const STUDIO_DCC_FORMAT_MATRIX_REVISION = 1 as const;
+export const STUDIO_DCC_FORMAT_MATRIX_REVISION = 2 as const;
 
 export type StudioFormatGrade = "N" | "A" | "B" | "C" | "D" | "P" | "X";
 
@@ -69,7 +69,7 @@ export const STUDIO_DCC_FORMAT_MATRIX: readonly StudioFormatEntry[] = [
   { id: "mb", extensions: [".mb", ".ma"], category: "mesh", grade: "C", path: "Maya bridge", priority: "P4", notes: "" },
   { id: "c4d", extensions: [".c4d"], category: "mesh", grade: "X", path: "C4D bridge", priority: "P4", notes: "" },
   { id: "blend", extensions: [".blend"], category: "mesh", grade: "C", path: "Blender exporter bridge", priority: "P3", notes: "" },
-  { id: "skp", extensions: [".skp"], category: "mesh", grade: "C", path: "SketchUp bridge", priority: "P3", notes: "" },
+  { id: "skp", extensions: [".skp"], category: "mesh", grade: "B", path: "OpenSKP JS parser in a Worker -> normalized GLB (browser-direct)", priority: "P3", notes: "partial: SketchUp 2013+, <=32MiB desktop / 16MiB mobile, 90s limit; static geometry only (no scenes/camera/animation); hidden components/tags may be included; unit confirm UI; unofficial parser (not Trimble)" },
   { id: "clip", extensions: [".clip"], category: "document", grade: "X", path: "not reverse-engineered", priority: "P5", notes: "export via CSP" },
   { id: "ztl", extensions: [".ztl"], category: "mesh", grade: "X", path: "ZBrush bridge", priority: "P4", notes: "" },
   { id: "hip", extensions: [".hip"], category: "mesh", grade: "X", path: "Houdini bridge", priority: "P4", notes: "" },

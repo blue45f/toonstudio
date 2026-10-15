@@ -34,10 +34,10 @@ import {
 } from "./studio-bg3d-obj-preflight-worker-protocol";
 import { hydrateStudioBg3dObjWorkerResult } from "./studio-bg3d-obj-three-hydrator";
 import {
-  convertStudioBg3dSkpToGlb,
-  StudioBg3dSkpConverterUnavailableError,
-  StudioBg3dSkpParseError,
-} from "./studio-bg3d-skp-converter";
+  importStudioBg3dSkpToGlb,
+  type StudioBg3dSkpImportContext,
+  type StudioBg3dSkpImportOptions,
+} from "./studio-bg3d-skp-import";
 import {
   StudioBg3dObjWorkerClientError,
   parseStudioBg3dObjInWorker,
@@ -193,6 +193,8 @@ export interface StudioBg3dModelImportOptions {
    */
   readonly profile?: StudioBg3dGlbProfile;
   readonly budgets?: StudioBg3dGlbBudgetProfiles;
+  /** SketchUp(.skp) 가져오기의 단위 확인·진행·보고서 수신. 생략하면 묻지 않고 변환만 한다. */
+  readonly skp?: StudioBg3dSkpImportOptions;
 }
 
 export type StudioBg3dModelImportExecutionBackend = "worker" | "direct";
@@ -358,7 +360,7 @@ export function planStudioBg3dModelImports(
       && extension !== "glb"
       && file.size > STUDIO_BG3D_IMPORT_MAX_CONVERSION_SOURCE_BYTES
     ) {
-      throw importError("file-too-large");
+      throw importError(extension === "skp" ? "skp-too-large" : "file-too-large");
     }
     if (totalBytes > STUDIO_BG3D_IMPORT_MAX_TOTAL_BYTES - file.size) throw importError("total-too-large");
     totalBytes += file.size;
@@ -1126,31 +1128,24 @@ async function parseGlbSourceImport(
   }
 }
 
-/**
- * .skp(SketchUp) 가져오기: OpenSKP(MIT) 파사드로 브라우저에서 GLB로 변환한 뒤 기존 GLB
- * 경로로 합류한다. 변환 청크를 불러오지 못하거나 파서가 파일을 거부하면 전용 오류 코드로
- * 실패해 DAE·GLB 내보내기 대안을 안내한다 — 되는 척하는 대체 변환은 하지 않는다.
- */
+/** .skp(SketchUp): 변환·단위 확인·보고는 studio-bg3d-skp-import 가 맡고, 결과 GLB 는 기존 GLB 경로에 합류한다. */
 async function parseSkpImport(
   item: StudioBg3dImportPlanItem,
   resolver: LocalResourceResolver,
+  executionBackend: StudioBg3dModelImportExecutionBackend,
+  skp: StudioBg3dSkpImportContext,
   signal?: AbortSignal,
 ): Promise<ParsedImport> {
-  const bytes = await readBytes(item.primary, signal);
-  throwIfAborted(signal);
-  let glb: Uint8Array;
-  try {
-    glb = await convertStudioBg3dSkpToGlb(bytes);
-  } catch (error) {
-    if (error instanceof StudioBg3dSkpConverterUnavailableError) {
-      throw importError("skp-converter-unavailable");
-    }
-    if (error instanceof StudioBg3dSkpParseError) throw importError("skp-parse-failed");
-    throw error;
-  }
-  throwIfAborted(signal);
-  const glbBuffer = glb.buffer.slice(glb.byteOffset, glb.byteOffset + glb.byteLength) as ArrayBuffer;
-  return parseGlbSourceImport(glbBuffer, resolver, signal);
+  const glb = await importStudioBg3dSkpToGlb({
+    name: item.primary.name,
+    path: item.primaryPath,
+    size: item.primary.size,
+    readBytes: () => readBytes(item.primary, signal),
+    signal,
+    executionBackend,
+    context: skp,
+  });
+  return parseGlbSourceImport(glb, resolver, signal);
 }
 
 async function preflightObjBytesForImport(
@@ -1690,6 +1685,7 @@ async function parsePlanItem(
   item: StudioBg3dImportPlanItem,
   resolver: LocalResourceResolver,
   executionBackend: StudioBg3dModelImportExecutionBackend,
+  skp: StudioBg3dSkpImportContext,
   signal?: AbortSignal,
   companionDecodedImageBytes = 0,
 ): Promise<ParsedImport> {
@@ -1709,7 +1705,7 @@ async function parsePlanItem(
     case "3ds":
       return parse3dsImport(item, resolver, signal);
     case "skp":
-      return parseSkpImport(item, resolver, signal);
+      return parseSkpImport(item, resolver, executionBackend, skp, signal);
     case "glb":
       throw importError("parse-failed");
   }
@@ -1849,6 +1845,7 @@ async function convertPlanItem(
   signal: AbortSignal | undefined,
   companionDecodedImageBytes: number,
   preExportBudget: StudioBg3dGlbValidationBudget | undefined,
+  skp: StudioBg3dSkpImportContext,
   onBeforeExport?: () => void,
 ): Promise<Bg3dModelUploadSource> {
   throwIfAborted(signal);
@@ -1860,6 +1857,7 @@ async function convertPlanItem(
       item,
       resolver,
       executionBackend,
+      skp,
       signal,
       companionDecodedImageBytes,
     );
@@ -1896,6 +1894,7 @@ export async function convertStudioBg3dModelFilesToGlb(
     throw new TypeError("studio-bg3d-model-import:invalid-execution-backend");
   }
   const preExportBudget = resolvePreExportBudget(options);
+  const skp: StudioBg3dSkpImportContext = { options: options.skp, profile: options.profile };
   const plan = planStudioBg3dModelImports(input);
   options.onProgress?.({
     stage: "planning",
@@ -1936,6 +1935,7 @@ export async function convertStudioBg3dModelFilesToGlb(
       options.signal,
       companionDecodedImageBytes,
       preExportBudget,
+      skp,
       item.format === "glb" ? undefined : () => progress("exporting"),
     );
     throwIfAborted(options.signal);
