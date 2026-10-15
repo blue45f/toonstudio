@@ -67,8 +67,10 @@ const {
 } = contracts;
 const {
   CHECKS,
+  DEFAULT_KIT_ROOT,
   IRIS_RECOLOR_MIN_MEAN_LUMINANCE,
   RECOLOR_MIN_MEAN_LUMINANCE,
+  createDiskSource,
   createMemorySource,
   decodeImageInfo,
   parseCliArgs,
@@ -930,6 +932,17 @@ it("--only는 선택한 검사만 돌리고 GLB 검사를 고르면 V5도 함께
   const result = await runVerify(kit, { only: ["V8"] });
   assert.deepEqual(Object.keys(result.checks).sort(), ["V5", "V8"]);
   assert.equal(result.ok, true);
+});
+
+it("출하 키트(apps/character-lab/public/assets/characters/toonstudio-kit-v1)는 V1~V20을 오류 없이 통과한다", async () => {
+  // 합성 키트만 검증하면 출하 kit.json을 손으로 고칠 때(예: 라이선스 정리로 파츠를 뺄 때) 생기는 어긋남을 못 잡는다.
+  // 2026-10-15: slotCapabilities를 손으로 쓴 문구가 규칙 계산(deriveKitCapabilities)과 달라 V17이 실패했지만 어떤 테스트도 몰랐다.
+  assert.ok(existsSync(path.join(DEFAULT_KIT_ROOT, "kit.json")), `출하 키트가 없습니다: ${DEFAULT_KIT_ROOT}`);
+  const result = await verifyKit({ source: createDiskSource(DEFAULT_KIT_ROOT) });
+  const errors = result.findings.filter((finding) => finding.level === "error");
+  assert.deepEqual(errors, [], `출하 키트 검증 오류:\n${JSON.stringify(errors, null, 1)}`);
+  assert.equal(result.ok, true);
+  assert.deepEqual(Object.keys(result.checks), CHECKS.map((check) => check.id));
 });
 
 // ---------------------------------------------------------------- V1
