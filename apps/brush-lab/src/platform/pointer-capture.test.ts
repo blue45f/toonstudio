@@ -199,8 +199,7 @@ describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
     open.detach();
   });
 
-  it("primaryButtonOnly는 마우스 보조 버튼 획을 막고 주 버튼·펜은 그대로 받는다(기본은 모두 받는다)", () => {
-    const strict = setup({ primaryButtonOnly: true });
+  it("primaryButtonOnly는 마우스 보조 버튼 획을 막고 주 버튼·펜은 그대로 받는다(기본은 모두 받는다)", () => {    const strict = setup({ primaryButtonOnly: true });
     strict.el.dispatchEvent(pointerEvent("pointerdown", { pointerType: "mouse", button: 2, buttons: 2, clientX: 1, clientY: 1 }));
     expect(strict.batches).toHaveLength(0);
     strict.el.dispatchEvent(pointerEvent("pointerdown", { pointerType: "mouse", button: 0, buttons: 1, clientX: 1, clientY: 1 }));
@@ -214,5 +213,24 @@ describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
     open.el.dispatchEvent(pointerEvent("pointerdown", { pointerType: "mouse", button: 2, buttons: 2, clientX: 1, clientY: 1 }));
     expect(open.batches).toHaveLength(1);
     open.detach();
+  });
+
+  it("setPointerCapture가 던지면 획을 시작하지 않고 onCaptureFailure로 사유를 알린다", () => {
+    const failures: { pointerId: number; reason: string }[] = [];
+    const { el, batches, detach } = setup({ onCaptureFailure: (info) => failures.push(info) });
+    Object.defineProperty(el, "setPointerCapture", {
+      value: () => {
+        throw new Error("NotFoundError");
+      },
+    });
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1 }));
+    expect(batches).toHaveLength(0);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]?.pointerId).toBe(1);
+    expect(failures[0]?.reason).toContain("NotFoundError");
+    // 소유자가 없으므로 이후 move도 무시된다(유령 획 없음).
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 5, clientY: 5 }));
+    expect(batches).toHaveLength(0);
+    detach();
   });
 });

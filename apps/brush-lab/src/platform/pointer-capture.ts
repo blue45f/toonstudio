@@ -34,6 +34,11 @@ export interface PointerCaptureOptions {
   blockContextMenu?: boolean;
   /** 마우스의 보조 버튼(우클릭·가운데)으로는 획을 시작하지 않는다. 펜·터치는 영향 없음. 기본 false(기존 동작 유지). */
   primaryButtonOnly?: boolean;
+  /**
+   * `setPointerCapture`가 던졌을 때(비활성 포인터 등) 호출된다. 생략하면 획을 시작하지 않고 조용히 무시한다.
+   * 핸들러 안에서 던지면 브라우저 콘솔로만 가므로, 원인 규명이 필요하면 여기서 notice·로그로 남긴다.
+   */
+  onCaptureFailure?: (info: { pointerId: number; reason: string }) => void;
 }
 
 export const DEFAULT_PALM_REJECT_MS = 500;
@@ -156,11 +161,19 @@ export function attachPointerCapture(
     if (!ev.isPrimary) return;
     if (opts.primaryButtonOnly === true && ev.pointerType === "mouse" && ev.button !== 0) return;
     if (isPalm(ev)) return;
+    try {
+      if (typeof el.setPointerCapture === "function") {
+        el.setPointerCapture(ev.pointerId);
+      }
+    } catch (error) {
+      // 캡처 실패 상태로 획을 시작하면 바깥으로 나간 포인터를 놓쳐 유령 획이 남는다. 시작하지 않고 사유를 알린다.
+      if (opts.onCaptureFailure) {
+        opts.onCaptureFailure({ pointerId: ev.pointerId, reason: error instanceof Error ? error.message : String(error) });
+      }
+      return;
+    }
     ownerId = ev.pointerId;
     lastPressure = ev.pressure;
-    if (typeof el.setPointerCapture === "function") {
-      el.setPointerCapture(ev.pointerId);
-    }
     ev.preventDefault();
     onSamples([sampleFromPointerEvent(ev, "down", "raw", mapper)]);
   };

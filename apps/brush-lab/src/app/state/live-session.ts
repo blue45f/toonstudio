@@ -61,6 +61,8 @@ export interface LiveStrokeAbort {
   receipt: StrokeAbortReceipt | null;
   /** 문서를 보존하지 못해 레인을 교체했는가(true면 그때까지 그린 문서가 비워졌다). */
   laneReplaced: boolean;
+  /** 버려진 획의 입력 정보(한글 한 줄: 입력 종류·표본 수·지속 시간). 원인 규명용이며 없으면 null. */
+  strokeKo: string | null;
 }
 
 export interface LiveSessionOptions {
@@ -344,13 +346,14 @@ export class LiveStrokeSession {
    * (체인 안이므로 `clear()`가 아니라 `replaceLane`을 직접 부른다. clear는 같은 체인을 기다려 교착한다.)
    */
   private async handleFailure(error: unknown): Promise<void> {
+    const strokeKo = this.strokeDetailKo();
     this.inStroke = false;
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
     const failures: unknown[] = [error];
     let abort: LiveStrokeAbort | null = null;
-    if (this.laneMidStroke) abort = await this.discardLaneStroke("error", failures);
+    if (this.laneMidStroke) abort = await this.discardLaneStroke("error", failures, strokeKo);
     const onError = this.opts.onError;
     if (!onError) throw error;
     for (const failure of failures) onError(failure);
@@ -362,13 +365,14 @@ export class LiveStrokeSession {
    * 레인이 획 도중이면 abortStroke로 버리고, 문서를 보존하지 못하면(레인 교체) 조용히 넘기지 않고 오류로 드러낸다.
    */
   private async handleCancel(): Promise<void> {
+    const strokeKo = this.strokeDetailKo();
     this.inStroke = false;
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
     if (!this.laneMidStroke) return;
     const failures: unknown[] = [];
-    const abort = await this.discardLaneStroke("pointercancel", failures);
+    const abort = await this.discardLaneStroke("pointercancel", failures, strokeKo);
     if (!abort.laneReplaced && failures.length === 0) {
       if (this.opts.onPreview) this.opts.onPreview([]);
       if (this.opts.onStrokeAbort) this.opts.onStrokeAbort(abort);
@@ -387,10 +391,25 @@ export class LiveStrokeSession {
   }
 
   /**
+   * 버려진 획의 입력 한 줄 설명(입력 종류·표본 수·지속 시간). 취소 notice의 원인 규명용이다.
+   * 레인에 들어가지 않은 획(같은 배치 안 시작·취소)은 표본이 없어 null이다.
+   */
+  private strokeDetailKo(): string | null {
+    const samples = this.strokeSamples;
+    if (samples.length === 0) return null;
+    const down = samples.find((s) => s.phase === "down");
+    if (!down) return null;
+    const last = samples[samples.length - 1];
+    const ms = last && last.tMs >= down.tMs ? Math.round(last.tMs - down.tMs) : 0;
+    const kind = down.pointerType === "pen" ? "펜" : down.pointerType === "touch" ? "터치" : "마우스";
+    return `${kind}·표본 ${samples.length}개·${ms}ms`;
+  }
+
+  /**
    * 레인의 진행 중인 획을 버린다. 문서가 보존되면 레인을 유지하고, 아니면(복원 불가·abortStroke 실패) 레인을 교체한다.
    * abortStroke가 던진 오류와 레인 교체 실패는 `failures`에 쌓아 호출자가 드러낸다.
    */
-  private async discardLaneStroke(cause: LiveStrokeAbort["cause"], failures: unknown[]): Promise<LiveStrokeAbort> {
+  private async discardLaneStroke(cause: LiveStrokeAbort["cause"], failures: unknown[], strokeKo: string | null): Promise<LiveStrokeAbort> {
     // 버린 획의 입력 단계 상태(보류한 up·붓/펜 위치)도 버린다. 포인터가 이미 새 획을 시작했으면 그 획의 상태이므로 건드리지 않는다.
     if (!this.pointerDown) this.inputStage?.reset();
     let receipt: StrokeAbortReceipt | null = null;
@@ -401,14 +420,14 @@ export class LiveStrokeSession {
     }
     if (receipt?.documentPreserved) {
       this.laneMidStroke = false;
-      return { cause, receipt, laneReplaced: false };
+      return { cause, receipt, laneReplaced: false, strokeKo };
     }
     try {
       await this.replaceLane();
     } catch (recoveryError) {
       failures.push(recoveryError);
     }
-    return { cause, receipt, laneReplaced: true };
+    return { cause, receipt, laneReplaced: true, strokeKo };
   }
 
   private async processStrokePart(part: RawSample[]): Promise<void> {
