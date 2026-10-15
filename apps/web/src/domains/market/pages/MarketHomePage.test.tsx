@@ -77,9 +77,12 @@ describe("MarketHomePage", () => {
     }
     expect(tiles.getByRole("link", { name: /템플릿/ }).getAttribute("href")).toBe("/market/browse?kind=template");
     const menu = within(navigation);
-    for (const label of ["찾아보기", "내 에셋", "찜 목록", "배포하기", "조건 맞춤", "후보 비교"]) {
+    // 판매 진입은 "판매자 센터" 하나만 노출한다 (S1-5). 등록·관리는 센터의 탭이라 "배포하기" 링크는 따로 두지 않는다.
+    for (const label of ["찾아보기", "내 에셋", "찜 목록", "판매자 센터", "조건 맞춤", "후보 비교"]) {
       expect(menu.getByRole("link", { name: label })).toBeTruthy();
     }
+    expect(menu.getByRole("link", { name: "판매자 센터" }).getAttribute("href")).toBe("/market/seller");
+    expect(menu.queryByRole("link", { name: "배포하기" })).toBeNull();
     expect(menu.getByRole("link", { name: "장면 레퍼런스" }).getAttribute("href")).toBe("/research/assets");
     expect(menu.getByRole("link", { name: "제작 강좌 ↗" }).getAttribute("href")).toBe("/learn");
   });
