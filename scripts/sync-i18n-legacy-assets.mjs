@@ -13,7 +13,11 @@ export function synchronizeLegacyI18nAssets(directory = root, { check = false } 
   const changed = [];
   const sync = (filename, dictionary) => {
     const contents = JSON.stringify(dictionary, null, 2) + "\n";
-    if (readFileSync(filename, "utf8") === contents) return;
+    let current;
+    try { current = readFileSync(filename, "utf8"); }
+    // 신규 네임스페이스의 로케일 자산은 아직 파일이 없다. 없는 파일은 항상 갱신 대상이다.
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+    if (current === contents) return;
     changed.push(filename);
     if (!check) writeFileSync(filename, contents);
   };
@@ -61,10 +65,23 @@ export function synchronizeLegacyI18nAssets(directory = root, { check = false } 
           if (key in merged || shellOnlyKeys.has(key)) continue;
           // Missing authored translations use the honest English fallback. The generated
           // coverage catalogue counts identical English strings as untranslated.
-          const part = parts.get(owner.get(key));
-          if (!part) throw new Error(`Missing fallback namespace for ${locale}/${key}`);
+          const namespace = owner.get(key);
+          if (!namespace) throw new Error(`Missing fallback namespace for ${locale}/${key}`);
+          // ko/en만 먼저 작성한 신규 네임스페이스는 이 로케일 파일이 아직 없다.
+          // I18N_GUIDE §3 절차대로 이 스크립트가 나머지 로케일 파일을 만든다.
+          let part = parts.get(namespace);
+          if (!part) {
+            part = {};
+            parts.set(namespace, part);
+          }
           part[key] = value;
         }
+        // 새로 만든 파일이 있어도 병합 순서는 네임스페이스 이름순으로 유지한다
+        // (다시 실행해도 평면 자산이 달라지지 않게 하는 멱등성 조건).
+        dictionaries.set(
+          locale,
+          new Map([...parts].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))),
+        );
       }
     }
     for (const locale of locales) {
