@@ -5,6 +5,8 @@ import {
   type ExternalPigmentProvider,
 } from "./pigment/external-pigments";
 
+import { latentPigmentToRgb, mixLatentPigments, mixRgbPigments, rgbToLatentPigment } from "./pigment/latent-pigment-mixer";
+
 import { mixStudioSpectralWgm } from "../studio-spectral-wgm-mix-v1";
 
 import type { BrushStudioV6Rights } from "./brush-studio-v6-license-profile";
@@ -14,6 +16,7 @@ export type BrushStudioV6PigmentProviderId =
   | "rgb-linear-v1"
   | "spectral-wgm-v1"
   | "mixbox-js-v2"
+  | "toonstudio-latent-pigment-v1"
   | "ks-reference-wgm-v1"
   | "inkwash-density-wgm-v1";
 
@@ -39,6 +42,7 @@ export const BRUSH_STUDIO_V6_PIGMENT_PROVIDERS = Object.freeze([
   descriptor({ id: "rgb-linear-v1", nodeId: "pigment-rgb", label: "RGB Linear", version: "1", rights: "internal", execution: "native" }),
   descriptor({ id: "spectral-wgm-v1", nodeId: "pigment-spectral", label: "Spectral WGM", version: "1", rights: "permissive", execution: "native" }),
   descriptor({ id: "mixbox-js-v2", nodeId: "pigment-mixbox", label: "Mixbox Latent Pigment", version: "2.0.0", rights: "noncommercial", execution: "native" }),
+  descriptor({ id: "toonstudio-latent-pigment-v1", nodeId: "pigment-latent", label: "ToonStudio Latent Pigment", version: "1", rights: "internal", execution: "native" }),
   descriptor({ id: "ks-reference-wgm-v1", nodeId: "pigment-open-km", label: "K/S Reference WGM", version: "1", rights: "internal", execution: "legacy-reference" }),
   descriptor({ id: "inkwash-density-wgm-v1", nodeId: "pigment-inkwash-density", label: "Inkwash Density WGM", version: "1", rights: "private-grant", execution: "legacy-reference" }),
 ] as const);
@@ -116,6 +120,25 @@ function mixboxPalette(
   }));
 }
 
+/** 자체 잠재 안료 혼합기: 두 색의 잠재 색을 한 번씩만 풀고 비율마다 선형 보간한다. */
+function latentPalette(
+  first: Rgb,
+  second: Rgb,
+  steps: number,
+): readonly string[] {
+  const firstLatent = rgbToLatentPigment([first.r, first.g, first.b]);
+  const secondLatent = rgbToLatentPigment([second.r, second.g, second.b]);
+  return Object.freeze(Array.from({ length: steps }, (_, index) => {
+    const ratio = index / (steps - 1);
+    const endpoint = exactEndpoint(first, second, ratio);
+    if (endpoint) return endpoint;
+    return hexColor(latentPigmentToRgb(mixLatentPigments([
+      { latent: firstLatent, weight: 1 - ratio },
+      { latent: secondLatent, weight: ratio },
+    ])));
+  }));
+}
+
 export function createBrushStudioV6PigmentPalette(
   primary: string,
   secondary: string,
@@ -131,6 +154,7 @@ export function createBrushStudioV6PigmentPalette(
   const first = parseColor(primary);
   const second = parseColor(secondary);
   if (providerId === "mixbox-js-v2") return mixboxPalette(first, second, count);
+  if (providerId === "toonstudio-latent-pigment-v1") return latentPalette(first, second, count);
   const spectral = providerId !== "rgb-linear-v1";
   return Object.freeze(Array.from({ length: count }, (_, index) => {
     const ratio = index / (count - 1);
@@ -159,6 +183,14 @@ export function mixBrushStudioV6PigmentColors(
       [secondary.r, secondary.g, secondary.b],
       ratio,
     ));
+  }
+  if (providerId === "toonstudio-latent-pigment-v1") {
+    const primary = parseColor(first);
+    const secondary = parseColor(second);
+    return hexColor(mixRgbPigments([
+      { rgb: [primary.r, primary.g, primary.b], weight: 1 - ratio },
+      { rgb: [secondary.r, secondary.g, secondary.b], weight: ratio },
+    ]));
   }
   const provider = PROVIDER_BY_ID.get(providerId);
   if (!provider) throw new BrushStudioV6PigmentProviderUnavailableError(providerId);

@@ -40,6 +40,7 @@ export const BRUSH_STUDIO_V6_MATERIAL_ENGINE = Object.freeze({
     "rgb-linear-v1",
     "spectral-wgm-v1",
     "mixbox-js-v2",
+    "toonstudio-latent-pigment-v1",
     "ks-reference-wgm-v1",
     "inkwash-density-wgm-v1",
   ]),
