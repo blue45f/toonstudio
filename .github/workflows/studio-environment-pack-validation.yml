@@ -7,6 +7,7 @@ on:
       - "scripts/blender/refine_studio_environments_v6.py"
       - "scripts/verify-studio-environment-pack.mjs"
       - "scripts/verify-studio-environment-pack.test.mjs"
+      - "tests/blender/test_studio_environment_release.py"
       - "apps/web/public/assets/3d/environments/refined-v6/**"
   pull_request:
     paths:
@@ -14,6 +15,7 @@ on:
       - "scripts/blender/refine_studio_environments_v6.py"
       - "scripts/verify-studio-environment-pack.mjs"
       - "scripts/verify-studio-environment-pack.test.mjs"
+      - "tests/blender/test_studio_environment_release.py"
       - "apps/web/public/assets/3d/environments/refined-v6/**"
   workflow_dispatch:
 
@@ -41,6 +43,9 @@ jobs:
 
       - name: Compile the environment release script
         run: python3 -m py_compile scripts/blender/refine_studio_environments_v6.py
+
+      - name: Test the environment release script contracts
+        run: python3 -m unittest discover -s tests/blender -p 'test_studio_environment_release.py' -v
 
       - name: Test the environment pack verifier
         run: node --test scripts/verify-studio-environment-pack.test.mjs

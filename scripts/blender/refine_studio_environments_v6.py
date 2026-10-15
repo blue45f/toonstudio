@@ -170,49 +170,75 @@ def render(path):
 # 16-bit so the remapping stays reversible from the recorded ranges.
 RENDER_PASSES = ("beauty", "depth", "normal", "ao")
 PASS_COLOR_DEPTH = {"beauty": "8", "depth": "16", "normal": "16", "ao": "8"}
+# depth/normal 은 값 자체가 데이터라서 뷰 변환이나 sRGB 인코딩 없이 선형 값 그대로 저장한다.
+# beauty/ao(8비트)는 기존 산출물처럼 장면의 뷰 변환(AgX)을 적용해 저장한다.
+RAW_DATA_PASSES = ("depth", "normal")
 
 
-def configure_render_passes():
+def socket_by_identifier(node, identifier):
+    # 벡터 모드 Map Range 는 이름이 같은 소켓(From Min 등)이 둘씩 있어 identifier 로만 구분된다.
+    for socket in node.inputs:
+        if socket.identifier == identifier:
+            return socket
+    raise ValueError("Compositor socket not found: " + node.bl_idname + " " + identifier)
+
+
+def configure_render_passes(passes_dir):
     scene = bpy.context.scene
     view_layer = bpy.context.view_layer
     view_layer.use_pass_z = True
     view_layer.use_pass_normal = True
     view_layer.use_pass_ambient_occlusion = True
-    scene.use_nodes = True
-    tree = scene.node_tree
-    tree.nodes.clear()
-    render_layers = tree.nodes.new("CompositorNodeRLayers")
-    output = tree.nodes.new("CompositorNodeOutputFile")
+    # Blender 5.0 부터 컴포지터는 씬 소유 node_tree 가 아니라 노드 그룹 데이터블록
+    # (Scene.compositing_node_group)을 쓴다. 기본 장치가 GPU 로 바뀌어 헤드리스 EGL 에
+    # 의존하므로 Cycles 처럼 CPU 로 고정하고, 16비트 data 패스가 반정밀도 중간 버퍼로
+    # 깎이지 않도록 전체 정밀도를 쓴다. Scene.use_nodes 는 6.0 에서 제거될 예정이라 쓰지 않는다.
+    scene.render.compositor_device = "CPU"
+    scene.render.compositor_precision = "FULL"
+    group = bpy.data.node_groups.new("StudioEnvironmentPasses", "CompositorNodeTree")
+    scene.compositing_node_group = group
+    nodes, links = group.nodes, group.links
+    render_layers = nodes.new("CompositorNodeRLayers")
+    output = nodes.new("CompositorNodeOutputFile")
+    output.directory = str(passes_dir)
+    output.file_name = ""
+    # File Output 의 기본 media_type 이 멀티레이어 EXR 이라 PNG 를 지정하려면 먼저 바꿔야 한다.
+    output.format.media_type = "IMAGE"
     output.format.file_format = "PNG"
     output.format.color_mode = "RGB"
-    output.file_slots[0].path = RENDER_PASSES[0]
-    for kind in RENDER_PASSES[1:]:
-        output.file_slots.new(kind)
-    for index, kind in enumerate(RENDER_PASSES):
-        slot = output.file_slots[index]
-        slot.use_node_format = False
-        slot.format.file_format = "PNG"
-        slot.format.color_mode = "RGB"
-        slot.format.color_depth = PASS_COLOR_DEPTH[kind]
-    links = tree.links
-    links.new(render_layers.outputs["Image"], output.inputs[0])
+    sockets = {}
+    for kind in RENDER_PASSES:
+        # 항목 이름의 #### 는 프레임 번호(4자리)로 치환되어 beauty0001.png 가 된다.
+        item = output.file_output_items.new("RGBA", kind + "####")
+        item.override_node_format = True
+        item.format.file_format = "PNG"
+        item.format.color_mode = "RGB"
+        item.format.color_depth = PASS_COLOR_DEPTH[kind]
+        if kind in RAW_DATA_PASSES:
+            item.save_as_render = False
+            item.format.linear_colorspace_settings.name = "Non-Color"
+        sockets[kind] = output.inputs[item.name]
+    links.new(render_layers.outputs["Image"], sockets["beauty"])
     camera = scene.camera
-    depth_range = tree.nodes.new("CompositorNodeMapRange")
+    depth_range = nodes.new("ShaderNodeMapRange")
+    depth_range.clamp = True
     depth_range.inputs["From Min"].default_value = camera.data.clip_start
     depth_range.inputs["From Max"].default_value = camera.data.clip_end
     depth_range.inputs["To Min"].default_value = 0.0
     depth_range.inputs["To Max"].default_value = 1.0
     links.new(render_layers.outputs["Depth"], depth_range.inputs["Value"])
-    links.new(depth_range.outputs["Value"], output.inputs[1])
-    normal_range = tree.nodes.new("CompositorNodeMapRange")
-    normal_range.inputs["From Min"].default_value = -1.0
-    normal_range.inputs["From Max"].default_value = 1.0
-    normal_range.inputs["To Min"].default_value = 0.0
-    normal_range.inputs["To Max"].default_value = 1.0
-    links.new(render_layers.outputs["Normal"], normal_range.inputs["Value"])
-    links.new(normal_range.outputs["Value"], output.inputs[2])
-    links.new(render_layers.outputs["AO"], output.inputs[3])
-    return output
+    links.new(depth_range.outputs["Result"], sockets["depth"])
+    # 법선(x, y, z)은 채널별로 [-1, 1] → [0, 1] 로 옮겨 RGB 법선 맵으로 저장한다.
+    normal_range = nodes.new("ShaderNodeMapRange")
+    normal_range.data_type = "FLOAT_VECTOR"
+    normal_range.clamp = True
+    for identifier, value in (("From_Min_FLOAT3", -1.0), ("From_Max_FLOAT3", 1.0),
+                              ("To_Min_FLOAT3", 0.0), ("To_Max_FLOAT3", 1.0)):
+        socket_by_identifier(normal_range, identifier).default_value = (value, value, value)
+    links.new(render_layers.outputs["Normal"], normal_range.inputs["Vector"])
+    links.new(normal_range.outputs["Vector"], sockets["normal"])
+    links.new(render_layers.outputs["Ambient Occlusion"], sockets["ao"])
+    return group
 
 
 def render_pass_set(name):
@@ -221,11 +247,15 @@ def render_pass_set(name):
         raise ValueError("Review camera is required")
     passes_dir = OUTPUT / "passes" / name
     passes_dir.mkdir(parents=True, exist_ok=True)
-    output = configure_render_passes()
-    output.base_path = str(passes_dir)
-    bpy.ops.render.render(write_still=True)
-    scene.use_nodes = False
     frame = str(scene.frame_current).zfill(4)
+    for kind in RENDER_PASSES:
+        # 이전 배포의 패스가 남아 있으면 컴포지터가 아무것도 쓰지 못해도 존재 검사를 통과하므로
+        # 렌더 전에 지워 이번 실행이 실제로 쓴 파일만 인정한다.
+        (passes_dir / (kind + frame + ".png")).unlink(missing_ok=True)
+    group = configure_render_passes(passes_dir)
+    bpy.ops.render.render(write_still=True)
+    scene.compositing_node_group = None
+    bpy.data.node_groups.remove(group)
     files = {}
     for kind in RENDER_PASSES:
         relative = "passes/" + name + "/" + kind + frame + ".png"
@@ -674,6 +704,9 @@ def main():
     parser.add_argument("--skip-render", action="store_true")
     parser.add_argument("--skip-passes", action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
+    if bpy.app.version < (5, 0, 0):
+        # 컴포지터 노드 그룹 API(Scene.compositing_node_group)는 5.0 에서 도입됐다.
+        raise RuntimeError("Blender 5.0 이상이 필요합니다(현재 " + bpy.app.version_string + ")")
     names = list(CAMERAS) if args.scenes == "all" else args.scenes.split(",")
     for name in names:
         if name not in CAMERAS:
