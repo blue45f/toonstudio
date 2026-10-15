@@ -58,6 +58,11 @@ Godot의 Studio 3D 적용 가능성 평가(2026-10-15, 제안 상태이며 현�
 3. [`evidence/godot-3d-poc/2026-10-15/README.md`](evidence/godot-3d-poc/2026-10-15/README.md) — 측정 원본 JSON과 읽는 법
 4. [`../tools/godot-3d-poc/README.md`](../tools/godot-3d-poc/README.md) — PoC 재현 순서(운영 연결·배포 없음)
 
+Mixbox 작동 원리 분석과 독립 구현 방침(2026-10-15, 역사 자료)은 다음 문서를 추가로 본다.
+
+1. [`reports/mixbox-working-principle-analysis-2026-10-15.md`](reports/mixbox-working-principle-analysis-2026-10-15.md) — 잠재 안료 혼합의 구조, clean-room 구현 방침, 권리 상태와 미해결 항목
+2. [`../third_party/mixbox/LICENSE-GRANT.md`](../third_party/mixbox/LICENSE-GRANT.md) — 제작사 서면 합의 기록(소유자 작성 대기)
+
 ## 문서 상태 표기
 
 - **현재**: 소스와 테스트로 지금 검증 가능
