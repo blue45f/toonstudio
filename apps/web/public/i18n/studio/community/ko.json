@@ -42,7 +42,7 @@
   "studio.community.share.derivativeStatement": "다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다.",
   "studio.community.share.submit": "마켓에 게시",
   "studio.community.share.publishSuccess": "\"{resourceName}\"을(를) 마켓에 게시했습니다.",
-  "studio.community.share.publishError": "공유 리소스를 게시하지 못했습니다.",
+  "studio.community.share.publishError": "공유 리소스를 게시하지 못했어요. 잠시 후 다시 시도해 주세요.",
   "studio.community.panel.label": "온라인 Creator 공유",
   "studio.community.panel.subtitle": "공개 탐색 · 실제 설치 · 내 자료 게시",
   "studio.community.panel.aria": "마켓",
@@ -61,8 +61,8 @@
   "studio.community.panel.empty": "조건에 맞는 공유 리소스가 없습니다.",
   "studio.community.panel.loadMore": "더 불러오기",
   "studio.community.record.deleteSuccess": "\"{resourceName}\" 공유를 삭제했습니다.",
-  "studio.community.error.loadCommunity": "마켓을 불러오지 못했습니다.",
-  "studio.community.error.loadMine": "내 공유를 불러오지 못했습니다.",
-  "studio.community.error.loadMore": "다음 공유 리소스를 불러오지 못했습니다.",
-  "studio.community.error.delete": "공유 리소스를 삭제하지 못했습니다."
+  "studio.community.error.loadCommunity": "마켓을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "studio.community.error.loadMine": "내 공유를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "studio.community.error.loadMore": "다음 공유 리소스를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "studio.community.error.delete": "공유 리소스를 삭제하지 못했어요. 잠시 후 다시 시도해 주세요."
 }

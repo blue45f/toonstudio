@@ -14,7 +14,7 @@
   "creatorAnalytics.episodes.dropOffFlag": "Drop-off",
   "creatorAnalytics.episodes.eyebrow": "EPISODES",
   "creatorAnalytics.episodes.title": "Per-episode performance",
-  "creatorAnalytics.error": "Couldn't load analytics.",
+  "creatorAnalytics.error": "Couldn't load analytics. Please try again in a moment.",
   "creatorAnalytics.insightLabel": "Insight",
   "creatorAnalytics.kpi.comments": "Comments",
   "creatorAnalytics.kpi.likes": "Likes",

@@ -11,7 +11,7 @@
   "auth.callback.error.oauthFailed": "OAuth солилцоо амжилтгүй боллоо.",
   "auth.callback.error.unsupported": "Unsupported login provider.",
   "auth.callback.error.accessDenied": "Sign-in was canceled.",
-  "auth.callback.error.generic": "Sign-in failed.",
+  "auth.callback.error.generic": "Sign-in failed. Go back to the sign-in page and try again.",
   "auth.callback.error.noUser": "️️️️️️️️️️️️️️️️️️️️",
   "auth.callback.error.invalidAccess": "Invalid access.",
   "auth.callback.error.failed": "️️️️️️️️️️️️️️️️️️️️",

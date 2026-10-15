@@ -1,6 +1,6 @@
 {
   "avatar.error.invalidType": "Unsupported image type.",
-  "avatar.error.processFailed": "Failed to process image.",
+  "avatar.error.processFailed": "Failed to process image. Try again with a different image.",
   "avatar.processing": "Processing…",
   "avatar.select": "Change image",
   "avatar.remove": "Remove image",

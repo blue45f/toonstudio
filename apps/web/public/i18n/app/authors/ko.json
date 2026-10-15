@@ -3,7 +3,7 @@
   "authors.title": "작가별 보기",
   "authors.desc": "작품을 많이 낸 작가 순으로 모았습니다. 작가를 누르면 그 작가의 작품·평점·펜카페를 한곳에서 봅니다.",
   "authors.search": "작가 이름 검색",
-  "authors.error": "작가 목록을 불러오지 못했습니다.",
+  "authors.error": "작가 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
   "authors.empty": "와 일치하는 작가가 없습니다.",
   "authors.allOf": "전체",
   "authors.topOf": "명 중 상위",

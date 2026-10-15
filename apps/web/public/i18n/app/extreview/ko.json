@@ -20,7 +20,7 @@
   "extreview.error.linkGone": "링크가 만료되었거나 접근 권한이 회수되었습니다.",
   "extreview.error.nameRequired": "검수자 이름을 입력해 주세요.",
   "extreview.error.noteRequired": "댓글 또는 수정 요청 내용을 입력해 주세요.",
-  "extreview.error.saveFailedFallback": "검수 의견을 저장하지 못했습니다.",
+  "extreview.error.saveFailedFallback": "검수 의견을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
   "extreview.error.title": "검수 링크를 열 수 없습니다",
   "extreview.evidence.alt": "검수 자료 이미지 {n}",
   "extreview.evidence.failed": "이미지 {n}을 불러오지 못했습니다. 원본 열기로 확인해 주세요.",

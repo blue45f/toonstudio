@@ -174,7 +174,7 @@
   "studio.settings.other.resetConfirm": "Do you want to restore all application settings to defaults? This does not affect document content.",
   "studio.settings.other.reset": "Reset to defaults",
   "studio.settings.other.pressureHint": "Lower values make strokes thicker even with light pressure; higher values feel firmer with stronger pressure.",
-  "studio.settings.other.persistenceSessionWarning": "Could not save to browser storage, so changes apply only to this session.",
+  "studio.settings.other.persistenceSessionWarning": "Could not save to browser storage, so changes apply only to this session. Check your browser's storage settings.",
   "studio.settings.other.persistenceRetry": "Save again",
   "studio.settings.other.persistenceSaved": "Changes are saved automatically on this device.",
   "studio.settings.state.hide": "Hidden",

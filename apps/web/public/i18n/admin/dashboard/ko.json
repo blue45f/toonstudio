@@ -8,7 +8,7 @@
   "admin.dashboard.groupCommunity": "커뮤니티",
   "admin.dashboard.groupMonetization": "수익",
   "admin.dashboard.groupUsers": "사용자",
-  "admin.dashboard.loadError": "지표를 불러오지 못했어요",
+  "admin.dashboard.loadError": "지표를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
   "admin.dashboard.paidAmount": "정산 완료액",
   "admin.dashboard.pendingAmount": "대기 금액",
   "admin.dashboard.pendingSettlements": "대기 정산건",

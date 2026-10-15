@@ -67,7 +67,7 @@
   "studio.canvas.shell.routeErrorDetail.invalidPath": "지원하지 않는 Studio 작업 주소입니다.",
   "studio.canvas.shell.routeErrorDetail.invalidRemixId": "리믹스 원본 ID를 안전하게 읽을 수 없습니다.",
   "studio.canvas.shell.routeErrorDetail.invalidWorkId": "작품 ID를 안전하게 읽을 수 없습니다.",
-  "studio.canvas.shell.routeErrorDetail.workIdConflict": "주소의 작품 ID가 서로 달라 다른 문서를 여는 대신 작업을 중단했습니다.",
+  "studio.canvas.shell.routeErrorDetail.workIdConflict": "주소의 작품 ID가 서로 달라 다른 문서를 여는 대신 작업을 중단했어요. 주소를 확인해 주세요.",
   "studio.canvas.shell.routeErrorOpenNew": "새 Studio 작업 열기",
   "studio.canvas.shell.routeErrorToShowcase": "창작 게시판으로",
   "studio.canvas.shell.placeholderStepsAriaLabel": "권장 작업 순서",

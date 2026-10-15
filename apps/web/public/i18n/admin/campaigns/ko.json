@@ -15,7 +15,7 @@
   "admin.campaigns.inputTargetWon": "목표 금액(원)",
   "admin.campaigns.inputTitle": "제목 *",
   "admin.campaigns.inputTitleId": "작품 ID (선택)",
-  "admin.campaigns.loadError": "캠페인을 불러오지 못했습니다.",
+  "admin.campaigns.loadError": "캠페인을 불러오지 못했습니다. 잠시 후 다시 시도하세요.",
   "admin.campaigns.new": "새 캠페인",
   "admin.campaigns.planId": "플랜 ID (선택)",
   "admin.campaigns.raisedWon": "모금 금액 (원)",

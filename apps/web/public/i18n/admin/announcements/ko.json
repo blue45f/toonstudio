@@ -11,7 +11,7 @@
   "admin.announcements.levelCritical": "긴급 (Critical)",
   "admin.announcements.levelInfo": "일반 (Info)",
   "admin.announcements.levelWarning": "주의 (Warning)",
-  "admin.announcements.loadError": "공지 목록을 불러오지 못했습니다.",
+  "admin.announcements.loadError": "공지 목록을 불러오지 못했습니다. 잠시 후 다시 시도하세요.",
   "admin.announcements.loading": "공지 목록 로딩 중...",
   "admin.announcements.modalTitle": "새 공지 / 배너 생성",
   "admin.announcements.placementBanner": "상단 배너",

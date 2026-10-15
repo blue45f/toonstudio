@@ -178,7 +178,7 @@
   "studio.settings.other.resetConfirm": "Studio 설정을 추천 기본값으로 되돌릴까요? 원고 내용은 바뀌지 않습니다.",
   "studio.settings.other.reset": "추천 기본값으로 되돌리기",
   "studio.settings.other.pressureHint": "값이 작으면 가볍게 눌러도 굵어지고, 값이 크면 세게 눌렀을 때 더 굵어집니다.",
-  "studio.settings.other.persistenceSessionWarning": "설정을 이 기기에 저장하지 못해 현재 창에서만 적용됩니다.",
+  "studio.settings.other.persistenceSessionWarning": "설정을 이 기기에 저장하지 못해 현재 창에서만 적용돼요. 브라우저의 저장 공간 설정을 확인해 주세요.",
   "studio.settings.other.persistenceRetry": "설정 다시 저장",
   "studio.settings.other.persistenceSaved": "변경한 설정은 이 기기에 자동으로 저장됩니다.",
   "studio.settings.state.hide": "숨김",

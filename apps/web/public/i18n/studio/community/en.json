@@ -40,7 +40,7 @@
   "studio.community.share.derivativeStatement": "This is not a derivative copy or hard-to-recognize transformation of another market item.",
   "studio.community.share.submit": "Publish to the market",
   "studio.community.share.publishSuccess": "Published \"{resourceName}\" to the market.",
-  "studio.community.share.publishError": "Could not publish shared resource.",
+  "studio.community.share.publishError": "Could not publish shared resource. Please try again in a moment.",
   "studio.community.panel.label": "Online Creator Community",
   "studio.community.panel.subtitle": "Public explore · install usage · share your own resources",
   "studio.community.panel.aria": "Online Creator sharing market",
@@ -59,10 +59,10 @@
   "studio.community.panel.empty": "No matching shared resources.",
   "studio.community.panel.loadMore": "Load more",
   "studio.community.record.deleteSuccess": "Deleted \"{resourceName}\" share entry.",
-  "studio.community.error.loadCommunity": "Failed to load the community market.",
-  "studio.community.error.loadMine": "Failed to load my share market.",
-  "studio.community.error.loadMore": "Failed to load next shared resources.",
-  "studio.community.error.delete": "Failed to delete shared resource.",
+  "studio.community.error.loadCommunity": "Failed to load the market. Please try again in a moment.",
+  "studio.community.error.loadMine": "Failed to load my shares. Please try again in a moment.",
+  "studio.community.error.loadMore": "Failed to load next shared resources. Please try again in a moment.",
+  "studio.community.error.delete": "Failed to delete shared resource. Please try again in a moment.",
   "studio.community.record.deleteAria": "Delete {resourceName}",
   "studio.community.record.deleteConfirmAria": "Confirm deleting {resourceName}"
 }
