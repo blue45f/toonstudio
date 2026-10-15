@@ -16,7 +16,6 @@ import {
   canViewSharedLibraryItem,
   type SharedLibraryOrganizationRole,
   type SharedLibraryPlacement,
-  type SharedLibraryScope,
   type SharedLibraryViewerContext,
 } from "@toonstudio/contracts/production-shared-library";
 import type { TeamWorkspaceRole } from "@toonstudio/contracts/production-workspace";

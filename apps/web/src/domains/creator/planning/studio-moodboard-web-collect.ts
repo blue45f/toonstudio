@@ -83,7 +83,7 @@ export function collectedUrlLabel(value: string): string {
   if (!url) return value;
   if (isMoodboardImageUrl(value)) {
     const segment = url.pathname.split("/").filter(Boolean).at(-1) ?? "";
-    let decoded = segment;
+    let decoded: string;
     try {
       decoded = decodeURIComponent(segment);
     } catch {
