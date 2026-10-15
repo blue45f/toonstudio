@@ -6,6 +6,10 @@
 //
 // 접근성 규약: 심각도는 색만으로 구분하지 않는다. 모든 칩이 한글 라벨(치명/중대/경미/참고)을
 // 글자로 갖고 있고, 색 토큰(good/warn/bad/accent)은 그 라벨을 보조할 뿐이다.
+//
+// 근거 대사: 인물 카드 규칙의 발견은 증거(`evidence`)에 기대값·실제값과 근거 대사(`referenceCueId`,
+// 같은 화자→청자에서 규칙대로 옮겨진 대사)를 싣는다. 이 화면은 그 값을 그대로 보여 주고 근거 대사로 이동하는
+// 버튼을 낸다 — 계산은 하지 않는다. 인물 규칙을 한 건도 못 대 본 경우(화자 미지정 등)는 오류 0건과 구분해서 말한다.
 import { AlertTriangle, ArrowRight, CheckCircle2, Info, ShieldAlert } from "lucide-react";
 
 import { STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET, StudioEmptyState } from "./studio-panel-ui";
@@ -57,6 +61,12 @@ function severityChip(severity: StudioMqmSeverity) {
   );
 }
 
+/** 증거 값 중 문자열만 꺼낸다(증거는 숫자·불리언도 담을 수 있다). */
+function evidenceText(error: StudioMqmError, key: string): string | null {
+  const value = error.evidence?.[key];
+  return typeof value === "string" && value !== "" ? value : null;
+}
+
 export type StudioLocalizationQaDimensionSection = {
   readonly dimension: string;
   readonly label: string;
@@ -64,6 +74,58 @@ export type StudioLocalizationQaDimensionSection = {
   readonly errorCount: number;
   readonly errors: readonly StudioMqmError[];
 };
+
+/**
+ * 인물 카드 규칙 발견의 근거 — 기대값·실제값, 그리고 같은 화자→청자에서 규칙대로 옮겨진 근거 대사.
+ * 인물 규칙이 아닌 발견(증거에 `character/` 규칙 id 가 없음)에는 아무것도 그리지 않는다.
+ */
+function evidenceBlock(
+  error: StudioMqmError,
+  cueIndex: ReadonlyMap<string, StudioLocalizationQaCue>,
+  onSelectCue: ((cueId: string) => void) | undefined,
+  evidenceJumpLabel: string
+) {
+  const ruleId = evidenceText(error, "ruleId");
+  if (ruleId === null || !ruleId.startsWith("character/")) return null;
+  const expected = evidenceText(error, "expected");
+  const actual = evidenceText(error, "actual");
+  const referenceId = evidenceText(error, "referenceCueId");
+  const reference = referenceId === null ? undefined : cueIndex.get(referenceId);
+  return (
+    <div className="mt-1 space-y-1 rounded-lg border border-line bg-panel px-1.5 py-1">
+      {expected !== null && (
+        <p className="text-[0.6rem] leading-relaxed text-fg-2">
+          기대: <span className="font-semibold">{expected}</span>
+          {actual !== null && (
+            <>
+              {" · "}실제: <span className="font-semibold">{actual}</span>
+            </>
+          )}
+        </p>
+      )}
+      {reference && (
+        <p className="truncate text-[0.6rem] text-fg-3" title={reference.text}>
+          근거 대사 · {reference.pageIndex + 1}페이지 · {reference.text}
+        </p>
+      )}
+      {reference && onSelectCue && (
+        <button
+          type="button"
+          onClick={() => onSelectCue(reference.id)}
+          aria-label={`${evidenceJumpLabel}: ${reference.pageIndex + 1}페이지`}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-lg border border-line bg-card px-2 text-[0.6rem] font-semibold text-accent transition-colors hover:bg-raised",
+            STUDIO_FOCUS_RING,
+            STUDIO_TOUCH_TARGET
+          )}
+        >
+          <ArrowRight size={11} aria-hidden />
+          {evidenceJumpLabel}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export function StudioLocalizationQaReport({
   report,
@@ -73,6 +135,7 @@ export function StudioLocalizationQaReport({
   onRerun,
   onSelectCue,
   jumpLabel,
+  evidenceJumpLabel = "근거 대사로 이동",
 }: {
   report: QaReport;
   sections: readonly StudioLocalizationQaDimensionSection[];
@@ -83,8 +146,10 @@ export function StudioLocalizationQaReport({
   /** 발견에서 대사로 되짚기. 없으면 이동 버튼을 그리지 않는다. */
   onSelectCue?: (cueId: string) => void;
   jumpLabel: string;
+  /** 근거 대사로 이동하는 버튼 라벨. */
+  evidenceJumpLabel?: string;
 }) {
-  const { score } = report;
+  const { score, character } = report;
   const verdict = VERDICT_META[score.verdict];
   const VerdictIcon = verdict.icon;
 
@@ -97,7 +162,7 @@ export function StudioLocalizationQaReport({
             <span className="text-lg font-black tabular-nums tracking-tight text-fg">
               {score.qualityScore === null ? "—" : score.qualityScore}
             </span>
-            <span className="text-[0.62rem] font-medium text-fg-4">
+            <span className="text-[0.62rem] font-medium text-fg-3">
               / 100 · 합격선 {score.passThreshold}
             </span>
           </p>
@@ -141,7 +206,64 @@ export function StudioLocalizationQaReport({
             <dt>대비 미달</dt>
             <dd className="tabular-nums text-fg-2">{report.legibilityFailCueCount}개</dd>
           </div>
+          {character.status === "ran" && (
+            <>
+              <div className="flex justify-between gap-1">
+                <dt>화자 지정 대사</dt>
+                <dd className="tabular-nums text-fg-2">
+                  {character.attributedCueCount}/{character.attributedCueCount + character.unattributedCueCount}개
+                </dd>
+              </div>
+              <div className="flex justify-between gap-1">
+                <dt>인물 규칙 검사</dt>
+                <dd className="tabular-nums text-fg-2">{character.ruleCheckedCueCount}개</dd>
+              </div>
+              <div className="flex justify-between gap-1">
+                <dt>존대 단계 판정</dt>
+                <dd className="tabular-nums text-fg-2">{character.registerCheckedCueCount}개</dd>
+              </div>
+            </>
+          )}
         </dl>
+        {/*
+          인물 카드 규칙은 "오류 0건"이 곧 통과가 아니다 — 화자를 지정한 대사에만 돌고, 존대 단계는 한국어·일본어만
+          판정한다. 못 돈 사정을 점수 옆에서 직접 말해 준다.
+        */}
+        {character.status === "source-locale" && (
+          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
+            인물 카드 규칙은 번역문(초안 또는 번역 로케일)에만 적용돼요. 지금은 원문을 검사하고 있어요.
+          </p>
+        )}
+        {character.status === "ran" && character.attributedCueCount === 0 && (
+          <p className="mt-1.5 rounded-lg border border-warn/35 bg-warn/10 px-1.5 py-1 text-[0.58rem] leading-relaxed text-warn">
+            화자가 지정된 대사가 없어 인물 카드 규칙을 한 건도 검사하지 못했어요. 인물 카드에서 대사 화자를
+            지정하세요. 인물 규칙 오류 0건을 &quot;통과&quot;로 읽지 마세요.
+          </p>
+        )}
+        {character.status === "ran" && character.attributedCueCount > 0 && character.unattributedCueCount > 0 && (
+          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
+            화자가 지정되지 않은 {character.unattributedCueCount}개 대사는 인물 카드 규칙을 건너뛰었어요(화자를
+            추정하지 않아요).
+          </p>
+        )}
+        {character.status === "ran" && character.sourceMissingCueCount > 0 && (
+          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
+            원문을 알 수 없는 {character.sourceMissingCueCount}개 대사는 고정어·원문 호칭 검사를 건너뛰었어요. 고정어
+            위반 0건을 &quot;통과&quot;로 읽지 마세요.
+          </p>
+        )}
+        {character.status === "ran" && character.registerUnsupportedLocale && (
+          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
+            이 언어는 존대/반말을 자동 판정하지 않아요(한국어·일본어만 판정). 호칭·고정어·금지어는 그대로
+            검사했습니다.
+          </p>
+        )}
+        {character.status === "ran" && character.registerUnclassifiedCueCount > 0 && (
+          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
+            존대 단계를 기대했지만 문장 어미로 읽어 내지 못한 대사가 {character.registerUnclassifiedCueCount}개
+            있어요(판정하지 않았어요).
+          </p>
+        )}
         {/*
           대비는 번역 품질이 아니라 읽힘의 문제라 위 점수에 들어가지 않는다. 그래서 미달이 있으면
           점수와 별개로 여기서 말해 준다 — 점수만 보고 "통과"로 읽지 않도록.
@@ -153,20 +275,20 @@ export function StudioLocalizationQaReport({
           </p>
         )}
         {report.legibilityCheckedCueCount === 0 && report.checkedCueCount > 0 && (
-          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-4">
+          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
             명도 대비를 판정한 대사가 없습니다(반투명·그라데이션 채우기이거나 색을 읽지
             못했습니다). 대비 미달 0개를 "통과"로 읽지 마세요.
           </p>
         )}
         {/* 점수의 한계를 화면이 직접 말한다 — 임계값 99는 단어 분모로만 교정돼 있다. */}
         {!score.denominator.thresholdCalibrated && (
-          <p className="mt-1.5 rounded-lg border border-line bg-panel px-1.5 py-1 text-[0.58rem] leading-relaxed text-fg-4">
+          <p className="mt-1.5 rounded-lg border border-line bg-panel px-1.5 py-1 text-[0.58rem] leading-relaxed text-fg-3">
             분모가 글자 수({score.denominator.count}자)입니다. 합격선 {score.passThreshold}은
             단어 분모 기준으로만 교정된 값이라, 여기서는 상대 비교용으로만 읽으세요.
           </p>
         )}
         {report.style.skippedUnitCount > 0 && (
-          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-4">
+          <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
             문체 규칙표는 영문 대사 전용입니다 — {report.style.skippedUnitCount}개 대사는 문체
             검사를 건너뛰었어요(넘침은 그대로 검사했습니다).
           </p>
@@ -179,7 +301,7 @@ export function StudioLocalizationQaReport({
           className="flex items-center gap-1.5 rounded-lg border border-warn/35 bg-warn/10 px-2 py-1.5 text-[0.62rem] leading-relaxed text-warn"
         >
           <AlertTriangle size={11} aria-hidden className="shrink-0" />
-          검사 뒤 대사가 바뀌었어요. 다시 검사해 주세요.
+          검사 뒤 대사나 인물 카드가 바뀌었어요. 다시 검사해 주세요.
         </p>
       )}
 
@@ -208,7 +330,7 @@ export function StudioLocalizationQaReport({
             <section key={section.dimension} aria-label={`${section.label} 발견`}>
               <p className="mb-1 flex items-baseline justify-between gap-2">
                 <span className="text-[0.66rem] font-bold text-fg">{section.label}</span>
-                <span className="text-[0.58rem] tabular-nums text-fg-4">
+                <span className="text-[0.58rem] tabular-nums text-fg-3">
                   {section.errorCount}건 · 감점 {section.penalty}
                 </span>
               </p>
@@ -225,12 +347,13 @@ export function StudioLocalizationQaReport({
                       </div>
                       {cue && (
                         <p
-                          className="mt-1 truncate text-[0.6rem] text-fg-4"
+                          className="mt-1 truncate text-[0.6rem] text-fg-3"
                           title={cue.text}
                         >
                           {cue.pageIndex + 1}페이지 · {cue.text}
                         </p>
                       )}
+                      {evidenceBlock(error, cueIndex, onSelectCue, evidenceJumpLabel)}
                       {cue && onSelectCue && (
                         <button
                           type="button"

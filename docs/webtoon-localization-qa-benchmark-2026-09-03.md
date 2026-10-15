@@ -1,5 +1,8 @@
 # 웹툰 현지화(번역·식자) QA 벤치마크와 ToonStudio 현지화 QA 계층 (2026-09-03)
 
+> 상태: **current**. §1~§5 는 2026-09-03 기록이고, §6 의 "미해결" 항목은 2026-10-15 소스 확인으로 갱신했으며,
+> 인물 카드(호칭·존대·금지어/고정어) 규칙은 §7 과 [`studio-translation-character-cards.md`](./studio-translation-character-cards.md) 에 있다.
+
 ## 1. 왜 이 계층이 필요했나
 
 `StudioDialogueTranslatePanel`은 로케일별 번역 **존재 비율**(`dialogueTranslationCoverage`)만 보여줬다.
@@ -72,7 +75,29 @@ Toonsquare/Kakao 번역 사양, 경어·의성어 매핑 표준, ISO 5060 수치
   −1.31(인간) / −1.98(최고 AI) / −4.25(범용 MT).
 - 처방 사다리는 Mantra의 "영역 안에서 폰트 최대화" 목표를 뒤집은 것 — 넘칠 때 **먼저 줄바꿈을 다시**
   하고, 그다음 축소, 그다음 확대, 마지막에 사람에게 넘긴다.
-- **미해결**: KO→EN 확장률은 파생값(실측 코퍼스로 대체 예정); 시리즈 용어집을 QA 발견으로 승격하는
-  연결(`studio-translation-memory` 충돌을 MQM `Terminology`로 채점)은 이번 범위 밖; 가로쓰기 한국어
-  말풍선 랩에 keep-all/금칙을 **실제 렌더 경로**에 배선하는 일은 별도 과제 — 이번에는 넘침 게이트의
-  예측 경로에서만 사용한다.
+- **해결됨 (2026-10-15 확인)**: 시리즈 용어집을 QA 발견으로 승격하는 연결(용어집 충돌을 MQM `Terminology` 로
+  채점)은 이 문서를 쓴 뒤 구현되었고 문서만 낡아 있었다. `lettering/studio-localization-qa.ts` §2.5 가
+  `studio-translation-glossary` 의 두 충돌(`ambiguous-rule` 경미 · `missing-target` 중대)을 `terminology`
+  차원 오류로 채점하고(서브타입 이름은 지어내지 않음, 심각도는 `glossarySeverity` 로 재정의), 번역 패널이 용어집 텍스트를
+  규칙으로 파싱해 QA 에 주입한다(`lettering/studio-dialogue-translate-qa-snapshot.ts`). 근거 테스트:
+  `studio-localization-qa.test.ts` "§2.5 용어집 충돌", `StudioDialogueTranslatePanel.test.tsx` "현지화 QA 용어집 검사".
+  남은 한계는 용어집 엔진의 경계 없는 부분 문자열 대조(영문 짧은 용어 오탐)이며 이번에도 바꾸지 않았다.
+- **미해결**: KO→EN 확장률은 파생값(실측 코퍼스로 대체 예정); 가로쓰기 한국어 말풍선 랩에 keep-all/금칙을
+  **실제 렌더 경로**에 배선하는 일은 별도 과제 — 이번에는 넘침 게이트의 예측 경로에서만 사용한다.
+
+## 7. 인물 카드 QA 규칙 (2026-10-15, current)
+
+번역 패널에서 인물별로 적은 호칭·존대/반말 단계·금지어/고정어를 QA 가 같은 채점기로 대 본다. 화자가 지정된 대사에만
+적용하고(화자를 추정하지 않는다), 결과는 기존 MQM 분류로 합류한다.
+
+| 규칙 | MQM 차원 | 기본 심각도* | 모듈 |
+|---|---|---|---|
+| 호칭 일관성(변형 사용 · 원문 호칭 누락) | Terminology | 경미 | `studio-localization-qa-character.ts` |
+| 고정어 위반 · 금지어 사용 | Terminology (용어집 충돌과 같은 차원) | 중대 | 위와 같음 |
+| 존대 단계 불일치(존대↔반말 / 합쇼체↔해요체) | Style | 중대 / 경미 | `studio-translation-register.ts` 로 판정 |
+
+\* 심각도는 MQM 이 정하지 않는 정책값이며 `characterSeverity` 로 재정의한다. 조립은 `runStudioLocalizationQa` 의 `characterCards`
+옵션이고 `report.character` 가 화자 지정/미지정 큐 수·규칙을 실제로 대 본 큐 수·원문을 몰라 건너뛴 큐 수를 싣는다 — 오류
+0건과 "검사하지 않음"을 구분하기 위해서다. 존대 판정은 한국어·일본어 번역만 하고 어미 휴리스틱이다. `StudioLocalizationQaReport` 는 발견마다 기대/실제
+값과 **근거 대사**(같은 화자→청자에서 규칙대로 옮겨진 대사)를 보이고 그리로 이동한다. 자세한 설계·한계:
+[`studio-translation-character-cards.md`](./studio-translation-character-cards.md).
