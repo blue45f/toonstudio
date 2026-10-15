@@ -42,6 +42,9 @@ export interface MyStoryReviewStageProps {
   readonly onRestart: () => void;
 }
 
+const BLANK_KO = "(빈칸)";
+const BLANK_EN = "(blank)";
+
 function CutRow({
   cut,
   template,
@@ -52,12 +55,15 @@ function CutRow({
   readonly onEditQuestion: (step: number) => void;
 }) {
   const bt = useBilingual("MyStoryReviewStage");
-  const blankMarker = bt("(빈칸)", "(blank)");
   const focusSlot = cut.parts[0]?.slot ?? cut.missing[0]?.slot;
   const focusStep = focusSlot ? template.questions.findIndex((question) => question.slot === focusSlot) : -1;
-  const missingNames = cut.missing.map((entry) => bt(entry.labelKo, entry.labelEn)).join(", ");
-  const position = template.narration.position === "top" ? bt("위쪽", "top") : bt("아래쪽", "bottom");
-  const balloonKind = cut.balloon?.kind === "thought" ? bt("생각", "thought") : bt("대사", "speech");
+  // 문장 안에 끼우는 조각은 bt 결과가 아니라 ko/en 원문 한 쌍으로 따로 만든다(my-story-labels 머리말 참고).
+  const missingKo = cut.missing.map((entry) => entry.labelKo).join(", ");
+  const missingEn = cut.missing.map((entry) => entry.labelEn).join(", ");
+  const positionKo = template.narration.position === "top" ? "위쪽" : "아래쪽";
+  const positionEn = template.narration.position === "top" ? "top" : "bottom";
+  const balloonKindKo = cut.balloon?.kind === "thought" ? "생각" : "대사";
+  const balloonKindEn = cut.balloon?.kind === "thought" ? "thought" : "speech";
 
   return (
     <li className={cn("rounded-xl border bg-panel/40 p-4", cut.blank ? "border-dashed border-line-strong" : "border-line")}>
@@ -90,21 +96,21 @@ function CutRow({
           <dd className={cn(cut.blank ? "text-fg-3" : "text-fg")}>
             {cut.blank
               ? bt(
-                `${blankMarker} ${missingNames} 칸을 채우면 여기에 들어가요.`,
-                `${blankMarker} It fills in once you answer: ${missingNames}.`,
+                `${BLANK_KO} ${missingKo} 칸을 채우면 여기에 들어가요.`,
+                `${BLANK_EN} It fills in once you answer: ${missingEn}.`,
               )
               : cut.summary}
           </dd>
           {!cut.blank && cut.missing.length > 0 ? (
-            <dd className="text-xs text-fg-3">{bt(`빈 칸: ${missingNames}`, `Empty: ${missingNames}`)}</dd>
+            <dd className="text-xs text-fg-3">{bt(`빈 칸: ${missingKo}`, `Empty: ${missingEn}`)}</dd>
           ) : null}
         </div>
         {cut.narration ? (
           <div>
             <dt className="text-xs font-semibold text-fg-3">
               {bt(
-                `나레이션 후보 (${position} · 최대 ${cut.narration.maxChars}자)`,
-                `Narration candidate (${position} · up to ${cut.narration.maxChars} characters)`,
+                `나레이션 후보 (${positionKo} · 최대 ${cut.narration.maxChars}자)`,
+                `Narration candidate (${positionEn} · up to ${cut.narration.maxChars} characters)`,
               )}
               {cut.narration.source === "ai" ? (
                 <span className="ml-2 rounded-full border border-accent/40 bg-accent-soft px-2 py-0.5 text-[0.7rem] text-fg">
@@ -112,7 +118,7 @@ function CutRow({
                 </span>
               ) : null}
             </dt>
-            <dd className={cn(cut.narration.text ? "text-fg" : "text-fg-3")}>{cut.narration.text || blankMarker}</dd>
+            <dd className={cn(cut.narration.text ? "text-fg" : "text-fg-3")}>{cut.narration.text || bt(BLANK_KO, BLANK_EN)}</dd>
             {cut.narration.more.map((more) => (
               <dd key={more} className="text-fg-2">
                 <span className="text-xs text-fg-3">{bt("이어서", "Next box")}: </span>
@@ -125,16 +131,16 @@ function CutRow({
           <div>
             <dt className="text-xs font-semibold text-fg-3">
               {bt(
-                `말풍선 후보 (${balloonKind} · 최대 ${cut.balloon.maxChars}자)`,
-                `Balloon candidate (${balloonKind} · up to ${cut.balloon.maxChars} characters)`,
+                `말풍선 후보 (${balloonKindKo} · 최대 ${cut.balloon.maxChars}자)`,
+                `Balloon candidate (${balloonKindEn} · up to ${cut.balloon.maxChars} characters)`,
               )}
             </dt>
             <dd className={cn(cut.balloon.text ? "text-fg" : "text-fg-3")}>
               {cut.balloon.text
                 ? `“${cut.balloon.text}”`
                 : bt(
-                  `${blankMarker} 답변에 “따옴표”로 묶은 말이 있으면 여기에 들어가요.`,
-                  `${blankMarker} A line you put in “quotes” in your answer appears here.`,
+                  `${BLANK_KO} 답변에 “따옴표”로 묶은 말이 있으면 여기에 들어가요.`,
+                  `${BLANK_EN} A line you put in “quotes” in your answer appears here.`,
                 )}
             </dd>
           </div>

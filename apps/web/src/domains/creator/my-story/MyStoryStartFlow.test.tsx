@@ -539,3 +539,38 @@ describe("내 이야기 시작 동선 — 텍스트 AI 보강(사용자가 누�
     expect((within(panel).getByRole("button", { name: "AI로 다듬기" }) as HTMLButtonElement).disabled).toBe(false);
   });
 });
+
+describe("내 이야기 시작 동선 — 영어 화면", () => {
+  const HANGUL = /[ㄱ-ㆎ가-힣]/u;
+
+  beforeEach(() => {
+    useI18n.setState({ lang: "en" });
+  });
+
+  it("질문·빈칸 안내·나레이션 상자 안내가 영어로만 나오고 한글이 섞이지 않는다", () => {
+    renderFlow({ storage: memory(), initialTemplateId: "safety" });
+    expect(screen.getByText("Question 1 of 6")).toBeTruthy();
+    expect(screen.getByText(/Example: A construction-site entrance/u)).toBeTruthy();
+    type("A construction-site entrance");
+    fireEvent.click(screen.getByRole("button", { name: "See the draft so far" }));
+
+    const cuts = screen.getByRole("list", { name: "Panel draft" });
+    const items = within(cuts).getAllByRole("listitem");
+    expect(items).toHaveLength(4);
+    // 답하지 않은 칸이 놓인 컷은 영어 빈칸 안내다.
+    expect(items[1]?.textContent).toContain("(blank) It fills in once you answer: Risky moment.");
+    // 나레이션·말풍선 상자 안내는 영어 위치·종류 이름을 쓴다.
+    expect(items[0]?.textContent).toContain("Narration candidate (bottom · up to 28 characters)");
+    expect(items[1]?.textContent).toContain("Balloon candidate (speech · up to 16 characters)");
+    expect(HANGUL.test(cuts.textContent ?? "")).toBe(false);
+  });
+
+  it("개인 정보 안내도 영어 이름만 쓴다", () => {
+    renderFlow({ storage: memory(), initialTemplateId: "family" });
+    type("Mom 010-1234-5678");
+    const hint = screen.getByText(/This looks like personal information/u);
+    expect(hint.getAttribute("role")).toBe("status");
+    expect(hint.textContent).toContain("(phone number)");
+    expect(HANGUL.test(hint.textContent ?? "")).toBe(false);
+  });
+});
