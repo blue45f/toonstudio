@@ -71,11 +71,16 @@ export class StageGateRepository {
     if (!result.rows[0]) throw new NotFoundException("접근 가능한 프로젝트가 없습니다.");
     return result.rows[0].role;
   }
-  private async memberName(client: PoolClient, actor: string, projectId: string, userId: string): Promise<string> {
+  /**
+   * 리드 후보가 이 프로젝트의 활성 구성원(작품 소유자 또는 활성 협업자)인지 확인하고 표시 이름을 돌려준다.
+   * 쿼리가 참조하는 파라미터만 바인딩한다 — SQL에서 쓰지 않는 `$n`이 하나라도 있으면 PostgreSQL이
+   * 그 파라미터의 타입을 추론하지 못해 "could not determine data type of parameter"로 실패한다.
+   */
+  private async memberName(client: PoolClient, projectId: string, userId: string): Promise<string> {
     const result = await client.query<{ name: string }>(`SELECT coalesce(u.name,'구성원') name FROM "user" u
-      WHERE u.id=$3 AND u.status='active' AND EXISTS (SELECT 1 FROM production_project p JOIN creator_work cw ON cw.id=p."workId"
-        LEFT JOIN creator_work_collaborator c ON c."workId"=cw.id AND c."userId"=$3 AND c.status='active'
-        WHERE p.id=$2 AND (cw."userId"=$3 OR c."userId" IS NOT NULL))`, [actor, projectId, userId]);
+      WHERE u.id=$2 AND u.status='active' AND EXISTS (SELECT 1 FROM production_project p JOIN creator_work cw ON cw.id=p."workId"
+        LEFT JOIN creator_work_collaborator c ON c."workId"=cw.id AND c."userId"=$2 AND c.status='active'
+        WHERE p.id=$1 AND (cw."userId"=$2 OR c."userId" IS NOT NULL))`, [projectId, userId]);
     if (!result.rows[0]) throw new BadRequestException("리드 리뷰어는 이 프로젝트의 구성원이어야 합니다.");
     return result.rows[0].name;
   }
@@ -144,7 +149,7 @@ export class StageGateRepository {
       }
       if (input.type === "assign-lead") {
         if (role !== "owner" && role !== "admin") throw new ForbiddenException("리드 지정은 작품 소유자나 관리자만 할 수 있습니다.");
-        const leadName = await this.memberName(client, actor, projectId, input.leadReviewerId);
+        const leadName = await this.memberName(client, projectId, input.leadReviewerId);
         await client.query("UPDATE production_stage_gate SET lead_reviewer_id=$2, lead_reviewer_name=$3 WHERE id=$1",
           [gateId, input.leadReviewerId, leadName]);
       } else if (input.type === "submit-round") {
