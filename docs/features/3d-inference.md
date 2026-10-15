@@ -141,6 +141,9 @@
 | 밀기/당기기 | 숫자 입력이 길이 입력 필드로 바뀌었다. 단위를 읽고, 직접 입력한 길이는 눈금 스냅으로 반올림하지 않는다 |
 | 방 빌더 벽 그리기 | 공개 훅 `useStudioBg3dInference` / 서비스 `createStudioBg3dInferenceService`. 방 빌더 코드는 수정하지 않았다 |
 
+호스트 배선은 `studio-bg3d-editor-inference-wiring.test.ts`(줄자·모델 배치 호스트 ↔ 서비스)가, 마운트 위치와 모듈 경계는
+`studio-bg3d-inference-integration-boundary.test.ts`(소스 검사)가 고정한다. 실제 WebGL 뷰포트에서의 조작은 이 테스트들이 대신하지 못한다.
+
 방 빌더 연결 예 (벽 그리기 도구가 있다면 이렇게 붙인다):
 
 ```tsx
@@ -196,7 +199,7 @@ service.begin("wall", {
 
 ```sh
 # 작업 위치: 저장소 루트. 추론 관련 단위·컴포넌트 테스트 (외부 네트워크 불필요, 인자는 경로 부분 문자열 필터)
-pnpm exec vitest run studio-bg3d-inference StudioBg3dInference StudioBg3dLengthField useStudioBg3dInference StudioBg3dShapesPanelPushPull
+pnpm exec vitest run studio-bg3d-inference StudioBg3dInference StudioBg3dLengthField useStudioBg3dInference StudioBg3dShapesPanelPushPull studio-bg3d-editor-inference-wiring
 pnpm exec vitest run studio-bg3d-inference-budget
 pnpm exec vitest run studio-3d-inference-engine studio-hybrid-dcc-p0p1.gating
 node scripts/generate-studio-manual.mjs --check
