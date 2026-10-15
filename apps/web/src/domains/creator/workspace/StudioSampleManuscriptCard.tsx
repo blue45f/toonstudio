@@ -17,7 +17,8 @@ import {
   type SamplePracticeCopyRef,
   type SamplePracticeMode,
 } from "../studio-sample-manuscript-seed";
-import { restoreStudioProject } from "../studio-project-library-store";
+import { markStudioProjectOpened, restoreStudioProject } from "../studio-project-library-store";
+import { useStudioSeedAutosavePersistence } from "./useStudioSeedAutosavePersistence";
 
 type CardState =
   | { readonly kind: "loading" }
@@ -38,6 +39,7 @@ export function StudioSampleManuscriptCard() {
   const [state, setState] = useState<CardState>({ kind: "loading" });
   const [copyError, setCopyError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const { ownerReady, persist } = useStudioSeedAutosavePersistence();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -52,12 +54,22 @@ export function StudioSampleManuscriptCard() {
         return;
       }
       setState({ kind: "ready", copy: findSampleManuscriptPracticeCopy(window.localStorage) });
+      // 원본 샘플 초안도 편집기가 복구할 수 있는 내구 저장소에 심는다(첫 시딩이면 미리보기가 읽도록 한 번 더 표시).
+      if (ownerReady) {
+        void persist(result.autosave).then((outcome) => {
+          if (outcome !== "written" || result.status !== "seeded") return;
+          markStudioProjectOpened(window.localStorage, SAMPLE_PROJECT_ID, result.documentId, {
+            at: new Date().toISOString(),
+            target: window,
+          });
+        });
+      }
     } catch {
       setState({ kind: "error" });
     }
-  }, [attempt]);
+  }, [attempt, ownerReady, persist]);
 
-  const createCopy = (mode: SamplePracticeMode) => {
+  const createCopy = async (mode: SamplePracticeMode) => {
     try {
       const result = createSampleManuscriptPracticeCopy(window.localStorage, { target: window, mode });
       if (result.status === "sample-trashed") {
@@ -66,6 +78,13 @@ export function StudioSampleManuscriptCard() {
       }
       if (result.status === "full") {
         setState({ kind: "full" });
+        return;
+      }
+      // 사본 링크를 보여 주기 전에 초안을 편집기가 복구할 수 있는 내구 저장소에 심는다.
+      // 심지 못하면 열어도 빈 화면이므로 링크 대신 오류를 보여 다시 시도하게 한다.
+      const outcome = await persist(result.autosave);
+      if (outcome === "unavailable") {
+        setCopyError(true);
         return;
       }
       setCopyError(false);

@@ -410,12 +410,6 @@ const PLANNING_LOCAL_WORKING_COPY =
   "Reviewed browser-local working copy of project- or workspace-scoped planning metadata; it is not the canvas document, the ProjectGraph revision history, a permission grant, or shared collaboration state, and it is not synced to a server yet.";
 const REVIEW_TOOL_LOCAL_STATE =
   "Device-local working state of a review or QC tool (compare session, compare comments, playlist verdicts, vote sessions, an unsent external-review draft, or a per-episode QC summary); losing it cannot alter the canvas document, the manuscript pin document, or server approval records.";
-const LEGACY_AUTOSAVE_SEED =
-  "Library-entry seed of a bundled example or sample draft in the legacy browser autosave format; it writes only into an empty slot, and a browser-only autosave record is merely a compatibility candidate whose restore the editor refuses, so the seed cannot become or shadow the OPFS/SQLite autosave authority.";
-const LEGACY_AUTOSAVE_SEED_PROOF =
-  "studio-example-project-seed.test.ts pins idempotency and the never-overwrite rule, studio-autosave-opfs-product-boundary.test.ts pins that browser-only compatibility recovery is backup-only and non-durable, and the exact autosave key expression and occurrence count are pinned here.";
-const LEGACY_AUTOSAVE_PRACTICE_COPY =
-  "Button-triggered creation of a new practice-copy project whose draft is written once, in the legacy browser autosave format, under the new copy's own document id; a browser-only autosave record is merely a compatibility candidate whose restore the editor refuses, so the copy cannot become or shadow the OPFS/SQLite autosave authority.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   // Deletion-only cleanup of browser compatibility remnants.
@@ -689,9 +683,6 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
 
   // 예제·샘플 원고 시딩: 라이브러리 진입 시 레거시 형식 자동저장 기록을 빈 슬롯에만 심고, 연습 사본은 버튼을 눌렀을 때
   // 새 사본의 문서 id 슬롯에 한 번 쓴다. 제품 자동저장 정본은 OPFS/SQLite 이고 브라우저 단독 기록은 복구가 막힌다.
-  allow("apps/web/src/domains/creator/studio-example-project-seed.ts", "durable-storage-write", "studioAutosaveKey({workId:EXAMPLE_DOCUMENT_ID})", 1, LEGACY_AUTOSAVE_SEED, LEGACY_AUTOSAVE_SEED_PROOF),
-  allow("apps/web/src/domains/creator/studio-sample-manuscript-seed.ts", "durable-storage-write", "studioAutosaveKey({workId:SAMPLE_DOCUMENT_ID})", 1, LEGACY_AUTOSAVE_SEED, LEGACY_AUTOSAVE_SEED_PROOF),
-  allow("apps/web/src/domains/creator/studio-sample-manuscript-seed.ts", "durable-storage-write", "studioAutosaveKey({workId:copyDocumentId})", 1, LEGACY_AUTOSAVE_PRACTICE_COPY, "The practice-copy creation is an explicit button action that first creates the new copy's own project and document ids; studio-autosave-opfs-product-boundary.test.ts pins that browser-only compatibility recovery is backup-only and non-durable, and the exact autosave key expression and occurrence count are pinned here."),
 ]);
 
 function allowanceId(value: Pick<BrowserKvFinding | BrowserKvAllowance, "file" | "kind" | "key">) {

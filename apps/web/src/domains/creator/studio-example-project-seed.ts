@@ -3,7 +3,7 @@ import {
   readStudioSaveProfiles,
   recordStudioManualSave,
 } from "./save-first/studio-save-profile";
-import { serializeStudioAutosave, studioAutosaveKey } from "./studio-autosave";
+import type { StudioSeedAutosave } from "./save-first/studio-seed-autosave-durable";
 import {
   EXAMPLE_DOCUMENT_HEIGHT,
   EXAMPLE_DOCUMENT_ID,
@@ -38,7 +38,10 @@ import {
  *
  * 멱등 계약:
  * - 고정 id(`example-first-webtoon`)가 이미 있으면 다시 만들지 않는다.
- * - 사용자가 예제 원고를 고친 뒤에는 자동저장 키가 있으므로 절대 덮지 않는다.
+ * - 사용자가 예제 원고를 고친 뒤에는 내구 자동저장 기록이 있으므로 절대 덮지 않는다.
+ * - 초안 본문은 localStorage 에 심지 않는다. 브라우저 저장소에만 있는 기록은 편집기가 복구를 거부하는
+ *   호환 후보일 뿐이라, 결과의 `autosave` 를 호출자가 `persistSeedAutosaveDurably` 로 편집기와 같은
+ *   소유자 키의 OPFS/SQLite 에 심는다(library 진입 UI 가 담당).
  * - 사용자가 휴지통에 버린 예제는 되살리지 않는다(상태만 돌려준다).
  */
 
@@ -54,6 +57,8 @@ export type ExampleProjectSeedResult =
       readonly project: StudioProjectLibraryEntry;
       readonly documentId: string;
       readonly editorHref: string;
+      /** 편집기가 열 수 있는 내구 저장소에 심어야 할 초안. */
+      readonly autosave: StudioSeedAutosave;
     }
   | { readonly status: "trashed"; readonly project: StudioProjectLibraryEntry }
   | { readonly status: "full"; readonly project: null };
@@ -98,18 +103,20 @@ function ensureExampleSaveProfile(
   recordStudioManualSave(storage, EXAMPLE_PROJECT_ID, { now: at, target });
 }
 
-function ensureExampleAutosave(storage: StudioExampleSeedStorage, at: string): void {
-  const key = studioAutosaveKey({ workId: EXAMPLE_DOCUMENT_ID });
-  // 자동저장이 이미 있으면 사용자가 만진 원고다 — 시딩은 절대 덮지 않는다.
-  if (storage.getItem(key) !== null) return;
-  const page = buildExampleProjectPage();
-  storage.setItem(key, serializeStudioAutosave({
-    version: 2,
-    savedAt: at,
-    title: EXAMPLE_PROJECT_TITLE,
-    currentPageId: page.id,
-    pagesList: [page],
-  }));
+function exampleSeedAutosave(documentId: string): StudioSeedAutosave {
+  return {
+    workId: documentId,
+    build: () => {
+      const page = buildExampleProjectPage();
+      return {
+        version: 2,
+        savedAt: new Date().toISOString(),
+        title: EXAMPLE_PROJECT_TITLE,
+        currentPageId: page.id,
+        pagesList: [page],
+      };
+    },
+  };
 }
 
 export function ensureExampleProjectSeeded(
@@ -126,7 +133,6 @@ export function ensureExampleProjectSeeded(
   if (existing) {
     if (existing.status === "trashed") return { status: "trashed", project: existing };
     const documentId = ensureExampleDocument(storage, at, options.target);
-    ensureExampleAutosave(storage, at);
     ensureExampleSaveProfile(storage, at, options.target);
     const project = existing.lastOpenedDocumentId === documentId
       ? existing
@@ -134,7 +140,13 @@ export function ensureExampleProjectSeeded(
         at,
         target: options.target,
       });
-    return { status: "already-seeded", project, documentId, editorHref: EXAMPLE_EDITOR_HREF };
+    return {
+      status: "already-seeded",
+      project,
+      documentId,
+      editorHref: EXAMPLE_EDITOR_HREF,
+      autosave: exampleSeedAutosave(documentId),
+    };
   }
 
   if (current.projects.length >= MAX_PROJECTS) return { status: "full", project: null };
@@ -142,7 +154,6 @@ export function ensureExampleProjectSeeded(
   // 순서가 중요하다: 원고 문서와 자동저장(그림)을 먼저 놓고, 마지막에 프로젝트를
   // 만들면서 UPDATED 이벤트를 쏘면 라이브러리가 썸네일까지 갖춘 채로 다시 읽는다.
   const documentId = ensureExampleDocument(storage, at, options.target);
-  ensureExampleAutosave(storage, at);
   ensureExampleSaveProfile(storage, at, options.target);
   createStudioProject(storage, {
     id: EXAMPLE_PROJECT_ID,
@@ -157,5 +168,11 @@ export function ensureExampleProjectSeeded(
     at,
     target: options.target,
   });
-  return { status: "seeded", project, documentId, editorHref: EXAMPLE_EDITOR_HREF };
+  return {
+    status: "seeded",
+    project,
+    documentId,
+    editorHref: EXAMPLE_EDITOR_HREF,
+    autosave: exampleSeedAutosave(documentId),
+  };
 }
