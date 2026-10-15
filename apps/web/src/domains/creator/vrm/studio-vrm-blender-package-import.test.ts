@@ -2,7 +2,7 @@ import { createHash, webcrypto } from "node:crypto";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { promoZip } from "../promo/promo-zip";
+import { buildStudioPackageArchiveBytes } from "../studio-package-archive";
 
 import { prepareBlenderCharacterPackage } from "./studio-vrm-blender-package-import";
 
@@ -49,7 +49,13 @@ describe("local Blender package preflight", () => {
   });
   it("reads a bounded ZIP without sending any request", async () => {
     const fetchSpy = vi.fn(); vi.stubGlobal("fetch", fetchSpy);
-    const bytes = model(); const zip = new Uint8Array(promoZip({ "delivery/character-package.json": JSON.stringify(manifest(bytes)), "delivery/models/character.vrm": bytes }));
+    const bytes = model();
+    // 패키지 작성기(tools/blender package_archive.py)처럼 ASCII 경로에도 UTF-8 플래그를 켠 STORE ZIP 이어야 한다 — 엄격한 리더가 요구한다.
+    // promoZip(fflate)은 ASCII 경로에 플래그를 쓰지 않아 이 계약을 대표하지 못한다.
+    const zip = new Uint8Array(await buildStudioPackageArchiveBytes([
+      { path: "delivery/character-package.json", data: new TextEncoder().encode(JSON.stringify(manifest(bytes))) },
+      { path: "delivery/models/character.vrm", data: bytes },
+    ], { crc32ExecutionMode: "direct-headless" }));
     const result = await prepareBlenderCharacterPackage([new File([zip], "delivery.toonchar.zip")]);
     expect(result.hasVrm).toBe(true); expect(fetchSpy).not.toHaveBeenCalled();
   });
