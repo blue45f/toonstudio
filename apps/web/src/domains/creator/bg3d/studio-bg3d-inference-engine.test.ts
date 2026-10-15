@@ -314,6 +314,23 @@ describe("기준점·축 정렬·기준점 연장", () => {
     expect(result.guides[0]?.dashed).toBe(true);
   });
 
+  it("기준점이 없어도 호버 기준점의 연장선에 붙는다 (첫 점을 다른 점에 정렬해 시작)", () => {
+    const { result } = ok({
+      index: empty,
+      cursor: pointCursor([5.02, 10, 0.03]),
+      hoverReferences: [[5, 0, 0]],
+    });
+    expect(result.kind).toBe("from-point");
+    expect(result.axis).toBe("y");
+    near(result.point, [5, 10, 0]);
+    expect(result.alignmentOrigin).toEqual([5, 0, 0]);
+  });
+
+  it("기준점도 호버 기준점도 없으면 정렬 후보를 만들지 않는다", () => {
+    const { result } = ok({ index: empty, cursor: pointCursor([5.02, 10, 0.03]) });
+    expect(result.kind).toBe("free");
+  });
+
   it("기준점 축선과 겹치는 호버 연장선은 중복으로 보고 건너뛴다", () => {
     const { result } = ok({
       index: empty,

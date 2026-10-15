@@ -15,6 +15,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { createStudioBg3dInferenceDragSession } from "./studio-bg3d-inference-drag";
+import { applyStudioBg3dInferenceToPlacementTarget } from "./studio-bg3d-inference-placement";
 import { createStudioBg3dInferenceService } from "./studio-bg3d-inference-service";
 import {
   buildStudioBg3dInferenceEntities,
@@ -30,6 +31,7 @@ import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { StudioBg3dInferenceDragSession } from "./studio-bg3d-inference-drag";
 import type { StudioBg3dInferenceVec3 } from "./studio-bg3d-inference-math";
+import type { StudioBg3dInferencePlacementTargetLike } from "./studio-bg3d-inference-placement";
 import type { StudioBg3dInferenceService } from "./studio-bg3d-inference-service";
 import type { StudioBg3dMeasurementDocument } from "./studio-bg3d-measurement";
 
@@ -50,6 +52,8 @@ export interface StudioBg3dInferenceHostInput {
   readonly measurementDocument: StudioBg3dMeasurementDocument;
   readonly effectiveIsQuadView: boolean;
   readonly immersiveSceneActive: boolean;
+  /** 3D 모델 배치 미리보기 중인지. */
+  readonly placementActive: boolean;
   readonly selectedIds: ReadonlySet<string>;
   readonly firstSelectedId: string | null | undefined;
   readonly transformSpace: string | undefined;
@@ -66,8 +70,10 @@ export interface StudioBg3dInferenceHostResult {
   readonly onCameraChange: (camera: Camera | null) => void;
   /** 가장 최근에 알려 준 카메라 — 진단·테스트용. */
   readonly getCamera: () => Camera | null;
-  /** 줄자가 포인터 추론을 쓰는 중인지 — 컨트롤러의 `active`. */
+  /** 줄자·모델 배치처럼 포인터 추론을 쓰는 중인지 — 컨트롤러의 `active`. */
   readonly pointerToolActive: boolean;
+  /** 모델 배치의 표면/바닥 목표점을 추론 점으로 바꿔 준다. 추론이 없으면 입력을 그대로 돌려준다. */
+  readonly inferPlacementTarget: <T extends StudioBg3dInferencePlacementTargetLike>(target: T) => T;
   /** HUD의 키보드 점 고르기에서 점을 골랐을 때(줄자의 시작·끝점). */
   readonly pickPoint: (point: V3) => void;
 }
@@ -139,6 +145,11 @@ export function useStudioBg3dInferenceHost(host: StudioBg3dInferenceHostInput): 
   useStudioBg3dInferenceKeyboard(service, host.open);
 
   const measureActive = host.open && host.measurementActive && !host.effectiveIsQuadView && !host.immersiveSceneActive;
+  const placementToolActive = host.open
+    && host.placementActive
+    && !measureActive
+    && !host.effectiveIsQuadView
+    && !host.immersiveSceneActive;
 
   // 줄자 세션 수명: 켜지면 열고 꺼지면 닫는다.
   useEffect(() => {
@@ -154,6 +165,14 @@ export function useStudioBg3dInferenceHost(host: StudioBg3dInferenceHostInput): 
     });
     return () => service.end();
   }, [measureActive, service, syncScene]);
+
+  // 모델 배치 미리보기 세션: HUD·키보드 없이 마커와 안내문만 쓰고, 배치 목표점을 추론 점으로 바꾼다.
+  useEffect(() => {
+    if (!placementToolActive) return undefined;
+    syncScene();
+    service.begin("generic", { keyboard: false, hud: false });
+    return () => service.end();
+  }, [placementToolActive, service, syncScene]);
 
   // 시작점이 바뀌면 기준점을 맞춘다 (값이 같으면 잠금·입력을 지우지 않는다).
   const startWorld = host.measurementStartWorld;
@@ -225,7 +244,8 @@ export function useStudioBg3dInferenceHost(host: StudioBg3dInferenceHostInput): 
     drag,
     onCameraChange,
     getCamera,
-    pointerToolActive: measureActive,
+    pointerToolActive: measureActive || placementToolActive,
+    inferPlacementTarget: (target) => applyStudioBg3dInferenceToPlacementTarget(service, target),
     pickPoint: (point) => latest.current.pickMeasurementPoint(point),
   };
 }

@@ -401,11 +401,13 @@ export function attachStudioBg3dEditorPlacementHost(h) {
   }
   h.cancelCustomModelPlacement = cancelCustomModelPlacement;
   function moveCustomModelPlacement(
-    target: StudioBg3dPlacementPointerTarget,
+    rawTarget: StudioBg3dPlacementPointerTarget,
     shiftKey: boolean,
   ): void {
     const current = placementSessionRef.current;
     if (current.phase !== "preview") return;
+    // 끝점·중간점 같은 추론 점이 방금 계산됐다면 목표점을 그 점으로 바꾼다.
+    const target = h.inferPlacementTarget ? h.inferPlacementTarget(rawTarget) : rawTarget;
     const transition = transitionStudioBg3dPlacementSession(current, {
       type: "pointer-move",
       placementToken: current.identity.placementToken,
@@ -427,13 +429,14 @@ export function attachStudioBg3dEditorPlacementHost(h) {
   }
   h.rotateCustomModelPlacement = rotateCustomModelPlacement;
   function commitCustomModelPlacement(
-    target: StudioBg3dPlacementPointerTarget,
+    rawTarget: StudioBg3dPlacementPointerTarget,
     shiftKey: boolean,
   ): void {
     const current = placementSessionRef.current;
     const asset = placementPreviewAsset;
     if (current.phase !== "preview" || !asset) return;
     if (!canAdmitSceneNodes(1)) return;
+    const target = h.inferPlacementTarget ? h.inferPlacementTarget(rawTarget) : rawTarget;
     const moved = transitionStudioBg3dPlacementSession(current, {
       type: "pointer-move",
       placementToken: current.identity.placementToken,

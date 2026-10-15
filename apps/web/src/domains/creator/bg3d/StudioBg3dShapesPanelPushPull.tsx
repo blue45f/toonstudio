@@ -1,11 +1,12 @@
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
-import {
-  STUDIO_BG3D_CONTROL_BUTTON as CONTROL_BUTTON,
-  studioBg3dClassNames as cx,
-} from "./studio-bg3d-editor-ui";
+import { StudioBg3dLengthField } from "./StudioBg3dLengthField";
+import { studioBg3dClassNames as cx } from "./studio-bg3d-editor-ui";
+import { STUDIO_BG3D_LENGTH_INPUT_EXAMPLES, parseStudioBg3dLengthInput } from "./studio-bg3d-inference-units";
 import type { StudioBg3dSnapSettings } from "./studio-bg3d-object-ops";
 import {
+  STUDIO_BG3D_PUSH_PULL_MAX_DISTANCE,
   planStudioBg3dPushPull,
   studioBg3dPushPullAxes,
   type StudioBg3dPushPullAxis,
@@ -48,6 +49,38 @@ export function StudioBg3dPushPullSection({
   setDistance: setPushPullDistance,
   setFeedback: setPushPullFeedback,
 }: StudioBg3dPushPullSectionProps) {
+  // 입력창은 "2.4m·80cm·1200mm·3'6\"" 같은 텍스트가 정본이다. 올바르게 읽히면 부모의 숫자 상태도 맞춘다.
+  const [distanceText, setDistanceText] = useState(() => String(pushPullDistance));
+
+  const applyPushPull = () => {
+    const parsed = parseStudioBg3dLengthInput(distanceText, {
+      allowNegative: true,
+      maxMeters: STUDIO_BG3D_PUSH_PULL_MAX_DISTANCE,
+    });
+    // 형식 오류는 입력창이 이유와 예시를 role=alert 로 알린다.
+    if (!parsed.ok) return;
+    const availableAxes = studioBg3dPushPullAxes(primitive.kind);
+    const effectiveAxis = availableAxes.includes(pushPullAxis)
+      ? pushPullAxis
+      : availableAxes[0];
+    if (!effectiveAxis) return;
+    // 직접 입력한 길이는 정확히 적용한다 — 눈금 스냅으로 반올림하지 않는다.
+    const result = planStudioBg3dPushPull(primitive, {
+      axis: effectiveAxis,
+      face: pushPullFace,
+      distance: parsed.meters,
+    });
+    if (!result.ok) {
+      setPushPullFeedback(result.message);
+      return;
+    }
+    setPushPullDistance(parsed.meters);
+    updateTransform(primitive.id, result.patch, { snap: false });
+    setPushPullFeedback(
+      `${effectiveAxis.toUpperCase()}${pushPullFace === "positive" ? "+" : "−"} 면 ${result.appliedDistance >= 0 ? "+" : ""}${result.appliedDistance.toFixed(2)}m · 반대 면 고정`,
+    );
+  };
+
   return (
     <section
       aria-label="면 밀기·당기기"
@@ -125,86 +158,26 @@ export function StudioBg3dPushPullSection({
             ))}
           </div>
 
-          <div className="mt-2">
-            <label
-              htmlFor="studio-bg3d-push-pull-distance"
-              className="block text-[0.65rem] font-semibold text-fg-3"
-            >
-              이동 거리
-            </label>
-            <div className="mt-1 flex gap-1.5">
-              <span className="flex min-h-10 flex-1 items-center overflow-hidden rounded-lg border border-line bg-panel focus-within:border-accent">
-                <input
-                  id="studio-bg3d-push-pull-distance"
-                  type="number"
-                  min={-1_000}
-                  max={1_000}
-                  step={
-                    snapSettings.enabled
-                      ? snapSettings.translateStep
-                      : 0.1
-                  }
-                  value={pushPullDistance}
-                  disabled={locked}
-                  aria-label="Push/Pull 이동 거리"
-                  className="min-w-0 flex-1 bg-transparent px-2.5 text-xs font-semibold text-fg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40"
-                  onChange={(event) => {
-                    setPushPullDistance(
-                      event.currentTarget.valueAsNumber,
-                    );
-                    setPushPullFeedback(null);
-                  }}
-                />
-                <span className="pr-2.5 text-[0.65rem] text-fg-3">
-                  m
-                </span>
-              </span>
-              <button
-                type="button"
-                disabled={locked}
-                className={cx(
-                  CONTROL_BUTTON,
-                  "min-h-10 shrink-0 border-accent/45 bg-accent px-3 text-on-accent hover:brightness-105 disabled:opacity-40",
-                )}
-                onClick={() => {
-                  const availableAxes =
-                    studioBg3dPushPullAxes(
-                      primitive.kind,
-                    );
-                  const effectiveAxis =
-                    availableAxes.includes(pushPullAxis)
-                      ? pushPullAxis
-                      : availableAxes[0];
-                  if (!effectiveAxis) return;
-                  const result = planStudioBg3dPushPull(
-                    primitive,
-                    {
-                      axis: effectiveAxis,
-                      face: pushPullFace,
-                      distance: pushPullDistance,
-                      snapStep: snapSettings.enabled
-                        ? snapSettings.translateStep
-                        : undefined,
-                    },
-                  );
-                  if (!result.ok) {
-                    setPushPullFeedback(result.message);
-                    return;
-                  }
-                  updateTransform(
-                    primitive.id,
-                    result.patch,
-                    { snap: false },
-                  );
-                  setPushPullFeedback(
-                    `${effectiveAxis.toUpperCase()}${pushPullFace === "positive" ? "+" : "−"} 면 ${result.appliedDistance >= 0 ? "+" : ""}${result.appliedDistance.toFixed(2)}m · 반대 면 고정`,
-                  );
-                }}
-              >
-                적용
-              </button>
-            </div>
-          </div>
+          <StudioBg3dLengthField
+            id="studio-bg3d-push-pull-distance"
+            className="mt-2"
+            label="이동 거리"
+            text={distanceText}
+            disabled={locked}
+            submitLabel="적용"
+            hint={`예: ${STUDIO_BG3D_LENGTH_INPUT_EXAMPLES.join(", ")} · 단위가 없으면 m`}
+            parseOptions={{ allowNegative: true, maxMeters: STUDIO_BG3D_PUSH_PULL_MAX_DISTANCE }}
+            onTextChange={(next) => {
+              setDistanceText(next);
+              setPushPullFeedback(null);
+              const parsed = parseStudioBg3dLengthInput(next, {
+                allowNegative: true,
+                maxMeters: STUDIO_BG3D_PUSH_PULL_MAX_DISTANCE,
+              });
+              if (parsed.ok) setPushPullDistance(parsed.meters);
+            }}
+            onSubmit={applyPushPull}
+          />
 
           <p
             aria-live="polite"
@@ -212,7 +185,7 @@ export function StudioBg3dPushPullSection({
           >
             {pushPullFeedback
               ?? (snapSettings.enabled
-                ? `${snapSettings.translateStep}m 스냅 적용 · 음수는 안쪽으로 당깁니다.`
+                ? "입력한 길이를 그대로 적용합니다(눈금 스냅 제외) · 음수는 안쪽으로 당깁니다."
                 : "음수는 안쪽으로 당기며 최소 두께는 0.01m입니다.")}
           </p>
         </>

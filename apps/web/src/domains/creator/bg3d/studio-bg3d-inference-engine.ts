@@ -359,7 +359,11 @@ function alignmentCandidate(input: {
   });
 }
 
-function collectAlignmentCandidates(ctx: Context, reference: V3): Candidate[] {
+/**
+ * 기준점 축선과 호버 기준점의 연장선. 기준점이 없어도 호버 기준점의 연장선은 평가한다 —
+ * 첫 점을 찍기 전에 다른 점 위에 머물렀다가 그 점에 정렬해 시작할 수 있어야 한다.
+ */
+function collectAlignmentCandidates(ctx: Context, reference: V3 | null): Candidate[] {
   const candidates: Candidate[] = [];
   const evaluateLines = (
     origin: V3,
@@ -388,16 +392,19 @@ function collectAlignmentCandidates(ctx: Context, reference: V3): Candidate[] {
       }));
     }
   };
-  evaluateLines(reference, "axis", "axis", new Set());
+  if (reference) evaluateLines(reference, "axis", "axis", new Set());
   const hovers = (ctx.query.hoverReferences ?? []).slice(0, STUDIO_BG3D_INFERENCE_BUDGET.maxReferencePoints);
   hovers.forEach((hover, index) => {
-    if (!isFiniteVec3(hover) || distance(hover, reference) < 1e-6) return;
+    if (!isFiniteVec3(hover)) return;
+    if (reference && distance(hover, reference) < 1e-6) return;
     // 기준점 축선과 겹치는 연장선은 중복이므로 건너뛴다.
     const skip = new Set<StudioBg3dInferenceAxis>();
-    const offset = sub(hover, reference);
-    for (const axis of STUDIO_BG3D_INFERENCE_AXES) {
-      const unit = studioBg3dInferenceAxisVector(axis);
-      if (distance(offset, scale(unit, dot(offset, unit))) < 1e-6) skip.add(axis);
+    if (reference) {
+      const offset = sub(hover, reference);
+      for (const axis of STUDIO_BG3D_INFERENCE_AXES) {
+        const unit = studioBg3dInferenceAxisVector(axis);
+        if (distance(offset, scale(unit, dot(offset, unit))) < 1e-6) skip.add(axis);
+      }
     }
     evaluateLines(hover, "from-point", `from:${index}`, skip);
   });
@@ -946,10 +953,10 @@ export function resolveStudioBg3dInference(query: StudioBg3dInferenceQuery): Stu
     const intersectionCandidates = kindAllowed(query, "intersection") ? collectIntersections(ctx, edgeHits) : [];
     candidates.push(...pointCandidates, ...edgeCandidates, ...intersectionCandidates);
 
-    if (reference) {
+    if (reference || (query.hoverReferences?.length ?? 0) > 0) {
       candidates.push(...collectAlignmentCandidates(ctx, reference));
-      candidates.push(...collectRelationCandidates(ctx, reference));
     }
+    if (reference) candidates.push(...collectRelationCandidates(ctx, reference));
 
     if (kindAllowed(query, "on-face")) {
       const surfaceHit = query.cursor.surfaceHit;

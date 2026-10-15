@@ -45,6 +45,7 @@ function makeHost(overrides: Partial<StudioBg3dInferenceHostInput> = {}) {
     measurementDocument: createStudioBg3dMeasurementDocument("m"),
     effectiveIsQuadView: false,
     immersiveSceneActive: false,
+    placementActive: false,
     selectedIds: new Set<string>(),
     firstSelectedId: null,
     transformSpace: "world",
@@ -181,6 +182,38 @@ describe("에디터 호스트 ↔ 추론 서비스 연결", () => {
     const service = result.current.service;
     unmount();
     expect(service.isActive()).toBe(false);
+  });
+});
+
+describe("모델 배치 연결", () => {
+  it("배치 미리보기 중에는 HUD·키보드 없는 추론 세션을 열고 끝나면 닫는다", () => {
+    const { host } = makeHost({ placementActive: true });
+    const { result, rerender } = mount(host);
+    const snapshot = result.current.service.getSnapshot();
+    expect(snapshot.session.active).toBe(true);
+    expect(snapshot.options).toEqual({ keyboard: false, hud: false });
+    expect(result.current.pointerToolActive).toBe(true);
+    rerender({ host: { ...host, placementActive: false } });
+    expect(result.current.service.isActive()).toBe(false);
+    expect(result.current.pointerToolActive).toBe(false);
+  });
+
+  it("배치 목표점을 방금 계산된 추론 점으로 바꿔 준다", () => {
+    const { host } = makeHost({ placementActive: true });
+    const { result } = mount(host);
+    act(() => {
+      result.current.service.resolve({ cursor: { kind: "point", point: [0.52, 1, 0.5], worldPerPixel: 1 / 64 } });
+    });
+    const snapped = result.current.inferPlacementTarget({
+      surfaceHit: { point: [0.52, 1, 0.5] as const, normal: [0, 1, 0] as const },
+    });
+    expect(snapped.surfaceHit.point).toEqual([0.5, 1, 0.5]);
+  });
+
+  it("줄자와 배치가 동시에 켜져 있으면 줄자가 우선한다", () => {
+    const { host } = makeHost({ placementActive: true, measurementActive: true, measurementStartWorld: [0, 0, 0] });
+    const { result } = mount(host);
+    expect(result.current.service.getSnapshot().session.tool).toBe("measure");
   });
 });
 

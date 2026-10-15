@@ -10,6 +10,7 @@ import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
 import { StudioBg3dCompositionOverlay } from "./StudioBg3dCompositionOverlay";
 import { StudioBg3dEngineRecoveryActions } from "./StudioBg3dEngineRecoveryActions";
+import { StudioBg3dInferenceHud } from "./StudioBg3dInferenceHud";
 import type { StudioBg3dCompositionGuideMode } from "./studio-bg3d-composition-guide";
 import { StudioBg3dViewFrameClear } from "./StudioBg3dViewFrameClear";
 import { createStudioBg3dPointerEvents } from "./studio-bg3d-pointer-events";
@@ -1140,6 +1141,15 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                   >
                     {measurementStatus}
                   </output>
+                ) : null}
+
+                {/* 추론 HUD: 현재 추론·잠금 배지·방향키 잠금 버튼·길이 직접 입력·키보드 점 고르기.
+                    live region은 항상 마운트되어 잠금·취소·오류 안내를 스크린리더가 읽는다. */}
+                {!immersiveSceneActive && h.inferenceService ? (
+                  <StudioBg3dInferenceHud
+                    service={h.inferenceService}
+                    onPickPoint={(point) => h.pickInferencePoint?.(point)}
+                  />
                 ) : null}
 
                 {!immersiveSceneActive && !sceneIsEmpty ? (
