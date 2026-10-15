@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import type { HydratePayload } from "../apps/web/src/shared/lib/store-types";
 import type { Page } from "@playwright/test";
 
 const ID = "11111111-1111-4111-8111-111111111111";
@@ -15,6 +16,9 @@ const promotion = { id: ID, author: post.author, kind: "trailer", stage: "debut"
   contentWarning: "", rightsConfirmed: true, version: 1, hidden: false, archived: false, saved: false,
   createdAt: post.createdAt, updatedAt: post.updatedAt };
 const pageData = (items: unknown[]) => ({ items, hasMore: false, nextCursor: null, canModerate: false });
+// 로그인한 앱 셸은 서재 스냅샷(/api/me, /api/me/merge)을 받아 스토어에 그대로 교체 적용한다. 서버는 항상 이 형식을 지키므로,
+// 필드가 빠진 응답({})을 주면 헤더 알림 동기화가 렌더 중 예외를 던져 화면 전체가 비어 버린다. 비어 있어도 계약은 지키는 합성 응답을 쓴다.
+const emptyLibrary: HydratePayload = { ratings: {}, reads: {}, subscriptions: {}, reviews: {}, likedReviews: {}, collections: [] };
 async function fixtures(page: Page, unavailable = false) {
   await page.route("**/api/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -93,7 +97,10 @@ test("owner candidate discovery pages and recovers without automatic offers", as
   // Explicit UI fixtures, not real authentication or production candidate data.
   await page.addInitScript((user) => sessionStorage.setItem("toonstudio-auth-session", JSON.stringify({ user })), owner);
   await page.route("**/api/auth/session", (route) => route.fulfill({ json: { authenticated: true, user: owner } }));
-  await page.route(/\/api\/me(?:\?.*)?$/u, (route) => route.fulfill({ json: { profile: { ...owner, avatar: null, bio: null, regionSettings: null } } }));
+  await page.route(/\/api\/me(?:\?.*)?$/u, (route) => route.fulfill({ json: { ...emptyLibrary, profile: { ...owner, avatar: null, bio: null, regionSettings: null } } }));
+  await page.route("**/api/me/merge", (route) => route.fulfill({ json: { ...emptyLibrary, collectionIdMap: {} } }));
+  await page.route("**/api/production/inbox", (route) => route.fulfill({ json: { items: [], counts: { dueToday: 0, inProgress: 0, review: 0, ready: 0, waitingInput: 0, blockingOthers: 0 } } }));
+  await page.route("**/api/studio-project-library", (route) => route.fulfill({ json: { projects: [] } }));
   await page.route(`**/api/collaborations/posts/${ID}`, (route) => route.fulfill({ json: { post, application: null, canManage: true, canModerate: false } }));
   await page.route(`**/api/collaborations/posts/${ID}/applications*`, (route) => route.fulfill({ json: [] }));
   const times = { startsAt: new Date().toISOString(), dueAt: new Date(Date.now()+3600000).toISOString() };
