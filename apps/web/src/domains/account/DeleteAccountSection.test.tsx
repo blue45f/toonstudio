@@ -20,6 +20,9 @@ vi.mock("@/shared/lib/i18n-bilingual-copy", () => ({
 
 vi.mock("@/shared/lib/i18n", () => ({
   useT: () => (key: string) => key,
+  // DeleteAccountSection이 끌어오는 AccountPage의 account-i18n.ts가 모듈 스코프에서 호출한다.
+  registerI18nLocaleEntries: (_locale: string, _entries: Readonly<Record<string, string>>) => undefined,
+  registerI18nEnglishSourceEntries: (_entries: Readonly<Record<string, string>>) => undefined,
 }));
 
 vi.mock("@/shared/lib/store", () => ({

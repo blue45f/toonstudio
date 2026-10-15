@@ -7,6 +7,7 @@ import {
   SELLER_PACKAGES_PATH,
   SELLER_REGISTER_PATH,
   sellerCenterTabForPath,
+  sellerListingWizardStepForReason,
 } from "./market-seller-center";
 
 describe("market seller center (S1-5)", () => {
@@ -41,5 +42,15 @@ describe("market seller center (S1-5)", () => {
       "pricing",
       "review",
     ]);
+  });
+
+  it("assigns every listing validation reason to the wizard step that owns its input", () => {
+    expect(sellerListingWizardStepForReason("title-required")).toBe("details");
+    expect(sellerListingWizardStepForReason("title-too-long")).toBe("details");
+    expect(sellerListingWizardStepForReason("seller-name-required")).toBe("details");
+    expect(sellerListingWizardStepForReason("seller-name-too-long")).toBe("details");
+    expect(sellerListingWizardStepForReason("description-too-long")).toBe("pricing");
+    expect(sellerListingWizardStepForReason("price-not-integer")).toBe("pricing");
+    expect(sellerListingWizardStepForReason("price-too-low")).toBe("pricing");
   });
 });

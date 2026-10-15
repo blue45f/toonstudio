@@ -21,6 +21,9 @@ vi.mock("@/shared/lib/i18n-bilingual-copy", () => ({
 
 vi.mock("@/shared/lib/i18n", () => ({
   useT: () => (key: string) => key,
+  // AccountPage가 side-effect로 평가하는 account-i18n.ts가 모듈 스코프에서 호출한다.
+  registerI18nLocaleEntries: (_locale: string, _entries: Readonly<Record<string, string>>) => undefined,
+  registerI18nEnglishSourceEntries: (_entries: Readonly<Record<string, string>>) => undefined,
 }));
 
 vi.mock("@/shared/lib/store", () => ({

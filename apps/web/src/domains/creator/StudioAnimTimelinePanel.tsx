@@ -38,6 +38,7 @@ import {
   renderStudioAnimTimesheetText,
   type StudioAnimTimesheet,
 } from "./studio-anim-timesheet";
+import { StudioAnimClipExposure } from "./animation/StudioAnimClipExposure";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioRemoveTimelineTrackRequest } from "./studio-destructive-command-catalog";
 import { MAX_FRAME_FPS, MIN_FRAME_FPS, type OnionSkinSettings } from "./studio-frame-animation";
@@ -300,7 +301,7 @@ export function StudioAnimTimelinePanel({
             </span>
           </div>
 
-          {/* Named clip exposure ranges — rename/select without a full multi-timeline editor. */}
+          {/* Named clip exposure ranges — rename/select, and edit start/length (StudioAnimClipExposure). */}
           <div className="space-y-1.5 border-t border-line/60 pt-2">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[0.72rem] font-semibold text-fg-3 uppercase tracking-wider">
@@ -378,9 +379,7 @@ export function StudioAnimTimelinePanel({
                         }}
                         className="min-w-0 flex-1 rounded-md border border-line bg-canvas px-2 py-1 text-xs text-fg outline-none focus:border-accent/50"
                       />
-                      <span className="shrink-0 text-[0.62rem] tabular-nums text-fg-3">
-                        {clip.startFrame + 1}–{clip.endFrame + 1}f
-                      </span>
+                      <StudioAnimClipExposure doc={doc} clip={clip} onDocChange={onDocChange} />
                     </li>
                   );
                 })}

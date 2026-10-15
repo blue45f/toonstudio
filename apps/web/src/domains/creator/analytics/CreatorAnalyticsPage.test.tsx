@@ -42,6 +42,9 @@ vi.mock("@/shared/lib/i18n", () => ({
     () =>
     (key: string, fallbackOrValues?: string | Record<string, string | number>) =>
       typeof fallbackOrValues === "string" ? fallbackOrValues : key,
+  // CreatorAnalyticsPage가 side-effect로 평가하는 creator-analytics-i18n.ts가 모듈 스코프에서 호출한다.
+  registerI18nLocaleEntries: (_locale: string, _entries: Readonly<Record<string, string>>) => undefined,
+  registerI18nEnglishSourceEntries: (_entries: Readonly<Record<string, string>>) => undefined,
 }));
 
 function renderPage() {

@@ -8,6 +8,8 @@
  * 동작하고, 내비 노출은 판매자 센터 하나로 수렴한다.
  */
 
+import type { SellerListingValidationReason } from "./market-seller-listings";
+
 /** 판매자 센터 정본 경로. 내비가 가리키는 유일한 판매 입구다. */
 export const SELLER_CENTER_PATH = "/market/seller";
 
@@ -78,7 +80,7 @@ export function sellerCenterTabForPath(pathname: string): SellerCenterTabId | nu
   }
 }
 
-/** 포인트 리스팅 등록 마법사의 단계. MarketSellerDashboard가 순서대로 소비한다. */
+/** 포인트 리스팅 등록 마법사의 단계. MarketSellerListingWizard가 순서대로 소비한다. */
 export const SELLER_LISTING_WIZARD_STEPS = [
   { id: "details", label: ["기본 정보", "Basics"] },
   { id: "pricing", label: ["설명·가격", "Description & price"] },
@@ -87,3 +89,27 @@ export const SELLER_LISTING_WIZARD_STEPS = [
 
 export type SellerListingWizardStepId =
   (typeof SELLER_LISTING_WIZARD_STEPS)[number]["id"];
+
+/**
+ * 리스팅 검증 실패 사유가 어느 마법사 단계의 입력에서 비롯됐는지.
+ * "다음"은 현재 단계(와 그 앞 단계)의 실패만 막고, 뒤 단계의 실패는 그 단계에 도착했을 때 안내한다.
+ * 판매자 이름은 폼 입력이 아니라 세션에서 오지만, 처음 검증되는 "기본 정보" 단계에서 막는다.
+ * Record 로 선언해 새 사유가 생기면 단계를 지정하기 전에는 컴파일되지 않는다.
+ */
+const WIZARD_STEP_BY_REASON: Readonly<
+  Record<SellerListingValidationReason, SellerListingWizardStepId>
+> = {
+  "title-required": "details",
+  "title-too-long": "details",
+  "seller-name-required": "details",
+  "seller-name-too-long": "details",
+  "description-too-long": "pricing",
+  "price-not-integer": "pricing",
+  "price-too-low": "pricing",
+};
+
+export function sellerListingWizardStepForReason(
+  reason: SellerListingValidationReason,
+): SellerListingWizardStepId {
+  return WIZARD_STEP_BY_REASON[reason];
+}

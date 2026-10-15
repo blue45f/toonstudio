@@ -107,7 +107,9 @@ describe("ShowcasePage", () => {
     const workLinks = scope.getAllByRole("link").filter((link) => link.getAttribute("href") === "/showcase/work/w2");
     expect(workLinks.length).toBeGreaterThanOrEqual(2);
     expect(scope.getByRole("link", { name: /작가 프로필/u }).getAttribute("href")).toBe("/u/author-1");
-    expect(scope.getByText("빛나 작가")).toBeTruthy();
+    // 표지가 로드되기 전에는 폴백 타일(제목·작가명)이 이미지 아래에 먼저 서 있다(CoverImage S3-16 계약).
+    // 그래서 작가명 글자만으로는 한 곳을 가리킬 수 없으니, 프로필로 이어지는 byline 링크의 이름으로 확인한다.
+    expect(scope.getByRole("link", { name: /^빛나 작가/u }).getAttribute("href")).toBe("/u/author-1");
     expect(scope.getByText("주인공 작품 설명입니다.")).toBeTruthy();
     // 좋아요순으로 주인공을 골랐는지 요청으로 확인한다.
     expect(creatorClient.listWorks).toHaveBeenCalledWith({ sort: "likes" }, expect.anything());
