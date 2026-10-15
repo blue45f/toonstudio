@@ -95,7 +95,7 @@ const CATEGORIES: readonly CategoryDef[] = [
     kind: "place", feeds: { [D3]: 3, [MKT]: 2, [PHOTO]: 1 }, tag: "배경",
     words: "골목,골목길,좁은 골목,뒷골목~alleyway,back alley|거리,길거리,큰길|번화가=busy street|도심=downtown|도시~urban|마을|건물|건축"
       + "|성|궁전|오두막|등대|항구|시장|광장|지하실|옥상,옥탑,옥탑방|온실|병원|카페|식당|호텔|공항"
-      + "|도서관|박물관|미술관|극장|교회|절|터널|동굴|실내,인테리어|방|정원|다리|계단|문|창문~windows|지하"
+      + "|도서관|박물관|미술관|극장|교회|절|터널|동굴|실내,인테리어,내부|방|정원|다리|계단|문|창문~windows|지하"
       + "|기차역=train station~railway station|지하철=subway|버스정류장=bus stop|편의점=convenience store"
       + "|아파트=apartment|주차장=parking lot|놀이터=playground|공원=park|운동장=schoolyard|사무실=office"
       + "|부엌=kitchen|침실=bedroom|거실=living room|욕실=bathroom|다락방=attic|창고=warehouse|공장=factory"
@@ -103,7 +103,12 @@ const CATEGORIES: readonly CategoryDef[] = [
       + "|동양 건축|일본 정원|바닷가|숲속|옥상 정원=rooftop garden|전통시장,재래시장=traditional market"
       + "|체육관=gym|수영장=swimming pool|놀이공원=amusement park|학원=academy|사거리=intersection|횡단보도=crosswalk"
       + "|철길=railroad track|골동품점=antique shop|서점=bookstore|빵집=bakery|노점=street stall"
-      + "|창가=window side|장터=marketplace|저잣거리=old market street|주막=tavern|서당=village school|관아=government office|마당=courtyard|처마=eaves",
+      + "|창가=window side|장터=marketplace|저잣거리=old market street|주막=tavern|서당=village school|관아=government office|마당=courtyard|처마=eaves"
+      + "|집=house|길=road|역=station|비닐하우스=greenhouse|정류장=bus stop|습지=wetland|갯벌=tidal flat|밭=farm field|과수원=orchard|목장=ranch|농장=farm|모스크=mosque|댐=dam"
+      + "|상점,가게=shop|마트=supermarket|백화점=department store|은행=bank|우체국=post office|경찰서=police station|소방서=fire station|약국=pharmacy|영화관=cinema"
+      + "|공연장=concert hall|경기장=stadium|동물원=zoo|수족관=aquarium|농구장,농구 코트=basketball court|축구장=soccer field|야구장=baseball stadium|응급실=emergency room"
+      + "|수술실=operating room|교무실=teachers office|강당=auditorium|도로=road|시골길=country road|산길=mountain trail"
+      + "|오솔길=forest path|벚꽃길=cherry blossom path|돌담길=stone wall road|우주정거장=space station|창밖,창 밖=window view",
   },
   {
     kind: "place", feeds: { [D3]: 3, [MKT]: 2, [PHOTO]: 1 }, tag: "학교",
@@ -113,7 +118,9 @@ const CATEGORIES: readonly CategoryDef[] = [
     kind: "nature", feeds: { [D3]: 3, [PHOTO]: 1, [REF]: 1, [MKT]: 1 }, tag: "배경",
     words: "숲|산~mountains|바다~ocean|파도|강|호수|연못|늪|폭포|해변|사막|정글|초원|들판|언덕|절벽|계곡|협곡|빙하|섬|화산"
       + "|하늘=sky|구름~cloudy sky|무지개|별|은하|우주|행성|밤하늘|풀|이끼|덩굴|갈대|달"
-      + "|설원,눈밭=snowfield|논=rice field|바위=rock|해안=coast|평야=plain|동산=small hill|바다 풍경=seascape",
+      + "|설원,눈밭=snowfield|논=rice field|바위=rock|해안=coast|평야=plain|동산=small hill|바다 풍경=seascape"
+      + "|땅=ground|불=fire|물=water|얼음=ice|꽃잎=petals|낙엽=fallen leaves|나뭇잎=leaves|뿌리=roots|씨앗=seeds|이슬=dew|먼지=dust|진흙=mud"
+      + "|물방울=water drops|거품=bubbles|불꽃=flames|폭발=explosion|열매=fruit",
   },
   // ── 재질·소품 ────────────────────────────────────────────────────────────
   {
@@ -137,7 +144,19 @@ const CATEGORIES: readonly CategoryDef[] = [
       + "|램프,조명등=lamp|양초|촛불|횃불|지도|나침반|열쇠|자물쇠|상자|병|접시|우산|가면|인형|피아노|바이올린|기타=guitar"
       + "|종|시계|조각상|깃발|돛|닻|바퀴|마차|보석|가구|소파=sofa|자전거=bicycle|자동차=car~automobile|오토바이=motorcycle"
       + "|가로등=street lamp|우체통=mailbox|자판기=vending machine|신호등=traffic light|간판=signboard|화분=flower pot"
-      + "|선풍기=electric fan|전화기=telephone|카메라=camera|도자기|돛단배|배|기차|수레=cart|항아리 뚜껑=jar lid",
+      + "|선풍기=electric fan|전화기=telephone|카메라=camera|도자기|돛단배|배|기차|수레=cart|항아리 뚜껑=jar lid"
+      + "|칠판=blackboard|노트북=laptop|스마트폰,핸드폰,휴대폰=smartphone|커피잔=coffee cup|파라솔=parasol|장작=firewood"
+      + "|형광등=fluorescent lamp|좌석=seat|비행기=airplane|우주선=spaceship|로봇=robot|컴퓨터=computer|텔레비전=television"
+      + "|냉장고=refrigerator|농구공=basketball|축구공=soccer ball"
+      + "|책장=bookshelf|서랍=drawer|옷장=wardrobe|신발장=shoe rack|이불=blanket|베개=pillow|커튼=curtain|달력=calendar|액자=picture frame"
+      + "|전등=ceiling light|스탠드=desk lamp|에어컨=air conditioner|세탁기=washing machine|전자레인지=microwave oven|가스레인지=gas stove"
+      + "|싱크대=kitchen sink|욕조=bathtub|변기=toilet|샤워기=shower head|세면대=washbasin"
+      + "|버스=bus|택시=taxi|트럭=truck|헬기,헬리콥터=helicopter|열차=train|전봇대=utility pole|맨홀=manhole|표지판=road sign|벤치=bench"
+      + "|쓰레기통=trash can|공중전화=public telephone|연필=pencil|펜=pen|지우개=eraser|공책=notebook|교과서=textbook|분필=chalk"
+      + "|책가방=school bag|도시락=lunch box|사물함=locker|철봉=horizontal bar|그네=swing|미끄럼틀=slide|지팡이=walking cane|마법봉=magic wand"
+      + "|두루마리=scroll|보물=treasure|금화=gold coin|풍선=balloon|선물=gift|편지=letter|폭탄=bomb"
+      + "|음식=food|밥=rice|김치=kimchi|라면=ramen|빵=bread|케이크=cake|커피=coffee|맥주=beer|와인=wine|우유=milk|물병=water bottle"
+      + "|과일=fruit|채소=vegetables|사과=apple|포도=grapes|수박=watermelon|귤=mandarin",
   },
   {
     kind: "armor", feeds: { [REF]: 3, [D3]: 2, [MKT]: 1 },
@@ -148,18 +167,28 @@ const CATEGORIES: readonly CategoryDef[] = [
     kind: "costume", feeds: { [REF]: 3, [PHOTO]: 1 },
     words: "한복,한복 입은|저고리|치마|바지|두루마기|도포|기모노|드레스|의상,복식|옷|전통 의상|한국 전통 의상"
       + "|교복=school uniform|군복=military uniform|정장=suit|모자|신발|장신구|목걸이|왕관|귀걸이|반지|비녀|망토|목도리|장갑|부츠"
-      + "|갓=gat hat|댕기=daenggi hair ribbon",
+      + "|갓=gat hat|댕기=daenggi hair ribbon"
+      + "|가방=bag|배낭=backpack|지갑=wallet|안경=glasses|선글라스=sunglasses|양말=socks|운동화=sneakers|구두=dress shoes|슬리퍼=slippers"
+      + "|셔츠=shirt|티셔츠=t-shirt|패딩=padded jacket|수영복=swimsuit|잠옷=pajamas|앞치마=apron",
   },
   {
     kind: "figure", feeds: { [REF]: 2, [MKT]: 1 },
     words: "인물|캐릭터=figure|소녀=girl|소년=boy|학생=student|군인=soldier|무사=warrior|마법사=wizard|왕=king|공주=princess"
-      + "|선비=scholar|상인=merchant|농부=farmer|어부=fisherman|할머니=grandmother|할아버지=grandfather|아기=baby",
+      + "|선비=scholar|상인=merchant|농부=farmer|어부=fisherman|할머니=grandmother|할아버지=grandfather|아기=baby"
+      + "|기사=knight|용사=hero|왕자=prince|여왕=queen|해적=pirate|닌자=ninja|사무라이=samurai|검객=swordsman|궁수=archer|도적=thief"
+      + "|스님=monk|도사=Taoist sage",
   },
   {
     kind: "figure", feeds: { [REF]: 3, [MKT]: 1 },
     words: "포즈,자세|초상화|얼굴|손|두 손|손 포즈|손가락|인체|해부학|근육|동세|옆모습|뒷모습|전신"
       + "|춤|달리는 사람|걷는 사람|앉은 자세|누운 자세|인물 눈|눈동자|눈썹|입술|머리카락|옷 주름,천 주름"
       + "|아이=child|노인=elderly person|여인,여자=woman|남자=man|군중=crowd",
+  },
+  {
+    kind: "figure", feeds: { [REF]: 3, [MKT]: 1 },
+    words: "달리는,뛰는,달려가는=running|걷는=walking|점프하는,뛰어오르는=jumping|싸우는=fighting|춤추는=dancing"
+      + "|무릎 꿇은,무릎꿇은=kneeling|앉아 있는,앉아있는,앉은=sitting|서 있는,서있는=standing|누워 있는,누워있는,누운=lying down"
+      + "|웅크린=crouching|뒤돌아보는=looking back|팔짱 낀=arms crossed",
   },
   {
     kind: "art", feeds: { [REF]: 3 },
@@ -169,7 +198,8 @@ const CATEGORIES: readonly CategoryDef[] = [
   },
   {
     kind: "myth", feeds: { [REF]: 3 },
-    words: "용|도깨비=goblin|봉황=phoenix|해태=haetae|유니콘=unicorn|요괴=yokai|귀신=ghost|천사=angel|악마=demon",
+    words: "용|도깨비=goblin|봉황=phoenix|해태=haetae|유니콘=unicorn|요괴=yokai|귀신,유령=ghost|천사=angel|악마=demon"
+      + "|괴물=monster|좀비=zombie|뱀파이어=vampire|늑대인간=werewolf|마녀=witch|외계인=alien",
   },
   // ── 생물·식물 ────────────────────────────────────────────────────────────
   {
@@ -179,7 +209,7 @@ const CATEGORIES: readonly CategoryDef[] = [
       + "|펭귄=penguin|참새=sparrow|비둘기=pigeon|잠자리=dragonfly|사마귀=mantis|반딧불이=firefly|두루미,학=crane"
       + "|거북이=turtle|악어=crocodile|박쥐=bat|다람쥐=squirrel|고슴도치=hedgehog|수달=otter|표범=leopard|치타=cheetah"
       + "|하마=hippopotamus|낙타=camel|앵무새=parrot|공작=peacock|백조=swan|금붕어=goldfish|잉어=carp|오징어=squid|게=crab"
-      + "|새우=shrimp|붉은여우=red fox|금빛독수리=golden eagle",
+      + "|새우=shrimp|붉은여우=red fox|금빛독수리=golden eagle|곤충=insect|모기=mosquito|바퀴벌레=cockroach",
   },
   {
     kind: "plant", feeds: { [CRT]: 1, [D3]: 3, [REF]: 1, [MKT]: 1 }, tag: "배경",
@@ -205,7 +235,7 @@ const CATEGORIES: readonly CategoryDef[] = [
   {
     kind: "light", feeds: { [WL]: 3, [D3]: 2 },
     words: "빛=light|조명=lighting|역광=backlight|그림자|어둠,어두운|달빛|햇빛,햇살|네온=neon|스포트라이트=spotlight"
-      + "|실루엣=silhouette|빛줄기=light rays|골든아워=golden hour|블루아워=blue hour|스튜디오 조명=studio light|숲속 빛=forest light",
+      + "|실루엣=silhouette|빛줄기=light rays|태양=sun|골든아워=golden hour|블루아워=blue hour|스튜디오 조명=studio light|숲속 빛=forest light",
   },
   {
     kind: "season", feeds: { [WL]: 1, [D3]: 1 }, axis: "season",
@@ -242,7 +272,8 @@ const CATEGORIES: readonly CategoryDef[] = [
   {
     kind: "mood", feeds: {}, neutral: true,
     words: "아늑한|신비로운|음산한|웅장한|평화로운|화려한|몽환적인|고요한|쓸쓸한=lonely|따뜻한=warm|차가운=cold|로맨틱한=romantic"
-      + "|긴장감 있는=tense|줄무늬|체크무늬|꽃무늬|기하학|추상",
+      + "|긴장감 있는=tense|줄무늬|체크무늬|꽃무늬|기하학|추상"
+      + "|귀여운=cute|아기자기한=cozy and cute|오싹한=chilling|으스스한=eerie|포근한=snug|청량한=refreshing|상쾌한=fresh|우울한=gloomy mood|감성적인=sentimental",
   },
   // ── 지역·장소 이름 ───────────────────────────────────────────────────────
   {
@@ -260,7 +291,8 @@ const CATEGORIES: readonly CategoryDef[] = [
       + "|전주=Jeonju|강릉=Gangneung|속초=Sokcho|수원=Suwon|여수=Yeosu|안동=Andong|춘천=Chuncheon|목포=Mokpo|통영=Tongyeong"
       + "|군산=Gunsan|성수동=Seongsu-dong|홍대=Hongdae|이태원=Itaewon|강남=Gangnam|명동=Myeongdong|종로=Jongno"
       + "|한강=Han River|청계천=Cheonggyecheon|남산=Namsan|여의도=Yeouido|잠실=Jamsil|신촌=Sinchon|연남동=Yeonnam-dong"
-      + "|을지로=Euljiro|세운상가=Sewoon Sangga|한국|대한민국=South Korea",
+      + "|을지로=Euljiro|세운상가=Sewoon Sangga|한국|대한민국=South Korea"
+      + "|해운대=Haeundae|광안리=Gwangalli|경성=Gyeongseong|북한산=Bukhansan|설악산=Seoraksan|한라산=Hallasan|독도=Dokdo|남이섬=Nami Island",
   },
   {
     kind: "foreign-place", feeds: { [PHOTO]: 2, [REF]: 1 },
@@ -364,7 +396,7 @@ const FUNCTIONAL_WORDS: ReadonlySet<string> = new Set((
   + " 레퍼런스 용 용도 위한 위해 대한 관련 정도 약간 조금 좀 아주 매우 많이 너무 그리고 또는 혹은 및 와 과 랑 이랑 에 에서 으로 로 의 가 이 은 는 을 를 도 만"
   + " 그냥 그런 이런 저런 어떤 무슨 하나 두 세 네 다섯 여러 몇 입은 입고 입는 쓴 쓰는 든 들고 앉아 앉은 서 서있는 서 있는 오는 내리는 나오는 나는"
   + " 초기 전기 중기 후기 말기 초 중반 말 후반 마리 명 개의 정말 진짜 가장 제일 다른 새로운 멋진 예쁜 좋은 큰 작은 많은 어느 모든 각 위에 아래 앞 뒤 옆 속 안 밖"
-  + " 웹툰 만화 풍경 소재 사용 만들기 만들고 만든 그리기 그릴 그리고 싶은 쓰고 쓸 위주 중심 하기 하게 해서 에서의 으로의 에서는 이미지의 사진의"
+  + " 감성 웹툰 만화 풍경 소재 사용 만들기 만들고 만든 그리기 그릴 그리고 싶은 쓰고 쓸 위주 중심 하기 하게 해서 에서의 으로의 에서는 이미지의 사진의"
 ).split(/\s+/u).filter(Boolean));
 
 const ENGLISH_STOP_WORDS: ReadonlySet<string> = new Set(

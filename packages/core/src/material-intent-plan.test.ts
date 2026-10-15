@@ -113,9 +113,25 @@ const SENTENCE_CASES: readonly SentenceCase[] = [
   { input: "교실 창가 햇살", lenses: ["3d-material", "market-resource", "weather-light"], queries: { polyhaven: "classroom window side" } },
   { input: "학교 복도", lenses: ["3d-material", "market-resource"], queries: { polyhaven: "school hallway" } },
   { input: "카페 인테리어", lenses: ["3d-material", "market-resource"], queries: { polyhaven: "cafe interior" } },
+  // ── 일상 어휘 · 나무=목재 규칙 ────────────────────────────────────────
+  { input: "나무 의자", lenses: ["3d-material", "market-resource"], queries: { polyhaven: "wood chair" } },
+  { input: "나무 아래 의자", lenses: ["3d-material", "reference-art", "market-resource"], queries: { polyhaven: "tree chair" } },
+  { input: "카페 내부", lenses: ["3d-material", "market-resource"], queries: { polyhaven: "cafe interior" } },
+  { input: "앉아 있는 인물 옆모습", lenses: ["reference-art", "market-resource"], queries: { met: "sitting figure profile" } },
+  {
+    input: "부산 해운대 여름 해변 사진",
+    lenses: ["photo-archive", "korean-place", "3d-material"],
+    queries: { internetarchive: "Busan Haeundae summer photograph", kheritage: "부산", polyhaven: "summer beach" },
+  },
+  {
+    input: "일제강점기 경성 거리 흑백 사진",
+    lenses: ["photo-archive", "korean-place"],
+    queries: { internetarchive: "Korea under Japanese rule Gyeongseong street black and white photograph", kheritage: "경성" },
+  },
+  { input: "귀여운 손글씨 말풍선 폰트", lenses: ["font"], queries: { googlefonts: "korean handwriting" }, unresolved: ["말풍선"] },
   // ── 영어 혼용 ─────────────────────────────────────────────────────────
   { input: "rainy alley at night", lenses: ["3d-material", "weather-light"], queries: { polyhaven: "alley night" } },
-  { input: "samurai armor", lenses: ["reference-art", "3d-material"], queries: { met: "samurai armor" }, passthrough: ["samurai"] },
+  { input: "kabuto armor", lenses: ["reference-art", "3d-material"], queries: { met: "kabuto armor" }, passthrough: ["kabuto"] },
   { input: "Nujabes 같은 분위기", lenses: ["reference-art"], queries: { met: "Nujabes" }, passthrough: ["Nujabes"], status: "fallback" },
   // ── 미지원 단어 보존 ──────────────────────────────────────────────────
   { input: "스산한 폐건물", lenses: ["3d-material", "market-resource"], queries: { polyhaven: "스산한 abandoned building" }, unresolved: ["스산한"] },
@@ -433,6 +449,93 @@ describe("단서 끄기(exclude)", () => {
 
   it("알 수 없는 id 는 무시한다", () => {
     expect(lensIds(planMaterialIntent("비 오는 골목", { exclude: ["없는:단서"] }))).toEqual(lensIds(planMaterialIntent("비 오는 골목")));
+  });
+});
+
+describe("나무: 바로 뒤가 가구·건축·재질이면 목재로 읽는다", () => {
+  it.each([
+    ["나무 의자", "wood chair"],
+    ["나무 책상", "wood desk"],
+    ["나무 문", "wood door"],
+    ["나무 벽", "wood wall"],
+    ["나무 칼", "wood sword"],
+    ["나무 상자", "wood box"],
+  ])("%s → %s", (input, query) => {
+    const plan = planMaterialIntent(input);
+    expect(lensOf(plan, "3d-material").providerQueries.polyhaven).toBe(query);
+    expect(plan.cues[0]?.term).toBe("wood");
+  });
+
+  it("사용자가 쓴 낱말 '나무' 는 칩·마켓 검색어·내 라이브러리 키워드에 그대로 남는다", () => {
+    const plan = planMaterialIntent("나무 의자");
+    expect(plan.cues.map((cue) => cue.surface)).toEqual(["나무", "의자"]);
+    expect(plan.cues[0]?.label).toBe("나무");
+    expect(plan.market.query).toBe("나무 의자");
+    expect(plan.myLibrary.keywords).toEqual(expect.arrayContaining(["나무", "wood"]));
+  });
+
+  it.each([
+    ["나무", "tree"],
+    ["나무 아래 의자", "tree chair"],
+    ["나무 숲", "tree forest"],
+    ["소나무 의자", "pine tree chair"],
+  ])("목재가 아닌 %s → %s", (input, query) => {
+    const plan = planMaterialIntent(input);
+    expect(lensOf(plan, "3d-material").providerQueries.polyhaven).toBe(query);
+  });
+
+  it("원목과 나무를 함께 적어도 목재 단서는 하나다", () => {
+    expect(planMaterialIntent("원목 나무 의자").cues.map((cue) => cue.id)).toEqual(["material:원목", "prop:의자"]);
+    expect(planMaterialIntent("나무 의자 나무 책상").cues.map((cue) => cue.id)).toEqual(["material:원목", "prop:의자", "prop:책상"]);
+  });
+
+  it("끄면 목재 단서만 빠진다", () => {
+    const plan = planMaterialIntent("나무 의자", { exclude: ["material:원목"] });
+    expect(lensOf(plan, "3d-material").providerQuery).toBe("chair");
+  });
+});
+
+describe("일상 어휘", () => {
+  it.each([
+    ["집", "house"],
+    ["길", "road"],
+    ["역", "station"],
+    ["응급실", "emergency room"],
+    ["칠판", "blackboard"],
+    ["노트북", "laptop"],
+    ["스마트폰", "smartphone"],
+    ["커피잔", "coffee cup"],
+    ["기사", "knight"],
+    ["유령", "ghost"],
+    ["해운대", "Haeundae"],
+    ["경성", "Gyeongseong"],
+    ["달리는", "running"],
+  ])("%s → %s", (word, term) => {
+    const plan = planMaterialIntent(word);
+    expect(plan.cues[0]?.term).toBe(term);
+    expect(plan.unresolved).toEqual([]);
+  });
+
+  it("한 글자 낱말도 조사가 붙으면 읽는다", () => {
+    expect(planMaterialIntent("집에서 본 노을").cues.map((cue) => cue.id)).toEqual(["place:집", "time:노을"]);
+    expect(planMaterialIntent("불이 난 집").cues.map((cue) => cue.id)).toEqual(["nature:불", "place:집"]);
+  });
+
+  it("다른 낱말의 일부로 들어 있는 글자는 읽지 않는다", () => {
+    for (const input of ["집중", "물론", "역사적인 순간"]) {
+      const plan = planMaterialIntent(input);
+      expect(plan.cues.map((cue) => cue.id), input).not.toContain("place:집");
+      expect(plan.cues.map((cue) => cue.id), input).not.toContain("nature:물");
+      expect(plan.cues.map((cue) => cue.id), input).not.toContain("place:역");
+    }
+    expect(planMaterialIntent("집중").unresolved).toEqual(["집중"]);
+  });
+
+  it("분위기 낱말은 보조 단서로만 읽고 검색어에 넣지 않으며, 감성 같은 군더더기는 미지원 낱말로 올리지 않는다", () => {
+    const plan = planMaterialIntent("귀여운 카페 감성");
+    expect(plan.cues.find((cue) => cue.label === "귀여운")?.neutral).toBe(true);
+    expect(plan.unresolved).toEqual([]);
+    expect(lensOf(plan, "3d-material").providerQuery).toBe("cafe");
   });
 });
 

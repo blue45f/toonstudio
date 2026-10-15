@@ -396,6 +396,25 @@ function isQuantity(token: string): boolean {
   return /^\d+$/u.test(token) || /^\d+(?!년대)\p{Script=Hangul}{1,2}$/u.test(token);
 }
 
+/** "나무" 바로 뒤에 이런 종류의 낱말이 오면 나무(tree)가 아니라 목재(wood)를 말한 것이다("나무 의자"). */
+const WOOD_TARGET_KINDS: ReadonlySet<MaterialCueKind> = new Set(["prop", "armor", "place", "material"]);
+const TREE_CONCEPT_ID = "plant:나무";
+const WOOD_SURFACE = "원목";
+
+/**
+ * 기본 사전은 "나무" 를 tree 로만 번역한다. 그러나 "나무 의자·나무 문·나무 벽"의 나무는 재질이라, tree 로 보내면
+ * 3D 제공처(모든 낱말이 맞아야 함)에서 결과가 비어 버린다. 바로 뒤 낱말이 가구·건축·재질이면 목재 단서로 읽는다.
+ * "나무 아래 의자"처럼 사이에 다른 낱말이 있으면 나무 그대로다.
+ */
+function woodForTree(concept: MaterialCueConcept, next: Token | undefined): MaterialCueConcept {
+  if (concept.id !== TREE_CONCEPT_ID || !next) return concept;
+  const following = lookupWithParticle(next.text);
+  if (!following || following.id === TREE_CONCEPT_ID || !WOOD_TARGET_KINDS.has(following.kind)) return concept;
+  const wood = MATERIAL_LEXICON.bySurface.get(WOOD_SURFACE);
+  // 사용자가 쓴 표기("나무")를 마켓 검색어·내 라이브러리 키워드에 그대로 남기려고 대표 표기만 이어받는다.
+  return wood ? { ...wood, ko: concept.ko } : concept;
+}
+
 function matchTokens(tokens: readonly Token[]): MatchResult {
   const segments: Segment[] = [];
   const free: FreeToken[] = [];
@@ -425,6 +444,7 @@ function matchTokens(tokens: readonly Token[]): MatchResult {
       }
     }
     if (concept) {
+      concept = woodForTree(concept, tokens[index + consumed]);
       let modifier: EraModifier | undefined;
       const next = tokens[index + consumed];
       if (concept.kind === "era" && next) {
