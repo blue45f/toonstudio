@@ -159,7 +159,10 @@ export function StudioPitchDocumentCard({
             placeholder="예: 기억을 지우는 대가로 타인의 꿈에 들어가는 상담사의 이야기"
             className={`${inputClass} min-h-11 font-bold`}
             disabled={disabled}
-            onChange={(event) => setDraft((current) => ({ ...current, logline: event.currentTarget.value }))}
+            onChange={(event) => {
+              const { value } = event.currentTarget;
+              setDraft((current) => ({ ...current, logline: value }));
+            }}
           />
         </label>
 
@@ -172,7 +175,10 @@ export function StudioPitchDocumentCard({
             placeholder="세계관, 주인공의 목표와 갈등, 이야기의 큰 흐름을 적어 주세요."
             className={`${inputClass} resize-y py-2 leading-relaxed`}
             disabled={disabled}
-            onChange={(event) => setDraft((current) => ({ ...current, synopsis: event.currentTarget.value }))}
+            onChange={(event) => {
+              const { value } = event.currentTarget;
+              setDraft((current) => ({ ...current, synopsis: value }));
+            }}
           />
         </label>
 
@@ -259,10 +265,13 @@ export function StudioPitchDocumentCard({
                 placeholder="예: 주 1회, 매주 수요일"
                 className={`${inputClass} min-h-11`}
                 disabled={disabled}
-                onChange={(event) => setDraft((current) => ({
-                  ...current,
-                  serializationPlan: { ...current.serializationPlan, cadence: event.currentTarget.value },
-                }))}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setDraft((current) => ({
+                    ...current,
+                    serializationPlan: { ...current.serializationPlan, cadence: value },
+                  }));
+                }}
               />
             </label>
             <label className={labelClass}>
@@ -273,10 +282,13 @@ export function StudioPitchDocumentCard({
                 placeholder="예: 시즌 1 총 24화"
                 className={`${inputClass} min-h-11`}
                 disabled={disabled}
-                onChange={(event) => setDraft((current) => ({
-                  ...current,
-                  serializationPlan: { ...current.serializationPlan, episodeCount: event.currentTarget.value },
-                }))}
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  setDraft((current) => ({
+                    ...current,
+                    serializationPlan: { ...current.serializationPlan, episodeCount: value },
+                  }));
+                }}
               />
             </label>
           </div>
@@ -289,10 +301,13 @@ export function StudioPitchDocumentCard({
               placeholder="시즌별 큰 흐름, 중반 전환점, 시즌 피날레 방향을 적어 주세요."
               className={`${inputClass} resize-y py-2 leading-relaxed`}
               disabled={disabled}
-              onChange={(event) => setDraft((current) => ({
-                ...current,
-                serializationPlan: { ...current.serializationPlan, outline: event.currentTarget.value },
-              }))}
+              onChange={(event) => {
+                const { value } = event.currentTarget;
+                setDraft((current) => ({
+                  ...current,
+                  serializationPlan: { ...current.serializationPlan, outline: value },
+                }));
+              }}
             />
           </label>
         </fieldset>

@@ -44,6 +44,38 @@ describe("StudioPitchDocumentCard", () => {
     expect(saved.serializationPlan.cadence).toBe("주 1회");
   });
 
+  it("keeps accepting consecutive edits in every text field of the planning form", () => {
+    // 상태 갱신 함수는 이벤트 핸들러가 끝난 뒤 렌더 단계로 미뤄질 수 있다. 이때 갱신 함수 안에서
+    // event.currentTarget 을 읽으면 이미 null 이라 두 번째 입력부터 예외가 났다.
+    const { onSave } = renderCard();
+    const logline = screen.getByRole("textbox", { name: "로그라인 (한 문장)" });
+    const synopsis = screen.getByRole("textbox", { name: "시놉시스" });
+    const cadence = screen.getByRole("textbox", { name: "연재 주기" });
+    const episodeCount = screen.getByRole("textbox", { name: "목표 회차" });
+    const outline = screen.getByRole("textbox", { name: "시즌 구성" });
+
+    for (const [field, values] of [
+      [logline, ["꿈", "꿈 상담사", "꿈 상담사의 이야기"]],
+      [synopsis, ["첫 줄", "첫 줄과 둘째 줄"]],
+      [cadence, ["주 1회", "주 2회"]],
+      [episodeCount, ["시즌 1", "시즌 1 총 24화"]],
+      [outline, ["1부", "1부와 2부"]],
+    ] as const) {
+      for (const value of values) fireEvent.change(field, { target: { value } });
+    }
+    fireEvent.click(screen.getByRole("button", { name: "기획서 저장" }));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const saved = onSave.mock.calls[0]![0];
+    expect(saved.logline).toBe("꿈 상담사의 이야기");
+    expect(saved.synopsis).toBe("첫 줄과 둘째 줄");
+    expect(saved.serializationPlan).toMatchObject({
+      cadence: "주 2회",
+      episodeCount: "시즌 1 총 24화",
+      outline: "1부와 2부",
+    });
+  });
+
   it("applies the document to slides only when something is written", () => {
     const { onApplyToSlides } = renderCard();
     const applyButton = screen.getByRole("button", { name: "슬라이드로 반영" });
