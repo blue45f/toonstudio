@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import exposureSource from "./StudioAnimClipExposure.tsx?raw";
 import { StudioAnimTimelinePanel } from "./StudioAnimTimelinePanel";
 import source from "./StudioAnimTimelinePanel.tsx?raw";
 
@@ -160,14 +161,17 @@ describe("StudioAnimTimelinePanel motion coach", () => {
 
 describe("StudioAnimTimelinePanel clip exposure editing", () => {
   it("wires clip start/duration editing to the pure model ops (drag bar + numeric inputs)", () => {
-    expect(source).toContain("moveTimelineClip");
-    expect(source).toContain("setTimelineClipDuration");
-    expect(source).toContain("setTimelineClipStart");
-    expect(source).toContain("activeClipExposureFrameIndices");
-    expect(source).toContain('data-testid={`timeline-clip-start-${clip.id}`}');
-    expect(source).toContain('data-testid={`timeline-clip-duration-${clip.id}`}');
-    expect(source).toContain('data-testid={`timeline-clip-bar-${clip.id}`}');
-    expect(source).toContain('data-clip-bar-track="true"');
+    // 패널은 클립 행마다 노출 편집기를 꽂고, 편집기가 순수 모델 연산을 호출한다.
+    // 패널 파일은 크기 래칫 기준선에 묶여 있어 편집기를 별도 컴포넌트 파일로 두었다.
+    expect(source).toContain("<StudioAnimClipExposure");
+    expect(exposureSource).toContain("moveTimelineClip");
+    expect(exposureSource).toContain("setTimelineClipDuration");
+    expect(exposureSource).toContain("setTimelineClipStart");
+    expect(exposureSource).toContain("activeClipExposureFrameIndices");
+    expect(exposureSource).toContain('data-testid={`timeline-clip-start-${clip.id}`}');
+    expect(exposureSource).toContain('data-testid={`timeline-clip-duration-${clip.id}`}');
+    expect(exposureSource).toContain('data-testid={`timeline-clip-bar-${clip.id}`}');
+    expect(exposureSource).toContain('data-clip-bar-track="true"');
   });
 
   it("renders start/duration inputs and the exposure bar for an existing clip", () => {
