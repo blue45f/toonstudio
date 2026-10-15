@@ -396,14 +396,14 @@ function isStudioWorkPurpose(pathname: string): boolean {
 }
 
 /** Exact destination state for drawer/utility items. A child page must not make
- * both its purpose hub and the child destination announce aria-current="page". */
+ * both its purpose hub and the child destination announce aria-current="page". 프로젝트 가상 스튜디오(/studio/p/:id/space)도 가상 스튜디오 목적지다. */
 function useDestinationActive() {
   useBilingualI18nRevision();
   const path = canonicalSitePath(usePathname());
   return (href: string, exact?: boolean) => {
     const destination = canonicalSitePath(href);
     if (exact) return path === destination;
-    return path === destination || path.startsWith(`${destination}/`);
+    return path === destination || path.startsWith(`${destination}/`) || (destination === "/studio/space" && VIRTUAL_STUDIO_PATTERN.test(path));
   };
 }
 

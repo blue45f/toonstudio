@@ -14,6 +14,12 @@ vi.mock("../../domains/auth/components/auth-menu-shell", () => ({
   AuthMenuShell: () => <button type="button">계정</button>,
 }));
 
+/**
+ * 헤더 1차 메뉴 목적지 (S1-2): 상시 노출은 제작·탐색·커뮤니티·배우기·마켓 5개뿐이다.
+ * 가상 스튜디오는 제작 드롭다운 자식으로 강등됐고, 협업은 협업 구역에서만 끼워 넣는 맥락형 항목이다.
+ */
+const PRIMARY_ENTRY_HREFS = ["/studio", "/discover", "/community", "/learn", "/market"];
+
 const mediaMatches = new Map<string, boolean>();
 const mediaListeners = new Map<string, Set<(event: MediaQueryListEvent) => void>>();
 
@@ -74,7 +80,7 @@ describe("mobile site shell accessibility", () => {
 
     const primaryNavigation = container.querySelector<HTMLElement>('nav[aria-label="주요 메뉴"]');
     expect(primaryNavigation?.querySelector('a[href="/about/technology"]')).toBeNull();
-    expect(Array.from(primaryNavigation?.querySelectorAll("a[data-navigation-entry]") ?? []).map((link) => link.getAttribute("href"))).toEqual(["/studio", "/studio/space", "/production", "/discover", "/community", "/learn", "/market"]);
+    expect(Array.from(primaryNavigation?.querySelectorAll("a[data-navigation-entry]") ?? []).map((link) => link.getAttribute("href"))).toEqual(PRIMARY_ENTRY_HREFS);
 
     const trigger = screen.getByRole("button", { name: "전체 메뉴" });
     trigger.focus();
@@ -127,7 +133,7 @@ describe("mobile site shell accessibility", () => {
     );
 
     const primaryNavigation = container.querySelector<HTMLElement>('nav[aria-label="주요 메뉴"]');
-    expect(Array.from(primaryNavigation?.querySelectorAll("a[data-navigation-entry]") ?? []).map((link) => link.getAttribute("href"))).toEqual(["/studio", "/studio/space", "/production", "/discover", "/community", "/learn", "/market"]);
+    expect(Array.from(primaryNavigation?.querySelectorAll("a[data-navigation-entry]") ?? []).map((link) => link.getAttribute("href"))).toEqual(PRIMARY_ENTRY_HREFS);
 
     const quickNavigation = container.querySelector<HTMLElement>('nav[aria-label="빠른 이동"]');
     expect(Array.from(quickNavigation?.querySelectorAll("a") ?? []).map((link) => link.getAttribute("href"))).toEqual(["/", "/studio", "/discover", "/community", "/sitemap"]);
@@ -201,7 +207,8 @@ describe("mobile site shell accessibility", () => {
     );
 
     const footer = container.querySelector("footer");
-    expect(screen.queryByRole("link", { name: "제작 기술" })).toBeNull();
+    // S1-3: 푸터도 전체 메뉴·⌘K와 같은 목적지 집합을 쓰므로 "제작 기술"을 더 이상 따로 빼지 않는다.
+    expect(screen.getByRole("link", { name: "제작 기술" }).getAttribute("href")).toBe("/about/technology");
     expect(footer?.className).toContain(
       "pb-[calc(3.75rem+env(safe-area-inset-bottom))]"
     );

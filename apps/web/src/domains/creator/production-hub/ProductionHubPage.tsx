@@ -230,7 +230,7 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
   return (
     <div data-creator-workflow="production-project" data-route-ready="production-project" className="min-h-dvh bg-canvas text-fg">
       <ProductionProjectHeader aggregate={aggregate} access={project.access} roleLens={roleLens} onRoleLensChange={setRoleLens} saveState={project.saveState} isDemo={project.isDemo} />
-      <div className="mx-auto grid max-w-[100rem] lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <div className="mx-auto grid max-w-[100rem] lg:grid-cols-[13.5rem_minmax(0,1fr)]">
         <ProductionProjectNav projectId={aggregate.projectId} surface={surface} />
         <div className="min-w-0 p-4 sm:p-6">
           {!project.isDemo ? <ProductionSessionStatus revision={aggregate.revision} refreshing={project.refreshing} saving={project.saveState === "saving"} onRefresh={project.refresh} /> : null}

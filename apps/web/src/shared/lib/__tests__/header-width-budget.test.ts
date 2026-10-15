@@ -6,8 +6,9 @@ import { describe, expect, it } from "vitest";
 const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
 // 헤더 폭 예산 — 제품 문맥별 핵심 목적지와 전체 메뉴, 검색, 생성·계정 동작을 한 줄에 유지한다.
-// 현재 헤더는 9개 고정 링크 대신 문맥별 핵심 목적지만 1180px부터 노출하므로, 1차 링크는
-// 글자만 두고 드롭다운 목적 아이콘, 텍스트 내비, 검색 트리거의 단계별 폭을 계약으로 고정한다.
+// 현재 헤더는 9개 고정 링크 대신 상시 5개(제작·탐색·커뮤니티·배우기·마켓)와 협업 구역의 맥락형 1개만
+// 표준 브레이크포인트 1024px(BLUEPRINT §5.2 (6))부터 노출하므로, 1차 링크는 글자만 두고
+// 드롭다운 목적 아이콘, 텍스트 내비, 검색 트리거의 단계별 폭을 계약으로 고정한다.
 describe("header width budget", () => {
   it("keeps the purpose navigation compact and gated to the measured desktop width", () => {
     const header = read("apps/web/src/shared/components/site-header.tsx");
@@ -29,7 +30,9 @@ describe("header width budget", () => {
     expect(primaryNavigation).toContain('className="site-header__primary"');
     expect(primaryNavigation).toContain('className="site-header__primary-link group"');
     expect(css).toMatch(/\.site-header__primary\s*\{[^}]*display:\s*none/u);
-    expect(css).toMatch(/@media\s*\(width\s*>=\s*1180px\)\s*\{\s*\.site-header__primary\s*\{\s*display:\s*flex/u);
+    expect(css).toMatch(/@media\s*\(width\s*>=\s*1024px\)\s*\{\s*\.site-header__primary\s*\{\s*display:\s*flex/u);
+    // 전용 1180 전환점은 폐지됐다 — 레이아웃 토큰 계약(BP)이 같은 규칙을 파일 수준에서 고정한다.
+    expect(css).not.toMatch(/@media\s*\(width\s*>=\s*1180px\)/u);
     const linkRule = css.match(/\.site-header__primary-link\s*\{([^}]*)\}/u)?.[1] ?? "";
     expect(linkRule).toContain("min-height: 44px");
     expect(linkRule).toContain("flex-shrink: 0");
