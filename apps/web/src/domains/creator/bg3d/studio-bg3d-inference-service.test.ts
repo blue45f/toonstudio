@@ -461,8 +461,11 @@ describe("키보드 점 고르기", () => {
     expect(candidates[0]?.distanceMeters).toBeLessThanOrEqual(candidates[5]?.distanceMeters ?? 0);
     expect(candidates[0]?.sourceId).toBe("A");
     expect(candidates[0]?.label).toContain("상자 A");
-    const picked = service.pickCandidate(candidates[0]!);
-    expect(picked.point).toEqual(candidates[0]?.point);
+    const first = candidates[0];
+    expect(first).toBeDefined();
+    if (!first) return;
+    const picked = service.pickCandidate(first);
+    expect(picked.point).toEqual(first.point);
     expect(service.getResult()).toBe(picked);
     expect(service.getSnapshot().live.text).toContain("선택");
     // 직접 고른 점은 커서 결과가 아니므로 클릭 치환에 쓰이지 않는다.
