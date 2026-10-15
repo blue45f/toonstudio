@@ -24,6 +24,7 @@ import type { BilingualLabel, ProductionLocalize } from "./production-labels";
 import { formatProductionDay } from "./production-format";
 import { ProductionEmptyState, ProductionMetric, ProductionPill, ProductionSectionCard } from "./production-ui";
 
+import { LazyContractReviewChecklist } from "@/shared/components/contract-review/LazyContractReviewChecklist";
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -228,6 +229,18 @@ export function ProductionRightsSurface({ aggregate }: { readonly aggregate: Pro
             </div>
           ))}
         </div> : <ProductionEmptyState title={hubText("활성 보상 계획이 없습니다")} description={hubText("고정 대가와 수익원별 배분 기준을 계약 버전에 연결하세요.")} />}
+      </ProductionSectionCard>
+
+      <ProductionSectionCard
+        className="xl:col-span-2"
+        id="production-contract-review"
+        title={bt("계약서 검토 체크리스트", "Contract review checklist")}
+        description={bt(
+          "서명 전에 내 계약서를 표준계약서 항목과 대조합니다. 지체상금·2차 저작·수익 배분·정산 주기·해지와 권리 반환을 다루며 법률 자문이 아닙니다.",
+          "Compare your contract with the standard contract topics before signing: late-delivery penalties, secondary works, revenue share, settlement cycle, termination and rights return. Not legal advice.",
+        )}
+      >
+        <LazyContractReviewChecklist headingLevel={3} />
       </ProductionSectionCard>
     </div>
   );
