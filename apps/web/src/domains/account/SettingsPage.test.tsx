@@ -54,10 +54,20 @@ describe("설정 화면 탭", () => {
     renderSettings("/settings#account-security");
     await waitFor(() => expect(screen.getByRole("tab", { name: "계정" }).getAttribute("aria-selected")).toBe("true"));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByTestId("connected-accounts")).toBeTruthy();
-    // 탈퇴도 계정 목적지(설정 계정 탭)에 모여 있다 — /me 프로필 편집과 분리된 자리.
+    // 탈퇴도 계정 목적지(설정 계정 탭)에 모여 있다 — /me 프로필 편집과 분리된 자리. 일상 구역이라 접지 않는다.
     expect(within(panel).getByTestId("delete-account")).toBeTruthy();
     expect(within(panel).getByRole("link", { name: /내 정보/u }).getAttribute("href")).toBe("/me");
+    // 연동 계정·계정 병합은 드물게 쓰는 설정이라 접힌 고급 그룹에 두고, 열기 전에는 그리지 않는다.
+    // 섹션 앵커(#account-security)는 탭만 열 뿐 그룹을 자동으로 펴지 않는다(settings-surface-tiers 계약).
+    const disclosure = within(panel).getByRole("button", { name: /연동 계정·계정 병합/u });
+    expect(disclosure.getAttribute("aria-expanded")).toBe("false");
+    expect(within(panel).queryByTestId("connected-accounts")).toBeNull();
+    expect(within(panel).queryByTestId("account-merge")).toBeNull();
+    // 접힌 그룹도 설정을 없애지 않는다 — 펼치면 연동 계정과 병합이 이 탭 안에서 그대로 열린다.
+    fireEvent.click(disclosure);
+    expect(disclosure.getAttribute("aria-expanded")).toBe("true");
+    expect(within(panel).getByTestId("connected-accounts")).toBeTruthy();
+    expect(within(panel).getByTestId("account-merge")).toBeTruthy();
   });
 
   it("연령 확인은 내 데이터와 분리된 전용 탭에서 열린다", () => {
@@ -103,7 +113,20 @@ describe("설정 검색", () => {
   it("데이터 초기화 범위가 서재 활동 데이터뿐임을 고지한다", () => {
     renderSettings();
     fireEvent.click(screen.getByRole("tab", { name: "내 데이터" }));
-    expect(screen.getByText(/초기화 범위는 서재 활동 데이터/)).toBeTruthy();
-    expect(screen.getByText(/환경설정과 연령 확인 상태, 계정 정보는 그대로 유지됩니다/)).toBeTruthy();
+    // 기록 정리·초기화는 접힌 고급 그룹에 있다. 파괴적 동작과 그 범위 고지는 같은 그룹에서 함께 열린다.
+    const disclosure = screen.getByRole("button", { name: /기록 정리와 초기화/u });
+    expect(disclosure.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText(/초기화 범위는 서재 활동 데이터/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "정말 초기화" })).toBeNull();
+
+    fireEvent.click(disclosure);
+    expect(disclosure.getAttribute("aria-expanded")).toBe("true");
+    const groupId = disclosure.getAttribute("aria-controls");
+    const group = groupId ? document.getElementById(groupId) : null;
+    expect(group).not.toBeNull();
+    if (!group) return;
+    expect(within(group).getByText(/초기화 범위는 서재 활동 데이터/)).toBeTruthy();
+    expect(within(group).getByText(/환경설정과 연령 확인 상태, 계정 정보는 그대로 유지됩니다/)).toBeTruthy();
+    expect(within(group).getByRole("button", { name: "정말 초기화" })).toBeTruthy();
   });
 });
