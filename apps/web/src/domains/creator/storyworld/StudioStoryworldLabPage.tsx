@@ -13,6 +13,7 @@ import {
   GitBranch,
   Globe2,
   Import,
+  ListChecks,
   Network,
   RefreshCcw,
   Save,
@@ -24,6 +25,7 @@ import {
   XCircle,
 } from "lucide-react";
 import {
+  Suspense,
   useEffect,
   useMemo,
   useRef,
@@ -76,15 +78,25 @@ import {
 import "./studio-storyworld-lab.css";
 import "../studio-shell/creator-workflow-surfaces.css";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
+
+// 개연성 점검 허브는 처음 열 때 내려받는다. 랩의 다른 탭을 쓰는 사람의 첫 화면을 무겁게 하지 않기 위해서다.
+const StudioStoryPlausibilityHub = lazyRetry(
+  () => import("./plausibility/StudioStoryPlausibilityHub").then((module) => ({ default: module.StudioStoryPlausibilityHub })),
+  "StudioStoryPlausibilityHub",
+);
 
 export interface StudioStoryworldLabPageProps {
   readonly workId: string | null;
   readonly remixSourceWorkId: string | null;
+  /** 주소의 ?view=plausibility 로 들어왔을 때 개연성 점검 탭에서 시작한다. */
+  readonly initialView?: "plausibility" | null;
 }
 
 type StoryworldTab =
+  | "plausibility"
   | "overview"
   | "settings"
   | "universe"
@@ -103,6 +115,7 @@ const TAB_ITEMS: readonly {
   readonly label: string;
   readonly icon: typeof Network;
 }[] = [
+  { id: "plausibility", label: "개연성 점검", icon: ListChecks },
   { id: "overview", label: "대시보드", icon: Network },
   { id: "settings", label: "설정 관리", icon: Settings2 },
   { id: "universe", label: "공유 세계관", icon: Globe2 },
@@ -590,10 +603,11 @@ function StudioStoryworldLabEditor({
   workId,
   remixSourceWorkId,
   initialProject,
+  initialView = null,
 }: StudioStoryworldLabPageProps & { readonly initialProject: StoryworldProject }) {
   const storageKey = useMemo(() => projectStorageKey(workId, remixSourceWorkId), [workId, remixSourceWorkId]);
   const [project, setProject] = useState<StoryworldProject>(initialProject);
-  const [activeTab, setActiveTab] = useState<StoryworldTab>("overview");
+  const [activeTab, setActiveTab] = useState<StoryworldTab>(initialView === "plausibility" ? "plausibility" : "overview");
   const [settingsFocus, setSettingsFocus] = useState<StoryworldSettingsFocus | null>(null);
   const [issueDispositions, setIssueDispositions] = useState<StoryworldIssueDispositionDocument | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -795,6 +809,24 @@ function StudioStoryworldLabEditor({
             </div>
           </div>
 
+          {activeTab === "plausibility" ? (
+            <Suspense fallback={<p className="storyworld-empty" role="status">개연성 점검을 여는 중입니다.</p>}>
+              <StudioStoryPlausibilityHub
+                analysis={result}
+                continuityIssues={continuityIssues}
+                dispositions={issueDispositions}
+                isExampleSeed={isDemoStoryworldSeed(project)}
+                onClearDisposition={clearDisposition}
+                onExportProject={exportProject}
+                onOpenSettings={openInSettings}
+                onProjectChange={(next, message) => { setProject(authoredStoryworldProject(next)); setStatusText(message); }}
+                onSetDisposition={setDisposition}
+                project={project}
+                scopeKey={storageKey}
+                workId={workId}
+              />
+            </Suspense>
+          ) : null}
           {activeTab === "overview" ? <OverviewTab onEditElement={openInSettings} onOpenData={() => setActiveTab("json")} onOpenIssues={() => setActiveTab("issues")} project={project} result={result} /> : null}
           {activeTab === "settings" ? (
             <StudioStoryworldSettings

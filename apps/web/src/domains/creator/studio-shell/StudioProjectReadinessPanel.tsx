@@ -7,6 +7,14 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_PROJECT_DIAGNOSTICS_FAILED_EVENT } from "../studio-project-diagnostic-source-store";
+import {
+  STUDIO_PLAUSIBILITY_SUMMARY_UPDATED_EVENT,
+  describePlausibilitySummary,
+  plausibilityHubHref,
+  plausibilitySummaryStorageKey,
+  readPlausibilitySummary,
+  type PlausibilitySummarySnapshot,
+} from "../storyworld/plausibility/studio-story-plausibility-summary";
 import { STUDIO_PROJECT_READINESS_REQUEST_EVENT, STUDIO_PROJECT_READINESS_UPDATED_EVENT, parseStudioProjectReadinessSnapshot, readStudioProjectReadinessSnapshot, studioProjectReadinessStorageKey, type StudioProjectReadinessSnapshot } from "../studio-project-readiness-store";
 
 import type { StudioProjectReadinessSectionId, StudioProjectReadinessStatus } from "../studio-project-readiness";
@@ -75,6 +83,49 @@ function readBrowserSnapshot(projectId: string): StudioProjectReadinessSnapshot 
   } catch {
     return null;
   }
+}
+
+function readBrowserPlausibility(projectId: string): PlausibilitySummarySnapshot | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return readPlausibilitySummary(window.localStorage, projectId);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 출시 전 권장 안내 한 줄: 개연성 점검의 마지막 점검 시각·오류·경고·커버리지. 준비도의 막힘·확인 필요 건수에는
+ * 더하지 않고, 점검 허브로 가는 링크 하나만 둔다.
+ */
+function PlausibilityReadinessNote({ projectId }: { readonly projectId: string }) {
+  useBilingualI18nRevision();
+  const [summary, setSummary] = useState<PlausibilitySummarySnapshot | null>(() => readBrowserPlausibility(projectId));
+  useEffect(() => {
+    setSummary(readBrowserPlausibility(projectId));
+    const refresh = () => setSummary(readBrowserPlausibility(projectId));
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === plausibilitySummaryStorageKey(projectId)) refresh();
+    };
+    window.addEventListener(STUDIO_PLAUSIBILITY_SUMMARY_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(STUDIO_PLAUSIBILITY_SUMMARY_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [projectId]);
+  const text = describePlausibilitySummary(summary, (iso, language) =>
+    new Date(iso).toLocaleString(language === "ko" ? "ko-KR" : "en-US"));
+  return (
+    <Link
+      href={plausibilityHubHref(projectId)}
+      className="mt-3 flex min-h-11 items-center gap-3 rounded-xl border border-dashed border-line bg-panel/40 px-3 py-2.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/40 hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+      data-studio-plausibility-note=""
+    >
+      <span className="size-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+      <span>{bi(text.ko, text.en)}</span>
+    </Link>
+  );
 }
 
 function projectSectionHref(projectId: string, section: StudioProjectReadinessSectionId): string {
@@ -286,6 +337,7 @@ export function StudioProjectReadinessPanel({
           ))}
         </div>
       ) : null}
+      <PlausibilityReadinessNote projectId={projectId} />
     </section>
   );
 }
