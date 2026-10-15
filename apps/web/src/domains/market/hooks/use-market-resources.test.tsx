@@ -173,7 +173,7 @@ describe("useMarketResources", () => {
     act(() => result.current.loadMore());
     await waitFor(() => {
       expect(result.current.loadingMore).toBe(false);
-      expect(result.current.loadMoreError).toBe("추가 리소스를 불러오지 못했어요.");
+      expect(result.current.loadMoreError).toBe("추가 리소스를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
     });
 
     act(() => result.current.loadMore());

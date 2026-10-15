@@ -48,7 +48,7 @@ describe("LanguagePicker", () => {
     render(<LanguagePicker value="ko" onChange={() => undefined} />);
 
     fireEvent.click(screen.getByRole("button", { name: "언어 선택" }));
-    // ja clears the translated floor but is only about half complete, so it is labelled.
+    // ja is only about half complete (under the 0.9 completeness threshold), so it is labelled.
     fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
       target: { value: "日本語" },
     });

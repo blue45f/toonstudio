@@ -3,7 +3,7 @@
   "authors.title": "Authors",
   "authors.desc": "Authors ranked by number of works. Tap an author to see their titles, ratings, and fan cafe in one place.",
   "authors.search": "Search author name",
-  "authors.error": "Couldn't load the author list.",
+  "authors.error": "Couldn't load the author list. Please try again in a moment.",
   "authors.empty": " — no matching author.",
   "authors.allOf": "of",
   "authors.topOf": "· top",

@@ -124,7 +124,7 @@
   "admin.members.selfTag": "(Me)",
   "admin.members.restore": "Restore",
   "admin.members.suspend": "Suspend",
-  "admin.members.delete": "Delete",
+  "admin.members.delete": "Remove member",
   "admin.members.statusMerged": "Merged",
   "admin.ops.monetizationTitle": "Зар сурталчилгааны мөнгө олох унтраалга",
   "admin.ops.monetizationDesc": "Аппликешн даяар мөнгө олох арга болон зарын харагдах байдлыг сэлгэх.",

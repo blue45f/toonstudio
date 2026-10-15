@@ -20,7 +20,7 @@
   "extreview.error.linkGone": "The link has expired or access has been revoked.",
   "extreview.error.nameRequired": "Please enter your name.",
   "extreview.error.noteRequired": "Please write a comment or describe the changes you are requesting.",
-  "extreview.error.saveFailedFallback": "Your review could not be saved.",
+  "extreview.error.saveFailedFallback": "Your review could not be saved. Please try again in a moment.",
   "extreview.error.title": "This review link cannot be opened",
   "extreview.evidence.alt": "Review material image {n}",
   "extreview.evidence.failed": "Image {n} could not be loaded. Please open the original to check it.",

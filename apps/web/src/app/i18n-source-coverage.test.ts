@@ -5,6 +5,17 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { i18nDict } from "@/shared/lib/i18n";
+// 지연 사전 묶음: 셸 내장 사전에서 분리된 네임스페이스는 소비 모듈이 평가될 때 동기 등록된다
+// (scripts/generate-i18n-builtins.mjs 의 LAZY_APP_BUILTIN_GROUPS 와 한 쌍이다). 분리 단계가
+// 늘어나면 이 목록에도 등록 모듈을 더해야 이 테스트가 그 키들을 계속 지켜 준다.
+import "@/domains/account/account-i18n";
+import "@/domains/catalog/guide-i18n";
+import "@/domains/creator/analytics/creator-analytics-i18n";
+import "@/domains/creator/production-hub/extreview-i18n";
+import "@/domains/legal/copyright-i18n";
+import "@/domains/monetization/monetization-i18n";
+import "@/shared/components/search-i18n";
+import "@/shared/components/share-i18n";
 import "@/domains/creator/studio-app-settings-center-i18n";
 import "@/domains/creator/reader-preview/reader-preview-i18n";
 import "@/domains/legal/creator-support-i18n";

@@ -23,12 +23,12 @@
   "share.social.telegram": "Telegram",
   "share.social.email": "Email",
   "share.status.shared": "Shared successfully.",
-  "share.status.failed": "Device sharing could not be opened.",
+  "share.status.failed": "Device sharing could not be opened. Please try again in a moment.",
   "share.status.kakaoOpened": "Opened KakaoTalk sharing.",
-  "share.status.kakaoFailed": "KakaoTalk sharing could not be opened.",
+  "share.status.kakaoFailed": "KakaoTalk sharing could not be opened. Please try again in a moment.",
   "share.status.copied": "Copied the share link.",
-  "share.status.copyFailed": "The link could not be copied.",
+  "share.status.copyFailed": "The link could not be copied. Please copy it manually.",
   "share.status.channelOpened": "Opened the selected sharing page.",
   "share.status.emailOpened": "Opened your email app.",
-  "share.status.qrFailed": "The QR code could not be created."
+  "share.status.qrFailed": "The QR code could not be created. Please try again in a moment."
 }

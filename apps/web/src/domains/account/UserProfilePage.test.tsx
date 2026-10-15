@@ -221,8 +221,8 @@ describe("UserProfilePage tab failure and empty states", () => {
     await renderProfileWithTab("works");
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("창작 작품을 불러오지 못했습니다");
-    expect(screen.queryByText("이 회원이 아직 공개한 창작 작품이 없습니다.")).toBeNull();
+    expect(alert.textContent).toContain("창작 작품을 불러오지 못했어요");
+    expect(screen.queryByText("이 회원이 아직 공개한 창작 작품이 없어요.")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "재시도" }));
     expect(vi.mocked(listWorks).mock.calls.length).toBe(2);
@@ -233,8 +233,8 @@ describe("UserProfilePage tab failure and empty states", () => {
     await renderProfileWithTab("series");
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("연재 시리즈를 불러오지 못했습니다");
-    expect(screen.queryByText("이 회원이 아직 만든 연재 시리즈가 없습니다.")).toBeNull();
+    expect(alert.textContent).toContain("연재 시리즈를 불러오지 못했어요");
+    expect(screen.queryByText("이 회원이 아직 만든 연재 시리즈가 없어요.")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "재시도" }));
     expect(vi.mocked(listSeries).mock.calls.length).toBe(2);

@@ -243,7 +243,7 @@ describe("MarketAcquisitionModal", () => {
       />,
     );
 
-    await screen.findByText("가격과 결제 정책을 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 열어 주세요.");
+    await screen.findByText("가격과 결제 정책을 불러오지 못했어요. 네트워크를 확인한 뒤 다시 열어 주세요.");
     expect(screen.getByText("확인 불가")).toBeTruthy();
     expect(screen.queryByText("무료", { exact: true })).toBeNull();
     expect(screen.getByRole("button", { name: /가격 확인하고 추가/ })).toBeTruthy();

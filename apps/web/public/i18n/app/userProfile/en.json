@@ -7,7 +7,7 @@
   "userProfile.works.error": "Unable to load created works. Please try again.",
   "userProfile.series.empty": "This user has no series yet.",
   "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.fetchError": "Unable to load profile.",
+  "userProfile.fetchError": "Unable to load profile. Please try again in a moment.",
   "userProfile.authorFallback": "User",
   "userProfile.metaTemplate": "{author} profile · {reviews} reviews · {works} works · avg rating {avg} — ToonStudio.",
   "userProfile.bioFallback": "Reader profile and published works",

@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Couldn't load notifications.",
+  "notify.loadError": "Couldn't load notifications. Please try again in a moment.",
   "notify.empty": "No new notifications."
 }

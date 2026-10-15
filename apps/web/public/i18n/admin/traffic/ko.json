@@ -16,7 +16,7 @@
   "admin.traffic.export": "CSV 내보내기",
   "admin.traffic.lastUpdated": "마지막 갱신",
   "admin.traffic.live": "LIVE",
-  "admin.traffic.loadError": "트래픽을 불러오지 못했어요",
+  "admin.traffic.loadError": "트래픽을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
   "admin.traffic.noData": "아직 수집된 실제 방문 데이터가 없습니다.",
   "admin.traffic.noDataDesc": "배포 후 공개 페이지 방문부터 집계됩니다. 관리자 경로와 개인정보 보호 신호가 활성화된 브라우저는 제외됩니다.",
   "admin.traffic.page": "페이지",

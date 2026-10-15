@@ -23,6 +23,6 @@
   "admin.members.selfTag": "(Me)",
   "admin.members.restore": "Restore",
   "admin.members.suspend": "Suspend",
-  "admin.members.delete": "Delete",
+  "admin.members.delete": "Remove member",
   "admin.members.statusMerged": "Merged"
 }

@@ -88,7 +88,7 @@ describe("CreatorMarketplaceReportAction", () => {
     );
     expect((screen.getByRole("button", { name: "내 리소스 신고 불가" }) as HTMLButtonElement).disabled)
       .toBe(true);
-    expect(screen.getByText("자신이 배포한 마켓 리소스는 신고할 수 없습니다."))
+    expect(screen.getByText("자신이 배포한 마켓 리소스는 신고할 수 없어요."))
       .toBeTruthy();
     expect(reportCreatorMarketplaceResource).not.toHaveBeenCalled();
   });

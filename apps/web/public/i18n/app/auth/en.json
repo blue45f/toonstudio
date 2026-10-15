@@ -11,7 +11,7 @@
   "auth.callback.error.oauthFailed": "OAuth exchange failed.",
   "auth.callback.error.unsupported": "Unsupported sign-in provider.",
   "auth.callback.error.accessDenied": "Sign-in was cancelled.",
-  "auth.callback.error.generic": "Sign-in failed.",
+  "auth.callback.error.generic": "Sign-in failed. Go back to the sign-in page and try again.",
   "auth.callback.error.noUser": "Unable to verify user information.",
   "auth.callback.error.invalidAccess": "Invalid access.",
   "auth.callback.error.failed": "An error occurred while signing in.",

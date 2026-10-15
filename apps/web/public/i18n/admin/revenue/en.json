@@ -10,7 +10,7 @@
   "admin.revenue.kindCampaign": "Campaign",
   "admin.revenue.kindPlan": "Plan",
   "admin.revenue.kindSubscription": "Subscription",
-  "admin.revenue.loadError": "Failed to load revenue ledger",
+  "admin.revenue.loadError": "Couldn't load settlement history. Please try again in a moment.",
   "admin.revenue.reject": "Reject",
   "admin.revenue.revoke": "Cancel",
   "admin.revenue.settle": "Complete Settlement",

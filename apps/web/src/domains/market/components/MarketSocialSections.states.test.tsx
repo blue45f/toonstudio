@@ -114,7 +114,7 @@ describe("마켓 소셜 섹션의 빈 상태/오류 구분", () => {
       </SessionContext.Provider>,
     );
 
-    expect(screen.queryByText(/아직 등록된 질문이 없습니다/)).toBeNull();
+    expect(screen.queryByText(/아직 등록된 질문이 없어요/)).toBeNull();
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("마켓 댓글과 리뷰를 불러오지 못했습니다.");
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
@@ -129,7 +129,7 @@ describe("마켓 소셜 섹션의 빈 상태/오류 구분", () => {
       </SessionContext.Provider>,
     );
 
-    expect(screen.getByText(/아직 등록된 질문이 없습니다/)).toBeDefined();
+    expect(screen.getByText(/아직 등록된 질문이 없어요/)).toBeDefined();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 

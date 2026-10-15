@@ -320,7 +320,7 @@ describe("StudioToolsCompanionPage", () => {
   it("refuses a missing or malformed session instead of joining a global channel", () => {
     renderCompanion("/studio/tools-companion");
 
-    expect(screen.getByRole("alert").textContent).toContain("유효한 분리 세션이 없습니다");
+    expect(screen.getByRole("alert").textContent).toContain("유효한 분리 세션이 없어요");
     expect(FakeBroadcastChannel.instances).toHaveLength(0);
   });
 
@@ -1153,7 +1153,7 @@ describe("StudioToolsCompanionPage", () => {
   it("rejects an invalid or duplicated surface without opening a channel", () => {
     renderCompanion(`/studio/tools-companion?session=${sessionId}&view=navigator&view=review`);
 
-    expect(screen.getByRole("alert").textContent).toContain("유효한 컴패니언 보기 모드가 없습니다");
+    expect(screen.getByRole("alert").textContent).toContain("유효한 컴패니언 보기 모드가 없어요");
     expect(FakeBroadcastChannel.instances).toHaveLength(0);
   });
 
@@ -1234,7 +1234,7 @@ describe("StudioToolsCompanionPage", () => {
 
     const root = view.container.firstElementChild as HTMLElement;
     const panel = document.getElementById("companion-mode-panel-reference")!;
-    const transportNote = screen.getByText(/편집 문서는 기본 탭만 소유합니다/u);
+    const transportNote = screen.getByText(/편집 문서는 기본 탭만 소유해요/u);
     expect(root.className).toContain("overflow-y-auto");
     expect(panel.className).toContain("min-h-[29rem]");
     expect(panel.className).toContain("flex-1");
@@ -1852,7 +1852,7 @@ describe("StudioToolsCompanionPage", () => {
     expect(getScreenDetails).toHaveBeenCalledOnce();
     expect(moveTo).toHaveBeenCalledWith(expect.any(Number), expect.any(Number));
     expect(resizeTo).toHaveBeenCalledWith(520, 820);
-    expect(screen.getByText(/다른 화면으로 이동을 요청했습니다/u).getAttribute("role")).toBe("status");
+    expect(screen.getByText(/다른 화면으로 이동을 요청했어요/u).getAttribute("role")).toBe("status");
     Reflect.deleteProperty(window, "getScreenDetails");
   });
 
@@ -1871,7 +1871,7 @@ describe("StudioToolsCompanionPage", () => {
     renderCompanion();
 
     fireEvent.click(screen.getByRole("button", { name: "다른 화면으로 창 이동" }));
-    expect(screen.getByText("연결된 화면을 확인하고 있습니다…").getAttribute("role")).toBe("status");
+    expect(screen.getByText("연결된 화면을 확인하고 있어요…").getAttribute("role")).toBe("status");
 
     await act(async () => {
       resolveDetails?.({
@@ -1880,7 +1880,7 @@ describe("StudioToolsCompanionPage", () => {
       });
       await Promise.resolve();
     });
-    expect(screen.getByRole("alert").textContent).toContain("사용 가능한 다른 화면을 찾지 못했습니다");
+    expect(screen.getByRole("alert").textContent).toContain("사용 가능한 다른 화면을 찾지 못했어요");
   });
 
   it("announces unsupported automatic placement as an alert", () => {
@@ -1889,7 +1889,7 @@ describe("StudioToolsCompanionPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "다른 화면으로 창 이동" }));
 
-    expect(screen.getByRole("alert").textContent).toContain("자동 창 배치를 지원하지 않습니다");
+    expect(screen.getByRole("alert").textContent).toContain("자동 창 배치를 지원하지 않아요");
   });
 
   it("drops a late screen permission result after an invalid-session page unmounts", async () => {

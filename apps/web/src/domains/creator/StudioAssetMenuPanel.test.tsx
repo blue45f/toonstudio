@@ -95,8 +95,8 @@ describe("StudioAssetMenuPanel mobile asset controls", () => {
   it("renders 44px controls, placement guidance, and an accessible context-aware add action", () => {
     const html = renderPanel();
 
-    expect(html).toContain('aria-label="이미지 에셋 업로드"');
-    expect(html).toContain('aria-label="AI 에셋 생성 도구 열기"');
+    expect(html).toContain('aria-label="이미지 소재 업로드"');
+    expect(html).toContain('aria-label="AI 소재 생성 도구 열기"');
     expect(html).toContain('aria-controls="studio-ai-asset-creator"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('id="studio-ai-asset-creator" hidden=""');
@@ -194,9 +194,9 @@ describe("StudioAssetMenuPanel favorites", () => {
     const html = renderPanel({ favoriteOnly: true });
 
     expect(html).toContain('role="status"');
-    expect(html).toContain("조건에 맞는 즐겨찾기가 없습니다.");
-    expect(html).toContain("별표를 추가하거나 검색 조건을 바꿔보세요.");
-    expect(html).not.toContain("검색 결과가 없습니다.");
+    expect(html).toContain("조건에 맞는 찜한 소재가 없어요.");
+    expect(html).toContain("찜하거나 검색 조건을 바꿔보세요.");
+    expect(html).not.toContain("검색 결과가 없어요.");
   });
 
   it("keeps identical local and community raw IDs in separate favorite namespaces", () => {
@@ -218,19 +218,19 @@ describe("StudioAssetMenuPanel favorites", () => {
     });
 
     expect(localHtml).toContain('data-favorite-id="local:same-id"');
-    expect(localHtml).toContain('aria-label="같은 로컬 즐겨찾기에서 제거" aria-pressed="true"');
+    expect(localHtml).toContain('aria-label="같은 로컬 찜에서 제거" aria-pressed="true"');
     expect(communityHtml).toContain('data-favorite-id="community:same-id"');
-    expect(communityHtml).toContain('aria-label="같은 공유 즐겨찾기에 추가" aria-pressed="false"');
+    expect(communityHtml).toContain('aria-label="같은 공유 찜에 추가" aria-pressed="false"');
   });
 
   it("renders the star as a 44px sibling control, separate from use and management actions", () => {
     const html = renderPanel();
-    const favoriteButton = html.indexOf('aria-label="로컬 에셋 즐겨찾기에 추가"');
+    const favoriteButton = html.indexOf('aria-label="로컬 에셋 찜에 추가"');
     const favoriteButtonEnd = html.indexOf("</button>", favoriteButton);
     const useButton = html.indexOf('aria-label="로컬 에셋 선택한 컷 또는 현재 보이는 위치에 추가"');
 
-    expect(html).toContain('aria-label="즐겨찾기만"');
-    expect(html).toContain('aria-label="로컬 에셋 즐겨찾기에 추가" aria-pressed="false"');
+    expect(html).toContain('aria-label="찜한 것만"');
+    expect(html).toContain('aria-label="로컬 에셋 찜에 추가" aria-pressed="false"');
     expect(html.slice(favoriteButton, favoriteButtonEnd)).toContain("size-11");
     expect(favoriteButton).toBeGreaterThan(-1);
     expect(favoriteButtonEnd).toBeLessThan(useButton);

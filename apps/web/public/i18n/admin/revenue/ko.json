@@ -10,7 +10,7 @@
   "admin.revenue.kindCampaign": "캠페인",
   "admin.revenue.kindPlan": "플랜",
   "admin.revenue.kindSubscription": "구독",
-  "admin.revenue.loadError": "정산 내역을 불러오지 못했어요",
+  "admin.revenue.loadError": "정산 내역을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
   "admin.revenue.reject": "반려",
   "admin.revenue.revoke": "취소",
   "admin.revenue.settle": "정산완료",
