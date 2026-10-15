@@ -322,6 +322,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/learn", "웹툰 제작 강좌", "Creation courses", "기초부터 Studio 실습까지", "Learn from foundations to studio practice"),
       destination("/learn/glossary", "웹툰 용어 사전", "Creation glossary", "제작 용어와 예시 빠르게 찾기", "Find production terms and examples"),
       destination("/learn/studio", "Studio 실습 과정", "Studio practice", "배운 내용을 작업공간에서 따라 하기", "Practice lessons inside the workspace"),
+      destination("/learn/contract-checklist", "웹툰 계약서 검토 체크리스트", "Webtoon contract checklist", "표준계약서 항목과 내 계약서를 하나씩 대조", "Compare your contract with the standard contract item by item"),
       destination("/learn/records", "학습 기록 관리", "Learning records", "진행 기록을 백업하고 복원", "Back up and restore learning progress"),
       destination("/learn/recipes", "제작 레시피", "Creative recipes", "연출을 직접 조작하며 학습", "Learn direction through hands-on recipes"),
       destination("/story-lab", "스토리 연구실", "Story lab", "인물·욕망·갈등 설계", "Shape characters, desire and conflict"),

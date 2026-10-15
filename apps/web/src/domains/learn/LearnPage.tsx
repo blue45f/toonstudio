@@ -4,6 +4,7 @@ import { LearnPage as LearnContent } from "./LearnContent";
 import { LearningHome, LearningPathPage } from "./LearningHome";
 import { LearningClassesPage } from "./LearningClassesPage";
 import { LearningClassroomPage } from "./LearningClassroomPage";
+import { LearningContractChecklistPage } from "./LearningContractChecklistPage";
 import { LearningResourcesPage } from "./LearningResourcesPage";
 import { LearningRecordsPage } from "./LearningRecordsPage";
 import { LearnSectionShell } from "./LearnSectionShell";
@@ -40,7 +41,9 @@ export function LearnPage() {
     ? <WebtoonProcessPage />
     : normalizedPath === "/learn/careers"
       ? <WebtoonCareerPage />
-      : null;
+      : normalizedPath === "/learn/contract-checklist"
+        ? <LearningContractChecklistPage />
+        : null;
 
   return (
     <LearnSectionShell>
