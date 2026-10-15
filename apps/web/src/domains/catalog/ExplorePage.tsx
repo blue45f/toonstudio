@@ -37,6 +37,11 @@ import {
   parseCatalogDiscoveryState,
   writeCatalogDiscoveryState,
 } from "@/shared/lib/catalog-discovery-state";
+import {
+  formatI18nTemplate,
+  useBilingual,
+  useBilingualI18nRevision,
+} from "@/shared/lib/i18n-bilingual-copy";
 import { useSavedTitleIds } from "@/shared/lib/store";
 import { GENRES, TYPE_LABEL } from "@/shared/lib/taxonomy";
 import {
@@ -51,17 +56,18 @@ import { useApiResource } from "@/platform/use-api-resource";
 
 type ExploreParams = Record<string, string | undefined>;
 
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: "popular", label: "인기순" },
-  { key: "rating", label: "평점순" },
-  { key: "trending", label: "급상승" },
-  { key: "newest", label: "최신순" },
+// 표시 라벨은 (ko, en) 튜플이다. 화면에서는 bt(...label)로 펼쳐 쓴다.
+const SORTS: { key: SortKey; label: readonly [string, string] }[] = [
+  { key: "popular", label: ["인기순", "Most popular"] },
+  { key: "rating", label: ["평점순", "Top rated"] },
+  { key: "trending", label: ["급상승", "Trending"] },
+  { key: "newest", label: ["최신순", "Newest"] },
 ];
 
-const TYPES: { value: WorkType | "all"; label: string }[] = [
-  { value: "all", label: "전체" },
-  { value: "webtoon", label: TYPE_LABEL.webtoon },
-  { value: "webnovel", label: TYPE_LABEL.webnovel },
+const TYPES: { value: WorkType | "all"; label: readonly [string, string] }[] = [
+  { value: "all", label: ["전체", "All"] },
+  { value: "webtoon", label: [TYPE_LABEL.webtoon, "Webtoons"] },
+  { value: "webnovel", label: [TYPE_LABEL.webnovel, "Web novels"] },
 ];
 
 const FACETS = [
@@ -110,6 +116,8 @@ interface ExploreResponse {
 }
 
 export function ExplorePage() {
+  useBilingualI18nRevision();
+  const bt = useBilingual("ExplorePage");
   const [searchParams, setSearchParams] = useSearchParams();
   const savedIds = useSavedTitleIds();
   const [panelOpen, setPanelOpen] = useState(false);
@@ -166,7 +174,7 @@ export function ExplorePage() {
   const query = searchParams.toString();
   const { data, loading, error, reload } = useApiResource<ExploreResponse>(
     query ? `/api/explore?${query}` : "/api/explore",
-    "탐색 데이터를 불러오지 못했습니다.",
+    bt("탐색 데이터를 불러오지 못했습니다.", "Couldn't load the explore data."),
   );
   const rawResults = data?.results ?? [];
   // 서버가 적용하지 못한 클라 전용 facet(가격 정밀·내 찜만)을 결과에 추가 적용.
@@ -272,7 +280,7 @@ export function ExplorePage() {
               style={{ backgroundImage: spectrumGradient([...GENRES], 90) }}
             />
             <Compass size={14} strokeWidth={2} />
-            GENRE SPECTRUM / 탐색
+            {bt("GENRE SPECTRUM / 탐색", "GENRE SPECTRUM / EXPLORE")}
           </p>
 
           <div className="mt-3 max-w-2xl sm:mt-4">
@@ -282,7 +290,7 @@ export function ExplorePage() {
                 animation: "fade-up 0.6s var(--ease-out-expo) 0.14s both",
               }}
             >
-              색을 따라 떠나는{" "}
+              {bt("색을 따라 떠나는", "Exploring by color:")}{" "}
               {heroGenre ? (
                 <span
                   className="relative font-serif font-normal italic"
@@ -305,7 +313,7 @@ export function ExplorePage() {
                   particleCount={22}
                   particleSpread={1.2}
                 >
-                  스펙트럼 탐색
+                  {bt("스펙트럼 탐색", "Genre spectrum")}
                 </ShimmerTitle>
               )}
             </h1>
@@ -315,11 +323,12 @@ export function ExplorePage() {
                 animation: "fade-up 0.6s var(--ease-out-expo) 0.24s both",
               }}
             >
-              조건으로 좁혀 보는 화면입니다. 장르·태그·유형별로 웹툰과 웹소설을
-              좁혀봅니다. 작품 카드에는 줄거리와 연재 상태가 함께 표시되어 무슨
-              작품인지 바로 판단할 수 있습니다. 어디서부터 볼지 모르겠다면{" "}
-              <Link href="/discover" className="font-semibold text-accent hover:underline">작품 탐색</Link>
-              에서 추천·랭킹부터 보세요.
+              {bt(
+                "조건으로 좁혀 보는 화면입니다. 장르·태그·유형별로 웹툰과 웹소설을 좁혀봅니다. 작품 카드에는 줄거리와 연재 상태가 함께 표시되어 무슨 작품인지 바로 판단할 수 있습니다. 어디서부터 볼지 모르겠다면",
+                "Narrow things down by condition here. Filter webtoons and web novels by genre, tag, and type. Each card shows the synopsis and release status, so you can tell what a title is at a glance. Not sure where to start? Try",
+              )}{" "}
+              <Link href="/discover" className="font-semibold text-accent hover:underline">{bt("작품 탐색", "Discover titles")}</Link>
+              {bt("에서 추천·랭킹부터 보세요.", " for recommendations and rankings first.")}
             </p>
             <Link
               href={
@@ -337,7 +346,9 @@ export function ExplorePage() {
                 aria-hidden="true"
                 className="transition-transform duration-300 ease-out-expo group-hover:rotate-180"
               />
-              {heroGenre ? `${heroGenre}에서 즉흥으로 한 편` : "조건은 됐고, 그냥 놀래켜줘"}
+              {heroGenre
+                ? formatI18nTemplate(bt("{v0}에서 즉흥으로 한 편", "One spontaneous pick from {v0}"), { v0: heroGenre })
+                : bt("조건은 됐고, 그냥 놀래켜줘", "Skip the filters — surprise me")}
             </Link>
           </div>
 
@@ -401,7 +412,7 @@ export function ExplorePage() {
                   onClick={() => setShowAllGenres(true)}
                   className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
                 >
-                  모든 장르 보기 · {GENRES.length - visibleGenres.length}개
+                  {formatI18nTemplate(bt("모든 장르 보기 · {v0}개", "Show all genres · {v0}"), { v0: GENRES.length - visibleGenres.length })}
                 </button>
               ) : showAllGenres ? (
                 <button
@@ -409,7 +420,7 @@ export function ExplorePage() {
                   onClick={() => setShowAllGenres(false)}
                   className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
                 >
-                  자주 쓰는 장르만 보기
+                  {bt("자주 쓰는 장르만 보기", "Show common genres only")}
                 </button>
               ) : null}
             </div>
@@ -421,7 +432,7 @@ export function ExplorePage() {
         <DiscoveryWorkspaceNav current="explore" />
 
         <RevealOnScroll variant="fade">
-          <p className="eyebrow mb-3 text-fg-2">BY CODE / 코드로 좁히기</p>
+          <p className="eyebrow mb-3 text-fg-2">{bt("BY CODE / 코드로 좁히기", "BY CODE / NARROW DOWN")}</p>
           <div className="flex flex-wrap gap-2">
             {visibleTags.map(({ tag: entry, count }) => {
               const active = filters.tags.includes(entry);
@@ -471,7 +482,7 @@ export function ExplorePage() {
                 onClick={() => setShowAllTags(true)}
                 className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
               >
-                태그 더 보기 · {hiddenTagCount}개
+                {formatI18nTemplate(bt("태그 더 보기 · {v0}개", "Show more tags · {v0}"), { v0: hiddenTagCount })}
               </button>
             ) : showAllTags && tags.length > 12 ? (
               <button
@@ -479,7 +490,7 @@ export function ExplorePage() {
                 onClick={() => setShowAllTags(false)}
                 className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
               >
-                주요 태그만 보기
+                {bt("주요 태그만 보기", "Show main tags only")}
               </button>
             ) : null}
           </div>
@@ -490,7 +501,7 @@ export function ExplorePage() {
             <div
               className="inline-flex items-center rounded-lg border border-line bg-card p-0.5"
               role="group"
-              aria-label="작품 유형"
+              aria-label={bt("작품 유형", "Work type")}
             >
               {TYPES.map((entry) => {
                 const active =
@@ -516,13 +527,13 @@ export function ExplorePage() {
                         : "text-fg-2 hover:text-fg",
                     )}
                   >
-                    {entry.label}
+                    {bt(...entry.label)}
                   </button>
                 );
               })}
             </div>
 
-            <div className="flex items-center gap-1" role="group" aria-label="정렬">
+            <div className="flex items-center gap-1" role="group" aria-label={bt("정렬", "Sort")}>
               {SORTS.map((entry) => {
                 const active = entry.key === sort;
                 return (
@@ -538,7 +549,7 @@ export function ExplorePage() {
                         : "font-medium text-fg-3 hover:text-fg-2",
                     )}
                   >
-                    {entry.label}
+                    {bt(...entry.label)}
                   </button>
                 );
               })}
@@ -556,7 +567,7 @@ export function ExplorePage() {
               )}
             >
               <SlidersHorizontal size={14} className="text-accent" />
-              상세 필터
+              {bt("상세 필터", "More filters")}
               {activeFilters > 0 && (
                 <span className="rounded-full bg-accent/15 px-1.5 text-xs text-accent">
                   {activeFilters}
@@ -567,7 +578,7 @@ export function ExplorePage() {
 
           <div className="flex items-center gap-4">
             <p className="text-sm text-fg-2">
-              작품{" "}
+              {bt("작품", "Titles")}{" "}
               <CountUp
                 key={results.length}
                 value={results.length}
@@ -575,7 +586,7 @@ export function ExplorePage() {
                 separator={results.length >= 1000}
                 className="numeral text-base text-fg"
               />
-              편
+              {bt("편", "")}
             </p>
             <button
               type="button"
@@ -583,7 +594,7 @@ export function ExplorePage() {
               className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-fg-3 transition-colors duration-150 hover:text-accent"
             >
               <RefreshCw size={13} className={cn(loading && "animate-spin")} />
-              갱신
+              {bt("갱신", "Refresh")}
             </button>
             {hasFilter && (
               <Link
@@ -591,7 +602,7 @@ export function ExplorePage() {
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-fg-3 transition-colors duration-150 hover:text-accent"
               >
                 <RotateCcw size={13} />
-                필터 초기화
+                {bt("필터 초기화", "Reset filters")}
               </Link>
             )}
           </div>
@@ -616,7 +627,7 @@ export function ExplorePage() {
           ]}
         />
 
-        <section aria-label="탐색 결과">
+        <section aria-label={bt("탐색 결과", "Explore results")}>
         {loading ? (
           <div className="grid grid-cols-2 gap-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: 10 }).map((_, index) => (
@@ -629,7 +640,7 @@ export function ExplorePage() {
           </div>
         ) : error ? (
           <ErrorState
-            title="탐색 데이터를 불러오지 못했습니다."
+            title={bt("탐색 데이터를 불러오지 못했습니다.", "Couldn't load the explore data.")}
             message={error}
             onRetry={reload}
           />
@@ -647,7 +658,7 @@ export function ExplorePage() {
                   onClick={showMore}
                   className="inline-flex items-center gap-2 rounded-xl border border-line bg-card px-5 py-2.5 text-sm font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
                 >
-                  {loading ? "불러오는 중…" : "더 보기"}
+                  {loading ? bt("불러오는 중…", "Loading…") : bt("더 보기", "Show more")}
                   <span className="numeral text-fg-3">
                     {shown.length} / {results.length}
                   </span>
@@ -685,12 +696,12 @@ export function ExplorePage() {
               />
             </span>
             <p className="relative text-sm font-medium text-fg">
-              조건에 맞는 작품이 없어요.
+              {bt("조건에 맞는 작품이 없어요.", "No titles match these conditions.")}
             </p>
             <p className="relative mt-1 text-xs text-fg-3">
               {hasFilter
-                ? "필터를 조금 넓히거나 초기화해 보세요."
-                : "다른 장르나 태그로 탐색해 보세요."}
+                ? bt("필터를 조금 넓히거나 초기화해 보세요.", "Try widening or resetting the filters.")
+                : bt("다른 장르나 태그로 탐색해 보세요.", "Try exploring other genres or tags.")}
             </p>
             {hasFilter && (
               <Link
@@ -698,7 +709,7 @@ export function ExplorePage() {
                 className="relative mt-4 inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-4 py-2 text-sm font-medium text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
               >
                 <RotateCcw size={14} />
-                필터 초기화
+                {bt("필터 초기화", "Reset filters")}
               </Link>
             )}
           </div>
