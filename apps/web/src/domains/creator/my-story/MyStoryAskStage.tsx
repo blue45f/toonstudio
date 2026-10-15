@@ -11,7 +11,7 @@ import {
   myStoryProgress,
   type MyStorySession,
 } from "./my-story-interview";
-import { myStorySensitiveKindLabel } from "./my-story-labels";
+import { myStorySensitiveKindNames } from "./my-story-labels";
 import { MY_STORY_ANSWER_MAX_LENGTH, type MyStoryQuestion, type MyStoryTemplate } from "./my-story-model";
 import { cleanMyStoryAnswer, detectMyStorySensitiveKinds } from "./my-story-text";
 
@@ -65,6 +65,7 @@ export function MyStoryAskStage({
   const blank = cleanMyStoryAnswer(answer) === "";
   const isLast = session.step >= template.questions.length - 1;
   const sensitiveKinds = detectMyStorySensitiveKinds(answer);
+  const sensitiveNames = myStorySensitiveKindNames(sensitiveKinds);
   const answeredAny = myStoryAnsweredCount(session) > 0;
 
   const forwardLabel = isLast
@@ -176,8 +177,8 @@ export function MyStoryAskStage({
             className="rounded-xl border border-warn/40 bg-warn/10 p-3 text-xs leading-5 text-fg"
           >
             {bt(
-              `개인 정보처럼 보이는 내용이 있어요 (${sensitiveKinds.map((kind) => myStorySensitiveKindLabel(bt, kind)).join(", ")}). 꼭 필요한 게 아니라면 지우거나 호칭으로 바꿔 주세요.`,
-              `This looks like personal information (${sensitiveKinds.map((kind) => myStorySensitiveKindLabel(bt, kind)).join(", ")}). Remove it or use a title instead unless you need it.`,
+              `개인 정보처럼 보이는 내용이 있어요 (${sensitiveNames.ko}). 꼭 필요한 게 아니라면 지우거나 호칭으로 바꿔 주세요.`,
+              `This looks like personal information (${sensitiveNames.en}). Remove it or use a title instead unless you need it.`,
             )}
           </p>
         ) : null}

@@ -1,4 +1,4 @@
-import { Check, RotateCcw, Sparkles, X } from "lucide-react";
+import { Check, RotateCcw, Sparkles, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
@@ -13,7 +13,9 @@ import {
   type MyStoryTextCompleter,
 } from "./my-story-ai";
 import type { MyStoryDraft } from "./my-story-draft";
+import { myStorySensitiveKindNames } from "./my-story-labels";
 import type { MyStoryLocale, MyStorySlotId } from "./my-story-model";
+import { detectMyStorySensitiveKinds, mergeMyStorySensitiveKinds } from "./my-story-text";
 
 export interface MyStoryAiPanelProps {
   readonly draft: MyStoryDraft;
@@ -38,6 +40,9 @@ export function MyStoryAiPanel({ draft, locale, complete, onAdopt, onClear }: My
   const [state, setState] = useState<PanelState>({ status: "idle" });
   const controllerRef = useRef<AbortController | null>(null);
   const targets = myStoryAiTargets(draft, locale);
+  // 답변이 기기 밖으로 나가는 유일한 지점이므로, 보내기 전에 개인 정보처럼 보이는 내용을 한 번 더 알린다(막지는 않는다).
+  const sensitiveKinds = mergeMyStorySensitiveKinds(targets.map((target) => detectMyStorySensitiveKinds(target.source)));
+  const sensitiveNames = myStorySensitiveKindNames(sensitiveKinds);
 
   useEffect(() => () => controllerRef.current?.abort(), []);
 
@@ -72,6 +77,18 @@ export function MyStoryAiPanel({ draft, locale, complete, onAdopt, onClear }: My
           "Nothing is sent before you press the button. When you do, the answers that become narration go to the free-first cloud AI and come back as sentence candidates. Candidates appear separately and only the ones you pick are used. If it fails, your draft stays as it is.",
         )}
       </p>
+
+      {sensitiveKinds.length > 0 ? (
+        <p className="mt-3 flex items-start gap-2 rounded-xl border border-warn/40 bg-warn/10 p-3 text-xs leading-5 text-fg">
+          <TriangleAlert size={14} aria-hidden className="mt-0.5 shrink-0 text-warn" />
+          <span>
+            {bt(
+              `보낼 내용에 개인 정보처럼 보이는 것이 있어요 (${sensitiveNames.ko}). 누르기 전에 질문으로 돌아가 지우거나 호칭으로 바꿔 주세요.`,
+              `The content to send looks like it contains personal information (${sensitiveNames.en}). Before you press the button, go back to the questions and remove it or use a title instead.`,
+            )}
+          </span>
+        </p>
+      ) : null}
 
       {targets.length > 0 ? (
         <details className="mt-3 text-xs text-fg-2">

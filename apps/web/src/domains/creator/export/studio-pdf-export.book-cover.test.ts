@@ -110,6 +110,28 @@ describe("renderPagesToPdf — 책 구성의 글자 표지", () => {
     expect(coverCanvas?.ctx.texts).toEqual(["제목 없음"]);
   });
 
+  it("표지를 붙여도 본문 기준으로 준 요소 목록의 경고는 표지 다음 쪽에 붙는다", async () => {
+    const { options } = setup();
+    const result = await renderPagesToPdf({
+      ...options,
+      pages: [asCanvas(new FakeCanvas(800, 1200)), asCanvas(new FakeCanvas(800, 1200))],
+      title: "책",
+      book: {
+        spec: a5,
+        dpi: 150,
+        binding: { placement: "inside-safe", cover: {} },
+        // 호출자는 본문 첫 쪽(0번)의 요소만 준다. 표지가 앞에 붙어도 경고는 PDF의 두 번째 쪽(1번)이어야 한다.
+        elementsByPage: [
+          [{ id: "b1", label: "대사", kind: "balloon", rect: { x: 2, y: 10, width: 40, height: 12 } }],
+          undefined,
+        ],
+      },
+    });
+    expect(result.bookWarnings).toEqual([
+      expect.objectContaining({ pageIndex: 1, elementId: "b1", code: "outside-safe" }),
+    ]);
+  });
+
   it("표지를 켜지 않으면 표지 캔버스를 만들지 않고 쪽수도 그대로다", async () => {
     const { created, encoded, options } = setup();
     const result = await renderPagesToPdf({

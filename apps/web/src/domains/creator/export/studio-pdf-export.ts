@@ -432,7 +432,13 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
       coverPages = 1;
     }
     if (options.book) {
-      const built = buildBookPrintPdf(bookPages, options.book, { title: options.title });
+      // 호출자는 요소 목록을 본문 쪽 기준으로 준다. 표지가 맨 앞에 붙으면 본문이 한 칸씩 밀리므로
+      // 목록도 같이 밀어, 안전 영역 경고가 엉뚱한 쪽에 붙지 않게 한다.
+      const request: BookPrintRequest =
+        coverPages > 0 && options.book.elementsByPage
+          ? { ...options.book, elementsByPage: [undefined, ...options.book.elementsByPage] }
+          : options.book;
+      const built = buildBookPrintPdf(bookPages, request, { title: options.title });
       pdfBytes = built.bytes;
       bookWarnings = built.warnings;
     } else {
