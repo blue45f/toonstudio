@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Title } from "@/shared/lib/types";
 
 import { cx } from "@/shared/lib/cx";
-import { coverGridPriority } from "./cover-image";
+import { coverGridPriority } from "./cover-image-sizing";
 import { TitlePoster } from "./title-poster";
 
 import "./spectacle.css";

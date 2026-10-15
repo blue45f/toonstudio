@@ -1,3 +1,4 @@
+import { artBackdropBackground } from "./art-backdrop-utils";
 import { CoverImage } from "./cover-image";
 
 import type { Title } from "@/shared/lib/types";
@@ -20,12 +21,6 @@ export const ART_BACKDROP_SCRIM_BOTTOM =
   "bg-[linear-gradient(to_top,oklch(0.09_0.025_265/0.95)_0%,oklch(0.09_0.025_265/0.82)_34%,oklch(0.09_0.025_265/0.38)_62%,oklch(0.09_0.025_265/0.06)_88%)]";
 export const ART_BACKDROP_SCRIM_SIDE =
   "bg-[linear-gradient(78deg,oklch(0.09_0.025_265/0.5)_0%,transparent_58%)]";
-
-/** 사전 계산 틴트 쌍 → 배경 그라디언트. TitlePoster와 같은 혼합 비율(88%/82%)을 쓴다. */
-export function artBackdropBackground(cover: readonly [string, string]): string {
-  const [from, to] = cover;
-  return `linear-gradient(150deg, color-mix(in oklch, ${from} 88%, oklch(0.24 0.012 66)), color-mix(in oklch, ${to} 82%, oklch(0.15 0.008 70)))`;
-}
 
 export function ArtBackdrop({
   title,

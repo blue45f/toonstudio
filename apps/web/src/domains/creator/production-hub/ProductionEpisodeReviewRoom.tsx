@@ -36,7 +36,8 @@ import {
   targetBlockedObserve,
   type FollowSession,
 } from "./observe-follow-model";
-import { CompareReviewRoom, buildCompareSeedPoolFromProcesses } from "./CompareReviewRoom";
+import { CompareReviewRoom } from "./CompareReviewRoom";
+import { buildCompareSeedPoolFromProcesses } from "./compare-review-seed-pool";
 import type { ComparePinGateSummary, ComparePoolItem } from "./compare-review-model";
 import {
   compareSendInboxToPoolItems,
