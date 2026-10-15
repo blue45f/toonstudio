@@ -22,6 +22,7 @@ import {
 import { rateLimit } from "@toonstudio/contracts/rate-limit";
 import { StudioLinked3dPassAssetFenceError } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
 import { StudioRealtimeRevocationService } from "../../platform/adapters/studio-realtime-revocation/studio-realtime-revocation.client";
+import { userFacingException } from "../../platform/http/user-facing-error";
 import {
   MEMBERSHIP_REWARD_SERVICE,
   type MembershipRewardService,
@@ -478,7 +479,7 @@ export class CreatorService {
       if (recoverableWorkId) {
         throw creatorPublicationMediaUnavailable(recoverableWorkId);
       }
-      throw new BadRequestException(error instanceof Error ? error.message : "작품을 저장할 수 없습니다.");
+      throw userFacingException(error, "작품을 저장할 수 없습니다.");
     }
   }
 
@@ -533,7 +534,7 @@ export class CreatorService {
       if (error instanceof StudioLinked3dPassAssetFenceError) {
         throw creatorLinked3dPassAssetFenceConflict(error);
       }
-      throw new BadRequestException(error instanceof Error ? error.message : "작품을 수정할 수 없습니다.");
+      throw userFacingException(error, "작품을 수정할 수 없습니다.");
     }
   }
 
@@ -839,7 +840,7 @@ export class CreatorService {
       return result;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new BadRequestException(error instanceof Error ? error.message : "작품을 삭제할 수 없습니다.");
+      throw userFacingException(error, "작품을 삭제할 수 없습니다.");
     }
   }
 
@@ -847,7 +848,7 @@ export class CreatorService {
     try {
       return await toggleLike(userId, workId);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "좋아요를 처리할 수 없습니다.");
+      throw userFacingException(error, "좋아요를 처리할 수 없습니다.");
     }
   }
 
@@ -862,9 +863,7 @@ export class CreatorService {
     try {
       return await toggleCreatorWorkBookmark(userId, workId);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "북마크를 처리할 수 없습니다.",
-      );
+      throw userFacingException(error, "북마크를 처리할 수 없습니다.");
     }
   }
 
@@ -872,9 +871,7 @@ export class CreatorService {
     try {
       return await listCreatorWorkReleases(workId, viewerId);
     } catch (error) {
-      throw new NotFoundException(
-        error instanceof Error ? error.message : "작품 릴리스를 찾을 수 없습니다.",
-      );
+      throw userFacingException(error, "작품 릴리스를 찾을 수 없습니다.", (message) => new NotFoundException(message));
     }
   }
 
@@ -882,9 +879,7 @@ export class CreatorService {
     try {
       return await createCreatorWorkRelease(userId, workId);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "작품 릴리스를 만들 수 없습니다.",
-      );
+      throw userFacingException(error, "작품 릴리스를 만들 수 없습니다.");
     }
   }
 
@@ -892,9 +887,7 @@ export class CreatorService {
     try {
       return await listCreatorExternalPublications(workId, viewerId);
     } catch (error) {
-      throw new NotFoundException(
-        error instanceof Error ? error.message : "외부 게시 기록을 찾을 수 없습니다.",
-      );
+      throw userFacingException(error, "외부 게시 기록을 찾을 수 없습니다.", (message) => new NotFoundException(message));
     }
   }
 
@@ -912,9 +905,7 @@ export class CreatorService {
     try {
       return await saveCreatorExternalPublication(userId, workId, body);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "외부 게시 기록을 저장할 수 없습니다.",
-      );
+      throw userFacingException(error, "외부 게시 기록을 저장할 수 없습니다.");
     }
   }
 
@@ -926,9 +917,7 @@ export class CreatorService {
     try {
       return await removeCreatorExternalPublication(userId, workId, publicationId);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "외부 게시 기록을 정리할 수 없습니다.",
-      );
+      throw userFacingException(error, "외부 게시 기록을 정리할 수 없습니다.");
     }
   }
 
@@ -942,9 +931,7 @@ export class CreatorService {
     try {
       return await reportCreatorWork(userId, workId, body);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "작품을 신고할 수 없습니다.",
-      );
+      throw userFacingException(error, "작품을 신고할 수 없습니다.");
     }
   }
 
@@ -971,9 +958,7 @@ export class CreatorService {
       );
       return comment;
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "댓글을 작성할 수 없습니다.",
-      );
+      throw userFacingException(error, "댓글을 작성할 수 없습니다.");
     }
   }
 
@@ -988,9 +973,7 @@ export class CreatorService {
     try {
       return await updateComment(userId, workId, commentId, text);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "댓글을 수정할 수 없습니다.",
-      );
+      throw userFacingException(error, "댓글을 수정할 수 없습니다.");
     }
   }
 
@@ -1018,9 +1001,7 @@ export class CreatorService {
       }
       return result;
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "댓글을 삭제할 수 없습니다.",
-      );
+      throw userFacingException(error, "댓글을 삭제할 수 없습니다.");
     }
   }
 
@@ -1034,9 +1015,7 @@ export class CreatorService {
     try {
       return await toggleCommentLike(userId, workId, commentId);
     } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : "댓글 반응을 처리할 수 없습니다.",
-      );
+      throw userFacingException(error, "댓글 반응을 처리할 수 없습니다.");
     }
   }
 
@@ -1084,7 +1063,7 @@ export class CreatorService {
     try {
       return await publishAsset(userId, body);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "에셋을 공유할 수 없습니다.");
+      throw userFacingException(error, "에셋을 공유할 수 없습니다.");
     }
   }
 
@@ -1099,7 +1078,7 @@ export class CreatorService {
       return await generateImageAsset((body ?? {}) as Record<string, unknown>);
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new BadRequestException(error instanceof Error ? error.message : "이미지를 생성할 수 없습니다.");
+      throw userFacingException(error, "이미지를 생성할 수 없습니다.");
     }
   }
 
@@ -1107,7 +1086,7 @@ export class CreatorService {
     try {
       return await deleteSharedAsset(userId, id, isAdmin);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "에셋을 삭제할 수 없습니다.");
+      throw userFacingException(error, "에셋을 삭제할 수 없습니다.");
     }
   }
 
@@ -1118,7 +1097,7 @@ export class CreatorService {
     try {
       return await reportSharedAsset(userId, id, body);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "에셋을 신고할 수 없습니다.");
+      throw userFacingException(error, "에셋을 신고할 수 없습니다.");
     }
   }
 
@@ -1130,7 +1109,7 @@ export class CreatorService {
     try {
       return await moderateSharedAsset(userId, id, body);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "에셋을 검수할 수 없습니다.");
+      throw userFacingException(error, "에셋을 검수할 수 없습니다.");
     }
   }
 
@@ -1167,7 +1146,7 @@ export class CreatorService {
     try {
       return await createSeries(userId, (body ?? {}) as Record<string, unknown>);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "시리즈를 만들 수 없습니다.");
+      throw userFacingException(error, "시리즈를 만들 수 없습니다.");
     }
   }
 
@@ -1175,7 +1154,7 @@ export class CreatorService {
     try {
       return await updateSeries(userId, id, (body ?? {}) as Record<string, unknown>);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "시리즈를 수정할 수 없습니다.");
+      throw userFacingException(error, "시리즈를 수정할 수 없습니다.");
     }
   }
 
@@ -1183,7 +1162,7 @@ export class CreatorService {
     try {
       return await deleteSeries(userId, id, isAdmin);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "시리즈를 삭제할 수 없습니다.");
+      throw userFacingException(error, "시리즈를 삭제할 수 없습니다.");
     }
   }
 
@@ -1203,7 +1182,7 @@ export class CreatorService {
     try {
       return await toggleFollow(followerId, creatorId);
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : "팔로우를 처리할 수 없습니다.");
+      throw userFacingException(error, "팔로우를 처리할 수 없습니다.");
     }
   }
 
