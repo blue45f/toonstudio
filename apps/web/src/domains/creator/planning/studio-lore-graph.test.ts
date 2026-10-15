@@ -50,12 +50,14 @@ describe("studio-lore-graph model", () => {
     const graph = buildLoreGraph(createWorldLoreExamples("project-1"), []);
     expect(graph.mode).toBe("graph");
     expect(graph.omission).toBeNull();
-    expect(graph.totalNodeCount).toBe(7);
+    // 예시 세계는 항목 8개다. 일부러 비워 둔 "도서관 아래 잠긴 층"(의도된 공백)도 도서관과 이어진다.
+    expect(graph.totalNodeCount).toBe(8);
     // 양방향 선언(도서관↔길드 등)은 무방향 간선 1개로 합쳐진다.
-    expect(graph.totalEdgeCount).toBe(8);
-    expect(graph.edges).toHaveLength(8);
+    expect(graph.totalEdgeCount).toBe(9);
+    expect(graph.edges).toHaveLength(9);
     const library = graph.nodes.find((node) => node.sourceId === "example-place-library");
-    expect(library?.degree).toBe(4);
+    // 대침수·길드 결성·등불지기 길드·물에 닿은 기억 규칙·잠긴 층.
+    expect(library?.degree).toBe(5);
     expect(graph.isolatedCount).toBe(0);
   });
 
