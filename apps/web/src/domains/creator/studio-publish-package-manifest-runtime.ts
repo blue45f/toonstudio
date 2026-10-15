@@ -20,7 +20,7 @@ import {
   type StudioPublishPackagePublicArtifact,
   type StudioPublishThumbnailSlot,
 } from "./studio-publish-package";
-import { readStudioPublishPackageRights } from "./publish/studio-publish-package-rights";
+import { readStudioPublishPackageRights } from "./studio-publish-package-rights";
 
 const ARTIFACT_ROLES = new Set<StudioPublishArtifactRole>([
   "episode-image",

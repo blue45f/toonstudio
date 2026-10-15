@@ -7,13 +7,13 @@
  * the planned renders and re-run validation with the resulting dimensions and byte sizes.
  */
 
-import { isRecord, normalizeText } from "./publish/studio-publish-package-primitives";
+import { isRecord, normalizeText } from "./studio-publish-package-primitives";
 import {
   DEFAULT_STUDIO_PUBLISH_PACKAGE_AI_TRAINING,
   normalizeStudioPublishPackageAiTraining,
   type StudioPublishPackageAiTraining,
   type StudioPublishPackageRights,
-} from "./publish/studio-publish-package-rights";
+} from "./studio-publish-package-rights";
 import { normalizeStudioReviewPdfProfileId } from "./studio-review-pdf-profile";
 
 import type { StudioReviewPdfProfileId } from "./studio-review-pdf-profile";
