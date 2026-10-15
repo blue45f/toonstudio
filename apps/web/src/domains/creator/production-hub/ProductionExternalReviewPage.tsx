@@ -14,6 +14,8 @@ import {
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
+// extreview.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./extreview-i18n";
 import {
   getProductionExternalReview,
   submitProductionExternalReview,
@@ -190,7 +192,7 @@ export function ProductionExternalReviewPage() {
   // 저장소 접근이 막힌 환경(사생활 모드 등)에서는 초안만 포기하고 진입 자체는 계속한다.
   useEffect(() => {
     if (!params.reviewId) return;
-    let raw: string | null = null;
+    let raw: string | null;
     try {
       raw = window.localStorage.getItem(externalReviewDraftKey(params.reviewId));
     } catch {
@@ -206,7 +208,6 @@ export function ProductionExternalReviewPage() {
       setDraftRestored(true);
     }
     // 검수 건이 바뀔 때만 복원한다 — 입력 중 재실행으로 값을 되돌리지 않는다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.reviewId]);
 
   useEffect(() => {
