@@ -4,7 +4,7 @@ import {
   readStudioSaveProfiles,
   studioSaveProfileNeedsDestination,
 } from "./save-first/studio-save-profile";
-import { parseStudioAutosave, studioAutosaveKey } from "./studio-autosave";
+import { studioAutosaveKey } from "./studio-autosave";
 import {
   EXAMPLE_DOCUMENT_ID,
   EXAMPLE_EDITOR_HREF,
@@ -68,29 +68,34 @@ describe("ensureExampleProjectSeeded", () => {
     expect(profile).toBeTruthy();
     expect(profile ? studioSaveProfileNeedsDestination(profile) : true).toBe(false);
 
-    const autosave = parseStudioAutosave(
-      storage.getItem(studioAutosaveKey({ workId: EXAMPLE_DOCUMENT_ID })),
-    );
-    expect(autosave?.pagesList).toHaveLength(1);
-    const elements = (autosave?.pagesList[0]?.elements ?? []) as Array<Record<string, unknown>>;
+    // 초안은 호출자가 편집기와 같은 소유자 키의 내구 저장소(OPFS/SQLite)에 심도록 결과로 돌려준다.
+    if (result.status !== "seeded") throw new Error("expected a seeded result");
+    expect(result.autosave.workId).toBe(EXAMPLE_DOCUMENT_ID);
+    const autosave = result.autosave.build();
+    expect(autosave.pagesList).toHaveLength(1);
+    const elements = (autosave.pagesList[0]?.elements ?? []) as Array<Record<string, unknown>>;
     expect(elements.some((element) => element.type === "bubble")).toBe(true);
     expect(elements.some((element) => element.type === "draw" && element.fill)).toBe(true);
     expect(elements.some((element) => element.type === "draw" && element.kind === "freehand")).toBe(true);
+
+    // 브라우저 저장소(localStorage)에는 초안을 심지 않는다 — 거기 있는 기록은 편집기가 복구를 거부하는 호환 후보일 뿐이다.
+    expect(storage.getItem(studioAutosaveKey({ workId: EXAMPLE_DOCUMENT_ID }))).toBeNull();
   });
 
-  it("is idempotent and never overwrites a user-edited example manuscript", () => {
+  it("is idempotent and never touches a browser record the user already holds", () => {
     const storage = new MemoryStorage();
     ensureExampleProjectSeeded(storage, { at: AT });
 
     const key = studioAutosaveKey({ workId: EXAMPLE_DOCUMENT_ID });
-    const edited = storage.getItem(key)!.replace("첫 컷", "내가 바꾼 대사");
+    const edited = '{"version":2,"title":"내가 바꾼 대사"}';
     storage.setItem(key, edited);
 
     const second = ensureExampleProjectSeeded(storage, { at: "2026-10-14T01:00:00.000Z" });
     expect(second.status).toBe("already-seeded");
+    // 이미 심어진 뒤에도 내구 저장소에 심을 초안을 다시 돌려준다(없을 때만 심는 것은 심는 쪽의 계약이다).
+    expect(second.status === "already-seeded" ? second.autosave.workId : null).toBe(EXAMPLE_DOCUMENT_ID);
     expect(readStudioProjectLibrary(storage).projects).toHaveLength(1);
     expect(storage.getItem(key)).toBe(edited);
-    expect(storage.getItem(key)).toContain("내가 바꾼 대사");
   });
 
   it("does not resurrect an example the user trashed, and leaves other projects alone", () => {

@@ -4,15 +4,37 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type {
+  StudioSeedAutosave,
+  StudioSeedDurableOutcome,
+} from "../save-first/studio-seed-autosave-durable";
 import {
+  EXAMPLE_DOCUMENT_ID,
   EXAMPLE_PROJECT_ID,
   readExampleJourney,
 } from "../studio-example-project-content";
 import { readStudioProjectLibrary } from "../studio-project-library-store";
 import { StudioExampleProjectBanner } from "./StudioExampleProjectBanner";
 
+// 내구 저장소(OPFS/SQLite)와 로그인 세션은 jsdom 에 없으므로 심는 훅을 가짜로 바꿔 배선만 확인한다.
+// 훅과 내구 저장 모듈 자체는 studio-seed-autosave-durable.test.ts 가 검증한다.
+const persistence = vi.hoisted(() => ({
+  ownerReady: true,
+  persist: vi.fn<(seed: StudioSeedAutosave) => Promise<StudioSeedDurableOutcome>>(),
+}));
+
+vi.mock("./useStudioSeedAutosavePersistence", () => ({
+  useStudioSeedAutosavePersistence: () => ({
+    ownerReady: persistence.ownerReady,
+    persist: persistence.persist,
+  }),
+}));
+
 beforeEach(() => {
   window.localStorage.clear();
+  persistence.ownerReady = true;
+  persistence.persist.mockReset();
+  persistence.persist.mockResolvedValue("written");
 });
 
 afterEach(() => {
@@ -43,6 +65,26 @@ describe("StudioExampleProjectBanner", () => {
     );
     expect(screen.getByRole("checkbox", { name: /말풍선 대사 바꿔|Rewrite the speech balloon/u })).toBeTruthy();
     expect(screen.getByRole("progressbar")).toBeTruthy();
+  });
+
+  it("plants the example draft in durable storage once the owner session is ready", async () => {
+    renderBanner();
+    await screen.findByRole("heading", { name: /예제 프로젝트로 한 컷을 완주|Finish one panel/u });
+
+    await waitFor(() => {
+      expect(persistence.persist).toHaveBeenCalledTimes(1);
+    });
+    const seed = persistence.persist.mock.calls[0]?.[0];
+    expect(seed?.workId).toBe(EXAMPLE_DOCUMENT_ID);
+    expect(seed?.build().pagesList.length).toBeGreaterThan(0);
+  });
+
+  it("does not plant any draft before the owner session is ready", async () => {
+    persistence.ownerReady = false;
+    renderBanner();
+    await screen.findByRole("heading", { name: /예제 프로젝트로 한 컷을 완주|Finish one panel/u });
+
+    expect(persistence.persist).not.toHaveBeenCalled();
   });
 
   it("records journey progress in its own storage key when a step is checked", async () => {

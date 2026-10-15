@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type {
+  StudioSeedAutosave,
+  StudioSeedDurableOutcome,
+} from "../save-first/studio-seed-autosave-durable";
 import {
   SAMPLE_EDITOR_HREF,
   SAMPLE_PROJECT_ID,
@@ -12,8 +16,25 @@ import { findSampleManuscriptPracticeCopy } from "../studio-sample-manuscript-se
 import { readStudioProjectLibrary } from "../studio-project-library-store";
 import { StudioSampleManuscriptCard } from "./StudioSampleManuscriptCard";
 
+// 내구 저장소(OPFS/SQLite)와 로그인 세션은 jsdom 에 없으므로 심는 훅을 가짜로 바꿔 배선만 확인한다.
+// 훅과 내구 저장 모듈 자체는 studio-seed-autosave-durable.test.ts 가 검증한다.
+const persistence = vi.hoisted(() => ({
+  ownerReady: true,
+  persist: vi.fn<(seed: StudioSeedAutosave) => Promise<StudioSeedDurableOutcome>>(),
+}));
+
+vi.mock("./useStudioSeedAutosavePersistence", () => ({
+  useStudioSeedAutosavePersistence: () => ({
+    ownerReady: persistence.ownerReady,
+    persist: persistence.persist,
+  }),
+}));
+
 beforeEach(() => {
   window.localStorage.clear();
+  persistence.ownerReady = true;
+  persistence.persist.mockReset();
+  persistence.persist.mockResolvedValue("written");
 });
 
 afterEach(() => {
@@ -58,6 +79,41 @@ describe("StudioSampleManuscriptCard", () => {
     expect(findSampleManuscriptPracticeCopy(window.localStorage)?.mode).toBe("trace");
     // 원본 프로젝트는 여전히 하나, 사본이 하나 더해졌다.
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(2);
+    // 사본 링크를 보이기 전에 사본 초안도 내구 저장소에 심었다.
+    const copySeed = persistence.persist.mock.calls
+      .map(([seed]) => seed)
+      .find((seed) => seed.workId === "sample-practice-1-ep01");
+    expect(copySeed?.build().pagesList.length).toBeGreaterThan(0);
+  });
+
+  it("plants the original sample draft in durable storage once the owner session is ready", async () => {
+    renderCard();
+    await screen.findByRole("heading", { name: /완성 원고를 뜯어보고|Take a finished manuscript apart/u });
+
+    await waitFor(() => {
+      expect(persistence.persist).toHaveBeenCalled();
+    });
+    const seed = persistence.persist.mock.calls[0]?.[0];
+    expect(SAMPLE_EDITOR_HREF).toContain(`/d/${seed?.workId}`);
+    expect(seed?.build().pagesList.length).toBeGreaterThan(0);
+  });
+
+  it("does not plant any draft before the owner session is ready", async () => {
+    persistence.ownerReady = false;
+    renderCard();
+    await screen.findByRole("heading", { name: /완성 원고를 뜯어보고|Take a finished manuscript apart/u });
+
+    expect(persistence.persist).not.toHaveBeenCalled();
+  });
+
+  it("shows an error instead of an editor link when the practice copy cannot be planted", async () => {
+    persistence.persist.mockImplementation(async (seed) =>
+      seed.workId.startsWith("sample-practice") ? "unavailable" : "written");
+    renderCard();
+    fireEvent.click(await screen.findByRole("button", { name: /연습 사본 만들어 따라 그리기|Make a practice copy and trace/u }));
+
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /연습 사본 이어서 따라 그리기|Keep tracing/u })).toBeNull();
   });
 
   it("shows an in-card error instead of breaking the library when storage writes fail", async () => {

@@ -3,7 +3,8 @@ import {
   readStudioSaveProfiles,
   recordStudioManualSave,
 } from "./save-first/studio-save-profile";
-import { parseStudioAutosave, serializeStudioAutosave, studioAutosaveKey } from "./studio-autosave";
+import type { StudioSeedAutosave } from "./save-first/studio-seed-autosave-durable";
+import { parseStudioAutosave, studioAutosaveKey } from "./studio-autosave";
 import type { El } from "./studio-element-model";
 import type { LayerGroup } from "./studio-layers";
 import type { PageState } from "./studio-page-state";
@@ -63,6 +64,8 @@ export type SampleManuscriptSeedResult =
       readonly project: StudioProjectLibraryEntry;
       readonly documentId: string;
       readonly editorHref: string;
+      /** 편집기가 열 수 있는 내구 저장소에 심어야 할 초안(호출자가 persistSeedAutosaveDurably 로 심는다). */
+      readonly autosave: StudioSeedAutosave;
     }
   | { readonly status: "trashed"; readonly project: StudioProjectLibraryEntry }
   | { readonly status: "full"; readonly project: null };
@@ -77,7 +80,11 @@ export interface SamplePracticeCopyRef {
 }
 
 export type SamplePracticeCopyResult =
-  | ({ readonly status: "created" | "already-created" } & SamplePracticeCopyRef)
+  | ({
+      readonly status: "created" | "already-created";
+      /** 사본 초안. 이미 있는 사본도 내구 저장소에 기록이 없으면 복구되도록 함께 돌려준다. */
+      readonly autosave: StudioSeedAutosave;
+    } & SamplePracticeCopyRef)
   | { readonly status: "sample-trashed" }
   | { readonly status: "full" };
 
@@ -118,18 +125,20 @@ function ensureSavedProfile(
   recordStudioManualSave(storage, projectId, { now: at, target });
 }
 
-function ensureSampleAutosave(storage: StudioSampleManuscriptStorage, at: string): void {
-  const key = studioAutosaveKey({ workId: SAMPLE_DOCUMENT_ID });
-  // 자동저장이 이미 있으면 사용자가 연 원고다 — 시딩은 절대 덮지 않는다.
-  if (storage.getItem(key) !== null) return;
-  const pages = buildSampleManuscriptPages();
-  storage.setItem(key, serializeStudioAutosave({
-    version: 2,
-    savedAt: at,
-    title: SAMPLE_PROJECT_TITLE,
-    currentPageId: pages[0]?.id,
-    pagesList: pages,
-  }));
+function sampleSeedAutosave(documentId: string): StudioSeedAutosave {
+  return {
+    workId: documentId,
+    build: () => {
+      const pages = buildSampleManuscriptPages();
+      return {
+        version: 2,
+        savedAt: new Date().toISOString(),
+        title: SAMPLE_PROJECT_TITLE,
+        currentPageId: pages[0]?.id,
+        pagesList: pages,
+      };
+    },
+  };
 }
 
 export function ensureSampleManuscriptSeeded(
@@ -146,7 +155,6 @@ export function ensureSampleManuscriptSeeded(
   if (existing) {
     if (existing.status === "trashed") return { status: "trashed", project: existing };
     const documentId = ensureSampleDocument(storage, at, options.target);
-    ensureSampleAutosave(storage, at);
     ensureSavedProfile(storage, SAMPLE_PROJECT_ID, at, options.target);
     const project = existing.lastOpenedDocumentId === documentId
       ? existing
@@ -154,13 +162,18 @@ export function ensureSampleManuscriptSeeded(
         at,
         target: options.target,
       });
-    return { status: "already-seeded", project, documentId, editorHref: SAMPLE_EDITOR_HREF };
+    return {
+      status: "already-seeded",
+      project,
+      documentId,
+      editorHref: SAMPLE_EDITOR_HREF,
+      autosave: sampleSeedAutosave(documentId),
+    };
   }
 
   if (current.projects.length >= MAX_PROJECTS) return { status: "full", project: null };
 
   const documentId = ensureSampleDocument(storage, at, options.target);
-  ensureSampleAutosave(storage, at);
   ensureSavedProfile(storage, SAMPLE_PROJECT_ID, at, options.target);
   createStudioProject(storage, {
     id: SAMPLE_PROJECT_ID,
@@ -175,7 +188,13 @@ export function ensureSampleManuscriptSeeded(
     at,
     target: options.target,
   });
-  return { status: "seeded", project, documentId, editorHref: SAMPLE_EDITOR_HREF };
+  return {
+    status: "seeded",
+    project,
+    documentId,
+    editorHref: SAMPLE_EDITOR_HREF,
+    autosave: sampleSeedAutosave(documentId),
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -294,6 +313,28 @@ export function buildPracticeCopyPages(
   });
 }
 
+function practiceCopyAutosave(
+  storage: StudioSampleManuscriptStorage,
+  copyProjectId: string,
+  copyDocumentId: string,
+  mode: SamplePracticeMode,
+): StudioSeedAutosave {
+  const copyTitle = mode === "trace" ? SAMPLE_PRACTICE_TITLE : SAMPLE_PRACTICE_STUDY_TITLE;
+  return {
+    workId: copyDocumentId,
+    build: () => {
+      const pages = buildPracticeCopyPages(readSamplePages(storage), copyProjectId, mode);
+      return {
+        version: 2,
+        savedAt: new Date().toISOString(),
+        title: copyTitle,
+        currentPageId: pages[0]?.id,
+        pagesList: pages,
+      };
+    },
+  };
+}
+
 export function createSampleManuscriptPracticeCopy(
   storage: StudioSampleManuscriptStorage,
   options: {
@@ -310,7 +351,13 @@ export function createSampleManuscriptPracticeCopy(
   if (seeded.status === "full") return { status: "full" };
 
   const existing = findSampleManuscriptPracticeCopy(storage);
-  if (existing && existing.mode === mode) return { status: "already-created", ...existing };
+  if (existing && existing.mode === mode) {
+    return {
+      status: "already-created",
+      ...existing,
+      autosave: practiceCopyAutosave(storage, existing.project.id, existing.documentId, mode),
+    };
+  }
 
   if (readStudioProjectLibrary(storage).projects.length >= MAX_PROJECTS) {
     return { status: "full" };
@@ -330,13 +377,6 @@ export function createSampleManuscriptPracticeCopy(
     height: SAMPLE_DOCUMENT_HEIGHT,
     pageCount: pages.length,
   }, { target: options.target });
-  storage.setItem(studioAutosaveKey({ workId: copyDocumentId }), serializeStudioAutosave({
-    version: 2,
-    savedAt: at,
-    title: copyTitle,
-    currentPageId: pages[0]?.id,
-    pagesList: pages,
-  }));
   ensureSavedProfile(storage, copyProjectId, at, options.target);
   createStudioProject(storage, {
     id: copyProjectId,
@@ -359,5 +399,6 @@ export function createSampleManuscriptPracticeCopy(
     documentId: copyDocumentId,
     editorHref: samplePracticeEditorHref(copyProjectId, copyDocumentId),
     mode,
+    autosave: practiceCopyAutosave(storage, copyProjectId, copyDocumentId, mode),
   };
 }
