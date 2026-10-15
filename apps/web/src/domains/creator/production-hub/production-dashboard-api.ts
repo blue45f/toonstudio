@@ -1,3 +1,5 @@
+import type { CollabAggregateInput } from "./collab-notification-landing-source";
+
 import { api } from "@/platform/api";
 
 export type ProductionCollaborationModel =
@@ -68,4 +70,18 @@ export function listProductionProjects(): Promise<ProductionProjectListResponse>
 
 export function getProductionPersonalInbox(): Promise<ProductionPersonalInboxResponse> {
   return api.get("/production/inbox");
+}
+
+/**
+ * 프로젝트 기록 중 랜딩의 협업 알림 투영이 읽는 부분집합.
+ * 서버 응답은 프로젝트 전체 기록이지만, 랜딩은 알림·검수 결정·인계만 읽는다. 전체 도메인 타입을
+ * 이 얇은 클라이언트에 끌어오지 않도록 알림 어댑터가 정의한 구조적 입력 타입만 쓴다.
+ */
+export interface ProductionProjectCollabRecord {
+  readonly aggregate: CollabAggregateInput;
+}
+
+/** 같은 엔드포인트의 얇은 읽기. 프로젝트 워크스페이스용 전체 클라이언트(production-api)를 랜딩이 가져오지 않게 한다. */
+export function getProductionProjectCollabRecord(projectId: string): Promise<ProductionProjectCollabRecord> {
+  return api.get(`/production/projects/${encodeURIComponent(projectId)}`);
 }
