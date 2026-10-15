@@ -16,8 +16,12 @@ async function reachDrawingUi(
   const beta = page.locator('[data-studio-beta-notice="true"]');
   const comic = page.locator('[data-studio-quick-comic-overlay="true"]');
   const quickstart = page.locator('[data-studio-creative-starter="true"]');
+  // 휴대폰 폭의 풀 편집 안내(data-testid)는 하단에 떠서 도크 메뉴와 다른 안내의 닫기 버튼을 가린다.
+  // 사용자가 편집 전에 하는 것처럼 "이해했어요"로 닫고, 가장 위 계층이므로 아래 안내보다 먼저 닫는다.
+  const mobileNotice = page.locator('[data-testid="mobile-full-edit-notice"]');
   const overlays = [
     { surface: comic, close: comic.getByRole("button", { name: "빠른 웹툰 조립 취소", exact: true }) },
+    { surface: mobileNotice, close: mobileNotice.getByRole("button", { name: "이해했어요", exact: true }) },
     { surface: beta, close: beta.locator('[data-studio-beta-notice-acknowledge="true"]') },
     { surface: welcome, close: welcome.getByRole("button", { name: "시작 안내 닫기", exact: true }) },
     { surface: quickstart, close: quickstart.locator('[data-studio-quickstart-dismiss="true"]') },
