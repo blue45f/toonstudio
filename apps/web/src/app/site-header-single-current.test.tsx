@@ -144,4 +144,27 @@ describe("헤더 현재 위치는 한 곳만 표시한다", () => {
     renderHeader(pathname);
     expect(currentPrimaryEntries()).toEqual([entry]);
   });
+
+  it.each([
+    "/studio/space",
+    "/studio/p/project-1/space",
+    "/studio/space/rooms/cafe",
+  ])("%s: 제작 드롭다운의 가상 스튜디오 자식만 현재 위치로 표시된다 (S1-2)", (pathname) => {
+    renderHeader(pathname);
+    const navigation = screen.getByRole("navigation", { name: "주요 메뉴" });
+    // 1차 링크 자체도 .group이라, 드롭다운 패널은 링크의 부모(항목 래퍼) 안에서 찾는다.
+    const studioMenu = navigation
+      .querySelector('[data-navigation-entry="studio"]')
+      ?.parentElement?.querySelector("ul");
+    const current = Array.from(studioMenu?.querySelectorAll('a[aria-current="page"]') ?? []);
+    expect(current.map((link) => link.getAttribute("href"))).toEqual(["/studio/space"]);
+  });
+
+  it("제작 하위 경로가 아닌 곳에서는 가상 스튜디오 자식이 현재 위치가 아니다", () => {
+    renderHeader("/studio/assets/characters/new");
+    const navigation = screen.getByRole("navigation", { name: "주요 메뉴" });
+    const virtualStudio = navigation.querySelector('ul a[href="/studio/space"]');
+    expect(virtualStudio).not.toBeNull();
+    expect(virtualStudio?.hasAttribute("aria-current")).toBe(false);
+  });
 });
