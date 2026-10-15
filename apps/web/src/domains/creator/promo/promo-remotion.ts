@@ -1,6 +1,10 @@
 import {
   parsePromoProject,
+  PROMO_ENDING_SECONDS,
+  PROMO_FPS,
+  promoFrameCount,
   promoKaraokeVtt,
+  promoMaxPanels,
   promoShotList,
   promoSrt,
   promoVtt,
@@ -113,6 +117,8 @@ This is a real Remotion composition, not an MP4 file. Node.js 22+ and internet a
 1. Extract this ZIP into a new directory.
 2. Run npm install.
 3. Run npm run studio to preview, or npm run render to create out/promo.mp4 (H.264, 1080 short-side pixels, 30 fps).
+
+This project renders ${project.seconds} seconds (${promoFrameCount(project)} frames at ${PROMO_FPS} fps). The final ${PROMO_ENDING_SECONDS}-second ending card is included in that length. This length allows at most ${promoMaxPanels(project.seconds)} cuts; src/promo-model.ts enforces the same limit as the editor.
 
 The assets are local and the renderer does not call an AI service. The same frame renderer and timeline are used in ToonStudio's browser preview. A local system font with Korean coverage must be installed (for example Noto Sans CJK); line breaks can differ across operating systems.
 
