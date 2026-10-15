@@ -29,7 +29,12 @@ const studioCanvasViewportDomOverlaysSource = readFileSync(
   new URL("./StudioCanvasViewportDomOverlays.tsx", import.meta.url),
   "utf8",
 );
-const globalsSource = readFileSync(new URL("../../../app/styles/globals.css", import.meta.url), "utf8");
+// 스튜디오 전용 규칙의 정본은 studio-route.css다(globals.css 머리말 정책 — 스튜디오 규칙은
+// 그쪽에만 두고 스튜디오 라우트 청크에서만 로드한다). 댓글 배치 커서 규칙도 거기에 있다.
+const studioRouteCssSource = readFileSync(
+  new URL("../../../shared/styles/studio-route.css", import.meta.url),
+  "utf8",
+);
 const perspectiveSource = readFileSync(new URL("../StudioPerspectiveOverlay.tsx", import.meta.url), "utf8");
 const isometricSource = readFileSync(new URL("../StudioIsometricGridOverlay.tsx", import.meta.url), "utf8");
 const guideSource = readFileSync(new URL("./StudioCanvasGuideLayers.tsx", import.meta.url), "utf8");
@@ -145,11 +150,11 @@ describe("Studio canvas cursor integration boundary", () => {
   });
 
   it("shows the comment cursor only while the resolved paper cursor is a usable crosshair", () => {
-    expect(globalsSource).toContain('@media (pointer: fine)');
-    expect(globalsSource).toContain(
+    expect(studioRouteCssSource).toContain('@media (pointer: fine)');
+    expect(studioRouteCssSource).toContain(
       '[data-studio-comment-placement-active="true"][data-studio-canvas-cursor="crosshair"] canvas'
     );
-    expect(globalsSource).toContain('9 9, crosshair !important');
+    expect(studioRouteCssSource).toContain('9 9, crosshair !important');
   });
 
   it.each([
