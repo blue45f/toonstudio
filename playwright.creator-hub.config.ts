@@ -12,6 +12,6 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: { command: `./node_modules/.bin/vite --host 127.0.0.1 --port ${port} --strictPort`,
+  webServer: { command: `pnpm exec vite --config apps/web/vite.config.ts --host 127.0.0.1 --port ${port} --strictPort`,
     url: `http://127.0.0.1:${port}`, reuseExistingServer: false, timeout: 120000 },
 });
