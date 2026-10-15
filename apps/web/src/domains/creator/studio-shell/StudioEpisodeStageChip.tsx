@@ -15,16 +15,20 @@
  *   칩은 없다 — 로딩·빈 상태·에러 상태가 모두 "칩 없음"인 것이 이 표면의
  *   설계다(헤더에 스켈레톤·에러 문구를 얹지 않는다).
  *
- * 장착: StudioDocumentLayout이 StudioEpisodeStageChipSlot을 상시 렌더하고,
- * 슬롯은 StudioDocumentWindowHub 헤더 바의 전용 자리
- * (#studio-episode-stage-chrome-slot)로 포털한다. 문서 라우트가 아닌
- * 표면(헤더 바 자체가 없는 경우)에서는 자리도 없어 칩도 없다.
+ * 장착: StudioDocumentLayout이 StudioEpisodeStageChipSlot(StudioEpisodeStageChipSlot.tsx)을
+ * 상시 렌더하고, 슬롯이 맥락·세션을 확인한 뒤 이 파일의 연결 단위
+ * (StudioEpisodeStageChipConnector)를 지연 로딩한다. 연결 단위는 StudioDocumentWindowHub
+ * 헤더 바의 전용 자리(#studio-episode-stage-chrome-slot)로 포털한다. 문서 라우트가
+ * 아닌 표면(헤더 바 자체가 없는 경우)에서는 자리도 없어 칩도 없다.
+ *
+ * 번들 경계: 이 파일은 제작 허브 모델(production-api·episode-stage 등)을 끌어오므로
+ * 에디터 시작 경로가 정적으로 import하면 안 된다 — 맥락 없는 모든 에디터 진입이 제작 허브
+ * 청크 묶음(약 190KB raw)을 내려받게 된다. 상시 렌더되는 얇은 슬롯만 시작 경로에 두고
+ * 이 파일은 슬롯의 동적 import로만 연다(경계 테스트가 지킨다).
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useLocation } from "react-router-dom";
 
-import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import {
   EpisodeStageStepper,
   type EpisodeStageStepView,
@@ -33,7 +37,7 @@ import {
 import { episodeStageForEpisode } from "../public/episode-stage";
 import { getProductionProject } from "../public/production-projects";
 import { episodeStageChipCurrent } from "./studio-episode-stage-chip-current";
-import { readStudioEpisodeStageContext } from "./studio-episode-stage-context";
+import type { StudioEpisodeStageContext } from "./studio-episode-stage-context";
 import { useStudioChromePortalTarget } from "./use-studio-chrome-portal-target";
 
 export function StudioEpisodeStageChip({
@@ -52,23 +56,24 @@ export function StudioEpisodeStageChip({
 }
 
 /**
- * 에디터 헤더 칩의 연결 단위. URL의 명시적 회차 맥락을 읽어 제작 프로젝트
- * aggregate 1건을 가져오고, 그 회차의 단계를 도출해 헤더 바 자리로 보낸다.
- * 맥락·세션·도출 근거 중 하나라도 없으면 아무것도 렌더하지 않는다.
+ * 에디터 헤더 칩의 연결 단위. 맥락으로 제작 프로젝트 aggregate 1건을 가져오고, 그 회차의
+ * 단계를 도출해 헤더 바 자리로 보낸다. 맥락·세션 판정은 슬롯(StudioEpisodeStageChipSlot)이
+ * 먼저 하므로 두 값은 이미 있다고 보고, 도출 실패(읽기 실패·aggregate에 회차 없음)만
+ * "칩 없음"으로 처리한다 — 헤더에 스켈레톤·에러 문구를 얹지 않는다.
  */
-export function StudioEpisodeStageChipSlot() {
-  const { search } = useLocation();
-  const context = useMemo(() => readStudioEpisodeStageContext(search), [search]);
-  const { data: session } = useSession();
-  const userId = session?.user?.id ?? null;
+export function StudioEpisodeStageChipConnector({
+  context,
+  userId,
+}: Readonly<{
+  /** URL에서 읽은 유효한 회차 맥락. */
+  readonly context: StudioEpisodeStageContext;
+  /** 로그인한 사용자 id. 계정이 바뀌면 같은 맥락이라도 다시 읽는다. */
+  readonly userId: string;
+}>) {
   const [states, setStates] = useState<readonly EpisodeStageStepView[] | null>(null);
   const target = useStudioChromePortalTarget("studio-episode-stage-chrome-slot");
 
   useEffect(() => {
-    if (!context || !userId) {
-      setStates(null);
-      return;
-    }
     let active = true;
     void getProductionProject(context.productionProjectId)
       .then((record) => {

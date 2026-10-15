@@ -83,10 +83,13 @@ export function createStudioManualChunks(predicates: {
       id.endsWith("/src/domains/creator/studio-selection-tools.ts")
       || id.endsWith("/src/domains/creator/studio-magic-wand.ts")
       || id.endsWith("/src/domains/creator/studio-alpha-lock.ts")
+      || id.endsWith("/src/domains/creator/studio-quick-selection.ts")
     ) {
       // Advanced Fill's user-triggered browser engine shares alpha-lock and magic-wand
       // primitives with the always-on selection graph. Keep those already-eager pure cores
       // in one chunk so the dynamic boundary does not add two launch-time HTTP requests.
+      // 2026-10-15: 퀵 선택 코어는 매직완드만 import하는 순수 모듈이고 에디터 호스트가 정적으로
+      // 쓰므로 같은 묶음에 넣어 자기 청크(+1 요청)를 없앤다.
       return "studio-selection-tools";
     }
     if (
@@ -150,12 +153,22 @@ export function createStudioManualChunks(predicates: {
     if (
       id.endsWith("/src/domains/creator/studio-panel-split.ts")
       || id.endsWith("/src/domains/creator/studio-edit-controls.ts")
+      || id.endsWith("/src/domains/creator/studio-macro-recorder.ts")
+      || id.endsWith("/src/domains/creator/studio-pathfinder-vector-engine.ts")
+      || id.endsWith("/src/domains/creator/studio-advanced-fill-tap.ts")
+      || id.endsWith("/src/domains/creator/studio-colordrop-gesture.ts")
     ) {
       // Dependency-free leaves with the same entry-owner set; merging removes one request
       // without changing any static or lazy closure.
+      // 2026-10-15: 매크로 기록·패스파인더 벡터 엔진·컬러드롭 제스처(와 그 유일한 의존성인 탭 판정)는
+      // 에디터 호스트가 정적으로 쓰고 지연 패널도 공유하는 무의존 잎 모듈이라 모듈마다 작은 공유
+      // 청크가 따로 생겼다(Studio 라우트 정적 청크 +3). 이미 Studio 정적 폐포에 있는 이 그룹에
+      // 합쳐 요청만 줄인다 — 패널·렌더러·Worker·상태 저장소는 넣지 않는다.
       return "studio-editing-micro-models";
     }
-    if (["studio-isometric-grid", "studio-perspective-guide", "studio-object-insert-drag", "studio-image-placement"]
+    if (["studio-isometric-grid", "studio-perspective-guide", "studio-object-insert-drag", "studio-image-placement",
+      // 2026-10-15: 원근 가이드 격자·소실점 기하(드로잉 보조). 같은 순수 기하라 같은 그룹에 둔다.
+      "drawing/studio-perspective-guide"]
       .some((name) => id.endsWith(`/src/domains/creator/${name}.ts`))) {
       // Pure placement/guide geometry already used by the static editor graph.
       return "studio-placement-guide-contracts";
