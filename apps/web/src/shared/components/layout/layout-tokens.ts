@@ -106,6 +106,25 @@ export const LAYOUT_EDITOR_EXCEPTIONS = {
   railWidth: "3rem",
 } as const;
 
+/**
+ * 디스플레이 타이포 스케일 정본 (BLUEPRINT §6.1 (6)·§6.2 (5)) — 허용 변형은 display와
+ * editorial 두 가지뿐이다. display는 base(<640px) → sm(≥640px) → lg(≥1024px) 3단계이고
+ * Tailwind 환산은 heading = text-[2rem]/text-4xl/text-6xl, sectionTitle = text-2xl/
+ * text-3xl/text-4xl이다. unified 계약(app/styles/unified-theme-contract.css)이 같은 값을
+ * `--site-heading-size`·`--site-section-title-size` CSS 변수로 미러링하며, 테마 전용 시트는
+ * 헤딩 크기를 재정의할 수 없다(테마를 바꿔도 글자 크기는 변하지 않는다).
+ * editorial은 세리프 이탤릭을 명시적으로 고른 표면(예: 홈 포스터)의 유동 크기다.
+ */
+export const LAYOUT_TYPE_SCALE = {
+  display: {
+    heading: { base: "2rem", sm: "2.25rem", lg: "3.75rem" },
+    sectionTitle: { base: "1.5rem", sm: "1.875rem", lg: "2.25rem" },
+  },
+  editorial: {
+    heading: "clamp(2.25rem, 3.4vw, 3.375rem)",
+  },
+} as const;
+
 export const LAYOUT_TOKENS = {
   /**
    * 페이지 외곽 — 헤더 높이만큼 확보한 최소 높이 + 캔버스 배경 + 페이지 수직 여백.
@@ -147,6 +166,12 @@ export const LAYOUT_TOKENS = {
   type: {
     /** 히어로 H1 — font-display + 2rem/4xl/6xl (PricingPage·MembershipPolicyPage 기준). */
     heroTitle: "font-display text-[2rem] leading-[1.18] font-black tracking-[-0.04em] text-fg break-keep text-balance sm:text-4xl sm:leading-[1.12] lg:text-6xl",
+    /**
+     * 히어로 H1 에디토리얼 변형 — 세리프 이탤릭을 명시적으로 고른 표면 전용(홈 포스터 기준).
+     * 크기는 `LAYOUT_TYPE_SCALE.editorial.heading`과 같다. 일반 표면은 display 변형을 쓴다.
+     */
+    heroTitleEditorial:
+      "font-serif text-[clamp(2.25rem,3.4vw,3.375rem)] leading-[1.14] font-bold italic tracking-[-0.035em] text-fg break-keep text-balance",
     /** 섹션 H2 — font-display + 2xl/3xl/4xl. */
     sectionTitle: "font-display text-2xl leading-snug font-black tracking-tight text-fg break-keep text-balance sm:text-3xl lg:text-4xl",
     /** 히어로 리드 문단. */

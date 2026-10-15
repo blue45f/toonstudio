@@ -8,6 +8,7 @@ import {
   LAYOUT_EDITOR_EXCEPTIONS,
   LAYOUT_ROW_RAIL,
   LAYOUT_TOKENS,
+  LAYOUT_TYPE_SCALE,
   PAGE_TEMPLATE_DETAIL_GRID,
   PAGE_TEMPLATE_SLOTS,
   PAGE_TEMPLATE_TONE,
@@ -154,5 +155,26 @@ describe("레이아웃 정본 상수 내부 일치 (L0~L6)", () => {
     expect(shared).not.toContain(LAYOUT_EDITOR_EXCEPTIONS.chromeHeight);
     expect(shared).not.toContain(LAYOUT_EDITOR_EXCEPTIONS.railWidth);
     expect(Object.keys(LAYOUT_DIMENSIONS).some((key) => key.toLowerCase().includes("editor"))).toBe(false);
+  });
+
+  it("디스플레이 타이포 스케일은 히어로·섹션 제목 클래스의 단계값과 같다", () => {
+    // Tailwind 환산: text-2xl=1.5rem, text-3xl=1.875rem, text-4xl=2.25rem, text-6xl=3.75rem.
+    const { heading, sectionTitle } = LAYOUT_TYPE_SCALE.display;
+    expect(LAYOUT_TOKENS.type.heroTitle).toContain(`text-[${heading.base}]`);
+    expect(LAYOUT_TOKENS.type.heroTitle).toContain("sm:text-4xl");
+    expect(LAYOUT_TOKENS.type.heroTitle).toContain("lg:text-6xl");
+    expect([heading.sm, heading.lg]).toEqual(["2.25rem", "3.75rem"]);
+    expect(LAYOUT_TOKENS.type.sectionTitle).toContain("text-2xl");
+    expect(LAYOUT_TOKENS.type.sectionTitle).toContain("sm:text-3xl");
+    expect(LAYOUT_TOKENS.type.sectionTitle).toContain("lg:text-4xl");
+    expect([sectionTitle.base, sectionTitle.sm, sectionTitle.lg]).toEqual(["1.5rem", "1.875rem", "2.25rem"]);
+  });
+
+  it("에디토리얼 변형 클래스는 정본 크기를 쓰는 세리프 이탤릭이다", () => {
+    const size = LAYOUT_TYPE_SCALE.editorial.heading.replaceAll(" ", "");
+    expect(LAYOUT_TOKENS.type.heroTitleEditorial).toContain(`text-[${size}]`);
+    expect(LAYOUT_TOKENS.type.heroTitleEditorial).toContain("font-serif");
+    expect(LAYOUT_TOKENS.type.heroTitleEditorial).toContain("italic");
+    expect(Object.keys(LAYOUT_TYPE_SCALE)).toEqual(["display", "editorial"]);
   });
 });
