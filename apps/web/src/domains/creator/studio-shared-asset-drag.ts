@@ -33,7 +33,9 @@ const SVG_EVENT_ATTRIBUTE_PATTERN =
   /(?:^|\s)on[A-Za-z][\w:.-]*\s*=/iu;
 const SVG_HREF_ATTRIBUTE_PATTERN =
   /(?:^|\s)(?:href|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/giu;
-const SVG_URL_CALL_PATTERN = /url\s*\(([^)]*)\)/giu;
+// 태그 첫머리의 요소 이름. 슬래시 앞뒤 공백을 `\s*\/?\s*` 로 쓰면 같은 공백을 두 수량자가 나눠 가질 수 있어
+// 공백만 긴 태그에서 제곱 시간이 되므로 `\s*(?:\/\s*)?` 로 쓴다. 받아들이는 문자열 집합은 같다.
+const SVG_TAG_ELEMENT_NAME_PATTERN = /^\s*(?:\/\s*)?([A-Za-z_][\w:.-]*)/u;
 
 function hasExactKeys(
   candidate: Record<string, unknown>,
@@ -116,6 +118,26 @@ function hasForbiddenXmlControl(svg: string): boolean {
   return false;
 }
 
+/**
+ * 모든 `url(` 호출이 `)` 로 닫히고 문서 안 참조만 가리키는지 본다.
+ * 호출마다 닫는 괄호를 indexOf 로 한 번만 찾고 그 뒤에서 이어 읽는다. 닫는 괄호를 끝내 못 찾는 `url(` 을 시작점마다
+ * `[^)]*` 로 문서 끝까지 다시 읽는 정규식은 입력 길이의 제곱 시간이 된다. 닫히지 않은 호출은 거부한다.
+ */
+function hasOnlySafeUrlReferences(svg: string): boolean {
+  const callStart = /url\s*\(/giu;
+  for (let call = callStart.exec(svg); call; call = callStart.exec(svg)) {
+    const close = svg.indexOf(")", callStart.lastIndex);
+    if (close < 0) return false;
+    const reference = svg
+      .slice(callStart.lastIndex, close)
+      .trim()
+      .replace(/^(["'])(.*)\1$/u, "$2");
+    if (!isSafeInternalSvgReference(reference)) return false;
+    callStart.lastIndex = close + 1;
+  }
+  return true;
+}
+
 function isSafeSvgMarkup(svg: string): boolean {
   if (
     !svg
@@ -152,7 +174,7 @@ function isSafeSvgMarkup(svg: string): boolean {
     }
     if (close < 0) return false;
     const tag = svg.slice(open + 1, close);
-    const elementName = /^\s*\/?\s*([A-Za-z_][\w:.-]*)/u.exec(tag)?.[1];
+    const elementName = SVG_TAG_ELEMENT_NAME_PATTERN.exec(tag)?.[1];
     if (
       (elementName && SVG_FORBIDDEN_ELEMENT_PATTERN.test(elementName))
       || SVG_EVENT_ATTRIBUTE_PATTERN.test(tag)
@@ -171,19 +193,7 @@ function isSafeSvgMarkup(svg: string): boolean {
     cursor = close + 1;
   }
 
-  const urlCallCount = svg.match(/url\s*\(/giu)?.length ?? 0;
-  let parsedUrlCallCount = 0;
-  SVG_URL_CALL_PATTERN.lastIndex = 0;
-  for (
-    let match = SVG_URL_CALL_PATTERN.exec(svg);
-    match;
-    match = SVG_URL_CALL_PATTERN.exec(svg)
-  ) {
-    parsedUrlCallCount += 1;
-    const reference = match[1].trim().replace(/^(["'])(.*)\1$/u, "$2");
-    if (!isSafeInternalSvgReference(reference)) return false;
-  }
-  return parsedUrlCallCount === urlCallCount;
+  return hasOnlySafeUrlReferences(svg);
 }
 
 function isValidSvgDataUrl(value: string): boolean {
