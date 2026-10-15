@@ -171,7 +171,7 @@ pnpm exec tsx scripts/generate-latent-pigment-model.mts --sweep    # 설계 변�
 - Mixbox 노드(`pigment-mixbox`, `mixbox-js-v2`, `noncommercial`)는 같은 안료 슬롯에서 그대로 `permissive-only`와 `source-available`에 차단된다. 상업 차단 시험은 바뀌지 않고 통과한다.
 - `brush-studio-v6-pigment-provider.ts`에 같은 슬롯용 어댑터를 더했다. 팔레트는 양 끝 색의 잠재 색을 한 번씩만 풀고 비율마다 보간하며, 양 끝점은 입력 색과 정확히 같다.
 - 엔진 노드 목록, 토폴로지 캐리어 호환 목록, 재료 엔진 안료 목록, 비교 패널에 항목을 더했다. 비교 패널 항목은 네이티브 버튼(`잠재 안료(자체) 선택`)이고 눌림 상태를 `aria-pressed`로 알린다. 보기만 해서는 브러시를 바꾸지 않는다.
-- **번들·구조**: 혼합기·생성 상수·기저 표 3개 모듈(원본 합계 35,434바이트 ≈ 34.6KiB: 29,781 + 3,189 + 2,464)은 안료 제공자(`brush-studio-v6-pigment-provider.ts`)가 정적으로 가져오며, 그 제공자가 이미 Studio 어댑터의 진입 그래프(`studio-legacy-editor-adapter.tsx` → `StudioPage.tsx` → … → `brush-studio-v6-material-engine.ts` → 제공자)에 정적으로 들어 있으므로 이 3개 모듈도 같은 그래프에 들어온다(진입 그래프 검사기로 확인). 새 동적 import와 새 정적 데이터 파일은 없다. 생성기와 `scripts/` 파일은 이 그래프에 도달하지 않는다. 확인한 것은 진입 그래프 래칫(통과: 정적 도달 원본 18.47 MiB, 허용 상한 18.72 MiB)과 파일 크기 래칫(통과)이다. 청크 수 래칫(297/297)은 전체 빌드가 필요해 이 작업에서 실행하지 못했으므로 "청크가 늘지 않았다"는 정적 근거만 있고 측정값은 없다. 새 파일은 모두 `brush-lab/pigment/` 아래이고 파일당 800줄 이하다.
+- **번들·구조**: 혼합기·생성 상수·기저 표 3개 모듈(원본 합계 35,434바이트 ≈ 34.6KiB: 29,781 + 3,189 + 2,464)은 안료 제공자(`brush-studio-v6-pigment-provider.ts`)가 정적으로 가져오며, 그 제공자가 이미 Studio 어댑터의 진입 그래프(`studio-legacy-editor-adapter.tsx` → `StudioPage.tsx` → … → `brush-studio-v6-material-engine.ts` → 제공자)에 정적으로 들어 있으므로 이 3개 모듈도 같은 그래프에 들어온다(진입 그래프 검사기로 확인). 새 동적 import와 새 정적 데이터 파일은 없다. 생성기와 `scripts/` 파일은 이 그래프에 도달하지 않는다. 기존 파일 4개(라이선스 프로필, 재료 엔진, 안료 제공자, 토폴로지 재료)의 증가분 2,174바이트를 더하면 진입 그래프 원본은 모두 37,608바이트(≈36.7KiB, 기준 커밋 대비 약 0.19%) 늘었다. 확인한 것은 진입 그래프 래칫(통과: 정적 도달 원본 18.47 MiB, 허용 상한 18.72 MiB)과 파일 크기 래칫(통과), `validate:architecture` 전체(통과)이다. 청크 수 래칫(297/297)은 전체 빌드가 필요해 이 작업에서 실행하지 못했으므로 "청크가 늘지 않았다"는 정적 근거만 있고 측정값은 없다. 새 파일은 모두 `brush-lab/pigment/` 아래이고 파일당 800줄 이하다.
 
 ## 8. 시험
 
@@ -214,7 +214,7 @@ pnpm exec vitest run apps/web/src/domains/creator/brush-lab/pigment scripts/gene
 
 ### clean-room 기록
 
-- 읽은 것: 분석 보고서, `third_party/mixbox/README.md`, 저장소의 KM 구현(`kubelka-munk.ts`, `external-pigments.ts`, `vendor/open-km.*`, `studio-spectral-pigment-mixing-provider.ts`), 안료 제공자 경계 파일(`brush-studio-v6-pigment-provider.ts`의 Mixbox 호출 지점)과 라이선스 프로필.
+- 읽은 것: 분석 보고서, `third_party/mixbox/README.md`, `third_party/mixbox/LICENSE-GRANT.md`(소유자가 작성할 합의 기록 양식이며 코드·데이터가 아니다. 작업 지시가 허용한 열람 범위는 README와 분석 보고서였으므로 범위를 넘어 열람했음을 밝힌다), 저장소의 KM 구현(`kubelka-munk.ts`, `external-pigments.ts`, `vendor/open-km.*`, `studio-spectral-pigment-mixing-provider.ts`), 안료 제공자 경계 파일(`brush-studio-v6-pigment-provider.ts`의 Mixbox 호출 지점)과 라이선스 프로필.
 - 열지 않은 것: `node_modules/mixbox`와 하위 파일, Mixbox 소스 사본, 웹의 Mixbox 구현·격자표·계수.
 - 실행한 것: Mixbox를 호출하는 기존 시험(실행만 했고 내부는 보지 않았다)과 개발 전용 비교 스크립트(공개 함수 `lerpFloat`만 블랙박스로 호출).
 - 구현자가 공개 자료로 아는 일반 지식(Kubelka–Munk 이론, 일반 안료 계열의 대략적인 색)은 쓰였다.
@@ -247,6 +247,8 @@ pnpm exec tsx scripts/dev/compare-latent-pigment-with-mixbox.mts
 - 역방향 풀이 전체: 시작점 표(10분할 286점), 시작점 선택 규칙(색 근접 + 농도 간격 0.3), 활성 집합 LM, 누설 클램프 0.1, 명도 가중 0.25, 정지 조건(2.2장)
 - 입력 검증과 가중치 정규화 규칙, 결과 동결, 진단용 `isLatentPigmentMixerInitialized`(2.3장)
 - `--check`의 숫자 허용 오차 1e-6(3장)
+- 제공자 등록의 세부: 노드 id `pigment-latent`, 제품 경로 `material-contact`, 역할 `pigment`·`palette`, 비교 패널 표기 "잠재 안료(자체)", 팔레트는 양 끝 색을 한 번씩만 풀고 사이를 잠재 공간에서 보간하는 방식(7장)
+- 개발용 도구의 이름과 위치: `generate:latent-pigment-model`·`verify:latent-pigment-model` 스크립트, `scripts/dev/` 아래 보고·비교 스크립트
 
 ## 13. 열린 항목
 
@@ -254,4 +256,6 @@ pnpm exec tsx scripts/dev/compare-latent-pigment-with-mixbox.mts
 - 논문 본문으로 안료 기저·잔차 정의 확인(구현에는 쓰지 않았다).
 - 실측 또는 허용 라이선스 도료 데이터로 안료 곡선 교체(target). 더 어둡고 진한 안료로 어두운 색의 포괄도를 높이려면 중립 균형(4.3장)을 다시 맞춰야 한다.
 - 접힌 면에서 농도가 갑자기 달라지는 경계를 줄이는 정규화.
+- 새 시험 파일 5개는 필수 CI 목록(`scripts/ci-required-vitest-targets.txt`)에 넣지 않았다. 그 목록의 줄 수를 발표 자료 시험(`engineering-talk-deck-content.test.ts`)이 단언하므로 목록과 발표 자료 수치를 함께 갱신해야 하며, 이 변경의 범위를 넘는다. 전체 `pnpm test`(`vitest run`)에는 포함된다.
+- 브라우저 벤치마크 하니스(`apps/web/tools/browser-harnesses/brush-pigment-benchmark.ts`)에는 새 제공자를 더하지 않았다.
 - 브라우저 화면 검증과 실제 획에서의 시각 확인은 별도 UI/UX 단계에서 한다(이 변경은 컴포넌트·순수 로직 시험으로 접근성 이름과 선택 상태까지만 증명했다).
