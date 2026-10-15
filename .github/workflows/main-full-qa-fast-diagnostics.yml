@@ -39,6 +39,10 @@ jobs:
             command: pnpm run lint:strict
           - gate: typecheck-all
             command: pnpm run typecheck && pnpm run typecheck:cloudflare-realtime
+          # PR core 의 check:type-coverage 는 테스트와 Studio 도메인을 뺀 범위만 잰다(힙 부족 복구).
+          # 제외분까지 포함한 운영 소스 전체를 샤드로 나눠 재고 합산하며, 임계값은 같은 스크립트에서 읽는다.
+          - gate: type-coverage-full
+            command: pnpm run check:type-coverage:full
           - gate: production-workspace-build
             command: pnpm --filter @webtoon-nest/api build && test -s apps/api/dist/apps/api/src/main.js && node --check apps/api/dist/apps/api/src/main.js && pnpm run build && pnpm run check:studio-bundle && pnpm run build:all
     steps:
