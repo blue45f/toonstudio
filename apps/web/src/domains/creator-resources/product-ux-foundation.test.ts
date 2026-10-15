@@ -94,11 +94,17 @@ describe("purpose-first product UX foundation", () => {
     expect(routes).toContain('path: "/accessibility"');
   });
 
-  it("uses distribution language for the free-first marketplace", () => {
+  it("keeps a single seller-center entrance in the marketplace header", () => {
     const source = readFileSync(MARKET_NAV, "utf8");
-    expect(source).toContain("배포하기");
+    // S1-5: 판매 진입은 판매자 센터 하나로 수렴했다(등록·관리는 센터의 탭). 정본 경로는
+    // models/market-seller-center.ts의 SELLER_CENTER_PATH이고, 현재 위치 판정은
+    // MarketNavHeader.test.tsx가 맡는다. 이 테스트는 내비에 구 진입이 다시 늘어나지 않게 막는다.
     expect(source).toContain("웹툰 소재 작업실");
-    expect(source).not.toContain("판매자 센터");
+    expect(source).toContain('href: "/market/seller"');
+    expect(source).toContain('label: ["판매자 센터", "Seller center"]');
+    expect(source).not.toContain("배포하기");
+    expect(source).not.toContain('href: "/market/publish"');
+    expect(source).not.toContain('href: "/market/manage"');
   });
 
   it("previews random picks instead of forcing a detail redirect", () => {
