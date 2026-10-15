@@ -1,13 +1,15 @@
 import { dbPool } from "../../platform/database";
 import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-contract";
 
-import type { Pool, QueryConfig } from "pg";
+import { containsEvery, timedHealthQuery } from "./health-readiness-query";
+
+import type { QueryablePool } from "./health-readiness-query";
+
+export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
 
 export const HEALTH_READINESS_REPOSITORY = Symbol(
   "HEALTH_READINESS_REPOSITORY",
 );
-
-export const HEALTH_READINESS_QUERY_TIMEOUT_MS = 3_000;
 
 /**
  * Every persistent relation declared by the current Drizzle model.
@@ -287,32 +289,6 @@ interface SchemaCatalogRow {
 
 interface MigrationCatalogRow {
   migrationIds: string[] | null;
-}
-
-type QueryablePool = Pick<Pool, "query">;
-type TimedHealthQuery = QueryConfig & { query_timeout: number };
-
-function timedHealthQuery(
-  text: string,
-  values?: unknown[],
-): TimedHealthQuery {
-  return {
-    text,
-    values: values as QueryConfig["values"],
-    query_timeout: HEALTH_READINESS_QUERY_TIMEOUT_MS,
-  };
-}
-
-function containsEvery(
-  actual: readonly string[] | null,
-  required: readonly string[],
-): boolean {
-  if (!actual) return false;
-  const actualSet = new Set(actual);
-  return (
-    actualSet.size === required.length &&
-    required.every((value) => actualSet.has(value))
-  );
 }
 
 export interface HealthReadinessRepository {
