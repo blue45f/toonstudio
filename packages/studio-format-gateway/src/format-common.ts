@@ -22,6 +22,16 @@ export function stableTextId(namespace: string, bytes: Uint8Array): string {
   return `${namespace}:${bytes.byteLength.toString(16)}:${fnv1a64Hex(bytes)}`;
 }
 
+/**
+ * 문자열 끝의 NUL 문자를 모두 뗀다. UTF-16 이름처럼 파일이 길이를 정하는 문자열에 `/\0+$/` 를 쓰면, 앞쪽에 NUL 이 길게
+ * 이어질 때 시작점마다 그 열을 끝까지 다시 읽어 입력 길이의 제곱 시간이 된다(CodeQL js/polynomial-redos).
+ */
+export function stripTrailingNuls(text: string): string {
+  let end = text.length;
+  while (end > 0 && text.charCodeAt(end - 1) === 0) end -= 1;
+  return end === text.length ? text : text.slice(0, end);
+}
+
 const MD5_SHIFT = [
   7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
   5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
@@ -162,26 +172,53 @@ const XML_ENTITIES: Readonly<Record<string, string>> = Object.freeze({
   quot: '"',
 });
 
+function decodeXmlEntity(whole: string, body: string): string {
+  const named = XML_ENTITIES[body];
+  if (named !== undefined) return named;
+  const hex = body.startsWith("#x") || body.startsWith("#X");
+  const decimal = body.startsWith("#") && !hex;
+  if (!hex && !decimal) {
+    throw new SafeXmlError(`unknown XML entity ${whole}`, "xml-entity-invalid");
+  }
+  const parsed = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
+  if (
+    !Number.isSafeInteger(parsed) ||
+    parsed < 0 ||
+    parsed > 0x10ffff ||
+    (parsed >= 0xd800 && parsed <= 0xdfff)
+  ) {
+    throw new SafeXmlError(`invalid XML character reference ${whole}`, "xml-entity-invalid");
+  }
+  return String.fromCodePoint(parsed);
+}
+
+/**
+ * `&본문;` 을 해독한다. 본문은 `&` 바로 뒤에서 첫 `;` 앞까지(비어 있지 않을 때)다.
+ * 같은 일을 `/&([^;]+);/g` 로 하면 `;` 를 끝내 못 찾는 `&` 마다 문자열 끝까지 다시 읽어 입력 길이의 제곱 시간이 된다
+ * (원문 예산 2,000,000자 안에서 `&` 열 하나로 탭이 멈춘다). 첫 `;` 위치를 한 번만 찾아 이어 쓰고, 뒤에 `;` 가 더
+ * 없으면 남은 `&` 는 모두 짝이 없으므로 바로 끝낸다.
+ */
 function decodeXmlEntities(value: string): string {
-  return value.replace(/&([^;]+);/gu, (whole, body: string) => {
-    const named = XML_ENTITIES[body];
-    if (named !== undefined) return named;
-    const hex = body.startsWith("#x") || body.startsWith("#X");
-    const decimal = body.startsWith("#") && !hex;
-    if (!hex && !decimal) {
-      throw new SafeXmlError(`unknown XML entity ${whole}`, "xml-entity-invalid");
+  let ampersand = value.indexOf("&");
+  if (ampersand < 0) return value;
+  let decoded = "";
+  let copiedUntil = 0;
+  // 마지막으로 찾은 `;` 위치. -1 은 뒤에 `;` 가 없다는 뜻이다.
+  let semicolon = -2;
+  while (ampersand >= 0) {
+    if (semicolon !== -1 && semicolon < ampersand) semicolon = value.indexOf(";", ampersand + 1);
+    if (semicolon < 0) break;
+    if (semicolon === ampersand + 1) {
+      // `&;` — 본문이 비어 있어 엔티티가 아니다. 다음 `&` 부터 다시 본다.
+      ampersand = value.indexOf("&", ampersand + 1);
+      continue;
     }
-    const parsed = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
-    if (
-      !Number.isSafeInteger(parsed) ||
-      parsed < 0 ||
-      parsed > 0x10ffff ||
-      (parsed >= 0xd800 && parsed <= 0xdfff)
-    ) {
-      throw new SafeXmlError(`invalid XML character reference ${whole}`, "xml-entity-invalid");
-    }
-    return String.fromCodePoint(parsed);
-  });
+    decoded += value.slice(copiedUntil, ampersand);
+    decoded += decodeXmlEntity(value.slice(ampersand, semicolon + 1), value.slice(ampersand + 1, semicolon));
+    copiedUntil = semicolon + 1;
+    ampersand = value.indexOf("&", copiedUntil);
+  }
+  return copiedUntil === 0 ? value : decoded + value.slice(copiedUntil);
 }
 
 function isXmlWhitespace(character: string | undefined): boolean {

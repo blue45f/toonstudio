@@ -1,0 +1,285 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  buildComputedAbr,
+  buildSampledAbr,
+} from "../../../../tests/corpus/brushes/abr/synthetic-abr";
+import { importAbr } from "../abr";
+import { decodeAbrPreviewBrushes } from "../abr-preview";
+import { SafeXmlError, parseSafeXml } from "../format-common";
+import { SvgParseError, parseSvgToScene } from "../svg";
+import { matchPaintUrl, scanTransformCalls } from "../svg-syntax-scan";
+
+/**
+ * 외부에서 받은 파일(브러시 묶음·SVG·OpenRaster)을 읽는 포맷 게이트웨이의 최악 입력 시간 회귀 테스트
+ * (CodeQL js/polynomial-redos). 정규식이 입력 길이의 제곱 시간이면 수십~수백 KB 한 장으로 탭이 수 초에서
+ * 수십 분까지 멈춘다. 아래 입력은 수정 전 구현에서 각각 2~6초가 걸렸고, 선형 시간이면 수십 ms 안에 끝난다.
+ * 상한은 느린 CI 에서도 흔들리지 않게 1초로 넉넉히 둔다.
+ */
+const LINEAR_TIME_BUDGET_MS = 1_000;
+
+function timed<T>(run: () => T): { value: T | undefined; error: unknown; elapsedMs: number } {
+  const startedAt = performance.now();
+  let value: T | undefined;
+  let error: unknown = null;
+  try {
+    value = run();
+  } catch (caught) {
+    error = caught;
+  }
+  return { value, error, elapsedMs: performance.now() - startedAt };
+}
+
+describe("XML 엔티티 해독의 선형 시간", () => {
+  it("';' 없이 '&' 만 길게 이어진 본문도 제곱 시간이 되지 않는다", () => {
+    const body = "&".repeat(80_000);
+    const { value, error, elapsedMs } = timed(() => parseSafeXml(`<root>${body}</root>`));
+    expect(error).toBeNull();
+    expect(value?.text).toBe(body);
+    expect(elapsedMs, "본문 엔티티 해독 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+
+  it("속성 값의 '&' 열도 제곱 시간이 되지 않는다", () => {
+    const body = "&".repeat(80_000);
+    const { value, error, elapsedMs } = timed(() => parseSafeXml(`<root a="${body}"/>`));
+    expect(error).toBeNull();
+    expect(value?.attrs.a).toBe(body);
+    expect(elapsedMs, "속성 엔티티 해독 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+
+  it("끝에 ';' 가 하나 있어도 '&' 열은 한 번에 읽고 알 수 없는 엔티티로 거부한다", () => {
+    const { error, elapsedMs } = timed(() => parseSafeXml(`<root>${"&".repeat(80_000)};</root>`));
+    expect(error).toBeInstanceOf(SafeXmlError);
+    expect(error).toMatchObject({ code: "xml-entity-invalid" });
+    expect(elapsedMs, "알 수 없는 엔티티 거부 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+});
+
+/** 수정 전 구현(정규식)을 그대로 옮겨 둔 기준. 판정 보존을 대조하는 데만 쓴다. */
+const LEGACY_XML_ENTITIES: Readonly<Record<string, string>> = {
+  amp: "&",
+  apos: "'",
+  gt: ">",
+  lt: "<",
+  quot: '"',
+};
+
+function legacyDecode(value: string): string {
+  return value.replace(/&([^;]+);/gu, (whole, body: string) => {
+    const named = LEGACY_XML_ENTITIES[body];
+    if (named !== undefined) return named;
+    const hex = body.startsWith("#x") || body.startsWith("#X");
+    const decimal = body.startsWith("#") && !hex;
+    if (!hex && !decimal) {
+      throw new SafeXmlError(`unknown XML entity ${whole}`, "xml-entity-invalid");
+    }
+    const parsed = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
+    if (
+      !Number.isSafeInteger(parsed) ||
+      parsed < 0 ||
+      parsed > 0x10ffff ||
+      (parsed >= 0xd800 && parsed <= 0xdfff)
+    ) {
+      throw new SafeXmlError(`invalid XML character reference ${whole}`, "xml-entity-invalid");
+    }
+    return String.fromCodePoint(parsed);
+  });
+}
+
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 0x1_0000_0000;
+  };
+}
+
+describe("XML 엔티티 해독의 판정 보존", () => {
+  it.each([
+    ["이름 있는 엔티티", "a &amp; b &lt;c&gt; &quot;d&quot; &apos;e&apos;", "a & b <c> \"d\" 'e'"],
+    ["10진 문자 참조", "&#65;&#44032;", "A가"],
+    ["16진 문자 참조", "&#x41;&#X1F600;", "A😀"],
+    ["';' 가 없는 '&' 는 그대로", "a & b &amp c", "a & b &amp c"],
+    ["빈 본문 '&;' 는 그대로", "x &; y", "x &; y"],
+    ["엔티티 뒤의 짝 없는 '&'", "&amp; & end", "& & end"],
+  ])("%s", (_label, source, expected) => {
+    expect(parseSafeXml(`<r>${source}</r>`).text).toBe(expected);
+  });
+
+  it.each([
+    ["알 수 없는 이름", "&nbsp;", "xml-entity-invalid"],
+    ["'&' 사이의 공백이 이름에 들어가는 경우", "&a &amp;", "xml-entity-invalid"],
+    ["서로게이트 범위 문자 참조", "&#xD800;", "xml-entity-invalid"],
+    ["유니코드 범위를 넘는 문자 참조", "&#x110000;", "xml-entity-invalid"],
+    ["숫자가 아닌 문자 참조", "&#xZZ;", "xml-entity-invalid"],
+  ])("%s 는 계속 거부한다", (_label, source, code) => {
+    const { error } = timed(() => parseSafeXml(`<r>${source}</r>`));
+    expect(error).toBeInstanceOf(SafeXmlError);
+    expect(error).toMatchObject({ code });
+  });
+
+  it("무작위 짧은 문자열 3,000건에서 수정 전 정규식 구현과 결과·오류가 같다", () => {
+    const alphabet = ["&", ";", "a", "m", "p", "#", "x", "4", "1", " ", "l", "t", "D", "8", "0"];
+    const random = seededRandom(20_261_015);
+    for (let caseIndex = 0; caseIndex < 3_000; caseIndex += 1) {
+      const length = Math.floor(random() * 14);
+      let source = "";
+      for (let index = 0; index < length; index += 1) {
+        source += alphabet[Math.floor(random() * alphabet.length)] ?? "";
+      }
+      const expected = timed(() => legacyDecode(source));
+      const actual = timed(() => parseSafeXml(`<r>${source}</r>`).text);
+      if (expected.error instanceof SafeXmlError) {
+        expect(actual.error, `입력 ${JSON.stringify(source)}`).toBeInstanceOf(SafeXmlError);
+        expect(actual.error).toMatchObject({ code: expected.error.code });
+      } else {
+        expect(actual.error, `입력 ${JSON.stringify(source)}`).toBeNull();
+        expect(actual.value, `입력 ${JSON.stringify(source)}`).toBe(expected.value);
+      }
+    }
+  });
+});
+
+describe("SVG transform·paint 해석의 선형 시간", () => {
+  it("괄호 없이 영문자만 길게 이어진 transform 도 제곱 시간이 되지 않고 같은 오류로 거부한다", () => {
+    const { error, elapsedMs } = timed(() =>
+      parseSvgToScene(`<svg width="10" height="10"><rect width="5" height="5" transform="${"A".repeat(80_000)}"/></svg>`),
+    );
+    expect(error).toBeInstanceOf(SvgParseError);
+    expect(String((error as Error).message)).toContain("unparseable transform fragment");
+    expect(elapsedMs, "transform 해석 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+
+  it("닫히지 않은 함수 호출이 길게 반복돼도 transform 해석이 제곱 시간이 되지 않는다", () => {
+    const { error, elapsedMs } = timed(() =>
+      parseSvgToScene(`<svg width="10" height="10"><rect width="5" height="5" transform="${"translate(".repeat(10_000)}"/></svg>`),
+    );
+    expect(error).toBeInstanceOf(SvgParseError);
+    expect(elapsedMs, "transform 해석 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+
+  it("url( 뒤에 공백이 길게 이어진 fill 도 제곱 시간이 되지 않는다", () => {
+    const { value, error, elapsedMs } = timed(() =>
+      parseSvgToScene(`<svg width="10" height="10"><rect width="5" height="5" fill="url(${" ".repeat(60_000)}x"/></svg>`),
+    );
+    expect(error).toBeNull();
+    expect(value?.scene.nodes.length).toBeGreaterThan(0);
+    expect(elapsedMs, "paint url 해석 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+
+  it("')' 뒤 꼬리에 줄바꿈이 낀 url() fill 도 제곱 시간이 되지 않는다", () => {
+    const { error, elapsedMs } = timed(() =>
+      parseSvgToScene(`<svg width="10" height="10"><rect width="5" height="5" fill="url(#a)${" ".repeat(60_000)}x\ny"/></svg>`),
+    );
+    expect(error).toBeNull();
+    expect(elapsedMs, "paint url 꼬리 해석 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+});
+
+describe("SVG transform·paint 해석의 판정 보존", () => {
+  it("여러 transform 함수를 앞에서부터 곱한다", () => {
+    const { scene } = parseSvgToScene(
+      `<svg width="100" height="100"><rect width="10" height="10" transform="translate(5 6) scale(2),rotate(90)"/></svg>`,
+    );
+    const rect = scene.nodes[0];
+    expect(rect?.kind).toBe("fill-path");
+  });
+
+  it.each([
+    ["함수 사이 쓰레기", "translate(1 2) junk scale(2)"],
+    ["꼬리 쓰레기", "translate(1 2) junk"],
+    ["알 수 없는 함수", "wobble(1)"],
+    ["인자 개수 오류", "translate(1 2 3)"],
+    ["숫자가 아닌 인자", "translate(a b)"],
+  ])("%s 는 계속 SvgParseError 로 거부한다", (_label, transform) => {
+    const { error } = timed(() =>
+      parseSvgToScene(`<svg width="10" height="10"><rect width="5" height="5" transform="${transform}"/></svg>`),
+    );
+    expect(error).toBeInstanceOf(SvgParseError);
+  });
+
+  it.each([
+    ["문서 안 참조", 'fill="url(#g)"', true],
+    ["공백이 낀 참조", 'fill="url( #g )"', true],
+    ["따옴표 참조", `fill="url('#g')"`, true],
+    ["이중 따옴표 참조", `fill='url("#g")'`, true],
+    ["대체 색이 붙은 참조", 'fill="url(#g) red"', true],
+    ["외부 참조", 'fill="url(https://example.test/a.svg)"', false],
+  ])("%s 는 수정 전과 같은 경고를 낸다", (_label, attribute, resolvable) => {
+    const { warnings } = parseSvgToScene(
+      `<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient></defs><rect width="5" height="5" ${attribute}/></svg>`,
+    );
+    expect(warnings.some((warning) => warning.includes("cannot be resolved"))).toBe(!resolvable);
+  });
+});
+
+describe("ABR 이름 끝 NUL 정리의 선형 시간", () => {
+  it("이름 앞에 NUL 이 길게 이어져도 제곱 시간이 되지 않는다", () => {
+    const name = `${"\0".repeat(60_000)}a`;
+    const { value, error, elapsedMs } = timed(() =>
+      importAbr(buildComputedAbr({ version: 2, name, spacingPct: 25, angleDeg: 0, roundness: 50, diameterPx: 32 })),
+    );
+    expect(error).toBeNull();
+    expect(value?.brushes[0]).toMatchObject({ kind: "computed", name });
+    expect(elapsedMs, "ABR 이름 정리 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+
+  it("미리보기용 표본 브러시 이름도 제곱 시간이 되지 않는다", () => {
+    const name = `${"\0".repeat(60_000)}b`;
+    const alpha = new Uint8Array(16).fill(255);
+    const { value, error, elapsedMs } = timed(() =>
+      decodeAbrPreviewBrushes(buildSampledAbr({ version: 2, name, width: 4, height: 4, alpha })),
+    );
+    expect(error).toBeNull();
+    expect(value?.brushes[0]).toMatchObject({ name });
+    expect(elapsedMs, "ABR 미리보기 이름 정리 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
+  });
+
+  it.each([
+    ["끝 NUL 하나", "G-Pen", "G-Pen"],
+    ["이름 안쪽 NUL 은 보존", "A\0B", "A\0B"],
+    ["이름이 NUL 뿐이면 대체 이름", "", "computed-0"],
+  ])("%s", (_label, name, expected) => {
+    const result = importAbr(buildComputedAbr({ version: 2, name, spacingPct: 25, angleDeg: 0, roundness: 50, diameterPx: 32 }));
+    expect(result.brushes[0]).toMatchObject({ kind: "computed", name: expected });
+  });
+});
+
+describe("SVG 속성 스캐너와 수정 전 정규식의 판정 대조", () => {
+  const LEGACY_TRANSFORM = /([A-Za-z]+)\s*\(([^)]*)\)/g;
+  const LEGACY_PAINT_URL = /^url\(\s*(["']?)([^"')\s]*)\1\s*\)\s*(.*)$/;
+  const LINE_SEPARATOR = String.fromCharCode(0x2028);
+
+  function randomText(random: () => number, pieces: readonly string[], maxPieces: number, prefix = ""): string {
+    const count = Math.floor(random() * maxPieces);
+    let text = prefix;
+    for (let index = 0; index < count; index += 1) text += pieces[Math.floor(random() * pieces.length)] ?? "";
+    return text;
+  }
+
+  it("transform 함수 호출 목록이 무작위 문자열 4,000건에서 같다", () => {
+    const pieces = ["translate", "scale", "a", "B", "(", ")", " ", ",", "1", "-", "\n", "x", "(1 2)", "  "];
+    const random = seededRandom(1_015_001);
+    for (let caseIndex = 0; caseIndex < 4_000; caseIndex += 1) {
+      const source = randomText(random, pieces, 12);
+      const legacy = [...source.matchAll(LEGACY_TRANSFORM)].map((match) => ({
+        index: match.index,
+        end: match.index + match[0].length,
+        name: match[1],
+        args: match[2],
+      }));
+      expect(scanTransformCalls(source), `입력 ${JSON.stringify(source)}`).toEqual(legacy);
+    }
+  });
+
+  it("paint url 해석이 무작위 문자열 6,000건에서 같다", () => {
+    const pieces = [")", "(", " ", "\t", "\n", "\r", LINE_SEPARATOR, '"', "'", "#", "a", "b", "g", "none", "red", "  ", "url("];
+    const random = seededRandom(1_015_002);
+    for (let caseIndex = 0; caseIndex < 6_000; caseIndex += 1) {
+      const source = randomText(random, pieces, 10, random() < 0.85 ? "url(" : "");
+      const legacyMatch = LEGACY_PAINT_URL.exec(source);
+      const legacy = legacyMatch ? { target: legacyMatch[2], rest: legacyMatch[3] } : null;
+      expect(matchPaintUrl(source), `입력 ${JSON.stringify(source)}`).toEqual(legacy);
+    }
+  });
+});

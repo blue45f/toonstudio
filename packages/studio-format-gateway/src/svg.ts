@@ -1,5 +1,7 @@
 import { pathBounds, sceneIRSchema } from "@toonstudio/studio-project-model";
 
+import { matchPaintUrl, scanTransformCalls } from "./svg-syntax-scan";
+
 import type {
   BlendModeIR,
   ColorIR,
@@ -305,8 +307,6 @@ function transformPath(path: PathIR, m: Mat): PathIR {
 // transform="" attribute
 // ---------------------------------------------------------------------------
 
-const TRANSFORM_FUNCTION = /([A-Za-z]+)\s*\(([^)]*)\)/g;
-
 function transformArgs(
   raw: string,
   fn: string,
@@ -381,9 +381,8 @@ function parseTransformAttr(raw: string | undefined, position: ElementPosition):
   if (raw === undefined || raw.trim().length === 0) return IDENTITY;
   let matrix: Mat = IDENTITY;
   let consumed = 0;
-  TRANSFORM_FUNCTION.lastIndex = 0;
-  for (let match = TRANSFORM_FUNCTION.exec(raw); match; match = TRANSFORM_FUNCTION.exec(raw)) {
-    const between = raw.slice(consumed, match.index);
+  for (const call of scanTransformCalls(raw)) {
+    const between = raw.slice(consumed, call.index);
     if (/[^\s,]/.test(between)) {
       throw new SvgParseError(
         `unparseable transform fragment "${between.trim()}"`,
@@ -391,10 +390,10 @@ function parseTransformAttr(raw: string | undefined, position: ElementPosition):
         position.column,
       );
     }
-    const fn = match[1] ?? "";
-    const args = transformArgs(match[2] ?? "", fn, position);
+    const fn = call.name;
+    const args = transformArgs(call.args, fn, position);
     matrix = matMul(matrix, transformFunctionMatrix(fn, args, position));
-    consumed = match.index + match[0].length;
+    consumed = call.end;
   }
   if (/[^\s,]/.test(raw.slice(consumed))) {
     throw new SvgParseError(
@@ -1049,8 +1048,6 @@ function parseOpacityValue(raw: string | undefined, fallback: number): number {
   return Number.isFinite(value) ? clamp01(value) : fallback;
 }
 
-const PAINT_URL = /^url\(\s*(["']?)([^"')\s]*)\1\s*\)\s*(.*)$/;
-
 function parsePaintSpec(
   raw: string | undefined,
   inherited: PaintSpec,
@@ -1059,10 +1056,10 @@ function parsePaintSpec(
   if (raw === undefined) return inherited;
   const value = raw.trim();
   if (value.length === 0 || value.toLowerCase() === "inherit") return inherited;
-  const urlMatch = PAINT_URL.exec(value);
+  const urlMatch = matchPaintUrl(value);
   if (urlMatch) {
-    const target = urlMatch[2] ?? "";
-    const fallbackRaw = (urlMatch[3] ?? "").trim();
+    const target = urlMatch.target;
+    const fallbackRaw = urlMatch.rest.trim();
     let fallback: ColorIR | null = null;
     if (fallbackRaw.length > 0 && fallbackRaw.toLowerCase() !== "none") {
       const parsed = parseColorValue(fallbackRaw, ctx.currentColor);
@@ -1351,8 +1348,8 @@ function resolveClipReference(
   if (raw === undefined || raw.trim().toLowerCase() === "none" || raw.trim().length === 0) {
     return { kind: "none" };
   }
-  const match = PAINT_URL.exec(raw.trim());
-  const target = match?.[2] ?? "";
+  const match = matchPaintUrl(raw.trim());
+  const target = match?.target ?? "";
   if (!match || !target.startsWith("#")) {
     ctx.warn(`unresolvable clip-path reference "${raw}"; element left unclipped`);
     return { kind: "none" };
