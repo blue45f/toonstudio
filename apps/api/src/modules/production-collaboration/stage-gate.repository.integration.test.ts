@@ -23,6 +23,42 @@ describe("stage gate DTO contract (no database)", () => {
   });
 });
 
+interface RecordedStatement { readonly text: string; readonly values: readonly unknown[] }
+
+/** DB 없이 command()가 서버로 보내는 모든 SQL을 기록한다. assign-lead 한 건이 끝까지 가는 데 필요한 행만 돌려준다. */
+function recordingRepository(): { repository: StageGateRepository; statements: RecordedStatement[] } {
+  const statements: RecordedStatement[] = [];
+  const rowsFor = (text: string): unknown[] => {
+    if (text.includes('FROM "user" WHERE id=$1')) return [{ id: "owner-1", name: "소유자" }];
+    if (text.includes("SELECT CASE WHEN")) return [{ role: "owner" }];
+    if (text.includes("coalesce(u.name")) return [{ name: "리드" }];
+    return [];
+  };
+  const client = {
+    query: async (text: string, values: readonly unknown[] = []) => {
+      statements.push({ text, values });
+      const rows = rowsFor(text);
+      return { rows, rowCount: rows.length };
+    },
+    release: () => undefined,
+  };
+  return { repository: new StageGateRepository({ connect: async () => client } as never), statements };
+}
+
+describe("stage gate SQL parameter contract (no database)", () => {
+  // PostgreSQL은 SQL이 참조하지 않는 `$n`의 타입을 추론하지 못해 "could not determine data type of parameter"로 거절한다.
+  // DB 통합 테스트는 TEST_DATABASE_URL이 없으면 건너뛰므로, DB 없이도 바인딩 파라미터와 플레이스홀더가 일치함을 지킨다.
+  it("binds exactly the placeholders each statement references while assigning a lead", async () => {
+    const { repository, statements } = recordingRepository();
+    await repository.command("owner-1", "project-1", "ep-1", "plan", { ...versioned(0), type: "assign-lead", leadReviewerId: "lead-1" });
+    expect(statements.some(({ text }) => text.includes("coalesce(u.name")), "리드 구성원 확인 쿼리가 실행되어야 한다").toBe(true);
+    for (const { text, values } of statements) {
+      const referenced = [...new Set([...text.matchAll(/\$(\d+)/gu)].map((match) => Number(match[1])))].sort((a, b) => a - b);
+      expect(referenced, text).toEqual(values.map((_, index) => index + 1));
+    }
+  });
+});
+
 describe.skipIf(!url)("stage gate server contract actual Postgres", () => {
   let admin: Pool;
   let pool: Pool;

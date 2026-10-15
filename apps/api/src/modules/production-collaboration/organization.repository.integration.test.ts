@@ -35,6 +35,27 @@ describe.skipIf(!url)("organization server contract actual Postgres", () => {
     await pool.query(`INSERT INTO "user"(id,name,email,"emailVerified") VALUES($1,$2,$3,$4)`, [id, `Tester ${id.slice(0, 4)}`, `${id}@example.test`, verified ? new Date() : null]);
     return id;
   }
+  /**
+   * 팀 작업공간과 대표 구성원은 같은 트랜잭션에서 만든다. 0085의 지연 제약(`production_team_owner_identity`)이
+   * 커밋 시점에 "작업공간은 대표 구성원 행을 반드시 가진다"를 강제하므로, 자동 커밋 문장 둘로 나누면 작업공간 INSERT
+   * 직후 커밋에서 23514로 거절된다. 운영 코드(team-workspace.repository.ts)도 같은 순서로 한 트랜잭션에 넣는다.
+   */
+  async function teamWorkspaceWithOwner(owner: string): Promise<string> {
+    const workspaceId = randomUUID();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("INSERT INTO production_team_workspace(id,name,owner_user_id) VALUES($1,'본편팀',$2)", [workspaceId, owner]);
+      await client.query("INSERT INTO production_team_member(workspace_id,user_id,role) VALUES($1,$2,'owner')", [workspaceId, owner]);
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+    return workspaceId;
+  }
   async function invite(owner: string, organizationId: string, target: string, revision: number, role: "manager" | "member" | "guest" | "admin" = "member") {
     return repository.command(owner, organizationId, { ...versioned(revision), type: "invite", email: `${target}@example.test`, role });
   }
@@ -113,9 +134,7 @@ describe.skipIf(!url)("organization server contract actual Postgres", () => {
     const owner = await user(); const member = await user(); const stranger = await user();
     const org = await repository.create(owner, create("연결 스튜디오"));
     const revision = await join(owner, org.organizationId, member, 0, "member");
-    const workspaceId = randomUUID();
-    await pool.query("INSERT INTO production_team_workspace(id,name,owner_user_id) VALUES($1,'본편팀',$2)", [workspaceId, owner]);
-    await pool.query("INSERT INTO production_team_member(workspace_id,user_id,role) VALUES($1,$2,'owner')", [workspaceId, owner]);
+    const workspaceId = await teamWorkspaceWithOwner(owner);
     // 팀에 속하지 않은 사람은 그 팀의 존재를 확인할 수 없어 연결도 못 한다.
     await expect(repository.command(owner, org.organizationId, { ...versioned(revision), type: "link-workspace", workspaceId: randomUUID() })).rejects.toMatchObject({ status: 404 });
     const linked = await repository.command(owner, org.organizationId, { ...versioned(revision), type: "link-workspace", workspaceId });

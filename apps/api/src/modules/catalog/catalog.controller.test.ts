@@ -184,7 +184,9 @@ describe("CatalogController cover SSRF boundary", () => {
   it("forwards a standard width as a Width hint and ignores non-standard widths", async () => {
     vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
     const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
-    const fetchMock = vi.fn().mockResolvedValue(
+    // 업스트림 요청마다 새 Response 를 돌려준다. Response 본문은 한 번만 읽을 수 있어, 한 인스턴스를
+    // 두 요청이 공유하면(mockResolvedValue) 두 번째 요청은 이미 소비된 본문을 읽다 502 로 끝난다.
+    const fetchMock = vi.fn().mockImplementation(async () =>
       new globalThis.Response(png, { headers: { "content-type": "image/png" } })
     );
     vi.stubGlobal("fetch", fetchMock);
@@ -194,6 +196,7 @@ describe("CatalogController cover SSRF boundary", () => {
     );
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
     expect((init.headers as Record<string, string>).Width).toBe("320");
+    expect(res.status).toHaveBeenCalledWith(200);
 
     const res2 = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
     await createController().proxyCover(

@@ -1,13 +1,15 @@
 import { dbPool } from "../../platform/database";
 import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-contract";
 
-import type { Pool, QueryConfig } from "pg";
+import { containsEvery, timedHealthQuery } from "./health-readiness-query";
+
+import type { QueryablePool } from "./health-readiness-query";
+
+export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
 
 export const HEALTH_READINESS_REPOSITORY = Symbol(
   "HEALTH_READINESS_REPOSITORY",
 );
-
-export const HEALTH_READINESS_QUERY_TIMEOUT_MS = 3_000;
 
 /**
  * Every persistent relation declared by the current Drizzle model.
@@ -107,6 +109,8 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "creator_work_like",
   "creator_work_live_lock",
   "creator_work_live_lock_clock",
+  "creator_work_op_log",
+  "creator_work_op_snapshot",
   "creator_work_production_workspace",
   "creator_work_publication",
   "creator_work_publication_media",
@@ -145,16 +149,29 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "membership_reward_reversal",
   "monetization_plan",
   "personal_cloud_connection",
+  "production_episode_voice_commentary",
   "production_integration_connection",
   "production_integration_oauth_state",
   "production_integration_receipt",
   "production_operation_policy",
   "production_operation_policy_audit",
   "production_operation_policy_receipt",
+  "production_organization",
+  "production_organization_audit",
+  "production_organization_invite",
+  "production_organization_link",
+  "production_organization_member",
+  "production_organization_notice",
+  "production_organization_receipt",
   "production_project",
   "production_project_event",
   "production_project_mutation_receipt",
   "production_push_subscription",
+  "production_stage_gate",
+  "production_stage_gate_audit",
+  "production_stage_gate_decision",
+  "production_stage_gate_receipt",
+  "production_stage_gate_round",
   "production_team_audit",
   "production_team_invite",
   "production_team_member",
@@ -287,32 +304,6 @@ interface SchemaCatalogRow {
 
 interface MigrationCatalogRow {
   migrationIds: string[] | null;
-}
-
-type QueryablePool = Pick<Pool, "query">;
-type TimedHealthQuery = QueryConfig & { query_timeout: number };
-
-function timedHealthQuery(
-  text: string,
-  values?: unknown[],
-): TimedHealthQuery {
-  return {
-    text,
-    values: values as QueryConfig["values"],
-    query_timeout: HEALTH_READINESS_QUERY_TIMEOUT_MS,
-  };
-}
-
-function containsEvery(
-  actual: readonly string[] | null,
-  required: readonly string[],
-): boolean {
-  if (!actual) return false;
-  const actualSet = new Set(actual);
-  return (
-    actualSet.size === required.length &&
-    required.every((value) => actualSet.has(value))
-  );
 }
 
 export interface HealthReadinessRepository {
