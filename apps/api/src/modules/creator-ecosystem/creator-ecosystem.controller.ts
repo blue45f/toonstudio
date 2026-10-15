@@ -11,9 +11,21 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from "@nestjs/common";
 
+import { createAnonymousClientLimiter } from "../../platform/http/anonymous-client-limit";
+
 import { CreatorEcosystemService } from "./creator-ecosystem.service";
+
+import type { Request } from "express";
+
+// 로그인 없이 서버 키(도서관 정보나루)로 외부 API를 부르는 조회다. 클라이언트별로 제한한다.
+const libraryHoldingsLimiter = createAnonymousClientLimiter({
+  name: "creator-ecosystem-library-holdings",
+  limit: 20,
+  windowMs: 60_000,
+});
 
 @Controller()
 export class CreatorEcosystemController {
@@ -131,7 +143,9 @@ export class CreatorEcosystemController {
   libraryHoldings(
     @Query("isbn") isbn?: string,
     @Query("region") region?: string,
+    @Req() request?: Request,
   ) {
+    if (request) libraryHoldingsLimiter.enforce(request);
     return this.service.getLibraryHoldings(isbn, region);
   }
 
