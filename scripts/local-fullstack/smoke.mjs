@@ -11,6 +11,7 @@
  * 로그인 자격증명을 보내는 대상이므로 API origin 이 loopback 이 아니면 요청 전에 중단한다.
  */
 
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 import { ENV_KEYS, EXIT, SENSITIVE_ENV_KEYS, resolveStackDirectory, stackPaths } from "./lib/config.mjs";
@@ -25,6 +26,9 @@ const RATE_LIMIT_ERROR = "요청이 너무 많아요. 잠시 후 다시 시도�
 // TEST-NET-2(RFC 5737) 문서용 주소: 실제 클라이언트가 아니므로 레이트리밋 버킷을 격리하는 데만 쓴다.
 const SYNTHETIC_IP_PREFIX = "198.51.100.";
 const RATE_LIMIT_LOGIN_MAX_ATTEMPTS = 14;
+// 웹(Vite) 프록시 확인의 재시도 예산과 간격(밀리초). 테스트는 options 로 줄여서 쓴다.
+const WEB_PROXY_BUDGET_MS = 90_000;
+const WEB_PROXY_RETRY_DELAY_MS = 3_000;
 
 // Nest 의 @Post 기본 응답 코드는 201 이다. 성공 판정은 200/201 모두 허용한다.
 const isCreatedOrOk = (status) => status === 200 || status === 201;
@@ -78,7 +82,8 @@ function describeJsonShape(json) {
  * @param {object} options
  * @param {Record<string, string>} options.values TOONSTUDIO_LOCAL_* 값(파일 또는 환경)
  * @param {{ api?: { trustedProxy?: boolean } }} [options.state]
- * @param {{ skipWeb?: boolean | string, ratelimitProbe?: boolean | "auto" }} [options.options] skipWeb 이 문자열이면 건너뛴 이유로 표에 쓴다
+ * @param {{ skipWeb?: boolean | string, ratelimitProbe?: boolean | "auto", webProxyBudgetMs?: number, retryDelayMs?: number }} [options.options]
+ *        skipWeb 이 문자열이면 건너뛴 이유로 표에 쓴다. webProxyBudgetMs·retryDelayMs 는 웹 프록시 확인의 재시도 예산·간격(기본 90초·3초)
  * @param {typeof fetch} [options.fetchImpl]
  * @param {() => number} [options.random]
  * @returns {Promise<Array<{ id: string, status: "PASS" | "FAIL" | "SKIP", title: string, detail: string }>>}
@@ -90,16 +95,17 @@ export async function runAuthSmoke({
   fetchImpl = fetch,
   random = Math.random,
 }) {
-  const api = assertLocalOrigin(values[ENV_KEYS.apiOrigin], ENV_KEYS.apiOrigin);
-  const web = values[ENV_KEYS.webOrigin] ? assertLocalOrigin(values[ENV_KEYS.webOrigin], ENV_KEYS.webOrigin) : null;
   const email = values[ENV_KEYS.testEmail];
   const password = values[ENV_KEYS.testPassword];
   const userId = values[ENV_KEYS.testUserId];
-  if (!email || !password || !userId) {
+  // 값이 아직 없는 것(아직 `up` 전)은 운영 보호 위반이 아니므로 가드보다 먼저 안내한다. 어느 쪽이든 요청은 한 번도 보내지 않는다.
+  if (!values[ENV_KEYS.apiOrigin] || !email || !password || !userId) {
     throw new Error(
-      `${ENV_KEYS.testEmail}/${ENV_KEYS.testPassword}/${ENV_KEYS.testUserId} 가 필요합니다. 먼저 'node scripts/local-fullstack/cli.mjs up' 을 실행하세요.`,
+      `${ENV_KEYS.apiOrigin}/${ENV_KEYS.testEmail}/${ENV_KEYS.testPassword}/${ENV_KEYS.testUserId} 가 필요합니다. 먼저 'node scripts/local-fullstack/cli.mjs up' 을 실행하세요.`,
     );
   }
+  const api = assertLocalOrigin(values[ENV_KEYS.apiOrigin], ENV_KEYS.apiOrigin);
+  const web = values[ENV_KEYS.webOrigin] ? assertLocalOrigin(values[ENV_KEYS.webOrigin], ENV_KEYS.webOrigin) : null;
 
   const rows = [];
   const record = (id, status, title, detail) => rows.push({ id, status, title, detail });
@@ -270,14 +276,30 @@ export async function runAuthSmoke({
     record("web.proxy", "SKIP", "웹 프록시 경유 확인", reason);
   } else {
     await step("web.proxy", "웹(Vite) 프록시 경유 GET /api/health/live · /api/auth/session", async () => {
-      const live = await sendRequest(fetchImpl, "GET", `${web.origin}/api/health/live`);
-      const session = await sendRequest(fetchImpl, "GET", `${web.origin}/api/auth/session`);
-      const liveOk = live.status === 200 && live.json?.status === "ok";
-      const sessionOk = session.status === 200 && session.json?.authenticated === false;
-      return {
-        ok: liveOk && sessionOk,
-        detail: `live HTTP ${live.status}, session HTTP ${session.status}(익명 응답=${String(sessionOk)})`,
-      };
+      // Vite 개발 서버는 `up` 직후 의존성 최적화로 잠시 느려질 수 있다(부하가 큰 머신에서는 수십 초).
+      // 한 번의 짧은 타임아웃으로 거짓 FAIL 을 내지 않도록 예산 안에서 재시도하고, 예산을 넘기면 마지막 사유로 FAIL 한다.
+      const budgetMs = options.webProxyBudgetMs ?? WEB_PROXY_BUDGET_MS;
+      const retryDelayMs = options.retryDelayMs ?? WEB_PROXY_RETRY_DELAY_MS;
+      const deadline = Date.now() + budgetMs;
+      let lastDetail; // 매 시도의 try/catch 에서 항상 먼저 채워지므로 초기값이 필요 없다.
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          const live = await sendRequest(fetchImpl, "GET", `${web.origin}/api/health/live`);
+          const session = await sendRequest(fetchImpl, "GET", `${web.origin}/api/auth/session`);
+          const liveOk = live.status === 200 && live.json?.status === "ok";
+          const sessionOk = session.status === 200 && session.json?.authenticated === false;
+          lastDetail = `live HTTP ${live.status}, session HTTP ${session.status}(익명 응답=${String(sessionOk)})`;
+          if (liveOk && sessionOk) {
+            return { ok: true, detail: `${lastDetail}${attempt > 1 ? `, ${attempt}번째 시도에서 성공` : ""}` };
+          }
+        } catch (error) {
+          lastDetail = `예외 ${error?.name ?? "Error"}: ${error?.cause?.code ?? error?.code ?? String(error?.message ?? "").slice(0, 80)}`;
+        }
+        if (Date.now() + retryDelayMs >= deadline) {
+          return { ok: false, detail: `${attempt}번 시도했지만 ${Math.round(budgetMs / 1000)}초 안에 정상 응답이 없음(마지막: ${lastDetail})` };
+        }
+        await delay(retryDelayMs);
+      }
     });
   }
 

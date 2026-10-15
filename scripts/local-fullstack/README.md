@@ -69,7 +69,7 @@ node scripts/local-fullstack/cli.mjs down           # 웹·API·PostgreSQL 중�
 | 대상 | 위치 |
 | --- | --- |
 | 비밀 파일 | 주 작업트리의 `.env.infrastructure.local`(링크된 worktree 에서 실행해도 git 공통 디렉터리를 따라 같은 파일). `TOONSTUDIO_LOCAL_ENV_FILE` 로 변경 |
-| 스택 디렉터리 | 기본 `<os.tmpdir()>/toonstudio-local-fullstack`. `TOONSTUDIO_LOCAL_STACK_DIR` 로 변경(값은 비밀 파일에도 기록되어 다음 실행이 같은 곳을 쓴다) |
+| 스택 디렉터리 | 기본 `<os.tmpdir()>/toonstudio-local-fullstack`. `TOONSTUDIO_LOCAL_STACK_DIR` 로 변경(값은 비밀 파일에도 기록되어 다음 실행이 같은 곳을 쓴다). 첫 `up` 이 상위 디렉터리까지 포함해 직접 만든다(미리 만들 필요 없음) |
 | 설치된 PostgreSQL 바이너리 | `<스택>/tools`(`npm --prefix`. 저장소 `package.json`·lockfile 은 변경하지 않음) |
 | DB 데이터 | `<스택>/pg/data`(127.0.0.1 listen, unix 소켓 없음, scram-sha-256) |
 | 상태·로그 | `<스택>/state.json`(PID·포트·시각·스키마 지문만, 비밀 없음), `<스택>/logs/{postgres-initdb,postgres,api,web,schema,seed,e2e}.log`(0600) |
@@ -111,10 +111,11 @@ PostgreSQL 은 일회용 로컬 DB 이므로 `fsync=off` 로 띄운다(비정상
 (`--allow-loopback`)로 호출한다. 번호 SQL 마이그레이션만 적용하는 별도 러너를 만들지 않은 이유:
 
 - 0001~0019 는 Drizzle 기준 스키마에 이미 반영된 기준선이라, 빈 DB 에 번호 SQL 만 적용하면 `user`·`account` 같은
-  기준 테이블이 없어 실패한다. 부트스트랩이 `drizzle-kit` 으로 기준 스키마를 만든 뒤 `production-database-migrations.manifest`
-  순서로 이후 마이그레이션을 적용하고 체크섬 원장에 기록한다.
+  기준 테이블이 없어 실패한다(예: `0001_studio_ai_usage_ledger.sql` 이 아직 없는 `"user"(id)` 를 참조한다).
+  부트스트랩이 `drizzle-kit` 으로 기준 스키마를 만든 뒤 `production-database-migrations.manifest` 순서로 이후 마이그레이션을
+  적용하고 체크섬 원장에 기록한다.
 - `/api/health/ready` 는 런타임 역할이 소유자가 아니며 테이블별 최소 권한만 가진다는 ACL 까지 검사한다
-  (`health-readiness.repository.ts`). 그래서 소유자 역할과 런타임 역할을 분리하는 경로가 필요하다.
+  (`apps/api/src/modules/health/health-readiness.repository.ts`). 그래서 소유자 역할과 런타임 역할을 분리하는 경로가 필요하다.
 
 API 가 부팅 시 만드는 테이블은 그대로 둔다. 이미 스키마가 있으면 다시 적용하지 않고 지문(스키마·마이그레이션 파일의 sha256)만
 비교해 브랜치가 바뀌었으면 경고한다(그 경우 `reset` 후 `up`).
@@ -145,7 +146,11 @@ API 가 부팅 시 만드는 테이블은 그대로 둔다. 이미 스키마가 
 
 출력은 PASS/FAIL/SKIP 표이며 이메일·비밀번호·사용자 ID·쿠키 값은 어디에도 출력하지 않는다. FAIL 이 하나라도 있으면 종료 코드 1 이다.
 
-로그인 레이트리밋은 IP·이메일별 10회/10분이다(`auth-rate-limit.ts`). 스모크는 loopback 프록시의 `X-Forwarded-For`(RFC 5737 문서용
+12번(웹 프록시)은 `up` 직후 Vite 가 의존성 최적화로 잠시 느려질 수 있어(다른 작업이 CPU 를 쓰는 머신에서는 수십 초) 한 번의 짧은
+타임아웃으로 FAIL 하지 않고 90초 예산 안에서 3초 간격으로 재시도한다. 예산을 넘기면 시도 횟수와 마지막 사유(HTTP 상태 또는 예외 코드)를
+적어 FAIL 한다. 1~11번(API 직접 호출)은 재시도하지 않는다.
+
+로그인 레이트리밋은 IP·이메일별 10회/10분이다(`apps/api/src/modules/auth/auth-rate-limit.ts`). 스모크는 loopback 프록시의 `X-Forwarded-For`(RFC 5737 문서용
 주소)로 IP 버킷을 격리해, 429 확인이 다른 로그인을 막지 않고 반복 실행해도 안전하다. 이 하네스가 띄운 API 는 loopback 프록시만
 신뢰하도록 설정되어 있다(`AUTH_TRUSTED_PROXY_*`). 다만 시드 계정 이메일 버킷은 한 번 실행에 2회(잘못된 비밀번호 + 로그인)와 브라우저
 스모크 1회를 쓰므로 10분 안에 4~5번 넘게 연속 실행하면 429 가 날 수 있다. 그때는 10분을 기다리거나 `api:stop` → `api:start` 로
@@ -156,7 +161,8 @@ API 가 부팅 시 만드는 테이블은 그대로 둔다. 이미 스키마가 
 `e2e/local-fullstack-auth.spec.mjs`: 로그인 UI(`/auth/login`) → "이미 로그인되어 있어요" 상태 표시 → 서버 세션이 시드 사용자임을
 쿠키로 확인 → `/help` 헤더의 계정 메뉴 → 로그아웃 → 로그인 버튼 복귀와 세션 폐기. `TOONSTUDIO_LOCAL_FULLSTACK_E2E=1` 이 아니면
 전체가 skip 되므로 기본 CI(`playwright.config.ts`)에서는 실행되지 않는다. 이 값은 `e2e` 명령만 설정하며, 스펙은 웹 origin 이
-loopback 이 아니면 자격증명을 입력하기 전에 실패한다. 스펙을 `.mjs` 로 둔 것은 `.ts` 변경이 `pnpm harness:verify` 의 전체 typecheck
+loopback 이 아니면 자격증명을 입력하기 전에 실패한다. `e2e` 명령은 Playwright 를 띄우기 전에 웹 `/` 가 200 을 줄 때까지 최대 90초
+기다린다(`up` 직후의 느린 Vite 에서 거짓 실패를 내지 않기 위해). 스펙을 `.mjs` 로 둔 것은 `.ts` 변경이 `pnpm harness:verify` 의 전체 typecheck
 분류를 일으키지 않게 하기 위해서다. 실패하면 스크린샷이 `<스택>/browser/results` 에 남는다. 열린 계정 메뉴에는 계정 이메일이
 보일 수 있으나 스택 디렉터리는 저장소 밖이라 커밋 대상이 아니다. Playwright 출력은 비밀값을 줄 단위로 가린 뒤 표시·저장한다.
 
@@ -186,12 +192,14 @@ loopback 이 아니면 자격증명을 입력하기 전에 실패한다. 스펙�
 node --test scripts/local-fullstack/lib/*.test.mjs scripts/local-fullstack/*.test.mjs
 ```
 
-가드(운영 호스트·쿼리 우회·userinfo 위장·호출 셸의 DB 환경변수), 비밀 파일 병합·권한, 갱신 규칙, 프로세스 종료, 스모크 판정(모의 API 로
-결함 주입), CLI 의 운영 보호(부작용 없이 종료 코드 3)·reset·leakcheck 를 검증한다.
+가드(운영 호스트·쿼리 우회·userinfo 위장·호출 셸의 DB 환경변수), 비밀 파일 병합·권한, 갱신 규칙, 프로세스 종료, 스택 잠금·상태 파일
+(스택 디렉터리가 없는 첫 실행 포함), 스모크 판정(모의 API 로 결함 주입)과 웹 프록시 재시도, CLI 의 운영 보호(부작용 없이 종료 코드 3)·reset·leakcheck 를
+검증한다. `node --test` 로 12개 파일 177건 통과를 확인했다.
 
 이 파일들은 `node:test` 와 `vitest` 양쪽에서 실행된다. 루트 `vitest.config.ts` 의 수집 루트에 `scripts` 가 들어 있어서 루트 단위 테스트
-실행(`pnpm test:root`, 곧 `vitest run`)에도 자동으로 포함된다. 루트 설정으로 `pnpm exec vitest run scripts/local-fullstack` 를 실행해
-11개 파일 160건 통과를 확인했다. 테스트는 실제 PostgreSQL 기동이나 npm 설치 없이 임시 디렉터리·loopback 모의 서버·합성 값만 쓴다.
+실행(`pnpm test:root`, 곧 `vitest run`)에도 자동으로 포함된다. 루트 설정으로 `pnpm exec vitest run scripts/local-fullstack` 를 실행한 결과는
+12개 파일 177건 통과다(공유 머신의 무거운 작업 대기열에 따라 대기 시간이 달라지며 실제 실행은 20여 초). 테스트는 실제 PostgreSQL 기동이나 npm 설치 없이
+임시 디렉터리·loopback 모의 서버·합성 값만 쓴다.
 하네스 자체(`up`·`smoke`·`e2e`)는 `package.json` 스크립트나 CI 작업에 연결하지 않았다(저장소 `package.json` 변경 금지 범위).
 브라우저 스펙(`e2e/`)은 루트 vitest 에서 제외되어 있다.
 
@@ -200,7 +208,7 @@ node --test scripts/local-fullstack/lib/*.test.mjs scripts/local-fullstack/*.tes
 | 증상 | 조치 |
 | --- | --- |
 | `운영 보호로 중단합니다` (exit 3) | 환경변수나 `.env.infrastructure.local` 의 `TOONSTUDIO_LOCAL_*` 가 로컬이 아닌 호스트를 가리키거나, 호출 셸의 `DATABASE_URL` 류가 로컬이 아니다(메시지에 변수 이름이 나온다). 해당 셸 변수는 `unset <이름>`, 비밀 파일 값은 고치거나 해당 줄을 지운 뒤 다시 실행 |
-| 포트 사용 중 | `--pg-port`/`--api-port`/`--web-port` 로 다른 포트 지정(비밀 파일의 URL·origin 포트가 갱신된다) 또는 점유 프로세스 정리 |
+| 포트 사용 중 | 시작 명령은 포트가 비워지기를 최대 10초 기다린 뒤에도 점유되어 있을 때만 실패한다(방금 멈춘 프로세스의 소켓이 늦게 닫히는 경우 대비). `--pg-port`/`--api-port`/`--web-port` 로 다른 포트 지정(비밀 파일의 URL·origin 포트가 갱신된다) 또는 점유 프로세스 정리 |
 | `관리자 비밀번호가 데이터 디렉터리와 맞지 않습니다` | 비밀 파일이 새로 만들어졌거나 바뀌었다. `reset --yes` 후 `up` |
 | `DB 에 객체가 있지만 스키마 준비 완료 기록이 없습니다` | 이전 스키마 준비가 중단됐다. `reset --yes` 후 `up` |
 | `/api/health/ready` 가 503 | `logs/api.log` 의 readiness 진단을 확인. 브랜치가 바뀌었다면 스키마 지문 경고가 함께 나오며 `reset --yes` 후 `up` |

@@ -143,6 +143,84 @@ describe("runAuthSmoke: 정상 서버", () => {
   });
 });
 
+/** 웹(Vite) 프록시를 흉내 내는 서버. 처음 failFirst 건은 503 으로 응답해 `up` 직후의 느린 개발 서버를 재현한다. */
+async function startFlakyWeb({ failFirst = 0, alwaysFail = false } = {}) {
+  let remaining = failFirst;
+  let requests = 0;
+  const server = createServer((request, response) => {
+    requests += 1;
+    const send = (status, json) => {
+      response.writeHead(status, { "content-type": "application/json" });
+      response.end(JSON.stringify(json));
+    };
+    if (alwaysFail || remaining > 0) {
+      remaining -= 1;
+      return send(503, { error: "기동 중" });
+    }
+    if (request.url === "/api/health/live") return send(200, { status: "ok" });
+    if (request.url === "/api/auth/session") return send(200, { authenticated: false, user: null });
+    return send(404, { error: "not found" });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address();
+  return {
+    origin: `http://127.0.0.1:${port}`,
+    requests: () => requests,
+    close: () => new Promise((resolve) => server.close(resolve)),
+  };
+}
+
+async function runWithWeb(web, options) {
+  const api = await startMockApi({});
+  try {
+    return await runAuthSmoke({
+      values: valuesFor(api.origin, { [ENV_KEYS.webOrigin]: web.origin }),
+      state: { api: { trustedProxy: true } },
+      options,
+      random: deterministic,
+    });
+  } finally {
+    await api.close();
+  }
+}
+
+describe("runAuthSmoke: 웹 프록시 확인은 느린 기동을 견딘다", () => {
+  it("처음 몇 번 응답하지 못해도 예산 안에서 재시도해 PASS 한다(거짓 FAIL 방지)", async () => {
+    const web = await startFlakyWeb({ failFirst: 3 });
+    try {
+      const rows = await runWithWeb(web, { webProxyBudgetMs: 10_000, retryDelayMs: 20 });
+      assert.equal(statusOf(rows, "web.proxy"), "PASS");
+      assert.match(rows.find((row) => row.id === "web.proxy").detail, /3번째 시도에서 성공/u);
+      assert.equal(summarizeRows(rows).failed, 0);
+    } finally {
+      await web.close();
+    }
+  });
+
+  it("예산 안에 끝내 정상 응답이 없으면 시도 횟수와 마지막 사유를 담아 FAIL 한다", async () => {
+    const web = await startFlakyWeb({ alwaysFail: true });
+    try {
+      const rows = await runWithWeb(web, { webProxyBudgetMs: 600, retryDelayMs: 100 });
+      assert.equal(statusOf(rows, "web.proxy"), "FAIL");
+      assert.match(rows.find((row) => row.id === "web.proxy").detail, /\d+번 시도했지만 \d+초 안에 정상 응답이 없음\(마지막: live HTTP 503/u);
+      assert.ok(web.requests() >= 4, `재시도가 일어나야 한다(요청 ${web.requests()}건)`);
+      assert.equal(summarizeRows(rows).failed, 1, "웹 프록시 한 항목만 FAIL 이어야 한다");
+    } finally {
+      await web.close();
+    }
+  });
+
+  it("연결 자체가 거부되면 예외 사유를 기록하고 비밀값은 싣지 않는다", async () => {
+    const web = await startFlakyWeb({});
+    await web.close();
+    const rows = await runWithWeb(web, { webProxyBudgetMs: 400, retryDelayMs: 50 });
+    const row = rows.find((entry) => entry.id === "web.proxy");
+    assert.equal(row.status, "FAIL");
+    assert.match(row.detail, /예외/u);
+    assert.ok(!row.detail.includes(ACCOUNT.password));
+  });
+});
+
 describe("runAuthSmoke: 결함을 FAIL 로 잡아낸다", () => {
   it("잘못된 비밀번호를 받아들이는 서버", async () => {
     const rows = await runAgainst({ acceptsAnyPassword: true });
@@ -213,6 +291,19 @@ describe("runAuthSmoke: 운영 보호", () => {
       () => runAuthSmoke({ values: { [ENV_KEYS.apiOrigin]: "http://127.0.0.1:4101" } }),
       /up/u,
     );
+  });
+
+  it("값이 전혀 없으면(아직 up 전) 운영 보호 위반이 아니라 up 안내로 실패하고 요청을 보내지 않는다", async () => {
+    let requests = 0;
+    const fetchImpl = async () => {
+      requests += 1;
+      throw new Error("호출되면 안 됩니다");
+    };
+    const error = await runAuthSmoke({ values: {}, fetchImpl }).then(() => null, (reason) => reason);
+    assert.ok(error instanceof Error);
+    assert.ok(!(error instanceof GuardViolationError), "비어 있는 값을 운영 보호 위반으로 보고하면 안 된다");
+    assert.match(error.message, /up/u);
+    assert.equal(requests, 0);
   });
 });
 

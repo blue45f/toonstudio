@@ -58,8 +58,12 @@ export function patchState(paths, patch) {
 /**
  * 동시에 두 개의 up/reset 이 같은 스택을 건드리지 않게 하는 간단한 잠금(디렉터리 생성은 원자적).
  * 잠금을 쥔 프로세스가 죽었으면(PID 없음) 이어받는다.
+ *
+ * 잠금 디렉터리는 스택 루트 아래에 만들므로, 스택 디렉터리가 아직 없는 첫 실행에서도 동작하도록
+ * 루트부터 보장한다(2026-10-15 새 경로에서 처음부터 실행하다 `mkdir <스택>/lock` ENOENT 로 확인한 결함).
  */
 export async function withStackLock(paths, work, { timeoutMs = 15_000 } = {}) {
+  mkdirSync(paths.root, { recursive: true, mode: 0o700 });
   const started = Date.now();
   for (;;) {
     try {
