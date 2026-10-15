@@ -54,9 +54,12 @@ describe("화면을 여는 순간 (request-journey)", () => {
 });
 
 describe("브라우저 안의 작업실 (browser-studio)", () => {
-  it("Worker 스크립트(*.worker.ts)는 앱 코드에 65개, 패키지에 0개이다", () => {
+  it("Worker 스크립트(*.worker.ts) 수는 구간 facts 가 적은 값과 같고 패키지에는 하나도 없다", () => {
     const count = (root: string): number => (readdirSync(root, { recursive: true }) as string[]).filter((file) => file.endsWith(".worker.ts")).length;
-    expect(count("apps/web/src")).toBe(65);
+    // 개수는 이 시험에 다시 적지 않는다: 구간이 말한 값(facts)을 저장소에서 센 값과 맞춘다. 워커가 늘면 구간의 facts 를 고친다.
+    const stated = section("browser-studio").facts?.find((fact) => fact.source === "apps/web/src");
+    expect(stated?.label.ko).toContain("*.worker.ts");
+    expect(Number(stated?.value), "구간 facts 의 Worker 스크립트 수").toBe(count("apps/web/src"));
     expect(count("packages")).toBe(0);
   });
 
