@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 import { attachStudioBg3dInferencePointer } from "./studio-bg3d-inference-pointer-binding";
 import { createStudioBg3dInferenceService } from "./studio-bg3d-inference-service";
 
-import type { StudioBg3dInferencePointerTargetLike } from "./studio-bg3d-inference-pointer-binding";
+import type {
+  StudioBg3dInferencePointerService,
+  StudioBg3dInferencePointerTargetLike,
+} from "./studio-bg3d-inference-pointer-binding";
 
 const RECT = { left: 0, top: 0, width: 800, height: 800 } as const;
 
@@ -53,7 +56,7 @@ function fakeTarget() {
   };
 }
 
-function setup(options: { readonly begin?: boolean } = {}) {
+function setup(options: { readonly begin?: boolean; readonly slowResolveMs?: number } = {}) {
   const clock = { t: 1_000 };
   const queue: Array<{ at: number; run: () => void; canceled: boolean }> = [];
   const schedule = (run: () => void, delay: number) => {
@@ -72,9 +75,22 @@ function setup(options: { readonly begin?: boolean } = {}) {
   const roots = new Map<string, THREE.Object3D>([["A", entityGroup("A", [0, 2, 0])]]);
   const dom = fakeTarget();
   let controlTarget = false;
+  // 큰 모델이 있는 장면처럼 해석 한 번(표면 레이캐스트 포함)이 오래 걸리는 상황을 가짜 시계로 흉내 낸다.
+  const slowResolveMs = options.slowResolveMs ?? 0;
+  const pointerService: StudioBg3dInferencePointerService = {
+    isActive: () => service.isActive(),
+    resolve: (input) => {
+      clock.t += slowResolveMs;
+      return service.resolve(input);
+    },
+    publishResult: (result) => service.publishResult(result),
+    addHoverReference: (point) => service.addHoverReference(point),
+    getIndex: () => service.getIndex(),
+    getResult: () => service.getResult(),
+  };
   const binding = attachStudioBg3dInferencePointer({
     target: dom.target,
-    service,
+    service: pointerService,
     getCamera: () => camera,
     getRect: () => RECT,
     getRoots: () => roots,
@@ -155,11 +171,34 @@ describe("포인터 → 추론 서비스 연결", () => {
     );
     const hit = raycaster.intersectObjects([...roots.values()], true)[0];
     expect(hit).toBeDefined();
-    const fresh = service.resolveFreshPoint(hit!.point.toArray() as [number, number, number]);
+    const hitPoint: [number, number, number] = hit ? [hit.point.x, hit.point.y, hit.point.z] : [0, 0, 0];
+    const fresh = service.resolveFreshPoint(hitPoint);
     expect(fresh.snapped).toBe(true);
     expect(fresh.point[0]).toBeCloseTo(0.5, 6);
     expect(fresh.point[1]).toBeCloseTo(2.5, 6);
     expect(fresh.point[2]).toBeCloseTo(0.5, 6);
+  });
+
+  it("해석이 느린 장면에서는 간격이 늘어 쿼리 수가 줄고, 멈춘 자리의 마지막 샘플은 끝내 처리한다", () => {
+    const fast = setup();
+    const slow = setup({ slowResolveMs: 20 });
+    const corner = screenOf(slow.camera, [0.5, 2.5, 0.5]);
+    for (let i = 0; i < 600; i += 1) {
+      // 커서가 끝점에서 멀어지는 쪽으로 계속 움직이다가 마지막 샘플만 끝점 가까이에서 멈춘다.
+      const x = i === 599 ? corner.x + 2 : corner.x + 80 + i * 0.1;
+      for (const scene of [fast, slow]) {
+        scene.clock.t += 1;
+        scene.dom.fire("pointermove", { clientX: x, clientY: corner.y });
+      }
+    }
+    // 빠른 장면은 프레임(16ms)당 한 번, 느린 장면은 비용(20ms)의 3배 간격으로만 해석한다.
+    expect(fast.binding.stats().intervalMs).toBe(16);
+    expect(slow.binding.stats().intervalMs).toBe(60);
+    expect(slow.binding.stats().queries).toBeLessThan(fast.binding.stats().queries / 2);
+    expect(slow.binding.stats().queries).toBeLessThan(40);
+    // 보류 중이던 마지막 샘플은 간격이 지나면 반드시 처리된다.
+    slow.advance(200);
+    expect(slow.service.getResult()?.kind).toBe("endpoint");
   });
 
   it("보조 포인터(멀티터치 둘째 손가락)와 뷰포트 컨트롤 위의 이벤트는 무시한다", () => {

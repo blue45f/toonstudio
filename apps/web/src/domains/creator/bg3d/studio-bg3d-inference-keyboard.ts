@@ -72,6 +72,8 @@ const ARROW_OWNER_SELECTOR = [
   '[role="slider"]',
   '[role="spinbutton"]',
   '[role="scrollbar"]',
+  // 포커스를 받는 분할선(패널 폭 조절 핸들)은 ←/→ 로 폭을 바꾼다 — 줄자 세션 중에도 그대로 둔다.
+  '[role="separator"]',
   '[role="tree"]',
   '[role="treeitem"]',
   '[role="grid"]',

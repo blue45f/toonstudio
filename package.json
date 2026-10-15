@@ -128,7 +128,7 @@
     "verify:studio-competitor-replacement": "pnpm run verify:studio-competitor-replacement:program && pnpm run verify:studio-competitor-replacement:desktop-sync && pnpm run verify:studio-professional-validation-kit && pnpm run test:desktop-sync-release",
     "manual:gen": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-studio-manual.mjs",
     "verify:studio-manual-docs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-studio-manual.mjs --check",
-    "test:unconnected-code": "node --test scripts/check-unconnected-code.test.mjs",
+    "test:unconnected-code": "vitest run scripts/check-unconnected-code.test.mjs",
     "check:unconnected-code": "node scripts/check-unconnected-code.mjs",
     "check:unconnected-code:gate": "node scripts/check-unconnected-code.mjs --check",
     "visual:diff": "node scripts/compare-visual-regression.mjs",
