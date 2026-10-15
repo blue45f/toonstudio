@@ -142,7 +142,7 @@
   "productionHub.uxKit.teamEmpty.title": "아직 팀원이 없습니다",
   "productionHub.versionActivity.loadFailed": "버전 활동을 불러오지 못했습니다.",
   "productionHub.visualPlanning.emptyEpisodePlan": "회차 기획이 없습니다",
-  "productionHub.visualPlanning.emptyLinkedAssets": "이 컷에 직접 연결된 에셋 요구사항이 없습니다.",
+  "productionHub.visualPlanning.emptyLinkedAssets": "이 컷에 직접 연결된 소재 요구사항이 없습니다.",
   "productionHub.visualPlanning.emptyOutlineScenes": "구조화할 장면이 없습니다",
   "productionHub.visualPlanning.emptyReaderCuts": "독자뷰에 표시할 컷이 없습니다",
   "productionHub.visualPlanning.emptySceneCuts": "이 장면에 설계된 컷이 없습니다.",

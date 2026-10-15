@@ -142,7 +142,7 @@
   "productionHub.uxKit.teamEmpty.title": "No team members yet",
   "productionHub.versionActivity.loadFailed": "Failed to load version activity.",
   "productionHub.visualPlanning.emptyEpisodePlan": "No episode plan.",
-  "productionHub.visualPlanning.emptyLinkedAssets": "No asset requirements are directly linked to this cut.",
+  "productionHub.visualPlanning.emptyLinkedAssets": "No material requirements are directly linked to this cut.",
   "productionHub.visualPlanning.emptyOutlineScenes": "No scenes to structure.",
   "productionHub.visualPlanning.emptyReaderCuts": "No cuts to show in the reader view.",
   "productionHub.visualPlanning.emptySceneCuts": "No cuts designed for this scene.",

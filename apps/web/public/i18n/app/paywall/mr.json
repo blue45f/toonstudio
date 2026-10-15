@@ -20,7 +20,7 @@
   "paywall.creatorPage.policySummary": "{days}-day supporter early access",
   "paywall.creatorPage.preview": "Preview",
   "paywall.creatorPage.save": "Save policy",
-  "paywall.creatorPage.subtitle": "Set up a rolling paywall: supporters first, free for everyone after N days.",
+  "paywall.creatorPage.subtitle": "Set up early access: supporters first, free for everyone after N days.",
   "paywall.creatorPage.title": "Early access",
   "paywall.creatorPage.titleIdLabel": "Title ID",
   "paywall.creatorPage.titleIdPlaceholder": "e.g. my-series-slug",
