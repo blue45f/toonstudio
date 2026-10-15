@@ -5,9 +5,13 @@ apps/api/src/csrf-middleware.test.ts
 apps/api/src/modules/admin/admin-traffic-d1-query.test.ts
 apps/api/src/modules/admin/admin-traffic-query.test.ts
 apps/api/src/modules/admin/admin-traffic.service.test.ts
+apps/api/src/modules/auth/auth-client-ip.test.ts
 apps/api/src/modules/catalog/catalog-pagination.test.ts
 apps/api/src/modules/catalog/catalog-public-cache.interceptor.test.ts
 apps/api/src/modules/catalog/catalog-search-cache.test.ts
+apps/api/src/modules/catalog/catalog.controller.security.test.ts
+apps/api/src/modules/community/community.controller.test.ts
+apps/api/src/modules/creator/creator.service.error-disclosure.test.ts
 apps/api/src/modules/creator/studio-crdt-root-schema-psd.test.ts
 apps/api/src/modules/creator/studio-handoff-envelope.repository.test.ts
 apps/api/src/modules/creator/studio-live-acoustic-binding.test.ts
@@ -17,10 +21,13 @@ apps/api/src/modules/fortune/fortune.controller.test.ts
 apps/api/src/modules/health/health-analytics-readiness.test.ts
 apps/api/src/modules/og/og-page.test.ts
 apps/api/src/modules/production-collaboration/production-collaboration.service.test.ts
+apps/api/src/modules/production-collaboration/production-integration-google-oauth.test.ts
 apps/api/src/modules/production-collaboration/production-integration-providers.test.ts
 apps/api/src/modules/production-collaboration/production-notification-safety.test.ts
+apps/api/src/modules/production-collaboration/production-web-push-network.test.ts
 apps/api/src/modules/production-collaboration/production-webhook-network.test.ts
 apps/api/src/modules/production-collaboration/production-workflow-command.test.ts
+apps/api/src/modules/promotion/promotion.service.error-disclosure.test.ts
 apps/api/src/modules/studio-ai/studio-3d-generation-provider-identity-store.test.ts
 apps/api/src/modules/studio-project-graph
 apps/api/src/modules/studio-project-graph/studio-project-graph.module.di.test.ts
@@ -39,6 +46,10 @@ apps/api/src/modules/traffic-analytics/traffic-analytics.controller.test.ts
 apps/api/src/modules/traffic-analytics/traffic-analytics.service.test.ts
 apps/api/src/platform/federated-data-plane/federated-data-plane-routing.test.ts
 apps/api/src/platform/federated-data-plane/federated-data-plane.module.test.ts
+apps/api/src/platform/http/anonymous-client-limit.test.ts
+apps/api/src/platform/http/anonymous-external-call-limit.test.ts
+apps/api/src/platform/http/log-safe.test.ts
+apps/api/src/platform/http/user-facing-error.test.ts
 apps/api/src/runtime/runtime-boundary.test.ts
 apps/api/src/session-middleware.test.ts
 apps/brush-lab/src/boundary.test.ts
@@ -336,6 +347,7 @@ apps/web/src/shared/lib/creator-role-workspace-contract.test.ts
 apps/web/tests/vite-react-compiler-runtime-interop.test.ts
 apps/web/tools/browser-harnesses/studio-p2p-direct-diagnostics.test.ts
 deploy/cloudflare-analytics/src/index.test.ts
+deploy/cloudflare-apex-redirect/src/index.test.ts
 packages/contracts/src/production-workflow.test.ts
 packages/core/src/catalog/home.cpu-cache.test.ts
 packages/core/src/fortune/fortune-engine.security.test.ts
@@ -388,6 +400,7 @@ scripts/verify-studio-hybrid-dcc-opfs-race.test.ts
 scripts/verify-studio-living-ink-integration.test.ts
 scripts/verify-studio-menus.test.ts
 scripts/verify-virtual-studio-art-manifest.test.mjs
+scripts/workflow-injection-policy.test.mjs
 tests/integration/api-web/api/modules/creator-marketplace/creator-marketplace-social-boundary.test.ts
 tests/integration/api-web/api/modules/creator/studio-live-lock.repository.test.ts
 tests/integration/api-web/api/modules/creator/studio-live.gateway.test.ts
