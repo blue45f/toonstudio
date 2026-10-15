@@ -1,3 +1,5 @@
+import { panelImportRightsAssetId, parsePanelImportRights } from "./panel-detect/panel-import-rights";
+
 import type { StudioAssetRightsUsageInput } from "./studio-asset-rights-manifest";
 import type { El } from "./studio-element-model";
 
@@ -86,6 +88,23 @@ function imageUsage(
       aiTraining: "unknown",
       redistribution: "unknown",
       scope: ["current-work", "commercial-publication"],
+    };
+  }
+  // 컷 자동 감지 가져오기: 사용자가 "권리를 가졌거나 이용 허락을 받은 원고"라고 확인한 기록이 있으면 사용권을
+  // 알 수 없음(unknown)이 아니라 사용자 확인(custom)으로 올린다. 허락 범위·만료·AI 학습 여부는 알 수 없으므로 그대로 둔다.
+  const attested = parsePanelImportRights(element.sourceRights);
+  if (attested) {
+    return {
+      ...placement,
+      assetId: panelImportRightsAssetId(attested),
+      assetVersion: `sha256:${attested.source.sha256}`,
+      source: { kind: "local-upload", id: attested.source.sha256.slice(0, 24) },
+      licenseId: "custom",
+      licenseLabel: "사용자 확인: 직접 권리 보유 또는 이용 허락",
+      commercialUse: "unknown",
+      aiTraining: "unknown",
+      redistribution: "unknown",
+      scope: ["current-work"],
     };
   }
   return {

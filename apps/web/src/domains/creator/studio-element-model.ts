@@ -68,6 +68,7 @@ import type {
   StudioTileableBlurOptions,
 } from "./studio-professional-filter-kernels";
 import type { StudioPublishAiProvenance } from "./studio-publish-preflight";
+import type { PanelImportRights } from "./panel-detect/panel-import-rights";
 import type { StudioSketchStyle } from "./studio-rough-shape";
 import type { SelectiveHsl } from "./studio-selective-hsl";
 import type { ShadowHighlight } from "./studio-shadow-highlight";
@@ -216,6 +217,8 @@ export interface ImageEl {
   stockImageCredit?: StudioStockImageCredit;
   /** 커뮤니티 에셋의 저작자·사용권·상업 이용 조건. 삽입 뒤에도 출처 표시에 사용한다. */
   communityAssetCredit?: StudioCommunityAssetCredit;
+  /** 컷 자동 감지·재배열 가져오기가 남기는 원본 출처와 사용자 권리 확인 기록. 권리 명세(rights manifest)로 합류한다. */
+  sourceRights?: PanelImportRights;
   /** AI 생성/편집 provenance. 페이지 JSON과 함께 저장되어 Publish Pack 사전검사에 사용된다. */
   aiProvenance?: StudioPublishAiProvenance;
   /** 번들 소재 카탈로그의 안정 ID. 다시 열어도 라이선스·생성 메타데이터를 추적한다. */
