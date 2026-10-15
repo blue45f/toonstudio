@@ -52,7 +52,7 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       {
         id: "ratchet",
         label: t("③ 구조 래칫", "3 Structure ratchets"),
-        sub: t("import 17규칙 · 파일 수 · 경고 수 · 번들 크기 · 새 파일 1,000줄(전체 시험)", "17 import rules, file counts, warnings, bundle size, 1,000-line new files (full tests)"),
+        sub: t("import 17규칙 · 파일 수 · 경고 수 · 번들 크기 · 새 파일 800줄", "17 import rules, file counts, warnings, bundle size, 800-line new files"),
         tone: "good",
       },
       {
@@ -97,8 +97,8 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       "On a PR, all 7 jobs of CI core (lint, types, regression, performance, accessibility, build, DB) must truly succeed.",
     ),
     t(
-      "구조 래칫이 나쁜 import·파일 수·경고 수·번들 크기를 기록된 값에 묶고, 새 파일 크기는 전체 시험이 지킵니다.",
-      "Structure ratchets tie bad imports, file counts, warning counts and bundle size to recorded values, and the full test run guards new-file size.",
+      "구조 래칫이 나쁜 import·파일 수·경고 수·번들 크기·소스 파일 크기를 기록된 값에 묶습니다.",
+      "Structure ratchets tie bad imports, file counts, warning counts, bundle size and source-file size to recorded values.",
     ),
     t(
       "접근성은 핵심 화면을 axe 로 검사하고, 시간을 재는 시험은 직렬 레인에서 돌며, 시험이 줄면 수집 하한이 막습니다.",
@@ -115,8 +115,8 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       "Quality is not kept by one big check. A check that comes too late makes fixing expensive, and one that is too heavy tempts people to skip it. So ToonStudio puts fast checks in the hooks on my machine, heavy checks in CI on a PR, and what needs human judgment in the manual release gate. Each gate looks at something different.",
     ),
     t(
-      "래칫(ratchet)은 한쪽으로만 도는 톱니입니다. 나쁜 import 개수, 폴더별 파일 수, 린트 경고 수, 웹의 새 파일 크기(1,000줄), 스튜디오 번들 크기(마지막으로 받아들인 측정값의 2%까지)를 지금 값에 못 박아 '더 나빠지지는 않게' 합니다. 새 파일 크기는 core 가 아니라 PR 마다 도는 전체 시험(진단)과 로컬 pnpm test 가 지킵니다. 접근성은 PR 마다 핵심 화면 시나리오를 열어 axe 로 검사하고 심각·치명 위반만 실패로 치며, 전체 화면 전수 감사는 수동입니다. 보안은 비밀값 스캔을 core 에 두고 취약점 감사(pnpm audit)는 야간·수동(의존성이 바뀐 푸시는 훅)으로 돌리며, 서비스 워커 프리캐시가 예산을 넘으면 빌드가 실패합니다.",
-      "A ratchet is a gear that turns only one way. Bad import counts, files per folder, the lint warning count, the size of new web files (1,000 lines) and the Studio bundle size (within 2% of the last accepted measurement) are nailed to today's values so things cannot get worse. The new-file size is guarded not by core but by the full test run on PRs (a diagnostic) and by local pnpm test. For accessibility, every PR opens key-screen scenarios and checks them with axe, failing only on serious and critical violations, while the exhaustive whole-site audit is manual. For security, the secret scan sits in core and the vulnerability audit (pnpm audit) runs nightly and manually (and in the push hook when dependencies change), and the build fails if the service-worker precache passes its budget.",
+      "래칫(ratchet)은 한쪽으로만 도는 톱니입니다. 나쁜 import 개수, 폴더별 파일 수, 린트 경고 수, 소스 파일 크기(새 파일은 800줄까지), 스튜디오 번들 크기(마지막으로 받아들인 측정값의 2%까지)를 지금 값에 못 박아 '더 나빠지지는 않게' 합니다. 파일 크기는 core 의 typecheck 잡이 의존성을 설치하기 전에 먼저 확인하고, 푸시 훅의 validate:architecture 와 전체 시험(진단)도 같은 기준선을 다시 확인합니다. 접근성은 PR 마다 핵심 화면 시나리오를 열어 axe 로 검사하고 심각·치명 위반만 실패로 치며, 전체 화면 전수 감사는 수동입니다. 보안은 비밀값 스캔을 core 에 두고 취약점 감사(pnpm audit)는 야간·수동(의존성이 바뀐 푸시는 훅)으로 돌리며, 서비스 워커 프리캐시가 예산을 넘으면 빌드가 실패합니다.",
+      "A ratchet is a gear that turns only one way. Bad import counts, files per folder, the lint warning count, the size of source files (new files up to 800 lines) and the Studio bundle size (within 2% of the last accepted measurement) are nailed to today's values so things cannot get worse. File size is checked first by the typecheck job of core, before dependencies are installed, and the push hook's validate:architecture and the full test run (a diagnostic) check the same baseline again. For accessibility, every PR opens key-screen scenarios and checks them with axe, failing only on serious and critical violations, while the exhaustive whole-site audit is manual. For security, the secret scan sits in core and the vulnerability audit (pnpm audit) runs nightly and manually (and in the push hook when dependencies change), and the build fails if the service-worker precache passes its budget.",
     ),
     t(
       "0건이 아니라 동결이라 위반이 남아 있고, 상한은 PR 로 올릴 수 있어 마지막 방어선은 사람의 리뷰입니다. 병합 조건에 들어 있는 것은 core 의 7개 잡뿐입니다. CodeQL 은 PR 과 main push 에서도 돌지만 core 에는 속하지 않고, 취약점 감사는 야간·수동으로, 전수 접근성 감사는 수동으로만 돕니다. GitHub 브랜치 보호 설정은 저장소 파일로 확인할 수 없어, core 가 머지 조건이라는 DEPLOY.md 서술을 근거로 합니다.",
@@ -149,6 +149,8 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       paths: [
         "config/architecture-boundary-ratchet.json",
         "config/architecture-source-ratchet.json",
+        "scripts/check-source-file-size.mjs",
+        "scripts/source-file-size-baseline.json",
         "apps/web/src/shared/lib/__tests__/file-size-ratchet.test.ts",
         "scripts/check-studio-bundle.mjs",
         "scripts/bundle-baseline.json",

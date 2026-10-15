@@ -109,13 +109,12 @@ const MODULE_BOUNDARY_RATCHET: EngineeringAtlasEntry = {
     {
       feature: t("같은 발상의 다른 래칫 (폴더별 파일 수 · 경고 수 · 파일 크기)", "Sibling ratchets (files per folder, warnings, file size)"),
       role: t(
-        "소스 레이아웃 래칫은 폴더별 파일 수와 린트 경고 상한을, 파일 크기 테스트(전체 시험·로컬 pnpm test, core 필수 대상 아님)는 신규 파일 1,000줄과 기존 거대 파일 327개의 기록 줄 수를 천장으로 삼습니다.",
-        "The source-layout ratchet caps files per folder and lint warnings, and the file-size test (full tests and local pnpm test, not required by core) caps new files at 1,000 lines and 327 existing giants at their recorded line counts.",
+        "소스 레이아웃 래칫은 폴더별 파일 수와 린트 경고 상한을, 파일 크기 래칫(core 의 typecheck 잡이 의존성 설치 전에 먼저 돌리고 전체 시험도 같은 기준선을 읽음)은 신규 파일 800줄과 기존 초과 파일의 기록 줄 수를 천장으로 삼습니다.",
+        "The source-layout ratchet caps files per folder and lint warnings, and the file-size ratchet (run first by the core typecheck job before dependencies are installed, and read by the full tests too) caps new files at 800 lines and existing oversized files at their recorded line counts.",
       ),
       paths: [
-        "config/architecture-source-ratchet.json",
-        "scripts/validate-source-layout.mjs",
-        "apps/web/src/shared/lib/__tests__/file-size-ratchet.test.ts",
+        "config/architecture-source-ratchet.json", "scripts/validate-source-layout.mjs", "scripts/check-source-file-size.mjs",
+        "scripts/source-file-size-baseline.json", "apps/web/src/shared/lib/__tests__/file-size-ratchet.test.ts",
       ],
     },
   ],
