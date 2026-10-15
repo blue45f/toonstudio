@@ -63,6 +63,10 @@ import {
   ProductionExternalHttpError,
 } from "./production-integration-http";
 import {
+  normalizeProductionRedirectPath,
+  PRODUCTION_REDIRECT_ROOT,
+} from "./production-integration-redirect";
+import {
   ProductionIntegrationMutationConflictError,
   ProductionIntegrationMutationInFlightError,
   ProductionIntegrationRepository,
@@ -101,7 +105,10 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function appendQuery(path: string, values: Record<string, string>): string {
-  const url = new URL(path, "https://toonstudio.invalid");
+  // 상태 행은 시작 시점에 검증되지만, 이미 저장된 값이 `/production/..//host` 처럼 정규화 뒤
+  // 스킴 상대 URL이 되는 경우까지 콜백이 그대로 내보내지 않도록 매번 다시 검증한다.
+  const safePath = normalizeProductionRedirectPath(path) ?? PRODUCTION_REDIRECT_ROOT;
+  const url = new URL(safePath, "https://toonstudio.invalid");
   for (const [key, value] of Object.entries(values)) {
     url.searchParams.set(key, value);
   }
@@ -473,13 +480,17 @@ export class ProductionIntegrationService {
     if (!this.config.google.configured) {
       throw new BadRequestException("google_workspace_not_configured");
     }
+    const safeRedirectPath = normalizeProductionRedirectPath(redirectPath);
+    if (!safeRedirectPath) {
+      throw new BadRequestException("redirectPath는 /production 안의 경로여야 합니다.");
+    }
     const state = randomBytes(32).toString("base64url");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1_000);
     await this.repository.createOauthState({
       stateHash: sha256Digest(state),
       projectId,
       actorUserId,
-      redirectPath,
+      redirectPath: safeRedirectPath,
       expiresAt,
     });
     return {
@@ -488,16 +499,30 @@ export class ProductionIntegrationService {
     };
   }
 
-  async googleCallback(input: {
-    readonly state: string;
-    readonly code?: string;
-    readonly error?: string;
-  }) {
+  /**
+   * @param viewerUserId 콜백을 연 브라우저의 검증된 세션 사용자(SameSite=Lax 쿠키는 Google에서
+   * 돌아오는 최상위 GET 이동에 실려 온다). 연결을 시작한 사용자와 다르면 거부한다. 이 바인딩이
+   * 없으면 공격자가 자기 프로젝트용 state 로 만든 동의 URL을 피해자가 완료하는 것만으로 피해자의
+   * Google 자격증명(calendar·gmail.compose·drive.file)이 공격자 프로젝트에 연결된다.
+   */
+  async googleCallback(
+    input: {
+      readonly state: string;
+      readonly code?: string;
+      readonly error?: string;
+    },
+    viewerUserId: string | undefined,
+  ) {
     const state = await this.repository.consumeOauthState(
       sha256Digest(input.state),
     );
     if (!state) {
       throw new BadRequestException("Google 연결 요청이 만료되었거나 이미 사용되었습니다.");
+    }
+    if (!viewerUserId || viewerUserId !== state.actorUserId) {
+      throw new ForbiddenException(
+        "Google 연결은 시작한 계정으로 로그인한 브라우저에서만 완료할 수 있습니다. 다시 로그인한 뒤 연결을 새로 시작해 주세요.",
+      );
     }
     if (input.error) {
       return {

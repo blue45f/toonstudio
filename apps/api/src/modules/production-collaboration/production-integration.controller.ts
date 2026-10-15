@@ -201,9 +201,11 @@ export class ProductionIntegrationController {
   async googleCallback(
     @Query(new ZodValidationPipe(ProductionIntegrationGoogleCallbackQueryDto))
     query: ProductionIntegrationGoogleCallbackQueryDto,
+    // sessionAuth 가 SameSite=Lax 세션 쿠키로 채운 검증된 사용자. 연결 시작 계정과 대조한다.
+    @Headers("x-user-id") viewerUserId: string | undefined,
     @Res() response: Response,
   ) {
-    const result = await this.service.googleCallback(query);
+    const result = await this.service.googleCallback(query, viewerUserId);
     response.redirect(303, result.redirectPath);
   }
 

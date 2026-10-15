@@ -2,6 +2,7 @@ import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 
 import { PRODUCTION_GOOGLE_DRIVE_ARTIFACTS } from "./production-integration-artifacts";
+import { normalizeProductionRedirectPath } from "./production-integration-redirect";
 
 const IdentitySchema = z
   .string()
@@ -21,6 +22,11 @@ export const ProductionIntegrationGoogleStartQuerySchema = z.object({
     .string()
     .max(512)
     .regex(/^\/production(?:\/|$)/u)
+    // 점 세그먼트·역슬래시로 /production 밖(`//host` 포함)으로 정규화되는 값을 막는다.
+    .refine(
+      (value) => normalizeProductionRedirectPath(value) !== null,
+      "redirectPath must stay inside /production after normalization",
+    )
     .default("/production"),
 }).strict();
 
