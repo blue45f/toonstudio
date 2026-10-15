@@ -38,7 +38,7 @@ import {
   renderStudioAnimTimesheetText,
   type StudioAnimTimesheet,
 } from "./studio-anim-timesheet";
-import { StudioAnimClipExposure } from "./StudioAnimClipExposure";
+import { StudioAnimClipExposure } from "./animation/StudioAnimClipExposure";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioRemoveTimelineTrackRequest } from "./studio-destructive-command-catalog";
 import { MAX_FRAME_FPS, MIN_FRAME_FPS, type OnionSkinSettings } from "./studio-frame-animation";

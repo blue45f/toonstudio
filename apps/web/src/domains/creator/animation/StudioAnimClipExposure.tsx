@@ -22,7 +22,7 @@ import {
   timelineClipDurationFrames,
   type AnimationTimelineDoc,
   type StudioAnimClipRange,
-} from "./studio-anim-tracks";
+} from "../studio-anim-tracks";
 
 import type { PointerEvent as ReactPointerEvent, ReactElement } from "react";
 

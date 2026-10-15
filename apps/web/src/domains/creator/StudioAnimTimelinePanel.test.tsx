@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import exposureSource from "./StudioAnimClipExposure.tsx?raw";
+import exposureSource from "./animation/StudioAnimClipExposure.tsx?raw";
 import { StudioAnimTimelinePanel } from "./StudioAnimTimelinePanel";
 import source from "./StudioAnimTimelinePanel.tsx?raw";
 
@@ -162,7 +162,7 @@ describe("StudioAnimTimelinePanel motion coach", () => {
 describe("StudioAnimTimelinePanel clip exposure editing", () => {
   it("wires clip start/duration editing to the pure model ops (drag bar + numeric inputs)", () => {
     // 패널은 클립 행마다 노출 편집기를 꽂고, 편집기가 순수 모델 연산을 호출한다.
-    // 패널 파일은 크기 래칫 기준선에 묶여 있어 편집기를 별도 컴포넌트 파일로 두었다.
+    // 패널 파일은 크기 래칫 기준선에, creator 루트는 파일 수 예산에 묶여 있어 편집기를 animation/ 의 별도 파일로 두었다.
     expect(source).toContain("<StudioAnimClipExposure");
     expect(exposureSource).toContain("moveTimelineClip");
     expect(exposureSource).toContain("setTimelineClipDuration");

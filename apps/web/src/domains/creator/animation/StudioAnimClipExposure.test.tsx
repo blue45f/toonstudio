@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioAnimClipExposure } from "./StudioAnimClipExposure";
 
-import type { AnimationTimelineDoc, StudioAnimClipRange } from "./studio-anim-tracks";
+import type { AnimationTimelineDoc, StudioAnimClipRange } from "../studio-anim-tracks";
 
 const CLIP: StudioAnimClipRange = { id: "clip-a", name: "도입", startFrame: 2, endFrame: 7 };
 
