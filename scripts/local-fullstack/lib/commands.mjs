@@ -55,7 +55,7 @@ import {
   stopPostgres,
   waitForPostgres,
 } from "./postgres.mjs";
-import { httpProbe, isPortFree, isProcessAlive, processMatches } from "./processes.mjs";
+import { httpProbe, isPortFree, isProcessAlive, processMatches, waitFor, waitForPortFree } from "./processes.mjs";
 import { computeSchemaFingerprint, resolveReleaseSha, runBootstrap } from "./schema.mjs";
 import { parseSeedResult } from "./seed.mjs";
 import { ensureStackDirectories, hasStackMarker, openLog, patchState, readState, withStackLock } from "./state.mjs";
@@ -175,6 +175,28 @@ function ensureEnvFile(context, plan) {
   return { written: true, ...result };
 }
 
+/**
+ * 잠금을 잡고 스택 디렉터리 구조(logs·tools·pg 등)와 표식 파일을 보장한 뒤 작업을 실행한다.
+ * 스택 디렉터리가 아직 없는 첫 실행에서도, 단계 명령(schema·seed·api:start·web:start)을 단독으로 써도 동작한다.
+ * down·reset 은 이미 만들어진 스택만 대상으로 하므로 이 헬퍼 대신 withStackLock 을 그대로 쓴다.
+ */
+function withPreparedStack(context, work) {
+  return withStackLock(context.paths, async () => {
+    process.umask(0o077);
+    ensureStackDirectories(context.paths);
+    return work();
+  });
+}
+
+/**
+ * 상태 파일이 있을 때만 해당 키를 지운다. 스택이 아직 없는 상태에서 중지 명령(db:stop·api:stop·web:stop)이
+ * 디렉터리를 만들려 하거나 `state.json` 임시 파일을 쓰다 ENOENT 로 실패하지 않게 한다("멈출 것이 없음"은 정상 종료).
+ */
+function clearStateKeys(paths, keys) {
+  if (!existsSync(paths.state)) return;
+  patchState(paths, Object.fromEntries(keys.map((key) => [key, null])));
+}
+
 // ── 단계 구현 ────────────────────────────────────────────────────────
 
 /** 파일·프로세스를 만들기 전에 필요한 도구가 있는지 한꺼번에 확인한다(빠른 실패). */
@@ -227,7 +249,7 @@ async function ensurePostgresRunning(context, values) {
     }
     say(`  PostgreSQL 재사용(PID ${pid}, 포트 ${admin.port})`);
   } else {
-    if (!(await isPortFree(admin.port))) {
+    if (!(await waitForPortFree(admin.port))) {
       throw new Error(`PostgreSQL 포트 ${admin.port} 를 다른 프로세스가 사용 중입니다. 정리하거나 --pg-port 로 다른 포트를 지정하세요.`);
     }
     const log = openLog(paths, "postgres", `PostgreSQL 시작 :${admin.port}`);
@@ -419,9 +441,7 @@ export async function commandUp(options) {
   }
   assertPrerequisites(context.paths, { noWeb: options.noWeb });
 
-  return withStackLock(context.paths, async () => {
-    process.umask(0o077);
-    ensureStackDirectories(context.paths);
+  return withPreparedStack(context, async () => {
     const envResult = ensureEnvFile(context, plan);
     say(envResult.written
       ? `[1/7] 비밀 파일 기록(권한 600, git 무시 확인): 추가 ${envResult.added.length}개, 갱신 ${envResult.replaced.length}개`
@@ -585,9 +605,7 @@ export async function commandDbStart(options) {
   const context = loadContext(options);
   const plan = planContext(context, options);
   assertPrerequisites(context.paths, { noWeb: true });
-  return withStackLock(context.paths, async () => {
-    process.umask(0o077);
-    ensureStackDirectories(context.paths);
+  return withPreparedStack(context, async () => {
     ensureEnvFile(context, plan);
     await ensurePostgresRunning(context, plan.values);
     say("PostgreSQL 준비 완료.");
@@ -599,7 +617,7 @@ export async function commandDbStop(options) {
   const context = loadContext(options);
   const state = readState(context.paths);
   const result = await stopPostgres({ paths: context.paths, state });
-  patchState(context.paths, { pg: null });
+  clearStateKeys(context.paths, ["pg"]);
   say(`PostgreSQL: ${result}`);
   return result === "survived" ? EXIT.failure : EXIT.ok;
 }
@@ -607,7 +625,7 @@ export async function commandDbStop(options) {
 export async function commandSchema(options) {
   const context = loadContext(options);
   const values = requireValues(context);
-  return withStackLock(context.paths, async () => {
+  return withPreparedStack(context, async () => {
     await ensurePostgresRunning(context, values);
     await ensureSchemaPrepared(context, values);
     return EXIT.ok;
@@ -617,7 +635,7 @@ export async function commandSchema(options) {
 export async function commandSeed(options) {
   const context = loadContext(options);
   const values = requireValues(context);
-  return withStackLock(context.paths, async () => {
+  return withPreparedStack(context, async () => {
     await ensurePostgresRunning(context, values);
     const seeded = await ensureSeedUser(context, values);
     syncSeedUserId(context, { values, changedKeys: [] }, seeded);
@@ -628,7 +646,7 @@ export async function commandSeed(options) {
 export async function commandApiStart(options) {
   const context = loadContext(options);
   const values = requireValues(context);
-  return withStackLock(context.paths, async () => {
+  return withPreparedStack(context, async () => {
     const state = readState(context.paths);
     const result = await startApi({ paths: context.paths, repositoryRoot: REPOSITORY_ROOT, values, state, secrets: activeSecrets });
     await waitForApiReady({ values, logPath: result.logPath ?? state.api?.log, secrets: activeSecrets });
@@ -640,7 +658,7 @@ export async function commandApiStart(options) {
 export async function commandApiStop(options) {
   const context = loadContext(options);
   const result = await stopApi({ state: readState(context.paths) });
-  patchState(context.paths, { api: null });
+  clearStateKeys(context.paths, ["api"]);
   say(`API: ${result}`);
   return result === "survived" ? EXIT.failure : EXIT.ok;
 }
@@ -649,7 +667,7 @@ export async function commandWebStart(options) {
   const context = loadContext(options);
   const values = requireValues(context);
   assertLocalOrigin(values[ENV_KEYS.webOrigin] ?? "", ENV_KEYS.webOrigin);
-  return withStackLock(context.paths, async () => {
+  return withPreparedStack(context, async () => {
     const result = await startWeb({ paths: context.paths, repositoryRoot: REPOSITORY_ROOT, values, state: readState(context.paths), secrets: activeSecrets });
     say(`웹 준비 완료(PID ${result.pid}, ${values[ENV_KEYS.webOrigin]}).`);
     return EXIT.ok;
@@ -659,7 +677,7 @@ export async function commandWebStart(options) {
 export async function commandWebStop(options) {
   const context = loadContext(options);
   const result = await stopWeb({ state: readState(context.paths) });
-  patchState(context.paths, { web: null });
+  clearStateKeys(context.paths, ["web"]);
   say(`웹: ${result}`);
   return result === "survived" ? EXIT.failure : EXIT.ok;
 }
@@ -694,9 +712,14 @@ export async function commandE2e(options) {
   const context = loadContext(options);
   const values = requireValues(context);
   assertLocalOrigin(values[ENV_KEYS.webOrigin] ?? "", ENV_KEYS.webOrigin);
-  const web = await httpProbe(`${values[ENV_KEYS.webOrigin]}/`, { timeoutMs: 5_000 });
-  if (web?.status !== 200) {
-    throw new Error(`웹(${values[ENV_KEYS.webOrigin]})이 응답하지 않습니다. 먼저 '${CLI_PATH} up' 을 실행하세요.`);
+  // `up` 직후 Vite 가 의존성 최적화로 잠시 느려질 수 있으므로(부하가 큰 머신에서는 수십 초) 한 번의 짧은 확인으로
+  // 거짓 실패를 내지 않고 예산 안에서 재시도한다. 끝까지 응답이 없을 때만 up 을 안내한다.
+  const web = await waitFor(
+    async () => (await httpProbe(`${values[ENV_KEYS.webOrigin]}/`, { timeoutMs: 8_000 }))?.status === 200,
+    { timeoutMs: 90_000, intervalMs: 2_000, describe: `웹 ${values[ENV_KEYS.webOrigin]}/` },
+  );
+  if (!web.ok) {
+    throw new Error(`웹(${values[ENV_KEYS.webOrigin]})이 응답하지 않습니다(${web.detail}). 먼저 '${CLI_PATH} up' 을 실행하세요.`);
   }
   ensureStackDirectories(context.paths);
   const require = createRequire(join(REPOSITORY_ROOT, "package.json"));

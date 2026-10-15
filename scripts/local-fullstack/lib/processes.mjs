@@ -69,6 +69,16 @@ export async function isPortFree(port, host = "127.0.0.1") {
 }
 
 /**
+ * 포트가 비워질 때까지 제한 시간 안에서 기다린다. 방금 멈춘(특히 SIGKILL 로 정리한) 프로세스는 리더가 이미 좀비로 보여도
+ * 다른 스레드가 소켓을 잠깐 쥐고 있을 수 있어, 바로 다시 시작하면 포트가 막힌 것으로 오판하기 때문이다.
+ * 시간 안에 비면 true, 계속 점유되어 있으면 false.
+ */
+export async function waitForPortFree(port, { host = "127.0.0.1", timeoutMs = 10_000, intervalMs = 200 } = {}) {
+  const result = await waitFor(() => isPortFree(port, host), { timeoutMs, intervalMs, describe: `포트 ${port}` });
+  return result.ok;
+}
+
+/**
  * 로그 파일로 stdout/stderr 를 보내는 detached 자식을 띄운다.
  * @returns {{ pid: number }}
  */

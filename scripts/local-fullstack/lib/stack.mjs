@@ -14,11 +14,11 @@ import { ENV_KEYS, REPOSITORY_ROOT } from "./config.mjs";
 import { assertLocalOrigin, assertLocalPostgresUrl, buildChildEnv, redactSecrets } from "./guard.mjs";
 import {
   httpProbe,
-  isPortFree,
   processMatches,
   spawnDetached,
   terminateProcess,
   waitFor,
+  waitForPortFree,
 } from "./processes.mjs";
 import { openLog, patchState } from "./state.mjs";
 
@@ -108,7 +108,7 @@ export async function startApi({ paths, repositoryRoot, values, state, secrets }
     }
     return { reused: true, pid: state.api.pid, port: state.api.port ?? api.port };
   }
-  if (!(await isPortFree(api.port))) {
+  if (!(await waitForPortFree(api.port))) {
     throw new Error(`API 포트 ${api.port} 를 다른 프로세스가 사용 중입니다. 해당 프로세스를 정리하거나 --api-port 로 다른 포트를 지정하세요.`);
   }
   const env = buildApiEnvironment(values, { repositoryRoot });
@@ -171,7 +171,7 @@ export async function startWeb({ paths, repositoryRoot, values, state, secrets }
     }
     return { reused: true, pid: state.web.pid, port: state.web.port ?? web.port };
   }
-  if (!(await isPortFree(web.port))) {
+  if (!(await waitForPortFree(web.port))) {
     throw new Error(`웹 포트 ${web.port} 를 다른 프로세스가 사용 중입니다. 해당 프로세스를 정리하거나 --web-port 로 다른 포트를 지정하세요.`);
   }
   const log = openLog(paths, "web", `웹(Vite) 시작 :${web.port}`);

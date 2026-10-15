@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { closeSync, mkdtempSync, openSync, readFileSync, rmSync } from "node:fs";
+import { closeSync, existsSync, mkdtempSync, openSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { createServer as createTcpServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -15,6 +15,7 @@ import {
   spawnDetached,
   terminateProcess,
   waitFor,
+  waitForPortFree,
 } from "./processes.mjs";
 
 const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
@@ -114,8 +115,13 @@ describe("spawnDetached / terminateProcess", () => {
 
   it("SIGTERM 을 무시하는 프로세스는 유예 후 SIGKILL 한다", async () => {
     await withTemporaryDirectory(async (directory) => {
-      const { pid } = startSleeper(directory, "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)");
-      await delay(300);
+      // 핸들러가 설치되기 전에 신호가 도착하면 기본 동작으로 바로 종료("stopped")돼 시험이 성립하지 않는다.
+      // 부하가 큰 머신에서는 Node 시작이 느릴 수 있으므로 고정 대기 대신 자식이 준비 파일을 쓸 때까지 기다린다.
+      const readyFile = join(directory, "sigterm-ignored.ready");
+      const script = `process.on('SIGTERM', () => {}); require('node:fs').writeFileSync(${JSON.stringify(readyFile)}, 'ready'); setInterval(() => {}, 1000)`;
+      const { pid } = startSleeper(directory, script);
+      for (let attempt = 0; attempt < 200 && !existsSync(readyFile); attempt += 1) await delay(50);
+      assert.ok(existsSync(readyFile), "자식이 SIGTERM 무시 핸들러를 설치하지 못했습니다");
       assert.equal(await terminateProcess(pid, { graceMs: 400 }), "killed");
       assert.equal(isProcessAlive(pid), false);
     });
@@ -134,10 +140,11 @@ describe("waitFor", () => {
 
   it("fatal 이면 기다리지 않고 바로 실패한다", async () => {
     const started = Date.now();
-    const result = await waitFor(async () => ({ ok: false, fatal: true, detail: "복구 불가" }), { timeoutMs: 10_000, intervalMs: 500 });
+    // 간격을 크게 잡아, 한 번이라도 기다렸다면(3초 이상) 단언이 실패하고 부하로 인한 지연(2.5초 미만)에는 흔들리지 않게 한다.
+    const result = await waitFor(async () => ({ ok: false, fatal: true, detail: "복구 불가" }), { timeoutMs: 30_000, intervalMs: 3_000 });
     assert.equal(result.ok, false);
     assert.equal(result.detail, "복구 불가");
-    assert.ok(Date.now() - started < 1_000);
+    assert.ok(Date.now() - started < 2_500);
   });
 });
 
@@ -149,6 +156,37 @@ describe("포트·HTTP 확인", () => {
     assert.equal(await isPortFree(port), false);
     await new Promise((resolve) => server.close(resolve));
     assert.equal(await isPortFree(port), true);
+  });
+
+  it("waitForPortFree: 이미 비어 있으면 바로 true, 늦게 닫히는 소켓은 기다렸다가 true, 계속 점유되면 시간이 지나 false", async () => {
+    // 회귀: 방금 SIGKILL 로 정리한 프로세스의 소켓이 늦게 닫히면 곧바로 시작하는 쪽이 "포트 사용 중"으로 오판했다.
+    const idle = createTcpServer();
+    await new Promise((resolve) => idle.listen(0, "127.0.0.1", resolve));
+    const { port: freePort } = idle.address();
+    await new Promise((resolve) => idle.close(resolve));
+    const quickStarted = Date.now();
+    // 간격을 크게 잡아, 한 번이라도 기다렸다면(3초 이상) 단언이 실패하고 부하로 인한 지연(2.5초 미만)에는 흔들리지 않게 한다.
+    assert.equal(await waitForPortFree(freePort, { timeoutMs: 10_000, intervalMs: 3_000 }), true);
+    assert.ok(Date.now() - quickStarted < 2_500, "비어 있으면 기다리지 않아야 한다");
+
+    const closing = createTcpServer();
+    await new Promise((resolve) => closing.listen(0, "127.0.0.1", resolve));
+    const { port: closingPort } = closing.address();
+    const waitStarted = Date.now();
+    setTimeout(() => closing.close(), 300);
+    assert.equal(await waitForPortFree(closingPort, { timeoutMs: 5_000, intervalMs: 20 }), true);
+    assert.ok(Date.now() - waitStarted >= 250, "닫힐 때까지 기다렸어야 한다");
+
+    const held = createTcpServer();
+    await new Promise((resolve) => held.listen(0, "127.0.0.1", resolve));
+    const { port: heldPort } = held.address();
+    try {
+      const heldStarted = Date.now();
+      assert.equal(await waitForPortFree(heldPort, { timeoutMs: 300, intervalMs: 20 }), false);
+      assert.ok(Date.now() - heldStarted >= 250, "제한 시간 동안은 기다려야 한다");
+    } finally {
+      await new Promise((resolve) => held.close(resolve));
+    }
   });
 
   it("httpProbe 는 상태 코드와 JSON 을 읽고 연결 실패는 null 이다", async () => {

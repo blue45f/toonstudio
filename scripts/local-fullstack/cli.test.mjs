@@ -323,6 +323,59 @@ describe("reset / down / leakcheck / status (격리 디렉터리)", () => {
     }
   });
 
+  it("스택이 전혀 없는 빈 상태에서 중지 계열(down·db:stop·api:stop·web:stop)은 0 으로 끝나고 아무것도 만들지 않는다", () => {
+    // 회귀: db:stop·api:stop·web:stop 이 없는 스택 디렉터리에 state.json 임시 파일을 쓰려다 ENOENT 로 종료 코드 1 이 됐다.
+    const sandbox = createSandbox();
+    try {
+      for (const command of [["down"], ["db:stop"], ["api:stop"], ["web:stop"]]) {
+        const result = runCli(sandbox, command);
+        assert.equal(result.status, 0, `${command.join(" ")}: ${result.stdout}${result.stderr}`);
+        assert.ok(!/ENOENT|Error:/u.test(`${result.stdout}${result.stderr}`), `${command.join(" ")}: 오류 원문이 보이면 안 된다`);
+      }
+      assert.deepEqual(listTree(sandbox.directory), [], "멈출 것이 없을 때 디렉터리·파일을 만들면 안 된다");
+    } finally {
+      sandbox.cleanup();
+    }
+  });
+
+  it("아직 up 하지 않은 빈 상태에서 smoke·e2e·단계 명령은 운영 보호(3)가 아니라 up 안내(1)로 실패하고 아무것도 만들지 않는다", () => {
+    const sandbox = createSandbox();
+    try {
+      for (const command of [["smoke"], ["e2e"], ["schema"], ["seed"], ["api:start"], ["web:start"]]) {
+        const result = runCli(sandbox, command);
+        assert.equal(result.status, 1, `${command.join(" ")}: ${result.stdout}${result.stderr}`);
+        assert.match(result.stderr, /up/u, `${command.join(" ")}: up 안내가 있어야 한다`);
+        assert.ok(!/운영 보호/u.test(result.stderr), `${command.join(" ")}: 값이 비어 있는 것을 운영 보호 위반으로 보고하면 안 된다`);
+      }
+      assert.deepEqual(listTree(sandbox.directory), []);
+    } finally {
+      sandbox.cleanup();
+    }
+  });
+
+  it("실행 중인 것이 없어도 상태 파일이 있으면 중지 명령이 해당 키만 지운다", () => {
+    const sandbox = createSandbox();
+    try {
+      prepareStack(sandbox);
+      const statePath = join(sandbox.stackDirectory, "state.json");
+      writeFileSync(
+        statePath,
+        `${JSON.stringify({ version: 1, api: { pid: 2147483000, port: 4101 }, web: { pid: 2147483001, port: 5273 }, seed: { action: "created" } }, null, 2)}\n`,
+        { mode: 0o600 },
+      );
+      assert.equal(runCli(sandbox, ["api:stop"]).status, 0);
+      const afterApi = JSON.parse(readFileSync(statePath, "utf8"));
+      assert.equal(afterApi.api, undefined, "api 키는 지워져야 한다");
+      assert.ok(afterApi.web && afterApi.seed, "다른 키는 보존되어야 한다");
+      assert.equal(runCli(sandbox, ["web:stop"]).status, 0);
+      const afterWeb = JSON.parse(readFileSync(statePath, "utf8"));
+      assert.equal(afterWeb.web, undefined);
+      assert.deepEqual(afterWeb.seed, { action: "created" });
+    } finally {
+      sandbox.cleanup();
+    }
+  });
+
   it("leakcheck 는 로그에 심어 둔 비밀값을 찾아 키 이름만 보고하고(값은 출력하지 않음), 깨끗하면 0 이다", () => {
     const sandbox = createSandbox();
     try {
