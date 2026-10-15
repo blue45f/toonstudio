@@ -1,5 +1,11 @@
 # Studio 대사 다국어 번역(BYOK) — StudioPage.tsx 통합 설계
 
+> 상태: **legacy exception** — 아래는 `StudioPage.tsx` 시절의 통합 **설계 기록**이다. 현재 구현은 이 문서와 달라진 곳이
+> 많다(호스트는 `StudioCuttoonEditorHost.tsx`, 번역 코드는 `lettering/`, QA·검수·OCR 화면 추가 등). 현재 사실은
+> 소스·테스트가 우선이다. 번역 요청에 인물 카드 문맥(화자별 호칭·존대·금지어)을 싣는 현재 흐름은
+> [`studio-translation-character-cards.md`](./studio-translation-character-cards.md) §3 을 본다 — 이 문서의
+> `executeGenerateTranslations()` 는 이제 패널이 넘기는 `cardContexts` 를 선택 인자로 받는다.
+
 > 이 문서만 작성 대상이다 — **이 세션에서는 새 파일을 만들지도, `StudioPage.tsx`/`studio-ai-client.ts`를
 > 수정하지도 않았다.** 순수 설계 문서이며, 아래는 후속 구현·통합 패스가 정확히 어떤 파일을 어떤
 > 데이터 모델로 만들고 기존 파일 어디에 무엇을 넣어야 하는지에 대한 지시서다. 라인 번호는 이 문서
