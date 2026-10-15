@@ -282,6 +282,42 @@ describe("방향키·Shift·Esc", () => {
   });
 });
 
+describe("Alt 추론 일시 해제", () => {
+  it("Alt를 누르는 동안은 끝점에 붙지 않고, 놓으면 다시 붙는다", () => {
+    const { service } = createFixture();
+    sceneWithBox(service);
+    service.begin("measure", { referencePoint: [3, 0, 0] });
+    service.resolve({ cursor: pointCursor([0.52, 1, 0.5]) });
+    expect(service.getResult()?.kind).toBe("endpoint");
+    service.handleKey("key-down", { key: "Alt", altKey: true });
+    service.resolve({ cursor: pointCursor([0.52, 1, 0.5]) });
+    expect(service.getResult()?.kind).toBe("free");
+    expect(service.resolveFreshPoint([0.52, 1, 0.5]).snapped).toBe(false);
+    service.handleKey("key-up", { key: "Alt" });
+    service.resolve({ cursor: pointCursor([0.52, 1, 0.5]) });
+    expect(service.getResult()?.kind).toBe("endpoint");
+  });
+
+  it("축 잠금 중에는 Alt를 눌러도 사용자가 건 제약을 풀지 않는다", () => {
+    const { service } = createFixture();
+    sceneWithBox(service);
+    service.begin("measure", { referencePoint: [3, 0, 3] });
+    service.handleKey("key-down", { key: "ArrowRight" });
+    service.handleKey("key-down", { key: "Alt", altKey: true });
+    service.resolve({ cursor: pointCursor([5, 0, 8]) });
+    expect(service.getResult()?.kind).toBe("axis");
+    expect(service.getResult()?.point[2]).toBeCloseTo(3, 9);
+  });
+
+  it("Alt를 누르고 뗄 때 일반(polite) 안내를 한다", () => {
+    const { service } = createFixture();
+    service.begin("measure", { referencePoint: [0, 0, 0] });
+    service.handleKey("key-down", { key: "Alt", altKey: true });
+    expect(service.getSnapshot().live.text).toContain("추론 일시 해제");
+    expect(service.getSnapshot().live.urgent).toBe(false);
+  });
+});
+
 describe("길이 직접 입력(VCB)", () => {
   function setup() {
     const fixture = createFixture();

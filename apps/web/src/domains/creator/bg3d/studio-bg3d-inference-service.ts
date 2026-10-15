@@ -208,6 +208,8 @@ export interface CreateStudioBg3dInferenceServiceOptions {
 
 const DEFAULT_FRESH_RESULT_MS = 1_500;
 const DEFAULT_FRESH_RESULT_PX = 10;
+/** 아무 종류도 허용하지 않는 집합 — 추론을 일시 해제할 때 쓴다. */
+const NO_KINDS: ReadonlySet<StudioBg3dInferenceKind> = new Set();
 const EMPTY_LIVE: StudioBg3dInferenceLiveMessage = Object.freeze({ seq: 0, text: "", urgent: false, tone: "info" });
 const EMPTY_SCENE: StudioBg3dInferenceSceneInfo = Object.freeze({ revision: null, builds: 0, stats: null });
 
@@ -535,7 +537,10 @@ export function createStudioBg3dInferenceService(
         lock: session.lock,
         hold: session.hold,
         ...(input.pointer === undefined ? {} : { pointer: input.pointer }),
-        ...(beginOptions.enabledKinds === undefined ? {} : { enabledKinds: beginOptions.enabledKinds }),
+        // Alt를 누르는 동안은 추론을 끈다 (잠금·유지 중에는 사용자가 건 제약이므로 그대로 둔다).
+        ...(session.altDown && session.lock.kind === "none" && !session.hold
+          ? { enabledKinds: NO_KINDS }
+          : beginOptions.enabledKinds === undefined ? {} : { enabledKinds: beginOptions.enabledKinds }),
         ...(beginOptions.grid === undefined ? {} : { grid: beginOptions.grid }),
         ...(beginOptions.excludeSourceIds === undefined ? {} : { excludeSourceIds: beginOptions.excludeSourceIds }),
       });

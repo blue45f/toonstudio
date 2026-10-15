@@ -317,6 +317,7 @@ export function StudioBg3dInferenceHud({
             <kbd className="rounded border border-line px-1">↑</kbd> Y ·{" "}
             <kbd className="rounded border border-line px-1">↓</kbd> 평행·수직 ·{" "}
             <kbd className="rounded border border-line px-1">Shift</kbd> 현재 추론 유지 ·{" "}
+            <kbd className="rounded border border-line px-1">Alt</kbd> 추론 일시 해제 ·{" "}
             <kbd className="rounded border border-line px-1">Esc</kbd> 취소 · 숫자 입력 후{" "}
             <kbd className="rounded border border-line px-1">Enter</kbd> 정확한 길이 적용
           </p>

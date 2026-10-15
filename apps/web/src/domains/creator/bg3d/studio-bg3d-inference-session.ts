@@ -374,7 +374,11 @@ function handleKeyDown(
     );
   }
   if (event.key === "Alt") {
-    return reduction(event.repeat || state.altDown ? state : { ...state, altDown: true }, false);
+    if (event.repeat || state.altDown) return reduction(state, false);
+    return reduction(
+      withNotice({ ...state, altDown: true }, "추론 일시 해제 — Alt를 놓으면 다시 켜집니다.", "info", false),
+      false,
+    );
   }
   if (event.ctrlKey || event.metaKey || event.altKey) return reduction(state, false);
 
@@ -437,7 +441,8 @@ function handleKeyUp(
     return reduction(hadHold ? withNotice(next, "추론 유지 해제", "info", true) : next, false);
   }
   if (event.key === "Alt") {
-    return reduction(state.altDown ? { ...state, altDown: false } : state, false);
+    if (!state.altDown) return reduction(state, false);
+    return reduction(withNotice({ ...state, altDown: false }, "추론 다시 켬", "info", false), false);
   }
   return reduction(state, false);
 }
