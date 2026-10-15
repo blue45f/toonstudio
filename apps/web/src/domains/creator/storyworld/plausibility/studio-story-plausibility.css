@@ -1,0 +1,948 @@
+/*
+ * 스토리 개연성 점검 허브 — 스타일.
+ *
+ * 랩 셸(.storyworld-shell)의 색 토큰을 그대로 따른다. 셸이 어두운 테마만 지원하므로 허브도 같다.
+ * 색만으로 뜻을 전하지 않는다: 심각도·신뢰·처리 상태는 항상 아이콘이나 글자와 함께 보인다.
+ */
+.plausibility-hub {
+  --pl-panel: var(--storyworld-panel, #111724);
+  --pl-panel-strong: var(--storyworld-panel-strong, #161d2b);
+  --pl-elevated: var(--storyworld-bg-elevated, #0d111b);
+  --pl-border: var(--storyworld-border, #263044);
+  --pl-border-strong: var(--storyworld-border-strong, #3a4862);
+  --pl-text: var(--storyworld-text, #f4f7fb);
+  --pl-muted: var(--storyworld-text-muted, #9eabc0);
+  --pl-accent: var(--storyworld-accent, #8fb8ff);
+  --pl-accent-strong: var(--storyworld-accent-strong, #b2ccff);
+  --pl-error: var(--storyworld-bad, #ff8d9d);
+  --pl-warn: var(--storyworld-warn, #ffd27a);
+  --pl-info: var(--storyworld-info, #84c9ff);
+  --pl-good: var(--storyworld-good, #73dbb0);
+  --pl-radius: var(--storyworld-radius, 14px);
+  --pl-radius-small: var(--storyworld-radius-small, 9px);
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  color: var(--pl-text);
+}
+
+.plausibility-hub *,
+.plausibility-hub *::before,
+.plausibility-hub *::after {
+  box-sizing: border-box;
+}
+
+.plausibility-hub h2,
+.plausibility-hub h3,
+.plausibility-hub h4,
+.plausibility-hub p {
+  margin: 0;
+}
+
+.plausibility-hub button:focus-visible,
+.plausibility-hub input:focus-visible,
+.plausibility-hub select:focus-visible,
+.plausibility-hub textarea:focus-visible,
+.plausibility-hub summary:focus-visible,
+.plausibility-hub [tabindex]:focus-visible {
+  outline: 2px solid var(--pl-accent-strong);
+  outline-offset: 2px;
+}
+
+.plausibility-hub__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 18px;
+}
+
+.plausibility-hub__intro {
+  display: grid;
+  max-width: 62ch;
+  gap: 4px;
+}
+
+.plausibility-hub__intro h2 {
+  font-size: 1.15rem;
+  letter-spacing: -0.015em;
+}
+
+.plausibility-hub__intro p {
+  color: var(--pl-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.plausibility-hub__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.plausibility-hub .storyworld-button {
+  min-height: 40px;
+}
+
+@media (pointer: coarse) {
+  .plausibility-hub .storyworld-button,
+  .plausibility-hub .storyworld-text-button,
+  .plausibility-hub .plausibility-chip-button {
+    min-height: 44px;
+  }
+}
+
+.plausibility-live {
+  min-height: 1.4em;
+  color: var(--pl-muted);
+  font-size: 0.78rem;
+}
+
+.plausibility-live:empty {
+  display: none;
+}
+
+.plausibility-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  border: 1px solid var(--pl-border-strong);
+  border-radius: var(--pl-radius-small);
+  background: var(--pl-elevated);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+}
+
+.plausibility-banner--example {
+  border-color: var(--pl-accent);
+}
+
+.plausibility-banner--warn {
+  border-color: var(--pl-warn);
+}
+
+.plausibility-banner--error {
+  border-color: var(--pl-error);
+  color: var(--pl-error);
+}
+
+.plausibility-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── 3열 배치 ─────────────────────────────────────────────────────── */
+
+.plausibility-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr) minmax(300px, 400px);
+  grid-template-areas: "scope list detail";
+  align-items: start;
+  gap: 14px;
+}
+
+.plausibility-layout > .plausibility-scope { grid-area: scope; }
+.plausibility-layout > .plausibility-findings { grid-area: list; }
+.plausibility-layout > .plausibility-detail { grid-area: detail; }
+
+@media (max-width: 1240px) {
+  .plausibility-layout {
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    grid-template-areas:
+      "scope list"
+      "scope detail";
+  }
+}
+
+@media (max-width: 900px) {
+  .plausibility-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "scope"
+      "list"
+      "detail";
+  }
+}
+
+.plausibility-card {
+  min-width: 0;
+  border: 1px solid var(--pl-border);
+  border-radius: var(--pl-radius);
+  background: var(--pl-panel);
+  padding: clamp(12px, 2vw, 16px);
+}
+
+.plausibility-card + .plausibility-card {
+  margin-top: 12px;
+}
+
+.plausibility-card > h2,
+.plausibility-card > h3 {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.plausibility-hint {
+  color: var(--pl-muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+/* ── 범위 · 점검 가능 범위 · 점수 ───────────────────────────────────── */
+
+.plausibility-scope {
+  display: grid;
+  gap: 12px;
+}
+
+.plausibility-scope fieldset {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.plausibility-scope label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 0.82rem;
+}
+
+.plausibility-scope input[type="radio"],
+.plausibility-scope input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--pl-accent);
+}
+
+.plausibility-scope__list {
+  display: grid;
+  max-height: 220px;
+  gap: 2px;
+  margin-left: 22px;
+  overflow: auto;
+  border: 1px solid var(--pl-border);
+  border-radius: var(--pl-radius-small);
+  padding: 6px;
+}
+
+.plausibility-scope__tools {
+  display: flex;
+  gap: 6px;
+  margin-left: 22px;
+}
+
+.plausibility-meter {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--pl-elevated);
+  box-shadow: inset 0 0 0 1px var(--pl-border);
+}
+
+.plausibility-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--pl-accent);
+}
+
+.plausibility-meter--low > span { background: var(--pl-warn); }
+.plausibility-meter--high > span { background: var(--pl-good); }
+
+.plausibility-bignum {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.plausibility-bignum strong {
+  font-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.plausibility-bignum span {
+  color: var(--pl-muted);
+  font-size: 0.78rem;
+}
+
+.plausibility-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+
+.plausibility-table caption {
+  padding-bottom: 4px;
+  color: var(--pl-muted);
+  text-align: left;
+}
+
+.plausibility-table th,
+.plausibility-table td {
+  border-top: 1px solid var(--pl-border);
+  padding: 4px 6px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.plausibility-table th:first-child,
+.plausibility-table td:first-child {
+  text-align: left;
+}
+
+.plausibility-details > summary {
+  min-height: 32px;
+  cursor: pointer;
+  color: var(--pl-accent-strong);
+  font-size: 0.8rem;
+}
+
+.plausibility-details[open] > summary {
+  margin-bottom: 8px;
+}
+
+.plausibility-sources {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.76rem;
+}
+
+.plausibility-sources li {
+  display: grid;
+  gap: 1px;
+}
+
+.plausibility-sources strong {
+  font-weight: 650;
+}
+
+/* ── 필터 · 목록 ──────────────────────────────────────────────────── */
+
+.plausibility-findings {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.plausibility-filters {
+  display: grid;
+  gap: 8px;
+}
+
+.plausibility-filters__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.plausibility-filters label {
+  display: grid;
+  gap: 3px;
+  color: var(--pl-muted);
+  font-size: 0.72rem;
+}
+
+.plausibility-filters select,
+.plausibility-filters input[type="search"] {
+  min-height: 38px;
+  min-width: 0;
+  border: 1px solid var(--pl-border);
+  border-radius: 8px;
+  background: var(--pl-elevated);
+  padding: 6px 9px;
+  color: var(--pl-text);
+}
+
+.plausibility-filters input[type="search"] {
+  width: min(100%, 260px);
+}
+
+.plausibility-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  border: 1px solid var(--pl-border);
+  border-radius: 9px;
+  background: var(--pl-elevated);
+  padding: 3px;
+}
+
+.plausibility-segmented button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 5px 10px;
+  color: var(--pl-muted);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.plausibility-segmented button[aria-pressed="true"] {
+  background: var(--pl-panel-strong);
+  color: var(--pl-text);
+  box-shadow: inset 0 0 0 1px var(--pl-border-strong);
+}
+
+.plausibility-group {
+  display: grid;
+  gap: 6px;
+}
+
+.plausibility-group > h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.86rem;
+}
+
+.plausibility-group > h3 small {
+  color: var(--pl-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.plausibility-rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plausibility-row {
+  display: grid;
+  width: 100%;
+  gap: 4px;
+  border: 1px solid var(--pl-border);
+  border-left-width: 4px;
+  border-radius: var(--pl-radius-small);
+  background: var(--pl-panel);
+  padding: 9px 11px;
+  color: var(--pl-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.plausibility-row:hover {
+  border-color: var(--pl-border-strong);
+  background: var(--pl-panel-strong);
+}
+
+.plausibility-row[aria-current="true"] {
+  border-color: var(--pl-accent);
+  background: var(--pl-panel-strong);
+}
+
+.plausibility-row--error { border-left-color: var(--pl-error); }
+.plausibility-row--warning { border-left-color: var(--pl-warn); }
+.plausibility-row--suggestion { border-left-color: var(--pl-info); }
+
+.plausibility-row__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.plausibility-row__title {
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.plausibility-row__meta {
+  color: var(--pl-muted);
+  font-size: 0.72rem;
+}
+
+.plausibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--pl-border-strong);
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: var(--pl-text);
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.plausibility-badge--error { color: var(--pl-error); border-color: var(--pl-error); }
+.plausibility-badge--warning { color: var(--pl-warn); border-color: var(--pl-warn); }
+.plausibility-badge--suggestion { color: var(--pl-info); border-color: var(--pl-info); }
+.plausibility-badge--muted { color: var(--pl-muted); }
+
+.plausibility-handled > summary {
+  min-height: 36px;
+  cursor: pointer;
+  color: var(--pl-muted);
+  font-size: 0.82rem;
+}
+
+.plausibility-handled[open] > summary {
+  margin-bottom: 8px;
+}
+
+.plausibility-empty {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed var(--pl-border-strong);
+  border-radius: var(--pl-radius);
+  padding: 18px;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.plausibility-empty h3 {
+  font-size: 0.95rem;
+}
+
+.plausibility-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── 근거 상세 ────────────────────────────────────────────────────── */
+
+.plausibility-detail {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+@media (min-width: 1241px) {
+  .plausibility-detail {
+    position: sticky;
+    top: 84px;
+    max-height: calc(100dvh - 130px);
+    overflow: auto;
+  }
+}
+
+.plausibility-detail h3 {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.plausibility-detail h4 {
+  margin-bottom: 4px;
+  color: var(--pl-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.plausibility-detail p {
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
+.plausibility-question {
+  border-left: 3px solid var(--pl-accent);
+  background: var(--pl-elevated);
+  padding: 8px 10px;
+}
+
+.plausibility-evidence {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plausibility-evidence li {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--pl-border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+}
+
+.plausibility-quote {
+  margin: 0;
+  border-left: 3px solid var(--pl-border-strong);
+  padding: 2px 0 2px 8px;
+  color: var(--pl-text);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.plausibility-hub mark {
+  border-radius: 3px;
+  background: rgb(255 210 122 / 28%);
+  padding: 0 2px;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.plausibility-source-view {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--pl-border-strong);
+  border-radius: var(--pl-radius-small);
+  background: var(--pl-elevated);
+  padding: 10px;
+}
+
+.plausibility-source-view pre {
+  max-height: 260px;
+  margin: 0;
+  overflow: auto;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.plausibility-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plausibility-options li {
+  display: grid;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.plausibility-options small {
+  color: var(--pl-muted);
+  font-size: 0.7rem;
+}
+
+.plausibility-disposition {
+  display: grid;
+  gap: 8px;
+}
+
+.plausibility-disposition__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.plausibility-disposition textarea,
+.plausibility-field textarea,
+.plausibility-field input[type="text"],
+.plausibility-field select,
+.plausibility-field input[type="number"] {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--pl-border);
+  border-radius: 8px;
+  background: var(--pl-elevated);
+  padding: 7px 9px;
+  color: var(--pl-text);
+}
+
+.plausibility-disposition textarea,
+.plausibility-field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.plausibility-chip-button {
+  min-height: 34px;
+  border: 1px solid var(--pl-border);
+  border-radius: 999px;
+  background: var(--pl-elevated);
+  padding: 4px 12px;
+  color: var(--pl-text);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+/* ── 로딩 · 오류 ───────────────────────────────────────────────────── */
+
+.plausibility-loading {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--pl-border);
+  border-radius: var(--pl-radius);
+  background: var(--pl-panel);
+  padding: 18px;
+}
+
+.plausibility-skeleton {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--pl-elevated), var(--pl-panel-strong), var(--pl-elevated));
+  background-size: 200% 100%;
+  animation: plausibility-shimmer 1.4s ease-in-out infinite;
+}
+
+.plausibility-skeleton:nth-child(2) { width: 82%; }
+.plausibility-skeleton:nth-child(3) { width: 64%; }
+
+@keyframes plausibility-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* ── 질문지 ───────────────────────────────────────────────────────── */
+
+.plausibility-qn {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .plausibility-qn {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.plausibility-qn__scenes {
+  display: grid;
+  gap: 4px;
+  max-height: 60dvh;
+  margin: 0;
+  overflow: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.plausibility-qn__scene {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 7px 9px;
+  color: var(--pl-text);
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plausibility-qn__scene:hover {
+  background: var(--pl-panel-strong);
+}
+
+.plausibility-qn__scene[aria-current="true"] {
+  border-color: var(--pl-accent);
+  background: var(--pl-panel-strong);
+}
+
+.plausibility-qn__scene small {
+  color: var(--pl-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.plausibility-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.plausibility-steps button {
+  min-height: 36px;
+  border: 1px solid var(--pl-border);
+  border-radius: 8px;
+  background: var(--pl-elevated);
+  padding: 4px 10px;
+  color: var(--pl-muted);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.plausibility-steps button[aria-selected="true"] {
+  border-color: var(--pl-accent);
+  color: var(--pl-text);
+}
+
+.plausibility-field {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  font-size: 0.82rem;
+}
+
+.plausibility-field legend {
+  padding: 0;
+  font-weight: 650;
+}
+
+.plausibility-field label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.plausibility-field input[type="checkbox"],
+.plausibility-field input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--pl-accent);
+}
+
+.plausibility-rowform {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  border: 1px solid var(--pl-border);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.plausibility-qn__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.plausibility-qn__actions .plausibility-spacer {
+  flex: 1 1 auto;
+}
+
+/* ── 원고로 시작 ──────────────────────────────────────────────────── */
+
+.plausibility-ms {
+  display: grid;
+  gap: 12px;
+}
+
+.plausibility-ms textarea {
+  width: 100%;
+  min-height: 240px;
+  border: 1px solid var(--pl-border);
+  border-radius: var(--pl-radius-small);
+  background: var(--pl-elevated);
+  padding: 10px;
+  color: var(--pl-text);
+  line-height: 1.7;
+}
+
+.plausibility-ms__scenes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plausibility-ms__scene {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--pl-border);
+  border-radius: var(--pl-radius-small);
+  background: var(--pl-panel);
+  padding: 10px;
+}
+
+.plausibility-ms__excerpt {
+  color: var(--pl-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.plausibility-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.plausibility-ms__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+/* ── 접근성 · 대비 · 움직임 ────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .plausibility-hub *,
+  .plausibility-hub *::before,
+  .plausibility-hub *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .plausibility-skeleton {
+    animation: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .plausibility-hub {
+    --pl-border: var(--pl-muted);
+    --pl-border-strong: var(--pl-text);
+  }
+
+  .plausibility-hub mark {
+    background: transparent;
+    outline: 2px solid currentcolor;
+  }
+}
+
+@media (forced-colors: active) {
+  .plausibility-card,
+  .plausibility-row,
+  .plausibility-source-view,
+  .plausibility-empty,
+  .plausibility-loading {
+    border-color: ButtonText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .plausibility-row[aria-current="true"],
+  .plausibility-qn__scene[aria-current="true"],
+  .plausibility-steps button[aria-selected="true"],
+  .plausibility-segmented button[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+  }
+
+  .plausibility-hub mark {
+    background: Mark;
+    color: MarkText;
+  }
+
+  .plausibility-meter > span {
+    background: Highlight;
+  }
+}

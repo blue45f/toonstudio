@@ -62,6 +62,16 @@ describe("Storyworld route integration", () => {
     }
   });
 
+  it("keeps the plausibility view query when canonicalizing, so deep links open the review hub", () => {
+    const direct = resolveStudioRoute({ pathname: "/studio/work/work-1/storyworld", search: "?view=plausibility" });
+    expect(direct).toMatchObject({ kind: "storyworld", workId: "work-1", canonicalHref: "/studio/work/work-1/storyworld?view=plausibility" });
+    const legacy = resolveStudioRoute({ pathname: "/studio/storyworld", search: "?id=work-1&view=plausibility" });
+    expect(legacy).toMatchObject({ kind: "storyworld", workId: "work-1", canonicalHref: "/studio/work/work-1/storyworld?view=plausibility" });
+    const draft = resolveStudioRoute({ pathname: "/studio/storyworld", search: "?view=plausibility" });
+    expect(draft).toMatchObject({ kind: "storyworld", workId: null, canonicalHref: "/studio/storyworld?view=plausibility" });
+    expect(direct.lifecycleKey).toBe(resolveStudioRoute({ pathname: "/studio/work/work-1/storyworld" }).lifecycleKey);
+  });
+
   it("owns its title and has distinct document lifetimes", () => {
     expect(studioRouteOwnsDocumentTitle({ pathname: "/studio/storyworld" })).toBe(true);
     const first = resolveStudioRoute({ pathname: "/studio/work/first/storyworld" });

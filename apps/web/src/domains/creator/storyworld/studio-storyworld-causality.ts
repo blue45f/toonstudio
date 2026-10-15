@@ -6,7 +6,15 @@
  * returns bounded diagnostics/proposals that a Studio command adapter can commit atomically.
  */
 
-export const STUDIO_STORYWORLD_SCHEMA_VERSION = 1 as const;
+/**
+ * 문서 스키마 버전. 2는 개연성 점검용 선택 필드(회차 번호, 질문지 답, 원고 출처, 나이·연도)를
+ * 더한 판이다. 새 필드는 모두 선택이라 1판 문서도 그대로 유효하며, 읽을 때 2판으로 정규화한다.
+ */
+export const STUDIO_STORYWORLD_SCHEMA_VERSION = 2 as const;
+export const STUDIO_STORYWORLD_LEGACY_SCHEMA_VERSION = 1 as const;
+export type StoryworldSchemaVersion =
+  | typeof STUDIO_STORYWORLD_LEGACY_SCHEMA_VERSION
+  | typeof STUDIO_STORYWORLD_SCHEMA_VERSION;
 export const STUDIO_STORYWORLD_RECEIPT_VERSION = 1 as const;
 
 export type StoryworldPrimitive = string | number | boolean | null;
@@ -129,6 +137,62 @@ export interface StoryworldProductionEstimate {
   readonly assigneeIds?: readonly string[];
 }
 
+/** 작가가 질문지에서 고른 장면 성격. 고르지 않았다면 아직 답하지 않은 것이다. */
+export type StoryworldSceneRole = "decision" | "resolution" | "flashback";
+export type StoryworldQuestionId =
+  | "roles"
+  | "motive"
+  | "cause"
+  | "information"
+  | "coincidence"
+  | "consequence";
+/** 질문 하나의 답 상태. answered/not-applicable만 "점검할 수 있음"으로 센다. */
+export type StoryworldAnswerState = "answered" | "not-applicable" | "unknown" | "skipped";
+
+export interface StoryworldMotive {
+  readonly characterId: string;
+  /** goal=인물이 바라는 것, event=앞선 사건, emotion=감정, unknown=작가가 아직 모름 */
+  readonly basis: "goal" | "event" | "emotion" | "unknown";
+  /** basis가 event일 때 동기가 된 앞 장면. */
+  readonly causeSceneId?: string;
+  readonly note?: string;
+}
+
+export interface StoryworldCoincidence {
+  /** foreshadowed=앞에 단서가 있음, none=단서 없음, unknown=작가가 아직 모름 */
+  readonly clue: "foreshadowed" | "none" | "unknown";
+  readonly clueSceneIds?: readonly string[];
+}
+
+/** 개연성 질문지의 답. 가능한 답은 전제·효과·지식·공개·복선 계약 같은 기존 필드에도 함께 기록한다. */
+export interface StoryworldScenePlausibility {
+  readonly roles?: readonly StoryworldSceneRole[];
+  readonly answers?: Readonly<Partial<Record<StoryworldQuestionId, StoryworldAnswerState>>>;
+  readonly motives?: readonly StoryworldMotive[];
+  readonly coincidence?: StoryworldCoincidence;
+}
+
+/** 원고에서 가져온 장면의 출처. 원문 전체가 아니라 짧은 발췌와 위치만 보관한다. */
+export interface StoryworldSceneSource {
+  readonly excerpt: string;
+  readonly boundary: "start" | "scene-number" | "separator" | "blank-lines" | "heading" | "manual";
+  /** 장면을 나눈 표지 줄 원문(예: "장면 3", "* * *"). */
+  readonly marker?: string;
+  /** 위치(start/end)가 가리키는 원고 사본의 id. 같은 id의 사본이 있어야 원문을 다시 열 수 있다. */
+  readonly copy?: string;
+  /** 보관한 원고 사본 안의 글자 위치. 원고 사본이 바뀌면 의미가 없다. */
+  readonly start?: number;
+  readonly end?: number;
+  /** 원문에 명시된 시간 표현("다음 날" 등). 의미를 해석해 시간 값으로 바꾸지 않는다. */
+  readonly timeCues?: readonly string[];
+}
+
+/** 장면 안에서 언급된 나이. storyYear와 인물의 birthYear로 산술 모순을 점검한다. */
+export interface StoryworldStatedAge {
+  readonly characterId: string;
+  readonly age: number;
+}
+
 export interface StoryworldScene {
   readonly id: string;
   readonly title: string;
@@ -153,6 +217,15 @@ export interface StoryworldScene {
   readonly assets?: readonly StoryworldAssetUse[];
   readonly production?: StoryworldProductionEstimate;
   readonly disabled?: boolean;
+  /** 이 장면이 속한 회차 번호(1부터). 점검 범위를 회차로 고를 때 쓴다. */
+  readonly episodeNumber?: number;
+  /** 개연성 질문지에서 작가가 답한 내용. 엔진은 읽지 않는다. */
+  readonly plausibility?: StoryworldScenePlausibility;
+  /** 원고에서 가져온 장면이면 그 출처. */
+  readonly source?: StoryworldSceneSource;
+  /** 이야기 속 연도. 나이·연도 산술 점검에 쓴다. */
+  readonly storyYear?: number;
+  readonly statedAges?: readonly StoryworldStatedAge[];
 }
 
 /**
@@ -188,6 +261,8 @@ export interface StoryworldCharacter {
   readonly secretFactIds?: readonly string[];
   /** 무빙툰 확장 설정. 없으면 확장 설정을 아직 정하지 않은 상태다. */
   readonly motion?: StoryworldCharacterMotionProfile;
+  /** 이야기 속에서 태어난 해. 장면의 storyYear·statedAges와 비교해 나이 모순을 점검한다. */
+  readonly birthYear?: number;
 }
 
 export interface StoryworldSetupContract {
@@ -206,7 +281,7 @@ export interface StoryworldMotifDefinition {
 }
 
 export interface StoryworldProject {
-  readonly schemaVersion: typeof STUDIO_STORYWORLD_SCHEMA_VERSION;
+  readonly schemaVersion: StoryworldSchemaVersion;
   readonly id: string;
   readonly title: string;
   readonly characters: readonly StoryworldCharacter[];

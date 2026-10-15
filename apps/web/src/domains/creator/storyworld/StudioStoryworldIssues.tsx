@@ -14,9 +14,10 @@ import type {
   StoryworldSeverity,
 } from "./studio-storyworld-causality";
 import type { StoryworldContinuityIssue } from "./studio-storyworld-continuity";
-import type {
-  StoryworldIssueDispositionDocument,
-  StoryworldIssueDispositionStatus,
+import {
+  STORYWORLD_ISSUE_DISPOSITION_LABELS,
+  type StoryworldIssueDispositionDocument,
+  type StoryworldIssueDispositionStatus,
 } from "./studio-storyworld-issue-dispositions";
 import { EmptyState, Panel } from "./StudioStoryworldLabShared";
 import { AXIS_LABELS, SEVERITY_LABELS, severityIcon } from "./studio-storyworld-lab-display";
@@ -34,7 +35,7 @@ function IssueDispositionControls({ issueKey, dispositions, onSet, onClear }: {
     return (
       <div className="storyworld-disposition">
         <span className="storyworld-disposition__chip">
-          {disposition.status === "resolved" ? "해결 표시됨" : "무시됨"}
+          {STORYWORLD_ISSUE_DISPOSITION_LABELS[disposition.status]}
         </span>
         {disposition.note ? <span className="storyworld-disposition__note">{disposition.note}</span> : null}
         <button className="storyworld-button" onClick={() => onClear(issueKey)} type="button">처리 되돌리기</button>

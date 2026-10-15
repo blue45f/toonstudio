@@ -17,6 +17,7 @@ import {
   ImagePlus,
   LayoutDashboard,
   LayoutGrid,
+  ListChecks,
   MessageSquareCheck,
   MoreHorizontal,
   Palette,
@@ -155,6 +156,7 @@ const SECTION_DEFINITIONS: Readonly<Record<StudioProjectSection, SectionDefiniti
     },
     icon: BookOpen,
     actions: [
+      action(ListChecks, "개연성 점검", "Plausibility review", "원고나 설정을 기준으로 이야기가 앞뒤가 맞는지 근거와 함께 점검합니다. 찾은 것은 판정이 아니라 작가에게 드리는 질문입니다.", "Check whether the story holds together, with supporting evidence. Findings are questions for you, not verdicts.", (id) => queryHref(workHref(id, "storyworld"), { view: "plausibility" })),
       action(BookOpen, "회차 줄거리", "Episode synopses", "회차마다 목표와 줄거리, 마음의 변화를 적어 콘티로 이어갑니다.", "Write each episode's goal, synopsis and emotional arc, then carry it into storyboards.", (id) => projectViewHref(id, "story", "episodes")),
       action(Users, "캐릭터 시트·관계", "Character sheets & relations", "말투·배경·바라는 것과 캐릭터 사이 관계를 시트로 정리합니다.", "Capture voice, background, motivation and relationships in character sheets.", (id) => projectViewHref(id, "story", "characters")),
       action(Boxes, "세계관 설정 허브", "World lore hub", "장소·세력·종족·규칙·연표를 항목으로 적고 서로 잇습니다. 이름 표기의 정본도 여기서 정해집니다.", "Record places, factions, species, rules and timeline events as linked entries — the canonical spellings live here too.", (id) => projectViewHref(id, "story", "world")),

@@ -32,7 +32,8 @@ export const STUDIO_REDACTION_PLACEHOLDER = "[가림]";
 /** 리포트에 싣는 자유 텍스트의 최대 길이. 넘치면 잘라내고 표시한다. */
 export const STUDIO_REDACTION_MAX_LENGTH = 240;
 
-export function redactStudioDiagnosticText(input: string): string {
+/** `maxLength`를 넘기면 그 길이까지 허용한다(긴 설명문을 내보내는 쪽에서 쓴다). 기본은 리포트 한 줄 길이다. */
+export function redactStudioDiagnosticText(input: string, maxLength: number = STUDIO_REDACTION_MAX_LENGTH): string {
   const cleaned = input
     .replace(EMAIL, STUDIO_REDACTION_PLACEHOLDER)
     .replace(DATA_URI, STUDIO_REDACTION_PLACEHOLDER)
@@ -42,8 +43,8 @@ export function redactStudioDiagnosticText(input: string): string {
     .replace(LONG_TOKEN, STUDIO_REDACTION_PLACEHOLDER)
     .replace(/\s+/gu, " ")
     .trim();
-  return cleaned.length > STUDIO_REDACTION_MAX_LENGTH
-    ? `${cleaned.slice(0, STUDIO_REDACTION_MAX_LENGTH)}…`
+  return cleaned.length > maxLength
+    ? `${cleaned.slice(0, maxLength)}…`
     : cleaned;
 }
 
