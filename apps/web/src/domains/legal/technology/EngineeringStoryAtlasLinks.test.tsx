@@ -20,8 +20,12 @@ describe("제작 스토리 → 기술 도감 역참조", () => {
         <EngineeringStoryPage />
       </MemoryRouter>,
     );
-    // 도감 데이터는 렌더 뒤에 동적으로 불러온다.
-    await waitFor(() => expect(container.querySelector('#storage a[href="/about/technology/atlas#fixture-opfs"]')).toBeTruthy());
+    // 도감 데이터는 렌더 뒤에 동적으로 불러온다. 전체 시험이 여러 작업자로 몰릴 때는 렌더가 1초 기본 한도를 넘기므로
+    // 이 저장소의 다른 비동기 화면 시험과 같은 10초 한도를 준다(단언은 그대로다).
+    await waitFor(
+      () => expect(container.querySelector('#storage a[href="/about/technology/atlas#fixture-opfs"]')).toBeTruthy(),
+      { timeout: 10_000 },
+    );
     expect(container.querySelector('#free-ai-routing a[href="/about/technology/atlas#fixture-free-budget"]')).toBeTruthy();
     // 연결되지 않은 챕터에는 줄 자체가 없다.
     expect(container.querySelector('#architecture a[href^="/about/technology/atlas#"]')).toBeNull();
