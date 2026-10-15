@@ -49,6 +49,7 @@ jobs:
             /apps/web/public/assets/3d/environments/refined-v6/manifest.json
             /apps/web/public/assets/3d/environments/expansion-v1/manifest.json
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
+            /apps/web/public/assets/3d/environments/authored-v1/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/hospital_reception.glb
             /apps/web/public/assets/3d/environments/expansion-v1/library_reading_room.glb
             /apps/web/public/assets/3d/environments/expansion-v1/thumbnails/library_reading_room.png
@@ -83,6 +84,15 @@ jobs:
             !/artifacts/
             !/tests/benchmarks/results/
             /tests/benchmarks/results/v12-runtime-fault-matrix.json
+            /apps/web/public/vrm/Anna.vrm
+            /apps/web/public/vrm/Sendagaya_Shibu.vrm
+            /apps/web/public/vrm/Sendagaya_Shino.vrm
+            /apps/web/public/vrm/sample.vrm
+            /apps/web/public/vrm/AliciaSolid.vrm
+            /apps/web/public/vrm/Darkness_Shibu.vrm
+            /apps/web/public/vrm/Jennifer.vrm
+            /apps/web/public/vrm/Jimmy.vrm
+            /apps/web/public/vrm/Sakurada_Fumiriya.vrm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
