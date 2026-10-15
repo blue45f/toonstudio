@@ -175,7 +175,7 @@ describe("MarketAcquisitionModal 포인트 구매", () => {
     renderModal();
     await agreeAndBuyWithPoints();
 
-    await screen.findByText(/차감한 포인트를 되돌렸습니다/);
+    await screen.findByText(/차감한 포인트를 되돌렸어요/);
     expect(screen.queryByText("내 에셋에 안전하게 보관했습니다")).toBeNull();
     expect(mocks.navigate).not.toHaveBeenCalled();
     const { events } = useAssetPointsStore.getState();

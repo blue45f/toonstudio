@@ -40,7 +40,7 @@ describe("StudioCommunityMarketplacePanel", () => {
     expect(html).toContain("온라인 Creator 공유");
     expect(html).toContain("공개 탐색 · 실제 설치 · 내 자료 게시");
     expect(html).not.toContain("온라인 공유 보기");
-    expect(html).not.toContain("무료 공유 마켓에 게시");
+    expect(html).not.toContain("마켓에 게시");
   });
 
   it("공개·계정 보관함·내 공유·자료 게시 탭과 모든 공통 리소스 종류를 노출한다", () => {
@@ -51,11 +51,11 @@ describe("StudioCommunityMarketplacePanel", () => {
     expect(html).toContain('role="tablist"');
     expect(html).toContain('aria-controls="');
     expect(html).toContain('aria-labelledby="');
-    expect(html).toContain("공개 마켓");
+    expect(html).toMatch(/role="tab" aria-selected="true"[^>]*>마켓<\/button>/u);
     expect(html).toContain("계정 보관함");
     expect(html).toContain("내 공유");
     expect(html).toContain("자료 게시");
-    for (const label of ["에셋", "브러시", "필터", "팔레트", "템플릿", "3D"]) {
+    for (const label of ["소재", "브러시", "필터", "팔레트", "템플릿", "3D"]) {
       expect(html).toContain(label);
     }
     expect(html).toContain("이름·설명·태그 검색");
@@ -81,7 +81,7 @@ describe("StudioCommunityMarketplacePanel", () => {
       /role="tab" aria-selected="true"[^>]*>자료 게시<\/button>/u,
     );
     expect(html).toContain('role="tabpanel"');
-    expect(html).toContain("무료 공유 마켓에 게시");
+    expect(html).toContain("마켓에 게시");
     expect(html).toContain("릴리스 버전 (SemVer)");
     expect(html).toContain('maxLength="40"');
     expect(html).not.toContain("이름·설명·태그 검색");

@@ -112,7 +112,7 @@ describe("ProductionGuideEmptyState", () => {
   it("가이드 문구와 원클릭 시작 버튼을 보여준다", () => {
     const onAction = vi.fn();
     render(<ProductionGuideEmptyState guideId="review-empty" onAction={onAction} />);
-    expect(screen.getByText("활성 외부 검수 링크가 없습니다")).toBeTruthy();
+    expect(screen.getByText("활성 외부 검수 링크가 없어요")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "외부 검수 링크 만들기" }));
     expect(onAction).toHaveBeenCalled();
   });

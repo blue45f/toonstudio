@@ -109,7 +109,7 @@ describe("Studio collaboration route gateways", () => {
     renderPlaceholder("assets");
 
     expect(document.querySelector("[data-studio-collaboration-gateway]")).toBeNull();
-    expect(screen.getByRole("button", { name: "에셋을 사용할 Studio 열기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "소재를 사용할 Studio 열기" })).toBeTruthy();
   });
 });
 
@@ -138,7 +138,7 @@ describe("quality review route ownership", () => {
       </MemoryRouter>
     );
     expect(document.querySelector("[data-studio-collaboration-gateway]")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "에셋을 사용할 Studio 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "소재를 사용할 Studio 열기" }));
     expect(onOpenStudio).toHaveBeenCalledTimes(1);
   });
 });

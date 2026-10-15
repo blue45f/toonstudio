@@ -393,7 +393,7 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     mocks.listPublic.mockResolvedValue(page([]));
     render(<StudioCommunityMarketplacePanel initialOpen />);
 
-    const community = screen.getByRole<HTMLButtonElement>("tab", { name: "공개 마켓" });
+    const community = screen.getByRole<HTMLButtonElement>("tab", { name: "마켓" });
     const library = screen.getByRole<HTMLButtonElement>("tab", { name: "계정 보관함" });
     const mine = screen.getByRole<HTMLButtonElement>("tab", { name: "내 공유" });
     const share = screen.getByRole<HTMLButtonElement>("tab", { name: "자료 게시" });
@@ -499,10 +499,10 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     mocks.publishResource.mockResolvedValue(resource("published-1", "새 릴리스", true));
 
     render(<StudioCommunityMarketplacePanel initialOpen initialView="share" />);
-    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유합니다."));
-    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다."));
+    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유해요."));
+    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아니에요."));
     const versionInput = screen.getByLabelText("릴리스 버전 (SemVer)");
-    const submit = screen.getByRole("button", { name: "무료 공유 마켓에 게시" });
+    const submit = screen.getByRole("button", { name: "마켓에 게시" });
 
     fireEvent.change(versionInput, { target: { value: "1.0.0-01" } });
     expect((versionInput as HTMLInputElement).getAttribute("aria-invalid")).toBe("true");
@@ -555,9 +555,9 @@ describe("StudioCommunityMarketplacePanel request races", () => {
       { packageId: "community/brush/v2-brush-1", limit: 1 },
       { packageId: "community/brush/legacy-brush-1", limit: 1 },
     ]);
-    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유합니다."));
-    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다."));
-    fireEvent.click(screen.getByRole("button", { name: "무료 공유 마켓에 게시" }));
+    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유해요."));
+    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아니에요."));
+    fireEvent.click(screen.getByRole("button", { name: "마켓에 게시" }));
     await waitFor(() => expect(mocks.createPublishManifest).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -621,9 +621,9 @@ describe("StudioCommunityMarketplacePanel request races", () => {
       <StudioCommunityMarketplacePanel initialOpen initialView="share" />,
     );
     expect(await screen.findByText(/관리자 검수로 숨겨진 패키지는/u)).toBeTruthy();
-    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유합니다."));
-    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다."));
-    expect((screen.getByRole("button", { name: "무료 공유 마켓에 게시" }) as HTMLButtonElement).disabled)
+    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유해요."));
+    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아니에요."));
+    expect((screen.getByRole("button", { name: "마켓에 게시" }) as HTMLButtonElement).disabled)
       .toBe(true);
 
     rendered.unmount();
@@ -647,10 +647,10 @@ describe("StudioCommunityMarketplacePanel request races", () => {
       .mockResolvedValueOnce(ownedHistoryPage("community/brush/legacy-brush-1"));
     render(<StudioCommunityMarketplacePanel initialOpen initialView="share" />);
     expect(await screen.findByText(/목록에서 내린 현재 헤드여도/u)).toBeTruthy();
-    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유합니다."));
-    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다."));
+    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유해요."));
+    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아니에요."));
     await waitFor(() => {
-      expect((screen.getByRole("button", { name: "무료 공유 마켓에 게시" }) as HTMLButtonElement).disabled)
+      expect((screen.getByRole("button", { name: "마켓에 게시" }) as HTMLButtonElement).disabled)
         .toBe(false);
     });
   });
@@ -683,9 +683,9 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     render(<StudioCommunityMarketplacePanel initialOpen initialView="share" />);
     expect((await screen.findByRole("alert")).textContent)
       .toContain("v2와 legacy package 이력이 모두 있어");
-    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유합니다."));
-    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다."));
-    expect((screen.getByRole("button", { name: "무료 공유 마켓에 게시" }) as HTMLButtonElement).disabled)
+    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유해요."));
+    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아니에요."));
+    expect((screen.getByRole("button", { name: "마켓에 게시" }) as HTMLButtonElement).disabled)
       .toBe(true);
     expect(mocks.createPublishManifest).not.toHaveBeenCalled();
   });
@@ -693,9 +693,9 @@ describe("StudioCommunityMarketplacePanel request races", () => {
   it("409 latest-version message를 일반 오류로 바꾸지 않고 그대로 알린다", async () => {
     mocks.publishResource.mockRejectedValue(new Error("현재 최신 버전은 2.0.0입니다."));
     render(<StudioCommunityMarketplacePanel initialOpen initialView="share" />);
-    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유합니다."));
-    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다."));
-    const submit = screen.getByRole("button", { name: "무료 공유 마켓에 게시" });
+    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유해요."));
+    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아니에요."));
+    const submit = screen.getByRole("button", { name: "마켓에 게시" });
     await waitFor(() => expect((submit as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(submit);
     expect((await screen.findByRole("alert")).textContent)
@@ -840,9 +840,9 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     expect(await screen.findByText(publicRecord.name)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("tab", { name: "자료 게시" }));
-    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유합니다."));
-    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다."));
-    const submit = screen.getByRole("button", { name: "무료 공유 마켓에 게시" });
+    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유해요."));
+    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아니에요."));
+    const submit = screen.getByRole("button", { name: "마켓에 게시" });
     await waitFor(() => expect((submit as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(submit);
 
@@ -874,20 +874,20 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     mocks.publishResource.mockReturnValue(pendingPublish.promise);
 
     render(<StudioCommunityMarketplacePanel initialOpen initialView="share" />);
-    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유합니다."));
-    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아닙니다."));
-    const submit = screen.getByRole("button", { name: "무료 공유 마켓에 게시" });
+    fireEvent.click(screen.getByLabelText("제가 직접 제작했으며 게시·재배포할 권리를 보유해요."));
+    fireEvent.click(screen.getByLabelText("다른 마켓 상품을 복제하거나 알아보기 어렵게 변형한 자료가 아니에요."));
+    const submit = screen.getByRole("button", { name: "마켓에 게시" });
     await waitFor(() => expect((submit as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(submit);
     await waitFor(() => expect(mocks.publishResource).toHaveBeenCalledOnce());
 
-    fireEvent.click(screen.getByRole("tab", { name: "공개 마켓" }));
+    fireEvent.click(screen.getByRole("tab", { name: "마켓" }));
     await waitFor(() => {
       expect(
-        screen.getByRole("tab", { name: "공개 마켓" }).getAttribute("aria-selected"),
+        screen.getByRole("tab", { name: "마켓" }).getAttribute("aria-selected"),
       ).toBe("true");
     });
-    expect(screen.queryByRole("button", { name: "무료 공유 마켓에 게시" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "마켓에 게시" })).toBeNull();
 
     await act(async () => {
       pendingPublish.resolve(publishedRecord);
@@ -895,10 +895,10 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     });
 
     expect(
-      screen.getByRole("tab", { name: "공개 마켓" }).getAttribute("aria-selected"),
+      screen.getByRole("tab", { name: "마켓" }).getAttribute("aria-selected"),
     ).toBe("true");
     expect(screen.queryByText(publishedRecord.name)).toBeNull();
-    expect(screen.queryByText(/무료 공유 마켓에 게시했습니다/)).toBeNull();
+    expect(screen.queryByText(/마켓에 게시했어요/)).toBeNull();
   });
 
   it("이전 공개 loadMore가 늦게 끝나도 mine 결과에 append하지 않는다", async () => {

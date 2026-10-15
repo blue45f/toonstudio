@@ -114,13 +114,13 @@ describe("ProductionExternalReviewPage", () => {
     renderPage();
     const image = await screen.findByRole("img", { name: "검수 자료 이미지 1" });
     fireEvent.error(image);
-    expect(await screen.findByText(/이미지 1을 불러오지 못했습니다/)).toBeTruthy();
+    expect(await screen.findByText(/이미지 1을 불러오지 못했어요/)).toBeTruthy();
   });
 
   it("shows a neutral invalid-link screen without leaking project data", async () => {
     getProductionExternalReview.mockRejectedValue(new Error("not found"));
     renderPage();
-    expect(await screen.findByRole("heading", { name: "검수 링크를 열 수 없습니다" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "검수 링크를 열 수 없어요" })).toBeTruthy();
     expect(screen.queryByText("밤의 우편배달부")).toBeNull();
   });
 
@@ -129,7 +129,7 @@ describe("ProductionExternalReviewPage", () => {
       .mockRejectedValueOnce(new Error("temporary network failure"))
       .mockResolvedValue(reviewView);
     renderPage();
-    expect(await screen.findByRole("heading", { name: "검수 링크를 열 수 없습니다" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "검수 링크를 열 수 없어요" })).toBeTruthy();
     // 공용 ErrorState의 재시도 라벨(사이트 표준 "재시도")을 누른다.
     fireEvent.click(screen.getByRole("button", { name: "재시도" }));
     expect(await screen.findByRole("heading", { name: "편집부 최종 검수" })).toBeTruthy();

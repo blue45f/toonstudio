@@ -186,9 +186,9 @@ describe("MarketFitLabPage", () => {
     render(<MemoryRouter><MarketFitLabPage /></MemoryRouter>);
 
     // 이유 한 줄은 평가 체크 문장에서만 도출된다 (조건 일치=통과 문장, 차단=첫 차단 체크).
-    expect(screen.getAllByText(/상업 작품 사용이 허용된 사용권입니다/).length)
+    expect(screen.getAllByText(/상업 작품 사용이 허용된 사용권이에요/).length)
       .toBeGreaterThan(0);
-    expect(screen.getAllByText(/Studio 버전 — Studio v9\.0\.0 이상이 필요합니다/).length)
+    expect(screen.getAllByText(/Studio 버전 — Studio v9\.0\.0 이상이 필요해요/).length)
       .toBeGreaterThan(0);
 
     // 미리보기는 정렬 1위(조건 일치) 결과에서 시작한다.

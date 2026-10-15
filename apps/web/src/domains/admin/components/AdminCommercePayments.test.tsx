@@ -42,7 +42,7 @@ describe("AdminCommercePayments 상태 표면 정합", () => {
     api.mockRejectedValue(new Error("결제 정보를 불러오지 못했습니다."));
     render(<AdminCommercePayments uid="admin" />);
     expect(
-      await screen.findByText("결제 내역을 불러오지 못했습니다."),
+      await screen.findByText("결제 내역을 불러오지 못했습니다. 잠시 후 다시 시도하세요."),
     ).toBeTruthy();
     expect(screen.queryByText("마켓 결제 내역이 없습니다.")).toBeNull();
     // 실패 화면에서 로딩 스피너가 계속 돌면 안 된다.

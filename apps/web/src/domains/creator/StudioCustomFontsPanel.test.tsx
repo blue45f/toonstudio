@@ -160,7 +160,7 @@ describe("StudioCustomFontsPanel", () => {
 
     expect(screen.getByText("아직 담은 글꼴이 없어요")).toBeTruthy();
     expect(screen.getByText(`0 B / ${formatCustomFontBytes(MAX_CUSTOM_FONT_TOTAL_BYTES)} 사용`)).toBeTruthy();
-    expect(screen.getByRole("progressbar", { name: "글꼴 보관함 사용량" }).getAttribute("aria-valuenow")).toBe("0");
+    expect(screen.getByRole("progressbar", { name: "글꼴 저장 공간 사용량" }).getAttribute("aria-valuenow")).toBe("0");
   });
 
   it("declares a font-only accept string on the file input", () => {
@@ -294,7 +294,7 @@ describe("StudioCustomFontsPanel", () => {
   it("shows the budget ceiling in the readout regardless of the stored total", () => {
     renderPanel({ fonts: [storedFont("A.ttf", fontBytes([...TTF_SIGNATURE], 300_000), "id-a")] });
 
-    const bar = screen.getByRole("progressbar", { name: "글꼴 보관함 사용량" });
+    const bar = screen.getByRole("progressbar", { name: "글꼴 저장 공간 사용량" });
     expect(bar.getAttribute("aria-valuenow")).toBe(
       String(Math.round((300_000 / MAX_CUSTOM_FONT_TOTAL_BYTES) * 100))
     );
