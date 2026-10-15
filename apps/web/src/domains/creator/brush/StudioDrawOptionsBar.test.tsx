@@ -689,7 +689,10 @@ describe("StudioDrawOptionsBar", () => {
       expect(drawOptionsSource).toContain(`"${preview}"`);
     }
     expect(drawOptionsSource).toContain("`symmetry-${item.id}`");
-    expect(drawOptionsSource).toContain("`stabilizer-${stabilizerMode}`");
+    // 미리보기 변형은 활성 보정 방식을 따르되, 미리보기 변형이 없는 weighted는 adaptive로 보낸다
+    // (stabilizer-standard·adaptive·precision만 정의돼 있다). 빠른 도크와 상세 패널 두 곳 모두 같은 규칙이다.
+    const modeKeyedStabilizerPreview = '`stabilizer-${stabilizerMode === "weighted" ? "adaptive" : stabilizerMode}`';
+    expect(drawOptionsSource.split(modeKeyedStabilizerPreview).length - 1).toBeGreaterThanOrEqual(2);
     expect(drawOptionsSource).toContain("`stabilizer-${item.id}`");
     expect(drawOptionsSource).toContain('"post-correction"');
     expect(drawOptionsSource).toContain("`pressure-${item.id}`");
