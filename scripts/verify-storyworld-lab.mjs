@@ -88,7 +88,10 @@ function healthyProject(engine) {
 }
 
 function validateCssCoverage() {
-  const page = readFileSync(join(sourceDir, "StudioStoryworldLabPage.tsx"), "utf8");
+  const page = readFileSync(join(sourceDir, "StudioStoryworldLabPage.tsx"), "utf8")
+    // 클래스가 아닌 이름은 뺀다: import/export 경로(./studio-storyworld-*)와 요소 id 참조.
+    .replace(/\b(?:from|import)\s+"[^"]*"/g, "")
+    .replace(/\b(?:id|aria-labelledby|htmlFor)="[^"]*"/g, "");
   const css = readFileSync(join(sourceDir, "studio-storyworld-lab.css"), "utf8");
   const used = new Set();
   for (const match of page.matchAll(/storyworld-[a-z0-9_-]+/g)) used.add(match[0]);
@@ -116,7 +119,8 @@ function validateStrictSurfaceTypes() {
 function compileEngine() {
   const inputDir = join(outDir, "src");
   mkdirSync(inputDir, { recursive: true });
-  const files = ["studio-storyworld-causality.ts", "studio-storyworld-catalog.ts"];
+  // causality 가 simulateStoryworldCounterfactual 등을 counterfactual 에서 다시 내보내므로 함께 복사한다.
+  const files = ["studio-storyworld-causality.ts", "studio-storyworld-catalog.ts", "studio-storyworld-counterfactual.ts"];
   for (const filename of files) {
     writeFileSync(join(inputDir, filename), readFileSync(join(sourceDir, filename)));
   }
