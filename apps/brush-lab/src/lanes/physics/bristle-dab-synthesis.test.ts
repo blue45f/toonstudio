@@ -16,23 +16,20 @@ import {
   BRISTLE_FRAME_DAB_BUDGET,
   BRISTLE_FRAME_SUBMIT_BUDGET,
   BRISTLE_MAX_ABS_COORD_PX,
-  BRISTLE_MIN_DAB_RADIUS_PX,
   BRISTLE_MIN_LOAD,
   BRISTLE_MIN_PRESSURE,
   BristleDabSynthesizer,
   BristleLaneBase,
-  bristleFillRatio,
-  mapProgramToBristle,
-  unsupportedBristleReason,
 } from "./bristle-dab-synthesis";
 import { BRUSH, CONTRACT_INIT } from "./bristle-lane-contract";
+import { BRISTLE_MIN_DAB_RADIUS_PX, bristleFillRatio, mapProgramToBristle, unsupportedBristleReason } from "./bristle-program-mapping";
 
 import type { DabBatch } from "../../engine/core/dab-layout";
 import type { DabInstance, RawSample } from "../../engine/core/types";
 import type { BristleTick } from "../../engine/physics/world2d/bristle-brush";
 import type { CircleBodySpec, PhysicsWorld2D } from "../../engine/physics/world2d/types";
 import type { LaneCapabilityReport, LaneEnvironment, LaneId, LaneMaturity } from "../lane";
-import type { BristleDabResponse } from "./bristle-dab-synthesis";
+import type { BristleDabResponse } from "./bristle-program-mapping";
 
 /** 제출된 dab를 모으는 표면 스텁(`addDabs`만 쓴다). */
 function stubSurface(): { surface: Surface; dabs: DabInstance[]; submits: number[] } {

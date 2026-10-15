@@ -8,7 +8,8 @@ import { splitFrames } from "../../engine/raster/reference-renderer";
 import { lineStroke, parametricStroke } from "../../engine/testing/synthetic-strokes";
 import { drawLine, expectStrokeColorContract } from "../testing/stroke-color-contract";
 
-import type { BristleLaneOptions, BristleStrokeReceipt } from "./bristle-dab-synthesis";
+import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";
+import type { BristleLaneOptions } from "./bristle-program-mapping";
 import type { LabImage, RawSample } from "../../engine/core/types";
 import type { Surface } from "../../engine/raster/reference-renderer";
 import type { BrushEngineLane } from "../lane";
