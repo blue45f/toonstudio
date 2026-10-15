@@ -65,8 +65,13 @@ export interface AttachStudioBg3dInferencePointerOptions {
 
 export interface StudioBg3dInferencePointerBinding {
   detach(): void;
-  /** 테스트·진단용: 처리한 쿼리 수와 게이트 통계. */
-  readonly stats: () => { readonly queries: number; readonly offered: number; readonly dropped: number };
+  /** 테스트·진단용: 처리한 쿼리 수, 게이트 통계, 지금 적용 중인 최소 간격(ms). */
+  readonly stats: () => {
+    readonly queries: number;
+    readonly offered: number;
+    readonly dropped: number;
+    readonly intervalMs: number;
+  };
 }
 
 interface PointerSample {
@@ -128,6 +133,9 @@ export function attachStudioBg3dInferencePointer(
     if (!service.isActive()) return;
     const camera = options.getCamera();
     if (!camera) return;
+    // 표면 레이캐스트는 장면의 삼각형 수에 비례하므로 후보 수 상한만으로는 비용을 묶을 수 없다.
+    // 실제로 걸린 시간을 게이트에 알려, 느린 장면에서는 간격이 늘어 추론이 프레임을 독점하지 않게 한다.
+    const startedAt = now();
     const built = buildStudioBg3dInferenceRayCursor({
       camera,
       rect: options.getRect(),
@@ -142,6 +150,7 @@ export function attachStudioBg3dInferencePointer(
     queries += 1;
     service.resolve({ cursor: built.cursor, pointer: sample.pointerType });
     trackDwell(service.getResult());
+    gate.recordCost(now() - startedAt);
   };
 
   const ignores = (event: StudioBg3dInferencePointerEventLike): boolean =>
@@ -208,7 +217,7 @@ export function attachStudioBg3dInferencePointer(
     },
     stats: () => {
       const { offered, dropped } = gate.stats();
-      return { queries, offered, dropped };
+      return { queries, offered, dropped, intervalMs: gate.intervalMs() };
     },
   };
 }

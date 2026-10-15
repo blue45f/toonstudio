@@ -228,6 +228,15 @@ export const STUDIO_BG3D_INFERENCE_BUDGET = Object.freeze({
   maxReferenceDirections: 16,
   /** 포인터 이동에서 쿼리를 돌리는 최소 간격(ms) — 한 프레임에 한 번. */
   minFrameIntervalMs: 16,
+  /**
+   * 처리 한 번(표면 레이캐스트 포함)이 실제로 오래 걸리면 간격을 "비용 × 이 값"으로 늘려, 추론이
+   * 시간의 약 1/3 이상을 쓰지 못하게 한다. 큰 모델이 있는 장면에서도 렌더·입력이 굶지 않는다.
+   */
+  costIntervalFactor: 3,
+  /** 적응형 간격의 상한(ms) — 아주 느려도 마커는 초당 8번 이상 갱신된다. */
+  maxAdaptiveFrameIntervalMs: 120,
+  /** 비용의 중앙값을 보는 최근 처리 수 — 한두 번 튀는 값(JIT·GC)에는 반응하지 않는다. */
+  costWindow: 5,
   /** 레이 쿼리 최대 길이(m). */
   maxRayDistance: 400,
 });
