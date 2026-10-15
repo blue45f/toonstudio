@@ -108,6 +108,9 @@ const STUDIO_WORKSPACE_ICON_MODULES = new Set([
   "arrow-down",
   "arrow-down-to-line",
   "arrow-left",
+  // 2026-10-15: 색상 교체 우물·협업 메뉴 등 정적 Studio 표면이 쓰는 잎 아이콘. 허용 목록에 없어서
+  // 청크 하나(250B)를 따로 내려받았다 — 번들 기준선 복구에서 요청 수만 줄인다.
+  "arrow-left-right",
   "arrow-right",
   "arrow-up",
   "ban",
