@@ -57,6 +57,7 @@ import type {
 import type { StudioBg3dDestructiveMutationGuard } from "./studio-bg3d-destructive-mutation-guard";
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import type { StudioBg3dImportProgress } from "./studio-bg3d-model-import";
+import type { StudioBg3dSkpImportRun } from "./studio-bg3d-skp-import-run";
 import type { StudioBg3dPlacementSessionState } from "./studio-bg3d-placement-session";
 import type {
   StudioBg3dCanonicalDocumentMutation,
@@ -222,6 +223,10 @@ export function createStudioBg3dModelImportActions(
     let uploadCommitted = false;
     let thumbnailCandidates: readonly Bg3dVerifiedStoredRecord[] = [];
     let plannedSourceFormats: readonly StudioGeneric3dSourceFormat[] = [];
+    // .skp 가져오기만 변환 보고서·단위 확인 화면과 이어진다(다른 형식은 이 모듈을 불러오지도 않는다).
+    let skpRun: StudioBg3dSkpImportRun | null = null;
+    let plannedSkpSourcePaths: readonly (string | null)[] = [];
+    let skpFailureMessage: string | null = null;
     let modelImportRuntime: typeof import("./studio-bg3d-model-import") | null = null;
     const cleanupUncommittedUploadCache = () => {
       const liveStorageIds = new Set(
@@ -255,11 +260,18 @@ export function createStudioBg3dModelImportActions(
         if (item.format === "obj") return hasSelectedMtl ? "obj-mtl" : "obj";
         return "glb";
       }));
+      plannedSkpSourcePaths = Object.freeze(
+        importPlan.items.map((item) => (item.format === "skp" ? item.primaryPath : null)),
+      );
+      if (plannedSkpSourcePaths.some((path) => path !== null)) {
+        skpRun = (await import("./studio-bg3d-skp-import-run")).beginStudioBg3dSkpImportRun();
+      }
       const canonicalInputs = await modelImportRuntime.convertStudioBg3dModelFilesToGlb(files, {
         executionBackend: "worker",
         profile: policy.profile,
         budgets: policy.budgets,
         signal: importController.signal,
+        skp: skpRun?.options,
         onProgress: (progress) => {
           studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
             setModelImportProgress(progress);
@@ -441,7 +453,7 @@ export function createStudioBg3dModelImportActions(
       // 저장은 atomic import가 책임지고, 화면 배치는 별도 all-or-none이다. 이번 시도에서 처음 로드한
       // 캐시만 되돌려 기존 장면 인스턴스가 공유 중인 자원은 건드리지 않는다.
       if (!isModalAssetSessionCurrent(session)) return false;
-      setError(
+      skpFailureMessage =
         modelImportRuntime && importFailure instanceof modelImportRuntime.StudioBg3dModelImportError
           ? importFailure.message
           : importFailure instanceof StudioBg3dModelPlacementAdmissionError
@@ -450,8 +462,8 @@ export function createStudioBg3dModelImportActions(
             ? importFailure.message
           : importController.signal.aborted
             ? "3D 모델 가져오기를 취소했습니다. 장면과 라이브러리는 변경하지 않았습니다."
-            : "선택한 모델 중 하나가 변환·안전 검사 또는 기기 복잡도 기준을 통과하지 못해 아무 모델도 배치하지 않았습니다."
-      );
+            : "선택한 모델 중 하나가 변환·안전 검사 또는 기기 복잡도 기준을 통과하지 못해 아무 모델도 배치하지 않았습니다.";
+      setError(skpFailureMessage);
       try {
         const entries = await listBg3dModelLibraryEntries();
         studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
@@ -470,6 +482,16 @@ export function createStudioBg3dModelImportActions(
         setModelImportProgress(null);
         setIsUploadingModel(false);
       });
+      await skpRun?.complete(
+        !isModalAssetSessionCurrent(session)
+          ? { status: "abandoned" }
+          : uploadCommitted
+            ? { status: "imported", records: thumbnailCandidates, sourcePaths: plannedSkpSourcePaths }
+            : {
+              status: "failed",
+              reason: skpFailureMessage ?? "편집 상태가 바뀌어 모델을 장면에 배치하지 않았습니다.",
+            },
+      );
     }
     if (uploadCommitted && thumbnailCandidates.length > 0) {
       startModelThumbnailCaptureBatch(thumbnailCandidates, session);
