@@ -5,6 +5,13 @@
  * marketplace URLs, and credentials must never enter this document.
  */
 
+import {
+  parseStudioBg3dSkpImportReport,
+  type StudioBg3dSkpImportReport,
+  type StudioBg3dSkpReportNameList,
+  type StudioBg3dSkpReportWarning,
+} from "./studio-bg3d-skp-import-report";
+
 export const STUDIO_BG3D_ASSET_METADATA_VERSION = 2 as const;
 
 export const STUDIO_BG3D_ASSET_METADATA_LIMITS = Object.freeze({
@@ -20,6 +27,8 @@ export const STUDIO_BG3D_ASSET_METADATA_LIMITS = Object.freeze({
   bytes: 100 * 1024 * 1024,
   triangles: 2_000_000,
   textures: 256,
+  /** 저장하는 SketchUp 가져오기 보고서(JSON UTF-8)의 최대 크기. 넘으면 보고서만 버리고 기록은 유지한다. */
+  skpImportReportBytes: 24 * 1024,
 } as const);
 
 export const STUDIO_BG3D_ASSET_FORMATS = Object.freeze([
@@ -31,6 +40,7 @@ export const STUDIO_BG3D_ASSET_FORMATS = Object.freeze([
   "stl",
   "ply",
   "3ds",
+  "skp",
 ] as const);
 
 export type StudioBg3dAssetFormat = (typeof STUDIO_BG3D_ASSET_FORMATS)[number];
@@ -70,6 +80,11 @@ export interface StudioBg3dAssetMetadata {
   readonly collections: readonly StudioBg3dAssetCollection[];
   readonly tags: readonly string[];
   readonly rights: StudioBg3dAssetRightsReceipt;
+  /**
+   * SketchUp(.skp) 가져오기 보고서 v1(studio-bg3d-skp-import-report). 형식이 skp 인 V2 기록에만 있고,
+   * 스키마 검증·텍스트 안전 검사·크기 한도를 통과하지 못한 값은 기록 전체를 무효로 만들지 않고 버린다.
+   */
+  readonly skpImport?: StudioBg3dSkpImportReport;
 }
 
 /**
@@ -319,6 +334,77 @@ function normalizeRights(
   });
 }
 
+function deepFreeze<T>(value: T): T {
+  if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  const children: unknown[] = Object.values(value);
+  for (const child of children) deepFreeze(child);
+  return value;
+}
+
+function scrubReportText(value: string, maximumCodePoints: number): string | null {
+  return normalizeText(value, maximumCodePoints);
+}
+
+function scrubNameList(list: StudioBg3dSkpReportNameList): StudioBg3dSkpReportNameList {
+  const items = list.items.flatMap((item) => {
+    const text = scrubReportText(item, STUDIO_BG3D_ASSET_METADATA_LIMITS.nameCodePoints);
+    return text ? [text] : [];
+  });
+  return {
+    available: list.available,
+    items,
+    total: list.total,
+    // 걸러 낸 이름이 있으면 목록이 전체가 아니라는 사실을 그대로 남긴다.
+    truncated: list.truncated || items.length < list.items.length,
+  };
+}
+
+function scrubWarning(warning: StudioBg3dSkpReportWarning): StudioBg3dSkpReportWarning {
+  return {
+    code: warning.code,
+    severity: warning.severity,
+    count: warning.count,
+    detail: warning.detail === null ? null : scrubReportText(warning.detail, 160),
+  };
+}
+
+/**
+ * 보고서의 파일 유래 텍스트(이름·경고 상세·버전·단위)를 이 모듈의 텍스트 규칙(마크업·URL·비밀 값 금지)으로
+ * 걸러 낸다. 걸러진 이름은 목록에서 빠지고 truncated 로 표시되며, 걸러진 문자열 필드는 null 이 된다.
+ * 이미 걸러진 보고서를 다시 걸러도 결과가 같다(V12 저장소가 왕복 동일성을 검사한다).
+ */
+function scrubSkpImportReport(report: StudioBg3dSkpImportReport): StudioBg3dSkpImportReport {
+  const optionalText = (value: string | null): string | null =>
+    value === null ? null : scrubReportText(value, 40);
+  return {
+    ...report,
+    source: {
+      ...report.source,
+      sketchupVersion: optionalText(report.source.sketchupVersion),
+      sketchupLabel: optionalText(report.source.sketchupLabel),
+      declaredUnits: optionalText(report.source.declaredUnits),
+    },
+    names: {
+      components: scrubNameList(report.names.components),
+      tags: scrubNameList(report.names.tags),
+      scenes: scrubNameList(report.names.scenes),
+    },
+    warnings: report.warnings.map(scrubWarning),
+  };
+}
+
+/** 저장 가능한 SketchUp 보고서만 돌려준다. 값이 없거나 검증을 통과하지 못하면 undefined. */
+function normalizeSkpImport(value: unknown): StudioBg3dSkpImportReport | undefined {
+  if (value === undefined || value === null) return undefined;
+  const report = parseStudioBg3dSkpImportReport(value);
+  if (!report) return undefined;
+  const scrubbed = scrubSkpImportReport(report);
+  const bytes = new TextEncoder().encode(JSON.stringify(scrubbed)).byteLength;
+  if (bytes > STUDIO_BG3D_ASSET_METADATA_LIMITS.skpImportReportBytes) return undefined;
+  return deepFreeze(scrubbed);
+}
+
 export function canonicalizeStudioBg3dAssetContentHash(
   value: unknown,
 ): `sha256:${string}` | null {
@@ -372,6 +458,11 @@ function normalizeMetadataRecord(
     return null;
   }
 
+  // 보고서는 V2 의 skp 형식 기록에만 둔다. V1 기록과 다른 형식의 기록에 붙은 값은 버린다.
+  const skpImport = sourceVersion !== 1 && format === "skp"
+    ? normalizeSkpImport(raw.skpImport)
+    : undefined;
+
   return Object.freeze({
     version: STUDIO_BG3D_ASSET_METADATA_VERSION,
     contentHash,
@@ -386,6 +477,7 @@ function normalizeMetadataRecord(
     collections,
     tags,
     rights: normalizeRights(raw.rights, { forceTeamShareDenied: sourceVersion === 1 }),
+    ...(skpImport ? { skpImport } : {}),
   });
 }
 
