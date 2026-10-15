@@ -57,10 +57,14 @@
 
 스케일(고정 rem, ratio ~1.2, 대형 디스플레이만 예외적으로 큼). tracking: 디스플레이/넘버럴 약간 타이트(-0.02em), 영문 라벨 대문자는 +0.12em.
 
+**현재(current) 디스플레이 제목 스케일.** 페이지·히어로 제목은 고정 rem 3단계(기본 2rem → ≥640px 2.25rem → ≥1024px 3.75rem), 섹션 제목은 1.5rem → 1.875rem → 2.25rem이다. 정본은 `apps/web/src/shared/components/layout/layout-tokens.ts`의 `LAYOUT_TYPE_SCALE`이고 `unified-theme-contract.css`의 `--site-heading-size`·`--site-section-title-size`가 같은 값을 미러링한다. 허용 변형은 display와 세리프 이탤릭 editorial(`data-type-variant="editorial"`로 명시할 때만) 두 가지뿐이며, 테마는 글자 크기를 바꾸지 않는다(`typography-display-scale.contract.test.ts`).
+
 ## 깊이와 표면
 
 플랫 + 경계 우선. 그림자는 거의 안 씀(다크에선 약함). 깊이는 surface 단계(canvas→panel→card→raised) + 보더 + 미세한 inner highlight로. **중첩 카드 금지.**
 시그니처 텍스처: 아주 옅은 **ledger 그리드 해어라인**(배경) — 색인/대장(臺帳) 느낌.
+
+**현재(current) 표현 토큰.** 히어로·표지 카드의 그라디언트·글로우·그림자·유리 면·삽화 스크림은 `apps/web/src/app/styles/unified-theme-contract.css`의 `--spectacle-*`·`--domain-tint`·`--elevation-*`·`--surface-glass`·`--art-scrim`·`--art-on`이 정본이다. 새 팔레트를 만들지 않고 테마가 이미 제공하는 `--unified-*`에서만 도출하며 테마별 블록에는 두지 않는다. 강제 색상(forced-colors)에서는 그라디언트·글로우·그림자가 모두 제거된다(`spectacle-tokens.contract.test.ts`).
 
 ## 시그니처 요소(고유 자산)
 
@@ -89,6 +93,14 @@
 ## 레이아웃
 
 상단바(검색·⌘K·내 서재) 고정. 홈은 에디토리얼 비대칭 리듬, 검색/랭킹은 예측 가능한 그리드. 공개 페이지 컨테이너는 좌우 여백을 포함한 1320px border-box, 본문 전용 컨테이너는 48rem이다. `--site-content-max`와 `--site-page-gutter`를 헤더·본문·메뉴가 공유한다. 본문 prose는 65–75ch로 유지한다. 반응형은 구조적(컬럼 붕괴), 폰트는 고정.
+
+**현재(current) 레이아웃 계약.** 아래 값은 구현과 계약 테스트가 함께 고정한다. 값을 바꿀 때는 정본과 테스트를 같은 변경에서 고친다.
+
+- **치수 단일 출처**: 폭·거터·레일·작업공간 크롬·홈 리듬의 리터럴은 `apps/web/src/app/styles/sitewide-visual-ux.css`의 `--layout-*`에서만 정의한다. `--site-content-max`·`--site-page-gutter`·`--site-reading-max`는 이를 가리키는 별칭이고, TS 미러는 `apps/web/src/shared/components/layout/layout-tokens.ts`의 `LAYOUT_DIMENSIONS`이며 글자 단위로 같아야 한다(`layout-token-contract.contract.test.ts`).
+- **폭 4단**: reading 48rem · standard 82.5rem(1320px, 기본) · app 100rem(데이터 밀집 표면이 선언할 때만) · full(에디터·캔버스). 거터는 `--layout-gutter` 한 변수로 16px, ≥640px 24px, ≥1280px 32px이며 헤더·본문·푸터의 정렬선이 일치한다.
+- **크롬 높이·레일**: 전역 헤더는 단일 60px, 작업공간 상단바는 64px, 작업공간 아이콘 레일은 96px이다. 행 레일은 216px(13.5rem)을 학습·설정·매뉴얼·프로젝트 허브가 공유하며 ≥1024px에서 나타난다(작업공간 셸은 ≥1280px에서 행 레일, 그 아래는 아이콘 레일). 에디터 크롬 44px·도구 레일 48px은 캔버스 면적을 우선하는 문서화된 예외이며 `apps/web/src/shared/styles/studio-route.css`의 `[data-studio-editor="true"]` 범위에만 둔다.
+- **반응형 지점**: 640·768·1024·1280·1536px와 그 max-width 동반값(표준−1)만 쓴다. 남은 전용 지점은 계약 테스트의 파일별 잔존 목록에 고정돼 있고 줄이는 방향으로만 갱신한다.
+- **표지 그리드**: 탐색·서재·마켓은 2열 → 640px 3열 → 1024px 4열 → 1280px 5열, gap 12px(≥640px는 16px), 표지 비율 3:4다(`LAYOUT_COVER_GRID`).
 
 ## 공개 페이지 — 웹툰 작가의 아틀리에
 
