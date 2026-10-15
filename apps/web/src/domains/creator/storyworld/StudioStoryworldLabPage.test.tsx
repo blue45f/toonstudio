@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { STORYWORLD_DRAFT_NAMESPACE } from "./draft-store";
 import { STORYWORLD_DEMO_PROJECT } from "./studio-storyworld-causality";
@@ -18,19 +18,31 @@ const saved = (id: string) => JSON.parse(db.rows.get(rowKey(id)) ?? "null");
 function page(workId: string) {
   return <MemoryRouter><StudioStoryworldLabPage key={workId} workId={workId} remixSourceWorkId={null} /></MemoryRouter>;
 }
-async function ready() { await screen.findByRole("button", { name: "원본 데이터" }); }
+async function ready() { await screen.findByRole("button", { name: "설정 파일" }); }
 async function open(workId: string) {
   const view = render(page(workId));
   await ready();
   return view;
 }
-function editProject(title: string) {
-  fireEvent.click(screen.getByRole("button", { name: "원본 데이터" }));
-  fireEvent.change(screen.getByRole("textbox", { name: "스토리월드 JSON" }), {
-    target: { value: JSON.stringify({ ...STORYWORLD_DEMO_PROJECT, id: "authored-test", title }) },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "적용 후 분석" }));
+/** "설정 파일" 탭의 직접 편집기는 닫힌 채 시작하므로, 탭을 열고 편집기까지 열어 글자판을 돌려준다. */
+function openSettingsEditor() {
+  fireEvent.click(screen.getByRole("button", { name: "설정 파일" }));
+  fireEvent.click(screen.getByRole("button", { name: "직접 편집 열기" }));
+  return screen.getByRole("textbox", { name: "세계관 설정 직접 편집" });
 }
+function applySettingsText(value: string) {
+  fireEvent.change(openSettingsEditor(), { target: { value } });
+  fireEvent.click(screen.getByRole("button", { name: "적용하고 다시 점검하기" }));
+}
+function editProject(title: string) {
+  applySettingsText(JSON.stringify({ ...STORYWORLD_DEMO_PROJECT, id: "authored-test", title }));
+}
+
+// 개연성 점검 허브는 탭을 처음 열 때 내려받는 지연 로딩 모듈이다. 변환 캐시가 차가운 환경(CI)에서는
+// 첫 변환이 findBy 기본 대기시간(1초)을 넘길 수 있어, 개별 테스트의 대기시간과 섞이지 않도록 미리 불러 둔다.
+beforeAll(async () => {
+  await import("./plausibility/StudioStoryPlausibilityHub");
+}, 60_000);
 
 describe("Storyworld actual page integration", () => {
   beforeEach(() => {
@@ -43,8 +55,8 @@ describe("Storyworld actual page integration", () => {
     await open("work-first");
     expect(screen.getByRole("link", { name: "Studio 편집기로 돌아가기" }).getAttribute("href")).toBe("/studio/work/work-first/canvas");
     expect(screen.getByText(/예시 데이터 ·/)).toBeTruthy();
-    expect(screen.getByLabelText("스토리월드 JSON 가져오기")).toBeTruthy();
-    expect(screen.getByText(/프로젝트 준비도에 투영되는 스토리월드/)).toBeTruthy();
+    expect(screen.getByLabelText("세계관 설정 파일 고르기")).toBeTruthy();
+    expect(screen.getByText(/작품 준비도에 반영되는 세계관 설정/)).toBeTruthy();
   });
   it("does not project the untouched demo seed into project readiness", async () => {
     const localWrite = vi.spyOn(Storage.prototype, "setItem");
@@ -52,14 +64,24 @@ describe("Storyworld actual page integration", () => {
     await waitFor(() => expect(saved("work-demo-seed")?.project.title).toBe(STORYWORLD_DEMO_PROJECT.title));
     const diagnosticWrites = localWrite.mock.calls.filter(([storageKey]) => storageKey === "toonstudio:project-diagnostic-source:v1:work-demo-seed");
     expect(diagnosticWrites).toHaveLength(0);
-    expect(screen.getByText(/데모 스토리월드는 저장했지만 실제 프로젝트 준비도에는 반영하지 않았습니다./)).toBeTruthy();
+    expect(screen.getByText(/예시 세계관은 저장했지만 실제 작품 준비도에는 반영하지 않았습니다./)).toBeTruthy();
   });
   it("opens every user-facing analysis surface", async () => {
     await open("work-tabs");
-    for (const label of ["설정 관리", "모순·위험", "멀티버스", "인물 지식", "서사 계약", "창의 기능 지도", "원본 데이터", "대시보드"]) {
-      fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}`) }));
+    // 상단의 "설정 파일로 저장" 버튼과 이름이 겹치지 않도록 섹션 탐색 안에서만 찾는다.
+    const nav = screen.getByRole("navigation", { name: "스토리월드 랩 섹션" });
+    const openTab = (label: string) => {
+      fireEvent.click(within(nav).getByRole("button", { name: new RegExp(`^${label}`) }));
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(label);
+    };
+    for (const label of ["설정 관리", "모순·위험", "다른 전개", "인물 지식", "복선 약속", "창의 기능 지도", "설정 파일", "대시보드"]) {
+      openTab(label);
     }
+    // 뒤에 늘어난 두 화면은 처음 열 때 비동기로 내용을 채우므로, 채워진 것을 보고 다음으로 넘어간다.
+    openTab("공유 세계관");
+    await screen.findByLabelText("새 공유 세계관 이름");
+    openTab("개연성 점검");
+    await screen.findByRole("heading", { name: "점검 범위" });
   });
   it("keeps authored JSON in SQLite while projecting readiness diagnostics to project storage", async () => {
     const localWrite = vi.spyOn(Storage.prototype, "setItem");
@@ -81,24 +103,21 @@ describe("Storyworld actual page integration", () => {
     expect(saved("work-a").project.title).toBe("A의 사적인 초안");
     view.rerender(page("work-a"));
     await ready();
-    expect(screen.getByText("A의 사적인 초안")).toBeTruthy();
+    expect(within(screen.getByRole("complementary")).getByText("A의 사적인 초안")).toBeTruthy();
     const router = readFileSync(resolve(process.cwd(), "apps/web/src/domains/creator/studio-router/StudioRouter.tsx"), "utf8");
     expect(router).toContain("key={resolution.lifecycleKey}");
   });
   it("keeps the current project after malformed JSON is rejected", async () => {
     await open("work-invalid");
-    fireEvent.click(screen.getByRole("button", { name: "원본 데이터" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "스토리월드 JSON" }), { target: { value: "{broken" } });
-    fireEvent.click(screen.getByRole("button", { name: "적용 후 분석" }));
-    expect(screen.getByRole("alert")).toBeTruthy();
+    applySettingsText("{broken");
+    // 내부 파서 문구가 아니라 작가가 다음에 할 일을 알려 주는 안내가 나온다.
+    expect(screen.getByRole("alert").textContent).toContain("설정 파일을 읽을 수 없습니다");
     await waitFor(() => expect(saved("work-invalid")?.project.title).toBe(STORYWORLD_DEMO_PROJECT.title));
   });
   it("rejects excessive scene counts before analysis", async () => {
     await open("work-budget");
-    fireEvent.click(screen.getByRole("button", { name: "원본 데이터" }));
     const oversized = { ...STORYWORLD_DEMO_PROJECT, scenes: Array.from({ length: 257 }, (_, i) => ({ id: `s-${i}`, title: "장면", order: i })) };
-    fireEvent.change(screen.getByRole("textbox", { name: "스토리월드 JSON" }), { target: { value: JSON.stringify(oversized) } });
-    fireEvent.click(screen.getByRole("button", { name: "적용 후 분석" }));
+    applySettingsText(JSON.stringify(oversized));
     expect(screen.getByRole("alert").textContent).toContain("장면 256개");
   });
   it("reports SQL write failures without claiming a durable save", async () => {
@@ -106,7 +125,7 @@ describe("Storyworld actual page integration", () => {
     await open("work-quota");
     editProject("아직 보관되지 않은 초안");
     expect(await screen.findByText("저장 실패")).toBeTruthy();
-    expect(screen.getByText(/SQLite\/OPFS에 저장하지 못했습니다/)).toBeTruthy();
+    expect(screen.getByText(/설정을 저장하지 못했습니다\. 지금 고친 내용은 이 화면에만 남아 있으니/)).toBeTruthy();
     expect(screen.getByText("아직 보관되지 않은 초안")).toBeTruthy();
     expect(saved("work-quota")).toBeNull();
   });
@@ -114,7 +133,7 @@ describe("Storyworld actual page integration", () => {
     let finish!: (value: string) => void;
     db.kvGet.mockReturnValueOnce(new Promise<string>((resolveRead) => { finish = resolveRead; }));
     render(page("work-delayed"));
-    expect(screen.queryByRole("button", { name: "원본 데이터" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "설정 파일" })).toBeNull();
     expect(db.kvSet).not.toHaveBeenCalled();
     await act(async () => {
       finish(JSON.stringify({ version: 1, documentKey: key("work-delayed"), project: { ...STORYWORLD_DEMO_PROJECT, title: "복원된 원본" } }));
@@ -126,12 +145,14 @@ describe("Storyworld actual page integration", () => {
   it("preserves corrupt rows and offers retry without writing demo data", async () => {
     db.rows.set(rowKey("work-corrupt"), "{corrupt");
     render(page("work-corrupt"));
-    expect((await screen.findByRole("alert")).textContent).toContain("복원 실패");
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("저장된 설정을 불러오지 못했습니다");
+    expect(alert.textContent).toContain("저장된 내용은 그대로 두었습니다");
     expect(db.rows.get(rowKey("work-corrupt"))).toBe("{corrupt");
     expect(db.kvSet).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "원본 데이터" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "설정 파일" })).toBeNull();
     db.rows.delete(rowKey("work-corrupt"));
-    fireEvent.click(screen.getByRole("button", { name: "저장소 다시 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "다시 불러오기" }));
     await ready();
   });
 });
@@ -229,7 +250,6 @@ describe("Storyworld settings management layer", () => {
 
   it("continuity tab shows rule-based conflicts, jumps to settings, and records an ignore reason", async () => {
     await open("work-continuity");
-    fireEvent.click(screen.getByRole("button", { name: "원본 데이터" }));
     const conflicting = {
       ...STORYWORLD_DEMO_PROJECT,
       id: "authored-continuity",
@@ -248,10 +268,7 @@ describe("Storyworld settings management layer", () => {
         },
       ],
     };
-    fireEvent.change(screen.getByRole("textbox", { name: "스토리월드 JSON" }), {
-      target: { value: JSON.stringify(conflicting) },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "적용 후 분석" }));
+    applySettingsText(JSON.stringify(conflicting));
 
     fireEvent.click(screen.getByRole("button", { name: /모순·위험/ }));
     const conflictText = await screen.findByText(/서로 다른 초기값을 선언했습니다/);
@@ -291,11 +308,7 @@ describe("Storyworld world board layer", () => {
   afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
   function applyProject(project: unknown) {
-    fireEvent.click(screen.getByRole("button", { name: "원본 데이터" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "스토리월드 JSON" }), {
-      target: { value: JSON.stringify(project) },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "적용 후 분석" }));
+    applySettingsText(JSON.stringify(project));
     fireEvent.click(screen.getByRole("button", { name: "대시보드" }));
   }
 
@@ -305,7 +318,7 @@ describe("Storyworld world board layer", () => {
     const checkupTitle = screen.getByRole("heading", { name: "점검 결과" });
     // 2층 구조: 보드가 점검 결과보다 문서 순서상 앞에 있다.
     expect(boardTitle.compareDocumentPosition(checkupTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // 요소 카드는 원본 데이터 그대로다 (데모 프로젝트).
+    // 요소 카드는 설정에 적힌 그대로다 (데모 프로젝트).
     expect(screen.getByRole("heading", { name: /캐릭터\s*2/ })).toBeTruthy();
     expect(screen.getByText("하은", { selector: "strong" })).toBeTruthy();
     expect(screen.getByText("사라진 동생의 기억 찾기")).toBeTruthy();
@@ -338,8 +351,8 @@ describe("Storyworld world board layer", () => {
     applyProject({ ...STORYWORLD_DEMO_PROJECT, id: "empty-authored", title: "빈 세계", characters: [], facts: [], scenes: [], setupContracts: [], motifs: [] });
     expect(screen.getByRole("heading", { name: "아직 세계관 요소가 없어요" })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "세계관 보드" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /원본 데이터에서 요소 만들기/ }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("원본 데이터");
+    fireEvent.click(screen.getByRole("button", { name: /설정 파일에서 요소 만들기/ }));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("설정 파일");
   });
 
   it("draws no graph region when elements exist without relations", async () => {

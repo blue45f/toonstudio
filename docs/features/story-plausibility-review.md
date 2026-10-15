@@ -454,4 +454,4 @@
 | 브라우저 화면 검증·E2E | 이 변경은 컴포넌트·순수 로직 테스트로 상태·키보드·접근성 이름을 고정했다. 실제 브라우저의 시각·모바일·밝은/어두운/고대비 화면 검증은 별도 UI/UX 단계에서 한다 |
 | Learn 앱(`/learn`) 레슨 | 없음. 초보 작가용 안내는 [개연성 점검표](../learn/story-plausibility-checklist.md) 문서와 허브의 "점검표 보기"로 제공한다 |
 | AI 보조 설명 | 없음. 모든 판정과 문구는 규칙 기반이며 외부 공급자 호출이 없다 |
-| 기준 커밋부터 실패하는 기존 도구 | `StudioStoryworldLabPage.test.tsx` 20건은 모두 탭 이름이 바뀐 뒤 갱신되지 않아(테스트는 "원본 데이터", 기준 커밋의 페이지는 "설정 파일") 첫 단계에서 실패한다. 탭 이름만 현재 값으로 바꾼 임시 사본을 기준 커밋의 페이지와 이 변경의 페이지에서 각각 돌려 보면 통과 8건·실패 12건이 똑같이 나온다(이 변경이 만든 회귀는 없다). `scripts/verify-storyworld-lab.mjs`는 엔진 사본에 `studio-storyworld-counterfactual.ts`가 빠져 컴파일 단계에서 실패하며 `package.json`·CI에 연결되어 있지 않다. 둘 다 이 작업의 범위 밖이라 고치지 않았다 |
+| 기준 커밋부터 실패하던 기존 도구 | 해소됨(2026-10-15, `claude/swq-sworld`). `StudioStoryworldLabPage.test.tsx` 20건은 탭 이름 등 화면 문구가 바뀐 뒤 갱신되지 않아 기준 커밋부터 실패했고 이 변경이 만든 회귀는 아니었다. 현재 문구와 설정 편집 흐름에 맞춰 갱신했다. `scripts/verify-storyworld-lab.mjs`도 엔진 사본에 `studio-storyworld-counterfactual.ts`가 빠진 문제와 CSS 검사 오탐을 고쳤지만 여전히 수동 도구로 `package.json`·CI에는 연결되어 있지 않다. 랩 화면의 CSS 확인은 `studio-storyworld-lab.css.test.ts`가 CI에서 대신 맡는다 |

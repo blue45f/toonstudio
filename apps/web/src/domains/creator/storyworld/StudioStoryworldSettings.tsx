@@ -261,7 +261,7 @@ function FactSettingsForm({ project, fact, onChange, onDelete }: {
       </Field>
       <p className="storyworld-settings-hint">
         초기값: {fact.initialValue === undefined ? "없음" : JSON.stringify(fact.initialValue)} ·
-        초기값과 독자 공개 순서는 원본 데이터 탭에서 편집합니다.
+        초기값과 독자 공개 순서는 설정 파일 탭에서 편집합니다.
       </p>
       <label className="storyworld-settings-inline-check">
         <input checked={canonical} onChange={(e) => setCanonical(e.target.checked)} type="checkbox" />

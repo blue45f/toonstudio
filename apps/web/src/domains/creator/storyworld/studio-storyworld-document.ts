@@ -406,6 +406,11 @@ export function friendlyStoryworldFileError(caught: unknown): string {
   if (raw.includes("schemaVersion")) {
     return "이 화면에서 저장한 설정 파일이 아닌 것 같습니다. '설정 파일로 저장'으로 받은 파일을 골랐는지 확인한 뒤 다시 불러와 주세요.";
   }
+  // 한도 초과는 파일이 망가진 것이 아니다. 아래 일반 안내(손상 확인)로 떨어지지 않게 한도와 할 일을 알린다.
+  if (raw.includes("로컬 분석 한도")) {
+    const { characters, facts, scenes } = STORYWORLD_DOCUMENT_LIMITS;
+    return `한 번에 점검할 수 있는 크기를 넘었습니다. 인물 ${characters}명, 사실 ${facts}개, 장면 ${scenes}개까지 불러올 수 있습니다. 항목을 줄이거나 작품을 나눈 뒤 다시 불러와 주세요.`;
+  }
   if (/characters|facts|scenes|setupContracts|motifs/.test(raw)) {
     return "설정 파일에서 인물·사실·장면 중 빠졌거나 형식이 다른 항목이 있습니다. 원본 파일을 열어 빠진 항목을 채운 뒤 다시 불러와 주세요.";
   }

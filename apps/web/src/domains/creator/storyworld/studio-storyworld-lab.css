@@ -1645,6 +1645,25 @@
   font-size: 0.78rem;
 }
 
+/* 설정 불러오기·직접 편집 안내의 순서 목록. 전역 초기화가 지운 번호와 들여쓰기를 되살려 순서대로 따라 하게 한다. */
+.storyworld-import-steps {
+  margin: 0 0 15px;
+  padding-left: 1.5em;
+  color: var(--storyworld-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  list-style: decimal;
+}
+
+.storyworld-import-steps li + li {
+  margin-top: 6px;
+}
+
+.storyworld-import-steps li::marker {
+  color: var(--storyworld-accent);
+  font-weight: 700;
+}
+
 .storyworld-board__relations {
   flex: 0 0 auto;
   border: 1px solid var(--storyworld-border);

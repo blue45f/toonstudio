@@ -176,3 +176,33 @@ describe("role personalization public creator rendering", () => {
     });
   });
 });
+
+describe("role onboarding privacy step", () => {
+  it("keeps accepting consecutive visibility toggles on the last step", async () => {
+    // 온보딩이 필요한 상태(전역 온보딩 미완료)로 연다.
+    mocks.useCreatorRoleWorkspace.mockReturnValue({
+      status: "ready",
+      error: null,
+      snapshot: { document: normalizeCreatorRoleWorkspacePreference({ onboardingComplete: false }) },
+      save: vi.fn(),
+    });
+    render(
+      <MemoryRouter initialEntries={["/studio/projects"]}>
+        <StudioRolePersonalizationCenter locale="ko" />
+      </MemoryRouter>,
+    );
+    fireEvent.change(await screen.findByLabelText("전체 직무에서 선택"), { target: { value: "story" } });
+    for (let step = 0; step < 3; step += 1) fireEvent.click(screen.getByRole("button", { name: "다음" }));
+
+    // 같은 이름의 공개 범위 스위치가 화면 아래쪽 설정에도 있으므로 온보딩 카드 안에서만 찾는다.
+    const onboarding = within(screen.getByRole("button", { name: "내 작업실 만들기" }).closest("section")!);
+    // 상태 갱신 함수가 핸들러 종료 뒤에 실행되어도 event.currentTarget 에 기대지 않아야 두 번째 토글부터 끊기지 않는다.
+    const toggles = ["직무", "전문 분야", "경력 수준", "협업 가능 상태"].map(
+      (name) => onboarding.getByRole("checkbox", { name }) as HTMLInputElement,
+    );
+    for (const toggle of toggles) fireEvent.click(toggle);
+    expect(toggles.map((toggle) => toggle.checked)).toEqual([true, true, true, true]);
+    fireEvent.click(toggles[1]!);
+    expect(toggles.map((toggle) => toggle.checked)).toEqual([true, false, true, true]);
+  });
+});
