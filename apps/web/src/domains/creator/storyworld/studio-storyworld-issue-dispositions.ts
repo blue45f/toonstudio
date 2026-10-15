@@ -5,7 +5,22 @@
  * 나타난다 — 예전 처리 기록이 새 충돌을 덮지 않는 것이 정직한 동작이다.
  * 엔진 이슈와 연속성 검사 이슈가 같은 저장 방식을 공유한다.
  */
-export type StoryworldIssueDispositionStatus = "resolved" | "ignored";
+/**
+ * 처리 상태. resolved(해결 표시)와 ignored(무시)는 모순·위험 탭에서, intended(의도된 설정)와
+ * deferred(나중에)는 개연성 점검 허브에서 더한 값이다. 예전에 저장한 기록은 그대로 읽힌다.
+ */
+export type StoryworldIssueDispositionStatus = "resolved" | "ignored" | "intended" | "deferred";
+
+export const STORYWORLD_ISSUE_DISPOSITION_LABELS: Readonly<Record<StoryworldIssueDispositionStatus, string>> = {
+  resolved: "해결 표시됨",
+  ignored: "무시됨",
+  intended: "의도된 설정",
+  deferred: "나중에",
+};
+
+export function isStoryworldIssueDispositionStatus(value: unknown): value is StoryworldIssueDispositionStatus {
+  return value === "resolved" || value === "ignored" || value === "intended" || value === "deferred";
+}
 
 export interface StoryworldIssueDisposition {
   readonly issueKey: string;
@@ -63,12 +78,13 @@ export function parseStoryworldIssueDispositions(text: string, scopeKey: string)
     const status = entry["status"];
     const note = entry["note"];
     const updatedAtIso = entry["updatedAtIso"];
-    if (typeof issueKey !== "string" || (status !== "resolved" && status !== "ignored")
+    if (typeof issueKey !== "string" || !isStoryworldIssueDispositionStatus(status)
       || typeof updatedAtIso !== "string"
       || (note !== undefined && typeof note !== "string")) {
       throw new Error("스토리월드 이슈 처리 기록의 항목이 올바르지 않습니다.");
     }
-    return { issueKey, status, ...(note !== undefined ? { note } : {}), updatedAtIso } as StoryworldIssueDisposition;
+    const parsed: StoryworldIssueDisposition = { issueKey, status, ...(note !== undefined ? { note } : {}), updatedAtIso };
+    return parsed;
   });
   return { version: 1, scopeKey, dispositions };
 }
