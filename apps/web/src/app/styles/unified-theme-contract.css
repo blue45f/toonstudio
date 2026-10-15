@@ -157,14 +157,63 @@
   --unified-route-accent-soft: var(--unified-accent-soft);
 }
 
-/* 공개 페이지의 1320px 외곽 폭에는 좌우 여백을 포함한다. 편집기는 자체 밀도를 유지한다. */
+/*
+ * 표현(Spectacle) 토큰 층 (BLUEPRINT §6.2 (1)·§6.4 경계 5, S3-15).
+ * 새 팔레트를 만들지 않는다: 위 아홉 테마가 이미 제공하는 --unified-*에서만 도출하고, 테마별
+ * 블록은 이 토큰을 직접 갖지 않는다(그래야 테마마다 인상이 갈라지지 않는다). 소비처는
+ * shared/components/spectacle.css(SpectacleHero·CoverCard)와 홈의 --rd-* 별칭이다.
+ * --art-scrim·--art-on은 테마와 무관한 고정 삽화 위의 전경이라 어두운 면 + 밝은 글자로 고정한다.
+ * 스크림 바탕은 DESIGN.md의 warm-ink 축(hue ≈ 68)을 따른다.
+ * 강제 색상(forced-colors)에서는 아래 전용 블록이 그라디언트·글로우·그림자를 모두 접는다.
+ */
+:root[data-design-theme] {
+  --spectacle-1: var(--unified-accent);
+  --spectacle-2: var(--unified-accent-2);
+  --spectacle-3: var(--color-cool, var(--unified-accent-2));
+  --spectacle-gradient: linear-gradient(100deg, var(--spectacle-1), var(--spectacle-2) 52%, var(--spectacle-3));
+  --spectacle-glow: 0 0 32px color-mix(in oklch, var(--spectacle-1) 26%, transparent);
+  --spectacle-duration-enter: 180ms;
+  --domain-tint: var(--spectacle-1);
+  --surface-glass: var(--unified-glass);
+  --elevation-1: var(--unified-shadow-soft);
+  --elevation-2: var(--unified-shadow);
+  --elevation-3: 0 1.5rem 4rem color-mix(in oklch, var(--unified-fg) 14%, transparent);
+  --art-scrim:
+    linear-gradient(90deg, oklch(0.14 0.012 68 / 0.9), oklch(0.14 0.012 68 / 0.46) 56%, oklch(0.14 0.012 68 / 0.22)),
+    linear-gradient(0deg, oklch(0.14 0.012 68 / 0.88), transparent 56%);
+  --art-on: oklch(0.97 0.012 285);
+}
+
+/*
+ * 폭·거터는 sitewide-visual-ux.css의 --layout-* 단일 선언처를 별칭으로 참조만 한다
+ * (BLUEPRINT §5.2 (1)·(2), §5.3 L0·L1): 공개 페이지(경험 범위)는 standard 폭 82.5rem(1320px,
+ * 좌우 여백 포함)이고 거터는 16/24/32px 3단계 --layout-gutter 하나다. 리터럴을 여기서 다시
+ * 정의하지 않는다. 편집기는 자체 밀도를 유지한다.
+ * 헤딩 크기는 layout-tokens.ts의 display 타이포 스케일(LAYOUT_TYPE_SCALE)을 그대로 미러링한다
+ * (BLUEPRINT §6.1 (6)·§6.2 (5)): base → 640px → 1024px 3단계이고 Tailwind sm·lg와 같은 지점이다.
+ * 테마 전용 시트는 이 변수들을 재정의하지 않는다(테마를 바꿔도 글자 크기가 변하지 않는다).
+ */
 [data-site-experience] {
-  --site-content-max: 82.5rem;
-  --site-page-gutter: clamp(1rem, 3vw, 2.5rem);
-  --site-reading-max: 48rem;
+  --site-content-max: var(--layout-content-standard);
+  --site-page-gutter: var(--layout-gutter);
+  --site-reading-max: var(--layout-content-reading);
   --site-heading-space: clamp(1.5rem, 3vw, 2.5rem);
-  --site-heading-size: clamp(1.875rem, 3.5vw, 3rem);
-  --site-section-title-size: clamp(1.25rem, 2vw, 1.75rem);
+  --site-heading-size: 2rem;
+  --site-section-title-size: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  [data-site-experience] {
+    --site-heading-size: 2.25rem;
+    --site-section-title-size: 1.875rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-site-experience] {
+    --site-heading-size: 3.75rem;
+    --site-section-title-size: 2.25rem;
+  }
 }
 
 [data-site-experience] .route-stage[data-theme-contract="unified"] [data-page-container] {
@@ -196,6 +245,18 @@
   letter-spacing: -0.045em;
   line-height: 1.2;
   text-wrap: balance;
+}
+
+/* 에디토리얼 변형 (BLUEPRINT §6.2 (5)) — 세리프 이탤릭을 명시적으로 고른 표면만 켠다(opt-in 속성).
+   크기는 layout-tokens.ts의 LAYOUT_TYPE_SCALE.editorial.heading과 같고, 페이지 헤더 h1 규칙보다 이긴다. */
+h1[data-type-variant="editorial"],
+[data-site-experience] .route-stage[data-theme-contract="unified"] [data-page-container] > header h1[data-type-variant="editorial"] {
+  font-family: var(--font-serif), serif;
+  font-size: clamp(2.25rem, 3.4vw, 3.375rem);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.14;
 }
 
 [data-site-experience] .route-stage[data-theme-contract="unified"] [data-section-heading] {
@@ -558,6 +619,14 @@
     --color-warning: CanvasText;
     --color-warning-soft: Canvas;
     --color-bad: CanvasText;
+    /* 표현 토큰 층은 강제 색상에서 장식을 전부 접는다 (BLUEPRINT §6.4 경계 1). */
+    --spectacle-gradient: none;
+    --spectacle-glow: none;
+    --surface-glass: Canvas;
+    --elevation-1: none;
+    --elevation-2: none;
+    --elevation-3: none;
+    --art-on: CanvasText;
   }
   [data-site-chrome="footer"] {
     --color-bg: Canvas;

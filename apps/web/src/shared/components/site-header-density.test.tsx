@@ -61,11 +61,14 @@ describe("단일 창작 헤더", () => {
     expect(header.getAttribute("data-site-home")).toBe("true");
     expect(container.querySelector(".public-site-journey")).toBeNull();
     expect(within(header).queryByRole("navigation", { name: "제작 기능 바로가기" })).toBeNull();
+    // S1-2: 상시 1차 메뉴는 제작·탐색·커뮤니티·배우기·마켓 5개뿐이다. 가상 스튜디오는 제작 드롭다운의
+    // 자식으로, 협업은 협업 구역에서만 끼워 넣는 맥락형 항목이라 홈에는 둘 다 1차 메뉴로 나오지 않는다.
+    expect(Array.from(navigation.querySelectorAll<HTMLAnchorElement>("a[data-navigation-entry]")).map((link) => link.dataset.navigationEntry))
+      .toEqual(["studio", "explore", "community", "learn", "market"]);
     expect(within(navigation).getAllByRole("link").map((link) => link.getAttribute("href")))
       .toEqual([
         "/studio", "/studio", "/create", "/studio/comic", "/studio/assets/characters/new", "/studio/bg3d",
         "/studio/space",
-        "/production", "/production", "/team/people", "/collaborate",
         "/discover", "/explore", "/ranking", "/calendar",
         "/community",
         "/learn", "/research", "/learn/classroom", "/guide",
@@ -73,8 +76,10 @@ describe("단일 창작 헤더", () => {
       ]);
     // 헤더의 제작/전체 진입은 레거시 별칭(/new, /more)이 아닌 canonical 경로로 직접 연결한다.
     expect(within(navigation).getByRole("link", { name: "제작" }).getAttribute("href")).toBe("/studio");
-    expect(within(navigation).getByRole("link", { name: "가상 스튜디오" }).getAttribute("href")).toBe("/studio/space");
-    expect(within(navigation).getByRole("link", { name: "협업" }).getAttribute("href")).toBe("/production");
+    // 가상 스튜디오는 강등됐지만 삭제되지 않았다 — 제작 드롭다운에서 canonical 경로로 도달한다.
+    expect(within(navigation).getByRole("link", { name: /^가상 스튜디오/u }).getAttribute("href")).toBe("/studio/space");
+    // 협업은 팀·프로젝트 맥락이 없는 홈에서는 1차 메뉴에 없다(전체 메뉴·⌘K에는 남는다).
+    expect(within(navigation).queryByRole("link", { name: "협업" })).toBeNull();
     // 가벼운 즐길 거리(운세)는 주 메뉴가 아니라 전체 메뉴·푸터에서 찾는다.
     expect(within(navigation).queryByRole("link", { name: "운세" })).toBeNull();
     expect(within(header).getByRole("link", { name: "작품 시작하기" }).getAttribute("href"))
@@ -90,7 +95,10 @@ describe("단일 창작 헤더", () => {
     // 드롭다운이 없는 목적지는 아이콘 없이 글자만으로 표시한다(시안의 가벼운 1차 표시).
     expect(within(navigation).getByRole("link", { name: "커뮤니티" }).querySelector("svg")).toBeNull();
     expect(within(navigation).getByRole("link", { name: "마켓" }).querySelector("svg")).toBeNull();
-    expect(within(navigation).getByRole("link", { name: "가상 스튜디오" }).querySelector("svg")).toBeNull();
+    // 가상 스튜디오는 1차 메뉴가 아니라 제작 드롭다운 패널 안의 항목이다(아이콘은 패널 안에서만 둔다).
+    const studioMenu = within(navigation).getByRole("link", { name: "제작" }).parentElement?.querySelector("ul");
+    expect(studioMenu?.querySelector('a[href="/studio/space"]')).not.toBeNull();
+    expect(navigation.querySelector('a[data-navigation-entry][href="/studio/space"]')).toBeNull();
   });
 
   it("탐색과 배우기 드롭다운은 필요한 곳에만 두고 canonical 목적지로 연결한다", () => {
@@ -141,11 +149,12 @@ describe("단일 창작 헤더", () => {
   });
 
   it.each([
-    ["/studio/space", "가상 스튜디오", ["제작", "협업"]],
-    ["/studio/p/project-1/space", "가상 스튜디오", ["제작", "협업"]],
+    // 가상 스튜디오(S1-2 강등)는 제작 구역이라 1차 메뉴에서는 제작이 현재 축이다.
+    ["/studio/space", "제작", ["탐색", "커뮤니티", "배우기", "마켓"]],
+    ["/studio/p/project-1/space", "제작", ["탐색", "커뮤니티", "배우기", "마켓"]],
     ["/production/projects/demo/overview", "협업", ["제작", "커뮤니티"]],
     ["/collaborate", "협업", ["커뮤니티", "제작"]],
-    ["/studio/assets/characters/new", "제작", ["가상 스튜디오", "협업"]],
+    ["/studio/assets/characters/new", "제작", ["탐색", "커뮤니티", "배우기", "마켓"]],
     ["/market", "마켓", ["탐색"]],
     ["/learn/classroom", "배우기", ["탐색"]],
     ["/ranking", "탐색", ["마켓", "배우기"]],
@@ -177,12 +186,22 @@ describe("단일 창작 헤더", () => {
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
     expect(within(navigation).getByRole("link", { name: "Create" }).getAttribute("href"))
       .toBe("/studio");
-    expect(within(navigation).getByRole("link", { name: "Virtual studio" }).getAttribute("href"))
+    expect(within(navigation).getByRole("link", { name: /^Virtual studio/u }).getAttribute("href"))
       .toBe("/studio/space");
-    expect(within(navigation).getByRole("link", { name: "Collaborate" }).getAttribute("href"))
-      .toBe("/production");
+    expect(within(navigation).queryByRole("link", { name: "Collaborate" })).toBeNull();
     expect(within(navigation).getByRole("link", { name: "Learn" }).getAttribute("aria-haspopup"))
       .toBe("true");
     expect(screen.getByRole("button", { name: "Calm appearance" })).toBeTruthy();
+  });
+
+  it("영문 협업 구역에서는 맥락형 협업 메뉴가 제작 다음에 끼워진다", () => {
+    useI18n.getState().setLang("en");
+    render(<HeaderWithAppearance pathname="/production" />);
+
+    const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
+    expect(Array.from(navigation.querySelectorAll<HTMLAnchorElement>("a[data-navigation-entry]")).map((link) => link.dataset.navigationEntry))
+      .toEqual(["studio", "collaborate", "explore", "community", "learn", "market"]);
+    expect(within(navigation).getByRole("link", { name: "Collaborate" }).getAttribute("href"))
+      .toBe("/production");
   });
 });

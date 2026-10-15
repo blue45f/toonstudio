@@ -18,8 +18,13 @@ const params = new URLSearchParams(location.search);
 const frame = document.getElementById("stage");
 window.__host = createTs3dHost(frame);
 window.__hostInfo = { crossOriginIsolated: self.crossOriginIsolated, sab: typeof SharedArrayBuffer };
+// 이 호스트 페이지는 로컬 측정 하니스 전용이다. 쿼리 값은 하니스가 만든 형태만 받아들인다:
+//  - stage: 같은 출처의 /g/<이름>/index.html
+//  - img: 로컬 보조 서버의 /x.png (교차 출처 이미지 시험용)
+const STAGE_PATH = /^\/g\/[a-z0-9_-]+\/index\.html$/;
+const LOCAL_IMAGE = /^http:\/\/(?:127\.0\.0\.1|localhost):\d{2,5}\/x\.png$/;
 const img = params.get("img");
-if (img) {
+if (img && LOCAL_IMAGE.test(img)) {
   const el = document.getElementById("xorigin");
   window.__imgResult = new Promise((resolve) => {
     el.onload = () => resolve({ loaded: true, w: el.naturalWidth });
@@ -28,7 +33,8 @@ if (img) {
   el.src = img;
 }
 window.__stageLoadStart = performance.now();
-frame.src = params.get("stage");
+const stage = params.get("stage");
+if (stage && STAGE_PATH.test(stage)) frame.src = stage;
 </script>
 </body>
 </html>

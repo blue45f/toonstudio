@@ -86,4 +86,28 @@ describe("StudioStoryEditorSurface", () => {
     expect(screen.getByText(/저장 결과 · 3개 반영/)).toBeTruthy();
     expect(screen.getByText("충돌 없이 모두 반영됐어요.")).toBeTruthy();
   });
+  it("커서를 여러 번 옮겨도 입력이 끊기지 않고 마지막 커서 위치에서 나눈다", () => {
+    // 선택 범위 갱신 함수가 이벤트 핸들러가 끝난 뒤 실행되면 event.currentTarget 은 이미 null 이다.
+    // 값을 핸들러 안에서 먼저 읽지 않으면 커서를 두 번째로 옮길 때부터 예외가 난다.
+    const onSplitText = vi.fn();
+    render(
+      <StudioStoryEditorSurface
+        pages={threePages()}
+        currentPageId="p1"
+        selectedId={null}
+        onClose={() => {}}
+        onSelectElement={() => {}}
+        onSaveDrafts={() => applyStoryEditorDrafts(threePages(), [])}
+        onSplitText={onSplitText}
+      />
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /구조 편집/ })[0]!);
+    const editor = screen.getByLabelText("1페이지 1번째 대사 편집");
+    for (const caret of [1, 2, 3]) {
+      fireEvent.select(editor, { target: { selectionStart: caret, selectionEnd: caret } });
+    }
+    fireEvent.click(screen.getByRole("button", { name: /커서에서 나누기/ }));
+    expect(onSplitText).toHaveBeenCalledTimes(1);
+    expect(onSplitText).toHaveBeenCalledWith("p1", expect.any(String), "첫 페이지 대사", 3);
+  });
 });

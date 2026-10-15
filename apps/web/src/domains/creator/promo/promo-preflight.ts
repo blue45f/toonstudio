@@ -1,4 +1,4 @@
-import { PROMO_FPS, promoTimeline } from "./promo-model";
+import { PROMO_FPS, PROMO_SHORT_SECONDS, promoTimeline } from "./promo-model";
 
 import type { PromoProject } from "./promo-model";
 
@@ -17,6 +17,8 @@ export function promoPreflight(project: PromoProject): PromoPreflightIssue[] {
     const limit = project.ratio === "16:9" ? 72 : project.presentation?.safeArea === false ? 45 : 39;
     if (units > limit) issues.push({ id: `caption-${scene.panel.id}`, severity: "warning", frame: scene.from, message: `컷 ${index + 1}: 자막이 3줄 영역에서 잘릴 수 있어요. 미리보기에서 말줄임표를 확인하세요.` });
     if (scene.panel.fit === "cover" || (scene.panel.camera && Math.max(scene.panel.camera.from.zoom, scene.panel.camera.to.zoom) > 1.5)) issues.push({ id: `crop-${scene.panel.id}`, severity: "warning", frame: scene.from + Math.floor(scene.duration / 2), message: `컷 ${index + 1}: 화면 채우기·확대 연출로 얼굴이나 말풍선이 잘리지 않는지 확인하세요.` });
+    // 10초 쇼츠는 본편이 8초뿐이라 컷이 1초보다 짧으면 장면을 알아보기 전에 넘어간다. 하한(0.5초)은 지키지만 권장하지 않는다.
+    if (project.seconds === PROMO_SHORT_SECONDS && scene.duration < PROMO_FPS) issues.push({ id: `short-pace-${scene.panel.id}`, severity: "warning", frame: scene.from, message: `컷 ${index + 1}: ${duration.toFixed(1)}초로 짧아요. 10초 쇼츠는 컷당 1초 이상을 권장해요. 상대 길이를 늘리거나 컷을 줄여 주세요.` });
   }
   const voice = project.voiceover;
   if (voice && voice.volume > 0) {

@@ -364,6 +364,8 @@ describe("StudioVrmJointHandles helpers", () => {
 });
 
 describe("StudioVrmJointHandles interaction boundary", () => {
+  // FK 직접 회전은 IK 우선 동선에서 "미세 조정"으로 강등 표기한다(StudioVrmJointHandles.tsx, 셰이퍼 1단계).
+  // 조작 방식(끌어서 회전·키보드·잠금)은 그대로이고 접근성 이름만 바뀌었다.
   it("renders only available bones as keyboard-accessible fixed-size controls", () => {
     const vrm = makeVrm({
       hips: new THREE.Object3D(),
@@ -372,7 +374,7 @@ describe("StudioVrmJointHandles interaction boundary", () => {
 
     render(<StudioVrmJointHandles vrm={vrm} selectedBone="leftHand" screenSize={24} />);
 
-    const hips = screen.getByRole("button", { name: "골반 관절 직접 회전" });
+    const hips = screen.getByRole("button", { name: "골반 관절 미세 조정" });
     const leftHand = screen.getByRole("button", { name: "왼손목 관절 IK 목표 이동" });
     expect(hips.getAttribute("aria-pressed")).toBe("false");
     expect(leftHand.getAttribute("aria-pressed")).toBe("true");
@@ -395,7 +397,7 @@ describe("StudioVrmJointHandles interaction boundary", () => {
         onInteractionActiveChange={onInteractionActiveChange}
       />,
     );
-    const handle = screen.getByRole("button", { name: "가슴 관절 직접 회전" });
+    const handle = screen.getByRole("button", { name: "가슴 관절 미세 조정" });
 
     fireEvent.pointerDown(handle, {
       pointerId: 31,
@@ -438,7 +440,7 @@ describe("StudioVrmJointHandles interaction boundary", () => {
         onBoneRotationGesture={onBoneRotationGesture}
       />,
     );
-    const handle = screen.getByRole("button", { name: "왼쪽 팔꿈치 관절 직접 회전" });
+    const handle = screen.getByRole("button", { name: "왼쪽 팔꿈치 관절 미세 조정" });
     fireEvent.pointerDown(handle, {
       pointerId: 32,
       pointerType: "touch",
@@ -485,7 +487,7 @@ describe("StudioVrmJointHandles interaction boundary", () => {
         onBoneRotationGesture={onBoneRotationGesture}
       />,
     );
-    const unlocked = screen.getByRole("button", { name: "목 관절 직접 회전" });
+    const unlocked = screen.getByRole("button", { name: "목 관절 미세 조정" });
     fireEvent.contextMenu(unlocked);
     expect(onToggleBoneLock).toHaveBeenLastCalledWith("neck");
 

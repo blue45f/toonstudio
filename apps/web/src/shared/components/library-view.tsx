@@ -112,7 +112,7 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
 
   if (!hydrated) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="skeleton aspect-[3/4] w-full" />
         ))}
@@ -209,7 +209,7 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
               cta={{ label: "작품 탐색하기", href: "/explore" }}
             />
           ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
               {shelfTitles.map((t, index) => (
                 <TitleCard key={t.id} title={t} size="sm" index={index} />
               ))}
@@ -360,7 +360,7 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
                     <Sparkles size={16} className="text-accent" />
                     <h3 className="font-semibold">취향 저격 추천</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
                     {recs.map(({ title, reason }, index) => (
                       <div key={title.id} className="flex flex-col gap-1.5">
                         <TitleCard title={title} size="sm" index={index} />
@@ -395,7 +395,7 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
                       오늘({todayDay}) 새 회차 {todaySubs.length}편
                     </h3>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
                     {todaySubs.map((t) => (
                       <TitleCard key={t.id} title={t} size="sm" />
                     ))}

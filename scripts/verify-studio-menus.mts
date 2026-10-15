@@ -1513,7 +1513,7 @@ async function main() {
       }
     }, { key: QUICKSTART_KEY });
 
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(`${url}?uiMode=full`, { waitUntil: "domcontentloaded", timeout: 30000 }); // 밀도는 앱 설정(기본 simple)이 정하므로 full 은 시작 힌트로 요청
     await page.waitForTimeout(900);
     await dismissOverlays(page);
 

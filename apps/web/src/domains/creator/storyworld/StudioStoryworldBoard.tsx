@@ -224,11 +224,11 @@ export function StudioStoryworldBoard({ project, onOpenData, onEditElement }: {
           <h2 id="storyworld-board-title">아직 세계관 요소가 없어요</h2>
           <p>
             인물·장면·사실을 만들면 이 자리에 요소 카드와 관계 그래프가 나타납니다.
-            요소는 원본 데이터(JSON)에서 직접 정의하거나, 만든 JSON 파일을 가져오기 버튼으로 불러올 수 있습니다.
+            요소는 ‘설정 파일’ 화면에서 직접 적거나, 저장해 둔 설정 파일을 ‘설정 불러오기’로 불러올 수 있습니다.
           </p>
           <button className="storyworld-button storyworld-button--primary" onClick={onOpenData} type="button">
             <LayoutGrid aria-hidden size={16} />
-            원본 데이터에서 요소 만들기
+            설정 파일에서 요소 만들기
           </button>
         </div>
       </section>
@@ -244,7 +244,7 @@ export function StudioStoryworldBoard({ project, onOpenData, onEditElement }: {
       <div className="storyworld-panel__heading">
         <div>
           <h2 id="storyworld-board-title">세계관 보드</h2>
-          <p>원본 데이터의 인물·장면·장소·사실 {board.elementCount}개와 그 관계를 한눈에 봅니다.</p>
+          <p>설정에 적힌 인물·장면·장소·사실 {board.elementCount}개와 그 관계를 한눈에 봅니다.</p>
         </div>
         <span className="storyworld-board__relations">관계 {board.relations.length}개</span>
       </div>

@@ -99,6 +99,17 @@ def self_test() -> None:
         pass
     else:
         raise AssertionError("A 10s video plus 15s audio must fail")
+    # 10-second short-form preset: both tracks must reach the 10s ending, and the contracts must not be interchangeable.
+    short = {"streams": data["streams"],
+             "packets": [{"stream_index": i, "pts_time": str(t), "duration_time": "0.02"} for i in (0, 1) for t in (0, 9.98)]}
+    timing(short, 10)
+    for recording, contract in ((short, 15), (data, 10)):
+        try:
+            timing(recording, contract)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"A recording that does not match the {contract}s contract must fail")
     reference = bytearray([20] * (WIDTH * HEIGHT * 3))
     for y in range(65, 75):
         for x in range(20, 70):
@@ -111,7 +122,7 @@ def self_test() -> None:
         pass
     else:
         raise AssertionError("A blank ending must fail even on a matching dark background")
-    print("Native output verifier self-tests passed (valid, truncated, matching, blank)")
+    print("Native output verifier self-tests passed (valid, truncated, 10s short-form, matching, blank)")
 
 
 def main() -> None:

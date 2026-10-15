@@ -183,4 +183,22 @@ describe("스토리월드 문서 읽기: 한도와 오류 안내", () => {
     expect(message).toMatch(pattern);
     expect(message).not.toMatch(/schemaVersion|undefined|\[object/u);
   });
+
+  it("한도를 넘긴 문서는 손상된 파일로 안내하지 않고 한도와 할 일을 알려 준다", () => {
+    const scenes = Array.from({ length: STORYWORLD_DOCUMENT_LIMITS.scenes + 1 }, (_, i) => ({ id: `s${i}`, title: `장면 ${i}`, order: i }));
+    let caught: unknown = null;
+    try {
+      normalizeStoryworldProject({ ...V1_DOCUMENT, scenes });
+    } catch (error) {
+      caught = error;
+    }
+    const message = friendlyStoryworldFileError(caught);
+    const { characters, facts, scenes: sceneLimit } = STORYWORLD_DOCUMENT_LIMITS;
+    expect(message).toContain(`인물 ${characters}명`);
+    expect(message).toContain(`사실 ${facts}개`);
+    expect(message).toContain(`장면 ${sceneLimit}개`);
+    expect(message).toMatch(/줄이거나 작품을 나눈 뒤/u);
+    // 한도 초과는 파일이 망가진 것이 아니므로 "손상" 안내로 덮어쓰지 않는다.
+    expect(message).not.toMatch(/손상/u);
+  });
 });

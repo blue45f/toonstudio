@@ -11868,7 +11868,7 @@ export function StudioCuttoonEditor({
     target: ImageEl & El;
     base: PixelSelection | null;
     combine: SelectionOperationMode;
-    mutationTicket: ReturnType<typeof captureStudioMutationTicket>;
+    mutationTicket: StudioEditorMutationTicket;
     scanInFlight: boolean;
     scanQueued: boolean;
     finished: boolean;

@@ -119,6 +119,9 @@ describe("production hub durable user operations", () => {
   });
 
   it("restores a checkpoint's tasks and reviews without reverting later titles or slides", async () => {
+    // 복원은 현재 작업을 덮어쓰는 동작이라 화면이 먼저 사용자 확인을 받는다(jsdom 은 confirm 이 미구현).
+    const confirm = vi.fn<(message?: string) => boolean>(() => true);
+    vi.stubGlobal("confirm", confirm);
     seed({ tasks: [task], reviews: [review], slides: [{ id: "slide-original", title: "기획", body: "보존할 본문" }] });
     mount("versions"); await saved();
     expect(screen.getByText("로컬 체크포인트가 없습니다")).toBeTruthy();
@@ -133,6 +136,33 @@ describe("production hub durable user operations", () => {
     fireEvent.click(screen.getByRole("button", { name: "로컬 복원" }));
     await waitFor(() => expect(row().tasks[0]!.status).toBe("doing"));
     expect(row()).toMatchObject({ title: "보존할 새 제목", reviews: [review], slides: [{ body: "보존할 본문" }] });
+    // 확인 문구가 복원 대상과 자동 백업을 알려 주고, 복원 직전(완료 상태) 작업이 백업 체크포인트로 남는다.
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("로컬 체크포인트 1 상태로 프로젝트를 복원할까요?"));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("자동 백업 체크포인트로 먼저 저장됩니다"));
+    expect(row().versions.map((version) => version.name)).toEqual(["복원 전 자동 백업 · 로컬 체크포인트 1", "로컬 체크포인트 1"]);
+    expect(row().versions.map((version) => version.tasks[0]!.status)).toEqual(["done", "doing"]);
+  });
+
+  it("keeps the current work untouched when the checkpoint restore is declined", async () => {
+    const confirm = vi.fn<(message?: string) => boolean>(() => false);
+    vi.stubGlobal("confirm", confirm);
+    seed({ tasks: [task], reviews: [review] });
+    mount("versions"); await saved();
+    fireEvent.click(screen.getByRole("button", { name: "체크포인트 만들기" }));
+    await screen.findByRole("heading", { name: "로컬 체크포인트 1" });
+    await go("홈");
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+    await waitFor(() => expect(row().tasks[0]!.status).toBe("done"));
+    await go("변경 기록");
+    const beforeDecline = row();
+    const writesBeforeDecline = storage.kvSet.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "로컬 복원" }));
+    await act(async () => { await Promise.resolve(); });
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(row()).toEqual(beforeDecline);
+    expect(storage.kvSet).toHaveBeenCalledTimes(writesBeforeDecline);
+    expect(screen.queryByText(/상태를 복원했습니다/)).toBeNull();
   });
 
   it("adds and edits real pitch cards without changing neighboring slides", async () => {

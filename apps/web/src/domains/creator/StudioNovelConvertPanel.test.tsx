@@ -135,6 +135,21 @@ describe("StudioNovelConvertPanel", () => {
     expect(lines.find((line) => line.text === "그래, 내일 보자.")?.characterId).toBe("char-jiyeon");
   });
 
+  it("장면 제목과 화자 연결을 여러 번 고쳐도 입력이 끊기지 않고 마지막 값이 남는다", () => {
+    // 상태 갱신 함수가 이벤트 핸들러가 끝난 뒤 실행되면 event.currentTarget 은 이미 null 이다.
+    // 값을 핸들러 안에서 먼저 읽지 않으면 두 번째 수정부터 예외가 난다.
+    renderPanel(createEmptyStudioWriterRoomDocument());
+    convertSample();
+
+    const title = screen.getByLabelText("장면 1 제목");
+    for (const value of ["도", "도입", "도입부"]) fireEvent.change(title, { target: { value } });
+    expect((title as HTMLInputElement).value).toBe("도입부");
+
+    const speakerLink = screen.getByLabelText("민준 캐릭터 연결");
+    for (const value of ["none", "char-jiyeon", "auto"]) fireEvent.change(speakerLink, { target: { value } });
+    expect((speakerLink as HTMLSelectElement).value).toBe("auto");
+  });
+
   it("기존 장면이 있으면 교체를 확인하기 전에는 반영할 수 없다", () => {
     const base = createEmptyStudioWriterRoomDocument();
     base.stages.scenes = {

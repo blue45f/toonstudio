@@ -1,7 +1,11 @@
 // Fixture tests for scripts/verify-studio-environment-pack.mjs: builds a
 // minimal environment pack on disk and checks the verifier accepts a complete
-// GLB + Cycles pass pairing and rejects incomplete ones. Run with:
+// GLB + Cycles pass pairing and rejects incomplete ones. Run with either:
 //   node --test scripts/verify-studio-environment-pack.test.mjs
+//   pnpm exec vitest run scripts/verify-studio-environment-pack.test.mjs
+//
+// 루트 vitest(pnpm test)도 이 파일을 수집한다. node:test 의 test() 는 vitest 스위트를 만들지 못해
+// "No test suite found" 로 파일 전체가 실패했으므로, 다른 scripts/*.test.mjs 처럼 러너를 고른다.
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -9,7 +13,8 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import test from "node:test";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const verifier = path.resolve(import.meta.dirname, "verify-studio-environment-pack.mjs");
 const WIDTH = 8;
