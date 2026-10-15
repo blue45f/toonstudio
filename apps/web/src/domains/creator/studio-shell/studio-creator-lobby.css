@@ -56,6 +56,9 @@
   position: relative;
   z-index: 1;
   display: grid;
+  /* 암묵 열은 자식의 min-content 폭까지 커진다. 한 줄 아이디어 입력칸의 고유 폭이 열을 컨테이너보다 넓혀
+   * 휴대폰 폭에서 히어로 오른쪽이 잘리지 않도록 열을 컨테이너 폭에 묶는다. */
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   align-content: center;
   gap: 0.9rem;
@@ -82,6 +85,8 @@
 
 .studio-lobby-idea-field {
   display: grid;
+  /* 입력칸 폼의 min-content 가 이 암묵 열을 다시 넓히지 못하게 같은 방식으로 묶는다. */
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   max-width: 34rem;
   gap: 0.35rem;
@@ -596,6 +601,7 @@
 
 .studio-lobby-director__cta {
   width: 100%;
+  min-height: 44px;
   margin-top: auto;
 }
 
@@ -719,6 +725,14 @@
 
   .studio-lobby-metrics {
     margin-left: 0;
+  }
+}
+
+/* 재방문(compact) 빠른 시작 카드는 썸네일·글·화살표를 한 줄에 둔다. 휴대폰 폭에서 2열이면 글 열이
+ * 한두 글자로 좁아져 제목이 세로로 쪼개지므로, 구조를 한 열로 접어 제목을 어절 단위로 읽게 한다. */
+@media (max-width: 479px) {
+  .studio-lobby[data-density="compact"] .studio-lobby-quick ul {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
