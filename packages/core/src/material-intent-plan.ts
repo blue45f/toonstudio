@@ -400,19 +400,35 @@ function isQuantity(token: string): boolean {
 const WOOD_TARGET_KINDS: ReadonlySet<MaterialCueKind> = new Set(["prop", "armor", "place", "material"]);
 const TREE_CONCEPT_ID = "plant:나무";
 const WOOD_SURFACE = "원목";
+/** "나무로 만든 의자"처럼 재료를 말하는 구문에서 재료와 대상 사이에 오는 낱말 */
+const WOOD_BRIDGE_WORDS: ReadonlySet<string> = new Set(["만든", "된", "만들어진"]);
 
 /**
  * 기본 사전은 "나무" 를 tree 로만 번역한다. 그러나 "나무 의자·나무 문·나무 벽"의 나무는 재질이라, tree 로 보내면
- * 3D 제공처(모든 낱말이 맞아야 함)에서 결과가 비어 버린다. 바로 뒤 낱말이 가구·건축·재질이면 목재 단서로 읽는다.
- * "나무 아래 의자"처럼 사이에 다른 낱말이 있으면 나무 그대로다.
+ * 3D 제공처(모든 낱말이 맞아야 함)에서 결과가 비어 버린다. 사용자가 한글 "나무" 를 썼고 바로 뒤 낱말이
+ * 가구·무기·건축·재질이면(또는 "나무로 만든 의자"처럼 재료 구문이면) 목재 단서로 읽는다.
+ * "나무 아래 의자"처럼 사이에 다른 낱말이 있거나 영어로 쓴 "tree house" 는 나무 그대로다.
  */
-function woodForTree(concept: MaterialCueConcept, next: Token | undefined): MaterialCueConcept {
-  if (concept.id !== TREE_CONCEPT_ID || !next) return concept;
-  const following = lookupWithParticle(next.text);
+function woodForTree(
+  concept: MaterialCueConcept,
+  surface: string,
+  tokens: readonly Token[],
+  nextIndex: number,
+): MaterialCueConcept {
+  if (concept.id !== TREE_CONCEPT_ID) return concept;
+  const madeOf = surface === "나무로";
+  if (surface !== "나무" && !madeOf) return concept;
+  let targetIndex = nextIndex;
+  if (madeOf) {
+    if (!WOOD_BRIDGE_WORDS.has(tokens[targetIndex]?.text ?? "")) return concept;
+    targetIndex += 1;
+  }
+  const target = tokens[targetIndex];
+  const following = target ? lookupWithParticle(target.text) : undefined;
   if (!following || following.id === TREE_CONCEPT_ID || !WOOD_TARGET_KINDS.has(following.kind)) return concept;
   const wood = MATERIAL_LEXICON.bySurface.get(WOOD_SURFACE);
   // 사용자가 쓴 표기("나무")를 마켓 검색어·내 라이브러리 키워드에 그대로 남기려고 대표 표기만 이어받는다.
-  return wood ? { ...wood, ko: concept.ko } : concept;
+  return wood ? { ...wood, ko: "나무" } : concept;
 }
 
 function matchTokens(tokens: readonly Token[]): MatchResult {
@@ -444,7 +460,7 @@ function matchTokens(tokens: readonly Token[]): MatchResult {
       }
     }
     if (concept) {
-      concept = woodForTree(concept, tokens[index + consumed]);
+      concept = woodForTree(concept, surface, tokens, index + consumed);
       let modifier: EraModifier | undefined;
       const next = tokens[index + consumed];
       if (concept.kind === "era" && next) {

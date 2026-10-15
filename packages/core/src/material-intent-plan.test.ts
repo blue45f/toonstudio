@@ -466,6 +466,27 @@ describe("나무: 바로 뒤가 가구·건축·재질이면 목재로 읽는다
     expect(plan.cues[0]?.term).toBe("wood");
   });
 
+  it.each([
+    ["나무로 만든 의자", "wood chair"],
+    ["나무로 된 문", "wood door"],
+    ["나무로 만들어진 상자", "wood box"],
+  ])("재료 구문 %s → %s", (input, query) => {
+    const plan = planMaterialIntent(input);
+    expect(lensOf(plan, "3d-material").providerQueries.polyhaven).toBe(query);
+    expect(plan.cues[0]?.label).toBe("나무");
+  });
+
+  it.each([
+    ["tree house", "tree house"],
+    ["tree chair", "tree chair"],
+    ["Tree door", "tree door"],
+    ["나무로 올라가는 집", "tree"],
+  ])("영어로 쓴 tree 와 재료 구문이 아닌 나무로는 목재로 바꾸지 않는다: %s", (input, startsWith) => {
+    const plan = planMaterialIntent(input);
+    expect(plan.cues[0]?.term).toBe("tree");
+    expect(lensOf(plan, "3d-material").providerQueries.polyhaven?.startsWith(startsWith)).toBe(true);
+  });
+
   it("사용자가 쓴 낱말 '나무' 는 칩·마켓 검색어·내 라이브러리 키워드에 그대로 남는다", () => {
     const plan = planMaterialIntent("나무 의자");
     expect(plan.cues.map((cue) => cue.surface)).toEqual(["나무", "의자"]);
@@ -702,6 +723,19 @@ describe("단서 사전", () => {
   it("사전을 구성하는 동안 문제(번역어 누락·표면형 중복)가 없다", () => {
     expect(MATERIAL_LEXICON.issues).toEqual([]);
     expect(MATERIAL_LEXICON.concepts.length).toBeGreaterThan(400);
+  });
+
+  it("모든 한글 표면형과 영어 별칭은 단독으로 입력하면 자기 단서로 읽힌다(도달할 수 없는 항목이 없다)", () => {
+    const broken: string[] = [];
+    for (const [surface, concept] of MATERIAL_LEXICON.bySurface) {
+      const ids = planMaterialIntent(surface).cues.map((cue) => cue.id);
+      if (!ids.includes(concept.id)) broken.push(`표면형 ${surface}: ${concept.id} / ${ids.join(",") || "-"}`);
+    }
+    for (const [alias, concept] of MATERIAL_LEXICON.byEnglish) {
+      const ids = planMaterialIntent(alias).cues.map((cue) => cue.id);
+      if (!ids.includes(concept.id)) broken.push(`별칭 ${alias}: ${concept.id} / ${ids.join(",") || "-"}`);
+    }
+    expect(broken).toEqual([]);
   });
 
   it("reference-query-language 가 아는 낱말은 그 사전의 번역어를 그대로 쓴다", () => {
