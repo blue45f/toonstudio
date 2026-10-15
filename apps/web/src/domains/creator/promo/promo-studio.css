@@ -159,3 +159,47 @@
   .promo-studio, .promo-studio :is(.promo-card, .promo-feedback, .promo-error, .promo-empty, .promo-preflight li, .promo-step-link, button, input, select, textarea) { background: Canvas; color: CanvasText; border-color: CanvasText; }
   .promo-studio :focus-visible { outline-color: Highlight; }
 }
+
+/* 문서 컷 가져오기 · 로케일별 자막 일괄 출력 — 기존 토큰만 쓰고, 상태는 색과 함께 글자로도 알린다. */
+.promo-subcard { margin: 18px 0; padding: 16px; border: 1px solid var(--promo-border); border-radius: 14px; background: var(--color-panel); min-width: 0; }
+.promo-subcard h3 { margin: 0 0 8px; font-size: 15px; color: var(--promo-text); }
+.promo-subcard-options { margin: 12px 0; padding: 12px; border: 1px solid var(--promo-border); border-radius: 10px; min-width: 0; }
+.promo-subcard-options legend { padding: 0 6px; font-size: 12px; font-weight: 750; color: var(--color-accent); }
+.promo-notice { margin: 12px 0; padding: 12px 14px; border: 1px solid var(--promo-border); border-radius: 10px; background: var(--color-card); color: var(--promo-text); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.promo-notice p { margin: 0; }
+.promo-notice[data-tone="error"] { border-color: var(--color-bad); background: color-mix(in srgb, var(--color-bad) 12%, var(--color-panel)); }
+.promo-notice[data-tone="warn"] { border-color: var(--color-warn); background: color-mix(in srgb, var(--color-warn) 10%, var(--color-panel)); }
+.promo-notice[data-tone="good"] { border-color: color-mix(in oklch, var(--color-good) 55%, transparent); }
+.promo-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.promo-chip { display: inline-flex; align-items: center; padding: 2px 10px; border: 1px solid var(--promo-border); border-radius: 999px; background: var(--color-card); color: var(--promo-text); font-size: 12px; font-weight: 650; line-height: 1.6; }
+.promo-chip[data-tone="good"] { border-color: color-mix(in oklch, var(--color-good) 60%, transparent); }
+.promo-chip[data-tone="warn"] { border-color: var(--color-warn); }
+.promo-chip[data-tone="bad"] { border-color: var(--color-bad); }
+.promo-cut-drafts { display: grid; gap: 12px; margin: 14px 0; padding: 0; list-style: none; }
+.promo-cut-draft { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--promo-border); border-radius: 12px; }
+.promo-cut-draft[data-included="false"] { border-style: dashed; }
+.promo-cut-draft legend { padding: 0 6px; font-size: 12px; font-weight: 700; }
+.promo-cut-thumb { width: 96px; height: 136px; object-fit: contain; border-radius: 8px; background: var(--color-raised); }
+.promo-cut-fields { min-width: 0; }
+.promo-cut-fields > label:first-child { margin-top: 0; }
+.promo-locale-list { display: grid; gap: 10px; margin: 12px 0; padding: 0; list-style: none; }
+.promo-locale-row { min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--promo-border); border-radius: 12px; background: var(--color-card); }
+.promo-locale-row code { padding: 0 6px; border-radius: 6px; background: var(--color-raised); font-size: 12px; }
+.promo-locale-detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--promo-border); }
+.promo-two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.promo-studio .promo-link-button { display: inline-flex; align-items: center; min-height: 44px; padding: 9px 14px; border: 1px solid var(--promo-border); border-radius: 9px; background: var(--color-card); color: var(--promo-text); font-size: 13px; line-height: 1.5; font-weight: 650; text-decoration: none; }
+.promo-studio .promo-link-button:hover { background: var(--color-raised); border-color: var(--color-accent); }
+.promo-locale-voice { margin-top: 10px; }
+.promo-locale-voice .promo-button-row { align-items: end; margin: 8px 0; }
+.promo-locale-voice select { max-width: 100%; }
+.promo-locale-warnings { margin-top: 10px; }
+.promo-locale-warnings summary { cursor: pointer; font-size: 12px; font-weight: 700; }
+.promo-locale-warnings ul { display: grid; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.promo-locale-warnings li { padding: 10px 12px; border: 1px solid var(--color-warn); border-radius: 10px; background: color-mix(in srgb, var(--color-warn) 10%, var(--color-panel)); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.promo-locale-warnings li[data-severity="info"] { border-color: var(--promo-border); background: var(--color-panel); }
+.promo-locale-details { overflow: hidden; }
+.promo-locale-details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 15px; font-weight: 750; }
+@media (max-width: 540px) { .promo-cut-draft { grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 10px; } .promo-cut-thumb { width: 64px; height: 100px; } .promo-two-columns { grid-template-columns: 1fr; } }
+@media (forced-colors: active) {
+  .promo-studio :is(.promo-subcard, .promo-subcard-options, .promo-notice, .promo-chip, .promo-cut-draft, .promo-locale-row, .promo-locale-warnings li, .promo-link-button) { background: Canvas; color: CanvasText; border-color: CanvasText; }
+}

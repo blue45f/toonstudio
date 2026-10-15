@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { EmptyTeach } from "@/shared/components/library-view-empty";
 import { Clapperboard } from "lucide-react";
@@ -18,10 +18,12 @@ import {
   type PromoHistoryTracker,
 } from "./promo-history";
 import { PromoDirectorControls } from "./PromoDirectorControls";
+import { PromoDocumentCuts } from "./PromoDocumentCuts";
 import { PromoMicrophoneRecorder } from "./PromoMicrophoneRecorder";
 import { downloadPromoRemotion } from "./promo-downloads";
+import { applyPromoShortPreset, changePromoSeconds, promoSecondsOptions } from "./promo-duration";
 import { downloadPromoBlob, importPromoPanel, promoRecorderMime, recordPromoVideo } from "./promo-media";
-import { emptyPromoProject, localPromoPlan, parsePromoAiPlan, parsePromoProject, PROMO_MAX_PANELS, PROMO_STYLES, PROMO_STYLE_LABELS, promoAiPrompt, promoKaraokeVtt, promoShotList, promoSrt, promoTimeline, promoVtt } from "./promo-model";
+import { emptyPromoProject, isPromoSeconds, localPromoPlan, parsePromoAiPlan, parsePromoProject, PROMO_ENDING_SECONDS, PROMO_SHORT_MAX_PANELS, PROMO_SHORT_SECONDS, PROMO_STYLES, PROMO_STYLE_LABELS, promoAiPrompt, promoKaraokeVtt, promoMaxPanels, promoShotList, promoSrt, promoTimeline, promoVtt } from "./promo-model";
 import { PromoPanelEditor } from "./PromoPanelEditor";
 import { PromoPreflight } from "./PromoPreflight";
 import { promoPreflight } from "./promo-preflight";
@@ -41,7 +43,11 @@ import "./promo-studio.css";
 import { SHOWCASE_HOME_PATH } from "../publishing/showcase-links";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import Link from "@/shared/navigation/router-link";
+
+// 로케일 일괄 출력은 넘침 게이트·ZIP 같은 무거운 코드를 쓰므로, 사용자가 펼칠 때만 불러온다(배포 청크 실패는 앱 공용 복구를 따른다).
+const PromoLocaleBatch = lazyRetry(() => import("./PromoLocaleBatch").then((module) => ({ default: module.PromoLocaleBatch })), "PromoLocaleBatch");
 
 export function StudioPromoPage() {
   const bt = useBilingual("StudioPromoPage");
@@ -57,9 +63,11 @@ export function StudioPromoPage() {
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
   const [quality, setQuality] = useState<720 | 1080>(720);
+  const [localeOpen, setLocaleOpen] = useState(false);
   const operation = useRef<AbortController | null>(null);
   const mounted = useRef(true);
   const busy = phase !== "idle" || !draft.ready;
+  const maxPanels = promoMaxPanels(project.seconds);
   const mime = promoRecorderMime();
   useEffect(() => {
     mounted.current = true;
@@ -114,9 +122,9 @@ export function StudioPromoPage() {
     const controller = start("import");
     if (!controller) return;
     try {
-      if (project.panels.length + files.length * (splitParts === "auto" ? 1 : splitParts) > PROMO_MAX_PANELS) throw new Error(`최대 ${PROMO_MAX_PANELS}컷까지 추가할 수 있어요.`);
+      if (project.panels.length + files.length * (splitParts === "auto" ? 1 : splitParts) > maxPanels) throw new Error(`${project.seconds}초 영상은 최대 ${maxPanels}컷까지 추가할 수 있어요.`);
       const panels: PromoPanel[] = [];
-      for (const file of Array.from(files).sort((a, b) => a.name.localeCompare(b.name, "ko", { numeric: true }))) panels.push(...await importPromoPanels(file, project.panels.length + panels.length, splitParts, controller.signal));
+      for (const file of Array.from(files).sort((a, b) => a.name.localeCompare(b.name, "ko", { numeric: true }))) panels.push(...await importPromoPanels(file, project.panels.length + panels.length, splitParts, controller.signal, maxPanels));
       if (!controller.signal.aborted) { patch({ panels: [...project.panels, ...panels] }); setMessage(`${panels.length}컷을 추가했어요. 컷 설명을 입력하면 AI가 더 정확하게 구성할 수 있어요.`); }
     } catch (reason) { failed(reason, controller.signal); } finally { finish(controller); }
   };
@@ -267,6 +275,21 @@ export function StudioPromoPage() {
   };
   const issues = promoPreflight(project);
   const steps = promoStepStatuses(project, issues);
+  const changeSeconds = (value: number) => {
+    if (!isPromoSeconds(value)) return;
+    const result = changePromoSeconds(project, value);
+    if (!result.ok) { setError(result.message); return; }
+    setError("");
+    apply(result.project);
+    if (value === PROMO_SHORT_SECONDS) setMessage(`10초 길이로 바꿨어요. 컷은 최대 ${PROMO_SHORT_MAX_PANELS}개예요. 읽기 시간에 맞춘 상대 길이는 '10초 쇼츠 트레일러' 연출이나 로컬 연출 템플릿을 적용하면 다시 계산돼요.`);
+  };
+  const applyShortPreset = () => {
+    const result = applyPromoShortPreset(project);
+    if (!result.ok) { setError(result.message); return; }
+    setError("");
+    apply(result.project);
+    setMessage(`10초 쇼츠 프리셋을 적용했어요. 길이 ${PROMO_SHORT_SECONDS}초(본편 ${PROMO_SHORT_SECONDS - PROMO_ENDING_SECONDS}초 + 마지막 ${PROMO_ENDING_SECONDS}초), 세로 9:16, 하드 컷 전환으로 맞췄어요. 컷 순서와 자막은 그대로예요.`);
+  };
   const movePanel = (index: number, direction: -1 | 1) => {
     const panels = [...project.panels];
     const target = index + direction;
@@ -286,7 +309,7 @@ export function StudioPromoPage() {
           <h1 id="promo-title">{bt("당신의 웹툰을, 움직이는 예고편으로.", "Turn your webtoon into a moving trailer.")}</h1>
           <p>{bt("컷을 올리고 분위기를 고르면 예고편·쇼츠·모션툰을 이 브라우저에서 바로 만들어 저장합니다.", "Add panels, pick a mood, and make trailers, shorts or motion comics right in this browser.")}</p>
         </div>
-        <span className="promo-badge">{bt("15 / 30 / 60초", "15 / 30 / 60 s")}</span>
+        <span className="promo-badge">{bt("10 / 15 / 30 / 60초", "10 / 15 / 30 / 60 s")}</span>
       </header>
       <p className="promo-draft-status" role="status">{draft.status}</p>
       <PromoStepNav steps={steps} panelCount={project.panels.length} />
@@ -299,17 +322,21 @@ export function StudioPromoPage() {
             <label htmlFor="promo-cta">마지막 2초의 안내 문구</label><input id="promo-cta" value={project.cta} maxLength={80} onChange={(event) => patch({ cta: event.target.value }, "field:cta")} />
             <div className="promo-inline-grid">
               <label htmlFor="promo-ratio">화면 비율<select id="promo-ratio" value={project.ratio} onChange={(event) => patch({ ratio: event.target.value as PromoProject["ratio"] })}><option value="9:16">세로 9:16 · 쇼츠/릴스</option><option value="16:9">가로 16:9 · 예고편</option><option value="1:1">정사각형 1:1 · 피드</option></select></label>
-              <label htmlFor="promo-seconds">전체 길이<select id="promo-seconds" value={project.seconds} onChange={(event) => patch({ seconds: Number(event.target.value) as PromoProject["seconds"] })}>{[15, 30, 60].map((seconds) => <option key={seconds} value={seconds}>{seconds}초</option>)}</select></label>
+              <label htmlFor="promo-seconds">전체 길이<select id="promo-seconds" aria-describedby="promo-seconds-note" value={project.seconds} onChange={(event) => changeSeconds(Number(event.target.value))}>{promoSecondsOptions(project.panels.length).map((option) => <option key={option.seconds} value={option.seconds} disabled={!option.allowed && option.seconds !== project.seconds}>{option.seconds}초{option.seconds === PROMO_SHORT_SECONDS ? " · 틱톡·쇼츠" : ""}{!option.allowed ? ` · 컷 ${option.maxPanels}개까지` : ""}</option>)}</select></label>
               <label htmlFor="promo-style">연출 분위기<select id="promo-style" value={project.style} onChange={(event) => patch({ style: event.target.value as PromoProject["style"] })}>{PROMO_STYLES.map((style) => <option key={style} value={style}>{PROMO_STYLE_LABELS[style]}</option>)}</select></label>
             </div>
+            <p id="promo-seconds-note" className="promo-muted">{project.seconds === PROMO_SHORT_SECONDS
+              ? `10초 쇼츠: 본편 ${PROMO_SHORT_SECONDS - PROMO_ENDING_SECONDS}초 + 마지막 ${PROMO_ENDING_SECONDS}초 안내 카드 · 컷은 최대 ${PROMO_SHORT_MAX_PANELS}개 · 컷마다 최소 0.5초를 보장하고 1초 이상을 권장해요.`
+              : `전체 길이에 마지막 ${PROMO_ENDING_SECONDS}초 안내 카드가 포함돼요. 컷은 최대 ${maxPanels}개까지 담을 수 있어요.`}</p>
           </fieldset>
-          <PromoDirectorControls project={project} disabled={busy} onApply={(next) => { apply(next); setError(""); setMessage("연출 프리셋을 적용했어요. 컷별 카메라·자막·효과를 추가로 조절할 수 있어요."); }} onPatch={(value, field) => patch(value, scopedPromoCoalesceKey("presentation", field))} />
+          <PromoDirectorControls project={project} disabled={busy} onApply={(next) => { apply(next); setError(""); setMessage("연출 프리셋을 적용했어요. 컷별 카메라·자막·효과를 추가로 조절할 수 있어요."); }} onShortPreset={applyShortPreset} onPatch={(value, field) => patch(value, scopedPromoCoalesceKey("presentation", field))} />
           <section className="promo-card" id={PROMO_STEP_ANCHOR.cuts} aria-labelledby="promo-cuts-title">
-            <div className="promo-section-head"><h2 id="promo-cuts-title">02 · 컷과 장면 구성</h2><span>{project.panels.length} / {PROMO_MAX_PANELS}컷</span></div>
+            <div className="promo-section-head"><h2 id="promo-cuts-title">02 · 컷과 장면 구성</h2><span>{project.panels.length} / {maxPanels}컷</span></div>
             <label htmlFor="promo-split">세로 원고 분할<select id="promo-split" value={splitParts} disabled={busy} onChange={(event) => setSplitParts(event.target.value === "auto" ? "auto" : Number(event.target.value))}><option value="auto">흰 여백 자동 감지 · 원본 보존</option>{[1, 2, 3, 4, 6, 12].map((parts) => <option value={parts} key={parts}>{parts === 1 ? "파일 1개 = 컷 1개" : `파일마다 세로 ${parts}등분`}</option>)}</select></label>
             <label htmlFor="promo-panels" className="promo-upload-label">웹툰 컷 추가 · PNG, JPEG, WebP · 컷당 10MB 이하</label>
             <input id="promo-panels" type="file" accept="image/png,image/jpeg,image/webp" multiple disabled={busy} onChange={(event) => { void uploadPanels(event.target.files); event.target.value = ""; }} />
             <p className="promo-muted">자동 감지는 가로로 이어진 흰색·투명 여백을 기준으로 분할합니다. 경계가 불확실하면 원고를 한 컷으로 유지합니다. 균등 분할도 선택할 수 있으며 말풍선 경계는 직접 확인하세요. 원본 파일은 수정하지 않습니다.</p>
+            <PromoDocumentCuts project={project} disabled={busy} onApply={(panels, summary) => { apply({ ...project, panels }); setError(""); setMessage(summary); }} />
             <div className="promo-button-row">
               <button type="button" className="promo-primary" disabled={busy || !project.panels.length} onClick={() => void generate()}>자동 무료 AI로 홍보 콘티 구성</button>
               <button type="button" disabled={busy || !project.panels.length} onClick={() => { patch({ panels: localPromoPlan(project) }); setMessage("로컬 연출 템플릿을 적용했어요. AI 생성 결과가 아니며 네트워크 요청 없이 동작해요."); }}>로컬 연출 템플릿</button>
@@ -324,8 +351,8 @@ export function StudioPromoPage() {
                 desc="3~6컷으로 첫 번째 예고편을 만들어보세요. 위에서 웹툰 컷을 추가하면 여기에 장면이 쌓입니다."
               />
             ) : null}
-            <div className="promo-shots">{promoTimeline(project).map((scene, index) => <PromoPanelEditor key={scene.panel.id} scene={scene} index={index} count={project.panels.length} disabled={busy} onSeekFrame={(frame) => setSeekRequest({ frame, token: Date.now() })} onSeek={() => setSeekRequest({ frame: scene.from + Math.floor(scene.duration / 2), token: Date.now() })} onForeground={(file) => { void uploadForeground(scene.panel.id, file); }} onDuplicate={() => {
-              if (project.panels.length >= PROMO_MAX_PANELS) return;
+            <div className="promo-shots">{promoTimeline(project).map((scene, index) => <PromoPanelEditor key={scene.panel.id} scene={scene} index={index} count={project.panels.length} maxPanels={maxPanels} disabled={busy} onSeekFrame={(frame) => setSeekRequest({ frame, token: Date.now() })} onSeek={() => setSeekRequest({ frame: scene.from + Math.floor(scene.duration / 2), token: Date.now() })} onForeground={(file) => { void uploadForeground(scene.panel.id, file); }} onDuplicate={() => {
+              if (project.panels.length >= maxPanels) return;
               const panels = [...project.panels]; panels.splice(index + 1, 0, { ...scene.panel, id: crypto.randomUUID() }); patch({ panels });
             }} onChange={(value, field) => patch({ panels: project.panels.map((panel) => panel.id === scene.panel.id ? { ...panel, ...value } : panel) }, scopedPromoCoalesceKey(`panel:${scene.panel.id}`, field))} onMove={(direction) => movePanel(index, direction)} onRemove={() => patch({ panels: project.panels.filter((panel) => panel.id !== scene.panel.id) })} />)}</div>
           </section>
@@ -383,6 +410,14 @@ export function StudioPromoPage() {
             <label htmlFor="promo-import">프로젝트 JSON 불러오기 (현재 구성 교체)</label><input id="promo-import" type="file" accept="application/json,.json" disabled={busy} onChange={(event) => { void importProject(event.target.files?.[0]); event.target.value = ""; }} />
             <p className="promo-muted">초안은 이 브라우저에 자동 저장합니다. 브라우저 데이터 삭제·저장 공간 부족에 대비해 프로젝트 JSON도 백업하세요. 미디어가 포함되므로 공유 대상을 확인하세요.</p>
           </section>
+          <details className="promo-card promo-locale-details" onToggle={(event) => setLocaleOpen(event.currentTarget.open)}>
+            <summary>{bt("로케일별 자막 일괄 출력 · 음성 미리듣기", "Batch captions by locale · voice preview")}</summary>
+            {localeOpen ? (
+              <Suspense fallback={<p role="status">{bt("로케일 출력 도구를 불러오는 중이에요…", "Loading the locale export tool…")}</p>}>
+                <PromoLocaleBatch project={project} disabled={busy} />
+              </Suspense>
+            ) : null}
+          </details>
           <div className="promo-feedback" aria-live="polite" aria-atomic="true">
             {phase === "ai" ? <p>AI가 홍보 문구와 컷 순서를 구성하고 있어요.</p> : null}
             {phase === "poster" ? <p>썸네일과 콘티를 렌더링하고 있어요.</p> : null}

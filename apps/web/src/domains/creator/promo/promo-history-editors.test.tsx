@@ -101,7 +101,7 @@ describe("실행 취소 병합 키 · 오디오 믹서와 연출 감독", () => 
 
   it("브랜드 문구·강조색은 필드 키로 병합하고 자막 선택·체크박스는 키 없이 넘긴다", () => {
     const onPatch = vi.fn();
-    render(<PromoDirectorControls project={emptyPromoProject()} disabled={false} onApply={vi.fn()} onPatch={onPatch} />);
+    render(<PromoDirectorControls project={emptyPromoProject()} disabled={false} onApply={vi.fn()} onShortPreset={vi.fn()} onPatch={onPatch} />);
     expect(changed(onPatch, byId("promo-brand-text"), "TOONSTUDIO")).toBe("brandText");
     expect(changed(onPatch, byId("promo-brand-color"), "#123456")).toBe("brandColor");
     expect(changed(onPatch, byId("promo-caption-style"), "boxed")).toBeUndefined();
