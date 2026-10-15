@@ -664,22 +664,43 @@ def build(name, args):
         "replacements": len(report["replacements"]), "surfaces": len(report["surfaces"])}), flush=True)
 
 
+def delivery_record(name, report):
+    sources = sorted({entry["sourceUrl"] for entry in report["sourceModels"] + report["surfaces"]})
+    return {"fileName": name + ".glb", "byteSize": report["metrics"]["bytes"],
+        "sha256": report["sha256"], "url": report["url"], "thumbnailUrl": report["thumbnailUrl"],
+        "bounds": report["bounds"], "sources": sources,
+        "sourceByteSize": (SOURCE / (name + ".glb")).stat().st_size,
+        "metrics": report["metrics"], "replacedGroups": len(report["replacements"]),
+        "refinedSurfaces": len(report["surfaces"]), "renderPasses": report.get("renderPasses"),
+        "reviewLevel": "single-view-blender-preview",
+        "allAnglesArtisticallyApproved": False, "studioRuntimeVerified": False}
+
+
+def released_records():
+    # 이미 배포된 manifest 의 레코드를 fileName 으로 모은다. 일부 장면만 다시 빌드한 실행이
+    # (CI 의 단일 장면 재빌드 등) 나머지 장면의 레코드를 보존해야 manifest 가 디스크의 GLB·패스와
+    # 계속 일치한다. manifest 가 없거나 깨졌으면 보존할 레코드가 없는 것으로 본다.
+    path = OUTPUT / "manifest.json"
+    if not path.is_file():
+        return {}
+    try:
+        records = json.loads(path.read_text()).get("records", [])
+    except ValueError:
+        return {}
+    return {record["fileName"]: record for record in records if "fileName" in record}
+
+
 def write_delivery_manifest():
+    released = released_records()
     records = []
     for name in CAMERAS:
         report_path = ARTIFACTS / (name + ".json")
-        if not report_path.exists():
+        if report_path.exists():
+            records.append(delivery_record(name, json.loads(report_path.read_text())))
+        elif name + ".glb" in released:
+            records.append(released[name + ".glb"])
+        else:
             return
-        report = json.loads(report_path.read_text())
-        sources = sorted({entry["sourceUrl"] for entry in report["sourceModels"] + report["surfaces"]})
-        records.append({"fileName": name + ".glb", "byteSize": report["metrics"]["bytes"],
-            "sha256": report["sha256"], "url": report["url"], "thumbnailUrl": report["thumbnailUrl"],
-            "bounds": report["bounds"], "sources": sources,
-            "sourceByteSize": (SOURCE / (name + ".glb")).stat().st_size,
-            "metrics": report["metrics"], "replacedGroups": len(report["replacements"]),
-            "refinedSurfaces": len(report["surfaces"]), "renderPasses": report.get("renderPasses"),
-            "reviewLevel": "single-view-blender-preview",
-            "allAnglesArtisticallyApproved": False, "studioRuntimeVerified": False})
     (OUTPUT / "manifest.json").write_text(json.dumps({
         "schema": "toonstudio.environment-refinement.v6", "records": records,
     }, indent=2) + "\n")
