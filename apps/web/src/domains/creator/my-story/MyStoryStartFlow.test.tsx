@@ -458,6 +458,22 @@ describe("내 이야기 시작 동선 — 텍스트 AI 보강(사용자가 누�
     expect(within(panel).queryByText(/신입 직원/u)).toBeNull();
   });
 
+  it("보낼 답변에 개인 정보처럼 보이는 숫자가 있으면 누르기 전에 알리되 보내는 것을 막지는 않는다", () => {
+    const complete = reply([]);
+    renderFlow({ storage: memory(), initialTemplateId: "safety", complete });
+    type("공사장 출입구 010-1234-5678");
+    click("여기까지로 초안 보기");
+    const panel = screen.getByRole("region", { name: /AI로 나레이션 다듬기/u });
+    expect(within(panel).getByText(/보낼 내용에 개인 정보처럼 보이는 것이 있어요 \(전화번호\)/u)).toBeTruthy();
+    expect((within(panel).getByRole("button", { name: "AI로 다듬기" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(complete).not.toHaveBeenCalled();
+  });
+
+  it("개인 정보처럼 보이는 내용이 없으면 이 경고를 보이지 않는다", async () => {
+    const panel = await openAiReady(reply([]));
+    expect(within(panel).queryByText(/보낼 내용에 개인 정보처럼 보이는 것이/u)).toBeNull();
+  });
+
   it("후보를 받아 컷별로 채택·되돌릴 수 있고, 채택 전에는 초안이 바뀌지 않는다", async () => {
     const complete = reply([{ index: 2, narration: "안전모 없이 안으로 들어가려 했다" }]);
     const panel = await openAiReady(complete);
