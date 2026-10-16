@@ -53,10 +53,15 @@ export function findOversizedPages(plan: PanelReflowPlan): number[] {
   return plan.pages.filter((page) => !canDrawSurface(plan.options.targetWidth, page.height)).map((page) => page.index + 1);
 }
 
-function paintPlacement(surface: PanelRenderSurface, source: PanelDrawable, placement: ReflowPlacement, offsetY: number): void {
+/**
+ * 컷 하나를 면에 그린다. 면이 페이지 전체(폭 규격)이면 계획의 가로 위치(`dest.x`, 가운데 정렬)에 놓고,
+ * 면이 컷 자신의 크기면 왼쪽 끝(0)에 놓는다. 컷 면에 `dest.x` 를 또 더하면 규격보다 좁은 컷("원본 크기 유지")이
+ * 오른쪽으로 밀려 오른쪽이 잘리고 왼쪽에 빈 띠가 생긴다 — Studio 문서는 컷 이미지를 `문서 오프셋 + dest.x` 에 따로 놓는다.
+ */
+function paintPlacement(surface: PanelRenderSurface, source: PanelDrawable, placement: ReflowPlacement, origin: { readonly x: number; readonly y: number }): void {
   surface.drawSource(source, placement.source, {
-    x: placement.dest.x,
-    y: placement.dest.y - offsetY,
+    x: placement.dest.x - origin.x,
+    y: placement.dest.y - origin.y,
     width: placement.dest.width,
     height: placement.dest.height,
   });
@@ -78,7 +83,7 @@ export async function renderReflowCuts(
     throwIfRenderAborted(options.signal);
     const surface = openRenderSurface(deps, placement.dest.width, placement.dest.height, placement.order);
     surface.fill(options.background);
-    paintPlacement(surface, source, placement, placement.dest.y);
+    paintPlacement(surface, source, placement, placement.dest);
     const blob = await encodeRenderSurface(surface, placement.order);
     bytes += blob.size;
     if (bytes > PANEL_STUDIO_INSERT_MAX_BYTES) throw new PanelRenderError("too-large-for-studio", placement.order);
@@ -100,7 +105,7 @@ async function renderPage(plan: PanelReflowPlan, page: ReflowPage, source: Panel
   const width = plan.options.targetWidth;
   const surface = openRenderSurface(deps, width, page.height, page.index + 1);
   surface.fill(background);
-  for (const placement of page.placements) paintPlacement(surface, source, placement, 0);
+  for (const placement of page.placements) paintPlacement(surface, source, placement, { x: 0, y: 0 });
   const blob = await encodeRenderSurface(surface, page.index + 1);
   return { index: page.index, width, height: page.height, blob };
 }

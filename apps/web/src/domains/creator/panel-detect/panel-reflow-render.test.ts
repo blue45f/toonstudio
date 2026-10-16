@@ -54,6 +54,33 @@ describe("재배열 렌더 — 컷 이미지", () => {
     expect(progress).toEqual([[1, 3], [2, 3], [3, 3]]);
   });
 
+  it("원본 크기 유지에서 규격보다 좁은 컷도 자기 면 전체에 그린다 — 오른쪽이 잘리거나 왼쪽에 빈 띠가 생기지 않는다", async () => {
+    const drawable = fixtureDrawable(new FixtureImage(720, 600, WHITE));
+    const world = fakeCanvasWorld();
+    // 폭 500 컷은 규격 720 안에서 가운데(x=110)에 놓이지만, 컷 이미지는 폭 500 짜리 자기 면이므로 면의 왼쪽 끝(0)부터 채워야 한다.
+    const plan = planPanelReflow(
+      [{ id: "narrow", x: 40, y: 20, width: 500, height: 300 }, { id: "wide", x: 10, y: 340, width: 700, height: 200 }],
+      { targetWidth: 720, gap: 80, scaleMode: "keep-size" },
+    );
+    expect(plan.placements.map((placement) => placement.dest.x)).toEqual([110, 10]);
+    await renderReflowCuts(plan, drawable, world.deps, { background: "#ffffff", yieldNow: noYield });
+    world.surfaces.forEach((surface, index) => {
+      const dest = plan.placements[index].dest;
+      expect(surface.width).toBe(dest.width);
+      expect(surface.draws).toHaveLength(1);
+      // 면 전체를 정확히 덮는다: 시작이 0 이 아니면 왼쪽이 비고, 끝이 면 폭을 넘으면 오른쪽이 잘린다.
+      expect(surface.draws[0].to).toEqual({ x: 0, y: 0, width: surface.width, height: surface.height });
+    });
+  });
+
+  it("페이지 이미지에는 같은 컷이 계획의 가로 위치(가운데 정렬)대로 놓인다", async () => {
+    const drawable = fixtureDrawable(new FixtureImage(720, 600, WHITE));
+    const world = fakeCanvasWorld();
+    const plan = planPanelReflow([{ id: "narrow", x: 40, y: 20, width: 500, height: 300 }], { targetWidth: 720, gap: 0, scaleMode: "keep-size" });
+    await renderReflowPages(plan, drawable, world.deps, { background: "#ffffff", yieldNow: noYield });
+    expect(world.surfaces[0].draws[0].to).toEqual({ x: 110, y: 0, width: 500, height: 300 });
+  });
+
   it("원본 이미지는 읽기만 한다(닫거나 바꾸지 않는다)", async () => {
     const { drawable, world, plan } = setup();
     await renderReflowCuts(plan, drawable, world.deps, { background: "#000000", yieldNow: noYield });
