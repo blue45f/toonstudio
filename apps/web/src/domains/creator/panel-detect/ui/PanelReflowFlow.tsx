@@ -9,7 +9,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import { buildStudioDocumentFromReflow } from "../panel-reflow-output";
-import { createManualDetectResult, createPanelEditState, setPanelRect } from "../panel-detect-edit";
+import { createManualDetectResult, createPanelEditState, setPanelRect, type PanelEditState } from "../panel-detect-edit";
 import { tightenRectToContent } from "../panel-detect-tighten";
 import { estimateGutter } from "../panel-detect-raster";
 import { PANEL_DETECT_LIMITS, type PanelDetectResult, type PanelDetectSensitivity, type PanelReadingOrder } from "../panel-detect-types";
@@ -167,19 +167,30 @@ function PanelReflowWorkspace({ ready, previewUrl, result, sensitivity, detectBu
   }, [view]);
   const changeView = (next: "review" | "reflow"): void => { setView(next); };
 
+  // 이미지를 읽는 동안(비동기) 사용자가 컷을 옮기거나 지울 수 있다. 누른 시점의 사각형으로 계산해 두었다가 적용하면 그 사이의
+  // 편집을 옛 값으로 덮어쓰므로, 읽기가 끝난 시점의 컷을 다시 찾아 그 위치에서 맞춘다(DOM 이 아닌 최신 상태 읽기용 참조).
+  const panelsRef = useRef(state.panels);
+  useEffect(() => {
+    panelsRef.current = state.panels;
+  }, [state.panels]);
+
   const tighten = (id: string): void => {
-    const panel = state.panels.find((candidate) => candidate.id === id);
-    if (!panel) return;
+    if (!state.panels.some((candidate) => candidate.id === id)) return;
     void tightenJob.run(async ({ signal }) => {
       const raster = await source.readRaster(signal);
+      if (signal.aborted) return;
+      const panel = panelsRef.current.find((candidate) => candidate.id === id);
+      if (!panel) return;
       const gutter = result.gutter.kind === "none" ? estimateGutter(raster, PANEL_DETECT_LIMITS.defaultGutterTolerance) : result.gutter;
       const tight = tightenRectToContent(raster, gutter, panel);
-      if (signal.aborted) return;
       if (!tight) {
         dispatch({ type: "edit", apply: (current) => current, announce: bi("이 영역에서 내용을 찾지 못해 그대로 뒀어요.", "No content found in this area; left unchanged.") });
         return;
       }
-      dispatch({ type: "edit", apply: (current) => setPanelRect(current, id, tight), announce: bi("컷을 내용에 맞췄어요.", "Panel fitted to its content.") });
+      // 계산한 사각형 그대로인 컷에만 적용한다. 그 사이 한 번 더 바뀌었다면 덮어쓰지 않는다.
+      const unchanged = (current: PanelEditState): boolean => current.panels.some((candidate) =>
+        candidate.id === id && candidate.x === panel.x && candidate.y === panel.y && candidate.width === panel.width && candidate.height === panel.height);
+      dispatch({ type: "edit", apply: (current) => (unchanged(current) ? setPanelRect(current, id, tight) : current), announce: bi("컷을 내용에 맞췄어요.", "Panel fitted to its content.") });
     });
   };
 

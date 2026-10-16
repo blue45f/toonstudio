@@ -7,7 +7,8 @@ import { useI18n } from "@/shared/lib/i18n";
 import { detectPanels } from "../panel-detect-core";
 import { createManualDetectResult } from "../panel-detect-edit";
 import { FixtureImage, INK, WHITE } from "../panel-detect-fixtures";
-import { PanelDetectError, type PanelDetectResult } from "../panel-detect-types";
+import { tightenRectToContent } from "../panel-detect-tighten";
+import { PanelDetectError, type PanelDetectRaster, type PanelDetectResult } from "../panel-detect-types";
 
 import { PanelReflowFlow } from "./PanelReflowFlow";
 import { createKit, mockBounds, renderWithEnv, sampleReady, samplePage, type Kit, type KitOverrides } from "./panel-ui-test-kit";
@@ -376,6 +377,68 @@ describe("컷 확인과 고치기 단계", () => {
     fireEvent.click(button("내용에 맞추기"));
     await waitFor(() => expect(announcer()).toBe("컷을 내용에 맞췄어요."));
     expect(where(document.querySelector("[data-panel-id]")?.getAttribute("aria-label") ?? "")).toBe(where(original));
+  });
+
+  it("‘내용에 맞추기’를 기다리는 동안 컷을 옮기면 옛 위치가 아니라 옮긴 위치에서 맞추고, 옮긴 것을 덮어쓰지 않는다", async () => {
+    const base = sampleReady(IMAGE);
+    const pending: Array<() => void> = [];
+    let reads = 0;
+    // 첫 읽기(컷 감지)는 바로 끝내고, 이후 읽기(내용에 맞추기)는 시험이 풀어 줄 때까지 붙잡는다.
+    const readRaster = (): Promise<PanelDetectRaster> => {
+      const raster = IMAGE.raster();
+      reads += 1;
+      return reads === 1 ? Promise.resolve(raster) : new Promise<PanelDetectRaster>((resolve) => { pending.push(() => { resolve(raster); }); });
+    };
+    const kit = createKit({ image: IMAGE });
+    renderWithEnv(<PanelReflowFlow ready={{ ...base, source: { ...base.source, readRaster } }} previewUrl="blob:preview" />, kit.env);
+    await reviewHeading();
+    fireEvent.click(firstOf(listButtons()));
+    const numberInput = (name: string): HTMLInputElement => screen.getByRole("spinbutton", { name }) as HTMLInputElement;
+    const edit = (name: string, value: string): void => { fireEvent.change(numberInput(name), { target: { value } }); fireEvent.blur(numberInput(name)); };
+    const rectOf = (): { x: number; y: number; width: number; height: number } => {
+      const match = /위치 x (\d+), y (\d+), 크기 (\d+)×(\d+) 픽셀/u.exec(document.querySelector("[data-panel-id]")?.getAttribute("aria-label") ?? "");
+      if (!match) throw new Error("컷 이름표에서 위치와 크기를 읽지 못했어요.");
+      return { x: Number(match[1]), y: Number(match[2]), width: Number(match[3]), height: Number(match[4]) };
+    };
+
+    // 오른쪽 여백(190~205)까지 컷을 늘린 뒤 맞추기를 누른다. 옆 컷의 그림(210~)은 건드리지 않는다.
+    edit("1번 컷 너비 (픽셀)", "195");
+    fireEvent.click(button("내용에 맞추기"));
+    await waitFor(() => expect(pending).toHaveLength(1));
+    // 맞추는 계산을 기다리는 사이에 사용자가 컷을 오른쪽으로 4px 옮긴다.
+    edit("1번 컷 X (왼쪽) (픽셀)", "14");
+    const moved = rectOf();
+    expect(moved).toEqual({ x: 14, y: 10, width: 195, height: 220 });
+
+    await act(async () => { pending[0]?.(); });
+    await waitFor(() => expect(announcer()).toBe("컷을 내용에 맞췄어요."));
+    const result = detectPanels(IMAGE.raster(), { readingOrder: "webtoon" });
+    // 옛 위치(x=10)에서 맞춘 값으로 덮어쓰면 옮긴 위치가 사라진다. 옮긴 위치의 사각형을 내용에 맞춘 값이어야 한다.
+    const expected = tightenRectToContent(IMAGE.raster(), result.gutter, moved);
+    expect(expected).toEqual({ x: 14, y: 10, width: 176, height: 220 });
+    expect(rectOf()).toEqual(expected);
+  });
+
+  it("‘내용에 맞추기’를 기다리는 동안 그 컷을 지우면 아무것도 되살리거나 바꾸지 않는다", async () => {
+    const base = sampleReady(IMAGE);
+    const pending: Array<() => void> = [];
+    let reads = 0;
+    const readRaster = (): Promise<PanelDetectRaster> => {
+      const raster = IMAGE.raster();
+      reads += 1;
+      return reads === 1 ? Promise.resolve(raster) : new Promise<PanelDetectRaster>((resolve) => { pending.push(() => { resolve(raster); }); });
+    };
+    const kit = createKit({ image: IMAGE });
+    renderWithEnv(<PanelReflowFlow ready={{ ...base, source: { ...base.source, readRaster } }} previewUrl="blob:preview" />, kit.env);
+    await reviewHeading();
+    fireEvent.click(firstOf(listButtons()));
+    fireEvent.click(button("내용에 맞추기"));
+    await waitFor(() => expect(pending).toHaveLength(1));
+    fireEvent.click(button("컷 1 삭제"));
+    expect(panelIds()).toHaveLength(2);
+    await act(async () => { pending[0]?.(); });
+    expect(panelIds()).toHaveLength(2);
+    expect(announcer()).toBe("1번 컷을 삭제했어요.");
   });
 
   it("말풍선·효과음이 여백을 막은 컷은 경고와 분할 제안을 보여 주고, 제안을 눌러 둘로 나눌 수 있다", async () => {
