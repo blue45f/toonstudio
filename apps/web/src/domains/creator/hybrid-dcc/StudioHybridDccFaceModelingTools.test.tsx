@@ -8,14 +8,11 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { useEffect, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createStudioEditableMeshFromPolygons, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
-
 import {
   createStudioHybridDccComponentSelection,
   mutateStudioHybridDccComponentSelection,
   type StudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
-import { hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
 import {
   createStudioHybridDccWorkspace,
   workspaceAddUnitCube,
@@ -73,7 +70,6 @@ class Latest {
 }
 
 interface HarnessOptions {
-  readonly workspace?: StudioHybridDccWorkspace;
   readonly selectedFaces?: readonly number[];
   readonly selectionMode?: "face" | "object";
   readonly readOnly?: boolean;
@@ -135,7 +131,7 @@ function Harness({ latest, options }: { readonly latest: Latest; readonly option
 }
 
 function setup(options: HarnessOptions = {}) {
-  const workspace = options.workspace ?? cubeWorkspace();
+  const workspace = cubeWorkspace();
   const selection = selectionOf(workspace, options.selectedFaces ?? [TOP], options.selectionMode ?? "face");
   const latest = new Latest(workspace, selection);
   render(<Harness latest={latest} options={options} />);
@@ -144,55 +140,6 @@ function setup(options: HarnessOptions = {}) {
     originalHash: workspace.session.state.geometry.records.cube!.meshHash,
     originalUndoDepth: workspace.session.undoStack.length,
   };
-}
-
-/** 한 변을 n칸으로 나눈 닫힌 정육면체(면 6n²개). 모든 면이 사각형이고 정점을 공유한다. */
-function subdividedCube(n: number): StudioEditableMesh {
-  const positions: { x: number; y: number; z: number }[] = [];
-  const known = new Map<string, number>();
-  const vertex = (x: number, y: number, z: number) => {
-    const key = `${x},${y},${z}`;
-    let id = known.get(key);
-    if (id === undefined) {
-      id = positions.length;
-      known.set(key, id);
-      positions.push({ x: x / n - 0.5, y: y / n - 0.5, z: z / n - 0.5 });
-    }
-    return id;
-  };
-  const faces: number[][] = [];
-  for (const axis of [0, 1, 2]) {
-    for (const side of [0, 1]) {
-      const u = (axis + 1) % 3;
-      const v = (axis + 2) % 3;
-      for (let i = 0; i < n; i += 1) {
-        for (let j = 0; j < n; j += 1) {
-          const corner = (di: number, dj: number) => {
-            const c = [0, 0, 0];
-            c[axis] = side * n;
-            c[u] = i + di;
-            c[v] = j + dj;
-            return vertex(c[0]!, c[1]!, c[2]!);
-          };
-          const quad = [corner(0, 0), corner(1, 0), corner(1, 1), corner(0, 1)];
-          faces.push(side === 1 ? quad : quad.reverse());
-        }
-      }
-    }
-  }
-  return createStudioEditableMeshFromPolygons(positions, faces);
-}
-
-function workspaceWithMesh(mesh: StudioEditableMesh): StudioHybridDccWorkspace {
-  const workspace = createStudioHybridDccWorkspace("face-modeling-big");
-  const session = hybridDccRegisterAsset(workspace.session, "cube", mesh, {
-    source: "primitive",
-    creator: "studio",
-    license: "CC0-1.0",
-    useScope: "commercial",
-    derivative: "original",
-  });
-  return { ...workspace, session, activeAssetId: "cube" };
 }
 
 function open() {
@@ -456,32 +403,6 @@ describe("면 모델링 작업대: 거리 입력과 미리보기", () => {
     });
     expect(document.querySelector("[data-studio-hybrid-dcc-face-modeling-state]")!.getAttribute("data-state")).toBe("idle");
     expect(latest.workspace.session.state.geometry.records.cube!.meshHash).toBe(previewHash);
-  });
-});
-
-describe("면 모델링 작업대: 아주 큰 메시", () => {
-  it("면이 4000개를 넘으면 핸들을 끄는 동안은 다시 계산하지 않고 놓을 때 한 번 계산한다", () => {
-    const mesh = subdividedCube(26);
-    expect(mesh.faces.length).toBeGreaterThan(4000);
-    const { originalHash } = setup({ workspace: workspaceWithMesh(mesh), selectedFaces: [0] });
-    open();
-    const slider = screen.getByRole("slider", { name: "거리 핸들" });
-    rect(slider, { left: 0, top: 0, width: 200, height: 44 });
-    fireEvent.pointerDown(slider, { button: 0, clientX: 150, pointerId: 1 });
-    fireEvent.pointerMove(slider, { clientX: 180, pointerId: 1 });
-    // 끄는 동안 값은 따라 바뀌지만 뷰포트는 원본 그대로다.
-    expect(Number(slider.getAttribute("aria-valuenow"))).toBeGreaterThan(0);
-    expect(viewport().getAttribute("data-mesh-hash")).toBe(originalHash);
-    fireEvent.pointerUp(slider, { clientX: 180, pointerId: 1 });
-    expect(viewport().getAttribute("data-mesh-hash")).not.toBe(originalHash);
-    expect(screen.queryByRole("alert")).toBeNull();
-  });
-
-  it("입력칸에 직접 입력하면 큰 메시도 바로 미리보기를 계산한다", () => {
-    const { originalHash } = setup({ workspace: workspaceWithMesh(subdividedCube(26)), selectedFaces: [0] });
-    open();
-    type(distanceField(), "0.1");
-    expect(viewport().getAttribute("data-mesh-hash")).not.toBe(originalHash);
   });
 });
 

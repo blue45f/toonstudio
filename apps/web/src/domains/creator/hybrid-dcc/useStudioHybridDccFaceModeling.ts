@@ -207,7 +207,8 @@ export function useStudioHybridDccFaceModeling(
   const previewSummary = preview?.ok ? describeStudioFaceModelingPreview(bt, preview.value.plan) : null;
   // 면 그리기가 거부되면 문제가 된 점(그린 순서의 색인)을 패드에서 따로 표시한다.
   const problemPoints = tool === "draw" && preview && !preview.ok ? (preview.elementIds ?? []) : [];
-  const canApply = Boolean(run && preview?.ok && !committing);
+  // 큰 메시를 끄는 동안(미리보기가 끌기 시작 값에 멈춰 있는 동안)에는 보이는 결과와 입력이 달라 적용하지 않는다.
+  const canApply = Boolean(run && preview?.ok && !committing && frozenText === null);
 
   const cancel = () => {
     if (!engaged) return;
@@ -268,7 +269,6 @@ export function useStudioHybridDccFaceModeling(
     /** 지금 선택·설정으로는 쓸 수 없는 이유(면 미선택, 바깥쪽 오프셋 불가 등). 도구·방향 선택은 열려 있다. */
     unusable: unusableMessage,
     selectionCount,
-    faceCount,
     engaged,
     committing,
     dragging,
@@ -324,17 +324,13 @@ export function useStudioHybridDccFaceModeling(
       edited();
       setDrawPoints(drawPoints.slice(0, -1));
     },
-    clearDrawPoints: () => {
-      edited();
-      setDrawPoints([]);
-    },
     error,
     hint,
     problemPoints,
     previewSummary,
     canApply,
     apply: () => {
-      if (!run || !request || !preview?.ok || committing) return;
+      if (!run || !request || !preview?.ok || committing || frozenText !== null) return;
       setApplyRequested(true);
       setNotice(bt(
         "적용을 요청했습니다. 결과는 편집기 상태 표시와 되돌리기 기록에서 확인하세요.",
