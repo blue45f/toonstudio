@@ -7,6 +7,7 @@
 | `/learn/process` | 아이디어부터 연재 운영까지 9단계 제작 과정과 산출물·참여 직무·Studio 이동 경로 안내 |
 | `/learn/careers` | 웹툰 제작 8개 역할의 업무·역량·포트폴리오 증거와 관련 제작 단계 안내 |
 | `/learn/education` | 대학·학원·공공·온라인 교육기관 검색, 목적·지역·방식 필터, 최대 3곳 비교 |
+| `/learn/accessibility` | 키보드 작업·말로 대사 입력·보기 편한 화면·독자용 대체 텍스트와 읽기 순서·캐릭터 토크 낭독을 한 쪽에 모은 접근성 있는 웹툰 만들기 안내. 기능마다 상태(지금 쓸 수 있어요 / 일부만 / 준비 중)를 표시하고 근거 없는 수치는 쓰지 않는다. 설계와 한계는 [기능 문서](../features/character-chat-voice-accessibility-guide.md) |
 
 기존 `/learn`, `/learn/lessons/*`, `/learn/paths/*`, `/learn/glossary`, `/learn/studio`, `/learn/records`의 학습 기록과 강좌 계약은 변경하지 않는다. 새 안내 페이지는 `LearnPage`의 정확한 경로 분기에서만 렌더링한다.
 
@@ -42,3 +43,4 @@
 - 기관 ID·공식 HTTPS URL·확인일·필수 분류 계약
 - 검색어·유형·지역·방식·목적 복합 필터 계약
 - 새 경로의 공개 사이트 크롬 분류 계약
+- `/learn/accessibility`의 단축키·받아쓰기 안내문·설정 이름이 실제 매뉴얼과 소스 문구와 같은지, 본문의 모든 수치에 근거가 있는지, 받아쓰기 버튼이 화면에 장착되면 안내 상태를 고치게 하는 데이터 계약(`accessible-webtoon-guide.test.ts`)
