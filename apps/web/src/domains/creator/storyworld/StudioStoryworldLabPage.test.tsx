@@ -19,7 +19,13 @@ const saved = (id: string) => JSON.parse(db.rows.get(rowKey(id)) ?? "null");
 function page(workId: string) {
   return <MemoryRouter><StudioStoryworldLabPage key={workId} workId={workId} remixSourceWorkId={null} /></MemoryRouter>;
 }
-async function ready() { await screen.findByRole("button", { name: "설정 파일" }); }
+
+// 처음 열 때 비동기로 채워지는 화면(편집기 첫 그리기, 공유 세계관의 레지스트리 읽기, 개연성 허브의 지연 로딩과 점검)은
+// findBy 기본 대기시간(1초)에 맡기지 않는다. 로컬에서 레지스트리는 수십 ms 지만 허브는 모듈을 미리 불러 둬도 0.35~0.5초가 들어,
+// 로컬보다 2.4~3.4배 느렸던 부하 큰 CI 에서는 1초에 닿는다. 저장소의 지연 로딩 시험 관례(LAZY_LOAD_TIMEOUT_MS)대로 15초까지 기다린다.
+const ASYNC_SURFACE_TIMEOUT_MS = 15_000;
+
+async function ready() { await screen.findByRole("button", { name: "설정 파일" }, { timeout: ASYNC_SURFACE_TIMEOUT_MS }); }
 /**
  * 편집기가 뜨면 "처리 기록" 읽기가 비동기로 시작된다. 이 읽기와 "공유 세계관" 탭의 레지스트리 읽기는 같은 모듈(universe-store)에서
  * `import("../studio-local-database-runtime")` 를 각각 부르는데, vitest 의 vi.mock 은 한 모듈에서 동시에 진행 중인 동적 import 의
@@ -30,7 +36,10 @@ async function ready() { await screen.findByRole("button", { name: "설정 파�
  * (= import 가 끝난 것)을 확인한다. vitest 4.1 에서 확인했다.
  */
 async function settleDispositionRead(workId: string) {
-  await waitFor(() => expect(db.kvGet).toHaveBeenCalledWith(STORYWORLD_DRAFT_NAMESPACE, storyworldIssueDispositionKey(key(workId))));
+  await waitFor(
+    () => expect(db.kvGet).toHaveBeenCalledWith(STORYWORLD_DRAFT_NAMESPACE, storyworldIssueDispositionKey(key(workId))),
+    { timeout: ASYNC_SURFACE_TIMEOUT_MS },
+  );
 }
 async function open(workId: string) {
   const view = render(page(workId));
@@ -41,7 +50,7 @@ async function open(workId: string) {
 /** "공유 세계관" 탭은 레지스트리를 읽은 뒤에야 입력칸을 그린다. 읽기가 실패하면 입력칸 대신 오류 안내만 남으므로, 그 문구를 실패 사유로 드러낸다. */
 async function findUniverseNameField() {
   try {
-    return await screen.findByLabelText("새 공유 세계관 이름");
+    return await screen.findByLabelText("새 공유 세계관 이름", undefined, { timeout: ASYNC_SURFACE_TIMEOUT_MS });
   } catch (error) {
     const reason = screen.queryAllByRole("alert").map((alert) => alert.textContent).join(" ");
     throw reason ? new Error(`공유 세계관 레지스트리를 읽지 못했습니다: ${reason}`, { cause: error }) : error;
@@ -104,7 +113,7 @@ describe("Storyworld actual page integration", () => {
     openTab("공유 세계관");
     await findUniverseNameField();
     openTab("개연성 점검");
-    await screen.findByRole("heading", { name: "점검 범위" });
+    await screen.findByRole("heading", { name: "점검 범위" }, { timeout: ASYNC_SURFACE_TIMEOUT_MS });
   });
   it("keeps authored JSON in SQLite while projecting readiness diagnostics to project storage", async () => {
     const localWrite = vi.spyOn(Storage.prototype, "setItem");
