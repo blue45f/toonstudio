@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 
+import { AccessibleWebtoonGuidePage } from "./AccessibleWebtoonGuidePage";
 import { LearnPage as LearnContent } from "./LearnContent";
 import { LearningHome, LearningPathPage } from "./LearningHome";
 import { LearningClassesPage } from "./LearningClassesPage";
@@ -40,7 +41,9 @@ export function LearnPage() {
     ? <WebtoonProcessPage />
     : normalizedPath === "/learn/careers"
       ? <WebtoonCareerPage />
-      : null;
+      : normalizedPath === "/learn/accessibility"
+        ? <AccessibleWebtoonGuidePage />
+        : null;
 
   return (
     <LearnSectionShell>
