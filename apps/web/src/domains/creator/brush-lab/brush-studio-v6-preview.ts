@@ -336,8 +336,8 @@ export function attachBrushStudioV6LivePreview(
     previousContext.drawImage(canvas, 0, 0);
     try { canvas.setPointerCapture(event.pointerId); }
     catch {
-      previousSurface.width = previousSurface.height = 0;
-      return;
+      // Capture is progressive enhancement: a refused capture must not block drawing.
+      // The stroke continues without capture and still ends on the normal up/cancel path.
     }
     const lastContactPressure = normalizeStudioMaterialPointerPressure(event.pointerType, event.pressure);
     try {
@@ -410,13 +410,18 @@ export function attachBrushStudioV6LivePreview(
     } finally { retire(event.pointerId, !completed); }
   };
   const cancel = (event: PointerEvent): void => { retire(event.pointerId, true); };
+  const onCaptureLoss = (event: PointerEvent): void => {
+    // A lone capture loss is transport degradation, not cancellation: the stroke stays
+    // active so later move/up samples can still finish it normally.
+    if (disposed || !active.has(event.pointerId)) return;
+  };
 
   canvas.addEventListener("pointerdown", down);
   canvas.addEventListener("pointermove", move);
   canvas.addEventListener("pointerrawupdate", move as EventListener);
   canvas.addEventListener("pointerup", up);
   canvas.addEventListener("pointercancel", cancel);
-  canvas.addEventListener("lostpointercapture", cancel);
+  canvas.addEventListener("lostpointercapture", onCaptureLoss);
 
   return {
     clear(): void {
@@ -433,7 +438,7 @@ export function attachBrushStudioV6LivePreview(
       canvas.removeEventListener("pointerrawupdate", move as EventListener);
       canvas.removeEventListener("pointerup", up);
       canvas.removeEventListener("pointercancel", cancel);
-      canvas.removeEventListener("lostpointercapture", cancel);
+      canvas.removeEventListener("lostpointercapture", onCaptureLoss);
       try {
         for (const pointerId of [...active.keys()]) retire(pointerId, true);
       } finally { canvas.style.touchAction = previousTouchAction; }

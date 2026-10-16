@@ -68,12 +68,23 @@ describe("workbench material pointer lifecycle", () => {
     const f = fixture(); f.send("pointerdown"); f.send("pointerup", { pressure: 0 });
     expect(calls.strokes[0]!.points).toHaveLength(1);
   });
-  it.each(["pointercancel", "lostpointercapture"])("restores the pre-stroke surface on %s", (type) => {
+  it("restores the pre-stroke surface on pointercancel", () => {
     const f = fixture(); f.send("pointerdown"); f.send("pointermove", { clientX: 100 });
     const before = f.context.drawImage.mock.calls.length;
-    f.send(type); expect(f.context.drawImage.mock.calls.length).toBeGreaterThan(before);
+    f.send("pointercancel"); expect(f.context.drawImage.mock.calls.length).toBeGreaterThan(before);
     const count = calls.strokes[0]!.points.length;
     f.send("pointermove", { clientX: 160 }); expect(calls.strokes[0]!.points).toHaveLength(count);
+    expect(f.capture.size).toBe(0);
+  });
+  it("keeps the stroke on a lone lostpointercapture so it can still finish normally", () => {
+    const f = fixture(); f.send("pointerdown"); f.send("pointermove", { clientX: 100 });
+    const before = f.context.drawImage.mock.calls.length;
+    f.send("lostpointercapture");
+    expect(f.context.drawImage.mock.calls.length).toBe(before);
+    const count = calls.strokes[0]!.points.length;
+    f.send("pointermove", { clientX: 160 }); expect(calls.strokes[0]!.points).toHaveLength(count + 1);
+    f.send("pointerup", { clientX: 160 });
+    expect(calls.strokes[0]!.points).toHaveLength(count + 1);
     expect(f.capture.size).toBe(0);
   });
   it("releases capture when clearing, and ignores late input", () => {
@@ -110,11 +121,14 @@ it("cancels the active stroke on destroy and makes repeated disposal inert", () 
   expect(f.context.clearRect.mock.calls.length).toBe(clearCalls);
   expect(calls.strokes[0]!.points).toHaveLength(1);
 });
-it("does not construct a stroke when the browser refuses pointer capture", () => {
+it("still constructs a stroke when the browser refuses pointer capture", () => {
   const f = fixture();
   f.canvas.setPointerCapture = () => { throw new DOMException("Pointer no longer active", "NotFoundError"); };
   f.send("pointerdown");
-  expect(calls.strokes).toHaveLength(0);
+  expect(calls.strokes).toHaveLength(1);
+  f.send("pointermove", { clientX: 100 });
+  expect(calls.strokes[0]!.points).toHaveLength(2);
+  f.send("pointerup");
   expect(f.capture.size).toBe(0);
 });
 it("resolves a changed transport only when the next stroke starts", () => {
