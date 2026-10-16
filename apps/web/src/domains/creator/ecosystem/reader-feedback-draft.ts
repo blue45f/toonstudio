@@ -90,7 +90,8 @@ function buildTarget(draft: ReaderFeedbackDraft, known: KnownFeedbackTarget | nu
       episode = null;
     }
   }
-  if (draft.title.trim() === "") errors.push({ field: "title", code: "required" });
+  // 공백뿐인 이름은 물론 보이지 않는 문자만 쓴 이름도 이름이 아니다(스키마가 쓰는 것과 같은 정리를 거쳐 가린다).
+  if (cleanFeedbackText(draft.title, READER_FEEDBACK_LIMITS.maxTitleLength) === "") errors.push({ field: "title", code: "required" });
   return { kind: "manual" as const, id: null, title: draft.title, episode };
 }
 

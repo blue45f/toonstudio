@@ -12,7 +12,7 @@
  */
 import { z } from "zod";
 
-import { cleanFeedbackText, cleanNickname } from "./reader-feedback-text";
+import { cleanFeedbackText, cleanNickname, hasVisibleText } from "./reader-feedback-text";
 
 export const READER_FEEDBACK_KIND = "toonstudio-reader-feedback" as const;
 export const READER_FEEDBACK_VERSION = 1 as const;
@@ -145,11 +145,14 @@ interface AnswerShape {
   readonly comment: string;
 }
 
-/** 점수·읽은 정도·감정·의견 중 하나라도 답했는지. 아무것도 없는 응답은 표본 수만 부풀리므로 받지 않는다. */
+/**
+ * 점수·읽은 정도·감정·의견 중 하나라도 답했는지. 아무것도 없는 응답은 표본 수만 부풀리므로 받지 않는다.
+ * 의견은 길이가 아니라 "보이는 글자가 있는지"로 본다 — 빈 칸처럼 보이는 문자만 쓴 의견은 답이 아니다.
+ */
 export function hasAnyAnswer(response: AnswerShape): boolean {
   return response.ratings.fun !== null
     || response.ratings.understanding !== null
     || response.reading.status !== "unmarked"
     || response.emotions.length > 0
-    || response.comment.length > 0;
+    || hasVisibleText(response.comment);
 }
