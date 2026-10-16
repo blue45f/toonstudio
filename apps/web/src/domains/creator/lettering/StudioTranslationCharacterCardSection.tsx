@@ -22,6 +22,7 @@ import {
   CARD_SMALL_BUTTON_CLASS,
   createManualCardId,
 } from "./studio-translation-card-ui";
+import { STUDIO_TRANSLATION_CARD_LIMITS } from "./studio-translation-character-card";
 import {
   addManualStudioTranslationCard,
   patchStudioTranslationCard,
@@ -110,6 +111,18 @@ export function StudioTranslationCharacterCardSection({
     set,
     items.map((item) => item.id),
   );
+  // 저장하는 카드 수에는 상한이 있다. 상한에 닿으면 새 카드(직접 추가 · 시트 인물의 첫 편집)는 저장되지 않으므로,
+  // 조용히 무시하지 않고 버튼을 막고 이유를 말한다.
+  const atCardLimit = set.cards.length >= STUDIO_TRANSLATION_CARD_LIMITS.cards;
+  const selectedIsStored = selected !== null && set.cards.some((card) => card.characterId === selected.characterId);
+  const editLockedByLimit = selected !== null && !selectedIsStored && atCardLimit;
+  const limitMessage = formatI18nTemplate(
+    bi(
+      "인물 카드는 최대 {v0}장까지 저장할 수 있어요. 쓰지 않는 카드를 지우면 다시 추가할 수 있어요.",
+      "Up to {v0} character cards can be stored. Delete a card you no longer use to add another.",
+    ),
+    { v0: STUDIO_TRANSLATION_CARD_LIMITS.cards },
+  );
 
   const patchCard = (card: StudioTranslationEffectiveCard, patch: StudioTranslationCardPatch) => {
     // 시트 카드는 이름을 보관용 스냅샷으로 함께 저장한다 — 시트에서 인물이 사라져도 카드를 알아볼 수 있게.
@@ -125,7 +138,7 @@ export function StudioTranslationCharacterCardSection({
 
   const addManual = () => {
     const name = newName.trim();
-    if (name === "") return;
+    if (name === "" || atCardLimit) return;
     const id = createManualCardId();
     controller.update((current) => addManualStudioTranslationCard(current, { id, name }));
     setSelectedId(id);
@@ -242,6 +255,7 @@ export function StudioTranslationCharacterCardSection({
                   peers={cards.filter((card) => card.characterId !== selected.characterId)}
                   targetLocale={targetLocale}
                   onPatch={(patch) => patchCard(selected, patch)}
+                  {...(editLockedByLimit ? { lockedReason: limitMessage } : {})}
                   {...(selected.origin === "story-bible"
                     ? {}
                     : {
@@ -275,19 +289,25 @@ export function StudioTranslationCharacterCardSection({
                 maxLength={40}
                 placeholder={bi("이름", "Name")}
                 className={CARD_INPUT_CLASS}
+                aria-describedby={atCardLimit ? `${baseId}-limit` : undefined}
                 onChange={(event) => setNewName(event.target.value)}
               />
             </div>
             <button
               type="submit"
               className={CARD_SMALL_BUTTON_CLASS}
-              disabled={newName.trim() === ""}
+              disabled={newName.trim() === "" || atCardLimit}
               aria-label={bi("인물 추가", "Add character")}
             >
               <UserPlus size={11} aria-hidden />
               {bi("추가", "Add")}
             </button>
           </form>
+          {atCardLimit ? (
+            <p id={`${baseId}-limit`} role="note" className="text-[0.62rem] leading-relaxed text-warn">
+              {limitMessage}
+            </p>
+          ) : null}
 
           <StudioTranslationSpeakerAssignments
             items={items}

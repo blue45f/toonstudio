@@ -3,11 +3,16 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { readStudioLocalizationCharacterCards } from "../studio-localization-project-store";
+import {
+  readStudioLocalizationCharacterCards,
+  updateStudioLocalizationCharacterCards,
+} from "../studio-localization-project-store";
 import { readStudioProjectDiagnosticSource } from "../studio-project-diagnostic-source-store";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 
 import { StudioTranslationCharacterCardSection } from "./StudioTranslationCharacterCardSection";
+import { STUDIO_TRANSLATION_CARD_LIMITS } from "./studio-translation-character-card";
+import { addManualStudioTranslationCard } from "./studio-translation-character-card-edit";
 import { useStudioTranslationCards } from "./use-studio-translation-cards";
 
 import type { StudioStoryBibleNarrative } from "../planning/studio-character-profile";
@@ -281,6 +286,72 @@ describe("StudioTranslationCharacterCardSection — 직접 추가한 카드와 �
     fireEvent.change(screen.getByLabelText("인물"), { target: { value: "yuna" } });
     expect(screen.getByText(/스토리 바이블에서 이 인물을 찾지 못했어요/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "이 카드 삭제" })).toBeTruthy();
+  });
+});
+
+describe("StudioTranslationCharacterCardSection — 삭제 확인의 포커스", () => {
+  it("'이 카드 삭제'를 누르면 포커스가 '취소'로 옮겨지고, 취소하면 '이 카드 삭제'로 돌아온다", () => {
+    render(<Harness withBible={false} />);
+    fireEvent.change(screen.getByLabelText("인물 직접 추가"), { target: { value: "Emma" } });
+    fireEvent.click(screen.getByRole("button", { name: "인물 추가" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "이 카드 삭제" }));
+    // 누른 버튼은 사라진다 — 포커스가 문서 맨 앞으로 날아가지 않고 되돌리기 쉬운 '취소'에 놓인다.
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "취소" }));
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "이 카드 삭제" }));
+    expect(storedCards().cards).toHaveLength(1);
+  });
+});
+
+describe("StudioTranslationCharacterCardSection — 카드 수 상한", () => {
+  const limitText = new RegExp(`최대 ${STUDIO_TRANSLATION_CARD_LIMITS.cards}장까지 저장할 수 있어요`, "u");
+
+  function fillToLimit() {
+    updateStudioLocalizationCharacterCards(localStorage, PROJECT, (cards) => {
+      let next = cards;
+      for (let index = 0; index < STUDIO_TRANSLATION_CARD_LIMITS.cards; index += 1) {
+        next = addManualStudioTranslationCard(next, { id: `m${index}`, name: `인물 ${index}` });
+      }
+      return next;
+    });
+  }
+
+  it("상한에 닿으면 추가 버튼을 막고 이유를 말하며, 입력한 이름은 지우지 않는다", () => {
+    fillToLimit();
+    render(<Harness withBible={false} />);
+    const input = screen.getByLabelText("인물 직접 추가") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Emma" } });
+
+    expect((screen.getByRole("button", { name: "인물 추가" }) as HTMLButtonElement).disabled).toBe(true);
+    const note = screen.getByText(limitText);
+    expect(note.getAttribute("role")).toBe("note");
+    expect(input.getAttribute("aria-describedby")).toBe(note.id);
+
+    // 엔터(폼 제출)로도 조용히 비우거나 선택을 바꾸지 않는다.
+    fireEvent.submit(input.form as HTMLFormElement);
+    expect(input.value).toBe("Emma");
+    expect(storedCards().cards).toHaveLength(STUDIO_TRANSLATION_CARD_LIMITS.cards);
+  });
+
+  it("상한에 닿았는데 아직 저장된 적 없는 시트 인물은 편집을 막고 이유를 보여 준다 — 저장된 카드는 계속 편집된다", () => {
+    seedBible();
+    fillToLimit();
+    render(<Harness />);
+
+    // 시트 인물(유나)은 저장된 카드가 없고 상한이라 첫 편집이 저장될 수 없다: 입력이 조용히 무시되지 않는다.
+    fireEvent.change(screen.getByLabelText("인물"), { target: { value: "yuna" } });
+    // 편집 표면 전체가 비활성 fieldset 안에 있어 모든 입력이 막힌다(자식 컨트롤의 .disabled 속성이 아니라 :disabled 로 본다).
+    const locked = screen.getByRole("group", { name: "유나 번역 카드 편집" }) as HTMLFieldSetElement;
+    expect(locked.disabled).toBe(true);
+    expect(screen.getByLabelText("말투 메모").matches(":disabled")).toBe(true);
+    expect(screen.getByLabelText("기본 존대/반말 단계").matches(":disabled")).toBe(true);
+    expect(screen.getAllByText(limitText)).toHaveLength(2);
+
+    fireEvent.change(screen.getByLabelText("인물"), { target: { value: "m0" } });
+    expect((screen.getByRole("group", { name: "인물 0 번역 카드 편집" }) as HTMLFieldSetElement).disabled).toBe(false);
+    expect(screen.getByLabelText("말투 메모").matches(":disabled")).toBe(false);
+    expect(screen.getAllByText(limitText)).toHaveLength(1);
   });
 });
 

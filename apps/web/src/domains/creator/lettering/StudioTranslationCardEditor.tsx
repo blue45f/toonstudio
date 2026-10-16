@@ -99,14 +99,24 @@ export interface StudioTranslationCardEditorProps {
   /** 직접 추가한 카드·시트에서 사라진 카드만 지울 수 있다. */
   readonly onRemove?: () => void;
   readonly targetLocale: string;
+  /**
+   * 값이 있으면 편집을 막고 이유로 보여 준다(저장 상한 때문에 이 편집이 저장되지 않을 때). 입력이 조용히 무시되는 것보다
+   * 막힌 이유를 말하는 편이 낫다.
+   */
+  readonly lockedReason?: string;
 }
 
+/**
+ * 호출부는 `key={card.characterId}` 로 쓴다 — 인물이 바뀌면 이 컴포넌트가 새로 마운트되어 확인 중이던 삭제 같은
+ * 지역 상태가 자연히 초기화된다(prop 변화를 효과로 따라가지 않는다).
+ */
 export function StudioTranslationCardEditor({
   card,
   peers,
   onPatch,
   onRemove,
   targetLocale,
+  lockedReason,
 }: StudioTranslationCardEditorProps) {
   useBilingualI18nRevision();
   const baseId = useId();
@@ -120,10 +130,6 @@ export function StudioTranslationCardEditor({
     refs.current.get(focusKey)?.focus();
     setFocusKey(null);
   }, [focusKey, card]);
-
-  useEffect(() => {
-    setConfirmingRemove(false);
-  }, [card.characterId]);
 
   const bind = (key: string) => (node: HTMLElement | null) => {
     if (node) refs.current.set(key, node);
@@ -200,12 +206,19 @@ export function StudioTranslationCardEditor({
     filled ? null : <span className={CARD_MISSING_BADGE_CLASS}>{bi("미입력", "Not set")}</span>;
 
   return (
-    <div className="space-y-3">
+    <fieldset disabled={lockedReason !== undefined} className="m-0 min-w-0 space-y-3 border-0 p-0">
+      <legend className="sr-only">{biFormat("{v0} 번역 카드 편집", "Edit translation card: {v0}", card.name)}</legend>
       <datalist id={localeListId}>
         {localeOptions.map((code) => (
           <option key={code} value={code} />
         ))}
       </datalist>
+
+      {lockedReason !== undefined ? (
+        <p role="note" className="rounded-lg border border-warn/35 bg-warn/10 px-2 py-1.5 text-[0.62rem] leading-relaxed text-warn">
+          {lockedReason}
+        </p>
+      ) : null}
 
       {card.origin === "orphan" ? (
         <p role="note" className="rounded-lg border border-warn/35 bg-warn/10 px-2 py-1.5 text-[0.62rem] leading-relaxed text-warn">
@@ -553,6 +566,13 @@ export function StudioTranslationCardEditor({
         </button>
       </section>
 
+      <p className="text-[0.58rem] leading-relaxed text-fg-3">
+        {bi(
+          "용어 일치는 형태소 분석 없이 글자 단위로 비교해요. 한글·가나·한자의 짧은 표기는 다른 단어 속에서도 일치할 수 있고(예: ‘야’ → ‘시야’), 영어는 복수형·소유형(-s, ’s)과 하이픈 표기를 같은 말로 봐요.",
+          "Terms are matched by characters, without morphological analysis. Short Hangul, kana and kanji terms can also match inside other words (e.g. ‘야’ in ‘시야’); English plurals, possessives (-s, ’s) and hyphenated forms count as the same term.",
+        )}
+      </p>
+
       {onRemove ? (
         <div className="border-t border-line/60 pt-2">
           {confirmingRemove ? (
@@ -560,7 +580,16 @@ export function StudioTranslationCardEditor({
               <p className="min-w-0 flex-1 text-[0.62rem] text-fg-2" role="status">
                 {bi("이 카드와 이 인물의 화자 지정을 지울까요?", "Delete this card and its speaker assignments?")}
               </p>
-              <button type="button" className={CARD_SMALL_BUTTON_CLASS} onClick={() => setConfirmingRemove(false)}>
+              {/* 누른 "이 카드 삭제" 버튼은 사라진다 — 확인 단계에서는 되돌리기 쉬운 "취소"로, 취소하면 원래 버튼으로 포커스를 옮긴다. */}
+              <button
+                type="button"
+                ref={bind("remove-cancel")}
+                className={CARD_SMALL_BUTTON_CLASS}
+                onClick={() => {
+                  setConfirmingRemove(false);
+                  setFocusKey("remove-open");
+                }}
+              >
                 {bi("취소", "Cancel")}
               </button>
               <button type="button" className={`${CARD_SMALL_BUTTON_CLASS} text-bad`} onClick={onRemove}>
@@ -568,13 +597,21 @@ export function StudioTranslationCardEditor({
               </button>
             </div>
           ) : (
-            <button type="button" className={CARD_SMALL_BUTTON_CLASS} onClick={() => setConfirmingRemove(true)}>
+            <button
+              type="button"
+              ref={bind("remove-open")}
+              className={CARD_SMALL_BUTTON_CLASS}
+              onClick={() => {
+                setConfirmingRemove(true);
+                setFocusKey("remove-cancel");
+              }}
+            >
               <Trash2 size={11} aria-hidden />
               {bi("이 카드 삭제", "Delete this card")}
             </button>
           )}
         </div>
       ) : null}
-    </div>
+    </fieldset>
   );
 }
