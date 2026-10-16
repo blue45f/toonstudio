@@ -9,6 +9,7 @@
  */
 
 import { sortPanelsByReadingOrder } from "./panel-detect-order";
+import { PANEL_DETECT_VERSION } from "./panel-detect-types";
 
 import type {
   PanelDetectResult,
@@ -75,6 +76,28 @@ export function createEmptyPanelEditState(
   return { imageWidth, imageHeight, readingOrder, panels: [], manualOrder: false, nextId: 1 };
 }
 
+/**
+ * 자동 감지를 쓰지 못할 때(실패·취소·사용자가 직접 그리기를 고름) 편집을 시작하는 빈 감지 결과.
+ * 컷도 제외 조각도 없고, 여백을 알 수 없으므로 gutter 는 none 이다.
+ */
+export function createManualDetectResult(imageWidth: number, imageHeight: number, readingOrder: PanelReadingOrder): PanelDetectResult {
+  return {
+    version: PANEL_DETECT_VERSION,
+    width: imageWidth,
+    height: imageHeight,
+    analysis: { width: imageWidth, height: imageHeight, step: 1 },
+    gutter: { kind: "none", color: null, tolerance: 0, votes: 0 },
+    readingOrder,
+    panels: [],
+    undetectable: [],
+    ignored: [],
+    suggestions: [],
+    confidence: 0,
+    level: "low",
+    warnings: [],
+  };
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -118,13 +141,47 @@ export function setPanelRect(state: PanelEditState, id: string, rect: PanelRect)
   return replacePanel(state, id, { ...panel, ...normalized, warnings: [] });
 }
 
+/** 사각형을 dx, dy 만큼 옮긴다. 이미지 밖으로는 나가지 않는다(순수 계산 — 끌기 미리보기와 편집이 같은 규칙을 쓴다). */
+export function moveRect(rect: PanelRect, dx: number, dy: number, imageWidth: number, imageHeight: number): PanelRect {
+  return {
+    x: clamp(rect.x + Math.round(dx), 0, imageWidth - rect.width),
+    y: clamp(rect.y + Math.round(dy), 0, imageHeight - rect.height),
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+/** 한 변을 절대 좌표 position 으로 옮긴 사각형. 반대편 변을 넘거나 최소 크기보다 작아지면 거기서 멈춘다. */
+export function resizeRectEdge(
+  rect: PanelRect,
+  edge: PanelEdge,
+  position: number,
+  imageWidth: number,
+  imageHeight: number,
+): PanelRect {
+  const target = Math.round(position);
+  let { x, y, width, height } = rect;
+  if (edge === "left") {
+    const right = rect.x + rect.width;
+    x = clamp(target, 0, right - PANEL_EDIT_MIN_SIDE);
+    width = right - x;
+  } else if (edge === "right") {
+    width = clamp(target, rect.x + PANEL_EDIT_MIN_SIDE, imageWidth) - rect.x;
+  } else if (edge === "top") {
+    const bottom = rect.y + rect.height;
+    y = clamp(target, 0, bottom - PANEL_EDIT_MIN_SIDE);
+    height = bottom - y;
+  } else {
+    height = clamp(target, rect.y + PANEL_EDIT_MIN_SIDE, imageHeight) - rect.y;
+  }
+  return { x, y, width, height };
+}
+
 /** 컷을 통째로 옮긴다. 이미지 밖으로는 나가지 않는다. */
 export function movePanelBy(state: PanelEditState, id: string, dx: number, dy: number): PanelEditState {
   const panel = findPanel(state, id);
   if (!panel || !Number.isFinite(dx) || !Number.isFinite(dy)) return state;
-  const x = clamp(panel.x + Math.round(dx), 0, state.imageWidth - panel.width);
-  const y = clamp(panel.y + Math.round(dy), 0, state.imageHeight - panel.height);
-  return setPanelRect(state, id, { x, y, width: panel.width, height: panel.height });
+  return setPanelRect(state, id, moveRect(panel, dx, dy, state.imageWidth, state.imageHeight));
 }
 
 /** 한 변을 절대 좌표 position 으로 옮긴다. 반대편 변을 넘거나 최소 크기보다 작아지면 거기서 멈춘다. */
@@ -136,22 +193,7 @@ export function resizePanelEdge(
 ): PanelEditState {
   const panel = findPanel(state, id);
   if (!panel || !Number.isFinite(position)) return state;
-  const target = Math.round(position);
-  let { x, y, width, height } = panel;
-  if (edge === "left") {
-    const right = panel.x + panel.width;
-    x = clamp(target, 0, right - PANEL_EDIT_MIN_SIDE);
-    width = right - x;
-  } else if (edge === "right") {
-    width = clamp(target, panel.x + PANEL_EDIT_MIN_SIDE, state.imageWidth) - panel.x;
-  } else if (edge === "top") {
-    const bottom = panel.y + panel.height;
-    y = clamp(target, 0, bottom - PANEL_EDIT_MIN_SIDE);
-    height = bottom - y;
-  } else {
-    height = clamp(target, panel.y + PANEL_EDIT_MIN_SIDE, state.imageHeight) - panel.y;
-  }
-  return setPanelRect(state, id, { x, y, width, height });
+  return setPanelRect(state, id, resizeRectEdge(panel, edge, position, state.imageWidth, state.imageHeight));
 }
 
 function userPanel(state: PanelEditState, rect: PanelRect): { panel: EditablePanel; nextId: number } {

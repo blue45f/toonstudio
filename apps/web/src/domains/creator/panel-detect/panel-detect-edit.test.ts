@@ -7,9 +7,11 @@ import {
   applyReadingOrder,
   commitPanelEdit,
   createEmptyPanelEditState,
+  createManualDetectResult,
   createPanelEditHistory,
   createPanelEditState,
   mergePanels,
+  moveRect,
   movePanelBy,
   movePanelInOrder,
   normalizePanelRect,
@@ -17,6 +19,7 @@ import {
   removePanel,
   reorderPanel,
   resizePanelEdge,
+  resizeRectEdge,
   setPanelRect,
   splitPanel,
   undoPanelEdit,
@@ -25,6 +28,7 @@ import {
 } from "./panel-detect-edit";
 import { FixtureImage, WHITE, mulberry32 } from "./panel-detect-fixtures";
 import { tightenRectToContent } from "./panel-detect-tighten";
+import { parsePanelDetectResult } from "./panel-detect-worker-protocol";
 
 function gridState(readingOrder: "manga" | "comic" | "webtoon" = "comic"): PanelEditState {
   const image = new FixtureImage(1000, 1200, WHITE);
@@ -245,5 +249,51 @@ describe("컷 편집 — 내용에 맞추기", () => {
     expect(tightenRectToContent(raster, gutter, { x: 40, y: 60, width: 460, height: 400 })).toEqual({ x: 100, y: 120, width: 300, height: 200 });
     expect(tightenRectToContent(raster, gutter, { x: 450, y: 450, width: 100, height: 100 })).toBeNull();
     expect(tightenRectToContent(raster, { ...gutter, kind: "none", color: null }, { x: 1, y: 2, width: 3, height: 4 })).toEqual({ x: 1, y: 2, width: 3, height: 4 });
+  });
+});
+
+describe("컷 편집 — 사각형 계산(끌기 미리보기와 편집이 같은 규칙)", () => {
+  const rect = { x: 100, y: 200, width: 300, height: 400 };
+
+  it("moveRect 는 정수로 맞추고 이미지 밖으로 나가지 않게 가둔다", () => {
+    expect(moveRect(rect, 10.4, -20.6, 1000, 1200)).toEqual({ x: 110, y: 179, width: 300, height: 400 });
+    expect(moveRect(rect, -500, -500, 1000, 1200)).toEqual({ x: 0, y: 0, width: 300, height: 400 });
+    expect(moveRect(rect, 5000, 5000, 1000, 1200)).toEqual({ x: 700, y: 800, width: 300, height: 400 });
+  });
+
+  it("resizeRectEdge 는 한 변만 움직이고 반대편 변과 최소 크기를 지킨다", () => {
+    expect(resizeRectEdge(rect, "right", 500, 1000, 1200)).toEqual({ x: 100, y: 200, width: 400, height: 400 });
+    expect(resizeRectEdge(rect, "right", 5000, 1000, 1200)).toEqual({ x: 100, y: 200, width: 900, height: 400 });
+    expect(resizeRectEdge(rect, "right", 105, 1000, 1200).width).toBe(PANEL_EDIT_MIN_SIDE);
+    expect(resizeRectEdge(rect, "left", 150, 1000, 1200)).toEqual({ x: 150, y: 200, width: 250, height: 400 });
+    expect(resizeRectEdge(rect, "left", 399, 1000, 1200)).toEqual({ x: 400 - PANEL_EDIT_MIN_SIDE, y: 200, width: PANEL_EDIT_MIN_SIDE, height: 400 });
+    expect(resizeRectEdge(rect, "left", -50, 1000, 1200)).toEqual({ x: 0, y: 200, width: 400, height: 400 });
+    expect(resizeRectEdge(rect, "top", 250, 1000, 1200)).toEqual({ x: 100, y: 250, width: 300, height: 350 });
+    expect(resizeRectEdge(rect, "bottom", 700, 1000, 1200)).toEqual({ x: 100, y: 200, width: 300, height: 500 });
+    expect(resizeRectEdge(rect, "bottom", 1e9, 1000, 1200)).toEqual({ x: 100, y: 200, width: 300, height: 1000 });
+  });
+
+  it("상태 전이(movePanelBy·resizePanelEdge)도 같은 계산을 쓴다", () => {
+    const state = gridState();
+    const [first] = state.panels;
+    if (!first) throw new Error("시험 상태에 컷이 없어요.");
+    const moved = movePanelBy(state, first.id, 7, 9);
+    expect(moved.panels.find((panel) => panel.id === first.id)).toMatchObject(moveRect(first, 7, 9, state.imageWidth, state.imageHeight));
+    const resized = resizePanelEdge(state, first.id, "bottom", first.y + first.height - 30);
+    expect(resized.panels.find((panel) => panel.id === first.id)).toMatchObject(resizeRectEdge(first, "bottom", first.y + first.height - 30, state.imageWidth, state.imageHeight));
+  });
+});
+
+describe("컷 편집 — 직접 그리기로 시작하는 빈 결과", () => {
+  it("createManualDetectResult 는 컷 없는 유효한 감지 결과이고 바로 편집을 시작할 수 있다", () => {
+    const result = createManualDetectResult(400, 560, "comic");
+    expect(result).toMatchObject({ width: 400, height: 560, readingOrder: "comic", panels: [], undetectable: [], ignored: [], suggestions: [], confidence: 0, level: "low" });
+    expect(result.gutter.kind).toBe("none");
+    // Worker 응답을 받는 신뢰 경계의 검증기도 같은 모양을 받아들인다.
+    expect(parsePanelDetectResult(JSON.parse(JSON.stringify(result)), { width: 400, height: 560 })).toEqual(result);
+    const drawn = addPanel(createPanelEditState(result), { x: 10, y: 10, width: 100, height: 80 });
+    expect(drawn.panels).toHaveLength(1);
+    expect(drawn.panels[0]?.origin).toBe("user");
+    expect(validatePanelEditState(drawn)).toBe(true);
   });
 });
