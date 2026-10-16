@@ -8,6 +8,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 
 import { STORYWORLD_DRAFT_NAMESPACE } from "./draft-store";
 import { STORYWORLD_DEMO_PROJECT } from "./studio-storyworld-causality";
+import { storyworldIssueDispositionKey } from "./studio-storyworld-issue-dispositions";
 import { StudioStoryworldLabPage } from "./StudioStoryworldLabPage";
 
 const db = vi.hoisted(() => ({ rows: new Map<string, string>(), kvGet: vi.fn(), kvSet: vi.fn() }));
@@ -18,11 +19,42 @@ const saved = (id: string) => JSON.parse(db.rows.get(rowKey(id)) ?? "null");
 function page(workId: string) {
   return <MemoryRouter><StudioStoryworldLabPage key={workId} workId={workId} remixSourceWorkId={null} /></MemoryRouter>;
 }
-async function ready() { await screen.findByRole("button", { name: "설정 파일" }); }
+
+// 처음 열 때 비동기로 채워지는 화면(편집기 첫 그리기, 공유 세계관의 레지스트리 읽기, 개연성 허브의 지연 로딩과 점검)은
+// findBy 기본 대기시간(1초)에 맡기지 않는다. 로컬에서 레지스트리는 수십 ms 지만 허브는 모듈을 미리 불러 둬도 0.35~0.5초가 들어,
+// 로컬보다 2.4~3.4배 느렸던 부하 큰 CI 에서는 1초에 닿는다. 저장소의 지연 로딩 시험 관례(LAZY_LOAD_TIMEOUT_MS)대로 15초까지 기다린다.
+const ASYNC_SURFACE_TIMEOUT_MS = 15_000;
+
+async function ready() { await screen.findByRole("button", { name: "설정 파일" }, { timeout: ASYNC_SURFACE_TIMEOUT_MS }); }
+/**
+ * 편집기가 뜨면 "처리 기록" 읽기가 비동기로 시작된다. 이 읽기와 "공유 세계관" 탭의 레지스트리 읽기는 같은 모듈(universe-store)에서
+ * `import("../studio-local-database-runtime")` 를 각각 부르는데, vitest 의 vi.mock 은 한 모듈에서 동시에 진행 중인 동적 import 의
+ * 두 번째부터 모의를 건너뛰고 실제 모듈을 불러온다. 두 읽기가 겹치면 레지스트리 읽기가 실제 모듈의 "DedicatedWorker is unavailable"
+ * 로 거절되어 입력칸이 끝내 그려지지 않는다(대기 시간을 늘려도 소용없다). 처리 기록 읽기는 React 가 효과를 비울 때 시작되는데,
+ * 그 시점은 타이머와 React 스케줄러의 선후로 정해져 가끔(무부하 로컬에서도 약 4%) ready() 가 돌아온 뒤로 밀린다. 그러면 시험이
+ * 곧바로 탭을 여는 사이 두 읽기가 같은 틱에 시작된다. 그래서 다음 화면을 열기 전에 처리 기록 읽기가 저장소까지 닿은 것
+ * (= import 가 끝난 것)을 확인한다. vitest 4.1 에서 확인했다.
+ */
+async function settleDispositionRead(workId: string) {
+  await waitFor(
+    () => expect(db.kvGet).toHaveBeenCalledWith(STORYWORLD_DRAFT_NAMESPACE, storyworldIssueDispositionKey(key(workId))),
+    { timeout: ASYNC_SURFACE_TIMEOUT_MS },
+  );
+}
 async function open(workId: string) {
   const view = render(page(workId));
   await ready();
+  await settleDispositionRead(workId);
   return view;
+}
+/** "공유 세계관" 탭은 레지스트리를 읽은 뒤에야 입력칸을 그린다. 읽기가 실패하면 입력칸 대신 오류 안내만 남으므로, 그 문구를 실패 사유로 드러낸다. */
+async function findUniverseNameField() {
+  try {
+    return await screen.findByLabelText("새 공유 세계관 이름", undefined, { timeout: ASYNC_SURFACE_TIMEOUT_MS });
+  } catch (error) {
+    const reason = screen.queryAllByRole("alert").map((alert) => alert.textContent).join(" ");
+    throw reason ? new Error(`공유 세계관 레지스트리를 읽지 못했습니다: ${reason}`, { cause: error }) : error;
+  }
 }
 /** "설정 파일" 탭의 직접 편집기는 닫힌 채 시작하므로, 탭을 열고 편집기까지 열어 글자판을 돌려준다. */
 function openSettingsEditor() {
@@ -79,9 +111,9 @@ describe("Storyworld actual page integration", () => {
     }
     // 뒤에 늘어난 두 화면은 처음 열 때 비동기로 내용을 채우므로, 채워진 것을 보고 다음으로 넘어간다.
     openTab("공유 세계관");
-    await screen.findByLabelText("새 공유 세계관 이름");
+    await findUniverseNameField();
     openTab("개연성 점검");
-    await screen.findByRole("heading", { name: "점검 범위" });
+    await screen.findByRole("heading", { name: "점검 범위" }, { timeout: ASYNC_SURFACE_TIMEOUT_MS });
   });
   it("keeps authored JSON in SQLite while projecting readiness diagnostics to project storage", async () => {
     const localWrite = vi.spyOn(Storage.prototype, "setItem");
@@ -223,7 +255,7 @@ describe("Storyworld settings management layer", () => {
     await open("work-universe");
     fireEvent.click(screen.getByRole("button", { name: /^공유 세계관/ }));
 
-    fireEvent.change(await screen.findByLabelText("새 공유 세계관 이름"), { target: { value: "아르카나 유니버스" } });
+    fireEvent.change(await findUniverseNameField(), { target: { value: "아르카나 유니버스" } });
     fireEvent.click(screen.getByRole("button", { name: "공유 세계관 만들기" }));
     expect(await screen.findByText(/아직 멤버가 아닙니다/)).toBeTruthy();
 
