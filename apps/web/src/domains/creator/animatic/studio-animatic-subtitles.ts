@@ -334,14 +334,46 @@ function stripCueTags(value: string): string {
   return out + value.slice(cursor);
 }
 
+const VOICE_CUE_CLOSE = "</v>";
+
+/**
+ * WebVTT 화자 태그 큐 `<v 화자>본문</v>` 을 화자와 본문으로 가른다. `/^<v\s+([^>]+)>([\s\S]*?)<\/v>$/u` 와 같은 결과다.
+ * 그 식은 `\s+` 와 `[^>]+` 가 공백을 나눠 가질 수 있어서, 공백이 길게 이어진 뒤 `>` 나 끝의 `</v>` 가 맞지 않으면 나눔 위치를
+ * 한 칸씩 옮기며 같은 구간과 본문을 다시 읽어 입력 길이의 제곱 시간이 된다(CodeQL js/polynomial-redos). 자막 파일은
+ * 번역가·협업자에게서 받는 바깥 파일이라 큐 하나의 크기를 통제하지 못한다. `>` 뒤쪽의 성패는 나눔 위치와 상관없으므로
+ * 첫 `>` 와 끝의 `</v>` 를 한 번씩만 확인한다.
+ *
+ * 정규식과 같게 지키는 규칙은 다음과 같다.
+ * - `<v` 로 시작한다. `[^>]+` 는 `>` 를 담지 못하므로 `<v` 뒤 첫 `>` 가 태그의 끝이다.
+ * - 태그 안쪽(`<v` 와 첫 `>` 사이)은 공백으로 시작하고 두 글자 이상이다(`\s+` 한 칸 이상 + `[^>]+` 한 글자 이상).
+ *   공백의 범위는 `\s` 와 같은 `trimStart()` 의 기준을 쓴다.
+ * - 화자는 안쪽에서 앞쪽 공백을 건너뛴 나머지다. 안쪽이 전부 공백이면 `\s+` 가 마지막 한 칸을 `[^>]+` 에 내주므로
+ *   마지막 한 글자가 화자다.
+ * - 본문은 첫 `</v>` 가 아니라 맨 끝의 `</v>` 앞까지다(정규식의 `$` 앵커). 그 `</v>` 는 태그 끝 `>` 뒤에 있어야 한다.
+ */
+function matchVoiceCue(cue: string): { readonly speaker: string; readonly body: string } | null {
+  if (!cue.startsWith("<v")) return null;
+  const tagEnd = cue.indexOf(">", 2);
+  if (tagEnd < 0) return null;
+  const inner = cue.slice(2, tagEnd);
+  const leadingBlank = inner.length - inner.trimStart().length;
+  if (inner.length < 2 || leadingBlank === 0) return null;
+  const bodyEnd = cue.length - VOICE_CUE_CLOSE.length;
+  if (bodyEnd <= tagEnd || !cue.endsWith(VOICE_CUE_CLOSE)) return null;
+  return {
+    speaker: leadingBlank < inner.length ? inner.slice(leadingBlank) : inner.slice(-1),
+    body: cue.slice(tagEnd + 1, bodyEnd),
+  };
+}
+
 function parseCueText(lines: readonly string[], format: StudioAnimaticSubtitleFormat): { text: string; speaker?: string } {
   const joined = lines.join("\n").trim();
   if (format === "vtt") {
-    const voice = /^<v\s+([^>]+)>([\s\S]*?)<\/v>$/u.exec(joined);
+    const voice = matchVoiceCue(joined);
     if (voice) {
       return {
-        speaker: voice[1]!.replace(/&amp;/gu, "&").trim() || undefined,
-        text: voice[2]!
+        speaker: voice.speaker.replace(/&amp;/gu, "&").trim() || undefined,
+        text: voice.body
           .replace(/&lt;/gu, "<")
           .replace(/&gt;/gu, ">")
           .replace(/&amp;/gu, "&")
