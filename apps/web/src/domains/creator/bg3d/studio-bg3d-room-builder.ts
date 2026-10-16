@@ -476,7 +476,8 @@ export function instantiateStudioBg3dRoomBuild(
 
 // ── 프리셋 ────────────────────────────────────────────────────────────────────
 // 씬 템플릿(고정 좌표 완성 공간)과 달리, 여기 프리셋은 "시작점 스펙"이다 — 적용 후에도 모든
-// 수치를 계속 조정할 수 있다.
+// 수치를 계속 조정할 수 있다. 의자는 앞면이 +z 라(등받이가 -z) 테이블의 남쪽(+z)에 놓으면 yaw 180,
+// 북쪽에 놓으면 yaw 0 이어야 테이블을 본다 — 모든 프리셋에서 시험이 고정한다.
 
 export interface StudioBg3dRoomPreset {
   readonly id: string;
@@ -506,17 +507,17 @@ export const STUDIO_BG3D_ROOM_PRESETS: readonly StudioBg3dRoomPreset[] = [
       ],
       furniture: [
         { kind: "table", x: -1.8, z: -0.6, yawDeg: 0 },
-        { kind: "chair", x: -1.8, z: 0.1, yawDeg: 0 },
+        { kind: "chair", x: -1.8, z: 0.1, yawDeg: 180 },
         { kind: "table", x: 0, z: -0.6, yawDeg: 0 },
-        { kind: "chair", x: 0, z: 0.1, yawDeg: 0 },
+        { kind: "chair", x: 0, z: 0.1, yawDeg: 180 },
         { kind: "table", x: 1.8, z: -0.6, yawDeg: 0 },
-        { kind: "chair", x: 1.8, z: 0.1, yawDeg: 0 },
+        { kind: "chair", x: 1.8, z: 0.1, yawDeg: 180 },
         { kind: "table", x: -1.8, z: 1.2, yawDeg: 0 },
-        { kind: "chair", x: -1.8, z: 1.9, yawDeg: 0 },
+        { kind: "chair", x: -1.8, z: 1.9, yawDeg: 180 },
         { kind: "table", x: 0, z: 1.2, yawDeg: 0 },
-        { kind: "chair", x: 0, z: 1.9, yawDeg: 0 },
+        { kind: "chair", x: 0, z: 1.9, yawDeg: 180 },
         { kind: "table", x: 1.8, z: 1.2, yawDeg: 0 },
-        { kind: "chair", x: 1.8, z: 1.9, yawDeg: 0 },
+        { kind: "chair", x: 1.8, z: 1.9, yawDeg: 180 },
       ],
     }),
   },
@@ -538,8 +539,8 @@ export const STUDIO_BG3D_ROOM_PRESETS: readonly StudioBg3dRoomPreset[] = [
       ],
       furniture: [
         { kind: "table", x: -1.6, z: -1, yawDeg: 0 },
-        { kind: "chair", x: -1.6, z: -1.8, yawDeg: 180 },
-        { kind: "chair", x: -1.6, z: -0.2, yawDeg: 0 },
+        { kind: "chair", x: -1.6, z: -1.8, yawDeg: 0 },
+        { kind: "chair", x: -1.6, z: -0.2, yawDeg: 180 },
         { kind: "table", x: 1.2, z: 0.8, yawDeg: 90 },
         { kind: "chair", x: 0.4, z: 0.8, yawDeg: 90 },
         { kind: "chair", x: 2, z: 0.8, yawDeg: 270 },
@@ -566,7 +567,7 @@ export const STUDIO_BG3D_ROOM_PRESETS: readonly StudioBg3dRoomPreset[] = [
         { kind: "bed", x: -1.4, z: -0.8, yawDeg: 0 },
         { kind: "bookshelf", x: 1.9, z: -1.6, yawDeg: 0 },
         { kind: "table", x: 1.2, z: 1.1, yawDeg: 0 },
-        { kind: "chair", x: 1.2, z: 1.8, yawDeg: 0 },
+        { kind: "chair", x: 1.2, z: 1.8, yawDeg: 180 },
         { kind: "sofa", x: -0.2, z: 1.35, yawDeg: 180 },
         { kind: "lamp", x: 1.9, z: 1.6, yawDeg: 0 },
       ],
