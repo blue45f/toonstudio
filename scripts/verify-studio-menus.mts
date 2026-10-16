@@ -1513,9 +1513,7 @@ async function main() {
       }
     }, { key: QUICKSTART_KEY });
 
-    // 밀도(density)는 더 이상 localStorage 의 toonstudio-studio-ui-density:v1 로 정해지지 않고 앱 설정
-    // (기본 simple)이 정한다. 모든 메뉴 → 도구 팝오버 호스트가 마운트되는 full 밀도는 시작 힌트로 요청한다.
-    await page.goto(`${url}?uiMode=full`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(`${url}?uiMode=full`, { waitUntil: "domcontentloaded", timeout: 30000 }); // 밀도는 앱 설정(기본 simple)이 정하므로 full 은 시작 힌트로 요청
     await page.waitForTimeout(900);
     await dismissOverlays(page);
 
