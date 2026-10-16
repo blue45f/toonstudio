@@ -113,8 +113,8 @@ export function PanelImportEntry({ environment, loadWorkbench: loader = loadWork
         <Lock size={15} className="mt-1 shrink-0" aria-hidden="true" />
         <span>
           {bi(
-            "이미지는 이 기기 안에서만 처리하고 서버로 보내지 않아요. 내가 권리를 가진 원고이거나 이용 허락을 받은 원고만 사용해 주세요.",
-            "Images are processed only on this device and never uploaded. Use only manuscripts you own or have permission to use.",
+            "이 도구는 이미지를 이 기기 안에서만 처리하고 서버로 보내지 않아요. 컷을 Studio 문서로 넣은 뒤의 저장과 동기화는 Studio 의 규칙을 따라요. 내가 권리를 가진 원고이거나 이용 허락을 받은 원고만 사용해 주세요.",
+            "This tool processes images only on this device and does not send them to a server. After panels are inserted into a Studio document, Studio’s own saving and sync rules apply. Use only manuscripts you own or have permission to use.",
           )}
         </span>
       </p>
@@ -156,8 +156,9 @@ export function PanelImportEntry({ environment, loadWorkbench: loader = loadWork
                 }
               >
                 {bi(
-                  "작업대를 열지 못했어요. 네트워크 연결을 확인하고 다시 시도해 주세요. 원고 이미지는 아직 읽지 않았고 어디로도 보내지 않았어요.",
-                  "The workbench could not be opened. Check your connection and try again. No image has been read or sent anywhere.",
+                  // 이 안내는 불러오기 실패뿐 아니라 이미지를 읽은 뒤의 그리기 오류에도 뜬다. 이미지를 읽었는지는 말하지 않는다.
+                  "작업대를 열지 못했어요. 네트워크 연결을 확인하고 다시 시도해 주세요. 이 도구는 이미지를 서버로 보내지 않아요.",
+                  "The workbench could not be opened. Check your connection and try again. This tool does not send images to a server.",
                 )}
               </PanelNotice>
             }

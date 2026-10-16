@@ -173,11 +173,24 @@ describe("1단계 — 권리 확인과 이미지 선택", () => {
     expect(screen.getByRole("checkbox", { name: /I own this manuscript or have permission to use it/ })).toBeTruthy();
     expect(screen.getByText("First tick the rights confirmation above.")).toBeTruthy();
     expect(fileInputOf(container).disabled).toBe(true);
-    expect(screen.getByText(/never sent to a server/)).toBeTruthy();
+    expect(screen.getByText(/does not send it to a server/)).toBeTruthy();
   });
 
-  it("서버로 보내지 않는다는 안내가 항상 보인다", () => {
+  it("이 도구가 서버로 보내지 않는다는 안내가 항상 보이고, 컷을 Studio 문서로 넣은 뒤의 저장·동기화는 그 규칙을 따른다고 덧붙인다 (재배열)", () => {
     renderStep();
-    expect(screen.getByText(/이미지는 이 기기에서만 처리하고 서버로 보내지 않아요/)).toBeTruthy();
+    expect(screen.getByText(/이 도구는 이미지를 이 기기 안에서만 처리하고 서버로 보내지 않아요/)).toBeTruthy();
+    expect(screen.getByText(/컷을 Studio 문서로 넣은 뒤의 저장과 동기화는 Studio 의 규칙을 따라요/)).toBeTruthy();
+    expect(screen.getByText(/원본 파일은 바꾸지 않아요/)).toBeTruthy();
+  });
+
+  it("카드뉴스 모드에는 Studio 문서 이야기를 넣지 않는다(ZIP 만 내려받는다)", () => {
+    const kit = createKit();
+    render(
+      <PanelImportEnvironmentContext.Provider value={kit.env}>
+        <PanelSourceStep mode="cards" onReady={vi.fn()} />
+      </PanelImportEnvironmentContext.Provider>,
+    );
+    expect(screen.getByText(/이 도구는 이미지를 이 기기 안에서만 처리하고 서버로 보내지 않아요/)).toBeTruthy();
+    expect(screen.queryByText(/Studio 의 규칙/)).toBeNull();
   });
 });

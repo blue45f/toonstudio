@@ -160,7 +160,15 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
 
       <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-fg-2">
         <Lock size={13} aria-hidden="true" />
-        {bi("이미지는 이 기기에서만 처리하고 서버로 보내지 않아요. 원본 파일은 바꾸지 않아요.", "The image is processed only on this device and never sent to a server. The original file is not changed.")}
+        {mode === "reflow"
+          ? bi(
+            "이 도구는 이미지를 이 기기 안에서만 처리하고 서버로 보내지 않아요. 컷을 Studio 문서로 넣은 뒤의 저장과 동기화는 Studio 의 규칙을 따라요. 원본 파일은 바꾸지 않아요.",
+            "This tool processes the image only on this device and does not send it to a server. After the panels are inserted into a Studio document, Studio’s own saving and sync rules apply. The original file is not changed.",
+          )
+          : bi(
+            "이 도구는 이미지를 이 기기 안에서만 처리하고 서버로 보내지 않아요. 원본 파일은 바꾸지 않아요.",
+            "This tool processes the image only on this device and does not send it to a server. The original file is not changed.",
+          )}
       </p>
 
       {state.status === "running" ? (

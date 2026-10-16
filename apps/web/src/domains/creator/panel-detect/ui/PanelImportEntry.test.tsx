@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
-import { act, fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { detectPanels } from "../panel-detect-core";
+import { fakePngFile } from "../panel-detect-test-doubles";
+import { PANEL_IMPORT_RIGHTS_STATEMENT_KO } from "../panel-import-rights";
+
 import { PanelImportEntry, type PanelWorkbenchLoader } from "./PanelImportEntry";
-import { createKit, renderInRouter } from "./panel-ui-test-kit";
+import { createKit, renderInRouter, samplePage } from "./panel-ui-test-kit";
 
 const button = (name: string | RegExp): HTMLElement => screen.getByRole("button", { name });
 
@@ -23,7 +27,9 @@ describe("Studio 가져오기 — 원고 이미지 도우미 진입 구역", () 
     expect(screen.getByRole("heading", { level: 2, name: "스캔한 원고에서 컷을 찾거나, 긴 원고를 카드로 나누기" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "컷 자동 감지 · 세로 재배열" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "카드뉴스 슬라이스 (4:5)" })).toBeTruthy();
-    expect(screen.getByText(/이미지는 이 기기 안에서만 처리하고 서버로 보내지 않아요/)).toBeTruthy();
+    expect(screen.getByText(/이 도구는 이미지를 이 기기 안에서만 처리하고 서버로 보내지 않아요/)).toBeTruthy();
+    // 이 도구가 보내지 않는다는 말이지, Studio 문서로 넣은 뒤의 저장·동기화까지 덮는 약속이 아니다.
+    expect(screen.getByText(/Studio 문서로 넣은 뒤의 저장과 동기화는 Studio 의 규칙을 따라요/)).toBeTruthy();
     expect(screen.getByText(/내가 권리를 가진 원고이거나 이용 허락을 받은 원고만 사용해 주세요/)).toBeTruthy();
     // 무거운 작업대는 시작을 누르기 전에는 열리지 않는다.
     expect(screen.queryByRole("heading", { name: "1. 원고 권리 확인과 이미지 선택" })).toBeNull();
@@ -65,12 +71,32 @@ describe("Studio 가져오기 — 원고 이미지 도우미 진입 구역", () 
     fireEvent.click(button("컷 찾기 시작"));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("작업대를 열지 못했어요");
-    expect(alert.textContent).toContain("어디로도 보내지 않았어요");
+    expect(alert.textContent).toContain("이 도구는 이미지를 서버로 보내지 않아요");
+    // 이 안내는 렌더 오류에도 뜨므로 이미지를 읽었는지 여부는 말하지 않는다.
+    expect(alert.textContent).not.toContain("아직 읽지");
     // 가져오기 화면의 나머지는 그대로 남는다.
     expect(screen.getByRole("heading", { level: 2, name: "스캔한 원고에서 컷을 찾거나, 긴 원고를 카드로 나누기" })).toBeTruthy();
     fireEvent.click(button("다시 시도"));
     expect(await screen.findByRole("heading", { name: "1. 원고 권리 확인과 이미지 선택" })).toBeTruthy();
     expect(attempts).toBe(2);
+  });
+
+  it("이미지를 읽은 뒤 작업대가 그리다 실패해도 ‘아직 읽지 않았다’고 말하지 않는다", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const kit = createKit();
+    // 감지 결과 모양이 어긋나면 확인 화면을 그리다 던진다 — 이미지는 이미 읽은 뒤다.
+    const broken = { ...detectPanels(samplePage().raster(), {}), panels: undefined as never };
+    renderInRouter(<PanelImportEntry environment={{ ...kit.env, detect: () => Promise.resolve(broken) }} />);
+    fireEvent.click(button("컷 찾기 시작"));
+    fireEvent.click(await screen.findByRole("checkbox", { name: new RegExp(PANEL_IMPORT_RIGHTS_STATEMENT_KO) }));
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!input) throw new Error("파일 입력칸을 찾지 못했어요.");
+    fireEvent.change(input, { target: { files: [fakePngFile("page-01.png", 400, 560)] } });
+    await waitFor(() => expect(kit.loadSource).toHaveBeenCalledTimes(1));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("작업대를 열지 못했어요");
+    expect(alert.textContent).not.toContain("아직 읽지");
+    expect(alert.textContent).not.toContain("어디로도 보내지 않았어요");
   });
 
   it("불러오기에 실패했을 때 닫으면 모드 선택으로 돌아온다", async () => {
@@ -90,6 +116,8 @@ describe("Studio 가져오기 — 원고 이미지 도우미 진입 구역", () 
     act(() => { useI18n.getState().setLang("en"); });
     expect(await screen.findByRole("heading", { name: "1. Confirm rights and choose the image" })).toBeTruthy();
     expect(screen.getByText("MANUSCRIPT HELPER")).toBeTruthy();
-    expect(screen.getByText(/Images are processed only on this device and never uploaded/)).toBeTruthy();
+    expect(screen.getByText(/This tool processes images only on this device and does not send them to a server/)).toBeTruthy();
+    // 진입 구역과 열린 작업대(재배열 1단계)가 같은 한정을 각자 보여 준다.
+    expect(screen.getAllByText(/Studio’s own saving and sync rules apply/)).toHaveLength(2);
   });
 });
