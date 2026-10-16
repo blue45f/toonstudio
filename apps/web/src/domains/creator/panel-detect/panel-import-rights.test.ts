@@ -134,6 +134,23 @@ describe("권리 명세(rights manifest) 합류", () => {
     expect(manifest.assets[0].commercialUse).toBe("unknown");
   });
 
+  it("확인 기록이 있어도 상업 게시 허용 여부는 알 수 없는 채로 남아 확인 필요 오류가 그대로 보존된다", () => {
+    const rights = createPanelImportRights(input());
+    const [attested, plain] = projectStudioAssetRightsUsages([
+      { id: "page-1", elements: [image("cut-1", { sourceRights: rights }), image("plain")] },
+    ]);
+    // "권리를 가졌거나 이용 허락을 받았다"는 확인은 상업 게시를 허락한다는 뜻이 아니다. 사용 범위를 확인 기록이 없는 로컬 이미지와 같게
+    // 두어야 같은 진단이 나온다(범위를 current-work 로 좁히면 COMMERCIAL_USE_UNKNOWN 이 조용히 사라진다).
+    expect(attested.scope).toEqual(plain.scope);
+    expect(attested.commercialUse).toBe("unknown");
+    const now = Date.parse("2026-10-15T00:00:00.000Z");
+    const codesOf = (usage: typeof attested): string[] =>
+      buildStudioAssetRightsManifest({ workId: "work-1", usages: [usage], now }).diagnostics.map((diagnostic) => diagnostic.code).sort();
+    // 확인 기록이 풀어 주는 것은 사용권 미상·출처·버전 누락뿐이다. 상업 게시 미확인·만료 미확인·사람의 검토 확인은 그대로 남는다.
+    expect(codesOf(plain)).toEqual(["ASSET_VERSION_MISSING", "ATTESTATION_REQUIRED", "COMMERCIAL_USE_UNKNOWN", "EXPIRY_UNKNOWN", "LICENSE_UNKNOWN"]);
+    expect(codesOf(attested)).toEqual(["ATTESTATION_REQUIRED", "COMMERCIAL_USE_UNKNOWN", "EXPIRY_UNKNOWN"]);
+  });
+
   it("깨진 확인 기록은 무시하고 기존 fail-closed 경로(local-upload/unknown)로 둔다", () => {
     const usages = projectStudioAssetRightsUsages([
       { id: "page-1", elements: [image("cut-1", { sourceRights: { schema: "toonstudio.panel-import-rights" } as never })] },

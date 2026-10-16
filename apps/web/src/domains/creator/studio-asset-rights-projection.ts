@@ -91,7 +91,9 @@ function imageUsage(
     };
   }
   // 컷 자동 감지 가져오기: 사용자가 "권리를 가졌거나 이용 허락을 받은 원고"라고 확인한 기록이 있으면 사용권을
-  // 알 수 없음(unknown)이 아니라 사용자 확인(custom)으로 올린다. 허락 범위·만료·AI 학습 여부는 알 수 없으므로 그대로 둔다.
+  // 알 수 없음(unknown)이 아니라 사용자 확인(custom)으로 올린다. 이 확인은 허락 범위(상업 게시 포함)·만료·AI 학습·재배포를
+  // 알려 주지 않으므로 그 값은 unknown 으로, 사용 범위도 다른 분기와 같게 둔다 — 범위를 좁히면 상업 게시 허용 여부가 확인되지
+  // 않았다는 오류(COMMERCIAL_USE_UNKNOWN)가 조용히 사라진다.
   const attested = parsePanelImportRights(element.sourceRights);
   if (attested) {
     return {
@@ -104,7 +106,7 @@ function imageUsage(
       commercialUse: "unknown",
       aiTraining: "unknown",
       redistribution: "unknown",
-      scope: ["current-work"],
+      scope: ["current-work", "commercial-publication"],
     };
   }
   return {
