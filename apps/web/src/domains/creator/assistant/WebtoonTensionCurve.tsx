@@ -5,6 +5,11 @@
  * `<button>` 이 "점"이다. 그래서 포커스·Enter/Space·터치 영역·접근성 이름이 브라우저 기본 동작이다.
  * 점은 컷 한 칸 폭 전체(세로 전체)를 차지해 눌러야 하는 크기가 작지 않다.
  *
+ * 가로 정렬: SVG 는 래퍼 폭의 %(컷 i 의 x = (i + 0.5) / 컷 수)로 그리고, 점 버튼 열은 같은 래퍼 폭을
+ * 컷 수로 똑같이 나눈다(`flex-1`, `min-w-0`). 그래서 한 칸의 폭을 정하는 곳은 래퍼의 `--tension-col`
+ * 변수 하나뿐이다 — 버튼마다 자기 최소 폭을 따로 두면(px·rem 이 섞이거나 터치에서만 달라지면) 버튼 열이
+ * 래퍼보다 넓어져 곡선과 점이 어긋난다.
+ *
  * 키보드: Tab 으로 곡선에 들어오면 한 점만 탭 정지점(roving tabindex)이다. ←/→ 는 이웃 점으로,
  * Home/End 는 처음·끝 점으로 포커스를 옮긴다(선택은 바꾸지 않는다). Enter/Space 가 컷을 선택한다.
  * 곡선을 못 보는 사용자를 위한 텍스트 요약·표는 호출한 화면이 곁에 둔다(`describedBy`).
@@ -38,8 +43,12 @@ import type {
 const bi = (ko: string, en: string): string =>
   translateBilingualValueForActiveLocale("WebtoonTensionCurve", ko, en);
 
-/** 한 컷 칸의 최소 폭(px). 컷이 많으면 곡선이 가로로 스크롤된다. */
-const COLUMN_MIN_PX = 36;
+/**
+ * 한 컷 칸의 폭(`--tension-col`) — 래퍼의 최소 폭(칸 수 × 이 값)과 점 버튼 열이 모두 여기서 나온다.
+ * rem 이라 브라우저 글자 크기를 키워도 곡선과 점이 함께 커지고, 터치(pointer: coarse)에서는 점 하나가
+ * 44px 이상이 되게 키운다. 컷이 많아 래퍼가 컨테이너보다 넓어지면 곡선 전체가 가로로 스크롤된다.
+ */
+const COLUMN_WIDTH_CLASS = "[--tension-col:2.25rem] pointer-coarse:[--tension-col:2.75rem]";
 /** 위·아래 여백(%) — 긴장도 1 과 0 의 점이 잘리지 않고, 위쪽에 후보 글리프 줄이 들어갈 자리를 남긴다. */
 const PLOT_PAD_PCT = 12;
 
@@ -134,7 +143,10 @@ export function WebtoonTensionCurve({
         </div>
 
         <div className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-line bg-card">
-          <div className="relative" style={{ minWidth: `${count * COLUMN_MIN_PX}px` }}>
+          <div
+            className={cn("relative", COLUMN_WIDTH_CLASS)}
+            style={{ minWidth: `calc(var(--tension-col) * ${count})` }}
+          >
             <svg
               aria-hidden="true"
               focusable="false"
@@ -206,7 +218,8 @@ export function WebtoonTensionCurve({
                     onFocus={() => setFocusIndex(index)}
                     onKeyDown={(event) => moveFocus(event, index)}
                     className={cn(
-                      "group flex min-w-9 flex-1 flex-col pointer-coarse:min-w-11",
+                      // 폭은 래퍼의 `--tension-col` 이 정한다 — 여기에 최소 폭을 두면 열이 래퍼보다 넓어질 수 있다.
+                      "group flex min-w-0 flex-1 flex-col",
                       STUDIO_EASE,
                       // 점이 가로 스크롤 영역에 꽉 차서 바깥 윤곽선은 잘린다 — 안쪽으로 그린다.
                       "focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",

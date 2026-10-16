@@ -187,6 +187,50 @@ describe("WebtoonTensionCurve — keyboard", () => {
   });
 });
 
+describe("WebtoonTensionCurve — column width", () => {
+  // jsdom 에는 레이아웃이 없어 점과 곡선이 실제로 같은 x 에 놓이는지는 여기서 볼 수 없다(실제 브라우저에서
+  // 터치 390px·글자 크기 확대로 쟀다). 대신 어긋남의 원인이던 "폭을 정하는 곳이 둘" 이라는 구조를 고정한다.
+  function curveWrapper(container: HTMLElement): HTMLElement {
+    const wrapper = container.querySelector("svg")?.parentElement;
+    if (!wrapper) throw new Error("곡선 래퍼를 찾을 수 없어요");
+    return wrapper;
+  }
+
+  it("takes the wrapper's min width from the same variable the columns share, never from px", () => {
+    const { container, result } = renderCurve();
+    const wrapper = curveWrapper(container);
+    const classes = wrapper.className.split(/\s+/);
+    expect(classes).toContain("[--tension-col:2.25rem]");
+    // 터치에서는 점이 44px 이상이 되게 같은 변수를 키운다 — 버튼이 아니라 변수를 키우므로 래퍼도 함께 넓어진다
+    expect(classes).toContain("pointer-coarse:[--tension-col:2.75rem]");
+    expect(wrapper.getAttribute("style")).toContain(
+      `min-width: calc(var(--tension-col) * ${result.cuts.length})`,
+    );
+    expect(wrapper.getAttribute("style")).not.toMatch(/\bpx\b|\d\s*px/);
+  });
+
+  it("lets every point column share the wrapper width equally without a min width of its own", () => {
+    renderCurve();
+    for (const point of points()) {
+      const classes = point.className.split(/\s+/);
+      expect(classes).toContain("flex-1");
+      // 버튼마다 자기 최소 폭(px·rem·터치 변형)을 두면 열이 래퍼보다 넓어져 곡선과 어긋난다
+      expect(classes.filter((token) => /(?:^|:)min-w-/.test(token))).toEqual(["min-w-0"]);
+    }
+  });
+
+  it("scales the wrapper with the cut count so a long curve scrolls instead of squeezing the points", () => {
+    const { container, result, rerender } = renderCurve();
+    const fewer = result.cuts.slice(0, 4);
+    rerender(
+      <WebtoonTensionCurve cuts={fewer} segments={[]} selectedIndex={0} onSelect={() => {}} />,
+    );
+    expect(curveWrapper(container).getAttribute("style")).toContain(
+      "min-width: calc(var(--tension-col) * 4)",
+    );
+  });
+});
+
 describe("WebtoonTensionCurve — theme tokens", () => {
   it("uses only themed colour tokens, no raw palette, hex colours or OS-bound dark: variants", () => {
     const { container } = renderCurve();
