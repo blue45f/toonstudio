@@ -215,7 +215,7 @@ describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
     open.detach();
   });
 
-  it("setPointerCapture가 던지면 획을 시작하지 않고 onCaptureFailure로 사유를 알린다", () => {    const failures: { pointerId: number; reason: string }[] = [];
+    it("setPointerCapture가 던지면 획을 시작하지 않고 onCaptureFailure로 사유를 알린다", () => {    const failures: { pointerId: number; reason: string }[] = [];
     const { el, batches, detach } = setup({ onCaptureFailure: (info) => failures.push(info) });
     Object.defineProperty(el, "setPointerCapture", {
       value: () => {
@@ -230,6 +230,30 @@ describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
     // 소유자가 없으므로 이후 move도 무시된다(유령 획 없음).
     el.dispatchEvent(pointerEvent("pointermove", { clientX: 5, clientY: 5 }));
     expect(batches).toHaveLength(0);
+    detach();
+  });
+
+  it("캡처 호출은 성공해도 확보되지 않으면 획을 시작하지 않는다", () => {
+    const failures: { pointerId: number; reason: string }[] = [];
+    const { el, batches, detach } = setup({ onCaptureFailure: (info) => failures.push(info) });
+    Object.defineProperty(el, "setPointerCapture", { value: () => undefined });
+    Object.defineProperty(el, "hasPointerCapture", { value: () => false });
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1 }));
+    expect(batches).toHaveLength(0);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]?.reason).toContain("not acquired");
+    detach();
+  });
+
+  it("요소가 놓친 up은 window 그물망이 받아 획을 끝낸다(유령 소유자 방지)", () => {
+    const { el, batches, detach } = setup();
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1, pressure: 0.4 }));
+    expect(batches).toHaveLength(1);
+    // 요소 리스너를 거치지 않고 window에만 pointerup이 온 경우(리마운트 등).
+    window.dispatchEvent(pointerEvent("pointerup", { clientX: 9, clientY: 9 }));
+    const last = batches[batches.length - 1] ?? [];
+    expect(last).toHaveLength(1);
+    expect(last[0]).toEqual(expect.objectContaining({ phase: "up" }));
     detach();
   });
 

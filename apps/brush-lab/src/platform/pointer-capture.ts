@@ -172,6 +172,15 @@ export function attachPointerCapture(
       if (typeof el.setPointerCapture === "function") {
         el.setPointerCapture(ev.pointerId);
       }
+      // 호출이 성공해도 캡처가 실제로 걸렸는지 동기 확인한다. 걸리지 않은 채로 획을 시작하면
+      // 창 밖에서 뗀 포인터를 놓쳐 유령 획이 남는다.
+      if (
+        typeof el.hasPointerCapture === "function" &&
+        typeof el.setPointerCapture === "function" &&
+        !el.hasPointerCapture(ev.pointerId)
+      ) {
+        throw new Error("pointer capture not acquired");
+      }
     } catch (error) {
       // 캡처 실패 상태로 획을 시작하면 바깥으로 나간 포인터를 놓쳐 유령 획이 남는다. 시작하지 않고 사유를 알린다.
       if (opts.onCaptureFailure) {
@@ -251,6 +260,15 @@ export function attachPointerCapture(
   el.addEventListener("pointerup", finish);
   el.addEventListener("pointercancel", finish);
   el.addEventListener("lostpointercapture", onLostCapture);
+  // 캡처가 없거나 놓친 경우의 그물망: 창 밖에서 뗀 up/cancel을 요소가 못 받으면 소유자가 영구히 남아
+  // 이후 획이 전부 무시되는 유령 상태가 된다. finish는 소유자 일치 때만 동작해 중복 호출이 안전하다.
+  const onWindowEnd = (ev: Event): void => {
+    if (!isPointerEvent(ev)) return;
+    if (ownerId === null || ev.pointerId !== ownerId) return;
+    finish(ev);
+  };
+  window.addEventListener("pointerup", onWindowEnd);
+  window.addEventListener("pointercancel", onWindowEnd);
   if (blockMenu) el.addEventListener("contextmenu", onContextMenu);
   if (useRaw) el.addEventListener("pointerrawupdate", onRawUpdate);
 
@@ -260,6 +278,8 @@ export function attachPointerCapture(
     el.removeEventListener("pointerup", finish);
     el.removeEventListener("pointercancel", finish);
     el.removeEventListener("lostpointercapture", onLostCapture);
+    window.removeEventListener("pointerup", onWindowEnd);
+    window.removeEventListener("pointercancel", onWindowEnd);
     if (blockMenu) el.removeEventListener("contextmenu", onContextMenu);
     if (useRaw) el.removeEventListener("pointerrawupdate", onRawUpdate);
     el.style.touchAction = previousTouchAction;
