@@ -25,6 +25,14 @@ export interface StudioCharmPopoverController {
   readonly toggle: () => void;
 }
 
+function samePlan(left: StudioCharmPopoverPlan, right: StudioCharmPopoverPlan): boolean {
+  return left.placement === right.placement
+    && left.left === right.left
+    && left.top === right.top
+    && left.width === right.width
+    && left.maxHeight === right.maxHeight;
+}
+
 export function useStudioCharmPopover(width?: number): StudioCharmPopoverController {
   const [plan, setPlan] = useState<StudioCharmPopoverPlan | null>(null);
   const triggerRef = useRef<HTMLDivElement | null>(null);
@@ -50,12 +58,21 @@ export function useStudioCharmPopover(width?: number): StudioCharmPopoverControl
 
   useEffect(() => {
     if (!isOpen) return;
-    const reposition = () => setPlan(measure());
+    // 위치가 그대로면 이전 계획을 그대로 둔다: 새 객체를 넣으면 스크롤 이벤트 하나마다 바와 선택기가 다시 그려진다.
+    const reposition = () => {
+      const next = measure();
+      setPlan((current) => (current && next && samePlan(current, next) ? current : next));
+    };
+    const onScroll = (event: Event) => {
+      // 팝오버 안 목록을 스크롤하는 것은 트리거 위치를 바꾸지 않는다.
+      if (event.target instanceof Element && event.target.closest(STUDIO_CHARM_POPOVER_SELECTOR)) return;
+      reposition();
+    };
     window.addEventListener("resize", reposition);
-    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       window.removeEventListener("resize", reposition);
-      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [isOpen, measure]);
 
