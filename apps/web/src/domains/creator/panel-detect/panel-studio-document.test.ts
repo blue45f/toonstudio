@@ -169,6 +169,14 @@ describe("편집기로 넘기기", () => {
     const loaded = await parseStudioProjectDocument(await file.text());
     expect(loaded.source).toBe("legacy-project");
     expect(loaded.project.pagesList).toHaveLength(project.pagesList.length);
+    // 편집기가 문서를 받은 뒤에도 컷 이미지마다 권리 확인 기록이 남아 있어야 이후 저장·권리 명세에서 쓸 수 있다.
+    const loadedRights = loaded.project.pagesList.flatMap((page) => page.elements).flatMap((element) => (
+      typeof element === "object" && element !== null && "type" in element && element.type === "image" && "sourceRights" in element
+        ? [element.sourceRights]
+        : []
+    ));
+    expect(loadedRights).toHaveLength(3);
+    for (const entry of loadedRights) expect(entry).toEqual(RIGHTS);
 
     const { handoff, href } = registerPanelStudioHandoff(file);
     expect(handoff.target).toBe("project-json");
