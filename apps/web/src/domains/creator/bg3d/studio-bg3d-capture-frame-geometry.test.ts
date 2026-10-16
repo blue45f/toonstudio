@@ -334,17 +334,21 @@ describe("capture aspect presets", () => {
   it("offers the webtoon presets with the automatic entry first", () => {
     expect(STUDIO_BG3D_CAPTURE_ASPECT_PRESETS.map((preset) => preset.id)).toEqual([
       "viewport",
+      "21-9",
       "16-9",
       "4-3",
       "1-1",
+      "4-5",
       "3-4",
       "9-16",
     ]);
     expect(STUDIO_BG3D_CAPTURE_ASPECT_PRESETS[0]!.ratio).toBeNull();
     expect(STUDIO_BG3D_CAPTURE_ASPECT_PRESETS.map((preset) => preset.ratio).slice(1)).toEqual([
+      21 / 9,
       16 / 9,
       4 / 3,
       1,
+      4 / 5,
       3 / 4,
       9 / 16,
     ]);
@@ -354,6 +358,66 @@ describe("capture aspect presets", () => {
       expect(preset.ratio).toBeGreaterThanOrEqual(STUDIO_BG3D_CAPTURE_ASPECT_MIN);
       expect(preset.ratio).toBeLessThanOrEqual(STUDIO_BG3D_CAPTURE_ASPECT_MAX);
     }
+  });
+
+  it("keeps the preset ids unique and orders the fixed ratios from wide to tall", () => {
+    const ids = STUDIO_BG3D_CAPTURE_ASPECT_PRESETS.map((preset) => preset.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const ratios = STUDIO_BG3D_CAPTURE_ASPECT_PRESETS.flatMap((preset) =>
+      preset.ratio === null ? [] : [preset.ratio],
+    );
+    expect([...ratios].sort((a, b) => b - a)).toEqual(ratios);
+  });
+
+  it("adds the Instagram 4:5 and the 21:9 cinema ratios and labels them for authors", () => {
+    const byId = new Map(STUDIO_BG3D_CAPTURE_ASPECT_PRESETS.map((preset) => [preset.id, preset]));
+    expect(byId.get("4-5")).toMatchObject({ ratio: 0.8, label: "세로 4:5 (인스타)" });
+    expect(byId.get("21-9")).toMatchObject({ ratio: 21 / 9, label: "와이드 21:9" });
+    // 저장된 비율이 새 프리셋으로 되돌아오므로 선택 칸이 "직접 지정"으로 떨어지지 않는다.
+    expect(matchStudioBg3dCaptureAspectPreset(4 / 5)).toBe("4-5");
+    expect(matchStudioBg3dCaptureAspectPreset(21 / 9)).toBe("21-9");
+    expect(matchStudioBg3dCaptureAspectPreset(2.35)).toBe("custom");
+    // 문서 정규화가 두 비율을 그대로 보존한다(한도 0.25~4 안, 클램프 없음).
+    expect(normalizeStudioBg3dCaptureAspectRatio(4 / 5)).toBe(4 / 5);
+    expect(normalizeStudioBg3dCaptureAspectRatio(21 / 9)).toBe(21 / 9);
+  });
+
+  it("covers every ratio the cinematic director offers as a cut ratio", () => {
+    // StudioBg3dCinematicDirectorPanelContent 의 컷 비율 선택지(9:16, 4:5, 1:1, 16:9, 21:9)가
+    // 모두 캡처 프레임 프리셋의 비율과 일치해야 디렉터 선택을 캡처 프레임으로 이을 수 있다.
+    const directorRatios: readonly (readonly [number, number])[] = [
+      [9, 16],
+      [4, 5],
+      [1, 1],
+      [16, 9],
+      [21, 9],
+    ];
+    for (const [width, height] of directorRatios) {
+      const presetId = matchStudioBg3dCaptureAspectPreset(width / height);
+      expect(presetId, `${width}:${height}`).not.toBe("custom");
+      expect(presetId).not.toBe("viewport");
+    }
+  });
+
+  it("crops a 16:10 viewport into the 21:9 and 4:5 frames without leaving it", () => {
+    const wide = resolveStudioBg3dCaptureFrame({
+      viewportWidth: 1_600,
+      viewportHeight: 1_000,
+      aspectRatio: 21 / 9,
+    })!;
+    expect(wide.fit).toBe("letterbox");
+    expect(wide.width).toBe(1_600);
+    expect(wide.height).toBeCloseTo(1_600 / (21 / 9), 9);
+    expect(wide.y).toBeCloseTo((1_000 - wide.height) / 2, 9);
+    const portrait = resolveStudioBg3dCaptureFrame({
+      viewportWidth: 1_600,
+      viewportHeight: 1_000,
+      aspectRatio: 4 / 5,
+    })!;
+    expect(portrait.fit).toBe("pillarbox");
+    expect(portrait.height).toBe(1_000);
+    expect(portrait.width).toBeCloseTo(800, 9);
+    expect(portrait.x).toBeCloseTo(400, 9);
   });
 
   it("derives a document canvas preset and rejects unusable canvas sizes", () => {
