@@ -51,3 +51,10 @@ The exact base main CI failed API runtime import validation because the staged C
 Each acceptance run also uses a newly allocated loopback origin forwarding only to the fixed local fixture server. This prevents prior test-origin data retained by some WebKit builds from contaminating a fresh run, without clearing any existing origin. The same origin and profile are retained across cold-process recovery. The initial-empty-history assertion remains mandatory. Proxy/profile lifecycle and non-local upstream rejection have tests.
 
 Observed focused results before PR: 29 files / 265 tests; Chromium/Firefox/WebKit 31 interaction scenarios; WebKit complete process restart restored pins and recent colors. The separate ephemeral context explicitly reported session-only while editing remained usable. Three real-control axe audits had no serious/critical findings. Chromium synthetic 5,000-element color input measured p95 9.3ms across 120 samples, with no preview history writes. Exact-head CI and build results are recorded separately in the pull request.
+
+## 2026-10-16 추가: OPFS 진입점이 없는 WebKit 빌드 (current)
+
+- 측정(2026-10-16, Playwright 1.62.1의 WebKit 26.5, Ubuntu 24.04): Linux용 Playwright WebKit은 임시·영구 컨텍스트와 `localhost`·`127.0.0.1` 모두에서 `navigator.storage`, `StorageManager`, `FileSystemHandle`을 노출하지 않는다(`indexedDB`는 있다). 이 빌드에서는 OPFS 기반 SQLite가 성립하지 않아, 위 "실제 `saved` 상태를 요구한다"는 시나리오가 제품과 무관하게 항상 실패한다. Firefox 153은 같은 환경에서 `getDirectory`가 있다.
+- 러너 변경: WebKit 격리 영구 프로필에서 `navigator.storage.getDirectory` 진입점을 먼저 잰다(`scripts/lib/studio-drawing-storage-capability.mjs`). 진입점이 **있으면** 기존과 같이 모든 시나리오가 실제 `saved`를 요구한다. 진입점이 **없을 때만** 내구 저장 시나리오(도구막대 핀·프로필·최근 색의 재시작 복원)를 실행하지 않고 내구 저장 성공으로 세지 않는다. 대신 모바일 도크 4개 폭(390/360/320/412)이 정확히 `session-only` 상태에서 동작하는지와, 제한 컨텍스트 검증의 세션 전용 경고·편집 가능·가짜 저장 표시 없음·문서 Undo 없음을 요구한다.
+- 완화 범위: Chromium·Firefox와 진입점이 있는 WebKit(예: macOS)은 이 변경의 영향을 받지 않는다. 진입점이 있는데 `saved`가 아니면 결함이므로 그대로 실패한다. 제품 코드와 저장소 정책은 바꾸지 않았다.
+- 검증 근거: `scripts/lib/studio-drawing-storage-capability.test.ts`(능력 판정과 엔진별 기대), WebKit 단독 실행(`node scripts/verify-studio-drawing-ux-v2.mjs http://127.0.0.1:5219 webkit`) 통과.
