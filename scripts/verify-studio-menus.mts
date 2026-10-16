@@ -575,7 +575,7 @@ async function openMainMenuGroup(
   // retry a click that was swallowed that way; a menu that never opens still fails.
   await waitForStableBox(btn, 350, 4000);
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    await btn.click({ timeout: 5000 });
+    await btn.click({ timeout: 15_000 }); // 앱 부팅 직후·큰 재렌더 직후에는 입력 확인이 수 초 늦을 수 있다(성공 경로의 시간은 늘지 않는다).
     const opened = await menu
       .waitFor({ state: "visible", timeout: attempt === 0 ? 2500 : 5000 })
       .then(() => true)
@@ -1065,7 +1065,7 @@ async function assertMenuDrivenPopovers(page: Page): Promise<string[]> {
       await closeFloatingUi(page);
       await openMainMenuGroup(page, title, surface);
       const menu = page.locator(`[role="menu"][aria-label="${title}"]`);
-      await menu.getByRole("menuitem", { name: entry.item }).click({ timeout: 4000 });
+      await clickAndWaitForRenderer(page, menu.getByRole("menuitem", { name: entry.item })); // 지연 패널이 마운트되는 동안 입력 확인이 수 초 늦을 수 있다.
       // Lazy panels + fixed popovers need a beat after main-menu close
       await page.waitForTimeout(700);
 
