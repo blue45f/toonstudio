@@ -65,6 +65,18 @@ describe("resolveVersionShare", () => {
     }
   });
 
+  it("재시도 정책은 비밀번호를 실은 요청에만 따로 지정한다(첫 확인 요청은 공용 읽기 정책을 그대로 쓴다)", async () => {
+    get.mockResolvedValue(OK_BODY);
+    await resolveVersionShare("token-value-123456");
+    expect((get.mock.calls.at(-1)?.[1] as { retry?: unknown }).retry).toBeUndefined();
+
+    await resolveVersionShare("token-value-123456", "moon-1234");
+    const retry = (get.mock.calls.at(-1)?.[1] as { retry?: Record<string, unknown> }).retry;
+    // 동작(실제 ky 가 따르는지)은 production-manuscript-version-share-api.ky.test.ts 가 본다.
+    expect(retry).toMatchObject({ limit: 1, statusCodes: [429], maxRetryAfter: 2_000, retryOnTimeout: false });
+    expect(typeof retry?.shouldRetry).toBe("function");
+  });
+
   it("비밀번호는 헤더로만 보낸다", async () => {
     get.mockResolvedValue(OK_BODY);
     await resolveVersionShare("token-value-123456", "moon-1234");
@@ -79,6 +91,7 @@ describe("resolveVersionShare", () => {
     [410, "version_share_expired", "expired"],
     [401, "version_share_password_required", "password_required"],
     [401, "version_share_password_invalid", "password_invalid"],
+    [429, "version_share_password_busy", "password_busy"],
   ] as const)("서버 코드 %s를 %s 판정으로 바꾼다", async (status, code, expected) => {
     get.mockRejectedValue(apiError(status, code));
     await expect(resolveVersionShare("token-value-123456")).resolves.toEqual({ status: expected });
