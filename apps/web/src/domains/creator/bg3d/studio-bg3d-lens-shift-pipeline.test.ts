@@ -245,6 +245,70 @@ describe("lens shift pipeline — Babylon capture projection", () => {
   });
 });
 
+// 알려진 한계(docs/features/studio-bg3d-webtoon-backgrounds.md 8절): Babylon 캡처 투영은 뷰포트 안전 프레임 크롭을
+// 모른다. 출력 크기에 맞춰 세로 fov 로 투영 행렬을 만들고 시프트를 "출력 프레임 한 변의 비율"로 읽으므로,
+// 뷰포트 비율과 출력 비율이 같을 때(캡처 프레임이 뷰포트 전체)만 Three 삽입 결과와 일치한다. 4:5·21:9 프리셋이 이 차이를
+// 더 자주 드러낸다. 아래 시험은 일치하는 경우를 고정하고, 어긋나는 경우의 크기를 적어 두어 나중에 고치면 문서를 함께 고치게 한다.
+describe("lens shift pipeline — Babylon vs a cropped Three capture frame (known limit)", () => {
+  function babylonMinusThree(ratio: number, shift: Shift) {
+    const frame = resolveStudioBg3dCaptureFrame({
+      viewportWidth: VIEWPORT.width,
+      viewportHeight: VIEWPORT.height,
+      aspectRatio: ratio,
+    })!;
+    const view = cameraWithShift(shift);
+    const three = threeCamera(view);
+    expect(applyStudioBg3dCaptureFrameViewOffset(three, frame, VIEWPORT)).toBeTypeOf("function");
+    const differences: Array<readonly [number, number]> = [];
+    withBabylonScene((scene) => {
+      const camera = createStudioBg3dBabylonCaptureCamera(view, Math.round(frame.width), Math.round(frame.height), scene);
+      const viewProjection = camera.getViewMatrix(true).multiply(camera.getProjectionMatrix(true));
+      for (const point of WORLD_POINTS) {
+        const expected = ndc(three, point);
+        const actual = BabylonVector3.TransformCoordinates(new BabylonVector3(...point), viewProjection);
+        differences.push([actual.x - expected.x, actual.y - expected.y]);
+      }
+    });
+    return { frame, differences };
+  }
+
+  it("agrees when the capture frame is the whole viewport (same ratio), with or without a shift", () => {
+    for (const shift of [[0, 0], [0.31, -0.18]] as const) {
+      const { frame, differences } = babylonMinusThree(VIEWPORT.width / VIEWPORT.height, shift);
+      expect(frame.fit).toBe("exact");
+      for (const [dx, dy] of differences) {
+        expect(dx).toBeCloseTo(0, 4);
+        expect(dy).toBeCloseTo(0, 4);
+      }
+    }
+  });
+
+  it("limit: a 4:5 pillarbox crop keeps the vertical axis but the horizontal shift is read against the narrower output", () => {
+    const shift: Shift = [0.2, 0.2];
+    const { frame, differences } = babylonMinusThree(4 / 5, shift);
+    expect(frame.fit).not.toBe("exact");
+    const halfWidth = frame.width / VIEWPORT.width;
+    // Three 는 뷰포트 기준 시프트를 크롭으로 다시 자르므로 출력 NDC 이동이 1/halfWidth 배가 된다. Babylon 은 그대로다.
+    const expectedGap = 2 * shift[0] * (1 / halfWidth - 1);
+    expect(expectedGap).toBeGreaterThan(0.3);
+    for (const [dx, dy] of differences) {
+      expect(dx).toBeCloseTo(expectedGap, 2);
+      expect(dy).toBeCloseTo(0, 4);
+    }
+    // 시프트가 0 이면 이 비율에서는 어긋나지 않는다.
+    for (const [dx, dy] of babylonMinusThree(4 / 5, [0, 0]).differences) {
+      expect(dx).toBeCloseTo(0, 4);
+      expect(dy).toBeCloseTo(0, 4);
+    }
+  });
+
+  it("limit: a 21:9 letterbox crop differs even with no shift (Babylon fixes the vertical fov on the shorter output)", () => {
+    const { frame, differences } = babylonMinusThree(21 / 9, [0, 0]);
+    expect(frame.fit).not.toBe("exact");
+    expect(Math.max(...differences.map(([dx, dy]) => Math.hypot(dx, dy)))).toBeGreaterThan(0.1);
+  });
+});
+
 describe("lens shift pipeline — vanishing point guides", () => {
   const LOOKING_DOWN = {
     ...cameraWithShift(undefined),
