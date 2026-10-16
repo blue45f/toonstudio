@@ -167,6 +167,9 @@ const envSchema = z.object({
   WEBDEX_CATALOG_FILE: boundedPath("WEBDEX_CATALOG_FILE").optional(),
   WEBDEX_CATALOG_GZ: boundedPath("WEBDEX_CATALOG_GZ").optional(),
   COVER_IMAGE_POLICY: z.enum(["proxy", "off"]).optional(),
+  // 서버 표지 픽셀 변환(image-js, 메인 스레드 동기 실행). 미설정=끔 — 0.1 CPU 무료 플랜에서
+  // 표지 한 장이 이벤트 루프를 약 8초 막아 헬스체크가 끊긴 2026-10-16 사고 때문이다.
+  COVER_SERVER_TRANSCODE: z.enum(["on", "off"]).optional(),
   // 장기 실행 Nest API의 Socket.IO 다중 인스턴스 adapter. postgres 모드는 LISTEN 가능한
   // direct PostgreSQL URL과 listener + publisher를 위한 최소 2개 연결을 사용한다.
   STUDIO_LIVE_CLUSTER_ADAPTER: z.enum(["memory", "postgres"]).optional(),

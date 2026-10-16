@@ -265,8 +265,9 @@ describe("CatalogController cover server transcode", () => {
     vi.unstubAllEnvs();
   });
 
-  it("resizes an oversized upstream JPEG to the requested standard width", async () => {
+  it("resizes an oversized upstream JPEG to the requested standard width when the owner turned it on", async () => {
     vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    vi.stubEnv("COVER_SERVER_TRANSCODE", "on");
     const { Image, encode, decode } = await import("image-js");
     const data = new Uint8Array(800 * 1200 * 4);
     for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
@@ -289,8 +290,37 @@ describe("CatalogController cover server transcode", () => {
     expect(decoded.height).toBe(480);
   });
 
+  // 2026-10-16 운영 사고: 변환은 메인 스레드를 표지 한 장당 약 8초 막아(무료 플랜 0.1 CPU) 헬스체크가
+  // 끊겼다. 켜지 않은 환경(기본)에서는 폭이 지정돼도 업스트림 바이트를 그대로 중계해야 한다.
+  it.each([
+    ["미설정", undefined],
+    ["빈 값", ""],
+    ["off", "off"],
+    ["오타(true)", "true"],
+  ])("relays the upstream bytes untouched when the server transcode is %s", async (_label, flag) => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    if (flag === undefined) delete process.env.COVER_SERVER_TRANSCODE;
+    else vi.stubEnv("COVER_SERVER_TRANSCODE", flag);
+    const { Image, encode } = await import("image-js");
+    const data = new Uint8Array(800 * 1200 * 4);
+    for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
+    const jpeg = encode(new Image(800, 1200, { data, colorModel: "RGBA" }), { format: "jpeg" });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(jpeg, { headers: { "content-type": "image/jpeg" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.jpg", res as unknown as Response, "320", undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "image/jpeg");
+    expect(res.send).toHaveBeenCalledWith(Buffer.from(jpeg));
+  });
+
   it("passes a WebP upstream through untouched even when a width is requested", async () => {
     vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    vi.stubEnv("COVER_SERVER_TRANSCODE", "on");
     const webp = Uint8Array.from([
       0x52, 0x49, 0x46, 0x46, 0x1a, 0, 0, 0, 0x57, 0x45, 0x42, 0x50,
       0x56, 0x50, 0x38, 0x20, 0x0e, 0, 0, 0, 0x90, 0x01, 0, 0x9d, 0x01, 0x2a, 0x01, 0, 0x01, 0,

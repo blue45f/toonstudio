@@ -528,6 +528,7 @@ describe("Catalog file, asset admission, and KMAS environment validation", () =>
           WEBDEX_CATALOG_FILE: "apps/api/data/catalog.json.gz",
           WEBDEX_CATALOG_GZ: "apps/api/data/catalog-legacy.json.gz",
           COVER_IMAGE_POLICY: "proxy",
+          COVER_SERVER_TRANSCODE: "off",
           STUDIO_RASTER_ASSET_ADMISSION:
             "verified-renderer-handoff-v1",
           STUDIO_WORK_ASSET_ADMISSION:
@@ -550,9 +551,23 @@ describe("Catalog file, asset admission, and KMAS environment validation", () =>
     ).toMatchObject({
       TZ: "Asia/Seoul",
       COVER_IMAGE_POLICY: "proxy",
+      COVER_SERVER_TRANSCODE: "off",
       KMAS_CATALOG_SOURCE: "snapshot",
     });
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it("accepts only on/off for the server cover transcode switch", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    expect(validateEnv({ NODE_ENV: "test", COVER_SERVER_TRANSCODE: "on" }, logger)).toMatchObject({
+      COVER_SERVER_TRANSCODE: "on",
+    });
+    expect(validateEnv({ NODE_ENV: "test" }, logger)).not.toBeNull();
+    expect(logger.warn).not.toHaveBeenCalled();
+
+    expect(validateEnv({ NODE_ENV: "test", COVER_SERVER_TRANSCODE: "true" }, logger)).toBeNull();
+    expect(logger.warn).toHaveBeenCalledOnce();
   });
 
   it("normalizes the Lambda-injected POSIX ':UTC' timezone instead of warning on every cold start", () => {

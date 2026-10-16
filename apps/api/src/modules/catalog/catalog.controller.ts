@@ -25,6 +25,7 @@ import { searchParamsFromBody } from "../../../../../packages/core/src/search-pa
 import { CatalogService } from "./catalog.service";
 import { resolveAffiliateDestination, resolveCoverFetchUrl } from "./catalog-url-policy";
 import { transcodeCoverToWidth } from "./cover-transcode";
+import { coverServerTranscodeEnabled } from "./cover-transcode-policy";
 
 import type { Request, Response } from "express";
 
@@ -157,8 +158,11 @@ export class CatalogController {
       }
       // 서버 픽셀 변환: 폭이 지정됐는데 업스트림이 더 큰 JPEG/PNG를 줬으면 그 폭으로
       // 줄여서 낸다(카드 폭에 맞는 바이트만 수신되게). 변환 불가·불필요하면 원본 중계.
+      // 변환은 메인 스레드를 수 초 막으므로 기본은 꺼 두고 명시적으로 켠 환경에서만 한다
+      // (cover-transcode-policy.ts — 무료 플랜 0.1 CPU 에서 헬스체크가 끊긴 2026-10-16 사고).
       const servedType = sniffed ?? headerType;
-      const transcoded = width ? transcodeCoverToWidth(body, servedType, width) : null;
+      const transcoded =
+        width && coverServerTranscodeEnabled() ? transcodeCoverToWidth(body, servedType, width) : null;
       const servedBody = transcoded?.body ?? body;
       res.setHeader("Content-Type", transcoded?.contentType ?? servedType);
       // 표지는 제3자 저작물이라 권리침해 신고·정책 변경(킬스위치) 시 빠르게 빠져야 한다 →
