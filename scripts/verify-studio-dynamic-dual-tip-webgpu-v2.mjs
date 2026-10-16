@@ -3,7 +3,7 @@
  *
  * Exit codes: 0 = observed/passed, 1 = regression, 2 = structured environment skip.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -16,7 +16,7 @@ import { WEB_ROOT } from "./lib/repo-paths.mjs";
 const SCRATCH =
   process.env.TOONSPECTRUM_DYNAMIC_DUAL_TIP_V2_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-dynamic-dual-tip-v2-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-dynamic-dual-tip-v2-"));
 const HARNESS_PATH = "/__studio_dynamic_dual_tip_webgpu_v2__";
 const HARNESS_ENTRY = "/scripts/studio-dynamic-dual-tip-webgpu-v2-browser.ts";
 const RESULT_TIMEOUT_MS = 120_000;

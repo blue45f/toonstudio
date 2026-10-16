@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 import { build } from "vite";
 import { REPO_ROOT, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 
-const scratch = process.env.TOONSPECTRUM_VERIFY_DIR ?? join(tmpdir(), `scene3d-gpu-proof-${Date.now()}`);
+const scratch = process.env.TOONSPECTRUM_VERIFY_DIR ?? mkdtempSync(join(tmpdir(), "scene3d-gpu-proof-"));
 const lane = process.env.SCENE3D_GPU_LANE ?? "hardware";
 if (!["hardware", "swiftshader"].includes(lane)) throw new Error("Unknown GPU lane");
 const dist = join(scratch, "bundle");

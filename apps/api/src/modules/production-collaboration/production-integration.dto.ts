@@ -84,11 +84,12 @@ export const ProductionPushUnsubscribeSchema = z.object({
 
 export const ProductionPushSubscriptionSchema = z.object({
   // 서버가 이 주소로 직접 요청을 보내므로 공개 도메인의 표준 포트 HTTPS 푸시 서비스만 허용한다
-  // (내부망, 로컬, 메타데이터, IP 리터럴, 인증 정보, 비표준 포트 거부 - SSRF 방지).
+  // (내부망, 로컬, 메타데이터, IP 리터럴, 인증 정보, 비표준 포트 거부 - SSRF 방지). 호스트는 표준 푸시
+  // 서비스(FCM·Apple·Mozilla·Windows)나 운영자가 PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS 로 더한 것만 쓴다.
   // 구독 해제는 서버가 요청을 보내지 않고 해시만 쓰므로 과거 구독도 지울 수 있게 느슨하게 둔다.
   endpoint: z.url().max(4_096).refine(
     (value) => parseWebPushEndpoint(value) !== null,
-    "Push endpoint must be a public HTTPS push service URL",
+    "Push endpoint must be a public HTTPS URL on an allowed push service host",
   ),
   expirationTime: z.number().int().min(0).nullable().default(null),
   keys: z.object({

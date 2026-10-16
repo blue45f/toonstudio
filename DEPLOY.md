@@ -179,6 +179,12 @@ GitHub는 OAuth App의 Client ID/Secret을 Core API에 주입합니다. 자세�
 - `GET https://<domain>/api/ranking?axis=popular&period=daily&limit=5`가 `meta.source="formula-api"`와 스냅샷 산식 fallback reason을 반환하는지 확인.
 - 표지 프록시(`/api/cover?u=...`)가 이미지를 반환하거나 안전하게 폴백하는지 확인.
 - 로그인/리뷰/커뮤니티 기능이 DB 연결로 동작하는지 확인.
+- 에지 출처 인증 확인: `GET https://<domain>/api/health/capabilities` 응답의 `edgeOriginAuth`가 `enforced`인지 확인합니다.
+  `disabled`이면 Core API 원본(Render 주소)이 Cloudflare 게이트웨이를 거치지 않은 직접 요청도 모두 처리합니다. 이때는 Render의
+  `CLOUDFLARE_EDGE_ORIGIN_SECRET`(앞뒤 공백 없는 32바이트 이상)과 게이트웨이 Worker의 `CORE_ORIGIN_SECRET`을 같은 값으로 설정하고
+  해당 runtime을 수동 재배포합니다(값은 출력하지 않습니다). 원본 주소로 직접 `GET /api/auth/providers`를 보내 HTTP 403
+  (`Trusted edge origin is required`)인지도 확인합니다. 서버 시작 로그의 "에지 출처 인증이 꺼져 있습니다" 경고가 같은 상태를 알립니다.
+  규칙과 상태 응답 노출 결정은 [`docs/operations/production-environment.md`](docs/operations/production-environment.md#에지-출처-인증)를 따릅니다.
 
 ## 6. Studio 실시간 권위와 선택형 Socket.IO 폴백
 

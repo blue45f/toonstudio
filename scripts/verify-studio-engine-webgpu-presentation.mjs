@@ -14,7 +14,7 @@
  *   2 = explicit structured environment skip because WebGPU is unavailable
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -25,7 +25,7 @@ import { createServer as createViteServer } from "vite";
 const SCRATCH =
   process.env.TOONSPECTRUM_WEBGPU_PRESENTATION_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-webgpu-presentation-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-webgpu-presentation-"));
 const HARNESS_PATH = "/__studio_engine_webgpu_presentation__";
 const HARNESS_ENTRY = "/scripts/studio-engine-webgpu-presentation-browser.ts";
 const RESULT_TIMEOUT_MS = 120_000;

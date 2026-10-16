@@ -110,6 +110,10 @@ services:
         sync: false
       - key: PRODUCTION_TOSS_ALLOW_LIVE
         sync: false
+      # 웹 푸시 선택 설정은 이 Blueprint 에 키를 선언하지 않았습니다(값도 두지 않습니다). 필요할 때만 Render 대시보드에서
+      # 추가하세요: PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS(자체 푸시 중계 호스트),
+      # PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_PROJECT, PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_USER,
+      # PRODUCTION_WEB_PUSH_FANOUT_CONCURRENCY. 이름·기본값·잘못된 값의 처리는 docs/production-external-integrations.md 를 따릅니다.
       - key: TOSS_PAYMENTS_API_BASE_URL
         value: https://api.tosspayments.com
       - key: TOSS_PAYMENTS_CLIENT_KEY

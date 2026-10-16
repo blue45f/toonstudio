@@ -8,6 +8,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ProductionCollaborationService } from "../production-collaboration/production-collaboration.service";
+import type { IntegrationRuntimeAccessPolicy } from "./integration-runtime.access";
 import type { IntegrationRuntimeExecuteDto } from "./integration-runtime.dto";
 import type { IntegrationRuntimeProviderEngine } from "./integration-runtime.providers";
 import {
@@ -38,7 +39,20 @@ const request: IntegrationRuntimeExecuteDto = {
   },
 };
 
-function fixture(overrides: { configured?: boolean; edit?: boolean; writes?: boolean } = {}) {
+type OperatorAccessDecision = Awaited<ReturnType<IntegrationRuntimeAccessPolicy["authorize"]>>;
+
+const OPERATOR_ACCESS_DENIED = {
+  allowed: false,
+  code: "operator_connector_admin_only",
+  message: "Slack 연동은 운영자 계정의 인증 정보로 실행돼요. 관리자만 사용할 수 있어요.",
+} as const satisfies OperatorAccessDecision;
+
+function fixture(overrides: {
+  configured?: boolean;
+  edit?: boolean;
+  writes?: boolean;
+  operatorAccess?: OperatorAccessDecision;
+} = {}) {
   const production = {
     getProject: vi.fn().mockResolvedValue({
       aggregate: { projectId: "project-1" },
@@ -71,14 +85,21 @@ function fixture(overrides: { configured?: boolean; edit?: boolean; writes?: boo
       response: { providerId: "slack", delivered: true },
     }),
   };
+  const accessPolicy = {
+    authorize: vi.fn().mockResolvedValue(
+      overrides.operatorAccess ?? { allowed: true, basis: "administrator" },
+    ),
+  };
   return {
     production,
     repository,
     engine,
+    accessPolicy,
     service: new IntegrationRuntimeService(
       production as unknown as ProductionCollaborationService,
       repository as unknown as IntegrationRuntimeRepository,
       engine as unknown as IntegrationRuntimeProviderEngine,
+      accessPolicy as unknown as IntegrationRuntimeAccessPolicy,
     ),
   };
 }
@@ -116,6 +137,57 @@ describe("IntegrationRuntimeService", () => {
       ForbiddenException,
     );
     expect(test.repository.beginMutation).not.toHaveBeenCalled();
+  });
+
+  it("운영자 인증 정보를 쓰는 커넥터는 정책이 거부하면 공급자 호출과 영수증 없이 403 으로 닫는다", async () => {
+    const test = fixture({ operatorAccess: OPERATOR_ACCESS_DENIED });
+    const error = await test.service.execute("user-1", request).catch(
+      (cause: unknown) => cause,
+    );
+    expect(error).toBeInstanceOf(ForbiddenException);
+    expect((error as ForbiddenException).getResponse()).toMatchObject({
+      code: "operator_connector_admin_only",
+      message: OPERATOR_ACCESS_DENIED.message,
+      providerId: "slack",
+    });
+    expect(test.repository.beginMutation).not.toHaveBeenCalled();
+    expect(test.engine.execute).not.toHaveBeenCalled();
+  });
+
+  it("드라이런도 같은 운영자 인증 정보 권한 검사를 거쳐 실행 가능 계획을 내주지 않는다", async () => {
+    const test = fixture({ operatorAccess: OPERATOR_ACCESS_DENIED });
+    await expect(test.service.execute("user-1", {
+      ...request,
+      dryRun: true,
+      confirm: false,
+    })).rejects.toBeInstanceOf(ForbiddenException);
+    expect(test.engine.execute).not.toHaveBeenCalled();
+  });
+
+  it("정책에는 인증된 행위자·프로젝트·검증된 요청·커넥터 정보를 넘기고 프로젝트 권한 검사 뒤에 묻는다", async () => {
+    const test = fixture();
+    await test.service.execute("user-1", request);
+    expect(test.accessPolicy.authorize).toHaveBeenCalledWith({
+      actorUserId: "user-1",
+      projectId: "project-1",
+      request: request.request,
+      connector: expect.objectContaining({
+        providerId: "slack",
+        name: "Slack",
+        executionMode: "operator-webhook",
+      }),
+    });
+    expect(test.production.getProject.mock.invocationCallOrder[0]).toBeLessThan(
+      test.accessPolicy.authorize.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it("프로젝트 편집 권한이 없으면 운영자 인증 정보 정책을 묻기 전에 거부한다", async () => {
+    const test = fixture({ edit: false });
+    await expect(test.service.execute("user-1", request)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(test.accessPolicy.authorize).not.toHaveBeenCalled();
   });
 
   it("fails closed before a receipt when operator configuration is missing", async () => {

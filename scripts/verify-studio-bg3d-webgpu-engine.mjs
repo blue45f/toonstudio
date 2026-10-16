@@ -17,7 +17,7 @@
  *   2 = explicit structured environment skip because WebGPU is unavailable here
  */
 
-import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -30,7 +30,7 @@ import { REPO_ROOT, WEB_PUBLIC, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 const SCRATCH =
   process.env.TOONSPECTRUM_BG3D_WEBGPU_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-bg3d-webgpu-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-bg3d-webgpu-"));
 const HARNESS_PATH = "/__studio_bg3d_webgpu_engine__";
 const HARNESS_ENTRY = "/scripts/studio-bg3d-webgpu-engine-browser.ts";
 const RESULT_TIMEOUT_MS = 180_000;

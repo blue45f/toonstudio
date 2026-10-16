@@ -60,6 +60,7 @@ describe("health response contracts", () => {
       incidentId: "inc_123",
       retryAfterSeconds: 30,
       checkedAt: "2026-09-26T00:00:00.000Z",
+      edgeOriginAuth: "enforced",
       capabilities: {
         publicCatalog: "available",
         authSession: "degraded",
@@ -77,6 +78,35 @@ describe("health response contracts", () => {
 
     expect(parsed.status).toBe("degraded");
     expect(parsed.capabilities.studioLocalEditing).toBe("available");
+    expect(parsed.edgeOriginAuth).toBe("enforced");
+  });
+
+  it("limits the edge origin authentication state to enforced or disabled", () => {
+    const base = {
+      status: "available",
+      incidentId: null,
+      retryAfterSeconds: null,
+      checkedAt: "2026-09-26T00:00:00.000Z",
+      capabilities: {
+        publicCatalog: "available",
+        authSession: "available",
+        communityRead: "available",
+        communityWrite: "available",
+        marketplaceRead: "available",
+        studioLocalEditing: "available",
+        studioProjectRead: "available",
+        studioCloudSave: "available",
+        realtimeCollaboration: "available",
+        publishing: "available",
+        serverAi: "available",
+      },
+    } as const;
+    for (const edgeOriginAuth of ["enforced", "disabled"]) {
+      expect(HealthCapabilitiesResponseSchema.safeParse({ ...base, edgeOriginAuth }).success).toBe(true);
+    }
+    for (const edgeOriginAuth of ["available", "unknown", true, undefined]) {
+      expect(HealthCapabilitiesResponseSchema.safeParse({ ...base, edgeOriginAuth }).success).toBe(false);
+    }
   });
 
 });

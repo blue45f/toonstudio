@@ -14,7 +14,7 @@
  *   2 = structured environment skip because native OPFS sync-access is unavailable
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,7 +27,7 @@ import { WEB_ROOT } from "./lib/repo-paths.mjs";
 const SCRATCH =
   process.env.TOONSPECTRUM_OPFS_V2_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-opfs-v2-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-opfs-v2-"));
 const HARNESS_PATH = "/__studio_engine_tile_storage_opfs_v2__";
 const HARNESS_ENTRY =
   "/scripts/studio-engine-tile-storage-opfs-v2-browser.ts";

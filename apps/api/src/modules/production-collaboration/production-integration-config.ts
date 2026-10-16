@@ -1,3 +1,5 @@
+import { resolveWebPushPolicy, type WebPushPolicy } from "./production-web-push-policy";
+
 export const GOOGLE_WORKSPACE_SCOPES = Object.freeze([
   "openid",
   "email",
@@ -55,6 +57,8 @@ export interface ProductionIntegrationConfig {
     readonly vapidSubject: string | null;
     readonly vapidPublicKey: string | null;
     readonly vapidPrivateKey: string | null;
+    /** 웹 푸시 endpoint 호스트 허용 목록, 구독 수 상한, 전송 동시성 상한. */
+    readonly webPush: WebPushPolicy;
   };
 }
 
@@ -256,6 +260,7 @@ export function resolveProductionIntegrationConfig(
       vapidSubject: trimmed(env.PRODUCTION_WEB_PUSH_VAPID_SUBJECT),
       vapidPublicKey: trimmed(env.PRODUCTION_WEB_PUSH_VAPID_PUBLIC_KEY),
       vapidPrivateKey: trimmed(env.PRODUCTION_WEB_PUSH_VAPID_PRIVATE_KEY),
+      webPush: Object.freeze(resolveWebPushPolicy(env)),
     }),
   });
 }

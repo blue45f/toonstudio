@@ -75,7 +75,49 @@ A live request must set `dryRun=false` and `confirm=true`. The server validates 
 - Receipt history requires access to the production project and is always scoped to the current actor.
 - Read-only provider actions require project view access.
 - Actions that change an external service require project edit access.
+- Connectors that run with operator-held credentials (`executionMode` `operator-token` or `operator-webhook`) additionally require an administrator or an operator allowlist entry; see the next section.
 - No endpoint accepts a user ID, role or access claim from the request body.
+
+## 운영자 인증 정보 커넥터 접근 제어
+
+상태: current (2026-10-16 구현, `integration-runtime.access.ts`).
+
+Notion·Linear·Jira Cloud·Trello·Figma·Zoom·Naver DataLab(`operator-token`)과 Slack·Microsoft Teams(`operator-webhook`)는 운영자가 배포 환경에 넣어 둔 토큰과 웹훅 URL로 실행됩니다. 프로젝트 편집 권한은 "이 프로젝트를 고칠 수 있다"는 뜻이지 "운영자의 외부 계정을 쓸 수 있다"는 뜻이 아닙니다. 편집 권한만 확인하던 때에는 로그인한 누구나 자기 프로젝트를 만든 뒤 임의의 `dataSourceId`·`teamId`·`projectKey`로 운영자 토큰을 실행해 외부 서비스를 읽고 쓸 수 있었습니다(혼동된 대리인, CWE-441/862). 지금은 프로젝트 권한 확인에 이어 아래 규칙을 드라이런과 실제 실행 모두에 적용합니다.
+
+| 요청자 | 규칙 |
+|---|---|
+| 관리자(`admin`·`operator` 역할의 활성 계정) | 허용 목록과 무관하게 모든 대상을 실행할 수 있습니다. |
+| 일반 사용자 | 운영자가 `INTEGRATION_RUNTIME_OPERATOR_GRANTS`에 (프로젝트, 공급자, 대상)을 등록한 경우에만 실행할 수 있습니다. 허용 목록이 없으면 거부합니다(fail-closed). |
+| 공개 프로토콜(Wikidata·Google Books) | 운영자 인증 정보를 쓰지 않으므로 기존처럼 프로젝트 권한만 봅니다. 다만 Google Books는 `GOOGLE_BOOKS_API_KEY`가 설정되면 운영자 키의 쿼터를 씁니다(아래 참고). |
+| 결합 의미(위 규칙 전체) | `관리자` **OR** (`허용 목록의 프로젝트·공급자` **AND** `허용 목록의 대상` **AND** `새 항목 만들기`). 관리자는 허용 목록과 무관하게 통과하고, 일반 사용자는 세 조건을 모두 만족해야 합니다. 하나라도 빠지면 거부합니다(`code`는 아래 표). |
+
+허용 목록은 JSON 배열이며 항목은 `projectId`, `providerId`, `targets`만 가질 수 있습니다. `targets`에는 허용할 Notion 데이터 소스 ID, Linear 팀 ID, Jira 프로젝트 키, Trello 리스트 ID, Figma 파일 키, Zoom 사용자 ID를 넣습니다. 대상을 지정하지 않는 Slack·Teams·Naver DataLab은 `targets`를 생략합니다. 와일드카드는 지원하지 않습니다.
+
+```json
+[
+  { "projectId": "<제작 프로젝트 ID>", "providerId": "notion", "targets": ["<Notion 데이터 소스 ID>"] },
+  { "projectId": "<제작 프로젝트 ID>", "providerId": "slack" }
+]
+```
+
+- 허용 목록에 있는 프로젝트라도 목록 밖 대상은 거부합니다. Notion·Linear UUID는 하이픈 유무와 대소문자를 무시하고, Figma 파일 키와 Zoom 사용자 ID는 정확히 같아야 합니다.
+- `pageId`·`issueId`·`issueKey`·`cardId`처럼 ID로 기존 항목을 직접 고치는 요청은 항목이 어느 컨테이너에 속하는지 서버가 검증하지 않으므로 관리자만 실행할 수 있습니다. 허용 목록으로 연결된 프로젝트의 일반 사용자는 새 항목 만들기만 쓸 수 있습니다.
+- Zoom 요청의 `userId`를 생략하면 기본값 `me`가 대상으로 평가됩니다. 일반 사용자에게 기본 요청을 허용하려면 `targets`에 `me`를 적어야 하고
+  (정확히 같아야 하므로 `ME`는 다른 값입니다), 특정 Zoom 사용자만 허용하려면 그 ID만 적습니다. 대상 지정이 필요한 공급자(Notion·Linear·Jira·
+  Trello·Figma·Zoom)의 `targets`를 비워 두면 일반 사용자는 어떤 대상도 쓸 수 없습니다.
+- Google Books는 공개 프로토콜이라 위 규칙 없이 프로젝트 보기 권한만 확인하지만, 운영자가 `GOOGLE_BOOKS_API_KEY`를 설정해 두면 요청이 그
+  운영자 키로 나가 운영자 키의 쿼터를 씁니다. 키를 설정한 배포에서는 프로젝트를 볼 수 있는 모든 일반 사용자가 그 쿼터를 쓰며, 걸리는 상한은
+  사용자별 하루 실행 상한(`INTEGRATION_RUNTIME_DAILY_EXECUTIONS_PER_ACTOR`)뿐입니다. 쿼터를 지키려면 키를 비워 키 없는 낮은 호출량으로
+  쓰거나 그 상한을 낮춥니다.
+- 관리자 여부를 조회하지 못하면 관리자가 아닌 것으로 봅니다. 허용 목록 값이 JSON이 아니거나 항목 형식이 틀리면 항목을 모두 버리고(관리자 전용) 부팅 로그에 사유만 남깁니다. 값 자체는 기록하지 않습니다.
+- 거부하면 HTTP 403과 함께 `code`·`message`·`providerId`를 돌려줍니다. `message`는 사용자에게 그대로 보여 줄 수 있는 한국어 사유이며 요청에 담긴 대상 값을 되풀이하지 않습니다.
+
+| `code` | 의미 |
+|---|---|
+| `operator_connector_admin_only` | 허용 목록이 비어 있어 관리자만 쓸 수 있음 |
+| `operator_connector_project_not_allowed` | 이 프로젝트·공급자가 허용 목록에 없음 |
+| `operator_connector_target_not_allowed` | 허용 목록에 없는 데이터 소스·팀·프로젝트 키·리스트·파일·사용자 |
+| `operator_connector_object_update_admin_only` | ID로 기존 항목을 수정하는 요청은 관리자만 가능 |
 
 ## Durable execution receipts
 
@@ -124,7 +166,8 @@ After deployment:
 5. confirm the external object and the matching receipt;
 6. repeat the exact request with the same mutation ID through an API test and confirm replay rather than duplication;
 7. revoke the provider credential and confirm fail-closed behavior;
-8. test a timeout or provider sandbox failure and reconcile the uncertain receipt manually.
+8. test a timeout or provider sandbox failure and reconcile the uncertain receipt manually;
+9. with a non-administrator session, confirm that an operator-credential connector returns HTTP 403 with a Korean reason for a project and target outside `INTEGRATION_RUNTIME_OPERATOR_GRANTS`, and that an allowlisted project and target still executes.
 
 ## Validation
 
