@@ -47,10 +47,17 @@ export interface PanelCanvasEditorProps {
 
 type Drag =
   | { readonly kind: "move"; readonly id: string; readonly origin: ImagePoint; readonly start: PanelRect; readonly current: PanelRect }
-  | { readonly kind: "edge"; readonly id: string; readonly edge: PanelEdge; readonly start: PanelRect; readonly current: PanelRect }
+  | { readonly kind: "edge"; readonly id: string; readonly edge: PanelEdge; readonly grab: number; readonly start: PanelRect; readonly current: PanelRect }
   | { readonly kind: "draw"; readonly origin: ImagePoint; readonly current: PanelRect };
 
 const EDGES: readonly PanelEdge[] = ["left", "right", "top", "bottom"];
+
+/**
+ * 이미지 위에 겹쳐 놓는 상자는 위치가 곧 값이다. 작업 화면 틀 안의 단추에 일괄로 걸린 마우스를 올렸을 때 1px 떠오르는 효과
+ * (workspace-visual-v3.css 의 `.workspace-task-route-content :where(button, [role="button"]):not(:disabled):hover
+ * { transform: translateY(-1px) }`)가 상자를 이미지에서 어긋나 보이게 하므로, 인라인으로 막는다(인라인은 그 규칙보다 앞선다).
+ */
+const OVERLAY_STILL = { transform: "none" } as const;
 
 /** 자동으로 나눌 수 없는 영역의 빗금. 색은 테마의 경고 토큰에서 얻으므로 라이트·다크·고대비를 그대로 따른다. */
 const UNDETECTABLE_HATCH =
@@ -124,8 +131,14 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
   const startEdge = (event: PointerEvent, panel: EditablePanel, edge: PanelEdge): void => {
     if (event.button !== 0) return;
     event.stopPropagation();
+    const origin = pointOf(event);
+    if (!origin) return;
     capture(event);
-    setDrag({ kind: "edge", id: panel.id, edge, start: panel, current: panel });
+    // 손잡이는 변 둘레로 넓게 잡혀 있어 변에서 벗어난 곳을 누를 수 있다. 누른 자리와 변의 거리를 기억해 두었다가 빼서,
+    // 끌기 시작 때 변이 포인터 밑으로 튀지 않고 끈 만큼만 움직이게 한다.
+    const edgeAt = edge === "left" ? panel.x : edge === "right" ? panel.x + panel.width : edge === "top" ? panel.y : panel.y + panel.height;
+    const grab = (edge === "left" || edge === "right" ? origin.x : origin.y) - edgeAt;
+    setDrag({ kind: "edge", id: panel.id, edge, grab, start: panel, current: panel });
   };
 
   const startDraw = (event: PointerEvent<HTMLDivElement>): void => {
@@ -150,7 +163,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
     if (drag.kind === "move") {
       setDrag({ ...drag, current: moveRect(drag.start, point.x - drag.origin.x, point.y - drag.origin.y, image.width, image.height) });
     } else if (drag.kind === "edge") {
-      const position = drag.edge === "left" || drag.edge === "right" ? point.x : point.y;
+      const position = (drag.edge === "left" || drag.edge === "right" ? point.x : point.y) - drag.grab;
       setDrag({ ...drag, current: resizeRectEdge(drag.start, drag.edge, position, image.width, image.height) });
     } else {
       setDrag({ ...drag, current: rectFromPoints(drag.origin, point) });
@@ -212,12 +225,21 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
 
   const shown = (panel: EditablePanel): PanelRect => (drag && drag.kind !== "draw" && drag.id === panel.id ? drag.current : panel);
   const splitting = tool === "split-horizontal" || tool === "split-vertical";
+  const hasFocusableChild = panels.length > 0 || ignored.length > 0 || undetectable.length > 0;
   const guideTarget = splitting && hover
     ? [...panels].reverse().find((panel) => hover.x >= panel.x && hover.x < panel.x + panel.width && hover.y >= panel.y && hover.y < panel.y + panel.height)
     : undefined;
 
   return (
-    <div className="max-h-[78dvh] overflow-auto rounded-xl border border-line bg-canvas" data-panel-canvas-scroller="true">
+    <div
+      className={cn("max-h-[78dvh] overflow-auto rounded-xl border border-line bg-canvas", !hasFocusableChild && PANEL_FOCUS_RING)}
+      data-panel-canvas-scroller="true"
+      // 안쪽에 포커스를 받는 컷·조각이 하나도 없을 때만 스크롤 영역 자체가 포커스를 받아야 키보드로 이미지를 훑어볼 수 있다(WCAG 2.1.1).
+      // 컷이 있으면 컷이 포커스를 받으므로 이 영역은 포커스 순서에 끼어들지 않는다.
+      role={hasFocusableChild ? undefined : "region"}
+      tabIndex={hasFocusableChild ? undefined : 0}
+      aria-label={hasFocusableChild ? undefined : bi("컷 편집 영역 (방향키로 스크롤)", "Panel editing area (scroll with the arrow keys)")}
+    >
       <p id={helpId} className="sr-only">
         {bi(
           "컷을 선택한 뒤 방향키로 옮기고, Shift+방향키는 1픽셀, Alt+방향키는 크기, Delete 는 삭제, Esc 는 선택 해제입니다.",
@@ -247,7 +269,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
           <button
             key={fragment.id}
             type="button"
-            style={percentRectStyle(fragment, image)}
+            style={{ ...percentRectStyle(fragment, image), ...OVERLAY_STILL }}
             onClick={() => props.onAdopt(fragment)}
             aria-label={bi(`제외된 조각 ${index + 1} (${fragment.width}×${fragment.height}). 눌러 컷으로 쓰기`, `Left-out fragment ${index + 1} (${fragment.width}×${fragment.height}). Press to use it as a panel`)}
             className={cn("absolute border-2 border-dotted border-fg-3 bg-fg-3/10 hover:bg-fg-3/25", PANEL_FOCUS_RING, tool !== "select" && "pointer-events-none")}
@@ -257,7 +279,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
           <button
             key={region.id}
             type="button"
-            style={{ ...percentRectStyle(region, image), backgroundImage: UNDETECTABLE_HATCH }}
+            style={{ ...percentRectStyle(region, image), ...OVERLAY_STILL, backgroundImage: UNDETECTABLE_HATCH }}
             onClick={() => props.onAdopt(region)}
             aria-label={bi(`자동으로 나눌 수 없는 영역 ${index + 1} (${region.width}×${region.height}). 눌러 한 컷으로 쓰기`, `Region ${index + 1} could not be split automatically (${region.width}×${region.height}). Press to use it as one panel`)}
             className={cn("absolute border-2 border-warn", PANEL_FOCUS_RING, tool !== "select" && "pointer-events-none")}
@@ -282,7 +304,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
               data-panel-id={panel.id}
               data-selected={selected ? "true" : undefined}
               // 선택한 컷 위에서는 손가락 끌기가 화면 스크롤이 되지 않고 컷 이동이 되게 한다(고르지 않은 컷은 그대로 스크롤된다).
-              style={{ ...percentRectStyle(rect, image), touchAction: selected && tool === "select" ? "none" : undefined }}
+              style={{ ...percentRectStyle(rect, image), ...OVERLAY_STILL, touchAction: selected && tool === "select" ? "none" : undefined }}
               onPointerDown={(event) => startMove(event, panel)}
               onKeyDown={(event) => onKey(event, panel)}
               onFocus={() => { if (!selected && tool === "select") props.onSelect(panel.id); }}
@@ -321,6 +343,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
             tabIndex={-1}
             onClick={(event) => splitAt(pointOf(event))}
             aria-label={bi("나눌 컷 위를 눌러 분할선 놓기", "Press on a panel to place the dividing line")}
+            style={OVERLAY_STILL}
             className="absolute inset-0 z-40 cursor-copy"
           />
         ) : null}

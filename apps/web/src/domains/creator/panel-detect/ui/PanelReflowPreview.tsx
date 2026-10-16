@@ -2,9 +2,12 @@
 // 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
 // React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
 
+import { cn } from "@/shared/lib/utils";
+
 import { percentRectStyle, regionBackgroundStyle, type ImageSize } from "../panel-canvas-geometry";
 
 import { bi } from "./panel-import-copy";
+import { PANEL_FOCUS_RING } from "./panel-import-styles";
 
 import type { ReactElement } from "react";
 import type { PanelReflowPlan } from "../panel-reflow-plan";
@@ -24,7 +27,14 @@ interface PanelReflowPreviewProps {
 export function PanelReflowPreview({ plan, imageUrl, image, background }: PanelReflowPreviewProps): ReactElement {
   const width = plan.options.targetWidth;
   return (
-    <div className="max-h-[70dvh] overflow-auto rounded-xl border border-line bg-canvas p-2" data-panel-reflow-preview="true">
+    <div
+      className={cn("max-h-[70dvh] overflow-auto rounded-xl border border-line bg-canvas p-2", PANEL_FOCUS_RING)}
+      data-panel-reflow-preview="true"
+      role="region"
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 안쪽에 포커스를 받는 것이 없는 스크롤 영역이라, 키보드만 쓰는 사람이 스크롤하려면 영역 자체가 포커스를 받아야 한다(WCAG 2.1.1).
+      tabIndex={0}
+      aria-label={bi("재배열 미리보기 (방향키로 스크롤)", "Rearranged preview (scroll with the arrow keys)")}
+    >
       <ol className="mx-auto grid max-w-sm gap-3" aria-label={bi("재배열 미리보기 페이지", "Rearranged preview pages")}>
         {plan.pages.map((page) => (
           <li key={page.index}>

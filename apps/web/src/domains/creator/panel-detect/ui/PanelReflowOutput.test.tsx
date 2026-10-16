@@ -78,6 +78,15 @@ describe("재배열 설정 단계", () => {
     expect(screen.getByRole("list", { name: "재배열 미리보기 페이지" })).toBeTruthy();
   });
 
+  it("미리보기는 스크롤 영역이라 키보드로 포커스를 받고 이름을 읽어 준다(안쪽에 포커스 받는 것이 없으므로)", async () => {
+    await openReflowStep();
+    const region = screen.getByRole("region", { name: /재배열 미리보기 \(방향키로 스크롤\)/ });
+    expect(region.getAttribute("tabindex")).toBe("0");
+    expect(region.hasAttribute("data-panel-reflow-preview")).toBe(true);
+    region.focus();
+    expect(document.activeElement).toBe(region);
+  });
+
   it("원본이 달라지는 점(손실 보고)을 보여 주고, 확인하기 전에는 삽입·내려받기가 닫혀 있다", async () => {
     await openReflowStep();
     expect(screen.getByText("원본과 달라지는 점")).toBeTruthy();

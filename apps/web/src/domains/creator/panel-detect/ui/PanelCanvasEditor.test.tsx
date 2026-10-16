@@ -81,6 +81,22 @@ describe("컷 편집 캔버스 — 표시와 접근성", () => {
     expect(screen.getByRole("img", { name: "가져온 원고 이미지" }).getAttribute("src")).toBe("blob:preview");
   });
 
+  it("컷이 있으면 컷이 포커스를 받으므로 스크롤 영역은 따로 포커스를 받지 않는다", () => {
+    const { container } = renderEditor();
+    const scroller = container.querySelector("[data-panel-canvas-scroller]");
+    expect(scroller?.hasAttribute("tabindex")).toBe(false);
+    expect(screen.queryByRole("region", { name: /컷 편집 영역/ })).toBeNull();
+  });
+
+  it("컷도 제외 조각도 검출 불가 영역도 없으면 스크롤 영역 자체가 포커스를 받아 키보드로 이미지를 훑을 수 있다", () => {
+    renderEditor({ panels: [] });
+    const region = screen.getByRole("region", { name: /컷 편집 영역 \(방향키로 스크롤\)/ });
+    expect(region.getAttribute("tabindex")).toBe("0");
+    expect(region.hasAttribute("data-panel-canvas-scroller")).toBe(true);
+    region.focus();
+    expect(document.activeElement).toBe(region);
+  });
+
   it("컷의 위치는 이미지 대비 퍼센트로 놓여 표시 크기와 무관하게 맞는다", () => {
     renderEditor();
     const first = elementOf(panelButtons(), 0);
@@ -89,6 +105,16 @@ describe("컷 편집 캔버스 — 표시와 접근성", () => {
     expect(first.style.top).toBe(style.top);
     expect(first.style.width).toBe(style.width);
     expect(first.style.height).toBe(style.height);
+  });
+
+  it("겹쳐 놓은 상자는 단추 일괄 효과(마우스를 올리면 떠오름)로 이미지에서 어긋나지 않게 인라인으로 고정한다", () => {
+    renderEditor({
+      ignored: [{ id: "ignored-1", x: 5, y: 5, width: 20, height: 20, reason: "too-small" }],
+      undetectable: [{ id: "undetectable-1", x: 100, y: 100, width: 60, height: 60, reason: "non-separable", componentCount: 2 }],
+    });
+    for (const button of panelButtons()) expect(button.style.transform).toBe("none");
+    expect(screen.getByRole("button", { name: /제외된 조각 1/ }).style.transform).toBe("none");
+    expect(screen.getByRole("button", { name: /자동으로 나눌 수 없는 영역 1/ }).style.transform).toBe("none");
   });
 
   it("선택한 컷만 눌림 상태이고 가장자리 손잡이가 나타난다", () => {
@@ -248,6 +274,25 @@ describe("컷 편집 캔버스 — 끌기", () => {
     const right = panel.x + panel.width;
     fireEvent.pointerDown(edge, { button: 0, clientX: right, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(root, { clientX: right - 30, clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(root, { pointerId: 1 });
+    expect(onSetRect).toHaveBeenCalledTimes(1);
+    expect(onSetRect).toHaveBeenCalledWith(panel.id, resizeRectEdge(panel, "right", right - 30, SIZE.width, SIZE.height));
+  });
+
+  it("손잡이를 변에서 벗어난 곳에서 잡아도 변이 포인터 밑으로 튀지 않고 끈 만큼만 움직인다", () => {
+    mockBounds(400, 560);
+    const panel = panelOf(0);
+    const { root, onSetRect } = renderEditor({ selectedId: panel.id });
+    const edge = elementOf(panelButtons(), 0).querySelector('[data-edge="right"]');
+    if (!edge) throw new Error("오른쪽 가장자리 손잡이를 찾지 못했어요.");
+    const right = panel.x + panel.width;
+    // 손잡이는 변 둘레 약 10px 까지 잡힌다. 변에서 8px 바깥을 눌러 그대로 놓으면 아무 일도 일어나지 않는다.
+    fireEvent.pointerDown(edge, { button: 0, clientX: right + 8, clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(root, { pointerId: 1 });
+    expect(onSetRect).not.toHaveBeenCalled();
+    // 30px 끌면 변이 정확히 30px 안쪽으로 온다(포인터가 있는 right - 22 가 아니라 right - 30).
+    fireEvent.pointerDown(edge, { button: 0, clientX: right + 8, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(root, { clientX: right + 8 - 30, clientY: 100, pointerId: 1 });
     fireEvent.pointerUp(root, { pointerId: 1 });
     expect(onSetRect).toHaveBeenCalledTimes(1);
     expect(onSetRect).toHaveBeenCalledWith(panel.id, resizeRectEdge(panel, "right", right - 30, SIZE.width, SIZE.height));
