@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -19,6 +20,7 @@ import {
   studioRecordingBoothAssetDeleteSchema,
 } from "@toonstudio/studio-project-model/recording-booth-asset";
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
+import { AuthenticatedUploadGuard } from "../creator/studio-asset-upload.guard";
 import type { StudioWorkAssetUploadFile } from "../creator/studio-work-asset.service";
 import { authenticatedStudioUserId } from "./studio-project-graph.controller";
 import { StudioRecordingBoothAssetService } from "./studio-recording-booth-asset.service";
@@ -51,6 +53,7 @@ export class StudioRecordingBoothAssetController {
   @Post()
   @HttpCode(200)
   @Header("Cache-Control", "private, no-store, max-age=0")
+  @UseGuards(AuthenticatedUploadGuard)
   @UseInterceptors(FileInterceptor("file", { limits: STUDIO_RECORDING_BOOTH_ASSET_UPLOAD_LIMITS }))
   create(
     @Param(new ZodValidationPipe(WorkParams)) params: WorkParams,

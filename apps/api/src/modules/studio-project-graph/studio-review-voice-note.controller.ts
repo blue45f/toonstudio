@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -20,6 +21,7 @@ import {
   studioReviewVoiceNoteSubjectSchema,
 } from "@toonstudio/studio-project-model/review-voice-note";
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
+import { AuthenticatedUploadGuard } from "../creator/studio-asset-upload.guard";
 import type { StudioWorkAssetUploadFile } from "../creator/studio-work-asset.service";
 import { authenticatedStudioUserId } from "./studio-project-graph.controller";
 import { StudioReviewVoiceNoteService } from "./studio-review-voice-note.service";
@@ -52,6 +54,7 @@ export class StudioReviewVoiceNoteController {
   @Post()
   @HttpCode(200)
   @Header("Cache-Control", "private, no-store, max-age=0")
+  @UseGuards(AuthenticatedUploadGuard)
   @UseInterceptors(FileInterceptor("file", { limits: STUDIO_REVIEW_VOICE_NOTE_UPLOAD_LIMITS }))
   create(
     @Param(new ZodValidationPipe(WorkParams)) params: WorkParams,
