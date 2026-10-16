@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createPanelImportRights,
+  panelImportRightsAssetId,
+} from "../panel-detect/panel-import-rights";
+import { projectStudioAssetRightsUsages } from "../studio-asset-rights-projection";
+import {
   createLayerGroup,
   hasContiguousLayerGroups,
   type LayerGroup,
@@ -230,6 +235,33 @@ describe("studio layer lift document plan", () => {
     expect(original).toMatchObject({ src: SOURCE_PNG, hidden: true, locked: true });
     expect(background).toMatchObject({ src: BACKGROUND_PNG, hidden: false, locked: false });
     expect(foreground).toMatchObject({ src: FOREGROUND_PNG, hidden: false, locked: false });
+  });
+
+  it("carries the manuscript rights attestation to the generated layers so they stay one attested asset", () => {
+    // 분리 배경·전경은 사용자가 권리를 확인한 원고 이미지의 현재 모습에서 나온 픽셀이므로, 다른 출처 기록(스톡·커뮤니티·AI)처럼
+    // 권리 확인 기록도 이어받아야 한다. 잃으면 세 층이 서로 다른 "알 수 없음" 로컬 자산으로 갈라져 사용자가 다시 확인해야 한다.
+    const sourceRights = createPanelImportRights({
+      confirmed: true,
+      attestedAt: "2026-10-15T09:00:00.000Z",
+      note: "",
+      source: { fileName: "ep01-scan.png", mimeType: "image/png", sizeBytes: 4096, width: 640, height: 960, sha256: "b".repeat(64) },
+    });
+    const attested = { ...SOURCE, sourceRights } satisfies El;
+    const result = success(planStudioLayerLift(input({ elements: [attested] })));
+    const [original, background, foreground] = result.nextElements;
+
+    expect(original).toMatchObject({ sourceRights });
+    expect(background).toMatchObject({ sourceRights });
+    expect(foreground).toMatchObject({ sourceRights });
+    const usages = projectStudioAssetRightsUsages([{ id: "page-1", elements: result.nextElements }]);
+    expect(usages.map((usage) => usage.assetId)).toEqual(Array(3).fill(panelImportRightsAssetId(sourceRights)));
+    expect(usages.every((usage) => usage.licenseId === "custom")).toBe(true);
+  });
+
+  it("adds no rights field when the source has no attestation", () => {
+    const result = success(planStudioLayerLift(input()));
+    expect(result.nextElements[1]).not.toHaveProperty("sourceRights");
+    expect(result.nextElements[2]).not.toHaveProperty("sourceRights");
   });
 
   it("creates one Korean-named contiguous group and leaves no duplicate IDs", () => {

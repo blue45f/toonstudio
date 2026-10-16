@@ -17,6 +17,7 @@ import "@/domains/monetization/monetization-i18n";
 import "@/shared/components/search-i18n";
 import "@/shared/components/share-i18n";
 import "@/domains/creator/studio-app-settings-center-i18n";
+import "@/domains/creator/panel-detect/panel-import-i18n";
 import "@/domains/creator/reader-preview/reader-preview-i18n";
 import "@/domains/legal/creator-support-i18n";
 import "@/domains/legal/support-us-i18n";
