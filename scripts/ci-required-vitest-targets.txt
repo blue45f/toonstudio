@@ -130,6 +130,7 @@ apps/web/src/domains/creator/bg3d/StudioBg3dCinematicDirectorPanel.cut-aspect.te
 apps/web/src/domains/creator/bg3d/StudioBg3dCinematicDirectorPanel.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dCompositionOverlay.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dLensShiftControls.test.tsx
+apps/web/src/domains/creator/bg3d/StudioBg3dLtLineDetailControls.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dProSuitePanel.lazy.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dProSuitePanel.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dProSuiteRuntimeBridge.test.tsx
@@ -160,11 +161,17 @@ apps/web/src/domains/creator/bg3d/studio-bg3d-engine-remount-safety.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-inplace-storage.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-lens-composition.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-lens-shift-pipeline.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-lt-line-quality.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-lt-line-ridge.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-lt-line-settings-flow.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-lt-line-stroke.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-lt-line-suppression.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-panel-source-boundary.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-room-build-host.test.tsx
 apps/web/src/domains/creator/bg3d/studio-bg3d-room-builder-cutaway.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-room-furniture.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-room-parts-canonical.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-line-output.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-scene-edit-readiness.test.tsx
 apps/web/src/domains/creator/bg3d/studio-bg3d-shot-output-aspect-ratio.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-street-builder.test.ts
