@@ -1,6 +1,6 @@
 import { workspaceTaskRoute } from "../workspace/workspace-task-route.ts";
 import { isPublicCreativeRoute } from "../site-public-routes.ts";
-import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+import { trimTrailingSlashes } from "../../lib/trim-trailing-slashes.ts";
 
 export type ExperienceMode = "vivid" | "calm";
 export type ExperienceLocale = string;export const EXPERIENCE_MODE_KEY = "toonstudio:site-experience:v1";

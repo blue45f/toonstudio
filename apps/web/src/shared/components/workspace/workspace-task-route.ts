@@ -1,4 +1,4 @@
-import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+import { trimTrailingSlashes } from "../../lib/trim-trailing-slashes.ts";
 
 /** Presentation ownership only. This policy never resolves a document ID or grants access. */
 export interface WorkspaceTaskRoute {

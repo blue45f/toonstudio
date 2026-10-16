@@ -1,4 +1,4 @@
-import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+import { trimTrailingSlashes } from "../lib/trim-trailing-slashes.ts";
 
 /** Shared discovery classification for the primary navigation and creative journey. */
 export const DISCOVER_PURPOSE_PREFIXES = [

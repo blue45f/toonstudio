@@ -1,5 +1,5 @@
 import { supportsSiteExperience } from "./site-experience-policy.ts";
-import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+import { trimTrailingSlashes } from "../../lib/trim-trailing-slashes.ts";
 
 // Retain the existing public model contract while keeping shell policy lightweight.
 export { EXPERIENCE_MODE_KEY, parseExperienceMode, supportsSiteExperience, type ExperienceMode, type ExperienceLocale } from "./site-experience-policy.ts";
