@@ -76,6 +76,15 @@ describe("감지 결과 검증(신뢰 경계)", () => {
     expect(parsePanelDetectResult(structuredClone(result), dims)).toEqual(result);
   });
 
+  it("합쳐짐 의심 경고가 붙은 실제 결과도 구조 복제를 거쳐 그대로 복원한다(경고 코드가 검증기에서 빠지지 않았다)", () => {
+    const thin = new FixtureImage(1200, 800, WHITE);
+    thin.art(40, 40, 560, 720, { seed: 0 });
+    thin.art(604, 40, 556, 720, { seed: 1 });
+    const merged = detectPanels(thin.raster(), { readingOrder: "comic" });
+    expect(merged.panels[0].warnings).toContain("merged-panels-suspected");
+    expect(parsePanelDetectResult(structuredClone(merged), { width: 1200, height: 800 })).toEqual(merged);
+  });
+
   it("크기가 다르거나 이미지 밖 사각형, 이어지지 않은 id·순서, 모르는 경고는 거절한다", () => {
     // 객체 전개는 인터페이스를 이름 없는 객체 형태로 풀어 주므로 단언 없이 색인 가능한 사본이 된다.
     const clone = (): Record<string, unknown> => ({ ...structuredClone(result) });
