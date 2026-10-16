@@ -6,6 +6,8 @@ import {
   STUDIO_BG3D_SKP_MIN_SUPPORTED_MAJOR_VERSION,
   STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES,
 } from "../bg3d/studio-bg3d-skp-contract";
+import { STUDIO_CHARM_BAR_MAX_CHARMS } from "../charm/studio-charm-model";
+import { STUDIO_CHARM_STARTER_PACK } from "../charm/studio-charm-starter-pack";
 
 import { MANUAL_ARTICLES, MANUAL_CATEGORIES, MANUAL_SHORTCUTS, MANUAL_WORKSPACE_LABELS } from "./studio-manual-data";
 import {
@@ -98,6 +100,19 @@ describe("Studio user manual content", () => {
     expect(text).toContain("Trimble Inc.의 상표");
     expect(searchManual("스케치업")[0]?.id).toBe("background-3d");
     expect(searchManual("skp").map((article) => article.id)).toContain("background-3d");
+  });
+
+  it("documents the charm bar with the real limits and finds it by name", () => {
+    const section = findManualArticle("assets")?.sections.find((candidate) => candidate.id === "charm-bar");
+    expect(section?.title).toContain("참 바");
+    const text = JSON.stringify(section);
+    // 문서의 숫자는 참 바가 실제로 적용하는 상수와 같아야 한다.
+    expect(text).toContain(`기본 참 ${STUDIO_CHARM_STARTER_PACK.length}개`);
+    expect(text).toContain(`최대 ${STUDIO_CHARM_BAR_MAX_CHARMS}개`);
+    expect(text).toContain("되돌리기 한 번");
+    expect(text).toContain("끌어다 놓을 수 없고");
+    expect(searchManual("참 바").map((article) => article.id)).toContain("assets");
+    expect(searchManual("charm")[0]?.id).toBe("assets");
   });
 
   it("documents shortcut defaults without claiming to read a live user keymap", () => {
