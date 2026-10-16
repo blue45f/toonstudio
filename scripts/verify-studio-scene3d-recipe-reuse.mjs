@@ -1,5 +1,6 @@
 import {
   mkdirSync,
+  mkdtempSync,
   realpathSync,
   writeFileSync,
   existsSync,
@@ -15,7 +16,7 @@ import { createServer } from "vite";
 import { REPO_ROOT, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 const scratch =
   process.env.TOONSPECTRUM_VERIFY_DIR ??
-  join(tmpdir(), `scene3d-recipe-reuse-${Date.now()}`);
+  mkdtempSync(join(tmpdir(), "scene3d-recipe-reuse-"));
 mkdirSync(scratch, { recursive: true });
 const bundleName = readdirSync(join(REPO_ROOT, "dist/assets")).find((name) =>
   /^specialist\.worker-.*\.js$/.test(name),

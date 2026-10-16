@@ -43,7 +43,7 @@
  *                                               reports long tasks the product never shows)
  */
 import { type ChildProcess } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -139,7 +139,7 @@ const DEFAULT_IDS = [
 ] as const;
 
 const OUTPUT_DIR = process.env.TOONSPECTRUM_SCENARIO_DIR?.trim()
-  || join(tmpdir(), `toonstudio-brush-scenarios-${Date.now()}`);
+  || mkdtempSync(join(tmpdir(), "toonstudio-brush-scenarios-"));
 const STRICT = process.env.TOONSPECTRUM_SCENARIO_STRICT === "1";
 const LAYER_PROBE = process.env.TOONSPECTRUM_SCENARIO_LAYER_PROBE === "1";
 /** Diagnostic: trace full-canvas clears, backing-store resizes and the first draw after each clear. */

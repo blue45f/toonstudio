@@ -1,5 +1,6 @@
 import {
   mkdirSync,
+  mkdtempSync,
   realpathSync,
   writeFileSync,
   readdirSync,
@@ -17,7 +18,7 @@ const PRODUCTION_TILED_WORKER_PATH = "/__scene3d_tiled_worker__.js";
 const PRODUCTION_PSD_WORKER_PATH = "/__scene3d_psd_worker__.js";
 const scratch =
   process.env.TOONSPECTRUM_VERIFY_DIR ??
-  join(tmpdir(), `scene3d-tiles-${Date.now()}`);
+  mkdtempSync(join(tmpdir(), "scene3d-tiles-"));
 mkdirSync(scratch, { recursive: true });
 const lane = process.env.SCENE3D_CAPTURE_GPU_LANE ?? "hardware";
 const built =

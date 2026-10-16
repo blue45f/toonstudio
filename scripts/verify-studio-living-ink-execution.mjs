@@ -5,7 +5,7 @@
  * that provider unavailable, but cannot select or substitute the other backend. The same visual
  * harness therefore verifies WebGPU/WGSL and WebGL2/GLSL as independent product choices.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -17,7 +17,7 @@ import { createServer as createViteServer, normalizePath } from "vite";
 import { WEB_VITE_CONFIG } from "./lib/repo-paths.mjs";
 
 const EVIDENCE_ROOT = process.env.TOONSPECTRUM_LIVING_INK_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-living-ink-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-living-ink-"));
 const PROBE_RESULTS_PATH = process.env.TOONSPECTRUM_LIVING_INK_PROBE_RESULTS_PATH
   ?? new URL("../tests/benchmarks/results/living-ink-probe.json", import.meta.url);
 const HARNESS_PATH = "/__studio_living_ink_execution__";

@@ -12,7 +12,7 @@
  *   2 = structured environment skip because WebGL2 context creation is absent
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -25,7 +25,7 @@ import { REPO_ROOT } from "./lib/repo-paths.mjs";
 const SCRATCH =
   process.env.TOONSPECTRUM_P5_BRUSH_REAL_RUNTIME_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-p5-brush-real-runtime-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-p5-brush-real-runtime-"));
 const HARNESS_PATH = "/__studio_p5_brush_real_runtime__";
 const HARNESS_ENTRY = "/scripts/studio-p5-brush-real-runtime-browser.ts";
 const RESULT_TIMEOUT_MS = 120_000;

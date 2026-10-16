@@ -14,7 +14,7 @@
  *   2 = structured environment skip because WebGPU is unavailable
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,7 +27,7 @@ import { WEB_ROOT, WEB_VITE_CONFIG } from "./lib/repo-paths.mjs";
 const SCRATCH =
   process.env.TOONSPECTRUM_WEBGPU_TEXTURED_BRUSH_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-webgpu-textured-brush-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-webgpu-textured-brush-"));
 const HARNESS_PATH = "/__studio_engine_webgpu_textured_brush__";
 const HARNESS_ENTRY = "/scripts/studio-engine-webgpu-textured-brush-browser.ts";
 const RESULT_TIMEOUT_MS = 120_000;

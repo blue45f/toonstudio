@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync, realpathSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync, realpathSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { build, preview } from "vite";
 import { chromium } from "playwright";
 import { REPO_ROOT, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 
-const output = resolve(process.argv[2] ?? join(tmpdir(), `brush-original-source-${Date.now()}`));
+const output = resolve(process.argv[2] ?? mkdtempSync(join(tmpdir(), "brush-original-source-")));
 const source = join(output, "source"), dist = join(output, "dist");
 mkdirSync(source, { recursive: true }); mkdirSync(dist, { recursive: true });
 writeFileSync(join(source, "index.html"), '<!doctype html><html lang="ko"><head><meta charset="utf-8"><link rel="icon" href="data:,"><title>Brush source preservation</title></head><body><script type="module" src="/entry.ts"></script></body></html>');

@@ -1,5 +1,5 @@
 /** Actual V6 Canvas2D recipe/input evidence. Run: pnpm exec node scripts/verify-studio-brush-v6-quality.mjs */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -9,7 +9,7 @@ import { createServer } from "vite";
 import { REPO_ROOT, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 
 const OUTPUT = process.env.TOONSPECTRUM_BRUSH_V6_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-brush-v6-quality-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-brush-v6-quality-"));
 const ENTRY = "/scripts/studio-brush-v6-quality-browser.ts";
 const diagnostics = { consoleErrors: [], pageErrors: [], failedRequests: [] };
 const recipeFilter = new Set((process.env.TOONSPECTRUM_BRUSH_V6_VERIFY_FILTER ?? "")

@@ -14,7 +14,7 @@
  *   2 = structured environment skip because a required browser primitive is unavailable
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,7 +27,7 @@ import { WEB_ROOT, WEB_VITE_CONFIG } from "./lib/repo-paths.mjs";
 const SCRATCH =
   process.env.TOONSPECTRUM_CANVASKIT_WORKER_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-canvaskit-quality-worker-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-canvaskit-quality-worker-"));
 const HARNESS_PATH = "/__studio_canvaskit_quality_worker__";
 const HARNESS_ENTRY = "/scripts/studio-canvaskit-quality-worker-browser.ts";
 const RESULT_TIMEOUT_MS = 90_000;

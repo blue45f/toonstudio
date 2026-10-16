@@ -3,7 +3,7 @@
  *
  * Exit codes: 0 = exact observed result, 1 = regression, 2 = structured environment skip.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -16,7 +16,7 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const SCRATCH =
   process.env.TOONSPECTRUM_DAB_BINNING_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-dab-binning-webgpu-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-dab-binning-webgpu-"));
 const HARNESS_PATH = "/__studio_webgpu_dab_tile_binning_compute__";
 const HARNESS_ENTRY = "/scripts/studio-webgpu-dab-tile-binning-compute-browser.ts";
 const RESULT_TIMEOUT_MS = 180_000;

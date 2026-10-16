@@ -5,7 +5,7 @@
  * locally pinned original in Chromium, captures evidence and emits neutral image/performance
  * metrics that our independent implementation can compare against.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -15,7 +15,7 @@ const WIDTH = 512;
 const HEIGHT = 384;
 const URL = process.env.TOONSPECTRUM_INKWASH_ORACLE_URL ?? "http://127.0.0.1:53987/";
 const EVIDENCE = process.env.TOONSPECTRUM_INKWASH_ORACLE_DIR
-  ?? join(tmpdir(), `toonstudio-inkwash-oracle-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-inkwash-oracle-"));
 
 function imageFromBottomUp(raw) {
   const output = new Uint8Array(raw.length);

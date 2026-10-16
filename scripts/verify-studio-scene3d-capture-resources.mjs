@@ -1,12 +1,12 @@
 /** Real browser HDR, pooled-resource ownership and 2K/4K capture proof. No API server required. */
-import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import { createServer } from "vite";
 import { REPO_ROOT, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 
-const scratch = process.env.TOONSPECTRUM_VERIFY_DIR ?? join(tmpdir(), `scene3d-capture-${Date.now()}`);
+const scratch = process.env.TOONSPECTRUM_VERIFY_DIR ?? mkdtempSync(join(tmpdir(), "scene3d-capture-"));
 const lane = process.env.SCENE3D_CAPTURE_GPU_LANE ?? "hardware";
 if (!["hardware", "swiftshader"].includes(lane)) throw new Error("Unknown capture proof lane.");
 mkdirSync(scratch, { recursive: true });
