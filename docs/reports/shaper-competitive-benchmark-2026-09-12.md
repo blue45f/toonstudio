@@ -78,7 +78,7 @@
 | 세부 기능 | 구현 근거 | 분석·다음 검증 |
 |---|---|---|
 | 공유 3D 장면 | `studio-shared-3d-stage-document.ts`, `studio-shared-3d-insert-contract.ts` | 여러 편집 화면이 동일 문서를 사용하는지 저장·재개방으로 검증 |
-| 방·공간·템플릿 | `studio-background-3d-scene-templates.ts`, `scene-3d/studio-3d-room-builder-v2.ts` | 실제 단위·벽 두께·문/창·카메라 충돌·그림자와 원고 구도 점검 |
+| 방·공간·템플릿 | `studio-background-3d-scene-templates.ts`, `bg3d/studio-bg3d-room-builder.ts` | 실제 단위·벽 두께·문/창·카메라 충돌·그림자와 원고 구도 점검 |
 | 카메라·렌즈·샷 | `studio-3d-camera-path.ts`, `scene-3d/studio-3d-camera-perspective-lens.ts`, `bg3d/studio-bg3d-production-multipass.ts` | 계산 utility와 실제 카메라 mutation 구분. 화면비 변경 후 같은 구도 유지 필요 |
 | 조명·그림자·재질 | `scene-3d/studio-3d-material-system.ts`, `scene-3d/studio-3d-toon-pass-pipeline.ts` | 피부 중간톤, 얼굴 그림자, 발밑 접지, 검은 재질과 투명 머리카락으로 검사 |
 | 일반 선 추출 | `scene-3d/studio-3d-line-art-extractor.ts` | Sobel/Canny/DoG/normal-depth/hybrid와 벡터 결과 구조 존재. 실제 pass 제공 여부 및 화면 노이즈 검증 필요 |

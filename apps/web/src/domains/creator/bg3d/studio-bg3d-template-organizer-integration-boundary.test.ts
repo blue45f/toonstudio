@@ -28,7 +28,7 @@ function expectInOrder(value: string, markers: readonly string[]): void {
 describe("Studio BG3D template organizer integration boundary", () => {
   it("tags and selects every built-in scene-template node as one instance", () => {
     const start = sceneOpsSource.indexOf("const addSceneTemplate = (templateId: string) =>");
-    const end = sceneOpsSource.indexOf("const addRoomBuild = () =>", start);
+    const end = sceneOpsSource.indexOf("const addRoomBuild = (", start);
     const addTemplate = sceneOpsSource.slice(start, end);
 
     expectInOrder(addTemplate, [

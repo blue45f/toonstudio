@@ -240,7 +240,7 @@ export function AppShell({
           <Suspense fallback={null}><AmbientExperienceHost /></Suspense>
         ) : null}
         {showSkipLink ? (
-          <a href="#main-content" className="sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:flex focus:min-h-11 focus:items-center focus:rounded-xl focus:border focus:border-line-strong focus:bg-fg focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-canvas focus:shadow-2xl focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent">
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:flex focus:min-h-11 focus:items-center focus:rounded-xl focus:border focus:border-line-strong focus:bg-fg focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-canvas focus:shadow-2xl focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent">
             {t("app.skipToContent")}
           </a>
         ) : null}

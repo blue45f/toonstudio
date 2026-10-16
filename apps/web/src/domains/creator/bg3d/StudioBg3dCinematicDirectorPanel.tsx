@@ -129,6 +129,8 @@ export function StudioBg3dCinematicDirectorPanel(
     onApplyShotBookmark,
     onUseCurrentFrameAsAiReference,
     aiReferenceBusy,
+    captureAspectRatio,
+    onCaptureAspectRatioChange,
     ...rest
   } = props;
   const resolvedDisabled = disabled ?? runtime?.disabled ?? false;
@@ -138,6 +140,10 @@ export function StudioBg3dCinematicDirectorPanel(
   const resolvedApply = onApplyProductionShot ?? runtime?.onApplyProductionShot;
   const resolvedMove = onMoveProductionShot ?? runtime?.onMoveProductionShot;
   const resolvedRemove = onRemoveProductionShot ?? runtime?.onRemoveProductionShot;
+  const resolvedCaptureAspectChange = onCaptureAspectRatioChange ?? runtime?.onSetCaptureAspectRatio;
+  const resolvedCaptureAspectRatio = captureAspectRatio !== undefined
+    ? captureAspectRatio
+    : runtime?.captureAspectRatio ?? null;
   const runtimeApplyCameraView = runtime?.onApplyCameraView;
   const runtimePreviewCameraView = runtime?.onPreviewCameraView;
   const runtimeFinishCameraPreview = runtime?.onFinishCameraViewPreview;
@@ -239,6 +245,12 @@ export function StudioBg3dCinematicDirectorPanel(
         {...(resolvedBookmark ? { onApplyShotBookmark: resolvedBookmark } : {})}
         {...(resolvedAiReference
           ? { onUseCurrentFrameAsAiReference: resolvedAiReference }
+          : {})}
+        {...(resolvedCaptureAspectChange
+          ? {
+              captureAspectRatio: resolvedCaptureAspectRatio,
+              onCaptureAspectRatioChange: resolvedCaptureAspectChange,
+            }
           : {})}
       />
     </>

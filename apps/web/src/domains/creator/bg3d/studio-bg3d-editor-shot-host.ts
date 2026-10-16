@@ -393,10 +393,6 @@ export function attachStudioBg3dEditorShotHost(h) {
     }));
   }
   h.applyTwoPointPerspective = applyTwoPointPerspective;
-  function resetTwoPointPerspective() {
-    updateCameraLens((view) => ({ lensShift: [view.lensShift?.[0] ?? 0, 0] }));
-  }
-  h.resetTwoPointPerspective = resetTwoPointPerspective;
   function readCurrentCanonicalScene(
     purpose: "shot" | "precision-modeler" = "shot",
   ): StudioBg3dSceneDocument | null {

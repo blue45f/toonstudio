@@ -89,7 +89,7 @@ function snapshotPayload(
       "scaleAwareAccuracy", "exteriorOutlineStrength", "depthEnabled", "depthStrength",
       "depthOutlineOnly", "smoothing", "textureLineEnabled", "textureLineStrength",
       "creaseAngleDegrees", "hiddenLineRemoval",
-    ])) return null;
+    ], ["interiorSuppressionEnabled", "interiorSuppressionStrength"])) return null;
     if (!exactEnumerableKeys(toneValue, [
       "mode", "type", "pattern", "levels", "opacity", "frequency", "angleDegrees",
     ])) return null;
@@ -152,6 +152,13 @@ function snapshotPayload(
         textureLineStrength: lineValue.textureLineStrength,
         creaseAngleDegrees: lineValue.creaseAngleDegrees,
         hiddenLineRemoval: lineValue.hiddenLineRemoval,
+        // 선택 필드는 값이 있을 때만 옮긴다(키가 없는 설정은 워커에서도 키가 없다).
+        ...(lineValue.interiorSuppressionEnabled !== undefined
+          ? { interiorSuppressionEnabled: lineValue.interiorSuppressionEnabled }
+          : {}),
+        ...(lineValue.interiorSuppressionStrength !== undefined
+          ? { interiorSuppressionStrength: lineValue.interiorSuppressionStrength }
+          : {}),
       }),
       tone: Object.freeze({
         mode: toneValue.mode,

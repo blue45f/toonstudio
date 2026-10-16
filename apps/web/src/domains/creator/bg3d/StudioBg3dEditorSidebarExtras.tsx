@@ -503,6 +503,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                 professionalReadiness={professionalRuntimeReadiness}
                 inplaceTools={h.inplaceTools}
                 onEnginePreferenceChange={engineRuntime.setPreference}
+                onSetCaptureAspectRatio={updateLtExportAspectRatio}
                 onOpenPrecisionModeler={handleOpenPrecisionModeler}
                 aiReferenceBusy={isCapturing}
                 aiReferenceDisabled={
@@ -587,7 +588,6 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                   LtToggleRow,
                   twoPointPerspectiveActive,
                   applyTwoPointPerspective,
-                  resetTwoPointPerspective,
                   RotateCcw,
                   lineArtPreview,
                   setLineArtPreview,

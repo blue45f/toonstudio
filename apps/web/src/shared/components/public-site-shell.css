@@ -59,6 +59,8 @@
   flex-shrink: 0;
   gap: 6px;
   min-height: 44px;
+  /* 두 글자 항목(예: 마켓)도 가로 44px 탭 대상을 채운다(UI/UX 자동 측정 2026-10-16: 42px 로 16개 칸 감점). */
+  min-width: 44px;
   padding: 8px 9px;
   border: 1px solid transparent;
   border-radius: 6px;

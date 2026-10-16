@@ -28,7 +28,7 @@ import {
   parseStudioBg3dSceneDocument,
   serializeStudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
-import { STUDIO_BG3D_SHOT_BATCH_PASSES } from "./studio-bg3d-shot-batch-pass-catalog";
+import { STUDIO_BG3D_SHOT_BATCH_PASSES, studioBg3dShotBatchNeedsDepth } from "./studio-bg3d-shot-batch-pass-catalog";
 
 import type {
   StudioBg3dCaptureBackend,
@@ -874,9 +874,7 @@ export async function createStudioBg3dShotBatchPlan(
     ) {
       return failure("invalid-capture", "컷 배치 캡처 해상도가 canonical 출력 계획과 일치하지 않습니다.");
     }
-    const includeDepth = applied.output.line.depthEnabled ||
-      passes.includes("depth") ||
-      passes.includes("normal");
+    const includeDepth = studioBg3dShotBatchNeedsDepth(applied.output.line, passes);
     if (capture.includeDepth !== includeDepth) {
       return failure("invalid-capture", "컷 배치 깊이 캡처가 canonical 출력 패스와 일치하지 않습니다.");
     }

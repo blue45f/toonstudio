@@ -331,7 +331,46 @@ export interface StudioBg3dLineOutputSettings {
   readonly textureLineEnabled: boolean;
   readonly textureLineStrength: number;
   readonly creaseAngleDegrees: number;
+  /**
+   * 앞 물체에 가려지는 쪽(먼 면)에 생기는 이중선을 앞 물체의 윤곽선 한 줄로 합치고 그쪽 재질선 반점을 줄인다.
+   * 깊이 캡처가 있을 때만 효과가 있다(깊이선 검출 또는 내부선 억제가 켜져 있을 때). 깊이가 없으면 아무것도
+   * 바꾸지 않는다.
+   */
   readonly hiddenLineRemoval: boolean;
+  /**
+   * 내부선 억제 켜기. 물체 안쪽 명암·재질·모서리 선을 줄이고 윤곽선과 윤곽에 붙은 선을 남긴다.
+   * 선택 필드: 값이 있을 때만 저장한다. 이 키가 없는 이전 문서는 꺼짐과 같다.
+   */
+  readonly interiorSuppressionEnabled?: boolean;
+  /** 내부선 억제 강도(0..1, 없으면 0.6). 켜져 있을 때만 의미가 있다. */
+  readonly interiorSuppressionStrength?: number;
+}
+
+/** 내부선 억제를 켰을 때 강도 필드가 없으면 쓰는 기본 강도. */
+export const STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH = 0.6;
+
+/**
+ * 내부선 억제의 해석. 필드가 없으면 꺼짐이다. 강도가 0 이면 켜져 있어도 효과가 없으므로 `active` 는 거짓이다.
+ * 렌더러·깊이 캡처 요청·UI 가 같은 판정을 쓰도록 이 함수만 거친다.
+ */
+export function resolveStudioBg3dInteriorSuppression(
+  line: Pick<StudioBg3dLineOutputSettings, "interiorSuppressionEnabled" | "interiorSuppressionStrength">
+): { readonly active: boolean; readonly strength: number } {
+  const strength = line.interiorSuppressionStrength ?? STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH;
+  return { active: line.interiorSuppressionEnabled === true && strength > 0, strength };
+}
+
+/**
+ * 선 설정이 깊이 캡처를 요구하는지. 깊이선 검출과 내부선 억제(깊이 윤곽을 윤곽 근거로 쓴다)가 그렇다.
+ * 가려진 선 제거는 깊이를 스스로 요구하지 않고, 이미 캡처된 깊이가 있을 때만 효과를 낸다.
+ */
+export function studioBg3dLineNeedsDepth(
+  line: Pick<
+    StudioBg3dLineOutputSettings,
+    "depthEnabled" | "interiorSuppressionEnabled" | "interiorSuppressionStrength"
+  >
+): boolean {
+  return line.depthEnabled || resolveStudioBg3dInteriorSuppression(line).active;
 }
 
 export interface StudioBg3dToneOutputSettings {
@@ -616,6 +655,8 @@ export interface StudioBg3dShotLineOutputOverride {
   readonly textureLineStrength?: number;
   readonly creaseAngleDegrees?: number;
   readonly hiddenLineRemoval?: boolean;
+  readonly interiorSuppressionEnabled?: boolean;
+  readonly interiorSuppressionStrength?: number;
 }
 
 export interface StudioBg3dShotToneOutputOverride {

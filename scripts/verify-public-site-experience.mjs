@@ -92,8 +92,14 @@ try {
     await check(`home color treatment and footer availability ${width}`, async () => {
       await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
       await assertPublicCreatorHome(page);
-      const background = await page.locator('.rd-search').evaluate((element) => getComputedStyle(element).backgroundColor);
-      assert(background !== 'rgba(0, 0, 0, 0)' && background !== 'transparent', 'The primary action must retain its theme surface');
+      // 홈의 1차 행동은 통합 입력의 제출 버튼이다(예전 .rd-search 는 BLUEPRINT §3.3 4밴드 개편으로 사라졌다).
+      // 제출 버튼의 면은 단색이 아니라 그라데이션(background-image)일 수 있다. 색이나 이미지 중 하나는 있어야 한다.
+      const surface = await page.locator('.rd-idea-submit').evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { color: style.backgroundColor, image: style.backgroundImage };
+      });
+      assert((surface.color !== 'rgba(0, 0, 0, 0)' && surface.color !== 'transparent') || surface.image !== 'none',
+        'The primary action must retain its theme surface');
       await expect(page.locator('footer')).toBeAttached({ timeout: 5000 });
       await page.screenshot({ path: `${output}/home-${width}.png`, animations: 'disabled', timeout: 20000 });
       // Theme fixture verifies contrast/layout without claiming the preference UI was tested.
@@ -101,6 +107,23 @@ try {
       await page.goto(`${origin}/research`, { waitUntil: 'domcontentloaded' });
       await expect(page.locator('main h1')).toHaveCount(1);
       await page.screenshot({ path: `${output}/research-${width}.png`, animations: 'disabled', timeout: 20000 });
+    });
+    await check(`home idea input routes to the story lab and to search ${width}`, async () => {
+      await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
+      const dashboard = page.locator('[data-reference-dashboard="true"]');
+      await expect(dashboard).toBeVisible({ timeout: 30000 });
+      // 기본 모드(이야기 만들기)는 입력한 문장을 들고 스토리 연구실로 간다.
+      await dashboard.locator('#rd-idea-input').fill('비 오는 날의 첫사랑');
+      await dashboard.locator('#rd-idea-input').press('Enter');
+      await expect(page).toHaveURL(/\/story-lab\?idea=/u);
+      await page.goBack();
+      await expect(dashboard).toBeVisible({ timeout: 30000 });
+      // 작품 찾기 모드는 같은 입력을 카탈로그 검색으로 보낸다.
+      await dashboard.locator('.rd-idea-modes button').nth(1).click();
+      await dashboard.locator('#rd-idea-input').fill('마법');
+      await dashboard.locator('.rd-idea-submit').click();
+      await expect(page).toHaveURL(/\/search\?q=/u);
+      await expect(page.locator('main h1')).toHaveCount(1);
     });
     await check(`personal workspace remains distinct from the public home ${width}`, async () => {
       // 개인 작업공간은 게스트 신원이 있어야 열리고(없으면 계정 안내가 먼저 뜬다), 처음 여는 작업 투어·만화 인트로는

@@ -2,14 +2,24 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import {
+  clampStudioBg3dLensShiftValue,
   computeStudioBg3dTwoPointPerspective,
+  formatStudioBg3dLensShiftValue,
+  isStudioBg3dLensShiftNeutral,
   isStudioBg3dTwoPointPerspectiveActive,
+  readStudioBg3dLensShift,
   STUDIO_BG3D_LENS_MAX_FOCAL_MM,
   STUDIO_BG3D_LENS_MIN_FOCAL_MM,
   STUDIO_BG3D_LENS_PRESETS,
+  STUDIO_BG3D_LENS_SHIFT_LIMIT,
   studioBg3dFocalLengthToFovDegrees,
   studioBg3dFovDegreesToFocalLength,
+  withStudioBg3dLensShiftAxis,
 } from "./studio-bg3d-lens";
+import {
+  DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+  normalizeStudioBg3dSceneDocument,
+} from "./studio-bg3d-scene-document";
 
 describe("초점거리 ↔ 세로 화각 매핑", () => {
   it("알려진 값: 24mm→53.13°, 12mm→90°, 50mm→26.99°", () => {
@@ -156,5 +166,71 @@ describe("isStudioBg3dTwoPointPerspectiveActive", () => {
     expect(
       isStudioBg3dTwoPointPerspectiveActive({ position: [0, 2, 5], target: [0, 2, 0] }),
     ).toBe(false);
+  });
+});
+
+describe("렌즈 시프트 슬라이더 헬퍼", () => {
+  it("한도는 문서 정규화 한도(±2)와 같은 값이다", () => {
+    expect(STUDIO_BG3D_LENS_SHIFT_LIMIT).toBe(2);
+    // 한도 안의 값은 문서 정규화를 지나도 그대로이고, 한도 밖의 값은 같은 지점으로 눌린다.
+    const roundTrip = (lensShift: readonly [number, number]) =>
+      normalizeStudioBg3dSceneDocument({
+        ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+        camera: { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.camera, lensShift },
+      }).camera.lensShift;
+    expect(roundTrip([0.37, -0.52])).toEqual([0.37, -0.52]);
+    expect(roundTrip([9, -9])).toEqual([STUDIO_BG3D_LENS_SHIFT_LIMIT, -STUDIO_BG3D_LENS_SHIFT_LIMIT]);
+    expect(clampStudioBg3dLensShiftValue(9)).toBe(STUDIO_BG3D_LENS_SHIFT_LIMIT);
+    expect(clampStudioBg3dLensShiftValue(-9)).toBe(-STUDIO_BG3D_LENS_SHIFT_LIMIT);
+  });
+
+  it("유한하지 않은 값은 0 으로, 한도 안의 값은 그대로 둔다", () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(clampStudioBg3dLensShiftValue(bad)).toBe(0);
+    }
+    expect(clampStudioBg3dLensShiftValue(0.125)).toBe(0.125);
+    expect(clampStudioBg3dLensShiftValue(-1.999)).toBe(-1.999);
+  });
+
+  it("카메라에서 [가로, 세로]를 읽고 없거나 손상됐으면 [0, 0] 이다", () => {
+    expect(readStudioBg3dLensShift({ lensShift: [0.2, -0.4] })).toEqual([0.2, -0.4]);
+    expect(readStudioBg3dLensShift({})).toEqual([0, 0]);
+    expect(readStudioBg3dLensShift(undefined)).toEqual([0, 0]);
+    expect(readStudioBg3dLensShift(null)).toEqual([0, 0]);
+    expect(readStudioBg3dLensShift({ lensShift: [5, Number.NaN] })).toEqual([2, 0]);
+    expect(readStudioBg3dLensShift({ lensShift: [1] as unknown as readonly [number, number] })).toEqual([0, 0]);
+  });
+
+  it("한 축만 바꾸고 다른 축은 보존한다(입력은 변경하지 않는다)", () => {
+    const current = Object.freeze([0.3, -0.6] as const);
+    expect(withStudioBg3dLensShiftAxis(current, "x", 0.5)).toEqual([0.5, -0.6]);
+    expect(withStudioBg3dLensShiftAxis(current, "y", 0.1)).toEqual([0.3, 0.1]);
+    expect(withStudioBg3dLensShiftAxis(current, "y", 99)).toEqual([0.3, STUDIO_BG3D_LENS_SHIFT_LIMIT]);
+    expect(current).toEqual([0.3, -0.6]);
+  });
+
+  it("두 축이 모두 잡음 범위이면 중립으로 본다", () => {
+    expect(isStudioBg3dLensShiftNeutral([0, 0])).toBe(true);
+    expect(isStudioBg3dLensShiftNeutral([5e-5, -5e-5])).toBe(true);
+    expect(isStudioBg3dLensShiftNeutral([0.001, 0])).toBe(false);
+    expect(isStudioBg3dLensShiftNeutral([0, -0.5])).toBe(false);
+  });
+
+  it("값 표기는 부호를 붙인 소수 둘째 자리이고 0 은 부호가 없다", () => {
+    expect(formatStudioBg3dLensShiftValue(0)).toBe("0.00");
+    expect(formatStudioBg3dLensShiftValue(0.004)).toBe("0.00");
+    expect(formatStudioBg3dLensShiftValue(0.125)).toBe("+0.13");
+    expect(formatStudioBg3dLensShiftValue(-0.5)).toBe("\u22120.50");
+    expect(formatStudioBg3dLensShiftValue(Number.NaN)).toBe("0.00");
+    expect(formatStudioBg3dLensShiftValue(9)).toBe("+2.00");
+  });
+
+  it("2점 투시 자동 보정 결과도 같은 한도 안에 머문다", () => {
+    const result = computeStudioBg3dTwoPointPerspective({
+      position: [0.2, 0, 0.2],
+      target: [0, 40, 0],
+      fovDegrees: 20,
+    });
+    expect(result!.lensShiftY).toBe(-STUDIO_BG3D_LENS_SHIFT_LIMIT);
   });
 });

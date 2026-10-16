@@ -16,7 +16,19 @@
 
 import { uid } from "../studio-id";
 
+import {
+  STUDIO_BG3D_ROOM_FURNITURE_KINDS,
+  STUDIO_BG3D_ROOM_FURNITURE_LABELS,
+  rotateStudioBg3dRoomYaw,
+  studioBg3dRoomFurnitureParts,
+  type StudioBg3dRoomFurnitureKind,
+} from "./studio-bg3d-room-furniture";
+
 import type { BgPrimitive, BgPrimitiveKind } from "../studio-background-3d-metadata";
+
+// 가구 카탈로그는 별도 모듈로 옮겼다(800줄 한도). 기존 가져오기 경로를 유지하려고 다시 내보낸다.
+export { STUDIO_BG3D_ROOM_FURNITURE_KINDS, STUDIO_BG3D_ROOM_FURNITURE_LABELS };
+export type { StudioBg3dRoomFurnitureKind };
 
 export const STUDIO_BG3D_ROOM_WALL_IDS = ["north", "south", "west", "east"] as const;
 export type StudioBg3dRoomWallId = (typeof STUDIO_BG3D_ROOM_WALL_IDS)[number];
@@ -27,6 +39,9 @@ export const STUDIO_BG3D_ROOM_WALL_LABELS: Record<StudioBg3dRoomWallId, string> 
   west: "왼벽",
   east: "오른벽",
 };
+
+/** 벽체 파츠 이름은 `${벽 이름표}${이 접미}` 다(예: "앞벽 벽체"). 안내 문구가 숨긴 벽을 이름으로 묶을 때 쓴다. */
+export const STUDIO_BG3D_ROOM_WALL_PART_SUFFIX = " 벽체";
 
 export type StudioBg3dRoomOpeningType = "door" | "window";
 
@@ -40,31 +55,6 @@ export interface StudioBg3dRoomOpening {
   /** 바닥에서 오프닝 하단까지 높이(m). 문은 0으로 강제된다. */
   readonly sillHeight: number;
 }
-
-export const STUDIO_BG3D_ROOM_FURNITURE_KINDS = [
-  "table",
-  "chair",
-  "bed",
-  "bookshelf",
-  "column",
-  "stairs",
-  "sofa",
-  "plant",
-  "lamp",
-] as const;
-export type StudioBg3dRoomFurnitureKind = (typeof STUDIO_BG3D_ROOM_FURNITURE_KINDS)[number];
-
-export const STUDIO_BG3D_ROOM_FURNITURE_LABELS: Record<StudioBg3dRoomFurnitureKind, string> = {
-  table: "테이블",
-  chair: "의자",
-  bed: "침대",
-  bookshelf: "책장",
-  column: "기둥",
-  stairs: "계단",
-  sofa: "소파",
-  plant: "화분",
-  lamp: "스탠드 조명",
-};
 
 export interface StudioBg3dRoomFurnitureItem {
   readonly kind: StudioBg3dRoomFurnitureKind;
@@ -89,6 +79,8 @@ export interface StudioBg3dRoomSpec {
 export interface StudioBg3dRoomPart {
   readonly kind: BgPrimitiveKind;
   readonly name: string;
+  /** 벽체 파츠가 속한 벽(바닥·가구는 없음). 자동 단면이 벽 단위로 숨길 때 쓴다. */
+  readonly wall?: StudioBg3dRoomWallId;
   readonly position: readonly [number, number, number];
   readonly rotation: readonly [number, number, number];
   readonly scale: readonly [number, number, number];
@@ -301,102 +293,25 @@ function wallPlacement(wall: StudioBg3dRoomWallId, width: number, depth: number)
   }
 }
 
-// ── 가구 파츠 팩토리(yaw-only) ───────────────────────────────────────────────
-
-interface FurniturePart {
-  readonly kind: BgPrimitiveKind;
-  readonly name: string;
-  readonly offset: readonly [number, number, number];
-  readonly scale: readonly [number, number, number];
-  readonly color: string;
-}
-
-function furnitureParts(kind: StudioBg3dRoomFurnitureKind, wallHeight: number): FurniturePart[] {
-  switch (kind) {
-    case "table":
-      return [
-        { kind: "box", name: "테이블 상판", offset: [0, 0.72, 0], scale: [1.4, 0.06, 0.8], color: "#8a6b4a" },
-        { kind: "box", name: "테이블 다리", offset: [-0.6, 0.345, -0.3], scale: [0.08, 0.69, 0.08], color: "#5c4632" },
-        { kind: "box", name: "테이블 다리", offset: [0.6, 0.345, -0.3], scale: [0.08, 0.69, 0.08], color: "#5c4632" },
-        { kind: "box", name: "테이블 다리", offset: [-0.6, 0.345, 0.3], scale: [0.08, 0.69, 0.08], color: "#5c4632" },
-        { kind: "box", name: "테이블 다리", offset: [0.6, 0.345, 0.3], scale: [0.08, 0.69, 0.08], color: "#5c4632" },
-      ];
-    case "chair":
-      return [
-        { kind: "box", name: "의자 좌판", offset: [0, 0.44, 0], scale: [0.42, 0.06, 0.42], color: "#6b4a37" },
-        { kind: "box", name: "의자 다리", offset: [0, 0.205, 0], scale: [0.34, 0.41, 0.34], color: "#7a5a44" },
-        { kind: "box", name: "의자 등받이", offset: [0, 0.72, -0.18], scale: [0.42, 0.5, 0.06], color: "#6b4a37" },
-      ];
-    case "bed":
-      return [
-        { kind: "box", name: "침대 프레임", offset: [0, 0.25, 0], scale: [1.2, 0.3, 2.1], color: "#6b4a6a" },
-        { kind: "box", name: "침대 매트리스", offset: [0, 0.47, 0.05], scale: [1.1, 0.16, 1.9], color: "#e8dce8" },
-        { kind: "box", name: "침대 헤드보드", offset: [0, 0.68, -1.0], scale: [1.2, 0.56, 0.12], color: "#5a3a5a" },
-      ];
-    case "bookshelf":
-      return [
-        { kind: "box", name: "책장 몸통", offset: [0, 0.9, 0], scale: [0.9, 1.8, 0.32], color: "#8a6b4a" },
-        { kind: "box", name: "책장 선반", offset: [0, 0.62, 0.05], scale: [0.78, 0.05, 0.24], color: "#5c4632" },
-        { kind: "box", name: "책장 선반", offset: [0, 1.18, 0.05], scale: [0.78, 0.05, 0.24], color: "#5c4632" },
-      ];
-    case "column": {
-      const height = Math.max(0.5, wallHeight);
-      return [
-        // cylinder 기본 반지름 0.3(CylinderGeometry(0.3, ...)) → scale.x 0.6이면 실제 반지름 0.18m.
-        { kind: "cylinder", name: "기둥", offset: [0, height / 2, 0], scale: [0.6, height, 0.6], color: "#c8c2b4" },
-      ];
-    }
-    case "stairs": {
-      const stepCount = 6;
-      const stepRise = 0.2;
-      const stepRun = 0.3;
-      const stepWidth = 1.1;
-      const parts: FurniturePart[] = [];
-      for (let index = 0; index < stepCount; index += 1) {
-        // 계단은 겹침 없는 "층층 박스": index번째 칸은 바닥부터 (index+1)*rise까지 차오른다 —
-        // 옆에서 본 단면이 정확한 계단 모양이고, 섹션 컷과 선화 추출에서도 깨끗한 단이 나온다.
-        const height = stepRise * (index + 1);
-        parts.push({
-          kind: "box",
-          name: `계단 ${index + 1}단`,
-          offset: [0, height / 2, stepRun * index - (stepRun * (stepCount - 1)) / 2],
-          scale: [stepWidth, height, stepRun],
-          color: "#b0a894",
-        });
-      }
-      return parts;
-    }
-    case "sofa":
-      return [
-        { kind: "box", name: "소파 하부", offset: [0, 0.22, 0], scale: [1.7, 0.24, 0.85], color: "#5a6a7a" },
-        { kind: "box", name: "소파 좌석", offset: [-0.4, 0.42, 0], scale: [0.8, 0.16, 0.78], color: "#6b7b8b" },
-        { kind: "box", name: "소파 좌석", offset: [0.4, 0.42, 0], scale: [0.8, 0.16, 0.78], color: "#6b7b8b" },
-        { kind: "box", name: "소파 등받이", offset: [0, 0.62, -0.32], scale: [1.7, 0.56, 0.2], color: "#5a6a7a" },
-        { kind: "box", name: "소파 팔걸이", offset: [-0.79, 0.48, 0], scale: [0.12, 0.34, 0.85], color: "#4e5e6e" },
-        { kind: "box", name: "소파 팔걸이", offset: [0.79, 0.48, 0], scale: [0.12, 0.34, 0.85], color: "#4e5e6e" },
-      ];
-    case "plant":
-      return [
-        // cylinder 기본 반지름 0.3 → scale.x 0.9면 화분 반지름 ≈0.27m.
-        { kind: "cylinder", name: "화분 몸통", offset: [0, 0.19, 0], scale: [0.9, 0.38, 0.9], color: "#a4643f" },
-        { kind: "sphere", name: "화분 잎", offset: [0, 0.72, 0], scale: [1.4, 1.2, 1.4], color: "#4a7a3a" },
-      ];
-    case "lamp":
-      return [
-        { kind: "cylinder", name: "조명 베이스", offset: [0, 0.02, 0], scale: [1.2, 0.04, 1.2], color: "#3a3a42" },
-        { kind: "cylinder", name: "조명 폴", offset: [0, 0.75, 0], scale: [0.16, 1.44, 0.16], color: "#3a3a42" },
-        { kind: "cone", name: "조명 갓", offset: [0, 1.56, 0], scale: [1.2, 0.5, 1.2], color: "#e8dcc8" },
-      ];
-  }
-}
-
-function rotateYaw(offset: readonly [number, number, number], yawRad: number): readonly [number, number, number] {
-  const cos = Math.cos(yawRad);
-  const sin = Math.sin(yawRad);
-  return [offset[0] * cos + offset[2] * sin, offset[1], -offset[0] * sin + offset[2] * cos];
-}
-
 // ── 방 전체 파츠 생성 ─────────────────────────────────────────────────────────
+
+/**
+ * 라디안 각도를 장면 문서의 정규형 [-π, π) 으로 바꾼다. 문서 정규화(scene-document 의 normalizedRotation)와
+ * 같은 식이며, 엄격한 컷 포착(captureStudioBg3dShot)은 정규형이 아닌 회전(예: 정확히 π)을 거부하므로
+ * 방 파츠가 처음부터 정규형이 되게 한다. 일부 각도(예: 음수 15° 배수)는 식을 한 번 적용해도 부동소수점
+ * 오차로 고정점이 되지 않아, 값이 더 바뀌지 않을 때까지 되풀이한다(최대 4회).
+ */
+export function canonicalStudioBg3dRoomYaw(radians: number): number {
+  if (!Number.isFinite(radians)) return 0;
+  const turn = Math.PI * 2;
+  let angle = radians;
+  for (let step = 0; step < 4; step += 1) {
+    const wrapped = ((((angle + Math.PI) % turn) + turn) % turn) - Math.PI;
+    if (wrapped === angle) return wrapped;
+    angle = wrapped;
+  }
+  return angle;
+}
 
 export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): StudioBg3dRoomPart[] {
   const spec = clampStudioBg3dRoomSpec(rawSpec);
@@ -424,7 +339,8 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
       const [x, z] = placement.toWorld(segment.centerU);
       parts.push({
         kind: "box",
-        name: `${STUDIO_BG3D_ROOM_WALL_LABELS[wall]} 벽체`,
+        name: `${STUDIO_BG3D_ROOM_WALL_LABELS[wall]}${STUDIO_BG3D_ROOM_WALL_PART_SUFFIX}`,
+        wall,
         position: [x, segment.centerY, z],
         rotation: [0, 0, 0],
         scale: placement.alongX
@@ -437,13 +353,15 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
 
   for (const item of spec.furniture) {
     const yawRad = (item.yawDeg * Math.PI) / 180;
-    for (const part of furnitureParts(item.kind, spec.wallHeight)) {
-      const rotated = rotateYaw(part.offset, yawRad);
+    // 위치는 원래 각도로 돌리고, 문서에 쓰는 회전값만 문서 정규형으로 바꾼다(방향은 같다).
+    const documentYaw = canonicalStudioBg3dRoomYaw(yawRad);
+    for (const part of studioBg3dRoomFurnitureParts(item.kind, spec.wallHeight)) {
+      const rotated = rotateStudioBg3dRoomYaw(part.offset, yawRad);
       parts.push({
         kind: part.kind,
         name: part.name,
         position: [item.x + rotated[0], rotated[1], item.z + rotated[2]],
-        rotation: [0, yawRad, 0],
+        rotation: [0, documentYaw, 0],
         scale: [...part.scale] as [number, number, number],
         color: part.color,
       });
@@ -453,18 +371,108 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
   return parts;
 }
 
+// ── 자동 단면(카메라 쪽 벽 숨김) ──────────────────────────────────────────────
+// 방 밖에서 안을 바라보는 카메라 쪽 벽은 시선을 가려, 방을 추가해도 첫 화면에서 바깥 벽만 보인다.
+// 이 규칙은 scene-3d/studio-3d-room-builder-v2.ts(2026-10-16 삭제)의 evaluateAutoCutawayWalls 를
+// 옮겨 온 것이다 — v2 는 테스트에서만 쓰이는 모듈이었고, 쓸모 있는 고유 로직은 이 판정뿐이었다.
+//
+// 판정(벽마다): 카메라가 그 벽 바깥 면 쪽에 있고, 바라보는 점(초점)이 카메라보다 방 안쪽이면 그 벽을
+// 가린다. 높이 조건(v2 에는 없던 보강): 카메라가 낮은 난간 위에서 내려다봐 시선이 벽 윗단 위로 지나가면
+// 그 벽은 시선을 가리지 않으므로 숨기지 않는다(옥상 난간을 지우지 않기 위함).
+//
+// 결과는 "생성 시점의 한 번 판정"이다. 가려진 벽은 지우지 않고 visible:false 로 만들어 레이어 목록의
+// 눈 아이콘으로 되살릴 수 있고, 이후 카메라를 옮겨도 다시 계산하지 않는다(문서에 방 단위 개념이 없다).
+
+type RoomVec3 = readonly [number, number, number];
+
+export interface StudioBg3dRoomCutawayInput {
+  /** 방 중심이 원점인 방-로컬 좌표의 카메라 위치. */
+  readonly cameraPosition: RoomVec3;
+  /** 방-로컬 좌표의 초점(오빗 타깃). */
+  readonly focusPoint: RoomVec3;
+  readonly roomWidth: number;
+  readonly roomDepth: number;
+  /** 주어지면 시선이 벽 윗단 위로 지나는 낮은 벽은 가리지 않는다. */
+  readonly wallHeight?: number;
+}
+
+/** 카메라→초점 선분이 벽 평면(axis: 0=X, 2=Z)을 지나는 높이가 벽 윗단보다 높은지. */
+function sightlinePassesAboveWall(
+  camera: RoomVec3,
+  focus: RoomVec3,
+  axis: 0 | 2,
+  planeCoordinate: number,
+  wallHeight: number | undefined,
+): boolean {
+  if (wallHeight === undefined) return false;
+  const span = focus[axis] - camera[axis];
+  if (span === 0) return false;
+  const t = (planeCoordinate - camera[axis]) / span;
+  // 선분이 평면에 닿지 않으면(초점이 평면 앞) 높이 판단을 하지 않고 기본 판정을 따른다.
+  if (!(t > 0 && t <= 1)) return false;
+  return camera[1] + t * (focus[1] - camera[1]) > wallHeight + 1e-9;
+}
+
+export function evaluateStudioBg3dRoomAutoCutaway(
+  input: StudioBg3dRoomCutawayInput,
+): ReadonlySet<StudioBg3dRoomWallId> {
+  const { cameraPosition: camera, focusPoint: focus, roomWidth, roomDepth, wallHeight } = input;
+  const halfWidth = roomWidth / 2;
+  const halfDepth = roomDepth / 2;
+  const cut = new Set<StudioBg3dRoomWallId>();
+  if (![...camera, ...focus, roomWidth, roomDepth].every(Number.isFinite)) return cut;
+  if (camera[2] > halfDepth && focus[2] < camera[2] &&
+    !sightlinePassesAboveWall(camera, focus, 2, halfDepth, wallHeight)) cut.add("south");
+  if (camera[2] < -halfDepth && focus[2] > camera[2] &&
+    !sightlinePassesAboveWall(camera, focus, 2, -halfDepth, wallHeight)) cut.add("north");
+  if (camera[0] > halfWidth && focus[0] < camera[0] &&
+    !sightlinePassesAboveWall(camera, focus, 0, halfWidth, wallHeight)) cut.add("east");
+  if (camera[0] < -halfWidth && focus[0] > camera[0] &&
+    !sightlinePassesAboveWall(camera, focus, 0, -halfWidth, wallHeight)) cut.add("west");
+  return cut;
+}
+
+export interface StudioBg3dRoomBuildOptions {
+  /** 주어지면 이 카메라(월드 좌표) 기준으로 자동 단면을 판정해 가려지는 벽을 숨김 상태로 만든다. */
+  readonly autoCutawayCamera?: {
+    readonly position: RoomVec3;
+    readonly target: RoomVec3;
+  } | null;
+}
+
+export interface StudioBg3dRoomBuildPlan {
+  readonly primitives: BgPrimitive[];
+  /** 숨김 상태로 만든 벽(북·남·서·동 순). 자동 단면을 쓰지 않았거나 가릴 벽이 없으면 빈 배열. */
+  readonly hiddenWalls: readonly StudioBg3dRoomWallId[];
+  /** 기존 도형과 겹치지 않도록 방 전체에 더한 X 오프셋(m). */
+  readonly anchorX: number;
+}
+
 /**
  * 씬 템플릿과 같은 "결정적 X 오프셋 + uid" 전개. 테스트는 idFactory를 주입해 완전 결정적으로
- * 검증한다(프로덕션 ID는 공용 UUID 계약을 쓰며 지오메트리에는 영향 없음).
+ * 검증한다(프로덕션 ID는 공용 UUID 계약을 쓰며 지오메트리에는 영향 없음). 자동 단면 카메라를 주면
+ * 오프셋을 뺀 방-로컬 좌표로 판정해 가려지는 벽의 모든 벽체를 visible:false 로 만든다.
  */
-export function instantiateStudioBg3dRoomBuild(
+export function planStudioBg3dRoomBuild(
   spec: Partial<StudioBg3dRoomSpec>,
   existingCount: number,
   idFactory: () => string = uid,
-): BgPrimitive[] {
+  options: StudioBg3dRoomBuildOptions = {},
+): StudioBg3dRoomBuildPlan {
   const clamped = clampStudioBg3dRoomSpec(spec);
   const anchorX = existingCount > 0 ? existingCount * (clamped.width / 6) : 0;
-  return buildStudioBg3dRoomParts(clamped).map((part) => ({
+  const camera = options.autoCutawayCamera;
+  // 카메라 값이 비정상이면(배열이 아님 등) 단면 없이 만든다 — 방 추가 자체가 막히면 안 된다.
+  const hidden: ReadonlySet<StudioBg3dRoomWallId> = camera && Array.isArray(camera.position) && Array.isArray(camera.target)
+    ? evaluateStudioBg3dRoomAutoCutaway({
+        cameraPosition: [camera.position[0] - anchorX, camera.position[1], camera.position[2]],
+        focusPoint: [camera.target[0] - anchorX, camera.target[1], camera.target[2]],
+        roomWidth: clamped.width,
+        roomDepth: clamped.depth,
+        wallHeight: clamped.wallHeight,
+      })
+    : new Set();
+  const primitives = buildStudioBg3dRoomParts(clamped).map((part): BgPrimitive => ({
     id: idFactory(),
     kind: part.kind,
     name: part.name,
@@ -472,12 +480,27 @@ export function instantiateStudioBg3dRoomBuild(
     rotation: [...part.rotation] as [number, number, number],
     scale: [...part.scale] as [number, number, number],
     color: part.color,
+    ...(part.wall !== undefined && hidden.has(part.wall) ? { visible: false } : {}),
   }));
+  return {
+    primitives,
+    hiddenWalls: STUDIO_BG3D_ROOM_WALL_IDS.filter((wall) => hidden.has(wall)),
+    anchorX,
+  };
+}
+
+export function instantiateStudioBg3dRoomBuild(
+  spec: Partial<StudioBg3dRoomSpec>,
+  existingCount: number,
+  idFactory: () => string = uid,
+): BgPrimitive[] {
+  return planStudioBg3dRoomBuild(spec, existingCount, idFactory).primitives;
 }
 
 // ── 프리셋 ────────────────────────────────────────────────────────────────────
 // 씬 템플릿(고정 좌표 완성 공간)과 달리, 여기 프리셋은 "시작점 스펙"이다 — 적용 후에도 모든
-// 수치를 계속 조정할 수 있다.
+// 수치를 계속 조정할 수 있다. 의자는 앞면이 +z 라(등받이가 -z) 테이블의 남쪽(+z)에 놓으면 yaw 180,
+// 북쪽에 놓으면 yaw 0 이어야 테이블을 본다 — 모든 프리셋에서 시험이 고정한다.
 
 export interface StudioBg3dRoomPreset {
   readonly id: string;
@@ -507,17 +530,17 @@ export const STUDIO_BG3D_ROOM_PRESETS: readonly StudioBg3dRoomPreset[] = [
       ],
       furniture: [
         { kind: "table", x: -1.8, z: -0.6, yawDeg: 0 },
-        { kind: "chair", x: -1.8, z: 0.1, yawDeg: 0 },
+        { kind: "chair", x: -1.8, z: 0.1, yawDeg: 180 },
         { kind: "table", x: 0, z: -0.6, yawDeg: 0 },
-        { kind: "chair", x: 0, z: 0.1, yawDeg: 0 },
+        { kind: "chair", x: 0, z: 0.1, yawDeg: 180 },
         { kind: "table", x: 1.8, z: -0.6, yawDeg: 0 },
-        { kind: "chair", x: 1.8, z: 0.1, yawDeg: 0 },
+        { kind: "chair", x: 1.8, z: 0.1, yawDeg: 180 },
         { kind: "table", x: -1.8, z: 1.2, yawDeg: 0 },
-        { kind: "chair", x: -1.8, z: 1.9, yawDeg: 0 },
+        { kind: "chair", x: -1.8, z: 1.9, yawDeg: 180 },
         { kind: "table", x: 0, z: 1.2, yawDeg: 0 },
-        { kind: "chair", x: 0, z: 1.9, yawDeg: 0 },
+        { kind: "chair", x: 0, z: 1.9, yawDeg: 180 },
         { kind: "table", x: 1.8, z: 1.2, yawDeg: 0 },
-        { kind: "chair", x: 1.8, z: 1.9, yawDeg: 0 },
+        { kind: "chair", x: 1.8, z: 1.9, yawDeg: 180 },
       ],
     }),
   },
@@ -539,8 +562,8 @@ export const STUDIO_BG3D_ROOM_PRESETS: readonly StudioBg3dRoomPreset[] = [
       ],
       furniture: [
         { kind: "table", x: -1.6, z: -1, yawDeg: 0 },
-        { kind: "chair", x: -1.6, z: -1.8, yawDeg: 180 },
-        { kind: "chair", x: -1.6, z: -0.2, yawDeg: 0 },
+        { kind: "chair", x: -1.6, z: -1.8, yawDeg: 0 },
+        { kind: "chair", x: -1.6, z: -0.2, yawDeg: 180 },
         { kind: "table", x: 1.2, z: 0.8, yawDeg: 90 },
         { kind: "chair", x: 0.4, z: 0.8, yawDeg: 90 },
         { kind: "chair", x: 2, z: 0.8, yawDeg: 270 },
@@ -567,7 +590,7 @@ export const STUDIO_BG3D_ROOM_PRESETS: readonly StudioBg3dRoomPreset[] = [
         { kind: "bed", x: -1.4, z: -0.8, yawDeg: 0 },
         { kind: "bookshelf", x: 1.9, z: -1.6, yawDeg: 0 },
         { kind: "table", x: 1.2, z: 1.1, yawDeg: 0 },
-        { kind: "chair", x: 1.2, z: 1.8, yawDeg: 0 },
+        { kind: "chair", x: 1.2, z: 1.8, yawDeg: 180 },
         { kind: "sofa", x: -0.2, z: 1.35, yawDeg: 180 },
         { kind: "lamp", x: 1.9, z: 1.6, yawDeg: 0 },
       ],
