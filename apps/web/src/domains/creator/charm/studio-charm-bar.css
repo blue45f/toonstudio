@@ -1,0 +1,143 @@
+/*
+ * 참 바 배치. 색은 Tailwind 의미 토큰으로 칠하고, 여기서는 "어디에 놓이느냐"에 따른 방향·스크롤만 정한다.
+ * - 1024px 미만(모바일·태블릿) 또는 배치 영역이 꺼진 곳: 작업공간 위쪽 가로 띠. 칩 줄만 가로로 스크롤하고
+ *   도구 버튼(+ ⋯)은 항상 오른쪽 끝에 보인다. 안내 문구(잠금·저장 실패 등)는 다음 줄로 내려간다.
+ * - 1024px 이상 + 붙어 있음: 도구 레일 옆 세로 레일(폭 4.25rem). 칩 줄만 세로로 스크롤하고 도구 버튼은 아래에 고정된다.
+ * - 떠 있는 창(자유 배치·가장자리 도킹): 창 크기만큼 칩이 줄바꿈으로 채우고 창 자체가 스크롤한다.
+ * 떠 있는지 여부는 StudioWorkspaceRegion 이 루트에 다는 data-studio-region-floating 으로 판정한다.
+ * 포커스 링(바깥 4px)이 스크롤 영역 가장자리에서 잘리지 않도록 칩 줄에 0.25rem 안쪽 여백을 둔다.
+ */
+.studio-charm-bar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.studio-charm-bar__chips {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.studio-charm-bar__tools {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.studio-charm-bar__note,
+.studio-charm-bar__empty {
+  flex: 1 0 100%;
+  max-width: none;
+}
+
+/* 같은 문구의 두 길이: 기본은 전체 문장, 좁은 세로 레일에서만 짧은 말(아래 미디어 쿼리). */
+.studio-charm-bar__short {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  [data-studio-region-floating="false"] .studio-charm-bar {
+    width: 4.25rem;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    overflow: hidden;
+    border-bottom: 0;
+    border-right: 1px solid var(--color-line);
+  }
+
+  [data-studio-region-floating="false"] .studio-charm-bar__chips {
+    flex: 1 1 0;
+    min-height: 0;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  [data-studio-region-floating="false"] .studio-charm-bar__tools {
+    flex-direction: column;
+    padding-bottom: 0.25rem;
+  }
+
+  [data-studio-region-floating="false"] .studio-charm-bar__note,
+  [data-studio-region-floating="false"] .studio-charm-bar__empty {
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.25rem;
+    font-size: 0.62rem;
+    text-align: center;
+  }
+
+  /* 좁은 레일: 전체 문장·버튼 글자는 눈에는 감추고(스크린리더에는 그대로) 짧은 말과 아이콘만 보인다. */
+  [data-studio-region-floating="false"] .studio-charm-bar__full,
+  [data-studio-region-floating="false"] .studio-charm-bar__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  [data-studio-region-floating="false"] .studio-charm-bar__short {
+    display: block;
+    text-align: center;
+  }
+
+  [data-studio-region-floating="false"] .studio-charm-bar__hint {
+    display: none;
+  }
+
+  [data-studio-region-floating="false"] .studio-charm-chip__label {
+    display: none;
+  }
+}
+
+[data-studio-region-floating="true"] .studio-charm-bar {
+  width: 100%;
+  min-height: 100%;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  border: 0;
+}
+
+[data-studio-region-floating="true"] .studio-charm-bar__chips {
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+[data-studio-region-floating="true"] .studio-charm-bar__note,
+[data-studio-region-floating="true"] .studio-charm-bar__empty {
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-charm-bar * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

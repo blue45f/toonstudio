@@ -3,6 +3,10 @@ import {
   type StudioBg3dEnginePreference,
 } from "./bg3d/studio-bg3d-engine-selection";
 import {
+  normalizeStudioCharmBarState,
+  type StudioCharmBarState,
+} from "./charm/studio-charm-model";
+import {
   normalizeStudioAdvancedFillSettings,
   type StudioAdvancedFillSettings,
 } from "./studio-advanced-fill-settings";
@@ -52,6 +56,7 @@ export type StudioPagePreviewSize = (typeof STUDIO_PAGE_PREVIEW_SIZE_VALUES)[num
 
 const BACKGROUND_RECENT_KEY = "background-recent";
 const BG3D_ENGINE_PREFERENCE_KEY = "bg3d-engine-preference";
+const CHARM_BAR_KEY = "charm-bar";
 const APP_SETTINGS_KEY = "app-settings";
 const ADVANCED_FILL_SETTINGS_KEY = "advanced-fill-settings";
 const EFFECT_FAVORITES_KEY = "effect-favorites";
@@ -86,6 +91,9 @@ export interface StudioUiPreferencesRepository {
    *  There is no auto lane — a stored legacy "auto" normalizes to WebGPU (ADR 0018). */
   loadBg3dEnginePreference(): Promise<StudioBg3dEnginePreference>;
   saveBg3dEnginePreference(preference: StudioBg3dEnginePreference): Promise<void>;
+  /** 참(Charm) 바에 고정한 소재 참조와 순서·펼침 상태. 소재 자체는 저장하지 않는다. */
+  loadCharmBar(): Promise<StudioCharmBarState>;
+  saveCharmBar(state: StudioCharmBarState): Promise<void>;
   loadEffectFavorites(): Promise<StudioEffectFavoriteState>;
   saveEffectFavorites(state: StudioEffectFavoriteState): Promise<void>;
   loadElementsRecent(): Promise<StudioElementsRecentState>;
@@ -209,6 +217,12 @@ export function createStudioUiPreferencesRepository(
         BG3D_ENGINE_PREFERENCE_KEY,
         normalizeStudioBg3dEnginePreference(preference),
       );
+    },
+    async loadCharmBar() {
+      return normalizeStudioCharmBarState(parseJson(await store.get(CHARM_BAR_KEY)));
+    },
+    saveCharmBar(state: StudioCharmBarState) {
+      return enqueue(CHARM_BAR_KEY, JSON.stringify(normalizeStudioCharmBarState(state)));
     },
     async loadEffectFavorites() {
       return normalizeStudioEffectFavoriteState(parseJson(await store.get(EFFECT_FAVORITES_KEY)));

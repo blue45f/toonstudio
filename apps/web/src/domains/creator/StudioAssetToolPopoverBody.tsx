@@ -17,6 +17,7 @@ import {
 import { Suspense } from "react";
 
 import { StudioSceneTemplateBrowser } from "./catalog/studio-catalog-lazy-ui";
+import { StudioCharmBarToggleButton } from "./charm/StudioCharmBarControls";
 import { completeStudioAssetInsertion } from "./studio-asset-insertion-outcome";
 import { CANVAS_W, TEMPLATES, groupTemplates } from "./studio-assets";
 import { svgToDataUrl } from "./studio-characters";
@@ -209,6 +210,8 @@ export function StudioAssetToolPopoverBody({
                   { id: "asset", label: "내 에셋", icon: Library, title: "업로드·생성한 에셋" },
                 ]}
               />
+              {/* 참 바: 요소·효과에서 자주 쓰는 소재를 한 번에 붙이는 고정 바를 여기서 켜고 끈다. */}
+              {(menu === "elements" || menu === "sticker") && <StudioCharmBarToggleButton className="mb-2" />}
               {menu === "template" && (
                 <div className="grid gap-1.5 lg:max-h-80 lg:overflow-y-auto lg:pr-1">
                   <p className="px-1 text-[0.66rem] font-medium text-fg-3">캔버스 템플릿</p>
@@ -664,7 +667,7 @@ export function StudioAssetToolPopoverBody({
                             onClick={() => addFxOverlay(fx.svg, fx.width, fx.height)}
                             className="group flex flex-col items-center justify-center rounded-lg border border-line bg-card p-1 hover:border-accent/50"
                           >
-                            <div className="h-10 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded flex items-center justify-center p-0.5">
+                            <div className="h-10 w-full overflow-hidden bg-[oklch(0.94_0.01_78)] rounded flex items-center justify-center p-0.5">
                               <img src={svgToDataUrl(fx.svg)} alt={fx.label} className="h-full w-full object-contain transition-transform group-hover:scale-105" />
                             </div>
                             <span className="block text-center text-[0.55rem] text-fg-3 mt-0.5 truncate w-full">{fx.label}</span>
