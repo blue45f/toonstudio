@@ -148,9 +148,11 @@ interface LtToggleRowProps {
   readonly label: string;
   readonly onChange: (checked: boolean) => void;
   readonly disabled?: boolean;
+  /** 선택. 스위치에 `aria-describedby` 로 묶이는 한 줄 설명. */
+  readonly description?: string;
 }
 
-export function LtToggleRow({ checked, label, onChange, disabled = false }: LtToggleRowProps) {
+export function LtToggleRow({ checked, label, onChange, disabled = false, description }: LtToggleRowProps) {
   return (
     <StudioThreeDToggleControl
       checked={checked}
@@ -158,6 +160,9 @@ export function LtToggleRow({ checked, label, onChange, disabled = false }: LtTo
       disabled={disabled}
       className="border-b border-line/70 py-2 last:border-b-0 hover:text-fg"
       labelClassName="text-xs font-semibold text-fg-2 group-hover:text-fg"
+      {...(description === undefined
+        ? {}
+        : { description, descriptionClassName: "text-[0.64rem] font-normal leading-relaxed text-fg-3" })}
       onChange={onChange}
     />
   );
