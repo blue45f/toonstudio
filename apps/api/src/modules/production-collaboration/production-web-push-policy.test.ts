@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   DEFAULT_WEB_PUSH_ALLOWED_HOSTS,
@@ -7,6 +7,7 @@ import {
   DEFAULT_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_USER,
   evaluateWebPushSubscriptionLimits,
   isWebPushHostAllowed,
+  reportIgnoredWebPushHostEntries,
   resolveWebPushPolicy,
   settleWithConcurrency,
 } from "./production-web-push-policy";
@@ -68,7 +69,7 @@ describe("웹 푸시 허용 호스트", () => {
     expect(isWebPushHostAllowed("fcm.googleapis.com", policy.allowedHosts)).toBe(true);
   });
 
-  it("중복 항목은 합치고 잘못된 항목은 버린 뒤 개수만 알려 준다", () => {
+  it("중복 항목은 합치고 잘못된 항목은 버린 뒤 개수와 이유를 알려 준다", () => {
     const policy = resolveWebPushPolicy({
       PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: [
         "push.example-vendor.com",
@@ -94,6 +95,104 @@ describe("웹 푸시 허용 호스트", () => {
       "push.example-vendor.com",
     ]);
     expect(policy.ignoredHostEntries).toBe(14);
+    expect(policy.ignoredHostEntryDetails).toHaveLength(14);
+    expect(policy.ignoredHostEntryDetails.map(({ issue }) => issue)).toEqual([
+      "ip-address",
+      "ip-address",
+      "internal-name",
+      "internal-name",
+      "internal-name",
+      "too-few-labels",
+      "not-a-bare-hostname",
+      "not-a-bare-hostname",
+      "not-a-bare-hostname",
+      "wildcard-too-broad",
+      "wildcard-too-broad",
+      "wildcard-too-broad",
+      "not-a-bare-hostname",
+      "invalid-hostname",
+    ]);
+  });
+
+  it("스킴·경로·포트·IDN 원문은 조용히 사라지지 않고 이유와 함께 무시 목록에 남는다", () => {
+    const policy = resolveWebPushPolicy({
+      PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: [
+        "https://relay.example.com",
+        "relay.example.com:8443",
+        "bücher.de",
+        "xn--bcher-kva.de",
+      ].join(" "),
+    });
+    expect(policy.allowedHosts).toEqual([...DEFAULT_WEB_PUSH_ALLOWED_HOSTS, "xn--bcher-kva.de"]);
+    expect(policy.ignoredHostEntries).toBe(3);
+    expect(policy.ignoredHostEntryDetails).toEqual([
+      { issue: "not-a-bare-hostname", entry: null },
+      { issue: "not-a-bare-hostname", entry: null },
+      { issue: "non-ascii-hostname", entry: "bücher.de" },
+    ]);
+  });
+
+  it("와일드카드 접미사는 3레이블 이상만 받는다(공용·공유 접미사를 통째로 열지 않는다)", () => {
+    const rejected = [
+      "*.co.uk",
+      ".co.uk",
+      "*.github.io",
+      ".pages.dev",
+      ".googleapis.com",
+      // 공용 접미사 목록 없이는 example.com 과 co.uk 를 레이블 수로 가를 수 없어 두 레이블 접미사는 모두 거부한다.
+      "*.example.com",
+      "*.com",
+      "*",
+    ];
+    const policy = resolveWebPushPolicy({
+      PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: rejected.join(","),
+    });
+    expect(policy.allowedHosts).toEqual(DEFAULT_WEB_PUSH_ALLOWED_HOSTS);
+    expect(policy.ignoredHostEntryDetails).toEqual(
+      rejected.map((entry) => ({ issue: "wildcard-too-broad", entry })),
+    );
+
+    const accepted = resolveWebPushPolicy({
+      PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS:
+        "*.push.example.com .relay.example.net *.a.b.example.org github.io example-vendor.com",
+    });
+    expect(accepted.ignoredHostEntries).toBe(0);
+    expect(accepted.allowedHosts).toEqual([
+      ...DEFAULT_WEB_PUSH_ALLOWED_HOSTS,
+      ".push.example.com",
+      ".relay.example.net",
+      ".a.b.example.org",
+      // 정확한 호스트는 두 레이블이어도 그 호스트 하나만 열므로 받는다.
+      "github.io",
+      "example-vendor.com",
+    ]);
+    expect(isWebPushHostAllowed("github.io", accepted.allowedHosts)).toBe(true);
+    expect(isWebPushHostAllowed("attacker.github.io", accepted.allowedHosts)).toBe(false);
+  });
+
+  it("기본 허용 목록의 항목은 운영자 입력 규칙(와일드카드 3레이블)에도 걸리지 않는다", () => {
+    const policy = resolveWebPushPolicy({
+      PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: DEFAULT_WEB_PUSH_ALLOWED_HOSTS.join(","),
+    });
+    expect(policy.ignoredHostEntries).toBe(0);
+    expect(policy.allowedHosts).toEqual(DEFAULT_WEB_PUSH_ALLOWED_HOSTS);
+  });
+
+  it("무시한 항목의 원문은 호스트 이름 모양일 때만 남기고 자격 증명이 섞일 수 있는 값은 남기지 않는다", () => {
+    const withCredentials = ["https://", "user", ":", "pw", "@relay.example.com"].join("");
+    const policy = resolveWebPushPolicy({
+      PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: [
+        withCredentials,
+        `${"a".repeat(64)}.example.com`,
+        "intranet",
+      ].join(","),
+    });
+    expect(policy.ignoredHostEntryDetails).toEqual([
+      { issue: "not-a-bare-hostname", entry: null },
+      { issue: "invalid-hostname", entry: null },
+      { issue: "too-few-labels", entry: "intranet" },
+    ]);
+    expect(JSON.stringify(policy)).not.toContain("pw@");
   });
 
   it("값이 비어 있거나 공백뿐이면 기본 목록만 쓴다", () => {
@@ -101,6 +200,67 @@ describe("웹 푸시 허용 호스트", () => {
       expect(resolveWebPushPolicy({ PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: raw }).allowedHosts)
         .toEqual(DEFAULT_WEB_PUSH_ALLOWED_HOSTS);
     }
+  });
+});
+
+describe("무시한 추가 허용 호스트 항목의 시작 로그", () => {
+  it("무시한 항목이 없으면 아무것도 남기지 않는다", () => {
+    const logger = { warn: vi.fn() };
+    reportIgnoredWebPushHostEntries(resolveWebPushPolicy({}), logger);
+    reportIgnoredWebPushHostEntries(
+      resolveWebPushPolicy({ PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: "push.example-vendor.com" }),
+      logger,
+    );
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it("무시한 항목을 한 번의 경고로 이유별로 묶어 알리고 URL 형태 원문은 싣지 않는다", () => {
+    const logger = { warn: vi.fn() };
+    const withCredentials = ["https://", "user", ":", "pw", "@relay.example.com"].join("");
+    reportIgnoredWebPushHostEntries(
+      resolveWebPushPolicy({
+        PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: [
+          "https://relay.example.com",
+          withCredentials,
+          "relay.example.com:8443",
+          "bücher.de",
+          "*.co.uk",
+          ".pages.dev",
+          "push.example-vendor.com",
+        ].join(","),
+      }),
+      logger,
+    );
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    const message = String(logger.warn.mock.calls[0]?.[0]);
+    expect(message).toContain("PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS");
+    expect(message).toContain("6개 항목을 무시했습니다");
+    expect(message).toContain("호스트 이름만 적어야 합니다");
+    expect(message).toContain("값을 남기지 않은 항목 3개");
+    expect(message).toContain("punycode(xn--…)");
+    expect(message).toContain("bücher.de");
+    expect(message).toContain("3레이블 이상의 접미사");
+    expect(message).toContain("*.co.uk, .pages.dev");
+    expect(message).not.toContain("https://relay.example.com");
+    expect(message).not.toContain("8443");
+    expect(message).not.toContain("pw@");
+    expect(message).not.toContain("push.example-vendor.com");
+  });
+
+  it("같은 이유의 항목이 많으면 앞의 열 개만 적고 나머지는 개수로 알린다", () => {
+    const logger = { warn: vi.fn() };
+    const entries = Array.from({ length: 13 }, (_unused, index) => `*.tld${index}.co`);
+    // 레이블 두 개짜리(`tldN.co`) 접미사는 모두 wildcard-too-broad 다.
+    reportIgnoredWebPushHostEntries(
+      resolveWebPushPolicy({ PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: entries.join(",") }),
+      logger,
+    );
+    const message = String(logger.warn.mock.calls[0]?.[0]);
+    expect(message).toContain("13개 항목을 무시했습니다");
+    expect(message).toContain("*.tld0.co");
+    expect(message).toContain("*.tld9.co");
+    expect(message).not.toContain("*.tld10.co");
+    expect(message).toContain("외 3개");
   });
 });
 

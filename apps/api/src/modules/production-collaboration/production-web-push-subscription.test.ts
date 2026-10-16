@@ -1,4 +1,4 @@
-import { ConflictException } from "@nestjs/common";
+import { ConflictException, Logger } from "@nestjs/common";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -253,6 +253,33 @@ describe("ProductionIntegrationService 웹 푸시 상한 연결", () => {
       expect.anything(),
       { maxPerProject: 50, maxPerUser: 3 },
     );
+  });
+
+  it("서비스를 만들 때(서버 시작) 무시한 추가 허용 호스트를 한 번만 경고하고 정상 설정에는 경고하지 않는다", async () => {
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    try {
+      fixture();
+      expect(warn).not.toHaveBeenCalled();
+
+      vi.stubEnv(
+        "PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS",
+        "https://relay.example.com *.co.uk push.example-vendor.com",
+      );
+      const misconfigured = fixture();
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toContain("2개 항목을 무시했습니다");
+
+      // 요청을 처리하는 동안에는 같은 경고를 반복하지 않는다.
+      await misconfigured.service.subscribeWebPush("user-1", "project-1", subscription);
+      await misconfigured.service.subscribeWebPush("user-1", "project-1", subscription);
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      vi.stubEnv("PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS", "push.example-vendor.com");
+      fixture();
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("상한에 걸린 구독 등록은 409 이고 응답에 구독 성공을 담지 않는다", async () => {

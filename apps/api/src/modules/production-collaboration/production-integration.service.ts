@@ -76,6 +76,7 @@ import {
 import {
   sendProductionNotification,
 } from "./production-notification-provider";
+import { reportIgnoredWebPushHostEntries } from "./production-web-push-policy";
 import { registerWebPushSubscription } from "./production-web-push-subscription";
 import {
   confirmTossPayment,
@@ -129,6 +130,7 @@ export class ProductionIntegrationService {
     private readonly repository: ProductionIntegrationRepository,
   ) {
     this.config = resolveProductionIntegrationConfig(process.env);
+    reportIgnoredWebPushHostEntries(this.config.notification.webPush); // 시작 때 한 번
   }
 
   private async project(
