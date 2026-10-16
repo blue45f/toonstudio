@@ -1,8 +1,13 @@
 import { Module } from "@nestjs/common";
 
+import { isAdminUser } from "../../server/app-config";
 import { ProductionCollaborationModule } from "../production-collaboration/production-collaboration.module";
 import { IntegrationPlatformController } from "./integration-platform.controller";
 import { IntegrationPlatformService } from "./integration-platform.service";
+import {
+  createIntegrationRuntimeAccessPolicy,
+  INTEGRATION_RUNTIME_ACCESS_POLICY,
+} from "./integration-runtime.access";
 import { IntegrationRuntimeController } from "./integration-runtime.controller";
 import { IntegrationRuntimeProviderEngine } from "./integration-runtime.providers";
 import {
@@ -29,6 +34,10 @@ import {
     {
       provide: INTEGRATION_RUNTIME_ENGINE,
       useFactory: () => new IntegrationRuntimeProviderEngine(),
+    },
+    {
+      provide: INTEGRATION_RUNTIME_ACCESS_POLICY,
+      useFactory: () => createIntegrationRuntimeAccessPolicy(process.env, isAdminUser),
     },
   ],
   exports: [IntegrationPlatformService, IntegrationRuntimeService],

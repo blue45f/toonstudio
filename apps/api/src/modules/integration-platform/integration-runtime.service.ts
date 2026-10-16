@@ -12,6 +12,11 @@ import {
 } from "@nestjs/common";
 
 import { ProductionCollaborationService } from "../production-collaboration/production-collaboration.service";
+import {
+  INTEGRATION_RUNTIME_ACCESS_POLICY,
+  IntegrationRuntimeAccessPolicy,
+} from "./integration-runtime.access";
+import type { IntegrationRuntimeConnectorStatus } from "./integration-runtime.contract";
 import type {
   IntegrationRuntimeExecuteDto,
   IntegrationRuntimeReceiptQueryDto,
@@ -55,6 +60,8 @@ export class IntegrationRuntimeService {
     private readonly repository: IntegrationRuntimeRepository,
     @Inject(INTEGRATION_RUNTIME_ENGINE)
     private readonly engine: IntegrationRuntimeProviderEngine,
+    @Inject(INTEGRATION_RUNTIME_ACCESS_POLICY)
+    private readonly accessPolicy: IntegrationRuntimeAccessPolicy,
   ) {}
 
   connectors() {
@@ -81,6 +88,26 @@ export class IntegrationRuntimeService {
       throw new ForbiddenException("프로젝트 편집 권한이 필요합니다.");
     }
     return record;
+  }
+
+  // 운영자 인증 정보를 쓰는 커넥터는 프로젝트 편집 권한만으로 열지 않는다(혼동된 대리인 방지).
+  private async requireOperatorCredentialAccess(
+    actorUserId: string,
+    input: IntegrationRuntimeExecuteDto,
+    connector: IntegrationRuntimeConnectorStatus,
+  ): Promise<void> {
+    const decision = await this.accessPolicy.authorize({
+      actorUserId,
+      projectId: input.projectId,
+      request: input.request,
+      connector,
+    });
+    if (decision.allowed) return;
+    throw new ForbiddenException({
+      code: decision.code,
+      message: decision.message,
+      providerId: connector.providerId,
+    });
   }
 
   private mapFence(error: unknown): never {
@@ -133,6 +160,7 @@ export class IntegrationRuntimeService {
       input.projectId,
       connector.writesExternalState,
     );
+    await this.requireOperatorCredentialAccess(actorUserId, input, connector);
 
     const requestDigest = integrationRuntimeDigest({
       projectId: input.projectId,

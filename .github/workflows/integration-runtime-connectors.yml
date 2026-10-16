@@ -62,6 +62,7 @@ jobs:
           pnpm exec vitest run --maxWorkers=2
           apps/api/src/modules/integration-platform/integration-platform.controller.test.ts
           apps/api/src/modules/integration-platform/integration-platform.service.test.ts
+          apps/api/src/modules/integration-platform/integration-runtime.access.test.ts
           apps/api/src/modules/integration-platform/integration-runtime.controller.test.ts
           apps/api/src/modules/integration-platform/integration-runtime.dto.test.ts
           apps/api/src/modules/integration-platform/integration-runtime.providers.test.ts
