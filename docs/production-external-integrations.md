@@ -45,6 +45,55 @@ private key는 저장소, `VITE_` 변수, 브라우저 로그에 넣지 않습�
 한 브라우저 endpoint는 여러 프로젝트에 등록할 수 있으며, 프로젝트별 해제는 다른 프로젝트 구독을 끊지 않습니다.
 만료된 endpoint가 404 또는 410을 반환하면 서버가 모든 매핑을 정리합니다.
 
+### 구독 endpoint 호스트 허용 목록과 구독 상한
+
+상태: current (2026-10-16). 서버는 구독 때 받은 endpoint 주소로 직접 알림 요청을 보냅니다. 공개 도메인이면 어디든 보내게 두면
+서버가 남의 주소로 요청을 대신 보내는 통로가 되므로, 브라우저가 실제로 발급하는 표준 푸시 서비스 호스트만 기본으로 허용합니다.
+
+| 푸시 서비스 | 기본 허용 호스트 |
+| --- | --- |
+| FCM(Chrome·Edge·Brave·Opera·Samsung Internet) | `fcm.googleapis.com` |
+| Apple(Safari·iOS 웹 앱) | `web.push.apple.com` |
+| Mozilla(Firefox) | `*.push.services.mozilla.com` |
+| Windows 알림 서비스(WNS) | `*.notify.windows.com` |
+
+자체 푸시 중계(UnifiedPush 등)를 쓰는 배포는 아래 첫 변수로 중계 호스트를 더해야 합니다. 더하지 않으면 그 중계 주소의 **새 구독은
+HTTP 400**(영문 메시지 `Push endpoint must be a public HTTPS URL on an allowed push service host`)으로 거절되고, **이미 저장된
+구독은 지우지 않고 전송에서 건너뜁니다.** 건너뛴 개수는 알림 전송 응답의 `providerResponse.skippedHostNotAllowed`에만 남고 오류 로그는
+남지 않습니다. 호스트를 더하면 저장된 구독이 다시 쓰입니다.
+
+| 변수 | 기본값 | 의미 | 잘못된 값 |
+| --- | --- | --- | --- |
+| `PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS` | 비어 있음(기본 목록만) | 기본 목록에 더할 호스트. 쉼표·세미콜론·공백으로 구분합니다. 정확한 호스트(`push.example.com`) 또는 하위 도메인 전체(`*.push.example.com`, `.push.example.com`)이며 하위 도메인 항목은 본체를 열지 않습니다. | 받아들이지 못한 항목은 무시하고 서버 시작 때 경고 로그를 한 번 남깁니다. 호스트 이름 모양의 항목은 원문과 이유를, URL·포트·사용자 정보가 섞인 값은 개수만 적습니다. |
+| `PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_PROJECT` | `200` | 프로젝트당 구독 수 상한(1~1000). 알림 한 번이 읽는 구독 수의 상한이기도 합니다. | 아래 숫자 규칙 |
+| `PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_USER` | `10` | 한 사용자가 한 프로젝트에 둘 수 있는 구독 수(1~100). | 아래 숫자 규칙 |
+| `PRODUCTION_WEB_PUSH_FANOUT_CONCURRENCY` | `8` | 한 번의 알림에서 동시에 보내는 요청 수(1~32). | 아래 숫자 규칙 |
+
+호스트 항목 규칙:
+
+- 호스트 이름만 적습니다. `https://` 같은 스킴, 경로, 포트, 사용자 정보가 섞인 항목은 무시합니다.
+- 한글 등 비ASCII 도메인은 punycode(`xn--…`)로 적습니다.
+- IP 주소, `localhost`, 내부 도메인(`.internal`·`.local` 등)은 허용하지 않습니다. 이름은 점으로 구분된 두 레이블 이상이어야 합니다.
+- 와일드카드(`*.` 또는 `.`로 시작)는 접두어를 뗀 접미사가 **3레이블 이상**일 때만 받습니다(`*.push.example.com` 가능).
+  공용 접미사 목록 없이는 `example.com`과, 남이 하위 도메인을 얻을 수 있는 `co.uk`·`github.io`·`pages.dev`·`googleapis.com`을
+  레이블 수로 가를 수 없으므로 `*.example.com` 같은 두 레이블 접미사는 모두 거부합니다. 두 레이블 호스트 하나만 열려면
+  와일드카드 대신 정확한 호스트로 적습니다.
+
+숫자 규칙: 비어 있거나 숫자가 아니면 기본값을 씁니다. 숫자는 가장 가까운 한계로 고정하고(소수는 내림) **0이나 음수는 1로 고정됩니다.**
+0은 기능을 끄는 값이 아닙니다. Web Push를 끄려면 VAPID 세 값을 비웁니다. 값은 서버가 시작할 때 한 번 읽으므로 바꾼 뒤에는 해당
+runtime을 수동 재배포해야 반영됩니다([`docs/operations/production-environment.md`](./operations/production-environment.md)).
+설정을 바꿔도 이미 저장된 구독은 지워지지 않습니다.
+
+구독 상한이 가득 찼을 때:
+
+- **사용자 상한**: 새 endpoint는 거절하지 않고 그 사용자의 가장 오래 갱신되지 않은 구독 하나를 새 구독으로 교체합니다. 기기가 구독을
+  갱신하면 옛 endpoint가 404·410 정리 전까지 남아 상한을 채우기 때문입니다. 교체된 기기는 알림을 받지 못하고, 그 기기에서 다시 켜면
+  복구됩니다(이때 다른 오래된 구독이 교체될 수 있습니다). 이미 등록한 endpoint의 키 갱신은 상한과 무관합니다.
+- **프로젝트 상한**: 새 구독은 HTTP 409(`production_push_subscription_limit`)로 거절합니다. 다른 사용자의 구독을 대신 지우지 않습니다.
+- **저장된 구독이 프로젝트 상한보다 많은 경우**(상한을 낮춘 뒤 등): 알림은 최근에 갱신한 구독부터 상한 개수만 보냅니다. 나머지는
+  알림도 오류도 받지 않으므로 전송 응답의 `providerResponse`에 `truncated: true`와 빠진 개수 `omitted`가 남고, 서버 경고 로그가 한 줄
+  남습니다(프로젝트 ID와 개수만, endpoint 값은 남기지 않음).
+
 ## Google Workspace
 
 Google OAuth 앱을 만든 뒤 다음 네 값을 모두 설정해야 연결 버튼이 나타납니다.
@@ -120,7 +169,7 @@ live key는 `explicit-cost-enabled`와 `PRODUCTION_TOSS_ALLOW_LIVE=true`가 모�
 1. `0054_production_external_integrations.sql`을 적용합니다.
 2. `PRODUCTION_INTEGRATION_COST_POLICY=zero-cost-only`를 유지합니다.
 3. `pnpm integration:generate-secrets`로 암호화/VAPID 키를 생성해 secret store에만 저장합니다.
-4. 필요한 공급자만 환경변수로 활성화합니다.
+4. 필요한 공급자만 환경변수로 활성화합니다. 자체 푸시 중계를 쓰면 `PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS`에 중계 호스트를 함께 설정합니다.
 5. `/production/projects/:projectId/settings?view=integrations`에서 capabilities와 남은 일일 상한을 확인합니다.
 6. Calendar, Gmail, Drive, 알림은 테스트 프로젝트로 한 번씩 검증합니다.
 7. Documenso와 Toss live 경로는 비용·약관·환불 정책 검토 전 활성화하지 않습니다.
