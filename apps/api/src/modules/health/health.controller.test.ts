@@ -70,6 +70,7 @@ describe("HealthController", () => {
       incidentId: "inc_status",
       retryAfterSeconds: 30,
       checkedAt: "2026-09-26T00:00:00.000Z",
+      edgeOriginAuth: "disabled" as const,
       capabilities: {
         publicCatalog: "available" as const,
         authSession: "degraded" as const,
@@ -89,6 +90,7 @@ describe("HealthController", () => {
     await expect(controller.capabilities()).resolves.toMatchObject({
       status: "degraded",
       incidentId: "inc_status",
+      edgeOriginAuth: "disabled",
       capabilities: {
         publicCatalog: "available",
         communityRead: "unavailable",

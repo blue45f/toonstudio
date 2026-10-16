@@ -64,6 +64,44 @@ Render dashboard에서 암호화하여 저장하고 로컬 임시 파일은 전�
 
 개인 저장소 공급자의 콘솔 등록값, 최소 scope, 운영·로컬 콜백은 [`personal-cloud-provider-registration.md`](./personal-cloud-provider-registration.md)를 따른다.
 
+## 에지 출처 인증
+
+상태: current (2026-10-16). Core API 원본(Render 주소)은 공개 주소입니다. `CLOUDFLARE_EDGE_ORIGIN_SECRET`을 설정하면 API는
+`x-toonstudio-origin-secret` 헤더가 이 값과 같은 요청만 처리하고, Cloudflare 게이트웨이를 거치지 않은 직접 요청에는 HTTP 403
+(`Trusted edge origin is required`)으로 답합니다. 게이트웨이 Worker는 같은 값을 `CORE_ORIGIN_SECRET`에서 읽어 원본으로 보내는
+요청마다 헤더를 붙입니다.
+
+| 항목 | 규칙 |
+| --- | --- |
+| 값 | API의 `CLOUDFLARE_EDGE_ORIGIN_SECRET`과 Worker의 `CORE_ORIGIN_SECRET`은 같은 값이며, 앞뒤 공백 없는 32 UTF-8 바이트 이상입니다. 저장소·로그·채팅에 출력하지 않습니다. |
+| 비워 둘 때 | 선택 설정이라 부팅을 막지 않지만 원본이 직접 요청도 모두 처리합니다. production의 공개 웹 API 역할(`API_RUNTIME_ROLE=full`)이면 시작 때 오류 로그(보안 경고)를 남깁니다. `studio-live`·`capability-worker` 역할은 대상이 아닙니다. |
+| 잘못된 값 | 32바이트 미만이거나 앞뒤에 공백이 있으면 API가 시작하지 못하고, Worker는 503(`CORE_API_UNAVAILABLE`)으로 닫습니다. |
+| 비밀 없이 통과 | `GET`·`HEAD`의 `/api/health`, `/api/health/live`, `/api/health/ready`(플랫폼 헬스체크). |
+| 회전 | 두 값을 함께 바꿔야 하고 새·옛 값을 겹쳐 허용하는 기능이 없어 짧은 오류 구간이 생길 수 있습니다. 무중단 회전 절차는 아직 정해지지 않았습니다. |
+
+배포 후 확인(`DEPLOY.md` 5절과 같음):
+
+1. `GET https://www.toonstudio.cloud/api/health/capabilities` 응답의 `edgeOriginAuth`가 `enforced`인지 봅니다.
+2. Render 원본 주소로 직접 `GET /api/auth/providers`를 보내 HTTP 403이 오는지 봅니다.
+
+### 상태 응답의 `edgeOriginAuth` 노출은 의도한 선택입니다
+
+`GET /api/health/capabilities`는 인증 없이 읽을 수 있고 `Cache-Control: no-store`로 답합니다. 응답의 `edgeOriginAuth`
+(`enforced` | `disabled`)는 누구에게나 "원본이 게이트웨이 밖의 직접 요청을 받아 주는지"(`disabled`)를 알려 줍니다. 이 노출을 알고
+수용합니다.
+
+- **보이는 정보**: 집행 여부 한 단어뿐입니다. 비밀 값, 길이, 형식 오류의 구체적 이유는 담지 않습니다. 형식이 잘못된 값은 서버가
+  시작하지 못하므로 `disabled`는 "비어 있음"만 뜻합니다.
+- **보는 사람**: 게이트웨이를 통해 이 경로를 부를 수 있는 누구나 봅니다. 집행 중이면 원본에 직접 부른 같은 경로는 403이라
+  `enforced`도 게이트웨이 경유로만 보입니다.
+- **수용하는 이유**: 원본 주소는 `render.yaml`·`DEPLOY.md`·`CORE_API_ORIGIN` 구성으로 이미 공개된 정보이고, 누구든 원본에 직접 요청
+  하나를 보내면 같은 사실(집행 중이면 403)을 응답 코드로 알 수 있습니다. 이 필드가 공격자에게 주는 새 능력은 없습니다. 반대로
+  운영자는 배포 직후 설정 누락을 요청 한 번(또는 모니터링의 `disabled` 알림)으로 확인합니다.
+- **위험의 크기**: `disabled` 환경의 실제 문제는 원본 직접 접근이 열려 있다는 사실이고 필드는 그것을 알릴 뿐입니다. 해결은 비밀을
+  설정하는 것이지 필드를 숨기는 것이 아닙니다.
+
+필드를 지우거나 인증 뒤로 옮기면 배포 후 점검이 관리자 인증이나 로그 열람에 의존하게 됩니다. 노출 정책 변경은 별도 결정입니다.
+
 ## Supabase 저장소 인증 형식
 
 신규 서버 전용 키는 `SUPABASE_OBJECT_STORAGE_SECRET_KEY`로 주입한다. 새 키는 JWT가 아니므로

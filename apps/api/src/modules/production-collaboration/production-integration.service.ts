@@ -76,6 +76,8 @@ import {
 import {
   sendProductionNotification,
 } from "./production-notification-provider";
+import { reportIgnoredWebPushHostEntries } from "./production-web-push-policy";
+import { registerWebPushSubscription } from "./production-web-push-subscription";
 import {
   confirmTossPayment,
   type TossPaymentResponse,
@@ -128,6 +130,7 @@ export class ProductionIntegrationService {
     private readonly repository: ProductionIntegrationRepository,
   ) {
     this.config = resolveProductionIntegrationConfig(process.env);
+    reportIgnoredWebPushHostEntries(this.config.notification.webPush); // 시작 때 한 번
   }
 
   private async project(
@@ -715,14 +718,9 @@ export class ProductionIntegrationService {
   ) {
     await this.project(actorUserId, projectId);
     const endpointHash = sha256Digest(subscription.endpoint);
-    await this.repository.upsertPushSubscription({
-      projectId,
-      actorUserId,
-      endpointHash,
-      endpoint: subscription.endpoint,
-      p256dh: subscription.keys.p256dh,
-      auth: subscription.keys.auth,
-      expirationTime: subscription.expirationTime,
+    await registerWebPushSubscription(this.repository, this.config.notification.webPush, {
+      projectId, actorUserId, endpointHash, endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh, auth: subscription.keys.auth, expirationTime: subscription.expirationTime,
     });
     return {
       subscribed: true,
@@ -775,9 +773,9 @@ export class ProductionIntegrationService {
       ...input,
       url: this.safeNotificationUrl(input.url),
     };
-    const subscriptions = input.channel === "web-push"
-      ? await this.repository.listPushSubscriptions(projectId)
-      : [];
+    const { subscriptions, omitted } = input.channel === "web-push"
+      ? await this.repository.listPushSubscriptions(projectId, this.config.notification.webPush.maxSubscriptionsPerProject)
+      : { subscriptions: [], omitted: 0 };
     return this.fenced({
       actorUserId,
       projectId,
@@ -794,6 +792,7 @@ export class ProductionIntegrationService {
           projectTitle: aggregate.title,
           notification,
           subscriptions,
+          omittedSubscriptions: omitted,
         });
         const cleanup = await Promise.allSettled(
           result.removedEndpointHashes.map((endpointHash) =>

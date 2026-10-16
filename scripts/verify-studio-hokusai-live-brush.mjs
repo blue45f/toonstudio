@@ -1,5 +1,5 @@
 /** Real Chromium + checked-in Hokusai WASM gate for the incremental live provider. */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,7 +8,7 @@ import { chromium } from "playwright";
 import { createServer as createViteServer } from "vite";
 
 const EVIDENCE_ROOT = process.env.TOONSPECTRUM_HOKUSAI_LIVE_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-hokusai-live-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-hokusai-live-"));
 const HARNESS_PATH = "/__studio_hokusai_live_quality__";
 const ENTRY = "/scripts/studio-hokusai-live-brush-quality-browser.ts";
 const TIMEOUT_MS = 150_000;

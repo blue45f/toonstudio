@@ -1,0 +1,719 @@
+// @vitest-environment jsdom
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useI18n } from "@/shared/lib/i18n-core";
+
+import { ReaderFeedbackSummaryPanel } from "./ReaderFeedbackSummaryPanel";
+import { createExampleReaderFeedback } from "./reader-feedback-example";
+import { READER_FEEDBACK_HIDDEN_KEY } from "./reader-feedback-hidden";
+import { READER_FEEDBACK_LIMITS, type ReaderFeedbackResponse } from "./reader-feedback-schema";
+
+const EXAMPLES = createExampleReaderFeedback();
+
+function fileJson(responses: readonly ReaderFeedbackResponse[], overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({ kind: "toonstudio-reader-feedback", version: 1, exportedAt: "2026-10-16T01:05:00.000Z", responses, ...overrides });
+}
+
+function jsonFile(name: string, responses: readonly ReaderFeedbackResponse[], overrides: Record<string, unknown> = {}): File {
+  return new File([fileJson(responses, overrides)], name, { type: "application/json" });
+}
+
+function textFile(name: string, text: string): File {
+  return new File([text], name, { type: "application/json" });
+}
+
+function renderPanel() {
+  return render(<MemoryRouter><ReaderFeedbackSummaryPanel /></MemoryRouter>);
+}
+
+function chooseFiles(files: readonly File[]) {
+  fireEvent.change(screen.getByLabelText(/응답 파일 선택/u), { target: { files } });
+}
+
+const statusText = () => screen.getAllByRole("status").map((node) => node.textContent).join(" | ");
+
+/** 같은 회차의 응답 `count`개. 의견만 있는 응답에 `answer(index)`로 점수·읽은 정도를 얹는다. */
+function crowd(count: number, answer: (index: number) => Partial<ReaderFeedbackResponse> = () => ({}), episode = 1): ReaderFeedbackResponse[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...EXAMPLES[2]!,
+    id: `crowd-${episode}-${index}`,
+    createdAt: new Date(Date.UTC(2026, 9, 10, 0, index)).toISOString(),
+    target: { kind: "manual" as const, id: null, title: "분모 시험 작품", episode },
+    nickname: null,
+    ratings: { fun: null, understanding: null },
+    reading: { status: "unmarked" as const },
+    emotions: [],
+    comment: `${index + 1}번째 독자의 의견이에요`,
+    spoiler: false,
+    ...answer(index),
+  }));
+}
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
+
+describe("ReaderFeedbackSummaryPanel: 처음 상태", () => {
+  it("빈 상태가 사용 방법을 가르치고, 한계 안내가 항상 보인다", () => {
+    renderPanel();
+    expect(screen.getByRole("heading", { level: 3, name: "회차별 독자 피드백 요약" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 4, name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+    const steps = screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" }).parentElement!;
+    expect(within(steps).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(steps).getByRole("link", { name: "독자용 화면 열기" }).getAttribute("href")).toBe("/studio/ecosystem/viewer");
+
+    const caution = screen.getByRole("complementary", { name: "해석할 때 주의할 점" });
+    expect(caution.textContent).toContain("자체 선택");
+    expect(caution.textContent).toContain("대표하지 않아요");
+    expect(caution.textContent).toContain("멈춘 곳이 실제보다 적게 보일 수 있어요");
+    expect(caution.textContent).toContain("응답이 적으면 평균과 분포는 한두 명에 좌우돼요");
+    expect(caution.textContent).toContain("닉네임은 신원 확인이 아니에요");
+    expect(screen.queryByRole("table")).toBeNull();
+  });
+
+  it("파일 선택·붙여넣기·예시 체험 버튼이 이름으로 찾아지고 붙여넣기 영역은 펼침 상태를 알린다", () => {
+    renderPanel();
+    const input = screen.getByLabelText(/응답 파일 선택/u) as HTMLInputElement;
+    expect(input.type).toBe("file");
+    expect(input.multiple).toBe(true);
+    expect(input.accept).toContain(".json");
+    const paste = screen.getByRole("button", { name: "붙여넣어 가져오기" });
+    expect(paste.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(paste);
+    expect(paste.getAttribute("aria-expanded")).toBe("true");
+    expect(document.getElementById(paste.getAttribute("aria-controls")!)).toBeTruthy();
+    expect((screen.getByRole("button", { name: "붙여넣은 내용 가져오기" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/파일 하나는 256KB, 한 번에 20개까지, 합쳐서 1000개 응답까지 가져와요/u)).toBeTruthy();
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 예시 체험과 요약", () => {
+  it("예시 응답을 불러오면 회차 비교표와 첫 회차 요약이 나온다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    expect(screen.queryByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeNull();
+
+    const compare = screen.getByRole("table", { name: /회차별 응답 수와 평균/u });
+    const rows = within(compare).getAllByRole("row");
+    expect(rows).toHaveLength(3);
+    expect(within(rows[1]!).getByRole("button", { name: "예시 작품 · Example story 1화" }).getAttribute("aria-current")).toBe("true");
+    expect(within(rows[1]!).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["8", "2.3", "2.1", "3/8", "7~8컷 (3명)"]);
+
+    const group = screen.getByRole("article");
+    expect(within(group).getByRole("heading", { level: 4, name: "예시 작품 · Example story 1화" })).toBeTruthy();
+    expect(within(group).getByText("받은 응답").parentElement!.textContent).toBe("받은 응답8개");
+    expect(within(group).getByText("재미 평균").parentElement!.textContent).toContain("2.3/3");
+    expect(within(group).getByText("끝까지 읽음").parentElement!.textContent).toContain("3/8");
+    expect(within(group).getByText(/응답이 30개 미만이라/u)).toBeTruthy();
+    expect(statusText()).toContain("응답 14개 추가 · 0개 갱신 · 중복 0개 제외");
+  });
+
+  it("회차 이름을 누르면 그 회차의 요약으로 바뀌고 선택 표시가 따라간다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    const second = screen.getByRole("button", { name: "예시 작품 · Example story 2화" });
+    fireEvent.click(second);
+    expect(second.getAttribute("aria-current")).toBe("true");
+    expect(screen.getByRole("button", { name: "예시 작품 · Example story 1화" }).getAttribute("aria-current")).toBeNull();
+    expect(screen.getByRole("heading", { level: 4, name: "예시 작품 · Example story 2화" })).toBeTruthy();
+    expect(screen.getByText("받은 응답").parentElement!.textContent).toBe("받은 응답6개");
+  });
+
+  it("이탈 지점은 SVG 그래프와 같은 내용의 표로 함께 준다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    const chart = screen.getByRole("img", { name: /컷 번호로 알려 준 멈춘 곳/u });
+    expect(chart.tagName.toLowerCase()).toBe("svg");
+    expect(chart.getAttribute("aria-labelledby")).toBeTruthy();
+    expect(chart.textContent).toContain("가장 많이 멈춘 구간: 7~8컷 (3명)");
+    // 값이 있는 칸은 색뿐 아니라 개수 글자로도 말한다.
+    expect(Array.from(chart.querySelectorAll("text")).map((text) => text.textContent)).toEqual(["3", "1"]);
+
+    const table = screen.getByRole("table", { name: "컷 번호로 알려 준 멈춘 곳", hidden: true });
+    const body = within(table).getAllByRole("row", { hidden: true }).slice(1);
+    expect(body).toHaveLength(12);
+    const peak = body.find((row) => within(row).queryByText("7~8컷"));
+    expect(within(peak!).getAllByRole("cell", { hidden: true }).map((cell) => cell.textContent)).toEqual(["3"]);
+    // 표본이 10개 미만이라 비율 열은 없다.
+    expect(within(table).queryByRole("columnheader", { name: "비율", hidden: true })).toBeNull();
+
+    expect(screen.getByRole("img", { name: /스크롤 위치로 알려 준 멈춘 곳/u })).toBeTruthy();
+    expect(screen.getAllByText("표로 보기").length).toBe(2);
+  });
+
+  it("개수 글자는 칸 색 위가 아니라 칸 위의 별도 줄에 놓이고, 어떤 것도 그림 밖으로 잘리지 않는다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    const charts = screen.getAllByRole("img", { name: /멈춘 곳/u });
+    expect(charts).toHaveLength(2);
+    for (const chart of charts) {
+      const [, , viewWidth = NaN, viewHeight = NaN] = (chart.getAttribute("viewBox") ?? "").split(" ").map(Number);
+      // 바깥 크기와 그림 좌표가 같아 배율이 생기지 않는다.
+      expect(Number(chart.getAttribute("width"))).toBe(viewWidth);
+      expect(Number(chart.getAttribute("height"))).toBe(viewHeight);
+
+      const cells = Array.from(chart.querySelectorAll("rect"));
+      expect(cells.length).toBeGreaterThan(0);
+      const cellTop = Math.min(...cells.map((cell) => Number(cell.getAttribute("y"))));
+      for (const cell of cells) {
+        expect(Number(cell.getAttribute("x")) + Number(cell.getAttribute("width"))).toBeLessThanOrEqual(viewWidth);
+        expect(Number(cell.getAttribute("y")) + Number(cell.getAttribute("height"))).toBeLessThanOrEqual(viewHeight);
+      }
+
+      const counts = Array.from(chart.querySelectorAll("text"));
+      expect(counts.length).toBeGreaterThan(0);
+      for (const text of counts) {
+        // dominant-baseline 이 central 이면 y 는 글자 상자의 가운데다. 상자 전체가 그림 맨 위와 칸 윗변 사이에 있어야 한다.
+        expect(text.getAttribute("dominant-baseline")).toBe("central");
+        const half = Number(text.getAttribute("font-size")) / 2;
+        const center = Number(text.getAttribute("y"));
+        expect(center - half).toBeGreaterThanOrEqual(0);
+        expect(center + half).toBeLessThanOrEqual(cellTop);
+        // 글자색은 칸 색에 따라 바뀌지 않고 본문 글자색 하나다.
+        expect(text.getAttribute("style") ?? "").toContain("var(--color-fg)");
+        expect(text.getAttribute("style") ?? "").not.toContain("on-accent");
+        // 글자는 어떤 칸의 가로 가운데 바로 위에 있다.
+        expect(cells.some((cell) => Number(cell.getAttribute("x")) + Number(cell.getAttribute("width")) / 2 === Number(text.getAttribute("x")))).toBe(true);
+      }
+    }
+  });
+
+  it("점수 분포와 감정 분포는 개수를 글자로 보여 준다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    const distribution = screen.getByRole("heading", { level: 5, name: "점수 분포" }).parentElement!;
+    expect(within(distribution).getByText("재밌었어요").parentElement!.textContent).toContain("3명");
+    expect(within(distribution).getByText("헷갈렸어요").parentElement!.textContent).toContain("2명");
+    const emotions = screen.getByRole("heading", { level: 5, name: "느낀 감정" }).parentElement!;
+    expect(within(emotions).getByText("설렘").parentElement!.textContent).toContain("2명");
+    expect(within(emotions).queryByText(/%/u)).toBeNull();
+  });
+
+  it("대표 의견은 5개이고 스포일러 의견은 눌러서 펼친다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    const representative = screen.getByRole("heading", { level: 5, name: "대표 의견" }).parentElement!;
+    const list = within(representative).getAllByRole("list")[0]!;
+    expect(within(list).getAllByRole("listitem")).toHaveLength(5);
+    expect(screen.queryByText(/동생이 돌아오는 장면/u)).toBeNull();
+    const reveal = screen.getAllByRole("button", { name: "스포일러 보기" })[0]!;
+    expect(reveal.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(reveal);
+    expect(screen.getByText(/동생이 돌아오는 장면/u)).toBeTruthy();
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 비율(%)은 각 분모(답한 사람 수)가 충분할 때만", () => {
+  it("응답이 10개여도 점수·읽은 정도에 답한 사람이 한 명이면 '100%'를 보이지 않고 개수만 보인다", async () => {
+    renderPanel();
+    chooseFiles([jsonFile("one-answer.json", crowd(10, (index) => (index === 0 ? { ratings: { fun: 3, understanding: 3 }, reading: { status: "finished" } } : {})))]);
+    await screen.findByText(/응답 10개 추가/u);
+    const group = screen.getByRole("article");
+    expect(within(group).getByText("받은 응답").parentElement!.textContent).toBe("받은 응답10개");
+    const finished = within(group).getByText("끝까지 읽음", { selector: "dt" }).parentElement!.textContent!;
+    expect(finished).toContain("1/1");
+    expect(finished).not.toContain("%");
+    expect(within(group).getByText("재밌었어요").parentElement!.textContent).toBe("재밌었어요1명");
+    expect(within(group).getByText("한눈에 이해했어요").parentElement!.textContent).toBe("한눈에 이해했어요1명");
+    expect(group.textContent).not.toContain("100%");
+  });
+
+  it("분모마다 따로 기준을 적용한다: 10명이 답한 질문에는 비율이 붙고 9명이 답한 질문에는 붙지 않는다", async () => {
+    renderPanel();
+    const answers = crowd(12, (index) => ({
+      ratings: { fun: index < 10 ? (index < 6 ? 3 : index < 9 ? 2 : 1) : null, understanding: index < 9 ? 2 : null },
+      reading: index < 4 ? { status: "finished" as const } : { status: "unmarked" as const },
+    }));
+    chooseFiles([jsonFile("ten-and-nine.json", answers)]);
+    await screen.findByText(/응답 12개 추가/u);
+    const group = screen.getByRole("article");
+    // 재미: 10명 답함 → 비율을 쓴다.
+    expect(within(group).getByText("재밌었어요").parentElement!.textContent).toBe("재밌었어요6명 · 60%");
+    expect(within(group).getByText("괜찮았어요").parentElement!.textContent).toBe("괜찮았어요3명 · 30%");
+    // 이해: 9명 답함 → 개수만.
+    expect(within(group).getByText("대체로 이해했어요").parentElement!.textContent).toBe("대체로 이해했어요9명");
+    // 읽은 정도: 4명만 밝힘 → 4/4 로 쓴다(응답은 12개여도 100% 를 만들지 않는다).
+    expect(within(group).getByText("끝까지 읽음", { selector: "dt" }).parentElement!.textContent).toContain("4/4");
+    expect(within(group).getByText("끝까지 읽음", { selector: "dt" }).parentElement!.textContent).not.toContain("%");
+  });
+
+  it("읽은 정도를 밝힌 사람이 10명 이상이면 완독 비율을 %로 보인다", async () => {
+    renderPanel();
+    chooseFiles([jsonFile("marked-ten.json", crowd(10, (index) => ({ reading: index < 3 ? { status: "finished" as const } : { status: "left" as const, point: { mode: "scroll" as const, percent: 30 } } })))]);
+    await screen.findByText(/응답 10개 추가/u);
+    const finished = within(screen.getByRole("article")).getByText("끝까지 읽음", { selector: "dt" }).parentElement!.textContent!;
+    expect(finished).toContain("30%");
+    expect(finished).toContain("읽은 정도를 밝힌 10명 기준");
+  });
+
+  it("회차 비교표의 '끝까지' 열도 읽은 정도를 밝힌 사람 수를 기준으로 한다", async () => {
+    renderPanel();
+    const firstEpisode = crowd(10, (index) => (index === 0 ? { reading: { status: "finished" as const } } : {}), 1);
+    const secondEpisode = crowd(10, (index) => ({ reading: index < 5 ? { status: "finished" as const } : { status: "left" as const, point: { mode: "cut" as const, cut: 3, cutCount: null } } }), 2);
+    chooseFiles([jsonFile("two-episodes.json", [...firstEpisode, ...secondEpisode])]);
+    await screen.findByText(/응답 20개 추가/u);
+    const rows = within(screen.getByRole("table", { name: /회차별 응답 수와 평균/u })).getAllByRole("row").slice(1);
+    const finishedColumn = rows.map((row) => within(row).getAllByRole("cell")[3]!.textContent);
+    expect(finishedColumn).toEqual(["1/1", "50%"]);
+  });
+
+  it("주의 안내는 비율이 응답 수가 아니라 질문에 답한 사람 수를 기준으로 한다고 말한다", () => {
+    renderPanel();
+    const caution = screen.getByRole("complementary", { name: "해석할 때 주의할 점" });
+    expect(caution.textContent).toContain("비율(%)은 그 질문에 답한 사람이 10명 이상일 때만 보여 줘요");
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 여러 파일 합치기", () => {
+  it("겹치는 응답은 한 번만 세고, 열지 못한 파일은 사유와 함께 남긴다", async () => {
+    renderPanel();
+    chooseFiles([
+      jsonFile("reader-a.json", EXAMPLES.slice(0, 6)),
+      jsonFile("reader-b.json", EXAMPLES.slice(3, 10)),
+      textFile("not-feedback.json", JSON.stringify({ kind: "toonstudio-beta", version: 1 })),
+      textFile("legacy.json", JSON.stringify({ kind: "toonstudio-beta-feedback", version: 1, feedback: [] })),
+    ]);
+    await screen.findByText(/응답 10개 추가/u);
+    expect(statusText()).toContain("응답 10개 추가 · 0개 갱신 · 중복 3개 제외 · 열지 못한 파일 2개");
+    const results = screen.getByRole("heading", { level: 4, name: "가져오기 결과" }).parentElement!.parentElement!;
+    const items = within(results).getAllByRole("listitem");
+    expect(items.map((item) => item.textContent)).toEqual([
+      "reader-a.json 응답 6개를 읽었어요.",
+      "reader-b.json 응답 7개를 읽었어요.",
+      "not-feedback.json 독자 피드백 파일이 아니에요.",
+      "legacy.json 이전 '검토 응답' 형식이에요. 위쪽 '응답 가져오기'로 가져와 주세요.",
+    ]);
+    expect(screen.getByRole("button", { name: "예시 작품 · Example story 1화" })).toBeTruthy();
+    expect(screen.getByText("받은 응답").parentElement!.textContent).toBe("받은 응답8개");
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+
+  it("같은 id 의 더 늦은 응답은 갱신으로 세고, 같은 파일을 다시 고르면 모두 중복이다", async () => {
+    renderPanel();
+    chooseFiles([jsonFile("first.json", EXAMPLES.slice(0, 2))]);
+    await screen.findByText(/응답 2개 추가/u);
+    const edited = { ...EXAMPLES[0]!, createdAt: "2026-10-20T00:00:00.000Z", comment: "고쳐 다시 보낸 의견입니다." };
+    chooseFiles([jsonFile("edited.json", [edited])]);
+    await waitFor(() => expect(statusText()).toContain("응답 0개 추가 · 1개 갱신 · 중복 0개 제외"));
+    chooseFiles([jsonFile("edited-again.json", [edited])]);
+    await waitFor(() => expect(statusText()).toContain("응답 0개 추가 · 0개 갱신 · 중복 1개 제외"));
+    expect(screen.getByText("고쳐 다시 보낸 의견입니다.")).toBeTruthy();
+  });
+
+  it("파일을 읽는 동안 읽는 중 상태를 보이고, 끝나면 사라진다", async () => {
+    renderPanel();
+    let release: (text: string) => void = () => undefined;
+    const slow = textFile("slow.json", "x");
+    Object.defineProperty(slow, "text", { value: () => new Promise<string>((resolve) => { release = resolve; }) });
+    chooseFiles([slow]);
+    const busy = await screen.findByRole("status", { name: "파일을 읽는 중" });
+    expect(busy.getAttribute("aria-busy")).toBe("true");
+    expect(busy.textContent).toContain("파일을 읽는 중…");
+    expect(screen.queryByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeNull();
+    await act(async () => { release(fileJson(EXAMPLES.slice(0, 1))); });
+    await waitFor(() => expect(screen.queryByRole("status", { name: "파일을 읽는 중" })).toBeNull());
+    expect(statusText()).toContain("응답 1개 추가");
+  });
+
+  it("읽기에 실패한 파일은 다시 시도할 수 있고, 형식 오류는 다시 시도 버튼이 없다", async () => {
+    renderPanel();
+    const flaky = textFile("flaky.json", "x");
+    const read = vi.fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new Error("NotReadableError"))
+      .mockResolvedValueOnce(fileJson(EXAMPLES.slice(0, 3)));
+    Object.defineProperty(flaky, "text", { value: read });
+    chooseFiles([flaky, textFile("broken.json", "{ 깨짐")]);
+    await screen.findByText("파일을 읽지 못했어요. 다시 시도해 보세요.");
+    expect(screen.getByText("JSON 형식이 아니에요.")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "다시 시도" })).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    await screen.findByText("응답 3개를 읽었어요.");
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+    expect(screen.getByText("받은 응답").parentElement!.textContent).toBe("받은 응답3개");
+    expect(screen.getByText("JSON 형식이 아니에요.")).toBeTruthy();
+  });
+
+  it("너무 큰 파일은 내용을 읽지 않고 거절한다", async () => {
+    renderPanel();
+    const big = textFile("big.json", "{}");
+    const read = vi.fn(async () => "{}");
+    Object.defineProperty(big, "text", { value: read });
+    Object.defineProperty(big, "size", { value: READER_FEEDBACK_LIMITS.maxFileBytes + 1 });
+    chooseFiles([big, textFile("empty.json", "")]);
+    await screen.findByText(/파일이 너무 커요. 한 파일은 256KB까지 가져올 수 있어요./u);
+    expect(screen.getByText("빈 파일이에요.")).toBeTruthy();
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("한 번에 20개 파일까지만 읽고 나머지는 건너뛴 수를 알린다", async () => {
+    renderPanel();
+    const many = Array.from({ length: 21 }, (_, index) => jsonFile(`r-${index}.json`, [{ ...EXAMPLES[0]!, id: `bulk-${index}`, comment: `의견 ${index}번`, createdAt: `2026-10-10T00:${String(index).padStart(2, "0")}:00.000Z` }]));
+    chooseFiles(many);
+    await screen.findByText(/응답 20개 추가/u);
+    expect(statusText()).toContain("한 번에 20개 파일까지만 읽어 1개는 건너뛰었어요.");
+    expect(screen.getByText("받은 응답").parentElement!.textContent).toBe("받은 응답20개");
+  });
+
+  it("붙여넣은 내용도 같은 검증을 거치고, 실패하면 입력을 지우지 않는다", async () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "붙여넣어 가져오기" }));
+    const box = screen.getByLabelText("독자가 복사해 보낸 응답 내용") as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: "{ 깨짐" } });
+    fireEvent.click(screen.getByRole("button", { name: "붙여넣은 내용 가져오기" }));
+    await screen.findByText("JSON 형식이 아니에요.");
+    expect(box.value).toBe("{ 깨짐");
+    fireEvent.change(box, { target: { value: fileJson(EXAMPLES.slice(8, 10)) } });
+    fireEvent.click(screen.getByRole("button", { name: "붙여넣은 내용 가져오기" }));
+    await screen.findByText(/응답 2개 추가/u);
+    expect(screen.getByRole("heading", { level: 4, name: "예시 작품 · Example story 2화" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "입력 지우기" }));
+    expect(box.value).toBe("");
+  });
+
+  it("비우기를 누르면 처음 상태로 돌아가고 결과 닫기는 보고서만 닫는다", async () => {
+    renderPanel();
+    chooseFiles([jsonFile("a.json", EXAMPLES.slice(0, 2)), textFile("bad.json", "[]")]);
+    await screen.findByText(/응답 2개 추가/u);
+    fireEvent.click(screen.getByRole("button", { name: "결과 닫기" }));
+    expect(screen.queryByRole("heading", { name: "가져오기 결과" })).toBeNull();
+    expect(screen.getByText("받은 응답").parentElement!.textContent).toBe("받은 응답2개");
+    fireEvent.click(screen.getByRole("button", { name: "가져온 응답 비우기" }));
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+    expect(screen.queryByRole("article")).toBeNull();
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 읽는 중에 가져온 응답 비우기", () => {
+  /** 읽기가 끝나는 때를 시험이 정하는 파일. */
+  function slowFile(name: string) {
+    let finish: (text: string) => void = () => undefined;
+    const file = textFile(name, "x");
+    Object.defineProperty(file, "text", { value: () => new Promise<string>((resolve) => { finish = resolve; }) });
+    return { file, finish: async (text: string) => { await act(async () => { finish(text); }); } };
+  }
+  const loadExample = () => fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+  const clear = () => fireEvent.click(screen.getByRole("button", { name: "가져온 응답 비우기" }));
+
+  it("읽는 중에 비워도 늦게 끝난 읽기가 응답을 다시 채우지 않고, 읽는 중 표시도 바로 사라진다", async () => {
+    renderPanel();
+    loadExample();
+    const slow = slowFile("slow.json");
+    chooseFiles([slow.file]);
+    await screen.findByRole("status", { name: "파일을 읽는 중" });
+    clear();
+    expect(screen.queryByRole("status", { name: "파일을 읽는 중" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+
+    await slow.finish(fileJson(EXAMPLES.slice(0, 3)));
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+    expect(screen.queryByRole("article")).toBeNull();
+    expect(statusText()).not.toContain("추가");
+    expect(screen.queryByRole("heading", { name: "가져오기 결과" })).toBeNull();
+  });
+
+  it("비운 뒤 새로 가져온 응답은 받고, 비우기 전에 시작한 읽기의 결과만 버린다", async () => {
+    renderPanel();
+    loadExample();
+    const stale = slowFile("stale.json");
+    chooseFiles([stale.file]);
+    await screen.findByRole("status", { name: "파일을 읽는 중" });
+    clear();
+
+    chooseFiles([jsonFile("fresh.json", EXAMPLES.slice(8, 10))]);
+    await screen.findByText(/응답 2개 추가/u);
+    await stale.finish(fileJson(EXAMPLES.slice(0, 3)));
+    expect(screen.getByText("받은 응답").parentElement!.textContent).toBe("받은 응답2개");
+    expect(statusText()).toContain("응답 2개 추가");
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(expect.arrayContaining(["fresh.json 응답 2개를 읽었어요."]));
+    expect(screen.queryByText(/stale\.json/u)).toBeNull();
+    // 새로 시작한 읽기는 비우기와 상관없이 끝까지 센다(읽는 중 표시가 낡은 읽기 때문에 남지도, 일찍 꺼지지도 않는다).
+    expect(screen.queryByRole("status", { name: "파일을 읽는 중" })).toBeNull();
+  });
+
+  it("다시 시도하는 중에 비워도 늦게 끝난 읽기가 응답을 되살리지 않는다", async () => {
+    renderPanel();
+    loadExample();
+    const flaky = textFile("flaky.json", "x");
+    const retried = slowFile("retry-body.json");
+    const read = vi.fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new Error("NotReadableError"))
+      .mockImplementationOnce(() => (retried.file as unknown as { text(): Promise<string> }).text());
+    Object.defineProperty(flaky, "text", { value: read });
+    chooseFiles([flaky]);
+    await screen.findByText("파일을 읽지 못했어요. 다시 시도해 보세요.");
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    clear();
+
+    await retried.finish(fileJson(EXAMPLES.slice(0, 3)));
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+    expect(screen.queryByRole("article")).toBeNull();
+    // 비운 뒤에는 이전 가져오기의 다시 시도 단추도 남지 않는다.
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 누른 단추가 사라져도 초점이 body 로 떨어지지 않는다", () => {
+  const loadExample = () => fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+  const representativeSection = () => screen.getByRole("heading", { level: 5, name: "대표 의견" }).parentElement!;
+  const representativeItems = () => within(within(representativeSection()).getAllByRole("list")[0]!).getAllByRole("listitem");
+  const toggleOf = (item: HTMLElement) => within(item).getByRole("button", { name: /이 의견 숨기기|다시 보이기/u });
+
+  it("스포일러 보기: 단추가 그 자리에 남아 초점을 지키고, 눌렀다 다시 누르면 가려진다", () => {
+    renderPanel();
+    loadExample();
+    const reveal = screen.getAllByRole("button", { name: "스포일러 보기" })[0]!;
+    reveal.focus();
+    expect(document.activeElement).toBe(reveal);
+    fireEvent.click(reveal);
+    expect(document.activeElement).toBe(reveal);
+    expect(reveal.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText(/동생이 돌아오는 장면/u)).toBeTruthy();
+    expect(document.getElementById(reveal.getAttribute("aria-controls")!)?.textContent).toContain("동생이 돌아오는 장면");
+    fireEvent.click(reveal);
+    expect(document.activeElement).toBe(reveal);
+    expect(reveal.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText(/동생이 돌아오는 장면/u)).toBeNull();
+  });
+
+  it("의견 숨기기: 초점이 같은 목록의 다음 의견 단추로 옮겨가고, 마지막 의견이면 이전 의견 단추로 간다", () => {
+    renderPanel();
+    loadExample();
+    const before = representativeItems().map(toggleOf);
+    before[0]!.focus();
+    fireEvent.click(before[0]!);
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toBe(before[1]);
+
+    const after = representativeItems();
+    const last = toggleOf(after[after.length - 1]!);
+    const previous = toggleOf(after[after.length - 2]!);
+    last.focus();
+    fireEvent.click(last);
+    expect(document.activeElement).toBe(previous);
+    // 알림: 스크린 리더 사용자는 단추가 사라졌다는 사실과 숨긴 개수를 듣는다.
+    expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("숨긴 의견은 2개예요");
+  });
+
+  it("다시 보이기와 마지막 의견 숨기기: 이웃이 없으면 '대표 의견' 제목으로 초점이 옮겨간다", () => {
+    renderPanel();
+    chooseFiles([jsonFile("only-one.json", [EXAMPLES[0]!])]);
+    return screen.findByText(/응답 1개 추가/u).then(() => {
+      const [only] = representativeItems();
+      const hide = toggleOf(only!);
+      hide.focus();
+      fireEvent.click(hide);
+      const heading = screen.getByRole("heading", { level: 5, name: "대표 의견" });
+      expect(document.activeElement).toBe(heading);
+      expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("의견을 숨겼어요");
+
+      const restore = screen.getByRole("button", { name: "다시 보이기" });
+      restore.focus();
+      fireEvent.click(restore);
+      expect(document.activeElement).toBe(screen.getByRole("heading", { level: 5, name: "대표 의견" }));
+      expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("의견을 다시 보이게 했어요");
+      expect(representativeItems()).toHaveLength(1);
+    });
+  });
+
+  it("가로로 밀리는 그래프 영역은 키보드로 닿고 이름이 있어, 스크롤 영역에 초점 대상이 없다는 접근성 경고를 피한다", () => {
+    renderPanel();
+    loadExample();
+    for (const label of ["컷 번호로 알려 준 멈춘 곳", "스크롤 위치로 알려 준 멈춘 곳"]) {
+      const chart = screen.getByRole("img", { name: new RegExp(label, "u") });
+      const scroller = chart.parentElement!;
+      expect(scroller.className).toContain("overflow-x-auto");
+      expect(scroller.getAttribute("tabindex")).toBe("0");
+      expect(scroller.getAttribute("role")).toBe("region");
+      expect(screen.getByRole("region", { name: `${label} (좌우로 스크롤)` })).toBe(scroller);
+    }
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 회차 비교표의 가장 많이 멈춘 곳", () => {
+  const stoppedAt = (cut: number) => ({ reading: { status: "left" as const, point: { mode: "cut" as const, cut, cutCount: 12 } } });
+
+  it("최빈 구간이 동률이면 첫 구간만 보이지 않고 동률인 곳 수와 각각의 인원을 밝힌다", async () => {
+    renderPanel();
+    const tied = crowd(4, (index) => stoppedAt(index < 2 ? 3 : 9), 1);
+    const single = crowd(3, (index) => stoppedAt(index < 2 ? 5 : 6), 2);
+    const threeWay = crowd(3, (index) => stoppedAt([2, 7, 11][index]!), 3);
+    chooseFiles([jsonFile("peaks.json", [...tied, ...single, ...threeWay])]);
+    await screen.findByText(/응답 10개 추가/u);
+    const rows = within(screen.getByRole("table", { name: /회차별 응답 수와 평균/u })).getAllByRole("row").slice(1);
+    expect(rows.map((row) => within(row).getAllByRole("cell")[4]!.textContent)).toEqual([
+      "3컷 외 1곳 동률 (각 2명)",
+      "5컷 (2명)",
+      "2컷 외 2곳 동률 (각 1명)",
+    ]);
+    // 자세한 요약은 동률인 구간을 모두 나열한다(표는 줄여 보이되 정보를 숨기지 않는다).
+    fireEvent.click(within(rows[0]!).getByRole("button"));
+    expect(screen.getByRole("article").textContent).toContain("가장 많이 멈춘 구간: 3컷 (2명), 9컷 (2명)");
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 사용자 문자열은 <bdi>로 감싼다", () => {
+  const arabic = "مرحبا بالعالم";
+  const hebrew = "שלום עולם";
+
+  it("작품 이름·닉네임·의견·파일 이름이 오른쪽에서 왼쪽으로 쓰는 글이어도 주변 글자 순서를 흩지 않도록 격리한다", async () => {
+    renderPanel();
+    const withTitle = (id: string, episode: number) => ({
+      ...crowd(1, () => ({ nickname: hebrew, comment: arabic }), episode)[0]!, id,
+      target: { kind: "manual" as const, id: null, title: arabic, episode },
+    });
+    chooseFiles([jsonFile(`${hebrew}.json`, [withTitle("rtl-1", 1), withTitle("rtl-2", 2)])]);
+    await screen.findByText(/응답 2개 추가/u);
+
+    const isolated = (element: HTMLElement | null | undefined, text: string) => {
+      const bdi = element?.querySelector("bdi");
+      expect(bdi?.textContent, `${text} 를 <bdi> 로 감싼 곳이 없습니다`).toBe(text);
+    };
+    // 파일 이름(가져오기 결과)
+    isolated(screen.getByRole("heading", { level: 4, name: "가져오기 결과" }).parentElement!.parentElement!.querySelector("li strong"), `${hebrew}.json`);
+    // 회차 이름: 비교표의 단추와 자세한 요약의 제목
+    const compare = screen.getByRole("table", { name: /회차별 응답 수와 평균/u });
+    for (const button of within(compare).getAllByRole("button")) isolated(button, arabic);
+    isolated(screen.getByRole("article").querySelector("h4"), arabic);
+    // 닉네임, 의견(문단 방향은 내용을 따른다)
+    const item = within(screen.getByRole("heading", { level: 5, name: "대표 의견" }).parentElement!).getAllByRole("listitem")[0]!;
+    isolated(item.querySelector("p span"), hebrew);
+    const text = item.querySelector("p[dir='auto']") as HTMLElement;
+    isolated(text, arabic);
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 이름 없는 파일", () => {
+  const originalLanguage = useI18n.getState().lang;
+  afterEach(() => useI18n.setState({ lang: originalLanguage }));
+
+  it("파일 이름이 비면 현재 언어의 대체 이름으로 보인다", async () => {
+    renderPanel();
+    chooseFiles([jsonFile("   ", EXAMPLES.slice(0, 1))]);
+    await screen.findByText(/응답 1개 추가/u);
+    const results = screen.getByRole("heading", { level: 4, name: "가져오기 결과" }).parentElement!.parentElement!;
+    expect(within(results).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["(이름 없음) 응답 1개를 읽었어요."]);
+  });
+
+  it("영어 화면에서는 영어 대체 이름으로 보인다", async () => {
+    useI18n.setState({ lang: "en" });
+    renderPanel();
+    fireEvent.change(screen.getByLabelText(/Choose response files/u), { target: { files: [jsonFile("   ", EXAMPLES.slice(0, 1))] } });
+    await screen.findByText(/1 added/u);
+    const results = screen.getByRole("heading", { level: 4, name: "Import results" }).parentElement!.parentElement!;
+    expect(within(results).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["(no name) Read 1 responses."]);
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 악의적 입력", () => {
+  it("HTML·스크립트 조각은 요소가 되지 않고 글자 그대로 보인다", async () => {
+    const { container } = renderPanel();
+    const attack = '<img src=x onerror="document.title=1"><script>document.title=2</script>';
+    const hostile = { ...EXAMPLES[2]!, target: { kind: "manual" as const, id: null, title: attack, episode: 1 }, nickname: "<b>굵게</b>", comment: `${attack} javascript:alert(3)`, spoiler: false };
+    chooseFiles([jsonFile("hostile.json", [hostile])]);
+    await screen.findByText(/응답 1개 추가/u);
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("b")).toBeNull();
+    expect(container.querySelector("[onerror]")).toBeNull();
+    expect(screen.getAllByText(new RegExp(attack.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u")).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("<b>굵게</b>")).toBeTruthy();
+    expect(container.querySelector("a[href^='javascript']")).toBeNull();
+    expect(document.title).not.toBe("1");
+    expect(document.title).not.toBe("2");
+  });
+
+  it("프로토타입 오염 키가 든 파일은 열지 않고 전역 객체를 건드리지 않는다", async () => {
+    renderPanel();
+    const polluted = fileJson(EXAMPLES.slice(0, 1)).replace('{"kind"', '{"__proto__":{"polluted":"yes"},"kind"');
+    chooseFiles([textFile("polluted.json", polluted), textFile("ctor.json", fileJson(EXAMPLES.slice(0, 1)).replace('"id":"example-1-1"', '"id":"example-1-1","constructor":{"prototype":{"polluted":"yes"}}'))]);
+    await screen.findAllByText("허용되지 않는 항목이 들어 있어 열지 않았어요.");
+    expect(screen.getAllByText("허용되지 않는 항목이 들어 있어 열지 않았어요.")).toHaveLength(2);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+  });
+
+  it("아주 깊거나 큰 JSON 은 구조가 복잡하다는 안내만 보이고 화면이 멈추지 않는다", async () => {
+    renderPanel();
+    chooseFiles([textFile("deep.json", "[".repeat(50_000)), textFile("wide.json", JSON.stringify(Array.from({ length: 30_000 }, () => 0)))]);
+    await screen.findAllByText("구조가 너무 복잡해서 열지 않았어요.");
+    expect(screen.getAllByText("구조가 너무 복잡해서 열지 않았어요.")).toHaveLength(2);
+  });
+
+  it("형식이 어긋난 값은 알려 준 위치와 함께 거절하고 입력의 키 이름을 되풀이하지 않는다", async () => {
+    const { container } = renderPanel();
+    const bad = JSON.parse(fileJson(EXAMPLES.slice(0, 1)));
+    bad.responses[0].ratings.fun = 9;
+    bad.responses[0]["<img src=x onerror=alert(1)>"] = 1;
+    chooseFiles([textFile("bad-shape.json", JSON.stringify(bad))]);
+    await screen.findByText(/파일 내용이 형식에 맞지 않아요/u);
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.textContent).not.toContain("onerror");
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 의견 숨기기(이 브라우저에만 표시)", () => {
+  function hideFirstRepresentative() {
+    const representative = screen.getByRole("heading", { level: 5, name: "대표 의견" }).parentElement!;
+    const list = within(representative).getAllByRole("list")[0]!;
+    const first = within(list).getAllByRole("listitem")[0]!;
+    const text = first.querySelector("p:last-of-type")?.textContent ?? "";
+    fireEvent.click(within(first).getByRole("button", { name: "이 의견 숨기기" }));
+    return text;
+  }
+
+  it("숨긴 의견은 대표 목록에서 빠지고 숨긴 의견 목록에 모이며 집계는 그대로다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    const before = screen.getByRole("heading", { level: 5, name: "점수 분포" }).parentElement!.textContent;
+    const hiddenText = hideFirstRepresentative();
+    expect(hiddenText).not.toBe("");
+    const representative = screen.getByRole("heading", { level: 5, name: "대표 의견" }).parentElement!;
+    const list = within(representative).getAllByRole("list")[0]!;
+    expect(within(list).queryByText(hiddenText)).toBeNull();
+    expect(within(list).getAllByRole("listitem")).toHaveLength(5);
+    expect(screen.getByText("숨긴 의견 (1개)")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 5, name: "점수 분포" }).parentElement!.textContent).toBe(before);
+    expect(JSON.parse(window.localStorage.getItem(READER_FEEDBACK_HIDDEN_KEY) ?? "null")).toEqual({ version: 1, ids: [expect.stringMatching(/^example-1-/u)] });
+    // 숨긴 의견 목록에서 다시 보이게 할 수 있다.
+    fireEvent.click(screen.getByRole("button", { name: "다시 보이기" }));
+    expect(screen.queryByText(/^숨긴 의견/u)).toBeNull();
+    expect(JSON.parse(window.localStorage.getItem(READER_FEEDBACK_HIDDEN_KEY) ?? "null")).toEqual({ version: 1, ids: [] });
+  });
+
+  it("숨김 표시는 화면을 다시 열어 같은 응답을 가져와도 이어진다", () => {
+    const first = renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    hideFirstRepresentative();
+    first.unmount();
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    expect(screen.getByText("숨긴 의견 (1개)")).toBeTruthy();
+  });
+
+  it("저장소가 막혀 있어도 숨기기는 동작하고 저장되지 않는다고 알린다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("QuotaExceededError"); });
+    hideFirstRepresentative();
+    expect(screen.getByText("숨긴 의견 (1개)")).toBeTruthy();
+    expect(statusText()).toContain("이 브라우저가 저장을 막고 있어");
+  });
+
+  it("깨진 저장값이 있어도 숨김 없이 정상 시작한다", () => {
+    window.localStorage.setItem(READER_FEEDBACK_HIDDEN_KEY, "{ 깨짐");
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    expect(screen.queryByText(/^숨긴 의견/u)).toBeNull();
+  });
+});

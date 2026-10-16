@@ -14,7 +14,7 @@
  *   2 = structured environment skip because real Chromium WebGPU is unavailable
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,7 +27,7 @@ import { WEB_ROOT, WEB_VITE_CONFIG } from "./lib/repo-paths.mjs";
 const SCRATCH =
   process.env.TOONSPECTRUM_ENGINE_WEBGPU_FILTER_PARITY_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
-  ?? join(tmpdir(), `toonstudio-engine-webgpu-filter-parity-${Date.now()}`);
+  ?? mkdtempSync(join(tmpdir(), "toonstudio-engine-webgpu-filter-parity-"));
 const HARNESS_PATH = "/__studio_engine_webgpu_filter_parity__";
 const HARNESS_ENTRY = "/scripts/studio-engine-webgpu-filter-parity-browser.ts";
 const RESULT_TIMEOUT_MS = 60_000;

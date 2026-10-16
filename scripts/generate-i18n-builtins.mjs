@@ -84,6 +84,13 @@ const LAZY_APP_BUILTIN_GROUPS = [
     namespaces: ["share"],
     target: "apps/web/src/shared/i18n/generated/i18n-share-builtins.json",
   },
+  // 컷 자동 감지·카드뉴스 가져오기 화면(Studio 가져오기 화면의 진입 구역)만 쓰는 신규 네임스페이스. 처음부터 셸 내장 사전에
+  // 넣지 않고 소비 도메인이 등록한다 — apps/web/src/domains/creator/panel-detect/panel-import-i18n.ts.
+  {
+    id: "panel-import",
+    namespaces: ["panelImport"],
+    target: "apps/web/src/domains/creator/panel-detect/i18n/generated/i18n-panel-import-builtins.json",
+  },
 ];
 
 const LAZY_APP_BUILTIN_NAMESPACES = new Set(

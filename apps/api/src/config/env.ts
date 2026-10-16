@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { edgeOriginAuthStartupFinding } from "./edge-origin-auth";
+
 /**
  * 백엔드 env 검증(NON-FATAL).
  *
@@ -732,6 +734,13 @@ export function validateEnv(
           `[env] 보안 경고: production 인데 AUTH_SESSION_SECRET/AUTH_STATE_SECRET 미설정 —\n` +
           `      세션 서명이 공개된 개발용 폴백 비밀로 동작합니다(토큰 위조 가능).\n` +
           `${"!".repeat(72)}\n`,
+      );
+    }
+    // 에지 출처 인증 비밀은 선택 사항이라 부팅은 막지 않고, 없으면 눈에 띄게 알린다.
+    const edgeFinding = edgeOriginAuthStartupFinding(source);
+    if (edgeFinding) {
+      logger.error(
+        `\n${"!".repeat(72)}\n[env] 보안 경고: ${edgeFinding}\n${"!".repeat(72)}\n`,
       );
     }
   }

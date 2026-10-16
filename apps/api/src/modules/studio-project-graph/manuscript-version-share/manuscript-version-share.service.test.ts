@@ -11,7 +11,11 @@ import {
   versionShareTokenSuffix,
   type VersionShareResolution,
 } from "./manuscript-version-share.repository";
-import { ManuscriptVersionShareService } from "./manuscript-version-share.service";
+import {
+  ManuscriptVersionShareService,
+  VersionSharePasswordBusyException,
+  VersionSharePasswordLockedException,
+} from "./manuscript-version-share.service";
 
 describe("버전 공유 토큰 해시", () => {
   it("sha256 hex로 저장하고 원문을 되돌릴 수 없게 한다", () => {
@@ -28,19 +32,20 @@ describe("버전 공유 토큰 해시", () => {
 });
 
 describe("버전 공유 비밀번호 해시", () => {
-  it("scrypt 해시로 저장하고 올바른 비밀번호만 통과한다", () => {
+  it("scrypt 해시로 저장하고 올바른 비밀번호만 통과한다", async () => {
     const stored = hashVersionSharePassword("moon-1234");
     expect(stored.startsWith("scrypt$")).toBe(true);
     expect(stored).not.toContain("moon-1234");
-    expect(verifyVersionSharePassword("moon-1234", stored)).toBe(true);
-    expect(verifyVersionSharePassword("moon-9999", stored)).toBe(false);
+    // 검증은 비동기여야 한다: 동기 scrypt 는 요청마다 이벤트 루프를 수십 ms 점유해 서버 전체를 멈춘다.
+    await expect(verifyVersionSharePassword("moon-1234", stored)).resolves.toBe(true);
+    await expect(verifyVersionSharePassword("moon-9999", stored)).resolves.toBe(false);
   });
 
-  it("같은 비밀번호도 솔트 때문에 해시가 다르고, 깨진 형식은 거부한다", () => {
+  it("같은 비밀번호도 솔트 때문에 해시가 다르고, 깨진 형식은 거부한다", async () => {
     expect(hashVersionSharePassword("same")).not.toBe(hashVersionSharePassword("same"));
-    expect(verifyVersionSharePassword("same", "not-a-hash")).toBe(false);
-    expect(verifyVersionSharePassword("same", "scrypt$zz$yy")).toBe(false);
-    expect(verifyVersionSharePassword("same", "")).toBe(false);
+    await expect(verifyVersionSharePassword("same", "not-a-hash")).resolves.toBe(false);
+    await expect(verifyVersionSharePassword("same", "scrypt$zz$yy")).resolves.toBe(false);
+    await expect(verifyVersionSharePassword("same", "")).resolves.toBe(false);
   });
 });
 
@@ -159,6 +164,211 @@ describe("공유 링크 해석 상태 매핑", () => {
       .resolveShare("token-value-123456", "wrong").catch((e: unknown) => e);
     expect((invalid as HttpException).getResponse()).toMatchObject({
       code: "version_share_password_invalid",
+    });
+  });
+
+  describe("비밀번호 무차별 대입 방어", () => {
+    const TOKEN = "token-value-123456";
+    function guarded(rightPassword = "right") {
+      const resolveShare = vi.fn(async (_token: string, password?: string): Promise<VersionShareResolution> => {
+        if (!password) return { kind: "password_required" };
+        return password === rightPassword ? okResolution : { kind: "password_invalid" };
+      });
+      return { service: new ManuscriptVersionShareService({ resolveShare } as never), resolveShare };
+    }
+    async function failMany(service: ManuscriptVersionShareService, count: number, token = TOKEN) {
+      for (let attempt = 0; attempt < count; attempt += 1) {
+        const error = await service.resolveShare(token, `wrong-${attempt}`).catch((e: unknown) => e);
+        expect((error as HttpException).getStatus()).toBe(401);
+      }
+    }
+
+    it("실패가 한도(10회)에 닿으면 올바른 비밀번호도 429 로 막고 저장소를 더 호출하지 않는다", async () => {
+      const { service, resolveShare } = guarded();
+      await failMany(service, 10);
+      expect(resolveShare).toHaveBeenCalledTimes(10);
+
+      const locked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
+      expect(locked).toBeInstanceOf(HttpException);
+      expect((locked as HttpException).getStatus()).toBe(429);
+      expect((locked as HttpException).getResponse()).toMatchObject({
+        code: "version_share_password_locked",
+      });
+      expect(resolveShare).toHaveBeenCalledTimes(10);
+    });
+
+    it("잠금은 그 링크에만 적용되고 다른 링크의 해석은 영향받지 않는다", async () => {
+      const { service } = guarded();
+      await failMany(service, 10);
+      await expect(service.resolveShare("another-token-654321", "right")).resolves.toBe(okResolution);
+    });
+
+    it("비밀번호를 보내지 않은 요청은 잠금과 무관하게 비밀번호 필요 응답을 받는다", async () => {
+      const { service } = guarded();
+      await failMany(service, 10);
+      const required = await service.resolveShare(TOKEN).catch((e: unknown) => e);
+      expect((required as HttpException).getStatus()).toBe(401);
+      expect((required as HttpException).getResponse()).toMatchObject({
+        code: "version_share_password_required",
+      });
+    });
+
+    it("성공하면 실패 횟수가 초기화된다", async () => {
+      const { service } = guarded();
+      await failMany(service, 9);
+      await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+      await failMany(service, 9);
+      await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+    });
+
+    it("잠금은 창(15분)이 지나면 풀린다", async () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date("2026-10-16T00:00:00.000Z"));
+        const { service } = guarded();
+        await failMany(service, 10);
+        await expect(service.resolveShare(TOKEN, "right")).rejects.toMatchObject({ status: 429 });
+        vi.setSystemTime(new Date("2026-10-16T00:15:01.000Z"));
+        await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    describe("동시에 몰린 요청", () => {
+      /** 저장소 조회(DB 연결 + scrypt)를 흉내 내는 지연. 확인과 기록 사이에 await 가 끼는 실제 상황이다. */
+      function slowGuarded(delayMs = 20) {
+        const resolveShare = vi.fn(async (_token: string, password?: string): Promise<VersionShareResolution> => {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          if (!password) return { kind: "password_required" };
+          return password === "right" ? okResolution : { kind: "password_invalid" };
+        });
+        return { service: new ManuscriptVersionShareService({ resolveShare } as never), resolveShare };
+      }
+      const statusOf = (result: PromiseSettledResult<unknown>): number | "ok" =>
+        result.status === "fulfilled" ? "ok" : (result.reason as HttpException).getStatus();
+
+      it("틀린 비밀번호를 동시에 100건 보내도 저장소(=scrypt 검증)에는 한도(10건)만 도달한다", async () => {
+        const { service, resolveShare } = slowGuarded();
+        const results = await Promise.allSettled(
+          Array.from({ length: 100 }, (_, index) => service.resolveShare(TOKEN, `guess-${index}`)),
+        );
+        const statuses = results.map(statusOf);
+
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+        expect(statuses.filter((status) => status === 401)).toHaveLength(10);
+        expect(statuses.filter((status) => status === 429)).toHaveLength(90);
+        // 버스트 중에 막힌 90건은 확정된 오답이 아직 없어 잠금이 아니라 "판정 중" 일시 차단이다.
+        const codes = results.flatMap((result) =>
+          result.status === "rejected" && (result.reason as HttpException).getStatus() === 429
+            ? [((result.reason as HttpException).getResponse() as { code: string }).code]
+            : [],
+        );
+        expect(new Set(codes)).toEqual(new Set(["version_share_password_busy"]));
+        // 버스트가 끝난 뒤에는 올바른 비밀번호도 잠금이 풀릴 때까지 막히고, 이제는 진짜 잠금이다.
+        const locked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
+        expect((locked as HttpException).getStatus()).toBe(429);
+        expect((locked as HttpException).getResponse()).toMatchObject({ code: "version_share_password_locked" });
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+      });
+
+      it("판정 중인 시도 때문에 막힌 요청에는 창 전체가 아니라 짧은 재시도 안내를 준다", async () => {
+        let open!: () => void;
+        const gate = new Promise<void>((resolve) => {
+          open = resolve;
+        });
+        const resolveShare = vi.fn(async (): Promise<VersionShareResolution> => {
+          await gate;
+          return { kind: "password_invalid" };
+        });
+        const service = new ManuscriptVersionShareService({ resolveShare } as never);
+        const inFlight = Array.from({ length: 10 }, (_, index) => service.resolveShare(TOKEN, `guess-${index}`));
+
+        const blocked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
+        expect((blocked as HttpException).getStatus()).toBe(429);
+        expect((blocked as HttpException).getResponse()).toMatchObject({
+          code: "version_share_password_busy",
+          retryAfterSeconds: 1,
+        });
+        expect(blocked).toBeInstanceOf(VersionSharePasswordBusyException);
+        expect(blocked).not.toBeInstanceOf(VersionSharePasswordLockedException);
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+
+        open();
+        await Promise.allSettled(inFlight);
+        // 판정이 끝나 10건이 오답으로 확정되면 이제는 15분 창 전체가 안내된다.
+        const locked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
+        expect((locked as HttpException).getResponse()).toMatchObject({
+          code: "version_share_password_locked",
+          retryAfterSeconds: 15 * 60,
+        });
+      });
+
+      it("정답을 동시에 50건 보내면 10건만 검증되고 나머지 40건은 잠금이 아니라 일시 차단이며, 직후에는 정답이 통과한다", async () => {
+        const { service, resolveShare } = slowGuarded();
+        const results = await Promise.allSettled(
+          Array.from({ length: 50 }, () => service.resolveShare(TOKEN, "right")),
+        );
+        const rejected = results.flatMap((result) => (result.status === "rejected" ? [result.reason as HttpException] : []));
+
+        expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(10);
+        expect(rejected).toHaveLength(40);
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+        for (const error of rejected) {
+          expect(error.getStatus()).toBe(429);
+          expect(error.getResponse()).toMatchObject({ code: "version_share_password_busy", retryAfterSeconds: 1 });
+        }
+        // 오답이 하나도 없었으니 잠기지 않았다: 판정이 끝난 뒤의 정답은 곧바로 통과한다.
+        await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+      });
+
+      it("저장소가 예기치 못한 값을 돌려줘 예외가 나도 선점을 되돌려 링크가 막히지 않는다", async () => {
+        // 한도(10)만큼 반복해도 선점이 새면 그 링크는 영구히 일시 차단 상태가 된다.
+        const broken = vi.fn(
+          async (_token: string, _password?: string): Promise<VersionShareResolution> =>
+            undefined as unknown as VersionShareResolution,
+        );
+        const service = new ManuscriptVersionShareService({ resolveShare: broken } as never);
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+          await expect(service.resolveShare(TOKEN, `guess-${attempt}`)).rejects.toBeInstanceOf(TypeError);
+        }
+        expect(broken).toHaveBeenCalledTimes(12);
+
+        broken.mockImplementation(async () => okResolution);
+        await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+      });
+
+      it("링크 없음·회수·만료·저장소 오류는 오답으로 세지 않아 정상 사용자가 잠기지 않는다", async () => {
+        const outcomes: Array<() => Promise<VersionShareResolution>> = [
+          async () => ({ kind: "missing" }),
+          async () => ({ kind: "revoked" }),
+          async () => ({ kind: "expired" }),
+          async () => {
+            throw new Error("db down");
+          },
+        ];
+        for (const outcome of outcomes) {
+          const resolveShare = vi.fn(async (_token: string, password?: string): Promise<VersionShareResolution> =>
+            password === "right" ? okResolution : outcome());
+          const service = new ManuscriptVersionShareService({ resolveShare } as never);
+          // 한도의 두 배를 동시에 보내도(모두 선점됐다가 되돌려진다) 그 링크는 잠기지 않는다.
+          await Promise.allSettled(Array.from({ length: 20 }, (_, index) => service.resolveShare(TOKEN, `guess-${index}`)));
+          await Promise.allSettled(Array.from({ length: 20 }, (_, index) => service.resolveShare(TOKEN, `again-${index}`)));
+          await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+        }
+      });
+
+      it("동시 요청과 순차 요청이 섞여도 오답은 정확히 한 번씩만 센다", async () => {
+        const { service, resolveShare } = slowGuarded(5);
+        await Promise.allSettled(Array.from({ length: 5 }, (_, index) => service.resolveShare(TOKEN, `burst-${index}`)));
+        for (let index = 0; index < 4; index += 1) {
+          await expect(service.resolveShare(TOKEN, `serial-${index}`)).rejects.toMatchObject({ status: 401 });
+        }
+        // 오답 9건이 확정됐으니 10번째는 검증까지 가서 401, 11번째부터 429 이다.
+        await expect(service.resolveShare(TOKEN, "serial-9")).rejects.toMatchObject({ status: 401 });
+        await expect(service.resolveShare(TOKEN, "right")).rejects.toMatchObject({ status: 429 });
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+      });
     });
   });
 });

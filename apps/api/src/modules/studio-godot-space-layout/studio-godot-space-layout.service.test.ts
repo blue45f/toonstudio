@@ -105,6 +105,50 @@ describe("authorization", () => {
   });
 });
 
+// 협업 역할 정책(creator-collaboration.policy)에서 edit 권한이 없는 읽기 전용 역할이다.
+const READ_ONLY_ROLES: ReadonlyArray<
+  readonly [role: string, capabilities: Readonly<Record<string, boolean>>]
+> = [
+  ["viewer", { view: true, comment: false, edit: false, manageMembers: false }],
+  ["commenter", { view: true, comment: true, edit: false, manageMembers: false }],
+];
+
+describe("write authorization (읽기 전용 협업 역할은 공간 정의를 바꿀 수 없다)", () => {
+  it.each(READ_ONLY_ROLES)(
+    "%s 역할의 저장 요청은 DB 에 닿기 전에 403 으로 막힌다",
+    async (_role, capabilities) => {
+      const { service } = makeService(viewerTeam({ capabilities }));
+      await expect(
+        service.saveLayout("u1", "work-1", "street", { definition, expectedRevision: 0 }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(
+        service.saveLayout("u1", "work-1", "street", { definition, expectedRevision: 3 }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(boundary.query).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(READ_ONLY_ROLES)(
+    "%s 역할은 본문이 잘못돼도 400 이 아니라 403 을 받는다(인가가 먼저)",
+    async (_role, capabilities) => {
+      const { service } = makeService(viewerTeam({ capabilities }));
+      await expect(
+        service.saveLayout("u1", "work-1", "studio-room", { definition, expectedRevision: 0 }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    },
+  );
+
+  it.each(READ_ONLY_ROLES)(
+    "%s 역할도 저장된 공간 정의는 읽을 수 있다",
+    async (_role, capabilities) => {
+      const { service } = makeService(viewerTeam({ capabilities }));
+      boundary.query.mockResolvedValueOnce({ rows: [ROW] });
+      const layout = await service.getLayout("u1", "work-1", "street");
+      expect(layout.revision).toBe(3);
+    },
+  );
+});
+
 describe("read", () => {
   it("returns the stored layout with its revision", async () => {
     const { service } = makeService(viewerTeam());

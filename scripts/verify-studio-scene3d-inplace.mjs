@@ -1,6 +1,7 @@
 import { verifyScene3dReview } from "./lib/scene3d-review-browser-proof.mjs";
 import {
   mkdirSync,
+  mkdtempSync,
   existsSync,
   realpathSync,
   readFileSync,
@@ -16,7 +17,7 @@ import { createServer } from "vite";
 import { REPO_ROOT, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 const output =
   process.env.TOONSPECTRUM_VERIFY_DIR ??
-  join(tmpdir(), `scene3d-inplace-${Date.now()}`);
+  mkdtempSync(join(tmpdir(), "scene3d-inplace-"));
 mkdirSync(output, { recursive: true });
 const operation = process.env.SCENE3D_INPLACE_OPERATION === "release" ? "release" : "lod";
 const verifyReuse = process.env.SCENE3D_INPLACE_REUSE === "1";

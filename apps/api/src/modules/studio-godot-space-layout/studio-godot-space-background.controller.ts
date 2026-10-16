@@ -10,11 +10,13 @@ import {
   Res,
   StreamableFile,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
+import { AuthenticatedUploadGuard } from "../creator/studio-asset-upload.guard";
 import {
   GodotSpaceBackgroundAssetParamsSchema,
   GodotSpaceBackgroundWorkParamsSchema,
@@ -46,6 +48,7 @@ export class StudioGodotSpaceBackgroundController {
   ) {}
 
   @Post()
+  @UseGuards(AuthenticatedUploadGuard)
   @UseInterceptors(
     FileInterceptor("file", {
       limits: {

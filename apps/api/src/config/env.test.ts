@@ -669,3 +669,45 @@ describe("Studio voice ICE environment validation", () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 });
+
+describe("production edge origin authentication warning", () => {
+  const sessionSecret = "s".repeat(40);
+
+  it("logs a visible non-fatal error when the production web API has no edge origin secret", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    expect(() => validateEnv({
+      NODE_ENV: "production",
+      AUTH_SESSION_SECRET: sessionSecret,
+    }, logger)).not.toThrow();
+    expect(logger.error).toHaveBeenCalledOnce();
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining("CLOUDFLARE_EDGE_ORIGIN_SECRET"),
+    );
+    expect(String(logger.error.mock.calls[0]?.[0])).toContain("edgeOriginAuth");
+  });
+
+  it("stays quiet once the secret is configured", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    validateEnv({
+      NODE_ENV: "production",
+      AUTH_SESSION_SECRET: sessionSecret,
+      CLOUDFLARE_EDGE_ORIGIN_SECRET: "e".repeat(40),
+    }, logger);
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain("e".repeat(40));
+  });
+
+  it("does not warn outside the production web API role", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    validateEnv({ NODE_ENV: "development" }, logger);
+    validateEnv({
+      NODE_ENV: "production",
+      API_RUNTIME_ROLE: "capability-worker",
+      BACKEND_CAPABILITY_WORKER_ENABLED: "true",
+    }, logger);
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+});

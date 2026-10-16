@@ -19,7 +19,7 @@
  *   2 = structured environment skip because native OPFS or Web Locks is unavailable
  */
 import { createHash, randomUUID } from "node:crypto";
-import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -504,7 +504,7 @@ async function execute(scratch: string): Promise<void> {
 export async function runStudioTwoTabLeaderVerifier(): Promise<void> {
   const scratch =
     process.env.TOONSPECTRUM_TWO_TAB_VERIFY_DIR
-    ?? join(tmpdir(), `toonstudio-studio-two-tab-${Date.now()}-${randomUUID().slice(0, 8)}`);
+    ?? mkdtempSync(join(tmpdir(), "toonstudio-studio-two-tab-"));
   mkdirSync(scratch, { recursive: true });
   try {
     await execute(scratch);

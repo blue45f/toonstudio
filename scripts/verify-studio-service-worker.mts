@@ -25,6 +25,7 @@ import { chromium, type Browser, type Page } from "playwright";
 
 import { STUDIO_SERVICE_WORKER_STATIC_CRITICAL_URLS } from "../apps/web/src/app/service-worker/studio-service-worker-precache-plan";
 
+import { isPathInsideDirectory } from "./lib/path-containment.mjs";
 import { findFreePort } from "./lib/studio-verify-preview-harness.mjs";
 
 const DIST = resolve(process.cwd(), "dist");
@@ -114,7 +115,8 @@ function startStaticServer(
     }
 
     const candidate = join(DIST, normalize(pathname).replace(/^(\.\.[/\\])+/u, ""));
-    const isFile = candidate.startsWith(DIST) && existsSync(candidate)
+    // 파일을 읽어 응답하므로 dist 바깥을 가리키는 심볼릭 링크까지 바깥으로 본다(resolveSymlinks).
+    const isFile = isPathInsideDirectory(DIST, candidate, { resolveSymlinks: true }) && existsSync(candidate)
       && statSync(candidate).isFile();
     // Mirrors the production Static Assets SPA fallback to /index.html.
     const file = isFile ? candidate : join(DIST, "index.html");

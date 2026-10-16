@@ -1,6 +1,7 @@
 import { verifyScene3dReview } from "./lib/scene3d-review-browser-proof.mjs";
 import {
   mkdirSync,
+  mkdtempSync,
   realpathSync,
   writeFileSync,
   existsSync,
@@ -16,7 +17,7 @@ import { createServer } from "vite";
 import { REPO_ROOT, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 const scratch =
   process.env.TOONSPECTRUM_VERIFY_DIR ??
-  join(tmpdir(), `scene3d-specialists-${Date.now()}`);
+  mkdtempSync(join(tmpdir(), "scene3d-specialists-"));
 mkdirSync(scratch, { recursive: true });
 const bundleName =
   process.env.SCENE3D_SPECIALISTS_PRODUCTION_WORKER === "1"

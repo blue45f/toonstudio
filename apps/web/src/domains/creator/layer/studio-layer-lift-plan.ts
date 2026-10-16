@@ -214,6 +214,8 @@ function imageOutputFromFlattenedSource(
       ? {}
       : { communityAssetCredit: source.communityAssetCredit }),
     ...(source.aiProvenance === undefined ? {} : { aiProvenance: source.aiProvenance }),
+    // 컷 자동 감지 가져오기가 남긴 권리 확인 기록. 분리된 층도 같은 원고에서 나온 픽셀이므로 이어받아야 권리 명세에서 한 자산으로 묶인다.
+    ...(source.sourceRights === undefined ? {} : { sourceRights: source.sourceRights }),
     groupId: input.groupId,
     hidden: false,
     locked: false,

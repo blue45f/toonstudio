@@ -30,7 +30,7 @@ function AlertList({ alerts }: { alerts: WebVitalsAlert[] }) {
   if (alerts.length === 0) return null;
   return (
     <section aria-label="성능 회귀 경보" className="mt-6">
-      <h2 className="flex items-center gap-2 text-base font-semibold text-red-700">
+      <h2 className="flex items-center gap-2 text-base font-semibold text-bad">
         <AlertTriangle className="h-5 w-5" aria-hidden />
         회귀 경보 {alerts.length}건
       </h2>
@@ -40,8 +40,8 @@ function AlertList({ alerts }: { alerts: WebVitalsAlert[] }) {
             key={`${alert.path}-${alert.metric}-${alert.kind}`}
             className={
               alert.severity === "critical"
-                ? "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
-                : "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                ? "rounded-xl border border-bad/40 bg-bad/10 px-4 py-3 text-sm text-fg"
+                : "rounded-xl border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-fg"
             }
           >
             <span className="font-semibold">
@@ -59,7 +59,7 @@ function PathCard({ summary }: { summary: WebVitalsPathSummary }) {
   return (
     <section
       aria-label={`${summary.path} 성능 실측`}
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="rounded-2xl border border-line bg-card p-5"
     >
       <header className="flex items-center justify-between">
         <h3 className="text-base font-semibold">{summary.path}</h3>
@@ -81,8 +81,8 @@ function PathCard({ summary }: { summary: WebVitalsPathSummary }) {
       </header>
       <dl className="mt-4 grid grid-cols-3 gap-3">
         {summary.metrics.map((metric) => (
-          <div key={metric.metric} className="rounded-xl bg-slate-50 px-3 py-3">
-            <dt className="text-xs font-medium text-slate-500">
+          <div key={metric.metric} className="rounded-xl bg-panel px-3 py-3">
+            <dt className="text-xs font-medium text-fg-3">
               {metric.metric} · p75
             </dt>
             <dd className="mt-1 text-lg font-bold">
@@ -94,7 +94,7 @@ function PathCard({ summary }: { summary: WebVitalsPathSummary }) {
               >
                 {webVitalRatingLabel(metric.rating)}
               </span>
-              <span className="ml-2 text-xs text-slate-400">
+              <span className="ml-2 text-xs text-fg-3">
                 표본 {metric.samples}건
               </span>
             </dd>
@@ -162,8 +162,8 @@ export function WebVitalsDashboardPage() {
           ))}
         </div>
       ) : error && !data ? (
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-center">
-          <p className="text-sm text-slate-600">
+        <div className="mt-6 rounded-2xl border border-line bg-card p-6 text-center">
+          <p className="text-sm text-fg-2">
             {t("adminWebVitals.loadFailed", "성능 실측을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.")}
           </p>
           <button
@@ -178,7 +178,7 @@ export function WebVitalsDashboardPage() {
         <>
           <AlertList alerts={data.alerts} />
           {data.paths.length === 0 ? (
-            <p className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+            <p className="mt-6 rounded-2xl border border-line bg-card p-6 text-center text-sm text-fg-2">
               {t(
                 "adminWebVitals.empty",
                 "아직 수집된 실측 데이터가 없어요. 공개 페이지 방문이 쌓이면 여기에 표시됩니다.",
@@ -191,7 +191,7 @@ export function WebVitalsDashboardPage() {
               ))}
             </div>
           )}
-          <p className="mt-4 text-xs text-slate-400">
+          <p className="mt-4 text-xs text-fg-3">
             최근 {data.windowDays}일 실측 · 직전 {data.windowDays}일과 비교해 회귀를 판정합니다 ·
             기준 LCP 2.5초 · CLS 0.1 · INP 200ms (p75)
           </p>

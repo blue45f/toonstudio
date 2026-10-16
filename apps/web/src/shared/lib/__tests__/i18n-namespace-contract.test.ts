@@ -47,7 +47,29 @@ const LEGACY_REVERSED_NAMESPACES: readonly string[] = [];
  * its files here in the same change; the scan then keeps inline bilingual
  * authoring out of them for good.
  */
-const GUARDED_NEW_SURFACE_FILES = ["apps/web/src/app/AppShell.tsx"];
+const GUARDED_NEW_SURFACE_FILES = [
+  "apps/web/src/app/AppShell.tsx",
+  // 컷 감지·카드뉴스 가져오기 화면(panelImport 네임스페이스). 화면 문구는 키로만 쓰고, 사용자 값은 번역 원문이 아니라 {자리표시} 값으로만
+  // 넘긴다(번역 서비스로 파일 이름·행 번호가 나가지 않게 하는 일은 panel-detect 의 시험이 따로 지킨다).
+  "apps/web/src/domains/creator/panel-detect/panel-import-i18n.ts",
+  "apps/web/src/domains/creator/panel-detect/ui/panel-import-copy.ts",
+  "apps/web/src/domains/creator/panel-detect/ui/use-panel-t.ts",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelCanvasEditor.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelCardCutControls.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelCardFlow.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelCardPreview.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelCutInspector.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelCutList.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelDetectControls.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelImportEntry.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelImportWorkbench.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelJobStatus.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelReflowFlow.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelReflowPreview.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelReflowStep.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelReviewStep.tsx",
+  "apps/web/src/domains/creator/panel-detect/ui/PanelSourceStep.tsx",
+];
 
 function readNamespaceSnapshot(namespace: string): I18nNamespaceSnapshot {
   const directory = path.join(ASSET_DIRECTORY, namespace);

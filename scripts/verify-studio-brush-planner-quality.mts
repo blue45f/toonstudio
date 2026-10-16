@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -20,7 +20,7 @@ import {
 
 const OUTPUT_ROOT = resolve(
   process.env.TOONSPECTRUM_BRUSH_QUALITY_VERIFY_DIR?.trim()
-    || join(tmpdir(), `toonstudio-brush-planner-quality-${Date.now()}`),
+    || mkdtempSync(join(tmpdir(), "toonstudio-brush-planner-quality-")),
 );
 const REPORT_PATH = join(OUTPUT_ROOT, "studio-brush-planner-quality-report.json");
 

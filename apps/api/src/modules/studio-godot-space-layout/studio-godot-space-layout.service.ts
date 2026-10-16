@@ -18,6 +18,9 @@ import {
 /**
  * 작품 멤버십이 공간 정의 접근의 권한 경계다 (voice ICE 정책과 동일).
  * 팀에 없는 작품은 존재 자체를 숨기기 위해 404로 답한다.
+ *
+ * 읽기는 활성 구성원(view) 전원에게 열리지만 저장은 편집 권한(edit)이 있는 역할만 한다.
+ * viewer·commenter 는 협업 역할 정책상 읽기 전용이라 공간 정의를 덮어쓸 수 없다.
  */
 @Injectable()
 export class StudioGodotSpaceLayoutService {
@@ -25,13 +28,20 @@ export class StudioGodotSpaceLayoutService {
     @Inject(CreatorService) private readonly creatorService: CreatorService,
   ) {}
 
-  private async requireViewer(userId: string | undefined, workId: string) {
+  private async requireViewer(
+    userId: string | undefined,
+    workId: string,
+    need: "view" | "edit" = "view",
+  ) {
     const id = userId?.trim();
     if (!id) throw new ForbiddenException("로그인이 필요합니다.");
 
     const { viewer } = await this.creatorService.getWorkTeam(id, workId);
     if (!viewer || viewer.status !== "active" || !viewer.capabilities.view) {
       throw new ForbiddenException("이 작품의 공간 정의를 볼 권한이 없습니다.");
+    }
+    if (need === "edit" && !viewer.capabilities.edit) {
+      throw new ForbiddenException("이 작품의 공간 정의를 수정할 권한이 없습니다.");
     }
     return viewer;
   }
@@ -76,7 +86,7 @@ export class StudioGodotSpaceLayoutService {
     spaceId: string,
     body: SaveGodotSpaceLayoutBody,
   ): Promise<GodotSpaceLayoutDto> {
-    const viewer = await this.requireViewer(userId, workId);
+    const viewer = await this.requireViewer(userId, workId, "edit");
     if (body.definition.id !== spaceId) {
       throw new BadRequestException("경로의 spaceId와 정의의 id가 다릅니다.");
     }

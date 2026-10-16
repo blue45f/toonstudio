@@ -4,6 +4,8 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
@@ -12,6 +14,7 @@ import {
 } from "@nestjs/common";
 import { and, desc, eq } from "drizzle-orm";
 
+import { rateLimit } from "@toonstudio/contracts/rate-limit";
 import {
   STUDIO_VIRTUAL_CUSTOM_FURNITURE_EDGE,
   admitStudioVirtualCustomFurniture,
@@ -33,6 +36,14 @@ const READ_URL_TTL_SECONDS = 900;
 
 /** 목록 한 번에 주는 개수. */
 const LIST_LIMIT = 60;
+
+/**
+ * 계정별 업로드 시도 한도. 한 번의 업로드는 이미지 디코드·재인코딩(CPU)과 오브젝트 저장소 쓰기를
+ * 일으키고 삭제 경로가 없어 쌓이기만 하므로, 한 계정이 반복 호출로 서버를 점유하지 못하게 한다.
+ * 가구를 한 번에 꾸미는 정상 사용(수 장)에는 닿지 않는 값이다.
+ */
+const UPLOAD_ATTEMPTS_PER_HOUR = 30;
+const UPLOAD_WINDOW_MS = 60 * 60_000;
 
 function opaqueControlId(namespace: string, value: string): string {
   return `${namespace}:${createHash("sha256").update(value).digest("hex")}`;
@@ -103,6 +114,12 @@ export class StudioVirtualSpaceFurnitureService {
    */
   async upload(userId: string | undefined, body: unknown): Promise<StudioVirtualCustomFurnitureSummary> {
     const owner = await this.requireActiveUser(userId);
+    if (!rateLimit(`studio-furniture-upload:${owner}`, UPLOAD_ATTEMPTS_PER_HOUR, UPLOAD_WINDOW_MS)) {
+      throw new HttpException(
+        "가구 업로드 한도에 도달했어요. 잠시 후 다시 시도해 주세요.",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
     const storage = await this.requireStorage();
 
     const input = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;

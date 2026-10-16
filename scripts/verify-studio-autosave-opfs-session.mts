@@ -24,6 +24,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
   mkdirSync,
+  mkdtempSync,
   readFileSync,
   realpathSync,
   readdirSync,
@@ -1066,10 +1067,7 @@ export async function runStudioAutosaveOpfsBrowserVerifier(): Promise<void> {
   const scratch =
     process.env.TOONSPECTRUM_AUTOSAVE_OPFS_VERIFY_DIR
     ?? process.env.TOONSPECTRUM_VERIFY_DIR
-    ?? join(
-      tmpdir(),
-      `toonstudio-studio-autosave-opfs-${Date.now()}-${randomUUID().slice(0, 8)}`,
-    );
+    ?? mkdtempSync(join(tmpdir(), "toonstudio-studio-autosave-opfs-"));
   const plan = createStudioAutosaveOpfsBrowserRunPlan(scratch);
   mkdirSync(plan.scratch, { recursive: true });
 

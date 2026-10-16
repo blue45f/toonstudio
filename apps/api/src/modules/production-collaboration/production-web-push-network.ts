@@ -4,6 +4,8 @@ import { isIP } from "node:net";
 
 import { isPublicOutboundAddress } from "../../platform/adapters/network/public-endpoint";
 
+import { isWebPushHostAllowed, resolveWebPushPolicy } from "./production-web-push-policy";
+
 import type { LookupFunction } from "node:net";
 
 const MAXIMUM_ENDPOINT_LENGTH = 4_096;
@@ -21,20 +23,31 @@ function containsAmbiguousCharacter(value: string): boolean {
   return false;
 }
 
+export type WebPushEndpointVerdict =
+  | { readonly kind: "accepted"; readonly url: URL }
+  /** 공개 도메인의 표준 포트 HTTPS 이지만 허용 목록에 없는 호스트. 구독을 지우지 말고 건너뛴다. */
+  | { readonly kind: "host-not-allowed"; readonly hostname: string }
+  /** 형식 위반, IP 리터럴, 내부 도메인, 인증 정보, 비표준 포트 등. 전송할 수 없는 값이다. */
+  | { readonly kind: "rejected" };
+
 /**
  * 브라우저가 발급하는 웹 푸시 구독 endpoint 로 허용할 수 있는 주소인지 판정한다.
  * 서버가 이 주소로 직접 요청을 보내므로, 공개 도메인 이름을 가진 표준 포트(443)의 HTTPS 만 인정하고
- * IP 리터럴, localhost, 내부 도메인 접미사, 인증 정보, 비표준 포트를 거부한다.
+ * IP 리터럴, localhost, 내부 도메인 접미사, 인증 정보, 비표준 포트를 거부한다. 여기에 더해 호스트가
+ * 표준 푸시 서비스(FCM·Apple·Mozilla·Windows)이거나 운영자가 환경 변수로 더한 호스트일 때만 통과시킨다.
  * 통과하면 WHATWG 로 정규화한 URL 을 돌려준다(전송에도 이 정규형을 쓴다).
  */
-export function parseWebPushEndpoint(value: string): URL | null {
-  if (value.length === 0 || value.length > MAXIMUM_ENDPOINT_LENGTH) return null;
-  if (containsAmbiguousCharacter(value)) return null;
+export function classifyWebPushEndpoint(
+  value: string,
+  allowedHosts: readonly string[] = resolveWebPushPolicy().allowedHosts,
+): WebPushEndpointVerdict {
+  if (value.length === 0 || value.length > MAXIMUM_ENDPOINT_LENGTH) return { kind: "rejected" };
+  if (containsAmbiguousCharacter(value)) return { kind: "rejected" };
   let url: URL;
   try {
     url = new URL(value);
   } catch {
-    return null;
+    return { kind: "rejected" };
   }
   if (
     url.protocol !== "https:"
@@ -42,7 +55,7 @@ export function parseWebPushEndpoint(value: string): URL | null {
     || url.password
     || (url.port && url.port !== "443")
   ) {
-    return null;
+    return { kind: "rejected" };
   }
   const hostname = url.hostname.replace(/^\[|\]$/gu, "").replace(/\.$/u, "").toLowerCase();
   if (
@@ -52,9 +65,19 @@ export function parseWebPushEndpoint(value: string): URL | null {
     || !hostname.includes(".")
     || INTERNAL_HOST_SUFFIX.test(hostname)
   ) {
-    return null;
+    return { kind: "rejected" };
   }
-  return url;
+  if (!isWebPushHostAllowed(hostname, allowedHosts)) return { kind: "host-not-allowed", hostname };
+  return { kind: "accepted", url };
+}
+
+/** 구독 등록 검증용: 전송 가능한 endpoint 만 URL 로 돌려주고 그 외에는 null. */
+export function parseWebPushEndpoint(
+  value: string,
+  allowedHosts?: readonly string[],
+): URL | null {
+  const verdict = classifyWebPushEndpoint(value, allowedHosts);
+  return verdict.kind === "accepted" ? verdict.url : null;
 }
 
 export interface WebPushDnsAnswer {

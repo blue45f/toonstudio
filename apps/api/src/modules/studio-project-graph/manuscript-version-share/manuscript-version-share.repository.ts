@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomUUID, scrypt, scryptSync, timingSafeEqual } from "node:crypto";
 
 import {
   ConflictException,
@@ -106,13 +106,29 @@ export function hashVersionSharePassword(password: string): string {
   return `${PASSWORD_SCHEME}$${salt.toString("hex")}$${digest.toString("hex")}`;
 }
 
-export function verifyVersionSharePassword(password: string, stored: string): boolean {
+function scryptDigest(password: string, salt: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, 32, (error, derivedKey) => {
+      if (error) reject(error);
+      else resolve(derivedKey);
+    });
+  });
+}
+
+/**
+ * 비밀번호 검증은 비동기 scrypt 로 한다. 동기 scrypt 는 시도마다 이벤트 루프를 수십 ms 점유해, 비밀번호를
+ * 반복해서 보내는 요청 하나가 같은 프로세스의 모든 요청을 멈추게 할 수 있다.
+ */
+export async function verifyVersionSharePassword(
+  password: string,
+  stored: string,
+): Promise<boolean> {
   const [scheme, saltHex, digestHex] = stored.split("$");
   if (scheme !== PASSWORD_SCHEME || !saltHex || !digestHex) return false;
   const salt = Buffer.from(saltHex, "hex");
   const expected = Buffer.from(digestHex, "hex");
   if (salt.length !== 16 || expected.length !== 32) return false;
-  const actual = scryptSync(password, salt, 32);
+  const actual = await scryptDigest(password, salt);
   return timingSafeEqual(actual, expected);
 }
 
@@ -526,7 +542,7 @@ export class ManuscriptVersionShareRepository {
       }
       if (share.passwordHash) {
         if (!password) return { kind: "password_required" };
-        if (!verifyVersionSharePassword(password, share.passwordHash)) {
+        if (!(await verifyVersionSharePassword(password, share.passwordHash))) {
           return { kind: "password_invalid" };
         }
       }
