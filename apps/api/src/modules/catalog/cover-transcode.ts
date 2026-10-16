@@ -1,6 +1,7 @@
-import { decode, encodeJpeg, encodePng } from "image-js";
+import { Image, decode, encodeJpeg, encodePng } from "image-js";
+import { decode as decodeJpegPixels } from "jpeg-js";
 
-import { COVER_MAX_DECODE_PIXELS } from "./cover-decode-limits";
+import { COVER_JPEG_DECODE_OPTIONS, guardJpeg } from "./cover-jpeg-guard";
 import { PNG_SIGNATURE, guardPng } from "./cover-png-guard";
 
 // 디코드 상한은 사전 검사 모듈과 같은 값을 쓴다(cover-decode-limits.ts). 기존 import 경로를 지키려고 다시 내보낸다.
@@ -37,11 +38,6 @@ const COVER_JPEG_QUALITY = 82;
 
 type CoverFormat = "png" | "jpeg";
 
-interface DeclaredImage {
-  readonly width: number;
-  readonly height: number;
-}
-
 /**
  * 형식은 Content-Type 이 아니라 매직 바이트로 정한다. Content-Type 은 업스트림이 마음대로 붙이는 라벨이라,
  * TIFF 에 PNG 라벨을 붙이고 12~23바이트에 가짜 IHDR(1x1)을 심으면 선언 크기 검사를 통과한 채 image-js 가 실제
@@ -55,40 +51,24 @@ function sniffCoverFormat(body: Buffer): CoverFormat | null {
   return null;
 }
 
-/** 디코드하지 않고 JPEG SOF 헤더에서 선언된 크기만 읽는다. 읽을 수 없으면 null. */
-function readDeclaredJpeg(body: Buffer): DeclaredImage | null {
-  if (body.length < 4 || body[0] !== 0xff || body[1] !== 0xd8) return null;
-  let offset = 2;
-  while (offset + 4 <= body.length) {
-    if (body[offset] !== 0xff) {
-      offset += 1;
-      continue;
+/**
+ * 사전 검사를 통과한 표지를 디코드한다. PNG 는 검사가 확인한 청크로 다시 조립한 PNG 를 image-js 로, JPEG 는 한도를
+ * 건 jpeg-js 로 직접 풀어 화소를 image-js 의 Image 로 넘긴다(image-js 의 decode 는 jpeg-js 한도를 끄고 부른다).
+ * 어느 단계든 실패하면 null.
+ */
+function decodeGuarded(body: Buffer, format: CoverFormat): ReturnType<typeof decode> | null {
+  try {
+    if (format === "png") {
+      const guarded = guardPng(body);
+      return guarded === null ? null : decode(guarded.sanitized);
     }
-    const marker = body[offset + 1];
-    if (marker === undefined) return null;
-    if (marker === 0xff) {
-      // 마커 앞의 채움 바이트다.
-      offset += 1;
-      continue;
-    }
-    // 길이 필드가 없는 마커(TEM, RSTn, SOI)는 두 바이트만 건너뛴다.
-    if (marker === 0x01 || marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7)) {
-      offset += 2;
-      continue;
-    }
-    // 프레임 헤더(SOF)보다 먼저 스캔(SOS)이나 끝(EOI)이 나오면 크기를 알 수 없다.
-    if (marker === 0xd9 || marker === 0xda) return null;
-    const segmentLength = body.readUInt16BE(offset + 2);
-    if (segmentLength < 2) return null;
-    const isFrameHeader =
-      marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
-    if (isFrameHeader) {
-      if (offset + 9 > body.length) return null;
-      return { height: body.readUInt16BE(offset + 5), width: body.readUInt16BE(offset + 7) };
-    }
-    offset += 2 + segmentLength;
+    if (guardJpeg(body) === null) return null;
+    // image-js 의 decodeJpeg 와 같은 결과(8비트 RGBA)다. EXIF 메타는 리사이즈·인코드에 쓰이지 않아 읽지 않는다.
+    const pixels = decodeJpegPixels(body, COVER_JPEG_DECODE_OPTIONS);
+    return new Image(pixels.width, pixels.height, { data: pixels.data, colorModel: "RGBA" });
+  } catch {
+    return null;
   }
-  return null;
 }
 
 /**
@@ -104,27 +84,11 @@ export function transcodeCoverToWidth(
   if (type !== "image/jpeg" && type !== "image/jpg" && type !== "image/png") return null;
   if (!Number.isInteger(targetWidth) || targetWidth < 1) return null;
 
-  // 디코드는 선언된 크기만큼 메모리를 할당하므로, 형식을 매직 바이트로 정하고 헤더로 크기를 먼저 확인한다.
-  // PNG 는 검사한 바이트 그대로가 아니라 검사가 확인한 청크로 다시 조립한 PNG 를 디코드한다(cover-png-guard.ts).
+  // 디코드는 선언된 크기만큼 메모리를 할당하므로, 형식을 매직 바이트로 정하고 사전 검사를 통과한 입력만 디코드한다.
   const format = sniffCoverFormat(body);
   if (format === null) return null;
-  let decodable: Buffer;
-  if (format === "png") {
-    const guarded = guardPng(body);
-    if (guarded === null) return null;
-    decodable = guarded.sanitized;
-  } else {
-    const declared = readDeclaredJpeg(body);
-    if (declared === null || declared.width * declared.height > COVER_MAX_DECODE_PIXELS) return null;
-    decodable = body;
-  }
-
-  let image: ReturnType<typeof decode>;
-  try {
-    image = decode(decodable);
-  } catch {
-    return null;
-  }
+  const image = decodeGuarded(body, format);
+  if (image === null) return null;
   if (image.width <= targetWidth) return null;
 
   try {

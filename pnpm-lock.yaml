@@ -663,6 +663,9 @@ importers:
       image-js:
         specifier: ^1.7.0
         version: 1.7.0
+      jpeg-js:
+        specifier: 0.4.4
+        version: 0.4.4
       js-base64:
         specifier: ^3.9.0
         version: 3.9.0

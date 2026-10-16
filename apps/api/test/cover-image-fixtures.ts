@@ -161,3 +161,89 @@ export function pngChunksHaveValidCrc(png: Buffer): boolean {
   }
   return false;
 }
+
+// ---- JPEG ----------------------------------------------------------------------------------------------------
+// 마커 구조를 바이트 단위로 직접 만든다. 헤더만 있는 입력은 디코더가 풀 수 없지만 사전 검사·한도 시험에는 충분하다.
+
+export const JPEG_SOI = Buffer.from([0xff, 0xd8]);
+export const JPEG_EOI = Buffer.from([0xff, 0xd9]);
+
+/** 마커 + 길이(본문 + 2) + 본문. */
+export function jpegSegment(marker: number, payload: Buffer): Buffer {
+  const header = Buffer.from([0xff, marker, 0, 0]);
+  header.writeUInt16BE(payload.length + 2, 2);
+  return Buffer.concat([header, payload]);
+}
+
+/** 프레임 헤더(SOF). 성분은 id 1..n, 표집 계수 1x1, 양자화 표 0 이다. */
+export function jpegSof(width: number, height: number, components: number, marker = 0xc0): Buffer {
+  const payload = Buffer.alloc(6 + 3 * components);
+  payload[0] = 8;
+  payload.writeUInt16BE(height, 1);
+  payload.writeUInt16BE(width, 3);
+  payload[5] = components;
+  for (let index = 0; index < components; index += 1) {
+    payload[6 + 3 * index] = (index + 1) & 0xff;
+    payload[7 + 3 * index] = 0x11;
+  }
+  return jpegSegment(marker, payload);
+}
+
+/** 스캔 시작(SOS) 헤더. 엔트로피 부호화 데이터는 호출부가 뒤에 붙인다. */
+export function jpegSos(components = 3): Buffer {
+  const payload = Buffer.alloc(4 + 2 * components);
+  payload[0] = components;
+  for (let index = 0; index < components; index += 1) payload[1 + 2 * index] = index + 1;
+  payload[1 + 2 * components + 2] = 0; // Ah/Al
+  return jpegSegment(0xda, payload);
+}
+
+export function concatBytes(...parts: readonly Buffer[]): Buffer {
+  return Buffer.concat(parts);
+}
+
+/** 맨 뒤의 EOI 를 떼어, 뒤에 마커를 더 붙일 수 있게 한다. */
+export function withoutEoi(jpeg: Buffer): Buffer {
+  return jpeg.subarray(0, jpeg.length - 2);
+}
+
+/**
+ * EXIF(APP1) 세그먼트: 방향(Orientation)과 IFD1 의 JPEG 썸네일을 가진 빅엔디언 TIFF. 카메라 사진은 APP1 안에
+ * 완전한 썸네일 JPEG(자기 SOI·SOF·SOS)를 싣는다. 마커 순회가 이 안의 SOF 를 프레임으로 오인하지 않는지 본다.
+ */
+export function exifApp1WithThumbnail(thumbnail: Buffer, orientation = 6): Buffer {
+  const ifd0 = 8;
+  const ifd1 = ifd0 + 2 + 12 + 4;
+  const thumbnailOffset = ifd1 + 2 + 3 * 12 + 4;
+  const tiff = Buffer.alloc(thumbnailOffset + thumbnail.length);
+  tiff.write("MM", 0, "ascii");
+  tiff.writeUInt16BE(0x2a, 2);
+  tiff.writeUInt32BE(ifd0, 4);
+  tiff.writeUInt16BE(1, ifd0);
+  tiff.writeUInt16BE(0x0112, ifd0 + 2); // Orientation
+  tiff.writeUInt16BE(3, ifd0 + 4); // SHORT
+  tiff.writeUInt32BE(1, ifd0 + 6);
+  tiff.writeUInt16BE(orientation, ifd0 + 10);
+  tiff.writeUInt32BE(ifd1, ifd0 + 14);
+  tiff.writeUInt16BE(3, ifd1);
+  const entries: ReadonlyArray<readonly [number, number, number]> = [
+    [0x0103, 3, 6], // Compression: JPEG
+    [0x0201, 4, thumbnailOffset], // JPEGInterchangeFormat
+    [0x0202, 4, thumbnail.length], // JPEGInterchangeFormatLength
+  ];
+  entries.forEach(([tag, type, value], index) => {
+    const at = ifd1 + 2 + index * 12;
+    tiff.writeUInt16BE(tag, at);
+    tiff.writeUInt16BE(type, at + 2);
+    tiff.writeUInt32BE(1, at + 4);
+    if (type === 3) tiff.writeUInt16BE(value, at + 8);
+    else tiff.writeUInt32BE(value, at + 8);
+  });
+  thumbnail.copy(tiff, thumbnailOffset);
+  return jpegSegment(0xe1, Buffer.concat([Buffer.from("Exif\0\0", "latin1"), tiff]));
+}
+
+/** SOI 바로 뒤에 세그먼트를 끼운다(APPn·COM 은 SOF 앞 어디에 있어도 된다). */
+export function insertAfterSoi(jpeg: Buffer, segment: Buffer): Buffer {
+  return Buffer.concat([jpeg.subarray(0, 2), segment, jpeg.subarray(2)]);
+}

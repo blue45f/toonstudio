@@ -14,3 +14,10 @@ export const COVER_MAX_DECODE_PIXELS = 16_000_000;
  * 선언대로 정직한 이미지도 큰 메모리를 쓴다. 8비트 RGBA 4000x4000(약 64MB)이 들어가는 크기로 잡는다.
  */
 export const COVER_MAX_DECODE_RAW_BYTES = 64 * 1024 * 1024;
+
+/**
+ * JPEG 디코더(jpeg-js)가 한 번의 디코드에서 할당할 수 있는 누적 메모리 예산(MB). jpeg-js 는 블록·행·출력 버퍼를
+ * 할당하기 전에 이 예산을 확인하고 넘으면 던진다. 상한(1600만 화소)인 정상 이미지가 쓰는 계상량은 실측으로
+ * 회색 153MB, 4:2:0 222MB, 4:4:4(프로그레시브 포함) 336MB, CMYK 428MB 라 512MB 면 정상 이미지를 막지 않는다.
+ */
+export const COVER_JPEG_DECODE_MEMORY_MB = 512;

@@ -5,11 +5,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   IEND_CHUNK,
+  JPEG_EOI,
+  JPEG_SOI,
+  concatBytes,
   ihdrChunk,
   inflatingIccpChunk,
+  jpegSof,
+  jpegSos,
   pngFile,
+  withoutEoi,
   zeroRunIdat,
 } from "../../../test/cover-image-fixtures";
+import { COVER_JPEG_SAMPLES } from "../../../test/cover-jpeg-samples";
 import { COVER_MAX_DECODE_RAW_BYTES, transcodeCoverToWidth } from "./cover-transcode";
 
 // 디코드 호출 여부가 핵심 계약이라 image-js 의 decode 를 실제 구현 그대로 감싸서 호출만 센다.
@@ -18,6 +25,18 @@ vi.mock("image-js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("image-js")>();
   decodeSpy.mockImplementation(actual.decode);
   return { ...actual, decode: decodeSpy };
+});
+// JPEG 는 image-js 가 아니라 jpeg-js 를 한도와 함께 직접 부른다. 호출과 옵션을 세고, 실제 구현은 따로 꺼내 둔다
+// (사전 검사를 비껴간 입력을 한도만으로 막는지 시험할 때 실제 jpeg-js 에 같은 옵션을 준다).
+const { jpegDecodeSpy, actualJpegDecode } = vi.hoisted(() => ({
+  jpegDecodeSpy: vi.fn(),
+  actualJpegDecode: { current: undefined as undefined | ((data: Uint8Array, options: object) => unknown) },
+}));
+vi.mock("jpeg-js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("jpeg-js")>();
+  actualJpegDecode.current = actual.decode as (data: Uint8Array, options: object) => unknown;
+  jpegDecodeSpy.mockImplementation(actual.decode);
+  return { ...actual, decode: jpegDecodeSpy };
 });
 
 const CRC_TABLE = (() => {
@@ -118,6 +137,7 @@ function realImage(width: number, height: number): Image {
 describe("transcodeCoverToWidth 디코드 크기 상한(이미지 폭탄 방어)", () => {
   beforeEach(() => {
     decodeSpy.mockClear();
+    jpegDecodeSpy.mockClear();
   });
 
   it("작은 파일이 거대한 픽셀로 풀리는 PNG 는 디코드하지 않고 null 을 돌려준다", () => {
@@ -132,6 +152,7 @@ describe("transcodeCoverToWidth 디코드 크기 상한(이미지 폭탄 방어)
   ])("거대한 크기를 선언한 %s JPEG 도 디코드하지 않는다", (_label, marker) => {
     expect(transcodeCoverToWidth(jpegHeader(30_000, 30_000, marker), "image/jpeg", 320)).toBeNull();
     expect(decodeSpy).not.toHaveBeenCalled();
+    expect(jpegDecodeSpy).not.toHaveBeenCalled();
   });
 
   it("상한(1600만 화소) 이하의 정상 이미지는 그대로 변환한다", () => {
@@ -139,7 +160,9 @@ describe("transcodeCoverToWidth 디코드 크기 상한(이미지 폭탄 방어)
     const jpeg = Buffer.from(encode(realImage(800, 1200), { format: "jpeg" }));
     expect(transcodeCoverToWidth(png, "image/png", 160)?.width).toBe(160);
     expect(transcodeCoverToWidth(jpeg, "image/jpeg", 320)?.width).toBe(320);
-    expect(decodeSpy).toHaveBeenCalledTimes(2);
+    // PNG 는 image-js 로, JPEG 는 한도를 건 jpeg-js 로 디코드한다.
+    expect(decodeSpy).toHaveBeenCalledTimes(1);
+    expect(jpegDecodeSpy).toHaveBeenCalledTimes(1);
   });
 
   it("상한 바로 위의 선언 크기는 거절하고 바로 아래는 실제로 디코드해 변환한다", () => {
@@ -161,12 +184,14 @@ describe("transcodeCoverToWidth 디코드 크기 상한(이미지 폭탄 방어)
     expect(transcodeCoverToWidth(jpegWithoutFrame, "image/jpeg", 320)).toBeNull();
     expect(transcodeCoverToWidth(Buffer.from("not an image at all, just text"), "image/png", 320)).toBeNull();
     expect(decodeSpy).not.toHaveBeenCalled();
+    expect(jpegDecodeSpy).not.toHaveBeenCalled();
   });
 });
 
 describe("transcodeCoverToWidth 형식 위장·팽창 우회 방어", () => {
   beforeEach(() => {
     decodeSpy.mockClear();
+    jpegDecodeSpy.mockClear();
   });
 
   it("TIFF 에 PNG 라벨과 가짜 IHDR(1x1)을 붙여도 서명이 PNG·JPEG 가 아니면 디코드하지 않는다", () => {
@@ -269,5 +294,72 @@ describe("transcodeCoverToWidth 형식 위장·팽창 우회 방어", () => {
   it("잘린 PNG(IEND 없이 IDAT 중간에서 끊김)는 변환하지 않고 원본 중계에 맡긴다", () => {
     const honest = Buffer.from(encodePng(realImage(640, 960)));
     expect(transcodeCoverToWidth(honest.subarray(0, Math.floor(honest.length / 2)), "image/png", 160)).toBeNull();
+  });
+});
+
+describe("transcodeCoverToWidth JPEG 프레임 은닉·성분 수 방어", () => {
+  beforeEach(() => {
+    decodeSpy.mockClear();
+    jpegDecodeSpy.mockClear();
+  });
+
+  /** 디코더를 전혀 부르지 않고 거절했는지: 이전 구현은 이런 입력도 image-js 로 디코드했다(그 사이 수백 MB~수 GB 를 할당). */
+  function expectRejectedBeforeDecode(jpeg: Buffer): void {
+    expect(transcodeCoverToWidth(jpeg, "image/jpeg", 320)).toBeNull();
+    expect(decodeSpy).not.toHaveBeenCalled();
+    expect(jpegDecodeSpy).not.toHaveBeenCalled();
+  }
+
+  const realJpeg = (): Buffer => COVER_JPEG_SAMPLES.ycbcr420!.bytes;
+
+  it("프레임 헤더가 둘이면 디코드하지 않는다(작은 SOF 뒤에 상한을 넘는 SOF, 이전엔 두 번째 SOF 의 블록까지 할당했다)", () => {
+    // 실제 공격은 1x1 뒤 8000x8000(+1.8GB)·30000x30000(힙 OOM 으로 프로세스 종료)이었다. 같은 구조를 상한 바로 위로 줄였다.
+    expectRejectedBeforeDecode(concatBytes(JPEG_SOI, jpegSof(1, 1, 3), jpegSof(4_001, 4_000, 3), JPEG_EOI));
+    expectRejectedBeforeDecode(concatBytes(JPEG_SOI, jpegSof(4_001, 4_000, 3), jpegSof(1, 1, 3), JPEG_EOI));
+  });
+
+  it("FF00 으로 옛 검사기를 비껴가던 파일도 디코드하지 않는다", () => {
+    const front = concatBytes(JPEG_SOI, Buffer.from([0xff, 0x00]), jpegSof(4_001, 4_000, 3));
+    const skipTo = 2 + 2 + 0xffc0; // 옛 검사기는 FF00 뒤 FFC0(=65472)를 길이로 읽어 여기까지 건너뛰고 작은 SOF 를 봤다
+    expectRejectedBeforeDecode(
+      concatBytes(front, Buffer.alloc(skipTo - front.length, 0xff), jpegSof(1, 1, 3), JPEG_EOI),
+    );
+  });
+
+  it("정상 스캔 뒤에 숨긴 두 번째 프레임 헤더도 디코드하지 않는다", () => {
+    expectRejectedBeforeDecode(concatBytes(withoutEoi(realJpeg()), jpegSof(4_001, 4_000, 3), JPEG_EOI));
+  });
+
+  it.each([
+    [8, 4_000, 4_000],
+    [255, 4_000, 4_000],
+    [5, 500, 500],
+    [2, 500, 500],
+  ])("성분이 %i개인 JPEG(%ix%i)는 크기가 상한 안이어도 디코드하지 않는다", (components, width, height) => {
+    // 실제 공격은 4000x4000 선언에 8성분(+1.2GB)·255성분(힙 OOM)이었다. jpeg-js 의 메모리 예산만으로는 7성분 분량
+    // (약 700MB)을 할당한 뒤에야 멈춘다.
+    expectRejectedBeforeDecode(concatBytes(JPEG_SOI, jpegSof(width, height, components), jpegSos(components), JPEG_EOI));
+  });
+
+  it("정상 JPEG 는 image-js 의 decode 가 아니라 화소·메모리 한도를 건 jpeg-js 로 디코드한다", () => {
+    const result = transcodeCoverToWidth(realJpeg(), "image/jpeg", 24);
+
+    expect(result?.width).toBe(24);
+    expect(decodeSpy).not.toHaveBeenCalled();
+    expect(jpegDecodeSpy).toHaveBeenCalledTimes(1);
+    expect(jpegDecodeSpy.mock.calls[0]![1]).toEqual({ useTArray: true, maxResolutionInMP: 16, maxMemoryUsageInMB: 512 });
+  });
+
+  it("사전 검사를 비껴간 입력도 같은 옵션의 jpeg-js 가 할당 전에 거절한다(한도가 디코더 안에서 걸린다)", () => {
+    transcodeCoverToWidth(realJpeg(), "image/jpeg", 24);
+    const options = jpegDecodeSpy.mock.calls[0]![1] as object;
+    const decodeWithLimits = actualJpegDecode.current!;
+
+    // 검사기는 이런 파일을 거절하지만, 검사기가 없다고 가정해 한도만 건 디코더에 바로 준다. 디코더는 SOF 를 읽자마자 화소 수를
+    // 확인하므로 두 번째 프레임의 블록을 할당하기 전에 던진다(밀리초, 메모리 증가 없음).
+    const secondFrameTooLarge = concatBytes(withoutEoi(realJpeg()), jpegSof(4_001, 4_000, 3), JPEG_EOI);
+    expect(() => decodeWithLimits(secondFrameTooLarge, options)).toThrow(/maxResolutionInMP/u);
+    const hugeSecondFrame = concatBytes(JPEG_SOI, jpegSof(1, 1, 3), jpegSof(30_000, 30_000, 3), JPEG_EOI);
+    expect(() => decodeWithLimits(hugeSecondFrame, options)).toThrow(/maxResolutionInMP/u);
   });
 });

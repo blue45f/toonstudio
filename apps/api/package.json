@@ -27,6 +27,7 @@
     "fast-xml-parser": "5.10.1",
     "google-auth-library": "^10.7.0",
     "image-js": "^1.7.0",
+    "jpeg-js": "0.4.4",
     "js-base64": "^3.9.0",
     "korean-lunar-calendar": "0.4.0",
     "lunar-typescript": "1.8.6",
