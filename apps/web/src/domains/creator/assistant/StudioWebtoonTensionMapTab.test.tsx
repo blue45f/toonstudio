@@ -248,12 +248,22 @@ describe("StudioWebtoonTensionMapTab — curve, selection and text alternatives"
     expect(screen.getByTestId("tension-cut-detail").textContent).toContain("늘어짐 후보");
   });
 
+  /** 접이식을 사용자가 여는 실제 경로(summary 를 누름)로 연다 — `details.open = true` 는 이 경로를 건너뛴다. */
+  function openDisclosure(testId: string): HTMLDetailsElement {
+    const details = screen.getByTestId(testId);
+    if (!(details instanceof HTMLDetailsElement)) throw new Error(`details 가 아니에요: ${testId}`);
+    const summary = details.querySelector<HTMLElement>(":scope > summary");
+    if (!summary) throw new Error(`summary 를 찾을 수 없어요: ${testId}`);
+    expect(details.open).toBe(false);
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
+    return details;
+  }
+
   it("offers the same numbers as a real table with a caption and row/column headers", async () => {
     await renderSample();
-    const details = screen.getByTestId("tension-table-details") as HTMLDetailsElement;
-    expect(details.tagName).toBe("DETAILS");
-    expect(details.open).toBe(false);
-    details.open = true;
+    expect(screen.getByTestId("tension-table-details").tagName).toBe("DETAILS");
+    const details = openDisclosure("tension-table-details");
     expect(within(details).getByText("표로 보기 (곡선의 텍스트 대안)")).toBeTruthy();
     const table = within(details).getByRole("table", { name: /컷별 긴장도와 계산 근거/ });
     expect(within(table).getAllByRole("row")).toHaveLength(1 + 10);
@@ -267,9 +277,8 @@ describe("StudioWebtoonTensionMapTab — curve, selection and text alternatives"
 
   it("lays out the method notes from the live config, marking only the CANVAS band as sourced", async () => {
     await renderSample();
-    const notes = screen.getByTestId("tension-method-notes") as HTMLDetailsElement;
-    expect(within(notes).getByText("계산 방법과 한계 (모두 휴리스틱)")).toBeTruthy();
-    notes.open = true;
+    expect(within(screen.getByTestId("tension-method-notes")).getByText("계산 방법과 한계 (모두 휴리스틱)")).toBeTruthy();
+    const notes = openDisclosure("tension-method-notes");
     expect(notes.textContent).toContain("이 저장소가 정한 값이에요");
     expect(notes.textContent).toContain("검증하지 않았고");
     const rows = within(notes).getAllByRole("row");
@@ -279,6 +288,36 @@ describe("StudioWebtoonTensionMapTab — curve, selection and text alternatives"
     expect(rowFor("감정 비중")?.textContent).toContain("휴리스틱 (출처 없음)");
     expect(rowFor("표준 독자 스크롤 속도")?.textContent).toContain("350px/s");
     expect(rowFor("표준 독자 스크롤 속도")?.textContent).toContain("추정치 (출처 없음)");
+  });
+
+  it("gives both disclosures a 44px touch target and a hidden-from-readers arrow instead of the browser marker", async () => {
+    await renderSample();
+    for (const testId of ["tension-table-details", "tension-method-notes"]) {
+      const summary = screen.getByTestId(testId).querySelector<HTMLElement>(":scope > summary");
+      expect(summary?.className).toContain("min-h-11");
+      // 마커를 지운 대신 화살표가 열림 상태를 보여 주고, 장식이라 스크린 리더는 읽지 않는다
+      expect(summary?.className).toContain("list-none");
+      expect(summary?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    }
+  });
+
+  it("makes each horizontally scrolling table a named region the keyboard can reach and scroll", async () => {
+    await renderSample();
+    const tableRegion = within(openDisclosure("tension-table-details")).getByRole("region", {
+      name: "컷별 긴장도와 계산 근거",
+    });
+    const methodRegion = within(openDisclosure("tension-method-notes")).getByRole("region", {
+      name: "계수와 임계값, 그리고 출처",
+    });
+    for (const region of [tableRegion, methodRegion]) {
+      expect(region.tabIndex).toBe(0);
+      expect(region.className).toContain("overflow-x-auto");
+      // 포커스가 보여야 방향키로 스크롤하는 사용자가 어디에 있는지 안다
+      expect(region.className).toContain("focus-visible:outline-accent");
+      expect(within(region).getByRole("table")).toBeTruthy();
+    }
+    // 이름은 눈에 보이는 표 캡션에서 온다 — 번역 문구를 따로 두지 않는다
+    expect(within(tableRegion).getByRole("table", { name: "컷별 긴장도와 계산 근거" })).toBeTruthy();
   });
 
   it("moves between points with the keyboard and selects with Enter's click", async () => {

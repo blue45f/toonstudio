@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -447,5 +447,94 @@ describe("StudioWebtoonAssistantModal — tension map tab", () => {
     await screen.findByTestId("cut-pose-suggestion-list", {}, { timeout: 15_000 });
     expect(screen.queryAllByRole("button", { name: /에 적용/ })).toHaveLength(0);
     expect(screen.getByTestId("cut-pose-no-target")).toBeTruthy();
+  });
+
+  describe("Tab ring inside the modal", () => {
+    /** 레이아웃이 없는 jsdom 에서 크기 질의가 한 칸짜리 목록을 돌려주게 해 모든 요소를 "보이는" 것으로 만든다. */
+    const VISIBLE_RECTS: DOMRectList = Object.assign([new DOMRect()], {
+      item: (index: number): DOMRect | null => (index === 0 ? new DOMRect() : null),
+    });
+
+    function summaryOf(testId: string): HTMLElement {
+      const summary = screen.getByTestId(testId).querySelector<HTMLElement>(":scope > summary");
+      if (!summary) throw new Error(`summary 를 찾을 수 없어요: ${testId}`);
+      return summary;
+    }
+
+    /** 포커스가 있는 곳에서 Tab 을 누른다. true 면 모달이 가로채지 않아 브라우저가 다음 요소로 보낸다. */
+    function tabLeftToBrowser(shift = false): boolean {
+      return fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab", shiftKey: shift });
+    }
+
+    async function openWithSampleScript() {
+      render(
+        <StudioWebtoonAssistantModal
+          open
+          onClose={() => {}}
+          pages={pagesFixture}
+          currentPageId="p2"
+          onCommitPages={() => true}
+        />,
+      );
+      await openTensionMap();
+      fireEvent.click(screen.getAllByRole("button", { name: "예시 대본 넣기" })[0]);
+      const applyButtons = await screen.findAllByRole(
+        "button",
+        { name: /^'표지 컷'에 적용: / },
+        { timeout: 15_000 },
+      );
+      // jsdom 에는 레이아웃이 없다. 모달의 포커스 순환이 "보이는" 요소만 후보로 삼도록 크기 질의를 고정한다.
+      vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue(VISIBLE_RECTS);
+      return {
+        closeButton: screen.getByRole("button", { name: "보조 센터 닫기" }),
+        lastApply: applyButtons[applyButtons.length - 1],
+        tableSummary: summaryOf("tension-table-details"),
+        notesSummary: summaryOf("tension-method-notes"),
+      };
+    }
+
+    it("reaches the table and method disclosures with Tab and wraps around them, instead of skipping both past the last button", async () => {
+      const { closeButton, lastApply, tableSummary, notesSummary } = await openWithSampleScript();
+
+      // 마지막 '적용' 버튼에서 모달이 Tab 을 가로채면 DOM 끝의 summary 두 개를 건너뛴다
+      lastApply.focus();
+      expect(tabLeftToBrowser()).toBe(true);
+      tableSummary.focus();
+      expect(tabLeftToBrowser()).toBe(true);
+
+      // 맨 끝은 계산 방법의 summary — 거기서 Tab 은 처음으로, 처음에서 Shift+Tab 은 다시 그 summary 로 돈다
+      notesSummary.focus();
+      expect(tabLeftToBrowser()).toBe(false);
+      expect(document.activeElement).toBe(closeButton);
+      expect(tabLeftToBrowser(true)).toBe(false);
+      expect(document.activeElement).toBe(notesSummary);
+    });
+
+    it("keeps each opened table's scrolling region in the ring, and the closed one's out of it", async () => {
+      const { closeButton, tableSummary, notesSummary } = await openWithSampleScript();
+      const regionOf = (testId: string, name: string) =>
+        within(screen.getByTestId(testId)).getByRole("region", { name });
+
+      // 닫혀 있는 동안 본문의 영역은 레이아웃이 있어도 마지막 요소가 되지 못한다
+      notesSummary.focus();
+      expect(tabLeftToBrowser()).toBe(false);
+      expect(document.activeElement).toBe(closeButton);
+
+      fireEvent.click(tableSummary);
+      fireEvent.click(notesSummary);
+      const tableRegion = regionOf("tension-table-details", "컷별 긴장도와 계산 근거");
+      const methodRegion = regionOf("tension-method-notes", "계수와 임계값, 그리고 출처");
+
+      // 열면 summary → 영역 순서로 이어지고, 맨 끝은 마지막으로 열린 본문의 영역이 된다
+      tableRegion.focus();
+      expect(tabLeftToBrowser()).toBe(true);
+      notesSummary.focus();
+      expect(tabLeftToBrowser()).toBe(true);
+      methodRegion.focus();
+      expect(tabLeftToBrowser()).toBe(false);
+      expect(document.activeElement).toBe(closeButton);
+      expect(tabLeftToBrowser(true)).toBe(false);
+      expect(document.activeElement).toBe(methodRegion);
+    });
   });
 });
