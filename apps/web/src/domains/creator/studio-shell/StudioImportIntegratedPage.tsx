@@ -2,6 +2,8 @@ import { getActiveI18nLocale, useBilingualI18nRevision } from "@/shared/lib/i18n
 import { Container } from "@/shared/components/section";
 import { useI18n } from "@/shared/lib/i18n";
 
+import { PanelImportEntry } from "../panel-detect/ui/PanelImportEntry";
+
 import { StudioImportPage } from "./StudioFrontDoorPages";
 import { StudioImportIntake } from "./StudioImportIntake";
 import { StudioImportVisualGuide } from "./StudioImportVisualGuide";
@@ -24,6 +26,7 @@ export function StudioImportIntegratedPage() {
       <Container size="wide" className="pb-10 lg:pb-12">
         <StudioImportVisualGuide locale={locale} />
         <StudioImportIntake locale={locale} />
+        <PanelImportEntry />
       </Container>
     </div>
   );
