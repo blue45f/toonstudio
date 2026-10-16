@@ -24,6 +24,7 @@ import { bi, biFill, lockNoticeText } from "./studio-charm-copy";
 import { writeStudioCharmDragPayload } from "./studio-charm-drag";
 import { activateStudioCharm } from "./studio-charm-insert";
 import { resolveStudioCharmKeyIntent } from "./studio-charm-keyboard";
+import { STUDIO_CHARM_STARTER_PACK } from "./studio-charm-starter-pack";
 import { StudioCharmBarMenu } from "./StudioCharmBarMenu";
 import { StudioCharmBarEmpty, StudioCharmBarNotices } from "./StudioCharmBarStatus";
 import { StudioCharmChip } from "./StudioCharmChip";
@@ -459,7 +460,7 @@ export function StudioCharmBar({
       )}
 
       <StudioCharmBarNotices
-        starterCount={!starterNoticeDismissed && snapshot.starterAutoAdded ? charms.length : 0}
+        starterCount={!starterNoticeDismissed && snapshot.starterAutoAdded ? STUDIO_CHARM_STARTER_PACK.length : 0}
         onDismissStarter={() => setStarterNoticeDismissed(true)}
         lock={lock}
         resultNotice={resultNotice}

@@ -457,7 +457,8 @@ describe("참 고르기(선택기)", () => {
     await waitFor(() => expect(h.store.getSnapshot().state.charms).toEqual([TEAR, FOCUS]));
     expect(announcement()).toBe("참 바에 고정했어요: 집중선");
     await waitFor(() => expect(pickButton(dialog, FOCUS)?.getAttribute("aria-pressed")).toBe("true"));
-    expect(pickButton(dialog, FOCUS)?.getAttribute("aria-label")).toBe("집중선 — 참 바에서 빼기");
+    // 고정 상태는 aria-pressed 한 곳으로만 전한다: 라벨은 상태와 상관없이 같다.
+    expect(pickButton(dialog, FOCUS)?.getAttribute("aria-label")).toBe("집중선 — 참 바에 고정");
     fireEvent.click(pickButton(dialog, FOCUS) as HTMLButtonElement);
     await waitFor(() => expect(h.store.getSnapshot().state.charms).toEqual([TEAR]));
   });

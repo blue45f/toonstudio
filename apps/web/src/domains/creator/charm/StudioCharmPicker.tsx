@@ -3,7 +3,9 @@
  *
  * 새 소재를 만들지 않는다. 기존 카탈로그(효과·스티커·소품·이모지·효과음·도형·일러스트·내 소재·말풍선·3D)를
  * 한 곳에서 검색하고, 기존 즐겨찾기(내장 일러스트/내 소재의 자산 즐겨찾기, 요소 카탈로그 즐겨찾기)는
- * "즐겨찾기" 분류로 모아 보여 준다. 고정 상태는 `aria-pressed` 토글 버튼으로 드러낸다.
+ * "즐겨찾기" 분류로 모아 보여 준다. 고정 상태는 `aria-pressed` 토글 버튼 하나로만 드러낸다(라벨은 상태와 상관없이 같다).
+ * 권리·출처 요약은 마우스 올림(title)에만 두지 않는다: 각 타일이 `aria-describedby` 로 요약을 가리키고(스크린리더),
+ * 포커스·올림·누름을 받은 항목의 요약을 목록 아래에 눈에 보이게 띄운다(키보드·터치 사용자).
  * 불러오기(loading)·빈 결과(empty)·오류(error)+다시 시도(retry)를 모두 갖는다.
  */
 
@@ -77,10 +79,13 @@ export function StudioCharmPicker({
 }: StudioCharmPickerProps) {
   useBilingualI18nRevision();
   const headingId = useId();
+  const rightsIdBase = useId();
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<PickerFilter>("all");
   const [limit, setLimit] = useState(PAGE_SIZE);
+  /** 권리 요약을 눈에 보이게 띄울 항목: 마지막으로 포커스·올림·누름을 받은 타일. */
+  const [detailId, setDetailId] = useState<StudioCharmId | null>(null);
   const elementPreferences = useStudioCatalogPreferences("elements", acquireCatalogPreferences);
   const favoriteCharmIds = useMemo(
     () => studioCharmFavoriteIds(assetFavoriteIds, elementPreferences.state.favoriteIds),
@@ -102,6 +107,8 @@ export function StudioCharmPicker({
     return filter === "favorites" ? found.filter((descriptor) => favoriteCharmIds.has(descriptor.id)) : found;
   }, [catalog, favoriteCharmIds, filter, query]);
   const visible = matches.slice(0, limit);
+  const detail = detailId ? visible.find((descriptor) => descriptor.id === detailId) ?? null : null;
+  const rightsIdOf = (id: StudioCharmId) => `${rightsIdBase}-${id}`;
   const loading = catalogStatus === "loading" || libraryStatus === "loading";
   const sections: readonly StudioCharmSection[] = [
     "effect", "sticker", "prop", "emoji", "sfx", "shape", "illustration", "mine", "bubble", "object3d",
@@ -267,10 +274,16 @@ export function StudioCharmPicker({
                   type="button"
                   aria-pressed={isPinned}
                   aria-disabled={blocked ? true : undefined}
-                  aria-label={`${descriptor.label}${aiLabel} — ${isPinned ? bi("참 바에서 빼기", "Remove from the charm bar") : bi("참 바에 고정", "Pin to the charm bar")}`}
+                  aria-label={`${descriptor.label}${aiLabel} — ${bi("참 바에 고정", "Pin to the charm bar")}`}
+                  aria-describedby={rightsIdOf(descriptor.id)}
                   title={`${descriptor.label} · ${descriptor.rights.summary}`}
                   data-studio-charm-pick={descriptor.id}
-                  onClick={() => { if (!blocked) onToggle(descriptor); }}
+                  onFocus={() => setDetailId(descriptor.id)}
+                  onPointerEnter={() => setDetailId(descriptor.id)}
+                  onClick={() => {
+                    setDetailId(descriptor.id);
+                    if (!blocked) onToggle(descriptor);
+                  }}
                   className={cn(
                     "relative flex w-full flex-col items-center gap-1 rounded-lg border p-1.5 text-center",
                     STUDIO_EASE,
@@ -293,6 +306,7 @@ export function StudioCharmPicker({
                     <span aria-hidden="true" className="absolute left-1 top-1 rounded border border-line bg-panel px-0.5 text-[0.5rem] font-bold text-fg-2">AI</span>
                   ) : null}
                 </button>
+                <span id={rightsIdOf(descriptor.id)} className="sr-only">{descriptor.rights.summary}</span>
               </li>
             );
           })}
@@ -308,6 +322,23 @@ export function StudioCharmPicker({
           </button>
         ) : null}
       </div>
+
+      {/* 눈에 보이는 권리·출처 요약. 스크린리더는 타일의 aria-describedby 로 읽으므로 접근성 트리에서는 숨긴다. */}
+      <p
+        aria-hidden="true"
+        data-studio-charm-rights=""
+        className="min-h-[3.25rem] shrink-0 rounded-lg border border-line bg-card px-2 py-1.5 text-[0.7rem] leading-snug text-fg-2"
+      >
+        {detail ? (
+          <>
+            <strong className="font-semibold text-fg">{detail.label}</strong>
+            {detail.rights.aiGenerated ? <span className="ml-1 rounded border border-line bg-panel px-1 text-[0.6rem] font-bold">{bi("AI 생성", "AI-generated")}</span> : null}
+            <span className="block">{detail.rights.summary}</span>
+          </>
+        ) : (
+          bi("항목에 포커스를 두거나 올리면 권리·출처가 여기에 보여요.", "Focus or hover an item to see its rights and source here.")
+        )}
+      </p>
     </div>
   );
 }
