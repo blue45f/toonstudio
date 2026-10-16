@@ -430,6 +430,24 @@ describe("capture aspect presets", () => {
     expect(createStudioBg3dDocumentCaptureAspectPreset(undefined, undefined)).toBeNull();
   });
 
+  it("does not repeat a ratio the fixed presets already offer, so the select keeps the entry the author picked", () => {
+    // 인스타 4:5 캔버스: "문서 캔버스 비율"이 따로 있으면 "세로 4:5"를 골라도 선택 칸이 문서 캔버스로 바뀌어 보인다.
+    expect(createStudioBg3dDocumentCaptureAspectPreset(1_080, 1_350)).toBeNull();
+    for (const [width, height] of [[1_920, 1_080], [1_080, 1_920], [1_000, 1_000], [2_100, 900], [1_200, 900]] as const) {
+      expect(createStudioBg3dDocumentCaptureAspectPreset(width, height), `${width}×${height}`).toBeNull();
+    }
+    // 목록에 문서 항목이 없으면 4:5 비율은 고정 프리셋 "4-5" 하나로만 맞는다.
+    const withDocument = [
+      STUDIO_BG3D_CAPTURE_ASPECT_PRESETS[0]!,
+      ...[createStudioBg3dDocumentCaptureAspectPreset(1_080, 1_350)].filter((preset) => preset !== null),
+      ...STUDIO_BG3D_CAPTURE_ASPECT_PRESETS.slice(1),
+    ];
+    expect(withDocument.map((preset) => preset.id)).toEqual(STUDIO_BG3D_CAPTURE_ASPECT_PRESETS.map((preset) => preset.id));
+    expect(matchStudioBg3dCaptureAspectPreset(0.8, withDocument)).toBe("4-5");
+    // 고정 프리셋에 없는 캔버스 비율(2:3)은 그대로 문서 항목으로 남는다.
+    expect(createStudioBg3dDocumentCaptureAspectPreset(1_200, 1_800)).toMatchObject({ id: "document" });
+  });
+
   it("matches a stored ratio back to its preset id", () => {
     expect(matchStudioBg3dCaptureAspectPreset(null)).toBe("viewport");
     expect(matchStudioBg3dCaptureAspectPreset(undefined)).toBe("viewport");

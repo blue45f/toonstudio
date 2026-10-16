@@ -267,7 +267,11 @@ export const STUDIO_BG3D_CAPTURE_ASPECT_PRESETS: readonly StudioBg3dCaptureAspec
     Object.freeze({ id: "9-16", label: "세로 9:16", ratio: 9 / 16 }),
   ]);
 
-/** 편집 중인 문서 캔버스 비율 프리셋. 캔버스 크기를 모르면 null이라 목록에서 빠진다. */
+/**
+ * 편집 중인 문서 캔버스 비율 프리셋. 캔버스 크기를 모르면 null이라 목록에서 빠진다. 캔버스 비율이 이미 고정
+ * 프리셋(예: 4:5)과 같으면 null 이다 — 같은 비율이 두 항목으로 겹치면 선택 칸이 처음 맞는 항목(문서 캔버스)으로
+ * 되돌아가 사용자가 고른 "세로 4:5"가 다른 이름으로 바뀐 것처럼 보이기 때문이다.
+ */
 export function createStudioBg3dDocumentCaptureAspectPreset(
   canvasWidth: unknown,
   canvasHeight: unknown,
@@ -275,6 +279,7 @@ export function createStudioBg3dDocumentCaptureAspectPreset(
   if (!finitePositive(canvasWidth) || !finitePositive(canvasHeight)) return null;
   const ratio = normalizeStudioBg3dCaptureAspectRatio(canvasWidth / canvasHeight);
   if (ratio === null) return null;
+  if (matchStudioBg3dCaptureAspectPreset(ratio) !== STUDIO_BG3D_CAPTURE_ASPECT_CUSTOM_PRESET_ID) return null;
   return Object.freeze({
     id: STUDIO_BG3D_CAPTURE_ASPECT_DOCUMENT_PRESET_ID,
     label: `문서 캔버스 비율 (${Math.round(canvasWidth)}×${Math.round(canvasHeight)})`,
