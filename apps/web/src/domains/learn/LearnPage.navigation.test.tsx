@@ -16,12 +16,12 @@ describe("공통 학습 탐색", () => {
     const navigation = screen.getAllByRole("navigation", { name: "배우기 영역" });
     expect(navigation).toHaveLength(1);
     const menu = within(navigation[0]);
-    // 목적지는 기존 자체 내비가 보존하던 13곳에 제작 레시피와 계약서 검토를 더한 15곳이다 —
-    // 지우지도, 드롭다운 뒤에 숨기지도 않는다(레시피 편입 사유는 LearnSectionShell 주석).
+    // 목적지는 기존 자체 내비가 보존하던 13곳에 제작 레시피·계약서 검토·접근성 안내를 더한 16곳이다 —
+    // 지우지도, 드롭다운 뒤에 숨기지도 않는다(편입 사유는 LearnSectionShell 주석).
     expect(menu.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/learn", "/learn/resources", "/learn/classroom", "/learn/classes", "/learn#learning-paths",
       "/learn/trace", "/learn/recipes", "/learn/studio", "/learn/glossary", "/learn/process", "/learn/careers",
-      "/learn/contract-checklist", "/learn/education", "/learn/records", "/research",
+      "/learn/contract-checklist", "/learn/education", "/learn/accessibility", "/learn/records", "/research",
     ]);
     // 이름은 다른 표면의 정본과 맞춘다(클래스룸·교육 안내 등).
     expect(menu.getByRole("link", { name: /클래스룸/u })).toBeTruthy();
@@ -57,6 +57,19 @@ describe("공통 학습 탐색", () => {
       .getAttribute("aria-current")).toBe("page");
     expect(within(currentNavigation).getByRole("link", { name: /학습 홈/u })
       .getAttribute("aria-current")).toBeNull();
+  });
+
+  it("접근성 안내 화면은 같은 내비에서 현재 위치로 표시되고 학습 진행 스트립은 얹지 않는다", () => {
+    render(<MemoryRouter initialEntries={["/learn/accessibility"]}><LearnPage /></MemoryRouter>);
+    const navigation = screen.getAllByRole("navigation", { name: "배우기 영역" });
+    expect(navigation).toHaveLength(1);
+    const currents = within(navigation[0]).getAllByRole("link")
+      .filter((link) => link.getAttribute("aria-current") === "page");
+    expect(currents.map((link) => link.getAttribute("href"))).toEqual(["/learn/accessibility"]);
+    expect(currents[0].textContent).toContain("접근성 있는 웹툰 만들기");
+    expect(screen.getByRole("heading", { level: 1, name: "접근성 있는 웹툰 만들기" })).toBeTruthy();
+    // 학습 진도와 무관한 안내라 자체 진행 표시 없는 화면용 스트립을 얹지 않는다.
+    expect(screen.queryByRole("region", { name: "내 학습 진행" })).toBeNull();
   });
 
   it("학습 기록 화면도 같은 내비를 사용하며 백업 기능을 유지한다", () => {

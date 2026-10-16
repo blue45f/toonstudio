@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
+  Accessibility,
   BookMarked,
   BookOpen,
   Briefcase,
@@ -51,7 +52,9 @@ interface LearnNavGroupSpec {
  * 13곳에 제작 레시피를 더한 14곳이다 — 레시피는 /learn 아래에 살면서도 LearnPage 밖
  * 라우트로 렌더링돼 학습 영역에서 유일하게 섹션 내비가 없는 화면이었다(웨이브 5 재채점
  * §7-2). 2026-10-07 셸 편입과 함께 목적지로 등록해 발견 동선과 현재 위치 표시를 맞춘다.
- * 계약서 검토 체크리스트(/learn/contract-checklist)가 더해져 15곳이다.
+ * 계약서 검토 체크리스트(/learn/contract-checklist)와 2026-10-16의 "접근성 있는 웹툰 만들기"
+ * (/learn/accessibility)가 더해져 16곳이다. 접근성 화면은 자체 히어로를 갖되 학습 진행과 무관해
+ * REFERENCE_PATHS(진행 스트립 대상)에는 넣지 않는다.
  */
 const NAV_GROUPS: readonly LearnNavGroupSpec[] = [
   {
@@ -77,6 +80,7 @@ const NAV_GROUPS: readonly LearnNavGroupSpec[] = [
       { id: "careers", path: "/learn/careers", icon: Briefcase, label: defineBilingualText("learnPageNav", "careers", "진로·직무 안내", "Careers & roles") },
       { id: "contract", path: "/learn/contract-checklist", icon: ScrollText, label: defineBilingualText("learnPageNav", "contract", "계약서 검토", "Contract checklist") },
       { id: "education", path: "/learn/education", icon: School, label: defineBilingualText("learnPageNav", "education", "교육 안내", "Education") },
+      { id: "accessibility", path: "/learn/accessibility", icon: Accessibility, label: defineBilingualText("learnPageNav", "accessibility", "접근성 있는 웹툰 만들기", "Accessible webtoons") },
     ],
   },
   {

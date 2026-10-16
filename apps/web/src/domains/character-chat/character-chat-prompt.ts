@@ -28,8 +28,23 @@ function clipMessage(text: string): string {
     : normalized;
 }
 
+export interface CharacterChatPromptOptions {
+  /**
+   * 답변이 곧바로 소리 내어 읽힐 때(듣는 사람이 자동 낭독을 켠 경우) true.
+   * 기본값(꺼짐)에서는 프롬프트가 이 옵션이 생기기 전과 글자 단위로 같다.
+   */
+  readonly readAloud?: boolean;
+}
+
+/** 소리로 읽힐 답변을 위한 규칙 — 브라우저 음성은 이모지·마크다운·괄호 지문을 매끄럽게 읽지 못한다. */
+export const CHARACTER_CHAT_READ_ALOUD_RULE =
+  "- 이 답변은 소리 내어 읽힐 수 있다. 이모지·마크다운·괄호 속 행동 묘사 없이, 입으로 말하는 대사만 짧은 문장으로 쓴다.";
+
 /** 캐릭터 정체성과 대화 규칙을 담은 시스템 프롬프트. */
-export function buildCharacterChatSystemPrompt(profile: CharacterChatProfile): string {
+export function buildCharacterChatSystemPrompt(
+  profile: CharacterChatProfile,
+  options: CharacterChatPromptOptions = {},
+): string {
   const lines: string[] = [
     `너는 웹툰·웹소설 작품 "${profile.workTitle}"의 등장인물 "${profile.characterName}"이다.`,
     "독자가 작품 속 캐릭터와 대화하는 자리다. 너는 AI가 아니라 그 캐릭터 본인으로서 답한다.",
@@ -49,6 +64,9 @@ export function buildCharacterChatSystemPrompt(profile: CharacterChatProfile): s
     "- 답변은 1~4문장으로 짧게, 말투를 유지한다.",
     "- 독자를 작품 세계 안의 손님처럼 대한다.",
   );
+  if (options.readAloud === true) {
+    lines.push(CHARACTER_CHAT_READ_ALOUD_RULE);
+  }
   if (profile.forbiddenTopics.length > 0) {
     lines.push(
       `- 다음 주제는 작가가 대화를 금지했다. 언급을 피하고 캐릭터답게 화제를 돌린다: ${profile.forbiddenTopics.join(", ")}`,

@@ -21,6 +21,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { CharacterAvatar, CharacterChatThread } from "./CharacterChatThread";
+import { CharacterChatVoiceFields } from "./CharacterChatVoiceFields";
 import {
   characterChatProfileToDraft,
   validateCharacterChatProfileDraft,
@@ -30,6 +31,7 @@ import type {
   CharacterChatProfile,
   CharacterChatProfileDraft,
 } from "./character-chat-types";
+import { DEFAULT_CHARACTER_CHAT_VOICE } from "./character-chat-voice";
 import { useCharacterChatEngine } from "./use-character-chat-engine";
 
 const EMPTY_DRAFT: CharacterChatProfileDraft = {
@@ -515,6 +517,16 @@ export function CharacterChatManagePage() {
                   className={inputClass}
                 />
               </Field>
+            </div>
+            <div className="sm:col-span-2">
+              <CharacterChatVoiceFields
+                value={draft.voice ?? DEFAULT_CHARACTER_CHAT_VOICE}
+                onChange={(voice) => setDraft({ ...draft, voice })}
+                previewText={
+                  draft.greeting.trim()
+                  || t("안녕하세요. 이런 목소리로 읽어 드려요.", "Hello. This is how I will sound.")
+                }
+              />
             </div>
             <div className="sm:col-span-2">
               <Field

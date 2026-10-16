@@ -9,6 +9,7 @@ import {
   buildCharacterChatSystemPrompt,
   buildCharacterChatUserPrompt,
   CHARACTER_CHAT_HISTORY_TURNS,
+  CHARACTER_CHAT_READ_ALOUD_RULE,
 } from "./character-chat-prompt";
 import type { CharacterChatMessage } from "./character-chat-types";
 
@@ -60,6 +61,22 @@ describe("buildCharacterChatSystemPrompt", () => {
     const prompt = buildCharacterChatSystemPrompt(profile);
     expect(prompt).toContain("AI");
     expect(prompt).toContain("언급하지 않는다");
+  });
+
+  it("낭독 옵션이 꺼져 있으면 프롬프트는 옵션이 생기기 전과 같다", () => {
+    const base = buildCharacterChatSystemPrompt(profile);
+    expect(base).not.toContain(CHARACTER_CHAT_READ_ALOUD_RULE);
+    expect(buildCharacterChatSystemPrompt(profile, {})).toBe(base);
+    expect(buildCharacterChatSystemPrompt(profile, { readAloud: false })).toBe(base);
+  });
+
+  it("낭독 옵션을 켜면 대화 규칙 안에 읽기 좋은 대사 규칙을 더하고 금지 주제는 그대로 둔다", () => {
+    const prompt = buildCharacterChatSystemPrompt(profile, { readAloud: true });
+    expect(prompt).toContain(CHARACTER_CHAT_READ_ALOUD_RULE);
+    // 규칙은 [대화 규칙] 목록 안에 놓여 금지 주제 지시보다 앞선다.
+    expect(prompt.indexOf("[대화 규칙]")).toBeLessThan(prompt.indexOf(CHARACTER_CHAT_READ_ALOUD_RULE));
+    expect(prompt.indexOf(CHARACTER_CHAT_READ_ALOUD_RULE)).toBeLessThan(prompt.indexOf("왕의 죽음"));
+    expect(prompt).toContain("왕의 죽음");
   });
 });
 

@@ -325,6 +325,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/learn/contract-checklist", "웹툰 계약서 검토 체크리스트", "Webtoon contract checklist", "표준계약서 항목과 내 계약서를 하나씩 대조", "Compare your contract with the standard contract item by item"),
       destination("/learn/records", "학습 기록 관리", "Learning records", "진행 기록을 백업하고 복원", "Back up and restore learning progress"),
       destination("/learn/recipes", "제작 레시피", "Creative recipes", "연출을 직접 조작하며 학습", "Learn direction through hands-on recipes"),
+      destination("/learn/accessibility", "접근성 있는 웹툰 만들기", "Accessible webtoons", "키보드 작업·받아쓰기·보기 설정·대체 텍스트 안내", "Keyboard work, dictation, display settings and alt text"),
       destination("/story-lab", "스토리 연구실", "Story lab", "인물·욕망·갈등 설계", "Shape characters, desire and conflict"),
     ],
   },
