@@ -15,6 +15,12 @@ import {
   validateCharacterChatProfileDraft,
 } from "./character-chat-profile";
 import type { CharacterChatProfileDraft } from "./character-chat-types";
+import {
+  CHARACTER_CHAT_VOICE_PITCH_MAX,
+  CHARACTER_CHAT_VOICE_RATE_MAX,
+  DEFAULT_CHARACTER_CHAT_VOICE,
+  resolveCharacterChatVoice,
+} from "./character-chat-voice";
 
 function draft(overrides: Partial<CharacterChatProfileDraft> = {}): CharacterChatProfileDraft {
   return {
@@ -142,5 +148,71 @@ describe("수정과 인사말", () => {
     const withGreeting = buildCharacterChatProfile(draft(), { id: "p2" });
     // 저장 시 NFKC 정규화로 "…"는 "..."이 된다 — 그대로 돌려주는지 확인한다.
     expect(resolveCharacterGreeting(withGreeting)).toBe("...누구지. 볼일이 있으면 짧게 말해.");
+  });
+});
+
+describe("낭독 선호 호환", () => {
+  it("낭독 선호가 없는 초안은 voice 필드가 없는 프로필을 만든다 — 기존 저장 모양과 같다", () => {
+    const profile = buildCharacterChatProfile(draft(), { id: "p1" });
+    expect("voice" in profile).toBe(false);
+    expect(JSON.parse(JSON.stringify(profile))).not.toHaveProperty("voice");
+    expect(resolveCharacterChatVoice(profile)).toEqual(DEFAULT_CHARACTER_CHAT_VOICE);
+  });
+
+  it("기본값과 같은 낭독 선호도 필드로 남기지 않는다", () => {
+    const profile = buildCharacterChatProfile(draft({ voice: { ...DEFAULT_CHARACTER_CHAT_VOICE } }), { id: "p1" });
+    expect("voice" in profile).toBe(false);
+  });
+
+  it("낭독 선호가 있으면 범위를 정규화해 저장한다", () => {
+    const profile = buildCharacterChatProfile(
+      draft({ voice: { voiceURI: " Yuna ", gender: "female", rate: 9, pitch: 9 } }),
+      { id: "p1" },
+    );
+    expect(profile.voice).toEqual({
+      voiceURI: "Yuna",
+      gender: "female",
+      rate: CHARACTER_CHAT_VOICE_RATE_MAX,
+      pitch: CHARACTER_CHAT_VOICE_PITCH_MAX,
+    });
+  });
+
+  it("낭독 선호는 초안 왕복과 수정에서 보존된다", () => {
+    const original = buildCharacterChatProfile(
+      draft({ voice: { voiceURI: null, gender: "male", rate: 0.9, pitch: 1 } }),
+      { id: "p1" },
+    );
+    const roundTripped = buildCharacterChatProfile(characterChatProfileToDraft(original), { id: "p1" });
+    expect(roundTripped.voice).toEqual(original.voice);
+
+    // 수정 폼이 낭독 선호를 따로 건드리지 않아도(초안에 그대로 실려 와) 유지된다.
+    const revised = reviseCharacterChatProfile(original, characterChatProfileToDraft(original), "2026-10-15T00:00:00.000Z");
+    expect(revised.voice).toEqual(original.voice);
+  });
+
+  it("낭독 선호가 없는 초안으로 수정해도 저장된 낭독 선호를 지우지 않는다", () => {
+    const original = buildCharacterChatProfile(
+      draft({ voice: { voiceURI: "Yuna", gender: "female", rate: 1.1, pitch: 0.9 } }),
+      { id: "p1" },
+    );
+    const withoutVoice = draft({ personality: "속은 따뜻하다." });
+    expect("voice" in withoutVoice).toBe(false);
+    expect(reviseCharacterChatProfile(original, withoutVoice).voice).toEqual(original.voice);
+    // 기본값을 명시적으로 넘기면 되돌려진다.
+    expect(
+      "voice" in reviseCharacterChatProfile(original, draft({ voice: { ...DEFAULT_CHARACTER_CHAT_VOICE } })),
+    ).toBe(false);
+  });
+
+  it("voice 필드가 없던 기존 프로필을 수정해도 낭독 선호가 새로 생기지 않는다", () => {
+    const legacy = buildCharacterChatProfile(draft(), { id: "legacy" });
+    const draftOfLegacy = characterChatProfileToDraft(legacy);
+    expect("voice" in draftOfLegacy).toBe(false);
+    expect("voice" in reviseCharacterChatProfile(legacy, draftOfLegacy)).toBe(false);
+  });
+
+  it("저장소에서 읽은 깨진 voice 값도 안전한 기본값으로 읽는다", () => {
+    const corrupted = JSON.parse('{"voice":{"rate":"빠름","pitch":null,"gender":42,"voiceURI":{}}}');
+    expect(resolveCharacterChatVoice(corrupted)).toEqual(DEFAULT_CHARACTER_CHAT_VOICE);
   });
 });
