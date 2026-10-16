@@ -6,9 +6,14 @@
  * - ignored: 너무 작거나 내용이 거의 없는 조각. 사용자가 직접 컷으로 채택할 수 있게 목록으로 남긴다.
  * - undetectable: 서로 이어지지 않은 큰 덩어리가 둘 이상이고 그 경계 상자가 가로·세로 모두 겹친다.
  *   여백이 축에 평행하지 않거나(사선·기울어진 컷) 컷이 서로 겹친 경우라 자동으로 나눌 수 없다. 컷을 지어내지 않는다.
+ *   컷 테두리 같은 얇은 고리는 큰 덩어리로 세지 않는다(테두리 속에 떠 있는 인물을 겹침으로 오인하지 않는다).
+ *
+ * 컷으로 받은 영역 안에 서로 이어지지 않은 컷 후보가 둘 이상 남아 있으면(여백이 최소 두께보다 얇거나 스캔이 기운 경우)
+ * 여러 컷이 합쳐졌을 수 있다고 경고한다. 컷을 쪼개서 지어내지는 않는다.
  */
 
 import { labelInkComponents, type InkComponent } from "./panel-detect-components";
+import { componentBoxArea, createSeparatorClassifier, hasSeparatePanelCandidates, isFrameLikeComponent } from "./panel-detect-frames";
 import {
   colInkCounts,
   gutterRuns,
@@ -71,10 +76,6 @@ const BRIDGE_NEIGHBOR_SHARE = 0.5;
 const BRIDGE_NEIGHBOR_ROWS = 3;
 const BRIDGE_MAX_PER_AXIS = 4;
 
-function bboxArea(component: InkComponent): number {
-  return (component.x1 - component.x0) * (component.y1 - component.y0);
-}
-
 function overlapsOnBothAxes(a: InkComponent, b: InkComponent): boolean {
   const overlapX = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
   const overlapY = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
@@ -89,7 +90,9 @@ export function largeOverlappingComponents(
   area: number,
 ): InkComponent[] {
   const large = components.filter(
-    (component) => bboxArea(component) >= LARGE_BBOX_SHARE * area && component.area >= LARGE_INK_SHARE * area,
+    (component) => componentBoxArea(component) >= LARGE_BBOX_SHARE * area
+      && component.area >= LARGE_INK_SHARE * area
+      && !isFrameLikeComponent(component),
   );
   for (let i = 0; i < large.length; i += 1) {
     for (let j = i + 1; j < large.length; j += 1) {
@@ -152,6 +155,7 @@ function bridgedGuttersAlong(
   const cross = axis === "rows" ? regionWidth(region) : regionHeight(region);
   const origin = axis === "rows" ? region.y0 : region.x0;
   const found: BridgeSuggestion[] = [];
+  const classify = createSeparatorClassifier(mask, region, axis, minGap);
   for (const run of gutterRuns(counts, Math.floor(cross * BRIDGE_ROW_SHARE))) {
     if (found.length >= BRIDGE_MAX_PER_AXIS) break;
     if (run.start < 2 || run.end > counts.length - 2 || run.end - run.start < minGap) continue;
@@ -159,6 +163,8 @@ function bridgedGuttersAlong(
       densestNear(counts, run.start - 1, -1) < cross * BRIDGE_NEIGHBOR_SHARE
       || densestNear(counts, run.end, 1) < cross * BRIDGE_NEIGHBOR_SHARE
     ) continue;
+    // 양끝이 끊김 없는 선으로 막힌 빈 줄은 컷 사이 여백이 아니라 테두리 안쪽이다(성긴 그림이 든 컷).
+    if (classify(run) === "enclosed") continue;
     const touched = new Uint8Array(cross);
     for (let i = run.start; i < run.end; i += 1) {
       for (let k = 0; k < cross; k += 1) {
@@ -206,12 +212,14 @@ export function* evaluateLeaf(
   const density = ink / area;
   if (density < MIN_CONTENT_DENSITY) return { kind: "ignored", reason: "low-content" };
 
+  let mergedSuspected = false;
   if (area >= context.componentCheckMinArea) {
     const components = labelInkComponents(context.mask, region);
     if (context.budget.consume(area * 3)) yield;
     if (components !== null) {
       const large = largeOverlappingComponents(components, area);
       if (large.length >= 2) return { kind: "undetectable", componentCount: large.length };
+      mergedSuspected = hasSeparatePanelCandidates(components, area);
     }
   }
 
@@ -224,6 +232,11 @@ export function* evaluateLeaf(
     ? findBridgedGutters(context.mask, region, context.minGap)
     : [];
   if (context.budget.consume(area * 2)) yield;
-  if (bridges.length > 0) warnings.push("bridged-gutter-suspected");
+  if (bridges.length > 0) {
+    warnings.push("bridged-gutter-suspected");
+  } else if (mergedSuspected) {
+    // 말풍선·효과음이 여백을 가로막은 경우는 위 경고(분할 제안 포함)가 더 구체적이라 겹쳐서 감점하지 않는다.
+    warnings.push("merged-panels-suspected");
+  }
   return { kind: "panel", ink, density, warnings, bridges };
 }

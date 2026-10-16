@@ -7,6 +7,8 @@
  *  2. 입력이 분석 상한을 넘으면 정수 배율로 다운샘플한 "내용 마스크"를 만든다(여백 아님 = 1).
  *  3. 영역을 바깥 여백까지 잘라 낸 뒤, 행 투영으로 위아래로 나누고(여백 줄 묶음이 최소 두께 이상일 때)
  *     못 나누면 열 투영으로 좌우로 나눈다. 나뉜 조각은 반대 축을 먼저 시도하며 재귀한다(최대 깊이 제한).
+ *     양끝이 끊김 없는 선으로 막힌 빈 칸(테두리가 둘러싼 컷 안쪽)은 컷 사이 여백으로 보지 않는다(panel-detect-frames).
+ *     그런 칸만 있는 영역은 "페이지 테두리 안에 직사각형 컷이 둘 이상"일 때만 컨테이너로 보고 안쪽을 나눈다.
  *  4. 더 나뉘지 않는 잎은 작은 조각이면 제외(ignored), 서로 이어지지 않은 큰 덩어리가 겹쳐 있으면 검출 불가,
  *     아니면 컷으로 채택한다. 기울어진 컷·겹침은 지어내지 않고 검출 불가로 보고한다.
  *  5. 원본 좌표로 되돌려 읽기 순서를 붙이고 신뢰도를 계산한다.
@@ -17,15 +19,18 @@
 
 import { assemblePanelDetectResult, type FragmentRecord, type LeafRecord, type UndetectableRecord } from "./panel-detect-assemble";
 import { evaluateLeaf, type LeafContext } from "./panel-detect-leaf";
+import { createSeparatorClassifier, isRectangularRegion } from "./panel-detect-frames";
 import {
   allowedInk,
   colInkCounts,
-  findSplitSegments,
+  findSeparators,
   regionHeight,
   regionInkTotal,
   regionWidth,
   rowInkCounts,
+  splitSegmentsAt,
   trimRegion,
+  type IndexRun,
   type PanelRegion,
 } from "./panel-detect-profile";
 import {
@@ -93,38 +98,88 @@ function shrinkSides(sides: PanelSides, before: PanelRegion, after: PanelRegion)
   };
 }
 
+/** 한 축으로 나누는 두 가지 제안: 열린 여백만 쓴 것(strict)과 양끝이 막힌 칸까지 쓴 컨테이너 해석(lenient, 그런 칸이 있을 때만). */
+interface SplitProposal {
+  readonly strict: Child[] | null;
+  readonly lenient: Child[] | null;
+}
+
 function splitRegion(
   context: AnalysisContext,
   region: PanelRegion,
   sides: PanelSides,
   axis: Axis,
-): Child[] | null {
+): SplitProposal {
   const counts = axis === "rows" ? rowInkCounts(context.mask, region) : colInkCounts(context.mask, region);
   const crossLength = axis === "rows" ? regionWidth(region) : regionHeight(region);
-  const segments = findSplitSegments(counts, allowedInk(crossLength, context.inkTolerance), context.minGap);
-  if (segments === null) return null;
-  return segments.map((segment): Child => {
-    if (axis === "rows") {
+  const separators = findSeparators(counts, allowedInk(crossLength, context.inkTolerance), context.minGap);
+  if (separators.length === 0) return { strict: null, lenient: null };
+  const classify = createSeparatorClassifier(context.mask, region, axis, context.minGap);
+  const kinds = separators.map((run) => ({ run, kind: classify(run) }));
+  const open = kinds.filter((entry) => entry.kind === "open").map((entry) => entry.run);
+  // 컨테이너 해석에는 열린 여백과 양끝이 모두 막힌 칸만 쓴다. 한쪽만 막힌 칸은 다른 컷이 지나가는 자리라 쓰지 않는다.
+  const container = kinds.filter((entry) => entry.kind !== "crossed").map((entry) => entry.run);
+  const childrenAt = (runs: readonly IndexRun[]): Child[] | null => {
+    const segments = splitSegmentsAt(counts.length, runs);
+    if (segments === null) return null;
+    return segments.map((segment): Child => {
+      if (axis === "rows") {
+        return {
+          region: { x0: region.x0, x1: region.x1, y0: region.y0 + segment.start, y1: region.y0 + segment.end },
+          sides: {
+            left: sides.left,
+            right: sides.right,
+            top: segment.gapBefore === null ? sides.top : gapSide(segment.gapBefore),
+            bottom: segment.gapAfter === null ? sides.bottom : gapSide(segment.gapAfter),
+          },
+        };
+      }
       return {
-        region: { x0: region.x0, x1: region.x1, y0: region.y0 + segment.start, y1: region.y0 + segment.end },
+        region: { x0: region.x0 + segment.start, x1: region.x0 + segment.end, y0: region.y0, y1: region.y1 },
         sides: {
-          left: sides.left,
-          right: sides.right,
-          top: segment.gapBefore === null ? sides.top : gapSide(segment.gapBefore),
-          bottom: segment.gapAfter === null ? sides.bottom : gapSide(segment.gapAfter),
+          top: sides.top,
+          bottom: sides.bottom,
+          left: segment.gapBefore === null ? sides.left : gapSide(segment.gapBefore),
+          right: segment.gapAfter === null ? sides.right : gapSide(segment.gapAfter),
         },
       };
+    });
+  };
+  return { strict: childrenAt(open), lenient: container.length === open.length ? null : childrenAt(container) };
+}
+
+/**
+ * 닫힌 여백(양끝이 선으로 막힌 빈 칸)만 있는 영역을 컨테이너로 볼 수 있는지 시험한다.
+ * 페이지 테두리나 스캔 가장자리 그림자 안에 컷들이 들어 있는 경우다. 안쪽을 실제로 나눠 보고, 직사각형 컷이 둘 이상이고
+ * 모두 직사각형일 때만 채택한다. 컷 하나가 테두리 안에 인물·말풍선을 띄운 경우(덩어리가 직사각형이 아님)는 되돌리고 컷 하나로 둔다.
+ */
+function* acceptContainer(
+  context: AnalysisContext,
+  children: readonly Child[],
+  depth: number,
+  next: Axis,
+): Generator<void, boolean, void> {
+  if (depth >= context.options.maxDepth) return false;
+  const saved = { leaves: context.leaves.length, ignored: context.ignored.length, undetectable: context.undetectable.length };
+  const rollback = (): void => {
+    context.leaves.length = saved.leaves;
+    context.ignored.length = saved.ignored;
+    context.undetectable.length = saved.undetectable;
+  };
+  try {
+    for (const child of children) yield* analyzeRegion(context, child.region, child.sides, depth + 1, next);
+  } catch (error) {
+    // 안쪽 무늬가 잘게 쪼개져 컷 상한을 넘으면 컨테이너가 아니라는 뜻이다. 조용히 되돌린다.
+    if (error instanceof PanelDetectError && error.code === "too-many-panels") {
+      rollback();
+      return false;
     }
-    return {
-      region: { x0: region.x0 + segment.start, x1: region.x0 + segment.end, y0: region.y0, y1: region.y1 },
-      sides: {
-        top: sides.top,
-        bottom: sides.bottom,
-        left: segment.gapBefore === null ? sides.left : gapSide(segment.gapBefore),
-        right: segment.gapAfter === null ? sides.right : gapSide(segment.gapAfter),
-      },
-    };
-  });
+    throw error;
+  }
+  const added = context.leaves.slice(saved.leaves);
+  if (added.length >= 2 && added.every((leaf) => isRectangularRegion(context.mask, leaf.region, context.minGap))) return true;
+  rollback();
+  return false;
 }
 
 function* analyzeRegion(
@@ -142,15 +197,17 @@ function* analyzeRegion(
   const axes: readonly Axis[] = preferred === "rows" ? ["rows", "cols"] : ["cols", "rows"];
   const inherited: PanelWarningCode[] = [];
   for (const axis of axes) {
-    const children = splitRegion(context, trimmed, trimmedSides, axis);
+    const proposal = splitRegion(context, trimmed, trimmedSides, axis);
     if (context.budget.consume(trimmedArea)) yield;
+    const next: Axis = axis === "rows" ? "cols" : "rows";
+    if (proposal.strict === null && proposal.lenient !== null && (yield* acceptContainer(context, proposal.lenient, depth, next))) return;
+    const children = proposal.strict;
     if (children === null) continue;
     if (depth >= context.options.maxDepth) {
       // 깊이 제한 때문에 더 나누지 않은 것이므로 경고로 남긴다.
       inherited.push("max-depth-reached");
       break;
     }
-    const next: Axis = axis === "rows" ? "cols" : "rows";
     for (const child of children) yield* analyzeRegion(context, child.region, child.sides, depth + 1, next);
     return;
   }

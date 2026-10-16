@@ -5,7 +5,7 @@
  *   content     컷 안 내용 픽셀 밀도 ÷ 3%  (거의 빈 조각은 점수를 깎는다)
  *   size        페이지 대비 면적 ÷ 1.2%     (아주 작은 조각은 점수를 깎는다)
  *   raw         separation^0.6 × content^0.25 × size^0.15
- *   penalty     겹침 의심 ×0.6, 여백 가로막힘 의심 ×0.65, 최대 깊이 도달 ×0.75, 여백 없음 ×0.5
+ *   penalty     겹침 의심 ×0.6, 여백 가로막힘 의심 ×0.65, 여러 컷 합쳐짐 의심 ×0.55, 최대 깊이 도달 ×0.75, 여백 없음 ×0.5
  *   confidence  min(0.99, raw × penalty)  — 100% 확신은 주장하지 않는다.
  * 전체 신뢰도는 컷 면적 가중 평균에, 검출 불가 영역 비중만큼(최대 70%) 감점한다.
  */
@@ -41,6 +41,7 @@ export interface PanelConfidenceInput {
 const WARNING_PENALTY: Readonly<Partial<Record<PanelWarningCode, number>>> = Object.freeze({
   "overlap-suspected": 0.6,
   "bridged-gutter-suspected": 0.65,
+  "merged-panels-suspected": 0.55,
   "max-depth-reached": 0.75,
   "no-gutter-found": 0.5,
 });

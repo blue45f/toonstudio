@@ -55,7 +55,14 @@ const DETECT_CODES = codesOf<PanelDetectErrorCode>({
   "worker-failed": true,
   "worker-protocol": true,
 });
-const PANEL_WARNINGS = codesOf<PanelWarningCode>({ "overlap-suspected": true, "bridged-gutter-suspected": true, "max-depth-reached": true, "touches-image-edge": true, "no-gutter-found": true });
+const PANEL_WARNINGS = codesOf<PanelWarningCode>({
+  "overlap-suspected": true,
+  "bridged-gutter-suspected": true,
+  "merged-panels-suspected": true,
+  "max-depth-reached": true,
+  "touches-image-edge": true,
+  "no-gutter-found": true,
+});
 const DETECT_WARNINGS = codesOf<PanelDetectWarningCode>({
   "blank-image": true,
   "no-gutter-found": true,

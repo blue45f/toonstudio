@@ -101,6 +101,10 @@ export const confidenceLabel = (level: PanelConfidenceLevel): string => pick(CON
 
 const PANEL_WARNING_TEXT: Readonly<Record<PanelWarningCode, Pair>> = {
   "overlap-suspected": ["컷이 서로 겹쳤을 수 있어요.", "Panels may overlap."],
+  "merged-panels-suspected": [
+    "여러 컷이 한 컷으로 합쳐졌을 수 있어요. 컷 사이 여백이 얇거나 스캔이 기울었을 수 있으니 민감도를 '섬세'로 바꾸거나 직접 나눠 주세요.",
+    "Several panels may have been merged into one. The gutters may be thin or the scan tilted: try the “fine” sensitivity or split it yourself.",
+  ],
   "bridged-gutter-suspected": ["말풍선이나 효과음이 컷 사이를 가로막았을 수 있어요. 분할 제안을 확인해 보세요.", "A balloon or sound effect may bridge two panels. Check the split suggestions."],
   "max-depth-reached": ["더 나눌 수 있었지만 단계 한도에서 멈췄어요.", "It could be split further but stopped at the depth limit."],
   "touches-image-edge": ["이미지 가장자리까지 닿는 컷이에요.", "This panel reaches the image edge."],

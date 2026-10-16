@@ -76,6 +76,7 @@ export type PanelConfidenceLevel = "high" | "medium" | "low";
 export type PanelWarningCode =
   | "overlap-suspected"
   | "bridged-gutter-suspected"
+  | "merged-panels-suspected"
   | "max-depth-reached"
   | "touches-image-edge"
   | "no-gutter-found";

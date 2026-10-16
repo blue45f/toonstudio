@@ -148,13 +148,17 @@ export interface SplitSegment {
 }
 
 /**
- * 한 축의 투영(counts)에서 내부 여백 줄 묶음 중 minGap 이상인 것을 경계로 조각을 나눈다.
- * 조각이 둘 미만이면 null. (영역은 이미 잘라 냈으므로 맨 앞·맨 뒤는 내용 줄이다.)
+ * 한 축의 투영(counts)에서 minGap 이상인 내부 여백 줄 묶음을 모두 찾는다.
+ * (영역은 이미 잘라 냈으므로 맨 앞·맨 뒤는 내용 줄이고, 가장자리에 닿은 묶음은 여백이 아니다.)
  */
-export function findSplitSegments(counts: Int32Array, allowed: number, minGap: number): SplitSegment[] | null {
-  const separators = gutterRuns(counts, allowed).filter(
+export function findSeparators(counts: Int32Array, allowed: number, minGap: number): IndexRun[] {
+  return gutterRuns(counts, allowed).filter(
     (run) => run.start > 0 && run.end < counts.length && run.end - run.start >= minGap,
   );
+}
+
+/** 여백 묶음을 경계로 길이 length 의 축을 조각으로 나눈다. 묶음이 없으면 null. */
+export function splitSegmentsAt(length: number, separators: readonly IndexRun[]): SplitSegment[] | null {
   if (separators.length === 0) return null;
   const segments: SplitSegment[] = [];
   let cursor = 0;
@@ -169,6 +173,14 @@ export function findSplitSegments(counts: Int32Array, allowed: number, minGap: n
     cursor = separator.end;
     gapBefore = separator.end - separator.start;
   }
-  segments.push({ start: cursor, end: counts.length, gapBefore, gapAfter: null });
+  segments.push({ start: cursor, end: length, gapBefore, gapAfter: null });
   return segments;
+}
+
+/**
+ * 한 축의 투영(counts)에서 내부 여백 줄 묶음 중 minGap 이상인 것을 경계로 조각을 나눈다.
+ * 조각이 둘 미만이면 null. (영역은 이미 잘라 냈으므로 맨 앞·맨 뒤는 내용 줄이다.)
+ */
+export function findSplitSegments(counts: Int32Array, allowed: number, minGap: number): SplitSegment[] | null {
+  return splitSegmentsAt(counts.length, findSeparators(counts, allowed, minGap));
 }

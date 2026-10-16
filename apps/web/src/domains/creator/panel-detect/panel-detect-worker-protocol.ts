@@ -161,7 +161,9 @@ function parseConfidence(value: unknown): number | null {
   return isFiniteNumber(value) && value >= 0 && value <= 1 ? value : null;
 }
 
-const PANEL_WARNINGS = ["overlap-suspected", "bridged-gutter-suspected", "max-depth-reached", "touches-image-edge", "no-gutter-found"] as const;
+const PANEL_WARNINGS = [
+  "overlap-suspected", "bridged-gutter-suspected", "merged-panels-suspected", "max-depth-reached", "touches-image-edge", "no-gutter-found",
+] as const;
 const RESULT_WARNINGS = [
   "blank-image", "no-gutter-found", "no-panel-found", "downsampled", "undetectable-regions",
   "ignored-fragments", "max-depth-reached", "low-overall-confidence",

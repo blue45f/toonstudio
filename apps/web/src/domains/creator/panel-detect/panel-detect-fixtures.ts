@@ -159,6 +159,74 @@ export class FixtureImage {
     return { x, y, width, height };
   }
 
+  /** 채운 타원. outline > 0 이면 가장자리 outline 두께만 INK 로 그린다(말풍선 윤곽). */
+  ellipse(cx: number, cy: number, rx: number, ry: number, fill: Rgb, outline = 0): void {
+    const inner = outline > 0 ? ((Math.min(rx, ry) - outline) / Math.min(rx, ry)) ** 2 : 0;
+    for (let y = -ry; y <= ry; y += 1) {
+      for (let x = -rx; x <= rx; x += 1) {
+        const distance = (x * x) / (rx * rx) + (y * y) / (ry * ry);
+        if (distance <= 1) this.put(cx + x, cy + y, outline > 0 && distance > inner ? INK : fill);
+      }
+    }
+  }
+
+  /** 굵기 thickness 의 선분. */
+  line(x0: number, y0: number, x1: number, y1: number, thickness: number, color: Rgb = INK): void {
+    const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+    for (let i = 0; i <= steps; i += 1) {
+      const x = Math.round(x0 + ((x1 - x0) * i) / steps);
+      const y = Math.round(y0 + ((y1 - y0) * i) / steps);
+      this.fillRect(x - Math.floor(thickness / 2), y - Math.floor(thickness / 2), thickness, thickness, color);
+    }
+  }
+
+  /**
+   * 흑백 만화 컷: 흰 바탕에 얇은 테두리만 있고 안쪽은 대부분 여백색이다(스캔 원고의 가장 흔한 모양).
+   * sparse 는 인물 하나와 말풍선 하나만 띄우고, dense 는 인물에서 퍼지는 집중선을 그린다.
+   * 테두리가 얇을수록 안쪽 빈 줄이 컷 사이 여백과 닮아 투영만으로는 구분하기 어렵다.
+   */
+  inkPanel(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    options: { readonly frame?: number; readonly seed?: number; readonly mode?: "sparse" | "dense" } = {},
+  ): PanelRect {
+    const random = mulberry32((options.seed ?? 0) * 101 + 7);
+    this.fillRect(x, y, width, height, WHITE);
+    if (options.mode === "dense") {
+      for (let i = 0; i < 26; i += 1) {
+        this.line(x + Math.round(width * 0.5), y + Math.round(height * 0.5), x + Math.round(random() * width), y + Math.round(random() * height), 2);
+      }
+      this.ellipse(x + Math.round(width * 0.5), y + Math.round(height * 0.55), Math.round(width * 0.12), Math.round(height * 0.2), [30, 30, 34]);
+    } else {
+      this.ellipse(x + Math.round(width * (0.35 + random() * 0.3)), y + Math.round(height * 0.62), Math.round(width * 0.14), Math.round(height * 0.22), [30, 30, 34]);
+      this.ellipse(x + Math.round(width * 0.3), y + Math.round(height * 0.2), Math.round(width * 0.16), Math.round(height * 0.09), WHITE, 3);
+    }
+    this.frameRect(x, y, width, height, options.frame ?? 4, INK);
+    return { x, y, width, height };
+  }
+
+  /** 가운데를 중심으로 시계 방향 degrees 만큼 돌린 새 이미지(가장 가까운 화소, 바깥은 흰색). 기울어진 스캔 시험용. */
+  rotated(degrees: number): FixtureImage {
+    const out = new FixtureImage(this.width, this.height, WHITE);
+    const radians = (degrees * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const cx = this.width / 2;
+    const cy = this.height / 2;
+    for (let y = 0; y < this.height; y += 1) {
+      for (let x = 0; x < this.width; x += 1) {
+        const sx = Math.round(cx + (x - cx) * cos + (y - cy) * sin);
+        const sy = Math.round(cy - (x - cx) * sin + (y - cy) * cos);
+        if (sx < 0 || sy < 0 || sx >= this.width || sy >= this.height) continue;
+        const from = (sy * this.width + sx) * 4;
+        out.put(x, y, [this.data[from], this.data[from + 1], this.data[from + 2]], this.data[from + 3]);
+      }
+    }
+    return out;
+  }
+
   /** 채널마다 ±amplitude 의 결정적 잡티(스캔·JPEG 열화 흉내). */
   noise(amplitude: number, seed: number): void {
     const random = mulberry32(seed);
