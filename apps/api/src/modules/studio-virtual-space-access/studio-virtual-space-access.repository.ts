@@ -166,6 +166,18 @@ export class StudioVirtualSpaceAccessRepository {
     // DTO가 1차 정규화하지만, 저장소 직접 호출자도 같은 판정을 받도록 여기서도 맞춘다.
     const codeHash = hash(input.code.trim().toUpperCase());
     return this.transaction(async (client) => {
+      // 코드가 한 번도 발급되지 않은 공간에는 시도 기록 행을 만들지 않는다. 이 경로는 로그인 없이
+      // 호출되고 spaceId 도 호출자가 정하므로, 매번 행을 만들면 임의 식별자로 표를 끝없이 키울 수
+      // 있다. 응답 모양은 발급된 공간의 첫 실패와 같게 맞춰 첫 호출로 존재 여부를 알 수 없게 한다.
+      const issued = await client.query(
+        `SELECT 1 FROM "studio_virtual_space_entry_code" WHERE "spaceId" = $1 LIMIT 1`,
+        [input.spaceId]);
+      if (!issued.rowCount) {
+        return {
+          valid: false, reason: "not-found",
+          attemptsRemaining: ENTRY_CODE_MAX_FAILED_ATTEMPTS - 1,
+        };
+      }
       await client.query(
         `INSERT INTO "studio_virtual_space_entry_attempt" ("spaceId") VALUES ($1)
          ON CONFLICT ("spaceId") DO NOTHING`, [input.spaceId]);
