@@ -181,7 +181,7 @@
 | `studio-charm-fake-host.test-fixture.ts`, `studio-charm-bar-harness.test-fixture.tsx`, `studio-charm-host-writes.test-support.ts` | 시험 전용: 삽입 뒤 선택이 바뀌는 가짜 호스트와 호스트 파생식 잠금 픽스처, 본체 마운트 도구, 호스트 쓰기 폐포 분석 |
 | `StudioCharmBarControls.tsx` | 요소·효과 메뉴의 스위치와 요소 상세의 고정 버튼 |
 
-- Studio 진입 그래프에는 슬롯과 순수 모듈 8개(약 37 KiB 원본)만 정적으로 들어온다. 칩·선택기·카탈로그 데이터(SVG)는 바를 펼칠 때 지연 로드한다(`pnpm run check:studio-eager-graph` 통과).
+- Studio 진입 그래프에는 슬롯과 순수 모듈 8개(약 44 KiB 원본, 연속 붙이기 선택 이어 받기·`biFill` 이 더해지며 37 KiB 에서 늘었다)만 정적으로 들어온다. 칩·선택기·카탈로그 데이터(SVG)는 바를 펼칠 때 지연 로드한다(`pnpm run check:studio-eager-graph` 통과).
 - 편집기 호스트(`StudioCuttoonEditorHost.tsx`)는 고치지 않았다. 기존 파일에는 작은 연결만 더해졌다: 작업공간에 슬롯 렌더 1곳(`StudioCuttoonEditorWorkspace.tsx`), 에셋 메뉴에 스위치 1곳(`StudioAssetToolPopoverBody.tsx`), 요소 상세에 고정 버튼 1곳(`StudioElementsPanel.tsx`), 저장소에 `charm-bar` 읽기·쓰기(`studio-ui-preferences-sqlite.ts`). 작업공간 파일은 `@ts-nocheck` 라서 컴파일러가 슬롯에 넘기는 세션 필드를 검사하지 못한다. 슬롯이 읽는 세션 필드 23개(`StudioCharmHostSession` 15개 + 슬롯 8개)는 호스트 계약 시험이 선언을 읽어 호스트가 뷰에 넘기는 속성과 직접 대조한다(이 문서의 개수도 같은 시험이 지킨다).
 
 ## 8. 권리 (current)
