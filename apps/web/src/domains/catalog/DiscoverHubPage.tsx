@@ -5,6 +5,7 @@ import {
   HelpCircle,
   Library,
   MessagesSquare,
+  NotebookPen,
   Search,
   Shuffle,
   Sparkles,
@@ -13,7 +14,7 @@ import {
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { lazy, Suspense, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
@@ -47,6 +48,11 @@ import {
 const QUICK_GENRE_COUNT = 8;
 /** 스냅샷 수치는 정확한 값이라 약식(6만) 대신 천 단위 구분으로 보여 준다. */
 const COUNT_FORMAT = new Intl.NumberFormat("en-US");
+
+// 기억으로 작품 찾기는 접힌 안내를 처음 펼칠 때만 내려받는다 — 탐색 허브의 첫 화면 번들에 넣지 않는다.
+const LazyMemoryFinderSection = lazy(() =>
+  import("./memory-finder/MemoryFinderSection").then((module) => ({ default: module.MemoryFinderSection })),
+);
 
 interface DiscoverDestination {
   readonly href: string;
@@ -125,6 +131,7 @@ export function DiscoverHubPage() {
   const bt = useBilingual("DiscoverHubPage");
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [memoryFinderOpened, setMemoryFinderOpened] = useState(false);
   const home = useApiResource<DiscoverHomeSnapshot>(
     DISCOVER_HOME_SNAPSHOT_URL,
     bt("추천 작품을 불러오지 못했습니다.", "Couldn't load story picks."),
@@ -241,6 +248,25 @@ export function DiscoverHubPage() {
             />
           ))}
         </StaggerReveal>
+        <SiteDisclosure
+          className="mt-4"
+          id="memory-finder"
+          icon={NotebookPen}
+          title={bt("제목이 기억나지 않으세요?", "Can't remember the title?")}
+          summary={bt(
+            "기억나는 장면이나 줄거리만 적으면 후보를 찾아 드려요. 확인된 것과 짐작한 것을 나눠서 말해요.",
+            "Describe a scene or the plot and I'll look for candidates — separating what is confirmed from what is a guess.",
+          )}
+          onToggle={(open) => {
+            if (open) setMemoryFinderOpened(true);
+          }}
+        >
+          {memoryFinderOpened ? (
+            <Suspense fallback={<p role="status" className="text-sm text-fg-2">{bt("불러오는 중…", "Loading…")}</p>}>
+              <LazyMemoryFinderSection />
+            </Suspense>
+          ) : null}
+        </SiteDisclosure>
         <SiteDisclosure
           className="mt-4"
           icon={HelpCircle}

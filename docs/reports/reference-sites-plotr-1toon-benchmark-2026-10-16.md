@@ -17,7 +17,8 @@
 | 확인 결과 갭 아님 | AI 콘티 대본창의 예시 대본(§5 #3) — 두 대본창 모두 예시 대본이 미리 채워져 있다 | — |
 | 이번 변경 | 다중 선택 공통 선 두께(§5 #8) | S |
 | 다음 차례 | 매뉴얼 `planned` 필드(§5 #11) | S |
-| 다음 차례 | 기억으로 작품 찾기(단서 폼 + "확인된/추정/못 찾음" 상태), 컷별 1:1 낱장 ZIP | M |
+| 이번 변경 | 기억으로 작품 찾기(단서 폼 + "확인된/추정/약한 후보/못 찾음" 상태)와 정직 표기 배지 공용화(§5 #1·#17) | M |
+| 다음 차례 | 컷별 1:1 낱장 ZIP | M |
 | 다음 차례 | 소재(인물·배경·소품) 줄, 선택 개수에 따라 바뀌는 입력줄, 빈 컷 일괄 생성 큐, 생성 이미지 30일 보관 | L |
 | 하지 않음 | `viewport`의 `maximum-scale=1`(확대 금지), 크레딧 과금 모델 | — |
 
@@ -61,7 +62,7 @@
 
 | # | 후보 | 현황 | 근거 | 크기 | 결정 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 기억으로 작품 찾기 | 부분 — 제목·별칭·작가·태그·장르 점수 검색은 있으나 단서 폼·일치한 단서 표시·"못 찾음" 안내가 없다 | `packages/core/src/search.ts`, `catalog/RecommendPage.tsx` | M | 다음 |
+| 1 | 기억으로 작품 찾기 | 부분 — 제목·별칭·작가·태그·장르 점수 검색은 있었으나 단서 폼·일치한 단서 표시·"못 찾음" 안내가 없었다 → 이번에 `/discover` 접힌 안내로 추가(`docs/features/memory-finder.md`) | `packages/core/src/search.ts`, `catalog/memory-finder/` | M | **이번** |
 | 2 | 인앱 브라우저 로그인 안내 | 부분 — 판별·탈출 링크 모듈이 있고 Studio 몰입 허브만 쓴다. 로그인 화면에는 없다 | `apps/web/src/platform/browser/in-app-browser.ts`, `auth/components/auth-form.tsx` | S | **이번** |
 | 3 | 예시 대본으로 따라 하기 | 있음 — 텐션 맵은 "예시 대본 넣기" 버튼, AI 콘티 대본창(`StudioAiSuperSuiteModal`)과 회차 제작 대본창(`StudioAiEpisodeProductionModal`)은 예시 대본(`DEFAULT_SCRIPT` 등)이 미리 채워져 있다. 비우면 되돌릴 수단이 없는 점만 남는다 | `creator/assistant/webtoon-tension-map-source.ts`, `creator/ai/StudioAiSuperSuiteModal.tsx`, `creator/ai/StudioAiEpisodeProductionModal.tsx` | S | 유지(조사 단계의 "갭" 판단을 정정) |
 | 4 | 소재(인물·배경·소품) 줄 | 부분 — 제작 바이블(장면·장소·소품)과 인물 바이블이 따로 있고 줄 UI·빈 칸·프로젝트 간 가져오기가 없다 | `creator/studio-production-bible.ts`, `creator/studio-character-bible.ts` | L | 다음 |
@@ -77,7 +78,7 @@
 | 14 | 글꼴 | 있음 — 28종 + 업로드 + 기기 글꼴 | `creator/studio-brand-kit.ts`, `creator/studio-google-fonts.ts` | — | 유지 |
 | 15 | 장르별 연출표 | 부분 — 장르 15종 × 전개 비트는 있고 컷 호흡·앵글·효과 규칙표는 없다 | `creator/planning/studio-plot-development.ts` | M | 다음 |
 | 16 | 씨앗 빌더 → 콘티 대본 | 부분 — 산출물이 회차 기획 필드라 컷별 대본이 아니다 | `creator/planning/StudioStorySeedBuilder.tsx` | S–M | 다음 |
-| 17 | 정직 고지 공용 컴포넌트 | 있음(패턴 다수, 공용 컴포넌트 없음) | `creator-resources/SourcesPage.tsx`, `learn/AccessibleWebtoonGuidePage.tsx` | S–M | 다음 |
+| 17 | 정직 고지 공용 컴포넌트 | 있음(패턴 다수, 공용 컴포넌트 없었음) → 이번에 `HonestyBadge`(확인됨·추정·확인 못 함)를 추가하고 기억 찾기가 처음 쓴다. 기존 화면을 바꾸지는 않았다 | `creator-resources/SourcesPage.tsx`, `learn/AccessibleWebtoonGuidePage.tsx`, `shared/components/ui/honesty-badge.tsx` | S–M | **이번**(컴포넌트만) |
 
 ## 6. 이번 변경과 검증
 
@@ -85,11 +86,12 @@
 - **#13 `translate="no"`**: Studio 편집 셸에만 건다. `index.html` 전체에 메타를 넣으면 공개 사이트의 해외 독자 번역이 함께 막히므로 하지 않는다. 캔버스(Konva) 글자는 DOM이 아니라 대상이 아니다.
 - 두 변경 모두 단위 시험으로 고정하고(`in-app-browser-notice.test.tsx`, `studio-no-auto-translate.test.tsx`), 새 시험은 `scripts/ci-required-vitest-targets.txt`에 등록한다.
 - **#3은 구현하지 않았다.** 조사 초기의 정적 검색은 AI 콘티 대본창을 "placeholder뿐"이라고 보고했지만, 코드를 직접 읽어 보니 두 대본창 모두 예시 대본이 미리 채워져 있다. 확인 없이 버튼을 더했다면 중복 기능이 됐을 것이다.
+- **#1 기억으로 작품 찾기·#17 정직 표기 배지**: `/discover`의 접힌 안내 "제목이 기억나지 않으세요?"를 펼치면 폼이 받아진다. 입력은 제목 기억 정도·제목 조각·장면·시기이고, 결과마다 근거 칩과 확신 단계(확인된 일치·추정 일치·약한 후보)를 붙이며 근거가 없으면 못 찾았다고 말한다. 점수는 정렬에만 쓰고 퍼센트로 보이지 않는다. 새 API·마이그레이션은 없다. 자세한 정의와 한계는 `docs/features/memory-finder.md`.
 - **#8 다중 선택 공통 선 두께**: `studio-multi-selection-color.ts` 에 색과 같은 구조의 순수 함수 쌍(`resolve…StrokeWidth`/`apply…StrokeWidth`)을 더하고, 다중 선택 인스펙터의 "공통 선 스타일" 상자에 두께 슬라이더(0.5~16px, 0.5 단위)를 둔다. 선이 보이는 요소에만 적용해 선 없음인 요소의 기본 두께(3px) 규칙을 흐트리지 않고, 이미 상한보다 굵은 선이 있으면 상한을 그 굵기까지 올려 건드린 것만으로 가늘어지지 않게 한다. 되돌리기는 색과 같은 병합 키 방식이다.
 
 ## 7. 정직 표기 — 하지 못한 것
 
 - 인앱 WebView에서 구글 로그인이 실제로 실패하는지는 실기기로 확인하지 못했다. 그래서 안내 문구를 "막힐 수 있어요"로 썼다 **[미확인]**.
 - 플로터 로그인 뒤 화면과 AI 결과 품질은 평가하지 않았다. 이 문서는 플로터가 더 낫다는 판단이 아니다.
-- 1toon은 목업이라 검색 품질 비교가 불가능하다. 우리 카탈로그에서 장면 단서가 얼마나 맞는지는 구현 뒤 실측해야 한다.
+- 1toon은 목업이라 검색 품질 비교가 불가능하다. 우리 카탈로그에서 장면 단서가 얼마나 맞는지는 **구현했지만 측정하지 못했다** — 실제 사용에서 "못 찾음" 비율을 봐야 한다.
 - 우리 쪽 대조는 정적 코드 검색이다. 7번 "Esc로 중단" 전용 UX 여부, 12번 복제가 페이지 본문까지 복사하는지 등은 확인하지 못했다.
