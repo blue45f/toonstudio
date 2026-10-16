@@ -43,6 +43,8 @@ export interface FakeStudioHost {
   readonly selected: () => FakeHostElement | null;
   /** 사용자가 캔버스에서 요소를 고른 것처럼 선택만 바꾼다(`null` 은 선택 해제). */
   readonly select: (id: string | null) => void;
+  /** 다른 페이지(또는 문서 마스터)로 옮겨 간 것처럼 요소 목록 전체와 선택을 바꾼다. */
+  readonly replaceDocument: (nextElements: readonly FakeHostElement[], nextSelectedId: string | null) => void;
   /** 호스트가 다시 그릴 때마다 슬롯에 넘기는 세션 값. 선택은 그때그때의 값이다. */
   readonly session: (overrides?: Partial<StudioCharmHostSession>) => StudioCharmHostSession;
 }
@@ -127,6 +129,11 @@ export function createFakeStudioHost(seed: FakeStudioHostSeed): FakeStudioHost {
     selected,
     select: (id) => {
       selectedId = id;
+      emit();
+    },
+    replaceDocument: (nextElements, nextSelectedId) => {
+      elements = [...nextElements];
+      selectedId = nextSelectedId;
       emit();
     },
     session: (overrides = {}) => ({

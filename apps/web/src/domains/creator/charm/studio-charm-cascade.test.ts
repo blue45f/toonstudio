@@ -63,6 +63,20 @@ describe("연속 삽입 선택 이어 받기", () => {
     expect(resolve(NEW_2, [...EXISTING, "new-1", "new-2"], 2_000)).toBe(PHOTO);
   });
 
+  it("직전에 알던 요소가 사라졌다면(다른 페이지·마스터로 옮김) 새 선택은 붙이기의 결과가 아니다", () => {
+    const resolve = createStudioCharmBurst<Selection>();
+    resolve(FRAME, EXISTING, 0);
+    const otherPageFrame: Selection = { id: "p2-frame", name: "다른 페이지의 컷" };
+    expect(resolve(otherPageFrame, ["p2-frame", "p2-text"], 1_000)).toBe(otherPageFrame);
+  });
+
+  it("선택한 요소가 현재 요소 목록에 없으면(저장 전 펜 획 등) 이어 받지 않는다", () => {
+    const resolve = createStudioCharmBurst<Selection>();
+    resolve(FRAME, EXISTING, 0);
+    const pendingStroke: Selection = { id: "stroke-1", name: "저장 전 획" };
+    expect(resolve(pendingStroke, EXISTING, 1_000)).toBe(pendingStroke);
+  });
+
   it("5초가 지나면 이어 받지 않는다(방금 붙인 요소가 선택돼 있어도 그 선택을 따른다)", () => {
     const resolve = createStudioCharmBurst<Selection>();
     resolve(FRAME, EXISTING, 0);

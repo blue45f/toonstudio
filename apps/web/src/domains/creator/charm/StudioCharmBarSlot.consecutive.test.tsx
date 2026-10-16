@@ -204,6 +204,18 @@ describe("참 바: 사용자가 직접 고른 선택은 이어 받기보다 앞�
     expect(next.y + 40).toBe(110);
   });
 
+  it("붙인 뒤 다른 페이지로 옮겨 그 페이지의 컷을 고르면 이전 페이지의 대상을 이어 받지 않는다", async () => {
+    const host = newHost(FRAME.id);
+    const [chip] = await renderHosted(host, [FOCUS]);
+    await stampAndWait(host, chip);
+    // 페이지 2: 요소 ID 가 전혀 다른 문서. 새로 선택한 컷은 "방금 붙인 요소"가 아니다.
+    const pageTwoFrame: FakeHostElement = { id: "p2-frame", type: "frame", x: 100, y: 800, width: 400, height: 300 };
+    act(() => { host.replaceDocument([pageTwoFrame], pageTwoFrame.id); });
+    const next = await stampAndWait(host, chip);
+    expect(inside(next, pageTwoFrame)).toBe(true);
+    expect(next.y).toBeGreaterThanOrEqual(800);
+  });
+
   it("붙인 뒤 선택을 풀면 보이는 화면(문서) 중앙으로 간다", async () => {
     const host = newHost(FRAME.id);
     const [chip] = await renderHosted(host, [TEAR]);
