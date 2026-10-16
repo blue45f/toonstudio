@@ -13,6 +13,7 @@ apps/api/src/modules/catalog/catalog-pagination.test.ts
 apps/api/src/modules/catalog/catalog-public-cache.interceptor.test.ts
 apps/api/src/modules/catalog/catalog-search-cache.test.ts
 apps/api/src/modules/catalog/catalog.controller.security.test.ts
+apps/api/src/modules/catalog/catalog.controller.test.ts
 apps/api/src/modules/catalog/cover-transcode-policy.test.ts
 apps/api/src/modules/community/community.controller.test.ts
 apps/api/src/modules/creator-ecosystem/creator-ecosystem.rate-limit.test.ts
@@ -69,6 +70,7 @@ apps/web/src/app/studio-cross-origin-isolation.test.ts
 apps/web/src/app/studio-immersive-shell.test.ts
 apps/web/src/domains/account/UserProfilePage.test.tsx
 apps/web/src/domains/auth/components/in-app-browser-notice.test.tsx
+apps/web/src/domains/catalog/DiscoverHubPage.test.tsx
 apps/web/src/domains/catalog/memory-finder/MemoryFinderSection.test.tsx
 apps/web/src/domains/catalog/memory-finder/memory-finder-model.test.ts
 apps/web/src/domains/character-chat/CharacterChatSpeech.test.tsx
@@ -326,6 +328,7 @@ apps/web/src/domains/creator/studio-menubar-content-boundary.test.ts
 apps/web/src/domains/creator/studio-mobile-editing-dock-boundary.test.ts
 apps/web/src/domains/creator/studio-mobile-history-touch-gesture-host.test.ts
 apps/web/src/domains/creator/studio-mobile-immersive.test.ts
+apps/web/src/domains/creator/studio-multi-selection-color.test.ts
 apps/web/src/domains/creator/studio-page-autosave-runtime.test.ts
 apps/web/src/domains/creator/studio-page-lazy-ui-recovery.test.ts
 apps/web/src/domains/creator/studio-page-orchestration-intent-lock.test.ts

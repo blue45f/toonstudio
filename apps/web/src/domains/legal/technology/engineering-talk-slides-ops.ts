@@ -173,7 +173,7 @@ export const OPS_SLIDES = [
     points: [
       t("래칫: 레거시 경계 위반은 상한(30·76)에 묶여 늘면 CI가 실패 — 도메인 간 깊은 import 실측은 76", "Ratchet: legacy boundary violations are capped (30 and 76) and CI fails if they grow — measured deep imports are 76"),
       t("접근성: 코어 필수 게이트는 axe 스모크(기본 설정, 모션 감소 없음) — 모션 감소·강제 색상은 수동 매트릭스, 키보드 점검은 스모크에 없음", "Accessibility: the required core gate is an axe smoke (default config, no reduced motion) — reduced motion and forced colors are a manual matrix and keyboard checks are not in the smoke"),
-      t("5,100+는 수집 규모이지 매 PR 게이트가 아님 — 병합을 막는 코어는 큐레이션한 511개 대상, 정본은 CI", "5,100+ is the collected scale, not a per-PR gate — the merge-blocking core lists 511 curated targets, and CI is the source of truth"),
+      t("5,100+는 수집 규모이지 매 PR 게이트가 아님 — 병합을 막는 코어는 큐레이션한 514개 대상, 정본은 CI", "5,100+ is the collected scale, not a per-PR gate — the merge-blocking core lists 514 curated targets, and CI is the source of truth"),
     ],
     stack: ["Vitest", "Testing Library", "Playwright", "@axe-core/playwright", "GitHub Actions"],
     notes: t(
