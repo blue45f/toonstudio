@@ -100,7 +100,7 @@ describe("panelImport 네임스페이스 — 문구", () => {
   });
 
   it("권리 확인 문구의 한글 정본이 데이터 계층(결과물에 남는 기록)의 문구와 같다", () => {
-    expect(ko["panelImport.source.rights.statement"]).toBe(PANEL_IMPORT_RIGHTS_STATEMENT_KO);
+    expect(ko["panelImport.attest.statement"]).toBe(PANEL_IMPORT_RIGHTS_STATEMENT_KO);
   });
 
   it("값 자리표시 바로 뒤에 받침에 따라 달라지는 조사를 붙이지 않는다(‘컷 2을’·‘카드 2과 3’ 방지)", () => {

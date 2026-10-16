@@ -759,7 +759,7 @@
   "panelImport.source.hint.reflow": "Choose one scanned comic page or a long webtoon image. Panels are detected and rearranged into a vertical strip.",
   "panelImport.source.hint.cards": "Choose one long vertical manuscript image. It is sliced into 4:5 (1080×1350) cards. A vertical image exported from Studio works too.",
   "panelImport.source.rights.legend": "Rights confirmation (required)",
-  "panelImport.source.rights.statement": "I own this manuscript or have permission to use it",
+  "panelImport.attest.statement": "I own this manuscript or have permission to use it",
   "panelImport.source.rights.notice": "Scans or other people’s work may be copyrighted. This confirmation is recorded with the result; it is not legal advice or rights certification.",
   "panelImport.source.note.label": "Source / permission note (optional)",
   "panelImport.source.note.placeholder": "e.g. drew it myself / publisher’s permission 2026-09-30",

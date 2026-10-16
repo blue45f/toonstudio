@@ -170,7 +170,7 @@ describe("컷 찾기 단계", () => {
     const empty: PanelDetectResult = { ...createManualDetectResult(IMAGE.width, IMAGE.height, "webtoon"), warnings: ["no-panel-found"] };
     renderFlow({ detect: () => Promise.resolve(empty) });
     await reviewHeading();
-    expect(screen.getByText("컷을 하나도 찾지 못했어요. 컷을 직접 그려 주세요.")).toBeTruthy();
+    expect(screen.getByText("컷이 하나도 보이지 않아요. 컷을 직접 그려 주세요.")).toBeTruthy();
     expect(panelIds()).toHaveLength(0);
     expect((button(/다음: 세로 재배열 설정/) as HTMLButtonElement).disabled).toBe(true);
   });

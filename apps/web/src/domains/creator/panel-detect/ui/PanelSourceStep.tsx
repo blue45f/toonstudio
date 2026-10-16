@@ -110,7 +110,7 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
             onChange={(event) => setConfirmed(event.currentTarget.checked)}
             className={cn("mt-0.5 size-5 shrink-0 accent-accent", PANEL_FOCUS_RING)}
           />
-          <span>{t("panelImport.source.rights.statement")}</span>
+          <span>{t("panelImport.attest.statement")}</span>
         </label>
         <p className={cn(PANEL_HINT, "mt-1 pl-7")}>
           {t("panelImport.source.rights.notice")}
