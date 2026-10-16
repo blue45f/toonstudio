@@ -388,6 +388,7 @@ apps/web/src/shared/components/contract-review/ContractReviewChecklist.test.tsx
 apps/web/src/shared/components/contract-review/LazyContractReviewChecklist.error.test.tsx
 apps/web/src/shared/components/contract-review/LazyContractReviewChecklist.test.tsx
 apps/web/src/shared/components/contract-review/contract-review-answer-store.test.ts
+apps/web/src/shared/components/contract-review/contract-review-checklist.test.ts
 apps/web/src/shared/components/workspace
 apps/web/src/shared/components/workspace/WorkspaceContextPanel.test.tsx
 apps/web/src/shared/lib/__tests__/drawing-pwa-manifest.test.ts
@@ -400,7 +401,6 @@ deploy/cloudflare-analytics/src/index.test.ts
 deploy/cloudflare-apex-redirect/src/index.test.ts
 packages/contracts/src/production-workflow.test.ts
 packages/core/src/catalog/home.cpu-cache.test.ts
-packages/core/src/contract-review-checklist.test.ts
 packages/core/src/fortune/fortune-engine.security.test.ts
 packages/core/src/fortune/fortune-observatory.test.ts
 packages/core/src/production/notification-digest.test.ts
