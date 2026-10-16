@@ -205,6 +205,30 @@ describe("컷 감지 — 못 나누는 경우는 지어내지 않고 경고한�
     expect(tilted.confidence).toBeLessThan(0.75);
   });
 
+  it("컷에 여백 없이 바로 붙은 넓은 가장자리 띠는 떼어 내지 못해 한 컷으로 두되 낮은 신뢰도와 경고를 준다", () => {
+    const image = inkPage(4, "sparse");
+    image.fillRect(0, 0, 40, 1700, [70, 70, 70]);
+    const result = detectPanels(image.raster(), { readingOrder: "manga" });
+    expect(result.panels).toHaveLength(1);
+    expect(result.panels[0].level).toBe("low");
+    expect(result.panels[0].warnings.length).toBeGreaterThan(0);
+  });
+
+  it("위·아래 선만 있는 열린 컷은 네 변이 막힌 직사각형이 아니라 안쪽 그림만 컷이 되고 선은 제외 조각으로 남는다", () => {
+    const image = new FixtureImage(1000, 1000, WHITE);
+    [0, 1].forEach((index) => {
+      const y = 40 + index * 480;
+      image.fillRect(40, y, 920, 3, INK);
+      image.fillRect(40, y + 437, 920, 3, INK);
+      image.ellipse(500, y + 220, 90, 120, [30, 30, 34]);
+    });
+    const result = detectPanels(image.raster());
+    expect(result.panels).toHaveLength(2);
+    expect(result.panels.every((panel) => panel.width < 400 && panel.height < 400)).toBe(true);
+    expect(result.ignored.length).toBeGreaterThanOrEqual(4);
+    expect(result.ignored.every((fragment) => fragment.reason === "too-small")).toBe(true);
+  });
+
   it("흑백 페이지는 0.6°까지 기울어도 컷 5개를 찾고, 1° 기울면 못 나눈 채 한 컷으로 두되 합쳐졌을 수 있다고 경고한다", () => {
     const page = inkPage(4, "sparse");
     expect(detectPanels(page.rotated(0.6).raster(), { readingOrder: "manga" }).panels).toHaveLength(5);
