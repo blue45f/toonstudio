@@ -295,6 +295,19 @@ describe("웹 푸시 알림 전송", () => {
     expect(typeof options.timeout).toBe("number");
   });
 
+  it("저장된 endpoint 는 WHATWG 정규형(소문자 호스트·기본 포트 표기 제거)으로 바꿔 전송한다", async () => {
+    // 검증한 호스트와 web-push(legacy url.parse)가 접속하는 호스트를 일치시키려면 원문이 아니라 정규형을 보내야 한다.
+    const result = await send([
+      subscription("https://FCM.GoogleAPIs.com:443/fcm/send/abc", "hash-a"),
+      subscription("https://fcm%2Egoogleapis.com/fcm/send/def", "hash-b"),
+    ]);
+    expect(result.sent).toBe(2);
+    expect(webPush.sendNotification.mock.calls.map((call) => (call[0] as { endpoint: string }).endpoint)).toEqual([
+      "https://fcm.googleapis.com/fcm/send/abc",
+      "https://fcm.googleapis.com/fcm/send/def",
+    ]);
+  });
+
   it("이미 저장돼 있던 내부 주소 구독은 요청 없이 건너뛰고 정리 대상으로 돌려준다", async () => {
     const result = await send([
       subscription("https://127.0.0.1:4001/api/health/ready", "hash-internal"),
