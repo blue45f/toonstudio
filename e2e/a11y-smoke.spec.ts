@@ -16,6 +16,14 @@ const DESKTOP_A11Y_ROUTES = [
 const MOBILE_A11Y_ROUTES = ["/", "/discover", "/studio", "/studio/new"] as const;
 const BLOCKING_IMPACTS = new Set(["serious", "critical"]);
 
+// 이 스모크는 진입 연출이 끝난 정지 화면의 색을 잰다. 연출 중간 프레임의 반투명한 색은 사용자가 읽는 상태가 아닌데도
+// 임계값 근처의 글자를 위반으로 잡는다. 간헐 실패(홈 `.rd-new-project > span`)의 원인은 확정하지 못했고, 콜드 스타트
+// 개발 서버에서 연출이 판정 직전에 다시 시작했을 가능성이 가장 크다. 그래서 움직임 줄이기로 연출 자체를 없애고(앱은
+// prefers-reduced-motion 을 존중한다) CI 에서는 한 번 다시 시도한다 — 결정적인 위반은 두 번 다 실패하므로 가려지지
+// 않고, 한 번 실패 뒤 통과하면 보고서가 flaky 로 표시하며 첫 시도의 진단(아래 details)을 남긴다.
+test.use({ reducedMotion: "reduce" });
+test.describe.configure({ retries: process.env.CI ? 1 : 0 });
+
 /** 실패한 노드의 실제 환경: 맨 위 요소, 조상 불투명도, 진행 중인 애니메이션·전환 수. */
 async function describeNodeEnvironment(page: Page, target: unknown): Promise<unknown> {
   const selector = Array.isArray(target) ? target.filter((part): part is string => typeof part === "string").join(" ") : "";
@@ -59,14 +67,26 @@ async function assertNoBlockingViolations(page: Page, route: string) {
   // 페이지 진입 연출은 0.5~1.1초 동안 내용을 페이드시킨다. 중간 프레임의 반투명한 색으로 대비를 재면
   // 사용자가 읽는 상태가 아닌데도 임계값 근처의 선택 버튼이 실패로 잡혀 판정이 흔들린다.
   // 끝이 정해진 애니메이션이 모두 끝난 뒤의 색으로 판정하고, 무한 반복하는 앰비언트 효과는 기다리지 않는다.
+  // 부하가 큰 CI(첫 시험은 콜드 스타트로 1분 넘게 걸린다)에서는 연출이 이 대기 직후에 새로 시작되기도 한다.
+  // 그래서 끝이 정해진 애니메이션이 300ms 동안 새로 생기지 않을 때까지 한 번 더 기다린 뒤 잰다(전체 상한 5초).
   await page.evaluate(async () => {
     const deadline = performance.now() + 5_000;
     const pending = () => document.getAnimations().filter((animation) => {
       const timing = animation.effect?.getTiming();
       return animation.playState === "running" && Number.isFinite(timing?.iterations ?? 1);
     });
-    while (pending().length > 0 && performance.now() < deadline) {
-      await Promise.allSettled(pending().map((animation) => animation.finished));
+    const untilDeadline = () => new Promise<void>((resolve) => setTimeout(resolve, Math.max(0, deadline - performance.now())));
+    let quietSince = performance.now();
+    while (performance.now() < deadline) {
+      const running = pending();
+      if (running.length > 0) {
+        await Promise.race([Promise.allSettled(running.map((animation) => animation.finished)), untilDeadline()]);
+        quietSince = performance.now();
+      } else if (performance.now() - quietSince >= 300) {
+        break;
+      } else {
+        await new Promise<void>((resolve) => setTimeout(resolve, 50));
+      }
     }
   });
 
