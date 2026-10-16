@@ -1772,7 +1772,7 @@ function serializeV12ModelManifest(manifest: Bg3dModelV12Manifest): string {
   return raw;
 }
 
-function parseV12ModelManifest(raw: string | null): Bg3dModelV12Manifest {
+export function parseV12ModelManifest(raw: string | null): Bg3dModelV12Manifest {
   if (raw === null) return emptyV12ModelManifest();
   if (new TextEncoder().encode(raw).byteLength > BG3D_MODEL_LIBRARY_V12_MAX_MANIFEST_BYTES) {
     throw createLibraryError("stored-metadata-mismatch");
