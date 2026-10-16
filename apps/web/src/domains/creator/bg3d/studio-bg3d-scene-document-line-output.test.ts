@@ -19,6 +19,7 @@ import {
   DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
   applyStudioBg3dShot,
   captureStudioBg3dShot,
+  migrateStudioBg3dSceneDocument,
   normalizeStudioBg3dLineOutputSettings,
   normalizeStudioBg3dSceneDocument,
   normalizeStudioBg3dShotLineOutputOverride,
@@ -109,35 +110,83 @@ describe("normalizeStudioBg3dLineOutputSettings", () => {
     expect(normalizeStudioBg3dLineOutputSettings({ color: "red" }).color).toBe("#000000");
   });
 
-  it("writes the suppression fields only when the input has them and bounds them", () => {
-    expect(normalizeStudioBg3dLineOutputSettings({ interiorSuppressionEnabled: true })).toMatchObject({
-      interiorSuppressionEnabled: true,
-    });
+  it("writes the suppression fields only while the switch is on, and drops a default strength", () => {
     const onlySwitch = normalizeStudioBg3dLineOutputSettings({ interiorSuppressionEnabled: true });
+    expect(onlySwitch.interiorSuppressionEnabled).toBe(true);
     expect("interiorSuppressionStrength" in onlySwitch).toBe(false);
-    const onlyStrength = normalizeStudioBg3dLineOutputSettings({ interiorSuppressionStrength: 0.3 });
-    expect("interiorSuppressionEnabled" in onlyStrength).toBe(false);
-    expect(onlyStrength.interiorSuppressionStrength).toBe(0.3);
 
+    // 켜져 있지 않으면 강도는 의미가 없어 쓰지 않는다. 꺼짐도 쓰지 않는다(없음 = 꺼짐).
+    for (const off of [
+      { interiorSuppressionStrength: 0.3 },
+      { interiorSuppressionEnabled: false },
+      { interiorSuppressionEnabled: false, interiorSuppressionStrength: 0.9 },
+      { interiorSuppressionEnabled: "yes", interiorSuppressionStrength: "high" },
+    ]) {
+      const line = normalizeStudioBg3dLineOutputSettings(off);
+      expect(line, JSON.stringify(off)).not.toHaveProperty("interiorSuppressionEnabled");
+      expect(line, JSON.stringify(off)).not.toHaveProperty("interiorSuppressionStrength");
+      expect(line).toEqual(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output.line);
+    }
+
+    // 기본 강도(0.6)는 없는 것과 같으므로 쓰지 않는다. 기본이 아니면 쓴다.
     expect(
-      normalizeStudioBg3dLineOutputSettings({
-        interiorSuppressionEnabled: true,
-        interiorSuppressionStrength: 3,
-      }).interiorSuppressionStrength
+      normalizeStudioBg3dLineOutputSettings({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 0.6 })
+    ).not.toHaveProperty("interiorSuppressionStrength");
+    expect(
+      normalizeStudioBg3dLineOutputSettings({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 0.3 })
+        .interiorSuppressionStrength
+    ).toBe(0.3);
+    expect(
+      normalizeStudioBg3dLineOutputSettings({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 3 })
+        .interiorSuppressionStrength
     ).toBe(1);
     expect(
-      normalizeStudioBg3dLineOutputSettings({ interiorSuppressionStrength: -1 }).interiorSuppressionStrength
+      normalizeStudioBg3dLineOutputSettings({ interiorSuppressionEnabled: true, interiorSuppressionStrength: -1 })
+        .interiorSuppressionStrength
     ).toBe(0);
-    // 형식이 틀린 값은 기본값으로 바뀐다(엄격 저장은 이 변경을 감지해 거부한다).
+    // 켜 두고 강도 형식만 틀리면 기본 강도로 돌아가 키가 없어진다(엄격 저장은 이 변경을 감지해 거부한다).
     expect(
-      normalizeStudioBg3dLineOutputSettings({
-        interiorSuppressionEnabled: "yes",
-        interiorSuppressionStrength: "high",
-      })
-    ).toMatchObject({
-      interiorSuppressionEnabled: false,
-      interiorSuppressionStrength: STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH,
-    });
+      normalizeStudioBg3dLineOutputSettings({ interiorSuppressionEnabled: true, interiorSuppressionStrength: "high" })
+    ).toEqual({ ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output.line, interiorSuppressionEnabled: true });
+  });
+
+  it("emits keys in the stored order regardless of the order of the input keys (golden JSON)", () => {
+    // 저장 문서의 키 순서가 바뀌면 이전 코드가 쓴 문서와 바이트가 달라진다. jsonStructuresEqual 은 순서를 무시하므로
+    // 순서는 이 골든 문자열이 지킨다.
+    const golden =
+      '{"enabled":true,"layerType":"raster","color":"#000000","widthPx":1,"strength":0.8,"accuracy":0.75,' +
+      '"scaleAwareAccuracy":true,"exteriorOutlineStrength":1,"depthEnabled":false,"depthStrength":0.5,' +
+      '"depthOutlineOnly":true,"smoothing":0.5,"textureLineEnabled":true,"textureLineStrength":0.5,' +
+      '"creaseAngleDegrees":20,"hiddenLineRemoval":true}';
+    expect(JSON.stringify(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output.line)).toBe(golden);
+    expect(JSON.stringify(normalizeStudioBg3dLineOutputSettings({}))).toBe(golden);
+
+    const reversed = Object.fromEntries(
+      Object.entries(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output.line).reverse()
+    );
+    expect(JSON.stringify(normalizeStudioBg3dLineOutputSettings(reversed))).toBe(golden);
+    expect(
+      JSON.stringify(
+        normalizeStudioBg3dLineOutputSettings({
+          interiorSuppressionStrength: 0.45,
+          interiorSuppressionEnabled: true,
+          ...reversed,
+        })
+      )
+    ).toBe(`${golden.slice(0, -1)},"interiorSuppressionEnabled":true,"interiorSuppressionStrength":0.45}`);
+
+    // 컷 덮어쓰기도 같은 표 순서를 따른다.
+    expect(
+      JSON.stringify(
+        normalizeStudioBg3dShotLineOutputOverride({
+          interiorSuppressionStrength: 0.5,
+          hiddenLineRemoval: false,
+          widthPx: 2,
+          enabled: true,
+          interiorSuppressionEnabled: false,
+        })
+      )
+    ).toBe('{"enabled":true,"widthPx":2,"hiddenLineRemoval":false,"interiorSuppressionEnabled":false,"interiorSuppressionStrength":0.5}');
   });
 });
 
@@ -247,6 +296,100 @@ describe("scene document persistence", () => {
     expect(parseStudioBg3dSceneDocument(serialized!)).toEqual(document);
   });
 
+  // 롤백 호환: 억제를 켠 적 없는(또는 켰다가 끈) 문서는 이전 코드가 읽을 수 있어야 한다. 이전 코드는 모르는 키가 있는
+  // 문서를 엄격 경계에서 거부하므로, 꺼짐·기본 상태에서는 새 키를 저장하지 않는다.
+  describe("rollback compatibility: the new keys are written only while the suppression is on", () => {
+    const baseline = serializeStudioBg3dSceneDocument(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT)!;
+
+    it("serializes an off or default setting byte-identically to a document that never had the keys", () => {
+      for (const line of [
+        {},
+        { interiorSuppressionEnabled: false },
+        { interiorSuppressionEnabled: false, interiorSuppressionStrength: 0.9 },
+        { interiorSuppressionStrength: 0.9 },
+      ]) {
+        const serialized = serializeStudioBg3dSceneDocument(withLine(line));
+        expect(serialized, JSON.stringify(line)).toBe(baseline);
+        expect(serialized).not.toContain("interiorSuppression");
+      }
+      // 켜 두고 강도가 기본(0.6)이면 스위치만 쓴다.
+      const defaultStrength = serializeStudioBg3dSceneDocument(
+        withLine({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 0.6 })
+      )!;
+      expect(defaultStrength).toContain('"interiorSuppressionEnabled":true');
+      expect(defaultStrength).not.toContain("interiorSuppressionStrength");
+    });
+
+    it("writes the keys when the suppression is on (and only then), and a strict reload keeps them", () => {
+      const lone = serializeStudioBg3dSceneDocument(withLine({ interiorSuppressionEnabled: true }))!;
+      expect(lone).toContain('"interiorSuppressionEnabled":true');
+      expect(lone).not.toContain("interiorSuppressionStrength");
+      const strong = serializeStudioBg3dSceneDocument(
+        withLine({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 0.45 })
+      )!;
+      expect(strong).toContain('"interiorSuppressionEnabled":true,"interiorSuppressionStrength":0.45');
+      expect(serializeStudioBg3dSceneDocument(parseStudioBg3dSceneDocument(strong))).toBe(strong);
+    });
+
+    it("accepts the explicit off/default spelling from another writer but never a malformed value", () => {
+      const explicitOff = parseStudioBg3dSceneDocument(JSON.stringify(withLine({ interiorSuppressionEnabled: false })));
+      expect(explicitOff).toEqual(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT);
+      expect(serializeStudioBg3dSceneDocument(explicitOff)).toBe(baseline);
+      const explicitDefault = parseStudioBg3dSceneDocument(
+        JSON.stringify(withLine({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 0.6 }))
+      );
+      expect(explicitDefault?.output.line).toMatchObject({ interiorSuppressionEnabled: true });
+      expect(explicitDefault?.output.line).not.toHaveProperty("interiorSuppressionStrength");
+
+      for (const line of [
+        { interiorSuppressionEnabled: false, interiorSuppressionStrength: 1.5 },
+        { interiorSuppressionEnabled: false, interiorSuppressionStrength: "0.5" },
+        { interiorSuppressionEnabled: 0 },
+        { interiorSuppressionEnabled: null },
+        { interiorSuppressionEnabled: true, interiorSuppressionStrength: Number.NaN },
+      ]) {
+        expect(parseStudioBg3dSceneDocument(JSON.stringify(withLine(line))), JSON.stringify(line)).toBeNull();
+      }
+    });
+
+    it("turning the suppression on and back off leaves exactly the bytes of a document that never had it", () => {
+      // 편집기의 canonicalSceneDocument 와 같은 경로(migrate → serialize → parse)로 패치를 적용한다.
+      const canonical = (document: unknown) => {
+        const serialized = serializeStudioBg3dSceneDocument(migrateStudioBg3dSceneDocument(document));
+        return serialized ? parseStudioBg3dSceneDocument(serialized) : null;
+      };
+      const patchLine = (document: StudioBg3dSceneDocument, patch: Record<string, unknown>) => ({
+        ...document,
+        output: { ...document.output, line: { ...document.output.line, ...patch } },
+      });
+      const turnedOn = canonical(
+        patchLine(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT, {
+          interiorSuppressionEnabled: true,
+          interiorSuppressionStrength: 0.45,
+        })
+      );
+      expect(turnedOn?.output.line).toMatchObject({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 0.45 });
+      const turnedOff = canonical(patchLine(turnedOn!, { interiorSuppressionEnabled: false }));
+      expect(turnedOff).not.toBeNull();
+      expect(turnedOff!.output.line).not.toHaveProperty("interiorSuppressionEnabled");
+      expect(turnedOff!.output.line).not.toHaveProperty("interiorSuppressionStrength");
+      expect(serializeStudioBg3dSceneDocument(turnedOff)).toBe(baseline);
+    });
+
+    it("keeps an explicit off in a shot override, because it overrides a document that has the suppression on", () => {
+      const onDocument = normalizeStudioBg3dSceneDocument(
+        withLine({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 0.8 })
+      );
+      const withShot = normalizeStudioBg3dSceneDocument({
+        ...onDocument,
+        shots: [{ id: "plain", name: "억제 끔", output: { line: { interiorSuppressionEnabled: false } } }],
+      });
+      const reloaded = parseStudioBg3dSceneDocument(serializeStudioBg3dSceneDocument(withShot)!);
+      expect(reloaded?.shots?.[0]?.output?.line).toEqual({ interiorSuppressionEnabled: false });
+      expect(applyStudioBg3dShot(reloaded, "plain")?.output.line).not.toHaveProperty("interiorSuppressionEnabled");
+    });
+  });
+
   it("rejects non-canonical new values and misspelled keys in strict mode but repairs them leniently", () => {
     const tooStrong = JSON.stringify(withLine({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 1.5 }));
     expect(parseStudioBg3dSceneDocument(tooStrong)).toBeNull();
@@ -291,10 +434,11 @@ describe("scene document persistence", () => {
         { id: "inherit", name: "문서 설정 그대로", output: { line: { widthPx: 2 } } },
       ],
     });
-    expect(applyStudioBg3dShot(overridden, "plain")?.output.line).toMatchObject({
-      interiorSuppressionEnabled: false,
-      interiorSuppressionStrength: 0.8,
-    });
+    // 컷이 억제를 끄면 적용된 문서는 억제가 꺼진 정규 형태(두 키 없음)다.
+    expect(applyStudioBg3dShot(overridden, "plain")?.output.line).toEqual(
+      DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output.line
+    );
+    expect(overridden.shots?.[0]?.output?.line).toEqual({ interiorSuppressionEnabled: false });
     expect(applyStudioBg3dShot(overridden, "stronger")?.output.line).toMatchObject({
       interiorSuppressionEnabled: true,
       interiorSuppressionStrength: 1,

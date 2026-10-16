@@ -740,64 +740,63 @@ type LineFieldSpec = readonly [key: string, fallback: boolean | number | string,
 
 /**
  * 선 설정 필드 표. 전체 설정(`output.line`)과 컷별 덮어쓰기(`shots[].output.line`)가 같은 표를 쓴다. 순서는 저장
- * 문서의 키 순서와 같아야 한다(엄격 저장 왕복이 바이트 단위로 같아야 한다). 불리언·문자열은 [키, 기본값],
- * 숫자는 [키, 기본값, 최솟값, 최댓값]이다. 마지막 두 개(내부선 억제)는 선택 필드라 입력에 키가 있을 때만 기록한다.
+ * 문서의 키 순서와 같다. 불리언·문자열은 [키, 기본값], 숫자는 [키, 기본값, 최솟값, 최댓값]이다. 마지막 두 개(내부선
+ * 억제)는 선택 필드다. 전체 설정에서는 켜져 있고 기본이 아닐 때만 기록하고(꺼짐·기본은 쓰지 않아 억제를 켠 적 없는
+ * 문서를 옛 코드도 읽는다), 컷 덮어쓰기에서는 입력에 있는 키를 그대로 남긴다(꺼짐도 전체 설정을 덮는 값이다).
  */
 const LINE_FIELD_SPECS: readonly LineFieldSpec[] = [
-  ["enabled", true],
-  ["layerType", "raster"],
-  ["color", "#000000"],
-  ["widthPx", 1, 0.25, 8],
-  ["strength", 0.8, 0, 1],
-  ["accuracy", 0.75, 0, 1],
-  ["scaleAwareAccuracy", true],
-  ["exteriorOutlineStrength", 1, 0, 2],
-  ["depthEnabled", false],
-  ["depthStrength", 0.5, 0, 1],
-  ["depthOutlineOnly", true],
-  ["smoothing", 0.5, 0, 1],
-  ["textureLineEnabled", true],
-  ["textureLineStrength", 0.5, 0, 1],
-  ["creaseAngleDegrees", 20, 0, 180],
-  ["hiddenLineRemoval", true],
-  ["interiorSuppressionEnabled", false],
+  ["enabled", true], ["layerType", "raster"], ["color", "#000000"], ["widthPx", 1, 0.25, 8],
+  ["strength", 0.8, 0, 1], ["accuracy", 0.75, 0, 1], ["scaleAwareAccuracy", true], ["exteriorOutlineStrength", 1, 0, 2],
+  ["depthEnabled", false], ["depthStrength", 0.5, 0, 1], ["depthOutlineOnly", true], ["smoothing", 0.5, 0, 1],
+  ["textureLineEnabled", true], ["textureLineStrength", 0.5, 0, 1], ["creaseAngleDegrees", 20, 0, 180],
+  ["hiddenLineRemoval", true], ["interiorSuppressionEnabled", false],
   ["interiorSuppressionStrength", STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH, 0, 1],
 ];
 const OPTIONAL_LINE_FIELD_SET = new Set<string>(["interiorSuppressionEnabled", "interiorSuppressionStrength"]);
 
-function normalizeLineField(
-  [key, fallback, minimum = 0, maximum = 1]: LineFieldSpec,
-  input: unknown
-): boolean | number | string {
-  if (typeof fallback === "boolean") return normalizedBoolean(input, fallback);
-  if (typeof fallback === "number") return boundedNumber(input, fallback, minimum, maximum);
-  return key === "color"
-    ? normalizedColor(input, fallback)
-    : normalizedEnum(input, LINE_LAYER_TYPE_SET, fallback);
-}
-
 function normalizeLineFields(value: unknown, onlyPresent: boolean): Record<string, unknown> {
   const source = isRecord(value) ? value : {};
   const result: Record<string, unknown> = {};
-  for (const spec of LINE_FIELD_SPECS) {
-    const key = spec[0];
+  for (const [key, fallback, minimum = 0, maximum = 1] of LINE_FIELD_SPECS) {
     if ((onlyPresent || OPTIONAL_LINE_FIELD_SET.has(key)) && !hasOwn(source, key)) continue;
-    result[key] = normalizeLineField(spec, source[key]);
+    const input = source[key];
+    result[key] = typeof fallback === "boolean" ? normalizedBoolean(input, fallback)
+      : typeof fallback === "number" ? boundedNumber(input, fallback, minimum, maximum)
+      : key === "color" ? normalizedColor(input, fallback) : normalizedEnum(input, LINE_LAYER_TYPE_SET, fallback);
+  }
+  if (!onlyPresent) {
+    if (result.interiorSuppressionEnabled !== true) {
+      delete result.interiorSuppressionEnabled;
+      delete result.interiorSuppressionStrength;
+    } else if (result.interiorSuppressionStrength === STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH) {
+      delete result.interiorSuppressionStrength;
+    }
   }
   return result;
 }
 
-/** `output.line` 정규화. 필드별 기본값·범위는 위의 표가 단일 기준이다. */
-export function normalizeStudioBg3dLineOutputSettings(value: unknown): StudioBg3dLineOutputSettings {
-  return normalizeLineFields(value, false) as unknown as StudioBg3dLineOutputSettings;
+/** 엄격 비교용: 정규화가 쓰지 않는 꺼짐·기본 표기(false, 의미 없는 강도, 기본 강도)의 억제 필드는 없는 것과 같다. 틀린 값은 남긴다. */
+function withoutRedundantSuppressionFields(root: Record<string, unknown>): Record<string, unknown> {
+  const output = isRecord(root.output) ? root.output : null;
+  const line = output && isRecord(output.line) ? output.line : null;
+  if (!output || !line) return root;
+  const strength = line.interiorSuppressionStrength;
+  const validStrength = typeof strength === "number" && strength >= 0 && strength <= 1;
+  const rest = { ...line };
+  if (line.interiorSuppressionEnabled === false) delete rest.interiorSuppressionEnabled;
+  if (validStrength && (line.interiorSuppressionEnabled !== true || strength === STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH)) {
+    delete rest.interiorSuppressionStrength;
+  }
+  return { ...root, output: { ...output, line: rest } };
 }
 
+/** `output.line` 정규화. 필드별 기본값·범위는 위의 표가 단일 기준이다. */
+export const normalizeStudioBg3dLineOutputSettings = (value: unknown): StudioBg3dLineOutputSettings =>
+  normalizeLineFields(value, false) as unknown as StudioBg3dLineOutputSettings;
+
 /** 컷별 선 덮어쓰기 정규화. 입력에 있는 키만 결과에 남긴다. */
-export function normalizeStudioBg3dShotLineOutputOverride(
-  value: unknown
-): StudioBg3dShotLineOutputOverride {
-  return normalizeLineFields(value, true) as StudioBg3dShotLineOutputOverride;
-}
+export const normalizeStudioBg3dShotLineOutputOverride = (value: unknown): StudioBg3dShotLineOutputOverride =>
+  normalizeLineFields(value, true) as StudioBg3dShotLineOutputOverride;
 
 function normalizeOutput(value: unknown): StudioBg3dOutputSettings {
   const candidate = isRecord(value) ? value : {};
@@ -1652,7 +1651,7 @@ function normalizeDecodedCurrentDocument(
     if (canonicalDocumentByteLength(normalized) > STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES) {
       failBudget("document-byte-budget-exceeded");
     }
-    if (rootMode === "strict" && !jsonStructuresEqual(value, normalized)) return null;
+    if (rootMode === "strict" && !jsonStructuresEqual(withoutRedundantSuppressionFields(value), normalized)) return null;
     return deepFreeze(normalized);
   } catch (cause) {
     if (cause instanceof StudioBg3dSceneDocumentBudgetError && budgetFailureMode === "null") {

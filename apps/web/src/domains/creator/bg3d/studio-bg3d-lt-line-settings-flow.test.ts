@@ -30,6 +30,7 @@ import {
   applyStudioBg3dShot,
   normalizeStudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
+import { resolveStudioBg3dInteriorSuppression } from "./studio-bg3d-scene-document-types";
 import {
   buildStudioBg3dShotArtifacts,
   type StudioBg3dShotArtifactPipelineDependencies,
@@ -261,8 +262,11 @@ describe("편집기 삽입과 멀티패스 내보내기의 선 설정 공유", (
     const editorLine = document.output.line;
     const batchLine = applyStudioBg3dShot(document, "shot-a")!.output.line;
     expect(editorLine.interiorSuppressionEnabled).toBe(true);
-    expect(batchLine.interiorSuppressionEnabled).toBe(false);
-    expect(batchLine.interiorSuppressionStrength).toBe(0.8);
+    // 컷이 끄면 적용된 문서는 억제가 꺼진 정규 형태(두 키 없음)다. 편집기 문서는 그대로 켜져 있다.
+    expect(resolveStudioBg3dInteriorSuppression(batchLine).active).toBe(false);
+    expect(batchLine).not.toHaveProperty("interiorSuppressionEnabled");
+    expect(batchLine).not.toHaveProperty("interiorSuppressionStrength");
+    expect(resolveStudioBg3dInteriorSuppression(editorLine)).toEqual({ active: true, strength: 0.8 });
   });
 
   it("renders an old document (no new keys) identically in the editor path and the batch path", async () => {
