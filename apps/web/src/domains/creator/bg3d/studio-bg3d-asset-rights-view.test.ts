@@ -220,6 +220,16 @@ describe("가져온 소재의 권리 보기", () => {
       expect(loose.conflict).toBe(true);
     });
 
+    it("메타데이터의 더 제한적인 상태가 이기면 폼의 표기 의무 답은 다른 상태에 대한 것이라 미확인으로 둔다", () => {
+      const owned: StudioBg3dAttachmentRights = { status: "owned", commercialUse: true, attributionRequired: false };
+      const stricter = withMetadata(owned, meta({}));
+      expect(stricter.state.license).toBe("licensed");
+      expect(stricter.attribution).toBe("unknown");
+      // 라이브러리의 답이 최종 판정에 쓰이면(라이브러리가 더 제한적이거나 같음) 폼의 답을 그대로 쓴다.
+      expect(withMetadata(licensed, meta({ status: "owned", license: undefined })).attribution).toBe("required");
+      expect(withMetadata(licensed, meta({})).attribution).toBe("required");
+    });
+
     it("같은 말이면 충돌로 보지 않는다", () => {
       expect(withMetadata(licensed, meta({})).conflict).toBe(false);
       // 라이브러리 기본값(권리 미확인)과 AI 표기만 있는 메타데이터는 충돌이 아니다.

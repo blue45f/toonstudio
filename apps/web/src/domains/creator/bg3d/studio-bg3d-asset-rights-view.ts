@@ -182,9 +182,10 @@ function importedFacts(
       basis: "library",
       status,
       commercialUse,
-      // 라이브러리 레코드가 권리 상태를 알면(폼에서 골랐으면) 표기 필요 여부도 폼의 답이다: true 필요, false 불필요.
-      // 권리 상태를 모르는(기본값) 레코드는 표기 여부도 모른다.
-      attributionRequired: status === "unknown" ? null : library.attributionRequired,
+      // 라이브러리 레코드가 권리 상태를 알고(폼에서 골랐고) 그 답이 최종 판정에 쓰였을 때만 표기 필요 여부도 폼의 답이다: true 필요,
+      // false 불필요. 권리 상태를 모르는(기본값) 레코드이거나, 메타데이터의 더 제한적인 상태가 이겨 폼의 답이 다른 상태에 대한 것이
+      // 된 경우에는 표기 여부도 모른다.
+      attributionRequired: status === "unknown" || status !== library.status ? null : library.attributionRequired,
       attributionText: library.attribution ?? null,
       licenseName: library.licenseName ?? extras?.license ?? null,
       conflict,
