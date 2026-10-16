@@ -157,9 +157,16 @@ export function attachPointerCapture(
 
   const onDown = (ev: PointerEvent): void => {
     notePen(ev);
-    if (ownerId !== null) return;
+    if (ownerId !== null) {
+      // 획 도중 마우스 보조 버튼(휠클릭·우클릭): 자동스크롤·메뉴 제스처가 pointercancel을 쏘기 전에 막는다. 표본은 만들지 않는다.
+      if (ev.pointerType === "mouse" && ev.button !== 0) ev.preventDefault();
+      return;
+    }
     if (!ev.isPrimary) return;
-    if (opts.primaryButtonOnly === true && ev.pointerType === "mouse" && ev.button !== 0) return;
+    if (opts.primaryButtonOnly === true && ev.pointerType === "mouse" && ev.button !== 0) {
+      ev.preventDefault();
+      return;
+    }
     if (isPalm(ev)) return;
     try {
       if (typeof el.setPointerCapture === "function") {

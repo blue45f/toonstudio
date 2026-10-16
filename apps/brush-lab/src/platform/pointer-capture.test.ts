@@ -215,8 +215,7 @@ describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
     open.detach();
   });
 
-  it("setPointerCapture가 던지면 획을 시작하지 않고 onCaptureFailure로 사유를 알린다", () => {
-    const failures: { pointerId: number; reason: string }[] = [];
+  it("setPointerCapture가 던지면 획을 시작하지 않고 onCaptureFailure로 사유를 알린다", () => {    const failures: { pointerId: number; reason: string }[] = [];
     const { el, batches, detach } = setup({ onCaptureFailure: (info) => failures.push(info) });
     Object.defineProperty(el, "setPointerCapture", {
       value: () => {
@@ -231,6 +230,21 @@ describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
     // 소유자가 없으므로 이후 move도 무시된다(유령 획 없음).
     el.dispatchEvent(pointerEvent("pointermove", { clientX: 5, clientY: 5 }));
     expect(batches).toHaveLength(0);
+    detach();
+  });
+
+  it("획 도중 마우스 보조 버튼은 기본 동작을 막고(자동스크롤 방지) 표본을 만들지 않는다", () => {
+    const { el, batches, detach } = setup({ primaryButtonOnly: true });
+    el.dispatchEvent(pointerEvent("pointerdown", { pointerType: "mouse", button: 0, buttons: 1, clientX: 1, clientY: 1 }));
+    expect(batches).toHaveLength(1);
+    const wheel = pointerEvent("pointerdown", { pointerType: "mouse", button: 1, buttons: 5, clientX: 2, clientY: 2 });
+    el.dispatchEvent(wheel);
+    expect(wheel.defaultPrevented).toBe(true);
+    expect(batches).toHaveLength(1);
+    const right = pointerEvent("pointerdown", { pointerType: "mouse", button: 2, buttons: 3, clientX: 3, clientY: 3 });
+    el.dispatchEvent(right);
+    expect(right.defaultPrevented).toBe(true);
+    expect(batches).toHaveLength(1);
     detach();
   });
 });
