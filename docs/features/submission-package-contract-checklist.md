@@ -153,9 +153,9 @@ ZIP은 기존 작성기의 "store"(압축 없음) 방식이다. 이미지는 이
 - 선택은 `localStorage`(`toonstudio:contract-review:v1`)에 저장한다. 저장소가 막히면 "저장되지 않아요" 배너를 보인다. 초기화는 확인 대화를 거친다.
 - **Markdown 요약**을 내려받거나(`toonstudio-contract-review-YYYY-MM-DD.md`) 복사한다. 요약은 브라우저 안에서 만들고 서버로 보내지 않으며, 법률 자문이 아니라는 고지와 출처를 함께 넣는다. 다운로드·복사가 막히면 오류와 대안을 알린다.
 
-### 3.2 항목 20개
+### 3.2 항목 19개
 
-데이터는 순수 모듈이다: `packages/core/src/contract-review-items.ts`(출처·분류·항목), `contract-review-checklist.ts`(답 처리·요약), 가져오기 경로 `@toonstudio/core/contract-review-checklist`. "표준 근거"의 조항·쪽은 해설집에 실린 표준 웹툰 연재계약서(별표3)와 2차적저작물작성권 계약서(별표7·8)를 기준으로 하며, 쪽은 문서 하단에 인쇄된 쪽 번호다.
+데이터와 순수 로직은 화면과 같은 폴더(`apps/web/src/shared/components/contract-review/`)에 둔다: `contract-review-items.ts`(출처·분류·항목), `contract-review-checklist.ts`(답 처리·요약), `contract-review-types.ts`(타입). 소비자가 `apps/web` 하나뿐이라 `packages/core`에 두지 않는다 — 코어에 두면 `config/architecture-source-ratchet.json`의 `packagesCoreFiles` 상한(136)을 넘겨 `pnpm run validate:source-layout`이 실패한다. 화면 파일은 `./contract-review-checklist`에서 가져온다. "표준 근거"의 조항·쪽은 해설집에 실린 표준 웹툰 연재계약서(별표3)와 2차적저작물작성권 계약서(별표7·8)를 기준으로 하며, 쪽은 문서 하단에 인쇄된 쪽 번호다.
 
 | 분류 | id | 항목 | 표준 근거 |
 | --- | --- | --- | --- |
@@ -207,14 +207,14 @@ ZIP은 기존 작성기의 "store"(압축 없음) 방식이다. 이미지는 이
 | --- | --- |
 | 투고 순수 모듈 | `submission-image-probe.test.ts`, `submission-package-preflight.test.ts`, `submission-package-text.test.ts`, `submission-package-cover.test.ts`, `submission-package-cover-pdf.test.ts`, `submission-package-messages.test.ts`, `submission-package-story.test.ts`, `submission-package-layout.test.ts`, `submission-package-build.test.ts`, `submission-package-draft-store.test.ts`, `submission-package-draft-state.test.ts`, `submission-package-platform.test.ts`, `submission-package-abort.test.ts` |
 | 투고 훅·화면 (jsdom) | `use-submission-package-draft.test.tsx`, `use-submission-package-build.test.tsx`, `StudioSubmissionPackagePanel.test.tsx` — 처음 모습·복원·저장, 캐릭터 불러오는 중/실패/빈 상태, 이미지 추가·순서·빼기·폭 경고, 만들기·저장·저장 취소·저장 실패, 취소 후 재시작, 읽기 실패 후 재시도, 이름과 키보드 순서 |
-| 계약 체크리스트 | `packages/core/src/contract-review-checklist.test.ts`, `shared/components/contract-review/*.test.ts(x)`, `domains/learn/LearningContractChecklistPage.test.tsx`, `domains/creator/production-hub/ProductionContractReview.test.tsx` |
+| 계약 체크리스트 | `shared/components/contract-review/*.test.ts(x)`(항목 데이터·답 처리·요약을 시험하는 `contract-review-checklist.test.ts` 포함), `domains/learn/LearningContractChecklistPage.test.tsx`, `domains/creator/production-hub/ProductionContractReview.test.tsx` |
 | 라우트·내비 계약 | `site-public-routes.test.ts`, `SitemapPage.test.ts`, `LearnPage.navigation.test.tsx` |
 
 실행 위치는 저장소 루트이고 부작용은 없다(네트워크·DB를 쓰지 않는다).
 
 ```bash
 pnpm exec vitest run apps/web/src/domains/creator/submission-package
-pnpm exec vitest run packages/core/src/contract-review-checklist.test.ts apps/web/src/shared/components/contract-review apps/web/src/domains/learn/LearningContractChecklistPage.test.tsx apps/web/src/domains/creator/production-hub/ProductionContractReview.test.tsx
+pnpm exec vitest run apps/web/src/shared/components/contract-review apps/web/src/domains/learn/LearningContractChecklistPage.test.tsx apps/web/src/domains/creator/production-hub/ProductionContractReview.test.tsx
 ```
 
 jsdom 시험은 `TextEncoder`·`DOMException`이 다른 전역의 객체를 돌려주는 환경이라, 구현이 `instanceof` 대신 이름으로 취소를 판별하고(`submission-package-abort.ts`) 텍스트 바이트를 현재 전역의 `Uint8Array`로 옮긴다(`submission-package-build.ts`의 `currentRealmBytes`). 브라우저에서도 무해한 방어다.

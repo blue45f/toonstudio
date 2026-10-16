@@ -1,6 +1,10 @@
 import { useId, useRef } from "react";
 import { ExternalLink, Scale } from "lucide-react";
 
+import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useI18n } from "@/shared/lib/i18n";
+import { cn } from "@/shared/lib/utils";
+
 import {
   CONTRACT_REVIEW_CATEGORIES,
   CONTRACT_REVIEW_CHECKED_ON,
@@ -9,12 +13,7 @@ import {
   CONTRACT_REVIEW_STANDARD_EDITION,
   resolveContractReviewLocale,
   summarizeContractReview,
-} from "@toonstudio/core/contract-review-checklist";
-
-import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { useI18n } from "@/shared/lib/i18n";
-import { cn } from "@/shared/lib/utils";
-
+} from "./contract-review-checklist";
 import { ContractReviewItemCard } from "./ContractReviewItemCard";
 import { ContractReviewSummaryPanel } from "./ContractReviewSummaryPanel";
 import { useContractReviewAnswers } from "./use-contract-review-answers";

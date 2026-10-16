@@ -1,12 +1,11 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import type { ContractReviewAnswer, ContractReviewAnswers } from "@toonstudio/core/contract-review-checklist";
-
 import {
   CONTRACT_REVIEW_STORAGE_KEY,
   createContractReviewAnswerStore,
   type ContractReviewPersistence,
 } from "./contract-review-answer-store";
+import type { ContractReviewAnswer, ContractReviewAnswers } from "./contract-review-checklist";
 
 export interface ContractReviewAnswersController {
   readonly answers: ContractReviewAnswers;
