@@ -63,6 +63,11 @@ export interface StudioCharmBarNoticesProps {
   readonly starterCount: number;
   readonly onDismissStarter: () => void;
   readonly lock: StudioCharmLock | null;
+  /**
+   * 붙이기 요청·거절·실패를 눈에 보이게 알린다(없으면 null). 같은 문장을 스크린리더는 바의 상태 영역으로 읽으므로
+   * 이 안내는 보이기만 하고 접근성 트리에서는 숨긴다(두 번 읽히지 않게).
+   */
+  readonly resultNotice?: { readonly text: string; readonly short: string } | null;
   readonly persistence: StudioCharmBarPersistence;
   readonly onRetryPersistence: () => void;
   /** 고정한 내 소재 참이 있는데 보관함 목록을 읽지 못했다. 그 참들은 읽을 때까지 자리표시로 남는다. */
@@ -74,6 +79,7 @@ export function StudioCharmBarNotices({
   starterCount,
   onDismissStarter,
   lock,
+  resultNotice = null,
   persistence,
   onRetryPersistence,
   libraryFailed,
@@ -112,6 +118,12 @@ export function StudioCharmBarNotices({
       {lockText ? (
         <p role="status" data-studio-charm-note="lock" className={cn(NOTE_BASE, NOTE_WARNING)}>
           <Dual full={lockText} short={bi("잠김", "Locked")} />
+        </p>
+      ) : null}
+
+      {resultNotice ? (
+        <p aria-hidden="true" data-studio-charm-note="result" className={cn(NOTE_BASE, NOTE_WARNING)}>
+          <Dual full={resultNotice.text} short={resultNotice.short} />
         </p>
       ) : null}
 

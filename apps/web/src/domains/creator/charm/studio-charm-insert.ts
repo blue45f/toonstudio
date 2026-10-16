@@ -84,8 +84,18 @@ export interface StudioCharmHostCommands {
   }) => void;
 }
 
+/**
+ * 붙이기 결과.
+ * - `inserted`: 호스트가 붙였다고 확인해 줬다(명령이 `true` 를 돌려줌).
+ * - `requested`: 명령을 불렀지만 호스트가 결과를 돌려주지 않아 붙었는지 알 수 없다(이모지·말풍선·효과음, 결과가 `void`).
+ *   잠금·저장 중이면 호스트가 조용히 거절할 수 있으므로 "붙였다"고 말하지 않는다.
+ * - `opened`: 3D 도구를 열었다. 문서는 바뀌지 않았다.
+ * - `rejected`: 호스트가 거절했다(`false`). 이유는 잠금·저장 중·진행 중인 다른 삽입·네트워크 실패 등 여럿이고 호스트가 이미 안내를 띄웠을 수 있다.
+ * - `failed`: 명령이 예외를 던졌다.
+ */
 export type StudioCharmActivationResult =
   | { readonly status: "inserted" }
+  | { readonly status: "requested" }
   | { readonly status: "opened" }
   | { readonly status: "rejected" }
   | { readonly status: "failed"; readonly message: string };
@@ -220,7 +230,8 @@ function failureMessage(error: unknown): string {
 
 /**
  * 참을 붙인다. 호스트 명령은 종류마다 정확히 한 번만 부른다.
- * 호스트가 잠금·저장 중 등으로 거절하면 `rejected`(자세한 안내는 호스트가 이미 띄웠다), 예외는 `failed`.
+ * 결과는 호스트가 알려 준 만큼만 말한다: 확인되면 `inserted`, 결과를 안 주면 `requested`, 거절하면 `rejected`
+ * (자세한 안내는 호스트가 이미 띄웠을 수 있다), 예외는 `failed`.
  */
 export async function activateStudioCharm(
   descriptor: StudioCharmDescriptor,
@@ -259,20 +270,21 @@ export async function activateStudioCharm(
       case "emoji-sticker": {
         const plan = planStudioCharmPlacement(context, STICKER_FOOTPRINT);
         commands.addSticker(action.emoji, plan.point);
-        return { status: "inserted" };
+        return { status: "requested" };
       }
       case "native-bubble": {
         const plan = planStudioCharmPlacement(context, studioCharmBubbleFootprint(action.variant));
         commands.addBubble(action.variant, plan.point, false);
-        return { status: "inserted" };
+        return { status: "requested" };
       }
       case "raster-asset": {
         const result = await commands.addBuiltinRasterAsset(action.asset);
-        return result === false ? { status: "rejected" } : { status: "inserted" };
+        if (result === false) return { status: "rejected" };
+        return result === true ? { status: "inserted" } : { status: "requested" };
       }
       case "sfx-text": {
         await commands.addSfxPreset(action.preset);
-        return { status: "inserted" };
+        return { status: "requested" };
       }
       case "open-3d": {
         commands.openStudioObjectInsert({ openTarget: action.openTarget, sourceId: action.sourceId });

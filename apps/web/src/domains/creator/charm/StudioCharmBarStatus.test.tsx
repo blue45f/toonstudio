@@ -83,6 +83,16 @@ describe("참 바 안내", () => {
     expect(note.textContent).toContain("검수 중인 화면이라");
   });
 
+  it("붙이기 요청·거절·실패 안내는 눈에 보이되 접근성 트리에서는 숨긴다(상태 영역이 이미 읽는다)", () => {
+    notices({ resultNotice: { text: "눈물·물방울 붙이기를 요청했어요. 캔버스에 안 보이면 잠금이나 저장 중인지 확인해 주세요.", short: "요청함" } });
+    const note = document.querySelector("[data-studio-charm-note='result']");
+    expect(note?.getAttribute("aria-hidden")).toBe("true");
+    expect(note?.getAttribute("role")).toBeNull();
+    expect(note?.querySelector(".studio-charm-bar__full")?.textContent).toContain("붙이기를 요청했어요");
+    expect(note?.querySelector(".studio-charm-bar__short")?.textContent).toBe("요청함");
+    expect(note?.querySelector(".studio-charm-bar__short")?.getAttribute("title")).toContain("눈물·물방울");
+  });
+
   it("저장소에 연결하지 못하면 메모리 전용임을 알리고 다시 시도를 준다", () => {
     const { props } = notices({ persistence: "memory-only" });
     const note = screen.getByRole("status");

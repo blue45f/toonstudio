@@ -226,7 +226,8 @@ describe("참 바: 붙이기", () => {
     expect(spies.addRenderedImage).toHaveBeenCalledTimes(1);
     expect(spies.addSticker).not.toHaveBeenCalled();
     fireEvent.click(chips()[1]);
-    await waitFor(() => expect(announcement()).toBe("붙였어요: 눈물·물방울"));
+    // 이모지 명령은 결과를 돌려주지 않아 "붙였어요"가 아니라 "요청했어요"로 알린다.
+    await waitFor(() => expect(announcement()).toContain("눈물·물방울 붙이기를 요청했어요"));
     expect(spies.addSticker).toHaveBeenCalledTimes(1);
     expect(spies.addRenderedImage).toHaveBeenCalledTimes(1);
   });

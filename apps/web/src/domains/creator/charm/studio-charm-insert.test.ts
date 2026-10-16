@@ -199,8 +199,9 @@ describe("참 붙이기: 호스트 명령 한 번 = 되돌리기 한 단계", ()
   });
 
   it("이모지·말풍선은 계획된 중심점으로 스티커/말풍선 명령을 한 번 부른다", async () => {
+    // 스티커·말풍선 명령은 결과를 돌려주지 않는다: 붙었는지 알 수 없으므로 inserted 가 아니라 requested 다.
     const emoji = commandsWithSpies();
-    expect(await activateStudioCharm(descriptor(createStudioCharmId("emoji", "1f4a7")), context({ visible: VISIBLE }), emoji.commands)).toEqual({ status: "inserted" });
+    expect(await activateStudioCharm(descriptor(createStudioCharmId("emoji", "1f4a7")), context({ visible: VISIBLE }), emoji.commands)).toEqual({ status: "requested" });
     expect(emoji.spies.addSticker).toHaveBeenCalledWith("💧", { x: 360, y: 640 });
     expect(emoji.totalCalls()).toBe(1);
     const bubble = commandsWithSpies();
@@ -230,14 +231,15 @@ describe("참 붙이기: 호스트 명령 한 번 = 되돌리기 한 단계", ()
     expect(totalCalls()).toBe(1);
     spies.addBuiltinRasterAsset.mockResolvedValueOnce(false);
     expect(await activateStudioCharm(descriptor(createStudioCharmId("raster", asset.id)), context(), commands)).toEqual({ status: "rejected" });
+    // 호스트가 결과를 주지 않으면(void) 붙었다고 말하지 않는다.
     spies.addBuiltinRasterAsset.mockResolvedValueOnce(undefined);
-    expect(await activateStudioCharm(descriptor(createStudioCharmId("raster", asset.id)), context(), commands)).toEqual({ status: "inserted" });
+    expect(await activateStudioCharm(descriptor(createStudioCharmId("raster", asset.id)), context(), commands)).toEqual({ status: "requested" });
   });
 
   it("효과음은 기존 효과음 명령으로, 3D 오브젝트는 도구 열기 명령으로 간다", async () => {
     const sfx = commandsWithSpies();
     const sfxDescriptor = descriptor(createStudioCharmId("sfx", "sfx-kwang"));
-    expect(await activateStudioCharm(sfxDescriptor, context(), sfx.commands)).toEqual({ status: "inserted" });
+    expect(await activateStudioCharm(sfxDescriptor, context(), sfx.commands)).toEqual({ status: "requested" });
     expect(sfx.spies.addSfxPreset).toHaveBeenCalledOnce();
     expect(sfx.totalCalls()).toBe(1);
 

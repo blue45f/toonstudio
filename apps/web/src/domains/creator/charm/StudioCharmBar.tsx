@@ -64,6 +64,9 @@ export interface StudioCharmBarProps {
   readonly acquireCatalogPreferences?: () => Promise<StudioCatalogPreferencesRepository>;
 }
 
+/** 눈에 보이는 붙이기 결과 안내가 머무는 시간. */
+const RESULT_NOTICE_MS = 8_000;
+
 const TOOL_BUTTON = cn(
   "grid size-10 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
   "pointer-coarse:size-11 max-lg:size-11 disabled:cursor-not-allowed disabled:opacity-40",
@@ -115,6 +118,7 @@ export function StudioCharmBar({
     sequence: 0,
   });
   const [starterNoticeDismissed, setStarterNoticeDismissed] = useState(false);
+  const [resultNotice, setResultNotice] = useState<{ readonly text: string; readonly short: string } | null>(null);
   const chipElements = useRef(new Map<StudioCharmId, HTMLButtonElement>());
   const focusRequest = useRef<StudioCharmId | null>(null);
 
@@ -134,6 +138,13 @@ export function StudioCharmBar({
     return found >= 0 ? found : entries.findIndex((entry) => entry.resolution.status !== "pending");
   }, [activeIndex, charms.length, entries]);
 
+  // 눈에 보이는 결과 안내는 잠시 뒤 저절로 사라진다(스크린리더용 상태 영역의 문장은 남는다).
+  useEffect(() => {
+    if (!resultNotice) return;
+    const timer = setTimeout(() => setResultNotice(null), RESULT_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [resultNotice]);
+
   // 순서를 바꾸거나 칩을 뺀 뒤 DOM 이 다시 배치돼도 포커스를 잃지 않게 한다.
   useEffect(() => {
     const id = focusRequest.current;
@@ -150,6 +161,11 @@ export function StudioCharmBar({
   const announce = useCallback((message: string) => {
     setAnnouncement((current) => ({ text: message, sequence: current.sequence + 1 }));
   }, []);
+  // 요청·거절·실패는 스크린리더용 상태 영역에 더해 눈에 보이는 안내로도 잠시 띄운다(시각 사용자도 알 수 있게).
+  const announceAttention = useCallback((message: string, short: string) => {
+    announce(message);
+    setResultNotice({ text: message, short });
+  }, [announce]);
 
   const descriptorOf = useCallback((id: StudioCharmId): StudioCharmDescriptor | null => {
     const resolution = catalog.resolve(id);
@@ -164,17 +180,40 @@ export function StudioCharmBar({
     try {
       // 문맥은 눌린 순간에 읽는다: 비동기 삽입 동안 선택이나 스크롤이 바뀌어도 누른 곳 기준이다.
       const result = await activateStudioCharm(descriptor, readContext(), commands);
-      if (result.status === "inserted") announce(biFill("붙였어요: {label}", "Stamped: {label}", { label: descriptor.label }));
-      else if (result.status === "opened") {
-        announce(biFill("3D 도구에서 열었어요: {label}", "Opened in the 3D tool: {label}", { label: descriptor.label }));
-      }
-      else if (result.status === "rejected") {
-        announce(bi("붙이지 못했어요. 편집 잠금이나 저장 중인지 확인해 주세요.", "Could not stamp it. Check for an edit lock or a save in progress."));
-      } else announce(result.message);
+      const { label } = descriptor;
+      if (result.status === "inserted") {
+        announce(biFill("붙였어요: {label}", "Stamped: {label}", { label }));
+        setResultNotice(null);
+      } else if (result.status === "opened") {
+        announce(biFill("3D 도구에서 열었어요: {label}", "Opened in the 3D tool: {label}", { label }));
+        setResultNotice(null);
+      } else if (result.status === "requested") {
+        // 이모지·말풍선·효과음 명령은 결과를 돌려주지 않는다. 잠금·저장 중이면 조용히 거절될 수 있어 "붙였어요"라고 하지 않는다.
+        announceAttention(
+          biFill(
+            "{label} 붙이기를 요청했어요. 캔버스에 안 보이면 잠금이나 저장 중인지 확인해 주세요.",
+            "Requested stamping {label}. If it does not appear on the canvas, check for a lock or a save in progress.",
+            { label },
+          ),
+          bi("요청함", "Requested"),
+        );
+      } else if (result.status === "rejected") {
+        announceAttention(
+          biFill(
+            "붙이지 못했어요: {label}. 편집 잠금, 저장 중, 다른 삽입이 진행 중인지 또는 네트워크 상태를 확인해 주세요. 편집기에 안내가 떠 있을 수 있어요.",
+            "Could not stamp {label}. Check for an edit lock, a save, another insertion in progress or the network. The editor may show a message.",
+            { label },
+          ),
+          bi("붙이지 못함", "Not stamped"),
+        );
+      } else announceAttention(result.message, bi("실패", "Failed"));
     } catch {
-      announce(bi("붙이지 못했어요. 잠시 뒤 다시 시도해 주세요.", "Could not stamp it. Please try again in a moment."));
+      announceAttention(
+        bi("붙이지 못했어요. 잠시 뒤 다시 시도해 주세요.", "Could not stamp it. Please try again in a moment."),
+        bi("실패", "Failed"),
+      );
     }
-  }, [announce, commands, currentLockText, readContext]);
+  }, [announce, announceAttention, commands, currentLockText, readContext]);
 
   const unpin = useCallback((id: StudioCharmId) => {
     const index = charms.indexOf(id);
@@ -423,6 +462,7 @@ export function StudioCharmBar({
         starterCount={!starterNoticeDismissed && snapshot.starterAutoAdded ? charms.length : 0}
         onDismissStarter={() => setStarterNoticeDismissed(true)}
         lock={lock}
+        resultNotice={resultNotice}
         persistence={snapshot.persistence}
         onRetryPersistence={() => { void store.retry(); }}
         libraryFailed={pinnedLibrary && library.status === "error"}
