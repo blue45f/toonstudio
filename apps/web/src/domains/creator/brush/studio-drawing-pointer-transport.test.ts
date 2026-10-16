@@ -551,4 +551,85 @@ describe("studio drawing pointer transport", () => {
     ]);
     controller.release();
   });
+
+  it("finishes a quietly-dead stroke and starts the new contact after the stale window", () => {
+    const windowTarget = new TestEventTarget();
+    const documentTarget = new TestVisibilityTarget();
+    const captureTarget = new TestCaptureTarget();
+    const controller = createStudioDrawingPointerTransportController({
+      documentTarget,
+      windowTarget,
+    });
+    const lastMove = pointerEvent("pointermove", {
+      timeStamp: 100,
+      target: captureTarget as unknown as EventTarget,
+    });
+    const spies = portSpies({ getLastAuthoritativePointer: () => lastMove });
+    controller.updatePorts(spies.ports);
+    const down = pointerEvent("pointerdown", {
+      timeStamp: 1,
+      target: captureTarget as unknown as EventTarget,
+    });
+    expect(controller.start({ pointerEvent: down, session: pointerSession(down), stage: null }))
+      .toEqual({ captured: true, started: true });
+    const live = controller.getSession();
+    if (!live) throw new Error("expected a live session");
+    controller.replaceSession({
+      ...live,
+      lastAuthoritativeSample: { ...live.lastAuthoritativeSample, timeStamp: 100 },
+    });
+
+    const nextDown = pointerEvent("pointerdown", {
+      pointerId: 9,
+      timeStamp: 5000,
+      target: captureTarget as unknown as EventTarget,
+    });
+    const nextSession = pointerSession(nextDown);
+    expect(controller.start({ pointerEvent: nextDown, session: nextSession, stage: null }))
+      .toEqual({ captured: true, started: true });
+    expect(spies.finishes).toEqual([
+      {
+        event: lastMove,
+        request: { cancelled: false, consumeReleaseSample: false, reason: "stale-takeover" },
+      },
+    ]);
+    expect(controller.getSession()?.pointerId).toBe(9);
+    controller.release();
+  });
+
+  it("keeps a fresh session owned against a second contact inside the stale window", () => {
+    const windowTarget = new TestEventTarget();
+    const controller = createStudioDrawingPointerTransportController({ windowTarget });
+    const lastMove = pointerEvent("pointermove", { timeStamp: 100 });
+    const spies = portSpies({ getLastAuthoritativePointer: () => lastMove });
+    controller.updatePorts(spies.ports);
+    const down = pointerEvent("pointerdown", { timeStamp: 1 });
+    controller.start({ pointerEvent: down, session: pointerSession(down), stage: null });
+    const live = controller.getSession();
+    if (!live) throw new Error("expected a live session");
+    controller.replaceSession({
+      ...live,
+      lastAuthoritativeSample: { ...live.lastAuthoritativeSample, timeStamp: 100 },
+    });
+
+    const palmDown = pointerEvent("pointerdown", { pointerId: 9, timeStamp: 1500 });
+    expect(controller.start({ pointerEvent: palmDown, session: pointerSession(palmDown), stage: null }))
+      .toEqual({ captured: false, started: false });
+    expect(spies.finishes).toEqual([]);
+    expect(controller.getSession()?.pointerId).toBe(7);
+    controller.release();
+  });
+
+  it("does not take over a stale session without a last authoritative pointer", () => {
+    const windowTarget = new TestEventTarget();
+    const controller = createStudioDrawingPointerTransportController({ windowTarget });
+    controller.updatePorts(portSpies().ports);
+    const down = pointerEvent("pointerdown", { timeStamp: 1 });
+    controller.start({ pointerEvent: down, session: pointerSession(down), stage: null });
+    const nextDown = pointerEvent("pointerdown", { pointerId: 9, timeStamp: 9000 });
+    expect(controller.start({ pointerEvent: nextDown, session: pointerSession(nextDown), stage: null }))
+      .toEqual({ captured: false, started: false });
+    expect(controller.getSession()?.pointerId).toBe(7);
+    controller.release();
+  });
 });

@@ -43,7 +43,8 @@ export type StudioDrawingPointerFinishReason =
   | "pointercancel-prefix"
   | "released-contact"
   | "transport-abort"
-  | "lost-capture";
+  | "lost-capture"
+  | "stale-takeover";
 
 export interface StudioDrawingPointerFinishRequest {
   readonly cancelled: boolean;
@@ -113,6 +114,9 @@ const EMPTY_PORTS: StudioDrawingPointerTransportPorts = {
   onDiscard: () => undefined,
   onFinish: () => undefined,
 };
+
+/** A session with no end signal and no samples past this quiet window is treated as dead. */
+const STALE_STROKE_TAKEOVER_MS = 2000;
 
 function hasPointerCaptureSetter(value: unknown): value is StudioDrawingPointerCaptureTarget {
   if (!value || (typeof value !== "object" && typeof value !== "function")) return false;
@@ -209,7 +213,10 @@ export class StudioDrawingPointerTransportController {
   }
 
   start(input: StartStudioDrawingPointerTransportInput): StartStudioDrawingPointerTransportResult {
-    if (this.session || !isStudioStrokePointerEvent(input.session, input.pointerEvent)) {
+    if (this.session && !this.takeoverStaleSession(input)) {
+      return { captured: false, started: false };
+    }
+    if (!isStudioStrokePointerEvent(input.session, input.pointerEvent)) {
       return { captured: false, started: false };
     }
 
@@ -253,6 +260,30 @@ export class StudioDrawingPointerTransportController {
 
   private noteDeliveryAfterTerminalClaim(): void {
     this.diagnostics.deliveriesAfterTerminalClaim += 1;
+  }
+
+  private takeoverStaleSession(input: StartStudioDrawingPointerTransportInput): boolean {
+    const stale = this.session;
+    if (!stale) return true;
+    if (this.terminalClaimed) return false;
+    const lastPointer = this.ports.getLastAuthoritativePointer();
+    if (!lastPointer || !isStudioStrokePointerEvent(stale, lastPointer)) return false;
+    const elapsed = input.pointerEvent.timeStamp - stale.lastAuthoritativeSample.timeStamp;
+    if (!Number.isFinite(elapsed) || elapsed <= STALE_STROKE_TAKEOVER_MS) return false;
+    this.requestFinish(lastPointer, {
+      cancelled: false,
+      consumeReleaseSample: false,
+      reason: "stale-takeover",
+    });
+    const safetyCleanup = this.safetyCleanup;
+    const captureTarget = this.captureTarget;
+    this.session = null;
+    this.captureTarget = null;
+    this.safetyCleanup = null;
+    this.terminalClaimed = false;
+    safetyCleanup?.();
+    tryReleaseStudioStrokePointer(captureTarget, stale.pointerId);
+    return true;
   }
 
   private requestFinish(
