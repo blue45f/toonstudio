@@ -14,7 +14,7 @@ import { cn } from "@/shared/lib/utils";
  *
  * 카카오톡·인스타그램·네이버 같은 앱이 띄운 내장 브라우저(WebView)에서는 구글 같은 소셜 로그인이 막히거나
  * 작업이 저장되기 전에 화면이 닫힐 수 있다. 사용자가 로그인 버튼을 눌러 보기 전에 한 번만 알리고, 실제로
- * 나갈 수 있는 길을 준다: Android 는 기본 브라우저로 여는 링크, 나머지는 메뉴 안내와 주소 복사.
+ * 나갈 수 있는 길을 준다: 카카오톡은 기본 브라우저로 여는 링크, 나머지는 메뉴 안내와 주소 복사.
  *
  * 판별과 탈출 링크는 `in-app-browser.ts` 가 순수 함수로 맡는다(이 컴포넌트는 그 결과를 그리기만 한다).
  * 인앱이 아니면 아무것도 그리지 않으므로 일반 브라우저 사용자에게는 화면이 달라지지 않는다.
@@ -78,24 +78,28 @@ export function AuthInAppBrowserNotice({ className }: AuthInAppBrowserNoticeProp
     "구글 같은 소셜 로그인이 막히거나, 작업이 저장되기 전에 화면이 닫힐 수 있어요. 기본 브라우저에서 열면 안전해요.",
     "Social sign-in such as Google can be blocked here, and the page may close before your work is saved. Opening it in your default browser is safer.",
   );
+  // 메뉴 위치와 이름은 앱마다 다르고 실기기로 앱별 확인을 하지 못했다 — 위치를 단정하지 않고 비슷한 이름의 항목을 찾게 한다.
   const hint =
     diagnosis.platform === "ios"
       ? translateBilingualPair(
           SCOPE,
-          "화면 오른쪽 아래 메뉴에서 ‘Safari로 열기’를 눌러 주세요.",
-          "Open the menu at the bottom right and choose “Open in Safari”.",
+          "앱 안의 ⋯(더보기) 메뉴에서 ‘Safari로 열기’나 ‘외부 브라우저에서 열기’ 같은 항목을 눌러 주세요. 메뉴 위치와 이름은 앱마다 달라요.",
+          "In the app’s ⋯ (more) menu, tap an item like “Open in Safari” or “Open in external browser”. The menu’s place and name differ by app.",
         )
       : diagnosis.platform === "android"
         ? translateBilingualPair(
             SCOPE,
-            "화면 오른쪽 위 메뉴에서 ‘다른 브라우저로 열기’를 눌러 주세요.",
-            "Open the menu at the top right and choose “Open in another browser”.",
+            "앱 안의 ⋯(더보기) 메뉴에서 ‘다른 브라우저로 열기’나 ‘외부 브라우저에서 열기’ 같은 항목을 눌러 주세요. 메뉴 위치와 이름은 앱마다 달라요.",
+            "In the app’s ⋯ (more) menu, tap an item like “Open in another browser” or “Open in external browser”. The menu’s place and name differ by app.",
           )
         : translateBilingualPair(
             SCOPE,
             "브라우저 앱에서 이 주소를 열어 주세요.",
             "Open this address in your browser app.",
           );
+  // 한 번에 여는 링크는 전용 스킴이 확실한 카카오톡에서만 둔다. 그 밖의 Android 앱 브라우저는 intent:// 를 받아들이지
+  // 않고 오류 화면으로 보낼 수 있어(실기기 미확인) 로그인 도중 길을 잃게 하느니 안내와 주소 복사로 두는 편이 안전하다.
+  const escapeHref = diagnosis.id === "kakaotalk" ? diagnosis.escapeHref : null;
 
   const copyAddress = async () => {
     try {
@@ -123,8 +127,8 @@ export function AuthInAppBrowserNotice({ className }: AuthInAppBrowserNoticeProp
       <p className="mt-1 text-fg-3">{body}</p>
       <p className="mt-1 text-fg-3">{hint}</p>
       <div className="mt-2 flex flex-wrap gap-2">
-        {diagnosis.escapeHref ? (
-          <a href={diagnosis.escapeHref} data-auth-in-app-open="" className={ACTION_CLASS}>
+        {escapeHref ? (
+          <a href={escapeHref} data-auth-in-app-open="" className={ACTION_CLASS}>
             <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
             {translateBilingualPair(SCOPE, "기본 브라우저로 열기", "Open in default browser")}
           </a>

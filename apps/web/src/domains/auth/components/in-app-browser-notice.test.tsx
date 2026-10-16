@@ -10,6 +10,8 @@ const DESKTOP_CHROME =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 const KAKAOTALK_ANDROID =
   "Mozilla/5.0 (Linux; Android 13; SM-S918N Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36 KAKAOTALK 2511290";
+const GENERIC_ANDROID_WEBVIEW =
+  "Mozilla/5.0 (Linux; Android 13; Pixel 7 Build/TQ3A.230901.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36";
 const INSTAGRAM_IOS =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21A329 Instagram 300.0.0.0 (iPhone14,2; iOS 17_0; ko_KR; ko-KR; scale=3.00; 1170x2532; 123456789)";
 
@@ -53,6 +55,27 @@ describe("AuthInAppBrowserNotice", () => {
       `kakaotalk://web/openExternal?url=${encodeURIComponent(window.location.href)}`,
     );
     expect(note.textContent).toContain("다른 브라우저로 열기");
+  });
+
+  it("카톡이 아닌 Android 앱 브라우저에는 열기 링크를 두지 않는다 — intent:// 가 오류 화면이 될 수 있다", () => {
+    useUserAgent(GENERIC_ANDROID_WEBVIEW);
+    render(<AuthInAppBrowserNotice />);
+
+    const note = screen.getByRole("note");
+    expect(note.querySelector("a[data-auth-in-app-open]")).toBeNull();
+    expect(note.querySelector('a[href^="intent:"]')).toBeNull();
+    expect(note.textContent).toContain("다른 브라우저로 열기");
+    expect(screen.getByRole("button", { name: /주소 복사/u })).toBeTruthy();
+  });
+
+  it("메뉴 위치를 단정하지 않고 앱마다 다르다고 말한다", () => {
+    useUserAgent(INSTAGRAM_IOS);
+    render(<AuthInAppBrowserNotice />);
+
+    const text = screen.getByRole("note").textContent ?? "";
+    expect(text).toContain("메뉴 위치와 이름은 앱마다 달라요");
+    expect(text).not.toContain("오른쪽 아래");
+    expect(text).not.toContain("오른쪽 위");
   });
 
   it("인스타그램(iOS)에서는 열기 링크 없이 메뉴 안내와 주소 복사만 준다", () => {
