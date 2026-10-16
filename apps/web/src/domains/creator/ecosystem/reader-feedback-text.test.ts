@@ -96,6 +96,50 @@ describe("보이지 않는 문자는 목록이 아니라 유니코드 속성으�
   });
 });
 
+describe("길이 경계는 보이는 글자(코드 포인트)로 센다", () => {
+  const hidden = (count: number, code = 0x200b) => chars(...Array.from({ length: count }, () => code));
+  const response = (overrides: Record<string, unknown>) => ({
+    id: "resp-1",
+    createdAt: "2026-10-16T01:00:00.000Z",
+    target: { kind: "package", id: "pkg-1", title: "새 연재작 1화", episode: 1 },
+    nickname: null,
+    ratings: { fun: 2, understanding: null },
+    reading: { status: "unmarked" },
+    emotions: [],
+    comment: "",
+    spoiler: false,
+    ...overrides,
+  });
+  const parseOne = (overrides: Record<string, unknown>) => {
+    const result = parseReaderFeedbackText(JSON.stringify({ kind: "toonstudio-reader-feedback", version: 1, exportedAt: "2026-10-16T01:05:00.000Z", responses: [response(overrides)] }));
+    return result.ok ? result.file.responses[0]! : null;
+  };
+
+  it("보이지 않는 문자는 길이에 들지 않는다: 600자 안에 보이는 글자만 센다", () => {
+    const text = `${"가".repeat(599)}${hidden(3)}나나${hidden(2, 0xe0041)}다`;
+    expect(cleanFeedbackText(text, 600)).toBe(`${"가".repeat(599)}나`);
+    expect(cleanFeedbackText(`${"가".repeat(600)}${hidden(50)}`, 600)).toBe("가".repeat(600));
+    expect(Array.from(cleanFeedbackText(`${"가".repeat(601)}`, 600))).toHaveLength(600);
+  });
+
+  it("원문 길이 상한(정리 상한의 2배)은 보이지 않는 문자로 채워도 우회되지 않는다", () => {
+    // 의견 600자 → 원문 1200 UTF-16 단위까지. 보이는 글자 300 + 보이지 않는 글자 900 = 1200 은 받고, 하나 더 얹으면 거절한다.
+    expect(parseOne({ comment: `${"가".repeat(300)}${hidden(900)}` })?.comment).toBe("가".repeat(300));
+    expect(parseOne({ comment: `${"가".repeat(300)}${hidden(901)}` })).toBeNull();
+    // 닉네임 20자 → 원문 40 단위까지.
+    expect(parseOne({ nickname: `${"가".repeat(20)}${hidden(20)}` })?.nickname).toBe("가".repeat(20));
+    expect(parseOne({ nickname: `${"가".repeat(20)}${hidden(21)}` })).toBeNull();
+    expect(parseOne({ nickname: `${"가".repeat(25)}${hidden(15)}` })?.nickname).toBe("가".repeat(20));
+  });
+
+  it("작품 이름은 120자까지이고, 정리 뒤 비면 거절한다", () => {
+    const title = (value: string) => ({ target: { kind: "package", id: "pkg-1", title: value, episode: 1 } });
+    expect(parseOne(title(`${"나".repeat(120)}${hidden(100)}`))?.target.title).toBe("나".repeat(120));
+    expect(parseOne(title("나".repeat(130)))?.target.title).toBe("나".repeat(120));
+    expect(parseOne(title(hidden(100, 0x3164)))).toBeNull();
+  });
+});
+
 describe("이모지를 잇는 ZWJ 만 남기고 그 밖의 ZWJ·ZWNJ 는 지운다", () => {
   const man = 0x1f468;
   const woman = 0x1f469;

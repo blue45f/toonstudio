@@ -119,6 +119,10 @@
 독자가 쓴 제목·닉네임·의견·파일 이름은 번역 문구 사전에도 브라우저 저장소에도 들어가지 않는다. 기존 런타임 번역은 문구 사전에 등록된 원문을 외부 번역 서비스로 보낼 수 있어서,
 값이 끼는 문구는 `{이름}` 자리표시자로 두고(8절) 값 자체는 번역 뒤에 끼운다. 숨김이 기억하는 것은 응답 id 뿐이다.
 
+이 약속은 소스를 문법 트리로 읽는 시험(`reader-feedback-privacy.test.tsx`)이 지킨다. 네트워크 API는 호출뿐 아니라 이름이 나오는 곳 전부(`window["fetch"]` 같은 문자열 키, `const send = fetch` 같은 별칭, `new Request`)를 찾고,
+브라우저가 스스로 주소를 불러오거나 폼을 보내는 JSX(`<img src>`, `<iframe src>`, `<link href>`, `<form action>`, `formAction`, `ping` …)도 찾는다. 검사는 이 기능의 파일뿐 아니라 폼을 품은 뷰어 화면(`CreatorEcosystemViewerPage`)과 파일 내려받기 도우미(`ecosystem-preview`)에도 똑같이 적용한다.
+허용 목록에는 뷰어가 패키지의 미리보기를 그리는 `<img src>` 두 곳뿐이고, 그 값은 패키지 스키마가 `data:image/(png|jpeg|webp);base64,…`로만 받는다는 것도 시험으로 고정했다. 정규식이 아니라 문법 트리를 읽으므로 주석과 문구에 적힌 말은 걸리지 않는다.
+
 연락처 가림은 휴리스틱이다. 날짜(`2026-10-16`, `20261016`)나 컷 번호는 건드리지 않지만, 개인정보를 모두 찾아낸다고 약속하지 않는다.
 
 ## 6. 합치기와 중복 제거 (current)
@@ -222,6 +226,6 @@
 | `ReaderFeedbackSummaryPanel.test.tsx` | 빈·읽는 중·오류·재시도 상태, 여러 파일 합치기, 그래프(칸·개수 글자 배치)+표, 스포일러·숨김, 악의적 파일 |
 | `CreatorEcosystemViewerPage.test.tsx`, `CreatorEcosystemPage.test.tsx` | 뷰어의 패키지별 폼 연결, 베타 독자 구역에 요약이 있음 |
 | `reader-feedback-docs.test.ts` | 이 문서의 상한·감정 표·기준값이 코드와 같음 |
-| `reader-feedback-privacy.test.tsx` | 소스가 가져오는 모듈 허용 목록·네트워크/HTML 주입 API 부재·`localStorage` 범위, 독자가 쓴 글이 번역 문구 사전·브라우저 저장소에 남지 않음 |
+| `reader-feedback-privacy.test.tsx` | 소스가 가져오는 모듈 허용 목록·`localStorage` 범위, 네트워크 API 이름과 주소를 불러오는 JSX 의 부재(문법 트리, 뷰어 화면·내려받기 도우미 포함)·HTML 주입 API 부재, `bt()` 값 보간 부재, 독자가 쓴 글이 번역 문구 사전·브라우저 저장소에 남지 않음 |
 
 실행: `pnpm exec vitest run apps/web/src/domains/creator/ecosystem`

@@ -146,6 +146,30 @@ describe("응답 합치기와 중복 제거", () => {
     expect(mergeReaderFeedback(full.responses, [make({ id: "old-0", createdAt: at(59), comment: "수정" })])).toMatchObject({ updated: 1, overflow: 0 });
   });
 
+  it("상한에 걸린 상태에서도 같은 응답의 새 버전은 받고, id 가 같아도 묶음이 다르면 새 응답이라 받지 못한다", () => {
+    const max = READER_FEEDBACK_LIMITS.maxTotalResponses;
+    const manual = (episode: number) => ({ kind: "manual", id: null, title: "상한 시험", episode });
+    const fill = Array.from({ length: max }, (_, index) => make({ id: `fill-${index}`, createdAt: at(index % 50), target: manual(1), comment: `채움 의견 ${index}번` }));
+    const full = mergeReaderFeedback([], fill).responses;
+    expect(full).toHaveLength(max);
+    // 같은 id·같은 묶음의 새 버전은 자리를 더 쓰지 않는다.
+    expect(mergeReaderFeedback(full, [make({ id: "fill-0", createdAt: at(59), target: manual(1), comment: "고친 의견입니다" })])).toMatchObject({ added: 0, updated: 1, overflow: 0 });
+    // id 가 같아도 다른 회차면 별개의 응답이라 자리가 없으면 받지 못한다.
+    const otherEpisode = mergeReaderFeedback(full, [make({ id: "fill-0", createdAt: at(59), target: manual(2), comment: "다른 회차 의견입니다" })]);
+    expect(otherEpisode).toMatchObject({ added: 0, updated: 0, duplicates: 0, overflow: 1 });
+    expect(otherEpisode.responses).toHaveLength(max);
+  });
+
+  it("묶음이 다르면 종류(package/work)만 달라도, 회차 없음과 1화도 서로 다른 응답이다", () => {
+    const target = (kind: "package" | "work", episode: number | null) => ({ kind, id: "same-target", title: "대상", episode });
+    const responses = [
+      make({ id: "dup", createdAt: at(1), target: target("package", 1), comment: "패키지 1화 의견입니다" }),
+      make({ id: "dup", createdAt: at(2), target: target("work", 1), comment: "작품 1화 의견입니다" }),
+      make({ id: "dup", createdAt: at(3), target: target("package", null), comment: "패키지 회차 없음 의견입니다" }),
+    ];
+    expect(mergeReaderFeedback([], responses)).toMatchObject({ added: 3, duplicates: 0 });
+  });
+
   it("합친 뒤 입력 배열을 바꾸지 않는다", () => {
     const existing = [make({ id: "z", createdAt: at(9), comment: "z" })];
     const incoming = [make({ id: "y", createdAt: at(1), comment: "y" })];

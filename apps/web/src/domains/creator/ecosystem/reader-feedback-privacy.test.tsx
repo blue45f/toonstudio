@@ -9,13 +9,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DICT } from "@/shared/lib/i18n-core";
 
 import { downloadEcosystemJson } from "./ecosystem-preview";
+import { BETA_PACKAGE_SCHEMA, PROCESS_PACKAGE_SCHEMA } from "./ecosystem-record";
 import { ReaderFeedbackForm } from "./ReaderFeedbackForm";
 import { ReaderFeedbackSummaryPanel } from "./ReaderFeedbackSummaryPanel";
 import { createExampleReaderFeedback } from "./reader-feedback-example";
 
 /**
  * 독자 피드백이 문서(docs/features/reader-feedback-summary.md)에 적은 개인정보·보안 약속을 지키는지 묶어 두는 테스트.
- * - 서버로 보내지 않는다: 소스가 네트워크 클라이언트를 가져오거나 부르지 않는다.
+ * - 서버로 보내지 않는다: 소스가 네트워크 클라이언트를 가져오거나 부르지 않는다. 호출만이 아니라 이름이 나오는 곳(별칭, `window["fetch"]` 같은
+ *   문자열 키, `new Request`)과 브라우저가 스스로 주소를 불러오거나 폼을 보내는 JSX(`<img src>`, `<form action>` …)까지 문법 트리로 찾는다.
+ *   폼을 품은 뷰어 화면(`CreatorEcosystemViewerPage.tsx`)과 파일 내려받기 도우미(`ecosystem-preview.ts`)도 같은 검사를 받는다.
  * - HTML 로 해석하지 않는다: HTML 문자열을 심는 API 를 쓰지 않는다.
  * - 독자가 쓴 글은 화면 메모리 밖에 남지 않는다: 번역 문구 사전(외부 번역 서비스로 나갈 수 있는 글)과 브라우저 저장소에 들어가지 않는다.
  */
@@ -28,6 +31,13 @@ const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8"
 const FEATURE_SOURCES = readdirSync(resolve(process.cwd(), SOURCE_DIR))
   .filter((name) => /^(?:ReaderFeedback[A-Za-z]*\.tsx|reader-feedback-[a-z-]+\.ts)$/u.test(name))
   .map((name) => ({ name, text: read(`${SOURCE_DIR}/${name}`) }));
+
+/**
+ * 이 기능과 맞닿은 기존 소스: 폼을 품은 뷰어 화면과 파일 내려받기 도우미. 가져오는 모듈 허용 목록과 `localStorage` 범위는 이 기능의 파일에만
+ * 적용하지만(기존 파일은 다른 일도 한다), 네트워크·마크업·동적 코드 검사는 이 파일들에도 똑같이 적용한다.
+ */
+const TOUCHED_EXISTING_SOURCES = ["CreatorEcosystemViewerPage.tsx", "ecosystem-preview.ts"].map((name) => ({ name, text: read(`${SOURCE_DIR}/${name}`) }));
+const SCANNED_SOURCES = [...FEATURE_SOURCES, ...TOUCHED_EXISTING_SOURCES];
 
 /** 가져와도 되는 외부 모듈. 새로 늘리려면 외부 전송·개인정보 영향을 검토한 뒤 문서와 함께 고친다. */
 const ALLOWED_PACKAGES: ReadonlySet<string> = new Set([
@@ -47,9 +57,10 @@ const FORBIDDEN_APIS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bsendBeacon\b/u, "navigator.sendBeacon"],
   [/\bnew\s+(?:WebSocket|EventSource|Image|Worker|SharedWorker)\b/u, "소켓·이미지 핑·워커"],
   [/\bimport\s*\(/u, "동적 import"],
-  [/dangerouslySetInnerHTML|\.(?:inner|outer)HTML\b|insertAdjacentHTML|document\.write/u, "HTML 문자열 주입"],
+  [/dangerouslySetInnerHTML|\.(?:inner|outer)HTML\b|\[\s*["'`](?:inner|outer)HTML["'`]\s*\]|insertAdjacentHTML|document\.write/u, "HTML 문자열 주입"],
   [/\beval\s*\(|\bnew\s+Function\b/u, "동적 코드 실행"],
   [/\bdocument\.cookie\b|\bindexedDB\b|\bsessionStorage\b/u, "쿠키·IndexedDB·sessionStorage"],
+  [/\bwindow\.open\b|\blocation\.(?:assign|replace|href)\b|\bwindow\.location\b/u, "다른 주소로의 이동·새 창"],
 ];
 
 describe("독자 피드백 소스는 서버 전송·HTML 해석 없음 약속을 어기는 API 를 쓰지 않는다", () => {
@@ -60,6 +71,9 @@ describe("독자 피드백 소스는 서버 전송·HTML 해석 없음 약속을
       "reader-feedback-io.ts", "reader-feedback-import.ts", "reader-feedback-text.ts",
     ]));
     expect(names.length).toBeGreaterThanOrEqual(15);
+    // 이번에 바뀐 기존 소스도 검사 대상이다(내용이 비어 있지 않다).
+    expect(SCANNED_SOURCES.map((source) => source.name)).toEqual(expect.arrayContaining(["CreatorEcosystemViewerPage.tsx", "ecosystem-preview.ts"]));
+    expect(TOUCHED_EXISTING_SOURCES.every((source) => source.text.length > 500)).toBe(true);
   });
 
   it("가져오는 모듈은 허용 목록과 이 기능의 파일뿐이라 네트워크 클라이언트가 몰래 들어오지 않는다", () => {
@@ -80,7 +94,7 @@ describe("독자 피드백 소스는 서버 전송·HTML 해석 없음 약속을
   });
 
   it("네트워크·HTML 문자열 주입·동적 코드 실행 API 를 쓰지 않는다", () => {
-    for (const { name, text } of FEATURE_SOURCES) {
+    for (const { name, text } of SCANNED_SOURCES) {
       for (const [pattern, label] of FORBIDDEN_APIS) {
         expect(pattern.test(text), `${name}에서 ${label} 사용이 보입니다. 독자 응답을 서버로 보내거나 HTML 로 해석하지 않는다는 문서의 약속과 충돌합니다`).toBe(false);
       }
@@ -88,7 +102,128 @@ describe("독자 피드백 소스는 서버 전송·HTML 해석 없음 약속을
   });
 
   it("localStorage 는 숨긴 의견 id 를 기억하는 요약 화면만 만진다", () => {
-    expect(FEATURE_SOURCES.filter((source) => /\blocalStorage\b/u.test(source.text)).map((source) => source.name)).toEqual(["ReaderFeedbackSummaryPanel.tsx"]);
+    expect(SCANNED_SOURCES.filter((source) => /\blocalStorage\b/u.test(source.text)).map((source) => source.name)).toEqual(["ReaderFeedbackSummaryPanel.tsx"]);
+  });
+});
+
+/**
+ * 서버로 요청을 보내거나 브라우저가 스스로 주소를 불러오는 길을 문법 트리로 찾는다. 정규식은 `window["fetch"](…)`, `const f = fetch`,
+ * `new Request(…)`, `<img src>`, `<form action>` 같은 우회를 놓치므로, 이름이 나오는 곳 전부와 그 속성 전부를 본다. 주석과 문구는 보지 않는다.
+ */
+const NETWORK_NAMES: ReadonlySet<string> = new Set([
+  "fetch", "XMLHttpRequest", "sendBeacon", "WebSocket", "EventSource", "Request", "Worker", "SharedWorker", "BroadcastChannel", "RTCPeerConnection", "WebTransport", "Image",
+]);
+/** 문자열로 이름을 대는 우회(`window["fetch"]`, `Reflect.get(window, "fetch")`). "Image"는 화면 문구로 흔한 낱말이라 문자열에서는 뺀다. */
+const NETWORK_KEYS: ReadonlySet<string> = new Set([...NETWORK_NAMES].filter((name) => name !== "Image"));
+const DYNAMIC_CODE_NAMES: ReadonlySet<string> = new Set(["eval", "Function"]);
+/** 브라우저가 속성에 적힌 주소를 스스로 불러오는 태그와 속성. */
+const RESOURCE_TAGS: ReadonlySet<string> = new Set(["img", "iframe", "script", "link", "video", "audio", "source", "track", "embed", "object", "picture", "image", "use"]);
+const RESOURCE_ATTRIBUTES: ReadonlySet<string> = new Set(["src", "srcSet", "href", "xlinkHref", "data", "poster"]);
+/** 어느 태그에서든 폼 전송·추적 요청이 되는 속성. */
+const OUTBOUND_ATTRIBUTES: ReadonlySet<string> = new Set(["action", "formAction", "ping"]);
+/**
+ * 이미 있던 뷰어 화면이 패키지의 미리보기를 그리는 `<img src>` 두 곳. 값은 패키지 파일이 담은 `data:image/(png|jpeg|webp);base64,…`뿐이다
+ * (`ecosystem-record.ts` 의 스키마가 그 밖의 주소를 거절한다 — 아래 시험). 늘리려면 외부 요청이 생기지 않는지 검토한 뒤 문서와 함께 고친다.
+ */
+const ALLOWED_RESOURCE_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+  ["CreatorEcosystemViewerPage.tsx", new Set(["img:src={loaded.value.pages[pageIndex]!.image}", "img:src={checkpoint.preview}"])],
+]);
+
+function outboundFindings(fileName: string, text: string, allowed: ReadonlySet<string> = new Set()): string[] {
+  const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const found: string[] = [];
+  const report = (node: ts.Node, kind: string) => found.push(`${fileName}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1} ${kind}`);
+  const visit = (node: ts.Node) => {
+    if (ts.isIdentifier(node) && (NETWORK_NAMES.has(node.text) || DYNAMIC_CODE_NAMES.has(node.text))) report(node, `이름 ${node.text}`);
+    if (ts.isStringLiteralLike(node) && (NETWORK_KEYS.has(node.text) || DYNAMIC_CODE_NAMES.has(node.text))) report(node, `문자열 "${node.text}"`);
+    if (ts.isCallExpression(node) && /(?:^|\.)(?:setTimeout|setInterval)$/u.test(node.expression.getText()) && node.arguments[0] && ts.isStringLiteralLike(node.arguments[0])) {
+      report(node, "문자열을 실행하는 타이머");
+    }
+    if (ts.isJsxAttribute(node)) {
+      const element = node.parent.parent;
+      const tag = ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element) ? element.tagName.getText() : "";
+      const attribute = node.name.getText();
+      const lowercaseTag = /^[a-z]/u.test(tag);
+      const reachesOut = lowercaseTag && ((RESOURCE_TAGS.has(tag) && RESOURCE_ATTRIBUTES.has(attribute)) || OUTBOUND_ATTRIBUTES.has(attribute));
+      if (reachesOut && !allowed.has(`${tag}:${node.getText()}`)) report(node, `<${tag} ${attribute}>`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return found;
+}
+
+describe("서버로 요청을 보내는 길은 우회까지 문법 트리로 막는다", () => {
+  const detects = (snippet: string) => outboundFindings("sample.tsx", snippet).length;
+
+  it("검사기가 정규식이 놓치던 우회를 실제로 찾아낸다(아무것도 못 찾아 통과하는 일이 없다)", () => {
+    const bad = [
+      'window["fetch"]("/x");',
+      'globalThis.fetch("/x");',
+      "const send = fetch; send('/x');",
+      'new Request("/x");',
+      'new window.WebSocket("wss://x");',
+      'navigator["sendBeacon"]("/x", data);',
+      'Reflect.get(window, "fetch");',
+      "new XMLHttpRequest();",
+      "new Image().src = url;",
+      "const view = <img src={url} alt=\"\" />;",
+      'const view = <form action="/collect"><button>x</button></form>;',
+      'const view = <input type="submit" formAction="/collect" />;',
+      'const view = <iframe src="/frame" />;',
+      'const view = <link rel="prefetch" href="/x" />;',
+      'const view = <a href="/x" ping="/track">x</a>;',
+      'const view = <video poster={url} />;',
+      'eval("1");',
+      'new Function("return 1");',
+      'setTimeout("alert(1)", 0);',
+    ];
+    for (const snippet of bad) expect(detects(snippet), snippet).toBeGreaterThan(0);
+    const fine = [
+      'const view = <button type="button" onClick={go}>저장</button>;',
+      'const view = <Link to="/studio/ecosystem">뒤로</Link>;',
+      'const view = <input type="file" accept="application/json" onChange={pick} />;',
+      "const blob = new Blob(['x'], { type: 'application/json' }); URL.createObjectURL(blob);",
+      "globalThis.setTimeout(() => URL.revokeObjectURL(url), 1_000);",
+      'const label = bt("이미지", "Image");',
+      "// fetch(url) 같은 말이 주석에만 있으면 네트워크 호출이 아니다\nconst note = 1;",
+    ];
+    for (const snippet of fine) expect(detects(snippet), snippet).toBe(0);
+  });
+
+  it("허용 목록은 정확히 적힌 표현식만 풀어 준다", () => {
+    const allowed = new Set(["img:src={preview}"]);
+    expect(outboundFindings("sample.tsx", "const v = <img src={preview} alt=\"\" />;", allowed)).toEqual([]);
+    expect(outboundFindings("sample.tsx", "const v = <img src={other} alt=\"\" />;", allowed)).toHaveLength(1);
+    expect(outboundFindings("sample.tsx", "const v = <iframe src={preview} />;", allowed)).toHaveLength(1);
+  });
+
+  it("이 기능의 소스와 뷰어 화면·내려받기 도우미에는 요청을 보내거나 주소를 불러오는 코드가 없다", () => {
+    const found = SCANNED_SOURCES.flatMap(({ name, text }) => outboundFindings(name, text, ALLOWED_RESOURCE_ATTRIBUTES.get(name)));
+    expect(found, "독자 응답을 서버로 보내지 않는다는 문서의 약속과 충돌합니다. 새로 필요하다면 외부 전송·개인정보 영향을 검토한 뒤 허용 목록과 문서를 함께 고치세요").toEqual([]);
+  });
+
+  it("뷰어 화면의 허용된 <img src> 두 곳이 실제로 있고, 그 값은 패키지 스키마가 data:image 로만 받는다", () => {
+    const viewer = TOUCHED_EXISTING_SOURCES.find((source) => source.name === "CreatorEcosystemViewerPage.tsx")!;
+    for (const expression of ALLOWED_RESOURCE_ATTRIBUTES.get(viewer.name)!) {
+      const attribute = expression.slice("img:".length);
+      expect(viewer.text, `${attribute} 가 뷰어에 없습니다. 허용 목록을 정리하세요`).toContain(attribute);
+    }
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+    const beta = (image: string) => ({
+      kind: "toonstudio-beta", version: 1, id: "pkg", documentId: "doc", title: "검토본", createdAt: "2026-10-16T00:00:00.000Z", rightsAcknowledged: true,
+      pages: [{ id: "page", image, fingerprint: "v1", panels: [], dialogue: [] }],
+    });
+    const process = (preview: string) => ({
+      kind: "toonstudio-process", version: 1, title: "과정", credit: "", rightsAcknowledged: true, sampleId: null,
+      checkpoints: [{ id: "stage", pageId: "page", label: "콘티", preview, fingerprint: "v1", createdAt: "2026-10-16T00:00:00.000Z" }],
+    });
+    expect(BETA_PACKAGE_SCHEMA.safeParse(beta(png)).success).toBe(true);
+    expect(PROCESS_PACKAGE_SCHEMA.safeParse(process(png)).success).toBe(true);
+    for (const remote of ["https://tracker.example/pixel.png", "//tracker.example/pixel.png", "javascript:alert(1)", "data:text/html;base64,PGI+", "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4="]) {
+      expect(BETA_PACKAGE_SCHEMA.safeParse(beta(remote)).success, remote).toBe(false);
+      expect(PROCESS_PACKAGE_SCHEMA.safeParse(process(remote)).success, remote).toBe(false);
+    }
   });
 });
 
