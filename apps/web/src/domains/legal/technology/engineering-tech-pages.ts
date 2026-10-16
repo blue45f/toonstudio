@@ -16,6 +16,7 @@ import {
 
 import type { LocalizedText } from "./engineering-story-content";
 import type { WorkflowVisual } from "@/shared/components/site-experience/workflow-illustration";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 /**
  * 기술 소개 하위 페이지의 단일 목록. 탭 메뉴·허브의 발표 동선·하단 이어보기가 모두 이 목록을 쓴다.
@@ -247,7 +248,7 @@ export function findEngineeringPage(id: EngineeringPageId): EngineeringPageEntry
 
 /** 현재 경로에 해당하는 페이지. 하위 경로·끝 슬래시도 같은 페이지로 본다. */
 export function engineeringPageForPath(pathname: string): EngineeringPageEntry | undefined {
-  const normalized = pathname.replace(/\/+$/u, "");
+  const normalized = trimTrailingSlashes(pathname);
   return ENGINEERING_PAGES.find((page) => normalized === page.href || normalized.startsWith(`${page.href}/`));
 }
 

@@ -25,6 +25,7 @@ import { SectionArt } from "@/shared/components/section-art";
 
 import { LESSONS } from "./learning-content";
 import { useLearningProgress } from "./use-learning-progress";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 import "./learning-enhancements.css";
 
@@ -156,7 +157,7 @@ export function LearnSectionShell({ children }: { readonly children: ReactNode }
   useBilingualI18nRevision();
   const t = useT();
   const { pathname, hash } = useLocation();
-  const normalizedPath = pathname.replace(/\/+$/u, "") || "/";
+  const normalizedPath = trimTrailingSlashes(pathname) || "/";
 
   const showArtBanner = normalizedPath === "/learn/resources";
   const isReferencePath = REFERENCE_PATHS.includes(normalizedPath);

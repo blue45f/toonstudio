@@ -1,4 +1,5 @@
 import { nextExperienceDestinations } from "./site-experience-model";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 export type AtelierScene = "ink" | "layers" | "panels" | "motion" | "materials";
 export type AtelierLocale = "ko" | "en";
@@ -43,7 +44,7 @@ const CHAPTERS = {
 
 /** Only enrich supported browsing pages. Keep forms, reading and editors undisturbed. */
 export function atelierChapterForPath(pathname: string) {
-  const path = pathname.replace(/\/+$/u, "").toLowerCase() || "/";
+  const path = trimTrailingSlashes(pathname).toLowerCase() || "/";
   if (!nextExperienceDestinations(path).length) return null;
   if (/^\/(?:research|references|insights|now|opportunities)(?:\/|$)/u.test(path)) return CHAPTERS.research;
   if (/^\/(?:learn|guide|help)(?:\/|$)/u.test(path)) return CHAPTERS.learn;

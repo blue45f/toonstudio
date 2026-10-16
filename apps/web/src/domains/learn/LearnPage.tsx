@@ -10,6 +10,7 @@ import { LearnSectionShell } from "./LearnSectionShell";
 import { TracePracticePage } from "./TracePracticePage";
 import { WebtoonCareerPage } from "./WebtoonCareerPage";
 import { WebtoonProcessPage } from "./WebtoonProcessPage";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 import "./learning-academy.css";
 
@@ -21,7 +22,7 @@ import "./learning-academy.css";
  */
 export function LearnPage() {
   const { pathname } = useLocation();
-  const normalizedPath = pathname.replace(/\/+$/u, "") || "/";
+  const normalizedPath = trimTrailingSlashes(pathname) || "/";
 
   const isHome = normalizedPath === "/learn";
   const pathMatch = normalizedPath.match(/^\/learn\/paths\/([^/]+)$/u);

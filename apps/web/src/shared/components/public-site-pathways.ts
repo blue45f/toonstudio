@@ -1,4 +1,5 @@
 import { activePublicJourney, PUBLIC_JOURNEY as DESTINATION_JOURNEY, type PublicJourneyId } from "./public-site-destinations";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 export type PublicJourneyPhase = "discover" | "learn" | "resources" | "create" | "share";
 const PHASE: Record<PublicJourneyId, PublicJourneyPhase> = {
@@ -34,7 +35,7 @@ export function publicSiteNextSteps(pathname: string) {
   const phase = publicJourneyPhase(pathname);
   const keys: readonly DestinationKey[] = phase ? NEXT[phase] : ["research", "learn", "resources"];
   return keys.map((key) => DESTINATIONS[key]).filter((destination) => {
-    const normalized = pathname.toLowerCase().replace(/\/+$/u, "");
+    const normalized = trimTrailingSlashes(pathname.toLowerCase());
     return normalized !== destination.href && !normalized.startsWith(`${destination.href}/`);
   });
 }

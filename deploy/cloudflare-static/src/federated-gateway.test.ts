@@ -300,4 +300,32 @@ describe("federated Cloudflare gateway", () => {
     expect(queried).toBeNull();
     expect(write).toBeNull();
   });
+
+  it("ignores trailing slashes in snapshot paths without quadratic scanning", () => {
+    // 요청 경로는 누구나 만들어 보낼 수 있다. 끝 슬래시를 `/\/+$/u` 로 떼면 슬래시가 길게 이어진 경로에서
+    // 시작점마다 그 열을 다시 읽어 입력 길이의 제곱 시간이 든다(CodeQL js/polynomial-redos).
+    const trailing = createReadModelSnapshotRequest(
+      new Request("https://www.toonstudio.cloud/api/titles///"),
+      "/data/api-read-model",
+    );
+    expect(trailing?.url).toBe(
+      "https://www.toonstudio.cloud/data/api-read-model/titles.json",
+    );
+
+    const flood = "/".repeat(60_000);
+    const startedAt = performance.now();
+    createReadModelSnapshotRequest(
+      new Request(`https://www.toonstudio.cloud/api/titles${flood}x`),
+      "/data/api-read-model",
+    );
+    expect(performance.now() - startedAt).toBeLessThan(300);
+
+    // 정적 스냅샷 접두사도 같은 방식으로 정리한다.
+    const prefixStartedAt = performance.now();
+    createReadModelSnapshotRequest(
+      new Request("https://www.toonstudio.cloud/api/titles"),
+      `/data/api-read-model${flood}x`,
+    );
+    expect(performance.now() - prefixStartedAt).toBeLessThan(300);
+  });
 });

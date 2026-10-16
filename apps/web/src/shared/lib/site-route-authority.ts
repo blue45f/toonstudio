@@ -1,3 +1,5 @@
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+
 export type SiteRouteProduct = "studio" | "spectrum" | "docs";
 export type SiteRoutePurpose = "create" | "discover" | "learn" | "connect" | "manage" | "trust";
 export type SiteRouteMaturity = "stable" | "beta" | "experimental";
@@ -114,7 +116,7 @@ export const SITE_ROUTE_ALIASES = {
 
 export function canonicalSitePath(input: string): string {
   const pathname = input.split(/[?#]/u, 1)[0] || "/";
-  const normalized = pathname !== "/" ? pathname.replace(/\/+$/u, "") || "/" : "/";
+  const normalized = pathname !== "/" ? trimTrailingSlashes(pathname) || "/" : "/";
   return SITE_ROUTE_ALIASES[normalized as keyof typeof SITE_ROUTE_ALIASES] ?? normalized;
 }
 

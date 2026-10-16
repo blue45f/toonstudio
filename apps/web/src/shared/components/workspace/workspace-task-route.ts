@@ -1,3 +1,5 @@
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+
 /** Presentation ownership only. This policy never resolves a document ID or grants access. */
 export interface WorkspaceTaskRoute {
   readonly section?: "works" | "explore" | "support" | "team";
@@ -52,7 +54,7 @@ const PROJECT_SECTIONS: Readonly<Record<string, WorkspaceTaskRoute>> = {
 };
 
 export function workspaceTaskRoute(pathname: string, search = ""): WorkspaceTaskRoute | null {
-  const path = pathname.replace(/\/+$/u, "") || "/";
+  const path = trimTrailingSlashes(pathname) || "/";
   // An external review intentionally has no internal work navigation or contextual metadata.
   const params = new URLSearchParams(search);
   if (params.has("token") || params.has("invite") || params.has("reviewToken")) return null;

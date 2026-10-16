@@ -310,6 +310,30 @@ function parseTimestamp(value: string): number | null {
   return ((hours * 60 + minutes) * 60 + seconds) * 1_000 + millis;
 }
 
+/**
+ * WebVTT 큐 본문의 태그(`<b>`, `<c.yellow>`, `<00:00:01.500>` 등)를 지운다. `/<[^>]+>/g` 와 같은 결과다.
+ * 그 식은 닫는 `>` 가 없이 `<` 만 길게 이어진 큐에서 시작점마다 큐 끝까지 다시 읽어 입력 길이의 제곱 시간이 된다
+ * (CodeQL js/polynomial-redos). 자막 파일은 번역가·협업자에게서 받는 바깥 파일이라 큐 하나의 크기를 통제하지 못한다.
+ * 뒤에 `>` 가 더 없으면 남은 `<` 는 모두 짝이 없으므로 바로 끝낸다.
+ */
+function stripCueTags(value: string): string {
+  let out = "";
+  let cursor = 0;
+  for (let open = value.indexOf("<"); open >= 0; open = value.indexOf("<", cursor)) {
+    const close = value.indexOf(">", open + 1);
+    if (close < 0) break;
+    if (close === open + 1) {
+      // `<>` 는 태그가 아니다(태그 이름이 한 글자 이상 있어야 한다). 여는 꺾쇠만 넘기고 이어서 본다.
+      out += value.slice(cursor, open + 1);
+      cursor = open + 1;
+      continue;
+    }
+    out += value.slice(cursor, open);
+    cursor = close + 1;
+  }
+  return out + value.slice(cursor);
+}
+
 function parseCueText(lines: readonly string[], format: StudioAnimaticSubtitleFormat): { text: string; speaker?: string } {
   const joined = lines.join("\n").trim();
   if (format === "vtt") {
@@ -325,8 +349,7 @@ function parseCueText(lines: readonly string[], format: StudioAnimaticSubtitleFo
       };
     }
     return {
-      text: joined
-        .replace(/<[^>]+>/gu, "")
+      text: stripCueTags(joined)
         .replace(/&lt;/gu, "<")
         .replace(/&gt;/gu, ">")
         .replace(/&amp;/gu, "&")

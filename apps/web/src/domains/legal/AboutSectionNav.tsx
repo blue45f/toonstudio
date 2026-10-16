@@ -5,6 +5,7 @@ import { useLayoutEffect, useRef } from "react";
 import Link from "@/shared/navigation/router-link";
 import { usePathname } from "@/shared/navigation/navigation";
 import { cx } from "@/shared/lib/cx";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("AboutSectionNav", ko, en);
@@ -61,7 +62,7 @@ interface AboutSectionNavProps {
  */
 export function AboutSectionNav({ className, variant = "full" }: AboutSectionNavProps) {
   useBilingualI18nRevision();
-  const pathname = usePathname().replace(/\/+$/u, "") || "/";
+  const pathname = trimTrailingSlashes(usePathname()) || "/";
   const compact = variant === "compact";
   const scrollerRef = useRef<HTMLDivElement>(null);
 
