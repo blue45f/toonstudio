@@ -11,7 +11,7 @@ import {
   setContractReviewAnswer,
   type ContractReviewAnswer,
   type ContractReviewAnswers,
-} from "@toonstudio/core/contract-review-checklist";
+} from "./contract-review-checklist";
 
 /** 저장 형식을 바꾸면 버전을 올리고, 옛 키는 읽지 않는다(답은 항목 id 로만 저장하므로 가볍다). */
 export const CONTRACT_REVIEW_STORAGE_KEY = "toonstudio:contract-review:v1";

@@ -34,7 +34,7 @@
 위치: `StudioProjectIntegratedPage`의 `section === "export" && view === "packages"`(만든 파일). 패널은 `lazy()`로 불러오므로 다른 보기에는 ZIP·PDF 작성 코드가 들어가지 않고, 프로젝트가 바뀌면 `key={projectId}`로 새로 만들어 작품 소개·회차 칸·고른 이미지가 다른 프로젝트로 섞이지 않게 한다. 진입 파일: `apps/web/src/domains/creator/submission-package/StudioSubmissionPackagePanel.tsx`.
 
 1. 작품 소개를 적는다 — 제목(필수), 작가명(선택), 로그라인, 시놉시스. 시놉시스가 비어 있고 프로젝트에 설명이 있으면 "프로젝트 설명 넣기"로 한 번에 채운다(덮어쓰지 않는다).
-2. 회차마다 번호·제목·메모를 적고 이미지를 고른다. 이름의 숫자 순서로 자동 정렬하고, 위/아래 버튼으로 순서를 바꾸거나 목록에서 뺀다.
+2. 회차마다 번호·제목·메모를 적고 이미지를 고른다. 이름의 숫자 순서로 자동 정렬하고, 위/아래 버튼으로 순서를 바꾸거나 목록에서 뺀다. 처음 여는 칸은 프로젝트의 활성 웹툰 문서에서 채운다 — 순서와 번호는 문서 목록(최근에 연 순)이 아니라 `submission-package-document-order.ts`가 정한다. 모든 문서 제목이 서로 다른 회차 숫자(`1화`·`제3화`·`12회`·`EP02`)로 시작하면 그 숫자가 번호이고 숫자 순으로 놓는다. 하나라도 아니면(일부만 숫자가 있거나 숫자가 겹침) 문서를 만든 순서(오래된 것이 앞)로 1화부터 붙이고, 만든 시각이 같으면(가져온 프로젝트) 제목의 숫자 크기 순(`2` < `10`)으로 놓는다. 문서가 3개보다 적어 빈 칸을 이을 때는 가장 큰 번호 다음부터 붙인다. 칸 위의 안내 한 줄이 이 방식을 알린다.
 3. 스토리 바이블의 캐릭터 중 담을 인물을 고른다. 서술 시트를 한 칸이라도 채운 캐릭터만 기본으로 담긴다.
 4. 폭 점검 기준(네이버 690·카카오 720·웹툰 캔버스 800·고화질 1080·점검하지 않음), 표지 언어, 표지 요약 PDF 포함 여부를 정한다.
 5. "만들기 전 점검"을 읽는다 — 필수 구성 5개 진행도, 전체 용량 막대, 막는 문제·알림·참고 목록.
@@ -153,9 +153,9 @@ ZIP은 기존 작성기의 "store"(압축 없음) 방식이다. 이미지는 이
 - 선택은 `localStorage`(`toonstudio:contract-review:v1`)에 저장한다. 저장소가 막히면 "저장되지 않아요" 배너를 보인다. 초기화는 확인 대화를 거친다.
 - **Markdown 요약**을 내려받거나(`toonstudio-contract-review-YYYY-MM-DD.md`) 복사한다. 요약은 브라우저 안에서 만들고 서버로 보내지 않으며, 법률 자문이 아니라는 고지와 출처를 함께 넣는다. 다운로드·복사가 막히면 오류와 대안을 알린다.
 
-### 3.2 항목 20개
+### 3.2 항목 19개
 
-데이터는 순수 모듈이다: `packages/core/src/contract-review-items.ts`(출처·분류·항목), `contract-review-checklist.ts`(답 처리·요약), 가져오기 경로 `@toonstudio/core/contract-review-checklist`. "표준 근거"의 조항·쪽은 해설집에 실린 표준 웹툰 연재계약서(별표3)와 2차적저작물작성권 계약서(별표7·8)를 기준으로 하며, 쪽은 문서 하단에 인쇄된 쪽 번호다.
+데이터와 순수 로직은 화면과 같은 폴더(`apps/web/src/shared/components/contract-review/`)에 둔다: `contract-review-items.ts`(출처·분류·항목), `contract-review-checklist.ts`(답 처리·요약), `contract-review-types.ts`(타입). 소비자가 `apps/web` 하나뿐이라 `packages/core`에 두지 않는다 — 코어에 두면 `config/architecture-source-ratchet.json`의 `packagesCoreFiles` 상한(136)을 넘겨 `pnpm run validate:source-layout`이 실패한다. 화면 파일은 `./contract-review-checklist`에서 가져온다. "표준 근거"의 조항·쪽은 해설집에 실린 표준 웹툰 연재계약서(별표3)와 2차적저작물작성권 계약서(별표7·8)를 기준으로 하며, 쪽은 문서 하단에 인쇄된 쪽 번호다.
 
 | 분류 | id | 항목 | 표준 근거 |
 | --- | --- | --- | --- |
@@ -205,16 +205,16 @@ ZIP은 기존 작성기의 "store"(압축 없음) 방식이다. 이미지는 이
 
 | 영역 | 파일 |
 | --- | --- |
-| 투고 순수 모듈 | `submission-image-probe.test.ts`, `submission-package-preflight.test.ts`, `submission-package-text.test.ts`, `submission-package-cover.test.ts`, `submission-package-cover-pdf.test.ts`, `submission-package-messages.test.ts`, `submission-package-story.test.ts`, `submission-package-layout.test.ts`, `submission-package-build.test.ts`, `submission-package-draft-store.test.ts`, `submission-package-draft-state.test.ts`, `submission-package-platform.test.ts`, `submission-package-abort.test.ts` |
-| 투고 훅·화면 (jsdom) | `use-submission-package-draft.test.tsx`, `use-submission-package-build.test.tsx`, `StudioSubmissionPackagePanel.test.tsx` — 처음 모습·복원·저장, 캐릭터 불러오는 중/실패/빈 상태, 이미지 추가·순서·빼기·폭 경고, 만들기·저장·저장 취소·저장 실패, 취소 후 재시작, 읽기 실패 후 재시도, 이름과 키보드 순서 |
-| 계약 체크리스트 | `packages/core/src/contract-review-checklist.test.ts`, `shared/components/contract-review/*.test.ts(x)`, `domains/learn/LearningContractChecklistPage.test.tsx`, `domains/creator/production-hub/ProductionContractReview.test.tsx` |
+| 투고 순수 모듈 | `submission-image-probe.test.ts`, `submission-package-preflight.test.ts`, `submission-package-text.test.ts`, `submission-package-cover.test.ts`, `submission-package-cover-pdf.test.ts`, `submission-package-messages.test.ts`, `submission-package-story.test.ts`, `submission-package-layout.test.ts`, `submission-package-build.test.ts`, `submission-package-draft-store.test.ts`, `submission-package-draft-state.test.ts`, `submission-package-document-order.test.ts`, `submission-package-platform.test.ts`, `submission-package-abort.test.ts` |
+| 투고 훅·화면 (jsdom) | `use-submission-package-draft.test.tsx`, `use-submission-package-build.test.tsx`, `StudioSubmissionPackagePanel.test.tsx` — 처음 모습·복원·저장(실제 문서 저장소로 만든 여러 웹툰 문서가 1·2·3화 순서로 담기는지 포함), 캐릭터 불러오는 중/실패/빈 상태, 이미지 추가·순서·빼기·폭 경고, 만들기·저장·저장 취소·저장 실패, 취소 후 재시작, 읽기 실패 후 재시도, 이름과 키보드 순서 |
+| 계약 체크리스트 | `shared/components/contract-review/*.test.ts(x)`(항목 데이터·답 처리·요약을 시험하는 `contract-review-checklist.test.ts` 포함), `domains/learn/LearningContractChecklistPage.test.tsx`, `domains/creator/production-hub/ProductionContractReview.test.tsx` |
 | 라우트·내비 계약 | `site-public-routes.test.ts`, `SitemapPage.test.ts`, `LearnPage.navigation.test.tsx` |
 
 실행 위치는 저장소 루트이고 부작용은 없다(네트워크·DB를 쓰지 않는다).
 
 ```bash
 pnpm exec vitest run apps/web/src/domains/creator/submission-package
-pnpm exec vitest run packages/core/src/contract-review-checklist.test.ts apps/web/src/shared/components/contract-review apps/web/src/domains/learn/LearningContractChecklistPage.test.tsx apps/web/src/domains/creator/production-hub/ProductionContractReview.test.tsx
+pnpm exec vitest run apps/web/src/shared/components/contract-review apps/web/src/domains/learn/LearningContractChecklistPage.test.tsx apps/web/src/domains/creator/production-hub/ProductionContractReview.test.tsx
 ```
 
 jsdom 시험은 `TextEncoder`·`DOMException`이 다른 전역의 객체를 돌려주는 환경이라, 구현이 `instanceof` 대신 이름으로 취소를 판별하고(`submission-package-abort.ts`) 텍스트 바이트를 현재 전역의 `Uint8Array`로 옮긴다(`submission-package-build.ts`의 `currentRealmBytes`). 브라우저에서도 무해한 방어다.
@@ -223,6 +223,7 @@ jsdom 시험은 `TextEncoder`·`DOMException`이 다른 전역의 객체를 돌�
 
 - **편집기에서 문서를 바로 굽지 않는다 (target).** 이미지는 사용자가 에디터에서 내보낸 파일을 고른다. 편집기 래스터화 경로에 "회차 N장을 투고 규격으로 내보내기"를 연결하면 이 단계가 사라진다.
 - **게시 작품(클라우드 시리즈)에서 가져오기 어댑터가 없다 (target).** 1절의 이유로 이번 범위에서 제외했다.
+- **회차 번호와 제목의 숫자가 어긋나도 점검하지 않는다 (target).** 번호는 처음 칸을 채울 때만 제목의 숫자·만든 순서로 붙인다(2.1절). 사용자가 번호나 제목을 고친 뒤에 둘이 어긋나도 알리지 않는다 — 칸 위의 안내 한 줄과 사용자의 확인에 맡긴다. 일부 문서 제목에만 숫자가 있을 때는 제목의 숫자를 쓰지 않고 만든 순서를 따르므로 그 경우 번호와 제목이 다를 수 있다.
 - **이미지는 새로고침하면 다시 골라야 한다 (legacy exception).** 글만 저장한다. 큰 파일을 IndexedDB에 두는 방식은 용량·삭제 정책이 필요해 하지 않았다.
 - **표지 PDF는 글자를 선택·검색할 수 없다 (legacy exception).** 한글 폰트 임베드를 피하려고 `studio-review-pdf`와 같은 방식을 썼다. 그리는 코드는 가짜 캔버스로만 시험했고 **실제 브라우저에서의 모양은 확인하지 않았다.**
 - **발행 패키지의 권리·AI 학습 동의 메타데이터를 싣지 않는다 (target).** 투고처가 권리·AI 사용 표기를 요구하는지는 확인하지 못했고, 이 변경은 매니페스트에 넣지 않았다.

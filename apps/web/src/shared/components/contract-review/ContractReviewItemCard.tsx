@@ -1,6 +1,9 @@
 import { useId } from "react";
 import { Circle, CircleCheck, CircleHelp, ExternalLink, TriangleAlert, type LucideIcon } from "lucide-react";
 
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { cn } from "@/shared/lib/utils";
+
 import {
   contractReviewItemStatus,
   getContractReviewSource,
@@ -8,10 +11,7 @@ import {
   type ContractReviewItem,
   type ContractReviewItemStatus,
   type ContractReviewText,
-} from "@toonstudio/core/contract-review-checklist";
-
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { cn } from "@/shared/lib/utils";
+} from "./contract-review-checklist";
 
 const ANSWER_OPTIONS: readonly ContractReviewAnswer[] = ["present", "absent", "unsure"];
 

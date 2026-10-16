@@ -5,6 +5,7 @@
  * 이 순수 함수라 파일 읽기 같은 비동기 부수 효과와 분리해 시험할 수 있다. 이미지 Blob 은 메모리 상태에만 있고
  * 저장되지 않는다(`submission-package-draft-store` 가 글만 저장한다).
  */
+import { orderSubmissionDocuments, type SubmissionDocumentSeed } from "./submission-package-document-order";
 import {
   EMPTY_SUBMISSION_DRAFT_TEXT,
   type SubmissionCoverLocaleChoice,
@@ -63,11 +64,14 @@ export function createEmptyEpisode(id: string, number: number, document: Submiss
   return { id, number, title, note: "", pages: [], reading: 0, document };
 }
 
-/** 처음 여는 초안: 투고 최소 회차만큼 빈 칸을 미리 둔다. */
+/**
+ * 처음 여는 초안: 투고 최소 회차만큼 빈 칸을 미리 둔다.
+ * 문서로 칸을 채울 때의 순서와 번호는 `orderSubmissionDocuments` 가 정한다(문서 목록의 '최근에 연 순'을 따르지 않는다).
+ */
 export function initialSubmissionDraft(options: {
   readonly saved: SubmissionDraftText | null;
   readonly projectTitle: string;
-  readonly documents: ReadonlyArray<{ readonly id: string; readonly title: string; readonly width: number | null; readonly height: number | null; readonly pageCount: number }>;
+  readonly documents: readonly SubmissionDocumentSeed[];
   readonly idFor: (index: number) => string;
 }): SubmissionDraftState {
   const { saved } = options;
@@ -77,17 +81,18 @@ export function initialSubmissionDraft(options: {
   if (savedEpisodes.length > 0) {
     episodes = savedEpisodes.map((meta) => ({ ...createEmptyEpisode(meta.id, meta.number, null, meta.title), note: meta.note }));
   } else if (options.documents.length > 0) {
-    episodes = options.documents.map((document, index) =>
+    episodes = orderSubmissionDocuments(options.documents).map(({ document, number }, index) =>
       createEmptyEpisode(
         options.idFor(index),
-        index + 1,
+        number,
         { id: document.id, width: document.width, height: document.height, pageCount: document.pageCount },
         document.title,
       ),
     );
     // 문서가 최소 회차보다 적어도 투고에 필요한 만큼 빈 칸을 이어 둔다(사용자가 '회차 추가'를 찾지 않아도 되게).
+    // 번호는 '회차 추가'와 같이 가장 큰 번호 다음부터라서, 제목의 숫자가 건너뛴 번호와도 겹치지 않는다.
     for (let index = episodes.length; index < SUBMISSION_PACKAGE_MIN_EPISODES; index += 1) {
-      episodes.push(createEmptyEpisode(options.idFor(index), index + 1));
+      episodes.push(createEmptyEpisode(options.idFor(index), nextEpisodeNumber(episodes)));
     }
   } else {
     episodes = Array.from({ length: SUBMISSION_PACKAGE_MIN_EPISODES }, (_, index) => createEmptyEpisode(options.idFor(index), index + 1));

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 
 import { toSubmissionPageFile } from "./submission-image-probe";
 import { isAbortError } from "./submission-package-abort";
+import type { SubmissionDocumentSeed } from "./submission-package-document-order";
 import {
   initialSubmissionDraft,
   submissionDraftReducer,
@@ -35,18 +36,10 @@ import type {
 const PROBE_CONCURRENCY = 4;
 const PERSIST_DEBOUNCE_MS = 400;
 
-export interface SubmissionDocumentSeed {
-  readonly id: string;
-  readonly title: string;
-  readonly width: number | null;
-  readonly height: number | null;
-  readonly pageCount: number;
-}
-
 export interface UseSubmissionPackageDraftOptions {
   readonly projectId: string;
   readonly projectTitle: string;
-  /** 프로젝트의 웹툰 문서. 저장된 글이 없을 때만 회차 칸의 출발점으로 쓴다. */
+  /** 프로젝트의 웹툰 문서(받은 순서는 상관없다 — 순서와 번호는 만든 시각·제목으로 정한다). 저장된 글이 없을 때만 회차 칸의 출발점으로 쓴다. */
   readonly documents: readonly SubmissionDocumentSeed[];
   /** 스토리 바이블에서 투고용으로 옮긴 캐릭터 시트 전체(선택 전). */
   readonly characters: readonly SubmissionCharacterSheet[];

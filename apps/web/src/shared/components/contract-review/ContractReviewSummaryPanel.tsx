@@ -1,19 +1,18 @@
 import { useId, useState } from "react";
 import { ClipboardCopy, Download, RotateCcw, TriangleAlert } from "lucide-react";
 
+import { Button } from "@/shared/components/ui/button";
+import { copyText } from "@/shared/lib/copy-text";
+import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+
+import type { ContractReviewPersistence } from "./contract-review-answer-store";
 import {
   CONTRACT_REVIEW_ITEMS,
   buildContractReviewMarkdown,
   type ContractReviewAnswers,
   type ContractReviewLocale,
   type ContractReviewSummary,
-} from "@toonstudio/core/contract-review-checklist";
-
-import { Button } from "@/shared/components/ui/button";
-import { copyText } from "@/shared/lib/copy-text";
-import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-
-import type { ContractReviewPersistence } from "./contract-review-answer-store";
+} from "./contract-review-checklist";
 import { contractReviewFilename, downloadTextFile } from "./contract-review-export";
 
 export interface ContractReviewSummaryPanelProps {

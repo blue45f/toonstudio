@@ -7,7 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { upsertStoryCharacterProfile } from "../planning/studio-character-profile";
-import { createStudioProjectDocument } from "../studio-project-document-store";
+import { readStudioProjectDocuments } from "../studio-project-document-reader";
+import { createStudioProjectDocument, markStudioProjectDocumentOpened } from "../studio-project-document-store";
 import { createStudioProject } from "../studio-project-library-store";
 import { updateStudioProjectWorkspaceState } from "../studio-project-workspace-store";
 import type * as workspaceHookModule from "../studio-shell/useStudioProjectWorkspace";
@@ -86,6 +87,40 @@ function seedProject(): void {
     description: "야간 편의점에 찾아오는 손님들의 사연을 듣는 이야기.",
   });
   createStudioProjectDocument(window.localStorage, PROJECT_ID, { id: "doc-1", title: "첫 손님", kind: "webtoon", width: 690, height: 8_000, pageCount: 2 });
+}
+
+interface SeedDocument {
+  readonly id: string;
+  readonly title: string;
+  readonly createdAt: string;
+  readonly pageCount?: number;
+}
+
+/** 실제 저장소 모듈로 프로젝트와 여러 웹툰 문서를 만든다(문서 목록 순서를 직접 흉내 내지 않는다). */
+function seedEpisodeDocuments(documents: readonly SeedDocument[]): void {
+  createStudioProject(window.localStorage, { id: PROJECT_ID, title: "달빛 아래 편의점", kind: "webtoon", description: "" });
+  for (const document of documents) {
+    createStudioProjectDocument(window.localStorage, PROJECT_ID, {
+      id: document.id,
+      title: document.title,
+      kind: "webtoon",
+      width: 690,
+      height: 8_000,
+      pageCount: document.pageCount ?? 1,
+      createdAt: document.createdAt,
+    });
+  }
+}
+
+function inputValue(element: HTMLElement): string {
+  return element instanceof HTMLInputElement ? element.value : "";
+}
+
+/** 화면에 놓인 순서대로 [회차 번호, 제목] 을 읽는다. */
+function episodeRows(): Array<readonly [string, string]> {
+  const numbers = screen.getAllByLabelText("회차 번호").map(inputValue);
+  const titles = screen.getAllByLabelText("제목").map(inputValue);
+  return numbers.map((number, index): readonly [string, string] => [number, titles[index] ?? ""]);
 }
 
 function seedCharacters(): void {
@@ -187,6 +222,8 @@ describe("투고 패키지 화면 — 처음 모습", () => {
     expect(screen.getByText(/모든 처리는 이 브라우저 안에서만 해요/u)).toBeTruthy();
     expect(screen.getByRole("link", { name: "웹툰 계약서 검토 체크리스트" }).getAttribute("href")).toBe("/learn/contract-checklist");
     for (const label of [/^1화$/u, /^2화$/u, /^3화$/u]) expect(episodeCard(label)).toBeTruthy();
+    // 이어진 문서가 없으면 번호를 어떻게 붙였는지 알릴 일이 없다.
+    expect(screen.queryByText(/회차 번호는 스튜디오 문서 제목의 숫자/u)).toBeNull();
     expect(screen.getByText("이미지가 담긴 회차 0화 / 투고에는 최소 3화가 필요해요.")).toBeTruthy();
     expect(screen.getByText("필수 구성 0 / 5")).toBeTruthy();
 
@@ -211,6 +248,79 @@ describe("투고 패키지 화면 — 처음 모습", () => {
     fireEvent.click(screen.getByRole("button", { name: "프로젝트 설명 넣기" }));
     expect(synopsis).toHaveProperty("value", "야간 편의점에 찾아오는 손님들의 사연을 듣는 이야기.");
     expect(screen.getByRole("button", { name: "프로젝트 설명 넣기" }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("1·2·3화 문서를 순서대로 만든 프로젝트는 최근에 연 순이 아니라 1·2·3 번호 칸으로 담는다", () => {
+    seedEpisodeDocuments([
+      { id: "doc-1", title: "1화 편의점의 밤", createdAt: "2026-10-15T09:00:00.000Z", pageCount: 2 },
+      { id: "doc-2", title: "2화 도깨비 손님", createdAt: "2026-10-15T09:01:00.000Z", pageCount: 3 },
+      { id: "doc-3", title: "3화 시간 상인", createdAt: "2026-10-15T09:02:00.000Z", pageCount: 4 },
+    ]);
+    // 문서 목록은 '최근에 연 순(내림차순)'이다. 이 전제가 바뀌면 아래 시험이 무엇을 막는지 알 수 없으므로 함께 못 박아 둔다.
+    expect(readStudioProjectDocuments(window.localStorage, PROJECT_ID).documents.map((document) => document.id)).toEqual(["doc-3", "doc-2", "doc-1"]);
+
+    renderPanel();
+
+    expect(episodeRows()).toEqual([
+      ["1", "1화 편의점의 밤"],
+      ["2", "2화 도깨비 손님"],
+      ["3", "3화 시간 상인"],
+    ]);
+    // 칸마다 이어진 문서의 기록도 같은 문서의 것이다(번호만 맞고 문서가 어긋나지 않는다).
+    expect(within(episodeCard(/^1화/u)).getByText(/연결된 스튜디오 문서: 690 × 8000px · 2쪽/u)).toBeTruthy();
+    expect(within(episodeCard(/^3화/u)).getByText(/연결된 스튜디오 문서: 690 × 8000px · 4쪽/u)).toBeTruthy();
+  });
+
+  it("회차 숫자가 없는 제목은 마지막에 연 문서와 상관없이 만든 순서대로 번호를 붙이고, 번호를 붙인 방식을 알린다", () => {
+    seedEpisodeDocuments([
+      { id: "doc-1", title: "첫 손님", createdAt: "2026-10-15T09:00:00.000Z" },
+      { id: "doc-2", title: "두 번째 손님", createdAt: "2026-10-15T09:01:00.000Z" },
+      { id: "doc-3", title: "세 번째 손님", createdAt: "2026-10-15T09:02:00.000Z" },
+    ]);
+    markStudioProjectDocumentOpened(window.localStorage, PROJECT_ID, "doc-2", undefined, { at: "2026-10-15T10:00:00.000Z" });
+    expect(readStudioProjectDocuments(window.localStorage, PROJECT_ID).documents.map((document) => document.id)).toEqual(["doc-2", "doc-3", "doc-1"]);
+
+    renderPanel();
+
+    expect(episodeRows()).toEqual([
+      ["1", "첫 손님"],
+      ["2", "두 번째 손님"],
+      ["3", "세 번째 손님"],
+    ]);
+    expect(screen.getByText(/회차 번호는 스튜디오 문서 제목의 숫자.*만든 순서로 붙였어요/u)).toBeTruthy();
+  });
+
+  it("모든 문서 제목에 회차 숫자가 있으면 만든 순서와 달라도 제목의 숫자를 번호로 쓴다", () => {
+    seedEpisodeDocuments([
+      { id: "doc-a", title: "3화 시간 상인", createdAt: "2026-10-15T09:00:00.000Z" },
+      { id: "doc-b", title: "1화 편의점의 밤", createdAt: "2026-10-15T09:01:00.000Z" },
+      { id: "doc-c", title: "2화 도깨비 손님", createdAt: "2026-10-15T09:02:00.000Z" },
+    ]);
+
+    renderPanel();
+
+    expect(episodeRows()).toEqual([
+      ["1", "1화 편의점의 밤"],
+      ["2", "2화 도깨비 손님"],
+      ["3", "3화 시간 상인"],
+    ]);
+  });
+
+  it("같은 시각에 만들어진 문서(가져온 프로젝트)는 제목의 숫자 크기 순으로 놓는다(10화가 2화 앞에 오지 않는다)", () => {
+    const at = "2026-10-15T09:00:00.000Z";
+    seedEpisodeDocuments([
+      { id: "doc-x", title: "10화 마지막 손님", createdAt: at },
+      { id: "doc-y", title: "2화 도깨비 손님", createdAt: at },
+      { id: "doc-z", title: "1화 편의점의 밤", createdAt: at },
+    ]);
+
+    renderPanel();
+
+    expect(episodeRows()).toEqual([
+      ["1", "1화 편의점의 밤"],
+      ["2", "2화 도깨비 손님"],
+      ["10", "10화 마지막 손님"],
+    ]);
   });
 
   it("지난번에 적은 글은 복원하고 이미지는 다시 고르라고 알린다", () => {

@@ -2,11 +2,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  CONTRACT_REVIEW_ITEMS,
-  CONTRACT_REVIEW_SOURCES,
-} from "@toonstudio/core/contract-review-checklist";
-
 import { useI18n } from "@/shared/lib/i18n";
 
 import { ContractReviewChecklist } from "./ContractReviewChecklist";
@@ -15,6 +10,7 @@ import {
   parseStoredContractReviewAnswers,
   serializeContractReviewAnswers,
 } from "./contract-review-answer-store";
+import { CONTRACT_REVIEW_ITEMS, CONTRACT_REVIEW_SOURCES } from "./contract-review-checklist";
 
 const DELAY_PENALTY = "지체상금(마감 지연 패널티)";
 const REVENUE_SHARE = "수익 배분(RS) 비율과 ‘순 매출액’ 정의";
