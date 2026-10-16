@@ -160,20 +160,18 @@ export const EMPTY_STUDIO_TRANSLATION_CARD_SET: StudioTranslationCharacterCardSe
 // ── §2. 텍스트 정리 ──────────────────────────────────────────────────────────
 
 /**
- * 눈에 보이지 않는 제어·서식 문자인가. 제어 문자(C0/C1), 제로폭 공백·방향 표식, 양방향 서식 문자는
- * 화면에는 안 보이지만 프롬프트에는 그대로 실려 지시문을 숨기는 데 쓰일 수 있다.
- * 정규식 대신 코드 포인트 범위로 판정한다(제어 문자 정규식은 린트가 금지한다).
+ * 눈에 보이지 않는 문자인가 — 제어 문자(`Cc`: C0/C1)와 유니코드 "기본 무시 코드 포인트"
+ * (`Default_Ignorable_Code_Point`: 제로폭 공백·방향 표식·양방향 서식, 소프트 하이픈, 결합 문자 접합자,
+ * 변이 선택자 U+FE00–FE0F·U+E0100–E01EF, 한글 채움 문자, 유니코드 태그 블록 U+E0000–E007F 등).
+ * 이 문자들은 화면에는 안 보이지만 프롬프트에는 그대로 실려 지시문을 숨기는 데 쓰일 수 있다.
+ * 개별 범위 목록은 새 은닉 경로를 빠뜨리기 쉬워 유니코드 속성으로 판정한다. ZWJ(U+200D)와 이모지 표현 선택자
+ * (U+FE0F)도 함께 지워지므로 ZWJ 로 이은 이모지 시퀀스는 낱개로 남는다 — 이름·말투 메모에 쓰이는 경우가 드물어
+ * 숨은 지시문 차단을 우선한다.
  */
-function isHiddenControl(codePoint: number): boolean {
-  return (
-    codePoint < 0x20
-    || (codePoint >= 0x7f && codePoint <= 0x9f)
-    || (codePoint >= 0x200b && codePoint <= 0x200f)
-    || (codePoint >= 0x202a && codePoint <= 0x202e)
-    || (codePoint >= 0x2060 && codePoint <= 0x2064)
-    || (codePoint >= 0x2066 && codePoint <= 0x2069)
-    || codePoint === 0xfeff
-  );
+const HIDDEN_CHARACTER = /[\p{Cc}\p{Default_Ignorable_Code_Point}]/u;
+
+function isHiddenControl(character: string): boolean {
+  return HIDDEN_CHARACTER.test(character);
 }
 
 /**
@@ -189,12 +187,11 @@ export function boundedStudioTranslationCardText(
   if (typeof value !== "string") return "";
   let out = "";
   for (const character of value.normalize("NFC")) {
-    const codePoint = character.codePointAt(0) ?? 0;
     if (character === "\n") {
       out += options.multiline === true ? "\n" : " ";
     } else if (character === "\t") {
       out += " ";
-    } else if (!isHiddenControl(codePoint)) {
+    } else if (!isHiddenControl(character)) {
       out += character;
     }
   }

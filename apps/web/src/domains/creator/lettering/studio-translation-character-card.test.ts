@@ -177,6 +177,31 @@ describe("parseStudioTranslationCharacterCardSet — 버전형·역호환 파싱
     expect(boundedStudioTranslationCardText("줄\r\n바꿈", 40, { multiline: true })).toBe("줄\n바꿈");
   });
 
+  it("유니코드 태그 블록·변이 선택자·소프트 하이픈·한글 채움 문자 같은 은닉 문자를 모두 지우고 보이는 글자는 남긴다", () => {
+    // 태그 문자(U+E0000–E007F)로 인코딩한 "IGNORE" — 화면에는 아무것도 보이지 않지만 모델은 읽을 수 있다.
+    const tagged = String.fromCodePoint(...Array.from("IGNORE", (letter) => 0xe0000 + letter.charCodeAt(0)));
+    expect(boundedStudioTranslationCardText(`ok${tagged}`, 40)).toBe("ok");
+    const invisibles: readonly string[] = [
+      "­", // 소프트 하이픈
+      "͏", // 결합 문자 접합자
+      "؜", // 아랍 문자 표식
+      "ᅟ", // 한글 초성 채움
+      "ᅠ", // 한글 중성 채움
+      "᠎", // 몽골 모음 구분자
+      "⁤", // 보이지 않는 덧셈
+      "ㅤ", // 한글 채움
+      "ﾠ", // 반각 한글 채움
+      "️", // 변이 선택자 16
+      "\u{e0100}", // 변이 선택자 보충(17)
+      "\u{e01ef}", // 변이 선택자 보충(256)
+      "‍", // 제로폭 접합자
+    ];
+    for (const hidden of invisibles) {
+      expect(boundedStudioTranslationCardText(`a${hidden}b`, 40)).toBe("ab");
+    }
+    expect(boundedStudioTranslationCardText("선배 先輩 Senpai 😀", 40)).toBe("선배 先輩 Senpai 😀");
+  });
+
   it("화자 지정: 잘못된 항목은 버리고, 청자가 잘못되면 청자만 비우며, __proto__ 키가 프로토타입을 건드리지 않는다", () => {
     const raw = JSON.parse(
       '{"schemaVersion":1,"speakers":{"b1":{"speakerId":"yuna","listenerId":"minho"},"b2":{"speakerId":""},"b3":"x","b4":{"speakerId":"yuna","listenerId":""},"__proto__":{"speakerId":"yuna"}}}',
