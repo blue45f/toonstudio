@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useI18n } from "@/shared/lib/i18n-core";
+
 import { CreatorEcosystemViewerPage } from "./CreatorEcosystemViewerPage";
 import { downloadEcosystemJson } from "./ecosystem-preview";
 import { parseReaderFeedbackText } from "./reader-feedback-io";
@@ -136,5 +138,24 @@ describe("CreatorEcosystemViewerPage: 회차 피드백", () => {
     openPackage(BETA_PACKAGE);
     await screen.findByRole("heading", { level: 2, name: "이미지 검토본" });
     expect((screen.getByLabelText("자유 의견 (선택)") as HTMLTextAreaElement).value).toBe("");
+  });
+});
+
+describe("CreatorEcosystemViewerPage: 영어 화면", () => {
+  const originalLanguage = useI18n.getState().lang;
+  afterEach(() => useI18n.setState({ lang: originalLanguage }));
+
+  it("이번에 더한 문구(텍스트 검토 패키지 안내, 패키지 없이 남기기)도 폼처럼 영어로 보인다", async () => {
+    useI18n.setState({ lang: "en" });
+    renderViewer();
+    const toggle = screen.getByRole("button", { name: "Leave episode feedback without a package" });
+    fireEvent.click(toggle);
+    expect(screen.getByLabelText("Story title")).toBeTruthy();
+
+    openPackage(REVIEW_PACKAGE);
+    await screen.findByRole("heading", { level: 2, name: "새 연재작 1화" });
+    expect(screen.getByText(/This is a text review package/u)).toBeTruthy();
+    expect(screen.queryByText(/텍스트 검토 패키지입니다/u)).toBeNull();
+    expect(screen.getByRole("heading", { level: 3, name: "Leave feedback on an episode" })).toBeTruthy();
   });
 });

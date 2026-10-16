@@ -2,6 +2,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DICT, useI18n } from "@/shared/lib/i18n-core";
+
 import { downloadEcosystemJson } from "./ecosystem-preview";
 import { ReaderFeedbackForm } from "./ReaderFeedbackForm";
 import type { KnownFeedbackTarget } from "./reader-feedback-draft";
@@ -389,5 +391,54 @@ describe("ReaderFeedbackForm", () => {
     choose("재밌었어요");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "내용 복사" })); });
     await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("복사하지 못했어요"));
+  });
+});
+
+describe("ReaderFeedbackForm: 번역", () => {
+  const originalLanguage = useI18n.getState().lang;
+  afterEach(() => useI18n.setState({ lang: originalLanguage }));
+  const registeredCopy = () => [...Object.values(DICT.ko), ...Object.values(DICT.en)];
+
+  it("값이 끼는 문구는 {자리표시자}로 등록되어, 값마다 번역 키가 생기지 않고 화면에는 값이 채워진다", () => {
+    render(<ReaderFeedbackForm />);
+    expect(screen.getByRole("group", { name: /느낀 감정 \(최대 3개\)/u })).toBeTruthy();
+    choose("괜찮았어요");
+    fireEvent.change(screen.getByLabelText("작품 이름"), { target: { value: "내 작품" } });
+    fireEvent.change(screen.getByLabelText("회차 번호 (선택)"), { target: { value: "0" } });
+    save();
+    expect(screen.getAllByText("회차는 1~9999 사이의 숫자로 적어 주세요.").length).toBeGreaterThanOrEqual(1);
+    const copy = registeredCopy();
+    expect(copy).toEqual(expect.arrayContaining(["회차는 1~{max} 사이의 숫자로 적어 주세요.", "Enter an episode number between 1 and {max}.", "느낀 감정 (최대 {max}개)", "How it felt (up to {max})"]));
+    expect(copy.filter((text) => text.includes("1~9999") || text.includes("최대 3개") || text.includes("between 1 and 9999") || text.includes("up to 3)"))).toEqual([]);
+  });
+
+  it("영어 화면: 값이 채워진 안내가 영어로 나온다", () => {
+    useI18n.setState({ lang: "en" });
+    render(<ReaderFeedbackForm />);
+    expect(screen.getByRole("group", { name: /How it felt \(up to 3\)/u })).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: "It was okay" }));
+    fireEvent.change(screen.getByLabelText("Story title"), { target: { value: "My story" } });
+    fireEvent.change(screen.getByLabelText("Episode number (optional)"), { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as file" }));
+    expect(screen.getAllByText("Enter an episode number between 1 and 9999.").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("영어 화면: 연락처 안내가 파일에 실제로 담기는 가림 표시를 그대로 보여 준다", async () => {
+    useI18n.setState({ lang: "en" });
+    render(<ReaderFeedbackForm target={KNOWN} />);
+    fireEvent.change(screen.getByLabelText("Comment (optional)"), { target: { value: "reach me at mail@example.com" } });
+    const warning = screen.getByText(/looks like an email or phone number/u);
+    expect(warning.textContent).toContain(CONTACT_MASK);
+    expect(warning.textContent).not.toContain("[contact hidden]");
+    fireEvent.click(screen.getByRole("button", { name: "Save as file" }));
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+    // 안내에 적힌 표시가 정확히 파일 안의 표시다.
+    expect(lastExport().response.comment).toBe(`reach me at ${CONTACT_MASK}`);
+  });
+
+  it("한국어 화면: 연락처 안내도 같은 가림 표시를 보여 준다", () => {
+    render(<ReaderFeedbackForm target={KNOWN} />);
+    fireEvent.change(screen.getByLabelText("닉네임 (선택)"), { target: { value: "mail@example.com" } });
+    expect(screen.getByText(/바뀌거나 비워져요/u).textContent).toContain(`${CONTACT_MASK}으로 바뀌거나 비워져요`);
   });
 });

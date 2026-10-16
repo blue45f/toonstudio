@@ -2,6 +2,7 @@ import { Download, FileUp, MessageSquareText } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
@@ -41,6 +42,8 @@ function feedbackTarget(loaded: LoadedPackage | null): KnownFeedbackTarget | nul
 }
 
 export function CreatorEcosystemViewerPage() {
+  // 이 페이지의 기존 문구는 한국어 고정이다. 회차 피드백을 더하며 새로 쓴 문구만 폼과 같은 언어로 보이게 쌍으로 쓴다(나머지 이관은 별도 작업).
+  const bt = useBilingual("CreatorEcosystemViewerPage");
   useDocumentTitle("검토·제작 과정 패키지 · ToonStudio");
   const [loaded, setLoaded] = useState<LoadedPackage | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
@@ -121,14 +124,14 @@ export function CreatorEcosystemViewerPage() {
     </section> : null}
     {loaded?.kind === "review" ? <section className="mt-8 rounded-2xl border border-line bg-panel/50 p-4" aria-labelledby="ecosystem-review-heading">
       <h2 id="ecosystem-review-heading" className="text-xl font-black text-fg">{loaded.value.title}</h2>
-      <p className="mt-2 text-sm leading-6 text-fg-2">텍스트 검토 패키지입니다. 작품 본문은 작가에게서 따로 받아 읽고, 아래 구성을 기준으로 의견을 남겨 주세요.</p>
+      <p className="mt-2 text-sm leading-6 text-fg-2">{bt("텍스트 검토 패키지입니다. 작품 본문은 작가에게서 따로 받아 읽고, 아래 구성을 기준으로 의견을 남겨 주세요.", "This is a text review package. Read the story itself separately from the author, then leave feedback based on the outline below.")}</p>
       <ol className="mt-3 grid gap-1 text-sm text-fg-2 sm:grid-cols-2">{loaded.value.pages.map((page, index) => <li key={page.id}><span className="tabular-nums text-fg-3">{index + 1}.</span> {page.label}</li>)}</ol>
       {loaded.value.questions.length ? <ul className="mt-3 list-disc pl-5 text-sm text-fg-2">{loaded.value.questions.map(question => <li key={question}>{question}</li>)}</ul> : null}
     </section> : null}
-    {known ? <section className="mt-8" aria-label="회차 피드백"><ReaderFeedbackForm key={known.id} target={known} /></section> : null}
-    {loaded?.kind !== "process" && !known ? <section className="mt-8" aria-label="패키지 없이 피드백 남기기">
+    {known ? <section className="mt-8" aria-label={bt("회차 피드백", "Episode feedback")}><ReaderFeedbackForm key={known.id} target={known} /></section> : null}
+    {loaded?.kind !== "process" && !known ? <section className="mt-8" aria-label={bt("패키지 없이 피드백 남기기", "Leave feedback without a package")}>
       <button type="button" className={BUTTON} aria-expanded={manualFeedback} aria-controls="ecosystem-manual-feedback" onClick={() => setManualFeedback(open => !open)}>
-        <MessageSquareText size={16} aria-hidden /> 패키지 없이 회차 피드백만 남기기
+        <MessageSquareText size={16} aria-hidden /> {bt("패키지 없이 회차 피드백만 남기기", "Leave episode feedback without a package")}
       </button>
       {manualFeedback ? <div id="ecosystem-manual-feedback" className="mt-4"><ReaderFeedbackForm /></div> : null}
     </section> : null}

@@ -34,7 +34,7 @@ import {
   shareReaderFeedback,
 } from "./reader-feedback-io";
 import { READER_EMOTION_IDS, READER_FEEDBACK_LIMITS, type ReaderEmotionId } from "./reader-feedback-schema";
-import { hasContactInfo } from "./reader-feedback-text";
+import { CONTACT_MASK, hasContactInfo } from "./reader-feedback-text";
 
 const LIMITS = READER_FEEDBACK_LIMITS;
 /** 미리보기용 응답을 만들 때만 쓰는 자리 표시 값. 화면에는 이 값 대신 "저장할 때 정해져요" 안내를 보인다. */
@@ -90,7 +90,8 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
   const messageOf = (error: DraftError): string => {
     switch (error.field) {
       case "title": return bt("작품 이름을 적어 주세요.", "Enter the story title.");
-      case "episode": return bt(`회차는 1~${LIMITS.maxEpisode} 사이의 숫자로 적어 주세요.`, `Enter an episode number between 1 and ${LIMITS.maxEpisode}.`);
+      // 값은 {자리표시자}로 두고 formatI18nTemplate 로 채운다: bt() 에 값을 끼운 문자열을 넘기면 값마다 번역 키가 생긴다.
+      case "episode": return formatI18nTemplate(bt("회차는 1~{max} 사이의 숫자로 적어 주세요.", "Enter an episode number between 1 and {max}."), { max: LIMITS.maxEpisode });
       case "cut": return error.code === "required"
         ? bt("멈춘 컷 번호를 적어 주세요.", "Enter the cut number where you stopped.")
         : formatI18nTemplate(bt("컷 번호는 1~{limit} 사이의 숫자로 적어 주세요.", "Enter a cut number between 1 and {limit}."), { limit: cutLimit });
@@ -288,7 +289,7 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
           <div className="min-w-0 space-y-6">
             <fieldset className="min-w-0">
               <legend className="text-sm font-bold text-fg">
-                {bt(`느낀 감정 (최대 ${LIMITS.maxEmotions}개)`, `How it felt (up to ${LIMITS.maxEmotions})`)}
+                {formatI18nTemplate(bt("느낀 감정 (최대 {max}개)", "How it felt (up to {max})"), { max: LIMITS.maxEmotions })}
                 <span className="ml-2 text-xs font-normal text-fg-3" aria-live="polite">{draft.emotions.length}/{LIMITS.maxEmotions}</span>
               </legend>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -330,7 +331,13 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
             </div>
             {contactWarning ? (
               <p id={ids.contact} role="status" className="rounded-lg border border-warn/40 bg-warn/10 p-3 text-xs leading-5 text-fg">
-                {bt("이메일·전화번호처럼 보이는 내용은 파일에 담을 때 [연락처 가림]으로 바뀌거나 비워져요.", "Anything that looks like an email or phone number is masked as [contact hidden] or dropped when saved.")}
+                {formatI18nTemplate(
+                  bt(
+                    "이메일·전화번호처럼 보이는 내용은 파일에 담을 때 {mask}으로 바뀌거나 비워져요.",
+                    "Anything that looks like an email or phone number is replaced with {mask} (Korean for \u201Ccontact hidden\u201D) or dropped when saved.",
+                  ),
+                  { mask: CONTACT_MASK },
+                )}
               </p>
             ) : null}
           </div>

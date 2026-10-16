@@ -3,6 +3,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useI18n } from "@/shared/lib/i18n-core";
+
 import { ReaderFeedbackSummaryPanel } from "./ReaderFeedbackSummaryPanel";
 import { createExampleReaderFeedback } from "./reader-feedback-example";
 import { READER_FEEDBACK_HIDDEN_KEY } from "./reader-feedback-hidden";
@@ -535,6 +537,28 @@ describe("ReaderFeedbackSummaryPanel: 누른 단추가 사라져도 초점이 bo
       expect(scroller.getAttribute("role")).toBe("region");
       expect(screen.getByRole("region", { name: `${label} (좌우로 스크롤)` })).toBe(scroller);
     }
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 이름 없는 파일", () => {
+  const originalLanguage = useI18n.getState().lang;
+  afterEach(() => useI18n.setState({ lang: originalLanguage }));
+
+  it("파일 이름이 비면 현재 언어의 대체 이름으로 보인다", async () => {
+    renderPanel();
+    chooseFiles([jsonFile("   ", EXAMPLES.slice(0, 1))]);
+    await screen.findByText(/응답 1개 추가/u);
+    const results = screen.getByRole("heading", { level: 4, name: "가져오기 결과" }).parentElement!.parentElement!;
+    expect(within(results).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["(이름 없음) 응답 1개를 읽었어요."]);
+  });
+
+  it("영어 화면에서는 영어 대체 이름으로 보인다", async () => {
+    useI18n.setState({ lang: "en" });
+    renderPanel();
+    fireEvent.change(screen.getByLabelText(/Choose response files/u), { target: { files: [jsonFile("   ", EXAMPLES.slice(0, 1))] } });
+    await screen.findByText(/1 added/u);
+    const results = screen.getByRole("heading", { level: 4, name: "Import results" }).parentElement!.parentElement!;
+    expect(within(results).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["(no name) Read 1 responses."]);
   });
 });
 

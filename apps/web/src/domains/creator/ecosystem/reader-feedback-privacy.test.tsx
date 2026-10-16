@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { MemoryRouter } from "react-router-dom";
+import ts from "typescript";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DICT } from "@/shared/lib/i18n-core";
@@ -88,6 +89,48 @@ describe("독자 피드백 소스는 서버 전송·HTML 해석 없음 약속을
 
   it("localStorage 는 숨긴 의견 id 를 기억하는 요약 화면만 만진다", () => {
     expect(FEATURE_SOURCES.filter((source) => /\blocalStorage\b/u.test(source.text)).map((source) => source.name)).toEqual(["ReaderFeedbackSummaryPanel.tsx"]);
+  });
+});
+
+/**
+ * `bt(ko, en)` 는 넘긴 문자열 쌍을 번역 문구 사전에 올린다. 값(작품 이름·닉네임·의견·숫자)을 끼운 템플릿 문자열을 넘기면 값마다
+ * 새 문구가 등록되어, 독자가 쓴 글이 사전(외부 번역 서비스로 나갈 수 있는 곳)에 들어간다. 값은 `{이름}` 자리표시자로 두고
+ * `formatI18nTemplate` 로 번역 뒤에 채워야 한다. 호출 인자에 보간이 있는 템플릿 문자열·문자열 이어 붙이기가 있으면 찾아낸다.
+ */
+const COPY_FUNCTIONS: ReadonlySet<string> = new Set(["bt", "localize"]);
+
+function dynamicCopyCalls(fileName: string, text: string): string[] {
+  const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const isDynamic = (node: ts.Node): boolean =>
+    ts.isTemplateExpression(node)
+    || (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken)
+    || ts.forEachChild(node, (child) => (isDynamic(child) ? true : undefined)) === true;
+  const found: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && COPY_FUNCTIONS.has(node.expression.text) && node.arguments.some(isDynamic)) {
+      found.push(`${fileName}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return found;
+}
+
+describe("문구 쌍(bt)에는 값을 끼우지 않는다", () => {
+  it("검사기가 값이 끼는 호출을 실제로 찾아낸다(아무것도 못 찾아 통과하는 일이 없다)", () => {
+    const sample = [
+      "const a = bt(`회차는 ${max}`, `episode ${max}`);",
+      'const b = bt("고정 문구", "fixed" + suffix);',
+      'const c = localize(label.ko, `${label.en}!`);',
+      'const ok = formatI18nTemplate(bt("회차는 {max}", "episode {max}"), { max });',
+      "const fine = bt(LABELS[id].ko, LABELS[id].en);",
+    ].join("\n");
+    expect(dynamicCopyCalls("sample.tsx", sample)).toEqual(["sample.tsx:1", "sample.tsx:2", "sample.tsx:3"]);
+  });
+
+  it("이 기능의 소스는 bt()·localize() 인자에 템플릿 보간이나 문자열 이어 붙이기를 쓰지 않는다", () => {
+    const found = FEATURE_SOURCES.flatMap(({ name, text }) => dynamicCopyCalls(name, text));
+    expect(found, "값은 {이름} 자리표시자로 두고 formatI18nTemplate 로 채우세요(값마다 번역 키가 생기고, 독자가 쓴 글이 번역 사전에 들어갈 수 있습니다)").toEqual([]);
   });
 });
 

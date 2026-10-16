@@ -199,7 +199,7 @@ export function ReaderFeedbackSummaryPanel() {
             {state.reports.map((report) => (
               <li key={report.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2 text-sm first:border-t-0 first:pt-0">
                 <span className="min-w-0 [overflow-wrap:anywhere]">
-                  <strong className="text-fg">{report.name}</strong>{" "}
+                  <strong className="text-fg">{report.name || bt("(이름 없음)", "(no name)")}</strong>{" "}
                   {report.status === "ok"
                     ? <span className="text-fg-2">{formatI18nTemplate(bt("응답 {n}개를 읽었어요.", "Read {n} responses."), { n: report.accepted })}</span>
                     : <span className="font-bold text-bad">{failureText(bt, report)}</span>}

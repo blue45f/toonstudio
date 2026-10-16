@@ -13,7 +13,7 @@ export type ImportFailureCode = ReaderFeedbackParseErrorCode | "read-failed";
 
 export interface ImportReport {
   readonly id: number;
-  /** 화면에 보일 이름. 길이를 자르고 제어 문자를 지운 값이다. */
+  /** 화면에 보일 이름. 길이를 자르고 보이지 않는 문자를 지운 값이다. 비면 빈 문자열(화면이 대체 문구를 보인다). */
   readonly name: string;
   readonly source: "file" | "paste" | "example";
   readonly status: "ok" | "failed";
@@ -36,8 +36,12 @@ export interface ImportOutcome {
   readonly incoming: readonly ReaderFeedbackResponse[];
 }
 
+/**
+ * 화면에 보일 이름. 정리 뒤 비면 빈 문자열이다 — 이 모듈은 현재 언어를 모르므로 "(이름 없음)" 같은 문구를 박아 두지 않고,
+ * 화면이 번역된 대체 문구를 보인다.
+ */
 function displayName(name: string): string {
-  return cleanFeedbackText(name, 80) || "(이름 없음)";
+  return cleanFeedbackText(name, 80);
 }
 
 /** 한 소스를 읽고 검증한다. 어떤 실패도 예외가 아니라 보고서로 돌려준다. */

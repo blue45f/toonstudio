@@ -54,7 +54,7 @@ describe("importReaderFeedbackSources", () => {
     expect(outcome.reports[1]).toMatchObject({ source: "paste", code: "not-json", retryable: false });
   });
 
-  it("화면에 보일 이름은 제어 문자를 지우고 80자로 줄이며 비면 대체 이름을 쓴다", async () => {
+  it("화면에 보일 이름은 제어 문자를 지우고 80자로 줄이며, 비면 빈 문자열이라 화면이 번역된 대체 이름을 쓴다", async () => {
     const outcome = await importReaderFeedbackSources([
       source(`가${String.fromCharCode(0)}나${String.fromCodePoint(0x202e)}다.json`, valid(1)),
       source("긴".repeat(200), valid(1, 1)),
@@ -62,7 +62,10 @@ describe("importReaderFeedbackSources", () => {
     ], 1);
     expect(outcome.reports[0]!.name).toBe("가나다.json");
     expect(Array.from(outcome.reports[1]!.name)).toHaveLength(80);
-    expect(outcome.reports[2]!.name).toBe("(이름 없음)");
+    // 모듈은 번역을 모르므로 한국어 문구를 박아 두지 않고 빈 값을 돌려준다(화면이 현재 언어로 "(이름 없음)"을 보인다).
+    expect(outcome.reports[2]!.name).toBe("");
+    const invisible = await importReaderFeedbackSources([source(`${String.fromCodePoint(0x2800, 0x3164)}`, valid(1))], 1);
+    expect(invisible.reports[0]!.name).toBe("");
   });
 
   it("너무 큰 소스는 내용을 읽지 않는다", async () => {
