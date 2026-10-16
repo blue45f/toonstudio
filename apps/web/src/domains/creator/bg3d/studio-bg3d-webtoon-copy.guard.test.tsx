@@ -7,13 +7,8 @@ import { fileURLToPath } from "node:url";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  findToneViolations,
-  hasErrorActionGuidance,
-  isFailureCopy,
-  registersInFlow,
-  violatesErrorPattern,
-} from "@/shared/language";
+import { hasErrorActionGuidance, isFailureCopy, violatesErrorPattern } from "@/shared/language/error-pattern";
+import { findToneViolations, registersInFlow } from "@/shared/language/tone-policy";
 
 import { StudioBg3dLensShiftControls } from "./StudioBg3dLensShiftControls";
 import { StudioBg3dRoomBuilderPanel } from "./StudioBg3dRoomBuilderPanel";
