@@ -64,6 +64,15 @@ describe("ReaderFeedbackForm", () => {
     expect(within(screen.getByRole("group", { name: /느낀 감정/u })).getAllByRole("checkbox")).toHaveLength(10);
   });
 
+  it("제목 수준은 놓이는 곳에 맞춰 고를 수 있다(기본은 h3)", () => {
+    const { unmount } = render(<ReaderFeedbackForm target={KNOWN} />);
+    expect(screen.getByRole("heading", { level: 3, name: "회차 피드백 남기기" })).toBeTruthy();
+    unmount();
+    render(<ReaderFeedbackForm headingLevel={2} />);
+    expect(screen.getByRole("heading", { level: 2, name: "회차 피드백 남기기" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { level: 3, name: "회차 피드백 남기기" })).toBeNull();
+  });
+
   it("아무것도 답하지 않고 저장하면 안내하고 의견 칸으로 초점을 옮기며 파일을 만들지 않는다", () => {
     render(<ReaderFeedbackForm target={KNOWN} />);
     save();

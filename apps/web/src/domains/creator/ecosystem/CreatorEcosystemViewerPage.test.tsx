@@ -141,7 +141,34 @@ describe("CreatorEcosystemViewerPage: 회차 피드백", () => {
   });
 });
 
+/** 문서 순서대로 제목 수준이 한 단계보다 크게 건너뛰지 않는지(h1 → h3 같은 건너뜀이 없는지). */
+function headingLevels(): number[] {
+  return Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6"), (heading) => Number(heading.tagName.slice(1)));
+}
+function expectNoHeadingSkips() {
+  const levels = headingLevels();
+  expect(levels[0]).toBe(1);
+  levels.forEach((level, index) => {
+    if (index > 0) expect(level - levels[index - 1]!, `제목 수준 ${levels.join(" → ")}`).toBeLessThanOrEqual(1);
+  });
+}
+
 describe("CreatorEcosystemViewerPage: 랜드마크", () => {
+  it("패키지 없이 남기는 폼의 제목은 페이지 제목(h1) 바로 아래 수준이라 제목 수준을 건너뛰지 않는다", () => {
+    renderViewer();
+    fireEvent.click(screen.getByRole("button", { name: "패키지 없이 회차 피드백만 남기기" }));
+    expect(screen.getByRole("heading", { level: 2, name: "회차 피드백 남기기" })).toBeTruthy();
+    expectNoHeadingSkips();
+  });
+
+  it("패키지를 열면 폼의 제목은 패키지 제목(h2) 아래 수준이다", async () => {
+    renderViewer();
+    openPackage(REVIEW_PACKAGE);
+    await screen.findByRole("heading", { level: 2, name: "새 연재작 1화" });
+    expect(screen.getByRole("heading", { level: 3, name: "회차 피드백 남기기" })).toBeTruthy();
+    expectNoHeadingSkips();
+  });
+
   it("피드백 영역에 이름이 겹치는 region 이 중첩되지 않는다(폼의 region 하나만 남는다)", async () => {
     renderViewer();
     openPackage(REVIEW_PACKAGE);

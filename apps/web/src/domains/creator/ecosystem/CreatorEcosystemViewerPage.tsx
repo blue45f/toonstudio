@@ -134,7 +134,7 @@ export function CreatorEcosystemViewerPage() {
       <button type="button" className={BUTTON} aria-expanded={manualFeedback} aria-controls="ecosystem-manual-feedback" onClick={() => setManualFeedback(open => !open)}>
         <MessageSquareText size={16} aria-hidden /> {bt("패키지 없이 회차 피드백만 남기기", "Leave episode feedback without a package")}
       </button>
-      {manualFeedback ? <div id="ecosystem-manual-feedback" className="mt-4"><ReaderFeedbackForm /></div> : null}
+      {manualFeedback ? <div id="ecosystem-manual-feedback" className="mt-4"><ReaderFeedbackForm headingLevel={2} /></div> : null}
     </div> : null}
     {loaded?.kind === "process" ? <section className="mt-8">
       <div className="max-w-3xl"><h2 className="text-2xl font-black text-fg">{loaded.value.title}</h2><p className="mt-2 text-sm leading-6 text-fg-2">{loaded.value.credit}</p></div>

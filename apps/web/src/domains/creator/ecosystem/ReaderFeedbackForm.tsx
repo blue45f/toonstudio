@@ -52,13 +52,19 @@ type FormStatus =
 export interface ReaderFeedbackFormProps {
   /** 패키지·작품에서 이미 아는 대상. 없으면 독자가 작품 이름을 직접 적는다. */
   readonly target?: KnownFeedbackTarget | null;
+  /**
+   * 폼 제목의 수준. 폼이 놓인 곳의 바로 위 제목보다 한 단계 아래여야 제목 수준을 건너뛰지 않는다.
+   * 기본 3은 패키지 제목(h2) 아래, 패키지를 열지 않은 화면처럼 페이지 제목(h1) 바로 아래에 놓이면 2.
+   */
+  readonly headingLevel?: 2 | 3;
 }
 
 function newResponseId(): string {
   return crypto.randomUUID();
 }
 
-export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
+export function ReaderFeedbackForm({ target = null, headingLevel = 3 }: ReaderFeedbackFormProps) {
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   const bt = useBilingual("ReaderFeedback");
   const uid = useId();
   const [draft, setDraft] = useState<ReaderFeedbackDraft>(() => createEmptyDraft());
@@ -182,7 +188,7 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
 
   return (
     <section aria-labelledby={`${uid}-heading`} className="rounded-2xl border border-line bg-card p-4 sm:p-6">
-      <h3 id={`${uid}-heading`} className="text-lg font-black text-fg">{bt("회차 피드백 남기기", "Leave feedback on an episode")}</h3>
+      <Heading id={`${uid}-heading`} className="text-lg font-black text-fg">{bt("회차 피드백 남기기", "Leave feedback on an episode")}</Heading>
       <p className="mt-1 max-w-3xl text-sm leading-6 text-fg-2">
         {bt(
           "재미·이해·멈춘 곳·감정을 가볍게 남기면 작가가 여러 독자의 응답을 모아 봅니다. 서버로 보내지 않고, 만들어진 파일을 작가에게 직접 전달해요.",
