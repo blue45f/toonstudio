@@ -9,6 +9,7 @@ import {
   type StudioBg3dAssetMetadata,
   type StudioBg3dAssetRightsReceipt,
 } from "./studio-bg3d-asset-metadata";
+import { resolveStudioBg3dAssetPatchValue } from "./studio-bg3d-asset-rights-merge";
 import {
   getStudioBg3dLibrariesAuthority,
   StudioBg3dLibrariesAuthorityError,
@@ -610,7 +611,7 @@ async function updateMetadataV12(
       const nextRecord = normalizeStudioBg3dAssetMetadata({
         ...existing,
         updatedAt: Math.max(existing.updatedAt, now),
-        [patchKey]: validatedPatch[patchKey],
+        [patchKey]: resolveStudioBg3dAssetPatchValue(existing, patchKey, patchValue, validatedPatch),
       });
       if (!nextRecord || nextRecord.contentHash !== hash) throw storeError("invalid-metadata");
       const next = canonicalMetadataV12Manifest({
@@ -641,7 +642,6 @@ async function updateMetadata(
   const hash = canonicalHash(contentHash);
   const now = validateMutationNow(options);
   const validatedPatch = validationFixture({ [patchKey]: patchValue });
-  const safeValue = validatedPatch[patchKey];
   throwIfAborted(options.signal);
 
   return withObjectStore("readwrite", options, async (store) => {
@@ -651,7 +651,7 @@ async function updateMetadata(
     const next = normalizeStudioBg3dAssetMetadata({
       ...current,
       updatedAt: Math.max(current.updatedAt, now),
-      [patchKey]: safeValue,
+      [patchKey]: resolveStudioBg3dAssetPatchValue(current, patchKey, patchValue, validatedPatch),
     });
     if (!next || next.contentHash !== hash) throw storeError("invalid-metadata");
     await requestResult(store.put(next), options.signal);
