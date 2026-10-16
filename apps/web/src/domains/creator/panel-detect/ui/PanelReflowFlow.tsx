@@ -1,6 +1,6 @@
 "use no memo";
-// 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
-// React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
+// 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t("…")
+// 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
 import { useEffect, useEffectEvent, useReducer, useRef, useState, type ReactElement } from "react";
 import { useNavigate } from "react-router-dom";
@@ -22,10 +22,11 @@ import { PanelNotice } from "./PanelNotice";
 import { PanelReflowStep } from "./PanelReflowStep";
 import { DEFAULT_REFLOW_SETTINGS, type ReflowSettings } from "./panel-reflow-outcome";
 import { PanelReviewStep } from "./PanelReviewStep";
-import { bi, detectErrorText } from "./panel-import-copy";
+import { detectErrorText } from "./panel-import-copy";
 import { usePanelImportEnvironment } from "./panel-import-env";
 import { PANEL_HEADING, PANEL_SKELETON, PANEL_SURFACE } from "./panel-import-styles";
 import { usePanelJob, type JobState } from "./use-panel-job";
+import { usePanelT } from "./use-panel-t";
 import { useStepHeadingFocus } from "./use-step-heading-focus";
 
 import type { PanelReflowPlan } from "../panel-reflow-plan";
@@ -106,19 +107,20 @@ interface PanelDetectStepProps {
 
 /** 2단계 앞부분 — 컷을 찾는 중 / 취소·실패 뒤 다시 시도하거나 직접 그리기. 나타날 때마다 제목으로 포커스를 옮긴다. */
 function PanelDetectStep({ state, onCancel, onRetry, onDrawManually }: PanelDetectStepProps): ReactElement {
+  const t = usePanelT();
   const headingRef = useStepHeadingFocus<HTMLHeadingElement>();
   return (
     <section className={PANEL_SURFACE} aria-labelledby="panel-detect-title">
       <h3 ref={headingRef} id="panel-detect-title" className={PANEL_HEADING} data-panel-step-heading="detect" tabIndex={-1}>
-        {bi("2. 컷 찾는 중", "2. Finding panels")}
+        {t("panelImport.detect.title")}
       </h3>
       {state.status === "running" || state.status === "idle" ? (
         <div className="mt-3 grid gap-3">
           <PanelJobStatus
             state={state.status === "idle" ? { status: "running", progress: null } : state}
-            runningLabel={bi("여백을 따라 컷 경계를 찾는 중이에요…", "Looking for panel borders along the gutters…")}
+            runningLabel={t("panelImport.detect.running")}
             cancelledLabel=""
-            errorText={detectErrorText}
+            errorText={(error) => detectErrorText(t, error)}
             onCancel={onCancel}
             onRetry={onRetry}
           />
@@ -132,17 +134,17 @@ function PanelDetectStep({ state, onCancel, onRetry, onDrawManually }: PanelDete
           <PanelJobStatus
             state={state}
             runningLabel=""
-            cancelledLabel={bi("컷 찾기를 취소했어요. 다시 시도하거나 컷을 직접 그릴 수 있어요.", "Detection was cancelled. Try again or draw the panels yourself.")}
-            errorText={detectErrorText}
+            cancelledLabel={t("panelImport.detect.cancelled")}
+            errorText={(error) => detectErrorText(t, error)}
             onCancel={onCancel}
             onRetry={onRetry}
           />
           <PanelNotice tone="info" live="off" actions={
             <button type="button" onClick={onDrawManually} className={buttonClass({ variant: "outline", size: "sm" })}>
-              {bi("컷 직접 그리기", "Draw panels manually")}
+              {t("panelImport.detect.drawManually")}
             </button>
           }>
-            {bi("자동으로 찾지 못해도 이미지 위에 컷을 직접 그려 같은 방식으로 이어갈 수 있어요.", "Even without automatic detection you can draw panels on the image and continue the same way.")}
+            {t("panelImport.detect.drawManuallyHint")}
           </PanelNotice>
         </div>
       )}
@@ -160,12 +162,13 @@ interface PanelReflowWorkspaceProps {
 }
 
 function PanelReflowWorkspace({ ready, previewUrl, result, sensitivity, detectBusy, onRerun }: PanelReflowWorkspaceProps): ReactElement {
+  const t = usePanelT();
   const env = usePanelImportEnvironment();
   const navigate = useNavigate();
   const [editor, dispatch] = useReducer(panelEditorReducer, result, (initial) => createPanelEditorState(createPanelEditState(initial)));
   const [view, setView] = useState<"review" | "reflow">("review");
   const [settings, setSettings] = useState<ReflowSettings>(DEFAULT_REFLOW_SETTINGS);
-  const fallbackTitle = bi("가져온 원고", "Imported manuscript");
+  const fallbackTitle = t("panelImport.doc.defaultTitle");
   const [title, setTitle] = useState(() => panelStudioTitleFromFileName(ready.source.fileName, fallbackTitle));
   const [confirmedSignature, setConfirmedSignature] = useState<string | null>(null);
   const [pendingSensitivity, setPendingSensitivity] = useState(sensitivity);
@@ -196,19 +199,19 @@ function PanelReflowWorkspace({ ready, previewUrl, result, sensitivity, detectBu
       const gutter = result.gutter.kind === "none" ? estimateGutter(raster, PANEL_DETECT_LIMITS.defaultGutterTolerance) : result.gutter;
       const tight = tightenRectToContent(raster, gutter, panel);
       if (!tight) {
-        dispatch({ type: "edit", apply: (current) => current, announce: bi("이 영역에서 내용을 찾지 못해 그대로 뒀어요.", "No content found in this area; left unchanged.") });
+        dispatch({ type: "edit", apply: (current) => current, announce: t("panelImport.review.announce.tightenNone") });
         return;
       }
       // 계산한 사각형 그대로인 컷에만 적용한다. 그 사이 한 번 더 바뀌었다면 덮어쓰지 않는다.
       const unchanged = (current: PanelEditState): boolean => current.panels.some((candidate) =>
         candidate.id === id && candidate.x === panel.x && candidate.y === panel.y && candidate.width === panel.width && candidate.height === panel.height);
-      dispatch({ type: "edit", apply: (current) => (unchanged(current) ? setPanelRect(current, id, tight) : current), announce: bi("컷을 내용에 맞췄어요.", "Panel fitted to its content.") });
+      dispatch({ type: "edit", apply: (current) => (unchanged(current) ? setPanelRect(current, id, tight) : current), announce: t("panelImport.review.announce.tightened") });
     });
   };
 
   const labels = {
-    cut: (order: number) => bi(`컷 ${order}`, `Panel ${order}`),
-    frame: (order: number) => bi(`컷 ${order} 프레임`, `Panel ${order} frame`),
+    cut: (order: number) => t("panelImport.doc.cutName", { order }),
+    frame: (order: number) => t("panelImport.doc.frameName", { order }),
   };
 
   const insert = (plan: PanelReflowPlan): void => {
@@ -285,7 +288,7 @@ function PanelReflowWorkspace({ ready, previewUrl, result, sensitivity, detectBu
         />
       )}
       {tightenJob.state.status === "error" ? (
-        <PanelNotice tone="bad">{detectErrorText(tightenJob.state.error)}</PanelNotice>
+        <PanelNotice tone="bad">{detectErrorText(t, tightenJob.state.error)}</PanelNotice>
       ) : null}
     </div>
   );

@@ -1,20 +1,19 @@
 "use no memo";
-// 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
-// React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
+// 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t("…")
+// 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { PanelCardFlow } from "./PanelCardFlow";
 import { PanelNotice } from "./PanelNotice";
 import { PanelReflowFlow } from "./PanelReflowFlow";
 import { PanelSourceStep, type PanelSourceReady } from "./PanelSourceStep";
-import { bi } from "./panel-import-copy";
 import { PanelImportEnvironmentContext, resolvePanelImportEnvironment, type PanelImportEnvironment } from "./panel-import-env";
+import { usePanelT } from "./use-panel-t";
 
 export type PanelImportMode = "reflow" | "cards";
 
@@ -35,7 +34,7 @@ interface Session {
  * 원고 이미지와 미리보기 주소는 여기서 한 번 만들고, 다른 원고를 고르거나 닫을 때 해제한다.
  */
 export function PanelImportWorkbench({ mode, onClose, environment }: PanelImportWorkbenchProps): ReactElement {
-  useBilingualI18nRevision();
+  const t = usePanelT();
   const env = useMemo(() => resolvePanelImportEnvironment(environment), [environment]);
   const [session, setSession] = useState<Session | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
@@ -69,17 +68,17 @@ export function PanelImportWorkbench({ mode, onClose, environment }: PanelImport
       <div className="grid gap-4" data-panel-workbench={mode}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-black text-fg">
-            {mode === "reflow" ? bi("컷 자동 감지 · 세로 재배열", "Auto panel detection · vertical rearrange") : bi("카드뉴스 슬라이스 (4:5)", "Card-news slicer (4:5)")}
+            {mode === "reflow" ? t("panelImport.mode.reflow.title") : t("panelImport.mode.cards.title")}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {session ? (
               <button type="button" onClick={() => setConfirmingReset(true)} className={buttonClass({ variant: "outline", size: "sm" })}>
-                {bi("다른 원고 고르기", "Choose another manuscript")}
+                {t("panelImport.workbench.chooseAnother")}
               </button>
             ) : null}
-            <button type="button" onClick={onClose} aria-label={bi("작업대 닫기", "Close the workbench")} className={cn(buttonClass({ variant: "quiet", size: "sm" }))}>
+            <button type="button" onClick={onClose} aria-label={t("panelImport.workbench.closeLabel")} className={cn(buttonClass({ variant: "quiet", size: "sm" }))}>
               <X size={15} aria-hidden="true" />
-              {bi("닫기", "Close")}
+              {t("panelImport.common.close")}
             </button>
           </div>
         </div>
@@ -90,12 +89,12 @@ export function PanelImportWorkbench({ mode, onClose, environment }: PanelImport
             live="alert"
             actions={
               <>
-                <button type="button" onClick={reset} className={buttonClass({ size: "sm" })}>{bi("처음으로", "Start over")}</button>
-                <button type="button" onClick={() => setConfirmingReset(false)} className={buttonClass({ variant: "outline", size: "sm" })}>{bi("계속 작업", "Keep working")}</button>
+                <button type="button" onClick={reset} className={buttonClass({ size: "sm" })}>{t("panelImport.workbench.startOver")}</button>
+                <button type="button" onClick={() => setConfirmingReset(false)} className={buttonClass({ variant: "outline", size: "sm" })}>{t("panelImport.workbench.keepWorking")}</button>
               </>
             }
           >
-            {bi("지금까지 고친 컷과 설정이 사라져요. 원본 파일은 그대로예요. 처음으로 돌아갈까요?", "The panels and settings you changed will be lost. Your original file is untouched. Start over?")}
+            {t("panelImport.workbench.confirmReset")}
           </PanelNotice>
         ) : null}
 

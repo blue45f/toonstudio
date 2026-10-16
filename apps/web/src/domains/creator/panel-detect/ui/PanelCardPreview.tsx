@@ -1,11 +1,11 @@
 "use no memo";
-// 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
-// React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
+// 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t("…")
+// 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
 import { regionBackgroundStyle } from "../panel-canvas-geometry";
 import { cardContentOffset } from "../panel-card-render";
 
-import { bi } from "./panel-import-copy";
+import { usePanelT } from "./use-panel-t";
 
 import type { ReactElement } from "react";
 import type { CardAlignment, CardSlice, CardSlicePlan } from "../panel-card-slice-types";
@@ -22,16 +22,14 @@ interface PanelCardPreviewProps {
  * 캔버스를 쓰지 않으므로 카드 수가 많아도 가볍다.
  */
 export function PanelCardPreview({ plan, card, imageUrl, alignment }: PanelCardPreviewProps): ReactElement {
+  const t = usePanelT();
   const offset = cardContentOffset(plan, card, alignment);
   return (
     <div
       className="relative w-full overflow-hidden rounded-lg border border-line"
       style={{ aspectRatio: `${plan.cardWidth} / ${plan.cardHeight}`, backgroundColor: plan.background }}
       role="img"
-      aria-label={bi(
-        `카드 ${card.index + 1} 미리보기 (원본 ${card.y0}~${card.y1}행)`,
-        `Card ${card.index + 1} preview (source rows ${card.y0}–${card.y1})`,
-      )}
+      aria-label={t("panelImport.cards.previewAria", { number: card.index + 1, from: card.y0, to: card.y1 })}
     >
       <div
         className="absolute inset-x-0"

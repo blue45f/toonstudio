@@ -1,6 +1,6 @@
 "use no memo";
-// 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
-// React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
+// 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t("…")
+// 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
 import { useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactElement } from "react";
 
@@ -20,8 +20,9 @@ import {
 import { moveRect, resizeRectEdge, type EditablePanel, type PanelEdge } from "../panel-detect-edit";
 import type { PanelEditTool } from "../panel-editor-state";
 
-import { bi, confidenceLabel } from "./panel-import-copy";
+import { confidenceLabel, type PanelT } from "./panel-import-copy";
 import { PANEL_FOCUS_RING } from "./panel-import-styles";
+import { usePanelT } from "./use-panel-t";
 
 import type { IgnoredFragment, PanelRect, UndetectableRegion } from "../panel-detect-types";
 
@@ -95,13 +96,10 @@ function levelOf(panel: EditablePanel): "high" | "medium" | "low" {
   return confidence >= 0.75 ? "high" : confidence >= 0.5 ? "medium" : "low";
 }
 
-function panelLabel(panel: EditablePanel, order: number): string {
-  const where = bi(
-    `위치 x ${panel.x}, y ${panel.y}, 크기 ${panel.width}×${panel.height} 픽셀`,
-    `at x ${panel.x}, y ${panel.y}, size ${panel.width}×${panel.height} px`,
-  );
-  const quality = panel.origin === "user" ? bi("직접 만든 컷", "added by you") : confidenceLabel(levelOf(panel));
-  return bi(`컷 ${order}, ${quality}, ${where}`, `Panel ${order}, ${quality}, ${where}`);
+function panelLabel(t: PanelT, panel: EditablePanel, order: number): string {
+  const where = t("panelImport.canvas.where", { x: panel.x, y: panel.y, width: panel.width, height: panel.height });
+  const quality = panel.origin === "user" ? t("panelImport.canvas.byYou") : confidenceLabel(t, levelOf(panel));
+  return t("panelImport.canvas.panelLabel", { order, quality, where });
 }
 
 /**
@@ -109,6 +107,7 @@ function panelLabel(panel: EditablePanel, order: number): string {
  * 이미지 픽셀 좌표를 상자 대비 퍼센트로 놓아 표시 크기와 무관하게 맞는다. 마우스·터치(끌기)와 키보드(방향키)를 모두 지원한다.
  */
 export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
+  const t = usePanelT();
   const { imageUrl, image, panels, selectedId, tool, undetectable, ignored, zoom } = props;
   const helpId = useId().replace(/:/gu, "");
   const rootRef = useRef<HTMLDivElement>(null);
@@ -243,18 +242,15 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
       // 컷이 있으면 컷이 포커스를 받으므로 이 영역은 포커스 순서에 끼어들지 않는다.
       role={hasFocusableChild ? undefined : "region"}
       tabIndex={hasFocusableChild ? undefined : 0}
-      aria-label={hasFocusableChild ? undefined : bi("컷 편집 영역 (방향키로 스크롤)", "Panel editing area (scroll with the arrow keys)")}
+      aria-label={hasFocusableChild ? undefined : t("panelImport.canvas.scrollArea")}
     >
       <p id={helpId} className="sr-only">
-        {bi(
-          "컷을 선택한 뒤 방향키로 옮기고, Shift+방향키는 1픽셀, Alt+방향키는 크기, Delete 는 삭제, Esc 는 선택 해제입니다.",
-          "Select a panel, then use the arrow keys to move it. Shift+arrows move 1 pixel, Alt+arrows resize, Delete removes it and Esc clears the selection.",
-        )}
+        {t("panelImport.canvas.help")}
       </p>
       <div
         ref={rootRef}
         role="group"
-        aria-label={bi("컷 편집 캔버스", "Panel editing canvas")}
+        aria-label={t("panelImport.canvas.group")}
         className={cn("relative select-none", tool === "draw" && "cursor-crosshair", splitting && "cursor-copy")}
         style={{ width: `${zoom * 100}%`, aspectRatio: `${image.width} / ${image.height}`, touchAction: tool === "draw" ? "none" : undefined }}
         onPointerDown={startDraw}
@@ -265,7 +261,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
       >
         <img
           src={imageUrl}
-          alt={bi("가져온 원고 이미지", "Imported manuscript image")}
+          alt={t("panelImport.canvas.imageAlt")}
           draggable={false}
           className="pointer-events-none absolute inset-0 h-full w-full select-none object-fill"
         />
@@ -276,7 +272,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
             type="button"
             style={{ ...percentRectStyle(fragment, image), ...OVERLAY_STILL }}
             onClick={() => props.onAdopt(fragment)}
-            aria-label={bi(`제외된 조각 ${index + 1} (${fragment.width}×${fragment.height}). 눌러 컷으로 쓰기`, `Left-out fragment ${index + 1} (${fragment.width}×${fragment.height}). Press to use it as a panel`)}
+            aria-label={t("panelImport.canvas.ignoredFragment", { number: index + 1, width: fragment.width, height: fragment.height })}
             className={cn("absolute border-2 border-dotted border-fg-3 bg-fg-3/10 hover:bg-fg-3/25", PANEL_FOCUS_RING, tool !== "select" && "pointer-events-none")}
           />
         ))}
@@ -286,11 +282,11 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
             type="button"
             style={{ ...percentRectStyle(region, image), ...OVERLAY_STILL, backgroundImage: UNDETECTABLE_HATCH }}
             onClick={() => props.onAdopt(region)}
-            aria-label={bi(`자동으로 나눌 수 없는 영역 ${index + 1} (${region.width}×${region.height}). 눌러 한 컷으로 쓰기`, `Region ${index + 1} could not be split automatically (${region.width}×${region.height}). Press to use it as one panel`)}
+            aria-label={t("panelImport.canvas.undetectableRegion", { number: index + 1, width: region.width, height: region.height })}
             className={cn("absolute border-2 border-warn", PANEL_FOCUS_RING, tool !== "select" && "pointer-events-none")}
           >
             <span className="absolute left-0 top-0 max-w-full truncate rounded-br-md bg-canvas/85 px-1.5 py-0.5 text-[0.65rem] font-bold text-warn">
-              {bi("검출 불가", "Not detectable")}
+              {t("panelImport.canvas.undetectableBadge")}
             </span>
           </button>
         ))}
@@ -304,7 +300,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
               role="button"
               tabIndex={0}
               aria-pressed={selected}
-              aria-label={panelLabel(panel, index + 1)}
+              aria-label={panelLabel(t, panel, index + 1)}
               aria-describedby={helpId}
               data-panel-id={panel.id}
               data-selected={selected ? "true" : undefined}
@@ -347,7 +343,7 @@ export function PanelCanvasEditor(props: PanelCanvasEditorProps): ReactElement {
             type="button"
             tabIndex={-1}
             onClick={(event) => splitAt(pointOf(event))}
-            aria-label={bi("나눌 컷 위를 눌러 분할선 놓기", "Press on a panel to place the dividing line")}
+            aria-label={t("panelImport.canvas.splitHint")}
             style={OVERLAY_STILL}
             className="absolute inset-0 z-40 cursor-copy"
           />

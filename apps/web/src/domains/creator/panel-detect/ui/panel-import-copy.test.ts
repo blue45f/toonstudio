@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -34,7 +35,9 @@ import {
   renderErrorText,
   sensitivityLabel,
   sourceErrorText,
+  type PanelT,
 } from "./panel-import-copy";
+import { usePanelT } from "./use-panel-t";
 
 const HANGUL = /[ㄱ-ㆎ가-힣]/u;
 
@@ -103,10 +106,15 @@ function expectReadable(text: string, minimum: number): void {
   expect(text).not.toMatch(/undefined|NaN|\[object|\{\}|null/u);
 }
 
-function inBothLanguages(check: (language: "ko" | "en") => void): void {
+/** 지금 언어의 해소 함수. 화면 컴포넌트와 같은 훅(usePanelT)으로 얻는다(사전 등록 포함). */
+function currentT(): PanelT {
+  return renderHook(() => usePanelT()).result.current;
+}
+
+function inBothLanguages(check: (language: "ko" | "en", t: PanelT) => void): void {
   for (const language of ["ko", "en"] as const) {
     useI18n.getState().setLang(language);
-    check(language);
+    check(language, currentT());
   }
 }
 
@@ -125,113 +133,115 @@ afterEach(() => { useI18n.getState().setLang("ko"); });
 
 describe("컷 가져오기 문구 — 모든 코드가 한글·영문으로 풀린다", () => {
   it("원고 읽기 오류", () => {
-    inBothLanguages((language) => {
+    inBothLanguages((language, t) => {
       for (const code of SOURCE_CODES) {
         const detail: Readonly<Record<string, number>> = code === "too-many-pixels" ? { megapixels: 16, pixels: 40_000_000 } : {};
-        expectLanguage(sourceErrorText(new PanelSourceError(code, detail)), language);
+        expectLanguage(sourceErrorText(t, new PanelSourceError(code, detail)), language);
       }
       // 권리 확인 없이 다시 시도한 경우는 일반 오류가 아니라 무엇을 해야 하는지 알려 준다.
-      const notConfirmed = sourceErrorText(new PanelImportRightsError("not-confirmed", "x"));
+      const notConfirmed = sourceErrorText(t, new PanelImportRightsError("not-confirmed", "x"));
       expectLanguage(notConfirmed, language);
-      expect(notConfirmed).not.toBe(sourceErrorText(new Error("boom")));
+      expect(notConfirmed).not.toBe(sourceErrorText(t, new Error("boom")));
     });
   });
 
   it("해상도 한도 문구에는 실제 값과 한도가 들어간다", () => {
     const error = new PanelSourceError("too-many-pixels", { megapixels: 16, pixels: 40_000_000 });
-    expect(sourceErrorText(error)).toContain("40");
-    expect(sourceErrorText(error)).toContain("16");
+    expect(sourceErrorText(currentT(), error)).toContain("40");
+    expect(sourceErrorText(currentT(), error)).toContain("16");
     useI18n.getState().setLang("en");
-    expect(sourceErrorText(error)).toMatch(/40 MP.*16 MP/u);
+    expect(sourceErrorText(currentT(), error)).toMatch(/40 MP.*16 MP/u);
   });
 
   it("컷 감지 오류와 경고", () => {
-    inBothLanguages((language) => {
-      for (const code of DETECT_CODES) expectLanguage(detectErrorText(new PanelDetectError(code)), language);
-      for (const code of PANEL_WARNINGS) expectLanguage(panelWarningText(code), language);
-      for (const code of DETECT_WARNINGS) expectLanguage(detectWarningText(code), language);
-      for (const value of READING_ORDERS) expectLanguage(readingOrderLabel(value), language, 2);
-      for (const value of SENSITIVITIES) expectLanguage(sensitivityLabel(value), language, 2);
-      for (const value of CONFIDENCES) expectLanguage(confidenceLabel(value), language, 2);
+    inBothLanguages((language, t) => {
+      for (const code of DETECT_CODES) expectLanguage(detectErrorText(t, new PanelDetectError(code)), language);
+      for (const code of PANEL_WARNINGS) expectLanguage(panelWarningText(t, code), language);
+      for (const code of DETECT_WARNINGS) expectLanguage(detectWarningText(t, code), language);
+      for (const value of READING_ORDERS) expectLanguage(readingOrderLabel(t, value), language, 2);
+      for (const value of SENSITIVITIES) expectLanguage(sensitivityLabel(t, value), language, 2);
+      for (const value of CONFIDENCES) expectLanguage(confidenceLabel(t, value), language, 2);
     });
   });
 
   it("감지 단계에서 원고 읽기 오류가 와도 같은 문구로 풀린다", () => {
-    expect(detectErrorText(new PanelSourceError("decode-failed"))).toBe(sourceErrorText(new PanelSourceError("decode-failed")));
+    const t = currentT();
+    expect(detectErrorText(t, new PanelSourceError("decode-failed"))).toBe(sourceErrorText(t, new PanelSourceError("decode-failed")));
   });
 
   it("재배열·삽입 오류", () => {
-    inBothLanguages((language) => {
-      for (const code of REFLOW_CODES) expectLanguage(renderErrorText(new PanelReflowError(code, "내부 메시지")), language);
+    inBothLanguages((language, t) => {
+      for (const code of REFLOW_CODES) expectLanguage(renderErrorText(t, new PanelReflowError(code, "내부 메시지")), language);
       for (const code of RENDER_CODES) {
-        expectLanguage(renderErrorText(new PanelRenderError(code, 0)), language);
-        expectLanguage(renderErrorText(new PanelRenderError(code, 3)), language);
+        expectLanguage(renderErrorText(t, new PanelRenderError(code, 0)), language);
+        expectLanguage(renderErrorText(t, new PanelRenderError(code, 3)), language);
       }
-      expectLanguage(renderErrorText(new PanelStudioHandoffError("too-large", "x")), language);
-      expectLanguage(renderErrorText(new PanelStudioHandoffError("register-failed", "x")), language);
-      expectLanguage(renderErrorText(new PanelStudioDocumentError("invalid-title", "x")), language);
-      expectLanguage(renderErrorText(new PanelImportRightsError("not-confirmed", "x")), language);
+      expectLanguage(renderErrorText(t, new PanelStudioHandoffError("too-large", "x")), language);
+      expectLanguage(renderErrorText(t, new PanelStudioHandoffError("register-failed", "x")), language);
+      expectLanguage(renderErrorText(t, new PanelStudioDocumentError("invalid-title", "x")), language);
+      expectLanguage(renderErrorText(t, new PanelImportRightsError("not-confirmed", "x")), language);
     });
   });
 
   it("몇 번째 이미지인지 알면 문구에 번호가 들어간다", () => {
-    expect(renderErrorText(new PanelRenderError("encode-failed", 3))).toContain("3");
-    expect(renderErrorText(new PanelRenderError("too-large-for-studio", 7))).toContain("7");
+    expect(renderErrorText(currentT(), new PanelRenderError("encode-failed", 3))).toContain("3");
+    expect(renderErrorText(currentT(), new PanelRenderError("too-large-for-studio", 7))).toContain("7");
     useI18n.getState().setLang("en");
-    expect(renderErrorText(new PanelRenderError("surface-unavailable", 2))).toContain("Image 2");
+    expect(renderErrorText(currentT(), new PanelRenderError("surface-unavailable", 2))).toContain("Image 2");
   });
 
   it("원본과 달라지는 점(손실 보고) 항목", () => {
     const values = { percent: 12, count: 3, maxScale: 2, minScale: 0.5, pairs: 2, offset: 15, pages: 4 };
-    inBothLanguages((language) => {
+    inBothLanguages((language, t) => {
       for (const code of LOSS_CODES) {
-        const text = lossItemText({ code, severity: "info", values });
+        const text = lossItemText(t, { code, severity: "info", values });
         expectLanguage(text, language);
       }
     });
   });
 
   it("손실 보고의 수치가 문구에 들어간다", () => {
-    expect(lossItemText({ code: "outside-cuts-dropped", severity: "warning", values: { percent: 37 } })).toContain("37%");
-    expect(lossItemText({ code: "split-into-pages", severity: "info", values: { pages: 5 } })).toContain("5개");
+    expect(lossItemText(currentT(), { code: "outside-cuts-dropped", severity: "warning", values: { percent: 37 } })).toContain("37%");
+    expect(lossItemText(currentT(), { code: "split-into-pages", severity: "info", values: { pages: 5 } })).toContain("5개");
     useI18n.getState().setLang("en");
-    expect(lossItemText({ code: "centered-in-document", severity: "info", values: { offset: 15 } })).toContain("15px");
+    expect(lossItemText(currentT(), { code: "centered-in-document", severity: "info", values: { offset: 15 } })).toContain("15px");
   });
 
   it("카드뉴스 오류·경고·절단 종류", () => {
-    inBothLanguages((language) => {
-      for (const code of CARD_CODES) expectLanguage(cardErrorText(new CardSliceError(code)), language);
+    inBothLanguages((language, t) => {
+      for (const code of CARD_CODES) expectLanguage(cardErrorText(t, new CardSliceError(code)), language);
       for (const code of ["no-cards", "mismatch", "archive-failed", "cancelled"] as const) {
-        expectLanguage(cardErrorText(new CardBundleError(code, "x")), language);
+        expectLanguage(cardErrorText(t, new CardBundleError(code, "x")), language);
       }
-      expectLanguage(cardErrorText(new PanelRenderError("encode-failed", 2)), language);
-      expectLanguage(cardErrorText(new PanelSourceError("decode-failed")), language);
-      for (const code of CARD_WARNINGS) expectLanguage(cardWarningText(code, 1.5), language);
-      for (const kind of CUT_KINDS) expectLanguage(cutKindText(kind), language, 2);
+      expectLanguage(cardErrorText(t, new PanelRenderError("encode-failed", 2)), language);
+      expectLanguage(cardErrorText(t, new PanelSourceError("decode-failed")), language);
+      for (const code of CARD_WARNINGS) expectLanguage(cardWarningText(t, code, 1.5), language);
+      for (const kind of CUT_KINDS) expectLanguage(cutKindText(t, kind), language, 2);
     });
   });
 
   it("배율은 소수 둘째 자리까지만 보인다", () => {
-    expect(cardWarningText("upscaled", 1.333333)).toContain("1.33");
-    expect(cardWarningText("downscaled", 0.5)).toContain("0.5");
+    expect(cardWarningText(currentT(), "upscaled", 1.333333)).toContain("1.33");
+    expect(cardWarningText(currentT(), "downscaled", 0.5)).toContain("0.5");
   });
 
   it("알 수 없는 오류는 어느 화면에서나 같은 일반 안내가 된다", () => {
-    inBothLanguages((language) => {
+    inBothLanguages((language, t) => {
       for (const unknown of [new Error("boom"), "문자열", null, undefined, 42, {}]) {
-        expectLanguage(sourceErrorText(unknown), language);
-        expectLanguage(detectErrorText(unknown), language);
-        expectLanguage(renderErrorText(unknown), language);
-        expectLanguage(cardErrorText(unknown), language);
+        expectLanguage(sourceErrorText(t, unknown), language);
+        expectLanguage(detectErrorText(t, unknown), language);
+        expectLanguage(renderErrorText(t, unknown), language);
+        expectLanguage(cardErrorText(t, unknown), language);
       }
     });
     // 내부 오류 메시지(영문·스택)가 화면 문구로 새지 않는다.
-    expect(renderErrorText(new Error("TypeError: secret internal detail"))).not.toContain("secret");
+    expect(renderErrorText(currentT(), new Error("TypeError: secret internal detail"))).not.toContain("secret");
   });
 
   it("한글 문구에는 내부 오류 코드 이름이 새지 않는다", () => {
     useI18n.getState().setLang("ko");
-    for (const code of DETECT_CODES) expect(detectErrorText(new PanelDetectError(code))).not.toContain(code);
-    for (const code of CARD_CODES) expect(cardErrorText(new CardSliceError(code))).not.toContain(code);
+    const t = currentT();
+    for (const code of DETECT_CODES) expect(detectErrorText(t, new PanelDetectError(code))).not.toContain(code);
+    for (const code of CARD_CODES) expect(cardErrorText(t, new CardSliceError(code))).not.toContain(code);
   });
 });

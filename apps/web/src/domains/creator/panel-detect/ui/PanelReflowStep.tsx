@@ -1,6 +1,6 @@
 "use no memo";
-// 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
-// React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
+// 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t("…")
+// 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
 import { ArrowLeft, Download, FileInput } from "lucide-react";
 import { useMemo, type ReactElement } from "react";
@@ -23,8 +23,9 @@ import { PanelJobStatus } from "./PanelJobStatus";
 import { PanelNotice } from "./PanelNotice";
 import { PanelReflowPreview } from "./PanelReflowPreview";
 import { computeReflowOutcome, type ReflowSettings } from "./panel-reflow-outcome";
-import { bi, lossItemText, renderErrorText } from "./panel-import-copy";
+import { formatPanelNumber, lossItemText, renderErrorText } from "./panel-import-copy";
 import { PANEL_FOCUS_RING, PANEL_HEADING, PANEL_HINT, PANEL_INPUT, PANEL_LABEL, PANEL_SUBSURFACE, PANEL_SURFACE, panelChipClass } from "./panel-import-styles";
+import { usePanelT } from "./use-panel-t";
 import { useStepHeadingFocus } from "./use-step-heading-focus";
 
 import type { EditablePanel } from "../panel-detect-edit";
@@ -54,6 +55,7 @@ interface PanelReflowStepProps {
 
 /** 3단계 — 폭 규격·여백·배율을 고르고, 결과 미리보기와 손실 보고를 확인한 뒤 Studio 문서로 삽입하거나 PNG 묶음으로 받는다. */
 export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
+  const t = usePanelT();
   const { settings, result } = props;
   const headingRef = useStepHeadingFocus<HTMLHeadingElement>();
   const outcome = useMemo(() => computeReflowOutcome(props.panels, settings, result, props.image), [props.panels, settings, result, props.image]);
@@ -73,19 +75,19 @@ export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
   return (
     <section className={PANEL_SURFACE} aria-labelledby="panel-reflow-title">
       <h3 ref={headingRef} id="panel-reflow-title" className={PANEL_HEADING} data-panel-step-heading="reflow" tabIndex={-1}>
-        {bi("3. 세로 스트립으로 재배열", "3. Rearrange into a vertical strip")}
+        {t("panelImport.reflow.title")}
       </h3>
       <p className={cn(PANEL_HINT, "mt-1")}>
-        {bi("컷을 읽기 순서대로 같은 폭의 세로 한 줄로 늘어놓아요. 컷은 원본에서 새 이미지로 다시 그려요.", "Panels are laid out in reading order as one vertical strip of equal width. Each panel is redrawn from the original as a new image.")}
+        {t("panelImport.reflow.intro")}
       </p>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <div className="grid min-w-0 content-start gap-3">
           <fieldset className={cn(PANEL_SUBSURFACE, "grid gap-3")} disabled={busy}>
-            <legend className="px-1 text-xs font-bold text-fg-2">{bi("규격", "Format")}</legend>
+            <legend className="px-1 text-xs font-bold text-fg-2">{t("panelImport.reflow.format")}</legend>
             <div>
-              <p className={PANEL_LABEL}>{bi("폭", "Width")}</p>
-              <div className="mt-1 flex flex-wrap gap-1.5" role="radiogroup" aria-label={bi("폭 규격", "Width preset")}>
+              <p className={PANEL_LABEL}>{t("panelImport.reflow.width")}</p>
+              <div className="mt-1 flex flex-wrap gap-1.5" role="radiogroup" aria-label={t("panelImport.reflow.widthGroup")}>
                 {PANEL_REFLOW_WIDTHS.map((width) => (
                   <label key={width} className={panelChipClass(settings.targetWidth === width)}>
                     <input type="radio" name="panel-reflow-width" className="sr-only" checked={settings.targetWidth === width} onChange={() => patch({ targetWidth: width })} />
@@ -94,12 +96,12 @@ export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
                 ))}
               </div>
               <p className={cn(PANEL_HINT, "mt-1")}>
-                {bi("720px 는 Studio 문서 폭이에요. 690px 는 양옆에 15px 씩 여백을 두고 가운데에 놓아요.", "720 px is the Studio page width. 690 px is centred with 15 px on each side.")}
+                {t("panelImport.reflow.widthHint")}
               </p>
             </div>
             <div>
               <label className="block">
-                <span className={PANEL_LABEL}>{bi("컷 사이 여백(px)", "Gap between panels (px)")}</span>
+                <span className={PANEL_LABEL}>{t("panelImport.reflow.gap")}</span>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -117,26 +119,26 @@ export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {GAP_PRESETS.map((gap) => (
                   <button key={gap} type="button" aria-pressed={settings.gap === gap} onClick={() => patch({ gap })} className={panelChipClass(settings.gap === gap)}>
-                    {gap === PANEL_REFLOW_STANDARD_GAP ? bi(`표준 ${gap}`, `Standard ${gap}`) : gap}
+                    {gap === PANEL_REFLOW_STANDARD_GAP ? t("panelImport.reflow.gapStandard", { gap }) : gap}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <p className={PANEL_LABEL}>{bi("배율", "Scaling")}</p>
-              <div className="mt-1 grid gap-1.5" role="radiogroup" aria-label={bi("배율 방식", "Scaling mode")}>
+              <p className={PANEL_LABEL}>{t("panelImport.reflow.scale")}</p>
+              <div className="mt-1 grid gap-1.5" role="radiogroup" aria-label={t("panelImport.reflow.scaleGroup")}>
                 <label className={cn(panelChipClass(settings.scaleMode === "fit-width"), "justify-start text-left")}>
                   <input type="radio" name="panel-reflow-scale" className="sr-only" checked={settings.scaleMode === "fit-width"} onChange={() => patch({ scaleMode: "fit-width" })} />
-                  {bi("폭에 맞춤 — 모든 컷을 같은 폭으로", "Fit width — every panel the same width")}
+                  {t("panelImport.reflow.fitWidth")}
                 </label>
                 <label className={cn(panelChipClass(settings.scaleMode === "keep-size"), "justify-start text-left")}>
                   <input type="radio" name="panel-reflow-scale" className="sr-only" checked={settings.scaleMode === "keep-size"} onChange={() => patch({ scaleMode: "keep-size" })} />
-                  {bi("원본 크기 유지 — 키우지 않고 가운데에", "Keep size — never enlarge, centred")}
+                  {t("panelImport.reflow.keepSize")}
                 </label>
               </div>
             </div>
             <label className="block">
-              <span className={PANEL_LABEL}>{bi("Studio 문서 제목", "Studio document title")}</span>
+              <span className={PANEL_LABEL}>{t("panelImport.reflow.docTitle")}</span>
               <input type="text" value={props.title} maxLength={200} onChange={(event) => props.onTitle(event.currentTarget.value)} aria-invalid={!titleValid} className={cn(PANEL_INPUT, "mt-1")} />
             </label>
           </fieldset>
@@ -144,16 +146,17 @@ export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
           {outcome.ok ? (
             <div className={cn(PANEL_SUBSURFACE, "grid gap-2")}>
               <p className="text-sm font-black text-fg" role="status">
-                {bi(
-                  `페이지 ${outcome.plan.pages.length}개 · 컷 ${outcome.plan.placements.length}개 · 총 높이 ${outcome.plan.totalHeight.toLocaleString("ko-KR")}px`,
-                  `${outcome.plan.pages.length} page(s) · ${outcome.plan.placements.length} panel(s) · ${outcome.plan.totalHeight.toLocaleString("en-US")} px tall`,
-                )}
+                {t("panelImport.reflow.summary", {
+                  pages: outcome.plan.pages.length,
+                  panels: outcome.plan.placements.length,
+                  height: formatPanelNumber(outcome.plan.totalHeight),
+                })}
               </p>
-              <h4 className="text-xs font-black text-fg-2">{bi("원본과 달라지는 점", "What changes from the original")}</h4>
+              <h4 className="text-xs font-black text-fg-2">{t("panelImport.reflow.changesTitle")}</h4>
               <ul className="grid gap-1.5">
                 {outcome.loss.map((item) => (
                   <li key={item.code}>
-                    <PanelNotice tone={item.severity === "warning" ? "warn" : "info"} live="off">{lossItemText(item)}</PanelNotice>
+                    <PanelNotice tone={item.severity === "warning" ? "warn" : "info"} live="off">{lossItemText(t, item)}</PanelNotice>
                   </li>
                 ))}
               </ul>
@@ -166,12 +169,12 @@ export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
                     onChange={(event) => props.onConfirm(event.currentTarget.checked ? outcome.signature : null)}
                     className={cn("mt-0.5 size-5 shrink-0 accent-accent", PANEL_FOCUS_RING)}
                   />
-                  <span>{bi("위 변경 사항을 확인했고, 이대로 새 이미지를 만드는 데 동의해요.", "I have read these changes and agree to create the new images this way.")}</span>
+                  <span>{t("panelImport.reflow.confirm")}</span>
                 </label>
               ) : null}
             </div>
           ) : (
-            <PanelNotice tone="bad">{renderErrorText(outcome.error)}</PanelNotice>
+            <PanelNotice tone="bad">{renderErrorText(t, outcome.error)}</PanelNotice>
           )}
         </div>
 
@@ -180,7 +183,7 @@ export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
             <PanelReflowPreview plan={plan} imageUrl={props.imageUrl} image={props.image} background={background} />
           ) : (
             <div className="grid min-h-40 place-items-center rounded-xl border border-dashed border-line px-4 text-center text-sm text-fg-3">
-              {bi("설정을 고치면 미리보기가 나타나요.", "Adjust the settings to see a preview.")}
+              {t("panelImport.reflow.previewEmpty")}
             </div>
           )}
         </div>
@@ -188,48 +191,45 @@ export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
 
       {oversizedCuts.length > 0 ? (
         <PanelNotice tone="bad" className="mt-3">
-          {bi(
-            `${oversizedCuts.join(", ")}번 컷이 이 브라우저에서 한 장으로 만들 수 있는 크기를 넘어요. 폭 규격이나 배율을 바꾸거나 그 컷을 나눠 주세요.`,
-            `Panel(s) ${oversizedCuts.join(", ")} are larger than this browser can create. Change the width or scaling, or split them.`,
-          )}
+          {t("panelImport.reflow.oversized", { cuts: oversizedCuts.join(", ") })}
         </PanelNotice>
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button type="button" onClick={props.onBack} disabled={busy} className={buttonClass({ variant: "outline", size: "lg" })}>
           <ArrowLeft size={16} aria-hidden="true" />
-          {bi("컷 고치기로", "Back to panels")}
+          {t("panelImport.reflow.back")}
         </button>
         <button type="button" disabled={!insertReady || plan === null} onClick={() => { if (plan) props.onInsert(plan); }} className={buttonClass({ size: "lg" })}>
           <FileInput size={16} aria-hidden="true" />
-          {bi("Studio 문서로 삽입", "Insert into a Studio document")}
+          {t("panelImport.reflow.insert")}
         </button>
         <button type="button" disabled={!downloadReady || plan === null || oversizedPages.length > 0} onClick={() => { if (plan) props.onDownload(plan); }} className={buttonClass({ variant: "outline", size: "lg" })}>
           <Download size={16} aria-hidden="true" />
-          {bi("PNG 묶음(ZIP) 내려받기", "Download PNG bundle (ZIP)")}
+          {t("panelImport.reflow.download")}
         </button>
       </div>
-      {!confirmed && needsConfirm ? <p className={cn(PANEL_HINT, "mt-2")}>{bi("변경 사항 확인에 체크하면 버튼이 열려요.", "Tick the confirmation to enable the buttons.")}</p> : null}
-      {oversizedPages.length > 0 && plan ? <p className={cn(PANEL_HINT, "mt-2")}>{bi("페이지가 너무 길어 PNG 묶음은 만들 수 없어요(Studio 문서로 삽입은 가능해요).", "A page is too tall for the PNG bundle (inserting into a Studio document still works).")}</p> : null}
+      {!confirmed && needsConfirm ? <p className={cn(PANEL_HINT, "mt-2")}>{t("panelImport.reflow.confirmHint")}</p> : null}
+      {oversizedPages.length > 0 && plan ? <p className={cn(PANEL_HINT, "mt-2")}>{t("panelImport.reflow.pageTooLong")}</p> : null}
 
       <div className="mt-3 grid gap-2">
         <PanelJobStatus
           state={props.insertJob.state}
-          runningLabel={bi("컷 이미지를 만들어 문서에 담는 중…", "Creating panel images and building the document…")}
-          cancelledLabel={bi("삽입을 취소했어요. 원본과 컷 설정은 그대로예요.", "Insert cancelled. Your original and panel settings are unchanged.")}
-          errorText={renderErrorText}
+          runningLabel={t("panelImport.reflow.inserting")}
+          cancelledLabel={t("panelImport.reflow.insertCancelled")}
+          errorText={(error) => renderErrorText(t, error)}
           onCancel={props.insertJob.cancel}
           onRetry={() => { if (plan) props.onInsert(plan); }}
-          success={bi("Studio 편집기로 이동하고 있어요…", "Opening the Studio editor…")}
+          success={t("panelImport.reflow.inserted")}
         />
         <PanelJobStatus
           state={props.downloadJob.state}
-          runningLabel={bi("페이지 이미지를 만들어 ZIP 으로 묶는 중…", "Creating page images and zipping them…")}
-          cancelledLabel={bi("내려받기를 취소했어요.", "Download cancelled.")}
-          errorText={renderErrorText}
+          runningLabel={t("panelImport.reflow.downloading")}
+          cancelledLabel={t("panelImport.reflow.downloadCancelled")}
+          errorText={(error) => renderErrorText(t, error)}
           onCancel={props.downloadJob.cancel}
           onRetry={() => { if (plan) props.onDownload(plan); }}
-          success={bi("ZIP 을 내려받았어요. 브라우저의 다운로드 목록을 확인해 주세요.", "The ZIP was downloaded. Check your browser’s downloads.")}
+          success={t("panelImport.reflow.downloaded")}
         />
       </div>
     </section>

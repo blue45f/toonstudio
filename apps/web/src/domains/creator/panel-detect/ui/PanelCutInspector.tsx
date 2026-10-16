@@ -1,13 +1,14 @@
 "use no memo";
-// 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
-// React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
+// 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t("…")
+// 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
 import { Scissors, Wand2 } from "lucide-react";
 
 import { cn } from "@/shared/lib/utils";
 
-import { bi, panelWarningText } from "./panel-import-copy";
+import { panelWarningText } from "./panel-import-copy";
 import { PANEL_HINT, PANEL_INPUT, PANEL_LABEL, PANEL_SMALL_BUTTON, PANEL_SUBSURFACE } from "./panel-import-styles";
+import { usePanelT } from "./use-panel-t";
 
 import type { KeyboardEvent, ReactElement } from "react";
 import type { EditablePanel } from "../panel-detect-edit";
@@ -25,20 +26,21 @@ interface PanelCutInspectorProps {
 
 type Field = "x" | "y" | "width" | "height";
 
-const FIELDS: ReadonlyArray<{ readonly key: Field; readonly ko: string; readonly en: string }> = [
-  { key: "x", ko: "X (왼쪽)", en: "X (left)" },
-  { key: "y", ko: "Y (위)", en: "Y (top)" },
-  { key: "width", ko: "너비", en: "Width" },
-  { key: "height", ko: "높이", en: "Height" },
+const FIELDS: ReadonlyArray<{ readonly key: Field; readonly labelKey: string }> = [
+  { key: "x", labelKey: "panelImport.inspector.field.x" },
+  { key: "y", labelKey: "panelImport.inspector.field.y" },
+  { key: "width", labelKey: "panelImport.inspector.field.width" },
+  { key: "height", labelKey: "panelImport.inspector.field.height" },
 ];
 
 /** 선택한 컷의 위치·크기를 숫자로 고치고, 내용에 맞추거나 선 하나로 나눈다. 끌기가 어려운 환경의 키보드 대안이기도 하다. */
 export function PanelCutInspector(props: PanelCutInspectorProps): ReactElement {
+  const t = usePanelT();
   const { panel, order } = props;
   if (!panel) {
     return (
       <p className={cn(PANEL_HINT, PANEL_SUBSURFACE)}>
-        {bi("컷을 선택하면 위치와 크기를 숫자로 고치거나 선 하나로 나눌 수 있어요.", "Select a panel to edit its position and size numerically, or split it with a line.")}
+        {t("panelImport.inspector.empty")}
       </p>
     );
   }
@@ -63,19 +65,19 @@ export function PanelCutInspector(props: PanelCutInspectorProps): ReactElement {
 
   return (
     <div className={cn(PANEL_SUBSURFACE, "grid gap-3")}>
-      <p className="text-sm font-black text-fg">{bi(`${order}번 컷 정보`, `Panel ${order}`)}</p>
+      <p className="text-sm font-black text-fg">{t("panelImport.inspector.title", { order })}</p>
       {/* 값이 바뀌면(끌기·되돌리기) 입력칸을 새 값으로 다시 만든다 — 상태 복제 없이 항상 현재 컷과 일치한다. */}
       <div key={`${panel.id}:${panel.x}:${panel.y}:${panel.width}:${panel.height}`} className="grid grid-cols-2 gap-2">
         {FIELDS.map((field) => (
           <label key={field.key} className="block">
-            <span className={PANEL_LABEL}>{bi(field.ko, field.en)}</span>
+            <span className={PANEL_LABEL}>{t(field.labelKey)}</span>
             <input
               type="number"
               inputMode="numeric"
               min={field.key === "width" || field.key === "height" ? 8 : 0}
               step={1}
               defaultValue={panel[field.key]}
-              aria-label={bi(`${order}번 컷 ${field.ko} (픽셀)`, `Panel ${order} ${field.en} (px)`)}
+              aria-label={t("panelImport.inspector.fieldAria", { order, field: t(field.labelKey) })}
               onBlur={(event) => commit(field.key, event.currentTarget)}
               onKeyDown={(event) => onKey(event, field.key)}
               className={cn(PANEL_INPUT, "mt-1")}
@@ -83,33 +85,33 @@ export function PanelCutInspector(props: PanelCutInspectorProps): ReactElement {
           </label>
         ))}
       </div>
-      <p className={PANEL_HINT}>{bi("숫자를 고친 뒤 Enter 를 누르거나 다른 곳을 누르면 적용돼요. 단위는 원본 이미지 픽셀이에요.", "Press Enter or leave the field to apply. Units are source-image pixels.")}</p>
+      <p className={PANEL_HINT}>{t("panelImport.inspector.hint")}</p>
 
       {panel.warnings.length > 0 ? (
         <ul className="grid gap-1 text-xs text-warn">
-          {panel.warnings.map((warning) => <li key={warning}>{panelWarningText(warning)}</li>)}
+          {panel.warnings.map((warning) => <li key={warning}>{panelWarningText(t, warning)}</li>)}
         </ul>
       ) : null}
 
       <div className="flex flex-wrap gap-2">
         <button type="button" disabled={props.busy} onClick={() => props.onTighten(panel.id)} className={PANEL_SMALL_BUTTON}>
           <Wand2 size={14} aria-hidden="true" />
-          {props.busy ? bi("맞추는 중…", "Fitting…") : bi("내용에 맞추기", "Fit to content")}
+          {props.busy ? t("panelImport.inspector.fitting") : t("panelImport.inspector.fit")}
         </button>
         <button type="button" onClick={() => props.onSplit(panel.id, "horizontal", center("horizontal"))} className={PANEL_SMALL_BUTTON}>
           <Scissors size={14} aria-hidden="true" />
-          {bi("가로선으로 나누기", "Split horizontally")}
+          {t("panelImport.tool.splitHorizontal")}
         </button>
         <button type="button" onClick={() => props.onSplit(panel.id, "vertical", center("vertical"))} className={PANEL_SMALL_BUTTON}>
           <Scissors size={14} className="rotate-90" aria-hidden="true" />
-          {bi("세로선으로 나누기", "Split vertically")}
+          {t("panelImport.tool.splitVertical")}
         </button>
       </div>
 
       {props.suggestions.length > 0 ? (
         <div className="grid gap-2">
           <p className="text-xs font-bold text-fg-2">
-            {bi("여기서 나뉘었을 수 있어요", "This panel may be two panels")}
+            {t("panelImport.inspector.suggestTitle")}
           </p>
           {props.suggestions.map((suggestion) => (
             <button
@@ -118,9 +120,7 @@ export function PanelCutInspector(props: PanelCutInspectorProps): ReactElement {
               onClick={() => props.onSplit(panel.id, suggestion.orientation, suggestion.position)}
               className={cn(PANEL_SMALL_BUTTON, "justify-start text-left")}
             >
-              {suggestion.orientation === "horizontal"
-                ? bi(`제안: 가로선(Y ${suggestion.position})에서 나누기`, `Suggestion: split at horizontal line (Y ${suggestion.position})`)
-                : bi(`제안: 세로선(X ${suggestion.position})에서 나누기`, `Suggestion: split at vertical line (X ${suggestion.position})`)}
+              {t(suggestion.orientation === "horizontal" ? "panelImport.inspector.suggestHorizontal" : "panelImport.inspector.suggestVertical", { position: suggestion.position })}
             </button>
           ))}
         </div>

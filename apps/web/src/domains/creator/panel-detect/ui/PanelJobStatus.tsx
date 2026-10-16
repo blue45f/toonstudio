@@ -1,13 +1,13 @@
 "use no memo";
-// 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
-// React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
+// 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t("…")
+// 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import { PanelNotice } from "./PanelNotice";
-import { bi } from "./panel-import-copy";
 import { PANEL_SKELETON } from "./panel-import-styles";
+import { usePanelT } from "./use-panel-t";
 
 import type { ReactElement, ReactNode } from "react";
 import type { JobState } from "./use-panel-job";
@@ -30,6 +30,7 @@ interface PanelJobStatusProps {
  * 로딩은 스피너 대신 스켈레톤과 진행률 막대로 보여 주고, 모션 감소 설정에서는 정지한다.
  */
 export function PanelJobStatus(props: PanelJobStatusProps): ReactElement | null {
+  const t = usePanelT();
   const { state } = props;
   if (state.status === "idle") return null;
   if (state.status === "running") {
@@ -41,7 +42,7 @@ export function PanelJobStatus(props: PanelJobStatusProps): ReactElement | null 
           live="status"
           actions={
             <button type="button" onClick={props.onCancel} className={buttonClass({ variant: "outline", size: "sm" })}>
-              {bi("취소", "Cancel")}
+              {t("panelImport.common.cancel")}
             </button>
           }
         >
@@ -61,7 +62,7 @@ export function PanelJobStatus(props: PanelJobStatusProps): ReactElement | null 
       <PanelNotice
         tone="warn"
         className={props.className}
-        actions={<button type="button" onClick={props.onRetry} className={buttonClass({ variant: "outline", size: "sm" })}>{bi("다시 시도", "Try again")}</button>}
+        actions={<button type="button" onClick={props.onRetry} className={buttonClass({ variant: "outline", size: "sm" })}>{t("panelImport.common.retry")}</button>}
       >
         {props.cancelledLabel}
       </PanelNotice>
@@ -72,7 +73,7 @@ export function PanelJobStatus(props: PanelJobStatusProps): ReactElement | null 
       <PanelNotice
         tone="bad"
         className={props.className}
-        actions={<button type="button" onClick={props.onRetry} className={buttonClass({ variant: "outline", size: "sm" })}>{bi("다시 시도", "Try again")}</button>}
+        actions={<button type="button" onClick={props.onRetry} className={buttonClass({ variant: "outline", size: "sm" })}>{t("panelImport.common.retry")}</button>}
       >
         {props.errorText(state.error)}
       </PanelNotice>

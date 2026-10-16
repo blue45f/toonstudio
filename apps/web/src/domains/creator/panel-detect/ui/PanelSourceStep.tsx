@@ -1,6 +1,6 @@
 "use no memo";
-// 문구가 전역 언어를 읽는 bi() 로 만들어져서, 언어를 바꾸면 열려 있는 화면도 바로 다시 그려야 한다.
-// React Compiler 가 상수 인자의 bi() 결과를 캐시하면 이전 언어가 남으므로 이 파일은 메모이제이션에서 뺀다(panel-import-bi.ts 참고).
+// 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t("…")
+// 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
 import { FileUp, Lock, ShieldCheck } from "lucide-react";
 import { useId, useRef, useState, type ChangeEvent, type ReactElement } from "react";
@@ -10,7 +10,6 @@ import { cn } from "@/shared/lib/utils";
 
 import {
   PANEL_IMPORT_NOTE_MAX_LENGTH,
-  PANEL_IMPORT_RIGHTS_STATEMENT_KO,
   PanelImportRightsError,
   createPanelImportRights,
   type PanelImportRights,
@@ -18,11 +17,12 @@ import {
 import { PANEL_IMPORT_LIMITS, type PanelSourceImage } from "../panel-source-image";
 
 import { PanelNotice } from "./PanelNotice";
-import { bi, sourceErrorText } from "./panel-import-copy";
+import { sourceErrorText } from "./panel-import-copy";
 import { usePanelImportEnvironment } from "./panel-import-env";
 import { PANEL_FOCUS_RING, PANEL_HEADING, PANEL_HINT, PANEL_INPUT, PANEL_LABEL, PANEL_SKELETON, PANEL_SURFACE } from "./panel-import-styles";
-import { useStepHeadingFocus } from "./use-step-heading-focus";
 import { usePanelJob } from "./use-panel-job";
+import { usePanelT } from "./use-panel-t";
+import { useStepHeadingFocus } from "./use-step-heading-focus";
 
 export interface PanelSourceReady {
   readonly source: PanelSourceImage;
@@ -44,6 +44,7 @@ const MAX_MB = PANEL_IMPORT_LIMITS.maxFileBytes / (1024 * 1024);
  * 이미지는 이 브라우저 안에서만 읽는다.
  */
 export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactElement {
+  const t = usePanelT();
   const env = usePanelImportEnvironment();
   const id = useId().replace(/:/gu, "");
   const headingRef = useStepHeadingFocus<HTMLHeadingElement>();
@@ -94,39 +95,34 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
   return (
     <section className={PANEL_SURFACE} aria-labelledby={`${id}-title`}>
       <h3 ref={headingRef} id={`${id}-title`} className={PANEL_HEADING} data-panel-step-heading="source" tabIndex={-1}>
-        {bi("1. 원고 권리 확인과 이미지 선택", "1. Confirm rights and choose the image")}
+        {t("panelImport.source.title")}
       </h3>
       <p className={cn(PANEL_HINT, "mt-1")}>
-        {mode === "reflow"
-          ? bi("스캔한 만화 페이지나 긴 웹툰 이미지 한 장을 골라 주세요. 컷을 찾아 세로 스트립으로 다시 배열해요.", "Choose one scanned comic page or a long webtoon image. Panels are detected and rearranged into a vertical strip.")
-          : bi("긴 세로 원고 이미지 한 장을 골라 주세요. 4:5(1080×1350) 카드로 나눠요. Studio 에서 내보낸 세로 이미지도 쓸 수 있어요.", "Choose one long vertical manuscript image. It is sliced into 4:5 (1080×1350) cards. A vertical image exported from Studio works too.")}
+        {mode === "reflow" ? t("panelImport.source.hint.reflow") : t("panelImport.source.hint.cards")}
       </p>
 
       <fieldset className="mt-4 rounded-xl border border-line bg-panel/55 p-3" disabled={busy || state.status === "success"}>
-        <legend className="px-1 text-xs font-bold text-fg-2">{bi("권리 확인 (필수)", "Rights confirmation (required)")}</legend>
+        <legend className="px-1 text-xs font-bold text-fg-2">{t("panelImport.source.rights.legend")}</legend>
         <label className="flex min-h-11 cursor-pointer items-start gap-2.5 text-sm font-semibold text-fg">
           <input
             type="checkbox"
             checked={confirmed}
             onChange={(event) => setConfirmed(event.currentTarget.checked)}
             className={cn("mt-0.5 size-5 shrink-0 accent-accent", PANEL_FOCUS_RING)}
-            data-autofocus="true"
           />
-          <span>
-            {bi(PANEL_IMPORT_RIGHTS_STATEMENT_KO, "I own this manuscript or have permission to use it")}
-          </span>
+          <span>{t("panelImport.source.rights.statement")}</span>
         </label>
         <p className={cn(PANEL_HINT, "mt-1 pl-7")}>
-          {bi("스캔본이나 다른 사람의 원고는 저작권이 있을 수 있어요. 이 확인은 결과물에 기록으로 남고, 법률 자문이나 권리 인증이 아니에요.", "Scans or other people’s work may be copyrighted. This confirmation is recorded with the result; it is not legal advice or rights certification.")}
+          {t("panelImport.source.rights.notice")}
         </p>
         <label className="mt-3 block">
-          <span className={PANEL_LABEL}>{bi("출처·이용 허락 메모 (선택)", "Source / permission note (optional)")}</span>
+          <span className={PANEL_LABEL}>{t("panelImport.source.note.label")}</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.currentTarget.value)}
             maxLength={PANEL_IMPORT_NOTE_MAX_LENGTH}
             rows={2}
-            placeholder={bi("예: 직접 그린 원고 / 출판사 허락 2026-09-30", "e.g. drew it myself / publisher’s permission 2026-09-30")}
+            placeholder={t("panelImport.source.note.placeholder")}
             className={cn(PANEL_INPUT, "mt-1 py-2")}
           />
         </label>
@@ -141,7 +137,7 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
           aria-disabled={!confirmed || busy || state.status === "success"}
         >
           <FileUp size={17} aria-hidden="true" />
-          {bi("이미지 선택", "Choose image")}
+          {t("panelImport.source.choose")}
           <input
             type="file"
             accept={ACCEPT}
@@ -152,33 +148,23 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
           />
         </label>
         <p id={hintId} className={cn(PANEL_HINT, "min-w-0 flex-1")}>
-          {confirmed
-            ? bi(`PNG·JPG·WebP, 최대 ${MAX_MB}MB`, `PNG, JPG or WebP, up to ${MAX_MB} MB`)
-            : bi("먼저 위의 권리 확인에 체크해 주세요.", "First tick the rights confirmation above.")}
+          {confirmed ? t("panelImport.source.accept", { max: MAX_MB }) : t("panelImport.source.needRights")}
         </p>
       </div>
 
       <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-fg-2">
         <Lock size={13} aria-hidden="true" />
-        {mode === "reflow"
-          ? bi(
-            "이 도구는 이미지를 이 기기 안에서만 처리하고 서버로 보내지 않아요. 컷을 Studio 문서로 넣은 뒤의 저장과 동기화는 Studio 의 규칙을 따라요. 원본 파일은 바꾸지 않아요.",
-            "This tool processes the image only on this device and does not send it to a server. After the panels are inserted into a Studio document, Studio’s own saving and sync rules apply. The original file is not changed.",
-          )
-          : bi(
-            "이 도구는 이미지를 이 기기 안에서만 처리하고 서버로 보내지 않아요. 원본 파일은 바꾸지 않아요.",
-            "This tool processes the image only on this device and does not send it to a server. The original file is not changed.",
-          )}
+        {mode === "reflow" ? t("panelImport.source.privacy.reflow") : t("panelImport.source.privacy.cards")}
       </p>
 
       {state.status === "running" ? (
         <div className="mt-4" aria-busy="true">
           <PanelNotice tone="info" live="status" actions={
             <button type="button" onClick={job.cancel} className={buttonClass({ variant: "outline", size: "sm" })}>
-              {bi("취소", "Cancel")}
+              {t("panelImport.common.cancel")}
             </button>
           }>
-            {bi(`${pickedName ?? "이미지"} 읽는 중…`, `Reading ${pickedName ?? "the image"}…`)}
+            {pickedName === null ? t("panelImport.source.readingFallback") : t("panelImport.source.reading", { name: pickedName })}
           </PanelNotice>
           <div className="mt-3 grid gap-2" aria-hidden="true">
             <div className={cn(PANEL_SKELETON, "h-4 w-2/3")} />
@@ -189,7 +175,7 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
 
       {state.status === "cancelled" ? (
         <PanelNotice tone="warn" className="mt-4" live="status">
-          {bi("이미지 읽기를 취소했어요. 다시 골라 주세요.", "Reading was cancelled. Choose the image again.")}
+          {t("panelImport.source.cancelled")}
         </PanelNotice>
       ) : null}
 
@@ -201,13 +187,13 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
             <>
               {lastFileRef.current ? (
                 <button type="button" onClick={() => { if (lastFileRef.current) start(lastFileRef.current); }} className={buttonClass({ variant: "outline", size: "sm" })}>
-                  {bi("같은 파일로 다시 시도", "Retry this file")}
+                  {t("panelImport.source.retryFile")}
                 </button>
               ) : null}
             </>
           }
         >
-          {sourceErrorText(state.error)}
+          {sourceErrorText(t, state.error)}
         </PanelNotice>
       ) : null}
 
@@ -215,7 +201,7 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
         <PanelNotice tone="good" className="mt-4">
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck size={14} aria-hidden="true" />
-            {bi(`${state.value.source.fileName} (${state.value.source.width}×${state.value.source.height}px)를 읽었어요. 권리 확인이 기록됐어요.`, `Read ${state.value.source.fileName} (${state.value.source.width}×${state.value.source.height} px). Your rights confirmation is recorded.`)}
+            {t("panelImport.source.done", { name: state.value.source.fileName, width: state.value.source.width, height: state.value.source.height })}
           </span>
         </PanelNotice>
       ) : null}
