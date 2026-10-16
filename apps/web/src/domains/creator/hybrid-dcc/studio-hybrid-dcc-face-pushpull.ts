@@ -413,7 +413,8 @@ function rangeFromPlan(mesh: StudioEditableMesh, plan: PushPullPlan): StudioFace
   ): StudioFacePushPullRange["pullLimitedBy"] => {
     if (overlap) return "overlap";
     if (value === toolMax && wall > toolMax && ray > toolMax) return "tool";
-    return wall <= ray ? "wall" : "clearance";
+    // 벽 깊이와 광선 여유가 같은 값이면(박스 안쪽 당기기) 벽 붕괴로 안내한다.
+    return wall <= ray * (1 + 1e-9) + 1e-12 ? "wall" : "clearance";
   };
   return {
     method: plan.method,

@@ -349,6 +349,26 @@ export function insetStudioEditableMeshFacesByDistance(
   return insetFaces(mesh, faceIds, distance, "inset");
 }
 
+/** 선택한 면들을 안쪽 테두리로 줄일 수 있는 최대 거리. 가장 작은 면이 결정한다. */
+export function studioEditableMeshInsetRange(
+  mesh: StudioEditableMesh,
+  faceIds: readonly number[],
+): StudioFaceModelingResult<{ readonly maxDistance: number }> {
+  const context = createContext(mesh);
+  if (!context.ok) return context;
+  const selected = selectedLoops(context.value, faceIds);
+  if (!selected.ok) return selected;
+  let limit = Number.POSITIVE_INFINITY;
+  for (const loop of selected.value) {
+    const face = prepareConvexFace(context.value, loop);
+    if (!face.ok) return face;
+    limit = Math.min(limit, maxInwardOffsetDistance(face.value.polygon, context.value.minFeature));
+  }
+  return okStudioFaceModeling({
+    maxDistance: Number.isFinite(limit) ? limit : STUDIO_FACE_MODELING_LIMITS.maxDistance,
+  });
+}
+
 export type StudioOffsetDirection = "inward" | "outward";
 
 interface RegionBoundary {
