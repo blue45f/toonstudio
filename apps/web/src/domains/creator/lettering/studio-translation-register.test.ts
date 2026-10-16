@@ -70,6 +70,15 @@ describe("detectStudioTranslationRegister — 한국어 번역", () => {
     expect(compareStudioTranslationRegister("polite", detect("네.", "ko"))).toBeNull();
   });
 
+  it("대답말의 반복·늘임('네네'·'예예'·'네에')도 대답말이라 분류하지 않는다", () => {
+    for (const text of ["네네.", "예예!", "네에.", "아, 네네."]) {
+      expect(detect(text, "ko")).toMatchObject({ tier: null, classifiedSentences: 0, totalSentences: 1 });
+      expect(compareStudioTranslationRegister("polite", detect(text, "ko"))).toBeNull();
+    }
+    // 대답말이 아닌 어절은 그대로 읽는다.
+    expect(detect("그건 아니네.", "ko")).toMatchObject({ tier: "non-honorific", classifiedSentences: 1 });
+  });
+
   it("어미로 읽을 수 없는 문장은 분류하지 않고 센다", () => {
     expect(detect("민호 선배", "ko")).toMatchObject({ tier: null, classifiedSentences: 0, totalSentences: 1 });
     expect(detect("", "ko")).toMatchObject({ tier: null, classifiedSentences: 0, totalSentences: 0 });
@@ -92,6 +101,30 @@ describe("detectStudioTranslationRegister — 일본어 번역", () => {
 
   it("한자·감탄사로 끝나는 문장은 읽지 않는다", () => {
     expect(detect("先輩！", "ja")).toMatchObject({ tier: null, classifiedSentences: 0 });
+  });
+
+  it("대답말·정형 인사(はい・どうぞ・いってらっしゃい・ご心配なく)는 반말 어미로 오독하지 않는다", () => {
+    for (const text of [
+      "はい。",
+      "はい！",
+      "ええ。",
+      "いいえ。",
+      "どうぞ。",
+      "はい、どうぞ。",
+      "いってらっしゃい。",
+      "ご心配なく。",
+      "お構いなく。",
+    ]) {
+      expect(detect(text, "ja")).toMatchObject({ tier: null, classifiedSentences: 0, totalSentences: 1 });
+      // 존대 인물에게 불일치를 만들지 않는다.
+      expect(compareStudioTranslationRegister("polite", detect(text, "ja"))).toBeNull();
+    }
+  });
+
+  it("대답말 뒤에 서술이 이어지면 서술의 어미를 읽는다", () => {
+    expect(detect("はい、わかりました。", "ja")).toMatchObject({ tier: "honorific", level: "polite" });
+    expect(detect("ええ、いいよ。", "ja")).toMatchObject({ tier: "non-honorific" });
+    expect(detect("どうぞよろしくお願いします。", "ja")).toMatchObject({ tier: "honorific" });
   });
 });
 

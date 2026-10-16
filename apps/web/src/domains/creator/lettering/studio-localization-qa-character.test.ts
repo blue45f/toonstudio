@@ -286,6 +286,18 @@ describe("존대 단계 불일치 (Style)", () => {
     expect(run({ cues: [cue("c1", "行きます。")], cards, speakers: map, targetLocale: "ja" }).errors).toEqual([]);
   });
 
+  it("대답말·정형 인사는 존댓말 인물에게 불일치를 만들지 않는다 — 일본어 'はい。'·'どうぞ。'와 한국어 '네네.'", () => {
+    for (const text of ["はい。", "どうぞ。", "はい、どうぞ。", "ご心配なく。"]) {
+      const result = run({ cues: [cue("c1", text)], cards, speakers: map, targetLocale: "ja" });
+      expect(result.errors).toEqual([]);
+      expect(result.registerCheckedCueCount).toBe(0);
+      expect(result.registerUnclassifiedCueCount).toBe(1);
+    }
+    const korean = run({ cues: [cue("c1", "네네.")], cards, speakers: map, targetLocale: "ko" });
+    expect(korean.errors).toEqual([]);
+    expect(korean.registerCheckedCueCount).toBe(0);
+  });
+
   it("영어처럼 판정하지 않는 언어는 오류를 만들지 않고, 판정하지 않았다고 알린다", () => {
     const result = run({ cues: [cue("c1", "Gotta go. See ya.")], cards, speakers: map, targetLocale: "en" });
     expect(result.errors).toEqual([]);
@@ -401,5 +413,23 @@ describe("studioTranslationTextContains — 단어 경계 인식 부분 문자�
     expect(studioTranslationTextContains("선배를 만났다", "선배")).toBe(true);
     expect(studioTranslationTextContains("先輩が来た", "先輩")).toBe(true);
     expect(studioTranslationTextContains("anything", "")).toBe(false);
+  });
+
+  it("영어 복수형·소유형과 하이픈 표기는 같은 말로 보되, 다른 단어에는 걸리지 않는다", () => {
+    expect(studioTranslationTextContains("The Demon Kings gather.", "Demon King")).toBe(true);
+    expect(studioTranslationTextContains("The Demon-King's castle", "Demon King")).toBe(true);
+    expect(studioTranslationTextContains("Thanks, Senpais!", "Senpai")).toBe(true);
+    expect(studioTranslationTextContains("the kings' hall", "king")).toBe(true);
+    expect(studioTranslationTextContains("the Demon King", "demon-king")).toBe(true);
+    // 하이픈은 경계라 접두 일치는 예전처럼 걸리고, 이어 붙은 다른 단어는 걸리지 않는다.
+    expect(studioTranslationTextContains("Sun-bae", "Sun")).toBe(true);
+    expect(studioTranslationTextContains("Sunsets are red", "sun")).toBe(false);
+    expect(studioTranslationTextContains("Sunbae", "Sun")).toBe(false);
+    // 3글자 미만은 굴절을 허용하지 않는다 — "us" 가 "uses" 에 걸리지 않게.
+    expect(studioTranslationTextContains("He uses it", "us")).toBe(false);
+  });
+
+  it("한글은 형태소 분석을 하지 않아 짧은 표기가 다른 단어 속에서도 일치한다 — 편집기가 이 한계를 밝힌다", () => {
+    expect(studioTranslationTextContains("시야가 흐려졌다", "야")).toBe(true);
   });
 });

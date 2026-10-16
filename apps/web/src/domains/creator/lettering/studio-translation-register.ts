@@ -59,15 +59,18 @@ function hasBieupFinal(character: string): boolean {
   return code >= HANGUL_BASE && code <= HANGUL_LAST && (code - HANGUL_BASE) % 28 === BIEUP_FINAL;
 }
 
-/** 대답말로 쓰인 "네"·"예"(그렇습니다) — 어미가 아니라 말이라 표의 감탄 종결 "~네"(예쁘네)와 구분한다. */
-const KOREAN_ANSWER_WORDS = new Set(["네", "예"]);
+/**
+ * 대답말로 쓰인 "네"·"예"(그렇습니다)와 그 반복·늘임("네네"·"예예"·"네에") — 어미가 아니라 말이라 표의 감탄 종결
+ * "~네"(예쁘네)와 구분한다. 어절 전체가 이 모양일 때만 대답말이다("예쁘네" 는 어절이 더 길어 걸리지 않는다).
+ */
+const KOREAN_ANSWER_WORD = /^[네예]+에*$/u;
 
 function classifyKoreanSentence(sentence: string): StudioTranslationRegister | null {
   const cleaned = sentence.replace(KOREAN_TRAILING_NOISE, "");
   // "네."·"아, 네." 처럼 마지막 어절이 대답말 그 자체면 분류하지 않는다. 표를 그대로 쓰면 존대 표지인 대답을
   // 해라체("~네")로 읽어 존대 인물의 대사를 반말로 오탐한다.
   const lastToken = cleaned.split(/[\s,，、]+/u).at(-1);
-  if (lastToken !== undefined && KOREAN_ANSWER_WORDS.has(lastToken)) return null;
+  if (lastToken !== undefined && KOREAN_ANSWER_WORD.test(lastToken)) return null;
   const beforeEnding = Array.from(cleaned).at(-3);
   // 기본 표(`extractSentenceEnding`)는 어미를 접미로만 읽어 두 곳을 틀린다. 앞 음절의 받침으로 가려 보완한다.
   //  · "…ㅂ니까/…습니까"(합쇼체 의문형)를 "까"(평서)로 읽는다 → 받침 ㅂ 뒤의 "니까"는 격식 존대다.
@@ -113,6 +116,30 @@ const JAPANESE_POLITE_ENDINGS = [
 /** 존대 표지가 없는 종지 형태(기본형 어미·과거 た·だ·ない 등). 한자·감탄사로 끝나는 문장은 여기에 걸리지 않는다. */
 const JAPANESE_PLAIN_ENDING = /(?:である|だった|なかった|ない|[だたるうくぐすつぬぶむいぜぞ])$/u;
 
+/**
+ * 대답말·정형 인사 — 문말 모양이 반말 어미를 닮았지만(はい 의 い, どうぞ 의 ぞ) 존대/반말을 가르는 말이 아니다.
+ * 절 전체가 정확히 이 말일 때만 분류하지 않는다("はい、わかりました" 처럼 뒤에 서술이 이어지면 뒤 절의 어미를 읽는다).
+ * 목록은 일부러 짧게 둔다 — 확실한 말만 빼고, 나머지는 어미 표가 읽는다.
+ */
+const JAPANESE_NEUTRAL_CLAUSES = new Set([
+  "はい",
+  "ええ",
+  "いいえ",
+  "いえ",
+  "どうぞ",
+  "どうも",
+  "いらっしゃい",
+  "いってらっしゃい",
+]);
+/** 접두 お·ご 가 붙은 "…なく" 정형 인사("ご心配なく"·"ご遠慮なく"·"お構いなく") — 높임 정형구라 어미로 읽지 않는다. */
+const JAPANESE_HONORIFIC_SET_PHRASE = /^[おご][^\s、,，。]{1,12}なく$/u;
+const JAPANESE_CLAUSE_SEPARATOR = /[、,，]/u;
+
+function isJapaneseNeutralClause(trimmed: string): boolean {
+  const lastClause = trimmed.split(JAPANESE_CLAUSE_SEPARATOR).at(-1)?.trim() ?? "";
+  return JAPANESE_NEUTRAL_CLAUSES.has(lastClause) || JAPANESE_HONORIFIC_SET_PHRASE.test(lastClause);
+}
+
 function stripJapaneseFinalParticles(sentence: string): string {
   let current = sentence;
   for (let guard = 0; guard < 3; guard += 1) {
@@ -124,7 +151,10 @@ function stripJapaneseFinalParticles(sentence: string): string {
 }
 
 function classifyJapaneseSentence(sentence: string): StudioTranslationRegister | null {
-  const stripped = stripJapaneseFinalParticles(sentence.replace(JAPANESE_TRAILING_NOISE, ""));
+  const trimmed = sentence.replace(JAPANESE_TRAILING_NOISE, "");
+  // 문말 조사를 벗기기 전에 본다 — "どうぞ" 의 ぞ 가 조사로 벗겨지면 "どう" 가 되어 반말 어미(う)로 읽힌다.
+  if (isJapaneseNeutralClause(trimmed)) return null;
+  const stripped = stripJapaneseFinalParticles(trimmed);
   if (stripped === "") return null;
   if (JAPANESE_FORMAL_ENDINGS.some((ending) => stripped.endsWith(ending))) return "formal";
   if (JAPANESE_POLITE_ENDINGS.some((ending) => stripped.endsWith(ending))) return "polite";
