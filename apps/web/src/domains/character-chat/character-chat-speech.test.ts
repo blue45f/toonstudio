@@ -308,4 +308,22 @@ describe("createCharacterChatSpeechController", () => {
     unsubscribeB();
     expect(fake.voiceListenerCount()).toBe(0);
   });
+
+  it("컨트롤러를 만든 뒤 구독이 걸리기 전에 바뀐 음성 목록도 첫 구독에서 따라잡는다 — 알림 없이 캐시만 맞춘다", () => {
+    const fake = createFakeSpeech({ voices: [] });
+    const controller = createCharacterChatSpeechController({ scope: fake.scope });
+    // 렌더 중에 컨트롤러가 만들어지고 구독은 렌더 뒤 효과에서 걸린다 — 그 사이에 브라우저가 목록을 채운다.
+    fake.setVoices([LOCAL]);
+    expect(controller.getVoices()).toEqual([]);
+
+    const listener = vi.fn();
+    const unsubscribe = controller.subscribeVoices(listener);
+    expect(controller.getVoices()).toEqual([LOCAL]);
+    expect(listener).not.toHaveBeenCalled();
+
+    // 이후의 변경은 평소처럼 알린다.
+    fake.setVoices([LOCAL, ONLINE]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+  });
 });

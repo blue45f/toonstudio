@@ -209,8 +209,13 @@ export function createCharacterChatSpeechController(
     },
     getVoices: () => voices,
     subscribeVoices(listener) {
+      if (voiceListeners.size === 0) {
+        attachVoiceListener();
+        // 컨트롤러가 만들어진 뒤 구독이 걸리기 전에 목록이 바뀌었을 수 있다(구독은 렌더 뒤 효과에서 걸린다).
+        // 아직 구독자가 없으니 알림 없이 캐시만 맞추고, 새 구독자는 다음 스냅샷 읽기에서 바뀐 목록을 본다.
+        refreshVoices();
+      }
       voiceListeners.add(listener);
-      if (voiceListeners.size === 1) attachVoiceListener();
       return () => {
         voiceListeners.delete(listener);
         if (voiceListeners.size === 0) detachVoiceListener();
