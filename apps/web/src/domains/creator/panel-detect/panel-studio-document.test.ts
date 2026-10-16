@@ -25,8 +25,6 @@ import {
   registerPanelStudioHandoff,
 } from "./panel-studio-handoff";
 
-import type { El } from "../studio-element-model";
-
 const RIGHTS = createPanelImportRights({
   confirmed: true,
   attestedAt: "2026-10-15T03:00:00.000Z",
@@ -126,7 +124,7 @@ describe("Studio 문서 만들기", () => {
 
   it("기존 권리 명세 투영이 컷 이미지를 '사용자 확인' 사용권의 한 자산으로 묶는다", () => {
     const { project } = build();
-    const usages = projectStudioAssetRightsUsages(project.pagesList.map((page) => ({ id: page.id, elements: page.elements as unknown as El[] })));
+    const usages = projectStudioAssetRightsUsages(project.pagesList.map((page) => ({ id: page.id, elements: page.elements })));
     expect(usages).toHaveLength(3);
     expect(new Set(usages.map((usage) => usage.assetId)).size).toBe(1);
     expect(usages.every((usage) => usage.licenseId === "custom" && usage.assetId === `panel-import:${"a".repeat(24)}`)).toBe(true);

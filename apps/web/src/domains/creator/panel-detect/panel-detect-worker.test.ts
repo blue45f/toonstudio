@@ -77,7 +77,8 @@ describe("감지 결과 검증(신뢰 경계)", () => {
   });
 
   it("크기가 다르거나 이미지 밖 사각형, 이어지지 않은 id·순서, 모르는 경고는 거절한다", () => {
-    const clone = (): Record<string, unknown> => structuredClone(result) as unknown as Record<string, unknown>;
+    // 객체 전개는 인터페이스를 이름 없는 객체 형태로 풀어 주므로 단언 없이 색인 가능한 사본이 된다.
+    const clone = (): Record<string, unknown> => ({ ...structuredClone(result) });
     expect(parsePanelDetectResult(result, { width: 10, height: 10 })).toBeNull();
     const outside = clone();
     (outside.panels as { x: number }[])[0].x = 590;
