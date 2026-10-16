@@ -6,7 +6,8 @@ export async function assertPublicDashboardHeader(page) {
   await expect(page.locator('.public-site-journey, [data-workspace-surface="task"]')).toHaveCount(0);
   await expect(header).toHaveCount(1);
   await expect(header).toBeVisible();
-  await expect(header.locator('.site-header__create')).toHaveAttribute("href", "/studio/new");
+  // 작품 시작의 정문은 /create 시작 시트 하나다(site-header.tsx CANONICAL_CREATE_HREF). /studio/new 는 시트 다음 2단계 양식이라 헤더가 직접 가리키지 않는다.
+  await expect(header.locator('.site-header__create')).toHaveAttribute("href", "/create");
   const appearance = header.locator(".site-header__appearance");
   await expect(appearance).toHaveCount(1);
   if (page.viewportSize().width >= 768) {
