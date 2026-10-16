@@ -11,30 +11,35 @@ const TASK_ROUTES = Object.freeze({
 });
 const DESTINATIONS = ["/home", "/studio", "/team", "/hub"];
 
+// 목록·작품 카드가 많은 화면(/discover 등)은 소프트웨어 렌더링 러너에서 한 번의 레이아웃에도 5초를 넘길 수 있다.
+// 여기서 보는 것은 배치와 초점이지 속도가 아니므로(속도는 CWV 게이트의 몫) 기다림 한도만 넉넉히 둔다.
+const LAYOUT_WAIT = Object.freeze({ timeout: 20_000 });
+
 /** 좁은 화면은 중복 여정 대신 실제 다섯 목적지와 전체 메뉴를 제공한다. */
 export async function assertPublicMobileNavigation(page, route) {
   const quick = page.getByRole("navigation", { name: "빠른 이동", exact: true });
-  await expect(quick).toBeVisible();
+  await expect(quick).toBeVisible(LAYOUT_WAIT);
   const links = quick.locator("a");
-  await expect(links).toHaveCount(5);
+  await expect(links).toHaveCount(5, LAYOUT_WAIT);
   assert.deepEqual(await links.evaluateAll((items) => items.map((item) => new URL(item.href).pathname)),
     ["/", "/studio", "/discover", "/community", "/sitemap"]);
   for (const link of await links.all()) {
-    await expect(link).toBeVisible();
-    await expect.poll(async () => (await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    await expect(link).toBeVisible(LAYOUT_WAIT);
+    await expect.poll(async () => (await link.boundingBox())?.height ?? 0, LAYOUT_WAIT).toBeGreaterThanOrEqual(44);
   }
-  if (route === "/community") await expect(quick.locator('a[href="/community"]')).toHaveAttribute("aria-current", "page");
+  if (route === "/community") await expect(quick.locator('a[href="/community"]')).toHaveAttribute("aria-current", "page", LAYOUT_WAIT);
   const trigger = page.getByRole("button", { name: "전체 메뉴", exact: true });
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "전체 메뉴", exact: true });
-  await expect(dialog).toBeVisible();
+  await expect(dialog).toBeVisible(LAYOUT_WAIT);
   assert(await dialog.evaluate((element) => element.contains(document.activeElement)), "The full menu must receive focus");
-  for (const href of ["/discover", "/learn", "/market", "/studio/new", "/showcase"]) {
-    await expect(dialog.locator(`a[href="${href}"]`).first()).toBeVisible();
+  // 작품 시작 항목은 시작 시트(/create)를 가리킨다. /studio/new 는 시트에서 빈 작품을 골랐을 때 닿는 2단계 양식이다.
+  for (const href of ["/discover", "/learn", "/market", "/create", "/showcase"]) {
+    await expect(dialog.locator(`a[href="${href}"]`).first()).toBeVisible(LAYOUT_WAIT);
   }
   await page.keyboard.press("Escape");
-  await expect(dialog).toHaveCount(0);
-  await expect(trigger).toBeFocused();
+  await expect(dialog).toHaveCount(0, LAYOUT_WAIT);
+  await expect(trigger).toBeFocused(LAYOUT_WAIT);
   assert.equal(new URL(page.url()).pathname, route, "Menu inspection must preserve the current page");
 }
 
