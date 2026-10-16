@@ -4,7 +4,7 @@ import { Profiler } from "react";
 
 import { recordStudioRenderProfile } from "./canvas/studio-canvas-shared-runtime";
 import { studioEditorSourceRoute } from "./studio-editor-source-scope";
-import { useStudioNoAutoTranslate } from "./studio-no-auto-translate";
+import { useStudioNoAutoTranslate } from "./browser-translate/studio-no-auto-translate";
 import { StudioCuttoonEditor } from "./StudioPage";
 
 import type { StudioWorkspaceRoute } from "./studio-workspace-route";

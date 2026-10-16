@@ -68,7 +68,7 @@ describe("편집기 자동 번역 끄기 — 배선 계약", () => {
 
   it("편집기 어댑터가 훅을 부른다", () => {
     const source = readFileSync(resolve(root, "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx"), "utf8");
-    expect(source).toMatch(/import \{ useStudioNoAutoTranslate \} from "\.\/studio-no-auto-translate";/u);
+    expect(source).toMatch(/import \{ useStudioNoAutoTranslate \} from "\.\/browser-translate\/studio-no-auto-translate";/u);
     expect(source).toMatch(/\n\s+useStudioNoAutoTranslate\(\);\n/u);
   });
 
