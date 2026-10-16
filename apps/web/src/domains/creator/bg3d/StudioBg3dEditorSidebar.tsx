@@ -334,6 +334,8 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
     sceneRecoveryError, sharedStageUpdateBlockedReason,
   } = { ...R, ...h };
   const simpleMode = experienceMode === "simple";
+  // 방 만들기의 "자동 단면"(카메라 쪽 벽 숨김) 설정 — 기본 켜짐. 문서에 저장하지 않는 입력 편의다.
+  const [roomAutoCutaway, setRoomAutoCutaway] = useState(true);
   const simplePanelCopy = {
     shapes: { label: "소품", hint: "가구·물건·기본 도형을 장면에 배치" },
     templates: { label: "배경", hint: "교실·거리·카페 같은 장소를 빠르게 구성" },
@@ -622,13 +624,21 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                       파라메트릭
                     </span>
                   </div>
-                  <StudioBg3dRoomBuilderPanel
-                    spec={roomBuilderSpec}
-                    disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
-                    onSpecChange={handleRoomBuilderSpecChange}
-                    onApplyPreset={applyRoomBuilderPreset}
-                    onInsert={addRoomBuild}
-                  />
+                  {activePanelTab === "templates" ? (
+                    <Suspense fallback={(
+                      <StudioPanelLoading label="방 만들기 도구를 불러오는 중입니다…" />
+                    )}>
+                      <StudioBg3dRoomBuilderPanel
+                        spec={roomBuilderSpec}
+                        disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
+                        onSpecChange={handleRoomBuilderSpecChange}
+                        onApplyPreset={applyRoomBuilderPreset}
+                        onInsert={() => addRoomBuild({ autoCutaway: roomAutoCutaway })}
+                        autoCutaway={roomAutoCutaway}
+                        onAutoCutawayChange={setRoomAutoCutaway}
+                      />
+                    </Suspense>
+                  ) : null}
                 </div>
               </section>
 

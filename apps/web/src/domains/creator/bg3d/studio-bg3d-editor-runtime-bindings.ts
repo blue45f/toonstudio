@@ -409,6 +409,7 @@ export {
   clampStudioBg3dRoomSpec,
   getStudioBg3dRoomPreset,
   instantiateStudioBg3dRoomBuild,
+  planStudioBg3dRoomBuild,
   type StudioBg3dRoomSpec,
 } from "./studio-bg3d-room-builder";
 export {
@@ -583,7 +584,12 @@ export {
   StudioBg3dPhysicsTransport,
 } from "./StudioBg3dPhysicsControls";
 export { StudioBg3dPlacementPointerController } from "./StudioBg3dPlacementPointerController";
-export { StudioBg3dRoomBuilderPanel } from "./StudioBg3dRoomBuilderPanel";
+// 방 만들기 패널(약 13KB)은 템플릿 탭을 열 때만 필요해 지연 로드한다(씬 템플릿 패널과 같은 방식).
+export const StudioBg3dRoomBuilderPanel = createLazyComponent(() =>
+  import("./StudioBg3dRoomBuilderPanel").then(({ StudioBg3dRoomBuilderPanel: Panel }) => ({
+    default: Panel,
+  }))
+);
 export { StudioBg3dSceneFog } from "./StudioBg3dSceneFog";
 export {
   BgAdaptiveDprController,

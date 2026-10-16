@@ -89,6 +89,8 @@ export interface StudioBg3dRoomSpec {
 export interface StudioBg3dRoomPart {
   readonly kind: BgPrimitiveKind;
   readonly name: string;
+  /** 벽체 파츠가 속한 벽(바닥·가구는 없음). 자동 단면이 벽 단위로 숨길 때 쓴다. */
+  readonly wall?: StudioBg3dRoomWallId;
   readonly position: readonly [number, number, number];
   readonly rotation: readonly [number, number, number];
   readonly scale: readonly [number, number, number];
@@ -425,6 +427,7 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
       parts.push({
         kind: "box",
         name: `${STUDIO_BG3D_ROOM_WALL_LABELS[wall]} 벽체`,
+        wall,
         position: [x, segment.centerY, z],
         rotation: [0, 0, 0],
         scale: placement.alongX
@@ -453,18 +456,108 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
   return parts;
 }
 
+// ── 자동 단면(카메라 쪽 벽 숨김) ──────────────────────────────────────────────
+// 방 밖에서 안을 바라보는 카메라 쪽 벽은 시선을 가려, 방을 추가해도 첫 화면에서 바깥 벽만 보인다.
+// 이 규칙은 scene-3d/studio-3d-room-builder-v2.ts(2026-10-16 삭제)의 evaluateAutoCutawayWalls 를
+// 옮겨 온 것이다 — v2 는 테스트에서만 쓰이는 모듈이었고, 쓸모 있는 고유 로직은 이 판정뿐이었다.
+//
+// 판정(벽마다): 카메라가 그 벽 바깥 면 쪽에 있고, 바라보는 점(초점)이 카메라보다 방 안쪽이면 그 벽을
+// 가린다. 높이 조건(v2 에는 없던 보강): 카메라가 낮은 난간 위에서 내려다봐 시선이 벽 윗단 위로 지나가면
+// 그 벽은 시선을 가리지 않으므로 숨기지 않는다(옥상 난간을 지우지 않기 위함).
+//
+// 결과는 "생성 시점의 한 번 판정"이다. 가려진 벽은 지우지 않고 visible:false 로 만들어 레이어 목록의
+// 눈 아이콘으로 되살릴 수 있고, 이후 카메라를 옮겨도 다시 계산하지 않는다(문서에 방 단위 개념이 없다).
+
+type RoomVec3 = readonly [number, number, number];
+
+export interface StudioBg3dRoomCutawayInput {
+  /** 방 중심이 원점인 방-로컬 좌표의 카메라 위치. */
+  readonly cameraPosition: RoomVec3;
+  /** 방-로컬 좌표의 초점(오빗 타깃). */
+  readonly focusPoint: RoomVec3;
+  readonly roomWidth: number;
+  readonly roomDepth: number;
+  /** 주어지면 시선이 벽 윗단 위로 지나는 낮은 벽은 가리지 않는다. */
+  readonly wallHeight?: number;
+}
+
+/** 카메라→초점 선분이 벽 평면(axis: 0=X, 2=Z)을 지나는 높이가 벽 윗단보다 높은지. */
+function sightlinePassesAboveWall(
+  camera: RoomVec3,
+  focus: RoomVec3,
+  axis: 0 | 2,
+  planeCoordinate: number,
+  wallHeight: number | undefined,
+): boolean {
+  if (wallHeight === undefined) return false;
+  const span = focus[axis] - camera[axis];
+  if (span === 0) return false;
+  const t = (planeCoordinate - camera[axis]) / span;
+  // 선분이 평면에 닿지 않으면(초점이 평면 앞) 높이 판단을 하지 않고 기본 판정을 따른다.
+  if (!(t > 0 && t <= 1)) return false;
+  return camera[1] + t * (focus[1] - camera[1]) > wallHeight + 1e-9;
+}
+
+export function evaluateStudioBg3dRoomAutoCutaway(
+  input: StudioBg3dRoomCutawayInput,
+): ReadonlySet<StudioBg3dRoomWallId> {
+  const { cameraPosition: camera, focusPoint: focus, roomWidth, roomDepth, wallHeight } = input;
+  const halfWidth = roomWidth / 2;
+  const halfDepth = roomDepth / 2;
+  const cut = new Set<StudioBg3dRoomWallId>();
+  if (![...camera, ...focus, roomWidth, roomDepth].every(Number.isFinite)) return cut;
+  if (camera[2] > halfDepth && focus[2] < camera[2] &&
+    !sightlinePassesAboveWall(camera, focus, 2, halfDepth, wallHeight)) cut.add("south");
+  if (camera[2] < -halfDepth && focus[2] > camera[2] &&
+    !sightlinePassesAboveWall(camera, focus, 2, -halfDepth, wallHeight)) cut.add("north");
+  if (camera[0] > halfWidth && focus[0] < camera[0] &&
+    !sightlinePassesAboveWall(camera, focus, 0, halfWidth, wallHeight)) cut.add("east");
+  if (camera[0] < -halfWidth && focus[0] > camera[0] &&
+    !sightlinePassesAboveWall(camera, focus, 0, -halfWidth, wallHeight)) cut.add("west");
+  return cut;
+}
+
+export interface StudioBg3dRoomBuildOptions {
+  /** 주어지면 이 카메라(월드 좌표) 기준으로 자동 단면을 판정해 가려지는 벽을 숨김 상태로 만든다. */
+  readonly autoCutawayCamera?: {
+    readonly position: RoomVec3;
+    readonly target: RoomVec3;
+  } | null;
+}
+
+export interface StudioBg3dRoomBuildPlan {
+  readonly primitives: BgPrimitive[];
+  /** 숨김 상태로 만든 벽(북·남·서·동 순). 자동 단면을 쓰지 않았거나 가릴 벽이 없으면 빈 배열. */
+  readonly hiddenWalls: readonly StudioBg3dRoomWallId[];
+  /** 기존 도형과 겹치지 않도록 방 전체에 더한 X 오프셋(m). */
+  readonly anchorX: number;
+}
+
 /**
  * 씬 템플릿과 같은 "결정적 X 오프셋 + uid" 전개. 테스트는 idFactory를 주입해 완전 결정적으로
- * 검증한다(프로덕션 ID는 공용 UUID 계약을 쓰며 지오메트리에는 영향 없음).
+ * 검증한다(프로덕션 ID는 공용 UUID 계약을 쓰며 지오메트리에는 영향 없음). 자동 단면 카메라를 주면
+ * 오프셋을 뺀 방-로컬 좌표로 판정해 가려지는 벽의 모든 벽체를 visible:false 로 만든다.
  */
-export function instantiateStudioBg3dRoomBuild(
+export function planStudioBg3dRoomBuild(
   spec: Partial<StudioBg3dRoomSpec>,
   existingCount: number,
   idFactory: () => string = uid,
-): BgPrimitive[] {
+  options: StudioBg3dRoomBuildOptions = {},
+): StudioBg3dRoomBuildPlan {
   const clamped = clampStudioBg3dRoomSpec(spec);
   const anchorX = existingCount > 0 ? existingCount * (clamped.width / 6) : 0;
-  return buildStudioBg3dRoomParts(clamped).map((part) => ({
+  const camera = options.autoCutawayCamera;
+  // 카메라 값이 비정상이면(배열이 아님 등) 단면 없이 만든다 — 방 추가 자체가 막히면 안 된다.
+  const hidden: ReadonlySet<StudioBg3dRoomWallId> = camera && Array.isArray(camera.position) && Array.isArray(camera.target)
+    ? evaluateStudioBg3dRoomAutoCutaway({
+        cameraPosition: [camera.position[0] - anchorX, camera.position[1], camera.position[2]],
+        focusPoint: [camera.target[0] - anchorX, camera.target[1], camera.target[2]],
+        roomWidth: clamped.width,
+        roomDepth: clamped.depth,
+        wallHeight: clamped.wallHeight,
+      })
+    : new Set();
+  const primitives = buildStudioBg3dRoomParts(clamped).map((part): BgPrimitive => ({
     id: idFactory(),
     kind: part.kind,
     name: part.name,
@@ -472,7 +565,21 @@ export function instantiateStudioBg3dRoomBuild(
     rotation: [...part.rotation] as [number, number, number],
     scale: [...part.scale] as [number, number, number],
     color: part.color,
+    ...(part.wall !== undefined && hidden.has(part.wall) ? { visible: false } : {}),
   }));
+  return {
+    primitives,
+    hiddenWalls: STUDIO_BG3D_ROOM_WALL_IDS.filter((wall) => hidden.has(wall)),
+    anchorX,
+  };
+}
+
+export function instantiateStudioBg3dRoomBuild(
+  spec: Partial<StudioBg3dRoomSpec>,
+  existingCount: number,
+  idFactory: () => string = uid,
+): BgPrimitive[] {
+  return planStudioBg3dRoomBuild(spec, existingCount, idFactory).primitives;
 }
 
 // ── 프리셋 ────────────────────────────────────────────────────────────────────

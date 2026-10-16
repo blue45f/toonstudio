@@ -4,7 +4,7 @@
 // 스펙 변경은 raw 값 그대로 올리고, clamp는 부모가 clampStudioBg3dRoomSpec으로 한 곳에서 한다.
 import { DoorOpen, Home, Plus, Trash2 } from "lucide-react";
 
-import { LtRangeControl } from "./studio-bg3d-control-fields";
+import { LtRangeControl, LtToggleRow } from "./studio-bg3d-control-fields";
 import {
   STUDIO_BG3D_ROOM_FURNITURE_KINDS,
   STUDIO_BG3D_ROOM_FURNITURE_LABELS,
@@ -27,7 +27,14 @@ export interface StudioBg3dRoomBuilderPanelProps {
   /** raw 스펙을 그대로 전달 — 부모가 clampStudioBg3dRoomSpec으로 정규화해 저장한다. */
   readonly onSpecChange: (next: StudioBg3dRoomSpec) => void;
   readonly onApplyPreset: (presetId: string) => void;
+  /** 클릭 이벤트를 넘기지 않고 인자 없이 부른다(부모의 선택 인자가 이벤트로 오염되지 않게). */
   readonly onInsert: () => void;
+  /**
+   * 켜면 방을 추가하는 순간 카메라 쪽 벽을 숨김 상태로 만든다(자동 단면). 값을 바꾸는 핸들러
+   * (onAutoCutawayChange)를 주지 않으면 토글 자체를 그리지 않는다 — 이 패널을 단면 없이 쓰는 화면용.
+   */
+  readonly autoCutaway?: boolean;
+  readonly onAutoCutawayChange?: (next: boolean) => void;
 }
 
 const NUMBER_INPUT =
@@ -52,6 +59,8 @@ export function StudioBg3dRoomBuilderPanel({
   onSpecChange,
   onApplyPreset,
   onInsert,
+  autoCutaway = false,
+  onAutoCutawayChange,
 }: StudioBg3dRoomBuilderPanelProps) {
   const limits = STUDIO_BG3D_ROOM_LIMITS;
   const partCount = buildStudioBg3dRoomParts(spec).length;
@@ -407,11 +416,27 @@ export function StudioBg3dRoomBuilderPanel({
         )}
       </div>
 
+      {onAutoCutawayChange ? (
+        <div className="mt-3 rounded-xl border border-line bg-card/70 px-3">
+          <LtToggleRow
+            checked={autoCutaway}
+            label="자동 단면 (카메라 쪽 벽 숨김)"
+            disabled={disabled}
+            onChange={onAutoCutawayChange}
+          />
+          <p className="pb-2 text-[0.64rem] leading-relaxed text-fg-3">
+            방 밖에서 안을 보고 있을 때, 추가하는 순간 시선을 가로막는 벽을 숨김 상태로 만듭니다. 벽은 지워지지
+            않아서 레이어 목록의 눈 아이콘으로 다시 켤 수 있어요. 한 번만 판단하며, 이후 카메라를 옮겨도 다시
+            계산하지 않습니다.
+          </p>
+        </div>
+      ) : null}
+
       <button
         type="button"
         disabled={disabled}
         className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-accent bg-accent px-3 text-xs font-bold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-9"
-        onClick={onInsert}
+        onClick={() => onInsert()}
       >
         <Plus size={14} aria-hidden />
         방 추가 · 오브젝트 {partCount}개

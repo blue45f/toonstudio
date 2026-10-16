@@ -494,15 +494,20 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     void captureStudio3dPlatesFromAdapter(graded.scene, 48, 27, captureRef?.current?.adapter ?? null);
   };
   h.addPrimitive = addPrimitive;
+  // 합성·방·웹툰 배경처럼 "한 번에 여러 도형을 만들어 붙이는" 추가의 공통 경로: 노드 수 한도를 확인한 뒤
+  // 한 번의 상태 교체로 커밋하고 첫 도형을 선택한다. buildParts(기존 도형 수, 현재 카메라 뷰) → BgPrimitive[].
+  const addGeneratedParts = (buildParts) => {
+    const live = physicsRuntimeSourceRef.current;
+    const parts = buildParts(live.primitives.length, viewportApiRef.current?.readView() ?? sceneBaseDocument.camera);
+    if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return false;
+    replaceCanonicalDocumentState({ primitives: [...live.primitives, ...parts] });
+    setSelectedIds(new Set([parts[0].id]));
+    return true;
+  };
+  h.addGeneratedParts = addGeneratedParts;
   const addComposite = (presetId: string) => {
     const preset = COMPOSITE_PRESETS.find((p) => p.id === presetId);
-    if (!preset) return;
-    const live = physicsRuntimeSourceRef.current;
-    const parts = instantiateCompositePreset(preset, live.primitives.length);
-    if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return;
-    const nextPrimitives = [...live.primitives, ...parts];
-    replaceCanonicalDocumentState({ primitives: nextPrimitives });
-    setSelectedIds(new Set([parts[0].id]));
+    if (preset) addGeneratedParts((count) => instantiateCompositePreset(preset, count));
   };
   h.addComposite = addComposite;
   const addProceduralStarterAsset = (
@@ -581,14 +586,8 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     return true;
   };
   h.addSceneTemplate = addSceneTemplate;
-  const addRoomBuild = () => {
-    const live = physicsRuntimeSourceRef.current;
-    const parts = instantiateStudioBg3dRoomBuild(roomBuilderSpec, live.primitives.length);
-    if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return;
-    const nextPrimitives = [...live.primitives, ...parts];
-    replaceCanonicalDocumentState({ primitives: nextPrimitives });
-    setSelectedIds(new Set([parts[0].id]));
-  };
+  const addRoomBuild = ({ autoCutaway = false } = {}) => addGeneratedParts((count, view) =>
+    R.planStudioBg3dRoomBuild(roomBuilderSpec, count, undefined, { autoCutawayCamera: autoCutaway ? view : null }).primitives);
   h.addRoomBuild = addRoomBuild;
   const applyRoomBuilderPreset = (presetId: string) => {
     const preset = getStudioBg3dRoomPreset(presetId);
