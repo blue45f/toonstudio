@@ -10,7 +10,14 @@
  * 컴포넌트 파일에서 함수를 내보내면 빠른 새로고침이 깨진다.
  * 계수와 임계값은 전부 `TENSION_MAP_CONFIG` / `TENSION_MAP_PARAMETERS` 에서 읽는다 —
  * 이 화면의 설명이 코드와 따로 낡지 않는다.
+ *
+ * 접이식(표·계산 방법)은 네이티브 `<details>` 다. summary 는 터치 44px 이상이고, 모달 안에서도 Tab 으로
+ * 닿는다(공용 포커스 트랩 `useStudioModalSheet` 가 summary 를 순환에 넣는다). 표는 좁은 화면에서
+ * 가로로 스크롤되므로 래퍼가 키보드로 닿는 이름 있는 영역(`role="region"`, `tabIndex=0`)이다.
  */
+
+import { ChevronDown } from "lucide-react";
+import { useId, type ReactNode } from "react";
 
 import {
   formatI18nTemplate,
@@ -57,6 +64,48 @@ const KIND_TEXT_CLASS: Readonly<Record<TensionSegmentKind, string>> = {
 };
 
 const CARD_CLASS = "rounded-xl border border-line bg-card/60 p-3";
+
+/** 접이식 summary — 터치 44px, 기본 마커 대신 화살표(스튜디오의 다른 접이식과 같은 관례). */
+const SUMMARY_CLASS = cn(
+  "flex cursor-pointer list-none items-center justify-between gap-2 text-[0.75rem] font-bold text-fg [&::-webkit-details-marker]:hidden",
+  STUDIO_TOUCH_TARGET,
+  STUDIO_FOCUS_RING,
+);
+
+const SCROLL_REGION_CLASS = cn("overflow-x-auto", STUDIO_FOCUS_RING);
+
+/**
+ * 가로로 스크롤되는 표의 래퍼 — 키보드로 닿아야 방향키로 스크롤할 수 있다(axe scrollable-region-focusable).
+ * 이름은 눈에 보이는 표 캡션이 준다(`aria-labelledby`).
+ */
+function ScrollRegion({
+  captionId,
+  className,
+  children,
+}: {
+  readonly captionId: string;
+  readonly className?: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 가로로 넘치는 표를 키보드만으로 읽을 수 있어야 하므로 스크롤 영역에 포커스가 필요하다(WCAG 2.1.1). 이름 있는 region 이며 저장소의 다른 스크롤 영역과 같은 관례다.
+    <div role="region" tabIndex={0} aria-labelledby={captionId} className={cn(SCROLL_REGION_CLASS, className)}>
+      {children}
+    </div>
+  );
+}
+
+function DisclosureSummary({ children }: { readonly children: ReactNode }) {
+  return (
+    <summary className={SUMMARY_CLASS}>
+      <span className="min-w-0">{children}</span>
+      <ChevronDown
+        aria-hidden="true"
+        className="size-4 shrink-0 text-fg-3 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+      />
+    </summary>
+  );
+}
 
 // ── 선택한 컷 상세 ───────────────────────────────────────────────────────
 
@@ -246,6 +295,7 @@ export interface TensionTableProps {
 
 export function TensionTable({ cuts, selectedIndex }: TensionTableProps) {
   useBilingualI18nRevision();
+  const captionId = useId();
   const unknown = (
     <>
       <span aria-hidden="true">—</span>
@@ -254,14 +304,12 @@ export function TensionTable({ cuts, selectedIndex }: TensionTableProps) {
   );
   return (
     <details className={cn(CARD_CLASS, "group")} data-testid="tension-table-details">
-      <summary
-        className={cn("cursor-pointer text-[0.75rem] font-bold text-fg", STUDIO_FOCUS_RING)}
-      >
+      <DisclosureSummary>
         {bi("표로 보기 (곡선의 텍스트 대안)", "View as a table (text alternative to the curve)")}
-      </summary>
-      <div className="mt-2 overflow-x-auto">
+      </DisclosureSummary>
+      <ScrollRegion captionId={captionId} className="mt-2">
         <table className="w-full min-w-[34rem] border-collapse text-left text-[0.68rem]">
-          <caption className="pb-1 text-left text-[0.62rem] text-fg-3">
+          <caption id={captionId} className="pb-1 text-left text-[0.62rem] text-fg-3">
             {bi("컷별 긴장도와 계산 근거", "Per-cut tension and the basis it was computed from")}
           </caption>
           <thead>
@@ -307,7 +355,7 @@ export function TensionTable({ cuts, selectedIndex }: TensionTableProps) {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </details>
   );
 }
@@ -316,14 +364,13 @@ export function TensionTable({ cuts, selectedIndex }: TensionTableProps) {
 
 export function TensionMethodNotes() {
   useBilingualI18nRevision();
+  const captionId = useId();
   const { weights, dwell } = TENSION_MAP_CONFIG;
   return (
     <details className={cn(CARD_CLASS, "group")} data-testid="tension-method-notes">
-      <summary
-        className={cn("cursor-pointer text-[0.75rem] font-bold text-fg", STUDIO_FOCUS_RING)}
-      >
+      <DisclosureSummary>
         {bi("계산 방법과 한계 (모두 휴리스틱)", "How it is computed, and its limits (all heuristics)")}
-      </summary>
+      </DisclosureSummary>
       <div className="mt-2 flex flex-col gap-3 text-[0.68rem] text-fg-2">
         <p className="rounded-lg border border-warn/35 bg-warn/10 p-2 text-warn">
           {bi(
@@ -378,9 +425,9 @@ export function TensionMethodNotes() {
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <ScrollRegion captionId={captionId}>
           <table className="w-full min-w-[26rem] border-collapse text-left">
-            <caption className="pb-1 text-left text-[0.62rem] text-fg-3">
+            <caption id={captionId} className="pb-1 text-left text-[0.62rem] text-fg-3">
               {bi("계수와 임계값, 그리고 출처", "Coefficients, thresholds and where each comes from")}
             </caption>
             <thead>
@@ -409,7 +456,7 @@ export function TensionMethodNotes() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
 
         <ul className="list-disc space-y-0.5 pl-4 text-fg-3">
           <li>
