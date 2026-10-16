@@ -71,6 +71,12 @@ test("production integrity follows the real menu verifier and its CI bootstrap",
     new URL("../.github/workflows/studio-finishing-quality.yml", import.meta.url), "utf8",
   );
   for (const workflow of [productionIntegritySource, finishingQualitySource]) {
+    // 메뉴 검증기의 대기 로직이 도우미 파일로 나뉘어 있으므로, 도우미만 바뀌어도 브라우저 메뉴 검증이 돌아야 한다.
+    assert.equal(
+      workflow.split("      - 'scripts/lib/studio-verify-render-settle*'").length - 1,
+      2,
+      "메뉴 검증 도우미를 바꾸는 PR 과 main 푸시에서도 브라우저 메뉴 검증이 실행돼야 한다",
+    );
     const start = workflow.indexOf("      - name: Verify canonical resize and offline rejection contracts\n");
     assert.ok(start >= 0, "브라우저 메뉴 검증에는 정본 변경과 오프라인 거절 검증이 필수다");
     const authorityStep = workflow.slice(start, workflow.indexOf("      - name: Build", start));
