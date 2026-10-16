@@ -728,6 +728,30 @@
   }
 }
 
+/* 재방문(compact) 빠른 시작 카드는 썸네일·글·화살표를 한 줄에 둔다. 901px 이상에서 7열이면 카드가 100~170px 라
+ * 글 열이 한두 글자~수십 px 로 좁아져 제목이 글자 단위로 쪼개지므로(1280px 에서 8줄) 열을 4개로 접는다(4+3, 마지막 카드는
+ * 두 열). 첫 방문(full) 카드는 글이 썸네일 아래에 놓여 영향이 없다. */
+@media (min-width: 901px) {
+  .studio-lobby[data-density="compact"] .studio-lobby-quick ul {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .studio-lobby[data-density="compact"] .studio-lobby-quick li:last-child {
+    grid-column: span 2;
+  }
+}
+
+/* 901~960px 는 4열 카드(약 150px)의 글 열이 가장 긴 어절("스튜디오")보다 좁아 3열(3+3+1)로 한 번 더 접는다. */
+@media (min-width: 901px) and (max-width: 960px) {
+  .studio-lobby[data-density="compact"] .studio-lobby-quick ul {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .studio-lobby[data-density="compact"] .studio-lobby-quick li:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
 /* 재방문(compact) 빠른 시작 카드는 썸네일·글·화살표를 한 줄에 둔다. 휴대폰 폭에서 2열이면 글 열이
  * 한두 글자로 좁아져 제목이 세로로 쪼개지므로, 구조를 한 열로 접어 제목을 어절 단위로 읽게 한다. */
 @media (max-width: 479px) {
