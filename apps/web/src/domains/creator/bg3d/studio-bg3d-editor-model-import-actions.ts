@@ -30,10 +30,11 @@ import {
   StudioBg3dModelPlacementAdmissionError,
 } from "./studio-bg3d-model-placement-admission";
 import {
+  combineStudioBg3dImportAiUseStatus,
   describeStudioBg3dImportAiUseNotice,
-  persistStudioBg3dImportedAiUse,
+  hasStudioBg3dImportAiUse,
   readStudioBg3dImportAiUse,
-} from "./studio-bg3d-import-asset-metadata";
+} from "./studio-bg3d-import-ai-use";
 import {
   admitAndCacheStudioBg3dModel as admitAndCacheModel,
   bindModelAttachment,
@@ -60,6 +61,7 @@ import type {
   StudioGeneric3dSourceFormat,
 } from "../studio-generic-3d-model-mode";
 import type { StudioBg3dDestructiveMutationGuard } from "./studio-bg3d-destructive-mutation-guard";
+import type { StudioBg3dImportAiUseNotice, StudioBg3dImportAiUseStatus } from "./studio-bg3d-import-ai-use";
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import type { StudioBg3dImportProgress } from "./studio-bg3d-model-import";
 import type { StudioBg3dSkpImportRun } from "./studio-bg3d-skp-import-run";
@@ -122,6 +124,8 @@ export interface StudioBg3dModelImportActionsContext {
   >;
   readonly setRefTick: Dispatch<SetStateAction<number>>;
   readonly setSelectedIds: Dispatch<SetStateAction<Set<string>>>;
+  /** 화면 읽기 프로그램에도 전달되는 상태 안내 줄. 없으면 오류 줄로 대신 보인다. */
+  readonly setSurfaceSnapStatus?: (status: StudioBg3dImportAiUseNotice) => void;
 
   readonly canAdmitSceneNodes: (additionalNodeCount: number) => boolean;
   readonly cancelCustomModelPlacement: (message?: string) => void;
@@ -191,6 +195,7 @@ export function createStudioBg3dModelImportActions(
     setModelLibraryStatus,
     setRefTick,
     setSelectedIds,
+    setSurfaceSnapStatus,
     startModelThumbnailCaptureBatch,
     storageModelIdByAttachmentIdRef,
   } = ctx;
@@ -233,8 +238,10 @@ export function createStudioBg3dModelImportActions(
     let plannedSkpSourcePaths: readonly (string | null)[] = [];
     let skpFailureMessage: string | null = null;
     // 가져오기 권리 폼의 AI 사용 표기. 라이브러리 레코드가 담을 수 없어 메타데이터 저장소에 따로 남기고, 결과는 숨기지 않고 알린다.
+    // 저장은 장면 반영·썸네일 시작이 끝난 뒤에 한다(저장이 느려도 가져오기가 멈추지 않는다). .skp 는 변환 보고서와 같은 기록이라
+    // 마무리(complete)가 저장하고 그 결과를 돌려준다.
     const importAiUse = readStudioBg3dImportAiUse(rights);
-    let aiUseNotice: string | null = null;
+    let skpAiUseStatus: StudioBg3dImportAiUseStatus = "skipped";
     let modelImportRuntime: typeof import("./studio-bg3d-model-import") | null = null;
     const cleanupUncommittedUploadCache = () => {
       const liveStorageIds = new Set(
@@ -247,6 +254,29 @@ export function createStudioBg3dModelImportActions(
         modelRootCacheRef.current.delete(storageId);
       }
       uploadOwnedCacheEntries.clear();
+    };
+    /** AI 사용 표기를 저장하고(.skp 가 아닌 소재) 결과를 상태 줄로 알린다. 던지지 않는다. */
+    const saveAndAnnounceImportAiUse = async (): Promise<void> => {
+      let status = skpAiUseStatus;
+      const plainRecords = hasStudioBg3dImportAiUse(importAiUse)
+        ? thumbnailCandidates.filter((_, index) => plannedSkpSourcePaths[index] == null)
+        : [];
+      if (plainRecords.length > 0) {
+        try {
+          // 저장 본체는 asset-metadata(zod)를 끌어오므로 AI 답이 있을 때만 불러온다.
+          const { persistStudioBg3dImportedAiUse } = await import("./studio-bg3d-import-asset-metadata");
+          status = combineStudioBg3dImportAiUseStatus(
+            status,
+            await persistStudioBg3dImportedAiUse(plainRecords, importAiUse, { signal: importController.signal }),
+          );
+        } catch {
+          status = combineStudioBg3dImportAiUseStatus(status, "failed");
+        }
+      }
+      const notice = describeStudioBg3dImportAiUseNotice(status);
+      if (!notice || !isModalAssetSessionCurrent(session)) return;
+      if (setSurfaceSnapStatus) setSurfaceSnapStatus(notice);
+      else setError(notice.message);
     };
     try {
       const policy = deriveStudioBg3dGlbValidationPolicy(sceneBaseDocument, deviceQuality);
@@ -296,10 +326,6 @@ export function createStudioBg3dModelImportActions(
           signal: importController.signal,
         },
       );
-      aiUseNotice = describeStudioBg3dImportAiUseNotice(await persistStudioBg3dImportedAiUse(
-        imported.filter((_, index) => plannedSkpSourcePaths[index] == null),
-        importAiUse,
-      ));
       const saved: Bg3dVerifiedStoredRecord[] = [];
       for (const importedRecord of imported) {
         if (!isModalAssetSessionCurrent(session)) {
@@ -494,7 +520,7 @@ export function createStudioBg3dModelImportActions(
         setModelImportProgress(null);
         setIsUploadingModel(false);
       });
-      await skpRun?.complete(
+      skpAiUseStatus = (await skpRun?.complete(
         !isModalAssetSessionCurrent(session)
           ? { status: "abandoned" }
           : uploadCommitted
@@ -503,15 +529,15 @@ export function createStudioBg3dModelImportActions(
               status: "failed",
               reason: skpFailureMessage ?? "편집 상태가 바뀌어 모델을 장면에 배치하지 않았습니다.",
             },
-      );
+      )) ?? "skipped";
     }
-    if (uploadCommitted && aiUseNotice && isModalAssetSessionCurrent(session)) setError(aiUseNotice);
     if (uploadCommitted && thumbnailCandidates.length > 0) {
       startModelThumbnailCaptureBatch(thumbnailCandidates, session);
     }
+    if (uploadCommitted) await saveAndAnnounceImportAiUse();
     return uploadCommitted;
-  }
 
+  }
   async function handleDeleteModelFromLibrary(id: string) {
     const session = modalAssetSessionRef.current;
     if (!session || !isModalAssetSessionCurrent(session)) return;

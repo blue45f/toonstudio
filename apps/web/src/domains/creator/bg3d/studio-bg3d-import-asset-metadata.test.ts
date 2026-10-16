@@ -1,15 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  STUDIO_BG3D_IMPORT_AI_USE_SAVE_TIMEOUT_MS,
   buildStudioBg3dImportedAssetMetadata,
-  describeStudioBg3dImportAiUseNotice,
-  hasStudioBg3dImportAiUse,
   persistStudioBg3dImportedAiUse,
-  readStudioBg3dImportAiUse,
   type StudioBg3dImportMetadataStore,
   type StudioBg3dImportedRecordLike,
 } from "./studio-bg3d-import-asset-metadata";
 import { STUDIO_BG3D_ASSET_METADATA_VERSION, type StudioBg3dAssetMetadata } from "./studio-bg3d-asset-metadata";
+import { subscribeStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
 
 const hash = (digit: string) => `sha256:${digit.repeat(64)}` as const;
 
@@ -36,16 +35,8 @@ function fakeStore(existing: readonly string[] = [], failPut = false) {
   return { store, put, deps: { now: () => 7_000, loadStore: async () => store } };
 }
 
-describe("readStudioBg3dImportAiUse", () => {
-  it("권리 폼 값에서 올바른 AI 표기만 골라 내고 모름·알 수 없는 값은 없음으로 본다", () => {
-    expect(readStudioBg3dImportAiUse({ aiGenerated: "yes", aiTraining: "prohibited", status: "owned" }))
-      .toEqual({ aiGenerated: "yes", aiTraining: "prohibited" });
-    expect(readStudioBg3dImportAiUse({ aiGenerated: "unknown", aiTraining: "maybe" })).toEqual({});
-    for (const bad of [null, undefined, "yes", 3, []]) expect(readStudioBg3dImportAiUse(bad)).toEqual({});
-    expect(hasStudioBg3dImportAiUse({})).toBe(false);
-    expect(hasStudioBg3dImportAiUse({ aiTraining: "allowed" })).toBe(true);
-    expect(hasStudioBg3dImportAiUse(undefined)).toBe(false);
-  });
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("buildStudioBg3dImportedAssetMetadata", () => {
@@ -144,12 +135,114 @@ describe("persistStudioBg3dImportedAiUse", () => {
   });
 });
 
-describe("describeStudioBg3dImportAiUseNotice", () => {
-  it("저장되지 않은 결과만 사용자에게 알리고 문구에 다음 행동이나 현재 표시를 담는다", () => {
-    expect(describeStudioBg3dImportAiUseNotice("saved")).toBeNull();
-    expect(describeStudioBg3dImportAiUseNotice("skipped")).toBeNull();
-    expect(describeStudioBg3dImportAiUseNotice("failed")).toContain("AI 미확인");
-    expect(describeStudioBg3dImportAiUseNotice("existing")).toContain("기존 기록");
-    expect(describeStudioBg3dImportAiUseNotice("partial")).toContain("나머지");
+describe("라이선스 이름이 저장 규칙에 걸려도 권리 상태를 지킨다", () => {
+  const AI = { aiGenerated: "no", aiTraining: "prohibited" } as const;
+
+  it("<상업> 같은 글자가 든 구매·허가 이름이어도 구매·허가·상업 가능·AI 표기가 그대로 남는다", () => {
+    const metadata = buildStudioBg3dImportedAssetMetadata(
+      record("a", { rights: { status: "licensed", commercialUse: true, attributionRequired: false, licenseName: "표준 <상업> 라이선스" } }),
+      AI,
+      7_000,
+    );
+    expect(metadata?.rights).toMatchObject({
+      status: "licensed",
+      commercialUse: true,
+      teamShareAllowed: false,
+      aiGenerated: "no",
+      aiTraining: "prohibited",
+    });
+    // 저장 규칙에 맞지 않는 글자는 기록에 들어가지 않는다(자리표시 이름).
+    expect(JSON.stringify(metadata)).not.toContain("<");
+    expect(metadata?.rights.license).toBeTruthy();
+  });
+
+  it("주소가 든 이름도 마찬가지이고, 직접 제작·공개 이용은 이름 없이 기록한다", () => {
+    const url = buildStudioBg3dImportedAssetMetadata(
+      record("b", { rights: { status: "licensed", commercialUse: true, attributionRequired: false, licenseName: "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" } }),
+      AI,
+      7_000,
+    );
+    expect(url?.rights.status).toBe("licensed");
+    expect(JSON.stringify(url)).not.toContain("https://");
+
+    const owned = buildStudioBg3dImportedAssetMetadata(
+      record("c", { rights: { status: "owned", commercialUse: true, attributionRequired: false, licenseName: "내 작업 <원본>" } }),
+      AI,
+      7_000,
+    );
+    expect(owned?.rights).toMatchObject({ status: "owned", commercialUse: true, aiGenerated: "no" });
+    expect(owned?.rights.license).toBeUndefined();
+  });
+});
+
+describe("취소·시간 한도·알림", () => {
+  const AI = { aiGenerated: "yes" } as const;
+
+  it("가져오기 취소 신호가 이미 섰으면 저장소를 열지 않고 cancelled 로 돌려준다", async () => {
+    const loadStore = vi.fn();
+    const controller = new AbortController();
+    controller.abort();
+    await expect(persistStudioBg3dImportedAiUse([record("a")], AI, { loadStore, signal: controller.signal })).resolves.toBe("cancelled");
+    expect(loadStore).not.toHaveBeenCalled();
+  });
+
+  it("저장소를 기다리는 도중 취소하면 멈추고, 아무것도 쓰지 않는다", async () => {
+    const controller = new AbortController();
+    let receivedSignal: AbortSignal | undefined;
+    const put = vi.fn();
+    const store: StudioBg3dImportMetadataStore = {
+      get: (_hash, signal) => {
+        receivedSignal = signal;
+        return new Promise<StudioBg3dAssetMetadata | null>(() => undefined);
+      },
+      put,
+    };
+    const pending = persistStudioBg3dImportedAiUse([record("a")], AI, { loadStore: async () => store, signal: controller.signal });
+    await Promise.resolve();
+    await Promise.resolve();
+    controller.abort();
+    await expect(pending).resolves.toBe("cancelled");
+    expect(receivedSignal?.aborted).toBe(true);
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it("저장소가 응답하지 않으면 시간 한도 뒤에 failed 로 멈춘다(실제 시간을 기다리지 않는다)", async () => {
+    vi.useFakeTimers();
+    const store: StudioBg3dImportMetadataStore = {
+      get: () => new Promise<StudioBg3dAssetMetadata | null>(() => undefined),
+      put: vi.fn(),
+    };
+    const pending = persistStudioBg3dImportedAiUse([record("a")], AI, { loadStore: async () => store });
+    await vi.advanceTimersByTimeAsync(STUDIO_BG3D_IMPORT_AI_USE_SAVE_TIMEOUT_MS - 1);
+    let settled = false;
+    void pending.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(pending).resolves.toBe("failed");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("끝난 저장은 시간 한도 타이머를 남기지 않는다", async () => {
+    vi.useFakeTimers();
+    const { deps } = fakeStore();
+    await expect(persistStudioBg3dImportedAiUse([record("a")], AI, deps)).resolves.toBe("saved");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("새 기록을 썼을 때만(saved·partial) 권리 읽기에 알린다", async () => {
+    const listener = vi.fn();
+    const stop = subscribeStudioBg3dAssetRightsChanged(listener);
+    await persistStudioBg3dImportedAiUse([record("a")], AI, fakeStore().deps);
+    expect(listener).toHaveBeenCalledTimes(1);
+    await persistStudioBg3dImportedAiUse([record("a"), record("b")], AI, fakeStore([hash("a")]).deps);
+    expect(listener).toHaveBeenCalledTimes(2);
+    await persistStudioBg3dImportedAiUse([record("a")], AI, fakeStore([hash("a")]).deps);
+    await persistStudioBg3dImportedAiUse([record("a")], AI, fakeStore([], true).deps);
+    await persistStudioBg3dImportedAiUse([record("a")], {}, fakeStore().deps);
+    expect(listener).toHaveBeenCalledTimes(2);
+    stop();
   });
 });

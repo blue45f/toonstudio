@@ -132,6 +132,7 @@ function harness() {
     setRefTick: vi.fn(),
     setSelectedIds: vi.fn(),
     setCustomModels: vi.fn(),
+    setSurfaceSnapStatus: vi.fn(),
   };
   return {
     context,
@@ -146,27 +147,6 @@ function planOf(...items: readonly { format: string; primaryPath: string }[]) {
 function file(name: string): File {
   return new File([new Uint8Array([1])], name);
 }
-
-beforeEach(() => {
-  vi.resetAllMocks();
-  studioBg3dSkpImportSession.clearResults();
-  studioBg3dSkpImportSession.setActivity(null);
-  runtime.list.mockResolvedValue([]);
-  runtime.persist.mockResolvedValue("saved");
-  runtime.createAttachment.mockImplementation(async (record: { id: string }) => ({ id: `attachment-${record.id}`, hash: "h" }));
-  runtime.admit.mockResolvedValue(undefined);
-  runtime.importVerified.mockResolvedValue([{ id: "model-1", contentHash: HASH, byteSize: 2_000 }]);
-  runtime.getStored.mockImplementation(async (id: string) => storedRecord(id));
-  runtime.runScene.mockImplementation(async (_session: unknown, work: (lease: unknown) => Promise<unknown>, commit: (value: unknown) => void) => {
-    commit(await work({ signal: new AbortController().signal, throwIfRevoked: () => undefined, isCurrent: () => true }));
-    return { status: "committed" };
-  });
-  runtime.commit.mockImplementation((_session: unknown, commit: () => void) => {
-    commit();
-    return true;
-  });
-  runtime.convert.mockResolvedValue([new Blob([new Uint8Array([1])])]);
-});
 
 const AI_RIGHTS = { ...RIGHTS, aiGenerated: "yes", aiTraining: "prohibited" } as const;
 
@@ -194,7 +174,7 @@ beforeEach(() => {
 });
 
 describe("importModelFiles with AI use chosen on the rights form", () => {
-  it("records the AI use for the imported model and stays quiet when it was saved", async () => {
+  it("records the AI use for the imported model after the scene is committed and says so on the status line", async () => {
     const h = harness();
     const committed = await h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
 
@@ -202,8 +182,50 @@ describe("importModelFiles with AI use chosen on the rights form", () => {
     expect(runtime.persistAi).toHaveBeenCalledOnce();
     expect(runtime.persistAi.mock.calls[0]?.[0]).toMatchObject([{ id: "model-1", contentHash: HASH }]);
     expect(runtime.persistAi.mock.calls[0]?.[1]).toEqual({ aiGenerated: "yes", aiTraining: "prohibited" });
+    expect(h.context.setSurfaceSnapStatus).toHaveBeenCalledWith({ tone: "success", message: "AI 사용 표기를 저장했어요." });
+    // 오류 줄은 가져오기 시작 때 비우는 한 번뿐이다(AI 안내가 오류 줄로 가지 않는다).
     expect(h.context.setError).toHaveBeenCalledTimes(1);
     expect(h.context.setError).toHaveBeenCalledWith(null);
+  });
+
+  it("saves only after the model is on the scene, the upload flag is off and thumbnails have started", async () => {
+    const h = harness();
+    await h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
+
+    const persistOrder = runtime.persistAi.mock.invocationCallOrder[0]!;
+    expect(h.context.setModelLibrary.mock.invocationCallOrder[0]!).toBeLessThan(persistOrder);
+    expect(h.context.replaceCanonicalDocumentState.mock.invocationCallOrder[0]!).toBeLessThan(persistOrder);
+    expect(h.context.setIsUploadingModel.mock.invocationCallOrder.at(-1)!).toBeLessThan(persistOrder);
+    expect(h.context.startModelThumbnailCaptureBatch.mock.invocationCallOrder[0]!).toBeLessThan(persistOrder);
+  });
+
+  it("does not hold the scene back while the save hangs, and hands the save the import's cancel signal", async () => {
+    let started!: () => void;
+    const startedSaving = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    let release!: (status: string) => void;
+    runtime.persistAi.mockImplementation(() => {
+      started();
+      return new Promise<string>((resolve) => {
+        release = resolve;
+      });
+    });
+    const h = harness();
+    const pending = h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
+    await startedSaving;
+
+    // 저장이 끝나지 않았어도 모델은 이미 장면에 있고 가져오기 표시는 꺼졌으며 썸네일도 시작됐다.
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledOnce();
+    expect(h.context.setIsUploadingModel).toHaveBeenLastCalledWith(false);
+    expect(h.context.startModelThumbnailCaptureBatch).toHaveBeenCalledOnce();
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
+    const deps = runtime.persistAi.mock.calls[0]?.[2] as { signal?: AbortSignal } | undefined;
+    expect(deps?.signal).toBeInstanceOf(AbortSignal);
+
+    release("saved");
+    await expect(pending).resolves.toBe(true);
+    expect(h.context.setSurfaceSnapStatus).toHaveBeenCalledWith(expect.objectContaining({ tone: "success" }));
   });
 
   it("hands the AI use to the library import untouched so the library keeps its closed rights format", async () => {
@@ -213,43 +235,70 @@ describe("importModelFiles with AI use chosen on the rights form", () => {
     expect(items).toMatchObject([{ rights: { status: "owned", commercialUse: true } }]);
   });
 
-  it("tells the user, after the model is placed, when the AI use could not be saved", async () => {
+  it("tells the user with an error status, after the model is placed, when the AI use could not be saved", async () => {
     runtime.persistAi.mockResolvedValue("failed");
     const h = harness();
     const committed = await h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
 
     expect(committed).toBe(true);
-    expect(h.context.setError).toHaveBeenLastCalledWith(expect.stringContaining("AI 사용 표기를 저장하지 못했습니다"));
+    expect(h.context.setSurfaceSnapStatus).toHaveBeenLastCalledWith({
+      tone: "error",
+      message: expect.stringContaining("AI 사용 표기를 저장하지 못했어요"),
+    });
     expect(h.context.setModelLibrary).toHaveBeenCalled();
   });
 
-  it("explains when an earlier record for the same model was left as it was", async () => {
+  it("reports an unloadable save module as a failed save instead of throwing", async () => {
+    runtime.persistAi.mockRejectedValue(new Error("chunk-load-failed"));
+    const h = harness();
+    await expect(h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS)).resolves.toBe(true);
+    expect(h.context.setSurfaceSnapStatus).toHaveBeenLastCalledWith(expect.objectContaining({ tone: "error" }));
+  });
+
+  it("explains with an info status when an earlier record for the same model was left as it was, or the import was cancelled", async () => {
     runtime.persistAi.mockResolvedValue("existing");
     const h = harness();
     await h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
-    expect(h.context.setError).toHaveBeenLastCalledWith(expect.stringContaining("기존 기록"));
+    expect(h.context.setSurfaceSnapStatus).toHaveBeenLastCalledWith({
+      tone: "info",
+      message: expect.stringContaining("기존 기록"),
+    });
+
+    runtime.persistAi.mockResolvedValue("cancelled");
+    const cancelled = harness();
+    await cancelled.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
+    expect(cancelled.context.setSurfaceSnapStatus).toHaveBeenLastCalledWith(expect.objectContaining({ tone: "info" }));
   });
 
-  it("does not bury a placement failure under the AI notice", async () => {
+  it("falls back to the error line when the editor gives no status line", async () => {
     runtime.persistAi.mockResolvedValue("failed");
+    const h = harness();
+    const { setSurfaceSnapStatus: _unused, ...withoutStatus } = h.context;
+    const actions = createStudioBg3dModelImportActions(withoutStatus as unknown as StudioBg3dModelImportActionsContext);
+    await actions.importModelFiles([file("prop.glb")], AI_RIGHTS);
+    expect(h.context.setError).toHaveBeenLastCalledWith(expect.stringContaining("AI 사용 표기를 저장하지 못했어요"));
+  });
+
+  it("does not bury a placement failure under the AI notice, and never saves for an import that did not place", async () => {
     runtime.runScene.mockRejectedValue(new Error("scene-failed"));
     const h = harness();
     const committed = await h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
 
     expect(committed).toBe(false);
     expect(h.context.setError).toHaveBeenLastCalledWith(expect.stringContaining("아무 모델도 배치하지 않았습니다"));
-    expect(h.context.setError).not.toHaveBeenCalledWith(expect.stringContaining("AI 사용 표기"));
+    expect(runtime.persistAi).not.toHaveBeenCalled();
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
   });
 
-  it("passes no AI use when none was chosen, so nothing is written", async () => {
-    runtime.persistAi.mockResolvedValue("skipped");
+  it("neither loads the save module nor says anything when no AI use was chosen", async () => {
     const h = harness();
     await h.actions().importModelFiles([file("prop.glb")], RIGHTS);
-    expect(runtime.persistAi.mock.calls[0]?.[1]).toEqual({});
+    expect(runtime.persistAi).not.toHaveBeenCalled();
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
     expect(h.context.setError).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps a .skp out of the generic recording and carries its AI use with the SketchUp report instead", async () => {
+  function skpPlan() {
     runtime.plan.mockReturnValue(planOf(
       { format: "glb", primaryPath: "prop.glb" },
       { format: "skp", primaryPath: "room.skp" },
@@ -267,6 +316,10 @@ describe("importModelFiles with AI use chosen on the rights form", () => {
       contentHash: id === "skp-model" ? HASH : `sha256:${"1".repeat(64)}`,
       byteSize: id === "skp-model" ? 2_000 : 10,
     }));
+  }
+
+  it("keeps a .skp out of the generic recording and carries its AI use with the SketchUp report instead", async () => {
+    skpPlan();
     const h = harness();
 
     await h.actions().importModelFiles([file("prop.glb"), file("room.skp")], AI_RIGHTS);
@@ -276,5 +329,36 @@ describe("importModelFiles with AI use chosen on the rights form", () => {
       sourcePath: "room.skp",
       aiUse: { aiGenerated: "yes", aiTraining: "prohibited" },
     });
+  });
+
+  it("reports the SketchUp report's AI save result too, and merges it with the other models' result", async () => {
+    skpPlan();
+    runtime.persist.mockResolvedValue("existing");
+    const h = harness();
+    await h.actions().importModelFiles([file("prop.glb"), file("room.skp")], AI_RIGHTS);
+    // glb 는 새로 저장(saved), skp 는 기존 기록 유지(existing) → 일부만 저장.
+    expect(h.context.setSurfaceSnapStatus).toHaveBeenLastCalledWith({
+      tone: "info",
+      message: expect.stringContaining("나머지는 표기를 저장했어요"),
+    });
+
+    runtime.persist.mockResolvedValue("failed");
+    const failed = harness();
+    await failed.actions().importModelFiles([file("prop.glb"), file("room.skp")], AI_RIGHTS);
+    expect(failed.context.setSurfaceSnapStatus).toHaveBeenLastCalledWith(expect.objectContaining({ tone: "error" }));
+  });
+
+  it("reports a .skp-only import's AI save result without touching the generic save module", async () => {
+    runtime.plan.mockReturnValue(planOf({ format: "skp", primaryPath: "room.skp" }));
+    runtime.convert.mockImplementation(async (_files: unknown, options: { skp?: StudioBg3dSkpImportOptions }) => {
+      options.skp?.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+      return [new Blob([new Uint8Array([2])])];
+    });
+    runtime.persist.mockResolvedValue("saved");
+    const h = harness();
+    await h.actions().importModelFiles([file("room.skp")], AI_RIGHTS);
+
+    expect(runtime.persistAi).not.toHaveBeenCalled();
+    expect(h.context.setSurfaceSnapStatus).toHaveBeenLastCalledWith({ tone: "success", message: "AI 사용 표기를 저장했어요." });
   });
 });

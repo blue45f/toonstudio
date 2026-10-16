@@ -17,7 +17,10 @@ import {
   type StudioBg3dAssetRightsReceipt,
 } from "./studio-bg3d-asset-metadata";
 
-import type { StudioBg3dImportAiUse } from "./studio-bg3d-import-asset-metadata";
+import { notifyStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
+import { pickStudioBg3dImportedMetadata } from "./studio-bg3d-import-rights-receipt";
+
+import type { StudioBg3dImportAiUse } from "./studio-bg3d-import-ai-use";
 import type { StudioBg3dAttachmentRights } from "./studio-bg3d-scene-document-types";
 import type { StudioBg3dSkpImportReport, StudioBg3dSkpReportNameList } from "./studio-bg3d-skp-import-report";
 
@@ -65,26 +68,12 @@ export function compactStudioBg3dSkpReportForStorage(report: StudioBg3dSkpImport
   };
 }
 
-function toAssetRights(
-  rights: StudioBg3dSkpImportedAsset["rights"],
-  aiUse: StudioBg3dImportAiUse | undefined,
-): StudioBg3dAssetRightsReceipt {
-  return {
-    status: rights.status,
-    commercialUse: rights.status === "unknown" ? false : rights.commercialUse,
-    // 팀 공유는 이 가져오기가 확인한 적이 없으므로 항상 금지한다.
-    teamShareAllowed: false,
-    ...(rights.licenseName ? { license: rights.licenseName } : {}),
-    ...(aiUse?.aiGenerated ? { aiGenerated: aiUse.aiGenerated } : {}),
-    ...(aiUse?.aiTraining ? { aiTraining: aiUse.aiTraining } : {}),
-  };
-}
-
 function candidateRecord(
   asset: StudioBg3dSkpImportedAsset,
   report: StudioBg3dSkpImportReport,
   name: string,
   now: number,
+  rights: StudioBg3dAssetRightsReceipt,
 ): unknown {
   return {
     version: STUDIO_BG3D_ASSET_METADATA_VERSION,
@@ -99,7 +88,7 @@ function candidateRecord(
     favorite: false,
     collections: [],
     tags: [],
-    rights: toAssetRights(asset.rights, asset.aiUse),
+    rights,
     skpImport: compactStudioBg3dSkpReportForStorage(report),
   };
 }
@@ -113,8 +102,10 @@ export function buildStudioBg3dSkpAssetMetadata(
   report: StudioBg3dSkpImportReport,
   now: number,
 ): StudioBg3dAssetMetadata | null {
-  return normalizeStudioBg3dAssetMetadata(candidateRecord(asset, report, asset.name, now))
-    ?? normalizeStudioBg3dAssetMetadata(candidateRecord(asset, report, FALLBACK_ASSET_NAME, now));
+  // 라이선스 이름이 저장 규칙에 걸려도 권리 상태·AI 표기는 지킨다(→ studio-bg3d-import-rights-receipt).
+  const build = (name: string) => pickStudioBg3dImportedMetadata(asset.rights, asset.aiUse, (rights) =>
+    normalizeStudioBg3dAssetMetadata(candidateRecord(asset, report, name, now, rights)));
+  return build(asset.name) ?? build(FALLBACK_ASSET_NAME);
 }
 
 /** 메타데이터 저장소 중 이 모듈이 쓰는 두 동작. 테스트는 가짜를 주입한다. */
@@ -152,6 +143,7 @@ export async function persistStudioBg3dSkpAssetMetadata(
     const store = await (deps.loadStore ?? loadStudioBg3dSkpMetadataStore)();
     if (await store.get(record.contentHash)) return "existing";
     await store.put([record]);
+    notifyStudioBg3dAssetRightsChanged();
     return "saved";
   } catch {
     return "failed";

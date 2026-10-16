@@ -14,6 +14,7 @@ import {
   type StudioBg3dSkpImportedAsset,
   type StudioBg3dSkpMetadataStore,
 } from "./studio-bg3d-skp-asset-metadata";
+import { subscribeStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
 import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
 
 const HASH = `sha256:${"d".repeat(64)}` as const;
@@ -79,6 +80,32 @@ describe("buildStudioBg3dSkpAssetMetadata — AI 사용 표기", () => {
     const record = buildStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), 1_000);
     expect("aiGenerated" in (record?.rights ?? {})).toBe(false);
     expect("aiTraining" in (record?.rights ?? {})).toBe(false);
+  });
+});
+
+describe("buildStudioBg3dSkpAssetMetadata — 라이선스 이름이 저장 규칙에 걸릴 때", () => {
+  it("<상업> 이름이어도 구매·허가·상업 가능·AI 표기를 지키고, 걸린 글자는 기록에 넣지 않는다", () => {
+    const record = buildStudioBg3dSkpAssetMetadata(
+      asset({
+        rights: { status: "licensed", commercialUse: true, licenseName: "3D Warehouse <표준> 약관" },
+        aiUse: { aiGenerated: "no", aiTraining: "allowed" },
+      }),
+      createSkpReportFixture(),
+      9_000,
+    );
+    expect(record?.rights).toMatchObject({ status: "licensed", commercialUse: true, aiGenerated: "no", aiTraining: "allowed" });
+    expect(JSON.stringify(record?.rights)).not.toContain("<");
+    expect(record?.skpImport).toBeDefined();
+  });
+
+  it("직접 제작은 걸린 이름을 빼고 기록한다", () => {
+    const record = buildStudioBg3dSkpAssetMetadata(
+      asset({ rights: { status: "owned", commercialUse: true, licenseName: "내 모델 https://example.invalid/own" } }),
+      createSkpReportFixture(),
+      9_000,
+    );
+    expect(record?.rights).toMatchObject({ status: "owned", commercialUse: true });
+    expect(record?.rights.license).toBeUndefined();
   });
 });
 
@@ -204,5 +231,34 @@ describe("persistStudioBg3dSkpAssetMetadata", () => {
     const status = await persistStudioBg3dSkpAssetMetadata(asset({ contentHash: "nope" }), createSkpReportFixture(), { loadStore });
     expect(status).toBe("failed");
     expect(loadStore).not.toHaveBeenCalled();
+  });
+
+  it("새 기록을 쓴 때만 권리 읽기에 알린다(기존 기록 유지·실패는 알리지 않는다)", async () => {
+    const listener = vi.fn();
+    const stop = subscribeStudioBg3dAssetRightsChanged(listener);
+    await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(fakeStore().store) });
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    const existing = normalizeStudioBg3dAssetMetadata({
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
+      contentHash: HASH,
+      name: "이미 있음",
+      format: "skp",
+      createdAt: 1,
+      updatedAt: 1,
+      byteSize: 4_096,
+      triangles: 80,
+      textures: 1,
+      favorite: true,
+      collections: [],
+      tags: [],
+      rights: DEFAULT_STUDIO_BG3D_ASSET_RIGHTS,
+    });
+    await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(fakeStore(existing).store) });
+    const rejecting = fakeStore();
+    rejecting.put.mockRejectedValueOnce(new Error("boom"));
+    await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(rejecting.store) });
+    expect(listener).toHaveBeenCalledTimes(1);
+    stop();
   });
 });

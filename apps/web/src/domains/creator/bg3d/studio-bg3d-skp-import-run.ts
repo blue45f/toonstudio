@@ -6,6 +6,7 @@
  * 자산 메타데이터에 기록한다. 액션이 SKP 세부를 몰라도 되게 하고, 화면 저장소·기록 모듈은 주입해 테스트한다.
  */
 
+import { combineStudioBg3dImportAiUseStatus, hasStudioBg3dImportAiUse } from "./studio-bg3d-import-ai-use";
 import { persistStudioBg3dSkpAssetMetadata } from "./studio-bg3d-skp-asset-metadata";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
 
@@ -13,7 +14,7 @@ import type {
   StudioBg3dSkpImportedAsset,
   StudioBg3dSkpMetadataStatus,
 } from "./studio-bg3d-skp-asset-metadata";
-import type { StudioBg3dImportAiUse } from "./studio-bg3d-import-asset-metadata";
+import type { StudioBg3dImportAiUse, StudioBg3dImportAiUseStatus } from "./studio-bg3d-import-ai-use";
 import type { StudioBg3dSkpImportOptions, StudioBg3dSkpReportEvent } from "./studio-bg3d-skp-import";
 import type { StudioBg3dSkpImportReport } from "./studio-bg3d-skp-import-report";
 import type { StudioBg3dSkpImportSession, StudioBg3dSkpResultInput } from "./studio-bg3d-skp-import-session";
@@ -71,8 +72,11 @@ export function collectStudioBg3dSkpImportedAssets(
 export interface StudioBg3dSkpImportRun {
   /** convertStudioBg3dModelFilesToGlb 의 skp 옵션. */
   readonly options: StudioBg3dSkpImportOptions;
-  /** 가져오기가 끝났을 때 한 번 부른다. 어떤 경우에도 던지지 않는다. */
-  readonly complete: (outcome: StudioBg3dSkpImportOutcome) => Promise<void>;
+  /**
+   * 가져오기가 끝났을 때 한 번 부른다. 어떤 경우에도 던지지 않는다. 돌려주는 값은 가져오기 권리 폼의 AI 사용 표기가
+   * 보고서와 같은 기록에 어떻게 저장됐는지다(고른 답이 없었거나 저장을 시도하지 않았으면 skipped).
+   */
+  readonly complete: (outcome: StudioBg3dSkpImportOutcome) => Promise<StudioBg3dImportAiUseStatus>;
 }
 
 export interface StudioBg3dSkpImportRunDeps {
@@ -93,7 +97,7 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
   const resultFor = async (
     event: StudioBg3dSkpReportEvent,
     outcome: StudioBg3dSkpImportOutcome,
-  ): Promise<StudioBg3dSkpResultInput> => {
+  ): Promise<{ readonly input: StudioBg3dSkpResultInput; readonly aiUse: StudioBg3dImportAiUseStatus }> => {
     const asset = outcome.status === "imported"
       ? collectStudioBg3dSkpImportedAssets(outcome.records, outcome.sourcePaths, outcome.aiUse)
         .find((candidate) => candidate.sourcePath === event.sourcePath)
@@ -109,14 +113,21 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
       } catch {
         metadata = "failed";
       }
-      return { sourceName: event.sourceName, report: event.report, status: "imported", reason: null, metadata };
+      return {
+        input: { sourceName: event.sourceName, report: event.report, status: "imported", reason: null, metadata },
+        // AI 표기는 보고서와 같은 기록에 담기므로 기록 결과가 곧 AI 표기의 결과다.
+        aiUse: hasStudioBg3dImportAiUse(asset.aiUse) ? metadata : "skipped",
+      };
     }
     return {
-      sourceName: event.sourceName,
-      report: event.report,
-      status: "not-imported",
-      reason: failureReason,
-      metadata: "skipped",
+      input: {
+        sourceName: event.sourceName,
+        report: event.report,
+        status: "not-imported",
+        reason: failureReason,
+        metadata: "skipped",
+      },
+      aiUse: "skipped",
     };
   };
 
@@ -130,10 +141,16 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
     },
     async complete(outcome) {
       session.setActivity(null);
-      if (reports.length === 0 || outcome.status === "abandoned") return;
+      if (reports.length === 0 || outcome.status === "abandoned") return "skipped";
       const inputs: StudioBg3dSkpResultInput[] = [];
-      for (const event of reports) inputs.push(await resultFor(event, outcome));
+      let aiUse: StudioBg3dImportAiUseStatus = "skipped";
+      for (const event of reports) {
+        const result = await resultFor(event, outcome);
+        inputs.push(result.input);
+        aiUse = combineStudioBg3dImportAiUseStatus(aiUse, result.aiUse);
+      }
       session.publishResults(inputs);
+      return aiUse;
     },
   };
 }
