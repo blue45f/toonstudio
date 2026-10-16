@@ -15,7 +15,7 @@ import { cn } from "@/shared/lib/utils";
 
 import { useStudioCatalogPreferences } from "../catalog/use-studio-catalog-preferences";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
-import { bi } from "./studio-charm-copy";
+import { bi, biFill } from "./studio-charm-copy";
 import { studioCharmFavoriteIds } from "./studio-charm-favorites";
 import { StudioCharmPreview } from "./StudioCharmPreview";
 
@@ -179,9 +179,10 @@ export function StudioCharmPicker({
       </div>
 
       <p role="status" aria-live="polite" className="text-[0.7rem] text-fg-3">
-        {bi(
-          `${matches.length}개 · 고정 ${pinned.length}/${capacity}`,
-          `${matches.length} found · ${pinned.length}/${capacity} pinned`,
+        {biFill(
+          "{found}개 · 고정 {pinned}/{capacity}",
+          "{found} found · {pinned}/{capacity} pinned",
+          { found: matches.length, pinned: pinned.length, capacity },
         )}
         {catalogStatus === "loading" ? bi(" · 효과·스티커를 불러오는 중…", " · loading effects and stickers…") : ""}
         {libraryStatus === "loading" ? bi(" · 내 소재를 불러오는 중…", " · loading your assets…") : ""}
@@ -219,9 +220,10 @@ export function StudioCharmPicker({
 
       {isFull ? (
         <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 px-2 py-1.5 text-xs text-fg-2">
-          {bi(
-            `참 바가 가득 찼어요(최대 ${capacity}개). 하나를 빼면 새로 고정할 수 있어요.`,
-            `The charm bar is full (up to ${capacity}). Remove one to pin another.`,
+          {biFill(
+            "참 바가 가득 찼어요(최대 {max}개). 하나를 빼면 새로 고정할 수 있어요.",
+            "The charm bar is full (up to {max}). Remove one to pin another.",
+            { max: capacity },
           )}
         </p>
       ) : null}
@@ -302,7 +304,7 @@ export function StudioCharmPicker({
             onClick={() => setLimit((value) => value + PAGE_SIZE)}
             className={cn("mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold text-fg-2 hover:bg-raised", STUDIO_FOCUS_RING)}
           >
-            {bi(`더 보기 (${visible.length}/${matches.length})`, `Show more (${visible.length}/${matches.length})`)}
+            {biFill("더 보기 ({shown}/{total})", "Show more ({shown}/{total})", { shown: visible.length, total: matches.length })}
           </button>
         ) : null}
       </div>

@@ -12,7 +12,7 @@ import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
-import { bi, lockNoticeText } from "./studio-charm-copy";
+import { bi, biFill, lockNoticeText } from "./studio-charm-copy";
 
 import type { StudioCharmLock } from "./studio-charm-host-bridge";
 import type { StudioCharmBarPersistence } from "./studio-charm-bar-store";
@@ -87,11 +87,12 @@ export function StudioCharmBarNotices({
         <p role="status" data-studio-charm-note="starter" className={cn(NOTE_BASE, "flex items-start gap-1 border-line bg-card")}>
           <span className="min-w-0 flex-1">
             <Dual
-              full={bi(
-                `기본 참 ${starterCount}개를 담았어요. 필요 없는 건 편집에서 뺄 수 있어요.`,
-                `Added ${starterCount} starter charms. Remove any you do not need while editing.`,
+              full={biFill(
+                "기본 참 {count}개를 담았어요. 필요 없는 건 편집에서 뺄 수 있어요.",
+                "Added {count} starter charms. Remove any you do not need while editing.",
+                { count: starterCount },
               )}
-              short={bi(`기본 ${starterCount}개`, `${starterCount} starter`)}
+              short={biFill("기본 {count}개", "{count} starter", { count: starterCount })}
             />
           </span>
           <button

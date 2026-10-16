@@ -17,7 +17,7 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { preloadStudioCharmBar } from "./studio-charm-bar-loader";
 import { getStudioCharmBarStore, type StudioCharmBarStore } from "./studio-charm-bar-store";
 import { preloadStudioCharmCatalogData } from "./studio-charm-catalog-data";
-import { bi } from "./studio-charm-copy";
+import { bi, biFill } from "./studio-charm-copy";
 import { STUDIO_CHARM_BAR_MAX_CHARMS, isStudioCharmPinned, parseStudioCharmId } from "./studio-charm-model";
 
 /** 켜려는 낌새(포인터 올림·포커스·터치)가 보이면 지연 로드하는 본체와 카탈로그 데이터를 미리 데운다. */
@@ -127,9 +127,10 @@ export function StudioCharmPinAction({
       </button>
       {fullNotice ? (
         <p role="status" className="basis-full text-xs text-bad">
-          {bi(
-            `참 바가 가득 찼어요(최대 ${STUDIO_CHARM_BAR_MAX_CHARMS}개). 하나를 빼면 새로 고정할 수 있어요.`,
-            `The charm bar is full (up to ${STUDIO_CHARM_BAR_MAX_CHARMS}). Remove one to pin another.`,
+          {biFill(
+            "참 바가 가득 찼어요(최대 {max}개). 하나를 빼면 새로 고정할 수 있어요.",
+            "The charm bar is full (up to {max}). Remove one to pin another.",
+            { max: STUDIO_CHARM_BAR_MAX_CHARMS },
           )}
         </p>
       ) : null}

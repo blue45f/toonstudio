@@ -19,7 +19,7 @@ import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_CHARM_BAR_MAX_CHARMS, splitStudioCharmId, type StudioCharmId } from "./studio-charm-model";
-import { bi, lockNoticeText } from "./studio-charm-copy";
+import { bi, biFill, lockNoticeText } from "./studio-charm-copy";
 import { writeStudioCharmDragPayload } from "./studio-charm-drag";
 import { activateStudioCharm } from "./studio-charm-insert";
 import { resolveStudioCharmKeyIntent, STUDIO_CHARM_SHORTCUTS, type StudioCharmShortcutId } from "./studio-charm-keyboard";
@@ -174,8 +174,10 @@ export function StudioCharmBar({
     try {
       // 문맥은 눌린 순간에 읽는다: 비동기 삽입 동안 선택이나 스크롤이 바뀌어도 누른 곳 기준이다.
       const result = await activateStudioCharm(descriptor, readContext(), commands);
-      if (result.status === "inserted") announce(bi(`붙였어요: ${descriptor.label}`, `Stamped: ${descriptor.label}`));
-      else if (result.status === "opened") announce(bi(`3D 도구에서 열었어요: ${descriptor.label}`, `Opened in the 3D tool: ${descriptor.label}`));
+      if (result.status === "inserted") announce(biFill("붙였어요: {label}", "Stamped: {label}", { label: descriptor.label }));
+      else if (result.status === "opened") {
+        announce(biFill("3D 도구에서 열었어요: {label}", "Opened in the 3D tool: {label}", { label: descriptor.label }));
+      }
       else if (result.status === "rejected") {
         announce(bi("붙이지 못했어요. 편집 잠금이나 저장 중인지 확인해 주세요.", "Could not stamp it. Check for an edit lock or a save in progress."));
       } else announce(result.message);
@@ -195,7 +197,7 @@ export function StudioCharmBar({
     store.dispatch({ type: "unpin", id });
     setEditTarget((current) => (current === id ? null : current));
     focusRequest.current = neighbor;
-    announce(bi(`참 바에서 뺐어요: ${label}`, `Removed from the charm bar: ${label}`));
+    announce(biFill("참 바에서 뺐어요: {label}", "Removed from the charm bar: {label}", { label }));
   }, [announce, charms, descriptorOf, reachablePositions, store]);
 
   const reorder = useCallback((id: StudioCharmId, delta: -1 | 1) => {
@@ -207,7 +209,11 @@ export function StudioCharmBar({
     const label = descriptorOf(id)?.label ?? bi("사용할 수 없는 참", "Unavailable charm");
     store.dispatch({ type: "move", id, toIndex: target });
     focusRequest.current = id;
-    announce(bi(`${target + 1}번째로 옮겼어요: ${label} (${charms.length}개 중)`, `Moved to position ${target + 1} of ${charms.length}: ${label}`));
+    announce(biFill(
+      "{position}번째로 옮겼어요: {label} ({total}개 중)",
+      "Moved to position {position} of {total}: {label}",
+      { position: target + 1, total: charms.length, label },
+    ));
   }, [announce, charms, descriptorOf, entries, store]);
 
   const onPress = useCallback((id: StudioCharmId) => {
@@ -215,7 +221,11 @@ export function StudioCharmBar({
     if (editing) {
       setEditTarget(id);
       const label = resolution.status === "ready" ? resolution.descriptor.label : bi("사용할 수 없는 참", "Unavailable charm");
-      announce(bi(`편집할 참으로 골랐어요: ${label} (${charms.indexOf(id) + 1}/${charms.length})`, `Selected for editing: ${label} (${charms.indexOf(id) + 1} of ${charms.length})`));
+      announce(biFill(
+        "편집할 참으로 골랐어요: {label} ({position}/{total})",
+        "Selected for editing: {label} ({position} of {total})",
+        { label, position: charms.indexOf(id) + 1, total: charms.length },
+      ));
       return;
     }
     if (resolution.status === "missing") {
@@ -271,12 +281,12 @@ export function StudioCharmBar({
     const wasPinned = charms.includes(descriptor.id);
     const result = store.dispatch({ type: "toggle", id: descriptor.id });
     if (!result.ok) {
-      announce(bi(`참 바가 가득 찼어요(최대 ${STUDIO_CHARM_BAR_MAX_CHARMS}개).`, `The charm bar is full (up to ${STUDIO_CHARM_BAR_MAX_CHARMS}).`));
+      announce(biFill("참 바가 가득 찼어요(최대 {max}개).", "The charm bar is full (up to {max}).", { max: STUDIO_CHARM_BAR_MAX_CHARMS }));
       return;
     }
     announce(wasPinned
-      ? bi(`참 바에서 뺐어요: ${descriptor.label}`, `Removed from the charm bar: ${descriptor.label}`)
-      : bi(`참 바에 고정했어요: ${descriptor.label}`, `Pinned to the charm bar: ${descriptor.label}`));
+      ? biFill("참 바에서 뺐어요: {label}", "Removed from the charm bar: {label}", { label: descriptor.label })
+      : biFill("참 바에 고정했어요: {label}", "Pinned to the charm bar: {label}", { label: descriptor.label }));
   }, [announce, charms, store]);
 
   const startEditing = () => {
@@ -355,7 +365,7 @@ export function StudioCharmBar({
       {editing ? (
         <div role="group" aria-label={bi("선택한 참 편집", "Edit the selected charm")} className="studio-charm-bar__tools" data-studio-charm-edit="">
           <p className="sr-only" role="status">
-            {editLabel ? bi(`선택됨: ${editLabel}`, `Selected: ${editLabel}`) : bi("편집할 참을 고르세요", "Select a charm to edit")}
+            {editLabel ? biFill("선택됨: {label}", "Selected: {label}", { label: editLabel }) : bi("편집할 참을 고르세요", "Select a charm to edit")}
           </p>
           <button type="button" className={TOOL_BUTTON} disabled={editIndex <= 0} aria-label={bi("앞으로 옮기기", "Move earlier")} title={bi("앞으로 옮기기", "Move earlier")} onClick={() => editTarget && reorder(editTarget, -1)}>
             <MoveLeft size={16} aria-hidden="true" />
