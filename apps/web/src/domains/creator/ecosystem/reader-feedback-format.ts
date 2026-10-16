@@ -21,11 +21,14 @@ export function meanText(mean: number | null): string {
   return mean === null ? "—" : mean.toFixed(1);
 }
 
-/** 묶음 이름: 제목 + 회차. 제목·회차가 같은 다른 대상이 있으면 id 끝자리로 구분한다. */
-export function groupLabel(bt: Localize, group: Pick<ReaderFeedbackGroup, "title" | "episode" | "id" | "needsDisambiguation">): string {
+/**
+ * 묶음 이름의 두 부분: 제목(독자가 쓴 글이라 화면이 `<bdi>`로 격리해 그린다)과 그 뒤에 붙는 회차·구분 표시.
+ * 제목·회차가 같은 다른 대상이 있으면 id 끝자리로 구분한다.
+ */
+export function groupLabelParts(bt: Localize, group: Pick<ReaderFeedbackGroup, "title" | "episode" | "id" | "needsDisambiguation">): { readonly title: string; readonly suffix: string } {
   const episode = group.episode === null ? "" : formatI18nTemplate(bt(" {n}화", " · Ep. {n}"), { n: group.episode });
-  const suffix = group.needsDisambiguation && group.id ? ` · …${group.id.slice(-4)}` : "";
-  return `${group.title}${episode}${suffix}`;
+  const idSuffix = group.needsDisambiguation && group.id ? ` · …${group.id.slice(-4)}` : "";
+  return { title: group.title, suffix: `${episode}${idSuffix}` };
 }
 
 export function cutRangeText(bt: Localize, bin: Pick<DropOffBin, "from" | "to">): string {
@@ -36,6 +39,18 @@ export function cutRangeText(bt: Localize, bin: Pick<DropOffBin, "from" | "to">)
 
 export function scrollRangeText(bt: Localize, bin: Pick<DropOffBin, "from" | "to">): string {
   return formatI18nTemplate(bt("{from}~{to}%", "{from}–{to}%"), { from: bin.from, to: bin.to });
+}
+
+/**
+ * 가장 많이 멈춘 구간을 짧게. 동률이면 첫 구간 뒤에 나머지 곳 수와 각각의 인원을 밝혀(첫 구간만 있는 것처럼 보이지 않게) 줄이고,
+ * 없으면 줄표다. 동률인 구간 전체는 자세한 요약이 나열한다.
+ */
+export function peakSummaryText(bt: Localize, peaks: readonly DropOffBin[], rangeLabel: (bin: DropOffBin) => string): string {
+  const [first] = peaks;
+  if (!first) return "—";
+  const count = countText(bt, first.count);
+  if (peaks.length === 1) return `${rangeLabel(first)} (${count})`;
+  return formatI18nTemplate(bt("{range} 외 {more}곳 동률 (각 {count})", "{range} and {more} more tied ({count} each)"), { range: rangeLabel(first), more: peaks.length - 1, count });
 }
 
 /** 한 응답이 읽은 정도를 말로. */

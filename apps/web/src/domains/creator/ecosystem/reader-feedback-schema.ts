@@ -26,7 +26,7 @@ export const READER_FEEDBACK_LIMITS = Object.freeze({
   /** 한 번에 가져오는 파일 수. */
   maxFiles: 20,
   maxResponsesPerFile: 50,
-  /** 합친 응답 총수. 넘으면 오래된 순으로 남기고 나머지는 가져오지 않는다. */
+  /** 합친 응답 총수. 넘으면 이미 있는 응답을 지키고 새로 들어온 응답은 받지 않는다(이미 있는 응답의 새 버전으로 바꾸는 것은 막지 않는다). */
   maxTotalResponses: 1_000,
   /** 파일 → responses → 응답 → reading → point 가 최대 5단이다. */
   maxJsonDepth: 6,

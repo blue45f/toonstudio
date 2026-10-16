@@ -34,6 +34,23 @@ function chooseFiles(files: readonly File[]) {
 
 const statusText = () => screen.getAllByRole("status").map((node) => node.textContent).join(" | ");
 
+/** 같은 회차의 응답 `count`개. 의견만 있는 응답에 `answer(index)`로 점수·읽은 정도를 얹는다. */
+function crowd(count: number, answer: (index: number) => Partial<ReaderFeedbackResponse> = () => ({}), episode = 1): ReaderFeedbackResponse[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...EXAMPLES[2]!,
+    id: `crowd-${episode}-${index}`,
+    createdAt: new Date(Date.UTC(2026, 9, 10, 0, index)).toISOString(),
+    target: { kind: "manual" as const, id: null, title: "분모 시험 작품", episode },
+    nickname: null,
+    ratings: { fun: null, understanding: null },
+    reading: { status: "unmarked" as const },
+    emotions: [],
+    comment: `${index + 1}번째 독자의 의견이에요`,
+    spoiler: false,
+    ...answer(index),
+  }));
+}
+
 beforeEach(() => {
   window.localStorage.clear();
 });
@@ -194,23 +211,6 @@ describe("ReaderFeedbackSummaryPanel: 예시 체험과 요약", () => {
 });
 
 describe("ReaderFeedbackSummaryPanel: 비율(%)은 각 분모(답한 사람 수)가 충분할 때만", () => {
-  /** 같은 회차의 응답 `count`개. 의견만 있는 응답에 `answer(index)`로 점수·읽은 정도를 얹는다. */
-  function crowd(count: number, answer: (index: number) => Partial<ReaderFeedbackResponse> = () => ({}), episode = 1): ReaderFeedbackResponse[] {
-    return Array.from({ length: count }, (_, index) => ({
-      ...EXAMPLES[2]!,
-      id: `crowd-${episode}-${index}`,
-      createdAt: new Date(Date.UTC(2026, 9, 10, 0, index)).toISOString(),
-      target: { kind: "manual" as const, id: null, title: "분모 시험 작품", episode },
-      nickname: null,
-      ratings: { fun: null, understanding: null },
-      reading: { status: "unmarked" as const },
-      emotions: [],
-      comment: `${index + 1}번째 독자의 의견이에요`,
-      spoiler: false,
-      ...answer(index),
-    }));
-  }
-
   it("응답이 10개여도 점수·읽은 정도에 답한 사람이 한 명이면 '100%'를 보이지 않고 개수만 보인다", async () => {
     renderPanel();
     chooseFiles([jsonFile("one-answer.json", crowd(10, (index) => (index === 0 ? { ratings: { fun: 3, understanding: 3 }, reading: { status: "finished" } } : {})))]);
@@ -537,6 +537,59 @@ describe("ReaderFeedbackSummaryPanel: 누른 단추가 사라져도 초점이 bo
       expect(scroller.getAttribute("role")).toBe("region");
       expect(screen.getByRole("region", { name: `${label} (좌우로 스크롤)` })).toBe(scroller);
     }
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 회차 비교표의 가장 많이 멈춘 곳", () => {
+  const stoppedAt = (cut: number) => ({ reading: { status: "left" as const, point: { mode: "cut" as const, cut, cutCount: 12 } } });
+
+  it("최빈 구간이 동률이면 첫 구간만 보이지 않고 동률인 곳 수와 각각의 인원을 밝힌다", async () => {
+    renderPanel();
+    const tied = crowd(4, (index) => stoppedAt(index < 2 ? 3 : 9), 1);
+    const single = crowd(3, (index) => stoppedAt(index < 2 ? 5 : 6), 2);
+    const threeWay = crowd(3, (index) => stoppedAt([2, 7, 11][index]!), 3);
+    chooseFiles([jsonFile("peaks.json", [...tied, ...single, ...threeWay])]);
+    await screen.findByText(/응답 10개 추가/u);
+    const rows = within(screen.getByRole("table", { name: /회차별 응답 수와 평균/u })).getAllByRole("row").slice(1);
+    expect(rows.map((row) => within(row).getAllByRole("cell")[4]!.textContent)).toEqual([
+      "3컷 외 1곳 동률 (각 2명)",
+      "5컷 (2명)",
+      "2컷 외 2곳 동률 (각 1명)",
+    ]);
+    // 자세한 요약은 동률인 구간을 모두 나열한다(표는 줄여 보이되 정보를 숨기지 않는다).
+    fireEvent.click(within(rows[0]!).getByRole("button"));
+    expect(screen.getByRole("article").textContent).toContain("가장 많이 멈춘 구간: 3컷 (2명), 9컷 (2명)");
+  });
+});
+
+describe("ReaderFeedbackSummaryPanel: 사용자 문자열은 <bdi>로 감싼다", () => {
+  const arabic = "مرحبا بالعالم";
+  const hebrew = "שלום עולם";
+
+  it("작품 이름·닉네임·의견·파일 이름이 오른쪽에서 왼쪽으로 쓰는 글이어도 주변 글자 순서를 흩지 않도록 격리한다", async () => {
+    renderPanel();
+    const withTitle = (id: string, episode: number) => ({
+      ...crowd(1, () => ({ nickname: hebrew, comment: arabic }), episode)[0]!, id,
+      target: { kind: "manual" as const, id: null, title: arabic, episode },
+    });
+    chooseFiles([jsonFile(`${hebrew}.json`, [withTitle("rtl-1", 1), withTitle("rtl-2", 2)])]);
+    await screen.findByText(/응답 2개 추가/u);
+
+    const isolated = (element: HTMLElement | null | undefined, text: string) => {
+      const bdi = element?.querySelector("bdi");
+      expect(bdi?.textContent, `${text} 를 <bdi> 로 감싼 곳이 없습니다`).toBe(text);
+    };
+    // 파일 이름(가져오기 결과)
+    isolated(screen.getByRole("heading", { level: 4, name: "가져오기 결과" }).parentElement!.parentElement!.querySelector("li strong"), `${hebrew}.json`);
+    // 회차 이름: 비교표의 단추와 자세한 요약의 제목
+    const compare = screen.getByRole("table", { name: /회차별 응답 수와 평균/u });
+    for (const button of within(compare).getAllByRole("button")) isolated(button, arabic);
+    isolated(screen.getByRole("article").querySelector("h4"), arabic);
+    // 닉네임, 의견(문단 방향은 내용을 따른다)
+    const item = within(screen.getByRole("heading", { level: 5, name: "대표 의견" }).parentElement!).getAllByRole("listitem")[0]!;
+    isolated(item.querySelector("p span"), hebrew);
+    const text = item.querySelector("p[dir='auto']") as HTMLElement;
+    isolated(text, arabic);
   });
 });
 

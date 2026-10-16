@@ -193,13 +193,15 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
         ref={formRef}
         noValidate
         className="mt-5 space-y-6"
-        onSubmit={(event) => { event.preventDefault(); void exportWith("download"); }}
+        // 한 줄 입력에서 Enter 를 누르면 브라우저가 폼을 제출한다. 이것이 곧바로 파일 저장이 되면 답을 마치기도 전에 파일이 내려가므로,
+        // 제출 자체는 아무것도 하지 않고 저장은 "파일로 저장" 단추를 누를 때만 한다(단추는 Enter·Space 로도 누를 수 있다).
+        onSubmit={(event) => event.preventDefault()}
       >
         <div className="grid gap-6 md:grid-cols-2">
           <div className="min-w-0 space-y-6">
             {target ? (
               <p className="text-sm text-fg-2">
-                {bt("대상", "Target")}: <strong className="text-fg [overflow-wrap:anywhere]">{target.title}</strong>
+                {bt("대상", "Target")}: <strong className="text-fg [overflow-wrap:anywhere]"><bdi>{target.title}</bdi></strong>
                 {target.episode ? <span>{formatI18nTemplate(bt(" · {n}화", " · Ep. {n}"), { n: target.episode })}</span> : null}
               </p>
             ) : (
@@ -355,7 +357,7 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
         ) : null}
 
         <div className="flex flex-wrap gap-2">
-          <button type="submit" className={RF_PRIMARY}><Download size={16} aria-hidden /> {bt("파일로 저장", "Save as file")}</button>
+          <button type="button" className={RF_PRIMARY} onClick={() => void exportWith("download")}><Download size={16} aria-hidden /> {bt("파일로 저장", "Save as file")}</button>
           {canShare ? <button type="button" className={RF_BUTTON} onClick={() => void exportWith("share")}><Share2 size={16} aria-hidden /> {bt("공유하기", "Share")}</button> : null}
           <button type="button" className={RF_BUTTON} onClick={() => void exportWith("copy")}><Copy size={16} aria-hidden /> {bt("내용 복사", "Copy text")}</button>
           {delivered ? <button type="button" className={RF_BUTTON} onClick={startOver}><RotateCcw size={16} aria-hidden /> {bt("새 의견 쓰기", "Write another")}</button> : null}

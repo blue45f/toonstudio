@@ -5,9 +5,19 @@ import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-co
 
 import { DistributionList, DropOffHeatStrip } from "./ReaderFeedbackCharts";
 import { EMOTION_LABELS, FUN_LEVEL_LABELS, RF_BUTTON, UNDERSTANDING_LEVEL_LABELS } from "./reader-feedback-copy";
-import { countText, cutRangeText, groupLabel, meanText, readingText, scrollRangeText, type Localize } from "./reader-feedback-format";
+import { countText, cutRangeText, groupLabelParts, meanText, readingText, scrollRangeText, type Localize } from "./reader-feedback-format";
 import { RATING_LEVELS } from "./reader-feedback-schema";
 import { SAMPLE_LEVEL_THRESHOLDS, peakBins, showsPercent, type FeedbackComment, type RatingSummary, type ReaderFeedbackGroup } from "./reader-feedback-summary";
+
+/**
+ * 회차 묶음의 이름. 제목은 독자·패키지가 쓴 글이라 `<bdi>`로 격리한다 — 오른쪽에서 왼쪽으로 쓰는 글이 뒤따르는 "1화"와
+ * 주변 구분 기호의 순서를 흩지 않게 한다.
+ */
+export function GroupName({ group }: { readonly group: Pick<ReaderFeedbackGroup, "title" | "episode" | "id" | "needsDisambiguation"> }) {
+  const bt = useBilingual("ReaderFeedback");
+  const { title, suffix } = groupLabelParts(bt, group);
+  return <><bdi>{title}</bdi>{suffix}</>;
+}
 
 function Figure({ label, value, unit, note }: { readonly label: string; readonly value: string; readonly unit?: string; readonly note?: string }) {
   return (
@@ -59,7 +69,7 @@ function CommentItem({ comment, onToggleHidden }: { readonly comment: FeedbackCo
   return (
     <li className="border-t border-line pt-3 first:border-t-0 first:pt-0">
       <p className="text-xs leading-5 text-fg-3">
-        <span className="font-bold text-fg-2">{comment.nickname ?? bt("익명", "Anonymous")}</span> · {ratings.join(" · ")}
+        <span className="font-bold text-fg-2">{comment.nickname === null ? bt("익명", "Anonymous") : <bdi>{comment.nickname}</bdi>}</span> · {ratings.join(" · ")}
       </p>
       {comment.spoiler ? (
         <div className="mt-1">
@@ -69,10 +79,10 @@ function CommentItem({ comment, onToggleHidden }: { readonly comment: FeedbackCo
               {revealed ? <EyeOff size={15} aria-hidden /> : <Eye size={15} aria-hidden />} {revealed ? bt("스포일러 가리기", "Hide spoiler") : bt("스포일러 보기", "Show spoiler")}
             </button>
           </div>
-          <div id={textId}>{revealed ? <p className="mt-1 text-sm leading-6 text-fg [overflow-wrap:anywhere]">{comment.text}</p> : null}</div>
+          <div id={textId}>{revealed ? <p dir="auto" className="mt-1 text-sm leading-6 text-fg [overflow-wrap:anywhere]"><bdi>{comment.text}</bdi></p> : null}</div>
         </div>
       ) : (
-        <p id={textId} className="mt-1 text-sm leading-6 text-fg [overflow-wrap:anywhere]">{comment.text}</p>
+        <p id={textId} dir="auto" className="mt-1 text-sm leading-6 text-fg [overflow-wrap:anywhere]"><bdi>{comment.text}</bdi></p>
       )}
       <button
         type="button"
@@ -143,7 +153,7 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
   return (
     <article aria-labelledby={headingId} className="space-y-4">
       <header>
-        <h4 id={headingId} className="text-base font-black text-fg [overflow-wrap:anywhere]">{groupLabel(bt, group)}</h4>
+        <h4 id={headingId} className="text-base font-black text-fg [overflow-wrap:anywhere]"><GroupName group={group} /></h4>
         <p className="mt-1 text-sm leading-6 text-fg-2">{sampleNote}</p>
       </header>
 

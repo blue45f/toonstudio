@@ -210,6 +210,29 @@ describe("ReaderFeedbackForm", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "새 의견 쓰기" })).toBeTruthy());
   });
 
+  it("입력 칸에서 Enter 를 눌러 폼이 제출되어도(암묵적 제출) 파일이 저장되지 않고, 저장 단추를 눌러야 저장된다", () => {
+    render(<ReaderFeedbackForm target={KNOWN} />);
+    choose("재밌었어요");
+    const nickname = screen.getByLabelText("닉네임 (선택)");
+    fireEvent.change(nickname, { target: { value: "별빛" } });
+    // 브라우저는 한 줄 입력에서 Enter 를 누르면 폼에 submit 을 보낸다. 이것이 저장으로 이어지지 않아야 한다.
+    const proceeded = fireEvent.submit(nickname.closest("form")!);
+    expect(proceeded).toBe(false);
+    expect(download).not.toHaveBeenCalled();
+    expect(screen.getByRole("status").textContent).toBe("");
+    // 저장 단추는 키보드(Enter·Space)로도 누를 수 있는 일반 단추라 그대로 저장한다.
+    expect(screen.getByRole("button", { name: "파일로 저장" }).getAttribute("type")).toBe("button");
+    save();
+    expect(download).toHaveBeenCalledTimes(1);
+  });
+
+  it("아는 대상의 이름은 <bdi>로 감싸 오른쪽에서 왼쪽으로 쓰는 이름이 주변 글자를 흩지 않게 한다", () => {
+    render(<ReaderFeedbackForm target={{ ...KNOWN, title: "مرحبا بالعالم", episode: 2 }} />);
+    const name = screen.getByText("مرحبا بالعالم");
+    expect(name.tagName).toBe("BDI");
+    expect(name.closest("p")!.textContent).toBe("대상: مرحبا بالعالم · 2화");
+  });
+
   it("컷 번호가 전체 컷 수를 넘으면 필드 오류로 알리고 그 칸으로 초점을 옮긴다", () => {
     render(<ReaderFeedbackForm target={KNOWN} />);
     choose("중간에 멈췄어요");
@@ -300,7 +323,7 @@ describe("ReaderFeedbackForm", () => {
 
   it("대상이 회차를 정해 두었으면 대상 줄에 보이고 그대로 담긴다", async () => {
     render(<ReaderFeedbackForm target={{ ...KNOWN, episode: 4 }} />);
-    expect(screen.getByText("새 연재작 1화").parentElement!.textContent).toBe("대상: 새 연재작 1화 · 4화");
+    expect(screen.getByText("새 연재작 1화").closest("p")!.textContent).toBe("대상: 새 연재작 1화 · 4화");
     choose("재밌었어요");
     save();
     await waitFor(() => expect(download).toHaveBeenCalledTimes(1));

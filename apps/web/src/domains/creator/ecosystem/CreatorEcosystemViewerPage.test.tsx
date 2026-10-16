@@ -141,6 +141,32 @@ describe("CreatorEcosystemViewerPage: 회차 피드백", () => {
   });
 });
 
+describe("CreatorEcosystemViewerPage: 랜드마크", () => {
+  it("피드백 영역에 이름이 겹치는 region 이 중첩되지 않는다(폼의 region 하나만 남는다)", async () => {
+    renderViewer();
+    openPackage(REVIEW_PACKAGE);
+    await screen.findByRole("heading", { level: 2, name: "새 연재작 1화" });
+    expect(screen.getAllByRole("region", { name: /회차 피드백/u }).map((region) => region.getAttribute("aria-labelledby") ? "form" : region.getAttribute("aria-label"))).toEqual(["form"]);
+  });
+
+  it("패키지 없이 남기는 길도 펼쳐도 region 은 폼 하나뿐이다", () => {
+    renderViewer();
+    expect(screen.queryAllByRole("region", { name: /피드백/u })).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "패키지 없이 회차 피드백만 남기기" }));
+    expect(screen.getAllByRole("region", { name: /피드백/u })).toHaveLength(1);
+    expect(screen.getByRole("region", { name: "회차 피드백 남기기" })).toBeTruthy();
+  });
+
+  it("텍스트 검토 패키지의 구성 이름과 질문은 <bdi>로 감싼다", async () => {
+    renderViewer();
+    openPackage({ ...REVIEW_PACKAGE, pages: [{ id: "page-1", label: "מבוא" }], questions: ["هل كان واضحا؟"] });
+    await screen.findByRole("heading", { level: 2, name: "새 연재작 1화" });
+    expect(screen.getByText("מבוא").tagName).toBe("BDI");
+    expect(screen.getByText("هل كان واضحا؟").tagName).toBe("BDI");
+    expect(screen.getByRole("heading", { level: 2, name: "새 연재작 1화" }).querySelector("bdi")?.textContent).toBe("새 연재작 1화");
+  });
+});
+
 describe("CreatorEcosystemViewerPage: 영어 화면", () => {
   const originalLanguage = useI18n.getState().lang;
   afterEach(() => useI18n.setState({ lang: originalLanguage }));

@@ -4,10 +4,10 @@ import { Link } from "react-router-dom";
 
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-import { ReaderFeedbackGroupView } from "./ReaderFeedbackGroupView";
+import { GroupName, ReaderFeedbackGroupView } from "./ReaderFeedbackGroupView";
 import { RF_BUTTON, RF_CONTROL, RF_PRIMARY } from "./reader-feedback-copy";
 import { createExampleReaderFeedback } from "./reader-feedback-example";
-import { countText, cutRangeText, groupLabel, meanText, scrollRangeText, type Localize } from "./reader-feedback-format";
+import { cutRangeText, meanText, peakSummaryText, scrollRangeText, type Localize } from "./reader-feedback-format";
 import { loadHiddenResponseIds, saveHiddenResponseIds, toggleHiddenResponseId } from "./reader-feedback-hidden";
 import {
   INITIAL_PANEL_STATE,
@@ -199,7 +199,7 @@ export function ReaderFeedbackSummaryPanel() {
             {state.reports.map((report) => (
               <li key={report.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2 text-sm first:border-t-0 first:pt-0">
                 <span className="min-w-0 [overflow-wrap:anywhere]">
-                  <strong className="text-fg">{report.name || bt("(이름 없음)", "(no name)")}</strong>{" "}
+                  <strong className="text-fg">{report.name ? <bdi>{report.name}</bdi> : bt("(이름 없음)", "(no name)")}</strong>{" "}
                   {report.status === "ok"
                     ? <span className="text-fg-2">{formatI18nTemplate(bt("응답 {n}개를 읽었어요.", "Read {n} responses."), { n: report.accepted })}</span>
                     : <span className="font-bold text-bad">{failureText(bt, report)}</span>}
@@ -249,7 +249,7 @@ export function ReaderFeedbackSummaryPanel() {
                   <tbody>
                     {groups.map((group) => {
                       const isCut = group.dropOff.cut.total >= group.dropOff.scroll.total;
-                      const peak = peakBins(isCut ? group.dropOff.cut.bins : group.dropOff.scroll.bins)[0];
+                      const peaks = peakBins(isCut ? group.dropOff.cut.bins : group.dropOff.scroll.bins);
                       const marked = group.reading.finished + group.reading.left;
                       return (
                         <tr key={group.key} className={`border-t border-line ${group.key === selected.key ? "bg-accent-soft" : ""}`}>
@@ -260,7 +260,7 @@ export function ReaderFeedbackSummaryPanel() {
                               className="min-h-11 rounded-lg px-1 text-left font-bold text-fg underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [overflow-wrap:anywhere]"
                               onClick={() => dispatch({ type: "select", key: group.key })}
                             >
-                              {groupLabel(bt, group)}
+                              <GroupName group={group} />
                             </button>
                           </th>
                           <td className="py-1 pr-3 text-right tabular-nums">{group.count}</td>
@@ -268,7 +268,7 @@ export function ReaderFeedbackSummaryPanel() {
                           <td className="py-1 pr-3 text-right tabular-nums">{meanText(group.understanding.mean)}</td>
                           <td className="py-1 pr-3 text-right tabular-nums">{group.reading.finishedShare === null ? "—" : showsPercent(marked) ? `${Math.round(group.reading.finishedShare * 100)}%` : `${group.reading.finished}/${marked}`}</td>
                           <td className="py-1 text-fg-2">
-                            {peak ? `${isCut ? cutRangeText(bt, peak) : scrollRangeText(bt, peak)} (${countText(bt, peak.count)})` : "—"}
+                            {peakSummaryText(bt, peaks, (bin) => (isCut ? cutRangeText(bt, bin) : scrollRangeText(bt, bin)))}
                           </td>
                         </tr>
                       );
