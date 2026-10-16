@@ -4,6 +4,7 @@ import ts from "typescript";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { BUBBLE_VARIANTS } from "../studio-assets";
+import { isStudioUndoRedoChord, shouldHandleStudioEditEvent } from "../studio-edit-controls";
 import { studioCharmBubbleFootprint } from "./studio-charm-insert";
 
 /**
@@ -233,6 +234,33 @@ describe("참 바 호스트 계약: 명령 전달과 놓기", () => {
     expect(workspace.match(/<StudioCharmBarSlot\b/gu)).toHaveLength(1);
     expect(workspace).toContain("<StudioCharmBarSlot session={s} />");
     expect(workspace.indexOf("<StudioCharmBarSlot")).toBeLessThan(workspace.indexOf("<StudioCuttoonEditorCanvasColumn"));
+  });
+});
+
+describe("참 바 호스트 계약: 전역 단축키 경계", () => {
+  // `StudioCharmBar.shortcuts.test.tsx` 는 전역 쪽 판정을 같은 함수·선택자로 흉내 낸다. 그 전제가 실제 디스패처와 같은지 여기서 지킨다.
+  it("전역 디스패처는 이미 처리된 키와 단축키 경계 안의 키를 편집 명령으로 실행하지 않는다", () => {
+    const source = readFileSync(new URL(`${CREATOR}studio-page-shortcut-dispatcher.ts`, import.meta.url), "utf8");
+    expect(source).toContain("if (e.defaultPrevented) return;");
+    expect(source).toContain(`target.closest("[data-studio-shortcut-boundary='true'], [aria-modal='true']")`);
+    expect(source).toContain("shouldHandleStudioEditEvent({");
+    expect(source).toMatch(/insideShortcutBoundary,\n/u);
+    expect(source).toContain("undoRedoIntent: isStudioUndoRedoChord(e)");
+  });
+
+  it("경계 안에서는 되돌리기·다시 하기만 통과하고 Delete·Backspace·Shift+방향키는 실행되지 않는다", () => {
+    const inside = (event: { readonly key: string; readonly ctrlKey?: boolean; readonly metaKey?: boolean }) => shouldHandleStudioEditEvent({
+      typing: false,
+      editing: false,
+      insideShortcutBoundary: true,
+      undoRedoIntent: isStudioUndoRedoChord(event),
+      timelapseCapturing: false,
+    });
+    expect(inside({ key: "Delete" })).toBe(false);
+    expect(inside({ key: "Backspace" })).toBe(false);
+    expect(inside({ key: "ArrowRight" })).toBe(false);
+    expect(inside({ key: "z", ctrlKey: true })).toBe(true);
+    expect(inside({ key: "y", metaKey: true })).toBe(true);
   });
 });
 

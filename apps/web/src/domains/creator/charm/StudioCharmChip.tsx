@@ -1,8 +1,9 @@
 /**
  * 참 바의 칩 하나. 아이콘 칩이며 누르면 붙이고, 끌어서 캔버스에 놓을 수 있다.
  *
- * 접근성: 네이티브 버튼 + roving tabindex(바 전체가 Tab 정지점 하나). 접근 가능한 이름은 참 이름이고,
- * 사용법은 `aria-describedby` 로 가리키는 숨김 안내문에 있다. 잠금·사라진 원본·불러오는 중을 각각 구분해 보여 준다.
+ * 접근성: 네이티브 버튼 + roving tabindex(바 전체가 Tab 정지점 하나). 접근 가능한 이름은 참 이름이다.
+ * 사용법 안내문은 칩마다가 아니라 도구 모음(toolbar)에 한 번만 연결돼 칩을 옮길 때마다 긴 설명이 읽히지 않는다.
+ * 잠금·사라진 원본·불러오는 중을 각각 구분해 보여 준다.
  * 터치 대상은 44px(`pointer-coarse`·`max-lg`), 모션은 `motion-reduce` 로 끈다.
  */
 
@@ -33,7 +34,6 @@ export interface StudioCharmChipProps {
   readonly selectedForEdit: boolean;
   /** 잠금 사유 문구. 있으면 칩은 `aria-disabled` 이며 누르면 이유만 알린다. */
   readonly lockText: string | null;
-  readonly describedBy: string;
   readonly registerElement: (id: StudioCharmId, element: HTMLButtonElement | null) => void;
   readonly onPress: (id: StudioCharmId) => void;
   readonly onKeyDown: (event: KeyboardEvent<HTMLButtonElement>, id: StudioCharmId, index: number) => void;
@@ -49,7 +49,6 @@ function StudioCharmChipView({
   editing,
   selectedForEdit,
   lockText,
-  describedBy,
   registerElement,
   onPress,
   onKeyDown,
@@ -76,11 +75,10 @@ function StudioCharmChipView({
         type="button"
         tabIndex={tabStop ? 0 : -1}
         aria-label={label}
-        aria-describedby={describedBy}
         aria-pressed={editing ? selectedForEdit : undefined}
         title={bi(
-          "원본 소재를 찾을 수 없어요. Delete 로 빼거나 편집 모드에서 뺄 수 있어요.",
-          "The original item can no longer be found. Remove it with Delete or in edit mode.",
+          "원본 소재를 찾을 수 없어요. ⋯ 메뉴의 순서·삭제 편집에서 뺄 수 있어요.",
+          "The original item can no longer be found. Remove it with Edit order and removal in the ⋯ menu.",
         )}
         data-studio-charm-id={id}
         data-studio-charm-state="missing"
@@ -116,7 +114,6 @@ function StudioCharmChipView({
       type="button"
       tabIndex={tabStop ? 0 : -1}
       aria-label={accessibleName}
-      aria-describedby={describedBy}
       aria-disabled={lockText ? true : undefined}
       aria-pressed={editing ? selectedForEdit : undefined}
       title={`${descriptor.label} — ${hint}`}

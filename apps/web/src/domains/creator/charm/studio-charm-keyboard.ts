@@ -10,8 +10,12 @@
  * | Home / End | 첫/마지막 칩으로 |
  * | Enter / Space | 선택한 참을 붙인다(키를 누르고 있어도 한 번만) |
  * | Alt + ← ↑ / → ↓ | 참의 순서를 한 칸 앞/뒤로 |
- * | Delete | 참 바에서 뺀다(요소 목록에서 다시 고정할 수 있다) |
+ * | Delete / Backspace | 순서 편집 중에만 참 바에서 뺀다(요소 목록에서 다시 고정할 수 있다). 편집 중이 아니면 빼지 않고 방법만 알린다 |
  * | Esc | 순서 편집 모드 끝내기 |
+ *
+ * 빼기를 편집 중으로 한정하는 이유: 붙인 직후에는 방금 붙인 요소가 선택돼 있고 포커스는 눌렀던 칩에 남기 쉽다.
+ * 그때 Delete 는 "그 요소를 지우려는" 키인데, 칩이 곧바로 참을 빼면 되돌리기로 복구되지 않는 참 목록이 조용히 줄어든다.
+ * 맥 키보드의 ⌫ 는 `Backspace` 로 오므로 Delete 와 같이 다룬다.
  */
 
 export interface StudioCharmKeyEvent {
@@ -36,6 +40,8 @@ export type StudioCharmKeyIntent =
   | { readonly type: "activate" }
   | { readonly type: "reorder"; readonly delta: -1 | 1 }
   | { readonly type: "unpin" }
+  /** 순서 편집 중이 아닐 때의 Delete·Backspace. 참을 빼지 않고 빼는 방법만 알린다. */
+  | { readonly type: "remove-hint" }
   | { readonly type: "exit-edit" }
   /** 기본 동작만 막는다(키 반복으로 같은 참이 여러 번 붙는 것을 방지). */
   | { readonly type: "swallow" }
@@ -49,7 +55,7 @@ export const STUDIO_CHARM_SHORTCUTS: readonly { readonly id: StudioCharmShortcut
   { id: "edge", keys: "Home / End" },
   { id: "stamp", keys: "Enter · Space" },
   { id: "reorder", keys: "Alt + ← → ↑ ↓" },
-  { id: "remove", keys: "Delete" },
+  { id: "remove", keys: "Delete · Backspace" },
   { id: "exit", keys: "Esc" },
 ]);
 
@@ -69,7 +75,10 @@ export function resolveStudioCharmKeyIntent(
   if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
     return event.repeat ? { type: "swallow" } : { type: "activate" };
   }
-  if (event.key === "Delete") return event.repeat ? { type: "swallow" } : { type: "unpin" };
+  if (event.key === "Delete" || event.key === "Backspace") {
+    if (event.repeat) return { type: "swallow" };
+    return editing ? { type: "unpin" } : { type: "remove-hint" };
+  }
 
   const forward = NEXT_KEYS.has(event.key);
   const backward = PREVIOUS_KEYS.has(event.key);

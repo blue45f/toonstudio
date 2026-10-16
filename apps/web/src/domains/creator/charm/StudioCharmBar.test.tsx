@@ -115,6 +115,12 @@ function announcement(): string {
   return document.querySelector("[data-studio-charm-announcement]")?.textContent ?? "";
 }
 
+/** `⋯` 메뉴의 "순서·삭제 편집"을 눌러 순서 편집 모드로 들어간다(참을 빼는 길은 이 모드뿐이다). */
+function enterEditMode(): void {
+  fireEvent.click(screen.getByRole("button", { name: "참 바 메뉴" }));
+  fireEvent.click(within(screen.getByRole("dialog", { name: "참 바 메뉴" })).getByRole("button", { name: "순서·삭제 편집" }));
+}
+
 beforeEach(() => {
   useI18n.getState().setLang("ko");
   catalogPreferences.values.clear();
@@ -155,7 +161,7 @@ describe("참 바: 상태 표시", () => {
     expect(retry).toHaveBeenCalledOnce();
   });
 
-  it("원본이 사라진 참은 '사용할 수 없는 참'으로 보이고 Delete 로 뺄 수 있다", async () => {
+  it("원본이 사라진 참은 '사용할 수 없는 참'으로 보이고, 순서 편집에서 Delete 로 뺄 수 있다", async () => {
     const missing = createStudioCharmId("element", "no-such-element");
     const { renderBar, store } = await harness([missing, FOCUS]);
     renderBar();
@@ -165,7 +171,13 @@ describe("참 바: 상태 표시", () => {
       return list;
     });
     expect(unavailable.getAttribute("aria-label")).toBe("사용할 수 없는 참");
+    // 편집 중이 아니면 누르거나 Delete 를 눌러도 빼지 않고, 어떻게 빼는지 알려 준다.
+    fireEvent.keyDown(unavailable, { key: "Enter" });
+    expect(announcement()).toContain("순서·삭제 편집에서");
     fireEvent.keyDown(unavailable, { key: "Delete" });
+    expect(store.getSnapshot().state.charms).toEqual([missing, FOCUS]);
+    enterEditMode();
+    fireEvent.keyDown(chips()[0], { key: "Delete" });
     await waitFor(() => expect(store.getSnapshot().state.charms).toEqual([FOCUS]));
     expect(announcement()).toContain("참 바에서 뺐어요");
   });
@@ -197,7 +209,12 @@ describe("참 바: 붙이기", () => {
     expect(chips().map((chip) => chip.getAttribute("aria-label"))).toEqual(["집중선", "속도선", "큰 땀방울"]);
     expect(chips().filter((chip) => chip.tabIndex === 0)).toHaveLength(1);
     expect(chips()[0].tabIndex).toBe(0);
-    expect(document.getElementById(chips()[0].getAttribute("aria-describedby") ?? "")?.textContent).toContain("Enter");
+    // 사용법 안내는 칩마다가 아니라 도구 모음에 한 번만 연결된다(칩을 옮길 때마다 긴 설명이 읽히지 않는다).
+    expect(chips().every((chip) => !chip.hasAttribute("aria-describedby"))).toBe(true);
+    const toolbar = screen.getByRole("toolbar", { name: "고정한 참" });
+    const help = document.getElementById(toolbar.getAttribute("aria-describedby") ?? "")?.textContent ?? "";
+    expect(help).toContain("Enter");
+    expect(help).toContain("순서·삭제 편집");
   });
 
   it("누르면 호스트 이미지 삽입 명령을 정확히 한 번 부르고 결과를 알린다", async () => {
@@ -313,10 +330,11 @@ describe("참 바: 키보드와 순서 편집", () => {
     await waitFor(() => expect(saves.at(-1)?.charms).toEqual([SPEED, FOCUS, SWEAT]));
   });
 
-  it("Delete 는 참을 빼고 포커스를 이웃 칩으로 옮긴다", async () => {
+  it("순서 편집 중 Delete 는 참을 빼고 포커스를 이웃 칩으로 옮긴다", async () => {
     const { renderBar, store } = await harness([FOCUS, SPEED, SWEAT]);
     renderBar();
     await waitFor(() => expect(chips()).toHaveLength(3));
+    enterEditMode();
     chips()[1].focus();
     fireEvent.keyDown(chips()[1], { key: "Delete" });
     await waitFor(() => expect(store.getSnapshot().state.charms).toEqual([FOCUS, SWEAT]));
@@ -356,10 +374,11 @@ describe("참 바: 키보드와 순서 편집", () => {
       expect(store.getSnapshot().state.charms).toEqual([FOCUS, TEAR_SWEAT, TEAR, SPEED]);
     });
 
-    it("Delete 로 뺀 뒤 포커스는 자리표시가 아닌 가장 가까운 칩으로 간다", async () => {
+    it("순서 편집에서 Delete 로 뺀 뒤 포커스는 자리표시가 아닌 가장 가까운 칩으로 간다", async () => {
       const { renderBar, store } = await harness([TEAR, FOCUS, TEAR_SWEAT]);
       renderBar({ loadCatalogData: neverLoads });
       await waitFor(() => expect(chips()).toHaveLength(2));
+      enterEditMode();
       chips()[0].focus();
       fireEvent.keyDown(chips()[0], { key: "Delete" });
       await waitFor(() => expect(store.getSnapshot().state.charms).toEqual([FOCUS, TEAR_SWEAT]));

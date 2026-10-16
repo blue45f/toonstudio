@@ -6,7 +6,8 @@
  *
  * - 붙이기: 칩 하나 = 호스트 삽입 명령 한 번 = 되돌리기 한 단계. 위치는 선택한 컷/요소 중앙, 없으면 보이는 화면 중앙.
  * - 끌어다 놓기: 기존 캔버스 드롭 계약(json-asset / json-insert / object-insert)을 그대로 쓴다.
- * - 키보드: 화살표 이동, Enter/Space 붙이기, Alt+화살표 순서, Delete 빼기, Esc 편집 끝(`studio-charm-keyboard.ts`).
+ * - 키보드: 화살표 이동, Enter/Space 붙이기, Alt+화살표 순서, 편집 중 Delete/Backspace 빼기, Esc 편집 끝(`studio-charm-keyboard.ts`).
+ *   바 전체와 팝오버는 단축키 경계(`data-studio-shortcut-boundary`)라서 칩이 처리하지 않는 키가 캔버스 편집 명령으로 새지 않는다.
  * - 편집: 편집 모드에서 칩을 고른 뒤 앞으로·뒤로·빼기. 끌기는 캔버스 놓기 전용이라 순서 변경에 쓰지 않는다.
  * - 상태: 불러오는 중 · 빈 바(스타터 팩 제안) · 원본 없음 · 저장소 연결 실패(메모리 전용) · 잠금 · 오류와 다시 시도.
  */
@@ -68,7 +69,7 @@ function shortcutAction(id: StudioCharmShortcutId): string {
     case "edge": return bi("처음·마지막 칩", "First / last charm");
     case "stamp": return bi("캔버스에 붙이기", "Stamp onto the canvas");
     case "reorder": return bi("순서 바꾸기", "Reorder");
-    case "remove": return bi("참 바에서 빼기", "Remove from the bar");
+    case "remove": return bi("순서 편집 중 참 바에서 빼기", "Remove from the bar (while editing order)");
     case "exit": return bi("순서 편집 끝내기", "Finish editing order");
   }
 }
@@ -229,11 +230,37 @@ export function StudioCharmBar({
       return;
     }
     if (resolution.status === "missing") {
-      announce(bi("원본 소재를 찾을 수 없어요. Delete 로 참 바에서 뺄 수 있어요.", "The original item can no longer be found. Press Delete to remove it from the bar."));
+      announce(bi(
+        "원본 소재를 찾을 수 없어요. ⋯ 메뉴의 순서·삭제 편집에서 참 바에서 뺄 수 있어요.",
+        "The original item can no longer be found. Remove it from the bar with Edit order and removal in the ⋯ menu.",
+      ));
       return;
     }
     if (resolution.status === "ready") void stamp(resolution.descriptor);
   }, [announce, catalog, charms, editing, stamp]);
+
+  // 순서 편집을 시작·끝낼 때 눌렀던 버튼(메뉴 항목·끝내기 버튼)이 사라지므로 포커스를 Tab 정지점인 칩으로 옮긴다.
+  const { close: closeMenu } = menu;
+  const startEditing = useCallback(() => {
+    setEditing(true);
+    setEditTarget(null);
+    closeMenu();
+    focusRequest.current = entries[stopIndex]?.id ?? null;
+    announce(bi("순서 편집을 시작했어요. 칩을 골라 앞으로·뒤로·빼기를 쓰세요.", "Editing order. Select a charm, then move it earlier, later or remove it."));
+  }, [announce, closeMenu, entries, stopIndex]);
+  const stopEditing = useCallback(() => {
+    setEditing(false);
+    setEditTarget(null);
+    focusRequest.current = entries[stopIndex]?.id ?? null;
+    announce(bi("순서 편집을 끝냈어요.", "Finished editing the order."));
+  }, [announce, entries, stopIndex]);
+
+  // 칩에서 누른 Esc 는 칩 쪽이 처리한다. 편집 도구 버튼에서 눌러도 같은 방식으로 순서 편집을 끝낼 수 있다.
+  const onEditToolKeyDown = useCallback((event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "Escape" || event.defaultPrevented) return;
+    event.preventDefault();
+    stopEditing();
+  }, [stopEditing]);
 
   const onKeyDown = useCallback((event: KeyboardEvent<HTMLButtonElement>, id: StudioCharmId, index: number) => {
     const intent = resolveStudioCharmKeyIntent(
@@ -261,12 +288,13 @@ export function StudioCharmBar({
     } else if (intent.type === "activate") onPress(id);
     else if (intent.type === "reorder") reorder(id, intent.delta);
     else if (intent.type === "unpin") unpin(id);
-    else if (intent.type === "exit-edit") {
-      setEditing(false);
-      setEditTarget(null);
-      announce(bi("순서 편집을 끝냈어요.", "Finished editing the order."));
-    }
-  }, [announce, charms, editing, onPress, reachablePositions, reorder, unpin]);
+    else if (intent.type === "remove-hint") {
+      announce(bi(
+        "참은 Delete 로 지워지지 않아요. 빼려면 ⋯ 메뉴의 순서·삭제 편집을 쓰세요.",
+        "Delete does not remove a charm here. Use Edit order and removal in the ⋯ menu.",
+      ));
+    } else if (intent.type === "exit-edit") stopEditing();
+  }, [announce, charms, editing, onPress, reachablePositions, reorder, stopEditing, unpin]);
 
   const onDragStart = useCallback((event: DragEvent<HTMLButtonElement>, descriptor: StudioCharmDescriptor) => {
     if (currentLockText || editing || !writeStudioCharmDragPayload(event.dataTransfer, descriptor, canvas)) {
@@ -289,18 +317,6 @@ export function StudioCharmBar({
       : biFill("참 바에 고정했어요: {label}", "Pinned to the charm bar: {label}", { label: descriptor.label }));
   }, [announce, charms, store]);
 
-  const startEditing = () => {
-    setEditing(true);
-    setEditTarget(null);
-    menu.close();
-    announce(bi("순서 편집을 시작했어요. 칩을 골라 앞으로·뒤로·빼기를 쓰세요.", "Editing order. Select a charm, then move it earlier, later or remove it."));
-  };
-  const stopEditing = () => {
-    setEditing(false);
-    setEditTarget(null);
-    announce(bi("순서 편집을 끝냈어요.", "Finished editing the order."));
-  };
-
   const editIndex = editTarget ? charms.indexOf(editTarget) : -1;
   const editLabel = editTarget ? descriptorOf(editTarget)?.label ?? bi("사용할 수 없는 참", "Unavailable charm") : null;
   const persistence = snapshot.persistence === "saved" ? "sqlite-opfs" : snapshot.persistence;
@@ -310,13 +326,14 @@ export function StudioCharmBar({
       aria-label={bi("참 바", "Charm bar")}
       aria-busy={!snapshot.hydrated || undefined}
       data-studio-charm-bar=""
+      data-studio-shortcut-boundary="true"
       data-studio-ui-preferences-authority={persistence}
       className="studio-charm-bar min-h-0 min-w-0 shrink-0 bg-panel p-1 text-fg"
     >
       <p id={helpId} className="sr-only">
         {bi(
-          "Enter 또는 Space 로 캔버스에 붙이고, 방향키로 이동하고, Alt 와 방향키로 순서를 바꾸고, Delete 로 뺍니다. 끌어서 원하는 위치에 놓을 수도 있어요.",
-          "Press Enter or Space to stamp, arrow keys to move, Alt with arrows to reorder, Delete to remove. You can also drag a charm to where you want it.",
+          "Enter 또는 Space 로 캔버스에 붙이고, 방향키로 이동하고, Alt 와 방향키로 순서를 바꿔요. 참을 빼려면 ⋯ 메뉴의 순서·삭제 편집에서 Delete 나 Backspace 를 누르세요. 끌어서 원하는 위치에 놓을 수도 있어요.",
+          "Press Enter or Space to stamp, arrow keys to move, Alt with arrows to reorder. To remove a charm, use Edit order and removal in the ⋯ menu, then press Delete or Backspace. You can also drag a charm to where you want it.",
         )}
       </p>
 
@@ -338,6 +355,7 @@ export function StudioCharmBar({
         <div
           role="toolbar"
           aria-label={bi("고정한 참", "Pinned charms")}
+          aria-describedby={helpId}
           data-studio-charm-count={charms.length}
           className="studio-charm-bar__chips"
         >
@@ -351,7 +369,6 @@ export function StudioCharmBar({
               editing={editing}
               selectedForEdit={editTarget === entry.id}
               lockText={currentLockText}
-              describedBy={helpId}
               registerElement={registerElement}
               onPress={onPress}
               onKeyDown={onKeyDown}
@@ -367,16 +384,16 @@ export function StudioCharmBar({
           <p className="sr-only" role="status">
             {editLabel ? biFill("선택됨: {label}", "Selected: {label}", { label: editLabel }) : bi("편집할 참을 고르세요", "Select a charm to edit")}
           </p>
-          <button type="button" className={TOOL_BUTTON} disabled={editIndex <= 0} aria-label={bi("앞으로 옮기기", "Move earlier")} title={bi("앞으로 옮기기", "Move earlier")} onClick={() => editTarget && reorder(editTarget, -1)}>
+          <button type="button" className={TOOL_BUTTON} disabled={editIndex <= 0} aria-label={bi("앞으로 옮기기", "Move earlier")} title={bi("앞으로 옮기기", "Move earlier")} onKeyDown={onEditToolKeyDown} onClick={() => editTarget && reorder(editTarget, -1)}>
             <MoveLeft size={16} aria-hidden="true" />
           </button>
-          <button type="button" className={TOOL_BUTTON} disabled={editIndex < 0 || editIndex >= charms.length - 1} aria-label={bi("뒤로 옮기기", "Move later")} title={bi("뒤로 옮기기", "Move later")} onClick={() => editTarget && reorder(editTarget, 1)}>
+          <button type="button" className={TOOL_BUTTON} disabled={editIndex < 0 || editIndex >= charms.length - 1} aria-label={bi("뒤로 옮기기", "Move later")} title={bi("뒤로 옮기기", "Move later")} onKeyDown={onEditToolKeyDown} onClick={() => editTarget && reorder(editTarget, 1)}>
             <MoveRight size={16} aria-hidden="true" />
           </button>
-          <button type="button" className={TOOL_BUTTON} disabled={!editTarget} aria-label={bi("참 바에서 빼기", "Remove from the bar")} title={bi("참 바에서 빼기", "Remove from the bar")} onClick={() => editTarget && unpin(editTarget)}>
+          <button type="button" className={TOOL_BUTTON} disabled={!editTarget} aria-label={bi("참 바에서 빼기", "Remove from the bar")} title={bi("참 바에서 빼기", "Remove from the bar")} onKeyDown={onEditToolKeyDown} onClick={() => editTarget && unpin(editTarget)}>
             <Trash2 size={16} aria-hidden="true" />
           </button>
-          <button type="button" className={cn(TOOL_BUTTON, "border-accent/60 bg-accent-soft text-fg")} aria-label={bi("순서 편집 끝내기", "Finish editing")} title={bi("순서 편집 끝내기", "Finish editing")} onClick={stopEditing}>
+          <button type="button" className={cn(TOOL_BUTTON, "border-accent/60 bg-accent-soft text-fg")} aria-label={bi("순서 편집 끝내기", "Finish editing")} title={bi("순서 편집 끝내기", "Finish editing")} onKeyDown={onEditToolKeyDown} onClick={stopEditing}>
             <Check size={16} aria-hidden="true" />
           </button>
         </div>

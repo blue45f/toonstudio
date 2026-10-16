@@ -163,6 +163,7 @@ export function StudioCharmBarSlot({
         <div
           role="alert"
           data-studio-charm-bar-failed=""
+          data-studio-shortcut-boundary="true"
           className="studio-charm-bar grid min-h-0 shrink-0 gap-1 bg-panel p-1 text-xs text-fg-2"
         >
           <p>{bi("참 바를 불러오지 못했어요. 원고와 도구 구성은 그대로예요.", "Could not load the charm bar. Your work and tools are unchanged.")}</p>
@@ -180,6 +181,7 @@ export function StudioCharmBarSlot({
           aria-live="polite"
           aria-busy="true"
           data-studio-charm-bar-loading=""
+          data-studio-shortcut-boundary="true"
           className="studio-charm-bar min-h-0 shrink-0 bg-panel p-1"
         >
           <span className="sr-only">{bi("참 바를 여는 중…", "Opening the charm bar…")}</span>

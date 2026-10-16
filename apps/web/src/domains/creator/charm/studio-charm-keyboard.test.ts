@@ -37,9 +37,18 @@ describe("참 바 키보드 의도", () => {
     expect(resolveStudioCharmKeyIntent(key("ArrowDown", { altKey: true }), { index: 4, count: 5, editing: false })).toEqual({ type: "swallow" });
   });
 
-  it("Delete 는 빼기, Esc 는 편집 모드에서만 편집 끝내기다", () => {
-    expect(resolveStudioCharmKeyIntent(key("Delete"), middle)).toEqual({ type: "unpin" });
+  it("Delete·Backspace 는 순서 편집 중에만 빼고, 아닐 때는 빼지 않고 방법만 알린다", () => {
+    const editing = { ...middle, editing: true };
+    expect(resolveStudioCharmKeyIntent(key("Delete"), middle)).toEqual({ type: "remove-hint" });
+    expect(resolveStudioCharmKeyIntent(key("Backspace"), middle)).toEqual({ type: "remove-hint" });
+    expect(resolveStudioCharmKeyIntent(key("Delete"), editing)).toEqual({ type: "unpin" });
+    // 맥 키보드의 ⌫ 는 Backspace 로 온다.
+    expect(resolveStudioCharmKeyIntent(key("Backspace"), editing)).toEqual({ type: "unpin" });
     expect(resolveStudioCharmKeyIntent(key("Delete", { repeat: true }), middle)).toEqual({ type: "swallow" });
+    expect(resolveStudioCharmKeyIntent(key("Backspace", { repeat: true }), editing)).toEqual({ type: "swallow" });
+  });
+
+  it("Esc 는 편집 모드에서만 편집 끝내기다", () => {
     expect(resolveStudioCharmKeyIntent(key("Escape"), middle)).toEqual({ type: "ignore" });
     expect(resolveStudioCharmKeyIntent(key("Escape"), { ...middle, editing: true })).toEqual({ type: "exit-edit" });
   });
@@ -47,6 +56,7 @@ describe("참 바 키보드 의도", () => {
   it("Ctrl/Meta 조합, IME 조합 중, 칩이 없을 때, 관계없는 키는 무시한다", () => {
     expect(resolveStudioCharmKeyIntent(key("ArrowRight", { ctrlKey: true }), middle)).toEqual({ type: "ignore" });
     expect(resolveStudioCharmKeyIntent(key("Enter", { metaKey: true }), middle)).toEqual({ type: "ignore" });
+    expect(resolveStudioCharmKeyIntent(key("Backspace", { metaKey: true }), { ...middle, editing: true })).toEqual({ type: "ignore" });
     expect(resolveStudioCharmKeyIntent(key("Enter", { isComposing: true }), middle)).toEqual({ type: "ignore" });
     expect(resolveStudioCharmKeyIntent(key("ArrowRight"), { index: 0, count: 0, editing: false })).toEqual({ type: "ignore" });
     expect(resolveStudioCharmKeyIntent(key("a"), middle)).toEqual({ type: "ignore" });
