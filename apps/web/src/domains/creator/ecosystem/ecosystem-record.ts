@@ -32,10 +32,16 @@ export const BETA_PACKAGE_SCHEMA = z.object({ kind: z.literal("toonstudio-beta")
     dialogue: z.array(z.string().max(12_000)).max(300) }).strict()).min(1).max(12) }).strict();
 export const BETA_FEEDBACK_PACKAGE_SCHEMA = z.object({ kind: z.literal("toonstudio-beta-feedback"), version: z.literal(1),
   packageId: id, documentId: id, feedback: z.array(FEEDBACK_SCHEMA).min(1).max(100) }).strict();
+/** 작성기의 '베타 독자' 구역이 내보내는 텍스트 중심 검토 패키지(`createBetaReviewPackage`)의 파일 계약. */
+export const BETA_REVIEW_PACKAGE_SCHEMA = z.object({ kind: z.literal("toonstudio-beta-review"), version: z.literal(1),
+  packageId: id, title: z.string().min(1).max(120),
+  pages: z.array(z.object({ id, label: z.string().max(120) }).strict()).min(1).max(100),
+  questions: z.array(z.string().max(200)).max(10) }).strict();
 export const PROCESS_PACKAGE_SCHEMA = z.object({ kind: z.literal("toonstudio-process"), version: z.literal(1),
   title: z.string().min(1).max(120), credit: z.string().max(500), rightsAcknowledged: z.literal(true),
   checkpoints: z.array(PROCESS_SCHEMA).min(1).max(8), sampleId: z.string().max(100).nullable() }).strict();
 export type BetaPackage = z.infer<typeof BETA_PACKAGE_SCHEMA>;
+export type BetaReviewPackageFile = z.infer<typeof BETA_REVIEW_PACKAGE_SCHEMA>;
 export type ProcessPackage = z.infer<typeof PROCESS_PACKAGE_SCHEMA>;
 export function emptyEcosystemRecord(documentId: string): EcosystemRecord {
   return ECOSYSTEM_RECORD_SCHEMA.parse({ version: 1, documentId, revision: 0, translations: [],
