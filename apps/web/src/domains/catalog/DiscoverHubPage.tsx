@@ -14,7 +14,7 @@ import {
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
-import { lazy, Suspense, useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
@@ -28,6 +28,7 @@ import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { Container, Section } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { GENRES } from "@/shared/lib/taxonomy";
 import Link from "@/shared/navigation/router-link";
 import { useApiResource } from "@/platform/use-api-resource";
@@ -50,8 +51,9 @@ const QUICK_GENRE_COUNT = 8;
 const COUNT_FORMAT = new Intl.NumberFormat("en-US");
 
 // 기억으로 작품 찾기는 접힌 안내를 처음 펼칠 때만 내려받는다 — 탐색 허브의 첫 화면 번들에 넣지 않는다.
-const LazyMemoryFinderSection = lazy(() =>
-  import("./memory-finder/MemoryFinderSection").then((module) => ({ default: module.MemoryFinderSection })),
+const LazyMemoryFinderSection = lazyRetry(
+  () => import("./memory-finder/MemoryFinderSection").then((module) => ({ default: module.MemoryFinderSection })),
+  "MemoryFinderSection",
 );
 
 interface DiscoverDestination {

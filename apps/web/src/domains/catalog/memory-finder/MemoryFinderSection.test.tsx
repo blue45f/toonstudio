@@ -25,7 +25,7 @@ function work(overrides: Partial<Title> & { id: string; title: string }): Title 
     genres: [],
     tags: [],
     synopsis: "",
-    releaseYear: 2014,
+    releaseYear: 2022,
     ...overrides,
   } as unknown as Title;
 }
@@ -60,6 +60,12 @@ describe("MemoryFinderSection — 입력", () => {
     expect(screen.getByLabelText(/기억하는 제목/u)).toBeTruthy();
   });
 
+  it("출시 연도가 자리표시값이 많아 시기 입력은 받지 않는다", () => {
+    renderFinder(vi.fn());
+
+    expect(screen.queryByLabelText(/언제 보셨나요/u)).toBeNull();
+  });
+
   it("장면 칸이 비어 있으면 검색하지 않고 이유를 알리며 초점을 그 칸으로 옮긴다", () => {
     const search = vi.fn();
     renderFinder(search);
@@ -84,6 +90,17 @@ describe("MemoryFinderSection — 입력", () => {
     expect(search).not.toHaveBeenCalled();
     expect(screen.getByRole("alert").textContent).toContain("두 글자 이상의 구체적인 낱말");
   });
+
+  it("장면을 고치기 시작하면 지난 입력 오류 문구를 치운다", () => {
+    renderFinder(vi.fn());
+    submit();
+    expect(screen.getByRole("alert")).toBeTruthy();
+
+    type(/기억나는 장면이나 줄거리/u, "우산");
+
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByLabelText(/기억나는 장면이나 줄거리/u).getAttribute("aria-invalid")).toBeNull();
+  });
 });
 
 describe("MemoryFinderSection — 결과의 정직한 표기", () => {
@@ -102,20 +119,41 @@ describe("MemoryFinderSection — 결과의 정직한 표기", () => {
     const row = screen.getByText("나 혼자만 레벨업").closest("li") as HTMLElement;
     expect(row.getAttribute("data-memory-match-level")).toBe("confirmed");
     expect(within(row).getByText("확인된 일치")).toBeTruthy();
-    expect(within(row).getByText("제목에 ‘혼자만레벨’")).toBeTruthy();
+    // 띄어쓰기를 빼야만 맞은 것이라 근거 칩이 그 사실을 그대로 말한다 — "제목에 ‘혼자만레벨’" 이라고 쓰지 않는다.
+    expect(within(row).getByText("제목에서 띄어쓰기를 빼면 ‘혼자만레벨’")).toBeTruthy();
     expect(document.activeElement?.textContent).toContain("제목 조각과 맞는 작품");
+  });
+
+  it("머리말 편수는 가장 확실한 단계만 세고 나머지는 따로 묶어 보여 준다", async () => {
+    const search = vi.fn().mockResolvedValue([
+      work({ id: "lv", title: "나 혼자만 레벨업" }),
+      work({ id: "p1", title: "던전 일기", tags: ["괴물", "헌터"] }),
+      work({ id: "p2", title: "헌터 이야기", tags: ["던전"], synopsis: "괴물이 나오는 사건 기록을 추적하는 이야기가 이어지는 아침" }),
+    ]);
+    renderFinder(search);
+    fireEvent.click(screen.getByRole("radio", { name: /일부만 기억나요/u }));
+    type(/기억나는 제목 조각/u, "레벨업");
+    type(/기억나는 장면이나 줄거리/u, "던전 괴물 헌터");
+
+    submit();
+
+    expect(await screen.findByRole("heading", { level: 3, name: "제목 조각과 맞는 작품을 찾았어요 (1편)" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 4, name: "그 밖에 단서가 겹치는 추정 후보 (2편)" })).toBeTruthy();
+    const probable = document.querySelector('[data-memory-group="probable"]') as HTMLElement;
+    expect(within(probable).getByText("던전 일기")).toBeTruthy();
+    expect(within(probable).getByText("헌터 이야기")).toBeTruthy();
   });
 
   it("장면·태그 단서만 겹치면 ‘추정 일치’이고 제목이 맞았다고 말하지 않는다", async () => {
     const search = vi.fn().mockResolvedValue([
-      work({ id: "p", title: "첫사랑 일기", tags: ["우산"], synopsis: "갑작스러운 소나기가 내리던 날" }),
+      work({ id: "p", title: "첫사랑 일기", tags: ["우산"], synopsis: "갑작스러운 소나기가 내리던 날 시작되는 이야기" }),
     ]);
     renderFinder(search);
     type(/기억나는 장면이나 줄거리/u, "우산 소나기");
 
     submit();
 
-    expect(await screen.findByRole("heading", { name: /확실하진 않지만 단서가 겹치는 후보예요/u })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /확실하진 않지만 단서가 겹치는 후보예요 \(1편\)/u })).toBeTruthy();
     const row = screen.getByText("첫사랑 일기").closest("li") as HTMLElement;
     expect(within(row).getByText("추정 일치")).toBeTruthy();
     expect(within(row).queryByText("확인된 일치")).toBeNull();
@@ -124,7 +162,19 @@ describe("MemoryFinderSection — 결과의 정직한 표기", () => {
     expect(screen.getByText(/제목이 아니라 장면·태그 같은 단서가 겹쳤다는 뜻/u)).toBeTruthy();
   });
 
-  it("단서가 하나만 소개에서 겹치면 ‘약한 후보’라고 낮춰 말한다", async () => {
+  it("칩에는 사용자가 쓴 말이 아니라 실제로 맞은 형태를 보인다", async () => {
+    const search = vi.fn().mockResolvedValue([work({ id: "sky", title: "하늘 연못에 너를 피워내다" })]);
+    renderFinder(search);
+    type(/기억나는 장면이나 줄거리/u, "하늘을");
+
+    submit();
+
+    const row = (await screen.findByText("하늘 연못에 너를 피워내다")).closest("li") as HTMLElement;
+    expect(within(row).getByText("제목에 ‘하늘’")).toBeTruthy();
+    expect(within(row).queryByText("제목에 ‘하늘을’")).toBeNull();
+  });
+
+  it("단서가 하나만 겹치면 ‘약한 후보’라고 낮춰 말한다", async () => {
     const search = vi.fn().mockResolvedValue([work({ id: "w", title: "도시 이야기", synopsis: "골목 끝의 작은 가게" })]);
     renderFinder(search);
     type(/기억나는 장면이나 줄거리/u, "가게 손님");
@@ -136,34 +186,50 @@ describe("MemoryFinderSection — 결과의 정직한 표기", () => {
     expect(within(row).getByText("약한 후보")).toBeTruthy();
   });
 
-  it("근거 있는 작품이 없으면 못 찾았다고 말하고 다른 길을 안내한다", async () => {
+  it("근거 있는 작품이 없으면 못 찾았다고 말하고 제목 조각을 넘겨 검색으로 안내한다", async () => {
     const search = vi.fn().mockResolvedValue([work({ id: "x", title: "무관한 작품" })]);
     renderFinder(search);
+    fireEvent.click(screen.getByRole("radio", { name: /일부만 기억나요/u }));
+    type(/기억나는 제목 조각/u, "없는제목");
     type(/기억나는 장면이나 줄거리/u, "우산 소나기");
 
     submit();
 
     expect(await screen.findByRole("heading", { name: /맞는 작품을 찾지 못했어요/u })).toBeTruthy();
     expect(screen.queryByText("무관한 작품")).toBeNull();
-    expect(screen.getByRole("link", { name: /제목 조각으로 검색/u }).getAttribute("href")).toBe("/search");
+    expect(screen.getByRole("link", { name: /제목 조각으로 검색/u }).getAttribute("href")).toBe(`/search?q=${encodeURIComponent("없는제목")}`);
     expect(screen.getByRole("link", { name: /장르로 둘러보기/u }).getAttribute("href")).toBe("/explore");
-    expect(screen.getByText(/1~3문장 요약이라, 장면 하나만으로는 못 찾을 수 있어요/u)).toBeTruthy();
   });
 
-  it("시기는 걸러 내지 않고 근거가 있을 때만 거든다", async () => {
-    const search = vi.fn().mockResolvedValue([
-      work({ id: "near", title: "우산 소녀", releaseYear: 2012 }),
-      work({ id: "far", title: "우산 소년", releaseYear: 2022 }),
-    ]);
-    renderFinder(search);
-    type(/기억나는 장면이나 줄거리/u, "우산");
-    fireEvent.change(screen.getByLabelText(/대략 언제 보셨나요/u), { target: { value: "2011-2015" } });
+  it("제목 조각이 없으면 검색 링크는 빈 검색으로 안내한다", async () => {
+    renderFinder(vi.fn().mockResolvedValue([]));
+    type(/기억나는 장면이나 줄거리/u, "우산 소나기");
 
     submit();
 
-    await screen.findByRole("heading", { name: /후보예요 \(2편\)/u });
-    expect(within(screen.getByText("우산 소녀").closest("li") as HTMLElement).getByText(/보신 시기\(2011~2015년\)와 가까워요/u)).toBeTruthy();
-    expect(within(screen.getByText("우산 소년").closest("li") as HTMLElement).queryByText(/보신 시기/u)).toBeNull();
+    await screen.findByRole("heading", { name: /맞는 작품을 찾지 못했어요/u });
+    expect(screen.getByRole("link", { name: /제목 조각으로 검색/u }).getAttribute("href")).toBe("/search");
+  });
+
+  it("소개가 자동 문구뿐인 작품이 많다는 한계를 사실대로 알린다", async () => {
+    renderFinder(vi.fn().mockResolvedValue([]));
+    type(/기억나는 장면이나 줄거리/u, "우산 소나기");
+
+    submit();
+
+    await screen.findByRole("heading", { name: /맞는 작품을 찾지 못했어요/u });
+    expect(screen.getByText(/출처 표기뿐인 작품은 소개로 비교하지 않고 제목·태그·장르로만 비교해요/u)).toBeTruthy();
+    expect(screen.queryByText(/서비스가 직접 쓴/u)).toBeNull();
+  });
+
+  it("낱말이 여덟 개를 넘으면 앞의 것만 썼다고 알린다", async () => {
+    const search = vi.fn().mockResolvedValue([work({ id: "o", title: "하나둘 이야기" })]);
+    renderFinder(search);
+    type(/기억나는 장면이나 줄거리/u, "하나둘 셋넷 다섯여섯 일곱여덟 아홉열 가나다 라마바 사아자 차카타 파하");
+
+    submit();
+
+    expect(await screen.findByText("낱말이 많아 앞의 8개만 썼어요.")).toBeTruthy();
   });
 });
 
@@ -177,7 +243,7 @@ describe("MemoryFinderSection — 진행·오류", () => {
     submit();
 
     expect((screen.getByRole("button", { name: /찾는 중/u }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByRole("status").textContent).toContain("후보를 찾고 있어요");
+    expect(screen.getByText("후보를 찾고 있어요…").getAttribute("role")).toBe("status");
     await act(async () => resolve([]));
     expect(await screen.findByRole("heading", { name: /맞는 작품을 찾지 못했어요/u })).toBeTruthy();
   });
@@ -189,13 +255,38 @@ describe("MemoryFinderSection — 진행·오류", () => {
 
     submit();
 
-    expect((await screen.findByRole("alert")).textContent).toContain("검색을 하지 못했어요");
+    expect((await screen.findByRole("heading", { name: /검색을 하지 못했어요/u })).textContent).toContain("검색을 하지 못했어요");
     expect((screen.getByLabelText(/기억나는 장면이나 줄거리/u) as HTMLTextAreaElement).value).toBe("우산");
 
     fireEvent.click(screen.getByRole("button", { name: /다시 시도/u }));
 
     expect(await screen.findByText("우산 소녀")).toBeTruthy();
     expect(search).toHaveBeenCalledTimes(2);
+  });
+
+  it("‘다시 시도’도 입력 검증을 거친다 — 오류 뒤 장면을 비우면 빈 질의로 검색하지 않는다", async () => {
+    const search = vi.fn().mockRejectedValue(new Error("search_request_failed"));
+    renderFinder(search);
+    type(/기억나는 장면이나 줄거리/u, "우산");
+    submit();
+    await screen.findByRole("heading", { name: /검색을 하지 못했어요/u });
+
+    type(/기억나는 장면이나 줄거리/u, "   ");
+    fireEvent.click(screen.getByRole("button", { name: /다시 시도/u }));
+
+    expect(search).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert").textContent).toContain("한 줄이라도 적어 주세요");
+  });
+
+  it("우리가 중단하지 않은 AbortError(시간 초과 등)는 오류로 보여 주고 ‘찾는 중’에 갇히지 않는다", async () => {
+    const abort = Object.assign(new Error("The operation was aborted"), { name: "AbortError" });
+    renderFinder(vi.fn().mockRejectedValue(abort));
+    type(/기억나는 장면이나 줄거리/u, "우산");
+
+    submit();
+
+    expect(await screen.findByRole("heading", { name: /검색을 하지 못했어요/u })).toBeTruthy();
+    expect((screen.getByRole("button", { name: /작품 찾기/u }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("다시 검색하면 앞의 요청을 중단한다", async () => {
@@ -231,5 +322,35 @@ describe("MemoryFinderSection — 진행·오류", () => {
     view.unmount();
 
     expect(signals[0]?.aborted).toBe(true);
+  });
+});
+
+describe("MemoryFinderSection — 초점과 화면 읽기", () => {
+  it("찾는 동안 입력을 고쳤다면 결과가 와도 초점을 빼앗지 않고 조용히 알린다", async () => {
+    let resolve!: (items: Title[]) => void;
+    const search = vi.fn().mockReturnValue(new Promise<Title[]>((done) => (resolve = done)));
+    renderFinder(search);
+    type(/기억나는 장면이나 줄거리/u, "우산 소나기");
+    submit();
+
+    const scene = screen.getByLabelText(/기억나는 장면이나 줄거리/u) as HTMLTextAreaElement;
+    scene.focus();
+    type(/기억나는 장면이나 줄거리/u, "우산 소나기 학교");
+    await act(async () => resolve([work({ id: "u", title: "우산 소녀" })]));
+
+    expect(await screen.findByText("우산 소녀")).toBeTruthy();
+    expect(document.activeElement).toBe(scene);
+    expect(document.querySelector("[data-memory-finder-live]")?.textContent).toBe("후보 1편을 찾았어요");
+  });
+
+  it("고치지 않았다면 결과 제목으로 초점이 가고 따로 알림을 겹쳐 읽지 않는다", async () => {
+    renderFinder(vi.fn().mockResolvedValue([work({ id: "u", title: "우산 소녀" })]));
+    type(/기억나는 장면이나 줄거리/u, "우산");
+
+    submit();
+
+    const heading = await screen.findByRole("heading", { level: 3 });
+    expect(document.activeElement).toBe(heading);
+    expect(document.querySelector("[data-memory-finder-live]")?.textContent).toBe("");
   });
 });

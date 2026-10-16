@@ -1,7 +1,8 @@
 import { Search } from "lucide-react";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
-import { fetchSearchResponse, isSearchAbortError } from "@/platform/search-client";
+import { fetchSearchResponse } from "@/platform/search-client";
+import { unifiedWorksMoreHref } from "@/shared/components/unified-search";
 import { TitleRow } from "@/shared/components/title-card";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { HonestyBadge } from "@/shared/components/ui/honesty-badge";
@@ -10,15 +11,17 @@ import Link from "@/shared/navigation/router-link";
 import { cn } from "@/shared/lib/utils";
 
 import {
+  MEMORY_MAX_SCENE_TOKENS,
   MEMORY_SCENE_MAX_LENGTH,
   MEMORY_TITLE_MAX_LENGTH,
   buildMemorySearchQuery,
+  countMemoryLevels,
   memoryCluesProblem,
   rankMemoryMatches,
+  sceneTokenInfo,
   summarizeMemoryOutcome,
   type MemoryClues,
   type MemoryCluesProblem,
-  type MemoryEra,
   type MemoryMatch,
   type MemoryMatchLevel,
   type MemoryMatchReason,
@@ -50,7 +53,13 @@ type Phase =
   | { readonly kind: "idle" }
   | { readonly kind: "loading" }
   | { readonly kind: "error" }
-  | { readonly kind: "done"; readonly matches: readonly MemoryMatch[]; readonly asked: MemoryClues };
+  | {
+      readonly kind: "done";
+      readonly matches: readonly MemoryMatch[];
+      readonly asked: MemoryClues;
+      /** 낱말이 여덟 개를 넘어 앞의 것만 쓴 경우. */
+      readonly truncated: boolean;
+    };
 
 const KNOWLEDGE_OPTIONS: readonly { readonly id: MemoryTitleKnowledge; readonly ko: string; readonly en: string }[] = [
   { id: "unknown", ko: "전혀 기억나지 않아요", en: "I can't remember it" },
@@ -58,13 +67,7 @@ const KNOWLEDGE_OPTIONS: readonly { readonly id: MemoryTitleKnowledge; readonly 
   { id: "exact", ko: "정확히 기억해요", en: "I remember it exactly" },
 ];
 
-const ERA_OPTIONS: readonly { readonly id: MemoryEra; readonly ko: string; readonly en: string }[] = [
-  { id: "any", ko: "잘 모르겠어요", en: "Not sure" },
-  { id: "before-2010", ko: "2010년 이전", en: "Before 2010" },
-  { id: "2011-2015", ko: "2011~2015년", en: "2011–2015" },
-  { id: "2016-2020", ko: "2016~2020년", en: "2016–2020" },
-  { id: "2021-later", ko: "2021년 이후", en: "2021 or later" },
-];
+const LEVELS: readonly MemoryMatchLevel[] = ["confirmed", "probable", "weak"];
 
 const FIELD_CLASS =
   "w-full rounded-xl border border-line-strong bg-card px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus-visible:border-accent/55 focus-visible:ring-2 focus-visible:ring-accent/30";
@@ -77,40 +80,58 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
   const sceneRef = useRef<HTMLTextAreaElement | null>(null);
   const resultHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /** 찾는 동안 사용자가 입력을 고치면 결과가 도착해도 초점을 빼앗지 않는다. */
+  const editedSinceSubmitRef = useRef(false);
 
   const [knowledge, setKnowledge] = useState<MemoryTitleKnowledge>("unknown");
   const [titleText, setTitleText] = useState("");
   const [scene, setScene] = useState("");
-  const [era, setEra] = useState<MemoryEra>("any");
   const [problem, setProblem] = useState<MemoryCluesProblem | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
+  /** 초점을 옮기지 않았을 때 화면 읽기 프로그램에 결과를 알리는 짧은 문장. */
+  const [liveNote, setLiveNote] = useState("");
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
   // 결과·오류가 나오면 제목으로 초점을 옮겨 화면 읽기 프로그램이 결과를 바로 읽게 한다.
+  // 사용자가 그사이 입력을 고쳤다면 초점은 그대로 두고 결과만 조용히 알린다(run 안에서 liveNote 로).
   useEffect(() => {
-    if (phase.kind === "done" || phase.kind === "error") resultHeadingRef.current?.focus();
+    if ((phase.kind === "done" || phase.kind === "error") && !editedSinceSubmitRef.current) {
+      resultHeadingRef.current?.focus();
+    }
   }, [phase]);
 
-  const currentClues = (): MemoryClues => ({ titleKnowledge: knowledge, titleText, scene, era });
+  const currentClues = (): MemoryClues => ({ titleKnowledge: knowledge, titleText, scene });
 
   const run = async (clues: MemoryClues) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    editedSinceSubmitRef.current = false;
+    setLiveNote("");
     setPhase({ kind: "loading" });
     try {
       const items = await search(buildMemorySearchQuery(clues), controller.signal);
       if (controller.signal.aborted) return;
-      setPhase({ kind: "done", matches: rankMemoryMatches(items, clues), asked: clues });
-    } catch (error) {
-      if (controller.signal.aborted || isSearchAbortError(error)) return;
+      const matches = rankMemoryMatches(items, clues);
+      setPhase({ kind: "done", matches, asked: clues, truncated: sceneTokenInfo(clues.scene).truncated });
+      if (editedSinceSubmitRef.current) {
+        setLiveNote(
+          matches.length === 0
+            ? bt("맞는 작품을 찾지 못했어요", "I could not find a matching story")
+            : formatI18nTemplate(bt("후보 {count}편을 찾았어요", "Found {count} candidates"), { count: matches.length }),
+        );
+      }
+    } catch {
+      // 우리가 중단한 요청만 조용히 넘긴다. 클라이언트 내부 시간 초과 같은 다른 중단은 오류로 보여 줘야 한다.
+      if (controller.signal.aborted) return;
       setPhase({ kind: "error" });
+      if (editedSinceSubmitRef.current) setLiveNote(bt("검색을 하지 못했어요", "The search did not go through"));
     }
   };
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  /** 제출과 "다시 시도"가 같은 길을 지나게 한다 — 오류 뒤 장면을 비우고 다시 눌러도 검증이 먼저 돈다. */
+  const start = () => {
     const clues = currentClues();
     const found = memoryCluesProblem(clues);
     setProblem(found);
@@ -121,6 +142,15 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
     void run(clues);
   };
 
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    start();
+  };
+
+  const touched = () => {
+    editedSinceSubmitRef.current = true;
+  };
+
   const problemText = (kind: MemoryCluesProblem) =>
     kind === "scene-empty"
       ? bt("기억나는 장면이나 줄거리를 한 줄이라도 적어 주세요.", "Write at least one line about a scene or the plot you remember.")
@@ -129,11 +159,13 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
           "I need specific words of two or more characters. Try people, objects or places you remember.",
         );
 
-  const reasonText = (reason: MemoryMatchReason, asked: MemoryClues): string => {
+  const reasonText = (reason: MemoryMatchReason): string => {
     const fill = (ko: string, en: string) => formatI18nTemplate(bt(ko, en), { clue: reason.clue });
     switch (reason.field) {
       case "title":
         return fill("제목에 ‘{clue}’", "Title has “{clue}”");
+      case "titleSpaced":
+        return fill("제목에서 띄어쓰기를 빼면 ‘{clue}’", "Title has “{clue}” if spaces are ignored");
       case "altTitle":
         return fill("다른 이름에 ‘{clue}’", "Other name has “{clue}”");
       case "author":
@@ -144,12 +176,6 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
         return fill("장르에 ‘{clue}’", "Genre has “{clue}”");
       case "synopsis":
         return fill("소개에 ‘{clue}’", "Summary has “{clue}”");
-      case "year": {
-        const option = ERA_OPTIONS.find((candidate) => candidate.id === asked.era);
-        return formatI18nTemplate(bt("보신 시기({era})와 가까워요", "Close to when you read it ({era})"), {
-          era: option ? bt(option.ko, option.en) : "",
-        });
-      }
     }
   };
 
@@ -185,7 +211,10 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
                   name={`${ids}-knowledge`}
                   value={option.id}
                   checked={knowledge === option.id}
-                  onChange={() => setKnowledge(option.id)}
+                  onChange={() => {
+                    touched();
+                    setKnowledge(option.id);
+                  }}
                   className="sr-only"
                 />
                 {bt(option.ko, option.en)}
@@ -202,7 +231,10 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
               type="text"
               value={titleText}
               maxLength={MEMORY_TITLE_MAX_LENGTH}
-              onChange={(event) => setTitleText(event.target.value)}
+              onChange={(event) => {
+                touched();
+                setTitleText(event.target.value);
+              }}
               autoComplete="off"
               className={cn(FIELD_CLASS, "min-h-11 font-normal")}
             />
@@ -220,7 +252,11 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
             rows={4}
             value={scene}
             maxLength={MEMORY_SCENE_MAX_LENGTH}
-            onChange={(event) => setScene(event.target.value)}
+            onChange={(event) => {
+              touched();
+              setScene(event.target.value);
+              if (problem) setProblem(null);
+            }}
             aria-required="true"
             aria-invalid={problem ? true : undefined}
             aria-describedby={sceneDescribedBy}
@@ -228,8 +264,8 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
           />
           <p id={`${ids}-scene-hint`} className="text-xs leading-relaxed text-fg-3">
             {bt(
-              "두 글자 이상의 구체적인 낱말(인물·소품·장소)이 있을수록 잘 찾아요. 한 글자 낱말은 빼고 찾아요.",
-              "Specific words of two or more characters (people, objects, places) work best. One-character words are ignored.",
+              "두 글자 이상의 구체적인 낱말(인물·소품·장소)을 작품의 제목·태그·소개와 맞춰 봐요. 한 글자 낱말과 ‘장면’·‘이야기’ 같은 흔한 말은 빼고 찾아요.",
+              "I match specific words of two or more characters (people, objects, places) against titles, tags and summaries. One-character words and very common words are ignored.",
             )}
           </p>
           {problem ? (
@@ -237,28 +273,6 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
               {problemText(problem)}
             </p>
           ) : null}
-        </div>
-
-        <div className="grid gap-1.5">
-          <label className="text-sm font-semibold text-fg" htmlFor={`${ids}-era`}>
-            {bt("대략 언제 보셨나요?", "Roughly when did you read it?")}{" "}
-            <span className="font-normal text-fg-3">{bt("(선택)", "(optional)")}</span>
-          </label>
-          <select
-            id={`${ids}-era`}
-            value={era}
-            onChange={(event) => setEra(event.target.value as MemoryEra)}
-            className={cn(FIELD_CLASS, "min-h-11")}
-          >
-            {ERA_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {bt(option.ko, option.en)}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs leading-relaxed text-fg-3">
-            {bt("시기는 걸러 내는 조건이 아니라 참고만 해요. 기억이 틀려도 후보에서 빠지지 않아요.", "The time is a hint, not a filter. A wrong memory never removes a candidate.")}
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -279,7 +293,11 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
         </div>
       </form>
 
-      <div aria-live="polite" aria-busy={phase.kind === "loading"}>
+      <p role="status" className="sr-only" data-memory-finder-live="">
+        {liveNote}
+      </p>
+
+      <div>
         {phase.kind === "loading" ? (
           <p role="status" className="text-sm text-fg-2">
             {bt("후보를 찾고 있어요…", "Looking for candidates…")}
@@ -287,8 +305,8 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
         ) : null}
 
         {phase.kind === "error" ? (
-          <div role="alert" className="grid gap-2 rounded-xl border border-bad/35 bg-bad/10 p-3">
-            <h3 ref={resultHeadingRef} tabIndex={-1} className="text-sm font-bold text-fg outline-none">
+          <div className="grid gap-2 rounded-xl border border-bad/35 bg-bad/10 p-3">
+            <h3 ref={resultHeadingRef} tabIndex={-1} className={cn("w-fit rounded text-sm font-bold text-fg", FOCUS_RING)}>
               {bt("검색을 하지 못했어요", "The search did not go through")}
             </h3>
             <p className="text-xs leading-relaxed text-fg-2">
@@ -296,7 +314,7 @@ export function MemoryFinderSection({ search = searchCatalog }: MemoryFinderSect
             </p>
             <button
               type="button"
-              onClick={() => void run(currentClues())}
+              onClick={start}
               className={cn("min-h-11 w-fit rounded-lg border border-line bg-card px-4 text-xs font-semibold text-fg hover:bg-raised", FOCUS_RING)}
             >
               {bt("다시 시도", "Try again")}
@@ -322,63 +340,101 @@ function Results({
 }: {
   readonly phase: Extract<Phase, { kind: "done" }>;
   readonly badge: (level: MemoryMatchLevel) => React.ReactNode;
-  readonly reasonText: (reason: MemoryMatchReason, asked: MemoryClues) => string;
+  readonly reasonText: (reason: MemoryMatchReason) => string;
   readonly headingRef: React.RefObject<HTMLHeadingElement | null>;
   readonly headingId: string;
   readonly bt: (ko: string, en: string) => string;
 }) {
   const outcome = summarizeMemoryOutcome(phase.matches);
-  const count = phase.matches.length;
+  const counts = countMemoryLevels(phase.matches);
+  const hasUnconfirmed = counts.probable + counts.weak > 0;
+  const titleQuery = phase.asked.titleKnowledge === "unknown" ? "" : phase.asked.titleText.trim();
+  // 머리말의 편수는 가장 확실한 단계만 센다 — 단계를 섞어 세면 "찾았어요 (12편)"이 부풀려진다.
+  const topCount = outcome === "none" ? 0 : counts[outcome];
   const heading =
     outcome === "confirmed"
-      ? formatI18nTemplate(bt("제목 조각과 맞는 작품을 찾았어요 ({count}편)", "Found stories matching the title ({count})"), { count })
+      ? formatI18nTemplate(bt("제목 조각과 맞는 작품을 찾았어요 ({count}편)", "Found stories matching the title ({count})"), { count: topCount })
       : outcome === "probable"
-        ? formatI18nTemplate(bt("확실하진 않지만 단서가 겹치는 후보예요 ({count}편)", "Not certain, but these share your clues ({count})"), { count })
+        ? formatI18nTemplate(bt("확실하진 않지만 단서가 겹치는 후보예요 ({count}편)", "Not certain, but these share your clues ({count})"), { count: topCount })
         : outcome === "weak"
-          ? formatI18nTemplate(bt("단서가 하나만 겹치는 약한 후보예요 ({count}편)", "Weak candidates sharing a single clue ({count})"), { count })
+          ? formatI18nTemplate(bt("단서가 하나만 겹치는 약한 후보예요 ({count}편)", "Weak candidates sharing a single clue ({count})"), { count: topCount })
           : bt("맞는 작품을 찾지 못했어요", "I could not find a matching story");
   const guidance =
-    outcome === "confirmed"
-      ? bt("제목이 맞는지 작품을 열어 직접 확인해 주세요.", "Open the story to check that the title is the one you mean.")
-      : outcome === "probable" || outcome === "weak"
-        ? bt(
-            "‘추정’은 제목이 아니라 장면·태그 같은 단서가 겹쳤다는 뜻이에요. 맞는지는 작품을 열어 직접 확인해야 해요. 단서를 더 보태면 좋아져요.",
-            "“Estimated” means scene or tag clues overlap, not the title. Open the story to check; adding more clues helps.",
-          )
-        : bt(
-            "이 서비스에 없는 작품이거나, 쓰신 낱말이 소개에 없을 수 있어요. 다른 낱말로 다시 적어 보세요.",
-            "It may not be in this service, or your words may not appear in its summary. Try different words.",
-          );
+    outcome === "none"
+      ? bt(
+          "이 서비스에 없는 작품이거나, 쓰신 낱말이 제목·태그·소개에 없을 수 있어요. 다른 낱말로 다시 적어 보세요.",
+          "It may not be in this service, or your words may not appear in its title, tags or summary. Try different words.",
+        )
+      : outcome === "confirmed"
+        ? bt("제목이 맞는지 작품을 열어 직접 확인해 주세요.", "Open the story to check that the title is the one you mean.")
+        : bt("맞는지는 작품을 열어 직접 확인해야 해요. 단서를 더 보태면 좋아져요.", "Open the story to check it. Adding more clues helps.");
+
+  const groups = LEVELS.map((level) => ({ level, items: phase.matches.filter((match) => match.level === level) })).filter(
+    (group) => group.items.length > 0,
+  );
+  const groupHeading = (level: MemoryMatchLevel, count: number) =>
+    formatI18nTemplate(
+      level === "probable"
+        ? bt("그 밖에 단서가 겹치는 추정 후보 ({count}편)", "Other candidates sharing your clues ({count})")
+        : bt("그 밖에 단서가 하나만 겹치는 약한 후보 ({count}편)", "Other weak candidates sharing a single clue ({count})"),
+      { count },
+    );
 
   return (
     <section aria-labelledby={headingId} data-memory-finder-results={outcome} className="grid gap-3">
-      <h3 id={headingId} ref={headingRef} tabIndex={-1} className="text-sm font-bold text-fg outline-none">
+      <h3 id={headingId} ref={headingRef} tabIndex={-1} className={cn("w-fit rounded text-sm font-bold text-fg", FOCUS_RING)}>
         {heading}
       </h3>
       <p className="text-xs leading-relaxed text-fg-2">{guidance}</p>
+      {hasUnconfirmed ? (
+        <p className="text-xs leading-relaxed text-fg-2">
+          {bt(
+            "‘추정’과 ‘약한 후보’는 제목이 아니라 장면·태그 같은 단서가 겹쳤다는 뜻이에요. 맞는지는 작품을 열어 직접 확인해야 해요.",
+            "“Estimated” and “weak” mean scene or tag clues overlap, not the title. Open the story to check.",
+          )}
+        </p>
+      ) : null}
+      {phase.truncated ? (
+        <p className="text-xs leading-relaxed text-fg-3">
+          {formatI18nTemplate(
+            bt("낱말이 많아 앞의 {count}개만 썼어요.", "There were many words, so I used only the first {count}."),
+            { count: MEMORY_MAX_SCENE_TOKENS },
+          )}
+        </p>
+      ) : null}
 
-      {count > 0 ? (
-        <ul className="grid gap-4">
-          {phase.matches.map((match) => (
-            <li key={match.title.id} className="grid gap-2" data-memory-match-level={match.level}>
-              <TitleRow title={match.title} />
-              <div className="flex flex-wrap items-center gap-1.5 px-1">
-                {badge(match.level)}
-                {match.reasons.map((reason, index) => (
-                  <span
-                    key={`${reason.field}-${reason.clue}-${index}`}
-                    className="inline-flex min-h-7 items-center rounded-full border border-line bg-raised px-2.5 text-[0.7rem] font-medium text-fg-2"
-                  >
-                    {reasonText(reason, phase.asked)}
-                  </span>
-                ))}
-              </div>
-            </li>
-          ))}
-        </ul>
+      {groups.length > 0 ? (
+        groups.map((group, groupIndex) => (
+          <div key={group.level} className="grid gap-3" data-memory-group={group.level}>
+            {groupIndex > 0 ? (
+              <h4 className="mt-1 text-xs font-bold text-fg-2">{groupHeading(group.level, group.items.length)}</h4>
+            ) : null}
+            <ul className="grid gap-4">
+              {group.items.map((match) => (
+                <li key={match.title.id} className="grid gap-2" data-memory-match-level={match.level}>
+                  <TitleRow title={match.title} />
+                  <div className="flex flex-wrap items-center gap-1.5 px-1">
+                    {badge(match.level)}
+                    {match.reasons.map((reason, index) => (
+                      <span
+                        key={`${reason.field}-${reason.clue}-${index}`}
+                        className="inline-flex min-h-7 items-center rounded-full border border-line bg-raised px-2.5 text-[0.7rem] font-medium text-fg-2"
+                      >
+                        {reasonText(reason)}
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
       ) : (
         <div className="flex flex-wrap gap-2">
-          <Link href="/search" className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11" })}>
+          <Link
+            href={titleQuery ? unifiedWorksMoreHref(titleQuery) : "/search"}
+            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11" })}
+          >
             {bt("제목 조각으로 검색", "Search by a piece of the title")}
           </Link>
           <Link href="/explore" className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11" })}>
@@ -389,8 +445,8 @@ function Results({
 
       <p className="text-xs leading-relaxed text-fg-3">
         {bt(
-          "작품 소개는 서비스가 직접 쓴 1~3문장 요약이라, 장면 하나만으로는 못 찾을 수 있어요.",
-          "Story summaries here are short 1–3 sentence texts written by the service, so a single scene may not be enough to find one.",
+          "소개가 비어 있거나 출처 표기뿐인 작품은 소개로 비교하지 않고 제목·태그·장르로만 비교해요. 그래서 장면 하나만으로는 못 찾는 작품이 많아요.",
+          "Stories with an empty summary, or one that only names its source, are compared by title, tags and genre alone — so a single scene often is not enough to find one.",
         )}
       </p>
     </section>
