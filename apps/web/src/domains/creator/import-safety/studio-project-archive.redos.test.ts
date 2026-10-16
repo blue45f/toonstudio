@@ -7,8 +7,9 @@ import { buildStudioProjectArchive } from "../studio-project-archive";
  *
  * 아카이브는 다른 사람이 만든 프로젝트 파일(공유·템플릿·마켓)이라 첨부 크기가 가져오는 쪽의 통제 밖이다.
  * 줄 첫머리 공백을 `^\s*` 로 읽으면 빈 줄이 길게 이어질 때 줄마다 남은 빈 줄 열을 끝까지 다시 읽어 입력 길이의 제곱 시간이 든다.
- * 아래 입력은 수정 전 구현에서 검사만 수 초가 걸렸고, 선형 시간이면 아카이브를 만드는 전체 시간도 수백 ms 안에 끝난다.
- * 상한은 ZIP 조립·해시까지 포함하므로 느린 CI 에서도 흔들리지 않게 5초로 넉넉히 둔다.
+ * 아래 입력은 수정 전 구현에서 빈 줄 15만 개가 17초, 공백 줄 10만 개가 20초 걸렸다(시간이 입력 길이의 제곱이라 빈 줄 6만 개는 2.5~3.3초).
+ * 선형 시간이면 아카이브를 만드는 전체 시간도 수백 ms 안에 끝난다. 상한은 ZIP 조립·해시까지 포함하므로 느린 CI 에서도 흔들리지
+ * 않게 5초로 넉넉히 두되, 수정 전 구현은 그 몇 배가 걸려 이 상한을 확실히 넘도록 입력을 키웠다.
  */
 const LINEAR_TIME_BUDGET_MS = 5_000;
 
@@ -56,13 +57,13 @@ function externalDependencyCount(result: Awaited<ReturnType<typeof buildWithObj>
 
 describe("OBJ 첨부의 mtllib 참조 검사", () => {
   it("빈 줄이 길게 이어져도 제곱 시간이 되지 않는다", async () => {
-    const { result, elapsedMs } = await buildWithObj(`# 빈 줄이 긴 OBJ\n${"\n".repeat(60_000)}o Cube\nv 0 0 0\n`);
+    const { result, elapsedMs } = await buildWithObj(`# 빈 줄이 긴 OBJ\n${"\n".repeat(150_000)}o Cube\nv 0 0 0\n`);
     expect(externalDependencyCount(result)).toBe(0);
     expect(elapsedMs, "아카이브 조립 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
   });
 
   it("공백만 든 줄이 길게 이어져도 제곱 시간이 되지 않는다", async () => {
-    const { result, elapsedMs } = await buildWithObj(`# 공백 줄이 긴 OBJ\n${"  \n".repeat(30_000)}o Cube\nv 0 0 0\n`);
+    const { result, elapsedMs } = await buildWithObj(`# 공백 줄이 긴 OBJ\n${"  \n".repeat(100_000)}o Cube\nv 0 0 0\n`);
     expect(externalDependencyCount(result)).toBe(0);
     expect(elapsedMs, "아카이브 조립 소요(ms)").toBeLessThan(LINEAR_TIME_BUDGET_MS);
   });
