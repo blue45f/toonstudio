@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, HttpException, NotFoundException } from "@nestjs/common";
 import { Image, decode, encode } from "image-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -95,6 +95,34 @@ describe("admission", () => {
     boundary.query.mockResolvedValue(ACTIVE);
 
     await expect(service.upload("u1", {})).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe("upload rate limit", () => {
+  const UPLOADS_PER_HOUR = 30;
+
+  async function attempt(userId: string): Promise<unknown> {
+    return service.upload(userId, {}).catch((error: unknown) => error);
+  }
+
+  it("한 계정은 한 시간에 30번까지만 업로드를 시도할 수 있고 그 뒤는 429 다", async () => {
+    boundary.query.mockResolvedValue(ACTIVE);
+
+    for (let index = 0; index < UPLOADS_PER_HOUR; index += 1) {
+      expect(await attempt("rate-limited-user")).toBeInstanceOf(BadRequestException);
+    }
+    const blocked = await attempt("rate-limited-user");
+    expect(blocked).toBeInstanceOf(HttpException);
+    expect((blocked as HttpException).getStatus()).toBe(429);
+    expect(boundary.uploadImmutable).not.toHaveBeenCalled();
+  });
+
+  it("다른 계정의 한도는 영향을 받지 않는다", async () => {
+    boundary.query.mockResolvedValue(ACTIVE);
+
+    for (let index = 0; index <= UPLOADS_PER_HOUR; index += 1) await attempt("noisy-user");
+
+    expect(await attempt("quiet-user")).toBeInstanceOf(BadRequestException);
   });
 });
 
