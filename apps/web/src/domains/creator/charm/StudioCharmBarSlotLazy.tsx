@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense } from "react";
 
 import type { StudioCharmBarSlotProps } from "./StudioCharmBarSlot";
 
@@ -14,27 +14,15 @@ import type { StudioCharmBarSlotProps } from "./StudioCharmBarSlot";
  * 부가 기능 때문에 새로 고치면 안 된다. 타입은 `import type` 이라 이 파일이 슬롯을 정적으로 끌어오지 않는다.
  */
 const LazyStudioCharmBarSlot = lazy(() =>
-  import("./StudioCharmBarSlot").then((module) => ({ default: module.StudioCharmBarSlot })),
+  import("./StudioCharmBarSlot")
+    .then((module) => ({ default: module.StudioCharmBarSlot }))
+    .catch(() => ({ default: () => null })),
 );
-
-class OptionalSlotBoundary extends Component<{ readonly children: ReactNode }, { readonly failed: boolean }> {
-  state = { failed: false };
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
 
 export function StudioCharmBarSlotLazy(props: StudioCharmBarSlotProps) {
   return (
-    <OptionalSlotBoundary>
-      <Suspense fallback={null}>
-        <LazyStudioCharmBarSlot {...props} />
-      </Suspense>
-    </OptionalSlotBoundary>
+    <Suspense fallback={null}>
+      <LazyStudioCharmBarSlot {...props} />
+    </Suspense>
   );
 }

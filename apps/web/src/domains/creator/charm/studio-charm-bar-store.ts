@@ -14,7 +14,6 @@
  * - 저장소가 없거나 실패해도 이번 탭의 메모리 상태는 유지하고 `memory-only` 로 알린다. `retry()` 로 다시 시도한다.
  */
 
-import { acquireProductStudioUiPreferencesRepository } from "../studio-legacy-editor-runtime-helpers";
 import {
   createEmptyStudioCharmBarState,
   moveStudioCharm,
@@ -128,8 +127,19 @@ function replay(base: StudioCharmBarState, journal: readonly StudioCharmBarComma
   return state;
 }
 
+/**
+ * 기본 저장소 획득. 편집기가 이미 정적으로 가진 큰 도우미 모듈(`studio-legacy-editor-runtime-helpers`, 약 41 KiB)을 이 파일이
+ * 가져오면 지연 로드되는 참 바 청크와 Studio 정적 청크가 그 모듈을 함께 쓰게 되어 번들러가 그 모듈을 별도 청크로 떼어
+ * 낸다(Studio 정적 청크 +1). 그 도우미는 결국 SQLite 환경설정 모듈을 지연 로드해 저장소를 얻을 뿐이므로, 같은 모듈을
+ * 직접 지연 로드한다 — 이 모듈은 이미 자기 지연 청크를 가진 경계라서 새 청크가 생기지 않는다.
+ */
+async function acquireProductRepository() {
+  const module = await import("../studio-ui-preferences-sqlite");
+  return module.acquireProductStudioUiPreferencesRepository();
+}
+
 export function createStudioCharmBarStore(options: CreateStudioCharmBarStoreOptions = {}): StudioCharmBarStore {
-  const acquire = options.acquire ?? acquireProductStudioUiPreferencesRepository;
+  const acquire = options.acquire ?? acquireProductRepository;
   const listeners = new Set<() => void>();
   let snapshot: StudioCharmBarSnapshot = Object.freeze({
     state: createEmptyStudioCharmBarState(),
