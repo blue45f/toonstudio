@@ -9,17 +9,17 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1583,
-    "bytes": 19433354
+    "modules": 1578,
+    "bytes": 19390211
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
-      "modules": 239,
-      "bytes": 1271445
+      "modules": 231,
+      "bytes": 1188418
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1389,
-      "bytes": 18548912
+      "modules": 1387,
+      "bytes": 18529339
     }
   },
   "forbiddenDomains": {
@@ -380,8 +380,8 @@
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 559,
-      "bytes": 8313610
+      "modules": 557,
+      "bytes": 8306535
     },
     "apps/web/src/domains/creator/ai": {
       "modules": 21,
@@ -575,10 +575,6 @@
       "modules": 1,
       "bytes": 582
     },
-    "apps/web/src/domains/learn": {
-      "modules": 11,
-      "bytes": 96216
-    },
     "apps/web/src/domains/marketing": {
       "modules": 2,
       "bytes": 4806
@@ -608,8 +604,8 @@
       "bytes": 3978
     },
     "apps/web/src/shared/components": {
-      "modules": 52,
-      "bytes": 222937
+      "modules": 51,
+      "bytes": 210517
     },
     "apps/web/src/shared/hooks": {
       "modules": 2,
@@ -620,8 +616,8 @@
       "bytes": 93528
     },
     "apps/web/src/shared/lib": {
-      "modules": 75,
-      "bytes": 278697
+      "modules": 73,
+      "bytes": 270816
     },
     "apps/web/src/shared/navigation": {
       "modules": 3,
@@ -765,7 +761,6 @@
     "apps/web/src/domains/creator/StudioLazyColorPopover.tsx": 2,
     "apps/web/src/domains/creator/StudioLazyPanelStack.tsx": 2,
     "apps/web/src/domains/creator/StudioLazySurfaceFallback.tsx": 2,
-    "apps/web/src/domains/creator/StudioLessonMissionBar.tsx": 2,
     "apps/web/src/domains/creator/StudioLiveTransformDraftNode.tsx": 2,
     "apps/web/src/domains/creator/StudioLiveTransformLayer.tsx": 2,
     "apps/web/src/domains/creator/StudioNaturalTransformer.tsx": 2,
@@ -1584,7 +1579,6 @@
     "apps/web/src/domains/creator/studio-lazy-brush-stabilizer.ts": 2,
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": 2,
     "apps/web/src/domains/creator/studio-legacy-editor-runtime-helpers.ts": 2,
-    "apps/web/src/domains/creator/studio-lesson-mission.ts": 2,
     "apps/web/src/domains/creator/studio-linked-3d-pass-transaction.ts": 2,
     "apps/web/src/domains/creator/studio-linked-3d-raster-edit-policy.ts": 2,
     "apps/web/src/domains/creator/studio-linked-3d-render-document.ts": 2,
@@ -1939,17 +1933,6 @@
     "apps/web/src/domains/creator/workspace/WorkspaceHomeRoute.tsx": 1,
     "apps/web/src/domains/creator/writer-room/buildStudioWriterRoomCanvasPages.ts": 2,
     "apps/web/src/domains/cuts/cuts-labels.ts": 1,
-    "apps/web/src/domains/learn/LearnSectionShell.tsx": 1,
-    "apps/web/src/domains/learn/learning-backup.ts": 3,
-    "apps/web/src/domains/learn/learning-content.ts": 3,
-    "apps/web/src/domains/learn/learning-model.ts": 3,
-    "apps/web/src/domains/learn/learning-paths.ts": 2,
-    "apps/web/src/domains/learn/learning-practice.ts": 2,
-    "apps/web/src/domains/learn/learning-storage.ts": 3,
-    "apps/web/src/domains/learn/public/learn-section-shell.ts": 1,
-    "apps/web/src/domains/learn/public/learning-practice.ts": 2,
-    "apps/web/src/domains/learn/use-learning-practice.ts": 2,
-    "apps/web/src/domains/learn/use-learning-progress.ts": 3,
     "apps/web/src/domains/marketing/comic-intro/ComicIntroHost.tsx": 1,
     "apps/web/src/domains/marketing/comic-intro/comic-intro-art.ts": 1,
     "apps/web/src/domains/newsletter/newsletter-labels.ts": 1,
@@ -1997,7 +1980,6 @@
     "apps/web/src/shared/components/pwa-install-nudge-host.tsx": 1,
     "apps/web/src/shared/components/route-silhouette.tsx": 1,
     "apps/web/src/shared/components/section-art.tsx": 1,
-    "apps/web/src/shared/components/section-nav.tsx": 1,
     "apps/web/src/shared/components/site-experience/SiteConnectionNotice.tsx": 1,
     "apps/web/src/shared/components/site-experience/SiteExperienceFrame.tsx": 1,
     "apps/web/src/shared/components/site-experience/WorkflowIllustration.tsx": 1,
@@ -2053,8 +2035,6 @@
     "apps/web/src/shared/lib/cx.ts": 3,
     "apps/web/src/shared/lib/decode-path-segment.ts": 1,
     "apps/web/src/shared/lib/file-system-access.ts": 2,
-    "apps/web/src/shared/lib/fuzzy-search.ts": 2,
-    "apps/web/src/shared/lib/hangul.ts": 2,
     "apps/web/src/shared/lib/i18n-asset-loader.ts": 3,
     "apps/web/src/shared/lib/i18n-asset-manifest.ts": 3,
     "apps/web/src/shared/lib/i18n-bilingual-copy.ts": 3,
