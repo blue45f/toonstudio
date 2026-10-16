@@ -19,7 +19,7 @@
 | 여러 페이지에 걸친 에피소드 전체 곡선 | target (구현 안 됨) | 지금은 활성 페이지의 프레임 또는 콘티 대본 전체만 분석한다 → 11절 |
 | 공동 편집(CRDT) 문서에서의 컷 포즈 보존 | legacy exception (확인하지 못함) | `live/studio-crdt-page-payload.ts` 의 `PAGE_PAYLOAD_KEYS` 에 `posePresetId` 가 없다 → 11절 |
 | 독자 반응으로 보정한 계수 | target (없음) | 모든 계수가 휴리스틱이다 |
-| 브라우저 화면 검증(light/dark/contrast, 모바일) | target | 이 변경은 컴포넌트 시험까지만 했고 화면 검증은 별도 UI/UX 단계에서 한다 |
+| 브라우저 화면 검증(light/dark/contrast, 모바일) | target | 컴포넌트 시험이 기본 근거다. 리뷰 수정(2026-10-16)에서 Chromium 한 엔진으로 곡선 정렬·모달 Tab 순환·axe 만 임시 하네스로 쟀다(9.2절). 세 테마 전체·contrast·실기기 화면 검증은 별도 UI/UX 단계에서 한다 |
 
 새 서버 API, 새 DB 마이그레이션, 새 런타임 의존성은 없다. 계산과 추천은 모두 브라우저 안에서 일어나며 대본·원고를 어디에도 보내지 않는다.
 
@@ -328,16 +328,19 @@ suggestCutPoses(
 ### 9.2 접근성
 
 - 곡선은 장식용 SVG(`aria-hidden`)이고 컷마다 진짜 `<button>` 이 점이다. 접근성 이름은 "컷 5, 긴장도 0.87, 절정 후보, 급함 후보"처럼 번호·값·후보 종류를 모두 담는다. 선택은 `aria-pressed` 다.
-- Tab 으로 곡선에 들어오면 한 점만 탭 정지점(roving tabindex)이고 ←/→/Home/End 로 옮긴다. 처리한 키는 스튜디오의 전역 방향키 이동으로 새지 않게 막는다. 점은 컷 한 칸 폭 전체를 차지하고 터치 기기에서는 더 넓다.
+- Tab 으로 곡선에 들어오면 한 점만 탭 정지점(roving tabindex)이고 ←/→/Home/End 로 옮긴다. 처리한 키는 스튜디오의 전역 방향키 이동으로 새지 않게 막는다. 점은 컷 한 칸 폭 전체를 차지한다.
+- 곡선(SVG)과 점 열의 가로 정렬: 한 칸의 폭은 래퍼의 CSS 변수 `--tension-col` 하나가 정한다(기본 2.25rem, 터치 `pointer: coarse` 에서 2.75rem). 래퍼 최소 폭이 `칸 수 × 변수`이고 점 버튼은 `flex-1`·`min-w-0` 으로 그 폭을 똑같이 나눠 가지므로, SVG 의 `(i + 0.5) / 칸 수` 위치와 점 중심이 터치·글자 크기 확대에서도 같다. 컷이 많아 래퍼가 컨테이너보다 넓으면 곡선 전체가 가로로 스크롤된다. 버튼에 자기 최소 폭(px·rem·터치 변형)을 따로 두면 열이 래퍼보다 넓어져 곡선과 점이 어긋나므로 두지 않는다(시험이 구조를 고정한다).
 - 색에만 기대지 않는다. 후보 종류는 띠 색과 함께 글리프(`▲` `!` `…`), 접근성 이름, 범례, 목록, 표 열로 알린다. 기준선은 점선과 범례 문구로 알린다.
 - 곡선의 텍스트 대안이 둘이다. 곡선 그룹의 `aria-describedby` 가 가리키는 한 줄 요약, 그리고 `caption`·열/행 머리글(`scope`)을 가진 실제 표(`표로 보기`).
+- 접이식(`표로 보기`, `계산 방법과 한계`)은 네이티브 `<details>` 다. summary 는 터치 44px 이상이고 기본 마커 대신 장식 화살표(`aria-hidden`)를 둔다. 보조 센터 모달 안에서도 Tab 으로 닿는다: 공용 포커스 트랩(`useStudioModalSheet.ts`)이 summary 를 순환 후보에 넣고, 닫힌 `<details>` 의 본문은 후보에서 뺀다. 닫힌 본문은 브라우저가 가릴 뿐 크기 질의에는 값을 돌려주기 때문에(Chromium·Firefox·WebKit 에서 확인) 빼지 않으면 숨은 요소가 "마지막 요소"가 되어 마지막 summary 의 Tab 이 모달 밖으로 샌다.
+- 두 표는 좁은 화면에서 가로로 스크롤되므로 래퍼가 키보드로 닿는 이름 있는 영역(`role="region"`, `tabIndex=0`, 이름은 눈에 보이는 표 캡션 `aria-labelledby`)이다. 방향키로 스크롤하는 사용자를 위해 포커스 링을 둔다(axe `scrollable-region-focusable`).
 - 입력(textarea, 선택 상자)은 모두 `<label>` 에 묶이고 안내 문구는 `aria-describedby` 로 이어진다. 안내·오류·적용 결과는 `role="status"`/`role="alert"` 영역으로 알린다. 되돌리기 뒤 포커스는 안내 문장으로 간다.
 - 터치 영역은 44px 이상(`min-h-11`), 포커스 링은 공용 `STUDIO_FOCUS_RING`, 전환은 색 변화뿐이라 움직임이 없다. 색은 의미 토큰(`accent`/`warn`/`good`/`bad`/`cool`/`line`)만 쓰고 원색 팔레트와 `dark:` 변형을 쓰지 않는다(시험이 확인한다).
 - 문구는 모두 한국어/영어 짝(`bi(ko, en)`)이며 현재 언어를 따른다.
 
 ## 10. 코드 구조와 경계
 
-경로는 `apps/web/src/domains/creator/` 기준이다. 새 파일은 모두 `assistant/` 안에 있고, 다른 도메인의 내부를 새로 가져오지 않는다(`pnpm run validate:app-boundaries` 의 교차 도메인 깊은 import 수가 늘지 않았다).
+경로는 `apps/web/src/domains/creator/` 기준이다. 새 소스 파일은 모두 `assistant/` 안에 있고(공용 포커스 트랩의 시험 하나만 `creator/` 에 있다), 다른 도메인의 내부를 새로 가져오지 않는다(`pnpm run validate:app-boundaries` 의 교차 도메인 깊은 import 수가 늘지 않았다).
 
 | 파일 | 역할 |
 | --- | --- |
@@ -360,6 +363,7 @@ suggestCutPoses(
 | `assistant/StudioWebtoonAssistantContent.tsx` | 탭 등록, 문서 접근 props, 지연 로드 문 장착 |
 | `assistant/studio-contextual-learning.ts` | 보조 센터의 "작업 맥락 학습"이 이 탭을 콘티·이야기 구성 자료로 잇는다 |
 | `StudioCuttoonEditorHost.tsx` | `pages`, `currentPageId`, `commitPages` 를 보조 센터에 넘긴다 |
+| `useStudioModalSheet.ts`, `useStudioModalSheet.details.test.ts` | 기존 공용 모달 포커스 트랩. 접이식의 summary 를 순환에 넣고 닫힌 `<details>` 본문을 뺀다(진짜 DOM 시험이 따로 있다). 이 훅을 쓰는 다른 모달에도 같이 적용된다 |
 
 번들 경계(`apps/web/AGENTS.md`):
 
