@@ -494,22 +494,23 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     void captureStudio3dPlatesFromAdapter(graded.scene, 48, 27, captureRef?.current?.adapter ?? null);
   };
   h.addPrimitive = addPrimitive;
-  // 합성·방·웹툰 배경처럼 "한 번에 여러 도형을 만들어 붙이는" 추가의 공통 경로: 노드 수 한도를 확인한 뒤
-  // 한 번의 상태 교체로 커밋하고 첫 도형을 선택한다. buildParts(기존 도형 수, 현재 카메라 뷰) → BgPrimitive[].
+  // 합성·방·웹툰 배경처럼 "한 번에 여러 도형을 만들어 붙이는" 추가의 공통 경로: 노드 수 한도를 확인한 뒤 한 번의 상태
+  // 교체로 커밋하고 첫 도형을 선택한다. buildParts(기존 도형 수, 현재 카메라 뷰) → BgPrimitive[]; 더한 목록(실패면 false)을 돌려준다.
   const addGeneratedParts = (buildParts) => {
     const live = physicsRuntimeSourceRef.current;
     const parts = buildParts(live.primitives.length, viewportApiRef.current?.readView() ?? sceneBaseDocument.camera);
     if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return false;
     replaceCanonicalDocumentState({ primitives: [...live.primitives, ...parts] });
     setSelectedIds(new Set([parts[0].id]));
-    return true;
+    return parts;
   };
   h.addGeneratedParts = addGeneratedParts;
-  const addComposite = (presetId: string) => {
+  // "숨긴 벽 되돌리기": 자동 단면이 숨긴 조각(id 목록)만 한 번의 상태 교체로 다시 보이게 한다.
+  h.showSceneParts = (ids) => replaceCanonicalDocumentState({ primitives: physicsRuntimeSourceRef.current.primitives.map((p) => (ids.includes(p.id) && p.visible === false ? { ...p, visible: true } : p)) });
+  h.addComposite = (presetId: string) => {
     const preset = COMPOSITE_PRESETS.find((p) => p.id === presetId);
     if (preset) addGeneratedParts((count) => instantiateCompositePreset(preset, count));
   };
-  h.addComposite = addComposite;
   const addProceduralStarterAsset = (
     assetId: string,
   ): StudioBg3dProceduralInsertionPlan => {

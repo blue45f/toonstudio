@@ -1,6 +1,8 @@
 /* Re-exports the original StudioBackground3D import graph for host extracts. */
 import { lazy as createLazyComponent } from "react";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+
 export { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
 export { OrthographicCamera } from "@react-three/drei/core/OrthographicCamera.js";
 export { PerspectiveCamera } from "@react-three/drei/core/PerspectiveCamera.js";
@@ -585,16 +587,22 @@ export {
 } from "./StudioBg3dPhysicsControls";
 export { StudioBg3dPlacementPointerController } from "./StudioBg3dPlacementPointerController";
 // 방 만들기 패널(약 13KB)은 템플릿 탭을 열 때만 필요해 지연 로드한다(씬 템플릿 패널과 같은 방식).
-export const StudioBg3dRoomBuilderPanel = createLazyComponent(() =>
-  import("./StudioBg3dRoomBuilderPanel").then(({ StudioBg3dRoomBuilderPanel: Panel }) => ({
-    default: Panel,
-  }))
+// 이 둘은 새 로드 실패 경로(방 만들기 패널은 예전에 정적이었다)라 lazyRetry 로 받는다: 배포 뒤 옛 청크가 사라진 실패를
+// 새로고침 한 번으로 복구하고, 새로고침이 취소되면 편집기를 오류 화면으로 바꾸지 않고 로딩 상태로 둔다(chunk-load-recovery.ts).
+export const StudioBg3dRoomBuilderPanel = lazyRetry(
+  () =>
+    import("./StudioBg3dRoomBuilderPanel").then(({ StudioBg3dRoomBuilderPanel: Panel }) => ({
+      default: Panel,
+    })),
+  "StudioBg3dRoomBuilderPanel",
 );
 // 원클릭 웹툰 배경 선택기(교실·복도·거리): 카탈로그·거리 생성기와 함께 템플릿 탭을 열 때만 불러온다.
-export const StudioBg3dWebtoonBackgroundPicker = createLazyComponent(() =>
-  import("./StudioBg3dWebtoonBackgroundPicker").then(({
-    StudioBg3dWebtoonBackgroundPicker: Picker,
-  }) => ({ default: Picker }))
+export const StudioBg3dWebtoonBackgroundPicker = lazyRetry(
+  () =>
+    import("./StudioBg3dWebtoonBackgroundPicker").then(({
+      StudioBg3dWebtoonBackgroundPicker: Picker,
+    }) => ({ default: Picker })),
+  "StudioBg3dWebtoonBackgroundPicker",
 );
 export { StudioBg3dSceneFog } from "./StudioBg3dSceneFog";
 export {

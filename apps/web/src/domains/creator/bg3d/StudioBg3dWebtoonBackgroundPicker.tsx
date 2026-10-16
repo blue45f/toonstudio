@@ -5,13 +5,25 @@
 // 맡긴다: 이 컴포넌트는 (기존 도형 수, 카메라 뷰) → 도형 묶음을 돌려주는 함수만 만들어 넘긴다. 그래서 노드 한도 검사·한 번의
 // 되돌리기 단계·첫 도형 선택은 방 만들기·복합 오브젝트와 같은 곳에서 처리된다.
 //
+// 자동 단면(카메라 쪽 벽 숨김)은 이 선택기에서 기본으로 켜져 있다. 켜진 채로 벽을 숨기면 그 사실을 안내하고, 숨긴 조각을
+// 한 번에 되살리는 버튼을 함께 보여 준다(visible:false 도형은 뷰포트 클릭도 받지 않으므로 되살릴 길이 눈에 보여야 한다).
+//
 // 이 파일은 지연 청크(studio-bg3d-editor-runtime-bindings.ts 의 createLazyComponent)로만 불러온다.
 
 import { Building2, DoorOpen, GraduationCap, Sparkles } from "lucide-react";
 import { useState } from "react";
 
+import { StudioBg3dBuildNotice } from "./StudioBg3dBuildNotice";
+import {
+  describeStudioBg3dBuildNotice,
+  STUDIO_BG3D_AUTO_CUTAWAY_LABEL,
+  STUDIO_BG3D_BUILD_FAILED_NOTICE,
+  STUDIO_BG3D_PICKER_CUTAWAY_HELP,
+  STUDIO_BG3D_PICKER_INTRO,
+  summarizeStudioBg3dHiddenWalls,
+  type StudioBg3dHiddenWallSummary,
+} from "./studio-bg3d-build-notice";
 import { LtToggleRow } from "./studio-bg3d-control-fields";
-import { STUDIO_BG3D_ROOM_WALL_LABELS } from "./studio-bg3d-room-builder";
 import {
   buildStudioBg3dWebtoonBackground,
   STUDIO_BG3D_WEBTOON_BACKGROUNDS,
@@ -37,8 +49,12 @@ export interface StudioBg3dWebtoonBackgroundPickerProps {
   readonly disabled?: boolean;
   readonly autoCutaway: boolean;
   readonly onAutoCutawayChange: (next: boolean) => void;
-  /** 호스트의 도형 묶음 추가: 장면에 반영했으면 true, 한도·준비 상태 때문에 못 했으면 false. */
-  readonly onBuild: (buildParts: StudioBg3dWebtoonBuildParts) => boolean | undefined;
+  /** 호스트의 도형 묶음 추가: 장면에 반영했으면 true(또는 더한 도형 목록), 한도·준비 상태 때문에 못 했으면 false. */
+  readonly onBuild: (buildParts: StudioBg3dWebtoonBuildParts) => boolean | readonly BgPrimitive[] | undefined;
+  /** "숨긴 벽 되돌리기": 이 id 의 도형을 다시 보이게 한다. 주지 않으면 버튼을 그리지 않는다. */
+  readonly onShowParts?: ((ids: readonly string[]) => void) | undefined;
+  /** "새로 만든 곳 보기": 방금 선택된 새 배경으로 화면을 맞춘다. 주지 않으면 버튼을 그리지 않는다. */
+  readonly onFocusBuilt?: (() => void) | undefined;
 }
 
 const ENTRY_ICON: Record<StudioBg3dWebtoonBackgroundId, typeof Building2> = {
@@ -53,21 +69,26 @@ function swatchColor(entry: StudioBg3dWebtoonBackgroundEntry): string {
   return entry.kind === "room" ? entry.spec.floorColor : STREET_SWATCH;
 }
 
-function describeBuilt(build: StudioBg3dWebtoonBackgroundBuild): string {
-  const hidden = build.hiddenWalls.map((wall) => STUDIO_BG3D_ROOM_WALL_LABELS[wall]).join("·");
-  const base = `${build.entry.label} 추가 완료 · 오브젝트 ${build.primitives.length}개`;
-  return hidden
-    ? `${base} · ${hidden}을 카메라에 맞춰 숨겼어요(레이어 목록에서 다시 켤 수 있어요)`
-    : base;
-}
+type PickerNotice =
+  | { readonly kind: "failed" }
+  | {
+      readonly kind: "built";
+      readonly label: string;
+      readonly objectCount: number;
+      readonly hiddenWalls: StudioBg3dHiddenWallSummary;
+      readonly wallsRestored: boolean;
+      readonly anchorX: number;
+    };
 
 export function StudioBg3dWebtoonBackgroundPicker({
   disabled = false,
   autoCutaway,
   onAutoCutawayChange,
   onBuild,
+  onShowParts,
+  onFocusBuilt,
 }: StudioBg3dWebtoonBackgroundPickerProps) {
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<PickerNotice | null>(null);
 
   const build = (id: StudioBg3dWebtoonBackgroundId) => {
     const built: { current: StudioBg3dWebtoonBackgroundBuild | null } = { current: null };
@@ -77,12 +98,33 @@ export function StudioBg3dWebtoonBackgroundPicker({
       });
       return built.current?.primitives ?? [];
     });
+    const result = built.current;
     setNotice(
-      accepted && built.current
-        ? describeBuilt(built.current)
-        : "지금은 추가하지 못했어요. 편집기를 준비하는 중이거나 오브젝트 한도에 닿았을 수 있어요.",
+      accepted && result
+        ? {
+            kind: "built",
+            label: result.entry.label,
+            objectCount: result.primitives.length,
+            hiddenWalls: summarizeStudioBg3dHiddenWalls(result.primitives),
+            wallsRestored: false,
+            anchorX: result.anchorX,
+          }
+        : { kind: "failed" },
     );
   };
+
+  const restoreWalls = () => {
+    if (notice?.kind !== "built") return;
+    onShowParts?.(notice.hiddenWalls.ids);
+    setNotice({ ...notice, wallsRestored: true });
+  };
+
+  const built = notice?.kind === "built" ? notice : null;
+  const message = built
+    ? describeStudioBg3dBuildNotice(built)
+    : notice?.kind === "failed"
+      ? STUDIO_BG3D_BUILD_FAILED_NOTICE
+      : null;
 
   return (
     <section aria-labelledby="bg3d-webtoon-background-title">
@@ -93,10 +135,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
         <Sparkles size={15} className="text-accent" aria-hidden />
         원클릭 웹툰 배경
       </h3>
-      <p className="mb-2.5 text-[0.68rem] leading-relaxed text-fg-3">
-        사람 키 기준 실제 크기(문 2.1m, 책상 윗면 0.72m, 층고 3m)로 한 번에 만듭니다. 추가한 뒤에는 벽·책상·가로등을
-        하나씩 골라 옮기고 지울 수 있어요.
-      </p>
+      <p className="mb-2.5 text-[0.68rem] leading-relaxed text-fg-3">{STUDIO_BG3D_PICKER_INTRO}</p>
 
       <div className="space-y-2">
         {STUDIO_BG3D_WEBTOON_BACKGROUNDS.map((entry) => {
@@ -128,22 +167,19 @@ export function StudioBg3dWebtoonBackgroundPicker({
       <div className="mt-2.5 rounded-xl border border-line bg-card/70 px-3">
         <LtToggleRow
           checked={autoCutaway}
-          label="자동 단면 (카메라 쪽 벽 숨김)"
+          label={STUDIO_BG3D_AUTO_CUTAWAY_LABEL}
           disabled={disabled}
           onChange={onAutoCutawayChange}
         />
-        <p className="pb-2 text-[0.64rem] leading-relaxed text-fg-3">
-          교실·복도는 방 밖에서 안을 볼 때 시선을 가로막는 벽을 추가하는 순간 숨깁니다. 거리에는 벽이 없어 영향이 없어요.
-        </p>
+        <p className="pb-2 text-[0.64rem] leading-relaxed text-fg-3">{STUDIO_BG3D_PICKER_CUTAWAY_HELP}</p>
       </div>
 
-      <p
-        role="status"
-        aria-live="polite"
-        className="mt-2 min-h-4 text-[0.65rem] leading-relaxed text-fg-3"
-      >
-        {notice}
-      </p>
+      <StudioBg3dBuildNotice
+        message={message}
+        disabled={disabled}
+        onRestoreWalls={built && built.hiddenWalls.ids.length > 0 && !built.wallsRestored && onShowParts ? restoreWalls : undefined}
+        onFocusBuilt={built && built.anchorX > 0 ? onFocusBuilt : undefined}
+      />
     </section>
   );
 }

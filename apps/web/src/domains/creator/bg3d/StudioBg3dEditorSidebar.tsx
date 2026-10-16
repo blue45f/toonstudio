@@ -334,8 +334,10 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
     sceneRecoveryError, sharedStageUpdateBlockedReason,
   } = { ...R, ...h };
   const simpleMode = experienceMode === "simple";
-  // 방 만들기의 "자동 단면"(카메라 쪽 벽 숨김) 설정 — 기본 켜짐. 문서에 저장하지 않는 입력 편의다.
-  const [roomAutoCutaway, setRoomAutoCutaway] = useState(true);
+  // "자동 단면"(카메라 쪽 벽 숨김) 설정 — 문서에 저장하지 않는 입력 편의다. 원클릭 웹툰 배경은 기본 켜짐(켜면 숨긴 벽을
+  // 안내하고 한 번에 되돌리는 버튼을 준다), 방 만들기는 기본 꺼짐(예전 "방 추가"와 같은 동작)이라 따로 둔다.
+  const [webtoonAutoCutaway, setWebtoonAutoCutaway] = useState(true);
+  const [roomPanelAutoCutaway, setRoomPanelAutoCutaway] = useState(false);
   const simplePanelCopy = {
     shapes: { label: "소품", hint: "가구·물건·기본 도형을 장면에 배치" },
     templates: { label: "배경", hint: "교실·거리·카페 같은 장소를 빠르게 구성" },
@@ -569,13 +571,15 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                 {activePanelTab === "templates" ? (
                   <div className="mb-5 border-b border-line pb-4">
                     <Suspense fallback={(
-                      <StudioPanelLoading label="웹툰 배경 도구를 불러오는 중입니다…" />
+                      <StudioPanelLoading label="웹툰 배경 도구를 불러오는 중이에요…" />
                     )}>
                       <StudioBg3dWebtoonBackgroundPicker
                         disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
-                        autoCutaway={roomAutoCutaway}
-                        onAutoCutawayChange={setRoomAutoCutaway}
+                        autoCutaway={webtoonAutoCutaway}
+                        onAutoCutawayChange={setWebtoonAutoCutaway}
                         onBuild={h.addGeneratedParts}
+                        onShowParts={h.showSceneParts}
+                        onFocusBuilt={focusSelectedEntity}
                       />
                     </Suspense>
                   </div>
@@ -640,16 +644,17 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                   </div>
                   {activePanelTab === "templates" ? (
                     <Suspense fallback={(
-                      <StudioPanelLoading label="방 만들기 도구를 불러오는 중입니다…" />
+                      <StudioPanelLoading label="방 만들기 도구를 불러오는 중이에요…" />
                     )}>
                       <StudioBg3dRoomBuilderPanel
                         spec={roomBuilderSpec}
                         disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
                         onSpecChange={handleRoomBuilderSpecChange}
                         onApplyPreset={applyRoomBuilderPreset}
-                        onInsert={() => addRoomBuild({ autoCutaway: roomAutoCutaway })}
-                        autoCutaway={roomAutoCutaway}
-                        onAutoCutawayChange={setRoomAutoCutaway}
+                        onInsert={() => addRoomBuild({ autoCutaway: roomPanelAutoCutaway })}
+                        autoCutaway={roomPanelAutoCutaway}
+                        onAutoCutawayChange={setRoomPanelAutoCutaway}
+                        onShowParts={h.showSceneParts}
                       />
                     </Suspense>
                   ) : null}

@@ -160,17 +160,17 @@ describe("씬 연산 호스트의 방 추가(addRoomBuild)와 공통 묶음 추�
     expect(view.result.current.setError.mock.calls[0][0]).toContain("오브젝트를 최대");
   });
 
-  it("addGeneratedParts 는 만든 쪽이 기존 도형 수와 카메라 뷰를 받아 도형 묶음을 돌려주면 한 번에 커밋한다", () => {
+  it("addGeneratedParts 는 만든 쪽이 기존 도형 수와 카메라 뷰를 받아 도형 묶음을 돌려주면 한 번에 커밋하고 더한 목록을 돌려준다", () => {
     const view = renderHost({ spec: classroom, liveView: OUTSIDE_SOUTH });
     const seen: unknown[] = [];
-    let accepted = false;
+    let accepted: unknown = false;
     act(() => {
       accepted = view.result.current.addGeneratedParts((count: number, cameraView: unknown) => {
         seen.push(count, cameraView);
         return [{ id: "gen-1", kind: "box", position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], color: "#ffffff" }];
       });
     });
-    expect(accepted).toBe(true);
+    expect(accepted).toMatchObject([{ id: "gen-1" }]);
     expect(seen).toEqual([0, OUTSIDE_SOUTH]);
     expect(view.result.current.primitives).toMatchObject([{ id: "gen-1" }]);
     expect(view.result.current.selectedIds).toEqual(new Set(["gen-1"]));
@@ -182,6 +182,45 @@ describe("씬 연산 호스트의 방 추가(addRoomBuild)와 공통 묶음 추�
     act(() => { accepted = view.result.current.addGeneratedParts(() => []); });
     expect(accepted).toBe(false);
     expect(view.result.current.primitives).toEqual([]);
+  });
+
+  it("방 추가는 더한 도형 목록을 돌려주고(안내가 이 목록으로 만들어진다), 못 더했으면 false 를 돌려준다", () => {
+    const view = renderHost({ spec: classroom, liveView: OUTSIDE_SOUTH });
+    let added: unknown = false;
+    act(() => { added = view.result.current.addRoomBuild({ autoCutaway: true }); });
+    expect(added).toEqual(view.result.current.primitives);
+    expect((added as BgPrimitive[]).some((primitive) => primitive.visible === false)).toBe(true);
+
+    const filler = Array.from({ length: 80 }, (_, index) => ({
+      id: `filler-${index}`, kind: "box", position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], color: "#ffffff",
+    })) as BgPrimitive[];
+    const full = renderHost({ spec: classroom, liveView: OUTSIDE_SOUTH, initialPrimitives: filler });
+    let rejected: unknown = null;
+    act(() => { rejected = full.result.current.addRoomBuild({ autoCutaway: true }); });
+    expect(rejected).toBe(false);
+  });
+
+  it("showSceneParts 는 목록의 숨긴 도형만 한 번의 상태 교체로 다시 보이게 하고 나머지는 그대로 둔다", () => {
+    const view = renderHost({ spec: classroom, liveView: OUTSIDE_SOUTH });
+    act(() => view.result.current.addRoomBuild({ autoCutaway: true }));
+    const before: BgPrimitive[] = view.result.current.primitives;
+    const hiddenIds = before.filter((primitive) => primitive.visible === false).map((primitive) => primitive.id);
+    expect(hiddenIds.length).toBeGreaterThan(1);
+    // 사용자가 그 사이 숨긴 조각 하나는 목록에 없으므로 되살리지 않는다.
+    const keptHidden = hiddenIds[0]!;
+    const revisionBefore = view.result.current.physicsRuntimeSourceRef.current.revision;
+    act(() => view.result.current.showSceneParts(hiddenIds.slice(1)));
+    const after: BgPrimitive[] = view.result.current.primitives;
+    expect(view.result.current.physicsRuntimeSourceRef.current.revision).toBe(revisionBefore + 1);
+    expect(after).toHaveLength(before.length);
+    expect(after.filter((primitive) => primitive.visible === false).map((primitive) => primitive.id)).toEqual([keptHidden]);
+    // 숨김 해제 말고는 아무것도 바뀌지 않는다(이름·위치·크기·색).
+    for (const [index, primitive] of after.entries()) {
+      expect({ ...primitive, visible: undefined }).toEqual({ ...before[index], visible: undefined });
+    }
+    // 이미 다 보이는 상태에서 다시 불러도 안전하다.
+    act(() => view.result.current.showSceneParts([...hiddenIds, "no-such-id"]));
+    expect(view.result.current.primitives.some((primitive: BgPrimitive) => primitive.visible === false)).toBe(false);
   });
 
   it("복합 오브젝트 추가도 같은 공통 경로를 쓰고 동작이 그대로다", async () => {

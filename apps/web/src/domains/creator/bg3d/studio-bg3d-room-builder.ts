@@ -40,6 +40,9 @@ export const STUDIO_BG3D_ROOM_WALL_LABELS: Record<StudioBg3dRoomWallId, string> 
   east: "오른벽",
 };
 
+/** 벽체 파츠 이름은 `${벽 이름표}${이 접미}` 다(예: "앞벽 벽체"). 안내 문구가 숨긴 벽을 이름으로 묶을 때 쓴다. */
+export const STUDIO_BG3D_ROOM_WALL_PART_SUFFIX = " 벽체";
+
 export type StudioBg3dRoomOpeningType = "door" | "window";
 
 export interface StudioBg3dRoomOpening {
@@ -336,7 +339,7 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
       const [x, z] = placement.toWorld(segment.centerU);
       parts.push({
         kind: "box",
-        name: `${STUDIO_BG3D_ROOM_WALL_LABELS[wall]} 벽체`,
+        name: `${STUDIO_BG3D_ROOM_WALL_LABELS[wall]}${STUDIO_BG3D_ROOM_WALL_PART_SUFFIX}`,
         wall,
         position: [x, segment.centerY, z],
         rotation: [0, 0, 0],

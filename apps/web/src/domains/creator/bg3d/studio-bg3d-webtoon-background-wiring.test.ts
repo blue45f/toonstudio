@@ -18,7 +18,17 @@ interface ModuleEdges {
   readonly dynamicEdges: string[];
 }
 
+const MODULE_EDGES_CACHE = new Map<string, ModuleEdges>();
+
 function moduleEdges(fileName: string): ModuleEdges {
+  const cached = MODULE_EDGES_CACHE.get(fileName);
+  if (cached) return cached;
+  const edges = parseModuleEdges(fileName);
+  MODULE_EDGES_CACHE.set(fileName, edges);
+  return edges;
+}
+
+function parseModuleEdges(fileName: string): ModuleEdges {
   const sourceFile = ts.createSourceFile(
     fileName,
     source(fileName),
@@ -63,6 +73,8 @@ function staticImporters(specifier: string): string[] {
 const LAZY_MODULES = [
   "./StudioBg3dRoomBuilderPanel",
   "./StudioBg3dWebtoonBackgroundPicker",
+  "./StudioBg3dBuildNotice",
+  "./studio-bg3d-build-notice",
   "./studio-bg3d-webtoon-background-templates",
   "./studio-bg3d-street-builder",
 ] as const;
@@ -72,9 +84,16 @@ describe("웹툰 배경·방 만들기 지연 로드 경계", () => {
     const edges = moduleEdges("studio-bg3d-editor-runtime-bindings.ts");
     expect(edges.dynamicEdges).toEqual(expect.arrayContaining(["./StudioBg3dRoomBuilderPanel", "./StudioBg3dWebtoonBackgroundPicker"]));
     for (const lazy of LAZY_MODULES) expect(edges.staticEdges, lazy).not.toContain(lazy);
+  });
+
+  it("두 지연 청크는 배포 뒤 옛 청크 실패를 lazyRetry 로 받는다(새 로드 실패 경로이므로 일반 lazy 가 아니다)", () => {
     const bindings = source("studio-bg3d-editor-runtime-bindings.ts");
-    expect(bindings).toMatch(/export const StudioBg3dRoomBuilderPanel = createLazyComponent\(/u);
-    expect(bindings).toMatch(/export const StudioBg3dWebtoonBackgroundPicker = createLazyComponent\(/u);
+    expect(moduleEdges("studio-bg3d-editor-runtime-bindings.ts").staticEdges).toContain("@/shared/lib/lazy-retry");
+    expect(bindings).toMatch(/export const StudioBg3dRoomBuilderPanel = lazyRetry\(/u);
+    expect(bindings).toMatch(/export const StudioBg3dWebtoonBackgroundPicker = lazyRetry\(/u);
+    // 서로 다른 chunkId — 같은 이름을 쓰면 한쪽 복구 표식이 다른 쪽 실패를 가려 새로고침 루프 방지가 어긋난다.
+    expect(bindings).toContain('"StudioBg3dRoomBuilderPanel",\n);');
+    expect(bindings).toContain('"StudioBg3dWebtoonBackgroundPicker",\n);');
   });
 
   it("지연 모듈을 정적으로 가져오는 제품 코드는 정해진 곳뿐이다(편집기 활성화 번들로 새지 않는다)", () => {
@@ -82,6 +101,22 @@ describe("웹툰 배경·방 만들기 지연 로드 경계", () => {
     expect(staticImporters("./StudioBg3dWebtoonBackgroundPicker")).toEqual([]);
     expect(staticImporters("./studio-bg3d-webtoon-background-templates")).toEqual(["StudioBg3dWebtoonBackgroundPicker.tsx"]);
     expect(staticImporters("./studio-bg3d-street-builder")).toEqual(["studio-bg3d-webtoon-background-templates.ts"]);
+    // 안내 모듈과 안내 컴포넌트는 두 지연 청크 안에서만 쓴다.
+    expect(staticImporters("./StudioBg3dBuildNotice")).toEqual(["StudioBg3dRoomBuilderPanel.tsx", "StudioBg3dWebtoonBackgroundPicker.tsx"]);
+    expect(staticImporters("./studio-bg3d-build-notice")).toEqual([
+      "StudioBg3dBuildNotice.tsx",
+      "StudioBg3dRoomBuilderPanel.tsx",
+      "StudioBg3dWebtoonBackgroundPicker.tsx",
+    ]);
+  });
+
+  it("한글 설명 문구 모듈은 그 문구를 그리는 지연 컴포넌트만 가져온다(정적 폐포의 바이트를 늘리지 않는다)", () => {
+    expect(staticImporters("./studio-bg3d-lens-shift-help")).toEqual(["StudioBg3dLensShiftControls.tsx"]);
+    expect(staticImporters("./studio-bg3d-cut-aspect-link")).toEqual(["StudioBg3dCinematicDirectorPanelContent.tsx"]);
+    const bindings = moduleEdges("studio-bg3d-editor-runtime-bindings.ts").staticEdges;
+    for (const module of ["./studio-bg3d-lens-shift-help", "./studio-bg3d-cut-aspect-link", "./studio-bg3d-build-notice"]) {
+      expect(bindings, module).not.toContain(module);
+    }
   });
 
   it("활성화 번들에 남는 룸 빌더와 가구 모듈은 렌더러·무거운 의존을 끌어오지 않는다", () => {
@@ -92,8 +127,14 @@ describe("웹툰 배경·방 만들기 지연 로드 경계", () => {
     }
   });
 
-  it("선택기와 카탈로그·거리 생성기는 three 나 렌더러를 가져오지 않는다", () => {
-    for (const file of ["StudioBg3dWebtoonBackgroundPicker.tsx", "studio-bg3d-webtoon-background-templates.ts", "studio-bg3d-street-builder.ts"]) {
+  it("선택기와 카탈로그·거리 생성기·안내는 three 나 렌더러를 가져오지 않는다", () => {
+    for (const file of [
+      "StudioBg3dWebtoonBackgroundPicker.tsx",
+      "StudioBg3dBuildNotice.tsx",
+      "studio-bg3d-build-notice.ts",
+      "studio-bg3d-webtoon-background-templates.ts",
+      "studio-bg3d-street-builder.ts",
+    ]) {
       const edges = moduleEdges(file);
       expect(edges.dynamicEdges, file).toEqual([]);
       for (const edge of edges.staticEdges) {
@@ -128,14 +169,23 @@ describe("웹툰 배경·방 만들기 편집기 연결", () => {
       "방 만들기",
       '{activePanelTab === "templates" ? (',
       "<StudioBg3dRoomBuilderPanel",
-      "onInsert={() => addRoomBuild({ autoCutaway: roomAutoCutaway })}",
+      "onInsert={() => addRoomBuild({ autoCutaway: roomPanelAutoCutaway })}",
     ]);
   });
 
-  it("선택기와 방 만들기 패널이 같은 자동 단면 상태를 공유하고 기본값은 켜짐이다", () => {
-    expect(sidebar).toContain("const [roomAutoCutaway, setRoomAutoCutaway] = useState(true);");
-    expect(sidebar.match(/autoCutaway=\{roomAutoCutaway\}/gu)).toHaveLength(2);
-    expect(sidebar.match(/onAutoCutawayChange=\{setRoomAutoCutaway\}/gu)).toHaveLength(2);
+  it("자동 단면 상태는 선택기(기본 켜짐)와 방 만들기 패널(기본 꺼짐 — 예전 \"방 추가\"와 같은 동작)이 따로 가진다", () => {
+    expect(sidebar).toContain("const [webtoonAutoCutaway, setWebtoonAutoCutaway] = useState(true);");
+    expect(sidebar).toContain("const [roomPanelAutoCutaway, setRoomPanelAutoCutaway] = useState(false);");
+    expect(sidebar).not.toContain("roomAutoCutaway");
+    expect(sidebar.match(/autoCutaway=\{webtoonAutoCutaway\}/gu)).toHaveLength(1);
+    expect(sidebar.match(/onAutoCutawayChange=\{setWebtoonAutoCutaway\}/gu)).toHaveLength(1);
+    expect(sidebar.match(/autoCutaway=\{roomPanelAutoCutaway\}/gu)).toHaveLength(1);
+    expect(sidebar.match(/onAutoCutawayChange=\{setRoomPanelAutoCutaway\}/gu)).toHaveLength(1);
+  });
+
+  it("두 패널 모두 숨긴 벽 되돌리기를 호스트의 showSceneParts 에 잇고, 선택기는 새로 만든 곳 보기를 화면 맞춤에 잇는다", () => {
+    expect(sidebar.match(/onShowParts=\{h\.showSceneParts\}/gu)).toHaveLength(2);
+    expect(sidebar.match(/onFocusBuilt=\{focusSelectedEntity\}/gu)).toHaveLength(1);
   });
 
   it("두 패널은 모두 지연 로드 경계(Suspense) 안에 있다", () => {
@@ -149,7 +199,7 @@ describe("웹툰 배경·방 만들기 편집기 연결", () => {
 
   it("호스트는 도형 묶음 추가 경로 하나를 두고 합성·방 추가가 그 위에서 동작한다", () => {
     expect(host).toContain("h.addGeneratedParts = addGeneratedParts;");
-    const composite = host.slice(host.indexOf("const addComposite = "), host.indexOf("h.addComposite = addComposite;"));
+    const composite = host.slice(host.indexOf("h.addComposite = "), host.indexOf("const addProceduralStarterAsset"));
     expect(composite).toContain("addGeneratedParts(");
     const room = host.slice(host.indexOf("const addRoomBuild = "), host.indexOf("h.addRoomBuild = addRoomBuild;"));
     expect(room).toContain("addGeneratedParts(");
