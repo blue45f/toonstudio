@@ -1,20 +1,18 @@
 import { ChevronDown, ListFilter } from "lucide-react";
+import { useRef } from "react";
 
-import { CHIP_BASE, CHIP_OFF, CHIP_ON, FOCUS_RING, cx } from "./studio-bg3d-asset-panel-styles";
+import { CHIP_BASE, CHIP_OFF, CHIP_ON, FOCUS_RING, NOTICE_TEXT, cx } from "./studio-bg3d-asset-panel-styles";
 import {
   STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER,
   STUDIO_BG3D_ASSET_RIGHTS_FILTER_GROUPS,
+  STUDIO_BG3D_ASSET_RIGHTS_FILTER_HELP,
+  STUDIO_BG3D_ASSET_RIGHTS_LOAD_NOTICES,
+  STUDIO_BG3D_ASSET_RIGHTS_PROJECT_SUMMARY_NOTICE,
   type StudioBg3dAssetRightsFilterKey,
 } from "./studio-bg3d-asset-rights-copy";
 
 import type { StudioBg3dAssetRightsCounts, StudioBg3dAssetRightsFilter } from "./studio-bg3d-asset-rights-view";
 import type { StudioBg3dAssetRightsLoadState } from "./useStudioBg3dAssetRights";
-
-const LOAD_NOTICE: Readonly<Record<Exclude<StudioBg3dAssetRightsLoadState, "ready">, string>> = {
-  loading: "저장된 권리 기록을 읽는 중입니다. 읽는 동안에는 가져온 소재가 '미확인'으로 분류됩니다.",
-  partial: "저장된 권리 기록 일부를 읽지 못했습니다. 읽지 못한 값은 '미확인'으로 표시하며, 목록은 그대로 쓸 수 있습니다.",
-  error: "저장된 권리 기록을 읽지 못했습니다. 가져온 소재는 모두 '미확인'으로 표시하며, 목록은 그대로 쓸 수 있습니다.",
-};
 
 interface StudioBg3dAssetRightsFilterBarProps {
   readonly filter: StudioBg3dAssetRightsFilter;
@@ -35,6 +33,7 @@ export function StudioBg3dAssetRightsFilterBar({
   onToggle,
   onClear,
 }: StudioBg3dAssetRightsFilterBarProps) {
+  const summaryRef = useRef<HTMLElement>(null);
   const chosen = (key: StudioBg3dAssetRightsFilterKey): readonly string[] => filter[key] ?? [];
   const activeCount = STUDIO_BG3D_ASSET_RIGHTS_FILTER_GROUPS.reduce((sum, group) => sum + chosen(group.key).length, 0);
 
@@ -42,8 +41,9 @@ export function StudioBg3dAssetRightsFilterBar({
     <div className="mt-2">
       <details className="group rounded-xl border border-line bg-card/60 open:bg-card">
         <summary
+          ref={summaryRef}
           className={cx(
-            "flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-bold text-fg marker:content-none sm:min-h-9",
+            "flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-bold text-fg marker:content-none",
             FOCUS_RING,
           )}
         >
@@ -60,12 +60,11 @@ export function StudioBg3dAssetRightsFilterBar({
         </summary>
 
         <div className="border-t border-line px-3 pb-3 pt-2.5">
-          <p className="text-[0.68rem] leading-relaxed text-fg-3">
-            라이선스·출처·AI 표기로 소재를 걸러 봅니다. 기록이 없는 소재는 '미확인'으로 분류하며, 사용해도 된다는 뜻이 아닙니다.
-          </p>
+          <p className={NOTICE_TEXT}>{STUDIO_BG3D_ASSET_RIGHTS_FILTER_HELP}</p>
           {STUDIO_BG3D_ASSET_RIGHTS_FILTER_GROUPS.map((group) => (
-            <div key={group.key} role="group" aria-label={group.label} className="mt-2.5">
-              <span className="block text-[0.66rem] font-bold text-fg-2">{group.label}</span>
+            // 그룹 이름은 화면에 보이는 제목 하나에서 가져온다(aria-label 을 따로 달면 같은 이름이 두 번 읽힌다).
+            <div key={group.key} role="group" aria-labelledby={`${controlsId}-rights-${group.key}`} className="mt-2.5">
+              <span id={`${controlsId}-rights-${group.key}`} className="block text-[0.66rem] font-bold text-fg-2">{group.label}</span>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {group.options.map((option) => {
                   const on = chosen(group.key).includes(option.value);
@@ -76,7 +75,7 @@ export function StudioBg3dAssetRightsFilterBar({
                       type="button"
                       aria-pressed={on}
                       aria-controls={controlsId}
-                      aria-label={`${group.label}: ${option.label}, ${count}개`}
+                      aria-label={`${option.label}, ${count}개`}
                       className={cx(CHIP_BASE, on ? CHIP_ON : CHIP_OFF)}
                       onClick={() => onToggle(group.key, option.value)}
                     >
@@ -92,20 +91,26 @@ export function StudioBg3dAssetRightsFilterBar({
             <button
               type="button"
               className={cx(CHIP_BASE, CHIP_OFF, "mt-3 w-full")}
-              onClick={onClear}
+              onClick={() => {
+                onClear();
+                // 이 버튼은 필터가 풀리면 사라진다. 포커스가 문서 처음으로 날아가지 않게 같은 영역의 제목 줄에 둔다.
+                summaryRef.current?.focus();
+              }}
             >
               권리 필터 해제
             </button>
           ) : null}
-          <p className="mt-2.5 text-[0.62rem] leading-relaxed text-fg-3">{STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER}</p>
+          <p className={cx("mt-2.5", NOTICE_TEXT)}>
+            {STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER} {STUDIO_BG3D_ASSET_RIGHTS_PROJECT_SUMMARY_NOTICE}
+          </p>
         </div>
       </details>
       {loadState !== "ready" ? (
         <p
-          className="mt-1.5 rounded-lg border border-line bg-card/70 px-2.5 py-1.5 text-[0.66rem] leading-relaxed text-fg-3"
+          className={cx("mt-1.5 rounded-lg border border-line bg-card/70 px-2.5 py-1.5", NOTICE_TEXT)}
           role="status"
         >
-          {LOAD_NOTICE[loadState]}
+          {STUDIO_BG3D_ASSET_RIGHTS_LOAD_NOTICES[loadState]}
         </p>
       ) : null}
     </div>

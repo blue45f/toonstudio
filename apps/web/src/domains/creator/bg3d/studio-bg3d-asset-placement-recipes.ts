@@ -60,6 +60,10 @@ export const STUDIO_BG3D_ASSET_PLACEMENT_RECIPES: readonly StudioBg3dAssetPlacem
   },
 ]);
 
+/** 배치 방식 목록 아래 안내. 한 번에 놓이고 되돌릴 수 있으며, 모델의 앞쪽 방향을 어떻게 가정하는지 밝힌다. */
+export const STUDIO_BG3D_ASSET_PLACEMENT_MENU_FOOTER =
+  "한 번에 배치되고, 실행 취소로 되돌릴 수 있어요. 모델 정면은 +Z 방향이라고 가정해요.";
+
 export function isStudioBg3dAssetPlacementRecipeId(value: unknown): value is StudioBg3dAssetPlacementRecipeId {
   return typeof value === "string" && (STUDIO_BG3D_ASSET_PLACEMENT_RECIPE_IDS as readonly string[]).includes(value);
 }

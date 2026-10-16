@@ -144,7 +144,8 @@ function renderPanel(overrides: Partial<PanelProps> = {}) {
 
 const shown = () => screen.getByText(/^표시 \d+\/\d+개/u).textContent;
 const chip = (group: string, label: string) =>
-  within(screen.getByRole("group", { name: group })).getByRole("button", { name: new RegExp(`^${group}: ${label},`, "u") });
+  within(screen.getByRole("group", { name: group })).getByRole("button", { name: new RegExp(`^${label},`, "u") });
+const RIGHTS_GROUPS = ["라이선스 종류", "출처 종류", "상업 사용", "AI 생성 표기", "AI 학습 표기"] as const;
 const openFilters = () => fireEvent.click(screen.getByText("권리 필터"));
 
 afterEach(() => cleanup());
@@ -161,10 +162,11 @@ describe("카드의 한 줄 권리 요약", () => {
     expect(screen.getAllByText("권리 미확인 · AI 미확인")).toHaveLength(2);
   });
 
-  it("권리를 모르는 소재의 요약은 허용처럼 보이는 색이 아니라 확인이 필요한 강조색이다", () => {
+  it("권리를 모르는 소재의 요약은 허용처럼 보이는 색이 아니라 확인이 필요한 경고색이다(선택 칩의 강조색과 다르다)", () => {
     renderPanel();
     for (const unknown of screen.getAllByText("권리 미확인 · AI 미확인")) {
-      expect(unknown.className).toContain("text-accent");
+      expect(unknown.className).toContain("text-warn");
+      expect(unknown.className).not.toContain("text-accent");
       expect(unknown.className).not.toContain("text-good");
       expect(unknown.textContent).not.toMatch(/가능|허용/u);
     }
@@ -210,8 +212,9 @@ describe("권리 상세 펼치기", () => {
     }
     // 기록되지 않은 칸은 '미확인'이라고 쓴다.
     expect(within(region).getAllByText("미확인").length).toBeGreaterThanOrEqual(2);
-    // 법률 자문이 아니라는 고지가 함께 보인다.
+    // 법률 자문이 아니라는 고지와, 프로젝트 권리 요약에는 아직 이어지지 않는다는 안내가 함께 보인다.
     expect(text).toContain("법률 자문이나 권리 인증이 아니에요");
+    expect(text).toContain("프로젝트 권리 요약에는 아직 반영되지 않아요");
 
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
@@ -263,20 +266,35 @@ describe("권리 필터 칩", () => {
   it("그룹 이름과 칩 이름·개수·선택 상태를 접근성 트리에 노출한다", () => {
     renderPanel();
     openFilters();
-    for (const group of ["라이선스 종류", "출처 종류", "상업 사용", "AI 생성 표기", "AI 학습 표기"]) {
+    for (const group of RIGHTS_GROUPS) {
       expect(screen.getByRole("group", { name: group })).toBeTruthy();
     }
     const bought = chip("라이선스 종류", "구매·허가");
-    expect(bought.getAttribute("aria-label")).toBe("라이선스 종류: 구매·허가, 2개");
+    expect(bought.getAttribute("aria-label")).toBe("구매·허가, 2개");
     expect(bought.getAttribute("aria-pressed")).toBe("false");
     expect(bought.getAttribute("aria-controls")).toBe("bg3d-model-library-results");
-    expect(chip("라이선스 종류", "미확인").getAttribute("aria-label")).toBe("라이선스 종류: 미확인, 2개");
+    expect(chip("라이선스 종류", "미확인").getAttribute("aria-label")).toBe("미확인, 2개");
+  });
+
+  it("그룹 이름은 화면의 제목 하나에서만 가져오고(aria-labelledby) 칩 이름에 그룹 이름을 되풀이하지 않는다", () => {
+    renderPanel();
+    openFilters();
+    for (const name of RIGHTS_GROUPS) {
+      const group = screen.getByRole("group", { name });
+      expect(group.hasAttribute("aria-label")).toBe(false);
+      const titleId = group.getAttribute("aria-labelledby");
+      expect(titleId).toBeTruthy();
+      expect(document.getElementById(titleId ?? "")?.textContent).toBe(name);
+      for (const button of within(group).getAllByRole("button")) {
+        expect(button.getAttribute("aria-label")).not.toContain(name);
+      }
+    }
   });
 
   it("칩은 키보드로 닿는 버튼이고 44px 탭 대상 규칙을 지킨다", () => {
     renderPanel();
     openFilters();
-    const chips = screen.getAllByRole("button").filter((button) => button.hasAttribute("aria-pressed") && /^(라이선스 종류|출처 종류|상업 사용|AI 생성 표기|AI 학습 표기):/u.test(button.getAttribute("aria-label") ?? ""));
+    const chips = RIGHTS_GROUPS.flatMap((name) => within(screen.getByRole("group", { name })).getAllByRole("button"));
     // 상업 사용에는 "불가" 칩이 없다(가능·미확인 둘뿐).
     expect(chips).toHaveLength(4 + 2 + 2 + 3 + 3);
     for (const target of chips) {
@@ -284,6 +302,8 @@ describe("권리 필터 칩", () => {
       expect(target.getAttribute("type")).toBe("button");
       expect(target.tabIndex).toBeGreaterThanOrEqual(0);
       expect(target.className).toContain("min-h-11");
+      // 데스크톱 폭에서도 탭 대상을 줄이지 않는다.
+      expect(target.className).not.toMatch(/sm:min-h-/u);
       expect(target.className).toContain("focus-visible:outline");
     }
     const first = chips[0];
@@ -351,8 +371,8 @@ describe("권리 필터 칩", () => {
     fireEvent.click(chip("AI 생성 표기", "AI 생성"));
 
     const status = screen.getByRole("status");
-    expect(status.textContent).toContain("검색·상태·종류 필터와 일치하는 3D 모델이 없습니다.");
-    expect(status.textContent).toContain("권리 필터가 켜져 있습니다");
+    expect(status.textContent).toContain("검색·상태·종류 필터와 일치하는 3D 모델이 없어요.");
+    expect(status.textContent).toContain("권리 필터가 켜져 있어요");
     expect(shown()).toBe("표시 0/0개 · 데스크톱 기준");
 
     fireEvent.click(within(status).getByRole("button", { name: "필터 모두 해제" }));
@@ -365,7 +385,7 @@ describe("권리 필터 칩", () => {
     renderPanel();
     fireEvent.change(screen.getByLabelText("3D 모델 라이브러리 검색"), { target: { value: "없는 소재" } });
     const status = screen.getByRole("status");
-    expect(status.textContent).not.toContain("권리 필터가 켜져 있습니다");
+    expect(status.textContent).not.toContain("권리 필터가 켜져 있어요");
     fireEvent.click(within(status).getByRole("button", { name: "필터 모두 해제" }));
     expect((screen.getByLabelText("3D 모델 라이브러리 검색") as HTMLInputElement).value).toBe("");
     expect(shown()).toBe("표시 6/6개 · 데스크톱 기준");
@@ -383,9 +403,11 @@ describe("권리 필터 칩", () => {
     const { rerender, props } = renderPanel({ rightsLoadState: "loading" });
     expect(screen.getByRole("status").textContent).toContain("권리 기록을 읽는 중");
     rerender(<StudioBg3dAssetLibraryPanel {...props} rightsLoadState="error" />);
-    expect(screen.getByRole("status").textContent).toContain("권리 기록을 읽지 못했습니다");
+    expect(screen.getByRole("status").textContent).toContain("권리 기록을 읽지 못했어요");
+    expect(screen.getByRole("status").textContent).toContain("다시 열어 주세요");
     rerender(<StudioBg3dAssetLibraryPanel {...props} rightsLoadState="partial" />);
-    expect(screen.getByRole("status").textContent).toContain("일부를 읽지 못했습니다");
+    expect(screen.getByRole("status").textContent).toContain("일부를 읽지 못했어요");
+    expect(screen.getByRole("status").textContent).toContain("다시 열어 주세요");
     expect(shown()).toBe("표시 6/6개 · 데스크톱 기준");
     expect(screen.getByRole("button", { name: "구매한 의자 장면에 추가" })).toHaveProperty("disabled", false);
   });
@@ -529,5 +551,174 @@ describe("원클릭 배치 레시피", () => {
     fireEvent.click(screen.getByRole("button", { name: "내가 만든 책상 권리 상세" }));
     expect(recipes.getAttribute("aria-expanded")).toBe("false");
     expect(rights.closest("div.relative")?.className).not.toContain("col-span-2");
+  });
+});
+
+describe("필터를 푸는 버튼이 사라질 때의 포커스", () => {
+  it("'권리 필터 해제' 를 누르면 버튼이 사라지므로 포커스를 필터 제목 줄로 옮긴다", () => {
+    renderPanel();
+    openFilters();
+    fireEvent.click(chip("라이선스 종류", "직접 제작"));
+    const clear = screen.getByRole("button", { name: "권리 필터 해제" });
+    clear.focus();
+    fireEvent.click(clear);
+    expect(screen.queryByRole("button", { name: "권리 필터 해제" })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByText("권리 필터").closest("summary"));
+  });
+
+  it("'필터 모두 해제' 를 누르면 버튼이 사라지므로 포커스를 검색칸으로 옮긴다", () => {
+    renderPanel();
+    openFilters();
+    fireEvent.click(chip("라이선스 종류", "직접 제작"));
+    fireEvent.click(chip("AI 생성 표기", "AI 생성"));
+    const clearAll = within(screen.getByRole("status")).getByRole("button", { name: "필터 모두 해제" });
+    clearAll.focus();
+    fireEvent.click(clearAll);
+    expect(screen.queryByRole("button", { name: "필터 모두 해제" })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByLabelText("3D 모델 라이브러리 검색"));
+  });
+});
+
+describe("고지·안내 문단과 카드 컨트롤의 크기", () => {
+  it("고지 문단은 12px 이상이고 가장 옅은 본문색을 쓰지 않으며, 프로젝트 권리 요약과 이어지지 않는다는 안내를 함께 보인다", () => {
+    renderPanel();
+    openFilters();
+    const filterNotice = screen.getByText(/법률 자문이나 권리 인증이 아니에요/u);
+    fireEvent.click(screen.getByRole("button", { name: "구매한 의자 권리 상세" }));
+    const detailNotice = within(screen.getByRole("region", { name: "구매한 의자 권리 상세" }))
+      .getByText(/법률 자문이나 권리 인증이 아니에요/u);
+    for (const notice of [filterNotice, detailNotice]) {
+      expect(notice.className).toContain("text-xs");
+      expect(notice.className).toContain("text-fg-2");
+      expect(notice.className).not.toContain("text-fg-3");
+      expect(notice.className).not.toMatch(/text-\[0\.\d+rem\]/u);
+      expect(notice.textContent).toContain("프로젝트 권리 요약에는 아직 반영되지 않아요");
+    }
+  });
+
+  it("카드의 권리 상세·배치 방식 버튼은 데스크톱 폭에서도 44px 탭 대상을 줄이지 않는다", () => {
+    renderPanel({ onPlaceWithRecipe: vi.fn() });
+    for (const name of ["구매한 의자 권리 상세", "구매한 의자 배치 방식"]) {
+      const { className } = screen.getByRole("button", { name });
+      expect(className).toContain("min-h-11");
+      expect(className).not.toMatch(/sm:min-h-/u);
+    }
+  });
+
+  it("배치 방식 목록은 menu 역할을 쓰지 않는 평범한 버튼 묶음이고 설명 글자는 12px 이상이다", () => {
+    renderPanel({ onPlaceWithRecipe: vi.fn() });
+    fireEvent.click(screen.getByRole("button", { name: "구매한 의자 배치 방식" }));
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(screen.queryAllByRole("menuitem")).toEqual([]);
+    const group = screen.getByRole("group", { name: "배치 방식" });
+    expect(group.textContent).toContain("실행 취소로 되돌릴 수 있어요");
+    for (const button of within(group).getAllByRole("button")) {
+      expect(button.className).not.toMatch(/sm:min-h-/u);
+      const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+      expect(description?.className).toContain("text-xs");
+      expect(description?.className).not.toContain("text-fg-3");
+    }
+    // 벽 방식의 설명은 숨긴 벽을 제외한다는 점을 밝힌다.
+    expect(group.textContent).toContain("숨긴 벽은 제외돼요");
+  });
+});
+
+describe("가져오기 권리 폼의 AI 답은 가져오기를 시작하면 비워진다", () => {
+  const pick = (name: string, files = [new File(["glb"], name, { type: "model/gltf-binary" })]) =>
+    fireEvent.change(screen.getByLabelText("3D 모델 및 연결 파일 선택"), { target: { files } });
+  const header = () => screen.getByText(/AI 표기:/u).textContent ?? "";
+
+  it("머리글에 지금 고른 AI 표기가 보이고, 가져온 뒤에는 이 화면에서 고칠 수 없다는 안내가 있다", () => {
+    renderPanel();
+    expect(header()).toContain("AI 표기: 미확인");
+    fireEvent.click(screen.getByText("이용 권리 기록"));
+    fireEvent.click(screen.getByRole("radio", { name: "AI 아님" }));
+    expect(header()).toContain("AI 표기: AI 아님");
+    fireEvent.click(screen.getByRole("radio", { name: "AI로 만듦" }));
+    expect(header()).toContain("AI 표기: AI 생성");
+    expect(screen.getByText(/가져온 뒤에는 이 화면에서 고칠 수 없어요/u).textContent).toContain("지금 가져오는 모델에만 적용돼요");
+  });
+
+  it("A 를 가져온 뒤 B 를 가져올 때 A 의 AI 답이 따라가지 않는다", () => {
+    const { props } = renderPanel();
+    fireEvent.click(screen.getByText("이용 권리 기록"));
+    fireEvent.click(screen.getByRole("radio", { name: "AI로 만듦" }));
+    fireEvent.click(screen.getByRole("radio", { name: "금지" }));
+
+    pick("a.glb");
+    expect(vi.mocked(props.onFileChange).mock.calls[0]?.[1]).toMatchObject({ aiGenerated: "yes", aiTraining: "prohibited" });
+    // 가져오기를 시작하면 폼이 '모름' 으로 돌아오고 머리글도 미확인으로 돌아온다.
+    expect((screen.getByRole("radio", { name: "AI로 만듦" }) as HTMLInputElement).checked).toBe(false);
+    for (const radio of screen.getAllByRole("radio", { name: "모름" })) expect((radio as HTMLInputElement).checked).toBe(true);
+    expect(header()).toContain("AI 표기: 미확인");
+
+    pick("b.glb");
+    const second = vi.mocked(props.onFileChange).mock.calls[1]?.[1] as Record<string, unknown>;
+    expect("aiGenerated" in second).toBe(false);
+    expect("aiTraining" in second).toBe(false);
+  });
+
+  it("파일을 고르지 않고 대화상자를 닫은 경우(빈 선택)에는 고른 답을 그대로 둔다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByText("이용 권리 기록"));
+    fireEvent.click(screen.getByRole("radio", { name: "AI 아님" }));
+    pick("none.glb", []);
+    expect((screen.getByRole("radio", { name: "AI 아님" }) as HTMLInputElement).checked).toBe(true);
+    expect(header()).toContain("AI 표기: AI 아님");
+  });
+});
+
+describe("예전 '상업 이용' 배지는 새 권리 요약과 모순되지 않는다", () => {
+  const commercialBadges = (text: string) => screen.queryAllByText(text);
+
+  it("권리 기록을 모두 읽으면 새 보기도 허용으로 읽는 소재만 긍정 표시를 한다", () => {
+    renderPanel();
+    expect(commercialBadges("상업 이용 가능")).toHaveLength(4);
+    expect(commercialBadges("상업 이용 확인 필요")).toHaveLength(2);
+  });
+
+  it("읽는 중이거나 읽지 못해 가져온 소재가 미확인이면 예전 배지도 중립이다(번들 소재만 긍정)", () => {
+    for (const rightsLoadState of ["loading", "error"] as const) {
+      cleanup();
+      renderPanel({ rightsViews: undefined, rightsLoadState });
+      expect(commercialBadges("상업 이용 가능")).toHaveLength(2);
+      const neutral = commercialBadges("상업 이용 확인 필요");
+      expect(neutral).toHaveLength(4);
+      for (const badge of neutral) {
+        expect(badge.className).toContain("bg-raised");
+        expect(badge.className).not.toContain("text-good");
+      }
+    }
+  });
+});
+
+describe("권리 상세의 근거 안내와 사용자 입력 줄", () => {
+  it("라이브러리와 저장된 기록이 달라 더 제한적인 쪽을 보일 때 그 사실을 알린다", () => {
+    const conflicting = buildStudioBg3dAssetRightsViews(LIBRARY, {
+      libraryRightsById: new Map([["bought", BOUGHT]]),
+      metadataByHash: new Map([[hash("c"), metadata("c", { status: "unknown" })]]),
+    });
+    renderPanel({ rightsViews: conflicting });
+    expect(document.getElementById("bg3d-model-rights-summary-bought")?.textContent).toBe("권리 미확인 · AI 미확인");
+    fireEvent.click(screen.getByRole("button", { name: "구매한 의자 권리 상세" }));
+    const region = screen.getByRole("region", { name: "구매한 의자 권리 상세" });
+    expect(region.textContent).toContain("서로 달라서 더 제한적인 쪽으로 보여요");
+    expect(region.textContent).toContain("원본 라이선스를 확인해 주세요");
+  });
+
+  it("제공처와 작성자가 같은 글이어도 중복 키 경고 없이 두 줄을 모두 보인다", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const same = buildStudioBg3dAssetRightsViews(LIBRARY, {
+      libraryRightsById: new Map([["bought", BOUGHT]]),
+      metadataByHash: new Map([[hash("c"), metadata("c", {
+        status: "licensed", commercialUse: true, teamShareAllowed: false, license: "ACON3D 구매 라이선스", provider: "ACON 3D", author: "ACON 3D",
+      })]]),
+    });
+    renderPanel({ rightsViews: same });
+    fireEvent.click(screen.getByRole("button", { name: "구매한 의자 권리 상세" }));
+    const region = screen.getByRole("region", { name: "구매한 의자 권리 상세" });
+    expect(within(region).getAllByText("ACON 3D")).toHaveLength(2);
+    expect(error.mock.calls.map((call) => String(call[0])).filter((message) => message.includes("same key"))).toEqual([]);
+    error.mockRestore();
   });
 });

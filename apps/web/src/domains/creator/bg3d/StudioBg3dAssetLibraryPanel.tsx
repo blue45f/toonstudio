@@ -26,6 +26,10 @@ import { StudioBg3dSkpImportPanel } from "./StudioBg3dSkpImportPanel";
 import { listStudioBg3dAssetPlacementRecipes } from "./studio-bg3d-asset-placement-recipes";
 import { getStudioBg3dBundledProvenance } from "./studio-bg3d-asset-rights-catalog";
 import {
+  STUDIO_BG3D_ASSET_RIGHTS_EMPTY_RESULT_HINT,
+  describeStudioBg3dImportAiHeader,
+} from "./studio-bg3d-asset-rights-copy";
+import {
   buildStudioBg3dAssetRightsView,
   buildStudioBg3dAssetRightsViews,
   countStudioBg3dAssetRightsValues,
@@ -159,6 +163,7 @@ export function StudioBg3dAssetLibraryPanel({
   const [exportingModelId, setExportingModelId] = useState<string | null>(null);
   const [downloadFeedback, setDownloadFeedback] = useState<DownloadFeedback | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const lastCardToggleRef = useRef<HTMLButtonElement | null>(null);
   const downloadOperationRef = useRef<{
     readonly controller: AbortController;
@@ -285,6 +290,8 @@ export function StudioBg3dAssetLibraryPanel({
     setClassificationFilter("all");
     setRightsFilter({});
     setVisibleCount(ASSET_BATCH_SIZE);
+    // "필터 모두 해제" 버튼은 목록이 돌아오면 사라진다. 포커스가 문서 처음으로 날아가지 않게 검색칸으로 옮긴다.
+    searchInputRef.current?.focus();
   };
   const toggleRightsFilter = (key: StudioBg3dAssetRightsFilterKey, value: string) => {
     setRightsFilter((current) => {
@@ -328,7 +335,16 @@ export function StudioBg3dAssetLibraryPanel({
         className="sr-only"
         multiple
         type="file"
-        onChange={(event) => onFileChange(event, importRights)}
+        onChange={(event) => {
+          // 파일을 지우기 전에 실제로 고른 파일이 있었는지 본다(취소해 빈 선택이면 답을 그대로 둔다).
+          const picked = (event.target.files?.length ?? 0) > 0;
+          onFileChange(event, importRights);
+          // AI 답은 이번에 고른 파일에만 쓴다. 남겨 두면 다음 가져오기에 모르는 새 AI 표기가 조용히 붙는다.
+          if (picked) {
+            setAiGenerated("unknown");
+            setAiTraining("unknown");
+          }
+        }}
       />
       <button
         type="button"
@@ -350,8 +366,8 @@ export function StudioBg3dAssetLibraryPanel({
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-bold text-fg marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9">
           <ShieldCheck size={14} className="shrink-0 text-accent" aria-hidden />
           <span className="min-w-0 flex-1 truncate">이용 권리 기록</span>
-          <span className="shrink-0 text-[0.65rem] font-semibold text-fg-3">
-            {RIGHTS_PRESETS.find((preset) => preset.id === rightsStatus)?.label}
+          <span className="max-w-[60%] shrink truncate text-[0.65rem] font-semibold text-fg-3">
+            {RIGHTS_PRESETS.find((preset) => preset.id === rightsStatus)?.label} · {describeStudioBg3dImportAiHeader(aiGenerated)}
           </span>
           <ChevronDown
             size={14}
@@ -503,6 +519,7 @@ export function StudioBg3dAssetLibraryPanel({
       <div className="relative mt-3">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-fg-3" aria-hidden />
         <input
+          ref={searchInputRef}
           type="search"
           value={query}
           aria-label="3D 모델 라이브러리 검색"
@@ -593,11 +610,9 @@ export function StudioBg3dAssetLibraryPanel({
             className="col-span-2 rounded-xl border border-line bg-card/60 px-3 py-4 text-center text-xs text-fg-3"
             role="status"
           >
-            검색·상태·종류 필터와 일치하는 3D 모델이 없습니다.
+            검색·상태·종류 필터와 일치하는 3D 모델이 없어요.
             {rightsFilterActive ? (
-              <span className="mt-1 block text-[0.66rem] leading-relaxed">
-                권리 필터가 켜져 있습니다. 기록이 없는 소재는 '미확인'으로 분류되므로 필터를 풀면 다시 보입니다.
-              </span>
+              <span className="mt-1 block text-xs leading-relaxed">{STUDIO_BG3D_ASSET_RIGHTS_EMPTY_RESULT_HINT}</span>
             ) : null}
             {anyFilterActive ? (
               <button
@@ -621,6 +636,9 @@ export function StudioBg3dAssetLibraryPanel({
             && entry.contentHash !== null
             && entry.byteSize !== null;
           const view = views.get(entry.id) ?? buildStudioBg3dAssetRightsView(entry);
+          // 예전 배지는 목록 항목의 값만 본다. 새 권리 요약(읽는 중·읽기 실패·미확인·충돌)과 모순되지 않도록, 새 보기도 상업 사용을
+          // 허용으로 읽을 때만 긍정 표시를 한다. 그 밖에는 중립 표시다.
+          const commercialConfirmed = entry.commercialUse && view.state.commercial === "allowed";
           const expandedPanel = openCard?.id === entry.id ? openCard.panel : null;
           const recipes = onPlaceWithRecipe
             ? listStudioBg3dAssetPlacementRecipes(isStudioBg3dEnvironmentAssetId(entry.id))
@@ -663,12 +681,12 @@ export function StudioBg3dAssetLibraryPanel({
                     <span
                       className={cx(
                         "inline-flex rounded-full px-1.5 py-0.5 text-[0.64rem] font-bold",
-                        entry.commercialUse
+                        commercialConfirmed
                           ? "bg-[oklch(0.80_0.15_150/0.14)] text-good"
                           : "bg-raised text-fg-3",
                       )}
                     >
-                      {entry.commercialUse ? "상업 이용 가능" : "상업 이용 확인 필요"}
+                      {commercialConfirmed ? "상업 이용 가능" : "상업 이용 확인 필요"}
                     </span>
                   </span>
                   <StudioBg3dAssetRightsSummary view={view} id={`bg3d-model-rights-summary-${entry.id}`} />

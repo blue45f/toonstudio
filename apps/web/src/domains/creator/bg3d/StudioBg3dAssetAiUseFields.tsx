@@ -1,6 +1,7 @@
 import { useId } from "react";
 
-import { cx } from "./studio-bg3d-asset-panel-styles";
+import { NOTICE_TEXT, cx } from "./studio-bg3d-asset-panel-styles";
+import { STUDIO_BG3D_IMPORT_AI_FORM_HELP, STUDIO_BG3D_IMPORT_AI_FORM_SCOPE_NOTICE } from "./studio-bg3d-asset-rights-copy";
 
 import type { StudioBg3dAssetAiGenerated, StudioBg3dAssetAiTraining } from "./studio-bg3d-asset-metadata";
 
@@ -52,7 +53,7 @@ function RadioRow<V extends string>({
             />
             <span
               className={cx(
-                "flex min-h-11 items-center justify-center rounded-lg border border-line bg-panel px-1.5 text-center text-[0.66rem] font-bold text-fg-2 transition-colors hover:bg-raised sm:min-h-9",
+                "flex min-h-11 items-center justify-center rounded-lg border border-line bg-panel px-1.5 text-center text-[0.66rem] font-bold text-fg-2 transition-colors hover:bg-raised",
                 "peer-checked:border-accent/55 peer-checked:bg-accent-soft peer-checked:text-accent",
                 "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent",
               )}
@@ -73,7 +74,10 @@ interface StudioBg3dAssetAiUseFieldsProps {
   readonly onAiTrainingChange: (value: StudioBg3dAssetAiTrainingChoice) => void;
 }
 
-/** 가져오기 권리 폼의 AI 사용 표기. 둘 다 선택이며 기본값은 "모름"(= 미확인으로 저장·표시). */
+/**
+ * 가져오기 권리 폼의 AI 사용 표기. 둘 다 선택이며 기본값은 "모름"(= 미확인으로 저장·표시).
+ * 고른 답은 지금 가져오는 모델에만 쓰이고, 가져오기를 시작하면 패널이 "모름"으로 되돌린다.
+ */
 export function StudioBg3dAssetAiUseFields({
   aiGenerated,
   aiTraining,
@@ -84,9 +88,8 @@ export function StudioBg3dAssetAiUseFields({
   return (
     <div className="mt-2.5 rounded-lg border border-line bg-card/50 px-2.5 py-2">
       <p className="text-[0.68rem] font-bold text-fg">AI 사용 표기 (선택)</p>
-      <p className="mt-0.5 text-[0.62rem] leading-relaxed text-fg-3">
-        모르면 '모름'으로 두세요. 기록하지 않은 소재는 목록에서 'AI 미확인'으로 표시됩니다.
-      </p>
+      <p className={cx("mt-0.5", NOTICE_TEXT)}>{STUDIO_BG3D_IMPORT_AI_FORM_HELP}</p>
+      <p className={cx("mt-0.5", NOTICE_TEXT)}>{STUDIO_BG3D_IMPORT_AI_FORM_SCOPE_NOTICE}</p>
       <RadioRow
         name={`${groupId}-ai-generated`}
         legend="AI로 생성한 소재인가요?"

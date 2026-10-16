@@ -1,16 +1,17 @@
 import { Fragment } from "react";
 
+import { NOTICE_SIZE, NOTICE_TEXT, UNCONFIRMED_TEXT, cx } from "./studio-bg3d-asset-panel-styles";
 import {
   STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER,
+  STUDIO_BG3D_ASSET_RIGHTS_PROJECT_SUMMARY_NOTICE,
   describeStudioBg3dAssetRightsBasisNotice,
   describeStudioBg3dAssetRightsRows,
   describeStudioBg3dAssetRightsSummary,
 } from "./studio-bg3d-asset-rights-copy";
-import { cx } from "./studio-bg3d-asset-panel-styles";
 
 import type { StudioBg3dAssetRightsView } from "./studio-bg3d-asset-rights-view";
 
-/** 카드의 한 줄 권리 요약. 권리를 모르면 강조색으로 "확인 필요"를 드러내고, 허용처럼 보이는 색은 쓰지 않는다. */
+/** 카드의 한 줄 권리 요약. 권리를 모르면 경고 색으로 "확인 필요"를 드러내고, 허용처럼 보이는 색은 쓰지 않는다. */
 export function StudioBg3dAssetRightsSummary({ view, id }: { readonly view: StudioBg3dAssetRightsView; readonly id: string }) {
   const summary = describeStudioBg3dAssetRightsSummary(view);
   return (
@@ -19,7 +20,7 @@ export function StudioBg3dAssetRightsSummary({ view, id }: { readonly view: Stud
       title={summary}
       className={cx(
         "mt-1 line-clamp-2 block text-[0.62rem] font-semibold leading-snug",
-        view.state.license === "unknown" ? "text-accent" : "text-fg-2",
+        view.state.license === "unknown" ? UNCONFIRMED_TEXT : "text-fg-2",
       )}
     >
       {summary}
@@ -49,18 +50,21 @@ export function StudioBg3dAssetRightsDetails({ view, id, labelledBy }: StudioBg3
           <Fragment key={row.key}>
             <dt className="font-bold text-fg-2">{row.label}</dt>
             <dd className="m-0 min-w-0 break-words [overflow-wrap:anywhere]">
-              <span className={row.tone === "unconfirmed" ? "font-bold text-accent" : "font-semibold text-fg"}>
+              <span className={row.tone === "unconfirmed" ? cx("font-bold", UNCONFIRMED_TEXT) : "font-semibold text-fg"}>
                 {row.value}
               </span>
-              {row.userText.map((text) => (
-                <span key={text} className="mt-0.5 block font-medium text-fg-3">{text}</span>
+              {/* 제공처와 작성자가 같은 글일 수 있어 글만으로는 키가 겹친다. 줄 안의 순서가 바뀌지 않으므로 순번을 함께 쓴다. */}
+              {row.userText.map((text, index) => (
+                <span key={`${index}:${text}`} className="mt-0.5 block font-medium text-fg-3">{text}</span>
               ))}
             </dd>
           </Fragment>
         ))}
       </dl>
-      {notice ? <p className="mt-2 text-[0.64rem] font-semibold leading-snug text-accent">{notice}</p> : null}
-      <p className="mt-2 text-[0.6rem] leading-snug text-fg-3">{STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER}</p>
+      {notice ? <p className={cx("mt-2 font-semibold", NOTICE_SIZE, UNCONFIRMED_TEXT)}>{notice}</p> : null}
+      <p className={cx("mt-2", NOTICE_TEXT)}>
+        {STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER} {STUDIO_BG3D_ASSET_RIGHTS_PROJECT_SUMMARY_NOTICE}
+      </p>
     </div>
   );
 }

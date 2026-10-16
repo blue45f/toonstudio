@@ -28,6 +28,34 @@ export const STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE =
 export const STUDIO_BG3D_ASSET_RIGHTS_CONFLICT_NOTICE =
   "라이브러리 기록과 저장된 권리 기록이 서로 달라서 더 제한적인 쪽으로 보여요. 원본 라이선스를 확인해 주세요.";
 
+/** 권리 필터 펼침 머리말. */
+export const STUDIO_BG3D_ASSET_RIGHTS_FILTER_HELP =
+  "라이선스·출처·AI 표기로 소재를 걸러 봐요. 기록이 없는 소재는 '미확인'으로 분류하며, 사용해도 된다는 뜻은 아니에요.";
+
+/** 저장된 권리 기록을 읽는 동안·읽지 못했을 때의 안내. 읽지 못한 경우에는 다음 행동을 함께 적는다. */
+export const STUDIO_BG3D_ASSET_RIGHTS_LOAD_NOTICES = Object.freeze({
+  loading: "저장된 권리 기록을 읽는 중이에요. 읽는 동안에는 가져온 소재가 '미확인'으로 보여요.",
+  partial: "저장된 권리 기록 일부를 읽지 못했어요. 읽지 못한 값은 '미확인'으로 보여요. 목록은 그대로 쓸 수 있고, 3D 모델 목록을 닫았다가 다시 열어 주세요.",
+  error: "저장된 권리 기록을 읽지 못했어요. 가져온 소재는 모두 '미확인'으로 보여요. 목록은 그대로 쓸 수 있고, 3D 모델 목록을 닫았다가 다시 열어 주세요.",
+} as const);
+
+/** 검색·필터 결과가 비었을 때, 권리 필터가 켜져 있으면 덧붙이는 설명. */
+export const STUDIO_BG3D_ASSET_RIGHTS_EMPTY_RESULT_HINT =
+  "권리 필터가 켜져 있어요. 기록이 없는 소재는 '미확인'으로 분류되니 필터를 풀면 다시 보여요.";
+
+/** 가져오기 폼의 AI 사용 표기 안내. 답은 가져오는 동안만 쓰이고 가져온 뒤에는 이 화면에서 고칠 수 없다. */
+export const STUDIO_BG3D_IMPORT_AI_FORM_HELP =
+  "모르면 '모름'으로 두세요. 기록하지 않은 소재는 목록에서 'AI 미확인'으로 보여요.";
+export const STUDIO_BG3D_IMPORT_AI_FORM_SCOPE_NOTICE =
+  "고른 답은 지금 가져오는 모델에만 적용돼요. 가져온 뒤에는 이 화면에서 고칠 수 없어요. 다음 가져오기는 '모름'에서 다시 시작해요.";
+
+const IMPORT_AI_HEADER = { yes: "AI 표기: AI 생성", no: "AI 표기: AI 아님", unknown: "AI 표기: 미확인" } as const;
+
+/** 가져오기 권리 폼 머리글에 보이는, 지금 골라 둔 AI 생성 표기. 고르지 않았으면 미확인이다. */
+export function describeStudioBg3dImportAiHeader(choice: keyof typeof IMPORT_AI_HEADER): string {
+  return IMPORT_AI_HEADER[choice] ?? IMPORT_AI_HEADER.unknown;
+}
+
 export const STUDIO_BG3D_ASSET_RIGHTS_UNCONFIRMED = "미확인";
 
 export type StudioBg3dAssetRightsFilterKey = "license" | "origin" | "commercial" | "aiGenerated" | "aiTraining";
