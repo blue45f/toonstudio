@@ -404,6 +404,31 @@ describe("HealthService", () => {
     });
   });
 
+  it("exposes whether Cloudflare edge origin authentication is enforced without revealing the secret", async () => {
+    const secret = "edge-origin-secret-with-at-least-thirty-two-bytes";
+    const disabled = dependencies();
+    await expect(disabled.service.checkCapabilities()).resolves.toMatchObject({
+      edgeOriginAuth: "disabled",
+    });
+
+    const enforced = dependencies({ environment: { CLOUDFLARE_EDGE_ORIGIN_SECRET: secret } });
+    const report = await enforced.service.checkCapabilities();
+    expect(report).toMatchObject({ edgeOriginAuth: "enforced", status: "available" });
+    expect(JSON.stringify(report)).not.toContain(secret);
+  });
+
+  it("does not degrade the service status or the capability matrix just because edge origin authentication is disabled", async () => {
+    const { service } = dependencies();
+    const report = await service.checkCapabilities();
+    expect(report).toMatchObject({
+      status: "available",
+      incidentId: null,
+      retryAfterSeconds: null,
+      edgeOriginAuth: "disabled",
+    });
+    expect(Object.keys(report.capabilities)).not.toContain("edgeOriginAuth");
+  });
+
   it("reuses a ready report within the cache window instead of probing again", async () => {
     const { repository, service } = dependencies();
 

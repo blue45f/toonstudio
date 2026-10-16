@@ -2,6 +2,10 @@ import { Inject, Injectable, Optional } from "@nestjs/common";
 import { ModuleRef } from "@nestjs/core";
 
 import {
+  resolveEdgeOriginAuthStatus,
+  type EdgeOriginAuthStatus,
+} from "../../config/edge-origin-auth";
+import {
   capabilityIncidentId,
   clearCapabilityIncident,
   DEFAULT_SERVICE_RETRY_AFTER_SECONDS,
@@ -41,6 +45,7 @@ const READINESS_SUCCESS_CACHE_TTL_MS = 5_000;
 export type HealthEnvironment = Partial<
   Record<
     | "NODE_ENV"
+    | "CLOUDFLARE_EDGE_ORIGIN_SECRET"
     | "TRAFFIC_ANALYTICS_STORE"
     | "AUTH_RATE_LIMIT_MODE"
     | "AUTH_DISTRIBUTED_RATE_LIMIT_ENABLED"
@@ -83,6 +88,8 @@ export interface HealthCapabilitiesReport {
   readonly incidentId: string | null;
   readonly retryAfterSeconds: number | null;
   readonly checkedAt: string;
+  /** Cloudflare 에지 출처 인증 집행 여부. 서비스 상태 등급과는 별개이며 비밀 값은 담지 않는다. */
+  readonly edgeOriginAuth: EdgeOriginAuthStatus;
   readonly capabilities: {
     readonly publicCatalog: HealthCapabilityState;
     readonly authSession: HealthCapabilityState;
@@ -221,6 +228,7 @@ export class HealthService {
         ? DEFAULT_SERVICE_RETRY_AFTER_SECONDS
         : null,
       checkedAt: new Date().toISOString(),
+      edgeOriginAuth: resolveEdgeOriginAuthStatus(this.environment),
       capabilities,
     };
   }

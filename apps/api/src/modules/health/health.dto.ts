@@ -39,6 +39,8 @@ export const HealthCapabilitiesResponseSchema = z
     incidentId: z.string().regex(/^inc_[A-Za-z0-9._-]+$/u).nullable(),
     retryAfterSeconds: z.number().int().min(1).max(3_600).nullable(),
     checkedAt: z.string().datetime(),
+    // 배포 점검용: 원본이 Cloudflare 에지 출처 비밀을 집행하는지(값은 노출하지 않는다).
+    edgeOriginAuth: z.enum(["enforced", "disabled"]),
     capabilities: z.object({
       publicCatalog: HealthCapabilityStateSchema,
       authSession: HealthCapabilityStateSchema,
