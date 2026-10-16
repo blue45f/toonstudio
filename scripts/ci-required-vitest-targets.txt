@@ -69,6 +69,8 @@ apps/web/src/app/studio-cross-origin-isolation.test.ts
 apps/web/src/app/studio-immersive-shell.test.ts
 apps/web/src/domains/account/UserProfilePage.test.tsx
 apps/web/src/domains/auth/components/in-app-browser-notice.test.tsx
+apps/web/src/domains/catalog/memory-finder/MemoryFinderSection.test.tsx
+apps/web/src/domains/catalog/memory-finder/memory-finder-model.test.ts
 apps/web/src/domains/character-chat/CharacterChatSpeech.test.tsx
 apps/web/src/domains/character-chat/CharacterChatVoiceFields.test.tsx
 apps/web/src/domains/character-chat/character-chat-speech.test.ts
@@ -434,6 +436,7 @@ apps/web/src/shared/components/contract-review/LazyContractReviewChecklist.test.
 apps/web/src/shared/components/contract-review/contract-review-answer-store.test.ts
 apps/web/src/shared/components/contract-review/contract-review-checklist.test.ts
 apps/web/src/shared/components/site-experience/node-resolvable-imports.contract.test.ts
+apps/web/src/shared/components/ui/honesty-badge.test.tsx
 apps/web/src/shared/components/workspace
 apps/web/src/shared/components/workspace/WorkspaceContextPanel.test.tsx
 apps/web/src/shared/lib/__tests__/drawing-pwa-manifest.test.ts
