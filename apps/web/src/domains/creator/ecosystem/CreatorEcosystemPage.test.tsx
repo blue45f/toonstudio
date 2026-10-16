@@ -61,6 +61,21 @@ describe("CreatorEcosystemPage", () => {
     expect(screen.getByRole("tabpanel").id).toBe("ecosystem-beta");
   });
 
+  it("베타 독자 구역에서 기존 응답 가져오기와 함께 회차별 독자 피드백 요약을 쓸 수 있다", () => {
+    window.history.replaceState(null, "", "/#ecosystem-beta");
+    renderPage();
+    const panel = screen.getByRole("tabpanel");
+    expect(panel.id).toBe("ecosystem-beta");
+    expect(within(panel).getByText("응답 가져오기")).toBeTruthy();
+    expect(within(panel).getByRole("heading", { level: 3, name: "회차별 독자 피드백 요약" })).toBeTruthy();
+    fireEvent.click(within(panel).getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    expect(within(panel).getByRole("article")).toBeTruthy();
+    // 다른 구역으로 갔다 와도 가져온 응답은 남는다(구역은 숨겨질 뿐 사라지지 않는다).
+    fireEvent.click(screen.getByRole("tab", { name: "원고 검수" }));
+    fireEvent.click(screen.getByRole("tab", { name: "베타 독자" }));
+    expect(within(screen.getByRole("tabpanel")).getByRole("article")).toBeTruthy();
+  });
+
   it("마지막 구역에는 이전 이동만, 첫 구역에는 다음 이동만 둔다", () => {
     renderPage();
     const footer = () => screen.getByRole("navigation", { name: "이전·다음 구역" });
