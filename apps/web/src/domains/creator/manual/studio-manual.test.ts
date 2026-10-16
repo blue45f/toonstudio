@@ -111,6 +111,12 @@ describe("Studio user manual content", () => {
     expect(text).toContain(`최대 ${STUDIO_CHARM_BAR_MAX_CHARMS}개`);
     expect(text).toContain("되돌리기 한 번");
     expect(text).toContain("끌어다 놓을 수 없고");
+    // 연달아 붙이기·키보드·정직한 결과 안내·한계(선택이 크기 없는 요소면 화면 가운데)가 매뉴얼에 있다.
+    expect(text).toContain("5초 안에 이어 누르면");
+    expect(text).toContain("크기가 없는 요소");
+    expect(text).toContain("편집 중이 아닐 때 Delete는 참을 빼지 않습니다");
+    expect(text).toContain("요청했어요");
+    expect(text).toContain("먼저 캔버스를 누르세요");
     expect(searchManual("참 바").map((article) => article.id)).toContain("assets");
     expect(searchManual("charm")[0]?.id).toBe("assets");
   });

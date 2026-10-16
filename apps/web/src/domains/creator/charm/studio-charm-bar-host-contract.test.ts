@@ -341,6 +341,46 @@ describe("참 바 호스트 계약: 전역 단축키 경계", () => {
   });
 });
 
+/** 인터페이스 멤버 이름(속성)을 선언 순서대로 읽는다. */
+function interfaceMemberNames(relativePath: string, interfaceName: string): string[] {
+  const file = sourceFileOf(relativePath);
+  const names: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isInterfaceDeclaration(node) && node.name.text === interfaceName) {
+      for (const member of node.members) {
+        if (ts.isPropertySignature(member) && ts.isIdentifier(member.name)) names.push(member.name.text);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return names;
+}
+
+describe("참 바 호스트 계약: 슬롯이 읽는 세션 필드", () => {
+  // 작업공간 파일은 `@ts-nocheck` 라서 컴파일러가 슬롯에 넘기는 세션 필드를 검사하지 못한다. 이름이 호스트와 어긋나면
+  // 조용히 `undefined` 를 읽으므로, 선언한 필드가 호스트가 뷰에 넘기는 속성인지 소스에서 직접 대조한다.
+  const sessionFields = (): string[] => [
+    ...interfaceMemberNames("./studio-charm-host-bridge.ts", "StudioCharmHostSession"),
+    ...interfaceMemberNames("./StudioCharmBarSlot.tsx", "StudioCharmSlotSession"),
+  ];
+
+  it("슬롯이 읽는 세션 필드는 모두 호스트가 뷰에 넘기는 속성이다", () => {
+    const source = readFileSync(new URL(HOST_SOURCE, import.meta.url), "utf8");
+    const fields = sessionFields();
+    expect(fields.length).toBeGreaterThan(15);
+    expect(new Set(fields).size, "필드 이름은 겹치지 않는다").toBe(fields.length);
+    for (const name of fields) {
+      expect(source, `${name} 는 호스트가 뷰에 넘기는 속성이어야 한다`).toMatch(new RegExp(`\\n\\s+${name}=\\{`, "u"));
+    }
+  });
+
+  it("기능 문서가 말하는 세션 필드 개수가 실제 선언과 같다", () => {
+    const doc = readFileSync(new URL("../../../../../../docs/features/studio-charm-bar.md", import.meta.url), "utf8");
+    expect(doc).toContain(`세션 필드 ${sessionFields().length}개`);
+  });
+});
+
 describe("참 바 호스트 계약: 편집 잠금 값", () => {
   // 참 바는 호스트가 파생한 잠금 값만 읽는다(`studioCharmLock`). 시험 픽스처(`deriveHostLockFields`)가 같은 식을 쓴다.
   it("호스트가 잠금 값을 파생하는 식이 시험 픽스처와 같고, 공동 편집 안내는 함수다", () => {
