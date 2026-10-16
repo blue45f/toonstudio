@@ -323,6 +323,7 @@ apps/web/src/domains/creator/studio-shell/StudioProjectLibraryPage.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioQuickStart.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioRolePersonalizationCenter.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioVisualGuidance.test.tsx
+apps/web/src/domains/creator/studio-shell/useStudioModalSheet.details.test.ts
 apps/web/src/domains/creator/studio-shell/useStudioProjectLibrary.test.tsx
 apps/web/src/domains/creator/studio-smart-filter-opacity.test.ts
 apps/web/src/domains/creator/studio-source-hydration-recovery-boundary.test.ts
@@ -336,6 +337,7 @@ apps/web/src/domains/creator/submission-package/submission-package-abort.test.ts
 apps/web/src/domains/creator/submission-package/submission-package-build.test.ts
 apps/web/src/domains/creator/submission-package/submission-package-cover-pdf.test.ts
 apps/web/src/domains/creator/submission-package/submission-package-cover.test.ts
+apps/web/src/domains/creator/submission-package/submission-package-document-order.test.ts
 apps/web/src/domains/creator/submission-package/submission-package-draft-state.test.ts
 apps/web/src/domains/creator/submission-package/submission-package-draft-store.test.ts
 apps/web/src/domains/creator/submission-package/submission-package-layout.test.ts

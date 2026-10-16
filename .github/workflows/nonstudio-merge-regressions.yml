@@ -34,7 +34,7 @@ jobs:
         run: |
           # Refresh these only after the complete assistant regression and focused lint jobs pass.
           test "$(git hash-object apps/web/src/domains/creator/assistant/StudioWebtoonAssistantContent.tsx)" = efeb3c5f95be497206564d8b9db64f0c0a41c2de
-          sed 's@from "./StudioWebtoonAssistantContent"@from "./StudioWebtoonAssistantModal"@' apps/web/src/domains/creator/assistant/StudioWebtoonAssistantModal.test.tsx | git hash-object --stdin | grep -Fx 4c9990d0bcdcc5eed2b8768d8d27f4b1482979f8
+          sed 's@from "./StudioWebtoonAssistantContent"@from "./StudioWebtoonAssistantModal"@' apps/web/src/domains/creator/assistant/StudioWebtoonAssistantModal.test.tsx | git hash-object --stdin | grep -Fx db22e014d69e80058b10cb5f4776c188e95af97b
       - name: Original assistant features, loading lifecycle and existing boundary tests
         run: >-
           pnpm exec vitest run
