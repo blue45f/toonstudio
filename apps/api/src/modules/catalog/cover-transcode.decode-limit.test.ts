@@ -1,7 +1,9 @@
+import { deflateSync } from "node:zlib";
+
 import { Image, encode, encodePng } from "image-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { transcodeCoverToWidth } from "./cover-transcode";
+import { COVER_MAX_DECODE_RAW_BYTES, transcodeCoverToWidth } from "./cover-transcode";
 
 // 디코드 호출 여부가 핵심 계약이라 image-js 의 decode 를 실제 구현 그대로 감싸서 호출만 센다.
 const { decodeSpy } = vi.hoisted(() => ({ decodeSpy: vi.fn() }));
@@ -10,6 +12,64 @@ vi.mock("image-js", async (importOriginal) => {
   decodeSpy.mockImplementation(actual.decode);
   return { ...actual, decode: decodeSpy };
 });
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes: Buffer): number {
+  let crc = 0xffffffff;
+  for (const byte of bytes) crc = (CRC_TABLE[(crc ^ byte) & 0xff] ?? 0) ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function chunk(type: string, data: Buffer): Buffer {
+  const out = Buffer.alloc(12 + data.length);
+  out.writeUInt32BE(data.length, 0);
+  out.write(type, 4, "ascii");
+  data.copy(out, 8);
+  out.writeUInt32BE(crc32(out.subarray(4, 8 + data.length)), 8 + data.length);
+  return out;
+}
+
+interface HandmadePng {
+  readonly width: number;
+  readonly height: number;
+  readonly bitDepth?: number;
+  readonly colorType?: number;
+  readonly interlace?: number;
+  /** IDAT 로 압축해 넣을 원본 바이트(필터 바이트 포함). */
+  readonly raw: Buffer;
+  readonly extraChunks?: readonly Buffer[];
+}
+
+/** 헤더·CRC 가 모두 정상인 PNG 를 손으로 만든다. IDAT 의 팽창 크기를 선언과 다르게 조절하려고 쓴다. */
+function handmadePng({ width, height, bitDepth = 8, colorType = 0, interlace = 0, raw, extraChunks = [] }: HandmadePng): Buffer {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = bitDepth;
+  ihdr[9] = colorType;
+  ihdr[12] = interlace;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", ihdr),
+    ...extraChunks,
+    chunk("IDAT", deflateSync(raw)),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+/** 1비트 회색 PNG: 4000x4000 이어도 압축 해제 크기가 약 2MB 라 시험이 가볍다. */
+function bilevelPng(width: number, height: number): Buffer {
+  return handmadePng({ width, height, bitDepth: 1, colorType: 0, raw: Buffer.alloc(height * (1 + Math.ceil(width / 8))) });
+}
 
 function pngHeader(width: number, height: number): Buffer {
   const header = Buffer.alloc(33);
@@ -75,12 +135,18 @@ describe("transcodeCoverToWidth 디코드 크기 상한(이미지 폭탄 방어)
     expect(decodeSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("상한 바로 위의 선언 크기는 거절하고 바로 아래는 디코드를 시도한다", () => {
-    expect(transcodeCoverToWidth(pngHeader(4_001, 4_000), "image/png", 320)).toBeNull();
+  it("상한 바로 위의 선언 크기는 거절하고 바로 아래는 실제로 디코드해 변환한다", () => {
+    expect(transcodeCoverToWidth(bilevelPng(4_001, 4_000), "image/png", 320)).toBeNull();
     expect(decodeSpy).not.toHaveBeenCalled();
-    // 상한 이하는 디코드를 시도한다(IDAT 가 없어 디코드 자체는 실패해 null 이다).
-    expect(transcodeCoverToWidth(pngHeader(4_000, 4_000), "image/png", 320)).toBeNull();
+    // 정확히 상한(1600만 화소)인 정상 PNG 는 변환된다.
+    const atLimit = transcodeCoverToWidth(bilevelPng(4_000, 4_000), "image/png", 320);
+    expect(atLimit?.width).toBe(320);
     expect(decodeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("IDAT 가 없는 PNG 는 크기가 상한 이하여도 디코드하지 않는다", () => {
+    expect(transcodeCoverToWidth(pngHeader(4_000, 4_000), "image/png", 320)).toBeNull();
+    expect(decodeSpy).not.toHaveBeenCalled();
   });
 
   it("헤더에서 크기를 읽을 수 없으면 디코드하지 않는다", () => {
@@ -88,5 +154,75 @@ describe("transcodeCoverToWidth 디코드 크기 상한(이미지 폭탄 방어)
     expect(transcodeCoverToWidth(jpegWithoutFrame, "image/jpeg", 320)).toBeNull();
     expect(transcodeCoverToWidth(Buffer.from("not an image at all, just text"), "image/png", 320)).toBeNull();
     expect(decodeSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("transcodeCoverToWidth 형식 위장·팽창 우회 방어", () => {
+  beforeEach(() => {
+    decodeSpy.mockClear();
+  });
+
+  it("TIFF 에 PNG 라벨과 가짜 IHDR(1x1)을 붙여도 서명이 PNG·JPEG 가 아니면 디코드하지 않는다", () => {
+    // 리뷰가 실측한 우회: 12~23바이트에 IHDR 1x1 을 심은 TIFF(실제 4100x4100)가 선언 크기 검사를 통과했다.
+    const tiff = Buffer.alloc(64);
+    tiff.write("II", 0, "ascii");
+    tiff.writeUInt16LE(42, 2);
+    tiff.writeUInt32LE(32, 4);
+    tiff.writeUInt32BE(13, 8);
+    tiff.write("IHDR", 12, "ascii");
+    tiff.writeUInt32BE(1, 16);
+    tiff.writeUInt32BE(1, 20);
+    tiff[24] = 8;
+    tiff[25] = 6;
+    expect(transcodeCoverToWidth(tiff, "image/png", 320)).toBeNull();
+    expect(transcodeCoverToWidth(tiff, "image/jpeg", 320)).toBeNull();
+    expect(decodeSpy).not.toHaveBeenCalled();
+  });
+
+  it("선언은 1x1 인데 IDAT 가 그보다 훨씬 크게 풀리는 PNG 는 디코드하지 않는다", () => {
+    // 선언 1x1 8비트 회색의 압축 해제 크기는 2바이트다. 8MB 로 팽창하면 상한을 넘으므로 거절한다.
+    const bomb = handmadePng({ width: 1, height: 1, raw: Buffer.alloc(8 * 1024 * 1024) });
+    expect(bomb.length).toBeLessThan(64 * 1024);
+    expect(transcodeCoverToWidth(bomb, "image/png", 320)).toBeNull();
+    expect(decodeSpy).not.toHaveBeenCalled();
+  });
+
+  it("선언한 크기대로 풀리는 정직한 PNG 는 팽창 검사를 통과해 변환된다", () => {
+    const honest = Buffer.from(encodePng(realImage(640, 960)));
+    expect(transcodeCoverToWidth(honest, "image/png", 160)?.width).toBe(160);
+    expect(decodeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("압축 해제 후 크기가 상한을 넘는 선언은 IDAT 를 풀어 보기 전에 거절한다", () => {
+    // 16비트 RGBA 4000x4000 은 화소 수(1600만)는 통과하지만 압축 해제 크기가 128MB 라 상한(64MB)을 넘는다.
+    const header = pngHeader(4_000, 4_000);
+    header[24] = 16;
+    header[25] = 6;
+    expect(4_000 * (1 + 4_000 * 8)).toBeGreaterThan(COVER_MAX_DECODE_RAW_BYTES);
+    expect(transcodeCoverToWidth(header, "image/png", 320)).toBeNull();
+    expect(decodeSpy).not.toHaveBeenCalled();
+  });
+
+  it("애니메이션 PNG(acTL)와 알 수 없는 색 유형·깊이 조합은 변환하지 않는다", () => {
+    const raw = Buffer.alloc(1 + 640);
+    const animated = handmadePng({ width: 640, height: 1, raw, extraChunks: [chunk("acTL", Buffer.alloc(8))] });
+    expect(transcodeCoverToWidth(animated, "image/png", 160)).toBeNull();
+    const badDepth = handmadePng({ width: 640, height: 1, colorType: 2, bitDepth: 4, raw });
+    expect(transcodeCoverToWidth(badDepth, "image/png", 160)).toBeNull();
+    const badColor = handmadePng({ width: 640, height: 1, colorType: 5, raw });
+    expect(transcodeCoverToWidth(badColor, "image/png", 160)).toBeNull();
+    expect(decodeSpy).not.toHaveBeenCalled();
+  });
+
+  it("라벨이 틀려도 서명이 PNG·JPEG 면 서명대로 변환한다(JPEG 를 PNG 라벨로 보낸 업스트림)", () => {
+    const jpeg = Buffer.from(encode(realImage(800, 1200), { format: "jpeg" }));
+    const result = transcodeCoverToWidth(jpeg, "image/png", 320);
+    expect(result?.contentType).toBe("image/jpeg");
+    expect(result?.width).toBe(320);
+  });
+
+  it("잘린 PNG(IEND 없이 IDAT 중간에서 끊김)는 변환하지 않고 원본 중계에 맡긴다", () => {
+    const honest = Buffer.from(encodePng(realImage(640, 960)));
+    expect(transcodeCoverToWidth(honest.subarray(0, Math.floor(honest.length / 2)), "image/png", 160)).toBeNull();
   });
 });

@@ -1,3 +1,5 @@
+import { inflateSync } from "node:zlib";
+
 import { decode, encodeJpeg, encodePng } from "image-js";
 
 // 서버측 표지 픽셀 변환.
@@ -37,17 +39,64 @@ const COVER_JPEG_QUALITY = 82;
  */
 export const COVER_MAX_DECODE_PIXELS = 16_000_000;
 
-interface DeclaredDimensions {
+/**
+ * PNG 의 압축 해제 후 크기(필터 바이트 포함) 상한. 화소 수 상한만으로는 16비트 RGBA 4000x4000(128MB)처럼
+ * 선언대로 정직한 이미지도 큰 메모리를 쓴다. 8비트 RGBA 4000x4000(약 64MB)이 들어가는 크기로 잡는다.
+ */
+export const COVER_MAX_DECODE_RAW_BYTES = 64 * 1024 * 1024;
+
+type CoverFormat = "png" | "jpeg";
+
+interface DeclaredImage {
   readonly width: number;
   readonly height: number;
+  /** PNG 에서만: 선언된 크기·깊이·인터레이스로 계산한 압축 해제 후 크기의 상한. */
+  readonly rawBytes?: number;
 }
 
-/** 디코드하지 않고 PNG IHDR / JPEG SOF 헤더에서 선언된 크기만 읽는다. 읽을 수 없으면 null. */
-function readDeclaredDimensions(body: Buffer, type: string): DeclaredDimensions | null {
-  if (type === "image/png") {
-    if (body.length < 24 || body.toString("ascii", 12, 16) !== "IHDR") return null;
-    return { width: body.readUInt32BE(16), height: body.readUInt32BE(20) };
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const PNG_COLOR_CHANNELS: Readonly<Record<number, number>> = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
+const PNG_VALID_BIT_DEPTHS: Readonly<Record<number, readonly number[]>> = {
+  0: [1, 2, 4, 8, 16],
+  2: [8, 16],
+  3: [1, 2, 4, 8],
+  4: [8, 16],
+  6: [8, 16],
+};
+
+/**
+ * 형식은 Content-Type 이 아니라 매직 바이트로 정한다. Content-Type 은 업스트림이 마음대로 붙이는 라벨이라,
+ * TIFF 에 PNG 라벨을 붙이고 12~23바이트에 가짜 IHDR(1x1)을 심으면 선언 크기 검사를 통과한 채 image-js 가 실제
+ * TIFF(4100x4100)를 풀어 버렸다. PNG·JPEG 서명이 아니면 변환하지 않는다.
+ */
+function sniffCoverFormat(body: Buffer): CoverFormat | null {
+  if (body.length >= PNG_SIGNATURE.length && body.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
+    return "png";
   }
+  if (body.length >= 3 && body[0] === 0xff && body[1] === 0xd8 && body[2] === 0xff) return "jpeg";
+  return null;
+}
+
+/** 디코드하지 않고 PNG IHDR 에서 선언된 크기와, 그에 맞는 압축 해제 후 크기 상한을 읽는다. 읽을 수 없으면 null. */
+function readDeclaredPng(body: Buffer): DeclaredImage | null {
+  if (body.length < 33 || body.readUInt32BE(8) !== 13 || body.toString("ascii", 12, 16) !== "IHDR") return null;
+  const width = body.readUInt32BE(16);
+  const height = body.readUInt32BE(20);
+  const bitDepth = body[24];
+  const colorType = body[25];
+  const interlace = body[28];
+  if (bitDepth === undefined || colorType === undefined || interlace === undefined) return null;
+  const channels = PNG_COLOR_CHANNELS[colorType];
+  if (channels === undefined || !PNG_VALID_BIT_DEPTHS[colorType]?.includes(bitDepth)) return null;
+  if (interlace !== 0 && interlace !== 1) return null;
+  const rowBytes = Math.ceil((width * channels * bitDepth) / 8);
+  // Adam7 은 일곱 번에 나눠 그리며 행마다 필터 바이트가 붙어 행 수가 약 2배다. 정확한 값 대신 안전한 상한을 쓴다.
+  const rows = interlace === 1 ? 2 * height + 7 : height;
+  return { width, height, rawBytes: rows * (1 + rowBytes) };
+}
+
+/** 디코드하지 않고 JPEG SOF 헤더에서 선언된 크기만 읽는다. 읽을 수 없으면 null. */
+function readDeclaredJpeg(body: Buffer): DeclaredImage | null {
   if (body.length < 4 || body[0] !== 0xff || body[1] !== 0xd8) return null;
   let offset = 2;
   while (offset + 4 <= body.length) {
@@ -83,6 +132,35 @@ function readDeclaredDimensions(body: Buffer, type: string): DeclaredDimensions 
 }
 
 /**
+ * PNG 의 압축 데이터(IDAT)가 선언한 크기 이상으로 풀리지 않는지 확인한다. 헤더의 선언 크기(1x1)와 달리 IDAT 가
+ * 수백 MB 로 팽창하는 파일(261KB → 256MB)은 화소 수 상한을 통과한 채 fast-png 의 무제한 inflate 로 메모리를
+ * 쓸어 갔다. 상한을 선언 크기로 묶은 inflate 로 먼저 시험해, 넘으면 디코드하지 않는다. 애니메이션 PNG(acTL)는
+ * 프레임 데이터(fdAT)까지 풀 수 있어 변환하지 않는다.
+ */
+function pngInflatesWithinDeclaredSize(body: Buffer, maxRawBytes: number): boolean {
+  const compressed: Buffer[] = [];
+  let offset = PNG_SIGNATURE.length;
+  while (offset + 12 <= body.length) {
+    const length = body.readUInt32BE(offset);
+    const dataStart = offset + 8;
+    if (length > body.length - dataStart - 4) return false;
+    const chunkType = body.toString("latin1", offset + 4, dataStart);
+    if (chunkType === "acTL") return false;
+    if (chunkType === "IDAT") compressed.push(body.subarray(dataStart, dataStart + length));
+    if (chunkType === "IEND") break;
+    offset = dataStart + length + 4;
+  }
+  if (compressed.length === 0) return false;
+  try {
+    inflateSync(Buffer.concat(compressed), { maxOutputLength: maxRawBytes });
+    return true;
+  } catch {
+    // 상한 초과(ERR_BUFFER_TOO_LARGE)와 손상된 스트림 모두 변환하지 않는다.
+    return false;
+  }
+}
+
+/**
  * 폭 지정 표지를 목표 폭으로 줄인다. 변환이 불필요하거나(원본이 이미 목표
  * 이하) 불가능하면(미지원 포맷·디코드 실패) null.
  */
@@ -95,9 +173,15 @@ export function transcodeCoverToWidth(
   if (type !== "image/jpeg" && type !== "image/jpg" && type !== "image/png") return null;
   if (!Number.isInteger(targetWidth) || targetWidth < 1) return null;
 
-  // 디코드는 선언된 크기만큼 메모리를 할당하므로, 헤더로 크기를 먼저 확인한다.
-  const declared = readDeclaredDimensions(body, type === "image/png" ? "image/png" : "image/jpeg");
+  // 디코드는 선언된 크기만큼 메모리를 할당하므로, 형식을 매직 바이트로 정하고 헤더로 크기를 먼저 확인한다.
+  const format = sniffCoverFormat(body);
+  if (format === null) return null;
+  const declared = format === "png" ? readDeclaredPng(body) : readDeclaredJpeg(body);
   if (declared === null || declared.width * declared.height > COVER_MAX_DECODE_PIXELS) return null;
+  if (format === "png") {
+    const rawBytes = declared.rawBytes ?? Number.POSITIVE_INFINITY;
+    if (rawBytes > COVER_MAX_DECODE_RAW_BYTES || !pngInflatesWithinDeclaredSize(body, rawBytes)) return null;
+  }
 
   let image: ReturnType<typeof decode>;
   try {
@@ -111,7 +195,7 @@ export function transcodeCoverToWidth(
     const resized = image.resize({ width: targetWidth });
     // 알파 채널이 실제로 쓰이는 PNG만 PNG로 유지하고, 나머지는 JPEG로 인코딩해
     // 바이트를 더 줄인다(표지는 사진·일러스트라 JPEG 손실이 허용 범위다).
-    const keepPng = type === "image/png" && image.alpha && hasVisibleTransparency(image);
+    const keepPng = format === "png" && image.alpha && hasVisibleTransparency(image);
     if (keepPng) {
       return {
         body: Buffer.from(encodePng(resized)),
