@@ -35,9 +35,13 @@ async function seedGuestSession(page: Page) {
   }, { key: GUEST_SESSION_KEY, tourKey: WORKSPACE_TOUR_STORAGE_KEY });
 }
 
+/** 사이트 공통 컨트롤 높이 바닥이 데스크톱 값(2.5rem)으로 바뀌는 폭(sitewide-visual-ux.css). 그 아래가 44px 터치 영역 계약의 대상이다. */
+const DESKTOP_CONTROL_FLOOR_WIDTH = 768;
+
 /**
- * 작업 우선 진입(/studio 로비)이 좁은 화면에서 잘리거나 쪼개져 읽기 어려운 곳을 실제 치수로 모은다.
- * 입력칸의 고유 폭이 히어로 열을 넓혀 오른쪽 조작이 카드 밖으로 잘렸던 결함을 그대로 잡는다.
+ * 작업 우선 진입(/studio 로비)이 좁은 화면과 노트북 폭에서 잘리거나 쪼개져 읽기 어려운 곳을 실제 치수로 모은다.
+ * 입력칸의 고유 폭이 히어로 열을 넓혀 오른쪽 조작이 카드 밖으로 잘렸던 결함과, 빠른 시작 카드의 글 열이 좁아
+ * 제목이 글자 단위로 쪼개졌던 결함을 그대로 잡는다.
  * (가시성만 보는 toBeVisible 은 조상의 overflow 로 잘린 요소도 "보임"으로 판정하므로 경계를 직접 비교한다.)
  * 라이브러리가 늦게 채워져 밀도(full/compact)가 바뀌는 순간을 재지 않도록 호출부가 문제 목록이 빌 때까지 다시 잰다.
  */
@@ -49,7 +53,7 @@ async function collectStudioLobbyProblems(page: Page, width: number): Promise<st
   if (frame.x < -1) problems.push("로비가 왼쪽으로 넘칩니다.");
   if (frame.x + frame.width > width + 1) problems.push("로비가 화면 오른쪽으로 넘칩니다.");
 
-  // 로비 안의 모든 조작 요소(링크·버튼·입력)는 로비 경계 안에 있고 44px 이상의 터치 영역을 가진다.
+  // 로비 안의 모든 조작 요소(링크·버튼·입력)는 로비 경계 안에 있고, 휴대폰·태블릿 세로 폭에서는 44px 이상의 터치 영역을 가진다.
   const controls = await lobby.locator("a:visible, button:visible, input:visible").evaluateAll((nodes) => nodes.map((node) => {
     const rect = node.getBoundingClientRect();
     const label = node.getAttribute("aria-label") ?? node.getAttribute("placeholder") ?? node.textContent ?? "";
@@ -59,20 +63,38 @@ async function collectStudioLobbyProblems(page: Page, width: number): Promise<st
   for (const control of controls) {
     if (control.left < frame.x - 1) problems.push(`${control.label}: 왼쪽 경계 밖으로 잘렸습니다.`);
     if (control.right > frame.x + frame.width + 1) problems.push(`${control.label}: 오른쪽 경계 밖으로 잘렸습니다.`);
-    if (control.height < 43.5) problems.push(`${control.label}: 터치 영역이 44px 미만입니다(${Math.round(control.height)}px).`);
+    if (width < DESKTOP_CONTROL_FLOOR_WIDTH && control.height < 43.5) {
+      problems.push(`${control.label}: 터치 영역이 44px 미만입니다(${Math.round(control.height)}px).`);
+    }
   }
 
   // 빠른 시작 카드 제목은 어절 단위로 두 줄 안에서 읽혀야 한다(글 열이 좁아 세로로 쪼개지면 안 된다).
+  // 줄 수만으로는 "스튜디오"가 "스튜디/오"로 끊긴 두 줄짜리를 놓치므로 어절마다 글자 범위가 한 줄에 놓였는지도 잰다.
   const titles = await lobby.locator(".studio-lobby-quick__copy strong").evaluateAll((nodes) => nodes.map((node) => {
     const lineHeight = Number.parseFloat(getComputedStyle(node).lineHeight);
+    const brokenWords: string[] = [];
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+      for (const match of (text.textContent ?? "").matchAll(/\S+/gu)) {
+        const start = match.index;
+        if (start === undefined) continue;
+        const range = document.createRange();
+        range.setStart(text, start);
+        range.setEnd(text, start + match[0].length);
+        const rows = new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top)));
+        if (rows.size > 1) brokenWords.push(match[0]);
+      }
+    }
     return {
       title: node.textContent ?? "",
       lines: Math.round(node.getBoundingClientRect().height / (Number.isFinite(lineHeight) ? lineHeight : 18)),
+      brokenWords,
     };
   }));
   if (titles.length === 0) problems.push("빠른 시작 카드가 없습니다.");
-  for (const { title, lines } of titles) {
+  for (const { title, lines, brokenWords } of titles) {
     if (lines > 2) problems.push(`${title}: 제목이 ${lines}줄로 쪼개졌습니다.`);
+    if (brokenWords.length > 0) problems.push(`${title}: 어절이 줄 중간에서 끊겼습니다(${brokenWords.join(", ")}).`);
   }
   return problems;
 }
@@ -231,7 +253,8 @@ test("legacy section links open the matching section without tabs", async ({ pag
   await expect(page.getByRole("tablist")).toHaveCount(0);
 });
 
-for (const width of [320, 390]) {
+// 320/390 은 휴대폰, 912 는 세로 태블릿(3열 구간), 1024/1280 은 노트북 폭(4열 구간)이다. 7열 그대로면 글 열이 좁아 제목이 쪼개졌다.
+for (const width of [320, 390, 912, 1024, 1280]) {
   test(`Studio task-first entry stays readable and unclipped at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.emulateMedia({ reducedMotion: "reduce" });
