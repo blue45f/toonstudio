@@ -20,6 +20,10 @@ import {
  * 검증 상한은 클라이언트 순수 함수(studio-virtual-space-space-booking.ts)와 같은
  * 값을 쓴다 — 서버가 더 느슨하면 우회 입력이 정본을 오염시키고, 더 엄격하면
  * 정상 패널 조작이 동기화 단계에서 거절당한다.
+ *
+ * 범위(scopeKey) 접근 규칙: 범위 키는 JSON 배열 `[작품 id, 월드 범위]` 이고, 같은 범위는 그 작품의
+ * 소유자와 활성 협업자만 공유한다. 서버에 없는 작품, 개인 스튜디오의 공용 상수 id, 해석할 수 없는
+ * 키는 공유할 상대가 없으므로 계정 전용 키로 분리해 저장한다. 서버에 있는 작품의 외부인은 거절한다.
  */
 const SCOPE_KEY_MAX_LENGTH = 512;
 const ID_MAX_LENGTH = 128;
@@ -35,6 +39,11 @@ const MAX_BOOKING_DURATION_MS = 31 * 24 * 60 * 60 * 1_000;
 const PAST_START_GRACE_MS = 10 * 60 * 1_000;
 /** 프레임당 likedBy 응답 상한. 좋아요 수 자체는 전체 행 수로 따로 센다. */
 const LIKED_BY_RESPONSE_CAP = 500;
+/**
+ * 웹 클라이언트가 개인 스튜디오(작품 없이 쓰는 내 작업실)에서 projectId 로 보내는 공용 상수다.
+ * 모든 계정이 같은 값을 쓰므로 이 작품 id 의 범위는 절대 공유하지 않는다.
+ */
+const PERSONAL_HOME_WORK_ID = "virtual-demo:personal-home";
 
 export interface StudioVirtualSpaceBookingDto {
   readonly id: string;
@@ -104,6 +113,30 @@ function readScopeKey(value: string): string {
     throw new NotFoundException("알 수 없는 공간 범위입니다.");
   }
   return scope;
+}
+
+/** 범위 키(JSON 배열)의 첫 요소인 작품 id 를 읽는다. 배열이 아니거나 문자열이 아니면 null 이다. */
+function readScopeWorkId(scopeKey: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(scopeKey);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed)) return null;
+  const first: unknown = parsed[0];
+  return typeof first === "string" && first.length > 0 && first.length <= ID_MAX_LENGTH ? first : null;
+}
+
+/** 계정 전용 범위의 저장 키. 공유 범위 키는 항상 `[` 로 시작하므로 이 키와 겹치지 않는다. */
+function privateScopeStorageKey(actorId: string, requestedScopeKey: string): string {
+  return `private:${actorId}|${requestedScopeKey}`;
+}
+
+/** 요청 범위 키와 저장소에 쓰는 키. 응답에는 항상 요청 키를 돌려줘야 클라이언트 스냅샷 검증을 통과한다. */
+interface ResolvedScope {
+  readonly requestedKey: string;
+  readonly storageKey: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -193,6 +226,25 @@ export class StudioVirtualSpaceBookingService {
     return id;
   }
 
+  /**
+   * 요청 범위 키를 접근 판정과 저장 키로 풀어낸다. 작품 구성원이 아니면 서버에 있는 작품의 범위에
+   * 접근할 수 없고(403), 공유할 상대가 없는 범위는 계정 전용 키로 분리한다.
+   */
+  private async resolveScope(actorId: string, scopeKeyValue: string): Promise<ResolvedScope> {
+    const requestedKey = readScopeKey(scopeKeyValue);
+    const privateScope: ResolvedScope = {
+      requestedKey,
+      storageKey: privateScopeStorageKey(actorId, requestedKey),
+    };
+    const workId = readScopeWorkId(requestedKey);
+    if (workId === null || workId === PERSONAL_HOME_WORK_ID) return privateScope;
+    const access = await this.repository.resolveWorkAccess(actorId, workId);
+    if (access === "outsider") {
+      throw new ForbiddenException("이 공간의 예약과 좋아요를 볼 권한이 없어요.");
+    }
+    return access === "member" ? { requestedKey, storageKey: requestedKey } : privateScope;
+  }
+
   private readBookingInput(body: unknown, nowMs: number): BookingInput {
     if (!isRecord(body)) throw new BadRequestException("예약 정보가 올바르지 않습니다.");
     const id = readText(body.id, ID_MAX_LENGTH);
@@ -248,13 +300,13 @@ export class StudioVirtualSpaceBookingService {
     };
   }
 
-  private async snapshot(scopeKey: string): Promise<StudioVirtualSpaceBookingSnapshot> {
+  private async snapshot(scope: ResolvedScope): Promise<StudioVirtualSpaceBookingSnapshot> {
     const [bookings, waitlist] = await Promise.all([
-      this.repository.listBookings(scopeKey),
-      this.repository.listWaitlist(scopeKey),
+      this.repository.listBookings(scope.storageKey),
+      this.repository.listWaitlist(scope.storageKey),
     ]);
     return {
-      scopeKey,
+      scopeKey: scope.requestedKey,
       bookings: bookings.map(toBookingDto),
       waitlist: waitlist.map(toWaitlistDto),
     };
@@ -264,8 +316,8 @@ export class StudioVirtualSpaceBookingService {
     userId: string | undefined,
     scopeKeyValue: string,
   ): Promise<StudioVirtualSpaceBookingSnapshot> {
-    await this.requireActiveUser(userId);
-    return this.snapshot(readScopeKey(scopeKeyValue));
+    const actorId = await this.requireActiveUser(userId);
+    return this.snapshot(await this.resolveScope(actorId, scopeKeyValue));
   }
 
   async createBooking(
@@ -274,19 +326,19 @@ export class StudioVirtualSpaceBookingService {
     body: unknown,
   ): Promise<StudioVirtualSpaceBookingSnapshot> {
     const authorId = await this.requireActiveUser(userId);
-    const scopeKey = readScopeKey(scopeKeyValue);
+    const scope = await this.resolveScope(authorId, scopeKeyValue);
     const input = this.readBookingInput(body, Date.now());
 
     const existing = await this.repository.findBookingById(input.id);
     if (existing) {
       // 동기화 재전송·승격 경쟁으로 같은 id가 다시 와도 정본은 하나만 남는다.
-      if (existing.scopeKey === scopeKey && existing.createdByUserId === authorId) {
-        return this.snapshot(scopeKey);
+      if (existing.scopeKey === scope.storageKey && existing.createdByUserId === authorId) {
+        return this.snapshot(scope);
       }
       throw new ConflictException("이미 처리된 예약이에요.");
     }
 
-    const bookings = await this.repository.listBookings(scopeKey);
+    const bookings = await this.repository.listBookings(scope.storageKey);
     const conflict = bookings.some(
       (booking) =>
         booking.status === "confirmed" &&
@@ -299,11 +351,11 @@ export class StudioVirtualSpaceBookingService {
 
     await this.repository.insertBooking({
       ...input,
-      scopeKey,
+      scopeKey: scope.storageKey,
       status: "confirmed",
       createdByUserId: authorId,
     });
-    return this.snapshot(scopeKey);
+    return this.snapshot(scope);
   }
 
   async cancelBooking(
@@ -312,21 +364,21 @@ export class StudioVirtualSpaceBookingService {
     bookingIdValue: string,
   ): Promise<StudioVirtualSpaceBookingSnapshot> {
     const authorId = await this.requireActiveUser(userId);
-    const scopeKey = readScopeKey(scopeKeyValue);
+    const scope = await this.resolveScope(authorId, scopeKeyValue);
     const bookingId = readText(bookingIdValue, ID_MAX_LENGTH);
     if (bookingId === null) throw new NotFoundException("예약을 찾을 수 없어요.");
     const booking = await this.repository.findBookingById(bookingId);
-    if (!booking || booking.scopeKey !== scopeKey) {
+    if (!booking || booking.scopeKey !== scope.storageKey) {
       throw new NotFoundException("예약을 찾을 수 없어요.");
     }
     if (booking.createdByUserId !== authorId) {
       throw new ForbiddenException("다른 사용자의 예약은 취소할 수 없어요.");
     }
-    if (booking.status === "cancelled") return this.snapshot(scopeKey);
+    if (booking.status === "cancelled") return this.snapshot(scope);
 
     await this.repository.updateBookingStatus(booking.id, "cancelled");
-    await this.promoteWaitlist(scopeKey, booking.spaceId);
-    return this.snapshot(scopeKey);
+    await this.promoteWaitlist(scope.storageKey, booking.spaceId);
+    return this.snapshot(scope);
   }
 
   /**
@@ -367,7 +419,7 @@ export class StudioVirtualSpaceBookingService {
     body: unknown,
   ): Promise<StudioVirtualSpaceBookingSnapshot> {
     const authorId = await this.requireActiveUser(userId);
-    const scopeKey = readScopeKey(scopeKeyValue);
+    const scope = await this.resolveScope(authorId, scopeKeyValue);
     const input = this.readBookingInput(body, Date.now());
     const requestedAt =
       isRecord(body) && readEpochMs(body.requestedAt) !== null
@@ -376,22 +428,22 @@ export class StudioVirtualSpaceBookingService {
 
     const existing = await this.repository.findWaitlistById(input.id);
     if (existing) {
-      if (existing.scopeKey === scopeKey && existing.createdByUserId === authorId) {
-        return this.snapshot(scopeKey);
+      if (existing.scopeKey === scope.storageKey && existing.createdByUserId === authorId) {
+        return this.snapshot(scope);
       }
       throw new ConflictException("이미 처리된 대기 신청이에요.");
     }
     // 이미 확정 예약으로 승격된 id면 대기열에 다시 넣지 않는다.
     const promoted = await this.repository.findBookingById(input.id);
-    if (promoted && promoted.scopeKey === scopeKey) return this.snapshot(scopeKey);
+    if (promoted && promoted.scopeKey === scope.storageKey) return this.snapshot(scope);
 
     await this.repository.insertWaitlistEntry({
       ...input,
-      scopeKey,
+      scopeKey: scope.storageKey,
       requestedAt,
       createdByUserId: authorId,
     });
-    return this.snapshot(scopeKey);
+    return this.snapshot(scope);
   }
 
   async leaveWaitlist(
@@ -400,34 +452,34 @@ export class StudioVirtualSpaceBookingService {
     entryIdValue: string,
   ): Promise<StudioVirtualSpaceBookingSnapshot> {
     const authorId = await this.requireActiveUser(userId);
-    const scopeKey = readScopeKey(scopeKeyValue);
+    const scope = await this.resolveScope(authorId, scopeKeyValue);
     const entryId = readText(entryIdValue, ID_MAX_LENGTH);
     if (entryId === null) throw new NotFoundException("대기 신청을 찾을 수 없어요.");
     const entry = await this.repository.findWaitlistById(entryId);
-    if (!entry || entry.scopeKey !== scopeKey) {
+    if (!entry || entry.scopeKey !== scope.storageKey) {
       throw new NotFoundException("대기 신청을 찾을 수 없어요.");
     }
     if (entry.createdByUserId !== authorId) {
       throw new ForbiddenException("다른 사용자의 대기 신청은 취소할 수 없어요.");
     }
     await this.repository.deleteWaitlistEntry(entry.id);
-    return this.snapshot(scopeKey);
+    return this.snapshot(scope);
   }
 
   async getGalleryLikes(
     userId: string | undefined,
     scopeKeyValue: string,
   ): Promise<StudioVirtualSpaceGalleryLikesSnapshot> {
-    await this.requireActiveUser(userId);
-    const scopeKey = readScopeKey(scopeKeyValue);
-    const rows = await this.repository.listGalleryLikes(scopeKey);
+    const actorId = await this.requireActiveUser(userId);
+    const scope = await this.resolveScope(actorId, scopeKeyValue);
+    const rows = await this.repository.listGalleryLikes(scope.storageKey);
     const frames: Record<string, { likes: number; likedBy: string[] }> = {};
     for (const row of rows) {
       const frame = (frames[row.frameId] ??= { likes: 0, likedBy: [] });
       frame.likes += 1;
       if (frame.likedBy.length < LIKED_BY_RESPONSE_CAP) frame.likedBy.push(row.userId);
     }
-    return { scopeKey, frames };
+    return { scopeKey: scope.requestedKey, frames };
   }
 
   async toggleGalleryLike(
@@ -436,18 +488,18 @@ export class StudioVirtualSpaceBookingService {
     body: unknown,
   ): Promise<{ readonly frameId: string } & StudioVirtualSpaceGalleryFrameLikes> {
     const authorId = await this.requireActiveUser(userId);
-    const scopeKey = readScopeKey(scopeKeyValue);
+    const scope = await this.resolveScope(authorId, scopeKeyValue);
     if (!isRecord(body)) throw new BadRequestException("프레임 정보가 올바르지 않습니다.");
     const frameId = readText(body.frameId, ID_MAX_LENGTH);
     if (frameId === null) throw new BadRequestException("프레임 정보가 올바르지 않습니다.");
 
-    const rows = await this.repository.listGalleryLikes(scopeKey);
+    const rows = await this.repository.listGalleryLikes(scope.storageKey);
     const frameRows = rows.filter((row) => row.frameId === frameId);
     const alreadyLiked = frameRows.some((row) => row.userId === authorId);
     if (alreadyLiked) {
-      await this.repository.deleteGalleryLike(scopeKey, frameId, authorId);
+      await this.repository.deleteGalleryLike(scope.storageKey, frameId, authorId);
     } else {
-      await this.repository.insertGalleryLike({ scopeKey, frameId, userId: authorId });
+      await this.repository.insertGalleryLike({ scopeKey: scope.storageKey, frameId, userId: authorId });
     }
     const likedBy = frameRows
       .map((row) => row.userId)
