@@ -32,7 +32,7 @@ export function PanelCardCutControls({ plan, cutIndex, disabled, onMove, onSnap 
   if (!cut) return null;
   const clean = cut.kind === "clean";
   const Icon = cut.kind === "content" ? AlertTriangle : CheckCircle2;
-  const label = bi(`카드 ${cutIndex + 1}과 ${cutIndex + 2} 사이 절단선`, `Cut between card ${cutIndex + 1} and ${cutIndex + 2}`);
+  const label = bi(`${cutIndex + 1}번째 카드와 ${cutIndex + 2}번째 카드 사이 절단선`, `Cut between card ${cutIndex + 1} and ${cutIndex + 2}`);
   const status = cutKindText(cut.kind);
   return (
     <div role="group" aria-label={label} className="grid gap-2 rounded-xl border border-line bg-panel/55 p-2.5">

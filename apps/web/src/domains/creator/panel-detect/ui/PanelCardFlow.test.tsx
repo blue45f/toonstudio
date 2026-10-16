@@ -42,12 +42,12 @@ const cardCount = (): number => screen.getByRole("list", { name: "카드 목록"
 const settled = (): Promise<void> => waitFor(() => expect(screen.queryByText("카드를 다시 나누는 중…")).toBeNull());
 
 function sliderOf(cutNumber: number): HTMLInputElement {
-  const slider = screen.getByRole("slider", { name: `카드 ${cutNumber}과 ${cutNumber + 1} 사이 절단선` });
+  const slider = screen.getByRole("slider", { name: `${cutNumber}번째 카드와 ${cutNumber + 1}번째 카드 사이 절단선` });
   if (!(slider instanceof HTMLInputElement)) throw new Error("슬라이더가 아니에요.");
   return slider;
 }
 
-const groupOf = (cutNumber: number): HTMLElement => screen.getByRole("group", { name: `카드 ${cutNumber}과 ${cutNumber + 1} 사이 절단선` });
+const groupOf = (cutNumber: number): HTMLElement => screen.getByRole("group", { name: `${cutNumber}번째 카드와 ${cutNumber + 1}번째 카드 사이 절단선` });
 
 interface SliceCall {
   readonly resolve: (analysis: CardSliceAnalysis) => void;
@@ -123,7 +123,7 @@ describe("카드 미리보기와 조정", () => {
     expect(previews).toHaveLength(4);
     expect(screen.getAllByRole("group", { name: /사이 절단선$/ })).toHaveLength(3);
     for (const number of [1, 2, 3]) expect(groupOf(number).textContent).toContain("여백에서 잘라요");
-    expect(screen.queryByRole("group", { name: "카드 4과 5 사이 절단선" })).toBeNull();
+    expect(screen.queryByRole("group", { name: "4번째 카드와 5번째 카드 사이 절단선" })).toBeNull();
     // 폭 720 → 1080 으로 키우므로 흐려질 수 있다는 안내가 보인다.
     expect(screen.getByText(/원고 폭이 1080px 보다 좁아 1\.5배로 키워요/)).toBeTruthy();
   });

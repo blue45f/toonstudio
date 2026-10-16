@@ -244,13 +244,13 @@ describe("컷 확인과 고치기 단계", () => {
     renderFlow();
     await reviewHeading();
     const [a, b, c] = panelIds();
-    fireEvent.click(button("컷 1을 뒤로"));
+    fireEvent.click(button("1번 컷을 뒤로"));
     expect(panelIds()).toEqual([b, a, c]);
     expect(announcer()).toBe("1번 컷을 뒤로 옮겼어요.");
-    fireEvent.click(button("컷 3을 앞으로"));
+    fireEvent.click(button("3번 컷을 앞으로"));
     expect(panelIds()).toEqual([b, c, a]);
-    expect((button("컷 1을 앞으로") as HTMLButtonElement).disabled).toBe(true);
-    expect((button("컷 3을 뒤로") as HTMLButtonElement).disabled).toBe(true);
+    expect((button("1번 컷을 앞으로") as HTMLButtonElement).disabled).toBe(true);
+    expect((button("3번 컷을 뒤로") as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("읽기 순서를 만화로 바꾸면 윗줄을 오른쪽부터 읽도록 컷이 다시 정렬된다", async () => {

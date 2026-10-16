@@ -79,7 +79,7 @@ export function PanelCutList(props: PanelCutListProps): ReactElement {
               type="button"
               onClick={() => props.onMove(panel.id, -1)}
               disabled={index === 0}
-              aria-label={bi(`컷 ${order}을 앞으로`, `Move panel ${order} earlier`)}
+              aria-label={bi(`${order}번 컷을 앞으로`, `Move panel ${order} earlier`)}
               className={PANEL_SMALL_BUTTON}
             >
               <ArrowUp size={15} aria-hidden="true" />
@@ -88,7 +88,7 @@ export function PanelCutList(props: PanelCutListProps): ReactElement {
               type="button"
               onClick={() => props.onMove(panel.id, 1)}
               disabled={index === panels.length - 1}
-              aria-label={bi(`컷 ${order}을 뒤로`, `Move panel ${order} later`)}
+              aria-label={bi(`${order}번 컷을 뒤로`, `Move panel ${order} later`)}
               className={PANEL_SMALL_BUTTON}
             >
               <ArrowDown size={15} aria-hidden="true" />
