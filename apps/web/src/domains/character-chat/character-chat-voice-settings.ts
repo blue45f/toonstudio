@@ -65,7 +65,27 @@ function readStored(): CharacterChatVoiceSettings {
 }
 
 let current: CharacterChatVoiceSettings | null = null;
+/** 마지막 저장이 실패했다(용량 초과·저장 금지). 이때 저장소의 값은 낡았으므로 메모리 값을 기준으로 삼는다. */
+let persistFailed = false;
 const listeners = new Set<() => void>();
+
+/**
+ * 바꾸기 전의 기준값. 저장소를 읽을 수 있고 마지막 저장이 성공했다면 저장소 값이 기준이다(다른 탭이 바꾼 항목을
+ * 덮지 않는다). 저장소가 막혔거나 읽지 못하거나 저장된 값이 없거나 마지막 저장이 실패했다면 이번 방문의 메모리 값이
+ * 기준이다 — 그렇지 않으면 앞서 켠 항목이 다음 항목을 바꿀 때 조용히 기본값으로 되돌아간다.
+ */
+function mergeBase(): CharacterChatVoiceSettings {
+  const memory = current ?? DEFAULT_CHARACTER_CHAT_VOICE_SETTINGS;
+  if (persistFailed) return memory;
+  const storage = browserStorage();
+  if (!storage) return memory;
+  try {
+    const raw = storage.getItem(CHARACTER_CHAT_VOICE_SETTINGS_KEY);
+    return raw === null ? memory : parseSettings(raw);
+  } catch {
+    return memory;
+  }
+}
 
 export function getCharacterChatVoiceSettings(): CharacterChatVoiceSettings {
   if (current === null) current = readStored();
@@ -79,16 +99,18 @@ export function subscribeCharacterChatVoiceSettings(listener: () => void): () =>
   };
 }
 
-/** 일부 값만 바꾼다. 다른 탭에서 바뀐 값을 덮지 않도록 쓰기 직전에 저장소 값을 다시 읽는다. */
+/** 일부 값만 바꾼다. 다른 탭에서 바뀐 값을 덮지 않도록 쓰기 직전에 저장소 값을 다시 읽는다(`mergeBase`). */
 export function updateCharacterChatVoiceSettings(patch: Partial<CharacterChatVoiceSettings>): void {
-  const next: CharacterChatVoiceSettings = { ...readStored(), ...patch };
+  const next: CharacterChatVoiceSettings = { ...mergeBase(), ...patch };
   current = next;
   const storage = browserStorage();
   if (storage) {
     try {
       storage.setItem(CHARACTER_CHAT_VOICE_SETTINGS_KEY, JSON.stringify(next));
+      persistFailed = false;
     } catch {
-      // 용량 초과·저장 금지: 이번 방문 동안은 메모리 값으로 동작한다.
+      // 용량 초과·저장 금지: 이번 방문 동안은 메모리 값으로 동작한다(다음 바꾸기도 메모리 값을 기준으로 한다).
+      persistFailed = true;
     }
   }
   listeners.forEach((listener) => listener());
@@ -97,6 +119,7 @@ export function updateCharacterChatVoiceSettings(patch: Partial<CharacterChatVoi
 /** 테스트에서 모듈 상태와 저장소를 처음 상태로 되돌린다. */
 export function resetCharacterChatVoiceSettingsForTests(): void {
   current = null;
+  persistFailed = false;
   try {
     browserStorage()?.removeItem(CHARACTER_CHAT_VOICE_SETTINGS_KEY);
   } catch {
