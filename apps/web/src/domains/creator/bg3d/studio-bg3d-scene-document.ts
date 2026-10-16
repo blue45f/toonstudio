@@ -26,6 +26,7 @@ import {
 } from "./studio-bg3d-camera-orientation";
 import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
 import { normalizeStudioBg3dHierarchyParents } from "./studio-bg3d-hierarchy";
+import { snapshotStudioBg3dShotOutput } from "./studio-bg3d-shot-output-snapshot";
 import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
 import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 
@@ -2067,11 +2068,7 @@ export function captureStudioBg3dShot(
       key: { ...document.lighting.key },
       fill: { ...document.lighting.fill },
     },
-    output: {
-      ...document.output,
-      line: { ...document.output.line },
-      tone: { ...document.output.tone },
-    },
+    output: snapshotStudioBg3dShotOutput(document.output),
   };
   return canonicalDocumentForShotHelper({
     ...withoutActiveShot(document),
