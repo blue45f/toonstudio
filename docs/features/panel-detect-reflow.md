@@ -1,0 +1,165 @@
+# 컷 자동 감지·세로 재배열 가져오기와 카드뉴스 슬라이스
+
+- 상태: **current** — 소스와 테스트로 확인되는 현재 동작이다. 아래 "남은 일"만 **target**이다.
+- 확인일: 2026-10-16 (`apps/web/src/domains/creator/panel-detect/`)
+- 진입: Studio **가져오기** 화면(`/studio/import`)의 "원고 이미지 도우미" 구역(`StudioImportIntegratedPage` → `PanelImportEntry`). 새 라우트·서버 API·DB·런타임 의존성은 없다.
+- 범위: 로컬 이미지 한 장(PNG·JPG·WebP)에서 컷 사각형을 찾아 고치고, 690/720px 세로 스트립으로 다시 배열해 Studio 문서의 컷으로 넣거나 PNG 묶음으로 받는다. 그리고 긴 세로 원고 한 장을 4:5 카드(1080×1350) 여러 장으로 잘라 ZIP(PNG)으로 내보낸다. PSD 레이어·여러 장 이어 붙이기·ZIP/CBZ 입력·OCR·말풍선 인식은 포함하지 않는다.
+
+## 한눈에 보기
+
+두 모드 모두 **이 브라우저 안에서만** 처리한다. 이미지는 서버로 보내지 않고, 소스에는 네트워크 호출이 없다(`panel-detect-local-only.test.ts`가 폴더 전체를 정적으로 검사한다). 시작 전에 "내가 권리를 가진 원고이거나 이용 허락을 받은 원고입니다" 확인이 필요하고, 이 확인은 결과물(Studio 문서의 컷 이미지, ZIP의 안내문·매니페스트)에 기록으로 남는다.
+
+| 모드 | 하는 일 | 결과 |
+| --- | --- | --- |
+| 컷 자동 감지 · 세로 재배열 | 여백(거터)을 따라 컷 경계를 찾고 → 이미지 위에서 추가·삭제·끌기·순서 편집 → 폭 규격·간격·배율을 골라 재배열 → 손실 보고를 확인 | Studio 문서(컷마다 프레임 + 이미지) 또는 페이지 PNG + 권리 확인 기록 ZIP |
+| 카드뉴스 슬라이스 (4:5) | 긴 세로 원고에서 여백이 있는 줄을 찾아 카드 경계를 정하고 → 카드별 미리보기·직접 조정 | `README.txt` · `manifest.json` · `cards/card-01.png …` ZIP |
+
+## 사용자 흐름
+
+1. **권리 확인과 이미지 선택(1단계).** 체크박스에 동의해야 파일 선택이 열린다. 출처·이용 허락 메모(선택, 300자)를 적을 수 있다. 확인 전에는 파일 입력이 닫혀 있고, 이벤트가 새어 들어와도 처리 단계가 다시 확인을 요구하며, 데이터 계층(`createPanelImportRights`)도 `confirmed: true`가 아니면 기록을 만들지 않는다.
+2. **컷 확인과 고치기(재배열 모드 2단계).** 감지는 Worker에서 돌고 진행 안내·취소·다시 시도를 보여 준다. 실패해도 "컷 직접 그리기"로 같은 흐름을 이어갈 수 있다. 캔버스에서 컷 이동·가장자리 크기 조절·새 컷 그리기·가로/세로선으로 나누기·합치기·삭제·순서 바꾸기, 읽기 순서(만화/코믹/웹툰)와 여백 민감도(섬세/보통/넓은 여백만) 바꾸기를 하고 되돌리기/다시하기를 쓴다. 키보드(방향키·Shift=1px·Alt=크기·Delete·Esc, Ctrl/⌘+Z)와 숫자 입력으로도 모두 고칠 수 있고, 끌 수 없는 환경에서는 "전체를 한 컷으로" 단추로 첫 컷을 만든 뒤 숫자 입력과 선 나누기로 다듬는다.
+3. **세로 스트립으로 재배열(3단계).** 폭 690/720px, 컷 사이 간격(0~400, 표준 80), 배율(폭에 맞춤/원본 크기 유지)을 고르면 미리보기와 **원본과 달라지는 점(손실 보고)** 이 즉시 바뀐다. 경고 항목이 있으면 확인 체크를 해야 삽입·내려받기가 열리고, 설정이 바뀌어 보고가 달라지면 확인이 자동으로 무효가 된다.
+4. **삽입 또는 내려받기.** "Studio 문서로 삽입"은 컷 이미지를 새로 만들어 프로젝트 JSON으로 묶고 기존 가져오기 전달표에 올린 뒤 편집기(`/studio/canvas?importHandoff=…`)로 이동한다. "PNG 묶음(ZIP) 내려받기"는 페이지 PNG와 `rights-receipt.txt`를 담는다. 둘 다 진행률·취소·오류 안내·다시 시도가 있다.
+5. **카드뉴스 모드.** 이미지를 고르면 카드 자리를 계산하고(진행·취소·재시도), 카드별 4:5 미리보기와 카드 수 조절, 절단선 슬라이더·±1/±10행·"가까운 여백으로" 붙이기, 카드 안 위치(가운데/위쪽)를 보여 준다. ZIP(PNG) 내보내기 뒤에는 "다시 내려받기"가 남는다.
+
+## 구조
+
+```text
+file → loadPanelSourceImage       panel-source-image.ts     형식·크기를 디코딩 전에 검사 → SHA-256 → PanelDrawable
+     → readRaster                 밴드 단위로 RGBA 를 읽으며 양보·취소 확인
+     → detectPanelsInBackground   panel-detect-client.ts    Worker(취소·바깥 타이머·결과 검증), Worker 가 없을 때만 direct
+         → [Worker] panel-detect.worker.ts → detectPanels (panel-detect-core.ts, 순수 generator 알고리즘)
+     → PanelDetectResult → createPanelEditState / panel-detect-edit.ts (순수 편집 모델 + 되돌리기 이력)
+     → planPanelReflow            panel-reflow-plan.ts      폭·간격·배율·페이지 분할 + 손실 보고
+     → renderReflowCuts / Pages   panel-reflow-render.ts    원본을 읽기만 하고 새 PNG 를 굽는다
+     → buildStudioDocumentFromReflow → registerPanelStudioHandoff → navigate   (Studio 문서)
+     → buildReflowPngBundle                                  (PNG 묶음 ZIP)
+
+file → readRaster → sliceCardsAsync (panel-card-slice.ts: 행 균일도 프로필 → DP 로 절단 위치 선택)
+     → renderCardNewsCards (panel-card-render.ts) → buildCardNewsBundle (panel-card-export.ts) → downloadBlob
+```
+
+| 모듈 | 역할 |
+| --- | --- |
+| `panel-detect-types.ts` | 좌표 규약, 한도, 결과·오류·경고 계약(DOM·React·Worker 무의존) |
+| `panel-detect-raster/-profile/-components/-leaf/-assemble/-confidence/-order/-tighten/-runtime/-core.ts` | 알고리즘 본체(아래 "알고리즘") |
+| `panel-detect-worker-protocol.ts`, `panel-detect.worker.ts`, `panel-detect-client.ts` | Worker 메시지 계약·진입점·클라이언트(취소, 시간 제한, 응답 검증 `parsePanelDetectResult`) |
+| `panel-detect-edit.ts`, `panel-editor-state.ts`, `panel-canvas-geometry.ts` | 편집 모델·이력, 화면 상태 리듀서, 좌표 계산(전부 순수) |
+| `panel-reflow-plan.ts`, `panel-reflow-render.ts`, `panel-reflow-output.ts` | 재배열 계획·손실 보고, PNG 굽기, 결과물(문서·ZIP) 만들기 |
+| `panel-studio-document.ts`, `panel-studio-handoff.ts` | Studio 프로젝트 JSON 만들기, 가져오기 전달표 등록 |
+| `panel-import-rights.ts` | 권리 확인 기록(스키마 `toonstudio.panel-import-rights` v1) |
+| `panel-card-slice-*.ts`, `panel-card-slice.ts`, `panel-card-render.ts`, `panel-card-export.ts` | 카드뉴스 분석·계획·수동 조정·렌더·ZIP |
+| `panel-canvas-adapter.ts`, `panel-render-core.ts`, `panel-source-image.ts` | 브라우저(디코딩·캔버스)에 닿는 유일한 경계. 나머지는 `PanelDrawable`/`PanelRenderSurface` 인터페이스만 본다 |
+| `ui/` | 화면. 브라우저 기능은 `PanelImportEnvironment`(`ui/panel-import-env.ts`)로만 부른다 |
+
+기존 코드와 이어지는 곳은 네 군데뿐이다: 가져오기 화면의 한 줄(`StudioImportIntegratedPage`), 컷 이미지 요소의 `sourceRights` 필드(`studio-element-model.ts`), 권리 명세 투영(`studio-asset-rights-projection.ts`), 그리고 편집기의 기존 프로젝트 JSON 가져오기 전달표(`studio-import-handoff.ts`)다. 편집기 본체는 건드리지 않았다.
+
+## 알고리즘 (의존성 없는 여백 기반 XY-cut)
+
+순수 TypeScript, 난수·시계 의존 없음. 같은 입력과 옵션은 배열 종류(`Uint8ClampedArray` 등)와 무관하게 같은 결과를 낸다.
+
+1. **여백색 추정.** 이미지 전체의 균일한 행·열 표본에서 여백색(흰·검정·단색·투명)을 고른다. 여백이 하나도 없으면(전면 삽화) 쪼개지 않고 이미지 전체를 낮은 신뢰도의 컷 하나로 돌려준다.
+2. **내용 마스크.** 여백색과 채널별 허용 오차(기본 28)보다 다르면 "내용"으로 본다. 입력이 분석 상한(기본 4,000,000픽셀)을 넘으면 정수 배율로 줄여 분석하고, 결과 좌표는 원본으로 되돌린 뒤 ±1px 안으로 다듬는다.
+3. **재귀 분할.** 영역을 바깥 여백까지 잘라 낸 뒤 행 투영으로 위아래, 못 나누면 열 투영으로 좌우로 나눈다(내용 비율이 1.2% 이하인 줄을 여백 줄로 보고, 그런 줄이 최소 두께 이상 이어질 때만). 최소 두께는 짧은 변 대비 섬세 0.4%·보통 0.7%·넓은 여백만 1.6%(하한 3~4px)다. 최대 깊이 8.
+4. **잎 판정.** 더 나뉘지 않는 영역은 컷으로 받거나(`panel`), 너무 작거나 비었으면 제외 목록(`ignored`)에 남기거나, 서로 이어지지 않은 큰 덩어리의 경계 상자가 가로·세로로 모두 겹치면 **검출 불가(`undetectable`)** 로 보고한다. 이 경우 컷을 지어내지 않는다.
+5. **말풍선·효과음이 컷 사이 여백을 막은 경우.** 자동으로 쪼개지 않고 `bridged-gutter-suspected` 경고와 분할 제안 위치(`suggestions`)만 낸다. 사용자가 확인해서 적용한다.
+6. **신뢰도·읽기 순서.** 컷 변마다 여백 두께·내용 밀도·크기·경고 벌점으로 0~0.99 점수를 매기고(높음 ≥0.75, 보통 ≥0.5), 만화(우→좌)·코믹(좌→우)·웹툰(위→아래, 같은 줄만 좌→우) 순서를 붙인다. L 자 배치는 묶음 단위로 읽는다.
+7. **실행 규칙.** 알고리즘은 generator 하나이고 동기·비동기 드라이버가 구동한다. 시간 상한(기본 10초)을 넘으면 부분 결과 없이 `timeout`, 취소 신호가 오면 `cancelled`, 컷이 120개를 넘으면 조용히 자르지 않고 `too-many-panels`로 끝난다.
+
+### 정확도 근거
+
+`panel-detect-accuracy.test.ts`는 시드 고정 난수로 만든 **단두대 배치 48종**(흰·검정·파스텔·투명 여백, 세로·가로 페이지, 컷 테두리 유무)에서 재현율·정밀도 100%, 경계 오차 ≤ 1px를 요구하고, 같은 배치를 4배 줄여 분석해도 컷 개수는 같고 오차는 4px 이내임을 요구한다. `panel-detect-core.test.ts`는 격자·L자·웹툰 스트립·스캔 잡티(±10)·전면 삽화·작은 조각 제외·깊이 한계·사선 컷·겹침·말풍선 가로막힘·결정성·시간/취소/컷 수 상한을 다룬다.
+
+이 수치는 **합성 이미지** 결과이며 실제 스캔본의 정확도를 보증하지 않는다. 실제 원고 모음으로 측정한 값은 아직 없다.
+
+### 한계와 수동 보정이 필요한 경우
+
+| 경우 | 동작 | 사용자가 할 일 |
+| --- | --- | --- |
+| 자유 형태(사선·곡선) 컷 | 사각형으로만 다룬다. 사선 여백은 검출 불가 영역으로 표시 | 영역을 눌러 한 컷으로 쓰거나 사각형을 직접 그린다. 재배열 결과는 사각형 잘라내기이므로 컷 밖 모서리가 함께 들어온다 |
+| 컷이 서로 겹침 | 겹침 의심 경고·낮은 신뢰도 또는 검출 불가 | 컷 위치를 직접 고친다. 겹친 영역은 결과에 두 번 나온다(손실 보고 `cuts-overlap`) |
+| 기울어진 스캔 | 여백이 축에 평행하지 않아 컷을 못 나눈다 | 외부 도구로 기울기를 먼저 바로잡거나 컷을 직접 그린다. 자동 기울기 보정은 없다 |
+| 말풍선·효과음이 여백을 가로지름 | 쪼개지 않고 분할 제안만 표시 | 제안을 눌러 적용하거나 직접 나눈다 |
+| 그라데이션·질감 있는 여백, 심한 JPEG 잡티 | 여백색 허용 오차(28)를 넘으면 여백으로 못 본다 | 민감도를 바꿔 다시 찾거나 직접 그린다 |
+| 전면 삽화·펼침면 | 전체를 낮은 신뢰도의 컷 하나로 돌려준다 | 필요하면 직접 나눈다 |
+| 매우 큰 이미지 | 분석은 줄여서 하고(±1px 보정) 결과 안내에 `downsampled`를 표시 | 경계가 몇 픽셀 어긋날 수 있어 확대해서 확인한다 |
+
+### 의존성 평가: 자체 구현 vs OpenCV(.js)
+
+- **현재 선택: 의존성 없는 자체 구현.** 대상이 축에 평행한 여백으로 나뉘는 만화·웹툰 페이지이고, 이 경우 투영(XY-cut)만으로 충분히 정확하다(위 정확도 근거). 번들·메모리·라이선스·보안 검토 비용이 없고, 결과가 결정적이라 시험으로 고정할 수 있으며, 취소·시간 상한·Worker 격리를 직접 통제한다.
+- **OpenCV.js가 더 낫거나 필요해지는 경우:** 윤곽선(contour)·허프 직선·최소 외접 회전 사각형으로 기울어진 컷, 곡선·사선 경계, 겹친 컷을 다루는 것. 대가는 WASM 번들 추가(OpenCV.js는 수 MB 규모이며 이 문서 작성 시 직접 측정하지 않았다), 이미지 복사본(Mat) 메모리, 새 런타임 의존성(Apache-2.0)과 그에 따른 번들·라이선스·보안 점검이다. 이 변경은 새 런타임 의존성을 추가하지 않는 조건이라 채택하지 않았다.
+- **재검토 기준(target):** 검출 불가·사선 영역이 실제 사용에서 수동 보정의 큰 부분을 차지한다고 확인될 때. 도입한다면 Worker 안의 지연 로딩 모듈로 두고, 이미 `undetectable`로 보고된 영역에만 적용해 `PanelDetectResult` 계약을 바꾸지 않는다. 지금은 이를 판단할 사용 데이터가 없다(이미지를 서버로 보내지 않으므로 수집하지도 않는다).
+
+## 재배열 규칙
+
+- 폭 규격은 **720px**(Studio 문서 폭)와 **690px**(양옆 15px씩 여백을 두고 가운데 배치) 둘이다. 간격은 컷 사이에만 들어가며 표준 80px, 범위 0~400.
+- 배율 "폭에 맞춤"은 모든 컷을 같은 폭으로 늘이거나 줄이고, "원본 크기 유지"는 키우지 않고 가운데에 둔다.
+- 페이지는 높이 8,000px을 넘기기 전에 **컷 경계에서만** 나눈다(Studio 웹툰 새 문서 기본 길이). 배율을 적용한 컷 한 장의 높이가 100,000px(Studio 문서 캔버스 높이 한도)를 넘으면 계획 단계에서 `panel-too-tall`로 거절하고 이유를 보여 준다. 200쪽 한도(`too-many-pages`)와 결과 픽셀 합계 8천만 상한(`output-too-large`)도 계획 단계에서 검사한다.
+- 컷마다 PNG 를 새로 만든다(그림면 한 변 16,384px·1,677만 픽셀 이내). Studio 문서에 담을 PNG 합계는 48MiB 이하여야 하고 프로젝트 JSON 은 96MiB 이하여야 한다.
+- **원본은 읽기만 한다.** 파일을 바꾸거나 덮어쓰지 않으며 결과는 항상 새 이미지·새 문서 사본이다.
+
+### 손실 보고(원본과 달라지는 점)
+
+`source-untouched`(알림), `outside-cuts-dropped`(경고, 컷 밖 영역 %), `upscaled`(경고, 개수·최대 배율), `downscaled`(알림), `recompressed-lossless`(알림, PNG), `cuts-overlap`(경고), `centered-in-document`(알림, 690px), `split-into-pages`(알림), `undetectable-excluded`(경고), `ignored-excluded`(알림), `low-confidence-cuts`(경고). **경고가 하나라도 있으면 사용자 확인이 있어야** 삽입·내려받기가 열린다. 확인은 보고 내용의 서명에 묶여서 설정이 바뀌면 다시 요구한다.
+
+## Studio 문서 삽입 경로
+
+1. 컷마다 PNG 를 만들어 `data:` 주소로 담고, 페이지(분할 단위)마다 컷 **프레임**(아래, 선 없음, 바탕색 = 감지한 여백색)과 컷 **이미지**(위)를 같은 위치·크기로 놓는다. 위치는 `문서 가로 오프셋 + 계획 좌표`다. 페이지 바탕색은 여백색, 컷 이름은 "컷 N"·"컷 N 프레임"이다.
+2. 프로젝트 JSON 은 편집기가 읽는 형식(`parseStudioProjectFile`·`parseStudioProjectDocument`)을 그대로 통과한다. 파일은 단일 사용·5분 유효 전달표(`registerStudioImportHandoff`)에 올리고 `/studio/canvas?importHandoff=<토큰>`으로 이동하면 편집기의 기존 프로젝트 JSON 가져오기가 받는다.
+3. 편집기의 `StudioImportHandoffHost`가 전달표에서 파일을 한 번만 꺼내 기존 프로젝트 JSON 가져오기 처리기(`onProjectJson`)에 넘긴다. 이 기능은 **프로젝트 문서를 통째로 불러오게 할 뿐 열려 있는 문서에 컷을 이어 붙이지 않는다.** 열린 문서와의 관계(덮어쓰기 확인 등)와 협업 잠금 중 대기, 전달이 만료됐을 때의 안내는 그 처리기의 기존 규칙을 따르며 이 기능이 바꾸지 않는다.
+
+## 권리 관문과 스캔 책임
+
+- 확인 문구: "내가 권리를 가진 원고이거나 이용 허락을 받은 원고입니다". 모든 모드에서 필수이며 건너뛰는 길이 없다.
+- 기록: 확인 시각, 사용자 메모(선택), 원본 **파일 이름·형식·크기·가로세로·SHA-256**, 도구 이름·버전. 이미지 바이트나 외부 주소는 담지 않는다.
+- 어디에 남나: 모든 컷 이미지 요소의 `sourceRights`, 프로젝트 설명(`description`), ZIP의 `rights-receipt.txt`·`manifest.json`. 기존 권리 명세 투영은 이를 라이선스 `custom`("사용자 확인")·자산 ID `panel-import:<SHA-256 앞 24자>` 하나로 묶는다.
+- **이 기록은 사용자의 자기 확인일 뿐이다.** 법률 자문, 권리 인증, 제3자의 권리 보유 보증이 아니다. 스캔본·번역본·팬 작품 등 다른 사람의 저작물은 이용 허락이 필요할 수 있고, 게시 전 원문 사용권과 대상 플랫폼의 최신 정책을 확인할 책임은 사용자에게 있다. 서비스는 권리 여부를 판별하지 않는다.
+- 외부 전송 없음: 원본 이미지, 컷, 카드, 권리 기록 모두 이 브라우저 안에서만 만들어지고 사용자가 내려받거나 편집기로 넘길 때만 밖으로 나간다.
+
+## 카드뉴스 슬라이스 규칙
+
+- 카드는 **1080×1350(4:5)** 고정이고, 원본 폭을 카드 폭에 맞추는 한 가지 배율로 줄이거나 늘린다(폭이 1080이 아니면 안내). 카드 한 장에 들어가는 원본 높이는 `floor(1350 × 원본 폭 ÷ 1080)`이다.
+- **행 프로필:** 각 행의 아홉 표본 열에서 기준색을 잡고 행 전체의 일치 비율을 잰다. 0.992 이상이면 `clean`(여백), 0.96 이상이면 `soft`(거의 빈 줄), 아니면 `content`. 알파 16 이하는 투명.
+- **절단 위치:** 후보 줄(약 카드 높이 ÷ 180마다 하나)에서 동적 계획법으로 조각 길이가 카드 높이의 35% 이상 100% 이하가 되도록, 절단 품질(여백 우선, 내용 가장자리에서 떨어질수록 좋음)과 채움·카드 수 벌점의 합이 최소가 되게 고른다. 카드 수는 자동으로 `ceil(원본 높이 ÷ 카드 원본 높이)`부터 `max(+2, ×1.5)`까지 살펴보며, 사용자가 직접 고를 수도 있다(최대 60장).
+- **경고:** 내용을 가로지르는 절단이 있으면 `content-cuts`, 확대/축소 배율 안내, 20장 초과 시 `over-carousel-limit`(인스타그램 캐러셀 한도, 막지는 않음). 여백이 없을 때는 같은 간격으로 나누는 대체 계획을 쓴다.
+- **직접 조정:** 절단선마다 움직일 수 있는 범위(양쪽 조각이 카드 높이를 넘지 않고 너무 짧지 않게)를 슬라이더로 주고, ±1/±10행 단추와 "가까운 여백으로"를 쓴다. 카드 수를 다시 정하면 직접 옮긴 절단선은 사라진다.
+- **내보내기:** `README.txt`(카드 순서·원본·권리 확인 기록), `manifest.json`(스키마 `toonstudio.card-news-bundle/v1`: 카드별 원본 행 범위·절단 품질·직접 옮김 여부·경고), `cards/card-01.png …`(장수 자릿수에 맞춰 0 채움). ZIP 은 기존 패키지 작성기(CRC-32·취소·메모리 한도)로 만든다.
+
+## 자원 한도와 실행 위치
+
+| 항목 | 값 | 근거 |
+| --- | --- | --- |
+| 원본 파일 | 48MiB | `PANEL_IMPORT_LIMITS.maxFileBytes` |
+| 디코딩 픽셀 | 데스크톱 5천만, 메모리 4~8GB 기기 3,200만, 터치·4GB 이하 1,600만 | `panelImportPixelLimit` (헤더 크기로 디코딩 **전에** 검사) |
+| 분석 | 4,000,000픽셀 초과는 정수 배율 다운샘플, 컷 120개·깊이 8·10초 상한 | `PANEL_DETECT_LIMITS` |
+| 카드 분석 | 15초 상한, 최대 60장 | `CARD_SLICE_LIMITS` |
+| 실행 위치 | 컷 감지는 Worker. 시작·실행 실패는 실패로 끝나며 **메인 스레드로 몰래 다시 시도하지 않는다.** `Worker` 생성자가 없는 환경에서만 direct 로 실행 | `panel-detect-client.ts` |
+| 취소 | AbortSignal. 컷·카드·페이지 하나가 끝날 때마다 확인하고 부분 결과는 버린다. 화면이 사라지면 진행 중 작업도 취소한다 | `ui/use-panel-job.ts` |
+
+## 접근성과 상태 화면
+
+- 모든 단계에 로딩(스켈레톤+진행률), 비어 있음, 오류(이유+다시 시도), 취소 상태가 있다. 작업대 코드는 시작을 누른 뒤에 지연 로딩하는데, 불러오지 못하면 가져오기 화면 전체가 아니라 이 구역만 안내로 바뀌고 "다시 시도"로 새로 불러온다(`PanelImportEntry`). 오류는 `role="alert"`, 진행·결과는 `role="status"`로 읽히고, 색만으로 상태를 전하지 않는다.
+- 컷은 `role="button"`에 번호·신뢰도·위치·크기를 읽어 주는 이름이 있고 키보드로 이동·크기 조절·삭제할 수 있다. 끌기가 어려운 환경을 위해 숫자 입력과 순서·삭제 단추가 있다. 편집 결과는 숨은 `role="status"`로 안내한다. 단계가 바뀌면 새 제목으로 포커스를 옮긴다.
+- 읽기 순서·민감도·폭·배율·카드 위치처럼 숨긴 라디오를 감싼 칩은 안쪽 입력의 `:focus-visible`을 라벨 테두리로 보여 준다(`ui/panel-import-styles.ts`, 라벨 자신의 포커스는 키보드 위치를 알려 주지 못하기 때문이다). 숫자 입력칸은 받아들이지 못한 값(빈 칸·최소 크기 미만)을 현재 컷의 값으로 되돌려 화면과 실제 컷이 어긋나지 않게 한다.
+- 모든 문구는 한글·영문 쌍(`ui/panel-import-copy.ts`)이며 언어를 바꾸면 열려 있는 화면도 바뀐다(이 폴더의 컴포넌트는 `"use no memo"`로 React Compiler 캐시에서 빠져 있고, 이유는 `ui/panel-import-bi.ts` 머리말에 있다).
+
+## 검증
+
+```bash
+# 저장소 루트에서. 이 기능 폴더의 시험만 실행한다(전체 vitest 가 아니다).
+pnpm exec vitest run apps/web/src/domains/creator/panel-detect
+```
+
+- 알고리즘: `panel-detect-core/-accuracy/-order/-worker.test.ts`
+- 편집·계획: `panel-detect-edit`, `panel-editor-state`, `panel-canvas-geometry`, `panel-reflow-plan`, `panel-reflow-render`
+- 입출력·권리: `panel-source-image`, `panel-import-rights`, `panel-studio-document`(편집기 파서 통과·권리 투영·전달표), `panel-reflow-output`, `panel-card-slice`, `panel-card-export`(실제 ZIP 을 만들어 다시 읽음)
+- 화면(jsdom, 대역 환경): `ui/*.test.tsx` — 권리 관문, 캔버스 포인터·키보드, 감지/카드 분석의 로딩·취소·오류·재시도, 손실 확인, 삽입 이동·전달표, ZIP 내려받기, 언어 전환, 가져오기 화면 통합
+- 경계: `panel-detect-local-only.test.ts`(네트워크 API·외부 주소·Worker 생성 위치), `ui/panel-import-copy.test.ts`(모든 코드가 한글·영문으로 풀림), `ui/panel-import-styles.test.ts`(라디오 칩의 키보드 포커스 표시)
+- 이미지는 모두 코드로 만든 합성 픽셀(`panel-detect-fixtures.ts`)이다. 바이너리 픽스처와 네트워크 시험은 없다.
+
+## 남은 일 (target — 아직 구현되지 않았다)
+
+- 실제 브라우저에서의 확인(Worker 번들, 실제 디코딩·캔버스·대용량 이미지, 터치 끌기, 시각 점검)과 실제 스캔 원고 모음으로 측정한 정확도.
+- 여러 장 이어 붙이기, ZIP/CBZ 입력, 다른 열린 문서에 컷 이어 붙이기.
+- 기울기 자동 보정, 자유 형태 컷, 겹친 컷 처리(필요가 확인되면 위 OpenCV 지연 로딩 검토).
+- 컷 이미지 한 장이 한 변 16,384px을 넘는 초고해상도 원고(지금은 오류로 안내하고 배율 또는 컷 나누기를 권한다).
