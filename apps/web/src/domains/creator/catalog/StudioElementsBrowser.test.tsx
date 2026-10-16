@@ -2,12 +2,17 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createStudioCharmBarStore, resetStudioCharmBarStoreForTests } from "../charm/studio-charm-bar-store";
+import { createStudioCharmId, normalizeStudioCharmBarState } from "../charm/studio-charm-model";
 import { createStudioUiPreferencesRepository } from "../studio-ui-preferences-sqlite";
 import { StudioElementsPanel } from "../StudioElementsPanel";
 
 import { createStudioCatalogPreferencesRepository } from "./studio-catalog-preferences";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  resetStudioCharmBarStoreForTests();
+});
 function setup() {
   const values = new Map<string, string>();
   const store = { get: async (k: string) => values.get(k) ?? null, set: async (k: string, v: string) => { values.set(k, v); }, delete: async (k: string) => { values.delete(k); } };
@@ -25,6 +30,25 @@ describe("elements detail and filtering", () => {
     expect(within(dialog).getByText(/이미지 요소/)).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "캔버스에 추가" }));
     expect(h.onAdd).toHaveBeenCalledOnce(); expect(h.onAdd.mock.calls[0][0].id).toBe("shape-superellipse");
+  });
+  it("offers pinning to the charm bar from the detail view without inserting anything", async () => {
+    const stored = normalizeStudioCharmBarState({ version: 1, charms: [], open: false, starterSettled: true });
+    const charmBar = createStudioCharmBarStore({
+      acquire: async () => ({ loadCharmBar: async () => stored, saveCharmBar: async () => undefined }),
+    });
+    resetStudioCharmBarStoreForTests(charmBar);
+    const h = setup();
+    fireEvent.click(screen.getByRole("button", { name: "슈퍼타원 상세 미리보기" }));
+    const dialog = screen.getByRole("dialog", { name: "슈퍼타원" });
+    const pin = within(dialog).getByRole("button", { name: "참 바에 고정" });
+    expect(pin.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(pin);
+    expect(charmBar.getSnapshot().state.charms).toEqual([createStudioCharmId("element", "shape-superellipse")]);
+    expect(charmBar.getSnapshot().state.open).toBe(true);
+    expect(pin.getAttribute("aria-pressed")).toBe("true");
+    expect(h.onAdd).not.toHaveBeenCalled();
+    fireEvent.click(pin);
+    expect(charmBar.getSnapshot().state.charms).toEqual([]);
   });
   it("filters favorites without inserting and restores durable selection on remount", async () => {
     const h = setup();

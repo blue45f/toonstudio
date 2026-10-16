@@ -413,6 +413,7 @@ describe("studioTranslationTextContains — 단어 경계 인식 부분 문자�
     expect(studioTranslationTextContains("선배를 만났다", "선배")).toBe(true);
     expect(studioTranslationTextContains("先輩が来た", "先輩")).toBe(true);
     expect(studioTranslationTextContains("anything", "")).toBe(false);
+    expect(studioTranslationTextContains("anything", "   ")).toBe(false);
   });
 
   it("영어 복수형·소유형과 하이픈 표기는 같은 말로 보되, 다른 단어에는 걸리지 않는다", () => {
@@ -427,6 +428,15 @@ describe("studioTranslationTextContains — 단어 경계 인식 부분 문자�
     expect(studioTranslationTextContains("Sunbae", "Sun")).toBe(false);
     // 3글자 미만은 굴절을 허용하지 않는다 — "us" 가 "uses" 에 걸리지 않게.
     expect(studioTranslationTextContains("He uses it", "us")).toBe(false);
+  });
+
+  it("대시뿐인 용어는 대시를 그대로 둔 표기로 비교한다 — 공백으로 바뀌어 빈 용어가 되면 영영 걸리지 않는다", () => {
+    expect(studioTranslationTextContains("그는 — 하고 말했다", "—")).toBe(true);
+    expect(studioTranslationTextContains("그는 말했다", "—")).toBe(false);
+    expect(studioTranslationTextContains("Demon-King", "-")).toBe(true);
+    expect(studioTranslationTextContains("Demon King", "-")).toBe(false);
+    // 대시와 글자가 섞인 용어는 예전처럼 대시를 공백으로 보고 비교한다.
+    expect(studioTranslationTextContains("the Demon King", "demon-king")).toBe(true);
   });
 
   it("한글은 형태소 분석을 하지 않아 짧은 표기가 다른 단어 속에서도 일치한다 — 편집기가 이 한계를 밝힌다", () => {

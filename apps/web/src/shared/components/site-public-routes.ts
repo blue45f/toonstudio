@@ -1,3 +1,5 @@
+import { trimTrailingSlashes } from "../lib/trim-trailing-slashes.ts";
+
 /** Shared discovery classification for the primary navigation and creative journey. */
 export const DISCOVER_PURPOSE_PREFIXES = [
   "/discover", "/search", "/explore", "/ranking", "/recommend", "/calendar",
@@ -9,7 +11,7 @@ const PUBLIC_PAGES = new Set([
   "/discover", "/discover/works", "/search", "/explore", "/ranking", "/recommend",
   "/calendar", "/compare", "/random", "/tags", "/authors", "/insights", "/insights/resources", "/news", "/guide",
   "/research", "/research/catalog", "/research/assets", "/research/open-creation", "/research/packs", "/research/books", "/research/3d-assets", "/research/material-assets", "/research/space-assets", "/research/vam", "/research/rijksmuseum", "/research/fonts", "/research/creatures", "/research/music-metadata", "/research/archive", "/research/weather-light", "/research/open-data", "/references", "/now", "/opportunities", "/story-lab",
-  "/learn", "/learn/recipes", "/learn/glossary", "/learn/studio", "/learn/process", "/learn/careers", "/learn/education", "/learn/resources", "/learn/classroom", "/learn/trace", "/learn/classes", "/learn/contract-checklist",
+  "/learn", "/learn/recipes", "/learn/glossary", "/learn/studio", "/learn/process", "/learn/careers", "/learn/education", "/learn/accessibility", "/learn/resources", "/learn/classroom", "/learn/trace", "/learn/classes", "/learn/contract-checklist",
   "/ecosystem/education", "/ecosystem/collaboration", "/ecosystem/fandom", "/ecosystem/library",
   "/market", "/market/browse", "/market/fit", "/market/compare",
   "/showcase", "/showcase/reviews", "/showcase/challenges", "/showcase/promo", "/create", "/create/challenges", "/create/promo",
@@ -40,7 +42,7 @@ const PUBLIC_DETAIL_ROUTES = [
 
 /** Promotional navigation belongs to public discovery and learning, never account workflows. */
 export function isPublicCreativeRoute(pathname: string): boolean {
-  const normalized = pathname.toLowerCase().replace(/\/+$/u, "") || "/";
+  const normalized = trimTrailingSlashes(pathname.toLowerCase()) || "/";
   if (PRIVATE_WORKFLOW_PAGES.has(normalized)) return false;
   return PUBLIC_PAGES.has(normalized)
     || PUBLIC_DETAIL_ROUTES.some((route) => route.test(normalized));
@@ -48,13 +50,13 @@ export function isPublicCreativeRoute(pathname: string): boolean {
 
 /** 정책 읽기는 공개 셸을 유지하되 창작 홍보와 다음 작업 제안은 덧붙이지 않는다. */
 export function supportsPublicSiteOnwardJourney(pathname: string): boolean {
-  const normalized = pathname.toLowerCase().replace(/\/+$/u, "") || "/";
+  const normalized = trimTrailingSlashes(pathname.toLowerCase()) || "/";
   return normalized !== "/"
     && !["/terms", "/privacy", "/copyright"].includes(normalized)
     && isPublicCreativeRoute(normalized);
 }
 
 export function isDiscoverPurposeRoute(pathname: string): boolean {
-  const normalized = pathname.toLowerCase().replace(/\/+$/u, "") || "/";
+  const normalized = trimTrailingSlashes(pathname.toLowerCase()) || "/";
   return DISCOVER_PURPOSE_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`));
 }

@@ -54,6 +54,19 @@ export function sniffStudioFbxBinaryHeader(bytes: Uint8Array): StudioFbxBinarySn
   return { byteLength: bytes.length, version, magicOk };
 }
 
+/**
+ * `머리말 { ... }` 블록 전체 원문을 돌려준다. `/머리말\{([^}]*)\}/` 와 같은 판정이다.
+ * 그 식은 여는 중괄호 뒤에 `}` 가 끝내 없으면 머리말 위치마다 문서 끝까지 다시 읽어 입력 길이의 제곱 시간이 된다.
+ * 첫 머리말 뒤에 `}` 가 없으면 이후 머리말 뒤에도 없으므로, 첫 머리말에서 `}` 를 한 번만 찾고 없으면 바로 끝낸다.
+ * @param header 여는 중괄호까지 읽는 전역 정규식(호출마다 새로 만든 것).
+ */
+function findFbxBraceBlock(text: string, header: RegExp): string | null {
+  const opening = header.exec(text);
+  if (!opening) return null;
+  const close = text.indexOf("}", header.lastIndex);
+  return close < 0 ? null : text.slice(opening.index, close + 1);
+}
+
 function parseNumberList(body: string): number[] {
   const values: number[] = [];
   const cleaned = body.replace(/^[^{]*\{/u, "").replace(/\}[\s\S]*$/u, "");
@@ -126,17 +139,17 @@ export function parseStudioFbxAscii(text: string): {
   const modelNames: string[] = [];
 
   // Vertices block
-  const vertBlock = /Vertices:\s*\*\d+\s*\{([^}]*)\}/u.exec(text)
-    ?? /Vertices:\s*\{([^}]*)\}/u.exec(text);
+  const vertBlock = findFbxBraceBlock(text, /Vertices:\s*\*\d+\s*\{/gu)
+    ?? findFbxBraceBlock(text, /Vertices:\s*\{/gu);
   if (vertBlock) {
-    positions.push(...parseNumberList(vertBlock[0]));
+    positions.push(...parseNumberList(vertBlock));
   }
 
   // PolygonVertexIndex: last index of each polygon is bitwise NOT of index
-  const polyBlock = /PolygonVertexIndex:\s*\*\d+\s*\{([^}]*)\}/u.exec(text)
-    ?? /PolygonVertexIndex:\s*\{([^}]*)\}/u.exec(text);
+  const polyBlock = findFbxBraceBlock(text, /PolygonVertexIndex:\s*\*\d+\s*\{/gu)
+    ?? findFbxBraceBlock(text, /PolygonVertexIndex:\s*\{/gu);
   if (polyBlock) {
-    const raw = parseNumberList(polyBlock[0]);
+    const raw = parseNumberList(polyBlock);
     let current: number[] = [];
     for (const v of raw) {
       if (v < 0) {

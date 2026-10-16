@@ -15,6 +15,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   STUDIO_LOCALIZATION_PROJECT_UPDATED_EVENT,
+  StudioLocalizationProjectUnreadableError,
+  isStudioLocalizationProjectUnreadable,
   parseStudioLocalizationProjectDocument,
   readStudioLocalizationCharacterCards,
   updateStudioLocalizationCharacterCards,
@@ -38,7 +40,11 @@ import type {
   StudioTranslationEffectiveCard,
 } from "./studio-translation-character-card";
 
-export type StudioTranslationCardsError = "load" | "save";
+/**
+ * `load`: 저장소를 읽지 못함. `save`: 저장에 실패함(용량·권한 — 다시 시도할 수 있음).
+ * `unreadable`: 저장된 번역 문서가 손상돼 카드를 쓰면 번역 단위를 덮어쓰므로 쓰지 않음(다시 시도해도 같다).
+ */
+export type StudioTranslationCardsError = "load" | "save" | "unreadable";
 
 /** 시트 층의 상태: 연결된 프로젝트 없음 · 읽음 · 읽지 못함. */
 export type StudioTranslationSheetStatus = "none" | "ready" | "error";
@@ -82,7 +88,11 @@ function readCardsOnce(scopeKey: string): {
   const storage = browserStorage();
   if (storage === null) return { set: EMPTY_STUDIO_TRANSLATION_CARD_SET, error: "load" };
   try {
-    return { set: readStudioLocalizationCharacterCards(storage, scopeKey), error: null };
+    return {
+      set: readStudioLocalizationCharacterCards(storage, scopeKey),
+      // 읽기는 손상된 문서에서도 빈 목록을 돌려주므로, 첫 편집에서야 드러나지 않게 처음부터 원인을 알린다.
+      error: isStudioLocalizationProjectUnreadable(storage, scopeKey) ? "unreadable" : null,
+    };
   } catch {
     return { set: EMPTY_STUDIO_TRANSLATION_CARD_SET, error: "load" };
   }
@@ -134,7 +144,7 @@ export function useStudioTranslationCards(input: {
     try {
       setSet(readStudioLocalizationCharacterCards(storage, scopeKey));
       unsavedRef.current = null;
-      setError(null);
+      setError(isStudioLocalizationProjectUnreadable(storage, scopeKey) ? "unreadable" : null);
     } catch {
       setError("load");
     }
@@ -197,13 +207,13 @@ export function useStudioTranslationCards(input: {
         setSet(next.characterCards ?? EMPTY_STUDIO_TRANSLATION_CARD_SET);
         unsavedRef.current = null;
         setError(null);
-      } catch {
+      } catch (failure) {
         // 저장은 실패했어도 화면의 편집은 남긴다 — 입력이 사라지면 사용자는 저장된 줄 안다.
         const next = updater(shownRef.current);
         shownRef.current = next;
         unsavedRef.current = next;
         setSet(next);
-        setError("save");
+        setError(failure instanceof StudioLocalizationProjectUnreadableError ? "unreadable" : "save");
       }
     },
     [scopeKey],

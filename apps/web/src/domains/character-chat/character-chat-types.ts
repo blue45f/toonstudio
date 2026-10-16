@@ -9,8 +9,31 @@
  * 제공자도 알지 않는다 (어댑터는 `character-chat-engine.ts`).
  */
 
+import type { NaturalVoiceGender } from "@/shared/lib/natural-browser-speech";
+
 /** 팬(사용자)과 캐릭터가 주고받는 대화 한 턴. */
 export type CharacterChatRole = "fan" | "character";
+
+/**
+ * 캐릭터의 낭독 선호 — 작가가 프로필에 저장하는 값은 "어떤 느낌으로 읽을지"뿐이다.
+ *
+ * 음성 파일·녹음·복제 음성은 어디에도 저장하지 않는다. 실제 소리는 팬 기기의 브라우저
+ * 내장 음성이 그 자리에서 만들고, 값의 범위는 `character-chat-voice.ts`가 제한한다.
+ * 프로필의 `voice`는 선택 필드라 이 필드가 생기기 전에 저장된 프로필도 그대로 읽힌다.
+ */
+export interface CharacterChatVoicePreference {
+  /**
+   * 선호 음성의 voiceURI. 음성 목록은 기기·브라우저마다 달라 같은 음성이 없을 수 있고,
+   * 그때는 같은 음색 힌트로 순위를 매긴 한국어 음성으로 대신 읽는다. null이면 순위 1위.
+   */
+  readonly voiceURI: string | null;
+  /** 순위 가산점으로만 쓰는 음색 힌트. */
+  readonly gender: NaturalVoiceGender;
+  /** 말하는 속도 배율(1 = 기본). */
+  readonly rate: number;
+  /** 목소리 높낮이 배율(1 = 기본). */
+  readonly pitch: number;
+}
 
 /** 캐릭터 챗 프로필 한 건 — 작가 승인 캐논 스냅샷. */
 export interface CharacterChatProfile {
@@ -52,6 +75,11 @@ export interface CharacterChatProfile {
    * 서버 미러까지 남의 세션으로 다시 쓰이던 혼선을 막기 위해서다.
    */
   readonly ownerId?: string | null;
+  /**
+   * 응답 낭독 선호(선택). 없으면 기기 기본 한국어 음성·기본 속도로 읽는다 —
+   * 이 필드가 생기기 전의 저장 프로필(IndexedDB·서버 미러)이 그대로 호환되도록 선택 필드다.
+   */
+  readonly voice?: CharacterChatVoicePreference;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -72,6 +100,8 @@ export interface CharacterChatProfileDraft {
   readonly avatarUrl: string;
   readonly canonSheetId: string;
   readonly chatEnabled: boolean;
+  /** 낭독 선호 초안(선택). 생략하면 기본값이며 저장 시 범위를 정규화한다. */
+  readonly voice?: CharacterChatVoicePreference;
 }
 
 /** 대화 메시지 한 건. */

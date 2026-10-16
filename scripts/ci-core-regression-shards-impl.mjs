@@ -92,6 +92,8 @@ export function shardForTarget(target) {
     || target.startsWith("packages/core/")
     // 기능 문서를 디스크에서 읽어 코드와 대조하는 시험은 문서를 내려받는 product 샤드에서만 돈다.
     || target === "apps/web/src/domains/creator/assistant/webtoon-tension-map-docs.test.ts"
+    || target === "apps/web/src/domains/creator/charm/studio-charm-bar-host-contract.test.ts"
+    || target === "apps/web/src/domains/learn/accessible-webtoon-guide-docs.test.ts"
     || target.startsWith("apps/web/src/domains/fortune/")
     || target.startsWith("apps/web/src/shared/catalog/")
     || target === "apps/web/src/shared/lib/__tests__/search.test.ts"

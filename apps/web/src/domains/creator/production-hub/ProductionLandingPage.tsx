@@ -58,6 +58,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 const SAMPLE_BASE = "/production/projects/sample-project";
 const ART = "/brand/illustrated-20260928";
@@ -393,7 +394,7 @@ export function ProductionLandingPage() {
   const t = useT();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const directoryMode = pathname.replace(/\/+$/u, "") === "/production/projects";
+  const directoryMode = trimTrailingSlashes(pathname) === "/production/projects";
   const userId = useApp((state) => state.userId);
   const bt = useBilingual("ProductionLandingPage");
   const [projects, setProjects] = useState<readonly ProductionProjectSummary[]>([]);

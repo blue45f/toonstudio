@@ -29,7 +29,7 @@ describe("public creative chrome route boundaries", () => {
 
   it.each([
     "/", "/about", "/about/", "/help", "/support", "/contact", "/business", "/collaborate", "/creators", "/research/assets",
-    "/learn", "/learn/process", "/learn/careers", "/learn/education", "/learn/resources", "/learn/classroom", "/learn/classes",
+    "/learn", "/learn/process", "/learn/careers", "/learn/education", "/learn/accessibility", "/learn/resources", "/learn/classroom", "/learn/classes",
     "/learn/contract-checklist", "/learn/contract-checklist/",
     "/learn/lessons/panel-pacing", "/learn/paths/webtoon", "/market/browse",
     "/market/resource/brush-1", "/showcase/work/work-1", "/showcase/reviews",

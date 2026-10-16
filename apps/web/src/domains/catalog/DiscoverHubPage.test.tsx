@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -169,5 +169,23 @@ describe("DiscoverHubPage", () => {
     const guide = screen.getByText("처음이라면 30초 안내").closest("details") as HTMLDetailsElement;
     expect(guide.open).toBe(false);
     expect(within(guide).getAllByRole("listitem")).toHaveLength(3);
+  });
+  it("folds the memory finder and only loads it once the reader opens it", async () => {
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPage();
+
+    const finder = screen.getByText("제목이 기억나지 않으세요?").closest("details") as HTMLDetailsElement;
+    // 접혀 있는 동안에는 폼도, 그것을 담은 지연 청크도 없다(탐색 허브 첫 화면을 가볍게 둔다).
+    expect(finder.open).toBe(false);
+    expect(document.querySelector("[data-memory-finder]")).toBeNull();
+    // 약속을 접은 줄에서도 읽을 수 있다: 확인된 것과 짐작한 것을 나눠 말한다.
+    expect(within(finder).getByText(/확인된 것과 짐작한 것을 나눠서 말해요/)).toBeTruthy();
+
+    finder.open = true;
+    fireEvent(finder, new Event("toggle"));
+
+    expect(await screen.findByRole("radio", { name: /전혀 기억나지 않아요/ })).toBeTruthy();
+    await waitFor(() => expect(document.querySelector("[data-memory-finder]")).not.toBeNull());
+    expect(within(finder).getByRole("button", { name: /작품 찾기/ })).toBeTruthy();
   });
 });

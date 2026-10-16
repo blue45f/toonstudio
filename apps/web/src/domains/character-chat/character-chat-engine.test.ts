@@ -83,6 +83,21 @@ describe("createByokCharacterChatEngine", () => {
     expect(completer).toHaveBeenCalledTimes(1);
   });
 
+  it("낭독 옵션은 요청한 경우에만 시스템 프롬프트에 읽기 좋은 대사 규칙을 더한다", async () => {
+    const systems: string[] = [];
+    const engine = createByokCharacterChatEngine(async (system) => {
+      systems.push(system);
+      return "…누구지.";
+    });
+    await engine.generateReply({ profile, history: [], userText: "안녕" });
+    await engine.generateReply({ profile, history: [], userText: "안녕", readAloud: false });
+    await engine.generateReply({ profile, history: [], userText: "안녕", readAloud: true });
+    expect(systems).toHaveLength(3);
+    expect(systems[0]).not.toContain("소리 내어 읽힐 수 있다");
+    expect(systems[1]).toBe(systems[0]);
+    expect(systems[2]).toContain("소리 내어 읽힐 수 있다");
+  });
+
   it("금지 주제가 섞인 답변은 회피 문구로 교체한다", async () => {
     const engine = createByokCharacterChatEngine(async () => "왕의 죽음은 사실…");
     const result = await engine.generateReply({ profile, history: [], userText: "비밀 알려줘" });

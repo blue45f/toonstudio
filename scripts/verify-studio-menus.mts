@@ -29,6 +29,7 @@ import {
 
 import { studioOwnedPreviewSessionEndpoint } from "./lib/studio-collaboration-preview-session";
 import { findFreePort, spawnVitePreview, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
+import { STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS, clickAndWaitForRenderer, selectCanvasResizeRow, waitForRendererQuiet } from "./lib/studio-verify-render-settle";
 
 import type { StudioRailToolId } from "../apps/web/src/domains/creator/studio-app-settings";
 import type { StudioMainMenuCompositeGroupId } from "../apps/web/src/domains/creator/studio-main-menu-presentation";
@@ -231,7 +232,7 @@ export const CATALOGUE_GROUPS: readonly CatalogueGroup[] = [
       "전체 레이아웃",
       "패널 접어 넓게",
       "캔버스만",
-      "템플릿 · 에셋",
+      "템플릿 · 소재", // 한국어 메뉴 사전 studio.mainMenu.item.insert.template (쉬운 말 정비로 "에셋" → "소재")
       "참고 이미지 창",
       "멀티 디스플레이 작업공간…",
     ],
@@ -462,7 +463,7 @@ export const MENU_DRIVEN_POPOVERS: {
 }[] = [
   {
     groupId: "window",
-    item: "템플릿 · 에셋",
+    item: "템플릿 · 소재",
     expectVisible: ["템플릿", "이메레스", "장면", "클립", "효과"],
   },
   {
@@ -574,7 +575,7 @@ async function openMainMenuGroup(
   // retry a click that was swallowed that way; a menu that never opens still fails.
   await waitForStableBox(btn, 350, 4000);
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    await btn.click({ timeout: 5000 });
+    await btn.click({ timeout: 15_000 }); // 앱 부팅 직후·큰 재렌더 직후에는 입력 확인이 수 초 늦을 수 있다(성공 경로의 시간은 늘지 않는다).
     const opened = await menu
       .waitFor({ state: "visible", timeout: attempt === 0 ? 2500 : 5000 })
       .then(() => true)
@@ -851,7 +852,7 @@ async function assertMainMenus(page: Page, evidenceDir?: string): Promise<string
               const where = presented.composite
                 ? `${presented.title} ▸ ${section.caption}`
                 : presented.title;
-              failures.push(`${spec.label} [${where}] 항목 없음: ${item}`);
+              failures.push(`${spec.label} [${where}] 항목 없음: ${item} (메뉴에 보이는 행: ${frame.itemRows.map((row) => row.replace(/\s+/gu, " ")).join(" | ")})`);
             }
           }
           if (section.id === "3d") {
@@ -1064,7 +1065,7 @@ async function assertMenuDrivenPopovers(page: Page): Promise<string[]> {
       await closeFloatingUi(page);
       await openMainMenuGroup(page, title, surface);
       const menu = page.locator(`[role="menu"][aria-label="${title}"]`);
-      await menu.getByRole("menuitem", { name: entry.item }).click({ timeout: 4000 });
+      await clickAndWaitForRenderer(page, menu.getByRole("menuitem", { name: entry.item })); // 지연 패널이 마운트되는 동안 입력 확인이 수 초 늦을 수 있다.
       // Lazy panels + fixed popovers need a beat after main-menu close
       await page.waitForTimeout(700);
 
@@ -1132,7 +1133,7 @@ export async function assertCurrentCanvasPlatformResize(
   const waitForHeight = async (height: number): Promise<boolean> => {
     const value = page.locator(`span[aria-label="높이 ${height}px"]`);
     try {
-      await value.waitFor({ state: "visible", timeout: 5_000 });
+      await value.waitFor({ state: "visible", timeout: STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS });
       const snapshot = await value.evaluate((element) => ({
         text: element.textContent ?? "", label: element.getAttribute("aria-label"),
       }));
@@ -1158,11 +1159,7 @@ export async function assertCurrentCanvasPlatformResize(
     }
     await openMainMenuGroup(page, canvasMenuTitle);
     const menu = page.locator(`[role="menu"][aria-label="${canvasMenuTitle}"]`);
-    await menu.locator(`[data-studio-menu-item-id="${itemId}"]`).click({ timeout: 4_000 });
-    await page.waitForFunction(({ expected, message }) =>
-      Boolean(document.querySelector(`span[aria-label="높이 ${expected}px"]`))
-      || [...document.querySelectorAll('[role="alert"]')].some((alert) => alert.textContent?.includes(message)),
-    { expected: expectedHeight, message: CANVAS_RESIZE_AUTHORITY_MESSAGE }, { timeout: 5_000 }).catch(() => undefined);
+    await selectCanvasResizeRow(page, menu.locator(`[data-studio-menu-item-id="${itemId}"]`), expectedHeight, CANVAS_RESIZE_AUTHORITY_MESSAGE);
     const outcome = classifyStudioCanvasResizeResult({
       expectedHeight: `높이 ${expectedHeight}px`, previousHeight,
       actualHeight: await heightIndicator.getAttribute("aria-label"),
@@ -1180,19 +1177,14 @@ export async function assertCurrentCanvasPlatformResize(
   try {
     await closeFloatingUi(page);
     await dismissCinematicCanvasWelcome(page);
+    await waitForRendererQuiet(page);
     await openMainMenuGroup(page, windowMenuTitle);
-    await page
-      .locator(`[role="menu"][aria-label="${windowMenuTitle}"]`)
-      .locator('[data-studio-menu-item-id="density-full"]')
-      .click({ timeout: 4_000 });
-    await page.waitForTimeout(150);
+    await clickAndWaitForRenderer(page, page.locator(`[role="menu"][aria-label="${windowMenuTitle}"]`).locator('[data-studio-menu-item-id="density-full"]'));
 
     await openMainMenuGroup(page, canvasMenuTitle);
     const menu = page.locator(`[role="menu"][aria-label="${canvasMenuTitle}"]`);
-    await menu
-      .locator('[data-studio-menu-item-id="canvas-settings"]')
-      .click({ timeout: 4_000 });
-    await page.locator("span[aria-label^=\"높이 \"][aria-label$=\"px\"]").first().waitFor({ state: "visible", timeout: 5_000 });
+    await clickAndWaitForRenderer(page, menu.locator('[data-studio-menu-item-id="canvas-settings"]'));
+    await heightIndicator.waitFor({ state: "visible", timeout: STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS });
 
     const drawingUrl = page.url();
     const naverResult = await applyPreset("apply-webtoon-naver", 8_348);
@@ -1226,6 +1218,7 @@ export async function assertCurrentCanvasPlatformResize(
     if (!(await waitForHeight(8_348))) {
       failures.push("플랫폼 규격 변경을 한 번의 실행취소로 복원하지 못함");
     }
+    await waitForRendererQuiet(page);
     await captureMenuEvidence(page, evidenceDir, "canvas-one-step-undo");
 
     if (failures.length === 0) {
@@ -1529,14 +1522,15 @@ async function main() {
       ...(await assertReferenceWindowToggle(page)),
       ...(await assertRailTools(page)),
       ...(await assertMenuDrivenPopovers(page)),
-      ...(await assertCurrentCanvasPlatformResize(page, {
-        evidenceDir,
-        ownedPreviewOrigin: candidate ? undefined : new URL(url).origin,
-      })),
       ...(await assertWorkspaceDeviceEditor(page)),
       ...(await assertDrawOptionsBar(page)),
       ...(await assertFloatingLayoutManager(page)),
       ...(await assertExportOptions(page)),
+      // 문서를 8000px대로 바꾸면 이후 모든 입력이 수 초씩 재렌더에 밀리므로(studio-verify-render-settle.ts) 반드시 마지막에 둔다.
+      ...(await assertCurrentCanvasPlatformResize(page, {
+        evidenceDir,
+        ownedPreviewOrigin: candidate ? undefined : new URL(url).origin,
+      })),
     ];
     await captureMenuEvidence(page, evidenceDir, "menu-verification-final");
 

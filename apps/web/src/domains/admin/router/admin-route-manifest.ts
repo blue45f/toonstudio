@@ -1,3 +1,5 @@
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+
 export const ADMIN_ROUTE_IDS = [
   "overview",
   "traffic",
@@ -102,7 +104,7 @@ const LEGACY_TAB_ROUTE: Readonly<Record<string, AdminRouteId>> = {
 
 function normalizePathname(pathname: string): string {
   if (pathname === "/") return pathname;
-  return pathname.replace(/\/+$/u, "") || "/";
+  return trimTrailingSlashes(pathname) || "/";
 }
 
 function appendLocation(pathname: string, search: string, hash: string): string {

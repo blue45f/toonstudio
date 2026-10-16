@@ -108,3 +108,37 @@ describe("세션과 계측", () => {
     expect(state.appendMessage(created.id, "fan", "안녕")).toBeNull();
   });
 });
+
+describe("낭독 선호", () => {
+  it("프로필을 만들 때 저장한 낭독 선호가 공개 토글과 수정 뒤에도 유지된다", () => {
+    const state = useCharacterChatStore.getState();
+    const voice = { voiceURI: "Yuna", gender: "female", rate: 0.95, pitch: 1.05 } as const;
+    const created = state.createProfile(draft({ chatEnabled: false, voice }));
+    if (!created) throw new Error("프로필 생성 실패");
+    expect(created.voice).toEqual(voice);
+
+    state.setProfileChatEnabled(created.id, true);
+    expect(useCharacterChatStore.getState().getProfile(created.id)?.voice).toEqual(voice);
+
+    // 낭독 선호가 없는 초안(이 필드를 모르는 호출부)으로 수정해도 저장된 값을 지우지 않는다.
+    state.updateProfile(created.id, draft({ personality: "속은 여리다." }));
+    expect(useCharacterChatStore.getState().getProfile(created.id)?.voice).toEqual(voice);
+
+    // 기본값으로 되돌리려면 기본값을 명시적으로 넘기고, 그러면 필드 자체가 사라진다.
+    state.updateProfile(created.id, draft({ voice: { voiceURI: null, gender: "neutral", rate: 1, pitch: 1 } }));
+    expect(useCharacterChatStore.getState().getProfile(created.id)?.voice).toBeUndefined();
+  });
+
+  it("voice 필드 없이 저장돼 있던 기존 프로필에 낭독 선호를 새로 붙일 수 있다", () => {
+    const state = useCharacterChatStore.getState();
+    const legacy = state.createProfile(draft());
+    if (!legacy) throw new Error("프로필 생성 실패");
+    expect("voice" in legacy).toBe(false);
+
+    const updated = state.updateProfile(
+      legacy.id,
+      draft({ voice: { voiceURI: null, gender: "male", rate: 1.1, pitch: 1 } }),
+    );
+    expect(updated?.voice).toEqual({ voiceURI: null, gender: "male", rate: 1.1, pitch: 1 });
+  });
+});

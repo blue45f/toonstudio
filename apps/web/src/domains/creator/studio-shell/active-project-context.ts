@@ -1,3 +1,5 @@
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+
 const ACTIVE_PROJECT_CONTEXT_KEY = "toonstudio:active-project-context:v1";
 
 function decodedSegment(value: string | undefined): string | null {
@@ -11,7 +13,7 @@ function decodedSegment(value: string | undefined): string | null {
 }
 
 export function activeProjectIdFromLocation(pathname: string, search = ""): string | null {
-  const normalized = pathname.replace(/\/+$/u, "") || "/";
+  const normalized = trimTrailingSlashes(pathname) || "/";
   const patterns = [
     /^\/studio\/p\/([^/]+)(?:\/|$)/u,
     /^\/studio\/(?:work|remix)\/([^/]+)(?:\/|$)/u,

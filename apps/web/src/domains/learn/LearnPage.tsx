@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 
+import { AccessibleWebtoonGuidePage } from "./AccessibleWebtoonGuidePage";
 import { LearnPage as LearnContent } from "./LearnContent";
 import { LearningHome, LearningPathPage } from "./LearningHome";
 import { LearningClassesPage } from "./LearningClassesPage";
@@ -11,6 +12,7 @@ import { LearnSectionShell } from "./LearnSectionShell";
 import { TracePracticePage } from "./TracePracticePage";
 import { WebtoonCareerPage } from "./WebtoonCareerPage";
 import { WebtoonProcessPage } from "./WebtoonProcessPage";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 import "./learning-academy.css";
 
@@ -22,7 +24,7 @@ import "./learning-academy.css";
  */
 export function LearnPage() {
   const { pathname } = useLocation();
-  const normalizedPath = pathname.replace(/\/+$/u, "") || "/";
+  const normalizedPath = trimTrailingSlashes(pathname) || "/";
 
   const isHome = normalizedPath === "/learn";
   const pathMatch = normalizedPath.match(/^\/learn\/paths\/([^/]+)$/u);
@@ -43,7 +45,9 @@ export function LearnPage() {
       ? <WebtoonCareerPage />
       : normalizedPath === "/learn/contract-checklist"
         ? <LearningContractChecklistPage />
-        : null;
+        : normalizedPath === "/learn/accessibility"
+          ? <AccessibleWebtoonGuidePage />
+          : null;
 
   return (
     <LearnSectionShell>

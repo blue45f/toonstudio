@@ -1,5 +1,41 @@
 export type StudioChunkPredicate = (id: string) => boolean;
 
+/**
+ * 2026-10-16: 에디터 호스트가 정적으로 쓰고 지연 패널도 공유하는 무의존 잎 모듈(`domains/creator` 기준 경로).
+ *
+ * 모듈마다 0.4~1.4 KiB 짜리 공유 청크가 따로 생겨 있었다. 작은 파일은 gzip 머리말·사전 시작 비용이 커서 원본 대비
+ * 압축률이 나쁘고(500 B 파일이 ~350 B), 청크 수 상한(`check:studio-bundle`)도 이 자잘한 청크가 채운다. 이미 Studio
+ * 정적 폐포에 있는 `studio-editing-micro-models` 에 합쳐 요청과 gzip 용량만 줄인다 — 정적·지연 폐포의 내용은 그대로다.
+ *
+ * 들어올 조건(모두 확인함): ① 값 import 가 없거나 React 뿐이다 ② 프로덕션 importer 가 전부 `domains/creator` 의
+ * Studio 편집기 계열이다(허브·공개 페이지·다른 도메인이 쓰는 `showcase-links`·`creator-studio-links`·
+ * `studio-dialogue` 같은 모듈은 넣지 않는다 — 합치면 그 경로가 Studio 묶음을 끌어온다).
+ * 상태 저장소·Worker·렌더러·패널은 넣지 않는다.
+ *
+ * BG3D 전용 잎(`bg3d/studio-bg3d-lens.ts` 등)과 압축 파일 쓰기에 쓰는 `studio-crc32.ts` 도 넣지 않는다: BG3D 편집기
+ * 활성화·컷 일괄 처리 런타임의 정적 폐포가 그 잎을 가져오는데(`studio-package-archive` → crc32), 합치면 이 묶음
+ * (~46 KiB)이 통째로 그 폐포에 들어와 `BG3D editor activation`·`BG3D shot-batch runtime` 래칫을 깬다(원본 +~41 KiB,
+ * gzip +~15 KiB). 새 잎을 더하기 전에 `check:studio-bundle` 의 전문 런타임 폐포 수치가 그대로인지 확인한다.
+ */
+const STUDIO_TINY_EDITOR_LEAVES: readonly string[] = [
+  "studio-shell/studio-shell-floating-layout-events.ts",
+  "studio-floating-menu-layouts.ts",
+  "canvas/studio-canvas-viewport-primitives.ts",
+  "studio-cuttoon-editor/studio-touch-gesture-policy.ts",
+  "studio-vector-reference-source-budget-receipt.ts",
+  "studio-stroke-focus-activity.ts",
+  "studio-horizontal-wheel.ts",
+  "studio-commercial-residuals.ts",
+  "studio-active-tool-command.ts",
+  "live/studio-live-page-lifecycle.ts",
+  "studio-tool-hint-preferences.ts",
+  "studio-selection-chrome-mirror.ts",
+  "render/studio-raster-edit-surface-cache.ts",
+  "render/studio-webgpu-color.ts",
+  "layer/studio-layer-comps.ts",
+  "studio-low-latency-canvas.ts",
+];
+
 export function createStudioManualChunks(predicates: {
   isInitialIconModule: StudioChunkPredicate;
   isStudioCoreIconModule: StudioChunkPredicate;
@@ -157,6 +193,9 @@ export function createStudioManualChunks(predicates: {
       || id.endsWith("/src/domains/creator/studio-pathfinder-vector-engine.ts")
       || id.endsWith("/src/domains/creator/studio-advanced-fill-tap.ts")
       || id.endsWith("/src/domains/creator/studio-colordrop-gesture.ts")
+      || id.endsWith("/src/domains/creator/studio-cuttoon-editor/runtime/useStudioMenuPopoverDismiss.ts")
+      || id.endsWith("/src/domains/creator/studio-sfx-presets.ts")
+      || STUDIO_TINY_EDITOR_LEAVES.some((leaf) => id.endsWith(`/src/domains/creator/${leaf}`))
     ) {
       // Dependency-free leaves with the same entry-owner set; merging removes one request
       // without changing any static or lazy closure.
@@ -164,9 +203,14 @@ export function createStudioManualChunks(predicates: {
       // 에디터 호스트가 정적으로 쓰고 지연 패널도 공유하는 무의존 잎 모듈이라 모듈마다 작은 공유
       // 청크가 따로 생겼다(Studio 라우트 정적 청크 +3). 이미 Studio 정적 폐포에 있는 이 그룹에
       // 합쳐 요청만 줄인다 — 패널·렌더러·Worker·상태 저장소는 넣지 않는다.
+      // 2026-10-16: 팝오버 닫힘 훅(React 만 의존)과 SFX 프리셋 데이터(무의존)도 같은 사정이다 — 에디터 호스트가 정적으로
+      // 쓰는데 지연 로드되는 참 바(팝오버 훅·카탈로그 데이터)가 함께 가져오면서 둘 다 자기 공유 청크로 떼어졌다(정적 청크 +2).
       return "studio-editing-micro-models";
     }
     if (["studio-isometric-grid", "studio-perspective-guide", "studio-object-insert-drag", "studio-image-placement",
+      // 2026-10-16: 삽입 끌기 위치의 격자 스냅. 위 두 삽입 모듈이 쓰는 순수 기하인데, 지연 로드되는 참 바가 함께 가져오면서
+      // 자기 공유 청크로 떼어졌다(정적 청크 +1). 같은 그룹에 둔다.
+      "studio-object-drag-snap",
       // 2026-10-15: 원근 가이드 격자·소실점 기하(드로잉 보조). 같은 순수 기하라 같은 그룹에 둔다.
       "drawing/studio-perspective-guide"]
       .some((name) => id.endsWith(`/src/domains/creator/${name}.ts`))) {

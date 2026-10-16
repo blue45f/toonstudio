@@ -30,6 +30,12 @@ export {
   hasCharacterChatTextRoute,
   resolveCharacterChatEngine,
 } from "./character-chat-engine";
+export {
+  DEFAULT_CHARACTER_CHAT_VOICE,
+  normalizeCharacterChatVoicePreference,
+  resolveCharacterChatVoice,
+  selectCharacterChatVoice,
+} from "./character-chat-voice";
 export { useCharacterChatStore } from "./character-chat-store";
 export { buildSeedCharacterChatProfiles } from "./character-chat-seed";
 export { useCharacterChatEngine } from "./use-character-chat-engine";
@@ -46,4 +52,5 @@ export type {
   CharacterChatProfileDraft,
   CharacterChatRole,
   CharacterChatSession,
+  CharacterChatVoicePreference,
 } from "./character-chat-types";

@@ -1,3 +1,5 @@
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+
 export type TeamAreaSection = "overview" | "people" | "recruiting";
 
 export interface TeamAreaDestination {
@@ -29,7 +31,7 @@ export const TEAM_AREA_DESTINATIONS: readonly TeamAreaDestination[] = [
 ] as const;
 
 function normalizePathname(pathname: string): string {
-  const normalized = pathname.replace(/\/+$/u, "");
+  const normalized = trimTrailingSlashes(pathname);
   return normalized || "/";
 }
 

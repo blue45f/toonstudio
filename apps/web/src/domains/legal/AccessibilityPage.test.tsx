@@ -19,6 +19,12 @@ describe("accessibility page", () => {
       .toBe("/feedback?type=bug&tag=accessibility");
   });
 
+  it("links to the learning guide for accessible webtoon-making", () => {
+    render(<MemoryRouter><AccessibilityPage /></MemoryRouter>);
+    expect(screen.getByRole("link", { name: /접근성 있는 웹툰 만들기|Making webtoons accessible/u }).getAttribute("href"))
+      .toBe("/learn/accessibility");
+  });
+
   it("changes only the preview and can reset every preference", () => {
     render(<MemoryRouter><AccessibilityPage /></MemoryRouter>);
     const slider = screen.getByRole("slider");

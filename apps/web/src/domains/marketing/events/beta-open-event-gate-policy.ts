@@ -1,6 +1,7 @@
 import { DISCOVER_PURPOSE_PREFIXES, isPublicCreativeRoute } from "@/shared/components/site-public-routes";
 
 import { BETA_OPEN_EVENT } from "./event-catalog";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 /** 영상 재생기와 챕터 목록을 가리면 시청 흐름이 끊기므로 홍보영상 페이지에는 띄우지 않는다. */
 const MEDIA_PAGES = new Set(["/product-tour", "/brand-film"]);
@@ -20,7 +21,7 @@ const COMPACT_SURFACE_PREFIXES: readonly string[] = [
 export type BetaOpenEventGateVariant = "full" | "compact";
 
 function normalizePathname(pathname: string): string {
-  return pathname.toLowerCase().replace(/\/+$/u, "") || "/";
+  return trimTrailingSlashes(pathname.toLowerCase()) || "/";
 }
 
 function matchesSurfacePrefix(normalized: string, prefix: string): boolean {

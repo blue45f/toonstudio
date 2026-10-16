@@ -46,7 +46,7 @@ Cursor, Gemini, OpenCode용 어댑터는 이 문서를 다시 복제하지 않�
 - 공유 브랜치에서 임의 amend, rebase, reset, force push를 하지 않는다.
 - `--no-verify`, CI 우회, 테스트 삭제·완화로 실패를 숨기지 않는다.
 - `main` 직접 작업보다 목적이 드러나는 브랜치와 PR을 사용한다.
-- PR 병합은 배포 승인이 아니다. 운영 배포는 별도 정책과 사용자의 명시적 승인이 필요하다.
+- PR 병합 자체는 배포가 아니다. 운영 배포는 `DEPLOY.md`의 상시 승인 범위(저장소 소유자 2026-10-16 결정) 안에서만 매번 승인 없이 수행하며, 범위 밖이거나 파괴적인 변경은 사용자의 명시적 승인이 필요하다.
 
 ## 5. 검증 기준
 
@@ -94,14 +94,14 @@ Cursor, Gemini, OpenCode용 어댑터는 이 문서를 다시 복제하지 않�
 이 정책은 이전의 main 자동 배포와 `[deploy]` 예외 지침을 대체한다.
 세부 절차는 `docs/operations/minimum-cost-deployment-policy.md`와 `DEPLOY.md`를 따른다.
 
-- PR 생성·병합·브랜치 정리는 배포 승인이 아니다. 운영 배포는 사용자의 별도 명시적 승인 후에만 한다. 2026-10-13 저장소 소유자 결정으로 `deploy/cloudflare-static/STANDING_APPROVAL.json`이 유효하면 매번 명시 승인 없이 HEAD를 승인 SHA로 간주한다. 파일 삭제·파손 시 명시 승인 방식으로 fail-closed 복귀한다.
+- PR 생성·병합·브랜치 정리는 그 자체로 배포가 아니다. 2026-10-16 저장소 소유자 결정으로 `deploy/STANDING_APPROVAL.json`이 유효한 범위(Cloudflare 정적 웹, apex 리다이렉트 Worker, Core API 컨테이너 릴리스와 Render 이미지 배포, 추가형 DB migration)는 매번 명시 승인 없이 배포한다. 배포 시점의 `origin/main` 끝 SHA를 승인 SHA로 간주하고 필수 CI(core·verify) 녹색, 사전 검증 통과, 롤백 대상 기록, 배포 후 스모크, 동일 SHA 중복 배포 금지를 지킨다. 범위 밖(환경변수·시크릿·도메인·유료 플랜 변경, 파괴적 migration, `adopt`/`repair` 모드, 새 배포 단위)은 사용자의 별도 명시적 승인이 필요하다. 정적 웹은 2026-10-13 결정의 `deploy/cloudflare-static/STANDING_APPROVAL.json`도 계속 유효하며, 파일 삭제·파손 시 명시 승인 방식으로 fail-closed 복귀한다.
 - Vercel 런타임·설정·배포 워크플로는 퇴역 상태이며 다시 추가하지 않는다.
 - 승인한 40자리 main SHA 하나만 변경된 Cloudflare/Render 배포 단위에 반영한다.
 - PR CI, core/verify, 테스트·보안·브랜치 보호는 유지하며 비용을 이유로 우회하지 않는다.
 - 정적 웹은 검증된 `dist/`를 Cloudflare Static Assets에 수동 배포하고 Core API는 Render 수동 release만 사용한다.
 - 원격 자동 source build, dashboard 자동 재배포, `[deploy]` 예외, 동일 SHA 중복 배포·자동 재시도는 금지한다.
 - Turbo/유료 동시 빌드/유료 러너/플랜 변경/자동 배포 재활성화는 별도 승인이 필요하다.
-- 운영 도메인·데이터·환경변수·DB migration은 단순 병합이나 배포의 일부로 임의 변경하지 않는다.
+- 운영 도메인·데이터·환경변수는 단순 병합이나 배포의 일부로 임의 변경하지 않는다. DB migration은 추가형(새 테이블·인덱스·제약)만 `production-database-migrations.yml`의 `apply` 모드로 적용하고, 삭제·이름 변경·제약 강화는 expand/contract 로 나눠 별도 승인을 받는다.
 - 실패하면 분석 후 중단하고 기존 정상 배포로의 롤백을 우선 검토한다.
 - 결과에는 승인, SHA, 검증, 빌드 위치, 배포 ID/URL, 남은 비용을 구분해 기록한다.
 

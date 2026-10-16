@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
 import {
   createDictationSession,
   insertDictationText,
+  DICTATION_HINT_IDLE,
+  DICTATION_HINT_LISTENING,
   DICTATION_UNSUPPORTED_MESSAGE,
   type DictationSession,
   type DictationSnapshot,
@@ -29,6 +31,7 @@ interface StudioDictationMicButtonProps {
 export default function StudioDictationMicButton({ getTarget, applyValue, disabled }: StudioDictationMicButtonProps) {
   const [snapshot, setSnapshot] = useState<DictationSnapshot | null>(null);
   const sessionRef = useRef<DictationSession | null>(null);
+  const hintId = useId();
   const insertedLengthRef = useRef(0);
   const getTargetRef = useRef(getTarget);
   getTargetRef.current = getTarget;
@@ -67,6 +70,8 @@ export default function StudioDictationMicButton({ getTarget, applyValue, disabl
   }
 
   const listening = snapshot.status === "listening" || snapshot.status === "requesting" || snapshot.status === "stopping";
+  const hint = listening ? DICTATION_HINT_LISTENING : DICTATION_HINT_IDLE;
+  const label = listening ? "받아쓰기 중지" : "음성으로 대사 입력";
 
   return (
     <div className="flex flex-col gap-1">
@@ -75,7 +80,10 @@ export default function StudioDictationMicButton({ getTarget, applyValue, disabl
           type="button"
           disabled={disabled || snapshot.status === "stopping"}
           aria-pressed={listening}
-          aria-label={listening ? "받아쓰기 중지" : "음성으로 대사 입력"}
+          aria-label={label}
+          aria-describedby={hintId}
+          data-tooltip={label}
+          data-tooltip-description={hint}
           onClick={() => {
             const session = sessionRef.current;
             if (!session) return;
@@ -97,6 +105,9 @@ export default function StudioDictationMicButton({ getTarget, applyValue, disabl
                 ? "듣고 있어요 — 눌러서 중지"
                 : "말로 입력"}
         </button>
+        <span id={hintId} className="sr-only">
+          {hint}
+        </span>
         {snapshot.status === "done" ? (
           <span role="status" className="text-xs text-fg-3">
             대사에 넣었어요

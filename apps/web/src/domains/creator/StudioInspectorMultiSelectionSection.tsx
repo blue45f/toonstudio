@@ -1,15 +1,21 @@
-import { useMemo } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { collectStudioDocumentColors } from "./studio-document-colors";
+import { isEffectivelyLocked } from "./studio-layers";
 import {
   applyStudioMultiSelectionStrokeColor,
+  applyStudioMultiSelectionStrokeWidth,
   resolveStudioMultiSelectionStrokeColor,
+  resolveStudioMultiSelectionStrokeWidth,
+  STUDIO_MULTI_SELECTION_STROKE_WIDTH_MIN,
+  STUDIO_MULTI_SELECTION_STROKE_WIDTH_STEP,
 } from "./studio-multi-selection-color";
 import { StudioColorField } from "./StudioColorField";
 import { StudioInspectorBatchRenameSection } from "./StudioInspectorBatchRenameSection";
 import { StudioInspectorSelectionActions } from "./StudioInspectorOrderAlignSection";
 import { StudioInspectorMutationLockNotice } from "./StudioInspectorUtilityPanels";
 
+import type { El } from "./studio-element-model";
 import type { StudioInspectorAsideModel } from "./useStudioInspectorAsideModel";
 
 /**
@@ -48,13 +54,43 @@ export function StudioInspectorMultiSelectionSection({
     () => collectStudioDocumentColors(elements),
     [elements],
   );
-  const strokeColorState = useMemo(
-    () => resolveStudioMultiSelectionStrokeColor(elements, marqueeIds),
-    [elements, marqueeIds],
+  // 잠긴 요소(자기 자신 또는 소속 그룹이 잠김)는 정렬·이동처럼 일괄 스타일에서도 바뀌지 않는다.
+  // 인스펙터 잠금 게이트는 단일 선택만 보므로 여기서 대상에서 뺀다.
+  const targetOptions = useMemo(
+    () => ({ isLocked: (element: El) => isEffectivelyLocked(element, groups) }),
+    [groups],
   );
-  const strokeColorHistoryKey = `color:multi:${[...marqueeIds].sort().join(",")}:stroke`;
+  const strokeColorState = useMemo(
+    () => resolveStudioMultiSelectionStrokeColor(elements, marqueeIds, targetOptions),
+    [elements, marqueeIds, targetOptions],
+  );
+  const strokeWidthState = useMemo(
+    () => resolveStudioMultiSelectionStrokeWidth(elements, marqueeIds, targetOptions),
+    [elements, marqueeIds, targetOptions],
+  );
+  const selectionKey = [...marqueeIds].sort().join(",");
+  // 슬라이더 위쪽 끝은 선택이 바뀔 때(또는 더 굵은 선이 생길 때)만 올려 잡는다. 끌 때마다 "지금 가장 굵은 선"으로 다시
+  // 계산하면 끄는 동안 값이 줄어드는 것을 따라 위쪽 끝도 줄어, 굵은 선이 의도보다 가늘어지고 다시 올릴 수도 없게 된다.
+  const [sliderCap, setSliderCap] = useState({ key: selectionKey, max: strokeWidthState.max });
+  let sliderMax = sliderCap.max;
+  if (sliderCap.key !== selectionKey || strokeWidthState.max > sliderCap.max) {
+    sliderMax = sliderCap.key !== selectionKey ? strokeWidthState.max : Math.max(sliderCap.max, strokeWidthState.max);
+    setSliderCap({ key: selectionKey, max: sliderMax });
+  }
+  const strokeWidthId = useId();
+  const strokeColorHistoryKey = `color:multi:${selectionKey}:stroke`;
+  const strokeWidthHistoryKey = `width:multi:${selectionKey}:stroke`;
+  const applyStrokeWidth = (width: number): void => {
+    const next = applyStudioMultiSelectionStrokeWidth(elements, marqueeIds, width, sliderMax, targetOptions);
+    if (next.every((element, index) => element === elements[index])) return;
+    if (commitCoalesced) {
+      commitCoalesced(next, strokeWidthHistoryKey);
+      return;
+    }
+    commit(next);
+  };
   const applyStrokeColor = (color: string | null, preview: boolean): void => {
-    const next = applyStudioMultiSelectionStrokeColor(elements, marqueeIds, color);
+    const next = applyStudioMultiSelectionStrokeColor(elements, marqueeIds, color, targetOptions);
     if (next.every((element, index) => element === elements[index])) return;
     if (preview && commitCoalesced) {
       commitCoalesced(next, strokeColorHistoryKey);
@@ -133,6 +169,41 @@ export function StudioInspectorMultiSelectionSection({
                   : undefined
               }
             />
+            {strokeWidthState.value !== null ? (
+              <div
+                className="flex min-h-11 items-center justify-between gap-2"
+                data-testid="studio-multi-selection-stroke-width"
+              >
+                <label htmlFor={strokeWidthId} className="text-xs font-semibold text-fg-2">
+                  선 두께
+                </label>
+                <span className="flex items-center gap-2">
+                  <input
+                    id={strokeWidthId}
+                    type="range"
+                    min={STUDIO_MULTI_SELECTION_STROKE_WIDTH_MIN}
+                    max={sliderMax}
+                    step={STUDIO_MULTI_SELECTION_STROKE_WIDTH_STEP}
+                    value={Math.min(sliderMax, strokeWidthState.value)}
+                    aria-valuetext={
+                      strokeWidthState.mixed
+                        ? "서로 다른 두께"
+                        : strokeWidthState.implicit
+                          ? "기본 두께"
+                          : `${strokeWidthState.value.toFixed(1)}픽셀`
+                    }
+                    onChange={(event) => applyStrokeWidth(Number(event.target.value))}
+                    onPointerUp={finishPatchElCoalescing}
+                    onKeyUp={finishPatchElCoalescing}
+                    onBlur={finishPatchElCoalescing}
+                    className="h-2 w-24 cursor-pointer accent-accent sm:w-28"
+                  />
+                  <output htmlFor={strokeWidthId} className="w-14 text-right text-xs tabular-nums text-fg-3">
+                    {strokeWidthState.mixed ? "섞임" : strokeWidthState.implicit ? "기본" : `${strokeWidthState.value.toFixed(1)}px`}
+                  </output>
+                </span>
+              </div>
+            ) : null}
             <p className="text-[0.6rem] leading-snug text-fg-3">
               {strokeColorState.mixed
                 ? "서로 다른 선 상태입니다. 새 색을 고르면 선택한 요소에 동일하게 적용됩니다."
@@ -140,7 +211,16 @@ export function StudioInspectorMultiSelectionSection({
                   ? "선이 없는 요소들입니다. 색을 고르면 선 두께 3px로 시작합니다."
                   : "선 색상을 선택 묶음 전체에서 함께 변경합니다."}
             </p>
+            {strokeColorState.lockedCount > 0 ? (
+              <p className="text-[0.6rem] leading-snug text-fg-3" data-testid="studio-multi-selection-locked-note">
+                잠긴 요소 {strokeColorState.lockedCount}개는 선 스타일이 바뀌지 않아요. 잠금을 풀면 함께 바꿀 수 있어요.
+              </p>
+            ) : null}
           </div>
+        ) : strokeColorState.lockedCount > 0 ? (
+          <p className="mb-3 text-[0.6rem] leading-snug text-fg-3" data-testid="studio-multi-selection-locked-note">
+            선택한 선 요소가 모두 잠겨 있어 선 스타일을 바꿀 수 없어요. 잠금을 풀면 바꿀 수 있어요.
+          </p>
         ) : null}
         <StudioInspectorSelectionActions
           selectionCount={marqueeIds.length}

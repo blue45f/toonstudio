@@ -56,6 +56,11 @@ export interface CharacterChatEngineInput {
   readonly history: readonly CharacterChatMessage[];
   readonly userText: string;
   readonly signal?: AbortSignal;
+  /**
+   * 이 답변이 곧바로 소리 내어 읽힐 예정인지(듣는 사람이 자동 낭독을 켠 경우). true면 시스템
+   * 프롬프트에 "읽기 좋은 대사" 규칙이 더해진다. 생략하면 이전과 같은 프롬프트를 쓴다.
+   */
+  readonly readAloud?: boolean;
 }
 
 export interface CharacterChatEngine {
@@ -109,7 +114,7 @@ export function createByokCharacterChatEngine(
   return {
     id: "byok-user-ai",
     async generateReply(input) {
-      const system = buildCharacterChatSystemPrompt(input.profile);
+      const system = buildCharacterChatSystemPrompt(input.profile, { readAloud: input.readAloud === true });
       const user = buildCharacterChatUserPrompt(input.profile, input.history, input.userText);
       let raw: string;
       try {

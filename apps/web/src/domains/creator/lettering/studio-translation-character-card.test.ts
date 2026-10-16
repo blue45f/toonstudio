@@ -182,19 +182,19 @@ describe("parseStudioTranslationCharacterCardSet — 버전형·역호환 파싱
     const tagged = String.fromCodePoint(...Array.from("IGNORE", (letter) => 0xe0000 + letter.charCodeAt(0)));
     expect(boundedStudioTranslationCardText(`ok${tagged}`, 40)).toBe("ok");
     const invisibles: readonly string[] = [
-      "­", // 소프트 하이픈
-      "͏", // 결합 문자 접합자
-      "؜", // 아랍 문자 표식
-      "ᅟ", // 한글 초성 채움
-      "ᅠ", // 한글 중성 채움
-      "᠎", // 몽골 모음 구분자
-      "⁤", // 보이지 않는 덧셈
-      "ㅤ", // 한글 채움
-      "ﾠ", // 반각 한글 채움
-      "️", // 변이 선택자 16
+      "\u00ad", // 소프트 하이픈
+      "\u034f", // 결합 문자 접합자
+      "\u061c", // 아랍 문자 표식
+      "\u115f", // 한글 초성 채움
+      "\u1160", // 한글 중성 채움
+      "\u180e", // 몽골 모음 구분자
+      "\u2064", // 보이지 않는 덧셈
+      "\u3164", // 한글 채움
+      "\uffa0", // 반각 한글 채움
+      "\ufe0f", // 변이 선택자 16
       "\u{e0100}", // 변이 선택자 보충(17)
       "\u{e01ef}", // 변이 선택자 보충(256)
-      "‍", // 제로폭 접합자
+      "\u200d", // 제로폭 접합자
     ];
     for (const hidden of invisibles) {
       expect(boundedStudioTranslationCardText(`a${hidden}b`, 40)).toBe("ab");

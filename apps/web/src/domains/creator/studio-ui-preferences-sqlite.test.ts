@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
+import {
+  createEmptyStudioCharmBarState,
+  createStudioCharmId,
+  normalizeStudioCharmBarState,
+} from "./charm/studio-charm-model";
 import { DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS } from "./studio-advanced-fill-settings";
 import { defaultStudioAppSettings } from "./studio-app-settings";
 import {
@@ -153,6 +158,63 @@ describe("Studio SQLite UI preferences", () => {
       favorites: [blur],
       recent: [levels],
     });
+  });
+
+  it("keeps the charm bar under its own key and never touches the existing favorites", async () => {
+    const focus = createStudioCharmId("fx", "radial-focus");
+    const tear = createStudioCharmId("emoji", "1f4a7");
+    const local = createStudioAssetFavoriteId("local", "asset-1");
+    const blur = createStudioEffectId("filter", "blur");
+    const fixture = memoryStore();
+    const repository = createStudioUiPreferencesRepository(fixture.store);
+    await repository.saveAssetFavorites("user-a", normalizeStudioAssetFavoriteState({ version: 1, ids: [local] }));
+    await repository.saveEffectFavorites({ version: 1, favorites: [blur], recent: [] });
+    const favoriteSnapshot = new Map([...fixture.values].filter(([key]) => key !== "charm-bar"));
+
+    await expect(repository.loadCharmBar()).resolves.toEqual(createEmptyStudioCharmBarState());
+    await repository.saveCharmBar(normalizeStudioCharmBarState({
+      version: 1,
+      charms: [tear, focus, tear],
+      open: true,
+      starterSettled: true,
+    }));
+    await expect(repository.loadCharmBar()).resolves.toEqual({
+      version: 1,
+      charms: [tear, focus],
+      open: true,
+      starterSettled: true,
+    });
+    expect(JSON.parse(fixture.values.get("charm-bar") ?? "null")).toEqual({
+      version: 1,
+      charms: [tear, focus],
+      open: true,
+      starterSettled: true,
+    });
+    // 고정 목록은 참조(ID)만 저장한다: 소재 본문이나 권리 정보를 복제하지 않는다.
+    expect(fixture.values.get("charm-bar")).not.toMatch(/svg|data:|license/iu);
+    expect(new Map([...fixture.values].filter(([key]) => key !== "charm-bar"))).toEqual(favoriteSnapshot);
+  });
+
+  it("drops malformed charm entries and fails closed to an empty bar", async () => {
+    const fixture = memoryStore({
+      "charm-bar": JSON.stringify({
+        version: 1,
+        charms: ["fx:ok", "fx:ok", "unknown:kind", "fx:bad id", 7, null, "emoji:1f4a7"],
+        open: "yes",
+        starterSettled: 1,
+      }),
+    });
+    const repository = createStudioUiPreferencesRepository(fixture.store);
+    await expect(repository.loadCharmBar()).resolves.toEqual({
+      version: 1,
+      charms: ["fx:ok", "emoji:1f4a7"],
+      open: false,
+      starterSettled: false,
+    });
+    fixture.values.set("charm-bar", "{broken");
+    await expect(repository.loadCharmBar()).resolves.toEqual(createEmptyStudioCharmBarState());
+    fixture.values.set("charm-bar", JSON.stringify({ version: 2, charms: ["fx:ok"], open: true }));
+    await expect(repository.loadCharmBar()).resolves.toEqual(createEmptyStudioCharmBarState());
   });
 
   it("round-trips element recents without probing the retired browser-storage envelope", async () => {

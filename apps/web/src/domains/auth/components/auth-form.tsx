@@ -30,6 +30,8 @@ import {
 } from "./auth-provider-discovery";
 import { resolveAuthEmailActionResult } from "./auth-email-action-result";
 import { GoogleIdentityButton } from "./google-identity-button";
+import { DemoTag } from "./auth-demo-tag";
+import { AuthInAppBrowserNotice } from "./in-app-browser-notice";
 import { GuestEntryButton } from "./guest-entry-button";
 
 import {
@@ -43,26 +45,6 @@ import { withCsrfProtection } from "@/shared/lib/csrf";
 import { cn } from "@/shared/lib/utils";
 import { signIn } from "@/domains/auth/public/session/auth-session-store";
 import { apiFetch, apiPath } from "@/platform/api";
-
-// 실제 OAuth 미설정 시 데모 폴백임을 버튼에 명확히 표시(정직성).
-function DemoTag({ dark }: { dark?: boolean }) {
-  return (
-    <span
-      className={cn(
-        "rounded px-1 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide",
-        dark
-          ? "bg-[oklch(0.2_0.02_60/0.16)] text-on-accent"
-          : "border border-line bg-raised text-fg-3"
-      )}
-    >
-      {translateCurrentStaticSourceText(
-        "domains.auth.components.auth.modal",
-        "ko",
-        "데모"
-      )}
-    </span>
-  );
-}
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -455,6 +437,7 @@ export function AuthForm({
             </p>
           </div>
 
+          <AuthInAppBrowserNotice />
           <div
             role="tablist"
             aria-label={translateCurrentStaticSourceText(

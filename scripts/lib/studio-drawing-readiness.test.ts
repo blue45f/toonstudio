@@ -7,9 +7,10 @@ import {
   waitForStudioDrawingReady,
 } from "./studio-drawing-readiness";
 
-type Surface = "comic" | "beta" | "welcome" | "quickstart" | "viewport" | "stage";
+type Surface = "comic" | "notice" | "beta" | "welcome" | "quickstart" | "viewport" | "stage";
 const selectors: Record<Surface, string> = {
   comic: '[data-studio-quick-comic-overlay="true"]',
+  notice: '[data-testid="mobile-full-edit-notice"]',
   beta: '[data-studio-beta-notice="true"]',
   welcome: '[data-studio-cinematic-canvas-welcome="true"]',
   quickstart: '[data-studio-creative-starter="true"]',
@@ -18,6 +19,7 @@ const selectors: Record<Surface, string> = {
 };
 const closeControls: Partial<Record<Surface, string>> = {
   comic: "빠른 웹툰 조립 취소",
+  notice: "이해했어요",
   beta: '[data-studio-beta-notice-acknowledge="true"]',
   welcome: "시작 안내 닫기",
   quickstart: '[data-studio-quickstart-dismiss="true"]',
@@ -26,7 +28,7 @@ const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 
 function fakePage() {
   const visible: Record<Surface, boolean> = {
-    comic: false, beta: false, welcome: false, quickstart: false, viewport: true, stage: true,
+    comic: false, notice: false, beta: false, welcome: false, quickstart: false, viewport: true, stage: true,
   };
   const calls: Array<{ surface: Surface | "target"; options: { timeout: number } }> = [];
   const close = vi.fn(async (surface: Surface, options: { timeout: number }) => {
@@ -88,13 +90,28 @@ describe("그리기 검증기 UI readiness", () => {
     expect(finished).toHaveBeenCalledWith({ welcomeDismissed: true });
   });
 
-  it("동시에 보이는 모달을 comic, beta, welcome, quickstart 순으로 정상 클릭한다", async () => {
+  it("동시에 보이는 안내를 comic, 모바일 편집 안내, beta, welcome, quickstart 순으로 정상 클릭한다", async () => {
     const f = fakePage();
-    for (const surface of ["comic", "beta", "welcome", "quickstart"] as const) f.visible[surface] = true;
+    for (const surface of ["comic", "notice", "beta", "welcome", "quickstart"] as const) f.visible[surface] = true;
     const result = waitForStudioDrawingReady(f.page, { requireWelcome: true });
     await vi.runAllTimersAsync();
     await result;
-    expect(f.calls.map(({ surface }) => surface)).toEqual(["comic", "beta", "welcome", "quickstart"]);
+    expect(f.calls.map(({ surface }) => surface)).toEqual(["comic", "notice", "beta", "welcome", "quickstart"]);
+  });
+
+  it("휴대폰 폭의 풀 편집 안내는 닫은 뒤에야 준비 완료로 보고 데스크톱 폭에서는 건드리지 않는다", async () => {
+    const f = fakePage();
+    expect(await waitForStudioDrawingReady(f.page)).toEqual({ welcomeDismissed: false });
+    expect(f.close).not.toHaveBeenCalled();
+
+    f.visible.notice = true;
+    const finished = vi.fn();
+    const result = waitForStudioDrawingReady(f.page).then(finished);
+    await vi.runAllTimersAsync();
+    await result;
+    expect(f.calls.map(({ surface }) => surface)).toEqual(["notice"]);
+    expect(f.visible.notice).toBe(false);
+    expect(finished).toHaveBeenCalledWith({ welcomeDismissed: false });
   });
 
   it.each(["viewport", "stage"] as const)("안내를 닫아도 %s가 안 보이면 기다린다", async (surface) => {
@@ -276,6 +293,23 @@ describe("그리기 검증기 UI readiness", () => {
     await vi.runAllTimersAsync();
     await result;
     expect(f.calls.map(({ surface }) => surface)).toEqual(["welcome", "target"]);
+    expect(f.targetClick.mock.calls.map(([options]) => options)).toEqual([{ timeout: 1_000 }, { timeout: 300 }]);
+    expect(Date.now() - started).toBe(1_200);
+  });
+
+  it("도크 메뉴를 누르는 도중 나타난 풀 편집 안내를 정상 클릭으로 닫고 같은 예산으로 재시도한다", async () => {
+    const f = fakePage();
+    f.targetClick.mockImplementationOnce(async ({ timeout }) => {
+      f.visible.notice = true;
+      await pause(timeout);
+      throw new errors.TimeoutError("모바일 편집 안내가 버튼을 가림");
+    });
+    const started = Date.now();
+    const result = clickStudioControlAfterReadiness(f.page, f.target, 1_500);
+    await vi.runAllTimersAsync();
+    await result;
+    expect(f.calls.map(({ surface }) => surface)).toEqual(["notice", "target"]);
+    expect(f.visible.notice).toBe(false);
     expect(f.targetClick.mock.calls.map(([options]) => options)).toEqual([{ timeout: 1_000 }, { timeout: 300 }]);
     expect(Date.now() - started).toBe(1_200);
   });

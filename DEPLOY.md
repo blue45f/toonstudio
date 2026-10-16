@@ -96,6 +96,29 @@ pnpm run cloudflare:static:deploy
 없거나 JSON·scope가 깨지면 기존 명시 승인 방식으로 fail-closed 복귀한다. 상시 승인을 거두려면
 파일을 삭제하면 된다.
 
+### 상시 승인 범위 확대 (2026-10-16 저장소 소유자 결정)
+
+"앞으로는 승인 없이 배포할 수 있게 해 달라"는 소유자 결정에 따라 `deploy/STANDING_APPROVAL.json`의
+`scopes`에 적힌 배포 단위는 매 릴리스 명시 승인 없이 배포한다. 이 파일이 없거나 JSON이 깨지면
+모든 단위가 명시 승인 방식으로 fail-closed 복귀하고, 상시 승인을 거두려면 파일을 삭제하면 된다.
+
+| scope | 배포 단위와 절차 | 롤백 |
+| --- | --- | --- |
+| `cloudflare-static-production` | 위 "정적 웹" 절차(`pnpm run cloudflare:static:deploy`) | 직전 Worker 버전으로 `wrangler versions deploy` |
+| `cloudflare-apex-redirect-production` | `pnpm run verify:cloudflare-apex-redirect` 통과 후 `wrangler versions upload` → `wrangler versions deploy <version-id>@100 --yes` (`deploy/cloudflare-apex-redirect/README.md`) | 직전 Worker 버전 |
+| `core-api-container-release` | `api-container-release.yml`에 `origin/main` 끝의 40자리 SHA를 넣어 GHCR 이미지(`ghcr.io/blue45f/toonspectrum-core-api:<sha>`)를 만든다. 운영에는 아직 반영되지 않는다 | 해당 없음(이미지 생성만) |
+| `render-core-api-image-deploy` | 위에서 만든 이미지 태그를 Render `toonspectrum-core-api`에 이미지 지정 배포(`POST /v1/services/{id}/deploys`의 `imageUrl`, 또는 대시보드 Manual Deploy). **서비스 설정의 `imagePath`는 옛 태그라서 이미지 지정 없는 재배포(`trigger_deploy`)는 옛 버전으로 되돌아가므로 쓰지 않는다** | 직전 정상 배포의 이미지 태그를 같은 방법으로 재배포 |
+| `production-database-migrations-additive` | `production-database-migrations.yml`을 `apply` 모드로 실행(릴리스 SHA는 이미 `origin/main`의 조상이어야 한다). **추가형 migration만** — 새 테이블·인덱스·제약·트리거 | 추가형이라 구 runtime과 호환되며, 되돌림이 필요하면 migration 파일 첫 줄의 롤백 주석을 별도 승인으로 수행 |
+
+공통 조건과 순서:
+
+1. 대상은 배포 시점 `origin/main` 끝의 40자리 SHA 하나이며 필수 CI(`core`·`verify`)가 그 SHA에서 녹색이어야 한다. 같은 SHA의 중복 배포·자동 재시도는 하지 않는다.
+2. 순서는 migration(추가형 여부를 SQL로 다시 확인) → 컨테이너 릴리스 → Render 이미지 배포 → 정적 웹 → apex Worker이며, 배포 단위 사이에 health·로그인·자산 업로드 같은 스모크를 확인한다.
+3. 직전 정상 버전(Worker 버전 ID, Render 이미지 태그)을 배포 전에 기록하고, 스모크가 실패하면 즉시 그 버전으로 되돌린다.
+4. 상시 승인 밖은 여전히 사용자의 명시적 승인이 필요하다: 환경변수·시크릿·도메인·유료 플랜 변경, 삭제·이름 변경·제약 강화 같은 파괴적 migration, `adopt`·`repair` 모드, 새로운 배포 단위의 추가.
+5. GitHub 환경(`production-database`)의 required reviewer 같은 보호 설정은 저장소 소유자의 통제 아래 그대로 유지한다. `NO-STUDIO-WRITERS` 확인 문구는 추가형 migration에서만 소유자를 대신해 입력하며, 입력 사실과 근거를 배포 기록에 남긴다.
+6. 결과에는 승인(상시 승인 적용), SHA, 검증, 배포 ID/URL, 롤백 대상을 구분해 기록한다.
+
 Core API에는 `.env.production.example`의 PostgreSQL·인증·CORS·목적별 object storage 설정을
 Render encrypted environment 또는 root `.env.local` Secret File로 주입합니다. `CORE_API_ORIGIN`은
 credential, path, query가 없는 별도 HTTPS origin이어야 하며 readiness와 origin provenance 검사를 통과해야 합니다.

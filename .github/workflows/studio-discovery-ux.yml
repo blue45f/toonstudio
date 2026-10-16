@@ -107,6 +107,7 @@ jobs:
           apps/web/src/domains/creator/useStudioRecentColors.test.tsx
           apps/web/src/domains/creator/studio-local-database-worker-handoff.test.ts
           scripts/lib/studio-drawing-browser-context.test.ts
+          scripts/lib/studio-drawing-storage-capability.test.ts
           scripts/lib/studio-drawing-isolated-origin.test.ts
           apps/web/src/domains/creator/studio-tool-search.test.ts
           apps/web/src/domains/creator/studio-basic-brush-expansion.test.ts

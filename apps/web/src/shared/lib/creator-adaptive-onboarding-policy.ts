@@ -1,5 +1,6 @@
 import type { CreatorRoleProfile } from "./creator-role-contract";
 import type { CreatorRoleWorkspacePreference } from "./creator-role-workspace-contract";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 const STORAGE_PREFIX = "toonspectrum:creator-adaptive-onboarding:v1:";
 const acknowledgedUsers = new Set<string>();
@@ -30,7 +31,7 @@ const CREATOR_ONBOARDING_ENTRY_PATHS: ReadonlySet<string> = new Set([
  */
 export function isCreatorOnboardingEntry(pathname: string, search = ""): boolean {
   if (search) return false;
-  return CREATOR_ONBOARDING_ENTRY_PATHS.has(pathname.replace(/\/+$/u, ""));
+  return CREATOR_ONBOARDING_ENTRY_PATHS.has(trimTrailingSlashes(pathname));
 }
 
 export function needsCreatorAdaptiveOnboarding(

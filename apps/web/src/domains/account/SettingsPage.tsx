@@ -592,7 +592,7 @@ export function SettingsPage() {
                     {entry.href ? (
                       <Link
                         to={entry.href}
-                        className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors hover:bg-panel-2"
+                        className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors hover:bg-raised"
                       >
                         <span className="text-sm font-bold text-fg">{bi(...entry.title)}</span>
                         <span className="shrink-0 text-xs text-fg-3">{bi(...entry.hint)}</span>
@@ -616,7 +616,7 @@ export function SettingsPage() {
                           }
                           setSettingsQuery("");
                         }}
-                        className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors hover:bg-panel-2"
+                        className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors hover:bg-raised"
                       >
                         <span className="text-sm font-bold text-fg">{bi(...entry.title)}</span>
                         <span className="shrink-0 text-xs text-fg-3">{bi(...entry.hint)}</span>

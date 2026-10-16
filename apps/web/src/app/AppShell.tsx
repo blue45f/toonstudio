@@ -34,6 +34,7 @@ import { workspaceTaskRoute } from "@/shared/components/workspace/workspace-task
 import { recordCreatorDestination } from "@/shared/lib/creator-continuity";
 import { useT } from "@/shared/lib/i18n";
 import { recordSiteRouteVisit } from "@/shared/lib/site-route-history";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 import "@toonstudio/core/fx/fx.css";
 
@@ -194,7 +195,7 @@ export function AppShell({
   const taskRoute = publicCreativeRoute || protectedCampus
     ? null
     : workspaceTaskRoute(pathname, search) ?? campusTaskRoute(campus);
-  const normalizedPath = pathname.replace(/\/+$/u, "") || "/";
+  const normalizedPath = trimTrailingSlashes(pathname) || "/";
   // 몰입 예외(전역 크롬 제거) 판정은 shell-chrome-policy의 명시 목록이 단일 기준이다.
   const { immersiveVirtualHome, immersiveVirtualProject, immersiveVirtualExperience } =
     resolveShellChrome({

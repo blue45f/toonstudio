@@ -79,6 +79,15 @@ describe("detectStudioTranslationRegister — 한국어 번역", () => {
     expect(detect("그건 아니네.", "ko")).toMatchObject({ tier: "non-honorific", classifiedSentences: 1 });
   });
 
+  it("따옴표·괄호로 감싼 대답말도 대답말이다 — 감싼 감탄 종결은 그대로 읽는다", () => {
+    // 문장 분리기가 닫는 따옴표를 따로 떼어 세기도 하므로 분류된 문장 수(0)만 본다.
+    for (const text of ['"네네."', "「네」", "(네)", "[예]", "‘네에.’", "“아, 네.”"]) {
+      expect(detect(text, "ko")).toMatchObject({ tier: null, classifiedSentences: 0 });
+      expect(compareStudioTranslationRegister("polite", detect(text, "ko"))).toBeNull();
+    }
+    expect(detect('"정말 예쁘네."', "ko")).toMatchObject({ tier: "non-honorific", classifiedSentences: 1 });
+  });
+
   it("어미로 읽을 수 없는 문장은 분류하지 않고 센다", () => {
     expect(detect("민호 선배", "ko")).toMatchObject({ tier: null, classifiedSentences: 0, totalSentences: 1 });
     expect(detect("", "ko")).toMatchObject({ tier: null, classifiedSentences: 0, totalSentences: 0 });
@@ -119,6 +128,31 @@ describe("detectStudioTranslationRegister — 일본어 번역", () => {
       // 존대 인물에게 불일치를 만들지 않는다.
       expect(compareStudioTranslationRegister("polite", detect(text, "ja"))).toBeNull();
     }
+  });
+
+  it("따옴표·괄호·장음 표지·되풀이로 꾸민 대답말·정형 인사도 중립이다", () => {
+    for (const text of [
+      "「はい」",
+      "（はい）",
+      "[はい]",
+      "はーい。",
+      "はいはい！",
+      "どうぞどうぞ。",
+      "いってらっしゃーい！",
+      "はい、どうぞどうぞ。",
+    ]) {
+      expect(detect(text, "ja")).toMatchObject({ tier: null, classifiedSentences: 0, totalSentences: 1 });
+      expect(compareStudioTranslationRegister("polite", detect(text, "ja"))).toBeNull();
+    }
+  });
+
+  it("'どうぞ…' 권유 표현은 존대 어미가 없어도 반말로 단정하지 않되, 존대 어미가 있으면 그대로 읽는다", () => {
+    expect(detect("どうぞよろしく。", "ja")).toMatchObject({ tier: null, classifiedSentences: 0 });
+    expect(detect("皆さん、どうぞよろしく！", "ja")).toMatchObject({ tier: null, classifiedSentences: 0 });
+    expect(detect("どうぞよろしくお願いします。", "ja")).toMatchObject({ tier: "honorific" });
+    expect(detect("どうぞお入りください。", "ja")).toMatchObject({ tier: "honorific", level: "polite" });
+    // 권유로 시작하지 않는 같은 모양은 어미 표가 그대로 읽는다.
+    expect(detect("よろしく。", "ja")).toMatchObject({ tier: "non-honorific" });
   });
 
   it("대답말 뒤에 서술이 이어지면 서술의 어미를 읽는다", () => {

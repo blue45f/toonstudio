@@ -6,7 +6,8 @@
  * 그래서 카드 계층은 이 함수를 쓴다.
  *
  *  · 정규화: NFKC(전각 → 반각 포함) + 소문자 + 하이픈·대시를 공백으로 + 공백 접기
- *    ("Demon-King" 과 "Demon King" 은 같은 말이다).
+ *    ("Demon-King" 과 "Demon King" 은 같은 말이다). 대시를 공백으로 바꾸면 사라지는 대시뿐인 용어("—"·"-")만
+ *    예외로, 대시를 그대로 둔 표기끼리 비교한다.
  *  · 라틴·키릴·그리스 문자와 숫자는 띄어쓰기로 단어가 갈린다 — 용어의 양끝이 그런 문자이고 이웃한 글자도
  *    그런 문자면 같은 단어의 일부라 일치로 보지 않는다("Sun" 은 "Sunbae" 에 걸리지 않고, "Sun-bae" 에는 걸린다).
  *  · 영어 굴절은 같은 말로 본다 — 라틴 문자로 끝나는 3글자 이상 용어 뒤에 복수형·소유형(-s, -es, 's, s')이 바로
@@ -26,15 +27,23 @@ const ENGLISH_INFLECTION_SUFFIX =
   /^(?:e?s|['’]s|s['’])(?![\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Greek}\p{N}])/u;
 const INFLECTION_MIN_LETTERS = 3;
 
+function normalizeBasic(value: string): string {
+  return value.normalize("NFKC").replace(/\s+/gu, " ").trim().toLowerCase();
+}
+
 function normalizeForMatch(value: string): string {
-  return value.normalize("NFKC").replace(/\p{Pd}+/gu, " ").replace(/\s+/gu, " ").trim().toLowerCase();
+  return normalizeBasic(value).replace(/\p{Pd}+/gu, " ").replace(/\s+/gu, " ").trim();
 }
 
 /** `text` 가 `term` 을 단어로 포함하는가. 빈 용어는 항상 false 다(빈 문자열이 모든 곳에 "포함"되는 오탐 방지). */
 export function studioTranslationTextContains(text: string, term: string): boolean {
   const haystack = normalizeForMatch(text);
   const needle = normalizeForMatch(term);
-  if (needle === "") return false;
+  if (needle === "") {
+    // 대시뿐인 용어("—"·"〜")는 대시를 공백으로 바꾸면 사라진다 — 이때만 대시를 그대로 둔 표기로 비교한다.
+    const dashes = normalizeBasic(term);
+    return dashes !== "" && normalizeBasic(text).includes(dashes);
+  }
   const characters = Array.from(needle);
   const needsLeftBoundary = SPACED_WORD_CHARACTER.test(characters[0] ?? "");
   const needsRightBoundary = SPACED_WORD_CHARACTER.test(characters[characters.length - 1] ?? "");

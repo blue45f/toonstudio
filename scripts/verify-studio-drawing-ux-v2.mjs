@@ -2,6 +2,7 @@ import { createStudioDrawingIsolatedOrigin } from "./lib/studio-drawing-isolated
 import { auditDrawingControls, measureDrawingColorInteraction } from "./lib/studio-drawing-acceptance-checks.mjs";
 import { verifyRestrictedDrawingContext } from "./lib/studio-restricted-drawing-context.mjs";
 import { openStudioDrawingContext } from "./lib/studio-drawing-browser-context.mjs";
+import { expectedDrawingPersistence, hasOpfsEntryPoint } from "./lib/studio-drawing-storage-capability.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -17,25 +18,36 @@ const isolated = await createStudioDrawingIsolatedOrigin(origin);
 const url = new URL("/tools/browser-harnesses/drawing-ux-v2.html", isolated.origin).href;
 report.origin = isolated.origin;
 const options = { timeout: 45000 };
+// 콜드 Vite dev 서버는 하니스의 모듈 그래프를 처음 변환·최적화하느라 기본 탐색 한도(30초, load 대기)를 넘긴다
+// (CI 에서 같은 픽스처의 첫 탐색이 36초 걸린 것이 관측됐다). 같은 서버를 쓰는 verify-studio-discovery-ux 와
+// 같은 예산(탐색·첫 컴포넌트 준비 120초, domcontentloaded)을 하니스 진입에 주고, 이후 상태 전이는 45초 expect 로 판정한다.
+const coldStart = { timeout: 120_000 };
+const navigation = { waitUntil: "domcontentloaded", ...coldStart };
 const pinIds = async (page) => JSON.parse(await page.getByTestId("pins").textContent());
-async function ready(page) {
-  await page.goto(url);
-  await expect(page.getByTestId("drawing-fixture")).toHaveAttribute("data-persistence", "saved", options);
-  await expect(page.getByTestId("drawing-fixture")).toHaveAttribute("data-history-persistence", "saved", options);
+// persistence 는 엔진의 저장 능력이 정한다(expectedDrawingPersistence). 기본은 실제 "saved" 이고, OPFS 진입점이 없는 빌드만
+// 제품이 문서화한 "session-only" 를 정확히 기대한다(둘 다 다른 값으로 바뀌면 실패한다).
+async function ready(page, persistence = "saved") {
+  await page.goto(url, navigation);
+  await expect(page.getByTestId("drawing-fixture")).toHaveAttribute("data-persistence", persistence, coldStart);
+  await expect(page.getByTestId("drawing-fixture")).toHaveAttribute("data-history-persistence", persistence, options);
 }
 async function saved(page) { await expect(page.getByTestId("drawing-fixture")).toHaveAttribute("data-persistence", "saved", options); }
 async function apply(page) { await page.getByRole("button", { name: "색상 적용", exact: true }).click(); }
+// 보기 방식·일괄 편집은 점진 공개(<details>)라 구성 창을 열 때마다 접힌 채 시작한다. 사용 전에 사용자처럼 펼친다.
+async function openBulkEdit(page) { await page.getByText("보기 방식·일괄 편집", { exact: true }).click(); }
 async function openColor(page, target = "주 색") {
   const mobileColor = page.locator('[data-studio-mobile-primary-actions="true"]').getByRole("button", { name: "브러시 색상", exact: true });
   if (await mobileColor.isVisible() && await mobileColor.getAttribute("aria-expanded") !== "true") await mobileColor.click();
   await page.getByRole("button", { name: target, exact: true }).click();
   const dialog = page.getByRole("dialog", { name: `${target} 선택`, exact: true });
-  await expect(dialog).toBeVisible();
+  // 휴대폰 폭의 첫 색상 시트는 지연 청크라 콜드 dev 서버에서 처음 열릴 때 변환 시간(실측 2.5초, 부하 시 5초 초과)이 든다.
+  await expect(dialog).toBeVisible(options);
   return dialog;
 }
 async function desktop(page, engine) {
   await ready(page);
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
+  await openBulkEdit(page);
   await page.getByRole("button", { name: "모든 도구 고정", exact: true }).click();
   const pinned = page.getByRole("region", { name: "도구막대에 표시", exact: true });
   const boxes = pinned.getByRole("checkbox");
@@ -77,6 +89,7 @@ async function desktop(page, engine) {
   report.checks.push(`${engine}: exact 27 pins, SQLite reload, focus density, keyboard entry, use/pin separation, ordered 35-tool extension`);
 
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
+  await openBulkEdit(page);
   await page.getByText("작업별 구성 · 내 구성 저장", { exact: true }).click();
   await page.getByRole("textbox", { name: "새 도구 구성 이름" }).fill("회귀 선화");
   await page.getByRole("button", { name: "구성 저장", exact: true }).click();
@@ -96,6 +109,7 @@ async function desktop(page, engine) {
   await page.getByRole("button", { name: "구성 적용", exact: true }).click();
   await saved(page); await page.reload(); await saved(page);
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
+  await openBulkEdit(page);
   await page.getByText("작업별 구성 · 내 구성 저장", { exact: true }).click();
   await expect(page.getByRole("button", { name: "키보드 작업", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "키보드 작업", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -207,14 +221,14 @@ async function desktop(page, engine) {
 
 }
 
-async function handheld(browser, engine, size) {
+async function handheld(browser, engine, size, persistence = "saved") {
   const session = await openStudioDrawingContext({ chromium, firefox, webkit }[engine], browser, engine,
     { viewport: size, hasTouch: true, ...(engine !== "firefox" ? { isMobile: true } : {}) });
   const context = session.context;
   const page = await context.newPage();
   page.on("pageerror", (error) => report.errors.push(`${engine} mobile: ${error.message}`));
   try {
-    await ready(page);
+    await ready(page, persistence);
     const controls = page.locator('[data-studio-mobile-primary-actions="true"]');
     await expect(controls).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
@@ -312,32 +326,47 @@ try {
     report.engines.push({ engine, version: browser.version() });
     try {
       const session = await openStudioDrawingContext(launcher, browser, engine, { viewport: { width: 1440, height: 900 } });
-      report.storageModes.push({ engine, mode: session.mode });
+      let persistence = "saved";
       try {
-        const page = await session.context.newPage();
-        page.on("pageerror", (error) => report.errors.push(`${engine}: ${error.message}`));
-        page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${engine}: ${message.text()}`); });
-        await desktop(page, engine);
-        if (engine === "chromium") {
-          report.accessibility.push(...await auditDrawingControls(page));
-          report.performance.push(await measureDrawingColorInteraction(page, url));
+        if (engine === "webkit") {
+          // 저장 능력은 콘솔 오류를 모으지 않는 별도 페이지로 잰다(OPFS 진입점이 없는 빌드는 제품이 오류를 정직하게 남긴다).
+          const probe = await session.context.newPage();
+          try {
+            await probe.goto(url, navigation);
+            persistence = expectedDrawingPersistence(engine, await hasOpfsEntryPoint(probe));
+          } finally { await probe.close(); }
         }
-        if (session.reopen) {
-          const pins = await pinIds(page);
-          const recent = await page.getByTestId("recent").textContent();
-          const reopened = await session.reopen();
-          const restored = await reopened.newPage();
-          restored.on("pageerror", (error) => report.errors.push(`${engine} restored: ${error.message}`));
-          await ready(restored);
-          assert.deepEqual(await pinIds(restored), pins);
-          await expect(restored.getByTestId("recent")).toHaveText(recent, options);
-          report.checks.push(`${engine}: complete browser shutdown and fresh process restore real SQLite pins and recent colors`);
+        report.storageModes.push({ engine, mode: session.mode, persistence });
+        if (persistence === "saved") {
+          const page = await session.context.newPage();
+          page.on("pageerror", (error) => report.errors.push(`${engine}: ${error.message}`));
+          page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${engine}: ${message.text()}`); });
+          await desktop(page, engine);
+          if (engine === "chromium") {
+            report.accessibility.push(...await auditDrawingControls(page));
+            report.performance.push(await measureDrawingColorInteraction(page, url));
+          }
+          if (session.reopen) {
+            const pins = await pinIds(page);
+            const recent = await page.getByTestId("recent").textContent();
+            const reopened = await session.reopen();
+            const restored = await reopened.newPage();
+            restored.on("pageerror", (error) => report.errors.push(`${engine} restored: ${error.message}`));
+            await ready(restored);
+            assert.deepEqual(await pinIds(restored), pins);
+            await expect(restored.getByTestId("recent")).toHaveText(recent, options);
+            report.checks.push(`${engine}: complete browser shutdown and fresh process restore real SQLite pins and recent colors`);
+          }
+        } else {
+          // 내구 저장 시나리오는 OPFS 가 있어야 성립한다. 없는 빌드에서는 저장을 흉내 내지 않고, 모바일 도크의 정확한 세션 전용
+          // 상태와 아래 제한 컨텍스트 검증(경고·편집 가능·가짜 저장 표시 없음)으로 문서화한 계약을 확인한다.
+          report.checks.push(`${engine}: OPFS entry point is absent in this build; durable SQLite scenarios are not claimed, session-only contract is verified instead`);
         }
       } finally { await session.close(); }
-      await handheld(browser, engine, { width: 390, height: 700 });
-      await handheld(browser, engine, { width: 360, height: 640 });
-      await handheld(browser, engine, { width: 320, height: 640 });
-      await handheld(browser, engine, { width: 412, height: 800 });
+      await handheld(browser, engine, { width: 390, height: 700 }, persistence);
+      await handheld(browser, engine, { width: 360, height: 640 }, persistence);
+      await handheld(browser, engine, { width: 320, height: 640 }, persistence);
+      await handheld(browser, engine, { width: 412, height: 800 }, persistence);
       if (engine === "webkit") report.storageModes.push({ engine, ...await verifyRestrictedDrawingContext(browser, url) });
     } finally { await browser.close(); }
   }

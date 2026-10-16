@@ -13,6 +13,7 @@ import type {
   CharacterChatProfile,
   CharacterChatProfileDraft,
 } from "./character-chat-types";
+import { characterChatVoiceForStorage, resolveCharacterChatVoice } from "./character-chat-voice";
 
 export const CHARACTER_CHAT_STORAGE_KEY = "toonstudio-character-chat-v1";
 export const CHARACTER_CHAT_PROFILES_SERVER_PATH = "/api/me/character-chat-profiles";
@@ -115,6 +116,8 @@ export function buildCharacterChatProfile(
   } = {},
 ): CharacterChatProfile {
   const now = options.now ?? new Date().toISOString();
+  // 낭독 선호는 기본값이 아닐 때만 필드로 남겨, 설정하지 않은 프로필의 모양을 그대로 유지한다.
+  const voice = characterChatVoiceForStorage(draft.voice);
   return {
     id: options.id ?? createSecureRandomUuid(),
     characterName: normalizeText(draft.characterName, PROFILE_CHARACTER_NAME_MAX),
@@ -133,23 +136,31 @@ export function buildCharacterChatProfile(
     chatEnabled: draft.chatEnabled,
     isDemo: options.isDemo ?? false,
     ownerId: options.ownerId ?? null,
+    ...(voice ? { voice } : {}),
     createdAt: now,
     updatedAt: now,
   };
 }
 
-/** 기존 프로필을 초안 내용으로 갱신한다 — id와 createdAt은 유지한다. */
+/**
+ * 기존 프로필을 초안 내용으로 갱신한다 — id와 createdAt은 유지한다.
+ * 초안에 낭독 선호(`voice`)가 없으면 기존 값을 그대로 둔다 — 이 필드를 모르는 호출부가 저장된
+ * 낭독 선호를 조용히 지우지 않게 한다. 기본값으로 되돌리려면 기본값을 명시적으로 넘긴다.
+ */
 export function reviseCharacterChatProfile(
   profile: CharacterChatProfile,
   draft: CharacterChatProfileDraft,
   now?: string,
 ): CharacterChatProfile {
-  const revised = buildCharacterChatProfile(draft, {
-    id: profile.id,
-    now: profile.createdAt,
-    isDemo: profile.isDemo,
-    ownerId: profile.ownerId ?? null,
-  });
+  const revised = buildCharacterChatProfile(
+    draft.voice === undefined && profile.voice ? { ...draft, voice: profile.voice } : draft,
+    {
+      id: profile.id,
+      now: profile.createdAt,
+      isDemo: profile.isDemo,
+      ownerId: profile.ownerId ?? null,
+    },
+  );
   return { ...revised, updatedAt: now ?? new Date().toISOString() };
 }
 
@@ -172,6 +183,7 @@ export function characterChatProfileToDraft(
     avatarUrl: profile.avatarUrl ?? "",
     canonSheetId: profile.canonSheetId ?? "",
     chatEnabled: profile.chatEnabled,
+    ...(profile.voice ? { voice: resolveCharacterChatVoice(profile) } : {}),
   };
 }
 

@@ -6,6 +6,8 @@
  * 테스트에서 브라우저 없이 검증할 수 있다.
  */
 
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+
 export type PageIntroMotifKind =
   | "pipeline" // /production/* — 공정 단계가 차례로 채워지듯
   | "frames" // /studio/p/* — 콘티 프레임이 차곡차곡 쌓이듯
@@ -22,7 +24,7 @@ const MOTIF_PREFIXES: ReadonlyArray<readonly [prefix: string, motif: PageIntroMo
 ];
 
 function normalizeIntroPath(pathname: string): string {
-  return pathname.toLowerCase().replace(/\/+$/u, "") || "/";
+  return trimTrailingSlashes(pathname.toLowerCase()) || "/";
 }
 
 /** 이 경로에 인트로 모티프를 표시한다면 그 종류, 아니면 null. */
