@@ -241,24 +241,32 @@ export interface WebPushSubscriptionLimitInput {
   readonly maxPerUser: number;
 }
 
-export interface WebPushSubscriptionLimitViolation {
-  readonly scope: "user" | "project";
-  readonly limit: number;
-}
+export type WebPushSubscriptionWriteDecision =
+  /** 그대로 저장한다: 이미 등록된 endpoint 의 키 갱신이거나, 두 상한 안에서 추가한다. */
+  | { readonly kind: "write" }
+  /**
+   * 사용자 상한이 가득 찼으니 본인 구독 중 가장 오래 갱신되지 않은 하나를 지우고 새 구독을 저장한다.
+   * 기기가 구독을 갱신(endpoint 교체)하면 옛 endpoint 는 다음 전송에서 404·410 을 받아야 지워지는데, 알림이 드문
+   * 프로젝트에서는 그동안 사용자 상한이 옛 endpoint 로 차서 사용자가 스스로 풀 수 없는 거절이 되기 때문이다
+   * (클라이언트는 현재 브라우저의 endpoint 만 해제한다). 지우고 넣으므로 행 수가 늘지 않아 프로젝트 상한에도 영향이 없다.
+   */
+  | { readonly kind: "replace-oldest-own" }
+  /** 프로젝트 상한이 가득 차 새 구독을 받을 수 없다. 다른 사용자의 구독을 대신 지우지 않는다. */
+  | { readonly kind: "reject"; readonly scope: "project"; readonly limit: number };
 
 /**
- * 새 endpoint 를 추가할 수 있는지 판정한다. 이미 등록된 endpoint 의 키 갱신은 행이 늘지 않으므로 항상 허용한다.
- * 둘 다 가득 찼다면 사용자가 스스로 정리할 수 있는 사용자 상한을 먼저 알린다.
+ * 새 endpoint 를 어떻게 저장할지 판정한다. 이미 등록된 endpoint 의 키 갱신은 행이 늘지 않으므로 항상 그대로 저장한다.
+ * 사용자 상한은 본인 구독 교체로 풀고(행 수 불변), 프로젝트 상한만 거절한다.
  */
 export function evaluateWebPushSubscriptionLimits(
   input: WebPushSubscriptionLimitInput,
-): WebPushSubscriptionLimitViolation | null {
-  if (input.alreadyRegistered) return null;
-  if (input.userCount >= input.maxPerUser) return { scope: "user", limit: input.maxPerUser };
+): WebPushSubscriptionWriteDecision {
+  if (input.alreadyRegistered) return { kind: "write" };
+  if (input.userCount >= input.maxPerUser) return { kind: "replace-oldest-own" };
   if (input.projectCount >= input.maxPerProject) {
-    return { scope: "project", limit: input.maxPerProject };
+    return { kind: "reject", scope: "project", limit: input.maxPerProject };
   }
-  return null;
+  return { kind: "write" };
 }
 
 /**

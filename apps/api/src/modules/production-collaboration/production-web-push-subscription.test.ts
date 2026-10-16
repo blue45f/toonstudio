@@ -45,26 +45,65 @@ interface Totals {
   readonly registered: number;
 }
 
-function fakeTransaction(totals: Totals) {
+interface FakeStatements {
+  lock?: unknown;
+  where?: unknown;
+  oldestWhere?: unknown;
+  oldestOrder?: unknown[];
+  oldestLimit?: number;
+  deleteWhere?: unknown;
+}
+
+/**
+ * 구독 저장소 트랜잭션의 대역. 호출 순서(events)와 각 문장의 조건·정렬 객체를 기록해, 시험이 PgDialect 로 렌더링한
+ * SQL 과 바인딩 값으로 검증할 수 있게 한다. oldestRows 는 "가장 오래 갱신되지 않은 본인 구독" 조회 결과다.
+ */
+function fakeTransaction(totals: Totals, oldestRows: readonly { endpointHash: string }[] = []) {
   const events: string[] = [];
-  const statements: { lock?: unknown; where?: unknown } = {};
+  const statements: FakeStatements = {};
   const written: Record<string, unknown>[] = [];
   const transaction = {
     execute: vi.fn(async (query: unknown) => {
       events.push("lock");
       statements.lock = query;
     }),
-    select: vi.fn(() => {
-      events.push("count");
-      const chain = {
-        from: () => chain,
+    select: vi.fn((fields: Record<string, unknown>) => {
+      if ("projectCount" in fields) {
+        events.push("count");
+        const counting = {
+          from: () => counting,
+          where: (condition: unknown) => {
+            statements.where = condition;
+            return Promise.resolve([totals]);
+          },
+        };
+        return counting;
+      }
+      events.push("select-oldest");
+      const oldest = {
+        from: () => oldest,
         where: (condition: unknown) => {
-          statements.where = condition;
-          return Promise.resolve([totals]);
+          statements.oldestWhere = condition;
+          return oldest;
+        },
+        orderBy: (...orders: unknown[]) => {
+          statements.oldestOrder = orders;
+          return oldest;
+        },
+        limit: (value: number) => {
+          statements.oldestLimit = value;
+          return Promise.resolve(oldestRows);
         },
       };
-      return chain;
+      return oldest;
     }),
+    delete: vi.fn(() => ({
+      where: (condition: unknown) => {
+        events.push("delete-oldest");
+        statements.deleteWhere = condition;
+        return Promise.resolve();
+      },
+    })),
     insert: vi.fn(() => ({
       values: (value: Record<string, unknown>) => {
         events.push("write");
@@ -76,7 +115,7 @@ function fakeTransaction(totals: Totals) {
   doubles.db.transaction.mockImplementation(
     async (callback: (tx: typeof transaction) => Promise<unknown>) => callback(transaction),
   );
-  return { events, statements, written };
+  return { events, statements, written, transaction };
 }
 
 function params(query: unknown): { sql: string; params: unknown[] } {
@@ -101,6 +140,7 @@ afterEach(() => {
 describe("웹 푸시 구독 저장소의 상한 검사", () => {
   const repository = new ProductionIntegrationRepository();
   const limits = { maxPerProject: 5, maxPerUser: 2 } as const;
+  const OLDEST_HASH = `sha256:${"b".repeat(64)}`;
 
   it("프로젝트 단위 잠금을 잡고 집계한 뒤 같은 트랜잭션에서 저장한다", async () => {
     const test = fakeTransaction({ projectCount: 1, userCount: 1, registered: 0 });
@@ -112,28 +152,52 @@ describe("웹 푸시 구독 저장소의 상한 검사", () => {
     expect(params(test.statements.where).params).toEqual(["project-1"]);
   });
 
-  it("사용자 상한(프로젝트 안)에 도달하면 저장하지 않고 사용자 상한 오류를 던진다", async () => {
-    const test = fakeTransaction({ projectCount: 2, userCount: 2, registered: 0 });
-    await expect(repository.upsertPushSubscription(record(), limits)).rejects.toMatchObject({
-      name: "ProductionPushSubscriptionLimitError",
-      scope: "user",
-      limit: 2,
-    });
-    expect(test.events).toEqual(["lock", "count"]);
-    expect(test.written).toEqual([]);
+  it("사용자 상한에 도달하면 거절하지 않고 본인의 가장 오래 갱신되지 않은 구독을 지운 뒤 저장한다", async () => {
+    const test = fakeTransaction(
+      { projectCount: 2, userCount: 2, registered: 0 },
+      [{ endpointHash: OLDEST_HASH }],
+    );
+    await expect(repository.upsertPushSubscription(record(), limits)).resolves.toBeUndefined();
+    // 잠금 → 집계 → 가장 오래된 본인 구독 조회 → 삭제 → 새 구독 저장, 모두 한 트랜잭션 안이다.
+    expect(test.events).toEqual(["lock", "count", "select-oldest", "delete-oldest", "write"]);
+    expect(doubles.db.transaction).toHaveBeenCalledTimes(1);
+    expect(test.written).toEqual([record()]);
+
+    // 조회는 이 프로젝트에서 이 사용자의 행으로만 한정하고, 갱신 시각이 가장 오래된 한 건을 고른다.
+    expect(params(test.statements.oldestWhere).params).toEqual(["project-1", "user-1"]);
+    expect(params(test.statements.oldestWhere).sql).toMatch(/"projectId" = \$1 and .*"actorUserId" = \$2/u);
+    const order = (test.statements.oldestOrder ?? []).map((entry) => params(entry).sql);
+    expect(order).toHaveLength(3);
+    expect(order[0]).toMatch(/"updatedAt" asc/u);
+    expect(order[1]).toMatch(/"createdAt" asc/u);
+    expect(order[2]).toMatch(/"endpointHash" asc/u);
+    expect(test.statements.oldestLimit).toBe(1);
+
+    // 삭제도 같은 프로젝트·사용자에 조회로 고른 endpoint 하나로만 한정한다(다른 사용자의 구독을 건드리지 않는다).
+    expect(params(test.statements.deleteWhere).params).toEqual(["project-1", "user-1", OLDEST_HASH]);
   });
 
-  it("프로젝트 상한에 도달하면 저장하지 않고 프로젝트 상한 오류를 던진다", async () => {
+  it("사용자 상한이 가득 차 있으면 프로젝트 상한도 가득 찼어도 교체로 받아들인다(행 수가 늘지 않는다)", async () => {
+    const test = fakeTransaction(
+      { projectCount: 5, userCount: 2, registered: 0 },
+      [{ endpointHash: OLDEST_HASH }],
+    );
+    await expect(repository.upsertPushSubscription(record(), limits)).resolves.toBeUndefined();
+    expect(test.events).toEqual(["lock", "count", "select-oldest", "delete-oldest", "write"]);
+  });
+
+  it("프로젝트 상한에 도달하면(사용자 상한은 남아 있을 때) 아무것도 지우지 않고 프로젝트 상한 오류를 던진다", async () => {
     const test = fakeTransaction({ projectCount: 5, userCount: 1, registered: 0 });
     const error = await repository.upsertPushSubscription(record(), limits).catch(
       (cause: unknown) => cause,
     );
     expect(error).toBeInstanceOf(ProductionPushSubscriptionLimitError);
     expect(error).toMatchObject({ scope: "project", limit: 5 });
+    expect(test.events).toEqual(["lock", "count"]);
     expect(test.written).toEqual([]);
   });
 
-  it("이미 등록한 endpoint 의 키 갱신은 상한에 도달해도 허용한다", async () => {
+  it("이미 등록한 endpoint 의 키 갱신은 두 상한에 도달해도 허용하고 다른 구독을 지우지 않는다", async () => {
     const test = fakeTransaction({ projectCount: 5, userCount: 2, registered: 1 });
     await repository.upsertPushSubscription(record({ expirationTime: 1_800_000_000_000 }), limits);
     expect(test.events).toEqual(["lock", "count", "write"]);
@@ -177,11 +241,8 @@ describe("registerWebPushSubscription", () => {
     expect(upsert).toHaveBeenCalledWith(record(), { maxPerProject: 200, maxPerUser: 10 });
   });
 
-  it.each([
-    ["user" as const, 10, "내 알림 기기는 최대 10대"],
-    ["project" as const, 200, "알림 기기가 가득 찼어요(최대 200대)"],
-  ])("%s 상한 오류는 원인을 알려 주는 한국어 409 로 바꾼다", async (scope, limit, fragment) => {
-    const upsert = vi.fn().mockRejectedValue(new ProductionPushSubscriptionLimitError(scope, limit));
+  it("프로젝트 상한 오류는 원인을 알려 주는 한국어 409 로 바꾼다", async () => {
+    const upsert = vi.fn().mockRejectedValue(new ProductionPushSubscriptionLimitError(200));
     const error = await registerWebPushSubscription(
       { upsertPushSubscription: upsert },
       policy,
@@ -190,9 +251,9 @@ describe("registerWebPushSubscription", () => {
     expect(error).toBeInstanceOf(ConflictException);
     expect((error as ConflictException).getResponse()).toMatchObject({
       code: "production_push_subscription_limit",
-      scope,
-      limit,
-      message: expect.stringContaining(fragment),
+      scope: "project",
+      limit: 200,
+      message: expect.stringContaining("알림 기기가 가득 찼어요(최대 200대)"),
     });
   });
 
@@ -285,7 +346,7 @@ describe("ProductionIntegrationService 웹 푸시 상한 연결", () => {
   it("상한에 걸린 구독 등록은 409 이고 응답에 구독 성공을 담지 않는다", async () => {
     const test = fixture();
     test.repository.upsertPushSubscription.mockRejectedValueOnce(
-      new ProductionPushSubscriptionLimitError("user", 10),
+      new ProductionPushSubscriptionLimitError(200),
     );
     await expect(test.service.subscribeWebPush("user-1", "project-1", subscription))
       .rejects.toBeInstanceOf(ConflictException);

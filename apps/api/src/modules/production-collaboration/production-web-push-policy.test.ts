@@ -310,41 +310,56 @@ describe("웹 푸시 상한 설정", () => {
 describe("구독 수 상한 판정", () => {
   const limits = { maxPerProject: 5, maxPerUser: 2 } as const;
 
-  it("이미 등록된 endpoint 의 갱신은 상한에 걸리지 않는다", () => {
+  it("이미 등록된 endpoint 의 갱신은 어느 상한에도 걸리지 않고 그대로 저장한다", () => {
     expect(evaluateWebPushSubscriptionLimits({
       alreadyRegistered: true,
       projectCount: 5,
       userCount: 2,
       ...limits,
-    })).toBeNull();
+    })).toEqual({ kind: "write" });
   });
 
-  it("새 endpoint 는 사용자 상한과 프로젝트 상한에 도달하면 거부한다", () => {
+  it("두 상한 안의 새 endpoint 는 그대로 추가한다", () => {
     expect(evaluateWebPushSubscriptionLimits({
       alreadyRegistered: false,
-      projectCount: 1,
+      projectCount: 4,
       userCount: 1,
       ...limits,
-    })).toBeNull();
+    })).toEqual({ kind: "write" });
+  });
+
+  it("사용자 상한에 도달한 새 endpoint 는 거절하지 않고 본인의 가장 오래된 구독을 교체한다", () => {
     expect(evaluateWebPushSubscriptionLimits({
       alreadyRegistered: false,
       projectCount: 1,
       userCount: 2,
       ...limits,
-    })).toEqual({ scope: "user", limit: 2 });
+    })).toEqual({ kind: "replace-oldest-own" });
+    // 상한을 낮춰 이미 상한보다 많이 갖고 있어도 교체이며 행 수는 늘지 않는다.
+    expect(evaluateWebPushSubscriptionLimits({
+      alreadyRegistered: false,
+      projectCount: 4,
+      userCount: 4,
+      ...limits,
+    })).toEqual({ kind: "replace-oldest-own" });
+  });
+
+  it("프로젝트 상한에 도달한(사용자 상한은 남은) 새 endpoint 만 거절한다", () => {
     expect(evaluateWebPushSubscriptionLimits({
       alreadyRegistered: false,
       projectCount: 5,
       userCount: 1,
       ...limits,
-    })).toEqual({ scope: "project", limit: 5 });
-    // 둘 다 가득 찼다면 사용자가 스스로 정리할 수 있는 사용자 상한을 먼저 알린다.
+    })).toEqual({ kind: "reject", scope: "project", limit: 5 });
+  });
+
+  it("둘 다 가득 찬 경우에는 교체한다(교체는 프로젝트의 행 수를 늘리지 않는다)", () => {
     expect(evaluateWebPushSubscriptionLimits({
       alreadyRegistered: false,
       projectCount: 5,
       userCount: 2,
       ...limits,
-    })).toEqual({ scope: "user", limit: 2 });
+    })).toEqual({ kind: "replace-oldest-own" });
   });
 });
 

@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, gte, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, isNull, sql } from "drizzle-orm";
 import { Injectable } from "@nestjs/common";
 
 import {
@@ -56,13 +56,15 @@ export interface ProductionIntegrationOauthStateRecord {
   readonly redirectPath: string;
 }
 
-/** 새 웹 푸시 구독이 프로젝트 또는 사용자(프로젝트 안) 상한에 걸렸다. */
+/**
+ * 새 웹 푸시 구독이 프로젝트 상한에 걸렸다. 사용자 상한은 오래된 본인 구독을 교체하므로 거절하지 않는다.
+ * 409 응답의 scope 필드 호환을 위해 scope 는 항상 "project" 로 남겨 둔다.
+ */
 export class ProductionPushSubscriptionLimitError extends Error {
-  constructor(
-    readonly scope: "user" | "project",
-    readonly limit: number,
-  ) {
-    super(`production_push_subscription_${scope}_limit`);
+  readonly scope = "project" as const;
+
+  constructor(readonly limit: number) {
+    super("production_push_subscription_project_limit");
     this.name = "ProductionPushSubscriptionLimitError";
   }
 }
@@ -326,6 +328,10 @@ export class ProductionIntegrationRepository {
     });
   }
 
+  /**
+   * 웹 푸시 구독을 저장한다. 프로젝트 단위 advisory lock 안에서 상한을 판정한다: 프로젝트 상한이면 거절(오류)하고,
+   * 사용자 상한이면 그 사용자의 가장 오래 갱신되지 않은 구독을 지운 뒤 저장한다.
+   */
   async upsertPushSubscription(
     input: ProductionPushSubscriptionRecord,
     limits: ProductionPushSubscriptionLimits,
@@ -350,15 +356,40 @@ export class ProductionIntegrationRepository {
         })
         .from(productionPushSubscriptions)
         .where(eq(productionPushSubscriptions.projectId, input.projectId));
-      const violation = evaluateWebPushSubscriptionLimits({
+      const decision = evaluateWebPushSubscriptionLimits({
         alreadyRegistered: (totals?.registered ?? 0) > 0,
         projectCount: totals?.projectCount ?? 0,
         userCount: totals?.userCount ?? 0,
         maxPerProject: limits.maxPerProject,
         maxPerUser: limits.maxPerUser,
       });
-      if (violation) {
-        throw new ProductionPushSubscriptionLimitError(violation.scope, violation.limit);
+      if (decision.kind === "reject") {
+        throw new ProductionPushSubscriptionLimitError(decision.limit);
+      }
+      if (decision.kind === "replace-oldest-own") {
+        // 사용자 상한이 가득 찼다: 본인 구독 중 가장 오래 갱신되지 않은 하나를 같은 트랜잭션(위 잠금 안)에서 지운다.
+        const [oldest] = await transaction
+          .select({ endpointHash: productionPushSubscriptions.endpointHash })
+          .from(productionPushSubscriptions)
+          .where(and(
+            eq(productionPushSubscriptions.projectId, input.projectId),
+            eq(productionPushSubscriptions.actorUserId, input.actorUserId),
+          ))
+          .orderBy(
+            asc(productionPushSubscriptions.updatedAt),
+            asc(productionPushSubscriptions.createdAt),
+            asc(productionPushSubscriptions.endpointHash),
+          )
+          .limit(1);
+        if (oldest) {
+          await transaction
+            .delete(productionPushSubscriptions)
+            .where(and(
+              eq(productionPushSubscriptions.projectId, input.projectId),
+              eq(productionPushSubscriptions.actorUserId, input.actorUserId),
+              eq(productionPushSubscriptions.endpointHash, oldest.endpointHash),
+            ));
+        }
       }
       await transaction
         .insert(productionPushSubscriptions)
