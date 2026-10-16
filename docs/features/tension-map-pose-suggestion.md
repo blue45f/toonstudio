@@ -340,7 +340,7 @@ suggestCutPoses(
 
 ## 10. 코드 구조와 경계
 
-경로는 `apps/web/src/domains/creator/` 기준이다. 새 소스 파일은 모두 `assistant/` 안에 있고(공용 포커스 트랩의 시험 하나만 `creator/` 에 있다), 다른 도메인의 내부를 새로 가져오지 않는다(`pnpm run validate:app-boundaries` 의 교차 도메인 깊은 import 수가 늘지 않았다).
+경로는 `apps/web/src/domains/creator/` 기준이다. 새 소스 파일은 모두 `assistant/` 안에 있고(공용 포커스 트랩의 시험 하나만 `studio-shell/` 에 있다. `creator/` 루트는 소스 배치 래칫이 직속 파일 수 증가를 막는다), 다른 도메인의 내부를 새로 가져오지 않는다(`pnpm run validate:app-boundaries` 의 교차 도메인 깊은 import 수가 늘지 않았다).
 
 | 파일 | 역할 |
 | --- | --- |
@@ -363,7 +363,7 @@ suggestCutPoses(
 | `assistant/StudioWebtoonAssistantContent.tsx` | 탭 등록, 문서 접근 props, 지연 로드 문 장착 |
 | `assistant/studio-contextual-learning.ts` | 보조 센터의 "작업 맥락 학습"이 이 탭을 콘티·이야기 구성 자료로 잇는다 |
 | `StudioCuttoonEditorHost.tsx` | `pages`, `currentPageId`, `commitPages` 를 보조 센터에 넘긴다 |
-| `useStudioModalSheet.ts`, `useStudioModalSheet.details.test.ts` | 기존 공용 모달 포커스 트랩. 접이식의 summary 를 순환에 넣고 닫힌 `<details>` 본문을 뺀다(진짜 DOM 시험이 따로 있다). 이 훅을 쓰는 다른 모달에도 같이 적용된다 |
+| `useStudioModalSheet.ts`, `studio-shell/useStudioModalSheet.details.test.ts` | 기존 공용 모달 포커스 트랩. 접이식의 summary 를 순환에 넣고 닫힌 `<details>` 본문을 뺀다(진짜 DOM 시험이 따로 있다). 이 훅을 쓰는 다른 모달에도 같이 적용된다 |
 
 번들 경계(`apps/web/AGENTS.md`):
 

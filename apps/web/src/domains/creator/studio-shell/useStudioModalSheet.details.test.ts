@@ -2,11 +2,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { activateStudioModalSheet } from "./useStudioModalSheet";
+import { activateStudioModalSheet } from "../useStudioModalSheet";
 
 /**
  * 접이식(`<details>`/`<summary>`)이 든 모달의 Tab 순환을 진짜 DOM 으로 확인한다.
- * `useStudioModalSheet.test.ts` 의 가짜 DOM 은 선택자를 해석하지 못해 summary 와 닫힌 details 의 본문을
+ * `../useStudioModalSheet.test.ts` 의 가짜 DOM 은 선택자를 해석하지 못해 summary 와 닫힌 details 의 본문을
  * 구별할 수 없다. jsdom 은 레이아웃이 없어 `getClientRects` 가 늘 비므로 다른 모달 시험처럼 "보이는
  * 요소"로 고정한다 — 실제 브라우저(Chromium·Firefox·WebKit)도 닫힌 details 본문의 `getClientRects` 는
  * 값을 돌려주므로 이 고정이 오히려 실제와 같다.
