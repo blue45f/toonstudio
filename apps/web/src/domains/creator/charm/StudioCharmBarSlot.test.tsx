@@ -8,6 +8,7 @@ import { STUDIO_CANVAS_WIDTH } from "../canvas/studio-canvas-constants";
 import { resetStudioFloatingSurfaceStackForTest } from "../studio-floating-surface-stack";
 import { setStudioWorkspaceArranging } from "../studio-workspace-arrangement";
 import { createStudioCharmBarStore, type StudioCharmBarStore } from "./studio-charm-bar-store";
+import { deriveHostLockFields } from "./studio-charm-fake-host.test-fixture";
 import { normalizeStudioCharmBarState } from "./studio-charm-model";
 import { StudioCharmBarSlot, type StudioCharmSlotSession } from "./StudioCharmBarSlot";
 
@@ -214,12 +215,12 @@ describe("참 바 슬롯: 본체에 넘기는 값", () => {
     const store = await openStore();
     const assets = [{ id: "a1", name: "내 손", dataUrl: "data:image/png;base64,AAAA", width: 10, height: 10 }];
     const view = render(
-      <StudioCharmBarSlot session={session({ assets, pageEditLocked: true })} store={store} loadBar={loadFakeBar} />,
+      <StudioCharmBarSlot session={session({ assets, ...deriveHostLockFields({ pageEditLocked: true }) })} store={store} loadBar={loadFakeBar} />,
     );
     await screen.findByTestId("fake-charm-bar");
     const first = latestProps;
     view.rerender(
-      <StudioCharmBarSlot session={session({ assets, pageEditLocked: true })} store={store} loadBar={loadFakeBar} />,
+      <StudioCharmBarSlot session={session({ assets, ...deriveHostLockFields({ pageEditLocked: true }) })} store={store} loadBar={loadFakeBar} />,
     );
     expect(latestProps?.canvas).toBe(first?.canvas);
     expect(latestProps?.hostLibrary).toBe(first?.hostLibrary);
@@ -230,18 +231,27 @@ describe("참 바 슬롯: 본체에 넘기는 값", () => {
   it("편집 잠금은 사유와 함께 넘긴다", async () => {
     const store = await openStore();
     const view = render(
-      <StudioCharmBarSlot session={session({ pageEditLocked: true })} store={store} loadBar={loadFakeBar} />,
+      <StudioCharmBarSlot session={session({ ...deriveHostLockFields({ pageEditLocked: true }) })} store={store} loadBar={loadFakeBar} />,
     );
     await screen.findByTestId("fake-charm-bar");
     expect(latestProps?.lock).toEqual({ kind: "page", message: null });
     view.rerender(
       <StudioCharmBarSlot
-        session={session({ collaborationDocumentLocked: true, collaborationLockMessage: "공동 편집 중" })}
+        session={session({ ...deriveHostLockFields({ collaborationDocumentLocked: true, collaborationMessage: "공동 편집 중" }) })}
         store={store}
         loadBar={loadFakeBar}
       />,
     );
     expect(latestProps?.lock).toEqual({ kind: "collaboration", message: "공동 편집 중" });
+    // 문서 마스터를 편집하는 동안 페이지 검토 잠금은 호스트가 쓰기를 허용하므로 잠그지 않는다.
+    view.rerender(
+      <StudioCharmBarSlot
+        session={session({ ...deriveHostLockFields({ pageEditLocked: true, masterEditMode: true }) })}
+        store={store}
+        loadBar={loadFakeBar}
+      />,
+    );
+    expect(latestProps?.lock).toBeNull();
   });
 
   it("문맥 읽기는 렌더 때가 아니라 부르는 순간의 세션을 본다", async () => {

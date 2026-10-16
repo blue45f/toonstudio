@@ -264,6 +264,41 @@ describe("참 바 호스트 계약: 전역 단축키 경계", () => {
   });
 });
 
+describe("참 바 호스트 계약: 편집 잠금 값", () => {
+  // 참 바는 호스트가 파생한 잠금 값만 읽는다(`studioCharmLock`). 시험 픽스처(`deriveHostLockFields`)가 같은 식을 쓴다.
+  it("호스트가 잠금 값을 파생하는 식이 시험 픽스처와 같고, 공동 편집 안내는 함수다", () => {
+    const source = readFileSync(new URL(HOST_SOURCE, import.meta.url), "utf8");
+    expect(source).toMatch(/const pageEditLocked = reviewBoundPage && isPageReviewLocked\(activePage\.review\);/u);
+    expect(source).toMatch(
+      /const activeSurfaceReviewLocked =\s*collaborationDocumentLocked \|\| \(pageEditLocked && !masterEditMode\);/u,
+    );
+    expect(source).toMatch(/const collaborationLockMessage = useCallback\(\s*\(\) =>\s*describeStudioCollaborationLock\(/u);
+  });
+
+  it("호스트는 잠금 값을 뷰 세션에 같은 이름으로 넘긴다", () => {
+    const source = readFileSync(new URL(HOST_SOURCE, import.meta.url), "utf8");
+    for (const name of [
+      "activeSurfaceReviewLocked",
+      "collaborationDocumentLocked",
+      "collaborationLockMessage",
+      "masterEditMode",
+      "pageEditLocked",
+    ]) {
+      expect(source, `${name} 는 세션에 넘어가야 한다`).toMatch(new RegExp(`\\n\\s+${name}=\\{${name}\\}\\n`, "u"));
+    }
+  });
+
+  it("문서 변경은 공동 편집 잠금이면 막고, 마스터 편집 중에는 페이지 검토 잠금을 보지 않고 마스터에 쓴다", () => {
+    const source = readFileSync(new URL(`${CREATOR}studio-cuttoon-editor/studio-deferred-stroke-commit.ts`, import.meta.url), "utf8");
+    const collaboration = source.indexOf("if (collaborationAccessRef.current.locked) {");
+    const master = source.indexOf("if (masterEditMode) {");
+    const pageLock = source.indexOf("if (pageEditLocked) {");
+    expect(collaboration).toBeGreaterThan(-1);
+    expect(master).toBeGreaterThan(collaboration);
+    expect(pageLock).toBeGreaterThan(master);
+  });
+});
+
 describe("참 바 호스트 계약: 놓이는 크기(격자 스냅의 전제)", () => {
   it("말풍선 크기표가 호스트 addBubble 이 변종마다 정하는 크기와 같다", () => {
     const [declaration] = findFunctions(host, "addBubble");

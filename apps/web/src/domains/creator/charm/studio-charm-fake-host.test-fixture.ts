@@ -143,3 +143,39 @@ export function createFakeStudioHost(seed: FakeStudioHostSeed): FakeStudioHost {
     }),
   };
 }
+
+export interface HostLockInputs {
+  /** 공동 편집이 문서를 잠갔다(호스트의 `collaborationDocumentLocked`). */
+  readonly collaborationDocumentLocked?: boolean;
+  /** 이 페이지가 검토 잠금이다(호스트의 `pageEditLocked`). */
+  readonly pageEditLocked?: boolean;
+  /** 문서 마스터를 편집 중이다. 이 동안 페이지 검토 잠금은 편집을 막지 않는다. */
+  readonly masterEditMode?: boolean;
+  /** 호스트의 `collaborationLockMessage()` 가 돌려줄 문장. */
+  readonly collaborationMessage?: string;
+}
+
+/**
+ * 호스트(`StudioCuttoonEditorHost.tsx`)가 편집 잠금 값을 파생하는 식 그대로 세션의 잠금 필드를 만든다.
+ * 서로 독립인 불리언·문자열을 따로 적으면 호스트에서는 생길 수 없는 조합(예: 공동 편집 잠금인데 검수 잠금이 꺼짐)을
+ * 시험하게 된다. 아래 식이 호스트와 같은지는 `studio-charm-bar-host-contract.test.ts` 가 소스에서 지킨다.
+ *
+ * - `activeSurfaceReviewLocked = collaborationDocumentLocked || (pageEditLocked && !masterEditMode)`
+ * - `collaborationLockMessage` 는 문자열이 아니라 `() => string` 함수다.
+ */
+export function deriveHostLockFields(input: HostLockInputs = {}): Pick<
+  StudioCharmHostSession,
+  "collaborationDocumentLocked" | "pageEditLocked" | "activeSurfaceReviewLocked" | "collaborationLockMessage"
+> & { readonly masterEditMode: boolean } {
+  const collaborationDocumentLocked = input.collaborationDocumentLocked ?? false;
+  const pageEditLocked = input.pageEditLocked ?? false;
+  const masterEditMode = input.masterEditMode ?? false;
+  const message = input.collaborationMessage ?? "다른 작가가 이 회차를 편집 중이에요.";
+  return {
+    collaborationDocumentLocked,
+    pageEditLocked,
+    masterEditMode,
+    activeSurfaceReviewLocked: collaborationDocumentLocked || (pageEditLocked && !masterEditMode),
+    collaborationLockMessage: () => message,
+  };
+}

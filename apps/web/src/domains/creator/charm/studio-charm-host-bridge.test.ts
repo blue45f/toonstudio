@@ -8,6 +8,8 @@ import {
   type StudioCharmHostSession,
 } from "./studio-charm-host-bridge";
 
+import { deriveHostLockFields, type HostLockInputs } from "./studio-charm-fake-host.test-fixture";
+
 import type { StudioCharmHostCommands } from "./studio-charm-insert";
 
 const COMMANDS: StudioCharmHostCommands = {
@@ -122,28 +124,55 @@ describe("참 바 호스트 어댑터: 누르는 순간의 문맥", () => {
   });
 });
 
-describe("참 바 호스트 어댑터: 편집 잠금", () => {
+describe("참 바 호스트 어댑터: 편집 잠금(호스트가 파생한 값으로)", () => {
+  const locked = (input: HostLockInputs) => studioCharmLock(session(deriveHostLockFields(input)));
+
   it("잠금이 없으면 null 이다", () => {
     expect(studioCharmLock(session())).toBeNull();
+    expect(locked({})).toBeNull();
   });
 
-  it("검수 잠금 > 공동 편집 잠금 > 페이지 잠금 순으로 사유를 고른다", () => {
-    expect(studioCharmLock(session({
+  it("공동 편집 잠금은 검수 잠금이 아니라 공동 편집 잠금으로 안내하고 호스트가 만든 문장을 그대로 쓴다", () => {
+    // 호스트는 공동 편집 잠금일 때 activeSurfaceReviewLocked 도 함께 켠다. 그래서 검수 쪽을 먼저 보면 사유가 뒤바뀐다.
+    const result = locked({ collaborationDocumentLocked: true, collaborationMessage: "다른 작가가 이 회차를 편집 중이에요." });
+    expect(result).toEqual({ kind: "collaboration", message: "다른 작가가 이 회차를 편집 중이에요." });
+    expect(locked({ collaborationDocumentLocked: true, pageEditLocked: true })?.kind).toBe("collaboration");
+  });
+
+  it("공동 편집 안내 문장은 함수를 부른 결과이고, 빈 문장이면 화면의 기본 문구를 쓰게 비워 둔다", () => {
+    const result = locked({ collaborationDocumentLocked: true, collaborationMessage: "잠시 후 다시 시도해 주세요." });
+    expect(typeof result?.message).toBe("string");
+    expect(result?.message).not.toContain("=>");
+    expect(locked({ collaborationDocumentLocked: true, collaborationMessage: "  " })).toEqual({ kind: "collaboration", message: null });
+    // 함수가 아닌 값이 들어와도(타입 밖) 함수 원문이나 객체를 사용자에게 보이지 않는다.
+    const odd = studioCharmLock(session({
+      collaborationDocumentLocked: true,
       activeSurfaceReviewLocked: true,
-      collaborationDocumentLocked: true,
-      pageEditLocked: true,
-    }))).toEqual({ kind: "review", message: null });
-    expect(studioCharmLock(session({ collaborationDocumentLocked: true, pageEditLocked: true })))
-      .toEqual({ kind: "collaboration", message: null });
-    expect(studioCharmLock(session({ pageEditLocked: true }))).toEqual({ kind: "page", message: null });
+      collaborationLockMessage: undefined,
+    }));
+    expect(odd).toEqual({ kind: "collaboration", message: null });
   });
 
-  it("호스트가 이미 가진 공동 편집 잠금 안내 문구는 그대로 전달하고 빈 문구는 버린다", () => {
-    expect(studioCharmLock(session({
-      collaborationDocumentLocked: true,
-      collaborationLockMessage: "다른 작가가 이 회차를 편집 중이에요.",
-    }))).toEqual({ kind: "collaboration", message: "다른 작가가 이 회차를 편집 중이에요." });
-    expect(studioCharmLock(session({ collaborationDocumentLocked: true, collaborationLockMessage: "" })))
-      .toEqual({ kind: "collaboration", message: null });
+  it("페이지 검토 잠금은 막지만, 문서 마스터를 편집하는 동안에는 호스트가 허용하므로 막지 않는다", () => {
+    expect(locked({ pageEditLocked: true })).toEqual({ kind: "page", message: null });
+    expect(locked({ pageEditLocked: true, masterEditMode: true })).toBeNull();
+    // 마스터 편집 중에도 공동 편집 잠금은 그대로 막는다.
+    expect(locked({ pageEditLocked: true, masterEditMode: true, collaborationDocumentLocked: true })?.kind).toBe("collaboration");
+  });
+
+  it("검수 잠금만 켜진 세션은 검수 잠금으로 안내한다", () => {
+    expect(studioCharmLock(session({ activeSurfaceReviewLocked: true }))).toEqual({ kind: "review", message: null });
+  });
+
+  it("호스트가 만들 수 있는 모든 잠금 조합이 호스트의 편집 가능 여부와 같다", () => {
+    for (const collaborationDocumentLocked of [false, true]) {
+      for (const pageEditLocked of [false, true]) {
+        for (const masterEditMode of [false, true]) {
+          const hostBlocks = collaborationDocumentLocked || (pageEditLocked && !masterEditMode);
+          const result = locked({ collaborationDocumentLocked, pageEditLocked, masterEditMode });
+          expect(result !== null, `collab=${collaborationDocumentLocked} page=${pageEditLocked} master=${masterEditMode}`).toBe(hostBlocks);
+        }
+      }
+    }
   });
 });

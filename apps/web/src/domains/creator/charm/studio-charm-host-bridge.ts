@@ -44,10 +44,16 @@ export interface StudioCharmHostSession {
   readonly effScale: number;
   readonly zoomHostRef?: { readonly current: StudioCharmMeasurable | null } | null;
   readonly wrapRef?: { readonly current: StudioCharmMeasurable | null } | null;
+  /**
+   * 호스트가 파생한 "이 작업면에 쓰기 불가" 값: `collaborationDocumentLocked || (pageEditLocked && !masterEditMode)`.
+   * 공동 편집 잠금을 포함하고, 마스터를 편집하는 동안의 페이지 검토 잠금은 제외한다(호스트가 그때는 쓰기를 허용한다).
+   */
   readonly activeSurfaceReviewLocked?: boolean;
+  /** 이 페이지가 검토 잠금이다. 마스터 편집 중에는 이것만으로 쓰기가 막히지 않는다. */
   readonly pageEditLocked?: boolean;
   readonly collaborationDocumentLocked?: boolean;
-  readonly collaborationLockMessage?: string | null;
+  /** 호스트가 공동 편집 잠금 사유를 문장으로 만들어 주는 함수(`() => string`). 문자열이 아니다. */
+  readonly collaborationLockMessage?: () => string;
 }
 
 function readVisibleTarget(session: StudioCharmHostSession, documentWidth: number): StudioInsertViewportTarget | null {
@@ -112,15 +118,28 @@ export interface StudioCharmLock {
   readonly message: string | null;
 }
 
+/** 호스트의 안내 함수를 불러 문장을 얻는다. 비었거나 문자열이 아니면 null 이라 화면이 기본 문구를 쓴다. */
+function readCollaborationMessage(read: (() => string) | undefined): string | null {
+  if (typeof read !== "function") return null;
+  const text: unknown = read();
+  return typeof text === "string" && text.trim() !== "" ? text : null;
+}
+
 /**
- * 편집을 막는 사유. 문서 잠금·검수 잠금·협업 잠금 중 하나라도 있으면 칩은 눌러도 붙이지 않고 이유를 안내한다.
- * (붙이기 명령 자체도 잠금이면 거절하지만, 칩이 미리 알려 주는 편이 정직하다.)
+ * 편집을 막는 사유. 칩은 잠겨 있으면 눌러도 붙이지 않고 이유를 안내한다(붙이기 명령 자체도 잠금이면 거절하지만,
+ * 칩이 미리 알려 주는 편이 정직하다). 호스트의 판정과 어긋나지 않도록 호스트가 이미 파생한 값만 쓴다.
+ *
+ * - 공동 편집 잠금을 먼저 본다. 호스트의 `activeSurfaceReviewLocked` 는 공동 편집 잠금까지 포함하므로 그것부터 보면
+ *   공동 편집 잠금이 "검수 중"으로 안내된다. 문장은 호스트의 `collaborationLockMessage()` 를 불러 얻는다.
+ * - 그 밖의 쓰기 불가는 `activeSurfaceReviewLocked` 가 알려 준다. 페이지 검토 잠금이면 "페이지 잠금", 아니면 "검수 잠금"이다.
+ *   마스터 편집 중의 페이지 검토 잠금은 호스트가 허용하므로 여기서도 막지 않는다.
  */
 export function studioCharmLock(session: StudioCharmHostSession): StudioCharmLock | null {
-  if (session.activeSurfaceReviewLocked) return { kind: "review", message: null };
   if (session.collaborationDocumentLocked) {
-    return { kind: "collaboration", message: session.collaborationLockMessage || null };
+    return { kind: "collaboration", message: readCollaborationMessage(session.collaborationLockMessage) };
   }
-  if (session.pageEditLocked) return { kind: "page", message: null };
+  if (session.activeSurfaceReviewLocked) {
+    return { kind: session.pageEditLocked ? "page" : "review", message: null };
+  }
   return null;
 }

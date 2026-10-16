@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetStudioFloatingSurfaceStackForTest } from "../studio-floating-surface-stack";
 import { setStudioWorkspaceArranging } from "../studio-workspace-arrangement";
 import { createStudioCharmBarStore, type StudioCharmBarStore } from "./studio-charm-bar-store";
+import { deriveHostLockFields } from "./studio-charm-fake-host.test-fixture";
 import { createStudioCharmId, normalizeStudioCharmBarState } from "./studio-charm-model";
 import { StudioCharmBarSlot, type StudioCharmSlotSession } from "./StudioCharmBarSlot";
 
@@ -164,12 +165,41 @@ describe("참 바 슬롯 + 본체: 세션에서 호스트 명령까지", () => {
 
   it("편집 잠금이면 칩이 aria-disabled 이고 눌러도 호스트 명령을 부르지 않으며 이유를 알린다", async () => {
     const { spies, commands } = commandSpies();
-    render(<StudioCharmBarSlot session={sessionWith(commands, { pageEditLocked: true })} store={await openStore([FOCUS])} />);
+    render(<StudioCharmBarSlot session={sessionWith(commands, deriveHostLockFields({ pageEditLocked: true }))} store={await openStore([FOCUS])} />);
     const [chip] = await readyChips(1);
     expect(chip.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(chip);
     await waitFor(() => expect(document.querySelector("[data-studio-charm-announcement]")?.textContent).toContain("편집이 잠겨"));
     expect(spies.addRenderedImage).not.toHaveBeenCalled();
+  });
+
+  it("공동 편집 잠금은 검수 중이 아니라 호스트가 만든 사유 문장 그대로 안내한다(함수 원문이 새지 않는다)", async () => {
+    const { spies, commands } = commandSpies();
+    const lock = deriveHostLockFields({ collaborationDocumentLocked: true, collaborationMessage: "다른 작가가 이 회차를 편집 중이에요." });
+    render(<StudioCharmBarSlot session={sessionWith(commands, lock)} store={await openStore([FOCUS])} />);
+    const [chip] = await readyChips(1);
+    expect(chip.getAttribute("aria-disabled")).toBe("true");
+    expect(chip.getAttribute("title")).toContain("다른 작가가 이 회차를 편집 중이에요.");
+    expect(chip.getAttribute("title")).not.toContain("=>");
+    expect(document.querySelector("[data-studio-charm-note='lock']")?.textContent).toContain("다른 작가가 이 회차를 편집 중이에요.");
+    expect(document.body.textContent).not.toContain("검수 중인 화면");
+    fireEvent.click(chip);
+    await waitFor(() => expect(document.querySelector("[data-studio-charm-announcement]")?.textContent).toBe("다른 작가가 이 회차를 편집 중이에요."));
+    expect(spies.addRenderedImage).not.toHaveBeenCalled();
+  });
+
+  it("문서 마스터를 편집하는 동안에는 페이지 검토 잠금이어도 호스트가 허용하므로 붙는다", async () => {
+    const { spies, commands } = commandSpies();
+    render(
+      <StudioCharmBarSlot
+        session={sessionWith(commands, deriveHostLockFields({ pageEditLocked: true, masterEditMode: true }))}
+        store={await openStore([FOCUS])}
+      />,
+    );
+    const [chip] = await readyChips(1);
+    expect(chip.getAttribute("aria-disabled")).toBeNull();
+    fireEvent.click(chip);
+    await waitFor(() => expect(spies.addRenderedImage).toHaveBeenCalledTimes(1));
   });
 
   it("바를 끄면 그리지 않고, 다시 켜면 같은 목록으로 돌아온다", async () => {
