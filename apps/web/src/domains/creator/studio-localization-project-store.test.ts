@@ -206,6 +206,36 @@ describe("Studio localization project store — 번역 인물 카드", () => {
     expect(parsed?.characterCards).toBeUndefined();
   });
 
+  it("저장된 문서가 있는데 읽을 수 없으면 카드 갱신은 쓰지 않고 오류를 던진다 — 번역 단위를 빈 문서로 덮어쓰지 않는다", () => {
+    const storage = memoryStorage();
+    const key = studioLocalizationProjectStorageKey("project-12");
+    // 단위 둘 중 하나가 검증에 실패하는 문서(원문이 공백) — 문서 전체가 읽히지 않는다.
+    const raw = JSON.stringify(unitsDocument([baseUnit("line-1"), { ...baseUnit("line-2"), sourceText: "   " }]));
+    storage.setItem(key, raw);
+    expect(readStudioLocalizationProject(storage, "project-12").units).toEqual([]);
+
+    const update = () =>
+      updateStudioLocalizationCharacterCards(storage, "project-12", (cards) =>
+        patchStudioTranslationCard(cards, "yuna", { name: "유나", register: "polite" }),
+      );
+    expect(update).toThrow(/unreadable/u);
+    expect(storage.getItem(key)).toBe(raw);
+
+    // 깨진 JSON 도 마찬가지다.
+    storage.setItem(key, "{broken");
+    expect(update).toThrow(/unreadable/u);
+    expect(storage.getItem(key)).toBe("{broken");
+  });
+
+  it("저장된 문서가 아예 없으면(처음 쓰는 범위) 카드를 정상적으로 저장한다", () => {
+    const storage = memoryStorage();
+    const saved = updateStudioLocalizationCharacterCards(storage, "project-12", (cards) =>
+      patchStudioTranslationCard(cards, "yuna", { name: "유나", register: "polite" }),
+    );
+    expect(saved.units).toEqual([]);
+    expect(saved.characterCards?.cards[0]).toMatchObject({ characterId: "yuna", register: "polite" });
+  });
+
   it("상한을 넘는 갱신은 파서를 거쳐 저장 경로에서도 잘린다", () => {
     const storage = memoryStorage();
     const saved = updateStudioLocalizationCharacterCards(storage, "project-12", (cards) =>

@@ -100,25 +100,39 @@ export function parseStudioLocalizationProjectDocument(
   });
 }
 
+interface StoredStudioLocalizationProject {
+  readonly document: StudioLocalizationProjectDocument;
+  /** 저장된 문서가 있는데 읽을 수 없었다(깨진 JSON·검증에 실패한 단위). `document` 는 이때 빈 문서다. */
+  readonly unreadable: boolean;
+}
+
+function loadStoredStudioLocalizationProject(
+  storage: StudioLocalizationProjectStorage,
+  projectId: string,
+): StoredStudioLocalizationProject {
+  const emptyDocument = (): StudioLocalizationProjectDocument =>
+    Object.freeze({
+      schemaVersion: 1,
+      projectId,
+      units: Object.freeze([]),
+      updatedAt: new Date(0).toISOString(),
+    });
+  const raw = storage.getItem(storageKey(projectId));
+  if (!raw) return { document: emptyDocument(), unreadable: false };
+  try {
+    const parsed = parseStudioLocalizationProjectDocument(JSON.parse(raw) as unknown, projectId);
+    if (parsed) return { document: parsed, unreadable: false };
+  } catch {
+    // Fall through to a safe empty project; corrupt data never enters the workflow.
+  }
+  return { document: emptyDocument(), unreadable: true };
+}
+
 export function readStudioLocalizationProject(
   storage: StudioLocalizationProjectStorage,
   projectId: string,
 ): StudioLocalizationProjectDocument {
-  const raw = storage.getItem(storageKey(projectId));
-  if (raw) {
-    try {
-      const parsed = parseStudioLocalizationProjectDocument(JSON.parse(raw) as unknown, projectId);
-      if (parsed) return parsed;
-    } catch {
-      // Fall through to a safe empty project; corrupt data never enters the workflow.
-    }
-  }
-  return Object.freeze({
-    schemaVersion: 1,
-    projectId,
-    units: Object.freeze([]),
-    updatedAt: new Date(0).toISOString(),
-  });
+  return loadStoredStudioLocalizationProject(storage, projectId).document;
 }
 
 /**
@@ -161,7 +175,13 @@ export function updateStudioLocalizationCharacterCards(
   updater: (current: StudioTranslationCharacterCardSet) => StudioTranslationCharacterCardSet,
   target?: Pick<EventTarget, "dispatchEvent">,
 ): StudioLocalizationProjectDocument {
-  const current = readStudioLocalizationProject(storage, projectId);
+  const stored = loadStoredStudioLocalizationProject(storage, projectId);
+  // 저장된 문서가 있는데 읽을 수 없으면 쓰지 않는다 — 빈 문서에 카드만 얹어 저장하면 번역 단위(units)를 조용히
+  // 덮어쓴다. 호출부는 이 오류를 저장 실패로 드러내고 편집을 메모리에 남긴다.
+  if (stored.unreadable) {
+    throw new Error("The stored localization project document is unreadable; the card change was not written.");
+  }
+  const current = stored.document;
   const before = current.characterCards ?? EMPTY_STUDIO_TRANSLATION_CARD_SET;
   const after = updater(before);
   if (after === before) return current;
