@@ -64,6 +64,24 @@ describe("compactStudioBg3dSkpReportForStorage", () => {
   });
 });
 
+describe("buildStudioBg3dSkpAssetMetadata — AI 사용 표기", () => {
+  it("권리 폼에서 고른 AI 표기를 변환 보고서와 같은 기록의 권리에 담는다", () => {
+    const record = buildStudioBg3dSkpAssetMetadata(
+      asset({ aiUse: { aiGenerated: "yes", aiTraining: "prohibited" } }),
+      createSkpReportFixture(),
+      1_000,
+    );
+    expect(record?.rights).toMatchObject({ aiGenerated: "yes", aiTraining: "prohibited" });
+    expect(record?.skpImport).toBeDefined();
+  });
+
+  it("고르지 않았다면 필드를 만들지 않아 기존 기록과 같은 모양(미확인)이다", () => {
+    const record = buildStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), 1_000);
+    expect("aiGenerated" in (record?.rights ?? {})).toBe(false);
+    expect("aiTraining" in (record?.rights ?? {})).toBe(false);
+  });
+});
+
 describe("buildStudioBg3dSkpAssetMetadata", () => {
   it("builds a skp record that the metadata contract accepts, with the report attached", () => {
     const record = buildStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), 1_000);

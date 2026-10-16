@@ -30,6 +30,11 @@ import {
   StudioBg3dModelPlacementAdmissionError,
 } from "./studio-bg3d-model-placement-admission";
 import {
+  describeStudioBg3dImportAiUseNotice,
+  persistStudioBg3dImportedAiUse,
+  readStudioBg3dImportAiUse,
+} from "./studio-bg3d-import-asset-metadata";
+import {
   admitAndCacheStudioBg3dModel as admitAndCacheModel,
   bindModelAttachment,
   withStudioGeneric3dWorkflowMetadata,
@@ -227,6 +232,9 @@ export function createStudioBg3dModelImportActions(
     let skpRun: StudioBg3dSkpImportRun | null = null;
     let plannedSkpSourcePaths: readonly (string | null)[] = [];
     let skpFailureMessage: string | null = null;
+    // 가져오기 권리 폼의 AI 사용 표기. 라이브러리 레코드가 담을 수 없어 메타데이터 저장소에 따로 남기고, 결과는 숨기지 않고 알린다.
+    const importAiUse = readStudioBg3dImportAiUse(rights);
+    let aiUseNotice: string | null = null;
     let modelImportRuntime: typeof import("./studio-bg3d-model-import") | null = null;
     const cleanupUncommittedUploadCache = () => {
       const liveStorageIds = new Set(
@@ -288,6 +296,10 @@ export function createStudioBg3dModelImportActions(
           signal: importController.signal,
         },
       );
+      aiUseNotice = describeStudioBg3dImportAiUseNotice(await persistStudioBg3dImportedAiUse(
+        imported.filter((_, index) => plannedSkpSourcePaths[index] == null),
+        importAiUse,
+      ));
       const saved: Bg3dVerifiedStoredRecord[] = [];
       for (const importedRecord of imported) {
         if (!isModalAssetSessionCurrent(session)) {
@@ -486,13 +498,14 @@ export function createStudioBg3dModelImportActions(
         !isModalAssetSessionCurrent(session)
           ? { status: "abandoned" }
           : uploadCommitted
-            ? { status: "imported", records: thumbnailCandidates, sourcePaths: plannedSkpSourcePaths }
+            ? { status: "imported", records: thumbnailCandidates, sourcePaths: plannedSkpSourcePaths, aiUse: importAiUse }
             : {
               status: "failed",
               reason: skpFailureMessage ?? "편집 상태가 바뀌어 모델을 장면에 배치하지 않았습니다.",
             },
       );
     }
+    if (uploadCommitted && aiUseNotice && isModalAssetSessionCurrent(session)) setError(aiUseNotice);
     if (uploadCommitted && thumbnailCandidates.length > 0) {
       startModelThumbnailCaptureBatch(thumbnailCandidates, session);
     }

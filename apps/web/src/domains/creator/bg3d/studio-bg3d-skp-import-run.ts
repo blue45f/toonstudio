@@ -13,6 +13,7 @@ import type {
   StudioBg3dSkpImportedAsset,
   StudioBg3dSkpMetadataStatus,
 } from "./studio-bg3d-skp-asset-metadata";
+import type { StudioBg3dImportAiUse } from "./studio-bg3d-import-asset-metadata";
 import type { StudioBg3dSkpImportOptions, StudioBg3dSkpReportEvent } from "./studio-bg3d-skp-import";
 import type { StudioBg3dSkpImportReport } from "./studio-bg3d-skp-import-report";
 import type { StudioBg3dSkpImportSession, StudioBg3dSkpResultInput } from "./studio-bg3d-skp-import-session";
@@ -35,6 +36,8 @@ export type StudioBg3dSkpImportOutcome =
     readonly status: "imported";
     readonly records: readonly StudioBg3dSkpStoredRecordLike[];
     readonly sourcePaths: readonly (string | null)[];
+    /** 가져오기 권리 폼에서 고른 AI 사용 표기. 변환 보고서와 같은 기록에 담긴다. */
+    readonly aiUse?: StudioBg3dImportAiUse;
   }
   | { readonly status: "failed"; readonly reason: string }
   /** 편집 세션이 바뀌어 결과를 보여 줄 곳이 없다. 진행 표시만 거두고 아무것도 게시하지 않는다. */
@@ -47,6 +50,7 @@ export type StudioBg3dSkpImportOutcome =
 export function collectStudioBg3dSkpImportedAssets(
   records: readonly StudioBg3dSkpStoredRecordLike[],
   sourcePaths: readonly (string | null)[],
+  aiUse?: StudioBg3dImportAiUse,
 ): StudioBg3dSkpImportedAsset[] {
   return records.flatMap((record, index) => {
     const sourcePath = sourcePaths[index] ?? null;
@@ -59,6 +63,7 @@ export function collectStudioBg3dSkpImportedAssets(
       triangles: record.validatorMetrics.triangles,
       textures: record.validatorMetrics.textures,
       rights: record.rights,
+      ...(aiUse ? { aiUse } : {}),
     }];
   });
 }
@@ -90,7 +95,7 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
     outcome: StudioBg3dSkpImportOutcome,
   ): Promise<StudioBg3dSkpResultInput> => {
     const asset = outcome.status === "imported"
-      ? collectStudioBg3dSkpImportedAssets(outcome.records, outcome.sourcePaths)
+      ? collectStudioBg3dSkpImportedAssets(outcome.records, outcome.sourcePaths, outcome.aiUse)
         .find((candidate) => candidate.sourcePath === event.sourcePath)
       : undefined;
     // 여러 파일을 함께 가져오다 실패하면 모두 저장되지 않는다. 사유가 다른 파일의 것일 수 있어 그렇게 밝힌다.

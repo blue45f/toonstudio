@@ -74,6 +74,19 @@ describe("beginStudioBg3dSkpImportRun", () => {
     expect(session.getSnapshot().results[1].report.counts.triangles).toBe(12);
   });
 
+  it("carries the AI use chosen on the rights form to the asset that is recorded", async () => {
+    const { persistSpy, run } = setup();
+    run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+    await run.complete({
+      status: "imported",
+      records: [record("방")],
+      sourcePaths: ["room.skp"],
+      aiUse: { aiGenerated: "yes" },
+    });
+    expect(persistSpy.mock.calls[0]?.[0]).toMatchObject({ name: "방", aiUse: { aiGenerated: "yes" } });
+    expect(collectStudioBg3dSkpImportedAssets([record("방")], ["room.skp"])[0]).not.toHaveProperty("aiUse");
+  });
+
   it("shows the report of a model that was converted but not imported, with the reason, and records nothing", async () => {
     const { session, persistSpy, run } = setup();
     run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });

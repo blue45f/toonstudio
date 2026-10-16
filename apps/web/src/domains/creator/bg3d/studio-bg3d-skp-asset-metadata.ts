@@ -17,6 +17,7 @@ import {
   type StudioBg3dAssetRightsReceipt,
 } from "./studio-bg3d-asset-metadata";
 
+import type { StudioBg3dImportAiUse } from "./studio-bg3d-import-asset-metadata";
 import type { StudioBg3dAttachmentRights } from "./studio-bg3d-scene-document-types";
 import type { StudioBg3dSkpImportReport, StudioBg3dSkpReportNameList } from "./studio-bg3d-skp-import-report";
 
@@ -38,6 +39,8 @@ export interface StudioBg3dSkpImportedAsset {
   readonly triangles: number;
   readonly textures: number;
   readonly rights: Pick<StudioBg3dAttachmentRights, "status" | "commercialUse" | "licenseName">;
+  /** 가져오기 권리 폼에서 고른 AI 사용 표기. 라이브러리 레코드가 담을 수 없어 따로 받는다. 없으면 미확인. */
+  readonly aiUse?: StudioBg3dImportAiUse;
 }
 
 function compactNameList(list: StudioBg3dSkpReportNameList): StudioBg3dSkpReportNameList {
@@ -62,13 +65,18 @@ export function compactStudioBg3dSkpReportForStorage(report: StudioBg3dSkpImport
   };
 }
 
-function toAssetRights(rights: StudioBg3dSkpImportedAsset["rights"]): StudioBg3dAssetRightsReceipt {
+function toAssetRights(
+  rights: StudioBg3dSkpImportedAsset["rights"],
+  aiUse: StudioBg3dImportAiUse | undefined,
+): StudioBg3dAssetRightsReceipt {
   return {
     status: rights.status,
     commercialUse: rights.status === "unknown" ? false : rights.commercialUse,
     // 팀 공유는 이 가져오기가 확인한 적이 없으므로 항상 금지한다.
     teamShareAllowed: false,
     ...(rights.licenseName ? { license: rights.licenseName } : {}),
+    ...(aiUse?.aiGenerated ? { aiGenerated: aiUse.aiGenerated } : {}),
+    ...(aiUse?.aiTraining ? { aiTraining: aiUse.aiTraining } : {}),
   };
 }
 
@@ -91,7 +99,7 @@ function candidateRecord(
     favorite: false,
     collections: [],
     tags: [],
-    rights: toAssetRights(asset.rights),
+    rights: toAssetRights(asset.rights, asset.aiUse),
     skpImport: compactStudioBg3dSkpReportForStorage(report),
   };
 }
