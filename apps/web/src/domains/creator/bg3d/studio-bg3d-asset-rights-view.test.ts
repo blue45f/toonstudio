@@ -114,6 +114,28 @@ describe("번들 소재의 권리 보기", () => {
   });
 });
 
+describe("번들 소재의 불리언이 아닌 값", () => {
+  const bundledView = (patch: Record<string, unknown>) =>
+    buildStudioBg3dAssetRightsView(entry("env-x", "9", { source: "sample" }), {
+      provenanceOf: () => ({ ...CC0, ...patch }) as StudioBg3dBundledProvenanceLike,
+    });
+
+  it("commercialUse 가 true 가 아니면 상업 가능으로 읽지 않는다", () => {
+    for (const value of [undefined, null, "true", 1, "yes"]) {
+      expect(bundledView({ commercialUse: value }).state.commercial).toBe("unknown");
+    }
+    expect(bundledView({ commercialUse: true }).state.commercial).toBe("allowed");
+  });
+
+  it("attributionRequired 가 불리언이 아니면 '표기 불필요'로 읽지 않고 미확인으로 둔다", () => {
+    for (const value of [undefined, null, "false", 0, "no"]) {
+      expect(bundledView({ attributionRequired: value }).attribution).toBe("unknown");
+    }
+    expect(bundledView({ attributionRequired: false }).attribution).toBe("not-required");
+    expect(bundledView({ attributionRequired: true }).attribution).toBe("required");
+  });
+});
+
 describe("가져온 소재의 권리 보기", () => {
   it("라이브러리 레코드의 권리를 기준으로 라이선스·표기 의무·상업 사용을 읽는다", () => {
     const view = buildStudioBg3dAssetRightsView(entry("a1", "1"), {
@@ -138,14 +160,14 @@ describe("가져온 소재의 권리 보기", () => {
     expect(view.state.license).toBe("unknown");
   });
 
-  it("메타데이터 기록은 AI 표기·제공처·작성자·날짜만 덧붙이고 권리 상태를 바꾸지 못한다", () => {
+  it("메타데이터 기록이 라이브러리와 같은 말을 하면 AI 표기·제공처·작성자·날짜만 덧붙는다", () => {
     const view = buildStudioBg3dAssetRightsView(entry("a3", "3"), {
       libraryRightsById: new Map([["a3", licensed]]),
       metadataByHash: new Map([[hash("3"), storedMetadata("3", {
-        // 라이브러리는 licensed 인데 메타데이터가 owned·상업 불가라고 주장해도 라이브러리가 이긴다.
-        status: "owned",
-        commercialUse: false,
+        status: "licensed",
+        commercialUse: true,
         teamShareAllowed: false,
+        license: "ACON3D 구매 라이선스",
         provider: "ACON 3D",
         author: "스튜디오 봄",
         purchaseOrDownloadDate: "2026-07-22",
@@ -154,7 +176,70 @@ describe("가져온 소재의 권리 보기", () => {
       })]]),
     });
     expect(view.state).toEqual({ license: "licensed", commercial: "allowed", aiGenerated: "yes", aiTraining: "prohibited" });
-    expect(view).toMatchObject({ provider: "ACON 3D", author: "스튜디오 봄", acquiredOn: "2026-07-22" });
+    expect(view).toMatchObject({ provider: "ACON 3D", author: "스튜디오 봄", acquiredOn: "2026-07-22", conflict: false });
+  });
+
+  describe("라이브러리와 메타데이터가 다르게 말하면 더 제한적인 쪽을 쓴다", () => {
+    const withMetadata = (library: StudioBg3dAttachmentRights, rights: unknown) =>
+      buildStudioBg3dAssetRightsView(entry("m1", "5"), {
+        libraryRightsById: new Map([["m1", library]]),
+        metadataByHash: new Map([[hash("5"), storedMetadata("5", rights)]]),
+      });
+    const meta = (patch: Record<string, unknown>) => ({ status: "licensed", commercialUse: true, teamShareAllowed: false, license: "표준", ...patch });
+
+    it("라이브러리는 구매·허가·상업 가능인데 메타데이터가 직접 제작·상업 미허용이면 구매·허가이되 상업은 미확인이다", () => {
+      const view = withMetadata(licensed, meta({ status: "owned", commercialUse: false, license: undefined }));
+      expect(view.state).toMatchObject({ license: "licensed", commercial: "unknown" });
+      expect(view.conflict).toBe(true);
+    });
+
+    it("메타데이터가 더 제한적이면(미확인) 라이브러리가 허용이라고 해도 미확인으로 닫는다", () => {
+      const view = withMetadata(licensed, { status: "unknown", aiGenerated: "yes" });
+      expect(view.state).toEqual({ license: "unknown", commercial: "unknown", aiGenerated: "yes", aiTraining: "unknown" });
+      expect(view.attribution).toBe("unknown");
+      expect(view.conflict).toBe(true);
+    });
+
+    it("메타데이터가 더 느슨해도(공개 이용) 라이브러리의 제한을 풀지 못한다", () => {
+      const view = withMetadata(
+        { status: "unknown", commercialUse: false, attributionRequired: false },
+        { status: "public-domain", commercialUse: true, teamShareAllowed: false },
+      );
+      expect(view.state).toMatchObject({ license: "unknown", commercial: "unknown" });
+      expect(view.conflict).toBe(true);
+
+      const licensedVsPublic = withMetadata(licensed, { status: "public-domain", commercialUse: true, teamShareAllowed: false });
+      expect(licensedVsPublic.state.license).toBe("licensed");
+      expect(licensedVsPublic.conflict).toBe(true);
+    });
+
+    it("상업 사용만 다르면 둘 다 허용일 때만 가능이다", () => {
+      expect(withMetadata(licensed, meta({ commercialUse: false })).state.commercial).toBe("unknown");
+      const loose = withMetadata({ ...licensed, commercialUse: false }, meta({ commercialUse: true }));
+      expect(loose.state.commercial).toBe("unknown");
+      expect(loose.conflict).toBe(true);
+    });
+
+    it("같은 말이면 충돌로 보지 않는다", () => {
+      expect(withMetadata(licensed, meta({})).conflict).toBe(false);
+      // 라이브러리 기본값(권리 미확인)과 AI 표기만 있는 메타데이터는 충돌이 아니다.
+      const defaults = withMetadata(
+        { status: "unknown", commercialUse: false, attributionRequired: false },
+        { status: "unknown", aiGenerated: "no" },
+      );
+      expect(defaults.conflict).toBe(false);
+      expect(defaults.state.aiGenerated).toBe("no");
+    });
+
+    it("충돌이 난 소재의 필터 값과 카드 값은 같은 기록에서 나온다", () => {
+      const entries = [entry("m1", "5")];
+      const views = buildStudioBg3dAssetRightsViews(entries, {
+        libraryRightsById: new Map([["m1", licensed]]),
+        metadataByHash: new Map([[hash("5"), storedMetadata("5", { status: "unknown" })]]),
+      });
+      expect(filterStudioBg3dAssetRightsEntries(entries, views, { license: ["licensed"] })).toEqual([]);
+      expect(filterStudioBg3dAssetRightsEntries(entries, views, { license: ["unknown"] })).toEqual(entries);
+    });
   });
 
   it("라이브러리 기록이 없고 메타데이터만 있으면 그 기록을 쓰되 표기 의무는 모른다고 한다", () => {
@@ -183,18 +268,64 @@ describe("가져온 소재의 권리 보기", () => {
     expect(view.state).toEqual({ license: "unknown", commercial: "unknown", aiGenerated: "yes", aiTraining: "unknown" });
   });
 
-  it("저장 규칙에 걸린 라이선스 문구는 카드에서도 라이선스 미확인으로 닫는다(필터와 같은 값)", () => {
-    const hostile: StudioBg3dAttachmentRights = {
-      status: "licensed",
-      commercialUse: true,
-      attributionRequired: false,
-      licenseName: "https://assets.invalid/license?access_token=secret",
-    };
-    const view = buildStudioBg3dAssetRightsView(entry("a7", "7"), { libraryRightsById: new Map([["a7", hostile]]) });
-    expect(view.state.license).toBe("unknown");
-    expect(view.state.commercial).toBe("unknown");
-    expect(view.attribution).toBe("unknown");
-    expect(view.licenseName).toBeNull();
+  describe("메타데이터 저장 규칙이 거절하는 글자가 든 라이선스 이름도 라이선스 상태는 지킨다", () => {
+    const licenseNamed = (licenseName: string, digit = "7") =>
+      buildStudioBg3dAssetRightsView(entry(`n${digit}`, digit), {
+        libraryRightsById: new Map<string, StudioBg3dAttachmentRights>([
+          [`n${digit}`, { status: "licensed", commercialUse: true, attributionRequired: false, licenseName }],
+        ]),
+      });
+
+    it("꺾쇠가 든 이름('표준 <상업>')은 구매·허가·상업 가능으로 남고 이름은 글로 그대로 보인다", () => {
+      const view = licenseNamed("표준 <상업>");
+      expect(view.state).toMatchObject({ license: "licensed", commercial: "allowed" });
+      expect(view.attribution).toBe("not-required");
+      expect(view.licenseName).toBe("표준 <상업>");
+      expect(view.conflict).toBe(false);
+    });
+
+    it("주소가 든 이름도 구매·허가로 남는다(필터와 카드가 같은 값)", () => {
+      const view = licenseNamed("https://assets.invalid/license?access_token=secret", "8");
+      expect(view.state).toMatchObject({ license: "licensed", commercial: "allowed" });
+      expect(view.record?.rights.status).toBe("licensed");
+      const entries = [entry("n8", "8")];
+      const views = buildStudioBg3dAssetRightsViews(entries, {
+        libraryRightsById: new Map([["n8", { status: "licensed", commercialUse: true, attributionRequired: false, licenseName: "https://assets.invalid/x" }]]),
+      });
+      expect(filterStudioBg3dAssetRightsEntries(entries, views, { license: ["licensed"] })).toEqual(entries);
+    });
+
+    it("민감한 낱말이 든 이름도 상태 판정에 끼지 않는다", () => {
+      expect(licenseNamed("api_key 포함 라이선스", "9").state.license).toBe("licensed");
+    });
+
+    it("보이지 않는 글자와 방향 제어 글자는 화면용 이름에서 빼지만 라이선스 상태는 그대로다", () => {
+      const view = licenseNamed("ACON\u200b 3D\u202e 라이선스\u2066");
+      expect(view.state.license).toBe("licensed");
+      expect(view.licenseName).toBe("ACON 3D 라이선스");
+    });
+
+    it("줄바꿈·탭은 공백 하나로 바꿔 이름이 붙어 보이지 않게 한다", () => {
+      expect(licenseNamed("ACON\n3D\t라이선스", "b").licenseName).toBe("ACON 3D 라이선스");
+    });
+
+    it("보이지 않는 글자뿐인 이름은 이름 없음으로 보이고 라이선스 상태는 그대로다", () => {
+      const view = licenseNamed("\u200b\u202e  ");
+      expect(view.licenseName).toBeNull();
+      expect(view.state.license).toBe("licensed");
+    });
+
+    it("이름 없는 구매·허가도 라이브러리 기록대로 구매·허가이고 이름만 비어 보인다", () => {
+      const view = buildStudioBg3dAssetRightsView(entry("nz", "6"), {
+        libraryRightsById: new Map([["nz", { status: "licensed", commercialUse: true, attributionRequired: false }]]),
+      });
+      expect(view.state.license).toBe("licensed");
+      expect(view.licenseName).toBeNull();
+    });
+
+    it("긴 이름은 화면용으로 잘라 보인다", () => {
+      expect(Array.from(licenseNamed("가".repeat(500), "a").licenseName ?? "").length).toBeLessThanOrEqual(160);
+    });
   });
 
   it("마크업이 든 이름이어도 기록을 일반 이름으로 만들어 필터에서 빠지지 않게 한다", () => {
@@ -270,11 +401,34 @@ describe("권리 필터 적용", () => {
     expect(entries).toEqual(before);
   });
 
+  it("질의 상한(4,096건)을 넘는 목록도 빈 결과가 되지 않고 상한 뒤의 항목까지 거른다", () => {
+    const total = 4_100;
+    const many = Array.from({ length: total }, (_, index) => entry(`bulk-${index}`, "a", {
+      contentHash: `sha256:${index.toString(16).padStart(64, "0")}`,
+    }));
+    const manyViews = buildStudioBg3dAssetRightsViews(many, {
+      libraryRightsById: new Map(many.map((item, index) => [
+        item.id,
+        index % 2 === 0
+          ? { status: "owned", commercialUse: true, attributionRequired: false } as const
+          : { status: "licensed", commercialUse: true, attributionRequired: false, licenseName: "표준" } as const,
+      ])),
+    });
+    const owned = filterStudioBg3dAssetRightsEntries(many, manyViews, { license: ["owned"] });
+    const licensedOnly = filterStudioBg3dAssetRightsEntries(many, manyViews, { license: ["licensed"] });
+    expect(owned).toHaveLength(total / 2);
+    expect(licensedOnly).toHaveLength(total / 2);
+    // 상한 경계 뒤(4,096번째 이후)의 항목이 결과에 들어 있다.
+    expect(ids(owned)).toContain("bulk-4098");
+    expect(ids(licensedOnly)).toContain("bulk-4099");
+    expect(ids(owned).some((id) => ids(licensedOnly).includes(id))).toBe(false);
+  });
+
   it("칩에 붙일 개수를 값별로 센다", () => {
     expect(countStudioBg3dAssetRightsValues(entries, views)).toEqual({
       origin: { bundled: 2, imported: 4 },
       license: { owned: 1, licensed: 2, "public-domain": 1, unknown: 2 },
-      commercial: { allowed: 3, prohibited: 1, unknown: 2 },
+      commercial: { allowed: 3, unknown: 3 },
       aiGenerated: { yes: 1, no: 2, unknown: 3 },
       aiTraining: { allowed: 0, prohibited: 0, unknown: 6 },
     });

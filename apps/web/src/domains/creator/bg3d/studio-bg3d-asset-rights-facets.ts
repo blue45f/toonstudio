@@ -6,6 +6,8 @@
  *
  * 원칙
  * - 모르는 값은 "미확인"이라는 하나의 값으로 다룬다. 미확인이 허용으로 읽히는 길은 없다.
+ * - 상업 사용은 "가능"과 "미확인" 둘뿐이다. 영수증의 commercialUse 는 불리언이라 false 가 "금지한다고 적었다"인지 "허용한다고
+ *   적지 않았다(체크하지 않았다)"인지 구분할 수 없다. 금지를 적은 적이 없는데 "불가"라고 말하지 않는다.
  * - 한 패싯 안의 값은 OR, 서로 다른 패싯은 AND 다. 비어 있는 패싯은 걸러 내지 않는다(목록이 사라지지 않는다).
  * - 알 수 없는 패싯 값은 부분 적용하지 않고 빈 결과로 닫는다(메타데이터 질의와 같은 규칙).
  * - 이 판정은 소재 기록에 적힌 권리 표기를 걸러 보는 도구이며 법률 자문이 아니다.
@@ -21,7 +23,7 @@ import type {
 } from "./studio-bg3d-asset-metadata";
 
 export const STUDIO_BG3D_RIGHTS_LICENSE_VALUES = ["owned", "licensed", "public-domain", "unknown"] as const;
-export const STUDIO_BG3D_RIGHTS_COMMERCIAL_VALUES = ["allowed", "prohibited", "unknown"] as const;
+export const STUDIO_BG3D_RIGHTS_COMMERCIAL_VALUES = ["allowed", "unknown"] as const;
 export const STUDIO_BG3D_RIGHTS_AI_GENERATED_VALUES = ["yes", "no", "unknown"] as const;
 export const STUDIO_BG3D_RIGHTS_AI_TRAINING_VALUES = ["allowed", "prohibited", "unknown"] as const;
 
@@ -66,12 +68,15 @@ const FACET_VALUES: Readonly<Record<(typeof FACET_KEYS)[number], readonly string
   aiTraining: STUDIO_BG3D_RIGHTS_AI_TRAINING_VALUES,
 });
 
-/** 영수증을 패싯이 읽는 상태로 바꾼다. 권리 상태가 미확인이면 상업 사용도 미확인이다(false 를 금지로 읽지 않는다). */
+/**
+ * 영수증을 패싯이 읽는 상태로 바꾼다. 상업 사용은 권리 상태를 알고 허용이라고 적은 경우에만 "가능"이다. 권리 상태가 미확인이거나
+ * commercialUse 가 false 이면 "미확인"이다(false 를 금지로 읽지 않는다).
+ */
 export function readStudioBg3dAssetRightsState(rights: StudioBg3dAssetRightsReceipt): StudioBg3dAssetRightsState {
   const known = rights.status !== "unknown";
   return Object.freeze({
     license: rights.status,
-    commercial: !known ? "unknown" : rights.commercialUse ? "allowed" : "prohibited",
+    commercial: known && rights.commercialUse ? "allowed" : "unknown",
     aiGenerated: rights.aiGenerated ?? "unknown",
     aiTraining: rights.aiTraining ?? "unknown",
   });

@@ -1,7 +1,12 @@
 /**
  * 3D 소재 권리 표시 문구 — 카드 요약, 상세 줄, 필터 칩이 같은 낱말을 쓰게 하는 한곳.
  *
- * 규칙: 모르는 값은 언제나 "미확인"이라고 쓴다. "가능"·"허용"처럼 읽히는 낱말은 기록에 그렇게 적힌 경우에만 쓴다.
+ * 규칙
+ * - 모르는 값은 언제나 "미확인"이라고 쓴다. "가능"·"허용"처럼 읽히는 낱말은 기록에 그렇게 적힌 경우에만 쓴다.
+ * - 상업 사용에는 "불가"가 없다. 기록이 불리언이라 "금지라고 적었다"와 "허용을 적지 않았다"를 가를 수 없어서다.
+ * - 새 문구는 해요체로 쓰고, 실패를 알리는 문구는 다음 행동을 함께 적는다(shared/language 가드가 시험한다).
+ * - 이 모듈의 새 문구는 한국어 리터럴이다(skp-import 의 선례). 번역 키로 옮기는 일은 후속이다.
+ *
  * 문구는 기록된 표기를 옮길 뿐 법률 자문이 아니다. 사용자가 입력한 값(라이선스 이름·제공처·작성자·표기 문구)은
  * 이 모듈이 문장에 끼워 넣지 않고 호출한 쪽이 별도 노드로 그린다.
  */
@@ -9,7 +14,19 @@
 import type { StudioBg3dAssetOrigin, StudioBg3dAssetRightsView } from "./studio-bg3d-asset-rights-view";
 
 export const STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER =
-  "소재 기록에 적힌 표기를 보여 줄 뿐 법률 자문이나 권리 인증이 아닙니다. 사용 전에 원본 라이선스를 직접 확인해 주세요.";
+  "소재 기록에 적힌 표기를 보여 줄 뿐 법률 자문이나 권리 인증이 아니에요. 사용하기 전에 원본 라이선스를 직접 확인해 주세요.";
+
+/** 이 화면의 권리 표시가 프로젝트 단위 권리 요약과 이어져 있지 않다는 안내(범용 3D 모델 모드의 근거 수집은 별개다). */
+export const STUDIO_BG3D_ASSET_RIGHTS_PROJECT_SUMMARY_NOTICE =
+  "여기 보이는 권리 표시는 프로젝트 권리 요약에는 아직 반영되지 않아요.";
+
+/** 가져온 소재의 권리 기록을 읽지 못했을 때. 실패 안내라 다음 행동을 함께 적는다. */
+export const STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE =
+  "저장된 권리 기록을 읽지 못해서 모두 미확인으로 보여요. 3D 모델 목록을 닫았다가 다시 열어 주세요.";
+
+/** 라이브러리 기록과 저장된 권리 기록이 달라 더 제한적인 쪽을 보여 줄 때. */
+export const STUDIO_BG3D_ASSET_RIGHTS_CONFLICT_NOTICE =
+  "라이브러리 기록과 저장된 권리 기록이 서로 달라서 더 제한적인 쪽으로 보여요. 원본 라이선스를 확인해 주세요.";
 
 export const STUDIO_BG3D_ASSET_RIGHTS_UNCONFIRMED = "미확인";
 
@@ -51,7 +68,6 @@ export const STUDIO_BG3D_ASSET_RIGHTS_FILTER_GROUPS: readonly StudioBg3dAssetRig
     label: "상업 사용",
     options: [
       { value: "allowed", label: "가능" },
-      { value: "prohibited", label: "불가" },
       { value: "unknown", label: STUDIO_BG3D_ASSET_RIGHTS_UNCONFIRMED },
     ],
   },
@@ -81,8 +97,8 @@ const LICENSE_SUMMARY: Readonly<Record<StudioBg3dAssetRightsView["state"]["licen
   "public-domain": "공개 이용",
   unknown: "권리 미확인",
 };
-const COMMERCIAL_SUMMARY = { allowed: "상업 가능", prohibited: "상업 불가", unknown: "상업 미확인" } as const;
-const COMMERCIAL_DETAIL = { allowed: "가능", prohibited: "불가", unknown: STUDIO_BG3D_ASSET_RIGHTS_UNCONFIRMED } as const;
+const COMMERCIAL_SUMMARY = { allowed: "상업 가능", unknown: "상업 미확인" } as const;
+const COMMERCIAL_DETAIL = { allowed: "가능", unknown: STUDIO_BG3D_ASSET_RIGHTS_UNCONFIRMED } as const;
 const AI_GENERATED_SUMMARY = { yes: "AI 생성", no: "AI 아님", unknown: "AI 미확인" } as const;
 const AI_GENERATED_DETAIL = { yes: "AI로 생성됨", no: "AI 생성물 아님", unknown: STUDIO_BG3D_ASSET_RIGHTS_UNCONFIRMED } as const;
 const AI_TRAINING_DETAIL = { allowed: "허용", prohibited: "금지", unknown: STUDIO_BG3D_ASSET_RIGHTS_UNCONFIRMED } as const;
@@ -150,9 +166,11 @@ export function describeStudioBg3dAssetRightsRows(view: StudioBg3dAssetRightsVie
   ];
 }
 
-/** 권리 기록을 읽지 못해 항목만 있는 가져온 소재에 붙이는 안내. 그 밖에는 null. */
+/**
+ * 카드에 붙이는 근거 안내. 권리 기록을 읽지 못해 항목만 있는 가져온 소재, 또는 두 기록이 어긋나 더 제한적인 쪽을 보여 주는
+ * 소재에만 있고 그 밖에는 null 이다.
+ */
 export function describeStudioBg3dAssetRightsBasisNotice(view: StudioBg3dAssetRightsView): string | null {
-  return view.basis === "entry-only" && view.origin === "imported"
-    ? "저장된 권리 기록을 읽지 못해 모두 미확인으로 표시합니다."
-    : null;
+  if (view.basis === "entry-only" && view.origin === "imported") return STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE;
+  return view.conflict ? STUDIO_BG3D_ASSET_RIGHTS_CONFLICT_NOTICE : null;
 }

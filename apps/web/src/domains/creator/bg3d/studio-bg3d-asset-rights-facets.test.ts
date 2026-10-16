@@ -52,11 +52,24 @@ const assets = [bought, ownedAi, publicDomain, nonCommercial, unconfirmed, uncon
 const hashesOf = (items: readonly StudioBg3dAssetMetadata[]) => items.map(({ contentHash }) => contentHash.slice(7, 8)).sort();
 
 describe("readStudioBg3dAssetRightsState", () => {
-  it("never reads an unconfirmed license as a commercial prohibition or permission", () => {
+  it("never reads an unconfirmed license as a commercial permission", () => {
     expect(readStudioBg3dAssetRightsState(unconfirmed.rights)).toEqual(UNKNOWN_STUDIO_BG3D_ASSET_RIGHTS_STATE);
     expect(readStudioBg3dAssetRightsState(unconfirmed.rights).commercial).toBe("unknown");
-    expect(readStudioBg3dAssetRightsState(nonCommercial.rights).commercial).toBe("prohibited");
     expect(readStudioBg3dAssetRightsState(bought.rights).commercial).toBe("allowed");
+  });
+
+  it("reads commercialUse=false as unconfirmed because the boolean cannot tell a ban from an unchecked box", () => {
+    expect(readStudioBg3dAssetRightsState(nonCommercial.rights).commercial).toBe("unknown");
+    // 값이 "금지"인 상업 사용 상태는 존재하지 않는다.
+    const values = (["owned", "licensed", "public-domain", "unknown"] as const).flatMap((status) =>
+      [true, false].map((commercialUse) =>
+        readStudioBg3dAssetRightsState({ status, commercialUse, teamShareAllowed: false }).commercial));
+    expect(new Set(values)).toEqual(new Set(["allowed", "unknown"]));
+  });
+
+  it("reads commercialUse=true under an unconfirmed license as unconfirmed, never as allowed", () => {
+    expect(readStudioBg3dAssetRightsState({ status: "unknown", commercialUse: true, teamShareAllowed: false }).commercial)
+      .toBe("unknown");
   });
 
   it("reports absent AI answers as unknown and keeps explicit ones", () => {
@@ -84,6 +97,9 @@ describe("normalizeStudioBg3dAssetRightsFacets", () => {
       { license: ["gpl"] },
       { aiGenerated: ["maybe"] },
       { commercial: "allowed" },
+      // 상업 사용에는 "불가" 값이 없다. 예전 저장 값이나 외부 입력이 들어와도 일부만 적용하지 않고 닫는다.
+      { commercial: ["prohibited"] },
+      { commercial: ["allowed", "prohibited"] },
       { origin: ["bundled"] },
       { license: [1] },
       null,
@@ -122,7 +138,8 @@ describe("queryStudioBg3dAssetRights", () => {
 
   it("treats unconfirmed as its own selectable value and never matches it to a known one", () => {
     expect(hashesOf(queryStudioBg3dAssetRights(assets, { rights: { license: ["unknown"] } }))).toEqual(["e", "f"]);
-    expect(hashesOf(queryStudioBg3dAssetRights(assets, { rights: { commercial: ["unknown"] } }))).toEqual(["e", "f"]);
+    // 비상업 라이선스(d)도 "허용이라고 적지 않았다"일 뿐이라 상업 미확인에 든다.
+    expect(hashesOf(queryStudioBg3dAssetRights(assets, { rights: { commercial: ["unknown"] } }))).toEqual(["d", "e", "f"]);
     expect(hashesOf(queryStudioBg3dAssetRights(assets, { rights: { aiGenerated: ["unknown"] } })))
       .toEqual(["c", "d", "e"]);
     expect(hashesOf(queryStudioBg3dAssetRights(assets, { rights: { commercial: ["allowed"] } })))

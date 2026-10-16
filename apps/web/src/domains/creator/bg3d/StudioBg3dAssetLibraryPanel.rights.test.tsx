@@ -211,7 +211,7 @@ describe("권리 상세 펼치기", () => {
     // 기록되지 않은 칸은 '미확인'이라고 쓴다.
     expect(within(region).getAllByText("미확인").length).toBeGreaterThanOrEqual(2);
     // 법률 자문이 아니라는 고지가 함께 보인다.
-    expect(text).toContain("법률 자문이나 권리 인증이 아닙니다");
+    expect(text).toContain("법률 자문이나 권리 인증이 아니에요");
 
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
@@ -277,7 +277,8 @@ describe("권리 필터 칩", () => {
     renderPanel();
     openFilters();
     const chips = screen.getAllByRole("button").filter((button) => button.hasAttribute("aria-pressed") && /^(라이선스 종류|출처 종류|상업 사용|AI 생성 표기|AI 학습 표기):/u.test(button.getAttribute("aria-label") ?? ""));
-    expect(chips).toHaveLength(4 + 2 + 3 + 3 + 3);
+    // 상업 사용에는 "불가" 칩이 없다(가능·미확인 둘뿐).
+    expect(chips).toHaveLength(4 + 2 + 2 + 3 + 3);
     for (const target of chips) {
       expect(target.tagName).toBe("BUTTON");
       expect(target.getAttribute("type")).toBe("button");
