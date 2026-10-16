@@ -55,6 +55,17 @@ describe("motion-webtoon-storage", () => {
     expect(parseShareHashId(buildShareHashId(id))).toBe(id);
   });
 
+  it("깨진 퍼센트 인코딩 해시도 예외 없이 처리한다(링크 하나로 페이지가 무너지지 않게)", () => {
+    // 주소창의 해시는 누구나 만들어 보낼 수 있다. 짝이 맞지 않는 `%` 는 URIError 를 던지므로
+    // 첫 렌더에서 해시를 읽는 화면이 오류 경계로 떨어지지 않아야 한다.
+    for (const hash of ["#motion-episode=%", "#motion-episode=%E0%A4%A", "#motion-episode=%ZZ", "#motion-episode=ep-%E0"]) {
+      expect(() => parseShareHashId(hash), hash).not.toThrow();
+    }
+    // 해독하지 못한 값은 원문 그대로 돌려줘 "공유 회차를 찾지 못함" 안내로 이어진다.
+    expect(parseShareHashId("#motion-episode=%E0%A4%A")).toBe("%E0%A4%A");
+    expect(parseShareHashId("#motion-episode=%")).toBe("%");
+  });
+
   it("회차를 저장·복원한다", () => {
     const storage = memoryStorage();
     const episode = makeEpisode("ep-save");

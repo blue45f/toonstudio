@@ -25,6 +25,7 @@ import {
 } from "./threaded-comment-model";
 
 import Link from "@/shared/navigation/router-link";
+import { safeDecodeRouteText } from "@/shared/lib/safe-route-text";
 import { cn, relativeDate } from "@/shared/lib/utils";
 
 import type { Dispatch, KeyboardEvent, SetStateAction } from "react";
@@ -251,7 +252,8 @@ export function ThreadedCommentSection<T extends ThreadedCommentRecord>({
 
   useEffect(() => {
     if (typeof document === "undefined" || typeof window === "undefined" || !window.location.hash) return;
-    const id = decodeURIComponent(window.location.hash.slice(1));
+    // 해시는 누구나 만들어 보낼 수 있다. 짝이 맞지 않는 `%` 가 URIError 로 화면을 무너뜨리지 않게 안전하게 해독한다.
+    const id = safeDecodeRouteText(window.location.hash.slice(1));
     if (!id.startsWith("comment-")) return;
     const timer = window.setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
