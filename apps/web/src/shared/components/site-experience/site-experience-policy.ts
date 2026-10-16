@@ -1,5 +1,6 @@
 import { workspaceTaskRoute } from "../workspace/workspace-task-route.ts";
 import { isPublicCreativeRoute } from "../site-public-routes.ts";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 export type ExperienceMode = "vivid" | "calm";
 export type ExperienceLocale = string;export const EXPERIENCE_MODE_KEY = "toonstudio:site-experience:v1";
@@ -9,7 +10,7 @@ export function parseExperienceMode(value: string | null): ExperienceMode {
 }
 
 function normalizedExperiencePath(pathname: string): string {
-  return pathname.replace(/\/+$/u, "").toLowerCase() || "/";
+  return trimTrailingSlashes(pathname).toLowerCase() || "/";
 }
 
 /** Editors and administrative tools never inherit promotional chrome or effects. */

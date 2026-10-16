@@ -1,4 +1,5 @@
 import { STUDIO_PROJECT_NAVIGATION } from "./studio-product-ia";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 export const STUDIO_ROUTE_IDS = [
   "home",
@@ -172,7 +173,7 @@ function normalizedPathname(pathname: string): string {
   const trimmed = pathname.trim();
   if (!trimmed.startsWith("/")) throw new Error("Studio route paths must begin with a slash.");
   const withoutQuery = trimmed.split(/[?#]/u, 1)[0] ?? "/";
-  return withoutQuery.length > 1 ? withoutQuery.replace(/\/+$/u, "") : withoutQuery;
+  return withoutQuery.length > 1 ? trimTrailingSlashes(withoutQuery) : withoutQuery;
 }
 
 export function studioRoutePath(id: StudioRouteId): string {

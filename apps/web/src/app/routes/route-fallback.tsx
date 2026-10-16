@@ -15,6 +15,7 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";
 import { resolveSiteRouteExperience } from "@/shared/lib/site-route-experience";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 /**
  * 경로가 속한 실루엣 화면군. 어느 군에도 속하지 않으면 null(일반 카드 스켈레톤 유지).
@@ -23,7 +24,7 @@ import { resolveSiteRouteExperience } from "@/shared/lib/site-route-experience";
  * shared/components/route-silhouette.tsx 머리말이 정본이다.
  */
 function routeSilhouetteFamily(pathname: string): RouteSilhouetteFamily | null {
-  const path = pathname.replace(/\/+$/u, "") || "/";
+  const path = trimTrailingSlashes(pathname) || "/";
   if (path === "/studio/space" || /^\/studio\/p\/[^/]+\/space(?:\/.*)?$/u.test(path)) {
     return "virtual-space";
   }

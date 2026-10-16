@@ -1,4 +1,5 @@
 import { resolveStudioRoute } from "@/domains/creator/studio-router/studio-route-manifest";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 /**
  * 진입 인트로를 띄울 라우트인지 판정한다. (구 app-shell-splash의 대체)
@@ -17,7 +18,7 @@ const IMMERSIVE_ENTRY_PATHS: ReadonlySet<string> = new Set([
 
 export function shouldShowEntryIntro(pathname: string, search = ""): boolean {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return false;
-  const normalized = pathname.replace(/\/+$/u, "") || "/";
+  const normalized = trimTrailingSlashes(pathname) || "/";
   if (IMMERSIVE_ENTRY_PATHS.has(normalized)) return false;
   if (normalized.startsWith("/team/")) return false;
   if (/^\/studio\/p\/[^/]+\/space$/u.test(normalized)) return false;

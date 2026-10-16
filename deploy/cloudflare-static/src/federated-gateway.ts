@@ -158,6 +158,17 @@ function publicReadOriginState(
   return { state: "configured", count: normalized.length };
 }
 
+/**
+ * 문자열 끝의 `/` 를 모두 뗀다. 요청 경로는 누구나 만들어 보낼 수 있어서 `replace(/\/+$/u, "")` 를 쓰면, 슬래시가 길게
+ * 이어진 뒤에 다른 글자가 오는 경로에서 시작점마다 그 열을 다시 읽어 입력 길이의 제곱 시간이 든다(CodeQL js/polynomial-redos).
+ * 뒤에서 앞으로 한 번만 훑는다.
+ */
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return end === value.length ? value : value.slice(0, end);
+}
+
 function validStaticPrefix(value: string): boolean {
   return value.startsWith("/")
     && value !== "/"
@@ -170,7 +181,7 @@ function validStaticPrefix(value: string): boolean {
 export function resolveReadModelStaticPrefix(raw: string | undefined): string {
   const candidate = raw?.trim() || DEFAULT_READ_MODEL_STATIC_PREFIX;
   return validStaticPrefix(candidate)
-    ? candidate.replace(/\/+$/u, "")
+    ? trimTrailingSlashes(candidate)
     : DEFAULT_READ_MODEL_STATIC_PREFIX;
 }
 
@@ -278,7 +289,7 @@ export function createReadModelSnapshotRequest(
   if (incoming.search !== "" || !incoming.pathname.startsWith("/api/")) {
     return null;
   }
-  const suffix = incoming.pathname.slice("/api".length).replace(/\/+$/u, "");
+  const suffix = trimTrailingSlashes(incoming.pathname.slice("/api".length));
   if (!suffix || suffix === "/") return null;
 
   const target = new URL(incoming.origin);

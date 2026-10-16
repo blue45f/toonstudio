@@ -1076,7 +1076,7 @@ function inspectAttachmentBytes(
     if (!objTextValid(bytes)) fail("MIME_SIGNATURE_MISMATCH", "OBJ attachment의 텍스트 구조가 올바르지 않습니다.");
     validateDeclaredMime(declaredMimeType, ["model/obj", "text/plain"]);
     const text = decodeUtf8(bytes, "MIME_SIGNATURE_MISMATCH", "OBJ attachment를 읽지 못했습니다.");
-    if (/^\s*mtllib\s+\S+/mu.test(text)) {
+    if (/^[^\S\n\r\u2028\u2029]*mtllib\s+\S/mu.test(text)) { // 줄 첫머리 공백은 같은 줄만 읽는다(빈 줄 열에서 제곱 시간 방지)
       warning(
         diagnostics,
         "EXTERNAL_ATTACHMENT_DEPENDENCY",

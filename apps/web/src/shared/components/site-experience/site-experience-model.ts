@@ -1,4 +1,5 @@
 import { supportsSiteExperience } from "./site-experience-policy.ts";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 // Retain the existing public model contract while keeping shell policy lightweight.
 export { EXPERIENCE_MODE_KEY, parseExperienceMode, supportsSiteExperience, type ExperienceMode, type ExperienceLocale } from "./site-experience-policy.ts";
@@ -22,7 +23,7 @@ export function experienceDestinationForHref(href: string) {
 }
 
 export function nextExperienceDestinations(pathname: string): ExperienceDestinationId[] {
-  const path = pathname.replace(/\/+$/u, "").toLowerCase() || "/";
+  const path = trimTrailingSlashes(pathname).toLowerCase() || "/";
   if (!supportsSiteExperience(path)) return [];
   // Do not interrupt purchasing, publishing, settings, authentication or reading.
   if (/^\/(?:me|my|settings|login|register|auth|play|fortune)(?:\/|$)/u.test(path)

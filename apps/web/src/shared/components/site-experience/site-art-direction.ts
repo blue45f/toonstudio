@@ -1,4 +1,5 @@
 import { nextExperienceDestinations, supportsSiteExperience, type ExperienceLocale } from "./site-experience-model";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 export type ArtworkKind = "world" | "process" | "materials";
 export type ArtworkView = "art" | "values" | "composition";
@@ -22,7 +23,7 @@ const DIRECTIONS = {
 
 /** Public browsing only: never promote another task inside an editor, form or reader. */
 export function siteArtDirection(pathname: string): SiteArtDirection | null {
-  const path = pathname.replace(/\/+$/u, "").toLowerCase() || "/";
+  const path = trimTrailingSlashes(pathname).toLowerCase() || "/";
   if (!supportsSiteExperience(path) || path === "/") return null;
   if (/^\/(?:me|my|settings|login|register|auth|play|fortune|terms|privacy|copyright)(?:\/|$)/u.test(path)) return null;
   if (/^\/market\/(?:publish|manage|checkout|library|wishlist)(?:\/|$)/u.test(path)

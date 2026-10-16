@@ -346,6 +346,41 @@ describe("kpp determinism and committed corpus", () => {
   });
 });
 
+/**
+ * 프리셋 XML 의 엔티티 이름은 `[a-z]+` 로 걸러 온 뒤 표에서 찾는다. 표를 `표[이름]` 으로 바로 읽으면 소문자뿐인
+ * Object.prototype 키 `constructor` 가 걸려 이름이 "function Object() { [native code] }" 로 풀렸다. 등록된 이름(소유 속성)만 푼다.
+ */
+describe("kpp 프리셋 XML 엔티티 해독", () => {
+  /** 프리셋 이름 속성에 `a<원문>b` 를 넣어 읽은 이름. */
+  function presetNameOf(rawName: string): string {
+    const presetXml = `<Preset name="a${rawName}b" paintopid="paintbrush" version="5.0">\n</Preset>`;
+    return parseKppPreset(buildKppFile({ presetXml })).presetName;
+  }
+
+  it.each([
+    ["&amp;", "&"],
+    ["&lt;", "<"],
+    ["&gt;", ">"],
+    ["&quot;", '"'],
+    ["&apos;", "'"],
+    ["&#65;", "A"],
+    ["&#x41;", "A"],
+  ])("%s 는 %j 로 푼다", (reference, expected) => {
+    expect(presetNameOf(reference)).toBe(`a${expected}b`);
+  });
+
+  it.each(["&nbsp;", "&Amp;", "&amp1;", "&#X41;"])("등록되지 않았거나 모양이 다른 %s 는 원문 그대로 둔다", (reference) => {
+    expect(presetNameOf(reference)).toBe(`a${reference}b`);
+  });
+
+  it.each(Object.getOwnPropertyNames(Object.prototype))(
+    "&%s; 는 Object.prototype 의 속성 이름이어도 풀리지 않고 원문 그대로 남는다",
+    (name) => {
+      expect(presetNameOf(`&${name};`)).toBe(`a&${name};b`);
+    },
+  );
+});
+
 /** Byte offset of the first occurrence of an ASCII needle. */
 function findAscii(haystack: Uint8Array, needle: string): number {
   const target = [...needle].map((ch) => ch.charCodeAt(0));

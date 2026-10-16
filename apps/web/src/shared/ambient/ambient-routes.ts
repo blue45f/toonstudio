@@ -6,6 +6,8 @@
  * 가상 스튜디오 몰입 화면(/home, /hub, /team, /studio/space 등)은 AppShell의 몰입 판정이 따로 끈다.
  */
 
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+
 /** 경로 접두사 규칙: 해당 경로와 그 하위 경로를 모두 끈다. */
 const FOCUS_ROUTE_PREFIXES: readonly string[] = [
   // 스튜디오 전체: 편집기(/studio/p/…), 3D 도구(/studio/bg3d, /studio/poser,
@@ -32,7 +34,7 @@ const FOCUS_ROUTE_EXACT: ReadonlySet<string> = new Set([
 ]);
 
 function normalizeAmbientPath(pathname: string): string {
-  return pathname.toLowerCase().replace(/\/+$/u, "") || "/";
+  return trimTrailingSlashes(pathname.toLowerCase()) || "/";
 }
 
 /** 이 경로에서 배경 효과를 표시해도 되는지. */

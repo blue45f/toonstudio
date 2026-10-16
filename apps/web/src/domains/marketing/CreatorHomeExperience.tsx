@@ -22,6 +22,7 @@ import { StudioAnnotatedTour } from "./StudioAnnotatedTour";
 import { StudioIntroBridge, StudioIntroClosing, StudioIntroFlow, StudioIntroHeroStage } from "./StudioIntroNarrative";
 import { StudioSupportLinks } from "./StudioSupportLinks";
 import { useCreatorHomeSectionNavigation } from "./use-creator-home-section-navigation";
+import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 const SCOPE = "domains.marketing.CreatorHomeExperience";
 
@@ -35,7 +36,7 @@ const SCOPE = "domains.marketing.CreatorHomeExperience";
  */
 export function CreatorHomeExperience() {
   useCreatorHomeSectionNavigation();
-  const pathname = usePathname().replace(/\/+$/u, "").toLowerCase();
+  const pathname = trimTrailingSlashes(usePathname()).toLowerCase();
   const introduction = pathname === "/about/studio";
   const language = useI18n((state) => state.lang);
   const resolvedTheme = useTheme((state) => state.resolvedTheme);

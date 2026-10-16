@@ -6,14 +6,20 @@
  * 복원된다는 점을 UI 문구로 정직하게 안내한다.
  */
 
+import { safeDecodeRouteText } from "@/shared/lib/safe-route-text";
+
 import type { MotionEpisode } from "./motion-webtoon-model";
 
 export const MOTION_EPISODE_SHARE_HASH_PREFIX = "#motion-episode=";
 
-/** 공유 해시에서 회차 ID를 추출한다. */
+/**
+ * 공유 해시에서 회차 ID를 추출한다. 해시는 누구나 만들어 보낼 수 있어서, 짝이 맞지 않는 퍼센트 인코딩은
+ * URIError 를 던지는 대신 원문 그대로 돌려준다(첫 렌더에서 읽으므로 던지면 화면 전체가 오류 경계로 떨어진다).
+ * 해독하지 못한 값은 저장된 회차와 맞지 않아 "공유 회차를 찾지 못함" 안내로 이어진다.
+ */
 export function parseShareHashId(hash: string): string | null {
   if (!hash.startsWith(MOTION_EPISODE_SHARE_HASH_PREFIX)) return null;
-  const id = decodeURIComponent(hash.slice(MOTION_EPISODE_SHARE_HASH_PREFIX.length));
+  const id = safeDecodeRouteText(hash.slice(MOTION_EPISODE_SHARE_HASH_PREFIX.length));
   return id.trim() ? id : null;
 }
 
