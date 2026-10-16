@@ -16,6 +16,32 @@ const DESKTOP_A11Y_ROUTES = [
 const MOBILE_A11Y_ROUTES = ["/", "/discover", "/studio", "/studio/new"] as const;
 const BLOCKING_IMPACTS = new Set(["serious", "critical"]);
 
+/** 실패한 노드의 실제 환경: 맨 위 요소, 조상 불투명도, 진행 중인 애니메이션·전환 수. */
+async function describeNodeEnvironment(page: Page, target: unknown): Promise<unknown> {
+  const selector = Array.isArray(target) ? target.filter((part): part is string => typeof part === "string").join(" ") : "";
+  if (!selector) return null;
+  return page.evaluate((query) => {
+    const element = document.querySelector(query);
+    if (!element) return { found: false };
+    const box = element.getBoundingClientRect();
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    const fades: string[] = [];
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      const opacity = getComputedStyle(node).opacity;
+      if (opacity !== "1") fades.push(`${node.tagName.toLowerCase()}.${String(node.className).slice(0, 40)}=${opacity}`);
+    }
+    return {
+      found: true,
+      rect: [Math.round(box.left), Math.round(box.top), Math.round(box.width), Math.round(box.height)],
+      viewport: [window.innerWidth, window.innerHeight],
+      onTop: top === element || Boolean(top && element.contains(top)),
+      topElement: top ? `${top.tagName.toLowerCase()}.${String(top.className).slice(0, 60)}` : null,
+      ancestorOpacity: fades,
+      runningAnimations: document.getAnimations().filter((animation) => animation.playState === "running").length,
+    };
+  }, selector).catch(() => null);
+}
+
 async function assertNoBlockingViolations(page: Page, route: string) {
   await page.goto(route, { waitUntil: "domcontentloaded" });
   await expect(page.locator("main").first()).toBeVisible();
@@ -59,13 +85,21 @@ async function assertNoBlockingViolations(page: Page, route: string) {
   const blocking = result.violations.filter(
     (violation) => violation.impact && BLOCKING_IMPACTS.has(violation.impact),
   );
-  const summary = blocking.map((violation) => ({
+  // 실패했을 때만 도는 진단이다. 색 대비는 간헐적으로만 실패해 대상 선택자만으로는 원인을 알 수 없었다:
+  // axe 가 잰 전경·배경색과 비율, 그리고 그 요소 중심에서 실제로 맨 위에 있는 요소(겹침)와 조상의 불투명도(진행 중
+  // 전환)를 남기면 다음에 같은 실패가 나도 재현 없이 원인을 가를 수 있다.
+  const summary = await Promise.all(blocking.map(async (violation) => ({
     id: violation.id,
     impact: violation.impact,
     help: violation.help,
     helpUrl: violation.helpUrl,
     targets: violation.nodes.slice(0, 5).map((node) => node.target),
-  }));
+    details: await Promise.all(violation.nodes.slice(0, 5).map(async (node) => ({
+      html: node.html.slice(0, 240),
+      checks: node.any.map((check) => check.data),
+      environment: await describeNodeEnvironment(page, node.target),
+    }))),
+  })));
 
   expect(
     summary,
