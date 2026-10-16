@@ -590,6 +590,12 @@ export const StudioBg3dRoomBuilderPanel = createLazyComponent(() =>
     default: Panel,
   }))
 );
+// 원클릭 웹툰 배경 선택기(교실·복도·거리): 카탈로그·거리 생성기와 함께 템플릿 탭을 열 때만 불러온다.
+export const StudioBg3dWebtoonBackgroundPicker = createLazyComponent(() =>
+  import("./StudioBg3dWebtoonBackgroundPicker").then(({
+    StudioBg3dWebtoonBackgroundPicker: Picker,
+  }) => ({ default: Picker }))
+);
 export { StudioBg3dSceneFog } from "./StudioBg3dSceneFog";
 export {
   BgAdaptiveDprController,

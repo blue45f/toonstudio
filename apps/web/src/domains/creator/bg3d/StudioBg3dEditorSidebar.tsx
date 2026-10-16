@@ -152,7 +152,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
     StudioBg3dDirectionalShadowLight, StudioBg3dImmersivePanel, StudioBg3dLtPanel,
     StudioBg3dMeasurementPanel, StudioBg3dMeasurementViewport, StudioBg3dPhysicsPanel,
     StudioBg3dPhysicsTransport, StudioBg3dPlacementPointerController,
-    StudioBg3dRoomBuilderPanel, StudioBg3dSceneFog, BgAdaptiveDprController,
+    StudioBg3dRoomBuilderPanel, StudioBg3dWebtoonBackgroundPicker, StudioBg3dSceneFog, BgAdaptiveDprController,
     BgCustomModelInstanceBatch, BgCustomModelMesh, BgGroundHelper, BgPlacementPreview,
     BgPrimitiveMesh, BgScaleGuide, BgSectionPlaneController, BgViewportController,
     SkyClearColorController, StudioBg3dThreeRenderSettingsController, StudioBg3dScenePanorama,
@@ -566,6 +566,20 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               ) : null}
 
               <section hidden={hideOnTab("templates")}>
+                {activePanelTab === "templates" ? (
+                  <div className="mb-5 border-b border-line pb-4">
+                    <Suspense fallback={(
+                      <StudioPanelLoading label="웹툰 배경 도구를 불러오는 중입니다…" />
+                    )}>
+                      <StudioBg3dWebtoonBackgroundPicker
+                        disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
+                        autoCutaway={roomAutoCutaway}
+                        onAutoCutawayChange={setRoomAutoCutaway}
+                        onBuild={h.addGeneratedParts}
+                      />
+                    </Suspense>
+                  </div>
+                ) : null}
                 <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-fg">
                   <LayoutTemplate size={15} className="text-accent" aria-hidden />
                   씬 템플릿
