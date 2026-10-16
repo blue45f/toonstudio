@@ -324,14 +324,15 @@ function normalizeRights(
 
   const aiUse = options.readAiUse ? normalizeAiUse(value) : {};
   if (!aiUse) return defaultRights();
+  // 다른 칸이 저장 규칙에 걸려 권한을 내릴 때도 서로 독립인 AI 표기는 유지한다(권한은 주지 않는다).
+  const downgraded = (): StudioBg3dAssetRightsReceipt =>
+    Object.keys(aiUse).length > 0 ? Object.freeze({ ...defaultRights(), ...aiUse }) : defaultRights();
   const status = value.status as StudioBg3dAssetRightsStatus;
-  if (status === "unknown") {
-    return Object.keys(aiUse).length > 0 ? Object.freeze({ ...defaultRights(), ...aiUse }) : defaultRights();
-  }
+  if (status === "unknown") return downgraded();
 
   const commercialUse = normalizeBoolean(value.commercialUse);
   const requestedTeamShare = normalizeBoolean(value.teamShareAllowed);
-  if (commercialUse === null || requestedTeamShare === null) return defaultRights();
+  if (commercialUse === null || requestedTeamShare === null) return downgraded();
 
   const optionalText = (key: "provider" | "author" | "license"): string | null | undefined => {
     if (value[key] === undefined) return undefined;
@@ -340,13 +341,13 @@ function normalizeRights(
   const provider = optionalText("provider");
   const author = optionalText("author");
   const license = optionalText("license");
-  if (provider === null || author === null || license === null) return defaultRights();
-  if (status === "licensed" && !license) return defaultRights();
+  if (provider === null || author === null || license === null) return downgraded();
+  if (status === "licensed" && !license) return downgraded();
 
   let purchaseOrDownloadDate: string | undefined;
   if (value.purchaseOrDownloadDate !== undefined) {
     const normalizedDate = normalizeCalendarDate(value.purchaseOrDownloadDate);
-    if (!normalizedDate) return defaultRights();
+    if (!normalizedDate) return downgraded();
     purchaseOrDownloadDate = normalizedDate;
   }
 

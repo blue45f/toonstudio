@@ -580,6 +580,25 @@ describe("AI use disclosure in the rights receipt (V3)", () => {
     expect(record?.rights).not.toBe(DEFAULT_STUDIO_BG3D_ASSET_RIGHTS);
   });
 
+  it("keeps valid AI answers when another receipt field is rejected, while the permissions are still downgraded", () => {
+    const record = normalizeStudioBg3dAssetMetadata(rawRecord(STUDIO_BG3D_ASSET_METADATA_VERSION, {
+      status: "licensed",
+      commercialUse: true,
+      teamShareAllowed: true,
+      license: "https://assets.invalid/license?access_token=secret",
+      aiGenerated: "yes",
+      aiTraining: "prohibited",
+    }));
+    expect(record?.rights).toEqual({
+      status: "unknown",
+      commercialUse: false,
+      teamShareAllowed: false,
+      aiGenerated: "yes",
+      aiTraining: "prohibited",
+    });
+    expect(JSON.stringify(record)).not.toContain("access_token");
+  });
+
   it("downgrades a receipt with an unrecognized AI answer instead of guessing", () => {
     for (const bad of [{ aiGenerated: "maybe" }, { aiGenerated: true }, { aiTraining: "yes" }, { aiTraining: null }]) {
       const record = normalizeStudioBg3dAssetMetadata(
