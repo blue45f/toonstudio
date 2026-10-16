@@ -71,7 +71,7 @@ describe("saving a cut while the capture ratio is fixed", () => {
     expect(captured!.activeShotId).toBe("cut-a");
     expect(captured!.output.exportAspectRatio).toBe(ratio);
     expect(captured!.shots![0]!.output?.exportHeight).toBe(1_080);
-    expect(captured!.shots![0]!.output?.exportAspectRatio).toBeUndefined();
+    expect(captured!.shots![0]!.output).not.toHaveProperty("exportAspectRatio");
   });
 
   it("keeps the ratio document-wide: applying a cut neither records nor restores one", () => {

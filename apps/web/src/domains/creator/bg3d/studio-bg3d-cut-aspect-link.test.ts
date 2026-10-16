@@ -82,7 +82,7 @@ describe("cinematic director cut ratio ↔ capture frame ratio", () => {
     const captured = captureStudioBg3dShot(portrait, { id: "cut-ratio", name: "인스타 컷" });
     expect(captured).not.toBeNull();
     expect(captured!.shots?.[0]?.output).toBeDefined();
-    expect(captured!.shots?.[0]?.output?.exportAspectRatio).toBeUndefined();
+    expect(captured!.shots?.[0]?.output).not.toHaveProperty("exportAspectRatio");
 
     const edited = normalizeStudioBg3dSceneDocument({
       ...captured!,
