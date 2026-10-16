@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseStudioFbxAscii } from "./studio-fbx-ascii-import";
+import { parseStudioFbxAscii } from "../studio-fbx-ascii-import";
 
 /**
  * ASCII FBX 읽기의 최악 입력 시간 회귀 테스트(CodeQL js/polynomial-redos).

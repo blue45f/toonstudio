@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildStudioProjectArchive } from "./studio-project-archive";
+import { buildStudioProjectArchive } from "../studio-project-archive";
 
 /**
  * 프로젝트 아카이브에 실린 OBJ 첨부의 재질 파일(mtllib) 참조 검사 시간 회귀 테스트(CodeQL js/polynomial-redos).
