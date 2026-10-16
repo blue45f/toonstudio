@@ -726,7 +726,7 @@ describe("DrawView", { timeout: 30_000 }, () => {
     expect(h.drawStore.get().strokes).toBe(2);
   });
 
-  it("lostpointercapture(pointerup 없이 캡처 상실)도 같은 abort 경로다", async () => {
+  it("lostpointercapture 단독은 획을 잇는다: 이후 up이 오면 정상 합성된다", async () => {
     const h = makeHarness(defaultDescriptors);
     renderDraw(h, { autoProbe: false });
     const stage = await ready(h);
@@ -737,10 +737,12 @@ describe("DrawView", { timeout: 30_000 }, () => {
     await waitFor(() => expect(sessionLanes(h)[0]?.calls).toContain("beginStroke"));
     act(() => {
       stage.dispatchEvent(pointerEvent("lostpointercapture", { clientX: 60, clientY: 40, timeStamp: 132 }));
+      stage.dispatchEvent(pointerEvent("pointermove", { clientX: 70, clientY: 50, timeStamp: 148 }));
+      stage.dispatchEvent(pointerEvent("pointerup", { clientX: 70, clientY: 50, timeStamp: 164 }));
     });
-    await waitFor(() => expect(sessionLanes(h)[0]?.calls).toContain("abortStroke"));
-    expect(sessionLanes(h)[0]?.calls).not.toContain("endStroke");
-    expect(h.drawStore.get().strokes).toBe(0);
+    await waitFor(() => expect(sessionLanes(h)[0]?.calls).toContain("endStroke"));
+    expect(sessionLanes(h)[0]?.calls).not.toContain("abortStroke");
+    expect(h.drawStore.get().strokes).toBe(1);
   });
 
   it("복원할 수 없는 레인에서 취소하면 캔버스를 비운 사실을 알리고 통계를 초기화한다", async () => {

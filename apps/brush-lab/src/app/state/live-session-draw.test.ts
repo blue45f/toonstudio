@@ -207,23 +207,20 @@ describe("LiveStrokeSession: 그리기 화면 옵션", () => {
     s.session.dispose();
   });
 
-  it("lostpointercapture(pointerup 없이 캡처가 풀림)도 취소로 보고 abortStroke로 버린다", async () => {
+  it("lostpointercapture 단독은 획을 잇는다: 이후 move/up이 정상 합성된다", async () => {
     const s = await make();
     s.el.dispatchEvent(pointerEvent("pointerdown", { clientX: 4, clientY: 4, timeStamp: 1 }));
     s.el.dispatchEvent(pointerEvent("pointermove", { clientX: 9, clientY: 9, timeStamp: 9 }));
     s.fr.tick();
     await flush();
     s.el.dispatchEvent(pointerEvent("lostpointercapture", { clientX: 9, clientY: 9, timeStamp: 17 }));
+    s.el.dispatchEvent(pointerEvent("pointermove", { clientX: 12, clientY: 8, timeStamp: 25 }));
+    s.el.dispatchEvent(pointerEvent("pointerup", { clientX: 12, clientY: 8, timeStamp: 33 }));
     s.fr.tick();
     await flush();
-    expect(s.lanes[0]?.calls.filter((c) => c === "abortStroke")).toHaveLength(1);
-    expect(s.lanes[0]?.calls).not.toContain("endStroke");
-    expect(s.results).toHaveLength(0);
-    expect(s.errors).toHaveLength(0);
-    expect(s.aborts[0]).toMatchObject({ cause: "pointercancel", laneReplaced: false, cancelSource: "lostpointercapture" });
-    // 다음 획은 정상이다.
-    await stroke(s, 100);
+    expect(s.aborts).toHaveLength(0);
     expect(s.results).toHaveLength(1);
+    expect(s.lanes[0]?.calls).not.toContain("abortStroke");
     s.session.dispose();
   });
 

@@ -151,18 +151,42 @@ describe("attachPointerCapture", () => {
 });
 
 describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
-  it("pointerup 없이 캡처가 풀리면(lostpointercapture) 소유 포인터의 획을 마지막 압력의 up 표본으로 끝낸다", () => {
+  it("lostpointercapture 단독은 표본을 만들지 않고 소유자를 유지해 획이 이어진다", () => {
     const { el, batches, detach } = setup();
     el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1, pressure: 0.4 }));
     el.dispatchEvent(pointerEvent("pointermove", { clientX: 5, clientY: 5, pressure: 0.7 }));
     el.dispatchEvent(pointerEvent("lostpointercapture", { clientX: 5, clientY: 5, pressure: 0 }));
+    expect(batches).toHaveLength(2);
+    // 소유자가 유지되므로 이후 move/up이 정상 경로로 이어진다.
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 9, clientY: 9, pressure: 0.8 }));
+    expect(batches).toHaveLength(3);
+    el.dispatchEvent(pointerEvent("pointerup", { clientX: 9, clientY: 9 }));
     const last = batches[batches.length - 1] ?? [];
     expect(last).toHaveLength(1);
     expect(last[0]).toEqual(expect.objectContaining({ phase: "up", source: "raw" }));
-    expect(last[0]?.pressure).toBeCloseTo(0.7, 5);
-    // 획이 끝났으므로 이후 move는 새 획의 down 전까지 무시된다.
-    el.dispatchEvent(pointerEvent("pointermove", { clientX: 9, clientY: 9 }));
-    expect(batches).toHaveLength(3);
+    detach();
+  });
+
+  it("조용히 끝난 획 뒤 한참 뒤의 down은 예전 획을 합성 종료하고 새로 시작한다", () => {
+    const { el, batches, detach } = setup();
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1, pressure: 0.4, timeStamp: 1000 }));
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 5, clientY: 5, pressure: 0.7, timeStamp: 1100 }));
+    expect(batches).toHaveLength(2);
+    // 2초 넘게 조용하다가 새 down: 합성 up 1개 + 새 down 1개.
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 9, clientY: 9, pressure: 0.5, timeStamp: 5000 }));
+    expect(batches).toHaveLength(4);
+    expect(batches[2]).toHaveLength(1);
+    expect(batches[2]?.[0]).toEqual(expect.objectContaining({ phase: "up" }));
+    expect(batches[2]?.[0]?.pressure).toBeCloseTo(0.7, 5);
+    expect(batches[3]).toEqual([expect.objectContaining({ phase: "down" })]);
+    detach();
+  });
+
+  it("조용한 지 2초 안의 down은 멀티터치로 보고 무시한다", () => {
+    const { el, batches, detach } = setup();
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1, pressure: 0.4, timeStamp: 1000 }));
+    el.dispatchEvent(pointerEvent("pointerdown", { pointerId: 2, clientX: 9, clientY: 9, pressure: 0.5, timeStamp: 1500 }));
+    expect(batches).toHaveLength(1);
     detach();
   });
 

@@ -231,8 +231,9 @@ export class LiveStrokeSession {
       this.cancelNextUp = false;
     };
     el.addEventListener("pointercancel", markCancel);
-    // 캡처를 잃은 경우(lostpointercapture)도 pointerup 없는 중단이라 같은 abort 경로로 보낸다.
-    // 정상 pointerup 뒤의 lostpointercapture는 플랫폼 캡처가 무시하고(소유자 없음) clearMark가 표시를 지운다.
+    // lostpointercapture 단독은 플랫폼이 소유자를 유지해 획을 잇는다(표본 없음). 표시만 남기고,
+    // 새 획의 down이 오면 지운다. 뒤이어 진짜 pointercancel이 오면 그 표시가 abort로 보낸다.
+    // 정상 pointerup 뒤의 lostpointercapture는 표시만 남고(무시) 다음 down이 지운다.
     el.addEventListener("lostpointercapture", markCancel);
     const offCapture = attachPointerCapture(el, (raw) => this.onSamples(raw), {
       logicalSize: { width: this.opts.width, height: this.opts.height },
