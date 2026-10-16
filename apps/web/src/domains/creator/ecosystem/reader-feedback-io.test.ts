@@ -254,6 +254,21 @@ describe("XSS·표시 위장 문자열은 일반 글자로만 남는다", () => 
     }
   });
 
+  it("ALM·금지된 서식 문자·한글 채움 문자도 지우고, 그것뿐인 의견은 답이 아니며 닉네임은 비운다", () => {
+    // ALM(U+061C), 금지된 서식 문자(U+206A~U+206F), 한글 채움(U+3164), 반각 한글 채움(U+FFA0).
+    const invisible = [0x61c, 0x206a, 0x206b, 0x206c, 0x206d, 0x206e, 0x206f, 0x3164, 0xffa0];
+    const dirty = invisible.map((code) => `가${chars(code)}`).join("");
+    expect(firstResponse(rawFile([rawResponse({ comment: dirty })])).comment).toBe("가".repeat(invisible.length));
+    expect(firstResponse(rawFile([rawResponse({ nickname: `별${chars(0x3164)}빛` })])).nickname).toBe("별빛");
+    expect(firstResponse(rawFile([rawResponse({ nickname: chars(...invisible) })])).nickname).toBeNull();
+    // 이모지에 쓰이는 변형 선택자(U+FE0F)는 남긴다.
+    const heart = chars(0x2764, 0xfe0f);
+    expect(firstResponse(rawFile([rawResponse({ comment: `좋아요 ${heart}` })])).comment).toBe(`좋아요 ${heart}`);
+    // 보이지 않는 글뿐인 의견만 있고 다른 답이 없으면 '내용이 없는 응답'이다.
+    const empty = rawResponse({ ratings: { fun: null, understanding: null }, reading: { status: "unmarked" }, emotions: [], comment: chars(...invisible) });
+    expectFailure(parse(rawFile([empty])), "invalid");
+  });
+
   it("이메일·전화번호처럼 보이는 글은 가리고, 닉네임이 연락처이면 닉네임을 비운다", () => {
     const response = firstResponse(rawFile([rawResponse({
       comment: "연락은 test.user@example.com 또는 010-1234-5678, 02 123 4567, +82 10 2222 3333 으로요",
