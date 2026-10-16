@@ -255,7 +255,9 @@ export function DrawView() {
     const onStrokeAbort = (abort: LiveStrokeAbort): void => {
       trailRef.current = [];
       drawPreview([]);
-      const why = abort.cause === "pointercancel" ? "포인터 취소(pointercancel/캡처 상실)" : "레인 오류";
+      const why = abort.cause === "pointercancel"
+        ? (abort.cancelSource === "lostpointercapture" ? "캡처 상실(lostpointercapture)" : "포인터 취소(pointercancel)")
+        : "레인 오류";
       const detail = abort.strokeKo ? ` — ${abort.strokeKo}` : "";
       if (abort.laneReplaced) {
         try {

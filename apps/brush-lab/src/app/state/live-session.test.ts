@@ -387,7 +387,7 @@ describe("LiveStrokeSession", () => {
     expect(s.errors).toHaveLength(1);
     expect(String(s.errors[0])).toContain("boom");
     expect(s.aborts).toEqual([
-      { cause: "error", receipt: expect.objectContaining({ documentPreserved: true }) as unknown, laneReplaced: false, strokeKo: null },
+      { cause: "error", receipt: expect.objectContaining({ documentPreserved: true }) as unknown, laneReplaced: false, strokeKo: null, cancelSource: null },
     ]);
     // 레인은 그대로이고 방금까지 그린 문서가 남아 있다.
     expect(s.lanes).toHaveLength(1);
@@ -651,7 +651,7 @@ describe("LiveStrokeSession — 획 되돌리기(abortStroke) 경로", () => {
       expect(lane.calls.filter((c) => c === "abortStroke")).toHaveLength(1);
       expect(s.results).toHaveLength(1);
       expect(s.errors).toHaveLength(0);
-      expect(s.aborts).toEqual([{ cause: "pointercancel", receipt: { discardedDabs: 2, documentPreserved: true }, laneReplaced: false, strokeKo: "펜·표본 2개·8ms" }]);
+      expect(s.aborts).toEqual([{ cause: "pointercancel", receipt: { discardedDabs: 2, documentPreserved: true }, laneReplaced: false, strokeKo: "펜·표본 2개·8ms·창 포커스 이탈", cancelSource: "pointercancel" }]);
       expect(s.previews.at(-1)).toEqual([]);
       expect(await lane.readback()).toEqual(before);
       expect(s.lanes).toHaveLength(1);

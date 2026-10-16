@@ -57,6 +57,11 @@ export interface LiveStrokeTimings {
 export interface LiveStrokeAbort {
   /** 버린 원인: 레인 오류 또는 포인터 취소. */
   cause: "error" | "pointercancel";
+  /**
+   * 취소의 출처: 브라우저가 쏜 `pointercancel`(제스처·포커스·하드웨어)인지,
+   * 캡처만 풀린 `lostpointercapture`(DOM 교체·캡처 가로채기)인지. 오류 원인이면 null.
+   */
+  cancelSource: "pointercancel" | "lostpointercapture" | null;
   /** 레인의 abortStroke 영수증. abortStroke가 던졌다면 null. */
   receipt: StrokeAbortReceipt | null;
   /** 문서를 보존하지 못해 레인을 교체했는가(true면 그때까지 그린 문서가 비워졌다). */
@@ -132,8 +137,11 @@ export class LiveStrokeSession {
   private readonly canceledUps = new WeakSet<RawSample>();
   /** `pointercancel` 디스패치 중에만 true: 플랫폼 캡처가 만드는 up 표본을 취소로 표시하라는 신호. */
   private cancelNextUp = false;
-  /** 취소 순간의 단서(마우스 우클릭 병행·창 포커스 이탈 구분용). clearMark에서 초기화한다. */
-  private cancelClue: { buttons: number; hasFocus: boolean } | null = null;
+  /**
+   * 취소 단서(출처·버튼·포커스). `clearMark`가 지우지 않는다: 비동기 abort 경로가 읽기 전에 지워져
+   * 단서가 항상 null이 되는 결함을 막는다. 새 획의 down과 abort 소비처에서 초기화한다.
+   */
+  private pendingCancel: { source: "pointercancel" | "lostpointercapture"; buttons: number; hasFocus: boolean } | null = null;
 
   private constructor(opts: LiveSessionOptions, lane: BrushEngineLane) {
     this.opts = opts;
@@ -212,15 +220,15 @@ export class LiveStrokeSession {
     // 같은 이벤트에서 그 up 표본이 만들어지는 순간을 알 수 있게 캡처 리스너의 앞(표시)과 뒤(해제)에 리스너를 하나씩 건다.
     const markCancel = (ev: Event): void => {
       this.cancelNextUp = true;
-      if ("buttons" in ev && typeof (ev as PointerEvent).buttons === "number") {
-        this.cancelClue = { buttons: (ev as PointerEvent).buttons, hasFocus: document.hasFocus() };
-      } else {
-        this.cancelClue = null;
-      }
+      const buttons = "buttons" in ev && typeof (ev as PointerEvent).buttons === "number" ? (ev as PointerEvent).buttons : 0;
+      this.pendingCancel = {
+        source: ev.type === "lostpointercapture" ? "lostpointercapture" : "pointercancel",
+        buttons,
+        hasFocus: document.hasFocus(),
+      };
     };
     const clearMark = (): void => {
       this.cancelNextUp = false;
-      this.cancelClue = null;
     };
     el.addEventListener("pointercancel", markCancel);
     // 캡처를 잃은 경우(lostpointercapture)도 pointerup 없는 중단이라 같은 abort 경로로 보낸다.
@@ -307,6 +315,8 @@ export class LiveStrokeSession {
       if (s.phase === "down") {
         this.pointerDown = true;
         this.strokeMaxButtons = s.buttons ?? 0;
+        // 이전 획의 정상 종료 뒤 따라온 lostpointercapture가 남긴 단서는 새 획과 무관하므로 버린다.
+        this.pendingCancel = null;
       } else if (s.phase === "up") this.pointerDown = false;
       else if (typeof s.buttons === "number") this.strokeMaxButtons = Math.max(this.strokeMaxButtons, s.buttons);
     }
@@ -360,13 +370,14 @@ export class LiveStrokeSession {
    */
   private async handleFailure(error: unknown): Promise<void> {
     const strokeKo = this.strokeDetailKo();
+    this.pendingCancel = null;
     this.inStroke = false;
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
     const failures: unknown[] = [error];
     let abort: LiveStrokeAbort | null = null;
-    if (this.laneMidStroke) abort = await this.discardLaneStroke("error", failures, strokeKo);
+    if (this.laneMidStroke) abort = await this.discardLaneStroke("error", failures, strokeKo, null);
     const onError = this.opts.onError;
     if (!onError) throw error;
     for (const failure of failures) onError(failure);
@@ -379,12 +390,14 @@ export class LiveStrokeSession {
    */
   private async handleCancel(): Promise<void> {
     let strokeKo = this.strokeDetailKo();
-    const clue = this.cancelClue;
-    if (strokeKo && clue) {
-      const buttons = clue.buttons | this.strokeMaxButtons;
+    const pending = this.pendingCancel;
+    this.pendingCancel = null;
+    if (strokeKo && pending) {
+      const buttons = pending.buttons | this.strokeMaxButtons;
       if ((buttons & 2) !== 0) strokeKo += "·우클릭 병행";
       else if ((buttons & 4) !== 0) strokeKo += "·가운데클릭 병행";
-      if (!clue.hasFocus) strokeKo += "·창 포커스 이탈";
+      if (!pending.hasFocus) strokeKo += "·창 포커스 이탈";
+      if (pending.source === "lostpointercapture") strokeKo += "·캡처상실";
     }
     this.inStroke = false;
     this.strokeSamples = [];
@@ -392,7 +405,8 @@ export class LiveStrokeSession {
     this.addSamplesMs = [];
     if (!this.laneMidStroke) return;
     const failures: unknown[] = [];
-    const abort = await this.discardLaneStroke("pointercancel", failures, strokeKo);
+    const source = pending?.source ?? "pointercancel";
+    const abort = await this.discardLaneStroke("pointercancel", failures, strokeKo, source);
     if (!abort.laneReplaced && failures.length === 0) {
       if (this.opts.onPreview) this.opts.onPreview([]);
       if (this.opts.onStrokeAbort) this.opts.onStrokeAbort(abort);
@@ -429,7 +443,12 @@ export class LiveStrokeSession {
    * 레인의 진행 중인 획을 버린다. 문서가 보존되면 레인을 유지하고, 아니면(복원 불가·abortStroke 실패) 레인을 교체한다.
    * abortStroke가 던진 오류와 레인 교체 실패는 `failures`에 쌓아 호출자가 드러낸다.
    */
-  private async discardLaneStroke(cause: LiveStrokeAbort["cause"], failures: unknown[], strokeKo: string | null): Promise<LiveStrokeAbort> {
+  private async discardLaneStroke(
+    cause: LiveStrokeAbort["cause"],
+    failures: unknown[],
+    strokeKo: string | null,
+    cancelSource: LiveStrokeAbort["cancelSource"],
+  ): Promise<LiveStrokeAbort> {
     // 버린 획의 입력 단계 상태(보류한 up·붓/펜 위치)도 버린다. 포인터가 이미 새 획을 시작했으면 그 획의 상태이므로 건드리지 않는다.
     if (!this.pointerDown) this.inputStage?.reset();
     let receipt: StrokeAbortReceipt | null = null;
@@ -440,14 +459,14 @@ export class LiveStrokeSession {
     }
     if (receipt?.documentPreserved) {
       this.laneMidStroke = false;
-      return { cause, receipt, laneReplaced: false, strokeKo };
+      return { cause, receipt, laneReplaced: false, strokeKo, cancelSource };
     }
     try {
       await this.replaceLane();
     } catch (recoveryError) {
       failures.push(recoveryError);
     }
-    return { cause, receipt, laneReplaced: true, strokeKo };
+    return { cause, receipt, laneReplaced: true, strokeKo, cancelSource };
   }
 
   private async processStrokePart(part: RawSample[]): Promise<void> {
