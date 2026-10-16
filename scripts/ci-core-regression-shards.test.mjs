@@ -43,6 +43,7 @@ test("semantic sharding keeps expensive domains isolated", () => {
     ["apps/api/src/runtime/runtime-boundary.test.ts", "product"],
     ["packages/core/src/catalog/home.cpu-cache.test.ts", "product"],
     ["apps/web/src/domains/creator/assistant/webtoon-tension-map-docs.test.ts", "product"],
+    ["apps/web/src/domains/creator/ecosystem/reader-feedback-docs.test.ts", "product"],
     // 기능 문서를 디스크에서 읽는 시험: 문서는 product 샤드에서만 내려받는다(나머지 샤드는 /docs/ 를 스파스 제외).
     // studio-foundation 에 두면 CI 에서만 ENOENT 로 터진다(2026-10-16 PR #2325).
     ["apps/web/src/domains/creator/charm/studio-charm-bar-host-contract.test.ts", "product"],
