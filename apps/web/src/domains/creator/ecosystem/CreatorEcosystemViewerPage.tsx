@@ -6,13 +6,39 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
 
-import { BETA_FEEDBACK_PACKAGE_SCHEMA, BETA_PACKAGE_SCHEMA, PROCESS_PACKAGE_SCHEMA, type BetaPackage, type ProcessPackage } from "./ecosystem-record";
+import { BETA_FEEDBACK_PACKAGE_SCHEMA, BETA_PACKAGE_SCHEMA, BETA_REVIEW_PACKAGE_SCHEMA, PROCESS_PACKAGE_SCHEMA, type BetaPackage, type BetaReviewPackageFile, type ProcessPackage } from "./ecosystem-record";
 import { downloadEcosystemJson, readEcosystemJson } from "./ecosystem-preview";
+import type { KnownFeedbackTarget } from "./reader-feedback-draft";
+import { ReaderFeedbackForm } from "./ReaderFeedbackForm";
 
 const CONTROL = "min-h-11 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent";
 const BUTTON = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold hover:bg-raised focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40";
 
-type LoadedPackage = { kind: "beta"; value: BetaPackage } | { kind: "process"; value: ProcessPackage };
+type LoadedPackage =
+  | { kind: "beta"; value: BetaPackage }
+  | { kind: "review"; value: BetaReviewPackageFile }
+  | { kind: "process"; value: ProcessPackage };
+
+function parsePackage(raw: unknown): LoadedPackage | null {
+  const beta = BETA_PACKAGE_SCHEMA.safeParse(raw);
+  if (beta.success) return { kind: "beta", value: beta.data };
+  const review = BETA_REVIEW_PACKAGE_SCHEMA.safeParse(raw);
+  if (review.success) return { kind: "review", value: review.data };
+  const process = PROCESS_PACKAGE_SCHEMA.safeParse(raw);
+  return process.success ? { kind: "process", value: process.data } : null;
+}
+
+/** 열어 둔 패키지에서 독자 피드백 폼이 미리 아는 대상(작품 이름·전체 컷 수)을 뽑는다. 제작 과정 패키지에는 피드백을 받지 않는다. */
+function feedbackTarget(loaded: LoadedPackage | null): KnownFeedbackTarget | null {
+  if (loaded?.kind === "beta") {
+    const cuts = loaded.value.pages.reduce((sum, page) => sum + page.panels.length, 0);
+    return { kind: "package", id: loaded.value.id, title: loaded.value.title, episode: null, cutCount: cuts > 0 ? cuts : null };
+  }
+  if (loaded?.kind === "review") {
+    return { kind: "package", id: loaded.value.packageId, title: loaded.value.title, episode: null, cutCount: loaded.value.pages.length };
+  }
+  return null;
+}
 
 export function CreatorEcosystemViewerPage() {
   useDocumentTitle("검토·제작 과정 패키지 · ToonStudio");
@@ -25,19 +51,15 @@ export function CreatorEcosystemViewerPage() {
   const [comment, setComment] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("패키지는 이 브라우저에서만 읽으며 서버에 업로드하지 않습니다.");
+  const [manualFeedback, setManualFeedback] = useState(false);
 
   const load = async (file: File | undefined) => {
     if (!file) return;
     setError("");
     try {
-      const raw = await readEcosystemJson(file);
-      const beta = BETA_PACKAGE_SCHEMA.safeParse(raw);
-      if (beta.success) setLoaded({ kind: "beta", value: beta.data });
-      else {
-        const process = PROCESS_PACKAGE_SCHEMA.safeParse(raw);
-        if (!process.success) throw new Error("지원하는 베타 검토 또는 제작 과정 패키지가 아닙니다.");
-        setLoaded({ kind: "process", value: process.data });
-      }
+      const next = parsePackage(await readEcosystemJson(file));
+      if (!next) throw new Error("지원하는 베타 검토 또는 제작 과정 패키지가 아닙니다.");
+      setLoaded(next);
       setPageIndex(0); setPanelId(""); setNotice("패키지를 검증해 열었습니다. 편집 원본이나 API 키는 포함되지 않습니다.");
     } catch (cause) { setLoaded(null); setError(cause instanceof Error ? cause.message : "패키지를 읽지 못했습니다."); }
   };
@@ -56,6 +78,8 @@ export function CreatorEcosystemViewerPage() {
     downloadEcosystemJson(`${loaded.value.id}-feedback.json`, result);
     setNotice("검토 응답 파일을 만들었습니다. 원고 제작자에게 직접 전달하세요.");
   };
+
+  const known = feedbackTarget(loaded);
 
   return <Container size="wide" className="py-8 sm:py-12">
     <Link to="/studio/ecosystem" className="inline-flex min-h-11 items-center text-sm font-bold text-accent">← 제작 생태계</Link>
@@ -94,6 +118,19 @@ export function CreatorEcosystemViewerPage() {
           <textarea className={`${CONTROL} mt-1`} rows={4} maxLength={2000} value={comment} onChange={event => setComment(event.target.value)} placeholder="어디에서 멈추거나 다시 읽었는지 적어 주세요." /></label>
         <button type="submit" className={`${BUTTON} mt-4 w-full bg-accent text-on-accent`}><Download size={16} /> 검토 응답 저장</button>
       </form>
+    </section> : null}
+    {loaded?.kind === "review" ? <section className="mt-8 rounded-2xl border border-line bg-panel/50 p-4" aria-labelledby="ecosystem-review-heading">
+      <h2 id="ecosystem-review-heading" className="text-xl font-black text-fg">{loaded.value.title}</h2>
+      <p className="mt-2 text-sm leading-6 text-fg-2">텍스트 검토 패키지입니다. 작품 본문은 작가에게서 따로 받아 읽고, 아래 구성을 기준으로 의견을 남겨 주세요.</p>
+      <ol className="mt-3 grid gap-1 text-sm text-fg-2 sm:grid-cols-2">{loaded.value.pages.map((page, index) => <li key={page.id}><span className="tabular-nums text-fg-3">{index + 1}.</span> {page.label}</li>)}</ol>
+      {loaded.value.questions.length ? <ul className="mt-3 list-disc pl-5 text-sm text-fg-2">{loaded.value.questions.map(question => <li key={question}>{question}</li>)}</ul> : null}
+    </section> : null}
+    {known ? <section className="mt-8" aria-label="회차 피드백"><ReaderFeedbackForm key={known.id} target={known} /></section> : null}
+    {loaded?.kind !== "process" && !known ? <section className="mt-8" aria-label="패키지 없이 피드백 남기기">
+      <button type="button" className={BUTTON} aria-expanded={manualFeedback} aria-controls="ecosystem-manual-feedback" onClick={() => setManualFeedback(open => !open)}>
+        <MessageSquareText size={16} aria-hidden /> 패키지 없이 회차 피드백만 남기기
+      </button>
+      {manualFeedback ? <div id="ecosystem-manual-feedback" className="mt-4"><ReaderFeedbackForm /></div> : null}
     </section> : null}
     {loaded?.kind === "process" ? <section className="mt-8">
       <div className="max-w-3xl"><h2 className="text-2xl font-black text-fg">{loaded.value.title}</h2><p className="mt-2 text-sm leading-6 text-fg-2">{loaded.value.credit}</p></div>
