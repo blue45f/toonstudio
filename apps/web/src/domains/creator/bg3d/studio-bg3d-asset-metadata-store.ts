@@ -1,5 +1,6 @@
 import {
   STUDIO_BG3D_ASSET_METADATA_LIMITS,
+  STUDIO_BG3D_ASSET_METADATA_VERSION,
   canonicalizeStudioBg3dAssetContentHash,
   migrateStudioBg3dAssetMetadata,
   normalizeStudioBg3dAssetMetadata,
@@ -329,7 +330,7 @@ function validateMutationNow(options: StudioBg3dAssetMetadataMutationOptions): n
 
 function validationFixture(patch: Record<string, unknown>): StudioBg3dAssetMetadata {
   const metadata = normalizeStudioBg3dAssetMetadata({
-    version: 2,
+    version: STUDIO_BG3D_ASSET_METADATA_VERSION,
     contentHash: PATCH_VALIDATION_HASH,
     name: "패치 검증",
     format: "glb",
@@ -454,24 +455,32 @@ function parseMetadataV12Manifest(raw: string | null): StudioBg3dAssetMetadataV1
     value.records.length > STUDIO_BG3D_ASSET_METADATA_LIMITS.assetsPerQuery
   ) throw storeError("invalid-stored-metadata");
   const records: StudioBg3dAssetMetadata[] = [];
+  let upgraded = false;
   for (const candidate of value.records) {
-    const metadata = normalizeStudioBg3dAssetMetadata(candidate);
-    if (!metadata || JSON.stringify(metadata) !== JSON.stringify(candidate)) {
+    // 옛 버전(1·2) 기록은 읽을 때 현재 버전으로 올려 읽고(AI 표기는 미확인), 현재 버전 기록은 왕복 동일해야 한다.
+    const metadata = migrateStudioBg3dAssetMetadata(candidate);
+    const isCurrent = (candidate as Record<string, unknown> | null)?.version === STUDIO_BG3D_ASSET_METADATA_VERSION;
+    if (!metadata || (isCurrent && JSON.stringify(metadata) !== JSON.stringify(candidate))) {
       throw storeError("invalid-stored-metadata");
     }
+    upgraded ||= !isCurrent;
     records.push(metadata);
   }
   if (new Set(records.map(({ contentHash }) => contentHash)).size !== records.length) {
     throw storeError("invalid-stored-metadata");
   }
-  const manifest = canonicalMetadataV12Manifest({
+  const manifestFields = {
     kind: STUDIO_BG3D_ASSET_METADATA_V12_MANIFEST_KIND,
     version: STUDIO_BG3D_ASSET_METADATA_V12_MANIFEST_VERSION,
     revision: value.revision as number,
     updatedAt: value.updatedAt as number,
-    records,
-  });
-  if (JSON.stringify(manifest) !== raw) throw storeError("invalid-stored-metadata");
+  } as const;
+  const manifest = canonicalMetadataV12Manifest({ ...manifestFields, records });
+  // 옛 기록이 섞여 있으면 원본 기록 그대로의 정규 형태와 비교한다. 올려 읽은 기록은 다음 쓰기에서 현재 버전으로 저장된다.
+  const comparable = upgraded
+    ? canonicalMetadataV12Manifest({ ...manifestFields, records: value.records as readonly StudioBg3dAssetMetadata[] })
+    : manifest;
+  if (JSON.stringify(comparable) !== raw) throw storeError("invalid-stored-metadata");
   return manifest;
 }
 

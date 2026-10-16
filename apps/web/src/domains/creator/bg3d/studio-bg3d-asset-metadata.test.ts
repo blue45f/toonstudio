@@ -45,10 +45,10 @@ function metadata(
 }
 
 describe("studio BG3D asset metadata normalization", () => {
-  it("canonicalizes hash/text/list data into deeply immutable V2 metadata", () => {
+  it("canonicalizes hash/text/list data into deeply immutable current-version metadata", () => {
     const decomposedKorean = "한옥";
     const raw = {
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       contentHash: "A".repeat(64),
       name: "  전통   찻집  ",
       format: "GLB",
@@ -78,7 +78,7 @@ describe("studio BG3D asset metadata normalization", () => {
     const normalized = normalizeStudioBg3dAssetMetadata(raw);
 
     expect(normalized).toEqual({
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       contentHash: HASH_A,
       name: "전통 찻집",
       format: "glb",
@@ -134,7 +134,7 @@ describe("studio BG3D asset metadata normalization", () => {
     });
 
     expect(migrated).toMatchObject({
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       updatedAt: 20,
       triangles: 400,
       textures: 4,
@@ -153,7 +153,10 @@ describe("studio BG3D asset metadata normalization", () => {
     const base = metadata(HASH_A);
     expect(canonicalizeStudioBg3dAssetContentHash(HASH_A.toUpperCase())).toBe(HASH_A);
     expect(canonicalizeStudioBg3dAssetContentHash(`${HASH_A}0`)).toBeNull();
-    expect(normalizeStudioBg3dAssetMetadata({ ...base, version: 3 })).toBeNull();
+    expect(normalizeStudioBg3dAssetMetadata({ ...base, version: STUDIO_BG3D_ASSET_METADATA_VERSION + 1 })).toBeNull();
+    // normalize 는 현재 버전만 받는다. 옛 버전은 migrate 를 거쳐야 한다.
+    expect(normalizeStudioBg3dAssetMetadata({ ...base, version: 2 })).toBeNull();
+    expect(migrateStudioBg3dAssetMetadata({ ...base, version: 2 })).not.toBeNull();
     expect(normalizeStudioBg3dAssetMetadata({ ...base, format: "exe" })).toBeNull();
     expect(normalizeStudioBg3dAssetMetadata({ ...base, byteSize: Number.POSITIVE_INFINITY })).toBeNull();
     expect(normalizeStudioBg3dAssetMetadata({ ...base, updatedAt: 99 })).toBeNull();
@@ -355,7 +358,7 @@ describe("studio BG3D asset search, facets, and stable sorting", () => {
 describe("SketchUp import report in asset metadata", () => {
   function skpRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       contentHash: HASH_A,
       name: "방 모델",
       format: "skp",
@@ -472,7 +475,118 @@ describe("SketchUp import report in asset metadata", () => {
       byteSize: 2_000,
       skpImport: createSkpReportFixture(),
     });
-    expect(migrated).toMatchObject({ version: 2, format: "skp" });
+    expect(migrated).toMatchObject({ version: STUDIO_BG3D_ASSET_METADATA_VERSION, format: "skp" });
     expect(migrated?.skpImport).toBeUndefined();
+  });
+
+  it("keeps the report when a V2 skp row is read through the V3 migration", () => {
+    const migrated = migrateStudioBg3dAssetMetadata(skpRecord({ version: 2 }));
+    expect(migrated).toMatchObject({ version: STUDIO_BG3D_ASSET_METADATA_VERSION, format: "skp" });
+    expect(migrated?.skpImport).toEqual(createSkpReportFixture());
+  });
+});
+
+describe("AI use disclosure in the rights receipt (V3)", () => {
+  const licensedRights = {
+    status: "licensed",
+    commercialUse: true,
+    teamShareAllowed: false,
+    provider: "ACON 3D",
+    license: "상업용 표준",
+  };
+
+  function rawRecord(version: number, rights: unknown): Record<string, unknown> {
+    return {
+      version,
+      contentHash: HASH_A,
+      name: "옛 기록",
+      format: "glb",
+      createdAt: 10,
+      updatedAt: 10,
+      byteSize: 1_000,
+      triangles: 10,
+      textures: 1,
+      favorite: false,
+      collections: [],
+      tags: [],
+      rights,
+    };
+  }
+
+  it("reads V1 and V2 rows without error and reports the AI use as unconfirmed (field absent)", () => {
+    for (const version of [1, 2]) {
+      const migrated = migrateStudioBg3dAssetMetadata(rawRecord(version, licensedRights));
+      expect(migrated).not.toBeNull();
+      expect(migrated?.version).toBe(STUDIO_BG3D_ASSET_METADATA_VERSION);
+      expect(migrated?.rights.status).toBe("licensed");
+      expect("aiGenerated" in (migrated?.rights ?? {})).toBe(false);
+      expect("aiTraining" in (migrated?.rights ?? {})).toBe(false);
+    }
+  });
+
+  it("ignores AI fields on legacy versions instead of trusting a record that predates the contract", () => {
+    const migrated = migrateStudioBg3dAssetMetadata(
+      rawRecord(2, { ...licensedRights, aiGenerated: "no", aiTraining: "allowed" }),
+    );
+    expect(migrated?.rights).toEqual({
+      status: "licensed",
+      commercialUse: true,
+      teamShareAllowed: false,
+      provider: "ACON 3D",
+      license: "상업용 표준",
+    });
+  });
+
+  it("stores explicit AI answers in canonical order, frozen, and round-trips byte for byte", () => {
+    const record = normalizeStudioBg3dAssetMetadata(
+      rawRecord(STUDIO_BG3D_ASSET_METADATA_VERSION, {
+        aiTraining: "prohibited",
+        aiGenerated: "yes",
+        ...licensedRights,
+      }),
+    );
+    expect(Object.keys(record?.rights ?? {})).toEqual([
+      "status", "commercialUse", "teamShareAllowed", "provider", "license", "aiGenerated", "aiTraining",
+    ]);
+    expect(record?.rights).toMatchObject({ aiGenerated: "yes", aiTraining: "prohibited" });
+    expect(Object.isFrozen(record?.rights)).toBe(true);
+    expect(JSON.stringify(normalizeStudioBg3dAssetMetadata(record))).toBe(JSON.stringify(record));
+    expect(JSON.stringify(migrateStudioBg3dAssetMetadata(JSON.parse(JSON.stringify(record))))).toBe(JSON.stringify(record));
+  });
+
+  it("omits the unknown literal and absent answers so old and new unconfirmed rows serialize identically", () => {
+    const explicit = normalizeStudioBg3dAssetMetadata(rawRecord(
+      STUDIO_BG3D_ASSET_METADATA_VERSION,
+      { ...licensedRights, aiGenerated: "unknown", aiTraining: "unknown" },
+    ));
+    const absent = normalizeStudioBg3dAssetMetadata(rawRecord(STUDIO_BG3D_ASSET_METADATA_VERSION, licensedRights));
+    expect(JSON.stringify(explicit)).toBe(JSON.stringify(absent));
+    expect("aiGenerated" in (explicit?.rights ?? {})).toBe(false);
+  });
+
+  it("keeps an AI answer even while the license itself is unconfirmed, without granting any privilege", () => {
+    const record = normalizeStudioBg3dAssetMetadata(rawRecord(STUDIO_BG3D_ASSET_METADATA_VERSION, {
+      status: "unknown",
+      commercialUse: true,
+      teamShareAllowed: true,
+      aiGenerated: "yes",
+    }));
+    expect(record?.rights).toEqual({
+      status: "unknown",
+      commercialUse: false,
+      teamShareAllowed: false,
+      aiGenerated: "yes",
+    });
+    expect(record?.rights).not.toBe(DEFAULT_STUDIO_BG3D_ASSET_RIGHTS);
+  });
+
+  it("downgrades a receipt with an unrecognized AI answer instead of guessing", () => {
+    for (const bad of [{ aiGenerated: "maybe" }, { aiGenerated: true }, { aiTraining: "yes" }, { aiTraining: null }]) {
+      const record = normalizeStudioBg3dAssetMetadata(
+        rawRecord(STUDIO_BG3D_ASSET_METADATA_VERSION, { ...licensedRights, ...bad }),
+      );
+      expect(record).not.toBeNull();
+      expect(record?.rights).toEqual(DEFAULT_STUDIO_BG3D_ASSET_RIGHTS);
+    }
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   DEFAULT_STUDIO_BG3D_ASSET_RIGHTS,
+  STUDIO_BG3D_ASSET_METADATA_VERSION,
   normalizeStudioBg3dAssetMetadata,
   type StudioBg3dAssetMetadata,
 } from "./studio-bg3d-asset-metadata";
@@ -67,7 +68,7 @@ describe("buildStudioBg3dSkpAssetMetadata", () => {
   it("builds a skp record that the metadata contract accepts, with the report attached", () => {
     const record = buildStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), 1_000);
     expect(record).toMatchObject({
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       contentHash: HASH,
       name: "방 모델",
       format: "skp",
@@ -144,7 +145,7 @@ describe("persistStudioBg3dSkpAssetMetadata", () => {
 
   it("leaves an existing record, and the edits on it, untouched", async () => {
     const existing = normalizeStudioBg3dAssetMetadata({
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       contentHash: HASH,
       name: "내가 고친 이름",
       format: "skp",
