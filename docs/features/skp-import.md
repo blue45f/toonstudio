@@ -1,7 +1,7 @@
 # SketchUp(.skp) 가져오기
 
 - 상태: **current** — 소스와 테스트로 확인되는 현재 동작이다.
-- 확인일: 2026-10-15 (`apps/web/src/domains/creator/bg3d/studio-bg3d-skp-*`)
+- 확인일: 2026-10-16 (`apps/web/src/domains/creator/bg3d/studio-bg3d-skp-*`). 2026-10-16에 자산 메타데이터 저장 절(AI 표기 결과 안내, 취소 신호와 시간 한도)을 고쳤다.
 - 변환기: [openskp](https://openskp.com/) 1.3.0 (MIT, 순수 TypeScript). **Trimble과 관련 없는 비공식 오픈소스 파서**이며 SketchUp은 Trimble Inc.의 상표다.
 - 범위: 배경 3D 에셋 라이브러리의 "3D 모델 및 연결 파일 가져오기"가 받는 `.skp`. 네이티브 SketchUp SDK·서버 변환·SketchUp 확장은 포함하지 않는다.
 
@@ -46,7 +46,8 @@ file → planStudioBg3dModelImports (32MiB 초과 → skp-too-large)
 | `studio-bg3d-skp-report-builder.ts`, `studio-bg3d-skp-report-constants.ts` | 보고서 생성기와 상수. zod에 의존하지 않아 Worker가 이것만 불러온다 |
 | `studio-bg3d-skp-import.ts` | 가져오기 파이프라인과 변환의 접합부(크기 사전 검사, 단위 질문, 보고) |
 | `studio-bg3d-skp-import-session.ts`, `StudioBg3dSkpImportPanel.tsx`, `studio-bg3d-skp-import-copy.ts` | 진행·질문·결과 화면과 문구 |
-| `studio-bg3d-skp-import-run.ts`, `studio-bg3d-skp-asset-metadata.ts` | 가져오기 한 번의 마무리와 자산 메타데이터 기록 |
+| `studio-bg3d-skp-import-run.ts`, `studio-bg3d-skp-asset-metadata.ts` | 가져오기 한 번의 마무리와 자산 메타데이터 기록. 마무리는 AI 표기가 어떻게 저장됐는지(`StudioBg3dImportAiUseStatus`)를 돌려준다 |
+| `studio-bg3d-import-save-interrupt.ts` | 가져오기 직후 메타데이터 저장의 취소 신호·시간 한도(일반 소재의 AI 표기 저장과 같은 규칙) |
 
 ### 실행 위치 규칙
 
@@ -130,8 +131,9 @@ OpenSKP 1.3.0 README와 소스에서 확인한 사실에 맞춘다.
 - 스키마 검증, 이름·경고 상세·버전 문자열의 텍스트 안전 검사(마크업·URL·비밀 값 금지), 24KiB 크기 한도를 통과하지 못한 보고서는 **기록 전체를 무효로 만들지 않고 보고서만 버린다.** 걸러진 이름은 목록에서 빠지고 `truncated`가 `true`가 된다. 같은 기록을 다시 정규화해도 결과가 같다(V12 저장소가 왕복 동일성을 검사한다).
 - 가져오기 직후 기록하는 보고서는 이름을 목록당 16개로 줄인다(`total`은 유지). 원본 경로와 파일 이름은 저장하지 않는다.
 - 같은 콘텐츠 해시의 기록이 이미 있으면 사용자 편집(즐겨찾기·태그·컬렉션)을 덮어쓰지 않도록 그대로 둔다. 저장하지 못해도 가져오기는 성공이며, 결과 카드가 그 사실을 알린다.
-- 가져오기 권리 폼의 AI 사용 표기(선택)를 고른 경우 같은 기록의 권리 영수증(`rights.aiGenerated`, `rights.aiTraining`)에 함께 담긴다. 고르지 않으면(모두 "모름") 필드가 없고 미확인으로 읽힌다.
-- **롤백 주의:** `skpImport`가 든 기록은 이 필드를 모르는 이전 코드에서 V12 매니페스트 왕복 검사에 걸려 `invalid-stored-metadata`가 될 수 있다. 또 V3 기록(AI 사용 표기 도입 이후에 쓴 기록)은 V2까지만 아는 이전 코드가 읽지 못한다. 메타데이터 저장소는 앞으로만 나아가는 변경으로 다룬다.
+- 가져오기 권리 폼의 AI 사용 표기(선택)를 고른 경우 같은 기록의 권리 영수증(`rights.aiGenerated`, `rights.aiTraining`)에 함께 담긴다. 고르지 않으면(모두 "모름") 필드가 없고 미확인으로 읽힌다. 이 저장 결과(저장·기존 기록 유지·실패)는 가져오기 마무리가 돌려주어, 다른 형식의 결과와 합쳐 편집기 상태 줄(`role="status"`)로 사용자에게 알린다. 폼의 AI 답은 파일을 고르는 순간 비워지고 가져온 뒤에는 고칠 수 없다([권리 중심 3D 소재 브라우저](bg3d-asset-rights-browser.md)).
+- **저장 시점과 한도:** 기록은 모델이 장면에 배치된 뒤 가져오기 마무리에서 저장한다. 가져오기 취소 신호를 받고, 저장소가 응답하지 않아도 15초 한도(`studio-bg3d-import-save-interrupt.ts`)에서 기다림을 멈춰 저장 실패로 알린다(저장소 쪽 작업이 이미 쓰는 중일 수 있어 "쓰지 않았다"는 보장은 아니다). 저장이 느려도 장면 배치는 멈추지 않지만, 마무리가 끝나야 썸네일 촬영이 시작되므로 그만큼(최대 15초) 늦어질 수 있다.
+- **롤백 주의:** `skpImport`가 든 기록은 이 필드를 모르는 이전 코드에서 V12 매니페스트 왕복 검사에 걸려 `invalid-stored-metadata`가 될 수 있다. 또 V3 기록(AI 사용 표기 도입 이후에 쓴 기록)은 V2까지만 아는 이전 코드가 읽지 못한다. 메타데이터 저장소는 앞으로만 나아가는 변경으로 다룬다. 이미 열려 있던 옛 빌드 탭이 새 빌드가 쓴 기록을 읽는 경우의 위험(추정)은 [권리 중심 3D 소재 브라우저](bg3d-asset-rights-browser.md)의 "롤백 주의"에 적었다.
 
 ## 권리·출처·법적 고지
 
@@ -162,7 +164,7 @@ pnpm exec vitest run apps/web/src/domains/creator/bg3d/studio-bg3d-skp apps/web/
 - 실제 브라우저(Worker·메모리 한도)에서의 대형 파일 성능은 측정하지 않았다. 한도 값은 2026-10-15 Node 24(4 vCPU)에서 openskp 작성기로 만든 레거시 파일(사각형 면만)을 `buildScene()`+`toGLB()`한 측정을 바탕으로 한 추정이다: 5천 면 1.6MiB 0.6초(프로세스 최대 RSS 증가 약 65MiB), 2만 면 6.9MiB 1.3초(약 260MiB), 10만 면 35MiB 14초(최대 RSS 1.1GiB, 작성기가 쥔 메모리 포함). `parseSkp()`(이름·단위 읽기)는 10만 면에서 17.5초라 24MiB 초과 파일은 건너뛴다. 파일 1MiB당 힙이 대략 20–40MiB 늘어나는 셈이지만, OpenSKP README는 실제 모델에서 이보다 훨씬 크게(113MB 파일에 Node 힙 8–16GB) 늘 수 있다고 밝힌다. 그래서 32MiB(데스크톱)·16MiB(모바일)는 안전 보장이 아니며, 메모리가 부족한 기기에서는 변환이 실패하거나 Worker가 중단될 수 있다(각각 `skp-too-large`, `skp-converter-unavailable`로 알린다).
 - 컴포넌트·태그·장면을 장면 그래프로 되살리는 연동(SKP 사이드카), 이름 기반 에셋 검색은 후속 작업이다. 보고서 v1이 그 입력 계약이다.
 - SKP Worker는 `scripts/check-studio-bundle.mjs`의 격리 Worker 예산(OBJ·PSD·물리 등)에 아직 등록되지 않았다. 전체 빌드를 돌리지 못해 실제 산출물 크기는 확인하지 못했다. Worker 진입점만 따로 번들한 추정(Vite 8, 2026-10-15)은 진입 청크 약 25KB(gzip 9.6KB)와 지연 로드되는 openskp 청크 약 240KB(gzip 68KB)다.
-- 이 표면의 문구는 같은 디렉터리의 다른 3D 패널처럼 한국어 리터럴이며 i18n 키로 옮기지 않았다.
+- 이 표면의 문구는 같은 디렉터리의 다른 3D 패널처럼 한국어 리터럴이며 i18n 키로 옮기지 않았다. 2026-10-16에 더한 AI 표기 저장 결과 안내 문구도 같은 방식(해요체, 실패에는 다음 행동)이며 번역 키 전환은 후속이다.
 
 ## 관련 문서
 
