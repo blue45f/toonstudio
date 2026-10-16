@@ -55,6 +55,7 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "./StudioBg3dSkpImportPanel",
       "./studio-bg3d-asset-placement-recipes",
       "./studio-bg3d-asset-rights-catalog",
+      "./studio-bg3d-asset-rights-copy",
       "./studio-bg3d-asset-rights-view",
       "./studio-bg3d-environment-catalog",
       "./studio-bg3d-skp-import-copy",
