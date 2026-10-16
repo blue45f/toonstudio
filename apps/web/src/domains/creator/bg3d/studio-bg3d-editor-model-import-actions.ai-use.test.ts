@@ -329,6 +329,9 @@ describe("importModelFiles with AI use chosen on the rights form", () => {
       sourcePath: "room.skp",
       aiUse: { aiGenerated: "yes", aiTraining: "prohibited" },
     });
+    // SketchUp 보고서 기록도 가져오기의 취소 신호를 받는다(저장소가 응답하지 않아도 시간 한도에서 멈춘다).
+    const deps = runtime.persist.mock.calls[0]?.[2] as { signal?: AbortSignal } | undefined;
+    expect(deps?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("reports the SketchUp report's AI save result too, and merges it with the other models' result", async () => {

@@ -524,7 +524,13 @@ export function createStudioBg3dModelImportActions(
         !isModalAssetSessionCurrent(session)
           ? { status: "abandoned" }
           : uploadCommitted
-            ? { status: "imported", records: thumbnailCandidates, sourcePaths: plannedSkpSourcePaths, aiUse: importAiUse }
+            ? {
+              status: "imported",
+              records: thumbnailCandidates,
+              sourcePaths: plannedSkpSourcePaths,
+              aiUse: importAiUse,
+              signal: importController.signal,
+            }
             : {
               status: "failed",
               reason: skpFailureMessage ?? "편집 상태가 바뀌어 모델을 장면에 배치하지 않았습니다.",

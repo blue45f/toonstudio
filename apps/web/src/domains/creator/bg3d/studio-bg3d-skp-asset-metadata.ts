@@ -19,6 +19,11 @@ import {
 
 import { notifyStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
 import { pickStudioBg3dImportedMetadata } from "./studio-bg3d-import-rights-receipt";
+import {
+  STUDIO_BG3D_IMPORT_SAVE_TIMEOUT_MS,
+  createStudioBg3dImportSaveScope,
+  raceStudioBg3dImportSave,
+} from "./studio-bg3d-import-save-interrupt";
 
 import type { StudioBg3dImportAiUse } from "./studio-bg3d-import-ai-use";
 import type { StudioBg3dAttachmentRights } from "./studio-bg3d-scene-document-types";
@@ -110,42 +115,52 @@ export function buildStudioBg3dSkpAssetMetadata(
 
 /** 메타데이터 저장소 중 이 모듈이 쓰는 두 동작. 테스트는 가짜를 주입한다. */
 export interface StudioBg3dSkpMetadataStore {
-  readonly get: (contentHash: string) => Promise<StudioBg3dAssetMetadata | null>;
-  readonly put: (values: readonly StudioBg3dAssetMetadata[]) => Promise<unknown>;
+  readonly get: (contentHash: string, signal?: AbortSignal) => Promise<StudioBg3dAssetMetadata | null>;
+  readonly put: (values: readonly StudioBg3dAssetMetadata[], signal?: AbortSignal) => Promise<unknown>;
 }
 
 export interface StudioBg3dSkpMetadataDeps {
   readonly now?: () => number;
   readonly loadStore?: () => Promise<StudioBg3dSkpMetadataStore>;
+  /** 가져오기 취소 신호. 서면 저장을 멈추고 failed 로 돌려준다. */
+  readonly signal?: AbortSignal;
+  /** 저장소가 응답하지 않을 때 기다리는 한도(ms). 넘으면 failed 로 돌려준다. */
+  readonly timeoutMs?: number;
 }
 
 /** 기본 저장소(V12 SQLite/OPFS 권한)를 처음 쓸 때 불러온다. */
 export async function loadStudioBg3dSkpMetadataStore(): Promise<StudioBg3dSkpMetadataStore> {
   const store = await import("./studio-bg3d-asset-metadata-store");
   return {
-    get: (contentHash) => store.getStudioBg3dAssetMetadata(contentHash),
-    put: (values) => store.putStudioBg3dAssetMetadataAtomically(values),
+    get: (contentHash, signal) => store.getStudioBg3dAssetMetadata(contentHash, { signal }),
+    put: (values, signal) => store.putStudioBg3dAssetMetadataAtomically(values, { signal }),
   };
 }
 
 /**
  * 변환 보고서를 자산 메타데이터에 기록한다. 결과는 사용자에게 그대로 알리는 상태값이다.
  * saved: 새로 기록 / existing: 같은 자산의 기록이 이미 있어 그대로 둠 / failed: 저장하지 못함.
+ * 가져오기 취소 신호나 시간 한도(기본 15초)에 걸리면 기다림을 멈추고 failed 로 돌려준다. 저장소 쪽 작업이 이미 쓰는 중일 수 있어
+ * 쓰지 않았다는 보장은 아니다.
  */
 export async function persistStudioBg3dSkpAssetMetadata(
   asset: StudioBg3dSkpImportedAsset,
   report: StudioBg3dSkpImportReport,
   deps: StudioBg3dSkpMetadataDeps = {},
 ): Promise<StudioBg3dSkpMetadataStatus> {
+  if (deps.signal?.aborted) return "failed";
+  const scope = createStudioBg3dImportSaveScope(deps.signal, deps.timeoutMs ?? STUDIO_BG3D_IMPORT_SAVE_TIMEOUT_MS);
   try {
     const record = buildStudioBg3dSkpAssetMetadata(asset, report, (deps.now ?? Date.now)());
     if (!record) return "failed";
-    const store = await (deps.loadStore ?? loadStudioBg3dSkpMetadataStore)();
-    if (await store.get(record.contentHash)) return "existing";
-    await store.put([record]);
+    const store = await raceStudioBg3dImportSave((deps.loadStore ?? loadStudioBg3dSkpMetadataStore)(), scope);
+    if (await raceStudioBg3dImportSave(store.get(record.contentHash, scope.signal), scope)) return "existing";
+    await raceStudioBg3dImportSave(store.put([record], scope.signal), scope);
     notifyStudioBg3dAssetRightsChanged();
     return "saved";
   } catch {
     return "failed";
+  } finally {
+    scope.dispose();
   }
 }

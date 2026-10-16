@@ -25,6 +25,12 @@ import {
 import { notifyStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
 import { hasStudioBg3dImportAiUse } from "./studio-bg3d-import-ai-use";
 import { pickStudioBg3dImportedMetadata } from "./studio-bg3d-import-rights-receipt";
+import {
+  STUDIO_BG3D_IMPORT_SAVE_TIMEOUT_MS,
+  StudioBg3dImportSaveInterrupted,
+  createStudioBg3dImportSaveScope,
+  raceStudioBg3dImportSave,
+} from "./studio-bg3d-import-save-interrupt";
 
 import type { StudioBg3dAssetMetadata } from "./studio-bg3d-asset-metadata";
 import type { StudioBg3dImportAiUse, StudioBg3dImportAiUseStatus } from "./studio-bg3d-import-ai-use";
@@ -88,8 +94,8 @@ export interface StudioBg3dImportMetadataDeps {
   readonly timeoutMs?: number;
 }
 
-/** 저장소 응답을 기다리는 기본 한도. 지역 저장소라 정상이면 훨씬 짧게 끝난다. */
-export const STUDIO_BG3D_IMPORT_AI_USE_SAVE_TIMEOUT_MS = 15_000;
+/** 저장소 응답을 기다리는 기본 한도. 지역 저장소라 정상이면 훨씬 짧게 끝난다(.skp 경로와 같은 값을 쓴다). */
+export const STUDIO_BG3D_IMPORT_AI_USE_SAVE_TIMEOUT_MS = STUDIO_BG3D_IMPORT_SAVE_TIMEOUT_MS;
 
 async function loadDefaultStore(): Promise<StudioBg3dImportMetadataStore> {
   const store = await import("./studio-bg3d-asset-metadata-store");
@@ -97,55 +103,6 @@ async function loadDefaultStore(): Promise<StudioBg3dImportMetadataStore> {
     get: (contentHash, signal) => store.getStudioBg3dAssetMetadata(contentHash, { signal }),
     put: (values, signal) => store.putStudioBg3dAssetMetadataAtomically(values, { signal }),
   };
-}
-
-class SaveInterrupted extends Error {
-  constructor(readonly cause_: "cancelled" | "timeout") {
-    super(cause_);
-    this.name = "StudioBg3dImportAiUseSaveInterrupted";
-  }
-}
-
-/** 취소·시간 한도를 하나의 내부 신호로 합친다. 정리 함수를 반드시 부른다. */
-function createInterruptScope(external: AbortSignal | undefined, timeoutMs: number) {
-  const controller = new AbortController();
-  let reason: "cancelled" | "timeout" | null = null;
-  const interrupt = (next: "cancelled" | "timeout") => {
-    if (reason !== null) return;
-    reason = next;
-    controller.abort();
-  };
-  const onExternalAbort = () => interrupt("cancelled");
-  if (external?.aborted) interrupt("cancelled");
-  else external?.addEventListener("abort", onExternalAbort, { once: true });
-  const timer = setTimeout(() => interrupt("timeout"), timeoutMs);
-  return {
-    signal: controller.signal,
-    reason: () => reason,
-    dispose: () => {
-      clearTimeout(timer);
-      external?.removeEventListener("abort", onExternalAbort);
-    },
-  };
-}
-
-function raceInterrupt<T>(work: Promise<T>, scope: ReturnType<typeof createInterruptScope>): Promise<T> {
-  const interrupted = () => new SaveInterrupted(scope.reason() ?? "cancelled");
-  if (scope.signal.aborted) return Promise.reject(interrupted());
-  return new Promise<T>((resolve, reject) => {
-    const onAbort = () => reject(interrupted());
-    scope.signal.addEventListener("abort", onAbort, { once: true });
-    work.then(
-      (value) => {
-        scope.signal.removeEventListener("abort", onAbort);
-        resolve(value);
-      },
-      (cause) => {
-        scope.signal.removeEventListener("abort", onAbort);
-        reject(cause);
-      },
-    );
-  });
 }
 
 /** AI 표기를 가져온 소재의 메타데이터 기록으로 남긴다. 어떤 경우에도 던지지 않는다. */
@@ -156,24 +113,24 @@ export async function persistStudioBg3dImportedAiUse(
 ): Promise<StudioBg3dImportAiUseStatus> {
   if (!hasStudioBg3dImportAiUse(aiUse) || records.length === 0) return "skipped";
   if (deps.signal?.aborted) return "cancelled";
-  const scope = createInterruptScope(deps.signal, deps.timeoutMs ?? STUDIO_BG3D_IMPORT_AI_USE_SAVE_TIMEOUT_MS);
+  const scope = createStudioBg3dImportSaveScope(deps.signal, deps.timeoutMs ?? STUDIO_BG3D_IMPORT_AI_USE_SAVE_TIMEOUT_MS);
   try {
     const now = (deps.now ?? Date.now)();
-    const store = await raceInterrupt((deps.loadStore ?? loadDefaultStore)(), scope);
+    const store = await raceStudioBg3dImportSave((deps.loadStore ?? loadDefaultStore)(), scope);
     const fresh: StudioBg3dAssetMetadata[] = [];
     let existing = 0;
     for (const record of records) {
       const metadata = buildStudioBg3dImportedAssetMetadata(record, aiUse, now);
       if (!metadata) return "failed";
-      if (await raceInterrupt(store.get(metadata.contentHash, scope.signal), scope)) existing += 1;
+      if (await raceStudioBg3dImportSave(store.get(metadata.contentHash, scope.signal), scope)) existing += 1;
       else if (!fresh.some(({ contentHash }) => contentHash === metadata.contentHash)) fresh.push(metadata);
     }
     if (fresh.length === 0) return "existing";
-    await raceInterrupt(store.put(fresh, scope.signal), scope);
+    await raceStudioBg3dImportSave(store.put(fresh, scope.signal), scope);
     notifyStudioBg3dAssetRightsChanged();
     return existing > 0 ? "partial" : "saved";
   } catch (cause) {
-    if (cause instanceof SaveInterrupted) return cause.cause_ === "cancelled" ? "cancelled" : "failed";
+    if (cause instanceof StudioBg3dImportSaveInterrupted) return cause.reason === "cancelled" ? "cancelled" : "failed";
     return "failed";
   } finally {
     scope.dispose();

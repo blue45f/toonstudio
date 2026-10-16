@@ -182,7 +182,8 @@ describe("persistStudioBg3dSkpAssetMetadata", () => {
       loadStore: () => Promise.resolve(store),
     });
     expect(status).toBe("saved");
-    expect(get).toHaveBeenCalledWith(HASH);
+    // 저장소에는 취소·시간 한도를 알리는 신호가 함께 넘어간다.
+    expect(get).toHaveBeenCalledWith(HASH, expect.any(AbortSignal));
     expect(put).toHaveBeenCalledTimes(1);
     const firstArgument: unknown = put.mock.calls[0]?.[0];
     expect(firstArgument).toEqual([expect.objectContaining({ contentHash: HASH, format: "skp", createdAt: 5_000 })]);
@@ -260,5 +261,82 @@ describe("persistStudioBg3dSkpAssetMetadata", () => {
     await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(rejecting.store) });
     expect(listener).toHaveBeenCalledTimes(1);
     stop();
+  });
+
+  describe("취소 신호와 시간 한도", () => {
+    it("가져오기 취소 신호가 이미 서 있으면 저장소를 건드리지 않고 failed 로 돌려준다", async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const loadStore = vi.fn(() => Promise.resolve(fakeStore().store));
+      const status = await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), {
+        loadStore,
+        signal: controller.signal,
+      });
+      expect(status).toBe("failed");
+      expect(loadStore).not.toHaveBeenCalled();
+    });
+
+    it("저장소가 응답하지 않는 동안 취소 신호가 서면 기다림을 멈추고, 저장소에는 선 신호를 넘기며, 새 기록 알림은 보내지 않는다", async () => {
+      const controller = new AbortController();
+      const listener = vi.fn();
+      const stop = subscribeStudioBg3dAssetRightsChanged(listener);
+      let received: AbortSignal | undefined;
+      const put = vi.fn(() => Promise.resolve([]));
+      const store: StudioBg3dSkpMetadataStore = {
+        get: (_hash, signal) => {
+          received = signal;
+          return new Promise(() => undefined);
+        },
+        put,
+      };
+      const pending = persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), {
+        loadStore: () => Promise.resolve(store),
+        signal: controller.signal,
+      });
+      await vi.waitFor(() => expect(received).toBeDefined());
+      expect(received?.aborted).toBe(false);
+      controller.abort();
+      await expect(pending).resolves.toBe("failed");
+      expect(received?.aborted).toBe(true);
+      expect(put).not.toHaveBeenCalled();
+      expect(listener).not.toHaveBeenCalled();
+      stop();
+    });
+
+    it("저장소가 한도 안에 답하지 않으면 한도에서 멈추고 failed 로 돌려준다(그 전에는 기다린다)", async () => {
+      vi.useFakeTimers();
+      try {
+        const store: StudioBg3dSkpMetadataStore = {
+          get: () => new Promise(() => undefined),
+          put: vi.fn(() => Promise.resolve([])),
+        };
+        let settled: string | null = null;
+        const pending = persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), {
+          loadStore: () => Promise.resolve(store),
+          timeoutMs: 1_000,
+        }).then((status) => {
+          settled = status;
+          return status;
+        });
+        await vi.advanceTimersByTimeAsync(999);
+        expect(settled).toBeNull();
+        await vi.advanceTimersByTimeAsync(1);
+        await expect(pending).resolves.toBe("failed");
+        expect(store.put).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("정상으로 끝나면 타이머를 남기지 않는다", async () => {
+      vi.useFakeTimers();
+      try {
+        const { store } = fakeStore();
+        await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(store) });
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

@@ -39,6 +39,8 @@ export type StudioBg3dSkpImportOutcome =
     readonly sourcePaths: readonly (string | null)[];
     /** 가져오기 권리 폼에서 고른 AI 사용 표기. 변환 보고서와 같은 기록에 담긴다. */
     readonly aiUse?: StudioBg3dImportAiUse;
+    /** 가져오기 취소 신호. 기록 저장이 이 신호에 멈춘다(저장소가 응답하지 않아도 시간 한도에서 멈춘다). */
+    readonly signal?: AbortSignal;
   }
   | { readonly status: "failed"; readonly reason: string }
   /** 편집 세션이 바뀌어 결과를 보여 줄 곳이 없다. 진행 표시만 거두고 아무것도 게시하지 않는다. */
@@ -84,6 +86,7 @@ export interface StudioBg3dSkpImportRunDeps {
   readonly persist?: (
     asset: StudioBg3dSkpImportedAsset,
     report: StudioBg3dSkpImportReport,
+    signal?: AbortSignal,
   ) => Promise<StudioBg3dSkpMetadataStatus>;
 }
 
@@ -91,7 +94,7 @@ const NOT_SAVED_REASON = "이번 가져오기에서 저장되지 않았습니다
 
 export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {}): StudioBg3dSkpImportRun {
   const session = deps.session ?? studioBg3dSkpImportSession;
-  const persist = deps.persist ?? ((asset, report) => persistStudioBg3dSkpAssetMetadata(asset, report));
+  const persist = deps.persist ?? ((asset, report, signal) => persistStudioBg3dSkpAssetMetadata(asset, report, { signal }));
   const reports: StudioBg3dSkpReportEvent[] = [];
 
   const resultFor = async (
@@ -109,7 +112,7 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
     if (asset) {
       let metadata: StudioBg3dSkpMetadataStatus;
       try {
-        metadata = await persist(asset, event.report);
+        metadata = await persist(asset, event.report, outcome.status === "imported" ? outcome.signal : undefined);
       } catch {
         metadata = "failed";
       }

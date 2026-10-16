@@ -19,7 +19,7 @@ function record(name: string): StudioBg3dSkpStoredRecordLike {
   };
 }
 
-function setup(persist?: (asset: StudioBg3dSkpImportedAsset, report: StudioBg3dSkpImportReport) => Promise<StudioBg3dSkpMetadataStatus>) {
+function setup(persist?: (asset: StudioBg3dSkpImportedAsset, report: StudioBg3dSkpImportReport, signal?: AbortSignal) => Promise<StudioBg3dSkpMetadataStatus>) {
   const session = createStudioBg3dSkpImportSession();
   const persistSpy = vi.fn(persist ?? (() => Promise.resolve<StudioBg3dSkpMetadataStatus>("saved")));
   const run = beginStudioBg3dSkpImportRun({ session, persist: persistSpy });
@@ -85,6 +85,24 @@ describe("beginStudioBg3dSkpImportRun", () => {
     });
     expect(persistSpy.mock.calls[0]?.[0]).toMatchObject({ name: "방", aiUse: { aiGenerated: "yes" } });
     expect(collectStudioBg3dSkpImportedAssets([record("방")], ["room.skp"])[0]).not.toHaveProperty("aiUse");
+  });
+
+  it("hands the import's cancel signal to the recording step, and none for an import that did not finish", async () => {
+    const { persistSpy, run } = setup();
+    run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+    const controller = new AbortController();
+    await run.complete({
+      status: "imported",
+      records: [record("방")],
+      sourcePaths: ["room.skp"],
+      signal: controller.signal,
+    });
+    expect(persistSpy.mock.calls[0]?.[2]).toBe(controller.signal);
+
+    const withoutSignal = setup();
+    withoutSignal.run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+    await withoutSignal.run.complete({ status: "imported", records: [record("방")], sourcePaths: ["room.skp"] });
+    expect(withoutSignal.persistSpy.mock.calls[0]?.[2]).toBeUndefined();
   });
 
   it("returns how the AI use was recorded: saved, left as it was, failed, or nothing to record", async () => {
