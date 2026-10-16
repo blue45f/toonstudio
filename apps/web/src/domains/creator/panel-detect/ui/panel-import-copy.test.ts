@@ -73,7 +73,7 @@ const DETECT_WARNINGS = codesOf<PanelDetectWarningCode>({
   "max-depth-reached": true,
   "low-overall-confidence": true,
 });
-const REFLOW_CODES = codesOf<PanelReflowErrorCode>({ "no-panels": true, "invalid-options": true, "panel-too-tall": true, "too-many-pages": true, "output-too-large": true });
+const REFLOW_CODES = codesOf<PanelReflowErrorCode>({ "no-panels": true, "invalid-options": true, "invalid-panel": true, "panel-too-tall": true, "too-many-pages": true, "output-too-large": true });
 const RENDER_CODES = codesOf<PanelRenderErrorCode>({ cancelled: true, "surface-unavailable": true, "encode-failed": true, "too-large-for-studio": true });
 const LOSS_CODES = codesOf<ReflowLossCode>({
   "source-untouched": true,

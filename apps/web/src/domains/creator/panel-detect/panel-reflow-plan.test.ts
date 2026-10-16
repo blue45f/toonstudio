@@ -97,6 +97,29 @@ describe("재배열 계획 — 배치", () => {
     expect(() => planPanelReflow(one, options({ pageHeight: 100 }))).toThrowError(expect.objectContaining({ code: "invalid-options" }));
   });
 
+  it("컷 사각형이 NaN·Infinity·음수 좌표·0 이하 크기이면 계획을 만들지 않고 몇 번째 컷인지 알린다", () => {
+    const ok = panel("ok", 0, 0, 100, 100);
+    const bad = (rect: Partial<ReflowSourcePanel>): ReflowSourcePanel => ({ ...panel("bad", 0, 0, 100, 100), ...rect });
+    const invalid: Array<readonly [string, ReflowSourcePanel]> = [
+      ["NaN 너비", bad({ width: Number.NaN })],
+      ["NaN 높이", bad({ height: Number.NaN })],
+      ["NaN 좌표", bad({ x: Number.NaN })],
+      ["무한 높이", bad({ height: Number.POSITIVE_INFINITY })],
+      ["0 너비", bad({ width: 0 })],
+      ["음수 높이", bad({ height: -5 })],
+      ["음수 좌표", bad({ y: -1 })],
+    ];
+    for (const scaleMode of ["fit-width", "keep-size"] as const) {
+      for (const [label, rect] of invalid) {
+        expect(() => planPanelReflow([ok, rect], options({ scaleMode })), `${label}/${scaleMode}`).toThrowError(
+          expect.objectContaining({ code: "invalid-panel", message: expect.stringContaining("2번 컷") }),
+        );
+      }
+    }
+    // 소수 좌표·크기는 유한하고 양수이므로 그대로 계획된다(편집 모델이 정수로 다듬지만 계획 함수가 요구하지는 않는다).
+    expect(() => planPanelReflow([panel("frac", 0.5, 0.5, 99.5, 99.5)], options())).not.toThrow();
+  });
+
   it("전체 출력 픽셀과 페이지 수 상한을 지킨다", () => {
     const many = Array.from({ length: 900 }, (_, index) => panel(`p${index}`, 0, 0, 720, 9_000));
     expect(() => planPanelReflow(many, options({ pageHeight: 9_000, gap: 0 }))).toThrowError(

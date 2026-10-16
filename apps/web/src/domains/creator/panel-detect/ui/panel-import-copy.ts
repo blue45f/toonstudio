@@ -129,6 +129,7 @@ export const detectWarningText = (code: PanelDetectWarningCode): string => pick(
 const REFLOW_ERRORS: Readonly<Record<PanelReflowErrorCode, Pair>> = {
   "no-panels": ["재배열할 컷이 없어요. 컷을 하나 이상 남겨 주세요.", "There are no panels to rearrange. Keep at least one panel."],
   "invalid-options": ["재배열 설정이 올바르지 않아요.", "The rearrange settings are not valid."],
+  "invalid-panel": ["컷의 위치나 크기가 올바르지 않아요. 컷을 다시 확인해 주세요.", "A panel's position or size is not valid. Please check the panels again."],
   "panel-too-tall": ["배율을 적용하면 너무 길어지는 컷이 있어요. 컷을 나누거나 '원본 크기 유지'를 써 보세요.", "A panel would become too tall at this scale. Split it or use “Keep original size”."],
   "too-many-pages": ["페이지가 200쪽을 넘어요. 컷 수를 줄여 주세요.", "That would exceed 200 pages. Use fewer panels."],
   "output-too-large": ["결과 이미지가 너무 커요. 컷 수를 줄이거나 '원본 크기 유지'를 써 보세요.", "The result is too large. Use fewer panels or “Keep original size”."],

@@ -77,6 +77,7 @@ export interface ReflowPage {
 export type PanelReflowErrorCode =
   | "no-panels"
   | "invalid-options"
+  | "invalid-panel"
   | "panel-too-tall"
   | "too-many-pages"
   | "output-too-large";
@@ -121,6 +122,18 @@ function assertOptions(options: PanelReflowOptions): Required<PanelReflowOptions
   return { targetWidth: options.targetWidth, gap: options.gap, scaleMode: options.scaleMode, pageHeight };
 }
 
+/**
+ * 컷 사각형이 유한한 숫자이고 원본 안의 좌표(x·y ≥ 0, 크기 > 0)인지 본다. 검사하지 않으면 NaN·Infinity·0 이하 크기가
+ * 배율 계산에 섞여 NaN 높이의 계획이 오류 없이 만들어지거나, 엉뚱하게 panel-too-tall 로 거절된다.
+ */
+function assertPanels(panels: readonly ReflowSourcePanel[]): void {
+  panels.forEach((panel, index) => {
+    const valid = Number.isFinite(panel.x) && Number.isFinite(panel.y) && Number.isFinite(panel.width) && Number.isFinite(panel.height)
+      && panel.x >= 0 && panel.y >= 0 && panel.width > 0 && panel.height > 0;
+    if (!valid) throw new PanelReflowError("invalid-panel", `${index + 1}번 컷의 위치나 크기가 올바르지 않아요.`);
+  });
+}
+
 function destSize(panel: PanelRect, options: Required<PanelReflowOptions>): { width: number; height: number } {
   const scale = options.scaleMode === "fit-width"
     ? options.targetWidth / panel.width
@@ -135,6 +148,7 @@ export function planPanelReflow(
 ): PanelReflowPlan {
   if (panels.length === 0) throw new PanelReflowError("no-panels", "재배열할 컷이 없어요.");
   const options = assertOptions(optionsInput);
+  assertPanels(panels);
   const placements: ReflowPlacement[] = [];
   const pages: ReflowPage[] = [];
   let current: ReflowPlacement[] = [];
@@ -153,7 +167,7 @@ export function planPanelReflow(
   panels.forEach((panel, index) => {
     const size = destSize(panel, options);
     if (size.height > STUDIO_PROJECT_MAX_CANVAS_HEIGHT) {
-      throw new PanelReflowError("panel-too-tall", `컷 ${index + 1}이 배율을 적용하면 ${STUDIO_PROJECT_MAX_CANVAS_HEIGHT}px 를 넘어요.`);
+      throw new PanelReflowError("panel-too-tall", `${index + 1}번 컷이 배율을 적용하면 ${STUDIO_PROJECT_MAX_CANVAS_HEIGHT}px 를 넘어요.`);
     }
     if (current.length > 0 && currentHeight + options.gap + size.height > options.pageHeight) closePage();
     const y = current.length === 0 ? 0 : currentHeight + options.gap;
