@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ManuscriptVersionShareController } from "./manuscript-version-share.controller";
 import {
+  VersionSharePasswordBusyException,
   VersionSharePasswordLockedException,
   type ManuscriptVersionShareService,
 } from "./manuscript-version-share.service";
@@ -40,6 +41,25 @@ describe("공유 링크 해석 컨트롤러의 Retry-After 헤더", () => {
     });
     expect(setHeader).toHaveBeenCalledTimes(1);
     expect(setHeader).toHaveBeenCalledWith("Retry-After", "540");
+  });
+
+  it("일시 차단(429)은 잠금과 다른 코드로 내리고 Retry-After 는 1초다", async () => {
+    const busy = new VersionSharePasswordBusyException(1);
+    const { controller, response, setHeader } = setup(async () => {
+      throw busy;
+    });
+
+    const error = await controller
+      .resolveShare({ token: TOKEN }, "guess", response, "user-1")
+      .catch((e: unknown) => e);
+
+    expect(error).toBe(busy);
+    expect((error as HttpException).getStatus()).toBe(429);
+    expect((error as HttpException).getResponse()).toMatchObject({
+      code: "version_share_password_busy",
+      retryAfterSeconds: 1,
+    });
+    expect(setHeader).toHaveBeenCalledExactlyOnceWith("Retry-After", "1");
   });
 
   it("다른 오류와 정상 응답에는 Retry-After 를 붙이지 않는다", async () => {

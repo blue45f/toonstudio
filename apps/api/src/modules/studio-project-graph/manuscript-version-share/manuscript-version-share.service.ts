@@ -21,18 +21,40 @@ import {
 } from "./version-share-password-guard";
 
 /**
- * 비밀번호 시도 한도 초과(429). 재시도 시점은 본문의 retryAfterSeconds 로도, 컨트롤러가 붙이는
- * Retry-After 헤더로도 알린다.
+ * 비밀번호 시도 때문에 거절된 429 의 공통 부모. 재시도 시점은 본문의 retryAfterSeconds 로도, 컨트롤러가 붙이는
+ * Retry-After 헤더로도 알린다. 잠금과 일시 차단은 응답 코드와 안내 문구가 다르다(아래 두 하위 클래스).
  */
-export class VersionSharePasswordLockedException extends HttpException {
-  constructor(readonly retryAfterSeconds: number) {
+export abstract class VersionSharePasswordThrottledException extends HttpException {
+  protected constructor(
+    readonly retryAfterSeconds: number,
+    code: string,
+    message: string,
+  ) {
+    super({ code, message, retryAfterSeconds }, 429);
+  }
+}
+
+/** 오답이 한도(15분에 10회)에 닿아 창이 끝날 때까지 이 링크의 비밀번호 확인을 막는다. 기다리면 풀린다. */
+export class VersionSharePasswordLockedException extends VersionSharePasswordThrottledException {
+  constructor(retryAfterSeconds: number) {
     super(
-      {
-        code: "version_share_password_locked",
-        message: "비밀번호를 여러 번 틀려 잠시 잠겼어요. 잠시 후 다시 시도해 주세요.",
-        retryAfterSeconds,
-      },
-      429,
+      retryAfterSeconds,
+      "version_share_password_locked",
+      "비밀번호를 여러 번 틀려 잠시 잠겼어요. 잠시 후 다시 시도해 주세요.",
+    );
+  }
+}
+
+/**
+ * 같은 링크의 다른 비밀번호 확인이 아직 처리 중이라 이번 요청은 검증하지 않고 돌려보낸다(선점한 시도가 한도를 채움).
+ * 비밀번호를 틀린 것이 아니고 잠긴 것도 아니라서 이 요청은 시도로 세지 않으며, 1초 안팎이면 다시 시도할 수 있다.
+ */
+export class VersionSharePasswordBusyException extends VersionSharePasswordThrottledException {
+  constructor(retryAfterSeconds: number) {
+    super(
+      retryAfterSeconds,
+      "version_share_password_busy",
+      "같은 링크로 다른 비밀번호 확인이 진행 중이에요. 잠시 뒤에 다시 시도해 주세요.",
     );
   }
 }
@@ -112,22 +134,23 @@ export class ManuscriptVersionShareService {
     if (password) {
       const admission = this.passwordGuard.admit(linkKey);
       if (!admission.admitted) {
-        throw new VersionSharePasswordLockedException(admission.retryAfterSeconds);
+        throw admission.reason === "busy"
+          ? new VersionSharePasswordBusyException(admission.retryAfterSeconds)
+          : new VersionSharePasswordLockedException(admission.retryAfterSeconds);
       }
       attempt = admission.attempt;
     }
     let resolution: VersionShareResolution;
     try {
       resolution = await this.repository.resolveShare(token, password);
-    } catch (error) {
-      // 저장소 오류(DB 장애 등)는 비밀번호 오답이 아니므로 선점한 시도를 되돌린다.
+      // 오답일 때만 오답으로 확정한다. 링크 없음·회수·만료·성공은 오답이 아니라 아래 finally 에서 되돌려져 정상 사용자가
+      // 불이익을 받지 않는다.
+      if (resolution.kind === "password_invalid") attempt?.fail();
+    } finally {
+      // 어떤 경로로 끝나든(저장소 오류, 예기치 못한 반환값으로 인한 예외 포함) 선점은 반드시 정산한다. 이미 fail 로 확정됐으면
+      // 아무 일도 하지 않는다. 정산하지 못한 선점은 그 링크의 한도를 영구히 줄여 결국 정상 요청까지 막는다.
       attempt?.release();
-      throw error;
     }
-    // 선점한 시도는 비밀번호 오답일 때만 오답으로 확정하고, 링크 없음·회수·만료·성공은 되돌려 정상 사용자가
-    // 불이익을 받지 않게 한다.
-    if (resolution.kind === "password_invalid") attempt?.fail();
-    else attempt?.release();
     switch (resolution.kind) {
       case "ok":
         this.passwordGuard.reset(linkKey);

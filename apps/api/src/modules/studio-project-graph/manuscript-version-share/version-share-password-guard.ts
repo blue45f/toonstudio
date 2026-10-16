@@ -35,9 +35,14 @@ export interface VersionSharePasswordAttempt {
   release(): void;
 }
 
+/**
+ * 선점 결과. 거절은 두 가지로 나뉜다: 확정된 오답이 한도에 닿은 "잠금"(창이 끝날 때까지, 최대 15분)과, 확정된 오답은
+ * 한도 밑인데 판정 중인 시도가 자리를 채운 "일시 차단"(판정이 끝나는 1초 안팎). 사용자에게 줄 안내와 재시도 가능
+ * 시점이 달라서 이유를 구분해 돌려준다.
+ */
 export type VersionSharePasswordAdmission =
   | { readonly admitted: true; readonly attempt: VersionSharePasswordAttempt }
-  | { readonly admitted: false; readonly retryAfterSeconds: number };
+  | { readonly admitted: false; readonly reason: "locked" | "busy"; readonly retryAfterSeconds: number };
 
 export class VersionSharePasswordGuard {
   /** 링크별 확정된 오답 창. */
@@ -62,9 +67,9 @@ export class VersionSharePasswordGuard {
     }
     const window = this.windows.get(linkKey);
     if (failures >= VERSION_SHARE_PASSWORD_MAX_FAILURES && window) {
-      return { admitted: false, retryAfterSeconds: Math.ceil((window.endsAt - now) / 1000) };
+      return { admitted: false, reason: "locked", retryAfterSeconds: Math.ceil((window.endsAt - now) / 1000) };
     }
-    return { admitted: false, retryAfterSeconds: PENDING_RETRY_AFTER_SECONDS };
+    return { admitted: false, reason: "busy", retryAfterSeconds: PENDING_RETRY_AFTER_SECONDS };
   }
 
   /** 올바른 비밀번호로 열렸으면 그 링크의 오답 기록을 지운다. */

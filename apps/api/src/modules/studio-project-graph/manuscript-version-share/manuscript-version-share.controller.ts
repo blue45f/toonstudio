@@ -20,7 +20,7 @@ import { ZodValidationPipe } from "../../../platform/http/zod-validation.pipe";
 import { authenticatedStudioUserId } from "../studio-project-graph.controller";
 import {
   ManuscriptVersionShareService,
-  VersionSharePasswordLockedException,
+  VersionSharePasswordThrottledException,
 } from "./manuscript-version-share.service";
 
 import type { Response } from "express";
@@ -169,7 +169,7 @@ export class ManuscriptVersionShareController {
    * 공유 링크 해석. 로그인한 사용자만 부를 수 있고(x-user-id 강제),
    * 토큰 자격·만료·회수·비밀번호는 서비스/저장소가 서버에서 판정한다.
    * 비밀번호는 쿼리스트링이 아니라 헤더로 받는다(로그·히스토리 노출 방지).
-   * 비밀번호 시도 한도(429)에는 본문의 retryAfterSeconds 와 같은 값을 Retry-After 헤더로도 싣는다.
+   * 비밀번호 시도 때문에 거절된 429(잠금·일시 차단)에는 본문의 retryAfterSeconds 와 같은 값을 Retry-After 헤더로도 싣는다.
    */
   @Get("version-shares/:token") @privateResponse()
   async resolveShare(
@@ -182,7 +182,7 @@ export class ManuscriptVersionShareController {
     try {
       return await this.service.resolveShare(params.token, password || undefined);
     } catch (error) {
-      if (error instanceof VersionSharePasswordLockedException) {
+      if (error instanceof VersionSharePasswordThrottledException) {
         response.setHeader("Retry-After", String(error.retryAfterSeconds));
       }
       throw error;

@@ -39,8 +39,23 @@ describe("VersionSharePasswordGuard", () => {
     const attempts = Array.from({ length: VERSION_SHARE_PASSWORD_MAX_FAILURES }, () => admitOrThrow(guard));
 
     // 확정된 오답은 아직 없고 판정 중인 시도만 가득 찬 경우: 창 전체가 아니라 짧은 재시도를 안내한다.
-    expect(guard.admit(LINK)).toEqual({ admitted: false, retryAfterSeconds: 1 });
+    expect(guard.admit(LINK)).toEqual({ admitted: false, reason: "busy", retryAfterSeconds: 1 });
     expect(attempts).toHaveLength(VERSION_SHARE_PASSWORD_MAX_FAILURES);
+  });
+
+  it("확정된 오답이 한도 밑이면 판정 중인 시도가 자리를 채워도 잠금이 아니라 일시 차단이다", () => {
+    const guard = new VersionSharePasswordGuard();
+    // 오답 4건 확정 + 판정 중 6건 = 한도(10): 아직 잠긴 것이 아니다. 판정 중인 시도가 끝나면 풀린다.
+    for (let count = 0; count < 4; count += 1) admitOrThrow(guard).fail();
+    const inFlight = Array.from({ length: VERSION_SHARE_PASSWORD_MAX_FAILURES - 4 }, () => admitOrThrow(guard));
+
+    expect(guard.admit(LINK)).toMatchObject({ admitted: false, reason: "busy", retryAfterSeconds: 1 });
+    inFlight.forEach((attempt) => attempt.release());
+    expect(canAdmit(guard)).toBe(true);
+
+    // 확정된 오답이 한도에 닿으면 판정 중인 시도가 있든 없든 잠금이다.
+    for (let count = 0; count < VERSION_SHARE_PASSWORD_MAX_FAILURES - 4; count += 1) admitOrThrow(guard).fail();
+    expect(guard.admit(LINK)).toMatchObject({ admitted: false, reason: "locked" });
   });
 
   it("오답으로 확정하면 창이 끝날 때까지 남은 초(올림)를 안내하고 창이 지나면 풀린다", () => {
@@ -50,6 +65,7 @@ describe("VersionSharePasswordGuard", () => {
     vi.setSystemTime(NOW + 1_500);
     expect(guard.admit(LINK)).toEqual({
       admitted: false,
+      reason: "locked",
       retryAfterSeconds: Math.ceil((VERSION_SHARE_PASSWORD_WINDOW_MS - 1_500) / 1000),
     });
     vi.setSystemTime(NOW + VERSION_SHARE_PASSWORD_WINDOW_MS + 1);

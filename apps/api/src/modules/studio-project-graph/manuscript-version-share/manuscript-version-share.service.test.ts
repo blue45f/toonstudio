@@ -11,7 +11,11 @@ import {
   versionShareTokenSuffix,
   type VersionShareResolution,
 } from "./manuscript-version-share.repository";
-import { ManuscriptVersionShareService } from "./manuscript-version-share.service";
+import {
+  ManuscriptVersionShareService,
+  VersionSharePasswordBusyException,
+  VersionSharePasswordLockedException,
+} from "./manuscript-version-share.service";
 
 describe("버전 공유 토큰 해시", () => {
   it("sha256 hex로 저장하고 원문을 되돌릴 수 없게 한다", () => {
@@ -254,8 +258,17 @@ describe("공유 링크 해석 상태 매핑", () => {
         expect(resolveShare).toHaveBeenCalledTimes(10);
         expect(statuses.filter((status) => status === 401)).toHaveLength(10);
         expect(statuses.filter((status) => status === 429)).toHaveLength(90);
-        // 버스트가 끝난 뒤에는 올바른 비밀번호도 잠금이 풀릴 때까지 막힌다.
-        await expect(service.resolveShare(TOKEN, "right")).rejects.toMatchObject({ status: 429 });
+        // 버스트 중에 막힌 90건은 확정된 오답이 아직 없어 잠금이 아니라 "판정 중" 일시 차단이다.
+        const codes = results.flatMap((result) =>
+          result.status === "rejected" && (result.reason as HttpException).getStatus() === 429
+            ? [((result.reason as HttpException).getResponse() as { code: string }).code]
+            : [],
+        );
+        expect(new Set(codes)).toEqual(new Set(["version_share_password_busy"]));
+        // 버스트가 끝난 뒤에는 올바른 비밀번호도 잠금이 풀릴 때까지 막히고, 이제는 진짜 잠금이다.
+        const locked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
+        expect((locked as HttpException).getStatus()).toBe(429);
+        expect((locked as HttpException).getResponse()).toMatchObject({ code: "version_share_password_locked" });
         expect(resolveShare).toHaveBeenCalledTimes(10);
       });
 
@@ -274,16 +287,55 @@ describe("공유 링크 해석 상태 매핑", () => {
         const blocked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
         expect((blocked as HttpException).getStatus()).toBe(429);
         expect((blocked as HttpException).getResponse()).toMatchObject({
-          code: "version_share_password_locked",
+          code: "version_share_password_busy",
           retryAfterSeconds: 1,
         });
+        expect(blocked).toBeInstanceOf(VersionSharePasswordBusyException);
+        expect(blocked).not.toBeInstanceOf(VersionSharePasswordLockedException);
         expect(resolveShare).toHaveBeenCalledTimes(10);
 
         open();
         await Promise.allSettled(inFlight);
         // 판정이 끝나 10건이 오답으로 확정되면 이제는 15분 창 전체가 안내된다.
         const locked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
-        expect((locked as HttpException).getResponse()).toMatchObject({ retryAfterSeconds: 15 * 60 });
+        expect((locked as HttpException).getResponse()).toMatchObject({
+          code: "version_share_password_locked",
+          retryAfterSeconds: 15 * 60,
+        });
+      });
+
+      it("정답을 동시에 50건 보내면 10건만 검증되고 나머지 40건은 잠금이 아니라 일시 차단이며, 직후에는 정답이 통과한다", async () => {
+        const { service, resolveShare } = slowGuarded();
+        const results = await Promise.allSettled(
+          Array.from({ length: 50 }, () => service.resolveShare(TOKEN, "right")),
+        );
+        const rejected = results.flatMap((result) => (result.status === "rejected" ? [result.reason as HttpException] : []));
+
+        expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(10);
+        expect(rejected).toHaveLength(40);
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+        for (const error of rejected) {
+          expect(error.getStatus()).toBe(429);
+          expect(error.getResponse()).toMatchObject({ code: "version_share_password_busy", retryAfterSeconds: 1 });
+        }
+        // 오답이 하나도 없었으니 잠기지 않았다: 판정이 끝난 뒤의 정답은 곧바로 통과한다.
+        await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+      });
+
+      it("저장소가 예기치 못한 값을 돌려줘 예외가 나도 선점을 되돌려 링크가 막히지 않는다", async () => {
+        // 한도(10)만큼 반복해도 선점이 새면 그 링크는 영구히 일시 차단 상태가 된다.
+        const broken = vi.fn(
+          async (_token: string, _password?: string): Promise<VersionShareResolution> =>
+            undefined as unknown as VersionShareResolution,
+        );
+        const service = new ManuscriptVersionShareService({ resolveShare: broken } as never);
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+          await expect(service.resolveShare(TOKEN, `guess-${attempt}`)).rejects.toBeInstanceOf(TypeError);
+        }
+        expect(broken).toHaveBeenCalledTimes(12);
+
+        broken.mockImplementation(async () => okResolution);
+        await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
       });
 
       it("링크 없음·회수·만료·저장소 오류는 오답으로 세지 않아 정상 사용자가 잠기지 않는다", async () => {
