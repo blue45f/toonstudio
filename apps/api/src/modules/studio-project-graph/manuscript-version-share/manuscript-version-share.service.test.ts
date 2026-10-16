@@ -28,19 +28,20 @@ describe("버전 공유 토큰 해시", () => {
 });
 
 describe("버전 공유 비밀번호 해시", () => {
-  it("scrypt 해시로 저장하고 올바른 비밀번호만 통과한다", () => {
+  it("scrypt 해시로 저장하고 올바른 비밀번호만 통과한다", async () => {
     const stored = hashVersionSharePassword("moon-1234");
     expect(stored.startsWith("scrypt$")).toBe(true);
     expect(stored).not.toContain("moon-1234");
-    expect(verifyVersionSharePassword("moon-1234", stored)).toBe(true);
-    expect(verifyVersionSharePassword("moon-9999", stored)).toBe(false);
+    // 검증은 비동기여야 한다: 동기 scrypt 는 요청마다 이벤트 루프를 수십 ms 점유해 서버 전체를 멈춘다.
+    await expect(verifyVersionSharePassword("moon-1234", stored)).resolves.toBe(true);
+    await expect(verifyVersionSharePassword("moon-9999", stored)).resolves.toBe(false);
   });
 
-  it("같은 비밀번호도 솔트 때문에 해시가 다르고, 깨진 형식은 거부한다", () => {
+  it("같은 비밀번호도 솔트 때문에 해시가 다르고, 깨진 형식은 거부한다", async () => {
     expect(hashVersionSharePassword("same")).not.toBe(hashVersionSharePassword("same"));
-    expect(verifyVersionSharePassword("same", "not-a-hash")).toBe(false);
-    expect(verifyVersionSharePassword("same", "scrypt$zz$yy")).toBe(false);
-    expect(verifyVersionSharePassword("same", "")).toBe(false);
+    await expect(verifyVersionSharePassword("same", "not-a-hash")).resolves.toBe(false);
+    await expect(verifyVersionSharePassword("same", "scrypt$zz$yy")).resolves.toBe(false);
+    await expect(verifyVersionSharePassword("same", "")).resolves.toBe(false);
   });
 });
 
@@ -159,6 +160,75 @@ describe("공유 링크 해석 상태 매핑", () => {
       .resolveShare("token-value-123456", "wrong").catch((e: unknown) => e);
     expect((invalid as HttpException).getResponse()).toMatchObject({
       code: "version_share_password_invalid",
+    });
+  });
+
+  describe("비밀번호 무차별 대입 방어", () => {
+    const TOKEN = "token-value-123456";
+    function guarded(rightPassword = "right") {
+      const resolveShare = vi.fn(async (_token: string, password?: string): Promise<VersionShareResolution> => {
+        if (!password) return { kind: "password_required" };
+        return password === rightPassword ? okResolution : { kind: "password_invalid" };
+      });
+      return { service: new ManuscriptVersionShareService({ resolveShare } as never), resolveShare };
+    }
+    async function failMany(service: ManuscriptVersionShareService, count: number, token = TOKEN) {
+      for (let attempt = 0; attempt < count; attempt += 1) {
+        const error = await service.resolveShare(token, `wrong-${attempt}`).catch((e: unknown) => e);
+        expect((error as HttpException).getStatus()).toBe(401);
+      }
+    }
+
+    it("실패가 한도(10회)에 닿으면 올바른 비밀번호도 429 로 막고 저장소를 더 호출하지 않는다", async () => {
+      const { service, resolveShare } = guarded();
+      await failMany(service, 10);
+      expect(resolveShare).toHaveBeenCalledTimes(10);
+
+      const locked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
+      expect(locked).toBeInstanceOf(HttpException);
+      expect((locked as HttpException).getStatus()).toBe(429);
+      expect((locked as HttpException).getResponse()).toMatchObject({
+        code: "version_share_password_locked",
+      });
+      expect(resolveShare).toHaveBeenCalledTimes(10);
+    });
+
+    it("잠금은 그 링크에만 적용되고 다른 링크의 해석은 영향받지 않는다", async () => {
+      const { service } = guarded();
+      await failMany(service, 10);
+      await expect(service.resolveShare("another-token-654321", "right")).resolves.toBe(okResolution);
+    });
+
+    it("비밀번호를 보내지 않은 요청은 잠금과 무관하게 비밀번호 필요 응답을 받는다", async () => {
+      const { service } = guarded();
+      await failMany(service, 10);
+      const required = await service.resolveShare(TOKEN).catch((e: unknown) => e);
+      expect((required as HttpException).getStatus()).toBe(401);
+      expect((required as HttpException).getResponse()).toMatchObject({
+        code: "version_share_password_required",
+      });
+    });
+
+    it("성공하면 실패 횟수가 초기화된다", async () => {
+      const { service } = guarded();
+      await failMany(service, 9);
+      await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+      await failMany(service, 9);
+      await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+    });
+
+    it("잠금은 창(15분)이 지나면 풀린다", async () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date("2026-10-16T00:00:00.000Z"));
+        const { service } = guarded();
+        await failMany(service, 10);
+        await expect(service.resolveShare(TOKEN, "right")).rejects.toMatchObject({ status: 429 });
+        vi.setSystemTime(new Date("2026-10-16T00:15:01.000Z"));
+        await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });
