@@ -124,7 +124,7 @@ describe("panelImport 네임스페이스 — 소스와의 일치", () => {
   });
 
   it('usePanelT() 를 쓰는 화면 컴포넌트(.tsx)는 "use no memo" 로 시작한다', () => {
-    // React Compiler 가 t("상수 키") 호출을 t 의 정체성으로 캐시하면, 번역 번들이 나중에 도착해도 첫 그리기의 영어 폴백이 남는다(use-panel-t.ts).
+    // React Compiler 가 상수 키 t 호출 호출을 t 의 정체성으로 캐시하면, 번역 번들이 나중에 도착해도 첫 그리기의 영어 폴백이 남는다(use-panel-t.ts).
     const components = sources.filter((source) => source.name.endsWith(".tsx") && /\busePanelT\(\)/u.test(source.code));
     expect(components.length).toBeGreaterThanOrEqual(15);
     expect(components.filter((source) => !/^["']use no memo["'];?\s/u.test(source.code)).map((source) => source.name)).toEqual([]);
