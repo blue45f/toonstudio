@@ -3,6 +3,8 @@ import { basename, join, resolve } from "node:path";
 
 import { decodePng } from "image-js";
 
+import { isPathInsideDirectory } from "./lib/path-containment.mjs";
+
 interface ArtifactPath {
   readonly absolute?: string;
   readonly relativeToScratch?: string;
@@ -196,7 +198,7 @@ function findQualityPath(performancePath: string): string {
   if (files.includes(exact)) return exact;
   const candidates = files.filter((path) =>
     basename(path) === "long-brush-quality-report.json"
-      && path.startsWith(directory));
+      && isPathInsideDirectory(directory, path));
   if (candidates.length !== 1) {
     throw new Error(`quality report for ${performancePath} is ambiguous: ${candidates.join(", ")}`);
   }

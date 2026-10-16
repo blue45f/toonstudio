@@ -115,7 +115,8 @@ function startStaticServer(
     }
 
     const candidate = join(DIST, normalize(pathname).replace(/^(\.\.[/\\])+/u, ""));
-    const isFile = isPathInsideDirectory(DIST, candidate) && existsSync(candidate)
+    // 파일을 읽어 응답하므로 dist 바깥을 가리키는 심볼릭 링크까지 바깥으로 본다(resolveSymlinks).
+    const isFile = isPathInsideDirectory(DIST, candidate, { resolveSymlinks: true }) && existsSync(candidate)
       && statSync(candidate).isFile();
     // Mirrors the production Static Assets SPA fallback to /index.html.
     const file = isFile ? candidate : join(DIST, "index.html");
