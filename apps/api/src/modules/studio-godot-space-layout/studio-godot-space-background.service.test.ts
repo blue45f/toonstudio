@@ -107,6 +107,51 @@ describe("authorization", () => {
   });
 });
 
+// 협업 역할 정책(creator-collaboration.policy)에서 edit 권한이 없는 읽기 전용 역할이다.
+const READ_ONLY_ROLES: ReadonlyArray<
+  readonly [role: string, capabilities: Readonly<Record<string, boolean>>]
+> = [
+  ["viewer", { view: true, comment: false, edit: false, manageMembers: false }],
+  ["commenter", { view: true, comment: true, edit: false, manageMembers: false }],
+];
+
+describe("write authorization (읽기 전용 협업 역할은 배경 자산을 바꿀 수 없다)", () => {
+  it.each(READ_ONLY_ROLES)(
+    "%s 역할의 업로드는 DB 에 닿기 전에 403 으로 막힌다",
+    async (_role, capabilities) => {
+      const { service } = makeService(viewerTeam({ capabilities }));
+      await expect(
+        service.upload("u1", "work-1", { buffer: VALID_GLB, originalname: "room.glb" }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(boundary.query).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(READ_ONLY_ROLES)(
+    "%s 역할의 삭제는 DB 에 닿기 전에 403 으로 막힌다",
+    async (_role, capabilities) => {
+      const { service } = makeService(viewerTeam({ capabilities }));
+      await expect(
+        service.remove("u1", "work-1", "aaaaaaaa-0000-4000-8000-000000000000"),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(boundary.query).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(READ_ONLY_ROLES)(
+    "%s 역할도 배경 목록은 볼 수 있다",
+    async (_role, capabilities) => {
+      const { service } = makeService(viewerTeam({ capabilities }));
+      boundary.query.mockResolvedValueOnce({
+        rows: [
+          ["work-1", "aaaaaaaa-0000-4000-8000-000000000000", "a.glb", 10, "b".repeat(64), "u1", CREATED],
+        ],
+      });
+      await expect(service.list("u1", "work-1")).resolves.toHaveLength(1);
+    },
+  );
+});
+
 describe("upload", () => {
   it("rejects a missing file with 400", async () => {
     const { service } = makeService(viewerTeam());

@@ -34,7 +34,8 @@ const MAX_FILE_NAME_LENGTH = 120;
 
 /**
  * 작품 멤버십이 배경 자산의 권한 경계다 (공간 정의와 동일).
- * 업로드·목록·삭제는 활성 팀 멤버만. content 서빙만 예외로
+ * 목록은 활성 팀 멤버(view)에게, 업로드·삭제는 편집 권한(edit)이 있는 역할만 허용한다 —
+ * viewer·commenter 는 협업 역할 정책상 읽기 전용이다. content 서빙만 예외로
  * 인증을 요구하지 않는다 — assetId(UUID)가 capability이고,
  * 배경은 방 안 전원에게 보이는 장식층이며, Godot 무대는
  * 커스텀 인증 헤더를 실을 수 없기 때문이다. 기존 카탈로그
@@ -46,13 +47,20 @@ export class StudioGodotSpaceBackgroundService {
     @Inject(CreatorService) private readonly creatorService: CreatorService,
   ) {}
 
-  private async requireViewer(userId: string | undefined, workId: string) {
+  private async requireViewer(
+    userId: string | undefined,
+    workId: string,
+    need: "view" | "edit" = "view",
+  ) {
     const id = userId?.trim();
     if (!id) throw new ForbiddenException("로그인이 필요합니다.");
 
     const { viewer } = await this.creatorService.getWorkTeam(id, workId);
     if (!viewer || viewer.status !== "active" || !viewer.capabilities.view) {
       throw new ForbiddenException("이 작품의 공간 배경을 관리할 권한이 없습니다.");
+    }
+    if (need === "edit" && !viewer.capabilities.edit) {
+      throw new ForbiddenException("이 작품의 공간 배경을 수정할 권한이 없습니다.");
     }
     return viewer;
   }
@@ -62,7 +70,7 @@ export class StudioGodotSpaceBackgroundService {
     workId: string,
     file: GodotSpaceBackgroundUploadFile | undefined,
   ): Promise<GodotSpaceBackgroundDto> {
-    const viewer = await this.requireViewer(userId, workId);
+    const viewer = await this.requireViewer(userId, workId, "edit");
     if (!file || !file.buffer || file.buffer.byteLength === 0) {
       throw new BadRequestException("올릴 GLB 파일이 없습니다.");
     }
@@ -147,7 +155,7 @@ export class StudioGodotSpaceBackgroundService {
     workId: string,
     assetId: string,
   ): Promise<{ deleted: true }> {
-    await this.requireViewer(userId, workId);
+    await this.requireViewer(userId, workId, "edit");
     const deleted = await db
       .delete(studioGodotSpaceBackgrounds)
       .where(
