@@ -625,3 +625,67 @@ it("admits complete 4K PNG output only under a versioned tiled profile and binds
     capture: canonicalCapture([SHOTS[0]], sourceRevision, smallerOwner, 4096, ["beauty", "main-line"]) });
   expect(smaller.ok).toBe(true); if (smaller.ok) expect(smaller.plan.planDigest).not.toBe(result.plan.planDigest);
 });
+
+describe("컷 배치 계획의 깊이 캡처 판정(내부선 억제)", () => {
+  /** 두 번째 컷만 내부선 억제를 켠다. 나머지 컷은 깊이를 요구하지 않는다. */
+  function suppressionRevision(
+    secondShotLine: Record<string, unknown>,
+  ): string {
+    const serialized = serializeStudioBg3dSceneDocument({
+      ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+      background: {
+        ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.background,
+        skyPresetId: "clear_day",
+      },
+      shots: SHOTS.map((shot, index) => ({
+        id: shot.id,
+        name: shot.name,
+        output: { exportHeight: 720, line: index === 1 ? secondShotLine : {} },
+      })),
+    });
+    if (!serialized) throw new Error("canonical suppression test scene unavailable");
+    return serialized;
+  }
+
+  it("freezes a depth capture for a shot that switches the suppression on and rejects a plan that omits it", async () => {
+    const sourceRevision = suppressionRevision({ interiorSuppressionEnabled: true });
+    // 이 시험의 canonicalCapture 는 옛 규칙(깊이선 또는 깊이·법선 패스만 깊이를 요구)으로 includeDepth 를 만든다.
+    const withoutDepth = options(SHOTS, { sourceRevision });
+    expect(withoutDepth.capture.shots[1]!.includeDepth).toBe(false);
+    await expect(createStudioBg3dShotBatchPlan(SHOTS, withoutDepth)).resolves.toMatchObject({
+      ok: false,
+      code: "invalid-capture",
+    });
+
+    const withDepth = patchCaptureShot(withoutDepth, 1, { includeDepth: true });
+    const planned = await createStudioBg3dShotBatchPlan(SHOTS, withDepth);
+    expect(planned.ok).toBe(true);
+    if (!planned.ok) return;
+    expect(planned.plan.shots.map((shot) => shot.capture.includeDepth)).toEqual([false, true, false]);
+    expect(isStudioBg3dShotBatchPlan(planned.plan)).toBe(true);
+  });
+
+  it("does not ask for depth when the suppression is off or has no strength, and still accepts old plans", async () => {
+    for (const line of [
+      { interiorSuppressionEnabled: false },
+      { interiorSuppressionEnabled: true, interiorSuppressionStrength: 0 },
+      { interiorSuppressionStrength: 0.9 },
+      {},
+    ]) {
+      const base = options(SHOTS, { sourceRevision: suppressionRevision(line) });
+      await expect(createStudioBg3dShotBatchPlan(SHOTS, base)).resolves.toMatchObject({ ok: true });
+      await expect(
+        createStudioBg3dShotBatchPlan(SHOTS, patchCaptureShot(base, 1, { includeDepth: true })),
+      ).resolves.toMatchObject({ ok: false, code: "invalid-capture" });
+    }
+  });
+
+  it("keeps requiring depth for depth/normal passes whether or not the suppression is on", async () => {
+    const sourceRevision = suppressionRevision({ interiorSuppressionEnabled: true });
+    const base = options(SHOTS, { sourceRevision, passes: ["depth"] });
+    for (const index of [0, 1, 2]) {
+      expect(base.capture.shots[index]!.includeDepth).toBe(true);
+    }
+    await expect(createStudioBg3dShotBatchPlan(SHOTS, base)).resolves.toMatchObject({ ok: true });
+  });
+});
