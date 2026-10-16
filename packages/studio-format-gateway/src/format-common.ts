@@ -173,8 +173,10 @@ const XML_ENTITIES: Readonly<Record<string, string>> = Object.freeze({
 });
 
 function decodeXmlEntity(whole: string, body: string): string {
-  const named = XML_ENTITIES[body];
-  if (named !== undefined) return named;
+  // 엔티티 이름(body)은 바깥 파일에서 온 임의 문자열이다. 표를 `XML_ENTITIES[body]` 로 바로 읽으면 Object.prototype 의
+  // 키(`constructor`·`__proto__`·`toString`·`hasOwnProperty` 등)까지 통과해, 함수 원문("function Object() ...")이나
+  // "[object Object]" 가 본문으로 풀려 들어간다. 등록된 이름(소유 속성)만 풀고 나머지는 미등록 엔티티로 거부한다.
+  if (Object.hasOwn(XML_ENTITIES, body)) return XML_ENTITIES[body];
   const hex = body.startsWith("#x") || body.startsWith("#X");
   const decimal = body.startsWith("#") && !hex;
   if (!hex && !decimal) {

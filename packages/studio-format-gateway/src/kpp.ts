@@ -219,7 +219,7 @@ function decodeXmlEntities(value: string): string {
       const code = Number.parseInt(body.slice(1), 10);
       return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
     }
-    return XML_NAMED_ENTITIES[body] ?? whole;
+    return Object.hasOwn(XML_NAMED_ENTITIES, body) ? XML_NAMED_ENTITIES[body] : whole; // 소유 속성만: `constructor` 등 Object.prototype 키 제외
   });
 }
 

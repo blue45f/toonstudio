@@ -159,6 +159,66 @@ describe("XML 엔티티 해독의 판정 보존", () => {
   });
 });
 
+/**
+ * 엔티티 이름은 바깥 파일에서 온 임의 문자열이라 표를 `표[이름]` 으로 바로 읽으면 Object.prototype 의 키가 걸린다.
+ * 수정 전에는 `&constructor;` 가 "function Object() { [native code] }", `&__proto__;` 가 "[object Object]" 로 풀려 본문에 들어갔다.
+ * 위의 무작위 대조는 알파벳에 'c'·'o'·'_' 가 없어 이 이름들을 만들 수 없으므로 이름을 직접 점검한다.
+ */
+describe("XML 엔티티 표 조회는 등록된 이름만 푼다", () => {
+  const PROTOTYPE_NAMES = Object.getOwnPropertyNames(Object.prototype);
+
+  it("점검 대상 Object.prototype 속성 이름 목록에 대표 이름이 들어 있다", () => {
+    expect(PROTOTYPE_NAMES).toEqual(
+      expect.arrayContaining(["constructor", "__proto__", "toString", "hasOwnProperty", "valueOf"]),
+    );
+  });
+
+  it.each(PROTOTYPE_NAMES)("&%s; 는 본문·속성 어디서도 풀리지 않고 알 수 없는 엔티티로 거부한다", (name) => {
+    for (const source of [`<r>&${name};</r>`, `<r a="&${name};"/>`]) {
+      const { value, error } = timed(() => parseSafeXml(source));
+      expect(value, source).toBeUndefined();
+      expect(error, source).toBeInstanceOf(SafeXmlError);
+      expect(error).toMatchObject({ code: "xml-entity-invalid", message: `unknown XML entity &${name};` });
+    }
+  });
+
+  it.each([
+    ["amp", "&"],
+    ["lt", "<"],
+    ["gt", ">"],
+    ["quot", '"'],
+    ["apos", "'"],
+  ])("등록된 &%s; 는 본문과 속성 값에서 모두 풀린다", (name, expected) => {
+    const parsed = parseSafeXml(`<r a="&${name};">&${name};</r>`);
+    expect(parsed.text).toBe(expected);
+    expect(parsed.attrs.a).toBe(expected);
+  });
+
+  it.each([
+    ["10진", "&#65;", "A"],
+    ["16진 소문자 x", "&#x41;", "A"],
+    ["16진 대문자 X", "&#X41;", "A"],
+    ["유니코드 상한", "&#x10FFFF;", String.fromCodePoint(0x10ffff)],
+    ["서로게이트 범위 바로 아래", "&#xD7FF;", String.fromCodePoint(0xd7ff)],
+    ["서로게이트 범위 바로 위", "&#xE000;", String.fromCodePoint(0xe000)],
+  ])("숫자 참조 %s 는 계속 풀린다", (_label, reference, expected) => {
+    expect(parseSafeXml(`<r>${reference}</r>`).text).toBe(expected);
+  });
+
+  it.each([
+    ["서로게이트 범위 시작", "&#xD800;"],
+    ["서로게이트 범위 끝", "&#xDFFF;"],
+    ["유니코드 상한 초과", "&#x110000;"],
+    ["숫자가 아닌 16진", "&#xZZ;"],
+    ["숫자가 없는 참조", "&#;"],
+    ["음수", "&#-1;"],
+  ])("숫자 참조 %s 는 계속 거부한다", (_label, reference) => {
+    const { error } = timed(() => parseSafeXml(`<r>${reference}</r>`));
+    expect(error).toBeInstanceOf(SafeXmlError);
+    expect(error).toMatchObject({ code: "xml-entity-invalid" });
+  });
+});
+
 describe("SVG transform·paint 해석의 선형 시간", () => {
   it("괄호 없이 영문자만 길게 이어진 transform 도 제곱 시간이 되지 않고 같은 오류로 거부한다", () => {
     const { error, elapsedMs } = timed(() =>
