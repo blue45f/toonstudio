@@ -157,7 +157,7 @@
 
 - 모든 입력은 `label`로 이름이 있고, 라디오·체크박스는 `fieldset`+`legend`로 묶인다. 선택 여부는 색뿐 아니라 체크 표시로도 드러난다.
 - 오류는 필드 옆 문구(`aria-describedby`, `aria-invalid`)와 요약 `role="alert"`로 알리고, 저장에 실패하면 첫 문제 칸으로 초점을 옮긴다.
-- 이탈 지점 그래프는 SVG(`role="img"`, 제목·설명)이며 값이 있는 칸에 개수 글자를 쓴다. 같은 내용을 "표로 보기"(`details`, 캡션이 있는 `table`)로도 준다.
+- 이탈 지점 그래프는 SVG(`role="img"`, 제목·설명)이며 값이 있는 칸 **위의 별도 줄**에 개수 글자를 쓴다. 글자가 칸 색 위에 놓이지 않아 칸 색의 농도와 무관하게 본문 글자(`fg`)와 같은 대비를 따른다. 같은 내용을 "표로 보기"(`details`, 캡션이 있는 `table`)로도 준다.
   강제 색상처럼 색이 무시되는 환경에서는 이 표가 대안이다.
 - 회차 비교표의 회차 이름은 버튼이고 선택한 행에 `aria-current`가 붙는다. 터치 대상은 44px 이상이다.
 - 색은 의미 토큰만 쓴다(`accent`, `raised`, `fg`, `warn` 등). 새 색을 만들지 않았다.
@@ -192,7 +192,7 @@
 | `reader-feedback-summary.test.ts` | 합치기·중복 제거·상한, 평균·분포·구간·감정, 대표 의견 규칙, 묶음 키, 표본 등급 |
 | `reader-feedback-import.test.ts`, `reader-feedback-hidden.test.ts` | 가져오기 파이프라인·상태 리듀서, 숨김 저장 |
 | `ReaderFeedbackForm.test.tsx` | 폼 입력·오류·초점·저장·공유·복사·미리 보기·XSS |
-| `ReaderFeedbackSummaryPanel.test.tsx` | 빈·읽는 중·오류·재시도 상태, 여러 파일 합치기, 그래프+표, 스포일러·숨김, 악의적 파일 |
+| `ReaderFeedbackSummaryPanel.test.tsx` | 빈·읽는 중·오류·재시도 상태, 여러 파일 합치기, 그래프(칸·개수 글자 배치)+표, 스포일러·숨김, 악의적 파일 |
 | `CreatorEcosystemViewerPage.test.tsx`, `CreatorEcosystemPage.test.tsx` | 뷰어의 패키지별 폼 연결, 베타 독자 구역에 요약이 있음 |
 | `reader-feedback-docs.test.ts` | 이 문서의 상한·감정 표·기준값이 코드와 같음 |
 

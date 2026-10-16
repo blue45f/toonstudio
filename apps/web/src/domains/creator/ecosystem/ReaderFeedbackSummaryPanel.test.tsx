@@ -129,6 +129,43 @@ describe("ReaderFeedbackSummaryPanel: 예시 체험과 요약", () => {
     expect(screen.getAllByText("표로 보기").length).toBe(2);
   });
 
+  it("개수 글자는 칸 색 위가 아니라 칸 위의 별도 줄에 놓이고, 어떤 것도 그림 밖으로 잘리지 않는다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+    const charts = screen.getAllByRole("img", { name: /멈춘 곳/u });
+    expect(charts).toHaveLength(2);
+    for (const chart of charts) {
+      const [, , viewWidth = NaN, viewHeight = NaN] = (chart.getAttribute("viewBox") ?? "").split(" ").map(Number);
+      // 바깥 크기와 그림 좌표가 같아 배율이 생기지 않는다.
+      expect(Number(chart.getAttribute("width"))).toBe(viewWidth);
+      expect(Number(chart.getAttribute("height"))).toBe(viewHeight);
+
+      const cells = Array.from(chart.querySelectorAll("rect"));
+      expect(cells.length).toBeGreaterThan(0);
+      const cellTop = Math.min(...cells.map((cell) => Number(cell.getAttribute("y"))));
+      for (const cell of cells) {
+        expect(Number(cell.getAttribute("x")) + Number(cell.getAttribute("width"))).toBeLessThanOrEqual(viewWidth);
+        expect(Number(cell.getAttribute("y")) + Number(cell.getAttribute("height"))).toBeLessThanOrEqual(viewHeight);
+      }
+
+      const counts = Array.from(chart.querySelectorAll("text"));
+      expect(counts.length).toBeGreaterThan(0);
+      for (const text of counts) {
+        // dominant-baseline 이 central 이면 y 는 글자 상자의 가운데다. 상자 전체가 그림 맨 위와 칸 윗변 사이에 있어야 한다.
+        expect(text.getAttribute("dominant-baseline")).toBe("central");
+        const half = Number(text.getAttribute("font-size")) / 2;
+        const center = Number(text.getAttribute("y"));
+        expect(center - half).toBeGreaterThanOrEqual(0);
+        expect(center + half).toBeLessThanOrEqual(cellTop);
+        // 글자색은 칸 색에 따라 바뀌지 않고 본문 글자색 하나다.
+        expect(text.getAttribute("style") ?? "").toContain("var(--color-fg)");
+        expect(text.getAttribute("style") ?? "").not.toContain("on-accent");
+        // 글자는 어떤 칸의 가로 가운데 바로 위에 있다.
+        expect(cells.some((cell) => Number(cell.getAttribute("x")) + Number(cell.getAttribute("width")) / 2 === Number(text.getAttribute("x")))).toBe(true);
+      }
+    }
+  });
+
   it("점수 분포와 감정 분포는 개수를 글자로 보여 준다", () => {
     renderPanel();
     fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
