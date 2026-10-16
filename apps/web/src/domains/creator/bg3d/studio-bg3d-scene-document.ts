@@ -301,7 +301,7 @@ const DEFAULT_RAW_DOCUMENT = {
       enabled: true,
       layerType: "raster",
       color: "#000000",
-      widthPx: 1,
+      widthPx: 1.75,
       strength: 0.8,
       accuracy: 0.75,
       scaleAwareAccuracy: true,
@@ -745,7 +745,7 @@ type LineFieldSpec = readonly [key: string, fallback: boolean | number | string,
  * 문서를 옛 코드도 읽는다), 컷 덮어쓰기에서는 입력에 있는 키를 그대로 남긴다(꺼짐도 전체 설정을 덮는 값이다).
  */
 const LINE_FIELD_SPECS: readonly LineFieldSpec[] = [
-  ["enabled", true], ["layerType", "raster"], ["color", "#000000"], ["widthPx", 1, 0.25, 8],
+  ["enabled", true], ["layerType", "raster"], ["color", "#000000"], ["widthPx", 1.75, 0.25, 8],
   ["strength", 0.8, 0, 1], ["accuracy", 0.75, 0, 1], ["scaleAwareAccuracy", true], ["exteriorOutlineStrength", 1, 0, 2],
   ["depthEnabled", false], ["depthStrength", 0.5, 0, 1], ["depthOutlineOnly", true], ["smoothing", 0.5, 0, 1],
   ["textureLineEnabled", true], ["textureLineStrength", 0.5, 0, 1], ["creaseAngleDegrees", 20, 0, 180],

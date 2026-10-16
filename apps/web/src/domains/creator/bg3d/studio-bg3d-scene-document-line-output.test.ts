@@ -154,7 +154,7 @@ describe("normalizeStudioBg3dLineOutputSettings", () => {
     // 저장 문서의 키 순서가 바뀌면 이전 코드가 쓴 문서와 바이트가 달라진다. jsonStructuresEqual 은 순서를 무시하므로
     // 순서는 이 골든 문자열이 지킨다.
     const golden =
-      '{"enabled":true,"layerType":"raster","color":"#000000","widthPx":1,"strength":0.8,"accuracy":0.75,' +
+      '{"enabled":true,"layerType":"raster","color":"#000000","widthPx":1.75,"strength":0.8,"accuracy":0.75,' +
       '"scaleAwareAccuracy":true,"exteriorOutlineStrength":1,"depthEnabled":false,"depthStrength":0.5,' +
       '"depthOutlineOnly":true,"smoothing":0.5,"textureLineEnabled":true,"textureLineStrength":0.5,' +
       '"creaseAngleDegrees":20,"hiddenLineRemoval":true}';
@@ -458,6 +458,43 @@ describe("scene document persistence", () => {
     expect(applied?.output.line).not.toHaveProperty("interiorSuppressionEnabled");
     expect(captured?.shots?.[0]?.output?.line).not.toHaveProperty("interiorSuppressionEnabled");
     expect(applied?.output.line).toEqual(old.output.line);
+  });
+});
+
+describe("calibrated default and preset stroke widths", () => {
+  // 선 폭이 픽셀 두께가 되면서(변경 전에는 설정값의 약 2배로 그려졌다) 이전 출력의 인상을 유지하도록 기본·프리셋 폭을
+  // 다시 맞췄다. 측정 방법과 표는 docs/features/bg3d-lineart-quality.md 7장. 이 값을 바꾸려면 그 측정부터 다시 한다.
+  it("pins the calibrated widths", () => {
+    expect(Object.fromEntries(STUDIO_BG3D_LT_BUILT_IN_PRESETS.map((preset) => [preset.id, preset.line.widthPx]))).toEqual({
+      "storyboard-background": 3.1,
+      "clean-architecture-lineart": 2.1,
+      "monochrome-manga": 3.25,
+      "rough-pen": 3.05,
+      "color-webtoon-underdrawing": 1.75,
+    });
+    expect(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output.line.widthPx).toBe(1.75);
+    // 폭이 없는(아주 오래된) 입력도 같은 기본값으로 정규화되고, 저장된 폭은 그대로 둔다.
+    expect(normalizeStudioBg3dLineOutputSettings({}).widthPx).toBe(1.75);
+    expect(normalizeStudioBg3dLineOutputSettings({ widthPx: 1 }).widthPx).toBe(1);
+    expect(normalizeStudioBg3dShotLineOutputOverride({})).not.toHaveProperty("widthPx");
+  });
+
+  it("keeps every calibrated width inside the slider range and on its 0.05 step", () => {
+    const widths = [
+      DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output.line.widthPx,
+      ...STUDIO_BG3D_LT_BUILT_IN_PRESETS.map((preset) => preset.line.widthPx),
+    ];
+    for (const width of widths) {
+      expect(width).toBeGreaterThanOrEqual(0.25);
+      expect(width).toBeLessThanOrEqual(8);
+      expect(Math.abs(width / 0.05 - Math.round(width / 0.05))).toBeLessThan(1e-9);
+    }
+  });
+
+  it("does not rewrite the width of a document that already stores one (no width-model marker)", () => {
+    const stored = normalizeStudioBg3dSceneDocument(withLine({ widthPx: 1 }));
+    expect(stored.output.line.widthPx).toBe(1);
+    expect(parseStudioBg3dSceneDocument(serializeStudioBg3dSceneDocument(stored)!)?.output.line.widthPx).toBe(1);
   });
 });
 
