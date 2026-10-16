@@ -35,6 +35,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       # Related tests validate tracked documentation evidence; retain docs.
+      # 환경 팩·VRM 라이브러리·썸네일 무결성 시험도 related 로 걸리므로 그 시험이 디스크에서 읽는 자산(3D 환경 GLB, VRM, 캐릭터 썸네일)을 함께 받는다.
       - name: Checkout focused ToonStudio source
         uses: actions/checkout@v6
         with:
@@ -79,20 +80,15 @@ jobs:
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-research-lab-vertical-depth/background.png
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/daily/gpt25-bg-daily-bedroom-night-vertical-depth/background.png
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/fantasy/gpt25-bg-fantasy-dragon-cliff-vertical-depth/background.png
-            /apps/web/public/assets/3d/characters/thumbnails/refined-v2/
-            !/apps/web/public/vrm/
+            /apps/web/public/assets/3d/characters/
+            /apps/web/public/assets/3d/environments/*.glb
+            /apps/web/public/assets/3d/environments/thumbnails/
+            /apps/web/public/assets/3d/environments/expansion-v1/
+            /apps/web/public/assets/3d/environments/webtoon-v7/
+            /apps/web/public/vrm/
             !/artifacts/
             !/tests/benchmarks/results/
             /tests/benchmarks/results/v12-runtime-fault-matrix.json
-            /apps/web/public/vrm/Anna.vrm
-            /apps/web/public/vrm/Sendagaya_Shibu.vrm
-            /apps/web/public/vrm/Sendagaya_Shino.vrm
-            /apps/web/public/vrm/sample.vrm
-            /apps/web/public/vrm/AliciaSolid.vrm
-            /apps/web/public/vrm/Darkness_Shibu.vrm
-            /apps/web/public/vrm/Jennifer.vrm
-            /apps/web/public/vrm/Jimmy.vrm
-            /apps/web/public/vrm/Sakurada_Fumiriya.vrm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
