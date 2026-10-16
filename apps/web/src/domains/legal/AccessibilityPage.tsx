@@ -29,6 +29,7 @@ const COPY = {
     note: "접근성 문제가 작업을 막고 있다면 화면 이름, 사용 장치와 막힌 행동을 알려주세요. 가능한 재현 정보를 바탕으로 우선순위를 높여 수정합니다.",
     feedback: "접근성 문제 제보",
     help: "도움말 센터",
+    guide: "접근성 있는 웹툰 만들기",
   },
   en: {
     eyebrow: "ACCESSIBILITY",
@@ -45,6 +46,7 @@ const COPY = {
     note: "If an accessibility issue blocks a task, tell us the screen, device and blocked action. Reproducible reports are prioritized for fixes.",
     feedback: "Report an accessibility issue",
     help: "Help Center",
+    guide: "Making webtoons accessible",
   },
 } as const;
 
@@ -89,6 +91,7 @@ export function AccessibilityPage() {
         <p className="max-w-3xl text-sm leading-7 text-fg-2">{copy.note}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href="/feedback?type=bug&tag=accessibility" className="inline-flex min-h-11 items-center rounded-xl bg-accent px-4 text-sm font-bold text-on-accent">{copy.feedback}</Link>
+          <Link href="/learn/accessibility" className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-semibold text-fg-2 hover:border-line-strong hover:text-fg">{copy.guide}</Link>
           <Link href="/help" className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-semibold text-fg-2 hover:border-line-strong hover:text-fg">{copy.help}</Link>
         </div>
       </section>
