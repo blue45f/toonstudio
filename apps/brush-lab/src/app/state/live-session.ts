@@ -126,10 +126,14 @@ export class LiveStrokeSession {
   private inputStage: RawStage | null;
   /** 포인터가 눌려 있는가(정본 표본의 down/up으로 추적). 눌린 채 단계를 reset하면 진행 중인 새 획의 상태를 지우므로 막는다. */
   private pointerDown = false;
+  /** 이번 획에서 관측한 최대 버튼 비트(취소 전에 뗀 우클릭 병행까지 잡는다). */
+  private strokeMaxButtons = 0;
   /** 포인터 취소로 끝난 up 표본(스케줄러 큐를 지나도 정체성으로 구분한다). 이 표본이 든 획은 합성하지 않고 버린다. */
   private readonly canceledUps = new WeakSet<RawSample>();
   /** `pointercancel` 디스패치 중에만 true: 플랫폼 캡처가 만드는 up 표본을 취소로 표시하라는 신호. */
   private cancelNextUp = false;
+  /** 취소 순간의 단서(마우스 우클릭 병행·창 포커스 이탈 구분용). clearMark에서 초기화한다. */
+  private cancelClue: { buttons: number; hasFocus: boolean } | null = null;
 
   private constructor(opts: LiveSessionOptions, lane: BrushEngineLane) {
     this.opts = opts;
@@ -206,11 +210,17 @@ export class LiveStrokeSession {
     if (this.detach) this.detach();
     // 플랫폼 캡처는 pointerup과 pointercancel을 똑같이 `up` 표본으로 바꾼다. 취소는 합성이 아니라 버려야 하므로,
     // 같은 이벤트에서 그 up 표본이 만들어지는 순간을 알 수 있게 캡처 리스너의 앞(표시)과 뒤(해제)에 리스너를 하나씩 건다.
-    const markCancel = (): void => {
+    const markCancel = (ev: Event): void => {
       this.cancelNextUp = true;
+      if ("buttons" in ev && typeof (ev as PointerEvent).buttons === "number") {
+        this.cancelClue = { buttons: (ev as PointerEvent).buttons, hasFocus: document.hasFocus() };
+      } else {
+        this.cancelClue = null;
+      }
     };
     const clearMark = (): void => {
       this.cancelNextUp = false;
+      this.cancelClue = null;
     };
     el.addEventListener("pointercancel", markCancel);
     // 캡처를 잃은 경우(lostpointercapture)도 pointerup 없는 중단이라 같은 abort 경로로 보낸다.
@@ -294,8 +304,11 @@ export class LiveStrokeSession {
     const raw = this.inputStage ? applyStrokeStream(this.inputStage, transformed) : transformed;
     const { canonical, predicted } = splitPredicted(raw);
     for (const s of canonical) {
-      if (s.phase === "down") this.pointerDown = true;
-      else if (s.phase === "up") this.pointerDown = false;
+      if (s.phase === "down") {
+        this.pointerDown = true;
+        this.strokeMaxButtons = s.buttons ?? 0;
+      } else if (s.phase === "up") this.pointerDown = false;
+      else if (typeof s.buttons === "number") this.strokeMaxButtons = Math.max(this.strokeMaxButtons, s.buttons);
     }
     if (this.opts.onPreview) {
       this.opts.onPreview(predicted.map((p) => ({ x: p.x, y: p.y, pressure: p.pressure })));
@@ -365,7 +378,14 @@ export class LiveStrokeSession {
    * 레인이 획 도중이면 abortStroke로 버리고, 문서를 보존하지 못하면(레인 교체) 조용히 넘기지 않고 오류로 드러낸다.
    */
   private async handleCancel(): Promise<void> {
-    const strokeKo = this.strokeDetailKo();
+    let strokeKo = this.strokeDetailKo();
+    const clue = this.cancelClue;
+    if (strokeKo && clue) {
+      const buttons = clue.buttons | this.strokeMaxButtons;
+      if ((buttons & 2) !== 0) strokeKo += "·우클릭 병행";
+      else if ((buttons & 4) !== 0) strokeKo += "·가운데클릭 병행";
+      if (!clue.hasFocus) strokeKo += "·창 포커스 이탈";
+    }
     this.inStroke = false;
     this.strokeSamples = [];
     this.frames = [];
