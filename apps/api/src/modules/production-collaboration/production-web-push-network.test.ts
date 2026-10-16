@@ -1,14 +1,16 @@
 import { Agent, request as httpsRequest } from "node:https";
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProductionPushSubscriptionSchema } from "./production-integration.dto";
 import { sendProductionNotification } from "./production-notification-provider";
 import {
+  classifyWebPushEndpoint,
   createPublicOnlyHttpsAgent,
   createPublicOnlyLookup,
   parseWebPushEndpoint,
 } from "./production-web-push-network";
+import { resolveWebPushPolicy } from "./production-web-push-policy";
 
 import type { ProductionIntegrationConfig } from "./production-integration-config";
 import type { ProductionPushSubscriptionRecord } from "./production-integration.repository";
@@ -20,12 +22,27 @@ const webPush = vi.hoisted(() => ({
 
 vi.mock("web-push", () => ({ default: webPush }));
 
+// 브라우저가 실제로 발급하는 표준 푸시 서비스 endpoint. 기본 허용 목록을 그대로 통과해야 한다.
 const PUBLIC_PUSH_ENDPOINTS = [
   "https://fcm.googleapis.com/fcm/send/abcDEF123:APA91bExample",
+  "https://fcm.googleapis.com/wp/abcDEF123-ExampleToken",
   "https://updates.push.services.mozilla.com/wpush/v2/gAAAAAB",
   "https://web.push.apple.com/QGxyz123",
   "https://wns2-par02p.notify.windows.com/w/?token=BQYAAAExample",
+  "https://db5p.notify.windows.com/?token=AwYAAAExample",
+];
+
+// 공개 도메인이지만 표준 푸시 서비스가 아닌 호스트. 서버가 대신 POST 를 보내는 증폭 경로가 되므로
+// 운영자가 환경 변수로 명시하기 전에는 등록할 수 없다.
+const NON_STANDARD_PUBLIC_ENDPOINTS = [
   "https://push.example-vendor.com/subscription/42",
+  "https://attacker.example.net/collect",
+  "https://fcm.googleapis.com.attacker.example.net/fcm/send/abc",
+  "https://evil.fcm.googleapis.com/fcm/send/abc",
+  "https://web.push.apple.com.attacker.example.net/QGxyz123",
+  "https://notify.windows.com/w/?token=apex",
+  "https://evilnotify.windows.com/w/?token=lookalike",
+  "https://push.services.mozilla.com.attacker.example.net/wpush/v2/gAAAAAB",
 ];
 
 // 사용자가 등록한 구독 endpoint 로 서버가 요청을 보내므로, 내부망·로컬·메타데이터 주소로 향하는
@@ -70,6 +87,64 @@ describe("웹 푸시 구독 endpoint 검증", () => {
     }
     for (const endpoint of FORBIDDEN_PUSH_ENDPOINTS) {
       expect(ProductionPushSubscriptionSchema.safeParse({ endpoint, keys }).success).toBe(false);
+    }
+  });
+});
+
+describe("웹 푸시 endpoint 호스트 허용 목록", () => {
+  const keys = { p256dh: "p".repeat(64), auth: "a".repeat(22) };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it.each(NON_STANDARD_PUBLIC_ENDPOINTS)(
+    "공개 도메인이어도 표준 푸시 서비스가 아니면 기본 설정에서 거부한다: %s",
+    (endpoint) => {
+      expect(parseWebPushEndpoint(endpoint)).toBeNull();
+      expect(ProductionPushSubscriptionSchema.safeParse({ endpoint, keys }).success).toBe(false);
+    },
+  );
+
+  it("구분해서 알려 주므로 허용 목록 밖 호스트와 형식 위반을 다르게 처리할 수 있다", () => {
+    const allowed = resolveWebPushPolicy({}).allowedHosts;
+    expect(classifyWebPushEndpoint(PUBLIC_PUSH_ENDPOINTS[0] ?? "", allowed)).toMatchObject({
+      kind: "accepted",
+    });
+    expect(classifyWebPushEndpoint("https://push.example-vendor.com/sub/1", allowed)).toEqual({
+      kind: "host-not-allowed",
+      hostname: "push.example-vendor.com",
+    });
+    expect(classifyWebPushEndpoint("https://127.0.0.1/x", allowed)).toEqual({ kind: "rejected" });
+    expect(classifyWebPushEndpoint("http://fcm.googleapis.com/x", allowed)).toEqual({
+      kind: "rejected",
+    });
+  });
+
+  it("운영자가 환경 변수로 더한 호스트와 하위 도메인만 추가로 허용한다", () => {
+    vi.stubEnv(
+      "PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS",
+      "push.example-vendor.com, *.unifiedpush.example.org",
+    );
+    const accepted = [
+      "https://push.example-vendor.com/subscription/42",
+      "https://relay.unifiedpush.example.org/up/abc",
+    ];
+    for (const endpoint of accepted) {
+      expect(parseWebPushEndpoint(endpoint), endpoint).not.toBeNull();
+      expect(ProductionPushSubscriptionSchema.safeParse({ endpoint, keys }).success).toBe(true);
+    }
+    for (const endpoint of [
+      "https://attacker.example.net/collect",
+      "https://push.example-vendor.com.attacker.example.net/subscription/42",
+      "https://unifiedpush.example.org/up/abc",
+    ]) {
+      expect(parseWebPushEndpoint(endpoint), endpoint).toBeNull();
+    }
+    // 허용 목록을 넓혀도 내부망·IP 주소 같은 기존 차단은 그대로다.
+    expect(parseWebPushEndpoint("https://127.0.0.1/x")).toBeNull();
+    for (const endpoint of PUBLIC_PUSH_ENDPOINTS) {
+      expect(parseWebPushEndpoint(endpoint), endpoint).not.toBeNull();
     }
   });
 });
@@ -159,13 +234,16 @@ describe("웹 푸시 전송 연결 시점 주소 검증", () => {
 });
 
 describe("웹 푸시 알림 전송", () => {
-  const config = {
-    notification: {
-      vapidSubject: "mailto:ops@example.com",
-      vapidPublicKey: "public-key",
-      vapidPrivateKey: "private-key",
-    },
-  } as unknown as ProductionIntegrationConfig;
+  function configWith(overrides: Partial<ReturnType<typeof resolveWebPushPolicy>> = {}) {
+    return {
+      notification: {
+        vapidSubject: "mailto:ops@example.com",
+        vapidPublicKey: "public-key",
+        vapidPrivateKey: "private-key",
+        webPush: { ...resolveWebPushPolicy({}), ...overrides },
+      },
+    } as unknown as ProductionIntegrationConfig;
+  }
 
   function subscription(endpoint: string, hash: string): ProductionPushSubscriptionRecord {
     return {
@@ -179,7 +257,10 @@ describe("웹 푸시 알림 전송", () => {
     };
   }
 
-  function send(subscriptions: readonly ProductionPushSubscriptionRecord[]) {
+  function send(
+    subscriptions: readonly ProductionPushSubscriptionRecord[],
+    config: ProductionIntegrationConfig = configWith(),
+  ) {
     return sendProductionNotification({
       config,
       projectId: "project-1",
@@ -223,5 +304,64 @@ describe("웹 푸시 알림 전송", () => {
     });
     expect(result.sent).toBe(1);
     expect(result.removedEndpointHashes).toEqual(["hash-internal", "hash-metadata"]);
+  });
+
+  it("허용 목록 밖 공개 호스트 구독은 요청 없이 건너뛰되 삭제하지 않는다(운영자가 목록을 넓히면 다시 쓸 수 있다)", async () => {
+    const result = await send([
+      subscription("https://push.example-vendor.com/subscription/42", "hash-vendor"),
+      subscription("https://fcm.googleapis.com/fcm/send/abc", "hash-ok"),
+    ]);
+    expect(webPush.sendNotification).toHaveBeenCalledOnce();
+    expect(webPush.sendNotification.mock.calls[0]?.[0]).toMatchObject({
+      endpoint: "https://fcm.googleapis.com/fcm/send/abc",
+    });
+    expect(result.sent).toBe(1);
+    expect(result.removedEndpointHashes).toEqual([]);
+    expect(result.providerResponse).toMatchObject({ attempted: 2, sent: 1, skippedHostNotAllowed: 1 });
+
+    webPush.sendNotification.mockClear();
+    const extended = await send(
+      [subscription("https://push.example-vendor.com/subscription/42", "hash-vendor")],
+      configWith(resolveWebPushPolicy({
+        PRODUCTION_WEB_PUSH_EXTRA_ALLOWED_HOSTS: "push.example-vendor.com",
+      })),
+    );
+    expect(extended.sent).toBe(1);
+    expect(webPush.sendNotification).toHaveBeenCalledOnce();
+  });
+
+  it("동시에 진행하는 전송 요청 수를 설정한 상한으로 제한한다", async () => {
+    let active = 0;
+    let peak = 0;
+    webPush.sendNotification.mockReset().mockImplementation(async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((done) => setTimeout(done, 5));
+      active -= 1;
+      return { statusCode: 201 };
+    });
+    const many = Array.from({ length: 12 }, (_unused, index) =>
+      subscription(`https://fcm.googleapis.com/fcm/send/token-${index}`, `hash-${index}`));
+    const result = await send(many, configWith({ fanOutConcurrency: 3 }));
+    expect(result.sent).toBe(12);
+    expect(webPush.sendNotification).toHaveBeenCalledTimes(12);
+    expect(peak).toBeLessThanOrEqual(3);
+    expect(peak).toBeGreaterThan(1);
+  });
+
+  it("만료(404·410)된 endpoint 정리 결과는 동시성 제한 아래서도 구독과 어긋나지 않는다", async () => {
+    webPush.sendNotification.mockReset().mockImplementation(async (target: { endpoint: string }) => {
+      if (target.endpoint.endsWith("/gone")) throw Object.assign(new Error("gone"), { statusCode: 410 });
+      if (target.endpoint.endsWith("/missing")) throw Object.assign(new Error("missing"), { statusCode: 404 });
+      return { statusCode: 201 };
+    });
+    const result = await send([
+      subscription("https://fcm.googleapis.com/fcm/send/a", "hash-a"),
+      subscription("https://fcm.googleapis.com/fcm/send/gone", "hash-gone"),
+      subscription("https://fcm.googleapis.com/fcm/send/b", "hash-b"),
+      subscription("https://fcm.googleapis.com/fcm/send/missing", "hash-missing"),
+    ], configWith({ fanOutConcurrency: 2 }));
+    expect(result.sent).toBe(2);
+    expect(result.removedEndpointHashes).toEqual(["hash-gone", "hash-missing"]);
   });
 });

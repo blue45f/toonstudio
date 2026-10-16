@@ -1,4 +1,4 @@
-import { and, count, eq, gt, gte, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, isNull, sql } from "drizzle-orm";
 import { Injectable } from "@nestjs/common";
 
 import {
@@ -8,6 +8,8 @@ import {
   productionIntegrationReceipts,
   productionPushSubscriptions,
 } from "../../platform/database";
+
+import { evaluateWebPushSubscriptionLimits } from "./production-web-push-policy";
 
 export type ProductionIntegrationProvider =
   | "google-calendar"
@@ -52,6 +54,22 @@ export interface ProductionIntegrationOauthStateRecord {
   readonly projectId: string;
   readonly actorUserId: string;
   readonly redirectPath: string;
+}
+
+/** 새 웹 푸시 구독이 프로젝트 또는 사용자(프로젝트 안) 상한에 걸렸다. */
+export class ProductionPushSubscriptionLimitError extends Error {
+  constructor(
+    readonly scope: "user" | "project",
+    readonly limit: number,
+  ) {
+    super(`production_push_subscription_${scope}_limit`);
+    this.name = "ProductionPushSubscriptionLimitError";
+  }
+}
+
+export interface ProductionPushSubscriptionLimits {
+  readonly maxPerProject: number;
+  readonly maxPerUser: number;
 }
 
 export interface ProductionPushSubscriptionRecord {
@@ -308,26 +326,60 @@ export class ProductionIntegrationRepository {
     });
   }
 
-  async upsertPushSubscription(input: ProductionPushSubscriptionRecord) {
-    await db
-      .insert(productionPushSubscriptions)
-      .values(input)
-      .onConflictDoUpdate({
-        target: [
-          productionPushSubscriptions.projectId,
-          productionPushSubscriptions.actorUserId,
-          productionPushSubscriptions.endpointHash,
-        ],
-        set: {
-          projectId: input.projectId,
-          actorUserId: input.actorUserId,
-          endpoint: input.endpoint,
-          p256dh: input.p256dh,
-          auth: input.auth,
-          expirationTime: input.expirationTime,
-          updatedAt: new Date(),
-        },
+  async upsertPushSubscription(
+    input: ProductionPushSubscriptionRecord,
+    limits: ProductionPushSubscriptionLimits,
+  ): Promise<void> {
+    await db.transaction(async (transaction) => {
+      // 같은 프로젝트에 동시에 들어온 구독이 함께 상한을 넘지 못하도록 프로젝트 단위로 직렬화한다.
+      await transaction.execute(sql`
+        select pg_catalog.pg_advisory_xact_lock(
+          pg_catalog.hashtextextended(
+            ${`production-push-subscription:${input.projectId}`},
+            0
+          )
+        )
+      `);
+      const [totals] = await transaction
+        .select({
+          projectCount: count(),
+          userCount: sql<number>`count(*) filter (where ${productionPushSubscriptions.actorUserId} = ${input.actorUserId})`
+            .mapWith(Number),
+          registered: sql<number>`count(*) filter (where ${productionPushSubscriptions.actorUserId} = ${input.actorUserId} and ${productionPushSubscriptions.endpointHash} = ${input.endpointHash})`
+            .mapWith(Number),
+        })
+        .from(productionPushSubscriptions)
+        .where(eq(productionPushSubscriptions.projectId, input.projectId));
+      const violation = evaluateWebPushSubscriptionLimits({
+        alreadyRegistered: (totals?.registered ?? 0) > 0,
+        projectCount: totals?.projectCount ?? 0,
+        userCount: totals?.userCount ?? 0,
+        maxPerProject: limits.maxPerProject,
+        maxPerUser: limits.maxPerUser,
       });
+      if (violation) {
+        throw new ProductionPushSubscriptionLimitError(violation.scope, violation.limit);
+      }
+      await transaction
+        .insert(productionPushSubscriptions)
+        .values(input)
+        .onConflictDoUpdate({
+          target: [
+            productionPushSubscriptions.projectId,
+            productionPushSubscriptions.actorUserId,
+            productionPushSubscriptions.endpointHash,
+          ],
+          set: {
+            projectId: input.projectId,
+            actorUserId: input.actorUserId,
+            endpoint: input.endpoint,
+            p256dh: input.p256dh,
+            auth: input.auth,
+            expirationTime: input.expirationTime,
+            updatedAt: new Date(),
+          },
+        });
+    });
   }
   async deletePushSubscription(
     projectId: string,
@@ -349,8 +401,10 @@ export class ProductionIntegrationRepository {
       .where(eq(productionPushSubscriptions.endpointHash, endpointHash));
   }
 
+  /** 한 번의 알림이 다루는 구독 수는 limit 로 제한한다(최근에 갱신한 구독부터). */
   async listPushSubscriptions(
     projectId: string,
+    limit: number,
   ): Promise<readonly ProductionPushSubscriptionRecord[]> {
     return db
       .select({
@@ -363,6 +417,8 @@ export class ProductionIntegrationRepository {
         expirationTime: productionPushSubscriptions.expirationTime,
       })
       .from(productionPushSubscriptions)
-      .where(eq(productionPushSubscriptions.projectId, projectId));
+      .where(eq(productionPushSubscriptions.projectId, projectId))
+      .orderBy(desc(productionPushSubscriptions.updatedAt))
+      .limit(limit);
   }
 }

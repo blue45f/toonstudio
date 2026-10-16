@@ -76,6 +76,7 @@ import {
 import {
   sendProductionNotification,
 } from "./production-notification-provider";
+import { registerWebPushSubscription } from "./production-web-push-subscription";
 import {
   confirmTossPayment,
   type TossPaymentResponse,
@@ -715,14 +716,9 @@ export class ProductionIntegrationService {
   ) {
     await this.project(actorUserId, projectId);
     const endpointHash = sha256Digest(subscription.endpoint);
-    await this.repository.upsertPushSubscription({
-      projectId,
-      actorUserId,
-      endpointHash,
-      endpoint: subscription.endpoint,
-      p256dh: subscription.keys.p256dh,
-      auth: subscription.keys.auth,
-      expirationTime: subscription.expirationTime,
+    await registerWebPushSubscription(this.repository, this.config.notification.webPush, {
+      projectId, actorUserId, endpointHash, endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh, auth: subscription.keys.auth, expirationTime: subscription.expirationTime,
     });
     return {
       subscribed: true,
@@ -776,7 +772,7 @@ export class ProductionIntegrationService {
       url: this.safeNotificationUrl(input.url),
     };
     const subscriptions = input.channel === "web-push"
-      ? await this.repository.listPushSubscriptions(projectId)
+      ? await this.repository.listPushSubscriptions(projectId, this.config.notification.webPush.maxSubscriptionsPerProject)
       : [];
     return this.fenced({
       actorUserId,

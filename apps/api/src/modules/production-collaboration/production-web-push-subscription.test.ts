@@ -1,0 +1,284 @@
+import { ConflictException } from "@nestjs/common";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { ProductionCollaborationService } from "./production-collaboration.service";
+import {
+  ProductionIntegrationRepository,
+  ProductionPushSubscriptionLimitError,
+  type ProductionPushSubscriptionRecord,
+} from "./production-integration.repository";
+import { ProductionIntegrationService } from "./production-integration.service";
+import { registerWebPushSubscription } from "./production-web-push-subscription";
+
+const doubles = vi.hoisted(() => ({
+  db: { transaction: vi.fn(), select: vi.fn() },
+  send: vi.fn(),
+}));
+
+vi.mock("../../platform/database", async () => ({
+  ...await import("../../platform/database/schema"),
+  db: doubles.db,
+  dbClient: {},
+}));
+vi.mock("./production-notification-provider", () => ({ sendProductionNotification: doubles.send }));
+
+const dialect = new PgDialect();
+const ENDPOINT_HASH = `sha256:${"a".repeat(64)}`;
+
+function record(overrides: Partial<ProductionPushSubscriptionRecord> = {}): ProductionPushSubscriptionRecord {
+  return {
+    projectId: "project-1",
+    actorUserId: "user-1",
+    endpointHash: ENDPOINT_HASH,
+    endpoint: "https://fcm.googleapis.com/fcm/send/abc",
+    p256dh: "p".repeat(64),
+    auth: "a".repeat(22),
+    expirationTime: null,
+    ...overrides,
+  };
+}
+
+interface Totals {
+  readonly projectCount: number;
+  readonly userCount: number;
+  readonly registered: number;
+}
+
+function fakeTransaction(totals: Totals) {
+  const events: string[] = [];
+  const statements: { lock?: unknown; where?: unknown } = {};
+  const written: Record<string, unknown>[] = [];
+  const transaction = {
+    execute: vi.fn(async (query: unknown) => {
+      events.push("lock");
+      statements.lock = query;
+    }),
+    select: vi.fn(() => {
+      events.push("count");
+      const chain = {
+        from: () => chain,
+        where: (condition: unknown) => {
+          statements.where = condition;
+          return Promise.resolve([totals]);
+        },
+      };
+      return chain;
+    }),
+    insert: vi.fn(() => ({
+      values: (value: Record<string, unknown>) => {
+        events.push("write");
+        written.push(value);
+        return { onConflictDoUpdate: () => Promise.resolve() };
+      },
+    })),
+  };
+  doubles.db.transaction.mockImplementation(
+    async (callback: (tx: typeof transaction) => Promise<unknown>) => callback(transaction),
+  );
+  return { events, statements, written };
+}
+
+function params(query: unknown): { sql: string; params: unknown[] } {
+  const rendered = dialect.sqlToQuery(query as Parameters<PgDialect["sqlToQuery"]>[0]);
+  return { sql: rendered.sql, params: rendered.params };
+}
+
+beforeEach(() => {
+  doubles.db.transaction.mockReset();
+  doubles.db.select.mockReset();
+  doubles.send.mockReset().mockResolvedValue({
+    sent: 0,
+    removedEndpointHashes: [],
+    providerResponse: {},
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+describe("웹 푸시 구독 저장소의 상한 검사", () => {
+  const repository = new ProductionIntegrationRepository();
+  const limits = { maxPerProject: 5, maxPerUser: 2 } as const;
+
+  it("프로젝트 단위 잠금을 잡고 집계한 뒤 같은 트랜잭션에서 저장한다", async () => {
+    const test = fakeTransaction({ projectCount: 1, userCount: 1, registered: 0 });
+    await repository.upsertPushSubscription(record(), limits);
+    expect(test.events).toEqual(["lock", "count", "write"]);
+    expect(test.written).toEqual([record()]);
+    expect(params(test.statements.lock).params).toContain("production-push-subscription:project-1");
+    // 집계는 해당 프로젝트 행으로 한정한다.
+    expect(params(test.statements.where).params).toEqual(["project-1"]);
+  });
+
+  it("사용자 상한(프로젝트 안)에 도달하면 저장하지 않고 사용자 상한 오류를 던진다", async () => {
+    const test = fakeTransaction({ projectCount: 2, userCount: 2, registered: 0 });
+    await expect(repository.upsertPushSubscription(record(), limits)).rejects.toMatchObject({
+      name: "ProductionPushSubscriptionLimitError",
+      scope: "user",
+      limit: 2,
+    });
+    expect(test.events).toEqual(["lock", "count"]);
+    expect(test.written).toEqual([]);
+  });
+
+  it("프로젝트 상한에 도달하면 저장하지 않고 프로젝트 상한 오류를 던진다", async () => {
+    const test = fakeTransaction({ projectCount: 5, userCount: 1, registered: 0 });
+    const error = await repository.upsertPushSubscription(record(), limits).catch(
+      (cause: unknown) => cause,
+    );
+    expect(error).toBeInstanceOf(ProductionPushSubscriptionLimitError);
+    expect(error).toMatchObject({ scope: "project", limit: 5 });
+    expect(test.written).toEqual([]);
+  });
+
+  it("이미 등록한 endpoint 의 키 갱신은 상한에 도달해도 허용한다", async () => {
+    const test = fakeTransaction({ projectCount: 5, userCount: 2, registered: 1 });
+    await repository.upsertPushSubscription(record({ expirationTime: 1_800_000_000_000 }), limits);
+    expect(test.events).toEqual(["lock", "count", "write"]);
+    expect(test.written[0]).toMatchObject({ expirationTime: 1_800_000_000_000 });
+  });
+
+  it("알림 대상 조회는 최근 갱신순으로 상한 개수만 읽는다", async () => {
+    const calls: { where?: unknown; order?: unknown; limit?: number } = {};
+    doubles.db.select.mockImplementation(() => {
+      const chain = {
+        from: () => chain,
+        where: (condition: unknown) => {
+          calls.where = condition;
+          return chain;
+        },
+        orderBy: (order: unknown) => {
+          calls.order = order;
+          return chain;
+        },
+        limit: (value: number) => {
+          calls.limit = value;
+          return Promise.resolve([]);
+        },
+      };
+      return chain;
+    });
+    await expect(repository.listPushSubscriptions("project-1", 200)).resolves.toEqual([]);
+    expect(calls.limit).toBe(200);
+    expect(params(calls.where).params).toEqual(["project-1"]);
+    expect(params(calls.order).sql).toMatch(/"updatedAt"/u);
+    expect(params(calls.order).sql).toMatch(/desc/iu);
+  });
+});
+
+describe("registerWebPushSubscription", () => {
+  const policy = { maxSubscriptionsPerProject: 200, maxSubscriptionsPerUser: 10 } as const;
+
+  it("정책 상한을 저장소에 그대로 넘긴다", async () => {
+    const upsert = vi.fn().mockResolvedValue(undefined);
+    await registerWebPushSubscription({ upsertPushSubscription: upsert }, policy, record());
+    expect(upsert).toHaveBeenCalledWith(record(), { maxPerProject: 200, maxPerUser: 10 });
+  });
+
+  it.each([
+    ["user" as const, 10, "내 알림 기기는 최대 10대"],
+    ["project" as const, 200, "알림 기기가 가득 찼어요(최대 200대)"],
+  ])("%s 상한 오류는 원인을 알려 주는 한국어 409 로 바꾼다", async (scope, limit, fragment) => {
+    const upsert = vi.fn().mockRejectedValue(new ProductionPushSubscriptionLimitError(scope, limit));
+    const error = await registerWebPushSubscription(
+      { upsertPushSubscription: upsert },
+      policy,
+      record(),
+    ).catch((cause: unknown) => cause);
+    expect(error).toBeInstanceOf(ConflictException);
+    expect((error as ConflictException).getResponse()).toMatchObject({
+      code: "production_push_subscription_limit",
+      scope,
+      limit,
+      message: expect.stringContaining(fragment),
+    });
+  });
+
+  it("상한 오류가 아닌 저장소 오류는 그대로 전달한다", async () => {
+    const failure = new Error("database offline");
+    await expect(registerWebPushSubscription(
+      { upsertPushSubscription: vi.fn().mockRejectedValue(failure) },
+      policy,
+      record(),
+    )).rejects.toBe(failure);
+  });
+});
+
+describe("ProductionIntegrationService 웹 푸시 상한 연결", () => {
+  function fixture() {
+    const projects = {
+      getProject: vi.fn().mockResolvedValue({
+        aggregate: { title: "Project" },
+        access: { view: true, edit: true, manage: true },
+      }),
+    };
+    const repository = {
+      upsertPushSubscription: vi.fn().mockResolvedValue(undefined),
+      listPushSubscriptions: vi.fn().mockResolvedValue([]),
+      deletePushSubscriptionByHash: vi.fn().mockResolvedValue(undefined),
+      beginMutation: vi.fn().mockResolvedValue({ replay: null }),
+      countMutationsSince: vi.fn().mockResolvedValue(0),
+      completeMutation: vi.fn().mockResolvedValue(undefined),
+      failMutation: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new ProductionIntegrationService(
+      projects as unknown as ProductionCollaborationService,
+      repository as unknown as ProductionIntegrationRepository,
+    );
+    return { projects, repository, service };
+  }
+
+  const subscription = {
+    endpoint: "https://fcm.googleapis.com/fcm/send/abc",
+    expirationTime: null,
+    keys: { p256dh: "p".repeat(64), auth: "a".repeat(22) },
+  } as const;
+
+  it("기본 상한(프로젝트 200, 사용자 10)과 환경 변수로 바꾼 상한을 저장소에 넘긴다", async () => {
+    const defaults = fixture();
+    await expect(defaults.service.subscribeWebPush("user-1", "project-1", subscription))
+      .resolves.toMatchObject({ subscribed: true });
+    expect(defaults.repository.upsertPushSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ projectId: "project-1", actorUserId: "user-1" }),
+      { maxPerProject: 200, maxPerUser: 10 },
+    );
+
+    vi.stubEnv("PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_PROJECT", "50");
+    vi.stubEnv("PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_USER", "3");
+    const tuned = fixture();
+    await tuned.service.subscribeWebPush("user-1", "project-1", subscription);
+    expect(tuned.repository.upsertPushSubscription).toHaveBeenCalledWith(
+      expect.anything(),
+      { maxPerProject: 50, maxPerUser: 3 },
+    );
+  });
+
+  it("상한에 걸린 구독 등록은 409 이고 응답에 구독 성공을 담지 않는다", async () => {
+    const test = fixture();
+    test.repository.upsertPushSubscription.mockRejectedValueOnce(
+      new ProductionPushSubscriptionLimitError("user", 10),
+    );
+    await expect(test.service.subscribeWebPush("user-1", "project-1", subscription))
+      .rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it("프로젝트 조회 권한이 없으면 구독 저장을 시도하지 않는다", async () => {
+    const test = fixture();
+    test.projects.getProject.mockRejectedValueOnce(new Error("forbidden"));
+    await expect(test.service.subscribeWebPush("user-1", "project-1", subscription)).rejects.toThrow();
+    expect(test.repository.upsertPushSubscription).not.toHaveBeenCalled();
+  });
+
+  it("알림 전송은 프로젝트 구독 상한만큼만 읽어 온다", async () => {
+    const test = fixture();
+    await test.service.sendNotification("user-1", "project-1", {
+      mutationId: "11111111-1111-4111-8111-111111111111",
+      channel: "web-push",
+      title: "검토 요청",
+      body: "에피소드를 확인해 주세요.",
+    });
+    expect(test.repository.listPushSubscriptions).toHaveBeenCalledWith("project-1", 200);
+  });
+});

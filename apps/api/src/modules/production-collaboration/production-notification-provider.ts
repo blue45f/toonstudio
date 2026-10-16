@@ -1,10 +1,11 @@
 import { sendProtectedWebhook } from "./production-webhook-network";
 import webPush from "web-push";
 import {
+  classifyWebPushEndpoint,
   createPublicOnlyHttpsAgent,
-  parseWebPushEndpoint,
   WEB_PUSH_REQUEST_TIMEOUT_MS,
 } from "./production-web-push-network";
+import { settleWithConcurrency } from "./production-web-push-policy";
 
 import {
   canonicalJson,
@@ -104,6 +105,14 @@ class WebPushEndpointRejectedError extends Error {
   }
 }
 
+// 공개 도메인이지만 허용 목록 밖인 호스트. 정책 변경만으로 사용자의 구독을 지우지 않도록 건너뛰기만 한다.
+class WebPushHostNotAllowedError extends Error {
+  constructor() {
+    super("web_push_host_not_allowed");
+    this.name = "WebPushHostNotAllowedError";
+  }
+}
+
 async function sendWebPush(
   config: ProductionIntegrationConfig,
   notification: ProductionIntegrationNotification,
@@ -123,15 +132,20 @@ async function sendWebPush(
     tag: "toonstudio-production",
   });
   // 구독 endpoint 는 사용자가 등록한 값이다. 등록 시 검증을 통과하지 못한 과거 데이터는 요청 없이
-  // 정리 대상으로 돌려주고, 나머지는 공개 주소로만 접속하는 전용 에이전트로 전송한다.
+  // 정리 대상으로 돌려주고, 허용 목록 밖 호스트는 요청 없이 건너뛰며, 나머지는 공개 주소로만 접속하는
+  // 전용 에이전트로 동시성 상한 안에서 전송한다.
+  const { allowedHosts, fanOutConcurrency } = config.notification.webPush;
   const agent = createPublicOnlyHttpsAgent();
-  const results = await Promise.allSettled(
-    subscriptions.map(async (subscription) => {
-      const endpoint = parseWebPushEndpoint(subscription.endpoint);
-      if (!endpoint) throw new WebPushEndpointRejectedError();
+  const results = await settleWithConcurrency(
+    subscriptions,
+    fanOutConcurrency,
+    async (subscription) => {
+      const verdict = classifyWebPushEndpoint(subscription.endpoint, allowedHosts);
+      if (verdict.kind === "rejected") throw new WebPushEndpointRejectedError();
+      if (verdict.kind === "host-not-allowed") throw new WebPushHostNotAllowedError();
       await webPush.sendNotification(
         {
-          endpoint: endpoint.href,
+          endpoint: verdict.url.href,
           expirationTime: subscription.expirationTime,
           keys: {
             p256dh: subscription.p256dh,
@@ -147,11 +161,12 @@ async function sendWebPush(
         },
       );
       return subscription.endpointHash;
-    }),
+    },
   );
   agent.destroy();
   const removedEndpointHashes: string[] = [];
   let sent = 0;
+  let skippedHostNotAllowed = 0;
   for (let index = 0; index < results.length; index += 1) {
     const result = results[index];
     const subscription = subscriptions[index];
@@ -161,6 +176,13 @@ async function sendWebPush(
       && result.reason instanceof WebPushEndpointRejectedError
     ) {
       removedEndpointHashes.push(subscription.endpointHash);
+      continue;
+    }
+    if (
+      result.status === "rejected"
+      && result.reason instanceof WebPushHostNotAllowedError
+    ) {
+      skippedHostNotAllowed += 1;
       continue;
     }
     if (result.status === "fulfilled") {
@@ -183,6 +205,7 @@ async function sendWebPush(
       attempted: subscriptions.length,
       sent,
       expired: removedEndpointHashes.length,
+      skippedHostNotAllowed,
     },
   };
 }
