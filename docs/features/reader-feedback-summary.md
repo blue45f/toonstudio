@@ -221,11 +221,11 @@
 | `reader-feedback-io.test.ts` | 정상 왕복, 큰 입력·깊은 중첩·노드 수, 프로토타입 오염 키, 알 수 없는 키, 범위 밖 숫자, XSS·bidi·연락처 가림, 읽기·공유·복사 보조 |
 | `reader-feedback-draft.test.ts` | 폼 초안 → 응답 변환과 필드별 오류, 다시 내보낼 때 응답 id 를 잇는 규칙 |
 | `reader-feedback-text.test.ts` | 보이지 않는 문자(속성별 대표 문자)·태그 문자·변형 선택자 제거, 이모지 ZWJ·표시 선택자 보존, 보이는 글자가 없는 응답, 정리의 멱등 |
-| `reader-feedback-summary.test.ts` | 합치기·중복 제거·상한, 평균·분포·구간·감정, 대표 의견 규칙, 묶음 키, 표본 등급 |
-| `reader-feedback-import.test.ts`, `reader-feedback-hidden.test.ts` | 가져오기 파이프라인·상태 리듀서, 숨김 저장 |
-| `ReaderFeedbackForm.test.tsx` | 폼 입력·오류·초점·저장·공유·복사·미리 보기·XSS |
-| `ReaderFeedbackSummaryPanel.test.tsx` | 빈·읽는 중·오류·재시도 상태, 여러 파일 합치기, 그래프(칸·개수 글자 배치)+표, 스포일러·숨김, 악의적 파일 |
-| `CreatorEcosystemViewerPage.test.tsx`, `CreatorEcosystemPage.test.tsx` | 뷰어의 패키지별 폼 연결, 베타 독자 구역에 요약이 있음 |
+| `reader-feedback-summary.test.ts` | 합치기·중복 제거·상한(id 와 묶음이 모두 같아야 같은 응답), 평균·분포·구간·감정, 대표 의견 규칙, 묶음 키, 표본 등급 |
+| `reader-feedback-import.test.ts`, `reader-feedback-hidden.test.ts` | 가져오기 파이프라인·상태 리듀서(비운 뒤 늦게 끝난 결과 버리기), 숨김 저장 |
+| `ReaderFeedbackForm.test.tsx` | 폼 입력·오류·초점·저장·공유·복사·미리 보기·XSS, 작품·회차가 바뀌면 새 id, 새 의견 쓰기, 제출(Enter)로는 저장 안 됨, 영어 화면과 번역 키 |
+| `ReaderFeedbackSummaryPanel.test.tsx` | 빈·읽는 중·오류·재시도 상태, 여러 파일 합치기, 그래프(칸·개수 글자 배치)+표, 스포일러·숨김, 비율의 분모 기준, 읽는 중 비우기, 초점 이동, 동률 표시, `<bdi>` 격리, 이름 없는 파일, 악의적 파일 |
+| `CreatorEcosystemViewerPage.test.tsx`, `CreatorEcosystemPage.test.tsx` | 뷰어의 패키지별 폼 연결, 랜드마크 이름·제목 수준, 영어 화면, 베타 독자 구역에 요약이 있음 |
 | `reader-feedback-docs.test.ts` | 이 문서의 상한·감정 표·기준값이 코드와 같음 |
 | `reader-feedback-privacy.test.tsx` | 소스가 가져오는 모듈 허용 목록·`localStorage` 범위, 네트워크 API 이름과 주소를 불러오는 JSX 의 부재(문법 트리, 뷰어 화면·내려받기 도우미 포함)·HTML 주입 API 부재, `bt()` 값 보간 부재, 독자가 쓴 글이 번역 문구 사전·브라우저 저장소에 남지 않음 |
 
