@@ -6,7 +6,7 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { lazy, Suspense, useLayoutEffect, useState } from "react";
-import { StudioCharmBarSlot } from "../charm/StudioCharmBarSlot";
+import { StudioCharmBarSlotLazy } from "../charm/StudioCharmBarSlotLazy";
 import { createStudioLeftToolRailRuntime } from "../editor-client/studio-left-tool-rail-client";
 import { LazyStudioLeftToolRail, LazyStudioPageListPane } from "../studio-page-modal-lazy-boundaries";
 import { StudioWorkspaceArrangementToolbar } from "../StudioWorkspaceArrangementToolbar";
@@ -324,8 +324,9 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             />
           </Suspense>
         ) : null}
-        {/* 참(Charm) 바 — 자주 쓰는 소재를 한 번에 붙이는 도킹 가능한 소형 패널. 꺼져 있으면 아무것도 그리지 않는다. */}
-        <StudioCharmBarSlot session={s} />
+        {/* 참(Charm) 바 — 자주 쓰는 소재를 한 번에 붙이는 도킹 가능한 소형 패널. 꺼져 있으면 아무것도 그리지 않는다.
+            슬롯째 지연 로드한다(`StudioCharmBarSlotLazy`): 정적으로 가져오면 Studio 첫 청크 그래프가 커져 번들 래칫을 깬다. */}
+        <StudioCharmBarSlotLazy session={s} />
         {/* 중앙: 캔버스 + 우측 인스펙터 — 데스크톱에서는 한 행으로 남은 높이를 공유한다.
             패널을 왼쪽에 도킹하면 행 방향을 뒤집어 [패널|스플리터|캔버스]가 된다. */}
         <div

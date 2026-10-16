@@ -10,7 +10,7 @@
  * result for round-trip retention.
  */
 
-import { stripTrailingNuls } from "./format-common";
+import { stripTrailingNuls } from "./nul-text";
 
 export interface AbrComputedBrush {
   kind: "computed";

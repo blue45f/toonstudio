@@ -308,9 +308,12 @@ describe("참 바 호스트 계약: 명령 전달과 놓기", () => {
       new URL(`${CREATOR}studio-cuttoon-editor/StudioCuttoonEditorWorkspace.tsx`, import.meta.url),
       "utf8",
     );
-    expect(workspace.match(/<StudioCharmBarSlot\b/gu)).toHaveLength(1);
-    expect(workspace).toContain("<StudioCharmBarSlot session={s} />");
-    expect(workspace.indexOf("<StudioCharmBarSlot")).toBeLessThan(workspace.indexOf("<StudioCuttoonEditorCanvasColumn"));
+    expect(workspace.match(/<StudioCharmBarSlotLazy\b/gu)).toHaveLength(1);
+    expect(workspace).toContain("<StudioCharmBarSlotLazy session={s} />");
+    expect(workspace.indexOf("<StudioCharmBarSlotLazy")).toBeLessThan(workspace.indexOf("<StudioCuttoonEditorCanvasColumn"));
+    // 슬롯을 정적으로 가져오면 슬롯과 순수 모듈 8개가 Studio 첫 청크 그래프에 묶여 번들 래칫(check:studio-bundle)을 깬다.
+    expect(workspace).not.toMatch(/from\s+["']\.\.\/charm\/StudioCharmBarSlot["']/u);
+    expect(workspace).toContain('from "../charm/StudioCharmBarSlotLazy"');
   });
 });
 

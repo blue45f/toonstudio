@@ -19,7 +19,7 @@
  */
 
 import { importAbr } from "./abr";
-import { stripTrailingNuls } from "./format-common";
+import { stripTrailingNuls } from "./nul-text";
 
 import type { AbrComputedBrush } from "./abr";
 

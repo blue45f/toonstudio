@@ -232,6 +232,7 @@ apps/web/src/domains/creator/charm/StudioCharmBarEntry.test.tsx
 apps/web/src/domains/creator/charm/StudioCharmBarSlot.consecutive.test.tsx
 apps/web/src/domains/creator/charm/StudioCharmBarSlot.integration.test.tsx
 apps/web/src/domains/creator/charm/StudioCharmBarSlot.test.tsx
+apps/web/src/domains/creator/charm/StudioCharmBarSlotLazy.test.tsx
 apps/web/src/domains/creator/charm/StudioCharmBarStatus.test.tsx
 apps/web/src/domains/creator/charm/studio-charm-bar-host-contract.test.ts
 apps/web/src/domains/creator/charm/studio-charm-bar-store.test.ts
@@ -458,6 +459,7 @@ packages/core/src/fortune/fortune-observatory.test.ts
 packages/core/src/production/notification-digest.test.ts
 packages/core/src/production/operations-control.test.ts
 packages/core/src/search-normalization.test.ts
+packages/studio-format-gateway/src/__tests__/nul-text-parity.test.ts
 packages/studio-project-model/src/__tests__/pinned-review-share.test.ts
 packages/studio-project-model/src/__tests__/review-policy-history.test.ts
 packages/studio-project-model/src/__tests__/review-policy.test.ts

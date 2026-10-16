@@ -175,13 +175,14 @@
 | `studio-charm-drag.ts` | 기존 드롭 계약에 맞춘 끌기 페이로드 |
 | `studio-charm-host-bridge.ts` | 세션 백에서 필요한 값만 읽어 문맥·잠금으로 바꿈 |
 | `studio-charm-bar-store.ts` | 상태 스토어, 저널, 직렬화된 저장, 스타터 팩 자동 담기 |
-| `StudioCharmBarSlot.tsx` | 작업공간에 놓이는 자리. 가볍게 유지하며 본체는 펼쳤을 때만 지연 로드 |
+| `StudioCharmBarSlot.tsx` | 작업공간에 놓이는 자리. 슬롯째 지연 로드하며(아래 `StudioCharmBarSlotLazy.tsx`) 본체는 펼쳤을 때만 한 번 더 지연 로드 |
+| `StudioCharmBarSlotLazy.tsx` | 슬롯의 지연 경계. 작업공간이 정적으로 가져오는 유일한 참 바 파일(약 2 KiB 원본). 슬롯 청크를 못 받아도 편집기는 그대로 두고 아무것도 그리지 않으며, 작업 중인 편집기를 새로 고치지 않는다 |
 | `StudioCharmBar.tsx` 외 | 본체(칩·선택기·팝오버·안내·키보드) |
 | `StudioCharmBarMenu.tsx`, `StudioCharmPopover.tsx`, `useStudioCharmPopover.ts` | `⋯` 메뉴(포커스 이동·방향키)와 팝오버 껍데기(단축키 경계, Tab 가장자리 닫기), 열림·위치 훅 |
 | `studio-charm-fake-host.test-fixture.ts`, `studio-charm-bar-harness.test-fixture.tsx`, `studio-charm-host-writes.test-support.ts` | 시험 전용: 삽입 뒤 선택이 바뀌는 가짜 호스트와 호스트 파생식 잠금 픽스처, 본체 마운트 도구, 호스트 쓰기 폐포 분석 |
 | `StudioCharmBarControls.tsx` | 요소·효과 메뉴의 스위치와 요소 상세의 고정 버튼 |
 
-- Studio 진입 그래프에는 슬롯과 순수 모듈 8개(약 44 KiB 원본, 연속 붙이기 선택 이어 받기·`biFill` 이 더해지며 37 KiB 에서 늘었다)만 정적으로 들어온다. 칩·선택기·카탈로그 데이터(SVG)는 바를 펼칠 때 지연 로드한다(`pnpm run check:studio-eager-graph` 통과).
+- **번들**: 슬롯과 순수 모듈 8개(약 44 KiB 원본)를 작업공간이 정적으로 가져오면 Studio 첫 청크 그래프에 그대로 묶여, PR #2325 의 `core` 가 번들 래칫(`Studio route after app shell` 원시 +20 KiB·gzip +8.8 KiB·청크 +5)에서 적색이 됐다. 그래서 슬롯째 지연 로드한다 — 작업공간은 `StudioCharmBarSlotLazy` 만 가져오고, 슬롯은 작업공간이 마운트된 뒤에 받는다. 참 바는 템플릿·에셋 메뉴에서 켜야 쓰는 선택 기능이고 저장된 상태는 어차피 비동기로 읽으므로 사용자가 보는 차이는 슬롯 청크 한 번(약 16 KiB 원시)만큼의 지연이다. 칩·선택기·카탈로그 데이터(SVG)는 바를 펼칠 때 한 번 더 지연 로드한다. 작업공간 계약 시험(`studio-charm-bar-host-contract.test.ts`)이 정적 import 가 되살아나지 않는지 지킨다(`pnpm run check:studio-eager-graph`·`check:studio-bundle`).
 - 편집기 호스트(`StudioCuttoonEditorHost.tsx`)는 고치지 않았다. 기존 파일에는 작은 연결만 더해졌다: 작업공간에 슬롯 렌더 1곳(`StudioCuttoonEditorWorkspace.tsx`), 에셋 메뉴에 스위치 1곳(`StudioAssetToolPopoverBody.tsx`), 요소 상세에 고정 버튼 1곳(`StudioElementsPanel.tsx`), 저장소에 `charm-bar` 읽기·쓰기(`studio-ui-preferences-sqlite.ts`). 작업공간 파일은 `@ts-nocheck` 라서 컴파일러가 슬롯에 넘기는 세션 필드를 검사하지 못한다. 슬롯이 읽는 세션 필드 23개(`StudioCharmHostSession` 15개 + 슬롯 8개)는 호스트 계약 시험이 선언을 읽어 호스트가 뷰에 넘기는 속성과 직접 대조한다(이 문서의 개수도 같은 시험이 지킨다).
 
 ## 8. 권리 (current)
