@@ -3,6 +3,13 @@ import { deflateSync } from "node:zlib";
 import { Image, encode, encodePng } from "image-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  IEND_CHUNK,
+  ihdrChunk,
+  inflatingIccpChunk,
+  pngFile,
+  zeroRunIdat,
+} from "../../../test/cover-image-fixtures";
 import { COVER_MAX_DECODE_RAW_BYTES, transcodeCoverToWidth } from "./cover-transcode";
 
 // 디코드 호출 여부가 핵심 계약이라 image-js 의 decode 를 실제 구현 그대로 감싸서 호출만 센다.
@@ -194,13 +201,51 @@ describe("transcodeCoverToWidth 형식 위장·팽창 우회 방어", () => {
   });
 
   it("압축 해제 후 크기가 상한을 넘는 선언은 IDAT 를 풀어 보기 전에 거절한다", () => {
-    // 16비트 RGBA 4000x4000 은 화소 수(1600만)는 통과하지만 압축 해제 크기가 128MB 라 상한(64MB)을 넘는다.
-    const header = pngHeader(4_000, 4_000);
-    header[24] = 16;
-    header[25] = 6;
-    expect(4_000 * (1 + 4_000 * 8)).toBeGreaterThan(COVER_MAX_DECODE_RAW_BYTES);
-    expect(transcodeCoverToWidth(header, "image/png", 320)).toBeNull();
+    // 16비트 RGB 3500x3500 은 화소 수(1225만)는 통과하지만 압축 해제 크기가 약 73.5MB 라 상한(64MiB)을 넘는다.
+    // IDAT 는 실제로 그 크기로 풀리는 정상 스트림이다(헤더만 있는 가짜는 IDAT 부재로도 거절돼 상한을 증명하지 못한다).
+    const raw = 3_500 * (1 + 3_500 * 6);
+    expect(raw).toBeGreaterThan(COVER_MAX_DECODE_RAW_BYTES);
+    const png = pngFile(
+      ihdrChunk({ width: 3_500, height: 3_500, bitDepth: 16, colorType: 2 }),
+      zeroRunIdat(raw),
+      IEND_CHUNK,
+    );
+    expect(png.length).toBeLessThan(256 * 1024);
+    expect(transcodeCoverToWidth(png, "image/png", 320)).toBeNull();
     expect(decodeSpy).not.toHaveBeenCalled();
+  });
+
+  it("IHDR 이 둘인 PNG 는 변환하지 않는다(디코더가 마지막 IHDR 로 푸는 화소 상한 우회)", () => {
+    // 첫 IHDR(2000x2000 RGBA8, 압축 해제 상한 16MB)로 사전 검사를 통과하고, 마지막 IHDR(6000x6000 1비트 = 3600만
+    // 화소, 압축 해제 4.5MB)이 디코드 크기를 정한다. 실제 공격은 5.1억 화소였고 같은 구조를 가볍게 줄인 입력이다.
+    const raw = 6_000 * (1 + 6_000 / 8);
+    const bomb = pngFile(
+      ihdrChunk({ width: 2_000, height: 2_000, bitDepth: 8, colorType: 6 }),
+      ihdrChunk({ width: 6_000, height: 6_000, bitDepth: 1, colorType: 0 }),
+      zeroRunIdat(raw),
+      IEND_CHUNK,
+    );
+    expect(transcodeCoverToWidth(bomb, "image/png", 320)).toBeNull();
+    expect(decodeSpy).not.toHaveBeenCalled();
+  });
+
+  it("압축 해제 후 수백 MB 로 풀리는 iCCP 가 붙은 정상 PNG 는 그 청크를 버린 PNG 로 디코드하고 결과는 같다", () => {
+    // 실제 공격은 261KB 파일의 iCCP 가 256MB 로 풀렸다(디코더가 iCCP 를 상한 없이 inflate 한다). 시험은 같은 구조를
+    // 8MB 로 줄였다: 디코더에 넘어간 바이트에 iCCP 가 없으면 그 inflate 는 일어나지 않는다.
+    const clean = Buffer.from(encodePng(realImage(640, 960)));
+    const bomb = Buffer.concat([clean.subarray(0, 33), inflatingIccpChunk(8 * 1024 * 1024), clean.subarray(33)]);
+    expect(bomb.length).toBeLessThan(clean.length + 64 * 1024);
+
+    const expected = transcodeCoverToWidth(clean, "image/png", 160);
+    decodeSpy.mockClear();
+    const result = transcodeCoverToWidth(bomb, "image/png", 160);
+
+    expect(result?.width).toBe(160);
+    expect(result?.body.equals(expected!.body)).toBe(true);
+    expect(decodeSpy).toHaveBeenCalledTimes(1);
+    const decoded = Buffer.from(decodeSpy.mock.calls[0]![0] as Uint8Array);
+    expect(decoded.includes(Buffer.from("iCCP"))).toBe(false);
+    expect(decoded.length).toBeLessThan(bomb.length);
   });
 
   it("애니메이션 PNG(acTL)와 알 수 없는 색 유형·깊이 조합은 변환하지 않는다", () => {
