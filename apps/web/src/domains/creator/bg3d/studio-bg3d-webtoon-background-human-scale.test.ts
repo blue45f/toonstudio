@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M } from "./studio-bg3d-scale-guide";
@@ -584,6 +586,27 @@ describe("웹툰 배경의 사람 크기", () => {
       expect(rules(checkCorridorClearWidth(narrow, primitives, "x"))).toContain("corridor.width");
     });
 
+    it("나머지 방 규칙도 각각 걸린다(창 높이, 의자-책상 거리, 책상 없는 의자, 칠판-천장 여유, 사물함 깊이)", () => {
+      const room = (primitives: readonly BgPrimitive[], spec: StudioBg3dRoomSpec = classroom.spec) => rules(checkRoomPrimitives(primitives, spec, "x"));
+      // 창이 너무 낮은 띠(0.5m)이거나 천장까지 닿는 통창(2.5m)이다.
+      for (const height of [0.5, 2.5]) {
+        const odd = specWith({ openings: [{ wall: "east", type: "window", centerOffset: 0, width: 1.8, height, sillHeight: 0.5 }] });
+        expect(rules(checkRoomSpec(odd, "x")), `창 높이 ${height}m`).toContain("window.height");
+      }
+      // 의자가 책상에서 멀리 떨어져 있거나(30m) 책상 위에 올라가 있다.
+      const farSeat = edit(classroomPrimitives, "의자 좌판", (item) => ({ position: [item.position[0] + 30, item.position[1], item.position[2]] }));
+      expect(room(farSeat)).toContain("seat.near-desk");
+      const deskTop = named(classroomPrimitives, "책상 상판")[0];
+      const onDesk = edit(classroomPrimitives, "의자 좌판", (item) => ({ position: [deskTop.position[0], item.position[1], deskTop.position[2]] }));
+      expect(room(onDesk)).toContain("seat.near-desk");
+      // 의자만 있고 책상이 하나도 없다.
+      expect(room(classroomPrimitives.filter((item) => item.name !== "책상 상판"))).toContain("seat.has-desk");
+      // 천장을 2.3m 로 낮추면 윗단 2.15m 인 칠판이 천장에 붙는다.
+      expect(room(classroomPrimitives, specWith({ wallHeight: 2.3 }))).toContain("board.below-ceiling");
+      // 사물함이 1.2m 로 깊다(복도를 막는다).
+      expect(room(edit(classroomPrimitives, "사물함 몸통", (item) => ({ scale: [item.scale[0], item.scale[1], 1.2] })))).toContain("locker.depth");
+    });
+
     const street = streetEntry();
     const streetPrimitives = build(street);
     const STREET_OPTIONS = { floorHeight: street.spec.floorHeight };
@@ -662,6 +685,22 @@ describe("웹툰 배경의 사람 크기", () => {
     it("정상 데이터에는 어떤 결함 규칙도 걸리지 않는다(통제군)", () => {
       expect(checkStreetPrimitives(streetPrimitives, "x", STREET_OPTIONS)).toEqual([]);
       expect(checkRoomPrimitives(classroomPrimitives, classroom.spec, "x")).toEqual([]);
+    });
+
+    // "규칙마다 합성 결함이 있다"는 주장이 새 규칙이 늘어도 지켜지게, 이 파일 자신의 소스에서 검사기가 내는 규칙 id 를
+    // 뽑아 합성 결함 구역에 그 id 가 적혀 있는지 본다(규칙을 더하고 결함 시험을 빠뜨리면 여기서 걸린다).
+    it("검사기가 내는 모든 규칙 id 에 합성 결함 시험이 있다", () => {
+      const own = readFileSync(new URL(import.meta.url), "utf8");
+      const checkers = own.slice(own.indexOf("// ── 방 검사"), own.indexOf("// ── 카탈로그 전체에 적용"));
+      const controls = own.slice(own.indexOf('describe("합성 결함(negative control)'), own.indexOf('it("거리 스펙을 극단값으로'));
+      const emitted = new Set([
+        ...[...checkers.matchAll(/\b(?:range|atLeast|within)\("([a-z][a-z.-]*)"/gu)].map((match) => match[1]!),
+        ...[...checkers.matchAll(/rule: "([a-z][a-z.-]*)"/gu)].map((match) => match[1]!),
+      ]);
+      expect(emitted.size).toBeGreaterThan(50);
+      expect(emitted.has("window.height") && emitted.has("locker.depth") && emitted.has("desk-minus-seat")).toBe(true);
+      const withoutControl = [...emitted].filter((rule) => !controls.includes(`"${rule}"`));
+      expect(withoutControl, "합성 결함 시험이 없는 규칙").toEqual([]);
     });
   });
 
