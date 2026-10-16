@@ -169,10 +169,18 @@ const RESULT_WARNINGS = [
   "ignored-fragments", "max-depth-reached", "low-overall-confidence",
 ] as const;
 
-function stringArray<T extends string>(value: unknown, allowed: readonly T[]): T[] | null {
+/** Array.isArray 는 unknown 을 any[] 로 좁히므로, 요소를 unknown 으로 다루도록 한 번 받아 둔다. */
+function unknownItems(value: unknown): readonly unknown[] | null {
   if (!Array.isArray(value)) return null;
+  const items: readonly unknown[] = value;
+  return items;
+}
+
+function stringArray<T extends string>(value: unknown, allowed: readonly T[]): T[] | null {
+  const items = unknownItems(value);
+  if (items === null) return null;
   const result: T[] = [];
-  for (const entry of value) {
+  for (const entry of items) {
     const match = allowed.find((candidate) => candidate === entry);
     if (match === undefined) return null;
     result.push(match);
@@ -198,10 +206,14 @@ export function parsePanelDetectResult(
   const readingOrder = (PANEL_READING_ORDERS as readonly unknown[]).includes(value.readingOrder)
     ? PANEL_READING_ORDERS.find((entry) => entry === value.readingOrder)
     : undefined;
-  if (!readingOrder || !Array.isArray(value.panels) || !Array.isArray(value.undetectable) || !Array.isArray(value.ignored) || !Array.isArray(value.suggestions)) return null;
+  const rawPanels = unknownItems(value.panels);
+  const rawUndetectable = unknownItems(value.undetectable);
+  const rawIgnored = unknownItems(value.ignored);
+  const rawSuggestions = unknownItems(value.suggestions);
+  if (!readingOrder || !rawPanels || !rawUndetectable || !rawIgnored || !rawSuggestions) return null;
 
   const panels: DetectedPanel[] = [];
-  for (const [index, entry] of value.panels.entries()) {
+  for (const [index, entry] of rawPanels.entries()) {
     const rect = isRecord(entry) ? parseRect(entry, width, height) : null;
     const warnings = isRecord(entry) ? stringArray(entry.warnings, PANEL_WARNINGS) : null;
     const confidence = isRecord(entry) ? parseConfidence(entry.confidence) : null;
@@ -210,20 +222,20 @@ export function parsePanelDetectResult(
     panels.push({ id: `panel-${index + 1}`, order: index + 1, ...rect, confidence, level: panelDetectConfidenceLevel(confidence), warnings });
   }
   const undetectable: UndetectableRegion[] = [];
-  for (const [index, entry] of value.undetectable.entries()) {
+  for (const [index, entry] of rawUndetectable.entries()) {
     const rect = isRecord(entry) ? parseRect(entry, width, height) : null;
     if (!isRecord(entry) || !rect || entry.reason !== "non-separable" || typeof entry.componentCount !== "number" || !Number.isInteger(entry.componentCount)) return null;
     undetectable.push({ id: `undetectable-${index + 1}`, reason: "non-separable", componentCount: entry.componentCount, ...rect });
   }
   const ignored: IgnoredFragment[] = [];
-  for (const [index, entry] of value.ignored.entries()) {
+  for (const [index, entry] of rawIgnored.entries()) {
     const rect = isRecord(entry) ? parseRect(entry, width, height) : null;
     if (!isRecord(entry) || !rect) return null;
     if (entry.reason !== "too-small" && entry.reason !== "low-content") return null;
     ignored.push({ id: `ignored-${index + 1}`, reason: entry.reason, ...rect });
   }
   const suggestions: SplitSuggestion[] = [];
-  for (const [index, entry] of value.suggestions.entries()) {
+  for (const [index, entry] of rawSuggestions.entries()) {
     if (!isRecord(entry) || entry.reason !== "bridged-gutter" || typeof entry.position !== "number" || !Number.isInteger(entry.position)) return null;
     if (entry.orientation !== "horizontal" && entry.orientation !== "vertical") return null;
     if (typeof entry.panelId !== "string" || !panels.some((panel) => panel.id === entry.panelId)) return null;

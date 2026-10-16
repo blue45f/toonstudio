@@ -119,7 +119,7 @@ export function inspectPanelSourceHeader(
   buffer: ArrayBuffer,
   declaredType: string,
 ): { readonly width: number; readonly height: number; readonly mimeType: string } {
-  let parsed;
+  let parsed: ReturnType<typeof parseStudioUploadImageDimensions>;
   try {
     parsed = parseStudioUploadImageDimensions(buffer);
   } catch (error) {
