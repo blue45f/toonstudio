@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  PayloadTooLargeException,
 } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 
@@ -22,12 +23,27 @@ import { db, studioVirtualSpaceDecorationLayouts, users } from "../../platform/d
  * DB에 그대로 넣을 수 있도록 길이를 먼저 잘라 서버 키 크기 제한도 피한다.
  */
 function readScope(value: string): string {
-  const scope = decodeURIComponent(value).trim();
+  // Express 가 경로 매개변수를 한 번 디코드한 뒤에도 '%' 가 남을 수 있어, 깨진 인코딩이 URIError(500)
+  // 로 새지 않게 잡는다.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    throw new NotFoundException("알 수 없는 배치 범위입니다.");
+  }
+  const scope = decoded.trim();
   if (!scope || scope.length > STUDIO_VIRTUAL_SCOPE_KEY_MAX) {
     throw new NotFoundException("알 수 없는 배치 범위입니다.");
   }
   return scope;
 }
+
+/**
+ * 계정이 보관할 수 있는 배치(범위 키 × 장소) 행의 상한. 범위 키는 호출자가 정하는 문자열이라 상한이
+ * 없으면 키를 바꿔 가며 저장하는 것만으로 행을 끝없이 만들 수 있다. 작품 수 × 장소 수로 정상 사용이
+ * 닿을 일이 없는 값이며, 이미 있는 범위의 갱신에는 적용하지 않는다.
+ */
+export const STUDIO_VIRTUAL_DECORATION_MAX_LAYOUTS_PER_USER = 1_000;
 
 function isDistrict(value: string): value is StudioVirtualDistrictId {
   return (STUDIO_VIRTUAL_DISTRICT_IDS as readonly string[]).includes(value);
@@ -118,6 +134,16 @@ export class StudioVirtualSpaceDecorationService {
     const nextRevision = expectedRevision + 1;
 
     if (expectedRevision === 0) {
+      // 새 범위를 만드는 경로에서만 계정별 보관 개수를 확인한다(이미 있는 범위의 갱신은 막지 않는다).
+      const [stored] = await db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(studioVirtualSpaceDecorationLayouts)
+        .where(eq(studioVirtualSpaceDecorationLayouts.userId, owner));
+      if (Number(stored?.total ?? 0) >= STUDIO_VIRTUAL_DECORATION_MAX_LAYOUTS_PER_USER) {
+        throw new PayloadTooLargeException(
+          `저장할 수 있는 공간 배치는 계정당 ${STUDIO_VIRTUAL_DECORATION_MAX_LAYOUTS_PER_USER}개까지예요. 쓰지 않는 배치를 정리한 뒤 다시 시도해 주세요.`,
+        );
+      }
       const inserted = await db
         .insert(studioVirtualSpaceDecorationLayouts)
         .values({
