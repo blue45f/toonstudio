@@ -570,6 +570,16 @@ describe("Catalog file, asset admission, and KMAS environment validation", () =>
     expect(logger.warn).toHaveBeenCalledOnce();
   });
 
+  it("reads the cover transcode switch the way the runtime policy does (case and spaces ignored, blank = unset)", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    expect(validateEnv({ NODE_ENV: "test", COVER_SERVER_TRANSCODE: " ON " }, logger)).toMatchObject({
+      COVER_SERVER_TRANSCODE: "on",
+    });
+    expect(validateEnv({ NODE_ENV: "test", COVER_SERVER_TRANSCODE: "" }, logger)).not.toBeNull();
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
   it("normalizes the Lambda-injected POSIX ':UTC' timezone instead of warning on every cold start", () => {
     const logger = { warn: vi.fn(), error: vi.fn() };
 
