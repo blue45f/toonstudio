@@ -164,6 +164,8 @@ export type VersionShareResolution =
   | { readonly status: "expired" }
   | { readonly status: "password_required" }
   | { readonly status: "password_invalid" }
+  /** 비밀번호를 여러 번 틀려 서버가 잠근 상태(429). 풀릴 때까지 남은 초는 서버가 알려 준 값이다. */
+  | { readonly status: "password_locked"; readonly retryAfterSeconds: number | null }
   | { readonly status: "login_required" };
 
 const RESOLUTION_CODE_MAP: Readonly<Record<string, VersionShareResolution["status"]>> = {
@@ -198,6 +200,10 @@ export async function resolveVersionShare(
   } catch (error) {
     if (isAppApiError(error)) {
       if (error.status === 403) return { status: "login_required" };
+      // 429 전체가 아니라 이 코드만 잠금으로 본다: 일반 속도 제한은 재시도 가능한 오류 화면이 맞다.
+      if (error.code === "version_share_password_locked") {
+        return { status: "password_locked", retryAfterSeconds: error.retryAfterSeconds };
+      }
       const mapped = error.code ? RESOLUTION_CODE_MAP[error.code] : undefined;
       if (mapped && mapped !== "ok") return { status: mapped };
     }

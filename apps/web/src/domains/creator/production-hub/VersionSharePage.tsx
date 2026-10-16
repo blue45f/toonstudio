@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { Link, useParams } from "react-router-dom";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { productionManuscriptRevisionLabel } from "./production-manuscript-model";
@@ -33,7 +33,7 @@ import {
 type PageState =
   | { readonly kind: "loading" }
   | { readonly kind: "ok"; readonly share: ResolvedVersionShare }
-  | { readonly kind: "password"; readonly invalid: boolean }
+  | { readonly kind: "password"; readonly invalid: boolean; readonly lockedForSeconds: number | null }
   | { readonly kind: "blocked"; readonly status: "not_found" | "revoked" | "expired" | "login_required" }
   | { readonly kind: "error" };
 
@@ -81,10 +81,13 @@ export function VersionSharePage() {
         setState({ kind: "ok", share: resolution.share });
         break;
       case "password_required":
-        setState({ kind: "password", invalid: false });
+        setState({ kind: "password", invalid: false, lockedForSeconds: null });
         break;
       case "password_invalid":
-        setState({ kind: "password", invalid: true });
+        setState({ kind: "password", invalid: true, lockedForSeconds: null });
+        break;
+      case "password_locked":
+        setState({ kind: "password", invalid: false, lockedForSeconds: resolution.retryAfterSeconds ?? 0 });
         break;
       default:
         setState({ kind: "blocked", status: resolution.status });
@@ -154,6 +157,20 @@ export function VersionSharePage() {
         />
         {state.invalid ? <p role="alert" className="mt-2.5 text-sm font-semibold text-bad">
           {bt("비밀번호가 맞지 않아요. 다시 확인해 주세요.", "That password doesn't match. Please try again.")}
+        </p> : null}
+        {state.lockedForSeconds !== null ? <p role="alert" className="mt-2.5 text-sm font-semibold text-bad">
+          {state.lockedForSeconds > 0
+            ? formatI18nTemplate(
+              bt(
+                "비밀번호를 여러 번 틀려 잠시 잠겼어요. 약 {minutes}분 뒤에 다시 시도해 주세요.",
+                "Too many wrong passwords, so this link is locked for a while. Try again in about {minutes} min.",
+              ),
+              { minutes: Math.ceil(state.lockedForSeconds / 60) },
+            )
+            : bt(
+              "비밀번호를 여러 번 틀려 잠시 잠겼어요. 잠시 뒤에 다시 시도해 주세요.",
+              "Too many wrong passwords, so this link is locked for a while. Please try again later.",
+            )}
         </p> : null}
         <button
           type="submit"

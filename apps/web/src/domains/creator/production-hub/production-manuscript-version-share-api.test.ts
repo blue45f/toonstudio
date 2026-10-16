@@ -14,8 +14,8 @@ vi.mock("@/platform/api", () => ({
 
 const get = vi.mocked(api.get);
 
-function apiError(status: number, code: string | null): Error {
-  return Object.assign(new Error("api error"), { __appApiError: true, status, code });
+function apiError(status: number, code: string | null, retryAfterSeconds: number | null = null): Error {
+  return Object.assign(new Error("api error"), { __appApiError: true, status, code, retryAfterSeconds });
 }
 
 const OK_BODY = {
@@ -82,6 +82,19 @@ describe("resolveVersionShare", () => {
   ] as const)("서버 코드 %s를 %s 판정으로 바꾼다", async (status, code, expected) => {
     get.mockRejectedValue(apiError(status, code));
     await expect(resolveVersionShare("token-value-123456")).resolves.toEqual({ status: expected });
+  });
+
+  it("비밀번호 시도 한도 429 는 잠금 판정으로 바꾸고 서버가 알려 준 재시도 초를 싣는다", async () => {
+    get.mockRejectedValue(apiError(429, "version_share_password_locked", 900));
+    await expect(resolveVersionShare("token-value-123456", "wrong")).resolves.toEqual({
+      status: "password_locked",
+      retryAfterSeconds: 900,
+    });
+  });
+
+  it("코드가 다른 429(일반 속도 제한)는 잠금이 아니라 재시도 오류로 던진다", async () => {
+    get.mockRejectedValue(apiError(429, "rate_limited", 30));
+    await expect(resolveVersionShare("token-value-123456")).rejects.toMatchObject({ status: 429 });
   });
 
   it("403은 로그인 필요로 바꾼다", async () => {
