@@ -7,7 +7,7 @@
  */
 
 import { resolveStudioVisibleDocumentPlacement } from "../studio-view-controls";
-import { createStudioCharmCascade } from "./studio-charm-cascade";
+import { createStudioCharmBurst, createStudioCharmCascade } from "./studio-charm-cascade";
 
 import type {
   StudioCharmActivationContext,
@@ -31,6 +31,11 @@ interface StudioCharmMeasurable {
 export interface StudioCharmHostSession {
   readonly studioToolBeltContentHandlers: StudioCharmHostCommands;
   readonly selected?: (StudioCharmSelectionBounds & { readonly id?: string }) | null;
+  /**
+   * 지금 문서에 있는 요소(ID 만 쓴다). 붙인 직후 호스트가 자동으로 고른 요소와 사용자가 직접 고른 요소를 가르는 데 쓴다
+   * (`createStudioCharmBurst`). 모르면 연달아 붙일 때 대상을 이어 받지 않는다.
+   */
+  readonly elements?: readonly { readonly id: string }[];
   readonly canvasH: number;
   readonly canvasFlipH: boolean;
   readonly canvasRotation: number;
@@ -71,15 +76,22 @@ export interface StudioCharmContextReader {
   read(session: StudioCharmHostSession, now?: number): StudioCharmActivationContext;
 }
 
-/** 연속 삽입 계단 카운터를 가진 문맥 읽기 도구를 만든다. 바 하나가 하나씩 가진다. */
+/**
+ * 연속 삽입 계단 카운터와 선택 이어 받기를 가진 문맥 읽기 도구를 만든다. 바 하나가 하나씩 가진다.
+ *
+ * 선택은 세션 값을 그대로 쓰되, 직전 붙이기가 만든 요소가 자동으로 선택된 것이라면 그 붙이기가 쓴 선택을 이어 받는다
+ * (같은 컷에 연달아 붙이면 매번 그 컷 안에서 계단식으로 이어진다).
+ */
 export function createStudioCharmContextReader(documentWidth: number): StudioCharmContextReader {
   const cascade = createStudioCharmCascade();
+  const burst = createStudioCharmBurst<StudioCharmSelectionBounds>();
   return {
     read(session, now = Date.now()) {
+      const selection = burst(session.selected ?? null, session.elements?.map((element) => element.id) ?? null, now);
       return {
         documentWidth,
         documentHeight: session.canvasH,
-        selection: session.selected ?? null,
+        selection,
         visible: readVisibleTarget(session, documentWidth),
         snap: {
           enabled: session.snapEnabled,

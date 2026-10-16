@@ -91,6 +91,28 @@ describe("참 바 호스트 어댑터: 누르는 순간의 문맥", () => {
     expect(later.sequenceFor("viewport:4:8")).toBe(0);
   });
 
+  it("연달아 붙일 때 호스트가 자동으로 고른 새 요소 대신 직전 붙이기의 컷을 이어 받아 같은 대상 키로 센다", () => {
+    const reader = createStudioCharmContextReader(720);
+    const frame = { id: "frame-1", type: "frame", x: 100, y: 200, width: 400, height: 300 };
+    const stamped = { id: "new-1", type: "image", x: 162, y: 212, width: 276, height: 276 };
+    const first = reader.read(session({ selected: frame, elements: [{ id: "frame-1" }] }), 1_000);
+    expect(first.selection).toBe(frame);
+    expect(first.sequenceFor("selected-frame:frame-1")).toBe(0);
+    // 호스트가 방금 붙인 요소를 선택했다: 세션의 선택은 새 요소지만 컷을 이어 받는다.
+    const second = reader.read(session({ selected: stamped, elements: [{ id: "frame-1" }, { id: "new-1" }] }), 2_000);
+    expect(second.selection).toBe(frame);
+    expect(second.sequenceFor("selected-frame:frame-1")).toBe(1);
+  });
+
+  it("사용자가 문서에 원래 있던 요소를 직접 고르면 이어 받지 않는다", () => {
+    const reader = createStudioCharmContextReader(720);
+    const frame = { id: "frame-1", type: "frame", x: 100, y: 200, width: 400, height: 300 };
+    const photo = { id: "img-1", type: "image", x: 50, y: 60, width: 200, height: 100 };
+    const elements = [{ id: "frame-1" }, { id: "img-1" }];
+    reader.read(session({ selected: frame, elements }), 1_000);
+    expect(reader.read(session({ selected: photo, elements }), 2_000).selection).toBe(photo);
+  });
+
   it("바 하나가 자기 카운터를 가진다(다른 바와 섞이지 않는다)", () => {
     const left = createStudioCharmContextReader(720);
     const right = createStudioCharmContextReader(720);

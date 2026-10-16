@@ -9,6 +9,8 @@
  * 놓을 위치는 기존 삽입 규칙을 재사용한다.
  * - 대상: `resolveStudioInsertTarget` — 선택한 컷(프레임) 중앙 → (프레임이 아닌 선택이면 그 중앙) → 보이는 화면 중앙 → 문서 중앙.
  * - 겹침 방지: `cascadeCanvasPlacementAnchor` — 같은 대상에 5초 안에 연달아 붙이면 계단식으로 비킨다.
+ *   호스트는 붙인 요소를 곧바로 선택하므로, 호출자(`createStudioCharmContextReader`)가 "방금 붙인 요소가 자동으로
+ *   선택된 것"을 알아보고 직전 붙이기의 선택을 이어 준다(`createStudioCharmBurst`). 이 파일의 계획은 받은 선택만 본다.
  * - 격자 스냅: `snapStudioObjectDragPosition` — 객체를 끌 때와 같은 자석 스냅(화면 px 허용 거리)을 왼쪽 위 모서리에 적용한다.
  */
 
@@ -39,8 +41,9 @@ export interface StudioCharmSelectionBounds {
   readonly type: string;
   readonly x: number;
   readonly y: number;
-  readonly width: number;
-  readonly height: number;
+  /** 스티커처럼 크기를 들지 않는 요소는 폭·높이가 없다(텍스트는 폭만 있다). 크기를 알 수 없으면 선택 위치로 쓰지 않는다. */
+  readonly width?: number;
+  readonly height?: number;
 }
 
 export interface StudioCharmSnapSettings {
@@ -120,16 +123,19 @@ function clamp(value: number, minimum: number, maximum: number): number {
 }
 
 function finiteBounds(bounds: StudioCharmSelectionBounds | null): StudioInsertBounds | null {
+  if (!bounds) return null;
+  const { x, y, width, height } = bounds;
   if (
-    !bounds
-    || !Number.isFinite(bounds.x)
-    || !Number.isFinite(bounds.y)
-    || !Number.isFinite(bounds.width)
-    || !Number.isFinite(bounds.height)
-    || bounds.width <= 0
-    || bounds.height <= 0
+    !Number.isFinite(x)
+    || !Number.isFinite(y)
+    || width === undefined
+    || height === undefined
+    || !Number.isFinite(width)
+    || !Number.isFinite(height)
+    || width <= 0
+    || height <= 0
   ) return null;
-  return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+  return { x, y, width, height };
 }
 
 function insetFor(target: StudioInsertTarget): number {

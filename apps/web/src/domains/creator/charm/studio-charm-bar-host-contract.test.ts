@@ -215,6 +215,16 @@ describe("참 바 호스트 계약: 명령 전달과 놓기", () => {
     expect(placeAt.match(/\baddEl\(/gu)).toHaveLength(1);
   });
 
+  it("호스트는 슬롯이 읽는 선택과 요소 목록을 뷰 세션에 그대로 넘긴다(연달아 붙일 때 선택 이어 받기의 전제)", () => {
+    const source = readFileSync(new URL(HOST_SOURCE, import.meta.url), "utf8");
+    // 호스트의 addEl 은 새 요소를 문서에 넣고 곧바로 선택한다. 슬롯은 이 둘을 비교해 "방금 붙인 요소"를 알아본다.
+    expect(source).toMatch(/\n\s+selected=\{selected\}\n/u);
+    expect(source).toMatch(/\n\s+elements=\{elements\}\n/u);
+    const [addEl] = findFunctions(host, "addEl");
+    const body = addEl.body?.getText(host) ?? "";
+    expect(body).toContain("setSelectedId(el.id)");
+  });
+
   it("작업공간은 참 바 슬롯을 캔버스 열 앞에 한 번만 두고 세션을 그대로 넘긴다", () => {
     const workspace = readFileSync(
       new URL(`${CREATOR}studio-cuttoon-editor/StudioCuttoonEditorWorkspace.tsx`, import.meta.url),
