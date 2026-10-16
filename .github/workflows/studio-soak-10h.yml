@@ -32,9 +32,6 @@ jobs:
     name: 1/2 UX · mobile · persistence soak
     runs-on: ubuntu-latest
     timeout-minutes: 355
-    env:
-      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
-      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -56,7 +53,10 @@ jobs:
         run: pnpm run build
       - name: Run UX, mobile, lifecycle and persistence combinations
         continue-on-error: true
+        # Jira 자격은 이슈를 올리는 이 단계에만 준다(설치·빌드 단계에는 노출하지 않는다).
         env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SOAK_PHASE: ux-persistence
           SOAK_RESULTS_DIR: artifacts/studio-soak/ux-persistence
@@ -77,9 +77,6 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 355
-    env:
-      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
-      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -99,7 +96,10 @@ jobs:
         run: pnpm run build
       - name: Run rendering, brush engine, WebGPU, WebGL2 and 3D combinations
         continue-on-error: true
+        # Jira 자격은 이슈를 올리는 이 단계에만 준다(설치·빌드 단계에는 노출하지 않는다).
         env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SOAK_PHASE: rendering-brush-3d
           SOAK_RESULTS_DIR: artifacts/studio-soak/rendering-brush-3d
