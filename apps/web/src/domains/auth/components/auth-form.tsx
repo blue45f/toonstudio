@@ -30,6 +30,7 @@ import {
 } from "./auth-provider-discovery";
 import { resolveAuthEmailActionResult } from "./auth-email-action-result";
 import { GoogleIdentityButton } from "./google-identity-button";
+import { AuthInAppBrowserNotice } from "./in-app-browser-notice";
 import { GuestEntryButton } from "./guest-entry-button";
 
 import {
@@ -455,6 +456,7 @@ export function AuthForm({
             </p>
           </div>
 
+          <AuthInAppBrowserNotice />
           <div
             role="tablist"
             aria-label={translateCurrentStaticSourceText(
