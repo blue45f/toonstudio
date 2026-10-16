@@ -26,7 +26,6 @@ import {
 } from "./studio-bg3d-camera-orientation";
 import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
 import { normalizeStudioBg3dHierarchyParents } from "./studio-bg3d-hierarchy";
-import { snapshotStudioBg3dShotOutput } from "./studio-bg3d-shot-output-snapshot";
 import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
 import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 
@@ -2057,6 +2056,8 @@ export function captureStudioBg3dShot(
     return null;
   }
 
+  // 컷은 문서 공통 캡처 비율을 소유하지 않는다(조명 environment 와 같은 이유): 넣으면 엄격 정규화가 컷 저장을 거부한다.
+  const { exportAspectRatio: _documentWideRatio, ...shotOutput } = document.output;
   const shot: StudioBg3dShot = {
     ...normalizedRequest,
     camera: { ...document.camera },
@@ -2068,7 +2069,7 @@ export function captureStudioBg3dShot(
       key: { ...document.lighting.key },
       fill: { ...document.lighting.fill },
     },
-    output: snapshotStudioBg3dShotOutput(document.output),
+    output: { ...shotOutput, line: { ...shotOutput.line }, tone: { ...shotOutput.tone } },
   };
   return canonicalDocumentForShotHelper({
     ...withoutActiveShot(document),

@@ -11,7 +11,6 @@ import {
   parseStudioBg3dSceneDocument,
   serializeStudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
-import { snapshotStudioBg3dShotOutput } from "./studio-bg3d-shot-output-snapshot";
 
 import type { StudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 
@@ -31,33 +30,25 @@ function documentWithAspect(exportAspectRatio: number | null, exportHeight = 1_0
   });
 }
 
-describe("snapshotStudioBg3dShotOutput", () => {
+describe("the output a cut records", () => {
   it("keeps what a cut owns and leaves the document-wide capture ratio out", () => {
     const document = documentWithAspect(21 / 9, 1_440);
-    const snapshot = snapshotStudioBg3dShotOutput(document.output);
-    expect(snapshot).toEqual({
+    const output = captureStudioBg3dShot(document, { id: "cut-a", name: "A" })!.shots![0]!.output;
+    expect(output).toEqual({
       transparentBackground: document.output.transparentBackground,
       exportHeight: 1_440,
       line: document.output.line,
       tone: document.output.tone,
     });
-    expect("exportAspectRatio" in snapshot).toBe(false);
+    expect(output).not.toHaveProperty("exportAspectRatio");
   });
 
-  it("copies line and tone so the cut never aliases the live document", () => {
+  it("is the same output a document without a fixed ratio always recorded", () => {
     const document = documentWithAspect(null);
-    const snapshot = snapshotStudioBg3dShotOutput(document.output);
-    expect(snapshot.line).not.toBe(document.output.line);
-    expect(snapshot.tone).not.toBe(document.output.tone);
-  });
-
-  it("is the same snapshot a document without a fixed ratio always produced", () => {
-    const document = documentWithAspect(null);
-    expect(snapshotStudioBg3dShotOutput(document.output)).toEqual({
-      ...document.output,
-      line: { ...document.output.line },
-      tone: { ...document.output.tone },
-    });
+    const output = captureStudioBg3dShot(document, { id: "cut-a", name: "A" })!.shots![0]!.output;
+    expect(output).toEqual(document.output);
+    expect(output?.line).not.toBe(document.output.line);
+    expect(output?.tone).not.toBe(document.output.tone);
   });
 });
 
