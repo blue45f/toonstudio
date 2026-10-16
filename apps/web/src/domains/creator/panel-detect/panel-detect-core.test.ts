@@ -10,6 +10,7 @@ import {
   rectIou,
   rectNear,
 } from "./panel-detect-fixtures";
+import { minGapForSensitivity } from "./panel-detect-runtime";
 import { PanelDetectError, type PanelDetectResult, type PanelRect } from "./panel-detect-types";
 
 function rects(result: PanelDetectResult): PanelRect[] {
@@ -357,5 +358,19 @@ describe("컷 감지 — 결정성과 실행 규칙", () => {
     for (let index = 0; index < 8; index += 1) image.art(20 + index * 144, 20, 120, 360, { seed: index, balloon: false });
     expect(() => detectPanels(image.raster(), { maxPanels: 4, sensitivity: "fine" }))
       .toThrowError(expect.objectContaining({ code: "too-many-panels" }));
+  });
+});
+
+describe("컷 감지 — 민감도별 여백 최소 두께", () => {
+  // 이 표는 docs/features/panel-detect-reflow.md 알고리즘 3 단계에 적은 값이다. 값을 바꾸면 문서도 함께 고친다.
+  it("분석 래스터의 짧은 변 대비 섬세 0.3%(하한 2px)·보통 0.7%(하한 3px)·넓은 여백만 1.6%(하한 4px)다", () => {
+    // 하한이 걸리는 작은 이미지(짧은 변 100px)
+    expect(minGapForSensitivity("fine", 100, 400)).toBe(2);
+    expect(minGapForSensitivity("normal", 100, 400)).toBe(3);
+    expect(minGapForSensitivity("coarse", 100, 400)).toBe(4);
+    // 비율이 걸리는 큰 이미지(짧은 변 1000px). 짧은 변은 가로·세로 중 작은 쪽이다.
+    expect(minGapForSensitivity("fine", 1000, 1500)).toBe(3);
+    expect(minGapForSensitivity("normal", 1500, 1000)).toBe(7);
+    expect(minGapForSensitivity("coarse", 1000, 1500)).toBe(16);
   });
 });

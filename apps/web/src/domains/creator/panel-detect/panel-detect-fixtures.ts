@@ -207,6 +207,27 @@ export class FixtureImage {
     return { x, y, width, height };
   }
 
+  /**
+   * 어두운 그림: 짙은 바탕에 밝은 점(빗줄기·별 같은 잔무늬)이 줄마다 `detail` 비율로 흩어져 있다.
+   * 줄 대부분이 "거의 한 색(어두운 색)"이라 여백색 표를 받지만, detail 이 내용 허용 비율(1.2%)보다 크면 여백 줄은 아니다.
+   * 바깥 여백 없이 이미지 끝까지 닿는 컷을 만들 때 쓴다.
+   */
+  darkArt(x: number, y: number, width: number, height: number, options: { readonly seed?: number; readonly detail?: number } = {}): PanelRect {
+    const random = mulberry32((options.seed ?? 0) * 977 + 13);
+    const dots = Math.round(width * (options.detail ?? 0.03));
+    for (let yy = y; yy < y + height; yy += 1) {
+      for (let xx = x; xx < x + width; xx += 1) {
+        const base = 22 + Math.floor(random() * 20);
+        this.put(xx, yy, [base, base, base + 4]);
+      }
+      for (let k = 0; k < dots; k += 1) {
+        const light = 205 + Math.floor(random() * 50);
+        this.put(x + Math.floor(random() * width), yy, [light, light, light]);
+      }
+    }
+    return { x, y, width, height };
+  }
+
   /** 가운데를 중심으로 시계 방향 degrees 만큼 돌린 새 이미지(가장 가까운 화소, 바깥은 흰색). 기울어진 스캔 시험용. */
   rotated(degrees: number): FixtureImage {
     const out = new FixtureImage(this.width, this.height, WHITE);

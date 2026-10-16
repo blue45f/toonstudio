@@ -4,6 +4,10 @@
  * "여백(gutter)"은 컷 사이·바깥을 채우는 단색 영역이다. 흰색, 검정, 임의의 단색, 투명을 모두 허용한다.
  * 여백색은 이미지 전체에서 고른 간격의 행·열을 표본으로 뽑아, 한 줄이 거의 한 색(94% 이상)인 줄에 표를 던져
  * 가장 많이 받은 색으로 정한다. 그런 줄이 하나도 없으면(전면 삽화 등) 여백을 찾지 못한 것이다 — 지어내지 않는다.
+ *
+ * 가장 많이 표를 받은 색이 틀릴 수도 있다(바깥 여백 없이 끝까지 닿는 어두운 그림). 그래서 alternativeGutters 가 다른 후보
+ * (표를 받은 다른 색, 흰색, 검정)를 순서대로 내고, 실제로 컷이 나뉘는지는 panel-detect-core 가 분석해 보고 정한다.
+ * 여기서는 후보를 낼 뿐 여백이라고 단정하지 않는다.
  */
 
 import { PANEL_DETECT_LIMITS, PanelDetectError } from "./panel-detect-types";
@@ -145,11 +149,14 @@ interface ColorBin {
   sumB: number;
 }
 
-/**
- * 여백색을 추정한다. 표본은 결정적(고른 간격)이라 같은 입력은 항상 같은 결과를 낸다.
- * 비용은 이미지 크기와 무관하게 최대 약 20만 픽셀 접근이다.
- */
-export function estimateGutter(raster: PanelDetectRaster, tolerance: number): GutterInfo {
+interface GutterVotes {
+  readonly bins: ReadonlyMap<number, ColorBin>;
+  readonly transparentLines: number;
+  readonly minVotes: number;
+}
+
+/** 고른 간격의 행·열 표본에서 "거의 한 색인 줄"의 표를 모은다. 표본은 결정적이라 같은 입력은 항상 같은 결과를 낸다. */
+function collectGutterVotes(raster: PanelDetectRaster, tolerance: number): GutterVotes {
   const scratch: LineScratch = {
     r: new Uint8Array(GUTTER_MAX_SAMPLES),
     g: new Uint8Array(GUTTER_MAX_SAMPLES),
@@ -179,27 +186,24 @@ export function estimateGutter(raster: PanelDetectRaster, tolerance: number): Gu
   };
   for (const y of rowLines) vote(sampleLine(raster, "row", y, tolerance, scratch));
   for (const x of colLines) vote(sampleLine(raster, "col", x, tolerance, scratch));
+  return { bins, transparentLines, minVotes: Math.max(2, Math.ceil(0.004 * (rowLines.length + colLines.length))) };
+}
 
-  const minVotes = Math.max(2, Math.ceil(0.004 * (rowLines.length + colLines.length)));
-  let bestKey = -1;
-  let bestBin: ColorBin | null = null;
+/** 표를 가장 많이 받은 칸. 표 수가 같으면 키가 작은 칸(결정적). */
+function topBin(bins: ReadonlyMap<number, ColorBin>, skip?: ReadonlySet<number>): { readonly key: number; readonly bin: ColorBin } | null {
+  let best: { readonly key: number; readonly bin: ColorBin } | null = null;
   for (const [key, bin] of bins) {
-    if (bestBin === null || bin.count > bestBin.count || (bin.count === bestBin.count && key < bestKey)) {
-      bestKey = key;
-      bestBin = bin;
-    }
+    if (skip?.has(key)) continue;
+    if (best === null || bin.count > best.bin.count || (bin.count === best.bin.count && key < best.key)) best = { key, bin };
   }
-  const bestCount = bestBin?.count ?? 0;
-  if (transparentLines >= minVotes && transparentLines >= bestCount) {
-    return { kind: "transparent", color: null, tolerance, votes: transparentLines };
-  }
-  if (bestBin === null || bestCount < minVotes) {
-    return { kind: "none", color: null, tolerance, votes: bestCount };
-  }
-  // 이웃 칸(양자화 경계에 걸린 같은 색)을 합쳐 대표색을 다시 구한다.
-  const centerR = bestBin.sumR / bestBin.count;
-  const centerG = bestBin.sumG / bestBin.count;
-  const centerB = bestBin.sumB / bestBin.count;
+  return best;
+}
+
+/** 이웃 칸(양자화 경계에 걸린 같은 색)을 합쳐 대표색과 표 수를 구한다. */
+function gutterFromBin(bins: ReadonlyMap<number, ColorBin>, chosen: ColorBin, tolerance: number): GutterInfo {
+  const centerR = chosen.sumR / chosen.count;
+  const centerG = chosen.sumG / chosen.count;
+  const centerB = chosen.sumB / chosen.count;
   let mergedCount = 0;
   let mergedR = 0;
   let mergedG = 0;
@@ -221,6 +225,57 @@ export function estimateGutter(raster: PanelDetectRaster, tolerance: number): Gu
     b: Math.round(mergedB / mergedCount),
   };
   return { kind: classifyKind(color), color, tolerance, votes: mergedCount };
+}
+
+/**
+ * 여백색을 추정한다. 표본은 결정적(고른 간격)이라 같은 입력은 항상 같은 결과를 낸다.
+ * 비용은 이미지 크기와 무관하게 최대 약 20만 픽셀 접근이다.
+ */
+export function estimateGutter(raster: PanelDetectRaster, tolerance: number): GutterInfo {
+  const { bins, transparentLines, minVotes } = collectGutterVotes(raster, tolerance);
+  const best = topBin(bins);
+  const bestCount = best?.bin.count ?? 0;
+  if (transparentLines >= minVotes && transparentLines >= bestCount) {
+    return { kind: "transparent", color: null, tolerance, votes: transparentLines };
+  }
+  if (best === null || bestCount < minVotes) {
+    return { kind: "none", color: null, tolerance, votes: bestCount };
+  }
+  return gutterFromBin(bins, best.bin, tolerance);
+}
+
+const CANONICAL_GUTTERS: readonly GutterColor[] = Object.freeze([
+  Object.freeze({ r: 255, g: 255, b: 255 }),
+  Object.freeze({ r: 0, g: 0, b: 0 }),
+]);
+
+function sameGutterColor(a: GutterColor, b: GutterColor, tolerance: number): boolean {
+  return Math.abs(a.r - b.r) <= tolerance && Math.abs(a.g - b.g) <= tolerance && Math.abs(a.b - b.b) <= tolerance;
+}
+
+/**
+ * 가장 많이 표를 받은 색이 여백이 아니었을 때를 위한 다른 가설들. 표를 받은 다른 색을 많은 순서로 내고,
+ * 그다음 흰색·검정을 낸다(여백이 한두 줄뿐이라 표본에 거의 안 잡힌 얇은 여백을 찾기 위해서다).
+ * 이미 시험한 색과 허용 오차 안에서 같은 색은 건너뛰고, 최대 limit 개를 돌려준다. 같은 입력은 항상 같은 순서를 낸다.
+ */
+export function alternativeGutters(raster: PanelDetectRaster, tolerance: number, primary: GutterInfo, limit: number): GutterInfo[] {
+  if (primary.kind === "transparent") return [];
+  const { bins } = collectGutterVotes(raster, tolerance);
+  const seen: GutterColor[] = primary.color === null ? [] : [primary.color];
+  const alternatives: GutterInfo[] = [];
+  const add = (info: GutterInfo): void => {
+    const color = info.color;
+    if (color === null || alternatives.length >= limit || seen.some((known) => sameGutterColor(known, color, tolerance))) return;
+    seen.push(color);
+    alternatives.push(info);
+  };
+  const skip = new Set<number>();
+  for (let next = topBin(bins, skip); next !== null && alternatives.length < limit; next = topBin(bins, skip)) {
+    skip.add(next.key);
+    add(gutterFromBin(bins, next.bin, tolerance));
+  }
+  for (const color of CANONICAL_GUTTERS) add({ kind: classifyKind(color), color, tolerance, votes: 0 });
+  return alternatives;
 }
 
 /** 한 소스 픽셀(RGBA 시작 오프셋 p)이 여백이 아닌 내용인지. */

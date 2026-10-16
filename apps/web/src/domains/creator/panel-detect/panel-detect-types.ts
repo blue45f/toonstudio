@@ -149,7 +149,7 @@ export interface GutterInfo {
   /** transparent / none 이면 null. */
   readonly color: GutterColor | null;
   readonly tolerance: number;
-  /** 같은 색으로 균일했던 표본 행·열 수. */
+  /** 같은 색으로 균일했던 표본 행·열 수. 표본에서 표를 받지 못하고 가설로만 시험한 흰색·검정이면 0. */
   readonly votes: number;
 }
 

@@ -6,7 +6,9 @@
  * - 동기 드라이버: 테스트·Worker 안의 단순 실행. 끝까지 멈추지 않지만 시간 상한은 지킨다.
  * - 비동기 드라이버: 메인 스레드에서 쓰는 실행. 일정 시간마다 이벤트 루프에 양보해 화면이 멈추지 않고,
  *   AbortSignal 같은 취소 신호가 실제로 전달될 틈을 만든다.
- * 같은 입력은 어느 드라이버로 돌려도 같은 결과를 낸다(결정성). 시간은 오류(timeout)에만 영향을 준다.
+ * 같은 입력은 어느 드라이버로 돌려도 같은 결과를 낸다(결정성). 시간은 오류(timeout)에만 영향을 주되, 한 가지 예외가 있다:
+ * 처음 추정이 나누지 못했을 때 시험하는 다른 여백색 가설은 시간 상한의 절반 안에서만 시험하므로(panel-detect-core 의
+ * ALTERNATIVE_TIME_SHARE), 아주 느린 기기에서는 가설 없이 처음 결과가 나올 수 있다.
  */
 
 import {
@@ -19,10 +21,14 @@ import {
   type PanelReadingOrder,
 } from "./panel-detect-types";
 
-/** 민감도별 여백 최소 두께: 분석 래스터의 짧은 변 대비 비율(최소 픽셀 하한 포함). */
+/**
+ * 민감도별 여백 최소 두께: 분석 래스터의 짧은 변 대비 비율(최소 픽셀 하한 포함). docs/features/panel-detect-reflow.md 의
+ * 알고리즘 3 단계에 같은 값을 적었고, panel-detect-core.test.ts 가 이 표를 고정한다.
+ * 하한 2px 아래로는 내릴 수 없다: 여백 양끝이 열려 있다고 판정하는 데 최소 2줄의 빈 구간이 필요하다(frames 의 openingLength).
+ */
 const SENSITIVITY_GAP: Readonly<Record<PanelDetectSensitivity, { readonly ratio: number; readonly floor: number }>> =
   Object.freeze({
-    fine: { ratio: 0.004, floor: 3 },
+    fine: { ratio: 0.003, floor: 2 },
     normal: { ratio: 0.007, floor: 3 },
     coarse: { ratio: 0.016, floor: 4 },
   });

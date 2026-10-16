@@ -4,6 +4,9 @@
  * 흐름
  *  1. 입력 RGBA 를 검증하고, 이미지 전체에서 여백색(흰·검정·단색·투명)을 추정한다. 여백이 하나도 없으면
  *     (전면 삽화) 컷을 쪼개지 않고 이미지 전체를 낮은 신뢰도의 컷 하나로 돌려준다.
+ *     처음 추정으로 한 군데도 못 나눴거나 신뢰도가 낮으면 다른 여백색 가설(표를 받은 다른 색, 흰색, 검정)을 시험한다.
+ *     바깥 여백 없이 끝까지 닿는 어두운 그림에서는 그림의 어두운 색이 여백색으로 뽑힐 수 있기 때문이다. 컷이 둘 이상으로
+ *     나뉘고 신뢰도가 충분히 좋을 때만 가설을 채택한다(detectPanelSteps).
  *  2. 입력이 분석 상한을 넘으면 정수 배율로 다운샘플한 "내용 마스크"를 만든다(여백 아님 = 1).
  *  3. 영역을 바깥 여백까지 잘라 낸 뒤, 행 투영으로 위아래로 나누고(여백 줄 묶음이 최소 두께 이상일 때)
  *     못 나누면 열 투영으로 좌우로 나눈다. 나뉜 조각은 반대 축을 먼저 시도하며 재귀한다(최대 깊이 제한).
@@ -13,7 +16,8 @@
  *     아니면 컷으로 채택한다. 기울어진 컷·겹침은 지어내지 않고 검출 불가로 보고한다.
  *  5. 원본 좌표로 되돌려 읽기 순서를 붙이고 신뢰도를 계산한다.
  *
- * 결정성: 난수·시계 의존 없음. 같은 입력·옵션은 입력 배열 종류(Uint8ClampedArray 등)와 무관하게 같은 결과다.
+ * 결정성: 난수 의존 없음. 같은 입력·옵션은 입력 배열 종류(Uint8ClampedArray 등)와 무관하게 같은 결과다. 시계가 결과를 바꾸는
+ * 곳은 한 군데뿐이다: 1 의 가설 시험이 시간 상한의 절반을 넘으면 중단하고 처음 결과를 낸다(아주 느린 기기에서만 걸린다).
  * 실행: 알고리즘은 generator 하나이고, 동기(detectPanels)·비동기(detectPanelsAsync) 드라이버가 구동한다.
  */
 
@@ -34,6 +38,7 @@ import {
   type PanelRegion,
 } from "./panel-detect-profile";
 import {
+  alternativeGutters,
   analysisStepFor,
   assertPanelDetectRaster,
   buildInkMask,
@@ -70,6 +75,8 @@ interface AnalysisContext extends LeafContext {
   readonly leaves: LeafRecord[];
   readonly ignored: FragmentRecord[];
   readonly undetectable: UndetectableRecord[];
+  /** 영역을 실제로 나눈 횟수. 0 이면 여백으로 나뉜 곳이 하나도 없다는 뜻이다. */
+  readonly stats: { splits: number };
 }
 
 interface Child {
@@ -200,7 +207,10 @@ function* analyzeRegion(
     const proposal = splitRegion(context, trimmed, trimmedSides, axis);
     if (context.budget.consume(trimmedArea)) yield;
     const next: Axis = axis === "rows" ? "cols" : "rows";
-    if (proposal.strict === null && proposal.lenient !== null && (yield* acceptContainer(context, proposal.lenient, depth, next))) return;
+    if (proposal.strict === null && proposal.lenient !== null && (yield* acceptContainer(context, proposal.lenient, depth, next))) {
+      context.stats.splits += 1;
+      return;
+    }
     const children = proposal.strict;
     if (children === null) continue;
     if (depth >= context.options.maxDepth) {
@@ -208,6 +218,7 @@ function* analyzeRegion(
       inherited.push("max-depth-reached");
       break;
     }
+    context.stats.splits += 1;
     for (const child of children) yield* analyzeRegion(context, child.region, child.sides, depth + 1, next);
     return;
   }
@@ -254,15 +265,21 @@ function wholeImageResult(
   });
 }
 
-export function* detectPanelSteps(
+interface GutterAnalysis {
+  readonly result: PanelDetectResult;
+  /** 영역을 여백으로 나눈 횟수. */
+  readonly splits: number;
+  /** 이미지 전체가 여백색 하나라서 내용이 없다. */
+  readonly blank: boolean;
+}
+
+/** 정해진 여백색 하나를 가정하고 이미지를 끝까지 분석한다. */
+function* analyzeWithGutter(
   raster: PanelDetectRaster,
   options: ResolvedPanelDetectOptions,
-): Generator<void, PanelDetectResult, void> {
-  assertPanelDetectRaster(raster);
-  const gutter = estimateGutter(raster, options.gutterTolerance);
-  if (gutter.kind === "none") return wholeImageResult(raster, options, gutter);
-
-  const budget = new PanelDetectBudget();
+  gutter: GutterInfo,
+  budget: PanelDetectBudget,
+): Generator<void, GutterAnalysis, void> {
   const step = analysisStepFor(raster.width, raster.height, options.maxAnalysisPixels);
   const mask: InkMask = yield* buildInkMask(raster, gutter, step, budget);
   const full: PanelRegion = { x0: 0, y0: 0, x1: mask.width, y1: mask.height };
@@ -285,12 +302,13 @@ export function* detectPanelSteps(
     leaves: [],
     ignored: [],
     undetectable: [],
+    stats: { splits: 0 },
   };
   if (totalInk > 0) {
     const bleed: PanelSides = { top: BLEED, bottom: BLEED, left: BLEED, right: BLEED };
     yield* analyzeRegion(context, full, bleed, 0, "rows");
   }
-  return assemblePanelDetectResult({
+  const result = assemblePanelDetectResult({
     raster,
     options,
     gutter,
@@ -303,6 +321,87 @@ export function* detectPanelSteps(
     undetectable: context.undetectable,
     blank: totalInk === 0,
   });
+  return { result, splits: context.stats.splits, blank: totalInk === 0 };
+}
+
+/** 다른 여백색 가설을 한 번에 최대 이만큼 시험한다. */
+const ALTERNATIVE_GUTTER_LIMIT = 3;
+/** 처음 추정이 어디선가 나눈 결과라면, 가설이 바뀐 결과는 전체 신뢰도가 이만큼 이상 좋아져야 채택한다(애매하면 처음 추정을 믿는다). */
+const ALTERNATIVE_CONFIDENCE_MARGIN = 0.1;
+/**
+ * 처음 추정이 한 군데도 못 나눴을 때는 "컷 한 장"이라는 결과의 신뢰도가 가설과 무관하게 높게 나오므로(잘못된 여백색으로는
+ * 이상한 점이 눈에 띄지 않는다) 비교하지 않고, 다른 가설이 컷을 둘 이상으로 나누면서 이 신뢰도 이상이면 채택한다.
+ */
+const ALTERNATIVE_MIN_CONFIDENCE = 0.5;
+/** 처음 추정의 전체 신뢰도가 이보다 낮으면 다른 여백색 가설을 시험한다(잘 나뉜 결과에는 추가 비용이 없다). */
+const ALTERNATIVE_TRIGGER_CONFIDENCE = 0.6;
+/**
+ * 다른 여백색 가설은 시간 상한의 이 비율 안에서만 시험한다. 이미 넘었으면 시작하지 않고, 시험하다가 넘으면 그 가설을
+ * 버리고 처음 결과를 낸다. 가설 시험 때문에 멀쩡히 끝난 분석이 시간 초과로 실패하는 일이 없게 하려는 것이다(아주 느린
+ * 기기에서만 걸린다). 결과가 시계에 따라 달라지는 곳은 이 판정 하나뿐이며, 그때 나오는 것은 가설 시험을 도입하기 전과
+ * 같은 처음 결과다.
+ */
+const ALTERNATIVE_TIME_SHARE = 0.5;
+
+/**
+ * 가설 하나를 시험한다. 처음 결과를 잃지 않도록 다음 두 경우에는 조용히 버리고 null 을 돌려준다.
+ * - 가설이 컷을 너무 잘게 쪼개 상한을 넘겼다(too-many-panels): 그 가설이 틀렸다는 뜻이다.
+ * - 시계가 giveUpAt 을 넘겼다: 드라이버의 시간 상한까지 가면 처음 결과까지 timeout 오류로 사라진다.
+ * 드라이버의 취소·시간 상한 점검은 이 시험이 양보할 때마다 그대로 이어진다.
+ */
+function* tryGutterHypothesis(
+  raster: PanelDetectRaster,
+  options: ResolvedPanelDetectOptions,
+  gutter: GutterInfo,
+  budget: PanelDetectBudget,
+  giveUpAt: number,
+): Generator<void, GutterAnalysis | null, void> {
+  const steps = analyzeWithGutter(raster, options, gutter, budget);
+  try {
+    for (let step = steps.next(); ; step = steps.next()) {
+      if (step.done) return step.value;
+      if (options.now() > giveUpAt) return null;
+      yield;
+    }
+  } catch (error) {
+    if (error instanceof PanelDetectError && error.code === "too-many-panels") return null;
+    throw error;
+  }
+}
+
+export function* detectPanelSteps(
+  raster: PanelDetectRaster,
+  options: ResolvedPanelDetectOptions,
+): Generator<void, PanelDetectResult, void> {
+  assertPanelDetectRaster(raster);
+  const startedAt = options.now();
+  const gutter = estimateGutter(raster, options.gutterTolerance);
+  const budget = new PanelDetectBudget();
+  const primary: GutterAnalysis = gutter.kind === "none"
+    ? { result: wholeImageResult(raster, options, gutter), splits: 0, blank: false }
+    : yield* analyzeWithGutter(raster, options, gutter, budget);
+  if (primary.blank || gutter.kind === "transparent") return primary.result;
+  // 여백으로 잘 나뉘었으면 처음 추정을 그대로 쓴다. 추가 비용도 없다.
+  if (primary.splits > 0 && primary.result.confidence >= ALTERNATIVE_TRIGGER_CONFIDENCE) return primary.result;
+
+  // 어디도 나뉘지 않았거나 신뢰도가 낮다. 전면 삽화이거나 여백이 얇아서일 수도 있지만, 바깥 여백이 없고 그림이 어둡거나
+  // 단색 면이 넓어서 "거의 한 색인 줄"이 그림 속에서 더 많이 나온 탓에 여백색을 잘못 짚은 것일 수도 있다. 다른 여백색
+  // 가설을 시험해, 실제로 컷이 둘 이상 나뉘고 신뢰도가 충분히(또는 뚜렷이) 좋을 때만 바꾼다.
+  const giveUpAt = startedAt + options.timeLimitMs * ALTERNATIVE_TIME_SHARE;
+  let best = primary.result;
+  for (const alternative of alternativeGutters(raster, options.gutterTolerance, gutter, ALTERNATIVE_GUTTER_LIMIT)) {
+    if (options.now() > giveUpAt) break;
+    const attempt = yield* tryGutterHypothesis(raster, options, alternative, budget, giveUpAt);
+    if (attempt === null || attempt.splits === 0 || attempt.result.panels.length < 2) continue;
+    // 먼저 채택한 가설이 있으면 그보다, 없으면 처음 추정보다 뚜렷이 좋아야 한다. 처음 추정이 못 나눴다면 기준은 고정값이다.
+    const required = best !== primary.result
+      ? best.confidence + ALTERNATIVE_CONFIDENCE_MARGIN
+      : primary.splits === 0
+        ? ALTERNATIVE_MIN_CONFIDENCE
+        : primary.result.confidence + ALTERNATIVE_CONFIDENCE_MARGIN;
+    if (attempt.result.confidence >= required) best = attempt.result;
+  }
+  return best;
 }
 
 /** 동기 실행. 시간 상한(timeLimitMs)과 isCancelled 를 점검 시점마다 확인한다. */
