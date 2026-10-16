@@ -219,6 +219,23 @@ describe("StudioPublishResultReceipt", () => {
     expect(screen.getByText("AI 학습 불허 표기")).toBeTruthy();
   });
 
+  it("renders a published receipt without retired series actions", () => {
+    render(
+      <MemoryRouter>
+        <StudioPublishResultReceipt
+          kind="published"
+          workId="work-9"
+          environment="production"
+          onContinueEditing={() => undefined}
+          onReviewSettings={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("button", { name: "원고 수정 계속" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "공개 설정 다시 확인" })).toBeTruthy();
+  });
+
   it("reads a receipt without the label as 'not specified' unless the legacy flag was on", () => {
     const { rerender } = render(
       <MemoryRouter>
@@ -247,6 +264,22 @@ describe("StudioPublishResultReceipt", () => {
       </MemoryRouter>,
     );
     expect(screen.getByText("AI 학습 허용 표기")).toBeTruthy();
+  });
+
+  it("renders a private receipt", () => {
+    render(
+      <StudioPublishResultReceipt
+        kind="private"
+        workId="work-private-2"
+        environment="preview"
+        onContinueEditing={() => undefined}
+        onReviewSettings={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "원고 수정 계속" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "공개 설정 다시 확인" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "다음 회차 5화 원고 시작" })).toBeNull();
   });
 
   it("omits the label row while the receipt details are not available yet", () => {
