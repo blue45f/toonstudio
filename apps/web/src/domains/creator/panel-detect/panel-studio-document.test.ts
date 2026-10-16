@@ -7,8 +7,10 @@ import {
   clearStudioImportHandoffsForTests,
   consumeStudioImportHandoff,
 } from "../studio-import-handoff";
+import { hasStudioLinked3dPassProjectArchiveReferences } from "../studio-linked-3d-pass-project-archive";
 import { parseStudioProjectDocument } from "../studio-project-document";
 import { parseStudioProjectFile } from "../studio-project-file";
+import { auditStudioVrmTexturePaintJsonImport } from "../vrm/studio-vrm-texture-paint-project-library";
 
 import { createPanelImportRights } from "./panel-import-rights";
 import { planPanelReflow } from "./panel-reflow-plan";
@@ -177,6 +179,11 @@ describe("편집기로 넘기기", () => {
     ));
     expect(loadedRights).toHaveLength(3);
     for (const entry of loadedRights) expect(entry).toEqual(RIGHTS);
+
+    // 편집기의 프로젝트 JSON 가져오기(handleImportProject)는 문서를 적용하기 전에 두 가지를 더 점검한다.
+    // 이 문서는 연결형 3D pass 도 VRM 표면 페인팅 참조도 없으므로 둘 다 조용히 통과해야 한다.
+    expect(hasStudioLinked3dPassProjectArchiveReferences(loaded.project)).toBe(false);
+    expect((await auditStudioVrmTexturePaintJsonImport(loaded.project)).notice).toBeNull();
 
     const { handoff, href } = registerPanelStudioHandoff(file);
     expect(handoff.target).toBe("project-json");
