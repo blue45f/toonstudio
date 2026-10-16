@@ -12,7 +12,7 @@
  * - 상태: 불러오는 중 · 빈 바(스타터 팩 제안) · 원본 없음 · 저장소 연결 실패(메모리 전용) · 잠금 · 오류와 다시 시도.
  */
 
-import { Check, Ellipsis, Keyboard, MoveLeft, MoveRight, Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { Check, Ellipsis, MoveLeft, MoveRight, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
@@ -23,7 +23,8 @@ import { STUDIO_CHARM_BAR_MAX_CHARMS, splitStudioCharmId, type StudioCharmId } f
 import { bi, biFill, lockNoticeText } from "./studio-charm-copy";
 import { writeStudioCharmDragPayload } from "./studio-charm-drag";
 import { activateStudioCharm } from "./studio-charm-insert";
-import { resolveStudioCharmKeyIntent, STUDIO_CHARM_SHORTCUTS, type StudioCharmShortcutId } from "./studio-charm-keyboard";
+import { resolveStudioCharmKeyIntent } from "./studio-charm-keyboard";
+import { StudioCharmBarMenu } from "./StudioCharmBarMenu";
 import { StudioCharmBarEmpty, StudioCharmBarNotices } from "./StudioCharmBarStatus";
 import { StudioCharmChip } from "./StudioCharmChip";
 import { StudioCharmPicker } from "./StudioCharmPicker";
@@ -61,17 +62,6 @@ export interface StudioCharmBarProps {
   readonly loadCatalogData?: () => Promise<StudioCharmCatalogData>;
   readonly loadLibrary?: () => Promise<readonly StudioCharmLibraryAsset[]>;
   readonly acquireCatalogPreferences?: () => Promise<StudioCatalogPreferencesRepository>;
-}
-
-function shortcutAction(id: StudioCharmShortcutId): string {
-  switch (id) {
-    case "move": return bi("칩 사이 이동", "Move between charms");
-    case "edge": return bi("처음·마지막 칩", "First / last charm");
-    case "stamp": return bi("캔버스에 붙이기", "Stamp onto the canvas");
-    case "reorder": return bi("순서 바꾸기", "Reorder");
-    case "remove": return bi("순서 편집 중 참 바에서 빼기", "Remove from the bar (while editing order)");
-    case "exit": return bi("순서 편집 끝내기", "Finish editing order");
-  }
 }
 
 const TOOL_BUTTON = cn(
@@ -125,7 +115,6 @@ export function StudioCharmBar({
     sequence: 0,
   });
   const [starterNoticeDismissed, setStarterNoticeDismissed] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
   const chipElements = useRef(new Map<StudioCharmId, HTMLButtonElement>());
   const focusRequest = useRef<StudioCharmId | null>(null);
 
@@ -444,7 +433,7 @@ export function StudioCharmBar({
         <span key={announcement.sequence}>{announcement.text}</span>
       </p>
 
-      <StudioCharmPopover plan={picker.plan} label={bi("참 고르기", "Choose charms")} id={pickerId}>
+      <StudioCharmPopover plan={picker.plan} label={bi("참 고르기", "Choose charms")} id={pickerId} onTabOut={picker.closeToTrigger}>
         <StudioCharmPicker
           catalog={catalog}
           catalogStatus={catalogStatus}
@@ -460,58 +449,19 @@ export function StudioCharmBar({
         />
       </StudioCharmPopover>
 
-      <StudioCharmPopover plan={menu.plan} label={bi("참 바 메뉴", "Charm bar menu")} id={menuId}>
-        <div className="grid gap-1 p-2">
-          <button
-            type="button"
-            disabled={charms.length === 0}
-            onClick={startEditing}
-            className={cn("flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-sm text-fg hover:bg-raised disabled:opacity-40", STUDIO_FOCUS_RING)}
-          >
-            <Pencil size={14} aria-hidden="true" />
-            {bi("순서·삭제 편집", "Edit order and removal")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              store.dispatch({ type: "apply-starter" });
-              menu.close();
-              announce(bi("기본 참을 담았어요.", "Added the starter charms."));
-            }}
-            className={cn("flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-sm text-fg hover:bg-raised", STUDIO_FOCUS_RING)}
-          >
-            <Sparkles size={14} aria-hidden="true" />
-            {bi("기본 참 다시 담기", "Add the starter charms again")}
-          </button>
-          <button
-            type="button"
-            aria-expanded={showShortcuts}
-            onClick={() => setShowShortcuts((value) => !value)}
-            className={cn("flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-sm text-fg hover:bg-raised", STUDIO_FOCUS_RING)}
-          >
-            <Keyboard size={14} aria-hidden="true" />
-            {bi("단축키 안내", "Keyboard shortcuts")}
-          </button>
-          {showShortcuts ? (
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-lg border border-line bg-card p-2 text-xs" data-studio-charm-shortcuts="">
-              {STUDIO_CHARM_SHORTCUTS.map((shortcut) => (
-                <div key={shortcut.id} className="contents">
-                  <dt><kbd className="rounded border border-line bg-raised px-1 py-0.5 font-mono text-[0.68rem] text-fg">{shortcut.keys}</kbd></dt>
-                  <dd className="text-fg-2">{shortcutAction(shortcut.id)}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => { menu.close(); store.dispatch({ type: "set-open", open: false }); }}
-            className={cn("flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-sm text-fg hover:bg-raised", STUDIO_FOCUS_RING)}
-          >
-            <X size={14} aria-hidden="true" />
-            {bi("참 바 닫기", "Close the charm bar")}
-          </button>
-        </div>
-      </StudioCharmPopover>
+      <StudioCharmBarMenu
+        plan={menu.plan}
+        id={menuId}
+        canEdit={charms.length > 0}
+        onTabOut={menu.closeToTrigger}
+        onStartEditing={startEditing}
+        onApplyStarter={() => {
+          store.dispatch({ type: "apply-starter" });
+          menu.closeToTrigger();
+          announce(bi("기본 참을 담았어요.", "Added the starter charms."));
+        }}
+        onCloseBar={() => { menu.close(); store.dispatch({ type: "set-open", open: false }); }}
+      />
     </section>
   );
 }
