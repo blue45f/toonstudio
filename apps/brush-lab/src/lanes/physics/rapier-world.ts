@@ -19,6 +19,11 @@ import type { ImpulseJoint, RigidBody, World } from "@dimforge/rapier2d-compat";
 
 const LENGTH_UNIT_PX = 32;
 const MAX_COLLIDE_GROUP = 16;
+/**
+ * 몸체 반경 하한(px). 가는 프리셋(샤프·마루펜)은 접촉 반경이 0이 되는데(PBD 월드는 0을 점 접촉으로 허용),
+ * Rapier는 0 반경을 만들지 못하므로 점 접촉에 가장 가까운 이 값으로 올린다. 실제 최소 반경(0.05)의 1/50이라 물리 영향은 없다.
+ */
+export const RAPIER_MIN_BODY_RADIUS_PX = 1e-3;
 
 export class RapierWorld2D implements PhysicsWorld2D {
   readonly traits: WorldTraits = { backendId: "rapier2d", labelKo: "Rapier 2D(compat, wasm)", needsDispose: true };
@@ -53,7 +58,8 @@ export class RapierWorld2D implements PhysicsWorld2D {
     const world = this.requireWorld();
     const R = this.R;
     if (!Number.isFinite(spec.x) || !Number.isFinite(spec.y)) throw new RangeError(`몸체 위치가 유한하지 않다(${spec.x}, ${spec.y})`);
-    if (!Number.isFinite(spec.radius) || spec.radius <= 0) throw new RangeError(`Rapier 몸체 반경은 0보다 커야 한다(받은 값 ${spec.radius})`);
+    if (!Number.isFinite(spec.radius) || spec.radius < 0) throw new RangeError(`Rapier 몸체 반경은 0 이상이어야 한다(받은 값 ${spec.radius})`);
+    const radius = spec.radius === 0 ? RAPIER_MIN_BODY_RADIUS_PX : spec.radius;
     const kin = spec.kinematic === true;
     if (!kin && !(Number.isFinite(spec.mass) && spec.mass > 0)) throw new RangeError(`동적 몸체의 질량은 0보다 커야 한다(받은 값 ${spec.mass})`);
     const group = spec.collideGroup ?? 0;
@@ -66,12 +72,12 @@ export class RapierWorld2D implements PhysicsWorld2D {
     const body = world.createRigidBody(desc);
     const member = group === 0 ? 0 : 1 << (group - 1);
     const groups = ((member << 16) | member) >>> 0;
-    const col = R.ColliderDesc.ball(spec.radius).setFriction(0).setRestitution(0).setCollisionGroups(groups);
+    const col = R.ColliderDesc.ball(radius).setFriction(0).setRestitution(0).setCollisionGroups(groups);
     if (!kin) col.setMass(spec.mass);
     world.createCollider(col, body);
     this.bodies.push(body);
     this.kinematic.push(kin);
-    this.radii.push(spec.radius);
+    this.radii.push(radius);
     this.dynamicFlag.push(kin ? 0 : 1);
     this.targets.push({ x: spec.x, y: spec.y });
     this.forces.push({ x: 0, y: 0 });

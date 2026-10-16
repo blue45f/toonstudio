@@ -4,6 +4,7 @@ import { pixelHash } from "../../bench/metrics/render-metrics";
 import { fakeEnv } from "../../bench/testing/synthetic-images";
 import { LaneUnavailableError } from "../../engine/core/errors";
 import { BODY_STATE_STRIDE } from "../../engine/physics/world2d/types";
+import { presetById } from "../../engine/presets/catalog";
 import { laneById } from "../registry";
 
 import { BRUSH, CONTRACT_INIT, describeBristleLaneContract, STROKE_A } from "./bristle-lane-contract";
@@ -155,6 +156,18 @@ describe("bristle-rapier 레인: 같은 머신 결정성(Node 22, 교차 머신�
     expect(Math.abs(rapier.inked - pbd.inked) / pbd.inked).toBeLessThan(0.25);
   });
 
+  it("접촉 반경 0인 가는 프리셋(샤프·마루펜)도 획을 끝까지 그린다", async () => {
+    for (const id of ["pencil-mechanical", "ink-maru-pen"] as const) {
+      const lane = createRapierBristleLane({ bristles: 8 });
+      await lane.init(fakeEnv(), CONTRACT_INIT);
+      lane.beginStroke(presetById(id), 3, { color: [0, 0, 0, 1] });
+      for (const s of STROKE_A) lane.addSamples([s]);
+      const receipt = (await lane.endStroke()) as BristleStrokeReceipt;
+      expect(receipt.dabCount).toBeGreaterThan(0);
+      lane.dispose();
+    }
+  });
+
   it("영수증에 월드 진단(스텝 수·스프링 재생성 수)이 남는다: 강성 단계가 바뀌면 재생성이 센다", async () => {
     const lane = createRapierBristleLane({ bristles: 8 });
     await lane.init(fakeEnv(), CONTRACT_INIT);
@@ -180,7 +193,7 @@ describe("RapierWorld2D 어댑터(실제 wasm)", () => {
     const w = await world();
     expect(w.traits).toMatchObject({ backendId: "rapier2d", needsDispose: true });
     expect(() => w.addCircle({ x: Number.NaN, y: 0, radius: 1, mass: 1 })).toThrow(RangeError);
-    expect(() => w.addCircle({ x: 0, y: 0, radius: 0, mass: 1 })).toThrow(RangeError);
+    expect(() => w.addCircle({ x: 0, y: 0, radius: -1, mass: 1 })).toThrow(RangeError);
     expect(() => w.addCircle({ x: 0, y: 0, radius: 1, mass: 0 })).toThrow(RangeError);
     expect(() => w.addCircle({ x: 0, y: 0, radius: 1, mass: 1, collideGroup: 17 })).toThrow(RangeError);
     const slot = w.addCircle({ x: 0, y: 0, radius: 0.5, mass: 1, kinematic: true });
@@ -194,6 +207,17 @@ describe("RapierWorld2D 어댑터(실제 wasm)", () => {
     w.dispose();
     w.dispose();
     expect(() => w.step(1 / 240)).toThrow(/dispose/);
+  });
+
+  it("반경 0 몸체는 하한으로 올려 만든다(가는 프리셋의 점 접촉)", async () => {
+    const w = await world();
+    const before = w.bodyCount;
+    const id = w.addCircle({ x: 0, y: 0, radius: 0, mass: 1 });
+    expect(w.bodyCount).toBe(before + 1);
+    const hits: number[] = [];
+    expect(w.queryCircle(0, 0, 1, hits)).toBe(1);
+    expect(hits).toEqual([id]);
+    w.dispose();
   });
 
   it("스프링·항력·외력·충돌 질의가 계약대로 동작한다", async () => {

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { PRESET_IDS, presetById } from "../../engine/presets/catalog";
 
-import { unsupportedBristleReason } from "./bristle-dab-synthesis";
 import { bristlePresetResponse, PRESET_MAX_HALF_WIDTH_PX, PRESET_MIN_HALF_WIDTH_PX, PRESET_RESPONSE_SAMPLES } from "./bristle-preset-response";
+import { unsupportedBristleReason } from "./bristle-program-mapping";
 
 import type { BrushProgram } from "../../engine/presets/program-schema";
 

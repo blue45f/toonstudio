@@ -6,7 +6,7 @@ import { BristleLaneBase } from "./bristle-dab-synthesis";
 import type { PbdWorldOptions } from "../../engine/physics/world2d/pbd-world";
 import type { PhysicsWorld2D } from "../../engine/physics/world2d/types";
 import type { BrushEngineLane, LaneCapabilityReport, LaneDescriptor, LaneEnvironment, LaneId, LaneMaturity } from "../lane";
-import type { BristleLaneOptions } from "./bristle-dab-synthesis";
+import type { BristleLaneOptions } from "./bristle-program-mapping";
 
 /**
  * 자체 PBD 물리 붓털 레인(실험, `maturity: "experimental"`).

@@ -220,7 +220,7 @@ describe("LiveStrokeSession: 그리기 화면 옵션", () => {
     expect(s.lanes[0]?.calls).not.toContain("endStroke");
     expect(s.results).toHaveLength(0);
     expect(s.errors).toHaveLength(0);
-    expect(s.aborts[0]).toMatchObject({ cause: "pointercancel", laneReplaced: false });
+    expect(s.aborts[0]).toMatchObject({ cause: "pointercancel", laneReplaced: false, cancelSource: "lostpointercapture" });
     // 다음 획은 정상이다.
     await stroke(s, 100);
     expect(s.results).toHaveLength(1);

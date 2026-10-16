@@ -8,7 +8,7 @@ import { RapierWorld2D } from "./rapier-world";
 
 import type { PhysicsWorld2D } from "../../engine/physics/world2d/types";
 import type { BrushEngineLane, LaneCapabilityReport, LaneDescriptor, LaneEnvironment, LaneId, LaneMaturity } from "../lane";
-import type { BristleLaneOptions } from "./bristle-dab-synthesis";
+import type { BristleLaneOptions } from "./bristle-program-mapping";
 import type { RapierImporter, RapierModule } from "./rapier-loader";
 
 /**

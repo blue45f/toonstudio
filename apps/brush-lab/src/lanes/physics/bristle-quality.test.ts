@@ -10,8 +10,8 @@ import { presetById } from "../../engine/presets/catalog";
 import { lineStroke, parametricStroke } from "../../engine/testing/synthetic-strokes";
 import { createCpuReferenceLane } from "../cpu-reference-lane";
 
-import { mapProgramToBristle } from "./bristle-dab-synthesis";
 import { createBristlePbdLane } from "./bristle-pbd-lane";
+import { mapProgramToBristle } from "./bristle-program-mapping";
 import { createRapierBristleLane } from "./rapier-bristle-lane";
 
 import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";

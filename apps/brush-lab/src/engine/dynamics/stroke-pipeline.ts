@@ -110,7 +110,7 @@ export class StrokePipeline {
     const timeDabs = Math.ceil((spanMs * this.program.deposition.timeDabsPerSecond) / 1000) + samples.length;
     const estimate = Math.ceil(pathLen / spacingFloor) + samples.length + timeDabs + 64;
     const extra = final ? Math.ceil(this.program.edge.taperEndPx / spacingFloor) + 16 : 0;
-    const capacity = (estimate + extra) * (this.dual ? 2 : 1);
+    const capacity = (estimate + extra) * (this.dual ? 2 : 1) * (this.program.physics.contact === "nib" ? 3 : 1);
     if (!Number.isFinite(capacity) || capacity > MAX_FRAME_DAB_CAPACITY) {
       throw new StrokeBudgetExceededError(Number.isFinite(capacity) ? capacity : Number.MAX_SAFE_INTEGER, MAX_FRAME_DAB_CAPACITY, {
         stage: "stroke-pipeline",

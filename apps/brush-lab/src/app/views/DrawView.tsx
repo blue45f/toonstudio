@@ -255,7 +255,10 @@ export function DrawView() {
     const onStrokeAbort = (abort: LiveStrokeAbort): void => {
       trailRef.current = [];
       drawPreview([]);
-      const why = abort.cause === "pointercancel" ? "포인터 취소(pointercancel/캡처 상실)" : "레인 오류";
+      const why = abort.cause === "pointercancel"
+        ? (abort.cancelSource === "lostpointercapture" ? "캡처 상실(lostpointercapture)" : "포인터 취소(pointercancel)")
+        : "레인 오류";
+      const detail = abort.strokeKo ? ` — ${abort.strokeKo}` : "";
       if (abort.laneReplaced) {
         try {
           if (!live) clearCanvas(surface.present);
@@ -265,12 +268,12 @@ export function DrawView() {
         drawActions.resetDocumentStats();
         drawActions.pushNotice(
           "document-not-preserved",
-          `${why}로 획을 버렸지만 레인이 문서를 보존하지 못해 캔버스를 비웠다${abort.receipt?.reasonKo ? `: ${abort.receipt.reasonKo}` : ""}`,
+          `${why}로 획을 버렸지만 레인이 문서를 보존하지 못해 캔버스를 비웠다${abort.receipt?.reasonKo ? `: ${abort.receipt.reasonKo}` : ""}${detail}`,
         );
       } else {
         drawActions.pushNotice(
           cancelCode(abort),
-          `${why}로 진행 중이던 획을 버렸다(문서에 합성하지 않음, 버린 dab ${abort.receipt?.discardedDabs ?? 0}개). 그때까지 그린 그림은 그대로다.`,
+          `${why}로 진행 중이던 획을 버렸다(문서에 합성하지 않음, 버린 dab ${abort.receipt?.discardedDabs ?? 0}개). 그때까지 그린 그림은 그대로다.${detail}`,
         );
       }
     };
@@ -325,7 +328,13 @@ export function DrawView() {
       // 입력 단계도 같다: 생성 중 방식·슬라이더·코너 게이트를 바꿨으면 effect의 setInputStage는 세션이 아직 없어 건너뛰었다.
       // 따라잡지 않으면 UI는 '끈 당김'인데 입력은 raw로 그려지거나(엔진 1€는 새 방식 기준 raw), 반대로 옛 단계 + 1€ 이중 평활이 남는다.
       created.setInputStage(inputStageRef.current);
-      detach = created.attach(surface.stage, { blockContextMenu: true, primaryButtonOnly: true });
+      detach = created.attach(surface.stage, {
+        blockContextMenu: true,
+        primaryButtonOnly: true,
+        onCaptureFailure: (info) => {
+          drawActions.pushNotice("pointer-capture-failed", `포인터 캡처 실패로 획을 시작하지 않았다(pointerId ${info.pointerId}): ${info.reason}`);
+        },
+      });
       drawActions.setSessionStatus("ready");
     };
 

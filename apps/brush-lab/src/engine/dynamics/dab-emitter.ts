@@ -27,6 +27,8 @@ export const MIN_SPACING_PX = 0.25;
 export const ADAPTIVE_RADIUS_JUMP = 0.1;
 /** 정지 상태 시간 기반 dab의 1회 호출당 상한(폭주 방지, fail-visible 아님: 입력 간격이 이보다 길면 간격이 늘어난다). */
 export const MAX_TIME_DABS_PER_STEP = 64;
+/** 닙 갈라짐을 두 갈래 dab로 그리는 최소 간격(px). 이하면 기존처럼 한 dab다. */
+export const NIB_SPLIT_MIN_GAP_PX = 0.4;
 
 export interface DabEmitterOptions {
   /** sRGB straight. 기본 검정. */
@@ -236,7 +238,7 @@ export class DabEmitter {
     const model = prog.deposition.model;
     const flow = Math.min(1, Math.max(0, prog.deposition.flow * fp.depositStrength * flowScale));
     const wetMedia = model === "wet-flow" || model === "impasto";
-    const dab: DabInstance = {
+    const base: DabInstance = {
       x: sample.x + sc.dx,
       y: sample.y + sc.dy,
       rx,
@@ -261,12 +263,42 @@ export class DabEmitter {
       impasto: model === "impasto",
       deposition: model,
     };
-    const dual = prog.deposition.dual ? this.dualOf(dab, prog.deposition.dual, index) : null;
-    if (prog.edge.taperEndPx > 0) {
-      this.pending.push({ dab, dual, pathPos });
-      return 0;
+    // 닙 홈: 가운데는 옅게, 벌어진 양 촉 자리는 진하게 그어 고압에서 속이 빈 이중선을 만든다.
+    // 래스터 규약에서 선폭축은 ry(각도 방향의 수직)이므로 홈도 ry로 파고 rx(진행축)는 그대로 둔다.
+    // 저압(간격 ≤ 임계)은 기존처럼 한 dab다. 바깥 폭(ry)은 그대로라 저압→고압 전이가 연속이다.
+    const pieces: ReadonlyArray<{ ox: number; oy: number; ryMul: number; flowMul: number }> = (() => {
+      const gap = fp.nibGap;
+      if (!(gap > NIB_SPLIT_MIN_GAP_PX)) return [{ ox: 0, oy: 0, ryMul: 1, flowMul: 1 }];
+      const nx = -Math.sin(angle);
+      const ny = Math.cos(angle);
+      const offFrac = 0.35 + 0.2 * Math.min(1, gap / Math.max(ry, 1e-3));
+      const tineFrac = Math.max(0.01, 0.95 - offFrac);
+      const off = ry * offFrac;
+      return [
+        { ox: 0, oy: 0, ryMul: 1, flowMul: 0.7 },
+        { ox: nx * off, oy: ny * off, ryMul: tineFrac, flowMul: 1 },
+        { ox: -nx * off, oy: -ny * off, ryMul: tineFrac, flowMul: 1 },
+      ];
+    })();
+    let placed = 0;
+    const splitFlow = 1;
+    for (const piece of pieces) {
+      const dab: DabInstance = {
+        ...base,
+        x: base.x + piece.ox,
+        y: base.y + piece.oy,
+        ry: Math.max(0.01, base.ry * piece.ryMul),
+        flow: Math.min(1, base.flow * piece.flowMul * splitFlow),
+      };
+      const dual = prog.deposition.dual ? this.dualOf(dab, prog.deposition.dual, index) : null;
+      if (prog.edge.taperEndPx > 0) {
+        this.pending.push({ dab, dual, pathPos });
+      } else {
+        placed += this.push(dab, dual, out);
+      }
     }
-    return this.push(dab, dual, out);
+    if (prog.edge.taperEndPx > 0) return 0;
+    return placed;
   }
 
   private dualOf(base: DabInstance, tip: BrushTipSpec, index: number): DabInstance {

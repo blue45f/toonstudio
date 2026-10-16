@@ -3,16 +3,15 @@ import { DabBatch } from "../../engine/core/dab-layout";
 import { InvalidStateError, LaneUnavailableError } from "../../engine/core/errors";
 import { hashU32 } from "../../engine/core/rng";
 import { SUMI_ENGINE_VERSION } from "../../engine/core/version";
-import { BristleBrush2D, bristleContactRadiusPx, bristleSpreadRadiusPx, resolveBristleBrushConfig } from "../../engine/physics/world2d/bristle-brush";
-import { PressureCurveTable, pressureCurveById } from "../../engine/physics/world2d/pressure-curve";
+import { BristleBrush2D, bristleSpreadRadiusPx } from "../../engine/physics/world2d/bristle-brush";
 import { Surface } from "../../engine/raster/reference-renderer";
 import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, resolveStrokeColor } from "../lane";
 
-import { PRESET_MAX_HALF_WIDTH_PX, bristlePresetResponse } from "./bristle-preset-response";
+import { BRISTLE_DAB_RADIUS_SCALE, BRISTLE_MAX_TARGET_ALPHA, mapProgramToBristle, unsupportedBristleReason } from "./bristle-program-mapping";
 
+import type { BristleDabResponse, BristleLaneOptions, BristleProgramMapping } from "./bristle-program-mapping";
 import type { Clock, DabInstance, LabImage, RawSample } from "../../engine/core/types";
-import type { BristleBrushConfig, BristleTick, BristleTickSink } from "../../engine/physics/world2d/bristle-brush";
-import type { PressureCurveId } from "../../engine/physics/world2d/pressure-curve";
+import type { BristleTick, BristleTickSink } from "../../engine/physics/world2d/bristle-brush";
 import type { PhysicsWorld2D } from "../../engine/physics/world2d/types";
 import type { BrushProgram } from "../../engine/presets/program-schema";
 import type {
@@ -48,8 +47,10 @@ import type {
 export const BRISTLE_BATCH_CAPACITY = 4096;
 /** dab 간격(지름 대비). SP-A 렌더 규약과 같다. */
 export const BRISTLE_DAB_SPACING = 0.3;
-/** dab 반경 / 털 접촉 반경. */
-export const BRISTLE_DAB_RADIUS_SCALE = 0.95;
+/** 한 번의 제출에 담는 dab 상한. 프레임을 넘는 큰 배치는 다음 프레임으로 넘겨 addSamples의 꼬리를 자른다. */
+export const BRISTLE_FRAME_SUBMIT_BUDGET = 512;
+/** 한 addSamples 호출에서 새로 찍는 dab 상한. 넘으면 경로를 따라가되 dab는 건너뛰고 영수증에 남긴다. */
+export const BRISTLE_FRAME_DAB_BUDGET = 2048;
 /** dab 간격의 하한(px). */
 export const BRISTLE_MIN_STEP_PX = 0.35;
 /** 압력이 이 값 이하면 물감을 내지 않는다. */
@@ -58,10 +59,19 @@ export const BRISTLE_MIN_PRESSURE = 0.002;
 export const BRISTLE_MIN_LOAD = 0.02;
 /** 압력 0에서의 흐름 비율(나머지는 압력에 비례): 흐름 = 기본 × 적재량 × (FLOOR + (1 − FLOOR)·압력). */
 export const BRISTLE_FLOW_PRESSURE_FLOOR = 0.2;
-/** 털 수 √N으로 나누는 기본 흐름 계수(털이 많을수록 겹침이 늘어 dab당 흐름을 줄인다). */
-export const BRISTLE_FLOW_GAIN = 1.8;
 /** 좁은 벌어짐에서 흐름을 줄이는 하한 비율. */
 export const BRISTLE_DENSITY_FLOOR = 0.35;
+/** 속도 결합의 기준 속도(px/s). 이 속도의 제곱 비율로 농도·간격이 옅어지고 성글어진다. */
+export const BRISTLE_SPEED_REF_PX_PER_SEC = 4000;
+/** 빠른 획 간격 확장의 상한 비율. */
+export const BRISTLE_SPEED_STEP_MAX_GAIN = 0.6;
+/** 빠른 획 농도 하한(아무리 빨라도 이 비율보다는 옅어지지 않는다). */
+export const BRISTLE_SPEED_FLOW_FLOOR = 0.35;
+/** 방향 추종 타원이 켜지는 최소 손잡이 속도(px/s). 정지·저속에서는 둥근 dab를 유지한다. */
+export const BRISTLE_HEADING_MIN_SPEED_PX_PER_SEC = 50;
+/** 방향 추종 타원의 장축·단축 배율(면적 ≈ 1 유지). */
+export const BRISTLE_HEADING_MAJOR_SCALE = 1.12;
+export const BRISTLE_HEADING_MINOR_SCALE = 0.9;
 /** 정착 최대 시간(ms). */
 export const BRISTLE_SETTLE_MAX_MS = 300;
 /**
@@ -69,190 +79,6 @@ export const BRISTLE_SETTLE_MAX_MS = 300;
  * 그 근처의 큰 값도 제곱 연산에서 넘친다. 문서 좌표로 의미가 있는 범위보다 훨씬 넉넉한 안전 상한으로 막는다.
  */
 export const BRISTLE_MAX_ABS_COORD_PX = 1e7;
-/** 벌어짐 반경 한계(px). */
-const MIN_RADIUS_PX = 1.5;
-const MAX_RADIUS_PX = 64;
-/** 프리셋 응답을 쓸 때 dab 반경의 하한(px): 아주 좁은 선(낮은 필압의 G펜)도 알파가 남는 최소 크기. */
-export const BRISTLE_MIN_DAB_RADIUS_PX = 0.7;
-/** 프리셋 응답을 쓸 때 겹친 dab가 만드는 목표 농도의 상한(1이면 로그가 발산한다). */
-export const BRISTLE_MAX_TARGET_ALPHA = 0.97;
-/** 몸체 반경을 정하는 기준 압력(낮은 필압): 이 압력의 다발에 털 몸체가 겹치지 않고 들어가야 좁은 선이 나온다. */
-export const BRISTLE_BODY_REFERENCE_PRESSURE = 0.15;
-/** 털 몸체 반경의 하한(px). */
-const MIN_BODY_RADIUS_PX = 0.05;
-
-/**
- * 털 N올 다발에서 dab 반경 / 벌어짐 반경 비율: 털 접촉 반경 공식(0.5·√(π/N)·1.07)에 dab 반경 배율을 곱한 값.
- * 벌어짐 반경 R일 때 선 반폭은 R + 이 비율 × R이다.
- */
-export function bristleFillRatio(count: number): number {
-  return 0.5 * Math.sqrt(Math.PI / count) * 1.07 * BRISTLE_DAB_RADIUS_SCALE;
-}
-
-/** 접촉 반폭 H를 벌어짐 반경 R과 dab 반경 r(= max(최소, κR))의 합으로 나눈다(연속). */
-function slotRadiusForHalfWidth(halfWidthPx: number, fillRatio: number): number {
-  const proportional = halfWidthPx / (1 + fillRatio);
-  if (fillRatio * proportional >= BRISTLE_MIN_DAB_RADIUS_PX) return proportional;
-  return Math.max(0, halfWidthPx - BRISTLE_MIN_DAB_RADIUS_PX);
-}
-
-/** 레인 생성 옵션. */
-export interface BristleLaneOptions {
-  /** 털 수. 기본 32(자체 PBD는 N ≤ 32를 권한다). */
-  bristles?: number;
-  /** 압력 → 벌어짐 곡선. 기본 `power-fit`(단조), `buckling-3d`는 3D 좌굴의 비단조를 흉내 낸다. */
-  spreadCurve?: PressureCurveId;
-  /** 붓털 설정 덮어쓰기(실험·시험용). */
-  brush?: Partial<BristleBrushConfig>;
-  /** 방향 출처. 기본 `velocity`(손잡이 속도 방향), `tilt`는 표본 기울기가 0이 아닐 때 그 방위각. */
-  headingSource?: "velocity" | "tilt";
-}
-
-const CURVE_LABEL_KO: Readonly<Record<PressureCurveId, string>> = {
-  "power-fit": "power-fit(단조 거듭제곱)",
-  "buckling-3d": "buckling-3d(좌굴 비단조 표)",
-  linear: "linear(선형 0.45→1)",
-};
-
-/** 프리셋에서 풀어낸 dab 합성 응답(`BristleDabSynthesizer`가 쓴다). 없으면 합성기는 예전 규약(고정 반경·경도 0.85·그레인 0)을 따른다. */
-export interface BristleDabResponse {
-  /** dab 반경 / 벌어짐 반경. */
-  fillRatio: number;
-  /** dab 반경 하한(px). */
-  minRadiusPx: number;
-  hardness: number;
-  shapeExp: number;
-  /** 프로그램 흐름(`deposition.flow`). 겹친 dab가 만드는 목표 농도의 기준이다. */
-  programFlow: number;
-  /** 압력 → 그레인 변조 강도. 없으면 0. */
-  grain: PressureCurveTable | null;
-  /** 압력 → 흐름 배율. 없으면 1(cpu-reference와 같이 압력으로 농도를 바꾸지 않는다). */
-  flowScale: PressureCurveTable | null;
-}
-
-/** 프로그램 → 붓털 설정/흐름 매핑. */
-export interface BristleProgramMapping {
-  config: BristleBrushConfig;
-  /** 프리셋 응답에서 얻은 dab 합성 규약. */
-  dabResponse: BristleDabResponse;
-  /** dab당 기준 흐름(적재량·압력을 곱하기 전). */
-  baseFlow: number;
-  mappedKo: string[];
-  unmappedKo: string[];
-  /** 근사로 허용했지만 결과가 원래 프로그램과 눈에 띄게 다를 수 있다는 경고(모델 이름 포함). 비어 있으면 경고할 근사가 없다. */
-  notesKo: string[];
-}
-
-/**
- * 이 모델로 근사 없이 표현할 수 없는 프로그램이면 한글 사유, 아니면 null.
- *
- * 붓털 레인은 항상 **둥근 dab**를 찍으므로 (a) 의미가 둥근 dab 누적과 크게 다른 프로그램은 근사하지 않고 거부한다(ADR-0018):
- * 습식·임파스토·smudge·지우개(문서/수분 모델 필요), 스프레이·하프톤(산포·망점 패턴), 산포·점·해치 팁, 특수 효과(fx) 계열.
- * (b) 둥근 dab로 어느 정도 흉내 낼 수 있는 모델(에어브러시, 질감 팁의 건식 도장, 털 모델)은 허용하되 `mapProgramToBristle`이
- * 모델 이름을 적은 `notesKo`·`unmappedKo`로 근사 사실을 영수증에 남긴다.
- */
-export function unsupportedBristleReason(program: BrushProgram): string | null {
-  const model = program.deposition.model;
-  if (model === "wet-flow") return `습식 흐름(${program.id})은 붓털 레인에 수분·안료 확산 모델이 없어 근사하지 않고 거부한다`;
-  if (model === "impasto") return `임파스토(${program.id})는 붓털 레인에 높이장·조명 모델이 없어 근사하지 않고 거부한다`;
-  if (model === "smudge") return `smudge(${program.id})는 붓털 dab가 문서의 기존 색을 집어 올리지 못해 거부한다`;
-  if (model === "eraser" || program.deposition.blend === "erase") return `지우개(${program.id})는 붓털 dab로 문서를 지울 수 없어 거부한다`;
-  if (model === "spray") return `스프레이(${program.id}, spray)는 입자 산포 모델이 붓털 레인에 없고 둥근 dab로 그리면 전혀 다른 그림이 되어 근사하지 않고 거부한다`;
-  if (model === "hatch-halftone") return `하프톤·망점(${program.id}, hatch-halftone)은 규칙적 망점 패턴 모델이 붓털 레인에 없고 둥근 dab로 그리면 전혀 다른 그림이 되어 근사하지 않고 거부한다`;
-  const tip = program.tip.kind;
-  if (tip === "particle" || tip === "stipple" || tip === "hatch") {
-    return `${tip} 팁(${program.id})은 산포·점·해치 패턴을 찍는 팁이라 붓털 레인의 둥근 dab로 근사하지 않고 거부한다`;
-  }
-  if (program.family === "special") return `특수 효과(fx) 계열(${program.id})은 산포·색상 지터·질감 팁이 정체성이라 붓털 레인의 둥근 dab로 근사하지 않고 거부한다`;
-  return null;
-}
-
-/**
- * 압력 → 슬롯 반경 추가 배율 표: 프리셋 접촉 반폭 H(p)에서 dab 반경을 뺀 슬롯 반경 R(p)를 `radiusPx × power-fit(p)`로 나눈 값.
- * 물리 곡선(`spreadCurve`)이 power-fit이면 슬롯 반경이 R(p) 그대로이고, 좌굴·선형 곡선이면 그 곡선이 power-fit과 다른 비율만큼 R(p)를 늘리거나 줄인다.
- */
-function presetSpreadScale(halfWidth: PressureCurveTable, radiusPx: number, fillRatio: number): PressureCurveTable {
-  const reference = pressureCurveById("power-fit");
-  const n = 101;
-  const values: number[] = [];
-  for (let i = 0; i < n; i += 1) {
-    const p = i / (n - 1);
-    const slot = slotRadiusForHalfWidth(halfWidth.eval(p), fillRatio);
-    values.push(slot / (radiusPx * Math.max(reference.eval(p), 1e-6)));
-  }
-  return new PressureCurveTable(values);
-}
-
-/** 프로그램과 레인 옵션으로 붓털 설정을 만든다. 팁 지름 → 벌어짐 반경, 프리셋 접촉 응답 → 압력 곡선, 흐름 → dab 기준 흐름. */
-export function mapProgramToBristle(program: BrushProgram, options: BristleLaneOptions = {}): BristleProgramMapping {
-  const count = options.bristles ?? 32;
-  const radiusPx = Math.min(MAX_RADIUS_PX, Math.max(MIN_RADIUS_PX, program.tip.sizePx / 2));
-  // 요청한 곡선을 이름 그대로 적용한다(모르는 이름은 pressureCurveById가 RangeError — 조용히 기본 곡선으로 바꾸지 않는다).
-  const curveId: PressureCurveId = options.spreadCurve ?? "power-fit";
-  const physical = pressureCurveById(curveId);
-  const response = bristlePresetResponse(program);
-  const fillRatio = bristleFillRatio(count);
-  const spreadScaleCurve = presetSpreadScale(response.halfWidthPx, radiusPx, fillRatio);
-  // 털 몸체 반경: 낮은 필압의 다발에 겹치지 않고 들어가야 한다(몸체가 압력 0.4 기준으로 크면 N올 패킹이 선 폭의 하한이 된다).
-  const unitConfig = resolveBristleBrushConfig({ count, radiusPx, spreadCurve: physical, spreadScaleCurve, bristleRadiusScale: 1 });
-  const unit = bristleContactRadiusPx(unitConfig);
-  const low = bristleSpreadRadiusPx(unitConfig, BRISTLE_BODY_REFERENCE_PRESSURE);
-  const mid = bristleSpreadRadiusPx(unitConfig, 0.4);
-  const rawScale = mid > 1e-6 ? low / mid : 1;
-  const bodyScale = Math.min(1, Math.max(MIN_BODY_RADIUS_PX / Math.max(unit, 1e-6), rawScale, 0.02));
-  const config = resolveBristleBrushConfig({ count, radiusPx, spreadCurve: physical, spreadScaleCurve, bristleRadiusScale: bodyScale, ...options.brush });
-  const baseFlow = Math.min(0.6, Math.max(0.002, (program.deposition.flow * BRISTLE_FLOW_GAIN) / Math.sqrt(count)));
-  const curveName = CURVE_LABEL_KO[curveId];
-  const model = program.deposition.model;
-  const tipKind = program.tip.kind;
-  const halfLo = response.halfWidthPx.eval(0.15);
-  const halfHi = response.halfWidthPx.eval(1);
-  const dabResponse: BristleDabResponse = {
-    fillRatio,
-    minRadiusPx: BRISTLE_MIN_DAB_RADIUS_PX,
-    hardness: response.hardness,
-    shapeExp: response.shapeExp,
-    programFlow: program.deposition.flow,
-    grain: response.grain,
-    flowScale: response.flowScale,
-  };
-  const unmappedKo = [
-    `팁 종류 ${tipKind}·종횡비 ${program.tip.aspect}·각도(dab는 항상 둥글다. 팁 경도 ${program.tip.hardness}와 초타원 지수만 옮긴다)`,
-    "프리셋의 dab 간격(spacing) 설정(간격은 현재 dab 반경에 비례하는 고정 비율)·산포·테이퍼·색 동역학(지터)",
-    response.grain
-      ? "종이 결 위상·질감 팁 형상(그레인 응답 강도만 압력 표로 옮기고 결 자체는 표면의 종이 필드가 준다)"
-      : "종이 그레인·질감(이 프리셋은 종이·흑연 그레인이 없어 dab의 그레인 응답은 0)",
-    "건조 끊김(dryBreakup)·습식 매체 파라미터·속도 의존 침착·종이 마찰 흐름 손실",
-  ];
-  for (const text of response.unmappedInputsKo) unmappedKo.push(text);
-  const notesKo: string[] = [];
-  if (response.halfWidthClamped) notesKo.push(`접촉 반폭이 상한 ${PRESET_MAX_HALF_WIDTH_PX}px를 넘어 잘렸다 — 압력이 높을 때 선이 cpu-reference보다 좁다`);
-  if (model === "airbrush") {
-    unmappedKo.push(`에어브러시 모델(airbrush, ${program.id}): 가장자리가 부드러운 누적 도포·초당 dab 발사(timeDabsPerSecond)가 없다`);
-    notesKo.push(`에어브러시(${program.id}, airbrush)를 둥근 털 dab로 근사했다 — 가장자리가 더 단단하고 농도가 cpu-reference와 다를 수 있다`);
-  } else if (model === "bristle") {
-    unmappedKo.push(`bristle 모델(${program.id}): 팁의 털 가닥 무늬(${tipKind})를 쓰지 않고 물리 붓털 다발(${count}올)이 대신 표현한다 — 가닥 수·간격은 일치하지 않는다`);
-  }
-  if (tipKind === "texture-stamp" || tipKind === "noise" || tipKind === "flat") {
-    notesKo.push(`${tipKind} 팁(${program.id})의 모양·질감은 쓰지 않고 둥근 털 dab로 그렸다 — 도장 질감·납작한 폭이 사라진다(경도·그레인 응답은 반영)`);
-  }
-  return {
-    config,
-    dabResponse,
-    baseFlow,
-    mappedKo: [
-      `팁 지름 ${program.tip.sizePx}px, 접촉 모델 ${program.physics.contact}·크기 동역학 → 압력 0.15 선 반폭 ${halfLo.toFixed(2)}px, 압력 1 선 반폭 ${halfHi.toFixed(2)}px(cpu-reference와 같은 값), 털 ${count}올, 털 몸체 반경 ${bristleContactRadiusPx(config).toFixed(2)}px`,
-      `압력 → 벌어짐 곡선 ${curveName}(프리셋 반폭 표를 얹음), 압력 → 강성 배율 ${config.stiffnessLevels}단계`,
-      `dab 반경 = max(${BRISTLE_MIN_DAB_RADIUS_PX}px, ${fillRatio.toFixed(3)} × 현재 벌어짐 반경), 경도 ${program.tip.hardness}`,
-      `흐름 ${program.deposition.flow} → 겹친 dab의 목표 농도 = 흐름 × ${response.flowScale ? "프리셋 흐름 동역학(압력 표)" : "1(압력으로 농도를 바꾸지 않는다)"} × 적재량, dab 하나의 흐름은 털 ${count}올이 선 폭 안에서 겹치는 깊이로 나눠 겹친 합이 목표 농도가 되게 한다(기준 흐름 ${baseFlow.toFixed(3)}은 응답이 없는 합성기의 예전 규약용)`,
-      ...(response.grain ? ["종이·흑연 그레인 → dab 그레인 응답(압력 표)"] : []),
-      "불투명도·블렌드는 엔진 표면의 획 합성(cpu-reference와 같은 경로)이 그대로 적용한다",
-      "획 색 옵션(sRGB) → 선형 premultiplied dab 색",
-    ],
-    unmappedKo,
-    notesKo,
-  };
-}
 
 /** 합성기 통계(영수증용). */
 export interface BristleSynthStats {
@@ -262,6 +88,8 @@ export interface BristleSynthStats {
   overflowDabs: number;
   skippedDry: number;
   skippedLift: number;
+  /** 프레임 예산을 넘어 건너뛴 dab 수. */
+  budgetSkipped: number;
 }
 
 /**
@@ -269,9 +97,11 @@ export interface BristleSynthStats {
  * 제출은 `submit`(보통 `Surface.addDabs`)으로 하고, 배치가 가득 차거나 `flush()`를 부르면 나간다.
  */
 export class BristleDabSynthesizer implements BristleTickSink {
-  readonly stats: BristleSynthStats = { dabs: 0, submits: 0, maxDirtyTiles: 0, overflowDabs: 0, skippedDry: 0, skippedLift: 0 };
+  readonly stats: BristleSynthStats = { dabs: 0, submits: 0, maxDirtyTiles: 0, overflowDabs: 0, skippedDry: 0, skippedLift: 0, budgetSkipped: 0 };
 
-  private readonly batch = new DabBatch(BRISTLE_BATCH_CAPACITY);
+  private readonly batches = [new DabBatch(BRISTLE_BATCH_CAPACITY), new DabBatch(BRISTLE_BATCH_CAPACITY)];
+  private activeIndex = 0;
+  private frameDabs = 0;
   private readonly carry: Float32Array;
   private readonly dab: DabInstance;
   private index = 0;
@@ -316,15 +146,34 @@ export class BristleDabSynthesizer implements BristleTickSink {
 
   /** 제출 전에 쌓여 있는 dab 수. */
   pending(): number {
-    return this.batch.count;
+    return this.batches[this.activeIndex]?.count ?? 0;
   }
 
-  /** 털마다 현재 위치에 dab 하나씩(탭 한 번에 점이 찍히게). */
+  /** 새 프레임 시작: 프레임 dab 개수를 초기화한다. 레인이 addSamples 호출마다 한 번 부른다. */
+  beginFrame(): void {
+    this.frameDabs = 0;
+  }
+
+  /** 털마다 현재 위치에 dab 하나씩(탭 한 번에 점이 찍히게). 정지 상태라 속도는 0·방향은 유지된다. */
   stamp(tick: BristleTick): void {
     if (tick.pressure <= BRISTLE_MIN_PRESSURE) return;
     const rad = this.dabRadius(tick.spreadRadiusPx);
-    const flowBase = this.flowBase(tick.pressure, tick.spreadRadiusPx, rad);
-    for (let i = 0; i < this.count; i += 1) this.place(i, tick.curX[i] ?? 0, tick.curY[i] ?? 0, tick.load[i] ?? 0, tick.pressure, flowBase, rad);
+    const flowBase = this.flowBase(tick.pressure, tick.spreadRadiusPx, rad, 0);
+    for (let i = 0; i < this.count; i += 1) this.place(i, tick.curX[i] ?? 0, tick.curY[i] ?? 0, tick.load[i] ?? 0, tick.pressure, flowBase, rad, tick.headingX, tick.headingY, 0);
+  }
+
+  /** 손잡이 속도(px/s) → 농도 배율 0..1. 보통 필기 속도에서는 거의 1이고 빠른 획에서 옅어진다. */
+  static speedFlowGain(speedPxPerSec: number): number {
+    const s = Number.isFinite(speedPxPerSec) ? Math.max(0, speedPxPerSec) : 0;
+    const q = s / BRISTLE_SPEED_REF_PX_PER_SEC;
+    return Math.max(BRISTLE_SPEED_FLOW_FLOOR, 1 / (1 + q * q));
+  }
+
+  /** 손잡이 속도(px/s) → 간격 배율 1..1.6. 보통 필기 속도에서는 거의 1이고 빠른 획에서 성글어진다. */
+  static speedStepGain(speedPxPerSec: number): number {
+    const s = Number.isFinite(speedPxPerSec) ? Math.max(0, speedPxPerSec) : 0;
+    const q = s / 10000;
+    return 1 + Math.min(BRISTLE_SPEED_STEP_MAX_GAIN, q * q);
   }
 
   /**
@@ -334,20 +183,20 @@ export class BristleDabSynthesizer implements BristleTickSink {
    * 선 전체의 평균 겹친 합 1 − (1 − a)^D가 목표 농도(프로그램 흐름 × 흐름 동역학)가 되도록 a를 정한다. 그래서 좁은 선도 넓은 선도 같은 농도로 칠해지고
    * 흐름이 낮은 프리셋(연필)은 묽게, 높은 프리셋(G펜)은 짙게 나온다. 적재량이 낮은 털은 이 값에 적재량을 곱해 연해진다.
    */
-  private flowBase(pressure: number, spreadRadiusPx: number, rad: number): number {
+  private flowBase(pressure: number, spreadRadiusPx: number, rad: number, speedPxPerSec: number): number {
+    const gain = BristleDabSynthesizer.speedFlowGain(speedPxPerSec);
     const r = this.response;
     if (!r) {
-      const gain = BRISTLE_FLOW_PRESSURE_FLOOR + (1 - BRISTLE_FLOW_PRESSURE_FLOOR) * pressure;
-      return this.baseFlow * gain * this.densityScale(spreadRadiusPx);
+      const pressureGain = BRISTLE_FLOW_PRESSURE_FLOOR + (1 - BRISTLE_FLOW_PRESSURE_FLOOR) * pressure;
+      return this.baseFlow * pressureGain * this.densityScale(spreadRadiusPx) * gain;
     }
     const target = Math.min(BRISTLE_MAX_TARGET_ALPHA, r.programFlow * (r.flowScale ? r.flowScale.eval(pressure) : 1));
     if (target <= 0) return 0;
     const step = Math.max(BRISTLE_MIN_STEP_PX, 2 * rad * BRISTLE_DAB_SPACING);
     const along = (2 * rad) / step;
-    // 선 전체 폭 2(R + 반경)에 털 N올이 반경 rad의 띠를 하나씩 놓으므로 폭 방향 평균 겹침은 N·rad/(R + rad)다(중앙은 이보다 짙고 가장자리는 옅다).
     const lateral = (this.count * rad) / (Math.max(spreadRadiusPx, 0) + rad);
     const depth = Math.max(1, along * lateral);
-    return 1 - (1 - target) ** (1 / depth);
+    return (1 - (1 - target) ** (1 / depth)) * gain;
   }
 
   /** 지금 벌어짐 반경에서의 dab 반경(px). 프리셋 응답이 없으면 예전 규약(털 접촉 반경 × 0.95 고정). */
@@ -359,9 +208,13 @@ export class BristleDabSynthesizer implements BristleTickSink {
 
   onTick(tick: BristleTick): void {
     const rad = this.dabRadius(tick.spreadRadiusPx);
-    const step = Math.max(BRISTLE_MIN_STEP_PX, 2 * rad * BRISTLE_DAB_SPACING);
+    const speed = Math.hypot(tick.handleVX ?? 0, tick.handleVY ?? 0);
+    const stepBase = Math.max(BRISTLE_MIN_STEP_PX, 2 * rad * BRISTLE_DAB_SPACING);
+    const step = stepBase * BristleDabSynthesizer.speedStepGain(speed);
     const lifted = tick.pressure <= BRISTLE_MIN_PRESSURE;
-    const flowBase = lifted ? 0 : this.flowBase(tick.pressure, tick.spreadRadiusPx, rad);
+    const flowBase = lifted ? 0 : this.flowBase(tick.pressure, tick.spreadRadiusPx, rad, speed);
+    const hx = tick.headingX ?? 1;
+    const hy = tick.headingY ?? 0;
     for (let i = 0; i < this.count; i += 1) {
       const x0 = tick.prevX[i] ?? 0;
       const y0 = tick.prevY[i] ?? 0;
@@ -374,12 +227,16 @@ export class BristleDabSynthesizer implements BristleTickSink {
         this.carry[i] = carried + len;
         continue;
       }
-      // 이 구간에서 간격마다 dab를 둔다.
+      // 이 구간에서 간격마다 dab를 둔다. 프레임 예산을 넘으면 경로는 따라가되 dab는 건너뛴다.
       let pos = step - carried;
       while (pos <= len) {
         const t = pos / len;
         if (lifted) this.stats.skippedLift += 1;
-        else this.place(i, x0 + dx * t, y0 + dy * t, tick.load[i] ?? 0, tick.pressure, flowBase, rad);
+        else if (this.frameDabs >= BRISTLE_FRAME_DAB_BUDGET) this.stats.budgetSkipped += 1;
+        else {
+          this.place(i, x0 + dx * t, y0 + dy * t, tick.load[i] ?? 0, tick.pressure, flowBase, rad, hx, hy, speed);
+          this.frameDabs += 1;
+        }
         pos += step;
       }
       carried = len - (pos - step);
@@ -396,36 +253,67 @@ export class BristleDabSynthesizer implements BristleTickSink {
     return r < BRISTLE_DENSITY_FLOOR ? BRISTLE_DENSITY_FLOOR : r > 1 ? 1 : r;
   }
 
-  /** 쌓인 dab를 표면에 제출한다. */
+  /** 쌓인 dab를 표면에 제출한다. place()가 예산에서 자동 제출하므로 나머지는 예산 미만이다. */
   flush(): void {
-    if (this.batch.count === 0) return;
-    const receipt = this.surface.addDabs(this.batch);
+    this.submitActive();
+  }
+
+  private active(): DabBatch {
+    const b = this.batches[this.activeIndex];
+    if (!b) throw new Error("BristleDabSynthesizer: 활성 배치가 없다");
+    return b;
+  }
+
+  /** 활성 배치를 통째로 제출하고 비어 있는 다른 배치로 바꾼다. 제출 순서를 유지하므로 최종 픽셀은 같다. */
+  private submitActive(): void {
+    const batch = this.active();
+    if (batch.count === 0) return;
+    const receipt = this.surface.addDabs(batch);
     this.stats.submits += 1;
     this.stats.overflowDabs += receipt.overflowDabs;
     if (receipt.dirtyTiles > this.stats.maxDirtyTiles) this.stats.maxDirtyTiles = receipt.dirtyTiles;
-    this.batch.reset();
+    batch.reset();
+    this.activeIndex = 1 - this.activeIndex;
   }
 
-  private place(i: number, x: number, y: number, load: number, pressure: number, flowBase: number, rad: number): void {
+  private place(i: number, x: number, y: number, load: number, pressure: number, flowBase: number, rad: number, headingX: number, headingY: number, speedPxPerSec: number): void {
     if (load <= BRISTLE_MIN_LOAD) {
       this.stats.skippedDry += 1;
       return;
     }
     const response = this.response;
-    const flow = Math.min(1, flowBase * load);
+    const breakup = response ? response.dryBreakup * Math.min(1, Math.max(0, 1 - load)) : 0;
+    if (breakup > 0) {
+      const u = (hashU32(i, this.index, this.seed) & 0x00ff_ffff) / 16777216;
+      if (u < breakup) {
+        this.stats.skippedDry += 1;
+        return;
+      }
+    }
     const dab = this.dab;
+    const follow = speedPxPerSec >= BRISTLE_HEADING_MIN_SPEED_PX_PER_SEC && Math.hypot(headingX, headingY) > 1e-6;
+    const flow = Math.min(1, flowBase * load);
     dab.x = x;
     dab.y = y;
-    dab.rx = rad;
-    dab.ry = rad;
+    if (follow) {
+      dab.rx = rad * BRISTLE_HEADING_MAJOR_SCALE;
+      dab.ry = rad * BRISTLE_HEADING_MINOR_SCALE;
+      dab.angle = Math.atan2(headingY, headingX);
+    } else {
+      dab.rx = rad;
+      dab.ry = rad;
+      dab.angle = 0;
+    }
     dab.flow = flow;
     dab.grain = response?.grain ? response.grain.eval(pressure) : 0;
     dab.seed = hashU32(i, this.index, this.seed) & 0x00ff_ffff;
     this.index += 1;
-    if (!this.batch.push(dab)) {
-      this.flush();
-      this.batch.push(dab);
+    const active = this.active();
+    if (!active.push(dab)) {
+      this.submitActive();
+      this.active().push(dab);
     }
+    if (this.active().count >= BRISTLE_FRAME_SUBMIT_BUDGET) this.submitActive();
     this.stats.dabs += 1;
   }
 }
@@ -442,6 +330,8 @@ export interface BristleStrokeReceipt extends StrokeReceipt {
   stiffnessUpdates: number;
   /** 물감이 말라서(적재량 소진) 찍지 않은 dab 수. */
   skippedDry: number;
+  /** 프레임 예산을 넘어 건너뛴 dab 수. */
+  budgetSkipped: number;
   /** 월드 구현의 진단 카운터. */
   worldDiagnostics: Readonly<Record<string, number>>;
   /** 이 획에서 드러내야 하는 사유(한글). 비어 있으면 아무 일도 없었다. */
@@ -552,6 +442,7 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     const clock = this.clock;
     const t0 = clock ? clock.now() : 0;
     const before = session.synth ? { dabs: session.synth.stats.dabs, submits: session.synth.stats.submits } : { dabs: 0, submits: 0 };
+    session.synth?.beginFrame();
     for (const s of samples) {
       // 예측 표본은 표시 전용이라 물리에 넣지 않는다.
       if (s.source === "predicted") continue;
@@ -593,6 +484,7 @@ export abstract class BristleLaneBase implements BrushEngineLane {
       const brush = session.brush;
       const synth = session.synth;
       if (brush && synth) {
+        synth.beginFrame();
         brush.settle(synth, BRISTLE_SETTLE_MAX_MS);
         // 탭(움직임 없이 끝난 획)에는 털마다 현재 위치에 dab 하나씩 찍어 점이 남게 한다.
         // 움직인 획의 시작에는 찍지 않는다(털이 모여 있는 시작점에 물감이 뭉치는 것을 막는다).
@@ -608,6 +500,7 @@ export abstract class BristleLaneBase implements BrushEngineLane {
       if (diag && diag.droppedTicks > 0) notesKo.push(`표본 시각이 크게 건너뛰어 고정 틱 ${diag.droppedTicks}개를 따라잡지 않고 넘겼다`);
       if (cpu.overflowDabs > 0) notesKo.push(`래스터 한도로 dab ${cpu.overflowDabs}개를 건너뛰었다(overflowDabs)`);
       if (stats && stats.skippedDry > 0) notesKo.push(`적재량이 소진된 털의 dab ${stats.skippedDry}개는 찍지 않았다(마른 붓)`);
+      if (stats && stats.budgetSkipped > 0) notesKo.push(`프레임당 dab 예산(${BRISTLE_FRAME_DAB_BUDGET})을 넘어 dab ${stats.budgetSkipped}개를 건너뛰었다 — 경로를 따라가서 끊기지 않고 다음 프레임에 이어진다`);
       const worldDiagnostics = brush ? brush.worldDiagnostics() : {};
       if ((worldDiagnostics.nonFiniteResets ?? 0) > 0) notesKo.push(`물리 월드가 비유한 값 ${worldDiagnostics.nonFiniteResets}건을 직전 위치로 되돌렸다 — 시뮬레이션이 건강하지 않다`);
       if ((worldDiagnostics.nonFiniteStates ?? 0) > 0) notesKo.push(`물리 월드가 비유한 상태 ${worldDiagnostics.nonFiniteStates}건을 읽었다 — 시뮬레이션이 건강하지 않다`);
@@ -627,6 +520,8 @@ export abstract class BristleLaneBase implements BrushEngineLane {
         droppedTicks: diag?.droppedTicks ?? 0,
         stiffnessUpdates: diag?.stiffnessUpdates ?? 0,
         skippedDry: stats?.skippedDry ?? 0,
+        /** 프레임 예산을 넘어 건너뛴 dab 수. */
+        budgetSkipped: stats?.budgetSkipped ?? 0,
         worldDiagnostics,
         notesKo,
         mappedKo: [...session.mapping.mappedKo],
