@@ -27,6 +27,7 @@
 | `apps/web/src/shared/motion-assets/motion-assets-illustrations.tsx` | 14 | 모션 일러스트 SVG 아트워크 |
 | `apps/web/src/shared/components/virtual-studio/StudioChibiSprite.tsx` | 10 | 치비 캐릭터 스프라이트 SVG 아트워크 — 작화 데이터 |
 | `apps/web/src/domains/market/components/MarketScene3dPreview.tsx` | 8 | 조명 프리셋으로 구동되는 3D 장면 미리보기 SVG 일러스트 — 장면 렌더 데이터 |
+| `apps/web/src/domains/creator/bg3d/StudioBg3dSceneNodes.tsx` | 4 | R3F 장면 노드의 three.js 재질 색(지면 원반·눈금 안내·라인아트 채움 흰색과 선 검정) — CSS 색이 아니라 렌더 데이터. 2026-10-16 이 파일을 고치다 훅(경고 0)에 걸려 등재했고, 경고 4건은 이전부터 있던 것이다 |
 
 ## 구간·라인 단위 예외 (UI 파일 안의 국소 지점)
 

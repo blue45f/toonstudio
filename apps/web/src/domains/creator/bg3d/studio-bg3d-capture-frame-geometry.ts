@@ -246,7 +246,11 @@ export const STUDIO_BG3D_CAPTURE_ASPECT_VIEWPORT_PRESET_ID = "viewport";
 export const STUDIO_BG3D_CAPTURE_ASPECT_DOCUMENT_PRESET_ID = "document";
 export const STUDIO_BG3D_CAPTURE_ASPECT_CUSTOM_PRESET_ID = "custom";
 
-/** 웹툰 작업 흐름에 맞춘 고정 비율 프리셋. 첫 항목은 언제나 "자동"이다. */
+/**
+ * 웹툰 작업 흐름에 맞춘 고정 비율 프리셋(가로로 넓은 순서에서 세로로 긴 순서). 첫 항목은 언제나 "자동"이다.
+ * 21:9 와 4:5 는 시네마틱 디렉터의 "컷 비율" 선택지(9:16·4:5·1:1·16:9·21:9)와 같은 비율을 캡처
+ * 프레임으로 고를 수 있게 더한 것이다 — 디렉터 쪽 선택이 이 목록의 비율로 그대로 이어진다.
+ */
 export const STUDIO_BG3D_CAPTURE_ASPECT_PRESETS: readonly StudioBg3dCaptureAspectPreset[] =
   Object.freeze([
     Object.freeze({
@@ -254,14 +258,20 @@ export const STUDIO_BG3D_CAPTURE_ASPECT_PRESETS: readonly StudioBg3dCaptureAspec
       label: "뷰포트 비율 (자유)",
       ratio: null,
     }),
+    Object.freeze({ id: "21-9", label: "와이드 21:9", ratio: 21 / 9 }),
     Object.freeze({ id: "16-9", label: "가로 16:9", ratio: 16 / 9 }),
     Object.freeze({ id: "4-3", label: "가로 4:3", ratio: 4 / 3 }),
     Object.freeze({ id: "1-1", label: "정사각 1:1", ratio: 1 }),
+    Object.freeze({ id: "4-5", label: "세로 4:5 (인스타)", ratio: 4 / 5 }),
     Object.freeze({ id: "3-4", label: "세로 3:4", ratio: 3 / 4 }),
     Object.freeze({ id: "9-16", label: "세로 9:16", ratio: 9 / 16 }),
   ]);
 
-/** 편집 중인 문서 캔버스 비율 프리셋. 캔버스 크기를 모르면 null이라 목록에서 빠진다. */
+/**
+ * 편집 중인 문서 캔버스 비율 프리셋. 캔버스 크기를 모르면 null이라 목록에서 빠진다. 캔버스 비율이 이미 고정
+ * 프리셋(예: 4:5)과 같으면 null 이다 — 같은 비율이 두 항목으로 겹치면 선택 칸이 처음 맞는 항목(문서 캔버스)으로
+ * 되돌아가 사용자가 고른 "세로 4:5"가 다른 이름으로 바뀐 것처럼 보이기 때문이다.
+ */
 export function createStudioBg3dDocumentCaptureAspectPreset(
   canvasWidth: unknown,
   canvasHeight: unknown,
@@ -269,6 +279,7 @@ export function createStudioBg3dDocumentCaptureAspectPreset(
   if (!finitePositive(canvasWidth) || !finitePositive(canvasHeight)) return null;
   const ratio = normalizeStudioBg3dCaptureAspectRatio(canvasWidth / canvasHeight);
   if (ratio === null) return null;
+  if (matchStudioBg3dCaptureAspectPreset(ratio) !== STUDIO_BG3D_CAPTURE_ASPECT_CUSTOM_PRESET_ID) return null;
   return Object.freeze({
     id: STUDIO_BG3D_CAPTURE_ASPECT_DOCUMENT_PRESET_ID,
     label: `문서 캔버스 비율 (${Math.round(canvasWidth)}×${Math.round(canvasHeight)})`,

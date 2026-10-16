@@ -78,6 +78,10 @@ export interface StudioBg3dProSuiteRuntimeValue {
   readonly onSetTransparentBackground?: (transparent: boolean) => void;
   /** Composes from the live viewport at command time; null means the edit was accepted. */
   readonly onComposeLens?: (fovDegrees: number, preserveSubjectSize: boolean) => string | null;
+  /** 문서 출력의 캡처 프레임 비율(가로/세로). null 은 뷰포트 비율을 따르는 자동 상태. */
+  readonly captureAspectRatio?: number | null;
+  /** 캡처 프레임 비율을 바꾼다(null = 자동). 값은 문서 정규화가 한도 안으로 누른다. */
+  readonly onSetCaptureAspectRatio?: ((ratio: number | null) => void) | undefined;
   readonly onApplyCameraView: (camera: StudioBg3dCameraSettings) => void;
   readonly onPreviewCameraView?: (camera: StudioBg3dCameraSettings) => void;
   readonly onFinishCameraViewPreview?: () => void;

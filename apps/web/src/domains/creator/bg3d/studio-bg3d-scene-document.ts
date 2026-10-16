@@ -2056,6 +2056,8 @@ export function captureStudioBg3dShot(
     return null;
   }
 
+  // 컷은 문서 공통 캡처 비율을 소유하지 않는다(조명 environment 와 같은 이유): 넣으면 엄격 정규화가 컷 저장을 거부한다.
+  const { exportAspectRatio: _documentWideRatio, ...shotOutput } = document.output;
   const shot: StudioBg3dShot = {
     ...normalizedRequest,
     camera: { ...document.camera },
@@ -2067,11 +2069,7 @@ export function captureStudioBg3dShot(
       key: { ...document.lighting.key },
       fill: { ...document.lighting.fill },
     },
-    output: {
-      ...document.output,
-      line: { ...document.output.line },
-      tone: { ...document.output.tone },
-    },
+    output: { ...shotOutput, line: { ...shotOutput.line }, tone: { ...shotOutput.tone } },
   };
   return canonicalDocumentForShotHelper({
     ...withoutActiveShot(document),
