@@ -466,6 +466,7 @@ scripts/creator-career-confirmation-database-contract.test.mjs
 scripts/creator-hiring-automation-database-contract.test.mjs
 scripts/deploy-cloudflare-analytics.test.mjs
 scripts/deploy-cloudflare-static.test.mjs
+scripts/deploy-standing-approval.test.mjs
 scripts/free-database-federation.test.mjs
 scripts/free-infrastructure-policy.test.mjs
 scripts/generate-latent-pigment-model.test.ts
