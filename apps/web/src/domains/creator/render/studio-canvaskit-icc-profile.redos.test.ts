@@ -6,8 +6,9 @@ import { parseIccProfile } from "./studio-canvaskit-icc-profile";
  * ICC 프로파일 설명 문자열(mluc)을 읽는 길의 최악 입력 시간 회귀 테스트(CodeQL js/polynomial-redos).
  *
  * 프로파일은 가져온 이미지·PDF 에 실려 오는 바깥 파일이다. 설명 끝의 NUL 을 `/\0+$/` 로 떼면 앞쪽에 NUL 이 길게 이어진
- * 프로파일에서 시작점마다 그 열을 다시 읽어 입력 길이의 제곱 시간이 든다. 아래 입력은 수정 전 구현에서 2초 안팎이 걸렸고,
- * 선형 시간이면 수십 ms 안에 끝난다. 상한은 느린 CI 에서도 흔들리지 않게 1초로 넉넉히 둔다.
+ * 프로파일에서 시작점마다 그 열을 다시 읽어 입력 길이의 제곱 시간이 든다. 아래 입력(NUL 15만 개)은 수정 전 구현에서 7~9초가
+ * 걸렸고(6만 개는 1.2초라 상한 1초에 얇게 못 미쳤다), 선형 시간이면 수 ms 안에 끝난다. 상한은 느린 CI 에서도 흔들리지 않게
+ * 1초로 넉넉히 둔다.
  */
 const LINEAR_TIME_BUDGET_MS = 1_000;
 
@@ -58,7 +59,7 @@ function descriptionOf(text: string): string {
 
 describe("ICC 설명 문자열 끝 NUL 정리", () => {
   it("설명 앞에 NUL 이 길게 이어져도 제곱 시간이 되지 않는다", () => {
-    const description = `${"\0".repeat(60_000)}a`;
+    const description = `${"\0".repeat(150_000)}a`;
     const startedAt = performance.now();
     const actual = descriptionOf(`${description}\0`);
     const elapsedMs = performance.now() - startedAt;
