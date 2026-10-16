@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -24,6 +28,13 @@ import { createStudioUiPreferencesRepository } from "../apps/web/src/domains/cre
 import { StudioBackgroundPanel } from "../apps/web/src/domains/creator/StudioBackgroundPanel";
 
 import {
+  STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS,
+  clickAndWaitForRenderer,
+  selectCanvasResizeRow,
+  waitForRendererQuiet,
+} from "./lib/studio-verify-render-settle";
+import {
+  CANVAS_RESIZE_AUTHORITY_MESSAGE,
   CATALOGUE_GROUPS,
   classifyStudioCanvasResizeResult,
   closeFloatingUi,
@@ -320,4 +331,181 @@ it("closes persistent Quick Access explicitly without clicking canvas coordinate
   expect(click).toHaveBeenCalledOnce();
   expect(waitFor).toHaveBeenCalledWith({ state: "hidden", timeout: 5000 });
   expect(page.mouse.click).not.toHaveBeenCalled();
+});
+
+
+describe("긴 세로 캔버스를 다시 그리는 단계의 대기 계약", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    document.body.innerHTML = "";
+  });
+
+  type PlaywrightPage = import("playwright").Page;
+  type PlaywrightLocator = import("playwright").Locator;
+
+  /** 시계는 직접 정한다: `elapsed` 가 타이머 주기(40ms)보다 훨씬 크면 그 사이 메인 스레드가 막혀 있었던 것이다. */
+  function quietHarness(options?: Parameters<typeof waitForRendererQuiet>[1]) {
+    let now = 0;
+    vi.stubGlobal("performance", { now: () => now });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const page = {
+      evaluate: async (callback: (argument: unknown) => unknown, argument: unknown) => callback(argument),
+    };
+    const result = waitForRendererQuiet(page as unknown as PlaywrightPage, options);
+    let settled: boolean | undefined;
+    void result.then((value) => { settled = value; });
+    const tick = async (elapsed = 40) => {
+      now += elapsed;
+      await vi.advanceTimersByTimeAsync(40);
+    };
+    return { result, settled: () => settled, tick };
+  }
+
+  it("막힘 없이 quietMs 동안 돌면 잠잠해진 것으로 돌아온다", async () => {
+    const { result, settled, tick } = quietHarness({ quietMs: 1_000, timeoutMs: 10_000 });
+    for (let index = 0; index < 24; index += 1) await tick();
+    expect(settled()).toBeUndefined();
+    await tick();
+    await expect(result).resolves.toBe(true);
+  });
+
+  it("중간에 메인 스레드가 막히면 그 막힘이 끝난 시점부터 quietMs 를 다시 센다", async () => {
+    const { result, settled, tick } = quietHarness({ quietMs: 1_000, timeoutMs: 60_000 });
+    for (let index = 0; index < 10; index += 1) await tick();
+    await tick(2_000);
+    for (let index = 0; index < 24; index += 1) await tick();
+    expect(settled()).toBeUndefined();
+    await tick();
+    await expect(result).resolves.toBe(true);
+  });
+
+  it("한도까지 계속 막혀 있으면 던지지 않고 false 로 돌아간다", async () => {
+    const { result, tick } = quietHarness({ quietMs: 1_000, timeoutMs: 500 });
+    for (let index = 0; index < 3; index += 1) await tick(200);
+    await expect(result).resolves.toBe(false);
+  });
+
+  it("페이지가 한도까지 응답하지 않아도 Node 쪽에서 false 로 돌아가 검증기가 끝없이 멈추지 않는다", async () => {
+    vi.useFakeTimers();
+    const page = { evaluate: () => new Promise<boolean>(() => undefined) };
+    const result = waitForRendererQuiet(page as unknown as PlaywrightPage, { timeoutMs: 1_000 });
+    let settled: boolean | undefined;
+    void result.then((value) => { settled = value; });
+    await vi.advanceTimersByTimeAsync(999);
+    expect(settled).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(10_000);
+    await expect(result).resolves.toBe(false);
+  });
+
+  it("메뉴 클릭은 항목을 짧게 확인하고 입력만 보낸 뒤 클릭 예산을 재렌더 시간에 맞춰 짧게 잠잠해지기를 기다린다", async () => {
+    const calls: string[] = [];
+    let quietTimeoutMs = 0;
+    const waitFor = vi.fn(async () => { calls.push("appear"); });
+    const click = vi.fn(async () => { calls.push("click"); });
+    const evaluate = vi.fn(async (_callback: unknown, argument: { timeout: number }) => {
+      calls.push("quiet");
+      quietTimeoutMs = argument.timeout;
+      return true;
+    });
+    await clickAndWaitForRenderer(
+      { evaluate } as unknown as PlaywrightPage,
+      { waitFor, click } as unknown as PlaywrightLocator,
+    );
+
+    // 기본 click 은 입력 뒤 렌더러 왕복까지 같은 예산에서 기다려, 수 초짜리 재렌더가 4초 클릭 예산을 소진한다.
+    expect(STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS).toBeGreaterThanOrEqual(30_000);
+    expect(waitFor).toHaveBeenCalledWith({ state: "visible", timeout: expect.any(Number) });
+    expect(click).toHaveBeenCalledWith({ timeout: STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS, noWaitAfter: true });
+    expect(calls).toEqual(["appear", "click", "quiet"]);
+    // 잠잠해짐 대기는 8000px대 문서를 다시 그리는 단계보다 짧은 상한을 쓴다: 계속 바쁜 러너에서 메뉴마다 1분씩 쓰지 않는다.
+    expect(quietTimeoutMs).toBeGreaterThan(0);
+    expect(quietTimeoutMs).toBeLessThan(STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS);
+  });
+
+  it("플랫폼 규격 행은 입력 전달만 확인하고 결과와 잠잠해짐을 같은 예산으로 기다린다", async () => {
+    const calls: string[] = [];
+    const waitFor = vi.fn(async () => { calls.push("appear"); });
+    const click = vi.fn(async () => { calls.push("click"); });
+    const waitForFunction = vi.fn(async () => { calls.push("outcome"); });
+    const evaluate = vi.fn(async () => { calls.push("quiet"); return true; });
+    await selectCanvasResizeRow(
+      { waitForFunction, evaluate } as unknown as PlaywrightPage,
+      { waitFor, click } as unknown as PlaywrightLocator,
+      8_348,
+      CANVAS_RESIZE_AUTHORITY_MESSAGE,
+    );
+
+    expect(click).toHaveBeenCalledWith({ timeout: STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS, noWaitAfter: true });
+    expect(waitForFunction).toHaveBeenCalledWith(
+      expect.any(Function), { height: 8_348, message: CANVAS_RESIZE_AUTHORITY_MESSAGE },
+      { timeout: STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS },
+    );
+    expect(calls).toEqual(["appear", "click", "outcome", "quiet"]);
+  });
+
+  it("눌러야 할 항목이 없으면 느린 입력 확인 예산을 쓰지 않고 짧은 대기 뒤에 던진다", async () => {
+    const missing = new Error("locator.waitFor: Timeout 15000ms exceeded.");
+    const waitFor = vi.fn(async () => { throw missing; });
+    const click = vi.fn(async () => undefined);
+    const evaluate = vi.fn(async () => true);
+    const page = { evaluate, waitForFunction: vi.fn(async () => undefined) } as unknown as PlaywrightPage;
+    const row = { waitFor, click } as unknown as PlaywrightLocator;
+
+    await expect(clickAndWaitForRenderer(page, row)).rejects.toBe(missing);
+    await expect(selectCanvasResizeRow(page, row, 8_348, CANVAS_RESIZE_AUTHORITY_MESSAGE)).rejects.toBe(missing);
+
+    // 항목의 유무는 렌더 비용과 무관하다: 60초 입력 확인 예산이 아니라 짧은 예산으로 기다리고, 없으면 누르지도 않는다.
+    // (항목 이름이 바뀐 날 CI 가 항목마다 1분씩 멈추지 않고, 실패 문구가 어떤 항목을 못 찾았는지 그대로 말한다.)
+    expect(waitFor).toHaveBeenCalledTimes(2);
+    for (const [options] of waitFor.mock.calls as unknown as [{ timeout: number }][]) {
+      expect(options.timeout).toBeGreaterThan(0);
+      expect(options.timeout).toBeLessThan(STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS);
+    }
+    expect(click).not.toHaveBeenCalled();
+    expect(evaluate).not.toHaveBeenCalled();
+  });
+
+  it("결과가 끝내 없어도 던지지 않고 호출자가 높이·안내·URL 로 판정하게 남긴다", async () => {
+    const waitForFunction = vi.fn(async () => { throw new Error("Timeout 60000ms exceeded"); });
+    const evaluate = vi.fn(async () => false);
+    await expect(selectCanvasResizeRow(
+      { waitForFunction, evaluate } as unknown as PlaywrightPage,
+      { waitFor: vi.fn(async () => undefined), click: vi.fn(async () => undefined) } as unknown as PlaywrightLocator,
+      8_000,
+      CANVAS_RESIZE_AUTHORITY_MESSAGE,
+    )).resolves.toBeUndefined();
+    expect(evaluate).toHaveBeenCalledOnce();
+  });
+
+  it("결과 조건은 목표 높이 표시 또는 정본 거절 안내 둘 중 하나만 인정한다", async () => {
+    const waitForFunction = vi.fn(async () => undefined);
+    await selectCanvasResizeRow(
+      { waitForFunction, evaluate: vi.fn(async () => true) } as unknown as PlaywrightPage,
+      { waitFor: vi.fn(async () => undefined), click: vi.fn(async () => undefined) } as unknown as PlaywrightLocator,
+      8_348,
+      CANVAS_RESIZE_AUTHORITY_MESSAGE,
+    );
+    const [predicate, argument] = waitForFunction.mock.calls[0] as unknown as [
+      (input: { height: number; message: string }) => boolean, { height: number; message: string },
+    ];
+    expect(predicate(argument)).toBe(false);
+    document.body.innerHTML = '<span aria-label="높이 8000px">8000</span>';
+    expect(predicate(argument)).toBe(false);
+    document.body.innerHTML = '<span aria-label="높이 8348px">8348</span>';
+    expect(predicate(argument)).toBe(true);
+    document.body.innerHTML = `<div role="alert">${CANVAS_RESIZE_AUTHORITY_MESSAGE}</div>`;
+    expect(predicate(argument)).toBe(true);
+    document.body.innerHTML = '<div role="alert">다른 안내</div>';
+    expect(predicate(argument)).toBe(false);
+  });
+
+  it("문서를 8000px대로 바꾸는 플랫폼 규격 단계는 검증기의 마지막 단계다", () => {
+    // 이 단계 뒤에는 문서가 8348px 로 남아, 이어지는 모든 입력이 수 초짜리 재그리기에 밀려 4초 예산을 넘긴다.
+    // 실행 위치(cwd)와 무관하게 이 시험 파일 옆의 검증기 원문을 읽는다.
+    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "verify-studio-menus.mts"), "utf8");
+    const steps = [...source.matchAll(/^\s*\.\.\.\(await (assert\w+)\(/gmu)].map((match) => match[1]);
+    expect(steps.length).toBeGreaterThan(5);
+    expect(steps.filter((step) => step === "assertCurrentCanvasPlatformResize")).toHaveLength(1);
+    expect(steps.at(-1)).toBe("assertCurrentCanvasPlatformResize");
+  });
 });
