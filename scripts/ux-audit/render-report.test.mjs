@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import { scoreCells, summarize } from "./aggregate.mjs";
-import { renderCategoryTable, renderJourneyTable, renderLowestTable, renderRouteTable, renderRubricMarkdown, renderSummaryMarkdown, renderUnmeasuredTable, renderViolationTable } from "./render-report.mjs";
+import { escapeCell, renderCategoryTable, renderJourneyTable, renderLowestTable, renderRouteTable, renderRubricMarkdown, renderSummaryMarkdown, renderUnmeasuredTable, renderViolationTable } from "./render-report.mjs";
 import { ROUTES } from "./routes.mjs";
 import { RUBRIC, UNMEASURED_HUMAN_ITEMS, describeRubric } from "./rubric.mjs";
 import { axeViolation, journeyResult, perfectCell } from "./test-fixtures.mjs";
@@ -48,6 +48,13 @@ describe("render-report: 표 생성", () => {
     const table = renderRouteTable(report);
     assert.ok(table.includes("화면 \\| A"));
     assert.ok(/\| 7\d\.\d \|/u.test(table));
+  });
+
+  it("역슬래시를 먼저 이스케이프해서 입력의 \\| 가 칸 경계로 풀리지 않는다", () => {
+    assert.equal(escapeCell("a|b"), "a\\|b");
+    assert.equal(escapeCell("a\\|b"), "a\\\\\\|b");
+    assert.equal(escapeCell("줄\n바꿈"), "줄 바꿈");
+    assert.equal(escapeCell(null), "");
   });
 
   it("영역별 점수표에 여정 영역과 합계가 들어 있다", () => {

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { UsageError, buildPlan, formatPlan, parseArguments, resolveJourneyIds } from "./cli-args.mjs";
 import { JOURNEY_ORDER } from "./journey-meta.mjs";
@@ -77,6 +78,12 @@ describe("routes: 대상 목록 계약", () => {
   it("칸 순서는 선언 순서로 고정된다(결정적)", () => {
     const { routes, viewports } = selectPlan({ routeIds: ["settings", "home"] });
     assert.deepEqual(planCells(routes, viewports).map((cell) => cell.key).slice(0, 4), ["home@mobile", "home@tablet", "home@desktop", "settings@mobile"]);
+  });
+
+  it("사이트 라우트 권위 모듈은 import 가 없는 순수 모듈이다(Node 가 별칭을 풀지 못한다)", () => {
+    const source = readFileSync(new URL("../../apps/web/src/shared/lib/site-route-authority.ts", import.meta.url), "utf8");
+    assert.deepEqual([...source.matchAll(/^\s*import\b[^;]*?\bfrom\s+["']([^"']+)["']/gmu)].map((match) => match[1]), []);
+    assert.equal(/^\s*import\s*\(/mu.test(source), false);
   });
 
   it("사이트 라우트 권위 주석: 권위의 sign-in 라우트는 로그인 구분과 일치한다", async () => {

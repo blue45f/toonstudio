@@ -217,7 +217,10 @@ describe("what-if: 인자와 출력", () => {
     assert.throws(() => parseWhatIfArguments([]), /보고서/u);
     assert.throws(() => parseWhatIfArguments(["r.json", "--tap-floor", "30", "--type", "tap-targets"]), /24 또는 40/u);
     assert.throws(() => parseWhatIfArguments(["r.json", "--match", "x"]), /--type/u);
-    assert.throws(() => parseWhatIfArguments(["r.json", "--match", "(", "--type", "focus-visibility"]), /정규식/u);
+    // --match 는 정규식이 아니라 문자열 조각이다: 정규식 특수문자도 그대로 글자로 취급한다.
+    const literal = parseWhatIfArguments(["r.json", "--match", "a(b.", "--type", "focus-visibility"]).match;
+    assert.equal(literal.test("xA(B.y"), true);
+    assert.equal(literal.test("a(bz"), false);
     assert.throws(() => parseWhatIfArguments(["r.json", "--roadmap", "-1"]), /정수/u);
     assert.throws(() => parseWhatIfArguments(["r.json", "--nope"]), /알 수 없는 옵션/u);
     assert.throws(() => parseWhatIfArguments(["a.json", "b.json"]), /하나만/u);

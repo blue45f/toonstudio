@@ -3,7 +3,8 @@
  */
 import { RUBRIC, SCREEN_MAX, UNMEASURED_HUMAN_ITEMS, describeRubric } from "./rubric.mjs";
 
-const escapeCell = (text) => String(text ?? "").replace(/\|/gu, "\\|").replace(/\n/gu, " ");
+// Markdown 표 칸 안전화. 역슬래시를 먼저 이스케이프해야 입력의 `\|` 가 칸 경계로 풀리지 않는다.
+export const escapeCell = (text) => String(text ?? "").replace(/\\/gu, "\\\\").replace(/\|/gu, "\\|").replace(/\n/gu, " ");
 const fmt = (value, digits = 2) => (value === null || value === undefined ? "미측정" : Number(value).toFixed(digits));
 
 function table(header, rows) {

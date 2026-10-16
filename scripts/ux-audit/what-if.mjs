@@ -8,7 +8,7 @@
  *   시간 지표를 뺀 합계는 낙관 쪽 값이므로 점수는 [하한, 보고서 합계] 사이에 있다고 읽는다.
  *
  * 사용: node scripts/ux-audit/what-if.mjs <report.json> [--type 유형] [--routes a,b] [--viewports mobile,desktop]
- *                                          [--match 정규식] [--tap-floor 40] [--roadmap N] [--json]
+ *                                          [--match 문자열] [--tap-floor 40] [--roadmap N] [--json]
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -22,13 +22,23 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 
 export class WhatIfUsageError extends Error {}
 
+/**
+ * `--match` 는 문자열 조각이다. 명령행 인자로 정규식을 만들면 정규식 주입(CodeQL js/regex-injection)이라 쓰지 않고,
+ * 대소문자를 무시한 부분 문자열 일치만 본다. 내부에서는 RegExp 처럼 `test()` 로 부른다.
+ * @param {string} needle
+ */
+export function literalMatcher(needle) {
+  const lowered = String(needle).toLowerCase();
+  return { test: (text) => String(text ?? "").toLowerCase().includes(lowered), toString: () => String(needle) };
+}
+
 export const WHAT_IF_USAGE = [
   "사용법: node scripts/ux-audit/what-if.mjs <report.json> [옵션]",
   "",
   "  --type 유형          이 유형만 계산한다(예: tap-targets, focus-visibility, axe:scrollable-region-focusable). 기본: 보고서에 나온 모든 유형",
   "  --routes a,b         이 라우트 id 의 칸에서만 고쳤다고 가정한다(기본 전체)",
   "  --viewports mobile   이 뷰포트 id 의 칸에서만 고쳤다고 가정한다(기본 전체)",
-  "  --match 정규식       포커스 표시 없음·겹침 유형에서 표본 문자열(요소·가린 요소)이 이 식에 맞는 것만 고쳤다고 가정한다",
+  "  --match 문자열       포커스 표시 없음·겹침 유형에서 표본(요소·가린 요소)에 이 문자열이 들어 있는 것만 고쳤다고 가정한다(대소문자 무시, 정규식 아님)",
   "  --tap-floor 40|24    탭 대상 유형에서 이 크기(px) 이상인 컨트롤은 44px 로 올렸다고 가정한다(40 이면 40~44px 구간만 해소)",
   "  --roadmap N          회수 점수가 큰 유형부터 N개를 차례로 고쳤을 때의 누적 합계도 출력한다(기본 8, 0 이면 생략)",
   "  --json               표 대신 JSON 으로 출력한다",
@@ -57,13 +67,8 @@ export function parseWhatIfArguments(argv) {
     if (name === "type") options.type = value;
     else if (name === "routes") options.routeIds = value.split(",").map((entry) => entry.trim()).filter(Boolean);
     else if (name === "viewports") options.viewportIds = value.split(",").map((entry) => entry.trim()).filter(Boolean);
-    else if (name === "match") {
-      try {
-        options.match = new RegExp(value, "u");
-      } catch {
-        throw new WhatIfUsageError(`--match 정규식이 올바르지 않습니다: ${value}`);
-      }
-    } else if (name === "tap-floor") {
+    else if (name === "match") options.match = literalMatcher(value);
+    else if (name === "tap-floor") {
       options.tapFloor = Number(value);
       if (![24, 40].includes(options.tapFloor)) throw new WhatIfUsageError("--tap-floor 는 24 또는 40 이어야 합니다.");
     } else {
@@ -100,7 +105,7 @@ export function isSupportedType(type) {
  * 한 칸에서 유형의 위반을 없앤 복사본을 돌려준다. 해당 위반이 없던 칸은 사실이 그대로인 복사본이다.
  * @param {object} cell 채점 전 측정 사실
  * @param {string} type 위반 유형(rubric 항목 id 또는 axe:<규칙 id>)
- * @param {{ match?: RegExp | null, tapFloor?: 24 | 40 | null }} [options]
+ * @param {{ match?: { test(text: string): boolean } | null, tapFloor?: 24 | 40 | null }} [options]
  */
 export function fixCell(cell, type, { match = null, tapFloor = null } = {}) {
   if (!isSupportedType(type)) throw new WhatIfUsageError(`지원하지 않는 유형: ${type}`);
@@ -229,7 +234,7 @@ export function violationTypes(report) {
  * 한 유형을 범위 안의 칸에서 고쳤다고 가정했을 때의 합계 변화.
  * @param {object} report
  * @param {string} type
- * @param {{ routeIds?: readonly string[], viewportIds?: readonly string[], match?: RegExp | null, tapFloor?: 24 | 40 | null }} [scope]
+ * @param {{ routeIds?: readonly string[], viewportIds?: readonly string[], match?: { test(text: string): boolean } | null, tapFloor?: 24 | 40 | null }} [scope]
  */
 export function simulateFix(report, type, { routeIds = [], viewportIds = [], match = null, tapFloor = null } = {}) {
   const inScope = (cell) => (routeIds.length === 0 || routeIds.includes(cell.routeId)) && (viewportIds.length === 0 || viewportIds.includes(cell.viewportId));
