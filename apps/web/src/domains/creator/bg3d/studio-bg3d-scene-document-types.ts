@@ -346,32 +346,14 @@ export interface StudioBg3dLineOutputSettings {
   readonly interiorSuppressionStrength?: number;
 }
 
-/** 내부선 억제를 켰을 때 강도 필드가 없으면 쓰는 기본 강도. */
+/**
+ * 내부선 억제를 켰을 때 강도 필드가 없으면 쓰는 기본 강도. 장면 문서 정규화(라우트)가 쓰는 원본이다.
+ * 같은 값을 선화 렌더러 쪽 잎 모듈(`studio-bg3d-line-output-rules`)도 가지고 있으며 두 값이 같음을 시험이 지킨다.
+ * 내부선 억제 해석·깊이 캡처 판정 함수는 이 큰 모듈에 두지 않고 그 잎 모듈에만 둔다: 이 모듈에 새 런타임
+ * import 가 생기면 번들러가 이 모듈을 장면 문서 청크에서 떼어 선화·생산 청크에 묶고 Studio 라우트가 그 청크를
+ * 정적으로 끌어온다(2026-10-16 번들 래칫 회귀).
+ */
 export const STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH = 0.6;
-
-/**
- * 내부선 억제의 해석. 필드가 없으면 꺼짐이다. 강도가 0 이면 켜져 있어도 효과가 없으므로 `active` 는 거짓이다.
- * 렌더러·깊이 캡처 요청·UI 가 같은 판정을 쓰도록 이 함수만 거친다.
- */
-export function resolveStudioBg3dInteriorSuppression(
-  line: Pick<StudioBg3dLineOutputSettings, "interiorSuppressionEnabled" | "interiorSuppressionStrength">
-): { readonly active: boolean; readonly strength: number } {
-  const strength = line.interiorSuppressionStrength ?? STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH;
-  return { active: line.interiorSuppressionEnabled === true && strength > 0, strength };
-}
-
-/**
- * 선 설정이 깊이 캡처를 요구하는지. 깊이선 검출과 내부선 억제(깊이 윤곽을 윤곽 근거로 쓴다)가 그렇다.
- * 가려진 선 제거는 깊이를 스스로 요구하지 않고, 이미 캡처된 깊이가 있을 때만 효과를 낸다.
- */
-export function studioBg3dLineNeedsDepth(
-  line: Pick<
-    StudioBg3dLineOutputSettings,
-    "depthEnabled" | "interiorSuppressionEnabled" | "interiorSuppressionStrength"
-  >
-): boolean {
-  return line.depthEnabled || resolveStudioBg3dInteriorSuppression(line).active;
-}
 
 export interface StudioBg3dToneOutputSettings {
   readonly mode: StudioBg3dToneMode;

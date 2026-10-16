@@ -6,7 +6,7 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { resolveStudioBg3dInsertQualityPlan } from "./studio-bg3d-insert-quality-policy";
-import { studioBg3dLineNeedsDepth } from "./studio-bg3d-scene-document-types";
+import { studioBg3dLineNeedsDepth } from "./studio-bg3d-line-output-rules";
 
 export function attachStudioBg3dEditorInsertHost(h) {
   const {

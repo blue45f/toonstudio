@@ -40,7 +40,9 @@ export interface StudioBg3dLtRidgeField {
   readonly ridge: Uint8Array;
 }
 
-const TAN_22_5_DEGREES = Math.tan(Math.PI / 8);
+// tan(22.5°). 모듈 최상위에서 Math.tan 을 부르지 않고 값을 적는다: 번들러가 그 호출을 부수효과로 보아 선화를 쓰지 않는
+// 번들(예: PNG 워커)에도 남긴다. 값은 시험이 `Math.tan(Math.PI / 8)` 과 대조한다.
+export const STUDIO_BG3D_LT_TAN_22_5_DEGREES = 0.41421356237309503;
 
 /** 가려진 선을 옮길 이웃을 고르는 동점 우선순위. 축 방향 이웃이 대각 이웃보다 먼저다. */
 const NEIGHBOR_PRIORITY: readonly (readonly [number, number])[] = [
@@ -106,9 +108,9 @@ export function extractStudioBg3dLtRidgeField(input: StudioBg3dLtRidgeFieldInput
       const absoluteX = Math.abs(horizontal);
       const absoluteY = Math.abs(vertical);
       sector[index] =
-        absoluteY <= absoluteX * TAN_22_5_DEGREES
+        absoluteY <= absoluteX * STUDIO_BG3D_LT_TAN_22_5_DEGREES
           ? 0
-          : absoluteX <= absoluteY * TAN_22_5_DEGREES
+          : absoluteX <= absoluteY * STUDIO_BG3D_LT_TAN_22_5_DEGREES
             ? 1
             : horizontal * vertical > 0
               ? 2

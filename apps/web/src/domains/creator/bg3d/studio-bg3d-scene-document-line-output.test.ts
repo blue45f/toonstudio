@@ -29,10 +29,11 @@ import {
   type StudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
 import {
-  STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH,
+  STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH as RULES_DEFAULT_STRENGTH,
   resolveStudioBg3dInteriorSuppression,
   studioBg3dLineNeedsDepth,
-} from "./studio-bg3d-scene-document-types";
+} from "./studio-bg3d-line-output-rules";
+import { STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH } from "./studio-bg3d-scene-document-types";
 
 const LEGACY_LINE_KEYS = [
   "enabled",
@@ -199,6 +200,11 @@ describe("resolveStudioBg3dInteriorSuppression and studioBg3dLineNeedsDepth", ()
       strength: STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH,
     });
     expect(STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH).toBe(0.6);
+  });
+
+  it("keeps the two default-strength constants identical (the rules leaf must not import the scene-document types)", () => {
+    // 번들러가 장면 문서 타입 모듈을 선화·생산 청크로 끌고 가지 않게 두 모듈은 서로를 import 하지 않는다. 값 일치는 여기서 지킨다.
+    expect(RULES_DEFAULT_STRENGTH).toBe(STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH);
   });
 
   it("is active only when switched on with a positive strength", () => {

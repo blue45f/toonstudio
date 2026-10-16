@@ -14,7 +14,7 @@ import {
   summarizeStudioBg3dHiddenWalls,
   type StudioBg3dHiddenWallSummary,
 } from "./studio-bg3d-build-notice";
-import { LtRangeControl, LtToggleRow } from "./studio-bg3d-control-fields";
+import { TemplateRangeControl, TemplateToggleRow } from "./StudioBg3dTemplateControls";
 import {
   STUDIO_BG3D_ROOM_FURNITURE_KINDS,
   STUDIO_BG3D_ROOM_FURNITURE_LABELS,
@@ -151,7 +151,7 @@ export function StudioBg3dRoomBuilderPanel({
       </div>
 
       <div className="rounded-xl border border-line bg-card/70 px-3 py-2">
-        <LtRangeControl
+        <TemplateRangeControl
           id="bg3d-room-width"
           label="가로 폭"
           min={limits.minWidth}
@@ -162,7 +162,7 @@ export function StudioBg3dRoomBuilderPanel({
           disabled={disabled}
           onChange={(width) => onSpecChange({ ...spec, width })}
         />
-        <LtRangeControl
+        <TemplateRangeControl
           id="bg3d-room-depth"
           label="세로 깊이"
           min={limits.minDepth}
@@ -173,7 +173,7 @@ export function StudioBg3dRoomBuilderPanel({
           disabled={disabled}
           onChange={(depth) => onSpecChange({ ...spec, depth })}
         />
-        <LtRangeControl
+        <TemplateRangeControl
           id="bg3d-room-wall-height"
           label="벽 높이"
           min={limits.minWallHeight}
@@ -184,7 +184,7 @@ export function StudioBg3dRoomBuilderPanel({
           disabled={disabled}
           onChange={(wallHeight) => onSpecChange({ ...spec, wallHeight })}
         />
-        <LtRangeControl
+        <TemplateRangeControl
           id="bg3d-room-wall-thickness"
           label="벽 두께"
           min={limits.minWallThickness}
@@ -476,7 +476,7 @@ export function StudioBg3dRoomBuilderPanel({
 
       {onAutoCutawayChange ? (
         <div className="mt-3 rounded-xl border border-line bg-card/70 px-3">
-          <LtToggleRow
+          <TemplateToggleRow
             checked={autoCutaway}
             label={STUDIO_BG3D_AUTO_CUTAWAY_LABEL}
             disabled={disabled}

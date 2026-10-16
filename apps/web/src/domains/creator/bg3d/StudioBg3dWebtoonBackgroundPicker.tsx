@@ -23,7 +23,7 @@ import {
   summarizeStudioBg3dHiddenWalls,
   type StudioBg3dHiddenWallSummary,
 } from "./studio-bg3d-build-notice";
-import { LtToggleRow } from "./studio-bg3d-control-fields";
+import { TemplateToggleRow } from "./StudioBg3dTemplateControls";
 import {
   buildStudioBg3dWebtoonBackground,
   STUDIO_BG3D_WEBTOON_BACKGROUNDS,
@@ -165,7 +165,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
       </div>
 
       <div className="mt-2.5 rounded-xl border border-line bg-card/70 px-3">
-        <LtToggleRow
+        <TemplateToggleRow
           checked={autoCutaway}
           label={STUDIO_BG3D_AUTO_CUTAWAY_LABEL}
           disabled={disabled}

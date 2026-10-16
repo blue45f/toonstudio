@@ -23,7 +23,7 @@ import {
   extractStudioBg3dLtRidgeField,
   relocateStudioBg3dLtOccludedRidges,
 } from "./studio-bg3d-lt-line-ridge";
-import { strokeStudioBg3dLtResponse, studioBg3dLtStrokeReach } from "./studio-bg3d-lt-line-stroke";
+import { strokeStudioBg3dLtResponse } from "./studio-bg3d-lt-line-stroke";
 import {
   buildStudioBg3dLtOutlineProximity,
   studioBg3dLtInteriorLineFactor,
@@ -38,8 +38,9 @@ import {
 import {
   resolveStudioBg3dInteriorSuppression,
   studioBg3dLineNeedsDepth,
-  type StudioBg3dLineOutputSettings,
-} from "./studio-bg3d-scene-document-types";
+} from "./studio-bg3d-line-output-rules";
+
+import type { StudioBg3dLineOutputSettings } from "./studio-bg3d-scene-document-types";
 
 import type { StudioBg3dRasterWindow } from "./studio-bg3d-tile-plan";
 
@@ -67,14 +68,12 @@ export interface StudioBg3dLtLineResponses {
  * - 알파 윤곽: 알파 Sobel 1 + 안쪽 칠하기(폭 `2w - 1` = 15) 도달 거리.
  * - 재질선: 주선 주변 비움 구역(폭 8 칠하기, 주선 중심선 기준) 거리와 휘도 3칸(흐림 2 + 라플라시안 1) 중 큰 쪽에
  *   재질선 칠하기(폭 6) 도달 거리를 더한다.
+ *
+ * 위 식의 결과를 적은 값이다: 주선 9 = (2 + 1 + 1 + 1) + 도달(8)=4, 알파 윤곽 8 = 1 + 도달(15)=7,
+ * 재질선 12 = max(9, 3) + 도달(6)=3. 모듈 최상위에서 `studioBg3dLtStrokeReach` 를 부르지 않는 이유는 번들러가 그 호출을
+ * 부수효과로 보아 선화를 쓰지 않는 번들(PNG 워커)에도 폭 계산 코드를 남기기 때문이다. 시험이 식과 값을 대조한다.
  */
-const BLUR_RADIUS_MAX = 2;
-const MAIN_CENTERLINE_PX = BLUR_RADIUS_MAX + 1 + 1 + 1;
-const MAIN_PX = MAIN_CENTERLINE_PX + studioBg3dLtStrokeReach(8);
-const EXTERIOR_PX = 1 + studioBg3dLtStrokeReach(15);
-const TEXTURE_PX =
-  Math.max(MAIN_PX, BLUR_RADIUS_MAX + 1) + studioBg3dLtStrokeReach(6);
-export const STUDIO_BG3D_LT_LINE_RECEPTIVE_FIELD_PX = Math.max(MAIN_PX, EXTERIOR_PX, TEXTURE_PX);
+export const STUDIO_BG3D_LT_LINE_RECEPTIVE_FIELD_PX = 12;
 
 /** 이 값 이하의 알파 경사(양자화 잡음 수준)는 윤곽으로 보지 않는다. */
 const ALPHA_EDGE_FLOOR = 0.01;

@@ -2,8 +2,9 @@ import { roundStudioBg3dNumber as round } from "./studio-bg3d-editor-ui";
 import {
   resolveStudioBg3dInteriorSuppression,
   studioBg3dLineNeedsDepth,
-  type StudioBg3dLineOutputSettings,
-} from "./studio-bg3d-scene-document-types";
+} from "./studio-bg3d-line-output-rules";
+
+import type { StudioBg3dLineOutputSettings } from "./studio-bg3d-scene-document-types";
 
 /**
  * LT 패널 "선화" 탭의 "정밀 선 검출" 접이식 구역.

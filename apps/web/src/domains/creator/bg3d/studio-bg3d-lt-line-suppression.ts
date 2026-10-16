@@ -21,10 +21,8 @@ export const STUDIO_BG3D_LT_OUTLINE_BAND_PX = 3;
 const WEIGHT_SCALE = 256;
 
 /** k = 0..BAND_PX 의 가중치(256 기준). `256 × (1 - k / (BAND_PX + 1))`. */
-const BAND_WEIGHTS: readonly number[] = Array.from(
-  { length: STUDIO_BG3D_LT_OUTLINE_BAND_PX + 1 },
-  (_, offset) => Math.round(WEIGHT_SCALE * (1 - offset / (STUDIO_BG3D_LT_OUTLINE_BAND_PX + 1)))
-);
+// 최상위 계산 호출을 피해 값을 적는다(번들러가 부수효과로 보아 쓰지 않는 번들에 남기는 것을 막는다). 시험이 위 식과 대조한다.
+export const STUDIO_BG3D_LT_OUTLINE_BAND_WEIGHTS: readonly number[] = [256, 192, 128, 64];
 
 /**
  * 윤곽 근거(0..255)를 밴드 안으로 번지게 해 근접도(0..255)를 만든다. 입력은 바꾸지 않는다.
@@ -48,7 +46,7 @@ export function buildStudioBg3dLtOutlineProximity(
       const first = Math.max(0, x - band);
       const last = Math.min(width - 1, x + band);
       for (let target = first; target <= last; target += 1) {
-        const candidate = (value * BAND_WEIGHTS[Math.abs(target - x)]! + WEIGHT_SCALE / 2) >> 8;
+        const candidate = (value * STUDIO_BG3D_LT_OUTLINE_BAND_WEIGHTS[Math.abs(target - x)]! + WEIGHT_SCALE / 2) >> 8;
         if (candidate > horizontal[row + target]!) horizontal[row + target] = candidate;
       }
     }
@@ -63,7 +61,7 @@ export function buildStudioBg3dLtOutlineProximity(
       const last = Math.min(height - 1, y + band);
       for (let target = first; target <= last; target += 1) {
         const index = target * width + x;
-        const candidate = (value * BAND_WEIGHTS[Math.abs(target - y)]! + WEIGHT_SCALE / 2) >> 8;
+        const candidate = (value * STUDIO_BG3D_LT_OUTLINE_BAND_WEIGHTS[Math.abs(target - y)]! + WEIGHT_SCALE / 2) >> 8;
         if (candidate > proximity[index]!) proximity[index] = candidate;
       }
     }

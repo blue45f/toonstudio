@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_BG3D_LT_TAN_22_5_DEGREES,
   extractStudioBg3dLtRidgeField,
   relocateStudioBg3dLtOccludedRidges,
 } from "./studio-bg3d-lt-line-ridge";
@@ -281,5 +282,12 @@ describe("relocateStudioBg3dLtOccludedRidges", () => {
         visibilityByByte: new Float32Array(255),
       })
     ).toThrow(RangeError);
+  });
+});
+
+describe("방향 구간 경계 상수", () => {
+  it("is tan(22.5°) written as a literal (the module must not call Math.tan at top level)", () => {
+    // 모듈 최상위 호출은 번들러가 부수효과로 보아 선화를 쓰지 않는 번들(PNG 워커)에도 남긴다. 값은 여기서 식과 대조한다.
+    expect(STUDIO_BG3D_LT_TAN_22_5_DEGREES).toBe(Math.tan(Math.PI / 8));
   });
 });
