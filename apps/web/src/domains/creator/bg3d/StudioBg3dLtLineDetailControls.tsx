@@ -35,9 +35,9 @@ export function StudioBg3dLtLineDetailControls({
     <details className="group border-b border-line/70">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-xs font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
         정밀 선 검출
-        <span className="flex items-center gap-1 text-[0.64rem] font-normal text-fg-3">
-          모서리 · 깊이 · 질감
-          <ChevronDown className="transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" size={13} aria-hidden />
+        <span className="flex items-center gap-1 text-right text-[0.64rem] font-normal text-fg-3">
+          {suppressionOn ? "모서리 · 깊이 · 질감 · 내부선 억제 켬" : "모서리 · 깊이 · 질감 · 내부선 억제"}
+          <ChevronDown className="shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" size={13} aria-hidden />
         </span>
       </summary>
       <div className="border-t border-line/60 pl-2">
@@ -66,7 +66,7 @@ export function StudioBg3dLtLineDetailControls({
         <LtToggleRow
           checked={suppressionOn}
           label="내부선 억제"
-          description="물체 안쪽의 명암·재질·모서리 선을 줄이고, 윤곽선과 윤곽에 붙은 선은 남겨요. 켜면 깊이도 함께 캡처해요."
+          description="안쪽의 명암·재질·모서리 선을 줄이고 물체와 배경의 경계(윤곽)는 남겨요. 바닥에 닿는 선처럼 깊이가 이어지는 곳은 안쪽 선으로 보고 줄여요. 켜면 깊이도 함께 캡처해요."
           disabled={!ltLineSettings.enabled}
           onChange={(interiorSuppressionEnabled) => updateLtLineSettings({ interiorSuppressionEnabled })}
         />

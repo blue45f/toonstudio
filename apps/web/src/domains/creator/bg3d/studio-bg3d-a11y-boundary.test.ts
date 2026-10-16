@@ -26,6 +26,10 @@ const ltPanelSource = readFileSync(
   new URL("./StudioBg3dLtPanel.tsx", import.meta.url),
   "utf8",
 );
+const ltLineDetailSource = readFileSync(
+  new URL("./StudioBg3dLtLineDetailControls.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("Studio BG3D accessibility boundary", () => {
   it("keeps the camera and physics sub-tabs keyboard navigable", () => {
@@ -71,9 +75,12 @@ describe("Studio BG3D accessibility boundary", () => {
       shapesPanelSource,
       viewPanelSource,
       ltPanelSource,
+      ltLineDetailSource,
     ]) {
       expect(source).not.toMatch(/(?:^|\s)(?:focus:)?outline-none(?![^"\n]*focus-visible:outline)/u);
     }
     expect(controlSource).toContain("focus-visible:outline-2");
+    // 접이식 요약은 키보드로 열고 닫는 유일한 진입점이라 보이는 포커스 표시가 있어야 한다.
+    expect(ltLineDetailSource).toContain("focus-visible:outline-accent");
   });
 });

@@ -137,8 +137,25 @@ describe("StudioBg3dLtLineDetailControls", () => {
   it("describes what 내부선 억제 keeps and removes through the switch's accessible description", () => {
     renderControls();
     const description = descriptionOf(switchByName("내부선 억제"));
-    expect(description).toContain("윤곽선");
+    expect(description).toContain("물체와 배경의 경계(윤곽)는 남겨요");
+    // 문서 5장의 한계를 숨기지 않는다: 깊이가 이어지는 접촉선(바닥에 닿는 선)은 안쪽 선으로 보고 줄인다.
+    expect(description).toContain("바닥에 닿는 선");
+    expect(description).toContain("줄여요");
     expect(description).toContain("깊이도 함께 캡처");
+    // 윤곽에 "붙은" 선이 남는다는 과장은 하지 않는다.
+    expect(description).not.toContain("윤곽에 붙은");
+  });
+
+  it("mentions 내부선 억제 in the collapsed summary so it can be found without opening the section", () => {
+    renderControls();
+    const summary = document.querySelector("details > summary");
+    expect(summary?.textContent).toContain("정밀 선 검출");
+    expect(summary?.textContent).toContain("내부선 억제");
+    expect(summary?.textContent).not.toContain("켬");
+    cleanup();
+
+    renderControls({ interiorSuppressionEnabled: true });
+    expect(document.querySelector("details > summary")?.textContent).toContain("내부선 억제 켬");
   });
 
   it("disables every control, including the new ones, when line art is off", () => {

@@ -162,7 +162,7 @@ export function LtToggleRow({ checked, label, onChange, disabled = false, descri
       labelClassName="text-xs font-semibold text-fg-2 group-hover:text-fg"
       {...(description === undefined
         ? {}
-        : { description, descriptionClassName: "text-[0.64rem] font-normal leading-relaxed text-fg-3" })}
+        : { description, descriptionClassName: "text-[0.6875rem] font-normal leading-relaxed text-fg-3" })}
       onChange={onChange}
     />
   );

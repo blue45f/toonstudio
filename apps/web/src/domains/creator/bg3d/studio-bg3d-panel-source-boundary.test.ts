@@ -9,6 +9,7 @@ const PANEL_FILES = [
   "./StudioBg3dViewPanel.tsx",
   "./StudioBg3dViewPanelContent.tsx",
   "./StudioBg3dLtPanel.tsx",
+  "./StudioBg3dLtLineDetailControls.tsx",
 ] as const;
 
 function moduleSource(fileName: string): string {
@@ -79,6 +80,26 @@ describe("Studio BG3D panel source boundary", () => {
         fileName,
       ).toBe(false);
     }
+  });
+
+  it("renders the extracted line detail controls from the LT panel with the live settings and the shared controls", () => {
+    const panelSource = moduleSource("./StudioBg3dLtPanel.tsx");
+    expect(panelSource).toContain('from "./StudioBg3dLtLineDetailControls"');
+    const element = /<StudioBg3dLtLineDetailControls\b[\s\S]*?\/>/u.exec(panelSource)?.[0] ?? "";
+    expect(element, "the LT panel must render <StudioBg3dLtLineDetailControls />").not.toBe("");
+    for (const prop of [
+      "ltLineSettings={ltLineSettings}",
+      "updateLtLineSettings={updateLtLineSettings}",
+      "LtToggleRow={LtToggleRow}",
+      "LtRangeControl={LtRangeControl}",
+      "ChevronDown={ChevronDown}",
+    ]) {
+      expect(element).toContain(prop);
+    }
+    // 컨트롤 컴포넌트는 패널이 넘겨 주는 것을 그대로 쓴다: 이 파일이 따로 구현하거나 import 하지 않는다.
+    const detailImports = moduleImports("./StudioBg3dLtLineDetailControls.tsx");
+    expect(detailImports.staticImports).not.toContain("./studio-bg3d-control-fields");
+    expect(detailImports.staticImports).not.toContain("lucide-react");
   });
 
   it("preserves always-mounted tab panels through the hidden attribute", () => {
