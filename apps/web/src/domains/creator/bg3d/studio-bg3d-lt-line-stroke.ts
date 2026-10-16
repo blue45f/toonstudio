@@ -21,6 +21,8 @@
  * 계산에 쓸 수 있다.
  */
 
+import { clamp01 } from "./studio-bg3d-lt-raster-math";
+
 export const STUDIO_BG3D_LT_STROKE_MIN_WIDTH_PX = 0.25;
 /**
  * 칠하기 함수가 받는 폭의 상한. 사용자 설정 상한은 8px 이고, 16 은 물체 안쪽으로만 그리는 윤곽(폭 `2w - 1`)을
@@ -30,10 +32,6 @@ export const STUDIO_BG3D_LT_STROKE_MAX_WIDTH_PX = 16;
 
 /** 덮임 비율을 0..256 정수로 양자화하는 배율(정수 연산으로 플랫폼 차이를 없앤다). */
 const WEIGHT_SCALE = 256;
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
 
 function assertWidthPx(widthPx: number): void {
   if (
@@ -124,31 +122,51 @@ function tableMargin(table: SplatTable): number {
   return margin;
 }
 
+/** 표의 (dx, dy) 를 이 이미지 폭에서의 선형 오프셋(dy × width + dx)으로 바꾼다. */
+function linearOffsets(table: SplatTable, width: number): Int32Array {
+  const offsets = new Int32Array(table.count);
+  for (let k = 0; k < table.count; k += 1) offsets[k] = table.dy[k]! * width + table.dx[k]!;
+  return offsets;
+}
+
 /**
- * 한 중심선 픽셀(`value`, 위치 x,y)에서 표의 모든 오프셋으로 `output` 에 최대값 규칙으로 칠한다.
- * `interior` 이면 경계 검사를 생략한다(표 최대 오프셋 안쪽 픽셀).
+ * 한 중심선 픽셀(`value`, 선형 위치 `base`)에서 표의 모든 오프셋으로 `output` 에 최대값 규칙으로 칠한다. 표의 최대
+ * 오프셋 안쪽 픽셀 전용이라 경계 검사가 없다(가장 뜨거운 반복문이라 오프셋을 미리 선형화해 둔다).
  */
-function splat(
-  output: Uint8ClampedArray,
+function splatInterior(
+  output: Uint8Array,
+  offsets: Int32Array,
+  weights: Uint16Array,
+  count: number,
+  base: number,
+  value: number
+): void {
+  for (let k = 0; k < count; k += 1) {
+    const candidate = (value * weights[k]! + WEIGHT_SCALE / 2) >> 8;
+    const target = base + offsets[k]!;
+    if (candidate > output[target]!) output[target] = candidate;
+  }
+}
+
+/** 가장자리 픽셀용: 이미지 밖으로 나가는 오프셋은 건너뛴다. */
+function splatChecked(
+  output: Uint8Array,
   table: SplatTable,
   width: number,
   height: number,
   x: number,
   y: number,
-  value: number,
-  interior: boolean
+  value: number
 ): void {
   const base = y * width + x;
   for (let k = 0; k < table.count; k += 1) {
     const dx = table.dx[k]!;
     const dy = table.dy[k]!;
-    if (!interior) {
-      const tx = x + dx;
-      const ty = y + dy;
-      if (tx < 0 || tx >= width || ty < 0 || ty >= height) continue;
-    }
-    const target = base + dy * width + dx;
+    const tx = x + dx;
+    const ty = y + dy;
+    if (tx < 0 || tx >= width || ty < 0 || ty >= height) continue;
     const candidate = (value * table.weight[k]! + WEIGHT_SCALE / 2) >> 8;
+    const target = base + dy * width + dx;
     if (candidate > output[target]!) output[target] = candidate;
   }
 }
@@ -182,7 +200,11 @@ export function strokeStudioBg3dLtResponse(
   const diagonal = useMidpoints ? midpointTable(widthPx, reach, 1) : tableFrom([]);
   const antiDiagonal = useMidpoints ? midpointTable(widthPx, reach, -1) : tableFrom([]);
   const margin = Math.max(tableMargin(center), tableMargin(diagonal), tableMargin(antiDiagonal));
-  const output = new Uint8ClampedArray(response.length);
+  // 내부는 Uint8Array 에 칠하고(저장이 더 싸다) 같은 버퍼의 Uint8ClampedArray 로 돌려준다. 값은 늘 0..255 정수다.
+  const painted = new Uint8Array(response.length);
+  const centerOffsets = linearOffsets(center, width);
+  const diagonalOffsets = linearOffsets(diagonal, width);
+  const antiDiagonalOffsets = linearOffsets(antiDiagonal, width);
 
   for (let y = 0; y < height; y += 1) {
     const row = y * width;
@@ -192,21 +214,33 @@ export function strokeStudioBg3dLtResponse(
       const value = response[index]!;
       if (value === 0) continue;
       const interior = rowInterior && x >= margin && x < width - margin;
-      splat(output, center, width, height, x, y, value, interior);
+      if (interior) {
+        splatInterior(painted, centerOffsets, center.weight, center.count, index, value);
+      } else {
+        splatChecked(painted, center, width, height, x, y, value);
+      }
       if (y + 1 >= height) continue;
       if (diagonal.count > 0 && x + 1 < width) {
         const other = response[index + width + 1]!;
         if (other !== 0) {
-          splat(output, diagonal, width, height, x, y, (value + other) >> 1, interior);
+          const mean = (value + other) >> 1;
+          if (interior) splatInterior(painted, diagonalOffsets, diagonal.weight, diagonal.count, index, mean);
+          else splatChecked(painted, diagonal, width, height, x, y, mean);
         }
       }
       if (antiDiagonal.count > 0 && x >= 1) {
         const other = response[index + width - 1]!;
         if (other !== 0) {
-          splat(output, antiDiagonal, width, height, x, y, (value + other) >> 1, interior);
+          const mean = (value + other) >> 1;
+          if (interior) {
+            splatInterior(painted, antiDiagonalOffsets, antiDiagonal.weight, antiDiagonal.count, index, mean);
+          } else {
+            splatChecked(painted, antiDiagonal, width, height, x, y, mean);
+          }
         }
       }
     }
   }
+  const output = new Uint8ClampedArray(painted.buffer);
   return output;
 }
