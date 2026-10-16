@@ -15,7 +15,27 @@ import {
   type ManuscriptVersionShareRecord,
   type VersionShareResolution,
 } from "./manuscript-version-share.repository";
-import { VersionSharePasswordGuard } from "./version-share-password-guard";
+import {
+  VersionSharePasswordGuard,
+  type VersionSharePasswordAttempt,
+} from "./version-share-password-guard";
+
+/**
+ * 비밀번호 시도 한도 초과(429). 재시도 시점은 본문의 retryAfterSeconds 로도, 컨트롤러가 붙이는
+ * Retry-After 헤더로도 알린다.
+ */
+export class VersionSharePasswordLockedException extends HttpException {
+  constructor(readonly retryAfterSeconds: number) {
+    super(
+      {
+        code: "version_share_password_locked",
+        message: "비밀번호를 여러 번 틀려 잠시 잠겼어요. 잠시 후 다시 시도해 주세요.",
+        retryAfterSeconds,
+      },
+      429,
+    );
+  }
+}
 
 /**
  * CT-1 서비스: 저장소의 해석 결과를 HTTP 의미로 변환한다.
@@ -24,7 +44,7 @@ import { VersionSharePasswordGuard } from "./version-share-password-guard";
  */
 @Injectable()
 export class ManuscriptVersionShareService {
-  /** 링크별 비밀번호 실패를 세어 무차별 대입을 막는다. 프로세스 로컬 상태다. */
+  /** 링크별 비밀번호 오답을 세어 무차별 대입을 막는다. 프로세스 로컬 상태다. */
   private readonly passwordGuard = new VersionSharePasswordGuard();
 
   constructor(
@@ -84,21 +104,30 @@ export class ManuscriptVersionShareService {
     password?: string,
   ): Promise<Extract<VersionShareResolution, { kind: "ok" }>> {
     const linkKey = hashVersionShareToken(token);
+    // 비밀번호 검증(DB 연결 + scrypt)은 비싸고 추측 가능한 비밀이므로, 한도에 닿은 링크는 저장소 조회 전에
+    // 거절한다. 검증은 await 를 거치므로 한도 확인과 증가를 await 앞에서 한 번에(시도 선점) 해야 동시에
+    // 몰린 요청이 모두 확인을 통과해 한도를 우회하지 못한다. 비밀번호가 없는 요청은 저장소가 scrypt 없이
+    // 곧바로 password_required 로 답하므로 시도로 세지 않는다.
+    let attempt: VersionSharePasswordAttempt | null = null;
     if (password) {
-      // 비밀번호 검증(scrypt)은 비싸고 추측 가능한 비밀이므로 잠긴 링크는 저장소 조회 전에 거절한다.
-      const lockedForSeconds = this.passwordGuard.lockedForSeconds(linkKey);
-      if (lockedForSeconds > 0) {
-        throw new HttpException(
-          {
-            code: "version_share_password_locked",
-            message: "비밀번호를 여러 번 틀려 잠시 잠겼어요. 잠시 후 다시 시도해 주세요.",
-            retryAfterSeconds: lockedForSeconds,
-          },
-          429,
-        );
+      const admission = this.passwordGuard.admit(linkKey);
+      if (!admission.admitted) {
+        throw new VersionSharePasswordLockedException(admission.retryAfterSeconds);
       }
+      attempt = admission.attempt;
     }
-    const resolution = await this.repository.resolveShare(token, password);
+    let resolution: VersionShareResolution;
+    try {
+      resolution = await this.repository.resolveShare(token, password);
+    } catch (error) {
+      // 저장소 오류(DB 장애 등)는 비밀번호 오답이 아니므로 선점한 시도를 되돌린다.
+      attempt?.release();
+      throw error;
+    }
+    // 선점한 시도는 비밀번호 오답일 때만 오답으로 확정하고, 링크 없음·회수·만료·성공은 되돌려 정상 사용자가
+    // 불이익을 받지 않게 한다.
+    if (resolution.kind === "password_invalid") attempt?.fail();
+    else attempt?.release();
     switch (resolution.kind) {
       case "ok":
         this.passwordGuard.reset(linkKey);
@@ -127,7 +156,6 @@ export class ManuscriptVersionShareService {
           401,
         );
       case "password_invalid":
-        this.passwordGuard.recordFailure(linkKey);
         throw new HttpException(
           {
             code: "version_share_password_invalid",

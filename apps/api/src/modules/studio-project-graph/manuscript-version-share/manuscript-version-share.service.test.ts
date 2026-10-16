@@ -230,5 +230,93 @@ describe("공유 링크 해석 상태 매핑", () => {
         vi.useRealTimers();
       }
     });
+
+    describe("동시에 몰린 요청", () => {
+      /** 저장소 조회(DB 연결 + scrypt)를 흉내 내는 지연. 확인과 기록 사이에 await 가 끼는 실제 상황이다. */
+      function slowGuarded(delayMs = 20) {
+        const resolveShare = vi.fn(async (_token: string, password?: string): Promise<VersionShareResolution> => {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          if (!password) return { kind: "password_required" };
+          return password === "right" ? okResolution : { kind: "password_invalid" };
+        });
+        return { service: new ManuscriptVersionShareService({ resolveShare } as never), resolveShare };
+      }
+      const statusOf = (result: PromiseSettledResult<unknown>): number | "ok" =>
+        result.status === "fulfilled" ? "ok" : (result.reason as HttpException).getStatus();
+
+      it("틀린 비밀번호를 동시에 100건 보내도 저장소(=scrypt 검증)에는 한도(10건)만 도달한다", async () => {
+        const { service, resolveShare } = slowGuarded();
+        const results = await Promise.allSettled(
+          Array.from({ length: 100 }, (_, index) => service.resolveShare(TOKEN, `guess-${index}`)),
+        );
+        const statuses = results.map(statusOf);
+
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+        expect(statuses.filter((status) => status === 401)).toHaveLength(10);
+        expect(statuses.filter((status) => status === 429)).toHaveLength(90);
+        // 버스트가 끝난 뒤에는 올바른 비밀번호도 잠금이 풀릴 때까지 막힌다.
+        await expect(service.resolveShare(TOKEN, "right")).rejects.toMatchObject({ status: 429 });
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+      });
+
+      it("판정 중인 시도 때문에 막힌 요청에는 창 전체가 아니라 짧은 재시도 안내를 준다", async () => {
+        let open!: () => void;
+        const gate = new Promise<void>((resolve) => {
+          open = resolve;
+        });
+        const resolveShare = vi.fn(async (): Promise<VersionShareResolution> => {
+          await gate;
+          return { kind: "password_invalid" };
+        });
+        const service = new ManuscriptVersionShareService({ resolveShare } as never);
+        const inFlight = Array.from({ length: 10 }, (_, index) => service.resolveShare(TOKEN, `guess-${index}`));
+
+        const blocked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
+        expect((blocked as HttpException).getStatus()).toBe(429);
+        expect((blocked as HttpException).getResponse()).toMatchObject({
+          code: "version_share_password_locked",
+          retryAfterSeconds: 1,
+        });
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+
+        open();
+        await Promise.allSettled(inFlight);
+        // 판정이 끝나 10건이 오답으로 확정되면 이제는 15분 창 전체가 안내된다.
+        const locked = await service.resolveShare(TOKEN, "right").catch((e: unknown) => e);
+        expect((locked as HttpException).getResponse()).toMatchObject({ retryAfterSeconds: 15 * 60 });
+      });
+
+      it("링크 없음·회수·만료·저장소 오류는 오답으로 세지 않아 정상 사용자가 잠기지 않는다", async () => {
+        const outcomes: Array<() => Promise<VersionShareResolution>> = [
+          async () => ({ kind: "missing" }),
+          async () => ({ kind: "revoked" }),
+          async () => ({ kind: "expired" }),
+          async () => {
+            throw new Error("db down");
+          },
+        ];
+        for (const outcome of outcomes) {
+          const resolveShare = vi.fn(async (_token: string, password?: string): Promise<VersionShareResolution> =>
+            password === "right" ? okResolution : outcome());
+          const service = new ManuscriptVersionShareService({ resolveShare } as never);
+          // 한도의 두 배를 동시에 보내도(모두 선점됐다가 되돌려진다) 그 링크는 잠기지 않는다.
+          await Promise.allSettled(Array.from({ length: 20 }, (_, index) => service.resolveShare(TOKEN, `guess-${index}`)));
+          await Promise.allSettled(Array.from({ length: 20 }, (_, index) => service.resolveShare(TOKEN, `again-${index}`)));
+          await expect(service.resolveShare(TOKEN, "right")).resolves.toBe(okResolution);
+        }
+      });
+
+      it("동시 요청과 순차 요청이 섞여도 오답은 정확히 한 번씩만 센다", async () => {
+        const { service, resolveShare } = slowGuarded(5);
+        await Promise.allSettled(Array.from({ length: 5 }, (_, index) => service.resolveShare(TOKEN, `burst-${index}`)));
+        for (let index = 0; index < 4; index += 1) {
+          await expect(service.resolveShare(TOKEN, `serial-${index}`)).rejects.toMatchObject({ status: 401 });
+        }
+        // 오답 9건이 확정됐으니 10번째는 검증까지 가서 401, 11번째부터 429 이다.
+        await expect(service.resolveShare(TOKEN, "serial-9")).rejects.toMatchObject({ status: 401 });
+        await expect(service.resolveShare(TOKEN, "right")).rejects.toMatchObject({ status: 429 });
+        expect(resolveShare).toHaveBeenCalledTimes(10);
+      });
+    });
   });
 });
