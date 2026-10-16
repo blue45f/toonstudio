@@ -17,6 +17,8 @@ export interface PaperSpec {
   absorbency: number;
   /** 압력이 요철을 눌러 메우는 정도 0..1. */
   pressureInfluence: number;
+  /** 2px 결(tooth) 진폭 0..1. 0이면 기존 출력과 비트 동일. */
+  tooth: number;
   filter: SamplingFilter;
   seed: number;
 }
@@ -38,6 +40,7 @@ export const DEFAULT_PAPER_SPEC: PaperSpec = {
   roughness: 0.5,
   absorbency: 0.5,
   pressureInfluence: 0.5,
+  tooth: 0,
   filter: "bilinear",
   seed: 7,
 };
@@ -102,13 +105,16 @@ export function generatePaper(spec: PaperSpec, size = 256): PaperField {
   const absorb = new Float32Array(size * size);
   const seed = spec.seed >>> 0;
   const contrast = 0.5 + spec.roughness;
+  const tooth = clamp01(spec.tooth ?? 0);
+  const toothSeed = (seed ^ 0x9e3779b9) >>> 0;
   for (let y = 0; y < size; y += 1) {
     const v = y / size;
     for (let x = 0; x < size; x += 1) {
       const u = x / size;
       const i = y * size + x;
       const b = periodicFbm(u, v, 8, 5, seed);
-      bump[i] = f(clamp01(0.5 + (b - 0.5) * contrast));
+      const t = tooth > 0 ? periodicValueNoise(u * 128, v * 128, 128, toothSeed) : 0.5;
+      bump[i] = f(clamp01(0.5 + (b - 0.5) * contrast + (t - 0.5) * tooth));
       const a = periodicFbm(u, v, 4, 3, (seed + 0x51ed270b) >>> 0);
       absorb[i] = f(clamp01((0.3 + 0.7 * a) * (0.5 + 0.5 * spec.absorbency)));
       const d = periodicFbm(u, v, 2, 2, (seed + 0x2545f491) >>> 0);

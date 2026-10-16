@@ -193,6 +193,7 @@ const paperSchema = z.object({
   roughness: z.number().min(0).max(1).default(DEFAULT_PAPER_SPEC.roughness),
   absorbency: z.number().min(0).max(1).default(DEFAULT_PAPER_SPEC.absorbency),
   pressureInfluence: z.number().min(0).max(1).default(DEFAULT_PAPER_SPEC.pressureInfluence),
+  tooth: z.number().min(0).max(1).default(DEFAULT_PAPER_SPEC.tooth),
   filter: z.enum(SAMPLING_FILTERS).default(DEFAULT_PAPER_SPEC.filter),
   seed: z.number().int().min(0).default(DEFAULT_PAPER_SPEC.seed),
 });

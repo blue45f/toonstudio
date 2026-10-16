@@ -106,6 +106,29 @@ describe("절차적 종이", () => {
     expect(prev).toBeLessThanOrEqual(1);
   });
 
+  it("tooth 0은 기존 bump와 바이트 동일하고 tooth가 이웃 대비를 키운다", () => {
+    const plain = generatePaper(spec, 64);
+    expect(hashField(plain)).toBe("bd7e0a61ada71578");
+    const toothed = generatePaper({ ...spec, tooth: 0.5 }, 64);
+    expect(hashField(toothed)).toBe("318a59c5dc3259f6");
+    const neighborDelta = (field: PaperField): number => {
+      let sum = 0;
+      const n = field.size;
+      for (let y = 0; y < n; y += 1) {
+        for (let x = 0; x < n; x += 1) {
+          sum += Math.abs((field.bump[y * n + x] ?? 0) - (field.bump[y * n + ((x + 1) % n)] ?? 0));
+        }
+      }
+      return sum / field.bump.length;
+    };
+    expect(neighborDelta(toothed)).toBeGreaterThan(neighborDelta(plain) * 2);
+    for (const v of toothed.bump) {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+    expect(hashField(generatePaper({ ...spec, tooth: 0.5 }, 64))).toBe(hashField(toothed));
+  });
+
   it("roughness가 클수록 bump 분산이 크고 absorbency가 클수록 absorb 평균이 크다", () => {
     const smooth = generatePaper({ ...spec, roughness: 0.1 }, 64);
     const rough = generatePaper({ ...spec, roughness: 0.9 }, 64);
