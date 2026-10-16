@@ -21,11 +21,13 @@ import { hybridDccCommitGeometry } from "./studio-hybrid-dcc-document";
 import {
   describeStudioEditableMeshFaceForDrawing,
   drawStudioEditableMeshFacePolygon,
+  type StudioFaceDrawingGuide,
+} from "./studio-hybrid-dcc-face-modeling-draw";
+import {
   insetStudioEditableMeshFacesByDistance,
   offsetStudioEditableMeshFace,
   studioEditableMeshInsetRange,
   studioEditableMeshOffsetRange,
-  type StudioFaceDrawingGuide,
   type StudioOffsetDirection,
 } from "./studio-hybrid-dcc-face-modeling-kernel";
 import {

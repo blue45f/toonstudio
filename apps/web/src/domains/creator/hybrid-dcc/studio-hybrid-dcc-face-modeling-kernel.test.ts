@@ -17,6 +17,8 @@ import {
 import {
   describeStudioEditableMeshFaceForDrawing,
   drawStudioEditableMeshFacePolygon,
+} from "./studio-hybrid-dcc-face-modeling-draw";
+import {
   insetStudioEditableMeshFacesByDistance,
   offsetStudioEditableMeshFace,
   studioEditableMeshOffsetRange,

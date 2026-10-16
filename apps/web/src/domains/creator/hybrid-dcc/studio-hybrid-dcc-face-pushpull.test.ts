@@ -12,10 +12,8 @@ import {
   buildStudioPlanarFrame,
   type StudioPlanarPoint,
 } from "./studio-hybrid-dcc-face-modeling-geometry";
-import {
-  drawStudioEditableMeshFacePolygon,
-  insetStudioEditableMeshFacesByDistance,
-} from "./studio-hybrid-dcc-face-modeling-kernel";
+import { drawStudioEditableMeshFacePolygon } from "./studio-hybrid-dcc-face-modeling-draw";
+import { insetStudioEditableMeshFacesByDistance } from "./studio-hybrid-dcc-face-modeling-kernel";
 import {
   analyzeStudioEditableMeshIntegrity,
   readStudioMeshFaceLoops,
