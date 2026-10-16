@@ -124,6 +124,16 @@ export const DICTATION_UNSUPPORTED_SNAPSHOT: DictationSnapshot = {
 export const DICTATION_UNSUPPORTED_MESSAGE =
   "이 브라우저는 음성 받아쓰기를 지원하지 않아요. Chrome 또는 Edge에서 열면 말로 대사를 입력할 수 있고, 지금은 키보드로 입력하거나 다른 기기에서 받아쓴 텍스트를 붙여넣어 주세요.";
 
+/**
+ * 받아쓰기 버튼의 툴팁·화면 낭독기 설명 — 버튼에 보이는 글자만으로는 알 수 없는 조건(지원 브라우저,
+ * 마이크 권한, 결과 확인)과 멈추는 방법을 알린다. 정확도 같은 수치는 약속하지 않는다.
+ * 학습 안내 `/learn/accessibility`의 받아쓰기 구간과 같은 내용이다.
+ */
+export const DICTATION_HINT_IDLE =
+  "브라우저의 음성 인식으로 말한 대사를 커서 위치에 넣어요. Chrome·Edge에서 쓸 수 있고 마이크 권한이 필요해요. 인식 결과는 틀릴 수 있으니 넣은 뒤 꼭 읽어 확인하세요.";
+export const DICTATION_HINT_LISTENING =
+  "다시 누르면 듣기를 멈춰요. 말하는 도중의 글자는 미리보기로만 보이고, 확정된 문장부터 대사에 들어가요.";
+
 const DICTATION_ERROR_MESSAGES: Record<string, { message: string; recoverable: boolean }> = {
   "not-allowed": {
     message: "마이크 권한이 필요해요. 주소창의 마이크 아이콘에서 허용한 뒤 다시 눌러 주세요.",
