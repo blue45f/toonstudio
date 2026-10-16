@@ -7,9 +7,8 @@ import {
   sortStudioBg3dAssetMetadata,
   type StudioBg3dAssetCollection,
   type StudioBg3dAssetMetadata,
-  type StudioBg3dAssetRightsReceipt,
 } from "./studio-bg3d-asset-metadata";
-import { resolveStudioBg3dAssetPatchValue } from "./studio-bg3d-asset-rights-merge";
+import { resolveStudioBg3dAssetPatchValue, type StudioBg3dAssetRightsPatch } from "./studio-bg3d-asset-rights-merge";
 import {
   getStudioBg3dLibrariesAuthority,
   StudioBg3dLibrariesAuthorityError,
@@ -785,7 +784,7 @@ export function updateStudioBg3dAssetTags(
 
 export function updateStudioBg3dAssetRights(
   contentHash: unknown,
-  rights: StudioBg3dAssetRightsReceipt,
+  rights: StudioBg3dAssetRightsPatch,
   options: StudioBg3dAssetMetadataMutationOptions = {},
 ): Promise<StudioBg3dAssetMetadata> {
   if (!usesExplicitLegacyIndexedDb(options)) {

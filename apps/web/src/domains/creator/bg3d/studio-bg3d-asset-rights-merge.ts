@@ -11,9 +11,23 @@
  * 이 모듈은 의존하는 모듈이 없다(타입만 가져온다). 저장소가 두 길(OPFS 매니페스트·IndexedDB)에서 같은 규칙을 쓰도록 한곳에 둔다.
  */
 
-import type { StudioBg3dAssetMetadata } from "./studio-bg3d-asset-metadata";
+import type {
+  StudioBg3dAssetAiGenerated,
+  StudioBg3dAssetAiTraining,
+  StudioBg3dAssetMetadata,
+  StudioBg3dAssetRightsReceipt,
+} from "./studio-bg3d-asset-metadata";
 
 export type StudioBg3dAssetPatchKey = "favorite" | "collections" | "tags" | "rights";
+
+/**
+ * 권리 갱신에 넘기는 영수증. 저장 형식과 같되 AI 칸에는 "unknown"(지움)도 쓸 수 있다. 칸을 빼면 저장된 값을 지킨다.
+ * 저장 형식(`StudioBg3dAssetRightsReceipt`)에는 "unknown" 이 없다(없음과 같은 뜻이라 생략하는 쪽으로 정규화한다).
+ */
+export type StudioBg3dAssetRightsPatch = Omit<StudioBg3dAssetRightsReceipt, "aiGenerated" | "aiTraining"> & {
+  readonly aiGenerated?: StudioBg3dAssetAiGenerated | "unknown";
+  readonly aiTraining?: StudioBg3dAssetAiTraining | "unknown";
+};
 
 /**
  * 저장할 패치 값. `validated` 는 패치를 저장 규칙으로 정규화한 기록이고 `rawValue` 는 호출자가 넘긴 원래 값이다.
