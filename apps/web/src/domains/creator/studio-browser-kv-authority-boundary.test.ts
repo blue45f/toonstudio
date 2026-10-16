@@ -680,6 +680,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
 
   // 장비·도구 단위 선택 저장: 잃어도 기본값으로 돌아갈 뿐이고, 읽을 때 다시 검증한다.
   allow("apps/web/src/domains/creator/scene-3d/studio-shaper-style-pack.ts", "durable-storage-write", '"toonstudio.shaper.style-packs.v1"', 1, OPTIONAL_LOCAL_TOOL_STATE, "studio-shaper-style-pack.test.ts pins the save and reload round trip, per-pack fail-closed parseCharacterStylePack (broken entries are skipped and counted), rejection with pack-limit when the user pack limit would be exceeded, and an honest storage-unavailable failure."),
+  allow("apps/web/src/domains/creator/submission-package/submission-package-draft-store.ts", "durable-storage-write", "submissionDraftStorageKey(projectId)", 1, OPTIONAL_LOCAL_TOOL_STATE, "submission-package-draft-store.test.ts covers the text-only round trip, per-project keys, rejection of malformed or other-version values, length and episode-count caps, storage-error swallowing with an observable result, and that picked image files are never stored; only the submission form text is written, so losing it cannot corrupt a project."),
 
   // 예제·샘플 원고 시딩: 라이브러리 진입 시 레거시 형식 자동저장 기록을 빈 슬롯에만 심고, 연습 사본은 버튼을 눌렀을 때
   // 새 사본의 문서 id 슬롯에 한 번 쓴다. 제품 자동저장 정본은 OPFS/SQLite 이고 브라우저 단독 기록은 복구가 막힌다.

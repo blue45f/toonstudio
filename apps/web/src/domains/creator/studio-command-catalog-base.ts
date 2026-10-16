@@ -2426,11 +2426,11 @@ export const STUDIO_COMMAND_CATALOG: readonly StudioCommandCatalogEntry[] =
       labels: [
         ko(
           "웹툰 창작 보조 센터",
-          "플랫폼 규격 검사, 자동 슬라이서, 스크롤 페이싱, 효과음 사전, 컬러 조화, 포커스 타이머를 제공합니다.",
+          "플랫폼 규격 검사, 자동 슬라이서, 스크롤 페이싱, 텐션 맵, 효과음 사전, 컬러 조화, 포커스 타이머를 제공합니다.",
         ),
         en("Webtoon Creator Assistant"),
       ],
-      aliases: [ours("웹툰 보조 툴킷"), ours("웹툰 어시스턴트")],
+      aliases: [ours("웹툰 보조 툴킷"), ours("웹툰 어시스턴트"), ours("텐션 맵")],
       origins: [menu("comic/webtoon-assistant")],
     }),
     defineCommand({

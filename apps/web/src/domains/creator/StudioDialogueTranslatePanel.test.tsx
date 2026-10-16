@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -12,6 +12,12 @@ import {
 } from "./studio-translation-memory";
 import { createStudioTranslationMemorySqlitePersistence } from "./studio-translation-memory-sqlite-persistence";
 import { StudioDialogueTranslatePanel } from "./StudioDialogueTranslatePanel";
+import { updateStudioLocalizationCharacterCards } from "./studio-localization-project-store";
+import {
+  addManualStudioTranslationCard,
+  patchStudioTranslationCard,
+  setStudioTranslationSpeaker,
+} from "./lettering/studio-translation-character-card-edit";
 
 import type { BubbleTextMeasurer } from "./lettering/studio-bubble-text-fit";
 
@@ -235,7 +241,7 @@ describe("StudioDialogueTranslatePanel 현지화 QA 화면", () => {
 
   it("검사 뒤 초안이 바뀌면 낡은 점수를 그대로 두지 않고 다시 검사를 요구한다", () => {
     const view = render(qaPanel({ qaOpen: true }));
-    const banner = "검사 뒤 대사가 바뀌었어요. 다시 검사해 주세요.";
+    const banner = "검사 뒤 대사나 인물 카드가 바뀌었어요. 다시 검사해 주세요.";
     expect(screen.queryByText(banner)).toBeNull();
 
     view.rerender(
@@ -501,5 +507,183 @@ describe("StudioDialogueTranslatePanel 현지화 QA 용어집 검사", () => {
 
     expect(screen.getByText("지적할 곳이 없어요")).toBeTruthy();
     expect(screen.queryByText(/규칙과 일치하지 않습니다/)).toBeNull();
+  });
+});
+
+// ── 번역 인물 카드 ────────────────────────────────────────────────────────────
+
+/** 번역 프로젝트 문서(작품 범위 키)에 카드를 미리 저장한다 — 패널이 같은 저장소에서 읽는다. */
+function seedCards(scope: string, speakerIds: readonly string[]) {
+  updateStudioLocalizationCharacterCards(localStorage, scope, (cards) => {
+    let next = addManualStudioTranslationCard(cards, { id: "yuna", name: "유나" });
+    next = addManualStudioTranslationCard(next, { id: "minho", name: "민호" });
+    next = patchStudioTranslationCard(next, "yuna", {
+      register: "polite",
+      bannedTerms: [{ term: "dude", locale: "" }],
+      addressTerms: [
+        { listenerId: "minho", sourceTerm: "선배", targetTerm: "Senpai", locale: "en", register: null, avoidTerms: ["Sunbae"] },
+      ],
+    });
+    for (const id of speakerIds) {
+      next = setStudioTranslationSpeaker(next, id, { speakerId: "yuna", listenerId: "minho" });
+    }
+    return next;
+  });
+}
+
+describe("StudioDialogueTranslatePanel 인물 카드 — 번역 요청 문맥", () => {
+  it("생성 화면에 접힌 인물 카드 구역이 있고, 화자가 지정된 대사의 문맥을 번역 생성으로 넘긴다", () => {
+    seedCards("work-cards-1", ["bubble-1"]);
+    const { onGenerate } = generatePanel({ workScope: "work-cards-1", projectId: null });
+
+    const toggle = screen.getByRole("button", { name: /인물 카드 · 2명 · 화자 지정 1\/1/ });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(generateButton());
+    expect(onGenerate).toHaveBeenCalledTimes(1);
+    const contexts = onGenerate.mock.calls[0]?.[0] as Record<string, { speaker: { name: string; banned?: string[] }; addressTerm?: string }>;
+    expect(Object.keys(contexts)).toEqual(["bubble-1"]);
+    expect(contexts["bubble-1"]?.speaker).toMatchObject({ name: "유나", banned: ["dude"] });
+    expect(contexts["bubble-1"]?.addressTerm).toBe("Senpai");
+    // 생성 버튼 위 한 줄이 이번 요청에 카드가 실제로 쓰인다고 말한다.
+    expect(screen.getByText("인물 카드 문맥이 붙는 대사 1/1개")).toBeTruthy();
+  });
+
+  it("카드는 있는데 화자를 지정한 대사가 없으면, 카드가 이번 요청에 쓰이지 않는다고 생성 버튼 위에서 알린다", () => {
+    seedCards("work-cards-nospeaker", []);
+    const { onGenerate } = generatePanel({ workScope: "work-cards-nospeaker", projectId: null });
+    expect(screen.getByText("화자를 지정한 대사가 없어 인물 카드는 이번 번역 요청에 쓰이지 않아요.")).toBeTruthy();
+    fireEvent.click(generateButton());
+    expect(onGenerate).toHaveBeenCalledWith({});
+  });
+
+  it("카드나 화자 지정이 없으면 빈 문맥을 넘긴다 — 요청은 예전과 같다", () => {
+    const { onGenerate } = generatePanel({ workScope: "work-cards-empty", projectId: null });
+    // 카드를 쓰지 않는 사용자의 화면에는 인물 카드 안내 줄이 없다.
+    expect(screen.queryByText(/이번 번역 요청에 쓰이지 않아요|문맥이 붙는 대사/)).toBeNull();
+    fireEvent.click(generateButton());
+    expect(onGenerate).toHaveBeenCalledWith({});
+  });
+
+  it("대상 언어가 바뀌면 그 언어에 맞는 문맥만 넘긴다(en 호칭 규칙은 ja 요청에 나가지 않는다)", () => {
+    seedCards("work-cards-2", ["bubble-1"]);
+    const { onGenerate } = generatePanel({ workScope: "work-cards-2", projectId: null, targetLocale: "ja" });
+    fireEvent.click(generateButton());
+    const contexts = onGenerate.mock.calls[0]?.[0] as Record<string, { addressTerm?: string }>;
+    expect(contexts["bubble-1"]?.addressTerm).toBeUndefined();
+  });
+
+  it("검수 화면(초안이 있는 화면)에서도 같은 구역을 펼쳐 카드를 고칠 수 있다", () => {
+    renderPanel({ workScope: "work-cards-3", projectId: null });
+    const toggle = screen.getByRole("button", { name: /인물 카드 · 0명/ });
+    fireEvent.click(toggle);
+    expect(screen.getByText("인물 카드가 아직 없어요")).toBeTruthy();
+  });
+});
+
+describe("StudioDialogueTranslatePanel 인물 카드 — 현지화 QA", () => {
+  const widePages = [
+    {
+      id: "page-1",
+      elements: [
+        { id: "bubble-1", type: "bubble", text: "고마워요, 선배.", x: 20, y: 40, width: 500, height: 200, fontSize: 14 },
+        { id: "bubble-2", type: "bubble", text: "정말 고마워요, 선배.", x: 20, y: 260, width: 500, height: 200, fontSize: 14 },
+      ],
+    },
+  ] as const;
+
+  it("카드 규칙을 어긴 초안은 Terminology 발견으로 나타나고, 근거 대사로 이동할 수 있다", () => {
+    seedCards("work-qa-cards", ["bubble-1", "bubble-2"]);
+    const onRevealCue = vi.fn();
+    const onQaOpenChange = vi.fn();
+    render(
+      qaPanel({
+        qaOpen: true,
+        onQaOpenChange,
+        onRevealCue,
+        workScope: "work-qa-cards",
+        projectId: null,
+        pages: widePages,
+        draft: new Map([
+          ["bubble-1", "Thank you, Senpai."],
+          ["bubble-2", "Thank you so much, Sunbae."],
+        ]),
+      })
+    );
+
+    expect(screen.getByText(/호칭이 인물 카드\(“Senpai”\)와 달라요/)).toBeTruthy();
+    expect(screen.getByText(/기대:/).parentElement?.textContent).toContain("Senpai");
+    expect(screen.getByText(/근거 대사 · 1페이지 · Thank you, Senpai\./)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "근거 대사로 이동: 1페이지" }));
+    expect(onRevealCue).toHaveBeenCalledWith("page-1", "bubble-1");
+    // 초안 화면으로 돌아가 그 행에 포커스를 둔다.
+    expect(onQaOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("카드는 있는데 화자가 지정된 대사가 없으면, 오류 0건을 통과로 읽지 말라는 안내를 보여 준다", () => {
+    seedCards("work-qa-unassigned", []);
+    render(
+      qaPanel({
+        qaOpen: true,
+        workScope: "work-qa-unassigned",
+        projectId: null,
+        pages: widePages,
+        draft: new Map([["bubble-1", "Thank you, dude."]]),
+      })
+    );
+    expect(screen.getByText(/화자가 지정된 대사가 없어 인물 카드 규칙을 한 건도 검사하지 못했어요/)).toBeTruthy();
+    expect(screen.queryByText(/금지어/)).toBeNull();
+  });
+
+  it("검사 뒤 인물 카드가 바뀌면 낡은 보고서로 보고 다시 검사를 요구한다", () => {
+    seedCards("work-qa-stale", ["bubble-1"]);
+    render(
+      qaPanel({
+        qaOpen: true,
+        workScope: "work-qa-stale",
+        projectId: null,
+        pages: widePages,
+        draft: new Map([["bubble-1", "Thank you, Senpai."]]),
+      })
+    );
+    const banner = "검사 뒤 대사나 인물 카드가 바뀌었어요. 다시 검사해 주세요.";
+    expect(screen.queryByText(banner)).toBeNull();
+
+    // 다른 곳(인물 카드 편집)에서 같은 문서의 카드를 고친 상황 — 갱신 이벤트가 패널에 도달한다.
+    act(() => {
+      updateStudioLocalizationCharacterCards(
+        localStorage,
+        "work-qa-stale",
+        (cards) => patchStudioTranslationCard(cards, "yuna", { bannedTerms: [{ term: "senpai", locale: "" }] }),
+        window
+      );
+    });
+    expect(screen.getByText(banner)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "다시 검사" }));
+    expect(screen.queryByText(banner)).toBeNull();
+    expect(screen.getByText(/금지어 “senpai”/)).toBeTruthy();
+  });
+
+  it("원문을 알 수 없는 초안(번역 로케일을 보는 중)은 고정어 검사를 건너뛴 대사 수를 알린다 — 0건을 통과로 읽지 않게", () => {
+    updateStudioLocalizationCharacterCards(localStorage, "work-qa-nosource", (cards) => {
+      const added = addManualStudioTranslationCard(cards, { id: "yuna", name: "유나" });
+      const withTerm = patchStudioTranslationCard(added, "yuna", {
+        fixedTerms: [{ source: "고마워", target: "Thank you", locale: "" }],
+      });
+      return setStudioTranslationSpeaker(withTerm, "bubble-1", { speakerId: "yuna", listenerId: null });
+    });
+    render(
+      qaPanel({
+        qaOpen: true,
+        activeLocale: "ja",
+        workScope: "work-qa-nosource",
+        projectId: null,
+        pages: widePages,
+        draft: new Map([["bubble-1", "Thanks."]]),
+      })
+    );
+    expect(screen.getByText(/원문을 알 수 없는 1개 대사는 고정어·원문 호칭 검사를 건너뛰었어요/)).toBeTruthy();
+    expect(screen.queryByText(/고정어 “고마워”/)).toBeNull();
   });
 });

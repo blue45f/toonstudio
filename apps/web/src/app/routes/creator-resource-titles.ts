@@ -56,6 +56,7 @@ export const CREATOR_RESOURCE_TITLES: Record<string, string> = {
   "/learn/resources": "웹툰 교육 자료 허브",
   "/learn/classroom": "웹툰 교육기관 활용",
   "/learn/recipes": "웹툰 제작 레시피",
+  "/learn/contract-checklist": "웹툰 계약서 검토 체크리스트",
   "/story-lab": "스토리 연구실",
   "/discover/works": "만화·작법서 탐색",
   "/publishing": "연재·출판 준비실",

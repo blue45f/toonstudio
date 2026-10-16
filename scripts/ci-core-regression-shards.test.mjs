@@ -42,6 +42,7 @@ test("semantic sharding keeps expensive domains isolated", () => {
   const fixtures = new Map([
     ["apps/api/src/runtime/runtime-boundary.test.ts", "product"],
     ["packages/core/src/catalog/home.cpu-cache.test.ts", "product"],
+    ["apps/web/src/domains/creator/assistant/webtoon-tension-map-docs.test.ts", "product"],
     ["apps/web/src/domains/creator/studio-project-creation.test.ts", "studio-foundation"],
     ["apps/web/src/domains/creator/brush/StudioBrushTray.test.tsx", "studio-editing"],
     ["apps/web/src/domains/creator/bg3d/studio-bg3d-camera-selection.test.ts", "studio-3d"],

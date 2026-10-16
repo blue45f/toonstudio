@@ -62,6 +62,7 @@ Mixbox 작동 원리 분석과 독립 구현 방침(2026-10-15, 역사 자료)�
 
 1. [`reports/mixbox-working-principle-analysis-2026-10-15.md`](reports/mixbox-working-principle-analysis-2026-10-15.md) — 잠재 안료 혼합의 구조, clean-room 구현 방침, 권리 상태와 미해결 항목
 2. [`../third_party/mixbox/LICENSE-GRANT.md`](../third_party/mixbox/LICENSE-GRANT.md) — 제작사 서면 합의 기록(소유자 작성 대기)
+3. [`features/latent-pigment-mixing.md`](features/latent-pigment-mixing.md) — 독립 구현(잠재 안료 혼합기 `toonstudio-latent-pigment-v1`)의 구조, 안료 선택과 출처, 적합 오차, 성능, 한계, 권리 상태(현재 구현)
 
 ## 문서 상태 표기
 

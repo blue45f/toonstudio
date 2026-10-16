@@ -72,6 +72,7 @@ import type { StudioUiDensityMode } from "../studio-ui-density";
 import type { StudioViewRotation } from "../studio-view-controls";
 import type { StudioWorkAssetRenderPlaceholder, StudioWorkAssetRenderProjection } from "../studio-work-asset-render-projection";
 import type { CvdMode } from "../StudioColorBlindPreview";
+import type { DialogueTranslationCardContextMap } from "../lettering/studio-dialogue-translate";
 import type { StudioDialogueTranslateSurface } from "../StudioDialogueTranslatePanel";
 import type {
   StudioWebGpuCanvasHandle,
@@ -168,7 +169,7 @@ export interface StudioCanvasViewportHandlers {
   duplicateSelected: (options?: StudioDuplicateSelectionOptions) => boolean | void;
   endLiveResourceEdit: () => void;
   enterCanvasOnlyMode: () => void;
-  executeGenerateTranslations: () => Promise<void>;
+  executeGenerateTranslations: (cardContexts?: DialogueTranslationCardContextMap) => Promise<void>;
   groupSelectedElements: () => void;
   ungroupSelectedElements: () => void;
   toggleSelectedElementsLocked: () => void;

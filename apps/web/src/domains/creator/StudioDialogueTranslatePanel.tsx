@@ -34,18 +34,14 @@ import {
 // 용어집은 작품(workScope)별로 localStorage에 남긴다(lettering/studio-dialogue-glossary-store).
 // 호스트의 세션 상태만으로는 새로고침마다 용어집이 사라져 작품 자산이 되지 못했다.
 import { BookOpenCheck, Check, Globe2, Import, Languages, ListChecks, Loader2, ScanText, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createCanvasBubbleTextMeasurer,
   type BubbleTextMeasurer,
   type BubbleWebtoonTheme,
 } from "./lettering/studio-bubble-text-fit";
-import {
-  collectDialogueItems,
-  isDialogueElement,
-  type DialogueBatchItem,
-} from "./lettering/studio-dialogue-batch";
+import { collectDialogueItems, type DialogueBatchItem } from "./lettering/studio-dialogue-batch";
 import {
   loadStudioDialogueGlossaryTextAsync,
   saveStudioDialogueGlossaryTextAsync,
@@ -64,20 +60,29 @@ import {
   type DialogueReviewPageLike,
   type DialogueReviewStatus,
 } from "./lettering/studio-dialogue-review";
-import { DIALOGUE_LOCALE_PRESETS, SOURCE_LOCALE, localeLabel } from "./lettering/studio-dialogue-translate";
-import { parseStudioTranslationMemoryGlossaryText } from "./studio-translation-glossary";
 import {
-  runStudioLocalizationQa,
-  studioLocalizationQaCueIndex,
-  studioLocalizationQaGroups,
-  type StudioLocalizationQaElementTypography,
-  type StudioLocalizationQaReport as QaReport,
-} from "./lettering/studio-localization-qa";
+  DIALOGUE_LOCALE_PRESETS,
+  SOURCE_LOCALE,
+  localeLabel,
+  type DialogueTranslationCardContextMap,
+} from "./lettering/studio-dialogue-translate";
+import {
+  computeStudioDialogueTranslateQaSnapshot,
+  studioDialogueTranslateQaFingerprint,
+  studioDialogueTranslateQaSections,
+  type StudioDialogueTranslateQaInput,
+  type StudioDialogueTranslateQaSnapshot,
+} from "./lettering/studio-dialogue-translate-qa-snapshot";
+import { studioLocalizationQaCueIndex } from "./lettering/studio-localization-qa";
+import {
+  StudioTranslationCardContextNote,
+  StudioTranslationCharacterCardSection,
+} from "./lettering/StudioTranslationCharacterCardSection";
+import { buildDialogueTranslationCardContexts } from "./lettering/studio-translation-card-context";
+import { useStudioTranslationCards } from "./lettering/use-studio-translation-cards";
 import { STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "./studio-panel-ui";
-import {
-  StudioLocalizationQaReport,
-  type StudioLocalizationQaDimensionSection,
-} from "./StudioLocalizationQaReport";
+import { StudioDocumentLayoutContext } from "./studio-router/studio-document-layout-context";
+import { StudioLocalizationQaReport } from "./StudioLocalizationQaReport";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
 import { cx } from "@/shared/lib/cx";
@@ -110,7 +115,11 @@ export type StudioDialogueTranslatePanelProps = {
   error: string | null;
   /** 생성된 번역 초안 — null 이면 생성 화면, 채워지면 검토 화면으로 자동 전환. */
   draft: Map<string, string> | null;
-  onGenerate: () => void;
+  /**
+   * 번역 생성. 인물 카드에서 만든 발화자별 문맥을 함께 넘긴다 — 화자가 지정된 대사에만 붙고, 카드가 없으면
+   * 빈 객체라 요청은 예전과 같다.
+   */
+  onGenerate: (cardContexts?: DialogueTranslationCardContextMap) => void;
   onDraftChange: (id: string, text: string) => void;
   onApplyDraft: () => void;
   onDiscardDraft: () => void;
@@ -119,6 +128,11 @@ export type StudioDialogueTranslatePanelProps = {
   onClose: () => void;
   /** Stable local/server document scope used to isolate translation-memory entries. */
   workScope?: string;
+  /**
+   * 번역 프로젝트 문서(인물 카드 저장)와 스토리 바이블을 찾을 프로젝트 id. 넘기지 않으면 문서 레이아웃
+   * 컨텍스트의 프로젝트를 쓰고, 프로젝트가 없으면(초안·리믹스) 작품 범위로 카드만 저장한다.
+   */
+  projectId?: string | null;
   /**
    * 현지화 QA 화면 표시 여부. 넘기면 제어형 — 메뉴(텍스트 ▸ 현지화 QA)가 패널을 QA 화면으로
    * 바로 연다. 안 넘기면 패널이 헤더 토글로 스스로 전환한다(기존 호출부는 그대로 컴파일된다).
@@ -180,109 +194,13 @@ const StudioDialogueTranslationMemoryPanel = lazy(() =>
 const CUSTOM_LOCALE_OPTION = "__custom__";
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-card px-2 py-1.5 text-[0.7rem] text-fg outline-none transition-colors placeholder:text-fg-4 focus:border-accent/50";
+  "w-full rounded-lg border border-line bg-card px-2 py-1.5 text-[0.7rem] text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent/50";
 
 const localeChipClass = (active: boolean) =>
   cx(
     "rounded-full border px-2 py-0.5 text-[0.62rem] font-medium transition-colors",
     active ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-3 hover:bg-raised"
   );
-
-// ── 현지화 QA 스냅샷 ────────────────────────────────────────────────────────
-
-type QaSnapshot = {
-  readonly report: QaReport;
-  /** 검사 당시 입력의 지문 — 지금 입력과 다르면 보고서가 낡은 것이다. */
-  readonly fingerprint: string;
-};
-
-type QaInput = {
-  readonly pages: readonly DialogueReviewPageLike[];
-  readonly draft: Map<string, string> | null;
-  /** 캔버스에 지금 표시 중인 로케일 — 초안 검사 중이고 이 값이 원문이면 요소의 text 가 곧 원문이다. */
-  readonly activeLocale: string;
-  /** 검사 대상 문자열의 로케일(초안이면 대상 언어, 아니면 표시 중인 언어). */
-  readonly locale: string;
-  readonly theme: BubbleWebtoonTheme | undefined;
-  /** 용어집 자유 텍스트 — 파싱된 규칙이 QA의 용어집 검사(위반 표시)에 들어간다. */
-  readonly glossary: string;
-};
-
-/**
- * 검사 입력의 지문. 넘침 판정이 읽는 필드(문자열·상자·서체·세로쓰기·숨김/잠금)를 전부 싣는다 —
- * 하나라도 빠지면 그 필드만 바뀐 회차가 "여전히 통과"로 보인다.
- */
-function qaFingerprint(input: QaInput): string {
-  const parts: string[] = [input.locale, input.theme ?? "", input.glossary];
-  for (const page of input.pages) {
-    for (const el of page.elements) {
-      if (!isDialogueElement(el)) continue;
-      const typo = el as typeof el & StudioLocalizationQaElementTypography;
-      parts.push(
-        [
-          el.id,
-          input.draft?.get(el.id) ?? el.text,
-          el.width ?? "",
-          el.height ?? "",
-          typo.fontSize ?? "",
-          typo.font ?? "",
-          typo.fontStyle ?? "",
-          typo.lineHeight ?? "",
-          typo.vertical ? 1 : 0,
-          el.hidden ? 1 : 0,
-          el.locked ? 1 : 0,
-        ].join("\u001f")
-      );
-    }
-  }
-  return parts.join("\u001e");
-}
-
-/** 순수 조립층을 부르고 지문과 함께 묶는다 — 자동 실행(효과)과 "다시 검사"(클릭)가 같은 길을 탄다. */
-function computeQaSnapshot(input: QaInput, measurer: BubbleTextMeasurer): QaSnapshot {
-  // 원문 확보 경로가 두 가지다. 초안 검사 중이고 캔버스가 원문을 보여 주고 있으면 요소의
-  // 현재 text 가 원문이다. 적용된 번역을 검사할 때는 dialogueI18n의 원문 스냅샷이 원문이다 —
-  // 스냅샷이 없는 큐는 sourceTextFor가 undefined를 돌려줘, 전제(원문)가 없는 검사가 조용히
-  // 건너뛰어진다(QA 조립층 계약). 검사 대상이 원문 자체면 원문을 넘기지 않는다.
-  const sourceById = (() => {
-    if (input.draft) {
-      return input.activeLocale === SOURCE_LOCALE
-        ? new Map(collectDialogueItems(input.pages).map((item) => [item.id, item.text]))
-        : null;
-    }
-    if (input.locale === SOURCE_LOCALE) return null;
-    const map = new Map<string, string>();
-    for (const page of input.pages) {
-      if (!page.dialogueI18n) continue;
-      for (const [elId, entry] of Object.entries(page.dialogueI18n)) {
-        const source = entry[SOURCE_LOCALE];
-        if (source !== undefined) map.set(elId, source);
-      }
-    }
-    return map.size > 0 ? map : null;
-  })();
-  // 용어집 규칙 주입 — 지금까지 이 패널은 규칙을 넘기지 않아 QA의 용어집 검사가 실제
-  // 사용 경로에서는 0개 규칙으로 돌았다. 규칙이 있을 때만 넘긴다(없으면 검사 자체가 없다).
-  const glossaryRules = parseStudioTranslationMemoryGlossaryText(input.glossary);
-  const report = runStudioLocalizationQa(input.pages, measurer, {
-    targetLocale: input.locale,
-    ...(input.draft ? { translations: input.draft } : {}),
-    ...(sourceById ? { sourceTextFor: (cueId: string) => sourceById.get(cueId) } : {}),
-    ...(glossaryRules.length > 0 ? { glossaryRules } : {}),
-    ...(input.theme === undefined ? {} : { theme: input.theme }),
-  });
-  return { report, fingerprint: qaFingerprint(input) };
-}
-
-function qaSections(report: QaReport): readonly StudioLocalizationQaDimensionSection[] {
-  return studioLocalizationQaGroups(report).map((group) => ({
-    dimension: group.rollup.dimension,
-    label: group.rollup.label,
-    penalty: group.rollup.penalty,
-    errorCount: group.rollup.errorCount,
-    errors: group.errors,
-  }));
-}
 
 export function StudioDialogueTranslatePanel({
   pages,
@@ -306,6 +224,7 @@ export function StudioDialogueTranslatePanel({
   onSwitchLocale,
   onClose,
   workScope,
+  projectId,
   qaOpen,
   onQaOpenChange,
   reviewOpen,
@@ -346,7 +265,7 @@ export function StudioDialogueTranslatePanel({
   // 대상 언어가 프리셋 코드가 아니면(빈 문자열 포함) "직접 입력" 모드 — 별도 로컬 상태 없이
   // targetLocale 값 자체로부터 화면을 파생시킨다(이 패널은 상태를 소유하지 않는다).
   const isPresetTarget = DIALOGUE_LOCALE_PRESETS.some((p) => p.code === targetLocale);
-  const items = collectDialogueItems(pages);
+  const items = useMemo(() => collectDialogueItems(pages), [pages]);
   const draftItems = draft ? items.filter((it) => draft.has(it.id)) : [];
 
   const grouped: { pageId: string; pageIndex: number; items: typeof draftItems }[] = [];
@@ -367,6 +286,33 @@ export function StudioDialogueTranslatePanel({
         : null;
   const canGenerate = configured && !busy && items.length > 0 && targetLocaleError === null;
   const resolvedWorkScope = workScope?.trim() || `local:${pages[0]?.id ?? "untitled"}`;
+
+  // ── 인물 카드 — 번역용 오버라이드는 번역 프로젝트 문서에, 시트는 스토리 바이블에서 읽기만 한다 ──────
+  const layout = useContext(StudioDocumentLayoutContext);
+  const bibleProjectId = projectId === undefined ? (layout?.projectId ?? null) : projectId;
+  const cardsController = useStudioTranslationCards({
+    scopeKey: bibleProjectId ?? resolvedWorkScope,
+    bibleProjectId,
+  });
+  const cardContextResult = useMemo(
+    () =>
+      buildDialogueTranslationCardContexts({
+        items,
+        cards: cardsController.cards,
+        speakers: cardsController.set.speakers,
+        targetLocale,
+      }),
+    [items, cardsController.cards, cardsController.set.speakers, targetLocale]
+  );
+  const cardContexts = cardContextResult.contexts;
+  const cardSection = (
+    <StudioTranslationCharacterCardSection
+      controller={cardsController}
+      items={items}
+      targetLocale={targetLocale}
+      {...(onRevealCue ? { onRevealCue } : {})}
+    />
+  );
 
   // ── 용어집 작품별 영속 — 세션 상태(호스트 useState)는 새로고침에 사라진다 ──────
   // 작품이 확정되면 저장본을 한 번 읽어, 지금 용어집이 비어 있을 때만 채운다(사용자가
@@ -418,7 +364,7 @@ export function StudioDialogueTranslatePanel({
     if (ocrOpen === undefined) setUncontrolledOcrOpen(open);
     onOcrOpenChange?.(open);
   };
-  const [qaSnapshot, setQaSnapshot] = useState<QaSnapshot | null>(null);
+  const [qaSnapshot, setQaSnapshot] = useState<StudioDialogueTranslateQaSnapshot | null>(null);
   // 발견 → 초안 행으로 되짚을 때 포커스할 textarea. QA 화면이 닫히고 초안 행이 다시 그려진 뒤에야
   // 요소가 존재하므로 "포커스 대기" 상태로 한 프레임 넘긴다.
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
@@ -427,27 +373,39 @@ export function StudioDialogueTranslatePanel({
 
   // 검사 로케일: 초안이 있으면 초안의 언어, 없으면 캔버스에 지금 표시 중인 언어(원문 포함).
   const qaLocale = draft ? targetLocale : activeLocale;
-  const qaInput: QaInput = {
-    pages,
-    draft,
-    activeLocale,
-    locale: qaLocale,
-    theme: webtoonTheme,
-    glossary,
-  };
-  const qaStale = qaVisible && qaSnapshot !== null && qaSnapshot.fingerprint !== qaFingerprint(qaInput);
+  const qaInput = useMemo<StudioDialogueTranslateQaInput>(
+    () => ({
+      pages,
+      draft,
+      activeLocale,
+      locale: qaLocale,
+      theme: webtoonTheme,
+      glossary,
+      cards: cardsController.cards,
+      speakers: cardsController.set.speakers,
+      cardsSignature: cardsController.signature,
+    }),
+    [
+      pages,
+      draft,
+      activeLocale,
+      qaLocale,
+      webtoonTheme,
+      glossary,
+      cardsController.cards,
+      cardsController.set.speakers,
+      cardsController.signature,
+    ]
+  );
+  const qaStale =
+    qaVisible && qaSnapshot !== null && qaSnapshot.fingerprint !== studioDialogueTranslateQaFingerprint(qaInput);
 
   // QA 화면이 열렸는데 보고서가 없으면 한 번 자동 실행한다 — 메뉴에서 열었을 때 버튼을 한 번 더
   // 누르게 하지 않는다. 이후 입력이 바뀌면 자동 재실행이 아니라 "다시 검사" 배너다.
   useEffect(() => {
     if (!qaVisible || qaSnapshot !== null) return;
-    setQaSnapshot(
-      computeQaSnapshot(
-        { pages, draft, activeLocale, locale: qaLocale, theme: webtoonTheme, glossary },
-        resolvedMeasurer
-      )
-    );
-  }, [qaVisible, qaSnapshot, pages, draft, activeLocale, qaLocale, webtoonTheme, glossary, resolvedMeasurer]);
+    setQaSnapshot(computeStudioDialogueTranslateQaSnapshot(qaInput, resolvedMeasurer));
+  }, [qaVisible, qaSnapshot, qaInput, resolvedMeasurer]);
 
   useEffect(() => {
     if (pendingFocusId === null) return;
@@ -459,7 +417,7 @@ export function StudioDialogueTranslatePanel({
     setPendingFocusId(null);
   }, [pendingFocusId]);
 
-  const runQa = () => setQaSnapshot(computeQaSnapshot(qaInput, resolvedMeasurer));
+  const runQa = () => setQaSnapshot(computeStudioDialogueTranslateQaSnapshot(qaInput, resolvedMeasurer));
   const qaCueIndex = qaSnapshot ? studioLocalizationQaCueIndex(qaSnapshot.report) : null;
   const revealQaCue = (cueId: string) => {
     const cue = qaCueIndex?.get(cueId);
@@ -485,7 +443,7 @@ export function StudioDialogueTranslatePanel({
       <div className="flex items-center justify-between gap-2 border-b border-line/60 px-3 py-2">
         <p className="flex items-center gap-1.5 text-xs font-bold text-fg">
           <Languages size={13} className="text-accent" aria-hidden />
-          {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "대사 번역")}<span className="font-medium text-fg-4">· {providerLabel}</span>
+          {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "대사 번역")}<span className="font-medium text-fg-3">· {providerLabel}</span>
         </p>
         <div className="flex items-center gap-1.5">
           {onOcrBuildDrafts ? (
@@ -575,7 +533,7 @@ export function StudioDialogueTranslatePanel({
           );
         })}
         {availableLocales.length === 0 && (
-          <span className="text-[0.62rem] text-fg-4">{translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "아직 번역된 언어가 없어요.")}</span>
+          <span className="text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "아직 번역된 언어가 없어요.")}</span>
         )}
       </div>
 
@@ -615,7 +573,7 @@ export function StudioDialogueTranslatePanel({
           ) : (
             <StudioLocalizationQaReport
               report={qaSnapshot.report}
-              sections={qaSections(qaSnapshot.report)}
+              sections={studioDialogueTranslateQaSections(qaSnapshot.report)}
               cueIndex={qaCueIndex ?? new Map()}
               stale={qaStale}
               onRerun={runQa}
@@ -674,6 +632,8 @@ export function StudioDialogueTranslatePanel({
 
           <StudioDialogueGlossaryEditor glossary={glossary} onGlossaryChange={onGlossaryChange} />
 
+          {cardSection}
+
           {!configured ? (
             <AiRecoveryNotice
               code="not_configured"
@@ -684,7 +644,7 @@ export function StudioDialogueTranslatePanel({
           {error ? (
             <AiRecoveryNotice
               message={error}
-              onRetry={canGenerate ? onGenerate : undefined}
+              onRetry={canGenerate ? () => onGenerate(cardContexts) : undefined}
               compact
             />
           ) : null}
@@ -694,27 +654,32 @@ export function StudioDialogueTranslatePanel({
               {progress.done}/{progress.total} {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "청크 처리 중…")}</p>
           )}
 
+          {targetLocaleError === null ? (
+            <StudioTranslationCardContextNote cardCount={cardsController.cards.length} stats={cardContextResult.stats} />
+          ) : null}
+
           <button
             type="button"
-            onClick={onGenerate}
+            onClick={() => onGenerate(cardContexts)}
             disabled={!canGenerate}
             className={cx(
               "flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold transition-colors",
-              canGenerate ? "bg-accent text-on-accent hover:opacity-90" : "cursor-not-allowed bg-card text-fg-4"
+              canGenerate ? "bg-accent text-on-accent hover:opacity-90" : "cursor-not-allowed bg-card text-fg-3"
             )}
           >
             {busy ? <Loader2 size={12} className="animate-spin" aria-hidden /> : <Globe2 size={12} aria-hidden />}
             {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "번역 생성")}</button>
           {items.length === 0 && (
-            <p className="text-center text-[0.62rem] text-fg-4">{translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "번역할 말풍선·텍스트가 없어요.")}</p>
+            <p className="text-center text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "번역할 말풍선·텍스트가 없어요.")}</p>
           )}
         </div>
       ) : (
         // ── B. 검토·적용 화면 ─────────────────────────────────────────────
         <>
           <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
+            <div className="mb-2.5">{cardSection}</div>
             {grouped.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed text-fg-4">
+              <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed text-fg-3">
                 {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "생성된 번역이 없어요.")}</p>
             ) : (
               <div className="space-y-2.5">
@@ -726,7 +691,7 @@ export function StudioDialogueTranslatePanel({
                       {group.items.map((entry) => (
                         <li key={entry.id} className="rounded-lg border border-line bg-card/45 p-1.5">
                           <div className="mb-1 flex min-w-0 items-center gap-1.5">
-                            <p className="min-w-0 flex-1 truncate text-[0.64rem] text-fg-4" title={entry.text}>
+                            <p className="min-w-0 flex-1 truncate text-[0.64rem] text-fg-3" title={entry.text}>
                               {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "원문: ")}{entry.text}
                             </p>
                             <button

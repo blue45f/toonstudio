@@ -441,6 +441,7 @@ import {
   switchDialogueLocale,
   DIALOGUE_LOCALE_PRESETS,
   SOURCE_LOCALE,
+  type DialogueTranslationCardContextMap,
 } from "./lettering/studio-dialogue-translate";
 import { studioAiSuperSuiteModalLoader } from "./ai/studio-ai-super-suite-loader";
 import { StudioWebtoonAssistantModal } from "./assistant/StudioWebtoonAssistantModal";
@@ -19854,11 +19855,10 @@ const puppetWarpArmed =
     setSelectedId(elId);
   }
 
-  // 대사 번역(BYOK) — 생성(청크 순차 처리) — 결과는 즉시 반영하지 않고 검토용 draft에만 모아둔다.
-  // 이미지 생성과 달리 결과가 텍스트라 AI 최초 사용 고지(runWithAiNotice) 대상이 아니다
-  // (StudioAiCompositionPanel과 동일한 판단 근거 — "생성형 AI 이미지"에 한정된 고지이지 텍스트 생성
-  // 전반에 대한 고지가 아니다).
-  async function executeGenerateTranslations() {
+  // 대사 번역(BYOK) — 생성(청크 순차 처리). 결과는 즉시 반영하지 않고 검토용 draft에만 모아둔다. 텍스트 결과라 AI
+  // 최초 사용 고지(runWithAiNotice) 대상이 아니다(StudioAiCompositionPanel과 동일 판단 — 고지는 "생성형 AI 이미지"에
+  // 한정). cardContexts는 패널이 인물 카드에서 만든 화자별 문맥(화자 지정 대사에만, own 키만 읽는다 — id가 "constructor" 여도 안전).
+  async function executeGenerateTranslations(cardContexts?: DialogueTranslationCardContextMap) {
     if (collaborationAccessRef.current.locked) return;
     const mutationTicket = captureStudioMutationTicket();
     if (translateBusy) return;
@@ -19867,13 +19867,13 @@ const puppetWarpArmed =
       setTranslateError("번역할 말풍선·텍스트가 없어요.");
       return;
     }
-    const chunks = chunkDialogueItemsForTranslation(items);
+    const chunks = chunkDialogueItemsForTranslation(items, cardContexts ? { contexts: cardContexts } : {});
     setTranslateBusy(true);
     setTranslateError(null);
     setTranslateProgress({ done: 0, total: chunks.length });
     const collected = new Map<string, string>();
     for (const chunk of chunks) {
-      const translationItems = chunk.map((it) => ({ id: it.id, text: it.text }));
+      const translationItems = chunk.map((it) => ({ id: it.id, text: it.text, context: cardContexts && Object.hasOwn(cardContexts, it.id) ? cardContexts[it.id] : undefined }));
       const pendingProvider = pendingTextAiProviderContext();
       const operationId = beginTrackedStudioAiOperation("translation", {
         kind: "text",
@@ -29334,10 +29334,10 @@ function clearSelectionForEdit() {
         <StudioWebtoonAssistantModal
           open={webtoonAssistantOpen}
           onClose={() => setWebtoonAssistantOpen(false)}
-          canvasWidth={CANVAS_W}
-          canvasHeight={canvasH}
+          canvasWidth={CANVAS_W} canvasHeight={canvasH}
           protectedRegions={webtoonAssistantDocumentAnalysis.protectedRegions}
           panels={webtoonAssistantDocumentAnalysis.panels}
+          pages={pages} currentPageId={currentPageId} onCommitPages={commitPages}
         />
         {aiSuperSuiteOpen !== null ? (
           <Suspense fallback={aiSuperSuiteOpen ? (

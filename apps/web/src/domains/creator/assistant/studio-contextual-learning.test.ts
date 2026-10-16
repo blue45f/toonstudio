@@ -11,6 +11,7 @@ import {
 describe("Studio contextual learning", () => {
   it("maps assistant tools to the production skill that the artist is using", () => {
     assert.deepEqual(resolveStudioLearningFocus("scroll-pacing", "lineart").primarySteps, ["storyboard"]);
+    assert.deepEqual(resolveStudioLearningFocus("tension-map", "lineart").primarySteps, ["storyboard", "story"]);
     assert.deepEqual(resolveStudioLearningFocus("color-harmony", "storyboard").primarySteps, ["color"]);
     assert.deepEqual(resolveStudioLearningFocus("croquis-pose", "flat-color").primarySteps, ["character", "drawing"]);
     assert.deepEqual(resolveStudioLearningFocus("spec-slicer", "draft").primarySteps, ["publish"]);
