@@ -30,8 +30,8 @@ describe("초기 초안", () => {
       saved: null,
       projectTitle: "내 작품",
       documents: [
-        { id: "d1", title: "1화 비 오는 날", width: 690, height: 8_000, pageCount: 3 },
-        { id: "d2", title: "2화", width: null, height: null, pageCount: 1 },
+        { id: "d1", title: "1화 비 오는 날", width: 690, height: 8_000, pageCount: 3, createdAt: "2026-10-15T09:00:00.000Z" },
+        { id: "d2", title: "2화", width: null, height: null, pageCount: 1, createdAt: "2026-10-15T09:01:00.000Z" },
       ],
       idFor,
     });
@@ -40,7 +40,7 @@ describe("초기 초안", () => {
   });
 
   it("문서가 최소 회차보다 적으면 모자란 만큼 빈 칸을 이어 두고, 많으면 문서 수 그대로 둔다", () => {
-    const documents = [1, 2, 3, 4].map((number) => ({ id: `d${number}`, title: `${number}화`, width: 690, height: 4_000, pageCount: 1 }));
+    const documents = [1, 2, 3, 4].map((number) => ({ id: `d${number}`, title: `${number}화`, width: 690, height: 4_000, pageCount: 1, createdAt: `2026-10-15T09:0${number}:00.000Z` }));
     const few = initialSubmissionDraft({ saved: null, projectTitle: "내 작품", documents: documents.slice(0, 2), idFor });
     expect(few.episodes.map((episode) => [episode.id, episode.number, episode.document?.id ?? null])).toEqual([
       ["new-0", 1, "d1"],
@@ -49,6 +49,42 @@ describe("초기 초안", () => {
     ]);
     const many = initialSubmissionDraft({ saved: null, projectTitle: "내 작품", documents, idFor });
     expect(many.episodes.map((episode) => episode.number)).toEqual([1, 2, 3, 4]);
+  });
+
+  it("문서가 최근에 연 순(내림차순)으로 들어와도 만든 순서대로 번호를 붙이고 문서 기록은 제 번호에 붙는다", () => {
+    const state = initialSubmissionDraft({
+      saved: null,
+      projectTitle: "내 작품",
+      documents: [
+        { id: "d3", title: "시간 상인", width: 690, height: 3_000, pageCount: 3, createdAt: "2026-10-15T09:02:00.000Z" },
+        { id: "d2", title: "도깨비 손님", width: 690, height: 2_000, pageCount: 2, createdAt: "2026-10-15T09:01:00.000Z" },
+        { id: "d1", title: "편의점의 밤", width: 690, height: 1_000, pageCount: 1, createdAt: "2026-10-15T09:00:00.000Z" },
+      ],
+      idFor,
+    });
+    expect(state.episodes.map((episode) => [episode.number, episode.title, episode.document?.id, episode.document?.height])).toEqual([
+      [1, "편의점의 밤", "d1", 1_000],
+      [2, "도깨비 손님", "d2", 2_000],
+      [3, "시간 상인", "d3", 3_000],
+    ]);
+  });
+
+  it("제목의 회차 숫자로 번호를 붙일 때는 건너뛴 번호와 겹치지 않게 빈 칸 번호를 가장 큰 번호 다음부터 잇는다", () => {
+    const state = initialSubmissionDraft({
+      saved: null,
+      projectTitle: "내 작품",
+      documents: [
+        { id: "d3", title: "3화 시간 상인", width: 690, height: 1_000, pageCount: 1, createdAt: "2026-10-15T09:00:00.000Z" },
+        { id: "d2", title: "2화 도깨비 손님", width: 690, height: 1_000, pageCount: 1, createdAt: "2026-10-15T09:01:00.000Z" },
+      ],
+      idFor,
+    });
+    expect(state.episodes.map((episode) => [episode.id, episode.number, episode.document?.id ?? null])).toEqual([
+      ["new-0", 2, "d2"],
+      ["new-1", 3, "d3"],
+      ["new-2", 4, null],
+    ]);
+    expect(new Set(state.episodes.map((episode) => episode.number)).size).toBe(state.episodes.length);
   });
 
   it("저장된 글이 있으면 그것을 쓰고, 회차는 저장된 번호·제목·메모로 복원한다(이미지는 비어 있다)", () => {
@@ -62,7 +98,7 @@ describe("초기 초안", () => {
         characterOverrides: { c1: false },
       },
       projectTitle: "무시되는 이름",
-      documents: [{ id: "d1", title: "문서", width: 1, height: 1, pageCount: 1 }],
+      documents: [{ id: "d1", title: "문서", width: 1, height: 1, pageCount: 1, createdAt: "2026-10-15T09:00:00.000Z" }],
       idFor,
     });
     expect(state).toMatchObject({ title: "저장된 제목", logline: "한 줄", targetWidth: "kakao", characterOverrides: { c1: false } });

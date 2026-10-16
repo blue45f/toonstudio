@@ -91,10 +91,24 @@ describe("초안 훅 — 시작", () => {
   });
 
   it("문서가 있으면 회차 칸의 출발점으로 쓰고 부족한 만큼 빈 칸을 이어 둔다", () => {
-    const { result } = setup({ documents: [{ id: "doc-1", title: "첫 손님", width: 690, height: 8_000, pageCount: 2 }] });
+    const { result } = setup({ documents: [{ id: "doc-1", title: "첫 손님", width: 690, height: 8_000, pageCount: 2, createdAt: "2026-10-15T09:00:00.000Z" }] });
     expect(result.current.state.episodes).toHaveLength(3);
     expect(result.current.state.episodes[0]).toMatchObject({ number: 1, title: "첫 손님", document: { id: "doc-1", width: 690 } });
     expect(result.current.state.episodes[2]?.document).toBeNull();
+  });
+
+  it("문서가 최근에 연 순으로 들어와도 만든 순서대로 1화부터 번호를 붙인다", () => {
+    const documents = [
+      { id: "doc-3", title: "세 번째 손님", width: 690, height: 8_000, pageCount: 1, createdAt: "2026-10-15T09:02:00.000Z" },
+      { id: "doc-2", title: "두 번째 손님", width: 690, height: 8_000, pageCount: 1, createdAt: "2026-10-15T09:01:00.000Z" },
+      { id: "doc-1", title: "첫 손님", width: 690, height: 8_000, pageCount: 1, createdAt: "2026-10-15T09:00:00.000Z" },
+    ];
+    const { result } = setup({ documents });
+    expect(result.current.state.episodes.map((episode) => [episode.number, episode.document?.id])).toEqual([
+      [1, "doc-1"],
+      [2, "doc-2"],
+      [3, "doc-3"],
+    ]);
   });
 });
 

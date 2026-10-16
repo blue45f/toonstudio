@@ -314,6 +314,14 @@ export function SubmissionEpisodeSection({ episodes, stats, issues, locale, targ
             {bt("지난번에 적은 회차 번호·제목·메모를 불러왔어요. 이미지 파일은 저장하지 않으므로 다시 골라 주세요.", "Episode numbers, titles and notes from last time were restored. Image files are never saved, so choose them again.")}
           </p>
         ) : null}
+        {episodes.some((episode) => episode.document !== null) ? (
+          <p className="mt-1 text-xs leading-relaxed text-fg-3">
+            {bt(
+              "회차 번호는 스튜디오 문서 제목의 숫자(1화, EP02 …)나 문서를 만든 순서로 붙였어요. 제목과 번호가 맞는지 확인해 주세요.",
+              "Episode numbers come from the numbers in the Studio document titles (Ep 1, EP02 …) or from the order the documents were created. Check that each number matches its title.",
+            )}
+          </p>
+        ) : null}
         <IssueLines issues={packageIssues} locale={locale} />
       </div>
       <ol ref={listRef} className="space-y-3">

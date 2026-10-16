@@ -17,7 +17,7 @@ import { SubmissionEpisodeSection } from "./SubmissionEpisodeSection";
 import { SubmissionOptions } from "./SubmissionOptions";
 import { SubmissionPreflightReport } from "./SubmissionPreflightReport";
 import { SubmissionStoryFields } from "./SubmissionStoryFields";
-import type { SubmissionDocumentSeed } from "./use-submission-package-draft";
+import type { SubmissionDocumentSeed } from "./submission-package-document-order";
 import { useSubmissionPackageDraft } from "./use-submission-package-draft";
 import type { SubmissionDraftStorage } from "./submission-package-draft-store";
 import { useSubmissionPackageBuild, type SubmissionBuildDeps } from "./use-submission-package-build";
@@ -56,7 +56,7 @@ function readProjectSeed(projectId: string): ProjectSeed {
   try {
     documents = readStudioProjectDocuments(window.localStorage, projectId)
       .documents.filter((document) => document.kind === "webtoon" && document.status === "active")
-      .map((document) => ({ id: document.id, title: document.title, width: document.width, height: document.height, pageCount: document.pageCount }));
+      .map((document) => ({ id: document.id, title: document.title, width: document.width, height: document.height, pageCount: document.pageCount, createdAt: document.createdAt }));
   } catch {
     // 문서 목록을 못 읽으면 빈 회차 칸으로 시작한다.
   }
