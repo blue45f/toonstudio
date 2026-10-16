@@ -35,7 +35,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       # Related tests validate tracked documentation evidence; retain docs.
-      # 환경 팩·VRM 라이브러리·썸네일 무결성 시험도 related 로 걸리므로 그 시험이 디스크에서 읽는 자산(3D 환경 GLB, VRM, 캐릭터 썸네일)을 함께 받는다.
+      # 환경 팩·VRM 카탈로그·썸네일 무결성 시험도 related 로 걸리므로 그 시험이 디스크에서 읽는 자산(3D 환경 GLB, 캐릭터 썸네일, 해당 VRM 폴더)을 함께 받는다. 전체 VRM 폴더 같은 무관한 자산 트리는 받지 않는다.
       - name: Checkout focused ToonStudio source
         uses: actions/checkout@v6
         with:
@@ -80,15 +80,32 @@ jobs:
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-research-lab-vertical-depth/background.png
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/daily/gpt25-bg-daily-bedroom-night-vertical-depth/background.png
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/fantasy/gpt25-bg-fantasy-dragon-cliff-vertical-depth/background.png
+            /apps/web/public/assets/3d/characters/thumbnails/refined-v2/
             /apps/web/public/assets/3d/characters/
             /apps/web/public/assets/3d/environments/*.glb
             /apps/web/public/assets/3d/environments/thumbnails/
             /apps/web/public/assets/3d/environments/expansion-v1/
             /apps/web/public/assets/3d/environments/webtoon-v7/
-            /apps/web/public/vrm/
+            !/apps/web/public/vrm/
             !/artifacts/
             !/tests/benchmarks/results/
             /tests/benchmarks/results/v12-runtime-fault-matrix.json
+            /apps/web/public/vrm/LICENSES.md
+            /apps/web/public/vrm/quaternius-fantasy-v1/
+            /apps/web/public/vrm/quaternius-modular-v1/
+            /apps/web/public/vrm/Anna.vrm
+            /apps/web/public/vrm/Sendagaya_Shibu.vrm
+            /apps/web/public/vrm/Sendagaya_Shino.vrm
+            /apps/web/public/vrm/sample.vrm
+            /apps/web/public/vrm/AliciaSolid.vrm
+            /apps/web/public/vrm/Darkness_Shibu.vrm
+            /apps/web/public/vrm/Jennifer.vrm
+            /apps/web/public/vrm/Jimmy.vrm
+            /apps/web/public/vrm/Sakurada_Fumiriya.vrm
+            /apps/web/public/vrm/Vivi.vrm
+            /apps/web/public/vrm/Victoria_Rubin.vrm
+            /apps/web/public/vrm/UnicornPerson.vrm
+            /apps/web/public/vrm/MegaAngel.vrm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -165,8 +182,10 @@ jobs:
           fi
           # 이 focused 체크아웃은 대용량 자산(studio/cc0-20260906, 약 1.7GB)을 내려받지 않는다.
           # 이 테스트는 전체 체크아웃을 쓰는 market-cc0-delivery.yml이 계속 실행하므로 여기서만 뺀다.
+          # vrm-library.test.ts 는 번들된 모든 VRM 파일(약 414MB)을 읽어 크기를 확인하는 시험이라 이 부분 체크아웃에서는 뺀다. 전체 체크아웃으로 도는 Full pnpm test 가 계속 실행한다.
           pnpm exec vitest related "${files[@]}" --run --pool=forks --maxWorkers=2 \
-            --exclude '**/studio-marketplace-cc0-catalog.test.ts'
+            --exclude '**/studio-marketplace-cc0-catalog.test.ts' \
+            --exclude '**/vrm-library.test.ts'
 
       - name: Run manual focused smoke suite
         if: github.event_name == 'workflow_dispatch'
