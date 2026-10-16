@@ -291,6 +291,7 @@ apps/web/src/domains/creator/review-resolution
 apps/web/src/domains/creator/review-task-completion
 apps/web/src/domains/creator/scene3d/integration/scene3d-inplace-controller.test.ts
 apps/web/src/domains/creator/scene3d/specialists/specialist-orchestration.test.ts
+apps/web/src/domains/creator/selection/StudioInspectorMultiSelectionSection.stroke-width.test.tsx
 apps/web/src/domains/creator/selection/studio-saved-selections-project.test.ts
 apps/web/src/domains/creator/selection/studio-selection-exact-mask.test.ts
 apps/web/src/domains/creator/selection/studio-selection-source-browser.test.ts
