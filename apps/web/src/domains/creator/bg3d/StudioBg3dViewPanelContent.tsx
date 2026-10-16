@@ -217,6 +217,8 @@ export interface StudioBg3dViewPanelProps {
   readonly aiReferenceBusy?: boolean;
   readonly aiReferenceDisabled?: boolean;
   readonly onOpenPrecisionModeler?: () => void;
+  /** 시네마틱 디렉터의 컷 비율을 문서 캡처 프레임 비율(output.exportAspectRatio)에 잇는 명령. */
+  readonly onSetCaptureAspectRatio?: (ratio: number | null) => void;
   /**
    * 임의 각도 일괄 캡처 결과 문서(후보 샷 세트 추가 또는 후보 적용)를 한 번의
    * 커밋으로 반영한다. 없으면 다각도 캡처 패널 자체가 표시되지 않는다.
