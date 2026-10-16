@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -11,6 +11,7 @@ import {
 } from "../../studio-import-handoff";
 import { parseStudioProjectFile } from "../../studio-project-file";
 import { readStudioZipArchive } from "../../studio-zip-reader";
+import { FixtureImage } from "../panel-detect-fixtures";
 import { fakeCanvasWorld } from "../panel-detect-test-doubles";
 import { PanelRenderError } from "../panel-render-core";
 
@@ -101,6 +102,28 @@ describe("재배열 설정 단계", () => {
     expect(button(/Studio 문서로 삽입/).disabled).toBe(false);
     expect(button(/PNG 묶음\(ZIP\) 내려받기/).disabled).toBe(false);
     expect(screen.queryByText("변경 사항 확인에 체크하면 버튼이 열려요.")).toBeNull();
+  });
+
+  it("투명한 여백이 있는 원고는 투명이 흰 바탕으로 채워진다는 점을 손실 보고에 올리고, 일반 원고에는 올리지 않는다", async () => {
+    await openReflowStep();
+    expect(screen.queryByText(/투명한 여백/)).toBeNull();
+    cleanup();
+
+    // 투명 바탕(알파 0)에 컷 셋을 그린 원고. 감지는 여백을 투명으로 보고, 결과 이미지는 흰색으로 깔린다.
+    const transparent = new FixtureImage(400, 560, null);
+    transparent.art(10, 10, 180, 220, { seed: 0, balloon: false });
+    transparent.art(210, 10, 180, 220, { seed: 1, balloon: false });
+    transparent.art(10, 250, 380, 300, { seed: 2, balloon: false });
+    const kit = createKit({ image: transparent });
+    renderWithEnv(<PanelReflowFlow ready={sampleReady(transparent)} previewUrl="blob:preview" />, kit.env);
+    await screen.findByRole("heading", { name: "2. 컷 확인과 고치기" });
+    fireEvent.click(button(/다음: 세로 재배열 설정/));
+    await screen.findByRole("heading", { name: "3. 세로 스트립으로 재배열" });
+    expect(screen.getByText(/원고에 투명한 여백이 있어요\. 결과 이미지는 투명하지 않고 흰색으로 채워져요/)).toBeTruthy();
+    // 경고이므로 확인하기 전에는 삽입·내려받기가 닫혀 있다. 다른 경고(확대·컷 밖 영역)와 별개로 항목이 보인다.
+    expect(button(/Studio 문서로 삽입/).disabled).toBe(true);
+    fireEvent.click(confirmBox());
+    expect(button(/Studio 문서로 삽입/).disabled).toBe(false);
   });
 
   it("폭 규격·간격·배율을 바꾸면 계획과 손실 보고가 바로 바뀐다", async () => {

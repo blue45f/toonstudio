@@ -132,7 +132,7 @@ describe("재배열 계획 — 손실·변경 보고", () => {
   const sourceWidth = 1440;
   const sourceHeight = 2000;
 
-  function report(panels: readonly ReflowSourcePanel[], overrides: Partial<PanelReflowOptions> = {}, extra: { undetectable?: number; ignored?: number; low?: number; format?: "png" | "webp" } = {}) {
+  function report(panels: readonly ReflowSourcePanel[], overrides: Partial<PanelReflowOptions> = {}, extra: { undetectable?: number; ignored?: number; low?: number; format?: "png" | "webp"; transparent?: boolean } = {}) {
     return buildReflowLossReport({
       plan: planPanelReflow(panels, options(overrides)),
       sourceWidth,
@@ -141,6 +141,7 @@ describe("재배열 계획 — 손실·변경 보고", () => {
       undetectableCount: extra.undetectable ?? 0,
       ignoredCount: extra.ignored ?? 0,
       lowConfidenceCount: extra.low ?? 0,
+      ...(extra.transparent === undefined ? {} : { transparentSource: extra.transparent }),
     });
   }
   const codes = (items: ReturnType<typeof report>): string[] => items.map((item) => item.code);
@@ -170,6 +171,19 @@ describe("재배열 계획 — 손실·변경 보고", () => {
     expect(items.find((item) => item.code === "upscaled")?.values).toEqual({ count: 2, maxScale: 2 });
     expect(items.find((item) => item.code === "undetectable-excluded")?.severity).toBe("warning");
     expect(items.find((item) => item.code === "ignored-excluded")?.severity).toBe("info");
+    expect(reflowLossNeedsConfirmation(items)).toBe(true);
+  });
+
+  it("투명한 여백이 있는 원고는 결과가 투명하지 않고 바탕색으로 채워진다고 알리며, 확인이 필요한 경고다", () => {
+    const whole = [panel("a", 0, 0, 1440, 2000)];
+    const plain = report(whole, { targetWidth: 720 });
+    expect(codes(plain)).not.toContain("transparency-flattened");
+    expect(codes(report(whole, { targetWidth: 720 }, { transparent: false }))).not.toContain("transparency-flattened");
+    const items = report(whole, { targetWidth: 720 }, { transparent: true });
+    // 무손실 재저장 바로 뒤에 놓이고, 이것 하나만으로도 삽입·내려받기 전에 확인을 요구한다.
+    expect(codes(items)).toEqual(["source-untouched", "downscaled", "recompressed-lossless", "transparency-flattened"]);
+    expect(items.find((item) => item.code === "transparency-flattened")).toEqual({ code: "transparency-flattened", severity: "warning", values: {} });
+    expect(reflowLossNeedsConfirmation(plain)).toBe(false);
     expect(reflowLossNeedsConfirmation(items)).toBe(true);
   });
 

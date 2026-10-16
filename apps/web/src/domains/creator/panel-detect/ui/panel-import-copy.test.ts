@@ -88,6 +88,7 @@ const LOSS_CODES = codesOf<ReflowLossCode>({
   "undetectable-excluded": true,
   "ignored-excluded": true,
   "low-confidence-cuts": true,
+  "transparency-flattened": true,
 });
 const CARD_CODES = codesOf<CardSliceErrorCode>({ "invalid-input": true, "invalid-options": true, "too-many-cards": true, cancelled: true, timeout: true });
 const CARD_WARNINGS = codesOf<CardSliceWarning>({ "content-cuts": true, upscaled: true, downscaled: true, "over-carousel-limit": true });

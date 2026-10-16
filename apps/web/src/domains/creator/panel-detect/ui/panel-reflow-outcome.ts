@@ -41,6 +41,7 @@ export function computeReflowOutcome(
       undetectableCount: result.undetectable.length,
       ignoredCount: result.ignored.length,
       lowConfidenceCount: panels.filter((panel) => panel.confidence !== null && panel.confidence < 0.5).length,
+      transparentSource: result.gutter.kind === "transparent",
     });
     return { ok: true, plan, loss, signature: loss.map((item) => `${item.code}:${JSON.stringify(item.values)}`).join("|") };
   } catch (error) {

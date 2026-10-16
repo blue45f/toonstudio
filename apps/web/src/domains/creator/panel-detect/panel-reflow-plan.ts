@@ -219,6 +219,7 @@ export type ReflowLossCode =
   | "downscaled"
   | "recompressed-lossless"
   | "recompressed-lossy"
+  | "transparency-flattened"
   | "cuts-overlap"
   | "centered-in-document"
   | "split-into-pages"
@@ -243,6 +244,11 @@ export interface ReflowLossInput {
   readonly ignoredCount: number;
   /** 신뢰도가 낮은(low) 컷 수. */
   readonly lowConfidenceCount: number;
+  /**
+   * 원고의 여백이 투명한가(감지한 여백 종류가 transparent). 결과 이미지는 여백색(투명이면 흰색) 바탕에 컷을 그려 PNG 로 굽기 때문에
+   * 투명한 부분이 불투명한 색으로 채워진다. 생략하면 투명하지 않은 원고로 본다.
+   */
+  readonly transparentSource?: boolean;
 }
 
 function overlapArea(a: PanelRect, b: PanelRect): number {
@@ -295,6 +301,7 @@ export function buildReflowLossReport(input: ReflowLossInput): ReflowLossItem[] 
     severity: input.format === "png" ? "info" : "warning",
     values: {},
   });
+  if (input.transparentSource === true) items.push({ code: "transparency-flattened", severity: "warning", values: {} });
   let overlapping = 0;
   for (let i = 0; i < sources.length; i += 1) {
     for (let j = i + 1; j < sources.length; j += 1) {

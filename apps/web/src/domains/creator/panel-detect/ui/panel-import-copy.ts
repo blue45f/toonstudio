@@ -176,6 +176,7 @@ const LOSS_TEXT: Readonly<Record<ReflowLossItem["code"], LossText>> = {
   downscaled: (values) => bi(`컷 ${values.count}개를 줄여서 가는 선이 사라질 수 있어요(최소 ${values.minScale}배).`, `${values.count} panel(s) are reduced, so fine lines may fade (down to ${values.minScale}×).`),
   "recompressed-lossless": () => bi("컷을 PNG(무손실)로 다시 저장해요. 화질 손실은 없지만 파일 크기가 달라져요.", "Panels are re-saved as lossless PNG. Quality is kept but file sizes change."),
   "recompressed-lossy": () => bi("컷을 손실 압축으로 다시 저장해요. 화질이 조금 떨어질 수 있어요.", "Panels are re-saved with lossy compression and may lose some quality."),
+  "transparency-flattened": () => bi("원고에 투명한 여백이 있어요. 결과 이미지는 투명하지 않고 흰색으로 채워져요.", "The manuscript has transparent margins. The result images are not transparent: transparent areas are filled with white."),
   "cuts-overlap": (values) => bi(`서로 겹치는 컷이 ${values.pairs}쌍 있어요. 겹친 부분은 두 번 나와요.`, `${values.pairs} pair(s) of panels overlap; the overlapping area appears twice.`),
   "centered-in-document": (values) => bi(`Studio 문서 폭(720)보다 좁아 양옆에 ${values.offset}px 씩 여백을 두고 가운데에 놓아요.`, `The strip is narrower than the Studio page (720), so it is centred with ${values.offset}px on each side.`),
   "split-into-pages": (values) => bi(`길이가 길어서 컷 경계에서 ${values.pages}개 페이지로 나눠요.`, `The strip is long, so it is split into ${values.pages} pages at panel boundaries.`),
