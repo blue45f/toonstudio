@@ -55,7 +55,7 @@ import type {
   StudioBg3dShotBatchContactSheet,
   StudioBg3dShotBatchContactSheetFallback,
 } from "./studio-bg3d-shot-batch";
-import type { StudioBg3dShotBatchPass } from "./studio-bg3d-shot-batch-pass-catalog";
+import { studioBg3dShotBatchNeedsDepth, type StudioBg3dShotBatchPass } from "./studio-bg3d-shot-batch-pass-catalog";
 import type {
   StudioBg3dShotBatchCaptureSpecInput,
   StudioBg3dShotBatchPlan,
@@ -425,9 +425,7 @@ export function createStudioBg3dShotBatchExportRunner(
           height: size.height,
           requestedHeight,
           wasReduced: size.wasReduced,
-          includeDepth: applied.output.line.depthEnabled ||
-            selectedShotBatchPasses.includes("depth") ||
-            selectedShotBatchPasses.includes("normal"),
+          includeDepth: studioBg3dShotBatchNeedsDepth(applied.output.line, selectedShotBatchPasses),
           shadows: shotQuality.shadows,
           shadowMapSize: shotQuality.shadowMapSize,
           background: studioBg3dCaptureBackgroundRequestFromSnapshot(background),

@@ -7,17 +7,20 @@ import type { StudioBg3dRasterWindow } from "./studio-bg3d-tile-plan";
  * only bounded typed-array processing: it never reaches the DOM, creates a canvas, decodes an
  * asset, or mutates caller-owned buffers. The caller can encode each returned RGBA layer as PNG.
  *
- * A captured image contains visible surfaces only, so hidden-line removal is already inherent at
- * this boundary. A requested vector line layer is deliberately rasterized here; vector tracing is
- * a separate post-process and must not be inferred from pixels by this trust boundary.
+ * A captured image contains visible surfaces only, so no occluded geometry can ever be drawn at this
+ * boundary. `hiddenLineRemoval` therefore means something narrower and image-based: when a depth
+ * capture is available it removes the line responses of the far side of an occlusion boundary (the
+ * surface hidden behind a nearer one), which otherwise doubles the contour. Without depth it changes
+ * nothing. A requested vector line layer is deliberately rasterized here; vector tracing is a
+ * separate post-process and must not be inferred from pixels by this trust boundary.
+ *
+ * Line geometry (ridge thinning, continuous stroke width, interior suppression) lives in
+ * `studio-bg3d-lt-line-response.ts`; see docs/features/bg3d-lineart-quality.md.
  */
 
-import { extractStudioBg3dLtNormalEdges } from "./studio-bg3d-lt-normal-edges";
-
-import {
-  STUDIO_BG3D_LT_DEPTH_EDGE_MAX_PIXELS,
-  extractStudioBg3dLtDepthEdges,
-} from "./studio-bg3d-lt-depth-edges";
+import { STUDIO_BG3D_LT_DEPTH_EDGE_MAX_PIXELS } from "./studio-bg3d-lt-depth-edges";
+import { renderStudioBg3dLtLineResponses } from "./studio-bg3d-lt-line-response";
+import { byteAt, clamp01 } from "./studio-bg3d-lt-raster-math";
 
 import type {
   StudioBg3dLineOutputSettings,
@@ -194,6 +197,13 @@ function validateLineSettings(line: StudioBg3dLineOutputSettings): void {
   assertFiniteRange(line.textureLineStrength, 0, 1, "line.textureLineStrength");
   assertFiniteRange(line.creaseAngleDegrees, 0, 180, "line.creaseAngleDegrees");
   assertBoolean(line.hiddenLineRemoval, "line.hiddenLineRemoval");
+  // 선택 필드(이전 문서에는 없다). 없으면 꺼짐으로 해석한다.
+  if (line.interiorSuppressionEnabled !== undefined) {
+    assertBoolean(line.interiorSuppressionEnabled, "line.interiorSuppressionEnabled");
+  }
+  if (line.interiorSuppressionStrength !== undefined) {
+    assertFiniteRange(line.interiorSuppressionStrength, 0, 1, "line.interiorSuppressionStrength");
+  }
 }
 
 function validateToneSettings(tone: StudioBg3dToneOutputSettings): void {
@@ -215,10 +225,6 @@ function validateToneSettings(tone: StudioBg3dToneOutputSettings): void {
   assertFiniteRange(tone.opacity, 0, 1, "tone.opacity");
   assertFiniteRange(tone.frequency, 1, 200, "tone.frequency");
   assertFiniteRange(tone.angleDegrees, -180, 180, "tone.angleDegrees");
-}
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
 }
 
 /*
@@ -268,10 +274,6 @@ export function decodeStudioBg3dThreeRgbaDepth(
   return depth;
 }
 
-function byteAt(rgba: Uint8Array | Uint8ClampedArray, pixelIndex: number, channel: number): number {
-  return rgba[pixelIndex * 4 + channel] ?? 0;
-}
-
 function buildLuminance(input: ValidatedInput): Float32Array {
   const luminance = new Float32Array(input.pixelCount);
   for (let index = 0; index < input.pixelCount; index += 1) {
@@ -281,126 +283,6 @@ function buildLuminance(input: ValidatedInput): Float32Array {
     luminance[index] = (red * 0.2126 + green * 0.7152 + blue * 0.0722) / 255;
   }
   return luminance;
-}
-
-/** Separable clamped-edge box blur with one image-sized allocation. */
-function boxBlur(field: Float32Array, width: number, height: number, radius: number): Float32Array {
-  if (radius < 1) return field;
-  const output = new Float32Array(field.length);
-  const span = radius * 2 + 1;
-  for (let y = 0; y < height; y += 1) {
-    const row = y * width;
-    let sum = 0;
-    for (let offset = -radius; offset <= radius; offset += 1) {
-      sum += field[row + Math.min(width - 1, Math.max(0, offset))];
-    }
-    for (let x = 0; x < width; x += 1) {
-      output[row + x] = sum / span;
-      const removeX = Math.min(width - 1, Math.max(0, x - radius));
-      const addX = Math.min(width - 1, Math.max(0, x + radius + 1));
-      sum += field[row + addX] - field[row + removeX];
-    }
-  }
-
-  const column = new Float32Array(height);
-  for (let x = 0; x < width; x += 1) {
-    let sum = 0;
-    for (let offset = -radius; offset <= radius; offset += 1) {
-      sum += output[Math.min(height - 1, Math.max(0, offset)) * width + x];
-    }
-    for (let y = 0; y < height; y += 1) {
-      column[y] = sum / span;
-      const removeY = Math.min(height - 1, Math.max(0, y - radius));
-      const addY = Math.min(height - 1, Math.max(0, y + radius + 1));
-      sum += output[addY * width + x] - output[removeY * width + x];
-    }
-    for (let y = 0; y < height; y += 1) output[y * width + x] = column[y];
-  }
-  return output;
-}
-
-function clampedIndex(x: number, y: number, width: number, height: number): number {
-  return Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x));
-}
-
-function sobelField(
-  field: Float32Array,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-): number {
-  const topLeft = field[clampedIndex(x - 1, y - 1, width, height)];
-  const top = field[clampedIndex(x, y - 1, width, height)];
-  const topRight = field[clampedIndex(x + 1, y - 1, width, height)];
-  const left = field[clampedIndex(x - 1, y, width, height)];
-  const right = field[clampedIndex(x + 1, y, width, height)];
-  const bottomLeft = field[clampedIndex(x - 1, y + 1, width, height)];
-  const bottom = field[clampedIndex(x, y + 1, width, height)];
-  const bottomRight = field[clampedIndex(x + 1, y + 1, width, height)];
-  const horizontal = -topLeft + topRight - 2 * left + 2 * right - bottomLeft + bottomRight;
-  const vertical = -topLeft - 2 * top - topRight + bottomLeft + 2 * bottom + bottomRight;
-  return clamp01(Math.hypot(horizontal, vertical) / 4);
-}
-
-function alphaAt(input: ValidatedInput, x: number, y: number): number {
-  const index = clampedIndex(x, y, input.width, input.height);
-  return byteAt(input.rgba, index, 3) / 255;
-}
-
-function sobelAlpha(input: ValidatedInput, x: number, y: number): number {
-  const topLeft = alphaAt(input, x - 1, y - 1);
-  const top = alphaAt(input, x, y - 1);
-  const topRight = alphaAt(input, x + 1, y - 1);
-  const left = alphaAt(input, x - 1, y);
-  const right = alphaAt(input, x + 1, y);
-  const bottomLeft = alphaAt(input, x - 1, y + 1);
-  const bottom = alphaAt(input, x, y + 1);
-  const bottomRight = alphaAt(input, x + 1, y + 1);
-  const horizontal = -topLeft + topRight - 2 * left + 2 * right - bottomLeft + bottomRight;
-  const vertical = -topLeft - 2 * top - topRight + bottomLeft + 2 * bottom + bottomRight;
-  return clamp01(Math.hypot(horizontal, vertical) / 4);
-}
-
-function smoothResponse(value: number, threshold: number, softness: number): number {
-  const normalized = clamp01((value - threshold) / Math.max(0.000_001, softness));
-  return normalized * normalized * (3 - 2 * normalized);
-}
-
-/** Separable maximum filter used to turn a one-pixel response into the requested ink width. */
-function expandResponse(
-  response: Uint8ClampedArray,
-  width: number,
-  height: number,
-  radius: number
-): Uint8ClampedArray {
-  if (radius < 1) return response;
-  const output = new Uint8ClampedArray(response.length);
-  for (let y = 0; y < height; y += 1) {
-    const row = y * width;
-    for (let x = 0; x < width; x += 1) {
-      let maximum = 0;
-      for (let offset = -radius; offset <= radius; offset += 1) {
-        maximum = Math.max(maximum, response[row + Math.min(width - 1, Math.max(0, x + offset))]);
-      }
-      output[row + x] = maximum;
-    }
-  }
-  const column = new Uint8ClampedArray(height);
-  for (let x = 0; x < width; x += 1) {
-    for (let y = 0; y < height; y += 1) {
-      let maximum = 0;
-      for (let offset = -radius; offset <= radius; offset += 1) {
-        maximum = Math.max(
-          maximum,
-          output[Math.min(height - 1, Math.max(0, y + offset)) * width + x]
-        );
-      }
-      column[y] = maximum;
-    }
-    for (let y = 0; y < height; y += 1) output[y * width + x] = column[y];
-  }
-  return output;
 }
 
 function parseColor(color: string): readonly [number, number, number] {
@@ -430,108 +312,6 @@ function inkLayerFromResponse(
     hasInk = true;
   }
   return hasInk ? { role, width: input.width, height: input.height, data } : null;
-}
-
-function lineWidthRadius(widthPx: number): number {
-  return Math.min(4, Math.max(0, Math.ceil((widthPx - 1) / 2)));
-}
-
-function renderMainLineResponse(
-  input: ValidatedInput,
-  luminance: Float32Array,
-  line: StudioBg3dLineOutputSettings
-): Uint8ClampedArray {
-  const smoothingRadius = Math.round(line.smoothing * 2);
-  const edgeField = boxBlur(luminance, input.width, input.height, smoothingRadius);
-  const response = new Uint8ClampedArray(input.pixelCount);
-  const maximumDimension = Math.max(input.window?.fullWidth ?? input.width, input.window?.fullHeight ?? input.height);
-  const scaleFactor = line.scaleAwareAccuracy
-    ? Math.min(1.35, Math.max(0.65, Math.sqrt(640 / maximumDimension)))
-    : 1;
-  const threshold = (0.16 - line.accuracy * 0.12) * scaleFactor;
-  const softness = 0.22 - line.accuracy * 0.1;
-  const depthResponse =
-    line.depthEnabled && input.depth
-      ? extractStudioBg3dLtDepthEdges({
-          width: input.width,
-          height: input.height,
-          depth: input.depth,
-          includeCreases: !line.depthOutlineOnly && !input.normalRgba,
-        })
-      : null;
-
-  const normalResponse = line.depthEnabled && !line.depthOutlineOnly && input.normalRgba && input.depth
-    ? extractStudioBg3dLtNormalEdges({ width: input.width, height: input.height,
-      normalRgba: input.normalRgba, depth: input.depth, creaseAngleDegrees: line.creaseAngleDegrees }) : null;
-
-  for (let y = 0; y < input.height; y += 1) {
-    for (let x = 0; x < input.width; x += 1) {
-      const index = y * input.width + x;
-      if (byteAt(input.rgba, index, 3) === 0) continue;
-      const luminanceEdge = smoothResponse(
-        sobelField(edgeField, x, y, input.width, input.height),
-        threshold,
-        softness
-      );
-      const exteriorEdge =
-        smoothResponse(sobelAlpha(input, x, y), 0.01, 0.2) * line.exteriorOutlineStrength;
-      let depthEdge = 0;
-      if (depthResponse) {
-        const depthFeature = depthResponse[index] / 255;
-        depthEdge = smoothResponse(depthFeature, threshold * 0.5, softness) * line.depthStrength;
-      }
-      const normalEdge = normalResponse ? normalResponse[index]! / 255 * line.depthStrength : 0;
-      const combined = Math.max(luminanceEdge, exteriorEdge, depthEdge, normalEdge);
-      response[index] = Math.round(clamp01(combined * line.strength) * 255);
-    }
-  }
-  return expandResponse(response, input.width, input.height, lineWidthRadius(line.widthPx));
-}
-
-function renderTextureLineResponse(
-  input: ValidatedInput,
-  luminance: Float32Array,
-  mainResponse: Uint8ClampedArray,
-  line: StudioBg3dLineOutputSettings
-): Uint8ClampedArray {
-  const localAverage = boxBlur(
-    luminance,
-    input.width,
-    input.height,
-    line.smoothing > 0.66 ? 2 : 1
-  );
-  const response = new Uint8ClampedArray(input.pixelCount);
-  const threshold =
-    0.012 +
-    (line.creaseAngleDegrees / 180) * 0.2 +
-    line.smoothing * 0.025 +
-    (1 - line.accuracy) * 0.035;
-  const softness = 0.08 + line.smoothing * 0.08;
-  for (let y = 0; y < input.height; y += 1) {
-    for (let x = 0; x < input.width; x += 1) {
-      const index = y * input.width + x;
-      if (byteAt(input.rgba, index, 3) === 0) continue;
-      const center = luminance[index];
-      const residual = Math.abs(center - localAverage[index]) * 3;
-      const laplacian = Math.abs(
-        center * 4 -
-          luminance[clampedIndex(x - 1, y, input.width, input.height)] -
-          luminance[clampedIndex(x + 1, y, input.width, input.height)] -
-          luminance[clampedIndex(x, y - 1, input.width, input.height)] -
-          luminance[clampedIndex(x, y + 1, input.width, input.height)]
-      );
-      const highFrequency = clamp01(Math.max(residual, laplacian * 0.5));
-      const separation = 1 - (mainResponse[index] / 255) * 0.85;
-      const intensity =
-        smoothResponse(highFrequency, threshold, softness) *
-        separation *
-        line.textureLineStrength *
-        line.strength;
-      response[index] = Math.round(clamp01(intensity) * 255);
-    }
-  }
-  const radius = Math.max(0, lineWidthRadius(line.widthPx) - 1);
-  return expandResponse(response, input.width, input.height, radius);
 }
 
 function quantizedLuminance(value: number, tone: StudioBg3dToneOutputSettings): number {
@@ -660,16 +440,10 @@ export function renderStudioBg3dLtLayers(
 
   if (settings.line.enabled && settings.line.strength > 0) {
     const color = parseColor(settings.line.color);
-    const mainResponse = renderMainLineResponse(input, luminance, settings.line);
-    mainLayer = inkLayerFromResponse("main-line", mainResponse, input, color);
-    if (settings.line.textureLineEnabled && settings.line.textureLineStrength > 0) {
-      const textureResponse = renderTextureLineResponse(
-        input,
-        luminance,
-        mainResponse,
-        settings.line
-      );
-      textureLayer = inkLayerFromResponse("texture-line", textureResponse, input, color);
+    const responses = renderStudioBg3dLtLineResponses(input, luminance, settings.line);
+    mainLayer = inkLayerFromResponse("main-line", responses.main, input, color);
+    if (responses.texture) {
+      textureLayer = inkLayerFromResponse("texture-line", responses.texture, input, color);
     }
   }
 

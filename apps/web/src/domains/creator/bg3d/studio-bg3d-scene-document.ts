@@ -34,6 +34,7 @@ import {
   STUDIO_BG3D_AIM_AXES,
   STUDIO_BG3D_GLB_MAX_BYTES,
   STUDIO_BG3D_GLB_MIME,
+  STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH,
   STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION,
   STUDIO_BG3D_MAX_TWO_BONE_IK_CONSTRAINTS,
   STUDIO_BG3D_PRIMITIVE_KINDS,
@@ -81,6 +82,7 @@ import {
   type StudioBg3dShot,
   type StudioBg3dShotBackgroundOverride,
   type StudioBg3dShotCameraOverride,
+  type StudioBg3dLineOutputSettings,
   type StudioBg3dShotCreateRequest,
   type StudioBg3dShotDirectionalLightOverride,
   type StudioBg3dShotLightingOverride,
@@ -299,7 +301,7 @@ const DEFAULT_RAW_DOCUMENT = {
       enabled: true,
       layerType: "raster",
       color: "#000000",
-      widthPx: 1,
+      widthPx: 1.75,
       strength: 0.8,
       accuracy: 0.75,
       scaleAwareAccuracy: true,
@@ -734,9 +736,70 @@ function normalizeQuality(value: unknown): StudioBg3dQualityProfiles {
   };
 }
 
+type LineFieldSpec = readonly [key: string, fallback: boolean | number | string, minimum?: number, maximum?: number];
+
+/**
+ * 선 설정 필드 표. 전체 설정(`output.line`)과 컷별 덮어쓰기(`shots[].output.line`)가 같은 표를 쓴다. 순서는 저장
+ * 문서의 키 순서와 같다. 불리언·문자열은 [키, 기본값], 숫자는 [키, 기본값, 최솟값, 최댓값]이다. 마지막 두 개(내부선
+ * 억제)는 선택 필드다. 전체 설정에서는 켜져 있고 기본이 아닐 때만 기록하고(꺼짐·기본은 쓰지 않아 억제를 켠 적 없는
+ * 문서를 옛 코드도 읽는다), 컷 덮어쓰기에서는 입력에 있는 키를 그대로 남긴다(꺼짐도 전체 설정을 덮는 값이다).
+ */
+const LINE_FIELD_SPECS: readonly LineFieldSpec[] = [
+  ["enabled", true], ["layerType", "raster"], ["color", "#000000"], ["widthPx", 1.75, 0.25, 8],
+  ["strength", 0.8, 0, 1], ["accuracy", 0.75, 0, 1], ["scaleAwareAccuracy", true], ["exteriorOutlineStrength", 1, 0, 2],
+  ["depthEnabled", false], ["depthStrength", 0.5, 0, 1], ["depthOutlineOnly", true], ["smoothing", 0.5, 0, 1],
+  ["textureLineEnabled", true], ["textureLineStrength", 0.5, 0, 1], ["creaseAngleDegrees", 20, 0, 180],
+  ["hiddenLineRemoval", true], ["interiorSuppressionEnabled", false],
+  ["interiorSuppressionStrength", STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH, 0, 1],
+];
+const OPTIONAL_LINE_FIELD_SET = new Set<string>(["interiorSuppressionEnabled", "interiorSuppressionStrength"]);
+
+function normalizeLineFields(value: unknown, onlyPresent: boolean): Record<string, unknown> {
+  const source = isRecord(value) ? value : {};
+  const result: Record<string, unknown> = {};
+  for (const [key, fallback, minimum = 0, maximum = 1] of LINE_FIELD_SPECS) {
+    if ((onlyPresent || OPTIONAL_LINE_FIELD_SET.has(key)) && !hasOwn(source, key)) continue;
+    const input = source[key];
+    result[key] = typeof fallback === "boolean" ? normalizedBoolean(input, fallback)
+      : typeof fallback === "number" ? boundedNumber(input, fallback, minimum, maximum)
+      : key === "color" ? normalizedColor(input, fallback) : normalizedEnum(input, LINE_LAYER_TYPE_SET, fallback);
+  }
+  if (!onlyPresent) {
+    if (result.interiorSuppressionEnabled !== true) {
+      delete result.interiorSuppressionEnabled;
+      delete result.interiorSuppressionStrength;
+    } else if (result.interiorSuppressionStrength === STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH) {
+      delete result.interiorSuppressionStrength;
+    }
+  }
+  return result;
+}
+
+/** 엄격 비교용: 정규화가 쓰지 않는 꺼짐·기본 표기(false, 의미 없는 강도, 기본 강도)의 억제 필드는 없는 것과 같다. 틀린 값은 남긴다. */
+function withoutRedundantSuppressionFields(root: Record<string, unknown>): Record<string, unknown> {
+  const output = isRecord(root.output) ? root.output : null;
+  const line = output && isRecord(output.line) ? output.line : null;
+  if (!output || !line) return root;
+  const strength = line.interiorSuppressionStrength;
+  const validStrength = typeof strength === "number" && strength >= 0 && strength <= 1;
+  const rest = { ...line };
+  if (line.interiorSuppressionEnabled === false) delete rest.interiorSuppressionEnabled;
+  if (validStrength && (line.interiorSuppressionEnabled !== true || strength === STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH)) {
+    delete rest.interiorSuppressionStrength;
+  }
+  return { ...root, output: { ...output, line: rest } };
+}
+
+/** `output.line` 정규화. 필드별 기본값·범위는 위의 표가 단일 기준이다. */
+export const normalizeStudioBg3dLineOutputSettings = (value: unknown): StudioBg3dLineOutputSettings =>
+  normalizeLineFields(value, false) as unknown as StudioBg3dLineOutputSettings;
+
+/** 컷별 선 덮어쓰기 정규화. 입력에 있는 키만 결과에 남긴다. */
+export const normalizeStudioBg3dShotLineOutputOverride = (value: unknown): StudioBg3dShotLineOutputOverride =>
+  normalizeLineFields(value, true) as StudioBg3dShotLineOutputOverride;
+
 function normalizeOutput(value: unknown): StudioBg3dOutputSettings {
   const candidate = isRecord(value) ? value : {};
-  const line = isRecord(candidate.line) ? candidate.line : {};
   const tone = isRecord(candidate.tone) ? candidate.tone : {};
   // 렌즈 시프트와 같은 선택 필드 규약: 값이 있을 때만 기록한다. 없는 문서는 자동(뷰포트 추종)으로
   // 남아 예전 삽입 결과와 바이트 단위로 동일하고, strict 왕복도 그대로 통과한다.
@@ -747,24 +810,7 @@ function normalizeOutput(value: unknown): StudioBg3dOutputSettings {
     transparentBackground: normalizedBoolean(candidate.transparentBackground, false),
     exportHeight: boundedInteger(candidate.exportHeight, 640, 256, 4096),
     ...(exportAspectRatio === null ? {} : { exportAspectRatio }),
-    line: {
-      enabled: normalizedBoolean(line.enabled, true),
-      layerType: normalizedEnum(line.layerType, LINE_LAYER_TYPE_SET, "raster"),
-      color: normalizedColor(line.color, "#000000"),
-      widthPx: boundedNumber(line.widthPx, 1, 0.25, 8),
-      strength: boundedNumber(line.strength, 0.8, 0, 1),
-      accuracy: boundedNumber(line.accuracy, 0.75, 0, 1),
-      scaleAwareAccuracy: normalizedBoolean(line.scaleAwareAccuracy, true),
-      exteriorOutlineStrength: boundedNumber(line.exteriorOutlineStrength, 1, 0, 2),
-      depthEnabled: normalizedBoolean(line.depthEnabled, false),
-      depthStrength: boundedNumber(line.depthStrength, 0.5, 0, 1),
-      depthOutlineOnly: normalizedBoolean(line.depthOutlineOnly, true),
-      smoothing: boundedNumber(line.smoothing, 0.5, 0, 1),
-      textureLineEnabled: normalizedBoolean(line.textureLineEnabled, true),
-      textureLineStrength: boundedNumber(line.textureLineStrength, 0.5, 0, 1),
-      creaseAngleDegrees: boundedNumber(line.creaseAngleDegrees, 20, 0, 180),
-      hiddenLineRemoval: normalizedBoolean(line.hiddenLineRemoval, true),
-    },
+    line: normalizeStudioBg3dLineOutputSettings(candidate.line),
     tone: {
       mode: normalizedEnum(tone.mode, TONE_MODE_SET, "flat"),
       type: normalizedEnum(tone.type, TONE_OUTPUT_TYPE_SET, "color"),
@@ -928,56 +974,6 @@ function normalizeShotLightingOverride(value: unknown): StudioBg3dShotLightingOv
   return result as StudioBg3dShotLightingOverride;
 }
 
-function normalizeShotLineOutputOverride(value: unknown): StudioBg3dShotLineOutputOverride {
-  const candidate = isRecord(value) ? value : {};
-  const result: Record<string, unknown> = {};
-  if (hasOwn(candidate, "enabled")) result.enabled = normalizedBoolean(candidate.enabled, true);
-  if (hasOwn(candidate, "layerType")) {
-    result.layerType = normalizedEnum(candidate.layerType, LINE_LAYER_TYPE_SET, "raster");
-  }
-  if (hasOwn(candidate, "color")) result.color = normalizedColor(candidate.color, "#000000");
-  if (hasOwn(candidate, "widthPx")) {
-    result.widthPx = boundedNumber(candidate.widthPx, 1, 0.25, 8);
-  }
-  if (hasOwn(candidate, "strength")) {
-    result.strength = boundedNumber(candidate.strength, 0.8, 0, 1);
-  }
-  if (hasOwn(candidate, "accuracy")) {
-    result.accuracy = boundedNumber(candidate.accuracy, 0.75, 0, 1);
-  }
-  if (hasOwn(candidate, "scaleAwareAccuracy")) {
-    result.scaleAwareAccuracy = normalizedBoolean(candidate.scaleAwareAccuracy, true);
-  }
-  if (hasOwn(candidate, "exteriorOutlineStrength")) {
-    result.exteriorOutlineStrength = boundedNumber(candidate.exteriorOutlineStrength, 1, 0, 2);
-  }
-  if (hasOwn(candidate, "depthEnabled")) {
-    result.depthEnabled = normalizedBoolean(candidate.depthEnabled, false);
-  }
-  if (hasOwn(candidate, "depthStrength")) {
-    result.depthStrength = boundedNumber(candidate.depthStrength, 0.5, 0, 1);
-  }
-  if (hasOwn(candidate, "depthOutlineOnly")) {
-    result.depthOutlineOnly = normalizedBoolean(candidate.depthOutlineOnly, true);
-  }
-  if (hasOwn(candidate, "smoothing")) {
-    result.smoothing = boundedNumber(candidate.smoothing, 0.5, 0, 1);
-  }
-  if (hasOwn(candidate, "textureLineEnabled")) {
-    result.textureLineEnabled = normalizedBoolean(candidate.textureLineEnabled, true);
-  }
-  if (hasOwn(candidate, "textureLineStrength")) {
-    result.textureLineStrength = boundedNumber(candidate.textureLineStrength, 0.5, 0, 1);
-  }
-  if (hasOwn(candidate, "creaseAngleDegrees")) {
-    result.creaseAngleDegrees = boundedNumber(candidate.creaseAngleDegrees, 20, 0, 180);
-  }
-  if (hasOwn(candidate, "hiddenLineRemoval")) {
-    result.hiddenLineRemoval = normalizedBoolean(candidate.hiddenLineRemoval, true);
-  }
-  return result as StudioBg3dShotLineOutputOverride;
-}
-
 function normalizeShotToneOutputOverride(value: unknown): StudioBg3dShotToneOutputOverride {
   const candidate = isRecord(value) ? value : {};
   const result: Record<string, unknown> = {};
@@ -1015,7 +1011,7 @@ function normalizeShotOutputOverride(value: unknown): StudioBg3dShotOutputOverri
     result.exportHeight = boundedInteger(candidate.exportHeight, 640, 256, 4096);
   }
   if (hasOwn(candidate, "line")) {
-    result.line = normalizeShotLineOutputOverride(candidate.line);
+    result.line = normalizeStudioBg3dShotLineOutputOverride(candidate.line);
   }
   if (hasOwn(candidate, "tone")) {
     result.tone = normalizeShotToneOutputOverride(candidate.tone);
@@ -1655,7 +1651,7 @@ function normalizeDecodedCurrentDocument(
     if (canonicalDocumentByteLength(normalized) > STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES) {
       failBudget("document-byte-budget-exceeded");
     }
-    if (rootMode === "strict" && !jsonStructuresEqual(value, normalized)) return null;
+    if (rootMode === "strict" && !jsonStructuresEqual(withoutRedundantSuppressionFields(value), normalized)) return null;
     return deepFreeze(normalized);
   } catch (cause) {
     if (cause instanceof StudioBg3dSceneDocumentBudgetError && budgetFailureMode === "null") {

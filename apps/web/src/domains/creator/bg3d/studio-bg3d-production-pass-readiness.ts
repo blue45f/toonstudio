@@ -1,4 +1,5 @@
 import { resolveStudioBg3dProductionBatchPreset } from "./studio-bg3d-production-multipass";
+import { resolveStudioBg3dInteriorSuppression } from "./studio-bg3d-scene-document-types";
 
 import type { StudioBg3dProductionBatchPreset } from "./studio-bg3d-production-multipass";
 import type {
@@ -13,6 +14,11 @@ export interface StudioBg3dProductionLookState {
   readonly lineStrength: number;
   readonly textureLineEnabled: boolean;
   readonly textureLineStrength: number;
+  /**
+   * 내부선 억제가 켜져 있고 강도가 100% 라서 질감선이 전부 지워지는 상태(렌더러는 이때 질감선 레이어를 만들지
+   * 않는다). 선택 필드이며 없으면 해당하지 않는다.
+   */
+  readonly textureLineSuppressed?: boolean;
   readonly toneMode: StudioBg3dToneMode;
   readonly toneType: StudioBg3dToneOutputType;
   readonly toneOpacity: number;
@@ -36,11 +42,13 @@ function finiteNonNegative(value: number): number {
 export function summarizeStudioBg3dProductionLook(
   output: StudioBg3dOutputSettings,
 ): StudioBg3dProductionLookState {
+  const suppression = resolveStudioBg3dInteriorSuppression(output.line);
   return Object.freeze({
     lineEnabled: output.line.enabled,
     lineStrength: finiteNonNegative(output.line.strength),
     textureLineEnabled: output.line.textureLineEnabled,
     textureLineStrength: finiteNonNegative(output.line.textureLineStrength),
+    ...(suppression.active && suppression.strength >= 1 ? { textureLineSuppressed: true } : {}),
     toneMode: output.tone.mode,
     toneType: output.tone.type,
     toneOpacity: finiteNonNegative(output.tone.opacity),
@@ -52,8 +60,10 @@ function resolvePassIssue(
   look: StudioBg3dProductionLookState,
 ): string | null {
   const mainLineReady = look.lineEnabled && look.lineStrength > 0;
-  const textureLineReady =
+  const textureLineRequested =
     mainLineReady && look.textureLineEnabled && look.textureLineStrength > 0;
+  const textureLineSuppressed = textureLineRequested && look.textureLineSuppressed === true;
+  const textureLineReady = textureLineRequested && !textureLineSuppressed;
   const toneLayerReady = look.toneMode !== "none" && look.toneOpacity > 0;
   const colorReady = toneLayerReady && look.toneType === "color";
   const toneReady = toneLayerReady && look.toneType !== "color";
@@ -73,8 +83,9 @@ function resolvePassIssue(
         ? null
         : "주선 출력이 꺼져 있거나 선 강도가 0입니다.";
     case "texture-line":
-      return textureLineReady
-        ? null
+      if (textureLineReady) return null;
+      return textureLineSuppressed
+        ? "내부선 억제 강도가 100%라 질감선이 모두 지워져 질감선 패스가 생성되지 않습니다."
         : "주선 또는 질감선 출력이 꺼져 있거나 질감선 강도가 0입니다.";
     case "color":
       return colorReady

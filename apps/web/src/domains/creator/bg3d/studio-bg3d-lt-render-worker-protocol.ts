@@ -73,6 +73,8 @@ const LINE_KEYS = [
   "creaseAngleDegrees",
   "hiddenLineRemoval",
 ] as const;
+/** 선택 필드: 이전 문서에는 없다. 있으면 형식을 검사하고, 없으면 꺼짐(기본값)으로 해석한다. */
+const LINE_OPTIONAL_KEYS = ["interiorSuppressionEnabled", "interiorSuppressionStrength"] as const;
 const TONE_KEYS = [
   "mode",
   "type",
@@ -143,7 +145,15 @@ function isOwnedArrayBuffer(value: unknown, byteLength: number): value is ArrayB
 }
 
 function isLineSettings(value: unknown): boolean {
-  if (!isRecord(value) || !hasExactKeys(value, LINE_KEYS)) return false;
+  if (!isRecord(value) || !hasExactKeys(value, LINE_KEYS, LINE_OPTIONAL_KEYS)) return false;
+  if (
+    hasOwn(value, "interiorSuppressionEnabled") &&
+    typeof value.interiorSuppressionEnabled !== "boolean"
+  ) return false;
+  if (
+    hasOwn(value, "interiorSuppressionStrength") &&
+    !isFiniteRange(value.interiorSuppressionStrength, 0, 1)
+  ) return false;
   return typeof value.enabled === "boolean" &&
     LINE_LAYER_TYPES.has(value.layerType as string) &&
     typeof value.color === "string" && /^#[0-9a-f]{6}$/u.test(value.color) &&
