@@ -9,6 +9,10 @@
  * 파일럿은 BYOK 경로라 플랫폼 상한이 없어 "상한 없음" 한 줄로 표시하고,
  * 플랫폼 경로가 열려 상한이 강제되면 잔여 횟수·진행바가 같은 자리에 뜨고
  * 상한 도달 시 전송이 막히며 초기화 시점·대안 행동 안내가 배지로 뜬다.
+ *
+ * 음성 낭독: 캐릭터 메시지마다 듣기/정지 버튼이 붙고(브라우저 내장 음성만 사용, 지원하지
+ * 않으면 버튼 대신 안내), 낭독 도구줄에서 자동 낭독(기본 꺼짐)과 온라인 음성 허용(기본 꺼짐)을
+ * 고른다. 소리는 화면을 떠나거나 캐릭터를 바꾸거나 Esc를 누르면 멈춘다.
  */
 
 import { Send, ShieldAlert } from "lucide-react";
@@ -20,9 +24,11 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
+import { CharacterChatSpeechToolbar, CharacterMessageSpeakButton } from "./CharacterChatSpeechControls";
 import { guardCharacterChatTurn } from "./character-chat-filter";
 import { buildCharacterChatQuotaView } from "./character-chat-quota";
 import { useCharacterChatHydrated, useCharacterChatStore } from "./character-chat-store";
+import { useCharacterChatSpeech, type CharacterChatSpeech } from "./use-character-chat-speech";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
 import type { CharacterChatEngine } from "./character-chat-engine";
 import type {
@@ -56,9 +62,11 @@ export function CharacterAvatar({
 function MessageBubble({
   message,
   profile,
+  speech,
 }: {
   readonly message: CharacterChatMessage;
   readonly profile: CharacterChatProfile;
+  readonly speech: CharacterChatSpeech;
 }) {
   const isFan = message.role === "fan";
   return (
@@ -78,6 +86,16 @@ function MessageBubble({
         >
           {message.text}
         </p>
+        {!isFan ? (
+          <div>
+            <CharacterMessageSpeakButton
+              speech={speech}
+              messageId={message.id}
+              text={message.text}
+              characterName={profile.characterName}
+            />
+          </div>
+        ) : null}
       </div>
     </li>
   );
@@ -119,6 +137,11 @@ export function CharacterChatThread({
   const [error, setError] = useState<{ readonly text: string; readonly retryText: string } | null>(null);
   const logRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const speech = useCharacterChatSpeech(profile);
+  // 답변은 비동기로 도착하므로, 그때의 최신 낭독 상태를 읽도록 ref에 둔다.
+  const speechRef = useRef(speech);
+  speechRef.current = speech;
 
   // 복원이 끝나기 전에 세션을 만들면 복원된 기존 대화에 덮여 사라진다.
   useEffect(() => {
@@ -135,6 +158,18 @@ export function CharacterChatThread({
     const log = logRef.current;
     if (log) log.scrollTop = log.scrollHeight;
   }, [session?.messages.length, sending]);
+
+  // 읽는 중에 Esc를 누르면 멈춘다. 한글 조합 중의 Esc는 조합 취소이므로 건드리지 않는다.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const stopOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.isComposing) return;
+      if (speechRef.current.speakingMessageId !== null) speechRef.current.stop();
+    };
+    root.addEventListener("keydown", stopOnEscape);
+    return () => root.removeEventListener("keydown", stopOnEscape);
+  }, []);
 
   const send = useCallback(
     async (rawText: string) => {
@@ -163,10 +198,17 @@ export function CharacterChatThread({
       appendMessage(profile.id, "fan", text);
       setDraft("");
       setSending(true);
-      const result = await engine.generateReply({ profile, history, userText: text });
+      // 자동 낭독이 켜져 있어 답변이 곧바로 읽힐 때만 엔진에 "읽기 좋은 대사" 규칙을 요청한다.
+      const readAloud = speechRef.current.supported && speechRef.current.settings.autoRead;
+      const result = await engine.generateReply({ profile, history, userText: text, readAloud });
       setSending(false);
       if (result.ok) {
-        appendMessage(profile.id, "character", result.text);
+        const reply = appendMessage(profile.id, "character", result.text);
+        // 자동 낭독은 듣는 사람이 켠 경우에만, 답변이 도착한 지금도 이 캐릭터의 화면이 살아 있을 때만 한다.
+        const latest = speechRef.current;
+        if (reply && latest.settings.autoRead && latest.isActiveFor(profile.id)) {
+          latest.speak({ id: reply.id, text: reply.text });
+        }
       } else {
         setError({ text: result.error, retryText: text });
       }
@@ -188,7 +230,7 @@ export function CharacterChatThread({
   };
 
   return (
-    <div className="flex min-h-[28rem] flex-1 flex-col">
+    <div ref={rootRef} className="flex min-h-[28rem] flex-1 flex-col">
       <ul
         ref={logRef}
         role="log"
@@ -197,7 +239,7 @@ export function CharacterChatThread({
         className="flex max-h-[26rem] flex-1 flex-col gap-4 overflow-y-auto px-4 py-4"
       >
         {(session?.messages ?? []).map((message) => (
-          <MessageBubble key={message.id} message={message} profile={profile} />
+          <MessageBubble key={message.id} message={message} profile={profile} speech={speech} />
         ))}
         {sending ? (
           <li className="flex gap-2.5" aria-label={t("캐릭터가 답을 쓰는 중", "Character is typing")}>
@@ -224,6 +266,7 @@ export function CharacterChatThread({
             ) : null}
           </div>
         ) : null}
+        <CharacterChatSpeechToolbar speech={speech} characterName={profile.characterName} />
         {notice ? (
           <p role="alert" className="mb-2 flex items-start gap-1.5 text-xs leading-relaxed text-warn">
             <ShieldAlert size={14} className="mt-0.5 shrink-0" aria-hidden />
