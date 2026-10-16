@@ -84,6 +84,13 @@ export interface ProductionPushSubscriptionRecord {
   readonly expirationTime: number | null;
 }
 
+/** 알림 한 번에 쓸 구독 목록. 전송 상한(limit)에 걸려 빠진 구독 수를 함께 돌려줘 조용한 절단을 막는다. */
+export interface ProductionPushSubscriptionBatch {
+  readonly subscriptions: readonly ProductionPushSubscriptionRecord[];
+  /** 상한 때문에 이번 알림 대상에서 빠진 구독 수. 상한 이하이면 0. */
+  readonly omitted: number;
+}
+
 @Injectable()
 export class ProductionIntegrationRepository {
   async beginMutation(input: {
@@ -432,12 +439,15 @@ export class ProductionIntegrationRepository {
       .where(eq(productionPushSubscriptions.endpointHash, endpointHash));
   }
 
-  /** 한 번의 알림이 다루는 구독 수는 limit 로 제한한다(최근에 갱신한 구독부터). */
+  /**
+   * 한 번의 알림이 다루는 구독 수는 limit 로 제한한다(최근에 갱신한 구독부터). 상한(기본 200, 환경 변수로 낮출 수 있음)보다
+   * 많이 저장돼 있으면 오래된 구독은 빠지므로, 빠진 개수를 omitted 로 함께 돌려준다.
+   */
   async listPushSubscriptions(
     projectId: string,
     limit: number,
-  ): Promise<readonly ProductionPushSubscriptionRecord[]> {
-    return db
+  ): Promise<ProductionPushSubscriptionBatch> {
+    const rows = await db
       .select({
         projectId: productionPushSubscriptions.projectId,
         actorUserId: productionPushSubscriptions.actorUserId,
@@ -446,10 +456,24 @@ export class ProductionIntegrationRepository {
         p256dh: productionPushSubscriptions.p256dh,
         auth: productionPushSubscriptions.auth,
         expirationTime: productionPushSubscriptions.expirationTime,
+        // LIMIT 을 적용하기 전의 이 프로젝트 전체 구독 수(윈도 집계는 LIMIT 보다 먼저 계산된다).
+        total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(productionPushSubscriptions)
       .where(eq(productionPushSubscriptions.projectId, projectId))
       .orderBy(desc(productionPushSubscriptions.updatedAt))
       .limit(limit);
+    return {
+      subscriptions: rows.map((row) => ({
+        projectId: row.projectId,
+        actorUserId: row.actorUserId,
+        endpointHash: row.endpointHash,
+        endpoint: row.endpoint,
+        p256dh: row.p256dh,
+        auth: row.auth,
+        expirationTime: row.expirationTime,
+      })),
+      omitted: Math.max(0, (rows[0]?.total ?? 0) - rows.length),
+    };
   }
 }

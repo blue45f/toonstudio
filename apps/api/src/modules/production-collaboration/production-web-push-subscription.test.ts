@@ -204,31 +204,67 @@ describe("웹 푸시 구독 저장소의 상한 검사", () => {
     expect(test.written[0]).toMatchObject({ expirationTime: 1_800_000_000_000 });
   });
 
-  it("알림 대상 조회는 최근 갱신순으로 상한 개수만 읽는다", async () => {
-    const calls: { where?: unknown; order?: unknown; limit?: number } = {};
-    doubles.db.select.mockImplementation(() => {
-      const chain = {
-        from: () => chain,
-        where: (condition: unknown) => {
-          calls.where = condition;
-          return chain;
-        },
-        orderBy: (order: unknown) => {
-          calls.order = order;
-          return chain;
-        },
-        limit: (value: number) => {
-          calls.limit = value;
-          return Promise.resolve([]);
-        },
+  describe("알림 대상 조회", () => {
+    function stubSelect(rows: readonly Record<string, unknown>[]) {
+      const calls: { fields?: Record<string, unknown>; where?: unknown; order?: unknown; limit?: number } = {};
+      doubles.db.select.mockImplementation((fields: Record<string, unknown>) => {
+        calls.fields = fields;
+        const chain = {
+          from: () => chain,
+          where: (condition: unknown) => {
+            calls.where = condition;
+            return chain;
+          },
+          orderBy: (order: unknown) => {
+            calls.order = order;
+            return chain;
+          },
+          limit: (value: number) => {
+            calls.limit = value;
+            return Promise.resolve(rows);
+          },
+        };
+        return chain;
+      });
+      return calls;
+    }
+
+    function row(index: number, total: number) {
+      return {
+        ...record({ endpointHash: `sha256:${String(index).repeat(64)}` }),
+        total,
       };
-      return chain;
+    }
+
+    it("최근 갱신순으로 상한 개수만 읽고, 전체 개수는 같은 문장의 윈도 집계로 구한다", async () => {
+      const calls = stubSelect([]);
+      await expect(repository.listPushSubscriptions("project-1", 200)).resolves.toEqual({
+        subscriptions: [],
+        omitted: 0,
+      });
+      expect(calls.limit).toBe(200);
+      expect(params(calls.where).params).toEqual(["project-1"]);
+      expect(params(calls.order).sql).toMatch(/"updatedAt"/u);
+      expect(params(calls.order).sql).toMatch(/desc/iu);
+      expect(params(calls.fields?.total).sql).toBe("count(*) over ()");
     });
-    await expect(repository.listPushSubscriptions("project-1", 200)).resolves.toEqual([]);
-    expect(calls.limit).toBe(200);
-    expect(params(calls.where).params).toEqual(["project-1"]);
-    expect(params(calls.order).sql).toMatch(/"updatedAt"/u);
-    expect(params(calls.order).sql).toMatch(/desc/iu);
+
+    it("저장된 구독이 상한 이하이면 빠진 구독이 없다고 알리고 집계 열은 구독에 싣지 않는다", async () => {
+      stubSelect([row(1, 2), row(2, 2)]);
+      const batch = await repository.listPushSubscriptions("project-1", 200);
+      expect(batch.omitted).toBe(0);
+      expect(batch.subscriptions).toHaveLength(2);
+      for (const subscription of batch.subscriptions) expect(subscription).not.toHaveProperty("total");
+      expect(batch.subscriptions[0]).toEqual(record({ endpointHash: `sha256:${"1".repeat(64)}` }));
+    });
+
+    it("저장된 구독이 상한보다 많으면 빠진 개수를 알린다(상한을 환경 변수로 낮춘 경우 포함)", async () => {
+      stubSelect([row(1, 7), row(2, 7), row(3, 7)]);
+      await expect(repository.listPushSubscriptions("project-1", 3)).resolves.toMatchObject({
+        omitted: 4,
+        subscriptions: expect.arrayContaining([expect.objectContaining({ projectId: "project-1" })]),
+      });
+    });
   });
 });
 
@@ -277,7 +313,7 @@ describe("ProductionIntegrationService 웹 푸시 상한 연결", () => {
     };
     const repository = {
       upsertPushSubscription: vi.fn().mockResolvedValue(undefined),
-      listPushSubscriptions: vi.fn().mockResolvedValue([]),
+      listPushSubscriptions: vi.fn().mockResolvedValue({ subscriptions: [], omitted: 0 }),
       deletePushSubscriptionByHash: vi.fn().mockResolvedValue(undefined),
       beginMutation: vi.fn().mockResolvedValue({ replay: null }),
       countMutationsSince: vi.fn().mockResolvedValue(0),
@@ -368,5 +404,33 @@ describe("ProductionIntegrationService 웹 푸시 상한 연결", () => {
       body: "에피소드를 확인해 주세요.",
     });
     expect(test.repository.listPushSubscriptions).toHaveBeenCalledWith("project-1", 200);
+  });
+
+  it("상한 때문에 빠진 구독 수를 전송 단계에 넘기고, 웹 푸시가 아닌 채널은 구독을 읽지 않는다", async () => {
+    const test = fixture();
+    const kept = [record()];
+    test.repository.listPushSubscriptions.mockResolvedValueOnce({ subscriptions: kept, omitted: 3 });
+    await test.service.sendNotification("user-1", "project-1", {
+      mutationId: "22222222-2222-4222-8222-222222222222",
+      channel: "web-push",
+      title: "검토 요청",
+      body: "에피소드를 확인해 주세요.",
+    });
+    expect(doubles.send).toHaveBeenCalledWith(
+      expect.objectContaining({ subscriptions: kept, omittedSubscriptions: 3 }),
+    );
+
+    test.repository.listPushSubscriptions.mockClear();
+    doubles.send.mockClear();
+    await test.service.sendNotification("user-1", "project-1", {
+      mutationId: "33333333-3333-4333-8333-333333333333",
+      channel: "ntfy",
+      title: "검토 요청",
+      body: "에피소드를 확인해 주세요.",
+    });
+    expect(test.repository.listPushSubscriptions).not.toHaveBeenCalled();
+    expect(doubles.send).toHaveBeenCalledWith(
+      expect.objectContaining({ subscriptions: [], omittedSubscriptions: 0 }),
+    );
   });
 });

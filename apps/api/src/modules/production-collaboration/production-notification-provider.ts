@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { sendProtectedWebhook } from "./production-webhook-network";
 import webPush from "web-push";
 import {
@@ -113,16 +114,28 @@ class WebPushHostNotAllowedError extends Error {
   }
 }
 
+const logger = new Logger("ProductionNotification");
+
 async function sendWebPush(
   config: ProductionIntegrationConfig,
   notification: ProductionIntegrationNotification,
   subscriptions: readonly ProductionPushSubscriptionRecord[],
+  truncation: { readonly projectId: string; readonly omitted: number },
 ): Promise<ProductionNotificationProviderResult> {
   const subject = config.notification.vapidSubject;
   const publicKey = config.notification.vapidPublicKey;
   const privateKey = config.notification.vapidPrivateKey;
   if (!subject || !publicKey || !privateKey) {
     throw new Error("web_push_not_configured");
+  }
+  const { omitted } = truncation;
+  if (omitted > 0) {
+    // 저장된 구독이 전송 상한보다 많으면 최근 갱신순 상위만 보내고 나머지는 알림도 오류도 없이 빠진다. 개수만 남긴다.
+    logger.warn(
+      `프로젝트 ${truncation.projectId} 의 웹 푸시 구독이 전송 상한(${config.notification.webPush.maxSubscriptionsPerProject}건)보다 많아 `
+      + `최근 갱신순 ${subscriptions.length}건에만 보내고 ${omitted}건은 제외했습니다. 제외된 기기는 알림도 오류도 받지 않습니다. `
+      + "상한은 PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_PROJECT 로 올릴 수 있습니다(최대 1000).",
+    );
   }
   webPush.setVapidDetails(subject, publicKey, privateKey);
   const payload = JSON.stringify({
@@ -206,6 +219,8 @@ async function sendWebPush(
       sent,
       expired: removedEndpointHashes.length,
       skippedHostNotAllowed,
+      truncated: omitted > 0,
+      omitted,
     },
   };
 }
@@ -215,6 +230,8 @@ export async function sendProductionNotification(input: {
   readonly projectTitle: string;
   readonly notification: ProductionIntegrationNotification;
   readonly subscriptions: readonly ProductionPushSubscriptionRecord[];
+  /** 전송 상한 때문에 subscriptions 에서 빠진 구독 수(웹 푸시 전송 결과의 truncated 표시에 쓴다). */
+  readonly omittedSubscriptions?: number;
 }, dependencies: { readonly webhookPost: typeof sendProtectedWebhook } = { webhookPost: sendProtectedWebhook }): Promise<ProductionNotificationProviderResult> {
   const body = {
     version: 1,
@@ -238,6 +255,7 @@ export async function sendProductionNotification(input: {
         input.config,
         input.notification,
         input.subscriptions,
+        { projectId: input.projectId, omitted: Math.max(0, input.omittedSubscriptions ?? 0) },
       );
   }
 }

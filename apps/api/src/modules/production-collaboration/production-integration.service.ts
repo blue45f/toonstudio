@@ -773,9 +773,9 @@ export class ProductionIntegrationService {
       ...input,
       url: this.safeNotificationUrl(input.url),
     };
-    const subscriptions = input.channel === "web-push"
+    const { subscriptions, omitted } = input.channel === "web-push"
       ? await this.repository.listPushSubscriptions(projectId, this.config.notification.webPush.maxSubscriptionsPerProject)
-      : [];
+      : { subscriptions: [], omitted: 0 };
     return this.fenced({
       actorUserId,
       projectId,
@@ -792,6 +792,7 @@ export class ProductionIntegrationService {
           projectTitle: aggregate.title,
           notification,
           subscriptions,
+          omittedSubscriptions: omitted,
         });
         const cleanup = await Promise.allSettled(
           result.removedEndpointHashes.map((endpointHash) =>

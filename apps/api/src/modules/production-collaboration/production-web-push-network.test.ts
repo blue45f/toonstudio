@@ -1,5 +1,6 @@
 import { Agent, request as httpsRequest } from "node:https";
 
+import { Logger } from "@nestjs/common";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProductionPushSubscriptionSchema } from "./production-integration.dto";
@@ -260,6 +261,7 @@ describe("웹 푸시 알림 전송", () => {
   function send(
     subscriptions: readonly ProductionPushSubscriptionRecord[],
     config: ProductionIntegrationConfig = configWith(),
+    omittedSubscriptions?: number,
   ) {
     return sendProductionNotification({
       config,
@@ -272,6 +274,7 @@ describe("웹 푸시 알림 전송", () => {
         body: "내용",
       },
       subscriptions,
+      ...(omittedSubscriptions === undefined ? {} : { omittedSubscriptions }),
     });
   }
 
@@ -328,6 +331,46 @@ describe("웹 푸시 알림 전송", () => {
     );
     expect(extended.sent).toBe(1);
     expect(webPush.sendNotification).toHaveBeenCalledOnce();
+  });
+
+  describe("전송 상한으로 구독이 잘린 경우", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("빠진 구독이 없으면 truncated 는 false 이고 경고를 남기지 않는다", async () => {
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      const result = await send([subscription("https://fcm.googleapis.com/fcm/send/abc", "hash-a")]);
+      expect(result.providerResponse).toMatchObject({ attempted: 1, sent: 1, truncated: false, omitted: 0 });
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("빠진 구독이 있으면 truncated 표시와 빠진 개수를 전송 결과에 담고 개수만 경고한다", async () => {
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      const result = await send(
+        [subscription("https://fcm.googleapis.com/fcm/send/abc", "hash-a")],
+        configWith({ maxSubscriptionsPerProject: 1 }),
+        4,
+      );
+      expect(result.sent).toBe(1);
+      expect(result.providerResponse).toMatchObject({ attempted: 1, sent: 1, truncated: true, omitted: 4 });
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0]?.[0]);
+      expect(message).toContain("프로젝트 project-1");
+      expect(message).toContain("전송 상한(1건)");
+      expect(message).toContain("1건에만 보내고 4건은 제외했습니다");
+      expect(message).toContain("PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_PROJECT");
+      // endpoint 주소나 해시 같은 구독 값은 로그에 남기지 않는다.
+      expect(message).not.toContain("fcm.googleapis.com");
+      expect(message).not.toContain("hash-a");
+    });
+
+    it("잘못된 빠진 개수(음수)는 0 으로 본다", async () => {
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      const result = await send([], configWith(), -2);
+      expect(result.providerResponse).toMatchObject({ attempted: 0, truncated: false, omitted: 0 });
+      expect(warn).not.toHaveBeenCalled();
+    });
   });
 
   it("동시에 진행하는 전송 요청 수를 설정한 상한으로 제한한다", async () => {
