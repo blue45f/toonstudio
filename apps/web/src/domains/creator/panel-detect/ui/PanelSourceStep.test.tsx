@@ -123,6 +123,39 @@ describe("1단계 — 권리 확인과 이미지 선택", () => {
     expect(onReady.mock.calls[0]?.[0].file).toBe(file);
   });
 
+  it("권리 확인을 해제한 채 다시 시도하면 파일을 읽기 전에 확인이 필요하다고 알려 주고, 다시 체크하면 읽는다", async () => {
+    let attempts = 0;
+    const { container, onReady } = renderStep({
+      loadSource: (file) => {
+        attempts += 1;
+        return attempts === 1
+          ? Promise.reject(new PanelSourceError("unsupported-format"))
+          : Promise.resolve(fakePanelSource(samplePage(), file.name));
+      },
+    });
+    fireEvent.click(checkbox());
+    pick(container, fakePngFile("page-01.png", 400, 560));
+    expect((await screen.findByRole("alert")).textContent).toContain("PNG, JPG, WebP 이미지만 읽을 수 있어요");
+    expect(attempts).toBe(1);
+
+    // 오류 화면에서는 체크를 풀 수 있다. 풀린 채 다시 시도하면 디코딩·해시를 하기 전에 거절해야 한다.
+    fireEvent.click(checkbox());
+    expect((checkbox() as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "같은 파일로 다시 시도" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("권리 확인에 체크");
+    // 일반 오류 문구로 뭉개지 않는다.
+    expect(alert.textContent).not.toContain("알 수 없는 오류");
+    expect(attempts).toBe(1);
+    expect(onReady).not.toHaveBeenCalled();
+
+    fireEvent.click(checkbox());
+    fireEvent.click(screen.getByRole("button", { name: "같은 파일로 다시 시도" }));
+    await waitFor(() => expect(onReady).toHaveBeenCalledTimes(1));
+    expect(attempts).toBe(2);
+    expect(onReady.mock.calls[0]?.[0].rights.statement).toBe(PANEL_IMPORT_RIGHTS_STATEMENT);
+  });
+
   it("해상도 한도를 넘으면 실제 값과 한도를 알려 준다", async () => {
     const { container } = renderStep({
       loadSource: () => Promise.reject(new PanelSourceError("too-many-pixels", { megapixels: 16, pixels: 40_000_000 })),

@@ -129,6 +129,10 @@ describe("컷 가져오기 문구 — 모든 코드가 한글·영문으로 풀�
         const detail: Readonly<Record<string, number>> = code === "too-many-pixels" ? { megapixels: 16, pixels: 40_000_000 } : {};
         expectLanguage(sourceErrorText(new PanelSourceError(code, detail)), language);
       }
+      // 권리 확인 없이 다시 시도한 경우는 일반 오류가 아니라 무엇을 해야 하는지 알려 준다.
+      const notConfirmed = sourceErrorText(new PanelImportRightsError("not-confirmed", "x"));
+      expectLanguage(notConfirmed, language);
+      expect(notConfirmed).not.toBe(sourceErrorText(new Error("boom")));
     });
   });
 

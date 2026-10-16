@@ -11,6 +11,7 @@ import { cn } from "@/shared/lib/utils";
 import {
   PANEL_IMPORT_NOTE_MAX_LENGTH,
   PANEL_IMPORT_RIGHTS_STATEMENT_KO,
+  PanelImportRightsError,
   createPanelImportRights,
   type PanelImportRights,
 } from "../panel-import-rights";
@@ -55,6 +56,9 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
     lastFileRef.current = file;
     setPickedName(file.name);
     void job.run(async ({ signal }) => {
+      // 권리 확인을 가장 먼저 본다. 오류 화면에서 체크를 풀고 "같은 파일로 다시 시도"를 눌러도 파일을 디코딩·해시하지 않고,
+      // 일반 오류가 아니라 확인이 필요하다는 이유로 끝낸다.
+      if (!confirmed) throw new PanelImportRightsError("not-confirmed", "원고 권리 확인 없이는 파일을 읽을 수 없어요.");
       const source = await env.loadSource(file, signal);
       if (signal.aborted) {
         source.dispose();

@@ -45,7 +45,10 @@ const SOURCE_ERRORS: Readonly<Record<Exclude<PanelSourceErrorCode, "too-many-pix
   cancelled: ["이미지 읽기를 취소했어요.", "Reading the image was cancelled."],
 };
 
+const RIGHTS_NOT_CONFIRMED: Pair = ["위의 권리 확인에 체크한 뒤 ‘같은 파일로 다시 시도’를 눌러 주세요.", "Tick the rights confirmation above, then press “Retry this file”."];
+
 export function sourceErrorText(error: unknown): string {
+  if (error instanceof PanelImportRightsError && error.code === "not-confirmed") return pick(RIGHTS_NOT_CONFIRMED);
   if (!(error instanceof PanelSourceError)) return pick(GENERIC_ERROR);
   if (error.code === "too-many-pixels") {
     const limit = error.detail.megapixels ?? 0;
