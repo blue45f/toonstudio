@@ -62,6 +62,36 @@ describe("응답 합치기와 중복 제거", () => {
     expect(mergeReaderFeedback(merged.responses, [older, base])).toMatchObject({ added: 0, updated: 0, duplicates: 2 });
   });
 
+  it("id 가 같아도 대상·회차 묶음이 다르면 서로 다른 응답이다(옛 폼이 내보낸 파일의 회차 응답도 잃지 않는다)", () => {
+    const manual = (episode: number | null, title = "내 작품") => ({ kind: "manual", id: null, title, episode });
+    const ep1 = make({ id: "same", createdAt: at(10), target: manual(1), comment: "1화 의견입니다" });
+    const ep2 = make({ id: "same", createdAt: at(20), target: manual(2), comment: "2화 의견입니다" });
+    const none = make({ id: "same", createdAt: at(30), target: manual(null), comment: "회차 없는 의견입니다" });
+    // 합쳐서 가져와도, 따로 가져와도 두 회차가 모두 남는다.
+    expect(mergeReaderFeedback([], [ep1, ep2])).toMatchObject({ added: 2, updated: 0, duplicates: 0 });
+    const apart = mergeReaderFeedback(mergeReaderFeedback([], [ep1]).responses, [ep2]);
+    expect(apart).toMatchObject({ added: 1, updated: 0, duplicates: 0 });
+    expect(apart.responses.map((response) => response.target.episode)).toEqual([1, 2]);
+    expect(mergeReaderFeedback(apart.responses, [none])).toMatchObject({ added: 1, updated: 0, duplicates: 0 });
+    // 같은 묶음이면 여전히 같은 응답을 고친 것이다: 더 늦은 쪽이 이기고, 같거나 오래되면 중복이다.
+    const edited = make({ id: "same", createdAt: at(40), target: manual(2), comment: "고친 2화 의견입니다" });
+    const again = mergeReaderFeedback(apart.responses, [edited, ep2]);
+    expect(again).toMatchObject({ added: 0, updated: 1, duplicates: 1 });
+    expect(again.responses.map((response) => [response.target.episode, response.comment])).toEqual([[1, "1화 의견입니다"], [2, "고친 2화 의견입니다"]]);
+    // 대소문자·띄어쓰기만 다른 이름은 같은 묶음이다.
+    const sameGroup = make({ id: "same", createdAt: at(50), target: manual(1, "  내   작품 "), comment: "다시 쓴 1화 의견입니다" });
+    expect(mergeReaderFeedback(apart.responses, [sameGroup])).toMatchObject({ added: 0, updated: 1, duplicates: 0 });
+  });
+
+  it("묶음이 다른 같은 id 의 응답이 섞여 들어와도 결과 순서가 입력 순서에 좌우되지 않는다", () => {
+    const manual = (episode: number) => ({ kind: "manual", id: null, title: "내 작품", episode });
+    const a = make({ id: "same", createdAt: at(10), target: manual(1), comment: "1화 의견입니다" });
+    const b = make({ id: "same", createdAt: at(10), target: manual(2), comment: "2화 의견입니다" });
+    const forward = mergeReaderFeedback([], [a, b]).responses.map((response) => response.target.episode);
+    const backward = mergeReaderFeedback([], [b, a]).responses.map((response) => response.target.episode);
+    expect(forward).toEqual(backward);
+  });
+
   it("한 번에 들어온 같은 id 의 여러 버전은 하나만 남기고 나머지는 중복으로 센다", () => {
     const v1 = make({ id: "x", createdAt: at(1), comment: "v1" });
     const v2 = make({ id: "x", createdAt: at(2), comment: "v2" });

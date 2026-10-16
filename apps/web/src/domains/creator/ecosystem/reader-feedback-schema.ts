@@ -106,7 +106,10 @@ const emotionsSchema = z.array(z.enum(READER_EMOTION_IDS)).max(LIMITS.maxEmotion
   .refine((emotions) => new Set(emotions).size === emotions.length, { message: "감정 태그가 중복됩니다." });
 
 export const readerFeedbackResponseSchema = z.strictObject({
-  /** 응답 하나의 고유값. 같은 폼에서 다시 내보내면 같은 값이라 가져올 때 최신 것으로 바뀐다. */
+  /**
+   * 응답 하나의 고유값. 같은 폼에서 같은 작품·회차로 다시 내보내면 같은 값이라 가져올 때 최신 것으로 바뀐다.
+   * 작품 이름이나 회차가 바뀌면 새 값이다. 가져올 때도 id 와 묶음이 모두 같아야 같은 응답으로 본다.
+   */
   id: idSchema,
   createdAt: instantSchema,
   target: targetSchema,

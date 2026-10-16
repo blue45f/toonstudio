@@ -6,6 +6,7 @@ import { downloadEcosystemJson } from "./ecosystem-preview";
 import { ReaderFeedbackForm } from "./ReaderFeedbackForm";
 import type { KnownFeedbackTarget } from "./reader-feedback-draft";
 import { parseReaderFeedbackText } from "./reader-feedback-io";
+import { mergeReaderFeedback, summarizeReaderFeedback } from "./reader-feedback-summary";
 import { CONTACT_MASK } from "./reader-feedback-text";
 
 vi.mock("./ecosystem-preview", () => ({ downloadEcosystemJson: vi.fn() }));
@@ -116,6 +117,95 @@ describe("ReaderFeedbackForm", () => {
     save();
     await waitFor(() => expect(download).toHaveBeenCalledTimes(3));
     expect(lastExport().response.id).not.toBe(first.id);
+  });
+
+  it("작품 이름·회차를 바꿔 다시 저장하면 새 id 로 나가, 합쳐도 앞선 회차의 응답이 사라지지 않는다", async () => {
+    render(<ReaderFeedbackForm />);
+    const episode = screen.getByLabelText("회차 번호 (선택)");
+    const comment = screen.getByLabelText("자유 의견 (선택)");
+    fireEvent.change(screen.getByLabelText("작품 이름"), { target: { value: "내 작품" } });
+    fireEvent.change(episode, { target: { value: "1" } });
+    choose("재밌었어요");
+    fireEvent.change(comment, { target: { value: "1화는 도입이 좋았어요." } });
+    save();
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+    const first = lastExport().response;
+
+    fireEvent.change(episode, { target: { value: "2" } });
+    fireEvent.change(comment, { target: { value: "2화는 전개가 빨랐어요." } });
+    save();
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(2));
+    const second = lastExport().response;
+    expect(second.id).not.toBe(first.id);
+
+    // 작가 쪽에서 두 파일을 합치거나 따로 가져와도 1화 응답이 2화 응답에 덮이지 않는다.
+    const together = mergeReaderFeedback([], [first, second]);
+    expect(together).toMatchObject({ added: 2, updated: 0, duplicates: 0 });
+    const apart = mergeReaderFeedback(mergeReaderFeedback([], [first]).responses, [second]);
+    expect(apart).toMatchObject({ added: 1, updated: 0, duplicates: 0 });
+    expect(summarizeReaderFeedback(apart.responses).map((group) => [group.episode, group.count])).toEqual([[1, 1], [2, 1]]);
+  });
+
+  it("작품 이름을 바꿔도 새 id 로 나가고, 대소문자·띄어쓰기만 바꾼 이름은 같은 응답을 고친 것으로 본다", async () => {
+    render(<ReaderFeedbackForm />);
+    const title = screen.getByLabelText("작품 이름");
+    fireEvent.change(title, { target: { value: "My Story" } });
+    choose("괜찮았어요");
+    save();
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+    const first = lastExport().response;
+
+    fireEvent.change(title, { target: { value: "  my   STORY " } });
+    save();
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(2));
+    expect(lastExport().response.id).toBe(first.id);
+
+    fireEvent.change(title, { target: { value: "Another Story" } });
+    save();
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(3));
+    expect(lastExport().response.id).not.toBe(first.id);
+    expect(lastExport().response.target.title).toBe("Another Story");
+
+    // 이름을 바꿨다가 도로 돌려도, 마지막으로 내보낸 묶음과 같을 때만 id 를 잇는다.
+    const third = lastExport().response;
+    fireEvent.change(title, { target: { value: "Another Story" } });
+    save();
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(4));
+    expect(lastExport().response.id).toBe(third.id);
+  });
+
+  it("저장한 뒤 무엇을 고쳐도 '새 의견 쓰기'가 계속 보이고, 누르면 처음 입력으로 초점을 옮긴다", async () => {
+    render(<ReaderFeedbackForm />);
+    expect(screen.queryByRole("button", { name: "새 의견 쓰기" })).toBeNull();
+    fireEvent.change(screen.getByLabelText("작품 이름"), { target: { value: "내 작품" } });
+    choose("재밌었어요");
+    expect(screen.queryByRole("button", { name: "새 의견 쓰기" })).toBeNull();
+    save();
+    await waitFor(() => expect(screen.getByRole("button", { name: "새 의견 쓰기" })).toBeTruthy());
+
+    // 고치면 '저장했어요' 안내는 사라지지만(내용이 달라졌으므로) 새로 쓰는 길은 남는다.
+    fireEvent.change(screen.getByLabelText("회차 번호 (선택)"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("자유 의견 (선택)"), { target: { value: "2화 의견" } });
+    expect(screen.getByRole("status").textContent).toBe("");
+    const another = screen.getByRole("button", { name: "새 의견 쓰기" });
+
+    fireEvent.click(another);
+    expect(screen.queryByRole("button", { name: "새 의견 쓰기" })).toBeNull();
+    expect((screen.getByLabelText("작품 이름") as HTMLInputElement).value).toBe("");
+    expect(document.activeElement).toBe(screen.getByLabelText("작품 이름"));
+  });
+
+  it("공유·복사가 실패하거나 취소된 시도만 있으면 '새 의견 쓰기'를 보이지 않는다(쓴 내용을 지울 이유가 없다)", async () => {
+    const share = vi.fn(async (_data: ShareData) => { throw new DOMException("취소", "AbortError"); });
+    setNavigator("share", share);
+    setNavigator("canShare", () => true);
+    render(<ReaderFeedbackForm target={KNOWN} />);
+    choose("재밌었어요");
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("공유를 취소했어요"));
+    expect(screen.queryByRole("button", { name: "새 의견 쓰기" })).toBeNull();
+    save();
+    await waitFor(() => expect(screen.getByRole("button", { name: "새 의견 쓰기" })).toBeTruthy());
   });
 
   it("컷 번호가 전체 컷 수를 넘으면 필드 오류로 알리고 그 칸으로 초점을 옮긴다", () => {

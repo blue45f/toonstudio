@@ -1,8 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  buildResponseForExport,
   buildResponseFromDraft,
   createEmptyDraft,
+  exportedRefOf,
+  reusableResponseId,
   type KnownFeedbackTarget,
   type ReaderFeedbackDraft,
 } from "./reader-feedback-draft";
@@ -97,5 +100,60 @@ describe("독자 폼 초안 → 응답", () => {
 
   it("연락처만 적은 의견도 가려진 글이 남으므로 답한 것으로 본다", () => {
     expect(success(buildResponseFromDraft(draft({ comment: "a@b.co" }), KNOWN, META)).comment).toBe(CONTACT_MASK);
+  });
+});
+
+describe("다시 내보낼 때 응답 id 를 잇는 규칙", () => {
+  const NOW = "2026-10-16T03:00:00.000Z";
+  const ids = () => {
+    let count = 0;
+    const createId = vi.fn(() => `new-${(count += 1)}`);
+    return createId;
+  };
+  const manual = (overrides: Partial<ReaderFeedbackDraft> = {}) => draft({ title: "내 작품", episode: "1", fun: 2, ...overrides });
+
+  it("처음 내보낼 때는 새 id 를 한 번 만든다", () => {
+    const createId = ids();
+    const result = buildResponseForExport(manual(), null, null, NOW, createId);
+    expect(success(result).id).toBe("new-1");
+    expect(createId).toHaveBeenCalledTimes(1);
+  });
+
+  it("같은 작품·회차로 다시 내보내면 앞선 id 를 잇고 새 id 를 만들지 않는다", () => {
+    const createId = ids();
+    const first = success(buildResponseForExport(manual(), null, null, NOW, createId));
+    const again = success(buildResponseForExport(manual({ comment: "고친 의견" }), null, exportedRefOf(first), NOW, createId));
+    expect(again.id).toBe(first.id);
+    expect(createId).toHaveBeenCalledTimes(1);
+    // 대소문자·띄어쓰기만 다른 이름은 같은 묶음이다.
+    const respaced = success(buildResponseForExport(manual({ title: "  내   작품 " }), null, exportedRefOf(first), NOW, createId));
+    expect(respaced.id).toBe(first.id);
+  });
+
+  it("작품 이름이나 회차가 바뀌면 새 id 를 쓰고, 회차를 비우는 것도 다른 묶음이다", () => {
+    const createId = ids();
+    const first = success(buildResponseForExport(manual(), null, null, NOW, createId));
+    const previous = exportedRefOf(first);
+    expect(success(buildResponseForExport(manual({ episode: "2" }), null, previous, NOW, createId)).id).toBe("new-2");
+    expect(success(buildResponseForExport(manual({ episode: "" }), null, previous, NOW, createId)).id).toBe("new-3");
+    expect(success(buildResponseForExport(manual({ title: "다른 작품" }), null, previous, NOW, createId)).id).toBe("new-4");
+    expect(createId).toHaveBeenCalledTimes(4);
+  });
+
+  it("아는 대상은 묶음이 바뀔 수 없으므로 항상 앞선 id 를 잇는다", () => {
+    const createId = ids();
+    const first = success(buildResponseForExport(draft({ fun: 2 }), KNOWN, null, NOW, createId));
+    const again = success(buildResponseForExport(draft({ fun: 3, title: "무시되는 입력", episode: "9" }), KNOWN, exportedRefOf(first), NOW, createId));
+    expect(again.id).toBe(first.id);
+  });
+
+  it("만들지 못하는 초안은 오류만 돌려주고, 같은 묶음 여부는 스키마 정리 뒤의 대상으로 가른다", () => {
+    const createId = ids();
+    expect(failure(buildResponseForExport(draft({ title: "내 작품" }), null, null, NOW, createId))).toEqual([{ field: "empty", code: "nothing-answered" }]);
+    const first = success(buildResponseForExport(manual(), null, null, NOW, createId));
+    expect(reusableResponseId(exportedRefOf(first), first)).toBe(first.id);
+    expect(reusableResponseId(null, first)).toBeNull();
+    const other = success(buildResponseFromDraft(manual({ episode: "3" }), null, { id: "x", createdAt: NOW }));
+    expect(reusableResponseId(exportedRefOf(first), other)).toBeNull();
   });
 });

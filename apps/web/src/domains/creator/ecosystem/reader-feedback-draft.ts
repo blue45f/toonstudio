@@ -12,6 +12,7 @@ import {
   type ReaderEmotionId,
   type ReaderFeedbackResponse,
 } from "./reader-feedback-schema";
+import { groupKeyOf } from "./reader-feedback-summary";
 import { cleanFeedbackText } from "./reader-feedback-text";
 
 export type DraftReadingStatus = "unset" | "finished" | "left";
@@ -134,4 +135,36 @@ export function buildResponseFromDraft(
     spoiler: draft.spoiler,
   });
   return parsed.success ? { ok: true, response: parsed.data } : { ok: false, errors: [{ field: "schema", code: "invalid" }] };
+}
+
+/** 이 폼에서 앞서 내보낸 응답의 id 와 묶음(작품+회차) 키. 다시 내보낼 때 같은 응답으로 이어 갈지 정하는 데 쓴다. */
+export interface ExportedResponseRef {
+  readonly id: string;
+  readonly groupKey: string;
+}
+
+export function exportedRefOf(response: ReaderFeedbackResponse): ExportedResponseRef {
+  return { id: response.id, groupKey: groupKeyOf(response.target) };
+}
+
+/** 앞서 내보낸 응답과 같은 묶음이면 그 id, 아니면 null. (미리 보기에 이미 정해진 id 를 보일지 가릴 때도 쓴다.) */
+export function reusableResponseId(previous: ExportedResponseRef | null, response: ReaderFeedbackResponse): string | null {
+  return previous !== null && previous.groupKey === groupKeyOf(response.target) ? previous.id : null;
+}
+
+/**
+ * 내보낼 응답을 만든다. 앞서 내보낸 응답과 같은 묶음(작품+회차)이면 그 id 를 이어, 작가의 요약에서 최신 한 건으로 합쳐지게 한다.
+ * 작품 이름이나 회차가 바뀌었으면 새 id 를 쓴다 — 다른 회차의 응답이 같은 id 로 나가면 앞선 회차의 응답을 덮어써 버리기 때문이다.
+ * 묶음은 스키마 정리를 거친 뒤의 대상으로 가린다(대소문자·띄어쓰기만 다른 이름은 같은 묶음).
+ */
+export function buildResponseForExport(
+  draft: ReaderFeedbackDraft,
+  known: KnownFeedbackTarget | null,
+  previous: ExportedResponseRef | null,
+  createdAt: string,
+  createId: () => string,
+): DraftBuildResult {
+  const first = buildResponseFromDraft(draft, known, { id: previous?.id ?? createId(), createdAt });
+  if (!first.ok || previous === null || reusableResponseId(previous, first.response) !== null) return first;
+  return buildResponseFromDraft(draft, known, { id: createId(), createdAt });
 }

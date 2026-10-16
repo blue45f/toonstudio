@@ -1,15 +1,19 @@
 import { Copy, Download, RotateCcw, Share2 } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { downloadEcosystemJson } from "./ecosystem-preview";
 import { ChoiceChip, FieldError, ScaleField } from "./ReaderFeedbackFields";
 import {
+  buildResponseForExport,
   buildResponseFromDraft,
   createEmptyDraft,
+  exportedRefOf,
+  reusableResponseId,
   type DraftError,
   type DraftErrorField,
+  type ExportedResponseRef,
   type KnownFeedbackTarget,
   type ReaderFeedbackDraft,
 } from "./reader-feedback-draft";
@@ -60,8 +64,12 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
   const [draft, setDraft] = useState<ReaderFeedbackDraft>(() => createEmptyDraft());
   const [errors, setErrors] = useState<readonly DraftError[]>([]);
   const [status, setStatus] = useState<FormStatus | null>(null);
-  // 같은 폼에서 고쳐 다시 내보내면 같은 id 로 나가, 작가의 요약에서는 최신 한 건으로 합쳐진다.
-  const [responseId, setResponseId] = useState<string | null>(null);
+  // 같은 폼에서 같은 작품·회차로 고쳐 다시 내보내면 같은 id 로 나가, 작가의 요약에서는 최신 한 건으로 합쳐진다.
+  // 작품 이름이나 회차가 바뀌면 새 id 로 나간다(다른 회차의 응답을 덮어쓰지 않도록).
+  const [saved, setSaved] = useState<ExportedResponseRef | null>(null);
+  // 파일·공유·복사 중 하나라도 실제로 끝났는지. '새 의견 쓰기'를 보일지 정하며, 입력을 고쳐도 유지된다.
+  const [delivered, setDelivered] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const [canShare] = useState(() => canShareReaderFeedback(typeof navigator === "undefined" ? undefined : navigator, "reader-feedback.json"));
 
   const ids = {
@@ -91,23 +99,23 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
   };
 
   const preview = useMemo(() => {
-    const built = buildResponseFromDraft(draft, target, { id: responseId ?? PREVIEW_ID, createdAt: PREVIEW_INSTANT });
+    const built = buildResponseFromDraft(draft, target, { id: PREVIEW_ID, createdAt: PREVIEW_INSTANT });
     if (!built.ok) return null;
     // 저장할 때 정해지는 값(id·시각)만 안내 문구로 바꿔 보여 준다. 문자열 치환이 아니라 값 단위로 바꾼다.
+    // 앞서 내보낸 응답과 같은 묶음이면 그 id 를 이어 쓰므로 이미 정해진 값을 보인다.
     const pending = bt("(저장할 때 정해져요)", "(set when you save)");
+    const reusedId = reusableResponseId(saved, built.response);
     const file = createReaderFeedbackFile(built.response, PREVIEW_INSTANT);
     return JSON.stringify({
       ...file,
       exportedAt: pending,
-      responses: file.responses.map((response) => ({ ...response, id: responseId ?? pending, createdAt: pending })),
+      responses: file.responses.map((response) => ({ ...response, id: reusedId ?? pending, createdAt: pending })),
     }, null, 2);
-  }, [draft, target, responseId, bt]);
+  }, [draft, target, saved, bt]);
 
   const exportWith = async (method: "download" | "share" | "copy") => {
-    const id = responseId ?? newResponseId();
-    if (responseId === null) setResponseId(id);
     const now = new Date().toISOString();
-    const built = buildResponseFromDraft(draft, target, { id, createdAt: now });
+    const built = buildResponseForExport(draft, target, saved, now, newResponseId);
     if (!built.ok) {
       setErrors(built.errors);
       setStatus(null);
@@ -117,28 +125,35 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
       return;
     }
     setErrors([]);
+    setSaved(exportedRefOf(built.response));
     const file = createReaderFeedbackFile(built.response, now);
     const filename = readerFeedbackFilename(built.response);
     if (method === "download") {
       downloadEcosystemJson(filename, file);
       setStatus({ kind: "saved", filename });
+      setDelivered(true);
       return;
     }
     const json = serializeReaderFeedbackFile(file);
     if (method === "share") {
       const outcome = await shareReaderFeedback(navigator, json, filename, built.response.target.title);
       setStatus(outcome === "shared" ? { kind: "shared", filename } : outcome === "cancelled" ? { kind: "share-cancelled" } : { kind: "share-failed" });
+      if (outcome === "shared") setDelivered(true);
       return;
     }
     const outcome = await copyReaderFeedback(navigator.clipboard, json);
     setStatus(outcome === "copied" ? { kind: "copied" } : { kind: "copy-failed" });
+    if (outcome === "copied") setDelivered(true);
   };
 
   const startOver = () => {
-    setResponseId(null);
+    setSaved(null);
+    setDelivered(false);
     setDraft(createEmptyDraft());
     setErrors([]);
     setStatus(null);
+    // 누른 버튼은 사라지므로, 새로 쓰기 시작할 첫 입력으로 초점을 옮긴다(첫 입력은 사라지지 않아 바로 옮겨도 된다).
+    formRef.current?.querySelector<HTMLElement>("input:not([disabled]), textarea:not([disabled])")?.focus();
   };
 
   const statusText = (() => {
@@ -153,7 +168,6 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
     }
   })();
   const statusIsError = status?.kind === "share-failed" || status?.kind === "copy-failed";
-  const finished = status?.kind === "saved" || status?.kind === "shared" || status?.kind === "copied";
 
   const toggleEmotion = (id: ReaderEmotionId) => patch({
     emotions: draft.emotions.includes(id) ? draft.emotions.filter((item) => item !== id) : [...draft.emotions, id],
@@ -174,6 +188,7 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
         )}
       </p>
       <form
+        ref={formRef}
         noValidate
         className="mt-5 space-y-6"
         onSubmit={(event) => { event.preventDefault(); void exportWith("download"); }}
@@ -335,7 +350,7 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
           <button type="submit" className={RF_PRIMARY}><Download size={16} aria-hidden /> {bt("파일로 저장", "Save as file")}</button>
           {canShare ? <button type="button" className={RF_BUTTON} onClick={() => void exportWith("share")}><Share2 size={16} aria-hidden /> {bt("공유하기", "Share")}</button> : null}
           <button type="button" className={RF_BUTTON} onClick={() => void exportWith("copy")}><Copy size={16} aria-hidden /> {bt("내용 복사", "Copy text")}</button>
-          {finished ? <button type="button" className={RF_BUTTON} onClick={startOver}><RotateCcw size={16} aria-hidden /> {bt("새 의견 쓰기", "Write another")}</button> : null}
+          {delivered ? <button type="button" className={RF_BUTTON} onClick={startOver}><RotateCcw size={16} aria-hidden /> {bt("새 의견 쓰기", "Write another")}</button> : null}
         </div>
 
         <p role={statusIsError ? "alert" : "status"} className={statusIsError ? "text-sm font-bold text-bad" : "text-sm text-fg-2"}>{statusText}</p>

@@ -19,13 +19,13 @@ import { normalizeTitleKey } from "./reader-feedback-text";
 // ───────────────────────── 합치기·중복 제거 ─────────────────────────
 
 export interface ReaderFeedbackMergeResult {
-  /** 합친 결과. 만든 시각 순(같으면 id 순)으로 정렬된다. */
+  /** 합친 결과. 만든 시각 순(같으면 id 순, 그것도 같으면 묶음 순)으로 정렬된다. */
   readonly responses: readonly ReaderFeedbackResponse[];
   /** 새로 들어온 응답 수. */
   readonly added: number;
-  /** 같은 id 의 더 새 응답으로 바뀐 수. */
+  /** 같은 응답(id 와 묶음이 모두 같음)의 더 새 버전으로 바뀐 수. */
   readonly updated: number;
-  /** 제외한 중복 수: 같은 id 의 같거나 더 오래된 응답, 내용이 완전히 같은 응답, 같은 묶음 안에서 덮어써진 응답. */
+  /** 제외한 중복 수: 같은 응답의 같거나 더 오래된 버전, 내용이 완전히 같은 응답, 같은 묶음 안에서 덮어써진 응답. */
   readonly duplicates: number;
   /** 총수 상한 때문에 받지 못한 수. */
   readonly overflow: number;
@@ -35,14 +35,29 @@ function timeOf(response: ReaderFeedbackResponse): number {
   return Date.parse(response.createdAt);
 }
 
+function compareText(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function compareResponses(left: ReaderFeedbackResponse, right: ReaderFeedbackResponse): number {
-  return timeOf(left) - timeOf(right) || (left.id < right.id ? -1 : left.id > right.id ? 1 : 0);
+  return timeOf(left) - timeOf(right)
+    || compareText(left.id, right.id)
+    || compareText(groupKeyOf(left.target), groupKeyOf(right.target));
 }
 
 /** 묶음(회차) 키. 대상 id 가 있으면 id 로, 직접 적은 이름이면 정규화한 제목으로 묶는다. */
 export function groupKeyOf(target: ReaderFeedbackTarget): string {
   const base = target.id === null ? `manual:${normalizeTitleKey(target.title)}` : `${target.kind}:${target.id}`;
   return `${base}#${target.episode ?? 0}`;
+}
+
+/**
+ * 합치기에서 "같은 응답"을 가르는 키: 응답 id 와 묶음 키의 쌍.
+ * id 만으로 가르면, 같은 폼에서 작품 이름·회차만 바꿔 내보낸 파일(옛 폼은 id 를 그대로 이었다)이 서로를 덮어써 앞선 회차의 응답이 조용히 사라진다.
+ * id 는 파일의 모양(`[A-Za-z0-9._:-]`)과 달리 묶음 키에는 아무 글자나 들어가므로 JSON 배열로 묶어 모호함을 없앤다.
+ */
+function mergeKeyOf(response: ReaderFeedbackResponse): string {
+  return JSON.stringify([response.id, groupKeyOf(response.target)]);
 }
 
 /**
@@ -66,56 +81,59 @@ function contentFingerprint(response: ReaderFeedbackResponse): string | null {
 
 /**
  * 기존 응답에 새로 가져온 응답을 합친다.
- * - 같은 id: 더 늦게 만든 쪽이 이긴다(같은 폼에서 고쳐 다시 내보낸 경우). 같거나 오래되면 중복.
- * - 다른 id 라도 충분히 긴 의견까지 완전히 같으면 중복(`CONTENT_DEDUPE_MIN_COMMENT` 참고). 의견이 없거나 짧으면 id 로만 판단한다.
+ * - 같은 응답(같은 id, 같은 묶음): 더 늦게 만든 쪽이 이긴다(같은 폼에서 고쳐 다시 내보낸 경우). 같거나 오래되면 중복.
+ *   id 가 같아도 묶음(대상+회차)이 다르면 서로 다른 응답이다.
+ * - 다른 응답이라도 충분히 긴 의견까지 완전히 같으면 중복(`CONTENT_DEDUPE_MIN_COMMENT` 참고). 의견이 없거나 짧으면 id 로만 판단한다.
  * - 총수 상한을 넘으면 기존 응답을 지키고 새 응답을 받지 않는다.
  */
 export function mergeReaderFeedback(
   existing: readonly ReaderFeedbackResponse[],
   incoming: readonly ReaderFeedbackResponse[],
 ): ReaderFeedbackMergeResult {
-  const byId = new Map<string, ReaderFeedbackResponse>();
+  const byKey = new Map<string, ReaderFeedbackResponse>();
   const owners = new Map<string, string>();
   for (const response of existing) {
-    byId.set(response.id, response);
+    const key = mergeKeyOf(response);
+    byKey.set(key, response);
     const print = contentFingerprint(response);
-    if (print !== null) owners.set(print, response.id);
+    if (print !== null) owners.set(print, key);
   }
-  const addedIds = new Set<string>();
-  const updatedIds = new Set<string>();
+  const addedKeys = new Set<string>();
+  const updatedKeys = new Set<string>();
   let duplicates = 0;
   let overflow = 0;
   for (const response of incoming) {
-    const current = byId.get(response.id);
+    const key = mergeKeyOf(response);
+    const current = byKey.get(key);
     if (current) {
       if (timeOf(response) <= timeOf(current)) {
         duplicates += 1;
         continue;
       }
       const oldPrint = contentFingerprint(current);
-      if (oldPrint !== null && owners.get(oldPrint) === response.id) owners.delete(oldPrint);
-      byId.set(response.id, response);
+      if (oldPrint !== null && owners.get(oldPrint) === key) owners.delete(oldPrint);
+      byKey.set(key, response);
       const newPrint = contentFingerprint(response);
-      if (newPrint !== null && !owners.has(newPrint)) owners.set(newPrint, response.id);
-      if (addedIds.has(response.id) || updatedIds.has(response.id)) duplicates += 1;
-      else updatedIds.add(response.id);
+      if (newPrint !== null && !owners.has(newPrint)) owners.set(newPrint, key);
+      if (addedKeys.has(key) || updatedKeys.has(key)) duplicates += 1;
+      else updatedKeys.add(key);
       continue;
     }
     const print = contentFingerprint(response);
     if (print !== null && owners.has(print)) {
       duplicates += 1;
-    } else if (byId.size >= READER_FEEDBACK_LIMITS.maxTotalResponses) {
+    } else if (byKey.size >= READER_FEEDBACK_LIMITS.maxTotalResponses) {
       overflow += 1;
     } else {
-      byId.set(response.id, response);
-      if (print !== null) owners.set(print, response.id);
-      addedIds.add(response.id);
+      byKey.set(key, response);
+      if (print !== null) owners.set(print, key);
+      addedKeys.add(key);
     }
   }
   return {
-    responses: [...byId.values()].sort(compareResponses),
-    added: addedIds.size,
-    updated: updatedIds.size,
+    responses: [...byKey.values()].sort(compareResponses),
+    added: addedKeys.size,
+    updated: updatedKeys.size,
     duplicates,
     overflow,
   };
