@@ -20,6 +20,8 @@
  * 수용 영역: 입력 픽셀 하나가 결과에 미치는 거리는 Sobel 1 + 비최대 억제 1 = 2픽셀(가려진 선 제거 +1)이다.
  */
 
+import { clamp01 } from "./studio-bg3d-lt-raster-math";
+
 export interface StudioBg3dLtRidgeFieldInput {
   readonly width: number;
   readonly height: number;
@@ -51,10 +53,6 @@ const NEIGHBOR_PRIORITY: readonly (readonly [number, number])[] = [
   [-1, 1],
   [1, 1],
 ];
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
 
 export function extractStudioBg3dLtRidgeField(input: StudioBg3dLtRidgeFieldInput): StudioBg3dLtRidgeField {
   const { width, height, field, rgba, floor } = input;

@@ -24,7 +24,10 @@ import {
   relocateStudioBg3dLtOccludedRidges,
 } from "./studio-bg3d-lt-line-ridge";
 import { strokeStudioBg3dLtResponse, studioBg3dLtStrokeReach } from "./studio-bg3d-lt-line-stroke";
-import { buildStudioBg3dLtOutlineProximity } from "./studio-bg3d-lt-line-suppression";
+import {
+  buildStudioBg3dLtOutlineProximity,
+  studioBg3dLtInteriorLineFactor,
+} from "./studio-bg3d-lt-line-suppression";
 import {
   boxBlur,
   byteAt,
@@ -72,6 +75,9 @@ const EXTERIOR_PX = 1 + studioBg3dLtStrokeReach(15);
 const TEXTURE_PX =
   Math.max(MAIN_PX, BLUR_RADIUS_MAX + 1) + studioBg3dLtStrokeReach(6);
 export const STUDIO_BG3D_LT_LINE_RECEPTIVE_FIELD_PX = Math.max(MAIN_PX, EXTERIOR_PX, TEXTURE_PX);
+
+/** 이 값 이하의 알파 경사(양자화 잡음 수준)는 윤곽으로 보지 않는다. */
+const ALPHA_EDGE_FLOOR = 0.01;
 
 /** 알파 Sobel 크기(0..1). 가장자리는 가장 가까운 픽셀로 채운다. */
 function alphaGradient(input: StudioBg3dLtLineInput, x: number, y: number): number {
@@ -194,7 +200,10 @@ function renderMainLine(
       const luminanceEdge = ridgeField.ridge[index]
         ? smoothResponse(ridgeField.magnitude[index]!, threshold, softness)
         : 0;
-      const exteriorEvidence = smoothResponse(alphaGradient(input, x, y), 0.01, 0.2);
+      // 알파 경사는 선형으로 쓴다. 안티앨리어싱된 가장자리(경사가 1~2픽셀)에서 가장자리 픽셀들의 (반응 × 불투명도) 합이
+      // 경계 하나의 두께(1px)와 같아지는 것은 반응이 경사에 비례할 때뿐이다. 포화시키면 경사가 넓을수록 선이 굵어진다.
+      const alphaEdge = alphaGradient(input, x, y);
+      const exteriorEvidence = alphaEdge > ALPHA_EDGE_FLOOR ? alphaEdge : 0;
       const exteriorEdge = exteriorEvidence * line.exteriorOutlineStrength;
       let depthContourEvidence = 0;
       let depthContourEdge = 0;
@@ -233,8 +242,7 @@ function renderMainLine(
       const value = interior[index]!;
       unsuppressed[index] = Math.max(response[index]!, value);
       if (value === 0) continue;
-      const factor = 1 - suppression.strength * (1 - proximity[index]! / 255);
-      const kept = Math.round(value * factor);
+      const kept = Math.round(value * studioBg3dLtInteriorLineFactor(proximity[index]!, suppression.strength));
       if (kept > response[index]!) response[index] = kept;
     }
   }
@@ -252,7 +260,7 @@ function renderMainLine(
  * 알파 윤곽을 물체 안쪽으로만 칠할 때의 칠하기 폭. 중심선이 물체 가장자리 픽셀에 있고 바깥쪽 절반은 투명이라
  * 잘리므로, 폭 `2w - 1` 로 칠하면 안쪽에 정확히 `w` 픽셀이 남는다(`(2w - 1 + 1) / 2 = w`).
  */
-export function inwardOutlineWidthPx(widthPx: number): number {
+function inwardOutlineWidthPx(widthPx: number): number {
   return Math.max(widthPx, 2 * widthPx - 1);
 }
 
@@ -275,8 +283,8 @@ function renderTextureLine(
   const { width, height, pixelCount } = input;
   const localAverage = boxBlur(luminance, width, height, line.smoothing > 0.66 ? 2 : 1);
   const suppression = resolveStudioBg3dInteriorSuppression(line);
-  // 재질선은 정의상 물체 안쪽 선이다. 윤곽 근접도 예외 없이 억제 강도만큼 줄인다.
-  const interiorFactor = suppression.active ? 1 - suppression.strength : 1;
+  // 재질선은 정의상 물체 안쪽 선이다. 윤곽 근접도 예외 없이(근접도 0) 억제 강도만큼 줄인다.
+  const interiorFactor = suppression.active ? studioBg3dLtInteriorLineFactor(0, suppression.strength) : 1;
   // 주선 근처를 비우는 구역. 주선은 한 픽셀 중심선을 칠한 것이라 그대로 쓰면 바로 옆에 재질선이 다시 붙는다.
   const separation = strokeStudioBg3dLtResponse(
     main.thin,

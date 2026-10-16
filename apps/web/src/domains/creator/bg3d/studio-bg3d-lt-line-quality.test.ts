@@ -19,11 +19,15 @@ import {
 } from "./studio-bg3d-scene-document";
 import { STUDIO_BG3D_TILE_HALO } from "./studio-bg3d-tile-plan";
 
-/** 선만 보이도록 베이스를 끄고, 응답이 포화하도록 강도·정밀도를 최대로 둔 기본 설정. */
+/**
+ * 선만 보이도록 베이스를 끄고, 응답이 포화하도록 강도·정밀도를 최대로 둔 기본 설정. 폭은 문서 기본값이 바뀌어도 이 시험의
+ * 고정 픽셀 수치가 흔들리지 않도록 1px 로 못 박는다(폭을 시험하는 곳은 `widthPx` 를 직접 준다).
+ */
 function settings(line: Partial<StudioBg3dLineOutputSettings> = {}): StudioBg3dLtRenderSettings {
   return {
     line: {
       ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output.line,
+      widthPx: 1,
       strength: 1,
       accuracy: 1,
       smoothing: 0,
@@ -188,6 +192,70 @@ describe("선 폭: 슬라이더 값이 곧 픽셀 두께다", () => {
     }
   });
 
+  describe("안티앨리어싱된 알파 윤곽: 실제 캡처의 가장자리는 1~2픽셀 경사다", () => {
+    /** 20 열부터 `ramp` 의 알파(0..1)가 이어지고 그 뒤는 불투명이다. 왼쪽은 투명. */
+    function rampSilhouette(ramp: readonly number[]): StudioBg3dLtRasterInput {
+      return {
+        width: WIDE,
+        height: TALL,
+        rgba: pixels(WIDE, TALL, (x) => {
+          const offset = x - 20;
+          const alpha = offset < 0 ? 0 : offset < ramp.length ? ramp[offset]! : 1;
+          return [128, 128, 128, Math.round(alpha * 255)];
+        }),
+      };
+    }
+
+    function ink(ramp: readonly number[], widthPx: number): number {
+      const main = layer(renderStudioBg3dLtLayers(rampSilhouette(ramp), settings({ widthPx })), "main-line");
+      return main ? thickness(main.data, WIDE, 10) : 0;
+    }
+
+    // 변경 전 알고리즘은 경사 반응을 포화시켜 경사가 넓을수록 선이 굵어졌다: 폭 1 에서 경계 알파 0.5 이면 1.50px,
+    // 2픽셀 경사면 2.00px, 3픽셀 경사면 2.50px. 반응을 경사에 비례하게 쓰면 (반응 × 불투명도)의 합이 경사 모양과
+    // 무관하게 정확히 폭이 된다.
+    it.each([0.2, 0.5, 0.8])("경사 1px(경계 알파 %s)에서 폭 0.5/1/2/3/5 의 두께가 설정과 같다", (edgeAlpha) => {
+      for (const widthPx of [0.5, 1, 2, 3, 5]) {
+        expect(ink([edgeAlpha], widthPx), `a=${edgeAlpha} w=${widthPx}`).toBeCloseTo(widthPx, 1);
+      }
+    });
+
+    it("keeps fractional widths within a quarter pixel below the setting on a one pixel ramp", () => {
+      for (const edgeAlpha of [0.2, 0.5, 0.8]) {
+        for (const widthPx of [1.5, 2.5]) {
+          const measured = ink([edgeAlpha], widthPx);
+          expect(measured, `a=${edgeAlpha} w=${widthPx}`).toBeLessThanOrEqual(widthPx + 0.02);
+          expect(measured, `a=${edgeAlpha} w=${widthPx}`).toBeGreaterThanOrEqual(widthPx - 0.25);
+        }
+      }
+    });
+
+    it("is exact at width 1 for ramps of any shape and never exceeds the setting on wider ones", () => {
+      const ramps = [[0.3, 0.7], [0.5, 0.9], [0.25, 0.5, 0.75]] as const;
+      for (const ramp of ramps) {
+        expect(ink(ramp, 1), `ramp=${ramp.join("/")}`).toBeCloseTo(1, 1);
+        for (const widthPx of [2, 3]) {
+          const measured = ink(ramp, widthPx);
+          expect(measured, `ramp=${ramp.join("/")} w=${widthPx}`).toBeLessThanOrEqual(widthPx + 0.02);
+        }
+      }
+      // 한계: 경사가 2픽셀이면 설정의 75% 이상, 3픽셀이면 폭이 커질수록 더 얇아진다(폭 3 에서 2.00px).
+      expect(ink([0.3, 0.7], 3)).toBeGreaterThanOrEqual(0.75 * 3);
+      expect(ink([0.3, 0.7], 2)).toBeGreaterThanOrEqual(0.75 * 2);
+      expect(ink([0.25, 0.5, 0.75], 3)).toBeCloseTo(2, 1);
+    });
+
+    it("grows with the width on every ramp (continuous and monotonic)", () => {
+      for (const ramp of [[0.5], [0.3, 0.7], [0.25, 0.5, 0.75]] as const) {
+        const grid = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5];
+        const measured = grid.map((widthPx) => ink(ramp, widthPx));
+        for (let index = 1; index < measured.length; index += 1) {
+          expect(measured[index]!, `ramp=${ramp.join("/")}`).toBeGreaterThan(measured[index - 1]!);
+        }
+      }
+    });
+  });
+
   describe("비스듬한 경계(축 정렬이 아닌 선): 두께가 설정보다 얼마나 더 나오는가", () => {
     const SIZE = 160;
     const MARGIN = 30;
@@ -207,10 +275,41 @@ describe("선 폭: 슬라이더 값이 곧 픽셀 두께다", () => {
       };
     }
 
-    /** 가장자리 영향을 피해 중앙 창 안의 잉크 합을 그 창을 지나는 경계선 길이로 나눈 평균 두께. */
-    function meanThickness(degrees: number, widthPx: number): number {
+    /**
+     * 이미지 중앙을 지나는 반평면 알파 실루엣(4x4 슈퍼샘플로 안티앨리어싱, 색은 단색이라 휘도 경계는 없다). 실제 캡처의
+     * 가장자리처럼 알파가 1~2픽셀 경사다.
+     */
+    function obliqueAlphaSilhouette(degrees: number): StudioBg3dLtRasterInput {
       const radians = (degrees * Math.PI) / 180;
-      const data = layer(renderStudioBg3dLtLayers(obliqueStep(degrees), settings({ widthPx })), "main-line")!.data;
+      const normalX = Math.sin(radians);
+      const normalY = -Math.cos(radians);
+      const center = SIZE / 2;
+      const samples = 4;
+      return {
+        width: SIZE,
+        height: SIZE,
+        rgba: pixels(SIZE, SIZE, (x, y) => {
+          let covered = 0;
+          for (let sy = 0; sy < samples; sy += 1) {
+            for (let sx = 0; sx < samples; sx += 1) {
+              const px = x + (sx + 0.5) / samples - 0.5;
+              const py = y + (sy + 0.5) / samples - 0.5;
+              if ((px - center) * normalX + (py - center) * normalY > 0) covered += 1;
+            }
+          }
+          return [128, 128, 128, Math.round((255 * covered) / (samples * samples))];
+        }),
+      };
+    }
+
+    /** 가장자리 영향을 피해 중앙 창 안의 잉크 합을 그 창을 지나는 경계선 길이로 나눈 평균 두께. */
+    function meanThickness(
+      degrees: number,
+      widthPx: number,
+      source: (degrees: number) => StudioBg3dLtRasterInput = obliqueStep
+    ): number {
+      const radians = (degrees * Math.PI) / 180;
+      const data = layer(renderStudioBg3dLtLayers(source(degrees), settings({ widthPx })), "main-line")!.data;
       let ink = 0;
       for (let y = MARGIN; y < SIZE - MARGIN; y += 1) {
         for (let x = MARGIN; x < SIZE - MARGIN; x += 1) ink += data[(y * SIZE + x) * 4 + 3]! / 255;
@@ -237,6 +336,19 @@ describe("선 폭: 슬라이더 값이 곧 픽셀 두께다", () => {
         const measured = meanThickness(degrees, widthPx);
         expect(measured, `${degrees}° w=${widthPx}`).toBeGreaterThanOrEqual(widthPx - 0.02);
         expect(measured, `${degrees}° w=${widthPx}`).toBeLessThanOrEqual(widthPx + maxExcess);
+      }
+    });
+
+    // 안티앨리어싱된 알파 실루엣은 사선에서도 부풀지 않는다: 알파 경사에 비례하는 반응의 (반응 × 불투명도) 합이 경사 모양과
+    // 무관하게 폭이기 때문이다. 측정값(2026-10-16): 폭 1 → 1.00~1.05, 폭 2 → 1.90~2.00, 폭 3 → 2.90~3.03.
+    // 변경 전 렌더러는 같은 입력에서 폭 1 → 1.41~1.64, 폭 2·3 → 2.50~3.01 이었다.
+    it("keeps the thickness within a tenth of a pixel on slanted anti-aliased alpha silhouettes", () => {
+      for (const degrees of [0, 10, 22.5, 30, 45, 60, 67.5, 90]) {
+        for (const widthPx of [1, 2, 3]) {
+          const measured = meanThickness(degrees, widthPx, obliqueAlphaSilhouette);
+          expect(measured, `${degrees}° w=${widthPx}`).toBeGreaterThanOrEqual(widthPx - 0.15);
+          expect(measured, `${degrees}° w=${widthPx}`).toBeLessThanOrEqual(widthPx + 0.1);
+        }
       }
     });
 
