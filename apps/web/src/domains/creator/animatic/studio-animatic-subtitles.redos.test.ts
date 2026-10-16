@@ -65,10 +65,10 @@ describe("WebVTT 큐 태그 제거의 판정 보존", () => {
       const count = 1 + Math.floor(next() * 9);
       let cue = "";
       for (let index = 0; index < count; index += 1) cue += pieces[Math.floor(next() * pieces.length)] ?? "";
-      // 수정 전 구현과 같은 순서(태그 제거 → 엔티티 해독)다. 해독은 split/join 으로 쓴다: 의미는 `replace(/&lt;/gu, "<")` 와
-      // 같지만, 이 시험은 비교용 사본일 뿐 HTML 로 쓰이지 않는데 정규식 치환 사슬이 CodeQL 의
+      // 수정 전 구현과 같은 순서(태그 제거 → 엔티티 해독)다. 둘 다 정규식 치환(`replace`) 대신 split/join 으로 쓴다:
+      // 결과는 같지만, 이 시험은 비교용 사본일 뿐 HTML 로 쓰이지 않는데 정규식 치환 사슬이 CodeQL 의
       // "불완전한 다중 문자 살균" 규칙(js/incomplete-multi-character-sanitization)에 높음으로 걸려 PR 을 막는다.
-      const legacy = unescapeLegacyEntities(cue.trim().replace(/<[^>]+>/gu, ""));
+      const legacy = unescapeLegacyEntities(stripLegacyTags(cue.trim()));
       expect(firstCueText(vtt(cue)), `입력 ${JSON.stringify(cue)}`).toBe(legacy || undefined);
     }
   });
@@ -139,8 +139,16 @@ function legacyVttCue(cue: string): { readonly voice: boolean; readonly speaker?
   const voice = /^<v\s+([^>]+)>([\s\S]*?)<\/v>$/u.exec(joined);
   const parsed = voice
     ? { voice: true, speaker: (voice[1] ?? "").replace(/&amp;/gu, "&").trim() || undefined, text: unescapeText(voice[2] ?? "") }
-    : { voice: false, speaker: undefined, text: unescapeText(joined.replace(/<[^>]+>/gu, "")) };
+    : { voice: false, speaker: undefined, text: unescapeText(stripLegacyTags(joined)) };
   return parsed.text ? parsed : undefined;
+}
+
+/**
+ * 수정 전 구현의 태그 제거 `value.replace(/<[^>]+>/gu, "")` 와 같은 결과를 내는 비교용 함수.
+ * 캡처 그룹이 없고 빈 문자열과 맞지 않는 정규식이라 `split` 한 조각을 이어 붙이면 `replace(…, "")` 와 정확히 같다.
+ */
+function stripLegacyTags(value: string): string {
+  return value.split(/<[^>]+>/gu).join("");
 }
 
 /** 수정 전 구현의 엔티티 해독(`&lt;`→`<`, `&gt;`→`>`, `&amp;`→`&`, 순서 그대로)과 끝 공백 제거. */
