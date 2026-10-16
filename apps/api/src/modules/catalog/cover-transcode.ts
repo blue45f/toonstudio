@@ -30,6 +30,59 @@ export interface CoverTranscodeResult {
 const COVER_JPEG_QUALITY = 82;
 
 /**
+ * 디코드를 허용하는 최대 화소 수(선언 크기 기준). 압축된 바이트는 작아도 PNG·JPEG 헤더가 수만 x 수만
+ * 화소를 선언할 수 있고, image-js 의 decode 는 그 크기만큼 메모리를 할당한다(이미지 폭탄, CWE-409).
+ * 실제 표지는 많아야 수백만 화소라 1600만 화소(4000x4000)면 정상 이미지를 막지 않는다.
+ * 상한을 넘거나 선언 크기를 읽지 못하면 변환하지 않고 호출부가 원본을 그대로 중계한다.
+ */
+export const COVER_MAX_DECODE_PIXELS = 16_000_000;
+
+interface DeclaredDimensions {
+  readonly width: number;
+  readonly height: number;
+}
+
+/** 디코드하지 않고 PNG IHDR / JPEG SOF 헤더에서 선언된 크기만 읽는다. 읽을 수 없으면 null. */
+function readDeclaredDimensions(body: Buffer, type: string): DeclaredDimensions | null {
+  if (type === "image/png") {
+    if (body.length < 24 || body.toString("ascii", 12, 16) !== "IHDR") return null;
+    return { width: body.readUInt32BE(16), height: body.readUInt32BE(20) };
+  }
+  if (body.length < 4 || body[0] !== 0xff || body[1] !== 0xd8) return null;
+  let offset = 2;
+  while (offset + 4 <= body.length) {
+    if (body[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+    const marker = body[offset + 1];
+    if (marker === undefined) return null;
+    if (marker === 0xff) {
+      // 마커 앞의 채움 바이트다.
+      offset += 1;
+      continue;
+    }
+    // 길이 필드가 없는 마커(TEM, RSTn, SOI)는 두 바이트만 건너뛴다.
+    if (marker === 0x01 || marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7)) {
+      offset += 2;
+      continue;
+    }
+    // 프레임 헤더(SOF)보다 먼저 스캔(SOS)이나 끝(EOI)이 나오면 크기를 알 수 없다.
+    if (marker === 0xd9 || marker === 0xda) return null;
+    const segmentLength = body.readUInt16BE(offset + 2);
+    if (segmentLength < 2) return null;
+    const isFrameHeader =
+      marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+    if (isFrameHeader) {
+      if (offset + 9 > body.length) return null;
+      return { height: body.readUInt16BE(offset + 5), width: body.readUInt16BE(offset + 7) };
+    }
+    offset += 2 + segmentLength;
+  }
+  return null;
+}
+
+/**
  * 폭 지정 표지를 목표 폭으로 줄인다. 변환이 불필요하거나(원본이 이미 목표
  * 이하) 불가능하면(미지원 포맷·디코드 실패) null.
  */
@@ -41,6 +94,10 @@ export function transcodeCoverToWidth(
   const type = contentType.split(";")[0]?.trim().toLowerCase() ?? "";
   if (type !== "image/jpeg" && type !== "image/jpg" && type !== "image/png") return null;
   if (!Number.isInteger(targetWidth) || targetWidth < 1) return null;
+
+  // 디코드는 선언된 크기만큼 메모리를 할당하므로, 헤더로 크기를 먼저 확인한다.
+  const declared = readDeclaredDimensions(body, type === "image/png" ? "image/png" : "image/jpeg");
+  if (declared === null || declared.width * declared.height > COVER_MAX_DECODE_PIXELS) return null;
 
   let image: ReturnType<typeof decode>;
   try {
