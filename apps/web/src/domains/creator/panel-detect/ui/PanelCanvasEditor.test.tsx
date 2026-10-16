@@ -125,6 +125,25 @@ describe("컷 편집 캔버스 — 표시와 접근성", () => {
     expect(elementOf(buttons, 0).querySelectorAll("[data-edge]")).toHaveLength(0);
   });
 
+  it("가장자리 손잡이는 보이는 선을 가늘게 두고, 터치(거친 포인터)에서는 44px 이상으로 잡히게 넓힌다", () => {
+    renderEditor({ selectedId: panelOf(1).id });
+    const handles = [...document.querySelectorAll<HTMLElement>("[data-edge]")];
+    expect(handles.map((handle) => handle.getAttribute("data-edge")).sort()).toEqual(["bottom", "left", "right", "top"]);
+    for (const handle of handles) {
+      const edge = handle.getAttribute("data-edge");
+      const vertical = edge === "left" || edge === "right";
+      const tokens = new Set(handle.className.split(/\s+/u));
+      // 마우스: 변 둘레 20px(w-5·h-5). 터치: 11 × 0.25rem = 44px, 변이 가운데 오도록 반대쪽 오프셋도 같이 넓힌다.
+      expect(tokens.has(vertical ? "w-5" : "h-5"), `${edge} 마우스 폭`).toBe(true);
+      expect(tokens.has(vertical ? "pointer-coarse:w-11" : "pointer-coarse:h-11"), `${edge} 터치 폭`).toBe(true);
+      expect(tokens.has(`pointer-coarse:-${edge}-5.5`), `${edge} 터치 오프셋`).toBe(true);
+      // 보이는 선은 터치에서도 가늘다(손잡이의 클래스가 아니라 안쪽 선의 클래스).
+      const line = handle.querySelector("span");
+      expect(line?.className.split(/\s+/u)).toContain(vertical ? "w-1" : "h-1");
+      expect(line?.className ?? "").not.toContain("pointer-coarse");
+    }
+  });
+
   it("직접 만든 컷은 이름에서 구분된다", () => {
     const withUser = addPanel(DETECTED, { x: 20, y: 300, width: 60, height: 40 });
     renderEditor({ panels: withUser.panels });

@@ -63,11 +63,16 @@ const OVERLAY_STILL = { transform: "none" } as const;
 const UNDETECTABLE_HATCH =
   "repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in oklch, var(--color-warn) 30%, transparent) 8px 10px)";
 
+/**
+ * 가장자리 손잡이가 잡히는 영역. 마우스는 변 둘레 20px(w-5·h-5)로 충분하고, 손가락(거친 포인터)은 44px(11 × 0.25rem) 이상이어야
+ * 잡기 쉽다(WCAG 2.5.5). 보이는 선(EDGE_LINE_CLASS)은 그대로 가늘게 두고 잡히는 영역만 변이 가운데 오도록 양쪽으로 넓힌다.
+ * 숫자 입력(컷 정보 칸)과 방향키는 끌기가 어려운 환경의 대안으로 그대로 있다.
+ */
 const EDGE_CLASS: Readonly<Record<PanelEdge, string>> = {
-  left: "-left-2.5 top-0 h-full w-5 cursor-ew-resize",
-  right: "-right-2.5 top-0 h-full w-5 cursor-ew-resize",
-  top: "-top-2.5 left-0 h-5 w-full cursor-ns-resize",
-  bottom: "-bottom-2.5 left-0 h-5 w-full cursor-ns-resize",
+  left: "-left-2.5 top-0 h-full w-5 cursor-ew-resize pointer-coarse:-left-5.5 pointer-coarse:w-11",
+  right: "-right-2.5 top-0 h-full w-5 cursor-ew-resize pointer-coarse:-right-5.5 pointer-coarse:w-11",
+  top: "-top-2.5 left-0 h-5 w-full cursor-ns-resize pointer-coarse:-top-5.5 pointer-coarse:h-11",
+  bottom: "-bottom-2.5 left-0 h-5 w-full cursor-ns-resize pointer-coarse:-bottom-5.5 pointer-coarse:h-11",
 };
 
 const EDGE_LINE_CLASS: Readonly<Record<PanelEdge, string>> = {
