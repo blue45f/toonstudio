@@ -6,6 +6,15 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { BUBBLE_VARIANTS } from "../studio-assets";
 import { isStudioUndoRedoChord, shouldHandleStudioEditEvent } from "../studio-edit-controls";
 import { studioCharmBubbleFootprint } from "./studio-charm-insert";
+import {
+  analyzeHostCommand,
+  historyWritesOf,
+  indexHostFunctions,
+  parseHostSource,
+  withDeclarationBefore,
+  withStatementInFunction,
+  type HostFunctionIndex,
+} from "./studio-charm-host-writes.test-support";
 
 /**
  * 참 바가 기대는 편집기 호스트의 계약을 소스에서 고정한다.
@@ -19,9 +28,6 @@ import { studioCharmBubbleFootprint } from "./studio-charm-insert";
 const CREATOR = "../";
 const HOST_SOURCE = `${CREATOR}StudioCuttoonEditorHost.tsx`;
 
-/** 문서 히스토리를 한 칸 쌓는 호스트 호출. `addEl` 은 내부에서 `commit` 을 한 번 부른다. */
-const HISTORY_WRITERS: ReadonlySet<string> = new Set(["addEl", "commit", "commitCoalesced", "commitPages"]);
-
 /** 참 바가 부르는 호스트 삽입 명령(`StudioCharmHostCommands`)과 그 명령이 일으켜야 하는 커밋 수. */
 const CHARM_INSERT_COMMANDS: readonly { readonly name: string; readonly writes: number }[] = [
   { name: "addRenderedImage", writes: 1 },
@@ -33,14 +39,51 @@ const CHARM_INSERT_COMMANDS: readonly { readonly name: string; readonly writes: 
   { name: "openStudioObjectInsert", writes: 0 },
 ];
 
-interface WriteCount {
-  /** 함수 본문에서 바로(중첩 함수 밖에서) 부르는 히스토리 쓰기 호출 수. */
-  readonly direct: number;
-  /** 반복문 안에서 부르는 호출 수. 0 이어야 한다(여러 번 실행될 수 있다). */
-  readonly inLoop: number;
-  /** 콜백·중첩 함수 안에서 부르는 호출 수. 0 이어야 한다(몇 번 실행될지 알 수 없다). */
-  readonly deferred: number;
-}
+/**
+ * 각 명령이 본문(중첩 함수 포함)에서 이름으로 부를 수 있다고 사람이 검토한 함수. 쓰기 판정 방법과 한계는
+ * `studio-charm-host-writes.test-support.ts` 에 있다. 목록에 없는 새 호출이 생기면 시험이 실패한다:
+ * 그 호출이 문서를 바꾸는지(되돌리기 한 단계가 유지되는지) 확인한 뒤 여기에 더한다.
+ * `reject`·`resolve`·`String` 은 파일을 읽는 Promise 콜백 안의 호출이다.
+ */
+const REVIEWED_CALLEES: Readonly<Record<string, readonly string[]>> = {
+  addRenderedImage: ["setError", "createCanvasImageElement", "uid", "nextAssetInsertionPlacement", "addEl"],
+  addSticker: ["setMenu", "spawnCenter", "addEl", "uid"],
+  addBubble: ["setMenu", "spawnCenter", "uid", "addEl", "setPendingLetteringEdit"],
+  addBuiltinRasterAsset: [
+    "captureStudioMutationTicket",
+    "nextAssetInsertionPlacement",
+    "setBuiltinRasterBusyId",
+    "setError",
+    "resolveAssetUrl",
+    "fetch",
+    "verifyStudioRasterAssetBlob",
+    "reject",
+    "resolve",
+    "String",
+    "canApplyStudioMutation",
+    "createCanvasImageElement",
+    "uid",
+    "buildStudioRasterAssetElements",
+    "commit",
+    "setSelectedId",
+    "setTool",
+    "setMenu",
+  ],
+  addSfxPreset: ["setMenu", "captureStudioMutationTicket", "spawnCenter", "canApplyStudioMutation", "addEl", "uid", "createSfxTextConfig"],
+  openStudioObjectInsert: [
+    "resolveStudioObjectInsertOpenSeed",
+    "setBg3dSeedTemplateId",
+    "setBg3dSeedPrimitiveKind",
+    "setPoserSeedPropId",
+    "setPoserInitialDataUrl",
+    "setPoserInitialElementId",
+    "setPoserVrmOpen",
+    "setBg3dInitialDataUrl",
+    "setBg3dInitialScene",
+    "setBg3dInitialElementId",
+    "setBg3dOpen",
+  ],
+};
 
 function sourceFileOf(relativePath: string): ts.SourceFile {
   const url = new URL(relativePath, import.meta.url);
@@ -62,39 +105,6 @@ function findFunctions(file: ts.SourceFile, name: string): ts.FunctionDeclaratio
   visit(file);
   return found;
 }
-
-function calleeName(call: ts.CallExpression): string | null {
-  return ts.isIdentifier(call.expression) ? call.expression.text : null;
-}
-
-function isLoop(node: ts.Node): boolean {
-  return ts.isForStatement(node)
-    || ts.isForInStatement(node)
-    || ts.isForOfStatement(node)
-    || ts.isWhileStatement(node)
-    || ts.isDoStatement(node);
-}
-
-function countHistoryWrites(fn: ts.FunctionDeclaration): WriteCount {
-  let direct = 0;
-  let inLoop = 0;
-  let deferred = 0;
-  const visit = (node: ts.Node, loopDepth: number, nested: boolean): void => {
-    if (ts.isCallExpression(node)) {
-      const callee = calleeName(node);
-      if (callee && HISTORY_WRITERS.has(callee)) {
-        if (nested) deferred += 1;
-        else if (loopDepth > 0) inLoop += 1;
-        else direct += 1;
-      }
-    }
-    const enteringNested = ts.isArrowFunction(node) || ts.isFunctionExpression(node) || ts.isFunctionDeclaration(node);
-    ts.forEachChild(node, (child) => visit(child, isLoop(node) ? loopDepth + 1 : loopDepth, nested || enteringNested));
-  };
-  if (fn.body) ts.forEachChild(fn.body, (child) => visit(child, 0, false));
-  return { direct, inLoop, deferred };
-}
-
 
 interface BubbleSize {
   width: number;
@@ -139,20 +149,87 @@ beforeAll(() => {
   host = sourceFileOf(HOST_SOURCE);
 });
 
+let hostSource: string;
+let hostIndex: HostFunctionIndex;
+
 describe("참 바 호스트 계약: 삽입 한 번 = 되돌리기 한 단계", () => {
-  it.each(CHARM_INSERT_COMMANDS)("$name 은 히스토리 커밋을 $writes 번만 일으킨다", ({ name, writes }) => {
-    const declarations = findFunctions(host, name);
-    expect(declarations, `${name} 선언은 호스트에 하나뿐이어야 한다`).toHaveLength(1);
-    const counted = countHistoryWrites(declarations[0]);
-    expect(counted.direct, `${name} 의 커밋 호출 수`).toBe(writes);
-    expect(counted.inLoop, `${name} 의 반복문 안 커밋`).toBe(0);
-    expect(counted.deferred, `${name} 의 콜백 안 커밋`).toBe(0);
+  beforeAll(() => {
+    hostSource = readFileSync(new URL(HOST_SOURCE, import.meta.url), "utf8");
+    hostIndex = indexHostFunctions(host);
+  });
+
+  it.each(CHARM_INSERT_COMMANDS)("$name 은 간접 호출까지 따라가도 히스토리 커밋을 $writes 번만 일으킨다", ({ name, writes }) => {
+    expect(findFunctions(host, name), `${name} 선언은 호스트에 하나뿐이어야 한다`).toHaveLength(1);
+    const analysis = analyzeHostCommand(hostIndex, name, new Set(REVIEWED_CALLEES[name]));
+    expect(analysis.writes, `${name} 의 호출당 히스토리 쓰기 수(반복·콜백 안이면 무한대)`).toBe(writes);
+    expect(analysis.unreviewed, `${name} 이 검토하지 않은 새 호출을 한다 — 되돌리기 한 단계가 유지되는지 보고 REVIEWED_CALLEES 에 더하세요`).toEqual([]);
   });
 
   it("addEl 은 커밋을 정확히 한 번 부르고 선택·도구 전환은 히스토리를 쌓지 않는다", () => {
-    const declarations = findFunctions(host, "addEl");
-    expect(declarations).toHaveLength(1);
-    expect(countHistoryWrites(declarations[0])).toEqual({ direct: 1, inLoop: 0, deferred: 0 });
+    expect(findFunctions(host, "addEl")).toHaveLength(1);
+    expect(historyWritesOf(hostIndex, "addEl")).toBe(1);
+    const analysis = analyzeHostCommand(hostIndex, "addEl", new Set(["commit", "setSelectedId", "setTool"]));
+    expect(analysis.unreviewed).toEqual([]);
+  });
+
+  describe("간접 쓰기도 잡는다(호스트 사본에 호출을 더해 확인)", () => {
+    function analyzeMutated(source: string, command: string) {
+      const file = parseHostSource(source);
+      return analyzeHostCommand(indexHostFunctions(file), command, new Set(REVIEWED_CALLEES[command]));
+    }
+    const mutate = (functionName: string, statement: string) => withStatementInFunction(hostSource, host, functionName, statement);
+
+    it("변형하지 않은 사본은 통과한다(대조군)", () => {
+      for (const { name, writes } of CHARM_INSERT_COMMANDS) {
+        const analysis = analyzeMutated(hostSource, name);
+        expect({ name, writes: analysis.writes, unreviewed: analysis.unreviewed }).toEqual({ name, writes, unreviewed: [] });
+      }
+    });
+
+    it("addSticker 가 patchEl 을 더 부르면 쓰기 2번이고 검토하지 않은 호출로 걸린다", () => {
+      const analysis = analyzeMutated(mutate("addSticker", 'patchEl("x", { x: 1 });'), "addSticker");
+      expect(analysis.writes).toBe(2);
+      expect(analysis.unreviewed).toEqual(["patchEl"]);
+    });
+
+    it("addBubble 이 addText() 를 더 부르면 쓰기 2번이다", () => {
+      const analysis = analyzeMutated(mutate("addBubble", "addText();"), "addBubble");
+      expect(analysis.writes).toBe(2);
+      expect(analysis.unreviewed).toEqual(["addText"]);
+    });
+
+    it("addRenderedImage 가 updateActivePage 를 더 부르면 쓰기 2번이다", () => {
+      const analysis = analyzeMutated(mutate("addRenderedImage", "updateActivePage({});"), "addRenderedImage");
+      expect(analysis.writes).toBe(2);
+      expect(analysis.unreviewed).toEqual(["updateActivePage"]);
+    });
+
+    it("이미 허용된 도우미(spawnCenter)가 내부에서 커밋하게 바뀌어도 폐포가 잡는다", () => {
+      const analysis = analyzeMutated(mutate("spawnCenter", "commit([]);"), "addSticker");
+      expect(analysis.unreviewed).toEqual([]);
+      expect(analysis.writes).toBe(2);
+    });
+
+    it("새 도우미 함수를 거쳐 쓰는 경우도 잡는다", () => {
+      const withHelper = withDeclarationBefore(
+        mutate("addSfxPreset", "sneakyWrite();"),
+        host,
+        "addSfxPreset",
+        "function sneakyWrite() { updateActivePage({}); }",
+      );
+      const analysis = analyzeMutated(withHelper, "addSfxPreset");
+      expect(analysis.writes).toBe(2);
+      expect(analysis.unreviewed).toEqual(["sneakyWrite"]);
+    });
+
+    it("반복문이나 콜백 안에서 부르면 몇 번일지 알 수 없어 무한대로 본다", () => {
+      expect(analyzeMutated(mutate("addBubble", "for (const n of [1, 2]) { addEl(n); }"), "addBubble").writes).toBe(Number.POSITIVE_INFINITY);
+      expect(analyzeMutated(mutate("addSticker", "queueMicrotask(() => addEl(1));"), "addSticker").writes).toBe(Number.POSITIVE_INFINITY);
+    });
+
+    it("스스로를 다시 부르는 재귀도 무한대로 본다", () => {
+      expect(analyzeMutated(mutate("addSticker", "addSticker(emoji);"), "addSticker").writes).toBe(Number.POSITIVE_INFINITY);
+    });
   });
 
   it("addRenderedImage 는 참이 쓰는 7번째 인자(계획된 위치)를 받아 배치에 그대로 쓴다", () => {
