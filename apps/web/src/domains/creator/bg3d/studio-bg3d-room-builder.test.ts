@@ -204,7 +204,9 @@ describe("buildStudioBg3dRoomParts", () => {
     expect(forwardBack.position[2]).toBeCloseTo(1 - 0.18, 10);
     expect(turnedBack.position[2]).toBeCloseTo(1 + 0.18, 10);
     expect(turnedBack.position[0]).toBeCloseTo(1, 10);
-    expect(turnedBack.rotation[1]).toBeCloseTo(Math.PI, 10);
+    // 문서 정규형 [-π, π) 에서 180° 는 -π 로 적는다. 방향(cos = -1)은 그대로다.
+    expect(turnedBack.rotation[1]).toBeCloseTo(-Math.PI, 10);
+    expect(Math.cos(turnedBack.rotation[1])).toBeCloseTo(-1, 10);
   });
 
   it("계단은 단수만큼 겹침 없는 층층 박스를 만들고 마지막 단이 가장 높다", () => {

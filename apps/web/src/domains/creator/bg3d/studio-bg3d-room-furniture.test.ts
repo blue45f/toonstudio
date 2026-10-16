@@ -89,7 +89,10 @@ describe("책걸상 deskSet", () => {
     expect(deskOf(forward).position[2]).toBeGreaterThan(seatOf(forward).position[2]);
     expect(deskOf(turned).position[2]).toBeLessThan(seatOf(turned).position[2]);
     expect(deskOf(forward).position[2] - 1).toBeCloseTo(-(deskOf(turned).position[2] - 1), 10);
-    expect(turned.find((part) => part.name === "의자 좌판")!.rotation[1]).toBeCloseTo(Math.PI, 10);
+    // 문서 정규형 [-π, π) 로 적으므로 180° 는 -π 다(방향 cos = -1 은 같다).
+    const turnedSeatYaw = turned.find((part) => part.name === "의자 좌판")!.rotation[1];
+    expect(turnedSeatYaw).toBeCloseTo(-Math.PI, 10);
+    expect(Math.cos(turnedSeatYaw)).toBeCloseTo(-1, 10);
   });
 });
 

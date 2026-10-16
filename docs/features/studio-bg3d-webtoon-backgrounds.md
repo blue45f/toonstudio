@@ -107,7 +107,7 @@
 
 - 모든 도형은 고유 id 와 이름(`앞벽 벽체`, `책상 상판`, `가로등 기둥` 등)을 갖고, 잠금·부모·묶음 연결이 없는 평범한 노드다. 도형끼리 배열을 공유하지 않는다(시험).
 - 문서 어댑터(`tryAdaptStudioBg3dRuntimeToDocument` → 직렬화 → 파싱 → `hydrateStudioBg3dDocumentToRuntime`)를 거쳐도 도형 수·id·이름·종류·색·위치·크기·회전·보임/숨김이
-  그대로다. 문서가 각도를 -π~π 범위로 정규화하므로 yaw 180° 가 π 에서 -π 로 적힌다(시험에서 확인, 같은 방향).
+  그대로다. 문서는 각도를 [-π, π) 로 정규화하므로 룸 빌더가 가구 파츠 회전을 처음부터 그 정규형으로 적는다(yaw 180° 는 π 가 아니라 -π, 방향은 같다 — 8절의 핸드오프 결함 참조).
 - 템플릿 정리 패널("추가된 템플릿 정리")의 한 묶음 선택·삭제와는 연동하지 않았다 — 방 만들기 결과와 같은 평범한 노드다.
 
 ### 3.5 번들
@@ -194,7 +194,7 @@ BG3D 편집기 활성화 번들 기준선(`scripts/bundle-baseline.json`)은 건
 | 명령 | 결과 |
 | --- | --- |
 | `pnpm exec vitest run apps/web/src/domains/creator/bg3d apps/web/src/domains/creator/scene-3d --maxWorkers=2` (저장소 루트) | 498개 파일 중 478 통과·20 로드 실패, **시험 4,644개 전부 통과**. 로드 실패 20개는 작업 전 기준선과 같은 파일 집합이다(`public/assets` 매니페스트 부재, `ERR_MODULE_NOT_FOUND`). 작업 전: 484개 파일 중 464 통과, 시험 4,444개 통과 |
-| `vitest run` hybrid-dcc 전체 + `studio-bim-room-builder-map` + `studio-webtoon-object-creator-v1-demo` | 55개 파일 중 51 통과·4 실패, 시험 498개 중 495 통과·3 실패. 실패는 VRM 픽스처 파일 없음 2건, `perfect-freehand` 패키지 경로 1건, 로드 실패 1개 파일(`bg3d-handoff`, 환경 매니페스트 부재)이다. 원인은 오류 메시지로 확인했고 기준 커밋에서 같은 실패를 직접 재현하지는 않았다 |
+| `vitest run` hybrid-dcc 전체 55개 파일, 환경 매니페스트 4개를 연결한 임시 설정(저장소 밖)으로 | 55개 파일 중 53 통과·2 실패, 시험 523개 중 521 통과·2 실패. 실패 2건은 VRM 픽스처 파일 없음(환경)이다. 매니페스트를 연결해야 `bg3d-handoff` 시험이 로드되며, 1차 판은 이를 돌리지 못했다(8절). 연결하지 않으면 그 파일이 로드 실패한다 |
 | `vitest run apps/web/src/shared/language apps/web/src/app/i18n-source-coverage.test.ts` (저장소 루트) | 9개 파일 34개 시험 통과 |
 | `node scripts/check-unconnected-code.mjs --json` 을 작업 전 보고서(`room-unconnected-before`)와 비교 | 새 항목 0건, 해소 2건(v2 `test-only-module`, 방 만들기 패널 `unmounted-component`) |
 | `node scripts/check-source-file-size.mjs` | 통과. `@ts-nocheck` 파일 50개로 늘지 않음. 상한 파일: scene-ops-host 933/934, scene-document 2,267/2,269, SidebarExtras 819/819, ViewPanelContent 1,680/1,697 |
@@ -221,6 +221,10 @@ BG3D 편집기 활성화 번들 기준선(`scripts/bundle-baseline.json`)은 건
 - **컷마다 캡처 비율 저장은 하지 않았다**(6.3). 문서 공통 값이다.
 - **배치 출력의 렌더 어댑터·타일링 경로를 렌즈 시프트와 함께 실제로 돌린 시험은 없다.** Babylon 은 NullEngine 투영 행렬 비교까지다.
 - **`scene-3d/studio-3d-room-building-kit.ts` 의 별도 단면 구현은 그대로 뒀다**(BG3D 생성 경로 밖, 배럴 재수출).
-- **프리셋 의자 방향 수정의 hybrid-dcc 영향.** 방 관련 hybrid-dcc 시험은 통과했지만, `studio-hybrid-dcc-bg3d-handoff.test.ts` 는 이 환경에서 로드되지 않아(번들 환경 매니페스트 부재) 돌려 보지
-  못했다. 그 시험이 확인하는 것은 프리셋 id 와 파츠 수이고 둘 다 그대로다.
+- **프리셋 의자 방향 수정의 hybrid-dcc 영향(1차 판의 설명은 틀렸고 고쳤다).** 1차 판은 "핸드오프는 프리셋 id 와 파츠 수만 본다"고 적었으나 사실이 아니다. 핸드오프는 방 프리셋을
+  id 로 다시 생성해 파츠 회전을 문서 노드로 그대로 복사하고, 이어서 엄격 컷 포착(`captureStudioBg3dShot`)을 거친다. 의자 yaw 180° 는 회전이 정확히 π 인데 문서 정규형은 [-π, π) 라
+  엄격 정규화가 문서를 거부해 `Could not capture DCC shot` 으로 실패했다(교실 프리셋 핸드오프가 깨졌다). 같은 결함이 수정 전 기준 커밋의 카페·원룸·옥상·서재 프리셋에도 이미 있었다
+  (기준 커밋의 룸 빌더로 4건 재현). 1차 판은 이 시험 파일이 환경 매니페스트 부재로 로드되지 않는 상태에서 돌려 보지 못한 채 영향이 작다고 판단했다.
+  룸 빌더가 가구 파츠 회전을 문서 정규형으로 적도록 고쳤고(`canonicalStudioBg3dRoomYaw`, 위치는 원래 각도로 돌리고 방향은 같다), 6개 프리셋 모두 핸드오프 시험(프리셋별)과 핸드오프 없는
+  직접 컷 포착 시험(`studio-bg3d-room-parts-canonical.test.ts`)으로 고정했다.
 - **번들 게이트는 측정하지 못했다**(3.5).

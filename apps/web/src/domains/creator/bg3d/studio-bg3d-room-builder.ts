@@ -292,6 +292,24 @@ function wallPlacement(wall: StudioBg3dRoomWallId, width: number, depth: number)
 
 // ── 방 전체 파츠 생성 ─────────────────────────────────────────────────────────
 
+/**
+ * 라디안 각도를 장면 문서의 정규형 [-π, π) 으로 바꾼다. 문서 정규화(scene-document 의 normalizedRotation)와
+ * 같은 식이며, 엄격한 컷 포착(captureStudioBg3dShot)은 정규형이 아닌 회전(예: 정확히 π)을 거부하므로
+ * 방 파츠가 처음부터 정규형이 되게 한다. 일부 각도(예: 음수 15° 배수)는 식을 한 번 적용해도 부동소수점
+ * 오차로 고정점이 되지 않아, 값이 더 바뀌지 않을 때까지 되풀이한다(최대 4회).
+ */
+export function canonicalStudioBg3dRoomYaw(radians: number): number {
+  if (!Number.isFinite(radians)) return 0;
+  const turn = Math.PI * 2;
+  let angle = radians;
+  for (let step = 0; step < 4; step += 1) {
+    const wrapped = ((((angle + Math.PI) % turn) + turn) % turn) - Math.PI;
+    if (wrapped === angle) return wrapped;
+    angle = wrapped;
+  }
+  return angle;
+}
+
 export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): StudioBg3dRoomPart[] {
   const spec = clampStudioBg3dRoomSpec(rawSpec);
   const parts: StudioBg3dRoomPart[] = [];
@@ -332,13 +350,15 @@ export function buildStudioBg3dRoomParts(rawSpec: Partial<StudioBg3dRoomSpec>): 
 
   for (const item of spec.furniture) {
     const yawRad = (item.yawDeg * Math.PI) / 180;
+    // 위치는 원래 각도로 돌리고, 문서에 쓰는 회전값만 문서 정규형으로 바꾼다(방향은 같다).
+    const documentYaw = canonicalStudioBg3dRoomYaw(yawRad);
     for (const part of studioBg3dRoomFurnitureParts(item.kind, spec.wallHeight)) {
       const rotated = rotateStudioBg3dRoomYaw(part.offset, yawRad);
       parts.push({
         kind: part.kind,
         name: part.name,
         position: [item.x + rotated[0], rotated[1], item.z + rotated[2]],
-        rotation: [0, yawRad, 0],
+        rotation: [0, documentYaw, 0],
         scale: [...part.scale] as [number, number, number],
         color: part.color,
       });
