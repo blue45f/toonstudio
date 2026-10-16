@@ -772,9 +772,8 @@ export function StudioHybridDccPanel({
             onDuplicateSelected={() => {
               if (!busy) void run("오브젝트 복제", () => workspaceDuplicateActive(ws));
             }}
-            onDeleteSelected={() => {
-              if (!busy) void run("오브젝트 삭제", () => workspaceDeleteActive(ws));
-            }}
+            onDeleteSelected={() => { if (!busy) void run("오브젝트 삭제", () => workspaceDeleteActive(ws)); }}
+            onRunWorkspaceEdit={(label, edit) => { if (!busy) void run(label, () => edit(ws, componentSelection)); }}
             onSelectAsset={selectWorkspaceAsset}
             onSelectComponent={selectMeshComponent}
             onSculptStroke={workbenchMode === "sculpt" && !busy
