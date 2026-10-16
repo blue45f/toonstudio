@@ -256,6 +256,24 @@ describe("ReaderFeedbackForm", () => {
     expect(within(fun).queryByRole("button", { name: "선택 취소" })).toBeNull();
   });
 
+  it("선택 취소를 눌러 단추가 사라져도 초점이 body 로 떨어지지 않고 그 묶음의 첫 선택지로 간다", () => {
+    render(<ReaderFeedbackForm target={KNOWN} />);
+    const fun = screen.getByRole("group", { name: "얼마나 재밌었나요?" });
+    choose("재밌었어요");
+    const clearFun = within(fun).getByRole("button", { name: "선택 취소" });
+    clearFun.focus();
+    fireEvent.click(clearFun);
+    expect(document.activeElement).toBe(within(fun).getAllByRole("radio")[0]);
+
+    choose("중간에 멈췄어요");
+    const reading = screen.getByRole("group", { name: "어디까지 읽었나요?" });
+    const clearReading = within(reading).getAllByRole("button", { name: "선택 취소" }).at(-1)!;
+    clearReading.focus();
+    fireEvent.click(clearReading);
+    expect(document.activeElement).toBe(within(reading).getAllByRole("radio")[0]);
+    expect(within(reading).queryByRole("button", { name: "선택 취소" })).toBeNull();
+  });
+
   it("대상을 모를 때는 작품 이름이 필요하고 회차 번호는 선택이다", async () => {
     render(<ReaderFeedbackForm />);
     choose("괜찮았어요");

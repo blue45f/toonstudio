@@ -70,6 +70,7 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
   // 파일·공유·복사 중 하나라도 실제로 끝났는지. '새 의견 쓰기'를 보일지 정하며, 입력을 고쳐도 유지된다.
   const [delivered, setDelivered] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const readingRef = useRef<HTMLFieldSetElement>(null);
   const [canShare] = useState(() => canShareReaderFeedback(typeof navigator === "undefined" ? undefined : navigator, "reader-feedback.json"));
 
   const ids = {
@@ -226,7 +227,7 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
             <ScaleField legend={bt("얼마나 재밌었나요?", "How fun was it?")} name={`${uid}-fun`} labels={FUN_LEVEL_LABELS} value={draft.fun} onChange={(fun) => patch({ fun })} localize={bt} clearLabel={clearLabel} />
             <ScaleField legend={bt("내용이 잘 이해됐나요?", "Was it easy to follow?")} name={`${uid}-understanding`} labels={UNDERSTANDING_LEVEL_LABELS} value={draft.understanding} onChange={(understanding) => patch({ understanding })} localize={bt} clearLabel={clearLabel} />
 
-            <fieldset className="min-w-0">
+            <fieldset ref={readingRef} className="min-w-0">
               <legend className="text-sm font-bold text-fg">{bt("어디까지 읽었나요?", "How far did you read?")}</legend>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <ChoiceChip type="radio" name={`${uid}-reading`} value="finished" checked={draft.reading === "finished"} onChange={() => patch({ reading: "finished" })}>{bt("끝까지 읽었어요", "I finished it")}</ChoiceChip>
@@ -235,7 +236,7 @@ export function ReaderFeedbackForm({ target = null }: ReaderFeedbackFormProps) {
               {draft.reading !== "unset" ? (
                 <button
                   type="button"
-                  onClick={() => patch({ reading: "unset" })}
+                  onClick={() => { patch({ reading: "unset" }); readingRef.current?.querySelector<HTMLElement>("input")?.focus(); }}
                   className="mt-1 min-h-11 rounded-lg px-2 text-xs font-bold text-fg-3 underline underline-offset-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   {clearLabel}

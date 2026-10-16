@@ -461,6 +461,83 @@ describe("ReaderFeedbackSummaryPanel: 읽는 중에 가져온 응답 비우기",
   });
 });
 
+describe("ReaderFeedbackSummaryPanel: 누른 단추가 사라져도 초점이 body 로 떨어지지 않는다", () => {
+  const loadExample = () => fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+  const representativeSection = () => screen.getByRole("heading", { level: 5, name: "대표 의견" }).parentElement!;
+  const representativeItems = () => within(within(representativeSection()).getAllByRole("list")[0]!).getAllByRole("listitem");
+  const toggleOf = (item: HTMLElement) => within(item).getByRole("button", { name: /이 의견 숨기기|다시 보이기/u });
+
+  it("스포일러 보기: 단추가 그 자리에 남아 초점을 지키고, 눌렀다 다시 누르면 가려진다", () => {
+    renderPanel();
+    loadExample();
+    const reveal = screen.getAllByRole("button", { name: "스포일러 보기" })[0]!;
+    reveal.focus();
+    expect(document.activeElement).toBe(reveal);
+    fireEvent.click(reveal);
+    expect(document.activeElement).toBe(reveal);
+    expect(reveal.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText(/동생이 돌아오는 장면/u)).toBeTruthy();
+    expect(document.getElementById(reveal.getAttribute("aria-controls")!)?.textContent).toContain("동생이 돌아오는 장면");
+    fireEvent.click(reveal);
+    expect(document.activeElement).toBe(reveal);
+    expect(reveal.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText(/동생이 돌아오는 장면/u)).toBeNull();
+  });
+
+  it("의견 숨기기: 초점이 같은 목록의 다음 의견 단추로 옮겨가고, 마지막 의견이면 이전 의견 단추로 간다", () => {
+    renderPanel();
+    loadExample();
+    const before = representativeItems().map(toggleOf);
+    before[0]!.focus();
+    fireEvent.click(before[0]!);
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toBe(before[1]);
+
+    const after = representativeItems();
+    const last = toggleOf(after[after.length - 1]!);
+    const previous = toggleOf(after[after.length - 2]!);
+    last.focus();
+    fireEvent.click(last);
+    expect(document.activeElement).toBe(previous);
+    // 알림: 스크린 리더 사용자는 단추가 사라졌다는 사실과 숨긴 개수를 듣는다.
+    expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("숨긴 의견은 2개예요");
+  });
+
+  it("다시 보이기와 마지막 의견 숨기기: 이웃이 없으면 '대표 의견' 제목으로 초점이 옮겨간다", () => {
+    renderPanel();
+    chooseFiles([jsonFile("only-one.json", [EXAMPLES[0]!])]);
+    return screen.findByText(/응답 1개 추가/u).then(() => {
+      const [only] = representativeItems();
+      const hide = toggleOf(only!);
+      hide.focus();
+      fireEvent.click(hide);
+      const heading = screen.getByRole("heading", { level: 5, name: "대표 의견" });
+      expect(document.activeElement).toBe(heading);
+      expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("의견을 숨겼어요");
+
+      const restore = screen.getByRole("button", { name: "다시 보이기" });
+      restore.focus();
+      fireEvent.click(restore);
+      expect(document.activeElement).toBe(screen.getByRole("heading", { level: 5, name: "대표 의견" }));
+      expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("의견을 다시 보이게 했어요");
+      expect(representativeItems()).toHaveLength(1);
+    });
+  });
+
+  it("가로로 밀리는 그래프 영역은 키보드로 닿고 이름이 있어, 스크롤 영역에 초점 대상이 없다는 접근성 경고를 피한다", () => {
+    renderPanel();
+    loadExample();
+    for (const label of ["컷 번호로 알려 준 멈춘 곳", "스크롤 위치로 알려 준 멈춘 곳"]) {
+      const chart = screen.getByRole("img", { name: new RegExp(label, "u") });
+      const scroller = chart.parentElement!;
+      expect(scroller.className).toContain("overflow-x-auto");
+      expect(scroller.getAttribute("tabindex")).toBe("0");
+      expect(scroller.getAttribute("role")).toBe("region");
+      expect(screen.getByRole("region", { name: `${label} (좌우로 스크롤)` })).toBe(scroller);
+    }
+  });
+});
+
 describe("ReaderFeedbackSummaryPanel: 악의적 입력", () => {
   it("HTML·스크립트 조각은 요소가 되지 않고 글자 그대로 보인다", async () => {
     const { container } = renderPanel();

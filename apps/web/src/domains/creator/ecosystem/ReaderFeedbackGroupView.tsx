@@ -1,5 +1,5 @@
 import { Eye, EyeOff } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from "react";
 
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -21,11 +21,17 @@ function Figure({ label, value, unit, note }: { readonly label: string; readonly
   );
 }
 
-function Section({ title, children }: { readonly title: string; readonly children: ReactNode }) {
+/** `headingRef`를 주면 제목이 프로그램으로 초점을 받을 수 있다(누른 단추가 사라졌을 때 초점을 돌려 놓을 자리). */
+function Section({ title, children, headingRef }: { readonly title: string; readonly children: ReactNode; readonly headingRef?: Ref<HTMLHeadingElement> }) {
   const id = useId();
   return (
     <section aria-labelledby={id} className="border-t border-line pt-4">
-      <h5 id={id} className="text-sm font-black text-fg">{title}</h5>
+      <h5
+        id={id} ref={headingRef} tabIndex={headingRef ? -1 : undefined}
+        className="text-sm font-black text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {title}
+      </h5>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -35,8 +41,12 @@ function ratingRows(bt: Localize, summary: RatingSummary, labels: typeof FUN_LEV
   return RATING_LEVELS.map((level) => ({ key: String(level), label: bt(labels[level].ko, labels[level].en), count: summary.counts[level - 1] }));
 }
 
-/** 의견 한 줄. 스포일러는 눌러서 펼치고, 숨김은 이 브라우저에만 표시한다. */
-function CommentItem({ comment, onToggleHidden }: { readonly comment: FeedbackComment; readonly onToggleHidden: (id: string) => void }) {
+/**
+ * 의견 한 줄. 스포일러는 눌러서 펼치고(다시 눌러 가릴 수 있다), 숨김은 이 브라우저에만 표시한다.
+ * 스포일러 단추는 누른 뒤에도 그 자리에 남아 초점을 지킨다. 숨기기·다시 보이기 단추는 누르면 이 의견이 다른 목록으로 옮겨가
+ * 사라지므로, 누른 단추를 `onToggleHidden`에 넘겨 부모가 초점을 옮기게 한다.
+ */
+function CommentItem({ comment, onToggleHidden }: { readonly comment: FeedbackComment; readonly onToggleHidden: (comment: FeedbackComment, trigger: HTMLElement) => void }) {
   const bt = useBilingual("ReaderFeedback");
   const [revealed, setRevealed] = useState(false);
   const textId = useId();
@@ -51,27 +61,38 @@ function CommentItem({ comment, onToggleHidden }: { readonly comment: FeedbackCo
       <p className="text-xs leading-5 text-fg-3">
         <span className="font-bold text-fg-2">{comment.nickname ?? bt("익명", "Anonymous")}</span> · {ratings.join(" · ")}
       </p>
-      {covered ? (
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <p id={textId} className="text-sm text-fg-3">{bt("줄거리 스포일러가 있는 의견이에요.", "This comment contains story spoilers.")}</p>
-          <button type="button" className={RF_BUTTON} aria-expanded={false} aria-controls={textId} onClick={() => setRevealed(true)}>
-            <Eye size={15} aria-hidden /> {bt("스포일러 보기", "Show spoiler")}
-          </button>
+      {comment.spoiler ? (
+        <div className="mt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-fg-3">{bt("줄거리 스포일러가 있는 의견이에요.", "This comment contains story spoilers.")}</p>
+            <button type="button" className={RF_BUTTON} aria-expanded={revealed} aria-controls={textId} onClick={() => setRevealed((open) => !open)}>
+              {revealed ? <EyeOff size={15} aria-hidden /> : <Eye size={15} aria-hidden />} {revealed ? bt("스포일러 가리기", "Hide spoiler") : bt("스포일러 보기", "Show spoiler")}
+            </button>
+          </div>
+          <div id={textId}>{revealed ? <p className="mt-1 text-sm leading-6 text-fg [overflow-wrap:anywhere]">{comment.text}</p> : null}</div>
         </div>
       ) : (
         <p id={textId} className="mt-1 text-sm leading-6 text-fg [overflow-wrap:anywhere]">{comment.text}</p>
       )}
       <button
         type="button"
+        data-comment-toggle=""
         className="mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-fg-3 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         aria-describedby={covered ? undefined : textId}
-        onClick={() => onToggleHidden(comment.id)}
+        onClick={(event) => onToggleHidden(comment, event.currentTarget)}
       >
         {comment.hidden ? <Eye size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />}
         {comment.hidden ? bt("다시 보이기", "Show again") : bt("이 의견 숨기기", "Hide this comment")}
       </button>
     </li>
   );
+}
+
+/** 누른 단추가 사라질 때 초점을 받을 곳: 같은 목록의 다음(없으면 이전) 의견의 숨기기 단추. */
+function neighborToggle(trigger: HTMLElement): HTMLElement | null {
+  const item = trigger.closest("li");
+  const neighbor = item?.nextElementSibling ?? item?.previousElementSibling ?? null;
+  return neighbor?.querySelector<HTMLElement>("[data-comment-toggle]") ?? null;
 }
 
 /**
@@ -84,6 +105,23 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
 }) {
   const bt = useBilingual("ReaderFeedback");
   const headingId = useId();
+  const commentsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const pendingFocus = useRef<{ readonly target: HTMLElement | null } | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  // 숨기기·다시 보이기를 누르면 그 단추가 사라진다. 목록이 바뀐 다음에 이웃 의견 단추(없거나 사라졌으면 '대표 의견' 제목)로 초점을 옮긴다.
+  useEffect(() => {
+    const pending = pendingFocus.current;
+    if (!pending) return;
+    pendingFocus.current = null;
+    (pending.target?.isConnected ? pending.target : commentsHeadingRef.current)?.focus();
+  });
+  const toggleHidden = (comment: FeedbackComment, trigger: HTMLElement) => {
+    pendingFocus.current = { target: neighborToggle(trigger) };
+    setAnnouncement(comment.hidden
+      ? formatI18nTemplate(bt("의견을 다시 보이게 했어요. 숨긴 의견은 {n}개예요.", "Comment shown again. {n} hidden in total."), { n: group.hiddenCount - 1 })
+      : formatI18nTemplate(bt("의견을 숨겼어요. 숨긴 의견은 {n}개예요.", "Comment hidden. {n} hidden in total."), { n: group.hiddenCount + 1 }));
+    onToggleHidden(comment.id);
+  };
   const count = (n: number) => countText(bt, n);
   const { cut, scroll } = group.dropOff;
   const left = cut.total + scroll.total;
@@ -151,6 +189,7 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
                   rangeLabel={strip.label}
                   countLabel={count}
                   title={strip.title}
+                  scrollLabel={formatI18nTemplate(bt("{title} (좌우로 스크롤)", "{title} (scrolls sideways)"), { title: strip.title })}
                   description={formatI18nTemplate(bt("가장 많이 멈춘 구간: {peak}. 이 방식으로 알려 준 응답은 모두 {total}개예요.", "Most common stopping point: {peak}. {total} responses used this method."), { peak: peakText(strip.bins, strip.label), total: strip.total })}
                   startLabel={strip.start}
                   endLabel={strip.end}
@@ -182,7 +221,8 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
         )}
       </Section>
 
-      <Section title={bt("대표 의견", "Representative comments")}>
+      <Section title={bt("대표 의견", "Representative comments")} headingRef={commentsHeadingRef}>
+        <p role="status" className="sr-only">{announcement}</p>
         <p className="text-xs leading-5 text-fg-3">
           {bt("다수결이 아니라, 문제 신호 하나·긍정 신호 하나를 먼저 고르고 자세한 의견 순으로 채워요. 스포일러 의견은 자리가 남을 때만 들어가요. 숨김은 이 브라우저에만 표시되고 집계에는 영향이 없어요.",
             "Not a vote: one concern and one positive first, then the most detailed. Spoiler comments only fill leftover slots. Hiding is a mark in this browser only and doesn't change the counts.")}
@@ -190,7 +230,7 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
         {group.representative.length === 0 ? (
           <p className="mt-2 text-sm text-fg-3">{bt("보여 줄 의견이 없어요.", "No comments to show.")}</p>
         ) : (
-          <ul className="mt-3 space-y-3">{group.representative.map((comment) => <CommentItem key={comment.id} comment={comment} onToggleHidden={onToggleHidden} />)}</ul>
+          <ul className="mt-3 space-y-3">{group.representative.map((comment) => <CommentItem key={comment.id} comment={comment} onToggleHidden={toggleHidden} />)}</ul>
         )}
         {group.comments.length > group.representative.length ? (
           <details className="mt-3">
@@ -198,7 +238,7 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
               {formatI18nTemplate(bt("의견 전체 보기 ({n}개)", "All comments ({n})"), { n: group.comments.length })}
             </summary>
             <ul className="mt-2 max-h-96 space-y-3 overflow-y-auto pr-1">
-              {group.comments.filter((comment) => !comment.hidden).map((comment) => <CommentItem key={comment.id} comment={comment} onToggleHidden={onToggleHidden} />)}
+              {group.comments.filter((comment) => !comment.hidden).map((comment) => <CommentItem key={comment.id} comment={comment} onToggleHidden={toggleHidden} />)}
             </ul>
           </details>
         ) : null}
@@ -207,7 +247,7 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
             <summary className="min-h-11 cursor-pointer py-2 text-sm font-bold text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
               {formatI18nTemplate(bt("숨긴 의견 ({n}개)", "Hidden comments ({n})"), { n: hiddenList.length })}
             </summary>
-            <ul className="mt-2 space-y-3">{hiddenList.map((comment) => <CommentItem key={comment.id} comment={comment} onToggleHidden={onToggleHidden} />)}</ul>
+            <ul className="mt-2 space-y-3">{hiddenList.map((comment) => <CommentItem key={comment.id} comment={comment} onToggleHidden={toggleHidden} />)}</ul>
           </details>
         ) : null}
       </Section>

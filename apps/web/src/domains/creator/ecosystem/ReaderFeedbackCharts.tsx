@@ -9,6 +9,8 @@ import type { DropOffBin } from "./reader-feedback-summary";
  * - 그래프는 색만으로 말하지 않는다: 값이 있는 칸의 윗줄에 개수를 글자로 쓰고, 같은 내용을 표로도 준다.
  * - 칸 색은 의미 토큰(accent)의 투명도로만 세기를 나타내며, 강제 색상 모드처럼 색이 무시되는 환경에서는 표가 대안이다.
  * - SVG 는 role="img" 에 제목·설명을 붙이고, 칸별 설명은 마우스 사용자를 위한 <title> 이다.
+ * - 칸 수가 많으면 그림이 좁은 화면보다 넓어 가로로 밀린다. 안에 초점을 받는 요소가 없으므로 영역 자체를 키보드로 닿게(tabIndex=0)
+ *   하고 이름을 붙인다(role="region" + aria-label — 저장소의 다른 스크롤 영역과 같은 방식). 그러지 않으면 키보드 사용자는 밀 수 없다.
  */
 
 const CELL_WIDTH = 34;
@@ -35,6 +37,8 @@ export interface DropOffHeatStripProps {
   readonly countLabel: (count: number) => string;
   readonly title: string;
   readonly description: string;
+  /** 가로로 밀리는 영역의 이름(예: "컷 번호로 알려 준 멈춘 곳 (좌우로 스크롤)"). 키보드 초점을 받을 때 읽힌다. */
+  readonly scrollLabel: string;
   readonly startLabel: string;
   readonly endLabel: string;
   readonly table: HeatStripTable;
@@ -44,14 +48,20 @@ export interface DropOffHeatStripProps {
   readonly showShare: boolean;
 }
 
-export function DropOffHeatStrip({ bins, rangeLabel, countLabel, title, description, startLabel, endLabel, table, total, showShare }: DropOffHeatStripProps) {
+export function DropOffHeatStrip({ bins, rangeLabel, countLabel, title, description, scrollLabel, startLabel, endLabel, table, total, showShare }: DropOffHeatStripProps) {
   const id = useId();
   const max = Math.max(1, ...bins.map((bin) => bin.count));
   const width = bins.length * (CELL_WIDTH + CELL_GAP) - CELL_GAP;
   return (
     <div className="min-w-0">
       <figure>
-        <div className="overflow-x-auto pb-1">
+        <div
+          role="region"
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 가로로 밀리는 그래프 영역 안에는 초점을 받는 요소가 없어, 영역 자체가 초점을 받아야 키보드만으로 밀 수 있다(WCAG 2.1.1).
+          tabIndex={0}
+          aria-label={scrollLabel}
+          className="overflow-x-auto pb-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
           <svg
             role="img" aria-labelledby={`${id}-title ${id}-desc`} viewBox={`0 0 ${width} ${STRIP_HEIGHT}`}
             width={width} height={STRIP_HEIGHT} className="max-w-none"

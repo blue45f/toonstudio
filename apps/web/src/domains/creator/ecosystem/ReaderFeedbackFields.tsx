@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -41,7 +41,10 @@ export function FieldError({ id, children }: { readonly id: string; readonly chi
   return <p id={id} className="mt-1 text-xs font-bold text-bad">{children}</p>;
 }
 
-/** 1~3단계 척도 하나. 처음에는 아무것도 고르지 않은 상태이고, 고른 뒤에도 "선택 취소"로 답하지 않은 상태로 돌아갈 수 있다. */
+/**
+ * 1~3단계 척도 하나. 처음에는 아무것도 고르지 않은 상태이고, 고른 뒤에도 "선택 취소"로 답하지 않은 상태로 돌아갈 수 있다.
+ * "선택 취소"는 누르면 사라지므로, 초점이 body 로 떨어지지 않게 이 묶음의 첫 선택지로 옮긴다.
+ */
 export function ScaleField({ legend, name, labels, value, onChange, localize, clearLabel }: {
   readonly legend: string;
   readonly name: string;
@@ -51,8 +54,9 @@ export function ScaleField({ legend, name, labels, value, onChange, localize, cl
   readonly localize: (ko: string, en: string) => string;
   readonly clearLabel: string;
 }) {
+  const fieldsetRef = useRef<HTMLFieldSetElement>(null);
   return (
-    <fieldset className="min-w-0">
+    <fieldset ref={fieldsetRef} className="min-w-0">
       <legend className="text-sm font-bold text-fg">{legend}</legend>
       <div className="mt-2 grid gap-2 sm:grid-cols-3">
         {RATING_LEVELS.map((level) => (
@@ -64,7 +68,7 @@ export function ScaleField({ legend, name, labels, value, onChange, localize, cl
       {value !== null ? (
         <button
           type="button"
-          onClick={() => onChange(null)}
+          onClick={() => { onChange(null); fieldsetRef.current?.querySelector<HTMLElement>("input")?.focus(); }}
           className="mt-1 min-h-11 rounded-lg px-2 text-xs font-bold text-fg-3 underline underline-offset-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {clearLabel}
