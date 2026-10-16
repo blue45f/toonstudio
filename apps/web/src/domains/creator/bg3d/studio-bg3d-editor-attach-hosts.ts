@@ -17,6 +17,7 @@ import { attachStudioBg3dEditorGenericHost } from "./studio-bg3d-editor-generic-
 import { attachStudioBg3dEditorMeasureHost } from "./studio-bg3d-editor-measure-host";
 import { attachStudioBg3dEditorPhysicsHost } from "./studio-bg3d-editor-physics-host";
 import { attachStudioBg3dEditorMiscHost } from "./studio-bg3d-editor-misc-host";
+import { attachStudioBg3dEditorRecipeHost } from "./studio-bg3d-editor-recipe-host";
 
 export function attachStudioBg3dEditorHosts(h) {
   attachStudioBg3dEditorSessionHost(h);
@@ -32,4 +33,6 @@ export function attachStudioBg3dEditorHosts(h) {
   attachStudioBg3dEditorMeasureHost(h);
   attachStudioBg3dEditorPhysicsHost(h);
   attachStudioBg3dEditorMiscHost(h);
+  // 배치 호스트가 만든 ensureModelRootCached 를 호출 시점에 읽으므로 그 뒤에 붙인다.
+  attachStudioBg3dEditorRecipeHost(h);
 }
