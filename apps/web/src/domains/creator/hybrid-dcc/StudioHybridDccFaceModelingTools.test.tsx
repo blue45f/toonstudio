@@ -80,6 +80,8 @@ interface HarnessOptions {
   readonly sculpt?: boolean;
   /** 패널처럼 실행이 끝날 때까지 편집을 잠그는 비동기 실행기. */
   readonly asyncRun?: boolean;
+  /** 실행이 끝나도 문서를 바꾸지 못한 경우(패널은 실패를 기록에만 남긴다). */
+  readonly failRun?: boolean;
 }
 
 function Harness({ latest, options }: { readonly latest: Latest; readonly options: HarnessOptions }) {
@@ -92,8 +94,10 @@ function Harness({ latest, options }: { readonly latest: Latest; readonly option
       latest.ran(label);
       const result = edit(workspace, selection);
       const finish = () => {
-        setWorkspace(result.workspace);
-        if (result.selection) setSelection(result.selection);
+        if (!options.failRun) {
+          setWorkspace(result.workspace);
+          if (result.selection) setSelection(result.selection);
+        }
         setBusy(false);
       };
       if (options.asyncRun) {
@@ -478,6 +482,29 @@ describe("면 모델링 작업대: 아주 큰 메시", () => {
     open();
     type(distanceField(), "0.1");
     expect(viewport().getAttribute("data-mesh-hash")).not.toBe(originalHash);
+  });
+});
+
+describe("면 모델링 작업대: 적용 실패", () => {
+  it("실행이 끝났는데 문서가 바뀌지 않았으면 적용하지 못했다고 알리고 미리보기를 남겨 다시 시도하게 한다", async () => {
+    const { latest, originalHash } = setup({ asyncRun: true, failRun: true });
+    open();
+    const field = distanceField();
+    type(field, "0.3");
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(document.querySelector("[data-studio-hybrid-dcc-face-modeling-state]")!.getAttribute("data-state")).toBe("committing");
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("status").textContent).toContain("적용하지 못했습니다");
+    expect(document.querySelector("[data-studio-hybrid-dcc-face-modeling-state]")!.getAttribute("data-state")).toBe("previewing");
+    expect(latest.workspace.session.state.geometry.records.cube!.meshHash).toBe(originalHash);
+    expect(viewport().getAttribute("data-mesh-hash")).not.toBe(originalHash);
+    expect(screen.getByRole("button", { name: "적용" }).getAttribute("aria-disabled")).toBeNull();
+    // 같은 미리보기를 그대로 다시 적용할 수 있다.
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(latest.runs).toEqual(["면 밀기/당기기", "면 밀기/당기기"]);
   });
 });
 

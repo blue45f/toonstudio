@@ -113,6 +113,19 @@ export function useStudioHybridDccFaceModeling(
   }
 
   const committing = applyRequested && engaged && editingDisabled;
+  // 확정 요청이 끝났는데(패널 실행 큐 종료) 대상이 그대로면 적용에 실패한 것이다. 미리보기는 남겨 다시 시도할
+  // 수 있게 하고, 이유는 패널의 작업 기록에 있다고 알린다. 대상이 바뀐 성공 경로는 위 블록이 먼저 닫는다.
+  const [wasCommitting, setWasCommitting] = useState(false);
+  if (seenContext === contextKey && wasCommitting !== committing) {
+    setWasCommitting(committing);
+    if (wasCommitting && engaged) {
+      setApplyRequested(false);
+      setNotice(bt(
+        "적용하지 못했습니다. 패널의 작업 기록에서 이유를 확인하고 다시 시도하세요.",
+        "Could not apply. Check the panel log for the reason and try again.",
+      ));
+    }
+  }
   const unavailable: string | null = !run
     ? bt(
       "이 화면은 읽기 전용이라 면 모델링을 적용할 수 없습니다.",
