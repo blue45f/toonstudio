@@ -6,7 +6,18 @@ import { commitStudioBg3dHistoryTransition, stepStudioBg3dCommandHistory } from 
 import { createStudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
 import { studioBg3dModalOperationCoordinator } from "./studio-bg3d-modal-operation-coordinator";
 import { createDefaultStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
-import { attachStudioBg3dEditorRecipeHost, type StudioBg3dEditorRecipeHost } from "./studio-bg3d-editor-recipe-host";
+import { attachStudioBg3dEditorRecipeHost } from "./studio-bg3d-editor-recipe-host";
+import {
+  STUDIO_BG3D_RECIPE_ATTACHMENT_MISSING_MESSAGE,
+  STUDIO_BG3D_RECIPE_BOUNDS_UNAVAILABLE_MESSAGE,
+  STUDIO_BG3D_RECIPE_BUSY_MESSAGES,
+  STUDIO_BG3D_RECIPE_ENVIRONMENT_UNSUPPORTED_MESSAGE,
+  STUDIO_BG3D_RECIPE_VERIFY_FAILED_MESSAGE,
+  type StudioBg3dEditorRecipeHost,
+} from "./studio-bg3d-editor-recipe-run";
+import { STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE, STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE } from "./studio-bg3d-asset-placement-recipes";
+import { STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M } from "./studio-bg3d-scale-guide";
+import { CUTAWAY_ROOM_INNER_FACE, buildCutawayRoomScene, hideEveryRoomObject } from "./studio-bg3d-room-cutaway.test-fixture";
 
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
@@ -159,11 +170,12 @@ describe("attachStudioBg3dEditorRecipeHost — 성공 경로", () => {
     expect(stepStudioBg3dCommandHistory(refs, "undo")?.status).toBe("empty");
   });
 
-  it("사람 키에 맞춤: 높이를 1.7m 로 맞춰 바닥에 놓는다", async () => {
+  it("사람 키에 맞춤: 뷰포트 사람 눈금(1.6m)과 같은 높이로 맞춰 바닥에 놓는다", async () => {
     const { host, live, modelId } = createHost();
     await host.placeCustomModelWithRecipe(modelId, "human-scale");
     const bounds = worldBoundsOf(live.customModels[0]);
-    expect(bounds.max[1] - bounds.min[1]).toBeCloseTo(1.7, 9);
+    expect(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M).toBe(1.6);
+    expect(bounds.max[1] - bounds.min[1]).toBeCloseTo(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M, 9);
     expect(bounds.min[1]).toBeCloseTo(0, 9);
   });
 
@@ -193,21 +205,59 @@ describe("attachStudioBg3dEditorRecipeHost — 성공 경로", () => {
   });
 });
 
-describe("attachStudioBg3dEditorRecipeHost — 실패해도 장면을 망가뜨리지 않는다", () => {
-  function expectUntouched(context: ReturnType<typeof createHost>, message?: RegExp) {
+describe("attachStudioBg3dEditorRecipeHost — 방 빌더의 단면 방(숨긴 벽)", () => {
+  const INSIDE_NEAR_SOUTH = { current: { readView: () => ({ target: [0, 0.6, 2.0] as const }) } };
+
+  it("숨긴 앞벽 대신 보이는 가장 가까운 옆벽에 붙는다", async () => {
+    const room = buildCutawayRoomScene();
+    const { host, live, modelId } = createHost({ sceneObjects: room.objects, patch: { viewportApiRef: INSIDE_NEAR_SOUTH } });
+    await expect(host.placeCustomModelWithRecipe(modelId, "wall")).resolves.toBe(true);
+    const placed = live.customModels[0];
+    const bounds = worldBoundsOf(placed);
+    // 동쪽 벽 안쪽 면(x = 2.9)에서 0.005m 띄워 맞붙고 정면(+Z)은 방 안쪽(-X)을 향한다.
+    expect(bounds.max[0]).toBeCloseTo(CUTAWAY_ROOM_INNER_FACE.x - 0.005, 4);
+    const front = rotateVectorEulerXyz([0, 0, 1], placed.rotation);
+    expect(front[0]).toBeCloseTo(-1, 9);
+    expect(front[2]).toBeCloseTo(0, 9);
+  });
+
+  it("벽이 모두 숨겨져 있으면 장면을 바꾸지 않고, 숨긴 벽은 제외된다는 안내를 상태 줄로 낸다", async () => {
+    const room = buildCutawayRoomScene();
+    hideEveryRoomObject(room);
+    const context = createHost({ sceneObjects: room.objects, patch: { viewportApiRef: INSIDE_NEAR_SOUTH } });
+    await expect(context.host.placeCustomModelWithRecipe(context.modelId, "wall")).resolves.toBe(false);
+    expect(context.live.customModels).toEqual([]);
+    expect(context.calls.commit).not.toHaveBeenCalled();
+    expect(context.calls.status).toHaveBeenCalledWith({ tone: "error", message: STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE });
+  });
+});
+
+describe("attachStudioBg3dEditorRecipeHost — 실패해도 장면을 망가뜨리지 않고 상태 줄로 알린다", () => {
+  /** 장면·이력·선택이 그대로이고, 안내는 오류 줄(역할 없음)이 아니라 상태 줄(role=status)로만 나갔는지 본다. */
+  function expectUntouched(
+    context: ReturnType<typeof createHost>,
+    expected?: { readonly tone: "info" | "error"; readonly message: string | RegExp },
+  ) {
     expect(context.live.customModels).toEqual([]);
     expect(context.calls.commit).not.toHaveBeenCalled();
     expect(context.calls.replace).not.toHaveBeenCalled();
     expect(context.calls.setSelectedIds).not.toHaveBeenCalled();
     expect(context.calls.setRefTick).not.toHaveBeenCalled();
     expect(context.refs.historyCommandTimelineRef.current).toBeNull();
-    if (message) expect(context.calls.setError).toHaveBeenLastCalledWith(expect.stringMatching(message));
+    // 오류 줄에는 문구를 싣지 않는다(비우는 null 만 허용).
+    for (const [argument] of context.calls.setError.mock.calls) expect(argument).toBeNull();
+    if (!expected) return;
+    expect(context.calls.status).toHaveBeenCalledTimes(1);
+    const [status] = context.calls.status.mock.calls[0] as [{ tone: string; message: string }];
+    expect(status.tone).toBe(expected.tone);
+    if (typeof expected.message === "string") expect(status.message).toBe(expected.message);
+    else expect(status.message).toMatch(expected.message);
   }
 
   it("경계가 비어 있는 모델(크기 0)은 배치하지 않고 이유를 알린다", async () => {
     const context = createHost({ root: new THREE.Group() });
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
-    expectUntouched(context, /경계를 확인하지 못해/u);
+    expectUntouched(context, { tone: "error", message: STUDIO_BG3D_RECIPE_BOUNDS_UNAVAILABLE_MESSAGE });
   });
 
   it("좌표가 NaN 인 모델은 배치하지 않는다", async () => {
@@ -217,7 +267,7 @@ describe("attachStudioBg3dEditorRecipeHost — 실패해도 장면을 망가뜨�
     root.add(new THREE.Mesh(geometry, MATERIAL));
     const context = createHost({ root });
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "human-scale")).resolves.toBe(false);
-    expectUntouched(context, /경계를 확인하지 못해/u);
+    expectUntouched(context, { tone: "error", message: STUDIO_BG3D_RECIPE_BOUNDS_UNAVAILABLE_MESSAGE });
   });
 
   it("높이가 0인 납작한 모델은 계획 단계에서 거부한다", async () => {
@@ -226,20 +276,25 @@ describe("attachStudioBg3dEditorRecipeHost — 실패해도 장면을 망가뜨�
     root.add(plane);
     const context = createHost({ root });
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
-    expectUntouched(context, /크기가 0/u);
+    expectUntouched(context, { tone: "error", message: /크기가 0/u });
   });
 
-  it("붙일 벽이 없으면 벽에 붙이기를 거부한다", async () => {
+  it("붙일 벽이 없으면 벽에 붙이기를 거부하고, 숨긴 벽은 제외된다는 점과 되돌리는 방법을 알린다", async () => {
     const context = createHost();
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "wall")).resolves.toBe(false);
-    expectUntouched(context, /벽을 찾지 못/u);
+    expectUntouched(context, { tone: "error", message: STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE });
   });
 
   it("번들 환경에는 크기를 바꾸거나 벽에 붙이는 방식을 쓰지 않고 모델 준비도 시작하지 않는다", async () => {
     const context = createHost({ modelId: "ts-bg3d-classroom-v1" });
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "wall")).resolves.toBe(false);
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "human-scale")).resolves.toBe(false);
-    expectUntouched(context, /쓸 수 없는 배치 방식/u);
+    expect(context.calls.status).toHaveBeenCalledTimes(2);
+    for (const [status] of context.calls.status.mock.calls) {
+      expect(status).toEqual({ tone: "error", message: STUDIO_BG3D_RECIPE_ENVIRONMENT_UNSUPPORTED_MESSAGE });
+    }
+    context.calls.status.mockClear();
+    expectUntouched(context);
     expect(context.host.ensureModelRootCached).not.toHaveBeenCalled();
   });
 
@@ -250,53 +305,74 @@ describe("attachStudioBg3dEditorRecipeHost — 실패해도 장면을 망가뜨�
     expect(context.live.customModels).toHaveLength(2);
   });
 
-  it("알 수 없는 배치 방식 이름은 받지 않는다", async () => {
+  it("알 수 없는 배치 방식 이름은 받지 않고 그때마다 안내한다", async () => {
     const context = createHost();
-    for (const recipe of ["", "diagonal", "FLOOR", "__proto__"]) {
+    const recipes = ["", "diagonal", "FLOOR", "__proto__"];
+    for (const recipe of recipes) {
       await expect(context.host.placeCustomModelWithRecipe(context.modelId, recipe)).resolves.toBe(false);
     }
-    expectUntouched(context, /배치 방식이 올바르지 않/u);
+    expect(context.calls.status).toHaveBeenCalledTimes(recipes.length);
+    for (const [status] of context.calls.status.mock.calls) {
+      expect(status).toEqual({ tone: "error", message: STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE });
+    }
+    context.calls.status.mockClear();
+    expectUntouched(context);
   });
 
-  it("다른 작업이 진행 중이거나 물리 미리보기 중이면 아무것도 하지 않는다", async () => {
-    for (const patch of [
-      { isUploadingModel: true },
-      { isCapturing: true },
-      { isRestoringScene: true },
-      { isQuadView: true },
-      { deletingModelId: "other" },
-      { applyingTemplateId: "template" },
-      { physicsPhaseRef: { current: "running" as const } },
-      { open: false },
-    ] satisfies Partial<StudioBg3dEditorRecipeHost>[]) {
+  it.each([
+    ["모델 가져오는 중", { isUploadingModel: true }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.uploadingModel],
+    ["촬영 중", { isCapturing: true }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.capturing],
+    ["장면 복원 중", { isRestoringScene: true }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.notReady],
+    ["4분할 보기", { isQuadView: true }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.quadView],
+    ["모델 지우는 중", { deletingModelId: "other" }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.deletingModel],
+    ["템플릿 적용 중", { applyingTemplateId: "template" }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.applyingTemplate],
+    ["물리 시뮬레이션 중", { physicsPhaseRef: { current: "running" as const } }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.physicsBusy],
+    ["여러 컷 렌더링 중", { isBatchRenderingShots: true }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.batchRendering],
+    ["편집기가 닫힘", { open: false }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.notReady],
+    ["렌더러 준비 전", { modelRenderer: null }, STUDIO_BG3D_RECIPE_BUSY_MESSAGES.notReady],
+  ] satisfies [string, Partial<StudioBg3dEditorRecipeHost>, string][])(
+    "%s: 아무것도 하지 않고 무엇이 막았고 다음에 무엇을 하면 되는지 한 줄로 알린다",
+    async (_name, patch, message) => {
       const context = createHost({ patch });
       await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
-      expectUntouched(context);
+      expectUntouched(context, { tone: "info", message });
       expect(context.host.ensureModelRootCached).not.toHaveBeenCalled();
-    }
-  });
+    },
+  );
 
-  it("장면 노드 한도를 넘으면 장면을 바꾸지 않는다", async () => {
+  it("장면 노드 한도를 넘으면 장면을 바꾸지 않고 한도를 알린다", async () => {
     const context = createHost({ patch: { canAdmitSceneNodes: vi.fn(() => false) } });
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
-    expectUntouched(context);
+    expectUntouched(context, { tone: "error", message: STUDIO_BG3D_RECIPE_BUSY_MESSAGES.nodeLimit });
+  });
+
+  it("장면에 반영하려는 순간 한도에 닿아도 같은 안내를 하고 장면은 그대로다", async () => {
+    let calls = 0;
+    const context = createHost({ patch: { canAdmitSceneNodes: vi.fn(() => (calls += 1) < 2) } });
+    await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
+    expectUntouched(context, { tone: "error", message: STUDIO_BG3D_RECIPE_BUSY_MESSAGES.nodeLimit });
   });
 
   it("장면 연결 정보가 없으면 배치하지 않는다", async () => {
     const context = createHost();
     (context.host.attachmentByStorageModelIdRef as { current: Map<string, StudioBg3dModelAttachment> }).current.clear();
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
-    expectUntouched(context, /연결 정보를 확인할 수 없어/u);
+    expectUntouched(context, { tone: "error", message: STUDIO_BG3D_RECIPE_ATTACHMENT_MISSING_MESSAGE });
   });
 
   it("모델 준비가 실패하면 일반 안내만 남기고 장면은 그대로다", async () => {
     const context = createHost({ patch: { ensureModelRootCached: vi.fn(async () => { throw new Error("raw internal detail"); }) } });
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
-    expectUntouched(context, /무결성을 확인하지 못해/u);
-    expect(context.calls.setError).not.toHaveBeenCalledWith(expect.stringContaining("raw internal detail"));
+    expectUntouched(context, { tone: "error", message: STUDIO_BG3D_RECIPE_VERIFY_FAILED_MESSAGE });
+    expect(context.calls.status).not.toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining("raw internal detail") }));
   });
 
-  it("편집 세션이 도중에 바뀌면 조용히 중단하고 장면을 바꾸지 않는다", async () => {
+  it("편집 세션이 시작 전에 이미 끝나 있으면 한 줄로 알리고, 도중에 바뀌면 조용히 중단한다", async () => {
+    const ended = createHost();
+    studioBg3dModalOperationCoordinator.endSession(ended.session);
+    await expect(ended.host.placeCustomModelWithRecipe(ended.modelId, "floor")).resolves.toBe(false);
+    expectUntouched(ended, { tone: "info", message: STUDIO_BG3D_RECIPE_BUSY_MESSAGES.sessionChanged });
+
     const context = createHost();
     const ensure = vi.fn(async () => {
       studioBg3dModalOperationCoordinator.endSession(context.session);
@@ -305,6 +381,7 @@ describe("attachStudioBg3dEditorRecipeHost — 실패해도 장면을 망가뜨�
     (context.host as { ensureModelRootCached: unknown }).ensureModelRootCached = ensure;
     await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
     expectUntouched(context);
+    expect(context.calls.status).not.toHaveBeenCalled();
   });
 
   it("진행 중인 포인터 배치 미리보기는 먼저 취소한다", async () => {

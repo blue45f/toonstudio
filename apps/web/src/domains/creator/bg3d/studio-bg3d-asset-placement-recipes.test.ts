@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_BG3D_ASSET_PLACEMENT_RECIPES,
   STUDIO_BG3D_ASSET_PLACEMENT_RECIPE_IDS,
-  STUDIO_BG3D_HUMAN_REFERENCE_HEIGHT_METERS,
   STUDIO_BG3D_WALL_CLEARANCE_METERS,
   isStudioBg3dAssetPlacementRecipeId,
   listStudioBg3dAssetPlacementRecipes,
@@ -12,6 +11,8 @@ import {
   type StudioBg3dPlacementWall,
 } from "./studio-bg3d-asset-placement-recipes";
 import { rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
+import { planStudioBg3dModelPlacementRecipe } from "./studio-bg3d-placement-recipe";
+import { STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M } from "./studio-bg3d-scale-guide";
 
 type Vec3 = readonly [number, number, number];
 
@@ -119,12 +120,13 @@ describe("장면 중앙 정렬", () => {
 });
 
 describe("사람 키 기준 맞춤", () => {
-  it("모델 높이를 1.7m 로 맞추고 균일 배율로 바닥에 놓는다", () => {
+  it("모델 높이를 뷰포트 사람 눈금(1.6m)과 같은 단일 출처 값으로 맞추고 균일 배율로 바닥에 놓는다", () => {
+    expect(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M).toBe(1.6);
     const result = planStudioBg3dAssetPlacement(input({ recipe: "human-scale", dropPoint: [1, 1] }));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const bounds = worldBounds(result.position, result.rotation, result.scale);
-    expect(bounds.max[1] - bounds.min[1]).toBeCloseTo(STUDIO_BG3D_HUMAN_REFERENCE_HEIGHT_METERS, 9);
+    expect(bounds.max[1] - bounds.min[1]).toBeCloseTo(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M, 9);
     expect(bounds.min[1]).toBeCloseTo(0, 9);
     expect(result.scale[0]).toBeCloseTo(result.scale[1], 12);
     expect(result.scale[2]).toBeCloseTo(result.scale[1], 12);
@@ -188,8 +190,47 @@ describe("벽에 붙이기", () => {
     for (const wall of [null, undefined, { axis: "y", direction: 1, coordinate: 0 }, { axis: "x", direction: 2, coordinate: 0 }, { axis: "z", direction: 1, coordinate: Number.NaN }]) {
       const result = planStudioBg3dAssetPlacement(input({ recipe: "wall", wall: wall as never }));
       expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.reason).toContain("벽");
+      if (!result.ok) {
+        expect(result.code).toBe("wall-not-found");
+        expect(result.reason).toContain("벽");
+        // 숨긴 벽은 대상이 아니라는 점과 되돌리는 방법을 함께 알린다.
+        expect(result.reason).toContain("숨긴 벽은 제외돼요");
+        expect(result.reason).toContain("숨긴 벽 되돌리기");
+      }
     }
+  });
+});
+
+describe("기존 배치 계획 모듈과의 관계", () => {
+  it("피벗이 경계 중심이면 기존 계획과 같은 결과다(보정이 아무것도 바꾸지 않는다)", () => {
+    const localBounds = { min: [-1, -2, -0.5] as Vec3, max: [1, 2, 0.5] as Vec3 };
+    const result = planStudioBg3dAssetPlacement({
+      recipe: "floor",
+      localBounds,
+      seed: { position: [0.5, 9, -3], rotation: [0, 0, 0], scale: [1.5, 1.5, 1.5] },
+      dropPoint: [0.5, -3],
+    });
+    const legacy = planStudioBg3dModelPlacementRecipe({
+      position: [0.5, 9, -3],
+      rotation: [0, 0, 0],
+      scale: [1.5, 1.5, 1.5],
+      boundingSize: [2, 4, 1],
+      groundY: 0,
+    });
+    expect(result.ok && legacy.ok).toBe(true);
+    if (!result.ok || !legacy.ok) return;
+    for (let axis = 0; axis < 3; axis += 1) expect(result.position[axis]).toBeCloseTo(legacy.position[axis], 12);
+    expect(result.rotation).toEqual(legacy.rotation);
+    expect(result.scale).toEqual(legacy.scale);
+  });
+
+  it("높이 맞춤 목표가 올바르지 않거나 모델 높이를 알 수 없으면 계획하지 않는다", () => {
+    for (const humanHeightMeters of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const result = planStudioBg3dAssetPlacement(input({ recipe: "human-scale", humanHeightMeters }));
+      expect(result).toMatchObject({ ok: false, code: "plan-failed" });
+    }
+    const flatSeed = planStudioBg3dAssetPlacement(input({ recipe: "human-scale", seed: { ...SEED, scale: [1, 0, 1] } }));
+    expect(flatSeed.ok).toBe(false);
   });
 });
 

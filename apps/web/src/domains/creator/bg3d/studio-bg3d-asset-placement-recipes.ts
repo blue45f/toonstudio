@@ -1,17 +1,24 @@
 /**
  * 소재 카드의 원클릭 배치 레시피 — 모델을 어디에 어떤 크기·방향으로 둘지 정하는 순수 계획.
  *
- * 변환 수학(자동 맞춤·요 회전·접지·피벗 보정)은 기존 `planStudioBg3dModelPlacementRecipe` 가 맡고, 이 모듈은
- * 레시피마다 입력을 채워 부르는 얇은 층이다. 엔진·DOM 에 의존하지 않으며 입력을 바꾸지 않는다.
+ * 변환 수학(요 회전·접지)은 기존 `planStudioBg3dModelPlacementRecipe` 가 맡고, 이 모듈은 레시피마다 입력을 채워 부르는 얇은
+ * 층이다. 기존 모듈은 모델 피벗이 경계 상자 중심이라고 가정하므로, 가져온 모델처럼 피벗이 중심이 아닌 경우의 보정(경계 중심을
+ * 목표 X/Z 에 맞추고 접지 높이를 중심 기준으로 되돌리기)과 높이 맞춤 배율은 여기서 그 결과 위에 얹는다 — 기존 모듈은 편집기
+ * 정적 그래프에 있어서 건드리지 않는다. 엔진·DOM 에 의존하지 않으며 입력을 바꾸지 않는다.
  *
  * 규칙
  * - 입력이 올바르지 않으면(경계 크기 0·NaN·역전, 벽 정보 누락 등) 변환을 만들지 않고 이유를 돌려준다. 호출한 쪽은
- *   그 경우 장면을 건드리지 않는다.
+ *   그 경우 장면을 건드리지 않는다. 이유(`reason`)는 사용자에게 그대로 보이는 해요체 문장이고 "원인 + 다음 행동"을 담는다.
+ *   프로그램이 가르는 값은 `code` 다.
  * - 레시피는 모델의 정면이 로컬 +Z 라고 가정한다(glTF 관례). 정면이 다른 모델은 배치 뒤에 회전 도구로 돌린다.
  * - 결과 변환은 장면 문서의 한도(스케일 0.001~1000, 월드 좌표 ±10000) 안이어야 한다. 넘으면 실패다.
+ * - 사람 키는 뷰포트 눈금(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M)과 같은 값을 쓴다(단일 출처).
+ * - "벽"은 보이는 축 정렬 수직 면이다. 숨긴(visible:false) 벽은 대상에서 제외한다 — 자동 단면이 숨긴 벽에는 붙지 않는다.
  */
 
+import { rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
 import { planStudioBg3dModelPlacementRecipe } from "./studio-bg3d-placement-recipe";
+import { STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M } from "./studio-bg3d-scale-guide";
 
 import type { StudioBg3dPlacementVec3 } from "./studio-bg3d-placement-recipe";
 
@@ -30,25 +37,25 @@ export const STUDIO_BG3D_ASSET_PLACEMENT_RECIPES: readonly StudioBg3dAssetPlacem
   {
     id: "floor",
     label: "바닥에 놓기",
-    description: "카메라가 보는 지점의 바닥에 모델 밑면을 붙여 놓습니다.",
+    description: "카메라가 보는 지점의 바닥에 모델 밑면을 붙여 놓아요.",
     appliesToEnvironment: true,
   },
   {
     id: "wall",
     label: "벽에 붙이기",
-    description: "가까운 벽을 찾아 모델 뒷면을 벽에 맞붙이고 정면을 방 안쪽으로 돌립니다.",
+    description: "가까운 벽을 찾아 모델 뒷면을 벽에 맞붙이고 정면을 방 안쪽으로 돌려요. 숨긴 벽은 제외돼요.",
     appliesToEnvironment: false,
   },
   {
     id: "human-scale",
     label: "사람 키에 맞춤",
-    description: "모델 높이를 사람 키(1.7m)에 맞춰 바닥에 놓습니다.",
+    description: `모델 높이를 사람 키(${STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M}m)에 맞춰 바닥에 놓아요.`,
     appliesToEnvironment: false,
   },
   {
     id: "scene-center",
     label: "장면 중앙",
-    description: "기존 오브젝트가 모인 장면의 가운데 바닥에 놓습니다.",
+    description: "기존 오브젝트가 모인 장면의 가운데 바닥에 놓아요.",
     appliesToEnvironment: true,
   },
 ]);
@@ -63,7 +70,6 @@ export function listStudioBg3dAssetPlacementRecipes(
   return STUDIO_BG3D_ASSET_PLACEMENT_RECIPES.filter((recipe) => !isEnvironment || recipe.appliesToEnvironment);
 }
 
-export const STUDIO_BG3D_HUMAN_REFERENCE_HEIGHT_METERS = 1.7;
 /** 벽과 모델 뒷면 사이의 틈. 같은 평면에서 면이 겹쳐 깜박이는 것을 막는다. */
 export const STUDIO_BG3D_WALL_CLEARANCE_METERS = 0.005;
 
@@ -109,6 +115,18 @@ export interface StudioBg3dAssetPlacementInput {
   readonly humanHeightMeters?: number;
 }
 
+export type StudioBg3dAssetPlacementFailureCode =
+  | "invalid-recipe"
+  | "invalid-bounds"
+  | "degenerate-size"
+  | "invalid-seed"
+  | "invalid-drop-point"
+  | "invalid-scene-bounds"
+  | "wall-not-found"
+  | "plan-failed"
+  | "scale-out-of-range"
+  | "position-out-of-range";
+
 export type StudioBg3dAssetPlacementResult =
   | {
     readonly ok: true;
@@ -117,10 +135,18 @@ export type StudioBg3dAssetPlacementResult =
     readonly rotation: StudioBg3dPlacementVec3;
     readonly scale: StudioBg3dPlacementVec3;
   }
-  | { readonly ok: false; readonly reason: string };
+  | { readonly ok: false; readonly code: StudioBg3dAssetPlacementFailureCode; readonly reason: string };
 
-function fail(reason: string): StudioBg3dAssetPlacementResult {
-  return Object.freeze({ ok: false, reason });
+/** 배치 방식을 알 수 없을 때(호스트도 같은 문장을 쓴다). */
+export const STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE =
+  "배치 방식을 알 수 없어요. 목록에서 배치 방식을 다시 골라 주세요.";
+
+/** 붙일 벽이 없을 때. 숨긴 벽은 대상이 아니라는 점과 되돌리는 방법을 함께 알린다. */
+export const STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE =
+  "붙일 벽을 찾지 못했어요. 숨긴 벽은 제외돼요. '숨긴 벽 되돌리기'나 레이어 목록의 눈 아이콘으로 벽을 다시 켠 뒤 눌러 주세요. 카메라를 벽 가까이 두면 더 잘 찾아요.";
+
+function fail(code: StudioBg3dAssetPlacementFailureCode, reason: string): StudioBg3dAssetPlacementResult {
+  return Object.freeze({ ok: false, code, reason });
 }
 
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
@@ -150,11 +176,11 @@ function yawDegreesFacing(wall: StudioBg3dPlacementWall): number {
 /** 레시피 한 가지로 모델 변환을 계획한다. 실패하면 장면을 바꾸지 말아야 한다. */
 export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInput): StudioBg3dAssetPlacementResult {
   if (typeof input !== "object" || input === null || !isStudioBg3dAssetPlacementRecipeId(input.recipe)) {
-    return fail("배치 방식이 올바르지 않습니다. 목록에서 배치 방식을 다시 골라 주세요.");
+    return fail("invalid-recipe", STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE);
   }
   const { localBounds, seed } = input;
   if (!validBounds(localBounds)) {
-    return fail("모델 경계를 읽을 수 없어 배치하지 않았습니다. 모델이 화면에 나타난 뒤 다시 시도해 주세요.");
+    return fail("invalid-bounds", "모델 경계를 읽을 수 없어서 배치하지 않았어요. 모델이 화면에 나타난 뒤에 다시 시도해 주세요.");
   }
   const size: [number, number, number] = [
     localBounds.max[0] - localBounds.min[0],
@@ -162,15 +188,15 @@ export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInpu
     localBounds.max[2] - localBounds.min[2],
   ];
   if (size.some((extent) => !(extent > MIN_MODEL_EXTENT) || extent > MAX_MODEL_EXTENT)) {
-    return fail("모델 크기가 0이거나 비정상이라 배치하지 않았습니다. 다른 모델로 시도해 주세요.");
+    return fail("degenerate-size", "모델 크기가 0이거나 비정상이라 배치하지 않았어요. 다른 모델로 다시 시도해 주세요.");
   }
   if (typeof seed !== "object" || seed === null || !finiteVec3(seed.position) || !finiteVec3(seed.rotation) || !finiteVec3(seed.scale)) {
-    return fail("배치 시작 변환이 올바르지 않아 배치하지 않았습니다.");
+    return fail("invalid-seed", "배치 시작 변환이 올바르지 않아서 배치하지 않았어요. 3D 배경 편집기를 닫았다가 다시 열어 주세요.");
   }
   const dropPoint = input.dropPoint ?? [0, 0];
   const groundY = input.groundY ?? 0;
   if (!Array.isArray(dropPoint) || dropPoint.length !== 2 || !dropPoint.every(finite) || !finite(groundY)) {
-    return fail("놓을 위치를 알 수 없어 배치하지 않았습니다. 화면을 조금 움직인 뒤 다시 시도해 주세요.");
+    return fail("invalid-drop-point", "놓을 위치를 알 수 없어서 배치하지 않았어요. 화면을 조금 움직인 뒤에 다시 눌러 주세요.");
   }
 
   const center: StudioBg3dPlacementVec3 = [
@@ -188,7 +214,7 @@ export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInpu
     case "scene-center": {
       const bounds = input.sceneBounds;
       if (bounds !== null && bounds !== undefined) {
-        if (!validBounds(bounds)) return fail("장면 경계를 읽을 수 없어 배치하지 않았습니다. 장면을 확인한 뒤 다시 시도해 주세요.");
+        if (!validBounds(bounds)) return fail("invalid-scene-bounds", "장면 경계를 읽을 수 없어서 배치하지 않았어요. 장면을 확인한 뒤에 다시 시도해 주세요.");
         anchor = [(bounds.min[0] + bounds.max[0]) / 2, (bounds.min[2] + bounds.max[2]) / 2];
       } else {
         anchor = [0, 0];
@@ -196,11 +222,11 @@ export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInpu
       break;
     }
     case "human-scale":
-      fitHeight = input.humanHeightMeters ?? STUDIO_BG3D_HUMAN_REFERENCE_HEIGHT_METERS;
+      fitHeight = input.humanHeightMeters ?? STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M;
       break;
     case "wall": {
       if (!validWall(input.wall)) {
-        return fail("붙일 벽을 찾지 못했습니다. 카메라를 벽 가까이 두거나 벽 역할을 하는 오브젝트를 먼저 놓아 주세요.");
+        return fail("wall-not-found", STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE);
       }
       const wall = input.wall;
       yawDegrees = yawDegreesFacing(wall);
@@ -211,29 +237,46 @@ export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInpu
     }
   }
 
+  const PLAN_FAILED = "모델 크기와 방향을 계산하지 못해서 배치하지 않았어요. 다른 배치 방식을 골라 주세요.";
+  // 높이 맞춤: 시작 배율을 균일하게 조정해 (배율을 반영한) 모델 높이가 목표값이 되게 한다. 작은 모델은 키운다.
+  let fitFactor = 1;
+  if (fitHeight !== undefined) {
+    const height = Math.abs(size[1] * seed.scale[1]);
+    fitFactor = fitHeight / height;
+    // 기본 계획 모듈의 이유는 개발자용 문장이라 그대로 보이지 않는다. 사용자에게는 다음 행동이 있는 해요체 문장만 보인다.
+    if (!finite(fitHeight) || fitHeight <= 0 || !(height > 0) || !Number.isFinite(fitFactor) || fitFactor <= 0) {
+      return fail("plan-failed", PLAN_FAILED);
+    }
+  }
   const planned = planStudioBg3dModelPlacementRecipe({
     position: seed.position,
     rotation: seed.rotation,
-    scale: seed.scale,
+    scale: [seed.scale[0] * fitFactor, seed.scale[1] * fitFactor, seed.scale[2] * fitFactor],
     boundingSize: size,
-    boundsCenterOffset: center,
-    anchorCenterXZ: anchor,
     groundY,
     yawDegrees,
-    ...(fitHeight !== undefined ? { fitHeight } : {}),
   });
-  if (!planned.ok) return fail(`${planned.reason} 다른 배치 방식을 골라 주세요.`);
+  if (!planned.ok) return fail("plan-failed", PLAN_FAILED);
+
+  // 기존 계획은 피벗이 경계 중심이라고 보고 접지한다. 실제 경계 중심은 피벗에서 (배율·회전을 반영한) shift 만큼 떨어져 있으므로,
+  // 경계 중심이 목표 X/Z 에 오고 경계 아래면이 접지 높이에 닿도록 그만큼 피벗 위치를 되돌린다.
+  const shift = rotateVectorEulerXyz(
+    [center[0] * planned.scale[0], center[1] * planned.scale[1], center[2] * planned.scale[2]],
+    planned.rotation as [number, number, number],
+  );
+  const position: StudioBg3dPlacementVec3 = [anchor[0] - shift[0], planned.position[1] - shift[1], anchor[1] - shift[2]];
+  if (!position.every(finite)) return fail("plan-failed", PLAN_FAILED);
 
   if (planned.scale.some((component) => !(Math.abs(component) >= MIN_SCALE && Math.abs(component) <= MAX_SCALE))) {
-    return fail("배치 결과 크기가 장면이 허용하는 범위(0.001~1000배)를 벗어납니다. 다른 배치 방식을 골라 주세요.");
+    return fail("scale-out-of-range", "배치 결과 크기가 장면이 허용하는 범위(0.001~1000배)를 벗어나서 배치하지 않았어요. 다른 배치 방식을 골라 주세요.");
   }
-  if (planned.position.some((component) => Math.abs(component) > MAX_WORLD_COORDINATE)) {
-    return fail("배치 위치가 3D 장면의 안전 범위를 벗어납니다. 카메라를 장면 가까이 옮긴 뒤 다시 시도해 주세요.");
+  if (position.some((component) => Math.abs(component) > MAX_WORLD_COORDINATE)) {
+    return fail("position-out-of-range", "배치 위치가 3D 장면의 안전 범위를 벗어나서 배치하지 않았어요. 카메라를 장면 가까이 옮긴 뒤에 다시 눌러 주세요.");
   }
   return Object.freeze({
     ok: true,
     recipe: input.recipe,
-    position: planned.position,
+    position,
     rotation: planned.rotation,
     scale: planned.scale,
   });
