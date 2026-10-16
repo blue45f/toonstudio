@@ -808,7 +808,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                       deviceProfileLabel={deviceQuality.profile === "mobile" ? "모바일" : "데스크톱"}
                       onFileChange={handleUploadModelFiles}
                       onCancelImport={() => modelImportAbortRef.current?.abort()}
-                      onAdd={addCustomModelToScene}
+                      onAdd={addCustomModelToScene} onPlaceWithRecipe={h.placeCustomModelWithRecipe}
                       onDelete={handleDeleteModelFromLibrary}
                     />
                   </Suspense>

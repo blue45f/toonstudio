@@ -10,11 +10,28 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 
+import {
+  StudioBg3dAssetAiUseFields,
+  type StudioBg3dAssetAiGeneratedChoice,
+  type StudioBg3dAssetAiTrainingChoice,
+} from "./StudioBg3dAssetAiUseFields";
+import { StudioBg3dAssetCardRightsActions, type StudioBg3dAssetCardPanel } from "./StudioBg3dAssetCardRightsActions";
+import { StudioBg3dAssetRightsFilterBar } from "./StudioBg3dAssetRightsFilterBar";
+import { StudioBg3dAssetRightsSummary } from "./StudioBg3dAssetRightsInfo";
 import { StudioBg3dSkpImportPanel } from "./StudioBg3dSkpImportPanel";
+import { listStudioBg3dAssetPlacementRecipes } from "./studio-bg3d-asset-placement-recipes";
+import { getStudioBg3dBundledProvenance } from "./studio-bg3d-asset-rights-catalog";
+import {
+  buildStudioBg3dAssetRightsView,
+  buildStudioBg3dAssetRightsViews,
+  countStudioBg3dAssetRightsValues,
+  filterStudioBg3dAssetRightsEntries,
+  hasActiveStudioBg3dAssetRightsFilter,
+} from "./studio-bg3d-asset-rights-view";
 import {
   getStudioBg3dEnvironmentAsset,
   isStudioBg3dEnvironmentAssetId,
@@ -22,6 +39,11 @@ import {
 import { STUDIO_BG3D_SKP_WAREHOUSE_NOTICE } from "./studio-bg3d-skp-import-copy";
 
 import type { Bg3dModelImportItem, Bg3dModelLibraryEntry } from "./bg3d-model-library";
+import type { StudioBg3dAssetAiGenerated, StudioBg3dAssetAiTraining } from "./studio-bg3d-asset-metadata";
+import type { StudioBg3dAssetPlacementRecipeId } from "./studio-bg3d-asset-placement-recipes";
+import type { StudioBg3dAssetRightsFilterKey } from "./studio-bg3d-asset-rights-copy";
+import type { StudioBg3dAssetRightsFilter, StudioBg3dAssetRightsView } from "./studio-bg3d-asset-rights-view";
+import type { StudioBg3dAssetRightsLoadState } from "./useStudioBg3dAssetRights";
 
 const ASSET_BATCH_SIZE = 12;
 const MODEL_RESULTS_ID = "bg3d-model-library-results";
@@ -36,6 +58,12 @@ type AssetClassification = "character" | "creature" | "prop";
 type AssetClassificationFilter = "all" | AssetClassification | "environment";
 type ImportRights = NonNullable<Bg3dModelImportItem["rights"]>;
 type ImportRightsStatus = NonNullable<ImportRights["status"]>;
+/** 라이브러리 레코드가 모르는 AI 표기는 같은 객체에 실려 가져오기 단계가 메타데이터 저장소에 따로 기록한다. */
+export type StudioBg3dImportRightsWithAiUse = ImportRights & {
+  readonly aiGenerated?: StudioBg3dAssetAiGenerated;
+  readonly aiTraining?: StudioBg3dAssetAiTraining;
+};
+type OpenCard = { readonly id: string; readonly panel: StudioBg3dAssetCardPanel };
 type DownloadFeedback = {
   readonly modelId: string;
   readonly tone: "error" | "notice" | "success";
@@ -82,10 +110,15 @@ type StudioBg3dAssetLibraryPanelProps = {
   } | null;
   isRestoringScene: boolean;
   deviceProfileLabel: "모바일" | "데스크톱";
-  onFileChange: (event: ChangeEvent<HTMLInputElement>, rights: ImportRights) => void;
+  onFileChange: (event: ChangeEvent<HTMLInputElement>, rights: StudioBg3dImportRightsWithAiUse) => void;
   onCancelImport: () => void;
   onAdd: (id: string) => void;
   onDelete: (id: string) => void;
+  /** 카드의 권리 보기. 없으면 목록 항목만으로 계산해 권리를 모두 미확인으로 보인다. */
+  rightsViews?: ReadonlyMap<string, StudioBg3dAssetRightsView>;
+  rightsLoadState?: StudioBg3dAssetRightsLoadState;
+  /** 카드에서 배치 방식을 골라 한 번에 배치한다. 없으면 배치 방식 버튼을 내놓지 않는다. */
+  onPlaceWithRecipe?: (modelId: string, recipe: StudioBg3dAssetPlacementRecipeId) => void | Promise<unknown>;
 };
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -105,6 +138,9 @@ export function StudioBg3dAssetLibraryPanel({
   onCancelImport,
   onAdd,
   onDelete,
+  rightsViews,
+  rightsLoadState = "ready",
+  onPlaceWithRecipe,
 }: StudioBg3dAssetLibraryPanelProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AssetFilter>("all");
@@ -116,9 +152,14 @@ export function StudioBg3dAssetLibraryPanel({
   const [attributionRequired, setAttributionRequired] = useState(false);
   const [licenseName, setLicenseName] = useState("");
   const [attribution, setAttribution] = useState("");
+  const [aiGenerated, setAiGenerated] = useState<StudioBg3dAssetAiGeneratedChoice>("unknown");
+  const [aiTraining, setAiTraining] = useState<StudioBg3dAssetAiTrainingChoice>("unknown");
+  const [rightsFilter, setRightsFilter] = useState<StudioBg3dAssetRightsFilter>({});
+  const [openCard, setOpenCard] = useState<OpenCard | null>(null);
   const [exportingModelId, setExportingModelId] = useState<string | null>(null);
   const [downloadFeedback, setDownloadFeedback] = useState<DownloadFeedback | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastCardToggleRef = useRef<HTMLButtonElement | null>(null);
   const downloadOperationRef = useRef<{
     readonly controller: AbortController;
     readonly modelId: string;
@@ -193,16 +234,25 @@ export function StudioBg3dAssetLibraryPanel({
   const rightsAreComplete =
     (rightsStatus !== "licensed" || trimmedLicenseName.length > 0) &&
     (!attributionRequired || trimmedAttribution.length > 0);
-  const importRights: ImportRights = {
+  const importRights: StudioBg3dImportRightsWithAiUse = {
     status: rightsStatus,
     commercialUse: rightsStatus === "unknown" ? false : commercialUse,
     attributionRequired,
     ...(trimmedLicenseName ? { licenseName: trimmedLicenseName } : {}),
     ...(trimmedAttribution ? { attribution: trimmedAttribution } : {}),
+    // "모름"은 필드를 만들지 않는다. 저장소에서 미확인으로 읽힌다.
+    ...(aiGenerated !== "unknown" ? { aiGenerated } : {}),
+    ...(aiTraining !== "unknown" ? { aiTraining } : {}),
   };
 
+  const views = useMemo(
+    () => rightsViews ?? buildStudioBg3dAssetRightsViews(entries, { provenanceOf: getStudioBg3dBundledProvenance }),
+    [entries, rightsViews],
+  );
+  const rightsCounts = useMemo(() => countStudioBg3dAssetRightsValues(entries, views), [entries, views]);
+
   const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
-  const filteredEntries = entries.filter((entry) => {
+  const searchAndStatusMatches = entries.filter((entry) => {
     if (filter === "usable" && !entry.canUse) return false;
     if (filter === "review" && entry.canUse) return false;
     const classification = isStudioBg3dEnvironmentAssetId(entry.id)
@@ -211,16 +261,48 @@ export function StudioBg3dAssetLibraryPanel({
     if (classificationFilter !== "all" && classification !== classificationFilter) return false;
     if (!normalizedQuery) return true;
     const environment = getStudioBg3dEnvironmentAsset(entry.id);
+    const view = views.get(entry.id);
     return [
       entry.name,
       entry.format,
       entry.statusMessage,
       environment?.description ?? "",
       ...(environment?.tags ?? []),
+      view?.licenseName ?? "",
+      view?.provider ?? "",
+      view?.author ?? "",
     ].some((value) =>
       value.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
     );
   });
+  // 권리 필터가 모두 꺼져 있으면 이 함수는 입력을 그대로 돌려준다(목록이 사라지지 않는다).
+  const filteredEntries = filterStudioBg3dAssetRightsEntries(searchAndStatusMatches, views, rightsFilter);
+  const rightsFilterActive = hasActiveStudioBg3dAssetRightsFilter(rightsFilter);
+  const anyFilterActive = normalizedQuery !== "" || filter !== "all" || classificationFilter !== "all" || rightsFilterActive;
+  const clearAllFilters = () => {
+    setQuery("");
+    setFilter("all");
+    setClassificationFilter("all");
+    setRightsFilter({});
+    setVisibleCount(ASSET_BATCH_SIZE);
+  };
+  const toggleRightsFilter = (key: StudioBg3dAssetRightsFilterKey, value: string) => {
+    setRightsFilter((current) => {
+      const chosen: readonly string[] = current[key] ?? [];
+      const next = chosen.includes(value) ? chosen.filter((item) => item !== value) : [...chosen, value];
+      const { [key]: _removed, ...rest } = current;
+      return next.length > 0 ? ({ ...rest, [key]: next } as StudioBg3dAssetRightsFilter) : rest;
+    });
+    setVisibleCount(ASSET_BATCH_SIZE);
+  };
+  const toggleCard = (event: MouseEvent<HTMLButtonElement>, id: string, panel: OpenCard["panel"]) => {
+    lastCardToggleRef.current = event.currentTarget;
+    setOpenCard((current) => (current?.id === id && current.panel === panel ? null : { id, panel }));
+  };
+  const closeCard = () => {
+    setOpenCard(null);
+    lastCardToggleRef.current?.focus();
+  };
   const visibleEntries = filteredEntries.slice(0, visibleCount);
   const hiddenEntryCount = Math.max(0, filteredEntries.length - visibleEntries.length);
 
@@ -355,6 +437,12 @@ export function StudioBg3dAssetLibraryPanel({
               />
             </label>
           ) : null}
+          <StudioBg3dAssetAiUseFields
+            aiGenerated={aiGenerated}
+            aiTraining={aiTraining}
+            onAiGeneratedChange={setAiGenerated}
+            onAiTrainingChange={setAiTraining}
+          />
           {!rightsAreComplete ? (
             <p className="mt-2 text-[0.66rem] font-semibold leading-relaxed text-accent" role="alert">
               필수 권리 정보를 입력하면 파일을 선택할 수 있습니다.
@@ -475,6 +563,18 @@ export function StudioBg3dAssetLibraryPanel({
         ))}
       </div>
 
+      <StudioBg3dAssetRightsFilterBar
+        filter={rightsFilter}
+        counts={rightsCounts}
+        loadState={rightsLoadState}
+        controlsId={MODEL_RESULTS_ID}
+        onToggle={toggleRightsFilter}
+        onClear={() => {
+          setRightsFilter({});
+          setVisibleCount(ASSET_BATCH_SIZE);
+        }}
+      />
+
       <div id={MODEL_RESULTS_ID} className="mt-3 grid grid-cols-2 gap-2">
         {libraryStatus === "loading" ? (
           <div className="col-span-2 rounded-xl border border-line bg-card/60 px-3 py-4 text-center text-xs text-fg-3">
@@ -494,6 +594,20 @@ export function StudioBg3dAssetLibraryPanel({
             role="status"
           >
             검색·상태·종류 필터와 일치하는 3D 모델이 없습니다.
+            {rightsFilterActive ? (
+              <span className="mt-1 block text-[0.66rem] leading-relaxed">
+                권리 필터가 켜져 있습니다. 기록이 없는 소재는 '미확인'으로 분류되므로 필터를 풀면 다시 보입니다.
+              </span>
+            ) : null}
+            {anyFilterActive ? (
+              <button
+                type="button"
+                className={cx(CONTROL_BUTTON, "mt-2 w-full border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg")}
+                onClick={clearAllFilters}
+              >
+                필터 모두 해제
+              </button>
+            ) : null}
           </div>
         ) : null}
 
@@ -506,15 +620,24 @@ export function StudioBg3dAssetLibraryPanel({
             && entry.canUse
             && entry.contentHash !== null
             && entry.byteSize !== null;
+          const view = views.get(entry.id) ?? buildStudioBg3dAssetRightsView(entry);
+          const expandedPanel = openCard?.id === entry.id ? openCard.panel : null;
+          const recipes = onPlaceWithRecipe
+            ? listStudioBg3dAssetPlacementRecipes(isStudioBg3dEnvironmentAssetId(entry.id))
+            : [];
+          const cardBusy = !entry.canUse || isDeleting || isExporting || isUploading || isRestoringScene;
           return (
             <div
               key={entry.id}
-              className="relative overflow-hidden rounded-xl border border-line bg-card transition-colors hover:bg-raised"
+              className={cx(
+                "relative overflow-hidden rounded-xl border border-line bg-card transition-colors hover:bg-raised",
+                expandedPanel !== null && "col-span-2",
+              )}
             >
               <button
                 type="button"
                 aria-label={`${entry.name} 장면에 추가`}
-                aria-describedby={`bg3d-model-status-${entry.id}`}
+                aria-describedby={`bg3d-model-status-${entry.id} bg3d-model-rights-summary-${entry.id}`}
                 className="grid min-h-[7.75rem] w-full grid-rows-[3rem_auto] gap-2 px-2.5 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-55"
                 disabled={!entry.canUse || isDeleting || isExporting || isUploading || isRestoringScene}
                 onClick={() => onAdd(entry.id)}
@@ -534,7 +657,7 @@ export function StudioBg3dAssetLibraryPanel({
                     </span>
                     {bundledEnvironment ? (
                       <span className="inline-flex rounded-full bg-accent-soft px-1.5 py-0.5 text-[0.64rem] font-bold text-accent">
-                        환경 · CC0
+                        {bundledEnvironment.provenance.license === "CC0-1.0" ? "환경 · CC0" : "환경 · 제공자 약관"}
                       </span>
                     ) : null}
                     <span
@@ -548,11 +671,28 @@ export function StudioBg3dAssetLibraryPanel({
                       {entry.commercialUse ? "상업 이용 가능" : "상업 이용 확인 필요"}
                     </span>
                   </span>
+                  <StudioBg3dAssetRightsSummary view={view} id={`bg3d-model-rights-summary-${entry.id}`} />
                   <span id={`bg3d-model-status-${entry.id}`} className="mt-1 line-clamp-2 block text-[0.64rem] leading-snug text-fg-3">
                     {bundledEnvironment?.description ?? entry.statusMessage}
                   </span>
                 </span>
               </button>
+
+              <StudioBg3dAssetCardRightsActions
+                entryId={entry.id}
+                entryName={entry.name}
+                view={view}
+                recipes={recipes}
+                expanded={expandedPanel}
+                busy={cardBusy}
+                onToggle={(event, panel) => toggleCard(event, entry.id, panel)}
+                onClose={closeCard}
+                onSelectRecipe={(recipe) => {
+                  setOpenCard(null);
+                  lastCardToggleRef.current?.focus();
+                  void onPlaceWithRecipe?.(entry.id, recipe);
+                }}
+              />
 
               {entry.source !== "sample" ? (
                 <div className="grid grid-cols-2 gap-1.5 border-t border-line/80 bg-panel/45 p-1.5">
