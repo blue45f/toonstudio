@@ -15,7 +15,8 @@
 | 이번 변경 | 로그인 화면의 인앱 브라우저 안내(§5 #2) | S |
 | 이번 변경 | Studio 편집 셸 `translate="no"`(§5 #13) | S |
 | 확인 결과 갭 아님 | AI 콘티 대본창의 예시 대본(§5 #3) — 두 대본창 모두 예시 대본이 미리 채워져 있다 | — |
-| 다음 차례 | 컷선 일괄 두께(§5 #8), 매뉴얼 `planned` 필드(§5 #11) | S |
+| 이번 변경 | 다중 선택 공통 선 두께(§5 #8) | S |
+| 다음 차례 | 매뉴얼 `planned` 필드(§5 #11) | S |
 | 다음 차례 | 기억으로 작품 찾기(단서 폼 + "확인된/추정/못 찾음" 상태), 컷별 1:1 낱장 ZIP | M |
 | 다음 차례 | 소재(인물·배경·소품) 줄, 선택 개수에 따라 바뀌는 입력줄, 빈 컷 일괄 생성 큐, 생성 이미지 30일 보관 | L |
 | 하지 않음 | `viewport`의 `maximum-scale=1`(확대 금지), 크레딧 과금 모델 | — |
@@ -67,7 +68,7 @@
 | 5 | 선택 개수로 바뀌는 입력줄 | 없음 — 역할별 참조 생성 함수는 있다 | `creator/ai/studio-ai-client.ts` | L | 다음 |
 | 6 | 생성 이미지 30일 보관 | 없음(이미지 단위) — 프로젝트 휴지통·체크포인트 10개만 있다 | `creator/studio-project-library-store.ts`, `creator/studio-checkpoints.ts` | L | 다음 |
 | 7 | 빈 컷 일괄 생성 큐 | 부분 — 순차 일괄(최대 24)·취소가 있다. 앞 컷 결과를 다음 컷의 참조로 쓰는 직렬 의존이 있어 동시 3개와 충돌한다 | `creator/ai/studio-scenario-image-generation.ts` | L | 다음 |
-| 8 | 컷선 일괄 두께·효과선·효과음 | 대부분 있음 — 효과선 4종·효과음 44개·컷선 켜기·색·두께·실선/점선. 다중 선택의 공통 선 스타일은 색/없음만 있다(`studio-multi-selection-color.ts` 가 `strokeWidth` 를 가진 요소 4종을 이미 다룬다) | `creator/StudioInspectorFocusSpeedFrameControls.tsx`, `creator/StudioInspectorMultiSelectionSection.tsx` | S | 다음 |
+| 8 | 컷선 일괄 두께·효과선·효과음 | 대부분 있음 — 효과선 4종·효과음 44개·컷선 켜기·색·두께·실선/점선. 다중 선택의 공통 선 스타일은 색/없음만 있었다 — 이번에 두께를 더했다 | `creator/StudioInspectorFocusSpeedFrameControls.tsx`, `creator/StudioInspectorMultiSelectionSection.tsx` | S | **이번** |
 | 9 | 컷별 1:1 낱장 ZIP | 부분 — 인스타 프리셋은 높이 기준 절단이라 컷이 잘릴 수 있고 ZIP이 없다 | `creator/export/studio-export-presets.ts`, `creator/export/studio-download-bundle.ts` | M | 다음 |
 | 10 | 화면 맥락 도우미 | 부분 — 현재 도구 도움말(오프라인)과 공개 홈 Luna가 있다 | `creator/studio-current-tool-help.ts`, `marketing/HomeLunaPanel.tsx` | S/L | 다음 |
 | 11 | "준비 중" 정직 표기가 있는 가이드 | 대부분 있음 — 매뉴얼 규격 + 접근성 가이드의 3상태. 매뉴얼에는 상태 필드가 없다 | `creator/manual/ManualArticleView.tsx`, `learn/accessible-webtoon-guide.ts` | S | 다음 |
@@ -84,7 +85,7 @@
 - **#13 `translate="no"`**: Studio 편집 셸에만 건다. `index.html` 전체에 메타를 넣으면 공개 사이트의 해외 독자 번역이 함께 막히므로 하지 않는다. 캔버스(Konva) 글자는 DOM이 아니라 대상이 아니다.
 - 두 변경 모두 단위 시험으로 고정하고(`in-app-browser-notice.test.tsx`, `studio-no-auto-translate.test.tsx`), 새 시험은 `scripts/ci-required-vitest-targets.txt`에 등록한다.
 - **#3은 구현하지 않았다.** 조사 초기의 정적 검색은 AI 콘티 대본창을 "placeholder뿐"이라고 보고했지만, 코드를 직접 읽어 보니 두 대본창 모두 예시 대본이 미리 채워져 있다. 확인 없이 버튼을 더했다면 중복 기능이 됐을 것이다.
-- **#8은 다음 차례**다. 계획: `studio-multi-selection-color.ts`와 같은 순수 함수 쌍(`resolve…StrokeWidth`/`apply…StrokeWidth`)을 더하고, "공통 선 스타일" 상자에 두께 슬라이더를 둔다. 선이 보이는 요소에만 적용하고 되돌리기는 기존 병합 키 방식을 따른다.
+- **#8 다중 선택 공통 선 두께**: `studio-multi-selection-color.ts` 에 색과 같은 구조의 순수 함수 쌍(`resolve…StrokeWidth`/`apply…StrokeWidth`)을 더하고, 다중 선택 인스펙터의 "공통 선 스타일" 상자에 두께 슬라이더(0.5~16px, 0.5 단위)를 둔다. 선이 보이는 요소에만 적용해 선 없음인 요소의 기본 두께(3px) 규칙을 흐트리지 않고, 이미 상한보다 굵은 선이 있으면 상한을 그 굵기까지 올려 건드린 것만으로 가늘어지지 않게 한다. 되돌리기는 색과 같은 병합 키 방식이다.
 
 ## 7. 정직 표기 — 하지 못한 것
 

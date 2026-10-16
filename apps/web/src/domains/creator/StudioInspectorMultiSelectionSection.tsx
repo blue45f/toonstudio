@@ -1,9 +1,13 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 
 import { collectStudioDocumentColors } from "./studio-document-colors";
 import {
   applyStudioMultiSelectionStrokeColor,
+  applyStudioMultiSelectionStrokeWidth,
   resolveStudioMultiSelectionStrokeColor,
+  resolveStudioMultiSelectionStrokeWidth,
+  STUDIO_MULTI_SELECTION_STROKE_WIDTH_MIN,
+  STUDIO_MULTI_SELECTION_STROKE_WIDTH_STEP,
 } from "./studio-multi-selection-color";
 import { StudioColorField } from "./StudioColorField";
 import { StudioInspectorBatchRenameSection } from "./StudioInspectorBatchRenameSection";
@@ -52,7 +56,22 @@ export function StudioInspectorMultiSelectionSection({
     () => resolveStudioMultiSelectionStrokeColor(elements, marqueeIds),
     [elements, marqueeIds],
   );
+  const strokeWidthState = useMemo(
+    () => resolveStudioMultiSelectionStrokeWidth(elements, marqueeIds),
+    [elements, marqueeIds],
+  );
+  const strokeWidthId = useId();
   const strokeColorHistoryKey = `color:multi:${[...marqueeIds].sort().join(",")}:stroke`;
+  const strokeWidthHistoryKey = `width:multi:${[...marqueeIds].sort().join(",")}:stroke`;
+  const applyStrokeWidth = (width: number): void => {
+    const next = applyStudioMultiSelectionStrokeWidth(elements, marqueeIds, width, strokeWidthState.max);
+    if (next.every((element, index) => element === elements[index])) return;
+    if (commitCoalesced) {
+      commitCoalesced(next, strokeWidthHistoryKey);
+      return;
+    }
+    commit(next);
+  };
   const applyStrokeColor = (color: string | null, preview: boolean): void => {
     const next = applyStudioMultiSelectionStrokeColor(elements, marqueeIds, color);
     if (next.every((element, index) => element === elements[index])) return;
@@ -133,6 +152,37 @@ export function StudioInspectorMultiSelectionSection({
                   : undefined
               }
             />
+            {strokeWidthState.value !== null ? (
+              <div
+                className="flex min-h-11 items-center justify-between gap-2"
+                data-testid="studio-multi-selection-stroke-width"
+              >
+                <label htmlFor={strokeWidthId} className="text-xs font-semibold text-fg-2">
+                  선 두께
+                </label>
+                <span className="flex items-center gap-2">
+                  <input
+                    id={strokeWidthId}
+                    type="range"
+                    min={STUDIO_MULTI_SELECTION_STROKE_WIDTH_MIN}
+                    max={strokeWidthState.max}
+                    step={STUDIO_MULTI_SELECTION_STROKE_WIDTH_STEP}
+                    value={Math.min(strokeWidthState.max, strokeWidthState.value)}
+                    aria-valuetext={
+                      strokeWidthState.mixed ? "서로 다른 두께" : `${strokeWidthState.value.toFixed(1)}픽셀`
+                    }
+                    onChange={(event) => applyStrokeWidth(Number(event.target.value))}
+                    onPointerUp={finishPatchElCoalescing}
+                    onKeyUp={finishPatchElCoalescing}
+                    onBlur={finishPatchElCoalescing}
+                    className="h-2 w-24 cursor-pointer accent-accent sm:w-28"
+                  />
+                  <output htmlFor={strokeWidthId} className="w-14 text-right text-xs tabular-nums text-fg-3">
+                    {strokeWidthState.mixed ? "섞임" : `${strokeWidthState.value.toFixed(1)}px`}
+                  </output>
+                </span>
+              </div>
+            ) : null}
             <p className="text-[0.6rem] leading-snug text-fg-3">
               {strokeColorState.mixed
                 ? "서로 다른 선 상태입니다. 새 색을 고르면 선택한 요소에 동일하게 적용됩니다."
