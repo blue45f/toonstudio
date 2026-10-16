@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   readStudioLocalizationCharacterCards,
+  studioLocalizationProjectStorageKey,
   updateStudioLocalizationCharacterCards,
 } from "../studio-localization-project-store";
 import { readStudioProjectDiagnosticSource } from "../studio-project-diagnostic-source-store";
@@ -372,6 +373,23 @@ describe("StudioTranslationCharacterCardSection — 저장 오류", () => {
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(screen.queryByRole("alert")).toBeNull();
     expect(storedCards().cards).toMatchObject([{ name: "Emma" }]);
+  });
+
+  it("저장된 번역 문서가 손상됐으면 원인을 말하고 다시 시도 없이, 편집은 화면에만 남기며 문서는 그대로 둔다", () => {
+    const key = studioLocalizationProjectStorageKey(PROJECT);
+    localStorage.setItem(key, "{broken");
+    render(<Harness withBible={false} />);
+
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("저장된 번역 문서를 읽을 수 없어요");
+    expect(alert.textContent).not.toContain("저장하지 못했어요");
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("인물 직접 추가"), { target: { value: "Emma" } });
+    fireEvent.click(screen.getByRole("button", { name: "인물 추가" }));
+    expect(screen.getByRole("alert").textContent).toContain("저장된 번역 문서를 읽을 수 없어요");
+    expect(screen.getByLabelText("인물")).toBeTruthy();
+    expect(localStorage.getItem(key)).toBe("{broken");
   });
 });
 

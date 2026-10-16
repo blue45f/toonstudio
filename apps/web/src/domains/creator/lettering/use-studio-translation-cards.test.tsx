@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   STUDIO_LOCALIZATION_PROJECT_UPDATED_EVENT,
   readStudioLocalizationCharacterCards,
+  studioLocalizationProjectStorageKey,
   updateStudioLocalizationCharacterCards,
 } from "../studio-localization-project-store";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
@@ -144,6 +145,48 @@ describe("useStudioTranslationCards", () => {
     expect(result.current.error).toBe("load");
     getItem.mockRestore();
     act(() => result.current.retry());
+    expect(result.current.error).toBeNull();
+  });
+
+  it("저장된 번역 문서가 손상됐으면 읽을 때부터 'unreadable' 로 알리고, 편집은 화면에만 남기며 문서는 덮어쓰지 않는다", () => {
+    const key = studioLocalizationProjectStorageKey("scope-1");
+    localStorage.setItem(key, "{broken");
+    const { result } = renderHook(() =>
+      useStudioTranslationCards({ scopeKey: "scope-1", bibleProjectId: null }),
+    );
+    expect(result.current.error).toBe("unreadable");
+
+    act(() => {
+      result.current.update((cards) => addManualStudioTranslationCard(cards, { id: "manual-1", name: "Emma" }));
+    });
+    expect(result.current.error).toBe("unreadable");
+    expect(result.current.cards.map((card) => card.name)).toEqual(["Emma"]);
+    expect(localStorage.getItem(key)).toBe("{broken");
+
+    // 문서가 치워지면(번역 패널에서 다시 만들면) 다시 시도로 메모리의 편집이 저장된다.
+    localStorage.removeItem(key);
+    act(() => result.current.retry());
+    expect(result.current.error).toBeNull();
+    expect(readStudioLocalizationCharacterCards(localStorage, "scope-1").cards.map((card) => card.name)).toEqual(["Emma"]);
+  });
+
+  it("다른 탭에서 문서가 손상되거나 고쳐지면 오류 종류를 다시 판정한다", () => {
+    const key = studioLocalizationProjectStorageKey("scope-1");
+    const { result } = renderHook(() =>
+      useStudioTranslationCards({ scopeKey: "scope-1", bibleProjectId: null }),
+    );
+    expect(result.current.error).toBeNull();
+
+    localStorage.setItem(key, "{broken");
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key, storageArea: localStorage }));
+    });
+    expect(result.current.error).toBe("unreadable");
+
+    localStorage.removeItem(key);
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key, storageArea: localStorage }));
+    });
     expect(result.current.error).toBeNull();
   });
 

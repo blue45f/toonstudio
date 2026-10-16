@@ -187,17 +187,33 @@ export function StudioTranslationCharacterCardSection({
             <StudioSurfaceState
               state="error"
               compact
-              title={error === "load" ? bi("인물 카드를 불러오지 못했어요", "Could not load character cards") : bi("인물 카드를 저장하지 못했어요", "Could not save character cards")}
+              title={
+                error === "load"
+                  ? bi("인물 카드를 불러오지 못했어요", "Could not load character cards")
+                  : error === "unreadable"
+                    ? bi("저장된 번역 문서를 읽을 수 없어요", "The stored translation document cannot be read")
+                    : bi("인물 카드를 저장하지 못했어요", "Could not save character cards")
+              }
               description={
                 error === "load"
                   ? bi("브라우저 저장 공간을 읽을 수 없어요. 다시 시도해 보세요.", "Browser storage could not be read. Try again.")
-                  : bi("편집한 내용은 이 화면에 남아 있지만 이 기기에 저장되지 않았어요. 저장 공간을 확인한 뒤 다시 시도하세요.", "Your edits are still on screen but were not stored on this device. Check storage and try again.")
+                  : error === "unreadable"
+                    ? bi(
+                        "문서가 손상돼 있어 인물 카드를 쓰면 번역 단위를 잃을 수 있어요. 그래서 저장하지 않았고, 편집한 내용은 이 화면에만 남아 있어요. 번역 패널에서 문서를 다시 만든 뒤 이어서 적어 주세요.",
+                        "The document is damaged, so saving cards could overwrite your translation units. Nothing was saved; your edits stay on this screen only. Rebuild the document in the translation panel, then continue here.",
+                      )
+                    : bi("편집한 내용은 이 화면에 남아 있지만 이 기기에 저장되지 않았어요. 저장 공간을 확인한 뒤 다시 시도하세요.", "Your edits are still on screen but were not stored on this device. Check storage and try again.")
               }
-              action={
-                <button type="button" onClick={controller.retry} className={CARD_SMALL_BUTTON_CLASS}>
-                  {bi("다시 시도", "Try again")}
-                </button>
-              }
+              // 손상된 문서는 다시 시도해도 같은 결과라 버튼을 두지 않는다.
+              {...(error === "unreadable"
+                ? {}
+                : {
+                    action: (
+                      <button type="button" onClick={controller.retry} className={CARD_SMALL_BUTTON_CLASS}>
+                        {bi("다시 시도", "Try again")}
+                      </button>
+                    ),
+                  })}
             />
           ) : null}
 

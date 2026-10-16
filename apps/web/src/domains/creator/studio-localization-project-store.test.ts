@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { createStudioLocalizationUnit, transitionStudioLocalizationUnit } from "./studio-localization-workflow";
 import {
+  isStudioLocalizationProjectUnreadable,
   parseStudioLocalizationProjectDocument,
   projectLocalizationDiagnostics,
   readStudioLocalizationCharacterCards,
   readStudioLocalizationProject,
   studioLocalizationProjectStorageKey,
   STUDIO_LOCALIZATION_PROJECT_UPDATED_EVENT,
+  StudioLocalizationProjectUnreadableError,
   updateStudioLocalizationCharacterCards,
   writeStudioLocalizationProject,
 } from "./studio-localization-project-store";
@@ -213,18 +215,33 @@ describe("Studio localization project store — 번역 인물 카드", () => {
     const raw = JSON.stringify(unitsDocument([baseUnit("line-1"), { ...baseUnit("line-2"), sourceText: "   " }]));
     storage.setItem(key, raw);
     expect(readStudioLocalizationProject(storage, "project-12").units).toEqual([]);
+    expect(isStudioLocalizationProjectUnreadable(storage, "project-12")).toBe(true);
 
     const update = () =>
       updateStudioLocalizationCharacterCards(storage, "project-12", (cards) =>
         patchStudioTranslationCard(cards, "yuna", { name: "유나", register: "polite" }),
       );
+    // 일반 저장 실패(용량·권한)와 가를 수 있게 전용 오류로 던진다.
+    expect(update).toThrow(StudioLocalizationProjectUnreadableError);
     expect(update).toThrow(/unreadable/u);
     expect(storage.getItem(key)).toBe(raw);
 
     // 깨진 JSON 도 마찬가지다.
     storage.setItem(key, "{broken");
-    expect(update).toThrow(/unreadable/u);
+    expect(isStudioLocalizationProjectUnreadable(storage, "project-12")).toBe(true);
+    expect(update).toThrow(StudioLocalizationProjectUnreadableError);
     expect(storage.getItem(key)).toBe("{broken");
+  });
+
+  it("문서가 없거나 멀쩡하면 '읽을 수 없음'이 아니고, 저장소가 예외를 던져도 판정 함수는 던지지 않는다", () => {
+    const storage = memoryStorage();
+    expect(isStudioLocalizationProjectUnreadable(storage, "project-12")).toBe(false);
+    writeStudioLocalizationProject(storage, unitsDocument());
+    expect(isStudioLocalizationProjectUnreadable(storage, "project-12")).toBe(false);
+    // 유효하지 않은 프로젝트 id(키를 만들 수 없음)나 읽기 예외는 false 로 접는다 — 호출부는 읽기 실패를 따로 센다.
+    expect(isStudioLocalizationProjectUnreadable(storage, "")).toBe(false);
+    const throwing = { getItem: () => { throw new Error("denied"); }, setItem: () => undefined };
+    expect(isStudioLocalizationProjectUnreadable(throwing, "project-12")).toBe(false);
   });
 
   it("저장된 문서가 아예 없으면(처음 쓰는 범위) 카드를 정상적으로 저장한다", () => {

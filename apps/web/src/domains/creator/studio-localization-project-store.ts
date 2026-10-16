@@ -100,6 +100,17 @@ export function parseStudioLocalizationProjectDocument(
   });
 }
 
+/**
+ * 저장된 번역 문서가 있는데 읽을 수 없어 인물 카드를 쓰지 않았다는 신호. 일반 저장 실패(용량·권한)와 달리 다시 시도해도
+ * 소용없으므로 호출부가 원인을 따로 말할 수 있게 별도 오류로 던진다.
+ */
+export class StudioLocalizationProjectUnreadableError extends Error {
+  constructor() {
+    super("The stored localization project document is unreadable; the card change was not written.");
+    this.name = "StudioLocalizationProjectUnreadableError";
+  }
+}
+
 interface StoredStudioLocalizationProject {
   readonly document: StudioLocalizationProjectDocument;
   /** 저장된 문서가 있는데 읽을 수 없었다(깨진 JSON·검증에 실패한 단위). `document` 는 이때 빈 문서다. */
@@ -133,6 +144,18 @@ export function readStudioLocalizationProject(
   projectId: string,
 ): StudioLocalizationProjectDocument {
   return loadStoredStudioLocalizationProject(storage, projectId).document;
+}
+
+/** 저장된 번역 문서가 있는데 읽을 수 없는가(깨진 JSON·검증에 실패한 단위). 문서가 아예 없으면 false 다. */
+export function isStudioLocalizationProjectUnreadable(
+  storage: StudioLocalizationProjectStorage,
+  projectId: string,
+): boolean {
+  try {
+    return loadStoredStudioLocalizationProject(storage, projectId).unreadable;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -178,9 +201,7 @@ export function updateStudioLocalizationCharacterCards(
   const stored = loadStoredStudioLocalizationProject(storage, projectId);
   // 저장된 문서가 있는데 읽을 수 없으면 쓰지 않는다 — 빈 문서에 카드만 얹어 저장하면 번역 단위(units)를 조용히
   // 덮어쓴다. 호출부는 이 오류를 저장 실패로 드러내고 편집을 메모리에 남긴다.
-  if (stored.unreadable) {
-    throw new Error("The stored localization project document is unreadable; the card change was not written.");
-  }
+  if (stored.unreadable) throw new StudioLocalizationProjectUnreadableError();
   const current = stored.document;
   const before = current.characterCards ?? EMPTY_STUDIO_TRANSLATION_CARD_SET;
   const after = updater(before);

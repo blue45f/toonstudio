@@ -48,7 +48,7 @@ export interface StudioRegisterDetection {
 
 // ── 한국어 ───────────────────────────────────────────────────────────────────
 
-const KOREAN_TRAILING_NOISE = /[\s.!?…~"'“”‘’」』)）]+$/u;
+const KOREAN_TRAILING_NOISE = /[\s.!?…~"'“”‘’」』)）\]］]+$/u;
 const HANGUL_BASE = 0xac00;
 const HANGUL_LAST = 0xd7a3;
 const BIEUP_FINAL = 17;
@@ -64,12 +64,14 @@ function hasBieupFinal(character: string): boolean {
  * "~네"(예쁘네)와 구분한다. 어절 전체가 이 모양일 때만 대답말이다("예쁘네" 는 어절이 더 길어 걸리지 않는다).
  */
 const KOREAN_ANSWER_WORD = /^[네예]+에*$/u;
+/** 어절 앞에 붙은 여는 따옴표·괄호 — 닫는 쪽은 `KOREAN_TRAILING_NOISE` 가 이미 벗긴다. */
+const LEADING_OPENERS = /^["'“‘「『(（[［]+/u;
 
 function classifyKoreanSentence(sentence: string): StudioTranslationRegister | null {
   const cleaned = sentence.replace(KOREAN_TRAILING_NOISE, "");
   // "네."·"아, 네." 처럼 마지막 어절이 대답말 그 자체면 분류하지 않는다. 표를 그대로 쓰면 존대 표지인 대답을
-  // 해라체("~네")로 읽어 존대 인물의 대사를 반말로 오탐한다.
-  const lastToken = cleaned.split(/[\s,，、]+/u).at(-1);
+  // 해라체("~네")로 읽어 존대 인물의 대사를 반말로 오탐한다. 따옴표·괄호로 감싼 대답("\"네네.\"")도 같다.
+  const lastToken = cleaned.split(/[\s,，、]+/u).at(-1)?.replace(LEADING_OPENERS, "");
   if (lastToken !== undefined && KOREAN_ANSWER_WORD.test(lastToken)) return null;
   const beforeEnding = Array.from(cleaned).at(-3);
   // 기본 표(`extractSentenceEnding`)는 어미를 접미로만 읽어 두 곳을 틀린다. 앞 음절의 받침으로 가려 보완한다.
@@ -86,7 +88,7 @@ function classifyKoreanSentence(sentence: string): StudioTranslationRegister | n
 
 // ── 일본어 ───────────────────────────────────────────────────────────────────
 
-const JAPANESE_TRAILING_NOISE = /[\s。.！!？?…‥~〜～♪ー」』)）]+$/u;
+const JAPANESE_TRAILING_NOISE = /[\s。.！!？?…‥~〜～♪ー」』)）\]］]+$/u;
 /** 문말 조사 — 벗기고 나서 어미를 본다("ですよね" → "です", "だよね" → "だ"). */
 const JAPANESE_FINAL_PARTICLES = new Set(["よ", "ね", "な", "わ", "ぞ", "ぜ", "さ", "か", "の"]);
 const JAPANESE_FORMAL_ENDINGS = [
@@ -134,10 +136,31 @@ const JAPANESE_NEUTRAL_CLAUSES = new Set([
 /** 접두 お·ご 가 붙은 "…なく" 정형 인사("ご心配なく"·"ご遠慮なく"·"お構いなく") — 높임 정형구라 어미로 읽지 않는다. */
 const JAPANESE_HONORIFIC_SET_PHRASE = /^[おご][^\s、,，。]{1,12}なく$/u;
 const JAPANESE_CLAUSE_SEPARATOR = /[、,，]/u;
+/** 장음 표지 — "はーい"·"いってらっしゃーい" 처럼 늘여 쓴 말은 같은 말로 읽는다. */
+const JAPANESE_PROLONGED_MARK = /ー+/gu;
+/** 존대 어미 없이 "どうぞ…" 로 시작하는 권유 표현("どうぞよろしく") — 끝 모양(く)으로 반말을 단정하지 않는다. */
+const JAPANESE_INVITATION_PREFIX = "どうぞ";
 
-function isJapaneseNeutralClause(trimmed: string): boolean {
-  const lastClause = trimmed.split(JAPANESE_CLAUSE_SEPARATOR).at(-1)?.trim() ?? "";
-  return JAPANESE_NEUTRAL_CLAUSES.has(lastClause) || JAPANESE_HONORIFIC_SET_PHRASE.test(lastClause);
+/** 문장의 마지막 절. 여는 따옴표·괄호("「はい")는 벗기고 장음 표지는 접는다. */
+function lastJapaneseClause(trimmed: string): string {
+  return (trimmed.split(JAPANESE_CLAUSE_SEPARATOR).at(-1) ?? "")
+    .trim()
+    .replace(LEADING_OPENERS, "")
+    .replace(JAPANESE_PROLONGED_MARK, "");
+}
+
+/** `clause` 가 `word` 를 한 번 이상 그대로 되풀이한 말인가("どうぞどうぞ"·"はいはい"). */
+function isRepeatOf(clause: string, word: string): boolean {
+  return clause.length >= word.length
+    && clause.length % word.length === 0
+    && word.repeat(clause.length / word.length) === clause;
+}
+
+function isJapaneseNeutralClause(lastClause: string): boolean {
+  return (
+    [...JAPANESE_NEUTRAL_CLAUSES].some((word) => isRepeatOf(lastClause, word))
+    || JAPANESE_HONORIFIC_SET_PHRASE.test(lastClause)
+  );
 }
 
 function stripJapaneseFinalParticles(sentence: string): string {
@@ -152,12 +175,14 @@ function stripJapaneseFinalParticles(sentence: string): string {
 
 function classifyJapaneseSentence(sentence: string): StudioTranslationRegister | null {
   const trimmed = sentence.replace(JAPANESE_TRAILING_NOISE, "");
+  const lastClause = lastJapaneseClause(trimmed);
   // 문말 조사를 벗기기 전에 본다 — "どうぞ" 의 ぞ 가 조사로 벗겨지면 "どう" 가 되어 반말 어미(う)로 읽힌다.
-  if (isJapaneseNeutralClause(trimmed)) return null;
+  if (isJapaneseNeutralClause(lastClause)) return null;
   const stripped = stripJapaneseFinalParticles(trimmed);
   if (stripped === "") return null;
   if (JAPANESE_FORMAL_ENDINGS.some((ending) => stripped.endsWith(ending))) return "formal";
   if (JAPANESE_POLITE_ENDINGS.some((ending) => stripped.endsWith(ending))) return "polite";
+  if (lastClause.startsWith(JAPANESE_INVITATION_PREFIX)) return null;
   // 일본어의 비존대는 "반말(해체)"과 "평서·하대"를 어미로 가를 수 없다 — 반말 쪽으로 읽되 층위만 쓴다.
   return JAPANESE_PLAIN_ENDING.test(stripped) ? "casual" : null;
 }
