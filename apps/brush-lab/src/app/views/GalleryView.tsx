@@ -1,9 +1,12 @@
+import { RECOMMENDED_COMBOS } from "../../bench/recommended-combos";
 import { FamilyGallery } from "../ui/FamilyGallery";
+import { RecommendedCombos } from "../ui/RecommendedCombos";
 
 /** 갤러리 탭: 29~30종 프리셋을 같은 fixture로 Worker(cpu-reference 경로)에서 렌더해 비교한다. */
 export function GalleryView() {
   return (
     <div className="lab-tabpanel">
+      <RecommendedCombos combos={RECOMMENDED_COMBOS} />
       <section className="lab-panel">
         <h2>브러시 가족 갤러리</h2>
         <p className="lab-muted">
