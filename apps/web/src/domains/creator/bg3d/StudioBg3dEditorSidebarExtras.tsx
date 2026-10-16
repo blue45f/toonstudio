@@ -587,7 +587,6 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                   LtToggleRow,
                   twoPointPerspectiveActive,
                   applyTwoPointPerspective,
-                  resetTwoPointPerspective,
                   RotateCcw,
                   lineArtPreview,
                   setLineArtPreview,

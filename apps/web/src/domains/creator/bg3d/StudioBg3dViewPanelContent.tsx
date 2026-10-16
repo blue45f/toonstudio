@@ -28,6 +28,7 @@ import {
   studioBg3dClassNames as cx,
 } from "./studio-bg3d-editor-ui";
 import { StudioBg3dEnginePanel } from "./StudioBg3dEnginePanel";
+import { StudioBg3dLensShiftControls } from "./StudioBg3dLensShiftControls";
 import { StudioBg3dLightingStudio } from "./StudioBg3dLightingStudio";
 import { StudioBg3dMultiAngleCapturePanel } from "./StudioBg3dMultiAngleCapturePanel";
 import { StudioBg3dProSuitePanel } from "./StudioBg3dProSuitePanel";
@@ -152,7 +153,6 @@ interface StudioBg3dViewPanelContext {
   readonly LtToggleRow: typeof import("./studio-bg3d-control-fields").LtToggleRow;
   readonly twoPointPerspectiveActive: boolean;
   readonly applyTwoPointPerspective: () => void;
-  readonly resetTwoPointPerspective: () => void;
   readonly RotateCcw: typeof import("lucide-react").RotateCcw;
   readonly lineArtPreview: boolean;
   readonly setLineArtPreview: import("react").Dispatch<import("react").SetStateAction<boolean>>;
@@ -527,7 +527,6 @@ export function StudioBg3dViewPanel({
     LtToggleRow,
     twoPointPerspectiveActive,
     applyTwoPointPerspective,
-    resetTwoPointPerspective,
     RotateCcw,
     lineArtPreview,
     setLineArtPreview,
@@ -1190,33 +1189,15 @@ export function StudioBg3dViewPanel({
                       {translateCurrentStaticSourceText("domains.creator.bg3d.StudioBg3dViewPanelContent", "ko", "근접 절단은 카메라 앞의 벽·천장을 잘라 실내 구도를 확보합니다. 더치 앵글은 화면만 기울이며 컷 저장·실행 취소·LT 내보내기에 그대로 유지됩니다.")}</p>
                   </div>
 
-                  <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                    <button
-                      type="button"
-                      aria-pressed={twoPointPerspectiveActive}
-                      disabled={isCapturing || isBatchRenderingShots || isRestoringScene || physicsInteractionLocked || isMainOrtho}
-                      className={cx(
-                        CONTROL_BUTTON,
-                        "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
-                        twoPointPerspectiveActive && "border-accent/60 bg-accent-soft text-accent",
-                      )}
-                      onClick={applyTwoPointPerspective}
-                    >
-                      {translateCurrentStaticSourceText("domains.creator.bg3d.StudioBg3dViewPanelContent", "ko", "2점 투시 보정")}</button>
-                    <button
-                      type="button"
-                      disabled={
-                        isCapturing || isBatchRenderingShots || isRestoringScene ||
-                        physicsInteractionLocked || isMainOrtho || !twoPointPerspectiveActive
-                      }
-                      className={cx(CONTROL_BUTTON, "border-line bg-panel px-3 text-fg-2 hover:bg-raised hover:text-fg")}
-                      onClick={resetTwoPointPerspective}
-                    >
-                      <RotateCcw size={14} aria-hidden />
-                      {translateCurrentStaticSourceText("domains.creator.bg3d.StudioBg3dViewPanelContent", "ko", "해제")}</button>
-                  </div>
-                  <p className="mt-1.5 text-[0.64rem] leading-relaxed text-fg-3">
-                    {translateCurrentStaticSourceText("domains.creator.bg3d.StudioBg3dViewPanelContent", "ko", "올려다보거나 내려다보는 구도에서 수직선을 화면과 평행하게 세웁니다(건축 컷). 시선은 수평이 되고 원래 구도는 렌즈 시프트로 보존됩니다.")}</p>
+                  <StudioBg3dLensShiftControls
+                    lensShift={sceneBaseDocument.camera.lensShift}
+                    disabled={cameraControlsDisabled || isMainOrtho}
+                    twoPointPerspectiveActive={twoPointPerspectiveActive}
+                    onPreviewShift={(lensShift) => previewCameraLens(() => ({ lensShift }))}
+                    onFinishShift={finishCameraLensGesture}
+                    onResetShift={() => updateCameraLens(() => ({ lensShift: [0, 0] }))}
+                    onApplyTwoPointPerspective={applyTwoPointPerspective}
+                  />
                 </div>
 
                 <div className="mt-5 border-t border-line pt-4">
