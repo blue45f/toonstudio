@@ -80,6 +80,7 @@ apps/character-lab/src/contracts/recipe.test.ts
 apps/character-lab/src/state/apply-plan.test.ts
 apps/character-lab/src/state/history.test.ts
 apps/web/src/app/app-floating-controls-startup.test.ts
+apps/web/src/app/app-shell-skip-link-visibility.test.ts
 apps/web/src/app/routes/groups/creator-brush-lab-route-contract.test.ts
 apps/web/src/app/service-worker
 apps/web/src/app/studio-cross-origin-isolation.test.ts
@@ -542,6 +543,7 @@ scripts/free-infrastructure-policy.test.mjs
 scripts/generate-latent-pigment-model.test.ts
 scripts/lib/character-psd-reference-compositor.test.mjs
 scripts/lib/path-containment.test.ts
+scripts/lib/public-home-content-hrefs.test.mjs
 scripts/lib/studio-3d-production-audit-policy.test.mjs
 scripts/lib/studio-drawing-storage-capability.test.ts
 scripts/lib/studio-inapp-sweep-harness.test.ts

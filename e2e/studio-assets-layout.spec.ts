@@ -34,10 +34,11 @@ for (const language of ["ko", "en"] as const) {
     }
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 1000 });
-      // 세로 스크롤바의 예약 폭은 가로 넘침이 아니다. 실제 콘텐츠 영역에 넘침이 없어야 한다.
+      // 세로 스크롤바의 예약 폭은 가로 넘침이 아니다. html 에 `scrollbar-gutter: stable` 이 걸려 있어 클래식 스크롤바 환경에서는
+      // 레이아웃 폭(scrollWidth)이 clientWidth 보다 스크롤바 폭(15px)만큼 작게 나온다(음수). 넘침은 양수일 때만 센다.
       await expect.poll(() => page.evaluate(() => ({
         viewport: window.innerWidth,
-        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        overflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       }))).toEqual({ viewport: width, overflow: 0 });
       const contentWidth = await page.evaluate(() => document.documentElement.clientWidth);
       expect(contentWidth).toBeGreaterThan(0);

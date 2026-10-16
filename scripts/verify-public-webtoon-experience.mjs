@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
 import { chromium, expect } from "@playwright/test";
+import { assertAboutStudioTour } from "./lib/public-about-studio-browser-contract.mjs";
 import { assertPublicCreatorHome } from "./lib/public-home-browser-contract.mjs";
 import { assertPublicSiteNavigation } from "./lib/public-navigation-browser-contract.mjs";
 import { installBetaEventDismissal } from "./lib/public-page-event-gate.mjs";
@@ -37,23 +38,8 @@ try {
         }).map((image) => image.getAttribute("src"))), { timeout: 15000, message: `${name}: visible branded artwork must load` }).toEqual([]);
         const drawingLinks = await page.locator("a[href]").evaluateAll((links) => links.map((link) => link.getAttribute("href")).filter((href) => /^\/(?:studio|make)(?:[/?]|$)/u.test(href)));
         assert(drawingLinks.length > 0, `${name}: drawing destination is missing`);
-        if (route === "/about/studio") {
-          // 소개는 세 탭(화면 구성 · 바로 시작 · 재료·협업·도움)이다. 키보드 방향키로 탭을 오가고 초점이 따라가는지 확인한다.
-          const tabs = page.getByRole("tablist", { name: "작업실 둘러보기" }).getByRole("tab");
-          await expect(tabs).toHaveCount(3);
-          await tabs.first().focus();
-          await expect(tabs.first()).toBeFocused();
-          await tabs.first().press("ArrowRight");
-          await expect(tabs.nth(1)).toBeFocused();
-          await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
-          await tabs.nth(1).press("ArrowRight");
-          await expect(tabs.nth(2)).toBeFocused();
-          await expect(page.locator("#creator-support-title")).toBeVisible();
-          await tabs.nth(2).press("Home");
-          await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
-          await expect(page.locator("video")).toHaveCount(0);
-        }
-        await page.screenshot({ path: `${output}/${name}.png`, fullPage: true, animations: "disabled", timeout: 20000 });
+        if (route === "/about/studio") await assertAboutStudioTour(page);
+        await page.screenshot({ path: `${output}/${name}.png`, fullPage: true, animations: "disabled", timeout: 60000 });
         assert.deepEqual(errors, [], `${name}: uncaught errors`);
         results.push({ route, width, status: "passed", title: await page.locator("main h1").innerText() });
         console.log(`PASS ${name}`);
