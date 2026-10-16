@@ -15,6 +15,18 @@ export interface StudioMultiSelectionStrokeColorState {
   readonly value: string | null;
   readonly mixed: boolean;
   readonly includesNone: boolean;
+  /** 선택에 들어 있지만 잠겨서 건드리지 않는 선 요소 수. */
+  readonly lockedCount: number;
+}
+
+/**
+ * 다중 선택 일괄 스타일의 대상 규칙.
+ *
+ * 잠긴 요소(요소 자체 또는 소속 그룹이 잠김)는 정렬·이동과 같이 일괄 편집에서 바뀌지 않아야 한다. 인스펙터의 잠금 게이트는
+ * 단일 선택만 보므로, 호출부가 `isLocked` 로 유효 잠금을 넘겨 주면 대상에서 뺀다. 넘기지 않으면 잠금을 따지지 않는다.
+ */
+export interface StudioMultiSelectionTargetOptions {
+  readonly isLocked?: (element: El) => boolean;
 }
 
 export function isStudioStrokeColorElement(
@@ -41,12 +53,15 @@ export function studioVisibleStrokeColor(
 export function resolveStudioMultiSelectionStrokeColor(
   elements: readonly El[],
   selectedIds: readonly string[],
+  options: StudioMultiSelectionTargetOptions = {},
 ): StudioMultiSelectionStrokeColorState {
   const selected = new Set(selectedIds);
-  const targets = elements.filter(
+  const isLocked = options.isLocked ?? (() => false);
+  const capable = elements.filter(
     (element): element is StudioStrokeColorElement =>
       selected.has(element.id) && isStudioStrokeColorElement(element),
   );
+  const targets = capable.filter((element) => !isLocked(element));
   const values = targets.map((element) =>
     studioVisibleStrokeColor(element.stroke),
   );
@@ -59,6 +74,7 @@ export function resolveStudioMultiSelectionStrokeColor(
     value: mixed ? firstVisible ?? null : values[0] ?? null,
     mixed,
     includesNone: values.some((value) => value === null),
+    lockedCount: capable.length - targets.length,
   };
 }
 
@@ -87,11 +103,13 @@ export function applyStudioMultiSelectionStrokeColor(
   elements: readonly El[],
   selectedIds: readonly string[],
   color: string | null,
+  options: StudioMultiSelectionTargetOptions = {},
 ): El[] {
   const selected = new Set(selectedIds);
+  const isLocked = options.isLocked ?? (() => false);
   let changed = false;
   const next = elements.map((element) => {
-    if (!selected.has(element.id) || !isStudioStrokeColorElement(element)) {
+    if (!selected.has(element.id) || !isStudioStrokeColorElement(element) || isLocked(element)) {
       return element;
     }
     const patched = withStudioStrokeColor(element, color);
@@ -107,8 +125,10 @@ export function applyStudioMultiSelectionStrokeColor(
  *
  * 컷선(프레임)·말풍선 테두리·글자 외곽선·펜 선이 같은 `strokeWidth` 를 쓰므로, 색과 같은 대상 규칙을 따르되
  * **선이 보이는 요소에만** 적용한다(선 없음인 요소의 두께를 바꿔도 화면이 달라지지 않고, 나중에 색을 고를 때의
- * 기본 두께 3px 규칙만 흐트러진다). 범위는 단일 컷선 슬라이더("테두리 두께", 0.5 단위)와 같다.
+ * 기본 두께 3px 규칙만 흐트러진다). 지우개 획은 두께가 곧 지우는 범위라서 대상에서 뺀다 — 색과 달리 바꾸면 그림이 달라진다.
+ * 범위는 단일 컷선 슬라이더("테두리 두께", 0.5 단위)와 같다.
  * 이미 슬라이더 최대값보다 굵은 선이 있으면 그 굵기까지 올려, 건드린 것만으로 굵은 선이 조용히 가늘어지지 않게 한다.
+ * (호출부는 이 상한을 선택이 바뀔 때만 다시 잡아야 한다 — 끌면서 줄어드는 값으로 매번 다시 계산하면 상한이 따라 줄어든다.)
  */
 export const STUDIO_MULTI_SELECTION_STROKE_WIDTH_MIN = 0.5;
 export const STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX = 16;
@@ -121,40 +141,67 @@ export interface StudioMultiSelectionStrokeWidthState {
   /** 공통 두께. 섞여 있으면 첫 요소의 값을 대표로 쓴다. 대상이 없으면 null. */
   readonly value: number | null;
   readonly mixed: boolean;
+  /**
+   * 두께가 명시되지 않은 대상이 있다. 그런 요소(예: 말풍선)는 크기에 따라 다른 기본 두께로 그려지므로 `value`(3px)가
+   * 실제 굵기가 아니다 — 화면은 숫자 대신 "기본"이라고 말해야 한다. 슬라이더를 건드리면 모두 명시된다.
+   */
+  readonly implicit: boolean;
   /** 슬라이더 위쪽 끝: 기본 상한과 대상 중 가장 굵은 선 가운데 큰 쪽(올림). */
   readonly max: number;
 }
 
-function effectiveStrokeWidth(element: StudioStrokeColorElement): number {
+function hasExplicitStrokeWidth(element: StudioStrokeColorElement): boolean {
   const width = element.strokeWidth;
-  return typeof width === "number" && Number.isFinite(width) && width > 0
-    ? width
-    : STUDIO_DEFAULT_STROKE_WIDTH;
+  return typeof width === "number" && Number.isFinite(width) && width > 0;
+}
+
+function effectiveStrokeWidth(element: StudioStrokeColorElement): number {
+  return hasExplicitStrokeWidth(element) ? (element.strokeWidth as number) : STUDIO_DEFAULT_STROKE_WIDTH;
 }
 
 function hasVisibleStroke(element: El): element is StudioStrokeColorElement {
   return isStudioStrokeColorElement(element) && studioVisibleStrokeColor(element.stroke) !== null;
 }
 
+function isEraserStroke(element: El): boolean {
+  return element.type === "draw" && element.mode === "eraser";
+}
+
+function isStrokeWidthTarget(
+  element: El,
+  selected: ReadonlySet<string>,
+  options: StudioMultiSelectionTargetOptions,
+): element is StudioStrokeColorElement {
+  return (
+    selected.has(element.id) &&
+    hasVisibleStroke(element) &&
+    !isEraserStroke(element) &&
+    !(options.isLocked?.(element) ?? false)
+  );
+}
+
 export function resolveStudioMultiSelectionStrokeWidth(
   elements: readonly El[],
   selectedIds: readonly string[],
+  options: StudioMultiSelectionTargetOptions = {},
 ): StudioMultiSelectionStrokeWidthState {
   const selected = new Set(selectedIds);
-  const targets = elements.filter(
-    (element): element is StudioStrokeColorElement =>
-      selected.has(element.id) && hasVisibleStroke(element),
+  const targets = elements.filter((element): element is StudioStrokeColorElement =>
+    isStrokeWidthTarget(element, selected, options),
   );
   if (targets.length === 0) {
-    return { targets, value: null, mixed: false, max: STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX };
+    return { targets, value: null, mixed: false, implicit: false, max: STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX };
   }
   const widths = targets.map(effectiveStrokeWidth);
   const first = widths[0] ?? STUDIO_DEFAULT_STROKE_WIDTH;
+  // 선택이 아주 많아도 호출 스택 한도에 걸리지 않게 펼침 인자 대신 접는다.
+  const thickest = widths.reduce((largest, width) => (width > largest ? width : largest), 0);
   return {
     targets,
     value: first,
     mixed: widths.some((width) => Math.abs(width - first) > 0.005),
-    max: Math.max(STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX, Math.ceil(Math.max(...widths))),
+    implicit: targets.some((element) => !hasExplicitStrokeWidth(element)),
+    max: Math.max(STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX, Math.ceil(thickest)),
   };
 }
 
@@ -171,12 +218,13 @@ export function applyStudioMultiSelectionStrokeWidth(
   selectedIds: readonly string[],
   width: number,
   max: number = STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX,
+  options: StudioMultiSelectionTargetOptions = {},
 ): El[] {
   const selected = new Set(selectedIds);
   const nextWidth = clampStudioMultiSelectionStrokeWidth(width, max);
   let changed = false;
   const next = elements.map((element) => {
-    if (!selected.has(element.id) || !hasVisibleStroke(element)) return element;
+    if (!isStrokeWidthTarget(element, selected, options)) return element;
     if (element.strokeWidth === nextWidth) return element;
     changed = true;
     return { ...element, strokeWidth: nextWidth } as StudioStrokeColorElement;

@@ -132,7 +132,16 @@ describe("multi-selection stroke widths", () => {
     );
 
     expect(state.targets.map((target) => target.id)).toEqual(["frame"]);
-    expect(state).toMatchObject({ value: 3, mixed: false, max: STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX });
+    expect(state).toMatchObject({ value: 3, mixed: false, implicit: true, max: STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX });
+  });
+
+  it("is not implicit once every target has an explicit width", () => {
+    const state = resolveStudioMultiSelectionStrokeWidth(
+      [{ ...frame("a", "#111111"), strokeWidth: 2 } as El, { ...draw("b", "#222222"), strokeWidth: 2 } as El],
+      ["a", "b"],
+    );
+
+    expect(state).toMatchObject({ value: 2, mixed: false, implicit: false });
   });
 
   it("reports no value and no mix when nothing selected shows a stroke", () => {
@@ -140,6 +149,7 @@ describe("multi-selection stroke widths", () => {
       targets: [],
       value: null,
       mixed: false,
+      implicit: false,
       max: STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX,
     });
   });
@@ -197,5 +207,65 @@ describe("multi-selection stroke widths", () => {
     const next = applyStudioMultiSelectionStrokeWidth(elements, ["a"], 9);
 
     expect(next[0]).toMatchObject({ stroke: "#abcdef", strokeWidth: 9 });
+  });
+});
+
+describe("multi-selection style targets — locked elements and erasers", () => {
+  const lockedIds = new Set(["locked-draw", "locked-frame"]);
+  const isLocked = (element: El) => lockedIds.has(element.id);
+
+  it("leaves locked members out of the color targets and counts them", () => {
+    const elements: El[] = [draw("free", "#111111"), draw("locked-draw", "#222222"), frame("locked-frame", "#333333")];
+    const state = resolveStudioMultiSelectionStrokeColor(elements, ["free", "locked-draw", "locked-frame"], { isLocked });
+
+    expect(state.targets.map((target) => target.id)).toEqual(["free"]);
+    expect(state.lockedCount).toBe(2);
+    expect(state.value).toBe("#111111");
+  });
+
+  it("does not recolor locked members and keeps them by reference", () => {
+    const lockedDraw = draw("locked-draw", "#222222");
+    const elements: El[] = [draw("free", "#111111"), lockedDraw];
+    const next = applyStudioMultiSelectionStrokeColor(elements, ["free", "locked-draw"], "#ff0000", { isLocked });
+
+    expect(next[0]).toMatchObject({ stroke: "#ff0000" });
+    expect(next[1]).toBe(lockedDraw);
+  });
+
+  it("without an isLocked rule nothing is excluded (existing callers keep their behavior)", () => {
+    const state = resolveStudioMultiSelectionStrokeColor([draw("locked-draw", "#222222")], ["locked-draw"]);
+
+    expect(state.targets).toHaveLength(1);
+    expect(state.lockedCount).toBe(0);
+  });
+
+  it("does not change the width of locked members", () => {
+    const lockedFrame = { ...frame("locked-frame", "#333333"), strokeWidth: 4 } as El;
+    const elements: El[] = [{ ...draw("free", "#111111"), strokeWidth: 4 } as El, lockedFrame];
+    const state = resolveStudioMultiSelectionStrokeWidth(elements, ["free", "locked-frame"], { isLocked });
+    const next = applyStudioMultiSelectionStrokeWidth(elements, ["free", "locked-frame"], 9, state.max, { isLocked });
+
+    expect(state.targets.map((target) => target.id)).toEqual(["free"]);
+    expect(next[0]).toMatchObject({ strokeWidth: 9 });
+    expect(next[1]).toBe(lockedFrame);
+  });
+
+  it("never changes an eraser stroke's width — it is the erased area", () => {
+    const eraser = { ...draw("rubber", "#111111"), mode: "eraser", strokeWidth: 24 } as El;
+    const ink = { ...draw("ink", "#111111"), strokeWidth: 4 } as El;
+    const state = resolveStudioMultiSelectionStrokeWidth([ink, eraser], ["ink", "rubber"]);
+    const next = applyStudioMultiSelectionStrokeWidth([ink, eraser], ["ink", "rubber"], 8);
+
+    expect(state.targets.map((target) => target.id)).toEqual(["ink"]);
+    expect(state.max).toBe(STUDIO_MULTI_SELECTION_STROKE_WIDTH_MAX);
+    expect(next[0]).toMatchObject({ strokeWidth: 8 });
+    expect(next[1]).toBe(eraser);
+  });
+
+  it("resolves the ceiling for a very large selection without spreading arguments", () => {
+    const many: El[] = Array.from({ length: 150_000 }, (_, index) => ({ ...frame(`f${index}`, "#111111"), strokeWidth: 2 }) as El);
+    const ids = many.map((element) => element.id);
+
+    expect(() => resolveStudioMultiSelectionStrokeWidth(many, ids)).not.toThrow();
   });
 });
