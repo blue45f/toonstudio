@@ -603,6 +603,27 @@ describe("내 소재 참: 호스트가 목록을 읽기 전에도 해석한다",
     expect(loadLibrary).toHaveBeenCalledTimes(1);
   });
 
+  it("내 소재에 단 별(local:)도 '즐겨찾기' 분류에 모이고, 거기서 바로 고정할 수 있다", async () => {
+    const h = await harness([]);
+    h.renderBar({
+      hostLibrary: { assets: [mineAsset], loaded: true, loading: false },
+      assetFavoriteIds: ["local:mine-1", "community:other"],
+    });
+    await waitFor(() => expect(screen.getByRole("button", { name: "참 고르기" })).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "참 고르기" }));
+    const dialog = screen.getByRole("dialog", { name: "참 고르기" });
+    fireEvent.click(within(dialog).getByRole("button", { name: /즐겨찾기/ }));
+    const pin = await waitFor(() => {
+      const found = pickButton(dialog, MINE);
+      expect(found).not.toBeNull();
+      return found as HTMLButtonElement;
+    });
+    // 커뮤니티 에셋 별은 원본을 내려받아 검증해야 해서 참 대상이 아니다.
+    expect(dialog.querySelectorAll("[data-studio-charm-pick]")).toHaveLength(1);
+    fireEvent.click(pin);
+    await waitFor(() => expect(h.store.getSnapshot().state.charms).toEqual([MINE]));
+  });
+
   it("선택기에서 내 소재를 읽지 못하면 오류와 다시 불러오기를 보이고 다른 분류는 계속 쓸 수 있다", async () => {
     const h = await harness([]);
     const loadLibrary = vi.fn()
