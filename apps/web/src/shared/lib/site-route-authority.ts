@@ -1,4 +1,11 @@
-import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+// 이 파일은 import 가 없는 순수 모듈이다. scripts/ux-audit 의 측정 CLI 가 평범한 Node 로 직접 읽어 라우트 권위를
+// 주석으로 붙이는데, Node 는 `@/` 별칭을 풀지 못한다(scripts/ux-audit/cli-args.test.mjs 가 import 0개를 지킨다).
+// 그래서 shared/lib/trim-trailing-slashes.ts 와 같은 뒤→앞 한 번 훑기(정규식 제곱 시간 방지)를 여기에 둔다.
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return end === value.length ? value : value.slice(0, end);
+}
 
 export type SiteRouteProduct = "studio" | "spectrum" | "docs";
 export type SiteRoutePurpose = "create" | "discover" | "learn" | "connect" | "manage" | "trust";

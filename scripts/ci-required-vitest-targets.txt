@@ -556,6 +556,16 @@ scripts/release-static-chunk-boundary.test.ts
 scripts/run-production-database-migrations.test.mjs
 scripts/setup-toonstudio-blender-pipeline.test.mjs
 scripts/studio-production-realtime.test.ts
+scripts/ux-audit/aggregate.test.mjs
+scripts/ux-audit/cli-args.test.mjs
+scripts/ux-audit/copy-heuristics.test.mjs
+scripts/ux-audit/design-tokens.test.mjs
+scripts/ux-audit/journeys.test.mjs
+scripts/ux-audit/measure-filters.test.mjs
+scripts/ux-audit/render-report.test.mjs
+scripts/ux-audit/rubric.test.mjs
+scripts/ux-audit/structure-analysis.test.mjs
+scripts/ux-audit/what-if.test.mjs
 scripts/verify-studio-3d-console.test.ts
 scripts/verify-studio-canvas-entry.test.ts
 scripts/verify-studio-engine-editor-entry.test.ts
