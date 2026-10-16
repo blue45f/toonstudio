@@ -191,6 +191,84 @@ describe("ReaderFeedbackSummaryPanel: 예시 체험과 요약", () => {
   });
 });
 
+describe("ReaderFeedbackSummaryPanel: 비율(%)은 각 분모(답한 사람 수)가 충분할 때만", () => {
+  /** 같은 회차의 응답 `count`개. 의견만 있는 응답에 `answer(index)`로 점수·읽은 정도를 얹는다. */
+  function crowd(count: number, answer: (index: number) => Partial<ReaderFeedbackResponse> = () => ({}), episode = 1): ReaderFeedbackResponse[] {
+    return Array.from({ length: count }, (_, index) => ({
+      ...EXAMPLES[2]!,
+      id: `crowd-${episode}-${index}`,
+      createdAt: new Date(Date.UTC(2026, 9, 10, 0, index)).toISOString(),
+      target: { kind: "manual" as const, id: null, title: "분모 시험 작품", episode },
+      nickname: null,
+      ratings: { fun: null, understanding: null },
+      reading: { status: "unmarked" as const },
+      emotions: [],
+      comment: `${index + 1}번째 독자의 의견이에요`,
+      spoiler: false,
+      ...answer(index),
+    }));
+  }
+
+  it("응답이 10개여도 점수·읽은 정도에 답한 사람이 한 명이면 '100%'를 보이지 않고 개수만 보인다", async () => {
+    renderPanel();
+    chooseFiles([jsonFile("one-answer.json", crowd(10, (index) => (index === 0 ? { ratings: { fun: 3, understanding: 3 }, reading: { status: "finished" } } : {})))]);
+    await screen.findByText(/응답 10개 추가/u);
+    const group = screen.getByRole("article");
+    expect(within(group).getByText("받은 응답").parentElement!.textContent).toBe("받은 응답10개");
+    const finished = within(group).getByText("끝까지 읽음", { selector: "dt" }).parentElement!.textContent!;
+    expect(finished).toContain("1/1");
+    expect(finished).not.toContain("%");
+    expect(within(group).getByText("재밌었어요").parentElement!.textContent).toBe("재밌었어요1명");
+    expect(within(group).getByText("한눈에 이해했어요").parentElement!.textContent).toBe("한눈에 이해했어요1명");
+    expect(group.textContent).not.toContain("100%");
+  });
+
+  it("분모마다 따로 기준을 적용한다: 10명이 답한 질문에는 비율이 붙고 9명이 답한 질문에는 붙지 않는다", async () => {
+    renderPanel();
+    const answers = crowd(12, (index) => ({
+      ratings: { fun: index < 10 ? (index < 6 ? 3 : index < 9 ? 2 : 1) : null, understanding: index < 9 ? 2 : null },
+      reading: index < 4 ? { status: "finished" as const } : { status: "unmarked" as const },
+    }));
+    chooseFiles([jsonFile("ten-and-nine.json", answers)]);
+    await screen.findByText(/응답 12개 추가/u);
+    const group = screen.getByRole("article");
+    // 재미: 10명 답함 → 비율을 쓴다.
+    expect(within(group).getByText("재밌었어요").parentElement!.textContent).toBe("재밌었어요6명 · 60%");
+    expect(within(group).getByText("괜찮았어요").parentElement!.textContent).toBe("괜찮았어요3명 · 30%");
+    // 이해: 9명 답함 → 개수만.
+    expect(within(group).getByText("대체로 이해했어요").parentElement!.textContent).toBe("대체로 이해했어요9명");
+    // 읽은 정도: 4명만 밝힘 → 4/4 로 쓴다(응답은 12개여도 100% 를 만들지 않는다).
+    expect(within(group).getByText("끝까지 읽음", { selector: "dt" }).parentElement!.textContent).toContain("4/4");
+    expect(within(group).getByText("끝까지 읽음", { selector: "dt" }).parentElement!.textContent).not.toContain("%");
+  });
+
+  it("읽은 정도를 밝힌 사람이 10명 이상이면 완독 비율을 %로 보인다", async () => {
+    renderPanel();
+    chooseFiles([jsonFile("marked-ten.json", crowd(10, (index) => ({ reading: index < 3 ? { status: "finished" as const } : { status: "left" as const, point: { mode: "scroll" as const, percent: 30 } } })))]);
+    await screen.findByText(/응답 10개 추가/u);
+    const finished = within(screen.getByRole("article")).getByText("끝까지 읽음", { selector: "dt" }).parentElement!.textContent!;
+    expect(finished).toContain("30%");
+    expect(finished).toContain("읽은 정도를 밝힌 10명 기준");
+  });
+
+  it("회차 비교표의 '끝까지' 열도 읽은 정도를 밝힌 사람 수를 기준으로 한다", async () => {
+    renderPanel();
+    const firstEpisode = crowd(10, (index) => (index === 0 ? { reading: { status: "finished" as const } } : {}), 1);
+    const secondEpisode = crowd(10, (index) => ({ reading: index < 5 ? { status: "finished" as const } : { status: "left" as const, point: { mode: "cut" as const, cut: 3, cutCount: null } } }), 2);
+    chooseFiles([jsonFile("two-episodes.json", [...firstEpisode, ...secondEpisode])]);
+    await screen.findByText(/응답 20개 추가/u);
+    const rows = within(screen.getByRole("table", { name: /회차별 응답 수와 평균/u })).getAllByRole("row").slice(1);
+    const finishedColumn = rows.map((row) => within(row).getAllByRole("cell")[3]!.textContent);
+    expect(finishedColumn).toEqual(["1/1", "50%"]);
+  });
+
+  it("주의 안내는 비율이 응답 수가 아니라 질문에 답한 사람 수를 기준으로 한다고 말한다", () => {
+    renderPanel();
+    const caution = screen.getByRole("complementary", { name: "해석할 때 주의할 점" });
+    expect(caution.textContent).toContain("비율(%)은 그 질문에 답한 사람이 10명 이상일 때만 보여 줘요");
+  });
+});
+
 describe("ReaderFeedbackSummaryPanel: 여러 파일 합치기", () => {
   it("겹치는 응답은 한 번만 세고, 열지 못한 파일은 사유와 함께 남긴다", async () => {
     renderPanel();

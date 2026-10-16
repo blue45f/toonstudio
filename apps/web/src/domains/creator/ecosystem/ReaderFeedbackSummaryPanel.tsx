@@ -137,7 +137,7 @@ export function ReaderFeedbackSummaryPanel() {
         <ul className="mt-1 list-disc space-y-1 pl-5">
           <li>{bt("파일을 보내 준 독자만의 응답이에요(자체 선택). 읽은 사람 전체를 대표하지 않아요.", "These are only readers who chose to send a file (self-selected). They don't represent everyone who read it.")}</li>
           <li>{bt("끝까지 읽지 않은 독자는 응답하지 않았을 수 있어서, 멈춘 곳이 실제보다 적게 보일 수 있어요.", "Readers who didn't finish may not have responded, so drop-off can look smaller than it is.")}</li>
-          <li>{formatI18nTemplate(bt("응답이 적으면 평균과 분포는 한두 명에 좌우돼요. 비율(%)은 응답 {n}개부터 보여 줘요.", "With few responses, averages hinge on one or two readers. Percentages appear from {n} responses."), { n: SAMPLE_LEVEL_THRESHOLDS.percentFrom })}</li>
+          <li>{formatI18nTemplate(bt("응답이 적으면 평균과 분포는 한두 명에 좌우돼요. 비율(%)은 그 질문에 답한 사람이 {n}명 이상일 때만 보여 줘요.", "With few responses, averages hinge on one or two readers. A percentage appears only when at least {n} readers answered that question."), { n: SAMPLE_LEVEL_THRESHOLDS.percentFrom })}</li>
           <li>{bt("파일은 누구나 만들거나 고칠 수 있고 닉네임은 신원 확인이 아니에요.", "Anyone can create or edit a file, and a nickname doesn't verify identity.")}</li>
         </ul>
       </aside>
@@ -257,7 +257,7 @@ export function ReaderFeedbackSummaryPanel() {
                           <td className="py-1 pr-3 text-right tabular-nums">{group.count}</td>
                           <td className="py-1 pr-3 text-right tabular-nums">{meanText(group.fun.mean)}</td>
                           <td className="py-1 pr-3 text-right tabular-nums">{meanText(group.understanding.mean)}</td>
-                          <td className="py-1 pr-3 text-right tabular-nums">{group.reading.finishedShare === null ? "—" : showsPercent(group.count) ? `${Math.round(group.reading.finishedShare * 100)}%` : `${group.reading.finished}/${marked}`}</td>
+                          <td className="py-1 pr-3 text-right tabular-nums">{group.reading.finishedShare === null ? "—" : showsPercent(marked) ? `${Math.round(group.reading.finishedShare * 100)}%` : `${group.reading.finished}/${marked}`}</td>
                           <td className="py-1 text-fg-2">
                             {peak ? `${isCut ? cutRangeText(bt, peak) : scrollRangeText(bt, peak)} (${countText(bt, peak.count)})` : "—"}
                           </td>

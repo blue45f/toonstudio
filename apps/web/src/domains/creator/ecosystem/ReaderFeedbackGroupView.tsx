@@ -74,14 +74,16 @@ function CommentItem({ comment, onToggleHidden }: { readonly comment: FeedbackCo
   );
 }
 
-/** 한 회차의 요약: 핵심 수치 → 점수 분포 → 멈춘 곳 → 감정 → 의견. 표본이 작다는 안내를 맨 위에 둔다. */
+/**
+ * 한 회차의 요약: 핵심 수치 → 점수 분포 → 멈춘 곳 → 감정 → 의견. 표본이 작다는 안내를 맨 위에 둔다.
+ * 비율(%)은 표시하는 비율마다 그 분모(그 질문에 답한 사람 수)가 충분할 때만 쓴다 — 응답이 많아도 한 명만 답한 질문에 "100%"를 만들지 않는다.
+ */
 export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
   readonly group: ReaderFeedbackGroup;
   readonly onToggleHidden: (id: string) => void;
 }) {
   const bt = useBilingual("ReaderFeedback");
   const headingId = useId();
-  const percent = showsPercent(group.count);
   const count = (n: number) => countText(bt, n);
   const { cut, scroll } = group.dropOff;
   const left = cut.total + scroll.total;
@@ -113,7 +115,7 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
         <Figure label={bt("이해 평균", "Average clarity")} value={meanText(group.understanding.mean)} unit="/3" note={formatI18nTemplate(bt("{n}명 답함", "{n} answered"), { n: group.understanding.answered })} />
         <Figure
           label={bt("끝까지 읽음", "Finished")}
-          value={finishedShare === null ? "—" : percent ? `${Math.round(finishedShare * 100)}%` : `${group.reading.finished}/${marked}`}
+          value={finishedShare === null ? "—" : showsPercent(marked) ? `${Math.round(finishedShare * 100)}%` : `${group.reading.finished}/${marked}`}
           note={formatI18nTemplate(bt("읽은 정도를 밝힌 {n}명 기준", "Of {n} who said how far"), { n: marked })}
         />
       </dl>
@@ -122,11 +124,11 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
         <div className="grid gap-5 md:grid-cols-2">
           <div>
             <p className="mb-2 text-xs font-bold text-fg-3">{bt("재미", "Fun")}</p>
-            <DistributionList rows={ratingRows(bt, group.fun, FUN_LEVEL_LABELS)} total={group.fun.answered} showShare={percent} countLabel={count} />
+            <DistributionList rows={ratingRows(bt, group.fun, FUN_LEVEL_LABELS)} total={group.fun.answered} showShare={showsPercent(group.fun.answered)} countLabel={count} />
           </div>
           <div>
             <p className="mb-2 text-xs font-bold text-fg-3">{bt("이해", "Clarity")}</p>
-            <DistributionList rows={ratingRows(bt, group.understanding, UNDERSTANDING_LEVEL_LABELS)} total={group.understanding.answered} showShare={percent} countLabel={count} />
+            <DistributionList rows={ratingRows(bt, group.understanding, UNDERSTANDING_LEVEL_LABELS)} total={group.understanding.answered} showShare={showsPercent(group.understanding.answered)} countLabel={count} />
           </div>
         </div>
       </Section>
@@ -174,7 +176,7 @@ export function ReaderFeedbackGroupView({ group, onToggleHidden }: {
           <DistributionList
             rows={group.emotions.map((emotion) => ({ key: emotion.id, label: bt(EMOTION_LABELS[emotion.id].ko, EMOTION_LABELS[emotion.id].en), count: emotion.count }))}
             total={group.count}
-            showShare={percent}
+            showShare={showsPercent(group.count)}
             countLabel={count}
           />
         )}

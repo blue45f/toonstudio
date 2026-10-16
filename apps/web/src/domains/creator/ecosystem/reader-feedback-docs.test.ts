@@ -54,7 +54,7 @@ describe("독자 피드백 문서와 코드의 일치", () => {
     expect(doc).toContain(`응답 id ${READER_FEEDBACK_HIDDEN_MAX}개까지`);
     expect(doc).toContain(`${SAMPLE_LEVEL_THRESHOLDS.tinyBelow}개 미만 \`tiny\``);
     expect(doc).toContain(`${SAMPLE_LEVEL_THRESHOLDS.smallBelow}개 미만 \`small\``);
-    expect(doc).toContain(`응답이 ${SAMPLE_LEVEL_THRESHOLDS.percentFrom}개 이상일 때만 보인다`);
+    expect(doc).toContain(`그 질문에 답한 사람이 ${SAMPLE_LEVEL_THRESHOLDS.percentFrom}명 이상일 때만** 보인다`);
     expect(doc).toContain(`최대 ${REPRESENTATIVE_LIMIT}개를 보인다`);
     expect(doc).toContain(`**의견이 ${CONTENT_DEDUPE_MIN_COMMENT}자 이상**`);
   });

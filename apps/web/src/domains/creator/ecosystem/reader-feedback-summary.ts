@@ -151,7 +151,10 @@ export function sampleLevel(count: number): SampleLevel {
   return count < SAMPLE_LEVEL_THRESHOLDS.smallBelow ? "small" : "moderate";
 }
 
-/** 비율(%)을 보여 줄 만큼 표본이 큰지. 작은 표본에서는 "3명"처럼 개수만 보여 가짜 정밀도를 피한다. */
+/**
+ * 비율(%)을 보여 줄 만큼 표본이 큰지. 작은 표본에서는 "3명"처럼 개수만 보여 가짜 정밀도를 피한다.
+ * `count`는 전체 응답 수가 아니라 그 비율의 분모(그 질문에 답한 사람 수)다. 응답이 10개여도 한 명만 답한 질문의 "100%"는 가짜 정밀도다.
+ */
 export function showsPercent(count: number): boolean {
   return count >= SAMPLE_LEVEL_THRESHOLDS.percentFrom;
 }
