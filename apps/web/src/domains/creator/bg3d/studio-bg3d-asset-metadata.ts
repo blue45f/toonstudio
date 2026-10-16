@@ -93,7 +93,7 @@ export interface StudioBg3dAssetMetadata {
   readonly tags: readonly string[];
   readonly rights: StudioBg3dAssetRightsReceipt;
   /**
-   * SketchUp(.skp) 가져오기 보고서 v1(studio-bg3d-skp-import-report). 형식이 skp 인 V2 기록에만 있고,
+   * SketchUp(.skp) 가져오기 보고서 v1(studio-bg3d-skp-import-report). 형식이 skp 인 V2 이상 기록에만 있고,
    * 스키마 검증·텍스트 안전 검사·크기 한도를 통과하지 못한 값은 기록 전체를 무효로 만들지 않고 버린다.
    */
   readonly skpImport?: StudioBg3dSkpImportReport;
@@ -101,7 +101,7 @@ export interface StudioBg3dAssetMetadata {
 
 /**
  * V1 did not encode team redistribution permission and used singular/legacy metric field names.
- * The interface exists only to document the supported migration input; callers should store V2.
+ * The interface exists only to document the supported migration input; callers should store the current version.
  */
 export interface StudioBg3dAssetMetadataV1 {
   readonly version: 1;
@@ -487,7 +487,7 @@ function normalizeMetadataRecord(
     return null;
   }
 
-  // 보고서는 V2 의 skp 형식 기록에만 둔다. V1 기록과 다른 형식의 기록에 붙은 값은 버린다.
+  // 보고서는 V2 이상의 skp 형식 기록에만 둔다. V1 기록과 다른 형식의 기록에 붙은 값은 버린다.
   const skpImport = sourceVersion !== 1 && format === "skp"
     ? normalizeSkpImport(raw.skpImport)
     : undefined;
