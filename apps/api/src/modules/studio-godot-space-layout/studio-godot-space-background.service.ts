@@ -4,9 +4,10 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  PayloadTooLargeException,
 } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db, studioGodotSpaceBackgrounds } from "../../platform/database";
 import { CreatorService } from "../creator/creator.service";
@@ -14,7 +15,11 @@ import {
   godotSpaceBackgroundRef,
   type GodotSpaceBackgroundDto,
 } from "./studio-godot-space-background.dto";
-import { validateGodotBackgroundGlb } from "./studio-godot-background-glb";
+import {
+  GODOT_SPACE_BACKGROUND_MAX_ASSETS_PER_WORK,
+  GODOT_SPACE_BACKGROUND_MAX_TOTAL_BYTES_PER_WORK,
+  validateGodotBackgroundGlb,
+} from "./studio-godot-background-glb";
 
 export interface GodotSpaceBackgroundUploadFile {
   buffer: Buffer;
@@ -79,6 +84,7 @@ export class StudioGodotSpaceBackgroundService {
     if (!verdict.ok) {
       throw new BadRequestException(verdict.reason);
     }
+    await this.assertWithinWorkStorageLimits(workId, file.buffer.byteLength);
 
     const assetId = randomUUID();
     const sha256 = createHash("sha256").update(file.buffer).digest("hex");
@@ -99,6 +105,36 @@ export class StudioGodotSpaceBackgroundService {
       })
       .returning();
     return this.toDto(row);
+  }
+
+  /**
+   * 페이로드가 DB bytea 라서 작품별 보관 개수·총 용량에 상한을 둔다(파일 하나의 상한만으로는
+   * 업로드를 반복하는 계정이 DB 용량을 끝없이 쓸 수 있다). 조회와 삽입 사이에 락을 잡지 않는
+   * 느슨한 상한이라 동시 업로드가 겹치면 요청 수만큼(최대 파일 하나 20MB씩) 넘을 수 있다.
+   */
+  private async assertWithinWorkStorageLimits(
+    workId: string,
+    incomingBytes: number,
+  ): Promise<void> {
+    const [usage] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+        bytes: sql<string>`coalesce(sum(${studioGodotSpaceBackgrounds.byteSize}), 0)::bigint`,
+      })
+      .from(studioGodotSpaceBackgrounds)
+      .where(eq(studioGodotSpaceBackgrounds.workId, workId));
+    const storedCount = Number(usage?.count ?? 0);
+    const storedBytes = Number(usage?.bytes ?? 0);
+    if (storedCount >= GODOT_SPACE_BACKGROUND_MAX_ASSETS_PER_WORK) {
+      throw new PayloadTooLargeException(
+        `배경 자산은 작품당 최대 ${GODOT_SPACE_BACKGROUND_MAX_ASSETS_PER_WORK}개까지 올릴 수 있어요. 쓰지 않는 배경을 삭제한 뒤 다시 올려 주세요.`,
+      );
+    }
+    if (storedBytes + incomingBytes > GODOT_SPACE_BACKGROUND_MAX_TOTAL_BYTES_PER_WORK) {
+      throw new PayloadTooLargeException(
+        `배경 자산의 총 용량은 작품당 ${GODOT_SPACE_BACKGROUND_MAX_TOTAL_BYTES_PER_WORK / (1024 * 1024)}MB까지예요. 쓰지 않는 배경을 삭제한 뒤 다시 올려 주세요.`,
+      );
+    }
   }
 
   async list(

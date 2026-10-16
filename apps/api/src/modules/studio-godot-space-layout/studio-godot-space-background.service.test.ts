@@ -2,10 +2,15 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  PayloadTooLargeException,
 } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { CreatorService } from "../creator/creator.service";
+import {
+  GODOT_SPACE_BACKGROUND_MAX_ASSETS_PER_WORK,
+  GODOT_SPACE_BACKGROUND_MAX_TOTAL_BYTES_PER_WORK,
+} from "./studio-godot-background-glb";
 import { StudioGodotSpaceBackgroundService } from "./studio-godot-space-background.service";
 
 const boundary = vi.hoisted(() => ({
@@ -188,6 +193,8 @@ describe("upload", () => {
   it("stores a valid GLB and returns the uploads/ reference", async () => {
     const { service } = makeService(viewerTeam());
     boundary.query.mockImplementation((sql: string) => {
+      // 작품별 보관량 조회(개수·총 용량) — 한도 안이다
+      if (sql.includes("count(")) return { rows: [[0, "0"]] };
       // insert ... returning — assetId는 서비스가 발급한 UUID가 파라미터에 있다
       if (sql.includes("insert into")) {
         return { rows: [fullRow("11111111-2222-4333-8444-555555555555", "my room.glb")] };
@@ -204,6 +211,71 @@ describe("upload", () => {
     expect(dto.byteSize).toBe(VALID_GLB.byteLength);
     expect(dto.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(dto.createdAt).toBe("2026-10-12T00:00:00.000Z");
+  });
+});
+
+describe("upload quota (작품당 배경 보관 상한)", () => {
+  const STORED_ID = "11111111-2222-4333-8444-555555555555";
+
+  function stubStored(count: number, bytes: number) {
+    boundary.query.mockImplementation((sql: string) => {
+      if (sql.includes("count(")) return { rows: [[count, String(bytes)]] };
+      if (sql.includes("insert into")) return { rows: [fullRow(STORED_ID)] };
+      throw new Error(`unexpected query: ${sql}`);
+    });
+  }
+
+  function insertCount(): number {
+    return boundary.query.mock.calls.filter(([sql]) => String(sql).includes("insert into")).length;
+  }
+
+  it("개수 상한에 닿으면 413 으로 거절하고 아무것도 저장하지 않는다", async () => {
+    const { service } = makeService(viewerTeam());
+    stubStored(GODOT_SPACE_BACKGROUND_MAX_ASSETS_PER_WORK, 1024);
+    await expect(
+      service.upload("u1", "work-1", { buffer: VALID_GLB, originalname: "room.glb" }),
+    ).rejects.toBeInstanceOf(PayloadTooLargeException);
+    expect(insertCount()).toBe(0);
+  });
+
+  it("총 용량 상한을 넘기는 업로드는 413 으로 거절한다", async () => {
+    const { service } = makeService(viewerTeam());
+    stubStored(
+      1,
+      GODOT_SPACE_BACKGROUND_MAX_TOTAL_BYTES_PER_WORK - VALID_GLB.byteLength + 1,
+    );
+    await expect(
+      service.upload("u1", "work-1", { buffer: VALID_GLB }),
+    ).rejects.toBeInstanceOf(PayloadTooLargeException);
+    expect(insertCount()).toBe(0);
+  });
+
+  it("상한 직전까지는 저장한다(개수 상한-1, 총 용량이 정확히 상한과 같아지는 경우)", async () => {
+    const { service } = makeService(viewerTeam());
+    stubStored(
+      GODOT_SPACE_BACKGROUND_MAX_ASSETS_PER_WORK - 1,
+      GODOT_SPACE_BACKGROUND_MAX_TOTAL_BYTES_PER_WORK - VALID_GLB.byteLength,
+    );
+    await expect(
+      service.upload("u1", "work-1", { buffer: VALID_GLB, originalname: "room.glb" }),
+    ).resolves.toMatchObject({ assetId: STORED_ID });
+    expect(insertCount()).toBe(1);
+  });
+
+  it("보관량은 요청한 작품(workId)만 센다", async () => {
+    const { service } = makeService(viewerTeam());
+    stubStored(0, 0);
+    await service.upload("u1", "work-1", { buffer: VALID_GLB });
+    const usageCall = boundary.query.mock.calls.find(([sql]) => String(sql).includes("count("));
+    expect(usageCall?.[1]).toEqual(["work-1"]);
+  });
+
+  it("거절 사유가 올바른 형식 검증(400)보다 먼저 보이지 않는다(형식 오류는 그대로 400)", async () => {
+    const { service } = makeService(viewerTeam());
+    stubStored(GODOT_SPACE_BACKGROUND_MAX_ASSETS_PER_WORK, 0);
+    await expect(
+      service.upload("u1", "work-1", { buffer: Buffer.from("definitely not a glb...") }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
 

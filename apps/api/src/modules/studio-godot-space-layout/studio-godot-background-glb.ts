@@ -22,6 +22,14 @@
 export const GODOT_SPACE_BACKGROUND_MAX_BYTES = 20 * 1024 * 1024;
 
 /**
+ * 작품당 보관 상한. 페이로드가 DB bytea 로 저장되므로 파일 하나의 상한(위)만으로는 업로드를
+ * 반복하는 계정이 DB 용량을 끝없이 쓸 수 있다. 실파일은 6~14MB 이고 한 방에 몇 장이면 충분해
+ * 정상 사용에는 닿지 않는 값으로 잡았고, 넘으면 안 쓰는 배경을 지운 뒤 올리게 한다.
+ */
+export const GODOT_SPACE_BACKGROUND_MAX_ASSETS_PER_WORK = 12;
+export const GODOT_SPACE_BACKGROUND_MAX_TOTAL_BYTES_PER_WORK = 100 * 1024 * 1024;
+
+/**
  * 용량 상한의 근거: 로드 가능 실파일 최대는 무압축 교실본
  * 13.9MB(s2a-resize1024), 카탈로그 방 배경 6.7MB, Blender 방·거리
  * 무압축 계열 6.8~8.1MB다. 20MB는 그 전부에 여유를 두면서도
