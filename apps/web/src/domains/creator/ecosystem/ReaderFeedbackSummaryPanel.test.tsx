@@ -391,6 +391,76 @@ describe("ReaderFeedbackSummaryPanel: 여러 파일 합치기", () => {
   });
 });
 
+describe("ReaderFeedbackSummaryPanel: 읽는 중에 가져온 응답 비우기", () => {
+  /** 읽기가 끝나는 때를 시험이 정하는 파일. */
+  function slowFile(name: string) {
+    let finish: (text: string) => void = () => undefined;
+    const file = textFile(name, "x");
+    Object.defineProperty(file, "text", { value: () => new Promise<string>((resolve) => { finish = resolve; }) });
+    return { file, finish: async (text: string) => { await act(async () => { finish(text); }); } };
+  }
+  const loadExample = () => fireEvent.click(screen.getByRole("button", { name: /예시 응답으로 체험하기/u }));
+  const clear = () => fireEvent.click(screen.getByRole("button", { name: "가져온 응답 비우기" }));
+
+  it("읽는 중에 비워도 늦게 끝난 읽기가 응답을 다시 채우지 않고, 읽는 중 표시도 바로 사라진다", async () => {
+    renderPanel();
+    loadExample();
+    const slow = slowFile("slow.json");
+    chooseFiles([slow.file]);
+    await screen.findByRole("status", { name: "파일을 읽는 중" });
+    clear();
+    expect(screen.queryByRole("status", { name: "파일을 읽는 중" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+
+    await slow.finish(fileJson(EXAMPLES.slice(0, 3)));
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+    expect(screen.queryByRole("article")).toBeNull();
+    expect(statusText()).not.toContain("추가");
+    expect(screen.queryByRole("heading", { name: "가져오기 결과" })).toBeNull();
+  });
+
+  it("비운 뒤 새로 가져온 응답은 받고, 비우기 전에 시작한 읽기의 결과만 버린다", async () => {
+    renderPanel();
+    loadExample();
+    const stale = slowFile("stale.json");
+    chooseFiles([stale.file]);
+    await screen.findByRole("status", { name: "파일을 읽는 중" });
+    clear();
+
+    chooseFiles([jsonFile("fresh.json", EXAMPLES.slice(8, 10))]);
+    await screen.findByText(/응답 2개 추가/u);
+    await stale.finish(fileJson(EXAMPLES.slice(0, 3)));
+    expect(screen.getByText("받은 응답").parentElement!.textContent).toBe("받은 응답2개");
+    expect(statusText()).toContain("응답 2개 추가");
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(expect.arrayContaining(["fresh.json 응답 2개를 읽었어요."]));
+    expect(screen.queryByText(/stale\.json/u)).toBeNull();
+    // 새로 시작한 읽기는 비우기와 상관없이 끝까지 센다(읽는 중 표시가 낡은 읽기 때문에 남지도, 일찍 꺼지지도 않는다).
+    expect(screen.queryByRole("status", { name: "파일을 읽는 중" })).toBeNull();
+  });
+
+  it("다시 시도하는 중에 비워도 늦게 끝난 읽기가 응답을 되살리지 않는다", async () => {
+    renderPanel();
+    loadExample();
+    const flaky = textFile("flaky.json", "x");
+    const retried = slowFile("retry-body.json");
+    const read = vi.fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new Error("NotReadableError"))
+      .mockImplementationOnce(() => (retried.file as unknown as { text(): Promise<string> }).text());
+    Object.defineProperty(flaky, "text", { value: read });
+    chooseFiles([flaky]);
+    await screen.findByText("파일을 읽지 못했어요. 다시 시도해 보세요.");
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    clear();
+
+    await retried.finish(fileJson(EXAMPLES.slice(0, 3)));
+    expect(screen.getByRole("heading", { name: "아직 가져온 응답이 없어요" })).toBeTruthy();
+    expect(screen.queryByRole("article")).toBeNull();
+    // 비운 뒤에는 이전 가져오기의 다시 시도 단추도 남지 않는다.
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+});
+
 describe("ReaderFeedbackSummaryPanel: 악의적 입력", () => {
   it("HTML·스크립트 조각은 요소가 되지 않고 글자 그대로 보인다", async () => {
     const { container } = renderPanel();

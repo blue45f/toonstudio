@@ -87,9 +87,14 @@ export interface PanelState {
   readonly lastMerge: MergeCounts | null;
   /** 파일 수 상한 때문에 읽지 않은 파일 수(가장 최근 가져오기 기준). */
   readonly skippedFiles: number;
-  /** 아직 끝나지 않은 가져오기 수. 0 보다 크면 읽는 중 표시를 한다. */
+  /** 아직 끝나지 않은 가져오기 수(마지막으로 비운 뒤에 시작한 것만). 0 보다 크면 읽는 중 표시를 한다. */
   readonly pending: number;
   readonly selectedKey: string | null;
+  /**
+   * 비운 횟수. 가져오기는 시작할 때의 값을 들고 있다가 끝나면서 돌려주고, 그 사이에 비웠다면(값이 다르면)
+   * 늦게 끝난 결과를 버린다. 그렇지 않으면 비운 화면이 이미 비우기를 누른 응답으로 다시 채워진다.
+   */
+  readonly generation: number;
 }
 
 export const INITIAL_PANEL_STATE: PanelState = {
@@ -99,13 +104,15 @@ export const INITIAL_PANEL_STATE: PanelState = {
   skippedFiles: 0,
   pending: 0,
   selectedKey: null,
+  generation: 0,
 };
 
 export type PanelAction =
   | { readonly type: "loading" }
-  | { readonly type: "imported"; readonly outcome: ImportOutcome; readonly skippedFiles: number }
+  /** `generation`은 가져오기를 시작할 때의 `PanelState.generation`. 그 사이에 비웠다면 이 결과는 버려진다. */
+  | { readonly type: "imported"; readonly generation: number; readonly outcome: ImportOutcome; readonly skippedFiles: number }
   /** 실패한 보고서 하나를 다시 읽은 결과. 같은 id 의 보고서를 바꿔 끼운다. */
-  | { readonly type: "retried"; readonly outcome: ImportOutcome }
+  | { readonly type: "retried"; readonly generation: number; readonly outcome: ImportOutcome }
   | { readonly type: "select"; readonly key: string | null }
   | { readonly type: "dismiss-reports" }
   | { readonly type: "clear" };
@@ -121,6 +128,7 @@ export function panelReducer(state: PanelState, action: PanelAction): PanelState
     case "loading":
       return { ...state, pending: state.pending + 1 };
     case "imported": {
+      if (action.generation !== state.generation) return state;
       const merged = mergeReaderFeedback(state.responses, action.outcome.incoming);
       return {
         ...state,
@@ -132,6 +140,7 @@ export function panelReducer(state: PanelState, action: PanelAction): PanelState
       };
     }
     case "retried": {
+      if (action.generation !== state.generation) return state;
       const merged = mergeReaderFeedback(state.responses, action.outcome.incoming);
       const replacement = action.outcome.reports[0];
       return {
@@ -147,7 +156,8 @@ export function panelReducer(state: PanelState, action: PanelAction): PanelState
     case "dismiss-reports":
       return { ...state, reports: [] };
     case "clear":
-      return { ...INITIAL_PANEL_STATE, pending: state.pending };
+      // 읽고 있던 가져오기는 이 시점에 버린 것으로 본다: 읽는 중 표시도 함께 끄고, 늦게 끝난 결과는 위에서 걸러진다.
+      return { ...INITIAL_PANEL_STATE, generation: state.generation + 1 };
   }
 }
 

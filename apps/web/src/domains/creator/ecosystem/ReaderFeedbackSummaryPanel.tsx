@@ -68,12 +68,14 @@ export function ReaderFeedbackSummaryPanel() {
   const failedReports = state.reports.filter((report) => report.status === "failed");
 
   const runImport = async (sources: readonly ImportSource[], files: readonly (File | null)[], skippedFiles: number) => {
+    // 읽는 동안 '비우기'를 누르면 이 결과는 버려진다(시작할 때의 세대를 돌려주어 리듀서가 가린다).
+    const generation = state.generation;
     const firstId = nextReportId.current;
     nextReportId.current += sources.length;
     files.forEach((file, index) => { if (file) retryFiles.current.set(firstId + index, file); });
     dispatch({ type: "loading" });
     const outcome = await importReaderFeedbackSources(sources, firstId);
-    dispatch({ type: "imported", outcome, skippedFiles });
+    dispatch({ type: "imported", generation, outcome, skippedFiles });
   };
 
   const onFilesChosen = (event: ChangeEvent<HTMLInputElement>) => {
@@ -87,9 +89,10 @@ export function ReaderFeedbackSummaryPanel() {
   const retry = async (report: ImportReport) => {
     const file = retryFiles.current.get(report.id);
     if (!file) return;
+    const generation = state.generation;
     dispatch({ type: "loading" });
     const outcome = await importReaderFeedbackSources([{ name: file.name, size: file.size, source: "file", text: () => file.text() }], report.id);
-    dispatch({ type: "retried", outcome });
+    dispatch({ type: "retried", generation, outcome });
   };
 
   const importPasted = () => {
@@ -103,9 +106,15 @@ export function ReaderFeedbackSummaryPanel() {
     dispatch({ type: "loading" });
     dispatch({
       type: "imported",
+      generation: state.generation,
       skippedFiles: 0,
       outcome: { reports: [{ id, name: bt("체험용 예시 응답", "Example responses"), source: "example", status: "ok", code: null, path: null, accepted: responses.length, retryable: false }], incoming: responses },
     });
+  };
+
+  const clearImported = () => {
+    retryFiles.current.clear();
+    dispatch({ type: "clear" });
   };
 
   const toggleHidden = (id: string) => {
@@ -153,7 +162,7 @@ export function ReaderFeedbackSummaryPanel() {
         {state.responses.length === 0 ? (
           <button type="button" className={RF_BUTTON} onClick={loadExample}><Sparkles size={16} aria-hidden /> {bt("예시 응답으로 체험하기", "Try with example responses")}</button>
         ) : (
-          <button type="button" className={RF_BUTTON} onClick={() => dispatch({ type: "clear" })}><Trash2 size={16} aria-hidden /> {bt("가져온 응답 비우기", "Clear imported responses")}</button>
+          <button type="button" className={RF_BUTTON} onClick={clearImported}><Trash2 size={16} aria-hidden /> {bt("가져온 응답 비우기", "Clear imported responses")}</button>
         )}
       </div>
       <p className="mt-1 text-xs text-fg-3">

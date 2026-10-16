@@ -91,21 +91,21 @@ describe("panelReducer", () => {
     let state: PanelState = panelReducer(INITIAL_PANEL_STATE, { type: "loading" });
     state = panelReducer(state, { type: "loading" });
     expect(state.pending).toBe(2);
-    state = panelReducer(state, { type: "imported", outcome: outcome([report(1)], 0, 2), skippedFiles: 0 });
+    state = panelReducer(state, { type: "imported", generation: 0, outcome: outcome([report(1)], 0, 2), skippedFiles: 0 });
     expect(state.pending).toBe(1);
-    state = panelReducer(state, { type: "imported", outcome: outcome([report(2)], 1, 2), skippedFiles: 0 });
+    state = panelReducer(state, { type: "imported", generation: 0, outcome: outcome([report(2)], 1, 2), skippedFiles: 0 });
     expect(state.pending).toBe(0);
     expect(state.responses).toHaveLength(3);
     expect(state.lastMerge).toEqual({ added: 1, updated: 0, duplicates: 1, overflow: 0 });
   });
 
   it("보고서는 최근 가져오기가 앞에 오고 같은 가져오기 안에서는 고른 순서를 지키며 30개까지만 남긴다", () => {
-    let state = panelReducer(INITIAL_PANEL_STATE, { type: "imported", outcome: outcome([report(1), report(2)], 0, 1), skippedFiles: 0 });
-    state = panelReducer(state, { type: "imported", outcome: outcome([report(3), report(4)], 0, 1), skippedFiles: 2 });
+    let state = panelReducer(INITIAL_PANEL_STATE, { type: "imported", generation: 0, outcome: outcome([report(1), report(2)], 0, 1), skippedFiles: 0 });
+    state = panelReducer(state, { type: "imported", generation: 0, outcome: outcome([report(3), report(4)], 0, 1), skippedFiles: 2 });
     expect(state.reports.map((item) => item.id)).toEqual([3, 4, 1, 2]);
     expect(state.skippedFiles).toBe(2);
     const many = Array.from({ length: 40 }, (_, index) => report(100 + index));
-    state = panelReducer(state, { type: "imported", outcome: outcome(many, 0, 1), skippedFiles: 0 });
+    state = panelReducer(state, { type: "imported", generation: 0, outcome: outcome(many, 0, 1), skippedFiles: 0 });
     expect(state.reports).toHaveLength(30);
     expect(state.reports[0]!.id).toBe(100);
   });
@@ -113,31 +113,53 @@ describe("panelReducer", () => {
   it("다시 시도한 결과는 같은 id 의 보고서를 바꿔 끼우고 응답을 합친다", () => {
     let state = panelReducer(INITIAL_PANEL_STATE, {
       type: "imported",
+      generation: 0,
       outcome: { reports: [report(1, { status: "failed", code: "read-failed", accepted: 0, retryable: true }), report(2)], incoming: [] },
       skippedFiles: 0,
     });
     state = panelReducer(state, { type: "loading" });
-    state = panelReducer(state, { type: "retried", outcome: outcome([report(1, { accepted: 3 })], 0, 3) });
+    state = panelReducer(state, { type: "retried", generation: 0, outcome: outcome([report(1, { accepted: 3 })], 0, 3) });
     expect(state.reports.map((item) => [item.id, item.status, item.accepted, item.retryable])).toEqual([[1, "ok", 3, false], [2, "ok", 1, false]]);
     expect(state.responses).toHaveLength(3);
     expect(state.pending).toBe(0);
   });
 
   it("선택·보고서 닫기·비우기는 서로 영향을 주지 않는 범위만 바꾼다", () => {
-    let state = panelReducer(INITIAL_PANEL_STATE, { type: "imported", outcome: outcome([report(1)], 0, 2), skippedFiles: 1 });
+    let state = panelReducer(INITIAL_PANEL_STATE, { type: "imported", generation: 0, outcome: outcome([report(1)], 0, 2), skippedFiles: 1 });
     state = panelReducer(state, { type: "select", key: "k" });
     expect(state.selectedKey).toBe("k");
     state = panelReducer(state, { type: "dismiss-reports" });
     expect(state.reports).toEqual([]);
     expect(state.responses).toHaveLength(2);
     state = panelReducer(panelReducer(state, { type: "loading" }), { type: "clear" });
-    expect(state).toEqual({ ...INITIAL_PANEL_STATE, pending: 1 });
+    // 비우면 읽고 있던 가져오기도 버린 것으로 본다: 읽는 중 수는 0 이고 세대만 하나 올라간다.
+    expect(state).toEqual({ ...INITIAL_PANEL_STATE, generation: 1 });
+  });
+
+  it("비우기 전에 시작한 가져오기·다시 시도의 늦은 결과는 버리고, 비운 뒤에 시작한 것은 받는다", () => {
+    let state = panelReducer(INITIAL_PANEL_STATE, { type: "imported", generation: 0, outcome: outcome([report(1, { status: "failed", code: "read-failed", accepted: 0, retryable: true })], 0, 0), skippedFiles: 0 });
+    state = panelReducer(state, { type: "loading" });
+    state = panelReducer(state, { type: "loading" });
+    expect(state.pending).toBe(2);
+    state = panelReducer(state, { type: "clear" });
+    expect(state).toMatchObject({ pending: 0, generation: 1, responses: [], reports: [], lastMerge: null });
+
+    // 세대 0 에서 시작한 두 가져오기가 뒤늦게 끝나도 아무것도 바뀌지 않는다(읽는 중 수도 그대로).
+    state = panelReducer(state, { type: "loading" });
+    const late = panelReducer(state, { type: "imported", generation: 0, outcome: outcome([report(2)], 0, 3), skippedFiles: 1 });
+    expect(late).toBe(state);
+    expect(panelReducer(state, { type: "retried", generation: 0, outcome: outcome([report(1, { accepted: 3 })], 0, 3) })).toBe(state);
+
+    // 비운 뒤(세대 1)에 시작한 가져오기는 받는다.
+    const fresh = panelReducer(state, { type: "imported", generation: 1, outcome: outcome([report(3)], 4, 2), skippedFiles: 0 });
+    expect(fresh).toMatchObject({ pending: 0, generation: 1, lastMerge: { added: 2 } });
+    expect(fresh.responses).toHaveLength(2);
   });
 
   it("상태를 직접 바꾸지 않는다", () => {
-    const before = panelReducer(INITIAL_PANEL_STATE, { type: "imported", outcome: outcome([report(1)], 0, 2), skippedFiles: 0 });
+    const before = panelReducer(INITIAL_PANEL_STATE, { type: "imported", generation: 0, outcome: outcome([report(1)], 0, 2), skippedFiles: 0 });
     const snapshot = JSON.stringify(before);
-    panelReducer(before, { type: "imported", outcome: outcome([report(2)], 2, 2), skippedFiles: 0 });
+    panelReducer(before, { type: "imported", generation: 0, outcome: outcome([report(2)], 2, 2), skippedFiles: 0 });
     panelReducer(before, { type: "clear" });
     expect(JSON.stringify(before)).toBe(snapshot);
   });
