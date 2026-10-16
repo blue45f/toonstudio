@@ -9,6 +9,7 @@ import { useEffect, useId, useRef, useState, type DragEvent, type ReactElement }
 import { queryStudioCatalog, type StudioCatalogOrientation, type StudioCatalogSort } from "./catalog/studio-catalog-query";
 import { StudioCatalogControls, StudioCatalogStorageNotice, STUDIO_CATALOG_CONTROL, STUDIO_CATALOG_PRIMARY_CONTROL } from "./catalog/StudioCatalogControls";
 import { StudioCatalogPreviewDialog } from "./catalog/StudioCatalogPreviewDialog";
+import { StudioCharmPinAction } from "./charm/StudioCharmBarControls";
 import { useStudioCatalogPreferences } from "./catalog/use-studio-catalog-preferences";
 import "./catalog/studio-catalog-browser.css";
 import { svgToDataUrl } from "./studio-characters";
@@ -608,6 +609,7 @@ export function StudioElementsPanel({
         preview={<StudioSvgAssetPreview assetId={previewItem.id} svg={previewItem.svg} width={previewItem.width} height={previewItem.height} requested tournament={previewTournament} />}
         actions={<>
           <button type="button" className={`${STUDIO_CATALOG_CONTROL} flex-1`} aria-pressed={catalog.state.favoriteIds.includes(previewItem.id)} onClick={() => toggleFavorite(previewItem)}>즐겨찾기 {catalog.state.favoriteIds.includes(previewItem.id) ? "해제" : "추가"}</button>
+          <StudioCharmPinAction kind="element" rawId={previewItem.id} className={`${STUDIO_CATALOG_CONTROL} flex-1`} />
           <button type="button" className={`${STUDIO_CATALOG_PRIMARY_CONTROL} flex-1`} onClick={() => { handlePick(previewItem); setPreviewItem(null); }}>캔버스에 추가</button>
         </>}>
         <p className="font-medium text-fg">{STUDIO_ELEMENT_CATEGORY_CHIPS.find((chip) => chip.id === previewItem.category)?.label} · {previewItem.width} × {previewItem.height} 기준 크기</p>
