@@ -153,7 +153,7 @@ export function PanelReviewStep(props: PanelReviewStepProps): ReactElement {
         {state.panels.length === 0
           ? bi("컷이 없어요.", "No panels.")
           : bi(`컷 ${state.panels.length}개`, `${state.panels.length} panel(s)`)}
-        {level ? bi(` · 자동 감지 전체 신뢰도 ${confidenceLabel(level)}(${Math.round(result.confidence * 100)}%)`, ` · overall detection confidence: ${confidenceLabel(level)} (${Math.round(result.confidence * 100)}%)`) : ""}
+        {level ? bi(` · 자동 감지 전체 ${confidenceLabel(level)}(${Math.round(result.confidence * 100)}%)`, ` · overall detection: ${confidenceLabel(level)} (${Math.round(result.confidence * 100)}%)`) : ""}
       </p>
       {result.warnings.length > 0 ? (
         <ul className="mt-2 grid gap-1.5">

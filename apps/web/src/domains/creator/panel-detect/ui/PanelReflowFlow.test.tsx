@@ -190,7 +190,8 @@ describe("컷 확인과 고치기 단계", () => {
     renderFlow();
     await reviewHeading();
     const status = screen.getAllByRole("status").find((node) => node.textContent?.includes("컷 3개"));
-    expect(status?.textContent).toMatch(/자동 감지 전체 신뢰도 신뢰도 (높음|보통|낮음)\(\d+%\)/u);
+    expect(status?.textContent).toMatch(/자동 감지 전체 신뢰도 (높음|보통|낮음)\(\d+%\)/u);
+    expect(status?.textContent).not.toMatch(/신뢰도 신뢰도/u);
     const list = screen.getByRole("list", { name: "컷 목록 (읽기 순서)" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(3);
     expect(panelIds()).toHaveLength(3);
@@ -392,6 +393,25 @@ describe("컷 확인과 고치기 단계", () => {
     expect(panelIds()).toHaveLength(2);
     expect(announcer()).toBe("컷을 둘로 나눴어요.");
     expect(screen.queryByText("여기서 나뉘었을 수 있어요")).toBeNull();
+  });
+
+  it("여백이 너무 얇아 합쳐진 컷은 경고와 낮춘 신뢰도를 보여 주고, 민감도를 '섬세'로 바꿔 다시 찾으면 둘로 나뉜다", async () => {
+    const page = new FixtureImage(1200, 800, WHITE);
+    page.art(40, 40, 560, 720, { seed: 0 });
+    page.art(604, 40, 556, 720, { seed: 1 });
+    const { kit } = renderFlow({}, page);
+    await reviewHeading();
+    expect(panelIds()).toHaveLength(1);
+    expect(screen.getByText(/컷 1개 · 자동 감지 전체 신뢰도 (보통|낮음)\(\d+%\)/)).toBeTruthy();
+    fireEvent.click(firstOf(listButtons()));
+    expect(screen.getAllByText(/여러 컷이 한 컷으로 합쳐졌을 수 있어요/).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("radio", { name: /섬세/ }));
+    fireEvent.click(button("이 설정으로 다시 찾기"));
+    await waitFor(() => expect(kit.detect).toHaveBeenCalledTimes(2));
+    expect(kit.detect.mock.calls[1]?.[1]).toMatchObject({ sensitivity: "fine" });
+    await reviewHeading();
+    await waitFor(() => expect(panelIds()).toHaveLength(2));
+    expect(screen.queryByText(/여러 컷이 한 컷으로 합쳐졌을 수 있어요/)).toBeNull();
   });
 
   it("컷이 없으면 다음 단계로 갈 수 없다", async () => {
