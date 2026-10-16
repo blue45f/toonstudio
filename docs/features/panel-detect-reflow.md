@@ -7,7 +7,7 @@
 
 ## 한눈에 보기
 
-두 모드 모두 **이 브라우저 안에서만** 처리한다. 이미지는 서버로 보내지 않고, 소스에는 네트워크 호출이 없다(`panel-detect-local-only.test.ts`가 폴더 전체를 정적으로 검사한다). 시작 전에 "내가 권리를 가진 원고이거나 이용 허락을 받은 원고입니다" 확인이 필요하고, 이 확인은 결과물(Studio 문서의 컷 이미지, ZIP의 안내문·매니페스트)에 기록으로 남는다.
+두 모드 모두 **이 브라우저 안에서만** 처리한다. 이미지는 서버로 보내지 않고, 소스에는 네트워크 호출이 없다(`panel-detect-local-only.test.ts`가 폴더 전체를 정적으로 검사한다). ko·en 이외 언어의 화면 문구를 런타임 번역할 때도 파일 이름·행 번호 같은 사용자 값은 번역 서비스로 나가지 않는다(아래 "접근성과 상태 화면"의 다국어 항목). 시작 전에 "내가 권리를 가진 원고이거나 이용 허락을 받은 원고입니다" 확인이 필요하고, 이 확인은 결과물(Studio 문서의 컷 이미지, ZIP의 안내문·매니페스트)에 기록으로 남는다.
 
 | 모드 | 하는 일 | 결과 |
 | --- | --- | --- |
@@ -16,8 +16,8 @@
 
 ## 사용자 흐름
 
-1. **권리 확인과 이미지 선택(1단계).** 체크박스에 동의해야 파일 선택이 열린다. 출처·이용 허락 메모(선택, 300자)를 적을 수 있다. 확인 전에는 파일 입력이 닫혀 있고, 이벤트가 새어 들어와도 처리 단계가 다시 확인을 요구하며, 데이터 계층(`createPanelImportRights`)도 `confirmed: true`가 아니면 기록을 만들지 않는다.
-2. **컷 확인과 고치기(재배열 모드 2단계).** 감지는 Worker에서 돌고 진행 안내·취소·다시 시도를 보여 준다. 실패해도 "컷 직접 그리기"로 같은 흐름을 이어갈 수 있다. 캔버스에서 컷 이동·가장자리 크기 조절·새 컷 그리기·가로/세로선으로 나누기·합치기·삭제·순서 바꾸기, 읽기 순서(만화/코믹/웹툰)와 여백 민감도(섬세/보통/넓은 여백만) 바꾸기를 하고 되돌리기/다시하기를 쓴다. 키보드(방향키·Shift=1px·Alt=크기·Delete·Esc, Ctrl/⌘+Z)와 숫자 입력으로도 모두 고칠 수 있고, 끌 수 없는 환경에서는 "전체를 한 컷으로" 단추로 첫 컷을 만든 뒤 숫자 입력과 선 나누기로 다듬는다.
+1. **권리 확인과 이미지 선택(1단계).** 체크박스에 동의해야 파일 선택이 열린다. 출처·이용 허락 메모(선택, 300자)를 적을 수 있다. 확인 전에는 파일 입력이 닫혀 있고, 이벤트가 새어 들어와도 처리 단계가 다시 확인을 요구하고("같은 파일로 다시 시도"도 파일을 읽기 전에 확인부터 보며, 없으면 일반 오류가 아니라 "위의 권리 확인에 체크한 뒤 ‘같은 파일로 다시 시도’를 눌러 주세요"라고 안내한다), 데이터 계층(`createPanelImportRights`)도 `confirmed: true`가 아니면 기록을 만들지 않는다.
+2. **컷 확인과 고치기(재배열 모드 2단계).** 감지는 Worker에서 돌고 진행 안내·취소·다시 시도를 보여 준다. 실패해도 "컷 직접 그리기"로 같은 흐름을 이어갈 수 있다. 캔버스에서 컷 이동·가장자리 크기 조절·새 컷 그리기·가로/세로선으로 나누기·합치기·삭제·순서 바꾸기, 읽기 순서(만화/코믹/웹툰)와 여백 민감도(섬세/보통/넓은 여백만) 바꾸기를 하고 되돌리기/다시하기를 쓴다. "내용에 맞추기"는 이미지를 읽는 동안 사용자가 같은 컷을 옮기거나 지워도 옛 위치로 되돌리거나 지운 컷을 되살리지 않고, 읽기가 끝난 시점의 최신 컷에서 맞춘다. 키보드(방향키·Shift=1px·Alt=크기·Delete·Esc, Ctrl/⌘+Z)와 숫자 입력으로도 모두 고칠 수 있고, 끌 수 없는 환경에서는 "전체를 한 컷으로" 단추로 첫 컷을 만든 뒤 숫자 입력과 선 나누기로 다듬는다.
 3. **세로 스트립으로 재배열(3단계).** 폭 690/720px, 컷 사이 간격(0~400, 표준 80), 배율(폭에 맞춤/원본 크기 유지)을 고르면 미리보기와 **원본과 달라지는 점(손실 보고)** 이 즉시 바뀐다. 경고 항목이 있으면 확인 체크를 해야 삽입·내려받기가 열리고, 설정이 바뀌어 보고가 달라지면 확인이 자동으로 무효가 된다.
 4. **삽입 또는 내려받기.** "Studio 문서로 삽입"은 컷 이미지를 새로 만들어 프로젝트 JSON으로 묶고 기존 가져오기 전달표에 올린 뒤 편집기(`/studio/canvas?importHandoff=…`)로 이동한다. "PNG 묶음(ZIP) 내려받기"는 페이지 PNG와 `rights-receipt.txt`를 담는다. 둘 다 진행률·취소·오류 안내·다시 시도가 있다.
 5. **카드뉴스 모드.** 이미지를 고르면 카드 자리를 계산하고(진행·취소·재시도), 카드별 4:5 미리보기와 카드 수 조절, 절단선 슬라이더·±1/±10행·"가까운 여백으로" 붙이기, 카드 안 위치(가운데/위쪽)를 보여 준다. ZIP(PNG) 내보내기 뒤에는 "다시 내려받기"가 남는다.
@@ -52,7 +52,7 @@ file → readRaster → sliceCardsAsync (panel-card-slice.ts: 행 균일도 프�
 | `panel-canvas-adapter.ts`, `panel-render-core.ts`, `panel-source-image.ts` | 브라우저(디코딩·캔버스)에 닿는 유일한 경계. 나머지는 `PanelDrawable`/`PanelRenderSurface` 인터페이스만 본다 |
 | `ui/` | 화면. 브라우저 기능은 `PanelImportEnvironment`(`ui/panel-import-env.ts`)로만 부른다 |
 
-기존 코드와 이어지는 곳은 네 군데뿐이다: 가져오기 화면의 한 줄(`StudioImportIntegratedPage`), 컷 이미지 요소의 `sourceRights` 필드(`studio-element-model.ts`), 권리 명세 투영(`studio-asset-rights-projection.ts`), 그리고 편집기의 기존 프로젝트 JSON 가져오기 전달표(`studio-import-handoff.ts`)다. 편집기 본체는 건드리지 않았다.
+기존 코드와 이어지는 곳은 다섯 군데뿐이다: 가져오기 화면의 한 줄(`StudioImportIntegratedPage`), 컷 이미지 요소의 `sourceRights` 필드(`studio-element-model.ts`), 권리 명세 투영(`studio-asset-rights-projection.ts`), 레이어 분리 계획(`layer/studio-layer-lift-plan.ts`가 분리된 층에 `sourceRights`를 이어받는다), 그리고 편집기의 기존 프로젝트 JSON 가져오기 전달표(`studio-import-handoff.ts`)다. 화면 문구를 위해 `i18n-asset-manifest.ts`(`panelImport` 등록)와 `scripts/generate-i18n-builtins.mjs`(지연 묶음)에도 한 줄씩 있다. 편집기 본체는 건드리지 않았다.
 
 ## 알고리즘 (의존성 없는 여백 기반 XY-cut)
 
@@ -107,13 +107,13 @@ file → readRaster → sliceCardsAsync (panel-card-slice.ts: 행 균일도 프�
 
 - 폭 규격은 **720px**(Studio 문서 폭)와 **690px**(양옆 15px씩 여백을 두고 가운데 배치) 둘이다. 간격은 컷 사이에만 들어가며 표준 80px, 범위 0~400.
 - 배율 "폭에 맞춤"은 모든 컷을 같은 폭으로 늘이거나 줄이고, "원본 크기 유지"는 키우지 않고 가운데에 둔다.
-- 페이지는 높이 8,000px을 넘기기 전에 **컷 경계에서만** 나눈다(Studio 웹툰 새 문서 기본 길이). 배율을 적용한 컷 한 장의 높이가 100,000px(Studio 문서 캔버스 높이 한도)를 넘으면 계획 단계에서 `panel-too-tall`로 거절하고 이유를 보여 준다. 200쪽 한도(`too-many-pages`)와 결과 픽셀 합계 8천만 상한(`output-too-large`)도 계획 단계에서 검사한다.
-- 컷마다 PNG 를 새로 만든다(그림면 한 변 16,384px·1,677만 픽셀 이내). Studio 문서에 담을 PNG 합계는 48MiB 이하여야 하고 프로젝트 JSON 은 96MiB 이하여야 한다.
+- 페이지는 높이 8,000px을 넘기기 전에 **컷 경계에서만** 나눈다(Studio 웹툰 새 문서 기본 길이). 컷 사각형이 유한한 숫자가 아니거나 좌표가 음수이거나 크기가 0 이하이면 계획 단계에서 `invalid-panel`로 거절한다(NaN 높이의 계획이 오류 없이 만들어지지 않게). 배율을 적용한 컷 한 장의 높이가 100,000px(Studio 문서 캔버스 높이 한도)를 넘으면 계획 단계에서 `panel-too-tall`로 거절하고 이유를 보여 준다. 200쪽 한도(`too-many-pages`)와 결과 픽셀 합계 8천만 상한(`output-too-large`)도 계획 단계에서 검사한다.
+- 컷마다 PNG 를 새로 만든다(그림면 한 변 16,384px·1,677만 픽셀 이내). 컷 이미지는 컷 자기 크기의 그림면에 굽는다. "원본 크기 유지"에서 목표 폭보다 좁은 컷도 오른쪽이 잘리거나 왼쪽에 빈 띠가 생기지 않으며, 가운데에 두는 일은 페이지 그림면 안 위치로만 한다(`panel-reflow-render.test.ts`). Studio 문서에 담을 PNG 합계는 48MiB 이하여야 하고 프로젝트 JSON 은 96MiB 이하여야 한다.
 - **원본은 읽기만 한다.** 파일을 바꾸거나 덮어쓰지 않으며 결과는 항상 새 이미지·새 문서 사본이다.
 
 ### 손실 보고(원본과 달라지는 점)
 
-`source-untouched`(알림), `outside-cuts-dropped`(경고, 컷 밖 영역 %), `upscaled`(경고, 개수·최대 배율), `downscaled`(알림), `recompressed-lossless`(알림, PNG), `cuts-overlap`(경고), `centered-in-document`(알림, 690px), `split-into-pages`(알림), `undetectable-excluded`(경고), `ignored-excluded`(알림), `low-confidence-cuts`(경고). **경고가 하나라도 있으면 사용자 확인이 있어야** 삽입·내려받기가 열린다. 확인은 보고 내용의 서명에 묶여서 설정이 바뀌면 다시 요구한다.
+`source-untouched`(알림), `outside-cuts-dropped`(경고, 컷 밖 영역 %), `upscaled`(경고, 개수·최대 배율), `downscaled`(알림), `recompressed-lossless`(알림, PNG), `transparency-flattened`(경고, 투명한 여백이 흰색으로 채워짐), `cuts-overlap`(경고), `centered-in-document`(알림, 690px), `split-into-pages`(알림), `undetectable-excluded`(경고), `ignored-excluded`(알림), `low-confidence-cuts`(경고). **경고가 하나라도 있으면 사용자 확인이 있어야** 삽입·내려받기가 열린다. 확인은 보고 내용의 서명에 묶여서 설정이 바뀌면 다시 요구한다. 결과 이미지는 여백색 바탕에 컷을 그려 PNG 로 굽는데, 투명 여백으로 감지한 원고는 여백색이 없어 흰색이 바탕이 된다. `transparency-flattened`는 감지한 여백 종류가 투명일 때만 나온다(불투명 여백인 원고 안의 반투명 픽셀은 알아내지 못한다. 알아내려면 원본을 한 번 더 통째로 읽어야 한다).
 
 ## Studio 문서 삽입 경로
 
@@ -125,9 +125,10 @@ file → readRaster → sliceCardsAsync (panel-card-slice.ts: 행 균일도 프�
 
 - 확인 문구: "내가 권리를 가진 원고이거나 이용 허락을 받은 원고입니다". 모든 모드에서 필수이며 건너뛰는 길이 없다.
 - 기록: 확인 시각, 사용자 메모(선택), 원본 **파일 이름·형식·크기·가로세로·SHA-256**, 도구 이름·버전. 이미지 바이트나 외부 주소는 담지 않는다.
-- 어디에 남나: 모든 컷 이미지 요소의 `sourceRights`, 프로젝트 설명(`description`), ZIP의 `rights-receipt.txt`·`manifest.json`. 기존 권리 명세 투영은 이를 라이선스 `custom`("사용자 확인")·자산 ID `panel-import:<SHA-256 앞 24자>` 하나로 묶는다.
+- 어디에 남나: 모든 컷 이미지 요소의 `sourceRights`, 프로젝트 설명(`description`), ZIP의 `rights-receipt.txt`·`manifest.json`. 컷 이미지를 레이어 분리하면 분리된 두 층에도 같은 기록이 이어진다(원본에 기록이 있을 때만). 기존 권리 명세 투영은 이를 라이선스 `custom`("사용자 확인")·자산 ID `panel-import:<SHA-256 앞 24자>` 하나로 묶는다.
+- 이 확인은 상업 게시를 허락한다는 뜻이 아니다. 투영은 사용 범위를 다른 이미지와 같게 `current-work`·`commercial-publication` 둘로 두고 허용 여부(상업 이용·AI 학습·재배포)는 `unknown`으로 둔다. 그래서 확인 기록이 풀어 주는 것은 사용권 미상과 출처·버전 누락 진단뿐이고, 상업 이용 미확인(`COMMERCIAL_USE_UNKNOWN`)·만료 미확인(`EXPIRY_UNKNOWN`)과 명세 검토 요구(`ATTESTATION_REQUIRED`)는 남는다(`panel-import-rights.test.ts`가 진단 코드 집합을 고정한다).
 - **이 기록은 사용자의 자기 확인일 뿐이다.** 법률 자문, 권리 인증, 제3자의 권리 보유 보증이 아니다. 스캔본·번역본·팬 작품 등 다른 사람의 저작물은 이용 허락이 필요할 수 있고, 게시 전 원문 사용권과 대상 플랫폼의 최신 정책을 확인할 책임은 사용자에게 있다. 서비스는 권리 여부를 판별하지 않는다.
-- 외부 전송 없음: 원본 이미지, 컷, 카드, 권리 기록 모두 이 브라우저 안에서만 만들어지고 사용자가 내려받거나 편집기로 넘길 때만 밖으로 나간다.
+- 외부 전송 없음: 원본 이미지, 컷, 카드, 권리 기록 모두 이 브라우저 안에서만 만들어지고 사용자가 내려받거나 편집기로 넘길 때만 밖으로 나간다. 안내 문구는 "이 도구는 이미지를 서버로 보내지 않아요"까지만 말하고, 재배열 모드에는 컷을 Studio 문서로 넣은 뒤의 저장·동기화는 Studio 의 규칙을 따른다고 덧붙인다. 화면 문구의 런타임 번역(ko·en 이외 언어)이 번역 서비스로 보내는 것은 값이 빠진 정적 문장뿐이다. 파일 이름·행 번호·컷 번호는 번역된 문장에 끼워 넣는다.
 
 ## 카드뉴스 슬라이스 규칙
 
@@ -154,11 +155,12 @@ file → readRaster → sliceCardsAsync (panel-card-slice.ts: 행 균일도 프�
 ## 접근성과 상태 화면
 
 - 모든 단계에 로딩(스켈레톤+진행률), 비어 있음, 오류(이유+다시 시도), 취소 상태가 있다. 작업대 코드는 시작을 누른 뒤에 지연 로딩하는데, 불러오지 못하면 가져오기 화면 전체가 아니라 이 구역만 안내로 바뀌고 "다시 시도"로 새로 불러온다(`PanelImportEntry`). 오류는 `role="alert"`, 진행·결과는 `role="status"`로 읽히고, 색만으로 상태를 전하지 않는다.
-- 컷은 `role="button"`에 번호·신뢰도·위치·크기를 읽어 주는 이름이 있고 키보드로 이동·크기 조절·삭제할 수 있다. 끌기가 어려운 환경을 위해 숫자 입력과 순서·삭제 단추가 있다. 편집 결과는 숨은 `role="status"`로 안내한다. 단계가 바뀌면 새 제목으로 포커스를 옮긴다.
+- 컷은 `role="button"`에 번호·신뢰도·위치·크기를 읽어 주는 이름이 있고 키보드로 이동·크기 조절·삭제할 수 있다. 끌기가 어려운 환경을 위해 숫자 입력과 순서·삭제 단추가 있다. 편집 결과는 숨은 `role="status"`로 안내한다. 단계가 나타나면(작업대 열기, 이미지 선택 뒤 감지·카드 분석, 컷 확인, 재배열 설정, 다시 찾기, 처음으로) 그 단계의 제목(`tabIndex=-1`)으로 포커스를 옮긴다. 단계 컴포넌트가 마운트될 때 한 번 옮기며(`ui/use-step-heading-focus.ts`), 같은 단계 안의 상태 변화는 포커스를 가져가지 않는다.
 - 스크롤되는 영역 안에 포커스를 받는 것이 없으면 영역 자체가 이름 있는 `role="region"`으로 포커스를 받아 방향키로 스크롤할 수 있다(컷·제외 조각·검출 불가 영역이 하나도 없는 편집 캔버스, 재배열 미리보기). 컷 같은 포커스 대상이 있으면 영역은 포커스 순서에 끼어들지 않는다.
-- 이미지 위에 겹친 상자는 마우스를 올려도 떠오르지 않는다(작업 화면 틀의 단추 호버 효과 `translateY(-1px)`가 상자를 이미지에서 어긋나 보이게 하므로 인라인으로 막는다). 선택한 컷의 가장자리 손잡이는 변 둘레 약 10px까지 잡히는데, 변에서 벗어난 곳을 잡아도 변이 포인터 밑으로 튀지 않고 끈 만큼만 움직인다.
+- 이미지 위에 겹친 상자는 마우스를 올려도 떠오르지 않는다(작업 화면 틀의 단추 호버 효과 `translateY(-1px)`가 상자를 이미지에서 어긋나 보이게 하므로 인라인으로 막는다). 선택한 컷의 가장자리 손잡이는 변 둘레 약 10px까지 잡히고 거친 포인터(터치, `@media (pointer: coarse)`)에서는 44px 폭(변 둘레 약 22px)까지 잡힌다. 보이는 선은 어느 쪽이든 가늘게 그대로다(jsdom 은 CSS 를 계산하지 않으므로 시험은 클래스 토큰 수준이고, 실제 터치 배치는 실브라우저 확인이 남아 있다). 변에서 벗어난 곳을 잡아도 변이 포인터 밑으로 튀지 않고 끈 만큼만 움직인다.
 - 읽기 순서·민감도·폭·배율·카드 위치처럼 숨긴 라디오를 감싼 칩은 안쪽 입력의 `:focus-visible`을 라벨 테두리로 보여 준다(`ui/panel-import-styles.ts`, 라벨 자신의 포커스는 키보드 위치를 알려 주지 못하기 때문이다). 숫자 입력칸은 받아들이지 못한 값(빈 칸·최소 크기 미만)을 현재 컷의 값으로 되돌려 화면과 실제 컷이 어긋나지 않게 한다.
-- 모든 문구는 한글·영문 쌍(`ui/panel-import-copy.ts`)이며 언어를 바꾸면 열려 있는 화면도 바뀐다(이 폴더의 컴포넌트는 `"use no memo"`로 React Compiler 캐시에서 빠져 있고, 이유는 `ui/panel-import-bi.ts` 머리말에 있다).
+- 모든 문구는 키 기반 `panelImport` 네임스페이스다(`apps/web/I18N_GUIDE.md`). ko·en 은 `public/i18n/app/panelImport/{ko,en}.json` 정본이고 나머지 73개 로케일 자산은 영문 폴백이며, 화면은 `usePanelT()`(`useT()`를 감싼 훅)의 `t("panelImport.키", { 값 })`으로만 푼다. 오류·경고·손실 보고 코드를 키로 풀어 쓰는 표는 `ui/panel-import-copy.ts`다. 언어를 바꾸면 열려 있는 화면도 바뀐다(이 폴더의 컴포넌트는 `"use no memo"`로 React Compiler 캐시에서 빠져 있고, 이유는 `ui/use-panel-t.ts` 머리말에 있다).
+- **사용자 값은 번역 원문에 섞지 않는다.** ko·en 이외 언어에서는 화면 문구의 영어 원문이 런타임 번역(MyMemory)의 원문으로 번역 서비스에 나간다. 인라인 쌍에 `${값}`을 넣으면 파일 이름·행 번호가 제3자 서비스로 나가고 값마다 새 원문이 생기므로, 값은 `{name}` 자리표시로 두고 번역된 문장에 끼운다. `panel-detect-local-only.test.ts`의 "번역 함수 호출에 템플릿 보간 금지"가 `t`·`bi`·`bt`와 금지 목록 호출의 보간을 정적으로 막고, `ui/panel-import-translation-privacy.test.tsx`가 ja·de·fr 화면에서 가짜 `fetch`로 번역 서비스 요청을 기록해 사용자 값이 든 요청이 0건이며 값이 늘어도 요청 수가 늘지 않음을 확인한다.
 
 ## 검증
 
@@ -171,7 +173,7 @@ pnpm exec vitest run apps/web/src/domains/creator/panel-detect
 - 편집·계획: `panel-detect-edit`, `panel-editor-state`, `panel-canvas-geometry`, `panel-reflow-plan`, `panel-reflow-render`
 - 입출력·권리: `panel-source-image`, `panel-import-rights`, `panel-studio-document`(편집기 파서 통과·권리 투영·전달표, 그리고 편집기 프로젝트 JSON 가져오기가 적용 전에 거르는 연결형 3D pass 참조·VRM 표면 페인팅 참조가 이 문서에 없음), `panel-reflow-output`, `panel-card-slice`, `panel-card-export`(실제 ZIP 을 만들어 다시 읽음)
 - 화면(jsdom, 대역 환경): `ui/*.test.tsx` — 권리 관문, 캔버스 포인터·키보드, 감지/카드 분석의 로딩·취소·오류·재시도, 손실 확인, 삽입 이동·전달표, ZIP 내려받기, 언어 전환, 가져오기 화면 통합
-- 경계: `panel-detect-local-only.test.ts`(네트워크 API·외부 주소·Worker 생성 위치), `ui/panel-import-copy.test.ts`(모든 코드가 한글·영문으로 풀림), `ui/panel-import-styles.test.ts`(라디오 칩의 키보드 포커스 표시)
+- 경계: `panel-detect-local-only.test.ts`(네트워크 API·외부 주소·Worker 생성 위치·번역 호출의 템플릿 보간), `ui/panel-import-copy.test.ts`(모든 코드가 한글·영문으로 풀림), `ui/panel-import-i18n-contract.test.ts`(소스·사전의 키와 자리표시 일치, 75개 로케일 자산, 생성된 내장 사전, 한국어 조사, `"use no memo"`), `ui/panel-import-translation-privacy.test.tsx`(번역 서비스로 사용자 값이 나가지 않음), `ui/panel-import-styles.test.ts`(라디오 칩의 키보드 포커스 표시)
 - 이미지는 모두 코드로 만든 합성 픽셀(`panel-detect-fixtures.ts`)이다. 바이너리 픽스처와 네트워크 시험은 없다.
 
 ## 남은 일 (target — 아직 구현되지 않았다)
@@ -182,3 +184,5 @@ pnpm exec vitest run apps/web/src/domains/creator/panel-detect
 - 열려 있는 Studio 문서를 파일로 내보내지 않고 바로 카드뉴스로 나누는 진입(지금은 내보낸 세로 이미지를 고른다).
 - 기울기 자동 진단·보정, 자유 형태 컷, 겹친 컷 처리(필요가 확인되면 위 OpenCV 지연 로딩 검토).
 - 컷 이미지 한 장이 한 변 16,384px을 넘는 초고해상도 원고(지금은 오류로 안내하고 배율 또는 컷 나누기를 권한다).
+- `panelImport` 네임스페이스의 73개 로케일 자산은 영문 폴백이다. 게시된 번역은 아직 없고, ko·en 이외 언어는 런타임 번역이 값이 빠진 정적 문장을 옮긴다(품질은 기계번역 수준).
+- 편집기의 리비전 비교(`studio-revision-diff.ts`)는 `aiProvenance`·`communityAssetCredit`은 비교하지만 `sourceRights`는 비교하지 않아, 권리 확인 기록이 달라져도 비교 화면에 나타나지 않는다.
