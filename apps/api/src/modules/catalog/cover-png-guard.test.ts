@@ -81,25 +81,61 @@ describe("guardPng 허용 청크 재조립", () => {
     expect(decode(guarded!.sanitized).alpha).toBe(true);
   });
 
-  it("IDAT 가 여러 조각이어도 순서와 바이트를 그대로 남기고 IEND 뒤의 바이트는 버린다", () => {
+  it("IDAT 가 여러 조각(빈 조각 포함)이어도 하나로 합치고 새 CRC 를 계산하며, IEND 뒤의 바이트는 버린다", () => {
     const header = ihdrChunk({ width: 32, height: 32 });
     const compressed = deflateSync(rawRows(32, 32, 8, grey));
     const half = Math.floor(compressed.length / 2);
-    const firstIdat = pngChunk("IDAT", compressed.subarray(0, half));
-    const secondIdat = pngChunk("IDAT", compressed.subarray(half));
     const split = pngFile(
       header,
-      firstIdat,
+      pngChunk("IDAT", compressed.subarray(0, half)),
+      pngChunk("IDAT"),
       pngChunk("tEXt", Buffer.from("between\0x")),
-      secondIdat,
+      pngChunk("IDAT", compressed.subarray(half)),
       IEND_CHUNK,
       Buffer.from("IEND 뒤의 쓰레기 바이트"),
     );
 
     const guarded = guardPng(split);
 
-    expect(guarded!.sanitized.equals(pngFile(header, firstIdat, secondIdat, IEND_CHUNK))).toBe(true);
+    expect(guarded!.sanitized.equals(pngFile(header, pngChunk("IDAT", compressed), IEND_CHUNK))).toBe(true);
+    expect(pngChunksHaveValidCrc(guarded!.sanitized)).toBe(true);
     expect(decode(guarded!.sanitized)).toMatchObject({ width: 32, height: 32 });
+  });
+
+  it("빈 IDAT 를 수십만 개 끼운 파일도 하나로 합쳐 작은 PNG 로 만든다(디코더가 IDAT 마다 inflate 를 따로 밀어 넣지 않는다)", () => {
+    const header = ihdrChunk({ width: 32, height: 32 });
+    const compressed = deflateSync(rawRows(32, 32, 8, grey));
+    const half = Math.floor(compressed.length / 2);
+    const empty = pngChunk("IDAT");
+    const crowded = pngFile(
+      header,
+      pngChunk("IDAT", compressed.subarray(0, half)),
+      Buffer.concat(Array.from({ length: 200_000 }, () => empty)),
+      pngChunk("IDAT", compressed.subarray(half)),
+      IEND_CHUNK,
+    );
+    expect(crowded.length).toBeGreaterThan(2_400_000);
+
+    const guarded = guardPng(crowded);
+
+    expect(guarded!.sanitized.equals(pngFile(header, pngChunk("IDAT", compressed), IEND_CHUNK))).toBe(true);
+  });
+
+  it("합친 IDAT 는 첫 IDAT 가 있던 자리에 두어 PLTE·tRNS 와의 원래 순서를 지킨다(비정상 순서도 그대로)", () => {
+    const header = ihdrChunk({ width: 16, height: 8, bitDepth: 8, colorType: 3 });
+    const palette = pngChunk("PLTE", Buffer.alloc(256 * 3, 9));
+    const alpha = pngChunk("tRNS", Buffer.from([0, 255]));
+    const compressed = deflateSync(rawRows(16, 8, 8, (x) => [x]));
+    const half = Math.floor(compressed.length / 2);
+    const first = pngChunk("IDAT", compressed.subarray(0, half));
+    const second = pngChunk("IDAT", compressed.subarray(half));
+    const merged = pngChunk("IDAT", compressed);
+
+    const ordered = guardPng(pngFile(header, palette, alpha, first, second, IEND_CHUNK));
+    expect(ordered!.sanitized.equals(pngFile(header, palette, alpha, merged, IEND_CHUNK))).toBe(true);
+    // PLTE 가 IDAT 뒤에 오는 비정상 순서도 디코더가 받던 순서 그대로다.
+    const lateTable = guardPng(pngFile(header, first, palette, second, IEND_CHUNK));
+    expect(pngChunkTypes(lateTable!.sanitized)).toEqual(["IHDR", "IDAT", "PLTE", "IEND"]);
   });
 
   it("압축 해제 크기가 수백 MB 로 풀리는 iCCP·zTXt 는 풀지 않고 버린다(파일은 작고 재조립본도 작다)", () => {

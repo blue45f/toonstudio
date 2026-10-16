@@ -12,6 +12,8 @@ import {
   inflatingIccpChunk,
   jpegSof,
   jpegSos,
+  pngChunk,
+  pngChunkTypes,
   pngFile,
   withoutEoi,
   zeroRunIdat,
@@ -252,6 +254,28 @@ describe("transcodeCoverToWidth 형식 위장·팽창 우회 방어", () => {
     );
     expect(transcodeCoverToWidth(bomb, "image/png", 320)).toBeNull();
     expect(decodeSpy).not.toHaveBeenCalled();
+  });
+
+  it("빈 청크를 수십만 개 끼운 PNG 도 디코더에는 IHDR·IDAT·IEND 세 청크짜리 PNG 가 넘어가고 결과는 같다", () => {
+    // 실제 입력은 빈 IDAT 80만 개로 채운 9.6MB 파일이었고 디코더가 IDAT 마다 inflate 를 따로 밀어 넣어 4.5초가 걸렸다.
+    const clean = Buffer.from(encodePng(realImage(640, 960)));
+    const empty = pngChunk("IDAT");
+    const idatAt = clean.indexOf(Buffer.from("IDAT")) - 4;
+    const crowded = Buffer.concat([
+      clean.subarray(0, idatAt),
+      Buffer.concat(Array.from({ length: 200_000 }, () => empty)),
+      clean.subarray(idatAt),
+    ]);
+    expect(crowded.length).toBeGreaterThan(2_400_000);
+    const expected = transcodeCoverToWidth(clean, "image/png", 160);
+    decodeSpy.mockClear();
+
+    const result = transcodeCoverToWidth(crowded, "image/png", 160);
+
+    expect(result?.body.equals(expected!.body)).toBe(true);
+    expect(decodeSpy).toHaveBeenCalledTimes(1);
+    const decoded = Buffer.from(decodeSpy.mock.calls[0]![0] as Uint8Array);
+    expect(pngChunkTypes(decoded)).toEqual(["IHDR", "IDAT", "IEND"]);
   });
 
   it("압축 해제 후 수백 MB 로 풀리는 iCCP 가 붙은 정상 PNG 는 그 청크를 버린 PNG 로 디코드하고 결과는 같다", () => {

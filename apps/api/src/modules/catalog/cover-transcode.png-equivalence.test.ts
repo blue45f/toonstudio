@@ -9,6 +9,7 @@ import {
   pngChunk,
   pngFile,
   rawRows,
+  splitIdatChunks,
   type PixelSource,
 } from "../../../test/cover-image-fixtures";
 import { transcodeCoverToWidth } from "./cover-transcode";
@@ -98,6 +99,8 @@ interface Shape {
   readonly ancillary: boolean;
   readonly alpha: "varying" | "opaque";
   readonly transparentPalette?: boolean;
+  /** IDAT 를 빈 조각 포함 여러 청크로 쪼갠다(재조립이 하나로 합치는 경로). */
+  readonly splitIdat?: boolean;
 }
 
 function buildPng(format: Format, shape: Shape): Buffer {
@@ -122,7 +125,7 @@ function buildPng(format: Format, shape: Shape): Buffer {
     ihdrChunk({ width, height, bitDepth: format.depth, colorType: format.colorType, interlace }),
     ...(shape.ancillary ? ANCILLARY : []),
     ...palette,
-    idatChunk(raw),
+    ...(shape.splitIdat ? splitIdatChunks(raw, 4) : [idatChunk(raw)]),
     IEND_CHUNK,
   );
 }
@@ -133,11 +136,13 @@ const SHAPES: readonly Shape[] = [
   { interlace: 1, ancillary: false, width: 64, height: 48, alpha: "varying" },
   { interlace: 1, ancillary: true, width: 61, height: 37, alpha: "varying" },
   { interlace: 0, ancillary: true, width: 64, height: 48, alpha: "opaque" },
+  { interlace: 0, ancillary: false, width: 61, height: 37, alpha: "varying", splitIdat: true },
+  { interlace: 1, ancillary: true, width: 64, height: 48, alpha: "varying", splitIdat: true },
 ];
 
 const CORPUS = FORMATS.flatMap((format) =>
   SHAPES.map((shape) => ({
-    name: `${format.name} / 인터레이스 ${shape.interlace} / 보조 청크 ${shape.ancillary ? "있음" : "없음"} / ${shape.width}x${shape.height} / 알파 ${shape.alpha}`,
+    name: `${format.name} / 인터레이스 ${shape.interlace} / 보조 청크 ${shape.ancillary ? "있음" : "없음"} / ${shape.width}x${shape.height} / 알파 ${shape.alpha}${shape.splitIdat ? " / IDAT 쪼갬" : ""}`,
     png: buildPng(format, shape),
   })),
 );

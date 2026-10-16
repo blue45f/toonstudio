@@ -45,6 +45,17 @@ export function idatChunk(raw: Buffer): Buffer {
   return pngChunk("IDAT", deflateSync(raw));
 }
 
+/** 압축 스트림 하나를 parts 개의 IDAT 로 쪼갠다. 사이에 빈 IDAT 도 끼워 청크 경계가 여러 모양이 되게 한다. */
+export function splitIdatChunks(raw: Buffer, parts = 3): Buffer[] {
+  const compressed = deflateSync(raw);
+  const size = Math.ceil(compressed.length / parts);
+  const chunks: Buffer[] = [];
+  for (let start = 0; start < compressed.length; start += size) {
+    chunks.push(pngChunk("IDAT", compressed.subarray(start, start + size)), pngChunk("IDAT"));
+  }
+  return chunks;
+}
+
 /**
  * total 바이트의 0 을 압축한 zlib 스트림. 1MiB 조각을 SYNC_FLUSH 로 이어 붙여, 수십~수백 MB 로 풀리는 데이터도
  * 만드는 쪽은 1MiB 와 수 KB 만 쓴다(디코더가 풀면 total 바이트가 된다).
