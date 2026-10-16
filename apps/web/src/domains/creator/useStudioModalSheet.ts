@@ -16,6 +16,9 @@ const FOCUSABLE_SELECTOR = [
   "iframe",
   "audio[controls]",
   "video[controls]",
+  // 접이식의 대표 summary 는 속성 없이도 Tab 으로 닿는다. 두 번째 summary 와 details 밖의 summary 는
+  // 브라우저가 tabIndex -1 로 돌려주므로 `focusableElements` 의 `tabIndex >= 0` 걸러내기가 알아서 뺀다.
+  "summary",
   "[contenteditable='true']",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
@@ -92,9 +95,29 @@ function focusElement(element: HTMLElement | null | undefined): boolean {
   return true;
 }
 
+/**
+ * 닫힌 `<details>` 의 본문은 화면에 없지만 브라우저가 content-visibility 로 가릴 뿐이라 크기 질의
+ * (`getClientRects`)는 값을 돌려주고, 안쪽 요소가 포커스 후보에 끼어든다. 그러면 DOM 끝의 숨은 요소가
+ * "마지막 요소"가 되어, 실제로 마지막인 summary 에서 누른 Tab 이 순환되지 않고 모달 밖으로 샌다.
+ * 닫힌 details 에서 화면에 있는 것은 대표 summary(와 그 안쪽)뿐이다.
+ */
+function isHiddenByClosedDetails(element: HTMLElement): boolean {
+  for (
+    let details = element.parentElement?.closest("details") ?? null;
+    details;
+    details = details.parentElement?.closest("details") ?? null
+  ) {
+    if (details.open) continue;
+    const summary = [...details.children].find((child) => child.localName === "summary");
+    if (!summary?.contains(element)) return true;
+  }
+  return false;
+}
+
 function focusableElements(dialog: HTMLElement): HTMLElement[] {
   return [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
-    (element) => element.tabIndex >= 0 && canReceiveFocus(element),
+    (element) =>
+      element.tabIndex >= 0 && canReceiveFocus(element) && !isHiddenByClosedDetails(element),
   );
 }
 
