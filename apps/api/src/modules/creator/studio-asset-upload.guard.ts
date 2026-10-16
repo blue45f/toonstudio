@@ -20,6 +20,19 @@ function requireAuthenticatedUploadRequest(context: ExecutionContext): void {
   }
 }
 
+/**
+ * 업로드 라우트용 최소 가드. 가드는 인터셉터(Multer)보다 먼저 실행되므로, 로그인하지 않은 호출이
+ * 라우트 한도(5~20MB)만큼 본문을 메모리에 쌓게 하지 않고 본문을 읽기 전에 403 으로 끊는다.
+ * 서비스의 권한 검사(작품 구성원·편집 권한)는 그대로 두고 그 앞에 로그인 확인만 더한다.
+ */
+@Injectable()
+export class AuthenticatedUploadGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    requireAuthenticatedUploadRequest(context);
+    return true;
+  }
+}
+
 /** Runs before Multer, so a disabled experiment never buffers an upload body. */
 @Injectable()
 export class StudioRasterAssetUploadGuard implements CanActivate {

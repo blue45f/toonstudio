@@ -9,10 +9,12 @@ import {
   Param,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
+import { AuthenticatedUploadGuard } from "../creator/studio-asset-upload.guard";
 import type { StudioWorkAssetUploadFile } from "../creator/studio-work-asset.service";
 import {
   PRODUCTION_VOICE_COMMENTARY_MAX_BYTES,
@@ -49,6 +51,7 @@ export class ProductionVoiceCommentaryController {
   @Post()
   @HttpCode(200)
   @Header("Cache-Control", "private, no-store, max-age=0")
+  @UseGuards(AuthenticatedUploadGuard)
   @UseInterceptors(FileInterceptor("file", { limits: PRODUCTION_VOICE_COMMENTARY_UPLOAD_LIMITS }))
   create(
     @Param(new ZodValidationPipe(ProductionVoiceCommentaryProjectEpisodeParamsDto))

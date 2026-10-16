@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { Link, useParams } from "react-router-dom";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { productionManuscriptRevisionLabel } from "./production-manuscript-model";
@@ -30,10 +30,20 @@ import {
  * 해석 결과를 상태별로 보여주고, 실제 원고 작업은 스튜디오로 이어 준다.
  */
 
+/** 비밀번호 화면에서 폼 아래에 알릴 직전 시도의 결과. 서로 배타적이라 한 번에 하나만 보여 준다. */
+type PasswordNotice =
+  | { readonly kind: "none" }
+  /** 비밀번호가 맞지 않았다. */
+  | { readonly kind: "invalid" }
+  /** 여러 번 틀려 서버가 잠갔다. 풀릴 때까지 남은 초(모르면 null). */
+  | { readonly kind: "locked"; readonly seconds: number | null }
+  /** 틀린 것도 잠긴 것도 아니고, 같은 링크의 다른 비밀번호 확인이 처리 중이라 이번 요청을 검증하지 못했다. */
+  | { readonly kind: "busy" };
+
 type PageState =
   | { readonly kind: "loading" }
   | { readonly kind: "ok"; readonly share: ResolvedVersionShare }
-  | { readonly kind: "password"; readonly invalid: boolean }
+  | { readonly kind: "password"; readonly notice: PasswordNotice }
   | { readonly kind: "blocked"; readonly status: "not_found" | "revoked" | "expired" | "login_required" }
   | { readonly kind: "error" };
 
@@ -81,10 +91,16 @@ export function VersionSharePage() {
         setState({ kind: "ok", share: resolution.share });
         break;
       case "password_required":
-        setState({ kind: "password", invalid: false });
+        setState({ kind: "password", notice: { kind: "none" } });
         break;
       case "password_invalid":
-        setState({ kind: "password", invalid: true });
+        setState({ kind: "password", notice: { kind: "invalid" } });
+        break;
+      case "password_locked":
+        setState({ kind: "password", notice: { kind: "locked", seconds: resolution.retryAfterSeconds } });
+        break;
+      case "password_busy":
+        setState({ kind: "password", notice: { kind: "busy" } });
         break;
       default:
         setState({ kind: "blocked", status: resolution.status });
@@ -107,6 +123,31 @@ export function VersionSharePage() {
     setState({ kind: "loading" });
     load();
   }, [load]);
+
+  const passwordNoticeText = (notice: Exclude<PasswordNotice, { readonly kind: "none" }>): string => {
+    switch (notice.kind) {
+      case "invalid":
+        return bt("비밀번호가 맞지 않아요. 다시 확인해 주세요.", "That password doesn't match. Please try again.");
+      case "busy":
+        return bt(
+          "같은 링크로 다른 비밀번호 확인이 진행 중이에요. 잠시 뒤에 다시 시도해 주세요.",
+          "Another password check on this link is in progress. Please try again in a moment.",
+        );
+      case "locked":
+        return notice.seconds !== null && notice.seconds > 0
+          ? formatI18nTemplate(
+            bt(
+              "비밀번호를 여러 번 틀려 잠시 잠겼어요. 약 {minutes}분 뒤에 다시 시도해 주세요.",
+              "Too many wrong passwords, so this link is locked for a while. Try again in about {minutes} min.",
+            ),
+            { minutes: Math.ceil(notice.seconds / 60) },
+          )
+          : bt(
+            "비밀번호를 여러 번 틀려 잠시 잠겼어요. 잠시 뒤에 다시 시도해 주세요.",
+            "Too many wrong passwords, so this link is locked for a while. Please try again later.",
+          );
+    }
+  };
 
   const handlePasswordSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -152,8 +193,8 @@ export function VersionSharePage() {
           onChange={(event) => setPassword(event.target.value)}
           className="mt-1.5 w-full rounded-xl border border-line bg-panel px-3.5 py-2.5 text-sm font-semibold text-fg outline-none focus:border-accent"
         />
-        {state.invalid ? <p role="alert" className="mt-2.5 text-sm font-semibold text-bad">
-          {bt("비밀번호가 맞지 않아요. 다시 확인해 주세요.", "That password doesn't match. Please try again.")}
+        {state.notice.kind !== "none" ? <p role="alert" className="mt-2.5 text-sm font-semibold text-bad">
+          {passwordNoticeText(state.notice)}
         </p> : null}
         <button
           type="submit"

@@ -19,9 +19,10 @@ jobs:
   live:
     runs-on: ubuntu-24.04
     timeout-minutes: 50
+    # HYPER3D_API_KEY 는 값을 쓰는 두 단계의 env 로만 전달한다. 잡 env 에 두면 의존성 설치·apt 설치
+    # 같은 외부 코드 실행 단계까지 과금되는 키를 읽을 수 있다.
     env:
       NODE_OPTIONS: --max-old-space-size=4096
-      HYPER3D_API_KEY: ${{ secrets.HYPER3D_API_KEY || secrets.RODIN_API_KEY || secrets.HYPER3D_RODIN_API_KEY || secrets.STUDIO_HYPER3D_API_KEY || secrets.STUDIO_RODIN_API_KEY || secrets.HYPER3D_KEY || secrets.RODIN_KEY }}
       STUDIO_HYPER3D_LIVE_OUTPUT: artifacts/studio-hyper3d-live
       STATUS_FILE: docs/automation/studio-hyper3d-live-acceptance.json
     steps:
@@ -42,6 +43,8 @@ jobs:
 
       - name: Require an available Hyper3D/Rodin credential
         if: steps.receipt.outputs.skip != 'true'
+        env:
+          HYPER3D_API_KEY: ${{ secrets.HYPER3D_API_KEY || secrets.RODIN_API_KEY || secrets.HYPER3D_RODIN_API_KEY || secrets.STUDIO_HYPER3D_API_KEY || secrets.STUDIO_RODIN_API_KEY || secrets.HYPER3D_KEY || secrets.RODIN_KEY }}
         run: |
           if [ -z "${HYPER3D_API_KEY:-}" ]; then
             echo "No recognized Hyper3D/Rodin repository secret is configured." >&2
@@ -66,6 +69,8 @@ jobs:
 
       - name: Submit one minimal live Rodin generation
         if: steps.receipt.outputs.skip != 'true'
+        env:
+          HYPER3D_API_KEY: ${{ secrets.HYPER3D_API_KEY || secrets.RODIN_API_KEY || secrets.HYPER3D_RODIN_API_KEY || secrets.STUDIO_HYPER3D_API_KEY || secrets.STUDIO_RODIN_API_KEY || secrets.HYPER3D_KEY || secrets.RODIN_KEY }}
         run: pnpm exec tsx scripts/verify-studio-hyper3d-live-smoke.mts
 
       - name: Install Blender

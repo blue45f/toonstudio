@@ -13,12 +13,14 @@ import {
   Query,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
+import { AuthenticatedUploadGuard } from "../creator/studio-asset-upload.guard";
 
 import {
   ProductionDocumensoEnvelopeMetadataSchema,
@@ -310,6 +312,7 @@ export class ProductionIntegrationController {
     );
   }
   @Post("/projects/:projectId/integrations/documenso/envelopes")
+  @UseGuards(AuthenticatedUploadGuard)
   @UseInterceptors(FileInterceptor("file", {
     limits: { fileSize: 20 * 1_024 * 1_024, files: 1 },
   }))

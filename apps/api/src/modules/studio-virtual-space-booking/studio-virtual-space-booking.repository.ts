@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, eq } from "drizzle-orm";
 
 import {
+  creatorWorkCollaborators,
+  creatorWorks,
   db,
   studioVirtualSpaceBookings,
   studioVirtualSpaceGalleryLikes,
@@ -46,8 +48,17 @@ export interface StudioVirtualSpaceGalleryLikeRow {
   readonly userId: string;
 }
 
+/**
+ * 범위 키가 가리키는 작품(workId)과 계정의 관계.
+ * - member: 작품 소유자이거나 활성 협업자다. 이 작품의 예약·대기열·좋아요를 함께 쓴다.
+ * - outsider: 서버에 있는 작품이지만 구성원이 아니다. 접근할 수 없다.
+ * - unknown: 서버에 작품 행이 없다(브라우저에만 있는 프로젝트). 공유할 상대가 없으므로 계정 전용 범위로 다룬다.
+ */
+export type StudioVirtualSpaceWorkAccess = "member" | "outsider" | "unknown";
+
 export interface StudioVirtualSpaceBookingRepository {
   findUserStatus(userId: string): Promise<string | null>;
+  resolveWorkAccess(userId: string, workId: string): Promise<StudioVirtualSpaceWorkAccess>;
   listBookings(scopeKey: string): Promise<readonly StudioVirtualSpaceBookingRow[]>;
   findBookingById(id: string): Promise<StudioVirtualSpaceBookingRow | null>;
   insertBooking(row: StudioVirtualSpaceBookingRow): Promise<void>;
@@ -118,6 +129,28 @@ export class DrizzleStudioVirtualSpaceBookingRepository
       .where(eq(users.id, userId))
       .limit(1);
     return row?.status ?? null;
+  }
+
+  async resolveWorkAccess(userId: string, workId: string): Promise<StudioVirtualSpaceWorkAccess> {
+    const [work] = await db
+      .select({ ownerId: creatorWorks.userId })
+      .from(creatorWorks)
+      .where(eq(creatorWorks.id, workId))
+      .limit(1);
+    if (!work) return "unknown";
+    if (work.ownerId === userId) return "member";
+    const [collaborator] = await db
+      .select({ role: creatorWorkCollaborators.role })
+      .from(creatorWorkCollaborators)
+      .where(
+        and(
+          eq(creatorWorkCollaborators.workId, workId),
+          eq(creatorWorkCollaborators.userId, userId),
+          eq(creatorWorkCollaborators.status, "active"),
+        ),
+      )
+      .limit(1);
+    return collaborator ? "member" : "outsider";
   }
 
   async listBookings(scopeKey: string): Promise<readonly StudioVirtualSpaceBookingRow[]> {

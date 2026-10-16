@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { api, isAppApiError } from "@/platform/api";
+import { api, HTTPError, isAppApiError, type ApiOptions } from "@/platform/api";
 
 /**
  * CT-1: 원고 버전 스냅샷·공유 링크 서버 정본 API 클라이언트.
@@ -164,14 +164,65 @@ export type VersionShareResolution =
   | { readonly status: "expired" }
   | { readonly status: "password_required" }
   | { readonly status: "password_invalid" }
+  /** 비밀번호를 여러 번 틀려 서버가 잠근 상태(429). 풀릴 때까지 남은 초는 서버가 알려 준 값이다. */
+  | { readonly status: "password_locked"; readonly retryAfterSeconds: number | null }
+  /**
+   * 같은 링크의 다른 비밀번호 확인이 처리 중이라 서버가 이번 요청을 검증하지 않고 돌려보낸 상태(429, 1초 안팎).
+   * 비밀번호가 틀린 것도 잠긴 것도 아니다. 자동으로 한 번 다시 보낸 뒤에도 막혀 있을 때만 화면까지 온다.
+   */
+  | { readonly status: "password_busy" }
   | { readonly status: "login_required" };
 
-const RESOLUTION_CODE_MAP: Readonly<Record<string, VersionShareResolution["status"]>> = {
-  version_share_not_found: "not_found",
-  version_share_revoked: "revoked",
-  version_share_expired: "expired",
-  version_share_password_required: "password_required",
-  version_share_password_invalid: "password_invalid",
+/**
+ * 서버 코드와 판정이 1:1 로 대응하고 추가 정보가 없는 것만 둔다. 잠금(password_locked)은 풀릴 때까지 남은 초를 함께
+ * 실어야 해서 이 표 밖에서 따로 만든다. 값 형식을 VersionShareResolution["status"] 전체로 두면 추가 정보가 필요한
+ * 판정까지 `{ status }` 만으로 만들 수 있는 것처럼 보여 타입 오류가 난다. Map 이라 "constructor" 같은 서버 코드가
+ * 객체 프로토타입의 속성으로 해석되지도 않는다.
+ */
+type CodeMappedStatus =
+  | "not_found"
+  | "revoked"
+  | "expired"
+  | "password_required"
+  | "password_invalid"
+  | "password_busy";
+
+const RESOLUTION_CODE_STATUS: ReadonlyMap<string, CodeMappedStatus> = new Map([
+  ["version_share_not_found", "not_found"],
+  ["version_share_revoked", "revoked"],
+  ["version_share_expired", "expired"],
+  ["version_share_password_required", "password_required"],
+  ["version_share_password_invalid", "password_invalid"],
+  ["version_share_password_busy", "password_busy"],
+]);
+
+const PASSWORD_BUSY_CODE = "version_share_password_busy";
+
+function isPasswordBusyError(error: unknown): boolean {
+  if (!(error instanceof HTTPError) || error.response.status !== 429) return false;
+  const data: unknown = error.data;
+  return typeof data === "object" && data !== null && (data as { code?: unknown }).code === PASSWORD_BUSY_CODE;
+}
+
+/**
+ * 비밀번호를 실은 해석 요청의 자동 재시도 정책. 공용 읽기 정책(2회, 408·425·429·5xx·시간 초과·네트워크 오류, 총 30초)을
+ * 그대로 쓰면 안 된다.
+ * - 이 요청은 서버가 비밀번호 시도 횟수를 센다. 5xx·시간 초과·네트워크 오류는 서버가 검증을 마치고 오답을 이미 센 뒤에
+ *   응답만 잃었을 수 있어, 자동으로 다시 보내면 사용자가 한 번 입력한 비밀번호가 두 번 틀린 것으로 세어진다.
+ * - 잠금(version_share_password_locked)의 Retry-After 는 최대 900초다. 공용 정책은 maxRetryAfter(30초)만큼 기다렸다가
+ *   총 시간 제한(30초)에 걸려 잠금 안내 대신 "연결 오류"를 보여 줬다(수정 전 81ms 에 끝나던 응답이 30초가 됐다).
+ * 그래서 서버가 "이 요청은 검증하지 않았다"고 알린 일시 차단(version_share_password_busy, Retry-After 1초) 하나만
+ * 한 번 다시 보내고, 대기는 2초로 묶는다. 그 밖의 오류는 곧바로 화면에 알린다.
+ */
+const PASSWORD_ATTEMPT_RETRY: NonNullable<ApiOptions["retry"]> = {
+  limit: 1,
+  methods: ["get"],
+  statusCodes: [429],
+  afterStatusCodes: [429],
+  maxRetryAfter: 2_000,
+  retryOnTimeout: false,
+  // undefined 는 기본 판정(상태 코드 429 + Retry-After 존중)으로, false 는 재시도 없음으로 넘긴다.
+  shouldRetry: ({ error }) => (isPasswordBusyError(error) ? undefined : false),
 };
 
 /**
@@ -190,7 +241,7 @@ export async function resolveVersionShare(
       {
         ...(signal ? { signal } : {}),
         ...(password
-          ? { headers: { "x-version-share-password": password } }
+          ? { headers: { "x-version-share-password": password }, retry: PASSWORD_ATTEMPT_RETRY }
           : {}),
       },
     );
@@ -198,8 +249,12 @@ export async function resolveVersionShare(
   } catch (error) {
     if (isAppApiError(error)) {
       if (error.status === 403) return { status: "login_required" };
-      const mapped = error.code ? RESOLUTION_CODE_MAP[error.code] : undefined;
-      if (mapped && mapped !== "ok") return { status: mapped };
+      // 429 전체가 아니라 이 코드만 잠금으로 본다: 일반 속도 제한은 재시도 가능한 오류 화면이 맞다.
+      if (error.code === "version_share_password_locked") {
+        return { status: "password_locked", retryAfterSeconds: error.retryAfterSeconds };
+      }
+      const mapped = error.code ? RESOLUTION_CODE_STATUS.get(error.code) : undefined;
+      if (mapped) return { status: mapped };
     }
     throw error;
   }

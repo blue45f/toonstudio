@@ -11,10 +11,17 @@ import type {
   StudioVirtualSpaceBookingRow,
   StudioVirtualSpaceGalleryLikeRow,
   StudioVirtualSpaceWaitlistRow,
+  StudioVirtualSpaceWorkAccess,
 } from "./studio-virtual-space-booking.repository";
 import { StudioVirtualSpaceBookingService } from "./studio-virtual-space-booking.service";
 
 const SCOPE = '["proj-1","office"]';
+// 소유자 user-1 만 있고 협업자가 없는 다른 작품의 범위. user-2 는 이 작품의 외부인이다.
+const PRIVATE_WORK_SCOPE = '["proj-9","office"]';
+// 웹 클라이언트가 개인 스튜디오(내 작업실)에서 쓰는 공용 상수 작품 id 로 만든 범위 키.
+const PERSONAL_SCOPE = '["virtual-demo:personal-home","office"]';
+// 서버에 작품 행이 없는(브라우저에만 있는) 프로젝트 id 의 범위 키.
+const LOCAL_ONLY_SCOPE = '["local-only-project","office"]';
 // 서비스가 실제 Date.now()와 대조하므로 기준 시각도 실행 시점이어야 한다.
 const NOW = Date.now();
 const HOUR = 60 * 60 * 1_000;
@@ -25,12 +32,22 @@ class FakeRepository implements StudioVirtualSpaceBookingRepository {
     ["user-2", "active"],
     ["user-off", "suspended"],
   ]);
+  /** 작품 접근 픽스처: 소유자와 활성 협업자만 구성원이다. 목록에 없는 작품은 서버에 없는 작품이다. */
+  readonly works = new Map<string, { ownerId: string; memberIds: readonly string[] }>([
+    ["proj-1", { ownerId: "user-1", memberIds: ["user-2"] }],
+    ["proj-9", { ownerId: "user-1", memberIds: [] }],
+  ]);
   readonly bookings: StudioVirtualSpaceBookingRow[] = [];
   readonly waitlist: StudioVirtualSpaceWaitlistRow[] = [];
   readonly likes: StudioVirtualSpaceGalleryLikeRow[] = [];
 
   async findUserStatus(userId: string): Promise<string | null> {
     return this.users.get(userId) ?? null;
+  }
+  async resolveWorkAccess(userId: string, workId: string): Promise<StudioVirtualSpaceWorkAccess> {
+    const work = this.works.get(workId);
+    if (!work) return "unknown";
+    return work.ownerId === userId || work.memberIds.includes(userId) ? "member" : "outsider";
   }
   async listBookings(scopeKey: string) {
     return this.bookings.filter((row) => row.scopeKey === scopeKey);
@@ -254,6 +271,106 @@ describe("StudioVirtualSpaceBookingService 갤러리 좋아요", () => {
     const { service } = setup();
     await expect(service.toggleGalleryLike("user-1", SCOPE, {})).rejects.toBeInstanceOf(
       BadRequestException,
+    );
+  });
+});
+
+describe("StudioVirtualSpaceBookingService 범위 접근 판정(작품 구성원만)", () => {
+  it("작품 구성원이 아닌 계정은 그 작품 범위를 읽지도 쓰지도 못하고 저장소는 그대로다", async () => {
+    const { service, repository } = setup();
+    // 소유자가 만든 예약·대기·좋아요가 이미 있는 작품이다.
+    await service.createBooking("user-1", PRIVATE_WORK_SCOPE, bookingBody({ id: "owner-booking" }));
+    await service.joinWaitlist(
+      "user-1",
+      PRIVATE_WORK_SCOPE,
+      bookingBody({ id: "owner-wait", startsAt: NOW + 3 * HOUR, endsAt: NOW + 4 * HOUR }),
+    );
+    await service.toggleGalleryLike("user-1", PRIVATE_WORK_SCOPE, { frameId: "frame-1" });
+    const before = {
+      bookings: structuredClone(repository.bookings),
+      waitlist: structuredClone(repository.waitlist),
+      likes: structuredClone(repository.likes),
+    };
+
+    const forbidden = [
+      () => service.getSnapshot("user-2", PRIVATE_WORK_SCOPE),
+      () =>
+        service.createBooking(
+          "user-2",
+          PRIVATE_WORK_SCOPE,
+          bookingBody({ id: "intruder-booking", startsAt: NOW + 5 * HOUR, endsAt: NOW + 6 * HOUR }),
+        ),
+      () => service.cancelBooking("user-2", PRIVATE_WORK_SCOPE, "owner-booking"),
+      () =>
+        service.joinWaitlist(
+          "user-2",
+          PRIVATE_WORK_SCOPE,
+          bookingBody({ id: "intruder-wait", startsAt: NOW + 5 * HOUR, endsAt: NOW + 6 * HOUR }),
+        ),
+      () => service.leaveWaitlist("user-2", PRIVATE_WORK_SCOPE, "owner-wait"),
+      () => service.getGalleryLikes("user-2", PRIVATE_WORK_SCOPE),
+      () => service.toggleGalleryLike("user-2", PRIVATE_WORK_SCOPE, { frameId: "frame-1" }),
+    ];
+    for (const call of forbidden) {
+      await expect(call()).rejects.toBeInstanceOf(ForbiddenException);
+    }
+    expect(repository.bookings).toEqual(before.bookings);
+    expect(repository.waitlist).toEqual(before.waitlist);
+    expect(repository.likes).toEqual(before.likes);
+  });
+
+  it("소유자와 활성 협업자는 같은 작품 범위의 예약과 좋아요를 공유한다", async () => {
+    const { service } = setup();
+    await service.createBooking("user-1", SCOPE, bookingBody({ id: "owner-booking" }));
+    const seenByMember = await service.getSnapshot("user-2", SCOPE);
+    expect(seenByMember.scopeKey).toBe(SCOPE);
+    expect(seenByMember.bookings.map((booking) => booking.id)).toEqual(["owner-booking"]);
+    await service.toggleGalleryLike("user-2", SCOPE, { frameId: "frame-1" });
+    const likes = await service.getGalleryLikes("user-1", SCOPE);
+    expect(likes.frames["frame-1"]?.likedBy).toEqual(["user-2"]);
+  });
+
+  it.each([
+    ["개인 스튜디오 공용 작품 id", PERSONAL_SCOPE],
+    ["서버에 작품 행이 없는 프로젝트 id", LOCAL_ONLY_SCOPE],
+    ["작품 id 를 읽을 수 없는 범위 키", "opaque-scope-key"],
+  ])("%s 범위는 계정별로 분리되어 다른 계정의 예약과 좋아요가 보이지 않는다", async (_label, scope) => {
+    const { service, repository } = setup();
+    await service.createBooking("user-1", scope, bookingBody({ id: "mine-1", note: "비공개 메모" }));
+    await service.toggleGalleryLike("user-1", scope, { frameId: "frame-1" });
+
+    // 두 번째 계정은 같은 범위 키를 보내도 첫 번째 계정의 데이터를 볼 수 없다.
+    const other = await service.getSnapshot("user-2", scope);
+    expect(other.bookings).toEqual([]);
+    expect(other.waitlist).toEqual([]);
+    expect((await service.getGalleryLikes("user-2", scope)).frames).toEqual({});
+
+    // 같은 시간대·같은 스페이스를 다른 계정이 잡아도 서로의 예약과 충돌하지 않는다.
+    const second = await service.createBooking("user-2", scope, bookingBody({ id: "mine-2" }));
+    expect(second.bookings.map((booking) => booking.id)).toEqual(["mine-2"]);
+
+    // 응답은 클라이언트가 보낸 범위 키를 그대로 돌려줘야 웹 클라이언트의 스냅샷 검증을 통과한다.
+    expect(second.scopeKey).toBe(scope);
+    expect((await service.getSnapshot("user-1", scope)).scopeKey).toBe(scope);
+
+    // 저장소에는 계정별로 다른 키가 쓰이고, 클라이언트가 보낸 원본 키는 공용 키로 쓰이지 않는다.
+    const storedKeys = new Set(repository.bookings.map((row) => row.scopeKey));
+    expect(storedKeys.size).toBe(2);
+    expect(storedKeys.has(scope)).toBe(false);
+
+    // 계정 간 좋아요도 섞이지 않는다: user-2 의 토글은 자기 하나만 센다.
+    const liked = await service.toggleGalleryLike("user-2", scope, { frameId: "frame-1" });
+    expect(liked).toMatchObject({ likes: 1, likedBy: ["user-2"] });
+  });
+
+  it("개인 범위에서 다른 계정의 예약 id 는 취소할 수 없다", async () => {
+    const { service } = setup();
+    await service.createBooking("user-1", PERSONAL_SCOPE, bookingBody({ id: "mine-1" }));
+    await expect(service.cancelBooking("user-2", PERSONAL_SCOPE, "mine-1")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect((await service.getSnapshot("user-1", PERSONAL_SCOPE)).bookings[0]?.status).toBe(
+      "confirmed",
     );
   });
 });

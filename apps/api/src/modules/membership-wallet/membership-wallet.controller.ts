@@ -12,12 +12,13 @@ import {
 
 import { AdminMutationGuard } from "../admin/admin-mutation.guard";
 
+import { sanitizeActivityClaimMetadata } from "./membership-activity-metadata";
 import { MembershipWalletService } from "./membership-wallet.service";
 
 type ActivityClaimBody = {
   activity?: unknown;
   sourceRef?: unknown;
-  metadata?: Record<string, unknown>;
+  metadata?: unknown;
 };
 
 @Controller()
@@ -51,7 +52,8 @@ export class MembershipWalletController {
       userId,
       activity: body?.activity,
       sourceRef: body?.sourceRef,
-      metadata: body?.metadata,
+      // 클라이언트 적립의 metadata 는 지갑 로트·원장에 영구 저장되므로 경계에서 작은 원시값만 남긴다.
+      metadata: sanitizeActivityClaimMetadata(body?.metadata),
     });
   }
 

@@ -1,7 +1,15 @@
-import { ConflictException, ForbiddenException, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+  PayloadTooLargeException,
+} from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { StudioVirtualSpaceDecorationService } from "./studio-virtual-space-decoration.service";
+import {
+  STUDIO_VIRTUAL_DECORATION_MAX_LAYOUTS_PER_USER,
+  StudioVirtualSpaceDecorationService,
+} from "./studio-virtual-space-decoration.service";
 
 const boundary = vi.hoisted(() => ({
   query: vi.fn(),
@@ -70,6 +78,13 @@ describe("ownership", () => {
   });
 });
 
+describe("범위 키 해석", () => {
+  it("퍼센트 인코딩이 깨진 범위 키는 URIError(500)가 아니라 404 로 답한다", async () => {
+    await expect(service.getState("u1", "%E0%A4%A", "sky-port")).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.save("u1", "%", "story-terrace", saveBody())).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
 describe("read", () => {
   it("returns the empty state at revision 0 when nothing is stored", async () => {
     boundary.query
@@ -91,11 +106,14 @@ describe("read", () => {
 
 describe("first write", () => {
   it("inserts and does not overwrite a row another device already created", async () => {
-    boundary.query.mockResolvedValueOnce(ACTIVE_USER).mockResolvedValueOnce({ rows: [] });
+    boundary.query
+      .mockResolvedValueOnce(ACTIVE_USER)
+      .mockResolvedValueOnce({ rows: [[0]] }) // 보관 개수 조회
+      .mockResolvedValueOnce({ rows: [] });
 
     await expect(service.save("u1", SCOPE, "story-terrace", saveBody())).rejects.toBeInstanceOf(ConflictException);
 
-    const [insertSql] = boundary.query.mock.calls[1];
+    const [insertSql] = boundary.query.mock.calls[2];
     expect(insertSql).toContain("insert into");
     expect(insertSql).toMatch(/on conflict do nothing/i);
   });
@@ -103,12 +121,63 @@ describe("first write", () => {
   it("returns revision 1 after a successful first write", async () => {
     boundary.query
       .mockResolvedValueOnce(ACTIVE_USER)
+      .mockResolvedValueOnce({ rows: [[0]] }) // 보관 개수 조회
       .mockResolvedValueOnce({ rows: [[1]] });
 
     const saved = await service.save("u1", SCOPE, "story-terrace", saveBody());
 
     expect(saved.revision).toBe(1);
     expect(saved.placements).toHaveLength(1);
+  });
+});
+
+describe("per-account layout cap (새 범위 저장의 계정별 상한)", () => {
+  function insertCount(): number {
+    return boundary.query.mock.calls.filter(([sql]) => String(sql).includes("insert into")).length;
+  }
+
+  it("보관한 배치 수가 상한이면 새 범위 저장을 413 으로 거절하고 INSERT 하지 않는다", async () => {
+    boundary.query
+      .mockResolvedValueOnce(ACTIVE_USER)
+      .mockResolvedValueOnce({ rows: [[STUDIO_VIRTUAL_DECORATION_MAX_LAYOUTS_PER_USER]] });
+
+    await expect(service.save("u1", SCOPE, "story-terrace", saveBody())).rejects.toBeInstanceOf(
+      PayloadTooLargeException,
+    );
+    expect(insertCount()).toBe(0);
+  });
+
+  it("상한 직전(상한-1)까지는 새 범위를 저장한다", async () => {
+    boundary.query
+      .mockResolvedValueOnce(ACTIVE_USER)
+      .mockResolvedValueOnce({ rows: [[STUDIO_VIRTUAL_DECORATION_MAX_LAYOUTS_PER_USER - 1]] })
+      .mockResolvedValueOnce({ rows: [[1]] });
+
+    await expect(service.save("u1", SCOPE, "story-terrace", saveBody())).resolves.toMatchObject({ revision: 1 });
+    expect(insertCount()).toBe(1);
+  });
+
+  it("개수는 요청한 계정의 행만 센다", async () => {
+    boundary.query
+      .mockResolvedValueOnce(ACTIVE_USER)
+      .mockResolvedValueOnce({ rows: [[0]] })
+      .mockResolvedValueOnce({ rows: [[1]] });
+
+    await service.save("u1", SCOPE, "story-terrace", saveBody());
+
+    const [countSql, countParams] = boundary.query.mock.calls[1] as [string, unknown[]];
+    expect(countSql).toContain("count(");
+    expect(countSql).toMatch(/"studio_virtual_space_decoration_layout"\."userId" = \$/u);
+    expect(countParams).toEqual(["u1"]);
+  });
+
+  it("이미 있는 범위의 갱신(expectedRevision > 0)은 상한에 걸리지 않고 개수도 세지 않는다", async () => {
+    boundary.query.mockResolvedValueOnce(ACTIVE_USER).mockResolvedValueOnce({ rows: [[1]] });
+
+    const saved = await service.save("u1", SCOPE, "story-terrace", saveBody({ expectedRevision: 3 }));
+
+    expect(saved.revision).toBe(4);
+    expect(boundary.query.mock.calls.some(([sql]) => String(sql).includes("count("))).toBe(false);
   });
 });
 

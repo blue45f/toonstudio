@@ -7,9 +7,11 @@ import {
   Headers,
   Param,
   Post,
+  UseGuards,
   Query,
   Req,
 } from "@nestjs/common";
+import { AdminMutationGuard } from "../admin/admin-mutation.guard";
 
 import { createAnonymousClientLimiter } from "../auth/anonymous-client-limit";
 
@@ -89,7 +91,9 @@ export class SupporterPaymentController {
     return this.service.getSettingsForAdmin(userId ?? "");
   }
 
+  // 운영비 후원 설정은 전역 변경이라 운영자가 아니라 관리자만 바꾼다(AdminMutationGuard 정책).
   @Post("admin/supporter-payments/settings")
+  @UseGuards(AdminMutationGuard)
   @Header("Cache-Control", "no-store, max-age=0")
   async updateSettingsForAdmin(
     @Headers("x-user-id") userId: string | undefined,
@@ -121,7 +125,9 @@ export class SupporterPaymentController {
     return this.service.resyncForAdmin(userId ?? "", id);
   }
 
+  // 전액 취소는 Toss 환불 호출을 일으키는 금융 변경이라 운영자가 아니라 관리자만 실행한다.
   @Post("admin/supporter-payments/:id/cancel")
+  @UseGuards(AdminMutationGuard)
   @Header("Cache-Control", "no-store, max-age=0")
   async cancelForAdmin(
     @Headers("x-user-id") userId: string | undefined,
