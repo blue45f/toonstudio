@@ -49,3 +49,10 @@ export function studioBg3dCaptureRatioFromCutAspect(value: string): number | und
 export function isStudioBg3dCutAspectOptionId(value: unknown): value is WebtoonPanelAspect {
   return STUDIO_BG3D_CUT_ASPECT_OPTIONS.some((option) => option.id === value);
 }
+
+/** 3D 장면과 연결된 덱에서 "컷 비율" 아래에 보이는 설명(해요체). 문서 전체 값이라는 점을 분명히 말한다. */
+export const STUDIO_BG3D_CUT_ASPECT_LINKED_HINT =
+  "컷 비율은 문서 전체의 캡처·삽입 프레임 비율이고 LT 탭의 출력 비율과 같은 값이에요. 컷마다 따로 저장하지는 않아요.";
+/** 리허설 덱처럼 장면과 연결되지 않은 곳의 설명(해요체). 값은 북마크 메모일 뿐이라는 점을 말한다. */
+export const STUDIO_BG3D_CUT_ASPECT_MEMO_HINT =
+  "리허설 덱에서는 컷 비율이 북마크 메모로만 기록돼요. 실제 캡처 프레임은 3D 장면과 연결된 덱의 컷 비율이나 LT 탭의 출력 비율에서 정해요.";

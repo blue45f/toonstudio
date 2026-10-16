@@ -28,6 +28,8 @@ import {
 } from "../scene-3d/studio-3d-camera-cinematic-director";
 
 import {
+  STUDIO_BG3D_CUT_ASPECT_LINKED_HINT,
+  STUDIO_BG3D_CUT_ASPECT_MEMO_HINT,
   STUDIO_BG3D_CUT_ASPECT_OPTIONS,
   isStudioBg3dCutAspectOptionId,
   resolveStudioBg3dCutAspectSelection,
@@ -386,9 +388,7 @@ export function StudioBg3dCinematicDirectorPanel({
           </label>
         </div>
         <p className="text-[0.6rem] leading-relaxed text-fg-3" data-testid="cut-aspect-hint">
-          {cutAspectLinked
-            ? "컷 비율은 문서 전체의 캡처·삽입 프레임 비율이며 LT 탭의 출력 비율과 같은 값입니다. 컷마다 따로 저장하지는 않아요."
-            : "리허설 덱에서는 컷 비율이 북마크 메모로만 기록됩니다. 실제 캡처 프레임은 3D 장면과 연결된 덱의 컷 비율이나 LT 탭의 출력 비율에서 정해요."}
+          {cutAspectLinked ? STUDIO_BG3D_CUT_ASPECT_LINKED_HINT : STUDIO_BG3D_CUT_ASPECT_MEMO_HINT}
         </p>
       </section>
 

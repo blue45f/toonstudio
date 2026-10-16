@@ -119,7 +119,9 @@ describe("StudioBg3dLensShiftControls", () => {
   it("tells authors which way a positive value moves the scene", () => {
     renderControls();
     expect(
-      screen.getByText(/\+값은 장면이 화면에서 가로로는 왼쪽, 세로로는 위쪽으로 이동합니다/),
+      screen.getByText(/\+값은 장면이 화면에서 가로로는 왼쪽, 세로로는 위쪽으로 이동해요/),
     ).toBeTruthy();
+    // 사진 렌즈의 라이즈와는 세로 부호가 반대라는 점도 적는다.
+    expect(screen.getByText(/라이즈\(렌즈를 위로 올리면 장면이 아래로 내려가요\)와는 세로 부호가 반대예요/)).toBeTruthy();
   });
 });

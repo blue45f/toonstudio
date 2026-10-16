@@ -19,6 +19,7 @@ import {
   type StudioBg3dLensShift,
   type StudioBg3dLensShiftAxis,
 } from "./studio-bg3d-lens";
+import { STUDIO_BG3D_LENS_SHIFT_SIGN_HELP, STUDIO_BG3D_LENS_SHIFT_USAGE_HELP } from "./studio-bg3d-lens-shift-help";
 
 const COPY_SCOPE = "domains.creator.bg3d.StudioBg3dLensShiftControls";
 
@@ -112,10 +113,10 @@ export function StudioBg3dLensShiftControls({
         </button>
       </div>
       <p className="mt-2 text-[0.64rem] leading-relaxed text-fg-3">
-        {copy("시프트는 카메라 위치와 회전은 그대로 두고 프레임만 옮깁니다. +값은 장면이 화면에서 가로로는 왼쪽, 세로로는 위쪽으로 이동합니다.")}
+        {copy(STUDIO_BG3D_LENS_SHIFT_SIGN_HELP)}
       </p>
       <p className="mt-1.5 text-[0.64rem] leading-relaxed text-fg-3">
-        {copy("올려다보거나 내려다보는 구도에서는 2점 투시 보정으로 수직선을 화면과 평행하게 세우세요(건축 컷). 시선은 수평이 되고 원래 구도는 세로 시프트로 보존됩니다. 같은 값이 컷 저장·실행 취소·LT 삽입·배치 출력에 쓰이며, 매직 마스크는 시프트가 0일 때만 만들 수 있어요.")}
+        {copy(STUDIO_BG3D_LENS_SHIFT_USAGE_HELP)}
       </p>
     </div>
   );

@@ -32,7 +32,7 @@ describe("cinematic director cut ratio in the rehearsal deck", () => {
   it("is labelled as a bookmark memo and says it does not change the capture frame", () => {
     render(<StudioBg3dCinematicDirectorPanel />);
     expect(screen.getByText(/컷 비율 \(메모\)/)).toBeTruthy();
-    expect(screen.getByTestId("cut-aspect-hint").textContent).toContain("북마크 메모로만 기록됩니다");
+    expect(screen.getByTestId("cut-aspect-hint").textContent).toContain("북마크 메모로만 기록돼요");
     // 리허설에서는 "자유"·"직접 지정" 항목이 없고 다섯 비율만 고를 수 있다.
     expect(Array.from(cutRatioSelect().options).map((option) => option.value)).toEqual([
       "9:16",
@@ -74,6 +74,7 @@ describe("cinematic director cut ratio linked to the capture frame", () => {
     expect(screen.queryByText(/컷 비율 \(메모\)/)).toBeNull();
     const hint = screen.getByTestId("cut-aspect-hint").textContent ?? "";
     expect(hint).toContain("문서 전체의 캡처·삽입 프레임 비율");
+    expect(hint).toContain("LT 탭의 출력 비율과 같은 값이에요");
     expect(hint).toContain("컷마다 따로 저장하지는 않아요");
   });
 
