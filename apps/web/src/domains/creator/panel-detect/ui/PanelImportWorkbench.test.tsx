@@ -104,6 +104,44 @@ describe("가져오기 작업대", () => {
     expect(kit.revoked).toEqual([]);
   });
 
+  describe("단계가 바뀔 때 포커스", () => {
+    const focused = (): Element | null => document.activeElement;
+
+    it("작업대가 열리면 1단계 제목으로, 이미지를 고르면 2단계 제목으로 포커스가 간다 (재배열)", async () => {
+      renderWorkbench("reflow");
+      // 시작 단추가 사라지고 작업대가 열리므로 포커스는 새 단계의 처음으로 가야 한다.
+      expect(focused()).toBe(screen.getByRole("heading", { name: "1. 원고 권리 확인과 이미지 선택" }));
+      await chooseImage();
+      const review = await screen.findByRole("heading", { name: "2. 컷 확인과 고치기" });
+      // 파일 입력은 읽는 동안 닫히고 1단계는 사라지므로, 포커스가 body 로 떨어지지 않아야 한다.
+      await waitFor(() => expect(focused()).toBe(review));
+      fireEvent.click(button(/다음: 세로 재배열 설정/));
+      const reflow = await screen.findByRole("heading", { name: "3. 세로 스트립으로 재배열" });
+      await waitFor(() => expect(focused()).toBe(reflow));
+      fireEvent.click(button("컷 고치기로"));
+      const back = await screen.findByRole("heading", { name: "2. 컷 확인과 고치기" });
+      await waitFor(() => expect(focused()).toBe(back));
+    });
+
+    it("이미지를 고르면 카드 미리보기 제목으로 포커스가 간다 (카드뉴스)", async () => {
+      renderWorkbench("cards", { image: sampleStrip() });
+      expect(focused()).toBe(screen.getByRole("heading", { name: "1. 원고 권리 확인과 이미지 선택" }));
+      await chooseImage("strip.png");
+      const cards = await screen.findByRole("heading", { name: "2. 카드 미리보기와 조정" });
+      await waitFor(() => expect(focused()).toBe(cards));
+    });
+
+    it("처음으로 돌아가면 1단계 제목으로 포커스가 돌아온다", async () => {
+      renderWorkbench("reflow");
+      await chooseImage();
+      await screen.findByRole("heading", { name: "2. 컷 확인과 고치기" });
+      fireEvent.click(button("다른 원고 고르기"));
+      fireEvent.click(button("처음으로"));
+      const first = await screen.findByRole("heading", { name: "1. 원고 권리 확인과 이미지 선택" });
+      await waitFor(() => expect(focused()).toBe(first));
+    });
+  });
+
   it("영문 화면에서는 작업대 제목과 단추가 영문이다", async () => {
     useI18n.getState().setLang("en");
     renderWorkbench("cards");

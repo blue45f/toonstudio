@@ -38,6 +38,16 @@ describe("Studio 가져오기 — 원고 이미지 도우미 진입 구역", () 
     expect(screen.getByRole("heading", { level: 3, name: "카드뉴스 슬라이스 (4:5)" })).toBeTruthy();
   });
 
+  it("시작 단추가 작업대로 바뀌어도 포커스를 잃지 않고 작업대 1단계 제목으로 간다", async () => {
+    renderInRouter(<PanelImportEntry environment={createKit().env} />);
+    const start = button("컷 찾기 시작");
+    start.focus();
+    expect(document.activeElement).toBe(start);
+    fireEvent.click(start);
+    const heading = await screen.findByRole("heading", { name: "1. 원고 권리 확인과 이미지 선택" });
+    expect(document.activeElement).toBe(heading);
+  });
+
   it("카드뉴스 모드로도 열 수 있다", async () => {
     renderInRouter(<PanelImportEntry environment={createKit().env} />);
     fireEvent.click(button("카드 나누기 시작"));

@@ -344,6 +344,22 @@ describe("컷 확인과 고치기 단계", () => {
     expect((button("축소") as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it("다시 찾는 동안에는 ‘컷 찾는 중’ 제목으로, 끝나면 새 확인 화면의 제목으로 포커스가 옮겨진다", async () => {
+    const { detect, calls } = deferredDetect();
+    renderFlow({ detect });
+    await resolveNth(calls, 0, detectSample());
+    const review = await reviewHeading();
+    await waitFor(() => expect(document.activeElement).toBe(review));
+    fireEvent.click(screen.getByRole("radio", { name: /넓은 여백만/ }));
+    fireEvent.click(button("이 설정으로 다시 찾기"));
+    // 다시 찾기 단추는 사라지므로 포커스는 진행 중 단계의 제목으로 가야 한다.
+    const detecting = await screen.findByRole("heading", { name: "2. 컷 찾는 중" });
+    expect(document.activeElement).toBe(detecting);
+    await resolveNth(calls, 1, detectSample());
+    const next = await reviewHeading();
+    await waitFor(() => expect(document.activeElement).toBe(next));
+  });
+
   it("고친 내용이 있으면 다시 찾기 전에 한 번 더 묻고, 설정을 바꿔 새로 찾는다", async () => {
     const { kit } = renderFlow();
     await reviewHeading();

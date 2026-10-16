@@ -25,7 +25,8 @@ import { PanelReviewStep } from "./PanelReviewStep";
 import { bi, detectErrorText } from "./panel-import-copy";
 import { usePanelImportEnvironment } from "./panel-import-env";
 import { PANEL_HEADING, PANEL_SKELETON, PANEL_SURFACE } from "./panel-import-styles";
-import { usePanelJob } from "./use-panel-job";
+import { usePanelJob, type JobState } from "./use-panel-job";
+import { useStepHeadingFocus } from "./use-step-heading-focus";
 
 import type { PanelReflowPlan } from "../panel-reflow-plan";
 import type { PanelSourceReady } from "./PanelSourceStep";
@@ -87,8 +88,28 @@ export function PanelReflowFlow({ ready, previewUrl }: PanelReflowFlowProps): Re
   }
 
   return (
+    <PanelDetectStep
+      state={state}
+      onCancel={detectJob.cancel}
+      onRetry={() => rerun(run.readingOrder, run.sensitivity)}
+      onDrawManually={() => setManual(createManualDetectResult(ready.source.width, ready.source.height, run.readingOrder))}
+    />
+  );
+}
+
+interface PanelDetectStepProps {
+  readonly state: JobState<PanelDetectResult>;
+  readonly onCancel: () => void;
+  readonly onRetry: () => void;
+  readonly onDrawManually: () => void;
+}
+
+/** 2단계 앞부분 — 컷을 찾는 중 / 취소·실패 뒤 다시 시도하거나 직접 그리기. 나타날 때마다 제목으로 포커스를 옮긴다. */
+function PanelDetectStep({ state, onCancel, onRetry, onDrawManually }: PanelDetectStepProps): ReactElement {
+  const headingRef = useStepHeadingFocus<HTMLHeadingElement>();
+  return (
     <section className={PANEL_SURFACE} aria-labelledby="panel-detect-title">
-      <h3 id="panel-detect-title" className={PANEL_HEADING} data-panel-step-heading="detect" tabIndex={-1}>
+      <h3 ref={headingRef} id="panel-detect-title" className={PANEL_HEADING} data-panel-step-heading="detect" tabIndex={-1}>
         {bi("2. 컷 찾는 중", "2. Finding panels")}
       </h3>
       {state.status === "running" || state.status === "idle" ? (
@@ -98,8 +119,8 @@ export function PanelReflowFlow({ ready, previewUrl }: PanelReflowFlowProps): Re
             runningLabel={bi("여백을 따라 컷 경계를 찾는 중이에요…", "Looking for panel borders along the gutters…")}
             cancelledLabel=""
             errorText={detectErrorText}
-            onCancel={detectJob.cancel}
-            onRetry={() => rerun(run.readingOrder, run.sensitivity)}
+            onCancel={onCancel}
+            onRetry={onRetry}
           />
           <div className="grid gap-2" aria-hidden="true">
             <div className={cn(PANEL_SKELETON, "h-64 w-full")} />
@@ -113,11 +134,11 @@ export function PanelReflowFlow({ ready, previewUrl }: PanelReflowFlowProps): Re
             runningLabel=""
             cancelledLabel={bi("컷 찾기를 취소했어요. 다시 시도하거나 컷을 직접 그릴 수 있어요.", "Detection was cancelled. Try again or draw the panels yourself.")}
             errorText={detectErrorText}
-            onCancel={detectJob.cancel}
-            onRetry={() => rerun(run.readingOrder, run.sensitivity)}
+            onCancel={onCancel}
+            onRetry={onRetry}
           />
           <PanelNotice tone="info" live="off" actions={
-            <button type="button" onClick={() => setManual(createManualDetectResult(ready.source.width, ready.source.height, run.readingOrder))} className={buttonClass({ variant: "outline", size: "sm" })}>
+            <button type="button" onClick={onDrawManually} className={buttonClass({ variant: "outline", size: "sm" })}>
               {bi("컷 직접 그리기", "Draw panels manually")}
             </button>
           }>
@@ -148,7 +169,6 @@ function PanelReflowWorkspace({ ready, previewUrl, result, sensitivity, detectBu
   const [title, setTitle] = useState(() => panelStudioTitleFromFileName(ready.source.fileName, fallbackTitle));
   const [confirmedSignature, setConfirmedSignature] = useState<string | null>(null);
   const [pendingSensitivity, setPendingSensitivity] = useState(sensitivity);
-  const containerRef = useRef<HTMLDivElement>(null);
   const insertJob = usePanelJob<void>();
   const downloadJob = usePanelJob<void>();
   const tightenJob = usePanelJob<void>();
@@ -156,15 +176,7 @@ function PanelReflowWorkspace({ ready, previewUrl, result, sensitivity, detectBu
   const background = panelStudioBackground(result.gutter.color);
   const source = ready.source;
 
-  // 단계가 바뀌면 새 단계의 제목으로 포커스를 옮겨 화면 낭독기가 새 내용을 알리게 한다(DOM 포커스 동기화). 처음 나타날 때는 옮기지 않는다.
-  const viewFocusedBefore = useRef(false);
-  useEffect(() => {
-    if (!viewFocusedBefore.current) {
-      viewFocusedBefore.current = true;
-      return;
-    }
-    containerRef.current?.querySelector<HTMLElement>("[data-panel-step-heading]")?.focus();
-  }, [view]);
+  // 확인·수정 ↔ 재배열 설정을 오갈 때의 포커스는 각 단계 컴포넌트가 나타나면서 자기 제목으로 옮긴다(use-step-heading-focus.ts).
   const changeView = (next: "review" | "reflow"): void => { setView(next); };
 
   // 이미지를 읽는 동안(비동기) 사용자가 컷을 옮기거나 지울 수 있다. 누른 시점의 사각형으로 계산해 두었다가 적용하면 그 사이의
@@ -238,7 +250,7 @@ function PanelReflowWorkspace({ ready, previewUrl, result, sensitivity, detectBu
   };
 
   return (
-    <div ref={containerRef} className="grid gap-4">
+    <div className="grid gap-4">
       {view === "review" ? (
         <PanelReviewStep
           imageUrl={previewUrl}

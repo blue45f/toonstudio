@@ -25,6 +25,7 @@ import { PanelReflowPreview } from "./PanelReflowPreview";
 import { computeReflowOutcome, type ReflowSettings } from "./panel-reflow-outcome";
 import { bi, lossItemText, renderErrorText } from "./panel-import-copy";
 import { PANEL_FOCUS_RING, PANEL_HEADING, PANEL_HINT, PANEL_INPUT, PANEL_LABEL, PANEL_SUBSURFACE, PANEL_SURFACE, panelChipClass } from "./panel-import-styles";
+import { useStepHeadingFocus } from "./use-step-heading-focus";
 
 import type { EditablePanel } from "../panel-detect-edit";
 import type { PanelDetectResult } from "../panel-detect-types";
@@ -54,6 +55,7 @@ interface PanelReflowStepProps {
 /** 3단계 — 폭 규격·여백·배율을 고르고, 결과 미리보기와 손실 보고를 확인한 뒤 Studio 문서로 삽입하거나 PNG 묶음으로 받는다. */
 export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
   const { settings, result } = props;
+  const headingRef = useStepHeadingFocus<HTMLHeadingElement>();
   const outcome = useMemo(() => computeReflowOutcome(props.panels, settings, result, props.image), [props.panels, settings, result, props.image]);
   const background = panelStudioBackground(result.gutter.color);
   const busy = props.insertJob.state.status === "running" || props.downloadJob.state.status === "running";
@@ -70,7 +72,7 @@ export function PanelReflowStep(props: PanelReflowStepProps): ReactElement {
 
   return (
     <section className={PANEL_SURFACE} aria-labelledby="panel-reflow-title">
-      <h3 id="panel-reflow-title" className={PANEL_HEADING} data-panel-step-heading="reflow" tabIndex={-1}>
+      <h3 ref={headingRef} id="panel-reflow-title" className={PANEL_HEADING} data-panel-step-heading="reflow" tabIndex={-1}>
         {bi("3. 세로 스트립으로 재배열", "3. Rearrange into a vertical strip")}
       </h3>
       <p className={cn(PANEL_HINT, "mt-1")}>

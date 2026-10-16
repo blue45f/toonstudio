@@ -20,6 +20,7 @@ import { PanelNotice } from "./PanelNotice";
 import { bi, cardErrorText, cardWarningText } from "./panel-import-copy";
 import { usePanelImportEnvironment } from "./panel-import-env";
 import { PANEL_HEADING, PANEL_HINT, PANEL_INPUT, PANEL_LABEL, PANEL_SKELETON, PANEL_SMALL_BUTTON, PANEL_SUBSURFACE, PANEL_SURFACE, panelChipClass } from "./panel-import-styles";
+import { useStepHeadingFocus } from "./use-step-heading-focus";
 import { usePanelJob } from "./use-panel-job";
 
 import type { PanelSourceReady } from "./PanelSourceStep";
@@ -38,6 +39,7 @@ interface ExportedBundle {
 /** 카드뉴스 흐름 — 행 측정으로 절단 위치 분석 → 카드 미리보기·수동 조정 → ZIP(PNG) 내보내기. */
 export function PanelCardFlow({ ready, previewUrl }: PanelCardFlowProps): ReactElement {
   const env = usePanelImportEnvironment();
+  const analyzeHeadingRef = useStepHeadingFocus<HTMLHeadingElement>();
   const analyzeJob = usePanelJob<CardSliceAnalysis>();
 
   const analyze = (): void => {
@@ -57,7 +59,7 @@ export function PanelCardFlow({ ready, previewUrl }: PanelCardFlowProps): ReactE
   }
   return (
     <section className={PANEL_SURFACE} aria-labelledby="panel-card-analyze-title">
-      <h3 id="panel-card-analyze-title" className={PANEL_HEADING} data-panel-step-heading="cards-analyze" tabIndex={-1}>
+      <h3 ref={analyzeHeadingRef} id="panel-card-analyze-title" className={PANEL_HEADING} data-panel-step-heading="cards-analyze" tabIndex={-1}>
         {bi("2. 카드로 나눌 자리를 찾는 중", "2. Finding where to cut the cards")}
       </h3>
       <div className="mt-3 grid gap-3">
@@ -87,6 +89,7 @@ interface PanelCardWorkspaceProps {
 
 function PanelCardWorkspace({ ready, previewUrl, initial }: PanelCardWorkspaceProps): ReactElement {
   const env = usePanelImportEnvironment();
+  const headingRef = useStepHeadingFocus<HTMLHeadingElement>();
   const [analysis, setAnalysis] = useState(initial);
   const [alignment, setAlignment] = useState<CardAlignment>("center");
   const fallbackTitle = bi("ToonStudio 카드뉴스", "ToonStudio card news");
@@ -131,7 +134,7 @@ function PanelCardWorkspace({ ready, previewUrl, initial }: PanelCardWorkspacePr
 
   return (
     <section className={PANEL_SURFACE} aria-labelledby="panel-card-title">
-      <h3 id="panel-card-title" className={PANEL_HEADING} data-panel-step-heading="cards" tabIndex={-1}>
+      <h3 ref={headingRef} id="panel-card-title" className={PANEL_HEADING} data-panel-step-heading="cards" tabIndex={-1}>
         {bi("2. 카드 미리보기와 조정", "2. Preview and adjust cards")}
       </h3>
       <p className="mt-1 text-sm text-fg-2" role="status">

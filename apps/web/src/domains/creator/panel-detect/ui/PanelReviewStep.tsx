@@ -37,6 +37,7 @@ import { PanelDetectControls } from "./PanelDetectControls";
 import { PanelNotice } from "./PanelNotice";
 import { bi, confidenceLabel, detectWarningText } from "./panel-import-copy";
 import { PANEL_FOCUS_RING, PANEL_HEADING, PANEL_HINT, PANEL_SMALL_BUTTON, PANEL_SURFACE, panelChipClass } from "./panel-import-styles";
+import { useStepHeadingFocus } from "./use-step-heading-focus";
 
 import type { PanelDetectResult, PanelDetectSensitivity, PanelRect, PanelReadingOrder } from "../panel-detect-types";
 
@@ -69,6 +70,7 @@ function newPanelId(next: PanelEditState, previous: PanelEditState): string | nu
 /** 2단계 — 컷 후보를 이미지 위에서 확인하고 추가·삭제·끌기·순서 편집으로 고친다. */
 export function PanelReviewStep(props: PanelReviewStepProps): ReactElement {
   const { result, editor, dispatch } = props;
+  const headingRef = useStepHeadingFocus<HTMLHeadingElement>();
   const state = editor.history.present;
   const image = useMemo(() => ({ width: state.imageWidth, height: state.imageHeight }), [state.imageWidth, state.imageHeight]);
   const selected = state.panels.find((panel) => panel.id === editor.selectedId) ?? null;
@@ -146,7 +148,7 @@ export function PanelReviewStep(props: PanelReviewStepProps): ReactElement {
 
   return (
     <section ref={sectionRef} className={PANEL_SURFACE} aria-labelledby="panel-review-title">
-      <h3 id="panel-review-title" className={PANEL_HEADING} data-panel-step-heading="review" tabIndex={-1}>
+      <h3 ref={headingRef} id="panel-review-title" className={PANEL_HEADING} data-panel-step-heading="review" tabIndex={-1}>
         {bi("2. 컷 확인과 고치기", "2. Review and fix panels")}
       </h3>
       <p className="mt-1 text-sm text-fg-2" role="status">

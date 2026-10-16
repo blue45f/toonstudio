@@ -21,6 +21,7 @@ import { PanelNotice } from "./PanelNotice";
 import { bi, sourceErrorText } from "./panel-import-copy";
 import { usePanelImportEnvironment } from "./panel-import-env";
 import { PANEL_FOCUS_RING, PANEL_HEADING, PANEL_HINT, PANEL_INPUT, PANEL_LABEL, PANEL_SKELETON, PANEL_SURFACE } from "./panel-import-styles";
+import { useStepHeadingFocus } from "./use-step-heading-focus";
 import { usePanelJob } from "./use-panel-job";
 
 export interface PanelSourceReady {
@@ -45,6 +46,7 @@ const MAX_MB = PANEL_IMPORT_LIMITS.maxFileBytes / (1024 * 1024);
 export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactElement {
   const env = usePanelImportEnvironment();
   const id = useId().replace(/:/gu, "");
+  const headingRef = useStepHeadingFocus<HTMLHeadingElement>();
   const [confirmed, setConfirmed] = useState(false);
   const [note, setNote] = useState("");
   const [pickedName, setPickedName] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
   const hintId = `${id}-hint`;
   return (
     <section className={PANEL_SURFACE} aria-labelledby={`${id}-title`}>
-      <h3 id={`${id}-title`} className={PANEL_HEADING} data-panel-step-heading="source" tabIndex={-1}>
+      <h3 ref={headingRef} id={`${id}-title`} className={PANEL_HEADING} data-panel-step-heading="source" tabIndex={-1}>
         {bi("1. 원고 권리 확인과 이미지 선택", "1. Confirm rights and choose the image")}
       </h3>
       <p className={cn(PANEL_HINT, "mt-1")}>
