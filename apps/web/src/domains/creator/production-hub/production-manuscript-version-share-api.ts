@@ -168,13 +168,21 @@ export type VersionShareResolution =
   | { readonly status: "password_locked"; readonly retryAfterSeconds: number | null }
   | { readonly status: "login_required" };
 
-const RESOLUTION_CODE_MAP: Readonly<Record<string, VersionShareResolution["status"]>> = {
-  version_share_not_found: "not_found",
-  version_share_revoked: "revoked",
-  version_share_expired: "expired",
-  version_share_password_required: "password_required",
-  version_share_password_invalid: "password_invalid",
-};
+/**
+ * 서버 코드와 판정이 1:1 로 대응하고 추가 정보가 없는 것만 둔다. 잠금(password_locked)은 풀릴 때까지 남은 초를 함께
+ * 실어야 해서 이 표 밖에서 따로 만든다. 값 형식을 VersionShareResolution["status"] 전체로 두면 추가 정보가 필요한
+ * 판정까지 `{ status }` 만으로 만들 수 있는 것처럼 보여 타입 오류가 난다. Map 이라 "constructor" 같은 서버 코드가
+ * 객체 프로토타입의 속성으로 해석되지도 않는다.
+ */
+type CodeMappedStatus = "not_found" | "revoked" | "expired" | "password_required" | "password_invalid";
+
+const RESOLUTION_CODE_STATUS: ReadonlyMap<string, CodeMappedStatus> = new Map([
+  ["version_share_not_found", "not_found"],
+  ["version_share_revoked", "revoked"],
+  ["version_share_expired", "expired"],
+  ["version_share_password_required", "password_required"],
+  ["version_share_password_invalid", "password_invalid"],
+]);
 
 /**
  * 공유 링크 해석. 알려진 상태 코드는 throw하지 않고 판정값으로 돌려주고,
@@ -204,8 +212,8 @@ export async function resolveVersionShare(
       if (error.code === "version_share_password_locked") {
         return { status: "password_locked", retryAfterSeconds: error.retryAfterSeconds };
       }
-      const mapped = error.code ? RESOLUTION_CODE_MAP[error.code] : undefined;
-      if (mapped && mapped !== "ok") return { status: mapped };
+      const mapped = error.code ? RESOLUTION_CODE_STATUS.get(error.code) : undefined;
+      if (mapped) return { status: mapped };
     }
     throw error;
   }

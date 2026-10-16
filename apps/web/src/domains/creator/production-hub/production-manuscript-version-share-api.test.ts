@@ -97,6 +97,14 @@ describe("resolveVersionShare", () => {
     await expect(resolveVersionShare("token-value-123456")).rejects.toMatchObject({ status: 429 });
   });
 
+  it.each(["constructor", "toString", "__proto__", "hasOwnProperty"])(
+    "판정 표에 없는 서버 코드 %s 는 객체 프로토타입의 속성으로 오인하지 않고 던진다",
+    async (code) => {
+      get.mockRejectedValue(apiError(400, code));
+      await expect(resolveVersionShare("token-value-123456")).rejects.toMatchObject({ status: 400, code });
+    },
+  );
+
   it("403은 로그인 필요로 바꾼다", async () => {
     get.mockRejectedValue(apiError(403, null));
     await expect(resolveVersionShare("token-value-123456")).resolves.toEqual({
