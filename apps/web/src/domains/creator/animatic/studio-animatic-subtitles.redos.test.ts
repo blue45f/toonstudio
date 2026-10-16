@@ -65,13 +65,10 @@ describe("WebVTT 큐 태그 제거의 판정 보존", () => {
       const count = 1 + Math.floor(next() * 9);
       let cue = "";
       for (let index = 0; index < count; index += 1) cue += pieces[Math.floor(next() * pieces.length)] ?? "";
-      const legacy = cue
-        .trim()
-        .replace(/<[^>]+>/gu, "")
-        .replace(/&lt;/gu, "<")
-        .replace(/&gt;/gu, ">")
-        .replace(/&amp;/gu, "&")
-        .trim();
+      // 수정 전 구현과 같은 순서(태그 제거 → 엔티티 해독)다. 해독은 split/join 으로 쓴다: 의미는 `replace(/&lt;/gu, "<")` 와
+      // 같지만, 이 시험은 비교용 사본일 뿐 HTML 로 쓰이지 않는데 정규식 치환 사슬이 CodeQL 의
+      // "불완전한 다중 문자 살균" 규칙(js/incomplete-multi-character-sanitization)에 높음으로 걸려 PR 을 막는다.
+      const legacy = unescapeLegacyEntities(cue.trim().replace(/<[^>]+>/gu, ""));
       expect(firstCueText(vtt(cue)), `입력 ${JSON.stringify(cue)}`).toBe(legacy || undefined);
     }
   });
@@ -137,18 +134,18 @@ describe("WebVTT 화자 태그 판별의 선형 시간", () => {
 
 /** 수정 전 구현(정규식)을 그대로 옮겨 둔 기준. 판정 보존을 대조하는 데만 쓴다. */
 function legacyVttCue(cue: string): { readonly voice: boolean; readonly speaker?: string; readonly text: string } | undefined {
-  const unescapeText = (value: string) =>
-    value
-      .replace(/&lt;/gu, "<")
-      .replace(/&gt;/gu, ">")
-      .replace(/&amp;/gu, "&")
-      .trim();
+  const unescapeText = (value: string) => unescapeLegacyEntities(value);
   const joined = cue.trim();
   const voice = /^<v\s+([^>]+)>([\s\S]*?)<\/v>$/u.exec(joined);
   const parsed = voice
     ? { voice: true, speaker: (voice[1] ?? "").replace(/&amp;/gu, "&").trim() || undefined, text: unescapeText(voice[2] ?? "") }
     : { voice: false, speaker: undefined, text: unescapeText(joined.replace(/<[^>]+>/gu, "")) };
   return parsed.text ? parsed : undefined;
+}
+
+/** 수정 전 구현의 엔티티 해독(`&lt;`→`<`, `&gt;`→`>`, `&amp;`→`&`, 순서 그대로)과 끝 공백 제거. */
+function unescapeLegacyEntities(value: string): string {
+  return value.split("&lt;").join("<").split("&gt;").join(">").split("&amp;").join("&").trim();
 }
 
 function firstCue(raw: string): { speaker?: string; text: string } | undefined {
