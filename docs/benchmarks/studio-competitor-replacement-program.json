@@ -334,7 +334,7 @@
       "track": "3d",
       "state": "implemented",
       "evidence": [
-        "apps/web/src/domains/creator/scene-3d/studio-3d-room-builder-v2.ts"
+        "apps/web/src/domains/creator/bg3d/studio-bg3d-room-builder.ts"
       ]
     },
     {
