@@ -33,8 +33,8 @@ jobs:
       - name: Preserve validated assistant baseline and all existing test expectations
         run: |
           # Refresh these only after the complete assistant regression and focused lint jobs pass.
-          test "$(git hash-object apps/web/src/domains/creator/assistant/StudioWebtoonAssistantContent.tsx)" = 996e5cd27064525797bc99b100fe95568bfb5a4b
-          sed 's@from "./StudioWebtoonAssistantContent"@from "./StudioWebtoonAssistantModal"@' apps/web/src/domains/creator/assistant/StudioWebtoonAssistantModal.test.tsx | git hash-object --stdin | grep -Fx 4e1ddb106d6f001da65ebe76df04a1650dd53fe5
+          test "$(git hash-object apps/web/src/domains/creator/assistant/StudioWebtoonAssistantContent.tsx)" = efeb3c5f95be497206564d8b9db64f0c0a41c2de
+          sed 's@from "./StudioWebtoonAssistantContent"@from "./StudioWebtoonAssistantModal"@' apps/web/src/domains/creator/assistant/StudioWebtoonAssistantModal.test.tsx | git hash-object --stdin | grep -Fx 4c9990d0bcdcc5eed2b8768d8d27f4b1482979f8
       - name: Original assistant features, loading lifecycle and existing boundary tests
         run: >-
           pnpm exec vitest run
