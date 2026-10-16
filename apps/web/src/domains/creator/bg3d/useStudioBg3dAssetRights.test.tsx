@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { notifyStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
 import { useStudioBg3dAssetRights } from "./useStudioBg3dAssetRights";
 
 import type { StudioBg3dAssetRightsSourceResult } from "./studio-bg3d-asset-rights-source";
@@ -94,5 +95,54 @@ describe("useStudioBg3dAssetRights", () => {
     await act(async () => resolve(loaded()));
     expect(error).not.toHaveBeenCalled();
     error.mockRestore();
+  });
+
+  it("권리 기록이 새로 저장되면 목록이 같아도 다시 읽고, 읽는 동안 직전 결과를 계속 쓴다", async () => {
+    const resolvers: ((value: StudioBg3dAssetRightsSourceResult) => void)[] = [];
+    const load = vi.fn(() => new Promise<StudioBg3dAssetRightsSourceResult>((r) => {
+      resolvers.push(r);
+    }));
+    const entries = [entry("m1", "b")];
+    const { result } = renderHook(() => useStudioBg3dAssetRights(entries, () => undefined, load));
+    await act(async () => resolvers[0]?.(loaded()));
+    expect(result.current.state).toBe("ready");
+    expect(load).toHaveBeenCalledTimes(1);
+
+    // 가져오기 직후 AI 사용 표기가 늦게 저장된 상황: 같은 항목이지만 새 기록을 읽어야 한다.
+    act(() => notifyStudioBg3dAssetRightsChanged());
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(result.current.state).toBe("ready");
+    expect(result.current.views.get("m1")?.state.license).toBe("licensed");
+
+    const withAi: StudioBg3dAssetRightsSourceResult = {
+      libraryRightsById: new Map([["m1", LICENSED]]),
+      metadataByHash: new Map([[hash("b"), {
+        version: 3,
+        contentHash: hash("b"),
+        name: "소재 m1",
+        format: "glb",
+        createdAt: 1,
+        updatedAt: 2,
+        byteSize: 100,
+        triangles: null,
+        textures: null,
+        favorite: false,
+        collections: [],
+        tags: [],
+        rights: { status: "licensed", commercialUse: true, teamShareAllowed: false, license: "표준 라이선스", aiGenerated: "yes" },
+      }]]),
+      failed: { library: false, metadata: false },
+    };
+    await act(async () => resolvers[1]?.(withAi));
+    expect(result.current.views.get("m1")?.state.aiGenerated).toBe("yes");
+  });
+
+  it("언마운트한 뒤의 저장 알림은 다시 읽지 않는다", () => {
+    const load = vi.fn(() => new Promise<StudioBg3dAssetRightsSourceResult>(() => undefined));
+    const { unmount } = renderHook(() => useStudioBg3dAssetRights([entry("m1", "b")], () => undefined, load));
+    expect(load).toHaveBeenCalledTimes(1);
+    unmount();
+    notifyStudioBg3dAssetRightsChanged();
+    expect(load).toHaveBeenCalledTimes(1);
   });
 });

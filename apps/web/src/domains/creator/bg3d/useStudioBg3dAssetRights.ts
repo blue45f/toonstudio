@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { subscribeStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
 import { loadStudioBg3dAssetRightsSources } from "./studio-bg3d-asset-rights-source";
 import { buildStudioBg3dAssetRightsViews } from "./studio-bg3d-asset-rights-view";
 
@@ -37,8 +38,9 @@ export interface StudioBg3dAssetRightsHookResult {
 }
 
 /**
- * 라이브러리 항목의 권리 보기를 만든다. 가져온 소재가 있을 때만 저장소를 읽고, 항목 목록이 바뀌면(가져오기·삭제)
- * 다시 읽는다. 다시 읽는 동안에는 직전 결과를 계속 쓴다.
+ * 라이브러리 항목의 권리 보기를 만든다. 가져온 소재가 있을 때만 저장소를 읽고, 항목 목록이 바뀌거나(가져오기·삭제)
+ * 권리 기록이 새로 저장되면(가져오기 직후의 AI 사용 표기 저장은 목록이 그려진 뒤에 끝난다) 다시 읽는다.
+ * 다시 읽는 동안에는 직전 결과를 계속 쓴다.
  */
 export function useStudioBg3dAssetRights(
   entries: readonly EntryLike[],
@@ -53,6 +55,9 @@ export function useStudioBg3dAssetRights(
     [entries],
   );
   const [loaded, setLoaded] = useState<{ readonly key: string; readonly result: StudioBg3dAssetRightsSourceResult } | null>(null);
+  // 권리 기록이 새로 저장될 때마다 올라가는 번호. 목록은 그대로여도 다시 읽게 한다.
+  const [revision, setRevision] = useState(0);
+  useEffect(() => subscribeStudioBg3dAssetRightsChanged(() => setRevision((value) => value + 1)), []);
 
   useEffect(() => {
     if (importedKey === "") return undefined;
@@ -63,7 +68,7 @@ export function useStudioBg3dAssetRights(
     // 읽기 함수가 던져도 목록은 그대로 두고 두 원천을 모두 읽지 못한 것으로 알린다.
     load({ signal: controller.signal }).then(settle, () => settle(ALL_SOURCES_FAILED));
     return () => controller.abort();
-  }, [importedKey, load]);
+  }, [importedKey, revision, load]);
 
   const result = loaded?.result ?? null;
   const views = useMemo(
