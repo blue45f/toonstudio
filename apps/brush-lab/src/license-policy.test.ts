@@ -52,6 +52,17 @@ const BANNED_PACKAGES: Readonly<Record<string, string>> = {
   "ammo.js": "라이선스 필드 없음 — 미확인",
 };
 
+/** 내재화 관련 소스 파일이 위치해야 하는 디렉터리(license-policy.md 4.5절 경로 guard). */
+const INTERNALIZATION_PIGMENT_DIR = path.join(APP_ROOT, "src", "engine", "pigment");
+
+/** 내재화 단계에서 신규로 추가될 pigment 소스 파일. 이 파일들은 pigment/ 내에 있어야 하고 mixbox·krita를 import하면 안 된다. */
+const INTERNALIZATION_PIGMENT_FILES = [
+  "krita-dynamics.ts",
+  "mixbox-compat.ts",
+  "perfect-freehand.ts",
+  "libmypaint-dynamics.ts",
+];
+
 /**
  * 라이선스 메타데이터가 비었거나 비표준이지만 LICENSE 파일을 직접 읽어 검토를 마친 패키지(`이름@버전`). 사유와 검토일을 적는다.
  * 새 항목은 검토 근거(LICENSE 원문 확인)와 함께 PR에서 승인받는다.
@@ -932,5 +943,23 @@ describe("내재화 위치 게이트(license-policy.md 4.5절)", () => {
     expect(BANNED_PACKAGES.mixbox).toBeDefined();
     expect(BANNED_PACKAGES.mixbox).toMatch(/수식 아이디어만 허용/);
     expect(BANNED_PACKAGES.mixbox).toMatch(/코드·셰이더 금지/);
+  });
+
+  it("내재화 관련 소스 파일은 src/engine/pigment/ 내에 위치한다(경로 guard)", () => {
+    for (const name of INTERNALIZATION_PIGMENT_FILES) {
+      const full = path.join(INTERNALIZATION_PIGMENT_DIR, name);
+      if (!existsSync(full)) continue;
+      expect(path.relative(APP_ROOT, full)).toMatch(/^src\/engine\/pigment\//);
+    }
+  });
+
+  it("내재화 소스는 금지 라이브러리(mixbox/krita)를 import하지 않는다(BANNED_PACKAGES import 금지)", () => {
+    for (const name of INTERNALIZATION_PIGMENT_FILES) {
+      const full = path.join(INTERNALIZATION_PIGMENT_DIR, name);
+      if (!existsSync(full)) continue;
+      const content = readFileSync(full, "utf8");
+      expect(content).not.toMatch(/(?:from|import\s*\(\s*|require\s*\(\s*)["']mixbox["']/u);
+      expect(content).not.toMatch(/(?:from|import\s*\(\s*|require\s*\(\s*)["']krita["']/u);
+    }
   });
 });
