@@ -12,7 +12,11 @@ import {
   type StudioBg3dSkpReportWarning,
 } from "./studio-bg3d-skp-import-report";
 
-export const STUDIO_BG3D_ASSET_METADATA_VERSION = 2 as const;
+/**
+ * 기록 형식 버전. 3 은 권리 영수증에 AI 사용 표기(aiGenerated·aiTraining)를 더했다.
+ * 1·2 기록은 읽을 때 3 으로 올려 읽고 AI 표기는 "미확인"(필드 없음)이 된다.
+ */
+export const STUDIO_BG3D_ASSET_METADATA_VERSION = 3 as const;
 
 export const STUDIO_BG3D_ASSET_METADATA_LIMITS = Object.freeze({
   assetsPerQuery: 4_096,
@@ -45,6 +49,10 @@ export const STUDIO_BG3D_ASSET_FORMATS = Object.freeze([
 
 export type StudioBg3dAssetFormat = (typeof STUDIO_BG3D_ASSET_FORMATS)[number];
 export type StudioBg3dAssetRightsStatus = "owned" | "licensed" | "public-domain" | "unknown";
+/** AI 생성물 표기. 필드가 없으면 "미확인"이다. */
+export type StudioBg3dAssetAiGenerated = "yes" | "no";
+/** 라이선스가 밝힌 AI 학습 이용 표기. 필드가 없으면 "미확인"이다. */
+export type StudioBg3dAssetAiTraining = "allowed" | "prohibited";
 export type StudioBg3dAssetSort = "recent" | "name" | "bytes" | "triangles";
 
 export interface StudioBg3dAssetCollection {
@@ -62,6 +70,10 @@ export interface StudioBg3dAssetRightsReceipt {
   readonly license?: string;
   /** Calendar date only. Precise purchase timestamps and transaction identifiers are excluded. */
   readonly purchaseOrDownloadDate?: string;
+  /** V3 부터. 없으면 미확인이며, V1·V2 기록도 미확인으로 읽힌다. 권리 상태가 unknown 이어도 보존한다. */
+  readonly aiGenerated?: StudioBg3dAssetAiGenerated;
+  /** V3 부터. 없으면 미확인이다. */
+  readonly aiTraining?: StudioBg3dAssetAiTraining;
 }
 
 export interface StudioBg3dAssetMetadata {
@@ -81,7 +93,7 @@ export interface StudioBg3dAssetMetadata {
   readonly tags: readonly string[];
   readonly rights: StudioBg3dAssetRightsReceipt;
   /**
-   * SketchUp(.skp) 가져오기 보고서 v1(studio-bg3d-skp-import-report). 형식이 skp 인 V2 기록에만 있고,
+   * SketchUp(.skp) 가져오기 보고서 v1(studio-bg3d-skp-import-report). 형식이 skp 인 V2 이상 기록에만 있고,
    * 스키마 검증·텍스트 안전 검사·크기 한도를 통과하지 못한 값은 기록 전체를 무효로 만들지 않고 버린다.
    */
   readonly skpImport?: StudioBg3dSkpImportReport;
@@ -89,7 +101,7 @@ export interface StudioBg3dAssetMetadata {
 
 /**
  * V1 did not encode team redistribution permission and used singular/legacy metric field names.
- * The interface exists only to document the supported migration input; callers should store V2.
+ * The interface exists only to document the supported migration input; callers should store the current version.
  */
 export interface StudioBg3dAssetMetadataV1 {
   readonly version: 1;
@@ -290,21 +302,37 @@ function defaultRights(): StudioBg3dAssetRightsReceipt {
   return DEFAULT_STUDIO_BG3D_ASSET_RIGHTS;
 }
 
+/** 알 수 없는 값은 null(기록 전체 거부), "unknown"·없음은 필드 생략(= 미확인)으로 정규화한다. */
+function normalizeAiUse(value: Record<string, unknown>): Pick<StudioBg3dAssetRightsReceipt, "aiGenerated" | "aiTraining"> | null {
+  const { aiGenerated, aiTraining } = value;
+  if (![undefined, "unknown", "yes", "no"].includes(aiGenerated as string | undefined)) return null;
+  if (![undefined, "unknown", "allowed", "prohibited"].includes(aiTraining as string | undefined)) return null;
+  return {
+    ...(aiGenerated === "yes" || aiGenerated === "no" ? { aiGenerated } : {}),
+    ...(aiTraining === "allowed" || aiTraining === "prohibited" ? { aiTraining } : {}),
+  };
+}
+
 function normalizeRights(
   value: unknown,
-  options: { readonly forceTeamShareDenied: boolean },
+  options: { readonly forceTeamShareDenied: boolean; readonly readAiUse: boolean },
 ): StudioBg3dAssetRightsReceipt {
   if (value === undefined || value === null) return defaultRights();
   if (!isRecord(value) || typeof value.status !== "string" || !RIGHTS_STATUSES.has(value.status as StudioBg3dAssetRightsStatus)) {
     return defaultRights();
   }
 
+  const aiUse = options.readAiUse ? normalizeAiUse(value) : {};
+  if (!aiUse) return defaultRights();
+  // 다른 칸이 저장 규칙에 걸려 권한을 내릴 때도 서로 독립인 AI 표기는 유지한다(권한은 주지 않는다).
+  const downgraded = (): StudioBg3dAssetRightsReceipt =>
+    Object.keys(aiUse).length > 0 ? Object.freeze({ ...defaultRights(), ...aiUse }) : defaultRights();
   const status = value.status as StudioBg3dAssetRightsStatus;
-  if (status === "unknown") return defaultRights();
+  if (status === "unknown") return downgraded();
 
   const commercialUse = normalizeBoolean(value.commercialUse);
   const requestedTeamShare = normalizeBoolean(value.teamShareAllowed);
-  if (commercialUse === null || requestedTeamShare === null) return defaultRights();
+  if (commercialUse === null || requestedTeamShare === null) return downgraded();
 
   const optionalText = (key: "provider" | "author" | "license"): string | null | undefined => {
     if (value[key] === undefined) return undefined;
@@ -313,13 +341,13 @@ function normalizeRights(
   const provider = optionalText("provider");
   const author = optionalText("author");
   const license = optionalText("license");
-  if (provider === null || author === null || license === null) return defaultRights();
-  if (status === "licensed" && !license) return defaultRights();
+  if (provider === null || author === null || license === null) return downgraded();
+  if (status === "licensed" && !license) return downgraded();
 
   let purchaseOrDownloadDate: string | undefined;
   if (value.purchaseOrDownloadDate !== undefined) {
     const normalizedDate = normalizeCalendarDate(value.purchaseOrDownloadDate);
-    if (!normalizedDate) return defaultRights();
+    if (!normalizedDate) return downgraded();
     purchaseOrDownloadDate = normalizedDate;
   }
 
@@ -331,6 +359,7 @@ function normalizeRights(
     ...(author ? { author } : {}),
     ...(license ? { license } : {}),
     ...(purchaseOrDownloadDate ? { purchaseOrDownloadDate } : {}),
+    ...aiUse,
   });
 }
 
@@ -415,7 +444,7 @@ export function canonicalizeStudioBg3dAssetContentHash(
 
 function normalizeMetadataRecord(
   raw: Record<string, unknown>,
-  sourceVersion: 1 | typeof STUDIO_BG3D_ASSET_METADATA_VERSION,
+  sourceVersion: 1 | 2 | typeof STUDIO_BG3D_ASSET_METADATA_VERSION,
 ): StudioBg3dAssetMetadata | null {
   const contentHash = canonicalizeStudioBg3dAssetContentHash(raw.contentHash);
   const name = normalizeText(raw.name, STUDIO_BG3D_ASSET_METADATA_LIMITS.nameCodePoints);
@@ -458,7 +487,7 @@ function normalizeMetadataRecord(
     return null;
   }
 
-  // 보고서는 V2 의 skp 형식 기록에만 둔다. V1 기록과 다른 형식의 기록에 붙은 값은 버린다.
+  // 보고서는 V2 이상의 skp 형식 기록에만 둔다. V1 기록과 다른 형식의 기록에 붙은 값은 버린다.
   const skpImport = sourceVersion !== 1 && format === "skp"
     ? normalizeSkpImport(raw.skpImport)
     : undefined;
@@ -476,7 +505,11 @@ function normalizeMetadataRecord(
     favorite,
     collections,
     tags,
-    rights: normalizeRights(raw.rights, { forceTeamShareDenied: sourceVersion === 1 }),
+    rights: normalizeRights(raw.rights, {
+      forceTeamShareDenied: sourceVersion === 1,
+      // 옛 버전(1·2)에는 AI 표기가 없었다. 우연히 같은 이름의 필드가 있어도 읽지 않고 미확인으로 둔다.
+      readAiUse: sourceVersion === STUDIO_BG3D_ASSET_METADATA_VERSION,
+    }),
     ...(skpImport ? { skpImport } : {}),
   });
 }
@@ -491,14 +524,14 @@ export function normalizeStudioBg3dAssetMetadata(raw: unknown): StudioBg3dAssetM
   }
 }
 
-/** Migrates the explicitly supported V1 schema or re-normalizes V2; every other version fails closed. */
+/** Migrates the explicitly supported V1·V2 schemas or re-normalizes V3; every other version fails closed. */
 export function migrateStudioBg3dAssetMetadata(raw: unknown): StudioBg3dAssetMetadata | null {
   try {
     if (!isRecord(raw)) return null;
     if (raw.version === STUDIO_BG3D_ASSET_METADATA_VERSION) {
       return normalizeMetadataRecord(raw, STUDIO_BG3D_ASSET_METADATA_VERSION);
     }
-    if (raw.version === 1) return normalizeMetadataRecord(raw, 1);
+    if (raw.version === 1 || raw.version === 2) return normalizeMetadataRecord(raw, raw.version);
     return null;
   } catch {
     return null;

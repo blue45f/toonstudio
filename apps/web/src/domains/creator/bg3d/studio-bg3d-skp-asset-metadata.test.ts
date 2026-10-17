@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   DEFAULT_STUDIO_BG3D_ASSET_RIGHTS,
+  STUDIO_BG3D_ASSET_METADATA_VERSION,
   normalizeStudioBg3dAssetMetadata,
   type StudioBg3dAssetMetadata,
 } from "./studio-bg3d-asset-metadata";
@@ -13,6 +14,7 @@ import {
   type StudioBg3dSkpImportedAsset,
   type StudioBg3dSkpMetadataStore,
 } from "./studio-bg3d-skp-asset-metadata";
+import { subscribeStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
 import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
 
 const HASH = `sha256:${"d".repeat(64)}` as const;
@@ -63,11 +65,55 @@ describe("compactStudioBg3dSkpReportForStorage", () => {
   });
 });
 
+describe("buildStudioBg3dSkpAssetMetadata — AI 사용 표기", () => {
+  it("권리 폼에서 고른 AI 표기를 변환 보고서와 같은 기록의 권리에 담는다", () => {
+    const record = buildStudioBg3dSkpAssetMetadata(
+      asset({ aiUse: { aiGenerated: "yes", aiTraining: "prohibited" } }),
+      createSkpReportFixture(),
+      1_000,
+    );
+    expect(record?.rights).toMatchObject({ aiGenerated: "yes", aiTraining: "prohibited" });
+    expect(record?.skpImport).toBeDefined();
+  });
+
+  it("고르지 않았다면 필드를 만들지 않아 기존 기록과 같은 모양(미확인)이다", () => {
+    const record = buildStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), 1_000);
+    expect("aiGenerated" in (record?.rights ?? {})).toBe(false);
+    expect("aiTraining" in (record?.rights ?? {})).toBe(false);
+  });
+});
+
+describe("buildStudioBg3dSkpAssetMetadata — 라이선스 이름이 저장 규칙에 걸릴 때", () => {
+  it("<상업> 이름이어도 구매·허가·상업 가능·AI 표기를 지키고, 걸린 글자는 기록에 넣지 않는다", () => {
+    const record = buildStudioBg3dSkpAssetMetadata(
+      asset({
+        rights: { status: "licensed", commercialUse: true, licenseName: "3D Warehouse <표준> 약관" },
+        aiUse: { aiGenerated: "no", aiTraining: "allowed" },
+      }),
+      createSkpReportFixture(),
+      9_000,
+    );
+    expect(record?.rights).toMatchObject({ status: "licensed", commercialUse: true, aiGenerated: "no", aiTraining: "allowed" });
+    expect(JSON.stringify(record?.rights)).not.toContain("<");
+    expect(record?.skpImport).toBeDefined();
+  });
+
+  it("직접 제작은 걸린 이름을 빼고 기록한다", () => {
+    const record = buildStudioBg3dSkpAssetMetadata(
+      asset({ rights: { status: "owned", commercialUse: true, licenseName: "내 모델 https://example.invalid/own" } }),
+      createSkpReportFixture(),
+      9_000,
+    );
+    expect(record?.rights).toMatchObject({ status: "owned", commercialUse: true });
+    expect(record?.rights.license).toBeUndefined();
+  });
+});
+
 describe("buildStudioBg3dSkpAssetMetadata", () => {
   it("builds a skp record that the metadata contract accepts, with the report attached", () => {
     const record = buildStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), 1_000);
     expect(record).toMatchObject({
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       contentHash: HASH,
       name: "방 모델",
       format: "skp",
@@ -136,7 +182,8 @@ describe("persistStudioBg3dSkpAssetMetadata", () => {
       loadStore: () => Promise.resolve(store),
     });
     expect(status).toBe("saved");
-    expect(get).toHaveBeenCalledWith(HASH);
+    // 저장소에는 취소·시간 한도를 알리는 신호가 함께 넘어간다.
+    expect(get).toHaveBeenCalledWith(HASH, expect.any(AbortSignal));
     expect(put).toHaveBeenCalledTimes(1);
     const firstArgument: unknown = put.mock.calls[0]?.[0];
     expect(firstArgument).toEqual([expect.objectContaining({ contentHash: HASH, format: "skp", createdAt: 5_000 })]);
@@ -144,7 +191,7 @@ describe("persistStudioBg3dSkpAssetMetadata", () => {
 
   it("leaves an existing record, and the edits on it, untouched", async () => {
     const existing = normalizeStudioBg3dAssetMetadata({
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       contentHash: HASH,
       name: "내가 고친 이름",
       format: "skp",
@@ -185,5 +232,111 @@ describe("persistStudioBg3dSkpAssetMetadata", () => {
     const status = await persistStudioBg3dSkpAssetMetadata(asset({ contentHash: "nope" }), createSkpReportFixture(), { loadStore });
     expect(status).toBe("failed");
     expect(loadStore).not.toHaveBeenCalled();
+  });
+
+  it("새 기록을 쓴 때만 권리 읽기에 알린다(기존 기록 유지·실패는 알리지 않는다)", async () => {
+    const listener = vi.fn();
+    const stop = subscribeStudioBg3dAssetRightsChanged(listener);
+    await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(fakeStore().store) });
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    const existing = normalizeStudioBg3dAssetMetadata({
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
+      contentHash: HASH,
+      name: "이미 있음",
+      format: "skp",
+      createdAt: 1,
+      updatedAt: 1,
+      byteSize: 4_096,
+      triangles: 80,
+      textures: 1,
+      favorite: true,
+      collections: [],
+      tags: [],
+      rights: DEFAULT_STUDIO_BG3D_ASSET_RIGHTS,
+    });
+    await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(fakeStore(existing).store) });
+    const rejecting = fakeStore();
+    rejecting.put.mockRejectedValueOnce(new Error("boom"));
+    await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(rejecting.store) });
+    expect(listener).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
+  describe("취소 신호와 시간 한도", () => {
+    it("가져오기 취소 신호가 이미 서 있으면 저장소를 건드리지 않고 failed 로 돌려준다", async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const loadStore = vi.fn(() => Promise.resolve(fakeStore().store));
+      const status = await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), {
+        loadStore,
+        signal: controller.signal,
+      });
+      expect(status).toBe("failed");
+      expect(loadStore).not.toHaveBeenCalled();
+    });
+
+    it("저장소가 응답하지 않는 동안 취소 신호가 서면 기다림을 멈추고, 저장소에는 선 신호를 넘기며, 새 기록 알림은 보내지 않는다", async () => {
+      const controller = new AbortController();
+      const listener = vi.fn();
+      const stop = subscribeStudioBg3dAssetRightsChanged(listener);
+      let received: AbortSignal | undefined;
+      const put = vi.fn(() => Promise.resolve([]));
+      const store: StudioBg3dSkpMetadataStore = {
+        get: (_hash, signal) => {
+          received = signal;
+          return new Promise(() => undefined);
+        },
+        put,
+      };
+      const pending = persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), {
+        loadStore: () => Promise.resolve(store),
+        signal: controller.signal,
+      });
+      await vi.waitFor(() => expect(received).toBeDefined());
+      expect(received?.aborted).toBe(false);
+      controller.abort();
+      await expect(pending).resolves.toBe("failed");
+      expect(received?.aborted).toBe(true);
+      expect(put).not.toHaveBeenCalled();
+      expect(listener).not.toHaveBeenCalled();
+      stop();
+    });
+
+    it("저장소가 한도 안에 답하지 않으면 한도에서 멈추고 failed 로 돌려준다(그 전에는 기다린다)", async () => {
+      vi.useFakeTimers();
+      try {
+        const store: StudioBg3dSkpMetadataStore = {
+          get: () => new Promise(() => undefined),
+          put: vi.fn(() => Promise.resolve([])),
+        };
+        let settled: string | null = null;
+        const pending = persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), {
+          loadStore: () => Promise.resolve(store),
+          timeoutMs: 1_000,
+        }).then((status) => {
+          settled = status;
+          return status;
+        });
+        await vi.advanceTimersByTimeAsync(999);
+        expect(settled).toBeNull();
+        await vi.advanceTimersByTimeAsync(1);
+        await expect(pending).resolves.toBe("failed");
+        expect(store.put).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("정상으로 끝나면 타이머를 남기지 않는다", async () => {
+      vi.useFakeTimers();
+      try {
+        const { store } = fakeStore();
+        await persistStudioBg3dSkpAssetMetadata(asset(), createSkpReportFixture(), { loadStore: () => Promise.resolve(store) });
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

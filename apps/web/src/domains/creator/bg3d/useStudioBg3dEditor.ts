@@ -70,6 +70,7 @@ export function useStudioBg3dEditor(props) {
     setModelLibraryStatus: h.setModelLibraryStatus,
     setRefTick: h.setRefTick,
     setSelectedIds: h.setSelectedIds,
+    setSurfaceSnapStatus: h.setSurfaceSnapStatus,
     startModelThumbnailCaptureBatch: h.startModelThumbnailCaptureBatch,
     storageModelIdByAttachmentIdRef: h.storageModelIdByAttachmentIdRef,
   });

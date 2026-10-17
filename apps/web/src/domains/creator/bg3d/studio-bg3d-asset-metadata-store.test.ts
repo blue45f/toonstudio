@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_STUDIO_BG3D_ASSET_RIGHTS,
   STUDIO_BG3D_ASSET_METADATA_LIMITS,
+  STUDIO_BG3D_ASSET_METADATA_VERSION,
   normalizeStudioBg3dAssetMetadata,
   type StudioBg3dAssetMetadata,
 } from "./studio-bg3d-asset-metadata";
@@ -14,6 +15,8 @@ import {
   STUDIO_BG3D_ASSET_METADATA_DATABASE_NAME,
   STUDIO_BG3D_ASSET_METADATA_DATABASE_VERSION,
   STUDIO_BG3D_ASSET_METADATA_STORE_NAME,
+  STUDIO_BG3D_ASSET_METADATA_V12_MANIFEST_KIND,
+  STUDIO_BG3D_ASSET_METADATA_V12_MANIFEST_VERSION,
   StudioBg3dAssetMetadataStoreError,
   deleteStudioBg3dAssetMetadataAtomically,
   getStudioBg3dAssetMetadata,
@@ -26,6 +29,8 @@ import {
 } from "./studio-bg3d-asset-metadata-store";
 import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
 
+import type { StudioBg3dLibrariesAuthority } from "./studio-bg3d-libraries-sqlite-opfs-authority";
+
 const HASH_A = `sha256:${"a".repeat(64)}` as const;
 const HASH_B = `sha256:${"b".repeat(64)}` as const;
 const HASH_C = `sha256:${"c".repeat(64)}` as const;
@@ -35,7 +40,7 @@ function metadata(
   overrides: Record<string, unknown> = {},
 ): StudioBg3dAssetMetadata {
   const value = normalizeStudioBg3dAssetMetadata({
-    version: 2,
+    version: STUDIO_BG3D_ASSET_METADATA_VERSION,
     contentHash,
     name: "기본 모델",
     format: "glb",
@@ -168,7 +173,7 @@ describe("studio BG3D asset metadata IndexedDB store", () => {
 
     expect(saved).toHaveLength(2);
     expect(saved[0]).toMatchObject({
-      version: 2,
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
       contentHash: HASH_A,
       triangles: 300,
       textures: 3,
@@ -418,5 +423,136 @@ describe("studio BG3D asset metadata IndexedDB store", () => {
     expect(error.name).toBe("StudioBg3dAssetMetadataStoreError");
     expect(error.code).toBe("storage-unavailable");
     expect(error.message).toContain("저장소");
+  });
+});
+
+/** 매니페스트 문자열 하나만 들고 있는 메모리 권한. SQLite/OPFS 없이 V12 경로의 읽기·쓰기만 검증한다. */
+function memoryAuthority(initialRaw: string | null) {
+  let raw = initialRaw;
+  const authority: StudioBg3dLibrariesAuthority = {
+    readManifest: async () => raw,
+    readBlob: async () => {
+      throw new Error("blob-not-used");
+    },
+    mutate: async (_slot, _refs, operation) => {
+      const outcome = await operation({
+        now: 1_000,
+        currentRaw: raw,
+        putBlob: async () => {
+          throw new Error("blob-not-used");
+        },
+        getBlob: async () => {
+          throw new Error("blob-not-used");
+        },
+      });
+      raw = outcome.nextRaw;
+      return outcome.result;
+    },
+  };
+  return { authority, raw: () => raw };
+}
+
+function manifestRaw(records: readonly unknown[]): string {
+  return JSON.stringify({
+    kind: STUDIO_BG3D_ASSET_METADATA_V12_MANIFEST_KIND,
+    version: STUDIO_BG3D_ASSET_METADATA_V12_MANIFEST_VERSION,
+    revision: 3,
+    updatedAt: 500,
+    records,
+  });
+}
+
+/** 이전 빌드가 저장하던 V2 기록 형태(키 순서 포함). */
+function storedV2Record(contentHash: `sha256:${string}`) {
+  return {
+    version: 2,
+    contentHash,
+    name: "옛 구매 모델",
+    format: "glb",
+    createdAt: 10,
+    updatedAt: 10,
+    byteSize: 1_000,
+    triangles: 100,
+    textures: 2,
+    favorite: false,
+    collections: [],
+    tags: [],
+    rights: { status: "licensed", commercialUse: true, teamShareAllowed: false, provider: "ACON 3D", license: "상업용 표준" },
+  };
+}
+
+describe("studio BG3D asset metadata V12 manifest with legacy rows", () => {
+  it("reads a manifest written by the previous V2 build without error and reports AI use as unconfirmed", async () => {
+    const { authority } = memoryAuthority(manifestRaw([storedV2Record(HASH_A)]));
+
+    const [record] = await listStudioBg3dAssetMetadata({ authority });
+
+    expect(record).toMatchObject({
+      version: STUDIO_BG3D_ASSET_METADATA_VERSION,
+      contentHash: HASH_A,
+      rights: { status: "licensed", commercialUse: true, license: "상업용 표준" },
+    });
+    expect("aiGenerated" in record.rights).toBe(false);
+    expect("aiTraining" in record.rights).toBe(false);
+    expect(await getStudioBg3dAssetMetadata(HASH_A, { authority })).toEqual(record);
+  });
+
+  it("upgrades legacy rows to the current version on the next write and keeps them readable", async () => {
+    const memory = memoryAuthority(manifestRaw([storedV2Record(HASH_A)]));
+
+    await updateStudioBg3dAssetFavorite(HASH_A, true, { authority: memory.authority, now: 2_000 });
+
+    const written = JSON.parse(memory.raw() ?? "null") as { records: { version: number; favorite: boolean }[] };
+    expect(written.records).toHaveLength(1);
+    expect(written.records[0]).toMatchObject({ version: STUDIO_BG3D_ASSET_METADATA_VERSION, favorite: true });
+    const [record] = await listStudioBg3dAssetMetadata({ authority: memory.authority });
+    expect(record).toMatchObject({ contentHash: HASH_A, favorite: true });
+  });
+
+  it("reads a manifest that mixes legacy and current-version rows in canonical order", async () => {
+    const current = metadata(HASH_B, { name: "새 기록", rights: { status: "owned", commercialUse: true, teamShareAllowed: false, aiGenerated: "no" } });
+    const { authority } = memoryAuthority(manifestRaw([storedV2Record(HASH_A), current]));
+
+    const records = await listStudioBg3dAssetMetadata({ authority });
+
+    expect(records.map(({ contentHash }) => contentHash).sort()).toEqual([HASH_A, HASH_B]);
+    expect(records.find(({ contentHash }) => contentHash === HASH_B)?.rights.aiGenerated).toBe("no");
+    expect(records.find(({ contentHash }) => contentHash === HASH_A)?.rights.aiGenerated).toBeUndefined();
+  });
+
+  it("still rejects a current-version row that is not in canonical form and any manifest that is not canonical", async () => {
+    const current = metadata(HASH_B);
+    const withExtraKey = manifestRaw([{ ...current, injected: "not-allowed" }]);
+    await expect(listStudioBg3dAssetMetadata({ authority: memoryAuthority(withExtraKey).authority }))
+      .rejects.toMatchObject({ code: "invalid-stored-metadata" });
+
+    const outOfOrder = manifestRaw([storedV2Record(HASH_B), storedV2Record(HASH_A)]);
+    await expect(listStudioBg3dAssetMetadata({ authority: memoryAuthority(outOfOrder).authority }))
+      .rejects.toMatchObject({ code: "invalid-stored-metadata" });
+
+    const brokenLegacy = manifestRaw([{ ...storedV2Record(HASH_A), byteSize: -1 }]);
+    await expect(listStudioBg3dAssetMetadata({ authority: memoryAuthority(brokenLegacy).authority }))
+      .rejects.toMatchObject({ code: "invalid-stored-metadata" });
+  });
+
+  it("persists and reads back AI answers through put and the rights patch", async () => {
+    const memory = memoryAuthority(null);
+    await putStudioBg3dAssetMetadataAtomically(
+      [metadata(HASH_A, { rights: { status: "licensed", commercialUse: true, teamShareAllowed: false, license: "표준", aiGenerated: "yes" } })],
+      { authority: memory.authority },
+    );
+    expect((await getStudioBg3dAssetMetadata(HASH_A, { authority: memory.authority }))?.rights.aiGenerated).toBe("yes");
+
+    const patched = await updateStudioBg3dAssetRights(HASH_A, {
+      status: "licensed", commercialUse: true, teamShareAllowed: false, license: "표준", aiGenerated: "yes", aiTraining: "prohibited",
+    }, { authority: memory.authority, now: 3_000 });
+    expect(patched.rights).toMatchObject({ aiGenerated: "yes", aiTraining: "prohibited" });
+    expect((await getStudioBg3dAssetMetadata(HASH_A, { authority: memory.authority }))?.rights.aiTraining).toBe("prohibited");
+
+    await expect(updateStudioBg3dAssetRights(HASH_A, {
+      status: "owned", commercialUse: true, teamShareAllowed: false, aiGenerated: "maybe",
+    } as never, { authority: memory.authority, now: 4_000 })).resolves.toMatchObject({
+      rights: DEFAULT_STUDIO_BG3D_ASSET_RIGHTS,
+    });
   });
 });
