@@ -43,7 +43,7 @@ const RANK: Record<Verdict, number> = { ok: 0, review: 1, reject: 2 };
 
 /** 라이선스 필드가 허용형처럼 보여도 채택을 막는 패키지(사유 필수). */
 const BANNED_PACKAGES: Readonly<Record<string, string>> = {
-  mixbox: "CC BY-NC(비상업) — 원장 금지",
+  mixbox: "CC BY-NC(비상업) — 원장 금지(수식 아이디어만 허용, 코드·셰이더 금지)",
   lygia: "Prosperity(상업 이용 불가) — 원장 금지",
   "canvaskit-wasm": "원장 '개념만'(Skia) — 번들 금지(경계 테스트도 import를 막는다)",
   "@babylonjs/havok": "래퍼는 MIT이나 Havok 바이너리 약관이 별도 — 법무 검토 전 금지",
@@ -882,5 +882,55 @@ describe("SPDX 식 해석기 자체 검증(구멍 방지)", () => {
       ["none-pkg@1.0.0", "review"],
       ["mixbox@1.0.0", "reject"],
     ]);
+  });
+});
+
+// ---------------------------------------------------------------- 내재화 위치 게이트(license-policy.md 4.5절)
+
+/** `dir` 아래 소스 파일(`.ts`·`.tsx`, 테스트·fixure 제외)에서 정규식에 맞는 내용을 가진 상대 경로 목록을 반환한다. */
+function findSourceFilesContaining(dir: string, pattern: RegExp): string[] {
+  const hits: string[] = [];
+  const walk = (current: string): void => {
+    for (const name of readdirSync(current)) {
+      if (name === "node_modules" || name === "dist" || name === "target" || name === ".git") continue;
+      const full = path.join(current, name);
+      const stat = statSync(full);
+      if (stat.isDirectory()) walk(full);
+      else if (name.endsWith(".ts") || name.endsWith(".tsx")) {
+        if (name.endsWith(".test.ts") || name.endsWith(".test.tsx") || name.includes(".fixture.")) continue;
+        const content = readFileSync(full, "utf8");
+        if (pattern.test(content)) hits.push(path.relative(dir, full).split(path.sep).join("/"));
+      }
+    }
+  };
+  walk(dir);
+  return hits.sort();
+}
+
+const POLICY_MD = readFileSync(path.join(REPO_ROOT, "apps/brush-lab/docs/license-policy.md"), "utf8");
+
+describe("내재화 위치 게이트(license-policy.md 4.5절)", () => {
+  it("내재화 섹션에 4개 라이브러리 경로와 mixbox 코드·셰이더 금지 주석이 모두 기록돼 있다", () => {
+    expect(POLICY_MD).toContain("## 4.5 알고리즘 내재화 위치(내부 구현 범위)");
+    for (const route of ["Krita Core", "Mixbox", "Perfect Freehand", "Libmypaint"]) {
+      expect(POLICY_MD).toContain(route);
+    }
+    expect(POLICY_MD).toContain("src/engine/brush-engine/krita-*");
+    expect(POLICY_MD).toContain("src/engine/pigment/mixbox-compat.ts");
+    expect(POLICY_MD).toContain("src/engine/stroke/perfect-freehand/");
+    expect(POLICY_MD).toContain("src/lanes/libmypaint-lane.ts");
+    expect(POLICY_MD).toContain("수식 아이디어 + 골든값 기대치만");
+    expect(POLICY_MD).toContain("코드·셰이더·`mixbox` 패키지 import 금지");
+  });
+
+  it("mixbox 패키지가 소스에 import되지 않는다(BANNED_PACKAGES import 금지)", () => {
+    const hits = findSourceFilesContaining(path.join(APP_ROOT, "src"), /(?:from|import\s*\(\s*|require\s*\(\s*)["']mixbox["']/u);
+    expect(hits).toEqual([]);
+  });
+
+  it("BANNED_PACKAGES에 mixbox 행이 비어 있지 않게 남아 있다", () => {
+    expect(BANNED_PACKAGES.mixbox).toBeDefined();
+    expect(BANNED_PACKAGES.mixbox).toMatch(/수식 아이디어만 허용/);
+    expect(BANNED_PACKAGES.mixbox).toMatch(/코드·셰이더 금지/);
   });
 });

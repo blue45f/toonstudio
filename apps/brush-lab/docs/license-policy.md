@@ -57,8 +57,21 @@ SPDX 식은 `A OR B`이면 가장 나은 쪽, `A AND B`이면 가장 나쁜 쪽�
   문서 문구도 복제하지 않고 파라미터 의미만 참고한다.
 - 브러시 설정 데이터는 CC0(`mypaint-brushes`의 `.myb`)만 입력으로 쓴다. 미리보기 이미지(`_prev.png`)는 쓰지 않는다.
 - 블루노이즈·종이 그레인·팁은 빌드 스크립트로 직접 생성한다(외부 텍스처 에셋 금지).
-- 특허: Apache-2.0은 특허 허여 조항이 있어 유리하지만, 알고리즘 특허 자체는 어떤 라이선스로도 해소되지 않는다.
+-   특허: Apache-2.0은 특허 허여 조항이 있어 유리하지만, 알고리즘 특허 자체는 어떤 라이선스로도 해소되지 않는다.
   특허 우려가 알려진 기법(예: 특정 필기 안정화·예측 방식의 상용 특허)은 실험 레인에서만 다루고, 상용 승격 전에 법무 검토 항목으로 올린다.
+
+## 4.5 알고리즘 내재화 위치(내부 구현 범위)
+
+외부 브러시 라이브러리(Krita Core GPL, Mixbox CC BY-NC, Perfect Freehand MIT, Libmypaint ISC)의 **개념·수식만** 우리 소스 코드에 내재화할 수 있다. 코드·식별자·주석·오프셋·셰이더·에셋·패키지 import는 금지한다(원본 라이선스에 상용 배포 근거가 없으므로).
+
+| 라이브러리 | 라이선스 | 내재화 위치(허용 범위) | 금지 |
+| --- | --- | --- | --- |
+| Krita Core | GPL-3.0-only(`reject`) | `src/engine/brush-engine/krita-*`: 개념·파라미터·수식 아이디어만 재구현 | 원본 코드·식별자·주석·오프셋 포팅 금지(원본 코드 미실행·미참조) |
+| Mixbox | CC BY-NC(`reject`, `BANNED_PACKAGES`) | `src/engine/pigment/mixbox-compat.ts`: 수식 아이디어 + 골든값 기대치만 | 코드·셰이더·`mixbox` 패키지 import 금지(`BANNED_PACKAGES` mixbox 행 유지) |
+| Perfect Freehand | MIT(`ok`) | `src/engine/stroke/perfect-freehand/`: 전체 수식 내재화 허용 | — |
+| Libmypaint | ISC(`ok`, MyPaint 앱은 GPL) | `src/lanes/libmypaint-lane.ts`: 개념·설정 맵·스프링 물리만, 외부 엔진 비교 레인 패턴 유지 | 코드 포팅 금지, MyPaint 앱 코드 참조 금지 |
+
+허용 SPDX 목록(1절)과 `BANNED_PACKAGES`(2절)는 이 섹션 추가로 바뀌지 않는다. 이 섹션을 바꾸면 `src/license-policy.test.ts`의 내재화 위치 게이트 테스트도 함께 통과시켜야 한다.
 
 ## 5. 바이너리 구성요소 원장 (현재)
 
