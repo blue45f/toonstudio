@@ -1,0 +1,66 @@
+{
+  "source": "concept-verification",
+  "note": "원본 Perfect Freehand 미실행(MIT). 개념 기대값으로 생성(license-policy.md 4.5절·6절). 비교 시 1e-9 허용 오차를 사용한다.",
+  "cases": [
+    {
+      "points": [
+        { "x": 0, "y": 0, "pressure": 1, "time": 0 },
+        { "x": 50, "y": 0, "pressure": 1, "time": 10 },
+        { "x": 100, "y": 0, "pressure": 1, "time": 20 }
+      ],
+      "options": { "size": 1, "thinning": 0, "smoothing": 0, "simulatePressure": true, "easing": "linear", "taper": true },
+      "expected": [
+        { "x": 0, "y": 0 },
+        { "x": 50, "y": 0.5 },
+        { "x": 100, "y": 0 },
+        { "x": 100, "y": 0 },
+        { "x": 50, "y": -0.5 },
+        { "x": 0, "y": 0 }
+      ]
+    },
+    {
+      "points": [
+        { "x": 0, "y": 0, "pressure": 1, "time": 0 },
+        { "x": 50, "y": 0, "pressure": 0.5, "time": 10 },
+        { "x": 100, "y": 0, "pressure": 1, "time": 20 }
+      ],
+      "options": { "size": 1, "thinning": 0, "smoothing": 0, "simulatePressure": true, "easing": "linear", "taper": true },
+      "expected": [
+        { "x": 0, "y": 0 },
+        { "x": 50, "y": 0.25 },
+        { "x": 100, "y": 0 },
+        { "x": 100, "y": 0 },
+        { "x": 50, "y": -0.25 },
+        { "x": 0, "y": 0 }
+      ]
+    },
+    {
+      "points": [
+        { "x": 0, "y": 0, "pressure": 1, "time": 0 },
+        { "x": 50, "y": 0, "pressure": 1, "time": 10 },
+        { "x": 100, "y": 0, "pressure": 1, "time": 20 }
+      ],
+      "options": { "size": 1, "thinning": 0, "smoothing": 0, "simulatePressure": true, "easing": "linear", "taper": false },
+      "expected": [
+        { "x": 0, "y": 0.5 },
+        { "x": 50, "y": 0.5 },
+        { "x": 100, "y": 0.5 },
+        { "x": 100, "y": -0.5 },
+        { "x": 50, "y": -0.5 },
+        { "x": 0, "y": -0.5 }
+      ]
+    },
+    {
+      "points": [
+        { "x": 10, "y": 20, "pressure": 0.8, "time": 5 }
+      ],
+      "options": { "size": 1, "thinning": 0, "smoothing": 0, "simulatePressure": true, "easing": "linear", "taper": true },
+      "expected": [
+        { "x": 9.6, "y": 19.6 },
+        { "x": 10.4, "y": 19.6 },
+        { "x": 10.4, "y": 20.4 },
+        { "x": 9.6, "y": 20.4 }
+      ]
+    }
+  ]
+}
