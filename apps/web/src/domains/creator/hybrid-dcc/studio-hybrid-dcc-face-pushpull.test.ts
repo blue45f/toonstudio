@@ -292,11 +292,11 @@ describe("밀기/당기기 무작위 입력 불변식(시드 고정)", () => {
         extruded += 1;
         expect(outcome.mesh.faces.length).toBeGreaterThan(mesh.faces.length);
       }
-      // 범위를 조금 넘으면 거부된다(범위 안/밖 경계가 연산과 일치).
-      const beyond = distance > 0 ? range.maxDistance * 1.01 + 1e-3 : range.minDistance * 1.01 - 1e-3;
-      if (Math.abs(beyond) < 100 && Math.abs(beyond) > 1e-4) {
-        const refused = pushPullStudioEditableMeshFaces(mesh, [faceId], beyond);
-        if (!refused.ok) rejected += 1;
+      // 범위를 조금 넘으면 양쪽 모두 거부된다(범위 안/밖 경계가 연산과 일치). 한계가 0이어도 마찬가지다.
+      for (const beyond of [range.minDistance * 1.01 - 1e-3, range.maxDistance * 1.01 + 1e-3]) {
+        if (Math.abs(beyond) >= 100) continue;
+        expect(pushPullStudioEditableMeshFaces(mesh, [faceId], beyond).ok, `round ${round} beyond ${beyond}`).toBe(false);
+        rejected += 1;
       }
     }
     expect(stretched).toBeGreaterThan(10);

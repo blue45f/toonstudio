@@ -296,10 +296,15 @@ export function describeStudioFaceModelingFailure(
         "This face is not supported: it is not planar, has a very short edge or too many corners. Select another face.",
       );
     case "unsupported-region":
-      return bt(
-        "주변 같은 평면 영역의 모양이 복잡해(구멍이 있거나 볼록하지 않음) 이 연산을 지원하지 않습니다. 다른 면을 선택하세요.",
-        "The surrounding coplanar region is too complex (holes or a non-convex outline) for this operation. Select another face.",
-      );
+      return tool === "push-pull"
+        ? bt(
+          "선택한 면들은 한 방향으로 함께 밀고 당길 수 없어요. 서로 다른 방향을 보는 면이 섞였거나, 꼭짓점 하나로만 맞닿았거나, 가장자리가 한 점에서 겹쳐 있어요. 이어진 면만, 같은 방향을 보는 면만 골라 다시 시도해 보세요.",
+          "These faces cannot be pushed or pulled together along one direction: they face very different ways, touch at a single corner, or their outline pinches at a point. Select connected faces that face the same way and try again.",
+        )
+        : bt(
+          "주변 같은 평면 영역의 모양이 복잡해(구멍이 있거나 볼록하지 않음) 이 연산을 지원하지 않습니다. 다른 면을 선택하세요.",
+          "The surrounding coplanar region is too complex (holes or a non-convex outline) for this operation. Select another face.",
+        );
     case "would-collide":
       return causeWithLimit(
         bt,

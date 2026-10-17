@@ -4,12 +4,17 @@
  * 두 가지 방식을 쓴다. 영역의 옆면이 모두 법선과 나란한 "기둥 벽"(박스의 옆면처럼 법선과 평행한 모서리로
  * 이어진 면)이면 영역의 꼭짓점을 옮겨 벽을 늘이거나 줄인다(stretch). 그러면 같은 면을 여러 번 밀고 당겨도
  * 모서리 고리가 쌓이지 않고, 박스 윗면을 안쪽으로 당겨도 옆면과 겹치는 이중 벽이 생기지 않는다.
- * 벽이 기둥 모양이 아니면 기존 영역 밀기(extrude, 영수증 포함)로 새 옆면을 만든다. 이때도 새 옆면이
- * 이웃 면과 같은 평면에서 겹치게 되는 방향은 거부한다.
+ * 벽이 기둥 모양이 아니면 기존 영역 밀기(extrude, 영수증 포함)로 새 옆면을 만든다.
  *
- * 범위 검증: 거리의 유한성·도구 범위, 벽이 사라지는 깊이(붕괴), 그리고 영역 꼭짓점·면 중심·모서리 중점에서
- * 움직이는 방향으로 쏜 광선이 다른 면에 닿기 전까지의 여유(관통)를 본다. 광선 표본은 보수적인
- * 근사라 모든 자기 교차를 잡지는 않으며, 얇은 장애물이 표본 사이로 빠질 수 있다.
+ * 범위 검증은 세 겹이다. (1) 영역 가장자리로 이어진 이웃 면: 이동 쪽에 있으면서 영역 안쪽으로 기울었거나
+ * 이동 방향과 나란하면 새 옆면이 그 면과 겹치거나 뚫으므로 그 방향은 막는다(뿔대 옆면을 안쪽으로 당기는 경우).
+ * (2) 나머지 모든 면: 영역을 쓸어 만든 기둥에 처음 닿는 거리를 그림자 겹침으로 정확히 구한다
+ * (`studio-hybrid-dcc-face-sweep.ts`). 함께 움직이는 다른 영역은 마주 보고 다가가는 최악을 가정해 절반으로 본다.
+ * (3) 결과: 새로 생기거나 움직인 면이 다른 면을 뚫고 지나가는지 삼각형 단위로 직접 확인한다
+ * (`studio-hybrid-dcc-face-intersection.ts`). 범위 안이라도 이 검사가 걸리면 `would-collide`로 거부한다.
+ * 정점을 공유하는 면끼리의 겹침은 (1)이 맡는다. 서로 이동 축과 거의 수직인 면이 섞여 그림자로 높이를 정할
+ * 수 없는 선택, 서로 다른 영역이 꼭짓점 하나로만 맞닿은 선택, 경계가 한 꼭짓점을 두 번 지나는 선택, 떨어진
+ * 영역의 이동 축이 나란하지 않은 선택은 처음부터 지원하지 않는다(`PushPullPlan.inseparable`).
  */
 
 import {
@@ -19,6 +24,7 @@ import {
   type StudioMeshVec3,
 } from "../studio-editable-half-edge-mesh";
 
+import { findStudioFaceIntersection } from "./studio-hybrid-dcc-face-intersection";
 import { buildStudioPlanarFrame } from "./studio-hybrid-dcc-face-modeling-geometry";
 import {
   failStudioFaceModeling,
@@ -33,6 +39,12 @@ import {
   type StudioFaceModelingResult,
   type StudioMeshFaceLoop,
 } from "./studio-hybrid-dcc-face-modeling-mesh";
+import {
+  createStudioSweepObstacles,
+  STUDIO_SWEEP_MIN_FACING,
+  studioSweepFirstContact,
+  type StudioSweepObstacle,
+} from "./studio-hybrid-dcc-face-sweep";
 
 export type StudioFacePushPullMethod = "extrude" | "stretch";
 
@@ -48,9 +60,12 @@ export interface StudioFacePushPullRange {
   readonly minDistance: number;
   /** 밀 수 있는 가장 큰 거리(0 이상). 0이면 밀 수 없다. */
   readonly maxDistance: number;
-  /** 벽 때문에 제한되는지 광선 여유 때문에 제한되는지(안내 문구 선택에 쓴다). */
-  readonly pullLimitedBy: "wall" | "clearance" | "tool" | "overlap";
-  readonly pushLimitedBy: "wall" | "clearance" | "tool" | "overlap";
+  /**
+   * 무엇이 한계를 정하는지(안내 문구 선택에 쓴다): 벽 붕괴, 다른 면까지의 여유, 도구 최대 거리,
+   * 이웃 면과의 겹침, 또는 한 방향으로 움직일 수 없는 선택 모양("region").
+   */
+  readonly pullLimitedBy: "wall" | "clearance" | "tool" | "overlap" | "region";
+  readonly pushLimitedBy: "wall" | "clearance" | "tool" | "overlap" | "region";
 }
 
 interface Vec3 {
@@ -63,13 +78,27 @@ interface PushPullComponent {
   readonly faceIds: readonly number[];
   readonly normal: Vec3;
   readonly planar: boolean;
+  /** 영역 면 법선과 영역 법선의 코사인 가운데 가장 작은 값. 작으면 한 방향으로 쓸 수 없다. */
+  readonly minFacing: number;
+  /** 영역의 경계가 같은 꼭짓점을 두 번 지나는지(영역이 한 점에서 자기 자신과 맞닿음). */
+  readonly pinched: boolean;
   readonly vertexIds: ReadonlySet<number>;
-  /** 영역 경계 반변 (from, to, 이웃 면 ID 또는 -1). */
-  readonly boundary: readonly { from: number; to: number; neighbor: number }[];
+  /** 영역 경계 반변 (from, to, 반변이 속한 영역 면 ID, 이웃 면 ID 또는 -1). */
+  readonly boundary: readonly { from: number; to: number; face: number; neighbor: number }[];
 }
 
 interface PushPullPlan {
   readonly components: readonly PushPullComponent[];
+  /** 영역 면 ID → 단위 법선. */
+  readonly faceNormals: ReadonlyMap<number, Vec3>;
+  /**
+   * 선택을 한 덩어리로 움직일 수 없는 모양인지. 네 경우다. (1) 영역 안에 이동 축과 거의 수직인 면이 섞여
+   * 그림자로 높이를 정할 수 없다. (2) 서로 다른 영역이 꼭짓점 하나로만 맞닿아 있어 움직이며 그 둘레에서 서로의
+   * 새 옆면을 뚫는다. (3) 떨어진 영역들의 이동 축이 나란하지 않아 두 기둥이 중간에서 엇갈릴 수 있다. 축이
+   * 나란한 영역끼리는 서로 다가오는 속도가 최대 2배라, 상대 영역까지 거리의 절반만 움직이면 부딪히지 않는다.
+   * (4) 한 영역의 경계가 같은 꼭짓점을 두 번 지나, 새 옆면이 한 모서리를 네 장이 나눠 갖는 비정상 위상이 된다.
+   */
+  readonly inseparable: boolean;
   readonly method: StudioFacePushPullMethod;
   /** stretch 일 때 벽이 허용하는 거리 구간. */
   readonly wallLow: number;
@@ -142,6 +171,7 @@ function analyzePlan(
   // 선택한 면을 모서리로 이어진 영역(component)으로 묶는다.
   const seen = new Set<number>();
   const components: PushPullComponent[] = [];
+  const faceNormals = new Map<number, Vec3>();
   for (const seed of unique) {
     if (seen.has(seed)) continue;
     const stack = [seed];
@@ -167,7 +197,7 @@ function analyzePlan(
     let sum: Vec3 = { x: 0, y: 0, z: 0 };
     const normals: Vec3[] = [];
     const vertexIds = new Set<number>();
-    const boundary: { from: number; to: number; neighbor: number }[] = [];
+    const boundary: { from: number; to: number; face: number; neighbor: number }[] = [];
     for (const id of members) {
       const loop = loopById.get(id)!;
       const frame = buildStudioPlanarFrame(studioFaceCornerPositions(mesh, loop.vertexIds));
@@ -180,12 +210,13 @@ function analyzePlan(
         z: sum.z + frame.normal.z * frame.area,
       };
       normals.push(frame.normal);
+      faceNormals.set(id, frame.normal);
       for (let corner = 0; corner < loop.vertexIds.length; corner += 1) {
         const from = loop.vertexIds[corner]!;
         const to = loop.vertexIds[(corner + 1) % loop.vertexIds.length]!;
         vertexIds.add(from);
         const neighbor = (facesByEdge.get(undirectedKey(from, to, stride)) ?? []).find((other) => other !== id) ?? -1;
-        if (neighbor < 0 || !memberSet.has(neighbor)) boundary.push({ from, to, neighbor });
+        if (neighbor < 0 || !memberSet.has(neighbor)) boundary.push({ from, to, face: id, neighbor });
       }
     }
     const length = norm(sum);
@@ -194,7 +225,9 @@ function analyzePlan(
     }
     const normal = { x: sum.x / length, y: sum.y / length, z: sum.z / length };
     const planar = normals.every((candidate) => dot(candidate, normal) >= 1 - 1e-9);
-    components.push({ faceIds: members, normal, planar, vertexIds, boundary });
+    const minFacing = normals.reduce((lowest, candidate) => Math.min(lowest, dot(candidate, normal)), 1);
+    const boundaryStarts = new Set(boundary.map((edge) => edge.from));
+    components.push({ faceIds: members, normal, planar, minFacing, pinched: boundaryStarts.size !== boundary.length, vertexIds, boundary });
   }
 
   // 한 점에서 맞닿은 서로 다른 영역은 같이 옮길 수 없다.
@@ -206,6 +239,10 @@ function analyzePlan(
       owner.set(id, index);
     }
   });
+
+  const axesParallel = components.every((first, index) => components.every(
+    (second, other) => other <= index || norm(cross(first.normal, second.normal)) <= PARALLEL_TOLERANCE,
+  ));
 
   let stretchable = !sharedVertex && components.every((component) => component.planar);
   let wallLow = Number.NEGATIVE_INFINITY;
@@ -259,6 +296,9 @@ function analyzePlan(
   }
   return okStudioFaceModeling({
     components,
+    faceNormals,
+    inseparable: sharedVertex || !axesParallel
+      || components.some((component) => component.pinched || !(component.minFacing >= STUDIO_SWEEP_MIN_FACING)),
     method: stretchable ? "stretch" : "extrude",
     wallLow: stretchable ? wallLow : Number.NEGATIVE_INFINITY,
     wallHigh: stretchable ? wallHigh : Number.POSITIVE_INFINITY,
@@ -269,23 +309,20 @@ function analyzePlan(
 }
 
 /**
- * extrude 방식에서 새 옆면이 이웃 면과 같은 평면에서 겹치게 되는지 본다.
- * 이웃 면이 움직이는 방향(법선)을 품고, 그 방향으로 영역 경계에서 이웃 면 안쪽으로 이어지면 새 벽이
- * 이웃 면 위에 포개진다(영역이 박스 윗면일 때 안쪽으로 당기는 경우).
+ * extrude 방식에서 가장자리로 이어진 이웃 면이 새 옆면과 겹치거나 뚫리게 되는지 본다.
+ *
+ * 이웃 면이 영역에서 `sign` 방향 쪽(이동하는 쪽)으로 이어지고, 그 면을 영역 평면에 비춘 그림자가 영역
+ * 안쪽으로 들어오거나(안쪽으로 기운 이웃) 가장자리와 나란하면(그림자가 선으로 접힘) 영역을 쓸어 만든 기둥이
+ * 이웃 면 위에 포개지거나 이웃 면을 뚫는다. 뿔대 옆면을 안쪽으로 당길 때처럼 이웃이 바깥으로 벌어지면
+ * 새 옆면은 입체 안쪽에 남아 통과한다.
  */
-function wallsOverlapNeighbours(
-  mesh: StudioEditableMesh,
-  plan: PushPullPlan,
-  sign: 1 | -1,
-): boolean {
+function neighbourBlocksSweep(mesh: StudioEditableMesh, plan: PushPullPlan, sign: 1 | -1): boolean {
   const loopById = new Map(plan.loops.map((loop) => [loop.id, loop] as const));
   for (const component of plan.components) {
+    const axis = component.normal;
     for (const edge of component.boundary) {
       if (edge.neighbor < 0) continue;
-      const neighbor = loopById.get(edge.neighbor)!;
-      const points = studioFaceCornerPositions(mesh, neighbor.vertexIds);
-      const frame = buildStudioPlanarFrame(points);
-      if (!frame || Math.abs(dot(frame.normal, component.normal)) > PARALLEL_TOLERANCE) continue;
+      const points = studioFaceCornerPositions(mesh, loopById.get(edge.neighbor)!.vertexIds);
       const from = mesh.vertices[edge.from]!.position;
       const to = mesh.vertices[edge.to]!.position;
       const along = sub(to, from);
@@ -301,127 +338,112 @@ function wallsOverlapNeighbours(
       const toCentroid = sub(centroid, midpoint);
       const parallel = dot(toCentroid, unit);
       // 모서리에 수직이면서 이웃 면 안쪽을 향하는 방향.
-      const inward = {
+      const away = {
         x: toCentroid.x - unit.x * parallel,
         y: toCentroid.y - unit.y * parallel,
         z: toCentroid.z - unit.z * parallel,
       };
-      const inwardLength = norm(inward);
+      const awayLength = norm(away);
+      if (!(awayLength > 0)) continue;
+      const ahead = sign * dot(axis, away) / awayLength;
+      if (!(ahead > PARALLEL_TOLERANCE)) continue;
+      // 영역 안쪽을 향하는 방향과 이웃 면 방향을 이동 축에 수직인 평면에 비춰 같은 쪽인지 본다.
+      const faceNormal = plan.faceNormals.get(edge.face)!;
+      const inward = cross(faceNormal, unit);
+      const shadowInward = {
+        x: inward.x - axis.x * dot(inward, axis),
+        y: inward.y - axis.y * dot(inward, axis),
+        z: inward.z - axis.z * dot(inward, axis),
+      };
+      const shadowAway = {
+        x: away.x - axis.x * dot(away, axis),
+        y: away.y - axis.y * dot(away, axis),
+        z: away.z - axis.z * dot(away, axis),
+      };
+      const inwardLength = norm(shadowInward);
+      const shadowLength = norm(shadowAway) / awayLength;
       if (!(inwardLength > 0)) continue;
-      if (sign * dot(component.normal, inward) / inwardLength > PARALLEL_TOLERANCE) return true;
+      const lean = shadowLength <= PARALLEL_TOLERANCE
+        ? 0
+        : dot(shadowAway, shadowInward) / (norm(shadowAway) * inwardLength);
+      if (lean > -PARALLEL_TOLERANCE) return true;
     }
   }
   return false;
 }
 
-interface ClearanceTriangle {
-  readonly a: Vec3;
-  readonly b: Vec3;
-  readonly c: Vec3;
-}
-
-function collectClearanceTriangles(
+/**
+ * 영역을 `sign` 방향으로 쓸 때 처음 닿는 다른 면까지의 거리. 없으면 Infinity.
+ * 영역 자신은 건너뛴다. stretch 방식의 벽(가장자리 이웃)은 영역과 함께 늘고 줄어 건너뛰지만, extrude 방식에서는
+ * 이웃 면도 장애물이다(영역 면이 기울어 있으면 그 이웃 면 아래로 파고들 수 있다).
+ */
+function sweepContact(
   mesh: StudioEditableMesh,
   plan: PushPullPlan,
-): ClearanceTriangle[] {
-  const triangles: ClearanceTriangle[] = [];
-  for (const loop of plan.loops) {
-    if (plan.touchedFaceIds.has(loop.id)) continue;
-    const points = studioFaceCornerPositions(mesh, loop.vertexIds);
-    for (let index = 1; index + 1 < points.length; index += 1) {
-      triangles.push({ a: points[0]!, b: points[index]!, c: points[index + 1]! });
-    }
-  }
-  return triangles;
-}
-
-/** 광선과 삼각형 교차 거리(Möller-Trumbore, 양면). 안 만나면 Infinity. */
-function rayTriangleDistance(origin: Vec3, direction: Vec3, triangle: ClearanceTriangle): number {
-  const edge1 = sub(triangle.b, triangle.a);
-  const edge2 = sub(triangle.c, triangle.a);
-  const p = cross(direction, edge2);
-  const determinant = dot(edge1, p);
-  if (Math.abs(determinant) < 1e-14) return Number.POSITIVE_INFINITY;
-  const inverse = 1 / determinant;
-  const t = sub(origin, triangle.a);
-  const u = dot(t, p) * inverse;
-  if (u < -1e-9 || u > 1 + 1e-9) return Number.POSITIVE_INFINITY;
-  const q = cross(t, edge1);
-  const v = dot(direction, q) * inverse;
-  if (v < -1e-9 || u + v > 1 + 1e-9) return Number.POSITIVE_INFINITY;
-  const distance = dot(edge2, q) * inverse;
-  return distance > 1e-9 ? distance : Number.POSITIVE_INFINITY;
-}
-
-/** 영역에서 `sign` 방향으로 가장 가까운 다른 면까지의 거리(표본 광선 기준). 없으면 Infinity. */
-function clearanceAlong(
-  mesh: StudioEditableMesh,
-  plan: PushPullPlan,
-  triangles: readonly ClearanceTriangle[],
+  obstacles: readonly StudioSweepObstacle[],
   sign: 1 | -1,
 ): number {
-  if (triangles.length === 0) return Number.POSITIVE_INFINITY;
+  const options = {
+    areaEpsilon: plan.minFeature * plan.minFeature * 1e-3,
+    heightEpsilon: plan.minFeature * 1e-3,
+  };
+  const everyRegionFace = new Set(plan.components.flatMap((component) => component.faceIds));
   let nearest = Number.POSITIVE_INFINITY;
-  const loopById = new Map(plan.loops.map((loop) => [loop.id, loop] as const));
   for (const component of plan.components) {
-    const direction: Vec3 = {
-      x: component.normal.x * sign,
-      y: component.normal.y * sign,
-      z: component.normal.z * sign,
-    };
-    const origins: Vec3[] = [];
-    for (const id of component.vertexIds) origins.push({ ...mesh.vertices[id]!.position });
-    for (const id of component.faceIds.slice(0, 64)) {
-      const points = studioFaceCornerPositions(mesh, loopById.get(id)!.vertexIds);
-      origins.push({
-        x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
-        y: points.reduce((sum, point) => sum + point.y, 0) / points.length,
-        z: points.reduce((sum, point) => sum + point.z, 0) / points.length,
-      });
-    }
-    for (const edge of component.boundary.slice(0, 64)) {
-      const from = mesh.vertices[edge.from]!.position;
-      const to = mesh.vertices[edge.to]!.position;
-      origins.push({ x: (from.x + to.x) / 2, y: (from.y + to.y) / 2, z: (from.z + to.z) / 2 });
-    }
-    for (const origin of origins.slice(0, 256)) {
-      for (const triangle of triangles) {
-        const distance = rayTriangleDistance(origin, direction, triangle);
-        if (distance < nearest) nearest = distance;
-      }
-    }
+    const skip = new Set(component.faceIds);
+    if (plan.method === "stretch") for (const edge of component.boundary) if (edge.neighbor >= 0) skip.add(edge.neighbor);
+    const moving = new Set([...everyRegionFace].filter((id) => !skip.has(id)));
+    const loopById = new Map(plan.loops.map((loop) => [loop.id, loop] as const));
+    const contact = studioSweepFirstContact(
+      {
+        normal: component.normal,
+        faces: component.faceIds.map((id) => ({
+          points: studioFaceCornerPositions(mesh, loopById.get(id)!.vertexIds),
+          normal: plan.faceNormals.get(id)!,
+        })),
+      },
+      sign,
+      obstacles,
+      { ...options, skip, moving },
+    );
+    nearest = Math.min(nearest, contact);
   }
   return nearest;
 }
 
 function rangeFromPlan(mesh: StudioEditableMesh, plan: PushPullPlan): StudioFacePushPullRange {
+  if (plan.inseparable) {
+    return { method: plan.method, minDistance: 0, maxDistance: 0, pullLimitedBy: "region", pushLimitedBy: "region" };
+  }
   const toolMax = STUDIO_FACE_MODELING_LIMITS.maxDistance;
   const wallPull = plan.method === "stretch" ? Math.max(0, -plan.wallLow) : Number.POSITIVE_INFINITY;
   const wallPush = plan.method === "stretch" ? Math.max(0, plan.wallHigh) : Number.POSITIVE_INFINITY;
-  const overlapPull = plan.method === "extrude" && wallsOverlapNeighbours(mesh, plan, -1);
-  const overlapPush = plan.method === "extrude" && wallsOverlapNeighbours(mesh, plan, 1);
-  const triangles = collectClearanceTriangles(mesh, plan);
-  const rayPull = overlapPull ? 0 : Math.max(0, clearanceAlong(mesh, plan, triangles, -1) - plan.minFeature);
-  const rayPush = overlapPush ? 0 : Math.max(0, clearanceAlong(mesh, plan, triangles, 1) - plan.minFeature);
-  const pull = Math.min(wallPull, rayPull, toolMax);
-  const push = Math.min(wallPush, rayPush, toolMax);
+  const overlapPull = plan.method === "extrude" && neighbourBlocksSweep(mesh, plan, -1);
+  const overlapPush = plan.method === "extrude" && neighbourBlocksSweep(mesh, plan, 1);
+  const obstacles = createStudioSweepObstacles(
+    plan.loops.map((loop) => ({ id: loop.id, points: studioFaceCornerPositions(mesh, loop.vertexIds) })),
+  );
+  const clearPull = overlapPull ? 0 : Math.max(0, sweepContact(mesh, plan, obstacles, -1) - plan.minFeature);
+  const clearPush = overlapPush ? 0 : Math.max(0, sweepContact(mesh, plan, obstacles, 1) - plan.minFeature);
+  const pull = Math.min(wallPull, clearPull, toolMax);
+  const push = Math.min(wallPush, clearPush, toolMax);
   const limiter = (
     wall: number,
-    ray: number,
+    clearance: number,
     overlap: boolean,
     value: number,
   ): StudioFacePushPullRange["pullLimitedBy"] => {
     if (overlap) return "overlap";
-    if (value === toolMax && wall > toolMax && ray > toolMax) return "tool";
-    // 벽 깊이와 광선 여유가 같은 값이면(박스 안쪽 당기기) 벽 붕괴로 안내한다.
-    return wall <= ray * (1 + 1e-9) + 1e-12 ? "wall" : "clearance";
+    if (value === toolMax && wall > toolMax && clearance > toolMax) return "tool";
+    // 벽 깊이와 다른 면까지의 여유가 같은 값이면(박스 안쪽 당기기) 벽 붕괴로 안내한다.
+    return wall <= clearance * (1 + 1e-9) + 1e-12 ? "wall" : "clearance";
   };
   return {
     method: plan.method,
     minDistance: pull > 0 ? -pull : 0,
     maxDistance: push,
-    pullLimitedBy: limiter(wallPull, rayPull, overlapPull, pull),
-    pushLimitedBy: limiter(wallPush, rayPush, overlapPush, push),
+    pullLimitedBy: limiter(wallPull, clearPull, overlapPull, pull),
+    pushLimitedBy: limiter(wallPush, clearPush, overlapPush, push),
   };
 }
 
@@ -458,6 +480,14 @@ export function pushPullStudioEditableMeshFaces(
   }
   const plan = analyzePlan(mesh, faceIds);
   if (!plan.ok) return plan;
+  const regionFaceIds = plan.value.components.flatMap((component) => component.faceIds);
+  if (plan.value.inseparable) {
+    return failStudioFaceModeling(
+      "unsupported-region",
+      "the selected faces cannot move together: mixed facing directions, a pinched boundary, a shared vertex, or regions on different axes",
+      { elementIds: regionFaceIds },
+    );
+  }
   const sign: 1 | -1 = distance > 0 ? 1 : -1;
   const range = rangeFromPlan(mesh, plan.value);
   const limit = sign > 0 ? range.maxDistance : -range.minDistance;
@@ -466,8 +496,8 @@ export function pushPullStudioEditableMeshFaces(
     if (limitedBy === "overlap") {
       return failStudioFaceModeling(
         "would-collide",
-        "the new side walls would overlap a neighbouring face lying along the move direction",
-        { maxDistance: 0, elementIds: [...plan.value.components.flatMap((component) => component.faceIds)] },
+        "the new side walls would overlap or cut through a neighbouring face on the move side",
+        { maxDistance: 0, elementIds: regionFaceIds },
       );
     }
     return failStudioFaceModeling(
@@ -508,14 +538,20 @@ function stretchFaces(
   const violation = verifyStudioFaceModelingResult(mesh, result, touched);
   if (violation) return violation;
   // 이웃 벽이 뒤집히지 않았는지(법선 방향 유지)도 확인한다.
-  const before = new Map(plan.loops.map((loop) => [loop.id, buildStudioPlanarFrame(studioFaceCornerPositions(mesh, loop.vertexIds))] as const));
-  for (const loop of plan.loops) {
-    if (!plan.touchedFaceIds.has(loop.id)) continue;
+  const loopById = new Map(plan.loops.map((loop) => [loop.id, loop] as const));
+  for (const id of touched) {
+    const loop = loopById.get(id)!;
+    const previous = buildStudioPlanarFrame(studioFaceCornerPositions(mesh, loop.vertexIds));
     const after = buildStudioPlanarFrame(studioFaceCornerPositions(result, loop.vertexIds));
-    const previous = before.get(loop.id);
     if (!after || !previous || dot(after.normal, previous.normal) < 0.9999) {
-      return failStudioFaceModeling("collapse", "a side wall would flip or lose its shape", { elementIds: [loop.id] });
+      return failStudioFaceModeling("collapse", "a side wall would flip or lose its shape", { elementIds: [id] });
     }
+  }
+  const crossing = findStudioFaceIntersection(result, touched);
+  if (crossing) {
+    return failStudioFaceModeling("would-collide", "the moved faces would cut through another face", {
+      elementIds: crossing.faceIds,
+    });
   }
   const selection = [...new Set(faceIds)].sort((left, right) => left - right);
   return okStudioFaceModeling({
@@ -542,6 +578,12 @@ function extrudeFaces(
   const created = [...receipt.capFaceIds, ...receipt.sideFaceIds].sort((left, right) => left - right);
   const violation = verifyStudioFaceModelingResult(mesh, extruded.value.mesh, created);
   if (violation) return violation;
+  const crossing = findStudioFaceIntersection(extruded.value.mesh, created);
+  if (crossing) {
+    return failStudioFaceModeling("would-collide", "the new faces would cut through another face", {
+      elementIds: crossing.faceIds,
+    });
+  }
   return okStudioFaceModeling({
     operation: "push-pull",
     method: "extrude",
