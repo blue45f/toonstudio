@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   STUDIO_BG3D_LT_OUTLINE_BAND_PX,
+  STUDIO_BG3D_LT_OUTLINE_BAND_WEIGHTS,
   buildStudioBg3dLtOutlineProximity,
   studioBg3dLtInteriorLineFactor,
 } from "./studio-bg3d-lt-line-suppression";
@@ -101,5 +102,17 @@ describe("studioBg3dLtInteriorLineFactor", () => {
   it("interpolates linearly with proximity", () => {
     expect(studioBg3dLtInteriorLineFactor(128, 1)).toBeCloseTo(128 / 255, 12);
     expect(studioBg3dLtInteriorLineFactor(64, 0.5)).toBeCloseTo(1 - 0.5 * (1 - 64 / 255), 12);
+  });
+});
+
+describe("번짐 가중치 표", () => {
+  it("equals 256 × (1 - k / (band + 1)) written as literals (no top-level calls in the module)", () => {
+    // 모듈 최상위의 계산 호출은 번들러가 부수효과로 보아 선화를 쓰지 않는 번들(PNG 워커)에도 남긴다. 값은 여기서 식과 대조한다.
+    const derived = Array.from(
+      { length: STUDIO_BG3D_LT_OUTLINE_BAND_PX + 1 },
+      (_, offset) => Math.round(256 * (1 - offset / (STUDIO_BG3D_LT_OUTLINE_BAND_PX + 1)))
+    );
+    expect([...STUDIO_BG3D_LT_OUTLINE_BAND_WEIGHTS]).toEqual(derived);
+    expect([...STUDIO_BG3D_LT_OUTLINE_BAND_WEIGHTS]).toEqual([...BAND_WEIGHT]);
   });
 });

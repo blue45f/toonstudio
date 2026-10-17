@@ -1,4 +1,6 @@
-import { studioBg3dLineNeedsDepth, type StudioBg3dLineOutputSettings } from "./studio-bg3d-scene-document-types";
+import { studioBg3dLineNeedsDepth } from "./studio-bg3d-line-output-rules";
+
+import type { StudioBg3dLineOutputSettings } from "./studio-bg3d-scene-document-types";
 
 /** Lightweight pass catalog shared by the editor controls and the deferred production runtime. */
 export const STUDIO_BG3D_SHOT_BATCH_PASSES = Object.freeze([

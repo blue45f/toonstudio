@@ -265,8 +265,10 @@ export {
   applyStudioBg3dLtPreset,
   type StudioBg3dLtPresetPayload,
 } from "./studio-bg3d-lt-presets";
+// 선화 렌더러 본체(`renderStudioBg3dLtLayers`)는 일부러 다시 내보내지 않는다: 편집기 본체는 렌더를 워커에 맡기고
+// (`renderStudioBg3dLtLayersInWorker`) 메인 스레드에서 직접 부르지 않는다. 다시 내보내면 렌더러와 선화 모듈 전체가
+// 편집기 활성화 정적 번들에 들어간다(2026-10-16 번들 래칫).
 export {
-  renderStudioBg3dLtLayers,
   STUDIO_BG3D_LT_RENDER_MAX_PIXELS,
   type StudioBg3dLtRenderSettings,
 } from "./studio-bg3d-lt-render";

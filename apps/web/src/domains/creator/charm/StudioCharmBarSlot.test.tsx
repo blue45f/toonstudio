@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_CANVAS_WIDTH } from "../canvas/studio-canvas-constants";
@@ -30,8 +30,9 @@ const COMMANDS: StudioCharmHostCommands = {
 let latestProps: StudioCharmBarProps | null = null;
 
 function FakeBar(props: StudioCharmBarProps) {
-  // 렌더 중에는 바깥 변수를 바꾸지 않는다: 커밋 뒤(효과)에 마지막으로 받은 값을 기록한다.
-  useEffect(() => {
+  // 렌더 중에는 바깥 변수를 바꾸지 않는다. 커밋과 같은 동기 구간(레이아웃 효과)에서 마지막으로 받은 값을 기록한다.
+  // 일반 효과는 화면에 나타난 뒤에 돌 수 있어서, findByTestId 가 먼저 끝나면 값이 아직 비어 있는 경쟁이 생긴다.
+  useLayoutEffect(() => {
     latestProps = props;
   });
   return <div data-testid="fake-charm-bar">참 바 본체</div>;

@@ -7,6 +7,7 @@ import {
   summarizeStudioBg3dProductionLook,
   type StudioBg3dProductionLookState,
 } from "./studio-bg3d-production-pass-readiness";
+import { resolveStudioBg3dInteriorSuppression } from "./studio-bg3d-line-output-rules";
 import { renderStudioBg3dLtLayers } from "./studio-bg3d-lt-render";
 import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
 
@@ -134,6 +135,21 @@ describe("Studio BG3D production pass readiness: interior suppression", () => {
     expect(look({ interiorSuppressionEnabled: false, interiorSuppressionStrength: 1 }).textureLineSuppressed)
       .toBeUndefined();
     expect(look({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 1 }).textureLineSuppressed).toBe(true);
+  });
+
+  it("agrees with the shared suppression rule for every enabled/strength combination", () => {
+    // 이 모듈은 번들 청크 경계 때문에 규칙 원본을 import 하지 않고 같은 판정을 따로 적는다. 어긋나지 않음을 표로 지킨다.
+    for (const enabled of [undefined, false, true]) {
+      for (const strength of [undefined, 0, 0.3, 0.6, 0.99, 1, 1.5]) {
+        const line = {
+          ...(enabled === undefined ? {} : { interiorSuppressionEnabled: enabled }),
+          ...(strength === undefined ? {} : { interiorSuppressionStrength: strength }),
+        };
+        const rule = resolveStudioBg3dInteriorSuppression(line);
+        const expected = rule.active && rule.strength >= 1;
+        expect(look(line).textureLineSuppressed === true, JSON.stringify(line)).toBe(expected);
+      }
+    }
   });
 
   it("warns before the run that the texture-line pass will be empty, and keeps the other passes ready", () => {

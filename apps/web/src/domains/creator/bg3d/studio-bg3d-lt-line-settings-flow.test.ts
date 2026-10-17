@@ -30,7 +30,7 @@ import {
   applyStudioBg3dShot,
   normalizeStudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
-import { resolveStudioBg3dInteriorSuppression } from "./studio-bg3d-scene-document-types";
+import { resolveStudioBg3dInteriorSuppression } from "./studio-bg3d-line-output-rules";
 import {
   buildStudioBg3dShotArtifacts,
   type StudioBg3dShotArtifactPipelineDependencies,

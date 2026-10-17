@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 
 import { STUDIO_BG3D_LT_LINE_RECEPTIVE_FIELD_PX } from "./studio-bg3d-lt-line-response";
+import { studioBg3dLtStrokeReach } from "./studio-bg3d-lt-line-stroke";
 import {
   renderStudioBg3dLtLayers,
   type StudioBg3dLtRasterInput,
@@ -733,5 +734,15 @@ describe("타일 경계 예산", () => {
     // 타일 이음매가 보이므로 먼저 이 예산을 다시 계산해야 한다. 현재 최악(재질선)은 12다.
     expect(STUDIO_BG3D_LT_LINE_RECEPTIVE_FIELD_PX).toBe(12);
     expect(STUDIO_BG3D_LT_LINE_RECEPTIVE_FIELD_PX).toBeLessThanOrEqual(STUDIO_BG3D_TILE_HALO);
+  });
+
+  it("writes the receptive-field constant as the value of its derivation (no top-level calls in the module)", () => {
+    // 모듈 최상위에서 도달 거리 함수를 부르면 번들러가 그 호출을 부수효과로 보아 선화를 쓰지 않는 번들(PNG 워커)에도
+    // 폭 계산 코드를 남긴다. 그래서 값을 적어 두고, 식과의 일치는 여기서 지킨다.
+    const blurRadiusMax = 2;
+    const main = blurRadiusMax + 1 + 1 + 1 + studioBg3dLtStrokeReach(8);
+    const exterior = 1 + studioBg3dLtStrokeReach(15);
+    const texture = Math.max(main, blurRadiusMax + 1) + studioBg3dLtStrokeReach(6);
+    expect(STUDIO_BG3D_LT_LINE_RECEPTIVE_FIELD_PX).toBe(Math.max(main, exterior, texture));
   });
 });
