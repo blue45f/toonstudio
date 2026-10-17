@@ -21,6 +21,7 @@ import {
   STUDIO_BG3D_ASSET_RIGHTS_EMPTY_RESULT_HINT,
   STUDIO_BG3D_ASSET_RIGHTS_FILTER_GROUPS,
   STUDIO_BG3D_ASSET_RIGHTS_FILTER_HELP,
+  STUDIO_BG3D_ASSET_RIGHTS_LIBRARY_UNREADABLE_NOTICE,
   STUDIO_BG3D_ASSET_RIGHTS_LOAD_NOTICES,
   STUDIO_BG3D_ASSET_RIGHTS_PROJECT_SUMMARY_NOTICE,
   STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE,
@@ -88,7 +89,12 @@ function unknownRecord() {
 
 const VIEWS: Readonly<Record<string, StudioBg3dAssetRightsView>> = {
   known: buildStudioBg3dAssetRightsView(ENTRY, { libraryRightsById: new Map([["chair", LICENSED]]) }),
-  unreadable: buildStudioBg3dAssetRightsView(ENTRY),
+  // 두 원천을 모두 읽지 못한 경우와, 저장된 권리 기록만 읽고 라이브러리 레코드를 읽지 못한 경우.
+  unreadable: buildStudioBg3dAssetRightsView(ENTRY, { failed: { library: true, metadata: true } }),
+  libraryUnreadable: buildStudioBg3dAssetRightsView(ENTRY, {
+    metadataByHash: new Map([[HASH, unknownRecord()]]),
+    failed: { library: true, metadata: false },
+  }),
   conflict: buildStudioBg3dAssetRightsView(ENTRY, {
     libraryRightsById: new Map([["chair", LICENSED]]),
     metadataByHash: new Map([[HASH, unknownRecord()]]),
@@ -99,6 +105,7 @@ const CONSTANT_COPY: ReadonlyArray<readonly [string, string]> = [
   ["면책", STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER],
   ["프로젝트 권리 요약 안내", STUDIO_BG3D_ASSET_RIGHTS_PROJECT_SUMMARY_NOTICE],
   ["권리 기록 읽기 실패", STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE],
+  ["라이브러리 기록 읽기 실패", STUDIO_BG3D_ASSET_RIGHTS_LIBRARY_UNREADABLE_NOTICE],
   ["기록 충돌", STUDIO_BG3D_ASSET_RIGHTS_CONFLICT_NOTICE],
   ["필터 머리말", STUDIO_BG3D_ASSET_RIGHTS_FILTER_HELP],
   ["빈 결과 설명", STUDIO_BG3D_ASSET_RIGHTS_EMPTY_RESULT_HINT],
@@ -126,7 +133,12 @@ describe("권리 브라우저 새 문구의 말투·오류 문형 가드", () =>
 
   it("실패를 알리는 문구는 모두 실패 계열로 읽히고 다음 행동을 담는다(빈 검사가 아니다)", () => {
     const failures = CONSTANT_COPY.filter(([, text]) => isFailureCopy(text));
-    expect(failures.map(([name]) => name)).toEqual(expect.arrayContaining(["권리 기록 읽기 실패", "권리 기록 읽기 partial", "권리 기록 읽기 error"]));
+    expect(failures.map(([name]) => name)).toEqual(expect.arrayContaining([
+      "권리 기록 읽기 실패",
+      "라이브러리 기록 읽기 실패",
+      "권리 기록 읽기 partial",
+      "권리 기록 읽기 error",
+    ]));
     for (const [name, text] of failures) expect(hasErrorActionGuidance(text), name).toBe(true);
     for (const [name, text] of CONSTANT_COPY) expect(registersInFlow([text]).has("polite"), name).toBe(true);
   });
@@ -137,7 +149,9 @@ describe("권리 브라우저 새 문구의 말투·오류 문형 가드", () =>
       labels.push(describeStudioBg3dAssetRightsSummary(view));
       for (const row of describeStudioBg3dAssetRightsRows(view)) labels.push(row.label, row.value);
     }
-    for (const choice of ["yes", "no", "unknown"] as const) labels.push(describeStudioBg3dImportAiHeader(choice));
+    for (const generated of ["yes", "no", "unknown"] as const) {
+      for (const training of ["allowed", "prohibited", "unknown"] as const) labels.push(describeStudioBg3dImportAiHeader(generated, training));
+    }
     for (const group of STUDIO_BG3D_ASSET_RIGHTS_FILTER_GROUPS) labels.push(group.label, ...group.options.map((option) => option.label));
     for (const label of labels) {
       expect(findToneViolations(label, "polite"), label).toEqual([]);
@@ -223,6 +237,7 @@ describe("권리 브라우저 새 문구의 말투·오류 문형 가드", () =>
     expect(flows.find(([name]) => name === "빈 결과 안내")?.[1][0]).toContain(STUDIO_BG3D_ASSET_RIGHTS_EMPTY_RESULT_HINT);
     expect(flows.find(([name]) => name === "권리 상세(conflict)")?.[1].join(" ")).toContain(STUDIO_BG3D_ASSET_RIGHTS_CONFLICT_NOTICE);
     expect(flows.find(([name]) => name === "권리 상세(unreadable)")?.[1].join(" ")).toContain(STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE);
+    expect(flows.find(([name]) => name === "권리 상세(libraryUnreadable)")?.[1].join(" ")).toContain(STUDIO_BG3D_ASSET_RIGHTS_LIBRARY_UNREADABLE_NOTICE);
 
     for (const [name, texts] of flows) {
       for (const text of texts) {

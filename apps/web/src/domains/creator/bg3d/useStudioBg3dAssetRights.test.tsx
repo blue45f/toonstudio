@@ -79,6 +79,34 @@ describe("useStudioBg3dAssetRights", () => {
     expect(load).toHaveBeenCalledTimes(2);
   });
 
+  it("라이브러리를 못 읽은 결과는 소재별 읽기 실패로 표시하고, 다시 읽는 동안에는 직전 실패를 소재에 알리지 않는다", async () => {
+    const resolvers: ((value: StudioBg3dAssetRightsSourceResult) => void)[] = [];
+    const load = vi.fn(() => new Promise<StudioBg3dAssetRightsSourceResult>((r) => {
+      resolvers.push(r);
+    }));
+    const { result, rerender } = renderHook(
+      ({ entries }) => useStudioBg3dAssetRights(entries, () => undefined, load),
+      { initialProps: { entries: [entry("m1", "b")] } },
+    );
+    // 읽는 중에는 아직 실패한 것이 없다.
+    expect(result.current.views.get("m1")?.readFailed).toBe(false);
+
+    await act(async () => resolvers[0]?.({ libraryRightsById: new Map(), metadataByHash: new Map(), failed: { library: true, metadata: false } }));
+    expect(result.current.state).toBe("partial");
+    expect(result.current.views.get("m1")?.readFailed).toBe(true);
+
+    // 목록이 바뀌어 다시 읽는 동안: 직전 값은 쓰되, 직전 읽기의 실패는 지금 목록에 대한 것이 아니다.
+    rerender({ entries: [entry("m1", "b"), entry("m2", "c")] });
+    expect(result.current.state).toBe("loading");
+    expect(result.current.views.get("m1")?.readFailed).toBe(false);
+
+    await act(async () => resolvers[1]?.(loaded()));
+    expect(result.current.state).toBe("ready");
+    expect(result.current.views.get("m1")?.readFailed).toBe(false);
+    // 라이브러리 기록이 없는 m2 는 읽기에 실패한 것이 아니라 기록이 없을 뿐이다.
+    expect(result.current.views.get("m2")?.readFailed).toBe(false);
+  });
+
   it("언마운트하면 읽기를 취소하고 늦게 도착한 결과를 버린다", async () => {
     let signal: AbortSignal | undefined;
     let resolve!: (value: StudioBg3dAssetRightsSourceResult) => void;

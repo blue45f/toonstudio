@@ -250,6 +250,8 @@ export function StudioBg3dAssetLibraryPanel({
     ...(aiTraining !== "unknown" ? { aiTraining } : {}),
   };
 
+  // 접힌 폼 머리글: 권리 종류와 지금 고른 AI 생성·AI 학습 표기.
+  const rightsHeader = `${RIGHTS_PRESETS.find((preset) => preset.id === rightsStatus)?.label} · ${describeStudioBg3dImportAiHeader(aiGenerated, aiTraining)}`;
   const views = useMemo(
     () => rightsViews ?? buildStudioBg3dAssetRightsViews(entries, { provenanceOf: getStudioBg3dBundledProvenance }),
     [entries, rightsViews],
@@ -366,8 +368,8 @@ export function StudioBg3dAssetLibraryPanel({
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-bold text-fg marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9">
           <ShieldCheck size={14} className="shrink-0 text-accent" aria-hidden />
           <span className="min-w-0 flex-1 truncate">이용 권리 기록</span>
-          <span className="max-w-[60%] shrink truncate text-[0.65rem] font-semibold text-fg-3">
-            {RIGHTS_PRESETS.find((preset) => preset.id === rightsStatus)?.label} · {describeStudioBg3dImportAiHeader(aiGenerated)}
+          <span className="max-w-[60%] shrink truncate text-[0.65rem] font-semibold text-fg-3" title={rightsHeader}>
+            {rightsHeader}
           </span>
           <ChevronDown
             size={14}

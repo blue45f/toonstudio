@@ -4,6 +4,8 @@
  * 규칙
  * - 모르는 값은 언제나 "미확인"이라고 쓴다. "가능"·"허용"처럼 읽히는 낱말은 기록에 그렇게 적힌 경우에만 쓴다.
  * - 상업 사용에는 "불가"가 없다. 기록이 불리언이라 "금지라고 적었다"와 "허용을 적지 않았다"를 가를 수 없어서다.
+ * - 표기 의무의 "불필요"도 기록에 그렇게 적힌 경우에만 쓴다. 구매·허가 소재는 라이선스마다 달라 "필요"로 적힌 경우만 알고
+ *   나머지는 "미확인"이다(번들 카탈로그의 불리언과 직접 제작·공개 이용은 기록대로 읽는다).
  * - 새 문구는 해요체로 쓰고, 실패를 알리는 문구는 다음 행동을 함께 적는다(shared/language 가드가 시험한다).
  * - 이 모듈의 새 문구는 한국어 리터럴이다(skp-import 의 선례). 번역 키로 옮기는 일은 후속이다.
  *
@@ -23,6 +25,10 @@ export const STUDIO_BG3D_ASSET_RIGHTS_PROJECT_SUMMARY_NOTICE =
 /** 가져온 소재의 권리 기록을 읽지 못했을 때. 실패 안내라 다음 행동을 함께 적는다. */
 export const STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE =
   "저장된 권리 기록을 읽지 못해서 모두 미확인으로 보여요. 3D 모델 목록을 닫았다가 다시 열어 주세요.";
+
+/** 라이브러리 레코드는 읽지 못하고 저장된 권리 기록만 읽었을 때. 권리 상태·상업 사용은 저장된 기록만으로는 믿지 않는다. */
+export const STUDIO_BG3D_ASSET_RIGHTS_LIBRARY_UNREADABLE_NOTICE =
+  "라이브러리에 저장된 권리 기록을 읽지 못해서 권리 상태와 상업 사용은 미확인으로 보여요. 3D 모델 목록을 닫았다가 다시 열어 주세요.";
 
 /** 라이브러리 기록과 저장된 권리 기록이 달라 더 제한적인 쪽을 보여 줄 때. */
 export const STUDIO_BG3D_ASSET_RIGHTS_CONFLICT_NOTICE =
@@ -50,10 +56,17 @@ export const STUDIO_BG3D_IMPORT_AI_FORM_SCOPE_NOTICE =
   "고른 답은 지금 가져오는 모델에만 적용돼요. 가져온 뒤에는 이 화면에서 고칠 수 없어요. 다음 가져오기는 '모름'에서 다시 시작해요.";
 
 const IMPORT_AI_HEADER = { yes: "AI 표기: AI 생성", no: "AI 표기: AI 아님", unknown: "AI 표기: 미확인" } as const;
+const IMPORT_AI_TRAINING_HEADER = { allowed: "AI 학습 허용", prohibited: "AI 학습 금지", unknown: "AI 학습 미확인" } as const;
 
-/** 가져오기 권리 폼 머리글에 보이는, 지금 골라 둔 AI 생성 표기. 고르지 않았으면 미확인이다. */
-export function describeStudioBg3dImportAiHeader(choice: keyof typeof IMPORT_AI_HEADER): string {
-  return IMPORT_AI_HEADER[choice] ?? IMPORT_AI_HEADER.unknown;
+/**
+ * 가져오기 권리 폼 머리글에 보이는, 지금 골라 둔 AI 생성·AI 학습 표기. 접힌 상태에서도 두 답이 모두 보여야 가져오기 전에 확인할 수
+ * 있다. 고르지 않았으면 미확인이다.
+ */
+export function describeStudioBg3dImportAiHeader(
+  generated: keyof typeof IMPORT_AI_HEADER,
+  training: keyof typeof IMPORT_AI_TRAINING_HEADER,
+): string {
+  return `${IMPORT_AI_HEADER[generated] ?? IMPORT_AI_HEADER.unknown} · ${IMPORT_AI_TRAINING_HEADER[training] ?? IMPORT_AI_TRAINING_HEADER.unknown}`;
 }
 
 export const STUDIO_BG3D_ASSET_RIGHTS_UNCONFIRMED = "미확인";
@@ -195,10 +208,15 @@ export function describeStudioBg3dAssetRightsRows(view: StudioBg3dAssetRightsVie
 }
 
 /**
- * 카드에 붙이는 근거 안내. 권리 기록을 읽지 못해 항목만 있는 가져온 소재, 또는 두 기록이 어긋나 더 제한적인 쪽을 보여 주는
- * 소재에만 있고 그 밖에는 null 이다.
+ * 카드에 붙이는 근거 안내. 기록을 읽지 못해 값이 비었을 수 있는 가져온 소재(`view.readFailed`), 또는 두 기록이 어긋나 더 제한적인
+ * 쪽을 보여 주는 소재에만 있고 그 밖에는 null 이다. 읽는 중이거나, 읽기는 성공했는데 기록이 없을 뿐인 소재(해시 없는 옛 항목 포함)에는
+ * "읽지 못했다"고 하지 않는다.
  */
 export function describeStudioBg3dAssetRightsBasisNotice(view: StudioBg3dAssetRightsView): string | null {
-  if (view.basis === "entry-only" && view.origin === "imported") return STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE;
+  if (view.readFailed) {
+    return view.basis === "metadata"
+      ? STUDIO_BG3D_ASSET_RIGHTS_LIBRARY_UNREADABLE_NOTICE
+      : STUDIO_BG3D_ASSET_RIGHTS_UNREADABLE_NOTICE;
+  }
   return view.conflict ? STUDIO_BG3D_ASSET_RIGHTS_CONFLICT_NOTICE : null;
 }
