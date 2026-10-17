@@ -7,9 +7,12 @@ import {
   STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE,
   STUDIO_BG3D_ASSET_PLACEMENT_RECIPES,
   STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE,
-  planStudioBg3dAssetPlacement,
-  type StudioBg3dAssetPlacementFailureCode,
-  type StudioBg3dAssetPlacementInput,
+} from "./studio-bg3d-asset-placement-catalog";
+import { planStudioBg3dAssetPlacement } from "./studio-bg3d-asset-placement.test-fixture";
+
+import type {
+  StudioBg3dAssetPlacementFailureCode,
+  StudioBg3dAssetPlacementInput,
 } from "./studio-bg3d-asset-placement-recipes";
 import {
   STUDIO_BG3D_RECIPE_IN_PROGRESS_MESSAGE,

@@ -23,7 +23,7 @@ import { StudioBg3dAssetCardRightsActions, type StudioBg3dAssetCardPanel } from 
 import { StudioBg3dAssetRightsFilterBar } from "./StudioBg3dAssetRightsFilterBar";
 import { StudioBg3dAssetRightsSummary } from "./StudioBg3dAssetRightsInfo";
 import { StudioBg3dSkpImportPanel } from "./StudioBg3dSkpImportPanel";
-import { listStudioBg3dAssetPlacementRecipes } from "./studio-bg3d-asset-placement-recipes";
+import { listStudioBg3dAssetPlacementRecipes } from "./studio-bg3d-asset-placement-catalog";
 import { getStudioBg3dBundledProvenance } from "./studio-bg3d-asset-rights-catalog";
 import {
   STUDIO_BG3D_ASSET_RIGHTS_EMPTY_RESULT_HINT,
@@ -44,7 +44,7 @@ import { STUDIO_BG3D_SKP_WAREHOUSE_NOTICE } from "./studio-bg3d-skp-import-copy"
 
 import type { Bg3dModelImportItem, Bg3dModelLibraryEntry } from "./bg3d-model-library";
 import type { StudioBg3dAssetAiGenerated, StudioBg3dAssetAiTraining } from "./studio-bg3d-asset-metadata";
-import type { StudioBg3dAssetPlacementRecipeId } from "./studio-bg3d-asset-placement-recipes";
+import type { StudioBg3dAssetPlacementRecipeId } from "./studio-bg3d-asset-placement-catalog";
 import type { StudioBg3dAssetRightsFilterKey } from "./studio-bg3d-asset-rights-copy";
 import type { StudioBg3dAssetRightsFilter, StudioBg3dAssetRightsView } from "./studio-bg3d-asset-rights-view";
 import type { StudioBg3dAssetRightsLoadState } from "./useStudioBg3dAssetRights";

@@ -53,7 +53,7 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "./StudioBg3dAssetRightsFilterBar",
       "./StudioBg3dAssetRightsInfo",
       "./StudioBg3dSkpImportPanel",
-      "./studio-bg3d-asset-placement-recipes",
+      "./studio-bg3d-asset-placement-catalog",
       "./studio-bg3d-asset-rights-catalog",
       "./studio-bg3d-asset-rights-copy",
       "./studio-bg3d-asset-rights-view",
@@ -63,7 +63,7 @@ describe("Studio BG3D asset-library ownership boundary", () => {
     expect(imports.typeImports).toEqual([
       "./bg3d-model-library",
       "./studio-bg3d-asset-metadata",
-      "./studio-bg3d-asset-placement-recipes",
+      "./studio-bg3d-asset-placement-catalog",
       "./studio-bg3d-asset-rights-copy",
       "./studio-bg3d-asset-rights-view",
       "./useStudioBg3dAssetRights",

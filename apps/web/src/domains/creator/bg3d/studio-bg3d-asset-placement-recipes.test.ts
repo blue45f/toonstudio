@@ -1,15 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  STUDIO_BG3D_ASSET_PLACEMENT_HUMAN_HEIGHT_METERS,
   STUDIO_BG3D_ASSET_PLACEMENT_RECIPES,
   STUDIO_BG3D_ASSET_PLACEMENT_RECIPE_IDS,
-  STUDIO_BG3D_WALL_CLEARANCE_METERS,
   isStudioBg3dAssetPlacementRecipeId,
   listStudioBg3dAssetPlacementRecipes,
-  planStudioBg3dAssetPlacement,
+} from "./studio-bg3d-asset-placement-catalog";
+import {
+  STUDIO_BG3D_WALL_CLEARANCE_METERS,
+  createStudioBg3dAssetPlacementPlanner,
   type StudioBg3dAssetPlacementInput,
   type StudioBg3dPlacementWall,
 } from "./studio-bg3d-asset-placement-recipes";
+import { planStudioBg3dAssetPlacement } from "./studio-bg3d-asset-placement.test-fixture";
 import { rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
 import { planStudioBg3dModelPlacementRecipe } from "./studio-bg3d-placement-recipe";
 import { STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M } from "./studio-bg3d-scale-guide";
@@ -41,6 +45,28 @@ function worldBounds(position: Vec3, rotation: Vec3, scale: Vec3, min = LOCAL_MI
   }
   return { min: low, max: high, center: low.map((value, axis) => (value + high[axis]) / 2) };
 }
+
+describe("계산 주입", () => {
+  it("기존 배치 계획과 회전 계산은 인자로 받은 것을 쓰고, 같은 함수를 꽂으면 결과가 같다", () => {
+    const planBase = vi.fn(planStudioBg3dModelPlacementRecipe);
+    const rotateVector = vi.fn(rotateVectorEulerXyz);
+    const plan = createStudioBg3dAssetPlacementPlanner({ planBase, rotateVector });
+    const request = input({ recipe: "floor", dropPoint: [1, 2] });
+    expect(plan(request)).toEqual(planStudioBg3dAssetPlacement(request));
+    expect(planBase).toHaveBeenCalledOnce();
+    expect(rotateVector).toHaveBeenCalledOnce();
+  });
+
+  it("입력이 올바르지 않으면 주입한 계산을 부르지 않고 실패한다", () => {
+    const planBase = vi.fn(planStudioBg3dModelPlacementRecipe);
+    const rotateVector = vi.fn(rotateVectorEulerXyz);
+    const plan = createStudioBg3dAssetPlacementPlanner({ planBase, rotateVector });
+    expect(plan(input({ recipe: "diagonal" as never })).ok).toBe(false);
+    expect(plan(input({ recipe: "floor", localBounds: { min: [0, 0, 0], max: [0, 0, 0] } })).ok).toBe(false);
+    expect(planBase).not.toHaveBeenCalled();
+    expect(rotateVector).not.toHaveBeenCalled();
+  });
+});
 
 describe("레시피 목록", () => {
   it("모든 레시피에 한글 이름·설명이 있고 식별자는 고유하다", () => {
@@ -120,6 +146,12 @@ describe("장면 중앙 정렬", () => {
 });
 
 describe("사람 키 기준 맞춤", () => {
+  it("카탈로그의 리터럴 사람 키는 뷰포트 눈금 상수와 같다(눈금 모듈을 값으로 가져오지 않는 대신 이 시험이 지킨다)", () => {
+    expect(STUDIO_BG3D_ASSET_PLACEMENT_HUMAN_HEIGHT_METERS).toBe(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M);
+    const humanScale = STUDIO_BG3D_ASSET_PLACEMENT_RECIPES.find(({ id }) => id === "human-scale");
+    expect(humanScale?.description).toContain(`${STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M}m`);
+  });
+
   it("모델 높이를 뷰포트 사람 눈금(1.6m)과 같은 단일 출처 값으로 맞추고 균일 배율로 바닥에 놓는다", () => {
     expect(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M).toBe(1.6);
     const result = planStudioBg3dAssetPlacement(input({ recipe: "human-scale", dropPoint: [1, 1] }));

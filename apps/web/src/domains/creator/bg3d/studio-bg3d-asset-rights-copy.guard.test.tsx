@@ -14,7 +14,7 @@ import { StudioBg3dAssetRightsDetails } from "./StudioBg3dAssetRightsInfo";
 import {
   STUDIO_BG3D_ASSET_PLACEMENT_MENU_FOOTER,
   listStudioBg3dAssetPlacementRecipes,
-} from "./studio-bg3d-asset-placement-recipes";
+} from "./studio-bg3d-asset-placement-catalog";
 import {
   STUDIO_BG3D_ASSET_RIGHTS_CONFLICT_NOTICE,
   STUDIO_BG3D_ASSET_RIGHTS_DISCLAIMER,
