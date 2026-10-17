@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { serializeStudioCommandJournal } from "../studio-command-journal";
-import { hashStudioEditableMesh } from "../studio-editable-half-edge-mesh";
+import { createStudioEditableMeshFromPolygons, hashStudioEditableMesh, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
 
 import {
   createStudioHybridDccComponentSelection,
@@ -9,8 +9,10 @@ import {
   validateStudioHybridDccComponentSelection,
   type StudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
+import { hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
 import {
   analyzeStudioEditableMeshIntegrity,
+  STUDIO_FACE_MODELING_LIMITS,
   type StudioFaceModelingResult,
 } from "./studio-hybrid-dcc-face-modeling-mesh";
 import {
@@ -325,5 +327,55 @@ describe("면 모델링 작업공간: 범위와 그리기 안내", () => {
       studioHybridDccFaceDrawingGuide(workspace, faceSelection(workspace, [TOP, 2])),
       "single-face-required",
     );
+  });
+});
+
+/** 가로 columns x 세로 rows 칸의 사각형으로 이루어진 열린 평면 격자. 면 수가 많은 오브젝트를 싸게 만든다. */
+function gridPlate(columns: number, rows: number): StudioEditableMesh {
+  const positions: { x: number; y: number; z: number }[] = [];
+  for (let j = 0; j <= rows; j += 1) {
+    for (let i = 0; i <= columns; i += 1) positions.push({ x: i / columns, y: 0, z: j / rows });
+  }
+  const faces: number[][] = [];
+  for (let j = 0; j < rows; j += 1) {
+    for (let i = 0; i < columns; i += 1) {
+      const at = (di: number, dj: number) => (j + dj) * (columns + 1) + i + di;
+      faces.push([at(0, 0), at(0, 1), at(1, 1), at(1, 0)]);
+    }
+  }
+  return createStudioEditableMeshFromPolygons(positions, faces);
+}
+
+function plateWorkspace(columns: number, rows: number): StudioHybridDccWorkspace {
+  const base = createStudioHybridDccWorkspace("face-modeling-plate");
+  const session = hybridDccRegisterAsset(base.session, "cube", gridPlate(columns, rows), {
+    source: "primitive",
+    creator: "studio",
+    license: "CC0-1.0",
+    useScope: "commercial",
+    derivative: "original",
+  });
+  return { ...base, session, activeAssetId: "cube" };
+}
+
+describe("면 모델링 작업공간: 면이 너무 많은 오브젝트", () => {
+  it("상한(8000면)을 한 면이라도 넘으면 범위·그리기 안내·계획·미리보기·확정이 모두 mesh-too-large 로 거부된다", () => {
+    const workspace = plateWorkspace(80, 101);
+    expect(workspace.session.state.geometry.records.cube!.mesh.faces).toHaveLength(8080);
+    const selection = faceSelection(workspace, [0]);
+    const request: StudioFaceModelingRequest = { tool: "push-pull", distance: 0.1 };
+    expectFailure(studioHybridDccFaceModelingRange(workspace, selection, "push-pull"), "mesh-too-large");
+    expectFailure(studioHybridDccFaceDrawingGuide(workspace, selection), "mesh-too-large");
+    expectFailure(planStudioHybridDccFaceModeling(workspace, selection, request), "mesh-too-large");
+    expectFailure(previewStudioHybridDccFaceModeling(workspace, selection, request), "mesh-too-large");
+    expect(() => commitStudioHybridDccFaceModeling(workspace, selection, request)).toThrow();
+  });
+
+  it("정확히 상한(8000면)이면 같은 요청이 처리된다", () => {
+    const workspace = plateWorkspace(80, 100);
+    expect(workspace.session.state.geometry.records.cube!.mesh.faces).toHaveLength(STUDIO_FACE_MODELING_LIMITS.maxMeshFaces);
+    const selection = faceSelection(workspace, [0]);
+    expectOk(studioHybridDccFaceModelingRange(workspace, selection, "push-pull"));
+    expectOk(previewStudioHybridDccFaceModeling(workspace, selection, { tool: "push-pull", distance: 0.1 }));
   });
 });

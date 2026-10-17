@@ -35,8 +35,17 @@ export const STUDIO_FACE_MODELING_LIMITS = Object.freeze({
   /** 한 번에 처리할 최대 선택 면 수와 같은 평면 영역의 최대 면 수. */
   maxSelectionFaces: 4096,
   maxRegionFaces: 4096,
-  /** 이 면 수를 넘는 메시는 끌기 중 실시간 미리보기를 건너뛰고 놓을 때만 계산한다. */
-  livePreviewFaceLimit: 4000,
+  /**
+   * 면 모델링을 쓸 수 있는 오브젝트의 최대 면 수. 미리보기 한 번이 면 수에 비례해(측정: 면 8천 개에서 0.5초 안팎)
+   * 느려지고, 확정이 문서 명령 크기 한도(1 MiB)를 면 9천~1만 개에서 넘기 때문에 그 아래에서 막는다.
+   */
+  maxMeshFaces: 8000,
+  /** 미리보기 비용(면 수 + 선택 면 수 x 3)이 이 값을 넘으면 핸들을 끄는 동안 미리보기를 멈추고 놓을 때만 계산한다. */
+  livePreviewCost: 1500,
+  /** 미리보기 비용이 이 값을 넘으면 입력·단계 이동은 입력이 멈춘 뒤에 계산한다. */
+  debouncedPreviewCost: 400,
+  /** 입력이 멈춘 뒤 미리보기를 계산하기까지 기다리는 시간(ms). */
+  previewDebounceMs: 200,
 });
 
 export type StudioFaceModelingFailureCode =
@@ -46,6 +55,7 @@ export type StudioFaceModelingFailureCode =
   | "empty-selection"
   | "invalid-mesh"
   | "invalid-parameter"
+  | "mesh-too-large"
   | "no-active-asset"
   | "no-coplanar-region"
   | "non-convex"

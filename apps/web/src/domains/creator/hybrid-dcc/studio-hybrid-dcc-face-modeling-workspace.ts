@@ -103,6 +103,9 @@ function resolveTarget(
   if (!assetId || !record) {
     return failStudioFaceModeling("no-active-asset", "no active editable asset");
   }
+  if (record.mesh.faces.length > STUDIO_FACE_MODELING_LIMITS.maxMeshFaces) {
+    return failStudioFaceModeling("mesh-too-large", "the mesh has too many faces for face modeling");
+  }
   if (selection.mode !== "face" || selection.elementIds.length === 0) {
     return failStudioFaceModeling("selection-required", "a face selection is required");
   }

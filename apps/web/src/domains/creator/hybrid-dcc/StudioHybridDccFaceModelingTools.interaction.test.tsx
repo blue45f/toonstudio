@@ -14,6 +14,9 @@ import {
   mutateStudioHybridDccComponentSelection,
   type StudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
+import { createStudioEditableMeshFromPolygons, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
+
+import { hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
 import {
   createStudioHybridDccWorkspace,
   workspaceAddUnitCube,
@@ -27,6 +30,55 @@ import type { StudioHybridDccWorkspaceEdit } from "./studio-hybrid-dcc-face-mode
 import type { StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
 
 const TOP = 3;
+
+/** 한 변을 n칸으로 나눈 닫힌 정육면체(면 6n²개). */
+function subdividedCube(n: number): StudioEditableMesh {
+  const positions: { x: number; y: number; z: number }[] = [];
+  const known = new Map<string, number>();
+  const vertex = (x: number, y: number, z: number) => {
+    const key = `${x},${y},${z}`;
+    let id = known.get(key);
+    if (id === undefined) {
+      id = positions.length;
+      known.set(key, id);
+      positions.push({ x: x / n - 0.5, y: y / n - 0.5, z: z / n - 0.5 });
+    }
+    return id;
+  };
+  const faces: number[][] = [];
+  for (const axis of [0, 1, 2]) {
+    for (const side of [0, 1]) {
+      const u = (axis + 1) % 3;
+      const v = (axis + 2) % 3;
+      for (let i = 0; i < n; i += 1) {
+        for (let j = 0; j < n; j += 1) {
+          const corner = (di: number, dj: number) => {
+            const c = [0, 0, 0];
+            c[axis] = side * n;
+            c[u] = i + di;
+            c[v] = j + dj;
+            return vertex(c[0]!, c[1]!, c[2]!);
+          };
+          const quad = [corner(0, 0), corner(1, 0), corner(1, 1), corner(0, 1)];
+          faces.push(side === 1 ? quad : quad.reverse());
+        }
+      }
+    }
+  }
+  return createStudioEditableMeshFromPolygons(positions, faces);
+}
+
+function workspaceWithMesh(mesh: StudioEditableMesh): StudioHybridDccWorkspace {
+  const base = createStudioHybridDccWorkspace("face-modeling-interaction-big");
+  const session = hybridDccRegisterAsset(base.session, "cube", mesh, {
+    source: "primitive",
+    creator: "studio",
+    license: "CC0-1.0",
+    useScope: "commercial",
+    derivative: "original",
+  });
+  return { ...base, session, activeAssetId: "cube" };
+}
 
 function selectionOf(workspace: StudioHybridDccWorkspace, ids: readonly number[]): StudioHybridDccComponentSelection {
   const result = mutateStudioHybridDccComponentSelection(createStudioHybridDccComponentSelection(), {
@@ -60,9 +112,9 @@ class Controls {
   }
 }
 
-function Harness({ controls }: { readonly controls: Controls }) {
-  const [workspace, setWorkspace] = useState(() => workspaceAddUnitCube(createStudioHybridDccWorkspace("face-modeling-interaction"), "cube"));
-  const [selection, setSelection] = useState(() => selectionOf(workspace, [TOP]));
+function Harness({ controls, initial }: { readonly controls: Controls; readonly initial?: StudioHybridDccWorkspace }) {
+  const [workspace, setWorkspace] = useState(() => initial ?? workspaceAddUnitCube(createStudioHybridDccWorkspace("face-modeling-interaction"), "cube"));
+  const [selection, setSelection] = useState(() => selectionOf(workspace, [initial ? 0 : TOP]));
   const [committing, setCommitting] = useState(false);
   const [otherBusy, setOtherBusy] = useState(false);
   const busy = committing || otherBusy;
@@ -90,9 +142,9 @@ function Harness({ controls }: { readonly controls: Controls }) {
   return <StudioHybridDccFaceModelingTools model={model} />;
 }
 
-function setup() {
+function setup(initial?: StudioHybridDccWorkspace) {
   const controls = new Controls();
-  render(<Harness controls={controls} />);
+  render(<Harness controls={controls} initial={initial} />);
   fireEvent.click(screen.getByRole("button", { name: /^면 모델링 · 밀기\/당기기/u }));
   return controls;
 }
@@ -175,5 +227,29 @@ describe("면 모델링 작업대: 다른 작업이 끝나기를 기다리는 �
     expect(apply().getAttribute("aria-disabled")).toBeNull();
     fireEvent.click(apply());
     expect(controls.runs).toBe(1);
+  });
+});
+
+describe("면 모델링 작업대: 면이 많은 오브젝트", () => {
+  it("입력을 기다리는 동안 이유를 알리고, Enter 는 먼저 미리보기를 보여 준 뒤 다시 누르면 적용한다", () => {
+    const controls = setup(workspaceWithMesh(subdividedCube(12)));
+    fireEvent.change(distanceField(), { target: { value: "0.1" } });
+    expect(screen.getByText(/입력을 멈추면 미리보기를 계산해요/u)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "적용" }).getAttribute("aria-disabled")).toBe("true");
+    fireEvent.keyDown(distanceField(), { key: "Enter" });
+    // 첫 Enter 는 미리보기만 계산한다.
+    expect(controls.runs).toBe(0);
+    expect(screen.queryByText(/입력을 멈추면 미리보기를 계산해요/u)).toBeNull();
+    expect(screen.getByRole("status").textContent).toContain("면 ");
+    expect(screen.getByRole("button", { name: "적용" }).getAttribute("aria-disabled")).toBeNull();
+    fireEvent.keyDown(distanceField(), { key: "Enter" });
+    expect(controls.runs).toBe(1);
+  });
+
+  it("면이 8000개를 넘는 오브젝트는 쓸 수 없다고 알리고 거리 칸과 도구를 잠근다", () => {
+    setup(workspaceWithMesh(subdividedCube(37)));
+    expect(screen.getByRole("status").textContent).toContain("면이 8000개를 넘는 오브젝트는 면 모델링을 쓸 수 없어요");
+    expect(distanceField().disabled).toBe(true);
+    expect(screen.getByRole("button", { name: "적용" }).getAttribute("aria-disabled")).toBe("true");
   });
 });

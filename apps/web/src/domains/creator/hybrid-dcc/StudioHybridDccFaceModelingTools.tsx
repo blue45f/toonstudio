@@ -77,7 +77,8 @@ function DistanceHandle({ model, hintId }: { readonly model: StudioHybridDccFace
         return;
       case "Enter":
         event.preventDefault();
-        model.apply();
+        if (model.pending) model.flushPreview();
+        else model.apply();
         return;
     }
   };
@@ -157,7 +158,9 @@ function DistanceControls({
     if (event.nativeEvent.isComposing) return;
     if (event.key === "Enter") {
       event.preventDefault();
-      model.apply();
+      // 입력이 멈추기를 기다리는 중이면 먼저 지금 값으로 미리보기를 보여 준다. 보이는 결과만 적용한다.
+      if (model.pending) model.flushPreview();
+      else model.apply();
       return;
     }
     if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "PageUp" || event.key === "PageDown") {

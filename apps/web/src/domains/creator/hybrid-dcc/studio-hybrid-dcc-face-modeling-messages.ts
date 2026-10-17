@@ -234,6 +234,14 @@ export function describeStudioFaceModelingFailure(
         ),
         { max: formatStudioFaceModelingDistance(STUDIO_FACE_MODELING_LIMITS.maxDistance) },
       );
+    case "mesh-too-large":
+      return formatI18nTemplate(
+        bt(
+          "면이 {max}개를 넘는 오브젝트는 면 모델링을 쓸 수 없어요. 일부를 떼어 내거나 면 수를 줄여 단순하게 만든 뒤 다시 시도해 보세요.",
+          "Face modeling is unavailable on objects with more than {max} faces. Split off part of it or simplify it to fewer faces, then try again.",
+        ),
+        { max: STUDIO_FACE_MODELING_LIMITS.maxMeshFaces },
+      );
     case "no-active-asset":
       return bt("먼저 편집할 오브젝트를 선택하세요.", "Select an object to edit first.");
     case "no-coplanar-region":

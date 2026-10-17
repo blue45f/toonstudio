@@ -15,6 +15,14 @@ import type { StudioFaceModelingTool } from "./studio-hybrid-dcc-face-modeling-w
 export type StudioFaceModelingDistanceTool = Exclude<StudioFaceModelingTool, "draw">;
 export type StudioFaceModelingStepScale = "fine" | "normal" | "coarse";
 
+/**
+ * 미리보기 한 번의 상대 비용: 메시 면 수에 선택 면 수의 3배를 더한다. 측정에서 면 하나당 약 0.05ms,
+ * 선택한 면 하나당 약 0.1~0.13ms가 들어 선택이 큰 편집이 더 느린 것을 반영한다.
+ */
+export function studioFaceModelingPreviewCost(faceCount: number, selectedFaceCount: number): number {
+  return faceCount + selectedFaceCount * 3;
+}
+
 /** 도구 해상도(0.1 mm). 입력과 표시는 이 자릿수까지만 의미가 있다. */
 const RESOLUTION = STUDIO_FACE_MODELING_LIMITS.minDistance;
 /** 끝값 비교에 쓰는 부동소수점 여유. 해상도의 1/10이라 눈에 보이는 차이는 만들지 않는다. */

@@ -18,6 +18,7 @@ import {
   studioFaceDrawViewBox,
   studioFaceModelingHandleFraction,
   studioFaceModelingHandleValue,
+  studioFaceModelingPreviewCost,
   studioFaceModelingRangeView,
   studioFaceModelingStepSize,
   type StudioFaceModelingDistanceTool,
@@ -280,5 +281,13 @@ describe("면 모델링 화면 규칙: 그리기 패드 좌표", () => {
     expect(Object.is(snapped[0], 0)).toBe(true);
     expect(Object.is(snapped[1], 0)).toBe(true);
     expect(snapStudioFaceDrawPoint([0.137, 0.2], 0)).toEqual([0.137, 0.2]);
+  });
+});
+
+describe("면 모델링 미리보기 비용", () => {
+  it("메시 면 수에 선택 면 수의 3배를 더한다", () => {
+    expect(studioFaceModelingPreviewCost(1000, 0)).toBe(1000);
+    expect(studioFaceModelingPreviewCost(1000, 100)).toBe(1300);
+    expect(studioFaceModelingPreviewCost(0, 0)).toBe(0);
   });
 });

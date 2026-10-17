@@ -5,6 +5,11 @@
  * 뷰포트에는 결과 메시를 얹은 복사본 작업공간만 넘긴다. 입력·선택·오브젝트가 바뀌면 미리보기는 저절로
  * 사라진다(상태를 되돌리는 효과를 두지 않고 렌더 중 비교로 닫는다). Esc는 미리보기가 있는 동안에만
  * 창 단위 캡처 단계에서 가로채 대화상자를 닫지 않고 미리보기만 취소한다.
+ *
+ * 미리보기 계산은 면 수에 비례해 느려지므로 비용(면 수 + 선택 면 수 x 3)에 따라 계산 시점을 늦춘다. 작은
+ * 메시는 입력마다 바로 계산하고, 비용이 크면 타이핑·화살표 입력은 멈춘 뒤에 계산하며(Enter는 바로 계산),
+ * 더 크면 핸들을 끄는 동안 미리보기를 멈추고 놓을 때 한 번만 계산한다. 계산이 밀려 있는 동안에는 보이는
+ * 결과와 입력이 다르므로 적용하지 않는다.
  */
 
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
@@ -32,6 +37,7 @@ import {
   formatStudioFaceModelingDistance,
   parseStudioFaceModelingDistance,
   stepStudioFaceModelingDistance,
+  studioFaceModelingPreviewCost,
   studioFaceModelingStepSize,
   studioFaceModelingRangeView,
   type StudioFaceModelingStepScale,
@@ -75,6 +81,8 @@ export function useStudioHybridDccFaceModeling(
   const [dragging, setDragging] = useState(false);
   /** 큰 메시에서 핸들을 끄는 동안 미리보기를 멈춰 둘 값(끌기 시작 시점의 입력). */
   const [frozenText, setFrozenText] = useState<string | null>(null);
+  /** 비용이 큰 메시에서 입력이 멈춘 뒤에야 미리보기에 반영하는 값. 비용이 작으면 쓰지 않는다. */
+  const [settledText, setSettledText] = useState("");
   /** 확정을 요청한 시점의 대상. 대상이 이 값에서 바뀌었는지로 확정이 끝났는지(성공)를 알아본다. */
   const [applyRequest, setApplyRequest] = useState<{ readonly assetId: string; readonly meshHash: string } | null>(null);
   const applyRequested = applyRequest !== null;
@@ -97,6 +105,7 @@ export function useStudioHybridDccFaceModeling(
     setDrawPoints([]);
     setDragging(false);
     setFrozenText(null);
+    setSettledText("");
     setApplyRequest(null);
   };
 
@@ -162,7 +171,18 @@ export function useStudioHybridDccFaceModeling(
     [active, tool, workspace, selection],
   );
 
-  const previewText = frozenText ?? text;
+  const faceCount = record ? record.mesh.faces.length : 0;
+  const selectionCount = selection.mode === "face" ? selection.elementIds.length : 0;
+  const previewCost = studioFaceModelingPreviewCost(faceCount, selectionCount);
+  const debounced = previewCost > STUDIO_FACE_MODELING_LIMITS.debouncedPreviewCost;
+  // 입력이 멈추면 대기 중이던 값을 미리보기에 반영한다. 입력이 이어지면 이전 대기를 지우고 다시 센다.
+  useEffect(() => {
+    if (!debounced || settledText === text) return;
+    const timer = setTimeout(() => setSettledText(text), STUDIO_FACE_MODELING_LIMITS.previewDebounceMs);
+    return () => clearTimeout(timer);
+  }, [debounced, text, settledText]);
+  const pending = debounced && frozenText === null && settledText !== text;
+  const previewText = frozenText ?? (debounced ? settledText : text);
   const parsed = useMemo(() => parseStudioFaceModelingDistance(text), [text]);
   const previewParsed = useMemo(() => parseStudioFaceModelingDistance(previewText), [previewText]);
   const check = distanceTool && rangeView && parsed.kind === "value"
@@ -182,9 +202,7 @@ export function useStudioHybridDccFaceModeling(
     [active, engaged, request, workspace, selection],
   );
 
-  const faceCount = record ? record.mesh.faces.length : 0;
   const stepSize = studioFaceModelingStepSize(extent);
-  const selectionCount = selection.mode === "face" ? selection.elementIds.length : 0;
 
   // 화면에 올릴 메시지: 경고(alert)는 사용자가 고쳐야 하는 오류, 힌트는 오류가 아닌 안내다.
   let error: string | null = null;
@@ -214,9 +232,15 @@ export function useStudioHybridDccFaceModeling(
   const problemPoints = tool === "draw" && preview && !preview.ok ? (preview.elementIds ?? []) : [];
   // 큰 메시를 끄는 동안(미리보기가 끌기 시작 값에 멈춰 있는 동안)에는 보이는 결과와 입력이 달라 적용하지 않는다.
   // 패널이 다른 작업 중이면(확정 중 포함) 패널이 요청을 조용히 버리므로 적용 단추부터 막는다.
-  const canApply = Boolean(run && preview?.ok && !editingDisabled && frozenText === null);
+  const canApply = Boolean(run && preview?.ok && !editingDisabled && frozenText === null && !pending);
   if (!error && !hint && active && engaged && editingDisabled && !committing) {
     hint = bt("다른 편집이 끝나면 적용할 수 있어요.", "You can apply once the other edit has finished.");
+  }
+  if (!error && !hint && active && engaged && pending) {
+    hint = bt(
+      "입력을 멈추면 미리보기를 계산해요. Enter를 누르면 바로 계산해요.",
+      "The preview is calculated once you stop typing. Press Enter to calculate it right away.",
+    );
   }
 
   const cancel = () => {
@@ -306,18 +330,24 @@ export function useStudioHybridDccFaceModeling(
     },
     setHandleValue: (value: number) => {
       if (!edited()) return;
-      setTextState(formatStudioFaceModelingDistance(value));
+      const formatted = formatStudioFaceModelingDistance(value);
+      setTextState(formatted);
+      // 핸들은 끄는 동안 바로 보여 주는 조작이라 입력 대기를 거치지 않는다.
+      setSettledText(formatted);
     },
     beginDrag: () => {
       if (committing) return;
       setDragging(true);
-      // 아주 큰 메시는 끄는 동안 다시 계산하지 않고, 놓을 때 한 번만 계산한다.
-      setFrozenText(faceCount > STUDIO_FACE_MODELING_LIMITS.livePreviewFaceLimit ? text : null);
+      // 비용이 큰 메시는 끄는 동안 다시 계산하지 않고, 놓을 때 한 번만 계산한다.
+      setFrozenText(previewCost > STUDIO_FACE_MODELING_LIMITS.livePreviewCost ? text : null);
     },
     endDrag: () => {
       setDragging(false);
       setFrozenText(null);
     },
+    /** 입력이 멈추기를 기다리는 중인지, 그리고 기다리지 않고 지금 입력으로 미리보기를 계산한다. */
+    pending,
+    flushPreview: () => setSettledText(text),
     /** 면 그리기 */
     guide: guideResult?.ok ? guideResult.value : null,
     drawPoints,
