@@ -34,6 +34,7 @@ import {
   failStudioFaceModeling,
   okStudioFaceModeling,
   STUDIO_FACE_MODELING_LIMITS,
+  type StudioFaceModelingFailure,
   type StudioFaceModelingOutcome,
   type StudioFaceModelingResult,
 } from "./studio-hybrid-dcc-face-modeling-mesh";
@@ -250,9 +251,21 @@ function commitMesh(
   return { ...workspace, session, bridge, activeAssetId: assetId };
 }
 
+/** 확정이 계획 단계에서 거부됐을 때 던지는 오류. 화면이 이유 코드로 사용자 문장을 만들 수 있게 실패 정보를 싣는다. */
+export class StudioFaceModelingCommitError extends Error {
+  readonly failure: StudioFaceModelingFailure;
+
+  constructor(failure: StudioFaceModelingFailure) {
+    super(failure.detail);
+    this.name = "StudioFaceModelingCommitError";
+    this.failure = failure;
+  }
+}
+
 /**
  * 요청을 문서에 확정한다. 한 번의 문서 명령이라 되돌리기 한 번으로 정확히 원래대로 돌아간다.
- * 실패하면 이유를 담은 오류를 던진다(패널의 실행 큐가 로그로 보여 준다). 화면은 미리보기에서 미리 걸러 낸다.
+ * 실패하면 오류를 던진다(패널의 실행 큐가 로그로 보여 준다). 계획 단계 거부는 이유 코드를 실은
+ * `StudioFaceModelingCommitError`, 문서 한도 초과 같은 저장 단계 실패는 그대로의 오류다. 화면은 미리보기에서 미리 걸러 낸다.
  */
 export function commitStudioHybridDccFaceModeling(
   workspace: StudioHybridDccWorkspace,
@@ -260,7 +273,7 @@ export function commitStudioHybridDccFaceModeling(
   request: StudioFaceModelingRequest,
 ): StudioHybridDccWorkspaceEditResult {
   const plan = planStudioHybridDccFaceModeling(workspace, selection, request);
-  if (!plan.ok) throw new Error(plan.detail);
+  if (!plan.ok) throw new StudioFaceModelingCommitError(plan);
   if (plan.value.method === "extrude" && request.tool === "push-pull") {
     // 영수증이 달린 영역 밀기 경로: 선택 재매핑까지 기존 검증을 그대로 따른다.
     const extruded = workspaceExtrudeRegionActive(workspace, selection, request.distance);

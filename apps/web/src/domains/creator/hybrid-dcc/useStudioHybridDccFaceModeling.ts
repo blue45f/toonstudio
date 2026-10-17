@@ -9,13 +9,14 @@
 
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 
-import { useBilingual } from "../../../shared/lib/i18n-bilingual-copy";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
   createStudioHybridDccComponentSelection,
   type StudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
 import {
+  describeStudioFaceModelingApplyError,
   describeStudioFaceModelingCheck,
   describeStudioFaceModelingFailure,
   describeStudioFaceModelingParseError,
@@ -38,6 +39,7 @@ import {
 import {
   commitStudioHybridDccFaceModeling,
   previewStudioHybridDccFaceModeling,
+  StudioFaceModelingCommitError,
   studioHybridDccFaceDrawingGuide,
   studioHybridDccFaceModelingRange,
   type StudioFaceModelingRequest,
@@ -73,7 +75,9 @@ export function useStudioHybridDccFaceModeling(
   const [dragging, setDragging] = useState(false);
   /** 큰 메시에서 핸들을 끄는 동안 미리보기를 멈춰 둘 값(끌기 시작 시점의 입력). */
   const [frozenText, setFrozenText] = useState<string | null>(null);
-  const [applyRequested, setApplyRequested] = useState(false);
+  /** 확정을 요청한 시점의 대상. 대상이 이 값에서 바뀌었는지로 확정이 끝났는지(성공)를 알아본다. */
+  const [applyRequest, setApplyRequest] = useState<{ readonly assetId: string; readonly meshHash: string } | null>(null);
+  const applyRequested = applyRequest !== null;
   const [notice, setNotice] = useState("");
 
   const assetId = workspace.activeAssetId;
@@ -93,22 +97,26 @@ export function useStudioHybridDccFaceModeling(
     setDrawPoints([]);
     setDragging(false);
     setFrozenText(null);
-    setApplyRequested(false);
+    setApplyRequest(null);
   };
 
-  // 대상(오브젝트·메시·선택)이 바뀌면 열려 있던 미리보기와 입력을 닫는다. 직접 적용한 결과로
-  // 바뀐 경우에는 적용 안내를 그대로 두고, 그 밖의 변경이면 취소했다고 알린다.
+  // 대상(오브젝트·메시·선택)이 바뀌면 열려 있던 미리보기와 입력을 닫는다. 확정을 요청한 오브젝트의 메시가
+  // 바뀌었다면 확정이 끝난 것이라 적용했다고 알리고, 그 밖의 변경이면 미리보기를 취소했다고 알린다.
   const [seenContext, setSeenContext] = useState(contextKey);
   if (seenContext !== contextKey) {
     setSeenContext(contextKey);
     if (engaged) {
       resetInputs();
-      if (!applyRequested) {
-        setNotice(bt(
-          "선택이나 오브젝트가 바뀌어 미리보기를 취소했습니다. 원본은 그대로입니다.",
+      const applied = applyRequest !== null && applyRequest.assetId === assetId && applyRequest.meshHash !== record?.meshHash;
+      setNotice(applied
+        ? bt(
+          "적용했어요. 되돌리기 한 번으로 원래대로 돌아가요.",
+          "Applied. One undo step restores the original.",
+        )
+        : bt(
+          "선택이나 오브젝트가 바뀌어 미리보기를 취소했어요. 원본은 그대로예요.",
           "The selection or object changed, so the preview was cancelled. The model is unchanged.",
         ));
-      }
     }
   }
 
@@ -119,11 +127,8 @@ export function useStudioHybridDccFaceModeling(
   if (seenContext === contextKey && wasCommitting !== committing) {
     setWasCommitting(committing);
     if (wasCommitting && engaged) {
-      setApplyRequested(false);
-      setNotice(bt(
-        "적용하지 못했습니다. 패널의 작업 기록에서 이유를 확인하고 다시 시도하세요.",
-        "Could not apply. Check the panel log for the reason and try again.",
-      ));
+      setApplyRequest(null);
+      setNotice(describeStudioFaceModelingApplyError(bt, undefined));
     }
   }
   const unavailable: string | null = !run
@@ -208,13 +213,17 @@ export function useStudioHybridDccFaceModeling(
   // 면 그리기가 거부되면 문제가 된 점(그린 순서의 색인)을 패드에서 따로 표시한다.
   const problemPoints = tool === "draw" && preview && !preview.ok ? (preview.elementIds ?? []) : [];
   // 큰 메시를 끄는 동안(미리보기가 끌기 시작 값에 멈춰 있는 동안)에는 보이는 결과와 입력이 달라 적용하지 않는다.
-  const canApply = Boolean(run && preview?.ok && !committing && frozenText === null);
+  // 패널이 다른 작업 중이면(확정 중 포함) 패널이 요청을 조용히 버리므로 적용 단추부터 막는다.
+  const canApply = Boolean(run && preview?.ok && !editingDisabled && frozenText === null);
+  if (!error && !hint && active && engaged && editingDisabled && !committing) {
+    hint = bt("다른 편집이 끝나면 적용할 수 있어요.", "You can apply once the other edit has finished.");
+  }
 
   const cancel = () => {
-    if (!engaged) return;
+    if (!engaged || committing) return;
     resetInputs();
     setNotice(bt(
-      "미리보기를 취소했습니다. 원본과 되돌리기 기록은 바뀌지 않았습니다.",
+      "미리보기를 취소했어요. 원본과 되돌리기 기록은 바뀌지 않았어요.",
       "Preview cancelled. The model and undo history are unchanged.",
     ));
   };
@@ -232,9 +241,12 @@ export function useStudioHybridDccFaceModeling(
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [engaged, committing]);
 
-  const edited = () => {
-    setApplyRequested(false);
+  /** 입력을 바꿀 수 있는 상태인지. 확정이 진행 중이면 바뀐 입력이 이미 떠난 요청과 어긋나므로 잠근다. */
+  const edited = (): boolean => {
+    if (committing) return false;
+    setApplyRequest(null);
     setNotice("");
+    return true;
   };
   // 뷰포트에 넘길 속성: 미리보기가 있으면 결과를 얹은 복사본 작업공간과 선택을 쓰고 편집은 잠근다.
   const viewportProps: StudioHybridDccViewportProps = preview?.ok
@@ -261,7 +273,7 @@ export function useStudioHybridDccFaceModeling(
     },
     direction,
     setDirection: (next: StudioOffsetDirection) => {
-      edited();
+      if (!edited()) return;
       setDirectionState(next);
     },
     /** 도구 자체를 쓸 수 없는 이유(읽기 전용·조형 모드·다른 편집 중). 모든 조작이 꺼진다. */
@@ -276,15 +288,14 @@ export function useStudioHybridDccFaceModeling(
     /** 거리 도구 */
     text,
     setText: (next: string) => {
-      edited();
+      if (!edited()) return;
       setTextState(next);
     },
     range: rangeView,
     stepSize,
     value: parsed.kind === "value" ? parsed.value : null,
     step: (sign: 1 | -1, scale: StudioFaceModelingStepScale) => {
-      if (!rangeView) return;
-      edited();
+      if (!rangeView || !edited()) return;
       setTextState(formatStudioFaceModelingDistance(stepStudioFaceModelingDistance(
         parsed.kind === "value" ? parsed.value : null,
         sign,
@@ -294,10 +305,11 @@ export function useStudioHybridDccFaceModeling(
       )));
     },
     setHandleValue: (value: number) => {
-      edited();
+      if (!edited()) return;
       setTextState(formatStudioFaceModelingDistance(value));
     },
     beginDrag: () => {
+      if (committing) return;
       setDragging(true);
       // 아주 큰 메시는 끄는 동안 다시 계산하지 않고, 놓을 때 한 번만 계산한다.
       setFrozenText(faceCount > STUDIO_FACE_MODELING_LIMITS.livePreviewFaceLimit ? text : null);
@@ -310,18 +322,19 @@ export function useStudioHybridDccFaceModeling(
     guide: guideResult?.ok ? guideResult.value : null,
     drawPoints,
     addDrawPoint: (point: StudioPlanarPoint) => {
+      if (committing) return;
       if (drawPoints.length >= STUDIO_FACE_MODELING_LIMITS.maxDrawPoints) {
         setNotice(bt(
-          "점은 최대 64개까지 찍을 수 있습니다. 마지막 점을 지우거나 적용하세요.",
+          "점은 최대 64개까지 찍을 수 있어요. 마지막 점을 지우거나 적용해 보세요.",
           "At most 64 points can be placed. Remove the last point or apply the shape.",
         ));
         return;
       }
-      edited();
+      if (!edited()) return;
       setDrawPoints([...drawPoints, point]);
     },
     removeLastDrawPoint: () => {
-      edited();
+      if (!edited()) return;
       setDrawPoints(drawPoints.slice(0, -1));
     },
     error,
@@ -330,14 +343,25 @@ export function useStudioHybridDccFaceModeling(
     previewSummary,
     canApply,
     apply: () => {
-      if (!run || !request || !preview?.ok || committing || frozenText !== null) return;
-      setApplyRequested(true);
+      if (!canApply || !run || !request || !assetId || !record) return;
+      const requested = request;
+      setApplyRequest({ assetId, meshHash: record.meshHash });
       setNotice(bt(
-        "적용을 요청했습니다. 결과는 편집기 상태 표시와 되돌리기 기록에서 확인하세요.",
-        "Apply requested. Check the editor status and undo history for the result.",
+        "적용하는 중이에요. 끝나면 되돌리기 한 번으로 원래대로 돌릴 수 있어요.",
+        "Applying. When it finishes, one undo step restores the original.",
       ));
-      run(studioFaceModelingRunLabel(request.tool), (current, currentSelection) =>
-        commitStudioHybridDccFaceModeling(current, currentSelection, request));
+      run(studioFaceModelingRunLabel(requested.tool), (current, currentSelection) => {
+        try {
+          return commitStudioHybridDccFaceModeling(current, currentSelection, requested);
+        } catch (error) {
+          // 패널은 예외를 작업 기록에만 남기고 busy 를 같은 묶음에서 닫아 화면이 실패를 알 수 없다. 여기서 직접 알린다.
+          setApplyRequest(null);
+          setNotice(error instanceof StudioFaceModelingCommitError
+            ? describeStudioFaceModelingFailure(bt, error.failure, requested.tool)
+            : describeStudioFaceModelingApplyError(bt, error));
+          throw error;
+        }
+      });
     },
     cancel,
     viewportProps,

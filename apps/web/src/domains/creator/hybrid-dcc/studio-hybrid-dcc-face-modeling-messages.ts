@@ -5,7 +5,7 @@
  * 입력한 문자열을 번역 원본에 섞지 않는다. 커널 `detail`은 개발자용 영어 한 줄이라 화면에 쓰지 않는다.
  */
 
-import { formatI18nTemplate } from "../../../shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate } from "@/shared/lib/i18n-bilingual-copy";
 
 import { STUDIO_FACE_MODELING_LIMITS, type StudioFaceModelingFailure } from "./studio-hybrid-dcc-face-modeling-mesh";
 import {
@@ -315,6 +315,24 @@ export function describeStudioFaceModelingFailure(
         failure.maxDistance,
       );
   }
+}
+
+/**
+ * 확정 도중 던져진 오류를 사용자 문장으로 바꾼다(계획 단계 거부는 이유 코드 문구를 따로 쓴다).
+ * 문서 명령의 크기 한도를 넘으면 메시가 너무 크다는 뜻이라 줄이는 방법을, 그 밖에는 다시 시도하는 방법을 알린다.
+ */
+export function describeStudioFaceModelingApplyError(bt: StudioFaceModelingBilingual, error: unknown): string {
+  const code = typeof error === "object" && error !== null && "code" in error ? (error as { readonly code?: unknown }).code : undefined;
+  if (code === "PAYLOAD_TOO_LARGE") {
+    return bt(
+      "메시가 너무 커서 이 편집을 문서에 기록할 수 없어요. 면을 일부 떼어 내거나 단순하게 줄인 뒤 다시 시도해 보세요.",
+      "The mesh is too large to record this edit in the document. Split off some faces or simplify the mesh, then try again.",
+    );
+  }
+  return bt(
+    "적용하지 못했어요. 선택이나 거리를 바꿔 다시 시도해 보세요. 이유는 패널의 작업 기록에 남아 있어요.",
+    "Could not apply. Change the selection or distance and try again. The reason is in the panel log.",
+  );
 }
 
 /** 미리보기가 성공했을 때의 한 줄 요약. 확정 전이며 문서는 바뀌지 않았다는 점을 함께 말한다. */

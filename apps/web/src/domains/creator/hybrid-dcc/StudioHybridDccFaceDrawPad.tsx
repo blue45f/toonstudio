@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
-import { formatI18nTemplate, useBilingual } from "../../../shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
   formatStudioFaceModelingDistance,
@@ -34,7 +34,7 @@ export function StudioHybridDccFaceDrawPad({ model }: { readonly model: StudioHy
   const { guide, drawPoints } = model;
   const viewBox = useMemo(() => (guide ? studioFaceDrawViewBox(guide.outline) : null), [guide]);
   const gridStep = useMemo(() => (guide ? studioFaceDrawGridStep(guide.outline) : 0.1), [guide]);
-  const disabled = Boolean(model.unavailable) || Boolean(model.unusable) || !guide;
+  const disabled = Boolean(model.unavailable) || Boolean(model.unusable) || !guide || model.committing;
   if (!guide || !viewBox) return null;
 
   const toSvg = (point: readonly [number, number]) => `${point[0]},${-point[1]}`;

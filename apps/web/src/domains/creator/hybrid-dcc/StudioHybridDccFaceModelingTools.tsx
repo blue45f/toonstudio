@@ -1,6 +1,6 @@
 import { useId, useRef, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 
-import { formatI18nTemplate, useBilingual } from "../../../shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { StudioHybridDccFaceDrawPad } from "./StudioHybridDccFaceDrawPad";
 import {
@@ -204,6 +204,7 @@ function DistanceControls({
             className={FIELD}
             value={model.text}
             disabled={disabled}
+            readOnly={model.committing}
             placeholder={bt("예: 0.25 · 25cm · 250mm", "e.g. 0.25 · 25cm · 250mm")}
             aria-invalid={model.error ? true : undefined}
             aria-describedby={describedBy}

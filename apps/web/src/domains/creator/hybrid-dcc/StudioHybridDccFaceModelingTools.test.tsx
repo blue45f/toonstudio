@@ -273,7 +273,7 @@ describe("면 모델링 작업대: 거리 입력과 미리보기", () => {
     expect(viewport().getAttribute("data-editing-disabled")).toBe("false");
     expect(distanceField().value).toBe("");
     expect(document.querySelector("[data-studio-hybrid-dcc-face-modeling-state]")!.getAttribute("data-state")).toBe("idle");
-    expect(screen.getByRole("status").textContent).toContain("적용을 요청했습니다");
+    expect(screen.getByRole("status").textContent).toContain("적용했어요");
     // 확정한 결과 위에서 선택은 새 메시 기준 면 선택으로 이어진다.
     expect(viewport().getAttribute("data-selected")).not.toBe("");
 
@@ -309,7 +309,7 @@ describe("면 모델링 작업대: 거리 입력과 미리보기", () => {
       expect(viewport().getAttribute("data-mesh-hash")).toBe(originalHash);
       expect(viewport().getAttribute("data-editing-disabled")).toBe("false");
       expect(distanceField().value).toBe("");
-      expect(screen.getByRole("status").textContent).toContain("미리보기를 취소했습니다");
+      expect(screen.getByRole("status").textContent).toContain("미리보기를 취소했어요");
 
       // 취소한 뒤에는 다시 통과한다.
       fireEvent.keyDown(document.body, { key: "Escape" });
@@ -373,7 +373,7 @@ describe("면 모델링 작업대: 거리 입력과 미리보기", () => {
     fireEvent.click(screen.getByRole("button", { name: "다른 면 선택" }));
     expect(viewport().getAttribute("data-mesh-hash")).toBe(originalHash);
     expect(distanceField().value).toBe("");
-    expect(screen.getByRole("status").textContent).toContain("선택이나 오브젝트가 바뀌어 미리보기를 취소했습니다");
+    expect(screen.getByRole("status").textContent).toContain("선택이나 오브젝트가 바뀌어 미리보기를 취소했어요");
   });
 
   it("도구를 바꾸면 입력과 미리보기가 초기화된다", () => {
@@ -418,7 +418,7 @@ describe("면 모델링 작업대: 적용 실패", () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(screen.getByRole("status").textContent).toContain("적용하지 못했습니다");
+    expect(screen.getByRole("status").textContent).toContain("적용하지 못했어요");
     expect(document.querySelector("[data-studio-hybrid-dcc-face-modeling-state]")!.getAttribute("data-state")).toBe("previewing");
     expect(latest.workspace.session.state.geometry.records.cube!.meshHash).toBe(originalHash);
     expect(viewport().getAttribute("data-mesh-hash")).not.toBe(originalHash);
