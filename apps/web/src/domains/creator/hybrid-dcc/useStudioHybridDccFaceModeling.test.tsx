@@ -114,6 +114,23 @@ describe("면 모델링 훅: 핸들을 끄는 동안의 미리보기 정책", ()
     expect(view.result.current.error).toBeNull();
   });
 
+  it("이미 값이 있는 큰 메시를 끌면 미리보기는 끌기 시작 값에 멈추고, 그 사이 보이지 않는 값은 적용하지 못한다", () => {
+    const { view, shownHash, originalHash } = renderFaceModeling(workspaceWithMesh(subdividedCube(26)), 0);
+    act(() => view.result.current.setText("0.05"));
+    const atStart = shownHash();
+    expect(atStart).not.toBe(originalHash);
+    expect(view.result.current.canApply).toBe(true);
+    act(() => view.result.current.beginDrag());
+    act(() => view.result.current.setHandleValue(0.3));
+    // 미리보기는 0.05 그대로인데 입력은 0.3 이므로 지금 확정하면 보이는 것과 다른 결과가 된다.
+    expect(shownHash()).toBe(atStart);
+    expect(view.result.current.text).toBe("0.3");
+    expect(view.result.current.canApply).toBe(false);
+    act(() => view.result.current.endDrag());
+    expect(shownHash()).not.toBe(atStart);
+    expect(view.result.current.canApply).toBe(true);
+  });
+
   it("직접 입력은 큰 메시도 바로 계산한다", () => {
     const { view, shownHash, originalHash } = renderFaceModeling(workspaceWithMesh(subdividedCube(26)), 0);
     act(() => view.result.current.setText("0.1"));

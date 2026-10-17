@@ -136,7 +136,7 @@ d는 **0보다 커야 한다(음수 불가)**. 모서리 하나라도 사라지�
 | `…-face-modeling-workspace.test.ts` (17) | 미리보기가 문서를 건드리지 않음, 확정 = 명령 1개, 되돌리기·다시 실행·저장 복원 |
 | `…-face-modeling-session.test.ts` (21) | 거리 해석·부호/범위 검증·키 단계·핸들 변환·패드 좌표. 입력/핸들 구간의 양 끝이 실제 커널에서 성공 |
 | `StudioHybridDccFaceModelingTools.test.tsx` (37) | 접힘, 이름/상태, 입력·검증 메시지, 키보드·포인터 끌기, `Esc` 가로채기, 그리기, 적용 실패, 쓸 수 없는 상태 |
-| `useStudioHybridDccFaceModeling.test.tsx` (3) | 4000면을 넘는 메시는 끄는 동안 미리보기를 멈추고 적용을 막고 놓을 때 한 번 계산, 직접 입력·작은 메시는 바로 계산 |
+| `useStudioHybridDccFaceModeling.test.tsx` (4) | 4000면을 넘는 메시는 끄는 동안 미리보기를 멈추고 적용을 막고 놓을 때 한 번 계산, 직접 입력·작은 메시는 바로 계산 |
 | `…-face-modeling-viewport.test.ts` (6) | 미리보기 작업공간 5종과 연쇄 편집 결과를 실제 `deriveStudioHybridDccViewportSnapshot`(오브젝트/면 모드)이 오류·경고 0건으로 받음 |
 | `StudioHybridDccPanel.face-modeling.test.tsx` (4) | 실제 패널 실행 큐·되돌리기/다시 실행 버튼·문서 변경 알림과의 연결 |
 | `…-half-edge-invariants.test.ts` (5 + 알려진 결함 1) | 기존 연산(영역 밀기·비율 안쪽 테두리·루프 컷·나이프) 각 80회, 면 모델링 연속 적용 40회 × 2~6단계(시드 31001~31005·32001)의 불변식과 단계별 되돌리기/다시 실행 정확 복원 |
