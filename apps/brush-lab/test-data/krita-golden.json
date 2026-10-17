@@ -1,0 +1,54 @@
+{
+  "source": "concept-verification",
+  "note": "원본 Krita 미실행. 우리가 기대하는 concept 동작 기준으로 생성(license-policy.md 4.5절·6절). 향후 원본 실행 결과와 비교할 때 source를 'original-run'으로 바꾼다.",
+  "config": {
+    "pressureSmoothing": 0.5,
+    "tiltSensitivity": 0.5,
+    "speedDecay": 0.5,
+    "timeConstant": 32
+  },
+  "initialState": {
+    "pressure": 0,
+    "tiltX": 0,
+    "tiltY": 0,
+    "speed": 0
+  },
+  "sequences": [
+    {
+      "name": "pressure-ramp",
+      "dtMs": 16,
+      "samples": [
+        { "pressure": 0.2, "tiltX": 0, "tiltY": 0, "dx": 0, "dy": 0 },
+        { "pressure": 0.6, "tiltX": 0, "tiltY": 0, "dx": 0, "dy": 0 },
+        { "pressure": 1.0, "tiltX": 0, "tiltY": 0, "dx": 0, "dy": 0 }
+      ],
+      "expected": [
+        { "pressure": 0.05, "tiltX": 0, "tiltY": 0, "speed": 0 },
+        { "pressure": 0.1875, "tiltX": 0, "tiltY": 0, "speed": 0 },
+        { "pressure": 0.390625, "tiltX": 0, "tiltY": 0, "speed": 0 }
+      ]
+    },
+    {
+      "name": "tilt-sweep",
+      "dtMs": 16,
+      "samples": [
+        { "pressure": 0, "tiltX": 1, "tiltY": 0, "dx": 0, "dy": 0 },
+        { "pressure": 0, "tiltX": 1, "tiltY": 0, "dx": 0, "dy": 0 }
+      ],
+      "expected": [
+        { "pressure": 0, "tiltX": 0.25, "tiltY": 0, "speed": 0 },
+        { "pressure": 0, "tiltX": 0.4375, "tiltY": 0, "speed": 0 }
+      ]
+    },
+    {
+      "name": "speed-spike",
+      "dtMs": 16,
+      "samples": [
+        { "pressure": 0, "tiltX": 0, "tiltY": 0, "dx": 100, "dy": 0 }
+      ],
+      "expected": [
+        { "pressure": 0, "tiltX": 0, "tiltY": 0, "speed": 1562.5 }
+      ]
+    }
+  ]
+}
