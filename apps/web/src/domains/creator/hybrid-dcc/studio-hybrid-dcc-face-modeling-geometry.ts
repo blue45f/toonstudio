@@ -50,6 +50,8 @@ export interface StudioAnnulusTriangulation {
 }
 
 const TURN_TOLERANCE = 1e-9;
+/** 같은 방향의 연속 모서리(일직선 꼭짓점)를 같은 각으로 보는 라디안 오차. */
+const ANGLE_TOLERANCE = 1e-9;
 
 function sub2(a: StudioPlanarPoint, b: StudioPlanarPoint): StudioPlanarPoint {
   return [a[0] - b[0], a[1] - b[1]];
@@ -490,13 +492,20 @@ export function triangulateConvexAnnulus(
   };
   const prepare = (angles: readonly number[]): { start: number; sequence: number[] } | null => {
     const relatives = angles.map(relative);
+    // 볼록 다각형의 모서리 방향각은 한 바퀴 돌며 줄어들지 않으므로 순환 수열에서 값이 떨어지는 곳이 시작이다.
+    // 가장 작은 값을 고르면 일직선 꼭짓점(같은 방향의 연속 모서리)이 수열의 처음과 끝에 걸칠 때 묶음 한가운데를
+    // 시작으로 잡아 단조성 검사가 실패한다. 떨어지는 곳이 없으면(이미 정렬됨) 처음부터 시작한다.
     let start = 0;
-    for (let index = 1; index < relatives.length; index += 1) {
-      if (relatives[index]! < relatives[start]!) start = index;
+    for (let index = 0; index < relatives.length; index += 1) {
+      const previous = relatives[(index + relatives.length - 1) % relatives.length]!;
+      if (previous > relatives[index]! + ANGLE_TOLERANCE) {
+        start = index;
+        break;
+      }
     }
     const sequence = relatives.map((_, step) => relatives[(start + step) % relatives.length]!);
     for (let step = 1; step < sequence.length; step += 1) {
-      if (sequence[step]! < sequence[step - 1]! - 1e-12) return null;
+      if (sequence[step]! < sequence[step - 1]! - ANGLE_TOLERANCE) return null;
     }
     return { start, sequence };
   };

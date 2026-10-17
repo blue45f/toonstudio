@@ -324,6 +324,140 @@ describe("안쪽 테두리(Inset) 거리 커널", () => {
   });
 });
 
+describe("일직선 꼭짓점과 정점 순서에 흔들리지 않는다", () => {
+  /** 변마다 중점이 있는 정사각 기둥. 윗면 8각형의 시작 꼭짓점을 `topStart`만큼 돌려 만든다. */
+  function squareColumn(topStart: number): StudioEditableMesh {
+    const ring: StudioPlanarPoint[] = [
+      [-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0],
+    ];
+    const positions: StudioMeshVec3[] = [
+      ...ring.map(([x, z]) => ({ x, y: 0, z })),
+      ...ring.map(([x, z]) => ({ x, y: 1, z })),
+    ];
+    const bottom = ring.map((_, index) => index);
+    const top = bottom.map((index) => index + 8);
+    const sides = bottom.map((index) => [index, (index + 1) % 8, ((index + 1) % 8) + 8, index + 8]);
+    const build = (flip: boolean) => {
+      const orient = (loop: number[]) => (flip ? [...loop].reverse() : loop);
+      // 윗면은 시험 변수만큼, 아랫면은 입력 조건이 아니라 배경이므로 항상 뷰포트가 그릴 수 있는 시작점으로 돌린다.
+      const topLoop = orient(top);
+      const bottomLoop = orient([...bottom].reverse());
+      const bottomStart = findRenderableStartCorner(bottomLoop.map((id) => positions[id]!));
+      return [
+        topLoop.map((_, index) => topLoop[(topStart + index) % topLoop.length]!),
+        bottomLoop.map((_, index) => bottomLoop[(bottomStart + index) % bottomLoop.length]!),
+        ...sides.map(orient),
+      ];
+    };
+    const mesh = createStudioEditableMeshFromPolygons(positions, build(false));
+    return fullReport(mesh).signedVolume < 0 ? createStudioEditableMeshFromPolygons(positions, build(true)) : mesh;
+  }
+
+  function topFaceOf(mesh: StudioEditableMesh): number {
+    return readStudioMeshFaceLoops(mesh)!.find((loop) => (
+      loop.vertexIds.length === 8 && loop.vertexIds.every((id) => mesh.vertices[id]!.position.y === 1)
+    ))!.id;
+  }
+
+  it.each([0, 1, 2, 3, 4, 5, 6, 7])("윗면 8각형의 시작 꼭짓점이 %i번째여도 면 그리기와 안쪽 테두리가 같은 결과를 낸다", (start) => {
+    const mesh = squareColumn(start);
+    const reference = fullReport(mesh);
+    const face = topFaceOf(mesh);
+    const square: StudioPlanarPoint[] = [[-0.2, -0.2], [0.2, -0.2], [0.2, 0.2], [-0.2, 0.2]];
+    const drawn = expectOk(drawStudioEditableMeshFacePolygon(mesh, face, square));
+    expectHealthy(drawn.mesh, reference, `draw start ${start}`);
+    const inset = expectOk(insetStudioEditableMeshFacesByDistance(mesh, [face], 0.3));
+    expectHealthy(inset.mesh, reference, `inset start ${start}`);
+  });
+
+  /** 한 변을 n칸으로 나눈 닫힌 정육면체. 큰 면 하나가 같은 평면의 n x n 사각형들이라 영역 경계에 일직선 꼭짓점이 생긴다. */
+  function subdividedCube(n: number): { positions: StudioMeshVec3[]; faces: number[][]; centroids: StudioMeshVec3[] } {
+    const positions: StudioMeshVec3[] = [];
+    const known = new Map<string, number>();
+    const vertex = (x: number, y: number, z: number) => {
+      const key = `${x},${y},${z}`;
+      let id = known.get(key);
+      if (id === undefined) {
+        id = positions.length;
+        known.set(key, id);
+        positions.push({ x: x / n - 0.5, y: y / n - 0.5, z: z / n - 0.5 });
+      }
+      return id;
+    };
+    const faces: number[][] = [];
+    const centroids: StudioMeshVec3[] = [];
+    for (const axis of [0, 1, 2]) {
+      for (const side of [0, 1]) {
+        const u = (axis + 1) % 3;
+        const v = (axis + 2) % 3;
+        for (let i = 0; i < n; i += 1) {
+          for (let j = 0; j < n; j += 1) {
+            const corner = (di: number, dj: number) => {
+              const c = [0, 0, 0];
+              c[axis] = side * n;
+              c[u] = i + di;
+              c[v] = j + dj;
+              return vertex(c[0]!, c[1]!, c[2]!);
+            };
+            const quad = [corner(0, 0), corner(1, 0), corner(1, 1), corner(0, 1)];
+            faces.push(side === 1 ? quad : quad.reverse());
+            const center = [0, 0, 0];
+            center[axis] = side * n;
+            center[u] = i + 0.5;
+            center[v] = j + 0.5;
+            centroids.push({ x: center[0]! / n - 0.5, y: center[1]! / n - 0.5, z: center[2]! / n - 0.5 });
+          }
+        }
+      }
+    }
+    return { positions, faces, centroids };
+  }
+
+  it("같은 평면 격자의 안쪽 사각형을 바깥으로 오프셋하고, 정점·면 번호와 시작 꼭짓점을 섞어도 결과가 같다", () => {
+    const random = seededRandom(8101);
+    let checked = 0;
+    for (const n of [3, 4, 5]) {
+      const cube = subdividedCube(n);
+      for (let trial = 0; trial < 8; trial += 1) {
+        // 안쪽 사각형(테두리 칸이 아닌 것) 하나를 고른다.
+        const interior = cube.faces.map((_, index) => index).filter((index) => {
+          const within = index % (n * n);
+          const i = Math.floor(within / n);
+          const j = within % n;
+          return i >= 1 && i <= n - 2 && j >= 1 && j <= n - 2;
+        });
+        const picked = interior[Math.floor(random() * interior.length)]!;
+        const target = cube.centroids[picked]!;
+        // 정점 번호, 면 순서, 각 면의 시작 꼭짓점을 무작위로 섞는다.
+        const vertexOrder = cube.positions.map((_, index) => index).sort(() => random() - 0.5);
+        const newIndex = new Map(vertexOrder.map((oldIndex, position) => [oldIndex, position] as const));
+        const positions = vertexOrder.map((oldIndex) => cube.positions[oldIndex]!);
+        const faceOrder = cube.faces.map((_, index) => index).sort(() => random() - 0.5);
+        const faces = faceOrder.map((faceIndex) => {
+          const loop = cube.faces[faceIndex]!.map((id) => newIndex.get(id)!);
+          const start = Math.floor(random() * loop.length);
+          return loop.map((_, index) => loop[(start + index) % loop.length]!);
+        });
+        const mesh = createStudioEditableMeshFromPolygons(positions, faces);
+        const reference = fullReport(mesh);
+        const loops = readStudioMeshFaceLoops(mesh)!;
+        const face = loops.find((loop) => {
+          const corners = loop.vertexIds.map((id) => mesh.vertices[id]!.position);
+          const cx = corners.reduce((sum, point) => sum + point.x, 0) / corners.length;
+          const cy = corners.reduce((sum, point) => sum + point.y, 0) / corners.length;
+          const cz = corners.reduce((sum, point) => sum + point.z, 0) / corners.length;
+          return Math.hypot(cx - target.x, cy - target.y, cz - target.z) < 1e-9;
+        })!;
+        const distance = 0.2 / n;
+        const outcome = expectOk(offsetStudioEditableMeshFace(mesh, face.id, distance, "outward"));
+        expectHealthy(outcome.mesh, reference, `n=${n} trial ${trial}`);
+        checked += 1;
+      }
+    }
+    expect(checked).toBe(24);
+  });
+});
+
 describe("오프셋 커널", () => {
   it("안쪽 오프셋은 안쪽 테두리와 같은 기하를 만들고 선택을 고리 면으로 옮긴다", () => {
     const cube = createStudioUnitCubeMesh();

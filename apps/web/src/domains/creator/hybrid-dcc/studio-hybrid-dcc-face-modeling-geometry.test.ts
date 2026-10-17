@@ -326,6 +326,71 @@ describe("볼록 고리 삼각 분할", () => {
     expect(used.size).toBe(8);
   });
 
+  it("일직선 꼭짓점 묶음이 정점 순서의 처음과 끝에 걸쳐도 모든 시작 회전에서 삼각 분할한다", () => {
+    // 사각형의 네 변 가운데에 점을 더한 8각형. 시작을 어디로 잡아도 같은 도형이다.
+    const ring: StudioPlanarPoint[] = [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]];
+    const inner: StudioPlanarPoint[] = [[-0.2, -0.2], [0.2, -0.2], [0.2, 0.2], [-0.2, 0.2]];
+    for (let start = 0; start < ring.length; start += 1) {
+      const outer = ring.map((_, index) => ring[(start + index) % ring.length]!);
+      for (let innerStart = 0; innerStart < inner.length; innerStart += 1) {
+        const rotatedInner = inner.map((_, index) => inner[(innerStart + index) % inner.length]!);
+        const result = triangulateConvexAnnulus(outer, rotatedInner);
+        expect(result, `outer start ${start}, inner start ${innerStart}`).not.toBeNull();
+        expectTilesAnnulus(result!.triangles, outer.length, rotatedInner.length);
+        expect(result!.triangles).toHaveLength(outer.length + rotatedInner.length);
+      }
+    }
+  });
+
+  it("안쪽 도형에 일직선 꼭짓점이 있어도 모든 시작 회전에서 삼각 분할한다", () => {
+    const outer: StudioPlanarPoint[] = [[-2, -2], [2, -2], [2, 2], [-2, 2]];
+    const ring: StudioPlanarPoint[] = [[-0.5, -0.5], [0, -0.5], [0.5, -0.5], [0.5, 0], [0.5, 0.5], [-0.5, 0.5]];
+    for (let start = 0; start < ring.length; start += 1) {
+      const inner = ring.map((_, index) => ring[(start + index) % ring.length]!);
+      const result = triangulateConvexAnnulus(outer, inner);
+      expect(result, `inner start ${start}`).not.toBeNull();
+      expectTilesAnnulus(result!.triangles, outer.length, inner.length);
+    }
+  });
+
+  it("무작위 볼록 다각형의 변에 일직선 점을 더하고 시작을 돌려도 같은 고리를 빈틈 없이 채운다", () => {
+    const random = seededRandom(20261017);
+    let withCollinear = 0;
+    for (let round = 0; round < 150; round += 1) {
+      const baseOuter = randomConvexPolygon(random, 3 + Math.floor(random() * 6), 3 + random() * 2, [0, 0], [1, 0.7 + random() * 0.3]);
+      const baseInner = randomConvexPolygon(
+        random,
+        3 + Math.floor(random() * 5),
+        convexPolygonInsetMargin(baseOuter, [0, 0]) * (0.1 + random() * 0.4),
+      );
+      const subdivide = (polygon: readonly StudioPlanarPoint[]): StudioPlanarPoint[] => polygon.flatMap((point, index) => {
+        const next = polygon[(index + 1) % polygon.length]!;
+        if (random() > 0.4) return [point];
+        const cuts = 1 + Math.floor(random() * 2);
+        const extra = Array.from({ length: cuts }, (_, cut) => {
+          const t = (cut + 1) / (cuts + 1);
+          return [point[0] + (next[0] - point[0]) * t, point[1] + (next[1] - point[1]) * t] as StudioPlanarPoint;
+        });
+        return [point, ...extra];
+      });
+      const outerBase = subdivide(baseOuter);
+      const innerBase = subdivide(baseInner);
+      if (outerBase.length > baseOuter.length || innerBase.length > baseInner.length) withCollinear += 1;
+      const outerStart = Math.floor(random() * outerBase.length);
+      const innerStart = Math.floor(random() * innerBase.length);
+      const outer = outerBase.map((_, index) => outerBase[(outerStart + index) % outerBase.length]!);
+      const inner = innerBase.map((_, index) => innerBase[(innerStart + index) % innerBase.length]!);
+      const result = triangulateConvexAnnulus(outer, inner);
+      expect(result, `round ${round}`).not.toBeNull();
+      expectTilesAnnulus(result!.triangles, outer.length, inner.length);
+      const points = [...outer, ...inner];
+      const area = result!.triangles.reduce((sum, triangle) => sum + polygonSignedArea(triangle.map((index) => points[index]!)), 0);
+      expect(area).toBeCloseTo(polygonSignedArea(outer) - polygonSignedArea(inner), 8);
+    }
+    // 일직선 꼭짓점이 실제로 섞인 사례가 충분히 있어야 시험이 의미가 있다.
+    expect(withCollinear).toBeGreaterThan(100);
+  });
+
   it("안쪽 도형이 바깥으로 삐져나오거나 면적이 더 크면 null이다", () => {
     const outer: StudioPlanarPoint[] = [[0, 0], [10, 0], [10, 10], [0, 10]];
     expect(triangulateConvexAnnulus(outer, [[0, 0], [20, 0], [20, 20], [0, 20]])).toBeNull();
