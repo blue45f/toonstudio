@@ -74,7 +74,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
     deleteStudioBg3dLtUserPreset, renameStudioBg3dLtUserPreset, upsertStudioBg3dLtUserPreset,
     getProductStudioBg3dLtPresetSqliteRepository, STUDIO_BG3D_LT_BUILT_IN_PRESETS,
     STUDIO_BG3D_LT_PRESET_MAX_COUNT, STUDIO_BG3D_LT_PRESET_MAX_DESCRIPTION_LENGTH,
-    STUDIO_BG3D_LT_PRESET_MAX_NAME_LENGTH, applyStudioBg3dLtPreset, renderStudioBg3dLtLayers,
+    STUDIO_BG3D_LT_PRESET_MAX_NAME_LENGTH, applyStudioBg3dLtPreset,
     STUDIO_BG3D_LT_RENDER_MAX_PIXELS, renderStudioBg3dLtLayersInWorker,
     StudioBg3dLtRenderWorkerError, buildStudioBg3dMagicFilterMask,
     encodeStudioBg3dMagicMaskPngDataUrl, captureStudioBg3dMagicObjectIds,
@@ -152,7 +152,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
     StudioBg3dDirectionalShadowLight, StudioBg3dImmersivePanel, StudioBg3dLtPanel,
     StudioBg3dMeasurementPanel, StudioBg3dMeasurementViewport, StudioBg3dPhysicsPanel,
     StudioBg3dPhysicsTransport, StudioBg3dPlacementPointerController,
-    StudioBg3dRoomBuilderPanel, StudioBg3dSceneFog, BgAdaptiveDprController,
+    StudioBg3dRoomBuilderPanel, StudioBg3dWebtoonBackgroundPicker, StudioBg3dSceneFog, BgAdaptiveDprController,
     BgCustomModelInstanceBatch, BgCustomModelMesh, BgGroundHelper, BgPlacementPreview,
     BgPrimitiveMesh, BgScaleGuide, BgSectionPlaneController, BgViewportController,
     SkyClearColorController, StudioBg3dThreeRenderSettingsController, StudioBg3dScenePanorama,
@@ -334,6 +334,10 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
     sceneRecoveryError, sharedStageUpdateBlockedReason,
   } = { ...R, ...h };
   const simpleMode = experienceMode === "simple";
+  // "자동 단면"(카메라 쪽 벽 숨김) 설정 — 문서에 저장하지 않는 입력 편의다. 원클릭 웹툰 배경은 기본 켜짐(켜면 숨긴 벽을
+  // 안내하고 한 번에 되돌리는 버튼을 준다), 방 만들기는 기본 꺼짐(예전 "방 추가"와 같은 동작)이라 따로 둔다.
+  const [webtoonAutoCutaway, setWebtoonAutoCutaway] = useState(true);
+  const [roomPanelAutoCutaway, setRoomPanelAutoCutaway] = useState(false);
   const simplePanelCopy = {
     shapes: { label: "소품", hint: "가구·물건·기본 도형을 장면에 배치" },
     templates: { label: "배경", hint: "교실·거리·카페 같은 장소를 빠르게 구성" },
@@ -564,6 +568,22 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               ) : null}
 
               <section hidden={hideOnTab("templates")}>
+                {activePanelTab === "templates" ? (
+                  <div className="mb-5 border-b border-line pb-4">
+                    <Suspense fallback={(
+                      <StudioPanelLoading label="웹툰 배경 도구를 불러오는 중이에요…" />
+                    )}>
+                      <StudioBg3dWebtoonBackgroundPicker
+                        disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
+                        autoCutaway={webtoonAutoCutaway}
+                        onAutoCutawayChange={setWebtoonAutoCutaway}
+                        onBuild={h.addGeneratedParts}
+                        onShowParts={h.showSceneParts}
+                        onFocusBuilt={focusSelectedEntity}
+                      />
+                    </Suspense>
+                  </div>
+                ) : null}
                 <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-fg">
                   <LayoutTemplate size={15} className="text-accent" aria-hidden />
                   씬 템플릿
@@ -622,13 +642,22 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                       파라메트릭
                     </span>
                   </div>
-                  <StudioBg3dRoomBuilderPanel
-                    spec={roomBuilderSpec}
-                    disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
-                    onSpecChange={handleRoomBuilderSpecChange}
-                    onApplyPreset={applyRoomBuilderPreset}
-                    onInsert={addRoomBuild}
-                  />
+                  {activePanelTab === "templates" ? (
+                    <Suspense fallback={(
+                      <StudioPanelLoading label="방 만들기 도구를 불러오는 중이에요…" />
+                    )}>
+                      <StudioBg3dRoomBuilderPanel
+                        spec={roomBuilderSpec}
+                        disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
+                        onSpecChange={handleRoomBuilderSpecChange}
+                        onApplyPreset={applyRoomBuilderPreset}
+                        onInsert={() => addRoomBuild({ autoCutaway: roomPanelAutoCutaway })}
+                        autoCutaway={roomPanelAutoCutaway}
+                        onAutoCutawayChange={setRoomPanelAutoCutaway}
+                        onShowParts={h.showSceneParts}
+                      />
+                    </Suspense>
+                  ) : null}
                 </div>
               </section>
 

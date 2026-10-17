@@ -28,6 +28,14 @@ import {
 } from "../scene-3d/studio-3d-camera-cinematic-director";
 
 import {
+  STUDIO_BG3D_CUT_ASPECT_LINKED_HINT,
+  STUDIO_BG3D_CUT_ASPECT_MEMO_HINT,
+  STUDIO_BG3D_CUT_ASPECT_OPTIONS,
+  isStudioBg3dCutAspectOptionId,
+  resolveStudioBg3dCutAspectSelection,
+  studioBg3dCaptureRatioFromCutAspect,
+} from "./studio-bg3d-cut-aspect-link";
+import {
   analyzeStudioBg3dShotContinuity,
   formatStudioBg3dShotContinuitySummary,
 } from "./studio-bg3d-shot-continuity";
@@ -82,6 +90,12 @@ export interface StudioBg3dCinematicDirectorPanelProps {
   readonly onTriggerShake?: (config: CameraShakeConfig) => void;
   readonly onUseCurrentFrameAsAiReference?: () => void;
   readonly aiReferenceBusy?: boolean;
+  /**
+   * 장면 연동 덱에서 컷 비율과 이어지는 문서 캡처 프레임 비율(가로/세로, null = 뷰포트 비율을 따름).
+   * 변경 명령(onCaptureAspectRatioChange)이 함께 있어야 연결 모드가 된다.
+   */
+  readonly captureAspectRatio?: number | null;
+  readonly onCaptureAspectRatioChange?: (ratio: number | null) => void;
 }
 
 let cinematicBookmarkCounter = 100;
@@ -98,6 +112,8 @@ export function StudioBg3dCinematicDirectorPanel({
   onTriggerShake,
   onUseCurrentFrameAsAiReference,
   aiReferenceBusy = false,
+  captureAspectRatio = null,
+  onCaptureAspectRatioChange,
 }: StudioBg3dCinematicDirectorPanelProps): React.JSX.Element {
   const [selectedAngle, setSelectedAngle] = useState<WebtoonShotAngleKind>("eye-level-dialogue");
   const [selectedShake, setSelectedShake] = useState<CameraShakePreset>("none");
@@ -115,6 +131,14 @@ export function StudioBg3dCinematicDirectorPanel({
   const [activeDeckIndex, setActiveDeckIndex] = useState(0);
 
   const productionMode = productionShots !== undefined;
+  // 장면 연동 덱이고 변경 명령이 있을 때만 컷 비율이 캡처 프레임과 이어진다. 그 밖(리허설 덱)에서는
+  // 북마크에 기록되는 메모일 뿐이므로 라벨과 안내 문구가 그 사실을 그대로 말한다.
+  const cutAspectLinked = productionMode && onCaptureAspectRatioChange !== undefined;
+  const linkedCutAspect = resolveStudioBg3dCutAspectSelection(captureAspectRatio);
+  const cutAspectValue = cutAspectLinked ? linkedCutAspect : panelAspect;
+  const effectivePanelAspect: WebtoonPanelAspect = isStudioBg3dCutAspectOptionId(cutAspectValue)
+    ? cutAspectValue
+    : panelAspect;
   const continuityShots = useMemo<readonly StudioBg3dShot[]>(
     () => productionShots ?? localBookmarks.map(bookmarkToShot),
     [localBookmarks, productionShots],
@@ -176,9 +200,22 @@ export function StudioBg3dCinematicDirectorPanel({
     transitionSeconds,
     holdSeconds,
     easing,
-    panelAspect,
+    panelAspect: effectivePanelAspect,
     safeFramePercent: 90,
   } as const;
+
+  const handleCutAspectChange = (value: string) => {
+    if (!cutAspectLinked) {
+      if (isStudioBg3dCutAspectOptionId(value)) setPanelAspect(value);
+      return;
+    }
+    if (value === "free") {
+      onCaptureAspectRatioChange?.(null);
+      return;
+    }
+    const ratio = studioBg3dCaptureRatioFromCutAspect(value);
+    if (ratio !== undefined) onCaptureAspectRatioChange?.(ratio);
+  };
 
   const handleAddBookmark = () => {
     if (productionMode) {
@@ -333,19 +370,26 @@ export function StudioBg3dCinematicDirectorPanel({
             </select>
           </label>
           <label className="text-[0.62rem] font-semibold text-fg-3">
-            컷 비율
+            {cutAspectLinked ? "컷 비율" : "컷 비율 (메모)"}
             <select
-              value={panelAspect}
+              value={cutAspectValue}
               disabled={disabled}
-              onChange={(event) => setPanelAspect(event.target.value as WebtoonPanelAspect)}
+              onChange={(event) => handleCutAspectChange(event.target.value)}
               className="mt-1 min-h-8 w-full rounded border border-line bg-raised px-2 text-fg"
             >
-              {(["9:16", "4:5", "1:1", "16:9", "21:9"] as const).map((value) => (
-                <option key={value} value={value}>{value}</option>
+              {cutAspectLinked ? <option value="free">자유(뷰포트)</option> : null}
+              {cutAspectLinked && cutAspectValue === "custom" ? (
+                <option value="custom" disabled>직접 지정</option>
+              ) : null}
+              {STUDIO_BG3D_CUT_ASPECT_OPTIONS.map(({ id }) => (
+                <option key={id} value={id}>{id}</option>
               ))}
             </select>
           </label>
         </div>
+        <p className="text-[0.6rem] leading-relaxed text-fg-3" data-testid="cut-aspect-hint">
+          {cutAspectLinked ? STUDIO_BG3D_CUT_ASPECT_LINKED_HINT : STUDIO_BG3D_CUT_ASPECT_MEMO_HINT}
+        </p>
       </section>
 
       <section className="flex flex-col gap-1.5" aria-label="웹툰 연출 앵글 프리셋">

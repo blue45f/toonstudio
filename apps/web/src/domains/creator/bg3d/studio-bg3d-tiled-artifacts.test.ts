@@ -179,6 +179,62 @@ describe("guarded global-coordinate line/tone tiles", () => {
       }
     },
   );
+  it.each([
+    { tileWidth: 47, bandHeight: 31 },
+    { tileWidth: 29, bandHeight: 23 },
+  ])(
+    "keeps depth, hidden-line removal, interior suppression, 8px strokes and texture lines seamless across $tileWidth x $bandHeight tiles",
+    async ({ tileWidth, bandHeight }) => {
+      // 깊이·내부선 억제·가려진 선 제거·가장 넓은 선 폭·재질선을 모두 켠 최악 조합이다. 한 출력 픽셀이 받는 입력
+      // 거리(흐림 2 + Sobel 1 + 비최대 억제 1 + 가려진 선 이동 1 + 칠하기 4 + 재질선 칠하기 3)가 타일 헤일로(12)
+      // 안에 들어와 전체 프레임 결과와 같아야 한다.
+      const full = fixture(139, 107);
+      const doc = createDefaultStudioBg3dSceneDocument();
+      const settings = {
+        line: {
+          ...doc.output.line,
+          enabled: true,
+          widthPx: 8,
+          smoothing: 1,
+          accuracy: 0.9,
+          depthEnabled: true,
+          depthOutlineOnly: false,
+          creaseAngleDegrees: 35,
+          hiddenLineRemoval: true,
+          textureLineEnabled: true,
+          textureLineStrength: 1,
+          interiorSuppressionEnabled: true,
+          interiorSuppressionStrength: 0.7,
+        },
+        tone: { ...doc.output.tone, mode: "none" as const },
+      };
+      const reference = renderStudioBg3dLtLayers(full, settings);
+      expect(reference.layers.map((layer) => layer.role)).toEqual(["texture-line", "main-line"]);
+      const processor = new StudioBg3dTiledArtifactProcessor({
+        width: full.width,
+        height: full.height,
+        tileWidth,
+        bandHeight,
+        passes: ["main-line", "texture-line"],
+        settings,
+      });
+      for (const tile of processor.plan.tiles)
+        await processor.append(tile.index, cut(full, tile.capture));
+      const results = await processor.finish();
+      expect(results.images).toHaveLength(2);
+      for (const image of results.images) {
+        const decoded = await decode(image.png),
+          expected = reference.layers.find((layer) => layer.role === image.pass)!;
+        let maximum = 0;
+        for (let i = 0; i < decoded.rgba.length; i++)
+          maximum = Math.max(
+            maximum,
+            Math.abs(decoded.rgba[i]! - expected.data[i]!),
+          );
+        expect(maximum, image.pass).toBeLessThanOrEqual(1);
+      }
+    },
+  );
   it("honors whole-frame scale-aware thresholds even for small processing tiles", () => {
     const full = fixture(331, 103);
     const doc = createDefaultStudioBg3dSceneDocument();

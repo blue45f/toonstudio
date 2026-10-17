@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
+import { buildStudioBg3dRoomParts, getStudioBg3dRoomPreset } from "../bg3d/studio-bg3d-room-builder";
 import {
   applyStudioShotOverride,
   mutateStudioSharedObjectGeometry,
@@ -357,6 +358,29 @@ describe("Hybrid DCC → shipping BG3D handoff", () => {
     });
     expect(result.deliveryEvidence.canvasDocumentIntegrated).toBe(false);
   });
+
+  // 방 파츠 회전이 문서 정규형([-π, π))이 아니면 엄격 컷 포착이 거부해 핸드오프가 "Could not capture DCC shot"
+  // 으로 실패한다(교실 의자 yaw 180° = 정확히 π 가 그 사례). 모든 방 프리셋의 절차 브리지를 고정한다.
+  it.each(["classroom", "cafe", "studio-flat", "corridor", "rooftop", "study"] as const)(
+    "hands off the %s room preset as editable primitives with canonical rotations and a captured shot",
+    async (presetId) => {
+      let workspace = createStudioHybridDccWorkspace(`room-preset-${presetId}`);
+      workspace = workspaceLoadRoomPreset(workspace, presetId);
+      const ports = testPorts();
+
+      const result = await handoffStudioHybridDccWorkspaceToBg3d(workspace, { ports });
+
+      expect(ports.persistAttachments).not.toHaveBeenCalled();
+      expect(result.proceduralObjects).toHaveLength(1);
+      expect(result.scene.shots?.length ?? 0).toBeGreaterThan(0);
+      expect(result.scene.nodes).toHaveLength(buildStudioBg3dRoomParts(getStudioBg3dRoomPreset(presetId)!.spec).length);
+      expect(result.scene.nodes.every((node) => node.kind === "primitive")).toBe(true);
+      for (const node of result.scene.nodes) {
+        const [, yaw] = node.transform.rotation;
+        expect(yaw >= -Math.PI && yaw < Math.PI, `${presetId} ${node.name}`).toBe(true);
+      }
+    },
+  );
 
   it.each(["cyclic", "bigint"] as const)(
     "rejects %s provenance before atomic model persistence",

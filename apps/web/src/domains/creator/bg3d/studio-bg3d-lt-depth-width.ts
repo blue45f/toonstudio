@@ -125,7 +125,8 @@ export function expandStudioBg3dLtResponseWithWidthField(
   }
   const meanWidth = sum / pixelCount;
   if (!Number.isFinite(meanWidth)) return null;
-  // Match LT renderer's lineWidthRadius: ceil((widthPx - 1) / 2), capped at 4.
+  // 예전 LT 렌더러의 정수 반경 규칙(ceil((widthPx - 1) / 2), 최대 4)을 그대로 둔 시험 전용 도우미다. 렌더러는 이제
+  // 연속 폭으로 칠하며(studio-bg3d-lt-line-stroke.ts) 이 함수와 이어져 있지 않다.
   const radius = Math.min(4, Math.max(0, Math.ceil((meanWidth - 1) / 2)));
 
   const source = response instanceof Uint8ClampedArray

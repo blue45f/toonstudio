@@ -69,6 +69,8 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
     disabled,
     proSuiteActive: !props.hidden && context.viewEditorSection === "prosuite",
     baseCamera: context.sceneBaseDocument.camera,
+    captureAspectRatio: context.sceneBaseDocument.output.exportAspectRatio ?? null,
+    onSetCaptureAspectRatio: props.onSetCaptureAspectRatio,
     productionShots: context.savedShots,
     sceneSummary,
     professionalReadiness: props.professionalReadiness,

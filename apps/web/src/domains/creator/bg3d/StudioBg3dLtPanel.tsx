@@ -1,5 +1,7 @@
 import { StudioThreeDToggleIndicator } from "../StudioThreeDToggle";
 
+import { StudioBg3dLtLineDetailControls } from "./StudioBg3dLtLineDetailControls";
+
 import {
   STUDIO_BG3D_CONTROL_BUTTON as CONTROL_BUTTON,
   roundStudioBg3dNumber as round,
@@ -534,8 +536,8 @@ export function StudioBg3dLtPanel({
                             className="absolute inset-x-3 top-[38%] rounded-full"
                             style={{
                               backgroundColor: ltLineSettings.color,
-                              height: `${Math.max(1, Math.min(8, ltLineSettings.widthPx * 1.6))}px`,
-                              opacity: ltLineSettings.strength,
+                              height: `${Math.max(1, Math.min(8, ltLineSettings.widthPx))}px`,
+                              opacity: ltLineSettings.strength * Math.min(1, ltLineSettings.widthPx),
                             }}
                           />
                           {ltLineSettings.textureLineEnabled ? (
@@ -656,119 +658,13 @@ export function StudioBg3dLtPanel({
                     onChange={(strength) => updateLtLineSettings({ strength })}
                   />
 
-                  <details className="group border-b border-line/70">
-                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-xs font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-                      정밀 선 검출
-                      <span className="flex items-center gap-1 text-[0.64rem] font-normal text-fg-3">
-                        모서리 · 깊이 · 질감
-                        <ChevronDown className="transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" size={13} aria-hidden />
-                      </span>
-                    </summary>
-                    <div className="border-t border-line/60 pl-2">
-                      <LtRangeControl
-                        id="bg3d-lt-line-accuracy"
-                        label="검출 정밀도"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={ltLineSettings.accuracy}
-                        valueText={`${Math.round(ltLineSettings.accuracy * 100)}%`}
-                        disabled={!ltLineSettings.enabled}
-                        onChange={(accuracy) => updateLtLineSettings({ accuracy })}
-                      />
-                      <LtRangeControl
-                        id="bg3d-lt-line-exterior"
-                        label="외곽선 강조"
-                        min={0}
-                        max={2}
-                        step={0.05}
-                        value={ltLineSettings.exteriorOutlineStrength}
-                        valueText={`${round(ltLineSettings.exteriorOutlineStrength, 2)}×`}
-                        disabled={!ltLineSettings.enabled}
-                        onChange={(exteriorOutlineStrength) => updateLtLineSettings({ exteriorOutlineStrength })}
-                      />
-                      <LtRangeControl
-                        id="bg3d-lt-line-smoothing"
-                        label="선 다듬기"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={ltLineSettings.smoothing}
-                        valueText={`${Math.round(ltLineSettings.smoothing * 100)}%`}
-                        disabled={!ltLineSettings.enabled}
-                        onChange={(smoothing) => updateLtLineSettings({ smoothing })}
-                      />
-                      <LtRangeControl
-                        id="bg3d-lt-line-crease"
-                        label="모서리 각도"
-                        min={0}
-                        max={180}
-                        step={1}
-                        value={ltLineSettings.creaseAngleDegrees}
-                        valueText={`${Math.round(ltLineSettings.creaseAngleDegrees)}°`}
-                        disabled={!ltLineSettings.enabled}
-                        onChange={(creaseAngleDegrees) => updateLtLineSettings({ creaseAngleDegrees })}
-                      />
-                      <LtToggleRow
-                        checked={ltLineSettings.scaleAwareAccuracy}
-                        label="화면 크기 보정"
-                        disabled={!ltLineSettings.enabled}
-                        onChange={(scaleAwareAccuracy) => updateLtLineSettings({ scaleAwareAccuracy })}
-                      />
-                      <LtToggleRow
-                        checked={ltLineSettings.hiddenLineRemoval}
-                        label="가려진 선 제거"
-                        disabled={!ltLineSettings.enabled}
-                        onChange={(hiddenLineRemoval) => updateLtLineSettings({ hiddenLineRemoval })}
-                      />
-                      <LtToggleRow
-                        checked={ltLineSettings.depthEnabled}
-                        label="깊이선 검출"
-                        disabled={!ltLineSettings.enabled}
-                        onChange={(depthEnabled) => updateLtLineSettings({ depthEnabled })}
-                      />
-                      {ltLineSettings.depthEnabled ? (
-                        <>
-                          <LtRangeControl
-                            id="bg3d-lt-line-depth"
-                            label="깊이선 강도"
-                            min={0}
-                            max={1}
-                            step={0.01}
-                            value={ltLineSettings.depthStrength}
-                            valueText={`${Math.round(ltLineSettings.depthStrength * 100)}%`}
-                            disabled={!ltLineSettings.enabled}
-                            onChange={(depthStrength) => updateLtLineSettings({ depthStrength })}
-                          />
-                          <LtToggleRow
-                            checked={ltLineSettings.depthOutlineOnly}
-                            label="깊이 외곽선만"
-                            disabled={!ltLineSettings.enabled}
-                            onChange={(depthOutlineOnly) => updateLtLineSettings({ depthOutlineOnly })}
-                          />
-                        </>
-                      ) : null}
-                      <LtToggleRow
-                        checked={ltLineSettings.textureLineEnabled}
-                        label="재질선 검출"
-                        disabled={!ltLineSettings.enabled}
-                        onChange={(textureLineEnabled) => updateLtLineSettings({ textureLineEnabled })}
-                      />
-                      {ltLineSettings.textureLineEnabled ? (
-                        <LtRangeControl
-                          id="bg3d-lt-line-texture"
-                          label="재질선 강도"
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          value={ltLineSettings.textureLineStrength}
-                          valueText={`${Math.round(ltLineSettings.textureLineStrength * 100)}%`}
-                          disabled={!ltLineSettings.enabled}
-                          onChange={(textureLineStrength) => updateLtLineSettings({ textureLineStrength })}
-                        />
-                      ) : null}
-                    </div>
-                  </details>
+                  <StudioBg3dLtLineDetailControls
+                    ltLineSettings={ltLineSettings}
+                    updateLtLineSettings={updateLtLineSettings}
+                    LtToggleRow={LtToggleRow}
+                    LtRangeControl={LtRangeControl}
+                    ChevronDown={ChevronDown}
+                  />
                 </div>
 
                 <div hidden={ltEditorSection !== "tone"} className="mt-3">

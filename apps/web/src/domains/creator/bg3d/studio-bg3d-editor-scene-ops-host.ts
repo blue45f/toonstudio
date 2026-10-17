@@ -77,7 +77,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     studioBg3dFocalLengthToFovDegrees, studioBg3dFovDegreesToFocalLength, resolveStudioBg3dLtCaptureSize, encodeStudioBg3dLtLayers,
     EMPTY_STUDIO_BG3D_LT_USER_PRESET_PAYLOAD, createStudioBg3dLtUserPreset, deleteStudioBg3dLtUserPreset, renameStudioBg3dLtUserPreset,
     upsertStudioBg3dLtUserPreset, getProductStudioBg3dLtPresetSqliteRepository, STUDIO_BG3D_LT_BUILT_IN_PRESETS, STUDIO_BG3D_LT_PRESET_MAX_COUNT,
-    STUDIO_BG3D_LT_PRESET_MAX_DESCRIPTION_LENGTH, STUDIO_BG3D_LT_PRESET_MAX_NAME_LENGTH, applyStudioBg3dLtPreset, renderStudioBg3dLtLayers,
+    STUDIO_BG3D_LT_PRESET_MAX_DESCRIPTION_LENGTH, STUDIO_BG3D_LT_PRESET_MAX_NAME_LENGTH, applyStudioBg3dLtPreset,
     STUDIO_BG3D_LT_RENDER_MAX_PIXELS, renderStudioBg3dLtLayersInWorker, StudioBg3dLtRenderWorkerError, buildStudioBg3dMagicFilterMask,
     encodeStudioBg3dMagicMaskPngDataUrl, captureStudioBg3dMagicObjectIds, STUDIO_BG3D_MAGIC_OBJECT_ID_RUNTIME_CAPABILITIES, resolveStudioBg3dMagicSelection,
     STUDIO_BG3D_MEASUREMENT_MAX_REFERENCES, classifyStudioBg3dMeasurementInference, createStudioBg3dMeasurementDocument, formatStudioBg3dMeasurementLength,
@@ -494,17 +494,23 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     void captureStudio3dPlatesFromAdapter(graded.scene, 48, 27, captureRef?.current?.adapter ?? null);
   };
   h.addPrimitive = addPrimitive;
-  const addComposite = (presetId: string) => {
-    const preset = COMPOSITE_PRESETS.find((p) => p.id === presetId);
-    if (!preset) return;
+  // 합성·방·웹툰 배경처럼 "한 번에 여러 도형을 만들어 붙이는" 추가의 공통 경로: 노드 수 한도를 확인한 뒤 한 번의 상태
+  // 교체로 커밋하고 첫 도형을 선택한다. buildParts(기존 도형 수, 현재 카메라 뷰) → BgPrimitive[]; 더한 목록(실패면 false)을 돌려준다.
+  const addGeneratedParts = (buildParts) => {
     const live = physicsRuntimeSourceRef.current;
-    const parts = instantiateCompositePreset(preset, live.primitives.length);
-    if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return;
-    const nextPrimitives = [...live.primitives, ...parts];
-    replaceCanonicalDocumentState({ primitives: nextPrimitives });
+    const parts = buildParts(live.primitives.length, viewportApiRef.current?.readView() ?? sceneBaseDocument.camera);
+    if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return false;
+    replaceCanonicalDocumentState({ primitives: [...live.primitives, ...parts] });
     setSelectedIds(new Set([parts[0].id]));
+    return parts;
   };
-  h.addComposite = addComposite;
+  h.addGeneratedParts = addGeneratedParts;
+  // "숨긴 벽 되돌리기": 자동 단면이 숨긴 조각(id 목록)만 한 번의 상태 교체로 다시 보이게 한다.
+  h.showSceneParts = (ids) => replaceCanonicalDocumentState({ primitives: physicsRuntimeSourceRef.current.primitives.map((p) => (ids.includes(p.id) && p.visible === false ? { ...p, visible: true } : p)) });
+  h.addComposite = (presetId: string) => {
+    const preset = COMPOSITE_PRESETS.find((p) => p.id === presetId);
+    if (preset) addGeneratedParts((count) => instantiateCompositePreset(preset, count));
+  };
   const addProceduralStarterAsset = (
     assetId: string,
   ): StudioBg3dProceduralInsertionPlan => {
@@ -581,14 +587,8 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     return true;
   };
   h.addSceneTemplate = addSceneTemplate;
-  const addRoomBuild = () => {
-    const live = physicsRuntimeSourceRef.current;
-    const parts = instantiateStudioBg3dRoomBuild(roomBuilderSpec, live.primitives.length);
-    if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return;
-    const nextPrimitives = [...live.primitives, ...parts];
-    replaceCanonicalDocumentState({ primitives: nextPrimitives });
-    setSelectedIds(new Set([parts[0].id]));
-  };
+  const addRoomBuild = ({ autoCutaway = false } = {}) => addGeneratedParts((count, view) =>
+    R.planStudioBg3dRoomBuild(roomBuilderSpec, count, undefined, { autoCutawayCamera: autoCutaway ? view : null }).primitives);
   h.addRoomBuild = addRoomBuild;
   const applyRoomBuilderPreset = (presetId: string) => {
     const preset = getStudioBg3dRoomPreset(presetId);

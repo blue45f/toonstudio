@@ -505,3 +505,97 @@ it("rejects shared, unpaired, and incorrectly sized normal payloads before creat
   }
   expect(factory).not.toHaveBeenCalled();
 });
+
+describe("내부선 억제 선택 필드가 Worker 경계를 건넌다", () => {
+  function withSuppression(
+    extra: Partial<StudioBg3dLtRenderSettings["line"]>,
+  ): StudioBg3dLtRenderSettings {
+    const base = settings();
+    return { ...base, line: { ...base.line, ...extra } };
+  }
+
+  it("copies the optional fields into the frozen request and renders exactly like the direct renderer", async () => {
+    const input = raster(9, 7);
+    const options = withSuppression({ interiorSuppressionEnabled: true, interiorSuppressionStrength: 0.75 });
+    const expected = renderStudioBg3dLtLayers(input, options);
+    const worker = new DeterministicRenderWorker();
+    const pending = renderStudioBg3dLtLayersInWorker(input, options, { workerFactory: () => worker });
+    const request = worker.requests[0]!;
+
+    expect(request.settings.line).toMatchObject({
+      interiorSuppressionEnabled: true,
+      interiorSuppressionStrength: 0.75,
+    });
+    expect(Object.isFrozen(request.settings.line)).toBe(true);
+    expect(isStudioBg3dLtRenderWorkerRequest(request)).toBe(true);
+    const result = await pending;
+    expect(result.layers.map((layer) => [layer.role, Array.from(layer.data)])).toEqual(
+      expected.layers.map((layer) => [layer.role, Array.from(layer.data)]),
+    );
+  });
+
+  it("does not invent the optional keys for settings that lack them (old documents)", async () => {
+    const worker = new FakeWorker();
+    const pending = renderStudioBg3dLtLayersInWorker(raster(), settings(), { workerFactory: () => worker });
+    const request = worker.requests[0]!;
+    expect(Object.keys(request.settings.line)).not.toContain("interiorSuppressionEnabled");
+    expect(Object.keys(request.settings.line)).not.toContain("interiorSuppressionStrength");
+    expect(isStudioBg3dLtRenderWorkerRequest(request)).toBe(true);
+    worker.emitMessage(responseFor(request));
+    await expect(pending).resolves.toMatchObject({ width: 8, height: 6 });
+  });
+
+  it("accepts a lone switch or a lone strength and equals the old behavior while off", async () => {
+    const input = raster();
+    const off = renderStudioBg3dLtLayers(input, settings());
+    for (const extra of [
+      { interiorSuppressionEnabled: false },
+      { interiorSuppressionStrength: 0.9 },
+      { interiorSuppressionEnabled: true, interiorSuppressionStrength: 0 },
+    ] as const) {
+      const worker = new DeterministicRenderWorker();
+      const result = await renderStudioBg3dLtLayersInWorker(input, withSuppression(extra), {
+        workerFactory: () => worker,
+      });
+      expect(result.layers.map((layer) => Array.from(layer.data))).toEqual(
+        off.layers.map((layer) => Array.from(layer.data)),
+      );
+    }
+  });
+
+  it("rejects malformed optional values and unknown line keys before creating a Worker", async () => {
+    const workerFactory = vi.fn(() => new FakeWorker());
+    for (const extra of [
+      { interiorSuppressionStrength: 1.5 },
+      { interiorSuppressionStrength: Number.NaN },
+      { interiorSuppressionEnabled: "yes" },
+      { interiorSuppresionEnabled: true },
+    ]) {
+      await expect(
+        renderStudioBg3dLtLayersInWorker(
+          raster(),
+          withSuppression(extra as unknown as Partial<StudioBg3dLtRenderSettings["line"]>),
+          { workerFactory },
+        ),
+      ).rejects.toMatchObject({ code: "invalid-request" });
+    }
+    expect(workerFactory).not.toHaveBeenCalled();
+  });
+
+  it("validates the optional fields again on the Worker side of the exact-key protocol", () => {
+    const buffer = new ArrayBuffer(4);
+    const request = (line: object) => ({
+      version: STUDIO_BG3D_LT_RENDER_WORKER_PROTOCOL_VERSION,
+      kind: "render",
+      requestId: 1,
+      input: { width: 1, height: 1, rgbaBuffer: buffer },
+      settings: { ...settings(), line: { ...settings().line, ...line } },
+    });
+    expect(isStudioBg3dLtRenderWorkerRequest(request({}))).toBe(true);
+    expect(isStudioBg3dLtRenderWorkerRequest(request({ interiorSuppressionEnabled: true }))).toBe(true);
+    expect(isStudioBg3dLtRenderWorkerRequest(request({ interiorSuppressionStrength: 0 }))).toBe(true);
+    expect(isStudioBg3dLtRenderWorkerRequest(request({ interiorSuppressionStrength: 1.01 }))).toBe(false);
+    expect(isStudioBg3dLtRenderWorkerRequest(request({ interiorSuppressionEnabled: 1 }))).toBe(false);
+    expect(isStudioBg3dLtRenderWorkerRequest(request({ interiorSuppressionStrenght: 0.5 }))).toBe(false);
+  });
+});

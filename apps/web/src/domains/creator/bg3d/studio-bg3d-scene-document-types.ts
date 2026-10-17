@@ -331,8 +331,29 @@ export interface StudioBg3dLineOutputSettings {
   readonly textureLineEnabled: boolean;
   readonly textureLineStrength: number;
   readonly creaseAngleDegrees: number;
+  /**
+   * 앞 물체에 가려지는 쪽(먼 면)에 생기는 이중선을 앞 물체의 윤곽선 한 줄로 합치고 그쪽 재질선 반점을 줄인다.
+   * 깊이 캡처가 있을 때만 효과가 있다(깊이선 검출 또는 내부선 억제가 켜져 있을 때). 깊이가 없으면 아무것도
+   * 바꾸지 않는다.
+   */
   readonly hiddenLineRemoval: boolean;
+  /**
+   * 내부선 억제 켜기. 물체 안쪽 명암·재질·모서리 선을 줄이고 윤곽선과 윤곽에 붙은 선을 남긴다.
+   * 선택 필드: 값이 있을 때만 저장한다. 이 키가 없는 이전 문서는 꺼짐과 같다.
+   */
+  readonly interiorSuppressionEnabled?: boolean;
+  /** 내부선 억제 강도(0..1, 없으면 0.6). 켜져 있을 때만 의미가 있다. */
+  readonly interiorSuppressionStrength?: number;
 }
+
+/**
+ * 내부선 억제를 켰을 때 강도 필드가 없으면 쓰는 기본 강도. 장면 문서 정규화(라우트)가 쓰는 원본이다.
+ * 같은 값을 선화 렌더러 쪽 잎 모듈(`studio-bg3d-line-output-rules`)도 가지고 있으며 두 값이 같음을 시험이 지킨다.
+ * 내부선 억제 해석·깊이 캡처 판정 함수는 이 큰 모듈에 두지 않고 그 잎 모듈에만 둔다: 이 모듈에 새 런타임
+ * import 가 생기면 번들러가 이 모듈을 장면 문서 청크에서 떼어 선화·생산 청크에 묶고 Studio 라우트가 그 청크를
+ * 정적으로 끌어온다(2026-10-16 번들 래칫 회귀).
+ */
+export const STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH = 0.6;
 
 export interface StudioBg3dToneOutputSettings {
   readonly mode: StudioBg3dToneMode;
@@ -616,6 +637,8 @@ export interface StudioBg3dShotLineOutputOverride {
   readonly textureLineStrength?: number;
   readonly creaseAngleDegrees?: number;
   readonly hiddenLineRemoval?: boolean;
+  readonly interiorSuppressionEnabled?: boolean;
+  readonly interiorSuppressionStrength?: number;
 }
 
 export interface StudioBg3dShotToneOutputOverride {

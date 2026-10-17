@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-raw-colors -- R3F 장면 노드(지면 원반·눈금 안내·라인아트 채움과 선)의 색은 three.js 재질 데이터이지 CSS 색이 아니라 UI 토큰 대상이 아니다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import {
   useEffect,
@@ -481,7 +482,7 @@ function useStudioBg3dPrimitivePaintTexture(prim: BgPrimitive): THREE.CanvasText
   return texture;
 }
 
-/* Keeps the fill mesh visible in line-art mode for hidden-line depth and raycast selection. */
+/* Keeps the fill mesh visible in line-art mode for hidden-line depth and raycast selection. Hidden (visible:false) groups get no pointer handlers: three's Raycaster ignores `visible`, so a hidden wall would otherwise swallow clicks meant for the visible object behind it. */
 export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, selected, onSelect, onSurfacePick, onSurfacePreview, onPaintPointer, registerRef, children }: BgPrimitiveMeshProps) {
   const { geometry, edges } = geometryPool.get(prim.kind);
   const paintTexture = useStudioBg3dPrimitivePaintTexture(prim);
@@ -510,21 +511,18 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
       scale={prim.scale}
       userData={{ studioBg3dEntityId: prim.id, studioBg3dEntityKind: "primitive" }}
       visible={visible}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onSurfacePick(prim.id, e)) return;
-        onSelect(prim.id, e.shiftKey || e.metaKey || e.ctrlKey);
-      }}
-      onPointerMove={(event) => {
-        onSurfacePreview?.(event);
-        if (event.buttons > 0) handlePaintPointer?.("move")(event);
-      }}
-      {...(handlePaintPointer
-        ? {
-            onPointerDown: handlePaintPointer("down"),
-            onPointerUp: handlePaintPointer("up"),
-          }
-        : {})}
+      {...(visible ? {
+        onClick: (e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          if (onSurfacePick(prim.id, e)) return;
+          onSelect(prim.id, e.shiftKey || e.metaKey || e.ctrlKey);
+        },
+        onPointerMove: (event: ThreeEvent<PointerEvent>) => {
+          onSurfacePreview?.(event);
+          if (event.buttons > 0) handlePaintPointer?.("move")(event);
+        },
+        ...(handlePaintPointer ? { onPointerDown: handlePaintPointer("down"), onPointerUp: handlePaintPointer("up") } : {}),
+      } : {})}
     >
       <mesh geometry={geometry} castShadow receiveShadow>
         {lineArt ? (
@@ -886,12 +884,14 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
       scale={instance.scale}
       userData={{ studioBg3dEntityId: instance.id, studioBg3dEntityKind: "model" }}
       visible={visible}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onSurfacePick(instance.id, e)) return;
-        onSelect(instance.id, e.shiftKey || e.metaKey || e.ctrlKey);
-      }}
-      onPointerMove={onSurfacePreview}
+      {...(visible ? {
+        onClick: (e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          if (onSurfacePick(instance.id, e)) return;
+          onSelect(instance.id, e.shiftKey || e.metaKey || e.ctrlKey);
+        },
+        onPointerMove: onSurfacePreview,
+      } : {})}
     >
       {editableClone ? <primitive object={editableClone.root} /> : null}
       {children}

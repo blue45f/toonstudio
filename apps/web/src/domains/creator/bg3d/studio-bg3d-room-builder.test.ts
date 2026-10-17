@@ -204,7 +204,9 @@ describe("buildStudioBg3dRoomParts", () => {
     expect(forwardBack.position[2]).toBeCloseTo(1 - 0.18, 10);
     expect(turnedBack.position[2]).toBeCloseTo(1 + 0.18, 10);
     expect(turnedBack.position[0]).toBeCloseTo(1, 10);
-    expect(turnedBack.rotation[1]).toBeCloseTo(Math.PI, 10);
+    // 문서 정규형 [-π, π) 에서 180° 는 -π 로 적는다. 방향(cos = -1)은 그대로다.
+    expect(turnedBack.rotation[1]).toBeCloseTo(-Math.PI, 10);
+    expect(Math.cos(turnedBack.rotation[1])).toBeCloseTo(-1, 10);
   });
 
   it("계단은 단수만큼 겹침 없는 층층 박스를 만들고 마지막 단이 가장 높다", () => {
@@ -285,5 +287,50 @@ describe("instantiateStudioBg3dRoomBuild", () => {
     expect(shifted[0].position[0] - first[0].position[0]).toBeCloseTo(12 * (spec.width / 6), 10);
     // 이름이 파츠 이름으로 채워져 레이어 목록에서 읽힌다.
     expect(first[0].name).toBe("바닥");
+  });
+});
+
+describe("프리셋 의자 방향", () => {
+  /** 의자 좌판마다 가장 가까운 테이블 상판 쪽을 향하는 정도(1=정면, -1=등짐)와 거리. */
+  function chairFacing(spec: Partial<StudioBg3dRoomSpec>): Array<{ facing: number; distance: number }> {
+    const parts = buildStudioBg3dRoomParts(spec);
+    const tables = parts.filter((part) => part.name === "테이블 상판");
+    return parts
+      .filter((part) => part.name === "의자 좌판")
+      .map((seat) => {
+        const table = tables.reduce((best, candidate) =>
+          Math.hypot(candidate.position[0] - seat.position[0], candidate.position[2] - seat.position[2]) <
+          Math.hypot(best.position[0] - seat.position[0], best.position[2] - seat.position[2])
+            ? candidate
+            : best,
+        );
+        const dx = table.position[0] - seat.position[0];
+        const dz = table.position[2] - seat.position[2];
+        const distance = Math.hypot(dx, dz);
+        const yaw = seat.rotation[1];
+        return { facing: (Math.sin(yaw) * dx + Math.cos(yaw) * dz) / distance, distance };
+      });
+  }
+
+  it("모든 프리셋의 의자는 가장 가까운 테이블을 정면으로 본다(예전 교실·카페·원룸은 등지고 있었다)", () => {
+    let checked = 0;
+    for (const preset of STUDIO_BG3D_ROOM_PRESETS) {
+      for (const [index, chair] of chairFacing(preset.spec).entries()) {
+        expect(chair.facing, `${preset.id} 의자 ${index}`).toBeGreaterThan(0.99);
+        expect(chair.distance, `${preset.id} 의자 ${index}`).toBeLessThan(1);
+        checked += 1;
+      }
+    }
+    // 교실 6 + 카페 4 + 원룸 1 + 옥상 1 + 서재 1.
+    expect(checked).toBe(13);
+  });
+
+  it("검사기는 등진 의자를 실제로 잡아낸다(합성 결함)", () => {
+    const base = { width: 6, depth: 6, wallHeight: 3, wallThickness: 0.15, openings: [] };
+    const table = { kind: "table", x: 0, z: 0, yawDeg: 0 } as const;
+    expect(chairFacing({ ...base, furniture: [table, { kind: "chair", x: 0, z: 0.8, yawDeg: 180 }] })[0].facing).toBeCloseTo(1, 10);
+    expect(chairFacing({ ...base, furniture: [table, { kind: "chair", x: 0, z: 0.8, yawDeg: 0 }] })[0].facing).toBeCloseTo(-1, 10);
+    expect(chairFacing({ ...base, furniture: [table, { kind: "chair", x: 0.8, z: 0, yawDeg: 270 }] })[0].facing).toBeCloseTo(1, 10);
+    expect(chairFacing({ ...base, furniture: [table, { kind: "chair", x: 0.8, z: 0, yawDeg: 90 }] })[0].facing).toBeCloseTo(-1, 10);
   });
 });

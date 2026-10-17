@@ -3,8 +3,18 @@
 // 모두 부모(StudioBackground3D.tsx)가 소유한다 — StudioBg3dSceneTemplatePanel과 같은 계약.
 // 스펙 변경은 raw 값 그대로 올리고, clamp는 부모가 clampStudioBg3dRoomSpec으로 한 곳에서 한다.
 import { DoorOpen, Home, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 
-import { LtRangeControl } from "./studio-bg3d-control-fields";
+import { StudioBg3dBuildNotice } from "./StudioBg3dBuildNotice";
+import {
+  describeStudioBg3dBuildNotice,
+  STUDIO_BG3D_AUTO_CUTAWAY_LABEL,
+  STUDIO_BG3D_BUILD_FAILED_NOTICE,
+  STUDIO_BG3D_ROOM_PANEL_CUTAWAY_HELP,
+  summarizeStudioBg3dHiddenWalls,
+  type StudioBg3dHiddenWallSummary,
+} from "./studio-bg3d-build-notice";
+import { TemplateRangeControl, TemplateToggleRow } from "./StudioBg3dTemplateControls";
 import {
   STUDIO_BG3D_ROOM_FURNITURE_KINDS,
   STUDIO_BG3D_ROOM_FURNITURE_LABELS,
@@ -21,14 +31,38 @@ import {
 
 import { cx } from "@/shared/lib/cx";
 
+import type { BgPrimitive } from "../studio-background-3d-metadata";
+
 export interface StudioBg3dRoomBuilderPanelProps {
   readonly spec: StudioBg3dRoomSpec;
   readonly disabled?: boolean;
   /** raw 스펙을 그대로 전달 — 부모가 clampStudioBg3dRoomSpec으로 정규화해 저장한다. */
   readonly onSpecChange: (next: StudioBg3dRoomSpec) => void;
   readonly onApplyPreset: (presetId: string) => void;
-  readonly onInsert: () => void;
+  /**
+   * 클릭 이벤트를 넘기지 않고 인자 없이 부른다(부모의 선택 인자가 이벤트로 오염되지 않게). 돌려받은 값으로
+   * 추가 직후 안내를 만든다: 더한 도형 목록이면 성공, false 면 실패, 그 밖에는 안내를 만들지 않는다.
+   */
+  readonly onInsert: () => boolean | readonly BgPrimitive[] | undefined;
+  /**
+   * 켜면 방을 추가하는 순간 카메라 쪽 벽을 숨김 상태로 만든다(자동 단면). 값을 바꾸는 핸들러
+   * (onAutoCutawayChange)를 주지 않으면 토글 자체를 그리지 않는다 — 이 패널을 단면 없이 쓰는 화면용.
+   * 부모가 정하는 기본값은 꺼짐이다(예전 "방 추가"와 같은 동작).
+   */
+  readonly autoCutaway?: boolean;
+  readonly onAutoCutawayChange?: (next: boolean) => void;
+  /** "숨긴 벽 되돌리기": 이 id 의 도형을 다시 보이게 한다. 주지 않으면 버튼을 그리지 않는다. */
+  readonly onShowParts?: ((ids: readonly string[]) => void) | undefined;
 }
+
+type RoomPanelNotice =
+  | { readonly kind: "failed" }
+  | {
+      readonly kind: "built";
+      readonly objectCount: number;
+      readonly hiddenWalls: StudioBg3dHiddenWallSummary;
+      readonly wallsRestored: boolean;
+    };
 
 const NUMBER_INPUT =
   "w-full min-w-0 rounded-md border border-line bg-card px-1.5 py-1 text-right text-[0.7rem] tabular-nums text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45";
@@ -52,9 +86,42 @@ export function StudioBg3dRoomBuilderPanel({
   onSpecChange,
   onApplyPreset,
   onInsert,
+  autoCutaway = false,
+  onAutoCutawayChange,
+  onShowParts,
 }: StudioBg3dRoomBuilderPanelProps) {
   const limits = STUDIO_BG3D_ROOM_LIMITS;
   const partCount = buildStudioBg3dRoomParts(spec).length;
+  const [notice, setNotice] = useState<RoomPanelNotice | null>(null);
+
+  const insert = () => {
+    const added = onInsert();
+    if (added === false) {
+      setNotice({ kind: "failed" });
+    } else if (typeof added === "object") {
+      setNotice({
+        kind: "built",
+        objectCount: added.length,
+        hiddenWalls: summarizeStudioBg3dHiddenWalls(added),
+        wallsRestored: false,
+      });
+    } else {
+      setNotice(null);
+    }
+  };
+
+  const restoreWalls = () => {
+    if (notice?.kind !== "built") return;
+    onShowParts?.(notice.hiddenWalls.ids);
+    setNotice({ ...notice, wallsRestored: true });
+  };
+
+  const built = notice?.kind === "built" ? notice : null;
+  const message = built
+    ? describeStudioBg3dBuildNotice({ ...built, label: "방", anchorX: 0 })
+    : notice?.kind === "failed"
+      ? STUDIO_BG3D_BUILD_FAILED_NOTICE
+      : null;
 
   const commitNumber = (value: string, apply: (parsed: number) => void) => {
     const parsed = Number(value);
@@ -84,7 +151,7 @@ export function StudioBg3dRoomBuilderPanel({
       </div>
 
       <div className="rounded-xl border border-line bg-card/70 px-3 py-2">
-        <LtRangeControl
+        <TemplateRangeControl
           id="bg3d-room-width"
           label="가로 폭"
           min={limits.minWidth}
@@ -95,7 +162,7 @@ export function StudioBg3dRoomBuilderPanel({
           disabled={disabled}
           onChange={(width) => onSpecChange({ ...spec, width })}
         />
-        <LtRangeControl
+        <TemplateRangeControl
           id="bg3d-room-depth"
           label="세로 깊이"
           min={limits.minDepth}
@@ -106,7 +173,7 @@ export function StudioBg3dRoomBuilderPanel({
           disabled={disabled}
           onChange={(depth) => onSpecChange({ ...spec, depth })}
         />
-        <LtRangeControl
+        <TemplateRangeControl
           id="bg3d-room-wall-height"
           label="벽 높이"
           min={limits.minWallHeight}
@@ -117,7 +184,7 @@ export function StudioBg3dRoomBuilderPanel({
           disabled={disabled}
           onChange={(wallHeight) => onSpecChange({ ...spec, wallHeight })}
         />
-        <LtRangeControl
+        <TemplateRangeControl
           id="bg3d-room-wall-thickness"
           label="벽 두께"
           min={limits.minWallThickness}
@@ -407,15 +474,32 @@ export function StudioBg3dRoomBuilderPanel({
         )}
       </div>
 
+      {onAutoCutawayChange ? (
+        <div className="mt-3 rounded-xl border border-line bg-card/70 px-3">
+          <TemplateToggleRow
+            checked={autoCutaway}
+            label={STUDIO_BG3D_AUTO_CUTAWAY_LABEL}
+            disabled={disabled}
+            onChange={onAutoCutawayChange}
+          />
+          <p className="pb-2 text-[0.64rem] leading-relaxed text-fg-3">{STUDIO_BG3D_ROOM_PANEL_CUTAWAY_HELP}</p>
+        </div>
+      ) : null}
+
       <button
         type="button"
         disabled={disabled}
         className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-accent bg-accent px-3 text-xs font-bold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-9"
-        onClick={onInsert}
+        onClick={insert}
       >
         <Plus size={14} aria-hidden />
         방 추가 · 오브젝트 {partCount}개
       </button>
+      <StudioBg3dBuildNotice
+        message={message}
+        disabled={disabled}
+        onRestoreWalls={built && built.hiddenWalls.ids.length > 0 && !built.wallsRestored && onShowParts ? restoreWalls : undefined}
+      />
       <p className="mt-1.5 text-[0.64rem] leading-relaxed text-fg-3">
         추가된 방은 일반 도형으로 저장되어 각 벽·가구를 따로 선택해 다듬을 수 있고, Ctrl+Z 한 번에
         방 전체가 되돌아갑니다.

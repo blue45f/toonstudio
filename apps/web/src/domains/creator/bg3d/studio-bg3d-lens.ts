@@ -18,6 +18,14 @@ export const STUDIO_BG3D_LENS_MAX_FOCAL_MM = 135;
 /** 문서 카메라 fovDegrees의 정규화 범위(studio-bg3d-scene-document.ts §normalizeCamera). */
 export const STUDIO_BG3D_LENS_MIN_FOV_DEG = 10;
 export const STUDIO_BG3D_LENS_MAX_FOV_DEG = 120;
+/**
+ * 렌즈 시프트(가로, 세로) 한 축의 절댓값 한도. 단위는 "프레임 한 변의 비율"이며
+ * studio-bg3d-scene-document.ts 의 카메라·샷 정규화(±2)와 같은 값이다. 슬라이더, 2점 투시 자동 보정,
+ * 문서 정규화가 모두 이 한 값을 따라야 화면에서 고른 값이 저장 단계에서 조용히 잘리지 않는다.
+ */
+export const STUDIO_BG3D_LENS_SHIFT_LIMIT = 2;
+/** 이 값보다 작은 시프트는 "없음"으로 본다(부동소수 잡음 허용). */
+const STUDIO_BG3D_LENS_SHIFT_EPSILON = 1e-4;
 
 export function studioBg3dFocalLengthToFovDegrees(focalLengthMm: number): number {
   const focal = Math.min(
@@ -90,7 +98,7 @@ export function computeStudioBg3dTwoPointPerspective(
   return {
     target: [tx, py, tz],
     // 문서 정규화 한도(±2)로 미리 클램프 — 극단 피치에서 조용히 잘려 저장되는 대신 여기서 확정.
-    lensShiftY: Math.min(2, Math.max(-2, lensShiftY)),
+    lensShiftY: clampStudioBg3dLensShiftValue(lensShiftY),
   };
 }
 
@@ -100,5 +108,51 @@ export function isStudioBg3dTwoPointPerspectiveActive(
 ): boolean {
   const pitchLevel = Math.abs(view.target[1] - view.position[1]) < 1e-3;
   const shiftY = view.lensShift?.[1] ?? 0;
-  return pitchLevel && Math.abs(shiftY) > 1e-4;
+  return pitchLevel && Math.abs(shiftY) > STUDIO_BG3D_LENS_SHIFT_EPSILON;
+}
+
+export type StudioBg3dLensShift = readonly [number, number];
+export type StudioBg3dLensShiftAxis = "x" | "y";
+
+/** 유한하지 않은 값은 0, 그 밖에는 ±한도로 누른다(슬라이더·문서 정규화 공통). */
+export function clampStudioBg3dLensShiftValue(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(
+    STUDIO_BG3D_LENS_SHIFT_LIMIT,
+    Math.max(-STUDIO_BG3D_LENS_SHIFT_LIMIT, value),
+  );
+}
+
+/** 문서 카메라에서 [가로, 세로] 시프트를 읽는다. 값이 없거나 손상됐으면 [0, 0]. */
+export function readStudioBg3dLensShift(
+  view: Pick<StudioBg3dCameraSettings, "lensShift"> | null | undefined,
+): StudioBg3dLensShift {
+  const shift = view?.lensShift;
+  if (!shift || shift.length !== 2) return [0, 0];
+  return [clampStudioBg3dLensShiftValue(shift[0]), clampStudioBg3dLensShiftValue(shift[1])];
+}
+
+/** 한 축만 바꾼 새 시프트를 돌려준다. 다른 축은 그대로 두고 바꾼 값은 한도로 누른다. */
+export function withStudioBg3dLensShiftAxis(
+  current: StudioBg3dLensShift,
+  axis: StudioBg3dLensShiftAxis,
+  value: number,
+): StudioBg3dLensShift {
+  const next = clampStudioBg3dLensShiftValue(value);
+  return axis === "x" ? [next, current[1]] : [current[0], next];
+}
+
+/** 두 축 모두 "없음" 범위인지(시프트 초기화 버튼의 활성 판정). */
+export function isStudioBg3dLensShiftNeutral(shift: StudioBg3dLensShift): boolean {
+  return (
+    Math.abs(shift[0]) <= STUDIO_BG3D_LENS_SHIFT_EPSILON &&
+    Math.abs(shift[1]) <= STUDIO_BG3D_LENS_SHIFT_EPSILON
+  );
+}
+
+/** 슬라이더 값 표기: 부호를 붙인 소수 둘째 자리(0 은 부호 없이). */
+export function formatStudioBg3dLensShiftValue(value: number): string {
+  const rounded = Math.round(clampStudioBg3dLensShiftValue(value) * 100) / 100;
+  if (rounded === 0) return "0.00";
+  return `${rounded > 0 ? "+" : "\u2212"}${Math.abs(rounded).toFixed(2)}`;
 }

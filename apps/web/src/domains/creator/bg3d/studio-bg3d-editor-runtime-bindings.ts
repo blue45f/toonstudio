@@ -1,6 +1,8 @@
 /* Re-exports the original StudioBackground3D import graph for host extracts. */
 import { lazy as createLazyComponent } from "react";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+
 export { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
 export { OrthographicCamera } from "@react-three/drei/core/OrthographicCamera.js";
 export { PerspectiveCamera } from "@react-three/drei/core/PerspectiveCamera.js";
@@ -263,8 +265,10 @@ export {
   applyStudioBg3dLtPreset,
   type StudioBg3dLtPresetPayload,
 } from "./studio-bg3d-lt-presets";
+// 선화 렌더러 본체(`renderStudioBg3dLtLayers`)는 일부러 다시 내보내지 않는다: 편집기 본체는 렌더를 워커에 맡기고
+// (`renderStudioBg3dLtLayersInWorker`) 메인 스레드에서 직접 부르지 않는다. 다시 내보내면 렌더러와 선화 모듈 전체가
+// 편집기 활성화 정적 번들에 들어간다(2026-10-16 번들 래칫).
 export {
-  renderStudioBg3dLtLayers,
   STUDIO_BG3D_LT_RENDER_MAX_PIXELS,
   type StudioBg3dLtRenderSettings,
 } from "./studio-bg3d-lt-render";
@@ -409,6 +413,7 @@ export {
   clampStudioBg3dRoomSpec,
   getStudioBg3dRoomPreset,
   instantiateStudioBg3dRoomBuild,
+  planStudioBg3dRoomBuild,
   type StudioBg3dRoomSpec,
 } from "./studio-bg3d-room-builder";
 export {
@@ -583,7 +588,24 @@ export {
   StudioBg3dPhysicsTransport,
 } from "./StudioBg3dPhysicsControls";
 export { StudioBg3dPlacementPointerController } from "./StudioBg3dPlacementPointerController";
-export { StudioBg3dRoomBuilderPanel } from "./StudioBg3dRoomBuilderPanel";
+// 방 만들기 패널(약 13KB)은 템플릿 탭을 열 때만 필요해 지연 로드한다(씬 템플릿 패널과 같은 방식).
+// 이 둘은 새 로드 실패 경로(방 만들기 패널은 예전에 정적이었다)라 lazyRetry 로 받는다: 배포 뒤 옛 청크가 사라진 실패를
+// 새로고침 한 번으로 복구하고, 새로고침이 취소되면 편집기를 오류 화면으로 바꾸지 않고 로딩 상태로 둔다(chunk-load-recovery.ts).
+export const StudioBg3dRoomBuilderPanel = lazyRetry(
+  () =>
+    import("./StudioBg3dRoomBuilderPanel").then(({ StudioBg3dRoomBuilderPanel: Panel }) => ({
+      default: Panel,
+    })),
+  "StudioBg3dRoomBuilderPanel",
+);
+// 원클릭 웹툰 배경 선택기(교실·복도·거리): 카탈로그·거리 생성기와 함께 템플릿 탭을 열 때만 불러온다.
+export const StudioBg3dWebtoonBackgroundPicker = lazyRetry(
+  () =>
+    import("./StudioBg3dWebtoonBackgroundPicker").then(({
+      StudioBg3dWebtoonBackgroundPicker: Picker,
+    }) => ({ default: Picker })),
+  "StudioBg3dWebtoonBackgroundPicker",
+);
 export { StudioBg3dSceneFog } from "./StudioBg3dSceneFog";
 export {
   BgAdaptiveDprController,

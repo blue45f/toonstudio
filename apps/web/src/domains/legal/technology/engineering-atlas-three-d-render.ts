@@ -584,8 +584,8 @@ export const TOON_SHADING_OUTLINE: EngineeringAtlasEntry = {
       "A manga artist traces outlines while looking at a photo and pastes dotted paper (screentone) on dark areas to show shading. To use a 3D scene as a manga background, the computer has to do both jobs. ToonStudio's LT (line and tone) conversion takes one picture of the 3D view and splits the lines and tones into separate layers, so an artist can pen over the lines, or erase the lines and keep only the tones. A code comment says the name and idea are modelled on the same feature in Clip Studio Paint.",
     ),
     t(
-      "선은 네 가지 단서를 겹쳐 찾습니다. 밝기가 급히 변하는 곳(Sobel 필터), 물체와 빈 배경의 경계(알파 실루엣), 깊이가 계단처럼 변하는 곳, 면의 방향(법선)이 꺾이는 주름입니다. 깊이 윤곽에는 요령이 있습니다. 완만한 경사는 이웃의 앞뒤 차이가 같아 서로 상쇄되고, 깊이 계단은 가리는 쪽(가까운 면)에만 남겨서 먼 쪽에 후광이 생기지 않습니다. 단서 중 가장 센 값을 고르고 설정한 굵기만큼 부풀려 주선을 만듭니다.",
-      "Lines are found by layering four clues: where brightness changes sharply (a Sobel filter), the border between an object and empty background (alpha silhouette), where depth changes like a step, and creases where the face direction (normal) bends. Depth contours have a trick. A gentle slope has equal changes toward the front and back, which cancel out, while a depth step is kept only on the occluding (nearer) surface so no halo forms on the far side. The strongest clue wins and is thickened to the chosen width to make the main line.",
+      "선은 네 가지 단서를 겹쳐 찾습니다. 밝기가 급히 변하는 곳(Sobel 필터), 물체와 빈 배경의 경계(알파 실루엣), 깊이가 계단처럼 변하는 곳, 면의 방향(법선)이 꺾이는 주름입니다. 깊이 윤곽에는 요령이 있습니다. 완만한 경사는 이웃의 앞뒤 차이가 같아 서로 상쇄되고, 깊이 계단은 가리는 쪽(가까운 면)에만 남겨서 먼 쪽에 후광이 생기지 않습니다. 단서 중 가장 센 값을 고른 뒤, 밝기 경계는 기울기 방향에서 가장 센 한 픽셀만 남겨(비최대 억제) 한 줄 중심선으로 얇게 만들고, 그 중심선에서 떨어진 거리에 따라 화소가 덮이는 비율을 계산해(안티앨리어싱) 설정한 굵기만큼 칠해 주선을 만듭니다. 그래서 굵기 값이 곧 픽셀 두께이며, 가로·세로 선에서는 설정값과 같고 비스듬한 선은 조금 더 굵게 나옵니다.",
+      "Lines are found by layering four clues: where brightness changes sharply (a Sobel filter), the border between an object and empty background (alpha silhouette), where depth changes like a step, and creases where the face direction (normal) bends. Depth contours have a trick. A gentle slope has equal changes toward the front and back, which cancel out, while a depth step is kept only on the occluding (nearer) surface so no halo forms on the far side. The strongest clue wins. For brightness edges only the single strongest pixel along the gradient direction is kept (non-maximum suppression) to thin them to a one-pixel centerline, and the centerline is painted to the chosen width by computing how much of each pixel it covers by distance (anti-aliasing) to make the main line. So the width value is a pixel thickness: equal to the setting on horizontal and vertical lines, and slightly thicker on slanted ones.",
     ),
     t(
       "톤은 밝기를 2~8단계로 나눈 뒤 어두울수록 큰 점을 찍습니다. 점·선·교차선·노이즈 무늬 중에서 고르고, 격자를 기울여(기본 45°) 인쇄된 망점처럼 만듭니다. 점의 넓이가 곧 잉크의 양이라 밝기와 비례합니다. 결과는 컬러·톤·질감선·주선이 뒤에서 앞 순서인 한 묶음('3D LT 배경')으로 한꺼번에 들어가고, 중간에 실패해도 일부만 남지 않습니다. 같은 입력이면 같은 출력이며 AI는 쓰지 않습니다.",
@@ -611,14 +611,14 @@ export const TOON_SHADING_OUTLINE: EngineeringAtlasEntry = {
       "The top row is lines and the bottom row is tone. Both start from the same capture and join as one bundle at the end.",
     ),
     alt: t(
-      "3D 화면 캡처에서 두 길이 갈라집니다. 위쪽 길은 밝기, 실루엣, 깊이, 법선 네 단서를 합친 뒤 가장 센 값을 고르고 굵기만큼 부풀려 주선과 질감선 레이어를 만듭니다. 아래쪽 길은 밝기를 몇 단계로 나눈 뒤 기울인 점 격자로 어두울수록 큰 점을 찍어 톤 레이어를 만듭니다. 두 길의 결과는 마지막에 3D LT 배경 묶음으로 합쳐집니다.",
-      "Two roads split from the 3D view capture. The top road combines the four clues of brightness, silhouette, depth and normal, picks the strongest value and thickens it to make the main-line and texture-line layers. The bottom road splits brightness into levels and prints bigger dots where it is darker on a tilted dot grid to make the tone layer. Both results join at the end as the 3D LT background bundle.",
+      "3D 화면 캡처에서 두 길이 갈라집니다. 위쪽 길은 밝기, 실루엣, 깊이, 법선 네 단서를 합친 뒤 가장 센 값을 고르고 한 픽셀 중심선으로 얇게 만든 다음 설정한 굵기만큼 칠해 주선과 질감선 레이어를 만듭니다. 아래쪽 길은 밝기를 몇 단계로 나눈 뒤 기울인 점 격자로 어두울수록 큰 점을 찍어 톤 레이어를 만듭니다. 두 길의 결과는 마지막에 3D LT 배경 묶음으로 합쳐집니다.",
+      "Two roads split from the 3D view capture. The top road combines the four clues of brightness, silhouette, depth and normal, picks the strongest value, thins it to a one-pixel centerline and paints it to the chosen width to make the main-line and texture-line layers. The bottom road splits brightness into levels and prints bigger dots where it is darker on a tilted dot grid to make the tone layer. Both results join at the end as the 3D LT background bundle.",
     ),
     nodes: [
       { id: "capture", label: t("3D 화면 캡처", "3D view capture"), sub: t("색 · 깊이 · 법선 화소", "Colour, depth, normal pixels"), tone: "local", at: [0, 0] },
       { id: "clues", label: t("선의 단서 넷", "Four line clues"), sub: t("밝기·실루엣·깊이·법선", "Brightness, silhouette, depth, normal"), tone: "local", at: [1, 0] },
       { id: "strongest", label: t("가장 센 값", "Strongest wins"), sub: t("max(단서) × 선 세기", "max of clues × strength"), tone: "local", at: [2, 0] },
-      { id: "thicken", label: t("굵기만큼 부풀림", "Thicken the line"), sub: t("최대값 필터, 반경 ≤ 4px", "Max filter, radius up to 4 px"), tone: "local", at: [3, 0] },
+      { id: "thicken", label: t("중심선을 굵기만큼 칠함", "Paint to width"), sub: t("거리 기반 덮임, 0.25~8px", "Distance coverage, 0.25–8 px"), tone: "local", at: [3, 0] },
       { id: "lines", label: t("주선 · 질감선", "Main and texture lines"), sub: t("선 색 + 알파", "Line colour plus alpha"), tone: "good", at: [4, 0] },
       { id: "levels", label: t("밝기를 단계로", "Brightness to levels"), sub: t("2~8단계로 나눔", "Split into 2 to 8 levels"), tone: "local", at: [1, 1] },
       { id: "dots", label: t("기울인 점 격자", "Tilted dot grid"), sub: t("어두울수록 큰 점", "Darker means bigger dots"), tone: "local", at: [2, 1] },

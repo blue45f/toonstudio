@@ -6,6 +6,7 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { resolveStudioBg3dInsertQualityPlan } from "./studio-bg3d-insert-quality-policy";
+import { studioBg3dLineNeedsDepth } from "./studio-bg3d-line-output-rules";
 
 export function attachStudioBg3dEditorInsertHost(h) {
   const {
@@ -528,7 +529,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         width: captureSize.width,
         height: captureSize.height,
         background: studioBg3dCaptureBackgroundRequestFromSnapshot(backgroundSnapshot),
-        includeDepth: ltSettingsSnapshot.line.depthEnabled,
+        includeDepth: studioBg3dLineNeedsDepth(ltSettingsSnapshot.line),
         ...(captureAdapter.normalProfile && ltSettingsSnapshot.line.depthEnabled && !ltSettingsSnapshot.line.depthOutlineOnly
           ? { includeNormals: true } : {}),
       }, { signal: insertController.signal, timeoutMs: 30_000 })
