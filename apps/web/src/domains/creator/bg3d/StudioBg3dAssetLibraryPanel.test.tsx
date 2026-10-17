@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioBg3dAssetLibraryPanel } from "./StudioBg3dAssetLibraryPanel";
+import { buildStudioBg3dAssetRightsViews } from "./studio-bg3d-asset-rights-view";
 
 import type { Bg3dModelLibraryEntry } from "./bg3d-model-library";
 import type { ComponentProps } from "react";
@@ -110,7 +111,7 @@ describe("StudioBg3dAssetLibraryPanel", () => {
     fireEvent.change(screen.getByLabelText("3D 모델 라이브러리 검색"), {
       target: { value: "교실" },
     });
-    expect(screen.getByText("검색·상태·종류 필터와 일치하는 3D 모델이 없습니다.")).toBeTruthy();
+    expect(screen.getByText("검색·상태·종류 필터와 일치하는 3D 모델이 없어요.")).toBeTruthy();
     expect(screen.getByText("표시 0/0개 · 데스크톱 기준")).toBeTruthy();
   });
 
@@ -226,7 +227,7 @@ describe("StudioBg3dAssetLibraryPanel", () => {
       target: { value: "없는 모델" },
     });
     expect(screen.getByRole("status").textContent)
-      .toContain("검색·상태·종류 필터와 일치하는 3D 모델이 없습니다.");
+      .toContain("검색·상태·종류 필터와 일치하는 3D 모델이 없어요.");
     expect(screen.getByText("표시 0/0개 · 데스크톱 기준")).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("3D 모델 라이브러리 검색"), {
@@ -354,9 +355,31 @@ describe("StudioBg3dAssetLibraryPanel", () => {
     expect(thumbnail?.getAttribute("alt")).toBe("");
     expect(thumbnail?.className).toContain("object-contain");
     expect(screen.getAllByText("glb")).toHaveLength(2);
-    expect(screen.getByText("상업 이용 가능")).toBeTruthy();
-    expect(screen.getByText("상업 이용 확인 필요")).toBeTruthy();
+    // 가져온 소재의 권리를 읽은 적이 없으면 새 권리 요약이 '권리 미확인'이므로 예전 배지도 긍정 표시를 하지 않는다.
+    expect(screen.queryByText("상업 이용 가능")).toBeNull();
+    expect(screen.getAllByText("상업 이용 확인 필요")).toHaveLength(2);
     expect(screen.getByText("다시 가져오기가 필요합니다.")).toBeTruthy();
+  });
+
+  it("shows the positive commercial badge only when the rights view also reads commercial use as allowed", () => {
+    const entries = [
+      createEntry("owned", "직접 만든 모델", { commercialUse: true, contentHash: `sha256:${"1".repeat(64)}` }),
+      createEntry("flagged", "목록만 허용인 모델", { commercialUse: true, contentHash: `sha256:${"2".repeat(64)}` }),
+    ];
+    const rightsViews = buildStudioBg3dAssetRightsViews(entries, {
+      libraryRightsById: new Map([["owned", { status: "owned", commercialUse: true, attributionRequired: false }]]),
+    });
+    const view = renderPanel({ entries, rightsViews });
+    const badges = view.container.querySelectorAll("span.rounded-full");
+    const positive = [...badges].filter((badge) => badge.textContent === "상업 이용 가능");
+    const neutral = [...badges].filter((badge) => badge.textContent === "상업 이용 확인 필요");
+    expect(positive).toHaveLength(1);
+    expect(positive[0].className).toContain("text-good");
+    expect(positive[0].closest("div.relative")?.textContent).toContain("직접 만든 모델");
+    // 목록 항목만 허용이라고 하고 권리 기록이 없는 소재는 중립 표시이며 초록 강조를 쓰지 않는다.
+    expect(neutral).toHaveLength(1);
+    expect(neutral[0].className).not.toContain("text-good");
+    expect(neutral[0].closest("div.relative")?.textContent).toContain("목록만 허용인 모델");
   });
 
   it("adds and deletes exactly once while keeping delete clicks out of the scene action", () => {

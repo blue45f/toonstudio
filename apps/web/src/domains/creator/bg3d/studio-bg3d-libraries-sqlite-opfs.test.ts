@@ -23,6 +23,7 @@ import {
   loadBg3dTemplatesV12WithLegacyMigration,
   saveBg3dTemplateV12,
 } from "./bg3d-template-library";
+import { STUDIO_BG3D_ASSET_METADATA_VERSION } from "./studio-bg3d-asset-metadata";
 import {
   STUDIO_BG3D_ASSET_METADATA_V12_MANIFEST_KIND,
   getStudioBg3dAssetMetadata,
@@ -40,6 +41,8 @@ import {
   type StudioBg3dLibrariesAuthority,
   type StudioBg3dLibrariesRunExclusive,
 } from "./studio-bg3d-libraries-sqlite-opfs-authority";
+import { loadStudioBg3dAssetRightsSources } from "./studio-bg3d-asset-rights-source";
+import { buildStudioBg3dAssetRightsViews } from "./studio-bg3d-asset-rights-view";
 import { createDefaultStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
 
@@ -170,7 +173,7 @@ function thumbnailDataUrl(): string {
 
 function metadata(hash: `sha256:${string}`, now = 10) {
   return {
-    version: 2 as const,
+    version: STUDIO_BG3D_ASSET_METADATA_VERSION,
     contentHash: hash,
     name: "검증 모델",
     format: "glb" as const,
@@ -724,6 +727,75 @@ describe("BG3D shared SQLite/OPFS product authority", () => {
     const [listed] = await listStudioBg3dAssetMetadata({ authority });
     expect(listed).toMatchObject({ contentHash: hash, favorite: true, format: "skp" });
     expect(listed.skpImport).toEqual(createSkpReportFixture());
+  });
+
+  it("reads model rights from the manifest and AI answers from the metadata store without reading model bytes", async () => {
+    const database = await openNamedDatabase();
+    const fileSystem = createStudioOpfsMemoryFileSystem();
+    const authority = authorityFor(database, fileSystem);
+    const [saved] = await importVerifiedBg3dModelsAtomicallyV12(
+      [{
+        file: glbFile("rights.glb", "rights-source"),
+        rights: {
+          status: "licensed",
+          commercialUse: true,
+          attributionRequired: true,
+          attribution: "모델 제작자 · 표준",
+          licenseName: "ACON3D 구매 라이선스",
+        },
+      }],
+      { authority, idFactory: () => "model-rights", now: 10 },
+    );
+    await putStudioBg3dAssetMetadataAtomically([{
+      ...metadata(saved!.contentHash),
+      rights: {
+        status: "licensed",
+        commercialUse: true,
+        teamShareAllowed: false,
+        license: "ACON3D 구매 라이선스",
+        aiGenerated: "yes",
+      },
+    }], { authority });
+    const entries = await listBg3dModelLibraryEntriesV12({ authority });
+
+    const readBlob = vi.fn(authority.readBlob.bind(authority));
+    const watched: StudioBg3dLibrariesAuthority = {
+      readManifest: authority.readManifest.bind(authority),
+      readBlob,
+      mutate: authority.mutate.bind(authority),
+    };
+    const sources = await loadStudioBg3dAssetRightsSources({ authority: watched });
+
+    expect(readBlob).not.toHaveBeenCalled();
+    expect(sources.failed).toEqual({ library: false, metadata: false });
+    expect(sources.libraryRightsById.get("model-rights")).toMatchObject({
+      status: "licensed",
+      attributionRequired: true,
+      licenseName: "ACON3D 구매 라이선스",
+    });
+    expect(sources.metadataByHash.get(saved!.contentHash)?.rights.aiGenerated).toBe("yes");
+    const views = buildStudioBg3dAssetRightsViews(entries, { ...sources, provenanceOf: () => undefined });
+    expect(views.get("model-rights")).toMatchObject({
+      origin: "imported",
+      basis: "library",
+      attribution: "required",
+      attributionText: "모델 제작자 · 표준",
+      state: { license: "licensed", commercial: "allowed", aiGenerated: "yes", aiTraining: "unknown" },
+    });
+  });
+
+  it("reports an unreadable model manifest as a failed source instead of an empty rights list", async () => {
+    const database = await openNamedDatabase();
+    const fileSystem = createStudioOpfsMemoryFileSystem();
+    const authority = authorityFor(database, fileSystem);
+    await database.kvSet(
+      STUDIO_BG3D_LIBRARIES_SQLITE_NAMESPACE,
+      STUDIO_BG3D_LIBRARY_MANIFEST_KEYS.models,
+      '{"kind":"toonstudio-studio-bg3d-model-library-v12"',
+    );
+    const sources = await loadStudioBg3dAssetRightsSources({ authority });
+    expect(sources.failed).toEqual({ library: true, metadata: false });
+    expect(sources.libraryRightsById.size).toBe(0);
   });
 
   it("fails explicitly instead of treating a memory CAS as durable product storage", async () => {

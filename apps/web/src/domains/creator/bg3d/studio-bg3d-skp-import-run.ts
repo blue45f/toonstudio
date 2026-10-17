@@ -6,6 +6,7 @@
  * 자산 메타데이터에 기록한다. 액션이 SKP 세부를 몰라도 되게 하고, 화면 저장소·기록 모듈은 주입해 테스트한다.
  */
 
+import { combineStudioBg3dImportAiUseStatus, hasStudioBg3dImportAiUse } from "./studio-bg3d-import-ai-use";
 import { persistStudioBg3dSkpAssetMetadata } from "./studio-bg3d-skp-asset-metadata";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
 
@@ -13,6 +14,7 @@ import type {
   StudioBg3dSkpImportedAsset,
   StudioBg3dSkpMetadataStatus,
 } from "./studio-bg3d-skp-asset-metadata";
+import type { StudioBg3dImportAiUse, StudioBg3dImportAiUseStatus } from "./studio-bg3d-import-ai-use";
 import type { StudioBg3dSkpImportOptions, StudioBg3dSkpReportEvent } from "./studio-bg3d-skp-import";
 import type { StudioBg3dSkpImportReport } from "./studio-bg3d-skp-import-report";
 import type { StudioBg3dSkpImportSession, StudioBg3dSkpResultInput } from "./studio-bg3d-skp-import-session";
@@ -35,6 +37,10 @@ export type StudioBg3dSkpImportOutcome =
     readonly status: "imported";
     readonly records: readonly StudioBg3dSkpStoredRecordLike[];
     readonly sourcePaths: readonly (string | null)[];
+    /** 가져오기 권리 폼에서 고른 AI 사용 표기. 변환 보고서와 같은 기록에 담긴다. */
+    readonly aiUse?: StudioBg3dImportAiUse;
+    /** 가져오기 취소 신호. 기록 저장이 이 신호에 멈춘다(저장소가 응답하지 않아도 시간 한도에서 멈춘다). */
+    readonly signal?: AbortSignal;
   }
   | { readonly status: "failed"; readonly reason: string }
   /** 편집 세션이 바뀌어 결과를 보여 줄 곳이 없다. 진행 표시만 거두고 아무것도 게시하지 않는다. */
@@ -47,6 +53,7 @@ export type StudioBg3dSkpImportOutcome =
 export function collectStudioBg3dSkpImportedAssets(
   records: readonly StudioBg3dSkpStoredRecordLike[],
   sourcePaths: readonly (string | null)[],
+  aiUse?: StudioBg3dImportAiUse,
 ): StudioBg3dSkpImportedAsset[] {
   return records.flatMap((record, index) => {
     const sourcePath = sourcePaths[index] ?? null;
@@ -59,6 +66,7 @@ export function collectStudioBg3dSkpImportedAssets(
       triangles: record.validatorMetrics.triangles,
       textures: record.validatorMetrics.textures,
       rights: record.rights,
+      ...(aiUse ? { aiUse } : {}),
     }];
   });
 }
@@ -66,8 +74,11 @@ export function collectStudioBg3dSkpImportedAssets(
 export interface StudioBg3dSkpImportRun {
   /** convertStudioBg3dModelFilesToGlb 의 skp 옵션. */
   readonly options: StudioBg3dSkpImportOptions;
-  /** 가져오기가 끝났을 때 한 번 부른다. 어떤 경우에도 던지지 않는다. */
-  readonly complete: (outcome: StudioBg3dSkpImportOutcome) => Promise<void>;
+  /**
+   * 가져오기가 끝났을 때 한 번 부른다. 어떤 경우에도 던지지 않는다. 돌려주는 값은 가져오기 권리 폼의 AI 사용 표기가
+   * 보고서와 같은 기록에 어떻게 저장됐는지다(고른 답이 없었거나 저장을 시도하지 않았으면 skipped).
+   */
+  readonly complete: (outcome: StudioBg3dSkpImportOutcome) => Promise<StudioBg3dImportAiUseStatus>;
 }
 
 export interface StudioBg3dSkpImportRunDeps {
@@ -75,6 +86,7 @@ export interface StudioBg3dSkpImportRunDeps {
   readonly persist?: (
     asset: StudioBg3dSkpImportedAsset,
     report: StudioBg3dSkpImportReport,
+    signal?: AbortSignal,
   ) => Promise<StudioBg3dSkpMetadataStatus>;
 }
 
@@ -82,15 +94,15 @@ const NOT_SAVED_REASON = "이번 가져오기에서 저장되지 않았습니다
 
 export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {}): StudioBg3dSkpImportRun {
   const session = deps.session ?? studioBg3dSkpImportSession;
-  const persist = deps.persist ?? ((asset, report) => persistStudioBg3dSkpAssetMetadata(asset, report));
+  const persist = deps.persist ?? ((asset, report, signal) => persistStudioBg3dSkpAssetMetadata(asset, report, { signal }));
   const reports: StudioBg3dSkpReportEvent[] = [];
 
   const resultFor = async (
     event: StudioBg3dSkpReportEvent,
     outcome: StudioBg3dSkpImportOutcome,
-  ): Promise<StudioBg3dSkpResultInput> => {
+  ): Promise<{ readonly input: StudioBg3dSkpResultInput; readonly aiUse: StudioBg3dImportAiUseStatus }> => {
     const asset = outcome.status === "imported"
-      ? collectStudioBg3dSkpImportedAssets(outcome.records, outcome.sourcePaths)
+      ? collectStudioBg3dSkpImportedAssets(outcome.records, outcome.sourcePaths, outcome.aiUse)
         .find((candidate) => candidate.sourcePath === event.sourcePath)
       : undefined;
     // 여러 파일을 함께 가져오다 실패하면 모두 저장되지 않는다. 사유가 다른 파일의 것일 수 있어 그렇게 밝힌다.
@@ -100,18 +112,25 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
     if (asset) {
       let metadata: StudioBg3dSkpMetadataStatus;
       try {
-        metadata = await persist(asset, event.report);
+        metadata = await persist(asset, event.report, outcome.status === "imported" ? outcome.signal : undefined);
       } catch {
         metadata = "failed";
       }
-      return { sourceName: event.sourceName, report: event.report, status: "imported", reason: null, metadata };
+      return {
+        input: { sourceName: event.sourceName, report: event.report, status: "imported", reason: null, metadata },
+        // AI 표기는 보고서와 같은 기록에 담기므로 기록 결과가 곧 AI 표기의 결과다.
+        aiUse: hasStudioBg3dImportAiUse(asset.aiUse) ? metadata : "skipped",
+      };
     }
     return {
-      sourceName: event.sourceName,
-      report: event.report,
-      status: "not-imported",
-      reason: failureReason,
-      metadata: "skipped",
+      input: {
+        sourceName: event.sourceName,
+        report: event.report,
+        status: "not-imported",
+        reason: failureReason,
+        metadata: "skipped",
+      },
+      aiUse: "skipped",
     };
   };
 
@@ -125,10 +144,16 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
     },
     async complete(outcome) {
       session.setActivity(null);
-      if (reports.length === 0 || outcome.status === "abandoned") return;
+      if (reports.length === 0 || outcome.status === "abandoned") return "skipped";
       const inputs: StudioBg3dSkpResultInput[] = [];
-      for (const event of reports) inputs.push(await resultFor(event, outcome));
+      let aiUse: StudioBg3dImportAiUseStatus = "skipped";
+      for (const event of reports) {
+        const result = await resultFor(event, outcome);
+        inputs.push(result.input);
+        aiUse = combineStudioBg3dImportAiUseStatus(aiUse, result.aiUse);
+      }
       session.publishResults(inputs);
+      return aiUse;
     },
   };
 }

@@ -19,7 +19,7 @@ function record(name: string): StudioBg3dSkpStoredRecordLike {
   };
 }
 
-function setup(persist?: (asset: StudioBg3dSkpImportedAsset, report: StudioBg3dSkpImportReport) => Promise<StudioBg3dSkpMetadataStatus>) {
+function setup(persist?: (asset: StudioBg3dSkpImportedAsset, report: StudioBg3dSkpImportReport, signal?: AbortSignal) => Promise<StudioBg3dSkpMetadataStatus>) {
   const session = createStudioBg3dSkpImportSession();
   const persistSpy = vi.fn(persist ?? (() => Promise.resolve<StudioBg3dSkpMetadataStatus>("saved")));
   const run = beginStudioBg3dSkpImportRun({ session, persist: persistSpy });
@@ -74,6 +74,77 @@ describe("beginStudioBg3dSkpImportRun", () => {
     expect(session.getSnapshot().results[1].report.counts.triangles).toBe(12);
   });
 
+  it("carries the AI use chosen on the rights form to the asset that is recorded", async () => {
+    const { persistSpy, run } = setup();
+    run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+    await run.complete({
+      status: "imported",
+      records: [record("방")],
+      sourcePaths: ["room.skp"],
+      aiUse: { aiGenerated: "yes" },
+    });
+    expect(persistSpy.mock.calls[0]?.[0]).toMatchObject({ name: "방", aiUse: { aiGenerated: "yes" } });
+    expect(collectStudioBg3dSkpImportedAssets([record("방")], ["room.skp"])[0]).not.toHaveProperty("aiUse");
+  });
+
+  it("hands the import's cancel signal to the recording step, and none for an import that did not finish", async () => {
+    const { persistSpy, run } = setup();
+    run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+    const controller = new AbortController();
+    await run.complete({
+      status: "imported",
+      records: [record("방")],
+      sourcePaths: ["room.skp"],
+      signal: controller.signal,
+    });
+    expect(persistSpy.mock.calls[0]?.[2]).toBe(controller.signal);
+
+    const withoutSignal = setup();
+    withoutSignal.run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+    await withoutSignal.run.complete({ status: "imported", records: [record("방")], sourcePaths: ["room.skp"] });
+    expect(withoutSignal.persistSpy.mock.calls[0]?.[2]).toBeUndefined();
+  });
+
+  it("returns how the AI use was recorded: saved, left as it was, failed, or nothing to record", async () => {
+    const outcomeOf = async (persistResult: StudioBg3dSkpMetadataStatus | "throw", aiUse?: { aiGenerated: "yes" }) => {
+      const { run } = setup(() => (persistResult === "throw" ? Promise.reject(new Error("boom")) : Promise.resolve(persistResult)));
+      run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+      return run.complete({
+        status: "imported",
+        records: [record("방")],
+        sourcePaths: ["room.skp"],
+        ...(aiUse ? { aiUse } : {}),
+      });
+    };
+    await expect(outcomeOf("saved", { aiGenerated: "yes" })).resolves.toBe("saved");
+    await expect(outcomeOf("existing", { aiGenerated: "yes" })).resolves.toBe("existing");
+    await expect(outcomeOf("failed", { aiGenerated: "yes" })).resolves.toBe("failed");
+    await expect(outcomeOf("throw", { aiGenerated: "yes" })).resolves.toBe("failed");
+    // 고른 AI 답이 없으면 보고서 기록 결과가 무엇이든 AI 표기는 알릴 것이 없다.
+    await expect(outcomeOf("saved")).resolves.toBe("skipped");
+    await expect(outcomeOf("failed")).resolves.toBe("skipped");
+  });
+
+  it("merges several files' AI results, and reports nothing for a failed or abandoned import", async () => {
+    const results = new Map([["의자", "existing"], ["방", "saved"]] as const);
+    const { run } = setup((candidate) => Promise.resolve(results.get(candidate.name as "의자" | "방") ?? "saved"));
+    run.options.onReport?.({ sourcePath: "a.skp", sourceName: "a.skp", report: createSkpReportFixture() });
+    run.options.onReport?.({ sourcePath: "b.skp", sourceName: "b.skp", report: createSkpReportFixture() });
+    await expect(run.complete({
+      status: "imported",
+      records: [record("의자"), record("방")],
+      sourcePaths: ["b.skp", "a.skp"],
+      aiUse: { aiGenerated: "yes" },
+    })).resolves.toBe("partial");
+
+    const failed = setup();
+    failed.run.options.onReport?.({ sourcePath: "a.skp", sourceName: "a.skp", report: createSkpReportFixture() });
+    await expect(failed.run.complete({ status: "failed", reason: "실패" })).resolves.toBe("skipped");
+    const abandoned = setup();
+    abandoned.run.options.onReport?.({ sourcePath: "a.skp", sourceName: "a.skp", report: createSkpReportFixture() });
+    await expect(abandoned.run.complete({ status: "abandoned" })).resolves.toBe("skipped");
+  });
+
   it("shows the report of a model that was converted but not imported, with the reason, and records nothing", async () => {
     const { session, persistSpy, run } = setup();
     run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
@@ -116,7 +187,7 @@ describe("beginStudioBg3dSkpImportRun", () => {
   it("never throws when recording the report fails; the screen says it could not be saved", async () => {
     const { session, run } = setup(() => Promise.reject(new Error("boom")));
     run.options.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
-    await expect(run.complete({ status: "imported", records: [record("방")], sourcePaths: ["room.skp"] })).resolves.toBeUndefined();
+    await expect(run.complete({ status: "imported", records: [record("방")], sourcePaths: ["room.skp"] })).resolves.toBe("skipped");
     expect(session.getSnapshot().results[0]).toMatchObject({ status: "imported", metadata: "failed" });
   });
 });

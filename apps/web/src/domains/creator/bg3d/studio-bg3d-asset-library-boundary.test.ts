@@ -48,11 +48,26 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "lucide-react",
       "react",
       "@/shared/lib/i18n-bilingual-copy",
+      "./StudioBg3dAssetAiUseFields",
+      "./StudioBg3dAssetCardRightsActions",
+      "./StudioBg3dAssetRightsFilterBar",
+      "./StudioBg3dAssetRightsInfo",
       "./StudioBg3dSkpImportPanel",
+      "./studio-bg3d-asset-placement-recipes",
+      "./studio-bg3d-asset-rights-catalog",
+      "./studio-bg3d-asset-rights-copy",
+      "./studio-bg3d-asset-rights-view",
       "./studio-bg3d-environment-catalog",
       "./studio-bg3d-skp-import-copy",
     ]);
-    expect(imports.typeImports).toEqual(["./bg3d-model-library"]);
+    expect(imports.typeImports).toEqual([
+      "./bg3d-model-library",
+      "./studio-bg3d-asset-metadata",
+      "./studio-bg3d-asset-placement-recipes",
+      "./studio-bg3d-asset-rights-copy",
+      "./studio-bg3d-asset-rights-view",
+      "./useStudioBg3dAssetRights",
+    ]);
     expect(imports.dynamicImports).toEqual(["./studio-bg3d-canonical-glb-download"]);
     expect([...imports.valueImports, ...imports.typeImports]).not.toContain("./StudioBackground3D");
     expect(imports.valueImports).not.toContain("three");
@@ -62,11 +77,18 @@ describe("Studio BG3D asset-library ownership boundary", () => {
   it("keeps the reference-rebuild wrapper renderer-free and delegates to the canonical file input", () => {
     const imports = moduleImports("./StudioBg3dAssetLibraryPanelWithPresets.tsx");
     expect(imports.valueImports).toEqual([
-      "react", "./StudioBg3dAssetLibraryPanel", "./StudioReferenceRebuildPresets",
+      "react",
+      "./StudioBg3dAssetLibraryPanel",
+      "./StudioReferenceRebuildPresets",
+      "./studio-bg3d-asset-rights-catalog",
+      "./useStudioBg3dAssetRights",
     ]);
     expect(imports.dynamicImports).toEqual([]);
     const wrapper = moduleSource("./StudioBg3dAssetLibraryPanelWithPresets.tsx");
-    expect(wrapper).toContain("<ExistingAssetLibraryPanel {...props} />");
+    // 읽은 권리 보기는 속성으로만 넘기고 패널이 파일 입력과 가져오기 권리 폼을 계속 소유한다.
+    expect(wrapper).toContain("<ExistingAssetLibraryPanel");
+    expect(wrapper).toContain("{...props}");
+    expect(wrapper).toContain("rightsViews={props.rightsViews ?? rights.views}");
     expect(wrapper).toContain("input.files = transfer.files");
     expect(wrapper).toContain('input.dispatchEvent(new Event("change", { bubbles: true }))');
     expect(wrapper).toContain("importButton.disabled");
@@ -81,6 +103,35 @@ describe("Studio BG3D asset-library ownership boundary", () => {
     const workerClient = moduleImports("./studio-reference-rebuild-worker-client.ts");
     expect(workerClient.valueImports).toEqual([]);
     expect(workerClient.dynamicImports).toEqual([]);
+  });
+
+  it("keeps the rights UI parts renderer-free and leaves storage reads to the composition hook", () => {
+    for (const file of [
+      "./StudioBg3dAssetAiUseFields.tsx",
+      "./StudioBg3dAssetCardRightsActions.tsx",
+      "./StudioBg3dAssetRecipeMenu.tsx",
+      "./StudioBg3dAssetRightsFilterBar.tsx",
+      "./StudioBg3dAssetRightsInfo.tsx",
+    ]) {
+      const imports = moduleImports(file);
+      expect([...imports.valueImports, ...imports.typeImports]).not.toContain("three");
+      expect(imports.valueImports.some((source) => source.startsWith("@react-three/"))).toBe(false);
+      expect(imports.dynamicImports).toEqual([]);
+      expect(imports.valueImports.some((source) => /store|authority|model-library/u.test(source))).toBe(false);
+    }
+    const panelSource = moduleSource("./StudioBg3dAssetLibraryPanel.tsx");
+    for (const storageToken of ["readManifest", "listStudioBg3dAssetMetadata", "loadStudioBg3dAssetRightsSources", "parseV12ModelManifest"]) {
+      expect(panelSource).not.toContain(storageToken);
+    }
+    // 저장소를 읽는 쪽은 훅과 읽기 원천뿐이며, 둘 다 지연 로딩되는 라이브러리 패널 아래에서만 쓰인다.
+    expect(moduleImports("./useStudioBg3dAssetRights.ts").valueImports).toContain("./studio-bg3d-asset-rights-source");
+    const sourceImports = moduleImports("./studio-bg3d-asset-rights-source.ts");
+    expect(sourceImports.valueImports).toEqual([]);
+    expect(sourceImports.dynamicImports).toEqual([
+      "./studio-bg3d-libraries-sqlite-opfs-authority",
+      "./bg3d-model-library",
+      "./studio-bg3d-asset-metadata-store",
+    ]);
   });
 
   it("keeps persistence, validation, resource disposal, scene, history, and selection in the parent", () => {

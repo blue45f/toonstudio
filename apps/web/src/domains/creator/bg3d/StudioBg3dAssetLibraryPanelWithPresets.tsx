@@ -2,13 +2,20 @@ import { useRef, useState, type ComponentProps } from "react";
 
 import { StudioBg3dAssetLibraryPanel as ExistingAssetLibraryPanel } from "./StudioBg3dAssetLibraryPanel";
 import { StudioReferenceRebuildPresets } from "./StudioReferenceRebuildPresets";
+import { getStudioBg3dBundledProvenance } from "./studio-bg3d-asset-rights-catalog";
+import { useStudioBg3dAssetRights } from "./useStudioBg3dAssetRights";
 
 type Props = ComponentProps<typeof ExistingAssetLibraryPanel>;
 
-/** Compose the optional generator without relocating the canonical file-input and rights panel. */
+/**
+ * Compose the optional generator without relocating the canonical file-input and rights panel.
+ * 카드의 권리 보기는 저장된 권리 기록(라이브러리 레코드·메타데이터 저장소)을 읽어야 하므로, 저장소 읽기는 리프 패널이
+ * 아니라 이 합성 계층이 맡고 패널에는 읽은 결과만 속성으로 넘긴다.
+ */
 export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
   const scopeRef = useRef<HTMLDivElement>(null);
   const [isBuilding, setIsBuilding] = useState(false);
+  const rights = useStudioBg3dAssetRights(props.entries, getStudioBg3dBundledProvenance);
 
   const handOffFile = (file: File): void => {
     const input = scopeRef.current?.querySelector<HTMLInputElement>('input[type="file"]');
@@ -29,7 +36,11 @@ export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
   return (
     <div ref={scopeRef}>
       <fieldset disabled={isBuilding} className="m-0 min-w-0 border-0 p-0">
-        <ExistingAssetLibraryPanel {...props} />
+        <ExistingAssetLibraryPanel
+          {...props}
+          rightsViews={props.rightsViews ?? rights.views}
+          rightsLoadState={props.rightsLoadState ?? rights.state}
+        />
       </fieldset>
       <StudioReferenceRebuildPresets
         disabled={props.isUploading || props.isRestoringScene || props.deletingModelId !== null}
