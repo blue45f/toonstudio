@@ -27,7 +27,7 @@ jobs:
       OUTPUT_DIR: artifacts/studio-3d-production-audit
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
 

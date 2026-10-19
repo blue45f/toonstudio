@@ -49,7 +49,7 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=12288
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
@@ -103,7 +103,7 @@ jobs:
       SCENE3D_SPECIALISTS_PRODUCTION_WORKER: "1"
       TOONSPECTRUM_VERIFY_DIR: ${{ github.workspace }}/.qa/scene3d-output-quality/specialist-ci
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
@@ -160,7 +160,7 @@ jobs:
       SCENE3D_TILED_PRODUCTION_WORKER: "1"
       TOONSPECTRUM_VERIFY_DIR: ${{ github.workspace }}/.qa/scene3d-output-quality/tiled-ci
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:

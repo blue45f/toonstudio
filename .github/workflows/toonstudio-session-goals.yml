@@ -37,7 +37,7 @@ jobs:
       # Related tests validate tracked documentation evidence; retain docs.
       # 환경 팩·VRM 카탈로그·썸네일 무결성 시험도 related 로 걸리므로 그 시험이 디스크에서 읽는 자산(3D 환경 GLB, 캐릭터 썸네일, 해당 VRM 폴더)을 함께 받는다. 전체 VRM 폴더 같은 무관한 자산 트리는 받지 않는다.
       - name: Checkout focused ToonStudio source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 1

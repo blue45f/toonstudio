@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
@@ -137,7 +137,7 @@ jobs:
               dynamic-dual-tip-webgpu-v2|pnpm run verify:studio-dynamic-dual-tip-webgpu-v2
               studio-toolchain|pnpm run studio:toolchain:check
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
