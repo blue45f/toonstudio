@@ -10,7 +10,7 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-vello_cpu = "0.2.0"
+vello_cpu = "0.3.0"
 # V12 WebGPU wasm PoC lane — optional, excluded from default wasm-pack builds.
 vello = { version = "0.10", optional = true }
 # Real sparse-strip hybrid renderer; product use is gated by explicit preflight.
