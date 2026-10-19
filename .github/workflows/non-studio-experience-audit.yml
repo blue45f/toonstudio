@@ -40,7 +40,7 @@ jobs:
           name: non-studio-audit-source
           path: /tmp/non-studio-audit-source.tar.gz
           retention-days: 3
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Install isolated browser harness
