@@ -26,7 +26,7 @@
   "dependencies": {
     "@toonstudio/studio-engine-registry": "workspace:*",
     "@toonstudio/studio-project-model": "workspace:*",
-    "canvaskit-wasm": "0.41.1"
+    "canvaskit-wasm": "0.42.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.2"
