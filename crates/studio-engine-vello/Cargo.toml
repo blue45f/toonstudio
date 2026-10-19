@@ -34,7 +34,7 @@ parley = { version = "0.11", default-features = false, features = ["std", "syste
 # vertical single-style lane therefore calls the same pinned HarfRust shaper
 # directly with Direction::TopToBottom so GSUB vert/vrt2 are real substitutions,
 # not feature-presence claims or Unicode presentation-form rewrites.
-harfrust = { version = "0.10", default-features = false, features = ["std"] }
+harfrust = { version = "0.12", default-features = false, features = ["std"] }
 skrifa = "0.43"
 
 [features]
