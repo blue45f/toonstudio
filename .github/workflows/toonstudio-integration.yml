@@ -209,7 +209,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Restore focused analysis cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .cache/ci/toonstudio
           key: toonstudio-${{ matrix.track }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'eslint.config.mjs', 'tsconfig.json', 'scripts/verify-toonstudio-integration.sh') }}-${{ github.sha }}

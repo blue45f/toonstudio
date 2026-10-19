@@ -133,7 +133,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/toonstudio-verification/studio-collaboration-sync/branch"
       - name: Cache Playwright Chromium
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}

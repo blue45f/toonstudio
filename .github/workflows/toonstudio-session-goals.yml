@@ -123,7 +123,7 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Restore focused lint cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: node_modules/.cache/eslint/quick
           key: toonstudio-session-eslint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'eslint.config.mjs') }}-${{ github.sha }}
