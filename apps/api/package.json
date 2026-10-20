@@ -31,7 +31,7 @@
     "js-base64": "^3.9.4",
     "korean-lunar-calendar": "0.4.0",
     "lunar-typescript": "1.8.6",
-    "nestjs-pino": "^4.6.1",
+    "nestjs-pino": "^5.3.1",
     "nestjs-zod": "^5.5.0",
     "pg": "^8.23.1",
     "pino-http": "^11.0.0",
