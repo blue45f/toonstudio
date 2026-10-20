@@ -18,6 +18,11 @@ import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 
 import {
+  REVIEWED_RUST_LICENSE_EXPRESSIONS,
+  VELLO_VENDORED_PACKAGE_SOURCES,
+  vendoredVelloSource,
+} from "./generate-third-party-notices-vello.mjs";
+import {
   HOKUSAI_PACKAGE_DIRECTORY,
   parseCargoLockPackages,
   validateHokusaiReleaseContract,
@@ -79,17 +84,6 @@ const VELLO_ARTIFACT_POLICIES = Object.freeze([
     ]),
   }),
 ]);
-// Vendored forks wired through [patch.crates-io] in the crate manifest. A
-// locked package with no registry source must be one of these, and its
-// recorded inventory source is the fork's repo-relative path so provenance
-// stays truthful per fork. refresh derives the path from cargo metadata and
-// fails if it is not declared here.
-const VELLO_VENDORED_PACKAGE_SOURCES = Object.freeze({
-  wgpu: "path:crates/vendor/wgpu-toon",
-  vello_hybrid: "path:crates/vendor/vello-hybrid",
-  velato: "path:crates/vendor/velato",
-  vello_svg: "path:crates/vendor/vello-svg",
-});
 const VELLO_REQUIRED_NOTICE_FILES = Object.freeze([
   "THIRD_PARTY_INVENTORY.json",
   "pkg/NOTICE",
@@ -528,24 +522,6 @@ export function readEmbeddedFirstPartyPortDocuments(
     };
   });
 }
-
-const REVIEWED_RUST_LICENSE_EXPRESSIONS = new Set([
-  "(MIT OR Apache-2.0) AND Unicode-3.0",
-  "0BSD OR MIT OR Apache-2.0",
-  "Apache-2.0/MIT",
-  "Apache-2.0 OR MIT",
-  "BSD-2-Clause",
-  "BSD-3-Clause",
-  "MIT",
-  "MIT OR Apache-2.0",
-  "MIT OR Apache-2.0 OR Zlib",
-  "MIT OR Zlib OR Apache-2.0",
-  "MIT/Apache-2.0",
-  "Unicode-3.0",
-  "Unlicense OR MIT",
-  "Zlib",
-  "Zlib OR Apache-2.0 OR MIT",
-]);
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -1041,14 +1017,6 @@ function stableCargoLicenseSource(packageMetadata, licensePath) {
     return `https://crates.io/crates/${packageMetadata.name}/${packageMetadata.version}/source/${basename(licensePath)}`;
   }
   return relative(REPOSITORY_ROOT, licensePath);
-}
-
-function vendoredVelloSource(packageMetadata, key) {
-  const derived = `path:${relative(REPOSITORY_ROOT, dirname(packageMetadata.manifest_path)).replaceAll("\\", "/")}`;
-  if (VELLO_VENDORED_PACKAGE_SOURCES[packageMetadata.name] !== derived) {
-    throw new Error(`Undeclared vendored Vello package: ${key} at ${derived}.`);
-  }
-  return derived;
 }
 
 function renderVelloLicenseBundle(artifact, packageByKey, documentByDigest) {

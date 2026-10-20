@@ -47,7 +47,7 @@ function job(name) {
 // script. The CI step must call that script, never a second copy of the
 // threshold, so the number cannot drift between local and CI runs.
 const EXPECTED_SCRIPT = "type-coverage --at-least 95";
-const EXPECTED_VERSION = "2.30.3";
+const EXPECTED_VERSION = "2.30.4";
 
 test("type-coverage is a pinned dev-only dependency", () => {
   assert.equal(packageJson.devDependencies?.["type-coverage"], EXPECTED_VERSION);

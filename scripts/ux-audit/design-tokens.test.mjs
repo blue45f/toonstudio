@@ -115,7 +115,7 @@ describe("design-tokens: ESLint 규칙과의 동기화", () => {
     const source = readFileSync(join(ROOT, "node_modules/@shadcn/lint/dist/similar.js"), "utf8");
     const prefix = source.match(/const COLOR_PREFIX = (\/.+\/);/u)?.[1];
     assert.equal(COLOR_PREFIX.toString(), prefix);
-    const palette = [...(source.match(/const PALETTE = \[([\s\S]*?)\];/u)?.[1] ?? "").matchAll(/"([a-z]+)"/gu)].map((match) => match[1]);
+    const palette = [...(source.match(/const PALETTE(?:\$\d+)? = \[([\s\S]*?)\];/u)?.[1] ?? "").matchAll(/"([a-z]+)"/gu)].map((match) => match[1]);
     assert.deepEqual([...PALETTE_NAMES], palette);
   });
 });
