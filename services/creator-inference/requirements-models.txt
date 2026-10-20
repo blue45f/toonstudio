@@ -12,7 +12,7 @@ sentencepiece>=0.2.2,<1
 numpy>=1.26,<3
 imageio[ffmpeg]>=2.34,<3
 opencv-python-headless>=4.10,<5
-omegaconf==2.3.0
+omegaconf==2.4.0
 einops>=0.8.2,<1
 trimesh>=4.0,<5
 # Optional opaque-image removal: pip install 'rembg[cpu]>=2,<3'
