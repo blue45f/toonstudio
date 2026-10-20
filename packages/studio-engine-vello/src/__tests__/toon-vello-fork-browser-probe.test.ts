@@ -11,7 +11,7 @@ import type { Browser, Page } from "playwright";
 
 /**
  * toon-vello fork track (V14) real-browser proof — device adoption + L4 for
- * both Vello Classic 0.10 and upstream Vello Hybrid 0.2.
+ * both Vello Classic 0.11 and upstream Vello Hybrid 0.2.
  *
  * Opt-in: `TOON_VELLO_FORK_PROBE=1 pnpm exec vitest run \
  *   packages/studio-engine-vello/src/__tests__/toon-vello-fork-browser-probe.test.ts`
@@ -629,7 +629,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         browser: { launch: launchLabel, version: browser.version() },
         adapter: probe.adapter ?? null,
         forkTrack: {
-          vendor: "crates/vendor/wgpu-toon (crates.io wgpu 29.0.4 + TOON-PATCH 0001, feature `toon-fabric`)",
+          vendor: "crates/vendor/wgpu-toon (crates.io wgpu 30.0.1 + TOON-PATCH 0001, feature `toon-fabric`)",
           upstreamCrateSha256:
             "76e8840e1ba2881d4cbb18d2147627a56af426ff064c0401eb0c8410c6325d07",
           buildTrackA: "cargo check --target wasm32-unknown-unknown --features gpu,lottie,svg (toon-fabric off; vendored crate is API-identical to upstream)",

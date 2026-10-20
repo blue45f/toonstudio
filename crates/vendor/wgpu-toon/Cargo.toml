@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.87.0"
 name = "wgpu"
-version = "29.0.4"
+version = "30.0.1"
 authors = ["gfx-rs developers"]
 build = "build.rs"
 exclude = ["Cargo.lock"]
@@ -59,7 +59,9 @@ default = [
     "wgsl",
     "webgpu",
 ]
+drm = ["wgpu-core?/drm"]
 dx12 = ["wgpu-core?/dx12"]
+exhaust = ["wgpu-types/exhaust"]
 fragile-send-sync-non-atomic-wasm = [
     "wgpu-core?/fragile-send-sync-non-atomic-wasm",
     "wgpu-types/fragile-send-sync-non-atomic-wasm",
@@ -102,32 +104,34 @@ strict_asserts = [
 
 # TOON-PATCH 0001 (ToonStudio V12 §5 toon-vello fork track).
 #
-# WHY: vello 0.9 pins `wgpu ^29.0.3`, and wgpu 29 has no way to build a
-# `wgpu::Device` around a `GPUDevice` the page already owns
-# (`mod backend` is private, `backend::webgpu::WebDevice.inner` is
-# `pub(crate)`, and `Device::from_custom` demands a whole custom backend
-# rather than adoption). That forces ToonStudio's WGSL filter kernels and
-# vello onto two separate `GPUDevice`s, so every exchange is a CPU readback
-# (V12 §6.3 L0) — measured at 2.9x the same-device GPU copy at 1024²
-# (`tests/benchmarks/results/gpu-fabric-probe.json`).
+# WHY: wgpu still has no way to build a `wgpu::Device` around a `GPUDevice`
+# the page already owns (`Device::from_custom` demands a whole custom
+# backend rather than adoption). Without adoption, ToonStudio's WGSL filter
+# kernels and vello are forced onto two separate `GPUDevice`s, so every
+# exchange is a CPU readback (V12 §6.3 L0) — measured at 2.9x the same-device
+# GPU copy at 1024² (`tests/benchmarks/results/gpu-fabric-probe.json`).
+#
+# On the 29.0.4 base this patch also backported the *export* half
+# (`Device::as_webgpu`, `Texture::as_webgpu`,
+# `Device::create_texture_from_webgpu_handle`, public `wgpu::webgpu`).
+# wgpu 30 ships all of that upstream, so on this 30.0.1 base the patch is
+# only the *adoption* half: `Device::from_webgpu_handle` plus the
+# `WebDevice`/`WebQueue::from_external_handle` constructors behind it. That
+# half has no upstream counterpart and is our upstream PR candidate
+# (V12 §5.4).
 #
 # OFF BY DEFAULT ON PURPOSE: with this feature disabled, every patch hunk in
 # this vendored tree compiles out and the crate is API-identical to upstream
-# 29.0.4. That is build track A (`upstream`) — it is what detects upstream
+# 30.0.1. That is build track A (`upstream`) — it is what detects upstream
 # regressions. Track B (`toon`) enables `toon-fabric`.
 #
 # REMOVE WHEN: wgpu upstream ships `Device`/`Queue` adoption of an external
-# WebGPU handle AND vello's wgpu pin reaches that release. wgpu 30.0.0
-# already ships the *export* half of this patch (`Device::as_webgpu`,
-# `Texture::as_webgpu`, `Device::create_texture_from_webgpu_handle`, public
-# `wgpu::webgpu` handle module), so those hunks are a straight backport and
-# die with the pin bump; the *adoption* half
-# (`Device::from_webgpu_handle` / `Queue::from_webgpu_handle`) does not
-# exist upstream at all and is our upstream PR candidate (V12 §5.4).
+# WebGPU handle AND vello's wgpu pin reaches that release.
 toon-fabric = []
 trace = [
     "serde",
     "wgpu-core?/trace",
+    "wgpu-types/trace",
 ]
 vulkan = ["wgpu-core?/vulkan"]
 vulkan-portability = ["wgpu-core?/vulkan-portability"]
@@ -149,6 +153,7 @@ webgpu = [
     "dep:wasm-bindgen-futures",
     "web-sys/Document",
     "web-sys/Event",
+    "web-sys/MediaQueryList",
     "web-sys/Navigator",
     "web-sys/NodeList",
     "web-sys/Window",
@@ -182,7 +187,7 @@ version = "1"
 version = "0.2.10"
 
 [dependencies.hashbrown]
-version = "0.16"
+version = "0.17"
 features = [
     "default-hasher",
     "inline-more",
@@ -193,7 +198,7 @@ default-features = false
 version = "0.4.29"
 
 [dependencies.naga]
-version = "29.0.1"
+version = "30.0.0"
 features = ["termcolor"]
 optional = true
 
@@ -214,11 +219,11 @@ default-features = false
 version = "1.1"
 
 [dependencies.wgpu-core]
-version = "29.0.1"
+version = "30.0.0"
 optional = true
 
 [dependencies.wgpu-types]
-version = "29.0.1"
+version = "30.0.0"
 default-features = false
 
 [dev-dependencies.bytemuck]
@@ -229,10 +234,10 @@ features = [
 ]
 
 [build-dependencies.cfg_aliases]
-version = "0.2.1"
+version = "0.2.2"
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies.js-sys]
-version = "0.3.85"
+version = "0.3.104"
 optional = true
 default-features = false
 
@@ -241,17 +246,17 @@ version = "1.14"
 optional = true
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies.wasm-bindgen]
-version = "0.2.108"
+version = "0.2.127"
 optional = true
 default-features = false
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies.wasm-bindgen-futures]
-version = "0.4.58"
+version = "0.4.77"
 optional = true
 default-features = false
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies.web-sys]
-version = "0.3.85"
+version = "0.3.104"
 features = [
     "HtmlCanvasElement",
     "OffscreenCanvas",
@@ -260,18 +265,18 @@ optional = true
 default-features = false
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies.wgpu-core]
-version = "29.0.1"
+version = "30.0.0"
 optional = true
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies.wgpu-hal]
-version = "29.0.1"
+version = "30.0.0"
 optional = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.smallvec]
 version = "1.14"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.wgpu-core]
-version = "29.0.1"
+version = "30.0.0"
 features = [
     "renderdoc",
     "wgsl",
@@ -279,7 +284,7 @@ features = [
 ]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.wgpu-hal]
-version = "29.0.1"
+version = "30.0.0"
 
 [target.'cfg(not(target_has_atomic = "64"))'.dependencies.portable-atomic]
 version = "1.10"
@@ -288,7 +293,13 @@ version = "1.10"
 version = "1.14"
 
 [target.'cfg(target_os = "emscripten")'.dependencies.wgpu-core]
-version = "29.0.1"
+version = "30.0.0"
 
 [target.'cfg(target_os = "emscripten")'.dependencies.wgpu-hal]
-version = "29.0.1"
+version = "30.0.0"
+
+[lints.clippy]
+ref_as_ptr = "warn"
+
+[lints.rust]
+missing_debug_implementations = "warn"

@@ -1,0 +1,255 @@
+# Changelog
+
+<!-- Instructions
+
+This changelog follows the patterns described here: <https://keepachangelog.com/en/1.0.0/>.
+
+Subheadings to categorize changes are `added, changed, deprecated, removed, fixed, security`.
+
+-->
+
+The latest published Velato release is [0.12.0](#0120-2026-09-09) which was released on 2026-09-09.
+You can find its changes [documented below](#0120-2026-09-09).
+
+## [Unreleased]
+
+This release has an [MSRV][] of 1.88.
+
+## [0.12.0][] (2026-09-09)
+
+This release has an [MSRV][] of 1.88.
+
+### Fixed
+
+- Fixed omitted transform scales defaulting to 1% instead of 100%. ([#113][] by [@RobertBrewitz])
+- Fixed `Composite` values to `Below = 1`, `Above = 2` and defaults to `Below`. ([#116][] by [@RobertBrewitz][])
+
+### Added
+
+- Retain unmodeled layer effects (`ef`) as raw JSON. ([#114][] by [@RobertBrewitz][])
+- Added image asset metadata and image layer rendering. ([#115][] by [@RobertBrewitz])
+- Added repeater shape import and rendering, including animated properties, split position, per-copy opacity, below/above compositing, hidden repeaters, and mirrored scales at fractional offsets. ([#116][] by [@RobertBrewitz][])
+
+### Changed
+
+- `RenderSink` implementations must now provide `draw_image`, passing a bare `vello::Scene` to `Renderer::append` panics when drawing an image. Use `Renderer::render_to_vello_scene` with a caller-owned image map, or use a custom sink instead. ([#115][] by [@RobertBrewitz])
+- Vello has been upgraded to v0.10 ([#117][] by [@RobertBrewitz])
+
+## [0.11.0]
+
+This release has an [MSRV][] of 1.88.
+
+### Changed
+
+- Vello has been upgraded to v0.9, and `wgpu` (in the `with_winit` example) to v29. ([#110][] by [@nixonyh][])
+
+## [0.10.0]
+
+This release has an [MSRV][] of 1.88.
+
+### Added
+
+- Added `markers`, `meta` and `metadata` fields to the Animation schema. ([#101][] by [@RobertBrewitz][])
+- Added PolyStar shape support (star and polygon geometry), including animated properties for position, radii, roundness, rotation, and point count. ([#102][] by [@RobertBrewitz][])
+- Added `begin_layer_group`/`end_layer_group` hooks to `RenderSink` for per-layer rendering callbacks. ([#104][] by [@RobertBrewitz][])
+
+### Fixed
+
+- Fixed `with_winit` example failing to start due to `wgpu` version mismatch (v26 vs v27) left behind during the Vello 0.7 upgrade. ([#100][] by [@RobertBrewitz][])
+- Fixed precomp `start_time` always being `None` because `#[serde(flatten)]` shadowed the outer `Layer.start_time` for the "st" key. ([#103][] by [@RobertBrewitz][])
+- Fixed hidden layers breaking parent transform chains, hidden layers now remain in the layer set with their transforms intact but render no content. ([#103][] by [@RobertBrewitz][])
+- Fixed `AnyAsset` deserialization errors not naming the failing asset. Errors now include the asset id, and also forward the actual inner failure (e.g. an unknown shape variant inside a precomposition's layers) instead of the generic "did not match any variant of untagged enum" message. ([#105][] by [@RobertBrewitz][])
+
+## [0.9.0]
+
+This release has an [MSRV][] of 1.88.
+
+### Changed
+
+- The `RenderSink` trait has been reintroduced, making it possible to use `velato` with any rendering backend. The `vello` dependency is now optional. ([#95][] by [@nicoburns][])
+- Vello has been upgraded to v0.7 ([#96][] by [@nicoburns][])
+
+### Removed
+
+- The `thiserror` dependency has been removed ([#94][] by [@nicoburns][])
+- The `once_cell` dependency has been removed ([#93][] by [@nicoburns][])
+
+### Changed
+
+## [0.8.1]
+
+This release has an [MSRV][] of 1.86.
+
+### Fixed
+
+- A panic on WASM when finding roots.
+
+## [0.8.0]
+
+This release has an [MSRV][] of 1.86.
+
+### Added
+
+- Added image schema layer. ([#78][] by [@RobertBrewitz][])
+- Added deserializer to deserialize into the correct Layer type based on the "ty" field. ([#78][] by [@RobertBrewitz][])
+- Added twist, stroke_dash, modifier and rounded_corners schema shapes. ([#78][] by [@RobertBrewitz][])
+- Added support for trim paths in animations. ([#83][] by [@RobertBrewitz][])
+
+### Changed
+
+- Changed the rust schema to better match the lottie spec. ([#78][] by [@RobertBrewitz][])
+
+### Fixed
+
+- Fixed tweening issue by replacing keyframe with kurbo cubic bezier implementation. ([#80][] & [#81][] by [@RobertBrewitz][])
+- Fixed flickering of hold frames in splines. ([#82][] by [@RobertBrewitz][])
+- Fixed matte layer clipping. ([#84][] by [@RobertBrewitz][])
+- Fixed easing handles, only use the first two components ([#85][] by [@RobertBrewitz][])
+
+### Removed
+
+- Removed custom LayerId type in favor for new deserializer. ([#78][] by [@RobertBrewitz][])
+- Removed unused layer enumeration. ([#78][] by [@RobertBrewitz][])
+- Removed SKEW_LIMIT from Transform::evaluate method as it can cause rendering errors. ([#79][] by [@RobertBrewitz][])
+
+## [0.7.0]  - 2025-10-11
+
+This release has an [MSRV][] of 1.86.
+
+### Changed
+
+- Updated to vello 0.6
+
+## [0.6.0]  - 2025-05-26
+
+This release has an [MSRV][] of 1.85.
+
+### Added
+
+- Keyframes in an animated Spline may now specify an `"e"` key, dictating an end value. When specified, this value is used instead of the next keyframe's start value, allowing for discontinuous animations. ([#60][] by [@RishiChalla][])
+- The last keyframe in an animated Spline may now specify only the timestamp, omitting all other fields. In this scenario, the previous keyframe's end/start values will be used. ([#60][] by [@RishiChalla][])
+
+### Changed
+
+- Updated to `vello` 0.5 ([#63][] by [@RobertBrewitz][])
+
+## [0.5.0]  - 2025-02-02
+
+This release has an [MSRV][] of 1.82.
+
+### Changed
+
+- Updated to `vello` 0.4 ([#49][] by [@simbleau][]).
+
+## [0.4.0]  - 2024-11-21
+
+This release has an [MSRV][] of 1.75.
+
+### Changed
+
+- Updated to `vello` 0.3
+- Updated `thiserror` to 2.0
+
+## [0.3.1]  - 2024-11-11
+
+This release has an [MSRV][] of 1.75.
+
+### Fixed
+
+- Non-linear easing is now correctly interpolated ([#42] by [@atoktoto])
+
+## [0.3.0]  - 2024-07-04
+
+This release has an [MSRV][] of 1.75.
+
+### Added
+
+- Added `velato::Renderer::render`, which now returns a new vello scene.
+
+### Changed
+
+- Updated to vello 0.2
+- Renamed `VelatoError` to `velato::Error`
+- Renamed the existing `velato::Renderer::render` to `velato::Renderer::append`
+
+### Removed
+
+- All code and related profiling (`wgpu_profiler`) used in examples.
+
+## [0.2.0] - 2024-05-26
+
+This release has an [MSRV][] of 1.75.
+
+### Changed
+
+- Disable `vello`'s default `wgpu` feature, and provide a `wgpu` passthrough feature to turn it back on. ([#17] by [@MarijnS95])
+
+### Fixed
+
+- Image viewBox clipping is now applied to the animation ([#16] by [@luke1188])
+- Errors that may occur on parsing a lottie composition are now public as `VelatoError`. ([#19] by [@simbleau])
+
+## [0.1.0] - 2024-03-26
+
+This release has an [MSRV][] of 1.75.
+
+- Initial release
+
+[@luke1188]: https://github.com/luke1188
+[@MarijnS95]: https://github.com/MarijnS95
+[@simbleau]: https://github.com/simbleau
+[@atoktoto]: https://github.com/atoktoto
+[@RishiChalla]: https://github.com/RishiChalla
+[@RobertBrewitz]: https://github.com/RobertBrewitz
+[@nicoburns]: https://github.com/nicoburns
+[@nixonyh]: https://github.com/nixonyh
+
+[#16]: https://github.com/linebender/velato/pull/16
+[#17]: https://github.com/linebender/velato/pull/17
+[#19]: https://github.com/linebender/velato/pull/19
+[#42]: https://github.com/linebender/velato/pull/42
+[#49]: https://github.com/linebender/velato/pull/49
+[#60]: https://github.com/linebender/velato/pull/60
+[#63]: https://github.com/linebender/velato/pull/63
+[#78]: https://github.com/linebender/velato/pull/78
+[#79]: https://github.com/linebender/velato/pull/79
+[#80]: https://github.com/linebender/velato/pull/80
+[#81]: https://github.com/linebender/velato/pull/81
+[#82]: https://github.com/linebender/velato/pull/82
+[#83]: https://github.com/linebender/velato/pull/83
+[#84]: https://github.com/linebender/velato/pull/82
+[#85]: https://github.com/linebender/velato/pull/85
+[#93]: https://github.com/linebender/velato/pull/93
+[#94]: https://github.com/linebender/velato/pull/94
+[#95]: https://github.com/linebender/velato/pull/95
+[#96]: https://github.com/linebender/velato/pull/96
+[#100]: https://github.com/linebender/velato/pull/100
+[#101]: https://github.com/linebender/velato/pull/101
+[#102]: https://github.com/linebender/velato/pull/102
+[#103]: https://github.com/linebender/velato/pull/103
+[#104]: https://github.com/linebender/velato/pull/104
+[#105]: https://github.com/linebender/velato/pull/105
+[#110]: https://github.com/linebender/velato/pull/110
+[#113]: https://github.com/linebender/velato/pull/113
+[#114]: https://github.com/linebender/velato/pull/114
+[#115]: https://github.com/linebender/velato/pull/115
+[#116]: https://github.com/linebender/velato/pull/116
+[#117]: https://github.com/linebender/velato/pull/117
+
+[Unreleased]: https://github.com/linebender/velato/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/linebender/velato/compare/v0.11.0...v0.12.0
+[0.11.0]: https://github.com/linebender/velato/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/linebender/velato/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/linebender/velato/compare/v0.8.1...v0.9.0
+[0.8.1]: https://github.com/linebender/velato/compare/v0.8.0...v0.8.1
+[0.8.0]: https://github.com/linebender/velato/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/linebender/velato/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/linebender/velato/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/linebender/velato/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/linebender/velato/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/linebender/velato/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/linebender/velato/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/linebender/velato/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/linebender/velato/releases/tag/v0.1.0
+
+[MSRV]: README.md#minimum-supported-rust-version-msrv

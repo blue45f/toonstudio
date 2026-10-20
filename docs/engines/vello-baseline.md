@@ -8,13 +8,20 @@
   `docs/architecture/ToonStudio_V12_차세대엔진_승격게이트_매트릭스.csv`(이하 V12 매트릭스)의 라이선스 열과 대조했다.
 
 
-## 0. 현재 제품 핀과 경계 (2026-09-24)
+## 0. 현재 제품 핀과 경계 (2026-10-20)
 
-현재 `Cargo.lock` 기준 제품 핀은 Vello Classic **0.10.0**, upstream
-`vello_hybrid` **0.2.0**, `vello_cpu` **0.2.0**, `vello_svg` **0.11.0**,
-Velato **0.12.0**, usvg **0.48.1**, wgpu/naga **29.0.4**다. `kurbo 0.13.1`,
+현재 `Cargo.lock` 기준 제품 핀은 Vello Classic **0.11.0**, upstream
+`vello_hybrid` **0.2.0**, `vello_cpu` **0.3.0**, `vello_svg` **0.11.0**,
+Velato **0.12.0**, usvg **0.48.1**, wgpu **30.0.1**이다. `kurbo 0.13.1`,
 `peniko 0.6.1`, Parley **0.11.0**과 vendored `wgpu-toon` 단일-device 패치는 유지한다.
 Skrifa는 **0.43.2 / 0.44.0**, HarfRust는 **0.10.0 / 0.12.0**이 잠긴다.
+
+2026-10-20 vello 0.11 포팅으로 §3.1의 "wgpu 30 도달 불가" 판정은 해소됐다.
+`wgpu-toon`은 wgpu **30.0.1**로 리베이스되어 TOON-PATCH 0001에 adoption
+절반만 남았고, 최신 릴리스가 구 메이저를 핀하는 세 크레이트(vello_hybrid→
+wgpu 30, velato·vello_svg→vello 0.11)는 `crates/vendor/`에 핀 이동본을
+둔다(§3.2). naga는 wgpu 30 경유 **30.0.1**이되, WGSL variant 코퍼스 검증용
+dev 핀만 캡처 세대인 29.0을 유지한다.
 
 브라우저 산출물(CPU `pkg`·GPU `pkg-gpu`)은 다음으로 재현한다. 두 레인 모두
 fixed SIMD를 명시 적용한다 — rustc의 wasm32 기본 타깃 기능에는 simd128이 없어
@@ -38,7 +45,7 @@ RUSTFLAGS="-C target-feature=+simd128" \
   `GPUTexture`로 반환한다. 제품 hot path CPU readback은 없다.
 - strict Vello SVG subset 밖의 안전한 filter/mask/text/Lottie는 사전 선택된 ThorVG 전문
   provider가 맡을 수 있지만, ThorVG 역시 문서 권위나 실패 후 대체 엔진이 아니다.
-- `THIRD_PARTY_INVENTORY.json`은 CPU 85개, GPU 137개 외부 Rust crate와 exact license
+- `THIRD_PARTY_INVENTORY.json`은 CPU 86개, GPU 142개 외부 Rust crate와 exact license
   bundle을 고정하고 `scripts/generate-third-party-notices.mjs --check`가 이를 검증한다.
 
 아래 V12 표와 벤치마크는 **2026-08-08 당시의 역사적 기준선**이다. 현재 버전·배포 경계는
@@ -140,22 +147,31 @@ interactive GPU Scene Fragment가 아니다.
 - **버전 승격은 오늘 불가**: crates.io 인덱스 실측상 vello 0.9.0 의존은 `wgpu ^29.0.3`이고,
   wgpu 30은 semver major라 도달 불가. wgpu 30으로 가려면 vello까지 포크해야 하므로,
   **벤더 대상은 wgpu 29.0.4 쪽이 최소 표면**이라고 판정했다.
+  → **2026-10-20 해소**: vello 0.11.0이 `wgpu ^30`을 핀하면서 전제가 사라졌다.
+  포팅 실측 결과 벤더 대상은 wgpu 30.0.1 리베이스(adoption 헝크만 잔존)와
+  vello_hybrid/velato/vello_svg 핀 이동 3건으로 확정됐다(§3.2). 위 판정은
+  당시 기록으로 남긴다.
 
 ### 3.2 벤더 트랙 구조
 
 ```text
-crates/vendor/wgpu-toon/                 crates.io wgpu 29.0.4 + TOON-PATCH 0001
+crates/vendor/wgpu-toon/                 crates.io wgpu 30.0.1 + TOON-PATCH 0001 (adoption 절반만)
 crates/vendor/wgpu-toon/PATCHES/         0001-webgpu-handle-adoption.patch (재현 절차 포함)
 crates/vendor/wgpu-toon/UPSTREAM.sha256  벤더 트리 전 파일 핀
-crates/studio-engine-vello/              [patch.crates-io] wgpu = { path = "../vendor/wgpu-toon" }
+crates/vendor/vello-hybrid/              crates.io vello_hybrid 0.2.0, wgpu 핀 29.0.3 -> 30.0.1 (TOON-VENDOR.md)
+crates/vendor/velato/                    crates.io velato 0.12.0, vello 핀 0.10 -> 0.11 (TOON-VENDOR.md)
+crates/vendor/vello-svg/                 crates.io vello_svg 0.11.0, vello 핀 0.10 -> 0.11 (TOON-VENDOR.md)
+crates/studio-engine-vello/              [patch.crates-io] wgpu/vello_hybrid/velato/vello_svg = 각 vendor 경로
 ```
 
-- 상류 원본: `https://static.crates.io/crates/wgpu/wgpu-29.0.4.crate`,
-  sha256 `76e8840e1ba2881d4cbb18d2147627a56af426ff064c0401eb0c8410c6325d07`
-  (crates.io 인덱스 `cksum`과 일치 확인).
-- 패치는 **6개 파일 · 총 308줄 패치 파일(대부분 주석)** — `Cargo.toml`, `src/lib.rs`,
-  `src/backend/webgpu.rs`, `src/api/{device,queue,texture}.rs`. 각 hunk에 WHY / UPSTREAM /
-  REMOVE WHEN 주석이 붙는다(§5.1 "숨은 임시 패치 금지").
+- 상류 원본: `https://static.crates.io/crates/wgpu/wgpu-30.0.1.crate`,
+  sha256 `527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e`
+  (crates.io 인덱스 `cksum`과 일치 확인, 2026-10-20).
+- 패치는 **3개 파일** — `Cargo.toml`, `src/backend/webgpu.rs`, `src/api/device.rs`.
+  29.0.4 베이스의 6개 파일에서 줄었다: export 절반(`pub mod webgpu`,
+  `as_webgpu`, `create_texture_from_webgpu_handle`)은 wgpu 30 상류에 이미
+  있어 백포트 헝크가 소멸했고, 남은 것은 adoption 헝크뿐이다. 각 hunk에
+  WHY / UPSTREAM / REMOVE WHEN 주석이 붙는다(§5.1 "숨은 임시 패치 금지").
 - **드리프트 게이트**: `crates/studio-engine-vello/tests/vendor_patch_parity.rs`가 벤더 트리 전
   파일 해시를 `UPSTREAM.sha256`과 대조하고, 패치 파일이 선언한 파일 집합과 상류 체크섬 기록을
   검증한다. 미선언 편집은 테스트 실패로 드러난다.
@@ -164,13 +180,13 @@ crates/studio-engine-vello/              [patch.crates-io] wgpu = { path = "../v
 
 | # | 항목 | 상류 상태 | 제거 조건 |
 | --- | --- | --- | --- |
-| 1 | `pub mod webgpu` JS 핸들 타입 재노출 | wgpu 30에 동일 존재 | vello의 wgpu 핀 ≥ 30 |
-| 2 | `Device/Queue/Texture::as_webgpu()` | wgpu 30에 동일 존재 | vello의 wgpu 핀 ≥ 30 |
-| 3 | `Device::create_texture_from_webgpu_handle()` | wgpu 30에 존재(우리 것은 DropCallback 생략) | vello의 wgpu 핀 ≥ 30 |
+| 1 | `pub mod webgpu` JS 핸들 타입 재노출 | wgpu 30에 동일 존재 | **소멸 (2026-10-20 리베이스)** |
+| 2 | `Device/Queue/Texture::as_webgpu()` | wgpu 30에 동일 존재 | **소멸 (2026-10-20 리베이스)** |
+| 3 | `Device::create_texture_from_webgpu_handle()` | wgpu 30에 존재(우리 것은 DropCallback 생략) | **소멸 (2026-10-20 리베이스)** |
 | 4 | `Device::from_webgpu_handle()` — 외부 GPUDevice/Queue 채택 | **상류 부재(30 포함)** | 상류가 채택 API를 받아들일 때 |
 
-§5.4 upstream 원칙: 1~3은 순수 백포트라 핀 상향과 함께 자연 소멸하고, **4번이 ToonStudio의
-상류 PR 후보**다(웹 백엔드의 모든 `Drop`이 이미 no-op이라 소유권 이전 위험이 없다는 점이 근거).
+§5.4 upstream 원칙: 1~3은 순수 백포트라 핀 상향과 함께 자연 소멸했고(2026-10-20 실측), **4번이 ToonStudio의
+상류 PR 후보**로 남는다(웹 백엔드의 모든 `Drop`이 이미 no-op이라 소유권 이전 위험이 없다는 점이 근거).
 
 ### 3.4 두 빌드 트랙 (§5.2)
 
@@ -178,7 +194,7 @@ crates/studio-engine-vello/              [patch.crates-io] wgpu = { path = "../v
 Track A  upstream-compatible — 벤더 크레이트의 `toon-fabric` 피처 OFF
          cargo test                                              (네이티브)
          cargo check --target wasm32-unknown-unknown --features lottie
-         → 모든 패치 hunk가 cfg-out 되어 상류 29.0.4와 API 동일. 상류 회귀 감지용.
+         → 모든 패치 hunk가 cfg-out 되어 상류 30.0.1과 API 동일. 상류 회귀 감지용.
 
 Track B  toon-vello — `toon-fabric` ON
          cargo check --target wasm32-unknown-unknown --features fabric

@@ -46,8 +46,9 @@ impl Texture {
     ///
     /// This method will return None if:
     /// - The texture is not from the backend specified by `A`.
-    /// - The texture is from the `webgpu` or `custom` backend.
-    /// - The texture has had [`Self::destroy()`] called on it.
+    /// - The texture is from [`Backend::BrowserWebGpu`].
+    ///   (Use `Texture::as_webgpu()` instead.)
+    /// - The texture is from a custom backend.
     ///
     /// # Safety
     ///
@@ -63,10 +64,6 @@ impl Texture {
         unsafe { texture.context.texture_as_hal::<A>(texture) }
     }
 
-    // TOON-PATCH 0001 hunk 6/6 — WebGPU handle export on `Texture`.
-    // WHY / REMOVE WHEN: see `toon-fabric` in this crate's Cargo.toml.
-    // UPSTREAM: backport of wgpu 30.0.0 (`wgpu-30.0.0/src/api/texture.rs`).
-
     /// Returns the underlying [`webgpu::GpuTexture`] handle if this `Texture`
     /// is on the WebGPU backend.
     ///
@@ -75,9 +72,9 @@ impl Texture {
     /// The returned handle is the same JS object wgpu uses internally; it can
     /// be passed to other WebGPU-aware JS APIs, used for identity comparison,
     /// or fed back into [`Device::create_texture_from_webgpu_handle`].
-    #[cfg(all(webgpu, feature = "toon-fabric"))]
+    #[cfg(webgpu)]
     pub fn as_webgpu(&self) -> Option<&webgpu::GpuTexture> {
-        self.inner.as_webgpu_opt().map(|texture| &texture.inner)
+        self.inner.as_webgpu_opt().map(|wt| &wt.inner)
     }
 
     #[cfg(custom)]

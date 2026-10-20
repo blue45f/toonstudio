@@ -287,7 +287,7 @@ describeProbe("vello gpu-browser real-browser parity probe", () => {
         harness:
           "packages/studio-engine-vello/src/__tests__/gpu-browser-probe.test.ts (VELLO_GPU_BROWSER_PROBE=1)",
         engine:
-          "vello 0.10.0 GPU via browser WebGPU (pkg-gpu wasm, wgpu 29.0.4 BROWSER_WEBGPU) vs embedded vello_cpu 0.2.0",
+          "vello 0.11.0 GPU via browser WebGPU (pkg-gpu wasm, wgpu 30.0.1 BROWSER_WEBGPU) vs embedded vello_cpu 0.3.0",
         note: "readback is probe-only evidence collection; timings include JSON boundary + readback",
         measuredAt: new Date().toISOString(),
         browser: { launch: launchLabel, version: browser.version() },

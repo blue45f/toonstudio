@@ -134,7 +134,8 @@ fn render_scene(gpu: &mut Gpu, scene: &vello::Scene, width: u32, height: u32) ->
     gpu.device
         .poll(wgpu::PollType::wait_indefinitely())
         .expect("poll");
-    let data = slice.get_mapped_range();
+    // wgpu 30: `get_mapped_range` returns a Result (infallible in wgpu 29).
+    let data = slice.get_mapped_range().expect("readback mapped range");
     let mut pixels = Vec::with_capacity((width * height * 4) as usize);
     for row in 0..height {
         let start = (row * bytes_per_row) as usize;

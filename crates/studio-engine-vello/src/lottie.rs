@@ -1,7 +1,7 @@
 //! Velato Lottie -> vello `Scene` lowering (ADR-0011 Velato lane, V12 게이트).
 //!
 //! Parses a Lottie (bodymovin) JSON document with velato 0.12 and lowers the
-//! requested frame into a vello 0.10 `Scene`, which then reuses the existing
+//! requested frame into a vello 0.11 `Scene`, which then reuses the existing
 //! GPU render path (`gpu_web::render_encoded_scene_gpu` in wasm, the raw
 //! harness in `tests/lottie_parity.rs` natively).
 //!

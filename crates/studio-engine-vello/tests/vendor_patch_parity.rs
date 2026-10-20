@@ -1,7 +1,7 @@
 //! toon-vello fork track guard (V12 §5.1): the vendored wgpu tree is a product
 //! asset, not a scratchpad.
 //!
-//! `crates/vendor/wgpu-toon` is crates.io wgpu 29.0.4 plus TOON-PATCH 0001.
+//! `crates/vendor/wgpu-toon` is crates.io wgpu 30.0.1 plus TOON-PATCH 0001.
 //! Every file in it is pinned by `UPSTREAM.sha256`, so an undeclared edit —
 //! the classic way a "temporary" fork silently grows a second life — fails
 //! here instead of shipping. Legitimate patch work updates the manifest and
@@ -167,7 +167,7 @@ fn vendored_wgpu_matches_its_pinned_manifest() {
     assert!(
         drift.is_empty(),
         "crates/vendor/wgpu-toon drifted from UPSTREAM.sha256 — every deviation from crates.io \
-         wgpu 29.0.4 must be a declared TOON-PATCH hunk. Update the patch file and the manifest \
+         wgpu 30.0.1 must be a declared TOON-PATCH hunk. Update the patch file and the manifest \
          together, or revert:\n  {}",
         drift.join("\n  ")
     );
@@ -185,11 +185,8 @@ fn patch_file_documents_every_touched_file() {
     // the files Cargo.toml's comment (and UPSTREAM.sha256's header) claim.
     for touched in [
         "a/Cargo.toml",
-        "a/src/lib.rs",
         "a/src/backend/webgpu.rs",
         "a/src/api/device.rs",
-        "a/src/api/queue.rs",
-        "a/src/api/texture.rs",
     ] {
         assert!(
             patch.contains(touched),
@@ -197,7 +194,7 @@ fn patch_file_documents_every_touched_file() {
         );
     }
     assert!(
-        patch.contains("76e8840e1ba2881d4cbb18d2147627a56af426ff064c0401eb0c8410c6325d07"),
+        patch.contains("527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e"),
         "TOON-PATCH 0001 must record the upstream .crate sha256 it applies to"
     );
 }

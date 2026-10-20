@@ -336,7 +336,7 @@ describeProbe("velato lottie real-browser render probe", () => {
         harness:
           "packages/studio-engine-vello/src/__tests__/lottie-browser-probe.test.ts (VELLO_LOTTIE_BROWSER_PROBE=1)",
         engine:
-          "velato 0.12.0 -> vello 0.10.0 GPU via browser WebGPU (pkg-gpu wasm --features hybrid,lottie,svg)",
+          "velato 0.12.0 -> vello 0.11.0 GPU via browser WebGPU (pkg-gpu wasm --features hybrid,lottie,svg)",
         note:
           "timings include JSON parse + velato lowering + render + readback + JS boundary; fixtures are hand-authored (crates/studio-engine-vello/tests/fixtures/lottie)",
         measuredAt: new Date().toISOString(),
