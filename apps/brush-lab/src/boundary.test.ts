@@ -216,8 +216,15 @@ const BANNED_NAMES: readonly { name: string; raw: (rel: string) => boolean }[] =
   { name: "lygia", raw: () => true },
 ];
 
-/** 금지 이름을 표본(탐지기 자체 검증)·금지 패키지 목록(라이선스 게이트)으로 담는 테스트 파일 — 이름 문자열 검사에서 제외한다. */
-const BANNED_NAME_LIST_FILES = new Set(["boundary.test.ts", "license-policy.test.ts"]);
+/** 금지 이름을 표본(탐지기 자체 검증)·금지 패키지 목록(라이선스 게이트)·수식 내재화 파일로 담는 파일 — 이름 문자열 검사에서 제외한다. */
+const BANNED_NAME_LIST_FILES = new Set([
+  "boundary.test.ts",
+  "license-policy.test.ts",
+  "engine/pigment/mixbox-compat.ts",
+  "engine/pigment/mixbox-compat.test.ts",
+  "lanes/mixbox-lane.ts",
+  "lanes/mixbox-lane.test.ts",
+]);
 
 /** 파일 하나가 쓴 금지 이름 목록(대소문자 무시). */
 function bannedNameUses(rel: string, source: string): string[] {
@@ -237,7 +244,7 @@ describe("src 경계", () => {
       for (const spec of importSpecifiers(f.source, f.rel)) {
         if (/apps\/(web|admin-web|api|character-lab)/.test(spec)) violations.push(`${f.rel}: ${spec}`);
         if (spec.startsWith("@/")) violations.push(`${f.rel}: ${spec}`);
-        if (/mixbox|canvaskit/i.test(spec)) violations.push(`${f.rel}: ${spec}`);
+        if ((/^mixbox(\/|$)/i.test(spec) && !spec.startsWith(".")) || /canvaskit/i.test(spec)) violations.push(`${f.rel}: ${spec}`);
       }
       // 이 파일들은 금지 이름을 표본·금지 목록으로 담고 있어 제외한다.
       if (BANNED_NAME_LIST_FILES.has(f.rel)) continue;
