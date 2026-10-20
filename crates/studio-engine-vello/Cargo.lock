@@ -1809,7 +1809,7 @@ dependencies = [
 name = "studio-engine-vello"
 version = "0.1.0"
 dependencies = [
- "harfrust 0.10.0",
+ "harfrust 0.12.0",
  "js-sys",
  "naga 29.0.4",
  "parley",
