@@ -37,10 +37,7 @@ export * from "./review-voice-note.schema";
 
 export * from "./studio-virtual-space-decoration.schema";
 
-export * from "./studio-unity-space-layout.schema";
 export * from "./studio-project-library.schema";
 export * from "./studio-op-log.schema";
-
-export * from "./studio-unity-space-background.schema";
 
 export * from "./studio-virtual-space-booking.schema";

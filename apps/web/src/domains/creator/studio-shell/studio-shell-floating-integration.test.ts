@@ -68,11 +68,13 @@ describe("studio shell floating integration", () => {
     expect(space).toContain('from "./StudioVirtualSpacePageRoot"');
     // 클래식 2D 기본 복귀(2026-10-13 소유자 결정) 이후 공간 라우트는 LiveCollaborationProvider를
     // 다시 마운트한다. 다만 showHuddleLauncher={false}라 플로팅 허들 런처는 중복되지 않고,
-    // 공간 안 소통은 클래식 경험 + Godot 임베드(전환 옵션)가 담당한다.
+    // 공간 안 소통은 클래식 경험이 담당한다. 3D 엔진 무대(Godot·Unity 임베드)는
+    // 2026-10-21 소유자 결정으로 제거되어 셸에 어떤 SpaceEmbed도 남지 않는다.
     expect(spaceRoot).toContain("StudioLiveCollaborationProvider");
     expect(spaceRoot).toContain("showHuddleLauncher={false}");
     expect(spaceRoot).not.toContain("<StudioP2pHuddleLauncher");
-    expect(spaceRoot).toContain("<StudioGodotSpaceEmbed");
+    expect(spaceRoot).toContain("<VirtualSpaceExperience");
+    expect(spaceRoot).not.toContain("SpaceEmbed");
   });
 
   it("lazy-loads the durable manager inside the document lifetime boundary", () => {

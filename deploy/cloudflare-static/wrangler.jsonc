@@ -36,16 +36,7 @@
       "/assets/ort-wasm-simd-threaded.asyncify-*.wasm",
       "/assets/tag2pix-*.onnx",
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
-      "/brand/toonstudio-product-tour.mp4",
-      "/cuts-godot/index.wasm",
-      "/godot-space/index.wasm",
-      "/play-godot/index.wasm",
-      "/godot-space",
-      "/godot-space/index.html",
-      "/cuts-godot",
-      "/cuts-godot/index.html",
-      "/play-godot",
-      "/play-godot/index.html"
+      "/brand/toonstudio-product-tour.mp4"
     ]
   },
   "r2_buckets": [

@@ -9,7 +9,6 @@ import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { StudioLiveCollaborationProvider } from "../live/StudioLiveCollaborationProvider";
 import { useStudioLiveTransportAuth } from "../live/use-studio-live-transport-auth";
-import type { StudioRealtimeTicketGuestAccess } from "../studio-realtime-provider-protocol";
 import { readStudioVirtualArtStyle, writeStudioVirtualArtStyle, type StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import { resolveStudioVirtualBuiltinWorld } from "./studio-virtual-space-campus-world";
 import { parseCodeInviteFragment } from "./studio-virtual-space-entry-code";
@@ -45,10 +44,6 @@ import {
 } from "./studio-virtual-space-session-position";
 import { isStudioSpatialInviteToken } from "./studio-spatial-invite-context";
 import { verifyStudioSpaceEntryCode, verifyStudioSpatialInvite } from "./studio-virtual-space-access-client";
-import { StudioUnitySpaceEmbed } from "./StudioUnitySpaceEmbed";
-import { resolveStudioSpaceEngine } from "./studio-space-engine";
-import { STUDIO_CHARACTER_SKINS } from "./studio-virtual-space-character-skins";
-import { STUDIO_SHARED_CURSOR_PALETTE } from "./studio-virtual-space-shared-cursors";
 import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
 import type { StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
 import { VirtualSpaceExperience } from "./StudioVirtualSpacePage";
@@ -353,90 +348,12 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
     />;
   }
 
-  // 무대 엔진 결정 (2D 기본 + 3D 전환): 기본값은 클래식(2D)이고
-  // Unity(3D)는 `?engine=unity` 명시 진입으로만 열린다. 규칙의 정본은
-  // studio-space-engine.ts: 명시 파라미터가 우선하고, 파라미터가 없으면
-  // 로그인·개인·게스트 전 진입에서 클래식이다. 클래식 화면의 전환 배너로
-  // Unity에 들어갈 수 있다.
-  const spaceEngine = resolveStudioSpaceEngine(location.search, {
-    signedIn: session.ready && Boolean(session.data),
-    personal,
-  });
-  if (spaceEngine === "unity") {
-    const effectiveAvatarIndex = isGuest ? 0 : entryAvatarIndex;
-    const skin =
-      STUDIO_CHARACTER_SKINS[effectiveAvatarIndex] ?? STUDIO_CHARACTER_SKINS[0];
-    const colorHex =
-      STUDIO_SHARED_CURSOR_PALETTE[
-        effectiveAvatarIndex % STUDIO_SHARED_CURSOR_PALETTE.length
-      ] ?? "#3b82f6";
-    const exitToClassic = () => {
-      const params = new URLSearchParams(location.search);
-      // 2D 복귀는 classic으로 고정한다(파라미터를 지워도 기본값이 클래식이라
-      // 동일하게 동작하지만, 명시가 이후 기본값 변경에도 안전하다).
-      params.set("engine", "classic");
-      const value = params.toString();
-      navigate({ pathname: location.pathname, search: value ? `?${value}` : "" });
-    };
-    // 게스트 티켓 배선: 서버 검증을 통과해 저장된 게스트 세션이 있을 때만
-    // 그 자격을 임베드에 넘겨 게스트 티켓으로 접속하게 한다. 세션은 검증
-    // 성공 뒤에만 만들어지고, 서버가 저장된 자격을 거절하면 위 게이트가
-    // 세션을 지우므로, 여기 닿은 자격은 살아 있는 자격이다. 자격이 없는
-    // 방문자는 기존처럼 로컬 무대(localOnly)에 머문다.
-    const unityGuestAccess: StudioRealtimeTicketGuestAccess | undefined =
-      isGuest && guestSessionForSpace
-        ? isStudioSpatialInviteToken(guestSessionForSpace.inviteToken)
-          ? {
-              kind: "invite",
-              token:
-                guestSessionForSpace.inviteToken,
-              guestSessionId: guestSessionForSpace.sessionId,
-            }
-          : {
-              kind: "entry-code",
-              code: guestSessionForSpace.inviteToken,
-              guestSessionId: guestSessionForSpace.sessionId,
-            }
-        : undefined;
-    return (
-      <StudioUnitySpaceEmbed
-        workId={decodedProjectId}
-        displayName={publicNickname}
-        colorHex={colorHex}
-        skinKey={skin?.key}
-        localOnly={personal || (!session.data && !unityGuestAccess)}
-        guestAccess={unityGuestAccess}
-        onExitToClassic={exitToClassic}
-      />
-    );
-  }
-
-  const enterUnity = () => {
-    const params = new URLSearchParams(location.search);
-    params.set("engine", "unity");
-    const value = params.toString();
-    navigate({ pathname: location.pathname, search: value ? `?${value}` : "" });
-  };
-
+  // 무대 엔진은 클래식 2D(Phaser) 단일이다. 3D 무대(구 Godot·Unity 임베드)는
+  // 2026-10-21 저장소 소유자 결정으로 제거됐다 — 엔진 선택 파라미터와 임베드
+  // 셸, 배치 편집·배경 업로드 표면이 함께 사라지고, 기존 `?engine=` 링크는
+  // 무시된 채 항상 클래식 무대로 진입한다.
   return (
-    <>
-      <div
-        data-testid="classic-space-fallback-banner"
-        className="fixed left-1/2 top-3 z-[130] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-full border border-line bg-card/95 px-4 py-2 shadow-lg"
-        role="status"
-      >
-        <p className="whitespace-nowrap text-xs font-semibold">
-          {bt("지금은 클래식 스페이스예요.", "You're in the classic space.")}
-        </p>
-        <button
-          type="button"
-          className="whitespace-nowrap text-xs font-bold underline underline-offset-4"
-          onClick={enterUnity}
-        >
-          {bt("새 스페이스(Unity)로 전환", "Switch to the new space (Unity)")}
-        </button>
-      </div>
-      <StudioLiveCollaborationProvider
+    <StudioLiveCollaborationProvider
         workId={decodedProjectId}
         participant={participant}
         currentPageId="virtual-space"
@@ -470,8 +387,7 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
           guestSpawn={guestSessionForSpace?.spawn ?? guestInvite.spawn}
           entryJustConfirmed={!initialEntryPreference.confirmed}
         />
-      </StudioLiveCollaborationProvider>
-    </>
+    </StudioLiveCollaborationProvider>
   );
 }
 

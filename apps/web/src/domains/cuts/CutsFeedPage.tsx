@@ -7,7 +7,7 @@
  * 조회수는 1.5초 이상 시청했을 때 한 번만 집계한다.
  */
 
-import { BookOpen, Clapperboard, Coins, Eye, Gamepad2, Heart, Share2, Shuffle } from "lucide-react";
+import { BookOpen, Clapperboard, Coins, Eye, Heart, Share2, Shuffle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -19,7 +19,6 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
 
-import { CutsGodotEmbed } from "./CutsGodotEmbed";
 import { CutsPlayer } from "./CutsPlayer";
 import { CutsRemixBadge } from "./CutsRemixBadge";
 import { countFanRemixes, isClipRemixAllowed, resolveRemixAllowed, selectFanRemixes } from "./cuts-remix";
@@ -183,14 +182,6 @@ function CutsFeedItem({
               {t("리믹스", "Remix")}
             </Link>
           ) : null}
-          <Link
-            href={`/cuts?engine=godot&clip=${clip.id}`}
-            className="cuts-action"
-            aria-label={t("Godot 플레이어로 재생", "Play in the Godot player")}
-          >
-            <span className="cuts-action__icon"><Gamepad2 size={22} aria-hidden="true" /></span>
-            {t("Godot", "Godot")}
-          </Link>
         </div>
       </div>
     </article>
@@ -401,50 +392,6 @@ export function CutsFeedPage() {
   }, [scrollToClip]);
 
   const toggleMute = useCallback(() => setMuted((value) => !value), []);
-
-  // Godot 플레이어 대체 진입 (?engine=godot) — 대상 클립 하나만 Godot로 재생한다.
-  // 기존 웹 플레이어·피드는 무변경이고, 내레이션은 임베드 셸이 소유한다.
-  const godotMode = searchParams.get("engine") === "godot";
-  if (godotMode) {
-    const godotClip =
-      clips.find((clip) => clip.id === sharedClipId) ?? visibleClips[0] ?? null;
-    const exitGodotMode = () => {
-      const next = new URLSearchParams(searchParams);
-      next.delete("engine");
-      setSearchParams(next);
-    };
-    return (
-      <div className="cuts-feed" aria-label={t("컷츠 Godot 플레이어", "Cuts Godot player")}>
-        <header className="cuts-feed__header">
-          <h1 className="cuts-feed__title">{t("컷츠", "Cuts")}</h1>
-        </header>
-        {!feedReady ? (
-          <div className="cuts-feed__empty">
-            <LoadingState variant="pulse" label={t("클립을 불러오는 중", "Loading clips")} />
-            <p>{t("클립을 불러오는 중…", "Loading clips…")}</p>
-          </div>
-        ) : godotClip ? (
-          <CutsGodotEmbed clip={godotClip} onExitToWeb={exitGodotMode} />
-        ) : (
-          <div className="cuts-feed__empty">
-            <ActionableEmptyState
-              icon={Clapperboard}
-              art="none"
-              title={t("재생할 클립을 찾지 못했어요.", "Couldn't find a clip to play.")}
-              description={t(
-                "피드에서 클립을 골라 Godot 플레이어로 재생할 수 있어요.",
-                "Pick a clip from the feed to play it in the Godot player.",
-              )}
-              primary={{
-                href: "/cuts",
-                label: t("전체 피드 보기", "View full feed"),
-              }}
-            />
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="cuts-feed" ref={containerRef} aria-label={t("컷츠 피드", "Cuts feed")}>
