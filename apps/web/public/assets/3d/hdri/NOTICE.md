@@ -12,7 +12,10 @@
 | `combination_room_1k.hdr` | Combination Room | https://polyhaven.com/a/combination_room | CC0-1.0 | `490f50c323b9329e5aa4a2ea32dc23aa` | 1,661,444 |
 | `cobblestone_street_night_1k.hdr` | Cobblestone Street Night | https://polyhaven.com/a/cobblestone_street_night | CC0-1.0 | `38d828b13e9ac07ab6fa80a1255c4459` | 1,760,191 |
 | `konigsallee_1k.hdr` | Königsallee | https://polyhaven.com/a/konigsallee | CC0-1.0 | `cacb43f0552e659ba929fdb153a4ae79` | 1,652,556 |
+| `combination_room_2k.hdr` | Combination Room | https://polyhaven.com/a/combination_room | CC0-1.0 | `1f43bc52010775159f5c4270c68596b9` | 6,532,595 |
+| `cobblestone_street_night_2k.hdr` | Cobblestone Street Night | https://polyhaven.com/a/cobblestone_street_night | CC0-1.0 | `739ade89e23a42a52e1ffb051eef8dcd` | 7,064,424 |
+| `konigsallee_2k.hdr` | Königsallee | https://polyhaven.com/a/konigsallee | CC0-1.0 | `b2a10fa34b2d98f11b9692bb07d1f902` | 6,438,733 |
 
 - 라이선스 전문: https://creativecommons.org/publicdomain/zero/1.0/
-- 다운로드 원본: `https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/<파일명>`
-- 내려받은 날짜: 2026-10-14 (다운로드 후 md5·바이트를 카탈로그 값과 대조해 일치 확인)
+- 다운로드 원본: `https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/<티어>/<파일명>`
+- 내려받은 날짜: 1k 2026-10-14, 2k 2026-10-21 (다운로드 후 md5·바이트를 카탈로그 값과 대조해 일치 확인)
