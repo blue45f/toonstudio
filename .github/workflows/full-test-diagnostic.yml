@@ -41,7 +41,7 @@ jobs:
       TEST_DATABASE_URL: postgresql://studio_full_test:studio_full_test@127.0.0.1:5432/studio_full_integration
       TEST_RUNTIME_DATABASE_ROLE: studio_full_runtime
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6

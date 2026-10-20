@@ -44,7 +44,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
       VITE_TRAFFIC_ANALYTICS_ENABLED: 'false'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:

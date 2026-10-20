@@ -46,7 +46,7 @@ jobs:
           - gate: production-workspace-build
             command: pnpm --filter @webtoon-nest/api build && test -s apps/api/dist/apps/api/src/main.js && node --check apps/api/dist/apps/api/src/main.js && pnpm run build && pnpm run check:studio-bundle && pnpm run build:all
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
@@ -74,7 +74,7 @@ jobs:
           - tests/integration/web-api/domains/creator/studio-large-epics-product-wiring.test.ts
           - apps/web/src/domains/creator/studio-soft-proofing.test.ts
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
@@ -100,7 +100,7 @@ jobs:
           - gate: serial-performance
             command: pnpm run test:perf
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
@@ -150,7 +150,7 @@ jobs:
             browser: true
             production_bundle: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
@@ -173,7 +173,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6
@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 100
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6

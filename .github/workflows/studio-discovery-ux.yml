@@ -75,7 +75,7 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref || github.sha }}
           persist-credentials: false
@@ -122,7 +122,7 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref || github.sha }}
           persist-credentials: false
@@ -151,7 +151,7 @@ jobs:
       TOONSPECTRUM_BRUSH_VERIFY_DIR: /tmp/studio-discovery-evidence
       TOONSPECTRUM_VERIFY_DIR: /tmp/studio-discovery-evidence
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref || github.sha }}
           persist-credentials: false

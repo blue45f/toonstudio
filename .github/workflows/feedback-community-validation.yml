@@ -59,7 +59,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=6144
       TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/feedback_community_test
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Prepare evidence directory

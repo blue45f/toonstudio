@@ -20,7 +20,7 @@ jobs:
       CI: "1"
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6

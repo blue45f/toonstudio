@@ -19,7 +19,7 @@ jobs:
       RENDER_CORE_API_ORIGIN: https://toonspectrum-core-api.onrender.com
       PUBLIC_APP_ORIGIN: https://www.toonstudio.cloud
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
 
