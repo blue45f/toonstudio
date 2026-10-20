@@ -203,7 +203,7 @@ export const ENGINE_LANES: readonly EngineLane[] = [
   { id: "babylon-webgl2", labelKo: "Babylon 9.19 WebGL2", status: "explicit-alternative", noteKo: "명시 대안. 자동 전환 금지." },
   { id: "null", labelKo: "NullEngine", status: "test-only", noteKo: "테스트 전용. readback은 provenance.synthetic=true." },
   { id: "physics-builtin-pbd", labelKo: "내장 PBD", status: "available", noteKo: "결정적 XPBD 체인·캡슐 충돌." },
-  { id: "physics-rapier", labelKo: "Rapier 0.19.3", status: "available-dynamic", noteKo: "동적 import. 소품·접지용." },
+  { id: "physics-rapier", labelKo: "Rapier 0.21.0", status: "available-dynamic", noteKo: "동적 import. 소품·접지용." },
   { id: "physics-havok", labelKo: "Havok", status: "unavailable", noteKo: "@babylonjs/havok 미설치(라이선스·lockfile 승인 필요)." },
   { id: "three-webgpu-vrm", labelKo: "Three 0.184 WebGPU + three-vrm", status: "docs-only", noteKo: "비교 문서 전용." },
   { id: "playcanvas", labelKo: "PlayCanvas", status: "docs-only", noteKo: "비교 문서 전용(자동 폴백 기본이라 ADR-0018 충돌)." },

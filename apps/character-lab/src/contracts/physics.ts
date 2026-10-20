@@ -10,7 +10,7 @@ export type PhysicsProviderId = (typeof PHYSICS_PROVIDER_IDS)[number];
 
 export const PHYSICS_PROVIDER_LABELS_KO: Readonly<Record<PhysicsProviderId, string>> = {
   "builtin-pbd": "내장 PBD(결정적)",
-  rapier: "Rapier 0.19.3",
+  rapier: "Rapier 0.21.0",
   havok: "Havok(미설치)",
 };
 

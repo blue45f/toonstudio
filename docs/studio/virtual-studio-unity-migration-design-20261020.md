@@ -128,10 +128,10 @@ API: `studio-godot-space-layout.dto.ts` / `.controller.ts` / `.service.ts` / `.m
   - `size: [w, h]` (각 400..4000)
   - `door?: [x, y]` (각 0..4000)
   - `floor?: string` (≤32, 실측값 `"#2e3444"` 같은 색상 문자열)
-  - `background?: {glb, hideNodes?: string[](≤16), camHeight?(2..40), camDist?(2..60), camFov?(20..90), camTargetLead?(-6..6), yaw?(-360..360)} | null` — `glb`는 `spaces/<slug>.glb` 또는 `uploads/<uuid>.glb` 패턴만 허용
+  - `background?: {glb, hideNodes?: string[] (≤16), camHeight?(2..40), camDist?(2..60), camFov?(20..90), camTargetLead?(-6..6), yaw?(-360..360)} | null` — `glb`는 `spaces/<slug>.glb` 또는 `uploads/<uuid>.glb` 패턴만 허용
   - `zones[]` (≤24): `{id, kind: meeting|presentation|focus|lounge|open, name, rect}`
   - `props[]` (≤64): `{kind: desk|bench|plant|board|storefront|stage|tree|lamp|table|crosswalk|sign|rug, name?, rect}`
-  - `npcs[]` (≤6, 선택): `{name, role?, skin?, color?, points: [x,y][](2..16), lines?: string[](≤12)}` — 무대 로컬 연출용 (프레즌스 아님)
+  - `npcs[]` (≤6, 선택): `{name, role?, skin?, color?, points: [x,y][] (2..16), lines?: string[] (≤12)}` — 무대 로컬 연출용 (프레즌스 아님)
 
 ### 3.2 rect의 의미 (실측 확정)
 
