@@ -105,6 +105,15 @@ function lerpSample(a: ModeledSample, b: ModeledSample, t: number): ModeledSampl
   };
 }
 
+/** 입자 트레일 간격(px, 최대 반경 배율 기준). */
+function trailSpacingFor(
+  prog: { deposition: { particleTrailSpacing: number; spacing: number } },
+  fp: ContactFootprint
+): number {
+  const base = Math.max(MIN_SPACING_PX, prog.deposition.spacing * Math.max(fp.rx, fp.ry));
+  return base * (1 + prog.deposition.particleTrailSpacing);
+}
+
 export class DabEmitter {
   private readonly program: BrushProgram;
   private readonly seed: number;
@@ -196,6 +205,52 @@ export class DabEmitter {
       this.pathLen += segLen;
       this.prev = { x: s.x, y: s.y, sample: s, fp };
       added += this.release(out, false);
+      // 입자 브러시 트레일: 경로에 잔상 입자를 남긴다(클립스튜디오 입자 브러시 고유 효과).
+      const trailSpacing = this.program.deposition.particleTrailSpacing;
+      if (trailSpacing > 0 && this.program.tip.kind === "particle" && this.prev) {
+        added += this.emitTrail(p.x, p.y, s.x, s.y, fp, out);
+      }
+    }
+    return added;
+  }
+
+  /** 두 지점 사이 경로에 입자 트레일 dab을 간격만큼 배치한다. 입자는 트레일 끝으로 갈수록 작고 옅어진다. */
+  private emitTrail(x0: number, y0: number, x1: number, y1: number, fp: ContactFootprint, out: DabBatch): number {
+    const prog = this.program;
+    const spacing = Math.max(MIN_SPACING_PX, trailSpacingFor(prog, fp));
+    const segLen = Math.hypot(x1 - x0, y1 - y0);
+    const nTrail = Math.floor(segLen / spacing);
+    let added = 0;
+    for (let i = 1; i <= nTrail; i += 1) {
+      const t = i / (nTrail + 1);
+      const tx = x0 + (x1 - x0) * t;
+      const ty = y0 + (y1 - y0) * t;
+      // 트레일 끝(현재 지점)으로 갈수록 불투명도와 크기가 줄어든다.
+      const fade = 1 - i / (nTrail + 1);
+      const sample: ModeledSample = {
+        x: tx,
+        y: ty,
+        tMs: 0,
+        inputTMs: 0,
+        pressure: fp.depositStrength * fade,
+        velocity: 0,
+        altitudeDeg: 90,
+        azimuthDeg: 0,
+        dirX: x1 - x0,
+        dirY: y1 - y0,
+        curvature: 0,
+        phase: "move",
+        source: "raw",
+        sourceIndex: 0,
+      };
+      const scale = Math.max(0.1, fade * 0.6 + 0.2);
+      const trailFp: ContactFootprint = {
+        ...fp,
+        rx: Math.max(0.01, fp.rx * scale),
+        ry: Math.max(0.01, fp.ry * scale),
+        depositStrength: fp.depositStrength * fade * 0.5,
+      };
+      added += this.place(sample, trailFp, this.pathLen, out);
     }
     return added;
   }

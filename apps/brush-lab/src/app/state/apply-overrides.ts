@@ -50,6 +50,7 @@ function pickDeposition(base: BrushDepositionSpec, o: LabOverrides): BrushDeposi
     timeDabsPerSecond: o.timeDabsPerSecond ?? base.timeDabsPerSecond,
     blend: o.blend ?? base.blend,
     dual: o.dual !== undefined ? o.dual : base.dual,
+    particleTrailSpacing: o.particleTrailSpacing ?? base.particleTrailSpacing,
   };
 }
 

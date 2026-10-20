@@ -129,6 +129,8 @@ export interface BrushDepositionSpec {
   timeDabsPerSecond: number;
   blend: BlendMode;
   dual: BrushTipSpec | null;
+  /** 입자 브러시 트레일 간격(최대 반경 배율). 0이면 트레일 없음. 입자 팁 사용 시 경로에 잔상 입자를 남긴다. */
+  particleTrailSpacing: number;
 }
 
 export interface BrushEdgeSpec {
@@ -206,6 +208,8 @@ const depositionSchema = z.object({
   timeDabsPerSecond: z.number().min(0).max(240).default(0),
   blend: z.enum(BLEND_MODES).default("normal"),
   dual: tipSchema.nullable().default(null),
+  /** 입자 브러시 트레일 간격(px, 최대 반경 배율). 0이면 트레일 없음. 입자 팁 사용 시 경로에 잔상 입자를 남긴다. */
+  particleTrailSpacing: z.number().min(0).max(4).default(0),
 });
 
 const edgeSchema = z.object({

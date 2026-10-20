@@ -209,6 +209,20 @@ describe("DabEmitter", () => {
     expect(a.dabs[0]?.flow).toBeCloseTo(0.2, 4);
     expect(b.dabs[0]?.flow).toBeCloseTo(1, 4);
   });
+
+  it("입자 브러시 트레일: particleTrailSpacing > 0이고 particle 팁이면 경로 사이에 잔상 dab이 추가된다", () => {
+    const withoutTrail = run(
+      program({ tip: { kind: "particle" }, deposition: { particleTrailSpacing: 0 } }),
+      lineSamples(0, 0, 50, 0, 5),
+      lineSamples(0, 0, 50, 0, 5).map(() => FP)
+    );
+    const withTrail = run(
+      program({ tip: { kind: "particle" }, deposition: { particleTrailSpacing: 0.5 } }),
+      lineSamples(0, 0, 50, 0, 5),
+      lineSamples(0, 0, 50, 0, 5).map(() => FP)
+    );
+    expect(withTrail.dabs.length).toBeGreaterThan(withoutTrail.dabs.length);
+  });
 });
 
 describe("StrokePipeline", () => {
