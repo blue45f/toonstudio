@@ -110,13 +110,14 @@ const DND_IMPLEMENTATION_CHOICE: EngineeringAtlasEntry = {
     {
       feature: t("엔진 내장 드래그 · 캔버스와 3D", "Engine built-in dragging · canvas and 3D"),
       role: t(
-        "Konva 노드의 draggable 과 Stage 의 dragmove 핸들러로 캔버스 객체를 옮기고, three.js TransformControls 로 3D 객체를 옮깁니다. Godot 무대 안의 배치 드래그는 무대 엔진이 소유하고, 셸 패널은 숫자 편집 명령만 보냅니다.",
-        "Konva node draggable and a Stage dragmove handler move canvas objects, and three.js TransformControls moves 3D objects. Layout dragging inside the Godot stage is owned by the stage engine, and the shell panel only sends numeric edit commands.",
+        "Konva 노드의 draggable 과 Stage 의 dragmove 핸들러로 캔버스 객체를 옮기고, three.js TransformControls 로 3D 객체를 옮깁니다. Phaser 씬 안 배치는 캔버스와 빌드 배치 모듈이 소유하고, 셸 저작 패널은 숫자 입력으로 월드 매니페스트를 고칩니다.",
+        "Konva node draggable and a Stage dragmove handler move canvas objects, and three.js TransformControls moves 3D objects. Layout inside the Phaser scene is owned by the canvas and the build-placement module, and the shell authoring panel edits the world manifest with number inputs.",
       ),
       paths: [
         `${CREATOR}/studio-cuttoon-editor/studio-cuttoon-stage-pointers-drag.ts#onStageDragMove`,
         `${CREATOR}/hybrid-dcc/StudioHybridDccTransformGizmo.tsx`,
-        `${CREATOR}/virtual-space/StudioGodotLayoutPanel.tsx`,
+        `${CREATOR}/virtual-space/StudioVirtualSpaceWorldAuthoringPanel.tsx`,
+        `${CREATOR}/virtual-space/hud/use-space-build-placement.ts`,
       ],
     },
     {
@@ -264,8 +265,8 @@ const KEYBOARD_ALTERNATIVES_FOR_DRAG: EngineeringAtlasEntry = {
       "Dragging feels natural when your hands are free, but not for everyone. People with tremors, people who use a keyboard or switch instead of a mouse, and people who listen to the screen cannot use features that work only by dragging. Just as a building with only stairs shuts out wheelchairs, dragging needs a ramp (an alternative path), and WCAG 2.2's 2.5.7 (Dragging Movements) and 2.1.1 (Keyboard) set that standard.",
     ),
     t(
-      "ToonStudio 의 끌기 대부분에는 같은 일을 하는 다른 길이 있습니다. 레이어는 Alt+↑/↓ 와 일괄 맨 앞/뒤 버튼, 페이지는 Alt+←/→ 와 ↑/↓ 버튼, 칸반은 Space→방향키→Enter 와 상태 선택 메뉴, 떠 있는 패널은 Alt+방향키와 창 배치 메뉴, 스플리터는 role=separator 와 화살표·Home·End, 보드 열 설정은 끌기와 같은 순서 함수를 부르는 앞·뒤 버튼, Godot 배치 패널은 숫자 입력 폼, VRM 관절은 화살표·PageUp/Down 으로 4°(Shift 1°)입니다. 결과는 aria-live·role=status 문구로 읽어 줍니다.",
-      "Most of ToonStudio's drags have another path to the same job. Layers use Alt+Up/Down and bulk bring-to-front and send-to-back buttons, pages use Alt+Left/Right and up and down buttons, the kanban uses Space, arrows and Enter plus a status menu, floating panels use Alt+arrows and a window layout menu, splitters use role=separator with arrows, Home and End, the board column settings use earlier and later buttons that call the same reorder function as dragging, the Godot layout panel uses a number-input form, and VRM joints rotate 4 degrees (1 with Shift) by arrows and PageUp or PageDown. Results are read out through aria-live or role=status text.",
+      "ToonStudio 의 끌기 대부분에는 같은 일을 하는 다른 길이 있습니다. 레이어는 Alt+↑/↓ 와 일괄 맨 앞/뒤 버튼, 페이지는 Alt+←/→ 와 ↑/↓ 버튼, 칸반은 Space→방향키→Enter 와 상태 선택 메뉴, 떠 있는 패널은 Alt+방향키와 창 배치 메뉴, 스플리터는 role=separator 와 화살표·Home·End, 보드 열 설정은 끌기와 같은 순서 함수를 부르는 앞·뒤 버튼, 가상 스튜디오 저작 패널은 숫자 입력 폼, VRM 관절은 화살표·PageUp/Down 으로 4°(Shift 1°)입니다. 결과는 aria-live·role=status 문구로 읽어 줍니다.",
+      "Most of ToonStudio's drags have another path to the same job. Layers use Alt+Up/Down and bulk bring-to-front and send-to-back buttons, pages use Alt+Left/Right and up and down buttons, the kanban uses Space, arrows and Enter plus a status menu, floating panels use Alt+arrows and a window layout menu, splitters use role=separator with arrows, Home and End, the board column settings use earlier and later buttons that call the same reorder function as dragging, the virtual studio authoring panel uses a number-input form, and VRM joints rotate 4 degrees (1 with Shift) by arrows and PageUp or PageDown. Results are read out through aria-live or role=status text.",
     ),
     t(
       "접근성 전용 끌기 라이브러리는 쓰지 않고 화면마다 직접 구현했습니다. 장점은 화면에 맞는 키 규칙(레이어와 페이지가 같은 Alt+방향키)을 맞출 수 있다는 것이고, 단점은 화면마다 따로 검증해야 한다는 것입니다. 공통 패턴은 ① 키 해석을 순수 함수로 분리 ② 이동 결과를 live region 으로 안내 ③ 끌기와 키보드가 같은 커밋 경로 공유 ④ 잠금 상태에서는 두 경로를 함께 끔입니다.",
@@ -326,15 +327,15 @@ const KEYBOARD_ALTERNATIVES_FOR_DRAG: EngineeringAtlasEntry = {
       paths: ["apps/web/src/shared/hooks/use-resizable.ts", `${CREATOR}/StudioPanelResizeHandle.tsx`],
     },
     {
-      feature: t("3D 관절 · 보드 열 · Godot 배치의 대체 경로", "Alternatives for 3D joints, board columns and Godot layout"),
+      feature: t("3D 관절 · 보드 열 · 가상 스튜디오 배치의 대체 경로", "Alternatives for 3D joints, board columns and virtual studio layout"),
       role: t(
-        "WebGL 위 관절은 DOM 버튼 오버레이로 올려 포커스·키보드(화살표 4°, Shift 1°)를 확보합니다. 보드 열은 앞·뒤 버튼이 끌기와 같은 순서 함수를 부르고, Godot 배치 패널은 숫자 입력 폼으로 좌표·크기를 고칩니다.",
-        "Joints over WebGL are lifted into a DOM button overlay for focus and keyboard (arrows 4 degrees, Shift 1). Board columns use earlier and later buttons that call the same reorder function as dragging, and the Godot layout panel changes position and size through a number-input form.",
+        "WebGL 위 관절은 DOM 버튼 오버레이로 올려 포커스·키보드(화살표 4°, Shift 1°)를 확보합니다. 보드 열은 앞·뒤 버튼이 끌기와 같은 순서 함수를 부르고, 가상 스튜디오 저작 패널은 숫자 입력 폼으로 좌표·크기를 고칩니다.",
+        "Joints over WebGL are lifted into a DOM button overlay for focus and keyboard (arrows 4 degrees, Shift 1). Board columns use earlier and later buttons that call the same reorder function as dragging, and the virtual studio authoring panel changes position and size through a number-input form.",
       ),
       paths: [
         `${CREATOR}/vrm/StudioVrmJointHandles.tsx#handleKeyboardRotation`,
         `${HUB}/ProductionBoardColumnSettings.tsx`,
-        `${CREATOR}/virtual-space/StudioGodotLayoutPanel.tsx`,
+        `${CREATOR}/virtual-space/StudioVirtualSpaceWorldAuthoringPanel.tsx`,
       ],
     },
     {
@@ -507,8 +508,8 @@ export function nextWidth(
       },
     ],
     pitfall: t(
-      "'모든 끌기에 대체 경로가 있다'고 말하지 마세요. 타임라인 키프레임 이동은 끌기뿐입니다. 캔버스 도형 이동·변형과 3D 기즈모의 키보드 동작은 일부만 확인했고(미확인), 실제 스크린리더 검증도 확인하지 못했습니다. 또한 Godot 무대 안의 배치 드래그는 무대 엔진이 소유하므로, 셸 쪽 대체 경로는 배치 패널의 숫자 입력 폼이며 무대 내부 키보드 동작 자체는 이 카드에서 검증하지 않았습니다.",
-      "Do not say every drag has an alternative: moving timeline keyframes is drag-only. Keyboard behaviour for canvas shape moves and transforms and for the 3D gizmo was only partly checked (unconfirmed), and verification with real screen readers was not found. Also, layout dragging inside the Godot stage is owned by the stage engine, so the shell-side alternative is the layout panel's number-input form, and keyboard behaviour inside the stage itself was not verified for this card.",
+      "'모든 끌기에 대체 경로가 있다'고 말하지 마세요. 타임라인 키프레임 이동은 끌기뿐입니다. 캔버스 도형 이동·변형과 3D 기즈모의 키보드 동작은 일부만 확인했고(미확인), 실제 스크린리더 검증도 확인하지 못했습니다. 또한 Phaser 씬 안 배치는 캔버스가 소유하므로, 셸 쪽 대체 경로는 저작 패널의 숫자 입력 폼이며 캔버스 내부 키보드 동작 자체는 이 카드에서 검증하지 않았습니다.",
+      "Do not say every drag has an alternative: moving timeline keyframes is drag-only. Keyboard behaviour for canvas shape moves and transforms and for the 3D gizmo was only partly checked (unconfirmed), and verification with real screen readers was not found. Also, layout inside the Phaser scene is owned by the canvas, so the shell-side alternative is the authoring panel's number-input form, and keyboard behaviour inside the canvas itself was not verified for this card.",
     ),
   },
   technologies: ["WAI-ARIA", "Pointer Events", "React"],

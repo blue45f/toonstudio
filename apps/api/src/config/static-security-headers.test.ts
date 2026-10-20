@@ -93,7 +93,7 @@ describe("provider-neutral static security headers", () => {
     expect(html).toContain('<script src="/bootstrap-compat.js"></script>');
   });
 
-  it("permits same-origin framing for the embedded Godot stages only", () => {
+  it("permits same-origin framing only", () => {
     expect(headerValue("X-Frame-Options")).toBe("SAMEORIGIN");
   });
 });

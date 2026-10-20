@@ -5,13 +5,13 @@ import { dirname, resolve } from "node:path";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// 배경 선택 모듈(studio-virtual-space-environment-preference.ts)은 클래식 Phaser
-// 클라이언트와 함께 제거됐고, 무대 배경의 현행 표면은 Godot 무대 데이터
-// (public/godot-space/spaces.json의 GLB 배경)다 — 아래
-// verifyVirtualStudioStageBackgrounds가 그 표면을 대조한다.
-// 다만 v8 배경 PNG 24종은 여전히 배포 에셋으로 남아 있고 파일명 규칙이 v8
-// 매니페스트 기록에 그대로 남아 있어, 검증기가 명명 규칙을 유지하며 파일
-// 무결성·스타일별 독립성을 계속 대조한다.
+// v7 팩은 현행 2D 클라이언트(장소 카탈로그·리빙 월드·갤러리)가 계속 싣는
+// 에셋이라 팩 매니페스트 대조가 이 검증기의 본편이다.
+// 배경 선택 모듈은 이전 개편에서 제거됐고, 검증기는 명명 규칙을 안에
+// 재선언해 배포 에셋으로 남아 있는 v8 배경 PNG 24종의 파일 무결성·
+// 스타일별 독립성을 계속 대조한다.
+// Godot 무대 데이터(public/godot-space/spaces.json)의 GLB 배경 대조는 무대
+// 자체가 2026-10-21 제거되면서 검증 대상이 사라져 함께 제거했다.
 const STUDIO_VIRTUAL_BACKDROPS = ["sky", "coast", "forest", "city"];
 function studioVirtualBackdropUrl(backdrop, style = "sky-island") {
   const file = style === "sky-island" ? backdrop : `backdrop-${style}-${backdrop}`;
@@ -82,30 +82,6 @@ export async function verifyVirtualStudioRuntimeBackdrops(resolveBackdrop = stud
   return { backdrops: seen.size };
 }
 
-// 무대 배경의 현행 표면: Godot 무대 데이터(spaces.json)가 가리키는 GLB 파일이
-// 실제로 존재하고 GLB 컨테이너인지 대조한다.
-export async function verifyVirtualStudioStageBackgrounds() {
-  const stageRoot = resolve(repo, "apps/web/public/godot-space");
-  const stage = JSON.parse(await readFile(resolve(stageRoot, "spaces.json"), "utf8"));
-  const spaces = stage.spaces ?? [];
-  if (spaces.length === 0) throw new Error("Godot stage data declares no spaces");
-  let backgrounds = 0;
-  for (const space of spaces) {
-    const glb = space.background?.glb;
-    if (typeof glb !== "string" || !/^[a-z0-9][a-z0-9/_-]*[.]glb$/u.test(glb)) {
-      throw new Error(`stage space ${space.id ?? "?"} has no safe GLB background`);
-    }
-    const path = resolve(stageRoot, glb);
-    if ((await lstat(path)).isSymbolicLink()) throw new Error("stage background symlink is forbidden: " + glb);
-    const data = await readFile(path);
-    if (data.toString("ascii", 0, 4) !== "glTF" || data.readUInt32LE(4) !== 2) {
-      throw new Error("stage background is not a GLB 2.0 container: " + glb);
-    }
-    backgrounds++;
-  }
-  return { backgrounds };
-}
-
 export async function verifyVirtualStudioImagegen25V7() {
   const errors = [];
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
@@ -164,21 +140,18 @@ export async function verifyVirtualStudioImagegen25V7() {
     errors.push("terrain atlas asset is invalid");
   }
 
-  // 장소 카탈로그(studio-virtual-space-place-catalog.ts) 연결 단언은 제거했다:
-  // 카탈로그 모듈이 클래식 클라이언트와 함께 삭제됐고 현행 어느 표면도 이 팩의 장소
-  // 미리보기를 싣지 않는다. 장소 미리보기 자체는 위에서 매니페스트 files와 대조해
-  // 계속 검증한다.
+  // 장소 카탈로그(studio-virtual-space-place-catalog.ts)와의 연결 단언은 두지
+  // 않는다: 이 검증기는 팩 자체의 무결성까지만 책임지고, 카탈로그 쪽 표면은
+  // 카탈로그 자체의 테스트가 대조한다. 장소 미리보기 자체는 위에서 매니페스트
+  // files와 대조해 계속 검증한다.
   const runtimeBackdrops = await verifyVirtualStudioRuntimeBackdrops();
-  const stageBackgrounds = await verifyVirtualStudioStageBackgrounds();
-  // 배경 URL 산출·지형 타일 로딩의 Phaser 체인(캔버스·부트 에셋·cinematic 어댑터·
-  // living-world 런타임) 단언은 제거했다: 해당 모듈이 전부 삭제됐고, 배경과 지형의
-  // 현행 표면은 Godot 무대 빌드(저장소 밖에서 빌드되는 .pck)라 소스 문자열 대조가
-  // 불가능하다. 지형 타일 에셋의 계약(4x4 128px 프레임, 512x512 아틀라스)은 위
-  // 매니페스트 검증으로, 무대 배경 GLB는 verifyVirtualStudioStageBackgrounds로
-  // 각각 계속 검증한다.
+  // 배경 URL 산출·지형 타일 로딩 체인의 소스 문자열 단언은 두지 않는다: 이
+  // 검증기는 에셋 파일과 매니페스트의 무결성만 대조하고, 로딩 체인은 각
+  // 모듈의 테스트가 맡는다. 지형 타일 에셋의 계약(4x4 128px 프레임,
+  // 512x512 아틀라스)은 위 매니페스트 검증으로 계속 확인한다.
 
   if (errors.length) throw new Error(errors.join("\n"));
-  return { files: fileRecords.size, places: places.length, bytes: totalBytes, runtimeBackdrops: runtimeBackdrops.backdrops, stageBackgrounds: stageBackgrounds.backgrounds };
+  return { files: fileRecords.size, places: places.length, bytes: totalBytes, runtimeBackdrops: runtimeBackdrops.backdrops };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

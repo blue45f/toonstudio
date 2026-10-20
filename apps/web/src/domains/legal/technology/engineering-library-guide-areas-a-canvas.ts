@@ -155,20 +155,21 @@ export const LIBRARY_AREA_CANVAS_2D: LibraryGuideArea = {
       name: "Phaser",
       kind: "engine",
       package: "phaser",
-      oneLine: t("과거 가상 스튜디오 웹 무대의 2D 게임 엔진 — 지금은 캐릭터 아트 런타임만 사용", "The 2D game engine of the former web stage — now used only by the character art runtime"),
+      oneLine: t("가상 스튜디오 2D 공간의 게임 엔진 — 걷기·카메라·충돌과 캐릭터 아트 런타임을 함께 맡음", "The game engine of the virtual studio's 2D space — walking, camera and collisions, also used by the character art runtime"),
       usedFor: t(
-        "웹 무대 시절에는 걷기·카메라·충돌·NPC 이동을 맡았고, 2026-10 Godot 무대로 교체된 뒤에는 캐릭터 아트 런타임(장면 아트·오브젝트 스프라이트)이 라이브러리로만 씁니다.",
-        "It used to drive walking, camera, collisions and NPC movement in the web stage; since the move to a Godot stage in 2026-10, only the character art runtime (scene art and object sprites) still uses it as a library.",
+        "가상 스튜디오 2D 공간에서 걷기·카메라·충돌·NPC 이동을 맡습니다. 캐릭터 아트 런타임(장면 아트·오브젝트 스프라이트)도 라이브러리로 씁니다.",
+        "It drives walking, camera, collisions and NPC movement in the virtual studio's 2D space. The character art runtime (scene art and object sprites) also uses it as a library.",
       ),
       why: t(
-        "이동·충돌·카메라를 이미 갖춘 게임 엔진을 쓰기 위해 골랐습니다. 공간 클라이언트를 Godot로 다시 쓰면서 웹 무대 용도는 은퇴했고, 아트 런타임의 스프라이트 처리만 남았습니다.",
-        "It was chosen for a game engine that already provides movement, collisions and camera. When the space client was rebuilt on Godot, its web-stage role retired and only sprite handling in the art runtime remains.",
+        "이동·충돌·카메라를 이미 갖춘 게임 엔진을 쓰기 위해 골랐습니다. 캔버스가 웹 앱과 한 몸으로 돌아 별도 빌드·전송 없이 공간 기능을 바로 고칠 수 있습니다.",
+        "It was chosen for a game engine that already provides movement, collisions and camera. The canvas runs inside the web app itself, so space features can change without a separate build or delivery step.",
       ),
       cost: t(
-        "공간 용도로는 은퇴한 라이브러리라 신규 공간 기능은 Godot 무대로 만듭니다. 권한·승인은 Phaser가 아니라 별도 시스템이 가집니다.",
-        "Its spatial role is retired, so new space features are built for the Godot stage. Permissions and approvals belong to a separate system, not to Phaser.",
+        "신규 공간 기능은 이 Phaser 무대를 기준으로 만듭니다. 권한·승인은 Phaser가 아니라 별도 시스템이 가집니다.",
+        "New space features are built on this Phaser stage. Permissions and approvals belong to a separate system, not to Phaser.",
       ),
       paths: [
+        `${CREATOR}/virtual-space/StudioVirtualSpacePhaserCanvas.tsx`,
         `${CREATOR}/virtual-space/studio-virtual-space-scene-art-runtime.ts`,
         `${CREATOR}/virtual-space/studio-virtual-space-world-manifest.ts`,
         "docs/studio/virtual-studio-world-authoring.md",
