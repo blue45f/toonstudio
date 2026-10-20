@@ -90,6 +90,12 @@ const studioCc0AssetLibraryLoader = createStudioIntentLazyLoader(() =>
   }))
 );
 
+const studioBundleAssetLibraryLoader = createStudioIntentLazyLoader(() =>
+  import("./StudioBundleAssetLibraryPanel").then((module) => ({
+    default: module.StudioBundleAssetLibraryPanel,
+  }))
+);
+
 const studioOriginalAssetMarketplaceLoader = createStudioIntentLazyLoader(() =>
   import("./StudioOriginalAssetMarketplacePanel").then((module) => ({
     default: module.StudioOriginalAssetMarketplacePanel,
@@ -111,6 +117,11 @@ const LazyStudioCc0AssetLibraryPanel = lazyRetry(
   "StudioCc0AssetLibraryPanel"
 );
 
+const LazyStudioBundleAssetLibraryPanel = lazyRetry(
+  studioBundleAssetLibraryLoader.load,
+  "StudioBundleAssetLibraryPanel"
+);
+
 const LazyStudioOriginalAssetMarketplacePanel = lazyRetry(
   studioOriginalAssetMarketplaceLoader.load,
   "StudioOriginalAssetMarketplacePanel"
@@ -126,6 +137,7 @@ const LazyStudioCommunityMarketplacePanel = lazyRetry(
 
 function preloadStudioAssetMarketplacePanels(): void {
   studioCc0AssetLibraryLoader.preload();
+  studioBundleAssetLibraryLoader.preload();
   studioOriginalAssetMarketplaceLoader.preload();
   studioCreatorPackMarketplaceLoader.preload();
   studioCommunityMarketplaceLoader.preload();
@@ -150,6 +162,7 @@ function StudioAssetMarketplacePanels({
     <Suspense fallback={<StudioAssetMarketplaceLoading />}>
       <div data-studio-asset-marketplace-lazy-boundary="true">
         <LazyStudioCc0AssetLibraryPanel onUseAsset={onUseLocalAsset} />
+        <LazyStudioBundleAssetLibraryPanel onUseAsset={onUseLocalAsset} />
         <LazyStudioOriginalAssetMarketplacePanel onUseAsset={onUseLocalAsset} />
         <LazyStudioCreatorPackMarketplacePanel />
         <LazyStudioCommunityMarketplacePanel

@@ -4,14 +4,18 @@ import { describe, expect, it } from "vitest";
 
 import { resolveStudioSpaceEngine } from "./studio-space-engine";
 
-describe("resolveStudioSpaceEngine (2D 기본 + ?engine=godot 전환)", () => {
+describe("resolveStudioSpaceEngine (2D 기본 + ?engine=unity 전환)", () => {
   it("명시 파라미터가 기본값보다 우선한다", () => {
     expect(
       resolveStudioSpaceEngine("?engine=classic", { signedIn: true, personal: false }),
     ).toBe("classic");
     expect(
+      resolveStudioSpaceEngine("?engine=unity", { signedIn: false, personal: false }),
+    ).toBe("unity");
+    // 엔진 교체 전 링크(?engine=godot)는 별칭으로 새 무대에 연결된다.
+    expect(
       resolveStudioSpaceEngine("?engine=godot", { signedIn: false, personal: false }),
-    ).toBe("godot");
+    ).toBe("unity");
     expect(
       resolveStudioSpaceEngine("?engine=classic", { signedIn: false, personal: true }),
     ).toBe("classic");
@@ -50,15 +54,15 @@ describe("StudioVirtualSpacePageRoot 배선 (소스 계약)", () => {
 
   it("엔진 결정은 리졸버를 거치고, 왕복은 engine 파라미터를 명시한다", () => {
     expect(pageRootSource).toContain("resolveStudioSpaceEngine(");
-    // Godot → 클래식: 파라미터를 지우는 대신 classic으로 고정해야
+    // Unity → 클래식: 파라미터를 지우는 대신 classic으로 고정해야
     // 기본값과 무관하게 2D 복귀가 유지된다.
     expect(pageRootSource).toContain('params.set("engine", "classic")');
-    // 클래식 → Godot: 전환 배너가 같은 방식으로 되돌린다.
-    expect(pageRootSource).toContain('params.set("engine", "godot")');
+    // 클래식 → Unity: 전환 배너가 같은 방식으로 되돌린다.
+    expect(pageRootSource).toContain('params.set("engine", "unity")');
     expect(pageRootSource).toContain('data-testid="classic-space-fallback-banner"');
   });
 
-  it("구 방식(?engine=godot 일 때만 Godot) 단언이 남아 있지 않다", () => {
+  it("구 방식(?engine=godot 일 때만 3D 무대) 단언이 남아 있지 않다", () => {
     expect(pageRootSource).not.toContain('get("engine") === "godot"');
   });
 });

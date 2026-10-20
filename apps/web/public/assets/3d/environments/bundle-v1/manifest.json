@@ -1,0 +1,339 @@
+{
+  "schema": "toonstudio.bg3d-environment-pack.bundle-v1",
+  "version": "bundle-v1",
+  "status": "catalog-only",
+  "generatedAt": null,
+  "provider": "itch.io Creator Bundle: Volume 1 (EmaceArt · RG Poly)",
+  "rights": {
+    "holder": "EmaceArt / RG Poly (구매 라이선스)",
+    "inServiceOnly": true,
+    "downloadable": false
+  },
+  "inServiceOnly": true,
+  "downloadable": false,
+  "assetsNote": "실제 GLB 파일은 인제스션(scripts/ingest-creator-bundle.mjs) 후 채워진다. 지금은 배경 테마별 수록 예정 팩 매핑(themes)만 정의된 카탈로그 상태다.",
+  "themes": [
+    {
+      "theme": "city",
+      "label": "도시",
+      "plannedPackId": "bundle-v1-city",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-001-cartoon-city-massive-pack",
+          "title": "Cartoon City Massive Pack",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-004-old-town-courtyards",
+          "title": "Old Town — Courtyards",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-005-harboria-victorian-town",
+          "title": "Harboria — Victorian Town",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-008-cute-park-pack",
+          "title": "Cute Park Pack",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        }
+      ]
+    },
+    {
+      "theme": "medieval-fantasy",
+      "label": "중세·판타지",
+      "plannedPackId": "bundle-v1-medieval-fantasy",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-020-viking-world-stylized",
+          "title": "Viking World - Stylized",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-021-slavica-medieval-village",
+          "title": "Slavica — Slavic Medieval Village",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-022-low-poly-medieval-village",
+          "title": "Low Poly Medieval Village",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-023-medieval-megapack-low-poly",
+          "title": "Medieval Megapack - Low Poly",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-024-cute-dungeon-megapack",
+          "title": "Cute Dungeon Megapack",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-063-free-fantasy-medieval-houses",
+          "title": "Free Fantasy Medieval Houses",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-079-free-stylized-medieval-village-urp",
+          "title": "Free Stylized Medieval Village — Unity URP",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        }
+      ]
+    },
+    {
+      "theme": "nature",
+      "label": "자연",
+      "plannedPackId": "bundle-v1-nature",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-028-lumagrove-wonky-woods",
+          "title": "LumaGrove — Wonky Woods",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-030-nature-megapack-extended",
+          "title": "Nature Megapack - Extended",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-031-poly-meadows",
+          "title": "Poly Meadows",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-032-low-poly-tiny-forest",
+          "title": "Low Poly Tiny Forest",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-034-natureforge-woodland-forest",
+          "title": "NatureForge — Stylized Woodland Forest Pack",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-056-farm-land",
+          "title": "Farm Land",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        }
+      ]
+    },
+    {
+      "theme": "interior",
+      "label": "실내",
+      "plannedPackId": "bundle-v1-interior",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-043-rewind-memory-80s-90s-rooms",
+          "title": "Rewind Memory — 80s/90s Rooms",
+          "creator": "EmaceArt",
+          "role": "preset-scene"
+        },
+        {
+          "catalogId": "cbv1-044-pixeldrift-metro",
+          "title": "PixelDrift Metro — 3D Pixel Art Subway (VR)",
+          "creator": "EmaceArt",
+          "role": "preset-scene"
+        },
+        {
+          "catalogId": "cbv1-065-free-analog-memory-rooms",
+          "title": "FREE Analog Memory — 80s/90s CRT VHS Rooms",
+          "creator": "EmaceArt",
+          "role": "preset-scene"
+        },
+        {
+          "catalogId": "cbv1-071-pixeldrift-metro-free",
+          "title": "PixelDrift: Metro — FREE",
+          "creator": "EmaceArt",
+          "role": "preset-scene"
+        }
+      ]
+    },
+    {
+      "theme": "sci-fi",
+      "label": "SF",
+      "plannedPackId": "bundle-v1-sci-fi",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-050-scifi-arena-1",
+          "title": "Sci-Fi Arena: 1",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-051-scifi-arena-2",
+          "title": "Sci-Fi Arena: 2",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-052-scifi-arena-cargo",
+          "title": "Sci-Fi Arena: Cargo",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-053-scifi-arena-blue-base",
+          "title": "Sci-Fi Arena: Blue Base",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        }
+      ]
+    },
+    {
+      "theme": "horror",
+      "label": "공포",
+      "plannedPackId": "bundle-v1-horror",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-006-polyvania-burton-horror-town",
+          "title": "Polyvania — Burton Horror Town",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-011-necropolyy-graveyard",
+          "title": "NecroPOLY — Stylized Graveyard",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-014-cute-graveyard",
+          "title": "Cute Graveyard",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-015-haunted-grounds",
+          "title": "Haunted Grounds — Halloween Props & Scene",
+          "creator": "EmaceArt",
+          "role": "preset-scene"
+        },
+        {
+          "catalogId": "cbv1-069-gravefield-cemetery-kit",
+          "title": "Gravefield Cemetery Kit — Dark Corners",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-070-ps1-psx-alone-in-the-dusk",
+          "title": "PS1 PSX Alone in the DUSK",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        }
+      ]
+    },
+    {
+      "theme": "desert-tropical",
+      "label": "사막·열대",
+      "plannedPackId": "bundle-v1-desert-tropical",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-035-pirate-island",
+          "title": "Pirate Island",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-036-desert-canyon",
+          "title": "Desert Canyon",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-037-voxel-summer",
+          "title": "Voxel Summer",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-038-aztec-jungle",
+          "title": "Aztec Jungle",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-039-raft-on-the-desert",
+          "title": "Raft on the Desert",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        }
+      ]
+    },
+    {
+      "theme": "swamp",
+      "label": "늪",
+      "plannedPackId": "bundle-v1-swamp",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-040-swamp-builder-nature",
+          "title": "Swamp Builder — Nature",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-041-swamp-builder-architecture",
+          "title": "Swamp Builder — Architecture",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        }
+      ]
+    },
+    {
+      "theme": "other",
+      "label": "기타",
+      "plannedPackId": "bundle-v1-other",
+      "sourcePacks": [
+        {
+          "catalogId": "cbv1-025-backroad-bridges",
+          "title": "Backroad Bridges — Stylized Modular",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-026-iowa-covered-bridges",
+          "title": "Iowa Covered Bridges",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-054-low-poly-asia-pack",
+          "title": "Low Poly Asia Pack",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-055-winter-atolls-pack",
+          "title": "Winter Atolls Pack - 3D Voxel Environment Kit MEGA Pack!",
+          "creator": "EmaceArt",
+          "role": "stage-set"
+        },
+        {
+          "catalogId": "cbv1-080-free-stylized-asia-megapack-urp",
+          "title": "FREE Stylized Asia Environment Megapack — Unity URP",
+          "creator": "RG Poly",
+          "role": "stage-set"
+        }
+      ]
+    }
+  ],
+  "assets": []
+}
