@@ -85,7 +85,7 @@ export const COMMON_SECURITY_HEADERS = Object.freeze({
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "SAMEORIGIN",
   "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://sharer.kakao.com https://*.tosspayments.com; script-src 'self' 'sha256-BWhbEGcNa8uwq1jepRHRSXlu8tgsEcnKrHTJQEooJUM=' 'wasm-unsafe-eval' https://accounts.google.com https://t1.kakaocdn.net https://static.cloudflareinsights.com https://js.tosspayments.com 'sha256-P6PYP9NaBHiS7s7V2j7b+2oovf7O0lK3euvWzzsw3is=' 'sha256-fwRvdxGBQTJ2ALEK6fQOX+/WfmLt2t65MYSJ42Pf1+M=' 'sha256-K3PQvwSORwkWFFB4wGH4e6dMPaclZ7v0yCFODB4iMKQ='; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' blob: https://api.artic.edu https://openaccess-api.clevelandart.org https://commons.wikimedia.org https://ko.wikipedia.org https://api.open-meteo.com https://accounts.google.com https://www.googleapis.com https://graph.microsoft.com https://storage.googleapis.com https://api.unsplash.com https://images.unsplash.com https://api.openai.com https://openrouter.ai https://api.z.ai https://api.deepseek.com https://ybsgfhofuvkhywbpytnl.supabase.co https://cdn.jsdelivr.net https://kapi.kakao.com https://cloudflareinsights.com https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://*.tosspayments.com; frame-src 'self' https://accounts.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.tosspayments.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests; block-all-mixed-content",
+  "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://sharer.kakao.com https://*.tosspayments.com; script-src 'self' 'sha256-BWhbEGcNa8uwq1jepRHRSXlu8tgsEcnKrHTJQEooJUM=' 'wasm-unsafe-eval' https://accounts.google.com https://t1.kakaocdn.net https://static.cloudflareinsights.com https://js.tosspayments.com; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' blob: https://api.artic.edu https://openaccess-api.clevelandart.org https://commons.wikimedia.org https://ko.wikipedia.org https://api.open-meteo.com https://accounts.google.com https://www.googleapis.com https://graph.microsoft.com https://storage.googleapis.com https://api.unsplash.com https://images.unsplash.com https://api.openai.com https://openrouter.ai https://api.z.ai https://api.deepseek.com https://ybsgfhofuvkhywbpytnl.supabase.co https://cdn.jsdelivr.net https://kapi.kakao.com https://cloudflareinsights.com https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://*.tosspayments.com; frame-src 'self' https://accounts.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.tosspayments.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests; block-all-mixed-content",
   "Permissions-Policy": "camera=(self), microphone=(self), geolocation=(), cross-origin-isolated=(self)",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 } as const);
@@ -596,86 +596,6 @@ function withSecurityHeaders(response: Response): Response {
   });
 }
 
-// Godot 무대 문서 6경로. 동일 출처 iframe 셸이 품는 부팅 문서라 인라인
-// 부트스트랩을 허용하는 전용 CSP가 필요하다. Static Assets는 매칭되는
-// _headers 규칙을 전부 병합하므로 전역 정책과 무대 정책이 두 장으로 겹쳐
-// 강제되고, 더 엄격한 전역 쪽이 인라인 실행을 막는다. 그래서 이 문서들은
-// Worker가 직접 서빙하며 framing 헤더를 정확히 한 벌로 접어준다.
-// 구성 계약(config/http-response-headers.json의 무대 6섹션)과 문자열이
-// 같아야 하며, 아래 동기화 테스트가 이를 강제한다.
-export const GODOT_STAGE_DOCUMENT_PATHS = Object.freeze([
-  "/godot-space",
-  "/godot-space/index.html",
-  "/cuts-godot",
-  "/cuts-godot/index.html",
-  "/play-godot",
-  "/play-godot/index.html",
-] as const);
-
-export const GODOT_STAGE_DOCUMENT_CSP =
-  "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://cloudflareinsights.com https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev";
-
-export function isGodotStageDocumentPath(pathname: string): boolean {
-  return (GODOT_STAGE_DOCUMENT_PATHS as readonly string[]).includes(pathname);
-}
-
-async function serveGodotStageDocument(
-  request: Request,
-  env: CloudflareStaticEnv,
-): Promise<Response | null> {
-  const method = request.method.toUpperCase();
-  if (method !== "GET" && method !== "HEAD") return null;
-  const incoming = new URL(request.url);
-  if (!isGodotStageDocumentPath(incoming.pathname)) return null;
-  const fetchAsset = (target: URL): Promise<Response> =>
-    env.ASSETS.fetch(new Request(target, {
-      method,
-      headers: request.headers,
-      redirect: "manual",
-      signal: request.signal,
-    }));
-  let assetResponse: Response;
-  try {
-    assetResponse = await fetchAsset(incoming);
-  } catch {
-    return null;
-  }
-  // Static Assets는 /<stage>/index.html을 /<stage>로 정규화한다. 동일 출처
-  // 단일 리다이렉트만 따라가서 서빙하는 문서가 항상 한 벌의 헤더를 갖게 한다.
-  if (assetResponse.status >= 300 && assetResponse.status < 400) {
-    const location = assetResponse.headers.get("location");
-    await cancelRetryResponse(assetResponse);
-    if (!location) return null;
-    const next = new URL(location, incoming);
-    if (next.origin !== incoming.origin || !isGodotStageDocumentPath(next.pathname)) {
-      return null;
-    }
-    try {
-      assetResponse = await fetchAsset(next);
-    } catch {
-      return null;
-    }
-  }
-  if (assetResponse.status === 404 || assetResponse.status >= 500) {
-    await cancelRetryResponse(assetResponse);
-    return null;
-  }
-  const headers = new Headers(assetResponse.headers);
-  headers.delete("content-security-policy");
-  headers.delete("x-frame-options");
-  headers.set("content-security-policy", GODOT_STAGE_DOCUMENT_CSP);
-  headers.set("x-frame-options", "SAMEORIGIN");
-  headers.set("x-toonstudio-stage-document", "normalized");
-  const body = method === "HEAD" || assetResponse.status === 304
-    ? null
-    : assetResponse.body;
-  return new Response(body, {
-    status: assetResponse.status,
-    statusText: assetResponse.statusText,
-    headers,
-  });
-}
-
 function retryableRead(request: Request, route: DynamicRoute): boolean {
   return route === "public-read"
     && RETRYABLE_READ_METHODS.has(request.method.toUpperCase())
@@ -821,16 +741,6 @@ export function createCloudflareStaticGateway(
     const requestUrl = new URL(request.url);
     if (isEdgeLivenessRequest(request, requestUrl)) {
       return edgeLivenessResponse(request);
-    }
-    // Godot 무대 문서는 _headers 병합으로 framing 정책이 두 장이 되므로
-    // Worker가 직접 서빙하며 한 벌로 접어준다. 실패하면 정상 경로로 넘긴다.
-    if (isGodotStageDocumentPath(requestUrl.pathname)) {
-      try {
-        const stageResponse = await serveGodotStageDocument(request, env);
-        if (stageResponse) return stageResponse;
-      } catch {
-        // Missing or unreadable stage documents continue to normal handling.
-      }
     }
     if (!isDynamicPath(requestUrl.pathname)) {
       return env.ASSETS.fetch(request);

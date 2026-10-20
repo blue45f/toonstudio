@@ -472,7 +472,6 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   // 마지막 위치는 세션 복원과 별개의 재방문 복원 기록이며 월드 상태 자체는 담지 않는다.
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-sound-preference.ts", "local-storage-write", '"toonspectrum:virtual-space-sound:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/studio-project-library-sync.ts", "durable-storage-write", '"toonspectrum:studio-project-library-deleted:v1"', 2, "Pending permanent-delete id list for the signed-in library account sync only; the server merge is the authority and the list carries ids that the user already deleted, never project content.", "Both writes persist or trim a string-id array that is validated on read and cleared once the server acknowledges it; corrupt or blocked storage only delays propagation and cannot create or restore a project."),
-  allow("apps/web/src/domains/creator/virtual-space/studio-godot-space-embed-support.ts", "local-storage-write", "godotPositionKey(workId)", 1, UI_ONLY, "The Godot stage shell stores only the last spaceId and x/y coordinates per work with a 30-day TTL; the loader validates every field and corrupt or blocked storage falls back to no restore, so it cannot carry document, world, permission, or collaboration state."),
   // 가상 스튜디오 클래식 공간의 검토 항목 13건 복원(2026-10-15). 73d962da 가 클래식 공간 모듈을 지우면서
   // 이 항목들을 stale 로 함께 지웠고, 4d2c3200 이 모듈을 되살릴 때 검토 항목은 되살리지 않아 가드가 붉어졌다.
   // 파일·종류·키·횟수와 근거 문장은 73d962da 직전 버전 그대로이며, 현재 코드의 호출 표현식도 그대로다.
