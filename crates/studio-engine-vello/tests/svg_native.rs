@@ -120,7 +120,8 @@ fn render_gpu(gpu: &mut Gpu, scene: &vello::Scene) -> Vec<u8> {
         .recv()
         .expect("receive map result")
         .expect("map readback");
-    let data = slice.get_mapped_range();
+    // wgpu 30: `get_mapped_range` returns a Result (infallible in wgpu 29).
+    let data = slice.get_mapped_range().expect("readback mapped range");
     let mut pixels = Vec::with_capacity((SIZE * SIZE * 4) as usize);
     for row in 0..SIZE {
         let start = (row * bytes_per_row) as usize;

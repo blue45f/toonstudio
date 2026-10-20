@@ -521,7 +521,7 @@ const STUDIO_INTERCHANGE_CAPABILITY_DEFINITIONS: readonly StudioInterchangeCapab
     ],
     runtimeRequirement: [
       "UTF-8 XML strict audit",
-      "vello_svg 0.10 + vello_cpu deterministic preview",
+      "vello_svg 0.11 + vello_cpu deterministic preview",
       "FormatGateway SceneIR",
       "CanvasKit SceneIR independent candidate (preselected requests only)",
       "resvg-wasm non-authoritative visual reference",
@@ -569,7 +569,7 @@ const STUDIO_INTERCHANGE_CAPABILITY_DEFINITIONS: readonly StudioInterchangeCapab
     },
     externalRequirements: {
       provider: "bundled-library",
-      providers: ["vello_svg 0.10", "vello_cpu 0.2", "CanvasKit 0.41.1", "resvg-wasm"],
+      providers: ["vello_svg 0.11", "vello_cpu 0.3", "CanvasKit 0.41.1", "resvg-wasm"],
       license: "bundled-dependency-terms",
       notes: ["각 provider의 고지·배포 조건과 WASM integrity pin을 유지해야 함"],
     },

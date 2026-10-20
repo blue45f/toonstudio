@@ -52,7 +52,7 @@ beforeAll(async () => {
 
 describe("vello-cpu adapter (wasm)", () => {
   it("reports its pinned version", () => {
-    expect(adapterVersion()).toContain("vello_cpu 0.2");
+    expect(adapterVersion()).toContain("vello_cpu 0.3");
   });
 
   it("renders a solid square onto the background", () => {

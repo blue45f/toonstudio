@@ -49,86 +49,6 @@ impl Device {
         }
     }
 
-    // TOON-PATCH 0001 hunk 4/6 — WebGPU handle adoption + export on `Device`.
-    // WHY / REMOVE WHEN: see `toon-fabric` in this crate's Cargo.toml.
-    // UPSTREAM: `as_webgpu` and `create_texture_from_webgpu_handle` are
-    // backports of wgpu 30.0.0 (`wgpu-30.0.0/src/api/device.rs`);
-    // `from_webgpu_handle` has no upstream counterpart and is our PR
-    // candidate.
-
-    /// Builds a `Device` around a [`webgpu::GpuDevice`] the caller already
-    /// owns — typically one the page created with `navigator.gpu` and shares
-    /// with other WebGPU consumers.
-    ///
-    /// Returns the adopted `Device` together with its [`Queue`], taken from
-    /// `device.queue()` so the two are guaranteed to belong to the same JS
-    /// object.
-    ///
-    /// wgpu never destroys an adopted handle: the caller stays responsible for
-    /// the `GPUDevice` lifetime, and dropping every `Device`/`Queue` clone
-    /// leaves the underlying JS object untouched.
-    ///
-    /// The caller must guarantee that the device's reported limits and
-    /// features cover what will be asked of it — wgpu reads them back from the
-    /// handle, so no separate validation is performed here.
-    #[cfg(all(webgpu, feature = "toon-fabric"))]
-    #[must_use]
-    pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
-        let queue = crate::backend::webgpu::WebQueue::from_external_handle(device.queue());
-        let device = crate::backend::webgpu::WebDevice::from_external_handle(device);
-        (
-            Self {
-                inner: device.into(),
-            },
-            Queue {
-                inner: queue.into(),
-            },
-        )
-    }
-
-    /// Returns the underlying [`webgpu::GpuDevice`] handle if this `Device`
-    /// is on the WebGPU backend, otherwise `None`.
-    #[cfg(all(webgpu, feature = "toon-fabric"))]
-    pub fn as_webgpu(&self) -> Option<&webgpu::GpuDevice> {
-        self.inner.as_webgpu_opt().map(|device| &device.inner)
-    }
-
-    /// Wraps a [`webgpu::GpuTexture`] this crate did not create, so it can be
-    /// rendered into or sampled like any other [`Texture`].
-    ///
-    /// This is the WebGPU counterpart of [`Self::create_texture_from_hal`].
-    /// wgpu never destroys the wrapped handle.
-    ///
-    /// The caller must guarantee:
-    ///
-    /// 1. `texture` was produced by the same underlying `GPUDevice` that this
-    ///    `Device` wraps.
-    /// 2. `desc.format`, `desc.size`, `desc.usage`, `desc.dimension`,
-    ///    `desc.mip_level_count` and `desc.sample_count` match the real
-    ///    `GPUTexture` — wgpu stores them verbatim and reports them from
-    ///    [`Texture::size`], [`Texture::format`] etc. without re-reading the
-    ///    handle. A mismatch yields wrong metadata and downstream
-    ///    `GPUValidationError`s, never memory unsafety (the browser bounds
-    ///    every access).
-    /// 3. The `GPUTexture` outlives every wgpu submission that references it.
-    #[cfg(all(webgpu, feature = "toon-fabric"))]
-    #[must_use]
-    pub fn create_texture_from_webgpu_handle(
-        &self,
-        texture: webgpu::GpuTexture,
-        desc: &TextureDescriptor<'_>,
-    ) -> Texture {
-        let inner = self.inner.as_webgpu().wrap_external_texture(texture);
-        Texture {
-            inner,
-            descriptor: TextureDescriptor {
-                label: None,
-                view_formats: &[],
-                ..desc.clone()
-            },
-        }
-    }
-
     /// Constructs a stub device for testing using [`Backend::Noop`].
     ///
     /// This is a convenience function which avoids the configuration, `async`, and fallibility
@@ -143,7 +63,7 @@ impl Device {
         let instance = Instance::new(InstanceDescriptor {
             backends: Backends::NOOP,
             backend_options: BackendOptions {
-                noop: NoopBackendOptions { enable: true },
+                noop: NoopBackendOptions::enabled(),
                 ..Default::default()
             },
             ..InstanceDescriptor::new_without_display_handle()
@@ -395,23 +315,43 @@ impl Device {
     #[doc = crate::macros::hal_type_dx12!("Texture")]
     #[doc = crate::macros::hal_type_gles!("Texture")]
     ///
+    /// On [`Backend::BrowserWebGpu`], use `Device::create_texture_from_webgpu_handle()` instead.
+    ///
+    /// # `initial_state`
+    ///
+    /// If the resource has already been initialized, `initial_state` should be
+    /// set to the [`wgt::TextureUses`] state of the wrapped resource.  It will
+    /// be used as the source state (`oldLayout` / `StateBefore`) of the first
+    /// barrier emitted on the texture.
+    ///
+    /// If the resource has not been initialized (or if the existing contents
+    /// may be discarded), `initial_state` may be set to
+    /// `TextureUses::UNINITIALIZED`.
+    ///
     /// # Safety
     ///
     /// - `hal_texture` must be created from this device internal handle
     /// - `hal_texture` must be created respecting `desc`
     /// - `hal_texture` must be initialized
+    /// - `initial_state`, if it is not `TextureUses::UNINITIALIZED`, must
+    ///   match the actual driver-side layout/state of the wrapped resource at
+    ///   the moment of wrap.
     #[cfg(wgpu_core)]
     #[must_use]
     pub unsafe fn create_texture_from_hal<A: hal::Api>(
         &self,
         hal_texture: A::Texture,
         desc: &TextureDescriptor<'_>,
+        initial_state: wgt::TextureUses,
     ) -> Texture {
         let texture = unsafe {
             let core_device = self.inner.as_core();
-            core_device
-                .context
-                .create_texture_from_hal::<A>(hal_texture, core_device, desc)
+            core_device.context.create_texture_from_hal::<A>(
+                hal_texture,
+                core_device,
+                desc,
+                initial_state,
+            )
         };
         Texture {
             inner: texture.into(),
@@ -421,6 +361,106 @@ impl Device {
                 ..desc.clone()
             },
         }
+    }
+
+    // TOON-PATCH 0001 hunk 2/3 — WebGPU handle adoption on `Device`.
+    // WHY / REMOVE WHEN: see `toon-fabric` in this crate's Cargo.toml.
+    // UPSTREAM: `as_webgpu` and `create_texture_from_webgpu_handle` in this
+    // impl block are wgpu 30 upstream; `from_webgpu_handle` has no upstream
+    // counterpart and is our PR candidate.
+
+    /// Builds a `Device` around a [`webgpu::GpuDevice`] the caller already
+    /// owns — typically one the page created with `navigator.gpu` and shares
+    /// with other WebGPU consumers.
+    ///
+    /// Returns the adopted `Device` together with its [`Queue`], taken from
+    /// `device.queue()` so the two are guaranteed to belong to the same JS
+    /// object.
+    ///
+    /// wgpu never destroys an adopted handle: the caller stays responsible for
+    /// the `GPUDevice` lifetime, and dropping every `Device`/`Queue` clone
+    /// leaves the underlying JS object untouched.
+    ///
+    /// The caller must guarantee that the device's reported limits and
+    /// features cover what will be asked of it — wgpu reads them back from the
+    /// handle, so no separate validation is performed here.
+    #[cfg(all(webgpu, feature = "toon-fabric"))]
+    #[must_use]
+    pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
+        let queue = crate::backend::webgpu::WebQueue::from_external_handle(device.queue());
+        let device = crate::backend::webgpu::WebDevice::from_external_handle(device);
+        (
+            Self {
+                inner: device.into(),
+            },
+            Queue {
+                inner: queue.into(),
+            },
+        )
+    }
+
+    /// Wraps a foreign [`webgpu::GpuTexture`] (e.g. a canvas `getCurrentTexture()` result)
+    /// as a [`Texture`] without any copy.
+    ///
+    /// The wrapped texture is *external*: dropping the returned `Texture` (or
+    /// calling [`Texture::destroy`] on it) does **not** call `GpuTexture.destroy()`
+    /// on the underlying handle - its lifetime is the caller's responsibility.
+    ///
+    /// If `drop_callback` is `Some`, it fires when wgpu releases its last
+    /// reference to the wrapped handle. wgpu never calls `GpuTexture.destroy()`
+    /// itself on a wrapped texture; to hand the handle's lifetime to wgpu,
+    /// supply a callback that calls `GpuTexture.destroy()`. The callback can
+    /// also be used to free a pool slot or notify dependent code that wgpu is
+    /// done with the handle. Pass `None` if the caller manages the handle's
+    /// lifetime entirely on their own.
+    ///
+    /// This is the WebGPU counterpart of [`Self::create_texture_from_hal`].
+    /// A `Some` `drop_callback` plays the same role as `wgpu_hal::DropCallback`
+    /// does on the Vulkan backend. The `None` case differs: here the texture is
+    /// always external and wgpu never destroys it, whereas on Vulkan a `None`
+    /// callback means wgpu takes ownership of the image and destroys it.
+    ///
+    /// The caller must guarantee:
+    ///
+    /// 1. `texture` was produced by the same underlying `GpuDevice` that this `Device` wraps.
+    /// 2. `desc.format`, `desc.size`, `desc.usage`, `desc.dimension`,
+    ///    `desc.mip_level_count`, and `desc.sample_count` match the actual
+    ///    `GPUTexture`'s reflected values. wgpu stores these verbatim and
+    ///    returns them from [`Texture::size`], [`Texture::format`], etc.
+    ///    without re-checking the handle; a mismatch yields silently incorrect
+    ///    metadata and, downstream, `GPUValidationError`s rather than memory
+    ///    unsafety (the browser bounds every access).
+    /// 3. The underlying `GpuTexture` must remain alive for as long as wgpu
+    ///    may use it (e.g. until any submitted command buffer that references
+    ///    it has finished executing). If `drop_callback` is `Some`, it is
+    ///    sufficient to keep the handle alive until the callback fires.
+    #[cfg(webgpu)]
+    #[must_use]
+    pub fn create_texture_from_webgpu_handle(
+        &self,
+        texture: webgpu::GpuTexture,
+        desc: &TextureDescriptor<'_>,
+        drop_callback: Option<webgpu::DropCallback>,
+    ) -> Texture {
+        let inner = self
+            .inner
+            .as_webgpu()
+            .wrap_external_texture(texture, drop_callback);
+        Texture {
+            inner,
+            descriptor: TextureDescriptor {
+                label: None,
+                view_formats: &[],
+                ..desc.clone()
+            },
+        }
+    }
+
+    /// Returns the underlying [`webgpu::GpuDevice`] handle if this `Device`
+    /// is on the WebGPU backend, otherwise `None`.
+    #[cfg(webgpu)]
+    pub fn as_webgpu(&self) -> Option<&webgpu::GpuDevice> {
+        self.inner.as_webgpu_opt().map(|wd| &wd.inner)
     }
 
     /// Creates a new [`ExternalTexture`].
@@ -491,7 +531,11 @@ impl Device {
     #[must_use]
     pub fn create_query_set(&self, desc: &QuerySetDescriptor<'_>) -> QuerySet {
         let query_set = self.inner.create_query_set(desc);
-        QuerySet { inner: query_set }
+        QuerySet {
+            inner: query_set,
+            ty: desc.ty,
+            count: desc.count,
+        }
     }
 
     /// Set a callback which will be called for all errors that are not handled in error scopes.
@@ -646,6 +690,8 @@ impl Device {
     /// - The device is not from the backend specified by `A`.
     /// - The device is from the `webgpu` or `custom` backend.
     ///
+    /// On the `webgpu` backend, use `as_webgpu` instead.
+    ///
     /// # Safety
     ///
     /// - The returned resource must not be destroyed unless the guard
@@ -780,6 +826,17 @@ impl Device {
 pub struct RequestDeviceError {
     pub(crate) inner: RequestDeviceErrorKind,
 }
+
+impl RequestDeviceError {
+    /// Construct an error from a custom backend message. This is mainly useful for custom backends.
+    #[cfg(custom)]
+    pub fn from_message(message: String) -> Self {
+        RequestDeviceError {
+            inner: RequestDeviceErrorKind::Custom(message),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(crate) enum RequestDeviceErrorKind {
     /// Error from [`wgpu_core`].
@@ -792,6 +849,10 @@ pub(crate) enum RequestDeviceErrorKind {
     /// (This is currently never used by the webgl backend, but it could be.)
     #[cfg(webgpu)]
     WebGpu(String),
+
+    /// Error from a custom backend.
+    #[cfg(custom)]
+    Custom(String),
 }
 
 static_assertions::assert_impl_all!(RequestDeviceError: Send, Sync);
@@ -805,6 +866,8 @@ impl fmt::Display for RequestDeviceError {
             RequestDeviceErrorKind::WebGpu(error) => {
                 write!(_f, "{error}")
             }
+            #[cfg(custom)]
+            RequestDeviceErrorKind::Custom(msg) => write!(_f, "{msg}"),
             #[cfg(not(any(webgpu, wgpu_core)))]
             _ => unimplemented!("unknown `RequestDeviceErrorKind`"),
         }
@@ -818,6 +881,8 @@ impl error::Error for RequestDeviceError {
             RequestDeviceErrorKind::Core(error) => error.source(),
             #[cfg(webgpu)]
             RequestDeviceErrorKind::WebGpu(_) => None,
+            #[cfg(custom)]
+            RequestDeviceErrorKind::Custom(_) => None,
             #[cfg(not(any(webgpu, wgpu_core)))]
             _ => unimplemented!("unknown `RequestDeviceErrorKind`"),
         }
@@ -953,5 +1018,21 @@ impl Drop for ErrorScopeGuard {
         if !self.popped {
             drop(self.device.pop_error_scope(self.index));
         }
+    }
+}
+
+impl fmt::Debug for ErrorScopeGuard {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let ErrorScopeGuard {
+            device,
+            index,
+            popped,
+            _phantom: _,
+        } = self;
+        f.debug_struct("ErrorScopeGuard")
+            .field("device", device)
+            .field("index", index)
+            .field("popped", popped)
+            .finish()
     }
 }

@@ -1,6 +1,6 @@
 //! Vello GPU (Classic) native validation (ADR-0010 §4).
 //!
-//! Renders the shared vector corpus through vello 0.10 on a headless wgpu
+//! Renders the shared vector corpus through vello 0.11 on a headless wgpu
 //! device (Metal on macOS) and compares against the deterministic vello_cpu
 //! lane with the same 3×3/δ48 fuzzy metric the JS diff harness uses. With
 //! VELLO_GPU_PROBE=1 it also records per-scene p50/p95 timings to
@@ -135,7 +135,8 @@ fn render_gpu(gpu: &mut Gpu, scene_ir: &SceneIR) -> Vec<u8> {
     let slice = buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
     gpu.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
-    let data = slice.get_mapped_range();
+    // wgpu 30: `get_mapped_range` returns a Result (infallible in wgpu 29).
+    let data = slice.get_mapped_range().expect("readback mapped range");
     let mut pixels = Vec::with_capacity((width * height * 4) as usize);
     for row in 0..height {
         let start = (row * bytes_per_row) as usize;
@@ -285,7 +286,7 @@ fn gpu_matches_cpu_on_the_vector_corpus() {
     if std::env::var("VELLO_GPU_PROBE").as_deref() == Ok("1") {
         let report = serde_json::json!({
             "harness": "crates/studio-engine-vello/tests/gpu_parity.rs",
-            "engine": "vello 0.10.0 (wgpu Metal headless, Area AA) vs vello_cpu 0.2.0",
+            "engine": "vello 0.11.0 (wgpu Metal headless, Area AA) vs vello_cpu 0.3.0",
             "note": "readback is test-only evidence collection; interactive path never reads back",
             "scenes": rows,
         });

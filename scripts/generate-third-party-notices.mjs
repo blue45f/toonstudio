@@ -48,12 +48,13 @@ const VELLO_ARTIFACT_POLICIES = Object.freeze([
   Object.freeze({
     id: "pkg",
     features: Object.freeze([]),
-    expectedExternalPackageCount: 85,
+    expectedExternalPackageCount: 86,
     requiredPackages: Object.freeze([
-      "vello_cpu@0.2.0",
-      "vello_common@0.2.0",
+      "vello_cpu@0.3.0",
+      "vello_common@0.3.0",
       "parley@0.11.0",
       "harfrust@0.10.0",
+      "harfrust@0.12.0",
       "skrifa@0.43.2",
       "skrifa@0.44.0",
     ]),
@@ -61,22 +62,34 @@ const VELLO_ARTIFACT_POLICIES = Object.freeze([
   Object.freeze({
     id: "pkg-gpu",
     features: Object.freeze(["hybrid", "lottie", "svg"]),
-    expectedExternalPackageCount: 137,
+    expectedExternalPackageCount: 142,
     requiredPackages: Object.freeze([
-      "vello@0.10.0",
+      "vello@0.11.0",
       "vello_hybrid@0.2.0",
-      "vello_cpu@0.2.0",
+      "vello_cpu@0.3.0",
       "velato@0.12.0",
       "vello_svg@0.11.0",
       "usvg@0.48.1",
-      "wgpu@29.0.4",
+      "wgpu@30.0.1",
       "parley@0.11.0",
       "harfrust@0.10.0",
+      "harfrust@0.12.0",
       "skrifa@0.43.2",
       "skrifa@0.44.0",
     ]),
   }),
 ]);
+// Vendored forks wired through [patch.crates-io] in the crate manifest. A
+// locked package with no registry source must be one of these, and its
+// recorded inventory source is the fork's repo-relative path so provenance
+// stays truthful per fork. refresh derives the path from cargo metadata and
+// fails if it is not declared here.
+const VELLO_VENDORED_PACKAGE_SOURCES = Object.freeze({
+  wgpu: "path:crates/vendor/wgpu-toon",
+  vello_hybrid: "path:crates/vendor/vello-hybrid",
+  velato: "path:crates/vendor/velato",
+  vello_svg: "path:crates/vendor/vello-svg",
+});
 const VELLO_REQUIRED_NOTICE_FILES = Object.freeze([
   "THIRD_PARTY_INVENTORY.json",
   "pkg/NOTICE",
@@ -519,6 +532,7 @@ export function readEmbeddedFirstPartyPortDocuments(
 const REVIEWED_RUST_LICENSE_EXPRESSIONS = new Set([
   "(MIT OR Apache-2.0) AND Unicode-3.0",
   "0BSD OR MIT OR Apache-2.0",
+  "Apache-2.0/MIT",
   "Apache-2.0 OR MIT",
   "BSD-2-Clause",
   "BSD-3-Clause",
@@ -737,7 +751,7 @@ export function validateVelloThirdPartyInventory({ // NOSONAR javascript:S3776
     }
     if (
       entry.checksum !== (locked.checksum || null)
-      || entry.source !== (locked.source || "path:crates/vendor/wgpu-toon")
+      || entry.source !== (locked.source || VELLO_VENDORED_PACKAGE_SOURCES[entry.name])
     ) {
       throw new Error(`Vello locked source/checksum changed for ${key}.`);
     }
@@ -1029,6 +1043,14 @@ function stableCargoLicenseSource(packageMetadata, licensePath) {
   return relative(REPOSITORY_ROOT, licensePath);
 }
 
+function vendoredVelloSource(packageMetadata, key) {
+  const derived = `path:${relative(REPOSITORY_ROOT, dirname(packageMetadata.manifest_path)).replaceAll("\\", "/")}`;
+  if (VELLO_VENDORED_PACKAGE_SOURCES[packageMetadata.name] !== derived) {
+    throw new Error(`Undeclared vendored Vello package: ${key} at ${derived}.`);
+  }
+  return derived;
+}
+
 function renderVelloLicenseBundle(artifact, packageByKey, documentByDigest) {
   const documentDigests = [
     ...new Set(
@@ -1127,7 +1149,7 @@ export function refreshVelloThirdPartyNotices() { // NOSONAR javascript:S3776
     parseCargoLockPackages(lockText).map((entry) => [packageKey(entry), entry]),
   );
   const packageKeys = [...new Set(artifacts.flatMap(({ packages }) => packages))].sort();
-  const velloMetadata = metadataByKey.get("vello@0.10.0");
+  const velloMetadata = metadataByKey.get("vello@0.11.0");
   const canonicalDualLicenseFiles = findRootLicenseFiles(dirname(velloMetadata.manifest_path));
   if (canonicalDualLicenseFiles.length < 2) {
     throw new Error("Vello canonical MIT/Apache license files are unavailable.");
@@ -1178,7 +1200,7 @@ export function refreshVelloThirdPartyNotices() { // NOSONAR javascript:S3776
       version: packageMetadata.version,
       license: packageMetadata.license,
       checksum: lockPackage.checksum || null,
-      source: lockPackage.source || "path:crates/vendor/wgpu-toon",
+      source: lockPackage.source || vendoredVelloSource(packageMetadata, key),
       upstream:
         packageMetadata.repository
         || packageMetadata.homepage

@@ -63,7 +63,7 @@ pub fn shape_text_json(
 #[wasm_bindgen]
 pub fn adapter_version() -> String {
     format!(
-        "studio-engine-vello {} (vello_cpu 0.2)",
+        "studio-engine-vello {} (vello_cpu 0.3)",
         env!("CARGO_PKG_VERSION")
     )
 }

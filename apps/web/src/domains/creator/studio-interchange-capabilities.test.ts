@@ -257,7 +257,7 @@ describe("Studio interchange capability registry", () => {
     expect(svgContract).toContain("resvg는 비권위 QA reference");
     expect(svgContract).not.toMatch(/resvg fallback|resvg로 .*우회/iu);
     expect(svg.externalRequirements.providers).toEqual(expect.arrayContaining([
-      "vello_svg 0.10",
+      "vello_svg 0.11",
       "CanvasKit 0.41.1",
       "resvg-wasm",
     ]));
