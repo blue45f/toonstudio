@@ -206,7 +206,7 @@ export function StudioFramePanel({
       }}
       onTransformEnd={(e) => {
         try {
-          const node = e.target as Konva.Group;
+          const node: Konva.Node = e.target;
           const sx = node.scaleX();
           const sy = node.scaleY();
           const w = Math.max(40, el.width * sx);

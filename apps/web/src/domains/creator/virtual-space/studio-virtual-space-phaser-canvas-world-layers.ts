@@ -6,6 +6,8 @@
  */
 import type * as Phaser from "phaser";
 
+import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+
 import type { StudioVirtualArtStyle, StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import type { StudioVirtualBackdrop } from "./studio-virtual-space-environment-preference";
 import { studioExperienceFrameGeometry } from "./studio-virtual-space-experience-art";
@@ -24,6 +26,17 @@ import {
  * 월드 뒤 배경 두 겹: 화면보다 느리게 흐르는 지평선 원경(스크롤 0.92)과 월드를 덮는 배경 이미지.
  * 지평선 이미지는 시간대 하늘 틴트가 입히므로 돌려주고, 배경 영역은 전경 가림 레이어가 같은 좌표를 쓴다.
  */
+/**
+ * Phaser 4의 Graphics.fillPoints/strokePoints는 .d.ts에 Vector2[]로 선언돼 있지만 실제 구현은
+ * 각 점의 x·y만 읽는다(phaser 패키지 src/gameobjects/graphics/Graphics.js에서 확인). 이 모듈은
+ * Phaser를 타입으로만 가져오는 지연 로드 경계라 Vector2 인스턴스를 만들 수 없어 좌표만 넘긴다.
+ */
+function studioPhaserPolygonPoints(
+  polygon: readonly StudioVirtualSpacePoint[],
+): Phaser.Math.Vector2[] {
+  return polygon as unknown as Phaser.Math.Vector2[];
+}
+
 export function drawStudioBackdropLayers(
   scene: Pick<Phaser.Scene, "add" | "textures">,
   manifest: Pick<StudioVirtualSpaceWorldManifest, "width" | "height" | "tilemap">,
@@ -73,8 +86,8 @@ export function drawStudioOcclusionLayers(
   for (const layer of layers) {
     if (manifest.tilemap) {
       const foreground = scene.add.graphics().setDepth(layer.depth);
-      foreground.fillStyle(artProfile.palette.room, 1).fillPoints([...layer.polygon], true);
-      foreground.lineStyle(4, artProfile.palette.wall, 0.86).strokePoints([...layer.polygon], true);
+      foreground.fillStyle(artProfile.palette.room, 1).fillPoints(studioPhaserPolygonPoints(layer.polygon), true);
+      foreground.lineStyle(4, artProfile.palette.wall, 0.86).strokePoints(studioPhaserPolygonPoints(layer.polygon), true);
       const minX = Math.min(...layer.polygon.map((point) => point.x));
       const maxX = Math.max(...layer.polygon.map((point) => point.x));
       const minY = Math.min(...layer.polygon.map((point) => point.y));
@@ -86,7 +99,7 @@ export function drawStudioOcclusionLayers(
       onCleanup(() => foreground.destroy());
       continue;
     }
-    const maskGraphics = scene.add.graphics().fillStyle(0xffffff).fillPoints([...layer.polygon], true).setVisible(false);
+    const maskGraphics = scene.add.graphics().fillStyle(0xffffff).fillPoints(studioPhaserPolygonPoints(layer.polygon), true).setVisible(false);
     const mask = maskGraphics.createGeometryMask();
     const foreground = scene.add.image(backgroundRect.x, backgroundRect.y, backgroundTextureKey)
       .setOrigin(0).setDisplaySize(backgroundRect.width, backgroundRect.height)

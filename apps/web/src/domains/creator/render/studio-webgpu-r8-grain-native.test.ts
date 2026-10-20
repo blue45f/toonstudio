@@ -29,7 +29,7 @@ interface FakeGpu {
     readonly destination: GPUTexelCopyTextureInfo;
     readonly bytes: Uint8Array;
     readonly layout: GPUTexelCopyBufferLayout;
-    readonly size: GPUExtent3DStrict;
+    readonly size: GPUExtent3D;
   }>;
 }
 
@@ -45,7 +45,7 @@ function fakeGpu(maxTextureDimension2D = 16_384): FakeGpu {
         destination: GPUTexelCopyTextureInfo,
         source: AllowSharedBufferSource,
         layout: GPUTexelCopyBufferLayout,
-        size: GPUExtent3DStrict,
+        size: GPUExtent3D,
       ) => {
         const view = ArrayBuffer.isView(source)
           ? new Uint8Array(source.buffer, source.byteOffset, source.byteLength)

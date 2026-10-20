@@ -350,23 +350,23 @@ const REVIEWED_LICENSE_FILE_DIGESTS = new Map([
 ]);
 
 const HYBRID_PROVIDER_DEPENDENCIES = Object.freeze({
-  "@gltf-transform/core": "4.4.2",
-  "@gltf-transform/extensions": "4.4.2",
+  "@gltf-transform/core": "4.5.1",
+  "@gltf-transform/extensions": "4.5.1",
   "@gltf-transform/functions": "4.4.2",
   "@resvg/resvg-wasm": "2.6.2",
   "@techstark/opencv-js": "5.0.0-release.1",
-  harfbuzzjs: "1.4.0",
+  harfbuzzjs: "1.6.3",
   "manifold-3d": "3.5.1",
   mixbox: "2.0.0",
-  "onnxruntime-web": "1.27.0",
+  "onnxruntime-web": "1.30.0",
   "opencascade.js": "1.1.1",
   "p5.brush": "2.2.1",
   paper: "0.12.18",
   "perfect-freehand": "1.2.3",
   rbush: "4.0.1",
-  rhino3dm: "8.32.1",
-  "three-mesh-bvh": "0.9.13",
-  "web-ifc": "0.0.77",
+  rhino3dm: "8.35.0",
+  "three-mesh-bvh": "0.9.16",
+  "web-ifc": "0.0.78",
   xatlasjs: "0.2.0",
 });
 

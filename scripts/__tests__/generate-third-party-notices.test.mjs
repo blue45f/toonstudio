@@ -215,7 +215,7 @@ describe("generated third-party notice inventory", () => {
       inventory.some(
         (entry) =>
           entry.name === "@dimforge/rapier3d-deterministic-compat"
-          && entry.versions.includes("0.19.3")
+          && entry.versions.includes("0.21.0")
           && entry.license === "Apache-2.0",
       ),
     ).toBe(true);

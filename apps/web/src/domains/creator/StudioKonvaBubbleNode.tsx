@@ -346,7 +346,7 @@ export function StudioKonvaBubbleNode({
         onChange({ x: e.target.x(), y: e.target.y() });
       },
       onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {
-        const node = e.target as Konva.Group;
+        const node: Konva.Node = e.target;
         const w = Math.max(60, el.width * node.scaleX());
         const h = Math.max(50, el.height * node.scaleY());
         node.scaleX(1);
