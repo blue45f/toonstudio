@@ -82,6 +82,11 @@ export const UnitySpaceDefinitionSchema = z.object({
   background: z
     .object({
       glb: z.string().max(96),
+      // 배경 포맷 명시 (다포맷 설계 §5-5). 없으면 무대(BackgroundLoader)가
+      // glb 참조의 확장자로 추론한다 — 기존 저장 정의는 이 필드가 없어도
+      // 그대로 유효하다. 런타임 로딩 가능 포맷은 glTF 계열(glb/gltf)뿐이며,
+      // 그 외 포맷은 스키마 단계에서부터 싣지 않는다.
+      format: z.enum(["glb", "gltf"]).optional(),
       hideNodes: z.array(z.string().max(64)).max(16).optional(),
       camHeight: z.number().optional(),
       camDist: z.number().optional(),

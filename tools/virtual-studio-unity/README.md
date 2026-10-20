@@ -42,7 +42,11 @@ needed for local editor builds (the initial route in DESIGN §7.1).
    Headless equivalent: `-executeMethod Tsvs.Stage.Editor.BuildWebGL.Build`.
 4. Copy the static catalog next to the build output (DESIGN §6.1):
    `spaces.json` and `spaces/*.glb` into `apps/web/public/unity-space/`
-   (copied from the current `public/godot-space/` set). The stage fetches
+   (copied from the current `public/godot-space/` set). For a multi-file
+   `.gltf` background, copy the whole `spaces/<name>/` folder tree (the
+   `.gltf` plus its `.bin`/texture dependencies, relative structure
+   preserved) instead of a single file — see "Backgrounds: .gltf
+   multi-file serving requirements" under Bundle assets. The stage fetches
    `/unity-space/spaces.json` directly for local boot and boot defaults.
    For editor-only local testing, the same `spaces.json` may be placed in
    `Assets/StreamingAssets/` as a fallback.
@@ -122,6 +126,65 @@ leave. Accordingly:
 - Backgrounds keep flowing through the existing upload + content pipeline
   (the stage just loads the injected URL via glTFast). The current upload
   extension ban list stays in force initially (DESIGN §5.5).
+
+### Editor import procedure for non-glTF bundle formats (formal route)
+
+**Unity WebGL runtime cannot read FBX or OBJ files, and has no runtime
+importer for DAE or .blend either — runtime loading is glTF-family only
+(`.glb` / `.gltf`, via glTFast in `BackgroundLoader`).** Any other bundle
+format reaches the stage exclusively through the editor, as a prefab baked
+into the build. This is the formal intake procedure, not an ad-hoc
+workaround:
+
+1. **FBX / OBJ / DAE — Unity editor native import.** Copy the model (for
+   OBJ, together with its `.mtl` and textures) into this project's
+   `Assets/` tree. The Unity editor imports `.fbx`, `.obj` and `.dae`
+   natively — no external converter and no runtime loader is involved.
+   Fix up import settings (scale, materials) in the editor as needed.
+2. **Turn the imported model into a prefab** under `Assets/` (drag the
+   imported model into a prefab asset; keep the service rule above: the
+   prefab is baked into the WebGL build / StreamingAssets, never exposed
+   as a separately fetchable model file).
+3. **Register the prefab in `PropFactory.Catalog`** — add a catalog entry
+   mapping the prop `kind` used by space definitions to the prefab, in
+   that order (import → prefab → catalog registration). Kinds without a
+   catalog entry keep falling back to the built-in primitive rendering.
+4. **.blend — editor import only when Blender is installed.** When
+   Blender is installed on the editor machine, the Unity editor imports
+   `.blend` files directly (it converts them through Blender / FBX
+   behind the scenes). On machines without Blender, do not attempt a
+   .blend intake: use the FBX or glTF variant of the same asset instead
+   and follow the steps above (FBX) or the glTF route. `.blend` remains a
+   source-only format — no surface loads it at runtime.
+
+Background definitions follow the same boundary: `background.format`
+("glb" | "gltf", optional — inferred from the reference's extension when
+absent) is the only format declaration the stage accepts, and
+`BackgroundLoader` settles any other format to `failed` before attempting
+a load.
+
+### Backgrounds: .gltf multi-file serving requirements
+
+Single-file `.glb` backgrounds are unchanged. A multi-file `.gltf`
+background (JSON + external `.bin` buffers + texture images) additionally
+requires:
+
+- **Folder-tree preservation.** glTFast resolves the `.gltf`'s external
+  `.bin` and texture relative URIs against the main file's URL, so every
+  dependency must be served under the same base with the **original
+  relative folder structure preserved** — including `../Textures/...`
+  upward references and `textures/...` subfolder references. Serving the
+  `.gltf` file alone, or flattening its folder, breaks the load.
+- **Correct MIME mapping** on the serving path: `.gltf` as
+  `model/gltf+json`, `.bin` as `application/octet-stream`, and textures
+  under their normal image types.
+- **Static catalog copies are tree copies.** When a `.gltf` background is
+  used as a static default, the build-procedure catalog copy (step 4)
+  expands from single files (`spaces/*.glb`) to whole folder trees:
+  copy `spaces/<name>/` — the `.gltf` plus all files its reference graph
+  reaches — as one unit into `apps/web/public/unity-space/spaces/<name>/`.
+  The uploaded-background API path is unaffected: it stores a single file
+  in the DB and stays GLB-only by design.
 
 ## Layout of this project
 

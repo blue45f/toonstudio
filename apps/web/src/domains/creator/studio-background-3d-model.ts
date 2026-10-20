@@ -7,6 +7,10 @@ import * as THREE from "three";
 
 import { loadStudioBg3dMeshoptDecoder } from "./bg3d/studio-bg3d-meshopt";
 import {
+  loadStudioBg3dModelByFormat,
+  type StudioBg3dModelFormat as StudioBg3dUnifiedModelFormat,
+} from "./bg3d/studio-bg3d-model-loader";
+import {
   computeStudioBg3dAutoFitScale,
   STUDIO_BG3D_AUTO_FIT_TARGET_SIZE,
 } from "./bg3d/studio-bg3d-model-scale-contract";
@@ -198,35 +202,34 @@ export function applyBg3dFallbackMaterial(root: THREE.Object3D, color: string = 
 }
 
 /**
- * IndexedDB에서 꺼낸 blob을 GLTFLoader(.glb/.gltf)/OBJLoader(.obj)로 파싱해 씬에 넣을 수 있는
- * Object3D 루트를 만든다. StudioVrmPoser.tsx의 loadVrmAsset과 동일하게 로더를 동적 import
- * (three/examples/jsm)해 초기 번들을 무겁게 만들지 않는다.
+ * IndexedDB에서 꺼낸 blob을 통합 로더(loadStudioBg3dModelByFormat)로 파싱해 씬에 넣을 수 있는
+ * Object3D 루트를 만든다. 파싱 자체는 통합 로더가 포맷별 동적 import(three/examples/jsm)로
+ * 수행하므로 초기 번들을 무겁게 만들지 않는다. 지원 포맷은 기존 glb/gltf/obj에 fbx/dae가
+ * 더해졌다.
  *
- * blob: URL은 이미 로컬 메모리에 있는 데이터(방금 IndexedDB에서 꺼낸 값)라, loadVrmAsset과 달리
+ * blob은 이미 로컬 메모리에 있는 데이터(방금 IndexedDB에서 꺼낸 값)라, loadVrmAsset과 달리
  * resolveAssetUrl/HEAD 프리플라이트(HTML 폴백 감지)가 필요 없다 — 그 대상은 배포 오리진이 다를 수
  * 있는 root-relative 정적 경로(/vrm/..)뿐이고, blob: 스킴은 애초에 그 대상이 아니다
  * (loadVrmAsset의 shouldPreflightVrmUrl도 blob:을 프리플라이트 대상에서 제외한다).
  */
-export async function loadBg3dCustomModelFromBlob(blob: Blob, format: Bg3dModelFormat): Promise<THREE.Object3D> {
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    if (format === "obj") {
-      const { OBJLoader } = await import("three/examples/jsm/loaders/OBJLoader.js");
-      const root = await new OBJLoader().loadAsync(objectUrl);
-      applyBg3dFallbackMaterial(root);
-      return root;
-    }
-
-    // GLTFLoader는 .glb(바이너리)/.gltf(JSON) 콘텐츠를 자동 판별하므로 둘을 따로 분기할 필요가 없다.
-    const [{ GLTFLoader }, meshoptDecoder] = await Promise.all([
-      import("three/examples/jsm/loaders/GLTFLoader.js"),
-      loadStudioBg3dMeshoptDecoder(),
-    ]);
-    const gltf = await new GLTFLoader().setMeshoptDecoder(meshoptDecoder).loadAsync(objectUrl);
-    return gltf.scene;
-  } finally {
-    URL.revokeObjectURL(objectUrl);
+export async function loadBg3dCustomModelFromBlob(
+  blob: Blob,
+  // 저장 층의 Bg3dModelFormat(glb/gltf/obj)에 통합 로더가 여는 fbx/dae를 더한 형태.
+  // 시그니처·반환 형태는 기존과 동일하고, 기존 호출자는 그대로 컴파일된다.
+  format: Bg3dModelFormat | "fbx" | "dae",
+): Promise<THREE.Object3D> {
+  // 통합 로더(bg3d/studio-bg3d-model-loader.ts) 위임으로 교체했다. 포맷별 동적 import와
+  // GLTFLoader의 Meshopt 디코더 적용은 통합 로더가 맡고, 이 레거시 경로 고유의 후처리
+  // (obj 폴백 재질)만 여기에 남긴다. 기존 동작과의 차이는 NOTES(web-loader) 참조:
+  // blob: URL + loadAsync 대신 바이트 + parse 계열을 쓰므로 단일 Blob으로 완결되는
+  // 모델에서는 결과가 같고, .gltf의 외부 상대 참조는 애초에 blob: URL로도 해석할 수
+  // 없었으므로 보존 범위에 들지 않는다.
+  const data = await blob.arrayBuffer();
+  const root = await loadStudioBg3dModelByFormat({ data, format: format as StudioBg3dUnifiedModelFormat });
+  if (format === "obj") {
+    applyBg3dFallbackMaterial(root);
   }
+  return root;
 }
 
 /* ── 검증 완료 GLB → Three.js 안전 경계 ─────────────────────────────────────────────
