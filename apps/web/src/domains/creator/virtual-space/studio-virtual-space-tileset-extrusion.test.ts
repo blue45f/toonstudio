@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   drawStudioExtrudedTileset,
@@ -15,7 +16,10 @@ interface PhaserTilesetLike {
   readonly columns: number;
   readonly rows: number;
 }
-const PhaserTileset = createRequire(import.meta.url)("phaser/src/tilemaps/Tileset.js") as
+// Phaser 4의 exports 맵은 내부 모듈의 패키지 경로 접근을 막으므로, 허용된 package.json으로
+// 패키지 위치를 찾고 실제 파일을 절대 경로로 불러온다.
+const phaserRoot = dirname(createRequire(import.meta.url).resolve("phaser/package.json"));
+const PhaserTileset = createRequire(import.meta.url)(join(phaserRoot, "src/tilemaps/Tileset.js")) as
   new (name: string, firstGid: number, tileWidth: number, tileHeight: number, margin: number, spacing: number) => PhaserTilesetLike;
 
 /** 픽셀 값을 정수로 들고 있는 가짜 캔버스. drawImage는 보간 없는 복제로 흉내 낸다. */

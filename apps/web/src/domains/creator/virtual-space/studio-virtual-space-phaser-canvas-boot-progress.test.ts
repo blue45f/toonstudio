@@ -15,7 +15,7 @@ class FakeLoader implements StudioBootLoaderLike {
   totalToLoad = 0;
   totalComplete = 0;
   totalFailed = 0;
-  readonly inflight: { entries: { percentComplete?: number }[] } = { entries: [] };
+  inflight: Set<{ percentComplete?: number }> = new Set();
   private readonly listeners = new Map<string, Array<() => void>>();
   on(event: string, listener: () => void): this {
     this.listeners.set(event, [...(this.listeners.get(event) ?? []), listener]);
@@ -78,13 +78,13 @@ describe("월드 부팅의 진행 신호 묶음", () => {
     boot.watchLoader(loader);
     loader.totalComplete = 1;
     loader.totalFailed = 1;
-    loader.inflight.entries = [{ percentComplete: 0.5 }, { percentComplete: 7 }, { percentComplete: -2 }, {}];
+    loader.inflight = new Set([{ percentComplete: 0.5 }, { percentComplete: 7 }, { percentComplete: -2 }, {}]);
     loader.emit("progress");
     // (완료 1 + 실패 1 + 받는 중 0.5 + 1(상한) + 0 + 0) / 4 = 0.875
     expect(onProgress).toHaveBeenLastCalledWith(88);
     loader.totalComplete = 4;
     loader.totalFailed = 0;
-    loader.inflight.entries = [];
+    loader.inflight = new Set();
     loader.emit("filecomplete");
     expect(onProgress).toHaveBeenLastCalledWith(100);
   });

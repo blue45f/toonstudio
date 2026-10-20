@@ -131,7 +131,7 @@ describe("멀티파트 업로드 라우트의 Multer 이전 인증 가드", () =
   it("스캐너가 알려진 업로드 라우트를 실제로 찾아낸다", () => {
     expect(routes.map((route) => route.id)).toEqual(
       expect.arrayContaining([
-        "modules/studio-godot-space-layout/studio-godot-space-background.controller.ts#StudioGodotSpaceBackgroundController.upload",
+        "modules/studio-unity-space-layout/studio-unity-space-background.controller.ts#StudioUnitySpaceBackgroundController.upload",
         "modules/production-collaboration/production-voice-commentary.controller.ts#ProductionVoiceCommentaryController.create",
         "modules/studio-project-graph/studio-recording-booth-asset.controller.ts#StudioRecordingBoothAssetController.create",
         "modules/studio-project-graph/studio-review-voice-note.controller.ts#StudioReviewVoiceNoteController.create",

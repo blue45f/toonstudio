@@ -921,8 +921,8 @@ importers:
         specifier: ^19.2.0
         version: 19.2.7
       remotion:
-        specifier: 4.0.514
-        version: 4.0.514(react-dom@19.3.1(react@19.2.7))(react@19.2.7)
+        specifier: 4.0.536
+        version: 4.0.536(react-dom@19.3.1(react@19.2.7))(react@19.2.7)
 
   packages/studio-brush-platform:
     dependencies:
@@ -8120,12 +8120,6 @@ packages:
   regexp.prototype.flags@1.5.4:
     resolution: {integrity: sha512-dYqgNSZbDwkaJ2ceRd9ojCGjBq+mOm9LmtXnAnEGyHhN/5R7iDW2TRw3h+o/jCFxus3P2LfWIIiwowAjANm7IA==}
     engines: {node: '>= 0.4'}
-
-  remotion@4.0.514:
-    resolution: {integrity: sha512-uhfvNqzs0v0Sg6+lI2bGpWHZd7fEmMpfJC6r4jR+EZXIPpWwH3VldEeO9BeoSrAEVsrt8l7TKwXxy6/duDO/9g==}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
 
   remotion@4.0.536:
     resolution: {integrity: sha512-e2e1TCk7a2qmTY+ow0Tco1NMY9/m/Vss6eBfh9WkZSlLB5EyTWRnUvLKUK/wYMLHDdlvOfUJ9kqtuQyX6RCNRw==}
@@ -16512,7 +16506,7 @@ snapshots:
       gopd: 1.2.0
       set-function-name: 2.0.2
 
-  remotion@4.0.514(react-dom@19.3.1(react@19.2.7))(react@19.2.7):
+  remotion@4.0.536(react-dom@19.3.1(react@19.2.7))(react@19.2.7):
     dependencies:
       react: 19.2.7
       react-dom: 19.3.1(react@19.2.7)

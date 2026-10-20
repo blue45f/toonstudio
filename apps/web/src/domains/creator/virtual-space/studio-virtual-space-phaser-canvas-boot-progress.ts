@@ -14,7 +14,8 @@ export interface StudioBootLoaderLike {
   readonly totalToLoad: number;
   readonly totalComplete: number;
   readonly totalFailed: number;
-  readonly inflight: { readonly entries: readonly { readonly percentComplete?: number }[] };
+  // Phaser 4부터 내려받는 중 파일 묶음은 Set이다(3의 ProcessQueue가 아니다).
+  readonly inflight: ReadonlySet<{ readonly percentComplete?: number }>;
   on(event: string, listener: () => void): unknown;
 }
 
@@ -55,7 +56,7 @@ export function createStudioBootProgress(options: StudioBootProgressOptions): St
         const total = loader.totalToLoad;
         if (total <= 0) return;
         let partial = 0;
-        for (const file of loader.inflight.entries) partial += Math.min(1, Math.max(0, file.percentComplete || 0));
+        for (const file of loader.inflight) partial += Math.min(1, Math.max(0, file.percentComplete || 0));
         onProgress(Math.round(Math.min(1, (loader.totalComplete + loader.totalFailed + partial) / total) * 100));
       };
       loader.on("fileprogress", noteLoadProgress);

@@ -1,12 +1,16 @@
 import { EventEmitter } from "node:events";
 import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createStudioWorldTileRuntime, StudioWorldTileRuntime, type StudioTileRuntimeBackend, type StudioTileScenePort } from "./studio-virtual-space-tile-runtime";
 import type { StudioTileWorld } from "./studio-virtual-space-tile-chunks";
 
 // 브라우저 전체를 띄우지 않고 설치된 Phaser의 실제 Tiled GID 해석기를 사용한다.
+// Phaser 4의 exports 맵은 내부 모듈의 패키지 경로 접근을 막으므로, 허용된 package.json으로
+// 패키지 위치를 찾고 실제 파일을 절대 경로로 불러온다.
+const phaserRoot = dirname(createRequire(import.meta.url).resolve("phaser/package.json"));
 const parseGid: (value: number) => { gid: number; rotation: number; flipped: boolean }
-  = createRequire(import.meta.url)("phaser/src/tilemaps/parsers/tiled/ParseGID.js");
+  = createRequire(import.meta.url)(join(phaserRoot, "src/tilemaps/parsers/tiled/ParseGID.js"));
 type MapPort = ReturnType<StudioTileScenePort["make"]["tilemap"]>;
 type LayerPort = NonNullable<ReturnType<MapPort["createBlankLayer"]>>;
 

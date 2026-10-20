@@ -33,9 +33,9 @@ export type StudioBundleManifestV2Surface = "web" | "unity-stage" | "offline";
 export const STUDIO_BUNDLE_MANIFEST_V2_SURFACE_FORMAT_PRIORITY: Readonly<
   Record<StudioBundleManifestV2Surface, readonly StudioBundleManifestV2Format[]>
 > = Object.freeze({
-  web: Object.freeze(["glb", "gltf", "fbx", "obj", "dae"]),
-  "unity-stage": Object.freeze(["glb", "gltf"]),
-  offline: Object.freeze(["glb", "gltf", "fbx", "obj", "dae", "blend"]),
+  web: Object.freeze(["glb", "gltf", "fbx", "obj", "dae"] as const),
+  "unity-stage": Object.freeze(["glb", "gltf"] as const),
+  offline: Object.freeze(["glb", "gltf", "fbx", "obj", "dae", "blend"] as const),
 });
 
 /** v1 asset-delivery와 동일한 다운로드 필드 거부 목록. */
