@@ -45,7 +45,7 @@ import {
 } from "./studio-virtual-space-session-position";
 import { isStudioSpatialInviteToken } from "./studio-spatial-invite-context";
 import { verifyStudioSpaceEntryCode, verifyStudioSpatialInvite } from "./studio-virtual-space-access-client";
-import { StudioGodotSpaceEmbed } from "./StudioGodotSpaceEmbed";
+import { StudioUnitySpaceEmbed } from "./StudioUnitySpaceEmbed";
 import { resolveStudioSpaceEngine } from "./studio-space-engine";
 import { STUDIO_CHARACTER_SKINS } from "./studio-virtual-space-character-skins";
 import { STUDIO_SHARED_CURSOR_PALETTE } from "./studio-virtual-space-shared-cursors";
@@ -354,15 +354,15 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
   }
 
   // 무대 엔진 결정 (2D 기본 + 3D 전환): 기본값은 클래식(2D)이고
-  // Godot(3D)는 `?engine=godot` 명시 진입으로만 열린다. 규칙의 정본은
+  // Unity(3D)는 `?engine=unity` 명시 진입으로만 열린다. 규칙의 정본은
   // studio-space-engine.ts: 명시 파라미터가 우선하고, 파라미터가 없으면
   // 로그인·개인·게스트 전 진입에서 클래식이다. 클래식 화면의 전환 배너로
-  // Godot에 들어갈 수 있다.
+  // Unity에 들어갈 수 있다.
   const spaceEngine = resolveStudioSpaceEngine(location.search, {
     signedIn: session.ready && Boolean(session.data),
     personal,
   });
-  if (spaceEngine === "godot") {
+  if (spaceEngine === "unity") {
     const effectiveAvatarIndex = isGuest ? 0 : entryAvatarIndex;
     const skin =
       STUDIO_CHARACTER_SKINS[effectiveAvatarIndex] ?? STUDIO_CHARACTER_SKINS[0];
@@ -383,7 +383,7 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
     // 성공 뒤에만 만들어지고, 서버가 저장된 자격을 거절하면 위 게이트가
     // 세션을 지우므로, 여기 닿은 자격은 살아 있는 자격이다. 자격이 없는
     // 방문자는 기존처럼 로컬 무대(localOnly)에 머문다.
-    const godotGuestAccess: StudioRealtimeTicketGuestAccess | undefined =
+    const unityGuestAccess: StudioRealtimeTicketGuestAccess | undefined =
       isGuest && guestSessionForSpace
         ? isStudioSpatialInviteToken(guestSessionForSpace.inviteToken)
           ? {
@@ -399,21 +399,21 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
             }
         : undefined;
     return (
-      <StudioGodotSpaceEmbed
+      <StudioUnitySpaceEmbed
         workId={decodedProjectId}
         displayName={publicNickname}
         colorHex={colorHex}
         skinKey={skin?.key}
-        localOnly={personal || (!session.data && !godotGuestAccess)}
-        guestAccess={godotGuestAccess}
+        localOnly={personal || (!session.data && !unityGuestAccess)}
+        guestAccess={unityGuestAccess}
         onExitToClassic={exitToClassic}
       />
     );
   }
 
-  const enterGodot = () => {
+  const enterUnity = () => {
     const params = new URLSearchParams(location.search);
-    params.set("engine", "godot");
+    params.set("engine", "unity");
     const value = params.toString();
     navigate({ pathname: location.pathname, search: value ? `?${value}` : "" });
   };
@@ -431,9 +431,9 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
         <button
           type="button"
           className="whitespace-nowrap text-xs font-bold underline underline-offset-4"
-          onClick={enterGodot}
+          onClick={enterUnity}
         >
-          {bt("새 스페이스(Godot)로 전환", "Switch to the new space (Godot)")}
+          {bt("새 스페이스(Unity)로 전환", "Switch to the new space (Unity)")}
         </button>
       </div>
       <StudioLiveCollaborationProvider
