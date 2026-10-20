@@ -87,7 +87,7 @@ jobs:
         run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
       - name: Restore ESLint result cache
         id: eslint-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: node_modules/.cache/eslint
           key: core-eslint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'eslint.config.mjs') }}-${{ github.sha }}
@@ -109,7 +109,7 @@ jobs:
         run: pnpm run verify:studio-manual-docs
       - name: Save ESLint result cache on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.eslint-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: node_modules/.cache/eslint
           key: core-eslint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'eslint.config.mjs') }}-${{ github.sha }}
@@ -157,7 +157,7 @@ jobs:
         run: pnpm run check:studio-eager-graph
       - name: Restore TypeScript incremental state
         id: typescript-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             **/*.tsbuildinfo
@@ -173,7 +173,7 @@ jobs:
         run: pnpm run check:type-coverage
       - name: Save TypeScript incremental state on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.typescript-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             **/*.tsbuildinfo

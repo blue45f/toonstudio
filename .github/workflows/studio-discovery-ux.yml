@@ -163,7 +163,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --prefer-offline
       - name: Cache drawing verification browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-drawing-three-engines-${{ hashFiles('pnpm-lock.yaml') }}

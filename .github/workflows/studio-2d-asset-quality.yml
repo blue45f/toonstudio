@@ -68,7 +68,7 @@ jobs:
         run: pnpm exec eslint apps/web/src/domains/creator/studio-2d-*.ts apps/web/src/domains/creator/Studio2d*.tsx apps/web/src/domains/creator/studio-bg-scenes.ts apps/web/src/domains/creator/StudioSceneToolPopoverBody.tsx apps/web/src/domains/creator/studio-page-lazy-ui.ts scripts/studio-2d-*.mjs
       - name: Cache Playwright Chromium
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
