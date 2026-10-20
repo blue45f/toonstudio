@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference path="./shared/types/webgpu-flag-constants.d.ts" />
 
 import "./shared/types/vendor/pigment-libraries";
 

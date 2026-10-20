@@ -1,5 +1,5 @@
 /**
- * rapier provider(보조 엔진, 소품·접지·접촉용): `@dimforge/rapier3d-deterministic-compat` 0.19.3을 동적 import해
+ * rapier provider(보조 엔진, 소품·접지·접촉용): `@dimforge/rapier3d-deterministic-compat` 0.21.0을 동적 import해
  * 체인을 kinematic 루트 + dynamic 구(ball) + spherical ImpulseJoint로, 캡슐 충돌체를 kinematic capsule로 만든다.
  *
  * 결정성: 같은 버전·삽입 순서(체인 id 사전순, 관절 루트→말단, 캡슐 본 이름순)·고정 timestep·`takeSnapshot()` SHA-256.

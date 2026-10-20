@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { parsePnpmLicenseInventory } from "./generate-third-party-notices.mjs";
 
-function packageRecord(name, version = "4.0.514") {
+function packageRecord(name, version = "4.0.536") {
   return {
     name,
     versions: [version],
@@ -12,7 +12,7 @@ function packageRecord(name, version = "4.0.514") {
 }
 
 describe("Remotion production license boundary", () => {
-  it("maps only the reviewed 4.0.514 packages onto the custom license", () => {
+  it("maps only the reviewed 4.0.536 packages onto the custom license", () => {
     const inventory = parsePnpmLicenseInventory(JSON.stringify({
       Unknown: [
         packageRecord("@remotion/player"),
@@ -28,12 +28,12 @@ describe("Remotion production license boundary", () => {
       {
         name: "@remotion/player",
         license: "Remotion License",
-        versions: ["4.0.514"],
+        versions: ["4.0.536"],
       },
       {
         name: "remotion",
         license: "Remotion License",
-        versions: ["4.0.514"],
+        versions: ["4.0.536"],
       },
     ]);
   });

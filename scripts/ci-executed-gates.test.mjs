@@ -449,10 +449,10 @@ test("PR caches restore without paying cache-save post steps", () => {
     ["typecheck", "typescript-cache"],
   ]) {
     const block = job(name);
-    assert.match(block, new RegExp(`id: ${cacheId}\\n\\s+uses: actions/cache/restore@v4`));
-    assert.match(block, /uses: actions\/cache\/save@v4/);
+    assert.match(block, new RegExp(`id: ${cacheId}\\n\\s+uses: actions/cache/restore@v\\d+`));
+    assert.match(block, /uses: actions\/cache\/save@v\d+/);
     assert.match(block, /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main'/);
-    assert.doesNotMatch(block, /uses: actions\/cache@v4/);
+    assert.doesNotMatch(block, /uses: actions\/cache@v\d+/);
   }
 });
 

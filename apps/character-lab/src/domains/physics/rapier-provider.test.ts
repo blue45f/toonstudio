@@ -12,7 +12,7 @@ describe("physics/rapier-provider (Node 실제 init)", () => {
       expect(status.status).toBe("active");
       if (status.status === "active") {
         expect(status.deterministic).toBe(true);
-        expect(status.versionLabel).toContain("0.19");
+        expect(status.versionLabel).toContain("0.21");
       }
       const chains = [chainAnchorFixture({ id: "b", root: [0.05, 1.72, 0], segments: 4 }), chainAnchorFixture({ id: "a", root: [-0.05, 1.72, 0], segments: 3, direction: [-0.3, -1, 0] })];
       provider.setChains(chains, [headColliderFixture()]);
