@@ -40,6 +40,15 @@ namespace Tsvs.Stage
         /// the stage.
         /// </summary>
         [JsonProperty("glb")] public string Glb;
+        /// <summary>
+        /// Optional explicit format of the <see cref="Glb"/> reference:
+        /// "glb" | "gltf". When absent (null — the case for every definition
+        /// written before this field existed), BackgroundLoader infers the
+        /// format from the Glb reference's file extension. Only glTF-family
+        /// formats are loadable at runtime; any other value is rejected
+        /// before a load is attempted.
+        /// </summary>
+        [JsonProperty("format")] public string Format;
         /// <summary>Node names inside the GLB to hide after load (max 16).</summary>
         [JsonProperty("hideNodes")] public string[] HideNodes;
         [JsonProperty("camHeight")] public float? CamHeight;

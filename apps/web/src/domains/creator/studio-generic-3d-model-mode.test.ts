@@ -135,7 +135,7 @@ describe("generic 3D model manifest", () => {
     expect(isStudioGeneric3dSourceFormat("glb")).toBe(true);
     expect(isStudioGeneric3dSourceFormat("obj-mtl")).toBe(true);
     expect(isStudioGeneric3dSourceFormat("vrm")).toBe(false);
-    expect(isStudioGeneric3dSourceFormat("fbx")).toBe(false);
+    expect(isStudioGeneric3dSourceFormat("fbx")).toBe(true);
     expect(() => createStudioGeneric3dGlbManifest({
       name: "avatar.vrm",
       sourceFormat: "vrm" as never,

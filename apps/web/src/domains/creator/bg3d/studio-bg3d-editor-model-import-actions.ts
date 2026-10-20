@@ -294,9 +294,11 @@ export function createStudioBg3dModelImportActions(
         path.toLocaleLowerCase("en-US").endsWith(".mtl")
       );
       plannedSourceFormats = Object.freeze(importPlan.items.map((item) => {
-        if (item.format === "gltf") return "gltf";
         if (item.format === "obj") return hasSelectedMtl ? "obj-mtl" : "obj";
-        return "glb";
+        // STUDIO_GENERIC_3D_SOURCE_FORMATS가 임포트 1차 포맷 9종을 전부 포함하게
+        // 확장됐으므로, 나머지 포맷은 원래 포맷 그대로 보존한다. 이전에는 열거에
+        // 없어 전부 "glb"로 뭉개졌다 (감사 §8-4). glb/gltf/obj의 기존 결과는 동일하다.
+        return item.format;
       }));
       plannedSkpSourcePaths = Object.freeze(
         importPlan.items.map((item) => (item.format === "skp" ? item.primaryPath : null)),

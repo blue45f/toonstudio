@@ -47,6 +47,12 @@ const FORMAT_LABELS: Readonly<Record<StudioGeneric3dModelManifest["sourceFormat"
     gltf: "glTF → GLB",
     obj: "OBJ",
     "obj-mtl": "OBJ + MTL",
+    fbx: "FBX → GLB",
+    dae: "DAE → GLB",
+    stl: "STL → GLB",
+    ply: "PLY → GLB",
+    "3ds": "3DS → GLB",
+    skp: "SKP → GLB",
   });
 
 const RIGHTS_LABELS: Readonly<Record<StudioGeneric3dModelManifest["rights"]["status"], string>> =

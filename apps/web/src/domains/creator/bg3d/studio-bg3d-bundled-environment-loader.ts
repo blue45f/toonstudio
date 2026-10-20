@@ -1,3 +1,5 @@
+import type * as THREE from "three";
+
 import {
   getStudioBg3dEnvironmentAsset,
   type StudioBg3dEnvironmentAsset,
@@ -143,4 +145,53 @@ export async function loadStudioBg3dBundledEnvironmentSource(
     bytes: Uint8Array.from(source.bytes),
     mimeType: DEFAULT_MIME,
   });
+}
+
+/* ── 매니페스트 v2 디스크립터 기반 다포맷 환경 로드 (신규 경로) ─────────────────────
+   위쪽의 기존 경로는 카탈로그 GLB 바이트를 fetch해 검증 파이프라인(model-library →
+   검증 → admission)으로 넘기는 전용 경로이며 여기서 한 줄도 바꾸지 않는다.
+   아래 신규 경로는 매니페스트 v2 소비 모듈(studio-bundle-manifest-v2.ts)이 만든
+   로드 디스크립터를 통합 로더(studio-bg3d-model-loader.ts)로 여는 별도 경로다.
+   디스크립터 타입을 이 파일이 자체 선언하는 이유: 매니페스트 모듈을 여기서 import하면
+   소비 모듈 ↔ 로더 모듈 간 순환이 생길 수 있어, 구조적으로 호환되는 최소 형태만
+   선언하고 실제 디스크립터 객체를 그대로 받는다 (structural typing). */
+
+/** 매니페스트 v2 로드 디스크립터와 구조 호환되는 최소 형태 (자체 선언). */
+export interface StudioBg3dBundledEnvironmentModelDescriptor {
+  readonly format: "glb" | "gltf" | "fbx" | "obj" | "dae";
+  readonly primaryUrl: string;
+  readonly baseUrl?: string;
+  readonly resolveDependency?: (relativePath: string) => string | null | undefined;
+}
+
+export interface StudioBg3dBundledEnvironmentModelOptions {
+  readonly signal?: AbortSignal;
+  /** OBJ 디스크립터와 함께 서빙되는 MTL의 URL. */
+  readonly mtlUrl?: string;
+}
+
+/**
+ * 매니페스트 v2 디스크립터가 가리키는 환경 모델을 통합 로더로 열어 Object3D 루트를
+ * 반환한다. 기존 GLB 검증 경로와 달리 이 경로는 매니페스트가 서빙하는 신뢰 에셋 전용
+ * 이며, 바이트 검증·admission을 거치지 않는다 (설계 §3-1의 경계 — 사용자 업로드에는
+ * 이 경로를 쓰지 않는다). blend 같은 런타임 불가 포맷은 디스크립터 타입 단계에서
+ * 이미 걸러지므로 여기로 들어오지 않는다.
+ */
+export async function loadStudioBg3dBundledEnvironmentModelFromDescriptor(
+  descriptor: StudioBg3dBundledEnvironmentModelDescriptor,
+  options: StudioBg3dBundledEnvironmentModelOptions = {},
+): Promise<THREE.Object3D> {
+  throwIfAborted(options.signal);
+  const { loadStudioBg3dModelByFormat } = await import("./studio-bg3d-model-loader");
+  const root = await loadStudioBg3dModelByFormat(
+    { url: descriptor.primaryUrl, format: descriptor.format },
+    {
+      baseUrl: descriptor.baseUrl,
+      resolveDependency: descriptor.resolveDependency,
+      mtlUrl: options.mtlUrl,
+      signal: options.signal,
+    },
+  );
+  throwIfAborted(options.signal);
+  return root;
 }
