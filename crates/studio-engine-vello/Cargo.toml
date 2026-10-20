@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 vello_cpu = "0.3.0"
 # V12 WebGPU wasm PoC lane — optional, excluded from default wasm-pack builds.
-vello = { version = "0.10", optional = true }
+vello = { version = "0.11", optional = true }
 # Real sparse-strip hybrid renderer; product use is gated by explicit preflight.
 vello_hybrid = { version = "0.2", optional = true, default-features = false, features = ["wgpu"] }
 # V12 Velato lane — Lottie(bodymovin) -> vello Scene lowering; velato 0.12.0
@@ -94,7 +94,7 @@ wasm-opt = false
 # velato: tests/lottie_parity.rs가 src/lottie.rs를 #[path]로 포함해 기본
 # 피처에서도 Lottie 레인을 네이티브 검증한다(gpu_scene.rs와 같은 패턴).
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-vello = "0.10"
+vello = "0.11"
 velato = "0.12"
 pollster = "0.4"
 # V12 lane 5 재개 게이트 2단계: tests/wgsl_variant_validation.rs가 커밋 WGSL
