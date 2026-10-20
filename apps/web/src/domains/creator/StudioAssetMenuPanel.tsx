@@ -21,13 +21,20 @@ import {
 import { Suspense, useEffect, useState } from "react";
 
 import {
+  LazyStudioBundleAssetLibraryPanel,
+  LazyStudioCc0AssetLibraryPanel,
+  LazyStudioCommunityMarketplacePanel,
+  LazyStudioCreatorPackMarketplacePanel,
+  LazyStudioOriginalAssetMarketplacePanel,
+  preloadStudioAssetMarketplacePanels,
+} from "./asset-menu/studio-asset-marketplace-lazy-panels";
+import {
   createStudioAssetFavoriteId,
   favoriteFirst,
   favoriteOnly as filterFavoriteOnly,
   isStudioAssetFavorite,
 } from "./studio-asset-favorites";
 import { writeStudioAssetDragPayload } from "./studio-insert-drag-writer";
-import { createStudioIntentLazyLoader } from "./studio-intent-lazy-loader";
 import {
   evaluateStudioMarketplacePublishRights,
   type StudioMarketplaceOrigin,
@@ -59,7 +66,6 @@ import {
 } from "@/shared/lib/creator-asset-contract";
 import { cx } from "@/shared/lib/cx";
 import { useT } from "@/shared/lib/i18n";
-import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 export type StudioAssetTab = "mine" | "community";
 export type StudioAssetSortOrder = "newest" | "recent" | "frequency" | "popular" | "name" | "size";
@@ -82,65 +88,6 @@ function localizeText(
 ): string {
   const translated = t(key, params, fallback);
   return translated === key ? fallback : translated;
-}
-
-const studioCc0AssetLibraryLoader = createStudioIntentLazyLoader(() =>
-  import("./StudioCc0AssetLibraryPanel").then((module) => ({
-    default: module.StudioCc0AssetLibraryPanel,
-  }))
-);
-
-const studioBundleAssetLibraryLoader = createStudioIntentLazyLoader(() =>
-  import("./StudioBundleAssetLibraryPanel").then((module) => ({
-    default: module.StudioBundleAssetLibraryPanel,
-  }))
-);
-
-const studioOriginalAssetMarketplaceLoader = createStudioIntentLazyLoader(() =>
-  import("./StudioOriginalAssetMarketplacePanel").then((module) => ({
-    default: module.StudioOriginalAssetMarketplacePanel,
-  }))
-);
-const studioCreatorPackMarketplaceLoader = createStudioIntentLazyLoader(() =>
-  import("./StudioCreatorPackMarketplacePanel").then((module) => ({
-    default: module.StudioCreatorPackMarketplacePanel,
-  }))
-);
-const studioCommunityMarketplaceLoader = createStudioIntentLazyLoader(() =>
-  import("./StudioCommunityMarketplacePanel").then((module) => ({
-    default: module.StudioCommunityMarketplacePanel,
-  }))
-);
-
-const LazyStudioCc0AssetLibraryPanel = lazyRetry(
-  studioCc0AssetLibraryLoader.load,
-  "StudioCc0AssetLibraryPanel"
-);
-
-const LazyStudioBundleAssetLibraryPanel = lazyRetry(
-  studioBundleAssetLibraryLoader.load,
-  "StudioBundleAssetLibraryPanel"
-);
-
-const LazyStudioOriginalAssetMarketplacePanel = lazyRetry(
-  studioOriginalAssetMarketplaceLoader.load,
-  "StudioOriginalAssetMarketplacePanel"
-);
-const LazyStudioCreatorPackMarketplacePanel = lazyRetry(
-  studioCreatorPackMarketplaceLoader.load,
-  "StudioCreatorPackMarketplacePanel"
-);
-const LazyStudioCommunityMarketplacePanel = lazyRetry(
-  studioCommunityMarketplaceLoader.load,
-  "StudioCommunityMarketplacePanel"
-);
-
-function preloadStudioAssetMarketplacePanels(): void {
-  studioCc0AssetLibraryLoader.preload();
-  studioBundleAssetLibraryLoader.preload();
-  studioOriginalAssetMarketplaceLoader.preload();
-  studioCreatorPackMarketplaceLoader.preload();
-  studioCommunityMarketplaceLoader.preload();
 }
 
 /**

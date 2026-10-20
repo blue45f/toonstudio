@@ -24,6 +24,13 @@ const assetMenuSource = readFileSync(
   new URL("./StudioAssetMenuPanel.tsx", import.meta.url),
   "utf8",
 );
+const assetMenuBoundarySource = readFileSync(
+  new URL(
+    "./asset-menu/studio-asset-marketplace-lazy-panels.tsx",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const assetPopoverSource = readFileSync(
   new URL("./StudioAssetToolPopoverBody.tsx", import.meta.url),
   "utf8",
@@ -140,8 +147,10 @@ describe("StudioCommunityMarketplacePanel", () => {
     expect(assetMenuSource).not.toContain(
       'from "./StudioCommunityMarketplacePanel"',
     );
-    expect(assetMenuSource).toContain(
-      'import("./StudioCommunityMarketplacePanel")',
+    // 동적 import는 지연 경계 모듈(asset-menu/)에 있다. 문자열을 그대로
+    // 쓰면 경계 스캐너가 테스트 파일의 문자열까지 import로 세므로 정규식으로 단언한다.
+    expect(assetMenuBoundarySource).toMatch(
+      /import\("\.\.\/StudioCommunityMarketplacePanel"\)/u,
     );
     expect(assetMenuSource).toContain("<LazyStudioCommunityMarketplacePanel");
     expect(assetMenuSource).toContain("initialOpen");
