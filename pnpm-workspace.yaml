@@ -65,6 +65,10 @@ overrides:
   fastify: '>=5.7.2'
   'fast-uri@>=3.0.0 <3.1.8': 3.1.8
   'socket.io-parser@>=4.0.0 <4.2.7': 4.2.7
+  # @nestjs/platform-socket.io 가 socket.io 4.8.3 을 정확히 고정해 apps/api 의 직접
+  # 의존성(4.8.4)과 두 벌이 되면 IoAdapter 의 Server 타입이 서로 호환되지 않아 api
+  # 빌드가 깨진다. 단일 버전으로 수렴시킨다.
+  socket.io: '4.8.4'
   'minimatch@3.1.5>brace-expansion': 5.0.12
   'brace-expansion@>=3.0.0 <5.0.12': 5.0.12
   'node-forge': '>=1.4.0'

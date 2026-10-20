@@ -1,5 +1,5 @@
 import { Download, PackageCheck, RotateCcw, Square } from "lucide-react";
-import { useEffect, useId, useRef } from "react";
+import { useId, useLayoutEffect, useRef } from "react";
 
 import { Button } from "@/shared/components/ui/button";
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -58,9 +58,11 @@ export function SubmissionBuildPanel({ state, saveState, canBuild, errorCount, s
   const progressId = `${baseId}-progress`;
   // 단계가 바뀌면 방금 누른 단추가 사라지므로(만들기 → 취소 → 저장), 키보드 사용자가 길을 잃지 않게
   // 새 단계의 주된 단추로 초점을 옮긴다. 처음 그릴 때는 초점을 가져오지 않는다.
+  // 레이아웃 이펙트에서 옮겨야 단계 전이와 같은 커밋 안에서 초점이 확정된다. 패시브 이펙트로 미루면
+  // 전이 직후 짧은 구간에 초점이 본문에 남고, 부하가 큰 환경에서는 그 구간이 관측 가능해진다.
   const primaryRef = useRef<HTMLButtonElement>(null);
   const previousStatus = useRef(state.status);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (previousStatus.current === state.status) return;
     previousStatus.current = state.status;
     primaryRef.current?.focus();

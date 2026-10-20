@@ -5,7 +5,7 @@
  * - 원시 Tailwind 팔레트(`bg-red-500`), 이름 있는 흑백(`bg-white`), 색 리터럴 임의값(`bg-[#fff]`)
  * - 선언되지 않은 테마 색 토큰(`bg-accent-hover`, `text-fg-4` 처럼 @theme 에 없어 CSS 가 생성되지 않는 클래스)
  *
- * 규칙의 출처는 ESLint `shadcn/no-raw-colors`(@shadcn/lint 0.2.0)다. 그 플러그인은 내부 상수를 내보내지 않아
+ * 규칙의 출처는 ESLint `shadcn/no-raw-colors`(@shadcn/lint 0.2.1)다. 그 플러그인은 내부 상수를 내보내지 않아
  * 접두어 정규식과 팔레트 이름을 여기에 옮겼고, design-tokens.test.mjs 가 설치된 플러그인 파일과 같은지 대조한다.
  * "선언 목록"은 린트 규칙과 같은 정본인 globals.css 의 `@theme` 블록(`--color-*`)이다.
  *
@@ -16,7 +16,7 @@
 /** @shadcn/lint 0.2.0 dist/similar.js 의 COLOR_PREFIX 와 같다(테스트가 대조). */
 export const COLOR_PREFIX = /^(?:text-shadow|inset-shadow|inset-ring|drop-shadow|scrollbar-(?:thumb|track)|ring-offset|border(?:-[trblxyse]|-[bi][se])?|divide(?:-[xy])?|mask-(?:linear|radial|conic|[trblxy])-(?:from|to)|bg|text|ring|outline|fill|stroke|from|via|to|accent|caret|decoration|placeholder|shadow)-/;
 
-/** @shadcn/lint 0.2.0 의 PALETTE 와 같다(테스트가 대조). */
+/** @shadcn/lint 0.2.1 의 PALETTE 와 같다(테스트가 대조). */
 export const PALETTE_NAMES = Object.freeze([
   "slate", "gray", "zinc", "neutral", "stone", "mauve", "olive", "mist", "taupe",
   "red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan",
