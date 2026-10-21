@@ -50,8 +50,27 @@ import "./product-tour-player.css";
 const TOUR_AUDIO_CONTEXT = "product-tour-video";
 const CHAPTER_STARTS: readonly number[] = PRODUCT_TOUR.chapters.map((chapter) => chapter.start);
 const DEFAULT_BGM_VOLUME = 0.48;
+const STARTUP_FALLBACK_TIMEOUT_MS = 45_000;
 
 type PlayerPhase = "idle" | "loading" | "ready" | "failed";
+
+/**
+ * Remotion 내부 에러 경계는 컴포지션 렌더 오류를 errorFallback으로 교체할 뿐이라
+ * 앱이 그 사실을 모르면 깨진 화면(기본 ⚠️)만 남는다. 마운트 직후 한 번만 보고해
+ * 호출자가 호환 MP4 폴백으로 전환하게 한다.
+ */
+function ProductTourCompositionErrorReporter({ error, onReport }: {
+  readonly error: Error;
+  readonly onReport: (error: Error) => void;
+}) {
+  const reportedRef = useRef(false);
+  useEffect(() => {
+    if (reportedRef.current) return;
+    reportedRef.current = true;
+    onReport(error);
+  }, [error, onReport]);
+  return null;
+}
 
 function formatMegabytes(bytes: number): string {
   const value = bytes / (1024 * 1024);
@@ -128,6 +147,15 @@ export function ProductTourPlayer({ locale, controllerRef }: {
   const handleAudioIssue = useCallback((issue: ProductTourAudioIssue) => {
     switchToFallback(`${issue.channel} runtime audio failed: ${issue.message}`);
   }, [switchToFallback]);
+
+  const handleCompositionError = useCallback((error: Error) => {
+    setPhase("failed");
+    switchToFallback(error.message || bi("Remotion 재생 중 알 수 없는 오류가 발생했습니다.", "An unknown Remotion playback error occurred."));
+  }, [bi, switchToFallback]);
+
+  const renderCompositionError = useCallback((info: { readonly error: Error }) => (
+    <ProductTourCompositionErrorReporter error={info.error} onReport={handleCompositionError} />
+  ), [handleCompositionError]);
 
   const compositionProps = useMemo<ProductTourRemotionCompositionProps>(() => ({
     locale,
@@ -208,6 +236,20 @@ export function ProductTourPlayer({ locale, controllerRef }: {
     playerRef.current?.pause();
     releaseSiteMusic();
   }, [releaseSiteMusic]);
+
+  // 로딩이 비정상적으로 길어지면(미디어 준비가 끝나지 않는 경우) 같은 위치에서
+  // 호환 MP4로 넘긴다. 정상 탐색·버퍼링은 이보다 훨씬 짧게 끝나고, 오디오 준비
+  // 자체의 실패는 onAudioIssue가 먼저 처리하므로 이 타이머는 마지막 안전망이다.
+  useEffect(() => {
+    if (!started || useFallback || phase !== "loading") return;
+    const timer = window.setTimeout(() => {
+      switchToFallback(bi(
+        "재생 준비가 너무 오래 걸려 호환 MP4로 전환합니다.",
+        "Playback took too long to start, so it switched to compatible MP4 playback.",
+      ));
+    }, STARTUP_FALLBACK_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [bi, phase, started, switchToFallback, useFallback]);
 
   const enableSound = useCallback((event?: SyntheticEvent) => {
     const player = playerRef.current;
@@ -359,6 +401,7 @@ export function ProductTourPlayer({ locale, controllerRef }: {
                   audioLatencyHint="playback"
                   sampleRate={48_000}
                   acknowledgeRemotionLicense
+                  errorFallback={renderCompositionError}
                 />
               ) : (
                 <button

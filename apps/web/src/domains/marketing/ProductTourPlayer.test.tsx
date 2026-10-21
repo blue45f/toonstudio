@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -219,6 +220,27 @@ describe("ProductTourPlayer Remotion runtime", () => {
       expect(container.querySelector("video")).not.toBeNull();
     });
     expect(container.textContent).toContain("호환 MP4");
+  });
+
+  it("falls back to MP4 when the composition render itself fails", async () => {
+    const { container } = renderPlayer("ko");
+    fireEvent.click(container.querySelector<HTMLButtonElement>(".product-tour-player__poster")!);
+    playerHarness.currentFrame = 191 * 30;
+
+    const errorFallback = playerHarness.lastProps?.errorFallback as
+      | ((info: { readonly error: Error }) => ReactNode)
+      | undefined;
+    expect(typeof errorFallback).toBe("function");
+    // Player 내부 에러 경계가 렌더 오류를 이 fallback으로 교체한다. 앱은 기본 ⚠️ 화면을
+    // 남기지 않고 그 보고를 받아 호환 MP4로 전환해야 한다.
+    render(errorFallback!({
+      error: new Error("useCurrentFrame can only be called inside a component that was passed to <Player>"),
+    }));
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="remotion-player"]')).toBeNull();
+      expect(container.querySelector("video")).not.toBeNull();
+    });
   });
 
   it("falls back to MP4 when a runtime audio element fails", async () => {
