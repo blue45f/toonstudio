@@ -39,16 +39,18 @@
         background:
           radial-gradient(720px 380px at 85% -4%, rgba(255, 90, 44, 0.13), transparent 65%),
           radial-gradient(560px 320px at 4% 104%, rgba(62, 198, 184, 0.07), transparent 65%); }
-.ir-present .scenes { position: absolute; inset: 0; z-index: 1; }
-.ir-present .scene { position: absolute; inset: 0;
+.ir-present .scenes { position: absolute; inset: 0; z-index: 1; isolation: isolate; }
+.ir-present .scene { position: absolute; inset: 0; z-index: 0;
         overflow-y: auto; overflow-x: hidden;
-        padding: 44px 0 calc(var(--hud-h) + 34px);
+        padding: 44px 0 0;
         opacity: 0; visibility: hidden; transform: translateX(34px);
+        contain: layout paint; pointer-events: none;
         transition: opacity .45s ease, transform .45s ease, visibility 0s linear .45s;
         scrollbar-width: thin; scrollbar-color: var(--surface-2) transparent; }
 .ir-present .scene.from-left { transform: translateX(-34px); }
-.ir-present .scene.active { opacity: 1; visibility: visible; transform: none; transition: opacity .45s ease, transform .45s ease; z-index: 2; }
-.ir-present .scene-inner { width: min(1180px, 100% - 48px); margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.ir-present .scene.active { opacity: 1; visibility: visible; transform: none; transition: opacity .45s ease, transform .45s ease; z-index: 2; pointer-events: auto; }
+.ir-present .scene-inner { width: min(1180px, 100% - 48px); margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; justify-content: center;
+        padding-bottom: calc(var(--hud-h) + 34px); }
 .ir-present .scene-inner.top { justify-content: flex-start; }
 .ir-present .rv { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
 .ir-present .scene.active .rv.in { opacity: 1; transform: none; }

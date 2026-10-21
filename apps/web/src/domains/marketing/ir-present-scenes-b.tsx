@@ -135,7 +135,7 @@ export const SCENE_NODES_B: ReactNode[] = [
           <div className="body">
             <div className="no">DEEP 03 · CHARACTER · POSE · 3D</div>
             <h3>구도는 3D로 탐색하고, 제작은 2D로</h3>
-            <p>어려운 구도는 감으로 그리지 않아요. <b>캐릭터와 포즈, 배경과 카메라를 3D 장면으로 구성</b>해서 구도를 먼저 확정하고, 그 결과를 현재 컷의 2D 제작으로 연결합니다. 캐릭터 셰이퍼의 15개 슬롯 프리셋으로 인물 구성도 빠르게 잡아요.</p>
+            <p>어려운 구도는 감으로 그리지 않아요. <b>캐릭터와 포즈, 배경과 카메라를 3D 장면으로 구성</b>해서 구도를 먼저 확정하고, 그 결과를 현재 컷의 2D 제작으로 연결합니다. 인물은 <b>3D 캐릭터 셰이퍼</b>로 체형과 포즈를 직접 조정해 세우고, 15개 슬롯 프리셋으로 구성도 빠르게 잡아요.</p>
           </div>
         </article>
         <article className="deep-card rv">
@@ -226,7 +226,7 @@ export const SCENE_NODES_B: ReactNode[] = [
         <div>
           <div className="t-label">Responsible AI</div>
           <h3>AI는 조수예요.<br />작가는 사람이 결정합니다</h3>
-          <p>툰스튜디오의 AI는 반복 업무를 줄이는 보조 역할만 해요. 작품의 방향과 표현, 최종 승인, 그리고 권리는 언제나 창작자에게 있습니다. 특정 AI 서비스에 종속되지 않도록 <b>BYOK(내 키 사용)</b>와 <b>로컬 모델</b>도 선택할 수 있게 했어요.</p>
+          <p>툰스튜디오의 AI는 반복 업무를 줄이는 보조 역할만 해요. 작품의 방향과 표현, 최종 승인, 그리고 권리는 언제나 창작자에게 있습니다. 특정 AI 서비스에 종속되지 않도록 <b>BYOK(내 키 사용)</b>와 <b>로컬 모델</b>도 선택할 수 있게 했어요. 선화에 색을 입히는 <b>AI 자동 채색</b>처럼, 손이 많이 가는 채색 작업도 AI가 돕고 있어요.</p>
         </div>
         <ul className="ai-rules">
           <li><span className="mark">1</span><span><b>AI의 자리</b> — 배경 정리, 소재 추천, 반복 편집 같은 보조 업무까지만</span></li>
