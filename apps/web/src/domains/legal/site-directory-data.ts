@@ -472,6 +472,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/features", "기능 한눈에 보기", "Features at a glance", "툰스튜디오의 모든 기능을 카테고리별로 한눈에 확인", "Browse every ToonStudio feature by category at a glance"),
       destination("/about", "서비스 소개", "About ToonStudio", "핵심 기능·제작 흐름·역할별 시작점과 소개 영상을 한눈에", "Core features, the production flow, starting points by role and intro films at a glance"),
       destination("/ir", "IR · 투자 소개", "IR · Investor brief", "핵심 메시지·제품 역량·시장·BM·검증 로드맵과 IR 영상을 발표 흐름 한 페이지로", "The pitch in one page: key message, product capabilities, market, business model, validation roadmap and the IR film"),
+      destination("/ir/present", "IR 발표 플레이어", "IR presentation player", "24개 씬으로 구성된 전체 IR 발표와 씬별 내레이션·배경음", "Full 24-scene IR presentation with scene narration and background audio"),
       destination(
         "/about/workflow",
         "웹툰 제작 과정",
