@@ -121,7 +121,8 @@ describe("MemoryFinderSection — 결과의 정직한 표기", () => {
     expect(within(row).getByText("확인된 일치")).toBeTruthy();
     // 띄어쓰기를 빼야만 맞은 것이라 근거 칩이 그 사실을 그대로 말한다 — "제목에 ‘혼자만레벨’" 이라고 쓰지 않는다.
     expect(within(row).getByText("제목에서 띄어쓰기를 빼면 ‘혼자만레벨’")).toBeTruthy();
-    expect(document.activeElement?.textContent).toContain("제목 조각과 맞는 작품");
+    // 초점은 passive effect 에서 옮기므로 제목이 보인 직후에는 아직 옮겨지기 전일 수 있다.
+    await waitFor(() => expect(document.activeElement?.textContent).toContain("제목 조각과 맞는 작품"));
   });
 
   it("머리말 편수는 가장 확실한 단계만 세고 나머지는 따로 묶어 보여 준다", async () => {
@@ -350,7 +351,8 @@ describe("MemoryFinderSection — 초점과 화면 읽기", () => {
     submit();
 
     const heading = await screen.findByRole("heading", { level: 3 });
-    expect(document.activeElement).toBe(heading);
+    // 초점은 passive effect 에서 옮기므로 제목이 보인 직후에는 아직 옮겨지기 전일 수 있다.
+    await waitFor(() => expect(document.activeElement).toBe(heading));
     expect(document.querySelector("[data-memory-finder-live]")?.textContent).toBe("");
   });
 });
