@@ -20,6 +20,7 @@ import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 import type { BubbleEl } from "./studio-element-model";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export type BubbleAppearancePatch = Partial<
   Pick<
@@ -69,6 +70,7 @@ export function StudioInspectorBubbleAppearanceControls({
   onRequestColorSample,
   onRememberColor,
 }: StudioInspectorBubbleAppearanceControlsProps) {
+  const t = useT();
   const previewLineHeight =
     selected.lineHeight ??
     (selected.vertical
@@ -143,7 +145,7 @@ export function StudioInspectorBubbleAppearanceControls({
         </div>
       </div>
 
-      <Suspense fallback={<StudioPanelLoading label="말풍선 스타일을 여는 중..." />}>
+      <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.bubbleStyle", "말풍선 스타일을 여는 중...")} />}>
         <StudioBubbleStylePresetPanel selected={selected} onApplyPreset={onPatch} />
       </Suspense>
 
@@ -191,7 +193,7 @@ export function StudioInspectorBubbleAppearanceControls({
           <p className="text-[0.66rem] font-semibold uppercase tracking-wider text-fg-3">
             그라데이션 채우기
           </p>
-          <Suspense fallback={<StudioPanelLoading label="그라데이션 패널을 여는 중..." />}>
+          <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.gradientPanel", "그라데이션 패널을 여는 중...")} />}>
             <StudioGradientEnginePanel
               value={selected.gradient ?? null}
               onChange={(gradient) => onPatch({ gradient: gradient ?? undefined })}
@@ -317,7 +319,7 @@ export function StudioInspectorBubbleAppearanceControls({
         </div>
       </div>
 
-      <Suspense fallback={<StudioPanelLoading label="텍스트 크기 고정 패널을 여는 중..." />}>
+      <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.textSizeLockPanel", "텍스트 크기 고정 패널을 여는 중...")} />}>
         <StudioBubbleAutoShrinkPanel
           enabled={Boolean(selected.autoShrinkText)}
           minFontSize={

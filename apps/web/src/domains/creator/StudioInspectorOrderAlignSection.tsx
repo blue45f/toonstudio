@@ -22,6 +22,7 @@ import type { El } from "./studio-element-model";
 import type { ReactNode } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useT } from "@/shared/lib/i18n";
 
 export type StudioInspectorAlignMode =
   | "left"
@@ -96,12 +97,13 @@ export function StudioInspectorSelectionActions({
   duplicateSelected,
   removeSelected,
 }: StudioInspectorSelectionActionsProps) {
+  const t = useT();
   const canDistribute = selectionCount >= 3;
   const distributeReason = "간격 분배는 요소를 3개 이상 선택하면 사용할 수 있어요.";
 
   return (
     <>
-      <StudioInspectorSection sectionId="element.order-align" loadingLabel="정렬·순서를 여는 중...">
+      <StudioInspectorSection sectionId="element.order-align" loadingLabel={t("studio.canvas.panelLoading.orderAlign", "정렬·순서를 여는 중...")}>
         {selectionCount > 1 ? (
           <div className="flex items-center justify-between gap-2 rounded-lg bg-canvas/45 px-2 py-1.5 text-[0.6875rem] text-fg-3">
             <span>선택 묶음 기준으로 정렬합니다.</span>

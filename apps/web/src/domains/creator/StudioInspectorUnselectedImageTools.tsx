@@ -11,6 +11,7 @@ import {
 
 import type { StudioInspectorTabA11y } from "./studio-inspector-tab-a11y";
 import type { StudioInspectorAsideModel } from "./useStudioInspectorAsideModel";
+import { useT } from "@/shared/lib/i18n";
 
 
 export function StudioInspectorUnselectedImageTools({
@@ -20,6 +21,7 @@ export function StudioInspectorUnselectedImageTools({
   model: StudioInspectorAsideModel;
   tabA11y: StudioInspectorTabA11y;
 }) {
+  const t = useT();
   const {
     activatePixelSelectionToolFromInspector,
     activeImageInspectorTab,
@@ -110,7 +112,7 @@ export function StudioInspectorUnselectedImageTools({
               ) : null}
               {shouldMountImageInspectorTab("fill") ? (
                 <div className="space-y-3" hidden={activeImageInspectorTab !== "fill"}>
-                  <Suspense fallback={<StudioPanelLoading label="채우기·선화 도구를 여는 중..." />}>
+                  <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.fillAndLineTools", "채우기·선화 도구를 여는 중...")} />}>
                     <StudioFloodFillPanel
                       active={advancedFillActive}
                       busy={advancedFillBusy}

@@ -20,6 +20,15 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /**
  * 이 계약이 지키는 표면들 — 1차 등록: 스튜디오 셸(라우트 로딩·실패 표면).
  * 표시 정본은 studio.canvas.shell.* 키 (studio-route-shell-i18n 계약과 짝).
+ * 2차 등록 (A4, 2026-10-22): 에디터 패널 로딩 라벨 표면 24파일.
+ * 표시 정본은 studio.canvas.panelLoading.* 키 (studio-panel-loading-i18n 계약과 짝).
+ * 3차 등록 (A4 트랜치 2, 2026-10-22): 일정·게시·production-hub·ai 표면 32파일.
+ * 표시 정본은 productionHub.status.* (app/productionHub 사전)·studio.aiStatus.*
+ * (ai/studio-ai-status-i18n 등록)·studio.publish.status.* (publish/publish-status-i18n
+ * 등록)·studio.aiToolPopover.* 키와 useBilingual 쌍 (studio-status-i18n-tranche2 계약과 짝).
+ * 파일 크기 래칫 기준선 파일 3개(StudioInspectorImageToolsSection·
+ * StudioBg3dEditorSidebarExtras·StudioLift3dPage)는 훅 대신
+ * StudioPanelLoading의 labelKey/labelFallback 소품으로 키를 경유한다.
  */
 const GUARDED_FILES = [
   "StudioLazySurfaceFallback.tsx",
@@ -30,6 +39,65 @@ const GUARDED_FILES = [
   "studio-router/routes/StudioStoryworldRoute.tsx",
   "studio-router/routes/StudioWorkAssetsRoute.tsx",
   "studio-router/routes/StudioAiComicDirectorRoute.tsx",
+  "studio-router/StudioRouter.tsx",
+  "StudioAssetLegacyPanel.tsx",
+  "StudioAssetToolPopoverBody.tsx",
+  "StudioAssetToolPopoverWorkspace.tsx",
+  "StudioInspectorBubbleAppearanceControls.tsx",
+  "StudioInspectorDrawingSection.tsx",
+  "StudioInspectorFocusSpeedFrameControls.tsx",
+  "StudioInspectorImageToolsSection.tsx",
+  "StudioInspectorSelectionSection.tsx",
+  "StudioInspectorShapeSection.tsx",
+  "StudioInspectorTypographySection.tsx",
+  "StudioInspectorUnselectedImageTools.tsx",
+  "StudioInspectorUtilityPanels.tsx",
+  "StudioSceneToolPopoverBody.tsx",
+  "StudioStyleToolPopoverBody.tsx",
+  "StudioToolBeltCreateModeGroups.tsx",
+  "StudioToolBeltCreateModeInsertTools.tsx",
+  "bg3d/StudioBg3dEditorSidebar.tsx",
+  "bg3d/StudioBg3dEditorSidebarExtras.tsx",
+  "bg3d/StudioBg3dProSuitePanel.tsx",
+  "bg3d/StudioBg3dProSuitePanelContent.tsx",
+  "bg3d/StudioBg3dSpatialStoryboardLauncher.tsx",
+  "bg3d/StudioBg3dViewPanelLazy.tsx",
+  "lift3d/StudioLift3dPage.tsx",
+  "StudioInspectorSection.tsx",
+  "StudioInspectorOrderAlignSection.tsx",
+  "StudioInspectorRulersSection.tsx",
+  "publish/PublishSpecAutoOptimizeSection.tsx",
+  "production-hub/ProductionIntegrationsPanel.tsx",
+  "production-hub/ProductionManuscriptSnapshotPanel.tsx",
+  "production-hub/ProductionOperationsControlWorkspace.tsx",
+  "production-hub/ProductionManuscriptDeliveryHub.tsx",
+  "production-hub/ProductionManuscriptWorkspace.tsx",
+  "production-hub/ProductionPageManifestBuilder.tsx",
+  "production-hub/ProductionStudioRevisionWorkspace.tsx",
+  "production-hub/ProductionRiskWorkspace.tsx",
+  "production-hub/ProductionTaskBulkEditor.tsx",
+  "production-hub/ProductionQuickExportPanel.tsx",
+  "production-hub/ProductionRecoveryScenarioPanel.tsx",
+  "production-hub/ProductionWorkflowDesigner.tsx",
+  "production-hub/ProductionWorkBoard.tsx",
+  "production-hub/ProductionEpisodeOperationsWorkspace.tsx",
+  "production-hub/ProductionTaskEditor.tsx",
+  "production-hub/ProductionExternalReviewWizard.tsx",
+  "production-hub/ReviewVoiceCommentaryPanel.tsx",
+  "production-hub/ProductionRiskEditorDialog.tsx",
+  "production-hub/ProductionEpisodeProcessMatrix.tsx",
+  "production-hub/ProductionFocusedAiWorkflow.tsx",
+  "production-hub/ProductionRiskResponseCard.tsx",
+  "production-hub/ProductionRiskResponseComposer.tsx",
+  "production-hub/CollabNotificationInbox.tsx",
+  "ai/StudioAiProvenancePanel.tsx",
+  "ai/StudioAiImageReferencePackEditor.tsx",
+  "ai/StudioAiEpisodeProductionModal.tsx",
+  "ai/StudioAiSuperSuiteGateway.tsx",
+  "ai/StudioStrokeProposalReviewPanel.tsx",
+  "ai/StudioToonProductionBoard.tsx",
+  "ai/StudioAiProductionLaunchpad.tsx",
+  "ai/StudioAiToolPopoverBody.tsx",
 ] as const;
 
 function readGuarded(file: (typeof GUARDED_FILES)[number]): string {

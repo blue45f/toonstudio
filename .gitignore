@@ -110,6 +110,7 @@ __pycache__/
 # 로케일 카탈로그 생성기(scripts/generate-app-i18n-catalog.mjs)가 카탈로그와 함께 쓰는 완성도 보고서.
 # 정본은 i18n-locale-catalog.ts 라서 추적하지 않는다(apps/web/I18N_GUIDE.md §6).
 /apps/web/src/shared/lib/i18n-locale-completeness-report.json
+/apps/web/src/shared/lib/i18n-locale-exhaustion-plan.json
 *.db-wal
 *.db-shm
 

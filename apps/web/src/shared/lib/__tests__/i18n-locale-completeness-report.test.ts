@@ -11,6 +11,7 @@ import {
 } from "@/shared/lib/i18n-locale-catalog";
 import {
   buildLocaleCompletenessReport,
+  buildLocaleExhaustionPlan,
   formatLocaleCompletenessReport,
 } from "../../../../../../scripts/generate-app-i18n-catalog.mjs";
 
@@ -86,6 +87,44 @@ describe("locale completeness report (catalog generation)", () => {
 
     expect(text).toContain("| ja | 1/2 | 75% | 50% | 번역 진행 중 |");
     expect(text).toContain("| en | 1/2 | 100% | 100% | 완료 |");
+  });
+});
+
+describe("locale exhaustion plan (G7 ordering)", () => {
+  it("ranks locales by measured completeness and queues namespaces partial-first, fewest remaining first", () => {
+    const namespaces = fixtureNamespaces();
+    const plan = buildLocaleExhaustionPlan(buildLocaleCompletenessReport(namespaces), namespaces);
+    const byLocale = new Map(plan.locales.map((entry) => [entry.locale, entry]));
+
+    // ko and en are fully translated on the fixture's key axis, ja is half, de is zero.
+    expect(plan.locales.map((entry) => entry.locale)).toEqual(["en", "ko", "ja", "de"]);
+    expect(byLocale.get("en")?.status).toBe("complete");
+    expect(byLocale.get("en")?.namespaceQueue).toEqual([]);
+    expect(byLocale.get("ko")?.completedNamespaces).toEqual(["nav"]);
+
+    // ja: nav is partial with 2 of 4 keys left; contact has no English source, so it is
+    // never queued (nothing to exhaust against the reference).
+    expect(byLocale.get("ja")?.namespaceQueue).toEqual([
+      {
+        namespace: "nav",
+        referenceKeyCount: 4,
+        translatedKeyCount: 2,
+        remainingKeyCount: 2,
+        status: "partial",
+      },
+    ]);
+    // de: nav is untouched with all 4 keys left.
+    expect(byLocale.get("de")?.namespaceQueue).toEqual([
+      {
+        namespace: "nav",
+        referenceKeyCount: 4,
+        translatedKeyCount: 0,
+        remainingKeyCount: 4,
+        status: "untouched",
+      },
+    ]);
+    expect(byLocale.get("ja")?.remainingKeyCount).toBe(2);
+    expect(plan.threshold).toBe(APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD);
   });
 });
 

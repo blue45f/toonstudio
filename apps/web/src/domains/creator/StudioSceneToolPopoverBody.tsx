@@ -26,6 +26,7 @@ import type { StudioMenu } from "./studio-editor-tool-model";
 import type { StudioToolBeltContentProps } from "./StudioToolBeltContent";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export interface StudioSceneToolPopoverBodyProps {
   readonly toolBelt: StudioToolBeltContentProps;
@@ -40,6 +41,7 @@ const QUICK_CARD = cn(
 export function StudioSceneToolPopoverBody({
   toolBelt,
 }: StudioSceneToolPopoverBodyProps) {
+  const t = useT();
   const {
     bg,
     bgGrad,
@@ -150,7 +152,7 @@ export function StudioSceneToolPopoverBody({
       </div>
 
       {menu === "bgFill" && (
-        <Suspense fallback={<StudioPanelLoading label="배경 편집기를 여는 중..." />}>
+        <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.backgroundEditor", "배경 편집기를 여는 중...")} />}>
           <StudioBackgroundPanel
             canvasW={CANVAS_W}
             canvasH={canvasH}
@@ -181,7 +183,7 @@ export function StudioSceneToolPopoverBody({
         </Suspense>
       )}
       {menu === "bgScene" && (
-        <Suspense fallback={<StudioPanelLoading label="2D 장면 라이브러리를 여는 중..." />}>
+        <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.sceneLibrary2d", "2D 장면 라이브러리를 여는 중...")} />}>
           <Studio2dSceneBrowser
             groups={studioOptionalAssets.bgSceneGenreGroups}
             query={bgSceneSearchQuery}
@@ -222,7 +224,7 @@ export function StudioSceneToolPopoverBody({
             )}
           </div>
           <div className="max-h-72 overflow-y-auto pr-1">
-            <Suspense fallback={<StudioPanelLoading label="톤 패널을 여는 중..." />}>
+            <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.tonePanel", "톤 패널을 여는 중...")} />}>
               <StudioTonePanel onPick={(svg) => void addTone(svg)} query={toneSearchQuery} />
             </Suspense>
           </div>

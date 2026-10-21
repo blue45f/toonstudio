@@ -21,6 +21,7 @@ import type {
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export interface StudioInspectorFocusSpeedFrameControlsProps {
   selected: FocusLinesEl | SpeedLinesEl | FrameEl;
@@ -47,6 +48,7 @@ export function StudioInspectorFocusSpeedFrameControls({
   onSplitFrame,
   onTogglePanelSplit,
 }: StudioInspectorFocusSpeedFrameControlsProps) {
+  const t = useT();
   return (
     <>
       {/* 집중선 및 속도선 선 효과 설정 */}
@@ -363,7 +365,7 @@ export function StudioInspectorFocusSpeedFrameControls({
                     ) : null}
                   </div>
                 ) : null}
-                <Suspense fallback={<StudioPanelLoading label="연속성 메타 편집기를 여는 중..." />}>
+                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.continuityMetaEditor", "연속성 메타 편집기를 여는 중...")} />}>
                   <StudioContinuityMetadataEditor
                     value={selected.storyBeat.continuity ?? {}}
                     onChange={(continuity) =>
@@ -424,7 +426,7 @@ export function StudioInspectorFocusSpeedFrameControls({
             </button>
           </div>
 
-          <Suspense fallback={<StudioPanelLoading label="컷 분할 도구를 여는 중..." />}>
+          <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.panelSplitTool", "컷 분할 도구를 여는 중...")} />}>
             <StudioPanelSplitPanel
               active={panelSplitActive}
               gutterPx={panelGutter}

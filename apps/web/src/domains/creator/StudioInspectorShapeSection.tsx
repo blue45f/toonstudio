@@ -28,6 +28,7 @@ import type { StudioHokusaiNaturalMediaReplaceHandler } from "./StudioHokusaiNat
 
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 interface StudioInspectorShapeSectionProps {
   selected: DrawEl;
@@ -94,8 +95,9 @@ export function StudioInspectorShapeSection({
   onFinishColorPreview,
   onRequestColorSample,
 }: StudioInspectorShapeSectionProps) {
+  const t = useT();
   return (
-    <StudioInspectorSection sectionId="element.shape-style" loadingLabel="도형 스타일을 여는 중...">
+    <StudioInspectorSection sectionId="element.shape-style" loadingLabel={t("studio.canvas.panelLoading.shapeStyle", "도형 스타일을 여는 중...")}>
       <div className="space-y-3">
         <StudioInspectorSelectionStrokeControls
           selected={selected}
@@ -164,7 +166,7 @@ export function StudioInspectorShapeSection({
         )}
         {selected.kind && selected.kind !== "freehand" && (
           <div className="mt-2.5 border-t border-line/40 pt-2.5">
-            <Suspense fallback={<StudioPanelLoading label="선 스타일 패널을 여는 중..." />}>
+            <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.lineStylePanel", "선 스타일 패널을 여는 중...")} />}>
               <StudioStrokeShapePanel
                 kind={selected.kind}
                 strokeStyle={normalizeStrokeStyle(selected.strokeStyle)}
@@ -246,8 +248,9 @@ export function StudioInspectorTextFillSection({
   selected,
   patchEl,
 }: StudioInspectorTextFillSectionProps) {
+  const t = useT();
   return (
-    <StudioInspectorSection sectionId="element.text-fill" loadingLabel="글자 채우기 스타일을 여는 중...">
+    <StudioInspectorSection sectionId="element.text-fill" loadingLabel={t("studio.canvas.panelLoading.textFillStyle", "글자 채우기 스타일을 여는 중...")}>
       <div className="space-y-2.5">
         <div className="flex gap-1.5 bg-card rounded-lg p-0.5 border border-line">
           {[

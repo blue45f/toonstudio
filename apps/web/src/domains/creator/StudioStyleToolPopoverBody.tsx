@@ -11,6 +11,7 @@ import { StudioPaletteWorkbench } from "./StudioPaletteWorkbench";
 
 import type { StudioMenu } from "./studio-editor-tool-model";
 import type { StudioToolBeltContentProps } from "./StudioToolBeltContent";
+import { useT } from "@/shared/lib/i18n";
 
 export interface StudioStyleToolPopoverBodyProps {
   readonly toolBelt: StudioToolBeltContentProps;
@@ -19,6 +20,7 @@ export interface StudioStyleToolPopoverBodyProps {
 export function StudioStyleToolPopoverBody({
   toolBelt,
 }: StudioStyleToolPopoverBodyProps) {
+  const t = useT();
   const {
     menu,
     recentColors,
@@ -75,7 +77,7 @@ export function StudioStyleToolPopoverBody({
           onPreviewColor={setColor}
           onCommitColor={rememberColor}
           libraryContent={(
-            <Suspense fallback={<StudioPanelLoading label="팔레트 라이브러리를 여는 중..." />}>
+            <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.paletteLibrary", "팔레트 라이브러리를 여는 중...")} />}>
               <StudioPaletteLibraryPanel
                 onPickColor={applyAndRememberColor}
                 seedColors={recentColors}
@@ -85,7 +87,7 @@ export function StudioStyleToolPopoverBody({
         />
       ) : null}
       {menu === "brandKit" ? (
-        <Suspense fallback={<StudioPanelLoading label="브랜드 킷 패널을 여는 중..." />}>
+        <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.brandKitPanel", "브랜드 킷 패널을 여는 중...")} />}>
           <StudioBrandKitPanel
             onPickColor={applyAndRememberColor}
             canApplyFont={!!selected && (selected.type === "text" || selected.type === "bubble")}

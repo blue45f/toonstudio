@@ -37,6 +37,7 @@ import type { StudioInspectorTabA11y } from "./studio-inspector-tab-a11y";
 
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export function StudioInspectorSelectionSection({
   model,
@@ -45,6 +46,7 @@ export function StudioInspectorSelectionSection({
   model: StudioInspectorAsideModel;
   tabA11y: StudioInspectorTabA11y;
 }) {
+  const tPanelLoading = useT();
   const {
     activeImageInspectorTab,
     activeSurfaceReviewLocked,
@@ -179,7 +181,7 @@ export function StudioInspectorSelectionSection({
                 className="m-0 min-w-0 border-0 p-0 disabled:[&_button]:cursor-not-allowed disabled:[&_button]:opacity-50 disabled:[&_input]:cursor-not-allowed disabled:[&_input]:opacity-55 disabled:[&_select]:cursor-not-allowed disabled:[&_select]:opacity-55 disabled:[&_textarea]:cursor-not-allowed disabled:[&_textarea]:opacity-55"
               >
                 <legend className="sr-only">선택 요소 편집 설정</legend>
-                <Suspense fallback={<StudioPanelLoading label="작업 패널을 여는 중..." />}>
+                <Suspense fallback={<StudioPanelLoading label={tPanelLoading("studio.canvas.panelLoading.workPanel", "작업 패널을 여는 중...")} />}>
                 <p className="mb-2 text-xs font-semibold text-fg-3">선택한 요소</p>
 
               {selected.type === "draw" && (
@@ -266,7 +268,7 @@ export function StudioInspectorSelectionSection({
                 />
               )}
               {selected.type === "bubble" && (
-                <StudioInspectorSection sectionId="element.bubble" loadingLabel="말풍선 설정을 여는 중...">
+                <StudioInspectorSection sectionId="element.bubble" loadingLabel={tPanelLoading("studio.canvas.panelLoading.bubbleSettings", "말풍선 설정을 여는 중...")}>
               {selected.type === "bubble" && (
                 <StudioInspectorBubbleAppearanceControls
                   recentColors={recentColors}
@@ -370,7 +372,7 @@ export function StudioInspectorSelectionSection({
                 (selected.type === "image" ||
                   selected.type === "bubble" ||
                   containingPanel(selected, elements)) && (
-              <StudioInspectorSection sectionId="element.constraints" loadingLabel="배치 제약을 여는 중...">
+              <StudioInspectorSection sectionId="element.constraints" loadingLabel={tPanelLoading("studio.canvas.panelLoading.layoutConstraints", "배치 제약을 여는 중...")}>
               {containingPanel(selected, elements) && (
                 <label className="flex items-center justify-between gap-2 text-sm text-fg-2">
                   패널 안에 가두기
@@ -408,7 +410,7 @@ export function StudioInspectorSelectionSection({
               {(selected.type === "text" || selected.type === "bubble") && (
                 /* 문단 — 정렬·세로 쓰기·자간·행간·높이 맞춤. 정렬은 예전에 타이포그래피 섹션에도
                    한 번 더 있었다(같은 속성 두 번 노출, 감사 §5.4). 이제 여기 한 곳뿐이다. */
-                <StudioInspectorSection sectionId="element.text-align" loadingLabel="문단 설정을 여는 중...">
+                <StudioInspectorSection sectionId="element.text-align" loadingLabel={tPanelLoading("studio.canvas.panelLoading.paragraphSettings", "문단 설정을 여는 중...")}>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2 text-sm text-fg-2">
                     글자 정렬
@@ -559,7 +561,7 @@ export function StudioInspectorSelectionSection({
               )}
 
               {selected.type === "image" && (
-                <StudioInspectorSection sectionId="element.blend-extended" loadingLabel="확장 블렌드를 여는 중...">
+                <StudioInspectorSection sectionId="element.blend-extended" loadingLabel={tPanelLoading("studio.canvas.panelLoading.extendedBlend", "확장 블렌드를 여는 중...")}>
                 <Suspense fallback={null}>
                   <StudioExtendedBlendPanel
                     mode={extendedBlendMode}
@@ -583,7 +585,7 @@ export function StudioInspectorSelectionSection({
               {(selected.type === "image" || selected.type === "text" || selected.type === "sticker") && (
                 <StudioInspectorSection
                   sectionId="element.layout"
-                  loadingLabel="기울이기를 여는 중..."
+                  loadingLabel={tPanelLoading("studio.canvas.panelLoading.tiltTool", "기울이기를 여는 중...")}
                 >
                     <StudioSkewPanel
                       value={{ skewX: selected.skewX, skewY: selected.skewY }}
@@ -596,7 +598,7 @@ export function StudioInspectorSelectionSection({
               {(selected.type === "focusLines"
                 || selected.type === "speedLines"
                 || selected.type === "frame") ? (
-                <StudioInspectorSection sectionId="element.effect-lines" loadingLabel="집중선·속도선을 여는 중...">
+                <StudioInspectorSection sectionId="element.effect-lines" loadingLabel={tPanelLoading("studio.canvas.panelLoading.effectLines", "집중선·속도선을 여는 중...")}>
                 <StudioInspectorFocusSpeedFrameControls
                   selected={selected}
                   panelGutter={panelGutter}

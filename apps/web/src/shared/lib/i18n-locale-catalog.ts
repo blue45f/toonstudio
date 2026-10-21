@@ -125,7 +125,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "id": 0.3335,
   "is": 0.3409,
   "it": 0.3366,
-  "ja": 0.3649,
+  "ja": 0.4208,
   "ka": 0.3428,
   "kk": 0.3403,
   "km": 0.3409,

@@ -27,6 +27,14 @@ describe("scanHardcodedStatusStrings — 하드코딩 검출", () => {
     expect(scanHardcodedStatusStrings(source)).toHaveLength(1);
   });
 
+  it("loadingLabel 속성의 한국어 로딩 리터럴을 잡는다 (인스펙터 섹션 가족)", () => {
+    const source = `<StudioInspectorSection sectionId="tool.x" loadingLabel="선 보정을 여는 중...">`;
+    const violations = scanHardcodedStatusStrings(source);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.kind).toBe("loading");
+    expect(violations[0]?.rule).toBe("display-prop-literal");
+  });
+
   it("에러 상수(REVIEWS_FETCH_ERROR 패턴)를 잡는다", () => {
     const source = `const REVIEWS_FETCH_ERROR = "리뷰 데이터를 불러오지 못했습니다.";`;
     const violations = scanHardcodedStatusStrings(source);

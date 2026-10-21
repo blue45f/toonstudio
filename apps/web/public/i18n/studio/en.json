@@ -1005,6 +1005,8 @@
   "studio.settings.uiDensityDescription.simple": "Simple mode shows only essential tools and basic settings for quick starts and focused work.",
   "studio.settings.uiDensityDescription.focus": "Super-simple mode focuses on drawing, insert (template · assets · bubble), and canvas; AI, 3D, and property panels stay collapsed.",
   "studio.settings.uiDensityDescription.full": "Full mode shows all menus, panels, AI, and 3D tools.",
+  "studio.settings.advancedTools.expand": "Expand advanced tools",
+  "studio.settings.advancedTools.collapse": "Collapse advanced tools",
   "studio.settings.general.brushCursorLabel": "Brush cursor",
   "studio.settings.general.brushCursorHint": "Outline shows brush size and dot shows only center point. System uses crosshair cursor.",
   "studio.settings.general.brushCursor.outline": "Outline",

@@ -48,12 +48,14 @@ import type { DrawEl, El } from "./studio-element-model";
 import type { StudioInspectorAsideModel } from "./useStudioInspectorAsideModel";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export function StudioInspectorDrawingSection({
   model,
 }: {
   model: StudioInspectorAsideModel;
 }) {
+  const t = useT();
   const {
     recentColors,
     ensureRecentColorsLoaded,
@@ -201,7 +203,7 @@ export function StudioInspectorDrawingSection({
             >
               <Suspense
                 fallback={
-                  <StudioPanelLoading label="서브 도구와 도구 속성을 여는 중..." />
+                  <StudioPanelLoading label={t("studio.canvas.panelLoading.subToolsAndProps", "서브 도구와 도구 속성을 여는 중...")} />
                 }
               >
                 <StudioDrawingPaletteStack
@@ -456,7 +458,7 @@ export function StudioInspectorDrawingSection({
                 )}
 
                 {drawMode !== "pixel" ? (
-                  <StudioInspectorSection sectionId="tool.line-correction" loadingLabel="선 보정을 여는 중...">
+                  <StudioInspectorSection sectionId="tool.line-correction" loadingLabel={t("studio.canvas.panelLoading.lineCorrection", "선 보정을 여는 중...")}>
                     <div className="space-y-2">
                       <StudioLineCorrectionControls
                         stabilizer={stabilizer}
@@ -484,7 +486,7 @@ export function StudioInspectorDrawingSection({
                 ) : null}
 
                 {drawMode !== "shape" && drawMode !== "pixel" ? (
-                  <StudioInspectorSection sectionId="tool.brush-studio" loadingLabel="현재 브러시 편집을 여는 중...">
+                  <StudioInspectorSection sectionId="tool.brush-studio" loadingLabel={t("studio.canvas.panelLoading.currentBrushEditor", "현재 브러시 편집을 여는 중...")}>
                   <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-raised/35 motion-reduce:animate-none" aria-hidden />}>
                     <StudioBrushStudio
                       brushId={brush}
@@ -520,7 +522,7 @@ export function StudioInspectorDrawingSection({
                   </Suspense>
                   </StudioInspectorSection>
                 ) : null}
-                <StudioInspectorSection sectionId="tool.brush-engines" loadingLabel="브러시 엔진을 여는 중...">
+                <StudioInspectorSection sectionId="tool.brush-engines" loadingLabel={t("studio.canvas.panelLoading.brushEngines", "브러시 엔진을 여는 중...")}>
                 <StudioHokusaiNaturalMediaInspectorMount
                   visible={drawMode !== "shape" && drawMode !== "pixel"}
                   selected={selected} currentColor={color}
