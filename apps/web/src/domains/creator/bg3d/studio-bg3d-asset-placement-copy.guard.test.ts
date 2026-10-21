@@ -16,6 +16,7 @@ import type {
 } from "./studio-bg3d-asset-placement-recipes";
 import {
   STUDIO_BG3D_RECIPE_IN_PROGRESS_MESSAGE,
+  STUDIO_BG3D_RECIPE_LOAD_FAILED_AGAIN_MESSAGE,
   STUDIO_BG3D_RECIPE_LOAD_FAILED_MESSAGE,
   STUDIO_BG3D_RECIPE_UNEXPECTED_MESSAGE,
 } from "./studio-bg3d-editor-recipe-host";
@@ -76,6 +77,7 @@ const NEW_COPY: ReadonlyArray<readonly [string, string]> = [
   ["모델 경계를 확인하지 못함", STUDIO_BG3D_RECIPE_BOUNDS_UNAVAILABLE_MESSAGE],
   ["모델 무결성을 확인하지 못함", STUDIO_BG3D_RECIPE_VERIFY_FAILED_MESSAGE],
   ["본문 불러오기 실패", STUDIO_BG3D_RECIPE_LOAD_FAILED_MESSAGE],
+  ["본문 불러오기 연속 실패", STUDIO_BG3D_RECIPE_LOAD_FAILED_AGAIN_MESSAGE],
   ["이미 배치하는 중", STUDIO_BG3D_RECIPE_IN_PROGRESS_MESSAGE],
   ["예상 밖 오류", STUDIO_BG3D_RECIPE_UNEXPECTED_MESSAGE],
   ...STUDIO_BG3D_ASSET_PLACEMENT_RECIPES.map((recipe): readonly [string, string] => [

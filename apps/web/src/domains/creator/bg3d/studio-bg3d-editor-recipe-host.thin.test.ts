@@ -125,8 +125,8 @@ describe("편집기 정적 그래프에 올라가는 파일의 경계", () => {
       [false, "./studio-bg3d-scene-edit-readiness"],
       [true, "./studio-bg3d-editor-recipe-run"],
     ]);
-    // `typeof import(...)` 는 타입이라 지워진다. 실제로 불러오는 것은 await import 하나다.
-    expect([...source.matchAll(/await import\("([^"]+)"\)/gu)].map((match) => match[1])).toEqual(["./studio-bg3d-editor-recipe-run"]);
+    // `typeof import(...)` 는 타입이라 지워진다. 실제로 불러오는 것은 import() 호출 하나다.
+    expect([...source.matchAll(/(?<!typeof )import\("([^"]+)"\)/gu)].map((match) => match[1])).toEqual(["./studio-bg3d-editor-recipe-run"]);
     expect(source).not.toContain('"three"');
     expect(source).not.toContain("studio-bg3d-asset-placement");
     expect(source).not.toContain("studio-bg3d-wall-probe");
