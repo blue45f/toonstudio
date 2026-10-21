@@ -14,6 +14,7 @@ export const CREATOR_RESOURCE_TITLES: Record<string, string> = {
   "/status": "서비스 상태",
   "/brand-film": "툰스튜디오 브랜드 필름",
   "/product-tour": "툰스튜디오 전체 제품 투어",
+  "/ir": "툰스튜디오 IR · 투자 소개",
   "/events": "이벤트",
   "/events/beta-open": "베타 오픈 이벤트",
   "/accessibility": "접근성",

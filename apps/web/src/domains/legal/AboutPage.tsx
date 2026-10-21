@@ -7,6 +7,7 @@ import {
   Cpu,
   Database,
   FileOutput,
+  Landmark,
   Layers,
   LayoutGrid,
   LifeBuoy,
@@ -53,8 +54,8 @@ const ABOUT_CORE_FEATURES = [
     image: "/brand/illustrated-20260928/canvas-noir-640.webp",
     href: "/studio/canvas",
     secondary: "/studio/comic",
-    ko: { tab: "드로잉", title: "드로잉·컷 연출", body: "브러시·레이어·보정과 컷·말풍선·식자를 하나의 캔버스에서 다룹니다.", points: ["레이어·선택·보정이 있는 전문 브러시", "컷 분할·말풍선·식자까지 같은 화면", "자동 저장과 버전 기록으로 되돌리기"], cta: "캔버스 열기", secondaryCta: "컷툰 편집기" },
-    en: { tab: "Drawing", title: "Drawing and panels", body: "Brushes, layers and corrections sit next to panels, balloons and lettering on one canvas.", points: ["Professional brushes with layers, selection and adjustments", "Panels, balloons and lettering on the same screen", "Autosave and version history to roll back"], cta: "Open the canvas", secondaryCta: "Comic editor" },
+    ko: { tab: "드로잉", title: "드로잉·컷 연출", body: "브러시·레이어·보정과 컷·말풍선·식자를 하나의 캔버스에서 다룹니다.", points: ["브러시 226종과 레이어·선택·보정", "컷 분할·말풍선·식자까지 같은 화면", "자동 저장과 버전 기록으로 되돌리기"], cta: "캔버스 열기", secondaryCta: "컷툰 편집기" },
+    en: { tab: "Drawing", title: "Drawing and panels", body: "Brushes, layers and corrections sit next to panels, balloons and lettering on one canvas.", points: ["226 brushes with layers, selection and adjustments", "Panels, balloons and lettering on the same screen", "Autosave and version history to roll back"], cta: "Open the canvas", secondaryCta: "Comic editor" },
   },
   {
     id: "three-d",
@@ -69,8 +70,8 @@ const ABOUT_CORE_FEATURES = [
     image: "/brand/workflow-20260928/collaborate-640.webp",
     href: "/production",
     secondary: "/production/projects/sample-project/overview",
-    ko: { tab: "협업", title: "협업·제작 관리", body: "회차·담당자·마감·수정 요청·승인을 실제 원고에 연결해 누락 없이 넘깁니다.", points: ["공정 보드에서 카드로 진행 관리", "담당자·마감·검토 상태를 한눈에", "수정 요청과 승인 기록"], cta: "제작 관리 열기", secondaryCta: "샘플 프로젝트 체험" },
-    en: { tab: "Team", title: "Collaboration and production", body: "Connect episodes, owners, deadlines, revision requests and approvals to the actual manuscript.", points: ["Track progress as cards on a production board", "Owners, deadlines and review state at a glance", "Revision requests and approvals on record"], cta: "Open production", secondaryCta: "Try a sample project" },
+    ko: { tab: "협업", title: "협업·제작 관리", body: "회차·담당자·마감·수정 요청·승인을 결과물 파일이 아니라 실제 원고에 직접 연결합니다. 만드는 과정 자체가 협업 기록이 됩니다.", points: ["공정 보드에서 카드로 진행 관리", "담당자·마감·검토 상태를 한눈에", "수정 요청과 승인 기록"], cta: "제작 관리 열기", secondaryCta: "샘플 프로젝트 체험" },
+    en: { tab: "Team", title: "Collaboration and production", body: "Episodes, owners, deadlines, revision requests and approvals attach to the manuscript itself, not to output files — the act of making becomes the collaboration record.", points: ["Track progress as cards on a production board", "Owners, deadlines and review state at a glance", "Revision requests and approvals on record"], cta: "Open production", secondaryCta: "Try a sample project" },
   },
   {
     id: "virtual-studio",
@@ -124,6 +125,7 @@ const MORE_LINKS = [
   { href: "/about/technology/atlas", icon: Boxes, ko: "기술 도감", en: "Technology atlas" },
   { href: "/help", icon: LifeBuoy, ko: "저장·복구 도움말", en: "Saving and recovery help" },
   { href: "/about/data", icon: Database, ko: "데이터 출처", en: "Data sources" },
+  { href: "/ir", icon: Landmark, ko: "IR · 투자 소개", en: "IR · Investor brief" },
 ] as const;
 
 export function AboutPage() {

@@ -265,6 +265,47 @@ export function TechnologyPage() {
 
       <TechnologyStackShowcase />
 
+      <section className="pb-12 sm:pb-16" aria-labelledby="engineering-films-title">
+        <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "WATCH THE PRODUCT")}</p>
+        <h2 id="engineering-films-title" className="mt-3 text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
+          {bi("기술은 실제 제품 화면으로 확인하세요", "See the technology in the real product")}
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
+          {bi(
+            "이 허브가 설명하는 렌더러·3D 배경·협업이 실제 서비스에서 어떻게 움직이는지는 제품 투어에서 챕터별로 볼 수 있습니다. 드로잉(1:48), 3D 배경(3:48), 협업·제작 관리(5:54) 챕터가 이 페이지의 기술 설명과 그대로 이어집니다.",
+            "The renderer, 3D sets and collaboration this hub explains can be watched chapter by chapter in the product tour. The drawing (1:48), 3D sets (3:48) and production (5:54) chapters continue directly from the explanations on this page.",
+          )}
+        </p>
+        <ul className="mt-6 grid gap-3 sm:grid-cols-2" aria-label={bi("제품 영상", "Product films")}>
+          {[
+            { href: "/product-tour", poster: "/brand/toonstudio-product-tour-poster.jpg", time: "8:24", ko: { title: "8분 제품 투어", meta: "9개 챕터 · 한·영 자막" }, en: { title: "8-minute product tour", meta: "9 chapters · KO/EN captions" } },
+            { href: "/brand-film", poster: "/brand/toonstudio-film-poster.jpg", time: "0:24", ko: { title: "24초 브랜드 필름", meta: "창작 흐름을 짧게" }, en: { title: "24-second brand film", meta: "The creative flow, in brief" } },
+          ].map((film) => {
+            const copy = bi(film.ko, film.en);
+            return (
+              <li key={film.href}>
+                <Link href={film.href} className="group grid overflow-hidden rounded-2xl border border-line/70 bg-card/65 transition-colors hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
+                  <span className="relative block aspect-video overflow-hidden bg-panel">
+                    <img src={film.poster} alt="" width={1280} height={720} loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
+                    <span className="absolute inset-0 grid place-items-center bg-gradient-to-t from-canvas/60 via-transparent to-transparent">
+                      <span className="grid size-12 place-items-center rounded-full bg-accent text-on-accent shadow-lg"><Play size={20} fill="currentColor" aria-hidden="true" /></span>
+                    </span>
+                    <span className="absolute bottom-2 right-2 rounded-md bg-canvas/80 px-1.5 py-0.5 text-xs font-bold tabular-nums text-fg">{film.time}</span>
+                  </span>
+                  <span className="flex items-center justify-between gap-3 p-3.5">
+                    <span className="min-w-0">
+                      <span className="block break-keep font-bold text-fg">{copy.title}</span>
+                      <span className="mt-0.5 block break-keep text-sm text-fg-2">{copy.meta}</span>
+                    </span>
+                    <ArrowRight size={17} className="shrink-0 text-accent transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
       <section className="pb-12 sm:pb-16" aria-labelledby="engineering-atlas-title">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>

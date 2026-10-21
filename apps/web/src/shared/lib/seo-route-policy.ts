@@ -69,6 +69,7 @@ const INDEXABLE_EXACT_ROUTES = new Set([
   "/help",
   "/insights",
   "/insights/resources",
+  "/ir",
   "/market",
   "/market/browse",
   "/market/fit",

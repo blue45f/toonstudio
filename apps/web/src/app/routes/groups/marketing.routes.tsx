@@ -63,6 +63,13 @@ const StudioIntroductionPage = lazyRetry(
   "StudioIntroductionPage",
 );
 
+const IrPitchPage = lazyRetry(
+  () => import("@/domains/marketing/IrPitchPage").then((module) => ({
+    default: module.IrPitchPage,
+  })),
+  "IrPitchPage",
+);
+
 export const marketingRoutes = defineAppRoutes([
   { id: "marketing-studio-introduction", path: "/about/studio", element: <StudioIntroductionPage /> },
   // O-01 명문화 (2026-10-08 실측): 아래 세 주소는 같은 StudioWorkspacePage를 쓰지만
@@ -76,6 +83,9 @@ export const marketingRoutes = defineAppRoutes([
   { id: "workspace-team", path: "/team", element: <WorkspaceHomeRoute><StudioWorkspacePage surface="team" /></WorkspaceHomeRoute> },
   { id: "workspace-hub", path: "/hub", element: <WorkspaceHomeRoute><StudioWorkspacePage surface="hub" /></WorkspaceHomeRoute> },
   { id: "marketing-product-tour", path: "/product-tour", element: <ProductTourPage /> },
+  // IR 피치 전용 페이지: 핵심 메시지·제품 역량·시장·BM·검증 로드맵·Ask를 발표 흐름 한 페이지로.
+  // 본문 영상은 제품 투어 챕터를 발췌한 IR 컷(/brand/toonstudio-ir-tour.mp4)이며 전체 투어는 /product-tour가 소유한다.
+  { id: "marketing-ir", path: "/ir", element: <IrPitchPage /> },
   { id: "marketing-membership", path: "/membership", element: <MembershipPolicyPage /> },
   // 내비게이션 팀이 헤더/푸터에서 연결할 공개 요금제 안내. 상세 한도는 /membership이 소유한다.
   { id: "marketing-pricing", path: "/pricing", element: <PricingPage /> },
