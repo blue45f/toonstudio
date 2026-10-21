@@ -29,6 +29,11 @@ async function renderAt(entry: string) {
   await act(async () => {
     render(<MemoryRouter initialEntries={[entry]}><CreatorHomeExperience /></MemoryRouter>);
   });
+  // /about/studio is intentionally lazy-loaded to keep the public homepage's first-load graph small.
+  // Wait for the narrative to resolve instead of asserting against Suspense's empty fallback.
+  if (entry.toLowerCase().split("#", 1)[0]?.replace(/\/+$/u, "") === "/about/studio") {
+    await screen.findByRole("heading", { level: 1 });
+  }
 }
 
 const hrefs = (root: ParentNode) => [...root.querySelectorAll("a")].map((link) => link.getAttribute("href"));

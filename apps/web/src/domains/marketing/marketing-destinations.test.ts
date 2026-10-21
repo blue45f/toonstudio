@@ -15,8 +15,8 @@ const STUDIO_REGISTRY = "apps/web/src/domains/creator/studio-route-registry.ts";
 const STUDIO_WORKSPACE_ROUTE = "apps/web/src/domains/creator/studio-workspace-route.ts";
 const STUDIO_ROUTE_MANIFEST = "apps/web/src/domains/creator/studio-router/studio-route-manifest.ts";
 const MARKETING_DIR = "apps/web/src/domains/marketing";
-// /about/studio는 1차 정리 때 StudioIntroduction.tsx를 CreatorHomeExperience.tsx로 합쳤다(같은 컴포넌트가 / 와 /about/studio를 그린다).
-const STUDIO_INTRODUCTION = "apps/web/src/domains/marketing/CreatorHomeExperience.tsx";
+// /about/studio의 서사는 CreatorStudioIntroduction에 있고, CreatorHomeExperience는 경로별 지연 로딩을 담당한다.
+const STUDIO_INTRODUCTION = "apps/web/src/domains/marketing/CreatorStudioIntroduction.tsx";
 const PRODUCT_TOUR_PAGE = "apps/web/src/domains/marketing/ProductTourPage.tsx";
 const HOME_DASHBOARD = "apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx";
 const ABOUT_PAGES = [
