@@ -183,7 +183,7 @@ export function ProductionPageManifestBuilder({
         openImportHandoff(editorHref, file);
       }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "페이지 버전 패키지를 만들지 못했습니다.");
+      setNotice(error instanceof Error ? error.message : t("productionHub.status.manifestPackageFailed", "페이지 버전 패키지를 만들지 못했습니다."));
     } finally {
       setBusy(null);
     }
@@ -219,7 +219,7 @@ export function ProductionPageManifestBuilder({
           {preview.cursor ? <button type="button" onClick={() => preview.setCursor(null)} className={buttonClass({ variant: "quiet", size: "sm" })}>처음 목록</button> : null}
           <button type="button" onClick={preview.refresh} disabled={!source} className={buttonClass({ variant: "quiet", size: "sm" })}><RefreshCcw className="size-4" aria-hidden="true" /> 갱신</button>
         </div>
-        {!preview.result && source && !invalidExplicitSource ? <p className="mt-4 text-xs text-fg-2" role="status"><LoaderCircle className="mr-2 inline size-4 animate-spin" aria-hidden="true" /> 고정 페이지를 확인 중…</p> : null}
+        {!preview.result && source && !invalidExplicitSource ? <p className="mt-4 text-xs text-fg-2" role="status"><LoaderCircle className="mr-2 inline size-4 animate-spin" aria-hidden="true" />{t("productionHub.status.checkingPinnedPages", "고정 페이지를 확인 중…")}</p> : null}
         {preview.result?.ok ? <div className="mt-4 grid grid-cols-2 gap-2">
           {preview.result.previews.map((item, index) => {
             const page = loadedPages[index];

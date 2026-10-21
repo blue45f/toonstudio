@@ -189,7 +189,7 @@ export function CommandPalette({
     };
   }, [debouncedTrimmedQ, open, activeMode]);
 
-  // 통합 검색 집계층: 전체 모드에서는 강좌·도움말(매뉴얼)·소재 링크 섹션도 함께 찾는다.
+  // 통합 검색 집계층: 전체 모드에서는 강좌·도움말(매뉴얼)·소재(로컬 색인) 섹션도 함께 찾는다.
   // 프로바이더는 강좌·매뉴얼·사이트맵 데이터를 끌어오므로 셸 청크에 넣지 않고
   // 검색어가 있을 때만 동적 import로 읽는다. 작품은 위 서버 검색, 페이지는 아래
   // filteredPages가 이미 맡고 있어 여기서는 세 유형만 채운다.
@@ -218,6 +218,7 @@ export function CommandPalette({
 
   const unifiedCourseItems = localSections.find((section) => section.kind === "courses")?.items ?? [];
   const unifiedHelpItems = localSections.find((section) => section.kind === "help")?.items ?? [];
+  const unifiedAssetItems = localSections.find((section) => section.kind === "assets")?.items ?? [];
   const unifiedAssetsMoreHref = localSections.find((section) => section.kind === "assets")?.moreHref;
 
   // 퍼지 보강(fuse.js): 동기 정확 필터(matchesCommandSearch)는 그대로 두고,
@@ -995,7 +996,37 @@ export function CommandPalette({
               </Command.Group>
             )}
 
-            {/* Unified Search: Assets Link (소재는 전용 표면에서 서버 검색) */}
+            {/* Unified Search: Assets Section (A6 — 경량 로컬 색인 항목) */}
+            {unifiedAssetItems.length > 0 && (
+              <Command.Group
+                forceMount
+                heading={
+                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                    소재 ({unifiedAssetItems.length})
+                  </div>
+                }
+              >
+                {unifiedAssetItems.map((item) => (
+                  <Command.Item
+                    forceMount
+                    key={`asset-${item.id}`}
+                    value={`asset-${item.id}`}
+                    onSelect={() => go(item.href, effectiveQuery)}
+                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
+                  >
+                    <Store size={16} className="text-fg-3 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-fg">{item.title}</span>
+                      {item.description ? (
+                        <span className="ml-2 text-xs text-fg-3">{item.description}</span>
+                      ) : null}
+                    </div>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+
+            {/* Unified Search: Assets Link (전용 표면 서버 검색으로 이어가기) */}
             {unifiedAssetsMoreHref && effectiveQuery && (
               <Command.Group
                 forceMount

@@ -71,6 +71,7 @@ import {
   productionManuscriptMetrics,
   type ProductionManuscriptProcess,
 } from "./production-manuscript-model";
+import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
 import { ProductionManuscriptDeliveryHub } from "./ProductionManuscriptDeliveryHub";
 import { buildProductionReviewCandidates } from "./production-manuscript-competitive-model";
 import type { ProductionClientCommand } from "./production-api";
@@ -821,6 +822,11 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
     data-production-manuscript-workspace=""
     aria-busy={loading || undefined}
   >
+    {/* 단계 인계: 회차가 지정된 진입(회차 룸 딥링크 등)에서는 작화 시작 화면 상단에
+        앞 단계(기획·콘티) 산출을 자동 인용한다. 회차 맥락이 없으면 마운트하지 않는다. */}
+    {episodeId ? (
+      <EpisodeStageHandoffSection aggregate={aggregate} episodeId={episodeId} targetStage="art" />
+    ) : null}
     <section
       className="min-w-0 max-w-full overflow-hidden rounded-3xl border border-line bg-card"
       aria-labelledby="manuscript-workspace-title"
@@ -878,7 +884,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
               {copyStatus === "copied"
                 ? "현재 원고 운영 화면 링크를 복사했습니다."
                 : copyStatus === "error"
-                  ? "현재 화면 링크를 복사하지 못했습니다."
+                  ? t("productionHub.status.screenLinkCopyFailed", "현재 화면 링크를 복사하지 못했습니다.")
                   : ""}
             </span>
           </div>

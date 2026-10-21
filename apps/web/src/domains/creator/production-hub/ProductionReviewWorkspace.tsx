@@ -27,6 +27,7 @@ import {
   type ScopeRef,
 } from "@toonstudio/core/production";
 
+import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
 import type { ProductionClientCommand } from "./production-api";
 import { reviewLaneLabel, roleTypeLabel, submissionStatusLabel } from "./production-labels";
 
@@ -341,6 +342,11 @@ function ProductionReviewWorkspaceForProject({
         </div>
         {requestError ? <p role="alert" className="mt-3 rounded-xl border border-bad/30 bg-bad/10 p-3 text-sm">{requestError}</p> : null}
       </header>
+
+      {/* 단계 인계: 선택 회차의 앞 단계(기획·콘티) 산출을 검수 시작 화면에 자동 인용한다. */}
+      <div className="border-b border-line p-4">
+        <EpisodeStageHandoffSection aggregate={aggregate} episodeId={selectedEpisodeId} targetStage="review" />
+      </div>
 
       <div className="grid min-h-[46rem] xl:grid-cols-[13rem_minmax(0,1fr)_21rem]">
         <aside className="border-b border-line bg-panel/70 p-3 xl:border-b-0 xl:border-r" aria-label="검수 컷 목록">

@@ -7,7 +7,9 @@
  *   어떤 소스가 없는지는 `missing` 으로 정직하게 돌려준다.
  * - 새 저장소를 만들지 않는다. 입력은 기획(EpisodePlanWithSynopsis),
  *   캐릭터 시트(StudioStoryCharacter + StudioStoryCharacterProfile),
- *   콘티 비트(StudioStoryBeat) — 전부 기존 정본 타입 그대로다.
+ *   콘티 비트(StudioStoryBeat), 장면 계획(ScenePlan의 구조적 부분집합) —
+ *   전부 기존 정본 데이터 그대로다. 비트가 없을 때만 장면 계획이 콘티
+ *   구성 섹션의 근거가 된다(비트와 장면 계획을 섞어 지어내지 않는다).
  * - 캐릭터 한 줄 특징은 시트의 실재 필드(personality → motivation →
  *   speechStyle 순으로 첫 non-empty)만 쓴다. background·signatureLines·
  *   appearanceNotes 는 인계 요약에 끌어오지 않는다.
@@ -69,10 +71,27 @@ export interface StageHandoffCharacterInput {
   readonly speechStyle?: string | null;
 }
 
+/**
+ * 장면 계획(콘티 구성의 장면 단위) 인계 입력. 제작 허브의 core ScenePlan에서
+ * 인용에 쓰는 필드만 구조적으로 받는다 — 비트(StudioStoryBeat)와 다른
+ * 타입이라 비트로 변환하지 않고, 장면 목적·감정 비트를 그대로 인용한다.
+ */
+export interface StageHandoffScenePlanInput {
+  readonly order: number;
+  readonly purpose?: string | null;
+  readonly emotionalBeat?: string | null;
+}
+
 export interface StageHandoffInput {
   readonly plan?: EpisodePlanWithSynopsis | null;
   readonly characters?: readonly StageHandoffCharacterInput[];
   readonly beats?: readonly StudioStoryBeat[];
+  /**
+   * 이 회차의 장면 계획. 비트가 없을 때만 콘티 구성 섹션의 근거가 된다
+   * (비트가 있으면 비트가 정본). 넘기지 않거나 비어 있으면 비트 기준으로만
+   * 판정한다.
+   */
+  readonly scenePlans?: readonly StageHandoffScenePlanInput[];
   /**
    * 동결 모델 시트 레코드(model-sheet-freeze-model 정본). 넘기지 않으면
    * 기준본 동결 여부를 판단하지 않는다 — 모른다고 미동결 안내를
@@ -301,6 +320,39 @@ function buildStoryboardSection(
 }
 
 /**
+ * 비트가 없을 때의 콘티 구성 섹션 — 장면 계획의 목적을 순서대로 인용한다.
+ * 목적이 비면 감정 비트로 폴백하고, 둘 다 비면 그 장면은 리드에서 빼되
+ * 장면 수에는 센다(없는 목적을 지어내지 않는다).
+ */
+function buildStoryboardSectionFromScenePlans(
+  scenePlans: readonly StageHandoffScenePlanInput[] | undefined,
+): StageHandoffSection | null {
+  if (!scenePlans || scenePlans.length === 0) return null;
+  const ordered = [...scenePlans].sort((a, b) => a.order - b.order);
+  const lines: string[] = [`장면 ${ordered.length}`];
+  for (const plan of ordered) {
+    if (lines.length >= 4) break;
+    const lead = plan.purpose?.trim() || plan.emotionalBeat?.trim() || "";
+    if (lead) lines.push(lead);
+  }
+  return section("storyboard", lines);
+}
+
+/**
+ * core ScenePlan(또는 같은 모양의 장면 계획) → 인계 입력. 호출부가 회차·
+ * 최신 리비전으로 골라 넘긴 목록을 순서만 정규화해 그대로 실어 나른다.
+ */
+export function stageHandoffScenePlanInputs(
+  plans: readonly StageHandoffScenePlanInput[],
+): readonly StageHandoffScenePlanInput[] {
+  return Object.freeze(
+    [...plans]
+      .sort((a, b) => a.order - b.order)
+      .map((plan) => Object.freeze({ order: plan.order, purpose: plan.purpose ?? null, emotionalBeat: plan.emotionalBeat ?? null })),
+  );
+}
+
+/**
  * "이 회차에 등장하는 캐릭터"의 판정 — 시즌 비트 보드와 같은 정본 규칙을
  * 쓴다: 콘티 비트의 characterIds 와 회차 계획의 characterRefs 가 등장
  * 근거다. 둘 다 근거를 주지 않을 때만, 호출부가 넘긴 캐릭터 목록 자체를
@@ -439,7 +491,9 @@ function buildReviewSessionSection(
 export function buildStageHandoff(input: StageHandoffInput): StageHandoff {
   const planSections = buildPlanSections(input.plan);
   const characterSection = buildCharacterSection(input.characters);
-  const storyboardSection = buildStoryboardSection(input.beats);
+  // 콘티 구성은 비트가 정본이고, 비트가 없을 때만 장면 계획으로 인용한다.
+  const storyboardSection =
+    buildStoryboardSection(input.beats) ?? buildStoryboardSectionFromScenePlans(input.scenePlans);
   const frozenAttachment = buildFrozenReferenceAttachment(input);
   const frozenSection = buildFrozenReferenceSection(frozenAttachment.references);
   const reviewSessionSection = buildReviewSessionSection(input.reviewSessionSummaries);

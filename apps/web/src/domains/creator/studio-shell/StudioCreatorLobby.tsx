@@ -33,6 +33,7 @@ import {
   studioLobbyRecentProjects,
 } from "./studio-creator-lobby-model";
 import { orderStudioLobbyActionsForRole } from "./studio-creator-lobby-role-model";
+import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 import {
   studioProjectIsTemporaryWork,
   studioProjectLibraryDateLabel,
@@ -286,7 +287,7 @@ function StudioLobbyHero() {
         </p>
         <StudioLobbyIdeaForm />
         <div className="studio-lobby-hero__actions">
-          <Link href="/studio/new" className={buttonClass({ size: "lg", className: "gap-2" })}>
+          <Link href={STUDIO_START_GATEWAY_HREF} className={buttonClass({ size: "lg", className: "gap-2" })}>
             <Plus size={17} aria-hidden="true" />
             {bi("새 작품 시작", "Start a new work")}
           </Link>
@@ -430,7 +431,7 @@ function StudioLobbyRecentShelf({
             </li>
           ))}
         <li>
-          <Link href="/studio/new" className="studio-lobby-project studio-lobby-project--new">
+          <Link href={STUDIO_START_GATEWAY_HREF} className="studio-lobby-project studio-lobby-project--new">
             <span className="studio-lobby-project__new-icon" aria-hidden="true">
               <Plus size={24} />
             </span>

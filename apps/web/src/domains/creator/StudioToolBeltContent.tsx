@@ -8,6 +8,7 @@ import {
   type StudioUiChromeRegion,
   type StudioUiFirstScreenExposure,
 } from "./studio-ui-density";
+import { studioWorkModeAllowsRegion } from "./studio-cuttoon-editor/runtime/studio-work-mode-gating";
 import type { StudioWorkMode } from "./studio-work-mode";
 import { STUDIO_VIEW_ACTION_HINTS } from "./studio-view-action-hints";
 import { StudioToolBeltCanvasControls } from "./StudioToolBeltCanvasControls";
@@ -737,8 +738,14 @@ export const StudioToolBeltContent = memo(function StudioToolBeltContent(
     <>
         {/* 모바일: 가로 스크롤 가능 힌트(좌측 페이드). 데스크톱에선 숨김. */}
         <span aria-hidden className="pointer-events-none sticky left-0 -ml-1 h-8 w-2 shrink-0 self-stretch bg-gradient-to-r from-panel to-transparent lg:hidden" />
-        {/* Quick Actions — undo/redo/history always near the left of the top bar */}
-        {studioUiDensityAllows(uiDensityMode, "quick-actions") ? (
+        {/* Quick Actions — undo/redo/history always near the left of the top bar.
+            Work-mode gate: composed with the density verdict like every other
+            chrome region (studio-work-mode-gating.ts). "quick-actions" is
+            never folded by the current work-mode matrix and mode "all" (or an
+            unwired host) is the identity, so this renders exactly as before
+            until a mode actually folds the region. */}
+        {studioUiDensityAllows(uiDensityMode, "quick-actions")
+          && studioWorkModeAllowsRegion(props.workMode ?? "all", "quick-actions", props.uiAdvancedToolsExpanded === true) ? (
           <StudioToolBeltQuickActions
             collaborationDocumentLocked={collaborationDocumentLocked}
             collaborationLockMessage={collaborationLockMessage}

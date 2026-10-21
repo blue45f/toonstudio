@@ -59,7 +59,8 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     // 새 작품 링크는 시작 카드와 이어가기 빈 상태 두 곳에 있을 수 있다 — 전부 같은 정문을 가리킨다.
     const newWorkLinks = screen.getAllByRole("link", { name: /새 작품 만들기/ });
     expect(newWorkLinks.length).toBeGreaterThan(0);
-    expect(newWorkLinks.every((link) => link.getAttribute("href") === "/studio/new")).toBe(true);
+    // 이어가기 빈 상태의 "새 작품 만들기"도 레인 없는 bare 링크가 아니라 빈 캔버스 레인을 명시한다(A5).
+    expect(newWorkLinks.every((link) => link.getAttribute("href") === "/studio/new?lane=blank")).toBe(true);
     expect(screen.getByRole("link", { name: /템플릿으로 시작하기/ }).getAttribute("href")).toBe("/studio/templates");
     // 콘티 레인은 레인을 명시해 넘긴다(S2-7) — 양식 시작점 초기값은 storyboard, 생성 뒤 에디터에 착지한다.
     expect(screen.getByRole("link", { name: /콘티부터 시작하기/ }).getAttribute("href")).toBe("/studio/new?lane=storyboard&start=storyboard");
@@ -81,7 +82,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     const continueCard = screen.getByRole("heading", { name: "이어서 작업하기" }).closest("section");
     expect(continueCard).not.toBeNull();
     const cardLinks = within(continueCard as HTMLElement).getAllByRole("link");
-    expect(cardLinks[0]?.getAttribute("href")).toBe("/studio/new");
+    expect(cardLinks[0]?.getAttribute("href")).toBe("/studio/new?lane=blank");
     expect(screen.getByRole("link", { name: /작업실 둘러보기/ }).getAttribute("href")).toBe("/studio");
     expect(screen.queryByRole("link", { name: /모든 작품 보기/ })).toBeNull();
     // 게스트에게는 저장 범위를 정직하게 알린다.

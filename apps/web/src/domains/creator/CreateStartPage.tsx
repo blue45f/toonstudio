@@ -339,7 +339,7 @@ export function CreateStartPage() {
             {/* 빈 상태의 다음 행동은 이 화면의 본래 목적인 "첫 작품 만들기"여야 한다.
                 둘러보기는 보조로 내린다 — 시작하러 온 사람을 구경으로 보내지 않는다. */}
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <Link href="/studio/new" className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+              <Link href="/studio/new?lane=blank" className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
                 {bt("새 작품 만들기", "Create a new work")}
                 <ArrowRight size={15} aria-hidden />
               </Link>

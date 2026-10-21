@@ -1,4 +1,4 @@
-import { CheckCircle2, LayoutTemplate, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LayoutTemplate, X } from "lucide-react";
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -13,6 +13,7 @@ import {
   writeStudioTemplateHandoff,
 } from "../studio-template-catalog";
 import { StudioNewIntegratedPage as StudioProjectCreatePage } from "./StudioProjectCreatePage";
+import { STUDIO_START_FORM_BACK_HREF } from "../studio-start-entry";
 import "./studio-new-visual-first.css";
 import "./studio-new-visual-gallery.css";
 
@@ -35,6 +36,19 @@ export function StudioNewIntegratedPage() {
 
   return (
     <>
+      {/* 복귀 맥락 (A5): 양식으로 직행해 들어와도 시작 방법을 다시 고를 수 있게,
+          관문(/create)으로 돌아가는 길을 항상 위에 둔다. */}
+      <div className="border-b border-line/60">
+        <Container size="wide" className="py-2">
+          <Link
+            href={STUDIO_START_FORM_BACK_HREF}
+            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent"
+          >
+            <ArrowLeft size={15} aria-hidden />
+            {bt("시작 방법 다시 고르기", "Choose another way to start")}
+          </Link>
+        </Container>
+      </div>
       {template ? (
         <div className="min-w-0 border-b border-accent/25 bg-accent-soft/35">
           <Container size="wide" className="min-w-0 py-3">

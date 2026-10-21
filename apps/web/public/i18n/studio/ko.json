@@ -1006,6 +1006,8 @@
   "studio.settings.uiDensityDescription.simple": "자주 쓰는 도구와 설정을 보여 주고 고급 기능은 필요할 때 펼쳐요.",
   "studio.settings.uiDensityDescription.focus": "캔버스와 그리기·말풍선·소재 같은 핵심 도구만 남겨 작업에 집중해요.",
   "studio.settings.uiDensityDescription.full": "AI·3D를 포함한 모든 전문 도구와 패널을 표시해요.",
+  "studio.settings.advancedTools.expand": "고급 도구 펼치기",
+  "studio.settings.advancedTools.collapse": "고급 도구 접기",
   "studio.settings.general.brushCursorLabel": "펜 커서",
   "studio.settings.general.brushCursorHint": "윤곽선은 현재 브러시 크기를, 점은 중심 위치만 보여 줘요.",
   "studio.settings.general.brushCursor.outline": "크기 윤곽선",

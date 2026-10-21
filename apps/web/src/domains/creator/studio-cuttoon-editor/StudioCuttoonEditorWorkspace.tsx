@@ -211,7 +211,33 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             className="fixed inset-0 z-[59] bg-black/45 backdrop-blur-sm lg:hidden"
           />
         )}
-        {/* 왼쪽: 페이지 목록 — 접히면 아이콘 엣지 레일 */}
+        {/* 왼쪽: 페이지 목록 — 접히면 아이콘 엣지 레일.
+            Work-mode gate: this pane is the "page-strip" + "left-panel" chrome.
+            When the composed gate (uiChromeExposure, density × work mode)
+            folds either region, the pane mounts as a slim folded strip whose
+            expand button reuses the density advanced-expansion choice — the
+            same pattern as the tool-rail gate below. Neither region is folded
+            by the current work-mode matrix and mode "all" returns the density
+            verdict unchanged, so the pane renders exactly as before until a
+            mode actually folds it. An unwired host (no uiChromeExposure)
+            keeps the pane mounted, as before. */}
+        {uiChromeExposure
+          && (uiChromeExposure("page-strip") === "folded" || uiChromeExposure("left-panel") === "folded") ? (
+          <div
+            data-studio-page-list-folded={workMode ?? undefined}
+            className="hidden w-12 shrink-0 flex-col items-center border-r border-line bg-panel py-2 lg:flex"
+          >
+            <button
+              type="button"
+              onClick={() => setUiAdvancedToolsExpanded?.(true)}
+              aria-label="접힌 페이지 목록 펼치기"
+              title="이 단계에서는 페이지 목록을 접어 둡니다. 펼치면 바로 쓸 수 있어요."
+              className="min-h-11 rounded-full border border-line px-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-panel"
+            >
+              페이지 펼치기
+            </button>
+          </div>
+        ) : (
         <Suspense
           fallback={(
             <div
@@ -247,6 +273,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             stableHandlers={studioPageListPaneHandlers}
           />
         </Suspense>
+        )}
 
         {/* Left vertical toolbar — desktop only; mobile uses bottom dock / horizontal belt.
             Work-mode gate: "tool-rail" is folded by the lettering/finish modes
@@ -338,7 +365,32 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
           }
         >
           <StudioCuttoonEditorCanvasColumn {...s} />
-          <StudioCuttoonEditorInspectorColumn {...s} />
+          {/* Work-mode gate: the inspector column is the "right-panel" chrome.
+              Same composed-gate pattern as the page pane and tool rail: a
+              folded verdict mounts a slim strip whose expand button reuses
+              the density advanced-expansion choice. "right-panel" is never
+              folded by the current work-mode matrix (primary or visible in
+              every mode) and mode "all" is the identity, so this renders the
+              column exactly as before until a mode actually folds it. An
+              unwired host (no uiChromeExposure) keeps the column mounted. */}
+          {uiChromeExposure && uiChromeExposure("right-panel") === "folded" ? (
+            <div
+              data-studio-inspector-folded={workMode ?? undefined}
+              className="hidden w-12 shrink-0 flex-col items-center border-l border-line bg-panel py-2 lg:flex"
+            >
+              <button
+                type="button"
+                onClick={() => setUiAdvancedToolsExpanded?.(true)}
+                aria-label="접힌 속성 패널 펼치기"
+                title="이 단계에서는 속성 패널을 접어 둡니다. 펼치면 바로 쓸 수 있어요."
+                className="min-h-11 rounded-full border border-line px-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-panel"
+              >
+                속성 펼치기
+              </button>
+            </div>
+          ) : (
+            <StudioCuttoonEditorInspectorColumn {...s} />
+          )}
         </div>
         <StudioCuttoonEditorPanels {...s} />
         <StudioCuttoonEditorSessionDialogs {...s} />

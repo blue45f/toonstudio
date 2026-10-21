@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import { useRef, useState, type FormEvent } from "react";
 import type { ProductionProjectAggregate, ProductionRisk, ProductionRiskResponse } from "@toonstudio/core/production";
 import type { ProductionClientCommand } from "./production-api";
@@ -19,6 +20,7 @@ export function ProductionRiskResponseComposer({ aggregate, risk, action, actorA
 }) {
   const [expectedEffect, setExpectedEffect] = useState(risk.varianceHours
     ? `예상 초과 ${Math.round(risk.varianceHours)}시간 축소` : "차단 원인 또는 일정 위험 축소");
+  const t = useT();
   const [owner, setOwner] = useState(actorAssignmentId ?? risk.ownerAssignmentId ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function ProductionRiskResponseComposer({ aggregate, risk, action, actorA
       await execute({ type: "upsert-risk-response", response }, `${action.title} 대응안을 제안했습니다.`);
       onClose();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "대응안을 저장하지 못했습니다.");
+      setError(failure instanceof Error ? failure.message : t("productionHub.status.riskResponseSaveFailed", "대응안을 저장하지 못했습니다."));
     } finally {
       savingRef.current = false; setSaving(false);
     }

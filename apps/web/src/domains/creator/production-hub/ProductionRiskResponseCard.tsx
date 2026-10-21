@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import {
   CheckCircle2,
   Play,
@@ -70,6 +71,7 @@ export function ProductionRiskResponseCard({
   canEdit,
   canManage,
 }: ProductionRiskResponseCardProps) {
+  const t = useT();
   const [resultNote, setResultNote] = useState(response.actualEffect ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +92,7 @@ export function ProductionRiskResponseCard({
       }, `${response.title} 대응을 ${STATUS_LABELS[toStatus]} 상태로 변경했습니다.`);
       if (toStatus === "proposed") setResultNote("");
     } catch (transitionError) {
-      setError(transitionError instanceof Error ? transitionError.message : "대응 상태를 변경하지 못했습니다.");
+      setError(transitionError instanceof Error ? transitionError.message : t("productionHub.status.riskResponseTransitionFailed", "대응 상태를 변경하지 못했습니다."));
     } finally {
       setBusy(false);
     }

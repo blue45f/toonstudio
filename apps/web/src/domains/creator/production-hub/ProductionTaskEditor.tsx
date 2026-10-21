@@ -142,7 +142,7 @@ export function ProductionTaskEditor({ aggregate, task, isNew, canEdit, execute,
       saved = true;
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "작업을 저장하지 못했습니다. 작성한 내용은 유지됩니다.",
+        cause instanceof Error ? cause.message : bt("작업을 저장하지 못했습니다. 작성한 내용은 유지됩니다.", "Could not save the task. Your edits are preserved."),
       );
     } finally {
       saving.current = false;
@@ -224,8 +224,8 @@ export function ProductionTaskEditor({ aggregate, task, isNew, canEdit, execute,
         {!editable ? (
           <p className="mb-4 rounded-xl border border-line bg-raised p-3 text-sm text-fg-2">
             {canEdit
-              ? "승인·완료·보관된 작업은 이 편집기에서 변경하지 않습니다."
-              : "읽기 전용입니다. 작업 변경에는 편집 권한이 필요합니다."}
+              ? bt("승인·완료·보관된 작업은 이 편집기에서 변경하지 않습니다.", "Approved, completed, or archived tasks cannot be changed in this editor.")
+              : bt("읽기 전용입니다. 작업 변경에는 편집 권한이 필요합니다.", "Read-only. Edit permission is required to change tasks.")}
           </p>
         ) : null}
         {stale ? (
@@ -521,7 +521,7 @@ export function ProductionTaskEditor({ aggregate, task, isNew, canEdit, execute,
               className={cn(buttonClass(), "min-h-11")}
             >
               <Save size={16} />
-              {busy ? "저장 중…" : isNew ? "작업 만들기" : "작업 저장"}
+              {busy ? bt("저장 중…", "Saving…") : isNew ? "작업 만들기" : "작업 저장"}
             </button>
           ) : null}
         </div>

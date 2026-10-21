@@ -125,7 +125,7 @@ describe("StudioCreatorLobby", () => {
     expect(within(region).getByRole("link", { name: /템플릿 모두 보기|Browse all templates/u }).getAttribute("href"))
       .toBe("/studio/templates");
     expect(within(region).getByRole("link", { name: /새 프로젝트|New project/u }).getAttribute("href"))
-      .toBe("/studio/new");
+      .toBe("/create");
     expect(within(region).getAllByRole("link").filter((link) => link.closest("nav"))).toHaveLength(7);
     // 빠른 시작에서 회차·공정을 운영하는 제작 관리로도 바로 들어갈 수 있다.
     expect(within(region).getByRole("link", { name: /제작 관리 열기|Open production/u }).getAttribute("href"))

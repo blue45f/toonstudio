@@ -3,6 +3,7 @@ import { ArrowRight, FileText } from "lucide-react";
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { TypographicCover } from "@/shared/components/typographic-cover";
+import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 import { useResolvedStudioProjectThumbnailUrl } from "../studio-shell/useStudioProjectThumbnailUrl";
 import type { StudioProjectKind, StudioProjectLibraryEntry } from "../studio-project-library-reader";
 
@@ -73,6 +74,6 @@ export function StudioWorkspaceRecentWorks({ projects, selectedId, locale, onSel
           </span>
         </button>;
       })}</div>
-      : <div className="workspace-recent-empty"><FileText size={24} aria-hidden="true" /><div><strong>{bt("아직 이 기기에 등록된 작품이 없습니다.", "No works are registered on this device yet.")}</strong><p>{bt("새 작품을 만들거나 기존 파일을 가져오면, 여기서 언제든 다시 이어갈 수 있어요.", "Create or import a work to pick up where you left off, right here.")}</p></div><Link href="/studio/new">{bt("새 작품 만들기", "Create a new work")}<ArrowRight size={16} aria-hidden="true" /></Link><Link href="/studio/import">{bt("파일 가져오기", "Import files")}<ArrowRight size={16} aria-hidden="true" /></Link></div>}
+      : <div className="workspace-recent-empty"><FileText size={24} aria-hidden="true" /><div><strong>{bt("아직 이 기기에 등록된 작품이 없습니다.", "No works are registered on this device yet.")}</strong><p>{bt("새 작품을 만들거나 기존 파일을 가져오면, 여기서 언제든 다시 이어갈 수 있어요.", "Create or import a work to pick up where you left off, right here.")}</p></div><Link href={STUDIO_START_GATEWAY_HREF}>{bt("새 작품 만들기", "Create a new work")}<ArrowRight size={16} aria-hidden="true" /></Link><Link href="/studio/import">{bt("파일 가져오기", "Import files")}<ArrowRight size={16} aria-hidden="true" /></Link></div>}
   </section>;
 }

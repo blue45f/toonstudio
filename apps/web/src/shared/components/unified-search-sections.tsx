@@ -19,10 +19,12 @@ const SECTION_ICONS: Record<Exclude<UnifiedSearchSectionKind, "works">, LucideIc
 };
 
 /**
- * /search의 통합 검색 패널 — 작품 결과(탐색기) 아래에 강좌·도움말(매뉴얼)·페이지
- * 섹션과 소재 전용 검색으로 가는 링크를 같은 검색어로 이어 붙인다.
+ * /search의 통합 검색 패널 — 작품 결과(탐색기) 아래에 소재·강좌·도움말
+ * (매뉴얼)·페이지 섹션을 같은 검색어로 이어 붙인다.
  * 작품만 찾던 /search에서 헤더 검색과 같은 유형별 도달성을 맞추기 위한 표면이며,
  * 실제 매칭은 전부 unified-search-providers(기존 검색 모듈 재사용)가 한다.
+ * 소재는 경량 로컬 색인(A6)이 실제 항목으로 답한다 — 색인에 항목이 없을
+ * 때만 아래쪽에 전용 표면 링크가 남는다.
  */
 export function UnifiedSearchSections({ query }: { readonly query: string }) {
   const bt = useBilingual("UnifiedSearchSections");
@@ -32,7 +34,9 @@ export function UnifiedSearchSections({ query }: { readonly query: string }) {
   if (!result) return null;
   const itemSections = result.sections.filter((section) => section.items.length > 0);
   const assets = unifiedSectionOf(result, "assets");
-  if (itemSections.length === 0 && !assets?.moreHref) return null;
+  // 소재 링크는 색인이 답하지 못했을 때의 폴백이다 — 항목이 있으면 섹션이 본문이다.
+  const assetsLinkOnly = assets && assets.items.length === 0 ? assets : undefined;
+  if (itemSections.length === 0 && !assetsLinkOnly?.moreHref) return null;
 
   return (
     <section
@@ -87,9 +91,9 @@ export function UnifiedSearchSections({ query }: { readonly query: string }) {
         })}
       </div>
 
-      {assets?.moreHref ? (
+      {assetsLinkOnly?.moreHref ? (
         <Link
-          href={assets.moreHref}
+          href={assetsLinkOnly.moreHref}
           className="mt-6 flex min-h-11 items-center gap-2 rounded-xl border border-dashed border-line px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
         >
           <Store size={16} className="text-accent" aria-hidden="true" />

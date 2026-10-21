@@ -596,7 +596,7 @@ function RiskPolicyPanel({
         },
       }, "위험 감지 정책을 저장했습니다.");
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "위험 감지 정책을 저장하지 못했습니다.");
+      setSaveError(error instanceof Error ? error.message : t("productionHub.status.riskPolicySaveFailed", "위험 감지 정책을 저장하지 못했습니다."));
     } finally {
       setSaving(false);
     }

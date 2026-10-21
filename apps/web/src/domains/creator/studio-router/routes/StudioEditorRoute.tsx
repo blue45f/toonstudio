@@ -6,6 +6,7 @@ import { resolveStudioLocalDocumentSource } from "../../studio-local-document-so
 import { studioEditorInstanceKey } from "../../studio-editor-scope";
 import { studioWorkspaceDocumentIdentity } from "../../studio-workspace-route";
 import { StudioRouteLoading } from "../../StudioLazySurfaceFallback";
+import { resolveStudioMobileTouchPlan } from "../../studio-mobile-touch-flow";
 import { MobileFullEditNotice } from "../../studio-shell/MobileFullEditNotice";
 import { StudioDocumentLayout } from "../StudioDocumentLayout";
 import { StudioDocumentRuntimeBoundary } from "../StudioDocumentRuntimeBoundary";
@@ -94,17 +95,23 @@ export function StudioEditorRoute({ resolution }: {
             <StudioWorkspaceContextCoach surface={route.surface} />
           </Suspense>
         ) : null}
-        <MobileFullEditNotice
-          surfaceId={`studio-editor-${route.surface}`}
-          surfaceLabel={route.surface === "canvas"
-            ? { ko: "캔버스 편집기", en: "Canvas editor" }
-            : { ko: "Studio 편집기", en: "Studio editor" }}
-          mobileCapabilities={[
-            { ko: "작품 보기와 확대·이동", en: "View, zoom and pan your work" },
-            { ko: "모바일 도크의 간단한 그리기·지우기", en: "Quick draw and erase from the mobile dock" },
-            { ko: "자동 저장 후 다른 기기에서 이어 편집", en: "Autosave, then continue on another device" },
-          ]}
-        />
+        {/*
+          표면별 터치 경계는 studio-mobile-touch-flow 정본 계획을 그대로 소비한다.
+          예전처럼 모든 표면에 "모바일 도크 그리기"를 약속하면, 도크가 없는 3D 배경·포저·
+          DCC 표면에서 "눌렀는데 안 되는" 거짓 안내가 된다 — 되는/안 되는 목록은 표면마다 다르다.
+        */}
+        {(() => {
+          const touchPlan = resolveStudioMobileTouchPlan(route.surface);
+          return (
+            <MobileFullEditNotice
+              surfaceId={`studio-editor-${route.surface}`}
+              surfaceLabel={touchPlan.label}
+              mobileCapabilities={touchPlan.canDo}
+              mobileLimitations={touchPlan.cannotDo}
+              touchTier={touchPlan.tier}
+            />
+          );
+        })()}
         <StudioOfflinePanelBoundary>
           <Suspense fallback={null}><StudioOfflinePanel /></Suspense>
         </StudioOfflinePanelBoundary>

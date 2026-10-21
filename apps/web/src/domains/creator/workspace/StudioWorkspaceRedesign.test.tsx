@@ -21,7 +21,7 @@ function project() {
 describe("studio-first visual redesign retains real actions", () => {
   it("presents actual empty state instead of invented work or live statistics", () => {
     render(<MemoryRouter><StudioWorkspaceActivityRail project={null} links={workspaceProjectLinks(null)} resume={null} resumeLabel={null} /></MemoryRouter>);
-    expect(screen.getByRole("link", { name: "내 첫 작품 만들기" }).getAttribute("href")).toBe("/studio/new");
+    expect(screen.getByRole("link", { name: "내 첫 작품 만들기" }).getAttribute("href")).toBe("/create");
     expect(screen.getByRole("link", { name: /기존 파일 가져오기/ }).getAttribute("href")).toBe("/studio/import");
     expect(screen.queryByText(/접속 중|명 온라인|완료율/)).toBeNull();
   });
@@ -65,7 +65,7 @@ describe("studio-first visual redesign retains real actions", () => {
 it("keeps creation, import and the sample workflow in the compact empty library", () => {
   render(<MemoryRouter><StudioWorkspaceLibraryEmptyState /></MemoryRouter>);
   expect(screen.getByRole("heading", { name: "첫 작품을 위한 자리를 비워 두었어요." })).toBeTruthy();
-  expect(screen.getByRole("link", { name: "새 작품 만들기" }).getAttribute("href")).toBe("/studio/new");
+  expect(screen.getByRole("link", { name: "새 작품 만들기" }).getAttribute("href")).toBe("/create");
   expect(screen.getByRole("link", { name: "파일 가져오기" }).getAttribute("href")).toBe("/studio/import");
   expect(screen.getByRole("link", { name: "샘플 제작 흐름 살펴보기" }).getAttribute("href")).toBe("/production/projects/sample-project/overview");
   expect(screen.queryByRole("img")).toBeNull();

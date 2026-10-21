@@ -294,7 +294,7 @@ export function ProductionStudioRevisionWorkspace({
                 >
                   <Link2 className="size-3.5" aria-hidden="true" />
                   {linkingId === linkId(row.deliverable.id, row.submission?.id ?? "missing")
-                    ? "연결 중…"
+                    ? t("productionHub.status.linkingRevision", "연결 중…")
                     : approved
                       ? "승인 revision 갱신"
                       : pending
@@ -311,7 +311,7 @@ export function ProductionStudioRevisionWorkspace({
                     : !assignment
                       ? t("productionHub.revisionWorkspace.emptyActiveAssignment", "현재 관점에서 사용할 활성 역할 배정이 없습니다.")
                       : !canEdit
-                        ? "편집 권한이 있어야 revision을 연결할 수 있습니다."
+                        ? t("productionHub.status.linkingRequiresEditPermission", "편집 권한이 있어야 revision을 연결할 수 있습니다.")
                         : "다른 revision을 연결하는 중입니다."}
                 </p>
               ) : null}

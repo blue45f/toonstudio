@@ -33,6 +33,7 @@ import type {
 } from "./StudioToolBeltContent";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export interface StudioToolBeltCreateModeInsertToolsProps {
   hints: StudioToolBeltHintMap;
@@ -44,6 +45,7 @@ export const StudioToolBeltCreateModeInsertTools = memo(
   function StudioToolBeltCreateModeInsertTools(
     props: StudioToolBeltCreateModeInsertToolsProps,
   ) {
+    const t = useT();
     const { hints, studioCanvasImageAccept, toolBelt } = props;
     const { color, menu, menuRef, setMenu, recentColors } = toolBelt;
     const {
@@ -153,7 +155,7 @@ export const StudioToolBeltCreateModeInsertTools = memo(
             >
               <Suspense
                 fallback={
-                  <StudioPanelLoading label="말풍선 메뉴를 여는 중..." />
+                  <StudioPanelLoading label={t("studio.canvas.panelLoading.bubbleMenu", "말풍선 메뉴를 여는 중...")} />
                 }
               >
                 <LazyStudioBubbleToolPopoverBody toolBelt={toolBelt} />
