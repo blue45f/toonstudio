@@ -108,8 +108,9 @@ const ENTRIES: readonly Bg3dModelLibraryEntry[] = [
 const ENTRY_IDS: Readonly<Record<string, string>> = { "env-cc0": "ts-bg3d-fake-cc0", "env-ai": "ts-bg3d-fake-ai" };
 const LIBRARY: readonly Bg3dModelLibraryEntry[] = ENTRIES.map((item) => ({ ...item, id: ENTRY_IDS[item.id] ?? item.id }));
 
-function views(entries = LIBRARY) {
+function views(entries = LIBRARY, failed?: { readonly library: boolean; readonly metadata: boolean }) {
   return buildStudioBg3dAssetRightsViews(entries, {
+    failed,
     provenanceOf: (id) => (id === "ts-bg3d-fake-cc0"
       ? { origin: "original-procedural", license: "CC0-1.0", commercialUse: true, attributionRequired: false, author: "ToonStudio" }
       : id === "ts-bg3d-fake-ai"
@@ -188,6 +189,25 @@ describe("카드의 한 줄 권리 요약", () => {
     expect(props.onAdd).toHaveBeenCalledWith("bought");
   });
 
+  it("구매·허가 소재의 '표기 필요' 칸이 비어 있으면(false) 요약은 '표기 미확인', 상세의 표기 의무는 '미확인'이다", () => {
+    const unticked = buildStudioBg3dAssetRightsViews(LIBRARY, {
+      libraryRightsById: new Map([["bought", { status: "licensed", commercialUse: true, attributionRequired: false, licenseName: "표준 약관" }]]),
+    });
+    renderPanel({ rightsViews: unticked });
+    expect(document.getElementById("bg3d-model-rights-summary-bought")?.textContent).toBe("구매·허가 · 상업 가능 · 표기 미확인 · AI 미확인");
+    fireEvent.click(screen.getByRole("button", { name: "구매한 의자 권리 상세" }));
+    const region = screen.getByRole("region", { name: "구매한 의자 권리 상세" });
+    expect(within(region).getByText("표기 의무").nextElementSibling?.textContent).toBe("미확인");
+    expect(region.textContent).not.toContain("표기 불필요");
+  });
+
+  it("직접 제작 소재의 '표기 필요' 칸 false 는 기록대로 '표기 불필요'로 보인다", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "내가 만든 책상 권리 상세" }));
+    const region = screen.getByRole("region", { name: "내가 만든 책상 권리 상세" });
+    expect(within(region).getByText("표기 의무").nextElementSibling?.textContent).toBe("표기 불필요");
+  });
+
   it("카탈로그 라이선스가 CC0 가 아닌 번들 환경에는 CC0 라고 쓰지 않는다", () => {
     renderPanel();
     expect(screen.getByText("환경 · CC0")).toBeTruthy();
@@ -232,10 +252,52 @@ describe("권리 상세 펼치기", () => {
     }
   });
 
-  it("권리 기록을 읽지 못한 가져온 소재에는 그 사실을 알린다", () => {
-    renderPanel({ rightsViews: undefined });
-    fireEvent.click(screen.getByRole("button", { name: "구매한 의자 권리 상세" }));
-    expect(screen.getByRole("region", { name: "구매한 의자 권리 상세" }).textContent).toContain("권리 기록을 읽지 못해");
+  describe("권리 기록을 읽지 못했다는 안내는 실제로 읽지 못한 소재에만 붙는다", () => {
+    const regionText = (name: string) => {
+      fireEvent.click(screen.getByRole("button", { name: `${name} 권리 상세` }));
+      return screen.getByRole("region", { name: `${name} 권리 상세` }).textContent ?? "";
+    };
+    const noRecords = (failed?: { readonly library: boolean; readonly metadata: boolean }) =>
+      buildStudioBg3dAssetRightsViews(LIBRARY, {
+        failed,
+        provenanceOf: () => undefined,
+      });
+
+    it("두 원천을 모두 읽지 못한 가져온 소재에는 그 사실과 다음 행동을 알린다", () => {
+      renderPanel({ rightsViews: noRecords({ library: true, metadata: true }) });
+      const text = regionText("구매한 의자");
+      expect(text).toContain("저장된 권리 기록을 읽지 못해서 모두 미확인으로 보여요");
+      expect(text).toContain("다시 열어 주세요");
+    });
+
+    it("읽는 중에는(원천이 아직 없으면) 소재 카드에 '읽지 못했다'고 하지 않는다", () => {
+      renderPanel({ rightsViews: noRecords(undefined), rightsLoadState: "loading" });
+      expect(regionText("구매한 의자")).not.toContain("읽지 못해");
+    });
+
+    it("읽기는 성공했는데 기록이 없을 뿐인 소재에도 '읽지 못했다'고 하지 않는다", () => {
+      renderPanel({ rightsViews: noRecords({ library: false, metadata: false }), rightsLoadState: "ready" });
+      expect(regionText("구매한 의자")).not.toContain("읽지 못해");
+    });
+
+    it("해시가 없는 옛 항목은 저장소 기록(메타데이터)만 못 읽었을 때 '읽지 못했다'고 하지 않는다", () => {
+      renderPanel({ rightsViews: views(LIBRARY, { library: false, metadata: true }), rightsLoadState: "partial" });
+      expect(regionText("옛 가져오기")).not.toContain("읽지 못해");
+    });
+
+    it("라이브러리를 읽지 못하고 저장된 기록만 읽었으면 권리 상태가 미확인인 이유를 알린다", () => {
+      renderPanel({
+        rightsViews: buildStudioBg3dAssetRightsViews(LIBRARY, {
+          failed: { library: true, metadata: false },
+          metadataByHash: new Map([[hash("c"), metadata("c", { status: "licensed", commercialUse: true, teamShareAllowed: false, license: "ACON3D 구매 라이선스" })]]),
+        }),
+        rightsLoadState: "partial",
+      });
+      const text = regionText("구매한 의자");
+      expect(text).toContain("라이브러리에 저장된 권리 기록을 읽지 못해서 권리 상태와 상업 사용은 미확인으로 보여요");
+      // 저장된 기록이 구매·허가·상업 가능이라고 해도 카드는 미확인이다.
+      expect(document.getElementById("bg3d-model-rights-summary-bought")?.textContent).toBe("권리 미확인 · AI 미확인");
+    });
   });
 
   it("여는 버튼에서 Esc 를 누르면 접고 포커스는 그 버튼에 남는다", () => {
@@ -639,6 +701,19 @@ describe("가져오기 권리 폼의 AI 답은 가져오기를 시작하면 비�
     expect(screen.getByText(/가져온 뒤에는 이 화면에서 고칠 수 없어요/u).textContent).toContain("지금 가져오는 모델에만 적용돼요");
   });
 
+  it("머리글은 AI 학습 이용 답도 함께 보이고, 좁은 폭에서 잘려도 title 로 전체를 읽을 수 있다", () => {
+    renderPanel();
+    expect(header()).toContain("AI 학습 미확인");
+    fireEvent.click(screen.getByText("이용 권리 기록"));
+    fireEvent.click(screen.getByRole("radio", { name: "금지" }));
+    expect(header()).toContain("AI 표기: 미확인 · AI 학습 금지");
+    fireEvent.click(screen.getByRole("radio", { name: "AI 아님" }));
+    fireEvent.click(screen.getByRole("radio", { name: "허용" }));
+    const text = header();
+    expect(text).toContain("AI 표기: AI 아님 · AI 학습 허용");
+    expect(screen.getByText(/AI 표기:/u).getAttribute("title")).toBe(text);
+  });
+
   it("A 를 가져온 뒤 B 를 가져올 때 A 의 AI 답이 따라가지 않는다", () => {
     const { props } = renderPanel();
     fireEvent.click(screen.getByText("이용 권리 기록"));
@@ -650,7 +725,7 @@ describe("가져오기 권리 폼의 AI 답은 가져오기를 시작하면 비�
     // 가져오기를 시작하면 폼이 '모름' 으로 돌아오고 머리글도 미확인으로 돌아온다.
     expect((screen.getByRole("radio", { name: "AI로 만듦" }) as HTMLInputElement).checked).toBe(false);
     for (const radio of screen.getAllByRole("radio", { name: "모름" })) expect((radio as HTMLInputElement).checked).toBe(true);
-    expect(header()).toContain("AI 표기: 미확인");
+    expect(header()).toContain("AI 표기: 미확인 · AI 학습 미확인");
 
     pick("b.glb");
     const second = vi.mocked(props.onFileChange).mock.calls[1]?.[1] as Record<string, unknown>;

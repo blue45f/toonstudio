@@ -23,7 +23,7 @@ import {
   normalizeStudioBg3dAssetMetadata,
 } from "./studio-bg3d-asset-metadata";
 import { notifyStudioBg3dAssetRightsChanged } from "./studio-bg3d-asset-rights-refresh";
-import { hasStudioBg3dImportAiUse } from "./studio-bg3d-import-ai-use";
+import { hasImportAiUseLazy } from "./studio-bg3d-import-ai-use-lazy";
 import { pickStudioBg3dImportedMetadata } from "./studio-bg3d-import-rights-receipt";
 import {
   STUDIO_BG3D_IMPORT_SAVE_TIMEOUT_MS,
@@ -111,7 +111,7 @@ export async function persistStudioBg3dImportedAiUse(
   aiUse: StudioBg3dImportAiUse | undefined,
   deps: StudioBg3dImportMetadataDeps = {},
 ): Promise<StudioBg3dImportAiUseStatus> {
-  if (!hasStudioBg3dImportAiUse(aiUse) || records.length === 0) return "skipped";
+  if (!hasImportAiUseLazy(aiUse) || records.length === 0) return "skipped";
   if (deps.signal?.aborted) return "cancelled";
   const scope = createStudioBg3dImportSaveScope(deps.signal, deps.timeoutMs ?? STUDIO_BG3D_IMPORT_AI_USE_SAVE_TIMEOUT_MS);
   try {

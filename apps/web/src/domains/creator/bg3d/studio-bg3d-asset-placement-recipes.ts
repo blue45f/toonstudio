@@ -6,72 +6,37 @@
  * 목표 X/Z 에 맞추고 접지 높이를 중심 기준으로 되돌리기)과 높이 맞춤 배율은 여기서 그 결과 위에 얹는다 — 기존 모듈은 편집기
  * 정적 그래프에 있어서 건드리지 않는다. 엔진·DOM 에 의존하지 않으며 입력을 바꾸지 않는다.
  *
+ * 의존성 주입: 이 모듈은 편집기 활성화 그래프에 있는 모듈(기존 배치 계획·회전 계산)을 값으로 가져오지 않는다. 지연 로드되는
+ * 모듈이 그런 모듈을 값으로 가져오면 번들러가 그 모듈을 활성화 본체 청크에서 떼어 별도 공유 청크로 만든다. 그래서 두 계산은
+ * `createStudioBg3dAssetPlacementPlanner` 의 인자로 받고(타입만 가져온다), 활성화 쪽의 가벼운 접합부가 실행 때 넘긴다.
+ * 레시피 이름·설명·고정 문구는 의존 없는 잎 모듈(studio-bg3d-asset-placement-catalog)에 있다.
+ *
  * 규칙
  * - 입력이 올바르지 않으면(경계 크기 0·NaN·역전, 벽 정보 누락 등) 변환을 만들지 않고 이유를 돌려준다. 호출한 쪽은
  *   그 경우 장면을 건드리지 않는다. 이유(`reason`)는 사용자에게 그대로 보이는 해요체 문장이고 "원인 + 다음 행동"을 담는다.
  *   프로그램이 가르는 값은 `code` 다.
  * - 레시피는 모델의 정면이 로컬 +Z 라고 가정한다(glTF 관례). 정면이 다른 모델은 배치 뒤에 회전 도구로 돌린다.
  * - 결과 변환은 장면 문서의 한도(스케일 0.001~1000, 월드 좌표 ±10000) 안이어야 한다. 넘으면 실패다.
- * - 사람 키는 뷰포트 눈금(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M)과 같은 값을 쓴다(단일 출처).
+ * - 사람 키는 뷰포트 눈금(STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M)과 같은 값을 쓴다. 눈금 모듈을 값으로 가져오지 않으므로 카탈로그의
+ *   리터럴(1.6)을 쓰고, 둘이 같다는 것은 시험이 지킨다(단일 출처 유지).
  * - "벽"은 보이는 축 정렬 수직 면이다. 숨긴(visible:false) 벽은 대상에서 제외한다 — 자동 단면이 숨긴 벽에는 붙지 않는다.
  */
 
-import { rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
-import { planStudioBg3dModelPlacementRecipe } from "./studio-bg3d-placement-recipe";
-import { STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M } from "./studio-bg3d-scale-guide";
+import {
+  STUDIO_BG3D_ASSET_PLACEMENT_HUMAN_HEIGHT_METERS,
+  STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE,
+  STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE,
+  isStudioBg3dAssetPlacementRecipeId,
+} from "./studio-bg3d-asset-placement-catalog";
 
-import type { StudioBg3dPlacementVec3 } from "./studio-bg3d-placement-recipe";
+import type { StudioBg3dAssetPlacementRecipeId } from "./studio-bg3d-asset-placement-catalog";
+import type { rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
+import type { planStudioBg3dModelPlacementRecipe, StudioBg3dPlacementVec3 } from "./studio-bg3d-placement-recipe";
 
-export const STUDIO_BG3D_ASSET_PLACEMENT_RECIPE_IDS = ["floor", "wall", "human-scale", "scene-center"] as const;
-export type StudioBg3dAssetPlacementRecipeId = (typeof STUDIO_BG3D_ASSET_PLACEMENT_RECIPE_IDS)[number];
-
-export interface StudioBg3dAssetPlacementRecipeDefinition {
-  readonly id: StudioBg3dAssetPlacementRecipeId;
-  readonly label: string;
-  readonly description: string;
-  /** 통째 장면(번들 환경)에도 쓸 수 있는가. 크기를 바꾸거나 벽에 붙이는 방식은 환경에 쓰지 않는다. */
-  readonly appliesToEnvironment: boolean;
-}
-
-export const STUDIO_BG3D_ASSET_PLACEMENT_RECIPES: readonly StudioBg3dAssetPlacementRecipeDefinition[] = Object.freeze([
-  {
-    id: "floor",
-    label: "바닥에 놓기",
-    description: "카메라가 보는 지점의 바닥에 모델 밑면을 붙여 놓아요.",
-    appliesToEnvironment: true,
-  },
-  {
-    id: "wall",
-    label: "벽에 붙이기",
-    description: "가까운 벽을 찾아 모델 뒷면을 벽에 맞붙이고 정면을 방 안쪽으로 돌려요. 숨긴 벽은 제외돼요.",
-    appliesToEnvironment: false,
-  },
-  {
-    id: "human-scale",
-    label: "사람 키에 맞춤",
-    description: `모델 높이를 사람 키(${STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M}m)에 맞춰 바닥에 놓아요.`,
-    appliesToEnvironment: false,
-  },
-  {
-    id: "scene-center",
-    label: "장면 중앙",
-    description: "기존 오브젝트가 모인 장면의 가운데 바닥에 놓아요.",
-    appliesToEnvironment: true,
-  },
-]);
-
-/** 배치 방식 목록 아래 안내. 한 번에 놓이고 되돌릴 수 있으며, 모델의 앞쪽 방향을 어떻게 가정하는지 밝힌다. */
-export const STUDIO_BG3D_ASSET_PLACEMENT_MENU_FOOTER =
-  "한 번에 배치되고, 실행 취소로 되돌릴 수 있어요. 모델 정면은 +Z 방향이라고 가정해요.";
-
-export function isStudioBg3dAssetPlacementRecipeId(value: unknown): value is StudioBg3dAssetPlacementRecipeId {
-  return typeof value === "string" && (STUDIO_BG3D_ASSET_PLACEMENT_RECIPE_IDS as readonly string[]).includes(value);
-}
-
-export function listStudioBg3dAssetPlacementRecipes(
-  isEnvironment: boolean,
-): readonly StudioBg3dAssetPlacementRecipeDefinition[] {
-  return STUDIO_BG3D_ASSET_PLACEMENT_RECIPES.filter((recipe) => !isEnvironment || recipe.appliesToEnvironment);
+/** 계획이 쓰는 두 계산. 활성화 그래프에 있는 모듈의 함수라 값으로 가져오지 않고 주입받는다. */
+export interface StudioBg3dAssetPlacementMath {
+  readonly planBase: typeof planStudioBg3dModelPlacementRecipe;
+  readonly rotateVector: typeof rotateVectorEulerXyz;
 }
 
 /** 벽과 모델 뒷면 사이의 틈. 같은 평면에서 면이 겹쳐 깜박이는 것을 막는다. */
@@ -141,14 +106,6 @@ export type StudioBg3dAssetPlacementResult =
   }
   | { readonly ok: false; readonly code: StudioBg3dAssetPlacementFailureCode; readonly reason: string };
 
-/** 배치 방식을 알 수 없을 때(호스트도 같은 문장을 쓴다). */
-export const STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE =
-  "배치 방식을 알 수 없어요. 목록에서 배치 방식을 다시 골라 주세요.";
-
-/** 붙일 벽이 없을 때. 숨긴 벽은 대상이 아니라는 점과 되돌리는 방법을 함께 알린다. */
-export const STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE =
-  "붙일 벽을 찾지 못했어요. 숨긴 벽은 제외돼요. '숨긴 벽 되돌리기'나 레이어 목록의 눈 아이콘으로 벽을 다시 켠 뒤 눌러 주세요. 카메라를 벽 가까이 두면 더 잘 찾아요.";
-
 function fail(code: StudioBg3dAssetPlacementFailureCode, reason: string): StudioBg3dAssetPlacementResult {
   return Object.freeze({ ok: false, code, reason });
 }
@@ -177,8 +134,20 @@ function yawDegreesFacing(wall: StudioBg3dPlacementWall): number {
   return wall.direction === 1 ? 90 : -90;
 }
 
-/** 레시피 한 가지로 모델 변환을 계획한다. 실패하면 장면을 바꾸지 말아야 한다. */
-export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInput): StudioBg3dAssetPlacementResult {
+/**
+ * 레시피 한 가지로 모델 변환을 계획하는 함수를 만든다. 실패하면 장면을 바꾸지 말아야 한다.
+ * `math` 는 기존 배치 계획과 회전 계산이다(활성화 쪽 접합부가 넘기고, 시험은 실제 함수를 넘긴다).
+ */
+export function createStudioBg3dAssetPlacementPlanner(
+  math: StudioBg3dAssetPlacementMath,
+): (input: StudioBg3dAssetPlacementInput) => StudioBg3dAssetPlacementResult {
+  return (input) => planStudioBg3dAssetPlacementWith(math, input);
+}
+
+function planStudioBg3dAssetPlacementWith(
+  math: StudioBg3dAssetPlacementMath,
+  input: StudioBg3dAssetPlacementInput,
+): StudioBg3dAssetPlacementResult {
   if (typeof input !== "object" || input === null || !isStudioBg3dAssetPlacementRecipeId(input.recipe)) {
     return fail("invalid-recipe", STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE);
   }
@@ -226,7 +195,7 @@ export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInpu
       break;
     }
     case "human-scale":
-      fitHeight = input.humanHeightMeters ?? STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M;
+      fitHeight = input.humanHeightMeters ?? STUDIO_BG3D_ASSET_PLACEMENT_HUMAN_HEIGHT_METERS;
       break;
     case "wall": {
       if (!validWall(input.wall)) {
@@ -252,7 +221,7 @@ export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInpu
       return fail("plan-failed", PLAN_FAILED);
     }
   }
-  const planned = planStudioBg3dModelPlacementRecipe({
+  const planned = math.planBase({
     position: seed.position,
     rotation: seed.rotation,
     scale: [seed.scale[0] * fitFactor, seed.scale[1] * fitFactor, seed.scale[2] * fitFactor],
@@ -264,7 +233,7 @@ export function planStudioBg3dAssetPlacement(input: StudioBg3dAssetPlacementInpu
 
   // 기존 계획은 피벗이 경계 중심이라고 보고 접지한다. 실제 경계 중심은 피벗에서 (배율·회전을 반영한) shift 만큼 떨어져 있으므로,
   // 경계 중심이 목표 X/Z 에 오고 경계 아래면이 접지 높이에 닿도록 그만큼 피벗 위치를 되돌린다.
-  const shift = rotateVectorEulerXyz(
+  const shift = math.rotateVector(
     [center[0] * planned.scale[0], center[1] * planned.scale[1], center[2] * planned.scale[2]],
     planned.rotation as [number, number, number],
   );
