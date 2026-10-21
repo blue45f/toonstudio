@@ -352,7 +352,7 @@ export function IrPresentPage() {
 
         <main className="scenes">
           {SCENE_NODES.map((node, i) => (
-            <section key={SCENE_META[i].title} className={i === idx ? `scene active${backward ? " from-left" : ""}` : "scene"}>
+            <section key={SCENE_META[i].title} aria-hidden={i !== idx} className={i === idx ? `scene active${backward ? " from-left" : ""}` : "scene"}>
               {node}
             </section>
           ))}
