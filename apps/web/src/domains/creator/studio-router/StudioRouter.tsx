@@ -44,8 +44,6 @@ export function StudioRouter() {
 
   const currentHref = `${location.pathname}${location.search}`;
   const canonicalHref = resolveStudioRouterCanonicalHref(resolution, location.search);
-  // Canonical equality is about parameter content, not serialization order or
-  // encoding: a live `?room=` id appended after mount must not remount the editor.
   if (!isStudioCanonicalHref(currentHref, canonicalHref)) {
     return <Navigate replace state={location.state} to={canonicalHref} />;
   }
