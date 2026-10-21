@@ -1,4 +1,7 @@
-/* 페이지 진입 모션 — 첫 페인트 뒤 1초 안에 끝나고, 끝나면 transform을 남기지 않는다. */
+/* 페이지 진입 모션 — 첫 페인트 뒤 1초 안에 끝나고, 끝나면 transform을 남기지 않는다.
+   투명도(opacity)는 건드리지 않는다: opacity 0에서 시작하면 브라우저가 콘텐츠를
+   그려도 사용자가 보는 첫 페인트가 애니메이션 끝까지 밀려 LCP를 직접 악화시킨다.
+   이동(transform)만으로 등장감을 유지한다. */
 .page-entrance {
   animation-duration: 880ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
@@ -23,36 +26,30 @@
 
 @keyframes page-entrance-rise {
   from {
-    opacity: 0;
     transform: translateY(14px);
   }
 
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes page-entrance-pop {
   from {
-    opacity: 0;
     transform: scale(0.985) translateY(6px);
   }
 
   to {
-    opacity: 1;
     transform: scale(1) translateY(0);
   }
 }
 
 @keyframes page-entrance-slide {
   from {
-    opacity: 0;
     transform: translateX(-16px);
   }
 
   to {
-    opacity: 1;
     transform: translateX(0);
   }
 }
