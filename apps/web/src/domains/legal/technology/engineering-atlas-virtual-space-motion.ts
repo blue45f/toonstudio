@@ -2,10 +2,9 @@ import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 import { t, VIRTUAL_SPACE_REVIEWED_AT } from "./engineering-atlas-virtual-space-kit";
 
 /**
- * virtual-space 카드 3: Godot 무대의 이동·충돌·카메라 · Godot 무대의 길 찾기.
- * 웹(Phaser) 공간 클라이언트 제거 뒤의 현행 구조로 다시 썼다. 경로·수치는
- * 셸에 남은 생존 파일에서 직접 확인한 값만 쓴다 — 무대(GDScript) 내부 수치는
- * 이 저장소에서 확인할 수 없어 수치로 적지 않는다.
+ * virtual-space 카드 3: Phaser 캔버스의 이동·충돌·카메라 · 격자 A* 길 찾기.
+ * 3D 무대 제거(2026-10-21) 뒤 현행 웹 구현 기준으로 다시 썼다. 경로·수치는
+ * 현행 코드 파일에서 직접 확인한 값만 쓴다.
  */
 
 const V = "apps/web/src/domains/creator/virtual-space";
@@ -14,55 +13,55 @@ export const VIRTUAL_SPACE_MOTION_CARDS: readonly EngineeringAtlasEntry[] = [
   {
     id: "movement-collision-inertia-camera",
     category: "virtual-space",
-    name: "Godot stage movement",
-    title: t("움직임·충돌·카메라는 Godot 무대 안에서 일어난다", "Movement, collisions and the camera live inside the Godot stage"),
+    name: "Phaser stage movement",
+    title: t("움직임·충돌·카메라는 Phaser 캔버스와 웹 모듈이 계산한다", "Movement, collisions and the camera are computed by the Phaser canvas and web modules"),
     status: "live",
     tagline: t(
-      "걷기와 카메라는 Godot 무대가 맡고, 웹 셸은 프레즌스 브리지로 위치와 상태만 주고받습니다.",
-      "The Godot stage owns walking and the camera; the web shell only exchanges position and state over the presence bridge.",
+      "걷기와 카메라는 Phaser 캔버스가 맡고, 순수 모듈이 관성·충돌·카메라 수치를 계산합니다.",
+      "The Phaser canvas owns walking and the camera, and pure modules compute the inertia, collision and camera figures.",
     ),
     background: [
       t(
-        "가상 스튜디오의 공간 화면은 이제 웹 캔버스가 직접 그리지 않습니다. 웹(Phaser) 공간 클라이언트는 제거됐고, 공간은 Godot 빌드가 맡습니다. 셸 페이지가 /godot-space/index.html 빌드를 iframe으로 품으면, 걷기·벽과 가구의 충돌·카메라 추종은 전부 그 무대(GDScript) 안에서 일어납니다. 셸 코드는 아바타의 속도를 계산하지 않습니다.",
-        "The virtual studio space is no longer drawn by a web canvas directly. The web (Phaser) space client was removed, and a Godot build renders the space now. The shell page embeds the /godot-space/index.html build in an iframe, and walking, collisions with walls and furniture, and camera following all happen inside that stage (GDScript). Shell code does not compute the avatar's velocity.",
+        "가상 스튜디오의 공간 화면은 웹 캔버스가 직접 그립니다. Phaser 캔버스가 같은 문서 안에서 걷기·벽과 가구의 충돌·카메라 추종을 Arcade 물리로 계산하고, 가속·감속 같은 이동 수치는 순수 타입스크립트 모듈이 따로 계산합니다. 따로 서빙되는 무대 빌드는 없고 웹 앱 자체가 무대입니다.",
+        "The virtual studio space is drawn by a web canvas directly. A Phaser canvas in the same document computes walking, collisions with walls and furniture, and camera following with Arcade physics, while movement figures such as acceleration and deceleration are computed by pure TypeScript modules. There is no separately served stage build; the web app itself is the stage.",
       ),
       t(
-        "셸이 맡는 것은 경계입니다. 계정 세션과 실시간 티켓을 무대에 건네고(__tsvs_setSession), 무대가 알려 주는 위치·구역 변화를 브리지 콜백(onPosition·onZoneChanged)으로 받습니다. 다른 참가자와의 동기화는 프레즌스 프로토콜이 맡습니다. 와이어 이름은 toonstudio-space-v1이고, 위치·상태 패킷은 90ms 간격으로 흐르며 패킷 하나는 1,024바이트를 넘지 않습니다.",
-        "The shell owns the boundary. It hands the account session and realtime ticket to the stage (__tsvs_setSession) and receives position and zone changes the stage reports through bridge callbacks (onPosition, onZoneChanged). Sync with other participants runs over the presence protocol: the wire is named toonstudio-space-v1, position and state packets flow every 90 ms, and one packet stays within 1,024 bytes.",
+        "셸과의 경계는 같은 프로세스 안의 브리지 객체입니다. 페이지가 브리지 객체를 캔버스에 prop으로 넘기면 캔버스는 위치·구역 변화를 콜백으로 돌려줍니다. 실시간 티켓은 캔버스가 아니라 협업 전송 층이 소비합니다. 다른 참가자와의 동기화는 프레즌스 프로토콜이 맡습니다. 와이어 이름은 toonstudio-space-v1이고, 위치·상태 패킷은 90ms 간격으로 흐르며 패킷 하나는 1,024바이트를 넘지 않습니다.",
+        "The boundary with the shell is a bridge object inside the same process. The page passes the bridge object to the canvas as a prop, and the canvas returns position and zone changes through callbacks. Realtime tickets are consumed by the collaboration transport layer, not the canvas. Sync with other participants runs over the presence protocol: the wire is named toonstudio-space-v1, position and state packets flow every 90 ms, and one packet stays within 1,024 bytes.",
       ),
       t(
-        "셸이 위치에 대해 하는 일은 동기화와 복원뿐입니다. 마지막 위치는 기기 로컬에만 30일 동안 저장해 다음 방문에서 복원하고, 실시간 방은 Worker 설정으로 방당 연결 64가 상한입니다. 무대 안의 가속·반발·카메라 계수 같은 수치는 이 저장소의 웹 코드에서 확인할 수 없어서, 이 도감은 그런 수치를 적지 않습니다. 확인할 수 있는 값만 근거로 남깁니다.",
-        "For position, the shell only syncs and restores. The last position is stored on the device only, for 30 days, and restored on the next visit, and the realtime room is capped at 64 connections per room by Worker settings. Numbers inside the stage, such as acceleration, rebound and camera factors, cannot be verified from this repository's web code, so this atlas does not list them. Only verifiable values are kept as evidence.",
+        "이동 수치도 웹 코드에서 확인할 수 있습니다. 기본 이동 설정은 가속 1,500, 감속 2,100, 최대 속도 205이고, 카메라는 lerp 0.12로 따라갑니다. 벽에 부딪히면 반발 모듈이 충돌 속도의 최대 40%까지 되돌립니다. 마지막 위치는 기기 로컬에 저장하되 보관 기간은 두지 않고, 같은 장소면 조용히 복원하고 다른 장소면 물어봅니다. 실시간 방은 Worker 설정으로 방당 연결 64가 상한입니다.",
+        "Movement figures can also be verified in the web code. The default motion settings are acceleration 1,500, deceleration 2,100 and a top speed of 205, and the camera follows with a lerp of 0.12. On hitting a wall, a bounce module returns up to 40 percent of the impact speed. The last position is stored on the device with no retention period: the same place restores silently and a different place asks first. The realtime room is capped at 64 connections per room by Worker settings.",
       ),
     ],
     keyPoints: [
-      t("움직임·충돌·카메라는 Godot 무대(GDScript)가 소유", "Movement, collisions and the camera are owned by the Godot stage (GDScript)"),
-      t("셸은 iframe 브리지로 세션·위치·구역만 주고받음", "The shell exchanges only session, position and zone over the iframe bridge"),
+      t("움직임·충돌·카메라는 Phaser 캔버스와 순수 모듈이 소유", "Movement, collisions and the camera are owned by the Phaser canvas and pure modules"),
+      t("셸과는 브리지 객체와 콜백으로 위치·구역만 주고받음", "Only position and zone cross to the shell, via a bridge object and callbacks"),
       t("프레즌스는 90ms 간격, 패킷 상한 1,024바이트", "Presence flows every 90 ms with a 1,024-byte packet cap"),
     ],
     diagram: {
       id: "movement-collision-inertia-camera-diagram",
       kind: "graph",
-      title: t("셸과 Godot 무대 사이의 움직임 동기화", "Movement sync between the shell and the Godot stage"),
+      title: t("캔버스와 셸 사이의 움직임 동기화", "Movement sync between the canvas and the shell"),
       caption: t(
-        "무대가 움직임을 계산하고, 셸은 브리지와 프레즌스로 위치·상태를 나눕니다.",
-        "The stage computes movement, and the shell shares position and state over the bridge and presence.",
+        "캔버스가 움직임을 계산하고, 셸은 브리지와 프레즌스로 위치·상태를 나눕니다.",
+        "The canvas computes movement, and the shell shares position and state over the bridge and presence.",
       ),
       alt: t(
-        "웹 셸이 세션과 티켓을 브리지로 Godot 무대에 건네면 무대가 이동·충돌·카메라를 계산합니다. 무대가 돌려준 위치는 프레즌스 패킷으로 다른 참가자에게 전파되고, 셸은 마지막 위치를 기기 로컬에 저장합니다.",
-        "The web shell hands the session and ticket to the Godot stage over the bridge, and the stage computes movement, collisions and the camera. Positions the stage reports travel to other participants as presence packets, and the shell stores the last position on the device.",
+        "Phaser 캔버스가 이동·충돌·카메라를 계산하고, 위치·구역을 브리지 콜백으로 셸에 알립니다. 위치는 프레즌스 패킷으로 다른 참가자에게 전파되고, 셸은 마지막 위치를 기기 로컬에 저장합니다.",
+        "The Phaser canvas computes movement, collisions and the camera, and reports position and zone to the shell through bridge callbacks. Positions travel to other participants as presence packets, and the shell stores the last position on the device.",
       ),
       nodes: [
         { id: "shell", label: t("웹 셸", "Web shell"), sub: t("계정·티켓·패널", "Account, ticket, panels"), tone: "local", shape: "pill", at: [0, 0] },
-        { id: "bridge", label: t("브리지", "Bridge"), sub: t("호스트 콜백", "Host callbacks"), tone: "local", at: [1, 0] },
-        { id: "stage", label: t("Godot 무대", "Godot stage"), sub: t("이동·충돌·카메라", "Move, collide, camera"), tone: "good", at: [2, 0] },
+        { id: "bridge", label: t("브리지", "Bridge"), sub: t("브리지 객체", "Bridge object"), tone: "local", at: [1, 0] },
+        { id: "stage", label: t("Phaser 캔버스", "Phaser canvas"), sub: t("이동·충돌·카메라", "Move, collide, camera"), tone: "good", at: [2, 0] },
         { id: "presence", label: t("프레즌스", "Presence"), sub: t("90ms 위치·상태", "90 ms position"), tone: "local", at: [3, 0] },
         { id: "peers", label: t("다른 참가자", "Other peers"), sub: t("위치·상태 수신", "Receive state"), tone: "local", shape: "pill", at: [4, 0] },
-        { id: "store", label: t("위치 저장", "Position store"), sub: t("기기 로컬 · 30일", "Local, 30 days"), tone: "neutral", at: [2, 1] },
+        { id: "store", label: t("위치 저장", "Position store"), sub: t("기기 로컬 · 기간 없음", "Local, no expiry"), tone: "neutral", at: [2, 1] },
       ],
       edges: [
-        { from: "shell", to: "bridge", label: t("세션", "session") },
-        { from: "bridge", to: "stage", label: t("주입", "inject") },
+        { from: "shell", to: "bridge", label: t("브리지 객체", "bridge object") },
+        { from: "bridge", to: "stage", label: t("prop 전달", "pass prop") },
         { from: "stage", to: "presence", label: t("위치", "position") },
         { from: "presence", to: "peers", label: t("전파", "relay") },
         { from: "stage", to: "store", label: t("위치 통지", "position") },
@@ -70,33 +69,32 @@ export const VIRTUAL_SPACE_MOTION_CARDS: readonly EngineeringAtlasEntry[] = [
     },
     usage: [
       {
-        feature: t("공간 화면 · Godot 무대 임베드", "Spatial screen · Godot stage embed"),
+        feature: t("공간 화면 · Phaser 캔버스", "Spatial screen · Phaser canvas"),
         role: t(
-          "셸 페이지가 Godot 빌드를 iframe으로 품고 세션·티켓·연결 상태를 맡습니다. 공간 렌더와 이동은 무대가 소유합니다.",
-          "The shell page embeds the Godot build in an iframe and owns the session, ticket and connection state. The stage owns space rendering and movement.",
+          "페이지가 Phaser 캔버스를 같은 문서에 마운트하고, 캔버스가 공간 렌더와 이동·충돌·카메라를 소유합니다. 계정·티켓은 셸과 전송 층이 맡습니다.",
+          "The page mounts the Phaser canvas in the same document, and the canvas owns space rendering and movement, collisions and the camera. The shell and transport layer own accounts and tickets.",
         ),
         paths: [
-          `${V}/StudioGodotSpaceEmbed.tsx`,
+          `${V}/StudioVirtualSpacePhaserCanvas.tsx`,
           `${V}/StudioVirtualSpacePageRoot.tsx`,
-          "apps/web/public/godot-space/index.html",
         ],
         route: "/studio/space",
       },
       {
         feature: t("프레즌스 브리지 · 위치·상태 동기화", "Presence bridge · position and state sync"),
         role: t(
-          "무대가 보고한 위치·바라보는 방향·구역을 와이어 패킷으로 인코딩해 다른 참가자와 주고받고, 오래된 피어는 만료시킵니다.",
-          "Positions, facing and zones reported by the stage are encoded as wire packets, exchanged with other participants, and stale peers expire.",
+          "캔버스가 보고한 위치·바라보는 방향·구역을 와이어 패킷으로 인코딩해 다른 참가자와 주고받고, 오래된 피어는 만료시킵니다.",
+          "Positions, facing and zones reported by the canvas are encoded as wire packets, exchanged with other participants, and stale peers expire.",
         ),
         paths: [`${V}/studio-virtual-space-presence-protocol.ts`, `${V}/studio-virtual-space-presence.ts`],
       },
       {
-        feature: t("셸↔무대 브리지와 마지막 위치 저장", "Shell-stage bridge and last-position store"),
+        feature: t("캔버스↔셸 브리지와 마지막 위치 저장", "Canvas-shell bridge and last-position store"),
         role: t(
-          "브리지 콜백 타입과 마지막 위치의 기기 로컬 저장(30일)을 셸 보조 모듈이 맡습니다. 무대는 이 경계로만 셸과 이야기합니다.",
-          "A shell support module owns the bridge callback types and the on-device last-position store (30 days). The stage talks to the shell only across this boundary.",
+          "브리지 객체가 요청·이벤트 타입을 정의하고, 마지막 위치의 기기 로컬 저장(기간 제한 없음)과 복원 판정을 순수 모듈이 맡습니다. 캔버스는 이 경계로만 셸과 이야기합니다.",
+          "The bridge object defines the request and event types, and pure modules own the on-device last-position store (no retention limit) and the resume decision. The canvas talks to the shell only across this boundary.",
         ),
-        paths: [`${V}/studio-godot-space-embed-support.ts`, `${V}/studio-godot-space.ts`],
+        paths: [`${V}/studio-virtual-space-engine-bridge.ts`, `${V}/studio-virtual-space-last-position.ts`],
       },
     ],
     samples: [
@@ -131,107 +129,107 @@ export function encodePacket(packet: unknown): string | null {
   return packetBytes(raw) <= PACKET_MAX_BYTES ? raw : null;
 }`,
         explain: t(
-          "무대가 만든 위치·상태는 이 패킷 모양으로만 셸 밖으로 나갑니다. 크기 상한을 넘는 패킷은 보내지 않으며, 전송 간격과 하트비트도 프로토콜 상수로 고정돼 있습니다.",
-          "Position and state made by the stage leave the shell only in this packet shape. A packet over the size cap is not sent, and the send interval and heartbeat are fixed as protocol constants.",
+          "캔버스가 만든 위치·상태는 이 패킷 모양으로만 셸 밖으로 나갑니다. 크기 상한을 넘는 패킷은 보내지 않으며, 전송 간격과 하트비트도 프로토콜 상수로 고정돼 있습니다.",
+          "Position and state made by the canvas leave the shell only in this packet shape. A packet over the size cap is not sent, and the send interval and heartbeat are fixed as protocol constants.",
         ),
         source: `${V}/studio-virtual-space-presence-protocol.ts`,
         verify: "types",
       },
       {
         kind: "simplified",
-        title: t("마지막 위치는 기기 로컬에 30일만", "The last position stays on the device for 30 days"),
+        title: t("마지막 위치 저장과 복원 판정", "Saving the last position and the resume decision"),
         language: "ts",
-        code: `// 마지막 위치는 셸이 기기 로컬에만 저장한다(embed-support의 단순화).
-const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일
+        code: `// 마지막 위치는 기기 로컬에 저장한다(last-position 모듈의 단순화).
+const PREFIX = "toonspectrum:virtual-space-last-position:v1";
 
-export interface LastPosition { spaceId: string; x: number; y: number; at: number }
+export interface LastPositionRecord { placeId: string; point: { x: number; y: number }; savedAt: number }
 
-export function isFresh(position: LastPosition, now: number): boolean {
-  return now - position.at <= TTL_MS;
+export function resumeDecision(record: LastPositionRecord, placeId: string): "silent" | "ask" {
+  return record.placeId === placeId ? "silent" : "ask"; // 보관 기간은 없고 장소 일치가 복원 방식을 정한다
 }
 
-export function saveLastPosition(workId: string, position: LastPosition): void {
+export function saveLastPosition(projectId: string, record: LastPositionRecord): void {
   try {
-    window.localStorage.setItem("tsvs-last-position:" + workId, JSON.stringify(position));
+    window.localStorage.setItem(PREFIX + ":" + projectId, JSON.stringify(record));
   } catch {
-    // 저장 실패는 복원을 포기할 뿐 무대 동작에 영향을 주지 않는다.
+    // 저장 실패는 복원을 포기할 뿐 공간 동작에 영향을 주지 않는다.
   }
 }`,
-        codeEn: `// The shell stores the last position on the device only (simplified from embed-support).
-const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+        codeEn: `// The last position is stored on the device (simplified from the last-position module).
+const PREFIX = "toonspectrum:virtual-space-last-position:v1";
 
-export interface LastPosition { spaceId: string; x: number; y: number; at: number }
+export interface LastPositionRecord { placeId: string; point: { x: number; y: number }; savedAt: number }
 
-export function isFresh(position: LastPosition, now: number): boolean {
-  return now - position.at <= TTL_MS;
+export function resumeDecision(record: LastPositionRecord, placeId: string): "silent" | "ask" {
+  return record.placeId === placeId ? "silent" : "ask"; // no retention period; the place match decides the restore mode
 }
 
-export function saveLastPosition(workId: string, position: LastPosition): void {
+export function saveLastPosition(projectId: string, record: LastPositionRecord): void {
   try {
-    window.localStorage.setItem("tsvs-last-position:" + workId, JSON.stringify(position));
+    window.localStorage.setItem(PREFIX + ":" + projectId, JSON.stringify(record));
   } catch {
-    // A failed save only gives up restoring; it never affects the stage.
+    // A failed save only gives up restoring; it never affects the space.
   }
 }`,
         explain: t(
-          "위치 복원은 셸의 일입니다. 무대가 onPosition으로 알려 준 좌표를 작품별로 저장하고, 30일이 지난 기록은 복원에 쓰지 않습니다. 서버에는 위치를 저장하지 않습니다.",
-          "Restoring position is the shell's job. Coordinates the stage reports via onPosition are stored per work, and records older than 30 days are not used for restoring. The position is not stored on a server.",
+          "위치 복원은 셸의 일입니다. 저장 시각만 기록하고 보관 기간은 두지 않으며, 같은 장소면 조용히 복원하고 다른 장소면 사용자에게 물어봅니다. 서버에는 위치를 저장하지 않습니다.",
+          "Restoring position is the shell's job. Only the save time is recorded, with no retention period: the same place restores silently and a different place asks the user first. The position is not stored on a server.",
         ),
-        source: `${V}/studio-godot-space-embed-support.ts`,
+        source: `${V}/studio-virtual-space-last-position.ts`,
         verify: "types",
       },
     ],
     links: [
-      { title: "Godot · Using CharacterBody2D", url: "https://docs.godotengine.org/en/stable/tutorials/physics/using_character_body_2d.html", kind: "docs", note: t("무대 쪽 몸체 이동과 충돌", "Body movement and collisions on the stage side") },
-      { title: "Godot · JavaScriptBridge", url: "https://docs.godotengine.org/en/stable/classes/class_javascriptbridge.html", kind: "docs", note: t("무대와 웹 셸의 브리지", "The bridge between the stage and the web shell") },
-      { title: "Godot · Exporting for the Web", url: "https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html", kind: "docs", note: t("웹 빌드 배포 형태", "How the web build is shipped") },
-      { title: "MDN · iframe element", url: "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe", kind: "docs", note: t("셸이 무대를 품는 방식", "How the shell embeds the stage") },
+      { title: "Phaser · Documentation", url: "https://docs.phaser.io/", kind: "docs", note: t("무대 엔진 문서", "Stage engine documentation") },
+      { title: "MDN · requestAnimationFrame", url: "https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame", kind: "docs", note: t("프레임 루프의 바탕", "The basis of the frame loop") },
+      { title: "MDN · Web Storage API", url: "https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API", kind: "docs", note: t("기기 로컬 저장", "On-device storage") },
+      { title: "MDN · Canvas API", url: "https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API", kind: "docs", note: t("캔버스 렌더링", "Canvas rendering") },
     ],
     chapterIds: ["virtual-studio-world-authority", "performance"],
     talk: {
       pitch: t(
-        "공간에서 걷고 벽에 부딪히고 카메라가 따라오는 일은 이제 웹 코드가 아니라 Godot 무대 안에서 일어납니다. 웹 셸은 무대를 iframe으로 품고 계정·티켓·업무 패널을 맡으며, 위치와 상태는 프레즌스 브리지로 90ms 간격 주고받습니다. 무대 내부 수치는 이 저장소에서 확인할 수 없어 도감에 적지 않습니다.",
-        "Walking, hitting walls and the camera following now happen inside the Godot stage, not in web code. The web shell embeds the stage in an iframe and keeps accounts, tickets and work panels, while position and state cross the presence bridge every 90 ms. Stage-internal numbers cannot be verified from this repository, so the atlas does not list them.",
+        "공간에서 걷고 벽에 부딪히고 카메라가 따라오는 일은 웹 코드 안에서 일어납니다. Phaser 캔버스가 Arcade 물리로 이동·충돌·카메라를 계산하고, 순수 모듈이 가속 1,500·감속 2,100·최대 속도 205 같은 이동 수치를 정합니다. 위치와 상태는 프레즌스 패킷으로 90ms 간격 주고받습니다.",
+        "Walking, hitting walls and the camera following happen inside the web code. The Phaser canvas computes movement, collisions and the camera with Arcade physics, and pure modules set movement figures such as acceleration 1,500, deceleration 2,100 and a top speed of 205. Position and state cross as presence packets every 90 ms.",
       ),
       analogy: t(
-        "무대는 배우가 연기하는 실제 무대이고, 셸은 표를 끊고 안내하는 로비입니다. 로비가 배우의 걸음걸이를 대신 계산하지 않듯, 셸도 움직임을 계산하지 않고 무대가 알려 준 위치를 다른 관객에게 전합니다.",
-        "The stage is where the actors actually perform, and the shell is the lobby that sells tickets and guides visitors. Just as the lobby does not compute an actor's steps, the shell does not compute movement; it relays the positions the stage reports to the other visitors.",
+        "무대와 로비가 한 건물에 있는 극장입니다. 배우(캔버스)가 무대에서 연기하고, 로비(셸)는 표를 끊고 안내합니다. 로비는 배우의 걸음을 대신 계산하지 않지만, 배우가 알려 준 위치는 다른 관객에게 전합니다.",
+        "It is a theatre where the stage and the lobby share one building. The actor (the canvas) performs on stage, and the lobby (the shell) sells tickets and guides visitors. The lobby does not compute the actor's steps, but it relays the positions the actor reports to the other visitors.",
       ),
       questions: [
         {
           question: t("가속도 같은 무대 안 수치는 얼마인가요?", "What are the stage-internal numbers, like acceleration?"),
           answer: t(
-            "이 저장소의 웹 코드에서는 확인할 수 없습니다. 무대 빌드는 배포 산출물로만 들어 있어 가속·반발·카메라 계수를 수치로 적지 않습니다. 확인할 수 있는 값은 프레즌스 간격 90ms와 패킷 상한 1,024바이트 같은 셸 쪽 상수뿐입니다.",
-            "They cannot be verified from this repository's web code. The stage build ships only as a built artifact, so acceleration, rebound and camera factors are not listed as numbers. The verifiable values are shell-side constants such as the 90 ms presence interval and the 1,024-byte packet cap.",
+            "웹 코드에서 직접 확인할 수 있습니다. 기본 이동 설정은 가속 1,500, 감속 2,100, 최대 속도 205이고, 카메라 추종 lerp는 0.12입니다. 전부 가상 스튜디오의 순수 모듈에 상수로 있습니다.",
+            "They can be verified directly in the web code. The default motion settings are acceleration 1,500, deceleration 2,100 and a top speed of 205, and the camera follow lerp is 0.12. All of them live as constants in the virtual studio's pure modules.",
           ),
         },
         {
-          question: t("셸은 움직임을 전혀 다루지 않나요?", "Does the shell handle movement at all?"),
+          question: t("캔버스 밖에서는 움직임을 다루지 않나요?", "Is movement handled anywhere outside the canvas?"),
           answer: t(
-            "물리 계산은 하지 않습니다. 셸은 세션·티켓을 무대에 건네고, 무대가 보고한 위치를 프레즌스로 전파하며, 마지막 위치를 기기 로컬에 저장해 복원하는 일까지만 맡습니다.",
-            "It does no physics. The shell only hands the session and ticket to the stage, relays the positions the stage reports over presence, and stores the last position on the device for restoring.",
+            "물리 계산은 캔버스가 합니다. 셸은 브리지 객체로 이모트나 순간이동 같은 요청을 보내고, 캔버스가 보고한 위치를 프레즌스로 전파하며, 마지막 위치를 기기 로컬에 저장해 복원하는 일까지만 맡습니다.",
+            "Physics runs in the canvas. The shell only sends requests such as emotes or teleports through the bridge object, relays the positions the canvas reports over presence, and stores the last position on the device for restoring.",
           ),
         },
         {
           question: t("다른 사람 아바타는 어떻게 따라오나요?", "How do other people's avatars keep up?"),
           answer: t(
-            "각 무대가 자기 아바타의 위치·방향·구역을 프레즌스 패킷으로 보내고, 받는 쪽 무대와 셸이 그 상태로 상대 아바타를 표시합니다. 하트비트는 2,500ms 간격이고 10,000ms 동안 소식이 없으면 피어는 만료됩니다.",
-            "Each stage sends its avatar's position, facing and zone as presence packets, and the receiving stage and shell render the peer from that state. The heartbeat runs every 2,500 ms, and a peer expires after 10,000 ms without news.",
+            "각 클라이언트가 자기 아바타의 위치·방향·구역을 프레즌스 패킷으로 보내고, 받는 쪽이 그 상태로 상대 아바타를 표시합니다. 하트비트는 2,500ms 간격이고 10,000ms 동안 소식이 없으면 피어는 만료됩니다.",
+            "Each client sends its avatar's position, facing and zone as presence packets, and the receiving side renders the peer from that state. The heartbeat runs every 2,500 ms, and a peer expires after 10,000 ms without news.",
           ),
         },
       ],
       pitfall: t(
-        "예전 Phaser·Arcade 물리 수치(가속 1500/2100, 카메라 lerp 0.12 등)를 현행처럼 말하지 마세요. 그 클라이언트는 제거됐습니다. 무대 안 수치는 빌드 산출물만으로 확인할 수 없으니, 모르면 모른다고 하고 셸에서 확인되는 상수만 말하세요.",
-        "Do not present the old Phaser and Arcade physics numbers (acceleration 1500/2100, camera lerp 0.12 and so on) as current. That client was removed. Stage-internal numbers cannot be verified from the built artifact alone, so say they are unknown and cite only constants verifiable in the shell.",
+        "무대 안 수치를 웹 코드에서 확인할 수 없다고 말하지 마세요. 가속 1,500·감속 2,100·카메라 lerp 0.12는 현행 순수 모듈의 상수입니다. 반대로 마지막 위치에 30일 같은 보관 기간은 없으니, 없는 수치를 있는 것처럼 말하지 마세요.",
+        "Do not say stage-internal numbers cannot be verified from the web code. Acceleration 1,500, deceleration 2,100 and a camera lerp of 0.12 are constants in the current pure modules. Conversely, the last position has no 30-day retention period, so do not present a number that does not exist.",
       ),
     },
-    technologies: ["Godot", "GDScript", "iframe bridge", "presence protocol"],
+    technologies: ["Phaser", "Arcade Physics", "TypeScript", "presence protocol"],
     facts: [
       { value: "toonstudio-space-v1", label: t("프레즌스 와이어 이름", "Presence wire name"), source: `${V}/studio-virtual-space-presence-protocol.ts` },
       { value: "90ms", label: t("프레즌스 전송 간격(설계값)", "Presence send interval (design value)"), source: `${V}/studio-virtual-space-presence-protocol.ts` },
       { value: "2,500ms · 10,000ms", label: t("하트비트 간격 · 피어 만료 기준(설계값)", "Heartbeat interval and peer expiry threshold (design values)"), source: `${V}/studio-virtual-space-presence-protocol.ts` },
       { value: "1,024바이트", label: t("프레즌스 패킷 크기 상한(fixtures 패킷 제외)", "Presence packet size cap (except fixtures packets)"), source: `${V}/studio-virtual-space-presence-protocol.ts` },
-      { value: "20,000ms", label: t("셸↔무대 브리지 핑 간격", "Shell-to-stage bridge ping interval"), source: `${V}/StudioGodotSpaceEmbed.tsx` },
+      { value: "1,500 · 2,100 · 205", label: t("이동 가속 · 감속 · 최대 속도(설계값)", "Movement acceleration, deceleration and top speed (design values)"), source: `${V}/studio-virtual-space-motion.ts` },
       { value: "64", label: t("실시간 방당 연결 상한(Worker 설정값)", "Realtime connections cap per room (Worker setting)"), source: "deploy/cloudflare-realtime/wrangler.jsonc" },
     ],
     reviewedAt: VIRTUAL_SPACE_REVIEWED_AT,
@@ -239,66 +237,66 @@ export function saveLastPosition(workId: string, position: LastPosition): void {
   {
     id: "pathfinding-astar-los",
     category: "virtual-space",
-    name: "Godot stage pathfinding",
-    title: t("길 찾기는 Godot 무대의 내비게이션 쪽으로 이동했다", "Pathfinding moved to navigation on the Godot stage"),
+    name: "Phaser stage A* pathfinding",
+    title: t("길 찾기는 격자 A*와 시야 평탄화로 웹 코드가 계산한다", "Pathfinding is computed by grid A* and line-of-sight smoothing in web code"),
     status: "live",
     tagline: t(
-      "클릭 이동과 NPC 길 찾기는 무대가 맡고, 셸은 NPC 동선과 캐스트 데이터를 건넵니다.",
-      "The stage owns click-to-move and NPC pathfinding; the shell hands over NPC routes and cast data.",
+      "클릭 이동과 NPC 순찰은 A*가 길을 찾고, 순수 모듈이 탐색·캐시 한도를 담당합니다.",
+      "Click-to-move and NPC patrols run on A*; pure modules own the search and its caps.",
     ),
     background: [
       t(
-        "바닥을 클릭하면 아바타가 벽을 돌아 걷고, NPC가 자기 동선을 따라 이동하는 일은 이제 무대 안에서 일어납니다. 예전 웹 클라이언트가 격자 위에서 하던 길 찾기는 공간 화면의 현행 동선이 아니며, 클릭 지점을 무대에 건네는 setPathTo 같은 웹 진입점도 제거됐습니다. 길 찾기는 Godot 무대의 내비게이션(NavigationAgent 계열)이 맡는 것으로 정리됐습니다.",
-        "Clicking the floor so the avatar walks around walls, and NPCs moving along their routes, now happen inside the stage. The grid search the old web client ran is not the current path of the space screen, and web entry points that handed click targets to it, such as setPathTo, were removed. Pathfinding is settled as the Godot stage's navigation (the NavigationAgent family).",
+        "바닥을 클릭하면 아바타가 벽을 돌아 걷고, NPC가 순찰 경로를 따라 이동하는 일은 웹 코드 안에서 일어납니다. 순수 모듈이 격자 위에서 A* 탐색을 돌리고(g 비용 힙, 8방향, 코너 커팅 방지), 캔버스가 클릭 지점을 모듈에 넘기는 진입점(setPathTo)을 엽니다. NPC 디렉터와 가이드는 탐색 결과를 순찰로 이어 줍니다.",
+        "Clicking the floor so the avatar walks around walls, and NPCs moving along their patrol routes, happen inside the web code. A pure module runs A* search over the grid (a g-cost heap, eight directions, corner-cutting prevention), and the canvas opens an entry point (setPathTo) that hands click targets to the module. The NPC director and guide turn search results into patrols.",
       ),
       t(
-        "셸이 무대에 건네는 것은 길이 아니라 재료입니다. 공간 정의 스키마는 NPC 항목마다 이름과 동선 points, 대사를 실을 수 있게 합니다. 동선 점은 2개부터 16개까지, NPC는 정의 하나에 최대 6명, 대사는 최대 12줄입니다. 배포되는 spaces.json의 NPC들도 점들을 이은 순환 동선을 그대로 갖고 있고, 무대는 그 재료로 자기 길 찾기를 돌립니다.",
-        "What the shell hands the stage is not a path but the ingredients. The space-definition schema lets each NPC entry carry a name, route points and lines. A route holds 2 to 16 points, one definition holds at most 6 NPCs, and lines are capped at 12. The NPCs in the shipped spaces.json carry looped routes made of those points, and the stage runs its own pathfinding from those ingredients.",
+        "월드의 재료는 매니페스트가 정합니다. 순찰 경로는 정의 하나에 최대 256점까지 실을 수 있고, NPC 배열 전체는 월드 총량 상한(4,096개) 안에서 들어갑니다. NPC 정의에는 대사 필드가 없으며, 인사는 근접 모듈이 거리를 보고 따로 거는 일입니다.",
+        "The world manifest decides the ingredients. A patrol route may carry up to 256 points in one definition, and the whole NPC array fits within the world total cap of 4,096. NPC definitions carry no dialogue field; greetings are triggered separately by the proximity module watching distance.",
       ),
       t(
-        "셸에 남은 근거는 길찾기 코드가 아니라 데이터와 표현입니다. NPC 캐스트 데이터는 그린 캐스트 8종과 절차적 정의 7종의 이름·역할·스킨을 셸이 계속 쥐고 있고, 프레즌스 표현 모듈은 다른 참가자의 위치 표본을 100ms 지연으로 보간하고 최대 250ms까지 외삽하는 일을 맡습니다. 무대 안 내비게이션 메시나 에이전트 설정값은 이 저장소에서 확인할 수 없어 수치로 적지 않습니다.",
-        "The evidence left in the shell is data and presentation, not pathfinding code. The shell still holds the NPC cast data, the names, roles and skins of 8 drawn cast members and 7 procedural definitions, and the presence presentation module interpolates other participants' position samples with a 100 ms delay and extrapolates up to 250 ms. The stage's navigation mesh and agent settings cannot be verified from this repository, so they are not listed as numbers.",
+        "탐색 한도도 웹 코드에 상수로 있습니다. 탐색은 150,000칸까지 확장하고, 경로 캐시는 2,000개, 직선 캐시는 20,000개를 유지하며, 이동 중 재계산은 350ms 간격으로 제한합니다. 셸의 프레즌스 표현 모듈은 다른 참가자의 위치 표본을 100ms 지연으로 보간하고 최대 250ms까지 외삽합니다.",
+        "Search caps also live as constants in the web code. A search expands up to 150,000 cells, the path cache holds 2,000 entries and the line-of-sight cache 20,000, and replanning while moving is limited to a 350 ms interval. The shell's presence presentation module interpolates other participants' position samples with a 100 ms delay and extrapolates up to 250 ms.",
       ),
     ],
     keyPoints: [
-      t("길 찾기는 Godot 무대의 내비게이션이 맡습니다", "Pathfinding belongs to navigation on the Godot stage"),
-      t("셸은 NPC 동선 points와 캐스트 데이터를 건넵니다", "The shell hands over NPC route points and cast data"),
-      t("셸에 남은 것은 길 찾기가 아니라 표현 보간입니다", "What remains in the shell is presentation interpolation, not pathfinding"),
+      t("길 찾기는 격자 A*와 시야 평탄화가 맡습니다", "Pathfinding belongs to grid A* with line-of-sight smoothing"),
+      t("캔버스의 setPathTo가 클릭을 경로로 잇습니다", "The canvas setPathTo entry turns clicks into paths"),
+      t("탐색·캐시 한도는 순수 모듈의 상수입니다", "Search and cache caps are constants in the pure module"),
     ],
     diagram: {
       id: "pathfinding-astar-los-diagram",
       kind: "graph",
-      title: t("정의와 캐스트가 무대 길 찾기로 이어지는 흐름", "How definitions and cast feed stage pathfinding"),
+      title: t("매니페스트와 캐스트가 A* 길 찾기로 이어지는 흐름", "How the manifest and cast feed A* pathfinding"),
       caption: t(
-        "셸이 공간 정의와 NPC 캐스트를 건네면, 무대의 내비게이션이 길을 찾아 걷습니다.",
-        "The shell hands over the space definition and NPC cast, and stage navigation finds the path and walks it.",
+        "순수 모듈이 A*로 경로를 계산하면, 캔버스와 NPC 디렉터가 그 경로를 따라 걷습니다.",
+        "A pure module computes the route with A*, and the canvas and the NPC director walk along it.",
       ),
       alt: t(
-        "공간 정의의 구역·소품·NPC 동선과 NPC 캐스트 데이터가 Godot 무대에 전달됩니다. 무대의 내비게이션이 그 재료로 경로를 계산하면 NPC와 아바타가 경로를 따라 걷습니다.",
-        "The space definition's zones, props and NPC routes, together with NPC cast data, are handed to the Godot stage. Stage navigation computes a route from those ingredients, and NPCs and avatars walk along it.",
+        "월드 매니페스트의 타일·NPC 순찰과 NPC 캐스트 데이터가 길 찾기 모듈로 들어갑니다. A*가 경로를 계산하고 시야 평탄화로 다듬으면, 아바타와 NPC가 그 경로를 따라 걷습니다.",
+        "The world manifest's tiles and NPC patrols, together with NPC cast data, enter the pathfinding module. A* computes a route and line-of-sight smoothing refines it, and avatars and NPCs walk along it.",
       ),
       nodes: [
-        { id: "def", label: t("공간 정의", "Space definition"), sub: t("구역·소품·NPC 동선", "Zones, props, NPC routes"), tone: "local", shape: "pill", at: [0, 0] },
-        { id: "stage", label: t("Godot 무대", "Godot stage"), sub: t("정의와 캐스트 수신", "Receives definition and cast"), tone: "local", at: [1, 0] },
-        { id: "nav", label: t("내비게이션", "Navigation"), sub: t("NavigationAgent", "NavigationAgent"), tone: "good", at: [2, 0] },
-        { id: "walk", label: t("경로 따라 걷기", "Walk the route"), sub: t("클릭 이동·NPC 동선", "Click-to-move, NPC routes"), tone: "local", shape: "pill", at: [3, 0] },
-        { id: "cast", label: t("NPC 캐스트", "NPC cast"), sub: t("그린 8종 · 절차 7종", "8 drawn, 7 procedural"), tone: "neutral", shape: "cylinder", at: [1, 1] },
+        { id: "def", label: t("월드 매니페스트", "World manifest"), sub: t("순찰·NPC·타일", "Patrol, NPCs, tiles"), tone: "local", shape: "pill", at: [0, 0] },
+        { id: "stage", label: t("길 찾기 모듈", "Pathfinding module"), sub: t("A* · 평탄화", "A*, smoothing"), tone: "local", at: [1, 0] },
+        { id: "nav", label: t("A* 탐색", "A* search"), sub: t("힙 · 8방향", "Heap, 8-way"), tone: "good", at: [2, 0] },
+        { id: "walk", label: t("경로 따라 걷기", "Walk the route"), sub: t("클릭 이동·NPC 순찰", "Click-to-move, NPC patrol"), tone: "local", shape: "pill", at: [3, 0] },
+        { id: "cast", label: t("NPC 캐스트", "NPC cast"), sub: t("그린 캐스트 8종", "8 drawn cast members"), tone: "neutral", shape: "cylinder", at: [1, 1] },
       ],
       edges: [
-        { from: "def", to: "stage", label: t("정의", "definition") },
+        { from: "def", to: "stage", label: t("재료", "input") },
         { from: "cast", to: "stage", label: t("캐스트", "cast") },
-        { from: "stage", to: "nav", label: t("길 찾기", "find") },
+        { from: "stage", to: "nav", label: t("탐색", "search") },
         { from: "nav", to: "walk", label: t("경로", "route") },
       ],
     },
     usage: [
       {
-        feature: t("공간 정의 · NPC 동선 전달", "Space definition · handing over NPC routes"),
+        feature: t("월드 길 찾기 · A*와 평탄화", "World pathfinding · A* and smoothing"),
         role: t(
-          "공간 정의 스키마가 구역·소품과 함께 NPC 동선 points와 대사를 무대에 건넵니다. 실제 배포 정의에도 순환 동선이 들어 있습니다.",
-          "The space-definition schema hands zones and props, plus NPC route points and lines, to the stage. The shipped definitions contain looped routes as well.",
+          "격자 A*와 코너 커팅 방지, 시야 평탄화, 탐색·캐시 상한이 순수 모듈에 있습니다. 클릭 이동과 NPC 순찰이 이 경로를 씁니다.",
+          "Grid A* with corner-cutting prevention, line-of-sight smoothing, and the search and cache caps live in a pure module. Click-to-move and NPC patrols use this path.",
         ),
-        paths: [`${V}/studio-godot-space.ts`, "apps/web/public/godot-space/spaces.json"],
+        paths: [`${V}/studio-virtual-space-world-pathfinding.ts`],
         route: "/studio/space",
       },
       {
@@ -310,52 +308,42 @@ export function saveLastPosition(workId: string, position: LastPosition): void {
         paths: [`${V}/studio-virtual-space-npc-cast.ts`],
       },
       {
-        feature: t("공간 화면 · 무대 임베드와 피어 표현", "Spatial screen · stage embed and peer presentation"),
+        feature: t("공간 화면 · 클릭 진입점과 피어 표현", "Spatial screen · click entry and peer presentation"),
         role: t(
-          "셸은 무대를 품고, 다른 참가자의 움직임은 프레즌스 표현 모듈의 타임라인 보간으로 매끄럽게 보입니다. 길 계산은 무대 몫입니다.",
-          "The shell embeds the stage, and other participants' movement is shown smoothly through the presence presentation module's timeline interpolation. Computing paths is the stage's share.",
+          "캔버스의 setPathTo가 포인터 클릭을 경로 요청으로 바꾸고, NPC 디렉터·가이드가 순찰을 잇습니다. 다른 참가자의 움직임은 프레즌스 표현 모듈의 타임라인 보간으로 매끄럽게 보입니다.",
+          "The canvas setPathTo turns pointer clicks into path requests, and the NPC director and guide carry patrols onward. Other participants' movement is shown smoothly through the presence presentation module's timeline interpolation.",
         ),
-        paths: [`${V}/StudioGodotSpaceEmbed.tsx`, `${V}/studio-virtual-space-presentation.ts`],
+        paths: [`${V}/StudioVirtualSpacePhaserCanvas.tsx`, `${V}/studio-virtual-space-npc-director.ts`, `${V}/studio-virtual-space-presentation.ts`],
       },
     ],
     samples: [
       {
         kind: "simplified",
-        title: t("NPC 동선과 대사의 정의 상한", "Definition caps for NPC routes and lines"),
+        title: t("탐색·캐시 상한과 재계산 간격", "Search and cache caps and the repath interval"),
         language: "ts",
-        code: `// 공간 정의가 NPC 동선과 대사를 무대에 건네는 계약(godot-space 스키마의 단순화).
-export const NPC_LIMITS = {
-  count: 6, // 정의 하나가 실을 수 있는 NPC 수 상한
-  nameMax: 20, // 이름 최대 길이
-  pointsMin: 2, // 동선 점 최소 개수
-  pointsMax: 16, // 동선 점 최대 개수
-  linesMax: 12, // 대사 줄 최대 개수
-} as const;
+        code: `// 길 찾기 모듈의 탐색·캐시 상한(단순화).
+export const MAX_EXPANSIONS = 150_000; // 한 번의 탐색이 확장할 수 있는 칸 수 상한
+export const MAX_LINE_CACHE = 20_000; // 직선(보이는지) 판정 캐시 상한
+export const MAX_PATH_CACHE = 2_000; // 계산한 경로 캐시 상한
+export const LIVE_REPATH_MS = 350; // 이동 중 재계산 간격
 
-export type NpcRoute = {
-  name: string;
-  points: readonly (readonly [number, number])[];
-  lines?: readonly string[];
-};`,
-        codeEn: `// The contract by which a space definition hands NPC routes and lines to the stage (simplified from the godot-space schema).
-export const NPC_LIMITS = {
-  count: 6, // max NPCs one definition may carry
-  nameMax: 20, // max name length
-  pointsMin: 2, // min route points
-  pointsMax: 16, // max route points
-  linesMax: 12, // max lines
-} as const;
+export function canExpand(expansions: number): boolean {
+  return expansions < MAX_EXPANSIONS; // 상한을 넘으면 탐색을 멈추고 찾지 못함으로 돌려준다
+}`,
+        codeEn: `// Search and cache caps of the pathfinding module (simplified).
+export const MAX_EXPANSIONS = 150_000; // max cells one search may expand
+export const MAX_LINE_CACHE = 20_000; // cap of the line-of-sight judgement cache
+export const MAX_PATH_CACHE = 2_000; // cap of the computed-path cache
+export const LIVE_REPATH_MS = 350; // replanning interval while moving
 
-export type NpcRoute = {
-  name: string;
-  points: readonly (readonly [number, number])[];
-  lines?: readonly string[];
-};`,
+export function canExpand(expansions: number): boolean {
+  return expansions < MAX_EXPANSIONS; // past the cap the search stops and reports not found
+}`,
         explain: t(
-          "셸이 검증하는 것은 동선의 모양과 상한까지입니다. 그 점들을 어떤 경로로 이을지는 무대의 내비게이션이 정하므로, 셸 스키마에는 탐색 설정이 없습니다.",
-          "The shell validates only the route's shape and caps. How those points are joined into a path is decided by stage navigation, so the shell schema holds no search settings.",
+          "탐색이 무한히 커지지 않도록 상한이 모듈 상수로 고정돼 있습니다. 상한을 넘는 목표는 길을 찾지 못한 것으로 처리하고, 직선 캐시가 있으면 벽 검사를 건너뜁니다.",
+          "Caps are fixed as module constants so a search cannot grow without bound. A target past the cap is treated as not found, and a line-of-sight cache hit skips the wall checks.",
         ),
-        source: `${V}/studio-godot-space.ts`,
+        source: `${V}/studio-virtual-space-world-pathfinding.ts`,
         verify: "types",
       },
       {
@@ -385,64 +373,64 @@ export function castLabel(
   return hit ? { ko: hit.labelKo, en: hit.labelEn } : undefined;
 }`,
         explain: t(
-          "패널과 대화처럼 이름만 필요한 곳은 이 조회만 씁니다. 캐스트는 셸에 남은 NPC 자료이며, 무대가 이 인물들을 동선 위로 움직입니다.",
-          "Places that need only a name, such as panels and dialogue, use just this lookup. The cast is NPC material left in the shell, and the stage moves these characters along their routes.",
+          "패널과 대화처럼 이름만 필요한 곳은 이 조회만 씁니다. 캐스트는 NPC 자료이며, NPC 디렉터와 Phaser 캔버스가 이 인물들을 순찰 경로 위로 움직입니다.",
+          "Places that need only a name, such as panels and dialogue, use just this lookup. The cast is NPC material, and the NPC director and the Phaser canvas move these characters along their patrol routes.",
         ),
         source: `${V}/studio-virtual-space-npc-cast.ts`,
         verify: "types",
       },
     ],
     links: [
-      { title: "Godot · NavigationAgent2D", url: "https://docs.godotengine.org/en/stable/classes/class_navigationagent2d.html", kind: "docs", note: t("무대 쪽 길 찾기 에이전트", "The pathfinding agent on the stage side") },
-      { title: "Godot · Navigation in 2D", url: "https://docs.godotengine.org/en/stable/tutorials/navigation/navigation_introduction_2d.html", kind: "guide", note: t("무대 내비게이션 개요", "An overview of stage navigation") },
       { title: "Red Blob Games · Introduction to A*", url: "https://www.redblobgames.com/pathfinding/a-star/introduction.html", kind: "guide", note: t("격자 길 찾기의 배경 지식", "Background reading on grid pathfinding") },
-      { title: "Wikipedia · A* search algorithm", url: "https://en.wikipedia.org/wiki/A*_search_algorithm", kind: "article", note: t("예전 웹 방식의 알고리즘 개요", "An overview of the algorithm the web approach used") },
+      { title: "Wikipedia · A* search algorithm", url: "https://en.wikipedia.org/wiki/A*_search_algorithm", kind: "article", note: t("A* 알고리즘 개요", "An overview of the A* algorithm") },
+      { title: "Phaser · Documentation", url: "https://docs.phaser.io/", kind: "docs", note: t("무대 엔진 문서", "Stage engine documentation") },
+      { title: "MDN · Canvas API", url: "https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API", kind: "docs", note: t("캔버스 렌더링", "Canvas rendering") },
     ],
     chapterIds: ["virtual-studio-world-authority", "performance"],
     talk: {
       pitch: t(
-        "바닥을 클릭해 벽을 돌아 걷는 길 찾기와 NPC가 동선을 따라 움직이는 일은 Godot 무대의 내비게이션이 맡습니다. 셸은 길을 계산하지 않고, NPC 동선 points(2~16개)와 대사, 캐스트 이름·역할 같은 재료만 공간 정의로 건넵니다. 무대 안 내비게이션 설정은 이 저장소에서 확인할 수 없어 수치로 말하지 않습니다.",
-        "Pathfinding that walks around walls after a floor click, and NPCs following their routes, belong to navigation on the Godot stage. The shell does not compute paths; it only hands over ingredients such as NPC route points (2 to 16), lines, and cast names and roles in the space definition. Stage navigation settings cannot be verified from this repository, so they are not stated as numbers.",
+        "바닥을 클릭해 벽을 돌아 걷는 길 찾기와 NPC가 순찰 경로를 따라 움직이는 일은 웹 코드의 격자 A*가 맡습니다. 탐색은 150,000칸 상한 안에서 돌고, 계산한 경로는 2,000개까지 캐시에 남습니다. 캔버스는 setPathTo로 클릭을 경로 요청으로 바꾸고, NPC 디렉터가 순찰을 잇습니다.",
+        "Pathfinding that walks around walls after a floor click, and NPCs following their patrol routes, belong to grid A* in the web code. A search runs within a 150,000-cell cap, and computed paths stay in a cache of up to 2,000 entries. The canvas turns clicks into path requests with setPathTo, and the NPC director carries patrols onward.",
       ),
       analogy: t(
-        "셸은 운전자가 아니라 관제탑이 건네는 운항 자료에 가깝습니다. 누가 어느 순환 동선을 도는지는 자료로 건네고, 실제로 길을 골라 운전하는 일은 무대 안의 내비게이션이 합니다.",
-        "The shell is less like a driver and more like the operations desk handing over route sheets. Who loops along which route is handed over as data, and actually choosing the road and driving happens in navigation inside the stage.",
+        "순수 모듈은 내비게이션 엔진이고, 캔버스와 디렉터는 운전자입니다. 어디로 가야 하는지는 자료(매니페스트)가 말하고, 실제 길 계산은 엔진이, 운전은 운전자가 합니다.",
+        "The pure module is the navigation engine, and the canvas and the director are the drivers. Where to go is stated by the data (the manifest); the engine computes the actual route, and the drivers drive it.",
       ),
       questions: [
         {
           question: t("셸에 A* 길 찾기가 남아 있나요?", "Is A* pathfinding still in the shell?"),
           answer: t(
-            "공간 화면의 현행 길 찾기로는 남아 있지 않습니다. 클릭 지점을 웹 길 찾기에 건네던 진입점과 NPC 디렉터·가이드는 제거됐고, 셸에 남은 근거는 NPC 캐스트 데이터와 동선 정의, 피어 표현 모듈뿐입니다.",
-            "Not as the space screen's current pathfinding. The entry points that handed click targets to web pathfinding, and the NPC director and guide, were removed; the evidence left in the shell is NPC cast data, route definitions and the peer presentation module only.",
+            "네, 공간 화면의 현행 길 찾기가 격자 A*입니다. 클릭 지점을 넘기는 setPathTo 진입점과 NPC 디렉터·가이드가 현행으로 동작하고, 캐스트 데이터와 피어 표현 모듈도 함께 씁니다.",
+            "Yes, the space screen's current pathfinding is grid A*. The setPathTo entry that hands over click targets and the NPC director and guide run as current code, together with the cast data and the peer presentation module.",
           ),
         },
         {
           question: t("NPC는 어떤 동선을 따라가나요?", "Which routes do NPCs follow?"),
           answer: t(
-            "공간 정의에 적힌 points 배열을 따릅니다. 점은 2개부터 16개까지 허용되고, 배포 정의의 NPC들은 처음 점으로 돌아오는 순환 동선을 갖고 있습니다. 점 사이를 잇는 경로는 무대가 계산합니다.",
-            "They follow the points arrays written in the space definition. A route allows 2 to 16 points, and NPCs in the shipped definitions carry looped routes that return to the first point. The stage computes the path between points.",
+            "월드 매니페스트의 순찰(patrol) 배열을 따릅니다. 순찰 점은 정의 하나에 최대 256개까지 허용되고, 점 사이 경로는 A*가 계산합니다. NPC 정의에는 대사 필드가 없고, 인사는 근접 모듈이 거리를 보고 따로 겁니다.",
+            "They follow the patrol arrays in the world manifest. A patrol may hold up to 256 points in one definition, and A* computes the path between points. NPC definitions carry no dialogue field; greetings are triggered separately by the proximity module watching distance.",
           ),
         },
         {
-          question: t("무대 안 길 찾기 성능은 얼마나 되나요?", "How fast is pathfinding inside the stage?"),
+          question: t("길 찾기 성능은 얼마나 제한되나요?", "How limited is pathfinding performance?"),
           answer: t(
-            "이 저장소에서는 확인할 수 없습니다. 내비게이션 메시와 에이전트 설정은 Godot 빌드 안에 있어, 칸 수나 탐색 한도 같은 예전 웹 수치를 무대의 성능처럼 말하지 않습니다.",
-            "It cannot be verified from this repository. The navigation mesh and agent settings live inside the Godot build, so old web numbers such as cell counts and search caps are not presented as stage performance.",
+            "탐색 확장 150,000칸, 경로 캐시 2,000개, 직선 캐시 20,000개가 상한이고, 이동 중 재계산은 350ms 간격으로 제한됩니다. 전부 길 찾기 모듈의 상수에서 확인할 수 있습니다.",
+            "A search may expand 150,000 cells, the path cache holds 2,000 entries and the line-of-sight cache 20,000, and replanning while moving is limited to a 350 ms interval. All of them can be verified in the pathfinding module's constants.",
           ),
         },
       ],
       pitfall: t(
-        "예전 격자 A*의 수치(칸 약 4만 개, 탐색 15만 칸, 캐시 2,000개)를 현행 길 찾기의 값처럼 말하지 마세요. 그 서술은 제거된 웹 클라이언트 기준입니다. 현행으로 말할 수 있는 것은 무대가 길 찾기를 맡는다는 구조와, 셸 정의의 동선 상한뿐입니다.",
-        "Do not present the old grid A* numbers (about 40,000 cells, a 150,000-cell search cap, a 2,000-path cache) as values of the current pathfinding. That description belonged to the removed web client. What can be stated as current is the structure, that the stage owns pathfinding, and the route caps in the shell definition.",
+        "무대 내비게이션이 길 찾기를 맡는다고 말하지 마세요. 현행 길 찾기는 웹 코드의 격자 A*이며 탐색 150,000칸·경로 캐시 2,000개 같은 수치가 정본입니다. 반대로 NPC 6명·동선 16점·대사 12줄 같은 삭제된 공간 정의의 상한을 현행처럼 말하지 마세요.",
+        "Do not say stage navigation owns pathfinding. The current pathfinding is grid A* in the web code, and figures such as the 150,000-cell search cap and the 2,000-entry path cache are canonical. Conversely, do not present the removed space definition's caps, such as 6 NPCs, 16 route points and 12 lines, as current.",
       ),
     },
-    technologies: ["Godot NavigationAgent", "Godot", "TypeScript", "zod"],
+    technologies: ["A* search", "TypeScript", "Phaser", "zod"],
     facts: [
-      { value: "최대 6명", label: t("공간 정의 하나가 실을 수 있는 NPC 수 상한", "Maximum NPCs one space definition may carry"), source: `${V}/studio-godot-space.ts` },
-      { value: "2~16개", label: t("NPC 동선 points 개수 범위", "Range of NPC route point counts"), source: `${V}/studio-godot-space.ts` },
-      { value: "최대 12줄", label: t("NPC 대사 lines 상한", "Cap on NPC dialogue lines"), source: `${V}/studio-godot-space.ts` },
-      { value: "최대 24개 · 64개", label: t("공간 정의 구역(zones) · 소품(props) 상한", "Caps on zones and props in a space definition"), source: `${V}/studio-godot-space.ts` },
-      { value: "8종 · 7종", label: t("그린 NPC 캐스트 · 절차적 NPC 정의 수", "Drawn NPC cast members and procedural NPC definitions"), source: `${V}/studio-virtual-space-npc-cast.ts` },
+      { value: "150,000칸", label: t("A* 탐색 확장 상한", "A* search expansion cap"), source: `${V}/studio-virtual-space-world-pathfinding.ts` },
+      { value: "2,000개 · 20,000개", label: t("경로 캐시 · 직선 캐시 상한", "Path cache and line-of-sight cache caps"), source: `${V}/studio-virtual-space-world-pathfinding.ts` },
+      { value: "350ms", label: t("이동 중 재계산 간격(설계값)", "Replanning interval while moving (design value)"), source: `${V}/studio-virtual-space-world-pathfinding.ts` },
+      { value: "최대 256점", label: t("NPC 순찰 경로 점 상한(정의 하나)", "Cap on NPC patrol points in one definition"), source: `${V}/studio-virtual-space-world-manifest.ts` },
+      { value: "8종", label: t("그린 NPC 캐스트 수", "Drawn NPC cast members"), source: `${V}/studio-virtual-space-npc-cast.ts` },
       { value: "100ms / 250ms", label: t("셸 피어 타임라인 보간 지연 / 외삽 상한(설계값)", "Shell peer-timeline interpolation delay and extrapolation cap (design values)"), source: `${V}/studio-virtual-space-presentation.ts` },
     ],
     reviewedAt: VIRTUAL_SPACE_REVIEWED_AT,

@@ -3,10 +3,10 @@ import type { ArchitectureGuideSection } from "./engineering-architecture-guide-
 
 /**
  * 아키텍처 해설 · 실행 구조 ⑤ 가상 스튜디오와 3D ⑥ AI가 끼어드는 길 ⑦ 실패해도 작업이 남는 이유.
- * ⑤는 코드로 확인한 사실만 쓴다: 2D 공간(`virtual-space/`)은 Godot 무대 빌드와 웹 셸 모듈로 구성되고 three.js·bg3d·VRM 모듈을 가져오지 않는다.
+ * ⑤는 코드로 확인한 사실만 쓴다: 2D 공간(`virtual-space/`)은 Phaser 캔버스와 웹 앱 모듈로 구성되고 three.js·bg3d·VRM 모듈을 가져오지 않는다.
  */
 
-/** 5) 가상 스튜디오와 3D — 2D 공간(Godot 무대)과 3D 장면(three.js)이 만나는 곳. */
+/** 5) 가상 스튜디오와 3D — 2D 공간(Phaser 캔버스)과 3D 장면(three.js)이 만나는 곳. */
 export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
   id: "virtual-studio-3d",
   group: "runtime",
@@ -14,8 +14,8 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
   title: t("가상 스튜디오와 3D", "The virtual studio and 3D"),
   question: t("2D 공간과 3D 장면은 어떻게 맞물리나?", "How do the 2D space and 3D scenes fit together?"),
   oneLine: t(
-    "2D 공간(Godot 무대)과 3D 장면(three.js)은 따로 돌고, 프로젝트와 작품 문서로 만납니다.",
-    "The 2D space (Godot stage) and 3D scenes (three.js) run separately and meet through the project and its document.",
+    "2D 공간(Phaser 캔버스)과 3D 장면(three.js)은 따로 돌고, 프로젝트와 작품 문서로 만납니다.",
+    "The 2D space (Phaser canvas) and 3D scenes (three.js) run separately and meet through the project and its document.",
   ),
   easy: t(
     "가상 스튜디오는 팀이 모이는 '로비'이고, 3D 는 캐릭터와 배경을 만드는 '공방'입니다. 로비와 공방은 서로의 도구를 빌려 쓰지 않고, 완성품(작품 문서)과 안내(어느 문으로 갈지)로만 오갑니다.",
@@ -30,12 +30,12 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
       "Each uses its own engine and they meet at the project and its document; the 2D space imports no 3D modules.",
     ),
     alt: t(
-      "서버가 발행한 월드를 웹 셸이 받아 Godot 무대에 전달하면 무대가 2D 공간을 그립니다. 공간의 문과 구역은 프로젝트 화면을 여는 의도만 전달합니다. 3D 쪽에서는 그림 한 장이 규칙으로 GLB 가 되고, 검증된 GLB 가 three.js 장면에 놓이며, 장면의 캡처가 레이어가 되어 작품 문서로 들어갑니다.",
-      "The web shell receives a server-published world and hands it to the Godot stage, which draws the 2D space. Doors and zones in the space only pass an intent to open project screens. On the 3D side, one image becomes a GLB by rules, a verified GLB is placed in a three.js scene, and captures of the scene become layers that enter the work document.",
+      "서버가 발행한 월드를 웹 앱이 받아 Phaser 캔버스가 2D 공간을 그립니다. 공간의 문과 구역은 프로젝트 화면을 여는 의도만 전달합니다. 3D 쪽에서는 그림 한 장이 규칙으로 GLB 가 되고, 검증된 GLB 가 three.js 장면에 놓이며, 장면의 캡처가 레이어가 되어 작품 문서로 들어갑니다.",
+      "The web app receives a server-published world and the Phaser canvas draws the 2D space. Doors and zones in the space only pass an intent to open project screens. On the 3D side, one image becomes a GLB by rules, a verified GLB is placed in a three.js scene, and captures of the scene become layers that enter the work document.",
     ),
     nodes: [
       { id: "world", label: t("서버 월드 발행본", "Server-published world"), sub: t("이미지 에셋 · 해시 검증", "Image assets, hash-checked"), tone: "server", shape: "cylinder", at: [0, 0] },
-      { id: "space", label: t("2D 공간 (Godot 무대)", "2D space (Godot stage)"), sub: t("걷기·프레즌스·근접 영상", "Walking, presence, proximity video"), tone: "local", at: [0, 1] },
+      { id: "space", label: t("2D 공간 (Phaser 캔버스)", "2D space (Phaser canvas)"), sub: t("걷기·프레즌스·근접 영상", "Walking, presence, proximity video"), tone: "local", at: [0, 1] },
       { id: "project", label: t("프로젝트·문서", "Project and document"), sub: t("두 엔진이 만나는 곳", "Where both engines meet"), tone: "neutral", at: [2, 1] },
       { id: "lift", label: t("그림 → 3D 변환", "Image to 3D"), sub: t("AI 없이 규칙으로", "Rules, no AI"), tone: "local", at: [2, 0] },
       { id: "glb", label: t("검증된 GLB", "Verified GLB"), sub: t("9형식을 한 형식으로", "Nine formats become one"), tone: "local", shape: "cylinder", at: [4, 0] },
@@ -50,38 +50,38 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
     ],
   },
   steps: [
-    t("공간에 들어갈 때 Godot 무대 빌드를 iframe으로 받도록 설계돼 있습니다(/studio/space, 협업은 /studio/p/…/space).", "Entering a space is designed to load the Godot stage build in an iframe then (/studio/space, or /studio/p/…/space for collaboration)."),
-    t("방(월드)은 서버가 확정한 발행본이고(발행본이 없으면 내장 월드가 열립니다), 웹 셸이 확정본을 받아 무대에 전달합니다.", "The room (world) is a server-confirmed publication (a built-in world opens when none is published), and the web shell receives the committed revision and hands it to the stage."),
+    t("공간에 들어가면 웹 앱이 같은 화면 안에 Phaser 캔버스를 띄웁니다(/studio/space, 협업은 /studio/p/…/space).", "Entering a space mounts a Phaser canvas inside the same web page (/studio/space, or /studio/p/…/space for collaboration)."),
+    t("방(월드)은 서버가 확정한 발행본이고(발행본이 없으면 내장 월드가 열립니다), 웹 앱이 확정본을 받아 캔버스에 그립니다.", "The room (world) is a server-confirmed publication (a built-in world opens when none is published), and the web app receives the committed revision and draws it on the canvas."),
     t("문·구역·NPC 는 '어디로 갈지'만 정하고, 쓸 자격은 도착한 기능이 따로 판단합니다.", "Doors, zones and NPCs only decide where to go; the feature you arrive at judges whether you may use it."),
-    t("3D 는 별도 화면(/studio/bg3d, /studio/poser)에서 three.js 가 그리며 Godot 무대를 쓰지 않습니다.", "3D is drawn by three.js on separate screens (/studio/bg3d, /studio/poser) and does not use the Godot stage."),
+    t("3D 는 별도 화면(/studio/bg3d, /studio/poser)에서 three.js 가 그리며 Phaser 캔버스를 쓰지 않습니다.", "3D is drawn by three.js on separate screens (/studio/bg3d, /studio/poser) and does not use the Phaser canvas."),
     t("그림 한 장은 규칙으로 GLB 가 되고, 가져온 3D 파일 9형식은 검증된 GLB 하나로 정규화됩니다.", "One image becomes a GLB by rules, and the nine importable 3D formats are normalized into one verified GLB."),
     t("3D 장면은 캡처되어 컬러·톤·질감선·주선 네 레이어로 2D 작품에 들어갑니다.", "A 3D scene is captured and enters the 2D work as four layers: color, tone, texture lines and main lines."),
   ],
   background: [
     t(
-      "'가상 스튜디오'와 '3D'는 한 덩어리처럼 들리지만 하는 일이 다릅니다. 가상 스튜디오는 팀원이 2D 방을 걸어 다니며 만나고 대화하는 '장소'이고, 3D 는 캐릭터와 배경을 만드는 '도구'입니다. 둘은 서로 다른 엔진(Godot, three.js)이 맡고, 코드에서 2D 공간이 3D 모듈을 가져오는 곳은 찾지 못했습니다.",
-      "'Virtual studio' and '3D' sound like one thing but do different jobs. The virtual studio is a place where teammates walk around 2D rooms to meet and talk, while 3D is a tool for making characters and backgrounds. They are handled by different engines (Godot and three.js), and no place was found where the 2D space imports a 3D module.",
+      "'가상 스튜디오'와 '3D'는 한 덩어리처럼 들리지만 하는 일이 다릅니다. 가상 스튜디오는 팀원이 2D 방을 걸어 다니며 만나고 대화하는 '장소'이고, 3D 는 캐릭터와 배경을 만드는 '도구'입니다. 둘은 서로 다른 엔진(Phaser, three.js)이 맡고, 코드에서 2D 공간이 3D 모듈을 가져오는 곳은 찾지 못했습니다.",
+      "'Virtual studio' and '3D' sound like one thing but do different jobs. The virtual studio is a place where teammates walk around 2D rooms to meet and talk, while 3D is a tool for making characters and backgrounds. They are handled by different engines (Phaser and three.js), and no place was found where the 2D space imports a 3D module.",
     ),
     t(
-      "2D 쪽은 Godot 무대가 그림·이동·충돌·근접을 맡고 웹 셸이 계정·채팅·업무 패널을 붙이며, 월드는 서버가 한 번에 한 버전만 확정합니다(기대 버전이 최신일 때만 기록). 3D 쪽은 three.js 와 React Three Fiber 가 뷰포트를 맡고, VRM 표준 뼈 이름(포즈 저장은 55개 허용 목록)이 포즈·손발 IK·웹캠 추적의 공통 언어이며, 낯선 3D 파일은 검증된 GLB 하나로 정규화한 뒤 씁니다.",
-      "On the 2D side the Godot stage draws and handles movement, collisions and proximity while the web shell attaches accounts, chat and work panels, and the server confirms one world version at a time (it writes only when the expected version is the latest). On the 3D side three.js and React Three Fiber run the viewport, standard VRM bone names (a 55-name allowlist for pose saving) are the common language for poses, limb IK and webcam tracking, and unfamiliar 3D files are normalized into one verified GLB before use.",
+      "2D 쪽은 Phaser 캔버스가 그림·이동·충돌·근접을 맡고 같은 화면의 웹 앱이 계정·채팅·업무 패널을 붙이며, 월드는 서버가 한 번에 한 버전만 확정합니다(기대 버전이 최신일 때만 기록). 3D 쪽은 three.js 와 React Three Fiber 가 뷰포트를 맡고, VRM 표준 뼈 이름(포즈 저장은 55개 허용 목록)이 포즈·손발 IK·웹캠 추적의 공통 언어이며, 낯선 3D 파일은 검증된 GLB 하나로 정규화한 뒤 씁니다.",
+      "On the 2D side the Phaser canvas draws and handles movement, collisions and proximity while the web app on the same screen attaches accounts, chat and work panels, and the server confirms one world version at a time (it writes only when the expected version is the latest). On the 3D side three.js and React Three Fiber run the viewport, standard VRM bone names (a 55-name allowlist for pose saving) are the common language for poses, limb IK and webcam tracking, and unfamiliar 3D files are normalized into one verified GLB before use.",
     ),
     t(
-      "한계: 2D 공간 안에서 3D 장면을 보여 주는 기능은 없습니다. Godot 무대는 웹 번들과 별개인 서빙 빌드라 입장 때 iframe으로 불러옵니다. 3D 엔진은 몰래 바꾸지 않고 사용자가 WebGPU 와 WebGL2 중에서 고르며, VRM 캐릭터가 있는 장면에서는 WebGPU 를 쓸 수 없게 되고, 그때 사용자가 WebGL2 를 직접 골라야 합니다. 자동으로 바뀌지 않습니다.",
-      "Limits: no feature shows a 3D scene inside the 2D space. The Godot stage is a served build separate from the web bundle, loaded in an iframe on entry. The 3D engine is never swapped silently: users choose between WebGPU and WebGL2, and in scenes with a VRM character WebGPU becomes unavailable and the user must pick WebGL2 manually; the app does not switch on its own.",
+      "한계: 2D 공간 안에서 3D 장면을 보여 주는 기능은 없습니다. 2D 공간은 웹 앱과 한 몸인 Phaser 캔버스로 그려져 별도 빌드나 iframe이 없습니다. 3D 엔진은 몰래 바꾸지 않고 사용자가 WebGPU 와 WebGL2 중에서 고르며, VRM 캐릭터가 있는 장면에서는 WebGPU 를 쓸 수 없게 되고, 그때 사용자가 WebGL2 를 직접 골라야 합니다. 자동으로 바뀌지 않습니다.",
+      "Limits: no feature shows a 3D scene inside the 2D space. The 2D space is drawn by a Phaser canvas that is part of the web app itself, with no separate build or iframe. The 3D engine is never swapped silently: users choose between WebGPU and WebGL2, and in scenes with a VRM character WebGPU becomes unavailable and the user must pick WebGL2 manually; the app does not switch on its own.",
     ),
   ],
   inService: [
     {
       what: t("가상 스튜디오 화면", "Virtual studio screen"),
       role: t(
-        "발행 월드를 받아 Godot 무대·프레즌스·근접 영상·패널을 한 화면에 조립하고, 공간 행동은 '열기 의도'로만 번역",
-        "Receives the published world and assembles the Godot stage, presence, proximity video and panels, translating space actions only into open intents",
+        "발행 월드를 받아 Phaser 캔버스·프레즌스·근접 영상·패널을 한 화면에 조립하고, 공간 행동은 '열기 의도'로만 번역",
+        "Receives the published world and assembles the Phaser canvas, presence, proximity video and panels on one screen, translating space actions only into open intents",
       ),
       paths: [
         "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePage.tsx",
-        "apps/web/src/domains/creator/virtual-space/StudioGodotSpaceEmbed.tsx",
-        "apps/web/src/domains/creator/virtual-space/studio-godot-space.ts",
+        "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx",
+        "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePageRoot.tsx",
       ],
     },
     {
@@ -162,8 +162,8 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
     },
   ],
   pitfall: t(
-    "'가상 스튜디오 안에서 3D 를 본다'는 오해입니다. 2D 공간은 Godot 무대 빌드와 이미지 에셋을 쓰고 3D 와 코드로 이어진 곳을 찾지 못했습니다. 운영 DB 의 실제 발행 월드와 다중 사용자 실측은 확인하지 못했습니다.",
-    "It is a misconception that you see 3D inside the virtual studio. The 2D space uses the Godot stage build and image assets, and no code link to 3D was found. Real published worlds and multi-user behavior in the production database were not verified.",
+    "'가상 스튜디오 안에서 3D 를 본다'는 오해입니다. 2D 공간은 Phaser 캔버스와 이미지 에셋을 쓰고 3D 와 코드로 이어진 곳을 찾지 못했습니다. 운영 DB 의 실제 발행 월드와 다중 사용자 실측은 확인하지 못했습니다.",
+    "It is a misconception that you see 3D inside the virtual studio. The 2D space uses the Phaser canvas and image assets, and no code link to 3D was found. Real published worlds and multi-user behavior in the production database were not verified.",
   ),
   facts: [
     {

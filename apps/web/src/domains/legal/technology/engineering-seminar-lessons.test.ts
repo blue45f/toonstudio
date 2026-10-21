@@ -449,9 +449,9 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-virtual-studio", claim: "공간은 Godot 무대, 방 연결 64·재생 보존 15분, 게스트 티켓 viewer 상한", needles: ["Godot", "64", "15분", "viewer", "studio-world-publication.repository.ts"],
+    lesson: "seminar-virtual-studio", claim: "공간은 Phaser 캔버스, 방 연결 64·재생 보존 15분, 게스트 티켓 viewer 상한", needles: ["Phaser", "64", "15분", "viewer", "studio-world-publication.repository.ts"],
     check: () => {
-      expect(readText("apps", "web", "src", "domains", "creator", "virtual-space", "StudioGodotSpaceEmbed.tsx")).toContain('GODOT_SPACE_EMBED_PATH = "/godot-space/index.html"');
+      expect(readText("apps", "web", "src", "domains", "creator", "virtual-space", "StudioVirtualSpacePhaserCanvas.tsx")).toContain("new Phaser.Game(");
       const wrangler = readText("deploy", "cloudflare-realtime", "wrangler.jsonc");
       expect(wrangler).toContain('"REALTIME_MAX_CONNECTIONS_PER_ROOM": "64"');
       expect(wrangler).toContain('"REALTIME_EVENT_RETENTION_MS": "900000"');

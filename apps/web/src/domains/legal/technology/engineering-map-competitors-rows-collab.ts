@@ -38,8 +38,8 @@ export const COMPETITOR_ROWS_COLLAB: readonly EngineeringMapRow[] = [
       "배움: 지도 보기에서 한 번에 이동하고 목록에서 사람 위치를 확인하는 방식(참고). 격차로 기록한 것: Slack·캘린더 같은 외부 연동과 브랜딩. 구현했다고는 적지 않음.",
       "Learned: one-step travel from a map view and finding people from a list (reference). Recorded as gaps: external links such as Slack and calendars, and branding. Not claimed as built.",
     ),
-    overlap: t("가상 스튜디오(Godot 무대)의 지도 이동과 웹 셸의 회의 패널.", "Map travel in the Virtual Studio (Godot stage) and the web shell meeting panel."),
-    evidence: [VIRTUAL_BENCH, `${CREATOR}/virtual-space/StudioGodotMeetingPanel.tsx`, `${CREATOR}/virtual-space/StudioGodotSpaceEmbed.tsx`],
+    overlap: t("가상 스튜디오(Phaser 2D 캔버스)의 지도 이동과 회의 패널.", "Map travel in the Virtual Studio (Phaser 2D canvas) and the meeting panel."),
+    evidence: [VIRTUAL_BENCH, `${CREATOR}/virtual-space/studio-virtual-space-meeting-flow.ts`, `${CREATOR}/virtual-space/StudioVirtualSpacePhaserCanvas.tsx`],
   }),
   row({
     id: "zep",
@@ -54,8 +54,8 @@ export const COMPETITOR_ROWS_COLLAB: readonly EngineeringMapRow[] = [
       "배움: 타일 효과로 영역의 뜻을 데이터로 선언하는 방식. 참고만 한 것: 영역 ID로 분리된 공간을 하나로 잇는 발상(구현 여부는 문서에 없음).",
       "Learned: declare the meaning of an area as data through tile effects. Referenced only: linking separate spaces by an area ID (whether built is not recorded).",
     ),
-    overlap: t("가상 스튜디오의 Godot 월드 저작 패널(구역·스폰·배경 설정).", "The Virtual Studio Godot world-authoring panel (zones, spawns, backgrounds)."),
-    evidence: [VIRTUAL_BENCH, `${CREATOR}/virtual-space/StudioGodotLayoutPanel.tsx`],
+    overlap: t("가상 스튜디오의 2D 월드 저작 패널(구역·스폰·배경 설정).", "The Virtual Studio 2D world-authoring panel (zones, spawns, backgrounds)."),
+    evidence: [VIRTUAL_BENCH, `${CREATOR}/virtual-space/StudioVirtualSpaceWorldAuthoringPanel.tsx`],
   }),
   row({
     id: "topia",
@@ -70,8 +70,8 @@ export const COMPETITOR_ROWS_COLLAB: readonly EngineeringMapRow[] = [
       "배움: 포털·임베드로 공간을 잇는 구성과 공동 편집 권한 모델을 참고. 아바타 꾸미기는 참고할 점이 적다고 기록함.",
       "Learned: a layout that links spaces through portals and embeds, and its co-editing permission model, as references. Its avatar customization was recorded as having little to learn from.",
     ),
-    overlap: t("웹 셸이 품은 Godot 무대 임베드와 무대 안 공간 이동.", "The Godot stage embedded in the web shell, and travel inside the stage."),
-    evidence: [VIRTUAL_BENCH, `${CREATOR}/virtual-space/StudioGodotSpaceEmbed.tsx`],
+    overlap: t("웹 앱이 그리는 Phaser 2D 무대와 무대 안 공간 이동.", "The Phaser 2D stage drawn by the web app, and travel inside the stage."),
+    evidence: [VIRTUAL_BENCH, `${CREATOR}/virtual-space/StudioVirtualSpacePhaserCanvas.tsx`],
   }),
   row({
     id: "spatial",
@@ -87,7 +87,7 @@ export const COMPETITOR_ROWS_COLLAB: readonly EngineeringMapRow[] = [
       "Learned: only the expectation that you can see who is speaking, so a lip-sync module turns mic level into three mouth shapes. 3D avatars and expression tracking are not followed.",
     ),
     overlap: t("웹 무대 시절의 립싱크 모듈은 Godot 전환으로 제거됐고, 현재 화상 표시는 웹 셸 화상 패널이 맡는다.", "The web-stage lip-sync module was removed in the Godot move; video display now lives in the web shell video panel."),
-    evidence: [VIRTUAL_BENCH, `${CREATOR}/virtual-space/StudioGodotSpaceEmbed.tsx`],
+    evidence: [VIRTUAL_BENCH, `${CREATOR}/virtual-space/studio-virtual-space-meeting-flow.ts`],
   }),
   row({
     id: "spatialchat",

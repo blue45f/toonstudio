@@ -509,16 +509,16 @@ export const ENGINES: readonly EngineeringMapRow[] = [
       "A 2D game engine for the web. It draws the Virtual Studio world, and the playbook calls it a projection, not business authority. In the review adapter it only displays, and review authority reuses ADR-0022.",
     ),
     learned: t(
-      "결정(2026-10 갱신): 가상 스튜디오는 2D 제품으로 유지하되 무대는 Godot로 교체했고, 3D 소셜 엔진으로 갈아타지는 않음.",
-      "Decision (updated 2026-10): the Virtual Studio stays a 2D product, its stage was rebuilt on Godot, and it is not being swapped for a 3D social engine.",
+      "결정(2026-10-21 갱신): 가상 스튜디오는 2D 제품으로 유지하고 무대는 Phaser 캔버스가 맡으며, 3D 소셜 엔진으로 갈아타지는 않음.",
+      "Decision (updated 2026-10-21): the Virtual Studio stays a 2D product drawn by the Phaser canvas, and it is not being swapped for a 3D social engine.",
     ),
-    overlap: t("가상 스튜디오의 월드 렌더러(Godot 무대).", "The Virtual Studio world renderer (Godot stage)."),
+    overlap: t("가상 스튜디오의 월드 렌더러(Phaser 캔버스).", "The Virtual Studio world renderer (Phaser canvas)."),
     evidence: [
       "docs/studio/studio-3d-platform-evolution-2026-09-19.md",
       "docs/studio/virtual-studio-benchmark-20260920.md",
       "docs/technology/toonstudio-engineering-playbook-2026-09-23.md",
       "docs/adr/0022-studio-authority-identity-production-modes.md",
-      `${CREATOR}/virtual-space/StudioGodotSpaceEmbed.tsx`,
+      `${CREATOR}/virtual-space/StudioVirtualSpacePhaserCanvas.tsx`,
     ],
   }),
 ];

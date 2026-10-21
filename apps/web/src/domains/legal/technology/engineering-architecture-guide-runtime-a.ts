@@ -359,13 +359,13 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
     },
   ],
   pitfall: t(
-    "'정적 요청은 Worker 를 거치지 않는다'에는 예외가 있습니다(먼저 실행하는 35개 경로: 링크 미리보기 크롤러·대형 파일 등). 운영 대시보드와 실제 사용량은 확인하지 못했고 코드·설정만 근거입니다.",
-    "'Static requests never touch the Worker' has exceptions: the 35 worker-first paths such as link-preview crawlers and large files. The production dashboard and real usage were not checked; only code and configuration back this section.",
+    "'정적 요청은 Worker 를 거치지 않는다'에는 예외가 있습니다(먼저 실행하는 26개 경로: 링크 미리보기 크롤러·대형 파일 등). 운영 대시보드와 실제 사용량은 확인하지 못했고 코드·설정만 근거입니다.",
+    "'Static requests never touch the Worker' has exceptions: the 26 worker-first paths such as link-preview crawlers and large files. The production dashboard and real usage were not checked; only code and configuration back this section.",
   ),
   facts: [
     {
-      value: "35",
-      label: t("Worker 가 먼저 받는 경로 패턴(API 4·미리보기 25·대형 파일 6)", "Path patterns the Worker handles first (4 API, 25 preview, 6 large file)"),
+      value: "26",
+      label: t("Worker 가 먼저 받는 경로 패턴(API 4·미리보기 16·대형 파일 6)", "Path patterns the Worker handles first (4 API, 16 preview, 6 large file)"),
       source: "deploy/cloudflare-static/wrangler.jsonc",
     },
     {

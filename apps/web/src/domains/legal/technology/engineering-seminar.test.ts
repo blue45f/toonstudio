@@ -105,10 +105,10 @@ describe("세미나 발표(30분) 원본", () => {
     expect(facts.get("재개 요청 측정 창(설정값)")).toBe("10s");
     expect(wrangler).toContain('"REALTIME_RESUME_WINDOW_MS": "10000"');
 
-    // 가상 스튜디오 슬라이드의 수치는 Godot 무대 임베드와 Worker·계약 상수에서 확인한다
+    // 가상 스튜디오 슬라이드의 수치는 Phaser 캔버스와 Worker·계약 상수에서 확인한다
     // (정원 사다리의 나머지는 engineering-talk-deck-content.test.ts 가 확인한다).
     const dir = "apps/web/src/domains/creator/virtual-space";
-    expect(source(`${dir}/StudioGodotSpaceEmbed.tsx`)).toContain('GODOT_SPACE_EMBED_PATH = "/godot-space/index.html"');
+    expect(source(`${dir}/StudioVirtualSpacePhaserCanvas.tsx`)).toContain("new Phaser.Game(");
     expect(facts.get("놓친 이벤트 재생 보존")).toBe("15분 · 2,048건");
     expect(wrangler).toContain('"REALTIME_EVENT_RETENTION_MS": "900000"');
     expect(facts.get("입장권 유효 시간")).toBe("60초");

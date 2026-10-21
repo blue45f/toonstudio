@@ -3,7 +3,7 @@ import { t, VIRTUAL_SPACE_REVIEWED_AT } from "./engineering-atlas-virtual-space-
 
 /**
  * virtual-space 카드 5: 아트 에셋 파이프라인(v3~v9, CI 게이트) · 캐릭터 아틀라스/LPC/텍스처 상주.
- * 웹(Phaser) 공간 클라이언트 제거와 Godot 무대 교체 이후 기준으로 다시 확인했다.
+ * 2026-10-21 Godot 무대 제거와 Phaser 2D 공간 단일화 이후 기준으로 다시 확인했다.
  * 경로·수치는 현재 코드와 매니페스트에서 직접 확인한 값이다.
  */
 
@@ -18,13 +18,13 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
     title: t("그림 에셋을 만들고 해시로 지키는 파이프라인(v3~v9)", "A pipeline that builds art assets and guards them by hash (v3 to v9)"),
     status: "live",
     tagline: t(
-      "원본을 결정적으로 가공하고 해시 매니페스트를 CI 가 검증합니다. 웹 소비처는 로비와 미리보기입니다.",
-      "Sources are processed deterministically and CI checks hash manifests; the web consumers are the lobby and previews.",
+      "원본을 결정적으로 가공하고 해시 매니페스트를 CI 가 검증합니다. 웹 소비처는 공간 화면과 로비, 미리보기입니다.",
+      "Sources are processed deterministically and CI checks hash manifests; the web consumers are the space screen, the lobby and previews.",
     ),
     background: [
       t(
-        "가상 스튜디오의 그림(배경, 캐릭터, 가구)은 3,560개 파일, 약 412.6 MiB 입니다. 이만큼의 그림이 버전을 거듭하며 바뀌면, 파일 하나가 몰래 바뀌거나 빠져도 눈치채기 어렵습니다. 그래서 팩마다 '명세서'(매니페스트)에 파일별 크기와 지문(SHA-256)을 적어 두고, 기계가 명세서와 실제 파일을 대조합니다. 택배 상자마다 송장과 무게를 적어 두고 도착할 때 대조하는 것과 같습니다. 공간 안 렌더는 이제 Godot 무대가 맡고, 이 팩의 웹 소비처는 입장 로비와 캐릭터·장소 미리보기입니다.",
-        "The studio's art (backgrounds, characters, furniture) is 3,560 files and about 412.6 MiB. With that much art changing across versions, one file silently altered or missing is hard to notice. So each pack's manifest lists every file's size and fingerprint (SHA-256), and a machine compares the manifest with the real files. It is like writing an invoice and weight on every parcel and checking them on arrival. In-space rendering is now handled by the Godot stage, and the web consumers of these packs are the entry lobby and the character and place previews.",
+        "가상 스튜디오의 그림(배경, 캐릭터, 가구)은 3,560개 파일, 약 412.6 MiB 입니다. 이만큼의 그림이 버전을 거듭하며 바뀌면, 파일 하나가 몰래 바뀌거나 빠져도 눈치채기 어렵습니다. 그래서 팩마다 '명세서'(매니페스트)에 파일별 크기와 지문(SHA-256)을 적어 두고, 기계가 명세서와 실제 파일을 대조합니다. 택배 상자마다 송장과 무게를 적어 두고 도착할 때 대조하는 것과 같습니다. 공간 안 렌더는 웹 앱의 Phaser 캔버스가 맡고, 이 팩의 웹 소비처는 공간 화면과 입장 로비, 캐릭터·장소 미리보기입니다.",
+        "The studio's art (backgrounds, characters, furniture) is 3,560 files and about 412.6 MiB. With that much art changing across versions, one file silently altered or missing is hard to notice. So each pack's manifest lists every file's size and fingerprint (SHA-256), and a machine compares the manifest with the real files. It is like writing an invoice and weight on every parcel and checking them on arrival. In-space rendering is handled by the web app's Phaser canvas, and the web consumers of these packs are the space screen, the entry lobby and the character and place previews.",
       ),
       t(
         "흐름은 이렇습니다. ① 원본을 준비합니다(v4·v6·v7 은 이미지 생성 도구로 만든 시트·보드, v5 는 스크립트가 스타일별로 그린 렌더). ② Python/Pillow 스크립트가 원본을 결정적으로 자르고 팩으로 묶어 webp/png 와 매니페스트(경로, 바이트, SHA-256, 가로세로)를 만듭니다. ③ Node 검증 스크립트가 폴더와 매니페스트가 정확히 일치하는지(남거나 빠진 파일 없음), 크기·해시·이미지 크기가 같은지, 심볼릭 링크와 경로 탈출이 없는지 확인합니다. ④ CI 빌드 작업이 test:studio-virtual-art 와 verify:studio-virtual-art 를 돌려 어긋나면 멈춥니다.",
@@ -42,7 +42,7 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
     keyPoints: [
       t("그림마다 바이트 수와 SHA-256 을 매니페스트에 적습니다", "Every file's size and SHA-256 go in a manifest"),
       t("CI 가 폴더와 매니페스트가 정확히 맞는지 대조합니다", "CI checks that the folder matches the manifest exactly"),
-      t("소비처는 로비·미리보기, 공간 렌더는 Godot 무대입니다", "Consumers are the lobby and previews; the Godot stage renders the space"),
+      t("소비처는 공간 화면·로비·미리보기입니다", "Consumers are the space screen, the lobby and previews"),
     ],
     diagram: {
       id: "art-asset-pipeline-v3-v9-ci-gate-diagram",
@@ -53,8 +53,8 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
         "Processing scripts produce packs and manifests, and verifier scripts and CI compare the two.",
       ),
       alt: t(
-        "원본(이미지 생성 도구의 시트나 스크립트 렌더)을 Python 가공 스크립트가 자르고 묶어 에셋 팩과 매니페스트를 만듭니다. Node 검증 스크립트가 둘을 대조하고 결과를 CI 게이트가 판정하며, 통과한 팩을 입장 로비와 미리보기가 씁니다. 공간 안 렌더는 이 경로 밖에 있는 Godot 무대가 맡습니다. v8·v9 는 게이트의 검증 스크립트가 일부만 닿아 점선으로 표시했고, 나머지는 생존한 단위 테스트가 대조합니다.",
-        "A Python processing script slices and bundles the sources (sheets from image generation tools or scripted renders) into asset packs and a manifest. Node verification scripts compare the two, the CI gate judges the result, and the entry lobby and previews use the packs that pass. In-space rendering is handled by the Godot stage, outside this path. The gate's verifier scripts reach v8 and v9 only partly, so they are shown with a dashed line; surviving unit tests compare the rest.",
+        "원본(이미지 생성 도구의 시트나 스크립트 렌더)을 Python 가공 스크립트가 자르고 묶어 에셋 팩과 매니페스트를 만듭니다. Node 검증 스크립트가 둘을 대조하고 결과를 CI 게이트가 판정하며, 통과한 팩을 공간 화면과 입장 로비, 미리보기가 씁니다. 공간 안 렌더는 이 경로 밖에 있는 Phaser 캔버스가 맡습니다. v8·v9 는 게이트의 검증 스크립트가 일부만 닿아 점선으로 표시했고, 나머지는 생존한 단위 테스트가 대조합니다.",
+        "A Python processing script slices and bundles the sources (sheets from image generation tools or scripted renders) into asset packs and a manifest. Node verification scripts compare the two, the CI gate judges the result, and the space screen, the entry lobby and previews use the packs that pass. In-space rendering is handled by the Phaser canvas, outside this path. The gate's verifier scripts reach v8 and v9 only partly, so they are shown with a dashed line; surviving unit tests compare the rest.",
       ),
       nodes: [
         { id: "source", label: t("원본", "Source"), sub: t("생성 도구 시트 · 렌더", "Tool sheets, renders"), tone: "external", shape: "cloud", at: [0, 0] },
@@ -207,8 +207,8 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
     chapterIds: ["quality"],
     talk: {
       pitch: t(
-        "가상 스튜디오의 그림은 3,560개 파일입니다. 그림마다 크기와 SHA-256 지문을 명세서에 적어 두고, 빌드할 때마다 기계가 명세서와 실제 파일을 대조해 어긋나면 빌드를 멈춥니다. 웹에서 이 팩을 쓰는 곳은 입장 로비와 미리보기이고, 공간 안 렌더는 Godot 무대가 맡습니다. 단, 모든 버전이 같은 방식으로 지켜지는 것은 아닙니다. v3~v7 은 아트 게이트가 해시까지 검증하고, v8 은 게이트 일부와 생존한 단위 테스트가 나눠 대조하며, v9 의 전수 대조 테스트는 제거됐습니다.",
-        "The studio's art is 3,560 files. Each file's size and SHA-256 fingerprint are written in a manifest, and on every build a machine compares the manifest with the real files and stops the build on a mismatch. On the web these packs are used by the entry lobby and the previews, while the Godot stage renders inside the space. Not every version is guarded the same way, though: the art gate verifies v3 to v7 down to hashes, part of the gate and surviving unit tests share v8, and the full-comparison test for v9 was removed.",
+        "가상 스튜디오의 그림은 3,560개 파일입니다. 그림마다 크기와 SHA-256 지문을 명세서에 적어 두고, 빌드할 때마다 기계가 명세서와 실제 파일을 대조해 어긋나면 빌드를 멈춥니다. 웹에서 이 팩을 쓰는 곳은 공간 화면과 입장 로비, 미리보기입니다. 단, 모든 버전이 같은 방식으로 지켜지는 것은 아닙니다. v3~v7 은 아트 게이트가 해시까지 검증하고, v8 은 게이트 일부와 생존한 단위 테스트가 나눠 대조하며, v9 의 전수 대조 테스트는 제거됐습니다.",
+        "The studio's art is 3,560 files. Each file's size and SHA-256 fingerprint are written in a manifest, and on every build a machine compares the manifest with the real files and stops the build on a mismatch. On the web these packs are used by the space screen, the entry lobby and the previews. Not every version is guarded the same way, though: the art gate verifies v3 to v7 down to hashes, part of the gate and surviving unit tests share v8, and the full-comparison test for v9 was removed.",
       ),
       analogy: t(
         "택배 창고의 입고 검수입니다. 상자마다 송장(매니페스트)에 무게와 도장이 적혀 있고, 입고 담당(검증기)이 실제 상자와 하나씩 맞춰 보며, 하나라도 다르면 문을 열어 주지 않습니다.",
@@ -263,8 +263,8 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
     ),
     background: [
       t(
-        "캐릭터의 모습은 한 장짜리 큰 그림 위에 동작별 칸을 모아 둔 '스프라이트 시트'에서 칸을 하나씩 꺼내 보여 줍니다. 만화책 컷을 격자로 인쇄한 종이에서 오려 쓰는 것과 같습니다. 칸을 나눌 때 1픽셀이라도 어긋나면 캐릭터가 깜빡이거나 옆 칸의 그림이 비치므로, 정수 경계로 정확히 자릅니다. 웹에서 이 라이브러리를 쓰는 곳은 캐릭터 미리보기와 입장 로비·캐릭터 선택이고, 공간 안에서 캐릭터를 움직이는 렌더는 Godot 무대가 맡습니다.",
-        "A character's appearance is shown by taking one cell at a time from a sprite sheet, one big picture holding cells for each motion. It is like cutting out panels from a sheet printed as a grid. If cutting is off by even one pixel the character flickers or the neighbouring cell shows through, so cuts are made exactly at integer boundaries. On the web this library is used by the character previews and the entry lobby and character picker, while the Godot stage renders characters moving inside the space.",
+        "캐릭터의 모습은 한 장짜리 큰 그림 위에 동작별 칸을 모아 둔 '스프라이트 시트'에서 칸을 하나씩 꺼내 보여 줍니다. 만화책 컷을 격자로 인쇄한 종이에서 오려 쓰는 것과 같습니다. 칸을 나눌 때 1픽셀이라도 어긋나면 캐릭터가 깜빡이거나 옆 칸의 그림이 비치므로, 정수 경계로 정확히 자릅니다. 웹에서 이 라이브러리를 쓰는 곳은 캐릭터 미리보기와 입장 로비·캐릭터 선택이고, 공간 안에서 캐릭터를 움직이는 렌더는 Phaser 캔버스가 맡습니다.",
+        "A character's appearance is shown by taking one cell at a time from a sprite sheet, one big picture holding cells for each motion. It is like cutting out panels from a sheet printed as a grid. If cutting is off by even one pixel the character flickers or the neighbouring cell shows through, so cuts are made exactly at integer boundaries. On the web this library is used by the character previews and the entry lobby and character picker, while the Phaser canvas renders characters moving inside the space.",
       ),
       t(
         "자르기: 시트를 칸 수로 나눌 때 Math.round 로 경계를 정해 이웃한 칸이 겹치지도 잘리지도 않게 합니다(rounded-grid). 간격이 고르지 않은 생성 원본은 검수한 칸 영역 목록(explicit-frames)을 그대로 씁니다. 미리보기 컴포넌트는 이 프레임 좌표로 SVG viewBox 와 클립을 만들어 한 칸만 보여 줍니다. 상주 규칙도 같은 라이브러리에 남아 있습니다. 텍스처를 주인별로 세는 상주 클래스는 아무도 쓰지 않으면 30초 유예 뒤 백엔드의 제거를 부르도록 설계됐고, 지금은 단위 테스트가 가짜 백엔드로 그 동작을 검증합니다.",
@@ -464,8 +464,8 @@ export class Residency {
     chapterIds: ["performance", "licenses"],
     talk: {
       pitch: t(
-        "캐릭터의 모습은 한 장의 큰 시트에서 칸을 꺼내 보여 줍니다. 칸을 정수 경계로 정확히 잘라 한 픽셀도 겹치거나 잘리지 않게 하고, 캐릭터 미리보기와 입장 로비가 그 프레임으로 캐릭터를 보여 줍니다. 공간 안 렌더는 Godot 무대가 맡습니다. 픽셀 캐릭터 20명은 오픈소스 LPC 생성기 레이어로 만들었고, 작가와 라이선스 기록은 credits.json 과 CREDITS.md 로 남습니다.",
-        "A character's appearance is shown by taking cells from one big sheet. The cells are cut exactly at integer boundaries so no pixel overlaps or is lost, and the character previews and the entry lobby show characters with those frames. The Godot stage renders inside the space. The 20 pixel characters are built from open-source LPC generator layers, and the author and license records remain as credits.json and CREDITS.md.",
+        "캐릭터의 모습은 한 장의 큰 시트에서 칸을 꺼내 보여 줍니다. 칸을 정수 경계로 정확히 잘라 한 픽셀도 겹치거나 잘리지 않게 하고, 캐릭터 미리보기와 입장 로비가 그 프레임으로 캐릭터를 보여 줍니다. 공간 안 렌더는 Phaser 캔버스가 맡습니다. 픽셀 캐릭터 20명은 오픈소스 LPC 생성기 레이어로 만들었고, 작가와 라이선스 기록은 credits.json 과 CREDITS.md 로 남습니다.",
+        "A character's appearance is shown by taking cells from one big sheet. The cells are cut exactly at integer boundaries so no pixel overlaps or is lost, and the character previews and the entry lobby show characters with those frames. The Phaser canvas renders inside the space. The 20 pixel characters are built from open-source LPC generator layers, and the author and license records remain as credits.json and CREDITS.md.",
       ),
       analogy: t(
         "도서관 대출 카운터와 같습니다. 책(텍스처)을 빌려 간 사람(주인)이 한 명이라도 있으면 서가에 두고, 모두 반납하면 잠깐 카운터에 두었다가 서가로 돌려보냅니다.",

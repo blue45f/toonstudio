@@ -341,7 +341,7 @@ describe("세미나 발표 원본: 요청한 주제를 모두 다룬다", () => 
     ["로컬 우선 저장", "talk-local-first", [/OPFS/u, /백업이 아님/u]],
     ["드래그 앤 드롭 구현", "talk-dnd", [/끌/u, /Pointer Events/u]],
     ["실시간 협업", "talk-collaboration", [/CRDT/u, /Yjs/u]],
-    ["가상 스튜디오", "talk-virtual-studio", [/Godot/u, /근접/u]],
+    ["가상 스튜디오", "talk-virtual-studio", [/Phaser/u, /근접/u]],
     ["WebRTC", "talk-webrtc", [/WebRTC|시그널링/u, /studio-direct-v1/u]],
     ["3D", "talk-3d", [/WebGPU/u, /VRM/u]],
     ["AI 활용", "talk-ai", [/무료/u, /ONNX/u]],
@@ -386,11 +386,11 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(wrangler).toContain('"REALTIME_MAX_REPLAY_EVENTS": "2048"');
   });
 
-  it("가상 스튜디오: Godot 무대 임베드와 정원 사다리, 게스트 티켓 상한", () => {
+  it("가상 스튜디오: Phaser 캔버스와 정원 사다리, 게스트 티켓 상한", () => {
     const slide = slideOf("talk-virtual-studio");
     const dir = "apps/web/src/domains/creator/virtual-space";
-    // 공간 클라이언트는 Godot 무대다 — 셸 임베드가 서빙 빌드 경로를 고정한다.
-    expect(read(`${dir}/StudioGodotSpaceEmbed.tsx`)).toContain('GODOT_SPACE_EMBED_PATH = "/godot-space/index.html"');
+    // 공간 클라이언트는 웹 앱 안의 Phaser 캔버스다 — 페이지가 캔버스를 직접 마운트한다.
+    expect(read(`${dir}/StudioVirtualSpacePhaserCanvas.tsx`)).toContain("new Phaser.Game(");
     expect(factOf(slide, 0, "방당 최대 연결")).toBe("64");
 
     // 정원 사다리: DO 방 64 · 재생 보존 15분/2,048건 · 허들 3.
