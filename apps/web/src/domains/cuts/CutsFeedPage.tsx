@@ -198,7 +198,7 @@ export function CutsFeedPage() {
   const remixPolicyOverrides = useCutsStore((state) => state.remixPolicyOverrides);
   const bindCutsOwner = useCutsStore((state) => state.bindCutsOwner);
   const actorId = useAuthActorId();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   // 좋아요·리믹스 정책은 계정 파티션 — 복원이 끝난 뒤 현재 계정으로 bind 한다.
   const cutsHydrated = useCutsHydrated();
