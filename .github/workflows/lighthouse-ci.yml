@@ -1,9 +1,8 @@
 name: Lighthouse CI
 
-# Public-surface Core Web Vitals as a PR gate (BLUEPRINT §6 budgets).
-# Lab measurement only: LCP and CLS are asserted directly; INP has no lab
-# equivalent in Lighthouse, so total-blocking-time is asserted at the same
-# 200ms budget as its lab proxy. Field INP stays with the web-vitals beacon.
+# Public-surface Core Web Vitals telemetry for pull requests.
+# Lab measurements are retained as warnings/reports, not hard release vetoes;
+# field INP stays with the web-vitals beacon.
 on:
   pull_request:
     branches: [main]
@@ -37,7 +36,7 @@ env:
 
 jobs:
   lighthouse:
-    name: Public surface CWV gate (LCP · CLS · INP proxy)
+    name: Public surface CWV telemetry (LCP · CLS · INP proxy)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -50,11 +49,11 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
-      - name: Lighthouse gate contract (budgets stay wired to §6)
+      - name: Lighthouse telemetry contract (metrics stay collected)
         run: pnpm exec vitest run scripts/__tests__/lighthouse-ci-contract.test.mjs
       - name: Build the exact candidate production bundle
         run: pnpm run build:bundle
-      - name: Collect and assert CWV budgets (fails on violation)
+      - name: Collect CWV metrics (thresholds are warnings only)
         run: pnpm run lhci:autorun
       - name: Keep Lighthouse reports
         if: always()

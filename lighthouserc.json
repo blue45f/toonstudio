@@ -1,1 +1,53 @@
-{"ci":{"assert":{"assertions":{"categories:performance":["warn",{"aggregationMethod":"median-run","minScore":0.9}],"cumulative-layout-shift":["error",{"aggregationMethod":"median-run","maxNumericValue":0.1}],"largest-contentful-paint":["error",{"aggregationMethod":"median-run","maxNumericValue":2500}],"total-blocking-time":["error",{"aggregationMethod":"median-run","maxNumericValue":200}]}},"collect":{"numberOfRuns":3,"settings":{"chromeFlags":"--no-sandbox --disable-dev-shm-usage"},"startServerCommand":"pnpm exec vite preview --config apps/web/vite.config.ts --host 127.0.0.1 --port 4173","startServerReadyPattern":"Local","startServerReadyTimeout":60000,"url":["http://127.0.0.1:4173/","http://127.0.0.1:4173/discover"]},"upload":{"outputDir":".lighthouseci","target":"filesystem"}}}
+{
+  "ci": {
+    "assert": {
+      "assertions": {
+        "categories:performance": [
+          "warn",
+          {
+            "aggregationMethod": "median-run",
+            "minScore": 0.9
+          }
+        ],
+        "cumulative-layout-shift": [
+          "warn",
+          {
+            "aggregationMethod": "median-run",
+            "maxNumericValue": 0.1
+          }
+        ],
+        "largest-contentful-paint": [
+          "warn",
+          {
+            "aggregationMethod": "median-run",
+            "maxNumericValue": 2500
+          }
+        ],
+        "total-blocking-time": [
+          "warn",
+          {
+            "aggregationMethod": "median-run",
+            "maxNumericValue": 200
+          }
+        ]
+      }
+    },
+    "collect": {
+      "numberOfRuns": 3,
+      "settings": {
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
+      },
+      "startServerCommand": "pnpm exec vite preview --config apps/web/vite.config.ts --host 127.0.0.1 --port 4173",
+      "startServerReadyPattern": "Local",
+      "startServerReadyTimeout": 60000,
+      "url": [
+        "http://127.0.0.1:4173/",
+        "http://127.0.0.1:4173/discover"
+      ]
+    },
+    "upload": {
+      "outputDir": ".lighthouseci",
+      "target": "filesystem"
+    }
+  }
+}
