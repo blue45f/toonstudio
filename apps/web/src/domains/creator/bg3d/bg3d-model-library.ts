@@ -6,6 +6,9 @@ import {
   releaseStudioBg3dBundledEnvironmentSource,
 } from "./studio-bg3d-bundled-environment-loader";
 import {
+  isStudioBg3dBundleAssetId, loadStudioBg3dBundleThemePackRecord, loadStudioBg3dBundleThemePackRecordByHash,
+} from "./studio-bg3d-bundle-asset-loader";
+import {
   STUDIO_BG3D_ENVIRONMENT_ASSETS,
   getStudioBg3dEnvironmentAsset,
   getStudioBg3dEnvironmentAssetByHash,
@@ -329,7 +332,7 @@ async function loadBundledEnvironmentRecord(
   executionBackend?: StudioBg3dGlbValidationExecutionBackend,
 ): Promise<Bg3dVerifiedStoredRecord | null> {
   const asset = getStudioBg3dEnvironmentAsset(id);
-  if (!asset) return null;
+  if (!asset) return loadStudioBg3dBundleThemePackRecord(id, signal, executionBackend, prepareVerifiedBg3dModelRecord);
   throwIfBg3dOperationAborted(signal);
   let pending = bundledEnvironmentRecordPromiseById.get(asset.id);
   if (!pending) {
@@ -1930,6 +1933,8 @@ export async function getStoredBg3dModelByHashV12(
   if (!canonicalHash) return null;
   const bundled = getStudioBg3dEnvironmentAssetByHash(canonicalHash);
   if (bundled) return loadBundledEnvironmentRecord(bundled.id, options.signal, options.executionBackend);
+  const bundleRecord = await loadStudioBg3dBundleThemePackRecordByHash(canonicalHash, options.signal, options.executionBackend, prepareVerifiedBg3dModelRecord);
+  if (bundleRecord) return bundleRecord;
   const authority = v12Authority(options);
   const manifest = parseV12ModelManifest(await authority.readManifest("models"));
   const record = manifest.records.find(({ contentHash }) => contentHash === canonicalHash);
@@ -1956,12 +1961,9 @@ export async function resolveBg3dModelHashV12(
   if (!canonicalHash) return { record: null, deletionReceipt: null };
   throwIfBg3dOperationAborted(options.signal);
   const bundled = getStudioBg3dEnvironmentAssetByHash(canonicalHash);
-  if (bundled) {
-    return {
-      record: await loadBundledEnvironmentRecord(bundled.id, options.signal, options.executionBackend),
-      deletionReceipt: null,
-    };
-  }
+  const bundledRecord = bundled ? await loadBundledEnvironmentRecord(bundled.id, options.signal, options.executionBackend)
+    : await loadStudioBg3dBundleThemePackRecordByHash(canonicalHash, options.signal, options.executionBackend, prepareVerifiedBg3dModelRecord);
+  if (bundledRecord) return { record: bundledRecord, deletionReceipt: null };
   const authority = v12Authority(options);
   const manifest = parseV12ModelManifest(await authority.readManifest("models"));
   const stored = manifest.records.find(({ contentHash }) => contentHash === canonicalHash);
@@ -2339,10 +2341,8 @@ export const saveBg3dModelThumbnail = saveBg3dModelThumbnailV12;
 export const deleteStoredBg3dModel = deleteStoredBg3dModelV12;
 
 /** Central source authority shared by new insertion and legacy initialDataUrl restoration. */
-export function resolveStudioBg3dModelAttachmentSource(
-  recordId: string,
-): StudioBg3dAttachmentSource {
-  return getStudioBg3dEnvironmentAsset(recordId) ? "bundled" : "local-library";
+export function resolveStudioBg3dModelAttachmentSource(recordId: string): StudioBg3dAttachmentSource {
+  return getStudioBg3dEnvironmentAsset(recordId) || isStudioBg3dBundleAssetId(recordId) ? "bundled" : "local-library";
 }
 
 /** Creates a scene-local attachment without exposing or reusing the private local storage key. */

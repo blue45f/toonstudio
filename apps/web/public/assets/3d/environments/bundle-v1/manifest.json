@@ -1,7 +1,7 @@
 {
   "schema": "toonstudio.bg3d-environment-pack.bundle-v1",
   "version": "bundle-v1",
-  "status": "catalog-only",
+  "status": "catalog-with-theme-packs",
   "generatedAt": null,
   "provider": "itch.io Creator Bundle: Volume 1 (EmaceArt · RG Poly)",
   "rights": {
@@ -11,7 +11,7 @@
   },
   "inServiceOnly": true,
   "downloadable": false,
-  "assetsNote": "실제 GLB 파일은 인제스션(scripts/ingest-creator-bundle.mjs) 후 채워진다. 지금은 배경 테마별 수록 예정 팩 매핑(themes)만 정의된 카탈로그 상태다.",
+  "assetsNote": "이 파일은 테마별 수록 팩 매핑(themes) 카탈로그다. 실제 배치 가능 에셋 데이터는 같은 폴더의 theme-packs.json(scripts/generate-creator-bundle-theme-packs.mjs가 매니페스트 v2에서 생성)이 정본이며, bg3d 에셋 라이브러리의 Creator Bundle 테마 팩 패널이 그 데이터를 읽어 장면 배치까지 연결한다. GLB 실파일은 매니페스트 v2 서빙 루트(/assets/studio/bundle-v2/)에서 참조로만 서빙되고 다운로드 경로는 없다.",
   "themes": [
     {
       "theme": "city",
