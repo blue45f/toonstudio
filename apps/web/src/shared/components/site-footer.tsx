@@ -113,6 +113,8 @@ export function SiteFooter() {
             {META_LINKS.map((link) => <Link key={link.href} href={link.href}>{t(link.key)}</Link>)}
             {/* /pricing 페이지는 routes 팀이 제공. 푸터에서 요금제 진입점을 유지한다. */}
             <Link href="/pricing">{bi("요금제", "Pricing")}</Link>
+            {/* 제품 투어(/product-tour)는 소개 페이지 히어로에서만 닿던 상태라, 푸터에서도 진입점을 유지한다. */}
+            <Link href="/product-tour">{bi("제품 투어", "Product tour")}</Link>
             <Link href="/install">{bi("앱 설치", "Install app")}</Link>
           </nav>
           <nav aria-label={bi("이용 정책", "Policies")}>
