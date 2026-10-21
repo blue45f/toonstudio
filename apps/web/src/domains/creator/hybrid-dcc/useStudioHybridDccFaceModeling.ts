@@ -4,7 +4,8 @@
  * 미리보기는 상태가 아니라 파생 값이다. 문서와 되돌리기 기록은 확정(apply) 전에는 전혀 바뀌지 않고,
  * 뷰포트에는 결과 메시를 얹은 복사본 작업공간만 넘긴다. 입력·선택·오브젝트가 바뀌면 미리보기는 저절로
  * 사라진다(상태를 되돌리는 효과를 두지 않고 렌더 중 비교로 닫는다). Esc는 미리보기가 있는 동안에만
- * 창 단위 캡처 단계에서 가로채 대화상자를 닫지 않고 미리보기만 취소한다.
+ * 작업대가 속한 문서의 창 캡처 단계에서 가로채 대화상자를 닫지 않고 미리보기만 취소한다. 더 안쪽 대화상자나
+ * 팝오버, 작업대 밖 입력칸의 Esc(값 되돌리기)는 그쪽이 먼저 받도록 양보한다.
  *
  * 미리보기 계산은 면 수에 비례해 느려지므로 비용(면 수 + 선택 면 수 x 3)에 따라 계산 시점을 늦춘다. 작은
  * 메시는 입력마다 바로 계산하고, 비용이 크면 타이핑·화살표 입력은 멈춘 뒤에 계산하며(Enter는 바로 계산),
@@ -12,7 +13,7 @@
  * 결과와 입력이 다르므로 적용하지 않는다.
  */
 
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -64,11 +65,31 @@ export interface StudioHybridDccFaceModelingHost {
 
 const EMPTY_SELECTION: StudioHybridDccComponentSelection = createStudioHybridDccComponentSelection();
 
+/** Esc 를 자기 몫으로 받는 층: 대화상자와 `data-studio-escape-scope` 팝오버(모달 시트와 같은 규약). */
+const ESCAPE_SCOPE = '[role="dialog"], [data-studio-escape-scope="true"]';
+const EDITABLE = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
+
+/**
+ * 이 Esc 를 면 모델링 미리보기가 받아야 하는지. 작업대 안이거나, 작업대를 품은 대화상자(또는 어디에도 포커스가
+ * 없는 화면)에서 온 것이면 받는다. 작업대를 품지 않은 더 안쪽 대화상자·팝오버, 작업대 밖 입력칸에서 온 것이면
+ * 그쪽이 Esc 의 주인이므로 양보한다. 다른 문서(iframe)의 요소도 다루므로 `instanceof` 대신 메서드 유무로 가린다.
+ */
+function previewOwnsEscape(target: EventTarget | null, section: Element | null): boolean {
+  const element = target as Partial<Element> | null;
+  if (!element || typeof element.closest !== "function") return true;
+  if (section?.contains(target as Node)) return true;
+  const scope = element.closest(ESCAPE_SCOPE);
+  if (scope && !(section && scope.contains(section))) return false;
+  return element.closest(EDITABLE) === null;
+}
+
 export function useStudioHybridDccFaceModeling(
   props: StudioHybridDccViewportProps,
   run: StudioHybridDccFaceModelingHost["onRunWorkspaceEdit"],
 ) {
   const bt = useBilingual("StudioHybridDccFaceModeling");
+  /** 작업대 구역 요소. Esc 를 어느 창에서 어떤 범위로 받을지 정하는 데 쓴다. */
+  const sectionRef = useRef<HTMLElement | null>(null);
   const { workspace, editingDisabled = false } = props;
   const selection = props.componentSelection ?? EMPTY_SELECTION;
   const sculpting = Boolean(props.onSculptStroke);
@@ -254,15 +275,17 @@ export function useStudioHybridDccFaceModeling(
   const cancelFromKey = useEffectEvent(cancel);
   useEffect(() => {
     if (!engaged || committing) return;
+    const view = sectionRef.current?.ownerDocument.defaultView ?? window;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.isComposing) return;
+      if (event.key !== "Escape" || event.isComposing || event.defaultPrevented) return;
+      if (!previewOwnsEscape(event.target, sectionRef.current)) return;
       // 대화상자의 Esc 닫기보다 먼저(창 캡처 단계) 받아서, 미리보기만 취소하고 화면은 유지한다.
       event.preventDefault();
       event.stopImmediatePropagation();
       cancelFromKey();
     };
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
+    view.addEventListener("keydown", onKeyDown, true);
+    return () => view.removeEventListener("keydown", onKeyDown, true);
   }, [engaged, committing]);
 
   /** 입력을 바꿀 수 있는 상태인지. 확정이 진행 중이면 바뀐 입력이 이미 떠난 요청과 어긋나므로 잠근다. */
@@ -283,6 +306,7 @@ export function useStudioHybridDccFaceModeling(
     : props;
 
   return {
+    sectionRef,
     open,
     setOpen: (next: boolean) => {
       if (!next) resetInputs();

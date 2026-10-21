@@ -319,6 +319,7 @@ export function StudioHybridDccFaceModelingTools({ model }: { readonly model: St
   const id = useId();
   return (
     <section
+      ref={model.sectionRef}
       className="mt-2 overflow-hidden rounded-xl border border-line bg-panel"
       aria-label={bt("면 모델링 작업대", "Face modeling workbench")}
       data-studio-hybrid-dcc-face-modeling="true"

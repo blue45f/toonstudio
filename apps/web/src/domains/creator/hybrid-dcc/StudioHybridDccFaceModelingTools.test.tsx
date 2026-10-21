@@ -334,6 +334,86 @@ describe("면 모델링 작업대: 거리 입력과 미리보기", () => {
     }
   });
 
+  it("작업대 밖의 더 안쪽 대화상자·팝오버·입력칸에서 온 Esc는 가로채지 않아 그쪽이 먼저 받는다", () => {
+    const { originalHash } = setup();
+    open();
+    type(distanceField(), "0.4");
+    const previewHash = viewport().getAttribute("data-mesh-hash");
+    expect(previewHash).not.toBe(originalHash);
+
+    const innerDialog = document.createElement("div");
+    innerDialog.setAttribute("role", "dialog");
+    const dialogButton = document.createElement("button");
+    innerDialog.append(dialogButton);
+    const popover = document.createElement("div");
+    popover.setAttribute("data-studio-escape-scope", "true");
+    const popoverButton = document.createElement("button");
+    popover.append(popoverButton);
+    const outsideInput = document.createElement("input");
+    document.body.append(innerDialog, popover, outsideInput);
+    try {
+      for (const source of [dialogButton, popoverButton, outsideInput]) {
+        const notIntercepted = fireEvent.keyDown(source, { key: "Escape" });
+        expect(notIntercepted).toBe(true);
+        expect(viewport().getAttribute("data-mesh-hash")).toBe(previewHash);
+        expect(distanceField().value).toBe("0.4");
+      }
+    } finally {
+      innerDialog.remove();
+      popover.remove();
+      outsideInput.remove();
+    }
+  });
+
+  it("작업대 안이거나 작업대를 품은 대화상자 안(입력칸 제외)에서 온 Esc는 미리보기를 취소한다", () => {
+    const { originalHash } = setup();
+    open();
+    // 작업대를 품은 바깥 대화상자 안에 작업대 밖 입력칸과 버튼을 둔다.
+    const host = viewport().parentElement!;
+    host.setAttribute("role", "dialog");
+    const outsideInput = document.createElement("input");
+    host.append(outsideInput);
+    try {
+      type(distanceField(), "0.4");
+      expect(viewport().getAttribute("data-mesh-hash")).not.toBe(originalHash);
+
+      // 대화상자 안의 입력칸은 값 되돌리기 몫이라 양보한다.
+      expect(fireEvent.keyDown(outsideInput, { key: "Escape" })).toBe(true);
+      expect(viewport().getAttribute("data-mesh-hash")).not.toBe(originalHash);
+
+      // 같은 대화상자 안의 버튼은 작업대를 품은 층이므로 미리보기만 취소한다.
+      expect(fireEvent.keyDown(screen.getByRole("button", { name: "다른 면 선택" }), { key: "Escape" })).toBe(false);
+      expect(viewport().getAttribute("data-mesh-hash")).toBe(originalHash);
+
+      // 작업대 안의 입력칸에서 온 Esc도 미리보기를 취소한다.
+      type(distanceField(), "0.3");
+      expect(viewport().getAttribute("data-mesh-hash")).not.toBe(originalHash);
+      expect(fireEvent.keyDown(distanceField(), { key: "Escape" })).toBe(false);
+      expect(viewport().getAttribute("data-mesh-hash")).toBe(originalHash);
+    } finally {
+      outsideInput.remove();
+      host.removeAttribute("role");
+    }
+  });
+
+  it("이미 다른 곳에서 처리(preventDefault)한 Esc는 건드리지 않는다", () => {
+    const { originalHash } = setup();
+    // 같은 창 캡처 단계에서는 먼저 등록된 리스너가 먼저 돈다. 작업대가 열려 Esc 를 받기 전에 등록해 "먼저 처리한 쪽"을 흉내 낸다.
+    const handled = (event: KeyboardEvent) => event.preventDefault();
+    window.addEventListener("keydown", handled, true);
+    open();
+    type(distanceField(), "0.4");
+    const previewHash = viewport().getAttribute("data-mesh-hash");
+    expect(previewHash).not.toBe(originalHash);
+    try {
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      expect(viewport().getAttribute("data-mesh-hash")).toBe(previewHash);
+      expect(distanceField().value).toBe("0.4");
+    } finally {
+      window.removeEventListener("keydown", handled, true);
+    }
+  });
+
   it("취소 버튼은 입력과 미리보기를 지우고 원본·기록을 그대로 둔다", () => {
     const { originalHash, latest, originalUndoDepth } = setup();
     open();
