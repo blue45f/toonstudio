@@ -201,7 +201,7 @@ const DRAWING: readonly EngineeringMapRow[] = [
       "배움: 기능 개수가 아니라 엔진 파라미터(안료 혼색, 번짐, 임파스토 조명)로 판단. 안 한 점: 상용 코드·프리셋·에셋 반입(clean-room 규칙).",
       "Learned: judge by engine parameters (pigment mixing, bleed, impasto lighting), not feature counts. Not adopted: importing commercial code, presets or assets (clean-room rule).",
     ),
-    overlap: t("자체 자연 매체 브러시 엔진(Hokusai).", "The in-house natural-media brush engine (Hokusai)."),
+    overlap: t("오픈소스 자연 매체 브러시 엔진(Hokusai).", "The open-source natural-media brush engine (Hokusai)."),
     evidence: [
       "docs/studio-commercial-clean-room-radar-2026-07-28.md",
       "docs/brush-texture-competitive-analysis-2026-08-22.md",

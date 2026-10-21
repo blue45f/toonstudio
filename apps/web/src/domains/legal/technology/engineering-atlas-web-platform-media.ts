@@ -207,7 +207,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     facts: [
       { value: "558 s × 30 fps", label: t("9분 18초 투어의 길이와 프레임률 (= 16,740프레임)", "Length and frame rate of the 9m 18s tour (= 16,740 frames)"), source: "packages/product-tour-film/src/ProductTourFilm.tsx" },
       { value: "720", label: t("24초 브랜드 필름 한 편의 프레임 수 (30fps)", "Frames in one 24-second brand film (30 fps)"), source: `${FILM_TOOLS}/src/index.tsx` },
-      { value: "4.0.514", label: t("remotion·@remotion/player 고정 버전", "Pinned remotion and @remotion/player version"), source: "package.json" },
+      { value: "4.0.536", label: t("remotion·@remotion/player 고정 버전", "Pinned remotion and @remotion/player version"), source: "package.json" },
     ],
     reviewedAt: "2026-10-08",
   },

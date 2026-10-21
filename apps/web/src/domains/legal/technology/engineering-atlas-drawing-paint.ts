@@ -31,8 +31,8 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         "So that rule changes do not alter old artwork, only brush lanes with the opt-in pin (spectral-wgm-v1) use this mixing, and unpinned lanes keep the old linear blend byte for byte. The oil ribbon and wet-into-wet oil default to spectral-wgm, and the oil-pastel 'wgm-mix' lane carries the pin.",
       ),
       t(
-        "Mixbox(안료를 잠재 공간에서 보간하는 고품질 방식)는 CC BY-NC 4.0(비상업) 라이선스라 제품 라이브 혼색에 쓰지 않고, 브러시 스튜디오(제작 도구)의 비교 provider 한 곳에만 격리했습니다. 라이선스 프로필 기본값이 noncommercial-full 이라 상업 배포 전에는 프로필 확인이 필요하다고 저장소 문서가 적고 있습니다. 이 카드는 법률 판단을 하지 않고 저장소의 처리 방식만 설명합니다.",
-        "Mixbox, a high-quality method that interpolates pigments in a latent space, is CC BY-NC 4.0 (non-commercial), so it is not used for live mixing in the product and is isolated in a single comparison provider of the brush studio (an authoring tool). The default license profile is noncommercial-full, and repository documents say the profile must be checked before any commercial release. This card gives no legal judgment; it only describes how the repository handles it.",
+        "Mixbox(안료를 잠재 공간에서 보간하는 고품질 방식)는 CC BY-NC 4.0(비상업) 라이선스라 제품 라이브 혼색에 쓰지 않고, 브러시 스튜디오(제작 도구)의 비교 provider 한 곳에만 격리했습니다. 라이선스 프로필 기본값은 permissive-only 로 고정돼 있어 기본 빌드에서는 차단되고, noncommercial-full 을 명시적으로 opt-in 한 프로그램에서만 쓸 수 있습니다. 이 카드는 법률 판단을 하지 않고 저장소의 처리 방식만 설명합니다.",
+        "Mixbox, a high-quality method that interpolates pigments in a latent space, is CC BY-NC 4.0 (non-commercial), so it is not used for live mixing in the product and is isolated in a single comparison provider of the brush studio (an authoring tool). The default license profile is fixed to permissive-only, so it is blocked in default builds and can be used only by programs that explicitly opt into noncommercial-full. This card gives no legal judgment; it only describes how the repository handles it.",
       ),
     ],
     keyPoints: [
@@ -185,8 +185,8 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         {
           question: t("Mixbox 를 상업적으로 써도 되나요?", "Can Mixbox be used commercially?"),
           answer: t(
-            "법률 판단은 이 카드의 범위 밖입니다. 저장소 문서는 상업·유료 배포나 상업 포크에서는 provider 를 제거하거나 별도 라이선스가 필요하다고 적고, 기본 프로필이 noncommercial-full 이므로 운영 배포 프로필을 배포 전에 확인하라고 둡니다.",
-            "Legal judgment is outside this card. The repository states that commercial or paid distribution and commercial forks must remove the provider or obtain a separate license, and since the default profile is noncommercial-full, the production profile should be checked before release.",
+            "법률 판단은 이 카드의 범위 밖입니다. 저장소 문서는 상업·유료 배포나 상업 포크에서는 provider 를 제거하거나 별도 라이선스가 필요하다고 적고, 기본 프로필이 permissive-only 로 고정돼 있어 Mixbox는 noncommercial-full 명시 opt-in 없이는 운영 배포에 들어가지 않는다고 둡니다.",
+            "Legal judgment is outside this card. The repository states that commercial or paid distribution and commercial forks must remove the provider or obtain a separate license, and since the default profile is fixed to permissive-only, Mixbox cannot enter a production release without an explicit noncommercial-full opt-in.",
           ),
         },
         {

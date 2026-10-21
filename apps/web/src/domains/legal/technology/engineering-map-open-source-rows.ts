@@ -450,8 +450,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
       license: same("CC-BY-NC-4.0"),
       mode: t("런타임 · 정적 import", "Runtime · static import"),
       note: t(
-        "비상업(NC) 라이선스. 저장소의 처리: provider 권리 라벨 noncommercial, 기본 프로파일 noncommercial-full, 2.0.0만 허용하는 감사 핀. 상용 빌드는 제거·비활성 또는 상업 라이선스가 필요하다고 기록했다. 같은 계약의 MIT 대안은 spectral.js·colormix.",
-        "Non-commercial (NC) license. The repository's handling: provider rights label noncommercial, default profile noncommercial-full, and an audit pin that allows only 2.0.0. Commercial builds must remove or disable it or buy a commercial license. MIT alternatives behind the same contract: spectral.js and colormix.",
+        "비상업(NC) 라이선스. 저장소의 처리: provider 권리 라벨 noncommercial, 기본 프로파일 permissive-only(Mixbox는 noncommercial-full 명시 opt-in에서만 허용), 2.0.0만 허용하는 감사 핀. 상용 빌드는 제거·비활성 또는 상업 라이선스가 필요하다고 기록했다. 같은 계약의 MIT 대안은 spectral.js·colormix.",
+        "Non-commercial (NC) license. The repository's handling: provider rights label noncommercial, default profile permissive-only (Mixbox allowed only on explicit noncommercial-full opt-in), and an audit pin that allows only 2.0.0. Commercial builds must remove or disable it or buy a commercial license. MIT alternatives behind the same contract: spectral.js and colormix.",
       ),
     },
     evidence: [

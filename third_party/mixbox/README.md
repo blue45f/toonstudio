@@ -6,9 +6,11 @@
 - Commercial license contact: mixbox@scrtwpns.com
 
 ToonStudio includes this exact package only in its explicitly free,
-non-commercial distribution profile. The Brush Studio V6 manifest classifies
-Mixbox as `noncommercial`, and license-profile validation rejects it from
-`permissive-only` and `source-available` builds.
+non-commercial distribution profile. The default Brush Studio V6 license
+profile is `permissive-only`; Mixbox is available only when a saved program
+explicitly opts into the `noncommercial-full` profile. The Brush Studio V6
+manifest classifies Mixbox as `noncommercial`, and license-profile validation
+rejects it from `permissive-only` and `source-available` builds.
 
 A commercial deployment, paid distribution, or commercial fork must remove or
 disable the Mixbox provider, or obtain a separate commercial license from

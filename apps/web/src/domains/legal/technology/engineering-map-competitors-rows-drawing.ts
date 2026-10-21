@@ -308,7 +308,7 @@ export const COMPETITOR_ROWS_DRAWING: readonly EngineeringMapRow[] = [
       "배움(제품군 기록): 물감 두께·종이 높이·젖음 시간 같은 상태를 획에 유지. 이 제품만의 적용·불채택은 문서에 따로 적혀 있지 않음.",
       "Learned (group-level record): keep state such as paint height, paper height and wetness age with the stroke. No product-specific adoption or exclusion is recorded.",
     ),
-    overlap: t("자체 자연 매체 브러시 엔진(Hokusai)과 임파스토 높이 제공자.", "The in-house natural-media brush engine (Hokusai) and the impasto height provider."),
+    overlap: t("오픈소스 자연 매체 브러시 엔진(Hokusai)과 임파스토 높이 제공자.", "The open-source natural-media brush engine (Hokusai) and the impasto height provider."),
     evidence: [INTAKE, RADAR, "docs/benchmarks/studio-competitor-registry.json", `${CREATOR}/studio-impasto-height-provider.ts`],
   }),
   row({

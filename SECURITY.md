@@ -1,12 +1,15 @@
-# 보안 정책 (초안 — 2026-10-13 보안 점검)
+# 보안 정책
 
 ## 취약점 제보
 
-ToonStudio의 보안 취약점을 발견하시면, 공개 이슈로 올리지 마시고
-GitHub의 비공개 취약점 제보(Private vulnerability reporting) 기능으로 알려 주세요.
+ToonStudio의 보안 취약점을 발견하시면, 공개 이슈로 올리지 마세요.
+아래 비공개 경로가 실제로 열려 있는지는 저장소 소유자의 GitHub 설정에
+달려 있어, 이 문서는 아직 켜지지 않은 기능을 켜진 것처럼 안내하지 않습니다.
 
-- 제보 경로: 이 저장소의 **Security 탭 > Report a vulnerability**
-  (이 기능은 저장소 소유자가 Settings > Security에서 켜야 동작합니다 — 적용 전 확인 필요)
+- 제보 경로(소유자 활성화 필요): 이 저장소의 **Security 탭 > Report a vulnerability**
+  (GitHub의 비공개 취약점 제보(Private vulnerability reporting) 기능으로,
+  저장소 소유자가 Settings > Security에서 켜야 동작합니다. 활성화 여부는
+  소유자 확인 대상이며, 켜져 있지 않으면 이 경로로 제보할 수 없습니다.)
 - 제보 시 포함해 주시면 좋은 정보: 영향받는 기능/경로, 재현 절차, 영향 범위
 
 ## 처리 원칙
@@ -17,4 +20,6 @@ GitHub의 비공개 취약점 제보(Private vulnerability reporting) 기능으�
 ## 지원 범위
 
 - 최신 `main` 브랜치와 운영 서비스(toonstudio.cloud)가 대상입니다.
-- 의존성 취약점은 Dependabot 알림과 정기 점검으로 추적합니다.
+- 의존성 버전 업데이트는 `.github/dependabot.yml`의 Dependabot 버전
+  업데이트 설정으로 추적합니다. Dependabot 취약점 알림의 활성화 여부는
+  위와 같이 소유자 확인 대상입니다.

@@ -1,8 +1,9 @@
-# Dependabot 버전 업데이트 설정 초안 (2026-10-13 보안 점검)
-# 목적: 의존성 취약점 알림이 자동으로 PR까지 이어지게 한다.
-# 현재 레포에는 이 파일이 없어 Dependabot 업데이트가 비활성 상태다.
-# 적용 방법: 이 파일을 레포 .github/dependabot.yml 로 그대로 추가.
-# (알림 자체는 Settings > Security에서 Dependabot alerts를 켜야 하며, 그건 소유자 작업)
+# Dependabot 버전 업데이트 설정 (2026-10-13 보안 점검에서 도입, 이 파일이 정본)
+# 목적: 의존성 업데이트가 자동으로 PR까지 이어지게 한다.
+# 이 파일은 레포의 .github/dependabot.yml 에 실제로 존재하며, 아래 updates가
+# Dependabot 버전 업데이트의 대상과 주기를 정한다.
+# (취약점 알림 자체는 Settings > Security에서 Dependabot alerts를 켜야 하며,
+#  활성화 여부는 소유자 확인 대상이다 — 이 파일만으로 알림이 켜지지는 않는다)
 version: 2
 updates:
   - package-ecosystem: "npm"
