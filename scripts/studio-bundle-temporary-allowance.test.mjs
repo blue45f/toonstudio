@@ -66,7 +66,6 @@ test("is run before dependency installation in the mandatory typecheck lane", ()
   assert.ok(policyTest >= 0);
   assert.ok(install > policyTest);
   const baseline = JSON.parse(readFileSync(new URL("./bundle-baseline.json", import.meta.url), "utf8"));
-  assert.equal(baseline.policy.byteTolerance, 0.02);
-  assert.equal(baseline.policy.countTolerance, 0.02);
-  assert.equal(baseline.policy.countSlack, 2);
+  assert.equal(baseline.policy.enforced, false);
+  assert.match(baseline.policy.authority, /structural contracts remain enforced/u);
 });

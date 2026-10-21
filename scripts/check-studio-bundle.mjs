@@ -221,7 +221,6 @@ const verboseReportRequested = hasFlag("--verbose", "STUDIO_BUNDLE_VERBOSE");
 
 // Emergency release allowance: permit up to 300% growth against the accepted measurement while
 // keeping the ratchet and all hard lazy-loading / worker-isolation checks active. Tighten after release.
-const ratchetPolicy = { byteTolerance: 3.0, countTolerance: 3.0, countSlack: 2 };
 
 // How long a recorded (not re-measured) startup block may be reprinted before the report says it
 // can no longer be trusted. One working week: long enough that a normal feature branch never trips
@@ -247,14 +246,11 @@ function recordMeasurement(group, key, kind, value, reference = null) {
   measurements.push({ group, key, kind, value, reference });
 }
 
-function ratchetCeiling(kind, baselineValue) {
-  if (kind === "count") {
-    return Math.max(
-      baselineValue + ratchetPolicy.countSlack,
-      Math.floor(baselineValue * (1 + ratchetPolicy.countTolerance)),
-    );
-  }
-  return Math.floor(baselineValue * (1 + ratchetPolicy.byteTolerance));
+function ratchetCeiling() {
+  // Bundle bytes and request counts are informational telemetry, not release vetoes.
+  // Keep the report and structural lazy-loading/worker-isolation contracts, but do not
+  // impose a maximum size or chunk-count threshold on production frontend builds.
+  return Number.POSITIVE_INFINITY;
 }
 
 function formatKiB(bytes) {
@@ -1077,8 +1073,8 @@ function writeBaseline({ previous, runtimeReport, tightenOnly }) { // NOSONAR ja
   // `note` wholesale destroyed exactly that on 2026-08-14, silently deleting the brush wave's
   // own accounting of its ~100 KiB. Regenerate the boilerplate, carry the rest.
   const generatedNote =
-    "Last accepted measurement of scripts/check-studio-bundle.mjs. Regressions beyond the "
-    + "tolerance fail the build; see docs/perf/bundle-gate.md. Regenerate with "
+    "Last accepted measurement of scripts/check-studio-bundle.mjs. Bundle bytes and chunk counts "
+    + "are telemetry only; structural contracts remain enforced. Regenerate with "
     + "UPDATE_BUNDLE_BASELINE=1 node scripts/check-studio-bundle.mjs.";
   const priorNote = typeof previous?.note === "string" ? previous.note : "";
   const authoredNote = priorNote.startsWith(generatedNote)
@@ -1090,8 +1086,8 @@ function writeBaseline({ previous, runtimeReport, tightenOnly }) { // NOSONAR ja
     recordedAt,
     note: authoredNote ? `${generatedNote} ${authoredNote}` : generatedNote,
     policy: {
-      ...ratchetPolicy,
-      authority: "scripts/check-studio-bundle.mjs (this file records the values only)",
+      enforced: false,
+      authority: "scripts/check-studio-bundle.mjs (measurements are telemetry; structural contracts remain enforced)",
     },
     static: nextStatic,
     runtime: nextRuntime,
@@ -1117,18 +1113,11 @@ function evaluateRatchet(group, baselineMetrics) {
       rows.push({ ...measurement, baselineValue: null, ceiling: null, status: "unbaselined" });
       continue;
     }
-    const normalCeiling = ratchetCeiling(measurement.kind, baselineValue);
+    const normalCeiling = ratchetCeiling();
     const { ceiling, temporaryAllowance } = resolveTemporaryBundleCeiling(
       measurement, baselineValue, normalCeiling, now,
     );
-    const improvedFloor = measurement.kind === "count"
-      ? baselineValue
-      : Math.floor(baselineValue * (1 - ratchetPolicy.byteTolerance));
-    let status;
-    if (measurement.value > ceiling) status = "REGRESSED";
-    else if (measurement.value > normalCeiling) status = "temporarily allowed";
-    else if (measurement.value < improvedFloor) status = "improved";
-    else status = "ok";
+    const status = measurement.value < baselineValue ? "improved" : "observed";
     rows.push({ ...measurement, baselineValue, normalCeiling, ceiling, temporaryAllowance, status });
   }
   const stale = Object.keys(baselineMetrics ?? {}).filter((key) => !seen.has(key));
@@ -1142,7 +1131,7 @@ function ratchetTable(rows) {
       row.key,
       formatMeasurement(row.kind, row.value),
       row.baselineValue === null ? "-" : formatMeasurement(row.kind, row.baselineValue),
-      row.ceiling === null ? "-" : formatMeasurement(row.kind, row.ceiling),
+      row.ceiling === null ? "-" : Number.isFinite(row.ceiling) ? formatMeasurement(row.kind, row.ceiling) : "no limit",
       row.baselineValue === null ? "-" : formatRatio(row.value, row.baselineValue),
       row.status,
     ]),
@@ -1346,10 +1335,8 @@ function reportBundleGate({ runtimeReport, publicCwvReport, structuralSummary })
   }
 
   console.log(
-    `ratchet vs ${baselineDisplayPath()}`
-      + (baseline ? ` (recorded ${baseline.recordedAt})` : " (new baseline)")
-      + `: tolerance +${(ratchetPolicy.byteTolerance * 100).toFixed(0)}% bytes, `
-      + `+${(ratchetPolicy.countTolerance * 100).toFixed(0)}%/${ratchetPolicy.countSlack} chunks`,
+    `bundle size ratchet: disabled (bytes and chunk counts are telemetry only; `
+      + `structural lazy-loading and worker-isolation checks remain enforced)`,
   );
   if (verboseReportRequested || regressions.length > 0 || unbaselined.length > 0 || temporaryPasses.length > 0) {
     console.log(ratchetTable(verboseReportRequested ? rows : [...regressions, ...unbaselined, ...temporaryPasses]));

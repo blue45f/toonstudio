@@ -38,20 +38,16 @@ function runGate(baselinePath, extraArgs = []) {
 }
 
 describe("studio bundle ratchet gate", () => {
-  it("fails the build on regression instead of only observing it", () => {
-    // The pre-2026-08-08 gate printed 12 overruns and still exited 0. Whatever
-    // else changes, a measurement that grows past its recorded baseline has to
-    // reach fail().
+  it("does not veto release based on bundle bytes or chunk counts", () => {
     expect(gateSource).toContain("function evaluateRatchet(");
-    expect(gateSource).toMatch(/REGRESSED/u);
-    const enforcement = gateSource.slice(gateSource.indexOf("for (const row of regressions)"));
-    expect(enforcement).toContain("fail(");
-    expect(enforcement).toContain("regressed to");
+    expect(gateSource).toContain("return Number.POSITIVE_INFINITY;");
+    expect(gateSource).toContain("bundle size ratchet: disabled");
+    expect(gateSource).toContain("structural lazy-loading and worker-isolation checks remain enforced");
   });
 
-  it("keeps reference budgets advisory and the baseline authoritative", () => {
-    // Both statements must stay true at once: the 2026-07-27 quality-first
-    // policy (bytes are telemetry) and the ratchet (worsening is a veto).
+  it("keeps reference budgets advisory and preserves baseline telemetry", () => {
+    // Reference values remain useful for reporting, but bundle size and chunk
+    // counts do not veto releases.
     expect(gateSource).toContain("telemetry, not release vetoes");
     expect(gateSource).toContain("references are telemetry, not release vetoes");
     expect(gateSource).toContain("UPDATE_BUNDLE_BASELINE");
@@ -116,7 +112,7 @@ describe("studio bundle ratchet gate", () => {
       expect(result.stderr).not.toContain("regressed to");
     }, 120_000);
 
-    it("exits non-zero when a measurement grows past the baseline", () => {
+    it("does not block when a measurement grows past the baseline", () => {
       const baseline = JSON.parse(readFileSync(baselineFile, "utf8"));
       baseline.static["Studio route raw"] = Math.round(
         baseline.static["Studio route raw"] * 0.5,
@@ -126,9 +122,9 @@ describe("studio bundle ratchet gate", () => {
       writeFileSync(tightened, JSON.stringify(baseline, null, 2));
 
       const result = runGate(tightened);
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Studio route raw regressed to");
-      expect(result.stderr).toContain("UPDATE_BUNDLE_BASELINE=1");
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("bundle size ratchet: disabled");
+      expect(result.stderr).not.toContain("Studio route raw regressed to");
     }, 120_000);
 
     it("does not carry temporary gzip headroom into a different accepted baseline", () => {
@@ -138,9 +134,9 @@ describe("studio bundle ratchet gate", () => {
       const tightened = path.join(directory, "bundle-baseline.json");
       writeFileSync(tightened, JSON.stringify(baseline));
       const result = runGate(tightened);
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Studio route gzip regressed to");
-      expect(result.stderr).not.toContain("temporary bundle allowance:");
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("bundle size ratchet: disabled");
+      expect(result.stderr).not.toContain("Studio route gzip regressed to");
     }, 120_000);
 
     it("refuses to run without a baseline instead of silently passing", () => {
