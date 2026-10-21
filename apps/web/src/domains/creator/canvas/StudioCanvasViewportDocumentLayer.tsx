@@ -1,8 +1,9 @@
 import { CANVAS_W } from "../studio-assets";
 import { buildStudioLiveAdjustmentRenderTree, isStudioLiveAdjustment, studioLiveAdjustmentRenderRevision, studioLiveAdjustmentObjectRevision, type StudioLiveAdjustmentRenderTree } from "../studio-live-adjustment";
 import { isAdjustmentEl } from "../layer/studio-adjustment-element-guard";
+import { StudioAdjustmentElLazyBoundary } from "./StudioAdjustmentElLazyBoundary";
 import { StudioLiveAdjustmentGroup } from "./StudioLiveAdjustmentGroup";
-import { Fragment, lazy, Suspense, useLayoutEffect, type ReactNode } from "react";
+import { Fragment, Suspense, useLayoutEffect, type ReactNode } from "react";
 import { Group, Shape } from "react-konva/lib/ReactKonvaCore";
 
 import { BlendIsolationGroup } from "../BlendIsolationGroup";
@@ -47,10 +48,6 @@ import type { StudioPaperSurfaceSettings } from "../brush/studio-paper-granulati
 import type { StudioLiveGesturePreviewRenderPlan } from "../live/studio-live-gesture-preview-projection";
 import type { El, FrameEl, ImageEl } from "../studio-element-model";
 import type Konva from "konva";
-
-const StudioAdjustmentElGroup = lazy(() =>
-  import("./StudioAdjustmentElGroup").then((module) => ({ default: module.StudioAdjustmentElGroup })),
-);
 
 export interface StudioCanvasViewportDocumentLayerProps {
   activeGroupId: StudioCanvasViewportProps["activeGroupId"];
@@ -964,13 +961,9 @@ export function StudioCanvasViewportDocumentLayer({
                   const children = node.children.map((child) => renderAdjustmentTree(child,
                     node.kind === "adjustment" && node.isolatedSource, maskPrefix));
                   if (node.kind === "group") return <Fragment key={node.id}>{children}</Fragment>;
-                  if (node.kind === "adjustment-el") return (
-                    <Suspense key={node.id} fallback={<Fragment>{children}</Fragment>}>
-                      <StudioAdjustmentElGroup element={node.element}
-                        pixelRatio={Math.max(1, effScale * (globalThis.devicePixelRatio || 1))} width={CANVAS_W} height={activePage.canvasH}
-                        cacheKey={`${studioLiveAdjustmentRenderRevision(node)}:${adjustmentContextRevision}`}>{children}</StudioAdjustmentElGroup>
-                    </Suspense>
-                  );
+                  if (node.kind === "adjustment-el") return <StudioAdjustmentElLazyBoundary key={node.id} element={node.element}
+                    pixelRatio={Math.max(1, effScale * (globalThis.devicePixelRatio || 1))} width={CANVAS_W} height={activePage.canvasH}
+                    cacheKey={`${studioLiveAdjustmentRenderRevision(node)}:${adjustmentContextRevision}`}>{children}</StudioAdjustmentElLazyBoundary>;
                   return <StudioLiveAdjustmentGroup key={node.id} element={node.element}
                     instanceId={maskPrefix ? `${maskPrefix}${node.id}` : undefined}
                     asMask={Boolean(maskPrefix)}
