@@ -48,18 +48,18 @@ const CHAPTER_JUMPS = [
 const PROBLEMS = [
   {
     icon: Layers,
-    ko: { title: "도구 파편화", body: "대본, 콘티, 드로잉, 3D, 파일 공유, 일정 관리가 서로 다른 앱에 분산됩니다." },
-    en: { title: "Fragmented tools", body: "Scripts, storyboards, drawing, 3D, file sharing and schedules live in separate apps." },
+    ko: { title: "도구 파편화", body: "대본, 콘티, 드로잉, 3D, 파일 공유, 일정이 전부 다른 앱에 흩어져 있어요." },
+    en: { title: "Fragmented tools", body: "Scripts, storyboards, drawing, 3D, file sharing and schedules — all in different apps." },
   },
   {
     icon: UsersRound,
-    ko: { title: "협업 손실", body: "역할·권한·피드백·승인 이력이 메신저와 파일명에 흩어져 재작업이 반복됩니다." },
-    en: { title: "Collaboration loss", body: "Roles, permissions, feedback and approvals scatter across messengers and file names, so work is redone." },
+    ko: { title: "협업 손실", body: "누가 뭘 맡았고, 어떤 피드백이 오갔고, 뭐가 승인됐는지가 메신저와 파일 이름 속에 묻혀요. 그러다 보면 같은 작업을 두 번 하게 됩니다." },
+    en: { title: "Collaboration loss", body: "Who owns what, which feedback was given, what got approved — it all sinks into messengers and file names, and the same work gets done twice." },
   },
   {
     icon: ShieldCheck,
-    ko: { title: "연재 리스크", body: "회차별 진행률과 마감 위험, 플랫폼 규격을 늦게 발견해 품질과 일정이 흔들립니다." },
-    en: { title: "Release risk", body: "Episode progress, deadline risk and platform specs surface too late, shaking quality and schedule." },
+    ko: { title: "연재 리스크", body: "회차가 얼마나 진행됐는지, 마감이 위험한지, 플랫폼 규격에 맞는지를 뒤늦게 알게 돼요. 품질도 일정도 흔들립니다." },
+    en: { title: "Release risk", body: "You find out too late how far an episode has come, whether the deadline is at risk, or whether the file meets platform specs — and quality and schedule both wobble." },
   },
 ] as const;
 
@@ -69,7 +69,7 @@ const LANDSCAPE = [
   { ko: { category: "3D 배경·소재", tools: "스케치업 · 에이콘3D · 블렌더" }, en: { category: "3D sets & assets", tools: "SketchUp · Acon3D · Blender" } },
   { ko: { category: "3D 포즈", tools: "Design Doll · Magic Poser" }, en: { category: "3D posing", tools: "Design Doll · Magic Poser" } },
   { ko: { category: "협업·관리", tools: "크레코(CRECO) · 메신저 · 드라이브 · 노션" }, en: { category: "Collaboration", tools: "CRECO · messengers · Drive · Notion" } },
-  { ko: { category: "AI 보조", tools: "작품 문맥과 분리된 생성형 AI" }, en: { category: "AI assist", tools: "Standalone generative AI, cut off from the work's context" } },
+  { ko: { category: "AI 보조", tools: "내 작품을 모르는 생성형 AI" }, en: { category: "AI assist", tools: "Generative AI that knows nothing about your work" } },
 ] as const;
 
 const FLOW_STEPS = [
@@ -87,68 +87,82 @@ const CAPABILITIES = [
     id: "drawing",
     image: "/brand/product-tour/03-draw.png",
     href: "/studio/canvas",
+    chapterStart: 108,
     icon: PenTool,
     stats: [{ ko: "WebGPU · Vello", en: "WebGPU · Vello" }, { ko: "브러시 226종", en: "226 brushes" }],
-    ko: { title: "드로잉 엔진", body: "자체 포팅한 WebGPU 벡터 렌더러(Vello)와 Skia 기반 캔버스로 대용량 원고를 브라우저에서 다룹니다. 브러시 226종, 레이어·선택·보정을 한 화면에 갖췄습니다.", cta: "캔버스 열기" },
-    en: { title: "Drawing engine", body: "A self-ported WebGPU vector renderer (Vello) and a Skia-based canvas handle large manuscripts in the browser, with 226 brushes, layers, selection and adjustments on one screen.", cta: "Open the canvas" },
+    ko: { title: "드로잉 엔진", body: "직접 포팅한 WebGPU 벡터 렌더러(Vello)와 Skia 캔버스 덕분에, 큰 원고도 브라우저에서 바로 다룰 수 있어요. 브러시 226종에 레이어·선택·보정까지 한 화면에 다 있습니다.", cta: "캔버스 열기" },
+    en: { title: "Drawing engine", body: "With our own WebGPU vector renderer (Vello) and a Skia canvas, even large manuscripts just work in the browser — 226 brushes, layers, selection and adjustments, all on one screen.", cta: "Open the canvas" },
   },
   {
     id: "three-d",
     image: "/brand/product-tour/05-3d.png",
     href: "/studio/bg3d",
+    chapterStart: 228,
     icon: Boxes,
     stats: [{ ko: "테마 팩 42", en: "42 theme packs" }, { ko: "배치 가능 에셋 14,665", en: "14,665 placeable assets" }, { ko: "프리셋 9", en: "9 presets" }],
-    ko: { title: "3D 배경·가상 스튜디오", body: "상용 라이선스를 확보한 3D 에셋 번들을 배경 스튜디오에 배선했습니다. 테마 팩 42종에서 골라 배치하고 카메라 구도를 잡아 컷의 밑그림으로 씁니다. 가상 스튜디오는 클래식 2D 무대에서 내 캐릭터로 만나 함께 작업하는 공간입니다.", cta: "3D 배경 스튜디오" },
-    en: { title: "3D sets & virtual studio", body: "A commercially licensed 3D asset bundle is wired into the background studio: pick from 42 theme packs, place assets and frame the camera as a base for the panel. The virtual studio is a classic 2D stage where you meet and work as your character.", cta: "Open the 3D studio" },
+    ko: { title: "3D 배경·가상 스튜디오", body: "상용 라이선스를 확보한 3D 에셋 번들을 배경 스튜디오에 연결해 뒀어요. 테마 팩 42종에서 골라 배치하고 카메라 구도를 잡으면, 그대로 컷의 밑그림이 됩니다. 가상 스튜디오는 클래식 2D 무대에서 내 캐릭터로 만나 함께 작업하는 공간이에요.", cta: "3D 배경 스튜디오" },
+    en: { title: "3D sets & virtual studio", body: "We wired a commercially licensed 3D asset bundle into the background studio: pick from 42 theme packs, place what you need, frame the camera — and it becomes the base of your panel. The virtual studio is a classic 2D stage where you meet and work as your character.", cta: "Open the 3D studio" },
   },
   {
     id: "collaboration",
     image: "/brand/product-tour/07-production.png",
     href: "/production",
+    chapterStart: 354,
     icon: UsersRound,
     stats: [{ ko: "Yjs 실시간 동기화", en: "Yjs real-time sync" }],
-    ko: { title: "실시간 협업·제작 관리", body: "Yjs 기반 동시 편집과 코멘트, 역할별 권한과 승인 기록이 원고에 직접 붙습니다. 회차별 진행률과 마감을 같은 화면에서 관리합니다.", cta: "제작 관리 열기" },
-    en: { title: "Real-time collaboration", body: "Yjs-based co-editing, comments, role permissions and approval records attach directly to the manuscript, with episode progress and deadlines managed on the same screen.", cta: "Open production" },
+    ko: { title: "실시간 협업·제작 관리", body: "Yjs로 여럿이 동시에 편집하고, 코멘트와 권한, 승인 기록이 원고에 바로 붙어요. 회차 진행률과 마감도 같은 화면에서 봅니다.", cta: "제작 관리 열기" },
+    en: { title: "Real-time collaboration", body: "With Yjs, several people edit at once, and comments, permissions and approvals stick right onto the manuscript. Episode progress and deadlines live on the same screen.", cta: "Open production" },
   },
   {
     id: "ai",
     image: "/brand/product-tour/06-ai.png",
     href: "/studio/ai-lab",
+    chapterStart: 300,
     icon: Sparkles,
     stats: [{ ko: "BYOK · 로컬 모델 선택", en: "BYOK · local models" }],
-    ko: { title: "Responsible AI", body: "AI는 장면 분해, 연속성 점검, 규격 검사 같은 반복 업무만 돕고, 작품 방향·표현 선택·수정 승인과 권리 판단은 사람이 합니다. AI 사용 이력은 프로젝트 기록으로 남고, 무료 모델·BYOK·로컬 모델을 고를 수 있습니다.", cta: "AI 도구 보기" },
-    en: { title: "Responsible AI", body: "AI only assists repetitive work such as scene breakdowns, continuity checks and spec validation; direction, expression, approvals and rights decisions stay with people. AI use is recorded, and free models, BYOK and local models are all selectable.", cta: "See AI tools" },
+    ko: { title: "Responsible AI", body: "AI는 장면 나누기, 설정이 어긋난 곳 찾기, 규격 검사 같은 반복 일을 도와요. 작품의 방향과 표현, 최종 승인과 권리는 사람이 정합니다. 무엇을 썼는지는 기록에 남고, 무료 모델·내 키(BYOK)·로컬 모델 중에서 고를 수 있어요.", cta: "AI 도구 보기" },
+    en: { title: "Responsible AI", body: "AI helps with the repetitive parts — splitting scenes, spotting continuity slips, checking specs. Direction, expression, final approvals and rights stay with people. Everything AI does is recorded, and you choose between free models, your own key (BYOK) and local models.", cta: "See AI tools" },
   },
   {
     id: "local-first",
     image: "/brand/product-tour/01-overview.png",
     href: "/about/technology",
+    chapterStart: null,
     icon: Database,
     stats: [{ ko: "OPFS · IndexedDB", en: "OPFS · IndexedDB" }],
-    ko: { title: "로컬 우선 데이터", body: "원고는 먼저 내 기기에 저장되고 오프라인에서도 작업이 이어집니다. 클라우드 동기화는 선택 사항이며, 회차·장면·레이어·피드백 데이터가 하나의 제작 그래프로 쌓입니다.", cta: "기술 자세히 보기" },
-    en: { title: "Local-first data", body: "Manuscripts save to your device first and work continues offline. Cloud sync is optional, and episodes, scenes, layers and feedback accumulate into one production graph.", cta: "Read the engineering hub" },
+    ko: { title: "로컬 우선 데이터", body: "원고는 먼저 내 기기에 저장돼요. 오프라인에서도 작업이 이어지고, 클라우드 동기화는 원할 때만 켭니다. 회차·장면·레이어·피드백이 하나의 제작 기록으로 쌓여요.", cta: "기술 자세히 보기" },
+    en: { title: "Local-first data", body: "Your manuscript saves to your own device first. Work carries on offline, and cloud sync only turns on when you want it. Episodes, scenes, layers and feedback build up into one production record.", cta: "Read the engineering hub" },
   },
 ] as const;
 
 const BUSINESS_MODEL = [
-  { ko: { tier: "Free", body: "핵심 제작 흐름 체험, 로컬 저장, 제한된 협업·AI" }, en: { tier: "Free", body: "Core production flow, local saving, limited collaboration and AI" } },
-  { ko: { tier: "Pro", body: "고급 제작 기능, 확장 저장·버전, 생산성 자동화. 월 19,900원은 검증용 가격 가설입니다." }, en: { tier: "Pro", body: "Advanced tools, extended storage and versions, productivity automation. KRW 19,900/mo is a pricing hypothesis under validation." } },
-  { ko: { tier: "Team · Education", body: "권한·공정·자산 관리, 관리자 대시보드, 교육용 클래스·과제 운영" }, en: { tier: "Team · Education", body: "Permissions, workflow and asset management, admin dashboards, classes and assignments" } },
-  { ko: { tier: "Marketplace", body: "브러시·소재·3D·템플릿을 거래하고 제작 흐름에 바로 적용하는 수수료 모델" }, en: { tier: "Marketplace", body: "Commission on brushes, materials, 3D and templates, applied directly in the workflow" } },
+  { ko: { tier: "Free", body: "핵심 제작 흐름을 무료로 써 보고, 로컬 저장과 기본 협업·AI까지" }, en: { tier: "Free", body: "Try the core production flow for free, with local saving and basic collaboration and AI" } },
+  { ko: { tier: "Pro", body: "고급 제작 기능, 넉넉한 저장·버전, 귀찮은 일을 줄여 주는 자동화. 월 19,900원은 아직 검증 중인 가격 가설이에요." }, en: { tier: "Pro", body: "Advanced tools, roomier storage and versions, automation that takes over the tedious parts. KRW 19,900 a month is still a pricing hypothesis we are validating." } },
+  { ko: { tier: "Team · Education", body: "권한과 공정, 자산을 팀 단위로 관리하고, 교육용으로는 반과 과제를 운영할 수 있어요." }, en: { tier: "Team · Education", body: "Manage permissions, workflow and assets as a team — or run classes and assignments for education" } },
+  { ko: { tier: "Marketplace", body: "브러시·소재·3D·템플릿을 사고팔고, 산 것은 제작 화면에 바로 갖다 씁니다. 거래 수수료 모델이에요." }, en: { tier: "Marketplace", body: "Buy and sell brushes, materials, 3D and templates, and use what you bought right in the studio. Revenue comes from transaction fees." } },
 ] as const;
 
 /** 아래 수치는 성과가 아니라 검증 목표다. */
 const VALIDATION_GOALS = [
-  { value: "30명", ko: "무료 베타 창작자 모집", en: "Free beta creators" },
+  { value: "30명", ko: "무료 베타 창작자", en: "Free beta creators" },
   { value: "10명+", ko: "직무별 심층 인터뷰", en: "In-depth interviews by role" },
-  { value: "3–6개월", ko: "Pro 유료 의향 검증", en: "Paid-intent validation for Pro" },
+  { value: "3–6개월", ko: "유료로 쓸 의향 검증", en: "Willingness-to-pay validation" },
 ] as const;
 
 const ASKS = [
   { ko: "초기 창작자 코호트 연결", en: "Early creator cohort access" },
-  { ko: "BM·가격 검증 자문", en: "Business model & pricing validation" },
-  { ko: "콘텐츠 산업 네트워크", en: "Content industry network" },
-  { ko: "후속 투자·정부지원 연계", en: "Follow-on investment & public programs" },
+  { ko: "BM·가격 검증 조언", en: "Advice on model & pricing validation" },
+  { ko: "콘텐츠 업계 네트워크", en: "Content industry network" },
+  { ko: "후속 투자·정부 지원 연결", en: "Follow-on investment & public programs" },
+] as const;
+
+/** 창업자 주요 경력. 출처는 본인 포트폴리오(heejun.cloud)이고, 근무 기간·연도는 사용자 지시로 넣지 않는다. */
+const FOUNDER_CAREER = [
+  { ko: "배달의민족(우아한형제들) — 주문·결제·장바구니 구조를 설계하고 이끌었어요. 국내에서 처음으로 애플페이 결제를 붙였고, React로 갈아타며 번들을 70% 줄이고 성능은 30% 끌어올렸습니다.", en: "Baemin (Woowa Brothers) — designed and led the order, payment and cart architecture. Shipped Korea's first Apple Pay checkout, and cut the bundle by 70% while improving performance 30% in the move to React." },
+  { ko: "스마일게이트 스토브 — 웹서비스개발팀 팀장으로 10명 팀을 이끌며 STOVE 플랫폼을 맡았어요.", en: "Smilegate STOVE — led a 10-person web service team running the STOVE platform." },
+  { ko: "삼쩜삼(자비스앤빌런즈) — Tax그룹 FE 챕터 리드로 프론트엔드를 이끌었어요.", en: "Samjjeomsam (Jarvis & Villains) — front-end chapter lead in the Tax group." },
+  { ko: "카카오 — 다음 메일 프론트엔드를 만들었어요.", en: "Kakao — built the Daum Mail front-end." },
+  { ko: "엔씨소프트 — 모바일 퍼블리싱 플랫폼을 다뤘어요.", en: "NCSOFT — worked on the mobile publishing platform." },
 ] as const;
 
 export function IrPitchPage() {
@@ -229,14 +243,14 @@ export function IrPitchPage() {
       <div key="cover" className={sceneShell}>
         <p className="eyebrow text-accent">IR · TOONSTUDIO</p>
         <h2 className={bigTitle}>{bi("웹툰의 기획부터 연재 준비까지, 흩어진 제작 도구와 협업 과정을 브라우저 하나로 연결합니다.", "From planning to release prep, ToonStudio connects the scattered tools and collaboration of webtoon production in one browser.")}</h2>
-        <p className="text-xl font-semibold text-fg-2">{bi("지금 toonstudio.cloud에서 작동하는 웹툰 제작 OS · 김희준 Founder", "A webtoon production OS already running at toonstudio.cloud · Heejun Kim, Founder")}</p>
+        <p className="text-xl font-semibold text-fg-2">{bi("지금 toonstudio.cloud에서 돌아가고 있는 웹툰 제작 OS예요 · 김희준 Founder", "A webtoon production OS, already live at toonstudio.cloud · Heejun Kim, Founder")}</p>
       </div>
     ),
     (
       <div key="film" className={sceneShell}>
         <p className="eyebrow text-accent">IR FILM · 4:48</p>
         <video ref={filmRef} className="aspect-video w-full rounded-2xl border border-line/70 bg-panel object-cover" src={IR_FILM_SRC} poster={IR_FILM_POSTER} controls playsInline aria-label={bi("ToonStudio IR 영상", "ToonStudio IR film")} />
-        <p className="text-lg text-fg-2">{bi("제품 투어 챕터를 실제 화면 그대로 발췌한 IR 컷입니다. Space로 재생·정지합니다.", "An IR cut excerpted from the product tour with real screens only. Press Space to play or pause.")}</p>
+        <p className="text-lg text-fg-2">{bi("제품 투어에서 실제 화면만 골라 담은 IR 컷이에요. Space를 누르면 재생·정지합니다.", "An IR cut made only of real product screens from the tour. Press Space to play or pause.")}</p>
       </div>
     ),
     (
@@ -271,7 +285,7 @@ export function IrPitchPage() {
             );
           })}
         </ul>
-        <p className="max-w-4xl text-lg leading-8 text-fg-2">{bi("가장 가까운 경쟁자 크레코는 만든 결과물의 관리 허브, ToonStudio는 제작 도구 자체를 내장한 통합 제작 OS입니다.", "The closest competitor, CRECO, is a hub for managing finished outputs; ToonStudio is an integrated production OS with the creation tools built in.")}</p>
+        <p className="max-w-4xl text-lg leading-8 text-fg-2">{bi("가장 가까운 경쟁자 크레코는 완성된 결과물을 관리하는 허브, ToonStudio는 만드는 도구 자체가 들어 있는 통합 제작 OS예요.", "The closest competitor, CRECO, manages finished outputs; ToonStudio has the creation tools themselves built in.")}</p>
       </div>
     ),
     (
@@ -286,7 +300,7 @@ export function IrPitchPage() {
             </li>
           ))}
         </ol>
-        <p className="text-lg text-fg-2">{bi("앞 단계의 결과물이 다음 단계로 그대로 이어집니다.", "Each stage hands its output directly to the next.")}</p>
+        <p className="text-lg text-fg-2">{bi("앞 단계에서 만든 게 다음 단계로 그대로 넘어갑니다.", "What you make in one stage carries straight into the next.")}</p>
       </div>
     ),
     (
@@ -295,10 +309,10 @@ export function IrPitchPage() {
         <h2 className={bigTitle}>{bi("네 가지 차별화", "Four points of difference")}</h2>
         <ul className="grid gap-3 md:grid-cols-2">
           {[
-            { ko: "미개척 포지션 — 브라우저 전문 드로잉 + 전 공정 통합", en: "Open position — pro drawing + full process, in a browser" },
+            { ko: "아직 비어 있는 자리 — 브라우저에서 전문 드로잉 + 전 공정 통합", en: "A position still open — pro drawing + full process, in a browser" },
             { ko: "전문 브러시 226종 · WebGPU 스트로크 렌더링", en: "226 pro brushes · WebGPU stroke rendering" },
-            { ko: "1인 → 소규모 팀 전 규모 올인원 협업 (대규모는 설계·로드맵)", en: "All-in-one collaboration, solo → small teams (large studios: design & roadmap)" },
-            { ko: "회차-공정-담당-승인, 웹툰 분업 체계 내장", en: "Episodes, processes, owners, approvals — division of labor built in" },
+            { ko: "1인부터 소규모 팀까지 한곳에서 협업 (대규모는 설계·로드맵)", en: "Collaboration in one place, solo to small teams (large studios: design & roadmap)" },
+            { ko: "회차-공정-담당-승인, 웹툰식 분업을 그대로 내장", en: "Episodes, processes, owners, approvals — the webtoon way, built in" },
           ].map((item) => (
             <li key={item.en} className="rounded-2xl border border-line/70 bg-card/65 p-6 font-display text-xl font-black leading-snug text-fg">{bi(item.ko, item.en)}</li>
           ))}
@@ -308,7 +322,7 @@ export function IrPitchPage() {
     (
       <div key="product" className={sceneShell}>
         <p className="eyebrow text-accent">PRODUCT</p>
-        <h2 className={bigTitle}>{bi("계획이 아니라, 이미 작동하는 제품입니다.", "Not a plan — a product that already runs.")}</h2>
+        <h2 className={bigTitle}>{bi("계획이 아니에요. 이미 돌아가고 있는 제품입니다.", "This is not a plan. The product is already running.")}</h2>
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {CAPABILITIES.map((capability) => {
             const copy = bi(capability.ko, capability.en);
@@ -328,7 +342,7 @@ export function IrPitchPage() {
     (
       <div key="market" className={sceneShell}>
         <p className="eyebrow text-accent">MARKET</p>
-        <h2 className={bigTitle}>{bi("웹툰은 이미 크고, 더 빠르게 커지는 시장입니다.", "Webtoons are already large — and growing faster.")}</h2>
+        <h2 className={bigTitle}>{bi("웹툰 시장, 이미 크고 더 빠르게 자라고 있어요.", "The webtoon market is already big — and growing faster.")}</h2>
         <div className="grid gap-3 lg:grid-cols-2">
           <div className="rounded-3xl border border-line/70 bg-card/65 p-6">
             <p className="font-display text-5xl font-black tracking-tight text-fg">{bi("2조 2,856억 원", "KRW 2.2856T")}</p>
@@ -339,13 +353,13 @@ export function IrPitchPage() {
             <p className="mt-2 font-bold text-fg">{bi("글로벌 시장 2024 → 2030 전망 · 연평균 약 27% (복수 기관 추정치)", "Global market 2024 → 2030 · about 27% CAGR (multiple research estimates)")}</p>
           </div>
         </div>
-        <p className="max-w-4xl text-lg leading-8 text-fg-2">{bi("제작 표준 도구는 전량 외산이고 국산 전문 제작 코어는 비어 있습니다(구조 산정). 그 빈자리가 ToonStudio의 자리입니다.", "Every standard production tool is foreign and the Korean professional core is empty (structural estimate). That gap is ToonStudio's position.")}</p>
+        <p className="max-w-4xl text-lg leading-8 text-fg-2">{bi("제작 표준 도구는 전부 외산이고, 국산 전문 제작 코어는 비어 있어요(구조 산정). 그 빈자리가 ToonStudio의 자리입니다.", "Every standard production tool is foreign, and the Korean professional core is empty (structural estimate). That gap is ToonStudio's position.")}</p>
       </div>
     ),
     (
       <div key="model" className={sceneShell}>
         <p className="eyebrow text-accent">BUSINESS MODEL & VALIDATION</p>
-        <h2 className={bigTitle}>{bi("개인 창작자에서 팀·교육·마켓으로.", "From solo creators to teams, education and a marketplace.")}</h2>
+        <h2 className={bigTitle}>{bi("개인 창작자에서 시작해 팀·교육·마켓으로.", "Starting with solo creators, then teams, education and a marketplace.")}</h2>
         <ul className="grid gap-2 md:grid-cols-2">
           {BUSINESS_MODEL.map((model) => {
             const copy = bi(model.ko, model.en);
@@ -371,7 +385,7 @@ export function IrPitchPage() {
       <div key="ask" className={sceneShell}>
         <p className="eyebrow text-accent">FOUNDER & ASK</p>
         <h2 className={bigTitle}>{bi("창작자가 작품에만 집중할 수 있는 제작 기반을 만들겠습니다.", "We are building the production foundation that lets creators focus only on their work.")}</h2>
-        <p className="text-xl font-semibold text-fg-2">{bi("김희준 · Founder — 18년 개발 경험, 설계부터 배포까지 직접 만듭니다.", "Heejun Kim · Founder — 18 years of development, building everything from design to deployment.")}</p>
+        <p className="text-xl font-semibold text-fg-2">{bi("김희준 · Founder — 배달의민족·스마일게이트·삼쩜삼·카카오·엔씨소프트를 거친 18년차 개발자예요. 설계부터 배포까지 직접 만듭니다.", "Heejun Kim · Founder — an 18-year developer who came through Baemin, Smilegate, Samjjeomsam, Kakao and NCSOFT, building everything from design to deployment himself.")}</p>
         <ul className="flex flex-wrap gap-2">
           {ASKS.map((ask) => (
             <li key={ask.en} className="rounded-full border border-line/70 bg-panel px-4 py-2.5 font-display text-base font-bold text-fg">{bi(ask.ko, ask.en)}</li>
@@ -391,8 +405,8 @@ export function IrPitchPage() {
           "From planning to release prep, ToonStudio connects the scattered tools and collaboration of webtoon production in one browser.",
         )}
         lede={bi(
-          "ToonStudio는 지금 toonstudio.cloud에서 작동하는 웹툰 제작 OS입니다. 이 페이지의 영상과 화면은 전부 실제 제품 기준입니다.",
-          "ToonStudio is a webtoon production OS already running at toonstudio.cloud. Every film and screen on this page comes from the real product.",
+          "ToonStudio는 지금 toonstudio.cloud에서 실제로 돌아가고 있는 웹툰 제작 OS예요. 이 페이지에 나오는 영상과 화면은 전부 실제 제품에서 가져왔습니다.",
+          "ToonStudio is a webtoon production OS, already live at toonstudio.cloud. Every film and screen on this page comes straight from the real product.",
         )}
         actions={(
           <div className="grid gap-3">
@@ -424,7 +438,7 @@ export function IrPitchPage() {
             <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-fg-2">
               <span className="inline-flex items-center gap-1.5 font-semibold text-fg">
                 <Clapperboard size={15} className="text-accent" aria-hidden="true" />
-                {bi("IR 컷 4:48 — 제품 투어 챕터를 실제 화면 그대로 발췌했습니다.", "IR cut, 4:48 — full-tour chapters excerpted with real product screens only.")}
+                {bi("IR 컷 4:48 — 제품 투어에서 실제 화면 챕터만 골라 붙였어요.", "IR cut, 4:48 — stitched from real-screen chapters of the product tour.")}
               </span>
               <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
                 {CHAPTER_JUMPS.map((chapter) => (
@@ -443,7 +457,7 @@ export function IrPitchPage() {
           id="ir-problem-title"
           eyebrow={eyebrow("PROBLEM")}
           title={bi("창작자는 작품보다 도구 사이의 빈틈에 시간을 씁니다.", "Creators spend more time between tools than on the work itself.")}
-          body={bi("핵심 문제는 기능 부족이 아니라 제작 흐름이 끊기는 것입니다.", "The core problem is not missing features — it is the broken production flow.")}
+          body={bi("결국 문제는 기능이 부족해서가 아니에요. 제작 흐름이 중간에 끊기는 게 문제입니다.", "In the end it is not about missing features. The problem is the flow breaking in the middle.")}
         />
         <ul className="mt-5 grid gap-3 md:grid-cols-3">
           {PROBLEMS.map((problem) => {
@@ -479,8 +493,8 @@ export function IrPitchPage() {
         </ul>
         <p className="mt-4 max-w-3xl break-keep text-sm leading-7 text-fg-2">
           {bi(
-            "가장 가까운 경쟁자는 협업 플랫폼 크레코(CRECO)입니다. 대형 제작사 베타 검증으로 다져진, 만든 결과물의 버전·피드백·권한을 관리하는 허브입니다. ToonStudio의 자리는 그 앞단입니다 — 드로잉·3D·콘티·AI 제작 도구 자체를 내장해, 만드는 과정이 곧 관리 기록이 되는 통합 제작 OS입니다.",
-            "The closest competitor is CRECO, a collaboration platform hardened by beta testing with large studios — a hub that manages versions, feedback and permissions for finished outputs. ToonStudio sits one step earlier: an integrated production OS with the drawing, 3D, storyboard and AI tools built in, where the act of making is itself the management record.",
+            "가장 가까운 경쟁자는 협업 플랫폼 크레코(CRECO)예요. 대형 제작사들이 베타로 써 보며 다져진 곳이라, 완성된 결과물의 버전·피드백·권한을 관리하는 데 강합니다. ToonStudio는 그보다 한 단계 앞을 봅니다. 드로잉·3D·콘티·AI 도구 자체가 안에 들어 있어서, 만드는 과정이 곧 관리 기록이 되는 통합 제작 OS예요.",
+            "The closest competitor is CRECO, a collaboration platform hardened by beta testing with large studios — it is strong at managing versions, feedback and permissions for finished outputs. ToonStudio looks one step earlier: the drawing, 3D, storyboard and AI tools live inside, so the act of making is itself the management record.",
           )}
         </p>
       </section>
@@ -489,8 +503,8 @@ export function IrPitchPage() {
         <IntroSectionHeading
           id="ir-flow-title"
           eyebrow={eyebrow("SOLUTION")}
-          title={bi("작품·회차·장면을 중심으로 전 공정을 한 흐름으로 연결합니다.", "Every stage connects around the work, its episodes and its scenes.")}
-          body={bi("앞 단계의 결과물이 다음 단계로 그대로 이어지고, 역할마다 필요한 화면은 다르게, 작품 정보는 하나로 유지됩니다.", "Each stage hands its output to the next, while every role gets its own surface over one shared work context.")}
+          title={bi("전 공정이 작품 하나를 중심으로 한 흐름으로 이어집니다.", "One work, one unbroken flow through every stage.")}
+          body={bi("앞 단계에서 만든 게 다음 단계로 그대로 넘어갑니다. 역할마다 보는 화면은 달라도, 작품 정보는 하나로 이어져요.", "What you make in one stage carries straight into the next. Each role sees a different screen, but the work itself stays one.")}
         />
         <ol className="mt-5 flex flex-wrap items-center gap-2" aria-label={bi("제작 파이프라인", "Production pipeline")}>
           {FLOW_STEPS.map((step, index) => (
@@ -513,20 +527,20 @@ export function IrPitchPage() {
         <ul className="mt-5 grid gap-3 md:grid-cols-2">
           {[
             {
-              ko: { title: "미개척 포지션", body: "전문 도구는 데스크톱 앱에, 협업 도구는 관리 허브에 머물러 있습니다. 브라우저에서 전문 드로잉과 전 공정을 하나로 통합한 자리는 아직 비어 있습니다." },
-              en: { title: "An open position", body: "Professional tools live in desktop apps and collaboration tools in management hubs. The position that unifies pro drawing and the full process in a browser is still open." },
+              ko: { title: "아직 비어 있는 자리", body: "전문 도구는 데스크톱 앱에 있고, 협업 도구는 결과물을 관리하는 허브에 머물러 있어요. 브라우저에서 전문 드로잉부터 전 공정을 하나로 합친 자리는 아직 비어 있습니다." },
+              en: { title: "A position still open", body: "Pro tools live in desktop apps, and collaboration tools stop at managing outputs. Nobody has yet put pro drawing and the whole process together in a browser." },
             },
             {
-              ko: { title: "전문 브러시 226종 · WebGPU 스트로크 렌더링", body: "자체 포팅한 WebGPU 벡터 렌더러(Vello)가 획을 GPU로 그려, 브라우저에서도 전문 브러시의 질감과 속도를 냅니다." },
-              en: { title: "226 pro brushes · WebGPU stroke rendering", body: "A self-ported WebGPU vector renderer (Vello) draws strokes on the GPU, bringing professional brush feel and speed to the browser." },
+              ko: { title: "전문 브러시 226종 · WebGPU 스트로크 렌더링", body: "직접 포팅한 WebGPU 벡터 렌더러(Vello)가 획을 GPU로 그려 줘서, 브라우저에서도 전문 브러시의 질감과 속도가 그대로 나와요." },
+              en: { title: "226 pro brushes · WebGPU stroke rendering", body: "Our own WebGPU vector renderer (Vello) draws strokes on the GPU, so professional brush feel and speed hold up right in the browser." },
             },
             {
-              ko: { title: "1인부터 팀까지, 전 규모 올인원 협업", body: "1인 작가와 소규모 팀의 실제 연재 흐름이 현재 설계·검증 범위입니다. 대규모 스튜디오 규모는 같은 구조로 확장하는 지원 설계·로드맵 단계입니다." },
-              en: { title: "All-in-one collaboration at every scale", body: "Solo creators and small teams in real release flow are the current design and validation scope. Large-studio scale is a support design and roadmap stage that extends the same structure." },
+              ko: { title: "1인부터 팀까지, 한곳에서 협업", body: "지금은 1인 작가와 소규모 팀이 실제로 연재하는 흐름에 맞춰 설계하고 검증하고 있어요. 대규모 스튜디오로 넓히는 건 같은 구조를 키우는 일이라, 지원 설계와 로드맵 단계로 구분해 둡니다." },
+              en: { title: "Collaboration in one place, from solo to team", body: "Right now we design and validate around how solo creators and small teams actually publish. Growing to large studios means scaling the same structure — we keep that clearly marked as support design and roadmap." },
             },
             {
-              ko: { title: "회차-공정-담당-승인, 웹툰 분업 체계", body: "웹툰 제작의 분업을 회차·공정·담당자·승인 단위로 제품 구조에 그대로 넣어, 팀이 커져도 흐름이 흐트러지지 않게 합니다." },
-              en: { title: "Division of labor, built in", body: "The webtoon division of labor — episodes, processes, owners and approvals — is built into the product structure, so the flow holds as teams grow." },
+              ko: { title: "회차-공정-담당-승인, 웹툰식 분업 그대로", body: "웹툰 팀이 일하는 방식 그대로, 회차·공정·담당자·승인을 제품 구조에 넣었어요. 팀이 커져도 흐름이 흐트러지지 않습니다." },
+              en: { title: "Division of labor, the webtoon way", body: "Episodes, processes, owners and approvals are built into the product, exactly the way webtoon teams already work — so the flow holds as the team grows." },
             },
           ].map((item) => {
             const copy = bi(item.ko, item.en);
@@ -544,7 +558,7 @@ export function IrPitchPage() {
         <IntroSectionHeading
           id="ir-product-title"
           eyebrow={eyebrow("PRODUCT")}
-          title={bi("계획이 아니라, 이미 작동하는 제품입니다.", "Not a plan — a product that already runs.")}
+          title={bi("계획이 아니에요. 이미 돌아가고 있는 제품입니다.", "This is not a plan. The product is already running.")}
         />
         <ul className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {CAPABILITIES.map((capability) => {
@@ -566,6 +580,11 @@ export function IrPitchPage() {
                   <Link href={capability.href} className="mt-1 inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-accent hover:text-accent-2">
                     {copy.cta}<ArrowRight size={14} aria-hidden="true" />
                   </Link>
+                  {capability.chapterStart !== null ? (
+                    <Link href={productTourChapterHref(capability.chapterStart)} className="inline-flex min-h-9 items-center gap-1.5 text-sm font-semibold text-fg-2 hover:text-fg">
+                      <CirclePlay size={14} className="text-accent" aria-hidden="true" />{bi("투어에서 이 장면 보기", "Watch this in the tour")}
+                    </Link>
+                  ) : null}
                 </div>
               </li>
             );
@@ -574,7 +593,7 @@ export function IrPitchPage() {
       </section>
 
       <section className={INTRO_SECTION} aria-labelledby="ir-market-title">
-        <IntroSectionHeading id="ir-market-title" eyebrow={eyebrow("MARKET")} title={bi("웹툰은 이미 크고, 더 빠르게 커지는 시장입니다.", "Webtoons are already large — and growing faster.")} />
+        <IntroSectionHeading id="ir-market-title" eyebrow={eyebrow("MARKET")} title={bi("웹툰 시장, 이미 크고 더 빠르게 자라고 있어요.", "The webtoon market is already big — and growing faster.")} />
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
           <div className="rounded-3xl border border-line/70 bg-card/65 p-6 sm:p-8">
             <p className="font-display text-5xl font-black tracking-tight text-fg">{bi("2조 2,856억 원", "KRW 2.2856T")}</p>
@@ -587,8 +606,8 @@ export function IrPitchPage() {
         </div>
         <p className="mt-4 max-w-3xl break-keep text-sm leading-7 text-fg-2">
           {bi(
-            "그런데 웹툰 종주국인 한국의 제작 표준 도구는 일본 셀시스의 클립스튜디오입니다(누적 5,000만 부 — 2025년 4월 공식 발표, 구독 ARR 46억 엔 초과). 표준 드로잉 툴은 클립스튜디오(일본)·포토샵(미국)·프로크리에이트(호주)·메디방/이비스(일본)까지 전량 외산이고 국산 전문 드로잉 툴은 없습니다 — 전문 드로잉 코어의 외산 비중은 사실상 100%, 국산은 0%에 수렴합니다(공식 점유율 통계가 없어 주요 표준 도구의 원산지 기준 구조 산정). 국산 도구는 협업·소재 같은 주변 영역에 머물고, 기획부터 연재까지 잇는 전문 제작 코어는 비어 있습니다. ToonStudio가 채우는 자리입니다.",
-            "Yet the standard production tool in Korea — the home of webtoons — is Japan's Clip Studio by Celsys (50 million copies cumulative, officially announced April 2025; subscription ARR above JPY 4.6 billion). Every standard drawing tool is foreign — Clip Studio (Japan), Photoshop (US), Procreate (Australia), MediBang/ibis (Japan) — and no Korean professional drawing tool exists: the foreign share of the pro drawing core is effectively 100% and the Korean share converges to 0% (a structural estimate from the origin of the standard tools, as no official share statistics exist). Korean tools stay in surrounding areas such as collaboration and assets, while the professional production core that connects planning to release remains empty. That is the gap ToonStudio fills.",
+            "그런데 정작 웹툰 종주국인 한국에서 제작 표준은 일본 셀시스의 클립스튜디오예요(누적 5,000만 부 — 2025년 4월 공식 발표, 구독 ARR 46억 엔 초과). 이름난 드로잉 툴을 놓고 보면 클립스튜디오(일본), 포토샵(미국), 프로크리에이트(호주), 메디방/이비스(일본)까지 전부 외산이고, 국산 전문 드로잉 툴은 없어요. 공식 점유율 통계가 따로 없어 구조로 어림잡은 수치지만, 전문 드로잉 코어는 사실상 전부 외산이고 국산은 0%에 가깝습니다. 국산 도구는 협업이나 소재 같은 주변에 머물러 있고, 기획부터 연재까지 잇는 제작 중심은 비어 있어요. ToonStudio가 들어가려는 자리가 여기입니다.",
+            "And yet, in Korea — the home of webtoons — the production standard is Japan's Clip Studio by Celsys (50 million copies cumulative, officially announced April 2025; subscription ARR above JPY 4.6 billion). Line up the well-known drawing tools and they are all foreign: Clip Studio (Japan), Photoshop (US), Procreate (Australia), MediBang/ibis (Japan). There is no Korean professional drawing tool. There are no official share statistics, so this is a structural estimate — but the pro drawing core is effectively all foreign, and the Korean share is close to zero. Korean tools stay around the edges, in collaboration and assets, while the production core from planning to release sits empty. That is exactly where ToonStudio aims to be.",
           )}
         </p>
         <p className="mt-2 text-xs leading-5 text-fg-3">
@@ -597,7 +616,7 @@ export function IrPitchPage() {
       </section>
 
       <section className={INTRO_SECTION} aria-labelledby="ir-model-title">
-        <IntroSectionHeading id="ir-model-title" eyebrow={eyebrow("BUSINESS MODEL & VALIDATION")} title={bi("개인 창작자에서 팀·교육·마켓으로 확장합니다.", "From solo creators to teams, education and a marketplace.")} />
+        <IntroSectionHeading id="ir-model-title" eyebrow={eyebrow("BUSINESS MODEL & VALIDATION")} title={bi("개인 창작자에서 시작해 팀·교육·마켓으로 넓혀 갑니다.", "Starting with solo creators, then teams, education and a marketplace.")} />
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
           <ul className="grid gap-3">
             {BUSINESS_MODEL.map((model) => {
@@ -613,7 +632,7 @@ export function IrPitchPage() {
           <div className="rounded-2xl border border-accent/35 bg-accent-soft/25 p-5 sm:p-6">
             <h3 className="flex items-center gap-2 font-display text-base font-black text-fg">
               <Cpu size={17} className="text-accent" aria-hidden="true" />
-              {bi("검증 로드맵 — 아래는 성과가 아니라 목표입니다", "Validation roadmap — goals, not results")}
+              {bi("검증 로드맵 — 아래 숫자는 성과가 아니라 목표예요", "Validation roadmap — these numbers are goals, not results")}
             </h3>
             <ul className="mt-4 grid gap-4">
               {VALIDATION_GOALS.map((goal) => (
@@ -627,20 +646,25 @@ export function IrPitchPage() {
               ))}
             </ul>
             <p className="mt-4 break-keep text-sm leading-6 text-fg-2">
-              {bi("작은 창작팀의 실제 연재 흐름에서 먼저 검증하고, 직무별 병목과 지불 의향을 코호트별로 확인합니다.", "Validation starts inside the real release flow of small creator teams, checking bottlenecks and willingness to pay by role and cohort.")}
+              {bi("먼저 작은 창작팀이 실제로 연재하는 현장에서 써 보게 할 거예요. 역할마다 어디서 막히는지, 얼마면 쓸지를 코호트별로 확인할 계획입니다.", "First, small creator teams will use it in their real publishing flow. Then we check, cohort by cohort, where each role gets stuck and what they would pay.")}
             </p>
           </div>
         </div>
       </section>
 
       <section className={INTRO_SECTION} aria-labelledby="ir-founder-title">
-        <IntroSectionHeading id="ir-founder-title" eyebrow={eyebrow("FOUNDER & ASK")} title={bi("개발 가능한 창업자가 직접 검증 속도를 높입니다.", "A founder who builds, shortening every validation loop.")} />
+        <IntroSectionHeading id="ir-founder-title" eyebrow={eyebrow("FOUNDER & ASK")} title={bi("직접 만드는 창업자라, 검증이 빠릅니다.", "The founder builds it himself — so validation moves fast.")} />
         <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1.2fr]">
           <div className="rounded-2xl border border-line/70 bg-card/65 p-5 sm:p-6">
             <p className="font-display text-xl font-black text-fg">{bi("김희준 · Founder", "Heejun Kim · Founder")}</p>
             <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
-              {bi("18년 개발 경험을 바탕으로 제품 설계, 프론트엔드, 인프라, AI 연동과 테스트 자동화를 직접 수행하며 프로토타입을 실제 서비스로 고도화하고 있습니다.", "With 18 years of development experience, he personally covers product design, front-end, infrastructure, AI integration and test automation, growing the prototype into a live service.")}
+              {bi("18년차 개발자예요. 제품 설계부터 프론트엔드, 인프라, AI 연결, 테스트 자동화까지 혼자 다 만들고, 프로토타입을 실제 서비스로 키워 왔어요.", "A developer of 18 years. He builds everything himself — product design, front-end, infrastructure, AI wiring, test automation — and has grown the prototype into a live service.")}
             </p>
+            <ul className="mt-4 grid gap-2.5 border-t border-line/60 pt-4">
+              {FOUNDER_CAREER.map((career) => (
+                <li key={career.en} className="break-keep text-sm leading-6 text-fg-2">{bi(career.ko, career.en)}</li>
+              ))}
+            </ul>
             <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-semibold text-fg-2">
               <span>toonstudio.cloud</span>
               <a href="mailto:blue45f@gmail.com" className="inline-flex items-center gap-1.5 text-accent hover:text-accent-2">
@@ -651,7 +675,7 @@ export function IrPitchPage() {
           <div className="rounded-2xl border border-line/70 bg-card/65 p-5 sm:p-6">
             <h3 className="flex items-center gap-2 font-display text-base font-black text-fg">
               <Handshake size={17} className="text-accent" aria-hidden="true" />
-              {bi("지금 필요한 연결", "What we are asking for")}
+              {bi("지금 이런 연결을 찾고 있어요", "What we are looking for now")}
             </h3>
             <ul className="mt-3 flex flex-wrap gap-2">
               {ASKS.map((ask) => (
