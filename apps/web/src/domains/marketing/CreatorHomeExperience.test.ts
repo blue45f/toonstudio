@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const EXPERIENCE_SOURCE = "apps/web/src/domains/marketing/CreatorHomeExperience.tsx";
+const INTRODUCTION_SOURCE = "apps/web/src/domains/marketing/CreatorStudioIntroduction.tsx";
 const NARRATIVE_SOURCE = "apps/web/src/domains/marketing/StudioIntroNarrative.tsx";
 const WRAPPER_STYLES = "apps/web/src/domains/marketing/studio-introduction.css";
 const TOUR_STYLES = "apps/web/src/domains/marketing/studio-tour.css";
@@ -36,6 +37,7 @@ describe("creator home experience contracts", () => {
 
   it("keeps / as the reference dashboard and makes /about/studio a narrative with the studio tour as one section", () => {
     const source = readFileSync(EXPERIENCE_SOURCE, "utf8");
+    const introduction = readFileSync(INTRODUCTION_SOURCE, "utf8");
     const narrative = readFileSync(NARRATIVE_SOURCE, "utf8");
     const identity = readFileSync(PRODUCT_IDENTITY_SOURCE, "utf8");
     // 같은 컴포넌트가 두 화면을 그린다: 경로가 /about/studio일 때만 소개 서사.
@@ -50,21 +52,21 @@ describe("creator home experience contracts", () => {
     expect(source).toContain('cx("creator-home", !introduction && "creator-experience creator-flagship")');
     // 탭이 아니라 한 번에 읽히는 서사: 히어로 아트 → 바로 시작 → 제작 흐름 → 기능 브리지 → 화면 구성 둘러보기 → 재료·협업·도움 → 마감.
     expect(source).not.toContain("<IntroTabs");
-    expect(source).toContain("<StudioIntroHeroStage");
-    expect(source).toContain("<StudioIntroFlow />");
-    expect(source).toContain("<StudioIntroBridge />");
-    expect(source).toContain("<StudioIntroClosing />");
-    expect(source).toContain('id="creator-tour"');
-    expect(source).toContain('id="creator-start"');
-    expect(source).toContain('<ProductIntentStart headingId="creator-toolkit-title" />');
-    expect(source).toContain("<StudioAnnotatedTour />");
-    expect(source).toContain("<StudioSupportLinks />");
-    expect(source).toContain('<AboutJourneyPager current="/about/studio" />');
+    expect(introduction).toContain("<StudioIntroHeroStage");
+    expect(introduction).toContain("<StudioIntroFlow />");
+    expect(introduction).toContain("<StudioIntroBridge />");
+    expect(introduction).toContain("<StudioIntroClosing />");
+    expect(introduction).toContain('id="creator-tour"');
+    expect(introduction).toContain('id="creator-start"');
+    expect(introduction).toContain('<ProductIntentStart headingId="creator-toolkit-title" />');
+    expect(introduction).toContain("<StudioAnnotatedTour />");
+    expect(introduction).toContain("<StudioSupportLinks />");
+    expect(introduction).toContain('<AboutJourneyPager current="/about/studio" />');
     expect(source).toContain('import { useCreatorHomeSectionNavigation } from "./use-creator-home-section-navigation"');
     expect(source).toContain("useCreatorHomeSectionNavigation();");
     // 첫 화면: 한 문장 + 주요 행동 1개(+보조 1개).
-    expect(source).toContain('<IntroPrimaryLink href="/studio/new">');
-    expect(source).toContain('<IntroSecondaryLink href="/studio" icon={FolderKanban}');
+    expect(introduction).toContain('<IntroPrimaryLink href="/studio/new">');
+    expect(introduction).toContain('<IntroSecondaryLink href="/studio" icon={FolderKanban}');
     // 서사 본문(StudioIntroNarrative): 흐름·브리지 섹션 앵커와 히어로 마감 카피, 기능별 브랜드 아트 썸네일.
     expect(narrative).toContain('id="creator-flow"');
     expect(narrative).toContain('id="creator-bridge"');

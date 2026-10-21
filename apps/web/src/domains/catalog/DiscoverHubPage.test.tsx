@@ -97,20 +97,20 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("DiscoverHubPage", () => {
-  it("reads the public catalog snapshot and shows real story shelves with their full-view links", () => {
+  it("reads the public catalog snapshot and shows real story shelves with their full-view links", async () => {
     mockResource({ data: snapshot(currentKstWeekDay()) });
     renderPage();
 
     expect(resource.read).toHaveBeenCalledWith("/data/home.json", expect.any(String));
     expect(screen.getByRole("heading", { level: 1, name: "다음 컷의 영감은, 새로운 이야기에서." })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeTruthy();
     expect(within(screen.getByRole("list", { name: "평점 랭킹 상위 작품" })).getByRole("link", { name: "작품-rated" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /무료 작품 더 보기/ }).getAttribute("href")).toBe("/search?pricing=free,wait-free");
     expect(screen.getByText("60,229")).toBeTruthy();
     expect(screen.getByText(/2026-10-01 기준 공개 카탈로그/)).toBeTruthy();
   });
 
-  it("features a spotlight story in the hero with a link to its detail page", () => {
+  it("features a spotlight story in the hero with a link to its detail page", async () => {
     mockResource({ data: { ...snapshot(currentKstWeekDay()), spotlight: { ...title("lead"), title: "스포트라이트 작품" }, featured: [title("f1")] } });
     renderPage();
 
@@ -119,37 +119,38 @@ describe("DiscoverHubPage", () => {
     expect(within(spotlight).getByRole("link", { name: /작품-f1/ }).getAttribute("href")).toBe("/title/f1");
     // 대표 작품 카드는 히어로 제목 뒤, 첫 레일보다 앞에 온다.
     const heading = screen.getByRole("heading", { level: 1 });
-    const firstShelf = screen.getByRole("heading", { name: "오늘 업데이트되는 웹툰" });
+    const firstShelf = await screen.findByRole("heading", { name: "오늘 업데이트되는 웹툰" });
     expect(heading.compareDocumentPosition(spotlight) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(spotlight.compareDocumentPosition(firstShelf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("does not call a stale snapshot weekday 'today'", () => {
+  it("does not call a stale snapshot weekday 'today'", async () => {
     const today = currentKstWeekDay();
     const otherDay = today === "월" ? "화" : "월";
     mockResource({ data: snapshot(otherDay) });
     renderPage();
 
     expect(screen.queryByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeNull();
-    expect(screen.getByRole("heading", { name: `${otherDay}요일 연재 인기작` })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: `${otherDay}요일 연재 인기작` })).toBeTruthy();
   });
 
-  it("keeps search usable while picks load and sends the query to the search page", () => {
+  it("keeps search usable while picks load and sends the query to the search page", async () => {
     mockResource({ loading: true });
     renderPage();
 
-    expect(screen.getAllByRole("status", { name: "추천 작품을 불러오는 중" }).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole("status", { name: "추천 작품을 불러오는 중" })).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "  나 혼자만 레벨업 " } });
     fireEvent.submit(screen.getByRole("search"));
     expect(screen.getByTestId("location").textContent).toBe(`/search?q=${encodeURIComponent("나 혼자만 레벨업")}`);
   });
 
-  it("offers a retry when the snapshot fails and keeps the discovery tools reachable", () => {
+  it("offers a retry when the snapshot fails and keeps the discovery tools reachable", async () => {
     mockResource({ error: "추천 작품을 불러오지 못했습니다." });
     renderPage();
 
-    expect(screen.getByRole("alert").textContent).toContain("추천 작품을 불러오지 못했어요");
-    fireEvent.click(within(screen.getByRole("alert")).getByRole("button"));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("추천 작품을 불러오지 못했어요");
+    fireEvent.click(within(alert).getByRole("button"));
     expect(resource.reload).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("link", { name: /두 작품 비교/ }).getAttribute("href")).toBe("/compare");
     expect(screen.getByRole("link", { name: "#로맨스" }).getAttribute("href")).toBe(`/explore?genre=${encodeURIComponent("로맨스")}`);

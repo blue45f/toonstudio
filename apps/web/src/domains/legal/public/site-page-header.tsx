@@ -128,6 +128,8 @@ function SitePageHeaderBannerArtwork({ artKey, artSrc, artSrcSet }: {
           alt=""
           width={1280}
           height={640}
+          loading="eager"
+          fetchPriority="high"
           decoding="async"
           draggable={false}
           onError={() => setFailed(true)}

@@ -35,8 +35,6 @@ import { useApiResource } from "@/platform/use-api-resource";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { cn } from "@/shared/lib/utils";
 
-import { DiscoverRecentShelf } from "./DiscoverRecentShelf";
-import { DiscoverShelves } from "./DiscoverShelves";
 import { DiscoverSpotlight } from "./DiscoverSpotlight";
 import {
   DISCOVER_HOME_SNAPSHOT_URL,
@@ -49,6 +47,16 @@ import {
 const QUICK_GENRE_COUNT = 8;
 /** 스냅샷 수치는 정확한 값이라 약식(6만) 대신 천 단위 구분으로 보여 준다. */
 const COUNT_FORMAT = new Intl.NumberFormat("en-US");
+
+// 아래 작품 레일은 라우트 본문과 분리해 첫 화면의 동기 모듈 그래프를 줄인다.
+const LazyDiscoverRecentShelf = lazyRetry(
+  () => import("./DiscoverRecentShelf").then((module) => ({ default: module.DiscoverRecentShelf })),
+  "DiscoverRecentShelf",
+);
+const LazyDiscoverShelves = lazyRetry(
+  () => import("./DiscoverShelves").then((module) => ({ default: module.DiscoverShelves })),
+  "DiscoverShelves",
+);
 
 // 기억으로 작품 찾기는 접힌 안내를 처음 펼칠 때만 내려받는다 — 탐색 허브의 첫 화면 번들에 넣지 않는다.
 const LazyMemoryFinderSection = lazyRetry(
@@ -221,10 +229,14 @@ export function DiscoverHubPage() {
       <section aria-labelledby="discover-shelves-title" className="mt-10 flex flex-col gap-12 sm:mt-12 sm:gap-14">
         <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>
         <RevealOnScroll>
-          <DiscoverRecentShelf />
+          <Suspense fallback={null}>
+            <LazyDiscoverRecentShelf />
+          </Suspense>
         </RevealOnScroll>
         <RevealOnScroll>
-          <DiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
+          <Suspense fallback={null}>
+            <LazyDiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
+          </Suspense>
         </RevealOnScroll>
       </section>
 
