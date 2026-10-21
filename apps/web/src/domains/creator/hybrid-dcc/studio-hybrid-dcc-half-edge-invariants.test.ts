@@ -172,11 +172,27 @@ describe("half-edge 연산 불변식(시드 고정)", () => {
     expect(checked).toBeGreaterThan(ROUNDS * 0.9);
   });
 
-  // 알려진 결함 고정: 기존 모서리 모따기는 단위 큐브의 24개 반변 모두에서 경계 반변 8개와 방향 충돌 2개가
-  // 남는 열린 메시를 돌려준다(끝점에 닿은 이웃 면을 함께 고치지 않음). 이 작업의 범위 밖이라 연산은 고치지
-  // 않았다. `it.fails`는 지금은 통과하고, 연산이 고쳐져 불변식이 지켜지면 실패해 이 시험을 일반 시험으로
-  // 바꾸도록 알려 준다. 면 모델링 연산은 이 연산을 쓰지 않는다.
-  it.fails("[알려진 결함] 모서리 모따기는 닫힌 메시를 돌려줘야 한다", () => {
+  it("모서리 모따기: 모서리 하나~셋을 깎아도 닫힘·방향·퇴화 없음이 유지되고 부피는 줄어든다", () => {
+    const random = seededRandom(31003);
+    let checked = 0;
+    for (let round = 0; round < ROUNDS; round += 1) {
+      const mesh = randomSolid(random);
+      const before = expectTopologyHealthy(mesh, `source ${round}`);
+      const count = 1 + Math.floor(random() * 3);
+      const picked = Array.from({ length: count }, () => mesh.halfEdges[Math.floor(random() * mesh.halfEdges.length)]!.id);
+      const result = bevelStudioEditableMeshEdges(mesh, picked, 0.05 + random() * 0.35);
+      if (!result.ok) continue;
+      checked += 1;
+      const after = expectTopologyHealthy(result.value, `bevel ${round}`);
+      expect(result.value.faces.length, `faces ${round}`).toBeGreaterThan(mesh.faces.length);
+      expect(after.signedVolume, `volume ${round}`).toBeLessThan(before.signedVolume);
+    }
+    expect(checked).toBeGreaterThan(ROUNDS * 0.9);
+  });
+
+  // 예전 구현은 단위 정육면체의 24개 반변 모두에서 경계 반변 8개와 방향 충돌 2개가 남는 열린 메시를 돌려줬다
+  // (끝점에 닿은 이웃 면을 함께 고치지 않고 모따기 면 방향도 뒤집혀 있었다). 그 회귀를 그대로 지킨다.
+  it("모서리 모따기: 단위 정육면체의 24개 반변 어느 것을 골라도 닫힌 메시를 돌려준다", () => {
     const cube = createStudioEditableMeshFromPolygons(
       [
         { x: -0.5, y: -0.5, z: -0.5 }, { x: 0.5, y: -0.5, z: -0.5 }, { x: 0.5, y: 0.5, z: -0.5 }, { x: -0.5, y: 0.5, z: -0.5 },
@@ -185,10 +201,11 @@ describe("half-edge 연산 불변식(시드 고정)", () => {
       [[3, 2, 1, 0], [4, 5, 6, 7], [0, 1, 5, 4], [2, 3, 7, 6], [1, 2, 6, 5], [3, 0, 4, 7]],
     );
     expect(report(cube).closed).toBe(true);
+    expect(cube.halfEdges).toHaveLength(24);
     for (const halfEdge of cube.halfEdges) {
       const result = bevelStudioEditableMeshEdges(cube, [halfEdge.id], 0.1);
-      expect(result.ok).toBe(true);
-      if (result.ok) expect(report(result.value).closed, `half-edge ${halfEdge.id}`).toBe(true);
+      expect(result.ok, `half-edge ${halfEdge.id}`).toBe(true);
+      if (result.ok) expectTopologyHealthy(result.value, `half-edge ${halfEdge.id}`);
     }
   });
 
