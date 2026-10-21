@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const homeExperience = readFileSync(new URL("./CreatorHomeExperience.tsx", import.meta.url), "utf8");
+const introduction = readFileSync(new URL("./CreatorStudioIntroduction.tsx", import.meta.url), "utf8");
 const legacyHome = readFileSync(new URL("./CreatorHomePage.tsx", import.meta.url), "utf8");
 const spacingCss = readFileSync(new URL("./creator-home-spacing.css", import.meta.url), "utf8");
 const installPrompt = readFileSync(
@@ -16,16 +17,16 @@ const installCss = readFileSync(
 
 describe("creator home spacing and app install prompt contracts", () => {
   it("renders the product hero before secondary navigation and intent tools", () => {
-    expect(homeExperience).not.toContain("<CreatorHomeNavigation");
-    expect(homeExperience).toContain('className="cf-shell cf-home-wayfinding"');
-    expect(homeExperience.indexOf('className="cf-hero cf-shell"')).toBeLessThan(
-      homeExperience.indexOf('className="cf-shell cf-home-wayfinding"'),
+    expect(introduction).not.toContain("<CreatorHomeNavigation");
+    expect(introduction).toContain('className="cf-shell cf-home-wayfinding"');
+    expect(introduction.indexOf('className="cf-hero cf-shell"')).toBeLessThan(
+      introduction.indexOf('className="cf-shell cf-home-wayfinding"'),
     );
-    expect(homeExperience).toContain('<ProductIntentStart headingId="creator-toolkit-title" />');
-    // 2026-10-06 S1-T3: 소개 서사 복원으로 탭을 걷어 냈다. 모든 섹션이 항상 존재하고 예전 앵커는 실제 섹션으로 이어진다.
-    expect(homeExperience).not.toContain("<CreatorSectionLink");
-    expect(homeExperience).not.toContain("<IntroTabs");
-    expect(homeExperience).toContain("<StudioIntroFlow />");
+    expect(introduction).toContain('<ProductIntentStart headingId="creator-toolkit-title" />');
+    // The introduction narrative lives in CreatorStudioIntroduction; the route wrapper owns only selection/lazy loading.
+    expect(introduction).not.toContain("<CreatorSectionLink");
+    expect(introduction).not.toContain("<IntroTabs");
+    expect(introduction).toContain("<StudioIntroFlow />");
   });
 
   it("loads the final spacing layer after each home implementation's base styles", () => {
