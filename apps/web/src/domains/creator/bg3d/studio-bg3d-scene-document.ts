@@ -27,7 +27,7 @@ import {
 import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
 import { normalizeStudioBg3dHierarchyParents } from "./studio-bg3d-hierarchy";
 import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
-import { normalizeStudioBg3dModelTexturePaint } from "./studio-bg3d-glb-texture-paint";
+import { normalizeStudioBg3dModelTexturePaint } from "../studio-bg3d-model-texture-paint";
 import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 
 import {

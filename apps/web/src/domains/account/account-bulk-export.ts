@@ -1,9 +1,11 @@
-import { readStudioProjectDocuments } from "@/domains/creator/studio-project-document-store";
-import { readStudioProjectLibrary } from "@/domains/creator/studio-project-library-store";
-import { buildStudioProjectPackageWithWorkspace } from "@/domains/creator/save-first/studio-project-package-with-workspace";
-import { writeStudioProjectPackageToTarget } from "@/domains/creator/save-first/studio-project-package";
-import { studioSaveProfileForProject } from "@/domains/creator/save-first/studio-save-profile";
-import { studioSubmissionsForProject } from "@/domains/creator/save-first/studio-submission-store";
+import {
+  buildStudioProjectPackageWithWorkspace,
+  readStudioProjectDocuments,
+  readStudioProjectLibrary,
+  studioSaveProfileForProject,
+  studioSubmissionsForProject,
+  writeStudioProjectPackageToTarget,
+} from "@/domains/creator/public/account-portability";
 
 import {
   ACCOUNT_BULK_EXPORT_MARKER_KEY,

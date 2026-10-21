@@ -23,7 +23,7 @@ import type {
   StudioAdjustmentKind,
 } from "../filter/studio-adjustment-effect-graph";
 import type { AdjustmentEl, El } from "../studio-element-model";
-
+import { isAdjustmentEl, type AdjustmentElement } from "./studio-adjustment-element-guard";
 import {
   adjustmentLayersAffecting,
   buildStudioAdjustmentLayerGraph,
@@ -32,17 +32,11 @@ import {
   type StudioStackEntry,
 } from "./studio-adjustment-layer";
 
+export { isAdjustmentEl, type AdjustmentElement } from "./studio-adjustment-element-guard";
+
 export type AdjustmentParameters = Readonly<
   Record<string, number | string | boolean | readonly number[]>
 >;
-
-/** El 유니온에서 조정 레이어 멤버만 뽑은 타입(메타데이터 인터섹션 포함). */
-export type AdjustmentElement = Extract<El, { type: "adjustment" }>;
-
-/** El 유니온에서 조정 레이어인지 판정하는 타입 가드. */
-export function isAdjustmentEl(el: El): el is AdjustmentElement {
-  return el.type === "adjustment";
-}
 
 function clamp01(value: number): number {
   if (!Number.isFinite(value)) return 1;

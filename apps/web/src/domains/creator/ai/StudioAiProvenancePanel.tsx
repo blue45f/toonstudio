@@ -177,6 +177,7 @@ function UsageSummary({ operation }: { operation: StudioAiOperation }) {
 }
 
 function SafeTechnicalDetails({ operation }: { operation: StudioAiOperation }) {
+  const t = useT();
   const targetScopes = [
     operation.target ? "페이지" : null,
     operation.target?.frameId ? "컷" : null,
