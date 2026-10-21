@@ -1,5 +1,10 @@
 import { throwIfStudioPsdImportAborted } from "./studio-psd-import-progress";
 import type { StudioPsdSource } from "./export/studio-psd-source";
+import { studioGroupsFromPsdElements } from "./export/studio-psd-folder-structure";
+import {
+  mergePsdElementsWithAdjustments,
+  psdAdjustmentElFromImported,
+} from "./studio-psd-adjustment-commit";
 import type {
   StudioArchiveImportApplyOptions,
   StudioArchiveImportPageDraft,
@@ -189,8 +194,51 @@ export async function prepareStudioDocumentInterchangeCommit(
       ? pending.result.compositeElement ? [pending.result.compositeElement] : null
       : pending.result.elements.flatMap((element) => [element, ...(pending.result.editableTextElements ?? []).filter((text) => text.psdRasterSourceId === element.id)]);
     if (!sourceElements) throw new Error("이 PSD에는 원본 합성 이미지가 없어 합성본으로 적용할 수 없어요.");
-    const importedElements: El[] = sourceElements.map((element) => source ? { ...element, psdSource: source } : { ...element });
-    const importedGroups = options.psdRepresentation === "composite" ? [] : pending.result.groups ?? [];
+    const withSource = sourceElements.map((element) => source ? { ...element, psdSource: source } : { ...element });
+    const importedWidth = Math.max(1, Math.round(pending.result.sourceWidth * pending.result.scale));
+    const importedHeightForAdjustments = Math.max(
+      1,
+      Math.round(pending.result.sourceHeight * pending.result.scale),
+    );
+    // 조정 레이어는 합성본 방식에서는 원본 합성에 이미 픽셀로 포함돼 있어 별도
+    // 레이어로 넣지 않고, 레이어 방식에서만 원래 스택 순서대로 문서에 삽입한다.
+    // 예전에는 레이어 방식에서도 adjustmentLayers를 소비하지 않아 적용 순간 사라졌다.
+    const restoredAdjustments = options.psdRepresentation === "composite"
+      ? []
+      : pending.result.adjustmentLayers ?? [];
+    let importedElements: El[];
+    if (restoredAdjustments.length === 0) {
+      importedElements = withSource as El[];
+    } else {
+      const rasterGroups = pending.result.elements.map((element) => {
+        const head = withSource.find((candidate) => candidate.id === element.id) as El;
+        const texts = (pending.result.editableTextElements ?? [])
+          .filter((text) => text.psdRasterSourceId === element.id)
+          .map((text) => withSource.find((candidate) => candidate.id === text.id) ?? text) as El[];
+        return { stackIndex: element.stackIndex, elements: [head, ...texts] };
+      });
+      importedElements = mergePsdElementsWithAdjustments(
+        rasterGroups,
+        restoredAdjustments,
+        { width: importedWidth, height: importedHeightForAdjustments },
+      );
+    }
+    const adjustmentGroups = restoredAdjustments.length > 0
+      ? studioGroupsFromPsdElements(
+          restoredAdjustments.map((layer) => psdAdjustmentElFromImported(layer, {
+            width: importedWidth,
+            height: importedHeightForAdjustments,
+          })),
+        )
+      : [];
+    const importedGroups = options.psdRepresentation === "composite"
+      ? []
+      : [
+          ...(pending.result.groups ?? []),
+          ...adjustmentGroups.filter(
+            (group) => !(pending.result.groups ?? []).some((existing) => existing.id === group.id),
+          ),
+        ];
     const importedHeight = Math.max(
       1,
       Math.round(pending.result.sourceHeight * pending.result.scale),
@@ -218,7 +266,23 @@ export async function prepareStudioDocumentInterchangeCommit(
       selectedPageId = page.id;
     }
     const skipped = pending.result.skipped.length;
-    const text = `${options.psdRepresentation === "composite" ? "PSD 원본 합성본을" : `${pending.result.elements.length}개 PSD 레이어를`} 적용했어요.${
+    const adjustmentReport = pending.result.adjustmentReport;
+    let adjustmentNote = "";
+    if (options.psdRepresentation === "composite" && (pending.result.adjustmentLayers?.length ?? 0) > 0) {
+      adjustmentNote = " 조정 레이어는 합성본 픽셀에 포함돼 있어 편집 가능한 조정 레이어로는 복원되지 않아요.";
+    } else if (restoredAdjustments.length > 0) {
+      const caveats: string[] = [];
+      if ((adjustmentReport?.counts.approximated ?? 0) > 0) {
+        caveats.push(`근사 ${adjustmentReport!.counts.approximated}개는 픽셀 결과가 원본과 다를 수 있어요`);
+      }
+      if ((adjustmentReport?.counts["preserved-only"] ?? 0) > 0) {
+        caveats.push(`파라미터만 보존 ${adjustmentReport!.counts["preserved-only"]}개는 픽셀에 적용되지 않아요`);
+      }
+      adjustmentNote = ` 조정 레이어 ${restoredAdjustments.length}개도 함께 복원했어요.${
+        caveats.length > 0 ? ` ${caveats.join(" · ")}.` : ""
+      }`;
+    }
+    const text = `${options.psdRepresentation === "composite" ? "PSD 원본 합성본을" : `${pending.result.elements.length}개 PSD 레이어를`} 적용했어요.${adjustmentNote}${
       skipped > 0 ? ` 재현하지 못한 항목 ${skipped}건을 확인해 주세요.` : ""
     }`;
     return {

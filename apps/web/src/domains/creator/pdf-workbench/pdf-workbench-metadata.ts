@@ -190,10 +190,14 @@ export const PDF_METADATA_FIELD_LABELS = {
   author: "저자",
   subject: "주제",
   keywords: "키워드",
+  creator: "만든 도구",
+  producer: "변환 도구",
+  creationDate: "만든 날짜",
+  modificationDate: "수정한 날짜",
 } as const;
 
 export interface PdfMetadataDisplayRow {
-  readonly key: "title" | "author" | "subject" | "keywords";
+  readonly key: keyof typeof PDF_METADATA_FIELD_LABELS;
   readonly label: string;
   /** 표시할 값. 속성이 없으면 undefined — 패널이 행 자체를 숨긴다. */
   readonly value?: string;
@@ -213,4 +217,37 @@ export function describePdfMetadataRows(metadata: PdfDocumentMetadata | undefine
     },
   ];
   return rows.filter((row) => row.value !== undefined);
+}
+
+/** 날짜를 YYYY-MM-DD(UTC 기준)로 표시한다. 날짜가 없거나 깨졌으면 undefined. */
+export function formatPdfSourceDate(date: Date | undefined): string | undefined {
+  if (!date || Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * 소스 속성 표시 행 — 입력 속성 4종에 더해 소스가 실제로 들고 있던 제작 정보
+ * (만든 도구·변환 도구·만든/수정한 날짜)까지 보여 준다. 엔진 inspect가 이미
+ * 읽어 돌려주는 값인데, 예전 표시 행은 4종만 만들어 이 값들이 화면에 닿지
+ * 못했다. 빈 값은 행을 만들지 않는 규칙은 describePdfMetadataRows와 같다.
+ */
+export function describePdfSourceMetadataRows(
+  metadata: PdfSourceMetadata | undefined,
+): readonly PdfMetadataDisplayRow[] {
+  if (!metadata) return [];
+  const extra: PdfMetadataDisplayRow[] = [
+    { key: "creator", label: PDF_METADATA_FIELD_LABELS.creator, value: clean(metadata.creator) },
+    { key: "producer", label: PDF_METADATA_FIELD_LABELS.producer, value: clean(metadata.producer) },
+    {
+      key: "creationDate",
+      label: PDF_METADATA_FIELD_LABELS.creationDate,
+      value: formatPdfSourceDate(metadata.creationDate),
+    },
+    {
+      key: "modificationDate",
+      label: PDF_METADATA_FIELD_LABELS.modificationDate,
+      value: formatPdfSourceDate(metadata.modificationDate),
+    },
+  ];
+  return [...describePdfMetadataRows(metadata), ...extra.filter((row) => row.value !== undefined)];
 }

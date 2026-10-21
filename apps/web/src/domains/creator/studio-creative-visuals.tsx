@@ -438,7 +438,7 @@ export function StudioStabilizerGlyph({ className }: { className?: string }): Re
   );
 }
 
-export type StudioStabilizerModeVisual = "standard" | "adaptive" | "precision";
+export type StudioStabilizerModeVisual = "standard" | "adaptive" | "precision" | "weighted";
 
 /** Stabilizer mode glyphs — jagged → smooth. */
 export function StudioStabilizerModeGlyph({
@@ -453,7 +453,10 @@ export function StudioStabilizerModeGlyph({
       ? "M2 9 L4 5 L6 10 L8 4 L10 9 L12 6"
       : mode === "adaptive"
         ? "M2 8 C4 4, 5 10, 7 6 S11 5, 12 7"
-        : "M2 7 C5 4, 9 4, 12 7";
+        : mode === "weighted"
+          ? // 무게 추 — 가운데가 관성으로 처지는 곡선에 추(점)를 단 모습.
+            "M2 4 C5 11, 9 11, 12 4 M7 9.4 L7 11"
+          : "M2 7 C5 4, 9 4, 12 7";
   return (
     <svg
       aria-hidden

@@ -527,7 +527,7 @@ export interface StudioCanvasViewportProps {
   smudgeRadius: number;
   sourceHydrationPending: boolean;
   stabilizer: number;
-  stabilizerMode: "standard" | "adaptive" | "precision";
+  stabilizerMode: "standard" | "adaptive" | "precision" | "weighted";
   stageRef: import("react").RefObject<import("konva/lib/Stage").Stage | null>;
   strokeWidth: number;
   tipAngle: number;

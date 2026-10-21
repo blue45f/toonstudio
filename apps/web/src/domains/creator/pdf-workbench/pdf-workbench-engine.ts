@@ -292,12 +292,21 @@ export async function buildSplitPdfFiles(input: {
   const plans = buildPdfSplitPlans(input.state, input.ranges);
   const cacheSet = createDocumentCache(input.bytesBySourceId);
   const metadata = resolveOutputMetadata(input);
+  // 속성을 찍기로 했는데(저자 등 입력) 제목만 비어 있으면, 파일마다 자기 파일
+  // 이름을 제목으로 채운다 — 병합 경로가 기본 제목을 채우는 것과 같은 규칙을
+  // 분할에도 맞춘 것. 속성이 전부 비면 기존처럼 아무것도 찍지 않는다.
+  const stampsAnything = Boolean(
+    metadata.title || metadata.author || metadata.subject || (metadata.keywords && metadata.keywords.length > 0),
+  );
   const files: { name: string; bytes: Uint8Array }[] = [];
   for (const plan of plans) {
     if (plan.steps.length === 0) continue;
+    const name = suggestPdfOutputName(input.baseName, plan.label);
+    const fileMetadata =
+      stampsAnything && !metadata.title ? { ...metadata, title: name.replace(/\.pdf$/iu, "") } : metadata;
     files.push({
-      name: suggestPdfOutputName(input.baseName, plan.label),
-      bytes: await buildDocumentFromSteps(cacheSet, plan.steps, metadata),
+      name,
+      bytes: await buildDocumentFromSteps(cacheSet, plan.steps, fileMetadata),
     });
   }
   return files;

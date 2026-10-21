@@ -342,6 +342,38 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     ]));
   });
 
+  it("조정 리포트는 충실도별로 세고, 요약 문구와 래스터 stackIndex를 함께 남긴다", async () => {
+    const psd = samplePsd([
+      leaf({ name: "배경" }),
+      leaf({ name: "레벨1", adjustment: { type: "levels", rgb: { shadowInput: 0, highlightInput: 255, shadowOutput: 0, highlightOutput: 255, midtoneInput: 1 } } }),
+      leaf({ name: "룩업1", adjustment: { type: "color lookup", lookupType: "3dlut", lut3DFileName: "look.cube" } }),
+      leaf({ name: "미래조정", adjustment: { type: "mystery" } as never }),
+    ]);
+    const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(psd));
+    // Studio z-order(뒤→앞): 미래조정(0, 제외) · 룩업(1) · 레벨(2) · 배경(3)
+    expect(result.elements.map((element) => element.stackIndex)).toEqual([3]);
+    expect(result.adjustmentLayers?.map((layer) => layer.stackIndex)).toEqual([1, 2]);
+    expect(result.adjustmentReport).toMatchObject({
+      total: 3,
+      restored: 2,
+      dropped: 1,
+      counts: { exact: 1, approximated: 0, "preserved-only": 1, dropped: 1 },
+    });
+    expect(result.adjustmentReport?.rows.map((row) => [row.name, row.fidelity])).toEqual([
+      ["룩업1", "preserved-only"],
+      ["레벨1", "exact"],
+      ["미래조정", "dropped"],
+    ]);
+    const message = psdImportResultMessage(result);
+    expect(message).toContain("조정 레이어 2개 복원(파라미터만 보존 1)");
+    // 손실 명세의 조정 결정에도 충실도 집계가 드러난다 — 전부 "그대로"로 뭉뚱그리지 않는다.
+    const adjustmentDecision = result.lossManifest?.decisions.find(
+      (decision) => decision.feature === "adjustment-layer" && decision.disposition === "preserved",
+    );
+    expect(adjustmentDecision?.message).toContain("파라미터만 보존 1개");
+    expect(adjustmentDecision?.message).toContain("픽셀에 적용되지 않습니다");
+  });
+
   it("text/smart object/effects/group losses are aggregated without parsing skipped strings", async () => {
     const psd = samplePsd([
       group([

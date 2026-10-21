@@ -12,6 +12,8 @@ import {
   EMPTY_PDF_METADATA_FORM,
   applyPdfMetadata,
   describePdfMetadataRows,
+  describePdfSourceMetadataRows,
+  formatPdfSourceDate,
   formValueFromMetadata,
   hasPdfMetadata,
   metadataFromFormValue,
@@ -85,6 +87,33 @@ describe("describePdfMetadataRows / hasPdfMetadata", () => {
   });
 });
 
+describe("describePdfSourceMetadataRows (소스 제작 정보까지 표시)", () => {
+  it("입력 속성 뒤에 만든 도구·변환 도구·날짜 행을 붙이고 빈 값은 생략한다", () => {
+    const rows = describePdfSourceMetadataRows({
+      title: "제목",
+      creator: "Clip Studio",
+      producer: "pdf-lib",
+      creationDate: new Date(Date.UTC(2026, 0, 2, 15, 30)),
+      modificationDate: new Date(Date.UTC(2026, 9, 22, 1, 2)),
+    });
+    expect(rows.map((row) => row.key)).toEqual([
+      "title",
+      "creator",
+      "producer",
+      "creationDate",
+      "modificationDate",
+    ]);
+    expect(rows.map((row) => row.value)).toEqual(["제목", "Clip Studio", "pdf-lib", "2026-01-02", "2026-10-22"]);
+    expect(describePdfSourceMetadataRows({ author: "저자" }).map((row) => row.key)).toEqual(["author"]);
+    expect(describePdfSourceMetadataRows(undefined)).toEqual([]);
+  });
+
+  it("formatPdfSourceDate는 없는·깨진 날짜를 undefined로 수렴한다", () => {
+    expect(formatPdfSourceDate(undefined)).toBeUndefined();
+    expect(formatPdfSourceDate(new Date(Number.NaN))).toBeUndefined();
+  });
+});
+
 describe("applyPdfMetadata + readPdfMetadata (실제 PDF 바이트 왕복)", () => {
   it("제목·저자·주제·키워드가 결과 PDF에 실제로 기록되고 다시 읽힌다", async () => {
     const stamped = await applyPdfMetadata(await makePdf([100]), FULL);
@@ -144,6 +173,37 @@ describe("엔진 연결 (병합·분할·소스 검사)", () => {
       const read = await readPdfMetadata(file.bytes);
       expect(read.title).toBe(FULL.title);
       expect(read.author).toBe(FULL.author);
+    }
+  });
+
+  it("분할에서 제목만 비어 있으면 파일마다 자기 파일 이름이 제목으로 기록된다", async () => {
+    const { state, bytesBySourceId } = await fixture();
+    const parsed = parsePdfPageRanges("1-2, 3", state.pages.length);
+    if (!parsed.ok) throw new Error("파싱 실패");
+    const files = await buildSplitPdfFiles({
+      state,
+      bytesBySourceId,
+      ranges: parsed.ranges,
+      baseName: "합본.pdf",
+      metadata: { author: "홍길동" },
+    });
+    expect(files.map((file) => file.name)).toEqual(["합본-1-2.pdf", "합본-3.pdf"]);
+    for (const [index, file] of files.entries()) {
+      const read = await readPdfMetadata(file.bytes);
+      expect(read.author).toBe("홍길동");
+      expect(read.title).toBe(index === 0 ? "합본-1-2" : "합본-3");
+    }
+  });
+
+  it("분할에서 속성이 전부 비면 기존처럼 아무것도 기록하지 않는다", async () => {
+    const { state, bytesBySourceId } = await fixture();
+    const parsed = parsePdfPageRanges("1-2, 3", state.pages.length);
+    if (!parsed.ok) throw new Error("파싱 실패");
+    const files = await buildSplitPdfFiles({ state, bytesBySourceId, ranges: parsed.ranges, baseName: "합본.pdf" });
+    for (const file of files) {
+      const read = await readPdfMetadata(file.bytes);
+      expect(hasPdfMetadata(read)).toBe(false);
+      expect(read.producer).not.toBe("ToonStudio");
     }
   });
 

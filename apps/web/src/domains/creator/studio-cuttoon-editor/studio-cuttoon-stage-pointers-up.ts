@@ -251,6 +251,8 @@ export function bindStudioCuttoonStagePointersUp(
     advancedFillColorDropRef,
     setAdvancedFillColorDropView,
     runAdvancedFillColorDropCommit,
+    cancelAdvancedFillColorDropPreview,
+    advancedFillColorDropPreviewBusyRef,
     advancedFillLassoDragRef,
     runAdvancedFillLassoPath,
     advancedFillTapPayloadRef,
@@ -460,13 +462,23 @@ export function bindStudioCuttoonStagePointersUp(
         const dropEnd = endColorDropSession(advancedFillColorDropRef.current, pointerId);
         advancedFillColorDropRef.current = dropEnd.session;
         setAdvancedFillColorDropView(colorDropGestureView(dropEnd.session));
-        if (dropEnd.outcome.type === "commit" && payload && !advancedFillAbortRef.current) {
+        if (
+          dropEnd.outcome.type === "commit" &&
+          payload &&
+          // 실행 중인 것이 이 드래그의 미리보기뿐이면 커밋이 그것을 대체한다.
+          // 그 외 실행(이전 탭 채우기)이 돌고 있으면 종전처럼 커밋하지 않는다.
+          (!advancedFillAbortRef.current || advancedFillColorDropPreviewBusyRef.current)
+        ) {
           // 드래그로 확정된 허용 오차로 실행한다. 탭 인식기는 8px 초과 이동에서
           // 스스로 실행을 막으므로 탭 채우기와 이중 실행되지 않는다.
           void runAdvancedFillColorDropCommit(payload, dropEnd.outcome.tolerance);
           return;
         }
-        // restore(취소성 종료)는 손댈 것이 없다 — 드래그 중 설정을 바꾼 적이 없다.
+        if (dropEnd.outcome.type === "restore") {
+          // 취소성 종료 — 설정은 드래그 중 바뀐 적이 없어 시작값 그대로이고,
+          // 드래그가 만든 실시간 미리보기만 폐기한다.
+          cancelAdvancedFillColorDropPreview();
+        }
       }
       if (outcome.execute && payload && !advancedFillAbortRef.current) {
         void runAdvancedFillAt(payload.position, payload.frame);

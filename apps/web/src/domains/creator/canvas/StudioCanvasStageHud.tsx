@@ -47,7 +47,7 @@ export interface StudioCanvasStageHudContext {
   readonly setZoomLocked: Dispatch<SetStateAction<boolean>>;
   readonly shapeFill: boolean;
   readonly stabilizer: number;
-  readonly stabilizerMode: "standard" | "adaptive" | "precision";
+  readonly stabilizerMode: "standard" | "adaptive" | "precision" | "weighted";
   readonly strokeWidth: number;
   readonly symmetryType: "none" | "vertical" | "horizontal" | "radial" | "kaleidoscope" | "silk";
   readonly t: (key: string) => string;

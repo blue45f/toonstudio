@@ -113,6 +113,26 @@ interface MisspellingEntry {
   readonly severity: DialogueSpellSeverity;
 }
 
+/**
+ * 종성이 ㄹ인 한글 음절 전집 — '-(으)ㄹ게요' 약속 말끝 판정용으로 프로그램으로
+ * 만든다. 약속·의지의 '게요'는 항상 ㄹ받침 음절(할·갈·있을·읽을…) 뒤에 붙으므로,
+ * '께요' 앞 음절이 ㄹ받침일 때만 오기로 본다. 그래야 존댓말 조사 '께'가 붙은
+ * "선생님께요·어머니께요" 같은 올바른 표기를 지적하지 않는다(오탐 0 우선).
+ * 잔여 한계: ㄹ받침으로 끝나는 인명(민철 등)+께요는 여전히 걸릴 수 있다 —
+ * 고유명사 판별은 형태소 분석 없이는 불가능해 문서화된 한계로 남긴다.
+ */
+const L_FINAL_SYLLABLE_CHARS = (() => {
+  let chars = "";
+  for (let initial = 0; initial < 19; initial += 1) {
+    for (let medial = 0; medial < 21; medial += 1) {
+      chars += String.fromCharCode(0xac00 + (initial * 21 + medial) * 28 + 8);
+    }
+  }
+  return chars;
+})();
+
+const KE_YO_PROMISE_PATTERN = new RegExp(`([${L_FINAL_SYLLABLE_CHARS}])께요`, "g");
+
 const MISSPELLINGS: readonly MisspellingEntry[] = [
   {
     pattern: /됬/g,
@@ -187,8 +207,10 @@ const MISSPELLINGS: readonly MisspellingEntry[] = [
     severity: "warning",
   },
   {
-    pattern: /께요/g,
-    replacement: "게요",
+    // 앞 음절이 ㄹ받침일 때만 매치한다(KE_YO_PROMISE_PATTERN, $1은 그 음절) —
+    // 존댓말 조사 '께'+'요'(선생님께요 등)를 오기로 잡던 오탐을 막기 위한 가드.
+    pattern: KE_YO_PROMISE_PATTERN,
+    replacement: "$1게요",
     message: "약속·의지의 말끝은 '할게요'처럼 '게요'로 써요. (존댓말 조사 '께'와 다릅니다)",
     severity: "warning",
   },
@@ -367,9 +389,9 @@ const MISSPELLINGS: readonly MisspellingEntry[] = [
     message: "'들어내다'이 아니라 '드러내다'로 써요.",
     severity: "warning",
   },
-  // 요새·웬일 — '왠지'는 정형이라 건드리지 않는다.
+  // 요새·웬일 — '왠지'는 정형이라 건드리지 않는다. '요세미티'(고유명사)는 제외.
   {
-    pattern: /요세/g,
+    pattern: /요세(?!미티)/g,
     replacement: "요새",
     message: "'요세'이 아니라 '요새'로 써요.",
     severity: "warning",
@@ -905,6 +927,119 @@ const MISSPELLINGS: readonly MisspellingEntry[] = [
     message: "'만히'이 아니라 '많이'로 써요.",
     severity: "warning",
   },
+
+  // ── 사전 확장(3차): 음식·일상 무모호 오기 ──────────────────────────
+  // 정형과 음절이 겹치거나 문맥 판별이 필요한 항목(찌게 단독·베게 등)은
+  // 계속 제외한다 — '김치찌게'처럼 앞말이 고정된 형태만 넣었다.
+  {
+    pattern: /곱배기/g,
+    replacement: "곱빼기",
+    message: "'곱배기'이 아니라 '곱빼기'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /떡볶기/g,
+    replacement: "떡볶이",
+    message: "'떡볶기'이 아니라 '떡볶이'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /수재비/g,
+    replacement: "수제비",
+    message: "'수재비'이 아니라 '수제비'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /뚝빼기/g,
+    replacement: "뚝배기",
+    message: "'뚝빼기'이 아니라 '뚝배기'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /돈까스/g,
+    replacement: "돈가스",
+    message: "'돈까스'이 아니라 '돈가스'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /김치찌게/g,
+    replacement: "김치찌개",
+    message: "'김치찌게'이 아니라 '김치찌개'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /된장찌게/g,
+    replacement: "된장찌개",
+    message: "'된장찌게'이 아니라 '된장찌개'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /순댓국/g,
+    replacement: "순대국",
+    message: "'순댓국'이 아니라 '순대국'으로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /후라이드/g,
+    replacement: "프라이드",
+    message: "'후라이드'이 아니라 '프라이드'로 써요.",
+    severity: "warning",
+  },
+  // 관용·한자어 오기 — 표준 형태가 하나로 정해진 것만.
+  {
+    pattern: /주구장창/g,
+    replacement: "주야장천",
+    message: "'주구장창'이 아니라 '주야장천'으로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /희노애락/g,
+    replacement: "희로애락",
+    message: "'희노애락'이 아니라 '희로애락'으로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /문뜩/g,
+    replacement: "문득",
+    message: "'문뜩'이 아니라 '문득'으로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /번뜩/g,
+    replacement: "번득",
+    message: "'번뜩'이 아니라 '번득'으로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /새카맣/g,
+    replacement: "새까맣",
+    message: "'새카맣'이 아니라 '새까맣'으로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /귀저기/g,
+    replacement: "기저귀",
+    message: "'귀저기'이 아니라 '기저귀'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /작작년/g,
+    replacement: "재작년",
+    message: "'작작년'이 아니라 '재작년'으로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /찝찝/g,
+    replacement: "찜찜",
+    message: "'찝찝'이 아니라 '찜찜'으로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /밤세/g,
+    replacement: "밤새",
+    message: "'밤세'이 아니라 '밤새'로 써요.",
+    severity: "warning",
+  },
 ];
 
 // ── 규칙 2: 띄어쓰기 휴리스틱 ──────────────────────────────────────────────
@@ -1010,15 +1145,21 @@ export function checkDialogueSpelling(
       continue;
     }
 
-    // 자주 틀리는 표기
+    // 자주 틀리는 표기 — 먼저 선언된 항목이 구간을 차지하면 겹치는 후순위는
+    // 건너뛴다(예: '기다릴께요'는 '기다릴께' 항목과 '께요' 범용 항목이 동시에
+    // 걸리는데, 같은 자리를 두 번 지적하면 패널에 중복 제안이 쌓인다).
+    const misspellingSpans: { readonly start: number; readonly end: number }[] = [];
     for (const entry of MISSPELLINGS) {
       for (const match of text.matchAll(entry.pattern)) {
         const start = match.index ?? 0;
+        const end = start + match[0].length;
+        if (misspellingSpans.some((span) => start < span.end && span.start < end)) continue;
+        misspellingSpans.push({ start, end });
         push(item, "common-misspelling", entry.severity, entry.message, {
           matchText: match[0],
           fix: {
             start,
-            end: start + match[0].length,
+            end,
             replacement: match[0].replace(entry.pattern, entry.replacement),
           },
         });

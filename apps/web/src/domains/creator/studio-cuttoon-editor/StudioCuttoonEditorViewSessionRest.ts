@@ -527,6 +527,8 @@ export type StudioCuttoonEditorViewSessionRest = {
   uiAdvancedToolsExpanded: any;
   uiFirstScreenExposure: any;
   setUiAdvancedToolsExpanded: any;
+  saveSyncStore: any;
+  requestSaveFlush: any;
   undo: any;
   undoBrushDelete: any;
   useVelocityPressure: boolean;

@@ -9,6 +9,7 @@ import type {
   StudioInterchangeLossPreviewInput,
 } from "./studio-interchange-loss-preview";
 import type { StudioOpenRasterImportResult } from "./studio-openraster-interchange";
+import { formatPsdAdjustmentReportLines } from "./studio-psd-adjustment-report";
 import type {
   PsdImportResult,
   PsdInterchangeFeature,
@@ -126,6 +127,18 @@ export function createStudioPsdImportLossPreview(
           ? `${decision.message} 대안: ${decision.alternative}`
           : decision.message,
       })) ?? [];
+  // 조정 레이어 대응표·충실도 리포트는 손실 고지와 별개로 항상 보여 준다 —
+  // "전부 복원됨"으로 읽히지 않게 정확/근사/파라미터만 보존/제외를 나눠 표기한다.
+  if (result.adjustmentReport) {
+    const reportLines = formatPsdAdjustmentReportLines(result.adjustmentReport);
+    reportLines.forEach((line, index) => {
+      constraints.push({
+        category: "editability",
+        severity: index < 2 ? "notice" : "warning",
+        message: line,
+      });
+    });
+  }
   constraints.push(...boundedMessages(result.skipped, "editability"));
   if (result.originalFile) constraints.push({
     category: "editability", severity: "notice",
@@ -155,7 +168,7 @@ export function createStudioPsdImportLossPreview(
     fileName,
     source: {
       pageCount: 1,
-      layerCount: result.elements.length,
+      layerCount: result.elements.length + (result.adjustmentLayers?.length ?? 0),
       width: result.sourceWidth,
       height: result.sourceHeight,
       alpha: "unknown",
@@ -166,7 +179,7 @@ export function createStudioPsdImportLossPreview(
     },
     result: {
       pageCount: 1,
-      layerCount: result.elements.length,
+      layerCount: result.elements.length + (result.adjustmentLayers?.length ?? 0),
       width: displayed.width,
       height: displayed.height,
       alpha: "present",
