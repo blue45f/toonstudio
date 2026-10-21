@@ -161,7 +161,7 @@ export function ProductionIntegrationsPanel({
       await action();
       setNotice(success);
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, "외부 연동 작업을 완료하지 못했습니다."));
+      setError(await getApiErrorMessage(cause, t("productionHub.status.integrationActionFailed", "외부 연동 작업을 완료하지 못했습니다.")));
     } finally {
       setBusy(null);
     }
@@ -291,7 +291,7 @@ export function ProductionIntegrationsPanel({
               })}
               className={buttonClass({ size: "sm" })}
             >
-              {busy === "gmail" ? "초안 생성 중…" : "Gmail 초안 만들기"}
+              {busy === "gmail" ? t("productionHub.status.creatingDraft", "초안 생성 중…") : "Gmail 초안 만들기"}
             </button>
           </div>
         </Card>
@@ -335,7 +335,7 @@ export function ProductionIntegrationsPanel({
               })}
               className={buttonClass({ size: "sm" })}
             >
-              {busy === "drive-upload" ? "Drive에 저장 중…" : "Google Drive에 저장"}
+              {busy === "drive-upload" ? t("productionHub.status.savingToDrive", "Drive에 저장 중…") : "Google Drive에 저장"}
             </button>
             {!capabilities?.drive.googleConnected && capabilities?.drive.googleApiConfigured ? (
               <button
@@ -456,7 +456,7 @@ export function ProductionIntegrationsPanel({
               })}
               className={buttonClass({ size: "sm" })}
             >
-              {busy === "documenso" ? "서명 문서 생성 중…" : distribute ? "생성 후 배포" : "서명 초안 만들기"}
+              {busy === "documenso" ? t("productionHub.status.creatingSignatureDocument", "서명 문서 생성 중…") : distribute ? "생성 후 배포" : "서명 초안 만들기"}
             </button>
             <button
               type="button"

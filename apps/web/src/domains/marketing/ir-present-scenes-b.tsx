@@ -49,8 +49,8 @@ export const SCENE_NODES_B: ReactNode[] = [
         </article>
         <article className="diff-card rv">
           <div className="t-label">Professional Drawing</div>
-          <h3>브러시 226종 + 자체 WebGPU 스트로크 렌더링</h3>
-          <p>브라우저라고 얕은 드로잉이 아니에요. G펜부터 질감 브러시까지 <b>226종 브러시 카탈로그</b>와 자체 <b>WebGPU(WGSL) 스트로크 렌더링</b>으로 필압과 스트로크의 질감을 브라우저에서 직접 처리합니다. "웹에서 도는 가벼운 그림판"이 아니라, 전문 작화를 전제로 만든 엔진이에요.</p>
+          <h3>직접 설계·튜닝한 브러시 프리셋 226종 + WebGPU 스트로크 렌더링</h3>
+          <p>브라우저라고 얕은 드로잉이 아니에요. G펜부터 질감 브러시까지 <b>직접 설계·튜닝한 브러시 프리셋 226종</b>과 직접 포팅·패치한 <b>WebGPU(WGSL) 스트로크 렌더링</b>으로 필압과 스트로크의 질감을 브라우저에서 직접 처리합니다. "웹에서 도는 가벼운 그림판"이 아니라, 전문 작화를 전제로 만든 엔진이에요.</p>
         </article>
         <article className="diff-card rv">
           <div className="t-label">Structured Production</div>
@@ -105,15 +105,15 @@ export const SCENE_NODES_B: ReactNode[] = [
           <div className="body">
             <div className="no">DEEP 01 · VIRTUAL STUDIO</div>
             <h3>가상 스튜디오 — 세계관을 무대로</h3>
-            <p>작품의 세계관과 공간을 <b>무대로 구성해 장면을 탐색하는 제작 공간</b>이에요. 클래식 2D 무대 위에 3D 배경(bg3d — 테마 팩 42개 · 배치 가능 에셋 14,665개 · 프리셋 9종)을 올려서, 같은 장소를 여러 각도에서 반복해 쓸 수 있습니다. 배경을 매번 새로 그리는 대신, 무대를 세우고 카메라를 움직이는 거예요.</p>
+            <p>작품의 세계관과 공간을 <b>무대로 구성해 장면을 탐색하는 제작 공간</b>이에요. 클래식 2D 무대 위에 3D 배경(bg3d — 테마 팩 42개 · 배치 가능 에셋 5,303개 · 프리셋 9종)을 올려서, 같은 장소를 여러 각도에서 반복해 쓸 수 있습니다. 배경을 매번 새로 그리는 대신, 무대를 세우고 카메라를 움직이는 거예요.</p>
           </div>
         </article>
         <article className="deep-card text-card rv">
           <div className="engine-visual" aria-hidden="true" style={{ height: 110 }}><i style={{ height: "38%" }} /><i style={{ height: "56%" }} /><i style={{ height: "44%" }} /><i style={{ height: "72%" }} /><i style={{ height: "62%" }} /><i style={{ height: "88%" }} /><i style={{ height: "78%" }} /><i style={{ height: "100%" }} /><i style={{ height: "84%" }} /><i style={{ height: "66%" }} /></div>
           <div className="body">
             <div className="no">DEEP 02 · DRAWING ENGINE</div>
-            <h3>자체 WebGPU 드로잉 엔진</h3>
-            <p>캔버스를 남의 라이브러리에 맡기지 않았어요. <b>WebGPU(WGSL) 픽셀 엔진 + Vello 벡터 포팅</b>으로 필압 브러시와 대형 원고 합성을 브라우저에서 처리합니다. 바뀐 영역만 GPU에 올리는 부분 업로드로, 큰 원고에서도 펜이 늦지 않게 따라와요.</p>
+            <h3>직접 포팅·패치한 WebGPU(Vello) 드로잉 엔진</h3>
+            <p>기본 부품은 검증된 오픈소스를 쓰고, 핵심 기술은 직접 개발했습니다. <b>WebGPU(WGSL) 픽셀 처리 + 직접 포팅·패치한 Vello 벡터 렌더링</b>으로 필압 브러시와 대형 원고 합성을 브라우저에서 처리합니다. 바뀐 영역만 GPU에 올리는 부분 업로드로, 큰 원고에서도 펜이 늦지 않게 따라와요.</p>
           </div>
         </article>
       </div>
@@ -188,12 +188,12 @@ export const SCENE_NODES_B: ReactNode[] = [
   (
     <div className="scene-inner" key="s19">
       <p className="kicker rv">Technology</p>
-      <h2 className="headline rv">브라우저를 얕보지 마세요.<br /><em>엔진부터 직접</em> 만들었어요</h2>
-      <p className="lede rv">캔버스 라이브러리를 가져다 붙인 게 아니에요. 문서·명령·히스토리·협업은 렌더러에 종속되지 않는 정본 모델이 권위를 갖고, 그 아래 렌더링 엔진들을 역할별로 조합하는 <strong>하이브리드 엔진 구조</strong>입니다.</p>
+      <h2 className="headline rv">브라우저를 얕보지 마세요.<br /><em>핵심 기술은 직접</em> 개발했어요</h2>
+      <p className="lede rv">기본 부품은 검증된 오픈소스를 쓰고, 핵심 기술은 직접 개발했습니다. 문서·명령·히스토리·협업은 렌더러에 종속되지 않는 정본 모델이 권위를 갖고, 그 아래 렌더링 엔진들을 역할별로 조합하는 <strong>하이브리드 엔진 구조</strong>입니다.</p>
       <div className="tech-grid">
         <article className="tech-card rv">
           <div className="t-label">Vector Engine</div>
-          <h3>자체 WebGPU 벡터 렌더링 엔진</h3>
+          <h3>직접 포팅·패치한 WebGPU(Vello) 벡터 렌더링 엔진</h3>
           <p>드로잉의 픽셀 권위는 <b>Raw WebGPU / WGSL</b>이 쥐어요. 벡터 렌더링은 Rust 기반 <b>Vello를 웹으로 포팅</b>한 provider가 맡고, 엔진들은 문서 모델 아래에서 교체 가능한 단위로 조합됩니다. 지원하지 않는 조합은 조용히 뭉개지 않고 제출 전에 차단(fail-closed)해요.</p>
           <div className="chips"><span className="chip">WebGPU · WGSL</span><span className="chip">Vello Port</span><span className="chip">RGBA16F Tiles</span><span className="chip">Dirty-rect Upload</span></div>
         </article>

@@ -143,11 +143,16 @@ import {
 } from "./studio-pose-history";
 import {
   createStudioMannequinScene,
+  type StudioMannequinCameraPreset,
   type StudioMannequinCaptureResult,
   type StudioMannequinProjection,
   type StudioMannequinSceneHandle,
 } from "./studio-mannequin-scene";
+import { StudioCompositionGenerationBriefPanel } from "../ai/StudioCompositionGenerationBriefPanel";
+import { buildStudioMannequinCompositionSnapshot } from "./studio-mannequin-composition-snapshot";
 import type { StudioMannequinLightingRig } from "./studio-mannequin-lighting";
+import { StudioMannequinFootGroundingToggle } from "./StudioMannequinFootGroundingToggle";
+import { useStudioMannequinFootGrounding } from "./use-studio-mannequin-foot-grounding";
 import {
   disposeStudioMannequinPoseLandmarker,
   getStudioMannequinWebcamErrorMessage,
@@ -405,8 +410,7 @@ export function StudioMannequinBodySection({
         </div>
         <div className="space-y-2">
           {HEAD_SLIDERS.map(({ key, label, step, format }) => {
-            const [min, max] =
-              STUDIO_MANNEQUIN_HEAD_PARAM_RANGES[key as StudioMannequinHeadParamKey];
+            const [min, max] = STUDIO_MANNEQUIN_HEAD_PARAM_RANGES[key as StudioMannequinHeadParamKey];
             const value = (params[key] as number | undefined) ?? 1.0;
             return (
               <StudioSliderRow
@@ -572,8 +576,7 @@ function MannequinPosePresetCard({
   onApply: (preset: StudioMannequinPosePreset) => void;
   onTogglePin: (presetId: string) => void;
 }): ReactElement {
-  const categoryLabel =
-    STUDIO_MANNEQUIN_POSE_CATEGORIES.find((meta) => meta.id === preset.category)?.label ?? "";
+  const categoryLabel = STUDIO_MANNEQUIN_POSE_CATEGORIES.find((meta) => meta.id === preset.category)?.label ?? "";
   return (
     <div
       className={cn(
@@ -1218,26 +1221,28 @@ export function StudioMannequinPoserPanel({
   const [tab, setTab] = useState<MannequinTabId>("pose");
   const [selectedJointId, setSelectedJointId] = useState<StudioMannequinJointId | null>(null);
   const [projection, setProjection] = useState<StudioMannequinProjection>("perspective");
+  // 구도 브리프(E2) 스냅샷의 근거 — 카메라 프리셋은 씬 핸들 명령과 함께 상태로도 남긴다.
+  const [cameraPreset, setCameraPreset] = useState<StudioMannequinCameraPreset>("home");
+  const [lastPosePresetId, setLastPosePresetId] = useState<string | null>(initialPosePresetId ?? null);
   const [captureScale, setCaptureScale] = useState<number>(2);
   const [capturing, setCapturing] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sceneError, setSceneError] = useState<string | null>(null);
-  const [persistenceStatus, setPersistenceStatus] =
-    useState<StudioMannequinPersistenceStatus>("idle");
-  const [photoPoseApplyStatus, setPhotoPoseApplyStatus] =
-    useState<StudioMannequinPhotoPoseApplyStatus | null>(null);
+  const [persistenceStatus, setPersistenceStatus] = useState<StudioMannequinPersistenceStatus>("idle");
+  const [photoPoseApplyStatus, setPhotoPoseApplyStatus] = useState<StudioMannequinPhotoPoseApplyStatus | null>(null);
+  // 자동 접지(foot-contact) — 포즈 변경·IK 드래그 종료 시 발 관통을 골반 오프셋으로 보정한다.
+  const footGrounding = useStudioMannequinFootGrounding();
+  const groundFootPose = footGrounding.groundPose;
 
   // 포즈 되돌리기/다시실행 히스토리. 웹캠 매 프레임은 기록하지 않고
   // 사용자 결정(프리셋 적용·관절 편집·사진 적용 등) 단위로만 기록한다.
   const poseHistoryRef = useRef<StudioPoseHistory>(createStudioPoseHistory());
-  const [poseHistorySnapshot, setPoseHistorySnapshot] =
-    useState<StudioPoseHistory>(poseHistoryRef.current);
+  const [poseHistorySnapshot, setPoseHistorySnapshot] = useState<StudioPoseHistory>(poseHistoryRef.current);
   const rotateGestureRecordedRef = useRef(false);
 
   const [webcamActive, setWebcamActive] = useState(false);
-  const [webcamLoadingStage, setWebcamLoadingStage] =
-    useState<StudioMannequinWebcamLoadingStage>(null);
+  const [webcamLoadingStage, setWebcamLoadingStage] = useState<StudioMannequinWebcamLoadingStage>(null);
   const [webcamError, setWebcamError] = useState<string | null>(null);
   const [poseFrozen, setPoseFrozen] = useState(false);
   const [mirrorMode, setMirrorMode] = useState(true);
@@ -1296,14 +1301,14 @@ export function StudioMannequinPoserPanel({
     setPoseHistorySnapshot(poseHistoryRef.current);
   }
 
-  /** 사용자 결정(프리셋·미러·초기화·사진 적용 등)으로 포즈를 바꿀 때 사용한다. */
+  /** 사용자 결정(프리셋·미러·초기화·사진 적용 등)으로 포즈를 바꿀 때 사용한다. 자동 접지가 켜져 있으면 커밋 전에 발 관통을 골반 오프셋으로 보정한다. */
   const commitPoseWithHistory = useCallback(
     (nextPose: StudioMannequinPose) => {
       recordPoseHistory();
       rotateGestureRecordedRef.current = true;
-      commitPose(nextPose);
+      commitPose(groundFootPose(nextPose, stateRef.current.params).pose);
     },
-    [commitPose],
+    [commitPose, groundFootPose],
   );
 
   function resetPoseHistoryGesture(): void {
@@ -1359,9 +1364,23 @@ export function StudioMannequinPoserPanel({
     commitPose(step.pose);
   }, [commitPose]);
 
-  const poseHistoryDescription = useMemo(
-    () => describeStudioPoseHistory(poseHistorySnapshot),
-    [poseHistorySnapshot],
+  const poseHistoryDescription = useMemo(() => describeStudioPoseHistory(poseHistorySnapshot), [poseHistorySnapshot]);
+
+  // 구도 → 생성 브리프(E2) 호스트 스냅샷: 지금 포저가 잡은 구도를 패널 계약으로 공급한다.
+  const compositionSnapshot = useMemo(
+    () =>
+      buildStudioMannequinCompositionSnapshot({
+        cameraPreset,
+        heightCm: params.heightCm,
+        posePresetId: lastPosePresetId,
+        poseLabel: lastPosePresetId
+          ? (STUDIO_MANNEQUIN_POSE_PRESETS.find((entry) => entry.id === lastPosePresetId)?.label
+            ?? getWebtoonPosePresetById(lastPosePresetId)?.name
+            ?? null)
+          : null,
+        materialStyle,
+      }),
+    [cameraPreset, lastPosePresetId, materialStyle, params.heightCm],
   );
 
   const releaseHandTrackingResources = useCallback(() => {
@@ -1853,8 +1872,11 @@ export function StudioMannequinPoserPanel({
         initialLightingRig: lightingRigRef.current,
         onSelectJoint: (jointId) => setSelectedJointId(jointId),
         onPoseEdited: (editedPose) => {
-          poseFromSceneRef.current = true;
-          commitPose(editedPose);
+          // IK·직접 드래그 종료 시점에만 접지를 적용한다(드래그 중에는 포즈를 빼앗지 않는다).
+          // 보정이 있으면 씬에도 보정 포즈를 다시 동기화해야 하므로 from-scene 플래그를 내린다.
+          const grounded = groundFootPose(editedPose, stateRef.current.params);
+          poseFromSceneRef.current = !grounded.applied;
+          commitPose(grounded.pose);
         },
       });
       sceneRef.current = handle;
@@ -1877,7 +1899,7 @@ export function StudioMannequinPoserPanel({
       sceneRef.current = null;
       handle.dispose();
     };
-  }, [commitPose, open]);
+  }, [commitPose, groundFootPose, open]);
 
   useEffect(() => {
     sceneRef.current?.setBodySpec(spec);
@@ -1905,6 +1927,7 @@ export function StudioMannequinPoserPanel({
   const applyPosePreset = useCallback((presetId: string) => {
     const preset = STUDIO_MANNEQUIN_POSE_PRESETS.find((entry) => entry.id === presetId);
     if (!preset) return;
+    setLastPosePresetId(presetId);
     // 손 전용 프리셋은 손목만 얹는다 — 힘들여 맞춘 몸 포즈를 지우지 않는 것이 분리 라이브러리의 계약이다.
     if (studioMannequinPosePresetScope(preset) === "hand-only") {
       commitPoseWithHistory(
@@ -1934,6 +1957,7 @@ export function StudioMannequinPoserPanel({
   const applyWebtoonPosePreset = useCallback((presetId: string) => {
     const preset = getWebtoonPosePresetById(presetId);
     if (!preset) return;
+    setLastPosePresetId(presetId);
     const converted = convertWebtoonPresetToMannequinPose(preset);
     // 웹툰 라이브러리의 2인 포즈(포옹·벽치기 등)도 같은 원클릭 상대 배치를 탄다.
     if (preset.figures === 2 || findStudioMannequinDuoComposition(preset.id)) {
@@ -2461,6 +2485,7 @@ export function StudioMannequinPoserPanel({
               <span className="text-[0.66rem] text-fg-3">
                 되돌리기 {poseHistoryDescription.undoCount} · 다시실행 {poseHistoryDescription.redoCount}
               </span>
+              <StudioMannequinFootGroundingToggle enabled={footGrounding.enabled} onToggle={footGrounding.onToggle} lastResult={footGrounding.lastResult} />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               {tab === "shaper" ? (
@@ -2573,6 +2598,7 @@ export function StudioMannequinPoserPanel({
                 </div>
               ) : null}
               {tab === "camera" ? (
+                <>
                 <StudioMannequinCameraSection
                   projection={projection}
                   onProjectionChange={(next) => {
@@ -2581,8 +2607,14 @@ export function StudioMannequinPoserPanel({
                   }}
                   captureScale={captureScale}
                   onCaptureScaleChange={setCaptureScale}
-                  onCameraPreset={(preset) => sceneRef.current?.setCameraPreset(preset)}
-                  onResetCamera={() => sceneRef.current?.resetCamera()}
+                  onCameraPreset={(preset) => {
+                    setCameraPreset(preset);
+                    sceneRef.current?.setCameraPreset(preset);
+                  }}
+                  onResetCamera={() => {
+                    setCameraPreset("home");
+                    sceneRef.current?.resetCamera();
+                  }}
                   onCapture={handleCapture}
                   capturing={capturing}
                   captureDisabled={persistenceStatus !== "ready"}
@@ -2601,6 +2633,13 @@ export function StudioMannequinPoserPanel({
                   facialTracking={facialTracking}
                   onToggleFacialTracking={() => setFacialTracking((prev) => !prev)}
                 />
+                <div className="mt-3 border-t border-line/60 pt-3">
+                  <StudioCompositionGenerationBriefPanel
+                    snapshot={compositionSnapshot}
+                    onInsertCaptureFallback={handleCapture}
+                  />
+                </div>
+                </>
               ) : null}
               <video ref={webcamVideoRef} className="hidden" playsInline muted />
             </div>

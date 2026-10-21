@@ -24,6 +24,7 @@ import {
 } from "./studio-ai-webtoon-style-filter";
 
 import { cn } from "@/shared/lib/utils";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 
 const T = (ko: string) => translateCurrentStaticSourceText(
   "domains.creator.ai.StudioOnnxAnimeStylePanel",
@@ -139,8 +140,7 @@ export function StudioOnnxAnimeStylePanel({
     >
       <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
         <Sparkles size={14} className="text-accent" aria-hidden />
-        {T("애니풍 변환")}
-      </div>
+        {T("애니풍 변환")} <StudioAiConnectionBadge kind="local" detail="기기 변환은 로컬 ONNX로 실행됩니다. 클라우드 변환 버튼은 개인 키가 있을 때만 활성화됩니다." /></div>
 
       <p className="text-[0.68rem] leading-relaxed text-fg-2">
         {T("사진·스케치·컷을 애니메이션 화풍으로 바꿔요. 기기에서 바로 변환하면 원본이 밖으로 나가지 않아요.")}

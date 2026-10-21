@@ -295,11 +295,18 @@ export function resolveStudioBg3dTexturePaintResolution(value: unknown): number 
  * 좌표 변환: UV 원점(0,0)은 텍스처 왼쪽 아래(Three 관례), 캔버스 y는 아래가 양수이므로
  * y = (1 - v) * height 로 뒤집는다. CanvasTexture(flipY 기본 true)와 짝을 이룬다.
  */
-function paintOneStroke(
+/**
+ * 획 1개를 UV 오프셋(정수 타일 단위)만큼 옮겨 그린다. 오프셋 (0,0)이 기본 그리기이고,
+ * ±1 오프셋은 2단계(GLB)의 랩 심 보정이 경계 반대편에 고스트 획을 찍을 때 쓴다 —
+ * 텍스처 wrap이 repeat인 표면에서 u=0과 u=1은 같은 자리라 한쪽만 칠하면 심이 갈라진다.
+ */
+export function paintStudioBg3dTextureStroke(
   context: StudioBg3dPaintCanvas2d,
   stroke: StudioBg3dTexturePaintStroke,
   width: number,
   height: number,
+  offsetU = 0,
+  offsetV = 0,
 ): void {
   context.strokeStyle = stroke.color;
   context.fillStyle = stroke.color;
@@ -310,18 +317,33 @@ function paintOneStroke(
   if (stroke.points.length === 1) {
     const [u, v] = stroke.points[0]!;
     context.beginPath();
-    context.arc(u * width, (1 - v) * height, Math.max(0.5, (stroke.size * width) / 2), 0, Math.PI * 2);
+    context.arc(
+      (u + offsetU) * width,
+      (1 - (v + offsetV)) * height,
+      Math.max(0.5, (stroke.size * width) / 2),
+      0,
+      Math.PI * 2,
+    );
     context.fill();
     return;
   }
   context.beginPath();
   stroke.points.forEach(([u, v], index) => {
-    const x = u * width;
-    const y = (1 - v) * height;
+    const x = (u + offsetU) * width;
+    const y = (1 - (v + offsetV)) * height;
     if (index === 0) context.moveTo(x, y);
     else context.lineTo(x, y);
   });
   context.stroke();
+}
+
+function paintOneStroke(
+  context: StudioBg3dPaintCanvas2d,
+  stroke: StudioBg3dTexturePaintStroke,
+  width: number,
+  height: number,
+): void {
+  paintStudioBg3dTextureStroke(context, stroke, width, height);
 }
 
 export function paintStudioBg3dTexture(

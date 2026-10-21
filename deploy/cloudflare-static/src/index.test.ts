@@ -109,6 +109,7 @@ describe("Cloudflare static gateway", () => {
       "/assets/ort-wasm-simd-threaded.asyncify-*.wasm",
       "/assets/tag2pix-*.onnx",
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
+      "/assets/studio/bundle-v2/*",
       "/brand/toonstudio-product-tour.mp4",
     ]);
     expect(wrangler.assets?.run_worker_first).not.toContain("/market/*");
@@ -456,6 +457,91 @@ describe("Cloudflare static gateway", () => {
     );
     expect(head).not.toHaveBeenCalled();
     expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("serves bundle-v2 GLBs from R2 with the decoded object key", async () => {
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("glb-bytes"));
+    const head = vi.fn(async (_key: string) => null);
+    const upstream = vi.fn<typeof fetch>();
+    const gateway = createCloudflareStaticGateway({ fetch: upstream });
+    const response = await gateway(
+      new Request(
+        "https://www.toonstudio.cloud/assets/studio/bundle-v2/pack-a/native/Some%20Folder/Model%2BA%26B.glb",
+      ),
+      environment({ LARGE_ASSETS: { get, head } }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("glb-bytes");
+    expect(response.headers.get("content-type")).toBe("model/gltf-binary");
+    expect(response.headers.get("cache-control")).toBe(
+      "public, max-age=31536000, immutable, s-maxage=0",
+    );
+    expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
+    expect(get).toHaveBeenCalledWith(
+      "assets/studio/bundle-v2/pack-a/native/Some Folder/Model+A&B.glb",
+      undefined,
+    );
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("serves the bundle-v2 deploy index from R2 with a short cache policy", async () => {
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("{\"files\":5303}"));
+    const head = vi.fn(async (_key: string) => null);
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(
+      new Request("https://www.toonstudio.cloud/assets/studio/bundle-v2/manifest.json"),
+      environment({ LARGE_ASSETS: { get, head } }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("application/json");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=300, s-maxage=0");
+    expect(get).toHaveBeenCalledWith("assets/studio/bundle-v2/manifest.json", undefined);
+  });
+
+  it("fails bundle-v2 requests honestly when the R2 object is missing", async () => {
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => null);
+    const head = vi.fn(async (_key: string) => null);
+    const upstream = vi.fn<typeof fetch>();
+    const gateway = createCloudflareStaticGateway({ fetch: upstream });
+    const response = await gateway(
+      new Request("https://www.toonstudio.cloud/assets/studio/bundle-v2/pack-a/Missing.glb"),
+      environment({ LARGE_ASSETS: { get, head } }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("does not route non-GLB bundle-v2 paths to the large-asset pipeline", async () => {
+    const assetFetch = vi.fn(async () => new Response("static", { status: 200 }));
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("nope"));
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(
+      new Request("https://www.toonstudio.cloud/assets/studio/bundle-v2/pack-a/Textures/atlas.png"),
+      environment({
+        ASSETS: { fetch: assetFetch },
+        LARGE_ASSETS: { get, head: vi.fn(async () => null) },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("static");
+    expect(get).not.toHaveBeenCalled();
   });
 
   it("serves the ONNX JSEP runtime and Tag2Pix model from R2, not Static Assets", async () => {

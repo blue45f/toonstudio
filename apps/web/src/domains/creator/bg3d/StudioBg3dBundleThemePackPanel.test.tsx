@@ -45,15 +45,21 @@ const fixtureRaw = vi.hoisted(() => ({
   totals: { packs: 2, placeableAssets: 3, presets: 1, crowdGlbAssets: 42, deferredAssets: 0 },
 }));
 
+const availabilityStub = vi.hoisted(() => ({
+  value: "available" as "available" | "unavailable",
+}));
+
 vi.mock("./studio-bg3d-bundle-theme-packs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./studio-bg3d-bundle-theme-packs")>();
   return {
     ...actual,
     loadStudioBg3dBundleThemePacks: async () => actual.parseStudioBg3dBundleThemePacks(fixtureRaw),
+    loadStudioBg3dBundleDeployAvailability: async () => availabilityStub.value,
   };
 });
 
 afterEach(() => {
+  availabilityStub.value = "available";
   cleanup();
 });
 
@@ -79,7 +85,9 @@ describe("StudioBg3dBundleThemePackPanel", () => {
     render(<StudioBg3dBundleThemePackPanel onAdd={onAdd} />);
     await screen.findByText(/배치 가능 3종/);
 
-    fireEvent.click(screen.getByRole("button", { name: "장면에 배치" }));
+    const presetButton = screen.getByRole("button", { name: "장면에 배치" }) as HTMLButtonElement;
+    await waitFor(() => expect(presetButton.disabled).toBe(false));
+    fireEvent.click(presetButton);
     expect(onAdd).toHaveBeenCalledWith("cbv1-ingest-city-001");
   });
 
@@ -97,8 +105,25 @@ describe("StudioBg3dBundleThemePackPanel", () => {
 
     const card = document.querySelector("[data-bundle-theme-asset-id='cbv1-ingest-prop-001']");
     if (!card) throw new Error("prop card missing");
-    fireEvent.click(within(card as HTMLElement).getByRole("button", { name: "장면에 추가" }));
+    const addButton = within(card as HTMLElement).getByRole("button", { name: "장면에 추가" }) as HTMLButtonElement;
+    await waitFor(() => expect(addButton.disabled).toBe(false));
+    fireEvent.click(addButton);
     expect(onAdd).toHaveBeenCalledWith("cbv1-ingest-prop-001");
+  });
+
+  it("shows an honest not-deployed state and blocks placement when the deploy index is missing", async () => {
+    availabilityStub.value = "unavailable";
+    const onAdd = vi.fn();
+    render(<StudioBg3dBundleThemePackPanel onAdd={onAdd} />);
+    await screen.findByText(/배치 가능 3종/);
+
+    expect(await screen.findByText(/에셋 파일 배포가 아직 완료되지 않아/)).toBeTruthy();
+    const addButton = screen.getByRole("button", { name: "장면에 배치" }) as HTMLButtonElement;
+    expect(addButton.disabled).toBe(true);
+    fireEvent.click(addButton);
+    expect(onAdd).not.toHaveBeenCalled();
+    // 목록 열람·검색은 배포와 무관하게 계속 쓸 수 있다.
+    expect(document.querySelector("[data-bundle-theme-asset-id='cbv1-ingest-city-001']")).not.toBeNull();
   });
 
   it("keeps crowd packs render-only: listed with the badge and no add buttons", async () => {

@@ -17,6 +17,7 @@ import {
   episodeCharacterIdsForHandoff,
   previousEpisodeStage,
   stageHandoffCharactersFromSheet,
+  stageHandoffScenePlanInputs,
 } from "./stage-handoff-model";
 
 const FULL_PLAN: EpisodePlanWithSynopsis = {
@@ -477,6 +478,49 @@ describe("검수 세션 결정 섹션 (인계 패키지 포함)", () => {
     expect(buildStageHandoff({ ...input, targetStage: "operate" }).sections.map((e) => e.kind)).toContain("reviewSession");
     expect(buildStageHandoff({ ...input, targetStage: "lettering" }).sections.map((e) => e.kind)).not.toContain("reviewSession");
     expect(buildStageHandoff({ ...input, targetStage: "publish" }).sections.map((e) => e.kind)).not.toContain("reviewSession");
+  });
+});
+
+describe("장면 계획 인용 (비트 없을 때 콘티 구성)", () => {
+  const SCENE_PLANS = [
+    { order: 2, purpose: "옥상에서 봉투를 확인한다", emotionalBeat: "긴장" },
+    { order: 1, purpose: "빗속 골목 도입", emotionalBeat: "" },
+    { order: 3, purpose: "", emotionalBeat: "안도" },
+    { order: 4, purpose: "네 번째 장면", emotionalBeat: "" },
+  ] as const;
+
+  it("builds the storyboard section from scene purposes in order, capped at three leads", () => {
+    const result = buildStageHandoff({ scenePlans: SCENE_PLANS, targetStage: "art" });
+    const storyboard = result.sections.find((entry) => entry.kind === "storyboard");
+    expect(storyboard?.sourceStage).toBe("storyboard");
+    expect(storyboard?.lines).toEqual([
+      "장면 4",
+      "빗속 골목 도입",
+      "옥상에서 봉투를 확인한다",
+      "안도",
+    ]);
+    expect(result.missing).not.toContain("storyboard");
+  });
+
+  it("prefers real beats over scene plans when both are supplied", () => {
+    const result = buildStageHandoff({ beats: BEATS, scenePlans: SCENE_PLANS, targetStage: "art" });
+    const storyboard = result.sections.find((entry) => entry.kind === "storyboard");
+    expect(storyboard?.lines[0]).toBe("장면 4 · 비트 5");
+  });
+
+  it("still reports storyboard missing when scene plans are empty", () => {
+    const result = buildStageHandoff({ scenePlans: [], targetStage: "art" });
+    expect(result.missing).toContain("storyboard");
+    expect(result.sections.some((entry) => entry.kind === "storyboard")).toBe(false);
+  });
+
+  it("stageHandoffScenePlanInputs sorts by order and normalizes nulls", () => {
+    expect(stageHandoffScenePlanInputs(SCENE_PLANS).map((plan) => plan.order)).toEqual([1, 2, 3, 4]);
+    expect(stageHandoffScenePlanInputs([{ order: 1 }])[0]).toEqual({
+      order: 1,
+      purpose: null,
+      emotionalBeat: null,
+    });
   });
 });
 

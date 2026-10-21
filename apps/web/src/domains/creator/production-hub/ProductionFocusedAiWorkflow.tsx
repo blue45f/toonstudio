@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import {
   ArrowRight,
   CheckCircle2,
@@ -60,6 +61,7 @@ export function ProductionFocusedAiWorkflow({
   readonly process: ProductionManuscriptProcess | null;
   readonly editorHref: string | null;
 }) {
+  const t = useT();
   const navigate = useNavigate();
   const [plan, setPlan] = useState<ProductionAiAssistPlan>({
     scope: "selection",
@@ -86,7 +88,7 @@ export function ProductionFocusedAiWorkflow({
       setNotice("편집기에서 선택 영역과 실행 조건을 다시 확인합니다. 아직 생성이나 과금은 시작되지 않았습니다.");
       navigate(editorHref);
     } catch {
-      setNotice("AI 보조 요청을 안전하게 전달하지 못했습니다. 편집기에서 직접 도우미를 열어 주세요.");
+      setNotice(t("productionHub.status.aiAssistHandoffFailed", "AI 보조 요청을 안전하게 전달하지 못했습니다. 편집기에서 직접 도우미를 열어 주세요."));
     }
   };
   return <section className="rounded-3xl border border-accent/30 bg-card p-4 sm:p-6" aria-labelledby="focused-ai-title" data-production-focused-ai="">
@@ -143,7 +145,7 @@ export function ProductionFocusedAiWorkflow({
     </div>
 
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-      <p className="text-xs text-fg-3">실패·취소·재시도와 중복 청구 방지는 실제 편집기 실행 경계에서 확인합니다.</p>
+      <p className="text-xs text-fg-3">{t("productionHub.status.aiWorkflowFailurePolicyNote", "실패·취소·재시도와 중복 청구 방지는 실제 편집기 실행 경계에서 확인합니다.")}</p>
       <button type="button" disabled={!process || !editorHref} onClick={launch} className={buttonClass({ className: "min-h-11 gap-2" })}>
         <WandSparkles className="size-4" aria-hidden="true" /> 편집기에서 미리보기·비용 확인 <ArrowRight className="size-4" aria-hidden="true" />
       </button>

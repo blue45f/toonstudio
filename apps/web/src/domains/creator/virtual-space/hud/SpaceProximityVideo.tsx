@@ -82,6 +82,9 @@ function SpaceVideoBubble({ name, stream, visual, muted, self, state, mirrored, 
 
 function peerState(peer: HuddlePeer): { readonly ko: string; readonly en: string; readonly tone: "info" | "bad" } | null {
   if (peer.connection === "failed") return { ko: "직접 연결 실패", en: "Direct link failed", tone: "bad" };
+  // 연결 품질 (C7): 나쁘거나 보통이면 카메라 상태보다 품질 경고를 먼저 보여준다.
+  if (peer.quality?.grade === "poor") return { ko: peer.quality.labelKo, en: peer.quality.labelEn, tone: "bad" };
+  if (peer.quality?.grade === "degraded") return { ko: peer.quality.labelKo, en: peer.quality.labelEn, tone: "info" };
   if (peer.connection === "connected") return peer.camera || peer.sharing ? null : { ko: "카메라 꺼짐", en: "Camera off", tone: "info" };
   if (!peer.camera && !peer.sharing && peer.muted) return { ko: "카메라·마이크 꺼짐", en: "Camera & mic off", tone: "info" };
   return { ko: "연결 중…", en: "Connecting…", tone: "info" };

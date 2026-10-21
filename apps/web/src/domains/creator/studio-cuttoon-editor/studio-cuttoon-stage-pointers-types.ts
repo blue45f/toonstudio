@@ -23,6 +23,9 @@ export type StudioCuttoonStagePointersHost = {
   advancedFillSettingsRef: any;
   setAdvancedFillColorDropView: any;
   runAdvancedFillColorDropCommit: any;
+  previewAdvancedFillColorDrop: any;
+  cancelAdvancedFillColorDropPreview: any;
+  advancedFillColorDropPreviewBusyRef: any;
   advancedRulerSnapRef: any;
   announceDrawingShortcut: any;
   appSettingsRef: any;

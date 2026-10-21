@@ -24,6 +24,7 @@ import type { StudioInspectorFocusTarget } from "./studio-inspector-focus";
 import type { ReactNode } from "react";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export interface StudioInspectorSectionProps {
   /** Must exist in `STUDIO_INSPECTOR_DENSITY` as an advanced-tier group id. */
@@ -46,9 +47,12 @@ export function StudioInspectorSection({
   defaultOpen = false,
   forceOpen = false,
   activeCount = 0,
-  loadingLabel = "설정을 여는 중...",
+  loadingLabel,
   children,
 }: StudioInspectorSectionProps) {
+  const t = useT();
+  const resolvedLoadingLabel =
+    loadingLabel ?? t("studio.canvas.panelLoading.inspectorDefault", "설정을 여는 중...");
   const [open, setOpen] = useState(
     () => forceOpen || readStudioInspectorSectionOpen(sectionId, defaultOpen),
   );
@@ -139,7 +143,7 @@ export function StudioInspectorSection({
           <Suspense
             fallback={
               <div className="mt-2 rounded-lg border border-line bg-card/70 px-3 py-2 text-xs text-fg-3">
-                {loadingLabel}
+                {resolvedLoadingLabel}
               </div>
             }
           >

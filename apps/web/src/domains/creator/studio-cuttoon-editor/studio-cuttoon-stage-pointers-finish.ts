@@ -247,6 +247,7 @@ export function bindStudioCuttoonStagePointersFinish(
     advancedFillTapGestureRef,
     advancedFillColorDropRef,
     setAdvancedFillColorDropView,
+    cancelAdvancedFillColorDropPreview,
     advancedFillTapPayloadRef,
     advancedFillTouchPanRef,
     advancedRulerSnapRef,
@@ -926,6 +927,10 @@ export function bindStudioCuttoonStagePointersFinish(
         const dropEnd = endColorDropSession(advancedFillColorDropRef.current, pointerId, true);
         advancedFillColorDropRef.current = dropEnd.session;
         setAdvancedFillColorDropView(colorDropGestureView(dropEnd.session));
+        if (dropEnd.outcome.type === "restore") {
+          // 취소 복원 — 드래그 미리보기를 폐기하고 시작 허용 오차 그대로 둔다.
+          cancelAdvancedFillColorDropPreview();
+        }
       }
       return;
     }

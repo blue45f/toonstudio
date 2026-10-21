@@ -21,8 +21,8 @@ export const SCENE_NODES_A: ReactNode[] = [
             </a>
           </div>
           <div className="hero-meta rv">
-            <span><b>WebGPU</b> 자체 렌더링 엔진</span>
-            <span><b>14,665</b> 배치 가능 3D 에셋</span>
+            <span><b>WebGPU(Vello)</b> 직접 포팅·패치한 렌더링 엔진</span>
+            <span><b>5,303</b> 배치 가능 3D 에셋</span>
             <span><b>설치 불필요</b> 브라우저 완결</span>
           </div>
         </div>
@@ -139,8 +139,8 @@ export const SCENE_NODES_A: ReactNode[] = [
       <PipelineWidget />
       <p className="ops-title rv">연재 운영을 받쳐 주는 지원 기능</p>
       <div className="ops-grid rv">
-        <div className="ops-item"><b>연재 캘린더 · 예약 발행</b><span>연재 요일에 맞춰 게시일을 잡고, 미리 예약해 둡니다</span></div>
-        <div className="ops-item"><b>단계별 마감 · 리스크 예측</b><span>공정마다 권장 마감과 버퍼를 잡고, 늦을 위험을 먼저 보여줍니다</span></div>
+        <div className="ops-item"><b>연재 캘린더 · 일정</b><span>연재 요일에 맞춰 게시일과 일정을 한곳에서 잡아 둡니다</span></div>
+        <div className="ops-item"><b>단계별 마감 계획</b><span>공정마다 권장 마감과 버퍼를 잡아 단계별 일정을 계획합니다</span></div>
         <div className="ops-item"><b>연재 버퍼 관리</b><span>미리 완성한 회차를 쌓아 둬서 연재 공백을 막습니다</span></div>
         <div className="ops-item"><b>알림 다이제스트 · 정책</b><span>마감과 협업 알림을 모아 보고, 역할마다 받는 방식을 정합니다</span></div>
         <div className="ops-item"><b>공지 · 휴재/복귀 키트</b><span>작가 공지부터 휴재 안내, 복귀 때 줄거리 리캡까지 돕습니다</span></div>
@@ -168,7 +168,7 @@ export const SCENE_NODES_A: ReactNode[] = [
           <div className="desc">장르·시대·공간별 배경 3D 테마 팩이 스튜디오에 바로 연결돼요.</div>
         </div>
         <div className="stat">
-          <div className="num"><span data-count="14665">14,665</span><small>개</small></div>
+          <div className="num"><span data-count="5303">5,303</span><small>개</small></div>
           <div className="label">배치 가능 3D 에셋</div>
           <div className="desc">배경 씬에 그대로 놓고 구도와 원근을 잡을 수 있는 실제 에셋 수예요.</div>
         </div>

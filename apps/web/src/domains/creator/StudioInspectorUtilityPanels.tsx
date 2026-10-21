@@ -28,6 +28,7 @@ import type { PageGrade } from "./studio-page-grade";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export function StudioInspectorDisabledReasons({
   reasons,
@@ -365,6 +366,7 @@ export function StudioInspectorPageGradeSurface({
   panelId?: string;
   panelLabelledBy?: string;
 }) {
+  const t = useT();
   const contentId = useId();
 
   return (
@@ -391,7 +393,7 @@ export function StudioInspectorPageGradeSurface({
             </button>
           </div>
           <div id={contentId}>
-            <Suspense fallback={<StudioPanelLoading label="색보정 패널을 여는 중..." />}>
+            <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.colorCorrectionPanel", "색보정 패널을 여는 중...")} />}>
               <fieldset
                 disabled={gate.disabled}
                 aria-disabled={gate.disabled}

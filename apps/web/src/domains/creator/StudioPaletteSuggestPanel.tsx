@@ -19,6 +19,7 @@ import type { AnswerTuning } from "./ai/answer-tuning";
 import type { PaletteSuggestion } from "./studio-palette-suggest";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { StudioAiConnectionBadge } from "./ai/StudioAiConnectionBadge";
 import { reducedMotion } from "@/shared/hooks/use-in-view";
 
 export function StudioPaletteSuggestPanel({
@@ -65,7 +66,7 @@ export function StudioPaletteSuggestPanel({
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
       <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
         <Palette size={14} />
-        {translateCurrentStaticSourceText("domains.creator.StudioPaletteSuggestPanel", "ko", "AI 색상 팔레트 추천")}</div>
+        {translateCurrentStaticSourceText("domains.creator.StudioPaletteSuggestPanel", "ko", "AI 색상 팔레트 추천")} <StudioAiConnectionBadge configured={configured} /></div>
 
       {!configured ? (
         <AiRecoveryNotice

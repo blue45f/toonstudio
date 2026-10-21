@@ -21,6 +21,7 @@ import {
   markStudioProjectOpened,
   readStudioProjectLibrary,
   STUDIO_PROJECT_LIBRARY_STORAGE_KEY,
+  updateStudioProjectThumbnailUrl,
   type StudioProjectKind,
   type StudioProjectLibraryEntry,
 } from "../studio-project-library-store";
@@ -32,6 +33,10 @@ import {
   STUDIO_SAVE_PROFILE_STORAGE_KEY,
   upsertStudioStorageBinding,
 } from "./studio-save-profile";
+import {
+  restoreStudioSubmissionsForImportedProject,
+  STUDIO_SUBMISSION_STORAGE_KEY,
+} from "./studio-submission-store";
 import {
   STUDIO_PROJECT_WORKSPACE_INDEX_ENTRY,
 } from "./studio-project-workspace-snapshots";
@@ -71,12 +76,16 @@ interface ParsedProjectPackage {
   readonly snapshots: ReadonlyMap<string, StudioAutosavePayload>;
   readonly autoSave: boolean;
   readonly createVersions: boolean;
+  /** distribution/submissions.json 원본 항목 — 복원은 기록 스토어가 검증·재연결한다. */
+  readonly submissions: readonly unknown[];
 }
 
 export interface StudioProjectPackageImportResult {
   readonly project: StudioProjectLibraryEntry;
   readonly documents: readonly StudioProjectDocumentEntry[];
   readonly restoredSnapshotCount: number;
+  /** 되살린 제출 기록 수 (C5 왕복 무결성 — 예전에는 0으로 버려졌다). */
+  readonly restoredSubmissionCount: number;
   readonly href: string;
 }
 
@@ -213,6 +222,13 @@ async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPacka
     await archive.readEntry("storage/profile.json"),
     "storage/profile.json",
   ));
+  const submissionsRaw = jsonValue(
+    await archive.readEntry("distribution/submissions.json"),
+    "distribution/submissions.json",
+  );
+  if (!Array.isArray(submissionsRaw)) {
+    throw new Error("ToonStudio 프로젝트 패키지의 제출 기록이 배열이 아닙니다.");
+  }
   const index = parseWorkspaceIndex(jsonValue(
     await archive.readEntry(`workspace/${STUDIO_PROJECT_WORKSPACE_INDEX_ENTRY}`),
     `workspace/${STUDIO_PROJECT_WORKSPACE_INDEX_ENTRY}`,
@@ -243,6 +259,7 @@ async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPacka
     snapshots,
     autoSave: profile.autoSave !== false,
     createVersions: profile.createVersions !== false,
+    submissions: Object.freeze([...submissionsRaw]),
   });
 }
 
@@ -295,6 +312,7 @@ export async function importStudioProjectPackage(
 
   const libraryBefore = options.storage.getItem(STUDIO_PROJECT_LIBRARY_STORAGE_KEY);
   const profilesBefore = options.storage.getItem(STUDIO_SAVE_PROFILE_STORAGE_KEY);
+  const submissionsBefore = options.storage.getItem(STUDIO_SUBMISSION_STORAGE_KEY);
   const createdAutosaveKeys: string[] = [];
   try {
     const project = createStudioProject(options.storage, {
@@ -307,6 +325,18 @@ export async function importStudioProjectPackage(
       definition: parsed.project.definition,
       createdAt: now,
     }, { target: options.target });
+    // 썸네일 왕복 (C5): createStudioProject는 썸네일을 항상 null로 시작하므로
+    // 패키지에 실린 값을 별도 갱신으로 되살린다. 단 blob: 같은 기기 로컬 참조는
+    // 다른 기기에서 깨진 링크가 되므로(음성 해설 blob 정책과 동일) 복원하지 않는다.
+    const sourceThumbnail = parsed.project.thumbnailUrl;
+    if (
+      typeof sourceThumbnail === "string"
+      && (sourceThumbnail.startsWith("https://") || sourceThumbnail.startsWith("data:image/"))
+    ) {
+      updateStudioProjectThumbnailUrl(options.storage, project.id, sourceThumbnail, {
+        target: options.target,
+      });
+    }
     const restoredDocuments = parsed.documents.map((sourceDocument) => ({
       sourceDocumentId: sourceDocument.id,
       document: createStudioProjectDocument(
@@ -374,17 +404,29 @@ export async function importStudioProjectPackage(
       },
       { now, target: options.target },
     );
+    // 제출 기록 왕복 (C5): 패키지에 실린 기록을 새 프로젝트 id로 재연결해 되살린다.
+    const restoredSubmissions = restoreStudioSubmissionsForImportedProject(
+      options.storage,
+      {
+        sourceProjectId: parsed.project.id,
+        importedProjectId: project.id,
+        entries: parsed.submissions,
+      },
+      { now, target: options.target },
+    );
     return Object.freeze({
       project: readStudioProjectLibrary(options.storage).projects.find(
         (candidate) => candidate.id === project.id,
       ) ?? project,
       documents: Object.freeze(documents),
       restoredSnapshotCount: createdAutosaveKeys.length,
+      restoredSubmissionCount: restoredSubmissions.length,
       href: studioProjectDocumentHref(opened),
     });
   } catch (cause) {
     restoreRaw(options.storage, STUDIO_PROJECT_LIBRARY_STORAGE_KEY, libraryBefore);
     restoreRaw(options.storage, STUDIO_SAVE_PROFILE_STORAGE_KEY, profilesBefore);
+    restoreRaw(options.storage, STUDIO_SUBMISSION_STORAGE_KEY, submissionsBefore);
     options.storage.removeItem(studioProjectDocumentStorageKey(projectId));
     for (const key of createdAutosaveKeys) {
       options.storage.removeItem(key);

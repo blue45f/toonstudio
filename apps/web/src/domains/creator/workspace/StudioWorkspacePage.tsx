@@ -37,6 +37,7 @@ import { StudioWorkspaceSpotlightTour } from "./StudioWorkspaceSpotlightTour";
 import { selectWorkspaceProject, workspacePanel, workspaceProjectLinks, type WorkspaceSurface } from "./studio-workspace-model";
 import { WorkspaceTeamContent, WorkspaceExploreContent } from "./StudioWorkspaceSections";
 import { WorkInviteArrivalBanner } from "../production-hub/WorkInviteArrivalBanner";
+import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 import { StudioWorkspaceProjectPicker } from "./StudioWorkspaceProjectPicker";
 import { StudioWorkspaceActivityRail } from "./StudioWorkspaceActivityRail";
 import { StudioWorkspaceRecentWorks } from "./StudioWorkspaceRecentWorks";
@@ -233,7 +234,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
                 <StudioWorkspaceActivityRail project={project} links={links} resume={resume} resumeLabel={resumeActionLabel} />
               </> : <>
                 <p>{bt("작품을 만들거나 가져오면 이곳에서 이어갈 수 있습니다.", "Create or import a work to continue here.")}</p>
-                <Link href="/studio/new"><Plus size={20} aria-hidden="true" />{bt("새 작품", "New work")}</Link>
+                <Link href={STUDIO_START_GATEWAY_HREF}><Plus size={20} aria-hidden="true" />{bt("새 작품", "New work")}</Link>
                 <Link href="/studio/import">{bt("파일 가져오기", "Import files")}</Link>
               </> : panel === "tools" ? <>
                 <Link href={links.assets}>{project ? bt("현재 작품 소재", "Work materials") : bt("소재 라이브러리", "Materials library")}</Link>
@@ -371,7 +372,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
                   <Link href={links.production}><FolderOpen size={20} aria-hidden="true" /><span><strong>{bt("진행과 담당 작업", "Production and assignments")}</strong><small>{bt("실제 제작 보드에서 상태 확인", "Check the actual production board")}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
                   <Link href={links.space}><MapPin size={20} aria-hidden="true" /><span><strong>{bt("작품 협업 공간", "Work collaboration space")}</strong><small>{bt("이 작품의 팀 공간으로 명시적으로 입장", "Enter this work's team space explicitly")}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
                 </> : <>
-                  <Link href="/studio/new"><Plus size={20} aria-hidden="true" /><span><strong>{bt("새 작품 만들기", "Create a new work")}</strong><small>{bt("형식과 제작 흐름을 선택해 시작", "Choose a format and production flow")}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
+                  <Link href={STUDIO_START_GATEWAY_HREF}><Plus size={20} aria-hidden="true" /><span><strong>{bt("새 작품 만들기", "Create a new work")}</strong><small>{bt("형식과 제작 흐름을 선택해 시작", "Choose a format and production flow")}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
                   <Link href="/studio/import"><FolderOpen size={20} aria-hidden="true" /><span><strong>{bt("기존 파일 가져오기", "Import existing work")}</strong><small>{bt("원본을 보존하며 작업으로 연결", "Preserve the source while bringing it into the workflow")}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
                   <Link href="/hub"><Compass size={20} aria-hidden="true" /><span><strong>{bt("영감 둘러보기", "Explore inspiration")}</strong><small>{bt("작품·소재·사람을 발견", "Discover work, materials and people")}</small></span><ArrowRight size={18} aria-hidden="true" /></Link>
                 </>}
@@ -408,7 +409,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
           {!loading && !library.error && !context.missing ? <Link
             className="workspace-primary"
             data-workspace-resume={project ? "true" : undefined}
-            href={canResume ? links.resume : "/studio/new"}
+            href={canResume ? links.resume : STUDIO_START_GATEWAY_HREF}
           >{canResume
             ? resumeActionLabel ?? (resume?.summary ? bt("이어서 작업", "Resume work") : bt("작품 열기", "Open work"))
             : bt("작품 시작", "Start creating")}<ArrowRight size={18} aria-hidden="true" /></Link> : null}

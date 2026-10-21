@@ -898,7 +898,7 @@ function ProductionWorkBoardForProject({
             </p>
           ) : null}
           <button type="button" disabled={dialogBusy || !canEdit || !previewTasks.length} className={cn(buttonClass(), "mt-5 min-h-11 w-full")} onClick={() => void generate()}>
-            {dialogBusy ? "생성 중…" : `${previewTasks.length}개 공정 작업 생성`}
+            {dialogBusy ? i18nT("productionHub.status.creatingTasks", "생성 중…") : `${previewTasks.length}개 공정 작업 생성`}
           </button>
         </ProductionWorkspaceDialog>
       ) : null}
@@ -934,7 +934,7 @@ function ProductionWorkBoardForProject({
               </p>
             ) : null}
             <button type="submit" disabled={dialogBusy || !canManage || !viewName.trim()} className={cn(buttonClass(), "mt-5 min-h-11 w-full")}>
-              {dialogBusy ? "저장 중…" : "팀 보기 저장"}
+              {dialogBusy ? i18nT("productionHub.status.savingView", "저장 중…") : "팀 보기 저장"}
             </button>
           </form>
         </ProductionWorkspaceDialog>

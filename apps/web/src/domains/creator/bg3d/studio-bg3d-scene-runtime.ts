@@ -14,6 +14,7 @@ import {
   normalizeStudioBg3dConstraintLayer,
   normalizeStudioBg3dGlbAttachment,
   normalizeStudioBg3dMaterialOverride,
+  normalizeStudioBg3dModelTexturePaintPayload,
   normalizeStudioBg3dPoseLayer,
   normalizeStudioBg3dMorphLayer,
   normalizeStudioBg3dSceneDocument,
@@ -439,6 +440,7 @@ function modelNodeFromRuntime(
   }
 
   const rawMaterialOverride = value.materialOverride;
+  const rawModelTexturePaint = value.modelTexturePaint;
   const rawAnimation = value.animation;
   const rawPose = value.pose;
   const rawMorph = value.morph;
@@ -449,6 +451,12 @@ function modelNodeFromRuntime(
       : normalizeRuntimePayloadLosslessly(
         rawMaterialOverride,
         normalizeStudioBg3dMaterialOverride,
+      ),
+    rawModelTexturePaint === undefined
+      ? undefined
+      : normalizeRuntimePayloadLosslessly(
+        rawModelTexturePaint,
+        normalizeStudioBg3dModelTexturePaintPayload,
       ),
     rawAnimation === undefined
       ? undefined
@@ -480,10 +488,11 @@ function modelNodeFromRuntime(
   }
 
   const materialOverride = payloads[0]?.status === "valid" ? payloads[0].value : undefined;
-  const animation = payloads[1]?.status === "valid" ? payloads[1].value : undefined;
-  const pose = payloads[2]?.status === "valid" ? payloads[2].value : undefined;
-  const morph = payloads[3]?.status === "valid" ? payloads[3].value : undefined;
-  const constraints = payloads[4]?.status === "valid" ? payloads[4].value : undefined;
+  const modelTexturePaint = payloads[1]?.status === "valid" ? payloads[1].value : undefined;
+  const animation = payloads[2]?.status === "valid" ? payloads[2].value : undefined;
+  const pose = payloads[3]?.status === "valid" ? payloads[3].value : undefined;
+  const morph = payloads[4]?.status === "valid" ? payloads[4].value : undefined;
+  const constraints = payloads[5]?.status === "valid" ? payloads[5].value : undefined;
   return {
     node: {
       id: value.id,
@@ -504,6 +513,7 @@ function modelNodeFromRuntime(
         ? { linkedSourceId: value.linkedSourceId }
         : {}),
       ...(materialOverride ? { materialOverride } : {}),
+      ...(modelTexturePaint ? { modelTexturePaint } : {}),
       ...(animation ? { animation } : {}),
       ...(pose ? { pose } : {}),
       ...(morph ? { morph } : {}),
@@ -858,6 +868,19 @@ export function hydrateStudioBg3dDocumentToRuntime(
       parentId: node.parentId ?? null,
       linkedSourceId: node.linkedSourceId,
       materialOverride: node.materialOverride ? { ...node.materialOverride } : undefined,
+      modelTexturePaint: node.modelTexturePaint ? {
+        ...node.modelTexturePaint,
+        targets: node.modelTexturePaint.targets.map((target) => ({
+          targetKey: target.targetKey,
+          paint: {
+            ...target.paint,
+            strokes: target.paint.strokes.map((stroke) => ({
+              ...stroke,
+              points: stroke.points.map((point) => [...point] as [number, number]),
+            })),
+          },
+        })),
+      } : undefined,
       animation: node.animation ? { ...node.animation } : undefined,
       pose: node.pose ? {
         ...node.pose,

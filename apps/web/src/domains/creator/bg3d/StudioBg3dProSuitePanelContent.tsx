@@ -132,7 +132,7 @@ export function StudioBg3dProSuitePanel({
         })}
       </div>
       {TOOLS.map((tool) => <div key={tool.id} role="tabpanel" id={`${id}-${tool.id}-panel`} aria-labelledby={`${id}-${tool.id}-tab`} hidden={activeTab !== tool.id}>
-        {visited.has(tool.id) && <Suspense fallback={<StudioPanelLoading label="제작 도구를 불러오는 중입니다." />}>
+        {visited.has(tool.id) && <Suspense fallback={<StudioPanelLoading label={t("제작 도구를 불러오는 중입니다.", "Loading production tools.")} />}>
           {tool.id === "lens" && <StudioBg3dCompositionLensPanel disabled={locked} />}
           {tool.id === "director" && runtime && <Director disabled={locked || activeTab !== "director" || runtime.proSuiteActive === false} />}
           {tool.id === "multipass" && runtime?.productionBatch && <MultiPass disabled={locked} />}

@@ -19,6 +19,7 @@ import { StudioWorkspaceNavigator } from "../StudioWorkspaceNavigator";
 import { Container } from "@/shared/components/container";
 import { cn } from "@/shared/lib/utils";
 import { StudioCuttoonEditorChrome } from "./StudioCuttoonEditorChrome";
+import { StudioSaveStatusChromeMount } from "../StudioSaveStatusChromeMount";
 import { StudioCuttoonEditorContextMenu } from "./StudioCuttoonEditorContextMenu";
 import { StudioCuttoonEditorDialogs } from "./StudioCuttoonEditorDialogs";
 import { StudioCuttoonEditorHosts } from "./StudioCuttoonEditorHosts";
@@ -163,6 +164,20 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
         )}
       >
         <StudioCuttoonEditorChrome {...s} />
+        {s.saveSyncStore ? (
+          <StudioSaveStatusChromeMount
+            store={s.saveSyncStore}
+            onRequestSaveFlush={s.requestSaveFlush}
+            publishSuggestion={{
+              // 1회성 기억의 단위는 문서(오토세이브 키)다 — 문서가 바뀌면 새 첫 게시 흐름으로 본다.
+              scope: s.saveIntentScope?.documentKey ?? s.effectiveWorkId ?? s.workId ?? "new-work",
+              cutCount: s.activePage?.elements?.length ?? 0,
+              alreadyPublished: s.loadedWork?.status === "published",
+              // "게시 준비 확인하기"의 도착지는 호스트의 게시 사전검사(게시 센터)다.
+              onCheckPublishReady: () => s.setPublishPreflightOpen(true),
+            }}
+          />
+        ) : null}
         <Suspense fallback={null}>
         <StudioDraftSaveCenter
           key={JSON.stringify([s.saveIntentScope, s.effectiveWorkId ?? s.workId ?? "new-work"])}

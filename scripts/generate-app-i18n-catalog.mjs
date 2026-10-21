@@ -24,6 +24,15 @@ const completenessReportPath = path.join(
   "lib",
   "i18n-locale-completeness-report.json",
 );
+const exhaustionPlanPath = path.join(
+  repoRoot,
+  "apps",
+  "web",
+  "src",
+  "shared",
+  "lib",
+  "i18n-locale-exhaustion-plan.json",
+);
 
 /** Locales compiled into the app shell so the fallback chain never awaits I/O. */
 const BUILT_IN_LOCALES = ["ko", "en"];
@@ -208,6 +217,83 @@ export function formatLocaleCompletenessReport(report) {
   return lines.join("\n");
 }
 
+/**
+ * Catalog exhaustion plan (G7): in which order locales and, inside each locale, namespaces
+ * should be finished, derived only from the measured completeness report — never hand-ranked.
+ *
+ * Locale order: completenessRatio descending (the closest locale to done goes first, so each
+ * finished locale is a fully usable surface instead of 73 half-finished ones), then
+ * translatedKeyCount descending, then locale code ascending for determinism.
+ * Namespace order inside a locale: partially translated namespaces first (fewest remaining
+ * keys first — finishing a namespace removes a whole English surface), then untouched
+ * namespaces (fewest keys first), then namespace name ascending for determinism. A namespace
+ * whose English source has no keys (reverse-authored) has nothing to exhaust and is skipped.
+ * Namespaces already fully translated for the locale are listed as completed, not queued.
+ */
+export function buildLocaleExhaustionPlan(report, namespaceDictionaries) {
+  const namespaces = [...namespaceDictionaries.keys()].sort();
+  const rankedLocales = [...report].sort(
+    (a, b) =>
+      b.completenessRatio - a.completenessRatio ||
+      b.translatedKeyCount - a.translatedKeyCount ||
+      (a.locale < b.locale ? -1 : a.locale > b.locale ? 1 : 0),
+  );
+
+  const locales = rankedLocales.map((entry, index) => {
+    const queue = [];
+    const completedNamespaces = [];
+    for (const namespace of namespaces) {
+      const byLocale = namespaceDictionaries.get(namespace);
+      const reference = byLocale?.get(REFERENCE_LOCALE) ?? {};
+      const referenceKeys = Object.keys(reference);
+      if (referenceKeys.length === 0) continue;
+      const dictionary = byLocale?.get(entry.locale) ?? {};
+      let translatedKeyCount = 0;
+      for (const key of referenceKeys) {
+        if (dictionary[key] === undefined) continue;
+        if (entry.locale === REFERENCE_LOCALE || dictionary[key] !== reference[key]) {
+          translatedKeyCount++;
+        }
+      }
+      const remainingKeyCount = referenceKeys.length - translatedKeyCount;
+      if (remainingKeyCount === 0) {
+        completedNamespaces.push(namespace);
+      } else {
+        queue.push({
+          namespace,
+          referenceKeyCount: referenceKeys.length,
+          translatedKeyCount,
+          remainingKeyCount,
+          status: translatedKeyCount === 0 ? "untouched" : "partial",
+        });
+      }
+    }
+    queue.sort(
+      (a, b) =>
+        (a.status === b.status ? 0 : a.status === "partial" ? -1 : 1) ||
+        a.remainingKeyCount - b.remainingKeyCount ||
+        (a.namespace < b.namespace ? -1 : a.namespace > b.namespace ? 1 : 0),
+    );
+    return {
+      locale: entry.locale,
+      rank: index + 1,
+      completenessRatio: entry.completenessRatio,
+      translatedKeyCount: entry.translatedKeyCount,
+      referenceKeyCount: entry.referenceKeyCount,
+      remainingKeyCount: entry.referenceKeyCount - entry.translatedKeyCount,
+      status: entry.translationInProgress ? "in-progress" : "complete",
+      completedNamespaces,
+      namespaceQueue: queue,
+    };
+  });
+
+  return {
+    threshold: COMPLETENESS_IN_PROGRESS_THRESHOLD,
+    referenceLocale: REFERENCE_LOCALE,
+    locales,
+  };
+}
+
 export function buildCatalogSource(dictionaries) {
   const reference = dictionaries.get(REFERENCE_LOCALE);
   if (!reference) {
@@ -276,12 +362,20 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.met
   writeFileSync(catalogPath, source, "utf8");
   process.stdout.write(`wrote ${path.relative(repoRoot, catalogPath)}\n`);
 
-  const report = buildLocaleCompletenessReport(readAppLocaleNamespaceDictionaries());
+  const namespaceDictionaries = readAppLocaleNamespaceDictionaries();
+  const report = buildLocaleCompletenessReport(namespaceDictionaries);
   writeFileSync(completenessReportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   const inProgress = report.filter((entry) => entry.translationInProgress);
   process.stdout.write(
     `wrote ${path.relative(repoRoot, completenessReportPath)} `
     + `(${report.length} locales, ${inProgress.length} 번역 진행 중)\n`,
+  );
+  const plan = buildLocaleExhaustionPlan(report, namespaceDictionaries);
+  writeFileSync(exhaustionPlanPath, `${JSON.stringify(plan, null, 2)}\n`, "utf8");
+  const nextLocale = plan.locales.find((entry) => entry.status === "in-progress");
+  process.stdout.write(
+    `wrote ${path.relative(repoRoot, exhaustionPlanPath)} `
+    + `(소진 순서 1순위 미완료 로케일: ${nextLocale ? nextLocale.locale : "없음"})\n`,
   );
   process.stdout.write(`${formatLocaleCompletenessReport(report)}\n`);
 }

@@ -9,16 +9,16 @@ import type {
 
 // Postgres 트래픽 리더 — 수집 파이프라인이 쌓는 public.traffic_page_view를
 // 시리즈(slug) 단위로 집계한다. 봇(is_bot)은 관리자 개요와 같은 기준으로 제외한다.
-// D1 저장소(TRAFFIC_ANALYTICS_STORE=d1) 배포에서는 이 리더를 등록하지 않는다
-// (creator-analytics.source-provider.ts) — 비어 있는 Postgres를 읽어 0을
-// 실측처럼 내는 일이 없게 하기 위해서다.
+// D1 저장소(TRAFFIC_ANALYTICS_STORE=d1) 배포에서는 D1 리더
+// (creator-analytics.traffic-d1-repository.ts)가 같은 계약으로 집계한다.
+// 어느 쪽이든 저장소가 선택되지 않은 리더를 읽어 0을 실측처럼 내지 않는다.
 
-interface PathViewsRow {
+export interface PathViewsRow {
   path: string;
   views: number;
 }
 
-interface SourceVisitsRow {
+export interface SourceVisitsRow {
   source: string;
   medium: string;
   visits: number;
@@ -92,13 +92,14 @@ export class PostgresCreatorAnalyticsTrafficReader
   }
 }
 
-function escapeLikePattern(value: string): string {
+/** LIKE 패턴에서 패턴 문자(\, %, _)를 이스케이프한다. D1 리더와 공유한다. */
+export function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
 // 경로 그룹을 상세 조회와 회차 조회로 나눈다. /title/:slug/episodes 같은
-// 리다이렉트 경로는 소비로 세지 않고 버린다.
-function splitPathViews(
+// 리다이렉트 경로는 소비로 세지 않고 버린다. D1 리더와 공유한다.
+export function splitPathViews(
   detailPath: string,
   rows: readonly PathViewsRow[],
 ): { detailViews: number; episodeViews: Map<number, number> } {

@@ -15,7 +15,7 @@
 
 import {
   PDF_METADATA_FIELD_LIMITS,
-  describePdfMetadataRows,
+  describePdfSourceMetadataRows,
   formValueFromMetadata,
   hasPdfMetadata,
   type PdfMetadataFormValue,
@@ -107,7 +107,7 @@ export function PdfWorkbenchMetadataPanel({ value, onChange, sources, disabled }
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">소스 문서 속성</h3>
           {sources.map((source) => {
-            const rows = describePdfMetadataRows(source.metadata);
+            const rows = describePdfSourceMetadataRows(source.metadata);
             return (
               <div
                 key={source.id}
@@ -119,7 +119,7 @@ export function PdfWorkbenchMetadataPanel({ value, onChange, sources, disabled }
                   <dl className="mt-1.5 flex flex-col gap-1">
                     {rows.map((row) => (
                       <div key={row.key} className="flex gap-2 text-xs">
-                        <dt className="w-12 shrink-0 text-neutral-500 dark:text-neutral-400">{row.label}</dt>
+                        <dt className="w-20 shrink-0 text-neutral-500 dark:text-neutral-400">{row.label}</dt>
                         <dd className="min-w-0 break-words text-neutral-800 dark:text-neutral-100">{row.value}</dd>
                       </div>
                     ))}

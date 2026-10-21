@@ -11,7 +11,7 @@ import {
 
 import { STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS } from "./studio-mannequin-model";
 import { STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN } from "./studio-mannequin-lighting";
-import { STUDIO_MANNEQUIN_POSE_PRESETS, normalizeStudioMannequinPose } from "./studio-mannequin-poses";
+import { STUDIO_MANNEQUIN_POSE_PRESETS, normalizeStudioMannequinPose, type StudioMannequinPose } from "./studio-mannequin-poses";
 
 import { snapshotStudioMannequinLightingPlan, type StudioMannequinSceneHandle } from "./studio-mannequin-scene";
 
@@ -1135,5 +1135,42 @@ describe("StudioMannequinPoserPanel", () => {
       expect(sceneHandle.setPose).toHaveBeenCalledTimes(4);
     });
     expect(screen.getByText("되돌리기 2 · 다시실행 0")).toBeTruthy();
+  });
+
+  it("IK 드래그 종료(onPoseEdited)에서 발이 관통하면 자동 접지가 골반을 들어 씬에 다시 동기화한다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+    const options = vi.mocked(createScene).mock.calls[0]?.[0] as {
+      onPoseEdited: (pose: StudioMannequinPose) => void;
+    };
+    vi.mocked(sceneHandle.setPose).mockClear();
+
+    // 서 있는 자세에서 전체가 5cm 가라앉은 드래그 결과 — 발바닥 관통 구간이다.
+    act(() => {
+      options.onPoseEdited({ joints: {}, pelvisOffset: [0, -0.05, 0] });
+    });
+    await waitFor(() => {
+      expect(sceneHandle.setPose).toHaveBeenCalledTimes(1);
+    });
+    const grounded = vi.mocked(sceneHandle.setPose).mock.calls[0]?.[0];
+    expect(grounded?.pelvisOffset[1]).toBeCloseTo(0, 5);
+    expect(screen.getByRole("button", { name: /자동 접지 ON/ })).toBeTruthy();
+  });
+
+  it("자동 접지 토글을 끄면 IK 드래그 종료에도 관통을 보정하지 않는다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+    const options = vi.mocked(createScene).mock.calls[0]?.[0] as {
+      onPoseEdited: (pose: StudioMannequinPose) => void;
+    };
+    fireEvent.click(screen.getByRole("button", { name: /자동 접지 ON/ }));
+    expect(screen.getByRole("button", { name: /자동 접지 OFF/ })).toBeTruthy();
+    vi.mocked(sceneHandle.setPose).mockClear();
+
+    act(() => {
+      options.onPoseEdited({ joints: {}, pelvisOffset: [0, -0.05, 0] });
+    });
+    // 보정이 없으면 씬이 이미 그 포즈라 다시 동기화하지 않는다.
+    expect(sceneHandle.setPose).not.toHaveBeenCalled();
   });
 });

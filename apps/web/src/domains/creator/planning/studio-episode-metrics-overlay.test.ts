@@ -7,6 +7,7 @@ import {
   episodeMetricsStatusLine,
   formatEpisodeMetricsBadge,
   formatEpisodeMetricsDetail,
+  formatEpisodeTrafficSummary,
   resolveEpisodeMetricsLoad,
   type EpisodeMetricsLoad,
 } from "./studio-episode-metrics-overlay";
@@ -142,6 +143,45 @@ describe("episode metrics overlay — no live data means no numbers", () => {
     expect(
       episodeMetricsStatusLine(buildEpisodeMetricsOverlay(REFS, { status: "error", response: null })),
     ).toContain("불러오지 못했어요");
+  });
+});
+
+describe("episode metrics overlay — series traffic and total views (F3)", () => {
+  it("carries sanitized traffic sources, the top source and the views KPI", () => {
+    const overlay = buildEpisodeMetricsOverlay(REFS, {
+      status: "live",
+      response: liveResponse({
+        kpis: [{ key: "views", value: 25300, deltaPct: -4.26 }],
+        trafficSources: [
+          { source: "direct", labelKo: "직접 방문", labelEn: "Direct", visits: 500, sharePct: 20 },
+          { source: "naver", labelKo: "naver 검색", labelEn: "naver (search)", visits: 2000, sharePct: 80 },
+          { source: "empty", labelKo: "빈 경로", labelEn: "Empty", visits: 0, sharePct: 0 },
+        ],
+      }),
+    });
+    // 방문 0인 경로는 버리고 방문 내림차순으로 정렬한다.
+    expect(overlay.trafficSources.map((source) => source.source)).toEqual(["naver", "direct"]);
+    expect(overlay.topTrafficSource?.labelKo).toBe("naver 검색");
+    expect(overlay.totalTrafficVisits).toBe(2500);
+    expect(overlay.totalViews).toBe(25300);
+    // 증감은 음수도 그대로 보존한다 (줄어든 것을 늘어난 것처럼 보이지 않게).
+    expect(overlay.totalViewsDeltaPct).toBe(-4.3);
+    expect(formatEpisodeTrafficSummary(overlay)).toBe(
+      "시리즈 유입 1위 naver 검색 · 방문 2,000 (80%)",
+    );
+  });
+
+  it("keeps traffic and totals empty when not live", () => {
+    const overlay = buildEpisodeMetricsOverlay(REFS, {
+      status: "not-connected",
+      response: null,
+    });
+    expect(overlay.trafficSources).toEqual([]);
+    expect(overlay.topTrafficSource).toBeNull();
+    expect(overlay.totalTrafficVisits).toBe(0);
+    expect(overlay.totalViews).toBeNull();
+    expect(overlay.totalViewsDeltaPct).toBeNull();
+    expect(formatEpisodeTrafficSummary(overlay)).toBeNull();
   });
 });
 

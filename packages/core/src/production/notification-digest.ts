@@ -24,14 +24,19 @@ export function groupProductionNotifications(aggregate: ProductionProjectAggrega
   const policy = (aggregate.notificationPolicies ?? []).find((entry) => entry.assignmentId === assignmentId);
   const timezone = policy?.timezone ?? (aggregate.resourceCalendars ?? []).find((entry) => entry.assignmentId === assignmentId)?.timezone ?? null;
   const groups = new Map<string, ProductionNotification[]>();
-  if (!aggregate.assignments.some((entry) => entry.id === assignmentId && entry.status === "active")) return { groups: [], quiet: "unknown" as const, policy, timezone };
+  if (!aggregate.assignments.some((entry) => entry.id === assignmentId && entry.status === "active")) return { groups: [], quiet: "unknown" as const, policy, timezone, mutedCount: 0 };
+  // 유형별 끄기(G1): 정책이 켜져 있고 mutedTypes에 든 유형은 묶음에서 제외하고
+  // 숨긴 건수를 돌려줘 화면이 "왜 안 보이는지"를 고지할 수 있게 한다.
+  const mutedTypes = policy?.enabled ? new Set(policy.mutedTypes ?? []) : new Set<never>();
+  let mutedCount = 0;
   for (const notification of aggregate.notifications ?? []) {
     if (notification.projectId !== aggregate.projectId || notification.status !== "unread" || (notification.assignmentId !== null && notification.assignmentId !== assignmentId)) continue;
+    if (mutedTypes.has(notification.type)) { mutedCount += 1; continue; }
     const key = JSON.stringify([notification.sourceType, notification.sourceId, notification.assignmentId]);
     const entries = groups.get(key) ?? []; entries.push(notification); groups.set(key, entries);
   }
   return { groups: [...groups.entries()].map(([key, entries]) => ({ key,
     entries: [...entries].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
   })).sort((a, b) => Date.parse(b.entries[0]!.createdAt) - Date.parse(a.entries[0]!.createdAt)),
-  quiet: productionQuietHours(policy, timezone, now), policy, timezone };
+  quiet: productionQuietHours(policy, timezone, now), policy, timezone, mutedCount };
 }

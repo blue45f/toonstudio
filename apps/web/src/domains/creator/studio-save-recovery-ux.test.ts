@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type { StudioConnectivitySnapshot } from "./offline/studio-connectivity";
 import {
+  advanceSaveRecoveryAnnouncement,
+  initialSaveRecoveryAnnouncementState,
   resolveSaveRecoveryView,
   saveRecoveryAnnouncement,
+  saveRecoveryAnnouncementForSequence,
   type SaveRecoveryKind,
 } from "./studio-save-recovery-ux";
 import type { StudioSaveSyncStatus } from "./studio-operation-recovery-coordinator";
@@ -93,6 +96,56 @@ describe("resolveSaveRecoveryView", () => {
     expect(
       resolveSaveRecoveryView(status({ pendingOperationsCount: 1 }), connectivity("online")).kind,
     ).toBe("saving");
+  });
+});
+
+describe("saveRecoveryAnnouncementForSequence (C6 상태 전이열)", () => {
+  it("keeps the recovered announcement across the full offline → recheck → syncing → saved path", () => {
+    // 실제 복구 동선: 오프라인 감지 → 로컬 보존 표시(offline) → 연결 재확인
+    // (reconnecting) → 보류분 동기화(saving) → 동기화 확인(saved).
+    // 한 쌍 판정(saving→saved)으로는 "saved"로 뭉개지던 전이열이다.
+    expect(
+      saveRecoveryAnnouncementForSequence(["saved", "offline", "reconnecting", "saving", "saved"]),
+    ).toBe("recovered");
+    expect(
+      saveRecoveryAnnouncementForSequence(["saved", "server-unavailable", "reconnecting", "saved"]),
+    ).toBe("recovered");
+  });
+
+  it("announces a plain save when no connection problem preceded it", () => {
+    expect(saveRecoveryAnnouncementForSequence(["saved", "saving", "saved"])).toBe("saved");
+    expect(saveRecoveryAnnouncementForSequence(["saved"])).toBe("none");
+    expect(saveRecoveryAnnouncementForSequence([])).toBe("none");
+  });
+
+  it("requires a fresh saved confirmation after a failure before reporting recovery", () => {
+    let state = initialSaveRecoveryAnnouncementState("saved");
+    let step = advanceSaveRecoveryAnnouncement(state, "failed");
+    expect(step.announcement).toBe("failed");
+    state = step.state;
+    step = advanceSaveRecoveryAnnouncement(state, "saving");
+    expect(step.announcement).toBe("none");
+    state = step.state;
+    step = advanceSaveRecoveryAnnouncement(state, "saved");
+    expect(step.announcement).toBe("recovered");
+    // 한 번 확인된 뒤의 일반 저장은 다시 "saved"다.
+    state = step.state;
+    step = advanceSaveRecoveryAnnouncement(state, "saving");
+    step = advanceSaveRecoveryAnnouncement(step.state, "saved");
+    expect(step.announcement).toBe("saved");
+  });
+
+  it("does not announce connection-lost twice for offline → server-unavailable drift", () => {
+    let state = initialSaveRecoveryAnnouncementState("saved");
+    let step = advanceSaveRecoveryAnnouncement(state, "offline");
+    expect(step.announcement).toBe("connection-lost");
+    state = step.state;
+    step = advanceSaveRecoveryAnnouncement(state, "server-unavailable");
+    // 종류가 달라 전이로 잡히지만, 이미 연결 상실을 알린 구간이라 최종
+    // 알림은 connection-lost 유지 + 확인 대기도 유지된다.
+    expect(step.state.syncConfirmationPending).toBe(true);
+    step = advanceSaveRecoveryAnnouncement(step.state, "saved");
+    expect(step.announcement).toBe("recovered");
   });
 });
 

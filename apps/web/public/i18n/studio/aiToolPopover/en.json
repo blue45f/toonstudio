@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Text AI provider",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server text AI provider",
   "studio.aiToolPopover.serverProviderAuto": "Auto switch",
-  "studio.aiToolPopover.serverFallbackMessage": "If quota or package limit is used up, we switch to another provider. To prevent duplicate billing, errors are not automatically retried."
+  "studio.aiToolPopover.serverFallbackMessage": "If quota or package limit is used up, we switch to another provider. To prevent duplicate billing, errors are not automatically retried.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

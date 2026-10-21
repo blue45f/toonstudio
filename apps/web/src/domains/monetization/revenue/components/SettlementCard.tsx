@@ -9,6 +9,7 @@ import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
+import { getPayoutAvailability } from "../models/payout-availability";
 import {
   computeSettlementBreakdown,
   formatKrw,
@@ -82,6 +83,12 @@ export function SettlementCard({
           rate: breakdown.creatorEffectiveTakeRatePercent,
         })}
       </p>
+
+      {!getPayoutAvailability().submissionEnabled ? (
+        <p role="status" className="mt-2 text-xs font-semibold leading-relaxed text-accent">
+          {t("revenue.payout.notAvailableTitle")}
+        </p>
+      ) : null}
 
       {onPayoutClick && (
         <button

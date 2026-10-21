@@ -12,6 +12,7 @@ import { studioStrokeFocusActivitySnapshot, subscribeStudioStrokeFocusActivity }
 import { acquireStudioHuddleAudioFocus } from "./studio-p2p-huddle-audio-focus";
 import { resolveStudioHuddleAuthority, type StudioHuddleAuthority } from "./studio-p2p-huddle-authority";
 import { canRetryStudioHuddleConnection, resolveStudioHuddleAvailability, STUDIO_HUDDLE_AVAILABILITY_COPY } from "./studio-p2p-huddle-availability";
+import { validateStudioExternalMeetingLink } from "./studio-p2p-call-quality";
 
 export default function StudioP2pHuddleLauncher({ placement = "floating" }: { readonly placement?: "floating" | "inline" } = {}) {
   const live = useStudioLiveCollaboration();
@@ -30,6 +31,7 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
   const [open, setOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<HuddleSnapshot | null>(null);
   const [draft, setDraft] = useState("");
+  const [externalMeetingLink, setExternalMeetingLink] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [deafened, setDeafened] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -77,7 +79,7 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
   }, []);
   const leave = useCallback(() => {
     disposeSession();
-    setSnapshot(null); setDraft(""); setBusy(false); setDeafened(false); setProximityMedia(true);
+    setSnapshot(null); setDraft(""); setExternalMeetingLink(""); setBusy(false); setDeafened(false); setProximityMedia(true);
   }, [disposeSession]);
   useEffect(() => {
     proximityPeerIds.current = null;
@@ -180,6 +182,17 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
     const owner = controller.current; setBusy(true);
     try { await action(); } finally { if (controller.current === owner) setBusy(false); }
   }
+  function openExternalMeeting(event: FormEvent) {
+    event.preventDefault();
+    // P2P가 막힌 환경의 대안: 검증된 회의 링크만 새 탭으로 연다 (외부 서비스 연동 아님).
+    const verdict = validateStudioExternalMeetingLink(externalMeetingLink);
+    if (!verdict.ok) {
+      setNotice(bt("회의 링크를 확인해 주세요. 알려진 회의 서비스의 https 링크만 열 수 있습니다.", "Check the meeting link. Only https links from known meeting services can be opened."));
+      return;
+    }
+    setNotice(null);
+    globalThis.open(verdict.url, "_blank", "noopener,noreferrer");
+  }
   function submit(event: FormEvent) {
     event.preventDefault();
     if (controller.current?.sendChat(draft)) { setDraft(""); setNotice(null); }
@@ -257,7 +270,8 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
             {snapshot?.peers.map((peer) => <div key={peer.participant.sessionId}>
               <MediaTile name={peer.participant.displayName} stream={peer.stream} muted={deafened} visual={peer.camera || peer.sharing} />
               <p className="mt-1 text-[11px] text-fg-3">{peer.muted ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "마이크 꺼짐") : translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "마이크 켜짐")} {peer.hand ? "✋" : ""} {peer.reaction ?? ""}
-                {peer.connection === "failed" ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", " · 연결 실패") : peer.connection === "connected" ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", " · 직접 연결") : ""}</p>
+                {peer.connection === "failed" ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", " · 연결 실패") : peer.connection === "connected" ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", " · 직접 연결") : ""}
+                {peer.quality ? <span data-studio-p2p-peer-quality={peer.quality.grade}>{" · "}{peer.quality.labelKo}</span> : null}</p>
               <button type="button" className="min-h-11 text-[11px] text-fg-3 underline" onClick={() => controller.current?.block(peer.participant.sessionId)}>
                 {peer.participant.displayName} {translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "이 세션에서 차단")}</button>
             </div>)}
@@ -273,6 +287,13 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
               {message.self && <span className="text-[10px] text-fg-3">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "전송 ")}{message.sent.length}/{message.targets.length} {translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "· 수신 확인 ")}{message.received.length}/{message.targets.length}</span>}
             </div>)}
           </div>
+          <form onSubmit={openExternalMeeting} className="flex gap-2">
+            <label className="sr-only" htmlFor="studio-p2p-external-meeting">{bt("외부 회의 링크", "External meeting link")}</label>
+            <input id="studio-p2p-external-meeting" value={externalMeetingLink} autoComplete="off" inputMode="url"
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-2 text-xs"
+              placeholder={bt("P2P가 막히면 외부 회의 링크 붙이기 (Meet·Zoom·Teams)", "If P2P is blocked, paste an external meeting link (Meet, Zoom, Teams)")} onChange={(event) => setExternalMeetingLink(event.target.value)} />
+            <button type="submit" className={controlClass} disabled={!externalMeetingLink.trim()}>{bt("외부 회의 열기", "Open meeting")}</button>
+          </form>
           <form onSubmit={submit} className="flex gap-2">
             <label className="sr-only" htmlFor="studio-p2p-message">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "P2P 메시지")}</label>
             <input id="studio-p2p-message" value={draft} maxLength={HUDDLE_TEXT_LIMIT} autoComplete="off"

@@ -92,7 +92,7 @@ describe("클래스 페이지", () => {
     expect(screen.getByRole("heading", { name: /완성까지 가는 클래스/u })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "첫 회차 완성 마스터클래스" })).toBeTruthy();
     expect(screen.getByText("990P")).toBeTruthy();
-    expect(screen.getByText("활동 포인트로 등록")).toBeTruthy();
+    expect(screen.getAllByText("활동 포인트로 등록")).toHaveLength(3);
     expect(screen.getByText("무료")).toBeTruthy();
     expect(screen.getByText("포인트 없이 바로 등록")).toBeTruthy();
     expect(screen.queryByText(/99,000원/u)).toBeNull();

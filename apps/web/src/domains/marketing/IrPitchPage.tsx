@@ -191,7 +191,7 @@ export function IrPitchPage() {
         <ul className="grid gap-3 md:grid-cols-2">
           {[
             { ko: "아직 비어 있는 자리 — 브라우저에서 전문 드로잉 + 전 공정 통합", en: "A position still open — pro drawing + full process, in a browser" },
-            { ko: "전문 브러시 226종 · WebGPU 스트로크 렌더링", en: "226 pro brushes · WebGPU stroke rendering" },
+            { ko: "직접 설계·튜닝한 전문 브러시 프리셋 226종 · WebGPU 스트로크 렌더링", en: "226 pro brush presets, designed and tuned in-house · WebGPU stroke rendering" },
             { ko: "1인부터 소규모 팀까지 한곳에서 협업 (대규모는 설계·로드맵)", en: "Collaboration in one place, solo to small teams (large studios: design & roadmap)" },
             { ko: "회차-공정-담당-승인, 웹툰식 분업을 그대로 내장", en: "Episodes, processes, owners, approvals — the webtoon way, built in" },
           ].map((item) => (
@@ -420,8 +420,8 @@ export function IrPitchPage() {
               en: { title: "A position still open", body: "Pro tools live in desktop apps, and collaboration tools stop at managing outputs. Nobody has yet put pro drawing and the whole process together in a browser." },
             },
             {
-              ko: { title: "전문 브러시 226종 · WebGPU 스트로크 렌더링", body: "직접 포팅한 WebGPU 벡터 렌더러(Vello)가 획을 GPU로 그려 줘서, 브라우저에서도 전문 브러시의 질감과 속도가 그대로 나와요." },
-              en: { title: "226 pro brushes · WebGPU stroke rendering", body: "Our own WebGPU vector renderer (Vello) draws strokes on the GPU, so professional brush feel and speed hold up right in the browser." },
+              ko: { title: "직접 설계·튜닝한 전문 브러시 프리셋 226종 · WebGPU 스트로크 렌더링", body: "직접 포팅·패치한 WebGPU 벡터 렌더러(Vello)가 획을 GPU로 그려 줘서, 브라우저에서도 전문 브러시의 질감과 속도가 그대로 나와요." },
+              en: { title: "226 pro brush presets, designed and tuned in-house · WebGPU stroke rendering", body: "A WebGPU vector renderer (Vello) that we ported and patched ourselves draws strokes on the GPU, so professional brush feel and speed hold up right in the browser." },
             },
             {
               ko: { title: "1인부터 팀까지, 한곳에서 협업", body: "지금은 1인 작가와 소규모 팀이 실제로 연재하는 흐름에 맞춰 설계하고 검증하고 있어요. 대규모 스튜디오로 넓히는 건 같은 구조를 키우는 일이라, 지원 설계와 로드맵 단계로 구분해 둡니다." },

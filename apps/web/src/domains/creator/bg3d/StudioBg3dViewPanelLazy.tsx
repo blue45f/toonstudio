@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from "react";
 
 import type { StudioBg3dViewPanelProps } from "./StudioBg3dViewPanelContent";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
+import { useT } from "@/shared/lib/i18n";
 
 const ViewPanel = lazy(() =>
   import("./StudioBg3dViewPanel").then(({ StudioBg3dViewPanel }) => ({
@@ -11,6 +12,7 @@ const ViewPanel = lazy(() =>
 
 /** Load on first use, then retain the mounted panel across tab switches. */
 export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
+  const t = useT();
   const [activated, setActivated] = useState(!props.hidden);
   // A guarded update of this component records the first visible render without an effect or
   // a mutable ref. Later hidden renders must preserve the panel's in-progress UI state.
@@ -21,7 +23,7 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
     <Suspense
       fallback={
         <div hidden={props.hidden}>
-          <StudioPanelLoading label="보기 도구를 불러오는 중입니다." />
+          <StudioPanelLoading label={t("studio.canvas.panelLoading.viewTools", "보기 도구를 불러오는 중입니다.")} />
         </div>
       }
     >

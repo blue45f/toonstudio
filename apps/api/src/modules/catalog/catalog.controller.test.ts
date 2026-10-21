@@ -181,6 +181,29 @@ describe("CatalogController cover SSRF boundary", () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
+  it("pins the recorded cache policy: revalidatable, no immutable, width variants split by URL", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(png, { headers: { "content-type": "image/png" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.png", res as unknown as Response, "320", undefined
+    );
+    // 2026-10-14 확인 기록(catalog.controller.ts): 제3자 저작물 킬스위치 때문에 immutable을
+    // 쓰지 않는 의도된 정책 — 브라우저 1시간·엣지 1일·SWR 1일. w는 URL 캐시 키라 폭 변형이
+    // 분리 캐시되고, 협상 결과 공유는 Vary: Accept가 막는다. 값을 바꾸려면 이 테스트와
+    // 컨트롤러 주석의 확인 기록을 함께 갱신할 것.
+    expect(res.setHeader).toHaveBeenCalledWith(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400"
+    );
+    expect(res.setHeader).toHaveBeenCalledWith("Vary", "Accept");
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
   it("forwards a standard width as a Width hint and ignores non-standard widths", async () => {
     vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
     const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);

@@ -94,6 +94,17 @@ describe("Studio 3D Advanced Pose & Hand Expression Library", () => {
     const sitting = filterWebtoonPosePresets({ category: "sitting" });
     expect(sitting.length).toBeGreaterThanOrEqual(3);
 
+    // G8 장르 상황 확장: 판타지 시전·기사 맹세·SF 조종석·무중력 부유.
+    expect(ADVANCED_WEBTOON_POSES.length).toBe(23);
+    expect(getWebtoonPosePresetById("action-spell-cast")?.category).toBe("action");
+    expect(getWebtoonPosePresetById("dramatic-knight-oath")?.tags).toContain("판타지");
+    expect(filterWebtoonPosePresets({ query: "조종석" }).map((pose) => pose.id)).toEqual([
+      "sitting-mech-pilot",
+    ]);
+    expect(filterWebtoonPosePresets({ query: "무중력" }).map((pose) => pose.id)).toEqual([
+      "daily-astronaut-float",
+    ]);
+
     const byQuery = filterWebtoonPosePresets({ query: "검" });
     expect(byQuery.some((pose) => pose.id === "action-sword-slash")).toBe(true);
 

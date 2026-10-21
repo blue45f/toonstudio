@@ -39,6 +39,9 @@ import {
   episodeStateLabel,
   type ProductionLocalize,
 } from "./production-labels";
+import { CollabThreadDeepLinkCard } from "./CollabThreadDeepLinkCard";
+import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
+import { ProductionDeadlineRiskForecast } from "./ProductionDeadlineRiskForecast";
 import { ProductionStageDeadlinePlan } from "./ProductionStageDeadlinePlan";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -269,6 +272,10 @@ function EpisodeOperationsCard({
 
       <ProductionStageDeadlinePlan aggregate={aggregate} episodeId={row.episode.episodeId} />
 
+      <div className="mt-3">
+        <ProductionDeadlineRiskForecast aggregate={aggregate} episodeId={row.episode.episodeId} />
+      </div>
+
       {row.riskyTasks.length > 0 || row.overdueTasks.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {[...new Map([...row.overdueTasks, ...row.riskyTasks].map((task) => [task.id, task])).values()].slice(0, 6).map((task) => (
@@ -324,6 +331,7 @@ function NewEpisodeForm({
   readonly suggestedDate: Date;
 }) {
   const episodeNumber = nextEpisodeNumber(aggregate);
+  const bt = useBilingual("ProductionEpisodeOperationsWorkspace.labels");
   const [title, setTitle] = useState(`${episodeNumber}화 제목 미정`);
   const [releaseDraft, setReleaseDraft] = useState(toDateTimeLocal(suggestedDate.toISOString()));
   const [submitting, setSubmitting] = useState(false);
@@ -439,7 +447,7 @@ function NewEpisodeForm({
           />
         </label>
         <button type="submit" className={buttonClass({ size: "sm" })} disabled={!canEdit || submitting || !title.trim() || !releaseDraft}>
-          <Sparkles className="size-3.5" aria-hidden="true" />{submitting ? "회차 생성 중…" : `${episodeNumber}화 생성`}
+          <Sparkles className="size-3.5" aria-hidden="true" />{submitting ? bt("회차 생성 중…", "Creating episode…") : `${episodeNumber}화 생성`}
         </button>
       </div>
     </form>
@@ -452,6 +460,7 @@ export function ProductionEpisodeOperationsWorkspace({
   canEdit,
 }: ProductionEpisodeOperationsWorkspaceProps) {
   const [filter, setFilter] = useState<Filter>("active");
+  const bt = useBilingual("ProductionEpisodeOperationsWorkspace.labels");
   const overview = useMemo(() => deriveProductionOperationsOverview(aggregate), [aggregate]);
   const rows = overview.rows.filter((row) => {
     if (filter === "all") return true;
@@ -462,7 +471,7 @@ export function ProductionEpisodeOperationsWorkspace({
   const operationsWarning = overview.criticalCount > 0
     ? `${overview.criticalCount}개 회차가 즉시 조치가 필요합니다.`
     : overview.readyBufferCount === 0
-      ? "게시 준비 버퍼가 없습니다. 다음 회차를 병행하거나 연재 주기를 조정하세요."
+      ? bt("게시 준비 버퍼가 없습니다. 다음 회차를 병행하거나 연재 주기를 조정하세요.", "There is no publish-ready buffer. Prepare the next episode in parallel or adjust the release cadence.")
       : `${overview.readyBufferCount}개 회차가 게시 버퍼로 준비되어 있습니다.`;
   const warningTone = overview.criticalCount > 0 ? "danger" : overview.readyBufferCount === 0 ? "warning" : "success";
 
@@ -491,11 +500,18 @@ export function ProductionEpisodeOperationsWorkspace({
         </div>
       </header>
 
+      <CollabThreadDeepLinkCard workId={aggregate.workId} />
+
+      {/* 단계 인계: 운영 시작 화면에서 다음 게시 회차의 앞 단계 산출(기획·검수 맥락)을 자동 인용한다. */}
+      {nextRelease ? (
+        <EpisodeStageHandoffSection aggregate={aggregate} episodeId={nextRelease.episode.episodeId} targetStage="operate" />
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           label="다음 게시"
           value={nextRelease ? relativeDeadline(nextRelease.daysUntilRelease) : "미정"}
-          detail={nextRelease ? `${nextRelease.episodeNumber ? `${nextRelease.episodeNumber}화` : nextRelease.episode.episodeId} · ${formatDateTime(nextRelease.releaseAt)}` : "게시 마감이 있는 회차가 없습니다."}
+          detail={nextRelease ? `${nextRelease.episodeNumber ? `${nextRelease.episodeNumber}화` : nextRelease.episode.episodeId} · ${formatDateTime(nextRelease.releaseAt)}` : bt("게시 마감이 있는 회차가 없습니다.", "No episode has a publish deadline.")}
           icon={CalendarClock}
           tone={nextRelease?.health === "critical" ? "danger" : "accent"}
         />
@@ -518,7 +534,7 @@ export function ProductionEpisodeOperationsWorkspace({
       <section className="space-y-3" aria-label="회차 운영 목록">
         {rows.map((row) => <EpisodeOperationsCard key={row.episode.id} aggregate={aggregate} row={row} execute={execute} canEdit={canEdit} />)}
         {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-line p-8 text-center"><Gauge className="mx-auto size-6 text-fg-3" aria-hidden="true" /><p className="mt-3 font-bold text-fg">표시할 회차가 없습니다</p><p className="mt-1 text-xs text-fg-2">필터를 바꾸거나 다음 회차를 생성하세요.</p></div>
+          <div className="rounded-2xl border border-dashed border-line p-8 text-center"><Gauge className="mx-auto size-6 text-fg-3" aria-hidden="true" /><p className="mt-3 font-bold text-fg">{bt("표시할 회차가 없습니다", "No episodes to show")}</p><p className="mt-1 text-xs text-fg-2">필터를 바꾸거나 다음 회차를 생성하세요.</p></div>
         ) : null}
       </section>
 

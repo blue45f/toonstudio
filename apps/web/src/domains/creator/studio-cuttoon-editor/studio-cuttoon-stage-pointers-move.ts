@@ -249,6 +249,8 @@ export function bindStudioCuttoonStagePointersMove(
     advancedFillTapGestureRef,
     advancedFillColorDropRef,
     setAdvancedFillColorDropView,
+    previewAdvancedFillColorDrop,
+    advancedFillTapPayloadRef,
     advancedFillLassoDragRef,
     advancedFillTouchPanRef,
     autoColorScribbleCanvasArmed,
@@ -477,8 +479,9 @@ export function bindStudioCuttoonStagePointersMove(
         );
         advancedFillTapGestureRef.current = gesture;
         if (advancedFillColorDropRef.current) {
-          // ColorDrop 드래그 — 설정을 바꾸면 미리보기가 무효화되므로 드래그 중에는
-          // 세션과 패널 표시(퍼센트)만 따라가고, 실행은 pointerup 커밋에서 일어난다.
+          // ColorDrop 드래그 — 허용 오차가 바뀔 때마다 패널 표시(퍼센트)와 실시간
+          // 미리보기가 함께 따라간다. 설정 자체는 손을 뗄 때(commit)만 바뀌므로
+          // 드래그 중 미리보기는 시작 시점 설정을 기준으로 다시 계산된다.
           const dropMove = moveColorDropSession(
             advancedFillColorDropRef.current,
             pointerId,
@@ -487,6 +490,8 @@ export function bindStudioCuttoonStagePointersMove(
           advancedFillColorDropRef.current = dropMove.session;
           if (dropMove.previewTolerance !== null) {
             setAdvancedFillColorDropView(colorDropGestureView(dropMove.session));
+            const payload = advancedFillTapPayloadRef.current;
+            if (payload) previewAdvancedFillColorDrop(payload, dropMove.previewTolerance);
           }
         }
         const pan = advancedFillTouchPanRef.current;

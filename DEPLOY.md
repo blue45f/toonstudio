@@ -174,6 +174,10 @@ GitHub는 OAuth App의 Client ID/Secret을 Core API에 주입합니다. 자세�
 
 ## 5. 배포 후 점검
 
+- 제품 투어 Remotion 게이트(정적 웹 배포 시): `docs/operations/product-tour-remotion-release-gate.md`의
+  G5-1·G5-2를 배포 직후 실행한다 — `node scripts/verify-product-tour-live.mjs`로 Remotion 재생
+  (MP4 폴백 아님)·내레이션·자막·챕터를 확인하고 결과를 기록한다. 청크 단일 인스턴스(G5-3)는
+  CI core 잡이 빌드 직후에 본다.
 - 프론트 도메인 접속 → 홈/검색/랭킹이 로드되는지 확인.
 - `GET https://<domain>/api/auth/providers`가 200인지 확인.
 - `GET https://<domain>/api/ranking?axis=popular&period=daily&limit=5`가 `meta.source="formula-api"`와 스냅샷 산식 fallback reason을 반환하는지 확인.

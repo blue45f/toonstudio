@@ -22,11 +22,15 @@ export type StudioLiveAdjustmentRenderTree =
   | { kind: "underlay"; id: string }
   | { kind: "content"; id: string; element: El; index: number; clipBase?: StudioLiveAdjustmentRenderTree }
   | { kind: "group"; id: string; children: StudioLiveAdjustmentRenderTree[] }
-  | { kind: "adjustment"; id: string; index: number; element: StudioLiveAdjustmentElement; composite: string; isolatedSource: boolean; children: StudioLiveAdjustmentRenderTree[] };
+  | { kind: "adjustment"; id: string; index: number; element: StudioLiveAdjustmentElement; composite: string; isolatedSource: boolean; children: StudioLiveAdjustmentRenderTree[] }
+  | { kind: "adjustment-el"; id: string; index: number; element: Extract<El, { type: "adjustment" }>; isolatedSource: boolean; children: StudioLiveAdjustmentRenderTree[] };
 
 function treeComposite(node: StudioLiveAdjustmentRenderTree | undefined): string {
   if (!node || node.kind === "group" || node.kind === "underlay") return "source-over";
   if (node.kind === "adjustment") return node.composite;
+  // 문서 조정 레이어(AdjustmentEl)의 블렌드·불투명도는 픽셀 패스 안에서 적용되므로
+  // 그룹 자체의 합성은 항상 source-over다.
+  if (node.kind === "adjustment-el") return "source-over";
   return node.element.type === "draw" && node.element.mode === "eraser"
     ? "destination-out" : node.element.blendMode ?? "source-over";
 }
@@ -34,6 +38,17 @@ function treeComposite(node: StudioLiveAdjustmentRenderTree | undefined): string
 function foldScope(nodes: StudioLiveAdjustmentRenderTree[]): StudioLiveAdjustmentRenderTree[] {
   const output: StudioLiveAdjustmentRenderTree[] = [];
   for (const node of nodes) {
+    if (node.kind === "content" && node.element.type === "adjustment") {
+      // 문서 조정 레이어(AdjustmentEl) — 라이브 조정과 같은 접기 규칙을 쓴다:
+      // 클립이면 바로 아래 일반 요소 1개만, 아니면 아래쪽 전체를 자식으로 삼는다.
+      const isolatedSource = node.element.clipToBelow === true;
+      const children = isolatedSource
+        ? output[output.length - 1]?.kind === "underlay" ? [] : output.splice(-1)
+        : output.splice(0);
+      output.push({ kind: "adjustment-el", id: node.id, index: node.index, element: node.element,
+        isolatedSource, children });
+      continue;
+    }
     if (node.kind !== "content" || !isStudioLiveAdjustment(node.element)) {
       const previous = output[output.length - 1];
       // The placeholder carries no alpha. A normal clipped layer needs the folded composite.
@@ -86,6 +101,6 @@ export function studioLiveAdjustmentObjectRevision(value: object): number {
 export function studioLiveAdjustmentRenderRevision(node: StudioLiveAdjustmentRenderTree): string {
   if (node.kind === "underlay") return `underlay:${node.id}`;
   if (node.kind === "content") return `content:${studioLiveAdjustmentObjectRevision(node.element)}:${node.clipBase ? studioLiveAdjustmentRenderRevision(node.clipBase) : ""}`;
-  const own = node.kind === "adjustment" ? studioLiveAdjustmentObjectRevision(node.element) : node.id;
+  const own = node.kind === "adjustment" || node.kind === "adjustment-el" ? studioLiveAdjustmentObjectRevision(node.element) : node.id;
   return `${node.kind}:${own}[${node.children.map(studioLiveAdjustmentRenderRevision).join(",")}]`;
 }

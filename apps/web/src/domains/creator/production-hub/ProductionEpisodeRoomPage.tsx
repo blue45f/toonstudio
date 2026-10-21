@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { ProductionClarificationAnswer } from "./ProductionClarificationAnswer";
+import { ProductionCollabInboxSection } from "./ProductionCollabInboxSection";
 import { ProductionEpisodeQcChecklist } from "./ProductionEpisodeQcChecklist";
 import { ProductionEpisodeReviewRoom } from "./ProductionEpisodeReviewRoom";
 import { ProductionProjectHeader } from "./ProductionProjectHeader";
@@ -336,6 +337,10 @@ export function ProductionEpisodeRoomPage() {
         />
 
         <ProductionEpisodeQcChecklist aggregate={aggregate} episodeId={episode.episodeId} />
+
+        <section className="rounded-2xl border border-line bg-card p-4" aria-label={bt("이 회차의 협업 알림", "Collaboration alerts for this episode")}>
+          <ProductionCollabInboxSection aggregate={aggregate} actorId={actorId} episodeId={episode.episodeId} />
+        </section>
 
         <div className="grid gap-4 xl:grid-cols-3">
           <ProductionSectionCard

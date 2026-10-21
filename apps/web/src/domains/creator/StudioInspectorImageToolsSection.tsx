@@ -327,7 +327,7 @@ export function StudioInspectorSelectedImageTools({
                       ) : null}
                       {shouldMountImageInspectorTab("quick") ? (
                       <div className="space-y-3" hidden={activeImageInspectorTab !== "quick"}>
-                        <Suspense fallback={<StudioPanelLoading label="빠른 이미지 도구를 여는 중..." />}>
+                        <Suspense fallback={<StudioPanelLoading labelKey="studio.canvas.panelLoading.quickImageTools" labelFallback="빠른 이미지 도구를 여는 중..." />}>
                           {!selectedWorkAssetDestructiveEditReason ? (
                             <>
                               <StudioBgRemoveButton
@@ -406,7 +406,7 @@ export function StudioInspectorSelectedImageTools({
                   )}
                   {shouldMountImageInspectorTab("fill") ? (
                   <div className="space-y-3" hidden={activeImageInspectorTab !== "fill"}>
-                    <Suspense fallback={<StudioPanelLoading label="채우기·선화 도구를 여는 중..." />}>
+                    <Suspense fallback={<StudioPanelLoading labelKey="studio.canvas.panelLoading.fillAndLineTools" labelFallback="채우기·선화 도구를 여는 중..." />}>
                       <StudioFloodFillPanel
                         active={advancedFillActive}
                         busy={advancedFillBusy}
@@ -536,7 +536,7 @@ export function StudioInspectorSelectedImageTools({
                   ) : null}
                   {shouldMountImageInspectorTab("quick") ? (
                   <div className="space-y-3" hidden={activeImageInspectorTab !== "quick"}>
-                    <Suspense fallback={<StudioPanelLoading label="이미지 보정을 여는 중..." />}>
+                    <Suspense fallback={<StudioPanelLoading labelKey="studio.canvas.panelLoading.imageAdjustments" labelFallback="이미지 보정을 여는 중..." />}>
                       <StudioInspectorFilterLauncher
                         availability={rasterAvailability("filter", studioFilterPreparationBusy)}
                         busy={studioFilterPreparationBusy}
@@ -560,7 +560,7 @@ export function StudioInspectorSelectedImageTools({
                   ) : null}
                   {shouldMountImageInspectorTab("retouch") ? (
                   <div className="space-y-3" hidden={activeImageInspectorTab !== "retouch"}>
-                    <Suspense fallback={<StudioPanelLoading label="선택·리터치 도구를 여는 중..." />}>
+                    <Suspense fallback={<StudioPanelLoading labelKey="studio.canvas.panelLoading.selectionRetouchTools" labelFallback="선택·리터치 도구를 여는 중..." />}>
                       {selected.type === "image" &&
                       rasterAvailability("pixel-marquee").entry.enabled ? (
                       <>
@@ -838,7 +838,7 @@ export function StudioInspectorSelectedImageTools({
                   ) : null}
                   {shouldMountImageInspectorTab("mask") ? (
                   <div className="space-y-3" hidden={activeImageInspectorTab !== "mask"}>
-                    <Suspense fallback={<StudioPanelLoading label="레이어 마스크를 여는 중..." />}>
+                    <Suspense fallback={<StudioPanelLoading labelKey="studio.canvas.panelLoading.layerMask" labelFallback="레이어 마스크를 여는 중..." />}>
                       {selected.type === "image" &&
                       rasterAvailability("layer-mask").entry.enabled ? (
                         <>
@@ -909,7 +909,7 @@ export function StudioInspectorSelectedImageTools({
                   ) : null}
                   {shouldMountImageInspectorTab("transform") ? (
                   <div className="space-y-3" hidden={activeImageInspectorTab !== "transform"}>
-                    <Suspense fallback={<StudioPanelLoading label="이미지 변형 도구를 여는 중..." />}>
+                    <Suspense fallback={<StudioPanelLoading labelKey="studio.canvas.panelLoading.imageTransformTools" labelFallback="이미지 변형 도구를 여는 중..." />}>
                       {selected.type === "image" &&
                       rasterAvailability("crop").entry.enabled ? (
                         <>

@@ -528,7 +528,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h) {
       !cacheEntry || unbatchableModelIds.has(model.modelId) || !isBgObjectVisible(model) ||
       selectedIds.has(model.id) || (sceneHierarchy.parentById.get(model.id) ?? null) !== null ||
       (sceneHierarchy.childrenByParent.get(model.id)?.length ?? 0) > 0 ||
-      model.materialOverride !== undefined || model.animation !== undefined || model.pose !== undefined ||
+      model.materialOverride !== undefined || model.modelTexturePaint !== undefined || model.animation !== undefined || model.pose !== undefined ||
       model.morph !== undefined || model.constraints !== undefined ||
       cacheEntry.metrics.skins > 0 || cacheEntry.metrics.morphTargets > 0 || cacheEntry.metrics.lights > 0 ||
       model.scale.some((component) => component <= 0)

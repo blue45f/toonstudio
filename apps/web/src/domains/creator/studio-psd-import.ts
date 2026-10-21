@@ -12,6 +12,13 @@ import {
   type StudioPsdAdjustmentConversion,
   type StudioPsdConvertedAdjustment,
 } from "./studio-psd-adjustment-import";
+import {
+  buildPsdAdjustmentImportReport,
+  classifyPsdAdjustmentFidelity,
+  PSD_ADJUSTMENT_FIDELITY_LABELS,
+  type PsdAdjustmentImportReport,
+  type PsdAdjustmentUnsupportedInput,
+} from "./studio-psd-adjustment-report";
 import { planStudioPsdEditableText } from "./export/studio-psd-text-import";
 import type { El } from "./studio-element-model";
 import type { LayerGroup } from "./studio-layers";
@@ -44,6 +51,8 @@ export interface PsdImportedElement {
   blendMode?: string;
   /** PSD 레이어 이름. 없으면 "레이어 N"(N=1부터, Studio z-order 기준 순번). */
   name?: string;
+  /** flatten 된 Studio z-order(뒤→앞) 전체 목록에서의 위치 — 조정 레이어와의 상대 순서 복원용. */
+  stackIndex?: number;
   /** 자신 또는 조상 그룹이 숨김이면 true. 아니면 필드 자체를 생략(El 관례). */
   hidden?: true;
   /** Photoshop 래스터 마스크를 white-RGB/alpha PNG로 바꾼 편집 가능한 비파괴 마스크. */
@@ -97,6 +106,9 @@ export interface PsdImportResult {
   /** 변환 가능한 PSD 조정 레이어를 복원한 명세(Studio z-order). 변환 불가 종류는
    *  여기에 없고 skipped·lossManifest 에 종류별 사유와 함께 기록된다. */
   adjustmentLayers?: PsdImportedAdjustmentLayer[];
+  /** 조정 레이어 대응표 기준 충실도 리포트(정확/근사/파라미터만 보존/제외) — 조정 레이어가
+   *  하나라도 발견됐을 때만 실린다. 복원분을 전부 "복원됨"으로 뭉뚱그리지 않는다. */
+  adjustmentReport?: PsdAdjustmentImportReport;
   /** 원본 파일 바이트는 적용 시 CAS에 보존하고 프로젝트에는 참조만 넣는다. */
   originalFile?: File;
   /** 원본 PSD 캔버스 크기(스케일 반영 전) — 새 페이지 생성 시 canvasH 계산에 필요. */
@@ -395,6 +407,17 @@ export function placementForLayer(
 /** 결과 요약 한 줄(상태 배너용) — psdExportResultMessage 와 동일한 톤. */
 export function psdImportResultMessage(result: PsdImportResult): string {
   const parts = [`PSD 준비 완료 — 레이어 ${result.elements.length}개`];
+  const report = result.adjustmentReport;
+  if (report && report.restored > 0) {
+    const caveats: string[] = [];
+    if (report.counts.approximated > 0) caveats.push(`근사 ${report.counts.approximated}`);
+    if (report.counts["preserved-only"] > 0) {
+      caveats.push(`파라미터만 보존 ${report.counts["preserved-only"]}`);
+    }
+    parts.push(
+      `조정 레이어 ${report.restored}개 복원${caveats.length > 0 ? `(${caveats.join(" · ")})` : ""}`,
+    );
+  }
   if (result.skipped.length > 0) parts.push(`알림 ${result.skipped.length}건`);
   return parts.join(" · ");
 }
@@ -883,11 +906,24 @@ function psdImportLossManifest(
     const kinds = [...new Set(convertedAdjustments.map((entry) =>
       entry.adjustmentConversion?.status === "converted" ? entry.adjustmentConversion.kind : "",
     ))].filter(Boolean).join("·");
+    const fidelityCounts: Record<string, number> = {};
+    for (const entry of convertedAdjustments) {
+      if (entry.adjustmentConversion?.status !== "converted") continue;
+      const fidelity = classifyPsdAdjustmentFidelity(entry.adjustmentConversion);
+      fidelityCounts[fidelity] = (fidelityCounts[fidelity] ?? 0) + 1;
+    }
+    const fidelitySummary = (["exact", "approximated", "preserved-only"] as const)
+      .filter((fidelity) => (fidelityCounts[fidelity] ?? 0) > 0)
+      .map((fidelity) => `${PSD_ADJUSTMENT_FIDELITY_LABELS[fidelity]} ${fidelityCounts[fidelity]}개`)
+      .join(" · ");
+    const caveat = (fidelityCounts.approximated ?? 0) > 0 || (fidelityCounts["preserved-only"] ?? 0) > 0
+      ? " 근사 변환은 픽셀 결과가 원본과 다를 수 있고, 파라미터만 보존한 항목은 픽셀에 적용되지 않습니다."
+      : "";
     decisions.push(psdDecision(
       "adjustment-layer",
       "preserved",
       convertedAdjustments.length,
-      `조정 레이어 ${convertedAdjustments.length.toLocaleString("ko-KR")}개를 비파괴 파라미터 그대로 Studio 조정 레이어로 복원합니다(${kinds}).`,
+      `조정 레이어 ${convertedAdjustments.length.toLocaleString("ko-KR")}개를 비파괴 파라미터와 함께 Studio 조정 레이어로 복원합니다(${kinds}). 충실도: ${fidelitySummary}.${caveat}`,
     ));
   }
   if (unsupportedAdjustments.length > 0) {
@@ -1080,6 +1116,7 @@ export async function importPsdFile(
   const encodedPng = createPsdEncodedPngAccountant();
 
   const adjustmentLayers: PsdImportedAdjustmentLayer[] = [];
+  const unsupportedAdjustments: PsdAdjustmentUnsupportedInput[] = [];
   let completedLayers = 0;
   reportStudioPsdImportProgress(options, "layers", 0, flattened.length);
   for (const [stackIndex, entry] of flattened.entries()) {
@@ -1114,6 +1151,7 @@ export async function importPsdFile(
           ? conversion.reason
           : "변환 결과가 없습니다.";
         const psdType = conversion?.status === "unsupported" ? conversion.psdType : "알 수 없음";
+        unsupportedAdjustments.push({ name: entry.name, psdType, reason });
         skipped.push(`${entry.name}: 조정 레이어(${psdType})는 변환할 수 없어 제외됨 — ${reason}`);
       }
       continue;
@@ -1174,6 +1212,7 @@ export async function importPsdFile(
       height: placement.height,
       rotation: 0,
       name: entry.name,
+      stackIndex,
     };
     const folderId = entry.folderPath.at(-1)?.id;
     if (folderId !== previousFolderId) {
@@ -1300,11 +1339,15 @@ export async function importPsdFile(
 
   lossMetrics.encodedPngSkippedLayers = encodedPng.skippedLayerCount;
   lossMetrics.encodedPngDroppedMasks = encodedPng.droppedMaskCount;
+  const adjustmentReport = adjustmentLayers.length > 0 || unsupportedAdjustments.length > 0
+    ? buildPsdAdjustmentImportReport(adjustmentLayers, unsupportedAdjustments)
+    : undefined;
   return {
     layerPixelStorage: "native-png",
     encodedPngMemory: encodedPng.snapshot(),
     elements,
     ...(adjustmentLayers.length > 0 ? { adjustmentLayers } : {}),
+    ...(adjustmentReport ? { adjustmentReport } : {}),
     groups: studioGroupsFromPsdElements(elements),
     editableTextElements,
     ...(compositeElement ? { compositeElement } : {}),

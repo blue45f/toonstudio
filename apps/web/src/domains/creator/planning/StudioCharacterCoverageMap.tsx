@@ -30,6 +30,7 @@ import {
 import {
   buildEpisodeMetricsOverlay,
   episodeMetricsStatusLine,
+  formatEpisodeTrafficSummary,
   type EpisodeMetricsLoad,
 } from "./studio-episode-metrics-overlay";
 
@@ -105,6 +106,9 @@ export function StudioCharacterCoverageMap({
       <section aria-label="캐릭터 커버리지 맵">
         <h2>누가 언제 나왔나요</h2>
         <p>캐릭터와 회차가 있어야 등장 기록을 모아 볼 수 있어요.</p>
+        {metricsOverlay && (
+          <p role="status">{episodeMetricsStatusLine(metricsOverlay)}</p>
+        )}
       </section>
     );
   }
@@ -123,6 +127,9 @@ export function StudioCharacterCoverageMap({
         </p>
         {metricsOverlay && (
           <p role="status">{episodeMetricsStatusLine(metricsOverlay)}</p>
+        )}
+        {metricsOverlay && formatEpisodeTrafficSummary(metricsOverlay) && (
+          <p data-episode-traffic="true">{formatEpisodeTrafficSummary(metricsOverlay)}</p>
         )}
       </header>
 

@@ -1,11 +1,16 @@
+import { useT } from "@/shared/lib/i18n";
 import { MapPin, Mic, Pause, Play, Square } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  VOICE_COMMENTARY_DEFAULT_RETENTION_DAYS,
+  VOICE_COMMENTARY_MAX_AUDIO_BYTES,
+  VOICE_COMMENTARY_MAX_RETENTION_DAYS,
   finishVoiceRecording,
   formatVoiceTime,
   recordVoiceKeyframe,
   startVoiceRecording,
+  voiceCommentaryAudioSizeProblem,
   voicePlaybackCueAt,
   type VoiceCommentaryTrack,
   type VoiceRecordingSession,
@@ -73,6 +78,7 @@ export function ReviewVoiceCommentaryPanel({
   onApplyView,
   onOpenPin,
 }: ReviewVoiceCommentaryPanelProps) {
+  const t = useT();
   const [recorder, setRecorder] = useState<RecorderState>({ kind: "idle" });
   const [elapsedMs, setElapsedMs] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -128,12 +134,12 @@ export function ReviewVoiceCommentaryPanel({
 
   const startRecording = async () => {
     if (!recorderSupported()) {
-      setRecorder({ kind: "unsupported", reason: "이 브라우저에서는 음성 녹음을 지원하지 않아 해설을 녹화할 수 없습니다. 핀으로 남겨 주세요." });
+      setRecorder({ kind: "unsupported", reason: t("productionHub.status.voiceRecordingUnsupported", "이 브라우저에서는 음성 녹음을 지원하지 않아 해설을 녹화할 수 없습니다. 핀으로 남겨 주세요.") });
       return;
     }
     const capture = captureView?.();
     if (!capture) {
-      setRecorder({ kind: "error", message: "현재 화면 상태를 읽지 못해 녹화를 시작할 수 없습니다." });
+      setRecorder({ kind: "error", message: t("productionHub.status.voiceCaptureStateFailed", "현재 화면 상태를 읽지 못해 녹화를 시작할 수 없습니다.") });
       return;
     }
     try {
@@ -159,7 +165,7 @@ export function ReviewVoiceCommentaryPanel({
       setElapsedMs(0);
       setRecorder({ kind: "recording", startedAtMs: Date.now() });
     } catch {
-      setRecorder({ kind: "error", message: "마이크 권한을 얻지 못해 녹화를 시작하지 못했습니다. 브라우저 권한을 확인해 주세요." });
+      setRecorder({ kind: "error", message: t("productionHub.status.voiceMicPermissionFailed", "마이크 권한을 얻지 못해 녹화를 시작하지 못했습니다. 브라우저 권한을 확인해 주세요.") });
     }
   };
 
@@ -176,8 +182,18 @@ export function ReviewVoiceCommentaryPanel({
     mr?.stop();
     mediaRecorderRef.current = null;
     sessionRef.current = null;
-    setRecorder({ kind: "idle" });
     const blob = chunksRef.current.length > 0 ? new Blob(chunksRef.current, mimeType ? { type: mimeType } : undefined) : null;
+    // 저장 상한(정책 상수)을 넘긴 녹음은 서버가 거부해 공유할 수 없다 — 조용히
+    // 세션 폴백으로만 남기지 않고, 나눠 녹화해야 한다는 것을 그 자리에서 알린다.
+    // 이 탭 안에서는 세션 보관으로 그대로 들을 수 있다.
+    if (blob && voiceCommentaryAudioSizeProblem(blob.size) === "too-large") {
+      setRecorder({
+        kind: "error",
+        message: `녹음이 저장 상한(${Math.round(VOICE_COMMENTARY_MAX_AUDIO_BYTES / (1024 * 1024))}MB)을 넘어 서버에 저장·공유할 수 없습니다. 더 짧게 나눠 녹화해 주세요. 방금 녹음은 이 탭에서만 들을 수 있습니다.`,
+      });
+    } else {
+      setRecorder({ kind: "idle" });
+    }
     const track = finishVoiceRecording({
       session: finalSession,
       id: `voice-${episodeId}-${Date.now()}`,
@@ -224,7 +240,14 @@ export function ReviewVoiceCommentaryPanel({
         <span style={{ opacity: 0.7, fontSize: 12 }}>화면을 이동하며 말로 남기면, 듣는 쪽 화면이 그 위치로 따라갑니다.</span>
       </header>
 
-      {loading ? <p role="status">해설을 불러오는 중…</p> : null}
+      <p style={{ fontSize: 12, opacity: 0.7, margin: 0 }}>
+        저장 정책: 해설 음성은 1건 최대 {Math.round(VOICE_COMMENTARY_MAX_AUDIO_BYTES / (1024 * 1024))}MB,
+        서버 보관 기본 {VOICE_COMMENTARY_DEFAULT_RETENTION_DAYS}일·최대 {VOICE_COMMENTARY_MAX_RETENTION_DAYS}일입니다.
+        기존 서버 저장소에만 보관하고 외부 유료 저장소는 쓰지 않습니다.
+        서버 저장에 실패한 녹음은 이 탭에서만 들을 수 있고 새로고침하면 사라집니다.
+      </p>
+
+      {loading ? <p role="status">{t("productionHub.status.loadingCommentary", "해설을 불러오는 중…")}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
       {recorder.kind === "unsupported" ? <p role="alert">{recorder.reason}</p> : null}
       {recorder.kind === "error" ? <p role="alert">{recorder.message}</p> : null}
@@ -248,7 +271,7 @@ export function ReviewVoiceCommentaryPanel({
       ) : null}
 
       {tracks.length === 0 && !loading ? (
-        <p>아직 음성 해설이 없습니다. 해설이 없어도 핀 검수는 종전대로 동작합니다.</p>
+        <p>{t("productionHub.status.noVoiceCommentary", "아직 음성 해설이 없습니다. 해설이 없어도 핀 검수는 종전대로 동작합니다.")}</p>
       ) : null}
 
       {tracks.length > 0 ? (
@@ -301,9 +324,11 @@ export function ReviewVoiceCommentaryPanel({
             <p style={{ fontSize: 12, opacity: 0.7 }}>이 해설의 음성은 아직 서버에 저장되지 않아 재생할 수 없습니다. 위치 기록은 아래 목록으로 확인할 수 있습니다.</p>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button type="button" onClick={togglePlay} disabled={!selected.audio}>
+            {/* 오디오가 없어도 버튼은 살아 있어야 한다 — togglePlay가 첫 키프레임
+                위치로 이동시켜 위치 기록만으로도 해설 순서를 따라갈 수 있다. */}
+            <button type="button" onClick={togglePlay}>
               {playing ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />}
-              {playing ? "일시정지" : "해설 듣기"}
+              {playing ? "일시정지" : selected.audio ? "해설 듣기" : "위치 따라가기"}
             </button>
             <span>
               {formatVoiceTime(playheadMs)} / {formatVoiceTime(selected.durationMs)}

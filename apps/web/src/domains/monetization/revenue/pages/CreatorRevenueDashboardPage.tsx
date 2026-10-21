@@ -6,7 +6,7 @@
  */
 // 수익화 i18n 네임스페이스는 셸 번들에서 분리됨 — 페이지 평가 시점에 동기 등록한다.
 import "../../monetization-i18n";
-import { ChartColumn, LogIn } from "lucide-react";
+import { ChartColumn, Info, LogIn } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -32,6 +32,7 @@ import {
   type RevenueSourceId,
 } from "../models/revenue-model";
 import { aggregateCreatorRevenue, computeSettlementBreakdown, formatKrw } from "../revenue-aggregator";
+import { getPayoutAvailability } from "../models/payout-availability";
 import { RevenueChart } from "../components/RevenueChart";
 import { CountUp } from "@/shared/components/count-up";
 import { PeriodDeltaBadge } from "../components/PeriodDeltaBadge";
@@ -57,6 +58,20 @@ const MEMBERSHIP_CTA = defineBilingualText(
   "membershipCta",
   "멤버십 관리로 가기",
   "Open membership settings",
+);
+const SELLER_CTA = defineBilingualText(
+  "creatorRevenueDashboardPage",
+  "sellerCta",
+  "마켓 판매자 대시보드로 가기",
+  "Open the market seller dashboard",
+);
+// 정산 백엔드가 연결되기 전에는 아래 숫자가 "이 기기에 기록된" 집계이며
+// 실제 입금·출금과 무관하다는 것을 숫자보다 먼저 분리해 고지한다.
+const SETTLEMENT_NOT_CONNECTED_NOTICE = defineBilingualText(
+  "creatorRevenueDashboardPage",
+  "settlementNotConnectedNotice",
+  "정산은 아직 연결 전이에요. 아래 금액은 이 기기·브라우저에 기록된 멤버십·후원 내역을 모아 보여 주는 참고 수치이고, 출금 신청은 아직 받지 않습니다.",
+  "Payouts are not connected yet. The amounts below are reference totals aggregated from membership and tip records stored on this device and browser, and payout requests are not being accepted yet.",
 );
 
 const SOURCE_ORDER: readonly RevenueSourceId[] = ["tips", "membership", "early-access", "market", "custom"];
@@ -173,6 +188,25 @@ export function CreatorRevenueDashboardPage() {
           ))}
         </div>
       </header>
+
+      {!getPayoutAvailability().submissionEnabled ? (
+        <p
+          role="status"
+          className="mt-4 flex items-start gap-2 rounded-2xl border border-line bg-panel/50 px-4 py-3 text-sm text-muted"
+        >
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
+          <span>{t(SETTLEMENT_NOT_CONNECTED_NOTICE)}</span>
+        </p>
+      ) : null}
+
+      <nav aria-label={t("revenue.dashboard.title")} className="mt-4 flex flex-wrap gap-2">
+        <a href="/creator/membership" className={buttonClass({ variant: "ghost" })}>
+          {t(MEMBERSHIP_CTA)}
+        </a>
+        <a href="/market/seller" className={buttonClass({ variant: "ghost" })}>
+          {t(SELLER_CTA)}
+        </a>
+      </nav>
 
       <section aria-label={t("revenue.dashboard.summaryTitle")} className="mt-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

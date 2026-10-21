@@ -8,7 +8,8 @@
  * - status 로 로딩/오류를 구분한다. 다시 시도 버튼은 onRetry 가 있을
  *   때만 렌더링한다.
  */
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, PenLine, RotateCcw } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { EpisodePlanWithSynopsis } from "../planning/studio-episode-synopsis";
@@ -20,6 +21,7 @@ import {
   previousEpisodeStage,
   STAGE_HANDOFF_SOURCE_LABELS,
   type StageHandoffCharacterInput,
+  type StageHandoffScenePlanInput,
 } from "./stage-handoff-model";
 import {
   episodeStageDefinition,
@@ -34,10 +36,19 @@ import { cn } from "@/shared/lib/utils";
 
 export type StageHandoffCardStatus = "ready" | "loading" | "error";
 
+/** 인용을 받아 시작할지(끌어오기), 접어 두고 새로 쓸지의 사용자 선택. */
+export type StageHandoffChoice = "pending" | "use" | "fresh";
+
 export interface StageHandoffCardProps {
   readonly plan?: EpisodePlanWithSynopsis | null;
   readonly characters?: readonly StageHandoffCharacterInput[];
   readonly beats?: readonly StudioStoryBeat[];
+  /** 이 회차의 장면 계획. 비트가 없을 때 콘티 구성 섹션의 근거가 된다. */
+  readonly scenePlans?: readonly StageHandoffScenePlanInput[];
+  /** "이 인용으로 시작하기"를 골랐을 때 — 표면이 시작 상태를 기록할 때 쓴다. */
+  readonly onUseHandoff?: () => void;
+  /** "인용 없이 새로 쓰기"를 골랐을 때 — 인용은 접히고 이 콜백이 불린다. */
+  readonly onStartFresh?: () => void;
   /**
    * 동결 모델 시트 레코드. 넘기면 이 회차 등장 캐릭터의 동결 리비전이
    * 기준본 섹션으로 자동 첨부되고, 미동결 캐릭터는 안내로 표시된다.
@@ -80,6 +91,9 @@ export function StageHandoffCard({
   plan,
   characters,
   beats,
+  scenePlans,
+  onUseHandoff,
+  onStartFresh,
   modelSheets,
   reviewSessionSummaries,
   targetStage,
@@ -89,7 +103,20 @@ export function StageHandoffCard({
   onRetry,
 }: StageHandoffCardProps) {
   const bt = useBilingual("StageHandoffCard");
-  const handoff = buildStageHandoff({ plan, characters, beats, modelSheets, reviewSessionSummaries, targetStage });
+  const handoff = buildStageHandoff({ plan, characters, beats, scenePlans, modelSheets, reviewSessionSummaries, targetStage });
+  // 끌어오기/새로 쓰기 선택: 고르기 전에는 인용 전문 + 선택지를 보여 주고,
+  // "새로 쓰기"면 인용을 한 줄로 접는다(다시 펼칠 수 있다). "끌어오기"면
+  // 인용을 기준 표시로 남긴다. 선택은 이 카드 인스턴스의 표시 상태일 뿐
+  // 앞 단계 데이터를 바꾸지 않는다.
+  const [choice, setChoice] = useState<StageHandoffChoice>("pending");
+  const chooseUse = () => {
+    setChoice("use");
+    onUseHandoff?.();
+  };
+  const chooseFresh = () => {
+    setChoice("fresh");
+    onStartFresh?.();
+  };
   // 미동결 안내 — 동결 기준본이 붙은 섹션과 별개로, 아직 기준본이 없는
   // 등장 캐릭터를 숨기지 않고 이름으로 알린다. ready 상태에서만 보인다.
   const unfrozenNotice =
@@ -184,38 +211,78 @@ export function StageHandoffCard({
             </Link>
           ) : null}
         </div>
-      ) : (
-        <div className="mt-3 space-y-4">
-          {handoff.sections.map((entry) => {
-            const sourceLabel = episodeStageDefinition(entry.sourceStage).label;
-            return (
-              <div key={entry.kind} className="border-l-2 border-accent/50 pl-3">
-                <p className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-black text-fg">
-                    {bt(entry.title.ko, entry.title.en)}
-                  </span>
-                  <span
-                    className={cn(
-                      "rounded-full bg-accent-soft px-2 py-0.5 text-[0.625rem] font-black text-accent",
-                    )}
-                  >
-                    {bt(sourceLabel.ko, sourceLabel.en)}
-                  </span>
-                </p>
-                <ul className="mt-1.5 space-y-1">
-                  {entry.lines.map((line, index) => (
-                    <li
-                      key={`${entry.kind}-${index}`}
-                      className="whitespace-pre-wrap text-sm leading-6 text-fg-2"
-                    >
-                      {line}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
+      ) : choice === "fresh" ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-line bg-panel p-4">
+          <p className="min-w-0 flex-1 text-sm font-bold text-fg">
+            {bt("인용 없이 새로 시작해요", "Starting fresh, without the handover")}
+          </p>
+          <button
+            type="button"
+            onClick={() => setChoice("pending")}
+            className={buttonClass({ size: "sm", variant: "outline", className: "min-h-11 gap-1.5" })}
+          >
+            {bt("인용 다시 보기", "Show the handover again")}
+          </button>
         </div>
+      ) : (
+        <>
+          <div className="mt-3 space-y-4">
+            {handoff.sections.map((entry) => {
+              const sourceLabel = episodeStageDefinition(entry.sourceStage).label;
+              return (
+                <div key={entry.kind} className="border-l-2 border-accent/50 pl-3">
+                  <p className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-black text-fg">
+                      {bt(entry.title.ko, entry.title.en)}
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded-full bg-accent-soft px-2 py-0.5 text-[0.625rem] font-black text-accent",
+                      )}
+                    >
+                      {bt(sourceLabel.ko, sourceLabel.en)}
+                    </span>
+                  </p>
+                  <ul className="mt-1.5 space-y-1">
+                    {entry.lines.map((line, index) => (
+                      <li
+                        key={`${entry.kind}-${index}`}
+                        className="whitespace-pre-wrap text-sm leading-6 text-fg-2"
+                      >
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+          {choice === "pending" ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={chooseUse}
+                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5" })}
+              >
+                <Check className="size-4" aria-hidden="true" />
+                {bt("이 인용으로 시작하기", "Start with this handover")}
+              </button>
+              <button
+                type="button"
+                onClick={chooseFresh}
+                className={buttonClass({ size: "sm", variant: "outline", className: "min-h-11 gap-1.5" })}
+              >
+                <PenLine className="size-4" aria-hidden="true" />
+                {bt("인용 없이 새로 쓰기", "Start fresh instead")}
+              </button>
+            </div>
+          ) : (
+            <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent" role="status">
+              <Check className="size-3.5" aria-hidden="true" />
+              {bt("이 인용을 기준으로 시작해요", "Starting from this handover")}
+            </p>
+          )}
+        </>
       )}
       {unfrozenNotice}
     </section>

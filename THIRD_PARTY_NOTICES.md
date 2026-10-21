@@ -28,8 +28,8 @@ obscure, or claim ownership of these libraries.
 | `perfect-freehand` | 1.2.3 | MIT | <https://github.com/steveruizok/perfect-freehand> |
 | `p5.brush` standalone entry | 2.2.1 | MIT | <https://github.com/acamposuribe/p5.brush> |
 | `mixbox` | 2.0.0 | CC BY-NC 4.0 — non-commercial use only | <https://github.com/scrtwpns/mixbox> |
-| `remotion` | 4.0.514 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion> |
-| `@remotion/player` | 4.0.514 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/main/packages/player> |
+| `remotion` | 4.0.536 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion> |
+| `@remotion/player` | 4.0.536 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/main/packages/player> |
 | `p5` peer resolution for `p5.brush` | 2.3.1 | LGPL-2.1 | <https://github.com/processing/p5.js> |
 | `libtess` dependency of the resolved `p5` peer | 1.2.2 | SGI-B-2.0 | <https://github.com/brendankenny/libtess.js> |
 | `hokusai-brush`, `hokusai-core`, and `hokusai-tile-mem` | 0.3.0 | MIT OR Apache-2.0 | <https://github.com/reearth/hokusai/tree/f7e998173c0e7427b95afe0b6947e3103da60f00> |
@@ -57,17 +57,22 @@ shipped beside xatlas, and records the exact MPL-2.0 source location for the
 unmodified resvg executable.
 
 
-`mixbox@2.0.0` is included only for ToonStudio's explicitly free,
-non-commercial distribution profile. Its CC BY-NC 4.0 terms do not permit a
-commercial product build. Any commercial deployment, paid distribution, or
-commercially licensed fork must disable/remove the Mixbox provider or obtain a
+`mixbox@2.0.0` is available only under an explicit non-commercial opt-in.
+Its CC BY-NC 4.0 terms do not permit a commercial product build. The default
+Brush Studio V6 license profile is fixed to `permissive-only` (license P0
+decision, 2026-10-14, in
+`apps/web/src/domains/creator/brush-lab/brush-studio-v6-license-profile.ts`),
+which rejects this provider; the Mixbox provider can run only when a saved
+program explicitly opts into the `noncommercial-full` profile. Any commercial
+deployment, paid distribution, or commercially licensed fork must keep the
+default profile (or otherwise disable/remove the Mixbox provider) or obtain a
 separate commercial license from Secret Weapons before release. The runtime
-marks this provider as `noncommercial`, the default Brush Studio V6 profile is
-`noncommercial-full`, and the exact package/version/license boundary is pinned
-by the release audit. See `third_party/mixbox/README.md`.
+marks this provider as `noncommercial`, and the exact
+package/version/license boundary is pinned by the release audit. See
+`third_party/mixbox/README.md`.
 
 The Product Tour runtime uses `remotion` and `@remotion/player` at exactly
-`4.0.514`. These packages use the custom Remotion License rather than a standard
+`4.0.536`. These packages use the custom Remotion License rather than a standard
 SPDX license. The Free License applies only to eligible individuals, non-profit
 or not-for-profit organizations, for-profit organizations with up to three
 employees, and qualifying evaluation use. Other for-profit organizations must
@@ -126,7 +131,7 @@ the Unicode-3.0 notice required by `unicode-ident` data tables. The license
 audit records the complete locked Rust dependency graph and the exact crates.io
 checksums, rather than treating the WASM file as an opaque binary.
 
-### inkwash — permission on record, nothing ported yet
+### inkwash — verbal permission only; evidence document required, nothing ported yet
 
 The project owner has stated that Johno Whitaker
 (<https://github.com/johnowhitaker/inkwash>) granted express permission to use
@@ -135,9 +140,15 @@ this record exists to make the grant auditable **before** any line is ported.
 
 - Upstream: <https://github.com/johnowhitaker/inkwash>
 - Author: Johno Whitaker
-- Basis: express permission granted to the project owner (no public licence)
-- Permission reference: **TODO — project owner to record the email, issue or DM
-  that carries the grant.** Do not cite a reference that has not been supplied.
+- Basis: express permission stated by the project owner to have been granted
+  by the author (no public licence, and no evidence document in this
+  repository)
+- Permission reference: **TODO — 근거 문서 필요 (evidence document required;
+  owner action).** As of 2026-10-22 no email, issue or DM carrying the grant
+  has been recorded in this repository, so the grant is not yet auditable.
+  The project owner must record the email, issue or DM that carries the grant
+  here before any inkwash code is ported. Do not cite a reference that has not
+  been supplied.
 
 **As of this entry no inkwash code is present in this repository.** The
 watercolour/ink lane's parameter reuse is a clean-room reimplementation and says

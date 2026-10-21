@@ -52,6 +52,7 @@ import { studioWorkModeAllowsRegion } from "./studio-cuttoon-editor/runtime/stud
 import type { StudioToolBeltContentProps, StudioToolBeltHintMap } from "./StudioToolBeltContent";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 type StudioToolBeltHintTargetProps = Omit<
   ComponentProps<typeof StudioToolHintTarget>,
@@ -77,6 +78,7 @@ export interface StudioToolBeltCreateModeGroupsProps {
 export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreateModeGroups(
   props: StudioToolBeltCreateModeGroupsProps,
 ) {
+  const t = useT();
   const { hints, studioCanvasImageAccept, toolBelt } = props;
   const {
     activeSurfaceReviewLocked,
@@ -232,7 +234,7 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
                 contentClassName: "overflow-y-auto overflow-x-hidden",
               }}
             >
-              <Suspense fallback={<StudioPanelLoading label="에셋 메뉴를 여는 중..." />}>
+              <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetMenu", "에셋 메뉴를 여는 중...")} />}>
                 <LazyStudioAssetToolPopoverBody toolBelt={toolBelt} />
               </Suspense>
             </StudioFloatingToolPopover>
@@ -502,7 +504,7 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
                   contentClassName: "overflow-y-auto",
                 }}
               >
-                <Suspense fallback={<StudioPanelLoading label="3D 스튜디오를 여는 중..." />}>
+                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.studio3d", "3D 스튜디오를 여는 중...")} />}>
                   <LazyStudioSceneToolPopoverBody toolBelt={toolBelt} />
                 </Suspense>
               </StudioFloatingToolPopover>
@@ -567,7 +569,7 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
                 contentClassName: "overflow-y-auto",
               }}
             >
-              <Suspense fallback={<StudioPanelLoading label="스타일 메뉴를 여는 중..." />}>
+              <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.styleMenu", "스타일 메뉴를 여는 중...")} />}>
                 <LazyStudioStyleToolPopoverBody toolBelt={toolBelt} />
               </Suspense>
             </StudioFloatingToolPopover>
@@ -634,7 +636,7 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
                   contentClassName: "flex flex-col overflow-hidden",
                 }}
               >
-                <Suspense fallback={<StudioPanelLoading label="AI 메뉴를 여는 중..." />}>
+                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.aiMenu", "AI 메뉴를 여는 중...")} />}>
                   <LazyStudioAiToolPopoverBody toolBelt={toolBelt} />
                 </Suspense>
               </StudioFloatingToolPopover>

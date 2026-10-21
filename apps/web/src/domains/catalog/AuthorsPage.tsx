@@ -117,7 +117,7 @@ export function AuthorsPage() {
                 style={{ background: `linear-gradient(145deg, ${a.cover[0]}, ${a.cover[1]})` }}
               >
                 {a.coverImage ? (
-                  <img src={proxiedCoverSrc(a.coverImage)} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" />
+                  <img src={proxiedCoverSrc(a.coverImage, 160)} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" />
                 ) : (
                   (a.name.replace(/[^가-힣A-Za-z0-9]/g, "").charAt(0) || "?")
                 )}

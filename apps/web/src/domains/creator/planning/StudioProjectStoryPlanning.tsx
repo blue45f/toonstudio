@@ -28,6 +28,11 @@
  * 애널리틱스 실집계를 resolveEpisodeMetricsLoad 로 접어 오버레이로 함께 넘긴다.
  * 비트 보드·커버리지 맵에서 회차를 고르면 줄거리 편집 대상이 그 회차로 바뀐다
  * (StudioEpisodeStoryPage 의 controlled 선택으로 공유).
+ *
+ * 누적 변경 (F3 reader-reaction-quote-card): episodes 표면 맨 위에 독자 반응
+ * 인용 카드를 장착한다. 같은 실집계 로드를 인용 모델로 접어 이전 회차 반응을
+ * 보여 주고, 인용 본문은 다음 회차 플랜의 readerReactionMemo 로 같은
+ * handleSavePlan 경로로 저장한다. 실집계가 없으면 카드는 빈 상태 안내만 낸다.
  */
 import { useEffect, useMemo, useState } from "react";
 
@@ -41,6 +46,11 @@ import type { StudioStoryCharacter } from "../studio-story-bible";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 import { ensureStudioProjectWorkspaceState } from "../studio-project-workspace-store";
 import { useApiResource } from "@/platform/use-api-resource";
+import { StudioReaderReactionQuoteCard } from "./StudioReaderReactionQuoteCard";
+import {
+  buildReaderReactionQuoteCard,
+  pickReaderReactionMemoTarget,
+} from "./studio-reader-reaction-quote";
 import { StudioCharacterCoverageMap } from "./StudioCharacterCoverageMap";
 import { StudioCharacterSheetPanel } from "./StudioCharacterSheetPanel";
 import { StudioEpisodeStoryPage } from "./StudioEpisodeStoryPage";
@@ -226,8 +236,33 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
     handleSavePlan({ ...targetPlan, ...patch, seedSettingRefs });
   };
 
+  // 독자 반응 인용 카드(F3) — 기획 시작 화면 맨 위에 이전 회차 실집계를
+  // 인용하고, 인용 본문은 "다음 회차" 플랜의 기획 메모로 저장한다.
+  // 기준 회차(가장 최근 측정 회차)보다 뒤 회차가 없으면 지금 짜는 마지막
+  // 회차가 저장 대상이다. 실집계가 없으면 카드는 빈 상태 안내만 낸다.
+  const reactionCard = buildReaderReactionQuoteCard(episodeMetrics);
+  const reactionTarget = pickReaderReactionMemoTarget(
+    planning.plans,
+    reactionCard.sourceEpisode?.episodeNumber ?? null,
+  );
+
   return (
     <div>
+      <div className="mb-4">
+        <StudioReaderReactionQuoteCard
+          episodeMetrics={episodeMetrics}
+          memoTargetLabel={
+            reactionTarget ? `${reactionTarget.episodeNumber}화` : null
+          }
+          savedMemo={reactionTarget?.readerReactionMemo ?? null}
+          onSaveMemo={
+            reactionTarget
+              ? (memo) =>
+                  handleSavePlan({ ...reactionTarget, readerReactionMemo: memo })
+              : undefined
+          }
+        />
+      </div>
       {targetPlan && (
         <div className="mb-4">
           <StudioStorySeedBuilder

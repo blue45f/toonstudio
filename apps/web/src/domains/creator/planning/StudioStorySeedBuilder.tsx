@@ -19,6 +19,8 @@ import { useMemo, useState } from "react";
 
 import { GENRES } from "@/shared/lib/taxonomy";
 
+import { StudioAiConnectionBadge, StudioAiConnectionNotice } from "../ai/StudioAiConnectionBadge";
+
 import {
   buildLocalStorySeed,
   localStorySeedProvider,
@@ -144,6 +146,17 @@ export function StudioStorySeedBuilder({
         <p className="mt-0.5 text-sm text-fg-3">
           장르와 키워드 몇 개면 회차 기획의 첫 초안이 만들어져요. 초안은 골격이에요 — 고르고, 채우고, 고치는 건 작가 몫입니다.
         </p>
+        {provider.kind === "ai" ? (
+          <div className="mt-2">
+            <StudioAiConnectionBadge kind="provider-ready" />
+          </div>
+        ) : (
+          <StudioAiConnectionNotice
+            kind="not-connected"
+            className="mt-2"
+            detail="외부 AI 제공자는 연결 전입니다. 대신 기본 제안(로컬·결정적)이 지금 바로 동작합니다 — 같은 입력은 항상 같은 초안이고, 횟수 제한이 없습니다."
+          />
+        )}
       </header>
 
       <div className="grid gap-3">

@@ -4,6 +4,7 @@ import {
   collabEventsFromCommentThreads,
   collabInboxReadIds,
   filterCollabInbox,
+  filterCollabInboxForEpisode,
   markAllCollabInboxRead,
   markCollabInboxRead,
   projectCollabInbox,
@@ -98,6 +99,19 @@ describe("collab-notification-model", () => {
     const read = markCollabInboxRead(items, "collab-notif:m");
     expect(filterCollabInbox(read, "unread")).toHaveLength(1);
     expect(collabInboxReadIds(markAllCollabInboxRead(items)).size).toBe(2);
+  });
+
+  it("회차 필터는 회차가 지정된 항목만 그 회차로 좁히고 무지정 항목은 유지한다", () => {
+    const items = projectCollabInbox([
+      event({ id: "h1", kind: "handover-ready", target: { surface: "production", href: "/h1", episodeId: "ep-1" } }),
+      event({ id: "h2", kind: "handover-ready", target: { surface: "production", href: "/h2", episodeId: "ep-2" } }),
+      event({ id: "a1", kind: "review-approved", target: { surface: "review", href: "/a1" } }),
+    ]);
+    expect(filterCollabInboxForEpisode(items, "ep-1").map((i) => i.id)).toEqual([
+      "collab-notif:a1",
+      "collab-notif:h1",
+    ]);
+    expect(filterCollabInboxForEpisode(items, "")).toHaveLength(3);
   });
 
   it("댓글 스레드 어댑터는 남이 나를 언급한 스레드만 이벤트로 바꾼다", () => {

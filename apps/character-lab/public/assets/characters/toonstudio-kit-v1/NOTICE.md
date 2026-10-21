@@ -305,9 +305,9 @@
 
 ## 들어 있는 파일
 
-- 베이스: `bases/female.glb` (남성 베이스는 이번 빌드에서 만들지 않았다.)
-- 파츠: accessory/cap, accessory/choker, accessory/earrings, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered, irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/blazer, top/hoodie, top/sailor, top/shirt, top/tee
-- 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다.
+- 베이스: `bases/female.glb`, `bases/male.glb`
+- 파츠(현재 제공 8종, 남녀 베이스 각 1파일씩 16개): accessory/choker, accessory/earrings, accessory/glasses, irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight
+- 제외한 Hyper3D 파생 변형 48개(출처 33종분 + 남성 리타깃 15종)의 GLB 파일은 저장소에 없다. 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다. (2026-10-22 실측 정정 — 이 절의 이전 목록은 2026-10-11 생성 당시 것이었다. 생성기 `tools/blender/character_kit/kit_manifest.py`의 베이스 고정 문장도 남아 있어, 키트를 재생성하면 이 절이 다시 낡을 수 있으니 재생성 전에 생성기부터 고칠 것.)
 
 ## 재현
 

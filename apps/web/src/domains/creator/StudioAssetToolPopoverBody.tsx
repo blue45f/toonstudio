@@ -44,6 +44,7 @@ import type {
 } from "./StudioToolBeltContent";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 const TEMPLATE_GROUPS = groupTemplates(TEMPLATES);
 
@@ -66,6 +67,7 @@ export interface StudioAssetToolPopoverBodyProps {
 export function StudioAssetToolPopoverBody({
   toolBelt,
 }: StudioAssetToolPopoverBodyProps) {
+  const t = useT();
   const communityMarketplaceInitialView =
     useStudioCommunityMarketplaceInitialView();
   const {
@@ -239,7 +241,7 @@ export function StudioAssetToolPopoverBody({
                   <div className="grid gap-1 border-t border-line pt-1.5">
                     <p className="px-1 text-[0.66rem] font-semibold uppercase tracking-wide text-fg-3">컷 템플릿 · 정형 레이아웃</p>
                     {panelLayoutsLoading && panelLayoutPresets.length === 0 && (
-                      <p className="rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">컷 레이아웃을 불러오는 중...</p>
+                      <p className="rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">{t("studio.canvas.panelLoading.cutLayout", "컷 레이아웃을 불러오는 중...")}</p>
                     )}
                     {panelLayoutsError && (
                       <p className="rounded-lg border border-bad/40 bg-bad/10 px-2 py-2 text-xs text-bad">{panelLayoutsError}</p>
@@ -259,7 +261,7 @@ export function StudioAssetToolPopoverBody({
                 </div>
               )}
               {menu === "collage" && (
-                <Suspense fallback={<StudioPanelLoading label="콜라주 패널을 여는 중..." />}>
+                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.collagePanel", "콜라주 패널을 여는 중...")} />}>
                   <StudioCollagePanel
                     canvasW={CANVAS_W}
                     availableImages={elements
@@ -274,7 +276,7 @@ export function StudioAssetToolPopoverBody({
                 </Suspense>
               )}
               {menu === "elements" && (
-                <Suspense fallback={<StudioPanelLoading label="요소 패널을 여는 중..." />}>
+                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.elementsPanel", "요소 패널을 여는 중...")} />}>
                   <StudioElementsPanel
                     onAdd={(item) => {
                       addCatalogElement(item);
@@ -402,7 +404,7 @@ export function StudioAssetToolPopoverBody({
                       )}
                       <div className="max-h-64 space-y-2.5 overflow-y-auto pr-1">
                         {studioEmeresAssetsLoading && !studioEmeresAssetsLoaded && (
-                          <p className="rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">이메레스 틀을 불러오는 중...</p>
+                          <p className="rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">{t("studio.canvas.panelLoading.emeresFrames", "이메레스 틀을 불러오는 중...")}</p>
                         )}
                         {studioEmeresAssetsError && (
                           <p className="rounded-lg border border-bad/40 bg-bad/10 px-2 py-2 text-xs text-bad">{studioEmeresAssetsError}</p>
@@ -446,14 +448,14 @@ export function StudioAssetToolPopoverBody({
                       </div>
                     </>
                   ) : (
-                    <Suspense fallback={<StudioPanelLoading label="내가 만든 틀을 여는 중..." />}>
+                    <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.myFrames", "내가 만든 틀을 여는 중...")} />}>
                       <StudioEmeresLibraryPanel onPickItem={addEmeresLibraryItem} />
                     </Suspense>
                   )}
                 </>
               )}
               {menu === "scene" && (
-                <Suspense fallback={<StudioPanelLoading label="장면 템플릿을 여는 중…" />}>
+                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.sceneTemplates", "장면 템플릿을 여는 중…")} />}>
                   <StudioSceneTemplateBrowser templates={sceneTemplates.templates} categories={sceneTemplates.categories}
                     loading={sceneTemplatesLoading} error={sceneTemplatesError} onAdd={addSceneTemplate} />
                 </Suspense>
@@ -553,7 +555,7 @@ export function StudioAssetToolPopoverBody({
                     ))}
                   </div>
                   {fxSectionVisible("raster") && fxRasterFiltered.length > 0 && (
-                    <Suspense fallback={<StudioPanelLoading label="장면 소품을 여는 중..." />}>
+                    <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.sceneProps", "장면 소품을 여는 중...")} />}>
                       <StudioRasterAssetGrid
                         assets={fxRasterFiltered}
                         busyId={builtinRasterBusyId}
@@ -566,7 +568,7 @@ export function StudioAssetToolPopoverBody({
                     </Suspense>
                   )}
                   {sfxLoading && !sfxPacks && fxSectionVisible("sfx") && (
-                    <p className="mb-2 rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">효과음을 불러오는 중...</p>
+                    <p className="mb-2 rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">{t("studio.canvas.panelLoading.soundEffects", "효과음을 불러오는 중...")}</p>
                   )}
                   {sfxError && fxSectionVisible("sfx") && (
                     <p className="mb-2 rounded-lg border border-bad/40 bg-bad/10 px-2 py-2 text-xs text-bad">{sfxError}</p>
@@ -615,14 +617,14 @@ export function StudioAssetToolPopoverBody({
                     </>
                   )}
                   {studioStickerAssetsLoading && !studioStickerAssetsLoaded && (
-                    <p className="mb-2 rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">스티커 에셋을 불러오는 중...</p>
+                    <p className="mb-2 rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">{t("studio.canvas.panelLoading.stickerAssets", "스티커 에셋을 불러오는 중...")}</p>
                   )}
                   {studioStickerAssetsError && (
                     <p className="mb-2 rounded-lg border border-bad/40 bg-bad/10 px-2 py-2 text-xs text-bad">
                       {studioStickerAssetsError}
                     </p>
                   )}
-                  <Suspense fallback={<StudioPanelLoading label="스티커 패널을 여는 중..." />}>
+                  <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.stickerPanel", "스티커 패널을 여는 중...")} />}>
                     {fxSectionVisible("comic") && fxComicFiltered.length > 0 && (
                       <StudioStickerGrid title="만화 스티커" items={fxComicFiltered} onAdd={addFxOverlay} />
                     )}
@@ -685,7 +687,7 @@ export function StudioAssetToolPopoverBody({
                 </>
               )}
               {menu === "asset" && (
-                <Suspense fallback={<StudioPanelLoading label="에셋 보관함을 여는 중..." />}>
+                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetLibrary", "에셋 보관함을 여는 중...")} />}>
                   <StudioAssetMenuPanel
                     assetTab={assetTab}
                     setAssetTab={setAssetTab}

@@ -21,7 +21,11 @@ import {
   createDefaultStudioSaveProfile,
   studioSaveProfileForProject,
 } from "./studio-save-profile";
-import type { StudioSubmission } from "./studio-submission-store";
+import {
+  readStudioSubmissions,
+  studioSubmissionsForProject,
+  type StudioSubmission,
+} from "./studio-submission-store";
 
 function storage(): Storage {
   const values = new Map<string, string>();
@@ -61,7 +65,7 @@ const sourceProject: StudioProjectLibraryEntry = Object.freeze({
   updatedAt: "2026-09-16T00:30:00.000Z",
   lastOpenedAt: "2026-09-16T00:30:00.000Z",
   lastOpenedDocumentId: "episode-2",
-  thumbnailUrl: null,
+  thumbnailUrl: "https://example.invalid/roundtrip-thumb.png",
   definition: createStudioProjectDefinition({
     format: "vertical-webtoon",
     purpose: "serial",
@@ -370,15 +374,55 @@ describe("project package export → import roundtrip integrity", () => {
     expect(readStudioProjectLibrary(target).projects).toEqual([]);
   });
 
-  it("documents the known gap: distribution submissions are exported but not restored", async () => {
+  it("restores distribution submissions re-linked to the imported project (C5 fix, 2026-10-22)", async () => {
     const target = storage();
     const result = await importInto(target, sourcePackageFile(), IMPORT_NOW, "rt1");
-    expect(result.project.title).toBe(sourceProject.title);
-    // The package carries distribution/submissions.json and the importer
-    // requires the entry to exist, but no submission record is recreated.
-    // Pinned here so a future importer change updates this expectation
-    // deliberately instead of silently changing restore semantics.
-    expect(allStorageText(target)).not.toContain(sourceSubmission.id);
-    expect(allStorageText(target)).not.toContain(sourceSubmission.notes);
+    // 예전에는 패키지가 제출 기록을 실어도 가져오기가 버렸다. 이제는 새
+    // 프로젝트 id로 재연결해 되살리고, 내용 필드는 원본 그대로 보존한다.
+    expect(result.restoredSubmissionCount).toBe(1);
+    const restored = studioSubmissionsForProject(target, result.project.id);
+    expect(restored).toHaveLength(1);
+    expect(restored[0]).toEqual({
+      ...sourceSubmission,
+      projectId: result.project.id,
+    });
+    // 남의 프로젝트 기록으로는 붙지 않는다.
+    expect(readStudioSubmissions(target).submissions.filter(
+      (submission) => submission.projectId === sourceProject.id,
+    )).toEqual([]);
+  });
+
+  it("re-importing the same package does not collide submission ids", async () => {
+    const target = storage();
+    const first = await importInto(target, sourcePackageFile(), IMPORT_NOW, "rt1");
+    const second = await importInto(target, sourcePackageFile(), REIMPORT_NOW, "rt2");
+    const all = readStudioSubmissions(target).submissions;
+    expect(all).toHaveLength(2);
+    expect(new Set(all.map((submission) => submission.id)).size).toBe(2);
+    expect(studioSubmissionsForProject(target, first.project.id)).toHaveLength(1);
+    expect(studioSubmissionsForProject(target, second.project.id)).toHaveLength(1);
+  });
+
+  it("does not restore a device-local blob: thumbnail", async () => {
+    const blobProject: StudioProjectLibraryEntry = Object.freeze({
+      ...sourceProject,
+      thumbnailUrl: "blob:https://example.invalid/local-only",
+    });
+    const result = buildStudioProjectPackage({
+      project: blobProject,
+      documents: sourceDocuments,
+      profile: createDefaultStudioSaveProfile(blobProject.id, { now: SOURCE_NOW }),
+      exportedAt: "2026-09-16T01:00:00.000Z",
+      additionalEntries: buildStudioProjectWorkspacePackageEntries(sourceDocuments, []),
+    });
+    const target = storage();
+    const imported = await importInto(
+      target,
+      new File([result.blob], result.fileName, { type: result.blob.type }),
+      IMPORT_NOW,
+      "blobthumb",
+    );
+    // blob: 참조는 만든 기기 밖에서 깨진 링크가 되므로 null로 떨어진다.
+    expect(imported.project.thumbnailUrl).toBeNull();
   });
 });

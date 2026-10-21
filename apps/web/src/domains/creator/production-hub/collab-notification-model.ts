@@ -168,6 +168,20 @@ export function filterCollabInbox(
   return items.filter((item) => item.category === tab);
 }
 
+/**
+ * 회차 룸처럼 한 회차에 집중하는 표면용 필터.
+ * 딥링크 대상 회차가 정해진 항목(인계·회차 지정 검수)은 그 회차 것만 남기고,
+ * 회차가 없는 항목(프로젝트 공지성 멘션·게이트 결과)은 그대로 둔다 — 회차 룸에서
+ * 프로젝트 신호를 통째로 잃지 않기 위해서다.
+ */
+export function filterCollabInboxForEpisode(
+  items: readonly CollabInboxItem[],
+  episodeId: string,
+): CollabInboxItem[] {
+  if (!episodeId) return [...items];
+  return items.filter((item) => !item.target.episodeId || item.target.episodeId === episodeId);
+}
+
 export interface CollabInboxSummary {
   readonly total: number;
   readonly unread: number;

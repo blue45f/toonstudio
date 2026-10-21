@@ -174,7 +174,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
   },
   {
     name: "@remotion/player",
-    version: "4.0.514",
+    version: "4.0.536",
     license: "Remotion License",
     url: "https://www.remotion.dev/docs/player",
     surface: "web",
@@ -420,7 +420,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     url: "https://scrtwpns.com/mixbox",
     surface: "web",
     flag: "noncommercial",
-    role: { ko: "안료 스펙트럴 혼합 — 브러시 V6 안료 provider가 정적으로 import하고, 라이선스 프로필이 비상업 조건을 게이트합니다(기본값 noncommercial-full)", en: "Spectral pigment mixing — statically imported by the Brush V6 pigment provider, with the license profile gating the non-commercial terms (default noncommercial-full)" },
+    role: { ko: "안료 스펙트럴 혼합 — 브러시 V6 안료 provider가 정적으로 import하고, 라이선스 프로필이 비상업 조건을 게이트합니다(기본값 permissive-only, noncommercial-full은 명시 opt-in에서만)", en: "Spectral pigment mixing — statically imported by the Brush V6 pigment provider, with the license profile gating the non-commercial terms (default permissive-only; noncommercial-full only on explicit opt-in)" },
   },
   {
     name: "motion",
@@ -593,7 +593,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
   },
   {
     name: "remotion",
-    version: "4.0.514",
+    version: "4.0.536",
     license: "Remotion License",
     url: "https://www.remotion.dev/docs/remotion",
     surface: "web",

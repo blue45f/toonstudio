@@ -20,8 +20,10 @@ import { resolveStudioRoute } from "./studio-route-manifest";
 import { resolveStudioRouterCanonicalHref } from "./studio-router-canonical-href";
 import { StudioRouteFailure, StudioRoutePlaceholder } from "./StudioRouteFallbacks";
 import { useStudioI18nPriorityLoading } from "./useStudioI18nPriorityLoading";
+import { useT } from "@/shared/lib/i18n";
 
 export function StudioRouter() {
+  const t = useT();
   useStudioI18nPriorityLoading();
   const location = useLocation();
   const navigate = useNavigate();
@@ -53,7 +55,7 @@ export function StudioRouter() {
       return <StudioEditorRoute resolution={resolution} />;
     case "composition":
       return (
-        <Suspense fallback={<StudioRouteLoading label="AI 코믹 디렉터 세션을 여는 중..." />}>
+        <Suspense fallback={<StudioRouteLoading label={t("studio.canvas.panelLoading.aiDirectorSession", "AI 코믹 디렉터 세션을 여는 중...")} />}>
           <StudioAiComicDirectorRoute key={resolution.lifecycleKey} resolution={resolution} />
         </Suspense>
       );
@@ -61,13 +63,13 @@ export function StudioRouter() {
       return <StudioPublishRoute resolution={resolution} />;
     case "lift3d":
       return (
-        <Suspense fallback={<StudioRouteLoading label="2D → 3D 변환 작업대를 여는 중..." />}>
+        <Suspense fallback={<StudioRouteLoading label={t("studio.canvas.panelLoading.lift3dWorkbench", "2D → 3D 변환 작업대를 여는 중...")} />}>
           <StudioLift3dPage initialSubject={resolution.subject} />
         </Suspense>
       );
     case "companion":
       return (
-        <Suspense fallback={<StudioRouteLoading label="Studio 보조 창을 여는 중..." />}>
+        <Suspense fallback={<StudioRouteLoading label={t("studio.canvas.panelLoading.auxiliaryWindow", "Studio 보조 창을 여는 중...")} />}>
           <StudioToolsCompanionPage />
         </Suspense>
       );

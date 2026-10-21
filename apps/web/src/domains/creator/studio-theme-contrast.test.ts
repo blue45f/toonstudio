@@ -143,12 +143,44 @@ function designToken(tokens: ThemeTokens, name: string): string {
   return value;
 }
 
+/** Tokens the two files share: design-themes.css --color-* mirrors the contract. */
+const SHARED_TOKENS = [
+  "canvas", "panel", "card", "raised", "line", "line-strong",
+  "fg", "fg-2", "fg-3", "accent", "accent-2", "accent-soft", "on-accent",
+] as const;
+
+/** Semantic status text exists only in design-themes.css (its single source). */
+const SEMANTIC_TOKENS = ["cool", "good", "warn", "bad"] as const;
+
+/** Own-tint badge surfaces: bg-<semantic>/10 and the 0.14–0.16 soft tokens. */
+const SEMANTIC_TINT_ALPHAS = [0.1, 0.16] as const;
+
+function withAlpha(value: string, alpha: number): string {
+  // Semantic tokens are opaque oklch()/hex values; attach the tint alpha the
+  // same way the soft tokens and Tailwind /10 modifiers do.
+  return value.includes("/")
+    ? value.replace(/\/[^)]*\)$/u, `/ ${alpha})`)
+    : value.replace(/\)$/u, ` / ${alpha})`);
+}
+
 describe("design-themes.css parity with the unified contract", () => {
   // design-themes.css carries the same palette under --color-*. Surfaces that
-  // never enter the unified shell still paint --color-line-strong as the
-  // static fallback for --color-control-border, so it must not drift from
-  // the contract value that carries the WCAG 1.4.11 3:1 guarantee.
+  // never enter the unified shell still paint these values directly, so the
+  // whole shared palette — not just the strong boundary — must not drift from
+  // the contract values that carry the contrast guarantees (single source:
+  // the unified contract; design-themes.css is its --color-* mirror).
   for (const themeId of THEME_IDS) {
+    it(`${themeId}: mirrors every shared token of the unified contract`, () => {
+      const unified = tokensFor(themeId);
+      const design = designTokensFor(themeId);
+      for (const name of SHARED_TOKENS) {
+        expect(
+          designToken(design, name),
+          `${themeId}: --color-${name} drifted from --unified-${name}`,
+        ).toBe(token(unified, name));
+      }
+    });
+
     it(`${themeId}: mirrors the unified strong boundary and keeps it at 3:1`, () => {
       const unified = tokensFor(themeId);
       const design = designTokensFor(themeId);
@@ -162,6 +194,31 @@ describe("design-themes.css parity with the unified contract", () => {
           ratio,
           `${themeId}: --color-line-strong on --color-${background} is ${ratio.toFixed(2)}:1`,
         ).toBeGreaterThanOrEqual(BOUNDARY_MINIMUM);
+      }
+    });
+
+    it(`${themeId}: keeps semantic status text at WCAG AA 4.5:1 on plain and own-tint surfaces`, () => {
+      const design = designTokensFor(themeId);
+      for (const semantic of SEMANTIC_TOKENS) {
+        const foreground = designToken(design, semantic);
+        for (const background of BACKGROUNDS) {
+          const plain = studioColorContrast(foreground, designToken(design, background));
+          expect(
+            plain,
+            `${themeId}: --color-${semantic} on --color-${background} is ${plain.toFixed(2)}:1`,
+          ).toBeGreaterThanOrEqual(TEXT_MINIMUM);
+          for (const alpha of SEMANTIC_TINT_ALPHAS) {
+            const tinted = compositeStudioColor(
+              withAlpha(foreground, alpha),
+              designToken(design, background),
+            );
+            const ratio = studioColorContrast(foreground, tinted);
+            expect(
+              ratio,
+              `${themeId}: --color-${semantic} on its ${alpha} tint over --color-${background} is ${ratio.toFixed(2)}:1`,
+            ).toBeGreaterThanOrEqual(TEXT_MINIMUM);
+          }
+        }
       }
     });
   }

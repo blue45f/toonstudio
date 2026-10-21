@@ -168,7 +168,7 @@ describe("CreatorAdaptiveOnboardingGate", () => {
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     // 목적을 고르지 않아도 완료 지점의 단일 다음 행동이 미리보기에 표시된다.
-    expect(screen.getByText(/완료하면 바로 “새 작품 만들기”/)).toBeTruthy();
+    expect(screen.getByText(/완료하면 바로 “작품 시작하기”/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "이 작업실로 시작" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(mocks.updateMyProfile).toHaveBeenCalledWith({ creatorRoleProfile: expect.objectContaining({
@@ -178,7 +178,8 @@ describe("CreatorAdaptiveOnboardingGate", () => {
     expect(mocks.saveWorkspace).toHaveBeenCalledWith(expect.objectContaining({
       activeRole: null, detailedLens: null, onboardingComplete: true,
     }));
-    expect(screen.getByTestId("gate-location").textContent).toBe("/studio/new");
+    // 목적이 없으면 양식 직행이 아니라 작품 시작 정문(/create)으로 간다(A5 — 시작 입구 단일화).
+    expect(screen.getByTestId("gate-location").textContent).toBe("/create");
   });
 
   it("names the role settings entry in the always-visible skip guidance", async () => {

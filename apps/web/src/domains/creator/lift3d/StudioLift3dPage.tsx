@@ -764,7 +764,7 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
                 />
               ) : buffers !== null ? (
                 <div className="h-[24rem] w-full lg:h-[32rem]">
-                  <Suspense fallback={<StudioPanelLoading label="3D 미리보기를 여는 중..." />}>
+                  <Suspense fallback={<StudioPanelLoading labelKey="studio.canvas.panelLoading.preview3d" labelFallback="3D 미리보기를 여는 중..." />}>
                     <StudioLift3dPreview
                       buffers={buffers}
                       textureUrl={previewTextureUrl}

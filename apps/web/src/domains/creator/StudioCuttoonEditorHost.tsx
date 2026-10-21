@@ -277,6 +277,8 @@ import {
 import { createStudioAutosaveBusyRetry } from "./studio-autosave-busy-retry";
 import { studioAutosaveLeadershipAllowsLocalEdit } from "./studio-autosave-document-leader";
 import { studioAutosaveDocumentBusy } from "./studio-autosave-opfs-session";
+import { createStudioSaveSyncSignalStore } from "./studio-save-sync-signals";
+import { useStudioSaveSyncSignalWiring } from "./studio-cuttoon-editor/runtime/useStudioSaveSyncSignalWiring";
 import { StudioFormalSaveDialogMount as StudioFormalSaveDialog } from "./save-first/StudioFormalSaveDialogMount";
 import { studioReviewCaptureSaveNavigation } from "./review-capture/studio-review-capture-navigation";
 import { useStudioReviewCaptureHost } from "./review-capture/useStudioReviewCaptureHost";
@@ -1775,6 +1777,7 @@ export function StudioCuttoonEditor({
       );
     }
   }
+  const [saveSyncStore] = useState(() => createStudioSaveSyncSignalStore());
   const {
     advanceStudioRevisionProjectGeneration,
     authorizedWorkAssetScopeId,
@@ -1844,6 +1847,7 @@ export function StudioCuttoonEditor({
   } = useStudioDocumentAccessRuntime({
     announce: (message) => announceDrawingShortcut(message),
     onAcceptedMutation: invalidatePendingRetainedRedo,
+    onEditGeneration: (generation) => saveSyncStore.noteEditGeneration(generation),
     getProjectSnapshot: () => currentStudioProjectSnapshot(),
     instantWorkId,
     liveInviteRole: liveInviteRoleParam,
@@ -2120,6 +2124,11 @@ export function StudioCuttoonEditor({
     studioLivePendingMutationRef,
     studioLiveRoomRef,
     studioWorkAssetAdmissionCoordinator,
+  });
+  useStudioSaveSyncSignalWiring({
+    store: saveSyncStore,
+    autosaveKey,
+    leadership: autosaveDocumentLeadership,
   });
   // 신규 캔버스(작업ID/리믹스 없음)에서는 페이지 리뷰 잠금이 편집 차단에 개입하지 않도록 스코프를 분리한다.
   const reviewBoundPage = workId !== null || remixId !== null;
@@ -6639,7 +6648,9 @@ export function StudioCuttoonEditor({
   const quickStartDismissedRef = useRef(quickStartDismissed);
   quickStartDismissedRef.current = quickStartDismissed;
   const [quickStartOpen, setQuickStartOpen] = useState(false);
-  const dismissQuickStartFromEarlyInteraction = useEffectEvent(() => dismissQuickStart());
+  // 첫 조작으로 코치가 비켜난 상태(세션 한정). 영구 dismiss 와 달리 접힌 "사용법"으로 다시 펼칠 수 있다.
+  const [quickStartYielded, setQuickStartYielded] = useState(false);
+  const yieldQuickStartFromEarlyInteraction = useEffectEvent(() => yieldQuickStart());
   useEffect(() => {
     if (quickStartDismissed || typeof globalThis.document === "undefined") return;
     const ownerDocument = globalThis.document;
@@ -6649,7 +6660,7 @@ export function StudioCuttoonEditor({
         ownerDocument,
         target: event.target,
       })) return;
-      dismissQuickStartFromEarlyInteraction();
+      yieldQuickStartFromEarlyInteraction();
     };
 
     // Pointer and keyboard cover mouse, touch, pen, and normal keyboard activation. `click` also
@@ -7289,9 +7300,11 @@ export function StudioCuttoonEditor({
     if (studioLifecycleBaselineScopeRef.current === scope) return;
     studioLifecycleBaselineScopeRef.current = scope;
     studioLifecycleDurableGenerationRef.current = studioRevisionProjectGenerationRef.current;
+    saveSyncStore.noteBaseline(studioRevisionProjectGenerationRef.current);
     studioLifecycleDurablePendingFingerprintRef.current = "";
   }, [
     remixId,
+    saveSyncStore,
     studioAuthUserId,
     studioRevisionProjectGenerationRef,
     workHydrated,
@@ -7488,6 +7501,7 @@ export function StudioCuttoonEditor({
             studioLifecycleDurableGenerationRef.current,
             scheduledGeneration
           );
+          saveSyncStore.noteDurableGeneration(scheduledGeneration);
           studioLifecycleDurablePendingFingerprintRef.current =
             scheduledPendingFingerprint;
         })().catch((cause: unknown) => {
@@ -7499,6 +7513,7 @@ export function StudioCuttoonEditor({
           // OPFS 내용이 복원된다. 두 권위를 그대로 보존하고 다음 편집/clear에서 재시도한다.
           reportStudioSaveAuthorityDegraded(cause);
           void reportStudioAutosaveFailure(cause);
+          saveSyncStore.noteFailure(Date.now());
           if (import.meta.env.DEV) {
             console.warn("Studio empty autosave tombstone could not be written.", cause);
           }
@@ -7522,6 +7537,7 @@ export function StudioCuttoonEditor({
             sessionPromise ?? Promise.resolve(null),
             sqlitePromise ?? Promise.resolve(null),
           ]);
+          saveSyncStore.noteDurability(session || sqlite ? "available" : "unavailable");
           if (!canPublishSnapshot()) return;
           const receipt = await persistStudioAutosaveWithOpfsPrimary({
             session,
@@ -7550,6 +7566,13 @@ export function StudioCuttoonEditor({
           studioLifecycleDurablePendingFingerprintRef.current =
             scheduledPendingFingerprint;
           noteStudioSaveSucceeded(receipt.authority);
+          saveSyncStore.noteDurableReceipt({
+            savedAtMs: Date.parse(receipt.savedAt) || Date.now(),
+            authority: receipt.authority,
+            sequence: receipt.sequence,
+            revision: receipt.revision,
+            generation: scheduledGeneration,
+          });
           // 대표 썸네일은 내구 저장 성공 뒤에만 갱신한다 — 실패해도 저장을 흔들지 않게 비동기로 흘려보낸다.
           void import("./studio-project-thumbnail").then(({ syncStudioProjectThumbnailAfterSave }) => syncStudioProjectThumbnailAfterSave({
             storage: globalThis.localStorage, projectId: studioRoute.projectId, payload,
@@ -7565,6 +7588,7 @@ export function StudioCuttoonEditor({
           // the durable generation; browser KV is compatibility/discard-only in the V12 product.
           // 무음 금지: 상태 레일에 도달시키고, 쿼터 압박이면 복구 저널 공간 회수까지 잇는다.
           void reportStudioAutosaveFailure(cause);
+          saveSyncStore.noteFailure(Date.now());
           console.error("Auto-save failed:", cause);
         });
   }, 1500);
@@ -7617,6 +7641,7 @@ export function StudioCuttoonEditor({
     sharedDocument,
     pagesHiRef,
     pagesHistoryRef,
+    saveSyncStore,
     studioRevisionProjectGenerationRef,
   ]);
 
@@ -11704,6 +11729,14 @@ export function StudioCuttoonEditor({
   const advancedFillColorDropRef = useRef<ColorDropSession | null>(null);
   const [advancedFillColorDropView, setAdvancedFillColorDropView] =
     useState<ColorDropGestureView | null>(null);
+  // ColorDrop 드래그 실시간 미리보기 — 실행 중 여부, 마지막으로 미리본 허용 오차,
+  // 실행 중 밀려 들어온 최신 요청(1건만 유지해 워커 왕복이 쌓이지 않게 한다).
+  const advancedFillColorDropPreviewBusyRef = useRef(false);
+  const advancedFillColorDropPreviewToleranceRef = useRef<number | null>(null);
+  const advancedFillColorDropPreviewPendingRef = useRef<{
+    payload: { position: { x: number; y: number }; frame: SelectionFrame };
+    tolerance: number;
+  } | null>(null);
   const advancedFillLassoDragRef = useRef<StudioLassoFillDragSession | null>(null);
   const advancedFillTapPayloadRef = useRef<{
     position: { x: number; y: number };
@@ -14673,10 +14706,11 @@ const puppetWarpArmed =
       && workHydrated
       && autosaveChecked
       && !hasAutosave
-      && uiDensityMode !== "focus"
       && !quickStartDismissed
-      && !menu
-      && elements.length === 0)
+      && (quickStartYielded
+        || (uiDensityMode !== "focus"
+          && !menu
+          && elements.length === 0)))
   );
 
   // 삭제된 요소의 노드 참조가 nodeRefs에 남지 않도록 정리(누수 방지).
@@ -17624,8 +17658,15 @@ const puppetWarpArmed =
       rotation: 0,
     });
   }
+  function yieldQuickStart() {
+    // 첫 조작은 코치를 영구히 지우지 않는다 — 접힌 "사용법" 상태로 남겨 두고,
+    // 영구 dismiss 는 패널의 ✕ 와 카드 안에서의 Esc 만 기록한다.
+    setQuickStartOpen(false);
+    setQuickStartYielded(true);
+  }
   function dismissQuickStart() {
     setQuickStartOpen(false);
+    setQuickStartYielded(false);
     if (quickStartDismissedRef.current) return;
     quickStartDismissedRef.current = true;
     setQuickStartDismissed(true);
@@ -21861,6 +21902,8 @@ const puppetWarpArmed =
   function clearAdvancedFillTapGesture() {
     advancedFillTapGestureRef.current = null;
     advancedFillColorDropRef.current = null;
+    advancedFillColorDropPreviewPendingRef.current = null;
+    advancedFillColorDropPreviewToleranceRef.current = null;
     setAdvancedFillColorDropView(null);
     advancedFillTapPayloadRef.current = null;
     advancedFillTouchPanRef.current = null;
@@ -22227,6 +22270,18 @@ const puppetWarpArmed =
     payload: { position: { x: number; y: number }; frame: SelectionFrame },
     tolerance: number,
   ) {
+    // 드래그 미리보기 실행이 아직 돌고 있으면 커밋 실행이 busy 가드에 막혀 사라진다.
+    // 미리보기는 이 제스처 전용 실행이라, 커밋이 그것을 대체(supersede)하는 것이 맞다.
+    const supersededPreview = advancedFillColorDropPreviewBusyRef.current;
+    if (supersededPreview) {
+      advancedFillColorDropPreviewBusyRef.current = false;
+      advancedFillColorDropPreviewPendingRef.current = null;
+      advancedFillColorDropPreviewToleranceRef.current = null;
+      advancedFillRunIdRef.current += 1;
+      advancedFillAbortRef.current?.abort();
+      advancedFillAbortRef.current = null;
+      setAdvancedFillBusy(false);
+    }
     const next: StudioAdvancedFillSettings = {
       ...advancedFillSettingsRef.current,
       tolerance,
@@ -22239,8 +22294,66 @@ const puppetWarpArmed =
       .catch(() => setAppSettingsPersistenceState("session-only"));
     return bindStudioAdvancedFillRun({
       ...studioAdvancedFillRunHost,
+      ...(supersededPreview ? { advancedFillBusy: false } : null),
+      // 드래그 미리보기와 같은 기준(원본)에서 최종 허용 오차로 다시 계산한다.
+      // 미리보기 결과에 누적하면 허용 오차가 겹쳐 의도보다 넓게 채워질 수 있다.
+      advancedFillPreview: null,
       advancedFillSettings: next,
     })(payload.position, payload.frame);
+  }
+
+  // ColorDrop 드래그 실시간 미리보기 — 드래그 중 허용 오차가 바뀔 때마다 기존 미리보기
+  // 경로(설정 무효화·영속 없이, 원본에서 다시 계산)로 채우기 결과를 다시 그린다.
+  // 설정은 손을 뗄 때(commit)만 바뀌므로 취소하면 시작값이 그대로 남는다.
+  // 동시 실행은 1건으로 제한하고, 실행 중 들어온 요청은 최신 1건만 이어 실행한다.
+  function previewAdvancedFillColorDrop(
+    payload: { position: { x: number; y: number }; frame: SelectionFrame },
+    tolerance: number,
+  ) {
+    if (advancedFillColorDropPreviewToleranceRef.current === tolerance) return;
+    if (advancedFillColorDropPreviewBusyRef.current) {
+      advancedFillColorDropPreviewPendingRef.current = { payload, tolerance };
+      return;
+    }
+    advancedFillColorDropPreviewBusyRef.current = true;
+    advancedFillColorDropPreviewToleranceRef.current = tolerance;
+    void bindStudioAdvancedFillRun({
+      ...studioAdvancedFillRunHost,
+      advancedFillBusy: false,
+      advancedFillPreview: null,
+      advancedFillKeepArmed: true,
+      advancedFillSettings: { ...advancedFillSettingsRef.current, tolerance },
+    })(payload.position, payload.frame).finally(() => {
+      advancedFillColorDropPreviewBusyRef.current = false;
+      const pending = advancedFillColorDropPreviewPendingRef.current;
+      advancedFillColorDropPreviewPendingRef.current = null;
+      // 제스처가 아직 드래그 중일 때만 이어서 미리본다. 끝난 제스처의 잔여 요청은 버린다.
+      if (pending && advancedFillColorDropRef.current?.drop.phase === "dragging") {
+        previewAdvancedFillColorDrop(pending.payload, pending.tolerance);
+      }
+    });
+  }
+
+  // ColorDrop 취소(pointercancel·차단) 복원 — 진행 중 미리보기 실행을 중단하고
+  // 드래그가 만든 미리보기를 폐기한다. 설정은 드래그 중 바뀐 적이 없어 시작값이
+  // 그대로 복원되고, 문서도 미리보기는 적용 전 단계라 손대지 않는다.
+  function cancelAdvancedFillColorDropPreview() {
+    advancedFillColorDropPreviewPendingRef.current = null;
+    const hadPreviewWork =
+      advancedFillColorDropPreviewBusyRef.current ||
+      advancedFillColorDropPreviewToleranceRef.current !== null;
+    if (advancedFillColorDropPreviewBusyRef.current) {
+      advancedFillColorDropPreviewBusyRef.current = false;
+      advancedFillRunIdRef.current += 1;
+      advancedFillAbortRef.current?.abort();
+      advancedFillAbortRef.current = null;
+      setAdvancedFillBusy(false);
+    }
+    advancedFillColorDropPreviewToleranceRef.current = null;
+    if (hadPreviewWork) {
+      setAdvancedFillPreview(null);
+      setAdvancedFillStatus("드래그가 취소되어 원래 허용 오차로 돌아갔습니다.");
+    }
   }
 
   // ── 이미지 크롭 적용 — 원본 자연 해상도로 잘라 data URL 교체(파괴적, 히스토리 1건) ──
@@ -22576,7 +22689,7 @@ const puppetWarpArmed =
   activatePrimaryCanvasToolRef.current = activatePrimaryCanvasTool;
   /** CSP/PPT: surface properties after a draw tool pick (rail, shortcuts, companion). */
   function activateDrawToolWithProperties(nextDrawMode?: DrawMode) {
-    if (showQuickStart) dismissQuickStart();
+    if (showQuickStart) yieldQuickStart();
     activatePrimaryCanvasTool("draw", nextDrawMode);
     openInspectorRoute({ primary: "properties" }, isMobile ? "draw" : null);
   }
@@ -23201,6 +23314,9 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     advancedFillSettingsRef,
     setAdvancedFillColorDropView,
     runAdvancedFillColorDropCommit,
+    previewAdvancedFillColorDrop,
+    cancelAdvancedFillColorDropPreview,
+    advancedFillColorDropPreviewBusyRef,
     advancedFillLassoDragRef,
     advancedFillLassoEnabled: advancedFillSettings.lassoFill,
     advancedFillTapGestureRef,
@@ -26170,6 +26286,13 @@ function clearSelectionForEdit() {
             );
             studioLifecycleDurablePendingFingerprintRef.current = pendingFingerprint;
             noteStudioSaveSucceeded(authority);
+            saveSyncStore.noteDurableReceipt({
+              savedAtMs: Date.parse(savedAt) || Date.now(),
+              authority,
+              sequence: null,
+              revision: null,
+              generation: emergencyGeneration,
+            });
           })
           .catch((cause: unknown) => {
             if (studioAutosaveDocumentBusy(cause)) return;
@@ -26177,6 +26300,7 @@ function clearSelectionForEdit() {
             // frontier until an OPFS/SQLite receipt exists, and make the loss of durability visible.
             reportStudioSaveAuthorityDegraded(cause);
             void reportStudioAutosaveFailure(cause);
+            saveSyncStore.noteFailure(Date.now());
             console.error("Pending stroke emergency autosave failed:", cause);
           });
       }
@@ -27040,7 +27164,7 @@ function clearSelectionForEdit() {
     },
     onPickImage,
     revealDrawToolProperties: () => {
-      if (showQuickStart) dismissQuickStart();
+      if (showQuickStart) yieldQuickStart();
       openInspectorRoute({ primary: "properties" }, isMobile ? "draw" : null);
     },
     toggleAdvancedFill,
@@ -28032,6 +28156,7 @@ function clearSelectionForEdit() {
     commitPages,
     commitDrawingPracticeView: drawingPractice.commitView,
     dismissQuickStart,
+    yieldQuickStart,
     downloadAutosaveBackup,
     duplicateSelected,
     enterCanvasOnlyMode,
@@ -29229,6 +29354,8 @@ function clearSelectionForEdit() {
       uiAdvancedToolsExpanded={uiAdvancedToolsExpanded}
       setUiAdvancedToolsExpanded={setUiAdvancedToolsExpanded}
       uiFirstScreenExposure={uiFirstScreenExposure}
+      saveSyncStore={saveSyncStore}
+      requestSaveFlush={() => setAutosaveRetryNonce((current) => current + 1)}
       undo={undo}
       undoBrushDelete={undoBrushDelete}
       useVelocityPressure={useVelocityPressure}

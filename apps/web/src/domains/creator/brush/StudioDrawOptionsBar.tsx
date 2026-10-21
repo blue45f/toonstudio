@@ -1328,9 +1328,11 @@ export function StudioDrawOptionsBar({
             <div className="flex shrink-0 items-center gap-0.5" role="group" aria-label="보정 방식">
               {(
                 [
-                  { id: "standard" as const, label: "표준" },
-                  { id: "adaptive" as const, label: "적응" },
-                  { id: "precision" as const, label: "정밀" },
+                  { id: "standard" as const, label: "표준", previewVariant: "standard" as const },
+                  { id: "adaptive" as const, label: "적응", previewVariant: "adaptive" as const },
+                  { id: "precision" as const, label: "정밀", previewVariant: "precision" as const },
+                  // 미리보기 변형이 없는 weighted는 adaptive로 보낸다(상세 패널과 같은 규칙).
+                  { id: "weighted" as const, label: "무게 추", previewVariant: "adaptive" as const },
                 ] as const
               ).map((item) => (
                 <StudioToolHintTarget
@@ -1341,10 +1343,12 @@ export function StudioDrawOptionsBar({
                       ? "입력 지연을 최소화하며 잔떨림을 고르게 줄입니다. 짧고 빠른 선화에 잘 맞아요."
                       : item.id === "adaptive"
                         ? "그리는 속도에 맞춰 보정량을 바꿉니다. 빠른 제스처와 느린 곡선을 함께 쓸 때 균형이 좋아요."
-                        : "입력을 더 길게 분석해 긴 곡선과 깨끗한 윤곽을 정밀하게 다듬습니다.",
+                        : item.id === "weighted"
+                          ? "무게 추가 매달린 듯 물리 관성으로 따라오고, 속도에서 도출한 필압으로 빠른 획 끝이 가늘어집니다."
+                          : "입력을 더 길게 분석해 긴 곡선과 깨끗한 윤곽을 정밀하게 다듬습니다.",
                     undefined,
                     "stabilizer",
-                    `stabilizer-${item.id}`
+                    `stabilizer-${item.previewVariant}`
                   )}
                 >
                   <button

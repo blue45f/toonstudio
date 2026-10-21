@@ -36,6 +36,7 @@
       "/assets/ort-wasm-simd-threaded.asyncify-*.wasm",
       "/assets/tag2pix-*.onnx",
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
+      "/assets/studio/bundle-v2/*",
       "/brand/toonstudio-product-tour.mp4"
     ]
   },

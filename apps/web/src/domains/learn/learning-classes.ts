@@ -70,6 +70,44 @@ export const CLASS_PRODUCTS: readonly ClassProduct[] = [
       { week: 4, title: "스튜디오 레이어 실습", summary: "원본을 유지한 채 색 수정과 내보내기를 실습합니다.", lessonIds: ["studio-layer-practice"] },
     ],
   },
+  {
+    id: "episode-workflow-class",
+    title: "한 회차 제작 워크플로 클래스",
+    summary: "회차 구조 설계에서 배경·톤 마무리와 조립 검수까지, 실제 제작 순서를 주차별로 한 회차 분량으로 완주하는 클래스입니다.",
+    instructor: "툰스튜디오 아카데미 제작진",
+    level: "growing",
+    pointPrice: 500,
+    outcomes: [
+      "질문·고조·답이 대응하는 회차 구조표와 콘티",
+      "장소와 시간대가 읽히는 배경과 톤 마무리",
+      "단계별 마감 표시와 검수 기록이 있는 조립본",
+    ],
+    curriculum: [
+      { week: 1, title: "회차 구조 설계", summary: "시작 질문과 고조, 답을 구조표로 세우고 세 컷 콘티로 검증합니다.", lessonIds: ["episode-arc", "story-board"] },
+      { week: 2, title: "공간과 배경 실습", summary: "배경으로 장소와 시간을 설명하고 작업 화면에서 카메라를 잡습니다.", lessonIds: ["background-scene", "studio-background-practice"] },
+      { week: 3, title: "톤과 질감 마무리", summary: "톤의 명도 단계와 효과선으로 표면과 분위기를 구분합니다.", lessonIds: ["tone-effects"] },
+      { week: 4, title: "조립과 게시 준비", summary: "컷을 회차로 조립하고 게시 검수까지 한 흐름으로 마칩니다.", lessonIds: ["studio-episode-assembly", "publish-check"] },
+    ],
+  },
+  {
+    id: "character-review-class",
+    title: "캐릭터 일관성과 리뷰·수정 클래스",
+    summary: "캐릭터 시트로 기준을 고정하고, 배경 속에서도 같은 인물로 읽히게 한 뒤 피드백을 수정으로 연결하는 심화 클래스입니다.",
+    instructor: "툰스튜디오 아카데미 제작진",
+    level: "advanced",
+    pointPrice: 700,
+    outcomes: [
+      "비율·표정·기준색이 고정된 캐릭터 시트",
+      "배경 속에서도 실루엣과 얼굴이 유지되는 캐릭터 컷",
+      "피드백을 수정 지시로 바꾼 전후 비교 기록",
+    ],
+    curriculum: [
+      { week: 1, title: "캐릭터 기준 세우기", summary: "캐릭터 시트를 만들고 실루엣으로 행동이 읽히는지 확인합니다.", lessonIds: ["character-consistency", "character-silhouette"] },
+      { week: 2, title: "배경 속 캐릭터", summary: "배경의 공간 규칙 안에서 인물의 접지와 크기를 맞춥니다.", lessonIds: ["background-scene", "studio-background-practice"] },
+      { week: 3, title: "피드백과 수정", summary: "감상을 위치와 현상으로 번역하고 우선순위대로 고칩니다.", lessonIds: ["feedback-revision"] },
+      { week: 4, title: "조립 검수와 완성", summary: "수정본을 회차로 조립하고 처음부터 끝까지 검수합니다.", lessonIds: ["studio-episode-assembly"] },
+    ],
+  },
 ];
 
 const PRODUCT_BY_ID = new Map(CLASS_PRODUCTS.map((product) => [product.id, product]));

@@ -194,7 +194,7 @@ export function StudioAiToolPopoverBody({
 
   const applyEpisodeProductionPlan = (plan: StudioAiEpisodeProductionPlan) => {
     if (masterEditMode) {
-      announceDrawingShortcut("마스터 편집 중에는 회차 AI 컷 제작을 사용할 수 없어요.");
+      announceDrawingShortcut(t("studio.aiToolPopover.masterEditAiCutDisabled", "마스터 편집 중에는 회차 AI 컷 제작을 사용할 수 없어요."));
       return;
     }
     const handoff = createStudioAiComicComposerHandoff(plan);

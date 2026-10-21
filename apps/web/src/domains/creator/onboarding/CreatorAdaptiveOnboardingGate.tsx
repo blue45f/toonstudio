@@ -192,7 +192,7 @@ function completionActionForGoals(
   if (goals.includes("team-production") || goals.includes("studio-management") || goals.includes("outsourcing")) {
     return { href: "/production", labelKo: "제작 현황 보러 가기", labelEn: "Open production" };
   }
-  return { href: "/studio/new", labelKo: "새 작품 만들기", labelEn: "Create a new project" };
+  return { href: "/create", labelKo: "작품 시작하기", labelEn: "Start a work" };
 }
 
 function localized(_locale: CreatorRoleLocale, ko: string, en: string): string {

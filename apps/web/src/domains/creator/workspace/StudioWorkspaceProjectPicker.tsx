@@ -3,6 +3,7 @@ import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-reader";
 import { searchWorkspaceProjects, WORKSPACE_PROJECT_PAGE_SIZE, type WorkspaceProjectOrder } from "./studio-workspace-project-search";
+import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 
 type Props = {
   readonly projects: readonly StudioProjectLibraryEntry[];
@@ -76,7 +77,7 @@ export function StudioWorkspaceProjectPicker({ projects, selectedId, personal, l
       </div>
       {!results.length ? <p>{query.trim() ? bt("검색 결과가 없습니다. 다른 제목으로 찾아보세요.", "No matching works. Try another title.") : bt("아직 이 기기에 등록된 작품이 없습니다.", "No works are registered on this device yet.")}</p> : null}
       {results.length > limit ? <button type="button" className="workspace-project-more" onClick={() => setLimit((value) => value + WORKSPACE_PROJECT_PAGE_SIZE)}>{bt("작품 더 보기", "Show more works")}</button> : null}
-      <div className="workspace-project-picker-actions"><Link href="/studio">{bt("작품 전체 관리", "Manage all works")}</Link><Link href="/studio/new">{bt("새 작품 만들기", "Create a work")}</Link></div>
+      <div className="workspace-project-picker-actions"><Link href="/studio">{bt("작품 전체 관리", "Manage all works")}</Link><Link href={STUDIO_START_GATEWAY_HREF}>{bt("새 작품 만들기", "Create a work")}</Link></div>
     </>}
   </div>;
 }

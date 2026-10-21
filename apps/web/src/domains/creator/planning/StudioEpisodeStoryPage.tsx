@@ -180,6 +180,12 @@ function EpisodeSynopsisEditor({
       }}
     >
       <h2>{plan.episodeNumber}화 줄거리</h2>
+      {plan.readerReactionMemo ? (
+        <section aria-label="독자 반응 기획 메모">
+          <h3>이전 회차 독자 반응 메모</h3>
+          <p style={{ whiteSpace: "pre-line" }}>{plan.readerReactionMemo}</p>
+        </section>
+      ) : null}
       {beats && beats.length > 0 && (
         <button type="button" onClick={fillFromBeats}>
           콘티 비트에서 초안 가져오기

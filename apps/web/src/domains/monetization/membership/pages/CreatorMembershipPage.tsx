@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useT } from "@/shared/lib/i18n";
+import { defineBilingualText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -29,6 +30,13 @@ import {
 } from "../models/membership-store";
 import { MembershipTierEditor } from "../components/MembershipTierEditor";
 import { MembershipTierCard } from "../components/MembershipTierCard";
+
+const REVENUE_CTA = defineBilingualText(
+  "creatorMembershipPage",
+  "revenueCta",
+  "수익 대시보드",
+  "Revenue dashboard",
+);
 
 export function CreatorMembershipPage() {
   const t = useT();
@@ -94,14 +102,19 @@ export function CreatorMembershipPage() {
           </h1>
           <p className="mt-1 text-sm text-muted">{t("membership.creatorPage.subtitle")}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => { setEditingTier(null); setShowEditor((v) => !v); }}
-          className={cn(buttonClass({ variant: "solid" }), "gap-1.5")}
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          {t("membership.creatorPage.newTier")}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <a href="/creator/revenue" className={buttonClass({ variant: "ghost" })}>
+            {t(REVENUE_CTA)}
+          </a>
+          <button
+            type="button"
+            onClick={() => { setEditingTier(null); setShowEditor((v) => !v); }}
+            className={cn(buttonClass({ variant: "solid" }), "gap-1.5")}
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            {t("membership.creatorPage.newTier")}
+          </button>
+        </div>
       </header>
 
       {tiers.length > 0 && (

@@ -296,7 +296,11 @@ export function createStudioInterchangeImportOrchestration(
       });
       if (controller.signal.aborted || documentImportEpochRef.current !== importEpoch) return;
       if (!canApplyStudioMutation(mutationTicket)) return;
-      if (result.elements.length === 0 && !result.compositeElement) {
+      if (
+        result.elements.length === 0
+        && !result.compositeElement
+        && (result.adjustmentLayers?.length ?? 0) === 0
+      ) {
         setPsdImportStatus({ tone: "warn", text: psdImportResultMessage(result) });
         return;
       }

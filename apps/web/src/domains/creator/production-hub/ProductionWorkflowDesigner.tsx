@@ -148,7 +148,7 @@ export function ProductionWorkflowDesigner({ aggregate, canManage, execute, onCl
       );
       saved = true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "공정 설정을 저장하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : bt("공정 설정을 저장하지 못했습니다.", "Could not save the workflow settings."));
     } finally {
       saving.current = false;
       setBusy(false);
@@ -614,7 +614,7 @@ export function ProductionWorkflowDesigner({ aggregate, canManage, execute, onCl
               className={cn(buttonClass({ variant: "solid" }), "min-h-11 gap-2")}
             >
               <Save size={16} />
-              {busy ? "공정 저장 중…" : "프로세스 저장"}
+              {busy ? bt("공정 저장 중…", "Saving workflow…") : "프로세스 저장"}
             </button>
           ) : null}
         </div>

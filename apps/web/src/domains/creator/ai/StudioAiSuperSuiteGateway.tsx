@@ -1,3 +1,5 @@
+import { useT } from "@/shared/lib/i18n";
+import "./studio-ai-status-i18n";
 import { Suspense, useEffect, useState } from "react";
 
 import { compileStudioAiSuitePromptHandoff } from "./studio-ai-suite-handoff";
@@ -13,6 +15,7 @@ const StudioAiSuperSuiteModal = lazyRetry(
 
 /** Own only the optional dialog lifetime, never the host's menu or image-tool state. */
 export function StudioAiSuperSuiteGateway({ onApplyPrompt }: { readonly onApplyPrompt: (prompt: string) => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   // Subscribe also consumes pre-mount requests. Unlike consuming in a state initializer,
   // effect delivery remains intact through StrictMode's render/effect replay.
@@ -26,7 +29,7 @@ export function StudioAiSuperSuiteGateway({ onApplyPrompt }: { readonly onApplyP
     <Suspense fallback={
       <div className="fixed inset-0 z-[120] grid place-items-center bg-bg/80 p-4 backdrop-blur-sm" role="status">
         <div className="rounded-xl border border-line bg-panel px-4 py-3 text-sm font-semibold text-fg shadow-xl">
-          AI 웹툰 레시피 도구를 여는 중…
+          {t("studio.aiStatus.openingRecipeTools", "AI 웹툰 레시피 도구를 여는 중…")}
           <button type="button" className="ml-3 min-h-11 rounded-lg border border-line px-3" onClick={() => setOpen(false)}>열기 취소</button>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { useStudioCommunityMarketplaceInitialView } from "./use-studio-community
 
 import type { StudioAsset } from "./studio-asset-library";
 import type { StudioToolBeltContentProps } from "./StudioToolBeltContent";
+import { useT } from "@/shared/lib/i18n";
 
 export interface StudioAssetLegacyPanelProps {
   readonly toolBelt: StudioToolBeltContentProps;
@@ -17,6 +18,7 @@ export interface StudioAssetLegacyPanelProps {
 export function StudioAssetLegacyPanel({
   toolBelt,
 }: StudioAssetLegacyPanelProps) {
+  const t = useT();
   const communityMarketplaceInitialView =
     useStudioCommunityMarketplaceInitialView();
   const {
@@ -68,7 +70,7 @@ export function StudioAssetLegacyPanel({
   } = toolBelt.stableHandlers;
 
   return (
-    <Suspense fallback={<StudioPanelLoading label="에셋 보관함을 여는 중..." />}>
+    <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetLibrary", "에셋 보관함을 여는 중...")} />}>
       <StudioAssetMenuPanel
         assetTab={assetTab}
         setAssetTab={setAssetTab}

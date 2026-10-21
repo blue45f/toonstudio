@@ -3,8 +3,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   countStudioBg3dBundlePackDeferred,
+  loadStudioBg3dBundleDeployAvailability,
   loadStudioBg3dBundleThemePacks,
   studioBg3dBundleAssetName,
+  type StudioBg3dBundleDeployAvailability,
   type StudioBg3dBundleThemePackAsset,
   type StudioBg3dBundleThemePacks,
 } from "./studio-bg3d-bundle-theme-packs";
@@ -48,6 +50,7 @@ export function StudioBg3dBundleThemePackPanel({
 }) {
   const searchId = "bg3d-bundle-theme-pack-search";
   const [data, setData] = useState<StudioBg3dBundleThemePacks | null>(null);
+  const [availability, setAvailability] = useState<"checking" | StudioBg3dBundleDeployAvailability>("checking");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [group, setGroup] = useState<GroupSelection>("all");
@@ -71,6 +74,22 @@ export function StudioBg3dBundleThemePackPanel({
       });
     return () => controller.abort();
   }, [data, revision]);
+
+  // 메타데이터만으로 "배치 가능"이라 주장하지 않는다: GLB 실물 배포의 완료
+  // 신호(배포 인덱스)가 테마 팩 합계와 맞을 때만 배치를 연다.
+  useEffect(() => {
+    if (!data) return;
+    const controller = new AbortController();
+    setAvailability("checking");
+    loadStudioBg3dBundleDeployAvailability(data, { signal: controller.signal })
+      .then((result) => {
+        if (!controller.signal.aborted) setAvailability(result);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setAvailability("unavailable");
+      });
+    return () => controller.abort();
+  }, [data]);
 
   useEffect(() => () => {
     if (addingTimer.current) clearTimeout(addingTimer.current);
@@ -113,8 +132,10 @@ export function StudioBg3dBundleThemePackPanel({
     (currentPage + 1) * PAGE_SIZE,
   );
 
+  const placementBlocked = disabled || availability !== "available";
+
   function add(assetId: string): void {
-    if (disabled || addingId !== null) return;
+    if (placementBlocked || addingId !== null) return;
     setAddingId(assetId);
     onAdd(assetId);
     addingTimer.current = setTimeout(() => setAddingId(null), 1500);
@@ -123,7 +144,7 @@ export function StudioBg3dBundleThemePackPanel({
   function renderAssetCard(asset: StudioBg3dBundleThemePackAsset) {
     const pack = data?.packs[asset.packIndex];
     const name = studioBg3dBundleAssetName(asset);
-    const busy = disabled || addingId !== null;
+    const busy = placementBlocked || addingId !== null;
     return (
       <article
         key={asset.id}
@@ -183,6 +204,18 @@ export function StudioBg3dBundleThemePackPanel({
         제공하지 않으며, 에셋은 서비스 안에서만 쓰는 참조로 들어가고 밖으로 나가는 것은 렌더된
         이미지뿐입니다.
       </p>
+      {data && availability === "checking" ? (
+        <p role="status" className="mt-2 text-xs text-fg-3">에셋 배포 상태를 확인하는 중입니다.</p>
+      ) : null}
+      {data && availability === "unavailable" ? (
+        <p
+          role="alert"
+          className="mt-2 rounded-lg border border-line bg-panel px-2.5 py-2 text-xs leading-relaxed text-fg-2"
+        >
+          에셋 파일 배포가 아직 완료되지 않아 목록만 미리 볼 수 있습니다. 장면 배치는
+          배포가 끝난 뒤에 가능합니다.
+        </p>
+      ) : null}
 
       {loadError ? (
         <div role="alert" className="mt-2 space-y-2 text-xs text-fg-2">
@@ -273,7 +306,7 @@ export function StudioBg3dBundleThemePackPanel({
                         <button
                           type="button"
                           className={CONTROL}
-                          disabled={disabled || addingId !== null}
+                          disabled={placementBlocked || addingId !== null}
                           onClick={() => add(asset.id)}
                         >
                           {addingId === asset.id ? "배치 준비 중…" : "장면에 배치"}
@@ -319,8 +352,8 @@ export function StudioBg3dBundleThemePackPanel({
               ) : null}
 
               <p className="text-[0.65rem] leading-relaxed text-fg-3">
-                GLB 변환본이 없거나 기기 예산을 넘어 보류 중인 에셋{" "}
-                {deferredTotal(data, packIndexesForGroup).toLocaleString("ko-KR")}종은 변환·회수가
+                GLB 변환본이 없거나, 외부 텍스처를 참조하거나, 기기 예산을 넘어 보류 중인 에셋{" "}
+                {deferredTotal(data, packIndexesForGroup).toLocaleString("ko-KR")}종은 임베드 변환·회수가
                 끝나면 자동으로 이 목록에 편입됩니다.
               </p>
               {data.pendingPacks.length > 0 ? (

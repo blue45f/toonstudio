@@ -1,10 +1,12 @@
 import { lazy, Suspense, useId, useState } from "react";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
+import { useT } from "@/shared/lib/i18n";
 
 const SpatialStoryboardPanel = lazy(() => import("./StudioBg3dSpatialStoryboardPanel"));
 
 /** No heavyweight renderer, session request or eager specialist chunk on studio startup. */
 export function StudioBg3dSpatialStoryboardLauncher({ hidden = false }: { readonly hidden?: boolean }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const contentId = useId();
   return (
@@ -20,7 +22,7 @@ export function StudioBg3dSpatialStoryboardLauncher({ hidden = false }: { readon
       </button>
       <div id={contentId} hidden={!expanded}>
         {expanded && !hidden ? (
-          <Suspense fallback={<StudioPanelLoading label="공간 콘티 도구를 불러오는 중입니다." />}>
+          <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.spatialStoryboardTools", "공간 콘티 도구를 불러오는 중입니다.")} />}>
             <SpatialStoryboardPanel />
           </Suspense>
         ) : null}

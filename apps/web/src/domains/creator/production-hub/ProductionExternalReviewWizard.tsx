@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import { useState } from "react";
 import { Check, Copy, Link2, LoaderCircle } from "lucide-react";
 
@@ -49,6 +50,7 @@ export function ProductionExternalReviewWizard({
   readonly onCreate: (input: ExternalReviewWizardInput) => Promise<string>;
   readonly onCancel?: () => void;
 }) {
+  const t = useT();
   const [index, setIndex] = useState(0);
   const [submissionId, setSubmissionId] = useState(submissions[0]?.id ?? "");
   const [label, setLabel] = useState("편집부 최종 검수");
@@ -76,7 +78,7 @@ export function ProductionExternalReviewWizard({
       setLink(url);
       setIndex(2);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "링크를 만들지 못했습니다. 다시 시도해 주세요.");
+      setError(cause instanceof Error ? cause.message : t("productionHub.status.reviewLinkCreateFailed", "링크를 만들지 못했습니다. 다시 시도해 주세요."));
     } finally {
       setBusy(false);
     }
@@ -88,7 +90,7 @@ export function ProductionExternalReviewWizard({
       await navigator.clipboard.writeText(link);
       setCopied(true);
     } catch {
-      setError("자동 복사에 실패했습니다. 아래 링크를 직접 복사해 주세요.");
+      setError(t("productionHub.status.reviewLinkAutoCopyFailed", "자동 복사에 실패했습니다. 아래 링크를 직접 복사해 주세요."));
     }
   };
 

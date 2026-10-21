@@ -147,6 +147,12 @@ export interface CollabAggregateInput {
     readonly value: string;
     readonly createdAt: string;
   }[];
+  /** G1 알림 정책 — 내 담당 정책의 유형별 끄기(mutedTypes)를 통합 작업함에도 적용한다. */
+  readonly notificationPolicies?: readonly {
+    readonly assignmentId: string;
+    readonly enabled: boolean;
+    readonly mutedTypes?: readonly string[];
+  }[];
   readonly handoffs: readonly {
     readonly id: string;
     readonly episodeId: string;
@@ -203,9 +209,17 @@ export function collabEventsFromProjectAggregate(
     return party?.publicDisplayName ?? "팀원";
   };
 
+  // 내 정책에서 끈 유형은 통합 작업함에도 올리지 않는다 (다이제스트와 같은 규칙).
+  const mutedTypes = new Set<string>();
+  for (const policy of aggregate.notificationPolicies ?? []) {
+    if (!policy.enabled || !myAssignmentIds.has(policy.assignmentId)) continue;
+    for (const type of policy.mutedTypes ?? []) mutedTypes.add(type);
+  }
+
   const projectPrefix = `${projectBase(aggregate.projectId)}/`;
   for (const notification of aggregate.notifications ?? []) {
     if (notification.type !== "mention" && notification.type !== "review") continue;
+    if (mutedTypes.has(notification.type)) continue;
     if (notification.status === "dismissed") continue;
     if (notification.assignmentId !== null && !myAssignmentIds.has(notification.assignmentId)) continue;
     const isMention = notification.type === "mention";

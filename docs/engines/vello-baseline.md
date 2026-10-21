@@ -196,10 +196,12 @@ Track A  upstream-compatible — 벤더 크레이트의 `toon-fabric` 피처 OFF
          cargo check --target wasm32-unknown-unknown --features lottie
          → 모든 패치 hunk가 cfg-out 되어 상류 30.0.1과 API 동일. 상류 회귀 감지용.
 
-Track B  toon-vello — `toon-fabric` ON
-         cargo check --target wasm32-unknown-unknown --features fabric
-         wasm-pack build --target web --release --out-dir pkg-gpu -- --features lottie,fabric
+Track B  toon-vello — `toon-fabric` ON (`hybrid` 피처가 `fabric`을 포함한다)
+         cargo check --target wasm32-unknown-unknown --features hybrid,lottie,svg
+         wasm-pack build --target web --release --out-dir pkg-gpu -- --features hybrid,lottie,svg
          → adopt_gpu_device / render_scene_gpu_texture_json 진입점 포함.
+         (2026-10-22 정정: 이전 표기의 `lottie,fabric`은 커밋된 pkg-gpu의 실제
+         빌드 명령과 달랐다. 정본은 §0의 재현 절차와 Cargo.toml 피처 주석이다.)
 ```
 
 트랙 전환은 **Cargo 피처 하나**다(`[patch]` 토글이나 `--config` 곡예 없음). 커밋된 `pkg-gpu/`
@@ -279,6 +281,16 @@ next:                toon-vello patches + wgpu 30
 `tests/benchmarks/results/vello-gpu-browser.json`)으로 개설 조건이 충족되었다. fork 디렉터리·next 트랙
 개설 자체는 별도 트랙으로 착수한다(ADR-0011 레인 2 유지 게이트) — 본 문서 §1 핀은 그때까지
 upstream-compatible 트랙 단일 소스로 유지된다.
+
+### 3.7 실 GPU 측정 상태와 기록 양식 (2026-10-22)
+
+§3.5의 정본 JSON은 포팅 전(wgpu 29 세대) 측정이 이력으로 남은 것이고, 포팅 후
+실행(2026-10-21, 이 VM)은 어댑터가 `Cpu`(SwiftShader)라 실 GPU 교환 비용은
+아직 미측정이다. 실 GPU(Metal) 측정의 실행 절차·기록 양식·판정 기준·CPU 폴백
+원인 항목화는 [`docs/engines/vello-real-gpu-measurement.md`](vello-real-gpu-measurement.md)가
+정본이다. 새 결과가 나오면 하니스가 JSON을 덮어쓰므로, §3.5 표와
+`docs/candidates/engine-portfolio/capability-survey.md`의 배속 행을 같은 변경에서
+함께 고쳐야 한다(`toon-vello-fork-doc-parity.test.ts`가 어긋남을 잡는다).
 
 ## 4. Velato Lottie 레인 (ADR-0011 Velato 레인, 2026-08-08)
 

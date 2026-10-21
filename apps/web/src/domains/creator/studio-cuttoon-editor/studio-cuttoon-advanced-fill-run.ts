@@ -43,6 +43,9 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
     setError,
     setAdvancedFillPreview,
     setAdvancedFillActive,
+    // ColorDrop 드래그 미리보기 전용: 미리보기가 끝나도 도구를 무장 해제하지 않는다.
+    // 제스처가 계속되는 동안 손을 뗄 때의 커밋 실행이 무장 상태를 그대로 필요로 한다.
+    advancedFillKeepArmed,
   } = host;
   // The host bag is intentionally untyped across the extraction seam, but the layers we consume
   // must stay typed: they flow into the raster projection helper, which preserves extra fields.
@@ -288,7 +291,7 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
         ...(vectorTarget ? { virtualTarget: vectorTarget } : null),
       });
       setAdvancedFillStatus(previewMessage);
-      if (!advancedFillSettings.continuousFill) setAdvancedFillActive(false);
+      if (!advancedFillSettings.continuousFill && !advancedFillKeepArmed) setAdvancedFillActive(false);
       setError(null);
     } catch (err) {
       if (runId !== advancedFillRunIdRef.current || controller.signal.aborted) return;

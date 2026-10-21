@@ -4,6 +4,7 @@ import { CoverImage } from "./cover-image";
 import type { Title } from "@/shared/lib/types";
 
 import { cx } from "@/shared/lib/cx";
+import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 
 /**
  * ArtBackdrop (BLUEPRINT §6.2 (2)·(4), §6.3 작품 상세, S3-17) — 표지 틴트 배경.
@@ -49,6 +50,8 @@ export function ArtBackdrop({
           src={title.coverImage}
           alt=""
           priority
+          srcSet={coverStandardSrcSet(title.coverImage)}
+          sizes="100vw"
           className="absolute inset-0 size-full scale-110 object-cover object-[center_22%] opacity-60 blur-md"
         />
       ) : null}

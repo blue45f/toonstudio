@@ -1,5 +1,9 @@
 import type { StudioMeetingEvent, StudioMeetingSession } from "./studio-virtual-space-meeting-objects";
 import { STUDIO_SPEAKER_THRESHOLD, type StudioSpeakerLevel } from "./studio-virtual-space-collaboration";
+import {
+  validateStudioExternalMeetingLink,
+  type StudioExternalMeetingLinkVerdict,
+} from "../live/huddle/studio-p2p-call-quality";
 import type { StudioUserStatus } from "./studio-virtual-space-user-status";
 import { studioVirtualSpaceDistance, type StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 
@@ -100,6 +104,52 @@ export function meetingRosterSummaryText(count: number): { readonly ko: string; 
     ko: `${count}명이 회의 중이에요.`,
     en: `${count} people are in the meeting.`,
   };
+}
+
+/* ---------------------------------------------------------- 외부 회의 링크 대안 */
+
+/**
+ * 외부 회의 링크 대안 (C7): P2P 직접 연결이 회사망 등에서 막힐 때, 세션에
+ * 외부 회의 링크를 붙여 이동하는 동선을 유지한다. 검증 규칙(https·회의 호스트
+ * allowlist·자격증명 금지)은 `studio-p2p-call-quality`가 단일 소유한다.
+ */
+export type StudioMeetingExternalLinkVerdict = StudioExternalMeetingLinkVerdict;
+
+export function resolveStudioMeetingExternalLink(
+  raw: string,
+): StudioMeetingExternalLinkVerdict {
+  return validateStudioExternalMeetingLink(raw);
+}
+
+/** 검증된 외부 회의 링크의 표시 문구. */
+export function externalMeetingLinkText(host: string): { readonly ko: string; readonly en: string } {
+  return {
+    ko: `외부 회의 열기 (${host})`,
+    en: `Open external meeting (${host})`,
+  };
+}
+
+/** 검증 실패 이유별 안내 문구. */
+export function externalMeetingLinkErrorText(
+  reason: Exclude<StudioExternalMeetingLinkVerdict, { ok: true }>["reason"],
+): { readonly ko: string; readonly en: string } {
+  switch (reason) {
+    case "empty":
+      return { ko: "회의 링크를 붙여넣어 주세요.", en: "Paste a meeting link first." };
+    case "not-a-url":
+      return { ko: "링크 형식이 아니에요. 전체 URL을 붙여넣어 주세요.", en: "That is not a URL. Paste the full link." };
+    case "not-https":
+      return { ko: "https 링크만 열 수 있어요.", en: "Only https links can be opened." };
+    case "credentials-in-url":
+      return { ko: "계정 정보가 든 링크는 열지 않아요.", en: "Links containing credentials are not opened." };
+    case "nonstandard-port":
+      return { ko: "표준 포트가 아닌 링크는 열지 않아요.", en: "Links with a non-standard port are not opened." };
+    case "unlisted-host":
+      return {
+        ko: "알려진 회의 서비스(Google Meet·Zoom·Teams 등) 링크만 열 수 있어요.",
+        en: "Only links from known meeting services (Google Meet, Zoom, Teams, …) can be opened.",
+      };
+  }
 }
 
 /** 박수 파동 전파 반경. */

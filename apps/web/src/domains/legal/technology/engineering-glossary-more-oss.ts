@@ -72,8 +72,8 @@ export const GLOSSARY_MORE_OSS: readonly GlossaryTerm[] = [
       "Like a free exhibition ticket: viewing, crediting and sketching along are fine, selling the sketch is not.",
     ),
     inToonstudio: t(
-      "혼색 라이브러리 mixbox 2.0.0 이 CC-BY-NC-4.0 이라 인벤토리에서 noncommercial 깃발이 달립니다. mixbox 를 import 하는 곳은 테스트를 빼면 brush-lab 의 안료 공급자 한 곳이고, 그 공급자는 라이선스 프로파일(permissive-only / source-available / noncommercial-full)을 따로 두며 기본값이 noncommercial-full 입니다(brush-lab/brush-studio-v6-license-profile.ts). 혼색 브러시의 studio-spectral-wgm-mix-v1.ts 는 mixbox 를 쓰지 않습니다.",
-      "The colour-mixing library mixbox 2.0.0 is CC-BY-NC-4.0, so the inventory flags it noncommercial. Outside tests, mixbox is imported in just one place, the brush lab's pigment provider, which keeps a separate licence profile (permissive-only / source-available / noncommercial-full) defaulting to noncommercial-full (brush-lab/brush-studio-v6-license-profile.ts). The colour-mixing brush's studio-spectral-wgm-mix-v1.ts does not use mixbox.",
+      "혼색 라이브러리 mixbox 2.0.0 이 CC-BY-NC-4.0 이라 인벤토리에서 noncommercial 깃발이 달립니다. mixbox 를 import 하는 곳은 테스트를 빼면 brush-lab 의 안료 공급자 한 곳이고, 그 공급자는 라이선스 프로파일(permissive-only / source-available / noncommercial-full)을 따로 두며 기본값이 permissive-only 입니다(brush-lab/brush-studio-v6-license-profile.ts). 혼색 브러시의 studio-spectral-wgm-mix-v1.ts 는 mixbox 를 쓰지 않습니다.",
+      "The colour-mixing library mixbox 2.0.0 is CC-BY-NC-4.0, so the inventory flags it noncommercial. Outside tests, mixbox is imported in just one place, the brush lab's pigment provider, which keeps a separate licence profile (permissive-only / source-available / noncommercial-full) defaulting to permissive-only (brush-lab/brush-studio-v6-license-profile.ts). The colour-mixing brush's studio-spectral-wgm-mix-v1.ts does not use mixbox.",
     ),
     chapters: ["licenses", "open-api-provenance"],
   },

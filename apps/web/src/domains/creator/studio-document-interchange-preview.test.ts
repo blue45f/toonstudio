@@ -5,6 +5,7 @@ import {
   createStudioOpenRasterImportLossPreview,
   createStudioPsdImportLossPreview,
 } from "./studio-document-interchange-preview";
+import { buildPsdAdjustmentImportReport } from "./studio-psd-adjustment-report";
 import { summarizeStudioInterchangeLoss } from "./studio-interchange-loss-preview";
 
 import type { StudioCbzImportResult } from "./studio-cbz-interchange";
@@ -33,6 +34,41 @@ describe("studio document interchange preview adapters", () => {
     expect(summary.findings.find((finding) => finding.category === "editability")?.notes).toContain(
       "텍스트 레이어를 래스터화했습니다.",
     );
+  });
+
+  it("shows the PSD adjustment support table and per-file fidelity report in the preview", () => {
+    const restored = [
+      { name: "레벨1", kind: "levels" as const, notes: [] as readonly string[] },
+      {
+        name: "룩업1",
+        kind: "color-lookup" as const,
+        notes: ["LUT 데이터가 PSD에 내장돼 있지 않아 파라미터만 보존했습니다 — 픽셀에는 적용되지 않습니다."] as readonly string[],
+      },
+    ];
+    const preview = createStudioPsdImportLossPreview("adjust.psd", {
+      elements: [{ id: "layer", type: "image" } as never],
+      adjustmentLayers: restored.map((layer, index) => ({
+        id: `adj-${index}`,
+        stackIndex: index + 1,
+        ...layer,
+        parameters: {},
+      })),
+      adjustmentReport: buildPsdAdjustmentImportReport(restored, []),
+      sourceWidth: 1_080,
+      sourceHeight: 1_920,
+      scale: 1,
+      skipped: [],
+    } satisfies PsdImportResult, OPTIONS);
+
+    // 레이어 수에 조정 레이어가 포함된다(래스터 1 + 조정 2).
+    expect(preview.source.layerCount).toBe(3);
+    expect(preview.result.layerCount).toBe(3);
+    const messages = (preview.constraints ?? []).map((constraint) => constraint.message);
+    expect(messages.some((message) => message.includes("대응표(전체 16종)"))).toBe(true);
+    expect(messages.some((message) => message.includes("조정 레이어 2개 — 복원 2개(정확 1 · 근사 0 · 파라미터만 보존 1) · 제외 0개"))).toBe(true);
+    expect(messages.some((message) => message.includes("룩업1(컬러 룩업): 파라미터만 보존"))).toBe(true);
+    // 정확 변환 행은 상세 고지로 늘어놓지 않는다.
+    expect(messages.some((message) => message.includes("레벨1(레벨): 정확"))).toBe(false);
   });
 
   it("maps the structured PSD feature manifest into loss-preview categories", () => {

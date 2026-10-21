@@ -31,6 +31,7 @@ import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 import type { BubbleEl, El, TextEl } from "./studio-element-model";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 interface StudioInspectorTypographySectionProps {
   selected: TextEl | BubbleEl;
@@ -61,6 +62,7 @@ export function StudioInspectorTypographySection({
   onFinishColorPreview,
   onRequestColorSample,
 }: StudioInspectorTypographySectionProps) {
+  const t = useT();
   const fontSize = selected.type === "text" ? selected.fontSize : selected.fontSize ?? 24;
   const fsVal = selected.fontStyle ?? "bold";
   const isBold = fsVal.includes("bold");
@@ -103,7 +105,7 @@ export function StudioInspectorTypographySection({
 
   return (
     <>
-      <StudioInspectorSection sectionId="element.typography" loadingLabel="글꼴을 여는 중...">
+      <StudioInspectorSection sectionId="element.typography" loadingLabel={t("studio.canvas.panelLoading.typographyFont", "글꼴을 여는 중...")}>
         <div className="mt-2">
           <p className="mb-1 text-[0.6875rem] font-medium text-fg-3">글꼴</p>
           <StudioPresetFontPreload />
@@ -212,7 +214,7 @@ export function StudioInspectorTypographySection({
         <StudioInspectorSection
           sectionId="element.typography-appearance"
           activeCount={countActiveAppearance(text)}
-          loadingLabel="외형을 여는 중..."
+          loadingLabel={t("studio.canvas.panelLoading.typographyAppearance", "외형을 여는 중...")}
         >
           <div className="space-y-2.5">
             <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-fg-3">글자 외곽선 (Border)</p>
@@ -424,13 +426,13 @@ export function StudioInspectorTypographySection({
         <StudioInspectorSection
           sectionId="element.typography-advanced"
           activeCount={text.textPath ? 1 : 0}
-          loadingLabel="고급 조판을 여는 중..."
+          loadingLabel={t("studio.canvas.panelLoading.advancedTypesetting", "고급 조판을 여는 중...")}
         >
-          <Suspense fallback={<StudioPanelLoading label="글자 효과 패널을 여는 중..." />}>
+          <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.textEffectsPanel", "글자 효과 패널을 여는 중...")} />}>
             <StudioTextEffectPanel onApply={(patch) => patchEl(text.id, patch as Partial<El>)} />
           </Suspense>
           <div className="border-t border-line/40 pt-2.5">
-            <Suspense fallback={<StudioPanelLoading label="곡선 텍스트 패널을 여는 중..." />}>
+            <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.curvedTextPanel", "곡선 텍스트 패널을 여는 중...")} />}>
               <StudioTextPathPanel
                 value={normalizeTextPath(text.textPath)}
                 onPatch={(patch: Partial<TextPathConfig>) =>

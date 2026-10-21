@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import { Save, ShieldAlert, X } from "lucide-react";
 import {
   useEffect,
@@ -123,6 +124,7 @@ export function ProductionRiskEditorDialog({
   onClose,
   onSave,
 }: ProductionRiskEditorDialogProps) {
+  const t = useT();
   const [draft, setDraft] = useState<RiskDraft>(() => initialDraft(risk, defaultOwnerAssignmentId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +174,7 @@ export function ProductionRiskEditorDialog({
     const description = draft.description.trim();
     const mitigation = draft.mitigation.trim();
     if (!title || !description || !mitigation) {
-      setError("제목, 설명, 대응 계획을 모두 입력해 주세요.");
+      setError(t("productionHub.status.riskFieldsRequired", "제목, 설명, 대응 계획을 모두 입력해 주세요."));
       return;
     }
     const now = new Date().toISOString();
@@ -263,7 +265,7 @@ export function ProductionRiskEditorDialog({
       await onSave(nextRisk);
       onClose();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "위험 항목을 저장하지 못했습니다.");
+      setError(saveError instanceof Error ? saveError.message : t("productionHub.status.riskSaveFailed", "위험 항목을 저장하지 못했습니다."));
     } finally {
       setSaving(false);
     }
@@ -531,7 +533,7 @@ export function ProductionRiskEditorDialog({
             disabled={saving}
           >
             <Save className="size-4" aria-hidden="true" />
-            {saving ? "저장 중…" : risk ? "변경 저장" : "위험 등록"}
+            {saving ? t("productionHub.status.saving", "저장 중…") : risk ? "변경 저장" : "위험 등록"}
           </button>
         </footer>
       </form>

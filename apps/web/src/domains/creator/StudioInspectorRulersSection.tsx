@@ -19,6 +19,7 @@ import type { VanishingPoint } from "./studio-perspective-guide";
 import type { StudioPerspectiveGuideState } from "./drawing/StudioRulersPanel";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 interface StudioInspectorSymmetrySectionProps {
   symmetryType: "none" | "vertical" | "horizontal" | "radial" | "kaleidoscope" | "silk";
@@ -43,8 +44,9 @@ export function StudioInspectorSymmetrySection({
   setSymmetryCenterX,
   setSymmetryCenterY,
 }: StudioInspectorSymmetrySectionProps) {
+  const t = useT();
   return (
-    <StudioInspectorSection sectionId="tool.symmetry" loadingLabel="대칭 자를 여는 중...">
+    <StudioInspectorSection sectionId="tool.symmetry" loadingLabel={t("studio.canvas.panelLoading.symmetryRuler", "대칭 자를 여는 중...")}>
       <div className="space-y-2">
         <div className="grid grid-cols-5 gap-1">
           {([
@@ -211,8 +213,9 @@ export function StudioInspectorRulersSection({
   selectAdvancedRuler,
   setActiveAdvancedRuler,
 }: StudioInspectorRulersSectionProps) {
+  const t = useT();
   return (
-    <StudioInspectorSection sectionId="tool.rulers" loadingLabel="자·가이드를 여는 중...">
+    <StudioInspectorSection sectionId="tool.rulers" loadingLabel={t("studio.canvas.panelLoading.rulersGuides", "자·가이드를 여는 중...")}>
       <Suspense fallback={null}>
         <StudioPerspectivePanel
           active={perspectiveRulerActive}

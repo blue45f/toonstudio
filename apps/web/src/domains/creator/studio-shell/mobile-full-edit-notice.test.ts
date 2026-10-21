@@ -64,9 +64,10 @@ describe("모바일 풀 편집 안내 닫힘 기억", () => {
 });
 
 describe("모바일 풀 편집 안내 패턴 계약", () => {
-  it("좁은 폭(1023px 이하)에서만 렌더링하고 데스크톱에서는 나오지 않는다", () => {
-    expect(noticeSource).toContain('MOBILE_FULL_EDIT_NOTICE_QUERY = "(max-width: 1023px)"');
-    expect(noticeSource).toContain("if (!narrow || dismissed) return null;");
+  it("좁은 폭(1023px 이하)과 태블릿 가로에서만 렌더링하고 데스크톱에서는 나오지 않는다", () => {
+    // 좁은 폭 쿼리 문자열의 정본은 studio-mobile-touch-flow 로 이동했다(A7).
+    expect(noticeSource).toContain("MOBILE_FULL_EDIT_NOTICE_QUERY = STUDIO_TOUCH_NARROW_QUERY");
+    expect(noticeSource).toContain("if ((!narrow && !touchTablet) || dismissed) return null;");
   });
 
   it("차단하지 않는 배너로 데스크톱 권장 + 가능 작업 목록 + 44px 닫기 동선을 제공한다", () => {
@@ -83,7 +84,29 @@ describe("모바일 풀 편집 안내 패턴 계약", () => {
   it("풀 편집 진입점인 StudioEditorRoute가 표면별 안내를 배선한다", () => {
     expect(editorRouteSource).toContain("<MobileFullEditNotice");
     expect(editorRouteSource).toContain("surfaceId={`studio-editor-${route.surface}`}");
-    expect(editorRouteSource).toContain("모바일 도크의 간단한 그리기·지우기");
+    // 되는/안 되는 목록은 라우트에 하드코딩하지 않고 표면별 정본 계획을 소비한다.
+    // (전 표면 공통 "모바일 도크 그리기" 약속은 도크 없는 표면에서 거짓 안내였다 — A7.)
+    expect(editorRouteSource).toContain("resolveStudioMobileTouchPlan(route.surface)");
+    expect(editorRouteSource).toContain("mobileCapabilities={touchPlan.canDo}");
+    expect(editorRouteSource).toContain("mobileLimitations={touchPlan.cannotDo}");
+    expect(editorRouteSource).toContain("touchTier={touchPlan.tier}");
+    expect(editorRouteSource).not.toContain("모바일 도크의 간단한 그리기·지우기");
+  });
+
+  it("안 되는 작업 목록을 가능 목록과 구분해 함께 보여 준다", () => {
+    expect(noticeSource).toContain("mobileLimitations");
+    expect(noticeSource).toContain("이 기기에서는 안 돼요");
+    expect(noticeSource).toContain("data-studio-mobile-touch-tier={touchTier}");
+  });
+
+  it("태블릿 가로(데스크톱 폭 + 터치)에서도 안내가 렌더링된다", () => {
+    expect(noticeSource).toContain("MOBILE_TOUCH_TABLET_NOTICE_QUERY");
+    expect(noticeSource).toContain("STUDIO_TOUCH_TABLET_QUERY");
+    expect(noticeSource).toContain("if ((!narrow && !touchTablet) || dismissed) return null;");
+    const flowSource = readFileSync(join(HERE, "../studio-mobile-touch-flow.ts"), "utf-8");
+    expect(flowSource).toContain(
+      '"(pointer: coarse) and (min-width: 1024px) and (max-width: 1366px)"',
+    );
   });
 });
 

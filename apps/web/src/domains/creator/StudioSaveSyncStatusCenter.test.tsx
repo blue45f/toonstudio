@@ -177,6 +177,31 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
     expect(onRecheckConnection).toHaveBeenCalledTimes(1);
   });
 
+  it("shows offline on the pill from connectivity even when the save signal still says synced (C6)", () => {
+    const offline: StudioConnectivitySnapshot = {
+      browserOnline: false,
+      serverReachable: false,
+      checking: false,
+      mode: "offline",
+      serverAvailable: false,
+      localOnly: true,
+      lastCheckedAt: 1_700_000_000_000,
+      consecutiveFailures: 0,
+    };
+    const journal = createEmptyOperationJournal("doc-g2");
+    render(
+      <StudioSaveSyncStatusCenter
+        journal={journal}
+        statusOverride={baseStatus}
+        connectivity={offline}
+      />
+    );
+
+    // 연결 모듈이 오프라인이면 저장 신호가 synced여도 "저장됨"으로 읽히면 안 된다.
+    expect(screen.getByText("오프라인 · 이 기기에 보관 중")).not.toBeNull();
+    expect(screen.queryByText("저장됨")).toBeNull();
+  });
+
   it("says no checkpoint exists instead of showing an epoch time", () => {
     const journal = createEmptyOperationJournal("doc-g2");
     render(

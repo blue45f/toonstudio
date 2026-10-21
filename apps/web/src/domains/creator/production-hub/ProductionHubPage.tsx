@@ -6,6 +6,7 @@ import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 import { ProductionProcurementSurface, ProductionRightsSurface } from "./ProductionCommercialSurfaces";
+import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
 import { ProductionActivityWorkspace } from "./ProductionActivityWorkspace";
 import { ProductionEpisodeOperationsWorkspace } from "./ProductionEpisodeOperationsWorkspace";
 import { ProductionHandoffSurface } from "./ProductionHandoffSurface";
@@ -104,6 +105,13 @@ function OverviewSurface({ aggregate, access, roleLens, execute, executeStrict, 
 function BoardSurface({ aggregate, access, roleLens, execute, executeStrict, isDemo, viewerAssignmentIds }: SurfaceProps) {
   const bt = useBilingual("ProductionBoardSurface");
   const [params, setParams] = useSearchParams();
+  // 단계 인계: 인계 화면의 "다음 공정 열기" 딥링크(boardEpisode)가 실은 진입에서는
+  // 콘티 시작 화면 상단에 앞 단계(기획) 산출을 자동 인용한다. 회차 맥락이 없는
+  // 일반 보드 진입에서는 마운트하지 않는다(지어낸 회차 인용 방지).
+  const boardEpisodeId = params.get("boardEpisode");
+  const boardEpisode = boardEpisodeId
+    ? aggregate.episodes.find((episode) => episode.episodeId === boardEpisodeId) ?? null
+    : null;
   const roleView = params.get("productionView") === "roles" || (params.has("task") && params.get("productionView") !== "board");
   const views = [
     { id: "board", label: bt("팀 공정 보드", "Team board"), active: !roleView },
@@ -128,6 +136,9 @@ function BoardSurface({ aggregate, access, roleLens, execute, executeStrict, isD
           </button>
         ))}
       </div>
+      {boardEpisode ? (
+        <EpisodeStageHandoffSection aggregate={aggregate} episodeId={boardEpisode.episodeId} targetStage="storyboard" />
+      ) : null}
       {roleView
         ? <ProductionRoleWorkspace aggregate={aggregate} execute={execute} canEdit={access.edit} roleLens={roleLens} />
         : (

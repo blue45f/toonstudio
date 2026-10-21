@@ -415,7 +415,7 @@ pub async fn probe_webgpu() -> String {
 // V12 §5/§6 StudioGpuFabric adoption lane (`fabric` feature, build track B).
 //
 // Everything below needs `crates/vendor/wgpu-toon`'s `toon-fabric` patch —
-// stock wgpu 29 has no way to build a `wgpu::Device` around a `GPUDevice` the
+// stock wgpu (30.0.1 포함) has no way to build a `wgpu::Device` around a `GPUDevice` the
 // page already owns, which is what forced the L0 readback exchange measured in
 // `tests/benchmarks/results/gpu-fabric-probe.json`.
 // ---------------------------------------------------------------------------

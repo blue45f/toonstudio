@@ -38,11 +38,14 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
+  advanceSaveRecoveryAnnouncement,
+  initialSaveRecoveryAnnouncementState,
   resolveSaveRecoveryView,
-  saveRecoveryAnnouncement,
+  type SaveRecoveryAnnouncementState,
   type SaveRecoveryKind,
 } from "./studio-save-recovery-ux";
 
+import { resolveSavedRecency } from "./studio-save-recency";
 import type { StudioConnectivitySnapshot } from "./offline/studio-connectivity";
 import type { StudioSaveSyncStatus } from "./studio-operation-recovery-coordinator";
 
@@ -92,14 +95,18 @@ export function StudioSaveStatusBar({
   const view = resolveSaveRecoveryView(status, connectivity, { readOnlyTab });
   const state: SaveRecoveryKind = view.kind;
   const [announcement, setAnnouncement] = useState("");
-  const previousState = useRef<SaveRecoveryKind>(state);
+  const announcementState = useRef<SaveRecoveryAnnouncementState>(
+    initialSaveRecoveryAnnouncementState(state),
+  );
 
   // 전이만 알린다: saving→saved (완료), *→failed (위험), 연결 상실·복구.
-  // 그 외 전이는 침묵해 스크린리더가 작업 중 계속 떠들지 않게 한다.
+  // 복구는 다단계 전이(오프라인→재확인→동기화 중→저장됨) 전체를 기억하는
+  // 상태 기계로 판정한다 — 마지막 한 쌍만 보면 "복구 확인"이 "일반 저장
+  // 완료"로 뭉개진다 (studio-save-recovery-ux의 C6 상태 기계).
   useEffect(() => {
-    const prev = previousState.current;
-    previousState.current = state;
-    const kind = saveRecoveryAnnouncement(prev, state);
+    const advanced = advanceSaveRecoveryAnnouncement(announcementState.current, state);
+    announcementState.current = advanced.state;
+    const kind = advanced.announcement;
     if (kind === "saved") {
       setAnnouncement(bi("모든 변경이 저장됐습니다.", "All changes saved."));
     } else if (kind === "failed") {
@@ -120,6 +127,15 @@ export function StudioSaveStatusBar({
     }
   }, [state]);
 
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (state !== "saved" || status.lastSavedAt <= 0) return;
+    setNowMs(Date.now());
+    const timer = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, [state, status.lastSavedAt]);
+  const recency = resolveSavedRecency(status.lastSavedAt, nowMs);
+
   const label =
     state === "readonly"
       ? bi("다른 탭에서 편집 중", "Editing in another tab")
@@ -133,9 +149,16 @@ export function StudioSaveStatusBar({
               ? bi("연결 다시 확인 중…", "Reconnecting…")
               : state === "saving"
                 ? bi("저장 중…", "Saving…")
-                : status.lastSavedAt > 0
-                  ? `${bi("저장됨", "Saved")} · ${formatSavedTime(status.lastSavedAt)}`
-                  : bi("저장됨", "Saved");
+                : status.lastSavedAt <= 0
+                  ? bi("저장됨", "Saved")
+                  : recency.kind === "just-now"
+                    ? `${bi("저장됨", "Saved")} · ${bi("방금", "Just now")}`
+                    : recency.kind === "minutes-ago"
+                      ? bi("저장됨 · {minutes}분 전", "Saved · {minutes} min ago").replace(
+                          "{minutes}",
+                          String(recency.minutes),
+                        )
+                      : `${bi("저장됨", "Saved")} · ${formatSavedTime(status.lastSavedAt)}`;
 
   const Icon =
     state === "readonly"

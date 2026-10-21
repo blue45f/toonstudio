@@ -1,3 +1,5 @@
+import { useT } from "@/shared/lib/i18n";
+import "./studio-ai-status-i18n";
 import {
   AlertTriangle,
   Ban,
@@ -15,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 import { createPortal } from "react-dom";
 
 import {
@@ -216,7 +219,7 @@ function SafeTechnicalDetails({ operation }: { operation: StudioAiOperation }) {
           )}
           {operation.error && (
             <>
-              <dt className="text-fg-3">오류 범주</dt>
+              <dt className="text-fg-3">{t("studio.aiStatus.errorCategory", "오류 범주")}</dt>
               <dd className="font-semibold text-fg-2">
                 {ERROR_CATEGORY_LABELS[operation.error.category]}
                 {operation.error.retriable ? " · 다시 시도 가능" : " · 자동 재시도 안 함"}
@@ -284,6 +287,7 @@ export function StudioAiProvenancePanel({
   onExportPublicSummary,
   onClearHistory,
 }: StudioAiProvenancePanelProps) {
+  const t = useT();
   const dialogRef = useRef<HTMLDivElement>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
@@ -403,7 +407,7 @@ export function StudioAiProvenancePanel({
       await onExportPublicSummary(projectStudioAiProvenanceForPublish(safeDocument));
       setNotice("개인 식별 정보를 제외한 공개용 AI 사용 요약을 전달했습니다.");
     } catch {
-      setError("공개용 요약을 내보내지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError(t("studio.aiStatus.provenanceExportFailed", "공개용 요약을 내보내지 못했어요. 잠시 후 다시 시도해 주세요."));
     } finally {
       setExporting(false);
     }
@@ -419,7 +423,7 @@ export function StudioAiProvenancePanel({
       setConfirmClear(false);
       setNotice("AI 작업 이력을 비웠습니다.");
     } catch {
-      setError("AI 작업 이력을 비우지 못했어요. 문서 저장 상태를 확인해 주세요.");
+      setError(t("studio.aiStatus.provenanceClearFailed", "AI 작업 이력을 비우지 못했어요. 문서 저장 상태를 확인해 주세요."));
     } finally {
       setClearing(false);
     }
@@ -456,6 +460,7 @@ export function StudioAiProvenancePanel({
                 <h2 id="studio-ai-provenance-title" className="text-base font-bold tracking-tight text-fg">
                   비공개 AI 작업 이력
                 </h2>
+                <StudioAiConnectionBadge kind="editor-only" />
                 <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[0.65rem] tabular-nums text-fg-3">
                   {formatCount(safeDocument.operations.length)} / {formatCount(STUDIO_AI_PROVENANCE_LIMITS.maxOperations)}
                 </span>
@@ -628,7 +633,7 @@ export function StudioAiProvenancePanel({
               <div className="grid min-h-full place-items-center px-6 py-12 text-center">
                 <div className="max-w-sm">
                   <ShieldCheck size={28} className="mx-auto text-fg-3" aria-hidden />
-                  <h3 className="mt-3 text-sm font-bold text-fg-2">아직 기록된 AI 작업이 없습니다</h3>
+                  <h3 className="mt-3 text-sm font-bold text-fg-2">{t("studio.aiStatus.noProvenanceRecords", "아직 기록된 AI 작업이 없습니다")}</h3>
                   <p className="mt-1 text-xs leading-relaxed text-fg-3">
                     이 문서에서 AI 기능을 실행하면 제공자와 모델, 작업 상태, 토큰 사용량을 내용 없이 확인할 수 있어요.
                   </p>
@@ -638,7 +643,7 @@ export function StudioAiProvenancePanel({
               <div className="grid min-h-full place-items-center px-6 py-12 text-center">
                 <div className="max-w-sm">
                   <Filter size={26} className="mx-auto text-fg-3" aria-hidden />
-                  <h3 className="mt-3 text-sm font-bold text-fg-2">조건에 맞는 작업이 없습니다</h3>
+                  <h3 className="mt-3 text-sm font-bold text-fg-2">{t("studio.aiStatus.noProvenanceMatches", "조건에 맞는 작업이 없습니다")}</h3>
                   <p className="mt-1 text-xs text-fg-3">상태나 세부 필터를 조정해 보세요.</p>
                   <button type="button" onClick={resetFilters} className={`${BUTTON_CLASS} mt-4`}>
                     <RotateCcw size={14} aria-hidden /> 모든 작업 보기
@@ -716,7 +721,7 @@ export function StudioAiProvenancePanel({
               className={`${BUTTON_CLASS} min-w-0 flex-1 sm:flex-none`}
             >
               {exporting ? <LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Download size={14} aria-hidden />}
-              {exporting ? "내보내는 중…" : "공개용 요약 내보내기"}
+              {exporting ? t("studio.aiStatus.exporting", "내보내는 중…") : "공개용 요약 내보내기"}
             </button>
             <button
               type="button"

@@ -214,6 +214,23 @@ describe("studio-mannequin-poses 카테고리·검색·손 분리 확장", () =>
     );
   });
 
+  it("감정 표현 카테고리(G8)와 장르 상황 포즈가 확장됐다", () => {
+    const counts = countStudioMannequinPosePresetsByCategory();
+    expect(counts.emotion).toBe(5);
+    expect(STUDIO_MANNEQUIN_POSE_PRESETS.length).toBeGreaterThanOrEqual(64);
+    expect(
+      filterStudioMannequinPosePresets({ query: "마법" }).map((preset) => preset.id),
+    ).toContain("action-spell-cast");
+    expect(
+      filterStudioMannequinPosePresets({ query: "조종석" }).map((preset) => preset.id),
+    ).toEqual(["sit-mech-pilot"]);
+    expect(
+      filterStudioMannequinPosePresets({ category: "emotion", query: "수줍음" }).map(
+        (preset) => preset.id,
+      ),
+    ).toEqual(["emotion-shy-face-cover"]);
+  });
+
   it("손 전용 라이브러리는 전신과 분리되고 손 적용은 몸 포즈를 유지한다", () => {
     expect(STUDIO_MANNEQUIN_HAND_POSE_PRESETS.length).toBeGreaterThanOrEqual(12);
     expect(

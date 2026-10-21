@@ -2,13 +2,23 @@ import { useT } from "@/shared/lib/i18n";
 
 interface StudioLazySurfaceFallbackProps {
   readonly label?: string;
+  /** 키 기반 라벨 — 호출부가 훅을 둘 수 없는 표면(파일 크기 래칫 파일 등)에서 쓴다. */
+  readonly labelKey?: string;
+  /** labelKey의 한국어 폴백 (사전 값과 동일하게 유지할 것). */
+  readonly labelFallback?: string;
 }
 
 export function StudioPanelLoading({
   label,
+  labelKey,
+  labelFallback,
 }: StudioLazySurfaceFallbackProps) {
   const t = useT();
-  const resolvedLabel = label ?? t("studio.canvas.shell.loadingPanel", "패널을 여는 중...");
+  const resolvedLabel =
+    label ??
+    (labelKey
+      ? t(labelKey, labelFallback)
+      : t("studio.canvas.shell.loadingPanel", "패널을 여는 중..."));
   return (
     <div
       className="skeleton-group min-h-20 rounded-lg border border-line bg-card/70 px-3 py-3 text-xs text-fg-3"
@@ -27,9 +37,17 @@ export function StudioPanelLoading({
   );
 }
 
-export function StudioRouteLoading({ label }: StudioLazySurfaceFallbackProps) {
+export function StudioRouteLoading({
+  label,
+  labelKey,
+  labelFallback,
+}: StudioLazySurfaceFallbackProps) {
   const t = useT();
-  const resolvedLabel = label ?? t("studio.canvas.shell.loadingStudio", "스튜디오를 여는 중...");
+  const resolvedLabel =
+    label ??
+    (labelKey
+      ? t(labelKey, labelFallback)
+      : t("studio.canvas.shell.loadingStudio", "스튜디오를 여는 중..."));
   return (
     <div
       className="skeleton-group grid min-h-dvh grid-rows-[3rem_1fr] bg-bg"

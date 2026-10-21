@@ -125,6 +125,42 @@ describe("studio-bg3d-scene-composition-presets", () => {
     ).toBeNull();
   });
 
+  it("covers six genres with sixteen packs after the G8 expansion", () => {
+    expect(STUDIO_BG3D_SCENE_GENRES.map((genre) => genre.id)).toEqual([
+      "romance",
+      "action",
+      "thriller",
+      "daily",
+      "fantasy",
+      "scifi",
+    ]);
+    expect(STUDIO_BG3D_SCENE_COMPOSITION_PRESETS).toHaveLength(16);
+    expect(listStudioBg3dSceneCompositionPresets("fantasy")).toHaveLength(3);
+    expect(listStudioBg3dSceneCompositionPresets("scifi")).toHaveLength(3);
+    expect(listStudioBg3dSceneCompositionPresets("thriller")).toHaveLength(3);
+    expect(listStudioBg3dSceneCompositionPresets("daily")).toHaveLength(3);
+    // G8 팩은 번들 테마를 참조하고, 기존 팩은 참조가 없다.
+    const withBundle = STUDIO_BG3D_SCENE_COMPOSITION_PRESETS.filter(
+      (preset) => preset.bundleThemeId !== undefined,
+    );
+    expect(withBundle).toHaveLength(8);
+    expect(new Set(withBundle.map((preset) => preset.bundleThemeId))).toEqual(
+      new Set(["nature", "city", "swamp", "sci-fi", "horror", "interior"]),
+    );
+    // 새 팩도 원자 적용·resolve 왕복 계약을 그대로 지킨다.
+    for (const preset of withBundle) {
+      const applied = applyStudioBg3dSceneCompositionPreset(BASE_INPUT, preset.id);
+      expect(applied?.presetId).toBe(preset.id);
+      expect(
+        resolveStudioBg3dSceneCompositionPreset({
+          camera: applied!.camera,
+          lighting: applied!.lighting,
+          exposure: applied!.exposure,
+        })?.id,
+      ).toBe(preset.id);
+    }
+  });
+
   it("computes camera positions on the expected sphere", () => {
     expect(
       studioBg3dCameraPositionFromAngle({

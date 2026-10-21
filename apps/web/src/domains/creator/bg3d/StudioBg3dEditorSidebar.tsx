@@ -11,10 +11,13 @@ import { StudioBg3dSceneDirectorPanel } from "./StudioBg3dSceneDirectorPanel";
 import type { StudioBg3dSceneGoal } from "./StudioBg3dSceneDirectorPanel";
 import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
 import { StudioBg3dEditorSidebarExtras } from "./StudioBg3dEditorSidebarExtras";
+import { StudioBg3dGlbTexturePaintMount } from "./StudioBg3dGlbTexturePaintMount";
 import { listOfferedStudio3dCommands } from "./studio-bg3d-grade-plates";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
+import { useT } from "@/shared/lib/i18n";
 
 export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro = () => {} }) {
+  const t = useT();
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
     Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
@@ -571,7 +574,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                 {activePanelTab === "templates" ? (
                   <div className="mb-5 border-b border-line pb-4">
                     <Suspense fallback={(
-                      <StudioPanelLoading label="웹툰 배경 도구를 불러오는 중이에요…" />
+                      <StudioPanelLoading label={t("studio.canvas.panelLoading.webtoonBackgroundTools", "웹툰 배경 도구를 불러오는 중이에요…")} />
                     )}>
                       <StudioBg3dWebtoonBackgroundPicker
                         disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
@@ -590,7 +593,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                 </h3>
                 {activePanelTab === "templates" ? (
                   <Suspense fallback={(
-                    <StudioPanelLoading label="템플릿 도구를 불러오는 중입니다…" />
+                    <StudioPanelLoading label={t("studio.canvas.panelLoading.templateTools", "템플릿 도구를 불러오는 중입니다…")} />
                   )}>
                     <StudioBg3dSceneTemplatePanel
                       templates={BG_SCENE_TEMPLATES}
@@ -644,7 +647,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                   </div>
                   {activePanelTab === "templates" ? (
                     <Suspense fallback={(
-                      <StudioPanelLoading label="방 만들기 도구를 불러오는 중이에요…" />
+                      <StudioPanelLoading label={t("studio.canvas.panelLoading.roomBuilderTools", "방 만들기 도구를 불러오는 중이에요…")} />
                     )}>
                       <StudioBg3dRoomBuilderPanel
                         spec={roomBuilderSpec}
@@ -662,6 +665,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               </section>
 
             <StudioBg3dEditorSidebarExtras h={h} />
+            <StudioBg3dGlbTexturePaintMount h={h} />
             </div>
             <StudioBg3dActionFooter
               sceneRecoveryError={sceneRecoveryError}

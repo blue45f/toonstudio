@@ -1,3 +1,5 @@
+import { useT } from "@/shared/lib/i18n";
+import "./studio-ai-status-i18n";
 import {
   Camera,
   Image as ImageIcon,
@@ -19,6 +21,7 @@ import {
 } from "./studio-ai-image-reference-roles";
 
 import { cn } from "@/shared/lib/utils";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 
 export const STUDIO_AI_IMAGE_REFERENCE_PROVIDER_SAFE_MAX = 16;
 
@@ -327,6 +330,7 @@ function ReferenceRoleSection({
   onGuidanceChange,
   onRemove,
 }: ReferenceRoleSectionProps) {
+  const t = useT();
   const id = useId();
   const [pendingAssetId, setPendingAssetId] = useState("");
   const presentation = ROLE_PRESENTATION[role];
@@ -349,15 +353,15 @@ function ReferenceRoleSection({
     || providerLimitReached
     || availableOptions.length === 0;
   const availabilityMessage = disabled
-    ? "읽기 전용 상태에서는 참조를 변경할 수 없습니다."
+    ? t("studio.aiStatus.referenceReadOnly", "읽기 전용 상태에서는 참조를 변경할 수 없습니다.")
     : loading
-      ? "프로젝트 에셋을 불러오는 중입니다."
+      ? t("studio.aiStatus.loadingProjectAssets", "프로젝트 에셋을 불러오는 중입니다.")
       : providerLimitReached
         ? `AI 제공자 안전 한도 ${STUDIO_AI_IMAGE_REFERENCE_PROVIDER_SAFE_MAX}개에 도달했습니다. 기존 참조를 제거한 뒤 추가하세요.`
         : roleLimitReached
           ? `${presentation.eyebrow} 역할은 최대 ${STUDIO_AI_IMAGE_REFERENCE_LIMITS.maxReferencesPerRole}개까지 연결할 수 있습니다.`
           : availableOptions.length === 0
-            ? "이 역할에 새로 연결할 에셋이 없습니다."
+            ? t("studio.aiStatus.noMoreAssetsForRole", "이 역할에 새로 연결할 에셋이 없습니다.")
             : "같은 이미지를 다른 역할에도 의도적으로 연결할 수 있습니다.";
 
   useEffect(() => {
@@ -442,7 +446,7 @@ function ReferenceRoleSection({
           >
             <option value="">
               {loading
-                ? "에셋 불러오는 중…"
+                ? t("studio.aiStatus.loadingAssets", "에셋 불러오는 중…")
                 : availableOptions.length > 0
                   ? "이미지 에셋 선택…"
                   : "추가할 에셋 없음"}
@@ -493,6 +497,7 @@ export function StudioAiImageReferencePackEditor({
   disabled = false,
   onChange,
 }: StudioAiImageReferencePackEditorProps) {
+  const t = useT();
   const headingId = useId();
   const totalReferenceCount = document.references.length;
 
@@ -565,6 +570,7 @@ export function StudioAiImageReferencePackEditor({
           <h2 id={headingId} className="text-sm font-bold text-fg">
             AI 이미지 참조 팩
           </h2>
+          <StudioAiConnectionBadge kind="editor-only" className="mt-1" />
           <p className="mt-1 text-[0.7rem] leading-relaxed text-fg-2">
             이미지마다 역할을 분리해 정체성·구도·화풍이 서로 섞이는 현상을 줄입니다.
           </p>
@@ -582,7 +588,7 @@ export function StudioAiImageReferencePackEditor({
           role="status"
           className="mt-2.5 flex min-h-11 items-center rounded-lg border border-line bg-raised/60 px-3 text-xs text-fg-2"
         >
-          프로젝트 이미지 에셋을 불러오는 중…
+          {t("studio.aiStatus.loadingProjectImageAssets", "프로젝트 이미지 에셋을 불러오는 중…")}
         </p>
       ) : null}
       {disabled ? (

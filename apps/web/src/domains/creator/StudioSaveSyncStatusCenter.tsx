@@ -91,13 +91,17 @@ export function StudioSaveSyncStatusCenter({
 
   const status = statusOverride ?? resolveSaveSyncStatus(journal, isOnline, isOpfsActive);
   const view = resolveSaveRecoveryView(status, connectivity);
+  // 필 라벨은 복구 모델(view.kind)을 정본으로 삼는다 (C6, 2026-10-22):
+  // 연결 모듈이 offline인데 저장 신호의 cloudSyncStatus가 아직 synced인
+  // 구간에서 예전 분기는 "저장됨"으로 떨어지는 거짓 안심이 있었다 — 바와
+  // 같은 판정을 쓰도록 offline 분기를 view.kind 기준으로 옮겼다.
   const saveLabel = !status.localDurable
     ? "저장 확인 필요"
     : view.kind === "server-unavailable"
       ? "서버 연결 안 됨 · 이 기기에 보관 중"
       : view.kind === "reconnecting"
         ? "연결 다시 확인 중"
-        : status.cloudSyncStatus === "offline"
+        : view.kind === "offline" || status.cloudSyncStatus === "offline"
           ? "오프라인 · 이 기기에 보관 중"
           : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
             ? `${status.pendingOperationsCount}개 변경 보존 중`
@@ -110,7 +114,7 @@ export function StudioSaveSyncStatusCenter({
 
   const StatusIcon = !status.localDurable
     ? TriangleAlert
-    : status.cloudSyncStatus === "offline" || view.kind === "server-unavailable"
+    : view.kind === "offline" || status.cloudSyncStatus === "offline" || view.kind === "server-unavailable"
       ? CloudOff
       : view.kind === "reconnecting"
         ? RefreshCw
@@ -120,7 +124,7 @@ export function StudioSaveSyncStatusCenter({
 
   const statusTone = !status.localDurable
     ? "text-danger"
-    : status.cloudSyncStatus === "offline" || view.kind === "server-unavailable"
+    : view.kind === "offline" || status.cloudSyncStatus === "offline" || view.kind === "server-unavailable"
       ? "text-warning"
       : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
         ? "text-accent"

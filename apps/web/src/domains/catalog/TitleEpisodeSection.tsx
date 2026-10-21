@@ -16,6 +16,7 @@ import { useAppConfig } from "@/platform/environment/use-app-config";
 import { PLATFORMS, PRICING_FULL } from "@/shared/lib/platforms";
 
 import { CoverImage } from "@/shared/components/cover-image";
+import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 import {
   formatI18nTemplate,
   getActiveI18nLocale,
@@ -56,7 +57,13 @@ function EpisodeRow({
     <>
       <span className="relative block aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-lg sm:w-28">
         {episode.thumbnailUrl ? (
-          <CoverImage src={episode.thumbnailUrl} alt="" className="absolute inset-0 size-full object-cover" />
+          <CoverImage
+            src={episode.thumbnailUrl}
+            alt=""
+            srcSet={coverStandardSrcSet(episode.thumbnailUrl)}
+            sizes="(max-width: 639px) 6rem, 7rem"
+            className="absolute inset-0 size-full object-cover"
+          />
         ) : (
           <span
             aria-hidden

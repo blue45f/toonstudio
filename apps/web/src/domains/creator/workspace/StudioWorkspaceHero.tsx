@@ -10,6 +10,7 @@ import {
 import { manuscriptCompletion, type ManuscriptCompletion } from "./studio-workspace-hero-model";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-reader";
 import type { StudioProjectResumeTarget } from "../studio-project-resume-target";
+import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 
 function useManuscriptCompletion(projectId: string | null): ManuscriptCompletion | null {
   const [revision, setRevision] = useState(0);
@@ -112,7 +113,7 @@ export function StudioWorkspaceHero({
           className="workspace-primary workspace-hero-cta"
           data-tour-target="continue"
           data-workspace-resume={project ? "true" : undefined}
-          href={canResume ? resumeHref : "/studio/new"}
+          href={canResume ? resumeHref : STUDIO_START_GATEWAY_HREF}
         >{canResume
           ? resumeActionLabel ?? (resume?.summary ? t("원고 이어하기", "Resume artwork") : t("작품 열기", "Open work"))
           : t("새 작품 만들기", "Create a work")}<ArrowRight size={18} aria-hidden="true" /></Link>

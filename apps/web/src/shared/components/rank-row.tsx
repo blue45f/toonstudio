@@ -8,6 +8,7 @@ import { CoverImage } from "./cover-image";
 import { GenreChip } from "./ui/chip";
 import { RatingInline } from "./ui/stars";
 
+import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 import { statsAreEstimated } from "@/shared/lib/estimate";
 import { useT } from "@/shared/lib/i18n";
 import { type RankedTitle, explainScore, type RankAxis } from "@/shared/lib/ranking";
@@ -39,6 +40,8 @@ export function MiniPoster({
           src={title.coverImage}
           alt=""
           fallback={title.title.charAt(0)}
+          srcSet={coverStandardSrcSet(title.coverImage)}
+          sizes="3.5rem"
           className="absolute inset-0 size-full object-cover contrast-[1.03] saturate-[1.04]"
         />
       ) : (

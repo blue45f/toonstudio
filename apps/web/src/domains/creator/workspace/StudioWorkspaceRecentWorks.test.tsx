@@ -108,7 +108,7 @@ describe("StudioWorkspaceRecentWorks 썸네일·카드", () => {
 
   it("작품이 없으면 만들기와 가져오기 시작 동선을 함께 안내한다", () => {
     renderWorks({ projects: [], locale: "ko", onSelect: vi.fn() });
-    expect(screen.getByRole("link", { name: /새 작품 만들기/ }).getAttribute("href")).toBe("/studio/new");
+    expect(screen.getByRole("link", { name: /새 작품 만들기/ }).getAttribute("href")).toBe("/create");
     expect(screen.getByRole("link", { name: /파일 가져오기/ }).getAttribute("href")).toBe("/studio/import");
   });
 });

@@ -66,9 +66,9 @@ function isAllowedLine(line: string): boolean {
   return false;
 }
 
-/** 표시 위치로 간주하는 prop/필드 이름들 */
+/** 표시 위치로 간주하는 prop/필드 이름들 (loadingLabel은 A4 2차 이관에서 추가) */
 const DISPLAY_PROP_PATTERN =
-  /(?:label|aria-label|title|placeholder|message|description|heading|errorText|emptyText)\s*(?:=|:)\s*(?:"([^"]*)"|'([^']*)'|\{\s*"([^"]*)"\s*\})/g;
+  /(?:loadingLabel|label|aria-label|title|placeholder|message|description|heading|errorText|emptyText)\s*(?:=|:)\s*(?:"([^"]*)"|'([^']*)'|\{\s*"([^"]*)"\s*\})/g;
 /** JSX 텍스트 노드 */
 const JSX_TEXT_PATTERN = />\s*([^<>{}]+?)\s*</g;
 /** 상태 상수 이름 (REVIEWS_FETCH_ERROR 같은 패턴) */

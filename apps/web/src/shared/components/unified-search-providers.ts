@@ -10,7 +10,6 @@ import { SITEMAP_DIRECTORY_ENTRIES } from "@/domains/legal/site-directory-data";
 import { fuzzyRankByTexts } from "@/shared/lib/fuzzy-search";
 
 import {
-  assetsLinkSection,
   buildUnifiedSearchResult,
   emptyUnifiedSection,
   unifiedCoursesMoreHref,
@@ -18,6 +17,7 @@ import {
   type UnifiedSearchResult,
   type UnifiedSearchSection,
 } from "./unified-search";
+import { searchUnifiedAssets } from "./unified-search-assets";
 
 /**
  * 통합 검색의 로컬 프로바이더 — 기존 검색 모듈을 그대로 재사용한다.
@@ -27,7 +27,10 @@ import {
  *   매뉴얼 검색 `searchManual`에 넘긴다(S2-9에서 세운 어휘 정렬 계약과 동일).
  *   즉 도움말 검색 결과에는 매뉴얼 본문 문서가 편입된다.
  * - 페이지: /help 관련 화면과 같은 `rankRelatedScreens`(사이트 디렉터리 랭킹).
- * - 소재: 로컬 색인이 없어 링크 전용 섹션(전용 표면에서 서버 검색).
+ * - 소재: 경량 로컬 색인(제목·태그·종류, unified-search-assets)으로 먼저
+ *   답하고, 서버 결과와는 mergeUnifiedAssetSections 규칙으로 합친다(A6).
+ *   이전의 "로컬 색인 없어 링크 전용"은 색인 도입으로 해소됐다 — 링크
+ *   (moreHref)는 색인에 없는 소재를 전용 표면에서 계속 찾게 하는 보조다.
  *
  * 이 모듈은 강좌·매뉴얼·사이트맵 데이터를 끌어오므로 가볍지 않다. 셸(커맨드
  * 팔레트)처럼 진입 청크에 있는 표면은 정적 import 대신 동적 import로 읽고,
@@ -147,15 +150,18 @@ export function searchUnifiedHelpSections(query: string): {
 }
 
 /**
- * 로컬에서 답할 수 있는 통합 검색 전체(강좌·도움말·페이지 + 소재 링크).
- * 작품·소재 아이템은 서버 검색이라 호출자가 worksSectionFromTitles /
- * assetsSectionFromResources로 만들어 buildUnifiedSearchResult에 합친다.
+ * 로컬에서 답할 수 있는 통합 검색 전체(소재 색인·강좌·도움말·페이지).
+ * 작품 아이템은 서버 검색이라 호출자가 worksSectionFromTitles로 만들어
+ * buildUnifiedSearchResult에 합친다. 소재는 로컬 색인이 1차 답을 하고,
+ * 서버 소재 결과를 가진 표면은 mergeUnifiedAssetSections로 합친다(A6).
  */
 export function searchUnifiedLocal(query: string): UnifiedSearchResult {
   return buildUnifiedSearchResult(query, [
-    assetsLinkSection(query),
+    searchUnifiedAssets(query),
     searchUnifiedCourses(query),
     searchUnifiedHelp(query),
     searchUnifiedPages(query),
   ]);
 }
+
+export { mergeUnifiedAssetSections, searchUnifiedAssets } from "./unified-search-assets";
