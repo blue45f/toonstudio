@@ -1,22 +1,22 @@
 {
   "version": 1,
-  "duration": 504,
+  "duration": 558,
   "voice": {
-    "provider": "macOS speech synthesis",
-    "name": "Yuna",
+    "provider": "Meta AI",
+    "name": "Helio",
     "locale": "ko-KR",
-    "rate": 185
+    "voiceId": "avocado_v2:MAI_03",
+    "note": "Muse spoken-audio pipeline (tts speak --language ko). Speed 100 by default; cues that exceed their window are re-synthesized faster. Standard voice designated by the service owner on 2026-10-21."
   },
   "disclosure": {
     "ko": "합성 음성으로 제작한 한국어 내레이션입니다.",
     "en": "The Korean narration uses a synthesized voice."
   },
   "rights": {
-    "status": "not-cleared",
-    "commercialDistribution": false,
-    "basis": "macOS Software License Agreement (Sonoma) Section 2F: System Voices may be used only for personal, noncommercial use; use, recording, publishing or redistribution in a profit, nonprofit, public sharing or commercial context is not permitted.",
-    "record": "apps/web/public/brand/product-tour/VOICE-RIGHTS.md",
-    "replacement": "Re-record with a cleared source (MeloTTS-Korean, MIT, or a rights-holder human voice) and assemble with tools/media/brand-film/assemble-product-tour-narration.mjs."
+    "status": "cleared",
+    "commercialDistribution": true,
+    "basis": "서비스 소유자가 2026-10-21 IR 발표 플레이어(아티팩트 toonstudio) 내레이션에 사용한 이 음성을 표준 음성으로 지정하고, 제품 투어를 포함한 홍보 영상 전반에 같은 음성을 사용하도록 지시했다. 합성은 소유자의 Muse 음성 합성 파이프라인(Meta AI 음성 Helio)으로 생성했다.",
+    "record": "apps/web/public/brand/product-tour/VOICE-RIGHTS.md"
   },
   "cues": [
     {
@@ -96,61 +96,76 @@
     },
     {
       "start": 301,
+      "ko": "이번에는 가상 스튜디오로 들어가 보겠습니다.",
+      "en": "Now, let's step into the virtual studio."
+    },
+    {
+      "start": 319,
+      "ko": "내 캐릭터로 작품 속 공간을 직접 걸어 다니며 장면의 분위기와 동선을 확인할 수 있습니다.",
+      "en": "Walk the spaces of your work as your own character, and check the mood and flow of each scene for yourself."
+    },
+    {
+      "start": 336,
+      "ko": "클래식 무대와 쓰리디 배경으로 공간을 구성하고, 팀원과 같은 작업실에 모여 함께 작업할 수 있습니다.",
+      "en": "Shape the space with a classic stage and 3D environments, and gather with your team in one shared studio."
+    },
+    {
+      "start": 355,
       "ko": "에이아이 작업실은 반복 작업을 줄이고 아이디어 탐색을 돕습니다.",
       "en": "The AI workspace reduces repetition and supports idea exploration."
     },
     {
-      "start": 318,
+      "start": 372,
       "ko": "개인 크리에이터 런타임과 생성 도구를 활용하되,",
       "en": "Use your personal Creator Runtime and generation tools,"
     },
     {
-      "start": 335,
+      "start": 389,
       "ko": "결과를 검토하고 선택해 실제 작품에 적용하는 최종 판단은 언제나 창작자에게 남겨 둡니다.",
       "en": "while keeping review, selection, and the final decision to apply a result in the creator's hands."
     },
     {
-      "start": 355,
+      "start": 409,
       "ko": "팀 작업에서는 파일을 주고받는 대신, 작품의 현재 상태를 함께 봅니다.",
       "en": "In team production, share the current state of the work instead of passing files around."
     },
     {
-      "start": 374,
+      "start": 428,
       "ko": "담당자와 진행 단계, 다음 할 일을 실제 작업물과 같은 문맥에서 확인하고,",
       "en": "See owners, production stages, and next actions in the context of the actual work,"
     },
     {
-      "start": 396,
+      "start": 450,
       "ko": "수정 요청과 변경 이력, 검토 결과를 연결해 누락과 제작 병목을 줄입니다.",
       "en": "then connect revision requests, change history, and review results to reduce omissions and bottlenecks."
     },
     {
-      "start": 421,
+      "start": 475,
       "ko": "막히는 순간에는 배우기 영역에서 바로 다음 행동을 찾을 수 있습니다.",
       "en": "When work stalls, the learning area helps you find the next useful action."
     },
     {
-      "start": 438,
+      "start": 492,
       "ko": "웹툰 제작 과정과 작화·스토리 기법, 실제 작업으로 이어지는 실습과 레퍼런스를 살펴보고,",
       "en": "Explore webtoon workflows, art and story techniques, exercises, and references that lead into real work,"
     },
     {
-      "start": 454.5,
+      "start": 508.5,
       "ko": "소재와 오디오 같은 창작 자원도 제작 흐름 가까이에서 찾아 활용하세요.",
       "en": "and find creative resources such as assets and audio close to the production flow."
     },
     {
-      "start": 469,
+      "start": 523,
       "ko": "완성 단계에서는 원고 이미지와 작품 정보, 게시 설정을 한 번 더 확인합니다.",
       "en": "At the finishing stage, review the manuscript images, work information, and publishing settings once more."
     },
     {
-      "start": 482,
+      "start": 536,
       "ko": "규격과 필수 항목을 검사하고, 내보내기와 공개 준비까지 같은 작품 안에서 마무리합니다.",
       "en": "Validate formats and required fields, then finish export and publishing preparation in the same work."
     },
     {
-      "start": 496,
+      "start": 550,
       "ko": "필요한 곳에서 시작해, 툰스튜디오와 함께 끝까지 이어 가세요.",
       "en": "Start where you need to, and carry the work all the way through with ToonStudio."
     }

@@ -87,7 +87,7 @@ function formatTime(totalSeconds) {
   const minutes = Math.floor((milliseconds % 3_600_000) / 60_000);
   const seconds = Math.floor((milliseconds % 60_000) / 1000);
   const remainder = milliseconds % 1000;
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(3, "0")}.${String(remainder).padStart(3, "0")}`;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(remainder).padStart(3, "0")}`;
 }
 
 function wrapCaption(text, width) {
@@ -104,7 +104,7 @@ function wrapCaption(text, width) {
 }
 
 function validateSpec() {
-  if (spec.duration !== 504 || !Array.isArray(cues) || cues.length < 20) throw new Error("Invalid product-tour narration specification");
+  if (spec.duration !== 558 || !Array.isArray(cues) || cues.length < 20) throw new Error("Invalid product-tour narration specification");
   for (const [index, cue] of cues.entries()) {
     if (!Number.isFinite(cue.start) || cue.start < 0 || cue.start >= spec.duration) throw new Error(`Invalid start at cue ${index + 1}`);
     if (index > 0 && cue.start <= cues[index - 1].start) throw new Error(`Cue ${index + 1} is not ordered`);

@@ -125,7 +125,7 @@ export const ABOUT_JOURNEY_DETAILS: Readonly<Record<AboutJourneyHref, { readonly
 export const SERVICE_FLOW = [
   { id: "home", href: "/", ko: "홈", en: "Home" },
   { id: "about", href: "/about", ko: "서비스 소개", en: "About" },
-  { id: "tour", href: "/product-tour", ko: "8분 제품 투어", en: "8-minute tour" },
+  { id: "tour", href: "/product-tour", ko: "9분 제품 투어", en: "9-minute tour" },
   { id: "start", href: "/studio/new", ko: "첫 작품 시작", en: "Start creating" },
 ] as const satisfies readonly (HomeLink & { readonly id: string })[];
 
@@ -134,7 +134,7 @@ export type ServiceFlowStep = (typeof SERVICE_FLOW)[number]["id"];
 /** 홈 하단 '더 알아보기' — 소개 흐름을 정본 순서로 보여 주고 영상 두 편과 전체 기능 요약을 덧붙인다. */
 export const HOME_LEARN_MORE: readonly HomeLink[] = [
   ...ABOUT_JOURNEY,
-  { href: "/product-tour", ko: "8분 제품 투어", en: "8-minute product tour" },
+  { href: "/product-tour", ko: "9분 제품 투어", en: "9-minute product tour" },
   { href: "/brand-film", ko: "24초 브랜드 필름", en: "24-second brand film" },
   { href: "/features", ko: "전체 기능 한눈에", en: "All features at a glance" },
 ];

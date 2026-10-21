@@ -109,7 +109,7 @@ const AUDIENCES = [
 
 /** 영상으로 먼저 보고 싶은 사람을 위한 두 편. 포스터는 저장소에 이미 있는 자산이다. */
 const EXPLORE_FILMS = [
-  { href: "/product-tour", poster: "/brand/toonstudio-product-tour-poster.jpg", time: "8:24", ko: { title: "8분 제품 투어", meta: "9개 챕터 · 한·영 자막" }, en: { title: "8-minute product tour", meta: "9 chapters · KO/EN captions" } },
+  { href: "/product-tour", poster: "/brand/toonstudio-product-tour-poster.jpg", time: "9:18", ko: { title: "9분 제품 투어", meta: "10개 챕터 · 한·영 자막" }, en: { title: "9-minute product tour", meta: "10 chapters · KO/EN captions" } },
   { href: "/brand-film", poster: "/brand/toonstudio-film-poster.jpg", time: "0:24", ko: { title: "24초 브랜드 필름", meta: "창작 흐름을 짧게" }, en: { title: "24-second brand film", meta: "The creative flow, in brief" } },
 ] as const;
 
@@ -148,7 +148,7 @@ export function AboutPage() {
         actions={(
           <IntroActions
             primary={{ href: "/studio/new", label: bi("새 작품 시작하기", "Start a new work") }}
-            secondary={{ href: "/product-tour", label: bi("8분 제품 투어 보기", "Watch the 8-minute tour"), icon: CirclePlay }}
+            secondary={{ href: "/product-tour", label: bi("9분 제품 투어 보기", "Watch the 9-minute tour"), icon: CirclePlay }}
           />
         )}
         media={(

@@ -30,7 +30,7 @@ describe("소개 페이지의 기능·기술 자료 연결", () => {
     expect(ABOUT.match(/<IntroActions\b/gu)).toHaveLength(1);
     expect(ABOUT).toContain('aria-label={bi("더 알아보기", "Learn more")}');
     // 영상 카드와 첫 화면 보조 행동은 그대로다.
-    expect(ABOUT).toContain("8분 제품 투어 보기");
+    expect(ABOUT).toContain("9분 제품 투어 보기");
     expect(ABOUT).toContain('href: "/product-tour"');
   });
 

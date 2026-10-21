@@ -33,7 +33,7 @@ export interface ProductTourFilmChapter {
   readonly accent: string;
 }
 
-export const PRODUCT_TOUR_DURATION_SECONDS = 504;
+export const PRODUCT_TOUR_DURATION_SECONDS = 558;
 export const PRODUCT_TOUR_FPS = 30;
 
 /**
@@ -65,7 +65,7 @@ export const PRODUCT_TOUR_FILM_CHAPTERS: readonly ProductTourFilmChapter[] = [
     start: 0,
     end: 48,
     kicker: "01 · WHAT IS TOONSTUDIO",
-    title: "아이디어에서 연재 준비까지,\n하나의 작품 안에서.",
+    title: "아이디어에서 연재·운영까지,\n하나의 작품 안에서.",
     body: "툰스튜디오는 그림 한 장을 그리는 도구가 아니라 웹툰 제작의 앞뒤 과정을 연결하는 브라우저 기반 창작 작업실입니다.",
     beats: ["기획에서 시작", "2D · 3D 제작", "검토 · 게시 준비"],
     assets: [capture("brand/product-tour/01-overview.png")],
@@ -115,7 +115,7 @@ export const PRODUCT_TOUR_FILM_CHAPTERS: readonly ProductTourFilmChapter[] = [
     end: 300,
     kicker: "05 · BUILD IN 3D",
     title: "포즈와 카메라, 공간을\n장면 설계의 도구로.",
-    body: "캐릭터 포즈와 배경, 카메라 구도를 3D로 탐색하고 현재 컷의 2D 제작으로 다시 연결합니다.",
+    body: "캐릭터 포즈와 배경, 카메라 구도를 3D로 탐색하고 현재 컷의 2D 제작으로 다시 연결합니다. 배경은 테마 팩 42개와 배치할 수 있는 에셋 14,665개, 프리셋 9개로 빠르게 시작합니다.",
     beats: ["캐릭터 · 포즈", "배경 · 공간", "카메라 · 컷 전환"],
     assets: [capture("brand/product-tour/05-3d.png")],
     route: "/studio/bg3d",
@@ -125,7 +125,20 @@ export const PRODUCT_TOUR_FILM_CHAPTERS: readonly ProductTourFilmChapter[] = [
   {
     start: 300,
     end: 354,
-    kicker: "06 · ASSIST, DON'T REPLACE",
+    kicker: "06 · STEP INTO THE STUDIO",
+    title: "작품 속 공간으로,\n직접 걸어 들어갑니다.",
+    body: "가상 스튜디오는 내 캐릭터로 작품의 공간을 걷고, 가까이 다가가 대화하며, 팀과 같은 작업실에 모이는 온라인 무대입니다. 클래식 2D 무대에 3D 배경을 더해 장면이 서는 공간을 구성합니다.",
+    beats: ["캐릭터로 걷는 무대", "2D 무대 · 3D 배경", "팀과 같은 작업실"],
+    // 가상 스튜디오 UI 캡처가 준비될 때까지 실제 월드 렌더(시네마틱)를 쓰고 개념 도해로 표기한다.
+    assets: [concept("assets/virtual-studio/cinematic-v9/campus-social-1024.webp"), concept("assets/virtual-studio/cinematic-v9/studio-tour-1024.webp")],
+    route: "/studio/space",
+    label: "VIRTUAL STUDIO",
+    accent: STARLIGHT.pink,
+  },
+  {
+    start: 354,
+    end: 408,
+    kicker: "07 · ASSIST, DON'T REPLACE",
     title: "반복 작업은 줄이고,\n판단은 창작자가.",
     body: "개인 Creator Runtime과 생성 도구를 반복 제작과 아이디어 탐색에 활용하되 결과 검토와 최종 선택은 작업자가 유지합니다.",
     beats: ["개인 런타임", "반복 제작 보조", "사람이 검토 · 선택"],
@@ -135,9 +148,9 @@ export const PRODUCT_TOUR_FILM_CHAPTERS: readonly ProductTourFilmChapter[] = [
     accent: STARLIGHT.violet,
   },
   {
-    start: 354,
-    end: 420,
-    kicker: "07 · PRODUCE TOGETHER",
+    start: 408,
+    end: 474,
+    kicker: "08 · PRODUCE TOGETHER",
     title: "파일을 넘기는 대신,\n작품의 상태를 함께 봅니다.",
     body: "담당자, 진행 상태, 수정 요청, 변경 이력과 검토를 실제 작업물에 연결해 팀 제작의 누락과 병목을 줄입니다.",
     beats: ["프로젝트 상태", "수정 · 변경 이력", "검토 · 승인"],
@@ -147,9 +160,9 @@ export const PRODUCT_TOUR_FILM_CHAPTERS: readonly ProductTourFilmChapter[] = [
     accent: STARLIGHT.cyan,
   },
   {
-    start: 420,
-    end: 468,
-    kicker: "08 · LEARN & COLLECT",
+    start: 474,
+    end: 522,
+    kicker: "09 · LEARN & COLLECT",
     title: "만들면서 배우고,\n필요한 재료를 바로 찾고.",
     body: "웹툰 제작 강좌와 레퍼런스, 소재와 오디오를 작업 흐름 가까이에 두어 막힌 단계에서 다음 행동을 찾습니다.",
     beats: ["웹툰 제작 강좌", "소재 · 레퍼런스", "오디오 · 창작 자원"],
@@ -159,12 +172,12 @@ export const PRODUCT_TOUR_FILM_CHAPTERS: readonly ProductTourFilmChapter[] = [
     accent: STARLIGHT.violet,
   },
   {
-    start: 468,
-    end: 504,
-    kicker: "09 · FINISH THE WORK",
-    title: "완성한 원고를 검사하고,\n내보내고, 공개 준비까지.",
-    body: "원고 규격과 게시 설정을 확인하고 내보내기와 공개 준비를 같은 작품 흐름의 마지막 단계로 이어갑니다.",
-    beats: ["원고 검사", "내보내기", "게시 준비"],
+    start: 522,
+    end: 558,
+    kicker: "10 · FINISH THE WORK",
+    title: "완성한 원고를 검사하고,\n내보내, 연재로 이어갑니다.",
+    body: "원고 규격과 게시 설정을 확인하고 내보내기와 게시를 같은 작품 흐름으로 이어갑니다. 투어는 여기서 끝나지만, 작품은 연재와 운영으로 계속됩니다.",
+    beats: ["원고 검사", "내보내기", "게시 · 연재"],
     assets: [capture("brand/product-tour/09-publish.png"), capture("brand/product-tour/01-overview.png")],
     route: "/studio/publish",
     label: "EXPORT & PUBLISH",
@@ -402,7 +415,7 @@ export function ToonStudioProductTour() {
         <Wordmark />
         <div style={{ display: "flex", alignItems: "center", gap: 18, color: STARLIGHT.fg2, fontSize: 12, letterSpacing: ".08em" }}>
           <span>{String(chapterIndex + 1).padStart(2, "0")} / {String(PRODUCT_TOUR_FILM_CHAPTERS.length).padStart(2, "0")}</span>
-          <span>{formatTime(second)} / 8:24</span>
+          <span>{formatTime(second)} / 9:18</span>
         </div>
       </header>
 

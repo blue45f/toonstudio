@@ -38,8 +38,8 @@ const CHAPTERS = [
     ko: "툰스튜디오는 무엇인가",
     en: "What ToonStudio is",
     summary: {
-      ko: "기획부터 원고 제작, 3D, 검토와 게시 준비까지 하나의 작품 흐름으로 연결하는 브라우저 기반 웹툰 제작 공간입니다.",
-      en: "A browser-based webtoon workspace connecting planning, art, 3D, review and publishing preparation around one work.",
+      ko: "기획부터 원고 제작, 3D, 검토와 게시, 연재 운영까지 하나의 작품 흐름으로 연결하는 브라우저 기반 웹툰 제작 공간입니다.",
+      en: "A browser-based webtoon workspace connecting planning, art, 3D, review, publishing and series operations around one work.",
     },
     feature: { href: "/studio", ko: "내 작업실", en: "My studio" },
     related: [
@@ -110,8 +110,8 @@ const CHAPTERS = [
     ko: "캐릭터·포즈·3D 장면",
     en: "Characters, posing and 3D",
     summary: {
-      ko: "캐릭터 포즈, 배경, 카메라와 공간을 구성해 어려운 구도를 탐색하고 현재 컷의 2D 제작으로 다시 연결합니다.",
-      en: "Explore difficult compositions with character poses, environments, cameras and space, then return that context to 2D production.",
+      ko: "캐릭터 포즈, 배경, 카메라와 공간을 구성해 어려운 구도를 탐색하고 현재 컷의 2D 제작으로 다시 연결합니다. 배경은 테마 팩 42개, 배치할 수 있는 에셋 14,665개와 프리셋 9개로 빠르게 구성할 수 있습니다.",
+      en: "Explore difficult compositions with character poses, environments, cameras and space, then return that context to 2D production. Environments come together quickly from 42 theme packs, 14,665 placeable assets and 9 presets.",
     },
     feature: { href: "/studio/bg3d", ko: "3D 배경 스튜디오", en: "3D background studio" },
     related: [
@@ -122,6 +122,25 @@ const CHAPTERS = [
   {
     start: 300,
     end: 354,
+    id: "space",
+    // 가상 스튜디오 UI 캡처가 준비될 때까지 실제 월드 렌더(시네마틱)를 쓰고 개념 도해로 표기한다.
+    image: "/assets/virtual-studio/cinematic-v9/campus-social-1024.webp",
+    visual: "concept",
+    ko: "가상 스튜디오",
+    en: "Virtual studio",
+    summary: {
+      ko: "내 캐릭터로 작품 속 공간을 걷고, 가까이 다가가 대화하고, 팀과 같은 작업실에 모여 함께 작업합니다. 클래식 2D 무대와 3D 배경으로 장면이 서는 공간을 구성합니다.",
+      en: "Walk the spaces of your work as your character, talk up close, and gather with your team in one shared studio. Shape the space a scene stands in with a classic 2D stage and 3D environments.",
+    },
+    feature: { href: "/studio/space", ko: "가상 스튜디오", en: "Virtual studio" },
+    related: [
+      { href: "/collaborate", ko: "구인·의뢰", en: "Find collaborators" },
+      { href: "/studio/bg3d", ko: "3D 배경 스튜디오", en: "3D background studio" },
+    ],
+  },
+  {
+    start: 354,
+    end: 408,
     id: "assist",
     image: "/brand/product-tour/06-ai.png",
     visual: "capture",
@@ -137,8 +156,8 @@ const CHAPTERS = [
     ],
   },
   {
-    start: 354,
-    end: 420,
+    start: 408,
+    end: 474,
     id: "production",
     image: "/brand/product-tour/07-production.png",
     visual: "capture",
@@ -156,15 +175,15 @@ const CHAPTERS = [
     ],
   },
   {
-    start: 420,
-    end: 468,
+    start: 474,
+    end: 522,
     id: "learn",
     image: "/brand/product-tour/08-learn.png",
     visual: "capture",
     ko: "학습·소재·사운드",
     en: "Learning, assets and sound",
     summary: {
-      ko: "웹툰 제작 강좌와 레퍼런스, 소재 마켓과 오디오 작업을 제작 도구 가까이에 두어 막힌 단계에서 바로 다음 행동을 찾습니다.",
+      ko: "웹툰 제작 강좌와 레퍼런스, 소재 라이브러리와 오디오 작업을 제작 도구 가까이에 두어 막힌 단계에서 바로 다음 행동을 찾습니다.",
       en: "Keep webtoon lessons, references, assets and audio close to production so the next useful action is available when work stalls.",
     },
     feature: { href: "/learn", ko: "배우기", en: "Learn" },
@@ -174,16 +193,16 @@ const CHAPTERS = [
     ],
   },
   {
-    start: 468,
-    end: 504,
+    start: 522,
+    end: 558,
     id: "finish",
     image: "/brand/product-tour/09-publish.png",
     visual: "capture",
-    ko: "검사·내보내기·게시 준비",
-    en: "Validate, export and prepare to publish",
+    ko: "검사·내보내기·게시",
+    en: "Validate, export and publish",
     summary: {
-      ko: "완성 원고의 규격과 게시 설정을 확인하고 내보내기와 게시 준비까지 같은 작품의 마지막 단계로 이어갑니다.",
-      en: "Validate the finished manuscript and publishing settings, then carry the same work through export and publishing preparation.",
+      ko: "완성 원고의 규격과 게시 설정을 확인하고 내보내기와 게시까지 같은 작품 흐름으로 이어갑니다. 게시한 작품은 그대로 연재·운영으로 계속됩니다.",
+      en: "Validate the finished manuscript and publishing settings, then carry the same work through export and publishing — and on into serialisation and series operations.",
     },
     feature: { href: "/studio/publish", ko: "검수·내보내기", en: "Review & export" },
     related: [
@@ -199,7 +218,7 @@ export const PRODUCT_TOUR = {
   poster: "/brand/toonstudio-product-tour-poster.jpg",
   captionsKo: "/brand/toonstudio-product-tour.ko.vtt",
   captionsEn: "/brand/toonstudio-product-tour.en.vtt",
-  duration: 504,
+  duration: 558,
   fps: 30,
   chapters: CHAPTERS,
 } as const;
@@ -238,7 +257,7 @@ export function formatProductTourDuration(
   return [minutes > 0 ? `${minutes}m` : "", showSeconds ? `${remainder}s` : ""].filter(Boolean).join(" ");
 }
 
-/** schema.org VideoObject.duration 용 ISO 8601 기간: 504초 → "PT8M24S". */
+/** schema.org VideoObject.duration 용 ISO 8601 기간: 558초 → "PT9M18S". */
 export function productTourIsoDuration(seconds: number): string {
   const total = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 0;
   const hours = Math.floor(total / 3600);
@@ -260,7 +279,7 @@ export const PRODUCT_TOUR_COPY = {
     metaDescription: `기획, 드로잉, 컷 연출, 3D, AI 보조, 협업, 학습과 게시 준비까지 툰스튜디오 전체 창작 흐름을 ${TOUR_DURATION_KO} Remotion 제품 투어로 살펴보세요. 제품 화면 캡처와 개념 도해로 구성했습니다.`,
     eyebrow: `PRODUCT TOUR · ${formatProductTourTime(PRODUCT_TOUR.duration)}`,
     eyebrowSr: `제품 투어, 재생 시간 ${TOUR_DURATION_KO}`,
-    title: ["아이디어에서 연재 준비까지,", "8분 안에 한눈에."],
+    title: ["아이디어에서 연재·운영까지,", "9분 안에 한눈에."],
     intro: `실제 제작 순서대로 기획·드로잉·컷 연출·3D·AI 보조·협업·게시 준비를 ${TOUR_CHAPTER_COUNT}개 챕터로 보여 드립니다. 챕터마다 해당 기능을 바로 열 수 있어요.`,
     watch: "제품 투어 재생",
     start: "새 작품 시작하기",
@@ -290,6 +309,7 @@ export const PRODUCT_TOUR_COPY = {
     closingTitle: "이제 한 장면을 직접 만들어 보세요.",
     closingBody: "빈 프로젝트에서 시작해도 되고, 스토리·드로잉·3D·협업 중 지금 필요한 곳부터 들어가도 됩니다.",
     brandFilm: "24초 브랜드 필름",
+    irDeck: "IR 발표 자료",
     nextFeatures: "전체 기능 한눈에",
     nextWorkflow: "웹툰 제작 과정",
     nextTechnology: "기술과 신뢰",
@@ -299,7 +319,7 @@ export const PRODUCT_TOUR_COPY = {
     metaDescription: `Explore ToonStudio's whole creative flow, from planning and drawing to 3D, AI help, teamwork and publishing prep, in an ${TOUR_DURATION_EN} Remotion tour of product captures and concept illustrations.`,
     eyebrow: `PRODUCT TOUR · ${formatProductTourTime(PRODUCT_TOUR.duration)}`,
     eyebrowSr: `Product tour, running time ${TOUR_DURATION_EN_LONG}`,
-    title: ["From the first idea to publishing,", "the whole studio in 8 minutes."],
+    title: ["From the first idea to a running series,", "the whole studio in 9 minutes."],
     intro: `Follow the real production order—planning, drawing, panels, 3D, AI assistance, collaboration and publishing—across ${TOUR_CHAPTER_COUNT} chapters. Every chapter opens the matching workspace.`,
     watch: "Play the product tour",
     start: "Start a new work",
@@ -329,6 +349,7 @@ export const PRODUCT_TOUR_COPY = {
     closingTitle: "Now make one scene yourself.",
     closingBody: "Start with a blank project or jump directly into story, drawing, 3D or collaboration—wherever your current work begins.",
     brandFilm: "24-second brand film",
+    irDeck: "IR presentation",
     nextFeatures: "All features at a glance",
     nextWorkflow: "Webtoon workflow",
     nextTechnology: "Technology & trust",

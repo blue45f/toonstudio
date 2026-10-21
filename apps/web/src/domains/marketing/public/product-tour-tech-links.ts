@@ -25,6 +25,7 @@ export type ProductTourTechChapterId =
   | "draw"
   | "comic"
   | "three-d"
+  | "space"
   | "assist"
   | "production"
   | "learn"
@@ -95,6 +96,14 @@ export const PRODUCT_TOUR_TECH_LINKS: Readonly<Record<ProductTourTechChapterId, 
     ],
     story: { chapterId: "web-3d-engine", status: "experimental", label: t("역할별 3D 권위 분리", "Separating 3D authority by role") },
   },
+  space: {
+    atlas: [
+      { atlasId: "virtual-studio-architecture-overview", label: t("가상 스튜디오", "Virtual studio") },
+      { atlasId: "phaser-lazy-scene-lifecycle", label: t("Phaser 무대", "Phaser stage") },
+      { atlasId: "tiled-world-data-model", label: t("월드 데이터", "World data") },
+    ],
+    story: { chapterId: "collaborative-crdt-boundary", status: "experimental", label: t("공간 협업의 동기화 경계", "Sync boundaries for spatial collaboration") },
+  },
   assist: {
     atlas: [
       { atlasId: "creator-inference-service", label: t("내 GPU 런타임", "Your own GPU runtime") },
@@ -105,7 +114,6 @@ export const PRODUCT_TOUR_TECH_LINKS: Readonly<Record<ProductTourTechChapterId, 
   },
   production: {
     atlas: [
-      { atlasId: "virtual-studio-architecture-overview", label: t("가상 스튜디오", "Virtual studio") },
       { atlasId: "yjs-crdt-document", label: t("동시 편집 CRDT", "Co-editing CRDT") },
       { atlasId: "crdt-lock-revision", label: t("편집 잠금", "Edit locks") },
     ],
