@@ -4,6 +4,8 @@
  * only hands the first approved batch to the existing AI hub.
  */
 
+import { useT } from "@/shared/lib/i18n";
+import "./studio-ai-status-i18n";
 import {
   AlertTriangle,
   Check,
@@ -220,6 +222,7 @@ export function StudioAiEpisodeProductionModal({
   onApplyPlan,
   onApplyPrompt,
 }: StudioAiEpisodeProductionModalProps): ReactElement | null {
+  const t = useT();
   const rawId = useId();
   const idPrefix = `ai-episode-production-${rawId.replace(/:/gu, "")}`;
   const titleId = `${idPrefix}-title`;
@@ -267,7 +270,7 @@ export function StudioAiEpisodeProductionModal({
       ? ""
       : clipboard.current.status === "copied"
         ? "클립보드에 복사했어요."
-        : "클립보드에 복사하지 못했어요. 텍스트를 직접 선택해 복사해 주세요.";
+        : t("studio.aiStatus.clipboardCopyFailed", "클립보드에 복사하지 못했어요. 텍스트를 직접 선택해 복사해 주세요.");
 
   useStudioModalSheet({
     activeKey: open ? "ai-episode-production" : null,

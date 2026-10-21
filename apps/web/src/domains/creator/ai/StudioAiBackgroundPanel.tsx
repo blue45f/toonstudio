@@ -10,6 +10,7 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_AI_IMAGE_SIZES, type StudioAiImageSize } from "./studio-ai-client";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 import { cn } from "@/shared/lib/utils";
 
 const BACKGROUND_PROMPT_MAX = 4_000;
@@ -42,7 +43,7 @@ export function StudioAiBackgroundPanel({
     >
       <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
         <ImageIcon size={14} className="text-accent" aria-hidden />
-        {translateCurrentStaticSourceText("domains.creator.ai.StudioAiBackgroundPanel", "ko", "AI 배경 생성")}</div>
+        {translateCurrentStaticSourceText("domains.creator.ai.StudioAiBackgroundPanel", "ko", "AI 배경 생성")} <StudioAiConnectionBadge configured={configured} /></div>
 
       {!configured ? (
         <AiRecoveryNotice

@@ -1,4 +1,7 @@
+import { useT } from "@/shared/lib/i18n";
+import "./studio-ai-status-i18n";
 import { useMemo, useState } from "react";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 
 import {
   applyStudioStrokeProposalReview,
@@ -36,6 +39,7 @@ export function StudioStrokeProposalReviewPanel({
   onApplyTransaction,
   onCancel,
 }: StudioStrokeProposalReviewPanelProps) {
+  const t = useT();
   const [review, setReview] = useState(() => (
     proposal ? createStudioStrokeProposalReview(proposal) : null
   ));
@@ -74,6 +78,7 @@ export function StudioStrokeProposalReviewPanel({
       <header className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold">스마트 획 보정 제안</h3>
+          <StudioAiConnectionBadge kind="local" />
           <p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">
             생성형 AI가 아닌 기기 내 선 보정 알고리즘입니다. 원본은 바꾸지 않고 최근 획을 부드럽게 다듬은 ghost 획만 제안합니다.
           </p>
@@ -84,7 +89,7 @@ export function StudioStrokeProposalReviewPanel({
           disabled={busy || activePointerStroke}
           className="min-h-11 shrink-0 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent disabled:opacity-50"
         >
-          {busy ? "보정 생성 중…" : proposal ? "다시 보정" : "획 보정 받기"}
+          {busy ? t("studio.aiStatus.generatingProposal", "보정 생성 중…") : proposal ? "다시 보정" : "획 보정 받기"}
         </button>
       </header>
 

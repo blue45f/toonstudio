@@ -15,6 +15,7 @@ import type { StudioOnnxColorizeLayeredResult } from "../studio-onnx-colorize";
 import type { StudioTag2pixTagName } from "../studio-onnx-tag2pix";
 
 import { cn } from "@/shared/lib/utils";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 
 const T = (ko: string) => translateCurrentStaticSourceText(
   "domains.creator.ai.StudioOnnxColorizePanel",
@@ -285,8 +286,7 @@ export function StudioOnnxColorizePanel({
     >
       <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
         <Palette size={14} className="text-accent" aria-hidden />
-        {T("기기에서 채색")}
-      </div>
+        {T("기기에서 채색")} <StudioAiConnectionBadge kind="local" /></div>
 
       <p className="text-[0.68rem] leading-relaxed text-fg-2">
         {cloudConfigured

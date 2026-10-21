@@ -28,6 +28,7 @@ import {
 import type { ChangeEvent, ReactElement } from "react";
 
 import { cn } from "@/shared/lib/utils";
+import { StudioAiConnectionBadge } from "./ai/StudioAiConnectionBadge";
 
 export type StudioColorizeMaskPanelProps = {
   /** el.colorizeMask 존재 여부 — false면 "추가" 액션만 보여준다. */
@@ -107,6 +108,7 @@ export function StudioColorizeMaskPanel({
         <p className="flex items-center gap-1.5 text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">
           <PaintBucket size={12} aria-hidden />
           힌트 채색 마스크
+          <StudioAiConnectionBadge kind="local" detail="굽기는 상위 호스트가 로컬 전파 알고리즘으로 실행합니다." />
         </p>
         {busy && (
           <Loader2

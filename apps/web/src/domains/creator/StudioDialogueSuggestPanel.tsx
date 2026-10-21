@@ -21,6 +21,7 @@ import type { AnswerTuning } from "./ai/answer-tuning";
 import { formatDialogueSuggestionLine, type DialogueSuggestionCandidate } from "./lettering/studio-dialogue-suggest";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { StudioAiConnectionBadge } from "./ai/StudioAiConnectionBadge";
 import { reducedMotion } from "@/shared/hooks/use-in-view";
 
 export function StudioDialogueSuggestPanel({
@@ -78,7 +79,7 @@ export function StudioDialogueSuggestPanel({
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
       <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
         <MessageSquareQuote size={14} />
-        {translateCurrentStaticSourceText("domains.creator.StudioDialogueSuggestPanel", "ko", "AI 대사/나레이션 제안")}</div>
+        {translateCurrentStaticSourceText("domains.creator.StudioDialogueSuggestPanel", "ko", "AI 대사/나레이션 제안")} <StudioAiConnectionBadge configured={configured} /></div>
 
       {!configured ? (
         <AiRecoveryNotice

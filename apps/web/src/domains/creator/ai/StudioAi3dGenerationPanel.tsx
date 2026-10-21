@@ -12,6 +12,7 @@ import {
   type Studio3dGenerationJob,
   type Studio3dGenerationMode,
 } from "./studio-3d-generation-client";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 
 const TERMINAL = new Set(["ready", "failed", "cancelled", "expired"]);
 
@@ -209,6 +210,7 @@ export function StudioAi3dGenerationPanel({
     >
       <header>
         <h3 className="text-sm font-bold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAi3dGenerationPanel", "ko", "AI 3D 생성")}</h3>
+        <StudioAiConnectionBadge kind="provider-ready" detail="주입된 3D 생성 클라이언트(Hyper3D/Rodin 개인 키)로 잡을 제출합니다. 키가 없으면 이 패널은 상위에서 고지로 대체됩니다." className="mt-1" />
         <p className="mt-1 text-[0.63rem] leading-relaxed text-fg-3">
           {translateCurrentStaticSourceText("domains.creator.ai.StudioAi3dGenerationPanel", "ko", "입력은 실행 전 확인 후 Hyper3D/Rodin으로 전송됩니다. 통합 AI 설정의 개인 키만 요청 단위로 사용하며 브라우저 번들·작업 기록·오류 로그에 저장하지 않습니다.")}</p>
       </header>

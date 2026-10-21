@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { ImagePlus, Layers, Loader2, Play, RefreshCw, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
 
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 
 import {
   generateStudioLoraImage,
@@ -312,6 +313,7 @@ export function StudioAiLoraTrainingPanel({
             <Layers className="h-3.5 w-3.5 text-accent" aria-hidden />
             {text("캐릭터·화풍 학습 (LoRA)")}
           </h4>
+          <StudioAiConnectionBadge configured={configured} className="mt-1" />
           <p className="mt-1 text-[11px] leading-5 text-fg-3">
             {text(
               "참조 이미지를 몇 장 모아 학습시키면, 그 캐릭터·화풍을 부를 수 있는 나만의 모델이 됩니다. 학습과 생성은 본인의 fal.ai 키로 실행됩니다.",

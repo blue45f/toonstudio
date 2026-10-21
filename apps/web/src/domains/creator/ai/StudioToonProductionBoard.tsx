@@ -1,3 +1,5 @@
+import { useT } from "@/shared/lib/i18n";
+import "./studio-ai-status-i18n";
 import {
   ChevronLeft,
   ChevronRight,
@@ -76,6 +78,7 @@ export function StudioToonProductionBoard({
   onOpenUsage,
   onOpenAnimation,
 }: StudioToonProductionBoardProps) {
+  const t = useT();
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(100);
   const [extensionCount, setExtensionCount] = useState(5);
@@ -107,7 +110,7 @@ export function StudioToonProductionBoard({
       direction: extensionDirection,
     });
     if (result.added <= 0) {
-      setExtensionNotice("추가할 수 있는 장면이 없습니다.");
+      setExtensionNotice(t("studio.aiStatus.noMoreScenesToAdd", "추가할 수 있는 장면이 없습니다."));
       return;
     }
     onReplaceScenes(result.scenes);
@@ -259,7 +262,7 @@ export function StudioToonProductionBoard({
               ) : (
                 <div className="max-w-sm text-center text-fg-3">
                   <Images size={32} className="mx-auto opacity-60" aria-hidden />
-                  <p className="mt-2 text-sm font-bold text-fg-2">아직 생성된 이미지가 없습니다</p>
+                  <p className="mt-2 text-sm font-bold text-fg-2">{t("studio.aiStatus.noGeneratedImages", "아직 생성된 이미지가 없습니다")}</p>
                   <p className="mt-1 text-xs leading-relaxed">
                     아래 후보 보드에서 이 장면을 선택하고 생성 작업을 여세요.
                   </p>
@@ -396,7 +399,7 @@ export function StudioToonProductionBoard({
         referenceSignature={referenceSignature}
         busy={disabled}
         imageGenerationReady={items.length > 0}
-        disabledReason={disabled ? "세션 저장 또는 동기화가 끝난 뒤 다시 시도하세요." : undefined}
+        disabledReason={disabled ? t("studio.aiStatus.retryAfterSessionSync", "세션 저장 또는 동기화가 끝난 뒤 다시 시도하세요.") : undefined}
         generationActionLabel="선택 컷 생성 작업 열기"
         onGenerate={onGenerate}
         onSelectCandidate={selectCandidate}

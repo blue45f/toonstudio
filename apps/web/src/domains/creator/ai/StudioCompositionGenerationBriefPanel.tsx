@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { StudioAiConnectionBadge, StudioAiConnectionNotice } from "./StudioAiConnectionBadge";
 import {
   buildCompositionGenerationBrief,
   type CompositionGenerationSnapshot,
@@ -67,6 +68,7 @@ export function StudioCompositionGenerationBriefPanel(
     return (
       <section aria-label={copy.title} data-testid="composition-brief-panel">
         <h3>{copy.title}</h3>
+        <StudioAiConnectionBadge kind="not-connected" />
         <p data-testid="composition-brief-empty">{copy.empty}</p>
       </section>
     );
@@ -81,6 +83,7 @@ export function StudioCompositionGenerationBriefPanel(
     return (
       <section aria-label={copy.title} data-testid="composition-brief-panel">
         <h3>{copy.title}</h3>
+        <StudioAiConnectionBadge kind="not-connected" />
         <ul data-testid="composition-brief-errors">
           {result.errors.map((error) => (
             <li key={error}>{errorCopy[error]}</li>
@@ -99,6 +102,19 @@ export function StudioCompositionGenerationBriefPanel(
   return (
     <section aria-label={copy.title} data-testid="composition-brief-panel">
       <h3>{copy.title}</h3>
+      {providerConnected ? (
+        <StudioAiConnectionBadge kind="provider-ready" />
+      ) : (
+        <>
+          <StudioAiConnectionNotice
+            kind="not-connected"
+            detail="외부 AI 이미지 제공자는 연결 전입니다(E3 보류). 생성 버튼은 제공자가 주입될 때만 나타납니다."
+          />
+          <p data-testid="composition-brief-local-fallback">
+            로컬 폴백 동작 중: 브리프 만들기는 이 기기에서 결정적으로 조립되며, 브리프 복사·캡처 그대로 넣기는 지금 바로 쓸 수 있습니다.
+          </p>
+        </>
+      )}
       {!providerConnected ? (
         <p data-testid="composition-brief-provider-pending">{copy.providerPending}</p>
       ) : null}

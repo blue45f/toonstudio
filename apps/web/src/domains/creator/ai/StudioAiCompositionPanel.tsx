@@ -26,6 +26,7 @@ import {
 } from "./studio-ai-client";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 import { reducedMotion } from "@/shared/hooks/use-in-view";
 
 export interface StudioAiCompositionOperationSettlement {
@@ -116,7 +117,7 @@ export function StudioAiCompositionPanel({
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
       <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
         <Clapperboard size={14} />
-        {translateCurrentStaticSourceText("domains.creator.ai.StudioAiCompositionPanel", "ko", "장면 구성 제안 (콘티→그림 보조)")}</div>
+        {translateCurrentStaticSourceText("domains.creator.ai.StudioAiCompositionPanel", "ko", "장면 구성 제안 (콘티→그림 보조)")} <StudioAiConnectionBadge configured={configured} /></div>
 
       {!configured ? (
         <AiRecoveryNotice

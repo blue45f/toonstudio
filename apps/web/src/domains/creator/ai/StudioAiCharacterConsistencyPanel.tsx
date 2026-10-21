@@ -16,6 +16,7 @@ import {
 import { Loader2, MousePointer2, UserRoundCheck } from "lucide-react";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 
 export function StudioAiCharacterConsistencyPanel({
   configured,
@@ -47,7 +48,7 @@ export function StudioAiCharacterConsistencyPanel({
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
       <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
         <UserRoundCheck size={14} className="text-accent" aria-hidden />
-        {translateCurrentStaticSourceText("domains.creator.ai.StudioAiCharacterConsistencyPanel", "ko", "AI 캐릭터 일관성 생성")}</div>
+        {translateCurrentStaticSourceText("domains.creator.ai.StudioAiCharacterConsistencyPanel", "ko", "AI 캐릭터 일관성 생성")} <StudioAiConnectionBadge configured={configured} /></div>
 
       {!configured ? (
         <AiRecoveryNotice

@@ -10,6 +10,7 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_AI_COLORIZE_PRESETS } from "./studio-ai-assist-ux";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 import { cn } from "@/shared/lib/utils";
 
 export function StudioAiColorizePanel({
@@ -36,7 +37,7 @@ export function StudioAiColorizePanel({
     >
       <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
         <Wand2 size={14} className="text-accent" aria-hidden />
-        {translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "AI 자동 채색")}</div>
+        {translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "AI 자동 채색")} <StudioAiConnectionBadge configured={configured} /></div>
 
       {!configured ? (
         <AiRecoveryNotice

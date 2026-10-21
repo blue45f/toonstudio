@@ -1,3 +1,5 @@
+import { useT } from "@/shared/lib/i18n";
+import "./studio-ai-status-i18n";
 import {
   ArrowRight,
   Clapperboard,
@@ -124,6 +126,7 @@ export function StudioAiProductionLaunchpad({
   scenarioDisabled = false,
   scenarioDisabledReason,
 }: StudioAiProductionLaunchpadProps): ReactElement | null {
+  const t = useT();
   const rawId = useId().replace(/:/gu, "");
   const pathname = typeof window === "undefined" ? "/studio" : window.location.pathname;
   const workspaceHref = comicDirectorWorkspaceHref(pathname);
@@ -145,7 +148,7 @@ export function StudioAiProductionLaunchpad({
       onClick: onOpenScenario,
       disabled: scenarioDisabled || !onOpenScenario,
       disabledReason: scenarioDisabled
-        ? scenarioDisabledReason ?? "현재 편집 상태에서는 사용할 수 없어요."
+        ? scenarioDisabledReason ?? t("studio.aiStatus.unavailableInCurrentEditState", "현재 편집 상태에서는 사용할 수 없어요.")
         : undefined,
       accent: true,
     },
