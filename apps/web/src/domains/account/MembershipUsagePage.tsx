@@ -1,5 +1,5 @@
 // 수익화 i18n 네임스페이스는 셸 번들에서 분리됨 — 페이지 평가 시점에 동기 등록한다.
-import "../monetization/monetization-i18n";
+import "@/domains/monetization/public/i18n";
 import {
   AlertTriangle,
   Bell,
