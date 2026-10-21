@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useI18n } from "@/shared/lib/i18n";
 import type {
   StudioArtifactRecord,
   StudioRevisionRecord,
@@ -201,6 +202,39 @@ describe("ProductionManuscriptSnapshotPanel", () => {
     );
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
     expect(screen.getByText("새 복원 체크포인트를 만들었습니다. 과거와 현재 버전은 모두 보존됩니다.")).toBeTruthy();
+  });
+
+  it("복원이 실패하면 확인창을 연 뒤 바뀐 표시 언어로 오류를 알린다", async () => {
+    const previousLang = useI18n.getState().lang;
+    try {
+      act(() => useI18n.setState({ lang: "ko" }));
+      createProductionManuscriptSnapshot(
+        "artifact-image",
+        {
+          revisionId: "revision-old",
+          rootGraphHash: "c".repeat(64),
+          revisionKind: "checkpoint",
+          revisionMessage: "old checkpoint",
+        },
+        "옛 버전",
+      );
+      renderPanel();
+
+      const oldCard = screen.getByRole("listitem", { name: "v1 스냅샷" });
+      fireEvent.click(within(oldCard).getByRole("button", { name: "복원" }));
+      expect(screen.getByRole("heading", { name: "스냅샷 복원" })).toBeTruthy();
+
+      // 확인창이 열려 있는 동안 표시 언어가 바뀐다. 복원 확인 핸들러가 첫 렌더의 번역 함수를
+      // 붙들고 있으면 바뀐 언어가 아니라 이전 언어의 문구가 오류로 나온다.
+      act(() => useI18n.setState({ lang: "en" }));
+      f.restoreRevision.mockRejectedValueOnce("restore-rejected");
+      fireEvent.click(screen.getByRole("button", { name: "복원하기" }));
+
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toBe("Could not restore the snapshot.");
+    } finally {
+      act(() => useI18n.setState({ lang: previousLang }));
+    }
   });
 
   it("marks the head snapshot and hides restore for it", () => {
