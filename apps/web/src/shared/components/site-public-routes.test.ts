@@ -23,6 +23,13 @@ describe("public creative chrome route boundaries", () => {
     expect(supportsPublicSiteOnwardJourney(pathname)).toBe(false);
   });
 
+  it("전체화면 발표 /ir/present의 공개 셸은 유지하고 홍보 여정만 제외한다", () => {
+    expect(isPublicCreativeRoute("/ir/present")).toBe(true);
+    expect(supportsPublicSiteOnwardJourney("/ir/present")).toBe(false);
+    expect(supportsPublicSiteOnwardJourney("/IR/PRESENT/")).toBe(false);
+    expect(supportsPublicSiteOnwardJourney("/ir")).toBe(true);
+  });
+
   it.each(["/discover", "/learn", "/market", "/community"])("공개 창작 목적지 %s의 다음 탐색은 유지한다", (pathname) => {
     expect(supportsPublicSiteOnwardJourney(pathname)).toBe(true);
   });

@@ -48,11 +48,11 @@ export function isPublicCreativeRoute(pathname: string): boolean {
     || PUBLIC_DETAIL_ROUTES.some((route) => route.test(normalized));
 }
 
-/** 정책 읽기는 공개 셸을 유지하되 창작 홍보와 다음 작업 제안은 덧붙이지 않는다. */
+/** 정책 읽기와 전체화면 발표는 공개 셸을 유지하되 창작 홍보와 다음 작업 제안은 덧붙이지 않는다. */
 export function supportsPublicSiteOnwardJourney(pathname: string): boolean {
   const normalized = trimTrailingSlashes(pathname.toLowerCase()) || "/";
   return normalized !== "/"
-    && !["/terms", "/privacy", "/copyright"].includes(normalized)
+    && !["/terms", "/privacy", "/copyright", "/ir/present"].includes(normalized)
     && isPublicCreativeRoute(normalized);
 }
 
