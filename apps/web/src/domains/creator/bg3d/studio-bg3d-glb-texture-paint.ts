@@ -714,11 +714,13 @@ export class StudioBg3dGlbTexturePaintSurface {
       return;
     }
     this.bleedContext.clearRect(0, 0, this.width, this.height);
-    // 실제 CanvasRenderingContext2D.putImageData는 ImageData 인스턴스를 요구한다.
+    // Create a fresh ArrayBuffer-backed buffer: dilated.data may be typed as
+    // Uint8ClampedArray<ArrayBufferLike>, while the DOM ImageData overload requires ArrayBuffer.
+    const pixels = new Uint8ClampedArray(dilated.data);
     // Node 등 ImageData가 없는 환경(테스트 가짜)에서는 구조적으로 같은 객체로 대체한다.
     const imageData = typeof ImageData !== "undefined"
-      ? new ImageData(dilated.data, this.width, this.height)
-      : { data: dilated.data, width: this.width, height: this.height };
+      ? new ImageData(pixels, this.width, this.height)
+      : { data: pixels, width: this.width, height: this.height };
     this.bleedContext.putImageData?.(imageData, 0, 0);
     this.seamBleedApplied = true;
     this.bleedDirty = false;
