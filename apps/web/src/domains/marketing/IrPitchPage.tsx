@@ -10,6 +10,8 @@ import {
   Clapperboard,
   Cpu,
   Database,
+  Download,
+  FileText,
   Handshake,
   Layers,
   Mail,
@@ -36,6 +38,10 @@ const SCOPE = "domains.marketing.IrPitchPage";
 /** IR 컷: 제품 투어(8:24)의 챕터 중 개요·드로잉·3D·제작·마무리를 완결 단위로 발췌한 4:48 편집본. 실제 제품 화면만으로 구성했다. */
 const IR_FILM_SRC = "/brand/toonstudio-ir-tour.mp4";
 const IR_FILM_POSTER = "/brand/toonstudio-product-tour-poster.jpg";
+
+/** 발표 자료 파일. 덱 정본을 사이트 public 자산으로 함께 배포한다. */
+const IR_DECK_PPTX = "/brand/toonstudio-ir-deck.pptx";
+const IR_DECK_PDF = "/brand/toonstudio-ir-deck.pdf";
 
 /** 발표 중 질의가 나오면 전체 투어의 해당 챕터로 바로 점프한다. 시작 초는 product-tour-content의 챕터 정본을 쓴다. */
 const CHAPTER_JUMPS = [
@@ -78,7 +84,7 @@ const FLOW_STEPS = [
   { ko: "콘티", en: "Storyboard" },
   { ko: "드로잉", en: "Draw" },
   { ko: "검수", en: "Review" },
-  { ko: "연재 준비", en: "Release prep" },
+  { ko: "연재·운영", en: "Release & run" },
 ] as const;
 
 /** 제품 역량 다섯 가지. 이미지는 전부 제품 투어 제작 때 찍은 실제 제품 화면 캡처다. */
@@ -136,10 +142,17 @@ const CAPABILITIES = [
 ] as const;
 
 const BUSINESS_MODEL = [
-  { ko: { tier: "Free", body: "핵심 제작 흐름을 무료로 써 보고, 로컬 저장과 기본 협업·AI까지" }, en: { tier: "Free", body: "Try the core production flow for free, with local saving and basic collaboration and AI" } },
-  { ko: { tier: "Pro", body: "고급 제작 기능, 넉넉한 저장·버전, 귀찮은 일을 줄여 주는 자동화. 월 19,900원은 아직 검증 중인 가격 가설이에요." }, en: { tier: "Pro", body: "Advanced tools, roomier storage and versions, automation that takes over the tedious parts. KRW 19,900 a month is still a pricing hypothesis we are validating." } },
+  { ko: { tier: "Free", body: "회원이 1만 명이 될 때까지는 전 기능을 무료로 운영해요. 핵심 제작 흐름부터 협업·AI까지 전부요." }, en: { tier: "Free", body: "Until membership reaches 10,000, every feature runs free — the full production flow, collaboration and AI included." } },
+  { ko: { tier: "Pro", body: "유료화 뒤에 열 고급 제작 기능, 넉넉한 저장·버전, 귀찮은 일을 줄여 주는 자동화. 월 19,900원은 그때의 예시 가격이에요 — 아직 확정된 가격은 아니에요." }, en: { tier: "Pro", body: "Advanced tools, roomier storage and versions, and automation for the tedious parts — opening with the paid switch. KRW 19,900 a month is an example price for that point, not a confirmed one." } },
   { ko: { tier: "Team · Education", body: "권한과 공정, 자산을 팀 단위로 관리하고, 교육용으로는 반과 과제를 운영할 수 있어요." }, en: { tier: "Team · Education", body: "Manage permissions, workflow and assets as a team — or run classes and assignments for education" } },
-  { ko: { tier: "Marketplace", body: "브러시·소재·3D·템플릿을 사고팔고, 산 것은 제작 화면에 바로 갖다 씁니다. 거래 수수료 모델이에요." }, en: { tier: "Marketplace", body: "Buy and sell brushes, materials, 3D and templates, and use what you bought right in the studio. Revenue comes from transaction fees." } },
+  { ko: { tier: "Marketplace", body: "향후 계획이에요. 브러시·소재·3D·템플릿을 사고팔고, 산 것은 제작 화면에 바로 갖다 쓰는 거래 수수료 모델로 준비하고 있어요. 아직 운영 중인 마켓은 아니에요." }, en: { tier: "Marketplace", body: "A future plan, not a running market: brushes, materials, 3D and templates traded on transaction fees, usable right in the studio." } },
+] as const;
+
+/** 고객 확보 순서 — 무료 구간(1만 명) 안에서 단계별로 넓혀 간다. */
+const GTM_STEPS = [
+  { ko: { title: "작가부터 모아요", body: "투자 유치 뒤에는 웹툰·만화 온라인 커뮤니티와 네이버 카페 같은 온라인 채널에서 알리며 작가 회원을 모아요." }, en: { title: "Creators first", body: "After raising investment, we promote in online webtoon and comics communities — online communities and Naver Cafes — to bring in creator members." } },
+  { ko: { title: "교육으로 자리 잡아요", body: "학원과 교육기관을 장기 고객으로 확보해요. 배우는 단계에서 익숙해진 도구가 현장의 표준이 되니까요." }, en: { title: "Education for the long term", body: "We secure academies and educational institutions as long-term customers — the tool you learn on tends to become the tool you work on." } },
+  { ko: { title: "팀 규모를 키워 가요", body: "소규모 아마추어 팀에서 시작해 대형 스튜디오로, 고객층을 단계씩 넓혀 갑니다." }, en: { title: "Grow team by team", body: "Starting with small amateur teams, we expand the customer base step by step toward large studios." } },
 ] as const;
 
 /** 아래 수치는 성과가 아니라 검증 목표다. */
@@ -156,7 +169,7 @@ const ASKS = [
   { ko: "후속 투자·정부 지원 연결", en: "Follow-on investment & public programs" },
 ] as const;
 
-/** 창업자 주요 경력. 출처는 본인 포트폴리오(heejun.cloud)이고, 근무 기간·연도는 사용자 지시로 넣지 않는다. */
+/** 예비 창업 도전자(김희준) 주요 경력. 출처는 본인 포트폴리오(heejun.cloud)이고, 근무 기간·연도는 사용자 지시로 넣지 않는다. */
 const FOUNDER_CAREER = [
   { ko: "배달의민족(우아한형제들) — 주문·결제·장바구니 구조를 설계하고 이끌었어요. 국내에서 처음으로 애플페이 결제를 붙였고, React로 갈아타며 번들을 70% 줄이고 성능은 30% 끌어올렸습니다.", en: "Baemin (Woowa Brothers) — designed and led the order, payment and cart architecture. Shipped Korea's first Apple Pay checkout, and cut the bundle by 70% while improving performance 30% in the move to React." },
   { ko: "스마일게이트 스토브 — 웹서비스개발팀 팀장으로 10명 팀을 이끌며 STOVE 플랫폼을 맡았어요.", en: "Smilegate STOVE — led a 10-person web service team running the STOVE platform." },
@@ -231,7 +244,7 @@ export function IrPitchPage() {
     bi("제품 역량", "Product"),
     bi("시장", "Market"),
     bi("비즈니스 모델·검증", "Model & validation"),
-    bi("창업자·Ask", "Founder & ask"),
+    bi("예비 창업 도전자·Ask", "Aspiring founder & ask"),
   ][index] ?? "";
 
   const bigTitle = "text-balance font-display text-4xl font-black leading-tight tracking-tight text-fg sm:text-5xl lg:text-6xl";
@@ -242,8 +255,8 @@ export function IrPitchPage() {
     (
       <div key="cover" className={sceneShell}>
         <p className="eyebrow text-accent">IR · TOONSTUDIO</p>
-        <h2 className={bigTitle}>{bi("웹툰의 기획부터 연재 준비까지, 흩어진 제작 도구와 협업 과정을 브라우저 하나로 연결합니다.", "From planning to release prep, ToonStudio connects the scattered tools and collaboration of webtoon production in one browser.")}</h2>
-        <p className="text-xl font-semibold text-fg-2">{bi("지금 toonstudio.cloud에서 돌아가고 있는 웹툰 제작 OS예요 · 김희준 Founder", "A webtoon production OS, already live at toonstudio.cloud · Heejun Kim, Founder")}</p>
+        <h2 className={bigTitle}>{bi("웹툰의 기획부터 연재·운영까지, 흩어진 제작 도구와 협업 과정을 브라우저 하나로 연결합니다.", "From planning through release and operations, ToonStudio connects the scattered tools and collaboration of webtoon production in one browser.")}</h2>
+        <p className="text-xl font-semibold text-fg-2">{bi("지금 toonstudio.cloud에서 베타로 공개돼, 계속 고도화하고 있는 웹툰 제작 OS예요 · 김희준 · 예비 창업 도전자", "A webtoon production OS in beta at toonstudio.cloud, still being improved · Heejun Kim, aspiring founder")}</p>
       </div>
     ),
     (
@@ -322,7 +335,7 @@ export function IrPitchPage() {
     (
       <div key="product" className={sceneShell}>
         <p className="eyebrow text-accent">PRODUCT</p>
-        <h2 className={bigTitle}>{bi("계획이 아니에요. 이미 돌아가고 있는 제품입니다.", "This is not a plan. The product is already running.")}</h2>
+        <h2 className={bigTitle}>{bi("계획만 있는 게 아니에요. 베타지만, 실제로 돌아가고 있는 제품입니다.", "Not just a plan — a working product, currently in beta.")}</h2>
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {CAPABILITIES.map((capability) => {
             const copy = bi(capability.ko, capability.en);
@@ -383,9 +396,9 @@ export function IrPitchPage() {
     ),
     (
       <div key="ask" className={sceneShell}>
-        <p className="eyebrow text-accent">FOUNDER & ASK</p>
+        <p className="eyebrow text-accent">ASPIRING FOUNDER & ASK</p>
         <h2 className={bigTitle}>{bi("창작자가 작품에만 집중할 수 있는 제작 기반을 만들겠습니다.", "We are building the production foundation that lets creators focus only on their work.")}</h2>
-        <p className="text-xl font-semibold text-fg-2">{bi("김희준 · Founder — 배달의민족·스마일게이트·삼쩜삼·카카오·엔씨소프트를 거친 18년차 개발자예요. 설계부터 배포까지 직접 만듭니다.", "Heejun Kim · Founder — an 18-year developer who came through Baemin, Smilegate, Samjjeomsam, Kakao and NCSOFT, building everything from design to deployment himself.")}</p>
+        <p className="text-xl font-semibold text-fg-2">{bi("김희준 · 예비 창업 도전자 — 배달의민족·스마일게이트·삼쩜삼·카카오·엔씨소프트를 거친 18년차 개발자예요. 설계부터 배포까지 직접 만듭니다.", "Heejun Kim · Aspiring founder — an 18-year developer who came through Baemin, Smilegate, Samjjeomsam, Kakao and NCSOFT, building everything from design to deployment himself.")}</p>
         <ul className="flex flex-wrap gap-2">
           {ASKS.map((ask) => (
             <li key={ask.en} className="rounded-full border border-line/70 bg-panel px-4 py-2.5 font-display text-base font-bold text-fg">{bi(ask.ko, ask.en)}</li>
@@ -401,12 +414,12 @@ export function IrPitchPage() {
       <HeroBlock
         eyebrow="IR · TOONSTUDIO"
         title={bi(
-          "웹툰의 기획부터 연재 준비까지, 흩어진 제작 도구와 협업 과정을 브라우저 하나로 연결합니다.",
-          "From planning to release prep, ToonStudio connects the scattered tools and collaboration of webtoon production in one browser.",
+          "웹툰의 기획부터 연재·운영까지, 흩어진 제작 도구와 협업 과정을 브라우저 하나로 연결합니다.",
+          "From planning through release and operations, ToonStudio connects the scattered tools and collaboration of webtoon production in one browser.",
         )}
         lede={bi(
-          "ToonStudio는 지금 toonstudio.cloud에서 실제로 돌아가고 있는 웹툰 제작 OS예요. 이 페이지에 나오는 영상과 화면은 전부 실제 제품에서 가져왔습니다.",
-          "ToonStudio is a webtoon production OS, already live at toonstudio.cloud. Every film and screen on this page comes straight from the real product.",
+          "ToonStudio는 지금 toonstudio.cloud에서 베타로 공개돼 있는 웹툰 제작 OS예요. 정식 오픈을 앞두고 계속 고도화하고 있고, 이 페이지에 나오는 영상과 화면은 전부 실제 제품에서 가져왔습니다.",
+          "ToonStudio is a webtoon production OS currently in beta at toonstudio.cloud, being improved ahead of its full launch. Every film and screen on this page comes straight from the real product.",
         )}
         actions={(
           <div className="grid gap-3">
@@ -558,7 +571,7 @@ export function IrPitchPage() {
         <IntroSectionHeading
           id="ir-product-title"
           eyebrow={eyebrow("PRODUCT")}
-          title={bi("계획이 아니에요. 이미 돌아가고 있는 제품입니다.", "This is not a plan. The product is already running.")}
+          title={bi("계획만 있는 게 아니에요. 베타지만, 실제로 돌아가고 있는 제품입니다.", "Not just a plan — a working product, currently in beta.")}
         />
         <ul className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {CAPABILITIES.map((capability) => {
@@ -648,17 +661,49 @@ export function IrPitchPage() {
             <p className="mt-4 break-keep text-sm leading-6 text-fg-2">
               {bi("먼저 작은 창작팀이 실제로 연재하는 현장에서 써 보게 할 거예요. 역할마다 어디서 막히는지, 얼마면 쓸지를 코호트별로 확인할 계획입니다.", "First, small creator teams will use it in their real publishing flow. Then we check, cohort by cohort, where each role gets stuck and what they would pay.")}
             </p>
+            <p className="mt-4 flex flex-wrap items-center gap-2 border-t border-accent/25 pt-4 text-sm font-semibold text-fg-2">
+              <span className="rounded-full border border-accent/40 px-2 py-0.5 text-xs font-bold text-accent">{bi("사실", "Fact")}</span>
+              {bi("모두의 창업 1라운드에 선정돼, 지금 프로그램에 참여하고 있어요.", "Selected for Round 1 of the Modoo Startup program (Ministry of SMEs and Startups) and participating now.")}
+            </p>
           </div>
+        </div>
+        <div className="mt-3 rounded-2xl border border-line/70 bg-card/65 p-5 sm:p-6">
+          <h3 className="font-display text-base font-black text-fg">{bi("성장 전략 — 사람을 모으는 순서", "Go-to-market — the order we grow in")}</h3>
+          <ol className="mt-4 grid gap-4 md:grid-cols-3">
+            {GTM_STEPS.map((step, index) => {
+              const copy = bi(step.ko, step.en);
+              return (
+                <li key={copy.title} className="flex gap-3">
+                  <span className="font-display text-2xl font-black tracking-tight text-accent">{index + 1}</span>
+                  <span>
+                    <span className="block break-keep text-sm font-bold text-fg">{copy.title}</span>
+                    <span className="mt-1 block break-keep text-sm leading-6 text-fg-2">{copy.body}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="mt-4 break-keep border-t border-line/60 pt-4 text-sm leading-6 text-fg-2">
+            {bi("회원이 1만 명이 될 때까지는 전 기능을 무료로 운영해요. 위 순서로 사람을 모으고, 1만 명을 넘긴 뒤에 유료화로 넘어가는 계획입니다.", "Every feature stays free until membership reaches 10,000. We grow in the order above, then switch to paid plans past that mark.")}
+          </p>
+          <p className="mt-4 break-keep border-t border-line/60 pt-4 text-sm leading-6 text-fg-2">
+            <span className="font-bold text-fg">{bi("장기 비전 — 웹툰 포털로 진화", "Long-term vision — evolving into a webtoon portal")}</span>
+            <br />
+            {bi("멀리 보면 제작 도구를 넘어 웹툰 포털로 진화하는 그림을 그리고 있어요. 네이버·카카오·리디 같은 기존 사업자와의 업무협의를 추진해, 포털과 통합 랭킹, 자체 연재 플랫폼, 교육 정보와 커뮤니티를 한곳에 모으는 계획입니다. 다만 지금 단계의 집중은 제작과 협업 도구 자체에 있어요 — 제휴는 성사된 일이 아니라 추진 계획 단계입니다.", "Further out, we picture ToonStudio growing past a production tool into a webtoon portal: pursuing business talks with established players such as Naver, Kakao and Ridi to bring a portal, unified rankings, our own serialisation platform, education content and community together in one place. For now, though, the focus stays on the production and collaboration tool itself — partnerships are a plan to pursue, not a done deal.")}
+          </p>
         </div>
       </section>
 
       <section className={INTRO_SECTION} aria-labelledby="ir-founder-title">
-        <IntroSectionHeading id="ir-founder-title" eyebrow={eyebrow("FOUNDER & ASK")} title={bi("직접 만드는 창업자라, 검증이 빠릅니다.", "The founder builds it himself — so validation moves fast.")} />
+        <IntroSectionHeading id="ir-founder-title" eyebrow={eyebrow("ASPIRING FOUNDER & ASK")} title={bi("직접 만드는 예비 창업 도전자라, 검증이 빠릅니다.", "The aspiring founder builds it himself — so validation moves fast.")} />
         <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1.2fr]">
           <div className="rounded-2xl border border-line/70 bg-card/65 p-5 sm:p-6">
-            <p className="font-display text-xl font-black text-fg">{bi("김희준 · Founder", "Heejun Kim · Founder")}</p>
+            <p className="font-display text-xl font-black text-fg">{bi("김희준 · 예비 창업 도전자", "Heejun Kim · Aspiring founder")}</p>
+            <p className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-full border border-accent/40 px-2.5 py-1 text-xs font-bold text-accent">{bi("모두의 창업 1라운드 선정", "Modoo Startup · Round 1 selected")}</span>
+            </p>
             <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
-              {bi("18년차 개발자예요. 제품 설계부터 프론트엔드, 인프라, AI 연결, 테스트 자동화까지 혼자 다 만들고, 프로토타입을 실제 서비스로 키워 왔어요.", "A developer of 18 years. He builds everything himself — product design, front-end, infrastructure, AI wiring, test automation — and has grown the prototype into a live service.")}
+              {bi("18년차 개발자예요. 제품 설계부터 프론트엔드, 인프라, AI 연결, 테스트 자동화까지 혼자 다 만들고, 프로토타입을 지금의 베타 서비스까지 키워 왔어요.", "A developer of 18 years. He builds everything himself — product design, front-end, infrastructure, AI wiring, test automation — and has grown the prototype into today's beta service.")}
             </p>
             <ul className="mt-4 grid gap-2.5 border-t border-line/60 pt-4">
               {FOUNDER_CAREER.map((career) => (
@@ -686,6 +731,36 @@ export function IrPitchPage() {
               {bi("창작자가 작품에만 집중할 수 있는 제작 기반을 만들겠습니다.", "We are building the production foundation that lets creators focus only on their work.")}
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className={INTRO_SECTION} aria-labelledby="ir-downloads-title">
+        <IntroSectionHeading id="ir-downloads-title" eyebrow={eyebrow("DOWNLOADS")} title={bi("발표 자료는 파일로도 가져가실 수 있어요.", "Take the presentation files with you.")} />
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <a href={IR_DECK_PPTX} download className="group rounded-2xl border border-line/70 bg-card/65 p-5 transition-colors hover:border-accent/50 sm:p-6">
+            <p className="flex items-center gap-2 font-display text-base font-black text-fg">
+              <Presentation size={17} className="text-accent" aria-hidden="true" />
+              {bi("IR 발표 덱 · PPTX", "IR pitch deck · PPTX")}
+            </p>
+            <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
+              {bi("파워포인트에서 바로 열리고, 필요하면 고쳐 쓸 수도 있어요. 약 4.8MB예요.", "Opens right in PowerPoint, and you can edit it if you need to. About 4.8 MB.")}
+            </p>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-accent group-hover:text-accent-2">
+              <Download size={14} aria-hidden="true" />{bi("PPTX 내려받기", "Download the PPTX")}
+            </p>
+          </a>
+          <a href={IR_DECK_PDF} download className="group rounded-2xl border border-line/70 bg-card/65 p-5 transition-colors hover:border-accent/50 sm:p-6">
+            <p className="flex items-center gap-2 font-display text-base font-black text-fg">
+              <FileText size={17} className="text-accent" aria-hidden="true" />
+              {bi("IR 발표 덱 · PDF", "IR pitch deck · PDF")}
+            </p>
+            <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
+              {bi("고치지 않고 그대로 읽거나 나눠 보기 좋아요. 27쪽, 약 7.9MB예요.", "Best for reading as-is or sharing. 27 pages, about 7.9 MB.")}
+            </p>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-accent group-hover:text-accent-2">
+              <Download size={14} aria-hidden="true" />{bi("PDF 내려받기", "Download the PDF")}
+            </p>
+          </a>
         </div>
       </section>
 

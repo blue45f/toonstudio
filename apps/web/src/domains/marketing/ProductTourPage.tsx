@@ -1,6 +1,6 @@
 import { getActiveI18nLocale, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { SITE_URL } from "@toonstudio/core/business";
-import { ArrowRight, ArrowUpRight, ChevronDown, CirclePlay, Clapperboard, Film, ImageIcon, Sparkles, Users } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, CirclePlay, Clapperboard, Download, FileText, Film, ImageIcon, Sparkles, Users } from "lucide-react";
 import { useRef, type MouseEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -191,6 +191,34 @@ export function ProductTourPage() {
             <ProductTourAdditions />
           )}
         </IntroTabs>
+      </section>
+
+      <section className="mk-shell product-tour__downloads" aria-labelledby="product-tour-downloads-title">
+        <div className="product-tour__more-head">
+          <p className="mk-eyebrow">{bi("자료 다운로드", "Downloads")}</p>
+          <h2 id="product-tour-downloads-title" className="mk-h2">{bi("문서로 받아 가세요", "Take the documents with you")}</h2>
+        </div>
+        <p className="mk-body product-tour__note">{bi("제품 소개서와 IR 발표 덱을 파일로 준비해 뒀어요. 영상에서 본 내용을 문서로 천천히 읽어 보세요.", "The product brief and the IR deck are ready as files — read what you saw in the film, in document form.")}</p>
+        <div className="product-tour__role-grid mk-rail">
+          <a className="product-tour__role mk-card" href="/brand/toonstudio-intro.pdf" download>
+            <span className="mk-badge"><FileText size={13} aria-hidden="true" />PDF</span>
+            <h3>{bi("제품 소개서", "Product brief")}</h3>
+            <p>{bi("ToonStudio가 뭘 하는 서비스인지, 네 쪽으로 정리했어요.", "What ToonStudio does, in four pages.")}</p>
+            <small>{bi("PDF 내려받기", "Download the PDF")}<Download size={14} aria-hidden="true" /></small>
+          </a>
+          <a className="product-tour__role mk-card" href="/brand/toonstudio-ir-deck.pdf" download>
+            <span className="mk-badge"><FileText size={13} aria-hidden="true" />PDF</span>
+            <h3>{bi("IR 발표 덱", "IR pitch deck")}</h3>
+            <p>{bi("시장과 경쟁, 제품과 만드는 사람까지 담은 발표 자료예요. 27쪽이에요.", "The full pitch — market, landscape, product and the builder. 27 pages.")}</p>
+            <small>{bi("PDF 내려받기", "Download the PDF")}<Download size={14} aria-hidden="true" /></small>
+          </a>
+          <a className="product-tour__role mk-card" href="/brand/toonstudio-ir-deck.pptx" download>
+            <span className="mk-badge"><FileText size={13} aria-hidden="true" />PPTX</span>
+            <h3>{bi("IR 발표 덱 (편집용)", "IR pitch deck (editable)")}</h3>
+            <p>{bi("파워포인트에서 바로 열리고, 필요하면 고쳐 쓸 수 있어요.", "Opens right in PowerPoint, ready to edit if you need to.")}</p>
+            <small>{bi("PPTX 내려받기", "Download the PPTX")}<Download size={14} aria-hidden="true" /></small>
+          </a>
+        </div>
       </section>
 
       <section className="mk-shell product-tour__next" aria-label={bi("이어서 보기", "Keep exploring")}>
