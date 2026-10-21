@@ -16,6 +16,7 @@ import { getApiErrorMessage } from "@/platform/api";
 import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { listTeamWorkspaces } from "./team-workspace-api";
+import { OrganizationBackupPanel } from "./OrganizationBackupPanel";
 import {
   acceptOrganizationInvite,
   commandOrganization,
@@ -392,6 +393,22 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
                 </dl>
                 <p className="mt-3 text-xs leading-6 text-fg-3">{bt("수치는 연결한 팀이 서버에 보고하는 카운터의 합입니다. 구성원 수는 팀별 합계라 같은 사람이 여러 팀에 있으면 중복 계산됩니다.", "Figures are sums of the counters your linked teams report to the server. Member counts are per-team sums, so a person in several teams is counted more than once.")}</p>
                 {rollup.missingCount > 0 && <p className="mt-2 text-sm text-warn">{bt(`연결 목록 중 ${rollup.missingCount}개 팀은 현재 팀 목록에서 확인할 수 없어 합산에서 제외했습니다. 나갔거나 삭제된 팀일 수 있습니다.`, `${rollup.missingCount} linked team(s) aren't in your current team list and were left out of the totals. They may be teams you left or that were deleted.`)}</p>}
+              </Card>
+            )}
+
+            {profile && detail && canRollup && (
+              <Card title={bt("조직 백업·내보내기", "Organization backup & export")}>
+                {/* 조직 백업 왕복 (C5): 서버 조직 상세에서 로컬 백업 모델이 쓰는
+                    모양(프로필·공지·연결 목록)을 조립해 패널에 넘긴다. 패널은
+                    마운트 시 API를 부르지 않고 내려받기·검증 클릭 때만 동작한다. */}
+                <OrganizationBackupPanel
+                  local={{
+                    profile,
+                    notices: detail.notices,
+                    linkedWorkspaceIds: detail.linkedWorkspaceIds,
+                  }}
+                  linkedTeams={rollup?.teams ?? []}
+                />
               </Card>
             )}
 

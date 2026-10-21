@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   applauseWaveTargets,
   buildMeetingRoster,
+  externalMeetingLinkErrorText,
+  externalMeetingLinkText,
   meetingBoardShortcut,
   meetingRosterSummaryText,
   meetingStatusForEvent,
+  resolveStudioMeetingExternalLink,
   STUDIO_APPLAUSE_WAVE_RADIUS,
 } from "./studio-virtual-space-meeting-flow";
 
@@ -136,5 +139,24 @@ describe("applauseWaveTargets", () => {
       radius: STUDIO_APPLAUSE_WAVE_RADIUS + 200,
     });
     expect(targets).toEqual(["near-2", "far-3"]);
+  });
+});
+
+describe("외부 회의 링크 대안 (C7)", () => {
+  it("회의 호스트 링크를 검증하고 표시 문구를 만든다", () => {
+    const verdict = resolveStudioMeetingExternalLink("https://meet.google.com/abc-defg-hij");
+    expect(verdict.ok).toBe(true);
+    if (verdict.ok) {
+      expect(verdict.host).toBe("meet.google.com");
+      expect(externalMeetingLinkText(verdict.host).ko).toContain("meet.google.com");
+    }
+  });
+
+  it("미등록 호스트는 거부하고 이유별 안내를 돌려준다", () => {
+    const verdict = resolveStudioMeetingExternalLink("https://example.com/meet");
+    expect(verdict).toMatchObject({ ok: false, reason: "unlisted-host" });
+    if (!verdict.ok) {
+      expect(externalMeetingLinkErrorText(verdict.reason).ko).toContain("회의 서비스");
+    }
   });
 });

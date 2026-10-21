@@ -17,7 +17,12 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/shared/lib/store", () => ({ useApp: () => mocks.userId }));
 vi.mock("@/platform/api", () => ({ getApiErrorMessage: async (_error: unknown, fallback: string) => fallback }));
-vi.mock("./team-workspace-api", () => ({ listTeamWorkspaces: mocks.listTeams }));
+vi.mock("./team-workspace-api", () => ({
+  listTeamWorkspaces: mocks.listTeams,
+  // 조직 백업 패널이 import한다 — 렌더에서는 부르지 않고 클릭 때만 쓴다.
+  getTeamWorkspace: vi.fn(),
+  getTeamAuditLog: vi.fn(),
+}));
 vi.mock("./organization-api", () => ({
   listOrganizations: mocks.listOrgs,
   getOrganization: mocks.getOrg,
@@ -191,6 +196,17 @@ describe("organization home (server contract)", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("조직 정보를 불러오지 못했습니다.");
     expect(screen.getByRole("button", { name: "다시 시도" })).toBeTruthy();
+  });
+
+  it("mounts the organization backup panel on the server organization home (C5)", async () => {
+    serverDetail = detail({ linkedWorkspaceIds: ["team-a"] });
+    mocks.listOrgs.mockResolvedValue({ organizations: [serverDetail.organization] });
+    render(<App />);
+    // 백업 카드가 서버 조직 홈에 실제로 붙어 있어야 한다 — 패널 파일만 있고
+    // 마운트가 없던 상태(서버 계약 이관 때 소실)를 고정한다.
+    expect(await screen.findByRole("heading", { name: "조직 백업·내보내기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "조직 백업 파일 내려받기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "백업 파일 검증하기" })).toBeTruthy();
   });
 
   it("states plainly that organization membership grants no manuscript access", async () => {

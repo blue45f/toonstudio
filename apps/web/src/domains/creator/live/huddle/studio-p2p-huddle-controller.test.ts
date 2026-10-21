@@ -712,3 +712,36 @@ describe("P2P huddle 정원 안내", () => {
     expect(controller.snapshot().overflowPeerCount).toBe(1);
   });
 });
+
+describe("P2P 통화 품질 (C7)", () => {
+  it("수신한 Opus SDP에 DTX·FEC·비트레이트 최적화를 병합해 적용한다", async () => {
+    const f = scopedMediaFixture();
+    f.receive(B, f.state());
+    const connection = f.connections[0]!;
+    const opusSdp = "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\na=rtpmap:111 opus/48000/2\r\na=fmtp:111 minptime=10;useinbandfec=1";
+    f.receive(B, {
+      kind: "description", epoch: "epoch-b", toEpoch: "epoch-a", type: "offer", sdp: opusSdp,
+      conversationId: "conversation-one", memberIds: ["a", "b"],
+    });
+    await vi.waitFor(() => expect(connection.setRemoteDescription).toHaveBeenCalled());
+    const applied = (connection.setRemoteDescription as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as { sdp: string };
+    expect(applied.sdp).toContain("usedtx=1");
+    expect(applied.sdp).toContain("maxaveragebitrate=32000");
+    expect(applied.sdp).toContain("minptime=10");
+  });
+
+  it("연결된 피어의 getStats를 폴링해 품질 등급을 스냅샷에 싣는다", async () => {
+    const f = scopedMediaFixture();
+    f.receive(B, f.state());
+    const connection = f.connections[0]! as unknown as Record<string, unknown>;
+    connection.connectionState = "connected";
+    connection.getStats = async () => new Map([
+      ["pair", { type: "candidate-pair", state: "succeeded", nominated: true, currentRoundTripTime: 0.08, localCandidateId: "lc" }],
+      ["lc", { type: "local-candidate", id: "lc", candidateType: "host" }],
+      ["in", { type: "inbound-rtp", jitter: 0.005, packetsLost: 0, packetsReceived: 100 }],
+    ]);
+    f.controller.refreshPeers();
+    await vi.waitFor(() => expect(f.controller.snapshot().peers[0]?.quality?.grade).toBe("good"));
+    expect(f.controller.snapshot().peers[0]?.quality?.labelKo).toContain("80ms");
+  });
+});

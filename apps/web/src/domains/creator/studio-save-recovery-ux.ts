@@ -171,3 +171,86 @@ export function saveRecoveryAnnouncement(
   }
   return "none";
 }
+
+/**
+ * 전이열 전체를 기억하는 알림 상태 기계 (C6, 2026-10-22).
+ *
+ * saveRecoveryAnnouncement(이전→다음 한 쌍)만으로는 실제 복구 동선의
+ * 다단계 전이를 놓친다: 오프라인 → 연결 재확인 중(reconnecting) →
+ * 저장 중(saving, 보류분 동기화) → 저장됨(saved) 순서로 회복하면
+ * 마지막 쌍이 saving→saved라 "일반 저장 완료"로 읽혀, 사용자가 기다린
+ * "복구됐고 동기화가 확인됐다"는 신호가 사라진다.
+ *
+ * 이 상태 기계는 연결 문제·실패를 겪은 뒤 아직 saved로 확인되지 않은
+ * 구간(syncConfirmationPending)을 기억한다:
+ * - offline / server-unavailable 진입 → "connection-lost" + 확인 대기 시작
+ * - failed 진입 → "failed" + 확인 대기 시작(재시도 후 saved가 와야 해소)
+ * - 확인 대기 중 saved 도달 → "recovered" (중간 reconnecting·saving 전이는 침묵)
+ * - 확인 대기가 아닌데 saving→saved → "saved"
+ * - readonly 진입은 확인 대기를 취소한다(이 탭은 저장 주체가 아니다).
+ */
+export interface SaveRecoveryAnnouncementState {
+  readonly lastKind: SaveRecoveryKind;
+  readonly syncConfirmationPending: boolean;
+}
+
+export function initialSaveRecoveryAnnouncementState(
+  kind: SaveRecoveryKind,
+): SaveRecoveryAnnouncementState {
+  return Object.freeze({ lastKind: kind, syncConfirmationPending: false });
+}
+
+export function advanceSaveRecoveryAnnouncement(
+  state: SaveRecoveryAnnouncementState,
+  next: SaveRecoveryKind,
+): { readonly state: SaveRecoveryAnnouncementState; readonly announcement: SaveRecoveryAnnouncement } {
+  if (next === state.lastKind) {
+    return { state, announcement: "none" };
+  }
+  if (next === "failed") {
+    return {
+      state: Object.freeze({ lastKind: next, syncConfirmationPending: true }),
+      announcement: "failed",
+    };
+  }
+  if (next === "offline" || next === "server-unavailable") {
+    return {
+      state: Object.freeze({ lastKind: next, syncConfirmationPending: true }),
+      announcement: "connection-lost",
+    };
+  }
+  if (next === "saved") {
+    return {
+      state: Object.freeze({ lastKind: next, syncConfirmationPending: false }),
+      announcement: state.syncConfirmationPending || state.lastKind === "reconnecting"
+        ? "recovered"
+        : "saved",
+    };
+  }
+  if (next === "readonly") {
+    return {
+      state: Object.freeze({ lastKind: next, syncConfirmationPending: false }),
+      announcement: "none",
+    };
+  }
+  // reconnecting·saving: 확인 대기를 유지한 채 침묵한다.
+  return {
+    state: Object.freeze({ lastKind: next, syncConfirmationPending: state.syncConfirmationPending }),
+    announcement: "none",
+  };
+}
+
+/** 전이열을 접어 최종 알림 하나로 검증하는 헬퍼(테스트·진단용). */
+export function saveRecoveryAnnouncementForSequence(
+  kinds: readonly SaveRecoveryKind[],
+): SaveRecoveryAnnouncement {
+  if (kinds.length === 0) return "none";
+  let state = initialSaveRecoveryAnnouncementState(kinds[0]!);
+  let announcement: SaveRecoveryAnnouncement = "none";
+  for (const kind of kinds.slice(1)) {
+    const advanced = advanceSaveRecoveryAnnouncement(state, kind);
+    state = advanced.state;
+    if (advanced.announcement !== "none") announcement = advanced.announcement;
+  }
+  return announcement;
+}

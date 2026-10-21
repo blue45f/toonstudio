@@ -120,6 +120,53 @@ describe("collab-notification-landing-source", () => {
     expect(items.find((item) => item.id === "collab-notif:notif:n1")?.read).toBe(true);
   });
 
+  it("내 알림 정책에서 끈 유형(멘션)은 통합 작업함 투영에서도 제외된다 (G1)", () => {
+    const aggregate: CollabAggregateInput = {
+      projectId: "p1",
+      title: "작품1",
+      parties: [{ id: "party-me", accountUserId: "user-me", publicDisplayName: "나" }],
+      assignments: [{ id: "as-me", partyId: "party-me", status: "active" }],
+      notifications: [
+        {
+          id: "n1",
+          assignmentId: "as-me",
+          type: "mention",
+          title: "멘션 알림",
+          body: "확인 부탁해요",
+          href: "/production/projects/p1/episodes?thread=t1",
+          urgency: "info",
+          sourceType: "thread",
+          sourceId: "t1",
+          status: "unread",
+          createdAt: "2026-10-14T01:00:00.000Z",
+        },
+        {
+          id: "n2",
+          assignmentId: "as-me",
+          type: "review",
+          title: "검수 알림",
+          body: "검수 부탁해요",
+          href: "/production/projects/p1/review",
+          urgency: "info",
+          sourceType: "review",
+          sourceId: "r1",
+          status: "unread",
+          createdAt: "2026-10-14T01:00:00.000Z",
+        },
+      ],
+      reviewDecisions: [],
+      handoffs: [],
+      notificationPolicies: [{ assignmentId: "as-me", enabled: true, mutedTypes: ["mention"] }],
+    };
+    const { events } = collabEventsFromProjectAggregate(aggregate, "user-me");
+    expect(events.map((event) => event.kind)).toEqual(["review-requested"]);
+    const disabled = collabEventsFromProjectAggregate(
+      { ...aggregate, notificationPolicies: [{ assignmentId: "as-me", enabled: false, mutedTypes: ["mention"] }] },
+      "user-me",
+    );
+    expect(disabled.events.map((event) => event.kind)).toEqual(["comment-mention", "review-requested"]);
+  });
+
   it("팀 댓글은 userId로 나를 언급한 남의 메시지만 멘션으로 바꾸고 해결 시 닫는다", () => {
     const events = collabEventsFromTeamCommentThreads(
       [

@@ -85,7 +85,7 @@ describe("SpaceProximityVideo", () => {
   it("직접 연결이 실패하면 이유를 알리되 TURN 미사용을 단정하지 않고 조건을 말한다", () => {
     const failedPeer: HuddlePeer = {
       participant: bob, epoch: "epoch-bob", lastSeen: 0, stream: null, connection: "failed",
-      reaction: null, reactionUntil: 0, muted: true, camera: false, sharing: false, hand: false,
+      reaction: null, reactionUntil: 0, quality: null, muted: true, camera: false, sharing: false, hand: false,
     };
     const snapshot: HuddleSnapshot = {
       peers: [failedPeer], messages: [], localStream: null, availablePeers: 1, error: null, closed: false,

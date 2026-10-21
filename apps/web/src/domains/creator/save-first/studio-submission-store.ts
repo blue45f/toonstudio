@@ -187,3 +187,50 @@ export function studioSubmissionsForProject(
 ): readonly StudioSubmission[] {
   return readStudioSubmissions(storage).submissions.filter((submission) => submission.projectId === projectId);
 }
+
+/**
+ * 프로젝트 패키지 가져오기 전용 복원 (C5 왕복 무결성, 2026-10-22).
+ *
+ * 패키지의 distribution/submissions.json 원본 항목들을 새 프로젝트에 붙여
+ * 되살린다. 패키지 가져오기가 제출 기록을 요구만 하고 버리던 간극의 해소다.
+ * - 원본 projectId가 sourceProjectId와 다른 항목은 다른 프로젝트의 기록이라
+ *   복원하지 않는다(남의 기록을 새 프로젝트에 붙이지 않음).
+ * - 깨진 항목(normalize 탈락)은 건너뛴다 — 패키지 전체를 거부할 사유는
+ *   아니고, 살아 있는 기록만 되살리는 것이 백업 복원의 목적에 맞다.
+ * - id는 원본을 유지하되, 이미 저장소에 같은 id가 있으면(같은 패키지 재가져오기
+ *   등) 새 프로젝트 id를 붙여 재발급한다 — id로 찾는 갱신이 엉뚱한 기록을
+ *   건드리지 않게 하기 위해서다.
+ * - createdAt·updatedAt·상태·메모 등 내용은 원본 그대로 보존한다.
+ */
+export function restoreStudioSubmissionsForImportedProject(
+  storage: StudioSubmissionStorage,
+  input: {
+    readonly sourceProjectId: string;
+    readonly importedProjectId: string;
+    readonly entries: readonly unknown[];
+  },
+  options: { readonly now?: string; readonly target?: EventTarget } = {},
+): readonly StudioSubmission[] {
+  const current = readStudioSubmissions(storage);
+  const usedIds = new Set(current.submissions.map((submission) => submission.id));
+  const restored: StudioSubmission[] = [];
+  for (const entry of input.entries) {
+    const normalized = normalize(entry);
+    if (!normalized || normalized.projectId !== input.sourceProjectId) continue;
+    let id = normalized.id;
+    if (usedIds.has(id)) {
+      id = `${normalized.id}--${input.importedProjectId}`.slice(0, 200);
+      if (usedIds.has(id)) continue;
+    }
+    usedIds.add(id);
+    restored.push(Object.freeze({ ...normalized, id, projectId: input.importedProjectId }));
+  }
+  if (restored.length === 0) return Object.freeze([]);
+  const now = options.now ?? new Date().toISOString();
+  writeStudioSubmissions(storage, Object.freeze({
+    schemaVersion: 1,
+    submissions: Object.freeze([...current.submissions, ...restored]),
+    updatedAt: now,
+  }), options.target);
+  return Object.freeze(restored);
+}

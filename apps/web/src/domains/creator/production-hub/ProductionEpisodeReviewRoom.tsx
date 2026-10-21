@@ -37,6 +37,7 @@ import {
   type FollowSession,
 } from "./observe-follow-model";
 import { CompareReviewRoom } from "./CompareReviewRoom";
+import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
 import { buildCompareSeedPoolFromProcesses } from "./compare-review-seed-pool";
 import type { ComparePinGateSummary, ComparePoolItem } from "./compare-review-model";
 import {
@@ -1019,6 +1020,11 @@ export function ProductionEpisodeReviewRoom({
         </div>
       </header>
 
+      {/* 단계 인계: 검수를 시작하는 화면 상단에 앞 단계(기획·콘티) 산출을 자동 인용한다. */}
+      <div className="mt-4">
+        <EpisodeStageHandoffSection aggregate={aggregate} episodeId={episodeId} targetStage="review" />
+      </div>
+
       <div className="mt-4">
         <ReviewSessionBar
           session={reviewSession}
@@ -1287,8 +1293,8 @@ export function ProductionEpisodeReviewRoom({
         ) : (
           <p className="mt-1 text-xs leading-5 text-fg-2">
             {bt(
-              "화면을 이동하며 말로 남기는 비동기 검수 해설입니다. 해설이 없어도 핀 검수는 종전대로 동작합니다.",
-              "Asynchronous voice commentary recorded while moving around the review surface. Pins keep working as before, with or without commentary.",
+              "화면을 이동하며 말로 남기는 비동기 검수 해설입니다. 해설이 없어도 핀 검수는 종전대로 동작합니다. 음성은 1건 최대 5MB, 서버 보관 기본 14일·최대 30일입니다.",
+              "Asynchronous voice commentary recorded while moving around the review surface. Pins keep working as before, with or without commentary. Audio is capped at 5MB per track and kept on the server for 14 days by default, up to 30 days.",
             )}
           </p>
         )}

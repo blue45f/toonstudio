@@ -6,6 +6,14 @@ import {
 import type { StudioLiveParticipant } from "../studio-live-collaboration-protocol";
 import type { StudioLiveDirectPort } from "../studio-live-direct-port";
 import { getStudioIceServers, iceServersIncludeTurn } from "../studio-ice-configuration";
+import {
+  describeStudioP2pQuality,
+  studioP2pAudioConstraints,
+  studioP2pAudioEncodingParameters,
+  tuneStudioP2pOpusSdp,
+  type StudioP2pPeerQuality,
+  type StudioP2pStatsLike,
+} from "./studio-p2p-call-quality";
 
 export interface HuddleMessage {
   id: string; author: string; name: string; text: string; self: boolean; at: number;
@@ -15,6 +23,8 @@ export interface HuddlePeer extends HuddleState {
   participant: StudioLiveParticipant; epoch: string; lastSeen: number;
   stream: MediaStream | null; connection: RTCPeerConnectionState | "idle";
   reaction: HuddleReaction | null; reactionUntil: number;
+  /** getStats() 기반 연결 품질 (C7). 아직 측정 전이면 null. */
+  quality: StudioP2pPeerQuality | null;
 }
 export type HuddleCameraFacingMode = "user" | "environment";
 export interface HuddleSnapshot extends HuddleState {
@@ -150,8 +160,42 @@ export class StudioP2pHuddleController {
       if (link.pc.connectionState === "failed" || link.pc.connectionState === "disconnected") {
         this.restartLinkIce(id, link);
       }
+      this.pollPeerQuality(id, link);
     }
     this.announce(); this.emit();
+  }
+  /**
+   * 연결 품질 폴링 (C7): 3초 주기 sync에서 getStats()를 읽어 피어 품질 등급을
+   * 갱신한다. getStats가 없는 가짜/구형 연결에서는 조용히 건너뛴다.
+   */
+  private pollPeerQuality(id: string, link: Link): void {
+    const pc = link.pc as RTCPeerConnection & {
+      getStats?: () => Promise<{ values(): Iterable<unknown> }>;
+    };
+    if (typeof pc.getStats !== "function" || pc.connectionState !== "connected") return;
+    void pc.getStats().then((report) => {
+      if (this.closed || this.links.get(id) !== link) return;
+      const peer = this.peers.get(id);
+      if (!peer) return;
+      peer.quality = describeStudioP2pQuality(
+        report.values() as unknown as StudioP2pStatsLike,
+      );
+      this.emit();
+    }).catch(() => undefined);
+  }
+  /** 오디오 sender에 비트레이트 상한을 건다 (C7). 미지원 연결에서는 건너뛴다. */
+  private applyAudioSenderParameters(link: Link): void {
+    const sender = link.audio as RTCRtpSender & {
+      getParameters?: () => RTCRtpParameters;
+      setParameters?: (parameters: RTCRtpParameters) => Promise<void>;
+    };
+    if (!this.audioTrack || typeof sender.getParameters !== "function"
+      || typeof sender.setParameters !== "function") return;
+    try {
+      const parameters = sender.getParameters();
+      parameters.encodings = [studioP2pAudioEncodingParameters()];
+      void sender.setParameters(parameters).catch(() => undefined);
+    } catch { /* 파라미터 적용 실패는 통화를 막지 않는다. */ }
   }
   private receive(sender: StudioLiveParticipant, raw: string): void {
     const id = sender.sessionId;
@@ -211,7 +255,7 @@ export class StudioP2pHuddleController {
     if (peer && fresh) this.removePeer(id);
     if (fresh) {
       peer = { participant: sender, epoch: packet.epoch, lastSeen: this.now(), stream: null,
-        connection: "idle", reaction: null, reactionUntil: 0, ...this.state };
+        connection: "idle", reaction: null, reactionUntil: 0, quality: null, ...this.state };
       this.peers.set(id, peer);
       this.overflowSeenAt.delete(id);
     }
@@ -320,6 +364,7 @@ export class StudioP2pHuddleController {
         }).catch(() => this.signalError(id, link));
       };
       void Promise.all([link.audio.replaceTrack(this.audioTrack), link.video.replaceTrack(this.videoTrack)])
+        .then(() => this.applyAudioSenderParameters(link))
         .catch(() => this.signalError(id, link));
       return link;
     } catch { this.fail("이 브라우저에서 WebRTC 통화를 준비하지 못했습니다."); return null; }
@@ -327,8 +372,10 @@ export class StudioP2pHuddleController {
   private sendDescription(id: string, link: Link): void {
     const description = link.pc.localDescription;
     if (!description || (description.type !== "offer" && description.type !== "answer")) return;
+    // 송신 SDP의 Opus 선언에 음성 최적화(DTX·FEC·비트레이트 상한)를 병합한다 (C7).
+    const tunedSdp = description.sdp ? tuneStudioP2pOpusSdp(description.sdp) : description.sdp;
     if (!this.send(id, { kind: "description", epoch: this.epoch, toEpoch: link.epoch,
-      type: description.type, sdp: description.sdp })) this.signalError(id, link);
+      type: description.type, sdp: tunedSdp })) this.signalError(id, link);
   }
   private signalError(id: string, link: Link): void {
     if (!this.closed && this.links.get(id) === link) this.fail("통화 연결 신호를 처리하지 못했습니다. 나간 뒤 재참여해 주세요.");
@@ -441,7 +488,7 @@ export class StudioP2pHuddleController {
         return;
       }
       link.settingAnswer = packet.type === "answer";
-      try { await pc.setRemoteDescription({ type: packet.type, sdp: packet.sdp }); }
+      try { await pc.setRemoteDescription({ type: packet.type, sdp: tuneStudioP2pOpusSdp(packet.sdp) }); }
       finally { link.settingAnswer = false; }
       if (this.links.get(id) !== link) return;
       for (const candidate of link.pendingIce.splice(0)) await pc.addIceCandidate(candidate);
@@ -457,7 +504,7 @@ export class StudioP2pHuddleController {
     if (!enabled) { this.stopTrack("audio"); this.publishMedia(); return; }
     if (this.closed || !this.unsubscribe || this.deps.authorityValid?.() === false) return;
     try {
-      const constraints = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false };
+      const constraints = studioP2pAudioConstraints();
       const stream = await (this.deps.getUserMedia?.(constraints) ?? navigator.mediaDevices.getUserMedia(constraints));
       this.acceptCapture("audio", stream, generation, false, undefined, authorityRevision);
     } catch { if (!this.closed && generation === this.mediaGeneration.audio) this.fail("마이크를 켜지 못했습니다. 브라우저 권한과 장치를 확인해 주세요."); }
@@ -518,6 +565,7 @@ export class StudioP2pHuddleController {
     if (tracks.length) for (const id of this.peers.keys()) this.ensureLink(id);
     for (const [id, link] of this.links) {
       void Promise.all([link.audio.replaceTrack(this.audioTrack), link.video.replaceTrack(this.videoTrack)])
+        .then(() => this.applyAudioSenderParameters(link))
         .catch(() => this.signalError(id, link));
     }
     this.announce(); this.emit();

@@ -60,6 +60,44 @@ export interface VoiceCommentaryTrack {
   readonly pinThreadIds: readonly string[];
 }
 
+// ── 저장 용량·보관 정책 (C4, 2026-10-22 명시) ────────────────────────────
+// 서버 계약(apps/api production-voice-commentary.dto + 마이그레이션 0113)과
+// 같은 값이다. 셋 중 하나를 바꾸면 나머지도 함께 바꿔야 한다.
+// - 오디오 1건 최대 5MB. 검수 해설은 짧은 음성 노트 용도라 이 상한으로 충분하고,
+//   넘긴 녹음은 서버가 거부하므로 패널이 녹화 종료 시점에 먼저 알린다.
+// - 보관 기본 14일, 최대 30일. 검수는 회차 마감 안에 끝나므로 장기 보관은
+//   하지 않는다 — 만료는 서버 expiresAt + 삭제 잡(claimExpired)이 강제한다.
+// - 저장소는 기존 서버 전용 객체 저장소(private-object-storage)만 쓴다.
+//   외부 유료 스토리지·CDN은 쓰지 않으며, 무료 범위(회원 1만 명까지 전 기능
+//   무료 정책)를 넘는 저장 설계는 도입하지 않는다. blob: URL은 만든 기기
+//   밖에서 무효라 공유·복원 대상이 아니다(parse가 탈락시키는 이유).
+export const VOICE_COMMENTARY_MAX_AUDIO_BYTES = 5 * 1024 * 1024;
+export const VOICE_COMMENTARY_DEFAULT_RETENTION_DAYS = 14;
+export const VOICE_COMMENTARY_MAX_RETENTION_DAYS = 30;
+
+/** 오디오 바이트 수가 저장 상한을 넘으면 "too-large", 아니면 null. byteSize를 모르면(null) 판정하지 않는다. */
+export function voiceCommentaryAudioSizeProblem(byteSize: number | null): "too-large" | null {
+  if (byteSize === null || !Number.isFinite(byteSize)) return null;
+  return byteSize > VOICE_COMMENTARY_MAX_AUDIO_BYTES ? "too-large" : null;
+}
+
+/**
+ * 보관 만료 시각(ISO). retentionDays는 서버 계약 범위(1..30)로 붙인다 —
+ * 기본값은 VOICE_COMMENTARY_DEFAULT_RETENTION_DAYS. createdAt이 깨졌으면 null.
+ */
+export function voiceCommentaryRetentionExpiresAt(
+  createdAtIso: string,
+  retentionDays: number = VOICE_COMMENTARY_DEFAULT_RETENTION_DAYS,
+): string | null {
+  const createdMs = Date.parse(createdAtIso);
+  if (!Number.isFinite(createdMs)) return null;
+  const days = Math.min(
+    VOICE_COMMENTARY_MAX_RETENTION_DAYS,
+    Math.max(1, Math.trunc(Number.isFinite(retentionDays) ? retentionDays : VOICE_COMMENTARY_DEFAULT_RETENTION_DAYS)),
+  );
+  return new Date(createdMs + days * 86_400_000).toISOString();
+}
+
 const SCALE_MIN = 0.25;
 const SCALE_MAX = 8;
 

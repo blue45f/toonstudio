@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -35,6 +36,15 @@ const TABS: readonly { readonly id: CollabInboxTab; readonly label: string }[] =
   { id: "approval", label: "승인 결과" },
   { id: "handover", label: "인계" },
 ];
+
+const EMPTY_COPY_KEYS: Readonly<Record<CollabInboxTab, string>> = {
+  all: "productionHub.status.inboxEmptyAll",
+  unread: "productionHub.status.inboxEmptyUnread",
+  mention: "productionHub.status.inboxEmptyMention",
+  "review-request": "productionHub.status.inboxEmptyReviewRequest",
+  approval: "productionHub.status.inboxEmptyApproval",
+  handover: "productionHub.status.inboxEmptyHandover",
+};
 
 const EMPTY_COPY: Readonly<Record<CollabInboxTab, string>> = {
   all: "아직 협업 알림이 없습니다. 팀원이 나를 언급하거나 검수를 요청하면 여기에 모입니다.",
@@ -74,6 +84,7 @@ export function CollabNotificationInbox({
   onOpenItem,
   onMarkAllRead,
 }: CollabNotificationInboxProps) {
+  const t = useT();
   const [tab, setTab] = useState<CollabInboxTab>("all");
   const summary = useMemo(() => summarizeCollabInbox(items), [items]);
   const visible = useMemo(() => filterCollabInbox(items, tab), [items, tab]);
@@ -155,7 +166,7 @@ export function CollabNotificationInbox({
 
       {visible.length === 0 ? (
         <div className="mt-3 rounded-xl border border-dashed border-line p-6 text-center text-xs leading-relaxed text-fg-3">
-          {EMPTY_COPY[tab]}
+          {t(EMPTY_COPY_KEYS[tab] ?? "productionHub.status.inboxEmptyAll", EMPTY_COPY[tab] ?? "")}
         </div>
       ) : (
         <ul className="mt-3 space-y-1.5">

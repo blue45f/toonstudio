@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ReviewVoiceCommentaryPanel } from "./ReviewVoiceCommentaryPanel";
 import type { VoiceCommentaryTrack } from "./review-voice-commentary-model";
@@ -51,5 +51,40 @@ describe("ReviewVoiceCommentaryPanel 자막 트랙", () => {
     );
 
     expect(container.querySelector("audio")).toBeNull();
+  });
+
+  it("저장 정책(용량·보관 기간)을 패널 문구로 명시한다", () => {
+    render(
+      <ReviewVoiceCommentaryPanel episodeId="episode-1" tracks={[track()]} authorName="나" readOnly />,
+    );
+
+    expect(screen.getByText(/저장 정책: 해설 음성은 1건 최대 5MB/)).toBeTruthy();
+    expect(screen.getByText(/서버 보관 기본 14일·최대 30일/)).toBeTruthy();
+    expect(screen.getByText(/외부 유료 저장소는 쓰지 않습니다/)).toBeTruthy();
+  });
+
+  it("음성이 없는 해설도 '위치 따라가기'로 첫 키프레임 위치 이동을 요청한다", () => {
+    const onApplyView = vi.fn();
+    render(
+      <ReviewVoiceCommentaryPanel
+        episodeId="episode-1"
+        tracks={[track({
+          audio: null,
+          keyframes: [{
+            atMs: 0,
+            view: { surface: "manuscript", poolItemId: null, pageId: "page-2", mode: null, scale: 1, tx: 0.25, ty: 0.5 },
+            pinThreadIds: ["pin-1"],
+          }],
+        })]}
+        authorName="나"
+        readOnly
+        onApplyView={onApplyView}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /위치 따라가기/ }));
+    expect(onApplyView).toHaveBeenCalledTimes(1);
+    expect(onApplyView.mock.calls[0]?.[0]).toMatchObject({ surface: "manuscript", pageId: "page-2" });
+    expect(onApplyView.mock.calls[0]?.[1]).toEqual(["pin-1"]);
   });
 });
