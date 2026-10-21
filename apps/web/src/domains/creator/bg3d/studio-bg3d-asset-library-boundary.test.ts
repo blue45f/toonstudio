@@ -79,6 +79,7 @@ describe("Studio BG3D asset-library ownership boundary", () => {
     expect(imports.valueImports).toEqual([
       "react",
       "./StudioBg3dAssetLibraryPanel",
+      "./StudioBg3dBundleThemePackPanel",
       "./StudioReferenceRebuildPresets",
       "./studio-bg3d-asset-rights-catalog",
       "./useStudioBg3dAssetRights",
