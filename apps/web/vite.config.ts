@@ -644,7 +644,10 @@ export default defineConfig(({ command, mode }) => ({
         : {}),
     },
     // Workspace hooks and their auto-installed peers must share the app renderer's dispatcher.
-    dedupe: ["react", "react-dom"],
+    // remotion도 단일 인스턴스여야 한다: 피어 조합이 갈린 복사본이 둘 번들되면 <Player>가
+    // 제공하는 재생 컨텍스트를 워크스페이스 필름 패키지의 훅이 찾지 못해 재생 즉시 렌더
+    // 오류(errorFallback)가 나고, 컴포지션 안의 오디오까지 함께 사라진다.
+    dedupe: ["react", "react-dom", "remotion", "@remotion/player"],
   },
   // Industrial OCCT: allow Vite to emit wasm asset URLs for browser fetch/locateFile.
   // The .onnx entry covers the bundled U-2-Netp foreground model asset.
