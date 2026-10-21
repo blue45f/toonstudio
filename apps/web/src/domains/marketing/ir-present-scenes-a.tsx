@@ -137,6 +137,15 @@ export const SCENE_NODES_A: ReactNode[] = [
       <h2 className="headline rv">그래서, <em>흐름부터</em> 붙였습니다</h2>
       <p className="lede rv">일곱 단계를 눌러보세요. 앞 단계에서 만든 게 다음 단계 입력으로 그대로 넘어가니까, 파일을 들고 옮길 일이 없어요. 연재가 시작된 뒤의 운영까지 같은 흐름 안에 있습니다.</p>
       <PipelineWidget />
+      <p className="ops-title rv">연재 운영을 받쳐 주는 지원 기능</p>
+      <div className="ops-grid rv">
+        <div className="ops-item"><b>연재 캘린더 · 예약 발행</b><span>연재 요일에 맞춰 게시일을 잡고, 미리 예약해 둡니다</span></div>
+        <div className="ops-item"><b>단계별 마감 · 리스크 예측</b><span>공정마다 권장 마감과 버퍼를 잡고, 늦을 위험을 먼저 보여줍니다</span></div>
+        <div className="ops-item"><b>연재 버퍼 관리</b><span>미리 완성한 회차를 쌓아 둬서 연재 공백을 막습니다</span></div>
+        <div className="ops-item"><b>알림 다이제스트 · 정책</b><span>마감과 협업 알림을 모아 보고, 역할마다 받는 방식을 정합니다</span></div>
+        <div className="ops-item"><b>공지 · 휴재/복귀 키트</b><span>작가 공지부터 휴재 안내, 복귀 때 줄거리 리캡까지 돕습니다</span></div>
+        <div className="ops-item"><b>권한 · 활동 기록 · 백업</b><span>역할별 권한과 활동 기록이 남고, 조직 백업 파일로 보관합니다</span></div>
+      </div>
       <figure className="rv" style={{ margin: "22px 0 0" }}>
         <div className="shot-frame">
           <div className="frame-bar"><i /><i /><i /><span className="frame-url">toonstudio.cloud/studio — 실제 제품 화면</span></div>

@@ -176,6 +176,13 @@
 .ir-present .stat .label { margin-top: 13px; font-weight: 700; font-size: 16.5px; }
 .ir-present .stat .desc { margin-top: 5px; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .ir-present .stats-note { color: var(--muted); font-size: 13.5px; margin-top: 14px; }
+.ir-present .ops-title { font-size: 15.5px; font-weight: 800; color: var(--ink-2); margin: 28px 0 12px; }
+.ir-present .ops-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ir-present .ops-item { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 16px 18px 14px; }
+.ir-present .ops-item b { display: block; font-size: 15.5px; font-weight: 800; margin-bottom: 4px; }
+.ir-present .ops-item span { color: var(--muted); font-size: 13.5px; line-height: 1.55; display: block; }
+@media (max-width: 960px) { .ir-present .ops-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .ir-present .ops-grid { grid-template-columns: 1fr; } }
 .ir-present .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .ir-present .role { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 30px 28px; display: flex; flex-direction: column; }
 .ir-present .role .tag { align-self: flex-start; font-size: 12.5px; font-weight: 800; letter-spacing: .06em; padding: 5px 11px; border-radius: 99px; margin-bottom: 18px; }
