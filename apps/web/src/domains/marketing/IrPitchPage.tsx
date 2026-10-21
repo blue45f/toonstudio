@@ -1,7 +1,11 @@
+import { useEffect, useRef, useState } from "react";
+
 import { translateCurrentStaticSourceText, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import {
   ArrowRight,
   Boxes,
+  ChevronLeft,
+  ChevronRight,
   CirclePlay,
   Clapperboard,
   Cpu,
@@ -9,10 +13,13 @@ import {
   Handshake,
   Layers,
   Mail,
+  Maximize,
   PenTool,
+  Presentation,
   ShieldCheck,
   Sparkles,
   UsersRound,
+  X,
 } from "lucide-react";
 
 import { productTourChapterHref } from "./product-tour-content";
@@ -150,6 +157,231 @@ export function IrPitchPage() {
 
   useDocumentTitle(bi("ToonStudio IR · 웹툰 제작 OS 투자 소개", "ToonStudio IR · Investor brief for the webtoon production OS"));
 
+  /* 발표 모드: /product-tour 플레이어와 같은 단축키 UX(←/→ 씬 이동, Space 재생·정지/다음, F 전체화면, Esc 종료).
+     ?present=1로 열면 바로 발표 모드로 시작한다. 스크롤 본문은 그대로 두고 씬은 발표용으로 압축한 별도 구성이다. */
+  const [presenting, setPresenting] = useState(false);
+  const [scene, setScene] = useState(0);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const filmRef = useRef<HTMLVideoElement>(null);
+
+  const SCENE_COUNT = 10;
+  const FILM_SCENE = 1;
+  const goTo = (next: number) => setScene(Math.min(SCENE_COUNT - 1, Math.max(0, next)));
+
+  const toggleFullscreen = () => {
+    try {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void overlayRef.current?.requestFullscreen();
+    } catch {
+      /* 전체화면이 막힌 환경에서는 오버레이만으로 발표를 계속한다. */
+    }
+  };
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("present")) setPresenting(true);
+  }, []);
+
+  useEffect(() => {
+    if (!presenting) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPresenting(false);
+      else if (event.key === "ArrowRight" || event.key === "PageDown") { event.preventDefault(); goTo(scene + 1); }
+      else if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); goTo(scene - 1); }
+      else if (event.key === "Home") { event.preventDefault(); goTo(0); }
+      else if (event.key === "End") { event.preventDefault(); goTo(SCENE_COUNT - 1); }
+      else if (event.key === "f" || event.key === "F") toggleFullscreen();
+      else if (event.key === " ") {
+        event.preventDefault();
+        if (scene === FILM_SCENE && filmRef.current) {
+          if (filmRef.current.paused) void filmRef.current.play();
+          else filmRef.current.pause();
+        } else goTo(scene + 1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [presenting, scene]);
+
+  const sceneTitle = (index: number): string => [
+    bi("표지", "Cover"),
+    bi("IR 영상", "IR film"),
+    bi("문제", "Problem"),
+    bi("경쟁 지형", "Landscape"),
+    bi("솔루션", "Solution"),
+    bi("차별화", "Differentiation"),
+    bi("제품 역량", "Product"),
+    bi("시장", "Market"),
+    bi("비즈니스 모델·검증", "Model & validation"),
+    bi("창업자·Ask", "Founder & ask"),
+  ][index] ?? "";
+
+  const bigTitle = "text-balance font-display text-4xl font-black leading-tight tracking-tight text-fg sm:text-5xl lg:text-6xl";
+  const sceneShell = "mx-auto grid w-full max-w-6xl content-center gap-8 px-6 py-16 sm:px-10";
+
+  /** 발표 씬 10개. 본문 섹션을 발표용 큰 글자·압축 문안으로 다시 구성한 것이라 수치·표기는 본문과 같다. */
+  const scenes = [
+    (
+      <div key="cover" className={sceneShell}>
+        <p className="eyebrow text-accent">IR · TOONSTUDIO</p>
+        <h2 className={bigTitle}>{bi("웹툰의 기획부터 연재 준비까지, 흩어진 제작 도구와 협업 과정을 브라우저 하나로 연결합니다.", "From planning to release prep, ToonStudio connects the scattered tools and collaboration of webtoon production in one browser.")}</h2>
+        <p className="text-xl font-semibold text-fg-2">{bi("지금 toonstudio.cloud에서 작동하는 웹툰 제작 OS · 김희준 Founder", "A webtoon production OS already running at toonstudio.cloud · Heejun Kim, Founder")}</p>
+      </div>
+    ),
+    (
+      <div key="film" className={sceneShell}>
+        <p className="eyebrow text-accent">IR FILM · 4:48</p>
+        <video ref={filmRef} className="aspect-video w-full rounded-2xl border border-line/70 bg-panel object-cover" src={IR_FILM_SRC} poster={IR_FILM_POSTER} controls playsInline aria-label={bi("ToonStudio IR 영상", "ToonStudio IR film")} />
+        <p className="text-lg text-fg-2">{bi("제품 투어 챕터를 실제 화면 그대로 발췌한 IR 컷입니다. Space로 재생·정지합니다.", "An IR cut excerpted from the product tour with real screens only. Press Space to play or pause.")}</p>
+      </div>
+    ),
+    (
+      <div key="problem" className={sceneShell}>
+        <p className="eyebrow text-accent">PROBLEM</p>
+        <h2 className={bigTitle}>{bi("창작자는 작품보다 도구 사이의 빈틈에 시간을 씁니다.", "Creators spend more time between tools than on the work itself.")}</h2>
+        <ul className="grid gap-3 md:grid-cols-3">
+          {PROBLEMS.map((problem) => {
+            const copy = bi(problem.ko, problem.en);
+            return (
+              <li key={problem.en.title} className="rounded-2xl border border-line/70 bg-card/65 p-5">
+                <h3 className="font-display text-xl font-black text-fg">{copy.title}</h3>
+                <p className="mt-2 text-base leading-7 text-fg-2">{copy.body}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ),
+    (
+      <div key="landscape" className={sceneShell}>
+        <p className="eyebrow text-accent">LANDSCAPE</p>
+        <h2 className={bigTitle}>{bi("좋은 도구들은 이미 있습니다. 다만, 나뉘어 있습니다.", "Good tools already exist — they are just split apart.")}</h2>
+        <ul className="grid gap-2">
+          {LANDSCAPE.map((row) => {
+            const copy = bi(row.ko, row.en);
+            return (
+              <li key={row.en.category} className="flex flex-wrap items-baseline gap-x-4 rounded-2xl border border-line/70 bg-card/65 px-5 py-3.5">
+                <span className="w-32 shrink-0 font-display text-base font-black text-fg">{copy.category}</span>
+                <span className="text-base text-fg-2">{copy.tools}</span>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="max-w-4xl text-lg leading-8 text-fg-2">{bi("가장 가까운 경쟁자 크레코는 만든 결과물의 관리 허브, ToonStudio는 제작 도구 자체를 내장한 통합 제작 OS입니다.", "The closest competitor, CRECO, is a hub for managing finished outputs; ToonStudio is an integrated production OS with the creation tools built in.")}</p>
+      </div>
+    ),
+    (
+      <div key="flow" className={sceneShell}>
+        <p className="eyebrow text-accent">SOLUTION</p>
+        <h2 className={bigTitle}>{bi("작품·회차·장면을 중심으로 전 공정을 한 흐름으로.", "Every stage connects around the work, its episodes and its scenes.")}</h2>
+        <ol className="flex flex-wrap items-center gap-3" aria-label={bi("제작 파이프라인", "Production pipeline")}>
+          {FLOW_STEPS.map((step, index) => (
+            <li key={step.en} className="inline-flex items-center gap-3">
+              <span className="inline-flex min-h-14 items-center rounded-full border border-accent/40 bg-accent-soft/25 px-6 font-display text-xl font-black text-fg">{bi(step.ko, step.en)}</span>
+              {index < FLOW_STEPS.length - 1 ? <ArrowRight size={20} className="text-accent" aria-hidden="true" /> : null}
+            </li>
+          ))}
+        </ol>
+        <p className="text-lg text-fg-2">{bi("앞 단계의 결과물이 다음 단계로 그대로 이어집니다.", "Each stage hands its output directly to the next.")}</p>
+      </div>
+    ),
+    (
+      <div key="difference" className={sceneShell}>
+        <p className="eyebrow text-accent">DIFFERENTIATION</p>
+        <h2 className={bigTitle}>{bi("네 가지 차별화", "Four points of difference")}</h2>
+        <ul className="grid gap-3 md:grid-cols-2">
+          {[
+            { ko: "미개척 포지션 — 브라우저 전문 드로잉 + 전 공정 통합", en: "Open position — pro drawing + full process, in a browser" },
+            { ko: "전문 브러시 226종 · WebGPU 스트로크 렌더링", en: "226 pro brushes · WebGPU stroke rendering" },
+            { ko: "1인 → 소규모 팀 전 규모 올인원 협업 (대규모는 설계·로드맵)", en: "All-in-one collaboration, solo → small teams (large studios: design & roadmap)" },
+            { ko: "회차-공정-담당-승인, 웹툰 분업 체계 내장", en: "Episodes, processes, owners, approvals — division of labor built in" },
+          ].map((item) => (
+            <li key={item.en} className="rounded-2xl border border-line/70 bg-card/65 p-6 font-display text-xl font-black leading-snug text-fg">{bi(item.ko, item.en)}</li>
+          ))}
+        </ul>
+      </div>
+    ),
+    (
+      <div key="product" className={sceneShell}>
+        <p className="eyebrow text-accent">PRODUCT</p>
+        <h2 className={bigTitle}>{bi("계획이 아니라, 이미 작동하는 제품입니다.", "Not a plan — a product that already runs.")}</h2>
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {CAPABILITIES.map((capability) => {
+            const copy = bi(capability.ko, capability.en);
+            return (
+              <li key={capability.id} className="grid overflow-hidden rounded-2xl border border-line/70 bg-card/65">
+                <img src={capability.image} alt="" width={1280} height={720} loading="lazy" decoding="async" className="aspect-video w-full object-cover" />
+                <div className="grid gap-1.5 p-4">
+                  <h3 className="font-display text-lg font-black text-fg">{copy.title}</h3>
+                  <p className="text-sm font-bold text-accent">{capability.stats.map((stat) => bi(stat.ko, stat.en)).join(" · ")}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ),
+    (
+      <div key="market" className={sceneShell}>
+        <p className="eyebrow text-accent">MARKET</p>
+        <h2 className={bigTitle}>{bi("웹툰은 이미 크고, 더 빠르게 커지는 시장입니다.", "Webtoons are already large — and growing faster.")}</h2>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="rounded-3xl border border-line/70 bg-card/65 p-6">
+            <p className="font-display text-5xl font-black tracking-tight text-fg">{bi("2조 2,856억 원", "KRW 2.2856T")}</p>
+            <p className="mt-2 font-bold text-fg">{bi("2024년 국내 웹툰 산업 매출 (문체부·콘진원 실태조사)", "Korean webtoon industry revenue, 2024 (MCST · KOCCA survey)")}</p>
+          </div>
+          <div className="rounded-3xl border border-line/70 bg-card/65 p-6">
+            <p className="font-display text-5xl font-black tracking-tight text-fg">{bi("약 102억 → 427억~453억 달러", "$10.2B → $42.7–45.3B")}</p>
+            <p className="mt-2 font-bold text-fg">{bi("글로벌 시장 2024 → 2030 전망 · 연평균 약 27% (복수 기관 추정치)", "Global market 2024 → 2030 · about 27% CAGR (multiple research estimates)")}</p>
+          </div>
+        </div>
+        <p className="max-w-4xl text-lg leading-8 text-fg-2">{bi("제작 표준 도구는 전량 외산이고 국산 전문 제작 코어는 비어 있습니다(구조 산정). 그 빈자리가 ToonStudio의 자리입니다.", "Every standard production tool is foreign and the Korean professional core is empty (structural estimate). That gap is ToonStudio's position.")}</p>
+      </div>
+    ),
+    (
+      <div key="model" className={sceneShell}>
+        <p className="eyebrow text-accent">BUSINESS MODEL & VALIDATION</p>
+        <h2 className={bigTitle}>{bi("개인 창작자에서 팀·교육·마켓으로.", "From solo creators to teams, education and a marketplace.")}</h2>
+        <ul className="grid gap-2 md:grid-cols-2">
+          {BUSINESS_MODEL.map((model) => {
+            const copy = bi(model.ko, model.en);
+            return (
+              <li key={copy.tier} className="rounded-2xl border border-line/70 bg-card/65 p-5">
+                <h3 className="font-display text-lg font-black text-fg">{copy.tier}</h3>
+                <p className="mt-1 text-sm leading-6 text-fg-2">{copy.body}</p>
+              </li>
+            );
+          })}
+        </ul>
+        <ul className="flex flex-wrap gap-x-8 gap-y-2">
+          {VALIDATION_GOALS.map((goal) => (
+            <li key={goal.en} className="flex items-baseline gap-3">
+              <span className="font-display text-3xl font-black text-fg">{goal.value}</span>
+              <span className="font-semibold text-fg-2">{bi(goal.ko, goal.en)} <span className="rounded-full border border-accent/40 px-2 py-0.5 text-xs font-bold text-accent">{bi("목표", "Goal")}</span></span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ),
+    (
+      <div key="ask" className={sceneShell}>
+        <p className="eyebrow text-accent">FOUNDER & ASK</p>
+        <h2 className={bigTitle}>{bi("창작자가 작품에만 집중할 수 있는 제작 기반을 만들겠습니다.", "We are building the production foundation that lets creators focus only on their work.")}</h2>
+        <p className="text-xl font-semibold text-fg-2">{bi("김희준 · Founder — 18년 개발 경험, 설계부터 배포까지 직접 만듭니다.", "Heejun Kim · Founder — 18 years of development, building everything from design to deployment.")}</p>
+        <ul className="flex flex-wrap gap-2">
+          {ASKS.map((ask) => (
+            <li key={ask.en} className="rounded-full border border-line/70 bg-panel px-4 py-2.5 font-display text-base font-bold text-fg">{bi(ask.ko, ask.en)}</li>
+          ))}
+        </ul>
+        <p className="text-lg font-semibold text-fg-2">toonstudio.cloud · blue45f@gmail.com</p>
+      </div>
+    ),
+  ];
+
   return (
     <Container size="wide" className={INTRO_PAGE}>
       <HeroBlock
@@ -163,10 +395,20 @@ export function IrPitchPage() {
           "ToonStudio is a webtoon production OS already running at toonstudio.cloud. Every film and screen on this page comes from the real product.",
         )}
         actions={(
-          <IntroActions
-            primary={{ href: "/product-tour", label: bi("8분 전체 제품 투어 보기", "Watch the full 8-minute tour"), icon: CirclePlay }}
-            secondary={{ href: "/about", label: bi("서비스 소개 보기", "About the service") }}
-          />
+          <div className="grid gap-3">
+            <IntroActions
+              primary={{ href: "/product-tour", label: bi("8분 전체 제품 투어 보기", "Watch the full 8-minute tour"), icon: CirclePlay }}
+              secondary={{ href: "/about", label: bi("서비스 소개 보기", "About the service") }}
+            />
+            <button
+              type="button"
+              onClick={() => { setScene(0); setPresenting(true); }}
+              className="inline-flex min-h-11 w-fit items-center gap-2 rounded-xl border border-accent/50 bg-accent-soft/30 px-4 py-2.5 text-sm font-bold text-accent transition-colors hover:bg-accent-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Presentation size={16} aria-hidden="true" />
+              {bi("발표 모드로 열기 (풀스크린 · ←/→ · Space)", "Present full-screen (←/→ · Space)")}
+            </button>
+          </div>
         )}
         media={(
           <figure className="grid gap-3">
@@ -422,6 +664,39 @@ export function IrPitchPage() {
           </div>
         </div>
       </section>
+
+      {presenting ? (
+        <div ref={overlayRef} className="fixed inset-0 z-[100] flex flex-col bg-canvas" role="dialog" aria-modal="true" aria-label={bi("IR 발표 모드", "IR presentation mode")}>
+          <div className="flex items-center justify-between gap-3 px-5 py-3 sm:px-8">
+            <p className="text-sm font-bold text-fg-2">
+              {sceneTitle(scene)} <span className="text-fg-3">· {scene + 1} / {SCENE_COUNT}</span>
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={toggleFullscreen} aria-label={bi("전체화면 전환", "Toggle full screen")} className="grid size-10 place-items-center rounded-xl border border-line/70 text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                <Maximize size={17} aria-hidden="true" />
+              </button>
+              <button type="button" onClick={() => setPresenting(false)} aria-label={bi("발표 모드 종료", "Exit presentation mode")} className="grid size-10 place-items-center rounded-xl border border-line/70 text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                <X size={17} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+          <div className="h-1 shrink-0 bg-line/50" aria-hidden="true">
+            <div className="h-full bg-accent transition-all duration-300" style={{ width: `${((scene + 1) / SCENE_COUNT) * 100}%` }} />
+          </div>
+          <div className="relative flex-1 overflow-y-auto">
+            {scenes[scene]}
+            <button type="button" onClick={() => goTo(scene - 1)} disabled={scene === 0} aria-label={bi("이전 씬", "Previous scene")} className="absolute left-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-line/70 bg-card/70 text-fg-2 transition-opacity hover:text-fg disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <ChevronLeft size={20} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => goTo(scene + 1)} disabled={scene === SCENE_COUNT - 1} aria-label={bi("다음 씬", "Next scene")} className="absolute right-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-line/70 bg-card/70 text-fg-2 transition-opacity hover:text-fg disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <ChevronRight size={20} aria-hidden="true" />
+            </button>
+          </div>
+          <p className="shrink-0 px-5 py-3 text-center text-xs text-fg-3 sm:px-8">
+            {bi("←/→ 씬 이동 · Space 재생·정지/다음 · F 전체화면 · Esc 종료", "←/→ scenes · Space play-pause/next · F full screen · Esc exit")}
+          </p>
+        </div>
+      ) : null}
     </Container>
   );
 }
