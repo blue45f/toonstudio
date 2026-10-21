@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { groupProductionNotifications, safeProductionNotificationHref, type ProductionNotification, type ProductionProjectAggregate } from "@toonstudio/core/production";
+import { decideNotificationReach, groupProductionNotifications, safeProductionNotificationHref, type ProductionNotification, type ProductionProjectAggregate } from "@toonstudio/core/production";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 export function ProductionNotificationDigest({ aggregate, assignmentId, disabled, onRead }: {
@@ -14,12 +14,17 @@ export function ProductionNotificationDigest({ aggregate, assignmentId, disabled
     active: bt("조용한 시간 외", "Outside quiet hours"), unknown: bt("담당자·시간대 확인 필요", "Check assignee and timezone") }[digest.quiet];
   return <div className="space-y-3" aria-label={bt("담당자별 알림 묶음", "Assignee notification digest")}>
     <p className="text-xs text-fg-2">{quiet} · {digest.timezone ?? bt("시간대 미정", "Timezone unknown")}</p>
+    {digest.mutedCount > 0 ? <p className="text-xs text-fg-2">{bt(`유형별 끄기로 ${digest.mutedCount}건은 표시하지 않습니다. 알림 정책에서 다시 켤 수 있습니다.`, `${digest.mutedCount} item(s) hidden by per-type settings. Re-enable them in the notification policy.`)}</p> : null}
     <p className="text-xs text-fg-2">{bt("선택한 담당자의 미확인 알림을 같은 원인별로 모았습니다. 조용한 시간에도 직접 열람할 수 있으며 외부 예약 발송 결과가 아닙니다.", "Unread notifications for the selected assignee are grouped by source. Manual reading remains available during quiet hours; this is not an external scheduled-delivery receipt.")}</p>
     <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
       {digest.groups.slice(0, 20).map((group) => {
         const first = group.entries[0]!;
+        // 도달 결정(G1 정본 decideNotificationReach)을 묶음마다 그대로 보여 준다 —
+        // 왜 지금 왔는지/왜 묶였는지를 정책과 같은 규칙으로 설명한다.
+        const reach = decideNotificationReach({ policy: digest.policy, type: first.type, urgency: first.urgency, quiet: digest.quiet });
+        const reachLabel = { "deliver-now": bt("즉시 도달", "Delivered now"), digest: bt("묶음 주기로 전달", "Batched by digest cadence"), "hold-quiet": bt("조용한 시간 — 보류 중", "Quiet hours — held"), muted: bt("유형 끄기됨", "Type muted"), off: bt("알림 정책 꺼짐", "Policy off") }[reach];
         return <details key={group.key} className="rounded-xl border border-line bg-panel p-3">
-          <summary className="min-h-11 cursor-pointer break-words text-sm font-semibold">{first.title} · {bt(`${group.entries.length}건`, `${group.entries.length} items`)}</summary>
+          <summary className="min-h-11 cursor-pointer break-words text-sm font-semibold">{first.title} · {bt(`${group.entries.length}건`, `${group.entries.length} items`)} · <span className="text-xs font-bold text-accent">{reachLabel}</span></summary>
           <div className="mt-2 space-y-3">{group.entries.slice(0, 50).map((notification) => {
             const href = safeProductionNotificationHref(aggregate.projectId, notification.href);
             return <article key={notification.id} className="space-y-2 rounded-lg border border-line p-3">

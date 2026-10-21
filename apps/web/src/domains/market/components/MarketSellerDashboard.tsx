@@ -453,6 +453,14 @@ export function MarketSellerDashboard({
             "Settlement figures come from this browser's sales ledger. Actual crediting to the points wallet happens through a server settlement contract once connected; balances are not credited yet.",
           )}
         </p>
+        <p className="mt-3">
+          <a href="/creator/revenue" className={buttonClass({ variant: "ghost", size: "sm" })}>
+            {bt(
+              "수익 대시보드에서 멤버십·후원 수익과 함께 보기",
+              "View with membership and tip revenue in the revenue dashboard",
+            )}
+          </a>
+        </p>
         {mySales.length === 0 ? (
           <p className="mt-3 text-sm text-fg-2">{bt("아직 판매 기록이 없어요.", "No sales yet.")}</p>
         ) : (

@@ -31,4 +31,24 @@ describe("notification grouping and quiet hours", () => {
     expect(groupProductionNotifications(aggregate, assignmentId, new Date()).groups.map((g) => g.entries.map((n) => n.id))).toEqual([["n", "n2"]]);
     expect(groupProductionNotifications({ ...aggregate, assignments: [] }, assignmentId, new Date()).groups).toEqual([]);
   });
+  it("excludes muted types from groups and reports the muted count (G1 per-type toggle)", () => {
+    const a = base(), assignmentId = a.assignments[0]!.id;
+    const note: ProductionNotification = { id: "n", projectId: "p", assignmentId, type: "review", title: "Review", body: "Read", href: "/production/projects/p", urgency: "info", sourceType: "review", sourceId: "r", status: "unread", createdAt: "2026-09-21T00:00:00Z", readAt: null };
+    const aggregate = {
+      ...a,
+      notificationPolicies: [{ ...policy, assignmentId, mutedTypes: ["review"] as const }],
+      notifications: [note, { ...note, id: "m", type: "mention" as const, sourceType: "thread", sourceId: "t" }],
+    };
+    const result = groupProductionNotifications(aggregate, assignmentId, new Date());
+    expect(result.groups.map((g) => g.entries.map((n) => n.id))).toEqual([["m"]]);
+    expect(result.mutedCount).toBe(1);
+  });
+  it("keeps every type when the policy is disabled or has no muted types", () => {
+    const a = base(), assignmentId = a.assignments[0]!.id;
+    const note: ProductionNotification = { id: "n", projectId: "p", assignmentId, type: "review", title: "Review", body: "Read", href: "/production/projects/p", urgency: "info", sourceType: "review", sourceId: "r", status: "unread", createdAt: "2026-09-21T00:00:00Z", readAt: null };
+    const disabled = { ...a, notificationPolicies: [{ ...policy, assignmentId, enabled: false, mutedTypes: ["review"] as const }], notifications: [note] };
+    const result = groupProductionNotifications(disabled, assignmentId, new Date());
+    expect(result.groups.map((g) => g.entries.map((n) => n.id))).toEqual([["n"]]);
+    expect(result.mutedCount).toBe(0);
+  });
 });

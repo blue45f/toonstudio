@@ -119,6 +119,24 @@ export function MessagingSettingsPanel({ onClose }: { onClose: () => void }) {
                     className="size-5 accent-accent"
                   />
                 </label>
+                <label
+                  htmlFor="message-email-notification"
+                  aria-label="이메일 알림"
+                  className="mt-4 flex items-center justify-between gap-4 border-t border-line pt-4"
+                >
+                  <span>
+                    <span className="block text-sm font-medium">이메일 알림</span>
+                    <span className="mt-0.5 block text-xs text-fg-2">읽지 않은 새 메시지가 쌓이면 이메일로 알려 줍니다. 제작 알림(마감·승인·멘션)의 유형별 설정은 각 작품의 알림 정책에서 정합니다.</span>
+                  </span>
+                  <input
+                    id="message-email-notification"
+                    type="checkbox"
+                    checked={preferences.emailNotification}
+                    onChange={(event) => void updatePreference({ emailNotification: event.target.checked })}
+                    disabled={saving}
+                    className="size-5 accent-accent"
+                  />
+                </label>
               </section>
             )}
 

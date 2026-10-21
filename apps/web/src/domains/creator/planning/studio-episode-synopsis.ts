@@ -36,6 +36,13 @@ export interface EpisodeSynopsisExtension {
   readonly seedSettingRefs?: readonly EpisodeSeedSettingRef[];
   /** 다음 화 훅 설계 두 칸. 없으면 빈 칸으로 판정한다. */
   readonly hookDesign?: EpisodeHookDesignInput;
+  /**
+   * 독자 반응 기획 메모 (선택 확장) — 독자 반응 인용 카드(F3)가 이전 회차
+   * 실집계 인용을 이 회차 기획에 반영하려고 저장한 본문. 카드로 저장할 때만
+   * 채워지고, 손으로 쓴 회차에는 없다. 실집계가 없는 지표는 본문에 숫자가
+   * 아니라 "미수집"으로만 들어간다 (studio-reader-reaction-quote.ts).
+   */
+  readonly readerReactionMemo?: string;
 }
 
 /** 씨앗 인용 출처 한 건 — 적용 시점에 풀어 둔 최소 모양(id·종류·이름). */

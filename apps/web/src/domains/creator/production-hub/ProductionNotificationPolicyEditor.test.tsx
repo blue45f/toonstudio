@@ -64,6 +64,21 @@ describe("notification preferences", () => {
     await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
     expect(execute.mock.calls[0]![0]).toMatchObject({ record: { value: { quietHoursStart: null, quietHoursEnd: null } } });
   });
+  it("saves edited channels and per-type mutes through the same command (G1)", async () => {
+    const { execute } = fixture(policy());
+    fireEvent.click(screen.getByRole("checkbox", { name: "이메일" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "멘션" }));
+    confirm(); save();
+    await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+    expect(execute.mock.calls[0]![0]).toMatchObject({
+      record: { kind: "notification-policy", value: { channels: ["in-app", "email"], mutedTypes: ["mention"] } },
+    });
+  });
+  it("restores a muted type from an existing policy as unchecked", () => {
+    fixture({ ...policy(), mutedTypes: ["overdue"] });
+    expect((screen.getByRole("checkbox", { name: "기한 초과" }) as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByRole("checkbox", { name: "멘션" }) as HTMLInputElement).checked).toBe(true);
+  });
   it("does not submit after management rights are removed", () => {
     const { execute, props, rerender } = fixture(); confirm();
     rerender(<ProductionNotificationPolicyEditor {...props} canManage={false} />); save(); expect(execute).not.toHaveBeenCalled();

@@ -5,6 +5,24 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { ProductionClientCommand } from "./production-api";
 
 const field = "min-h-11 max-w-full rounded-lg border border-line bg-panel px-3 text-sm disabled:opacity-50";
+type PolicyChannel = ProductionNotificationPolicy["channels"][number];
+type PolicyType = NonNullable<ProductionNotificationPolicy["mutedTypes"]>[number];
+const CHANNEL_OPTIONS: readonly { readonly id: PolicyChannel; readonly ko: string; readonly en: string }[] = [
+  { id: "in-app", ko: "앱 안 알림", en: "In-app" },
+  { id: "email", ko: "이메일", en: "Email" },
+  { id: "push", ko: "기기 푸시", en: "Push" },
+  { id: "webhook", ko: "웹훅", en: "Webhook" },
+];
+const TYPE_OPTIONS: readonly { readonly id: PolicyType; readonly ko: string; readonly en: string }[] = [
+  { id: "mention", ko: "멘션", en: "Mentions" },
+  { id: "review", ko: "검수 요청·결과", en: "Review requests & results" },
+  { id: "assignment", ko: "담당 배정", en: "Assignments" },
+  { id: "due-soon", ko: "마감 임박", en: "Due soon" },
+  { id: "overdue", ko: "기한 초과", en: "Overdue" },
+  { id: "blocker", ko: "막힘 신호", en: "Blockers" },
+  { id: "release", ko: "공개·연재", en: "Releases" },
+  { id: "automation", ko: "자동화 규칙", en: "Automation" },
+];
 type Props = { readonly aggregate: ProductionProjectAggregate; readonly assignmentId: string; readonly disabled: boolean; readonly canManage: boolean;
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void> };
 export function ProductionNotificationPolicyEditor(props: Props) {
@@ -69,7 +87,26 @@ function PolicyForAssignment({ aggregate, assignmentId, disabled, canManage, exe
         <label className="text-sm">{bt("마감 전 알림 시간", "Due-soon hours")}<input type="number" min={1} max={8760} className={`${field} mt-1 w-full`} value={draft.dueSoonHours} onChange={(event) => modify({ dueSoonHours: Number(event.target.value) })} /></label>
         <label className="text-sm">{bt("지연 알림 기준 시간", "Escalation hours")}<input type="number" min={1} max={8760} className={`${field} mt-1 w-full`} value={draft.escalationHours} onChange={(event) => modify({ escalationHours: Number(event.target.value) })} /></label>
       </div>
-      <p className="text-xs">{bt("저장된 채널", "Saved channels")}: {draft.channels.join(", ")}. {bt("채널 연결 상태나 전달 완료를 의미하지 않습니다.", "This is not a connection or delivery receipt.")}</p>
+      <fieldset className="min-w-0">
+        <legend className="text-sm">{bt("받을 채널", "Channels")}</legend>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {CHANNEL_OPTIONS.map((option) => {
+            const checked = draft.channels.includes(option.id);
+            return <label key={option.id} className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-sm"><input type="checkbox" checked={checked} onChange={(event) => modify({ channels: event.target.checked ? [...draft.channels, option.id] : draft.channels.filter((channel) => channel !== option.id) })} />{bt(option.ko, option.en)}</label>;
+          })}
+        </div>
+        <p className="mt-1 text-xs text-fg-2">{bt("채널을 저장해도 연결 상태나 전달 완료를 의미하지 않습니다. 최소 1개는 켜 두세요.", "Saving channels is not a connection or delivery receipt. Keep at least one on.")}</p>
+      </fieldset>
+      <fieldset className="min-w-0">
+        <legend className="text-sm">{bt("유형별 알림", "Per-type notifications")}</legend>
+        <div className="mt-1 grid gap-1 sm:grid-cols-2">
+          {TYPE_OPTIONS.map((option) => {
+            const muted = (draft.mutedTypes ?? []).includes(option.id);
+            return <label key={option.id} className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-sm"><input type="checkbox" checked={!muted} onChange={(event) => modify({ mutedTypes: event.target.checked ? (draft.mutedTypes ?? []).filter((type) => type !== option.id) : [...new Set([...(draft.mutedTypes ?? []), option.id])] })} />{bt(option.ko, option.en)}</label>;
+          })}
+        </div>
+        <p className="mt-1 text-xs text-fg-2">{bt("끈 유형은 알림 묶음과 통합 작업함에 나타나지 않습니다. 중요한 알림도 예외가 아니니 마감·검수는 켜 두는 편이 안전합니다.", "Muted types disappear from the digest and the unified inbox, including critical ones — keeping deadline and review types on is safer.")}</p>
+      </fieldset>
       {!valid ? <p role="alert">{bt("유효한 시간대, 시간 범위와 양의 정수 기준을 입력해 주세요.", "Enter a valid timezone, time range and positive integer thresholds.")}</p> : null}
       <label className="flex min-h-11 items-start gap-2 text-sm"><input type="checkbox" className="mt-1 size-5" checked={confirmed} disabled={!valid || changed} onChange={(event) => setConfirmed(event.target.checked)} />{bt("표시된 담당자의 알림 선호 변경을 확인했습니다.", "I confirm these changes to the displayed assignee’s notification preferences.")}</label>
       <div className="flex flex-wrap gap-2"><button type="button" className={field} disabled={!valid || changed || !confirmed} onClick={() => void save()}>{bt("알림 정책 저장", "Save notification policy")}</button>

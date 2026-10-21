@@ -1584,6 +1584,17 @@ export interface ProductionAutomationRule {
   readonly updatedAt: string;
 }
 
+/** 연재 운영 알림 유형 — 정책의 유형별 on/off(mutedTypes)가 이 집합을 기준으로 한다. */
+export type ProductionNotificationType =
+  | "assignment"
+  | "mention"
+  | "review"
+  | "due-soon"
+  | "overdue"
+  | "blocker"
+  | "release"
+  | "automation";
+
 export interface ProductionNotificationPolicy {
   readonly id: string;
   readonly projectId: string;
@@ -1596,6 +1607,12 @@ export interface ProductionNotificationPolicy {
   readonly dueSoonHours: number;
   readonly escalationHours: number;
   readonly enabled: boolean;
+  /**
+   * 유형별 끄기 (G1 알림 도달 설계). 여기에 든 유형은 다이제스트·통합 작업함
+   * 투영에서 제외된다. 필드가 없으면 전 유형 켜짐으로 본다 (기존 저장 정책 호환).
+   * 긴급(critical) 알림도 예외 없이 적용되므로, 편집 화면은 그 사실을 고지한다.
+   */
+  readonly mutedTypes?: readonly ProductionNotificationType[];
   readonly updatedAt: string;
 }
 
@@ -1603,15 +1620,7 @@ export interface ProductionNotification {
   readonly id: string;
   readonly projectId: string;
   readonly assignmentId: string | null;
-  readonly type:
-    | "assignment"
-    | "mention"
-    | "review"
-    | "due-soon"
-    | "overdue"
-    | "blocker"
-    | "release"
-    | "automation";
+  readonly type: ProductionNotificationType;
   readonly title: string;
   readonly body: string;
   readonly href: string;

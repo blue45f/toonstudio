@@ -493,6 +493,8 @@ const ProductionNotificationPolicySchema = z.object({
   dueSoonHours: z.number().int().min(1).max(8_760),
   escalationHours: z.number().int().min(1).max(8_760),
   enabled: z.boolean(),
+  // G1 유형별 끄기 — 코어 ProductionNotificationPolicy.mutedTypes와 같은 집합. 구 클라이언트 호환을 위해 optional.
+  mutedTypes: z.array(z.enum(["assignment", "mention", "review", "due-soon", "overdue", "blocker", "release", "automation"])).max(8).optional(),
   updatedAt: IsoDateTimeSchema,
 }).strict();
 

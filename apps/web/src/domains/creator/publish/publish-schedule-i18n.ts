@@ -63,6 +63,14 @@ registerI18nLocaleEntries("ko", {
   "studio.publish.schedule.attemptCount": "{count}회 시도",
   "studio.publish.schedule.eventWeek": "이벤트 주간",
   "studio.publish.schedule.eventWeekEvents": "이 주 일정: {events}",
+  "studio.publish.schedule.sectionLoading": "예약할 회차를 불러오는 중…",
+  "studio.publish.schedule.sectionLoadError":
+    "시리즈 회차를 불러오지 못했어요. 예약 발행은 회차 목록이 필요합니다.",
+  "studio.publish.schedule.retryLoad": "다시 불러오기",
+  "studio.publish.schedule.sectionEmptyEpisodes":
+    "예약할 수 있는 회차가 없어요. 게시되지 않은 회차가 생기면 여기서 예약할 수 있습니다.",
+  "studio.publish.schedule.localOnlyNotice":
+    "예약과 발행 패턴은 지금은 이 브라우저에만 저장됩니다(localStorage). 서버 발행과 자동으로 이어지지 않으니, 예약 시각이 되면 게시 명령 센터에서 직접 게시해 주세요.",
 });
 
 registerI18nLocaleEntries("en", {
@@ -122,4 +130,12 @@ registerI18nLocaleEntries("en", {
   "studio.publish.schedule.attemptCount": "{count} attempts",
   "studio.publish.schedule.eventWeek": "Event week",
   "studio.publish.schedule.eventWeekEvents": "This week: {events}",
+  "studio.publish.schedule.sectionLoading": "Loading episodes to schedule…",
+  "studio.publish.schedule.sectionLoadError":
+    "Could not load the series episodes. Scheduled publishing needs the episode list.",
+  "studio.publish.schedule.retryLoad": "Retry",
+  "studio.publish.schedule.sectionEmptyEpisodes":
+    "No episodes can be scheduled yet. Unpublished episodes will appear here.",
+  "studio.publish.schedule.localOnlyNotice":
+    "Reservations and the weekly cadence are currently stored only in this browser (localStorage). They are not connected to server publishing yet, so publish from the command center when the reserved time arrives.",
 });

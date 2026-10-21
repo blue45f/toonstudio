@@ -25,6 +25,7 @@ import {
   buildEpisodeMetricsOverlay,
   episodeMetricsFeedbackHints,
   episodeMetricsStatusLine,
+  formatEpisodeTrafficSummary,
   type EpisodeMetricsLoad,
 } from "./studio-episode-metrics-overlay";
 
@@ -83,6 +84,9 @@ export function StudioSeasonBeatBoard({
       <p>회차마다 누가 어떤 비트를 맡는지 한눈에 봐요. 오래 비는 캐릭터와 비트가 몰린 회차가 바로 보여요.</p>
       {metricsOverlay && (
         <p role="status">{episodeMetricsStatusLine(metricsOverlay)}</p>
+      )}
+      {metricsOverlay && formatEpisodeTrafficSummary(metricsOverlay) && (
+        <p data-episode-traffic="true">{formatEpisodeTrafficSummary(metricsOverlay)}</p>
       )}
 
       {characters.length === 0 ? (

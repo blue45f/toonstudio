@@ -665,7 +665,18 @@ export function MessagesPage() {
                   </Link>
                   <p className="mt-0.5 truncate text-xs text-fg-2">
                     {CATEGORY_LABELS[selectedThread.category]}
-                    {selectedThread.context.label ? ` · ${selectedThread.context.label}` : ""}
+                    {selectedThread.context.label
+                      ? selectedThread.context.href
+                        ? (
+                          <>
+                            {" · "}
+                            <Link href={selectedThread.context.href} className="font-semibold text-accent hover:underline" aria-label={`${selectedThread.context.label} 맥락으로 이동`}>
+                              {selectedThread.context.label}
+                            </Link>
+                          </>
+                        )
+                        : ` · ${selectedThread.context.label}`
+                      : ""}
                   </p>
                 </div>
                 <button type="button" onClick={() => void toggleMute()} disabled={Boolean(busy)} className="grid size-9 place-items-center rounded-xl hover:bg-raised" aria-label={selectedThread.mutedUntil ? "알림 켜기" : "8시간 알림 끄기"}>

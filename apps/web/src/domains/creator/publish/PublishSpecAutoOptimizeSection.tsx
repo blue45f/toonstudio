@@ -9,6 +9,8 @@
  * 사용자 노출 문자열은 한글(내보내기 다이얼로그 기존 패턴과 동일).
  */
 
+import { useT } from "@/shared/lib/i18n";
+import "./publish-status-i18n";
 import { useMemo, useState } from "react";
 
 import { downloadBlob, type ExportFormat } from "../export/studio-export";
@@ -67,6 +69,7 @@ export function PublishSpecAutoOptimizeSection({
   createCanvas,
   encode,
 }: PublishSpecAutoOptimizeSectionProps) {
+  const t = useT();
   const [presetId, setPresetId] = useState<PublishSpecPresetId>(
     () => mapExportPresetToPublishSpecId(exportPresetId) ?? "canvas"
   );
@@ -98,7 +101,7 @@ export function PublishSpecAutoOptimizeSection({
       const captured = await capturePages();
       const firstPage = captured.pages[0];
       if (!firstPage) {
-        throw new Error("캡처된 페이지가 없어요. 범위를 확인해주세요.");
+        throw new Error(t("studio.publish.status.noCapturedPages", "캡처된 페이지가 없어요. 범위를 확인해주세요."));
       }
       const title = exportTitle.trim() || "toonstudio-episode";
       const multiPage = captured.pages.length > 1;
@@ -126,7 +129,7 @@ export function PublishSpecAutoOptimizeSection({
         sliceOversized += result.oversized;
       }
       if (sliceTotal === 0) {
-        throw new Error("최적화할 슬라이스를 만들지 못했어요.");
+        throw new Error(t("studio.publish.status.sliceCreateFailed", "최적화할 슬라이스를 만들지 못했어요."));
       }
 
       const thumbnails = await generatePublishThumbnails(firstPage, preset, {
@@ -159,7 +162,7 @@ export function PublishSpecAutoOptimizeSection({
         text:
           error instanceof Error
             ? error.message
-            : "자동 최적화에 실패했어요. 다시 시도해주세요.",
+            : t("studio.publish.status.autoOptimizeFailed", "자동 최적화에 실패했어요. 다시 시도해주세요."),
       });
     } finally {
       setOptimizing(false);

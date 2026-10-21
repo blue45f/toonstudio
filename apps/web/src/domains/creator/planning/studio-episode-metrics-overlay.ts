@@ -28,6 +28,7 @@
 import type {
   CreatorAnalyticsPeriod,
   CreatorAnalyticsResponse,
+  CreatorAnalyticsTrafficSource,
 } from "../analytics/types";
 
 /** 지표 로딩 상태. 표면은 이 상태만으로 "숫자를 그릴 수 있는지"를 판정한다. */
@@ -154,6 +155,20 @@ export interface EpisodeMetricsOverlay {
   readonly dropOffEpisodeNumbers: readonly number[];
   readonly period: CreatorAnalyticsPeriod | null;
   readonly generatedAt: string | null;
+  /**
+   * 시리즈 단위 유입 경로(실집계). 유입은 회차 단위로 측정되지 않으므로
+   * 회차 항목(entries)에 나누지 않고 오버레이 전체에 한 번만 싣는다.
+   * live 가 아니면 빈 목록이다.
+   */
+  readonly trafficSources: readonly CreatorAnalyticsTrafficSource[];
+  /** 방문이 가장 많은 유입 경로. 측정된 유입이 없으면 null. */
+  readonly topTrafficSource: CreatorAnalyticsTrafficSource | null;
+  /** 측정된 유입 방문 합계. live 가 아니거나 유입이 없으면 0. */
+  readonly totalTrafficVisits: number;
+  /** 기간 전체 조회 KPI(kpis 의 views). KPI 가 없으면 null — 0 으로 위장하지 않는다. */
+  readonly totalViews: number | null;
+  /** 기간 전체 조회의 직전 기간 대비 증감(%). 음수 허용, 없으면 null. */
+  readonly totalViewsDeltaPct: number | null;
 }
 
 function sanitizeCount(value: unknown): number | null {
@@ -183,6 +198,51 @@ export function formatMetricCount(value: number): string {
 
 function formatPct(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+/** 백분율 표기 — 인용 카드 등 다른 기획 표면과 같은 규칙을 쓰도록 공개한다. */
+export function formatMetricPct(value: number): string {
+  return formatPct(value);
+}
+
+function sanitizeDeltaPct(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.round(value * 10) / 10;
+}
+
+function sanitizeTrafficSources(
+  sources: readonly CreatorAnalyticsTrafficSource[] | undefined,
+): readonly CreatorAnalyticsTrafficSource[] {
+  const cleaned: CreatorAnalyticsTrafficSource[] = [];
+  for (const source of sources ?? []) {
+    const visits = sanitizeCount(source?.visits);
+    if (visits === null || visits <= 0) continue;
+    const labelKo = source.labelKo?.trim() ? source.labelKo : source.source;
+    if (!labelKo) continue;
+    cleaned.push(
+      Object.freeze({
+        source: source.source,
+        labelKo,
+        labelEn: source.labelEn?.trim() ? source.labelEn : labelKo,
+        visits,
+        sharePct: Math.min(100, sanitizePct(source.sharePct) ?? 0),
+      }),
+    );
+  }
+  return Object.freeze(cleaned.sort((a, b) => b.visits - a.visits));
+}
+
+/**
+ * 시리즈 유입 요약 한 줄: "시리즈 유입 1위 직접 방문 · 방문 1,200 (42%)".
+ * 유입은 시리즈 단위 실측이라 회차 배지와 섞지 않고 별도 줄로만 낸다.
+ * live 가 아니거나 측정된 유입이 없으면 null — 빈 줄을 만들지 않는다.
+ */
+export function formatEpisodeTrafficSummary(
+  overlay: EpisodeMetricsOverlay,
+): string | null {
+  if (!overlay.isLive || !overlay.topTrafficSource) return null;
+  const top = overlay.topTrafficSource;
+  return `시리즈 유입 1위 ${top.labelKo} · 방문 ${formatMetricCount(top.visits)} (${formatPct(top.sharePct)}%)`;
 }
 
 /**
@@ -361,6 +421,17 @@ export function buildEpisodeMetricsOverlay(
     }
   }
 
+  // 유입·전체 조회는 시리즈 단위 실측이다. live 응답에서만 읽고, 없으면
+  // 빈 값으로 둔다 (회차 지표와 같은 정직성 규칙).
+  const trafficSources = response
+    ? sanitizeTrafficSources(response.trafficSources)
+    : Object.freeze([]);
+  const viewsKpi = response?.kpis?.find((kpi) => kpi?.key === "views") ?? null;
+  const totalViews = viewsKpi ? sanitizeCount(viewsKpi.value) : null;
+  const totalViewsDeltaPct = viewsKpi
+    ? sanitizeDeltaPct(viewsKpi.deltaPct)
+    : null;
+
   const referencedNumbers = new Set(refs.map((ref) => ref.episodeNumber));
   const entries: EpisodeMetricsOverlayEntry[] = refs.map((ref) => {
     const metrics = byEpisodeNumber.get(ref.episodeNumber) ?? null;
@@ -392,5 +463,10 @@ export function buildEpisodeMetricsOverlay(
     ),
     period: response?.period ?? null,
     generatedAt: response?.generatedAt ?? null,
+    trafficSources,
+    topTrafficSource: trafficSources[0] ?? null,
+    totalTrafficVisits: trafficSources.reduce((sum, source) => sum + source.visits, 0),
+    totalViews,
+    totalViewsDeltaPct,
   });
 }
