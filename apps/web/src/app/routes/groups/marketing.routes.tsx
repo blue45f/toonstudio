@@ -1,8 +1,20 @@
 import { defineAppRoutes } from "../app-route-definition";
 
 import { lazyRetry } from "@/shared/lib/lazy-retry";
-import { WorkspaceHomeRoute } from "@/domains/creator/workspace/WorkspaceHomeRoute";
-import { ComicIntroHost } from "@/domains/marketing/comic-intro/ComicIntroHost";
+
+const WorkspaceHomeRoute = lazyRetry(
+  () => import("@/domains/creator/workspace/WorkspaceHomeRoute").then((module) => ({
+    default: module.WorkspaceHomeRoute,
+  })),
+  "WorkspaceHomeRoute",
+);
+
+const ComicIntroHost = lazyRetry(
+  () => import("@/domains/marketing/comic-intro/ComicIntroHost").then((module) => ({
+    default: module.ComicIntroHost,
+  })),
+  "ComicIntroHost",
+);
 
 const ProductTourPage = lazyRetry(
   () => import("@/domains/marketing/ProductTourPage").then((module) => ({

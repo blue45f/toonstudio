@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 
-import { StudioHomeEntryRoute } from "@/domains/creator/studio-router/StudioHomeEntryRoute";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+
 import { studioRoutePath } from "@/domains/creator/studio-route-registry";
 import { defineAppRoutes } from "../app-route-definition";
 import {
@@ -18,6 +19,13 @@ import {
   PdfWorkbenchPage,
 } from "./creator-route-pages";
 import { creatorCreateRoutes, creatorShowcaseRoutes } from "./creator-showcase-routes";
+
+const StudioHomeEntryRoute = lazyRetry(
+  () => import("@/domains/creator/studio-router/StudioHomeEntryRoute").then((module) => ({
+    default: module.StudioHomeEntryRoute,
+  })),
+  "StudioHomeEntryRoute",
+);
 
 export const creatorRoutes = defineAppRoutes([
   { id: "creator-character-onboarding", path: "/onboarding/character", element: <StudioCharacterOnboardingPage /> },
