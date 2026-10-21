@@ -52,7 +52,7 @@ const PAGE_COPY = {
     closingEyebrow: "CREATE YOUR NEXT STORY",
     closingTitle: "이제 당신의 장면을 시작하세요.",
     closingBody:
-      "웹툰 기획부터 드로잉, 3D 장면, 협업과 연재 준비까지 하나의 제작 흐름으로 이어집니다.",
+      "웹툰 기획부터 드로잉, 3D 장면, 협업과 연재·운영까지 하나의 제작 흐름으로 이어집니다.",
     promo: "내 작품 홍보 영상 만들기",
   },
   en: {
@@ -84,7 +84,7 @@ const PAGE_COPY = {
     closingEyebrow: "CREATE YOUR NEXT STORY",
     closingTitle: "Start your next scene.",
     closingBody:
-      "Connect planning, drawing, 3D scenes, collaboration and publishing preparation in one production flow.",
+      "Connect planning, drawing, 3D scenes, collaboration, publishing and series operations in one production flow.",
     promo: "Create a promo for my work",
   },
 } as const;
@@ -92,8 +92,8 @@ const PAGE_COPY = {
 const FULL_TOUR_KEY = defineBilingualText(
   "brandFilmPage",
   "fullProductTour",
-  "8분 전체 제품 투어",
-  "8-minute full product tour",
+  "9분 전체 제품 투어",
+  "9-minute full product tour",
 );
 const PRODUCTION_ICONS = [Clapperboard, Ratio, Subtitles] as const;
 const BRAND_FILM_POSTER = `${SITE_URL}/brand/toonstudio-film-poster.jpg`;

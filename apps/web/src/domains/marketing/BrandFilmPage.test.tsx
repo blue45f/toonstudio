@@ -95,10 +95,10 @@ describe("brand film copy matches the film that is rendered", () => {
     expect(fold).toContain("{copy.productionNote}");
     expect(fold).toContain('href="/about/technology/videos"');
     expect(fold).toContain('href="/about/technology/atlas#remotion-composition-player"');
-    // 8분 투어 길이는 투어 데이터에서 계산해 문구에 넣는다.
+    // 9분 투어 길이는 투어 데이터에서 계산해 문구에 넣는다.
     expect(source).toContain('formatProductTourDuration(PRODUCT_TOUR.duration, "ko")');
     expect(source).toContain('formatProductTourDuration(PRODUCT_TOUR.duration, "en")');
-    expect(formatProductTourDuration(PRODUCT_TOUR.duration, "ko")).toBe("8분 24초");
+    expect(formatProductTourDuration(PRODUCT_TOUR.duration, "ko")).toBe("9분 18초");
     // 이 페이지는 Remotion 을 실행 코드로 가져오지 않는다 — 사전 렌더 MP4 파일만 서빙한다.
     expect(source).not.toMatch(/from "(?:remotion|@remotion\/player|@toonstudio\/product-tour-film)"/u);
   });

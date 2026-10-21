@@ -6,7 +6,7 @@ import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { PRODUCT_TOUR_ADDITIONS } from "./product-tour-additions";
 
 /**
- * 영상 제작 이후 더해진 핵심 기능(가상 스튜디오·제작 관리 보드) — 제품 투어 페이지의 '새로 더해진 기능' 탭 본문.
+ * 영상 제작 이후 더해진 핵심 기능(제작 관리 보드) — 제품 투어 페이지의 '새로 더해진 기능' 탭 본문.
  * 투어 영상에 없다는 사실과 이미지의 성격(캡처·개념 이미지)을 카드마다 밝힌다.
  */
 export function ProductTourAdditions() {
@@ -14,8 +14,8 @@ export function ProductTourAdditions() {
   return (
     <div className="product-tour__after" data-product-tour-additions="">
       <p className="mk-body product-tour__note">{bi(
-        "8분 투어에는 나오지 않는 기능입니다. 영상 대신 지금 바로 열어 보세요.",
-        "These features are not in the 8-minute tour. Open them directly instead.",
+        "9분 투어에는 나오지 않는 기능입니다. 영상 대신 지금 바로 열어 보세요.",
+        "This feature is not in the 9-minute tour. Open it directly instead.",
       )}</p>
       <ul className="product-tour__after-grid mk-rail">
         {PRODUCT_TOUR_ADDITIONS.map((item) => {

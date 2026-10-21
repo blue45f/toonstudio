@@ -537,10 +537,10 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-media", claim: "제품 투어 영상 8분 24초(504초)", needles: ["8분 24초", "product-tour-manifest.json"],
+    lesson: "seminar-media", claim: "제품 투어 영상 9분 18초(558초)", needles: ["9분 18초", "product-tour-manifest.json"],
     check: () => {
       const manifest = JSON.parse(readText("apps", "web", "public", "brand", "product-tour-manifest.json")) as { readonly duration: number };
-      expect(manifest.duration).toBe(8 * 60 + 24);
+      expect(manifest.duration).toBe(9 * 60 + 18);
     },
   },
   {

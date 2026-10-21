@@ -27,7 +27,7 @@ beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
   vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
   vi.spyOn(HTMLMediaElement.prototype, "readyState", "get").mockReturnValue(1);
-  vi.spyOn(HTMLMediaElement.prototype, "duration", "get").mockReturnValue(504);
+  vi.spyOn(HTMLMediaElement.prototype, "duration", "get").mockReturnValue(558);
 });
 
 afterEach(() => {

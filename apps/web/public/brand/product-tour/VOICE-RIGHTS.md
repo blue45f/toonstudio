@@ -108,3 +108,21 @@ ToonStudio 제품 투어는 상업 운영을 전제로 한 공개 마케팅·제
   https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
 - 레포 내 근거: `apps/web/public/brand/product-tour/product-tour-audio.json`,
   `tools/media/brand-film/audio/toonstudio-product-tour-narration.ko.json`
+
+## 2026-10-21 교체 실행 — 표준 음성(Helio) 채택
+
+- 실행일: 2026-10-21
+- 경위: 서비스 소유자가 같은 날 IR 발표 플레이어(아티팩트 `toonstudio`) 내레이션에
+  쓰인 음성을 표준 음성으로 지정하고, 제품 투어를 포함한 홍보 영상 전반에 같은
+  음성을 쓰도록 지시했다. 위 "교체 음원 — 채택안"의 1안(MeloTTS-Korean)은 이
+  지시로 대체한다.
+- 새 음성: Meta AI 음성 "Helio"(voiceId `avocado_v2:MAI_03`). 소유자의 Muse
+  음성 합성 파이프라인(`tts speak --language ko`)으로 큐별 합성했다. 속도 100을
+  기본으로 하고, 창(다음 큐 시작 − 0.7초)을 넘는 큐만 속도를 올려 재합성했다.
+- 함께 바뀐 것: 투어 개정(558초·챕터 10개·내레이션 큐 30개)에 맞춰 전체 큐를 새
+  음성으로 통일했다. 스펙·메타데이터·공개 매니페스트의 `voice`·`rights`를 새
+  기록으로 교체했고, `rights.status`는 소유자 지시를 근거로 `cleared`로
+  표기한다. 위 본문의 판정과 대상 파일 표(504초·구 SHA-256)는 교체 전 Yuna
+  파일에 대한 2026-10-14 시점 기록으로 남긴다.
+- 주의: 이 표기의 근거는 제3자 라이선스 문서가 아니라 서비스 소유자의 지정·
+  지시이다. 합성 파이프라인의 제공 조건이 바뀌면 이 판정을 다시 검토한다.

@@ -14,7 +14,7 @@ const inkAndStarlight = resolve(root, "apps/web/public/audio/original/ink-and-st
 const atlasOfStarlight = resolve(root, "apps/web/public/audio/original/atlas-of-starlight-instrumental.mp3");
 const manifestPath = resolve(publicBrand, "product-tour-manifest.json");
 const generatedAssetPath = resolve(root, "apps/web/src/domains/marketing/product-tour-asset.generated.ts");
-const duration = 504;
+const duration = 558;
 
 function argument(name, fallback) {
   const index = process.argv.indexOf(name);
@@ -127,12 +127,12 @@ const temporaryOutput = resolve(dirname(output), `.${Date.now()}-${process.pid}-
 const filter = [
   "[2:a]atrim=start=0:end=240,asetpts=PTS-STARTPTS,volume=-16dB[score_a]",
   "[3:a]atrim=start=0:end=180,asetpts=PTS-STARTPTS,volume=-16dB[score_b]",
-  "[2:a]atrim=start=120:end=210,asetpts=PTS-STARTPTS,volume=-16dB[score_c]",
+  "[2:a]atrim=start=30:end=240,asetpts=PTS-STARTPTS,volume=-16dB[score_c]",
   "[score_a][score_b]acrossfade=d=3:c1=tri:c2=tri[score_ab]",
-  "[score_ab][score_c]acrossfade=d=3:c1=tri:c2=tri,afade=t=in:st=0:d=2,afade=t=out:st=500:d=4[score]",
+  "[score_ab][score_c]acrossfade=d=3:c1=tri:c2=tri,afade=t=in:st=0:d=2,afade=t=out:st=554:d=4[score]",
   "[1:a]aresample=48000,pan=stereo|c0=c0|c1=c0,volume=-2dB,asplit=2[voice_side][voice_mix]",
   "[score][voice_side]sidechaincompress=threshold=0.015:ratio=10:attack=18:release=550:knee=3[ducked]",
-  "[ducked][voice_mix]amix=inputs=2:duration=longest:normalize=0,alimiter=limit=0.891:attack=5:release=80:level=false,atrim=duration=504[mixed]",
+  "[ducked][voice_mix]amix=inputs=2:duration=longest:normalize=0,alimiter=limit=0.891:attack=5:release=80:level=false,atrim=duration=558[mixed]",
 ].join(";");
 
 try {

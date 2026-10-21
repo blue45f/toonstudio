@@ -4,7 +4,7 @@ import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
 /**
  * 기술 도감 · web-platform · 영상·미디어 전달(Remotion, WebVTT, HTTP Range+Blob, VideoObject JSON-LD, ARIA 탭).
- * 8분 제품 투어(/product-tour)와 24초 브랜드 필름(/brand-film)을 만든 기술이다. 계약과 작성 규칙은 engineering-atlas-types.ts 를 따른다.
+ * 9분 제품 투어(/product-tour)와 24초 브랜드 필름(/brand-film)을 만든 기술이다. 계약과 작성 규칙은 engineering-atlas-types.ts 를 따른다.
  */
 const MARKETING = "apps/web/src/domains/marketing";
 const FILM_TOOLS = "tools/media/brand-film";
@@ -20,8 +20,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     ),
     status: "live",
     tagline: t(
-      "Remotion 으로 8분 투어는 브라우저에서 실시간 합성하고, 24초 필름은 MP4로 미리 굽습니다.",
-      "With Remotion the 8-minute tour is composed live in the browser and the 24-second film is pre-rendered to MP4.",
+      "Remotion 으로 9분 투어는 브라우저에서 실시간 합성하고, 24초 필름은 MP4로 미리 굽습니다.",
+      "With Remotion the 9-minute tour is composed live in the browser and the 24-second film is pre-rendered to MP4.",
     ),
     background: [
       t(
@@ -29,8 +29,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
         "Normally a video is made in an editor and exported as an MP4, so even a one-line caption fix means exporting again, and the scenes in the video drift away from the chapter list on the web page. Remotion builds video from React components. A component receives 'which frame is this' (useCurrentFrame) and sets values such as position and opacity with a formula (interpolate), so the video itself becomes code.",
       ),
       t(
-        "같은 컴포지션을 두 가지로 씁니다. 하나는 브라우저 안에서 <Player> 가 프레임을 실시간으로 그려 주는 방식으로, /product-tour 의 8분 24초(504초 × 30fps = 15,120프레임) 투어가 이렇게 재생됩니다. 다른 하나는 Remotion CLI 가 프레임을 한 장씩 그려 H.264 MP4 로 굽는 방식입니다. 투어 컴포지션은 두 방식이 함께 쓰는 워크스페이스 패키지(@toonstudio/product-tour-film)에 있어 호환 재생용 MP4 도 같은 장면입니다. 24초 브랜드 필름과 기술 영상은 자기 컴포지션을 CLI 로만 렌더한 MP4 이고, 웹앱은 그 파일을 서빙할 뿐입니다.",
-        "One composition is used two ways. In the first, <Player> draws the frames live inside the browser, which is how the 8m 24s tour on /product-tour (504 s × 30 fps = 15,120 frames) plays. In the second, the Remotion CLI draws frames one by one and bakes an H.264 MP4. The tour composition lives in a workspace package both ways share (@toonstudio/product-tour-film), so the compatibility MP4 shows the same scenes. The 24-second brand film and the engineering films are MP4s rendered only through the CLI from their own compositions, and the web app just serves those files.",
+        "같은 컴포지션을 두 가지로 씁니다. 하나는 브라우저 안에서 <Player> 가 프레임을 실시간으로 그려 주는 방식으로, /product-tour 의 9분 18초(558초 × 30fps = 16,740프레임) 투어가 이렇게 재생됩니다. 다른 하나는 Remotion CLI 가 프레임을 한 장씩 그려 H.264 MP4 로 굽는 방식입니다. 투어 컴포지션은 두 방식이 함께 쓰는 워크스페이스 패키지(@toonstudio/product-tour-film)에 있어 호환 재생용 MP4 도 같은 장면입니다. 24초 브랜드 필름과 기술 영상은 자기 컴포지션을 CLI 로만 렌더한 MP4 이고, 웹앱은 그 파일을 서빙할 뿐입니다.",
+        "One composition is used two ways. In the first, <Player> draws the frames live inside the browser, which is how the 9m 18s tour on /product-tour (558 s × 30 fps = 16,740 frames) plays. In the second, the Remotion CLI draws frames one by one and bakes an H.264 MP4. The tour composition lives in a workspace package both ways share (@toonstudio/product-tour-film), so the compatibility MP4 shows the same scenes. The 24-second brand film and the engineering films are MP4s rendered only through the CLI from their own compositions, and the web app just serves those files.",
       ),
       t(
         "대안은 편집 프로그램에서 한 번 내보낸 MP4 만 두는 것입니다. MP4 는 가볍고 어디서나 재생되지만 챕터 이동·자막 언어 전환·내레이션과 배경음 믹스 조절을 영상 밖 화면에서 따로 만들어야 하고, 장면 구성은 파일 안에 갇힙니다. Remotion 은 장면·자막 큐·챕터를 코드 한 곳에서 관리하게 해 주는 대신, 브라우저가 프레임을 실시간으로 그려야 하고 remotion·@remotion/player 가 웹앱 의존성에 더해집니다. 그래서 오디오를 불러오지 못하는 등 재생이 막히면 MP4 호환 재생으로 넘어가는 안전장치를 함께 둡니다.",
@@ -44,7 +44,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     keyPoints: [
       t("영상은 프레임 번호를 받는 React 컴포넌트", "A video is a React component that receives the frame number"),
       t("투어 컴포지션을 <Player> 와 CLI MP4 가 함께 쓴다", "One tour composition feeds both <Player> and the CLI MP4"),
-      t("실시간 합성은 8분 투어뿐, 24초 필름은 사전 렌더", "Only the 8-minute tour is live; the 24-second film is pre-rendered"),
+      t("실시간 합성은 9분 투어뿐, 24초 필름은 사전 렌더", "Only the 9-minute tour is live; the 24-second film is pre-rendered"),
       t("재생이 막히면 MP4 호환 재생으로 전환", "If playback is blocked, switch to compatibility MP4"),
     ],
     diagram: {
@@ -79,13 +79,13 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     usage: [
       {
         feature: t("제품 투어 · 브라우저 실시간 재생", "Product tour · live playback in the browser"),
-        role: t("웹앱이 remotion·@remotion/player 와 공유 컴포지션을 직접 가져와 <Player> 로 15,120프레임을 합성합니다. 재생 버튼을 누른 뒤에야 마운트하고, ?t= 로 시작 프레임을 정하며, 오디오가 막히거나 Player 가 오류를 내면 MP4 호환 재생으로 바꿉니다.", "The web app imports remotion, @remotion/player and the shared composition and composes 15,120 frames with <Player>. It mounts only after the play button is pressed, takes the start frame from ?t=, and switches to compatibility MP4 playback if audio is blocked or the Player errors."),
+        role: t("웹앱이 remotion·@remotion/player 와 공유 컴포지션을 직접 가져와 <Player> 로 16,740프레임을 합성합니다. 재생 버튼을 누른 뒤에야 마운트하고, ?t= 로 시작 프레임을 정하며, 오디오가 막히거나 Player 가 오류를 내면 MP4 호환 재생으로 바꿉니다.", "The web app imports remotion, @remotion/player and the shared composition and composes 16,740 frames with <Player>. It mounts only after the play button is pressed, takes the start frame from ?t=, and switches to compatibility MP4 playback if audio is blocked or the Player errors."),
         paths: [`${MARKETING}/ProductTourPlayer.tsx#ProductTourPlayer`, `${MARKETING}/ProductTourRemotionComposition.tsx`, "packages/product-tour-film/src/ProductTourFilm.tsx"],
         route: "/product-tour",
       },
       {
         feature: t("브랜드 필름·투어 MP4 제작 (사전 렌더)", "Brand film and tour MP4 production (pre-rendered)"),
-        role: t("tools/media/brand-film 이 컴포지션을 등록하고 CLI 로 H.264 MP4·포스터를 굽습니다. 24초 필름은 가로·세로·정사각 세 편, 8분 투어는 내레이션·배경음을 ffmpeg 로 섞은 한 편입니다. 결과는 apps/web/public/brand 에 두고 웹앱은 파일로 서빙합니다.", "tools/media/brand-film registers the compositions and bakes H.264 MP4s and posters with the CLI. The 24-second film comes as landscape, portrait and square editions; the 8-minute tour mixes narration and music with ffmpeg into one file. The results sit in apps/web/public/brand and the web app serves them as plain files."),
+        role: t("tools/media/brand-film 이 컴포지션을 등록하고 CLI 로 H.264 MP4·포스터를 굽습니다. 24초 필름은 가로·세로·정사각 세 편, 9분 투어는 내레이션·배경음을 ffmpeg 로 섞은 한 편입니다. 결과는 apps/web/public/brand 에 두고 웹앱은 파일로 서빙합니다.", "tools/media/brand-film registers the compositions and bakes H.264 MP4s and posters with the CLI. The 24-second film comes as landscape, portrait and square editions; the 9-minute tour mixes narration and music with ffmpeg into one file. The results sit in apps/web/public/brand and the web app serves them as plain files."),
         paths: [`${FILM_TOOLS}/src/index.tsx`, `${FILM_TOOLS}/render.mjs`, `${FILM_TOOLS}/render-product-tour.mjs`, `${FILM_TOOLS}/mix-product-tour-audio.mjs`],
         route: "/brand-film",
       },
@@ -117,7 +117,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
           ["  return ("],
           ["    <Player"],
           ["      component={Title}", "같은 Title 을 브라우저에서 재생한다 (MP4 굽기는 CLI 의 몫)", "plays the same Title in the browser (baking MP4 is the CLI's job)"],
-          ["      durationInFrames={504 * 30}", "8분 24초 = 504초 × 30fps", "8m 24s = 504 s × 30 fps"],
+          ["      durationInFrames={558 * 30}", "9분 18초 = 558초 × 30fps", "9m 18s = 558 s × 30 fps"],
           ["      fps={30}"],
           ["      compositionWidth={1280}"],
           ["      compositionHeight={720}"],
@@ -138,7 +138,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
           ['import { Composition, registerRoot } from "remotion";'],
           [""],
           ["const FPS = 30;"],
-          ["const TOUR_SECONDS = 504;"],
+          ["const TOUR_SECONDS = 558;"],
           ["const Film = () => null;", "실제로는 @toonstudio/product-tour-film 등의 컴포지션", "really the compositions of @toonstudio/product-tour-film and others"],
           [""],
           ["function Root() {"],
@@ -168,7 +168,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     chapterIds: ["delivery", "licenses"],
     talk: {
       pitch: t(
-        "Remotion 은 영상을 React 코드로 만드는 도구입니다. 8분 제품 투어는 컴포지션 하나를 두 가지로 씁니다. 브라우저에서는 Player 가 장면을 실시간으로 그려 챕터 이동과 자막 전환을 코드로 다루고, 같은 컴포지션을 CLI 로 MP4 로도 구워 두어 재생이 막히면 그 파일로 넘어갑니다. 24초 브랜드 필름은 미리 구운 MP4 파일입니다. 라이선스 자격은 저장소로 확인할 수 없어 공식 문서를 직접 검토해야 합니다.",
+        "Remotion 은 영상을 React 코드로 만드는 도구입니다. 9분 제품 투어는 컴포지션 하나를 두 가지로 씁니다. 브라우저에서는 Player 가 장면을 실시간으로 그려 챕터 이동과 자막 전환을 코드로 다루고, 같은 컴포지션을 CLI 로 MP4 로도 구워 두어 재생이 막히면 그 파일로 넘어갑니다. 24초 브랜드 필름은 미리 구운 MP4 파일입니다. 라이선스 자격은 저장소로 확인할 수 없어 공식 문서를 직접 검토해야 합니다.",
         "Remotion builds video from React code. The 8-minute product tour uses one composition two ways. In the browser the Player draws the scenes live, so chapter jumps and caption switching are handled in code, and the same composition is also baked to MP4 with the CLI so playback can fall back to that file. The 24-second brand film is a pre-rendered MP4. Eligibility under the license cannot be confirmed from the repository, so the official terms must be reviewed directly.",
       ),
       analogy: t(
@@ -199,13 +199,13 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
         },
       ],
       pitfall: t(
-        "'웹사이트는 Remotion 을 쓰지 않는다'도, '전부 실시간 합성이다'도 틀립니다. 실시간은 8분 투어 재생기뿐입니다. 실기기의 프레임 성능과 오디오 동기는 이 카드에서 측정하지 않았고, 저장소 단위 테스트는 Player 를 모의 객체로 대체합니다(실브라우저 e2e 는 수동 실행용입니다). 라이선스 자격은 저장소로 확인할 수 없습니다.",
-        "Both 'the website does not use Remotion' and 'everything is composed live' are wrong: only the 8-minute tour player composes live. Frame performance and audio sync on real devices were not measured for this card, and the repository's unit tests replace the Player with a mock (the real-browser e2e is run manually). License eligibility cannot be confirmed from the repository.",
+        "'웹사이트는 Remotion 을 쓰지 않는다'도, '전부 실시간 합성이다'도 틀립니다. 실시간은 9분 투어 재생기뿐입니다. 실기기의 프레임 성능과 오디오 동기는 이 카드에서 측정하지 않았고, 저장소 단위 테스트는 Player 를 모의 객체로 대체합니다(실브라우저 e2e 는 수동 실행용입니다). 라이선스 자격은 저장소로 확인할 수 없습니다.",
+        "Both 'the website does not use Remotion' and 'everything is composed live' are wrong: only the 9-minute tour player composes live. Frame performance and audio sync on real devices were not measured for this card, and the repository's unit tests replace the Player with a mock (the real-browser e2e is run manually). License eligibility cannot be confirmed from the repository.",
       ),
     },
     technologies: ["Remotion", "Remotion Player", "React", "H.264", "ffmpeg"],
     facts: [
-      { value: "504 s × 30 fps", label: t("8분 24초 투어의 길이와 프레임률 (= 15,120프레임)", "Length and frame rate of the 8m 24s tour (= 15,120 frames)"), source: "packages/product-tour-film/src/ProductTourFilm.tsx" },
+      { value: "558 s × 30 fps", label: t("9분 18초 투어의 길이와 프레임률 (= 16,740프레임)", "Length and frame rate of the 9m 18s tour (= 16,740 frames)"), source: "packages/product-tour-film/src/ProductTourFilm.tsx" },
       { value: "720", label: t("24초 브랜드 필름 한 편의 프레임 수 (30fps)", "Frames in one 24-second brand film (30 fps)"), source: `${FILM_TOOLS}/src/index.tsx` },
       { value: "4.0.514", label: t("remotion·@remotion/player 고정 버전", "Pinned remotion and @remotion/player version"), source: "package.json" },
     ],
@@ -234,8 +234,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
         "Captions are never written separately by hand. From one narration cue spec (product-tour-narration.json: the start time and the Korean and English sentence of each of 27 cues) a synthesized voice is made per cue, the real speech length is measured to set each end time, and the Korean and English VTT files are written together. An end time never passes 0.35 seconds before the next cue. The same cues also go out as a player module (product-tour-audio.generated.ts) that draws captions while Remotion plays. The generator's --check fails when a VTT no longer matches the spec, which catches stale captions.",
       ),
       t(
-        "재생 경로마다 자막이 나오는 방식이 다릅니다. MP4 호환 재생기(한·영 두 트랙)와 24초 브랜드 필름(4큐)은 <track> 과 textTracks 로 브라우저 자막을 쓰고, 8분 투어의 기본 Remotion 재생기는 영상 위에 글자를 직접 그리는 방식이라 <track> 을 쓰지 않습니다. 영상 밖에서 읽을 수 있는 것은 챕터별 요약 대본입니다.",
-        "Each playback path shows captions differently. The compatibility MP4 player (two tracks) and the 24-second brand film (four cues) use <track> and textTracks for browser captions, while the default Remotion player of the 8-minute tour draws the text onto the picture itself and does not use <track>. What can be read outside the video is a chapter-by-chapter outline.",
+        "재생 경로마다 자막이 나오는 방식이 다릅니다. MP4 호환 재생기(한·영 두 트랙)와 24초 브랜드 필름(4큐)은 <track> 과 textTracks 로 브라우저 자막을 쓰고, 9분 투어의 기본 Remotion 재생기는 영상 위에 글자를 직접 그리는 방식이라 <track> 을 쓰지 않습니다. 영상 밖에서 읽을 수 있는 것은 챕터별 요약 대본입니다.",
+        "Each playback path shows captions differently. The compatibility MP4 player (two tracks) and the 24-second brand film (four cues) use <track> and textTracks for browser captions, while the default Remotion player of the 9-minute tour draws the text onto the picture itself and does not use <track>. What can be read outside the video is a chapter-by-chapter outline.",
       ),
       t(
         "한계가 둘 있습니다. 첫째, Remotion 경로의 자막은 aria-hidden 으로 화면에만 그려져 스크린 리더에는 읽히지 않고, 챕터 요약 대본이 있을 뿐 내레이션 전문을 글로 제공하지는 않습니다. 둘째, 합성 음성은 macOS 의 say 로만 다시 만들 수 있어 다른 환경에서는 --check 로 확인만 되고, 자막과 소리의 싱크는 생성 때 잰 길이에 의존하며 사람이 끝까지 시청해 확인한 기록은 이 카드에 없습니다.",
@@ -576,7 +576,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     facts: [
       { value: "32 MiB", label: t("영상 준비 한도 (TOUR_VIDEO_MAX_BYTES)", "Video preparation limit (TOUR_VIDEO_MAX_BYTES)"), source: `${MARKETING}/seekable-media-asset.ts` },
       { value: "12 MiB", label: t("오디오 준비 한도 (TOUR_AUDIO_MAX_BYTES)", "Audio preparation limit (TOUR_AUDIO_MAX_BYTES)"), source: `${MARKETING}/seekable-media-asset.ts` },
-      { value: "23,469,745 B", label: t("8분 투어 MP4 크기 (약 22.4MiB)", "Size of the 8-minute tour MP4 (about 22.4 MiB)"), source: `${MARKETING}/product-tour-asset.generated.ts` },
+      { value: "28,398,836 B", label: t("9분 투어 MP4 크기 (약 27.1MiB)", "Size of the 9-minute tour MP4 (about 27.1 MiB)"), source: `${MARKETING}/product-tour-asset.generated.ts` },
     ],
     reviewedAt: "2026-10-08",
   },
@@ -595,12 +595,12 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     ),
     background: [
       t(
-        "검색엔진은 페이지 안의 영상이 얼마나 긴지, 어떤 장면이 있는지 글자만 보고는 알기 어렵습니다. JSON-LD 는 '이 페이지에는 8분 24초짜리 영상이 있고 챕터는 이렇습니다'를 schema.org 어휘로 적어 두는 JSON 형식의 명찰입니다. 검색엔진이 영상 결과에 길이·썸네일·주요 장면을 보여 주도록 돕지만, 실제로 보여 줄지는 검색엔진이 정합니다.",
+        "검색엔진은 페이지 안의 영상이 얼마나 긴지, 어떤 장면이 있는지 글자만 보고는 알기 어렵습니다. JSON-LD 는 '이 페이지에는 9분 18초짜리 영상이 있고 챕터는 이렇습니다'를 schema.org 어휘로 적어 두는 JSON 형식의 명찰입니다. 검색엔진이 영상 결과에 길이·썸네일·주요 장면을 보여 주도록 돕지만, 실제로 보여 줄지는 검색엔진이 정합니다.",
         "Search engines can hardly tell from the text alone how long a video on a page is or what scenes it has. JSON-LD is a name tag in JSON that states, in the schema.org vocabulary, 'this page has an 8m 24s video with these chapters'. It helps search engines show length, thumbnail and key moments in video results, but whether they actually do is up to them.",
       ),
       t(
-        "투어 페이지는 VideoObject 하나에 이름·설명·썸네일·MP4 주소·재생 시간·언어를 담고, 챕터 9개를 hasPart 의 Clip(시작·끝 초와 ?t= 딥링크)으로 적습니다. 재생 시간은 영상 길이(504초)에서 계산한 PT8M24S 라 영상이 바뀌면 함께 바뀝니다. 브랜드 필름 페이지는 챕터 없이 VideoObject 만 넣습니다. useJsonLd 훅이 <script type=application/ld+json> 을 <head> 에 넣고 화면을 떠나면 지우며, 문자열 속 '<' 는 \\u003c 로 바꿔 </script> 로 태그가 일찍 닫히는 일을 막습니다.",
-        "The tour page puts the name, description, thumbnail, MP4 address, duration and language in one VideoObject, and lists the nine chapters as Clip entries of hasPart (start and end seconds plus a ?t= deep link). The duration PT8M24S is computed from the video length (504 seconds), so it changes with the video. The brand film page adds a VideoObject without chapters. The useJsonLd hook adds <script type=application/ld+json> to <head> and removes it when the page is left; a '<' inside the string is turned into \\u003c so </script> cannot close the tag early.",
+        "투어 페이지는 VideoObject 하나에 이름·설명·썸네일·MP4 주소·재생 시간·언어를 담고, 챕터 10개를 hasPart 의 Clip(시작·끝 초와 ?t= 딥링크)으로 적습니다. 재생 시간은 영상 길이(558초)에서 계산한 PT9M18S 라 영상이 바뀌면 함께 바뀝니다. 브랜드 필름 페이지는 챕터 없이 VideoObject 만 넣습니다. useJsonLd 훅이 <script type=application/ld+json> 을 <head> 에 넣고 화면을 떠나면 지우며, 문자열 속 '<' 는 \\u003c 로 바꿔 </script> 로 태그가 일찍 닫히는 일을 막습니다.",
+        "The tour page puts the name, description, thumbnail, MP4 address, duration and language in one VideoObject, and lists the ten chapters as Clip entries of hasPart (start and end seconds plus a ?t= deep link). The duration PT9M18S is computed from the video length (558 seconds), so it changes with the video. The brand film page adds a VideoObject without chapters. The useJsonLd hook adds <script type=application/ld+json> to <head> and removes it when the page is left; a '<' inside the string is turned into \\u003c so </script> cannot close the tag early.",
       ),
       t(
         "중요한 한계가 있습니다. 이 JSON-LD 는 서버가 내려 주는 HTML 에 없고, 브라우저가 앱을 실행한 뒤에야 생깁니다. 2026-10-08 운영 /product-tour 의 정적 HTML(11,820바이트)에는 사이트 공통 그래프(WebSite·SoftwareApplication·Organization)만 있고 VideoObject 는 없었습니다. JS 를 실행하지 않는 크롤러는 이 정보를 못 보며, 같은 이유로 메신저 링크 미리보기(OG)도 홈 카드로 나올 수 있습니다. 엣지 Worker 가 크롤러에게 경로별 메타를 주는 목록(isOgPagePath)에도 두 영상 경로는 없습니다.",
@@ -612,8 +612,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
       ),
     ],
     keyPoints: [
-      t("VideoObject 와 챕터 Clip 9개를 JSON-LD 로 선언", "VideoObject plus nine chapter Clips declared in JSON-LD"),
-      t("재생 시간 PT8M24S 는 영상 길이(504초)에서 계산", "The duration PT8M24S is computed from the 504-second length"),
+      t("VideoObject 와 챕터 Clip 10개를 JSON-LD 로 선언", "VideoObject plus ten chapter Clips declared in JSON-LD"),
+      t("재생 시간 PT9M18S 는 영상 길이(558초)에서 계산", "The duration PT9M18S is computed from the 558-second length"),
       t("정적 HTML 이 아니라 JS 실행 뒤 <head> 에 주입", "Added to <head> after JS runs, not present in static HTML"),
       t("검색 노출 효과는 검증하지 못했다", "The effect on search results was not verified"),
     ],
@@ -639,7 +639,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
         { from: "crawler", to: "host", label: t("GET /product-tour", "GET /product-tour") },
         { from: "host", to: "crawler", label: t("공통 HTML 셸 (VideoObject 없음)", "Shared HTML shell (no VideoObject)"), style: "dashed", note: t("WebSite·Organization 그래프만", "only the WebSite and Organization graph") },
         { from: "crawler", to: "app", label: t("JS 를 실행해 화면을 그림", "Run JS and render the page"), note: t("JS 를 실행하는 크롤러만 도달", "only crawlers that execute JS get here") },
-        { from: "app", to: "app", label: t("투어 데이터로 JSON 조립", "Assemble JSON from tour data"), note: t("PT8M24S · Clip 9개", "PT8M24S and nine Clips") },
+        { from: "app", to: "app", label: t("투어 데이터로 JSON 조립", "Assemble JSON from tour data"), note: t("PT9M18S · Clip 10개", "PT9M18S and ten Clips") },
         { from: "app", to: "head", label: t("script type=ld+json 추가", "Add script type=ld+json") },
         { from: "head", to: "crawler", label: t("VideoObject 읽기", "Read the VideoObject"), style: "dashed" },
         { from: "app", to: "head", label: t("화면을 떠나면 제거", "Removed when the page is left"), style: "dashed" },
@@ -648,7 +648,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     usage: [
       {
         feature: t("제품 투어 페이지의 영상 정보", "Video data of the product tour page"),
-        role: t("VideoObject 에 이름·설명·썸네일·MP4 주소·재생 시간을 넣고 챕터 9개를 Clip 으로 적습니다. 재생 시간은 PRODUCT_TOUR.duration 에서 ISO 8601 로 계산합니다.", "Puts name, description, thumbnail, MP4 address and duration in a VideoObject and lists the nine chapters as Clips. The duration is computed from PRODUCT_TOUR.duration as ISO 8601."),
+        role: t("VideoObject 에 이름·설명·썸네일·MP4 주소·재생 시간을 넣고 챕터 10개를 Clip 으로 적습니다. 재생 시간은 PRODUCT_TOUR.duration 에서 ISO 8601 로 계산합니다.", "Puts name, description, thumbnail, MP4 address and duration in a VideoObject and lists the ten chapters as Clips. The duration is computed from PRODUCT_TOUR.duration as ISO 8601."),
         paths: [`${MARKETING}/ProductTourPage.tsx`, `${MARKETING}/product-tour-content.ts#productTourIsoDuration`, "apps/web/src/shared/seo/use-document-title.ts#useJsonLd"],
         route: "/product-tour",
       },
@@ -672,7 +672,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
         ...sampleSource([
           ["interface Chapter { readonly start: number; readonly end: number; readonly name: string }"],
           [""],
-          ["/** 504 → PT8M24S, 24 → PT24S (ISO 8601 기간) */"],
+          ["/** 558 → PT9M18S, 24 → PT24S (ISO 8601 기간) */"],
           ["export function isoDuration(totalSeconds: number): string {"],
           ["  const hours = Math.floor(totalSeconds / 3600);"],
           ["  const minutes = Math.floor((totalSeconds % 3600) / 60);"],
@@ -725,8 +725,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     chapterIds: ["delivery", "share-distribution-boundary"],
     talk: {
       pitch: t(
-        "영상 페이지는 길이, 썸네일, 챕터를 JSON-LD 라는 명찰로 선언합니다. 투어는 재생 시간을 영상 길이 504초에서 계산해 PT8M24S 로 적고, 챕터 9개를 Clip 으로 붙입니다. 다만 이 명찰은 서버가 주는 HTML 이 아니라 앱이 실행된 뒤 head 에 생기므로 JS 를 실행하는 크롤러만 읽을 수 있고, 검색 결과에 실제로 반영되는지는 확인하지 못했습니다.",
-        "Video pages declare length, thumbnail and chapters in a name tag called JSON-LD. The tour computes the duration from the 504-second video length and writes it as PT8M24S, and attaches the nine chapters as Clips. But this tag appears in head after the app runs rather than in the HTML the server sends, so only crawlers that execute JavaScript can read it, and whether it shows up in search results was not verified.",
+        "영상 페이지는 길이, 썸네일, 챕터를 JSON-LD 라는 명찰로 선언합니다. 투어는 재생 시간을 영상 길이 558초에서 계산해 PT9M18S 로 적고, 챕터 10개를 Clip 으로 붙입니다. 다만 이 명찰은 서버가 주는 HTML 이 아니라 앱이 실행된 뒤 head 에 생기므로 JS 를 실행하는 크롤러만 읽을 수 있고, 검색 결과에 실제로 반영되는지는 확인하지 못했습니다.",
+        "Video pages declare length, thumbnail and chapters in a name tag called JSON-LD. The tour computes the duration from the 558-second video length and writes it as PT9M18S, and attaches the ten chapters as Clips. But this tag appears in head after the app runs rather than in the HTML the server sends, so only crawlers that execute JavaScript can read it, and whether it shows up in search results was not verified.",
       ),
       analogy: t(
         "택배 상자에 붙인 송장입니다. 상자를 열지 않고도 내용물(영상 길이·챕터)을 읽을 수 있게 겉에 적어 두지만, 송장을 읽을지는 택배 기사(검색엔진)에게 달려 있습니다.",
@@ -748,10 +748,10 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
           ),
         },
         {
-          question: t("PT8M24S 는 무슨 뜻인가요?", "What does PT8M24S mean?"),
+          question: t("PT9M18S 는 무슨 뜻인가요?", "What does PT9M18S mean?"),
           answer: t(
-            "ISO 8601 기간 표기로 8분 24초입니다(P=기간, T=시간 부분 시작, M=분, S=초). 504초에서 계산해 영상 길이가 바뀌면 같이 바뀝니다.",
-            "It is the ISO 8601 duration notation for 8 minutes 24 seconds (P = period, T = start of the time part, M = minutes, S = seconds). It is computed from 504 seconds and changes with the video length.",
+            "ISO 8601 기간 표기로 9분 18초입니다(P=기간, T=시간 부분 시작, M=분, S=초). 558초에서 계산해 영상 길이가 바뀌면 같이 바뀝니다.",
+            "It is the ISO 8601 duration notation for 9 minutes 18 seconds (P = period, T = start of the time part, M = minutes, S = seconds). It is computed from 558 seconds and changes with the video length.",
           ),
         },
       ],
@@ -762,8 +762,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntr
     },
     technologies: ["JSON-LD", "schema.org", "VideoObject"],
     facts: [
-      { value: "9", label: t("JSON-LD 로 선언하는 투어 챕터(Clip) 수", "Tour chapters declared as Clips in JSON-LD"), source: `${MARKETING}/product-tour-content.ts` },
-      { value: "504 s", label: t("투어 길이 — PT8M24S 의 계산 원본", "Tour length, the source of PT8M24S"), source: `${MARKETING}/product-tour-content.ts` },
+      { value: "10", label: t("JSON-LD 로 선언하는 투어 챕터(Clip) 수", "Tour chapters declared as Clips in JSON-LD"), source: `${MARKETING}/product-tour-content.ts` },
+      { value: "558 s", label: t("투어 길이 — PT9M18S 의 계산 원본", "Tour length, the source of PT9M18S"), source: `${MARKETING}/product-tour-content.ts` },
     ],
     reviewedAt: "2026-10-08",
   },

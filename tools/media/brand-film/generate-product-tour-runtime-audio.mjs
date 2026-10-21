@@ -23,7 +23,7 @@ const publicNarration = resolve(publicDirectory, "toonstudio-product-tour-narrat
 const publicBgm = resolve(publicDirectory, "toonstudio-product-tour-bgm.m4a");
 const publicManifest = resolve(publicDirectory, "product-tour-audio.json");
 const generatedModule = resolve(root, "apps/web/src/domains/marketing/product-tour-audio.generated.ts");
-const duration = 504;
+const duration = 558;
 const checkOnly = process.argv.includes("--check");
 
 function run(command, args, { capture = false } = {}) {
@@ -121,9 +121,9 @@ function buildBgm() {
   const filter = [
     "[0:a]atrim=start=0:end=240,asetpts=PTS-STARTPTS[score_a]",
     "[1:a]atrim=start=0:end=180,asetpts=PTS-STARTPTS[score_b]",
-    "[0:a]atrim=start=120:end=210,asetpts=PTS-STARTPTS[score_c]",
+    "[0:a]atrim=start=30:end=240,asetpts=PTS-STARTPTS[score_c]",
     "[score_a][score_b]acrossfade=d=3:c1=tri:c2=tri[score_ab]",
-    "[score_ab][score_c]acrossfade=d=3:c1=tri:c2=tri,afade=t=in:st=0:d=2,afade=t=out:st=500:d=4,loudnorm=I=-18:TP=-1.5:LRA=8,apad=whole_dur=504,atrim=duration=504[out]",
+    "[score_ab][score_c]acrossfade=d=3:c1=tri:c2=tri,afade=t=in:st=0:d=2,afade=t=out:st=554:d=4,loudnorm=I=-18:TP=-1.5:LRA=8,apad=whole_dur=558,atrim=duration=558[out]",
   ].join(";");
   try {
     run("ffmpeg", [

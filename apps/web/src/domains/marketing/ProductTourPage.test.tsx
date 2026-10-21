@@ -50,8 +50,8 @@ function pathnameOf(href: string): string {
 
 describe("long-form product tour contracts", () => {
   it("keeps the walkthrough intentionally long and chaptered", () => {
-    expect(PRODUCT_TOUR.duration).toBe(504);
-    expect(PRODUCT_TOUR.chapters).toHaveLength(9);
+    expect(PRODUCT_TOUR.duration).toBe(558);
+    expect(PRODUCT_TOUR.chapters).toHaveLength(10);
     expect(PRODUCT_TOUR.chapters[0].start).toBe(0);
     expect(PRODUCT_TOUR.chapters.at(-1)?.end).toBe(PRODUCT_TOUR.duration);
     expect(PRODUCT_TOUR.chapters.every((chapter, index) => index === 0 || chapter.start === PRODUCT_TOUR.chapters[index - 1].end)).toBe(true);
@@ -76,12 +76,12 @@ describe("long-form product tour contracts", () => {
     const aboutSource = readFileSync("apps/web/src/domains/legal/AboutPage.tsx", "utf8");
 
     expect(routeSource).toContain('path: "/product-tour"');
-    // 홈은 '처음 둘러보는 순서'의 다음 버튼과 '더 알아보기'로, 서비스 소개는 8분 제품 투어 버튼으로 투어에 닿는다.
+    // 홈은 '처음 둘러보는 순서'의 다음 버튼과 '더 알아보기'로, 서비스 소개는 9분 제품 투어 버튼으로 투어에 닿는다.
     expect(dashboard).toContain('<ServiceFlowNext current="home"');
     expect(homeContent).toContain('{ id: "tour", href: "/product-tour"');
-    expect(homeContent).toContain('{ href: "/product-tour", ko: "8분 제품 투어"');
+    expect(homeContent).toContain('{ href: "/product-tour", ko: "9분 제품 투어"');
     expect(aboutSource).toContain('href: "/product-tour"');
-    expect(aboutSource).toContain("8분 제품 투어 보기");
+    expect(aboutSource).toContain("9분 제품 투어 보기");
   });
 
   it("uses video metadata, chapter navigation and actual product surfaces", () => {
@@ -89,10 +89,10 @@ describe("long-form product tour contracts", () => {
     const playerSource = readFileSync(PLAYER_SOURCE, "utf8");
 
     expect(pageSource).toContain('"@type": "VideoObject"');
-    // 재생 시간(PT8M24S)은 문자열을 손으로 적지 않고 PRODUCT_TOUR.duration(504초)에서 계산한다 — 영상을 다시 렌더하면 함께 바뀐다.
+    // 재생 시간(PT9M18S)은 문자열을 손으로 적지 않고 PRODUCT_TOUR.duration(558초)에서 계산한다 — 영상을 다시 렌더하면 함께 바뀐다.
     expect(pageSource).toContain("duration: productTourIsoDuration(PRODUCT_TOUR.duration)");
-    expect(pageSource).not.toContain('"PT8M24S"');
-    expect(productTourIsoDuration(PRODUCT_TOUR.duration)).toBe("PT8M24S");
+    expect(pageSource).not.toContain('"PT9M18S"');
+    expect(productTourIsoDuration(PRODUCT_TOUR.duration)).toBe("PT9M18S");
     expect(pageSource).toContain("product-tour-page__journey-grid");
     expect(pageSource).toContain("controllerRef={playerController}");
     expect(pageSource).toContain("chapter.feature.href");
@@ -178,9 +178,8 @@ describe("long-form product tour contracts", () => {
     }
   });
 
-  it("adds the virtual studio and production board as features that are not in the tour", () => {
+  it("adds the production board as a feature that is not in the tour (the virtual studio became a chapter)", () => {
     expect(PRODUCT_TOUR_ADDITIONS.map((item) => [item.id, pathnameOf(item.href)])).toEqual([
-      ["virtual-studio", "/studio/space"],
       ["production-board", "/production/projects/sample-project/production"],
     ]);
     const tourFeatures = PRODUCT_TOUR.chapters.map((chapter) => pathnameOf(chapter.feature.href));
@@ -197,7 +196,7 @@ describe("long-form product tour contracts", () => {
     const rootSource = readFileSync(REMOTION_ROOT, "utf8");
 
     expect(bridgeSource).toContain("@toonstudio/product-tour-film");
-    expect(filmSource).toContain("PRODUCT_TOUR_DURATION_SECONDS = 504");
+    expect(filmSource).toContain("PRODUCT_TOUR_DURATION_SECONDS = 558");
     expect(filmSource).toContain("PRODUCT_TOUR_FPS = 30");
     expect(rootSource).toContain('id="ToonStudioProductTour"');
     expect(rootSource).toContain("PRODUCT_TOUR_DURATION_SECONDS * PRODUCT_TOUR_FPS");
@@ -237,8 +236,8 @@ describe("long-form product tour contracts", () => {
 
     expect(manifest).toEqual(PRODUCT_TOUR_RUNTIME_AUDIO);
     expect(manifest.version).toBe(1);
-    expect(manifest.duration).toBe(504);
-    expect(manifest.cues).toHaveLength(27);
+    expect(manifest.duration).toBe(558);
+    expect(manifest.cues).toHaveLength(30);
     expect(manifest.narration.src).toMatch(/\?v=[a-f0-9]{16}$/u);
     expect(manifest.bgm.src).toMatch(/\?v=[a-f0-9]{16}$/u);
     expect(manifest.narration.bytes).toBe(narration.byteLength);
@@ -278,8 +277,8 @@ describe("long-form product tour contracts", () => {
       const cueLines = captions
         .split(/\r?\n/u)
         .filter((line) => line.includes(" --> "));
-      expect(cueLines).toHaveLength(27);
-      expect(captions).toContain("00:08:16.000");
+      expect(cueLines).toHaveLength(30);
+      expect(captions).toContain("00:09:10.000");
     }
   });
 
@@ -319,10 +318,10 @@ describe("product tour: lengths are derived and the copy stays honest", () => {
     expect(ko.eyebrow).toBe(`PRODUCT TOUR · ${formatProductTourTime(PRODUCT_TOUR.duration)}`);
     expect(ko.metaDescription).toContain(formatProductTourDuration(PRODUCT_TOUR.duration, "ko"));
     expect(en.metaDescription).toContain(formatProductTourDuration(PRODUCT_TOUR.duration, "en"));
-    // 스크린 리더는 "8:24" 를 길이로 읽지 못하므로 말로 읽히는 길이를 따로 둔다.
-    expect(ko.eyebrowSr).toContain("8분 24초");
-    expect(en.eyebrowSr).toContain("8 minutes 24 seconds");
-    // 제목의 "8분 안에" 는 반올림한 표현이다. 영상 길이가 바뀌어 분이 달라지면 이 문구를 다시 검토하도록 잠근다.
+    // 스크린 리더는 "9:18" 을 길이로 읽지 못하므로 말로 읽히는 길이를 따로 둔다.
+    expect(ko.eyebrowSr).toContain("9분 18초");
+    expect(en.eyebrowSr).toContain("9 minutes 18 seconds");
+    // 제목의 "9분 안에" 는 반올림한 표현이다. 영상 길이가 바뀌어 분이 달라지면 이 문구를 다시 검토하도록 잠근다.
     expect(ko.title[1]).toContain(`${Math.floor(PRODUCT_TOUR.duration / 60)}분`);
     expect(en.title[1]).toContain(`${Math.floor(PRODUCT_TOUR.duration / 60)} minutes`);
   });
@@ -343,7 +342,7 @@ describe("product tour: lengths are derived and the copy stays honest", () => {
     expect(PRODUCT_TOUR_COPY.ko.facts[2]).toContain("AI 생성");
     expect(PRODUCT_TOUR_COPY.en.facts[2]).toContain("Synthesized");
     expect(PRODUCT_TOUR_COPY.en.facts[2]).toContain("AI-generated");
-    expect(PRODUCT_TOUR_RUNTIME_AUDIO.narration.voice.provider).toBe("macOS speech synthesis");
+    expect(PRODUCT_TOUR_RUNTIME_AUDIO.narration.voice.provider).toBe("Meta AI");
     expect(PRODUCT_TOUR_RUNTIME_AUDIO.narration.disclosure.ko).toContain("합성 음성");
     // 배경음은 사이트 오리지널 OST 15곡 중 2곡이다. 믹스 스크립트가 읽는 곡이 정확히 둘이어야 화면의 "2곡" 이 맞다.
     const mix = readFileSync("tools/media/brand-film/mix-product-tour-audio.mjs", "utf8");

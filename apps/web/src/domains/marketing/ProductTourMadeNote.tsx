@@ -10,15 +10,15 @@ import {
 
 /**
  * 투어 하단의 접힌 기술 노트: 이 영상이 어떻게 만들어지고 재생되는지 네 줄로 정리한다.
- * 사실은 코드로 확인한 것만 적는다 — 8분 투어는 웹앱이 Remotion 을 직접 가져와 합성하고, 24초 브랜드 필름은 사전 렌더 MP4 다.
+ * 사실은 코드로 확인한 것만 적는다 — 9분 투어는 웹앱이 Remotion 을 직접 가져와 합성하고, 24초 브랜드 필름은 사전 렌더 MP4 다.
  * Remotion 라이선스 자격은 저장소로 확인할 수 없다고만 적고 법률 판단은 하지 않는다.
  */
 export function ProductTourMadeNote() {
   const bi = useBilingualLocalizer("domains.marketing.ProductTourMadeNote");
   const lines: readonly string[] = [
     bi(
-      "8분 투어는 웹앱이 remotion·@remotion/player 와 공유 컴포지션(@toonstudio/product-tour-film)을 직접 가져와 <Player> 로 브라우저에서 실시간 합성합니다. 같은 컴포지션을 MP4 로도 렌더해 ‘호환 재생’(?player=mp4)으로 제공합니다.",
-      "The 8-minute tour is composed live in the browser: the web app imports remotion, @remotion/player and the shared composition (@toonstudio/product-tour-film) and plays it with <Player>. The same composition is also rendered to MP4 and offered as ‘Compatibility playback’ (?player=mp4).",
+      "9분 투어는 웹앱이 remotion·@remotion/player 와 공유 컴포지션(@toonstudio/product-tour-film)을 직접 가져와 <Player> 로 브라우저에서 실시간 합성합니다. 같은 컴포지션을 MP4 로도 렌더해 ‘호환 재생’(?player=mp4)으로 제공합니다.",
+      "The 9-minute tour is composed live in the browser: the web app imports remotion, @remotion/player and the shared composition (@toonstudio/product-tour-film) and plays it with <Player>. The same composition is also rendered to MP4 and offered as ‘Compatibility playback’ (?player=mp4).",
     ),
     bi(
       "24초 브랜드 필름은 미리 렌더한 MP4(가로·세로·정사각 3종)이고, 웹앱은 컴포지션을 가져오지 않고 파일로만 서빙합니다.",

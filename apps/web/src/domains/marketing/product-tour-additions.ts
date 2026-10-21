@@ -1,12 +1,14 @@
 import type { ProductTourLink, ProductTourVisual } from "./product-tour-content";
 
 /**
- * 8분 투어 제작 이후 더해진 핵심 기능. 영상에는 나오지 않으므로 화면에 '영상에 없음'으로 표기하고,
+ * 제품 투어 제작 이후 더해진 핵심 기능. 영상에는 나오지 않으므로 화면에 '영상에 없음'으로 표기하고,
  * 이미지가 실제 화면 캡처인지 개념 이미지인지 visual로 구분한다.
+ * 가상 스튜디오는 2026-10-21 투어 개정으로 챕터가 됐으므로 이 목록에서 뺐다 —
+ * 챕터와 이 목록에 같은 기능을 두 번 싣지 않는다.
  * 모든 href는 등록된 라우트여야 한다(marketing-destinations.test).
  */
 export interface ProductTourAddition {
-  readonly id: "virtual-studio" | "production-board";
+  readonly id: "production-board";
   readonly href: string;
   readonly image: string;
   readonly imageWidth: number;
@@ -18,25 +20,6 @@ export interface ProductTourAddition {
 }
 
 export const PRODUCT_TOUR_ADDITIONS: readonly ProductTourAddition[] = [
-  {
-    id: "virtual-studio",
-    href: "/studio/space",
-    image: "/assets/virtual-studio/cinematic-v9/campus-social-1024.webp",
-    imageWidth: 1024,
-    imageHeight: 576,
-    visual: "concept",
-    ko: {
-      title: "가상 스튜디오",
-      body: "내 캐릭터로 공간을 걷고, 가까이 다가가 대화하고, 팀과 같은 작업실에 모여 함께 작업합니다.",
-      action: "가상 스튜디오 입장",
-    },
-    en: {
-      title: "Virtual studio",
-      body: "Walk the space as your character, talk when you come close, and gather with the team in one shared studio.",
-      action: "Enter the virtual studio",
-    },
-    secondary: { href: "/collaborate", ko: "함께할 사람 찾기", en: "Find collaborators" },
-  },
   {
     id: "production-board",
     // 07장은 제작 관리 홈(/production)을 보여 준다. 공정 보드는 그 뒤에 더해진 샘플 프로젝트 화면이다.

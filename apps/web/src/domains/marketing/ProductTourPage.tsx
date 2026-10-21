@@ -224,6 +224,7 @@ export function ProductTourPage() {
       <section className="mk-shell product-tour__next" aria-label={bi("이어서 보기", "Keep exploring")}>
         <ServiceFlowNext current="tour" />
         <div className="product-tour__next-links">
+          <Link className="mk-link" href="/ir">{copy.irDeck}<ArrowRight size={14} aria-hidden="true" /></Link>
           <Link className="mk-link" href="/brand-film">{copy.brandFilm}<ArrowRight size={14} aria-hidden="true" /></Link>
           <Link className="mk-link" href="/features">{copy.nextFeatures}<ArrowRight size={14} aria-hidden="true" /></Link>
           <Link className="mk-link" href="/about/workflow">{copy.nextWorkflow}<ArrowRight size={14} aria-hidden="true" /></Link>
