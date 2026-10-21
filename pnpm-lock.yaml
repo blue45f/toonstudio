@@ -918,11 +918,11 @@ importers:
   packages/product-tour-film:
     dependencies:
       react:
-        specifier: ^19.2.0
-        version: 19.2.7
+        specifier: ^19.3.1
+        version: 19.3.1
       remotion:
         specifier: 4.0.536
-        version: 4.0.536(react-dom@19.3.1(react@19.2.7))(react@19.2.7)
+        version: 4.0.536(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
 
   packages/studio-brush-platform:
     dependencies:
@@ -8073,10 +8073,6 @@ packages:
     peerDependenciesMeta:
       react-dom:
         optional: true
-
-  react@19.2.7:
-    resolution: {integrity: sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ==}
-    engines: {node: '>=0.10.0'}
 
   react@19.3.1:
     resolution: {integrity: sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==}
@@ -16360,11 +16356,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  react-dom@19.3.1(react@19.2.7):
-    dependencies:
-      react: 19.2.7
-      scheduler: 0.28.0
-
   react-dom@19.3.1(react@19.3.1):
     dependencies:
       react: 19.3.1
@@ -16442,8 +16433,6 @@ snapshots:
     optionalDependencies:
       react-dom: 19.3.1(react@19.3.1)
 
-  react@19.2.7: {}
-
   react@19.3.1: {}
 
   read-pkg@10.1.0:
@@ -16505,11 +16494,6 @@ snapshots:
       get-proto: 1.0.1
       gopd: 1.2.0
       set-function-name: 2.0.2
-
-  remotion@4.0.536(react-dom@19.3.1(react@19.2.7))(react@19.2.7):
-    dependencies:
-      react: 19.2.7
-      react-dom: 19.3.1(react@19.2.7)
 
   remotion@4.0.536(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
