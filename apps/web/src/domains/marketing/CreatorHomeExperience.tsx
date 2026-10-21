@@ -4,6 +4,7 @@ import { ReferenceCreatorDashboard } from "./ReferenceCreatorDashboard";
 import { useCreatorHomeSectionNavigation } from "./use-creator-home-section-navigation";
 import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 import { useTheme } from "@/shared/lib/theme";
+import { useI18n } from "@/shared/lib/i18n";
 import { usePathname } from "@/shared/navigation/navigation";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cx } from "@/shared/lib/cx";
@@ -26,6 +27,7 @@ export function CreatorHomeExperience() {
   const pathname = trimTrailingSlashes(usePathname()).toLowerCase();
   const introduction = pathname === "/about/studio";
   const resolvedTheme = useTheme((state) => state.resolvedTheme);
+  const language = useI18n((state) => state.lang);
 
   return (
     <div
@@ -35,6 +37,7 @@ export function CreatorHomeExperience() {
       data-theme-art={resolvedTheme}
       data-product-direction="planning-to-publishing"
       data-home-view={introduction ? "introduction" : "dashboard"}
+      lang={language}
     >
       {!introduction && <ReferenceCreatorDashboard />}
       {introduction ? (
