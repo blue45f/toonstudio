@@ -3,11 +3,13 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL,
   STUDIO_BG3D_BUNDLE_THEME_PACKS_URL,
   countStudioBg3dBundlePackDeferred,
   findStudioBg3dBundleAsset,
   findStudioBg3dBundleAssetByHash,
   isStudioBg3dBundleAssetId,
+  loadStudioBg3dBundleDeployAvailability,
   loadStudioBg3dBundleThemePacks,
   parseStudioBg3dBundleThemePacks,
   resetStudioBg3dBundleThemePacksCache,
@@ -153,6 +155,39 @@ describe("loadStudioBg3dBundleThemePacks + lookups", () => {
     const asset = findStudioBg3dBundleAsset("cbv1-ingest-test-001");
     if (!asset) throw new Error("fixture asset missing");
     expect(studioBg3dBundleAssetUrl(asset, data)).toBe("/assets/studio/bundle-v2/test-pack/My%20Scene%20%231.glb");
+  });
+});
+
+describe("loadStudioBg3dBundleDeployAvailability", () => {
+  const data = parseStudioBg3dBundleThemePacks(validRawThemePacks());
+  const indexFetcher = (body: unknown, ok = true) => async (input: RequestInfo | URL) => {
+    expect(String(input)).toBe(STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL);
+    return { ok, status: ok ? 200 : 404, json: async () => body };
+  };
+
+  it("is available only when the deploy index matches the theme-pack totals", async () => {
+    const matching = {
+      schema: "toonstudio.bundle-v2-deploy-index.v1", version: 1, files: 1, bytes: 128, packs: 1,
+    };
+    await expect(loadStudioBg3dBundleDeployAvailability(data, { fetcher: indexFetcher(matching) }))
+      .resolves.toBe("available");
+    await expect(loadStudioBg3dBundleDeployAvailability(data, {
+      fetcher: indexFetcher({ ...matching, files: 2 }),
+    })).resolves.toBe("unavailable");
+    await expect(loadStudioBg3dBundleDeployAvailability(data, {
+      fetcher: indexFetcher({ ...matching, bytes: 129 }),
+    })).resolves.toBe("unavailable");
+    await expect(loadStudioBg3dBundleDeployAvailability(data, {
+      fetcher: indexFetcher({ ...matching, schema: "other" }),
+    })).resolves.toBe("unavailable");
+  });
+
+  it("treats a missing index and fetch failures as unavailable, never available", async () => {
+    await expect(loadStudioBg3dBundleDeployAvailability(data, { fetcher: indexFetcher(null, false) }))
+      .resolves.toBe("unavailable");
+    const throwing = async () => { throw new Error("network down"); };
+    await expect(loadStudioBg3dBundleDeployAvailability(data, { fetcher: throwing }))
+      .resolves.toBe("unavailable");
   });
 });
 

@@ -304,6 +304,12 @@ export function bindStudioBg3dEditorSceneGraph(h) {
         onSurfacePreview={
           measurementActive ? handleMeasurementSurfacePreview : undefined
         }
+        onPaintPointer={
+          // 2단계(GLB 텍스처 페인트) 호스트 핸들러가 있을 때만 연결한다 — 없으면 기존 동선 그대로.
+          typeof h.handleModelTexturePaintPointer === "function"
+            ? h.handleModelTexturePaintPointer
+            : undefined
+        }
         registerRef={registerPrimitiveRef}
         registerAnimationTime={registerModelAnimationTime}
         registerRigBake={registerModelRigBake}

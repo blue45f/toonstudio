@@ -6,7 +6,8 @@ import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document";
  * 연결 복제(linked clone) 규칙 — 순수 함수 모듈.
  *
  * 연결 복제는 원본과 "외형"만 공유한다: 프리미티브는 color + materialOverride + texturePaint,
- * 모델은 materialOverride가 동기화 대상이다. 위치·회전·크기(transform), 이름, 표시, 잠금, 계층은
+ * 모델은 materialOverride + modelTexturePaint(GLB 텍스처 페인트)가 동기화 대상이다.
+ * 위치·회전·크기(transform), 이름, 표시, 잠금, 계층은
  * 복제본마다 독립이다. 그림자 플래그는 런타임 타입이 들고 있지 않아(문서 층에서 상수 true로
  * 변환됨) 동기화 대상이 아니다.
  *
@@ -105,11 +106,18 @@ export function syncLinkedCloneAppearance(input: {
       changed = true;
       return { ...model, linkedSourceId: undefined };
     }
-    if (materialOverridesEqual(root.materialOverride, model.materialOverride)) return model;
+    if (
+      materialOverridesEqual(root.materialOverride, model.materialOverride)
+      // 모델 페인트도 불변 데이터로 취급한다 — 참조 동등으로 충분(프리미티브 페인트와 같은 계약).
+      && root.modelTexturePaint === model.modelTexturePaint
+    ) {
+      return model;
+    }
     changed = true;
     return {
       ...model,
       materialOverride: root.materialOverride ? { ...root.materialOverride } : undefined,
+      modelTexturePaint: root.modelTexturePaint,
     };
   });
 

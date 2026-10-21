@@ -62,6 +62,10 @@ import {
   type StudioBg3dPaintCanvas,
 } from "./studio-bg3d-texture-paint";
 import {
+  applyStudioBg3dGlbTexturePaint,
+  collectStudioBg3dGlbTexturePaintTargets,
+} from "./studio-bg3d-glb-texture-paint-three";
+import {
   createStudioBg3dThreeStaticInstanceBatch,
   type StudioBg3dThreeInstancingSuccess,
 } from "./studio-bg3d-three-instancing";
@@ -560,6 +564,12 @@ interface BgCustomModelMeshProps {
   onSelect: (id: string, isMulti: boolean) => void;
   onSurfacePick: (id: string, event: ThreeEvent<MouseEvent>) => boolean;
   onSurfacePreview?: (event: ThreeEvent<PointerEvent>) => void;
+  /**
+   * 표면 직접 그리기 2단계(GLB)에서만 주입된다. 프리미티브 페인트와 같은 계약이며,
+   * 교차의 대상 키 판정·획 확정은 studio-bg3d-glb-texture-paint-controller 세션이 맡는다.
+   * 주입되지 않으면 기존 선택/스냅 동선과 완전히 동일하게 동작한다.
+   */
+  onPaintPointer?: (id: string, event: ThreeEvent<PointerEvent>, phase: StudioBg3dPaintPointerPhase) => void;
   registerRef: (id: string, obj: THREE.Group | null) => void;
   registerAnimationTime: (id: string, reader: (() => number) | null) => void;
   registerRigBake: (id: string, reader: StudioBg3dRigBakeReader | null) => void;
@@ -584,7 +594,7 @@ function studioBg3dMatricesDiffer(
   );
 }
 
-export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, capturing, targetFps, lodBias, onSelect, onSurfacePick, onSurfacePreview, registerRef, registerAnimationTime, registerRigBake, onAnimationComplete, onCloneStatus, children }: BgCustomModelMeshProps) {
+export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, capturing, targetFps, lodBias, onSelect, onSurfacePick, onSurfacePreview, onPaintPointer, registerRef, registerAnimationTime, registerRigBake, onAnimationComplete, onCloneStatus, children }: BgCustomModelMeshProps) {
   // Geometry/textures stay cache-owned, while each render instance owns cloned materials so its
   // adjustments cannot leak into sibling placements or the verified source cache.
   const [editableClone, setEditableClone] = useState<StudioBg3dEditableThreeClone | null>(null);
@@ -656,6 +666,23 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
   useEffect(() => {
     editableClone?.applyMaterialOverride(instance.materialOverride);
   }, [editableClone, instance.materialOverride]);
+  // 표면 직접 그리기 2단계: 문서의 GLB 텍스처 페인트(획 벡터)를 편집 클론 재질에 합성 텍스처로
+  // 올린다. 재질 오버라이드 effect가 원본 재질을 다시 복사하면 map이 원본으로 돌아가므로,
+  // 선언 순서상 그 뒤에 두고 오버라이드 변경에도 다시 적용한다. 정리 시 원본 map으로 복원된다.
+  useEffect(() => {
+    if (!editableClone || !instance.modelTexturePaint) return;
+    const collection = collectStudioBg3dGlbTexturePaintTargets(editableClone.root);
+    if (collection.targets.length === 0) return;
+    const application = applyStudioBg3dGlbTexturePaint(
+      collection.targets,
+      instance.modelTexturePaint,
+    );
+    if (application.appliedTargetKeys.length === 0) {
+      application.dispose();
+      return;
+    }
+    return () => application.dispose();
+  }, [editableClone, instance.materialOverride, instance.modelTexturePaint]);
   useEffect(() => {
     animationRunRef.current?.mixer.stopAllAction();
     animationRunRef.current = null;
@@ -875,6 +902,12 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
   }, [instance.id, registerRef]);
 
   const visible = isBgObjectVisible(instance);
+  const handlePaintPointer = onPaintPointer
+    ? (phase: StudioBg3dPaintPointerPhase) => (event: ThreeEvent<PointerEvent>) => {
+        event.stopPropagation();
+        onPaintPointer(instance.id, event, phase);
+      }
+    : null;
 
   return (
     <group
@@ -890,7 +923,11 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
           if (onSurfacePick(instance.id, e)) return;
           onSelect(instance.id, e.shiftKey || e.metaKey || e.ctrlKey);
         },
-        onPointerMove: onSurfacePreview,
+        onPointerMove: (event: ThreeEvent<PointerEvent>) => {
+          onSurfacePreview?.(event);
+          if (event.buttons > 0) handlePaintPointer?.("move")(event);
+        },
+        ...(handlePaintPointer ? { onPointerDown: handlePaintPointer("down"), onPointerUp: handlePaintPointer("up") } : {}),
       } : {})}
     >
       {editableClone ? <primitive object={editableClone.root} /> : null}

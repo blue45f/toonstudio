@@ -7,6 +7,7 @@
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { useStudioBg3dInplaceTools } from "./useStudioBg3dInplaceTools";
 import { useStudioBg3dInferenceHost } from "./useStudioBg3dInferenceHost";
+import { useStudioBg3dGlbTexturePaintHost } from "./useStudioBg3dGlbTexturePaintHost";
 import { isStudioBg3dPhysicsTransientPhase } from "./studio-bg3d-physics-ui";
 import { useStudioBg3dEditorState } from "./useStudioBg3dEditorState";
 import { bindStudioBg3dEditorViewModel } from "./studio-bg3d-editor-view-model";
@@ -96,6 +97,17 @@ export function useStudioBg3dEditor(props) {
   h.handleInferenceCameraChange = inference.onCameraChange;
   h.pickInferencePoint = inference.pickPoint;
   h.inferPlacementTarget = inference.inferPlacementTarget;
+  // GLB 텍스처 페인트(D4) 호스트 — 핸들러는 그리기 모드+paintable일 때만 함수로 실린다.
+  // SceneGraph가 이 값을 읽기 전에 할당해야 렌더 시점에 계약이 성립한다.
+  const glbTexturePaint = useStudioBg3dGlbTexturePaintHost({
+    instance: h.selectedCustomModel ?? null,
+    setCustomModels: h.setCustomModels,
+    cachedRoot: h.selectedCustomModel
+      ? (h.modelRootCacheRef.current.get(h.selectedCustomModel.modelId)?.root ?? null)
+      : null,
+  });
+  h.glbTexturePaint = glbTexturePaint;
+  h.handleModelTexturePaintPointer = glbTexturePaint.handleModelTexturePaintPointer;
   bindStudioBg3dEditorSceneGraph(h);
 
   const outlinerMutationDependencies = {

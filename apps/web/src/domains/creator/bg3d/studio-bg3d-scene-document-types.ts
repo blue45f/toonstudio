@@ -155,6 +155,28 @@ export interface StudioBg3dTexturePaint {
   readonly strokes: readonly StudioBg3dTexturePaintStroke[];
 }
 
+/**
+ * 3D 표면 직접 그리기 2단계 — GLB 모델 텍스처 페인트의 대상 1개.
+ * `targetKey`는 렌더 가능한 메시 프리미티브의 결정적 순서 키다: `mesh-<순서>`에 재질 배열
+ * 슬롯이 있을 때만 `:slot-<슬롯>`이 붙는다. glTF JSON 분석(studio-bg3d-glb-texture-paint)과
+ * Three 런타임 수집기가 같은 순서 규칙(장면 DFS → 메시 → 프리미티브)을 공유한다.
+ * 획은 대상 텍스처의 UV 공간에 있으며, 같은 텍스처를 공유하는 대상은 순서대로 합성된다.
+ */
+export interface StudioBg3dModelTexturePaintTarget {
+  readonly targetKey: string;
+  readonly paint: StudioBg3dTexturePaint;
+}
+
+/**
+ * GLB 모델 1개의 텍스처 페인트 전체(2단계). 프리미티브 페인트와 마찬가지로 획 벡터가
+ * 정본이고 래스터 텍스처는 캐시이며, 정규화·한도는
+ * studio-bg3d-glb-texture-paint의 normalizeStudioBg3dModelTexturePaint가 강제한다.
+ */
+export interface StudioBg3dModelTexturePaint {
+  readonly version: 1;
+  readonly targets: readonly StudioBg3dModelTexturePaintTarget[];
+}
+
 export interface StudioBg3dAnimationPlayback {
   readonly clipIndex: number;
   readonly playing: boolean;
@@ -563,6 +585,11 @@ export interface StudioBg3dModelNode extends StudioBg3dSceneNodeBase {
   readonly kind: "model";
   readonly attachmentId: string;
   readonly materialOverride?: StudioBg3dMaterialOverride;
+  /**
+   * 표면 직접 그리기 2단계(GLB 텍스처 페인트) 획. Optional — 페인트가 없는 기존 문서와
+   * 바이트 단위 호환을 유지하고, 정규화에서 유효한 대상이 없으면 필드 자체가 생략된다.
+   */
+  readonly modelTexturePaint?: StudioBg3dModelTexturePaint;
   readonly animation?: StudioBg3dAnimationPlayback;
   readonly pose?: StudioBg3dPoseLayer;
   readonly morph?: StudioBg3dMorphLayer;

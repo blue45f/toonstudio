@@ -22,6 +22,12 @@
  *     (studio-bg3d-glb-validation.ts의 DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES.mobile)을
  *     GLB 헤더(JSON 청크) 실측으로 미리 적용한 것이다. 최종 검증은 런타임
  *     검증기가 그대로 수행한다 (환경 팩과 같은 경계).
+ *   - 같은 검증기는 buffers/images에 uri 속성이 하나라도 있으면
+ *     external-resource-uri로 거부한다 (외부 텍스처를 참조하는 GLB는 바이트를
+ *     배포해도 배치할 수 없다). 생성기도 같은 기준으로 그런 GLB를
+ *     deferred.overBudget["external-resource"]로 분리한다 — 텍스처를 GLB 안에
+ *     임베드하는 재익스포트가 끝나야 편입할 수 있다 (2026-10-22 실측 정정:
+ *     Godot판 모듈 GLB 9,362개가 공유 아틀라스를 상대 경로로 참조하고 있었다).
  *
  * 사용법:
  *   node scripts/generate-creator-bundle-theme-packs.mjs \
@@ -181,6 +187,14 @@ function readGlbMetrics(buffer) {
       triangles += Math.floor(count / 3);
     }
   }
+  // 런타임 검증기(studio-bg3d-glb-validation.ts의 hasExternalResourceUri 및
+  // 이미지 검사)와 같은 판정: buffers/images 항목이 uri 속성을 가지면 외부
+  // 리소스 참조로 본다 (data: URI도 예외가 아니다 — 검증기가 속성 존재
+  // 자체를 거부한다).
+  const hasExternalResourceUri = [...(Array.isArray(json.buffers) ? json.buffers : []),
+    ...(Array.isArray(json.images) ? json.images : [])]
+    .some((resource) => resource !== null && typeof resource === "object"
+      && Object.hasOwn(resource, "uri"));
   return {
     nodes: Array.isArray(json.nodes) ? json.nodes.length : 0,
     primitives,
@@ -190,12 +204,16 @@ function readGlbMetrics(buffer) {
     animations: Array.isArray(json.animations) ? json.animations.length : 0,
     skins: Array.isArray(json.skins) ? json.skins.length : 0,
     extensionsRequired: Array.isArray(json.extensionsRequired) ? json.extensionsRequired : [],
+    externalResource: hasExternalResourceUri,
   };
 }
 
 function budgetFailure(metrics, bytes) {
   if (bytes > MOBILE_BUDGET.maxModelBytes) return "bytes";
   if (!metrics) return "metrics-unavailable";
+  // 예산 이전의 하드 거부 사유: 런타임 검증기가 external-resource-uri로
+  // 실패시키는 GLB는 예산과 무관하게 배치할 수 없다.
+  if (metrics.externalResource) return "external-resource";
   if (metrics.nodes > MOBILE_BUDGET.maxNodes) return "nodes";
   if (metrics.triangles > MOBILE_BUDGET.maxTriangles) return "triangles";
   if (metrics.primitives > MOBILE_BUDGET.maxDrawCalls) return "draw-calls";

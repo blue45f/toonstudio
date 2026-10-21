@@ -617,11 +617,12 @@ function r2LargeAssetHeaders(
   object: R2ObjectBinding,
   contentType: string,
   partial: boolean,
+  cacheControl: string = CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
 ): Headers {
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set("content-type", contentType);
-  headers.set("cache-control", CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL);
+  headers.set("cache-control", cacheControl);
   headers.set("etag", object.httpEtag);
   headers.set("accept-ranges", "bytes");
   headers.set("access-control-allow-origin", "*");
@@ -711,6 +712,7 @@ async function serveR2LargeAsset(
       object,
       descriptor.contentType,
       partial,
+      descriptor.cacheControl ?? CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
     );
     if (matchesIfNoneMatch(request, object.httpEtag)) {
       headers.delete("content-length");

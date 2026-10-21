@@ -4,6 +4,7 @@ import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-co
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 
 import type { StudioBg3dProSuitePanelProps } from "./StudioBg3dProSuitePanelContent";
+import { useT } from "@/shared/lib/i18n";
 
 export type {
   ProSuiteActiveTab,
@@ -18,6 +19,7 @@ const LazyProSuiteContent = lazy(async () => {
 
 /** Loads specialist tools on their first visible activation, then preserves their local state. */
 export function StudioBg3dProSuitePanel(props: StudioBg3dProSuitePanelProps) {
+  const t = useT();
   const runtime = useStudioBg3dProSuiteRuntime();
   const active = runtime?.proSuiteActive ?? true;
   const [hasActivated, setHasActivated] = useState(active);
@@ -29,7 +31,7 @@ export function StudioBg3dProSuitePanel(props: StudioBg3dProSuitePanelProps) {
 
   return (
     <Suspense
-      fallback={<StudioPanelLoading label="3D 전문 도구를 불러오는 중입니다." />}
+      fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.proTools3d", "3D 전문 도구를 불러오는 중입니다.")} />}
     >
       <LazyProSuiteContent
         {...props}

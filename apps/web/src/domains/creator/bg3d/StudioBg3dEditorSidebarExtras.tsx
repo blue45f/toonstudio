@@ -443,7 +443,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
               <section hidden={hideOnTab("layers")}>
                 {sharedStageResolution ? (
                   <Suspense fallback={(
-                    <StudioPanelLoading label="공유 3D 장면 상태를 불러오는 중이에요…" />
+                    <StudioPanelLoading labelKey="studio.canvas.panelLoading.sharedSceneState" labelFallback="공유 3D 장면 상태를 불러오는 중이에요…" />
                   )}>
                     <StudioBg3dSharedStagePanel
                       resolution={sharedStageResolution}
@@ -794,7 +794,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                 {modelsPanelActivated ? (
                   <Suspense
                     fallback={(
-                      <StudioPanelLoading label="3D 에셋 라이브러리를 불러오는 중입니다." />
+                      <StudioPanelLoading labelKey="studio.canvas.panelLoading.assetLibrary3d" labelFallback="3D 에셋 라이브러리를 불러오는 중입니다." />
                     )}
                   >
                     <LazyStudioBg3dAssetLibraryPanel

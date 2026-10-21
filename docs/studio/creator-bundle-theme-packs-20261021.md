@@ -1,6 +1,12 @@
 # Creator Bundle 테마 팩 — bg3d 제품 배선 (2026-10-21)
 
-상태: current. 대상 표면은 bg3d 에셋 라이브러리뿐이며 그리기·셰이퍼 등 무관한 표면은 건드리지 않는다.
+상태: current (배포 경로는 migration — 아래 "배포" 절). 대상 표면은 bg3d 에셋 라이브러리뿐이며 그리기·셰이퍼 등 무관한 표면은 건드리지 않는다.
+
+2026-10-22 정정: 생성기의 배치 가능 판정이 런타임 검증기의 external-resource-uri
+거부(buffers/images의 uri 속성)를 반영하지 않아, 외부 텍스처를 참조하는 Godot판
+모듈 GLB 9,362개가 배치 가능으로 과대 집계돼 있었다. 생성기에 같은 판정을 넣고
+theme-packs.json을 재생성해 배치 가능은 5,303개로, 보류(deferred)는 11,721개로
+정정했다. 외부 참조 GLB는 텍스처 임베드 재익스포트가 끝나야 편입할 수 있다.
 
 ## 구조
 
@@ -59,3 +65,41 @@ node scripts/generate-creator-bundle-theme-packs.mjs \
 기본값은 각각 bundle-v1 `manifest.json`과 같은 폴더의 `theme-packs.json`이다.
 생성기는 실물 파일의 sha256을 전수 대조해 매니페스트와 어긋나는 에셋을 제외하고,
 그 건수를 실행 로그에 남긴다.
+
+## 배포 (bundle-v2 → R2) — migration (2026-10-22 레포 측 완성, 실배포는 소유자 실행 대기)
+
+- 서빙 경로: `/assets/studio/bundle-v2/<theme-packs 에셋 path>`. 실물은 레포·
+  Static Assets가 아니라 R2 버킷 `toonspectrum-public-assets`에만 두고,
+  Cloudflare Static Worker가 바인딩(`LARGE_ASSETS`)으로 서빙한다
+  (`deploy/cloudflare-static/src/large-static-assets.ts`의 bundle-v2
+  디스크립터 + `wrangler.jsonc`의 run_worker_first `/assets/studio/bundle-v2/*`).
+  파일명에 공백·`+`·`&`가 있어 요청 URL은 조각별 퍼센트 인코딩으로 도착하고,
+  Worker는 조각마다 디코드한 값을 R2 키로 쓴다 (로더의
+  `studioBg3dBundleAssetUrl` 인코딩과 대칭).
+- 객체 목록 정본: `deploy/cloudflare-static/bundle-v2-deploy-manifest.json`
+  (2026-10-22 산출: GLB 5,303개·588,132,208바이트 + 배포 인덱스 1개 =
+  5,304객체·588,132,367바이트). `scripts/plan-creator-bundle-deploy.mjs`가
+  theme-packs와 실물 트리를 전수 대조(실재·바이트·sha256·외부 uri 게이트)해
+  재생성한다. GLB 중 1개(35.5MiB 프리셋)가 Static Assets 파일 상한(25MiB)을
+  넘는 것도 R2 단일 경로를 택한 이유다.
+- 완료 신호: 배포 인덱스 `assets/studio/bundle-v2/manifest.json`은 업로드
+  마지막 객체로만 올라간다. 패널은 이 인덱스의 files/bytes 합계가 테마 팩
+  데이터와 맞을 때만 배치를 열고, 아니면 "배포 미완료" 빈 상태를 보여준다.
+- 실행 (승인 주체: 저장소 소유자, 입력: 인제스션 v2 산출 트리가 있는 기기와
+  wrangler 로그인):
+
+```bash
+# 1) 계획 검증 (쓰기·업로드 없음)
+pnpm run plan:creator-bundle-deploy -- --asset-root <output-v2 트리>
+# 2) 매니페스트 재생성 (theme-packs가 바뀌었을 때만)
+pnpm run write:creator-bundle-deploy-manifest -- --asset-root <output-v2 트리>
+# 3) 정적 웹 배포로 Worker 경로를 먼저 반영한 뒤 (deploy-cloudflare-static 절차)
+# 4) 실업로드 (GLB → 인덱스 순서, 중단 시 같은 명령 재실행으로 이어감)
+pnpm run deploy:creator-bundle-assets -- --asset-root <output-v2 트리>
+```
+
+- 성공 기준: 업로드 완료 로그 + 패널에서 배포 상태가 "가능"으로 바뀌고 임의
+  에셋 1개가 장면에 배치되는 것. 실패 시: 인덱스가 없거나 합계가 어긋나면
+  패널은 자동으로 미배포 상태로 남는다 (부분 업로드가 배치 가능으로
+  오인되지 않는다). 롤백은 R2 객체 삭제가 아니라 인덱스 객체 삭제만으로
+  배치를 닫을 수 있다.

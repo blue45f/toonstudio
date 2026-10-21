@@ -3,7 +3,7 @@
  *
  * 기존에는 카메라(위치·화각)와 조명(HDRI 프리셋, studio-bg3d-hdri-lighting-presets.ts)을
  * 따로 골라야 해서, 배경을 처음 만드는 사용자는 "어떤 씬에 어떤 앵글+조명"인지 감이 없었다.
- * 이 모듈은 장르(로맨스·액션·스릴러·일상)별 대표 씬을 하나의 팩으로 묶는다:
+ * 이 모듈은 장르(로맨스·액션·스릴러·일상·판타지·SF)별 대표 씬을 하나의 팩으로 묶는다:
  * 팩 하나를 고르면 ① 카메라 앵글(위치·타깃·화각·더치롤)과 ② 그 씬에 맞는 HDRI 조명
  * 프리셋(조명+노출+날씨+태양 시각)이 함께 적용된다.
  *
@@ -26,7 +26,13 @@ import type {
 } from "./studio-bg3d-scene-document";
 import type { WeatherPresetId } from "../scene-3d/studio-3d-atmosphere-weather";
 
-export type StudioBg3dSceneGenreId = "romance" | "action" | "thriller" | "daily";
+export type StudioBg3dSceneGenreId =
+  | "romance"
+  | "action"
+  | "thriller"
+  | "daily"
+  | "fantasy"
+  | "scifi";
 
 /** 썸네일·카드 배지에 쓰는 구도 종류. */
 export type StudioBg3dCameraFramingKind =
@@ -58,6 +64,11 @@ export interface StudioBg3dSceneCompositionPreset {
   readonly tooltipEn: string;
   /** 함께 적용될 HDRI 조명 프리셋. 조명·노출·날씨·태양 시각은 이 프리셋에서 가져온다. */
   readonly lightingPresetId: StudioBg3dHdriLightingPresetId;
+  /**
+   * 이 팩의 무대를 꾸밀 수 있는 Creator Bundle 테마 id (theme-packs.json의 themes[].id).
+   * 번들 연동 팩에만 있으며, 팩→실재 에셋 대조는 studio-bg3d-genre-scene-pack-links.ts가 맡는다.
+   */
+  readonly bundleThemeId?: string;
   /** 적용될 카메라 전체 스냅샷(씬 문서 camera와 동형). */
   readonly camera: StudioBg3dCameraSettings;
   readonly thumbnail: StudioBg3dCameraAngleThumbnail;
@@ -74,6 +85,8 @@ export const STUDIO_BG3D_SCENE_GENRES: readonly StudioBg3dSceneGenre[] = Object.
   { id: "action", labelKo: "액션", labelEn: "Action" },
   { id: "thriller", labelKo: "스릴러·공포", labelEn: "Thriller" },
   { id: "daily", labelKo: "일상·학원", labelEn: "Daily" },
+  { id: "fantasy", labelKo: "판타지·시대극", labelEn: "Fantasy" },
+  { id: "scifi", labelKo: "SF", labelEn: "Sci-Fi" },
 ]);
 
 const FRAMING_LABELS: Readonly<
@@ -131,6 +144,7 @@ interface ScenePackSpec {
   readonly descriptionKo: string;
   readonly descriptionEn: string;
   readonly lightingPresetId: StudioBg3dHdriLightingPresetId;
+  readonly bundleThemeId?: string;
   readonly target: readonly [number, number, number];
   readonly azimuthDeg: number;
   readonly elevationDeg: number;
@@ -161,6 +175,7 @@ function buildPreset(spec: ScenePackSpec): StudioBg3dSceneCompositionPreset {
     tooltipKo: `${spec.labelKo} — ${framingLabel.ko} 구도와 조명을 함께 적용합니다.`,
     tooltipEn: `${spec.labelEn} — applies the ${framingLabel.en.toLowerCase()} framing and its lighting together.`,
     lightingPresetId: spec.lightingPresetId,
+    ...(spec.bundleThemeId ? { bundleThemeId: spec.bundleThemeId } : {}),
     camera,
     thumbnail: Object.freeze({
       azimuthDeg: spec.azimuthDeg,
@@ -300,6 +315,137 @@ export const STUDIO_BG3D_SCENE_COMPOSITION_PRESETS: readonly StudioBg3dSceneComp
       elevationDeg: 6,
       distance: 3.2,
       fovDegrees: 42,
+      framing: "medium",
+    }),
+    // G8 확장 (2026-10-22): 판타지·SF 장르 신설 + 번들 테마 연동 팩.
+    // bundleThemeId와 팩→에셋 연결은 studio-bg3d-genre-scene-pack-links.ts가
+    // theme-packs.json 실재 에셋과 대조해 검증한다(없는 에셋 참조 금지).
+    buildPreset({
+      id: "fantasy-forest-shrine",
+      genreId: "fantasy",
+      labelKo: "숲속 신전 와이드",
+      labelEn: "Forest shrine wide",
+      descriptionKo: "깊은 숲과 신전 터를 넓게 여는 판타지 오프닝 구도.",
+      descriptionEn: "A wide fantasy opening over deep woods and shrine ruins.",
+      lightingPresetId: "daylight",
+      bundleThemeId: "nature",
+      target: [0, 1, 0],
+      azimuthDeg: 30,
+      elevationDeg: 14,
+      distance: 9.5,
+      fovDegrees: 55,
+      framing: "wide",
+    }),
+    buildPreset({
+      id: "fantasy-old-town-arrival",
+      genreId: "fantasy",
+      labelKo: "옛 마을 도착 미디엄",
+      labelEn: "Old town arrival medium",
+      descriptionKo: "돌담 마을에 처음 발을 딛는 인물을 잡는 황혼 구도.",
+      descriptionEn: "A twilight framing for a character arriving in a stone old town.",
+      lightingPresetId: "twilight",
+      bundleThemeId: "city",
+      target: [0, 1.1, 0],
+      azimuthDeg: -20,
+      elevationDeg: 9,
+      distance: 5,
+      fovDegrees: 45,
+      framing: "medium",
+    }),
+    buildPreset({
+      id: "fantasy-swamp-crossing",
+      genreId: "fantasy",
+      labelKo: "늪지 횡단 로우앵글",
+      labelEn: "Swamp crossing low angle",
+      descriptionKo: "나무다리와 안개 낀 늪을 아래에서 올려다보는 모험 구도.",
+      descriptionEn: "A low angle over a marsh bridge and foggy swamp crossing.",
+      lightingPresetId: "twilight",
+      bundleThemeId: "swamp",
+      target: [0, 0.9, 0],
+      azimuthDeg: 45,
+      elevationDeg: -6,
+      distance: 6.5,
+      fovDegrees: 60,
+      framing: "low-angle",
+    }),
+    buildPreset({
+      id: "scifi-arena-showdown",
+      genreId: "scifi",
+      labelKo: "네온 아레나 대결",
+      labelEn: "Neon arena showdown",
+      descriptionKo: "네온 아레나 한가운데 대치를 아래에서 잡는 SF 구도.",
+      descriptionEn: "A low sci-fi framing for a standoff in a neon arena.",
+      lightingPresetId: "night",
+      bundleThemeId: "sci-fi",
+      target: [0, 1.1, 0],
+      azimuthDeg: 20,
+      elevationDeg: -7,
+      distance: 6,
+      fovDegrees: 62,
+      framing: "low-angle",
+    }),
+    buildPreset({
+      id: "scifi-planet-survey",
+      genreId: "scifi",
+      labelKo: "행성 지표 하이앵글",
+      labelEn: "Planet surface high angle",
+      descriptionKo: "낯선 행성 지표와 탐사 인물을 내려다보는 SF 구도.",
+      descriptionEn: "An overhead sci-fi framing of an alien planet surface survey.",
+      lightingPresetId: "daylight",
+      bundleThemeId: "sci-fi",
+      target: [0, 0.7, 0],
+      azimuthDeg: 55,
+      elevationDeg: 42,
+      distance: 10.5,
+      fovDegrees: 50,
+      framing: "overhead",
+    }),
+    buildPreset({
+      id: "scifi-station-portrait",
+      genreId: "scifi",
+      labelKo: "스테이션 포트레이트",
+      labelEn: "Station portrait",
+      descriptionKo: "스튜디오 조명으로 우주복 인물을 소개하는 SF 포트레이트.",
+      descriptionEn: "A studio-lit sci-fi portrait introducing a suited character.",
+      lightingPresetId: "studio",
+      bundleThemeId: "sci-fi",
+      target: [0, 1.3, 0],
+      azimuthDeg: -12,
+      elevationDeg: 5,
+      distance: 3.4,
+      fovDegrees: 40,
+      framing: "medium",
+    }),
+    buildPreset({
+      id: "thriller-graveyard-vigil",
+      genreId: "thriller",
+      labelKo: "묘지 야간 미디엄",
+      labelEn: "Graveyard night medium",
+      descriptionKo: "달빛 묘지와 석상 사이에 선 인물을 잡는 공포 구도.",
+      descriptionEn: "A moonlit horror framing in a graveyard among stone statues.",
+      lightingPresetId: "night",
+      bundleThemeId: "horror",
+      target: [0, 1.1, 0],
+      azimuthDeg: -30,
+      elevationDeg: 7,
+      distance: 5.2,
+      fovDegrees: 44,
+      framing: "medium",
+    }),
+    buildPreset({
+      id: "daily-subway-commute",
+      genreId: "daily",
+      labelKo: "지하철 출근 미디엄",
+      labelEn: "Subway commute medium",
+      descriptionKo: "아침 지하철 승강장의 출근 인파를 잡는 일상 구도.",
+      descriptionEn: "A daily framing of a morning subway platform commute.",
+      lightingPresetId: "studio",
+      bundleThemeId: "interior",
+      target: [0, 1.1, 0],
+      azimuthDeg: 35,
+      elevationDeg: 10,
+      distance: 5.6,
+      fovDegrees: 48,
       framing: "medium",
     }),
   ]);

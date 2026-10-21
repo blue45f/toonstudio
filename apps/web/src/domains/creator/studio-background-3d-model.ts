@@ -24,6 +24,7 @@ import type {
   StudioBg3dAnimationPlayback,
   StudioBg3dConstraintLayer,
   StudioBg3dMaterialOverride,
+  StudioBg3dModelTexturePaint,
   StudioBg3dParsedGlbMetrics,
   StudioBg3dPoseLayer,
   StudioBg3dMorphLayer,
@@ -72,6 +73,8 @@ export interface BgCustomModelInstance {
   linkedSourceId?: string;
   /** Engine-neutral, per-instance adjustments applied to cloned materials only. */
   materialOverride?: StudioBg3dMaterialOverride;
+  /** 표면 직접 그리기 2단계(GLB 텍스처 페인트) 획 — 문서 노드의 modelTexturePaint와 같은 정본 데이터. */
+  modelTexturePaint?: StudioBg3dModelTexturePaint;
   /** Optional clip playback state for animated glTF/FBX-derived assets. */
   animation?: StudioBg3dAnimationPlayback;
   /** Engine-neutral additive joint rotations applied after animation sampling. */
@@ -127,6 +130,19 @@ export function cloneBgCustomModelInstances(instances: BgCustomModelInstance[]):
     locked: inst.locked,
     parentId: inst.parentId,
     materialOverride: inst.materialOverride ? { ...inst.materialOverride } : undefined,
+    modelTexturePaint: inst.modelTexturePaint ? {
+      ...inst.modelTexturePaint,
+      targets: inst.modelTexturePaint.targets.map((target) => ({
+        targetKey: target.targetKey,
+        paint: {
+          ...target.paint,
+          strokes: target.paint.strokes.map((stroke) => ({
+            ...stroke,
+            points: stroke.points.map((point) => [...point] as [number, number]),
+          })),
+        },
+      })),
+    } : undefined,
     animation: inst.animation ? { ...inst.animation } : undefined,
     pose: inst.pose ? {
       ...inst.pose,

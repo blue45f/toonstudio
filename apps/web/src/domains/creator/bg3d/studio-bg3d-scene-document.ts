@@ -27,6 +27,7 @@ import {
 import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
 import { normalizeStudioBg3dHierarchyParents } from "./studio-bg3d-hierarchy";
 import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
+import { normalizeStudioBg3dModelTexturePaint } from "./studio-bg3d-glb-texture-paint";
 import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 
 import {
@@ -91,6 +92,7 @@ import {
   type StudioBg3dShotOutputOverride,
   type StudioBg3dShotRenderOverride,
   type StudioBg3dShotToneOutputOverride,
+  type StudioBg3dModelTexturePaint,
   type StudioBg3dTexturePaint,
   type StudioBg3dTransform,
   type StudioBg3dTwoBoneIkConstraint,
@@ -175,6 +177,8 @@ export {
   type StudioBg3dShotToneOutputOverride,
   type StudioBg3dSkyPresetId,
   type StudioBg3dTextureBudget,
+  type StudioBg3dModelTexturePaint,
+  type StudioBg3dModelTexturePaintTarget,
   type StudioBg3dTexturePaint,
   type StudioBg3dTexturePaintPoint,
   type StudioBg3dTexturePaintStroke,
@@ -1455,6 +1459,7 @@ function normalizeNode(
     const attachmentId = normalizedId(value.attachmentId);
     if (!attachmentId || !attachmentIds.has(attachmentId)) return null;
     const materialOverride = normalizeMaterialOverride(value.materialOverride);
+    const modelTexturePaint = normalizeStudioBg3dModelTexturePaint(value.modelTexturePaint);
     const animation = normalizeAnimationPlayback(value.animation);
     const pose = normalizePoseLayer(value.pose);
     const morph = normalizeMorphLayer(value.morph);
@@ -1464,6 +1469,8 @@ function normalizeNode(
       kind: "model",
       attachmentId,
       ...(materialOverride ? { materialOverride } : {}),
+      // GLB 텍스처 페인트 획은 정규화를 통과한 경우에만 문서에 남는다(프리미티브 페인트와 같은 관문).
+      ...(modelTexturePaint ? { modelTexturePaint } : {}),
       ...(animation ? { animation } : {}),
       ...(pose ? { pose } : {}),
       ...(morph ? { morph } : {}),
@@ -1866,7 +1873,7 @@ function migrateDecodedSchemaV1Document(value: unknown): StudioBg3dSceneDocument
   if (
     value.nodes.some((node) =>
       isRecord(node) && (
-        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
+        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
       ))
   ) return null;
   const budgets = migrateSchemaV1Budgets(value.budgets);
@@ -1898,7 +1905,7 @@ function migrateDecodedSchemaPanoramaDocument(
     value.version === STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION
     && value.nodes.some((node) =>
       isRecord(node) && (
-        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
+        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
       ))
   ) {
     return null;
@@ -2260,4 +2267,11 @@ export function normalizeStudioBg3dTexturePaintPayload(
   raw: unknown,
 ): StudioBg3dTexturePaint | null {
   return deepFreeze(normalizeStudioBg3dTexturePaint(decodeBoundedJson(raw)));
+}
+
+/** Runtime adapter helper for accepting only the bounded canonical GLB texture-paint payload. */
+export function normalizeStudioBg3dModelTexturePaintPayload(
+  raw: unknown,
+): StudioBg3dModelTexturePaint | null {
+  return deepFreeze(normalizeStudioBg3dModelTexturePaint(decodeBoundedJson(raw)));
 }
