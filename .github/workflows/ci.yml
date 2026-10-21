@@ -339,7 +339,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/core
           git rev-parse HEAD > artifacts/core/commit.txt
-          (pnpm --filter @webtoon-nest/api build && test -s apps/api/dist/apps/api/src/main.js && node --check apps/api/dist/apps/api/src/main.js && pnpm run build:bundle && pnpm run check:studio-bundle && test -s dist/.vite/manifest.json) 2>&1 | tee artifacts/core/build.log
+          (pnpm --filter @webtoon-nest/api build && test -s apps/api/dist/apps/api/src/main.js && node --check apps/api/dist/apps/api/src/main.js && pnpm run build:bundle && pnpm run check:studio-bundle && pnpm run check:product-tour-remotion-chunks && test -s dist/.vite/manifest.json) 2>&1 | tee artifacts/core/build.log
       - name: Verify Virtual Studio art integrity
         run: |
           set -euo pipefail

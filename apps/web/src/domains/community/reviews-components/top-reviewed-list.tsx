@@ -1,6 +1,7 @@
 import type { ReviewsResponse, Title } from "@/shared/lib/types";
 
 import { CoverImage } from "@/shared/components/cover-image";
+import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 import { spectrumGradient } from "@/shared/lib/genre-color";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
@@ -76,6 +77,8 @@ export function TopReviewedList({
                     <CoverImage
                       src={item.title.coverImage}
                       alt=""
+                      srcSet={coverStandardSrcSet(item.title.coverImage)}
+                      sizes="2.25rem"
                       className="h-full w-full object-cover"
                       fallback={<CoverSwatch title={item.title} />}
                     />

@@ -64,6 +64,14 @@ export const LESSON_META: Readonly<Record<string, LessonMeta>> = {
   "publish-check": { level: "advanced", skills: ["color", "lettering", "workflow"], outcome: "원본과 게시본을 분리한 최종 검수 기록", format: "concept-lab" },
   "studio-first-page": { level: "starter", skills: ["story", "direction", "workflow"], outcome: "툰스튜디오에서 만든 첫 3컷 러프", format: "studio-practice" },
   "studio-layer-practice": { level: "growing", skills: ["drawing", "color", "workflow"], outcome: "수정 가능한 레이어 원본과 확인된 내보내기", format: "studio-practice" },
+  "episode-arc": { level: "growing", skills: ["story", "direction"], outcome: "질문·고조·답이 대응하는 한 회차 구조표", format: "concept-lab" },
+  "character-consistency": { level: "growing", skills: ["drawing", "color"], outcome: "비율·표정·기준색이 정리된 캐릭터 시트 한 장", format: "concept-lab" },
+  "background-scene": { level: "growing", skills: ["direction", "drawing"], outcome: "장소와 시간대가 읽히는 배경 설계안", format: "concept-lab" },
+  "tone-effects": { level: "growing", skills: ["color", "drawing"], outcome: "표면마다 명도와 패턴이 구분된 한 컷", format: "concept-lab" },
+  "feedback-revision": { level: "advanced", skills: ["story", "workflow"], outcome: "수정 지시문과 전후 비교 기록이 있는 수정본", format: "concept-lab" },
+  "studio-background-practice": { level: "growing", skills: ["direction", "drawing", "workflow"], outcome: "인물과 배경이 한 공간에 있는 배경 컷", format: "studio-practice" },
+  "studio-lettering-practice": { level: "growing", skills: ["lettering", "direction", "workflow"], outcome: "축소 검수를 마친 대화 장면 한 컷", format: "studio-practice" },
+  "studio-episode-assembly": { level: "advanced", skills: ["story", "direction", "workflow"], outcome: "조립과 검수를 마친 한 회차 조립본", format: "studio-practice" },
 };
 
 const FALLBACK_META: LessonMeta = {
@@ -118,6 +126,33 @@ export const LEARNING_PATHS: readonly LearningPath[] = [
     level: "advanced",
     lessonIds: ["story-board", "lettering", "color-layers", "publish-check"],
     recommendedGoals: ["publish", "first-episode"],
+  },
+  {
+    id: "episode-production",
+    title: "한 회차 제작 워크플로",
+    summary: "회차 구조 설계부터 배경, 톤 마무리, 스튜디오 조립까지 실제 제작 순서를 따라갑니다.",
+    outcome: "구조표와 조립 검수 기록이 갖춰진 한 회차 제작본",
+    level: "growing",
+    lessonIds: ["episode-arc", "background-scene", "tone-effects", "studio-episode-assembly"],
+    recommendedGoals: ["first-episode", "publish"],
+  },
+  {
+    id: "character-consistency-path",
+    title: "캐릭터 일관성 다지기",
+    summary: "캐릭터 시트로 기준을 세우고 실루엣과 배경 속에서도 같은 인물이 읽히게 연습합니다.",
+    outcome: "기준이 정리된 캐릭터 시트와 배경 속 캐릭터 한 컷",
+    level: "growing",
+    lessonIds: ["character-consistency", "character-silhouette", "background-scene", "studio-background-practice"],
+    recommendedGoals: ["visual", "story"],
+  },
+  {
+    id: "review-and-finish",
+    title: "리뷰·수정으로 완성도 올리기",
+    summary: "피드백을 수정 지시로 바꾸고 대사와 조립을 검수하며 완성도를 끌어올립니다.",
+    outcome: "수정 전후 비교와 검수를 마친 완성 회차",
+    level: "advanced",
+    lessonIds: ["feedback-revision", "tone-effects", "studio-lettering-practice", "studio-episode-assembly"],
+    recommendedGoals: ["publish", "visual"],
   },
 ];
 

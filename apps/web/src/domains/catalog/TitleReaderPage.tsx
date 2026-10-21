@@ -17,6 +17,7 @@ import { resolveTitleEpisodes, resolveTotalEpisodes } from "./title-episodes";
 import { TitleNotFound } from "./TitleNotFound";
 
 import { CoverImage } from "@/shared/components/cover-image";
+import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 import { useNextgenLabSettings } from "@/shared/hooks/use-nextgen-lab-settings";
 import { useScreenWakeLock } from "@/shared/hooks/use-screen-wake-lock";
 import { ErrorState } from "@/shared/components/feedback/error-state";
@@ -239,7 +240,13 @@ function ReaderShell({
         <section aria-label={bi("회차 정보", "Episode info")} className="flex gap-4 rounded-2xl border border-white/10 bg-reader-panel p-4 sm:p-5">
           <span className="relative block aspect-[3/4] w-16 shrink-0 overflow-hidden rounded-lg sm:w-[4.5rem]">
             {title.coverImage ? (
-              <CoverImage src={title.coverImage} alt="" className="absolute inset-0 size-full object-cover" />
+              <CoverImage
+                src={title.coverImage}
+                alt=""
+                srcSet={coverStandardSrcSet(title.coverImage)}
+                sizes="(max-width: 639px) 4rem, 4.5rem"
+                className="absolute inset-0 size-full object-cover"
+              />
             ) : (
               <span
                 aria-hidden

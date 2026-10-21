@@ -630,15 +630,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         adapter: probe.adapter ?? null,
         forkTrack: {
           vendor: "crates/vendor/wgpu-toon (crates.io wgpu 30.0.1 + TOON-PATCH 0001, feature `toon-fabric`)",
+          // wgpu 30.0.1 .crate의 sha256 (crates.io 인덱스 cksum과 일치, 2026-10-20 확인).
+          // 2026-10-22 정정: 이전 값은 wgpu 29 세대 기록이 남아 있던 것으로, 잰 대상을
+          // 오인하게 하므로 현행 핀으로 교체했다. 판정은 scripts/check-vello-gpu-result.mjs.
           upstreamCrateSha256:
-            "76e8840e1ba2881d4cbb18d2147627a56af426ff064c0401eb0c8410c6325d07",
+            "527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e",
           buildTrackA: "cargo check --target wasm32-unknown-unknown --features gpu,lottie,svg (toon-fabric off; vendored crate is API-identical to upstream)",
           buildTrackB: "wasm-pack build --target web --release --out-dir pkg-gpu -- --features hybrid,lottie,svg",
           patchSurface: [
-            "wgpu::webgpu public handle module (backport of wgpu 30.0.0)",
-            "Device::as_webgpu / Queue::as_webgpu / Texture::as_webgpu (backport of wgpu 30.0.0)",
-            "Device::create_texture_from_webgpu_handle (backport of wgpu 30.0.0, minus DropCallback)",
+            // wgpu 30 상류에 이미 있는 export 절반(pub mod webgpu, as_webgpu,
+            // create_texture_from_webgpu_handle)은 30.0.1 리베이스로 소멸했다
+            // (docs/engines/vello-baseline.md §3.3). 남은 패치는 adoption뿐이다.
             "Device::from_webgpu_handle — external GPUDevice/GPUQueue adoption; absent from wgpu 30 too, upstream PR candidate (V12 §5.4)",
+            "WebDevice::from_external_handle / WebQueue::from_external_handle — adoption backing constructors in src/backend/webgpu.rs",
           ],
         },
         note:

@@ -3,6 +3,7 @@ import { ArrowRight, Star } from "lucide-react";
 import type { Title } from "@/shared/lib/types";
 
 import { CoverImage } from "@/shared/components/cover-image";
+import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -46,6 +47,8 @@ function Poster({ title, className, glyphClassName, priority }: {
           src={title.coverImage}
           alt=""
           priority={priority}
+          srcSet={coverStandardSrcSet(title.coverImage)}
+          sizes="(max-width: 639px) 7rem, 9rem"
           className="absolute inset-0 size-full object-cover"
           fallback={<PosterFallback title={title} className={glyphClassName} />}
         />
@@ -106,7 +109,13 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
       {/* 표지를 흐리게 깐 배경 — 장식이며, 표지를 못 불러오면 토큰 배경만 남는다. */}
       {lead.coverImage ? (
         <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-45 motion-safe:transition-opacity">
-          <CoverImage src={lead.coverImage} alt="" className="size-full scale-110 object-cover blur-2xl" />
+          <CoverImage
+            src={lead.coverImage}
+            alt=""
+            srcSet={coverStandardSrcSet(lead.coverImage)}
+            sizes="100vw"
+            className="size-full scale-110 object-cover blur-2xl"
+          />
         </span>
       ) : null}
       <span
