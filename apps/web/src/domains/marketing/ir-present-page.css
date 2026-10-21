@@ -13,6 +13,10 @@
         --muted: #a29384;
         --accent: #ff5a2c;
         --accent-soft: rgba(255, 90, 44, 0.14);
+        /* 흰 글씨를 얹는 채움 전용 음영 — --accent 위 흰 글씨는 대비 3.11로 WCAG 4.5 미달이라,
+           같은 색조를 유지한 진한 주황을 따로 둔다 (흰 글씨 대비 4.82 / hover 4.56). */
+        --accent-fill: #c94520;
+        --accent-fill-hover: #cf4822;
         --amber: #ffb03a;
         --teal: #3ec6b8;
         --radius: 18px;
@@ -74,8 +78,8 @@
         text-decoration: none; font-weight: 700; font-size: 16px;
         padding: 14px 26px; border-radius: 14px; transition: transform .18s, background .18s, border-color .18s; }
 .ir-present .btn:active { transform: scale(.97); }
-.ir-present .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 10px 30px -10px rgba(255,90,44,.55); }
-.ir-present .btn-primary:hover { background: #ff6c40; }
+.ir-present .btn-primary { background: var(--accent-fill); color: #fff; box-shadow: 0 10px 30px -10px rgba(255,90,44,.55); }
+.ir-present .btn-primary:hover { background: var(--accent-fill-hover); }
 .ir-present .btn-ghost { border: 1px solid var(--line-strong); color: var(--ink); background: rgba(255,238,224,.03); }
 .ir-present .btn-ghost:hover { border-color: var(--accent); }
 .ir-present .source-line { color: var(--muted); font-size: 13.5px; margin-top: 18px; }
@@ -115,7 +119,7 @@
 .ir-present .float-slower { animation: irp-floaty 9s ease-in-out infinite reverse; }
 @keyframes irp-floaty { 0%,100% { translate: 0 0; } 50% { translate: 0 -10px; } }
 .ir-present .founder-head { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; margin-bottom: 14px; }
-.ir-present .founder-head .avatar { width: 92px; height: 92px; border-radius: 26px; background: var(--accent); color: #fff;
+.ir-present .founder-head .avatar { width: 92px; height: 92px; border-radius: 26px; background: var(--accent-fill); color: #fff;
         font-family: var(--grot); font-weight: 700; font-size: 34px; display: grid; place-items: center; flex: none;
         box-shadow: 0 18px 36px -14px rgba(255,90,44,.6); }
 .ir-present .founder-name { font-size: clamp(40px, 5.4vw, 64px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; margin: 0; }
@@ -151,8 +155,8 @@
 .ir-present .pipe-step .idx { font-family: var(--grot); font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--muted); display: block; margin-bottom: 6px; }
 .ir-present .pipe-step .name { font-size: 17px; font-weight: 800; display: block; }
 .ir-present .pipe-step:hover { border-color: var(--line-strong); color: var(--ink); }
-.ir-present .pipe-step.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-.ir-present .pipe-step.active .idx { color: rgba(255,255,255,.75); }
+.ir-present .pipe-step.active { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
+.ir-present .pipe-step.active .idx { color: #fff; }
 .ir-present .pipe-detail { border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); padding: 26px 30px; min-height: 118px; }
 .ir-present .pipe-detail h3 { margin: 0 0 8px; font-size: 22px; font-weight: 800; }
 .ir-present .pipe-detail h3 .flow { color: var(--accent); font-family: var(--grot); font-size: 14px; letter-spacing: .12em; margin-right: 12px; vertical-align: 3px; }
@@ -193,7 +197,7 @@
 .ir-present .role li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 8px; height: 8px; border-radius: 2px; background: currentColor; opacity: .8; }
 .ir-present .role.r1 .tag { background: rgba(62,198,184,.15); color: var(--teal); }
 .ir-present .role.r1 li::before { color: var(--teal); }
-.ir-present .role.r2 .tag { background: var(--accent-soft); color: var(--accent); }
+.ir-present .role.r2 .tag { background: rgba(255,90,44,.08); color: var(--accent); }
 .ir-present .role.r2 li::before { color: var(--accent); }
 .ir-present .role.r3 .tag { background: rgba(255,176,58,.15); color: var(--amber); }
 .ir-present .role.r3 li::before { color: var(--amber); }
@@ -252,7 +256,7 @@
 .ir-present .pos-row .desc { color: var(--ink-2); font-size: 14.5px; }
 .ir-present .coverage { display: flex; gap: 6px; flex-wrap: wrap; }
 .ir-present .coverage span { font-size: 12.5px; font-weight: 700; padding: 6px 0; flex: 1 1 84px; text-align: center; border-radius: 9px; background: rgba(255,238,224,.05); color: var(--muted); border: 1px solid var(--line); }
-.ir-present .coverage span.full { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ir-present .coverage span.full { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
 .ir-present .coverage span.part { background: rgba(255,176,58,.14); border-color: rgba(255,176,58,.4); color: var(--amber); }
 .ir-present .pos-legend { display: flex; gap: 20px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 14px; }
 .ir-present .pos-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
@@ -300,7 +304,7 @@
 .ir-present .tour-feature img { width: 100%; height: auto; transition: transform .5s ease; }
 .ir-present .tour-feature:hover img { transform: scale(1.015); }
 .ir-present .tour-feature .play-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg, transparent 55%, rgba(10,8,7,.55)); }
-.ir-present .tour-feature .play-circle { width: 84px; height: 84px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; box-shadow: 0 18px 40px -10px rgba(255,90,44,.65); transition: transform .2s ease; }
+.ir-present .tour-feature .play-circle { width: 84px; height: 84px; border-radius: 50%; background: var(--accent-fill); color: #fff; display: grid; place-items: center; box-shadow: 0 18px 40px -10px rgba(255,90,44,.65); transition: transform .2s ease; }
 .ir-present .tour-feature:hover .play-circle { transform: scale(1.08); }
 .ir-present .tour-feature .play-circle svg { width: 30px; height: 30px; margin-left: 4px; }
 .ir-present .tour-feature .tour-badge { position: absolute; left: 18px; bottom: 16px; color: #fff; font-weight: 800; font-size: 15px; background: rgba(10,8,7,.72); padding: 8px 15px; border-radius: 99px; backdrop-filter: blur(6px); }
@@ -331,7 +335,7 @@
 .ir-present .ai-rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 13px; align-content: start; }
 .ir-present .ai-rules li { display: flex; gap: 12px; font-size: 15.5px; color: var(--ink-2); }
 .ir-present .ai-rules li b { color: var(--ink); }
-.ir-present .ai-rules .mark { flex: none; width: 24px; height: 24px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 800; margin-top: 1px; }
+.ir-present .ai-rules .mark { flex: none; width: 24px; height: 24px; border-radius: 8px; background: var(--accent-fill); color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 800; margin-top: 1px; }
 .ir-present .tiers { display: grid; gap: 11px; }
 .ir-present .tier { display: grid; grid-template-columns: 210px 1fr auto; gap: 26px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 24px 28px; }
 .ir-present .tier.hot { border-color: rgba(255,90,44,.5); background: linear-gradient(110deg, rgba(255,90,44,.09), transparent 60%), var(--surface); }
@@ -364,7 +368,7 @@
 .ir-present .road-step .gtm-title + p { margin-top: 8px; }
 .ir-present .team-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 14px; align-items: stretch; }
 .ir-present .founder { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 34px 32px; display: flex; flex-direction: column; }
-.ir-present .founder .avatar { width: 70px; height: 70px; border-radius: 20px; background: var(--accent); color: #fff; font-family: var(--grot); font-weight: 700; font-size: 25px; display: grid; place-items: center; margin-bottom: 20px; }
+.ir-present .founder .avatar { width: 70px; height: 70px; border-radius: 20px; background: var(--accent-fill); color: #fff; font-family: var(--grot); font-weight: 700; font-size: 25px; display: grid; place-items: center; margin-bottom: 20px; }
 .ir-present .founder h3 { margin: 0; font-size: 26px; font-weight: 800; }
 .ir-present .founder .role-line { color: var(--accent); font-weight: 700; margin: 4px 0 16px; }
 .ir-present .founder p { margin: 0 0 13px; color: var(--ink-2); font-size: 15px; }
@@ -420,8 +424,8 @@
 .ir-present .hud-btn:hover { background: rgba(255,238,224,.08); color: var(--ink); }
 .ir-present .hud-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ir-present .hud-btn svg { width: 17px; height: 17px; flex: none; }
-.ir-present .hud-btn.primary { background: var(--accent); color: #fff; min-width: 118px; justify-content: center; }
-.ir-present .hud-btn.primary:hover { background: #ff6c40; color: #fff; }
+.ir-present .hud-btn.primary { background: var(--accent-fill); color: #fff; min-width: 118px; justify-content: center; }
+.ir-present .hud-btn.primary:hover { background: var(--accent-fill-hover); color: #fff; }
 .ir-present .hud-btn[aria-pressed="true"] { border-color: rgba(255,90,44,.6); color: var(--ink); background: var(--accent-soft); }
 .ir-present .hud-center { display: flex; align-items: center; gap: 6px; margin: 0 auto; }
 .ir-present .hud-counter { font-family: var(--grot); font-weight: 700; font-size: 15px; color: var(--ink-2); white-space: nowrap; }
