@@ -89,6 +89,7 @@ import type { WardrobeEquip, WardrobeSlot, WardrobeState } from "../vrm/studio-v
 import { readStudioVrmPoserShaperSurface, type StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 import type { VRM } from "@pixiv/three-vrm";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import { shaperPreviewLockReason } from "../status-i18n/studio-lock-reason-i18n";
 
 /* -------------------------------------------------------------------------- */
 /* Raw host state — what one undo step restores                               */
@@ -149,7 +150,6 @@ interface CharacterShaperPreviewState {
 
 const HAND_SIDES: readonly CharacterHandSide[] = ["left", "right", "both"];
 const HEX_COLOR = /^#[0-9a-f]{6}$/iu;
-const PREVIEW_LOCK_REASON = "미리보기 후보를 확정하거나 닫은 뒤에 다른 편집을 할 수 있습니다.";
 
 const COLOR_LABELS: Readonly<Record<keyof CharacterRecipe["colors"], string>> = {
   skin: "피부",
@@ -758,7 +758,7 @@ export function useCharacterShaperBinding(
   const runPlan = useCallback((plan: CharacterApplyPlan): CharacterShaperCommitResult => {
     const blocked = busyRef.current;
     if (blocked !== null) return { ok: false, plan, reason: blocked };
-    if (previewRef.current !== null) return { ok: false, plan, reason: PREVIEW_LOCK_REASON };
+    if (previewRef.current !== null) return { ok: false, plan, reason: shaperPreviewLockReason() };
     if (plan.availability.status === "unavailable") {
       return { ok: false, plan, reason: plan.availability.reason ?? frozenStatus6Text("studio.frozenStatus6.shaper.modelUnavailable", "이 모델에는 적용할 수 없습니다.") };
     }
@@ -840,7 +840,7 @@ export function useCharacterShaperBinding(
     if (current) {
       return current.entryId === entry.id
         ? { ok: true, plan: current.plan, reason: null }
-        : { ok: false, plan: prepared, reason: PREVIEW_LOCK_REASON };
+        : { ok: false, plan: prepared, reason: shaperPreviewLockReason() };
     }
     if (prepared.steps.length === 0) return { ok: true, plan: prepared, reason: null };
 
@@ -876,7 +876,7 @@ export function useCharacterShaperBinding(
     const blocked = busyRef.current;
     if (blocked !== null) return { ok: false, plan: current.plan, reason: blocked };
     if (current.entryId !== entry.id || current.modelId !== readString(hostRef.current.activeModelId)) {
-      return { ok: false, plan: current.plan, reason: PREVIEW_LOCK_REASON };
+      return { ok: false, plan: current.plan, reason: shaperPreviewLockReason() };
     }
     previewRef.current = null;
     setPreviewEntryId(null);
@@ -968,7 +968,7 @@ export function useCharacterShaperBinding(
   const commitPreset = useCallback<CharacterShaperBinding["commitPreset"]>((preset, document) => {
     const blocked = busyRef.current;
     if (blocked !== null) return { ok: false, reason: blocked };
-    if (previewRef.current !== null) return { ok: false, reason: PREVIEW_LOCK_REASON };
+    if (previewRef.current !== null) return { ok: false, reason: shaperPreviewLockReason() };
     const host = hostRef.current;
     let prepared: ReturnType<typeof planCharacterPresetApplication>;
     try {
