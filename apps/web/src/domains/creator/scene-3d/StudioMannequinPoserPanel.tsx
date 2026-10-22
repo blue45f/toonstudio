@@ -42,7 +42,7 @@ import { createPortal } from "react-dom";
 
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
 import { studioDiscardUnpersistedMannequinStateRequest } from "../studio-destructive-command-catalog";
-import { frozenStatus2Text } from "../studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import {
   StudioPanelChip,
   StudioSectionHeader,

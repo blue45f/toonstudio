@@ -5,19 +5,22 @@ import { describe, expect, it } from "vitest";
 import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
 
 /**
- * creator 잔여 상태 문구 i18n 키 이관 계약 (A4 5라운드 cat1 잔여).
+ * creator 잔여 상태 문구 i18n 키 이관 계약 (A4 4라운드 cat1).
  *
- * 표시 정본은 r5cat1.creator.* (r5-cat1-status-i18n 형제 등록 모듈) 키이며,
- * 코드 안의 한국어 원문은 `r5CreatorStatusText(키, 한국어 폴백)`의 폴백 인자로만
+ * 배경: cat1 실측 분리에서 진짜 미이관으로 확정된 creator 표면 8파일의
+ * 빈 상태·실패·로딩 문구가 호출부에 한국어로 하드코딩돼 있었다. 표시 정본은
+ * r4cat1.creator.* (r4-cat1-status-i18n 형제 등록 모듈) 키이며, 코드 안의
+ * 한국어 원문은 `r4CreatorStatusText(키, 한국어 폴백)`의 폴백 인자로만
  * 남아야 한다. 기존 등록 모듈은 키 개수 단언이 있어 확장하지 않았다.
  */
 
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
+/** 등록 모듈(registerI18nLocaleEntries)의 locale 블록을 파싱한다. */
 function parseRegisterModule(source: string): Record<"ko" | "en", Record<string, string>> {
   const blocks: Record<string, Record<string, string>> = {};
   const pattern = /registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g;
@@ -31,26 +34,22 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
   return blocks as Record<"ko" | "en", Record<string, string>>;
 }
 
-const DICTS = parseRegisterModule(readSource("r5-cat1-status-i18n.ts"));
+const DICTS = parseRegisterModule(readSource("r4-cat1-status-i18n.ts"));
 const KEYS = Object.keys(DICTS.ko).sort();
 
 const CONSUMERS = [
-  "ai/StudioAiComicDirectorPanel.tsx",
-  "StudioLocalizationQaReport.tsx",
-  "StudioPublicationControls.tsx",
-  "StudioRevisionCompareView.tsx",
-  "StudioPathBooleanPanel.tsx",
-  "StudioBrowserWorkspaceTransfer.tsx",
-  "production-hub/ProductionManuscriptDeliveryHub.tsx",
-  "bg3d/StudioBg3dLtLineDetailControls.tsx",
-  "bg3d/StudioBg3dTexturePaintPanel.tsx",
-  "brush/StudioBrushEngineProgramControls.tsx",
-  "brush-lab/StudioBrushV6Workbench.tsx",
-  "storyworld/plausibility/StudioStoryPlausibilityManuscript.tsx",
+  "StoryBibleCrosslinkPanel.tsx",
+  "StudioMasterPagePanel.tsx",
+  "StudioStoryboardArtHandoffPanel.tsx",
+  "StudioArtifactIntakeTray.tsx",
+  "StudioCommandSearchDialog.tsx",
+  "StudioSaveSyncStatusCenter.tsx",
+  "toolchain/StudioProductionToolchainPanel.tsx",
+  "StudioScenarioCandidateDesk.tsx",
 ] as const;
 
 const CALL_PATTERN =
-  /r5CreatorStatusText\("([^"]+)",\s*(?:\{[^}}]*\},\s*)?"((?:[^"\\]|\\.)*)"\)/g;
+  /r4CreatorStatusText\("([^"]+)",\s*"((?:[^"\\]|\\.)*)"\)/g;
 
 function collectCalls(): Array<{ key: string; fallback: string; file: string }> {
   const calls: Array<{ key: string; fallback: string; file: string }> = [];
@@ -70,12 +69,12 @@ function placeholders(value: string): string[] {
   return [...value.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((match) => match[1] ?? "").sort();
 }
 
-describe("r5cat1.creator 사전 (5라운드 형제 등록 모듈)", () => {
-  it("ko/en 키가 패리티를 이루고 14키이며 en에 한글이 없다", () => {
+describe("r4cat1.creator 사전 (4라운드 형제 등록 모듈)", () => {
+  it("ko/en 키가 패리티를 이루고 9키이며 en에 한글이 없다", () => {
     expect(Object.keys(DICTS.en).sort()).toEqual(KEYS);
-    expect(KEYS).toHaveLength(14);
+    expect(KEYS).toHaveLength(9);
     for (const key of KEYS) {
-      expect(key.startsWith("r5cat1.creator."), key).toBe(true);
+      expect(key.startsWith("r4cat1.creator."), key).toBe(true);
       expect(DICTS.ko[key], `ko missing ${key}`).toBeTruthy();
       expect(DICTS.en[key], `en missing ${key}`).toBeTruthy();
       expect(HANGUL.test(DICTS.en[key] ?? ""), `en value has Hangul: ${key}`).toBe(false);
@@ -89,13 +88,13 @@ describe("r5cat1.creator 사전 (5라운드 형제 등록 모듈)", () => {
   });
 });
 
-describe("r5cat1.creator 소비 계약 (5라운드 이관)", () => {
+describe("r4cat1.creator 소비 계약 (4라운드 이관 8파일)", () => {
   it("등록된 전 키가 소비 파일에서 참조되고 미등록 참조가 없다", () => {
     const used = new Set(collectCalls().map((call) => call.key));
     expect([...used].sort()).toEqual(KEYS);
     const consumerSource = CONSUMERS.map((file) => readSource(file)).join("\n");
     const referenced = new Set(
-      [...consumerSource.matchAll(/"(r5cat1\.creator\.[A-Za-z0-9.]+)"/g)].map(
+      [...consumerSource.matchAll(/"(r4cat1\.creator\.[A-Za-z0-9.]+)"/g)].map(
         (match) => match[1] ?? "",
       ),
     );

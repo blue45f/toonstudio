@@ -59,7 +59,7 @@ import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import "./studio-panel-status-i18n";
-import "./studio-panel-status-i18n-r4cat5";
+import "./status-i18n/studio-panel-status-i18n-r4cat5";
 
 export type StudioSelectionWorkbenchCommitIntent =
   | "select-opaque"

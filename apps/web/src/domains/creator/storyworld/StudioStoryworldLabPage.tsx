@@ -34,7 +34,7 @@ import {
 } from "react";
 
 import { loadStoryworldIssueDispositions, saveStoryworldIssueDispositions } from "./disposition-store";
-import { frozenStatus2Text } from "../studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { storyworldDraftStore } from "./draft-store";
 import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
 import { IssueList, IssuesTab } from "./StudioStoryworldIssues";
