@@ -50,6 +50,15 @@ describe("AuthModal service availability", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("제공자 조회 실패 안내는 alert 역할로 노출되고 재시도 버튼을 함께 제공한다", async () => {
+    fetchMock.mockRejectedValue(new TypeError("offline"));
+    render(<AuthModal onClose={vi.fn()} />);
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain(unavailable);
+    expect(screen.getByRole("button", { name: "다시 확인" })).toBeTruthy();
+    expect(screen.queryByText("소셜 로그인 확인 중…")).toBeNull();
+  });
+
   it("응답이 없는 요청을 15초에 중단하고 늦은 응답은 재시도 결과를 덮지 않는다", async () => {
     vi.useFakeTimers();
     const pending = deferred<ReturnType<typeof response>>();
