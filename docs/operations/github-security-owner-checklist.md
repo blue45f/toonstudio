@@ -1,6 +1,6 @@
 # GitHub 보안 설정 4건 — 소유자 확인 체크리스트와 기록 양식
 
-상태: **확인 대기 (2026-10-22 작성)** — 아래 4건은 저장소 소유자만 열 수 있는 GitHub Settings·Security 탭의 상태라, 코드와 파일만 보는 에이전트는 켜짐/꺼짐과 최근 실행 결과를 판정할 수 없다. 소유자가 이 문서를 따라 확인하고 §5 기록 양식을 채우면 그때 확정된다. 확인 전에는 어느 항목도 "켜져 있다"거나 "성공했다"고 쓰지 않는다.
+상태: **부분 확인 (2026-10-22)** — 설정 토글 5건과 CodeQL 실행 결과는 에이전트가 GitHub API로 직접 읽어 §1-b에 적었다. 알림 건수(Dependabot·Code scanning·Secret scanning)는 에이전트의 API 권한이 없어(403) 읽지 못했으므로 소유자만 확인할 수 있다. 소유자가 이 문서를 따라 §2의 건수를 확인하고 §5 기록 양식을 채우면 그때 확정된다. 읽지 못한 항목은 "켜져 있다"거나 "0건"이라고 쓰지 않는다.
 
 대상 저장소: `blue45f/toonstudio` (공개 저장소), 기본 브랜치 `main`.
 
@@ -12,6 +12,21 @@
 | `.github/dependabot.yml` | 실재. npm·cargo(3곳)·pip·github-actions 주간 버전 업데이트 PR 설정 | **버전 업데이트 PR 설정일 뿐**이다. 취약점 알림(Dependabot alerts)은 별도 토글이고 이 파일로 켜지지 않는다 (§2-2 확인 대상) |
 | `.github/secret_scanning.yml` | 실재하나 내용은 테스트 fixture 2개 파일의 스캔 제외(`paths-ignore`)뿐 | Secret scanning 자체의 활성화 증거가 **아니다** (§2-3 확인 대상) |
 | `SECURITY.md` | 실재. 비공개 제보 경로를 "소유자 활성화 필요"로 정직하게 표기済 (2026-10-22 H1 정합) | Private vulnerability reporting이 실제로 켜졌는지는 §2-4 확인 대상 |
+
+### 1-b. GitHub API로 읽은 설정과 실행 결과 (에이전트 실측, 2026-10-22)
+
+| 항목 | 읽은 값 | 읽은 방법 |
+| --- | --- | --- |
+| Dependabot security updates | `enabled` | 저장소 조회 응답의 `security_and_analysis.dependabot_security_updates` |
+| Secret scanning | `enabled` | 같은 응답의 `secret_scanning` |
+| Push protection | `enabled` | 같은 응답의 `secret_scanning_push_protection` |
+| Secret scanning 비제공자 패턴 · 유효성 검사 | 둘 다 `disabled` | 같은 응답의 `secret_scanning_non_provider_patterns`·`secret_scanning_validity_checks` |
+| Private vulnerability reporting | `{"enabled": true}` | 저장소의 `private-vulnerability-reporting` 조회 |
+| CodeQL | `main` push(`826b39a`, 06:09Z)와 같은 커밋의 주간 스케줄(08:36Z) 실행이 모두 `success`. 그 뒤 push 실행 2건(`9a8f607`·`1346e02`)은 `cancelled` | 워크플로 실행 목록 |
+
+- **읽지 못한 것**: Dependabot alerts 토글 자체, 열린 알림 건수와 심각도, Code scanning alerts 건수, Secret scanning alerts 건수. 해당 조회는 "Resource not accessible by integration"(403) 또는 프록시 차단으로 거절됐다. Dependabot security updates가 켜져 있으면 alerts도 켜져 있을 가능성이 높지만 이는 추정이고 §2-2에서 소유자가 확인한다.
+- **대체 점검(알림 목록을 대신하지 않는다)**: 의존성은 OSV 일괄 조회, 소스는 semgrep(`p/security-audit`·`p/owasp-top-ten`·`p/secrets` 등)으로 훑었다. 이번 점검 과정에서 고친 것은 AES-GCM 복호화 3곳의 인증 태그 길이 명시, 포맷 게이트웨이 입력 예외 4건, creator-inference의 `accelerate` 하한이다. GitHub Security 탭의 알림과 1:1로 일치한다고 주장하지 않는다.
+- **판단이 남은 항목**: `transformers`는 4.x 전체가 영향권이고 수정본이 5.10 이상뿐이라(huggingface-hub 1.5 이상 필요) 범위를 올리지 않았다. 해당 알림이 열려 있으면 근거(`services/creator-inference/requirements-models.txt` 주석)를 보고 "사용하지 않는 코드 경로"로 닫을지 GPU 자격 검증을 거쳐 5.x로 올릴지 소유자가 정한다.
 
 ## 2. 소유자가 확인할 4건
 
