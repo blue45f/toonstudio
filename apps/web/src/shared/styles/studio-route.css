@@ -680,6 +680,19 @@ body[data-studio-app="true"] .route-stage::before,
     );
   }
 
+  /* 실시간 협업 빠른 조작 단추는 캔버스 맨 위 띠(sticky top-16 = 4rem)에 놓인다. 한 줄짜리 알약(약 55px)은
+     그 위에서 끝나지만, 오프라인·서버 장애 안내가 붙으면 알약이 두 줄(약 100px)로 커져 단추의 윗부분이
+     알약 아래에 가려졌다(axe target-size: 44×9px 만 보임). 알약의 실제 높이(--studio-immersive-menubar-block)
+     가 한 줄짜리 기준(4.25rem)을 넘는 만큼만 단추를 내린다. 한 줄일 때는 0 이라 지금 자리와 같다.
+     폴백도 같은 4.25rem 이라 변수가 사라지면 0 으로 돌아가 예전 위치가 된다. */
+  [data-studio-editor="true"][data-studio-mobile-immersive="true"]
+    [data-studio-live-quick-controls-root="true"] {
+    margin-top: max(
+      0px,
+      calc(var(--studio-immersive-menubar-block, 4.25rem) - 4.25rem)
+    );
+  }
+
   [data-studio-mobile-immersive="true"] [data-studio-status-bar="true"] {
     display: none;
   }
