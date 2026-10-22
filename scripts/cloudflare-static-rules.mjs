@@ -44,7 +44,17 @@ function sha256Token(text) {
   return `'sha256-${createHash("sha256").update(text).digest("base64")}'`;
 }
 
-// 전역 script-src의 인라인 해시를 apps/web JSON-LD 해시 하나로 정규화한다.
+/**
+ * 공개 페이지가 주입하는 /studio 프리렌더 규칙 문자열. 앱의 `buildSpeculationRulesJson(STUDIO_PRERENDER_URLS)`
+ * (apps/web/src/shared/lib/speculation-rules.ts)와 바이트까지 같아야 하며 시험이 일치를 고정한다.
+ * script-src 에 해시가 하나라도 있으면 'inline-speculation-rules' 키워드는 무시되므로(2026-10-23 Chromium 156
+ * 실측: 키워드만으로는 프리렌더 요청조차 나가지 않음) 규칙 해시로 허용한다.
+ */
+export const STUDIO_SPECULATION_RULES_JSON = JSON.stringify({
+  prerender: [{ source: "list", urls: ["/studio"], eagerness: "moderate" }],
+});
+
+// 전역 script-src의 인라인 해시를 apps/web JSON-LD 해시와 /studio 프리렌더 규칙 해시로 정규화한다.
 // _headers는 경로별 제외가 안 돼 모든 문서에 전역 정책이 함께 강제되므로,
 // 인라인 허용은 해시로만 푼다. 3D 무대(Godot) 임베드가 제거되면서 무대
 // 부트스트랩 해시는 더 이상 주입하지 않고, 낡은 해시는 갈아끼운다.
@@ -54,7 +64,7 @@ export function withInlineScriptHashes(responsePolicy, root = process.cwd()) {
   if (!ldJson) {
     throw new Error("apps/web/index.html JSON-LD data block is missing");
   }
-  const keep = new Set([sha256Token(ldJson[1])]);
+  const keep = new Set([sha256Token(ldJson[1]), sha256Token(STUDIO_SPECULATION_RULES_JSON)]);
   const policy = JSON.parse(JSON.stringify(responsePolicy));
   const rootRule = policy.headers?.find((rule) => rule?.source === "/(.*)");
   const csp = rootRule?.headers?.find((header) => header?.key === CONTENT_SECURITY_POLICY_KEY);
