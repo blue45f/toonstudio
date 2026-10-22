@@ -4,10 +4,14 @@
  * 전부 생성형 AI로 만든 배경 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(배경 위 배지와 섹션 안내 문구).
  *
- * 전환 클립 3편은 자산만 반입했다. 투어 플레이어(ProductTourPlayer)는 단일 MP4
- * 한 편의 시간 오프셋으로 챕터를 오가는 구조(챕터 시작점으로 seek)라, 챕터
- * 사이에 별도 클립을 끼워 넣을 이음매가 없다. 플레이어를 구간 재생 구조로
- * 바꾸는 별도 결정이 있기 전까지 삽입을 보류한다.
+ * 전환 클립 3편은 투어 플레이어에 끼워 넣지는 못했다. 플레이어
+ * (ProductTourPlayer)는 단일 MP4 한 편의 시간 오프셋으로 챕터를 오가는
+ * 구조(챕터 시작점으로 seek)라, 챕터 사이에 별도 클립을 끼울 이음매가 없다.
+ * 대신 주제가 맞는 소개 표면의 배경으로 재배선했다: drawing은
+ * /about/workflow 작화 단계 패널 배경(단계 매핑은
+ * domains/marketing/public/workflow-stages.ts가 소유한다), serial은 투어
+ * 페이지 '새로 더해진 기능' 카드(제작 관리 보드)의 배경. bg3d는 아직
+ * 자산만 반입한 상태다.
  */
 export interface ProductTourAmbientClip {
   readonly id: "intro" | "outro";
@@ -81,9 +85,30 @@ export function productTourChapterLoop(chapterId: string): ProductTourChapterLoo
   return PRODUCT_TOUR_CHAPTER_LOOPS.find((loop) => loop.chapterId === chapterId);
 }
 
+/**
+ * /about/workflow 작화 단계 패널 배경으로 재배선한 전환 클립 — 드로잉 장면을
+ * 그린 생성형 AI 영상이다. 단계 매핑 정본은 workflow-stages.ts다.
+ */
+export const PRODUCT_TOUR_TRANSITION_DRAWING_CLIP = {
+  id: "drawing",
+  src: "/brand/product-tour/tour-transition-1-drawing.mp4",
+  width: 1344,
+  height: 768,
+} as const;
+
+/**
+ * 투어 '새로 더해진 기능' 카드 배경으로 재배선한 전환 클립 — 연재 캘린더에
+ * 체크가 채워지는 장면을 그린 생성형 AI 영상이다. 카드 이미지(캡처·개념)와는
+ * 별개의 장식 배경이며, 성격은 탭 안내 문구로 밝힌다.
+ */
+export const PRODUCT_TOUR_TRANSITION_SERIAL_CLIP = {
+  id: "serial",
+  src: "/brand/product-tour/tour-transition-3-serial.mp4",
+  width: 1344,
+  height: 768,
+} as const;
+
 /** 챕터 전환 삽입 보류 중 — 자산만 반입한 스테이징 클립(파일 상단 주석 참고). */
 export const PRODUCT_TOUR_TRANSITION_CLIPS = [
-  { id: "drawing", src: "/brand/product-tour/tour-transition-1-drawing.mp4", width: 1344, height: 768 },
   { id: "bg3d", src: "/brand/product-tour/tour-transition-2-bg3d.mp4", width: 1344, height: 768 },
-  { id: "serial", src: "/brand/product-tour/tour-transition-3-serial.mp4", width: 1344, height: 768 },
 ] as const;

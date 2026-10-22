@@ -228,6 +228,7 @@
 }
 
 .product-tour__after-card {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   overflow: hidden;
@@ -252,6 +253,7 @@
 }
 
 .product-tour__after-copy {
+  position: relative;
   display: grid;
   align-content: center;
   gap: 10px;
