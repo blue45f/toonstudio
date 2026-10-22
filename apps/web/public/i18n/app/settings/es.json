@@ -1,8 +1,8 @@
 {
-  "settings.eyebrow": "SETTINGS",
+  "settings.eyebrow": "CONFIGURACIÓN",
   "settings.title": "Configuración",
   "settings.subtitle": "Almacenar las preferencias de visualización y filtro o restablecerlas. Todas las configuraciones se guardan solo en este navegador.",
-  "settings.section.display": "Display",
+  "settings.section.display": "Visualización",
   "settings.section.filters": "Los filtros",
   "settings.section.age": "Verificación de edad",
   "settings.section.data": "Mis datos",
