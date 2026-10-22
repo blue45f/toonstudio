@@ -667,7 +667,9 @@ function rethrowPackageArchiveError(cause: unknown): never {
     if (cause.code === "PATH_INVALID" || cause.code === "PATH_DUPLICATE") {
       fail(cause.code === "PATH_DUPLICATE" ? "DUPLICATE_PATH" : "PATH_INVALID", "fromPackageArchive", {
         path: cause.path,
-      }, { detail: cause.message });
+      }, cause.variant
+        ? { causeCode: cause.code, causeVariant: cause.variant, ...(cause.params ?? {}) }
+        : { detail: cause.message });
     }
   }
   fail("ARCHIVE_INVALID", "zipAssembleFailed");
@@ -1580,13 +1582,16 @@ function linked3dArchiveCoverage(
     return assertStudioLinked3dPassProjectArchiveEvidence(project, evidence);
   } catch (cause) {
     if (!(cause instanceof StudioLinked3dPassProjectArchiveError)) throw cause;
+    const causeParams = cause.variant
+      ? { causeCode: cause.code, causeVariant: cause.variant }
+      : { detail: cause.message };
     if (cause.code === "attachment-missing") {
-      fail("ATTACHMENT_MISSING", "fromLinked3d", {}, { detail: cause.message });
+      fail("ATTACHMENT_MISSING", "fromLinked3d", {}, causeParams);
     }
     if (cause.code === "attachment-mismatch") {
-      fail("DOCUMENT_REFERENCE_MISMATCH", "fromLinked3d", {}, { detail: cause.message });
+      fail("DOCUMENT_REFERENCE_MISMATCH", "fromLinked3d", {}, causeParams);
     }
-    fail("PROJECT_INVALID", "fromLinked3d", {}, { detail: cause.message });
+    fail("PROJECT_INVALID", "fromLinked3d", {}, causeParams);
   }
 }
 
