@@ -5,7 +5,7 @@ import { createStudioReferenceRebuildWorker } from "./studio-reference-rebuild-w
 import { useT } from "@/shared/lib/i18n";
 
 import "../studio-bg3d-panel-status-i18n";
-import "../studio-bg3d-panel-status-i18n-r4cat5";
+import "../status-i18n/studio-bg3d-panel-status-i18n-r4cat5";
 
 const PRESETS = [
   ["school-room", "채광 교실"],

@@ -17,7 +17,7 @@ import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 function parseRegisterModule(source: string): Record<"ko" | "en", Record<string, string>> {
@@ -39,11 +39,11 @@ function placeholders(value: string): string[] {
 
 const MODULES = [
   {
-    file: "studio-panel-status-i18n-r4cat5.ts",
+    file: "status-i18n/studio-panel-status-i18n-r4cat5.ts",
     consumers: ["StudioCommunityMarketplaceLifecycle.tsx", "StudioSelectionWorkbenchPanel.tsx"],
   },
   {
-    file: "studio-bg3d-panel-status-i18n-r4cat5.ts",
+    file: "status-i18n/studio-bg3d-panel-status-i18n-r4cat5.ts",
     consumers: ["bg3d/StudioReferenceRebuildPresets.tsx"],
   },
 ] as const;

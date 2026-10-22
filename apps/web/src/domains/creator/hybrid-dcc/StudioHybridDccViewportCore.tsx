@@ -63,7 +63,7 @@ import {
   type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
 import { STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES, validateStudioHybridDccFanPolygon } from "./studio-hybrid-dcc-polygon-validation";
-import { frozenStatus2Text } from "../studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { resolveStudioHybridDccScreenComponentCandidate } from "./studio-hybrid-dcc-screen-selection";
 import { createStudioHybridDccSelectionGate } from "./studio-hybrid-dcc-selection-gate";
 import { detectStudioHybridDccWebglCapability } from "./studio-hybrid-dcc-webgl-probe";

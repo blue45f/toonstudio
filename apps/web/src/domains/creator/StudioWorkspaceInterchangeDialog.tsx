@@ -51,7 +51,7 @@ import {
   STUDIO_ICON_STROKE,
   studioChromeIconClass,
 } from "./studio-chrome-ui";
-import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 
 import { cn } from "@/shared/lib/utils";
 

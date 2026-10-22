@@ -1,5 +1,5 @@
 import type { StudioMarketplaceImageAsset } from "./studio-marketplace-assets";
-import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
