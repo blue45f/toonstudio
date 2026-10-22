@@ -22,6 +22,9 @@ import type {
 
 import { cx } from "@/shared/lib/cx";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 // 템플릿마다 손으로 아이콘을 지정하는 대신 카테고리 단위로만 아이콘을 준다(교실/카페처럼 실내형
 // 템플릿이 늘어도 카테고리에 맞는 아이콘을 그대로 재사용할 수 있도록 — COMPOSITE_CATEGORY 칩이
 // 아이콘 없이 텍스트만 쓰는 것과 달리, 씬 템플릿 카드는 설명 텍스트가 길어 아이콘으로 스캔성을 보강).
@@ -119,6 +122,7 @@ export function StudioBg3dSceneTemplatePanel({
   onDeleteTemplateInstance,
   onDeleteAllTemplateInstances,
 }: StudioBg3dSceneTemplatePanelProps) {
+  const t = useT();
   const visibleTemplates = templates.filter((t) => activeCategory === null || t.category === activeCategory);
   const [pendingDelete, setPendingDelete] =
     useState<StudioBg3dTemplatePendingDelete | null>(null);
@@ -209,7 +213,7 @@ export function StudioBg3dSceneTemplatePanel({
             </button>
           );
         })}
-        {visibleTemplates.length === 0 ? <p className="py-4 text-center text-[0.68rem] text-fg-3">이 카테고리에는 아직 템플릿이 없어요.</p> : null}
+        {visibleTemplates.length === 0 ? <p className="py-4 text-center text-[0.68rem] text-fg-3">{t("studio.bg3dPanelStatus.sceneTemplate.categoryEmpty", "이 카테고리에는 아직 템플릿이 없어요.")}</p> : null}
       </div>
 
       <section className="mt-5 border-t border-line pt-4" aria-labelledby="bg3d-template-organizer-title">
@@ -258,7 +262,7 @@ export function StudioBg3dSceneTemplatePanel({
                 type="button"
                 className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-line bg-card px-2 text-[0.66rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9"
                 disabled={organizationDisabled || !allResetAvailable}
-                title={!allResetAvailable ? "원본을 찾을 수 없거나 잠긴 템플릿이 있습니다." : undefined}
+                title={!allResetAvailable ? t("studio.bg3dPanelStatus.sceneTemplate.resetAllUnavailable", "원본을 찾을 수 없거나 잠긴 템플릿이 있습니다.") : undefined}
                 onClick={() => { setPendingDelete(null); onResetAllTemplateInstances(); }}
               >
                 <RotateCcw size={13} aria-hidden />
@@ -304,8 +308,8 @@ export function StudioBg3dSceneTemplatePanel({
                 const resetUnavailableReason = instance.lockedNodeCount > 0
                   ? `잠긴 객체 ${instance.lockedNodeCount}개의 잠금을 먼저 해제해 주세요.`
                   : !instance.sourceAvailable
-                    ? "템플릿 원본을 찾을 수 없어 원래 배치로 초기화할 수 없습니다."
-                    : "템플릿 묶음 구조가 손상되어 원래 배치로 초기화할 수 없습니다.";
+                    ? t("studio.bg3dPanelStatus.sceneTemplate.resetSourceMissing", "템플릿 원본을 찾을 수 없어 원래 배치로 초기화할 수 없습니다.")
+                    : t("studio.bg3dPanelStatus.sceneTemplate.resetStructureCorrupt", "템플릿 묶음 구조가 손상되어 원래 배치로 초기화할 수 없습니다.");
                 return (
                   <article
                     key={instance.id}
@@ -384,7 +388,7 @@ export function StudioBg3dSceneTemplatePanel({
           </>
         ) : (
           <p className="rounded-lg border border-dashed border-line bg-card/40 px-3 py-3 text-center text-[0.66rem] leading-relaxed text-fg-3">
-            추적 가능한 템플릿 배치가 없습니다. 새 씬 템플릿이나 내 템플릿을 추가하면 이곳에서 한 묶음으로 정리할 수 있어요.
+            {t("studio.bg3dPanelStatus.sceneTemplate.trackedEmpty", "추적 가능한 템플릿 배치가 없습니다. 새 씬 템플릿이나 내 템플릿을 추가하면 이곳에서 한 묶음으로 정리할 수 있어요.")}
           </p>
         )}
       </section>

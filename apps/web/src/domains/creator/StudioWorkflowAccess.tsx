@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { BookOpen, ChevronDown, Search, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
@@ -155,7 +156,7 @@ export function StudioWorkflowAccess({
                     if (studioGettingStartedTaskDisabled(task, Boolean(lockedReason))) return;
                     closeGuide();
                     try { onTask(task.id); }
-                    catch { setNotice("도구를 열지 못했어요. 작품 상태를 확인하고 다시 시도해 주세요."); }
+                    catch { setNotice(r3c07StatusText("studio.panelStatus.r3c07.workflowAccess.openFailed", "도구를 열지 못했어요. 작품 상태를 확인하고 다시 시도해 주세요.")); }
                   }}
                   className="group flex min-h-24 items-start gap-3 rounded-xl border border-line bg-card p-4 text-left transition-colors hover:border-accent/60 hover:bg-accent-soft/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
                 >

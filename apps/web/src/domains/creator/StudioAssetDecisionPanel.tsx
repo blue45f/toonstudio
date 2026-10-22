@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -345,7 +346,7 @@ export function StudioAssetDecisionPanel({
                 )}
               >
                 <Layers3 size={14} aria-hidden />
-                {pending ? "처리 중…" : `현재 설정으로 ${selected.useLabel}`}
+                {pending ? r3c07StatusText("studio.panelStatus.r3c07.assetDecision.processing", "처리 중…") : `현재 설정으로 ${selected.useLabel}`}
               </button>
             </div>
           </div>

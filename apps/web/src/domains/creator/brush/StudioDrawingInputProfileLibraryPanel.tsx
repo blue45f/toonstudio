@@ -29,7 +29,10 @@ import {
 
 import type { StudioDrawingInputDeckProps } from "./StudioDrawingInputDeck";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "../studio-brush-canvas-status-i18n";
 
 export interface StudioDrawingInputProfileLibraryPanelProps
   extends StudioDrawingInputDeckProps {
@@ -68,11 +71,12 @@ export function StudioDrawingInputProfileLibraryPanel({
   onStampTuningChange,
   onClose,
 }: StudioDrawingInputProfileLibraryPanelProps): ReactElement {
+  const t = useT();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [profiles, setProfiles] = useState<readonly StudioDrawingInputCustomProfile[]>([]);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(true);
-  const [notice, setNotice] = useState("이 기기의 SQLite/OPFS에서 내 입력 프로필을 불러오는 중…");
+  const [notice, setNotice] = useState(t("studio.brushCanvasStatus.brush.profileLoading", "이 기기의 SQLite/OPFS에서 내 입력 프로필을 불러오는 중…"));
   const right = mobile ? 12 : Math.max(12, dockInsets.right + 12);
 
   const currentSnapshot = useMemo(
@@ -129,7 +133,7 @@ export function StudioDrawingInputProfileLibraryPanel({
       );
     } catch (cause) {
       setNotice(
-        `입력 프로필 저장소를 열지 못했습니다. 현재 작업 설정은 그대로 유지됩니다: ${cause instanceof Error ? cause.message : String(cause)}`,
+        t("studio.brushCanvasStatus.brush.profileOpenFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "입력 프로필 저장소를 열지 못했습니다. 현재 작업 설정은 그대로 유지됩니다: {detail}"),
       );
     } finally {
       setBusy(false);
@@ -154,7 +158,7 @@ export function StudioDrawingInputProfileLibraryPanel({
   const saveCurrent = useCallback(async (): Promise<void> => {
     const normalizedName = normalizeStudioDrawingInputProfileName(name);
     if (!normalizedName) {
-      setNotice("프로필 이름을 입력해 주세요.");
+      setNotice(t("studio.brushCanvasStatus.brush.profileNameRequired", "프로필 이름을 입력해 주세요."));
       return;
     }
     setBusy(true);
@@ -177,7 +181,7 @@ export function StudioDrawingInputProfileLibraryPanel({
       );
     } catch (cause) {
       setNotice(
-        `입력 프로필을 저장하지 못했습니다. 현재 입력감은 바뀌지 않았습니다: ${cause instanceof Error ? cause.message : String(cause)}`,
+        t("studio.brushCanvasStatus.brush.profileSaveFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "입력 프로필을 저장하지 못했습니다. 현재 입력감은 바뀌지 않았습니다: {detail}"),
       );
     } finally {
       setBusy(false);
@@ -193,7 +197,7 @@ export function StudioDrawingInputProfileLibraryPanel({
       setNotice(`${profile.name} 프로필을 삭제했습니다.`);
     } catch (cause) {
       setNotice(
-        `프로필을 삭제하지 못했습니다: ${cause instanceof Error ? cause.message : String(cause)}`,
+        t("studio.brushCanvasStatus.brush.profileDeleteFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "프로필을 삭제하지 못했습니다: {detail}"),
       );
     } finally {
       setBusy(false);
@@ -282,7 +286,7 @@ export function StudioDrawingInputProfileLibraryPanel({
         <section aria-label="저장된 입력 프로필" className="space-y-1.5">
           {profiles.length === 0 ? (
             <p className="rounded-xl border border-dashed border-line px-3 py-5 text-center text-[0.58rem] leading-relaxed text-fg-3">
-              저장된 프로필이 없습니다. 현재 잘 맞는 입력감을 저장해 두면 캔버스나 문서가 바뀌어도 다시 적용할 수 있습니다.
+              {t("studio.brushCanvasStatus.brush.profileEmpty", "저장된 프로필이 없습니다. 현재 잘 맞는 입력감을 저장해 두면 캔버스나 문서가 바뀌어도 다시 적용할 수 있습니다.")}
             </p>
           ) : profiles.map((profile) => {
             const active = snapshotMatches(currentSnapshot, profile.snapshot);

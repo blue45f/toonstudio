@@ -18,6 +18,7 @@
  * (캐릭터 시트 패널)가 이미 갖고 있어, 패널이 고른 캐릭터를 그대로 받는다.
  */
 import { useMemo } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { StudioStoryCharacter } from "../studio-story-bible";
 import type {
   CharacterAppearanceRecord,
@@ -82,10 +83,7 @@ export function StudioCharacterAppearanceList({
     <section aria-label={`${character.name} 등장 회차·씬 목록`}>
       <h3>{character.name} — 등장 회차·씬</h3>
       {lookup.totalEpisodes === 0 ? (
-        <p>
-          아직 등장 기록이 없어요. 회차에서 이 캐릭터를 태그하면 여기에 회차·씬
-          목록이 쌓여요.
-        </p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.appearance.empty", "아직 등장 기록이 없어요. 회차에서 이 캐릭터를 태그하면 여기에 회차·씬 목록이 쌓여요.")}</p>
       ) : (
         <>
           <p>

@@ -3,6 +3,7 @@ import {
   translateCurrentStaticSourceText,
   useBilingual,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 import {
   BookOpen,
   CheckCircle2,
@@ -138,7 +139,7 @@ export function CreatorEcosystemPage() {
 
   useEffect(() => {
     try { saveCreatorEcosystemState(globalThis.localStorage, state); }
-    catch (error) { setNotice(error instanceof Error ? error.message : "기록을 저장하지 못했습니다."); }
+    catch (error) { setNotice(error instanceof Error ? error.message : creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.saveRecordFailed", "기록을 저장하지 못했습니다.")); }
   }, [state]);
 
   const continuityIssues = detectContinuityIssues(state.continuityFacts);
@@ -205,7 +206,7 @@ export function CreatorEcosystemPage() {
     setAiBusy(false);
     if (!result.ok) { setNotice(result.error); return; }
     setDialogueDraft((current) => ({ ...current, translated: result.data.content }));
-    setNotice(`${result.data.provider} / ${result.data.model} 제안을 검토용 초안으로만 불러왔습니다. 승인 전에는 배포 데이터가 되지 않습니다.`);
+    setNotice(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.translationDraftNotice", { provider: result.data.provider, model: result.data.model }, "${result.data.provider} / ${result.data.model} 제안을 검토용 초안으로만 불러왔습니다. 승인 전에는 배포 데이터가 되지 않습니다."));
   };
 
   const exportBetaPackage = () => {
@@ -213,7 +214,7 @@ export function CreatorEcosystemPage() {
       const pack = createBetaReviewPackage(betaTitle, betaPages.split("\n").map((item) => item.trim()).filter(Boolean));
       downloadJson(`toonstudio-beta-${pack.packageId}.json`, pack);
       setNotice("텍스트와 페이지 이름만 포함한 베타 독자 패키지를 만들었습니다. 원고 이미지 공개는 사용자가 별도로 결정합니다.");
-    } catch (error) { setNotice(error instanceof Error ? error.message : "베타 패키지를 만들지 못했습니다."); }
+    } catch (error) { setNotice(error instanceof Error ? error.message : creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.betaPackageFailed", "베타 패키지를 만들지 못했습니다.")); }
   };
   const importFeedback = async (file: File | undefined) => {
     if (!file) return;
@@ -221,7 +222,7 @@ export function CreatorEcosystemPage() {
       const feedback = parseBetaFeedbackPackage(await readJsonFile(file));
       setState((current) => ({ ...current, betaFeedback: [...current.betaFeedback, ...feedback.filter((entry) => !current.betaFeedback.some((item) => item.id === entry.id))].slice(0, 500) }));
       setNotice(`${feedback.length}개의 베타 독자 응답을 가져왔습니다.`);
-    } catch (error) { setNotice(error instanceof Error ? error.message : "피드백을 가져오지 못했습니다."); }
+    } catch (error) { setNotice(error instanceof Error ? error.message : creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.feedbackLoadFailed", "피드백을 가져오지 못했습니다.")); }
   };
 
   const addProcessImages = async (files: FileList | null) => {
@@ -231,11 +232,11 @@ export function CreatorEcosystemPage() {
       const added = await Promise.all(selected.map(async (file, index) => {
         if (!file.type.match(/^image\/(?:png|jpeg|webp)$/u) || file.size > 3_000_000) throw new Error("과정 이미지는 PNG·JPEG·WebP, 장당 3MB 이하여야 합니다.");
         return { label: ["콘티", "선화", "채색", "완성"][processImages.length + index] ?? file.name.slice(0, 80), dataUrl: await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader(); reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("이미지를 읽지 못했습니다.")); reader.onerror = () => reject(reader.error ?? new Error("이미지를 읽지 못했습니다.")); reader.readAsDataURL(file);
+          const reader = new FileReader(); reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.imageReadFailed", "이미지를 읽지 못했습니다."))); reader.onerror = () => reject(reader.error ?? new Error(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.imageReadFailed", "이미지를 읽지 못했습니다."))); reader.readAsDataURL(file);
         }) };
       }));
       setProcessImages((current) => [...current, ...added].slice(0, 4));
-    } catch (error) { setNotice(error instanceof Error ? error.message : "과정 이미지를 읽지 못했습니다."); }
+    } catch (error) { setNotice(error instanceof Error ? error.message : creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.processImageReadFailed", "과정 이미지를 읽지 못했습니다.")); }
   };
 
   return (

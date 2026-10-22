@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import { StudioBrushV5Composer } from "./StudioBrushV5Composer";
 import {
   BRUSH_QUALITY_CATALOG,
@@ -108,6 +111,7 @@ function Metric({ label, value }: { readonly label: string; readonly value: numb
 }
 
 export function StudioBrushV5QualityWorkbench({ scope }: { readonly scope: string }) {
+  const t = useT();
   const storageKey = `toonstudio.brush-quality-v1:${encodeURIComponent(scope)}`;
   const [policy, setPolicy] = useState<BrushQualityPolicy>(() => readPolicy(storageKey));
   const [tab, setTab] = useState<Tab>("compose");
@@ -141,7 +145,7 @@ export function StudioBrushV5QualityWorkbench({ scope }: { readonly scope: strin
       const parsed: unknown = JSON.parse(await file.text());
       const source = parsed && typeof parsed === "object" && "policy" in parsed ? (parsed as { policy: unknown }).policy : parsed;
       replace(normalizeBrushQualityPolicy(source), `“${file.name}” 품질 정책을 가져왔습니다.`);
-    } catch { setMessage("품질 정책 JSON을 읽을 수 없습니다."); }
+    } catch { setMessage(t("studio.brushCanvasStatus.brushLab.v5PolicyReadFailed", "품질 정책 JSON을 읽을 수 없습니다.")); }
   }
 
   const tabs: readonly { id: Tab; label: string }[] = [

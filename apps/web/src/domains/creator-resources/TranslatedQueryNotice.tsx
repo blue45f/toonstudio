@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
+import { resourceStatusText } from "./resource-status-i18n";
 import { RESEARCH_MT_MODEL_TOTAL_BYTES } from "./research-query-mt";
 
 import type { TranslatedResearchQuery } from "./use-translated-research-query";
@@ -41,7 +42,7 @@ export function TranslatedQueryNotice({
       <p role="status" className="text-sm leading-6 text-fg-2">
         {translation.source === "original"
           ? <>한글 검색어를 영어로 바꾸지 못해 <strong className="text-fg">‘{translation.original}’</strong> 원문으로 검색합니다. 아래에서 영문 검색어를 직접 입력할 수 있습니다.</>
-          : <>‘{translation.original}’ → <strong className="text-fg">‘{translation.effectiveQuery}’</strong>(으)로 검색 중입니다. <span className="text-fg-3">변환 방식: {sourceLabel}</span></>}
+          : <>‘{translation.original}’ → <strong className="text-fg">‘{translation.effectiveQuery}’</strong>{resourceStatusText("resources.status.translatedNotice.searchingSuffix", "(으)로 검색 중입니다.")} <span className="text-fg-3">변환 방식: {sourceLabel}</span></>}
         {overridden && <span className="text-fg-3"> · 직접 고친 검색어입니다.</span>}
       </p>
       {translation.unresolved.length > 0 && translation.source === "dictionary" && (

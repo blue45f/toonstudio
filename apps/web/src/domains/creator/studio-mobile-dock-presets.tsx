@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { type ComponentProps, lazy, Suspense } from "react";
 
 import { studioMobileSheetSizeStyle } from "./studio-mobile-sheet-snap";
@@ -46,7 +47,7 @@ export function StudioInspectorAsideFallback({
       role={isMobile ? "dialog" : undefined}
       aria-modal={isMobile ? true : undefined}
       aria-busy="true"
-      aria-label="작업 패널 불러오는 중"
+      aria-label={r3c07StatusText("studio.panelStatus.r3c07.mobileDock.panelLoading", "작업 패널 불러오는 중")}
       data-studio-sheet-id="props"
       data-studio-mobile-sheet={isMobile ? "true" : undefined}
       data-studio-sheet-snap={isMobile ? snap : undefined}

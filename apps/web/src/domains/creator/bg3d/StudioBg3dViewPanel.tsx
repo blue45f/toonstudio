@@ -9,6 +9,9 @@ import {
 import { summarizeStudioBg3dProductionScene } from "./studio-bg3d-production-workflow";
 import { composeStudioBg3dLens } from "./studio-bg3d-lens-composition";
 import { StudioBg3dSpatialStoryboardLauncher } from "./StudioBg3dSpatialStoryboardLauncher";
+
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
 import { StudioBg3dWebglRecoveryNotice } from "./StudioBg3dWebglRecoveryNotice";
 import { StudioBg3dViewPanel as StudioBg3dViewPanelContent } from "./StudioBg3dViewPanelContent";
 
@@ -44,6 +47,7 @@ function normalizeSelectedPasses(
  * recovery and archive-integrity paths.
  */
 export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
+  const t = useT();
   const { context } = props;
   const disabled =
     context.isCapturing ||
@@ -129,13 +133,13 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
       startExport: context.exportSavedShotsAsZip,
     },
     onComposeLens: (fovDegrees, preserveSubjectSize) => {
-      let reason: string | null = "지금은 카메라를 변경할 수 없습니다. 진행 중인 작업을 마친 뒤 다시 시도해 주세요.";
+      let reason: string | null = t("studio.bg3dPanelStatus.viewPanel.cameraChangeUnavailable", "지금은 카메라를 변경할 수 없습니다. 진행 중인 작업을 마친 뒤 다시 시도해 주세요.");
       if (disabled) return reason;
       context.updateCameraLens((liveCamera) => {
         const next = composeStudioBg3dLens(liveCamera, fovDegrees, preserveSubjectSize);
         reason = next ? null : liveCamera.projection === "orthographic"
-          ? "평행 투영에서는 화각을 바꾸지 않습니다. 원근 투영을 선택해 주세요."
-          : "현재 거리에서는 피사체 크기를 유지할 수 없습니다. 거리 조절 옵션을 끄고 화각만 바꿔 주세요.";
+          ? t("studio.bg3dPanelStatus.viewPanel.orthographicFov", "평행 투영에서는 화각을 바꾸지 않습니다. 원근 투영을 선택해 주세요.")
+          : t("studio.bg3dPanelStatus.viewPanel.subjectSizeUnavailable", "현재 거리에서는 피사체 크기를 유지할 수 없습니다. 거리 조절 옵션을 끄고 화각만 바꿔 주세요.");
         return next ?? liveCamera;
       });
       return reason;

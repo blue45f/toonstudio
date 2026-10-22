@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Suspense, useState } from "react";
 
 import { StudioSmartShapeEditDialog } from "./studio-page-lazy-ui";
@@ -37,11 +38,11 @@ export function useStudioSmartShapeEditing(options: SmartShapeEditingOptions) {
     const source = recentStudioSmartShapeStroke(options.elements, options.selectedId);
     const reason = studioSmartShapeEditReason(source);
     if (reason || !source) {
-      options.setError(reason ?? "교정할 스트로크가 없어요.");
+      options.setError(reason ?? r3c07StatusText("studio.panelStatus.r3c07.smartShapeEditing.noStroke", "교정할 스트로크가 없어요."));
       return;
     }
     if (options.isLocked(source)) {
-      options.setError("잠긴 원고나 레이어에서는 도형을 교정할 수 없어요.");
+      options.setError(r3c07StatusText("studio.panelStatus.r3c07.smartShapeEditing.locked", "잠긴 원고나 레이어에서는 도형을 교정할 수 없어요."));
       return;
     }
     options.select(source.id);

@@ -6,6 +6,8 @@
  */
 import { AlertTriangle, Info, WandSparkles, Wrench, XCircle } from "lucide-react";
 import { useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "./storyworld-status-i18n";
 
 import type {
   StoryworldAnalysisResult,
@@ -111,8 +113,9 @@ export function IssueList({ issues, limit, dispositions, onSetDisposition, onCle
   readonly onSetDisposition?: (issueKey: string, status: StoryworldIssueDispositionStatus, note?: string) => void;
   readonly onClearDisposition?: (issueKey: string) => void;
 }) {
+  const t = useT();
   const visible = limit === undefined ? issues : issues.slice(0, limit);
-  if (visible.length === 0) return <EmptyState>현재 필터에서 발견된 문제가 없습니다.</EmptyState>;
+  if (visible.length === 0) return <EmptyState>{t("studio.storyworldStatus.issues.emptyFiltered", "현재 필터에서 발견된 문제가 없습니다.")}</EmptyState>;
   return (
     <div className="storyworld-issue-list">
       {visible.map((issue) => {
@@ -152,6 +155,7 @@ export function IssuesTab({ result, continuityIssues, dispositions, onSetDisposi
   readonly onClearDisposition: (issueKey: string) => void;
   readonly onFixContinuity: (issue: StoryworldContinuityIssue) => void;
 }) {
+  const t = useT();
   const [severity, setSeverity] = useState<StoryworldSeverity | "all">("all");
   const [axis, setAxis] = useState<StoryworldAxisId | "all">("all");
   const filtered = result.issues.filter((issue) =>
@@ -168,7 +172,7 @@ export function IssuesTab({ result, continuityIssues, dispositions, onSetDisposi
         title="설정·연속성 검사"
       >
         {continuityIssues.length === 0 ? (
-          <EmptyState>연속성 검사에서 발견된 불일치가 없습니다.</EmptyState>
+          <EmptyState>{t("studio.storyworldStatus.issues.emptyContinuity", "연속성 검사에서 발견된 불일치가 없습니다.")}</EmptyState>
         ) : (
           <>
             <div className="storyworld-issue-list">
@@ -183,7 +187,7 @@ export function IssuesTab({ result, continuityIssues, dispositions, onSetDisposi
                 />
               ))}
             </div>
-            {activeContinuity.length === 0 ? <EmptyState>활성 불일치가 없습니다. 처리된 항목은 아래에 있습니다.</EmptyState> : null}
+            {activeContinuity.length === 0 ? <EmptyState>{t("studio.storyworldStatus.issues.emptyActiveContinuity", "활성 불일치가 없습니다. 처리된 항목은 아래에 있습니다.")}</EmptyState> : null}
             {handledContinuity.length > 0 ? (
               <details className="storyworld-handled">
                 <summary>해결·무시됨 {handledContinuity.length}개</summary>
@@ -209,10 +213,10 @@ export function IssuesTab({ result, continuityIssues, dispositions, onSetDisposi
           <label>
             심각도
             <select onChange={(event) => setSeverity(event.target.value as StoryworldSeverity | "all")} value={severity}>
-              <option value="all">전체</option>
-              <option value="error">오류</option>
-              <option value="warning">경고</option>
-              <option value="info">확인</option>
+              <option value="all">{t("studio.storyworldStatus.issues.severityAll", "전체")}</option>
+              <option value="error">{t("studio.storyworldStatus.issues.severityError", "오류")}</option>
+              <option value="warning">{t("studio.storyworldStatus.issues.severityWarning", "경고")}</option>
+              <option value="info">{t("studio.storyworldStatus.issues.severityInfo", "확인")}</option>
             </select>
           </label>
           <label>

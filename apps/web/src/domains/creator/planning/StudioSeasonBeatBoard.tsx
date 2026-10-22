@@ -12,6 +12,7 @@
  *   완전히 동일하다 (studio-episode-metrics-overlay.ts 의 정직성 규칙).
  */
 import { useMemo } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { SeasonPlan } from "@toonstudio/core/production";
 import type { StudioStoryCharacter } from "../studio-story-bible";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
@@ -90,13 +91,13 @@ export function StudioSeasonBeatBoard({
       )}
 
       {characters.length === 0 ? (
-        <p>캐릭터가 아직 없어요. 캐릭터 시트에서 인물을 만들면 그 캐릭터가 열로 나타나요.</p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.seasonBeat.noCharacters", "캐릭터가 아직 없어요. 캐릭터 시트에서 인물을 만들면 그 캐릭터가 열로 나타나요.")}</p>
       ) : board.rows.length === 0 ? (
-        <p>아직 회차 줄거리가 없어요. 회차 줄거리를 적으면 그 회차가 행으로 나타나요.</p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.seasonBeat.emptyEpisodes", "아직 회차 줄거리가 없어요. 회차 줄거리를 적으면 그 회차가 행으로 나타나요.")}</p>
       ) : (
         <>
           {!board.hasStory && (
-            <p>아직 적힌 줄거리가 없어서 보드가 비어 있어요. 회차 줄거리와 등장 캐릭터를 적으면 비트가 채워져요.</p>
+            <p>{r3c04StatusText("studio.r3c04Status.planning.seasonBeat.emptyBoard", "아직 적힌 줄거리가 없어서 보드가 비어 있어요. 회차 줄거리와 등장 캐릭터를 적으면 비트가 채워져요.")}</p>
           )}
           <table aria-label="회차별 캐릭터 비트">
             <thead>

@@ -1,3 +1,4 @@
+import { catalogStatusText } from "./catalog-status-i18n";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { lazy, Suspense } from "react";
 import { SITE_URL } from "@toonstudio/core/business";
@@ -52,7 +53,7 @@ export function AuthorPage() {
   const decodedAuthor = authorParam;
   const { data, loading, error, notFound, reload } = useApiResource<AuthorResponse>(
     authorParam ? `/api/authors/${encodeURIComponent(decodedAuthor)}` : null,
-    "작가 데이터를 불러오지 못했습니다."
+    catalogStatusText("catalog.status.author.loadFailed", "작가 데이터를 불러오지 못했습니다.")
   );
 
   const author = data?.author ?? decodedAuthor;

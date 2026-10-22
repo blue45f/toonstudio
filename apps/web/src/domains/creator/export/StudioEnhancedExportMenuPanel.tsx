@@ -28,6 +28,7 @@ import {
   type StudioExportMenuPanelProps,
 } from "./StudioExportMenuPanel";
 import { StudioPromoHandoffSection } from "./StudioPromoHandoffSection";
+import { subStatusText } from "../studio-sub-status-i18n";
 
 type PackageRunTone = "info" | "good" | "warn";
 
@@ -60,9 +61,9 @@ function progressPercent(progress: StudioDownloadPackageProgress): number {
 
 function progressLabel(progress: StudioDownloadPackageProgress): string {
   if (progress.phase === "hashing") {
-    return `무결성 계산 ${progress.completed}/${progress.total}`;
+    return subStatusText("studio.subStatus.enhanced.hashing", { completed: progress.completed, total: progress.total }, "무결성 계산 {completed}/{total}");
   }
-  return `ZIP 조립 ${progress.completed}/${progress.total}`;
+  return subStatusText("studio.subStatus.enhanced.zipAssembling", { completed: progress.completed, total: progress.total }, "ZIP 조립 {completed}/{total}");
 }
 
 function isAbortError(error: unknown): boolean {
@@ -101,7 +102,7 @@ export function StudioEnhancedExportMenuPanel(
     controller.abort();
     setPackageStatus({
       tone: "info",
-      text: "현재 단계를 마친 뒤 패키지 생성을 중단하고 있어요.",
+      text: subStatusText("studio.subStatus.enhanced.stopping", "현재 단계를 마친 뒤 패키지 생성을 중단하고 있어요."),
     });
   };
 
@@ -113,7 +114,7 @@ export function StudioEnhancedExportMenuPanel(
     setPackageBusy(true);
     setPackageStatus({
       tone: "info",
-      text: `페이지 캡처 준비 0/${context.pageIndices.length} · ${context.rangeLabel}`,
+      text: subStatusText("studio.subStatus.enhanced.capturePreparing", { total: context.pageIndices.length, range: context.rangeLabel }, "페이지 캡처 준비 0/{total} · {range}"),
       percent: 0,
     });
 
@@ -155,7 +156,7 @@ export function StudioEnhancedExportMenuPanel(
         });
         setPackageStatus({
           tone: "info",
-          text: `페이지 인코딩 ${index + 1}/${canvases.length}`,
+          text: subStatusText("studio.subStatus.enhanced.encoding", { current: index + 1, total: canvases.length }, "페이지 인코딩 {current}/{total}"),
           percent: Math.round(((index + 1) / canvases.length) * 100),
         });
       }
@@ -186,14 +187,14 @@ export function StudioEnhancedExportMenuPanel(
       downloadBlob(result.blob, result.fileName);
       setPackageStatus({
         tone: "good",
-        text: `${result.manifest.pageCount}페이지와 SHA-256 매니페스트를 ZIP으로 저장했어요. (${captured.rangeLabel})`,
+        text: subStatusText("studio.subStatus.enhanced.saved", { count: result.manifest.pageCount, range: captured.rangeLabel }, "{count}페이지와 SHA-256 매니페스트를 ZIP으로 저장했어요. ({range})"),
         percent: 100,
       });
     } catch (error) {
       if (isAbortError(error)) {
         setPackageStatus({
           tone: "warn",
-          text: "다운로드 패키지 생성을 취소했어요. 다시 시도할 수 있습니다.",
+          text: subStatusText("studio.subStatus.enhanced.cancelled", "다운로드 패키지 생성을 취소했어요. 다시 시도할 수 있습니다."),
         });
       } else {
         setPackageStatus({
@@ -201,7 +202,7 @@ export function StudioEnhancedExportMenuPanel(
           text:
             error instanceof Error
               ? error.message
-              : "검증 다운로드 패키지를 만들지 못했어요.",
+              : subStatusText("studio.subStatus.enhanced.createFailed", "검증 다운로드 패키지를 만들지 못했어요."),
         });
       }
     } finally {
@@ -345,9 +346,9 @@ export function StudioEnhancedExportMenuPanel(
               <Download size={14} aria-hidden />
             )}
             {packageBusy
-              ? "패키지 생성 중"
+              ? subStatusText("studio.subStatus.enhanced.creating", "패키지 생성 중")
               : packageStatus?.tone === "warn"
-                ? "다시 시도"
+                ? subStatusText("studio.subStatus.enhanced.retry", "다시 시도")
                 : "페이지 ZIP 다운로드"}
           </button>
           {packageBusy ? (

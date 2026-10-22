@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -183,7 +184,7 @@ export function StudioProjectHealthSummary({
       {result.issues.length === 0 ? (
         <p className="mt-3 flex items-start gap-2 border-t border-line pt-3 text-xs leading-relaxed text-good">
           <CheckCircle2 size={14} className="mt-0.5 shrink-0" aria-hidden />
-          현재 로컬 진단 범위에서 즉시 조치할 문제를 찾지 못했습니다.
+          {r3c07StatusText("studio.panelStatus.r3c07.projectHealth.noIssues", "현재 로컬 진단 범위에서 즉시 조치할 문제를 찾지 못했습니다.")}
         </p>
       ) : (
         <ul className="mt-3 divide-y divide-line border-y border-line">

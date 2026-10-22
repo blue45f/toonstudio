@@ -1,5 +1,7 @@
 import { BookOpenCheck, Clapperboard, LayoutGrid, MapPin, Pencil, Shapes, Users } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "./storyworld-status-i18n";
 
 import type { StoryworldProject } from "./studio-storyworld-causality";
 import {
@@ -213,6 +215,7 @@ export function StudioStoryworldBoard({ project, onOpenData, onEditElement }: {
   readonly onOpenData: () => void;
   readonly onEditElement?: (kind: "character" | "fact", id: string) => void;
 }) {
+  const t = useT();
   const board = useMemo(() => buildStoryworldBoard(project), [project]);
   const [filter, setFilter] = useState<BoardFilter>("all");
 
@@ -221,7 +224,7 @@ export function StudioStoryworldBoard({ project, onOpenData, onEditElement }: {
       <section className="storyworld-panel storyworld-board" aria-labelledby="storyworld-board-title">
         <div className="storyworld-board-empty">
           <Shapes aria-hidden size={30} />
-          <h2 id="storyworld-board-title">아직 세계관 요소가 없어요</h2>
+          <h2 id="storyworld-board-title">{t("studio.storyworldStatus.board.emptyElements", "아직 세계관 요소가 없어요")}</h2>
           <p>
             인물·장면·사실을 만들면 이 자리에 요소 카드와 관계 그래프가 나타납니다.
             요소는 ‘설정 파일’ 화면에서 직접 적거나, 저장해 둔 설정 파일을 ‘설정 불러오기’로 불러올 수 있습니다.

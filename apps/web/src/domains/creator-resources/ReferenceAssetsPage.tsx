@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { resourceStatusText } from "./resource-status-i18n";
 
 import {
   ReferenceComparisonDialog,
@@ -174,16 +175,16 @@ export function ReferenceAssetsPage() {
       signal: controller.signal,
       headers: { Accept: "application/json" },
     }).then(async (response) => {
-      if (response.status === 429) throw new Error("검색 요청이 많습니다. 잠시 후 다시 시도하세요.");
-      if (!response.ok) throw new Error("Met 검색 서버에 연결하지 못했습니다.");
+      if (response.status === 429) throw new Error(resourceStatusText("resources.status.referenceAssets.tooManyRequests", "검색 요청이 많습니다. 잠시 후 다시 시도하세요."));
+      if (!response.ok) throw new Error(resourceStatusText("resources.status.referenceAssets.serverConnectFailed", "Met 검색 서버에 연결하지 못했습니다."));
       const parsedResult = parseSearchResult(await response.json());
-      if (!parsedResult || parsedResult.provider !== "met") throw new Error("검색 응답 형식을 확인하지 못했습니다.");
+      if (!parsedResult || parsedResult.provider !== "met") throw new Error(resourceStatusText("resources.status.referenceAssets.responseFormatFailed", "검색 응답 형식을 확인하지 못했습니다."));
       if (!disposed) setResult(parsedResult);
     }).catch((cause: unknown) => {
       if (disposed) return;
       setRequestError(controller.signal.aborted
-        ? "검색 시간이 초과되었습니다. 조건을 줄이거나 다시 시도하세요."
-        : cause instanceof Error ? cause.message : "검색하지 못했습니다.");
+        ? resourceStatusText("resources.status.referenceAssets.searchTimeout", "검색 시간이 초과되었습니다. 조건을 줄이거나 다시 시도하세요.")
+        : cause instanceof Error ? cause.message : resourceStatusText("resources.status.referenceAssets.searchFailed", "검색하지 못했습니다."));
     }).finally(() => {
       window.clearTimeout(timeout);
       if (!disposed) setLoading(false);
@@ -271,7 +272,7 @@ export function ReferenceAssetsPage() {
   const toggleSaved = (item: CreatorResource) => {
     const remove = savedIds.has(item.id);
     if (!remove && workspace.saved.length >= 200) {
-      toast("연구 보드는 최대 200개까지 저장할 수 있습니다. 기존 자료를 정리한 뒤 다시 시도하세요.", { tone: "error" });
+      toast(resourceStatusText("resources.status.referenceAssets.boardLimitReached", "연구 보드는 최대 200개까지 저장할 수 있습니다. 기존 자료를 정리한 뒤 다시 시도하세요."), { tone: "error" });
       return;
     }
     void update((value) => ({
@@ -399,7 +400,7 @@ export function ReferenceAssetsPage() {
 
       {requestError ? (
         <button type="button" className={`${RESOURCE_BUTTON} gap-2`} onClick={() => setRetry((value) => value + 1)}>
-          <RotateCcw size={15} aria-hidden="true" /> 다시 시도
+          <RotateCcw size={15} aria-hidden="true" /> {resourceStatusText("resources.status.referenceAssets.retry", "다시 시도")}
         </button>
       ) : null}
 
@@ -424,12 +425,12 @@ export function ReferenceAssetsPage() {
       ) : null}
 
       {!loading && view.mode === "saved" && savedItems.length === 0 ? (
-        <EmptyState title="아직 저장한 레퍼런스가 없습니다" description="검색 결과에서 북마크 버튼을 누르면 공개 이용 정보와 출처를 함께 이 브라우저의 연구 보드에 보관합니다." />
+        <EmptyState title={resourceStatusText("resources.status.referenceAssets.savedEmpty", "아직 저장한 레퍼런스가 없습니다")} description="검색 결과에서 북마크 버튼을 누르면 공개 이용 정보와 출처를 함께 이 브라우저의 연구 보드에 보관합니다." />
       ) : null}
 
       {!loading && sourceItems.length > 0 && visibleItems.length === 0 ? (
         <EmptyState
-          title="현재 결과 필터와 일치하는 자료가 없습니다"
+          title={resourceStatusText("resources.status.referenceAssets.filteredEmpty", "현재 결과 필터와 일치하는 자료가 없습니다")}
           description="결과 내 검색어나 문화권·분류 필터를 줄이면 다시 표시됩니다."
           action={<button type="button" className={`${RESOURCE_BUTTON} gap-2`} onClick={() => updateView({ within: "", department: "", culture: "", classification: "" })}><RotateCcw size={15} aria-hidden="true" /> 결과 필터 초기화</button>}
         />
@@ -437,7 +438,7 @@ export function ReferenceAssetsPage() {
 
       {!loading && !requestError && view.mode === "results" && search.query && result && result.items.length === 0 ? (
         <EmptyState
-          title="검증해 표시할 자료를 찾지 못했습니다"
+          title={resourceStatusText("resources.status.referenceAssets.verifiedEmpty", "검증해 표시할 자료를 찾지 못했습니다")}
           description="검색 후보가 있어도 공개 도메인 표시나 안전한 이미지가 확인되지 않으면 제외됩니다. 더 넓은 키워드나 다른 부서로 다시 검색해 보세요."
           action={<button type="button" className={`${RESOURCE_BUTTON} gap-2`} onClick={() => setAdvancedOpen(true)}><SlidersHorizontal size={15} aria-hidden="true" /> 검색 조건 조정</button>}
         />

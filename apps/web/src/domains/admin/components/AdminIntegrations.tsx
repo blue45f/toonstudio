@@ -1,3 +1,4 @@
+import { adminRestStatusText } from "../admin-rest-status-i18n";
 import { PlugZap, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -44,7 +45,7 @@ export function AdminIntegrations() {
     void api.get<RuntimeResponse>("/integrations/runtime")
       .then((response) => { if (!cancelled) setRuntime(response); })
       .catch(async (reason: unknown) => {
-        if (!cancelled) setError(await getApiErrorMessage(reason, "연동 운영 상태를 불러오지 못했습니다."));
+        if (!cancelled) setError(await getApiErrorMessage(reason, adminRestStatusText("adminRest.status.integrations.loadFailed", "연동 운영 상태를 불러오지 못했습니다.")));
       });
     return () => { cancelled = true; };
   }, [refreshKey]);

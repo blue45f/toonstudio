@@ -12,6 +12,7 @@
  *   그라디언트를 막대 위치별로 잘라 쓴다. 막대 자체는 장식이고 실제 수치는 지표 텍스트가 맡는다.
  */
 import { RESOURCE_BUTTON } from "./navigation";
+import { resourceStatusText } from "./resource-status-i18n";
 import { buildTrendBars, formatDateLabel, formatViews, summarizeDailyViews } from "./wikimedia-interest";
 
 import type { CreatorResource } from "@/shared/lib/creator-resources";
@@ -28,7 +29,7 @@ function ChangeBadge({ changePct, halfDays }: { changePct: number | null; halfDa
     return (
       <div>
         <dt className="text-xs font-semibold text-fg-3">전반부 대비 후반부</dt>
-        <dd className="mt-1 text-sm font-semibold text-fg-2">비교할 이전 기간 기록이 없습니다</dd>
+        <dd className="mt-1 text-sm font-semibold text-fg-2">{resourceStatusText("resources.status.wikimedia.previousPeriodEmpty", "비교할 이전 기간 기록이 없습니다")}</dd>
       </div>
     );
   }

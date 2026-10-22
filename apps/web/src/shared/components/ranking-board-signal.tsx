@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { FunctionSquare, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { CountUp } from "./count-up";
@@ -53,7 +54,7 @@ export function SignalWorkbench({
         </div>
         <div className="min-w-0">
           <p className="eyebrow text-[0.58rem] text-fg-3">급상승</p>
-          <p className="mt-1 truncate text-sm font-semibold text-fg">{insights?.rising?.title ?? "대기 중"}</p>
+          <p className="mt-1 truncate text-sm font-semibold text-fg">{insights?.rising?.title ?? restStatusText("rest.status.rankingSignal.waiting", "대기 중")}</p>
           <p className="mt-0.5 text-xs text-fg-3">
             {insights?.rising ? `#${insights.rising.rank} · ${insights.rising.delta > 0 ? "+" : ""}${insights.rising.delta}` : "상승 신호 없음"}
           </p>

@@ -3,6 +3,7 @@ import { FileJson, FolderOpen, Loader2 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { prepareBlenderCharacterPackage } from "../vrm/studio-vrm-blender-package-import";
 
 import type { BlenderPackagePreview } from "../vrm/studio-vrm-blender-package-import";
@@ -24,7 +25,7 @@ const BUTTON = cn(
   "inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-[0.75rem] font-semibold text-fg-2",
   "transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none", STUDIO_FOCUS_RING,
 );
-function reasonOf(error: unknown): string { return error instanceof Error && error.message ? error.message : "패키지를 읽지 못했습니다."; }
+function reasonOf(error: unknown): string { return error instanceof Error && error.message ? error.message : r3c04StatusText("studio.r3c04Status.shaper.blender.readFailed", "패키지를 읽지 못했습니다."); }
 
 export function CharacterShaperBlenderPackage({ h, disabled = false }: CharacterShaperBlenderPackageProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,7 +60,7 @@ export function CharacterShaperBlenderPackage({ h, disabled = false }: Character
     installingRef.current = true;
     setState({ kind: "installing" });
     try {
-      if (typeof h.handleGeneratedVrmFile !== "function") throw new Error("이 화면에서는 모델을 설치할 수 없습니다.");
+      if (typeof h.handleGeneratedVrmFile !== "function") throw new Error(r3c04StatusText("studio.r3c04Status.shaper.blender.installUnavailable", "이 화면에서는 모델을 설치할 수 없습니다."));
       await h.handleGeneratedVrmFile(value.runtimeFile);
       // The host queues loading and may report its own error: do not claim a completed render here.
       if (!task?.signal.aborted) setState({ kind: "sent", name: value.manifest.displayName });
@@ -119,12 +120,12 @@ export function CharacterShaperBlenderPackage({ h, disabled = false }: Character
         <button type="button" disabled={disabled} onClick={() => { void install(); }} className={BUTTON}>검증한 모델을 스튜디오로 가져오기</button>
       </div>}
       <p id={statusId} role="status" aria-live="polite" className={cn("text-[0.68rem] leading-relaxed", state.kind === "error" ? "text-bad" : "text-fg-3")}>
-        {state.kind === "error" ? `불러오지 못했습니다 — ${state.reason}`
-          : state.kind === "reading" ? "패키지 구조·품질·SHA-256을 확인하는 중입니다."
-          : state.kind === "preview" ? "검증을 통과했습니다. 모델 정보를 확인하고 가져오기를 눌러 주세요."
-          : state.kind === "installing" ? "검증한 모델을 전달하는 중입니다."
-          : state.kind === "sent" ? `${state.name} 파일을 모델 로더에 전달했습니다. 최종 결과는 모델 화면에서 확인하세요.`
-          : "아직 불러온 패키지가 없습니다."}
+        {state.kind === "error" ? r3c04StatusText("studio.r3c04Status.shaper.blender.loadFailedWithReason", { reason: state.reason }, "불러오지 못했습니다 — {reason}")
+          : state.kind === "reading" ? r3c04StatusText("studio.r3c04Status.shaper.blender.reading", "패키지 구조·품질·SHA-256을 확인하는 중입니다.")
+          : state.kind === "preview" ? r3c04StatusText("studio.r3c04Status.shaper.blender.previewPassed", "검증을 통과했습니다. 모델 정보를 확인하고 가져오기를 눌러 주세요.")
+          : state.kind === "installing" ? r3c04StatusText("studio.r3c04Status.shaper.blender.installing", "검증한 모델을 전달하는 중입니다.")
+          : state.kind === "sent" ? r3c04StatusText("studio.r3c04Status.shaper.blender.sentWithName", { name: state.name }, "{name} 파일을 모델 로더에 전달했습니다. 최종 결과는 모델 화면에서 확인하세요.")
+          : r3c04StatusText("studio.r3c04Status.shaper.blender.empty", "아직 불러온 패키지가 없습니다.")}
       </p>
     </section>
   );

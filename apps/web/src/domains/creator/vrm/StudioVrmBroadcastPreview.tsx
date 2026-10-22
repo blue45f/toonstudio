@@ -17,6 +17,9 @@ import {
 } from "./studio-vrm-broadcast-preview";
 import { acquireStudioVrmBroadcastRenderLease } from "./studio-vrm-broadcast-render-lease";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-vrm-panel-status-i18n";
+
 import type * as THREE from "three";
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -188,6 +191,7 @@ export function StudioVrmBroadcastPreviewBridge({
   groundRef,
   onError,
 }: StudioVrmBroadcastPreviewBridgeProps) {
+  const t = useT();
   const renderer = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   const invalidate = useThree((state) => state.invalidate);
@@ -211,7 +215,7 @@ export function StudioVrmBroadcastPreviewBridge({
       try {
         result.lease.release();
       } catch {
-        reportError("기존 3D 배경을 복원하지 못했습니다. 편집기를 닫았다가 다시 열어 주세요.");
+        reportError(t("studio.vrmPanelStatus.broadcastPreview.restoreBackgroundFailed", "기존 3D 배경을 복원하지 못했습니다. 편집기를 닫았다가 다시 열어 주세요."));
       }
     };
   }, [environmentRef, groundRef, invalidate, receipt, renderer, scene]);

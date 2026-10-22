@@ -1,4 +1,5 @@
 import { downloadBrushStudioSource } from "./brush-studio-source-download";
+import { brushCanvasStatusText } from "../studio-brush-canvas-status-i18n";
 import { useState, type ReactNode } from "react";
 import { createBrushStudioV6Program, type BrushStudioV6Program } from "./brush-studio-v6-engine";
 import { parseBrushStudioV6Import } from "./brush-studio-v6-experiments";
@@ -10,7 +11,7 @@ function readDraft(scope: string) {
     raw = globalThis.localStorage?.getItem(`toonstudio.brush-program-v6:${encodeURIComponent(scope)}`) ?? null;
     return { program: raw === null ? createBrushStudioV6Program() : parseBrushStudioV6Import(raw), raw, error: null };
   } catch (error) {
-    return { program: null, raw, error: error instanceof Error ? error.message : "브러시 설정을 읽지 못했습니다." };
+    return { program: null, raw, error: error instanceof Error ? error.message : brushCanvasStatusText("studio.brushCanvasStatus.brushLab.v6SettingsReadFailed", "브러시 설정을 읽지 못했습니다.") };
   }
 }
 

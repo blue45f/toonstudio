@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Link2, Unlink2 } from "lucide-react";
 
 import type { StudioSelectionResizeAnchor } from "./studio-selection-transform-advanced";
@@ -65,7 +66,7 @@ export function StudioTransformPrecisionControls({
           title={
             interactionDisabledReason
             ?? ((!supportsWidth && !supportsHeight)
-              ? sizeDisabledReason ?? "이 선택은 수치 크기 조절을 지원하지 않아요."
+              ? sizeDisabledReason ?? r3c07StatusText("studio.panelStatus.r3c07.transformPrecision.sizeUnsupported", "이 선택은 수치 크기 조절을 지원하지 않아요.")
               : "W/H 입력 시 고정할 기준점")
           }
           aria-label="크기 조절 기준점"
@@ -87,7 +88,7 @@ export function StudioTransformPrecisionControls({
           disabled={disabled || multi || !supportsAspectLock}
           title={
             disabled
-              ? interactionDisabledReason ?? "현재 편집 상태에서는 비율 잠금을 바꿀 수 없어요."
+              ? interactionDisabledReason ?? r3c07StatusText("studio.panelStatus.r3c07.transformPrecision.ratioLockUnavailable", "현재 편집 상태에서는 비율 잠금을 바꿀 수 없어요.")
               : multi
                 ? "여러 개 선택은 배치를 보존하도록 항상 같은 비율로 크기를 조절합니다."
                 : supportsAspectLock

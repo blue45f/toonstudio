@@ -14,6 +14,7 @@
  * 사전이 비어 있으면 검사가 아니라 "먼저 설정·캐릭터가 필요하다"를 안내한다.
  */
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
   STUDIO_LORE_ENTRY_KINDS,
@@ -120,10 +121,7 @@ export function StudioLoreNameCheckPanel({
     return (
       <section aria-label="설정 이름 일관성 검사">
         <h2>설정 이름 일관성 검사</h2>
-        <p>
-          아직 검사할 이름 사전이 비어 있어요. 위에서 세계관 설정을 적거나 캐릭터가
-          생기면, 그 이름들이 사전이 되어 줄거리·대사의 표기 흔들림을 검사할 수 있어요.
-        </p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.loreName.emptyDictionary", "아직 검사할 이름 사전이 비어 있어요. 위에서 세계관 설정을 적거나 캐릭터가 생기면, 그 이름들이 사전이 되어 줄거리·대사의 표기 흔들림을 검사할 수 있어요.")}</p>
       </section>
     );
   }
@@ -201,7 +199,7 @@ export function StudioLoreNameCheckPanel({
       {findings !== null && summary && (
         <div>
           {findings.length === 0 ? (
-            <p>발견된 흔들림이 없어요. 이름 표기가 사전과 잘 맞고 있어요.</p>
+            <p>{r3c04StatusText("studio.r3c04Status.planning.loreName.noFindings", "발견된 흔들림이 없어요. 이름 표기가 사전과 잘 맞고 있어요.")}</p>
           ) : (
             <>
               <p>

@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 /**
  * StudioMotionExportPanel — 작품 상세(작성자 전용)에서 효과툰을 "모션툰 영상(WebM)"으로
  * 내보내는 패널. WorkFxPanel에 저장된 doc.fx 연출(리빌·강조·분위기·BGM)을
@@ -76,7 +77,7 @@ export function StudioMotionExportPanel({ work }: { work: WorkDetail }) {
     setError(null);
     setDoneMsg(null);
     if (work.pages.length === 0) {
-      setError("내보낼 컷(페이지)이 없어요.");
+      setError(panelStatusText("studio.panelStatus.motionExport.noPages", "내보낼 컷(페이지)이 없어요."));
       return;
     }
     setPreparing(true);
@@ -94,14 +95,14 @@ export function StudioMotionExportPanel({ work }: { work: WorkDetail }) {
       downloadBlob(result.blob, motionExportFileName(work.title));
       setDoneMsg(
         result.audio === "failed"
-          ? "영상을 저장했어요. 다만 배경음악 믹스에 실패해 무음으로 내보냈어요."
+          ? panelStatusText("studio.panelStatus.motionExport.bgmMixFailed", "영상을 저장했어요. 다만 배경음악 믹스에 실패해 무음으로 내보냈어요.")
           : result.audio === "mixed"
             ? "배경음악을 포함한 모션툰 영상을 저장했어요."
             : "모션툰 영상을 저장했어요."
       );
     } catch (err) {
       if (!isMotionExportCancelled(err)) {
-        setError(err instanceof Error ? err.message : "영상을 내보내지 못했어요.");
+        setError(err instanceof Error ? err.message : panelStatusText("studio.panelStatus.motionExport.exportFailed", "영상을 내보내지 못했어요."));
       }
     } finally {
       handleRef.current = null;
@@ -112,10 +113,10 @@ export function StudioMotionExportPanel({ work }: { work: WorkDetail }) {
 
   const progressPct = Math.round((progress?.ratio ?? 0) * 100);
   const statusLabel = preparing
-    ? "컷 이미지 준비 중…"
+    ? panelStatusText("studio.panelStatus.motionExport.preparingCuts", "컷 이미지 준비 중…")
     : progress?.phase === "finalize"
-      ? "영상 파일 생성 중…"
-      : "녹화 중… (실제 재생 시간만큼 걸려요)";
+      ? panelStatusText("studio.panelStatus.motionExport.creatingFile", "영상 파일 생성 중…")
+      : panelStatusText("studio.panelStatus.motionExport.recording", "녹화 중… (실제 재생 시간만큼 걸려요)");
 
   return (
     <div className="mt-4 rounded-xl border border-line bg-card/50">
@@ -212,8 +213,7 @@ export function StudioMotionExportPanel({ work }: { work: WorkDetail }) {
 
           {!supported && (
             <p className="text-xs text-bad">
-              이 브라우저는 영상 녹화(MediaRecorder/WebM)를 지원하지 않아요. 크롬·엣지·파이어폭스에서
-              시도해주세요.
+              {panelStatusText("studio.panelStatus.motionExport.unsupportedLong", "이 브라우저는 영상 녹화(MediaRecorder/WebM)를 지원하지 않아요. 크롬·엣지·파이어폭스에서 시도해주세요.")}
             </p>
           )}
           {error && <p className="text-xs text-bad">{error}</p>}

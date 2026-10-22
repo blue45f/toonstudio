@@ -2,6 +2,7 @@
 // 문구는 usePanelT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t 호출
 // 결과를 캐시하면, 나중에 도착하는 런타임 번역(번역 번들 갱신)이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
+import { creatorRestStatusText } from "../../creator-rest-status-i18n";
 import { FileUp, Lock, ShieldCheck } from "lucide-react";
 import { useId, useRef, useState, type ChangeEvent, type ReactElement } from "react";
 
@@ -61,7 +62,7 @@ export function PanelSourceStep({ mode, onReady }: PanelSourceStepProps): ReactE
     void job.run(async ({ signal }) => {
       // 권리 확인을 가장 먼저 본다. 오류 화면에서 체크를 풀고 "같은 파일로 다시 시도"를 눌러도 파일을 디코딩·해시하지 않고,
       // 일반 오류가 아니라 확인이 필요하다는 이유로 끝낸다.
-      if (!confirmed) throw new PanelImportRightsError("not-confirmed", "원고 권리 확인 없이는 파일을 읽을 수 없어요.");
+      if (!confirmed) throw new PanelImportRightsError("not-confirmed", creatorRestStatusText("creatorRest.status.panelSource.rightsRequired", "원고 권리 확인 없이는 파일을 읽을 수 없어요."));
       const source = await env.loadSource(file, signal);
       if (signal.aborted) {
         source.dispose();

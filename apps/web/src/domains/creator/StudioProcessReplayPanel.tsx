@@ -3,6 +3,7 @@
 // 타이머 구동과 표시만 담당한다. 재생 커서는 보기 전용: 이동할 때마다 대상 이벤트의
 // historyIndex 를 호스트의 기존 히스토리 점프 경로(onJumpTo)로 전달할 뿐 저널을 쓰지 않는다.
 // 자체완결 플로팅 패널: StudioHistoryPanel 과 같은 자리(캔버스 우측 상단)에 뜨고 Esc 로 닫힌다.
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Flag, Pause, Play, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -154,7 +155,7 @@ export function StudioProcessReplayPanel({
         {/* 현재 단계 — 재생 중 무엇이 보이는지 항상 문자로도 알린다. */}
         <div aria-live="polite" className="min-h-8">
           <p className="truncate text-[0.8rem] font-semibold text-fg">
-            {current ? current.label : "기록된 과정이 없어요"}
+            {current ? current.label : r3c07StatusText("studio.panelStatus.r3c07.processReplay.recordsEmpty", "기록된 과정이 없어요")}
           </p>
           <p className="text-[0.72rem] tabular-nums text-fg-3">
             {current

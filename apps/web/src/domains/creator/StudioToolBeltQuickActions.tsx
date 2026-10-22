@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { History as HistoryIcon, Redo2, Undo2 } from "lucide-react";
 import { memo, type ComponentProps } from "react";
 
@@ -81,7 +82,7 @@ export const StudioToolBeltQuickActions = memo(function StudioToolBeltQuickActio
           collaborationDocumentLocked
             ? collaborationLockMessage()
             : hi === 0
-              ? "되돌릴 이전 작업이 없습니다."
+              ? r3c07StatusText("studio.panelStatus.r3c07.toolBeltQuickActions.undoEmpty", "되돌릴 이전 작업이 없습니다.")
               : undefined
         }
       >
@@ -111,7 +112,7 @@ export const StudioToolBeltQuickActions = memo(function StudioToolBeltQuickActio
           collaborationDocumentLocked
             ? collaborationLockMessage()
             : hi >= history.length - 1
-              ? "다시 적용할 작업이 없습니다."
+              ? r3c07StatusText("studio.panelStatus.r3c07.toolBeltQuickActions.redoEmpty", "다시 적용할 작업이 없습니다.")
               : undefined
         }
       >

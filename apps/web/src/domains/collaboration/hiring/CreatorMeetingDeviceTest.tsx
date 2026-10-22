@@ -2,9 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { collabButton, collabInput } from "../collaboration-ui";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "../collaboration-account-status-i18n";
+
 const pageIsHidden = () => document.visibilityState === "hidden";
 
 export function DeviceTest() {
+  const t = useT();
   const generation = useRef(0);
   const pending = useRef<object | null>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -49,12 +54,12 @@ export function DeviceTest() {
       clearTimeout(timer.current);
       stream.current = captured;
       if (video.current) video.current.srcObject = mode === "audio" ? null : captured;
-      setState("이 기기에서만 확인 중 · 30초 뒤 자동 종료");
+      setState(t("collaboration.meetingDevice.checkingLocal", "이 기기에서만 확인 중 · 30초 뒤 자동 종료"));
       timer.current = setTimeout(() => stop(), 30000);
     } catch {
       if (mounted.current && current === generation.current) {
         clearTimeout(timer.current); timer.current = undefined;
-        setState("장치를 열지 못했어요. 브라우저 권한과 장치 연결을 확인해 주세요.");
+        setState(t("collaboration.meetingDevice.openFailed", "장치를 열지 못했어요. 브라우저 권한과 장치 연결을 확인해 주세요."));
       }
     } finally {
       if (pending.current === token) { pending.current = null; if (mounted.current) setBusy(false); }

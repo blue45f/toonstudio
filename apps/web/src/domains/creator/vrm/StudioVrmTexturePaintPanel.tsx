@@ -20,6 +20,9 @@ import type {
 
 import { cn } from "@/shared/lib/utils";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-vrm-panel-status-i18n";
+
 export interface StudioVrmTexturePaintPanelSettings {
   readonly tool: "surface-brush" | "brush" | "fill";
   readonly brushKind: StudioStampBrushKind;
@@ -93,6 +96,7 @@ export function StudioVrmTexturePaintPanel({
   onResetActiveTexture,
   onRetryRestore,
 }: StudioVrmTexturePaintPanelProps) {
+  const t = useT();
   const editingDisabled = disabled || strokeActive;
   const hasActiveTexture = activeTargetId !== null;
   const [resetConfirmationTarget, setResetConfirmationTarget] = useState<string | null>(null);
@@ -196,7 +200,7 @@ export function StudioVrmTexturePaintPanel({
             <span className="flex min-w-0 items-start gap-2 leading-relaxed">
               <AlertTriangle className="mt-0.5 shrink-0 text-bad" size={14} aria-hidden />
               <span>
-                <span className="block font-bold text-fg">원본 텍스처 복원이 중단됐습니다.</span>
+                <span className="block font-bold text-fg">{t("studio.vrmPanelStatus.texturePaint.restoreInterrupted", "원본 텍스처 복원이 중단됐습니다.")}</span>
                 <span className="mt-0.5 block">{restoreError}</span>
               </span>
             </span>
@@ -206,7 +210,7 @@ export function StudioVrmTexturePaintPanel({
               onClick={onRetryRestore}
             >
               <RotateCcw size={13} aria-hidden />
-              다시 시도
+              {t("studio.vrmPanelStatus.texturePaint.retry", "다시 시도")}
             </button>
           </div>
         ) : null}

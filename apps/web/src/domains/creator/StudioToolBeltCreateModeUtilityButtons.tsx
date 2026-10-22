@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -72,7 +73,7 @@ export const StudioToolBeltCreateModeUtilityButtons = memo(function StudioToolBe
       <StudioToolBeltHintTarget
         hint={hints.timelapse}
         disabled={masterEditMode}
-        unavailableReason={masterEditMode ? "마스터 편집 중에는 타임랩스를 녹화할 수 없습니다." : undefined}
+        unavailableReason={masterEditMode ? r3c07StatusText("studio.panelStatus.r3c07.toolBeltUtility.timelapseBlocked", "마스터 편집 중에는 타임랩스를 녹화할 수 없습니다.") : undefined}
       >
         <button
           type="button"
@@ -249,7 +250,7 @@ export const StudioToolBeltCreateModeUtilityButtons = memo(function StudioToolBe
       <StudioToolBeltHintTarget
         hint={hints.timeline}
         disabled={masterEditMode}
-        unavailableReason={masterEditMode ? "마스터 편집 중에는 타임라인을 열 수 없습니다." : undefined}
+        unavailableReason={masterEditMode ? r3c07StatusText("studio.panelStatus.r3c07.toolBeltUtility.timelineBlocked", "마스터 편집 중에는 타임라인을 열 수 없습니다.") : undefined}
       >
         <button
           type="button"

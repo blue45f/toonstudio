@@ -1,3 +1,4 @@
+import { catalogStatusText } from "./catalog-status-i18n";
 import { BookOpen, EyeOff, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -70,7 +71,7 @@ export function WorldWikiSection({
         <div className="mt-4 rounded-lg border border-dashed border-line bg-card/50 px-4 py-6 text-center">
           <EyeOff size={18} aria-hidden className="mx-auto text-fg-3" />
           <p className="mt-2 text-sm font-semibold text-fg">
-            아직 공개된 설정이 없어요
+            {catalogStatusText("catalog.status.worldWiki.empty", "아직 공개된 설정이 없어요")}
           </p>
           <p className="mx-auto mt-1 max-w-[52ch] text-xs leading-relaxed text-fg-3">
             작가가 설정을 공개하면 이곳에 캐릭터·장소·소품의 공식 설정이 모입니다.

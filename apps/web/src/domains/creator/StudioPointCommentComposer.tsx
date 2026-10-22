@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { LoaderCircle, MapPin, Send, X } from "lucide-react";
 import {
   useEffect,
@@ -226,10 +227,10 @@ export function StudioPointCommentComposer({
     try {
       const accepted = await onSubmit(message);
       if (accepted === false) {
-        throw new Error("댓글을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+        throw new Error(r3c07StatusText("studio.panelStatus.r3c07.pointComment.saveFailedRetry", "댓글을 저장하지 못했어요. 잠시 후 다시 시도해 주세요."));
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "댓글을 저장하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : r3c07StatusText("studio.panelStatus.r3c07.pointComment.saveFailed", "댓글을 저장하지 못했어요."));
       globalThis.requestAnimationFrame(() => textareaRef.current?.focus());
     } finally {
       savingRef.current = false;
@@ -391,7 +392,7 @@ export function StudioPointCommentComposer({
               ) : (
                 <Send size={13} aria-hidden />
               )}
-              {saving ? "저장 중" : "등록"}
+              {saving ? r3c07StatusText("studio.panelStatus.r3c07.pointComment.saving", "저장 중") : "등록"}
             </button>
           </footer>
         </div>

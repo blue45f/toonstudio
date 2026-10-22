@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { ChevronDown, LayoutPanelTop, PackageOpen } from "lucide-react";
 import { Suspense, useState, type ComponentType } from "react";
 
@@ -151,7 +152,7 @@ function StudioWorkspaceMenuTrigger({
         </span>
       ) : null}
       <span className="sr-only" role="status" aria-live="polite">
-        {busy ? "작업공간 메뉴를 여는 중입니다." : ""}
+        {busy ? r3c07StatusText("studio.panelStatus.r3c07.workspaceMenuGate.menuOpening", "작업공간 메뉴를 여는 중입니다.") : ""}
       </span>
     </span>
   );
@@ -205,7 +206,7 @@ function StudioWorkspaceInterchangeTrigger({
         </span>
       ) : null}
       <span className="sr-only" role="status" aria-live="polite">
-        {busy ? "작업공간 이동 도구를 여는 중입니다." : ""}
+        {busy ? r3c07StatusText("studio.panelStatus.r3c07.workspaceMenuGate.moveToolsOpening", "작업공간 이동 도구를 여는 중입니다.") : ""}
       </span>
     </span>
   );

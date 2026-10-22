@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import {
   Bookmark,
   Clapperboard,
@@ -344,7 +345,7 @@ export function StudioAssetToolPopoverBody({
                             </button>
                           </div>
                           {emeresSimilarSiblings.length === 0 ? (
-                            <p className="text-[0.64rem] text-fg-3">같은 카테고리의 다른 틀이 없어요.</p>
+                            <p className="text-[0.64rem] text-fg-3">{panelStatusText("studio.panelStatus.assetToolPopover.emeresSiblingsEmpty", "같은 카테고리의 다른 틀이 없어요.")}</p>
                           ) : (
                             <div className="flex gap-1.5 overflow-x-auto pb-1">
                               {emeresSimilarSiblings.map((sib) => (
@@ -411,7 +412,7 @@ export function StudioAssetToolPopoverBody({
                         )}
                         {studioOptionalAssets.emeresSections.length > 0 && emeresSectionsFiltered.length === 0 && (
                           <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-line p-4 text-center">
-                            <p className="text-xs text-fg-3">검색 결과가 없습니다.</p>
+                            <p className="text-xs text-fg-3">{panelStatusText("studio.panelStatus.assetToolPopover.searchEmpty", "검색 결과가 없습니다.")}</p>
                             <p className="mt-1 text-[0.66rem] text-fg-3 leading-normal">다른 검색어로 찾아보세요.</p>
                           </div>
                         )}
@@ -477,7 +478,7 @@ export function StudioAssetToolPopoverBody({
                   </button>
                   {clips.length === 0 ? (
                     <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed text-fg-3">
-                      저장된 클립이 없어요. 포즈 캐릭터나 말풍선 세트를 저장해 다른 컷·회차에서 재사용하세요.
+                      {panelStatusText("studio.panelStatus.assetToolPopover.clipsEmpty", "저장된 클립이 없어요. 포즈 캐릭터나 말풍선 세트를 저장해 다른 컷·회차에서 재사용하세요.")}
                     </p>
                   ) : (
                     <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
@@ -680,7 +681,7 @@ export function StudioAssetToolPopoverBody({
                   )}
                   {!fxPickerHasResults && fxQuery !== "" && (
                     <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-line p-4 text-center">
-                      <p className="text-xs text-fg-3">검색 결과가 없습니다.</p>
+                      <p className="text-xs text-fg-3">{panelStatusText("studio.panelStatus.assetToolPopover.searchEmpty", "검색 결과가 없습니다.")}</p>
                       <p className="mt-1 text-[0.66rem] text-fg-3 leading-normal">다른 검색어로 찾아보세요.</p>
                     </div>
                   )}

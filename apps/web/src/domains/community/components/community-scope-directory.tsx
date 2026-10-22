@@ -1,3 +1,4 @@
+import { communityStatusText } from "../community-status-i18n";
 import { ArrowRight, MessageCircle, Search } from "lucide-react";
 import { type FormEvent, useId } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -28,7 +29,8 @@ export function CommunityScopeDirectory({ scope }: { scope: DirectoryScope }) {
   const request = new URLSearchParams({ scope, sort, limit: "60" });
   if (query.trim()) request.set("q", query.trim());
   const { data, loading, error, notFound, reload } = useApiResource<BoardResponse>(
-    `/api/community/boards?${request.toString()}`, "커뮤니티 목록을 불러오지 못했습니다.",
+    `/api/community/boards?${request.toString()}`,
+    communityStatusText("community.status.scope.loadFailed", "커뮤니티 목록을 불러오지 못했습니다."),
   );
   const malformed = data !== null && !Array.isArray(data.items);
   const boards = Array.isArray(data?.items) ? data.items.filter((board) => board
@@ -63,8 +65,8 @@ export function CommunityScopeDirectory({ scope }: { scope: DirectoryScope }) {
         {query && <button type="button" onClick={() => update("q", "")} className="min-h-11 rounded-xl border border-line px-4 text-sm text-fg-2">검색 지우기</button>}
       </form>
 
-      {error || notFound || malformed ? <ErrorState title="커뮤니티 목록을 불러오지 못했습니다."
-        message="잠시 후 다시 시도해 주세요. 통합 커뮤니티와 작품 탐색은 아래 링크로 계속 이용할 수 있습니다." onRetry={reload} />
+      {error || notFound || malformed ? <ErrorState title={communityStatusText("community.status.scope.loadFailed", "커뮤니티 목록을 불러오지 못했습니다.")}
+        message={communityStatusText("community.status.scope.loadFailedMessage", "잠시 후 다시 시도해 주세요. 통합 커뮤니티와 작품 탐색은 아래 링크로 계속 이용할 수 있습니다.")} onRetry={reload} />
         : loading ? <div role="status" className="space-y-3"><span className="sr-only">대화가 있는 커뮤니티를 찾고 있습니다…</span><div aria-hidden="true" className="space-y-3"><div className="skeleton h-20 rounded-2xl" /><div className="skeleton h-20 rounded-2xl" /><div className="skeleton h-20 rounded-2xl" /></div></div>
           : boards.length ? <>
             <p role="status" className="text-xs leading-relaxed text-fg-2">대화가 있는 {COMMUNITY_SCOPE_LABEL[scope]} {boards.length}개 · 최대 60개를 표시합니다. 이름으로 검색해 더 좁혀보세요.</p>
@@ -80,7 +82,7 @@ export function CommunityScopeDirectory({ scope }: { scope: DirectoryScope }) {
               </Link>)}
             </div>
           </> : <div className="rounded-2xl border border-dashed border-line-strong bg-panel/40 p-8 text-center">
-            <h2 className="text-lg font-semibold text-fg">{query ? "검색한 이름의 대화가 아직 없어요" : "아직 등록된 대화가 없어요"}</h2>
+            <h2 className="text-lg font-semibold text-fg">{query ? communityStatusText("community.status.scope.searchEmpty", "검색한 이름의 대화가 아직 없어요") : communityStatusText("community.status.scope.empty", "아직 등록된 대화가 없어요")}</h2>
             <p className="mt-3 text-sm leading-relaxed text-fg-2">{query ? "다른 이름으로 검색하거나 관심 있는 작품과 작가를 찾아보세요." : "관심 있는 작품과 작가의 페이지에서 첫 이야기를 시작해 보세요."}</p>
           </div>}
       <nav aria-label="커뮤니티 탐색 이어가기" className="flex flex-wrap gap-3">

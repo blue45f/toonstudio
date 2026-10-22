@@ -17,9 +17,13 @@ import {
   studioBg3dRetainedOwnerSource,
 } from "./studio-bg3d-retained-owner";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 export const BG3D_RETAINED_OWNER_STALE_RELEASE_MS = 250;
 
 function Bg3DRetainedLoadingOverlay() {
+  const t = useT();
   const [stage, setStage] = useState(0);
   useEffect(() => {
     const engineTimer = window.setTimeout(() => setStage(1), 900);
@@ -43,7 +47,7 @@ function Bg3DRetainedLoadingOverlay() {
           <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-accent/25 bg-accent-soft text-accent"><Loader2 className="animate-spin motion-reduce:animate-none" size={19} aria-hidden /></span>
           <div className="min-w-0">
             <p className="text-[0.64rem] font-black uppercase tracking-[0.15em] text-accent">3D SCENE STARTUP</p>
-            <h2 className="mt-1 text-base font-black text-fg sm:text-lg">장면 도우미를 여는 중</h2>
+            <h2 className="mt-1 text-base font-black text-fg sm:text-lg">{t("studio.bg3dPanelStatus.retainedOwnerHost.openingHelper", "장면 도우미를 여는 중")}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-2">빈 장면과 기본 카메라를 먼저 준비하고, 무거운 엔진과 에셋은 단계적으로 연결합니다.</p>
           </div>
         </div>
@@ -51,7 +55,7 @@ function Bg3DRetainedLoadingOverlay() {
           {stages.map((label, index) => (
             <li key={label} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${index <= stage ? "border-accent/35 bg-accent-soft text-accent" : "border-line bg-card text-fg-3"}`}>
               <span className="mr-1.5 font-black">{index + 1}</span>{label}
-              <span className="mt-1 block text-[0.62rem] font-medium opacity-75">{index < stage ? "준비됨" : index === stage ? "준비 중" : "대기"}</span>
+              <span className="mt-1 block text-[0.62rem] font-medium opacity-75">{index < stage ? "준비됨" : index === stage ? t("studio.bg3dPanelStatus.retainedOwnerHost.preparingStage", "준비 중") : "대기"}</span>
             </li>
           ))}
         </ol>

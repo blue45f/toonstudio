@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import {
   createBrushQualityPolicy,
   normalizeBrushQualityPolicy,
@@ -66,6 +69,7 @@ function download(program: ReturnType<typeof compileBrushRuntimeProgram>) {
 }
 
 export function StudioBrushV5RuntimeWorkbench({ scope }: { readonly scope: string }) {
+  const t = useT();
   const policyKey = `toonstudio.brush-quality-v1:${encodeURIComponent(scope)}`;
   const receiptKey = `toonstudio.brush-runtime-benchmark-v1:${encodeURIComponent(scope)}`;
   const [policy, setPolicy] = useState<BrushQualityPolicy>(() => loadPolicy(policyKey));
@@ -100,8 +104,8 @@ export function StudioBrushV5RuntimeWorkbench({ scope }: { readonly scope: strin
   }
   async function benchmark() {
     setBusy("bench"); setMessage("CPU 다브·이벤트 루프·실제 WebGPU compute를 반복 측정합니다.");
-    try { const next = await scanBrushRuntimeCapabilities(); setCapabilities(next); const measured = await benchmarkBrushRuntime(next); setReceipt(measured); setMessage(measured.stable ? "실측 영수증을 저장했습니다." : "측정 변동성이 커 인증할 수 없습니다."); }
-    catch (error) { setMessage(error instanceof Error ? `벤치마크 실패: ${error.message}` : "벤치마크 실패"); }
+    try { const next = await scanBrushRuntimeCapabilities(); setCapabilities(next); const measured = await benchmarkBrushRuntime(next); setReceipt(measured); setMessage(measured.stable ? "실측 영수증을 저장했습니다." : t("studio.brushCanvasStatus.brushLab.v5UnstableMeasurement", "측정 변동성이 커 인증할 수 없습니다.")); }
+    catch (error) { setMessage(error instanceof Error ? t("studio.brushCanvasStatus.brushLab.v5BenchmarkFailedWithMessage", { message: error.message }, "벤치마크 실패: {message}") : t("studio.brushCanvasStatus.brushLab.v5BenchmarkFailed", "벤치마크 실패")); }
     finally { setBusy(null); }
   }
 
@@ -123,7 +127,7 @@ export function StudioBrushV5RuntimeWorkbench({ scope }: { readonly scope: strin
 
     <div className="grid gap-4 xl:grid-cols-2">
       <section className={CARD}><h3 className="text-sm font-black text-fg">브라우저 입력·GPU 능력</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{capabilityRows(capabilities).map(([label, supported]) => <div key={label} className={SUB}><div className="flex justify-between gap-2"><span className="text-xs font-bold text-fg">{label}</span><span className={`text-[0.68rem] font-black ${supported ? "text-success" : "text-danger"}`}>{supported ? "지원" : "미지원"}</span></div></div>)}</div><p className="mt-3 text-[0.68rem] text-fg-3">CPU {capabilities.hardwareConcurrency} threads · memory {capabilities.deviceMemoryGb ?? "unknown"}GB</p></section>
-      <section className={CARD}><h3 className="text-sm font-black text-fg">실브라우저 영수증</h3>{receipt ? <div className="mt-3 grid gap-2 sm:grid-cols-4"><div className={SUB}><p className="text-xs text-fg-3">CPU</p><p className="font-black text-fg">{receipt.cpuDabMillionMarksPerSecond}M/s</p></div><div className={SUB}><p className="text-xs text-fg-3">Loop p95</p><p className="font-black text-fg">{receipt.eventLoopP95Ms}ms</p></div><div className={SUB}><p className="text-xs text-fg-3">GPU p95</p><p className="font-black text-fg">{receipt.webgpuDispatchP95Ms ?? "—"}ms</p></div><div className={SUB}><p className="text-xs text-fg-3">Stable</p><p className={`font-black ${receipt.stable ? "text-success" : "text-danger"}`}>{receipt.stable ? "통과" : "실패"}</p></div></div> : <p className="mt-3 rounded-xl border border-warning/35 bg-warning/5 p-4 text-sm font-semibold text-warning">이 장치의 실측 영수증이 없습니다.</p>}</section>
+      <section className={CARD}><h3 className="text-sm font-black text-fg">실브라우저 영수증</h3>{receipt ? <div className="mt-3 grid gap-2 sm:grid-cols-4"><div className={SUB}><p className="text-xs text-fg-3">CPU</p><p className="font-black text-fg">{receipt.cpuDabMillionMarksPerSecond}M/s</p></div><div className={SUB}><p className="text-xs text-fg-3">Loop p95</p><p className="font-black text-fg">{receipt.eventLoopP95Ms}ms</p></div><div className={SUB}><p className="text-xs text-fg-3">GPU p95</p><p className="font-black text-fg">{receipt.webgpuDispatchP95Ms ?? "—"}ms</p></div><div className={SUB}><p className="text-xs text-fg-3">Stable</p><p className={`font-black ${receipt.stable ? "text-success" : "text-danger"}`}>{receipt.stable ? t("studio.brushCanvasStatus.brushLab.v5StablePassed", "통과") : t("studio.brushCanvasStatus.brushLab.v5StableFailed", "실패")}</p></div></div> : <p className="mt-3 rounded-xl border border-warning/35 bg-warning/5 p-4 text-sm font-semibold text-warning">{t("studio.brushCanvasStatus.brushLab.v5ReceiptEmpty", "이 장치의 실측 영수증이 없습니다.")}</p>}</section>
     </div>
 
     <section className={CARD}><div className="flex flex-wrap justify-between gap-2"><div><h3 className="text-sm font-black text-fg">Canonical authority와 provider 근거</h3><p className="mt-1 text-xs text-fg-3">같은 물리 역할은 하나의 provider만 소유합니다.</p></div><code className="rounded-lg bg-bg-2 px-2 py-1 text-[0.65rem] text-fg-3">{program.programKey}</code></div><div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">{program.authorities.map((item) => <div key={item.authority} className={SUB}><p className="text-[0.65rem] font-black uppercase text-accent">{item.authority}</p><p className="mt-1 text-xs font-bold text-fg">{item.provider}</p><p className="mt-1 text-[0.68rem] text-fg-3">{item.reason}</p></div>)}</div><div className="mt-4 overflow-x-auto rounded-xl border border-line"><table className="min-w-full text-left text-xs"><thead className="bg-bg-2/80 text-fg-3"><tr><th className="px-3 py-2">Provider</th><th className="px-3 py-2">Readiness</th><th className="px-3 py-2">Kernel</th><th className="px-3 py-2">Gate / evidence</th></tr></thead><tbody>{program.providers.map((item) => <tr key={item.id} className="border-t border-line align-top"><td className="px-3 py-2 font-bold text-fg">{item.label}</td><td className="px-3 py-2 text-fg-2">{READY[item.readiness]}</td><td className={`px-3 py-2 font-bold ${item.productKernel ? "text-success" : "text-danger"}`}>{item.productKernel ? "wired" : "missing"}</td><td className="max-w-xl px-3 py-2 text-fg-3">{item.qualityGate}<br/><span className="font-mono text-[0.62rem]">{item.evidencePaths[0] ?? "no runtime evidence"}</span></td></tr>)}</tbody></table></div></section>

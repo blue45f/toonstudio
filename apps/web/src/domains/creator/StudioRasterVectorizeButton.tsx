@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { Copy, PenTool, ScanLine, Shapes } from "lucide-react";
 import { useState } from "react";
 
@@ -40,13 +41,13 @@ export function StudioRasterVectorizeButton({
   const runVectorize = async () => {
     if (busy || disabled) return;
     setBusy(true);
-    setStatus("외곽선을 분석하는 중…");
+    setStatus(panelStatusText("studio.panelStatus.rasterVectorize.analyzingOutline", "외곽선을 분석하는 중…"));
     try {
       const result = await vectorizeStudioRasterImage(src, image);
-      if (!onInsert(result.elements)) throw new Error("벡터 레이어를 현재 문서에 추가하지 못했습니다.");
+      if (!onInsert(result.elements)) throw new Error(panelStatusText("studio.panelStatus.rasterVectorize.insertLayerFailed", "벡터 레이어를 현재 문서에 추가하지 못했습니다."));
       setStatus(`벡터 외곽선 ${result.elements.length}개를 새 레이어로 추가했습니다.`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "이미지를 벡터로 변환하지 못했습니다.");
+      setStatus(error instanceof Error ? error.message : panelStatusText("studio.panelStatus.rasterVectorize.convertFailed", "이미지를 벡터로 변환하지 못했습니다."));
     } finally {
       setBusy(false);
     }
@@ -56,19 +57,19 @@ export function StudioRasterVectorizeButton({
     if (busy || disabled) return;
     setBusy(true);
     setTracedSvg(null);
-    setStatus("이미지를 채움 패스로 트레이싱하는 중…");
+    setStatus(panelStatusText("studio.panelStatus.rasterVectorize.tracingFill", "이미지를 채움 패스로 트레이싱하는 중…"));
     try {
       // 픽셀 연산(명도 격자·레이어 분리)은 Worker 에서 돈다. Worker 를 쓸 수 없는
       // 환경에서는 오케스트레이터가 direct 로 폴백한다.
       const { traceStudioRasterImageViaWorker } = await import("./studio-image-trace-browser");
       const result = await traceStudioRasterImageViaWorker(src, image, tracePreset);
-      if (!onInsert(result.elements)) throw new Error("트레이싱 결과를 현재 문서에 추가하지 못했습니다.");
+      if (!onInsert(result.elements)) throw new Error(panelStatusText("studio.panelStatus.rasterVectorize.insertTraceFailed", "트레이싱 결과를 현재 문서에 추가하지 못했습니다."));
       setTracedSvg(result.svg);
       setStatus(
         `트레이싱 완료 — 색상 ${result.layerCount}개, 채움 조각 ${result.pieceCount}개를 새 레이어로 추가했습니다.`,
       );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "이미지를 트레이싱하지 못했습니다.");
+      setStatus(error instanceof Error ? error.message : panelStatusText("studio.panelStatus.rasterVectorize.traceFailed", "이미지를 트레이싱하지 못했습니다."));
     } finally {
       setBusy(false);
     }
@@ -78,7 +79,7 @@ export function StudioRasterVectorizeButton({
     if (busy || disabled || !onInsertVectorLayer) return;
     setBusy(true);
     setTracedSvg(null);
-    setStatus("이미지를 벡터 레이어로 변환하는 중…");
+    setStatus(panelStatusText("studio.panelStatus.rasterVectorize.convertingLayer", "이미지를 벡터 레이어로 변환하는 중…"));
     try {
       const { traceStudioRasterImageViaWorker } = await import("./studio-image-trace-browser");
       const { traceResultToVectorLayer } = await import("./studio-image-trace-vector-layer");
@@ -87,15 +88,15 @@ export function StudioRasterVectorizeButton({
         id: `traced-vector-${image.id}-${Date.now().toString(36)}`,
       });
       if (conversion.convertedCount === 0) {
-        throw new Error("벡터 레이어로 만들 뚜렷한 윤곽을 찾지 못했어요. 대비가 더 높은 원본으로 다시 시도해 주세요.");
+        throw new Error(panelStatusText("studio.panelStatus.rasterVectorize.noOutline", "벡터 레이어로 만들 뚜렷한 윤곽을 찾지 못했어요. 대비가 더 높은 원본으로 다시 시도해 주세요."));
       }
-      if (!onInsertVectorLayer(conversion.layer)) throw new Error("벡터 레이어를 현재 문서에 추가하지 못했습니다.");
+      if (!onInsertVectorLayer(conversion.layer)) throw new Error(panelStatusText("studio.panelStatus.rasterVectorize.insertLayerFailed", "벡터 레이어를 현재 문서에 추가하지 못했습니다."));
       setTracedSvg(result.svg);
       setStatus(
         `벡터 레이어로 변환 완료 — 편집 가능한 윤곽 ${conversion.convertedCount}개를 벡터 레이어로 추가했습니다.`,
       );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "이미지를 벡터 레이어로 변환하지 못했습니다.");
+      setStatus(error instanceof Error ? error.message : panelStatusText("studio.panelStatus.rasterVectorize.convertLayerFailed", "이미지를 벡터 레이어로 변환하지 못했습니다."));
     } finally {
       setBusy(false);
     }
@@ -117,7 +118,7 @@ export function StudioRasterVectorizeButton({
     <div className="rounded-lg border border-line bg-card/50 p-2">
       <button type="button" disabled={busy || disabled} onClick={() => void runVectorize()} className={buttonClass({ variant: "outline", size: "sm", className: "w-full gap-2" })}>
         <ScanLine size={14} aria-hidden="true" />
-        {busy ? "벡터화 중…" : "이미지를 벡터 외곽선으로 변환"}
+        {busy ? panelStatusText("studio.panelStatus.rasterVectorize.vectorizing", "벡터화 중…") : "이미지를 벡터 외곽선으로 변환"}
       </button>
 
       <div className="mt-2 border-t border-line/60 pt-2">
@@ -145,12 +146,12 @@ export function StudioRasterVectorizeButton({
         ) : null}
         <button type="button" disabled={busy || disabled} onClick={() => void runTrace()} className={buttonClass({ variant: "outline", size: "sm", className: "mt-1.5 w-full gap-2" })}>
           <Shapes size={14} aria-hidden="true" />
-          {busy ? "트레이싱 중…" : "이미지를 채움 벡터로 트레이싱"}
+          {busy ? panelStatusText("studio.panelStatus.rasterVectorize.tracing", "트레이싱 중…") : "이미지를 채움 벡터로 트레이싱"}
         </button>
         {onInsertVectorLayer ? (
           <button type="button" disabled={busy || disabled} onClick={() => void runTraceToVectorLayer()} className={buttonClass({ variant: "outline", size: "sm", className: "mt-1.5 w-full gap-2" })}>
             <PenTool size={14} aria-hidden="true" />
-            {busy ? "변환 중…" : "벡터 레이어로 변환해 편집"}
+            {busy ? panelStatusText("studio.panelStatus.rasterVectorize.converting", "변환 중…") : "벡터 레이어로 변환해 편집"}
           </button>
         ) : null}
         {tracedSvg ? (

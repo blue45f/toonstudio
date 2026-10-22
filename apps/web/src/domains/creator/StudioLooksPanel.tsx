@@ -3,6 +3,7 @@
  * 원클릭 룩 인스펙터 — 검색·즐겨찾기·최근 적용 + 카테고리 칩.
  * 상태(즐겨찾기)는 부모가 localStorage 와 동기화해 넘긴다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { RotateCcw, Search, Star } from "lucide-react";
 import { useState } from "react";
 
@@ -150,7 +151,7 @@ export function StudioLooksPanel({
 
       {filtered.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line bg-card/40 px-3 py-4 text-center text-[0.7rem] text-fg-3">
-          {favoritesOnly ? "즐겨찾기한 룩이 없어요. 별 아이콘으로 추가해 보세요." : "검색 결과가 없어요."}
+          {favoritesOnly ? r3c07StatusText("studio.panelStatus.r3c07.looks.favoritesEmpty", "즐겨찾기한 룩이 없어요. 별 아이콘으로 추가해 보세요.") : r3c07StatusText("studio.panelStatus.r3c07.looks.searchEmpty", "검색 결과가 없어요.")}
         </p>
       ) : (
         CATEGORY_ORDER.map((category) => {

@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useId, useState } from "react";
 
 import {
@@ -142,7 +143,7 @@ export function StudioTransformField({
       </span>
       {invalid ? (
         <span id={errorId} role="alert" className="text-[0.625rem] font-medium leading-tight text-danger">
-          숫자 또는 안전한 수식을 입력해 주세요.
+          {r3c07StatusText("studio.panelStatus.r3c07.transformField.invalidInput", "숫자 또는 안전한 수식을 입력해 주세요.")}
         </span>
       ) : null}
     </label>

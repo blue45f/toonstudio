@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useInRouterContext } from "react-router-dom";
 
 import { ReferenceQueryExplanation } from "./ReferenceQueryExplanation";
+import { resourceStatusText } from "./resource-status-i18n";
 
 import type { ProviderAvailability } from "@/shared/lib/creator-resource-workflow";
 import type { ResourceProvider } from "@/shared/lib/creator-resources";
@@ -31,10 +32,10 @@ export function ProviderStatus({ provider }: { provider?: ResourceProvider }) {
   return <section aria-label="데이터 제공처 설정 상태" className="rounded-xl border border-line bg-panel p-4 text-sm leading-7">
     <p className="font-semibold">검색 제공처 설정</p>
     <div role="status">
-      {failed ? <p className="text-fg-2">설정 상태를 확인하지 못했습니다. 검색을 다시 시도하거나 공식 사이트를 확인하세요.</p>
+      {failed ? <p className="text-fg-2">{resourceStatusText("resources.status.provider.statusCheckFailed", "설정 상태를 확인하지 못했습니다. 검색을 다시 시도하거나 공식 사이트를 확인하세요.")}</p>
         : entries ? entries.filter((entry) => !provider || entry.provider === provider).map((entry) =>
           <p key={entry.provider}>{RESOURCE_LABELS[entry.provider]} · {entry.availability === "keyless" ? "인증키 없이 검색 가능" : entry.availability === "configured" ? "서버 인증키 설정됨" : "서버 인증키 미설정"}</p>)
-          : <p className="text-fg-2">설정 상태 확인 중…</p>}
+          : <p className="text-fg-2">{resourceStatusText("resources.status.provider.statusChecking", "설정 상태 확인 중…")}</p>}
     </div>
     <p className="text-xs text-fg-2">인증키 설정 여부만 표시합니다. 실제 연결 성공·이용권한·잔여 쿼터를 보증하지 않습니다.</p>
     {provider === "met" && inRouter && <ReferenceQueryExplanation />}

@@ -3,9 +3,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { copyText, downloadFile, downloadPng } from "./creative-export";
+import { playStatusText } from "../play-status-i18n";
 
 export function DraftNotice({ saved }: { saved: boolean }) {
-  return <p className={`play-note ${saved ? "" : "play-warning"}`} role="status">{saved ? "이 브라우저에 자동 저장됩니다. 다른 기기와 동기화되지 않으므로 중요한 결과는 파일로 보관해 주세요." : "브라우저 저장 공간을 사용할 수 없습니다. 편집은 가능하지만 나가기 전에 파일로 저장해 주세요."}</p>;
+  return <p className={`play-note ${saved ? "" : "play-warning"}`} role="status">{saved ? "이 브라우저에 자동 저장됩니다. 다른 기기와 동기화되지 않으므로 중요한 결과는 파일로 보관해 주세요." : playStatusText("play.status.lab.storageUnavailable", "브라우저 저장 공간을 사용할 수 없습니다. 편집은 가능하지만 나가기 전에 파일로 저장해 주세요.")}</p>;
 }
 export function CopyButton({ text, label = "복사" }: { text: string; label?: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "manual">("idle");
@@ -21,13 +22,13 @@ export function ExportDrawing({ svg, name, width, height, disabled = false }: { 
   const png = async () => {
     setBusy(true); setMessage("");
     try { await downloadPng(svg, `${name}.png`, width, height); setMessage("PNG 파일을 만들었습니다."); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "PNG 저장 실패. SVG 저장을 사용해 주세요."); }
+    catch (error) { setMessage(error instanceof Error ? error.message : playStatusText("play.status.lab.pngSaveFailed", "PNG 저장 실패. SVG 저장을 사용해 주세요.")); }
     finally { setBusy(false); }
   };
   return <div className="play-export">
     <div className="play-actions">
       <button className="play-button primary" type="button" disabled={disabled || busy} onClick={() => void png()}><Download size={16} />{busy ? "PNG 만드는 중…" : "PNG 저장"}</button>
-      <button className="play-button" type="button" disabled={disabled} onClick={() => { try { downloadFile(svg, `${name}.svg`, "image/svg+xml;charset=utf-8"); setMessage("SVG 파일을 만들었습니다."); } catch { setMessage("파일 저장을 사용할 수 없습니다. 브라우저 설정을 확인해 주세요."); } }}>SVG 저장</button>
+      <button className="play-button" type="button" disabled={disabled} onClick={() => { try { downloadFile(svg, `${name}.svg`, "image/svg+xml;charset=utf-8"); setMessage("SVG 파일을 만들었습니다."); } catch { setMessage(playStatusText("play.status.lab.fileSaveUnavailable", "파일 저장을 사용할 수 없습니다. 브라우저 설정을 확인해 주세요.")); } }}>SVG 저장</button>
     </div>
     <span role="status" className="play-note">{message}</span>
   </div>;

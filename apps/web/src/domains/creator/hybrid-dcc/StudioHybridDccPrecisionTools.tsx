@@ -11,6 +11,7 @@ import {
   type StudioHybridDccPrecisionKind,
 } from "./studio-hybrid-dcc-precision-transform";
 import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
+import { subStatusText } from "../studio-sub-status-i18n";
 
 const CONTROL = "min-h-9 pointer-coarse:min-h-11 min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40";
 const DEFAULTS = { translate: "10cm", rotate: "15deg", scale: "110%", dimension: "1m" } as const;
@@ -31,21 +32,21 @@ function PrecisionEditor(props: StudioHybridDccViewportProps) {
   const measurement = useMemo(() => {
     try {
       const assetId = workspace.activeAssetId;
-      if (!assetId) return { error: "3D 화면에서 오브젝트를 선택하세요." };
+      if (!assetId) return { error: subStatusText("studio.subStatus.precision.noObject", "3D 화면에서 오브젝트를 선택하세요.") };
       const transform = workspace.session.state.objectTransforms[assetId];
-      if (!transform) return { error: "선택한 오브젝트에 저장된 변환이 없습니다." };
+      if (!transform) return { error: subStatusText("studio.subStatus.precision.noTransform", "선택한 오브젝트에 저장된 변환이 없습니다.") };
       const asset = deriveStudioHybridDccViewportSnapshot(workspace).assets.find((item) => item.assetId === assetId);
-      if (!asset) return { error: "숨겨졌거나 표시할 수 없는 오브젝트는 정밀 편집할 수 없습니다." };
+      if (!asset) return { error: subStatusText("studio.subStatus.precision.hiddenObject", "숨겨졌거나 표시할 수 없는 오브젝트는 정밀 편집할 수 없습니다.") };
       return { assetId, transform, bounds: measureStudioHybridDccPrecisionBounds(asset.positions, transform) };
     } catch (error) {
-      return { error: error instanceof Error ? error.message : "메시를 측정하지 못했습니다." };
+      return { error: error instanceof Error ? error.message : subStatusText("studio.subStatus.precision.measureFailed", "메시를 측정하지 못했습니다.") };
     }
   }, [workspace]);
   const unavailable = measurement.error
-    ?? (editingDisabled ? "다른 편집이 완료된 뒤 적용하세요." : undefined)
-    ?? (componentSelection && componentSelection.mode !== "object" ? "오브젝트 모드에서 사용하세요. 메시 요소는 변경하지 않습니다." : undefined)
-    ?? (onSculptStroke ? "조형 모드에서는 오브젝트 정밀 변환을 잠시 사용할 수 없습니다." : undefined)
-    ?? (!onCommitAssetTransform ? "이 화면은 읽기 전용입니다." : undefined);
+    ?? (editingDisabled ? subStatusText("studio.subStatus.precision.editingBusy", "다른 편집이 완료된 뒤 적용하세요.") : undefined)
+    ?? (componentSelection && componentSelection.mode !== "object" ? subStatusText("studio.subStatus.precision.objectMode", "오브젝트 모드에서 사용하세요. 메시 요소는 변경하지 않습니다.") : undefined)
+    ?? (onSculptStroke ? subStatusText("studio.subStatus.precision.sculptMode", "조형 모드에서는 오브젝트 정밀 변환을 잠시 사용할 수 없습니다.") : undefined)
+    ?? (!onCommitAssetTransform ? subStatusText("studio.subStatus.precision.readOnly", "이 화면은 읽기 전용입니다.") : undefined);
   const candidate = (() => {
     if (!measurement.transform || !measurement.bounds) return { error: measurement.error };
     try {
@@ -66,7 +67,7 @@ function PrecisionEditor(props: StudioHybridDccViewportProps) {
         kind, axis, space, value, pivot,
       }, bounds) };
     } catch (error) {
-      return { error: error instanceof Error ? error.message : "변환 값을 확인하세요." };
+      return { error: error instanceof Error ? error.message : subStatusText("studio.subStatus.precision.valueCheck", "변환 값을 확인하세요.") };
     }
   })();
   const commit = (create: () => StudioHybridDccObjectTransform) => {
@@ -75,13 +76,13 @@ function PrecisionEditor(props: StudioHybridDccViewportProps) {
     try {
       const next = create();
       if (hashStudioHybridDccObjectTransform(next) === hashStudioHybridDccObjectTransform(measurement.transform)) {
-        setFeedback("변경할 값이 없습니다.");
+        setFeedback(subStatusText("studio.subStatus.precision.noChange", "변경할 값이 없습니다."));
         return;
       }
       onCommitAssetTransform(measurement.assetId, next);
-      setFeedback("변환을 요청했습니다. 실행 결과는 편집기 상태와 되돌리기 기록에서 확인하세요.");
+      setFeedback(subStatusText("studio.subStatus.precision.requested", "변환을 요청했습니다. 실행 결과는 편집기 상태와 되돌리기 기록에서 확인하세요."));
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "변환을 적용하지 못했습니다.");
+      setActionError(error instanceof Error ? error.message : subStatusText("studio.subStatus.precision.applyFailed", "변환을 적용하지 못했습니다."));
     }
   };
   const changeKind = (next: StudioHybridDccPrecisionKind) => {

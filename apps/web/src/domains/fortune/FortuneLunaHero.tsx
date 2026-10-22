@@ -4,6 +4,7 @@ import { ArrowRight, BookmarkPlus, Share2 } from "lucide-react";
 import { fortuneKstDate } from "@toonstudio/core/fortune";
 import { cn } from "@/shared/lib/utils";
 import { useFortuneStore } from "./fortune-store";
+import { fortuneStatusText } from "./fortune-status-i18n";
 import { drawFortuneTodayCards, fortuneTodayCardsText, type FortuneTodayCard } from "./fortune-today-cards";
 import { getTarotVisual, tarotAccent, tarotFaceGradient } from "./tarot-visuals";
 import { getTarotArtPath } from "./tarot-art";
@@ -103,7 +104,7 @@ export function FortuneLunaHero({ onSaveTodayCards }: { onSaveTodayCards: (text:
       setNotice("오늘의 카드를 클립보드에 복사했어요.");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      setNotice("공유를 열지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setNotice(fortuneStatusText("fortune.status.lunaHero.shareOpenFailed", "공유를 열지 못했어요. 잠시 후 다시 시도해 주세요."));
     }
   };
 

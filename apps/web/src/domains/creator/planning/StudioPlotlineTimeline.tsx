@@ -13,6 +13,7 @@
  * - 캐릭터·장소 필터는 모델의 필터 규칙으로 트랙 자체를 좁힌다.
  */
 import { useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { SeasonPlan } from "@toonstudio/core/production";
 import type { StudioStoryCharacter, StudioStoryLocation } from "../studio-story-bible";
 import type { EpisodePlanWithSynopsis } from "./studio-episode-synopsis";
@@ -175,9 +176,9 @@ export function StudioPlotlineTimeline({
       </div>
 
       {timeline.episodes.length === 0 ? (
-        <p>아직 회차 줄거리가 없어요. 회차 줄거리를 적으면 그 회차가 열로 나타나요.</p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.plotline.emptyEpisodes", "아직 회차 줄거리가 없어요. 회차 줄거리를 적으면 그 회차가 열로 나타나요.")}</p>
       ) : timeline.rows.length === 0 ? (
-        <p>이 필터에 맞는 플롯라인이 없어요. 필터를 풀면 전체 타임라인이 보여요.</p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.plotline.emptyFilter", "이 필터에 맞는 플롯라인이 없어요. 필터를 풀면 전체 타임라인이 보여요.")}</p>
       ) : (
         <table aria-label="플롯라인별 회차 카드">
           <thead>

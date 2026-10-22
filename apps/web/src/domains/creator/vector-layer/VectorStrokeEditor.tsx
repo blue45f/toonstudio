@@ -6,6 +6,7 @@
  * 상태 변경은 모두 부모 콜백으로 위임하고, 이 컴포넌트는 상태를 소유하지 않는다.
  */
 
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import { useMemo } from "react";
 
 import { exportVectorLayerToSvg } from "./vector-layer-svg-export";
@@ -85,7 +86,7 @@ export function VectorStrokeEditor({
 
       {layer.strokes.length === 0 ? (
         <p style={{ margin: 0, color: "#666" }}>
-          스트로크가 없습니다. 먼저 벡터 레이어에 선을 그리세요.
+          {creatorRestStatusText("creatorRest.status.vectorStroke.empty", "스트로크가 없습니다. 먼저 벡터 레이어에 선을 그리세요.")}
         </p>
       ) : (
         <ul

@@ -10,6 +10,7 @@ import {
 import { isFeedbackEntry } from "@toonstudio/core/feedback-response";
 import { api, getApiErrorMessage } from "@/platform/api";
 import { formatNumber } from "@toonstudio/core/format";
+import { legalStatusText } from "../legal-status-i18n";
 
 interface Props {
   kind: FeedbackKind;
@@ -54,7 +55,7 @@ export function FeedbackComposer({ kind, onKindChange, userId, hydrated, apiRead
       const entry = await api.post<unknown>("/feedback/posts", parsed.value, { timeout: 30_000, referrerPolicy: "no-referrer" });
       if (useApp.getState().userId !== userId) return;
       if (!isFeedbackEntry(entry) || entry.category !== parsed.value.category) {
-        throw new Error("등록 결과를 확인하지 못했어요. 중복 제보를 피하려면 내 제보 목록을 먼저 확인해 주세요. 입력 내용은 유지됩니다.");
+        throw new Error(legalStatusText("legal.status.feedbackComposer.submitUnconfirmed", "등록 결과를 확인하지 못했어요. 중복 제보를 피하려면 내 제보 목록을 먼저 확인해 주세요. 입력 내용은 유지됩니다."));
       }
       setTitle(""); setText(""); setTags(""); setSteps(""); setExpected(""); setActual(""); setPublicConfirmed(false);
       onCreated(entry);
@@ -99,7 +100,7 @@ export function FeedbackComposer({ kind, onKindChange, userId, hydrated, apiRead
         <div className="fb-consent"><input id={`${id}-public`} type="checkbox" checked={publicConfirmed} onChange={(event) => setPublicConfirmed(event.target.checked)} /><label htmlFor={`${id}-public`}>제보 내용이 공개되는 것을 확인했습니다.</label></div>
       </fieldset>
       {error && <p className="fb-error" role="alert" tabIndex={-1} ref={errorElement}>{error}</p>}
-      <button type="submit" disabled={sending || !apiReady} className="fb-button fb-primary fb-full"><Send size={16} aria-hidden="true" />{sending ? "등록 중…" : "공개 제보 등록"}</button>
+      <button type="submit" disabled={sending || !apiReady} className="fb-button fb-primary fb-full"><Send size={16} aria-hidden="true" />{sending ? legalStatusText("legal.status.feedbackComposer.submitting", "등록 중…") : "공개 제보 등록"}</button>
       <p className="fb-caption">공감 수는 참고 자료이며, 반영 여부나 일정을 보장하지 않습니다.</p>
     </form>
   );

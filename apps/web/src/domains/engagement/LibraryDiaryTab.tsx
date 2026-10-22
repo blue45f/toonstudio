@@ -1,3 +1,4 @@
+import { engagementStatusText } from "./engagement-status-i18n";
 import { BookOpenCheck, CalendarDays, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 
@@ -259,7 +260,7 @@ export function LibraryDiaryTab({ titlesById }: { readonly titlesById: Readonly<
         <p className="sr-only" role="status">{announcement}</p>
 
         {!hydrated ? (
-          <p role="status" className="mt-4 text-sm text-fg-2">감상 일기를 불러오는 중입니다…</p>
+          <p role="status" className="mt-4 text-sm text-fg-2">{engagementStatusText("engagement.status.libraryDiary.loading", "감상 일기를 불러오는 중입니다…")}</p>
         ) : sortedEntries.length === 0 ? (
           <div className="mt-4 rounded-3xl border border-dashed border-line bg-card/50 p-10 text-center">
             <CalendarDays className="mx-auto size-9 text-fg-3" aria-hidden="true" />

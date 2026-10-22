@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   ArrowLeftRight,
   CloudOff,
@@ -75,7 +76,7 @@ const DIALOG_CLASS = "w-[min(34rem,calc(100vw-1rem))] overflow-y-auto overscroll
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message.trim().slice(0, 500);
   if (typeof error === "string" && error.trim()) return error.trim().slice(0, 500);
-  return "동기화 작업을 완료하지 못했습니다.";
+  return r3c07StatusText("studio.panelStatus.r3c07.draftSync.syncFailed", "동기화 작업을 완료하지 못했습니다.");
 }
 
 function safeCount(value: number): number {

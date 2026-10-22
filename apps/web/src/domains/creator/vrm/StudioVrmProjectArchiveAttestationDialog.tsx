@@ -14,6 +14,8 @@ import type {
 
 import { cn } from "@/shared/lib/utils";
 
+import { vrmPanelStatusText } from "../studio-vrm-panel-status-i18n";
+
 type ReadyArchiveAttestationPlan = Extract<
   StudioVrmProjectArchiveAttestationPlan,
   { readonly ok: true }
@@ -106,7 +108,7 @@ function validationMessage(input: {
     return {
       ready: false,
       tone: "blocking",
-      text: "‘확인하지 못함’이 포함되어 archive 내보내기를 진행할 수 없습니다.",
+      text: vrmPanelStatusText("studio.vrmPanelStatus.archiveAttestation.unknownBlocksExport", "‘확인하지 못함’이 포함되어 archive 내보내기를 진행할 수 없습니다."),
     };
   }
   if (!input.attributionConfirmed) {

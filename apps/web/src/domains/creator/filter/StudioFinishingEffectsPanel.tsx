@@ -7,6 +7,7 @@
  * 전/후 이미지를 분할 슬라이더로 겹쳐 보여준다.
  */
 
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import { Check, Eye, RotateCcw, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -72,7 +73,7 @@ export function StudioFinishingEffectsPanel({
       }
       return { graph: next, error: null as string | null };
     } catch {
-      return { graph: baseGraph, error: "효과를 붙일 연결이 없어 미리보기를 만들지 못했습니다." };
+      return { graph: baseGraph, error: creatorRestStatusText("creatorRest.status.finishing.previewFailed", "효과를 붙일 연결이 없어 미리보기를 만들지 못했습니다.") };
     }
   }, [baseGraph, selected]);
 
@@ -124,7 +125,7 @@ export function StudioFinishingEffectsPanel({
       onCommit?.(candidate.graph);
       setCommitted(true);
     } catch {
-      setError("효과 적용에 실패했습니다. 그래프를 확인해 주세요.");
+      setError(creatorRestStatusText("creatorRest.status.finishing.applyFailed", "효과 적용에 실패했습니다. 그래프를 확인해 주세요."));
     }
   };
 

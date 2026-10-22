@@ -18,6 +18,7 @@ import {
 import { LessonLab } from "./LessonLab";
 import { useLearningPractice } from "./use-learning-practice";
 import { useLearningProgress, type LearningStore } from "./use-learning-progress";
+import { learnStatusText } from "./learn-status-i18n";
 
 import "./learning.css";
 import "./learning-lesson.css";
@@ -150,7 +151,7 @@ function Curriculum({ store }: { store: LearningStore }) {
         <p className="learn-small" role="status">검색 결과 {filtered.length}개</p>
         {filtered.length
           ? <div className="learn-card-grid">{filtered.map((lesson) => <LessonCard key={lesson.id} lesson={lesson} store={store} index={LESSONS.indexOf(lesson)} />)}</div>
-          : <div className="learn-empty"><h3>일치하는 강좌가 없습니다.</h3><p>다른 키워드 또는 전체 과정을 선택해 보세요.</p><button type="button" onClick={() => setParams({})}>검색 초기화</button></div>}
+          : <div className="learn-empty"><h3>{learnStatusText("learn.status.content.lessonsEmpty", "일치하는 강좌가 없습니다.")}</h3><p>다른 키워드 또는 전체 과정을 선택해 보세요.</p><button type="button" onClick={() => setParams({})}>검색 초기화</button></div>}
       </section>
       <section className="learn-banner">
         <div><p className="learn-eyebrow">FROM LEARNING TO MAKING</p><h2>배운 것을 툰스튜디오에서.</h2><p>새 탭에서 직접 따라 하는 기본 실습부터 시작합니다. 작업 자동 생성이나 자동 채점 기능은 아닙니다.</p></div>
@@ -510,7 +511,7 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
             <p className="learn-small" role="status">
               {saved.completed
                 ? store.warning
-                  ? "이 화면에서 완료했습니다. 저장에 실패했으므로 새로고침 전에 기록을 백업하세요."
+                  ? learnStatusText("learn.status.content.saveFailed", "이 화면에서 완료했습니다. 저장에 실패했으므로 새로고침 전에 기록을 백업하세요.")
                   : "완료 기록을 저장했습니다. 언제든 다시 열어 복습할 수 있습니다."
                 : ready
                   ? "체크리스트와 정답을 확인했습니다. 완료 버튼으로 기록을 남기세요."
@@ -664,7 +665,7 @@ function Glossary({ store }: { store: LearningStore }) {
         </div>
       ) : (
         <div className="learn-empty">
-          <h2>{selected ? "해당 용어를 찾을 수 없습니다." : "조건에 맞는 용어가 없습니다."}</h2>
+          <h2>{selected ? learnStatusText("learn.status.content.termNotFound", "해당 용어를 찾을 수 없습니다.") : learnStatusText("learn.status.content.termEmpty", "조건에 맞는 용어가 없습니다.")}</h2>
           <p>검색어와 분류를 바꾸거나 저장한 용어 필터를 해제해 보세요.</p>
           <button type="button" onClick={() => setParams({})}>전체 용어 보기</button>
         </div>
@@ -701,7 +702,7 @@ function StudioCourses({ store }: { store: LearningStore }) {
 function LearningNotFound() {
   return (
     <section className="learn-empty">
-      <h1>학습 페이지를 찾을 수 없습니다.</h1>
+      <h1>{learnStatusText("learn.status.content.pageNotFound", "학습 페이지를 찾을 수 없습니다.")}</h1>
       <p>주소가 변경되었거나 존재하지 않는 강좌입니다.</p>
       <Link className="learn-primary" to="/learn">강좌 목록으로</Link>
     </section>

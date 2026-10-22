@@ -9,6 +9,7 @@
  * - ko/en (defineBilingualText), 라이트/다크 (테마 CSS 변수), 390px,
  *   reduced-motion 대응.
  */
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import { useT } from "@/shared/lib/i18n";
@@ -152,7 +153,7 @@ function buildDemoLine(): StudioEditableVectorLine {
     thinning: 0.6,
     color: "#8b5cf6",
   });
-  if (!line) throw new Error("데모 선 생성 실패");
+  if (!line) throw new Error(creatorRestStatusText("creatorRest.status.vectorLine.demoFailed", "데모 선 생성 실패"));
   return line;
 }
 

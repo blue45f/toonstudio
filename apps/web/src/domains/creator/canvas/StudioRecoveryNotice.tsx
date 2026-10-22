@@ -3,7 +3,10 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { createStudioRecoveryNewDrawingHref } from "./studio-recovery-notice-model";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "../studio-brush-canvas-status-i18n";
 
 export type StudioRecoveryBlockedReason = "legacy-unversioned" | "work-mismatch" | "revision-mismatch" | null;
 
@@ -19,6 +22,7 @@ export interface StudioRecoveryNoticeProps {
 const actionClass = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-50";
 
 export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, onBackup, onDelete }: StudioRecoveryNoticeProps) {
+  const t = useT();
   const titleId = useId();
   const detailsId = useId();
   const [expanded, setExpanded] = useState(false);
@@ -41,7 +45,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
       try {
         await onRestore();
       } catch {
-        setError("자동으로 이어 열지 못했어요. 현재 그림은 그대로 유지했어요.");
+        setError(t("studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailed", "자동으로 이어 열지 못했어요. 현재 그림은 그대로 유지했어요."));
       } finally {
         // A successful restore clears `hasAutosave` in the parent and unmounts this notice.
         // If the notice is still mounted on the next task, the restore guard stopped the
@@ -67,7 +71,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
       else if (action === "delete") await onDelete();
       else onBackup();
     } catch {
-      setError("요청을 마치지 못했어요. 다시 시도하거나 백업 파일을 받아 주세요.");
+      setError(t("studio.brushCanvasStatus.canvas.recoveryRequestFailed", "요청을 마치지 못했어요. 다시 시도하거나 백업 파일을 받아 주세요."));
     } finally {
       busyRef.current = false;
       setBusy(null);
@@ -89,7 +93,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
         <div className="flex min-w-0 items-center gap-3" role="status" aria-live="polite">
           <Loader2 size={17} className="shrink-0 animate-spin text-accent motion-reduce:animate-none" aria-hidden />
           <div className="min-w-0">
-            <h2 id={titleId} className="font-bold">마지막 작업을 이어 여는 중이에요</h2>
+            <h2 id={titleId} className="font-bold">{t("studio.brushCanvasStatus.canvas.recoveryLoadingHeading", "마지막 작업을 이어 여는 중이에요")}</h2>
             <p className="mt-1 leading-relaxed text-fg-2">
               안전하게 저장된 같은 그림이면 묻지 않고 자동으로 이어서 엽니다.
             </p>
@@ -104,7 +108,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
     : blockedReason === "work-mismatch"
       ? "다른 작품의 그림이에요. 덮어쓰지 않고 백업 파일로 보관해 주세요."
       : blockedReason
-        ? "안전하게 열 수 있는지 확인하지 못했어요. 먼저 백업 파일을 받아 주세요."
+        ? t("studio.brushCanvasStatus.canvas.recoveryBlockedUnverified", "안전하게 열 수 있는지 확인하지 못했어요. 먼저 백업 파일을 받아 주세요.")
         : null;
   const manualRestoreRequired = blockedReason === null && !autoRestore;
   const fallbackDescription = error
@@ -123,7 +127,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
     >
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 basis-48" role="status" aria-live="polite">
-          <h2 id={titleId} className="font-bold">{blockedReason ? "남겨 둔 그림을 보관해 주세요" : manualRestoreRequired ? "저장 상태를 확인해 주세요" : "자동으로 이어 열지 못했어요"}</h2>
+          <h2 id={titleId} className="font-bold">{blockedReason ? "남겨 둔 그림을 보관해 주세요" : manualRestoreRequired ? "저장 상태를 확인해 주세요" : t("studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailedTitle", "자동으로 이어 열지 못했어요")}</h2>
           <p className="mt-1 leading-relaxed text-fg-2">{description}</p>
         </div>
         <div className="flex max-w-full flex-wrap gap-2">
@@ -135,7 +139,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
             className={cn(actionClass, "bg-accent text-on-accent hover:bg-accent-hover")}
           >
             {busy === "restore" ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden /> : blockedReason ? <Download size={15} aria-hidden /> : <RotateCcw size={15} aria-hidden />}
-            {busy === "restore" ? "그림 여는 중…" : blockedReason ? "백업 파일 받기" : manualRestoreRequired ? "이어서 그리기" : "다시 이어 열기"}
+            {busy === "restore" ? t("studio.brushCanvasStatus.canvas.recoveryOpening", "그림 여는 중…") : blockedReason ? "백업 파일 받기" : manualRestoreRequired ? "이어서 그리기" : "다시 이어 열기"}
           </button>
           <a
             href={newDrawingHref}
@@ -181,7 +185,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
               </button>
             )}
             <button type="button" disabled={busy !== null} onClick={() => void run("delete")} className={cn(actionClass, "text-bad hover:bg-bad/10")}>
-              <Trash2 size={14} aria-hidden /> {busy === "delete" ? "삭제 확인 중…" : "이전 그림 삭제…"}
+              <Trash2 size={14} aria-hidden /> {busy === "delete" ? t("studio.brushCanvasStatus.canvas.recoveryDeletingCheck", "삭제 확인 중…") : "이전 그림 삭제…"}
             </button>
           </div>
           <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">백업에는 이전 그림이 담겨요. 삭제는 현재 캔버스가 아닌 이전 그림에 적용되며, 확인 후 되돌릴 수 없어요.</p>

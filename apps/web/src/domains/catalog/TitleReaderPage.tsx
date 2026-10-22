@@ -1,3 +1,4 @@
+import { catalogStatusText } from "./catalog-status-i18n";
 import {
   ArrowUpRight,
   Check,
@@ -469,7 +470,7 @@ export function TitleReaderPage() {
   const { slug, episode: episodeParam } = useParams();
   const { data, loading, error, notFound, reload } = useApiResource<ReaderTitleResponse>(
     slug ? `/api/titles/${encodeURIComponent(slug)}` : null,
-    "작품 정보를 불러오지 못했습니다.",
+    catalogStatusText("catalog.status.titleReader.loadFailed", "작품 정보를 불러오지 못했습니다."),
   );
   const title = data?.title;
   const episodeNumber =

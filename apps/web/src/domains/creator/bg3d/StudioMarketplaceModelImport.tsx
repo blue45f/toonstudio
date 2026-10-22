@@ -3,6 +3,9 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { createStudioCc0ModelFile, studioCc0AssetUrl } from "../studio-cc0-asset-delivery";
 import { resolveStudioMarketplaceCc0Model } from "../studio-marketplace-cc0-registry";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import type { StudioBg3dModelImportActions } from "./studio-bg3d-editor-model-import-actions";
 
 export function StudioMarketplaceModelImport({ modelId, scopeKey, disabled, onImport }: {
@@ -11,6 +14,7 @@ export function StudioMarketplaceModelImport({ modelId, scopeKey, disabled, onIm
   readonly disabled: boolean;
   readonly onImport: StudioBg3dModelImportActions["importModelFiles"];
 }) {
+  const t = useT();
   const asset = resolveStudioMarketplaceCc0Model(`studio-3d-asset:cc0/${modelId ?? ""}`);
   const controllerRef = useRef<AbortController | null>(null);
   const latestRef = useRef({ disabled, onImport });
@@ -37,10 +41,10 @@ export function StudioMarketplaceModelImport({ modelId, scopeKey, disabled, onIm
         licenseName: "CC0 1.0", attribution: `${asset.provider} — ${asset.sourceUrl}`,
       }, controller.signal);
       if (controller.signal.aborted || controllerRef.current !== controller) return;
-      setNotice(imported ? `${asset.name}을(를) 장면에 배치했습니다.` : "모델을 배치하지 못했습니다. 3D 편집기의 오류 안내와 기기 예산을 확인해 주세요.");
+      setNotice(imported ? `${asset.name}을(를) 장면에 배치했습니다.` : t("studio.bg3dPanelStatus.marketplaceImport.placeFailed", "모델을 배치하지 못했습니다. 3D 편집기의 오류 안내와 기기 예산을 확인해 주세요."));
     } catch (error: unknown) {
       if (!controller.signal.aborted && controllerRef.current === controller) {
-        setNotice(error instanceof Error ? error.message : "모델을 가져오지 못했습니다.");
+        setNotice(error instanceof Error ? error.message : t("studio.bg3dPanelStatus.marketplaceImport.importFailed", "모델을 가져오지 못했습니다."));
       }
     } finally {
       if (controllerRef.current === controller) {
@@ -56,11 +60,11 @@ export function StudioMarketplaceModelImport({ modelId, scopeKey, disabled, onIm
       {asset.previewPath ? <img src={studioCc0AssetUrl(asset.previewPath)} alt={`${asset.name} 모델 미리보기`} className="max-h-36 w-full rounded-lg object-contain" /> : null}
       <p className="text-xs text-fg-3">선택한 상품의 GLB를 해시·형식·기기 예산 검사 후 장면에 배치합니다. 최종 2D 컷 적용은 편집기의 삽입 버튼을 사용하세요.</p>
       <button type="button" disabled={disabled || pending} onClick={() => void importSelected()} className="min-h-11 w-full rounded-lg border border-line px-3 text-xs font-semibold text-fg focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50">
-        {pending ? "검증·가져오는 중…" : "선택한 마켓 모델 가져오기"}
+        {pending ? t("studio.bg3dPanelStatus.marketplaceImport.verifyingImporting", "검증·가져오는 중…") : t("studio.bg3dPanelStatus.marketplaceImport.importButton", "선택한 마켓 모델 가져오기")}
       </button>
       {pending ? <button type="button" className="min-h-11 w-full rounded-lg border border-line px-3 text-xs text-fg-2 focus-visible:ring-2 focus-visible:ring-accent" onClick={() => {
-        controllerRef.current?.abort(); setNotice("모델 가져오기를 취소했습니다.");
-      }}>가져오기 취소</button> : null}
+        controllerRef.current?.abort(); setNotice(t("studio.bg3dPanelStatus.marketplaceImport.importCancelled", "모델 가져오기를 취소했습니다."));
+      }}>{t("studio.bg3dPanelStatus.marketplaceImport.cancelImport", "가져오기 취소")}</button> : null}
       <p role="status" aria-live="polite" className="text-xs text-fg-2">{notice}</p>
     </section>
   );

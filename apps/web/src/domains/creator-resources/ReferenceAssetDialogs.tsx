@@ -14,6 +14,7 @@ import {
 import { useRef, useState } from "react";
 
 import { RESOURCE_BUTTON } from "./navigation";
+import { resourceStatusText } from "./resource-status-i18n";
 import {
   AssetImage,
   copyText,
@@ -99,7 +100,7 @@ export function ReferenceDetailDialog({
             ) : (
               <div className="grid min-h-64 place-items-center text-fg-3">
                 <Images size={42} aria-hidden="true" />
-                <p>이미지 미리보기를 불러오지 못했습니다.</p>
+                <p>{resourceStatusText("resources.status.referenceDialogs.previewFailed", "이미지 미리보기를 불러오지 못했습니다.")}</p>
               </div>
             )}
           </div>

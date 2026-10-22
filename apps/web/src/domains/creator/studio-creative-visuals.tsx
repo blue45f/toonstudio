@@ -3,6 +3,7 @@
  * mini illustrations for tools, not brand clones. Pure presentation.
  */
 /* eslint-disable react-refresh/only-export-components -- shape kind maps + picker kinds shared with StudioPage / options bar */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { STUDIO_DRAW_SHAPE_PICKER_KINDS as DRAW_SHAPE_PICKER_KINDS } from "./brush/studio-draw-hud";
 import { StudioToolHintTarget } from "./StudioToolHint";
 
@@ -56,12 +57,9 @@ const SHAPE_PICKER_TIP_BY_KIND: Readonly<Record<string, string>> = {
   polygon: "변 수를 먼저 정하면 반복 배경과 소품 형태를 빠르게 만들 수 있어요.",
 };
 
-const SHAPE_PICKER_DEFAULT_UNAVAILABLE_REASON =
-  "현재 작업 상태에서는 이 도형을 사용할 수 없습니다.";
-
 function shapePickerUnavailableReason(item: StudioShapePickerItem): string | undefined {
   if (!item.disabled) return undefined;
-  return item.unavailableReason ?? SHAPE_PICKER_DEFAULT_UNAVAILABLE_REASON;
+  return item.unavailableReason ?? r3c07StatusText("studio.panelStatus.r3c07.creativeVisuals.shapeUnavailable", "현재 작업 상태에서는 이 도형을 사용할 수 없습니다.");
 }
 
 /** Shared semantic contract for both the inspector grid and compact shape strip. */

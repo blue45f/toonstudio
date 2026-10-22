@@ -1,3 +1,4 @@
+import { marketStatusText } from "../market-status-i18n";
 import {
   CheckCircle2,
   ChevronDown,
@@ -46,7 +47,7 @@ const STATUS_META = {
 const CHECK_META = {
   pass: { label: "문제 없음", icon: CheckCircle2, className: "border-good/30 bg-good/10 text-good" },
   review: { label: "확인 필요", icon: CircleAlert, className: "border-warn/35 bg-warn/10 text-warn" },
-  block: { label: "사용 불가", icon: ShieldX, className: "border-danger/35 bg-danger/10 text-danger" },
+  block: { label: marketStatusText("market.status.productionFit.blockLabel", "사용 불가"), icon: ShieldX, className: "border-danger/35 bg-danger/10 text-danger" },
 } as const;
 
 export function MarketProductionFitWorkbench({ record, className }: MarketProductionFitWorkbenchProps) {
@@ -88,7 +89,7 @@ export function MarketProductionFitWorkbench({ record, className }: MarketProduc
         <p className="mt-1 text-xs leading-5 text-fg-2 sm:text-sm sm:leading-6">{evaluation.guidance}</p>
         <div
           className="mt-3 flex flex-wrap items-center gap-1.5 text-[0.68rem] font-semibold"
-          aria-label={`문제 없음 ${evaluation.passCount}개, 확인 필요 ${evaluation.reviewCount}개, 사용 불가 ${evaluation.blockCount}개`}
+          aria-label={marketStatusText("market.status.productionFit.summaryAria", { pass: evaluation.passCount, review: evaluation.reviewCount, block: evaluation.blockCount }, "문제 없음 {pass}개, 확인 필요 {review}개, 사용 불가 {block}개")}
         >
           <span className="rounded-full bg-good/10 px-2.5 py-1 text-good">문제 없음 {evaluation.passCount}</span>
           {evaluation.reviewCount > 0 ? <span className="rounded-full bg-warn/10 px-2.5 py-1 text-warn">확인 필요 {evaluation.reviewCount}</span> : null}

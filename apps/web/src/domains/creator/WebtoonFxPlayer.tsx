@@ -10,6 +10,7 @@
  *   오버레이"다. 재생 규약은 리빌과 동일 — 컷당 1회, 재진입해도 다시 재생하지 않는다.
  * 접근성: prefers-reduced-motion이면 리빌·파티클·연출 마크를 끄고 정적으로 보여준다(소리는 별개 토글).
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Music, Pause, Play, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
@@ -202,7 +203,7 @@ function RevealPage({
           className="block w-full"
           fallback={
             <span className="grid aspect-[3/4] w-full place-items-center bg-raised/40 text-xs text-fg-3">
-              이미지를 불러올 수 없습니다.
+              {r3c07StatusText("studio.panelStatus.r3c07.webtoonFx.imageLoadFailed", "이미지를 불러올 수 없습니다.")}
             </span>
           }
         />
@@ -513,7 +514,7 @@ export function WebtoonFxPlayer({
     <>
       <div className="relative mb-8 overflow-hidden rounded-2xl border border-line bg-panel">
         {pages.length === 0 ? (
-          <p className="px-4 py-16 text-center text-sm text-fg-3">표시할 페이지가 없습니다.</p>
+          <p className="px-4 py-16 text-center text-sm text-fg-3">{r3c07StatusText("studio.panelStatus.r3c07.webtoonFx.pagesEmpty", "표시할 페이지가 없습니다.")}</p>
         ) : (
           pages.map((page, index) => {
             const cut = cutFx(fx, index); // 컷별 리빌(상속 포함) + 강조 + 연출 마크 + 오디오 연출

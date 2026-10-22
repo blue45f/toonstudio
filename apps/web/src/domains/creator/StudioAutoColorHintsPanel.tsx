@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 /**
  * Thin auto-color hints product panel.
  *
@@ -315,7 +316,7 @@ export function StudioAutoColorHintsPanel({
       setError(
         caught instanceof Error
           ? caught.message
-          : "자동 채색 힌트 계획을 계산하지 못했어요.",
+          : panelStatusText("studio.panelStatus.autoColorHints.planComputeFailed", "자동 채색 힌트 계획을 계산하지 못했어요."),
       );
     } finally {
       setBusy(false);
@@ -326,16 +327,16 @@ export function StudioAutoColorHintsPanel({
     const activePlan = planRef.current;
     const plannedImage = plannedImageRef.current;
     if (!activePlan || !plannedImage) {
-      setError("적용할 계획이 없어요. 먼저 힌트 계획을 실행하세요.");
+      setError(panelStatusText("studio.panelStatus.autoColorHints.noPlan", "적용할 계획이 없어요. 먼저 힌트 계획을 실행하세요."));
       return;
     }
     if (activePlan.status !== "ready" || activePlan.operations.length === 0) {
-      setError("준비된 연산이 없어 적용할 수 없어요. 시드를 조정한 뒤 다시 계획하세요.");
+      setError(panelStatusText("studio.panelStatus.autoColorHints.noOperations", "준비된 연산이 없어 적용할 수 없어요. 시드를 조정한 뒤 다시 계획하세요."));
       return;
     }
     const useNewLayer = applyTargetMode === "new-paint-layer";
     if (useNewLayer && !onApplyNewLayer) {
-      setError("새 채색 레이어 적용 경로가 연결되지 않았어요.");
+      setError(panelStatusText("studio.panelStatus.autoColorHints.newLayerPathMissing", "새 채색 레이어 적용 경로가 연결되지 않았어요."));
       return;
     }
     if (!useNewLayer && !onApplyResult) {
@@ -389,7 +390,7 @@ export function StudioAutoColorHintsPanel({
       setError(
         caught instanceof Error
           ? caught.message
-          : "고급 채우기 배치를 적용하지 못했어요.",
+          : panelStatusText("studio.panelStatus.autoColorHints.batchApplyFailed", "고급 채우기 배치를 적용하지 못했어요."),
       );
     } finally {
       setApplying(false);
@@ -413,7 +414,7 @@ export function StudioAutoColorHintsPanel({
   async function copyPlan() {
     if (!summary) return;
     const ok = await copyTextToClipboard(summary.copyText);
-    setCopyStatus(ok ? "요약을 클립보드에 복사했어요." : "클립보드에 복사하지 못했어요. 요약을 직접 선택해 복사하세요.");
+    setCopyStatus(ok ? "요약을 클립보드에 복사했어요." : panelStatusText("studio.panelStatus.autoColorHints.copyFailed", "클립보드에 복사하지 못했어요. 요약을 직접 선택해 복사하세요."));
   }
 
   return (
@@ -572,7 +573,7 @@ export function StudioAutoColorHintsPanel({
           ) : (
             <Sparkles size={16} aria-hidden="true" />
           )}
-          {busy ? "계획 계산 중…" : "힌트 계획 실행"}
+          {busy ? panelStatusText("studio.panelStatus.autoColorHints.planning", "계획 계산 중…") : "힌트 계획 실행"}
         </button>
 
         {usingDemo && summary ? (
@@ -747,7 +748,7 @@ export function StudioAutoColorHintsPanel({
                       <Paintbrush size={16} aria-hidden="true" />
                     )}
                     {applying
-                      ? "적용 중…"
+                      ? panelStatusText("studio.panelStatus.autoColorHints.applying", "적용 중…")
                       : applyTargetMode === "new-paint-layer"
                         ? "새 채색 레이어에 적용"
                         : "선택 레이어에 적용"}

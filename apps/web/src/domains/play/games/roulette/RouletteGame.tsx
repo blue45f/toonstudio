@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { GameHelp } from "../../GameHelp";
 import { PlayCover } from "../../PlayCover";
 import { PlayGameError, PlayGameSkeleton } from "../GameStates";
+import { playStatusText } from "../../play-status-i18n";
 import { usePlayTitles } from "../../use-play-catalog";
 import { usePlayDraft } from "../../lab/play-storage";
 
@@ -190,10 +191,10 @@ export function RouletteGame({ onExit }: PlayGameProps) {
   if (titles.length === 0) {
     return (
       <div className="flex min-h-[18rem] flex-col items-center justify-center gap-3 text-center">
-        <p className="text-sm text-fg-2">추천할 웹툰이 없어요.</p>
+        <p className="text-sm text-fg-2">{playStatusText("play.status.roulette.empty", "추천할 웹툰이 없어요.")}</p>
         <div className="flex items-center gap-2">
           <Button variant="solid" size="sm" onClick={retry}>
-            다시 불러오기
+            {playStatusText("play.status.roulette.retry", "다시 불러오기")}
           </Button>
           <Button variant="outline" size="sm" onClick={onExit}>
             다른 게임

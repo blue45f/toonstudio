@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 /**
  * Compact product-state shell for the procedural artistic brush panel.
  *
@@ -99,17 +100,17 @@ function summaryStatus(
   busy: boolean,
   cancelling: boolean,
 ): string {
-  if (cancelling) return "취소하는 중";
-  if (busy) return "생성 중";
+  if (cancelling) return panelStatusText("studio.panelStatus.proceduralBrush.cancelling", "취소하는 중");
+  if (busy) return panelStatusText("studio.panelStatus.proceduralBrush.generating", "생성 중");
   switch (capabilityStatus) {
     case "idle":
       return "확인 전";
     case "checking":
-      return "확인 중";
+      return panelStatusText("studio.panelStatus.proceduralBrush.checking", "확인 중");
     case "ready":
       return "사용 가능";
     case "unavailable":
-      return "사용 불가";
+      return panelStatusText("studio.panelStatus.proceduralBrush.unavailable", "사용 불가");
   }
 }
 
@@ -179,7 +180,7 @@ export function StudioProceduralArtisticBrushController({
           result.message
             ?? (result.available
               ? "전용 GPU Worker를 사용할 수 있습니다."
-              : "전용 GPU Worker를 사용할 수 없습니다."),
+              : panelStatusText("studio.panelStatus.proceduralBrush.workerUnavailable", "전용 GPU Worker를 사용할 수 없습니다.")),
         );
       })
       .catch((probeError: unknown) => {
@@ -190,7 +191,7 @@ export function StudioProceduralArtisticBrushController({
         setCapabilityStatus("unavailable");
         const nextError = errorMessage(
           probeError,
-          "렌더링 기능을 확인하지 못했습니다.",
+          panelStatusText("studio.panelStatus.proceduralBrush.renderCheckFailed", "렌더링 기능을 확인하지 못했습니다."),
         );
         setCapabilityMessage(nextError);
         setError(nextError);
@@ -265,7 +266,7 @@ export function StudioProceduralArtisticBrushController({
         ) return;
         setError(errorMessage(
           generationError,
-          "절차적 질감을 생성하지 못했습니다.",
+          panelStatusText("studio.panelStatus.proceduralBrush.textureCreateFailed", "절차적 질감을 생성하지 못했습니다."),
         ));
       })
       .finally(() => {

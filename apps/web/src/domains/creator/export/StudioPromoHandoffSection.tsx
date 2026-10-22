@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PROMO_DOCUMENT_CUTS_MAX } from "../promo/promo-handoff-contract";
 import { SHOWCASE_PROMO_PATH } from "../publishing/showcase-links";
 import { downloadBlob } from "./studio-export";
+import { subStatusText } from "../studio-sub-status-i18n";
 import {
   exceedsStudioPromoCutLimit,
   listStudioPromoCuts,
@@ -116,13 +117,13 @@ export function StudioPromoHandoffSection({
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy("cuts");
-    setStatus({ action: "cuts", rangeLabel, tone: "info", text: `페이지를 캡처하는 중이에요. (${rangeLabel})`, percent: 0 });
+    setStatus({ action: "cuts", rangeLabel, tone: "info", text: subStatusText("studio.subStatus.handoff.capturing", { range: rangeLabel }, "페이지를 캡처하는 중이에요. ({range})"), percent: 0 });
     let owned: HTMLCanvasElement[] = [];
     try {
       const captured = await context.capturePages();
       owned = captured.pages;
       if (controller.signal.aborted) throw new DOMException("취소", "AbortError");
-      if (captured.pages.length !== captured.indices.length) throw new Error("페이지 캡처가 끝까지 되지 않았어요. 다시 시도해 주세요.");
+      if (captured.pages.length !== captured.indices.length) throw new Error(subStatusText("studio.subStatus.handoff.captureFailed", "페이지 캡처가 끝까지 되지 않았어요. 다시 시도해 주세요."));
       const handoff = await import("./studio-promo-handoff");
       const result = await handoff.buildStudioPromoCutBundle({
         listing: cuts,
@@ -134,7 +135,7 @@ export function StudioPromoHandoffSection({
         signal: controller.signal,
         onProgress: (done, total) => {
           if (!mountedRef.current) return;
-          setStatus({ action: "cuts", rangeLabel, tone: "info", text: `컷 이미지를 만드는 중이에요. ${done}/${total}`, percent: Math.round((done / total) * 100) });
+          setStatus({ action: "cuts", rangeLabel, tone: "info", text: subStatusText("studio.subStatus.handoff.makingCuts", { done, total }, "컷 이미지를 만드는 중이에요. {done}/{total}"), percent: Math.round((done / total) * 100) });
         },
       });
       downloadBlob(new Blob([result.json], { type: "application/json" }), result.fileName);
@@ -144,8 +145,8 @@ export function StudioPromoHandoffSection({
         tone: result.skippedFrameCount > 0 ? "warn" : "good",
         percent: 100,
         text: result.skippedFrameCount > 0
-          ? `컷 ${result.bundle.cuts.length}개를 저장했어요. 캡처 밖에 있는 컷 ${result.skippedFrameCount}개는 담지 못했어요. 홍보 영상 편집기의 「Studio 문서에서 컷 가져오기」에서 불러오세요.`
-          : `컷 ${result.bundle.cuts.length}개를 저장했어요. 홍보 영상 편집기의 「Studio 문서에서 컷 가져오기」에서 불러오세요.`,
+          ? subStatusText("studio.subStatus.handoff.cutsSavedSkipped", { count: result.bundle.cuts.length, skipped: result.skippedFrameCount }, "컷 {count}개를 저장했어요. 캡처 밖에 있는 컷 {skipped}개는 담지 못했어요. 홍보 영상 편집기의 「Studio 문서에서 컷 가져오기」에서 불러오세요.")
+          : subStatusText("studio.subStatus.handoff.cutsSaved", { count: result.bundle.cuts.length }, "컷 {count}개를 저장했어요. 홍보 영상 편집기의 「Studio 문서에서 컷 가져오기」에서 불러오세요."),
       });
     } catch (error) {
       finish({
@@ -153,8 +154,8 @@ export function StudioPromoHandoffSection({
         rangeLabel,
         tone: "warn",
         text: isAbort(error)
-          ? "컷 묶음 만들기를 취소했어요. 다시 시도할 수 있어요."
-          : error instanceof Error ? error.message : "컷 묶음을 만들지 못했어요. 다시 시도해 주세요.",
+          ? subStatusText("studio.subStatus.handoff.cutsCancelled", "컷 묶음 만들기를 취소했어요. 다시 시도할 수 있어요.")
+          : error instanceof Error ? error.message : subStatusText("studio.subStatus.handoff.cutsFailed", "컷 묶음을 만들지 못했어요. 다시 시도해 주세요."),
       });
     } finally {
       // 캡처한 큰 캔버스는 이 파일이 만든 뒤 아무도 쓰지 않는다. 바로 놓는다.
@@ -166,7 +167,7 @@ export function StudioPromoHandoffSection({
     if (!translations || !translationsReady || locked) return;
     const rangeLabel = context.rangeLabel;
     setBusy("translations");
-    setStatus({ action: "translations", rangeLabel, tone: "info", text: "번역 초안 파일을 만드는 중이에요." });
+    setStatus({ action: "translations", rangeLabel, tone: "info", text: subStatusText("studio.subStatus.handoff.makingTranslations", "번역 초안 파일을 만드는 중이에요.") });
     try {
       const handoff = await import("./studio-promo-handoff");
       const result = handoff.buildStudioPromoTranslationFile({ listing: translations, documentId: sourceWorkId ?? null, title: exportTitle, exportedAt: new Date() });
@@ -175,10 +176,10 @@ export function StudioPromoHandoffSection({
         action: "translations",
         rangeLabel,
         tone: "good",
-        text: `로케일 ${result.localeCount}개, 번역 ${result.draftCount}건을 저장했어요. 홍보 영상 편집기의 「로케일별 자막 일괄 출력」에서 불러오세요.`,
+        text: subStatusText("studio.subStatus.handoff.translationsSaved", { localeCount: result.localeCount, draftCount: result.draftCount }, "로케일 {localeCount}개, 번역 {draftCount}건을 저장했어요. 홍보 영상 편집기의 「로케일별 자막 일괄 출력」에서 불러오세요."),
       });
     } catch (error) {
-      finish({ action: "translations", rangeLabel, tone: "warn", text: error instanceof Error ? error.message : "번역 초안을 만들지 못했어요. 다시 시도해 주세요." });
+      finish({ action: "translations", rangeLabel, tone: "warn", text: error instanceof Error ? error.message : subStatusText("studio.subStatus.handoff.translationsFailed", "번역 초안을 만들지 못했어요. 다시 시도해 주세요.") });
     }
   };
 
@@ -186,7 +187,7 @@ export function StudioPromoHandoffSection({
     const controller = abortRef.current;
     if (!controller || controller.signal.aborted) return;
     controller.abort();
-    setStatus({ action: "cuts", rangeLabel: context.rangeLabel, tone: "info", text: "현재 단계를 마친 뒤 컷 묶음 만들기를 멈추고 있어요." });
+    setStatus({ action: "cuts", rangeLabel: context.rangeLabel, tone: "info", text: subStatusText("studio.subStatus.handoff.stopping", "현재 단계를 마친 뒤 컷 묶음 만들기를 멈추고 있어요.") });
   };
 
   const retryCuts = visibleStatus?.action === "cuts" && visibleStatus.tone === "warn" && busy === null;
@@ -219,7 +220,7 @@ export function StudioPromoHandoffSection({
 
       {!pages ? (
         <p className={`mt-2 rounded-lg border border-line/70 bg-panel/70 px-2 py-1.5 ${NOTE}`}>
-          이 화면에서는 문서의 컷과 대사 정보를 받지 못해 홍보 쇼츠용 파일을 만들 수 없어요.
+          {subStatusText("studio.subStatus.handoff.noDocumentData", "이 화면에서는 문서의 컷과 대사 정보를 받지 못해 홍보 쇼츠용 파일을 만들 수 없어요.")}
         </p>
       ) : (
         <>
@@ -232,7 +233,7 @@ export function StudioPromoHandoffSection({
               </p>
             ) : (
               <p className={`mt-0.5 ${NOTE}`}>
-                선택한 범위({context.rangeLabel})에 컷(프레임)이 없어요. 프레임을 그린 페이지를 선택해 주세요.
+                {subStatusText("studio.subStatus.handoff.cutsEmpty", { range: context.rangeLabel }, "선택한 범위({range})에 컷(프레임)이 없어요. 프레임을 그린 페이지를 선택해 주세요.")}
               </p>
             )}
             {tooManyCuts && cuts ? (
@@ -274,7 +275,7 @@ export function StudioPromoHandoffSection({
                 onClick={() => void exportCuts()}
               >
                 {retryCuts ? <RotateCcw size={14} aria-hidden /> : <Download size={14} aria-hidden />}
-                {busy === "cuts" ? "컷 묶음 만드는 중" : retryCuts ? "컷 묶음 다시 시도" : "홍보 쇼츠용 컷 묶음 저장"}
+                {busy === "cuts" ? subStatusText("studio.subStatus.handoff.cutsBusy", "컷 묶음 만드는 중") : retryCuts ? subStatusText("studio.subStatus.handoff.cutsRetry", "컷 묶음 다시 시도") : "홍보 쇼츠용 컷 묶음 저장"}
               </button>
               {busy === "cuts" ? (
                 <button
@@ -304,7 +305,7 @@ export function StudioPromoHandoffSection({
               </ul>
             ) : (
               <p className={`mt-0.5 ${NOTE}`}>
-                선택한 범위에 번역된 대사가 없어요. 대사 번역 패널에서 번역을 만들고 검수한 뒤 내보낼 수 있어요.
+                {subStatusText("studio.subStatus.handoff.noTranslations", "선택한 범위에 번역된 대사가 없어요. 대사 번역 패널에서 번역을 만들고 검수한 뒤 내보낼 수 있어요.")}
               </p>
             )}
             {tooManyTranslations ? (
@@ -327,7 +328,7 @@ export function StudioPromoHandoffSection({
                 onClick={() => void exportTranslations()}
               >
                 {retryTranslations ? <RotateCcw size={14} aria-hidden /> : <Download size={14} aria-hidden />}
-                {busy === "translations" ? "번역 초안 만드는 중" : retryTranslations ? "번역 초안 다시 시도" : "번역 초안 JSON 저장"}
+                {busy === "translations" ? subStatusText("studio.subStatus.handoff.translationsBusy", "번역 초안 만드는 중") : retryTranslations ? subStatusText("studio.subStatus.handoff.translationsRetry", "번역 초안 다시 시도") : "번역 초안 JSON 저장"}
               </button>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { communityStatusText } from "./community-status-i18n";
 import { BadgeCheck, CalendarDays, Megaphone, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -174,7 +175,7 @@ export function CommunityEventsPage() {
           initialKind="event"
           emptyGuide={{
             icon: CalendarDays,
-            title: "아직 올라온 이벤트 소식이 없어요",
+            title: communityStatusText("community.status.events.emptyTitle", "아직 올라온 이벤트 소식이 없어요"),
             description:
               "전시·공모전·팬 행사·창작 모임 소식을 가장 먼저 나눠보세요. 날짜·장소·신청 방법을 함께 적으면 참여가 쉬워집니다.",
             primary: { href: "#fan-cafe-composer", label: "첫 이벤트 글 쓰기" },

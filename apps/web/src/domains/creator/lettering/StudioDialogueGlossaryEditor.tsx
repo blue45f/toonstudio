@@ -20,6 +20,9 @@ import {
 } from "../studio-translation-glossary";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 export type StudioDialogueGlossaryEditorProps = {
   glossary: string;
@@ -41,6 +44,7 @@ export function StudioDialogueGlossaryEditor({
   glossary,
   onGlossaryChange,
 }: StudioDialogueGlossaryEditorProps) {
+  const t = useT();
   const [mode, setMode] = useState<"text" | "rows">("text");
   const [rows, setRows] = useState<readonly StudioTranslationMemoryGlossaryRule[]>([]);
   const [memoLines, setMemoLines] = useState<readonly string[]>([]);
@@ -122,8 +126,7 @@ export function StudioDialogueGlossaryEditor({
         <div className="space-y-1.5">
           {rows.length === 0 ? (
             <p className="rounded-lg border border-dashed border-line px-2 py-3 text-center text-[0.62rem] leading-relaxed text-fg-4">
-              등록된 규칙이 없어요. 행을 추가하거나 텍스트 모드에서 &ldquo;원문: 정본&rdquo;
-              형식으로 입력하세요.
+              {t("studio.brushCanvasStatus.lettering.glossaryEmpty", "등록된 규칙이 없어요. 행을 추가하거나 텍스트 모드에서 “원문: 정본” 형식으로 입력하세요.")}
             </p>
           ) : (
             <ul className="space-y-1">

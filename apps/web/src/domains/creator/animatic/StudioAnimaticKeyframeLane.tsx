@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 
 import {
   addStudioAnimaticCameraKeyframe,
@@ -106,7 +107,7 @@ export function StudioAnimaticKeyframeLane({ document, segment, disabled, onDocu
               onChange={(event) => { const value = Number(event.target.value); if (Number.isFinite(value)) onDocumentChange(patchStudioAnimaticCameraKeyframe(document, segment.id, selected.at, { [field]: value })); }} />
           </label>
         ))}
-        <label className="text-xs text-fg-2">이 키프레임까지의 움직임{selectedIndex === 0 ? " (시작 키프레임은 이전 구간이 없어요)" : ""}
+        <label className="text-xs text-fg-2">이 키프레임까지의 움직임{selectedIndex === 0 ? creatorSub2StatusText("studio.creatorSub2.status.animatic.keyframeLane.firstSegmentSuffix", " (시작 키프레임은 이전 구간이 없어요)") : ""}
           <select className={FIELD} value={selected.easing} disabled={disabled || selectedIndex === 0} aria-label="선택 키프레임 이징"
             onChange={(event) => { const value = event.target.value as StudioAnimaticCameraEasing; if (value !== "custom") onDocumentChange(patchStudioAnimaticCameraKeyframe(document, segment.id, selected.at, { easing: value })); }}>
             {selected.easing === "custom" ? <option value="custom">직접 그린 곡선 (아래 그래프에서 편집)</option> : null}

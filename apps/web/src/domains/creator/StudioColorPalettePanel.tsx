@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { Check, Copy, Loader2, Palette, Sparkles, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -49,7 +50,7 @@ export function StudioColorPalettePanel({
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "색상 추출에 실패했어요.");
+        setError(e instanceof Error ? e.message : panelStatusText("studio.panelStatus.colorPalette.extractFailed", "색상 추출에 실패했어요."));
       })
       .finally(() => {
         if (cancelled) return;
@@ -96,11 +97,11 @@ export function StudioColorPalettePanel({
   const copyAllStatus = copyFeedback.statusFor("palette-all");
   const saveLabel =
     saveStatus === "saving"
-      ? "팔레트 저장 중…"
+      ? panelStatusText("studio.panelStatus.colorPalette.saving", "팔레트 저장 중…")
       : saveStatus === "saved"
         ? "내 팔레트에 저장됨"
         : saveStatus === "failed"
-          ? "저장 실패 · 다시 시도"
+          ? panelStatusText("studio.panelStatus.colorPalette.saveFailed", "저장 실패 · 다시 시도")
           : "내 팔레트에 저장";
 
   return (
@@ -139,9 +140,9 @@ export function StudioColorPalettePanel({
       {error ? (
         <p className="text-xs text-bad">{error}</p>
       ) : busy ? (
-        <p className="text-[0.7rem] leading-relaxed text-fg-3">이미지의 고유 배색을 분석하는 중…</p>
+        <p className="text-[0.7rem] leading-relaxed text-fg-3">{panelStatusText("studio.panelStatus.colorPalette.analyzing", "이미지의 고유 배색을 분석하는 중…")}</p>
       ) : colors.length === 0 ? (
-        <p className="text-[0.7rem] leading-relaxed text-fg-3">추출할 색이 없어요(투명 이미지).</p>
+        <p className="text-[0.7rem] leading-relaxed text-fg-3">{panelStatusText("studio.panelStatus.colorPalette.noColors", "추출할 색이 없어요(투명 이미지).")}</p>
       ) : (
         <>
           {/* Gradient Banner Preview */}
@@ -159,7 +160,7 @@ export function StudioColorPalettePanel({
               const copyStatus = copyFeedback.statusFor(`swatch:${hex}`);
               const isCopied = copyStatus === "copied";
               const copyFailed = copyStatus === "failed";
-              const statusCopy = isCopied ? "복사 완료" : copyFailed ? "복사 실패" : "선택 및 복사";
+              const statusCopy = isCopied ? "복사 완료" : copyFailed ? panelStatusText("studio.panelStatus.colorPalette.copyFailed", "복사 실패") : "선택 및 복사";
               return (
                 <button
                   key={hex}
@@ -190,7 +191,7 @@ export function StudioColorPalettePanel({
                     ) : null}
                   </span>
                   <span className="font-mono text-[0.62rem] text-fg-3 group-hover:text-fg-1 tracking-tight">
-                    {isCopied ? "복사됨" : copyFailed ? "복사 실패" : hex}
+                    {isCopied ? "복사됨" : copyFailed ? panelStatusText("studio.panelStatus.colorPalette.copyFailed", "복사 실패") : hex}
                   </span>
                 </button>
               );
@@ -233,7 +234,7 @@ export function StudioColorPalettePanel({
                 {copyAllStatus === "copied"
                   ? "전체 복사됨"
                   : copyAllStatus === "failed"
-                    ? "전체 복사 실패"
+                    ? panelStatusText("studio.panelStatus.colorPalette.copyAllFailed", "전체 복사 실패")
                     : "전체 복사"}
               </span>
             </button>

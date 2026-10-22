@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
@@ -63,8 +64,8 @@ export function CreatorEcosystemViewerPage() {
       const next = parsePackage(await readEcosystemJson(file));
       if (!next) throw new Error("지원하는 베타 검토 또는 제작 과정 패키지가 아닙니다.");
       setLoaded(next);
-      setPageIndex(0); setPanelId(""); setNotice("패키지를 검증해 열었습니다. 편집 원본이나 API 키는 포함되지 않습니다.");
-    } catch (cause) { setLoaded(null); setError(cause instanceof Error ? cause.message : "패키지를 읽지 못했습니다."); }
+      setPageIndex(0); setPanelId(""); setNotice(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.viewer.packageOpened", "패키지를 검증해 열었습니다. 편집 원본이나 API 키는 포함되지 않습니다."));
+    } catch (cause) { setLoaded(null); setError(cause instanceof Error ? cause.message : creatorSub2StatusText("studio.creatorSub2.status.ecosystem.viewer.packageReadFailed", "패키지를 읽지 못했습니다.")); }
   };
   const exportFeedback = () => {
     if (!loaded || loaded.kind !== "beta") return;

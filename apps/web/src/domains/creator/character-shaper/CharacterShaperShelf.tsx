@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal, Sparkles, Star, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { STUDIO_FOCUS_RING, StudioEmptyState, studioSegmentChipClass } from "../studio-panel-ui";
+import "../studio-r3c04-status-i18n";
 
 import { CHARACTER_GENRE_TAG_LABELS } from "./character-shaper-catalog";
 import { countCharacterAvailability, discoverCharacterEntries } from "./character-shaper-discovery";
@@ -180,8 +181,8 @@ function CharacterShaperShelfContent({
     return lockReason ? { ...actual, status: "unavailable", reason: lockReason } : actual;
   };
   const tagLabel = (genre: CharacterGenreTag): string => CHARACTER_GENRE_TAG_LABELS[genre] ?? genre;
-  const emptyTitle = collection === "favorites" ? "조건에 맞는 즐겨찾기가 없습니다"
-    : collection === "selected" ? "조건에 맞는 선택 항목이 없습니다" : "검색 결과가 없습니다";
+  const emptyTitle = collection === "favorites" ? t("studio.r3c04Status.shaper.shelf.emptyFavorites", "조건에 맞는 즐겨찾기가 없습니다")
+    : collection === "selected" ? t("studio.r3c04Status.shaper.shelf.emptySelected", "조건에 맞는 선택 항목이 없습니다") : t("studio.r3c04Status.shaper.shelf.emptySearch", "검색 결과가 없습니다");
 
   return (
     <div data-character-shaper-shelf={slot} data-character-shaper-shelf-compact={compact || undefined} className="flex h-full min-h-0 min-w-0 flex-col bg-panel">
@@ -274,9 +275,9 @@ function CharacterShaperShelfContent({
             <p role="status" className="text-[0.65rem] text-warn">{favorites.notice}</p>
             {favorites.hasPendingChanges ? (
               <button type="button" onClick={favorites.retrySave}
-                aria-label="즐겨찾기 저장 다시 시도"
+                aria-label={t("studio.r3c04Status.shaper.shelf.favoritesRetryAria", "즐겨찾기 저장 다시 시도")}
                 className={cn("min-h-11 w-full rounded-lg border border-line bg-card px-3 text-[0.72rem] font-semibold text-fg-2 hover:bg-raised", STUDIO_FOCUS_RING)}>
-                저장 다시 시도
+                {t("studio.r3c04Status.shaper.shelf.favoritesRetry", "저장 다시 시도")}
               </button>
             ) : null}
           </div>
@@ -308,7 +309,7 @@ function CharacterShaperShelfContent({
             </div>
           </section>
         ) : null}
-        {slotEntries.length === 0 ? <div className="p-3"><StudioEmptyState icon={<Sparkles size={18} aria-hidden />} title="이 슬롯에는 아직 프리셋이 없습니다" description="카탈로그가 준비되면 여기에 카드가 나타납니다." /></div>
+        {slotEntries.length === 0 ? <div className="p-3"><StudioEmptyState icon={<Sparkles size={18} aria-hidden />} title={t("studio.r3c04Status.shaper.shelf.slotEmpty", "이 슬롯에는 아직 프리셋이 없습니다")} description="카탈로그가 준비되면 여기에 카드가 나타납니다." /></div>
           : visible.length === 0 ? <div className="p-3"><StudioEmptyState icon={<Search size={18} aria-hidden />} title={emptyTitle}
             description={collection === "favorites" ? "모두에서 카드 아래 별을 눌러 추가하거나 다른 필터를 해제해 보세요." : "다른 검색어를 입력하거나 필터를 해제해 보세요."}
             action={<button type="button" onClick={clearFilters} className={cn("inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-[0.75rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg", STUDIO_FOCUS_RING)}>검색·필터 지우기</button>} /></div>

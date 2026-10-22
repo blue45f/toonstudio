@@ -235,7 +235,7 @@ export function ProductionStudioRevisionBridgePanel({
               <p className="text-sm font-bold text-fg">{t("productionHub.revisionBridge.cannotConnect", "Studio 정본을 연결할 수 없습니다.")}</p>
               <p className="mt-1 text-xs leading-5 text-fg-2">{state.message}</p>
               <p className="mt-1 text-xs leading-5 text-fg-3">
-                먼저 Studio에서 프로젝트와 원고를 저장한 뒤 다시 확인하세요. 제작 데이터는 변경되지 않습니다.
+                {t("productionHub.status.revisionBridgeSaveFirst", "먼저 Studio에서 프로젝트와 원고를 저장한 뒤 다시 확인하세요. 제작 데이터는 변경되지 않습니다.")}
               </p>
             </div>
           </div>
@@ -246,7 +246,7 @@ export function ProductionStudioRevisionBridgePanel({
         <>
           {!audit.workMatches ? (
             <div className="mt-4 rounded-xl border border-bad/35 bg-bad/10 p-3 text-xs text-fg" role="alert">
-              Production의 work ID와 Studio ProjectGraph의 work ID가 다릅니다. 자동 고정을 중단했습니다.
+              {t("productionHub.status.revisionBridgeWorkIdMismatch", "Production의 work ID와 Studio ProjectGraph의 work ID가 다릅니다. 자동 고정을 중단했습니다.")}
             </div>
           ) : null}
 
@@ -343,7 +343,7 @@ export function ProductionStudioRevisionBridgePanel({
             <div className="mt-4 rounded-xl border border-bad/30 bg-bad/10 p-3 sm:p-4">
               <h3 className="text-sm font-black text-fg">제출본 정본 불일치</h3>
               <p className="mt-1 text-xs leading-5 text-fg-2">
-                이미 제출된 revision은 자동 교체하지 않습니다. 새 Studio revision으로 다시 제출하고 기존 제출본을 보존하세요.
+                {t("productionHub.status.revisionBridgeSubmittedPreserved", "이미 제출된 revision은 자동 교체하지 않습니다. 새 Studio revision으로 다시 제출하고 기존 제출본을 보존하세요.")}
               </p>
               <ul className="mt-3 space-y-2">
                 {submissionIssues.map((binding) => (

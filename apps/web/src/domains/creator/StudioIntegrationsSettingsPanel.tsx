@@ -1,6 +1,7 @@
 // Studio 연동 허브. AI 자격 증명 편집은 `/settings/ai` 한 곳만 소유하고, 이 패널은
 // 비밀값을 다시 렌더하지 않는 연결 상태 카드만 제공한다. Unsplash Access Key는 AI 라우팅과
 // 별개인 스톡 이미지 브라우저 자격 증명이므로 현재 탭 범위 입력을 이곳에서 유지한다.
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { CheckCircle2, Eye, EyeOff, ExternalLink, Images, KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -122,7 +123,7 @@ export function StudioIntegrationsSettingsPanel(_legacyProps: StudioIntegrations
 
         {saveFailed ? (
           <span role="alert" className="text-[0.65rem] font-medium text-bad">
-            키를 이 탭에 저장하지 못했어요. 시크릿 모드이거나 저장 공간이 부족하면 새로고침 때 키가 사라집니다.
+            {r3c07StatusText("studio.panelStatus.r3c07.integrationsSettings.saveFailed", "키를 이 탭에 저장하지 못했어요. 시크릿 모드이거나 저장 공간이 부족하면 새로고침 때 키가 사라집니다.")}
           </span>
         ) : stockImageConfigured ? (
           <span className="inline-flex items-center gap-1 text-[0.65rem] font-medium text-good">

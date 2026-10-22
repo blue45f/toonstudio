@@ -5,6 +5,9 @@ import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import { StudioPigmentComparison } from "./pigment/StudioPigmentComparison";
 import { StudioBrushV6ProviderPlan } from "./StudioBrushV6ProviderPlan";
 import { StudioBrushV6RecipeShelf } from "./StudioBrushV6RecipeShelf";
@@ -318,6 +321,7 @@ export function StudioBrushV6Workbench({ scope, initialProgram }: {
 function StudioBrushV6Editor({ scope, initialProgram }: {
   readonly scope: string; readonly initialProgram: BrushStudioV6Program;
 }) {
+  const t = useT();
   const storageKey = `toonstudio.brush-program-v6:${encodeURIComponent(scope)}`;
   const [history, dispatchHistory] = useReducer(reduceBrushStudioV6EditHistory, initialProgram, createBrushStudioV6EditHistory);
   const program = history.present;
@@ -350,7 +354,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
     try { globalThis.localStorage?.setItem(BRUSH_STUDIO_EXPERIENCE_KEY, experience); } catch { /* UI preference is optional */ }
   }, [experience]);
   useEffect(() => {
-    try { globalThis.localStorage?.setItem(storageKey, serializeBrushStudioV6Authoring(program)); } catch { setStatus("설정 자동 저장에 실패했습니다. 현재 설정을 JSON으로 내보내 보관하세요."); }
+    try { globalThis.localStorage?.setItem(storageKey, serializeBrushStudioV6Authoring(program)); } catch { setStatus(t("studio.brushCanvasStatus.brushLab.v6AutosaveFailed", "설정 자동 저장에 실패했습니다. 현재 설정을 JSON으로 내보내 보관하세요.")); }
     globalThis.dispatchEvent?.(new CustomEvent("toonspectrum:brush-v6-program", { detail: program }));
   }, [program, storageKey]);
   useEffect(() => {
@@ -417,12 +421,12 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
     const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (!file) return;
     const generation = ++editGenerationRef.current;
     try {
-      if (file.size > 1_048_576) throw new Error("브러시 파일이 허용 크기를 초과했습니다.");
+      if (file.size > 1_048_576) throw new Error(t("studio.brushCanvasStatus.brushLab.v6FileTooLarge", "브러시 파일이 허용 크기를 초과했습니다."));
       const serialized = await file.text();
       if (generation !== editGenerationRef.current) return;
       replace(parseBrushStudioV6Import(serialized), `${file.name}에서 브러시 설정을 가져왔습니다.`);
     } catch (error) {
-      if (generation === editGenerationRef.current) setStatus(`${error instanceof Error ? error.message : "브러시 파일을 읽지 못했습니다."} 현재 브러시 설정은 유지됩니다.`);
+      if (generation === editGenerationRef.current) setStatus(t("studio.brushCanvasStatus.brushLab.v6ImportFailedKept", { message: error instanceof Error ? error.message : t("studio.brushCanvasStatus.brushLab.v5FileReadFailed", "브러시 파일을 읽지 못했습니다.") }, "{message} 현재 브러시 설정은 유지됩니다."));
     }
   };
 
@@ -445,7 +449,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
       setStatus(`‘${saved.name}’ 브러시를 라이브러리에 저장하고 다시 읽어 확인했습니다. 원고에서 사용하기로 그릴 수 있습니다.`);
     } catch (error) {
       if (generation !== editGenerationRef.current) return;
-      setStatus(error instanceof Error ? `브러시 저장 실패: ${error.message}` : "브러시를 저장하지 못했습니다. 설정은 유지됩니다.");
+      setStatus(error instanceof Error ? t("studio.brushCanvasStatus.brushLab.v6SaveFailedWithMessage", { message: error.message }, "브러시 저장 실패: {message}") : t("studio.brushCanvasStatus.brushLab.v6SaveFailed", "브러시를 저장하지 못했습니다. 설정은 유지됩니다."));
     } finally { setSaving(false); }
   };
 

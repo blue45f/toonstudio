@@ -24,6 +24,7 @@ import { useSiteTabAnchors, useSiteTabs } from "@/domains/legal/public/site-tabs
 import { WorkflowIllustration } from "@/shared/components/site-experience/WorkflowIllustration";
 
 import { LESSONS, TERMS } from "./learning-content";
+import { learnStatusText } from "./learn-status-i18n";
 import { LEARNING_ROLES, ROLE_LABELS, type LearningRole } from "./learning-resources";
 import { matchesSearch, type Lesson } from "./learning-model";
 import {
@@ -282,7 +283,7 @@ export function LearningHome() {
 
   function updateProfile(next: LearningProfile) {
     setProfile(next);
-    setProfileWarning(saveLearningProfile(browserStorage(), next) ? "" : "학습 목표를 기기에 저장하지 못했습니다. 현재 화면에서는 계속 사용할 수 있습니다.");
+    setProfileWarning(saveLearningProfile(browserStorage(), next) ? "" : learnStatusText("learn.status.home.profileSaveFailed", "학습 목표를 기기에 저장하지 못했습니다. 현재 화면에서는 계속 사용할 수 있습니다."));
   }
 
   function setFilter(key: string, value: string, replace = false) {
@@ -516,7 +517,7 @@ export function LearningHome() {
                 <SiteShowMoreButton remaining={library.remaining} onClick={() => library.showMore()} label={`강좌 더 보기 · ${library.remaining}개 남음`} />
               </>
             ) : (
-              <div className="learn-empty"><h3>조건에 맞는 강좌가 없습니다.</h3><p>검색어나 필터를 바꾸어 보세요.</p><button type="button" onClick={resetFilters}>전체 강좌 보기</button></div>
+              <div className="learn-empty"><h3>{learnStatusText("learn.status.home.coursesEmpty", "조건에 맞는 강좌가 없습니다.")}</h3><p>검색어나 필터를 바꾸어 보세요.</p><button type="button" onClick={resetFilters}>전체 강좌 보기</button></div>
             )}
           </section>
           </RevealOnScroll>
@@ -588,7 +589,7 @@ export function LearningPathPage({ pathId }: { pathId: string }) {
   if (!path || !stats || !nextLesson) {
     return (
       <div className="learn-page learn-path-page" lang="ko">
-        <section className="learn-empty"><h1>학습 경로를 찾을 수 없습니다.</h1><p>주소가 변경되었거나 존재하지 않는 경로입니다.</p><Link className="learn-primary" to="/learn#learning-paths">학습 경로 보기</Link></section>
+        <section className="learn-empty"><h1>{learnStatusText("learn.status.home.pathNotFound", "학습 경로를 찾을 수 없습니다.")}</h1><p>주소가 변경되었거나 존재하지 않는 경로입니다.</p><Link className="learn-primary" to="/learn#learning-paths">학습 경로 보기</Link></section>
       </div>
     );
   }

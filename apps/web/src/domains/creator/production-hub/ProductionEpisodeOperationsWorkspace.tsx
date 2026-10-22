@@ -469,7 +469,7 @@ export function ProductionEpisodeOperationsWorkspace({
   });
   const nextRelease = overview.nextRelease;
   const operationsWarning = overview.criticalCount > 0
-    ? `${overview.criticalCount}개 회차가 즉시 조치가 필요합니다.`
+    ? bt(`${overview.criticalCount}개 회차가 즉시 조치가 필요합니다.`, `${overview.criticalCount} episodes need immediate action.`)
     : overview.readyBufferCount === 0
       ? bt("게시 준비 버퍼가 없습니다. 다음 회차를 병행하거나 연재 주기를 조정하세요.", "There is no publish-ready buffer. Prepare the next episode in parallel or adjust the release cadence.")
       : `${overview.readyBufferCount}개 회차가 게시 버퍼로 준비되어 있습니다.`;

@@ -1,3 +1,4 @@
+import { engagementStatusText } from "./engagement-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { ArrowLeft, ArrowRight, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -173,7 +174,7 @@ export function TasteOnboardingPage() {
       {error ? (
         <ErrorState
           className="mx-auto mt-5 max-w-2xl"
-          title="인기 작품 목록을 불러오지 못했습니다"
+          title={engagementStatusText("engagement.status.taste.popularLoadFailedTitle", "인기 작품 목록을 불러오지 못했습니다")}
           message="장르와 형식만 선택해도 취향 설정을 완료할 수 있습니다."
           onRetry={() => setLoadTick((tick) => tick + 1)}
         />
@@ -274,7 +275,7 @@ export function TasteOnboardingPage() {
                 })}
               </div>
             ) : loading ? (
-              <div role="status" aria-label="작품 목록을 불러오는 중" className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div role="status" aria-label={engagementStatusText("engagement.status.taste.listLoadingAria", "작품 목록을 불러오는 중")} className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {Array.from({ length: 8 }, (_, index) => (
                   <span key={index} className="flex flex-col items-center rounded-xl border border-line bg-panel p-2" aria-hidden="true">
                     <span className="aspect-[3/4] w-14 rounded bg-line/60 motion-safe:animate-pulse" />
@@ -284,7 +285,7 @@ export function TasteOnboardingPage() {
               </div>
             ) : (
               <p className="mt-3 text-xs text-fg-3">
-                {error ? "작품 목록을 불러오지 못해 건너뜁니다. 장르만 골라도 완료할 수 있어요." : "지금은 보여 줄 인기 작품이 없어요. 장르만 골라도 취향을 완성할 수 있어요."}
+                {error ? engagementStatusText("engagement.status.taste.listLoadFailedSkip", "작품 목록을 불러오지 못해 건너뜁니다. 장르만 골라도 완료할 수 있어요.") : engagementStatusText("engagement.status.taste.popularEmpty", "지금은 보여 줄 인기 작품이 없어요. 장르만 골라도 취향을 완성할 수 있어요.")}
               </p>
             )}
           </div>
@@ -447,10 +448,10 @@ export function TasteOnboardingPage() {
             ) : (
               <p className="mt-3 text-xs leading-5 text-fg-3">
                 {error
-                  ? "작품 목록을 불러오지 못해 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다."
+                  ? engagementStatusText("engagement.status.taste.previewLoadFailedSkip", "작품 목록을 불러오지 못해 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다.")
                   : loading
-                    ? "작품 목록을 불러오는 중이라 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다."
-                    : "지금은 보여 줄 작품이 없어 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다."}
+                    ? engagementStatusText("engagement.status.taste.previewLoadingSkip", "작품 목록을 불러오는 중이라 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다.")
+                    : engagementStatusText("engagement.status.taste.previewEmptySkip", "지금은 보여 줄 작품이 없어 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다.")}
               </p>
             )}
           </div>

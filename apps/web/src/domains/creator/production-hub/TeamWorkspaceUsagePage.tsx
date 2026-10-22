@@ -14,6 +14,7 @@ import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { TeamSceneArt } from "./TeamSceneArt";
 import { getTeamUsage, getTeamWorkspace } from "./team-workspace-api";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 
 const ROLE_LABELS: Record<TeamWorkspaceRole, { ko: string; en: string }> = {
   owner: { ko: "소유자", en: "Owner" },
@@ -45,6 +46,7 @@ interface GaugeSpec {
 /** 한도와 현재 사용량을 함께 보여 주는 게이지 한 줄. 0인 카운터는 오류가 아니라
  *  정상 상태로 표시하고, 항목별 빈 안내를 곁들인다. */
 function UsageGauge({ gauge }: { gauge: GaugeSpec }) {
+  const t = useT();
   const percent = gauge.limit > 0 ? Math.min(100, Math.round((gauge.current / gauge.limit) * 100)) : 0;
   const reached = gauge.limit > 0 && gauge.current >= gauge.limit;
   return <div>
@@ -64,7 +66,7 @@ function UsageGauge({ gauge }: { gauge: GaugeSpec }) {
     </div>
     <p className="mt-2 text-sm text-fg-2">{gauge.detail}</p>
     {gauge.current === 0 && gauge.emptyNote && <p className="mt-1 text-sm text-fg-3">{gauge.emptyNote}</p>}
-    {reached && <p className="mt-1 text-sm text-warn">한도에 도달했어요. 새 항목을 추가하려면 기존 항목을 정리해 주세요. 기존 자료는 자동 삭제되지 않습니다.</p>}
+    {reached && <p className="mt-1 text-sm text-warn">{t("productionHub.status.teamUsageLimitReached", "한도에 도달했어요. 새 항목을 추가하려면 기존 항목을 정리해 주세요. 기존 자료는 자동 삭제되지 않습니다.")}</p>}
   </div>;
 }
 

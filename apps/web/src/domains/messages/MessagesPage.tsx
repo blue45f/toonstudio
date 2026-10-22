@@ -47,6 +47,9 @@ import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
+
+import "./message-status-i18n";
 
 import { EmptyInbox, ThreadListItem, type InboxTab } from "./MessagesThreadList";
 import { MessageBubble, MessageDayDivider } from "./MessageBubble";
@@ -92,6 +95,7 @@ function isInboxTab(value: string | null): value is InboxTab {
 
 export function MessagesPage() {
   useDocumentTitle("메시지 · ToonStudio");
+  const t = useT();
   const session = useSession();
   const authenticated = session.status === "authenticated";
   const { threadId } = useParams();
@@ -124,11 +128,11 @@ export function MessagesPage() {
       const result = await messagingClient.listThreads(tab);
       setThreads(result.items);
     } catch (error) {
-      if (!silent) setListError(await getApiErrorMessage(error, "메시지 목록을 불러오지 못했어요."));
+      if (!silent) setListError(await getApiErrorMessage(error, t("messages.status.page.listLoadFailed", "메시지 목록을 불러오지 못했어요.")));
     } finally {
       if (!silent) setListLoading(false);
     }
-  }, [authenticated, tab]);
+  }, [authenticated, tab, t]);
 
   const refreshDetail = useCallback(async (silent = false) => {
     if (!authenticated || !threadId) {
@@ -173,11 +177,11 @@ export function MessagesPage() {
         );
       }
     } catch (error) {
-      if (!silent) setDetailError(await getApiErrorMessage(error, "대화를 불러오지 못했어요."));
+      if (!silent) setDetailError(await getApiErrorMessage(error, t("messages.status.page.detailLoadFailed", "대화를 불러오지 못했어요.")));
     } finally {
       if (!silent) setDetailLoading(false);
     }
-  }, [authenticated, threadId]);
+  }, [authenticated, threadId, t]);
 
   useEffect(() => {
     if (!authenticated) {
@@ -259,7 +263,7 @@ export function MessagesPage() {
         }
       });
     } catch (error) {
-      setDetailError(await getApiErrorMessage(error, "이전 메시지를 불러오지 못했어요."));
+      setDetailError(await getApiErrorMessage(error, t("messages.status.page.olderLoadFailed", "이전 메시지를 불러오지 못했어요.")));
     } finally {
       setOlderLoading(false);
     }
@@ -280,7 +284,7 @@ export function MessagesPage() {
       setText("");
       void refreshThreads(true);
     } catch (error) {
-      setDetailError(await getApiErrorMessage(error, "메시지를 보내지 못했어요."));
+      setDetailError(await getApiErrorMessage(error, t("messages.status.page.sendFailed", "메시지를 보내지 못했어요.")));
     } finally {
       setBusy(null);
     }
@@ -293,7 +297,7 @@ export function MessagesPage() {
       setDetail(await messagingClient.acceptRequest(threadId));
       void refreshThreads(true);
     } catch (error) {
-      setDetailError(await getApiErrorMessage(error, "메시지 요청을 수락하지 못했어요."));
+      setDetailError(await getApiErrorMessage(error, t("messages.status.page.acceptFailed", "메시지 요청을 수락하지 못했어요.")));
     } finally {
       setBusy(null);
     }
@@ -307,7 +311,7 @@ export function MessagesPage() {
       navigate("/messages?tab=requests");
       void refreshThreads();
     } catch (error) {
-      setDetailError(await getApiErrorMessage(error, "메시지 요청을 거절하지 못했어요."));
+      setDetailError(await getApiErrorMessage(error, t("messages.status.page.declineFailed", "메시지 요청을 거절하지 못했어요.")));
     } finally {
       setBusy(null);
     }
@@ -322,7 +326,7 @@ export function MessagesPage() {
       navigate(archived ? "/messages" : `/messages/${encodeURIComponent(threadId)}`);
       void refreshThreads();
     } catch (error) {
-      setDetailError(await getApiErrorMessage(error, "대화를 보관하지 못했어요."));
+      setDetailError(await getApiErrorMessage(error, t("messages.status.page.archiveFailed", "대화를 보관하지 못했어요.")));
     } finally {
       setBusy(null);
     }
@@ -338,7 +342,7 @@ export function MessagesPage() {
       await messagingClient.muteThread(threadId, until);
       await refreshDetail(true);
     } catch (error) {
-      setDetailError(await getApiErrorMessage(error, "알림 설정을 변경하지 못했어요."));
+      setDetailError(await getApiErrorMessage(error, t("messages.status.page.muteFailed", "알림 설정을 변경하지 못했어요.")));
     } finally {
       setBusy(null);
     }
@@ -354,7 +358,7 @@ export function MessagesPage() {
       await refreshDetail(true);
       void refreshThreads(true);
     } catch (error) {
-      setDetailError(await getApiErrorMessage(error, "회원을 차단하지 못했어요."));
+      setDetailError(await getApiErrorMessage(error, t("messages.status.page.blockFailed", "회원을 차단하지 못했어요.")));
     } finally {
       setBusy(null);
     }
@@ -369,7 +373,7 @@ export function MessagesPage() {
       setReportTarget(null);
       setReportDetails("");
     } catch (error) {
-      setDetailError(await getApiErrorMessage(error, "메시지를 신고하지 못했어요."));
+      setDetailError(await getApiErrorMessage(error, t("messages.status.page.reportFailed", "메시지를 신고하지 못했어요.")));
     } finally {
       setBusy(null);
     }
@@ -390,7 +394,7 @@ export function MessagesPage() {
   // 로딩 중·목록 오류·빈 탭에서는 띄우지 않는다 (현황을 지어내거나 실패를 감추지 않는다).
   const inboxSummary = !listLoading && !listError && threads.length > 0
     ? tab === "requests"
-      ? `수락 대기 중인 요청 ${threads.filter((thread) => thread.state === "pending").length}개 · 전체 ${threads.length}개`
+      ? t("messages.status.page.pendingSummary", { pending: threads.filter((thread) => thread.state === "pending").length, total: threads.length }, "수락 대기 중인 요청 {pending}개 · 전체 {total}개")
       : tab === "archived"
         ? `보관한 대화 ${threads.length}개`
         : (() => {
@@ -405,7 +409,7 @@ export function MessagesPage() {
     return (
       <div data-route-pending="" className="grid min-h-[55vh] place-items-center px-6 text-center">
         <div>
-          <LoadingState variant="pulse" label="로그인 상태 확인 중" className="justify-center" />
+          <LoadingState variant="pulse" label={t("messages.status.page.sessionChecking", "로그인 상태 확인 중")} className="justify-center" />
           <p className="mt-3 text-sm text-fg-2">로그인 상태를 확인하고 있어요.</p>
         </div>
       </div>
@@ -418,7 +422,7 @@ export function MessagesPage() {
         <div role="alert" className="rounded-3xl border border-warn/35 bg-card p-8 text-center shadow-sm sm:p-12">
           <Mail size={36} className="mx-auto text-warn" aria-hidden="true" />
           <h1 className="mt-4 text-2xl font-bold">메시지</h1>
-          <p className="mt-2 text-sm leading-relaxed text-fg-2">로그인 상태를 확인하지 못했어요. 현재 주소는 유지되며 연결이 돌아오면 다시 확인할 수 있습니다.</p>
+          <p className="mt-2 text-sm leading-relaxed text-fg-2">{t("messages.status.page.sessionCheckFailed", "로그인 상태를 확인하지 못했어요. 현재 주소는 유지되며 연결이 돌아오면 다시 확인할 수 있습니다.")}</p>
           <button type="button" onClick={() => window.location.reload()} className={buttonClass({ size: "sm", variant: "outline", className: "mt-5" })}>다시 확인</button>
         </div>
       </Container>
@@ -509,7 +513,7 @@ export function MessagesPage() {
           {listError && threads.length > 0 && (
             <div role="alert" className="m-3 flex flex-wrap items-center gap-2 rounded-xl border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
               <span>{listError}</span>
-              <button type="button" onClick={() => void refreshThreads()} className="ml-auto font-semibold underline underline-offset-2">다시 시도</button>
+              <button type="button" onClick={() => void refreshThreads()} className="ml-auto font-semibold underline underline-offset-2">{t("messages.status.page.retry", "다시 시도")}</button>
             </div>
           )}
           {listLoading ? (
@@ -520,8 +524,8 @@ export function MessagesPage() {
                 <div>
                   <ShieldAlert size={30} className="mx-auto text-danger" />
                   <p className="mt-3 text-sm font-medium text-danger">{listError}</p>
-                  <p className="mt-1 text-xs text-fg-2">네트워크 상태를 확인한 뒤 다시 시도해 주세요.</p>
-                  <button type="button" onClick={() => void refreshThreads()} className={buttonClass({ size: "sm", variant: "outline", className: "mt-4" })}>다시 시도</button>
+                  <p className="mt-1 text-xs text-fg-2">{t("messages.status.page.retryNetworkGuide", "네트워크 상태를 확인한 뒤 다시 시도해 주세요.")}</p>
+                  <button type="button" onClick={() => void refreshThreads()} className={buttonClass({ size: "sm", variant: "outline", className: "mt-4" })}>{t("messages.status.page.retry", "다시 시도")}</button>
                 </div>
               </div>
             ) : (
@@ -548,7 +552,7 @@ export function MessagesPage() {
                 icon={MessageSquareText}
                 art="notifications"
                 title="대화를 선택해 주세요."
-                description="왼쪽 목록에서 대화를 고르면 여기서 이어서 이야기할 수 있어요. 메시지 요청은 수락하기 전까지 추가 메시지가 오지 않습니다."
+                description={t("messages.status.page.noThreadSelectedDescription", "왼쪽 목록에서 대화를 고르면 여기서 이어서 이야기할 수 있어요. 메시지 요청은 수락하기 전까지 추가 메시지가 오지 않습니다.")}
                 primary={{ href: "/messages/new", label: "새 메시지 쓰기" }}
                 className="w-full max-w-lg"
               />
@@ -560,7 +564,7 @@ export function MessagesPage() {
               <div>
                 <ShieldAlert size={34} className="mx-auto text-danger" />
                 <p className="mt-3 text-sm text-danger">{detailError}</p>
-                <button type="button" onClick={() => void refreshDetail()} className={buttonClass({ size: "sm", variant: "outline", className: "mt-4" })}>다시 시도</button>
+                <button type="button" onClick={() => void refreshDetail()} className={buttonClass({ size: "sm", variant: "outline", className: "mt-4" })}>{t("messages.status.page.retry", "다시 시도")}</button>
               </div>
             </div>
           ) : detail && selectedThread ? (
@@ -627,7 +631,7 @@ export function MessagesPage() {
 
               {selectedThread.blocked && (
                 <div className="flex items-center gap-2 border-b border-danger/20 bg-danger-soft px-4 py-2 text-xs text-danger">
-                  <BellOff size={14} /> 차단 관계에서는 새 메시지를 보낼 수 없습니다.
+                  <BellOff size={14} /> {t("messages.status.page.blockedBanner", "차단 관계에서는 새 메시지를 보낼 수 없습니다.")}
                 </div>
               )}
 
@@ -675,7 +679,7 @@ export function MessagesPage() {
                     onChange={(event) => setText(event.target.value.slice(0, 2_000))}
                     disabled={!selectedThread.canReply || Boolean(busy)}
                     rows={2}
-                    placeholder={selectedThread.state === "pending" ? "요청이 수락되면 답장할 수 있어요." : selectedThread.blocked ? "차단 관계에서는 메시지를 보낼 수 없어요." : "메시지를 입력하세요."}
+                    placeholder={selectedThread.state === "pending" ? "요청이 수락되면 답장할 수 있어요." : selectedThread.blocked ? t("messages.status.page.blockedPlaceholder", "차단 관계에서는 메시지를 보낼 수 없어요.") : "메시지를 입력하세요."}
                     className="min-h-11 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-fg-3 disabled:cursor-not-allowed"
                   />
                   <button

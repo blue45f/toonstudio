@@ -9,6 +9,8 @@
  */
 import { ClipboardList, Download, FileText, ListChecks, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "../storyworld-status-i18n";
 
 import type {
   StoryworldAnalysisResult,
@@ -86,6 +88,7 @@ function activeSceneCount(project: StoryworldProject): number {
 
 export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProps) {
   const { project, workId, scopeKey, dispositions } = props;
+  const t = useT();
   const fallbackDeps = useMemo(() => defaultPlausibilityRunDeps(), []);
   const deps = props.deps ?? fallbackDeps;
   const [mode, setMode] = useState<HubMode>("report");
@@ -134,7 +137,7 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
   useEffect(() => {
     const counts = countsRef.current;
     if (generatedAtIso !== null && counts !== null) {
-      setMessage(`점검을 마쳤어요. 오류 ${counts.error}, 경고 ${counts.warning}, 제안 ${counts.suggestion}.`);
+      setMessage(t("studio.storyworldStatus.hub.checkDone", { error: counts.error, warning: counts.warning, suggestion: counts.suggestion }, "점검을 마쳤어요. 오류 {error}, 경고 {warning}, 제안 {suggestion}."));
     }
   }, [generatedAtIso]);
 
@@ -220,7 +223,7 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
       : downloadTextFile(filename, "application/json", plausibilityExportToJson(doc));
     setMessage(ok
       ? `${filename} 파일을 저장했어요. 점수 계산식과 점검 가능 범위가 함께 들어 있어요.`
-      : "파일을 저장하지 못했어요. 브라우저의 다운로드 설정을 확인해 주세요.");
+      : t("studio.storyworldStatus.hub.fileSaveFailed", "파일을 저장하지 못했어요. 브라우저의 다운로드 설정을 확인해 주세요."));
   };
 
   if (mode === "manuscript") {
@@ -261,7 +264,7 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
     return (
       <div className="plausibility-hub">
         <div className="plausibility-empty">
-          <h3>아직 점검할 장면이 없어요</h3>
+          <h3>{t("studio.storyworldStatus.hub.emptyScenes", "아직 점검할 장면이 없어요")}</h3>
           <p>
             원고를 붙여 넣으면 장면을 나눠 드리고, 설정만 있어도 점검할 수 있어요. 어떤 모습인지 먼저 보고 싶다면 일부러 문제를 심어 둔
             예시 이야기를 열어 보세요. 내 설정은 바뀌지 않아요.
@@ -314,7 +317,7 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
 
       <p aria-live="polite" className="plausibility-live" role="status">{message}</p>
       {summaryFailed && !exampleMode ? (
-        <p className="plausibility-hint" role="status">프로젝트 준비도에 점검 요약을 남기지 못했어요. 점검 결과에는 영향이 없어요.</p>
+        <p className="plausibility-hint" role="status">{t("studio.storyworldStatus.hub.summarySaveFailed", "프로젝트 준비도에 점검 요약을 남기지 못했어요. 점검 결과에는 영향이 없어요.")}</p>
       ) : null}
 
       {exampleMode ? (

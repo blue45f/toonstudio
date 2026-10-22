@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import type { ProductionReviewCandidate } from "./production-manuscript-competitive-model";
@@ -68,6 +69,7 @@ export function ProductionAdoptionCenter({
   readonly externalReviewHref: string | null;
   readonly onOpen: (view: View) => void;
 }) {
+  const t = useT();
   const [role, setRole] = useState<JourneyRole>("producer");
   const [checked, setChecked] = useState<ReadonlySet<number>>(new Set());
   const steps = journey(role, editorHref, externalReviewHref);
@@ -96,7 +98,7 @@ export function ProductionAdoptionCenter({
       <ol className="mt-4 grid gap-3 lg:grid-cols-3">
         {steps.map((step, index) => <li key={step.title} className="rounded-2xl border border-line bg-panel p-4">
           <div className="flex items-start gap-3"><button type="button" aria-pressed={checked.has(index)} onClick={() => toggle(index)} className={cn("grid size-11 shrink-0 place-items-center rounded-xl border", checked.has(index) ? "border-good/35 bg-good/10 text-good" : "border-line bg-card text-fg-3")}><CheckCircle2 className="size-5" aria-hidden="true" /><span className="sr-only">{step.title} 완료 표시</span></button><div><p className="text-[0.625rem] font-black text-fg-3">{index + 1}단계 · 약 40초</p><h3 className="mt-1 font-black text-fg">{step.title}</h3><p className="mt-1 text-xs leading-5 text-fg-2">{step.detail}</p></div></div>
-          {step.view ? <button type="button" onClick={() => onOpen(step.view!)} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4 w-full justify-between" })}>실제 화면 열기 <ArrowRight className="size-4" aria-hidden="true" /></button> : step.href ? <Link to={step.href} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4 w-full justify-between" })}>실제 화면 열기 <ExternalLink className="size-4" aria-hidden="true" /></Link> : <p className="mt-4 rounded-lg border border-line bg-card p-2 text-xs text-fg-3">현재 선택 원고에서 사용할 수 없습니다.</p>}
+          {step.view ? <button type="button" onClick={() => onOpen(step.view!)} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4 w-full justify-between" })}>실제 화면 열기 <ArrowRight className="size-4" aria-hidden="true" /></button> : step.href ? <Link to={step.href} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4 w-full justify-between" })}>실제 화면 열기 <ExternalLink className="size-4" aria-hidden="true" /></Link> : <p className="mt-4 rounded-lg border border-line bg-card p-2 text-xs text-fg-3">{t("productionHub.status.adoptionUnavailable", "현재 선택 원고에서 사용할 수 없습니다.")}</p>}
         </li>)}
       </ol>
     </section>

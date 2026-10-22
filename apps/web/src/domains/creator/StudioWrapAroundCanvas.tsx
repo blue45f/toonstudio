@@ -8,6 +8,7 @@
  * 심리스 타일 섹션과 같은 급). 순수 기하는 전부 studio-wrap-around가 담당하고
  * 이 컴포넌트는 포인터 수집과 캔버스 렌더만 한다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -201,7 +202,7 @@ export function StudioWrapAroundCanvas({
 
       <p className="text-[0.62rem] tabular-nums text-fg-3" role="status" aria-live="polite">
         {pieces.length === 0
-          ? "아직 저장된 조각이 없어요."
+          ? r3c07StatusText("studio.panelStatus.r3c07.wrapAround.piecesEmpty", "아직 저장된 조각이 없어요.")
           : allInside
             ? `저장된 조각 ${pieces.length}개 — 전부 타일 안에 들어가 반복해도 이음새가 이어져요.`
             : `저장된 조각 ${pieces.length}개`}

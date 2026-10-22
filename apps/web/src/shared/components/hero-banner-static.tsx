@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { ArrowRight } from "lucide-react";
 
 import { HeroBannerBadge } from "./hero-banner-badge";
@@ -121,7 +122,7 @@ export function HeroBannerStatic({
               </p>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-2 sm:mt-1">
                 <span className="rounded-full border border-line bg-card/50 px-2.5 py-1 text-[0.72rem] font-medium text-fg-2">
-                  {first.availability.length > 0 ? `${first.availability.length}개 플랫폼` : "플랫폼 확인 중"}
+                  {first.availability.length > 0 ? `${first.availability.length}개 플랫폼` : restStatusText("rest.status.hero.platformChecking", "플랫폼 확인 중")}
                 </span>
                 <span className="ml-auto inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-[0.78rem] font-semibold text-on-accent transition-transform duration-150 ease-out-expo group-hover/slide:translate-x-0.5">
                   보러가기

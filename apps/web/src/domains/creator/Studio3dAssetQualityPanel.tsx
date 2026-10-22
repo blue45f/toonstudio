@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
 import {
@@ -50,7 +51,7 @@ export function Studio3dAssetQualityPanel({
       setSaving(false);
       setConfirming(false);
       setAcknowledged(false);
-      resetStudio3dAssetQualityMode("GPU 연결이 끊겨 자동 모드로 돌아왔습니다. 저장한 장면 사본을 보존하고, 무거운 원본은 경량본으로 다시 가져오세요.");
+      resetStudio3dAssetQualityMode(panelStatusText("studio.panelStatus.assetQuality3d.gpuContextLost", "GPU 연결이 끊겨 자동 모드로 돌아왔습니다. 저장한 장면 사본을 보존하고, 무거운 원본은 경량본으로 다시 가져오세요."));
     }
     document.addEventListener("webglcontextlost", onContextLost, true);
     return () => {
@@ -66,7 +67,7 @@ export function Studio3dAssetQualityPanel({
       setSaving(false);
       setConfirming(false);
       setAcknowledged(false);
-      resetStudio3dAssetQualityMode("GPU 장치 오류가 발생해 자동 모드로 돌아왔습니다. 장면 사본을 유지하고 경량본으로 다시 가져오세요.");
+      resetStudio3dAssetQualityMode(panelStatusText("studio.panelStatus.assetQuality3d.gpuDeviceError", "GPU 장치 오류가 발생해 자동 모드로 돌아왔습니다. 장면 사본을 유지하고 경량본으로 다시 가져오세요."));
     }
   }, [active, deviceLostMessage]);
 
@@ -79,7 +80,7 @@ export function Studio3dAssetQualityPanel({
       const saved = emptyScene || await onBeforeEnable();
       if (generation.current !== token) return;
       if (!saved) {
-        setError("장면 사본 저장을 완료하지 못해 자동 모드를 유지했습니다. 저장 공간과 장면 상태를 확인해 주세요.");
+        setError(panelStatusText("studio.panelStatus.assetQuality3d.checkpointIncomplete", "장면 사본 저장을 완료하지 못해 자동 모드를 유지했습니다. 저장 공간과 장면 상태를 확인해 주세요."));
         return;
       }
       enableStudio3dHighAssetQuality();
@@ -87,7 +88,7 @@ export function Studio3dAssetQualityPanel({
       setAcknowledged(false);
     } catch {
       if (generation.current === token) {
-        setError("장면 사본을 저장하지 못했습니다. 고품질 설정은 적용하지 않았습니다.");
+        setError(panelStatusText("studio.panelStatus.assetQuality3d.checkpointSaveFailed", "장면 사본을 저장하지 못했습니다. 고품질 설정은 적용하지 않았습니다."));
       }
     } finally {
       if (generation.current === token) setSaving(false);
@@ -103,7 +104,7 @@ export function Studio3dAssetQualityPanel({
       </p>
       <div className="flex flex-wrap gap-2" role="group" aria-label="3D 모델 메모리 모드 선택">
         <button type="button" className={BUTTON} aria-pressed={mode === "auto"} disabled={saving} onClick={() => {
-          resetStudio3dAssetQualityMode("자동 모드로 돌아왔습니다. 다음 모델 불러오기부터 안전 한도를 적용합니다.");
+          resetStudio3dAssetQualityMode(panelStatusText("studio.panelStatus.assetQuality3d.backToAuto", "자동 모드로 돌아왔습니다. 다음 모델 불러오기부터 안전 한도를 적용합니다."));
           setConfirming(false); setAcknowledged(false); setError(null);
         }}>자동 · 기본</button>
         <button type="button" className={BUTTON} aria-pressed={mode === "high"} disabled={!active || disabled || saving || Boolean(deviceLostMessage) || mode === "high"} onClick={() => {
@@ -113,7 +114,7 @@ export function Studio3dAssetQualityPanel({
       {confirming && mode === "auto" && <div className="space-y-2 rounded-lg border border-line bg-card p-3">
         <p className="text-xs leading-relaxed text-fg-2">
           고품질 원본은 느려짐·발열·페이지 재로딩을 유발할 수 있습니다.
-          {emptyScene ? " 현재 배경 장면이 비어 있어 사본 저장은 생략합니다." : " 전환 전에 현재 배경 장면을 이 기기의 템플릿 라이브러리에 사본으로 저장합니다."}
+          {emptyScene ? panelStatusText("studio.panelStatus.assetQuality3d.emptySceneSkip", " 현재 배경 장면이 비어 있어 사본 저장은 생략합니다.") : " 전환 전에 현재 배경 장면을 이 기기의 템플릿 라이브러리에 사본으로 저장합니다."}
           이는 전체 작품의 백업을 대신하지 않습니다.
         </p>
         <label className="flex min-h-11 items-start gap-2 text-xs leading-relaxed text-fg-2">
@@ -121,7 +122,7 @@ export function Studio3dAssetQualityPanel({
           <span>기기 메모리 부족으로 페이지가 종료될 수 있으며, 새로고침 후 자동 모드로 시작한다는 점을 확인했습니다.</span>
         </label>
         <button type="button" className={`${BUTTON} w-full`} disabled={!acknowledged || disabled || saving || !active || Boolean(deviceLostMessage)} onClick={() => { void enableAfterCheckpoint(); }}>
-          {saving ? "장면 사본 저장 중" : emptyScene ? "확인 후 고품질 사용" : "장면 사본 저장 후 고품질 사용"}
+          {saving ? panelStatusText("studio.panelStatus.assetQuality3d.savingCheckpoint", "장면 사본 저장 중") : emptyScene ? "확인 후 고품질 사용" : "장면 사본 저장 후 고품질 사용"}
         </button>
       </div>}
       {error && <p role="alert" className="text-xs leading-relaxed text-fg-2">{error}</p>}

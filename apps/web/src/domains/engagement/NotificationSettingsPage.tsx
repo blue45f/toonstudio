@@ -1,3 +1,4 @@
+import { engagementStatusText } from "./engagement-status-i18n";
 import { useSyncExternalStore } from "react";
 
 import { useEngagement } from "./engagement-store";
@@ -154,19 +155,19 @@ function RoleNotificationSummary() {
       ) : state === "error" ? (
         <div className="mt-3">
           <p role="alert" className="text-xs leading-5 text-danger">
-            직군 알림 설정을 불러오지 못했어요. 지금은 직군으로 거르지 않고 모든 제작 알림을 보여줍니다.
+            {engagementStatusText("engagement.status.notificationSettings.roleLoadFailed", "직군 알림 설정을 불러오지 못했어요. 지금은 직군으로 거르지 않고 모든 제작 알림을 보여줍니다.")}
           </p>
           <button
             type="button"
             onClick={() => void reload()}
             className={buttonClass({ variant: "outline", size: "sm", className: "mt-2" })}
           >
-            다시 시도
+            {engagementStatusText("engagement.status.notificationSettings.retry", "다시 시도")}
           </button>
         </div>
       ) : state === "loading" ? (
         <p role="status" className="mt-3 text-xs leading-5 text-fg-3">
-          직군 알림 설정을 불러오는 중이에요…
+          {engagementStatusText("engagement.status.notificationSettings.roleLoading", "직군 알림 설정을 불러오는 중이에요…")}
         </p>
       ) : state === "signed-out" ? (
         <p className="mt-3 text-xs leading-5 text-fg-3">
@@ -255,7 +256,7 @@ export function NotificationSettingsPage() {
         ) : null}
         {!hydrated ? (
           <p role="status" className="mt-3 text-xs leading-5 text-fg-3">
-            저장된 알림 설정을 불러오는 중이에요…
+            {engagementStatusText("engagement.status.notificationSettings.savedLoading", "저장된 알림 설정을 불러오는 중이에요…")}
           </p>
         ) : null}
         <div className="mt-3 grid gap-2 sm:grid-cols-2" aria-busy={!hydrated}>

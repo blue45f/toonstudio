@@ -22,6 +22,7 @@ import type { StudioLayerNavigatorAction } from "./StudioLayerNavigator";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
 import { cn } from "@/shared/lib/utils";
+import { subStatusText } from "../studio-sub-status-i18n";
 
 export interface StudioLayerNavigatorBatchBarProps {
   selectedIds: readonly string[];
@@ -151,11 +152,11 @@ export function StudioLayerNavigatorBatchBar({
         disabled={mutationDisabled || batchShowIds.length === 0}
         unavailableReason={
           readOnly
-            ? "읽기 전용 작업공간에서는 레이어 표시 상태를 바꿀 수 없어요."
+            ? subStatusText("studio.subStatus.batch.readOnlyShow", "읽기 전용 작업공간에서는 레이어 표시 상태를 바꿀 수 없어요.")
             : batchShowIds.length === 0
               ? batchShowBlockedCount > 0
-                ? `숨긴 상위 그룹 안의 ${batchShowBlockedCount}개는 그룹을 먼저 표시해야 해요.`
-                : "현재 선택에는 다시 표시할 숨긴 레이어가 없어요."
+                ? subStatusText("studio.subStatus.batch.showBlocked", { count: batchShowBlockedCount }, "숨긴 상위 그룹 안의 {count}개는 그룹을 먼저 표시해야 해요.")
+                : subStatusText("studio.subStatus.batch.noHiddenToShow", "현재 선택에는 다시 표시할 숨긴 레이어가 없어요.")
               : undefined
         }
         preferredSide="top"
@@ -186,9 +187,9 @@ export function StudioLayerNavigatorBatchBar({
         disabled={mutationDisabled || batchSelectedIds.length === 0}
         unavailableReason={
           readOnly
-            ? "읽기 전용 작업공간에서는 레이어를 숨길 수 없어요."
+            ? subStatusText("studio.subStatus.batch.readOnlyHide", "읽기 전용 작업공간에서는 레이어를 숨길 수 없어요.")
             : batchSelectedIds.length === 0
-              ? "먼저 레이어를 하나 이상 선택하세요."
+              ? subStatusText("studio.subStatus.batch.selectFirst", "먼저 레이어를 하나 이상 선택하세요.")
               : undefined
         }
         preferredSide="top"
@@ -218,9 +219,9 @@ export function StudioLayerNavigatorBatchBar({
         disabled={mutationDisabled || batchSelectedIds.length === 0}
         unavailableReason={
           readOnly
-            ? "읽기 전용 작업공간에서는 레이어를 잠글 수 없어요."
+            ? subStatusText("studio.subStatus.batch.readOnlyLock", "읽기 전용 작업공간에서는 레이어를 잠글 수 없어요.")
             : batchSelectedIds.length === 0
-              ? "먼저 레이어를 하나 이상 선택하세요."
+              ? subStatusText("studio.subStatus.batch.selectFirst", "먼저 레이어를 하나 이상 선택하세요.")
               : undefined
         }
         preferredSide="top"
@@ -249,11 +250,11 @@ export function StudioLayerNavigatorBatchBar({
         disabled={mutationDisabled || batchUnlockIds.length === 0}
         unavailableReason={
           readOnly
-            ? "읽기 전용 작업공간에서는 레이어 잠금을 해제할 수 없어요."
+            ? subStatusText("studio.subStatus.batch.readOnlyUnlock", "읽기 전용 작업공간에서는 레이어 잠금을 해제할 수 없어요.")
             : batchUnlockIds.length === 0
               ? batchUnlockBlockedCount > 0
-                ? `잠긴 상위 그룹 안의 ${batchUnlockBlockedCount}개는 그룹 잠금을 먼저 풀어야 해요.`
-                : "현재 선택에는 잠금을 풀 수 있는 레이어가 없어요."
+                ? subStatusText("studio.subStatus.batch.unlockBlocked", { count: batchUnlockBlockedCount }, "잠긴 상위 그룹 안의 {count}개는 그룹 잠금을 먼저 풀어야 해요.")
+                : subStatusText("studio.subStatus.batch.noUnlockable", "현재 선택에는 잠금을 풀 수 있는 레이어가 없어요.")
               : undefined
         }
         preferredSide="top"
@@ -284,9 +285,9 @@ export function StudioLayerNavigatorBatchBar({
         disabled={mutationDisabled || batchSelectedIds.length < 2}
         unavailableReason={
           readOnly
-            ? "읽기 전용 작업공간에서는 레이어를 병합할 수 없어요."
+            ? subStatusText("studio.subStatus.batch.readOnlyMerge", "읽기 전용 작업공간에서는 레이어를 병합할 수 없어요.")
             : batchSelectedIds.length < 2
-              ? "병합할 레이어를 두 개 이상 선택하세요."
+              ? subStatusText("studio.subStatus.batch.mergeNeedsTwo", "병합할 레이어를 두 개 이상 선택하세요.")
               : undefined
         }
         preferredSide="top"
@@ -319,7 +320,7 @@ export function StudioLayerNavigatorBatchBar({
       <StudioToolHintTarget
         disabled={mutationDisabled}
         unavailableReason={
-          readOnly ? "읽기 전용 작업공간에서는 표시 레이어를 병합할 수 없어요." : undefined
+          readOnly ? subStatusText("studio.subStatus.batch.readOnlyFlatten", "읽기 전용 작업공간에서는 표시 레이어를 병합할 수 없어요.") : undefined
         }
         preferredSide="top"
         hint={{

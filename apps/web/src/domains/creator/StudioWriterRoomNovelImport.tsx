@@ -6,6 +6,7 @@
  * 그리고 반영 시 전체 문서 수용 검증을 거치는 적용 로직.
  */
 
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { FileText } from "lucide-react";
 
 import { StudioNovelConvertPanel } from "./StudioNovelConvertPanel";
@@ -64,15 +65,15 @@ export function StudioWriterRoomNovelImportScreen({
       if (receipt.kind === "rejected") {
         onError(
           receipt.reason === "byte-budget-exceeded"
-            ? "Writer Room 문서가 2,000,000바이트 저장 예산을 초과해 소설 변환 결과를 반영하지 않았어요."
-            : "소설 변환 결과를 안전하게 읽을 수 없어 기존 문서를 유지했어요."
+            ? r3c07StatusText("studio.panelStatus.r3c07.writerRoomNovel.budgetExceeded", "Writer Room 문서가 2,000,000바이트 저장 예산을 초과해 소설 변환 결과를 반영하지 않았어요.")
+            : r3c07StatusText("studio.panelStatus.r3c07.writerRoomNovel.readFailed", "소설 변환 결과를 안전하게 읽을 수 없어 기존 문서를 유지했어요.")
         );
         return;
       }
       onChange(receipt.document);
       onApplied();
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "소설 변환 결과를 반영하지 못했어요.");
+      onError(cause instanceof Error ? cause.message : r3c07StatusText("studio.panelStatus.r3c07.writerRoomNovel.applyFailed", "소설 변환 결과를 반영하지 못했어요."));
     }
   };
 

@@ -16,7 +16,10 @@ import type {
 } from "./StudioDrawOptionsBar";
 
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "../studio-brush-canvas-status-i18n";
 
 const StudioDrawingInputDeckPanel = lazyRetry(
   () =>
@@ -60,6 +63,7 @@ function deckSideOffset(
 export function StudioDrawingInputDeck(
   props: StudioDrawingInputDeckProps
 ): ReactElement {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [profileLibraryOpen, setProfileLibraryOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -147,7 +151,7 @@ export function StudioDrawingInputDeck(
               className="fixed bottom-[calc(8rem+env(safe-area-inset-bottom))] z-[73] w-[min(24rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-card/95 p-4 text-xs font-semibold text-fg-3 shadow-2xl backdrop-blur-xl"
               style={{ right }}
             >
-              펜 입력 센터를 불러오는 중…
+              {t("studio.brushCanvasStatus.brush.deckLoadingCenter", "펜 입력 센터를 불러오는 중…")}
             </div>
           }
         >
@@ -162,7 +166,7 @@ export function StudioDrawingInputDeck(
               className="fixed bottom-[calc(8rem+env(safe-area-inset-bottom))] z-[73] w-[min(23rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-card/95 p-4 text-xs font-semibold text-fg-3 shadow-2xl backdrop-blur-xl"
               style={{ right }}
             >
-              내 입력 프로필을 불러오는 중…
+              {t("studio.brushCanvasStatus.brush.deckLoadingProfiles", "내 입력 프로필을 불러오는 중…")}
             </div>
           }
         >

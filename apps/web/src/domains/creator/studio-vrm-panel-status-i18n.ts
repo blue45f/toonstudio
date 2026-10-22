@@ -7,8 +7,14 @@
  * 대상 표면: vrm/StudioVrmPoseMaterialPanel·
  * vrm/StudioVrmAvatarReferenceRecommendationsPanel·
  * vrm/StudioVrmCharacterLibraryPanel.
+ * 3라운드(c03)에서 vrm 잔여 패널까지 같은 네임스페이스로 확장했다.
  */
-import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
+import {
+  FALLBACK_CHAIN,
+  getLang,
+  registerI18nLocaleEntries,
+  resolveTranslationForDisplay,
+} from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
   "studio.vrmPanelStatus.poseMaterial.storageUnavailable": "이 브라우저에서는 로컬 포즈 소재 저장소를 사용할 수 없습니다.",
@@ -53,6 +59,16 @@ registerI18nLocaleEntries("ko", {
   "studio.vrmPanelStatus.characterLibrary.loadingCharacters": "저장된 캐릭터를 불러오는 중입니다.",
   "studio.vrmPanelStatus.characterLibrary.loadingMore": "다음 캐릭터를 불러오는 중…",
   "studio.vrmPanelStatus.characterLibrary.loadNextPage": "저장된 캐릭터 다음 페이지 불러오기",
+  "studio.vrmPanelStatus.broadcastPreview.restoreBackgroundFailed": "기존 3D 배경을 복원하지 못했습니다. 편집기를 닫았다가 다시 열어 주세요.",
+  "studio.vrmPanelStatus.poserBody.loadModelFirst": "모델을 먼저 불러오세요.",
+  "studio.vrmPanelStatus.poserBody.noCostumeSeparation": "이 모델은 의상 분리 정보가 없어요.",
+  "studio.vrmPanelStatus.poserBody.noMToonSupport": "이 모델은 MToon 재질이 아니라 재질 효과를 지원하지 않아요.",
+  "studio.vrmPanelStatus.archiveAttestation.unknownBlocksExport": "‘확인하지 못함’이 포함되어 archive 내보내기를 진행할 수 없습니다.",
+  "studio.vrmPanelStatus.archiveAttestationHost.loadingTerms": "VRM 이용 조건 불러오는 중",
+  "studio.vrmPanelStatus.textureExport.exportFailed": "텍스처를 내보내지 못했습니다.",
+  "studio.vrmPanelStatus.textureExport.exporting": "텍스처 내보내는 중…",
+  "studio.vrmPanelStatus.texturePaint.restoreInterrupted": "원본 텍스처 복원이 중단됐습니다.",
+  "studio.vrmPanelStatus.texturePaint.retry": "다시 시도",
 });
 
 registerI18nLocaleEntries("en", {
@@ -98,4 +114,39 @@ registerI18nLocaleEntries("en", {
   "studio.vrmPanelStatus.characterLibrary.loadingCharacters": "Loading saved characters.",
   "studio.vrmPanelStatus.characterLibrary.loadingMore": "Loading more characters…",
   "studio.vrmPanelStatus.characterLibrary.loadNextPage": "Load the next page of saved characters",
+  "studio.vrmPanelStatus.broadcastPreview.restoreBackgroundFailed": "Could not restore the previous 3D background. Close the editor and open it again.",
+  "studio.vrmPanelStatus.poserBody.loadModelFirst": "Load a model first.",
+  "studio.vrmPanelStatus.poserBody.noCostumeSeparation": "This model has no costume separation information.",
+  "studio.vrmPanelStatus.poserBody.noMToonSupport": "This model does not use MToon materials, so material effects are not supported.",
+  "studio.vrmPanelStatus.archiveAttestation.unknownBlocksExport": "An item is marked “not verified”, so the archive export cannot proceed.",
+  "studio.vrmPanelStatus.archiveAttestationHost.loadingTerms": "Loading VRM terms of use",
+  "studio.vrmPanelStatus.textureExport.exportFailed": "Could not export the texture.",
+  "studio.vrmPanelStatus.textureExport.exporting": "Exporting texture…",
+  "studio.vrmPanelStatus.texturePaint.restoreInterrupted": "Restoring the original texture was interrupted.",
+  "studio.vrmPanelStatus.texturePaint.retry": "Retry",
 });
+
+/**
+ * 비컴포넌트 생산자용 생산 시점 로케일 해석 헬퍼 (studio-ai-error-i18n의
+ * `aiErrorText` 선례). 키가 사전에 없으면 koFallback을 그대로 돌려준다.
+ * `{token}` 보간은 useT 리졸버와 같은 규약으로 한 번만 치환한다.
+ */
+export function vrmPanelStatusText(key: string, koFallback: string): string;
+export function vrmPanelStatusText(
+  key: string,
+  params: Readonly<Record<string, string | number>>,
+  koFallback: string,
+): string;
+export function vrmPanelStatusText(
+  key: string,
+  paramsOrFallback: Readonly<Record<string, string | number>> | string,
+  koFallback?: string,
+): string {
+  const params = typeof paramsOrFallback === "string" ? undefined : paramsOrFallback;
+  const fallback = typeof paramsOrFallback === "string" ? paramsOrFallback : koFallback ?? "";
+  const text = resolveTranslationForDisplay(getLang(), key, FALLBACK_CHAIN, fallback);
+  if (!params) return text;
+  return text.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+    Object.hasOwn(params, token) ? String(params[token]) : placeholder,
+  );
+}

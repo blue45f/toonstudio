@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GameHelp } from "../../GameHelp";
 import { PlayCover } from "../../PlayCover";
 import { PlayGameError, PlayGameSkeleton } from "../GameStates";
+import { playStatusText } from "../../play-status-i18n";
 import { usePlayTitles } from "../../use-play-catalog";
 import { recordResult, usePlayDraft } from "../../lab/play-storage";
 
@@ -210,7 +211,7 @@ export function QuizGame({ onExit }: PlayGameProps) {
   }, [phase, score, seed]);
 
   if (loading) {
-    return <PlayGameSkeleton label="웹툰 문제를 불러오는 중" layout="quiz" />;
+    return <PlayGameSkeleton label={playStatusText("play.status.quiz.loadingQuestions", "웹툰 문제를 불러오는 중")} layout="quiz" />;
   }
 
   if (error && !question) {

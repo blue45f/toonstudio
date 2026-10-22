@@ -17,6 +17,9 @@ import {
   formatStudioBg3dSkpDimensions,
 } from "./studio-bg3d-skp-import-copy";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
+
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
 import { STUDIO_BG3D_SKP_UNIT_LABELS } from "./studio-bg3d-skp-unit";
 
 import type {
@@ -41,6 +44,7 @@ function UnitQuestionCard({
   readonly question: StudioBg3dSkpUnitQuestion;
   readonly onAnswer: (decision: StudioBg3dSkpUnitDecision) => void;
 }) {
+  const t = useT();
   const titleId = useId();
   const descriptionId = useId();
   const groupRef = useRef<HTMLDivElement>(null);
@@ -124,7 +128,7 @@ function UnitQuestionCard({
         className={cx(SMALL_BUTTON, "mt-2 border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg")}
       >
         <X size={14} aria-hidden />
-        가져오기 취소
+        {t("studio.bg3dPanelStatus.skpImport.cancelImport", "가져오기 취소")}
       </button>
     </div>
   );
@@ -137,6 +141,7 @@ function ResultCard({
   readonly entry: StudioBg3dSkpResultEntry;
   readonly onDismiss: (id: string) => void;
 }) {
+  const t = useT();
   const titleId = useId();
   const { report } = entry;
   const imported = entry.status === "imported";
@@ -159,7 +164,7 @@ function ResultCard({
             {entry.sourceName}
           </h4>
           <p className="break-words text-fg-2 [overflow-wrap:anywhere]">
-            {imported ? "SketchUp 변환 보고서 · 가져옴" : `가져오지 못함 · ${entry.reason ?? ""}`}
+            {imported ? "SketchUp 변환 보고서 · 가져옴" : t("studio.bg3dPanelStatus.skpImport.importFailedWithReason", { reason: entry.reason ?? "" }, "가져오지 못함 · {reason}")}
           </p>
         </div>
         <button

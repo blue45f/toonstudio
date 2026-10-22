@@ -19,6 +19,7 @@ import {
   saveNewsletterResendApiKey,
 } from "@/domains/newsletter/public/newsletter-mail-key";
 import { StoredKeyRow } from "./MaskedKeyField";
+import { integrationsStatusText } from "../integrations-status-i18n";
 import { maskApiKey, validateApiKeyFormat } from "./api-key-hub-model";
 
 const RESEND_API_KEYS_URL = "https://resend.com/api-keys";
@@ -151,7 +152,7 @@ export function ResendKeyConnectCard() {
             {status === "registered"
               ? "키를 등록했어요. 연결 테스트는 하지 않으며, 첫 발송에서 키가 확인됩니다."
               : status === "save_failed"
-                ? "키를 저장하지 못했습니다. 이 탭에서 다시 시도해 주세요."
+                ? integrationsStatusText("integrations.status.resend.saveFailed", "키를 저장하지 못했습니다. 이 탭에서 다시 시도해 주세요.")
                 : "키는 이 탭을 여는 동안만 유지됩니다. 탭을 닫으면 다시 등록해야 합니다."}
           </p>
         </div>
@@ -201,7 +202,7 @@ export function ResendKeyConnectCard() {
           <div aria-live="polite">
             {status === "empty" ? (
               <p className="mt-2 text-xs font-medium text-danger" role="alert">
-                키를 입력해 주세요.
+                {integrationsStatusText("integrations.status.resend.keyRequired", "키를 입력해 주세요.")}
               </p>
             ) : status === "too_short" ? (
               <p className="mt-2 text-xs font-medium text-danger" role="alert">
@@ -209,7 +210,7 @@ export function ResendKeyConnectCard() {
               </p>
             ) : status === "save_failed" ? (
               <p className="mt-2 text-xs font-medium text-danger" role="alert">
-                키를 저장하지 못했습니다. 이 탭에서 다시 시도해 주세요.
+                {integrationsStatusText("integrations.status.resend.saveFailed", "키를 저장하지 못했습니다. 이 탭에서 다시 시도해 주세요.")}
               </p>
             ) : input.trim() && !input.trim().startsWith(RESEND_API_KEY_PREFIX) ? (
               <p className="mt-2 text-xs text-fg-3">

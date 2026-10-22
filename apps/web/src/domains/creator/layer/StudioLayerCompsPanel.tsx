@@ -38,6 +38,7 @@ import {
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { subStatusText } from "../studio-sub-status-i18n";
 
 export interface StudioLayerCompsPanelProps<T extends StudioLayerLikeItem = StudioLayerLikeItem> {
   readonly layers: readonly T[];
@@ -121,7 +122,7 @@ export function StudioLayerCompsPanel<T extends StudioLayerLikeItem = StudioLaye
   };
 
   const handleApplyComp = (comp: StudioLayerComp) => {
-    runAction(() => onApplyComp(comp), "저장한 보기를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.");
+    runAction(() => onApplyComp(comp), subStatusText("studio.subStatus.comps.applyFailed", "저장한 보기를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요."));
   };
 
   const handleCreateComp = () => {
@@ -133,7 +134,7 @@ export function StudioLayerCompsPanel<T extends StudioLayerLikeItem = StudioLaye
       () => onCaptureComp
         ? onCaptureComp(nameToUse)
         : updateComps([...effectiveComps, captureLayerComp(nameToUse, layers, undefined, Date.now(), groups)]),
-      "레이어 보기를 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+      subStatusText("studio.subStatus.comps.saveFailed", "레이어 보기를 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요."),
       () => { setNewCompName(""); setIsCreating(false); },
     );
   };
@@ -146,14 +147,14 @@ export function StudioLayerCompsPanel<T extends StudioLayerLikeItem = StudioLaye
         ? onCaptureComp(target.name, target.id)
         : updateComps(effectiveComps.map((c) => c.id === compId
           ? updateLayerCompWithCurrentLayers(target, layers, groups) : c)),
-      "저장한 보기를 현재 상태로 바꾸지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+      subStatusText("studio.subStatus.comps.updateFailed", "저장한 보기를 현재 상태로 바꾸지 못했어요. 잠시 뒤 다시 시도해 주세요."),
     );
   };
 
   const handleDeleteComp = (compId: string) => {
     runAction(
       () => updateComps(effectiveComps.filter((c) => c.id !== compId)),
-      "저장한 보기를 삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+      subStatusText("studio.subStatus.comps.deleteFailed", "저장한 보기를 삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요."),
       () => { if (editingCompId === compId) setEditingCompId(null); },
     );
   };
@@ -167,7 +168,7 @@ export function StudioLayerCompsPanel<T extends StudioLayerLikeItem = StudioLaye
           c.id === editingCompId ? { ...c, name: trimmed } : c,
         ),
       ) : true,
-      "보기 이름을 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+      subStatusText("studio.subStatus.comps.renameFailed", "보기 이름을 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요."),
       () => setEditingCompId(null),
     );
   };
@@ -285,7 +286,7 @@ return (
         {effectiveComps.length === 0 ? (
           <StudioEmptyState
             icon={<Layers size={20} aria-hidden />}
-            title="저장한 레이어 보기가 없어요"
+            title={subStatusText("studio.subStatus.comps.emptyTitle", "저장한 레이어 보기가 없어요")}
             description="선화만 보기, 대사 없는 버전, 조명별 버전처럼 자주 확인하는 상태를 저장해 보세요."
             className="border border-dashed border-line/80 bg-panel/35 py-4"
           />

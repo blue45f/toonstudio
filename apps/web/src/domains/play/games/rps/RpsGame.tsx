@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from 
 
 import { GameHelp } from "../../GameHelp";
 import { recordResult } from "../../lab/play-storage";
+import { playStatusText } from "../../play-status-i18n";
 
 import {
   EMPTY_SCORE,
@@ -150,7 +151,7 @@ export function RpsGame({ onExit }: PlayGameProps) {
 
   function resolveShot(playerHand: Hand | null) {
     if (!playerHand) {
-      setMessage("손을 인식하지 못했어요 — 또렷하게 내봐요!");
+      setMessage(playStatusText("play.status.rps.handNotRecognized", "손을 인식하지 못했어요 — 또렷하게 내봐요!"));
       setPhase("idle");
       return;
     }
@@ -351,9 +352,9 @@ export function RpsGame({ onExit }: PlayGameProps) {
               )}
               {status !== "ready" && (
                 <div className="absolute inset-0 grid place-items-center px-2 text-center text-[0.7rem] text-white/90">
-                  {status === "loading" && "카메라 준비 중…"}
-                  {status === "denied" && "카메라 권한이 거부됨 — 버튼으로 플레이하세요"}
-                  {status === "error" && "카메라를 열 수 없어요 — 버튼으로 플레이"}
+                  {status === "loading" && playStatusText("play.status.rps.cameraLoading", "카메라 준비 중…")}
+                  {status === "denied" && playStatusText("play.status.rps.cameraDenied", "카메라 권한이 거부됨 — 버튼으로 플레이하세요")}
+                  {status === "error" && playStatusText("play.status.rps.cameraError", "카메라를 열 수 없어요 — 버튼으로 플레이")}
                 </div>
               )}
             </div>

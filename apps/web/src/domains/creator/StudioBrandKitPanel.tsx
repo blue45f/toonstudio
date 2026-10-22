@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 // 브랜드 킷 패널 — "스타일" 툴바 그룹 팝오버 안에 서브탭 콘텐츠로 얹히는 컴포넌트.
 // 팔레트(참조)·제목/본문 글꼴·로고를 하나의 이름 붙은 킷으로 저장·이름변경·삭제하고,
 // 스와치/글꼴/로고를 각각 개별적으로 적용한다. StudioPaletteLibraryPanel과 동일한
@@ -155,7 +156,7 @@ function GoogleFontPickerGrid({ value, onPick }: GoogleFontPickerGridProps) {
       />
       <div className="grid max-h-24 grid-cols-2 gap-1 overflow-y-auto pr-0.5">
         {filtered.length === 0 ? (
-          <p className="col-span-2 py-1 text-center text-[0.58rem] text-fg-3">일치하는 폰트가 없어요.</p>
+          <p className="col-span-2 py-1 text-center text-[0.58rem] text-fg-3">{panelStatusText("studio.panelStatus.brandKit.fontsEmpty", "일치하는 폰트가 없어요.")}</p>
         ) : (
           filtered.map((font) => {
             const cssValue = studioGoogleFontCssValue(font);
@@ -296,9 +297,7 @@ export function StudioBrandKitPanel({
       } catch (cause) {
         if (!active || !mountedRef.current || generation !== loadGenerationRef.current) return;
         setStorageState("unavailable");
-        setError(`SQLite/OPFS 브랜드 킷을 열지 못했습니다: ${
-          cause instanceof Error ? cause.message : String(cause)
-        }. 기존 브라우저 키는 자동으로 읽지 않습니다.`);
+        setError(panelStatusText("studio.panelStatus.brandKit.openFailed", {"detail": cause instanceof Error ? cause.message : String(cause)}, "SQLite/OPFS 브랜드 킷을 열지 못했습니다: {detail}. 기존 브라우저 키는 자동으로 읽지 않습니다."));
       }
     };
 
@@ -322,9 +321,7 @@ export function StudioBrandKitPanel({
       } catch (cause) {
         if (!active || !mountedRef.current || generation !== paletteLoadGenerationRef.current) return;
         setPalettes([]);
-        setError(`연결할 SQLite 팔레트를 불러오지 못했습니다: ${
-          cause instanceof Error ? cause.message : String(cause)
-        }`);
+        setError(panelStatusText("studio.panelStatus.brandKit.paletteLoadFailed", {"detail": cause instanceof Error ? cause.message : String(cause)}, "연결할 SQLite 팔레트를 불러오지 못했습니다: {detail}"));
       }
     };
     void hydratePalettes();
@@ -365,7 +362,7 @@ export function StudioBrandKitPanel({
         replaceKits(memoryUpdate(kitsRef.current));
         return "memory";
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "브랜드 킷 변경을 적용하지 못했습니다.");
+        setError(cause instanceof Error ? cause.message : panelStatusText("studio.panelStatus.brandKit.mutationFailed", "브랜드 킷 변경을 적용하지 못했습니다."));
         return "rejected";
       } finally {
         mutationBusyRef.current = false;
@@ -385,7 +382,7 @@ export function StudioBrandKitPanel({
     } catch (cause) {
       if (!mountedRef.current || generation !== mutationGenerationRef.current) return "rejected";
       if (cause instanceof StudioBrandKitSqliteRepositoryError && cause.code !== "unavailable") {
-        setError(`${cause.message} 항목을 줄이거나 데이터를 고친 뒤 다시 시도해 주세요.`);
+        setError(panelStatusText("studio.panelStatus.brandKit.retryAfterFix", {"message": cause.message}, "{message} 항목을 줄이거나 데이터를 고친 뒤 다시 시도해 주세요."));
         return "rejected";
       }
       try {
@@ -393,14 +390,12 @@ export function StudioBrandKitPanel({
       } catch (validationError) {
         setError(validationError instanceof Error
           ? validationError.message
-          : "브랜드 킷 변경을 적용하지 못했습니다.");
+          : panelStatusText("studio.panelStatus.brandKit.mutationFailed", "브랜드 킷 변경을 적용하지 못했습니다."));
         return "rejected";
       }
       memoryModeRef.current = true;
       setStorageState("memory");
-      setError(`SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라집니다: ${
-        cause instanceof Error ? cause.message : String(cause)
-      }`);
+      setError(panelStatusText("studio.panelStatus.brandKit.saveFailedMemoryOnly", {"detail": cause instanceof Error ? cause.message : String(cause)}, "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라집니다: {detail}"));
       return "memory";
     } finally {
       if (mountedRef.current && generation === mutationGenerationRef.current) {
@@ -454,7 +449,7 @@ export function StudioBrandKitPanel({
       const scaled = await downscaleImageFile(file, LOGO_MAX_DIM, LOGO_QUALITY);
       setDraftLogo({ dataUrl: scaled.src, width: scaled.width, height: scaled.height });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "로고 이미지를 불러오지 못했어요.");
+      setError(err instanceof Error ? err.message : panelStatusText("studio.panelStatus.brandKit.logoLoadFailed", "로고 이미지를 불러오지 못했어요."));
     } finally {
       if (mountedRef.current) setDraftLogoBusy(false);
     }
@@ -504,13 +499,13 @@ export function StudioBrandKitPanel({
 
       <p className="mb-1.5 text-[0.6rem] font-semibold text-fg-3" aria-live="polite">
         {storageState === "loading"
-          ? "SQLite/OPFS 브랜드 킷 확인 중"
+          ? panelStatusText("studio.panelStatus.brandKit.storageChecking", "SQLite/OPFS 브랜드 킷 확인 중")
           : storageState === "sqlite"
             ? "이 기기 SQLite/OPFS 저장"
             : storageState === "memory"
               ? "현재 탭 메모리 임시 · 새로고침 시 사라짐"
               : storageState === "unavailable"
-                ? "SQLite/OPFS 사용 불가 · 저장되지 않음"
+                ? panelStatusText("studio.panelStatus.brandKit.storageUnavailable", "SQLite/OPFS 사용 불가 · 저장되지 않음")
                 : "주입 저장소"}
       </p>
 
@@ -564,7 +559,7 @@ export function StudioBrandKitPanel({
             </select>
             {palettes.length === 0 && (
               <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-3">
-                저장된 팔레트가 없어요. 먼저 팔레트 탭에서 만들어보세요.
+                {panelStatusText("studio.panelStatus.brandKit.palettesEmpty", "저장된 팔레트가 없어요. 먼저 팔레트 탭에서 만들어보세요.")}
               </p>
             )}
           </div>
@@ -634,7 +629,7 @@ export function StudioBrandKitPanel({
               </div>
             ) : (
               <label className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-line bg-panel py-1.5 text-[0.66rem] font-semibold text-fg-2 transition-colors hover:bg-raised">
-                <ImagePlus size={11} /> {draftLogoBusy ? "불러오는 중…" : "로고 이미지 선택"}
+                <ImagePlus size={11} /> {draftLogoBusy ? panelStatusText("studio.panelStatus.brandKit.loading", "불러오는 중…") : "로고 이미지 선택"}
                 <input
                   type="file"
                   accept="image/*"
@@ -650,17 +645,17 @@ export function StudioBrandKitPanel({
             type="button"
             onClick={handleCreate}
             disabled={draftLogoBusy || mutationBusy || storageState === "loading"}
-            title={draftLogoBusy ? "로고를 불러오는 중이에요. 잠시만 기다려주세요." : undefined}
+            title={draftLogoBusy ? panelStatusText("studio.panelStatus.brandKit.logoLoadingTitle", "로고를 불러오는 중이에요. 잠시만 기다려주세요.") : undefined}
             className="rounded-lg bg-accent py-1.5 text-[0.66rem] font-semibold text-on-accent transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {draftLogoBusy ? "로고 불러오는 중…" : "브랜드 킷 만들기"}
+            {draftLogoBusy ? panelStatusText("studio.panelStatus.brandKit.logoLoading", "로고 불러오는 중…") : "브랜드 킷 만들기"}
           </button>
         </div>
       )}
 
       {kits.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed text-fg-3">
-          저장된 브랜드 킷이 없어요. 이름과 팔레트·글꼴·로고를 골라 새로 만들어보세요.
+          {panelStatusText("studio.panelStatus.brandKit.kitsEmpty", "저장된 브랜드 킷이 없어요. 이름과 팔레트·글꼴·로고를 골라 새로 만들어보세요.")}
         </p>
       ) : (
         <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1">

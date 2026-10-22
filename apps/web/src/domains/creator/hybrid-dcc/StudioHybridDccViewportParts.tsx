@@ -3,6 +3,7 @@ import { Component, useEffect, type ReactNode } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { subStatusText } from "../studio-sub-status-i18n";
 
 /**
  * 하이브리드 DCC 뷰포트의 장면 보조 조각 — 로컬 환경맵, 캔버스 오류 경계, 감소된 모션 선호,
@@ -60,9 +61,9 @@ export class StudioHybridDccCanvasBoundary extends Component<
         <div className="absolute inset-0 grid place-items-center bg-canvas px-5 text-center" role="alert">
           <div className="max-w-sm">
             <AlertTriangle className="mx-auto mb-3 text-bad" size={24} aria-hidden="true" />
-            <p className="text-sm font-semibold text-fg">3D 뷰포트를 시작하지 못했습니다.</p>
+            <p className="text-sm font-semibold text-fg">{subStatusText("studio.subStatus.viewport.startFailed", "3D 뷰포트를 시작하지 못했습니다.")}</p>
             <p className="mt-1 text-xs leading-relaxed text-fg-2">
-              그래픽 가속을 확인한 뒤 뷰포트를 다시 열어 주세요.
+              {subStatusText("studio.subStatus.viewport.startFailedDesc", "그래픽 가속을 확인한 뒤 뷰포트를 다시 열어 주세요.")}
             </p>
           </div>
         </div>

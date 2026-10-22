@@ -1,3 +1,4 @@
+import { authRestStatusText } from "./auth-rest-status-i18n";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -180,7 +181,7 @@ export function AuthMenu({
       }
     } catch {
       setSignOutError(
-        "로그아웃 확인에 실패했어요. 연결을 확인한 뒤 다시 시도해 주세요."
+        authRestStatusText("authRest.status.authMenu.signOutCheckFailed", "로그아웃 확인에 실패했어요. 연결을 확인한 뒤 다시 시도해 주세요.")
       );
     } finally {
       signOutInFlightRef.current = false;
@@ -189,9 +190,9 @@ export function AuthMenu({
   }
 
   const signOutLabel = signOutPending
-    ? "실시간 연결 정리 중…"
+    ? authRestStatusText("authRest.status.authMenu.cleaningUp", "실시간 연결 정리 중…")
     : signOutError
-    ? "로그아웃 다시 시도"
+    ? authRestStatusText("authRest.status.authMenu.signOutRetry", "로그아웃 다시 시도")
     : t("auth.menu.signOut");
 
   return (

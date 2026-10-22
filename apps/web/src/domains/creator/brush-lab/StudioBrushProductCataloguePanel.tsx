@@ -2,6 +2,9 @@ import { ArrowRight, Library, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import { BRUSH_QUALITY_CATALOG } from "./brush-studio-v5-quality-catalog";
 import { BRUSH_STUDIO_V6_RECIPES } from "./brush-studio-v6-engine";
@@ -32,6 +35,7 @@ export function StudioBrushProductCataloguePanel({
 }: {
   readonly baseHref: string;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(true);
   const [query, setQuery] = useState("");
   const recipeNames = useMemo(
@@ -143,7 +147,7 @@ export function StudioBrushProductCataloguePanel({
               className="mt-4 rounded-xl border border-line bg-panel/55 px-3 py-5 text-center text-sm text-fg-3"
               role="status"
             >
-              일치하는 제품 브러시가 없습니다.
+              {t("studio.brushCanvasStatus.brushLab.catalogueEmpty", "일치하는 제품 브러시가 없습니다.")}
             </p>
           ) : null}
         </div>

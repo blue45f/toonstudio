@@ -1,4 +1,7 @@
 import { useState } from "react";
+
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
 import { Brush, Download, Eraser, Redo2, Undo2 } from "lucide-react";
 
 import {
@@ -57,6 +60,7 @@ export function StudioBg3dTexturePaintPanel({
   disabled = false,
   disabledReason = null,
 }: StudioBg3dTexturePaintPanelProps) {
+  const t = useT();
   const [redoStack, setRedoStack] = useState<readonly StudioBg3dTexturePaintStroke[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const paint = primitive.texturePaint ?? null;
@@ -77,7 +81,7 @@ export function StudioBg3dTexturePaintPanel({
     if (!stroke) return;
     const next = appendStudioBg3dTexturePaintStroke(paint, stroke);
     if (!next) {
-      setNotice("획 한도에 닿아 다시 실행할 수 없습니다.");
+      setNotice(t("studio.bg3dPanelStatus.texturePaint.strokeLimitReached", "획 한도에 닿아 다시 실행할 수 없습니다."));
       return;
     }
     setRedoStack((stack) => stack.slice(0, -1));
@@ -111,7 +115,7 @@ export function StudioBg3dTexturePaintPanel({
       anchor.click();
       setNotice("텍스처 PNG를 내보냈습니다.");
     } catch {
-      setNotice("이 환경에서는 텍스처 내보내기가 지원되지 않습니다.");
+      setNotice(t("studio.bg3dPanelStatus.texturePaint.exportUnsupported", "이 환경에서는 텍스처 내보내기가 지원되지 않습니다."));
     }
   };
 

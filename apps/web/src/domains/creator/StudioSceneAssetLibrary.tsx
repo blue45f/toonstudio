@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useId, useRef, useState } from "react";
 
 import { svgToDataUrl } from "./studio-characters";
@@ -37,10 +38,10 @@ export function StudioSceneAssetLibrary({ items, onUseItem }: {
     setNotice(null);
     try {
       const used = await onUseItem(item);
-      setNotice(used === false ? "현재 캔버스에서는 이 에셋을 사용할 수 없습니다."
-        : item.useMode === "open" ? `${item.title} 제작 도구를 열었습니다.` : used === true ? `${item.title}을(를) 배치했습니다.` : `${item.title} 배치를 요청했습니다. 캔버스와 오류 안내를 확인해 주세요.`);
+      setNotice(used === false ? r3c07StatusText("studio.panelStatus.r3c07.sceneAssetLibrary.assetUnavailable", "현재 캔버스에서는 이 에셋을 사용할 수 없습니다.")
+        : item.useMode === "open" ? `${item.title} 제작 도구를 열었습니다.` : used === true ? `${item.title}을(를) 배치했습니다.` : r3c07StatusText("studio.panelStatus.r3c07.sceneAssetLibrary.placementRequested", { title: item.title }, "{title} 배치를 요청했습니다. 캔버스와 오류 안내를 확인해 주세요."));
     } catch (cause: unknown) {
-      setNotice(cause instanceof Error ? cause.message : "에셋을 사용하지 못했습니다.");
+      setNotice(cause instanceof Error ? cause.message : r3c07StatusText("studio.panelStatus.r3c07.sceneAssetLibrary.useFailed", "에셋을 사용하지 못했습니다."));
     } finally { busyRef.current = false; setPending(null); }
   }
 
@@ -64,9 +65,9 @@ export function StudioSceneAssetLibrary({ items, onUseItem }: {
         {previewSource(item) ? <img src={previewSource(item)} alt="" loading="lazy" decoding="async" className="size-full object-contain" /> : <span className="text-xs text-fg-3">장면 템플릿</span>}
       </button>
       <h4 className="mt-2 line-clamp-2 text-xs font-bold text-fg">{item.title}</h4><p className="my-1 line-clamp-2 text-[0.65rem] text-fg-3">{item.badges.join(" · ")}</p>
-      <button type="button" className={`${CONTROL} mt-1 w-full`} disabled={pending !== null} onClick={() => void handleUseItem(item)} aria-label={`${item.title} ${item.useLabel}`}>{pending === item.id ? "처리 중…" : item.useLabel}</button>
+      <button type="button" className={`${CONTROL} mt-1 w-full`} disabled={pending !== null} onClick={() => void handleUseItem(item)} aria-label={`${item.title} ${item.useLabel}`}>{pending === item.id ? r3c07StatusText("studio.panelStatus.r3c07.sceneAssetLibrary.processing", "처리 중…") : item.useLabel}</button>
     </article>)}</div>
-    {result.total === 0 && <p className="py-4 text-center text-xs text-fg-3">검색 결과가 없습니다. 다른 테마를 선택하거나 고품질 공용 라이브러리를 확인해 주세요.</p>}
+    {result.total === 0 && <p className="py-4 text-center text-xs text-fg-3">{r3c07StatusText("studio.panelStatus.r3c07.sceneAssetLibrary.searchEmpty", "검색 결과가 없습니다. 다른 테마를 선택하거나 고품질 공용 라이브러리를 확인해 주세요.")}</p>}
     {result.pages > 1 && <nav aria-label="템플릿과 배경 페이지" className="flex justify-between gap-2"><button type="button" className={CONTROL} disabled={result.page === 0} onClick={() => setPage(result.page - 1)}>이전</button><button type="button" className={CONTROL} disabled={result.page + 1 >= result.pages} onClick={() => setPage(result.page + 1)}>다음</button></nav>}
     {notice && <p role="status" aria-live="polite" className="text-xs text-fg-3">{notice}</p>}
   </section>;

@@ -6,6 +6,8 @@ import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
+import { playStatusText } from "../play-status-i18n";
+
 function Shimmer({ className }: { className?: string }) {
   return (
     <div
@@ -74,15 +76,15 @@ export function PlayGameError({ message, onRetry }: { message: string; onRetry: 
         <AlertTriangle className="h-6 w-6" aria-hidden="true" />
       </span>
       <div>
-        <p className="text-sm font-semibold text-fg">데이터를 불러오지 못했어요.</p>
+        <p className="text-sm font-semibold text-fg">{playStatusText("play.status.gameStates.loadFailed", "데이터를 불러오지 못했어요.")}</p>
         <p className="mt-1 max-w-xs text-xs text-fg-3">
-          인터넷 연결을 확인한 뒤 다시 시도해 주세요.
+          {playStatusText("play.status.gameStates.loadFailedHint", "인터넷 연결을 확인한 뒤 다시 시도해 주세요.")}
           <span className="sr-only"> 오류: {message}</span>
         </p>
       </div>
       <div className="flex items-center gap-2">
         <Button variant="solid" size="sm" onClick={onRetry}>
-          <RotateCcw className="mr-1 h-4 w-4" /> 다시 불러오기
+          <RotateCcw className="mr-1 h-4 w-4" /> {playStatusText("play.status.gameStates.retry", "다시 불러오기")}
         </Button>
       </div>
     </div>

@@ -4,7 +4,11 @@ import { STUDIO_BG3D_CONTROL_BUTTON, studioBg3dClassNames as cx } from "./studio
 import { STUDIO_BG3D_COMPOSITION_LENSES } from "./studio-bg3d-lens-composition";
 import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-context";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 export function StudioBg3dCompositionLensPanel({ disabled = false }: { readonly disabled?: boolean }) {
+  const t = useT();
   const runtime = useStudioBg3dProSuiteRuntime();
   const [preserveSubjectSize, setPreserveSubjectSize] = useState(true);
   const [compositionError, setCompositionError] = useState<string | null>(null);
@@ -19,7 +23,7 @@ export function StudioBg3dCompositionLensPanel({ disabled = false }: { readonly 
         {camera && <output className="text-xs tabular-nums text-fg-2" aria-label="현재 화각">{camera.fovDegrees.toFixed(1)}°</output>}
       </div>
       <p className="text-xs leading-relaxed text-fg-2">현재 바라보는 지점을 중심으로 구도를 바꿉니다. 변경은 장면에 저장되며 실행 취소할 수 있습니다.</p>
-      {orthographic && <p role="status" className="rounded-lg border border-line p-3 text-xs text-fg-2">평행 투영에서는 화각을 바꾸지 않습니다. 카메라 · 환경에서 원근 투영을 선택하세요.</p>}
+      {orthographic && <p role="status" className="rounded-lg border border-line p-3 text-xs text-fg-2">{t("studio.bg3dPanelStatus.compositionLens.orthographicFovNotice", "평행 투영에서는 화각을 바꾸지 않습니다. 카메라 · 환경에서 원근 투영을 선택하세요.")}</p>}
       <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-fg-2">
         <input type="checkbox" className="size-4 accent-accent" checked={preserveSubjectSize} disabled={locked || orthographic} onChange={(event) => { setPreserveSubjectSize(event.target.checked); setCompositionError(null); }} />
         피사체 크기를 유지하며 거리 조절

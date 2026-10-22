@@ -4,6 +4,9 @@ import { useId } from "react";
 import type { StudioScene3dGpuDiagnostics } from "../scene3d/studio-scene3d-gpu-diagnostics";
 import { StudioBg3dGpuDiagnostics } from "./StudioBg3dGpuDiagnostics";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import {
   STUDIO_BG3D_CONTROL_BUTTON as CONTROL_BUTTON,
   studioBg3dClassNames as cx,
@@ -57,6 +60,7 @@ export function StudioBg3dEnginePanel({
   frameTimeMs,
   onPreferenceChange,
 }: StudioBg3dEnginePanelProps) {
+  const t = useT();
   const headingId = useId();
   const statusId = useId();
   const hintId = useId();
@@ -72,7 +76,7 @@ export function StudioBg3dEnginePanel({
     : (deviceLostMessage ?? plan.notice);
   const selectionUnavailable = !probing && plan.status !== "available";
   const activeStatusLabel = probing
-    ? "확인 중"
+    ? t("studio.bg3dPanelStatus.engine.checking", "확인 중")
     : `${activeLabel} ${
       plan.status === "failed"
         ? "실행 실패"

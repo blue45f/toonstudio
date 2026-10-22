@@ -4,6 +4,7 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useEffect, useState } from "react";
 
 import {
@@ -92,7 +93,7 @@ function ReviewEditor({
   const save = () => {
     const nextTitle = title.trim();
     if (!nextTitle) {
-      setError("검수 항목 제목을 입력해 주세요.");
+      setError(r3c04StatusText("studio.r3c04Status.production.reviewBoard.titleRequired", "검수 항목 제목을 입력해 주세요."));
       return;
     }
     if (approvalRequired && status === "resolved" && !canApprove) {
@@ -317,7 +318,7 @@ export function StudioProductionReviewBoard({
   if (workspace.reviews.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-line p-6 text-center">
-        <p className="text-sm font-bold">검수 항목이 없습니다</p>
+        <p className="text-sm font-bold">{r3c04StatusText("studio.r3c04Status.production.reviewBoard.empty", "검수 항목이 없습니다")}</p>
         <p className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-fg-2">
           수정 요청을 추가하고 제작 범위·페이지·승인 필수 여부를 지정하세요.
         </p>

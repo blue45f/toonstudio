@@ -1,3 +1,4 @@
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import { useMemo, useState } from "react";
 
 import {
@@ -79,7 +80,7 @@ export function StudioWritingPolishPanel({
     if (!doc) return;
     const next = applyWritingPolishSuggestion(doc.text, suggestion);
     if (next === doc.text) {
-      setNotice("원문이 바뀌어 이 제안을 적용할 수 없어요. 제안을 새로 받아 주세요.");
+      setNotice(creatorRestStatusText("creatorRest.status.writingPolish.staleSuggestion", "원문이 바뀌어 이 제안을 적용할 수 없어요. 제안을 새로 받아 주세요."));
       return;
     }
     onApplyDocument(doc.id, next);
@@ -125,7 +126,7 @@ export function StudioWritingPolishPanel({
         <p className="text-xs text-fg-3">[표현 제안 받기]를 누르면 문장별 제안을 보여 드려요.</p>
       )}
       {effective !== null && visible.length === 0 && (
-        <p className="text-xs text-fg-3">지금 글에서는 다듬을 곳을 찾지 못했어요. 잘 쓰인 글이에요.</p>
+        <p className="text-xs text-fg-3">{creatorRestStatusText("creatorRest.status.writingPolish.empty", "지금 글에서는 다듬을 곳을 찾지 못했어요. 잘 쓰인 글이에요.")}</p>
       )}
       {visible.length > 0 && (
         <p className="text-xs text-fg-3">

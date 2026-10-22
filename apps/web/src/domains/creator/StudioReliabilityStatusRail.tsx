@@ -26,6 +26,7 @@
  *    role="status" · aria-live 와 함께 스스로 튀어나온다.
  */
 
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useEffect, useState } from "react";
 
 import {
@@ -108,11 +109,11 @@ function toneChipClassName(tone: StudioReliabilityTone): string {
 function toneSummary(tone: StudioReliabilityTone): string {
   switch (tone) {
     case "failed":
-      return "처리하지 못한 실패 있음";
+      return r3c07StatusText("studio.panelStatus.r3c07.reliabilityRail.unhandledFailure", "처리하지 못한 실패 있음");
     case "degraded":
       return "품질을 낮춰 계속 작업 중";
     case "ok":
-      return "실패에서 회복됨";
+      return r3c07StatusText("studio.panelStatus.r3c07.reliabilityRail.recovered", "실패에서 회복됨");
     case "quiet":
       return "이상 없음";
   }
@@ -297,7 +298,7 @@ export function StudioReliabilityStatusRail() {
                   ? "획을 문서에 복구했습니다."
                   : outcome.status === "refused"
                     ? outcome.reason
-                    : "지금은 복구할 수 없습니다. 편집기가 준비된 뒤 다시 시도하세요.",
+                    : r3c07StatusText("studio.panelStatus.r3c07.reliabilityRail.recoveryUnavailable", "지금은 복구할 수 없습니다. 편집기가 준비된 뒤 다시 시도하세요."),
               );
             }}
             className="ml-auto min-h-11 shrink-0 rounded-lg bg-accent/20 px-3 py-2 font-bold text-accent hover:bg-accent/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

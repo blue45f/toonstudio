@@ -1,6 +1,9 @@
 import { Camera, ChevronDown, ChevronUp, FileDown, Film, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import {
   asSceneLinkedStoryboardCut,
   reissueSceneLinkedCut,
@@ -91,6 +94,7 @@ export function StudioBg3dCutStripPanel({
   sceneCutTemplate,
   onReturnToScene,
 }: StudioBg3dCutStripPanelProps) {
+  const t = useT();
   const [newCutAspect, setNewCutAspect] = useState<CutAspectRatio>("9:16-vertical-climax");
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -234,8 +238,7 @@ export function StudioBg3dCutStripPanel({
 
       {cuts.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line px-3 py-4 text-center text-[0.65rem] leading-relaxed text-fg-3">
-          아직 컷이 없습니다. 화면비를 고르고 “컷 추가”를 눌러 첫 컷을 만들어
-          보세요.
+          {t("studio.bg3dPanelStatus.cutStrip.empty", "아직 컷이 없습니다. 화면비를 고르고 “컷 추가”를 눌러 첫 컷을 만들어 보세요.")}
         </p>
       ) : (
         <ol className="flex flex-col gap-1.5" aria-label="컷 순서">

@@ -1,3 +1,4 @@
+import { engagementStatusText } from "./engagement-status-i18n";
 import {
   BarChart3,
   CheckCircle2,
@@ -199,7 +200,7 @@ function ExperimentCard({ experiment }: { readonly experiment: GrowthExperiment 
               ? `${leader.label}이 현재 방향성 우세`
               : assessment.state === "collecting"
                 ? "표본 수집 중"
-                : "차이 확인 불가"}
+                : engagementStatusText("engagement.status.growthLab.diffUnavailable", "차이 확인 불가")}
           </strong>
           {assessment.confidence !== null ? <span className="text-xs font-bold text-fg-2">신뢰도 {percent(assessment.confidence)}</span> : null}
         </div>
@@ -326,11 +327,11 @@ export function CreatorGrowthLabPage() {
 
         <div className="space-y-5">
           {!hydrated ? (
-            <p role="status" className="text-sm text-fg-2">성장 실험을 불러오는 중입니다…</p>
+            <p role="status" className="text-sm text-fg-2">{engagementStatusText("engagement.status.growthLab.loading", "성장 실험을 불러오는 중입니다…")}</p>
           ) : experiments.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-line bg-card/50 p-12 text-center">
               <FlaskConical className="mx-auto size-11 text-fg-3" aria-hidden="true" />
-              <h2 className="mt-4 text-lg font-black text-fg">아직 성장 실험이 없습니다</h2>
+              <h2 className="mt-4 text-lg font-black text-fg">{engagementStatusText("engagement.status.growthLab.emptyTitle", "아직 성장 실험이 없습니다")}</h2>
               <p className="mt-2 text-sm text-fg-3">왼쪽에서 비교할 두 변형과 최소 표본을 정해 시작하세요.</p>
             </div>
           ) : experiments.map((experiment) => <ExperimentCard key={experiment.id} experiment={experiment} />)}

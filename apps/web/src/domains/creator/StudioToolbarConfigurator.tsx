@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { studioToolbarProfileMatches, studioToolbarProfileNameError } from "./studio-toolbar-profile-names";
 import { StudioToolbarProfileManager } from "./StudioToolbarProfileManager";
 import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp, GripVertical, Search } from "lucide-react";
@@ -109,7 +110,7 @@ export function StudioToolbarConfigurator({ value, onApply, onCancel }: {
             <button type="button" className={action} aria-label={`${label(tool)} 표시하기`} onClick={() => change(pinStudioToolbarTools(draft, [tool]))}>추가</button>
           </li>)}
         </ul>
-        {!available.filter(matches).length ? <p className="py-3 text-xs text-fg-2">추가할 검색 결과가 없습니다.</p> : null}
+        {!available.filter(matches).length ? <p className="py-3 text-xs text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.toolbarConfigurator.searchEmpty", "추가할 검색 결과가 없습니다.")}</p> : null}
       </section>
     </div>
       <details className="rounded-lg border border-line p-2">

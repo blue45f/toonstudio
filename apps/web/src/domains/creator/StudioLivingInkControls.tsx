@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Droplets, Eraser, LockKeyhole, Paintbrush, Power, Waves } from "lucide-react";
 
 import { STUDIO_WASH_INK_PRODUCT_LABEL_KO } from "./brush/studio-brush-behavior-ui";
@@ -50,9 +51,9 @@ const buttonClass = cn(
 
 function stateLabel(state: StudioLivingInkStudioState): string {
   if (state === "ready") return "번짐 준비됨";
-  if (state === "loading") return "번짐 상태 복원 중";
-  if (state === "failed") return "번짐 복원 실패 · 일반 수채로 안전 전환";
-  return "이 기기에서는 일반 수채로 안전 전환";
+  if (state === "loading") return r3c07StatusText("studio.panelStatus.r3c07.livingInk.restoring", "번짐 상태 복원 중");
+  if (state === "failed") return r3c07StatusText("studio.panelStatus.r3c07.livingInk.restoreFailed", "번짐 복원 실패 · 일반 수채로 안전 전환");
+  return r3c07StatusText("studio.panelStatus.r3c07.livingInk.safeFallback", "이 기기에서는 일반 수채로 안전 전환");
 }
 
 export function StudioLivingInkControls({

@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 /**
  * 통합 Command Search — 감사 §2.8 이 지적한 네 개의 부분 검색창을 대신하는
  * 단일 표면.
@@ -158,8 +159,8 @@ function studioCommandSearchAction(
         return binding.disabled
           ? {
             kind: "none",
-            badge: "사용 불가",
-            hint: binding.unavailableReason ?? "현재 상태에서는 이 명령을 사용할 수 없습니다",
+            badge: panelStatusText("studio.panelStatus.commandSearch.unavailableBadge", "사용 불가"),
+            hint: binding.unavailableReason ?? panelStatusText("studio.panelStatus.commandSearch.unavailableHint", "현재 상태에서는 이 명령을 사용할 수 없습니다"),
           }
           : { kind: "execute", badge: "실행", hint: "명령 실행" };
       }
@@ -572,8 +573,8 @@ export function StudioCommandSearchDialog({
             <div className="px-2 py-6 text-center text-xs text-fg-3">
               <p>
                 {scopeKinds
-                  ? `${SCOPE_LABELS[scope]} 범위에서 “${query}” 와 맞는 항목이 없습니다.`
-                  : `“${query}” 와 맞는 기능을 찾지 못했습니다.`}
+                  ? panelStatusText("studio.panelStatus.commandSearch.scopeEmpty", {"scopeLabel": SCOPE_LABELS[scope], "query": query}, "{scopeLabel} 범위에서 “{query}” 와 맞는 항목이 없습니다.")
+                  : panelStatusText("studio.panelStatus.commandSearch.searchEmpty", {"query": query}, "“{query}” 와 맞는 기능을 찾지 못했습니다.")}
               </p>
               {fallbackOutcome && fallbackOutcome.totalMatched > 0 ? (
                 <button

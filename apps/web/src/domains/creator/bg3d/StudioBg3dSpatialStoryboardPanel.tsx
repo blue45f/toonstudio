@@ -7,6 +7,9 @@ import { SpatialWebtoonReaderLauncher } from "../spatial/SpatialWebtoonReaderLau
 import { useEffect, useId, useRef, useState } from "react";
 
 import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-context";
+
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
 import {
   buildSpatialStoryboardPlan,
   normalizeSpatialStoryboardSettings,
@@ -67,6 +70,7 @@ function PlanMap({ panels, selectedId }: {
 }
 
 export default function StudioBg3dSpatialStoryboardPanel() {
+  const t = useT();
   const runtime = useStudioBg3dProSuiteRuntime();
   const [settings, setSettings] = useState<SpatialStoryboardSettings>(SPATIAL_STORYBOARD_DEFAULTS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -95,7 +99,7 @@ export default function StudioBg3dSpatialStoryboardPanel() {
   function run(action: () => void, notice: string) {
     if (!enabled) return;
     try { action(); setMessage(notice); setError(""); }
-    catch { setError("편집 명령을 적용하지 못했습니다. 현재 장면 상태를 확인하세요."); }
+    catch { setError(t("studio.bg3dPanelStatus.spatialStoryboard.applyCommandFailed", "편집 명령을 적용하지 못했습니다. 현재 장면 상태를 확인하세요.")); }
   }
   async function importSettings(file: File) {
     if (!enabled) return;
@@ -123,7 +127,7 @@ export default function StudioBg3dSpatialStoryboardPanel() {
       anchor.click();
       setError("");
       setMessage(`${format === "csv" ? "컷 배치표 CSV" : "계획 JSON"} 다운로드를 요청했습니다. 헤드셋 재생 파일이나 장면 백업은 아닙니다.`);
-    } catch { setError("계획 파일 다운로드를 시작하지 못했습니다."); }
+    } catch { setError(t("studio.bg3dPanelStatus.spatialStoryboard.downloadStartFailed", "계획 파일 다운로드를 시작하지 못했습니다.")); }
     finally {
       anchor.remove();
       if (url) { const ownedUrl = url; setTimeout(() => URL.revokeObjectURL(ownedUrl), 1000); }

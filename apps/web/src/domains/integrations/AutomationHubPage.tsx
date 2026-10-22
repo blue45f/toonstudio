@@ -14,6 +14,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { IntegrationPage } from "./IntegrationUi";
+import { integrationsStatusText } from "./integrations-status-i18n";
 import { integrationPlatformClient } from "./integration-platform-client";
 import {
   downloadIntegrationJson,
@@ -64,7 +65,7 @@ export function AutomationHubPage() {
       setCatalog(catalogResponse);
       setDefinition(recipeResponse);
     }).catch(async (error: unknown) => {
-      if (!cancelled) setLoadError(await getApiErrorMessage(error, "자동화 구성을 불러오지 못했습니다."));
+      if (!cancelled) setLoadError(await getApiErrorMessage(error, integrationsStatusText("integrations.status.automation.loadFailed", "자동화 구성을 불러오지 못했습니다.")));
     });
     return () => {
       cancelled = true;
@@ -105,7 +106,7 @@ export function AutomationHubPage() {
       const result = await integrationPlatformClient.validateRecipe(recipe);
       setValidations((current) => ({ ...current, [recipe.id]: result }));
     } catch (error) {
-      setMessage(await getApiErrorMessage(error, "자동화 검증에 실패했습니다."));
+      setMessage(await getApiErrorMessage(error, integrationsStatusText("integrations.status.automation.validateFailed", "자동화 검증에 실패했습니다.")));
     } finally {
       setBusyId(null);
     }

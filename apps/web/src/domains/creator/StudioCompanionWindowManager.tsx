@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { ExternalLink, Images, ListChecks, Map, MonitorCog, Pin, X } from "lucide-react";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 
@@ -75,13 +76,13 @@ export function StudioCompanionWindowManager({ disabled, onOpenSurface, getOpenS
     if (success) setOpened((previous) => ({ ...previous, [surface]: previous[surface] ?? profile.openMode }));
     setNotice({ error: !success, text: success
       ? `${label} ${profile.openMode === "tab" ? "탭" : "창"}을 열거나 앞으로 가져오도록 요청했습니다.`
-      : `${studioCompanionPopupGuidance().text} 새 탭 방식으로 바꾸거나 다시 시도해 주세요.` });
+      : `${studioCompanionPopupGuidance().text}${r3c07StatusText("studio.panelStatus.r3c07.companionManager.popupRetrySuffix", " 새 탭 방식으로 바꾸거나 다시 시도해 주세요.")}` });
   }
   function closeSurface(surface: DedicatedCompanionSurface) {
     const closed = onCloseSurface?.(surface) ?? false;
     if (closed) setOpened((previous) => { const next = { ...previous }; delete next[surface]; return next; });
     setNotice({ error: !closed, text: closed ? "보조 화면을 닫았습니다. 원고는 기본 편집기에 그대로 있습니다."
-      : "창을 닫을 수 없습니다. 직접 닫아 주세요. 다른 페이지로 이동한 창은 닫지 않습니다." });
+      : r3c07StatusText("studio.panelStatus.r3c07.companionManager.closeFailed", "창을 닫을 수 없습니다. 직접 닫아 주세요. 다른 페이지로 이동한 창은 닫지 않습니다.") });
   }
   function togglePin(surface: DedicatedCompanionSurface) {
     changeProfile({ ...profile, pinnedSurfaces: profile.pinnedSurfaces.includes(surface)

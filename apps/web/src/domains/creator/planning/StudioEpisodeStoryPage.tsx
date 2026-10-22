@@ -8,6 +8,7 @@
  * - 데이터는 props 로 받는다 (스토어·영속 연결은 후속 단계; 정본은 EpisodePlan/SeasonPlan).
  */
 import { useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { SeasonPlan } from "@toonstudio/core/production";
 import {
   deriveSynopsisDraftFromBeats,
@@ -279,7 +280,7 @@ function EpisodeSynopsisEditor({
           ))}
         </ul>
       )}
-      <p aria-live="polite">{card.needsSynopsis ? "아직 줄거리 칸이 비어 있어요." : "줄거리 칸이 채워졌어요."}</p>
+      <p aria-live="polite">{card.needsSynopsis ? r3c04StatusText("studio.r3c04Status.planning.storyPage.synopsisEmpty", "아직 줄거리 칸이 비어 있어요.") : r3c04StatusText("studio.r3c04Status.planning.storyPage.synopsisFilled", "줄거리 칸이 채워졌어요.")}</p>
       <button type="submit">저장</button>
       {/* 콘티 연결: PR #2303 의 시작점 값(start=storyboard)을 그대로 쓴다 */}
       <a href={`/studio/new?start=storyboard&episode=${encodeURIComponent(plan.episodeId)}`}>

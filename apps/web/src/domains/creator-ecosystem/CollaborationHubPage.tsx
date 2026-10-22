@@ -1,3 +1,4 @@
+import { restStatusText } from "../../shared/rest-status-i18n";
 import { Brush, Building2, CheckCircle2, Inbox, Search, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -199,7 +200,7 @@ export function CollaborationHubPage() {
       setCreators(result.items);
       setSelectedCreatorId((current) => current || result.items[0]?.userId || "");
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, "협업 가능한 작가를 불러오지 못했어요."));
+      setError(await getApiErrorMessage(cause, restStatusText("rest.status.collaboration.creatorsLoadFailed", "협업 가능한 작가를 불러오지 못했어요.")));
     }
   }, []);
 
@@ -217,7 +218,7 @@ export function CollaborationHubPage() {
       setInbox(inboxResult.items);
       setSent(sentResult.items);
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, "협업 설정을 불러오지 못했어요."));
+      setError(await getApiErrorMessage(cause, restStatusText("rest.status.collaboration.settingsLoadFailed", "협업 설정을 불러오지 못했어요.")));
     }
   }, [userId]);
 
