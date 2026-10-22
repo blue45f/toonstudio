@@ -316,12 +316,26 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenStatus5.assistant.colorCopyFailed": "색상 코드 복사에 실패했습니다",
   "studio.frozenStatus5.assistant.sfxSearchEmpty": "검색 결과가 없습니다",
   "studio.frozenStatus5.assistant.noWarnings": "현재 입력에서는 긴 공백·과밀 경고가 없습니다.",
+  "studio.frozenStatus5.assistant.inserted": "“{text}”을 캔버스에 삽입했습니다",
+  "studio.frozenStatus5.assistant.insertFailed": "“{text}” 삽입에 실패했습니다",
+  "studio.frozenStatus5.assistant.sfxCopied": "“{text}” 복사됨",
+  "studio.frozenStatus5.assistant.sfxCopyFailed": "“{text}” 복사 실패 — 브라우저가 클립보드를 막았습니다",
+  "studio.frozenStatus5.assistant.sfxCopyLabel": "{text} 복사",
+  "studio.frozenStatus5.assistant.sfxCopiedLabel": "{text} 복사됨",
+  "studio.frozenStatus5.assistant.sfxCopyFailedLabel": "{text} 복사 실패",
 });
 registerI18nLocaleEntries("en", {
   "studio.frozenStatus5.assistant.colorCopied": "Copied the color code",
   "studio.frozenStatus5.assistant.colorCopyFailed": "Could not copy the color code",
   "studio.frozenStatus5.assistant.sfxSearchEmpty": "No search results",
   "studio.frozenStatus5.assistant.noWarnings": "No long-gap or overcrowding warnings for the current input.",
+  "studio.frozenStatus5.assistant.inserted": "Inserted “{text}” onto the canvas",
+  "studio.frozenStatus5.assistant.insertFailed": "Could not insert “{text}” onto the canvas",
+  "studio.frozenStatus5.assistant.sfxCopied": "Copied “{text}”",
+  "studio.frozenStatus5.assistant.sfxCopyFailed": "Copy failed for “{text}” — the browser blocked the clipboard",
+  "studio.frozenStatus5.assistant.sfxCopyLabel": "Copy {text}",
+  "studio.frozenStatus5.assistant.sfxCopiedLabel": "{text} copied",
+  "studio.frozenStatus5.assistant.sfxCopyFailedLabel": "{text} copy failed",
 });
 
 // ── StudioCompanionReferenceDisplay
