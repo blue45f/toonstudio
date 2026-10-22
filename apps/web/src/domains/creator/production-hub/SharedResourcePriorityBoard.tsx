@@ -12,6 +12,7 @@ import {
   type SharedPersonLoad,
   type SharedResourceBoard,
 } from "./shared-resource-priority-license-model";
+import { resolveAssetLicenseIssue } from "../status-i18n/studio-producer-error-i18n-license";
 
 const LOAD_STATE_LABELS: Readonly<
   Record<SharedPersonLoad["state"] | "idle", { readonly ko: string; readonly en: string; readonly className: string }>
@@ -288,7 +289,7 @@ export function SharedResourcePriorityBoard({
                 </span>
                 <ul className="mt-1 list-disc pl-5 text-fg-2">
                   {check.issues.map((issue) => (
-                    <li key={issue.code}>{issue.message}</li>
+                    <li key={issue.code}>{resolveAssetLicenseIssue(issue)}</li>
                   ))}
                 </ul>
               </li>

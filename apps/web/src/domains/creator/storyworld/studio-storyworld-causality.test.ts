@@ -88,8 +88,8 @@ describe("Storyworld causality engine", () => {
     for (const expectedCode of [
       "knowledge-leak",
       "localization-overflow",
-      "accessibility-gap",
-      "rights-risk",
+      "accessibility-evidence-short",
+      "rights-license-status",
       "missing-provenance",
       "production-over-capacity",
     ] as const) {

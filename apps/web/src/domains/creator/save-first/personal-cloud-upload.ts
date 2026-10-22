@@ -37,15 +37,19 @@ export interface UploadPersonalCloudPackageInput {
   readonly onProgress?: (progress: PersonalCloudUploadProgress) => void;
 }
 
+export type PersonalCloudDetailCode =
+  | "cancelled" | "response-invalid" | "unauthorized" | "network-failed" | "binding-provider-mismatch" | "content-hash-failed"
+  | "provider-request-failed" | "provider-remote-version-failed" | "provider-upload-failed" | "provider-upload-session-failed" | "provider-folder-create-failed"
+  | "conflict-remote-changed" | "conflict-path-occupied" | "conflict-same-name-exists" | "conflict-name-exists" | "folder-create-failed" | "folder-result-unconfirmed"
+  | "upload-result-unconfirmed" | "upload-session-url-missing" | "upload-session-start-failed" | "app-folder-open-failed" | "project-file-empty";
+
 export class PersonalCloudUploadError extends Error {
   constructor(
     readonly code: "conflict" | "unauthorized" | "provider" | "network" | "cancelled",
-    message: string,
+    readonly detailCode: PersonalCloudDetailCode,
+    readonly params?: Readonly<Record<string, string>>,
     options: { readonly cause?: unknown } = {},
-  ) {
-    super(message, options.cause === undefined ? undefined : { cause: options.cause });
-    this.name = "PersonalCloudUploadError";
-  }
+  ) { super(detailCode, options.cause === undefined ? undefined : { cause: options.cause }); this.name = "PersonalCloudUploadError"; }
 }
 
 const GOOGLE_CHUNK_BYTES = 8 * 1024 * 1024;
@@ -101,7 +105,7 @@ function providerMessage(provider: PersonalCloudProviderId): string {
 }
 function abortError(signal?: AbortSignal): PersonalCloudUploadError | null {
   return signal?.aborted
-    ? new PersonalCloudUploadError("cancelled", "개인 저장소 업로드를 취소했습니다.")
+    ? new PersonalCloudUploadError("cancelled", "cancelled")
     : null;
 }
 
@@ -131,7 +135,7 @@ async function jsonObject(response: Response): Promise<Record<string, unknown>> 
       ? parsed as Record<string, unknown>
       : {};
   } catch {
-    throw new PersonalCloudUploadError("provider", `저장소 응답을 해석하지 못했습니다. (${response.status})`);
+    throw new PersonalCloudUploadError("provider", "response-invalid", { status: String(response.status) });
   }
 }
 function stringField(value: unknown): string {
@@ -146,20 +150,19 @@ function numberField(value: unknown): number {
 async function requireOk(
   response: Response,
   provider: PersonalCloudProviderId,
-  operation: string,
+  failureDetailCode: PersonalCloudDetailCode,
 ): Promise<Response> {
   if (response.ok) return response;
   if (response.status === 401 || response.status === 403) {
-    throw new PersonalCloudUploadError(
-      "unauthorized",
-      `${providerMessage(provider)} 연결 권한이 만료되었습니다. 계정을 다시 연결해 주세요.`,
-    );
+    throw new PersonalCloudUploadError("unauthorized", "unauthorized", { provider: providerMessage(provider) });
   }
   const detail = await boundedText(response);
-  throw new PersonalCloudUploadError(
-    "provider",
-    `${providerMessage(provider)} ${operation}에 실패했습니다. (${response.status})${detail ? ` ${detail.slice(0, 240)}` : ""}`,
-  );
+  // 서버 응답 detail은 번역 대상이 아닌 패스스루다(설계 §3.12) — 선행 공백을 포함해 {detail}로 싣는다.
+  throw new PersonalCloudUploadError("provider", failureDetailCode, {
+    provider: providerMessage(provider),
+    status: String(response.status),
+    detail: detail ? ` ${detail.slice(0, 240)}` : "",
+  });
 }
 
 async function sha256Hex(blob: Blob): Promise<string> {
@@ -183,13 +186,9 @@ async function request(
     });
   } catch (error) {
     if (input.signal?.aborted) {
-      throw new PersonalCloudUploadError("cancelled", "개인 저장소 업로드를 취소했습니다.", { cause: error });
+      throw new PersonalCloudUploadError("cancelled", "cancelled", undefined, { cause: error });
     }
-    throw new PersonalCloudUploadError(
-      "network",
-      `${providerMessage(provider)} 연결 중 네트워크 오류가 발생했습니다.`,
-      { cause: error },
-    );
+    throw new PersonalCloudUploadError("network", "network-failed", { provider: providerMessage(provider) }, { cause: error });
   }
 }
 
@@ -197,8 +196,8 @@ function bearer(credential: PersonalCloudAccessToken): string {
   return `${credential.tokenType || "Bearer"} ${credential.accessToken}`;
 }
 
-function conflict(message: string): never {
-  throw new PersonalCloudUploadError("conflict", message);
+function conflict(detailCode: PersonalCloudDetailCode, params?: Readonly<Record<string, string>>): never {
+  throw new PersonalCloudUploadError("conflict", detailCode, params);
 }
 interface GoogleDriveFile {
   readonly id: string;
@@ -242,7 +241,7 @@ async function googleJson(
       ...init.headers,
     },
   });
-  await requireOk(response, "google-drive", "요청");
+  await requireOk(response, "google-drive", "provider-request-failed");
   return jsonObject(response);
 }
 
@@ -295,7 +294,7 @@ async function ensureGoogleFolder(
     }),
   });
   const id = stringField(body.id);
-  if (!id) throw new PersonalCloudUploadError("provider", "Google Drive 폴더를 만들지 못했습니다.");
+  if (!id) throw new PersonalCloudUploadError("provider", "folder-create-failed", { provider: "Google Drive" });
   return id;
 }
 
@@ -319,14 +318,14 @@ async function getGoogleFile(
     { headers: { Authorization: bearer(input.credential), Accept: "application/json" } },
   );
   if (response.status === 404) return null;
-  await requireOk(response, "google-drive", "원격 버전 확인");
+  await requireOk(response, "google-drive", "provider-remote-version-failed");
   return googleFile(await jsonObject(response));
 }
 
 function assertGoogleVersion(binding: StudioStorageBinding | null, remote: GoogleDriveFile | null): void {
   if (!remote || !binding?.remoteVersion) return;
   if (remote.version !== binding.remoteVersion) {
-    conflict("Google Drive의 원격 사본이 다른 기기에서 변경되었습니다. 두 버전을 비교한 뒤 저장 방향을 선택해 주세요.");
+    conflict("conflict-remote-changed", { provider: "Google Drive" });
   }
 }
 
@@ -353,15 +352,15 @@ async function putGoogleChunks(
       emitProgress(input, "uploading", offset);
       continue;
     }
-    await requireOk(response, "google-drive", "업로드");
+    await requireOk(response, "google-drive", "provider-upload-failed");
     const file = googleFile(await jsonObject(response));
     if (!file) {
-      throw new PersonalCloudUploadError("provider", "Google Drive 업로드 결과를 확인하지 못했습니다.");
+      throw new PersonalCloudUploadError("provider", "upload-result-unconfirmed", { provider: "Google Drive" });
     }
     emitProgress(input, "uploading", blob.size);
     return file;
   }
-  throw new PersonalCloudUploadError("provider", "업로드할 프로젝트 파일이 비어 있습니다.");
+  throw new PersonalCloudUploadError("provider", "project-file-empty");
 }
 
 async function uploadGoogleDrive(
@@ -392,10 +391,10 @@ async function uploadGoogleDrive(
       ...(folderId ? { parents: [folderId] } : {}),
     }),
   });
-  await requireOk(response, "google-drive", "업로드 세션 생성");
+  await requireOk(response, "google-drive", "provider-upload-session-failed");
   const uploadUrl = response.headers.get("Location");
   if (!uploadUrl?.startsWith("https://")) {
-    throw new PersonalCloudUploadError("provider", "Google Drive 업로드 세션 주소를 받지 못했습니다.");
+    throw new PersonalCloudUploadError("provider", "upload-session-url-missing", { provider: "Google Drive" });
   }
   emitProgress(input, "uploading", 0);
   const file = await putGoogleChunks(input, uploadUrl);
@@ -462,7 +461,7 @@ async function dropboxApi(
     },
   );
   if (allowConflict && response.status === 409) return null;
-  await requireOk(response, "dropbox", "요청");
+  await requireOk(response, "dropbox", "provider-request-failed");
   return jsonObject(response);
 }
 
@@ -484,7 +483,7 @@ async function ensureDropboxFolder(
       true,
     );
     if (existing && stringField(existing[".tag"]) === "folder") return;
-    conflict(`Dropbox에 “${path}” 경로를 차지한 다른 항목이 있습니다.`);
+    conflict("conflict-path-occupied", { provider: "Dropbox", path });
   }
   const metadata = result.metadata;
   if (
@@ -492,7 +491,7 @@ async function ensureDropboxFolder(
     || typeof metadata !== "object"
     || stringField((metadata as Record<string, unknown>)[".tag"]) !== "folder"
   ) {
-    throw new PersonalCloudUploadError("provider", "Dropbox 폴더 생성 결과를 확인하지 못했습니다.");
+    throw new PersonalCloudUploadError("provider", "folder-result-unconfirmed", { provider: "Dropbox" });
   }
 }
 
@@ -526,10 +525,10 @@ function assertDropboxVersion(
 ): void {
   if (!remote) return;
   if (!binding?.remoteId) {
-    conflict("같은 이름의 Dropbox 파일이 이미 있습니다. 기존 파일을 연결하거나 이름을 바꿔 저장해 주세요.");
+    conflict("conflict-same-name-exists", { provider: "Dropbox" });
   }
   if (!binding.remoteVersion || binding.remoteVersion !== remote.revision) {
-    conflict("Dropbox의 원격 사본이 다른 기기에서 변경되었습니다. 두 버전을 비교한 뒤 저장 방향을 선택해 주세요.");
+    conflict("conflict-remote-changed", { provider: "Dropbox" });
   }
 }
 
@@ -567,7 +566,7 @@ async function dropboxContent(
       body,
     },
   );
-  await requireOk(response, "dropbox", "업로드");
+  await requireOk(response, "dropbox", "provider-upload-failed");
   return response;
 }
 
@@ -585,7 +584,7 @@ async function uploadDropboxSimple(
   emitProgress(input, "uploading", input.result.blob.size);
   const file = dropboxFile(await jsonObject(response));
   if (!file) {
-    throw new PersonalCloudUploadError("provider", "Dropbox 업로드 결과를 확인하지 못했습니다.");
+    throw new PersonalCloudUploadError("provider", "upload-result-unconfirmed", { provider: "Dropbox" });
   }
   return file;
 }
@@ -606,7 +605,7 @@ async function uploadDropboxSession(
   const startBody = await jsonObject(start);
   const sessionId = stringField(startBody.session_id);
   if (!sessionId) {
-    throw new PersonalCloudUploadError("provider", "Dropbox 업로드 세션을 시작하지 못했습니다.");
+    throw new PersonalCloudUploadError("provider", "upload-session-start-failed", { provider: "Dropbox" });
   }
   let offset = firstEnd;
   emitProgress(input, "uploading", offset);
@@ -633,7 +632,7 @@ async function uploadDropboxSession(
   emitProgress(input, "uploading", blob.size);
   const file = dropboxFile(await jsonObject(finish));
   if (!file) {
-    throw new PersonalCloudUploadError("provider", "Dropbox 업로드 결과를 확인하지 못했습니다.");
+    throw new PersonalCloudUploadError("provider", "upload-result-unconfirmed", { provider: "Dropbox" });
   }
   return file;
 }
@@ -706,7 +705,7 @@ async function oneDriveJson(
     },
   });
   if (allowMissing && response.status === 404) return null;
-  await requireOk(response, "onedrive", "요청");
+  await requireOk(response, "onedrive", "provider-request-failed");
   return jsonObject(response);
 }
 
@@ -762,12 +761,12 @@ async function createOneDriveFolder(
   if (response.status === 409) {
     const existing = await getOneDriveChild(input, parentId, name);
     if (existing?.isFolder) return existing;
-    throw new PersonalCloudUploadError("conflict", `OneDrive에 “${name}” 이름의 다른 항목이 이미 있습니다.`);
+    throw new PersonalCloudUploadError("conflict", "conflict-name-exists", { provider: "OneDrive", name });
   }
-  await requireOk(response, "onedrive", "폴더 생성");
+  await requireOk(response, "onedrive", "provider-folder-create-failed");
   const created = oneDriveItem(await jsonObject(response));
   if (!created?.isFolder) {
-    throw new PersonalCloudUploadError("provider", "OneDrive 폴더 생성 결과를 확인하지 못했습니다.");
+    throw new PersonalCloudUploadError("provider", "folder-result-unconfirmed", { provider: "OneDrive" });
   }
   return created;
 }
@@ -781,7 +780,7 @@ async function ensureOneDriveProjectFolder(
   );
   const appRoot = oneDriveItem(appRootBody);
   if (!appRoot?.isFolder) {
-    throw new PersonalCloudUploadError("provider", "OneDrive 앱 저장 폴더를 열지 못했습니다.");
+    throw new PersonalCloudUploadError("provider", "app-folder-open-failed", { provider: "OneDrive" });
   }
   const projects = await createOneDriveFolder(input, appRoot.id, PROJECT_FOLDER);
   return createOneDriveFolder(input, projects.id, projectFolderName(input.projectId));
@@ -793,10 +792,10 @@ function assertOneDriveVersion(
 ): void {
   if (!remote) return;
   if (!binding?.remoteId) {
-    conflict("같은 이름의 OneDrive 파일이 이미 있습니다. 기존 파일을 연결하거나 이름을 바꿔 저장해 주세요.");
+    conflict("conflict-same-name-exists", { provider: "OneDrive" });
   }
   if (!binding.remoteVersion || binding.remoteVersion !== remote.eTag) {
-    conflict("OneDrive의 원격 사본이 다른 기기에서 변경되었습니다. 두 버전을 비교한 뒤 저장 방향을 선택해 주세요.");
+    conflict("conflict-remote-changed", { provider: "OneDrive" });
   }
 }
 
@@ -820,7 +819,7 @@ async function createOneDriveUploadSession(
   });
   const uploadUrl = stringField(body?.uploadUrl);
   if (!uploadUrl.startsWith("https://")) {
-    throw new PersonalCloudUploadError("provider", "OneDrive 업로드 세션 주소를 받지 못했습니다.");
+    throw new PersonalCloudUploadError("provider", "upload-session-url-missing", { provider: "OneDrive" });
   }
   return uploadUrl;
 }
@@ -853,15 +852,15 @@ async function putOneDriveChunks(
       emitProgress(input, "uploading", offset);
       continue;
     }
-    await requireOk(response, "onedrive", "업로드");
+    await requireOk(response, "onedrive", "provider-upload-failed");
     const file = oneDriveItem(await jsonObject(response));
     if (!file) {
-      throw new PersonalCloudUploadError("provider", "OneDrive 업로드 결과를 확인하지 못했습니다.");
+      throw new PersonalCloudUploadError("provider", "upload-result-unconfirmed", { provider: "OneDrive" });
     }
     emitProgress(input, "uploading", blob.size);
     return file;
   }
-  throw new PersonalCloudUploadError("provider", "업로드할 프로젝트 파일이 비어 있습니다.");
+  throw new PersonalCloudUploadError("provider", "project-file-empty");
 }
 async function uploadOneDrive(
   input: UploadPersonalCloudPackageInput,
@@ -894,18 +893,14 @@ export async function uploadPersonalCloudProjectPackage(
   input: UploadPersonalCloudPackageInput,
 ): Promise<PersonalCloudUploadResult> {
   if (input.binding && input.binding.provider !== provider) {
-    throw new PersonalCloudUploadError("provider", "프로젝트 저장 위치와 연결 계정이 일치하지 않습니다.");
+    throw new PersonalCloudUploadError("provider", "binding-provider-mismatch");
   }
   emitProgress(input, "preparing", 0);
   let contentHash: string;
   try {
     contentHash = await sha256Hex(input.result.blob);
   } catch (error) {
-    throw new PersonalCloudUploadError(
-      "provider",
-      "업로드 전 프로젝트 무결성 해시를 만들지 못했습니다.",
-      { cause: error },
-    );
+    throw new PersonalCloudUploadError("provider", "content-hash-failed", undefined, { cause: error });
   }
   if (provider === "google-drive") {
     return uploadGoogleDrive(input, contentHash);

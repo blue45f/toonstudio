@@ -213,7 +213,17 @@ function adaptCausalityIssue(ctx: PlausibilityContext, issue: StoryworldIssue): 
         sceneIds: [sceneId],
       });
     }
-    case "dangling-reference": {
+    case "dangling-effect-fact":
+    case "dangling-dependency-scene":
+    case "dangling-character-fact":
+    case "dangling-participant":
+    case "dangling-assignee":
+    case "dangling-premise-fact":
+    case "dangling-knowledge-character":
+    case "dangling-knowledge-fact":
+    case "dangling-reveal-fact":
+    case "dangling-reveal-audience":
+    case "dangling-emotion-character": {
       const missingId = factId ?? characterId ?? evidenceText(issue, "dependencyId") ?? "알 수 없음";
       const kind = factId ? "사실" : characterId ? "인물" : "선행 장면";
       return createPlausibilityFinding(ctx, {
@@ -301,7 +311,8 @@ function adaptCausalityIssue(ctx: PlausibilityContext, issue: StoryworldIssue): 
         sceneIds: [],
       });
     }
-    case "orphan-payoff": {
+    case "orphan-payoff-before-setup":
+    case "orphan-payoff-first-before-first-setup": {
       if (!sceneId) return null;
       const setupName = issue.setupId ? ctx.setupLabel(issue.setupId) : "복선";
       return createPlausibilityFinding(ctx, {
