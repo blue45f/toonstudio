@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ارائه دهنده متن AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "ارائه دهنده AI متن سرور",
   "studio.aiToolPopover.serverProviderAuto": "سوئیچینگ خودکار",
-  "studio.aiToolPopover.serverFallbackMessage": "وقتی محدودیت موجودی/بسته تمام شد، به ارائه‌دهنده دیگری خواهید رفت. خطاهای عمومی برای جلوگیری از شارژ مضاعف به طور خودکار ارسال نمی شوند."
+  "studio.aiToolPopover.serverFallbackMessage": "وقتی محدودیت موجودی/بسته تمام شد، به ارائه‌دهنده دیگری خواهید رفت. خطاهای عمومی برای جلوگیری از شارژ مضاعف به طور خودکار ارسال نمی شوند.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

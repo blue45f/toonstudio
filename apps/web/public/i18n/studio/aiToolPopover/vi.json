@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Nhà cung cấp AI văn bản",
   "studio.aiToolPopover.serverTextAiProviderAria": "Nhà cung cấp AI văn bản máy chủ",
   "studio.aiToolPopover.serverProviderAuto": "chuyển mạch tự động",
-  "studio.aiToolPopover.serverFallbackMessage": "Khi hết hạn mức số dư/gói, bạn sẽ chuyển sang nhà cung cấp khác. Các lỗi chung không được tự động gửi lại để ngăn chặn việc sạc hai lần."
+  "studio.aiToolPopover.serverFallbackMessage": "Khi hết hạn mức số dư/gói, bạn sẽ chuyển sang nhà cung cấp khác. Các lỗi chung không được tự động gửi lại để ngăn chặn việc sạc hai lần.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

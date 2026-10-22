@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "טקסט ספק AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "ספק שרת טקסט AI",
   "studio.aiToolPopover.serverProviderAuto": "מיתוג אוטומטי",
-  "studio.aiToolPopover.serverFallbackMessage": "כשתמוצה מגבלת היתרה/חבילה, תעבור לספק אחר. שגיאות כלליות אינן נשלחות מחדש באופן אוטומטי כדי למנוע טעינה כפולה."
+  "studio.aiToolPopover.serverFallbackMessage": "כשתמוצה מגבלת היתרה/חבילה, תעבור לספק אחר. שגיאות כלליות אינן נשלחות מחדש באופן אוטומטי כדי למנוע טעינה כפולה.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Text-KI-Anbieter",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server-Text-KI-Anbieter",
   "studio.aiToolPopover.serverProviderAuto": "automatische Umschaltung",
-  "studio.aiToolPopover.serverFallbackMessage": "Wenn das Guthaben/Paketlimit erschöpft ist, wechseln Sie zu einem anderen Anbieter. Allgemeine Fehler werden nicht automatisch erneut gesendet, um eine Doppelbelastung zu verhindern."
+  "studio.aiToolPopover.serverFallbackMessage": "Wenn das Guthaben/Paketlimit erschöpft ist, wechseln Sie zu einem anderen Anbieter. Allgemeine Fehler werden nicht automatisch erneut gesendet, um eine Doppelbelastung zu verhindern.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

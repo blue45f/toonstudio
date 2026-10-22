@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Teksto AI teikėjas",
   "studio.aiToolPopover.serverTextAiProviderAria": "Serverio teksto AI teikėjas",
   "studio.aiToolPopover.serverProviderAuto": "automatinis perjungimas",
-  "studio.aiToolPopover.serverFallbackMessage": "Išnaudojus likučio / paketo limitą, pereisite prie kito teikėjo. Bendrosios klaidos automatiškai nesiunčiamos iš naujo, kad būtų išvengta dvigubo įkrovimo."
+  "studio.aiToolPopover.serverFallbackMessage": "Išnaudojus likučio / paketo limitą, pereisite prie kito teikėjo. Bendrosios klaidos automatiškai nesiunčiamos iš naujo, kad būtų išvengta dvigubo įkrovimo.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Teksta AI nodrošinātājs",
   "studio.aiToolPopover.serverTextAiProviderAria": "Servera teksta AI nodrošinātājs",
   "studio.aiToolPopover.serverProviderAuto": "automātiska pārslēgšana",
-  "studio.aiToolPopover.serverFallbackMessage": "Kad bilances/pakas limits ir izsmelts, jūs pārslēgsieties uz citu pakalpojumu sniedzēju. Vispārējas kļūdas netiek automātiski nosūtītas atkārtoti, lai novērstu dubultu uzlādi."
+  "studio.aiToolPopover.serverFallbackMessage": "Kad bilances/pakas limits ir izsmelts, jūs pārslēgsieties uz citu pakalpojumu sniedzēju. Vispārējas kļūdas netiek automātiski nosūtītas atkārtoti, lai novērstu dubultu uzlādi.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

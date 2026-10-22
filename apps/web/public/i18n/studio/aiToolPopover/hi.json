@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "टेक्स्ट एआई प्रदाता",
   "studio.aiToolPopover.serverTextAiProviderAria": "सर्वर टेक्स्ट एआई प्रदाता",
   "studio.aiToolPopover.serverProviderAuto": "स्वचालित स्विचिंग",
-  "studio.aiToolPopover.serverFallbackMessage": "जब शेष राशि/पैकेज सीमा समाप्त हो जाएगी, तो आप किसी अन्य प्रदाता पर स्विच कर देंगे। डबल चार्जिंग को रोकने के लिए सामान्य त्रुटियाँ स्वचालित रूप से वापस नहीं आती हैं।"
+  "studio.aiToolPopover.serverFallbackMessage": "जब शेष राशि/पैकेज सीमा समाप्त हो जाएगी, तो आप किसी अन्य प्रदाता पर स्विच कर देंगे। डबल चार्जिंग को रोकने के लिए सामान्य त्रुटियाँ स्वचालित रूप से वापस नहीं आती हैं।",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

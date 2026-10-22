@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ສົ່ງຂໍ້ຄວາມຫາຜູ້ໃຫ້ບໍລິການ AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "ຜູ້ໃຫ້ບໍລິການຂໍ້ຄວາມ AI ຂອງເຊີບເວີ",
   "studio.aiToolPopover.serverProviderAuto": "ສະຫຼັບອັດຕະໂນມັດ",
-  "studio.aiToolPopover.serverFallbackMessage": "ເມື່ອຂອບເຂດຍອດຄົງເຫຼືອ/ແພັກເກດໝົດ, ທ່ານຈະປ່ຽນໄປຫາຜູ້ໃຫ້ບໍລິການອື່ນ. ຂໍ້ຜິດພາດທົ່ວໄປຈະບໍ່ຖືກສົ່ງຄືນໂດຍອັດຕະໂນມັດເພື່ອປ້ອງກັນການສາກໄຟສອງເທົ່າ."
+  "studio.aiToolPopover.serverFallbackMessage": "ເມື່ອຂອບເຂດຍອດຄົງເຫຼືອ/ແພັກເກດໝົດ, ທ່ານຈະປ່ຽນໄປຫາຜູ້ໃຫ້ບໍລິການອື່ນ. ຂໍ້ຜິດພາດທົ່ວໄປຈະບໍ່ຖືກສົ່ງຄືນໂດຍອັດຕະໂນມັດເພື່ອປ້ອງກັນການສາກໄຟສອງເທົ່າ.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Tekstiä AI Provider",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI Provider",
   "studio.aiToolPopover.serverProviderAuto": "automaattinen vaihto",
-  "studio.aiToolPopover.serverFallbackMessage": "Kun saldo/pakettiraja on käytetty loppuun, vaihdat toiseen palveluntarjoajaan. Yleisiä virheitä ei lähetetä automaattisesti uudelleen kaksoislatauksen estämiseksi."
+  "studio.aiToolPopover.serverFallbackMessage": "Kun saldo/pakettiraja on käytetty loppuun, vaihdat toiseen palveluntarjoajaan. Yleisiä virheitä ei lähetetä automaattisesti uudelleen kaksoislatauksen estämiseksi.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

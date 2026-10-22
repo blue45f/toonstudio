@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Maandishi Mtoa huduma wa AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "Nakala ya Seva Mtoa AI",
   "studio.aiToolPopover.serverProviderAuto": "kubadili moja kwa moja",
-  "studio.aiToolPopover.serverFallbackMessage": "Wakati kikomo cha salio/furushi kimekwisha, utabadilisha hadi kwa mtoa huduma mwingine. Hitilafu za jumla hazitumwi kiotomatiki ili kuzuia kutoza mara mbili."
+  "studio.aiToolPopover.serverFallbackMessage": "Wakati kikomo cha salio/furushi kimekwisha, utabadilisha hadi kwa mtoa huduma mwingine. Hitilafu za jumla hazitumwi kiotomatiki ili kuzuia kutoza mara mbili.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

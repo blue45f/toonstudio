@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Pembekal AI Teks",
   "studio.aiToolPopover.serverTextAiProviderAria": "Pembekal AI Teks Pelayan",
   "studio.aiToolPopover.serverProviderAuto": "pensuisan automatik",
-  "studio.aiToolPopover.serverFallbackMessage": "Apabila had baki/pakej habis, anda akan bertukar kepada pembekal lain. Ralat umum tidak dihantar semula secara automatik untuk mengelakkan pengecasan dua kali."
+  "studio.aiToolPopover.serverFallbackMessage": "Apabila had baki/pakej habis, anda akan bertukar kepada pembekal lain. Ralat umum tidak dihantar semula secara automatik untuk mengelakkan pengecasan dua kali.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

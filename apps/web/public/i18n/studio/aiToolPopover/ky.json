@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Текст AI Провайдери",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI Провайдери",
   "studio.aiToolPopover.serverProviderAuto": "автоматтык которуу",
-  "studio.aiToolPopover.serverFallbackMessage": "Баланс/пакет чеги түгөнгөндө, сиз башка провайдерге которуласыз. Кош кубаттоонун алдын алуу үчүн жалпы каталар автоматтык түрдө кайра жөнөтүлбөйт."
+  "studio.aiToolPopover.serverFallbackMessage": "Баланс/пакет чеги түгөнгөндө, сиз башка провайдерге которуласыз. Кош кубаттоонун алдын алуу үчүн жалпы каталар автоматтык түрдө кайра жөнөтүлбөйт.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }
