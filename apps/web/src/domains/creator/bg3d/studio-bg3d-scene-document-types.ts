@@ -9,6 +9,9 @@ import type { StudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-v
 import type { StudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 
 export const STUDIO_BG3D_SCENE_DOCUMENT_KIND = "toonstudio.bg3d-scene" as const;
+// 노드 tags·componentRef, 장면 meta, 컷 hiddenTags 는 v3 에 선택 필드로 더했고 버전은 올리지 않았다.
+// 올리면 저장된 v3 데이터(고정 컷 sourceHash, 템플릿 sceneJson 등)를 함께 옮겨야 한다. 소유자 판정 대기:
+// docs/features/bg3d-components-tags-scenes.md "버전을 올리지 않은 이유와 대가".
 export const STUDIO_BG3D_SCENE_DOCUMENT_VERSION = 3 as const;
 export const STUDIO_BG3D_SCHEMA_V2_SCENE_DOCUMENT_VERSION = 2 as const;
 export const STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION = 1 as const;
