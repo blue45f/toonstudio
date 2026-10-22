@@ -27,6 +27,7 @@
     "./studio-music": "./src/studio-music.ts",
     "./reference-query-language": "./src/reference-query-language.ts",
     "./material-intent-plan": "./src/material-intent-plan.ts",
+    "./branching-cuttoon": "./src/branching-cuttoon/index.ts",
     "./creator-resources": "./src/creator-resources.ts",
     "./catalog": {
       "types": "./src/catalog/index.ts",
