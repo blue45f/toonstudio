@@ -69,6 +69,26 @@ interface MappedEntities {
   readonly changed: boolean;
 }
 
+/**
+ * 새 컴포넌트 묶음 id. 시각과 순번에 임의 값을 더해 서로 다른 탭·협업 편집기가 같은 순간에 만들어도 겹칠 일이 없게 하고,
+ * 이미 쓰는 id(`taken`)는 건너뛴다. 임의 값은 주입해 시험이 같은 id 를 얻을 수 있다.
+ */
+export function createStudioBg3dComponentId(
+  taken: ReadonlySet<string>,
+  now: number = Date.now(),
+  random: () => number = Math.random,
+): string {
+  const stamp = Math.max(0, Math.floor(now)).toString(36);
+  const salt = Math.floor(random() * 36 ** 4).toString(36).padStart(4, "0");
+  let ordinal = taken.size + 1;
+  let candidate = `comp-${stamp}-${salt}-${ordinal.toString(36)}`;
+  while (taken.has(candidate)) {
+    ordinal += 1;
+    candidate = `comp-${stamp}-${salt}-${ordinal.toString(36)}`;
+  }
+  return candidate;
+}
+
 function failure(reason: StudioBg3dOutlinerMutationFailure["reason"]): StudioBg3dOutlinerMutationFailure {
   return Object.freeze({ ok: false, reason });
 }

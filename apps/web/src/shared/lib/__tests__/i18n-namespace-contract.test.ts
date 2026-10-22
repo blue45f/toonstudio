@@ -69,6 +69,16 @@ const GUARDED_NEW_SURFACE_FILES = [
   "apps/web/src/domains/creator/panel-detect/ui/PanelReflowStep.tsx",
   "apps/web/src/domains/creator/panel-detect/ui/PanelReviewStep.tsx",
   "apps/web/src/domains/creator/panel-detect/ui/PanelSourceStep.tsx",
+  // 3D 배경 편집기의 태그·컴포넌트·장면 정보 화면과 .skp 원본 이름·소재 이름 검색 안내(studio.bg3dScene 네임스페이스).
+  "apps/web/src/domains/creator/bg3d/StudioBg3dAssetNameMatchHint.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dOutlinerComponentGroupRow.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dOutlinerComponentSection.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dOutlinerOrganizationPanel.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dOutlinerSceneInfoSection.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dOutlinerSkpSourceSection.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dOutlinerTagSection.tsx",
+  "apps/web/src/domains/creator/bg3d/StudioBg3dSkpSidecarScopeNote.tsx",
+  "apps/web/src/domains/creator/bg3d/studio-bg3d-organization-feedback.ts",
 ];
 
 function readNamespaceSnapshot(namespace: string): I18nNamespaceSnapshot {

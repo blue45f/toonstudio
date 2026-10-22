@@ -4,10 +4,12 @@ import {
   STUDIO_BG3D_COMPONENT_NAME_MAX_CODE_POINTS,
   STUDIO_BG3D_NODE_MAX_TAGS,
   STUDIO_BG3D_SCENE_MAX_HIDDEN_TAGS,
+  normalizeStudioBg3dComponentRef,
 } from "./studio-bg3d-hierarchy";
 import {
   STUDIO_BG3D_ORGANIZATION_MAX_BYTES,
   STUDIO_BG3D_SCENE_MAX_TAGS,
+  createStudioBg3dComponentId,
   estimateStudioBg3dOrganizationBytes,
   planStudioBg3dOrganizationMutation,
   type StudioBg3dOrganizationAction,
@@ -230,6 +232,26 @@ describe("태그 보이기·숨기기", () => {
     // 장면 태그 종류 한도(64)와 같은 값이라 한도를 넘는 상황은 숨긴 목록에 낡은 항목이 섞인 경우뿐이다.
     const source = snapshot([primitive("a", { tags: ["새태그"] })], [], document);
     expect(plan(source, { type: "toggle-tag-visibility", tag: "새태그" })).toEqual({ ok: false, reason: "limit-exceeded" });
+  });
+});
+
+describe("createStudioBg3dComponentId", () => {
+  it("시각·임의 값·순번으로 컴포넌트 id 규칙에 맞는 값을 만든다", () => {
+    const id = createStudioBg3dComponentId(new Set(), 1_700_000_000_000, () => 0.5);
+    expect(id).toMatch(/^comp-[0-9a-z]+-[0-9a-z]{4}-1$/u);
+    expect(normalizeStudioBg3dComponentRef({ id, name: "묶음" })).toEqual({ id, name: "묶음" });
+  });
+
+  it("이미 쓰는 id 는 건너뛴다", () => {
+    const first = createStudioBg3dComponentId(new Set(), 0, () => 0);
+    const second = createStudioBg3dComponentId(new Set([first]), 0, () => 0);
+    expect(second).not.toBe(first);
+    const crowded = new Set([first, "comp-0-0000-2", "comp-0-0000-3"]);
+    expect(crowded.has(createStudioBg3dComponentId(crowded, 0, () => 0))).toBe(false);
+  });
+
+  it("같은 순간에 다른 임의 값이면 다른 id 가 된다", () => {
+    expect(createStudioBg3dComponentId(new Set(), 5, () => 0.1)).not.toBe(createStudioBg3dComponentId(new Set(), 5, () => 0.9));
   });
 });
 
