@@ -81,8 +81,6 @@ function extractFrozenCalls(source: string): Array<[string, string]> {
         paren -= 1;
         if (paren === 0) {
           parts.push(current);
-          current = "";
-          pos += 1;
           break;
         }
       } else if (c === "{") brace += 1;
@@ -99,7 +97,7 @@ function extractFrozenCalls(source: string): Array<[string, string]> {
       pos += 1;
     }
     const unquote = (raw: string): string | null => {
-      const match = /^"((?:[^"\\]|\\.)*)"$/s.exec(raw.trim());
+      const match = /^"((?:[^"\\]|\\[\s\S])*)"$/.exec(raw.trim());
       return match ? (match[1] ?? "").replace(/\\"/g, '"') : null;
     };
     const key = parts.length > 0 ? unquote(parts[0] ?? "") : null;
