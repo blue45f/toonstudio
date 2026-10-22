@@ -166,7 +166,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "uz": 0.3219,
   "vi": 0.3254,
   "zh": 0.9828,
-  "zh-hant": 0.3432,
+  "zh-hant": 0.9828,
   "zu": 0.3308,
 };
 

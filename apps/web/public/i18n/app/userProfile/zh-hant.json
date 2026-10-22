@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "簡介內容",
   "userProfile.bioFallback": "讀者簡介與已發表的作品",
   "userProfile.emptyReviews": "該用戶尚未發表評論。",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "無法載入創作作品。請重試。",
+  "userProfile.series.error": "無法載入連載系列。請重試。",
+  "userProfile.emptyReviewsHint": "為你喜歡的作品留下第一條評論吧。",
+  "userProfile.emptyReviewsCta": "瀏覽作品"
 }
