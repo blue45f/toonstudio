@@ -218,6 +218,6 @@
 | 모델의 공개 진입점 | `apps/web/src/domains/creator/branching-cuttoon/model/index.ts` (같은 도메인 안에서 `./model` 로 가져온다) |
 | 화면과 저장 어댑터 | `apps/web/src/domains/creator/branching-cuttoon/` |
 | 화면 문구 정본 | `apps/web/public/i18n/app/branchingCuttoon/{ko,en}.json` |
-| 경로 등록 | `apps/web/src/app/routes/groups/creator.routes.tsx`, `apps/web/src/shared/lib/site-route-authority.ts` |
+| 경로 등록 | `apps/web/src/app/routes/groups/labs.routes.tsx`, `apps/web/src/shared/lib/site-route-authority.ts` |
 
 모델을 `packages/core` 가 아니라 이 도메인 안 `model/` 에 둔 이유: 소비자가 이 화면 하나뿐이고, `config/architecture-source-ratchet.json` 의 `packagesCoreFiles` 래칫이 상한에 닿아 있어 `packages/core` 에 파일을 더할 수 없다. 모델 모듈은 다른 폴더에서 가져오지 않는 순수 모듈이라(`branching-cuttoon-purity.test.ts` 가 확인) 서버 검증처럼 두 번째 소비자가 생기면 그대로 패키지로 승격할 수 있다.

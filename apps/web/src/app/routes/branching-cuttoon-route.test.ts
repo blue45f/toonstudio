@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { creatorRoutes } from "./groups/creator.routes";
+import { appRoutes } from "./groups/app-routes";
 import { resolveRouteStageDesign } from "./route-stage-design";
 
 import {
@@ -72,7 +72,7 @@ describe("분기형 컷툰 Labs 경로 계약", () => {
   });
 
   it("라우터가 /studio/* 와일드카드보다 먼저 이 경로를 맡는다", () => {
-    const paths = creatorRoutes.map((route) => route.path);
+    const paths = appRoutes.map((route) => route.path);
     const own = paths.indexOf(PATH);
     const wildcard = paths.indexOf("/studio/*");
     expect(own).toBeGreaterThanOrEqual(0);

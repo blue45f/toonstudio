@@ -32,7 +32,7 @@ describe("분기형 컷툰 문서와 화면 코드의 일치", () => {
       "apps/web/src/domains/creator/branching-cuttoon/model/branching-cuttoon-types.ts",
       "apps/web/src/domains/creator/branching-cuttoon/BranchingCuttoonPlayer.tsx",
       "apps/web/src/domains/creator/branching-cuttoon/BranchingCuttoonLabPage.tsx",
-      "apps/web/src/app/routes/groups/creator.routes.tsx",
+      "apps/web/src/app/routes/groups/labs.routes.tsx",
       "apps/web/src/shared/lib/site-route-authority.ts",
     ]) {
       expect(() => readFileSync(path, "utf8"), path).not.toThrow();
