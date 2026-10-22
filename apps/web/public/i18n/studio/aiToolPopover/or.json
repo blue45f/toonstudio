@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ପାଠ୍ୟ AI ପ୍ରଦାନକାରୀ |",
   "studio.aiToolPopover.serverTextAiProviderAria": "ସର୍ଭର ପାଠ୍ୟ AI ପ୍ରଦାନକାରୀ |",
   "studio.aiToolPopover.serverProviderAuto": "ସ୍ୱୟଂଚାଳିତ ସୁଇଚ୍",
-  "studio.aiToolPopover.serverFallbackMessage": "ଯେତେବେଳେ ବାଲାନ୍ସ / ପ୍ୟାକେଜ୍ ସୀମା ଶେଷ ହୋଇଯାଏ, ଆପଣ ଅନ୍ୟ ଏକ ପ୍ରଦାନକାରୀକୁ ଯିବେ | ଡବଲ୍ ଚାର୍ଜିଂକୁ ରୋକିବା ପାଇଁ ସାଧାରଣ ତ୍ରୁଟି ସ୍ୱୟଂଚାଳିତ ଭାବରେ ବିରକ୍ତ ହୁଏ ନାହିଁ |"
+  "studio.aiToolPopover.serverFallbackMessage": "ଯେତେବେଳେ ବାଲାନ୍ସ / ପ୍ୟାକେଜ୍ ସୀମା ଶେଷ ହୋଇଯାଏ, ଆପଣ ଅନ୍ୟ ଏକ ପ୍ରଦାନକାରୀକୁ ଯିବେ | ଡବଲ୍ ଚାର୍ଜିଂକୁ ରୋକିବା ପାଇଁ ସାଧାରଣ ତ୍ରୁଟି ସ୍ୱୟଂଚାଳିତ ଭାବରେ ବିରକ୍ତ ହୁଏ ନାହିଁ |",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }
