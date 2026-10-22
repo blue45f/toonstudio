@@ -18,7 +18,7 @@
  *   3) studioPathBooleanOutputFromPolygons — MultiPolygon 결과를 DrawEl(kind="freehand",
  *      fill+sampleSpacing) 이 그대로 그릴 수 있는 평탄 points 링으로 변환. 구멍(hole)은
  *      바깥 링에 폭 0 브리지로 잇는 키홀(keyhole) 처리 — nonzero/evenodd 어느 채움 규칙에서도
- *      구멍이 뚫린 채 렌더된다. 결과가 비면 { ok:false, reason } (op 별 한국어 사유).
+ *      구멍이 뚫린 채 렌더된다. 결과가 비면 { ok:false, reasonCode } (op 별 사유 코드).
  *
  * 결과 표현 계약(왜 freehand 인가): DrawEl 은 x/y/rotation 없이 points 가 곧 페이지 좌표다.
  * kind="freehand" + fill + sampleSpacing 은 StudioDrawNode 의 평면 <Line closed> 브랜치로
@@ -36,6 +36,9 @@ import {
 } from "./brush/studio-stroke-shapes";
 
 import type { StudioPortablePathGeometryContour } from "./render/studio-canvaskit-adapter";
+import type { StudioPathBooleanReasonCode, StudioPathBooleanReasonParams } from "./studio-path-boolean-reason";
+
+export type { StudioPathBooleanReasonCode, StudioPathBooleanReasonParams } from "./studio-path-boolean-reason";
 import type { DrawEl, El } from "./studio-element-model";
 
 // ---------------------------------------------------------------------------
@@ -121,7 +124,7 @@ export interface StudioShapeToPolygonOptions {
 
 export type StudioShapeToPolygonResult =
   | { ok: true; polygon: StudioPathPolygon }
-  | { ok: false; reason: string };
+  | { ok: false; reason: string; reasonCode: StudioPathBooleanReasonCode; params?: StudioPathBooleanReasonParams };
 
 export interface StudioPathBooleanBounds {
   x: number;
@@ -144,7 +147,7 @@ export interface StudioPathBooleanOutput {
 
 export type StudioPathBooleanCombineResult =
   | { ok: true; output: StudioPathBooleanOutput }
-  | { ok: false; reason: string };
+  | { ok: false; reason: string; reasonCode: StudioPathBooleanReasonCode; params?: StudioPathBooleanReasonParams };
 
 export const STUDIO_PATH_BOOLEAN_MIN_CURVE_SEGMENTS = 64;
 export const STUDIO_PATH_BOOLEAN_MAX_CURVE_SEGMENTS = 512;
@@ -327,7 +330,7 @@ export function studioShapeToPolygon(
 ): StudioShapeToPolygonResult {
   const flat = spec.points;
   if (!Array.isArray(flat) || flat.length % 2 !== 0 || !flat.every(isFiniteNumber)) {
-    return { ok: false, reason: "도형 좌표가 손상되어 결합할 수 없어요." };
+    return { ok: false, reason: "corruptCoordinates", reasonCode: "corruptCoordinates" };
   }
   const curveSegments = clampCurveSegments(options.curveSegments);
   const rotationDeg = isFiniteNumber(spec.rotationDeg) ? spec.rotationDeg : 0;
@@ -336,11 +339,11 @@ export function studioShapeToPolygon(
   if (spec.kind === "freehand") {
     ring = dedupeRing(roundRing(flatToRing(flat)));
     if (ring.length < 3) {
-      return { ok: false, reason: "점이 3개 이상인 닫힌 획만 결합할 수 있어요." };
+      return { ok: false, reason: "tooFewPoints", reasonCode: "tooFewPoints" };
     }
   } else {
     if (flat.length < 4) {
-      return { ok: false, reason: "도형 좌표가 손상되어 결합할 수 없어요." };
+      return { ok: false, reason: "corruptCoordinates", reasonCode: "corruptCoordinates" };
     }
     const [x1, y1, x2, y2] = [flat[0]!, flat[1]!, flat[2]!, flat[3]!];
     const x = Math.min(x1, x2);
@@ -348,7 +351,7 @@ export function studioShapeToPolygon(
     const width = Math.abs(x2 - x1);
     const height = Math.abs(y2 - y1);
     if (width < MIN_SPAN || height < MIN_SPAN) {
-      return { ok: false, reason: "면적이 없는(납작한) 도형은 결합할 수 없어요." };
+      return { ok: false, reason: "flatShape", reasonCode: "flatShape" };
     }
     const params = normalizeShapeParams(spec.shapeParams);
     if (spec.kind === "rect") {
@@ -372,7 +375,7 @@ export function studioShapeToPolygon(
   }
   ring = dedupeRing(roundRing(ring));
   if (ring.length < 3 || Math.abs(ringSignedArea(ring)) < MIN_RING_AREA) {
-    return { ok: false, reason: "면적이 없는(납작한) 도형은 결합할 수 없어요." };
+    return { ok: false, reason: "flatShape", reasonCode: "flatShape" };
   }
   return { ok: true, polygon: [ring] };
 }
@@ -396,7 +399,7 @@ type StudioSvgPathCommand =
 
 export type StudioPathBooleanSvgInputResult =
   | Readonly<{ ok: true; pathData: string }>
-  | Readonly<{ ok: false; reason: string }>;
+  | Readonly<{ ok: false; reason: string; reasonCode: StudioPathBooleanReasonCode; params?: StudioPathBooleanReasonParams }>;
 
 const CIRCLE_CUBIC_KAPPA = 0.552_284_749_830_793_6;
 
@@ -860,11 +863,11 @@ function keyholePolygon(polygon: StudioPathPolygon): StudioPathRing {
   return ring;
 }
 
-const EMPTY_RESULT_REASONS: Record<StudioPathBooleanOp, string> = {
-  union: "결합 결과가 비어 있어요.",
-  subtract: "위 도형이 아래 도형을 완전히 덮어 남는 면이 없어요.",
-  intersect: "두 도형이 겹치지 않아 교차 영역이 없어요.",
-  exclude: "두 도형이 완전히 겹쳐 남는 면이 없어요.",
+const EMPTY_RESULT_REASON_CODES: Record<StudioPathBooleanOp, StudioPathBooleanReasonCode> = {
+  union: "emptyUnion",
+  subtract: "emptySubtract",
+  intersect: "emptyIntersect",
+  exclude: "emptyExclude",
 };
 
 /** 정규형 MultiPolygon → 조각(키홀 평탄 링)+bbox. 비면 op 별 사유로 실패. */
@@ -890,14 +893,14 @@ export function studioPathBooleanOutputFromPolygons(
     allRings.push(...polygon);
   }
   if (pieces.length === 0) {
-    return { ok: false, reason: EMPTY_RESULT_REASONS[op] };
+    return { ok: false, reason: EMPTY_RESULT_REASON_CODES[op], reasonCode: EMPTY_RESULT_REASON_CODES[op] };
   }
   return { ok: true, output: { pieces, bounds: ringBounds(allRings) } };
 }
 
 /**
  * 전체 파이프라인 — 스펙 2개를 결합해 조각 목록으로. a=아래(base), b=위(top).
- * 실패는 전부 { ok:false, reason }(한국어)으로 수렴하며 예외를 던지지 않는다.
+ * 실패는 전부 { ok:false, reasonCode } 구조화 사유로 수렴하며 예외를 던지지 않는다.
  */
 export async function combineStudioShapes(
   a: StudioPathBooleanShapeSpec,
@@ -906,14 +909,14 @@ export async function combineStudioShapes(
   options: StudioShapeToPolygonOptions = {}
 ): Promise<StudioPathBooleanCombineResult> {
   const polygonA = studioShapeToPolygon(a, options);
-  if (!polygonA.ok) return { ok: false, reason: `아래 도형: ${polygonA.reason}` };
+  if (!polygonA.ok) return { ok: false, reason: "prefixBelow", reasonCode: "prefixBelow", params: { innerCode: polygonA.reasonCode } };
   const polygonB = studioShapeToPolygon(b, options);
-  if (!polygonB.ok) return { ok: false, reason: `위 도형: ${polygonB.reason}` };
+  if (!polygonB.ok) return { ok: false, reason: "prefixAbove", reasonCode: "prefixAbove", params: { innerCode: polygonB.reasonCode } };
   let combined: StudioPathPolygon[];
   try {
     combined = await combineStudioShapePolygons(polygonA.polygon, polygonB.polygon, op);
   } catch {
-    return { ok: false, reason: "경로 연산이 이 도형을 처리하지 못했어요(좌표를 조금 바꿔 다시 시도해 주세요)." };
+    return { ok: false, reason: "engineFailed", reasonCode: "engineFailed" };
   }
   return studioPathBooleanOutputFromPolygons(combined, op);
 }
@@ -935,27 +938,19 @@ export function drawElToStudioPathBooleanSpec(el: DrawEl): StudioPathBooleanShap
 }
 
 /**
- * 선택이 "결합 가능한 도형 정확히 2개"인지 검사 — 아니면 패널에 보여줄 한국어 사유.
+ * 선택이 "결합 가능한 도형 정확히 2개"인지 검사 — 아니면 패널에 보여줄 사유 코드.
  * 잠금/숨김 같은 페이지 상태 게이트는 호출부(StudioPage)가 추가로 검사한다.
  */
-export function studioPathBooleanUnavailableReason(selection: readonly El[]): string | null {
-  if (selection.length !== 2) {
-    return "캔버스에서 도형 2개를 함께 선택하세요(드래그 선택).";
-  }
+export function studioPathBooleanUnavailableReason(
+  selection: readonly El[]
+): StudioPathBooleanReasonCode | null {
+  if (selection.length !== 2) return "gateTwoShapes";
   for (const el of selection) {
-    if (el.type !== "draw") {
-      return "그리기 도형끼리만 결합할 수 있어요(이미지·글자·말풍선 제외).";
-    }
-    if (el.mode === "eraser") {
-      return "지우개 획은 결합할 수 없어요.";
-    }
-    if (el.symmetry && el.symmetry.type !== "none") {
-      return "대칭이 적용된 도형은 대칭을 해제한 뒤 결합해 주세요.";
-    }
+    if (el.type !== "draw") return "gateDrawShapesOnly";
+    if (el.mode === "eraser") return "gateEraser";
+    if (el.symmetry && el.symmetry.type !== "none") return "gateSymmetry";
     const kind = el.kind ?? "freehand";
-    if (kind === "line" || kind === "arrow") {
-      return "선·화살표는 면이 없어 결합할 수 없어요.";
-    }
+    if (kind === "line" || kind === "arrow") return "gateLineArrow";
   }
   return null;
 }

@@ -190,9 +190,11 @@ describe("extractStudioSketchFeatures", () => {
     expect(large.hypotheses[0]?.kind).toBe("circle");
   });
 
-  it("요약 문구와 SVG 경로를 만든다", () => {
+  it("요약 구조(코드+params)와 SVG 경로를 만든다", () => {
     const features = extractStudioSketchFeatures([ring(150, 100, 70, 70)]);
-    expect(describeStudioSketchFeatures(features)).toContain("원에 가까워요");
+    const summary = describeStudioSketchFeatures(features);
+    expect(summary?.code).toBe("summary");
+    expect(summary?.params).toEqual(expect.objectContaining({ labelCode: "circle", label: "원" }));
     expect(studioSketchStrokePath([P(1, 2), P(3.456, 4)])).toBe("M1,2 L3.46,4");
     expect(studioSketchStrokePath([])).toBe("");
   });
@@ -207,7 +209,10 @@ describe("recommendStudioAssetsForSketch", () => {
     expect(result.status).toBe("ok");
     expect(result.recommendations[0]?.item.id).toBe("element:shape-circle");
     expect(result.recommendations[0]?.matchedShape.kind).toBe("circle");
-    expect(result.recommendations[0]?.reasons[0]).toContain("원 모양과 닮았어요");
+    expect(result.recommendations[0]?.reasons[0]).toEqual({
+      code: "matchedShape",
+      params: { labelCode: "circle", label: "원" },
+    });
     expect(result.recommendations[0]?.score).toBeGreaterThanOrEqual(0.28);
   });
 
@@ -255,16 +260,16 @@ describe("recommendStudioAssetsForSketch", () => {
     });
     expect(result.status).toBe("no-match");
     const guidance = buildStudioSketchSearchGuidance(result);
-    expect(guidance.headline).toContain("찾지 못했어요");
+    expect(guidance.code).toBe("guidanceNoMatch");
+    expect(guidance.params).toEqual({ labelCode: "triangle", label: "삼각형" });
     expect(guidance.fallbackQuery).toBe("삼각형");
-    expect(guidance.tips.length).toBeGreaterThan(0);
   });
 
-  it("상태별 안내 문구가 모두 준비돼 있다", () => {
+  it("상태별 안내 구조(코드)가 모두 준비돼 있다", () => {
     const emptyGuidance = buildStudioSketchSearchGuidance(
       recommendStudioAssetsForSketch({ strokes: [], catalog: CATALOG }),
     );
-    expect(emptyGuidance.headline).toContain("그어 보세요");
+    expect(emptyGuidance.code).toBe("guidanceEmpty");
     expect(emptyGuidance.fallbackQuery).toBeNull();
 
     const okGuidance = buildStudioSketchSearchGuidance(
@@ -273,7 +278,8 @@ describe("recommendStudioAssetsForSketch", () => {
         catalog: CATALOG,
       }),
     );
-    expect(okGuidance.headline).toContain("원과 닮은 소재");
+    expect(okGuidance.code).toBe("guidanceMatched");
+    expect(okGuidance.params.labelWithParticle).toBe("원과");
     expect(okGuidance.fallbackQuery).toBe("원");
   });
 

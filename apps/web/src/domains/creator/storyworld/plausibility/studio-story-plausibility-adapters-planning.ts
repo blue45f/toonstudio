@@ -8,6 +8,7 @@ import type { ForeshadowSeed } from "../../planning/studio-foreshadow-ledger";
 import type { ContinuityTimelineCandidate } from "../../planning/studio-episode-continuity-timeline";
 import type { LoreNameFinding } from "../../planning/studio-lore-name-check";
 import { STUDIO_LORE_KIND_LABELS, type StudioLoreEntryKind, type StudioWorldLoreIssue } from "../../planning/studio-world-lore";
+import { resolveStudioPromisePayoffWarning } from "../../status-i18n/studio-producer-error-i18n-promise";
 import type { StudioPromisePayoffWarning } from "../../studio-promise-payoff-ledger";
 import { josa } from "./studio-story-plausibility-text";
 import {
@@ -104,11 +105,12 @@ export function adaptPromiseLedger(
   for (const warning of input.warnings) {
     const title = input.entryTitles[warning.entryId] ?? warning.entryId;
     const evidence: PlausibilityEvidence[] = [{ kind: "ledger", id: warning.entryId, label: title, detail: "약속·회수 장부" }];
+    const warningText = resolveStudioPromisePayoffWarning(warning);
     const base = {
       source: { module: "promise-ledger" as const, code: warning.code, originalId: `${warning.entryId}:${warning.code}` },
-      idParts: [warning.code, warning.entryId, warning.message],
+      idParts: [warning.code, warning.entryId, warningText],
       category: "foreshadowing" as const,
-      message: warning.message,
+      message: warningText,
       evidence,
       options: [optionInfo("promise-ledger", "제작 바이블에서 약속 고치기", "편집기의 제작 바이블 대화상자 '약속·회수' 패널에서 연결과 마감을 고칩니다.")],
       sceneIds: noScenes,

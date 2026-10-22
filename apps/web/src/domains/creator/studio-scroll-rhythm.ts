@@ -68,9 +68,8 @@ export interface StudioScrollRhythmInsight {
   readonly code: StudioScrollRhythmInsightCode;
   readonly severity: StudioScrollRhythmInsightSeverity;
   readonly pageId: string | null;
-  readonly title: string;
-  readonly detail: string;
-  readonly suggestion: string;
+  /** A4 D4 (R15): title/detail/suggestion 표시 문구 대신 해석용 params만 싣는다. */
+  readonly params: Readonly<Record<string, string>>;
 }
 
 export interface StudioScrollRhythmPageMetric {
@@ -104,7 +103,6 @@ export type StudioScrollEndingMode = "none" | "tight" | "balanced" | "reveal" | 
 
 export interface StudioScrollEndingAnalysis {
   readonly mode: StudioScrollEndingMode;
-  readonly label: string;
   readonly trailingWhitespacePx: number;
   readonly trailingWhitespaceScreens: number;
 }
@@ -311,7 +309,6 @@ function endingAnalysis(
   if (!lastPage || !lastMetric || lastMetric.visibleElementCount === 0) {
     return {
       mode: "none",
-      label: "엔딩 비트 없음",
       trailingWhitespacePx: lastMetric?.canvasHeight ?? 0,
       trailingWhitespaceScreens: lastMetric
         ? round(lastMetric.canvasHeight / viewportHeight)
@@ -330,7 +327,6 @@ function endingAnalysis(
   if (screens < 0.12) {
     return {
       mode: "tight",
-      label: "엔딩이 촘촘함",
       trailingWhitespacePx: round(trailingWhitespacePx),
       trailingWhitespaceScreens: round(screens),
     };
@@ -338,7 +334,6 @@ function endingAnalysis(
   if (screens <= 0.4) {
     return {
       mode: "balanced",
-      label: "균형 잡힌 엔딩",
       trailingWhitespacePx: round(trailingWhitespacePx),
       trailingWhitespaceScreens: round(screens),
     };
@@ -346,14 +341,12 @@ function endingAnalysis(
   if (screens <= 1.35) {
     return {
       mode: "reveal",
-      label: "클리프행어 호흡",
       trailingWhitespacePx: round(trailingWhitespacePx),
       trailingWhitespaceScreens: round(screens),
     };
   }
   return {
     mode: "empty",
-    label: "엔딩 여백이 김",
     trailingWhitespacePx: round(trailingWhitespacePx),
     trailingWhitespaceScreens: round(screens),
   };
@@ -504,9 +497,7 @@ export function analyzeStudioScrollRhythm(
         code: "NO_VISIBLE_CONTENT",
         severity: "warning",
         pageId: page.id,
-        title: "빈 페이지",
-        detail: "독자가 머무를 시각 비트가 없습니다.",
-        suggestion: "의도된 여백이 아니라면 컷, 대사 또는 전환 비트를 추가하세요.",
+        params: {},
       });
     }
     if (densityPerScreen > 8) {
@@ -514,9 +505,7 @@ export function analyzeStudioScrollRhythm(
         code: "DENSE_PAGE",
         severity: densityPerScreen > 12 ? "critical" : "warning",
         pageId: page.id,
-        title: "정보 밀도가 높음",
-        detail: `한 화면당 가중 요소가 약 ${round(densityPerScreen, 1)}개입니다.`,
-        suggestion: "컷을 분리하거나 컷 사이 여백을 늘려 시선 이동을 단순화하세요.",
+        params: { density: String(round(densityPerScreen, 1)) },
       });
     }
     if (dialogueCharactersPerScreen > 260) {
@@ -524,9 +513,7 @@ export function analyzeStudioScrollRhythm(
         code: "DIALOGUE_LOAD",
         severity: dialogueCharactersPerScreen > 400 ? "critical" : "warning",
         pageId: page.id,
-        title: "대사 호흡이 김",
-        detail: `한 화면당 약 ${Math.round(dialogueCharactersPerScreen)}자의 대사가 배치됐습니다.`,
-        suggestion: "말풍선을 나누거나 행동 컷 사이에 대사를 분산하세요.",
+        params: { dialogueChars: String(Math.round(dialogueCharactersPerScreen)) },
       });
     }
     if (sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN) {
@@ -537,9 +524,7 @@ export function analyzeStudioScrollRhythm(
             ? "critical"
             : "warning",
         pageId: page.id,
-        title: "효과음이 몰린 페이지",
-        detail: `한 화면당 효과음이 약 ${round(sfxPerScreen, 1)}개 배치됐습니다.`,
-        suggestion: "효과음을 줄이거나 인접 컷으로 나눠 배치하면 체감 속도가 완만해집니다.",
+        params: { sfx: String(round(sfxPerScreen, 1)) },
       });
     }
     if (breathingRoomRatio < 0.06 && visible.length > 0) {
@@ -547,9 +532,7 @@ export function analyzeStudioScrollRhythm(
         code: "NO_BREATHING_ROOM",
         severity: "warning",
         pageId: page.id,
-        title: "호흡 여백 부족",
-        detail: `비어 있는 세로 구간이 전체의 ${Math.round(breathingRoomRatio * 100)}%입니다.`,
-        suggestion: "감정 전환이나 장면 전환 앞뒤에 짧은 무음 여백을 확보하세요.",
+        params: { ratio: String(Math.round(breathingRoomRatio * 100)) },
       });
     }
     if (longestGapPx / viewportHeight > 1.4 && visible.length > 0) {
@@ -557,9 +540,7 @@ export function analyzeStudioScrollRhythm(
         code: "LONG_EMPTY_RUN",
         severity: "info",
         pageId: page.id,
-        title: "긴 무음 구간",
-        detail: `가장 긴 여백이 약 ${round(longestGapPx / viewportHeight, 1)}화면입니다.`,
-        suggestion: "의도된 서스펜스인지 확인하고, 아니라면 다음 비트를 조금 당기세요.",
+        params: { gapScreens: String(round(longestGapPx / viewportHeight, 1)) },
       });
     }
     if (beatIntervalVariation !== null && beatIntervalVariation < 0.12) {
@@ -567,9 +548,7 @@ export function analyzeStudioScrollRhythm(
         code: "FLAT_BEAT_INTERVALS",
         severity: "info",
         pageId: page.id,
-        title: "컷 간격이 단조로움",
-        detail: "주요 비트의 세로 간격이 거의 동일해 리듬 변화가 작습니다.",
-        suggestion: "강조 컷 전후 간격을 대비시켜 속도감과 긴장도를 조절하세요.",
+        params: {},
       });
     }
   }
@@ -583,18 +562,14 @@ export function analyzeStudioScrollRhythm(
       code: "TIGHT_ENDING",
       severity: "info",
       pageId: metrics.at(-1)?.pageId ?? null,
-      title: "엔딩 비트가 화면 끝에 붙음",
-      detail: "마지막 요소 뒤의 여백이 0.12화면보다 짧습니다.",
-      suggestion: "다음 화 유도나 감정 잔상을 원한다면 짧은 여백을 추가하세요.",
+      params: {},
     });
   } else if (ending.mode === "empty") {
     pushInsight(insights, {
       code: "EMPTY_ENDING",
       severity: "warning",
       pageId: metrics.at(-1)?.pageId ?? null,
-      title: "엔딩 이후 여백이 김",
-      detail: `마지막 비트 뒤에 약 ${ending.trailingWhitespaceScreens}화면이 비어 있습니다.`,
-      suggestion: "의도된 클리프행어가 아니라면 캔버스 높이를 줄이거나 마지막 비트를 내리세요.",
+      params: { screens: String(ending.trailingWhitespaceScreens) },
     });
   }
 
@@ -608,10 +583,7 @@ export function analyzeStudioScrollRhythm(
           code: "SFX_LONG_GAP",
           severity: "info",
           pageId: metric.pageId,
-          title: "효과음 없는 구간이 김",
-          detail: `효과음이 없는 구간이 약 ${round(metric.longestSfxGapScreens, 1)}화면 이어집니다.`,
-          suggestion:
-            "의도된 정적이면 그대로 두고, 아니라면 중간 컷에 환경음·동작 효과음을 한두 개 배치해 보세요.",
+          params: { gapScreens: String(round(metric.longestSfxGapScreens, 1)) },
         });
       }
     }
@@ -626,9 +598,7 @@ export function analyzeStudioScrollRhythm(
       code: "ANALYSIS_TRUNCATED",
       severity: "warning",
       pageId: null,
-      title: "분석 예산 적용",
-      detail: "대형 원고의 일부만 안전 예산 안에서 분석했습니다.",
-      suggestion: "페이지 구간을 나눠 다시 분석하면 더 세밀한 결과를 얻을 수 있습니다.",
+      params: {},
     });
   }
 

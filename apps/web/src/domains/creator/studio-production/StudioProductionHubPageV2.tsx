@@ -1,6 +1,7 @@
 import "../studio-shell/creator-workflow-surfaces.css";
 import { productionChecklistState } from "./studio-production-checklist";
 import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
+import { resolveStudioProductionWorkspaceErrorFromCause } from "../status-i18n/studio-producer-error-i18n-production";
 import { StudioWorkSessionEntry } from "../work-session/StudioWorkSessionEntry";
 import {
   formatI18nTemplate,
@@ -442,7 +443,7 @@ function StudioProductionHubWorkspace({
       adoptWorkspace(createEmptyProductionWorkspace(scope.key));
       setServerCapabilities(null);
       setPersistence("error");
-      setLoadError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.hub.loadFailed", "제작 운영 데이터를 불러오지 못했습니다."));
+      setLoadError(resolveStudioProductionWorkspaceErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.hub.loadFailed", "제작 운영 데이터를 불러오지 못했습니다.")));
     }
   }, [adoptWorkspace, mode, scope.key, serverWorkId]);
 
@@ -544,10 +545,7 @@ function StudioProductionHubWorkspace({
         void reloadWorkspace(false);
       };
       channelRef.current = channel;
-      return () => {
-        channel.close();
-        channelRef.current = null;
-      };
+      return () => { channel.close(); channelRef.current = null; };
     } catch {
       channelRef.current = null;
       return undefined;
@@ -615,7 +613,7 @@ function StudioProductionHubWorkspace({
         return;
       }
       setPersistence("error");
-      setNotice(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.hub.saveFailed", "제작 운영 데이터를 저장하지 못했습니다."));
+      setNotice(resolveStudioProductionWorkspaceErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.hub.saveFailed", "제작 운영 데이터를 저장하지 못했습니다.")));
     } finally {
       mutationPending.current = false;
     }

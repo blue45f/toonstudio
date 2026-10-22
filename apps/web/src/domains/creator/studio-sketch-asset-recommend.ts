@@ -589,18 +589,23 @@ export function extractStudioSketchFeatures(
   return { ...base, hypotheses: classify(base) };
 }
 
-/** 패널·접근성 문구용 한 줄 요약. 증거가 없으면 빈 문자열. */
+/** 패널·접근성 문구용 한 줄 요약의 구조화 형태(코드+params). 증거가 없으면 null. */
+export interface StudioSketchFeatureSummary { readonly code: "summary"; readonly params: Readonly<Record<string, string>> }
+
 export function describeStudioSketchFeatures(
   features: StudioSketchFeatures,
-): string {
+): StudioSketchFeatureSummary | null {
   const primary = features.hypotheses[0];
-  if (!primary) return "";
-  const parts = [
-    features.isClosed ? "닫힌 모양" : "열린 획",
-    features.cornerCount > 0 ? `모서리 ${features.cornerCount}개` : null,
-    `${primary.label}에 가까워요`,
-  ].filter(Boolean);
-  return parts.join(" · ");
+  if (!primary) return null;
+  return {
+    code: "summary",
+    params: {
+      openness: features.isClosed ? "closed" : "open",
+      cornerCount: String(features.cornerCount),
+      labelCode: primary.kind,
+      label: primary.label,
+    },
+  };
 }
 
 /** SVG path 문자열 (패널 미리보기 렌더 공용). */
@@ -717,14 +722,16 @@ function itemAspectRatio(item: StudioUnifiedAssetItem): number | null {
   return null;
 }
 
+export interface StudioSketchRecommendationReason { readonly code: "matchedShape" | "aspect" | "closedShape"; readonly params?: Readonly<Record<string, string>> }
+
 export interface StudioSketchAssetRecommendation {
   readonly item: StudioUnifiedAssetItem;
   /** 0..1 종합 점수. */
   readonly score: number;
   /** 가장 강하게 닿은 모양 가설. */
   readonly matchedShape: StudioSketchShapeHypothesis;
-  /** 한국어 이유 문구 (최대 3개, 점수 기여 순). */
-  readonly reasons: readonly string[];
+  /** 구조화 이유 (최대 3개, 점수 기여 순) — 표시는 리졸버 sketch 구간이 해석한다. */
+  readonly reasons: readonly StudioSketchRecommendationReason[];
 }
 
 export type StudioSketchRecommendStatus =
@@ -788,8 +795,11 @@ export function recommendStudioAssetsForSketch(
     }
     if (!matched) continue;
 
-    const reasons: string[] = [
-      `그린 ${matched.label} 모양과 닮았어요`,
+    const reasons: StudioSketchRecommendationReason[] = [
+      {
+        code: "matchedShape",
+        params: { labelCode: matched.kind, label: matched.label },
+      },
     ];
     let score = shapeScore;
     // 제목 자체가 모양 이름이면 동점에서 이긴다 ("원" vs "구름"의 원 매치 등).
@@ -805,12 +815,12 @@ export function recommendStudioAssetsForSketch(
       const aspectBonus = Math.max(0, 0.12 - diff * 0.1);
       if (aspectBonus > 0) {
         score += aspectBonus;
-        if (aspectBonus >= 0.07) reasons.push("가로·세로 비율이 비슷해요");
+        if (aspectBonus >= 0.07) reasons.push({ code: "aspect" });
       }
     }
     if (features.isClosed && item.category === "element") {
       score += 0.03;
-      reasons.push("닫힌 도형이라 크기를 바꿔 쓰기 좋아요");
+      reasons.push({ code: "closedShape" });
     }
     if (item.discoverability === "featured") score += 0.04;
     if (item.discoverability === "caution") score -= 0.05;
@@ -841,9 +851,12 @@ export function recommendStudioAssetsForSketch(
 // 빈 결과 안내
 // ---------------------------------------------------------------------------
 
+export type StudioSketchGuidanceCode = "guidanceEmpty" | "guidanceTooSmall" | "guidanceNoMatch" | "guidanceMatched";
+
 export interface StudioSketchSearchGuidance {
-  readonly headline: string;
-  readonly tips: readonly string[];
+  /** A4 D4 (R15): headline·tips 표시 문구 대신 코드+params만 싣는다. */
+  readonly code: StudioSketchGuidanceCode;
+  readonly params: Readonly<Record<string, string>>;
   /** 텍스트 검색으로 전환할 때 쓸 쿼리. 모양 가설이 있을 때만 있다. */
   readonly fallbackQuery: string | null;
 }
@@ -863,41 +876,27 @@ export function buildStudioSketchSearchGuidance(
   const primary = result.features.hypotheses[0];
   switch (result.status) {
     case "empty":
-      return {
-        headline: "그리고 싶은 모양을 그어 보세요",
-        tips: [
-          "원·사각형·별처럼 한 획으로 크게 그리면 더 잘 찾아요.",
-          "텍스트로 찾기 어렵던 모양도 스케치로 찾을 수 있어요.",
-        ],
-        fallbackQuery: null,
-      };
+      return { code: "guidanceEmpty", params: {}, fallbackQuery: null };
     case "too-small":
-      return {
-        headline: "조금 더 크게 그어 주세요",
-        tips: [
-          "획이 너무 짧으면 모양을 판정할 수 없어요.",
-          "패드 가운데에 크게, 한 획으로 이어 그어 보세요.",
-        ],
-        fallbackQuery: null,
-      };
+      return { code: "guidanceTooSmall", params: {}, fallbackQuery: null };
     case "no-match":
       return {
-        headline: "닮은 소재를 찾지 못했어요",
-        tips: [
-          "시작점과 끝점을 이어 닫힌 모양으로 그어 보세요.",
-          "획을 나눠 그렸다면 한 획으로 이어 그어 보세요.",
-          primary
-            ? `모양 이름 “${primary.label}”로 텍스트 검색도 해 보세요.`
-            : "모양 이름으로 텍스트 검색도 해 보세요.",
-        ],
+        code: "guidanceNoMatch",
+        params: primary
+          ? { labelCode: primary.kind, label: primary.label }
+          : {},
         fallbackQuery: primary ? primary.label : null,
       };
     case "ok":
       return {
-        headline: primary
-          ? `${withGwaParticle(primary.label)} 닮은 소재예요`
-          : "닮은 소재예요",
-        tips: [],
+        code: "guidanceMatched",
+        params: primary
+          ? {
+              labelCode: primary.kind,
+              label: primary.label,
+              labelWithParticle: withGwaParticle(primary.label),
+            }
+          : {},
         fallbackQuery: primary ? primary.label : null,
       };
   }

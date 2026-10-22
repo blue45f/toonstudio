@@ -7,6 +7,10 @@ import {
 } from "../studio-path-boolean";
 
 import type {
+  StudioPathBooleanReasonCode,
+  StudioPathBooleanReasonParams,
+} from "../studio-path-boolean-reason";
+import type {
   StudioQualityWorkerClientResult,
   StudioQualityWorkerRunOptions,
 } from "../studio-quality-worker-client";
@@ -36,7 +40,12 @@ export type StudioCanvasKitPathBooleanDocumentResult =
         requestToken: string;
       }>;
     }>
-  | Readonly<{ ok: false; reason: string }>;
+  | Readonly<{
+      ok: false;
+      reason: string;
+      reasonCode?: StudioPathBooleanReasonCode;
+      params?: StudioPathBooleanReasonParams;
+    }>;
 
 function qualityOperation(
   operation: StudioPathBooleanOp,
@@ -66,9 +75,9 @@ export async function combineStudioShapesWithCanvasKit(
   options: StudioQualityWorkerRunOptions = {},
 ): Promise<StudioCanvasKitPathBooleanDocumentResult> {
   const basePath = studioPathBooleanShapeToSvgPathData(base);
-  if (!basePath.ok) return { ok: false, reason: `아래 도형: ${basePath.reason}` };
+  if (!basePath.ok) return { ok: false, reason: "prefixBelow", reasonCode: "prefixBelow", params: { innerCode: basePath.reasonCode } };
   const topPath = studioPathBooleanShapeToSvgPathData(top);
-  if (!topPath.ok) return { ok: false, reason: `위 도형: ${topPath.reason}` };
+  if (!topPath.ok) return { ok: false, reason: "prefixAbove", reasonCode: "prefixAbove", params: { innerCode: topPath.reasonCode } };
 
   const response = await client.pathBoolean(
     basePath.pathData,

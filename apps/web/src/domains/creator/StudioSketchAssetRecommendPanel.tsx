@@ -22,6 +22,7 @@ import {
   type StudioSketchPoint,
   type StudioSketchStroke,
 } from "./studio-sketch-asset-recommend";
+import { resolveStudioSketchFeatureSummary, resolveStudioSketchGuidance, resolveStudioSketchRecommendationReason } from "./status-i18n/studio-producer-error-i18n-sketch";
 import type { StudioUnifiedAssetItem } from "./studio-unified-asset-catalog";
 
 export interface StudioSketchAssetRecommendPanelProps {
@@ -63,6 +64,7 @@ export function StudioSketchAssetRecommendPanel({
     () => buildStudioSketchSearchGuidance(result),
     [result],
   );
+  const guidanceText = useMemo(() => resolveStudioSketchGuidance(guidance), [guidance]);
   const summary = describeStudioSketchFeatures(result.features);
 
   function toPadPoint(event: React.PointerEvent): StudioSketchPoint | null {
@@ -175,7 +177,7 @@ export function StudioSketchAssetRecommendPanel({
       <div className="flex items-center justify-between gap-2">
         <p role="status" aria-live="polite" className="text-xs text-fg-3">
           {summary
-            ? summary
+            ? resolveStudioSketchFeatureSummary(summary)
             : result.status === "too-small"
               ? "획이 너무 짧아요."
               : "그린 모양을 읽어 추천합니다."}
@@ -200,7 +202,7 @@ export function StudioSketchAssetRecommendPanel({
         <div className="space-y-2">
           <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
             <Sparkles size={14} aria-hidden="true" />
-            {guidance.headline}
+            {guidanceText.headline}
             <span className="font-normal text-fg-3">
               {result.recommendations.length}개
             </span>
@@ -208,6 +210,7 @@ export function StudioSketchAssetRecommendPanel({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {result.recommendations.map((recommendation) => {
               const item = recommendation.item;
+              const firstReason = recommendation.reasons[0];
               const src = previewSource(item);
               return (
                 <article
@@ -232,7 +235,7 @@ export function StudioSketchAssetRecommendPanel({
                   </h5>
                   <p className="my-1 line-clamp-2 text-[0.65rem] text-fg-3">
                     닮은 정도 {Math.round(recommendation.score * 100)}% ·{" "}
-                    {recommendation.reasons[0]}
+                    {firstReason ? resolveStudioSketchRecommendationReason(firstReason) : null}
                   </p>
                   <button
                     type="button"
@@ -253,9 +256,9 @@ export function StudioSketchAssetRecommendPanel({
           role="note"
           className="space-y-2 rounded-xl border border-dashed border-line bg-card p-3"
         >
-          <h4 className="text-xs font-bold text-fg">{guidance.headline}</h4>
+          <h4 className="text-xs font-bold text-fg">{guidanceText.headline}</h4>
           <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg-3">
-            {guidance.tips.map((tip) => (
+            {guidanceText.tips.map((tip) => (
               <li key={tip}>{tip}</li>
             ))}
           </ul>
