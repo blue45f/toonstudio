@@ -12,9 +12,13 @@ theme-packs.json을 재생성해 배치 가능은 5,303개로, 보류(deferred)�
 (`config/creator-bundle-pack-rights.json`)으로 옮겼다. 원장의 기본값은 hold이고, 증빙이 없는
 팩은 allow가 될 수 없다. 생성기와 배포 플래너가 같은 원장을 따라 fail-closed로 닫힌다
 ("팩별 권리 원장" 절). Worker는 원장을 읽지 않고 R2에 올라간 객체를 동일 출처 가드로만 제한한다
-("배포" 절). 이 문서의 배치 가능 5,303개는 **원장 이전 스냅샷**이며, 원장을 적용해
+("배포" 절). 이 문서의 배치 가능 13,597개(아래 정정 3)는 **원장 이전 스냅샷**이며, 원장을 적용해
 theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성"). 어떤 팩을 열지는 증빙 제출 뒤
 저장소 소유자가 정한다.
+
+2026-10-22 정정 3 (5라운드 종결·텍스처 임베드 병합): 인제스션 팩 id가 재부여돼 생성기의 매핑 표를 새 id로 바꾸고
+임베드 병합 GLB 8,031개를 반영해 다시 생성했다(커밋 `3344060fa`). 커밋된 theme-packs.json은 이제 팩 42 · 배치 가능
+13,597 · 프리셋 9 · 군중 GLB 1,215 · 보류 3,885다. 위 정정의 5,303개·11,721개는 그 이전 시점의 기록이다.
 
 ## 구조
 
@@ -117,8 +121,8 @@ theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성
   같은 시드 사실 테스트를 같은 변경에서 갱신한다(팩을 여는 것은 소유자 결정이라 이 테스트들이 일부러 알려 준다).
 - 시드(2026-10-22): 61개 전부 hold. Cute Dungeon Megapack은 요구 증빙(CC0 문서)을 이미 갖췄지만 미수신
   (`pending`) 묶음이라 편입 전에는 `serve`를 allow로 바꿔도 아무것도 열리지 않는다(`holdReason: pending-ingest`).
-  검토 보고(2026-10-22)는 Restaurant(보류 1,023개)·Medieval(보류 1,265개)·Small Props(배치 가능 342개)를 서면
-  확인 전까지 제외하라고 권고했고, 원장은 이를 `reviewRecommendedHold`로 표시한다. 이 구분은 증빙 상태를 기록한
+  검토 보고(2026-10-22)는 Restaurant·Medieval·Small Props를 서면 확인 전까지 제외하라고 권고했고(현재 커밋된
+  스냅샷 기준 Restaurant는 외부 리소스 보류 1,023개, Medieval은 배치 가능 1,265개, Small Props는 배치 가능 342개), 원장은 이를 `reviewRecommendedHold`로 표시한다. 이 구분은 증빙 상태를 기록한
   것이며 개방·제외 확정은 소유자에게 있다.
 - hold 팩의 사용자 노출 문구: 원장 hold 때문에 `pendingPacks`(`rights-hold`)로 가서 패널의 「준비 중인 팩」에 보이는
   `holdLabel`은 모든 hold 팩이 같은 중립 문장(`HOLD_PUBLIC_LABEL`)이다. 미수신 `pending` 묶음 14개의 화면 문구는
@@ -170,7 +174,7 @@ node scripts/generate-creator-bundle-theme-packs.mjs \
 쓰지 않고 종료 코드 2로 닫는다.
 
 원장을 적용한 재생성은 팩 순서를 바꾼다. `packIndex`로 팩을 가리키는 장르 씬팩 연결
-(`studio-bg3d-genre-scene-pack-links.ts`)과 그 대조 테스트(배치 가능 5,303 · 연결 합계 1,477)는
+(`studio-bg3d-genre-scene-pack-links.ts`)과 그 대조 테스트(배치 가능 13,597 · 연결 합계 1,740)는
 같은 변경에서 갱신해야 한다. 이 변경에서는 소유자 트리가 필요한 실데이터 재생성을 하지 않았으므로
 커밋된 theme-packs.json은 원장 이전 스냅샷이다(Characters 1/2의 제작사·id만 정정).
 
@@ -216,9 +220,10 @@ node scripts/generate-creator-bundle-theme-packs.mjs \
   - 하드 링크는 경로로 구분할 수 없다. 내용은 sha256·크기·GLB 헤더로 고정되고 트리 자체는 소유자의 것이라 신뢰한다.
     다른 사람이 쓸 수 있는 트리에서 업로드를 실행하지 않는다.
 - 객체 목록 기록: `deploy/cloudflare-static/bundle-v2-deploy-manifest.json`은 2026-10-22 산출
-  스냅샷(GLB 5,303개·588,132,208바이트 + 배포 인덱스 1개 = 5,304객체·588,132,367바이트)이며
-  원본 경로 키·hold 팩 객체를 포함하는 **원장 이전 기록**이다. 업로드의 입력이 아니므로(업로드는
-  실행 때마다 새 계획을 만든다) 재생성 전까지 참고용으로만 쓴다.
+  스냅샷(GLB 13,597개·8,644,055,380바이트 + 배포 인덱스 1개 = 13,598객체·8,644,055,541바이트, 커밋 `3344060fa`가
+  원장 이전 계획기로 만들었다)이며 원본 경로 키·hold 팩 객체를 포함하는 **원장 이전 기록**이다. 업로드의 입력이
+  아니므로(업로드는 실행 때마다 새 계획을 만든다) 재생성 전까지 참고용으로만 쓴다. 이 기록의 키로는 Worker가
+  아무것도 서빙하지 않고, 현재 계획기는 허용된 팩이 없으면 객체를 0개로 계획해 `--write`·`--production`을 거부한다.
   `scripts/plan-creator-bundle-deploy.mjs`가 theme-packs와 실물 트리를 전수 대조(실재·바이트·sha256·
   외부 uri 게이트)해 재생성한다. GLB 중 1개(35.5MiB 프리셋)가 Static Assets 파일 상한(25MiB)을
   넘는 것도 R2 단일 경로를 택한 이유다.
@@ -259,7 +264,7 @@ pnpm run deploy:creator-bundle-assets -- --asset-root <output-v2 트리>
   재배포인지, Q3 변환·WebP 파생 GLB 호스팅, Q4 유료 멤버십 포함, Q5 다수 사용자).
 - itch 번들 영수증·약관, 팩 페이지 캡처(조회일 포함) 제공.
 - allow 요구 증빙 표(분류별)와 서면 확인 인정 범위(현재 `web-service-hosting` 한 가지). 질문서 초안 작성과 발송.
-- hold 팩 최종 확정. 권고는 Restaurant 1,023 · Medieval 1,265 · Small Props 342를 서면 확인 전까지
+- hold 팩 최종 확정. 권고는 Restaurant(보류 1,023) · Medieval(배치 가능 1,265) · Small Props(배치 가능 342)를 서면 확인 전까지
   제외하는 것이다.
 - R2 키 불투명화 최종 확정, 텍스처 교정 범위와 손실 허용선, theme-packs 캐시 정책, 번들 총량 상한.
 - `ASSET-INVENTORY.md` §3 정책 개정(제안만 기록됨)과 `THIRD_PARTY_NOTICES`의 번들 항목(§3.2 결정 뒤 작업).

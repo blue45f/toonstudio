@@ -22,7 +22,7 @@ export const SCENE_NODES_A: ReactNode[] = [
           </div>
           <div className="hero-meta rv">
             <span><b>WebGPU(Vello)</b> 직접 포팅·패치한 렌더링 엔진</span>
-            <span><b>5,303</b> 배치 가능 3D 에셋</span>
+            <span><b>13,597</b> 배치 가능 3D 에셋</span>
             <span><b>설치 불필요</b> 브라우저 완결</span>
           </div>
         </div>
@@ -168,7 +168,7 @@ export const SCENE_NODES_A: ReactNode[] = [
           <div className="desc">장르·시대·공간별 배경 3D 테마 팩이 스튜디오에 바로 연결돼요.</div>
         </div>
         <div className="stat">
-          <div className="num"><span data-count="5303">5,303</span><small>개</small></div>
+          <div className="num"><span data-count="13597">13,597</span><small>개</small></div>
           <div className="label">배치 가능 3D 에셋</div>
           <div className="desc">배경 씬에 그대로 놓고 구도와 원근을 잡을 수 있는 실제 에셋 수예요.</div>
         </div>

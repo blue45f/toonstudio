@@ -28,12 +28,20 @@ const test = process.env.VITEST ? vitestTest : nodeTest;
 const SCRIPT = resolve(dirname(fileURLToPath(import.meta.url)), "generate-creator-bundle-theme-packs.mjs");
 const sha256Of = (buffer) => createHash("sha256").update(buffer).digest("hex");
 
-/** 생성기 정의의 실제 인제스션 id를 쓰는 소형 픽스처 (팩 정의는 생성기 소스가 정본이다). */
+/**
+ * 생성기 정의의 실제 인제스션 id를 쓰는 소형 픽스처. 팩 정의(와 재부여되는 인제스션 id)는 생성기 소스가 정본이라
+ * id를 테스트에 베껴 두지 않고 정의에서 읽는다 (각 팩의 첫 인제스션 폴더 = godot/원본 변형).
+ */
+const firstIngest = (defs, title) => {
+  const def = defs.find((candidate) => candidate.title === title);
+  assert.ok(def?.ingest.length, `생성기 정의에 인제스션 폴더가 있는 ${title}가 없습니다.`);
+  return def.ingest[0];
+};
 const INGEST = {
-  oldTown: "cbv1-ingest-145-oldtownenvironmentcourtyardslite-2026-08-20",
-  pirate: "cbv1-ingest-149-pirateisland-godot-28-s0w2",
-  smallProps: "cbv1-ingest-166-small-props-pack",
-  characters1: "cbv1-ingest-031-characters-1-godot-40-3jio",
+  oldTown: firstIngest(CATALOG_PACKS, "Old Town — Courtyards"),
+  pirate: firstIngest(CATALOG_PACKS, "Pirate Island"),
+  smallProps: firstIngest(CATALOG_PACKS, "Small Props Pack"),
+  characters1: firstIngest(CROWD_PACKS, "Characters 1"),
 };
 
 function titleToEntry(ledger, title) {

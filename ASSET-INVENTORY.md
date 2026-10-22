@@ -20,7 +20,7 @@
 | 스크린톤/톤 | `screentone/`, `studio-tones.ts`, `StudioTonePanel.tsx` | 다수 | 프로젝트 원본 | 도트/선 스크린톤 엔진 |
 | 브러시 엔진 | `studio-brush*.ts`, `brush/`, `brush-lab/` | 다수 | 프로젝트 원본 | 별도 브러시 팀 담당 |
 | 가상공간 캐릭터 | `virtual-space/studio-virtual-space-character-assets.ts` | 다수 | 프로젝트 원본 | 스프라이트 시스템 연동 |
-| Creator Bundle 3D 테마 팩 (2026-10-22 추가) | `apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json` + R2 `bundle-v2` | 팩 42 · 배치 가능 5,303 (원장 이전 스냅샷) | 구매 라이선스(EmaceArt · RG Poly), 팩별 상이 — CC0가 아님 | 서비스 내 전용. 서빙 판정은 팩별 권리 원장(`config/creator-bundle-pack-rights.json`), 기본값 hold. §3 원칙과 충돌하는 현황이며 정책은 미결(§3.1·§3.2, 소유자 결정 대기) |
+| Creator Bundle 3D 테마 팩 (2026-10-22 추가) | `apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json` + R2 `bundle-v2` | 팩 42 · 배치 가능 13,597 (원장 이전 스냅샷) | 구매 라이선스(EmaceArt · RG Poly), 팩별 상이 — CC0가 아님 | 서비스 내 전용. 서빙 판정은 팩별 권리 원장(`config/creator-bundle-pack-rights.json`), 기본값 hold. §3 원칙과 충돌하는 현황이며 정책은 미결(§3.1·§3.2, 소유자 결정 대기) |
 
 **합계: 배경 61종(9+28+24+8신규), 소재 192종, FX 61종, 텍스처 8종(신규), 캐릭터/소품/가이드 38종+**
 
