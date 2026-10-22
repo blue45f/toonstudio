@@ -1078,44 +1078,8 @@ export function brushMatchesSnapshot(
 
 // ── JSON 내보내기/가져오기(이 앱 전용 포맷 — 브러시 설정엔 GPL 같은 표준이 없다) ──────
 
-export const BRUSH_EXPORT_KIND = "toonstudio-studio-brush";
-export const BRUSH_EXPORT_VERSION = 6;
-
-/**
- * A4 D4 (R14): writeBrushJson·importBrushFromJson 실패 전용 오류.
- * 생산자는 표시 문구 대신 구조화 코드만 방출하고(message = 코드 문자열),
- * 표시는 표시 지점(StudioBrushLibraryPanel의 catch 3곳)에서 리졸버로 해석한다
- * (status-i18n/studio-producer-error-i18n-brush.ts의 brushLibrary 구간).
- * archiveTooLarge는 내보내기(write)·가져오기(import) 양쪽에서 같은 코드로
- * 방출되지만 이관 전 원문이 서로 달라 variant로 구분한다 — palette 경고의
- * 방출 지점 suffix 전례와 같은 방식으로, 리졸버가 variant별로 해석한다.
- */
-export type StudioBrushLibraryErrorCode =
-  | "settingsTooLarge"
-  | "archiveTooLarge"
-  | "emptyFile"
-  | "archiveBytesTooLarge"
-  | "readFailed"
-  | "unsupportedOrCorrupt"
-  | "settingsNotRestorable"
-  | "plainSettingsTooLarge"
-  | "notJsonFile"
-  | "engineNotRestorable";
-
-export type StudioBrushLibraryErrorVariant = "write" | "import";
-
-export class StudioBrushLibraryError extends Error {
-  readonly code: StudioBrushLibraryErrorCode;
-  readonly variant?: StudioBrushLibraryErrorVariant;
-
-  constructor(code: StudioBrushLibraryErrorCode, variant?: StudioBrushLibraryErrorVariant) {
-    super(code);
-    this.name = "StudioBrushLibraryError";
-    this.code = code;
-    if (variant !== undefined) this.variant = variant;
-  }
-}
-
+import { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError } from "./studio-brush-library-export-contract";
+export { BRUSH_EXPORT_KIND, BRUSH_EXPORT_VERSION, StudioBrushLibraryError, type StudioBrushLibraryErrorCode, type StudioBrushLibraryErrorVariant } from "./studio-brush-library-export-contract";
 /** StudioSavedBrush → JSON 텍스트(들여쓰기 2칸, 사람이 읽을 수 있게). */
 export function writeBrushJson(brush: StudioSavedBrush): string {
   const { snapshot } = sanitizeBrushSnapshot(brush);

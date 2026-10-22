@@ -5758,31 +5758,11 @@ export function StudioCuttoonEditor({
         typeof importer.importAndCommitStudioBrushProgramFile
       >>;
       switch (format) {
-        case "myb":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "myb", product.repository,
-          );
-          break;
-        case "kpp":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "kpp", product.repository,
-          );
-          break;
-        case "sut":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "sut", product.repository,
-          );
-          break;
-        case "sutg":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "sutg", product.repository,
-          );
-          break;
-        case "bundle":
-          committed = await importer.importAndCommitStudioBrushProgramFile(
-            file, "bundle", product.repository,
-          );
-          break;
+        case "myb": committed = await importer.importAndCommitStudioBrushProgramFile(file, "myb", product.repository); break;
+        case "kpp": committed = await importer.importAndCommitStudioBrushProgramFile(file, "kpp", product.repository); break;
+        case "sut": committed = await importer.importAndCommitStudioBrushProgramFile(file, "sut", product.repository); break;
+        case "sutg": committed = await importer.importAndCommitStudioBrushProgramFile(file, "sutg", product.repository); break;
+        case "bundle": committed = await importer.importAndCommitStudioBrushProgramFile(file, "bundle", product.repository); break;
       }
       if (committed.saved.savedCount === 0) {
         setError(t("studio.hostStatus.brushNoNewItems", "브러시 파일에 새로 저장할 항목이 없어요."));
