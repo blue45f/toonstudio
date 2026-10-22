@@ -43,7 +43,7 @@ const REFERENCE_LOCALE = "en";
  */
 const BELOW_TRANSLATED_FLOOR: readonly string[] = [
   "af", "am", "ar", "as", "az", "be", "bs", "ca", "cs", "da",
-  "et", "eu", "fa", "fi", "fil", "gl", "he", "hr", "hu", "hy", "id", "is",
+  "et", "eu", "fa", "fi", "fil", "gl", "he", "hr", "hu", "hy", "is",
   "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "mn", "ms",
   "my", "ne", "nl", "no", "pl", "pt", "ro", "si", "sk", "sl", "sq", "sr",
   "sv", "sw", "ta", "te", "th", "tr", "ur", "uz", "vi", "zu",
