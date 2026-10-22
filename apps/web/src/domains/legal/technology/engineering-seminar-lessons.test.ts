@@ -329,7 +329,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
     check: () => {
       const notices = flat("THIRD_PARTY_NOTICES.md");
       expect(notices).toMatch(/`mixbox` \| 2\.0\.0 \| CC BY-NC 4\.0/u);
-      expect(notices).toContain("disable/remove the Mixbox provider or obtain a");
+      expect(notices).toContain("disable/remove the Mixbox provider) or obtain a");
     },
   },
   {
@@ -552,7 +552,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-open-source", claim: "pnpm 패치 N개(pnpm-workspace.yaml 에서 센 값) + 포크 2개(wgpu 29.0.4 는 toon-fabric 피처 뒤, braces 는 중첩 깊이 100 가드)", needles: ["포크는 둘", "wgpu 29.0.4", "toon-fabric", "crates/vendor/wgpu-toon", "patches/braces", "깊이 100", "CC BY-NC 4.0"],
+    lesson: "seminar-open-source", claim: "pnpm 패치 N개(pnpm-workspace.yaml 에서 센 값) + 포크 2개(wgpu 30.0.1 는 toon-fabric 피처 뒤, braces 는 중첩 깊이 100 가드)", needles: ["포크는 둘", "wgpu 29.0.4", "toon-fabric", "crates/vendor/wgpu-toon", "patches/braces", "깊이 100", "CC BY-NC 4.0"],
     check: () => {
       // 패치 개수는 하드코딩하지 않고 pnpm-workspace.yaml 의 patchedDependencies 에서 센다. 패치 파일 수와도 맞아야 한다.
       const count = patchedDependencyCount();
@@ -562,7 +562,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
       expect(lesson?.takeaway.ko).toContain(`패치 ${count}개와 포크 2개`);
       expect(lesson?.points[0]?.ko).toContain(`패치 ${count}개`);
       const cargo = readText("crates", "vendor", "wgpu-toon", "Cargo.toml");
-      expect(cargo).toMatch(/name = "wgpu"\s+version = "29\.0\.4"/u);
+      expect(cargo).toMatch(/name = "wgpu"\s+version = "30\.0\.1"/u);
       expect(cargo).toContain("toon-fabric = []");
       expect(cargo).toContain("our upstream PR candidate");
       expect(readdirSync(repo("crates", "vendor", "wgpu-toon", "PATCHES"))).toHaveLength(1);

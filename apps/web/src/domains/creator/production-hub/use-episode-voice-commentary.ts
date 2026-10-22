@@ -14,7 +14,6 @@ import {
   type RefObject,
 } from "react";
 
-import type { ComparePoolItem } from "./compare-review-model";
 import {
   listProductionVoiceCommentaries,
   uploadProductionVoiceCommentary,
@@ -33,7 +32,7 @@ export interface EpisodeVoiceCommentaryHostInput {
   readonly isDemo: boolean;
   readonly tab: "viewer" | "compare";
   readonly comments: StudioCommentsDocument | null;
-  readonly compareItems: readonly ComparePoolItem[];
+  readonly compareItems: readonly { readonly id: string }[];
   readonly pageId: string;
   readonly panelRef: RefObject<HTMLDivElement | null>;
   readonly programmaticScrollRef: RefObject<boolean>;
@@ -138,7 +137,7 @@ const captureVoiceView = useCallback((): VoiceViewCapture | null => {
         .map((thread) => thread.id)
       : [],
   };
-}, [pageId]);
+}, [pageId, panelRef]);
 
 const applyVoiceView = useCallback((view: VoiceViewSnapshot, pinThreadIds: readonly string[]) => {
   setVoicePinIds(pinThreadIds);
@@ -154,10 +153,12 @@ const applyVoiceView = useCallback((view: VoiceViewSnapshot, pinThreadIds: reado
     if (!panel) return;
     const maxX = Math.max(0, panel.scrollWidth - panel.clientWidth);
     const maxY = Math.max(0, panel.scrollHeight - panel.clientHeight);
+    // 호출자가 넘긴 ref 에 표시를 남기는 것이 이 훅의 계약이다(handlePanelScroll 이 읽는다).
+    // eslint-disable-next-line react-compiler/react-compiler
     programmaticScrollRef.current = true;
     panel.scrollTo({ left: view.tx * maxX, top: view.ty * maxY });
   });
-}, [setTab]);
+}, [setTab, panelRef, programmaticScrollRef]);
 
 const handleSaveVoiceTrack = useCallback((track: VoiceCommentaryTrack, audioBlob: Blob | null) => {
   // 먼저 세션에 넣어 이 탭에서 바로 재생할 수 있게 하고, 실제 프로젝트면

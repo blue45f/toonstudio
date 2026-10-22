@@ -112,8 +112,8 @@ export const LIBRARY_AREA_AI_ON_DEVICE: LibraryGuideArea = {
         "Server GPU inference sends the drawing to a server and leaves the GPU bill with the operator (speed was not compared in this repository). So large language and diffusion models are left to the cloud route (your own key).",
       ),
       cost: t(
-        "첫 사용 때 런타임 WASM 약 26.8MB와 모델(채색은 79.3MB)을 내려받습니다. WebGPU가 안 되면 느린 WASM(CPU)으로 넘어가고, 채색은 512×512 고정에 색이 옅어 클라우드 채색이 있으면 그쪽이 우선입니다.",
-        "On first use it downloads about 26.8 MB of runtime WASM and the model (79.3 MB for colorizing). Without WebGPU it falls back to slower WASM on the CPU, and colorizing is fixed at 512x512 with pale color, so cloud colorizing wins when it is available.",
+        "첫 사용 때 런타임 WASM 약 28.3MB와 모델(채색은 79.3MB)을 내려받습니다. WebGPU가 안 되면 느린 WASM(CPU)으로 넘어가고, 채색은 512×512 고정에 색이 옅어 클라우드 채색이 있으면 그쪽이 우선입니다.",
+        "On first use it downloads about 28.3 MB of runtime WASM and the model (79.3 MB for colorizing). Without WebGPU it falls back to slower WASM on the CPU, and colorizing is fixed at 512x512 with pale color, so cloud colorizing wins when it is available.",
       ),
       paths: [
         `${CREATOR}/studio-onnx-inference-provider.ts`,

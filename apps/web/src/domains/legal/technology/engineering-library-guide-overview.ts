@@ -120,8 +120,8 @@ export const LIBRARY_GUIDE_OVERVIEW: LibraryGuideOverview = {
     {
       title: t("버전을 고정하고 고친 곳을 남긴다", "Pin versions and record what we changed"),
       body: t(
-        "핵심 엔진은 정확한 버전으로 고정하고(CanvasKit 0.41.1 등), 직접 빌드한 WASM은 해시로 봉인합니다. 고쳐 쓴 곳은 pnpm 패치 7개와 포크 2개(wgpu-toon·braces)로 남아 있습니다.",
-        "Core engines are pinned to exact versions (CanvasKit 0.41.1 and others), WASM we build is sealed by hash, and what we modified remains as 7 pnpm patches and 2 forks (wgpu-toon and braces).",
+        "핵심 엔진은 정확한 버전으로 고정하고(CanvasKit 0.42.0 등), 직접 빌드한 WASM은 해시로 봉인합니다. 고쳐 쓴 곳은 pnpm 패치 7개와 포크 2개(wgpu-toon·braces)로 남아 있습니다.",
+        "Core engines are pinned to exact versions (CanvasKit 0.42.0 and others), WASM we build is sealed by hash, and what we modified remains as 7 pnpm patches and 2 forks (wgpu-toon and braces).",
       ),
     },
   ],

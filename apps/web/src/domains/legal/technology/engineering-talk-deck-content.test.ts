@@ -494,10 +494,10 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(slide.notes.ko).toMatch(/axe 스모크\(기본 설정, 모션 감소 없음\)[^\n]*모션 감소·강제 색상은 수동[^\n]*키보드 점검은 스모크에 없습니다/u);
   });
 
-  it("성능: 번들 기준선과 참고 예산, +2% 래칫은 기준선·검사 스크립트와 같다", () => {
+  it("성능: 번들 기준선과 참고 예산, 크기 상한 없음(관찰)은 기준선·검사 스크립트와 같다", () => {
     const slide = slideOf("talk-performance");
     const baseline = JSON.parse(read("scripts/bundle-baseline.json")) as {
-      readonly policy: { readonly byteTolerance: number };
+      readonly policy: { readonly enforced: boolean };
       readonly static: Readonly<Record<string, number>>;
     };
     const checker = read("scripts/check-studio-bundle.mjs");
@@ -516,8 +516,9 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(studio).toBeGreaterThan(budget("studio"));
     expect(slide.facts?.[0]?.label.ko).toContain("2.5배");
     expect(slide.facts?.[1]?.label.ko).toContain("2.5배");
-    expect(baseline.policy.byteTolerance).toBe(0.02);
-    expect(factOf(slide, 2, "마지막 승인 측정")).toBe("+2%");
+    expect(baseline.policy.enforced).toBe(false);
+    expect(factOf(slide, 2, "마지막 승인 측정")).toBe("없음");
+    expect(checker).toContain("bundle size ratchet: disabled");
     expect(factOf(slide, 3, "정적 청크 수")).toBe(String(baseline.static["Studio route chunks"]));
     expect(repoPathExists("docs/perf/bundle-gate.md")).toBe(true);
   });
@@ -583,12 +584,12 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(nextgen).toContain("27종");
     expect(nextgen).toContain("3개");
 
-    // 아키텍처: Worker 가 먼저 받는 경로 35개, 오픈소스 117개. 고쳐 쓴 의존성(pnpm 패치·포크)은 개수를 슬라이드에 쓰지 않는다.
+    // 아키텍처: Worker 가 먼저 받는 경로 27개(3D 엔진 무대 제거 cfb9c3fa 로 줄었다), 오픈소스 117개. 고쳐 쓴 의존성(pnpm 패치·포크)은 개수를 슬라이드에 쓰지 않는다.
     const staticConfig = read("deploy/cloudflare-static/wrangler.jsonc");
     const workerFirst = /"run_worker_first":\s*\[([^\]]*)\]/u.exec(staticConfig)?.[1] ?? "";
-    expect(workerFirst.match(/"[^"]+"/gu)).toHaveLength(35);
-    expect(slideOf("talk-architecture").notes.ko).toContain("35개");
-    expect(slideOf("talk-architecture").notes.en).toContain("35 worker-first");
+    expect(workerFirst.match(/"[^"]+"/gu)).toHaveLength(27);
+    expect(slideOf("talk-architecture").notes.ko).toContain("27개");
+    expect(slideOf("talk-architecture").notes.en).toContain("27 worker-first");
     const openSource = findEngineeringMap("open-source");
     expect(openSource?.intro.ko).toContain("117개");
     expect(openSource?.intro.ko).toContain("2026-10-07");

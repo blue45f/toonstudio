@@ -166,16 +166,16 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
         "Draws the document's vector island on a GPU (WebGL2) surface and runs precise path operations (PathOps) in a Worker.",
       ),
       why: t(
-        "경로·글자·필터를 한 성숙한 그래픽 코어에서 제공해 기준 출력으로 삼기 좋습니다. 0.41.1로 고정해 골든 이미지 비교의 기준이 흔들리지 않게 했습니다(ADR-0004).",
-        "It offers paths, text and filters in one mature graphics core, which suits a reference output. Pinning 0.41.1 keeps the baseline for golden-image comparison steady (ADR-0004).",
+        "경로·글자·필터를 한 성숙한 그래픽 코어에서 제공해 기준 출력으로 삼기 좋습니다. 0.42.0로 고정해 골든 이미지 비교의 기준이 흔들리지 않게 했습니다(ADR-0004).",
+        "It offers paths, text and filters in one mature graphics core, which suits a reference output. Pinning 0.42.0 keeps the baseline for golden-image comparison steady (ADR-0004).",
       ),
       alternatives: t(
         "Vello는 알파 단계라 명시 선택형으로 두었고, Skia Graphite는 웹 아티팩트가 없으며, Google Forma는 상류가 보관(archived)돼 채택하지 않았습니다(ADR-0017).",
         "Vello is alpha-stage so it is explicit-choice only, Skia Graphite has no web artifact, and Google Forma is archived upstream, so none was adopted (ADR-0017).",
       ),
       cost: t(
-        "wasm이 약 7.2MB라 필요할 때 불러옵니다. 배포본은 WebGL 빌드(WebGPU API 없음)이며, 버전은 ADR 개정 없이 올리지 않습니다.",
-        "The wasm is about 7.2 MB, so it loads on demand. The shipped build is the WebGL one (no WebGPU API), and the version is not raised without an ADR revision.",
+        "wasm이 약 7.3MB라 필요할 때 불러옵니다. 배포본은 WebGL 빌드(WebGPU API 없음)이며, 버전은 ADR 개정 없이 올리지 않습니다.",
+        "The wasm is about 7.3 MB, so it loads on demand. The shipped build is the WebGL one (no WebGPU API), and the version is not raised without an ADR revision.",
       ),
       paths: [
         "packages/studio-engine-skia/src/document-renderer.ts",

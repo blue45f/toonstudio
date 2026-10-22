@@ -90,8 +90,8 @@ export const GLOSSARY_MORE_OSS: readonly GlossaryTerm[] = [
       "Like sewing on a new button (patch) versus tailoring a copy of the whole garment (fork): the more you remake, the more you must maintain.",
     ),
     inToonstudio: t(
-      "pnpm-workspace.yaml 의 patchedDependencies 에 패치 7개가 있습니다. manifold-3d·ktx2-encoder 패치는 new Function 호출을 정적 코드로 바꿔 unsafe-eval 없이 돌게 하고, @gltf-transform/functions 패치는 Function()을 쓰는 이미지 커널을 처음 필요할 때만 불러오도록 미룹니다. 포크는 둘입니다. wgpu-toon(crates/vendor/wgpu-toon, wgpu 29.0.4 기반 6개 파일 수정)과 braces(patches/braces, 중첩 깊이 100 상한)이고, 상류에 보낸 PR 근거는 찾지 못했습니다.",
-      "pnpm-workspace.yaml lists seven patches under patchedDependencies. The manifold-3d and ktx2-encoder patches turn new Function calls into static code so they run without unsafe-eval, while the @gltf-transform/functions patch postpones its Function()-using image kernels until they are first needed. There are two forks: wgpu-toon (crates/vendor/wgpu-toon, based on wgpu 29.0.4 with six files changed) and braces (patches/braces, nesting-depth cap of 100). No upstream PR evidence was found in the repository.",
+      "pnpm-workspace.yaml 의 patchedDependencies 에 패치 7개가 있습니다. manifold-3d·ktx2-encoder 패치는 new Function 호출을 정적 코드로 바꿔 unsafe-eval 없이 돌게 하고, @gltf-transform/functions 패치는 Function()을 쓰는 이미지 커널을 처음 필요할 때만 불러오도록 미룹니다. 포크는 둘입니다. wgpu-toon(crates/vendor/wgpu-toon, wgpu 30.0.1 기반 6개 파일 수정)과 braces(patches/braces, 중첩 깊이 100 상한)이고, 상류에 보낸 PR 근거는 찾지 못했습니다.",
+      "pnpm-workspace.yaml lists seven patches under patchedDependencies. The manifold-3d and ktx2-encoder patches turn new Function calls into static code so they run without unsafe-eval, while the @gltf-transform/functions patch postpones its Function()-using image kernels until they are first needed. There are two forks: wgpu-toon (crates/vendor/wgpu-toon, based on wgpu 30.0.1 with six files changed) and braces (patches/braces, nesting-depth cap of 100). No upstream PR evidence was found in the repository.",
     ),
     chapters: ["open-source", "licenses"],
     atlasIds: ["gpu-fabric-device-lease-vello", "oss-pnpm-patches-no-unsafe-eval", "oss-fork-wgpu-toon"],

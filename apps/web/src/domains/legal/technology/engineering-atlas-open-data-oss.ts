@@ -200,11 +200,11 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
     name: "wgpu-toon",
     title: t("복사해 한 가지만 더한 벤더 포크: 같은 GPUDevice 공유", "A vendored fork with one addition: sharing the same GPUDevice"),
     status: "experimental",
-    tagline: t("wgpu 29.0.4 를 저장소에 복사해 패치 1개를 얹고, 모든 변경을 피처 하나 뒤에 둡니다.", "wgpu 29.0.4 is copied into the repo with one patch, every change sitting behind a single feature."),
+    tagline: t("wgpu 30.0.1 를 저장소에 복사해 패치 1개를 얹고, 모든 변경을 피처 하나 뒤에 둡니다.", "wgpu 30.0.1 is copied into the repo with one patch, every change sitting behind a single feature."),
     background: [
       t(
-        "오픈소스를 쓰다 보면 우리에게 꼭 필요한 기능이 원본에 없을 때가 있습니다. 가장 가벼운 해결은 작은 패치이고, 부족하면 원본 소스를 저장소에 복사해 고쳐 쓰는 벤더 포크가 됩니다. ToonStudio 는 그래픽 라이브러리 wgpu 29.0.4 를 crates/vendor/wgpu-toon 에 복사해 한 가지 기능만 더했습니다. 페이지가 이미 열어 둔 GPU 작업대(GPUDevice)를 다른 도구와 함께 쓰게 하는 기능입니다(장치를 한 곳에서 빌려 쓰는 구조는 드로잉 카드 gpu-fabric-device-lease-vello 에서 다룹니다).",
-        "Sometimes open source lacks a feature we need. The lightest fix is a small patch; when that is not enough, copying the source into the repository and editing it is a vendored fork. ToonStudio copied the graphics library wgpu 29.0.4 into crates/vendor/wgpu-toon and added one feature: letting the GPU workbench (GPUDevice) that the page already opened be shared with other tools (how one device is leased to everyone is covered in the drawing card gpu-fabric-device-lease-vello).",
+        "오픈소스를 쓰다 보면 우리에게 꼭 필요한 기능이 원본에 없을 때가 있습니다. 가장 가벼운 해결은 작은 패치이고, 부족하면 원본 소스를 저장소에 복사해 고쳐 쓰는 벤더 포크가 됩니다. ToonStudio 는 그래픽 라이브러리 wgpu 30.0.1 를 crates/vendor/wgpu-toon 에 복사해 한 가지 기능만 더했습니다. 페이지가 이미 열어 둔 GPU 작업대(GPUDevice)를 다른 도구와 함께 쓰게 하는 기능입니다(장치를 한 곳에서 빌려 쓰는 구조는 드로잉 카드 gpu-fabric-device-lease-vello 에서 다룹니다).",
+        "Sometimes open source lacks a feature we need. The lightest fix is a small patch; when that is not enough, copying the source into the repository and editing it is a vendored fork. ToonStudio copied the graphics library wgpu 30.0.1 into crates/vendor/wgpu-toon and added one feature: letting the GPU workbench (GPUDevice) that the page already opened be shared with other tools (how one device is leased to everyone is covered in the drawing card gpu-fabric-device-lease-vello).",
       ),
       t(
         "wgpu 29 에는 페이지가 이미 가진 GPUDevice 를 wgpu::Device 로 받아들이는 방법이 없었습니다. 그래서 필터 WGSL(GPU 셰이더 언어)과 Vello(벡터 렌더러)가 서로 다른 작업대를 써서, 결과를 넘길 때마다 CPU 로 읽어 내렸다가(readback) 다시 올려야 했습니다. 포크는 같은 GPUDevice 를 채택(adopt)해 이 왕복을 없앱니다. 패치는 6개 파일에 걸친 6개 hunk(패치 주석 기준)이고 모두 toon-fabric 피처 뒤에 있어, 피처를 끄면 원본 wgpu 와 API 가 같습니다.",
@@ -220,7 +220,7 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
       ),
     ],
     keyPoints: [
-      t("wgpu 29.0.4 복사본 + 패치 1개, 모두 toon-fabric 피처 뒤", "A wgpu 29.0.4 copy plus one patch, all behind toon-fabric"),
+      t("wgpu 30.0.1 복사본 + 패치 1개, 모두 toon-fabric 피처 뒤", "A wgpu 30.0.1 copy plus one patch, all behind toon-fabric"),
       t("같은 GPUDevice 를 공유해 CPU 왕복(readback)을 없앤다", "Sharing one GPUDevice removes the CPU round trip (readback)"),
       t("배속은 크기마다 다르다: 0.93~3.29배(2026-09-23 정본)", "Speed-up varies by size: 0.93-3.29x (canonical, 2026-09-23)"),
     ],
@@ -274,11 +274,11 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
         language: "toml",
         ...codePair(`
 [features]
-#~ Track A(기본)는 toon-fabric 이 꺼져 원본 wgpu 29.0.4 와 API 가 같다. Track B 에서 fabric 을 켠다. ## Track A (default) leaves toon-fabric off, so the API equals upstream wgpu 29.0.4; Track B turns fabric on.
+#~ Track A(기본)는 toon-fabric 이 꺼져 원본 wgpu 30.0.1 와 API 가 같다. Track B 에서 fabric 을 켠다. ## Track A (default) leaves toon-fabric off, so the API equals upstream wgpu 30.0.1; Track B turns fabric on.
 fabric = ["gpu", "dep:wgpu"]
 
 [dependencies]
-wgpu = { version = "29.0.4", optional = true, default-features = false, features = ["toon-fabric"] }
+wgpu = { version = "30.0.1", optional = true, default-features = false, features = ["toon-fabric"] }
 
 [patch.crates-io]
 #~ crates.io 의 wgpu 를 저장소 안 복사본으로 바꿔 끼운다. ## Replace the crates.io wgpu with the copy inside the repository.
@@ -324,8 +324,8 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
     chapterIds: ["open-source", "performance"],
     talk: {
       pitch: t(
-        "오픈소스 그래픽 라이브러리 wgpu 에 우리에게 꼭 필요한 기능이 없어서, 29.0.4 를 저장소에 복사해 한 가지 기능만 더했습니다. 페이지가 이미 가진 GPU 작업대를 Vello 가 함께 쓰게 해서 CPU 로 왕복하던 단계를 없앱니다. 모든 변경은 피처 하나 뒤에 있고 끄면 원본과 같습니다.",
-        "The open-source graphics library wgpu lacked a feature we needed, so we copied version 29.0.4 into the repository and added just one thing: letting Vello share the GPU workbench the page already owns, which removes the round trip through the CPU. Every change sits behind one feature, and with it off the code equals the original.",
+        "오픈소스 그래픽 라이브러리 wgpu 에 우리에게 꼭 필요한 기능이 없어서, 30.0.1 를 저장소에 복사해 한 가지 기능만 더했습니다. 페이지가 이미 가진 GPU 작업대를 Vello 가 함께 쓰게 해서 CPU 로 왕복하던 단계를 없앱니다. 모든 변경은 피처 하나 뒤에 있고 끄면 원본과 같습니다.",
+        "The open-source graphics library wgpu lacked a feature we needed, so we copied version 30.0.1 into the repository and added just one thing: letting Vello share the GPU workbench the page already owns, which removes the round trip through the CPU. Every change sits behind one feature, and with it off the code equals the original.",
       ),
       analogy: t(
         "공동 작업대입니다. 두 장인이 각자 작업대를 쓰면 물건을 넘길 때마다 상자에 담아 옮겨야 하지만, 같은 작업대를 쓰면 옆으로 밀어 주기만 하면 됩니다.",
@@ -551,8 +551,8 @@ try {
         "Using open source means bringing hundreds of other people's code packages into our service; if one is quietly changed or turns out vulnerable, our service is affected. This is called supply-chain risk, like not noticing that a restaurant's ingredient supplier changed. ToonStudio keeps several layers of defence.",
       ),
       t(
-        "① 버전 고정: 핵심 라이브러리는 정확한 버전(zod 4.4.3, three 0.184.0, vitest 4.1.11)으로 묶고, 전이 의존성은 pnpm overrides 54개로 고치며, CI 는 pnpm install --frozen-lockfile 로 잠금 파일과 어긋나면 멈춥니다. ② 설치 스크립트 차단: 설치 때 빌드 스크립트를 실행해도 되는 패키지는 6개뿐이고 sharp·onnxruntime-node 등은 명시적으로 거부합니다. ③ 감사: audit:security 는 보안 권고 예외를 허용하지 않고, 라이선스 감사와 번들 경계 검사가 이어집니다.",
-        "1 Version pinning: core libraries are tied to exact versions (zod 4.4.3, three 0.184.0, vitest 4.1.11), transitive ones are corrected by 54 pnpm overrides, and CI stops on pnpm install --frozen-lockfile when the lockfile disagrees. 2 Install-script blocking: only six packages may run build scripts at install time, and sharp, onnxruntime-node and others are explicitly denied. 3 Audits: audit:security allows no advisory exceptions, followed by the license audit and the bundle-boundary check.",
+        "① 버전 고정: 핵심 라이브러리는 정확한 버전(zod 4.6.7, three 0.186.1, vitest 4.1.11)으로 묶고, 전이 의존성은 pnpm overrides 55개로 고치며, CI 는 pnpm install --frozen-lockfile 로 잠금 파일과 어긋나면 멈춥니다. ② 설치 스크립트 차단: 설치 때 빌드 스크립트를 실행해도 되는 패키지는 6개뿐이고 sharp·onnxruntime-node 등은 명시적으로 거부합니다. ③ 감사: audit:security 는 보안 권고 예외를 허용하지 않고, 라이선스 감사와 번들 경계 검사가 이어집니다.",
+        "1 Version pinning: core libraries are tied to exact versions (zod 4.6.7, three 0.186.1, vitest 4.1.11), transitive ones are corrected by 55 pnpm overrides, and CI stops on pnpm install --frozen-lockfile when the lockfile disagrees. 2 Install-script blocking: only six packages may run build scripts at install time, and sharp, onnxruntime-node and others are explicitly denied. 3 Audits: audit:security allows no advisory exceptions, followed by the license audit and the bundle-boundary check.",
       ),
       t(
         "④ 실행 때는 출처와 해시를 고정합니다. 운영 CSP 가 외부 스크립트·WASM 실행을 막으므로 ONNX Runtime·MediaPipe 의 WASM 은 빌드 해시가 붙은 same-origin 자산으로 싣고, ONNX 모델 파일 6개(합계 119,438,571 바이트)는 저장소 안에 두고 길이와 SHA-256 을 확인한 뒤에야 세션을 만듭니다. 무거운 엔진은 동적 import 로만 불러오고, 정적 그래프에 돌아오면 번들 검사가 실패합니다.",
@@ -574,11 +574,11 @@ try {
       title: t("공급망 방어선", "Supply-chain lines of defence"),
       caption: t("설치 전·설치 때·배포 전·실행 때 네 겹으로 막고, 맨 아래 칸에 알려진 예외를 따로 적습니다.", "Four layers cover before install, at install, before release and at run time, with known exceptions listed in the last row."),
       alt: t(
-        "첫째 방어선은 정확한 버전 고정과 overrides 54개, 잠금 파일입니다. 둘째는 설치 때 실행되는 빌드 스크립트를 6개만 허용하는 것입니다. 셋째는 배포 전 보안·라이선스·번들 경계 감사입니다. 넷째는 실행 때 same-origin WASM과 ONNX 모델의 SHA-256 확인입니다. 마지막 칸은 MediaPipe 모델 런타임 다운로드 등 알려진 예외입니다.",
-        "The first line is exact version pins, 54 overrides and the lockfile. The second allows only six build scripts at install time. The third is the pre-release security, license and bundle-boundary audits. The fourth is same-origin WASM and SHA-256 checks of ONNX models at run time. The last row lists known exceptions such as the MediaPipe model downloaded at run time.",
+        "첫째 방어선은 정확한 버전 고정과 overrides 55개, 잠금 파일입니다. 둘째는 설치 때 실행되는 빌드 스크립트를 6개만 허용하는 것입니다. 셋째는 배포 전 보안·라이선스·번들 경계 감사입니다. 넷째는 실행 때 same-origin WASM과 ONNX 모델의 SHA-256 확인입니다. 마지막 칸은 MediaPipe 모델 런타임 다운로드 등 알려진 예외입니다.",
+        "The first line is exact version pins, 55 overrides and the lockfile. The second allows only six build scripts at install time. The third is the pre-release security, license and bundle-boundary audits. The fourth is same-origin WASM and SHA-256 checks of ONNX models at run time. The last row lists known exceptions such as the MediaPipe model downloaded at run time.",
       ),
       layers: [
-        { id: "pin", label: t("① 설치 전: 버전 고정", "1 Before install: pins"), sub: t("정확한 버전 · overrides 54개 · 잠금 파일 고정 설치", "Exact versions, 54 overrides, frozen-lockfile install"), tone: "server", chips: ["pnpm"] },
+        { id: "pin", label: t("① 설치 전: 버전 고정", "1 Before install: pins"), sub: t("정확한 버전 · overrides 55개 · 잠금 파일 고정 설치", "Exact versions, 55 overrides, frozen-lockfile install"), tone: "server", chips: ["pnpm"] },
         { id: "scripts", label: t("② 설치 때: 스크립트 차단", "2 At install: script blocking"), sub: t("빌드 스크립트 허용 6개 · 나머지는 명시적 거부", "Six allowed build scripts; the rest explicitly denied"), tone: "server" },
         { id: "audit", label: t("③ 배포 전: 감사", "3 Before release: audits"), sub: t("보안 권고 예외 금지 · 라이선스 감사 · 번들 경계", "No advisory exceptions, license audit, bundle boundary"), tone: "good" },
         { id: "runtime", label: t("④ 실행 때: 같은 출처·해시", "4 At run time: origin and hash"), sub: t("WASM 은 same-origin · ONNX 모델은 SHA-256 확인", "WASM same-origin; ONNX models checked by SHA-256"), tone: "local", chips: ["ONNX Runtime Web", "SRI"] },
@@ -589,7 +589,7 @@ try {
     usage: [
       {
         feature: t("설치·CI 정책", "Install and CI policy"),
-        role: t("pnpm overrides 54개, 빌드 스크립트 허용 6개와 명시 거부, 잠금 파일 고정 설치로 의존성을 고정합니다.", "Fixes dependencies with 54 pnpm overrides, six allowed build scripts with explicit denials, and frozen-lockfile installs."),
+        role: t("pnpm overrides 55개, 빌드 스크립트 허용 6개와 명시 거부, 잠금 파일 고정 설치로 의존성을 고정합니다.", "Fixes dependencies with 55 pnpm overrides, six allowed build scripts with explicit denials, and frozen-lockfile installs."),
         paths: ["pnpm-workspace.yaml", "pnpm-lock.yaml", ".github/workflows/architecture-boundaries.yml"],
       },
       {
@@ -630,8 +630,8 @@ overrides:
   ws: '>=8.21.0' #~ 전이 의존성의 취약 버전을 고쳐진 버전으로 수렴시킨다 ## converge vulnerable transitive versions to fixed ones
 `, "#"),
         explain: t(
-          "pnpm-workspace.yaml 의 발췌입니다. 실제 파일은 허용 6개(@nestjs/core, @sentry/cli, @swc/core, esbuild, unrs-resolver, workerd), 명시 거부 여러 개, overrides 54개를 담고 있습니다. 거부 목록은 pnpm 11 의 엄격한 설치 모드에서 설치가 실패하지 않게 하는 역할도 합니다.",
-          "An excerpt of pnpm-workspace.yaml. The real file holds six allowed packages (@nestjs/core, @sentry/cli, @swc/core, esbuild, unrs-resolver, workerd), several explicit denials and 54 overrides. The denials also keep installs from failing under pnpm 11's strict mode.",
+          "pnpm-workspace.yaml 의 발췌입니다. 실제 파일은 허용 6개(@nestjs/core, @sentry/cli, @swc/core, esbuild, unrs-resolver, workerd), 명시 거부 여러 개, overrides 55개를 담고 있습니다. 거부 목록은 pnpm 11 의 엄격한 설치 모드에서 설치가 실패하지 않게 하는 역할도 합니다.",
+          "An excerpt of pnpm-workspace.yaml. The real file holds six allowed packages (@nestjs/core, @sentry/cli, @swc/core, esbuild, unrs-resolver, workerd), several explicit denials and 55 overrides. The denials also keep installs from failing under pnpm 11's strict mode.",
         ),
         source: "pnpm-workspace.yaml",
       },
@@ -686,7 +686,7 @@ export async function loadVerifiedModel(url: string, expected: { bytes: number; 
           question: t("새 취약점이 나오면 어떻게 하나요?", "What happens when a new vulnerability appears?"),
           answer: t(
             "audit:security 가 pnpm audit 를 예외 없이 돌리고, 전이 의존성은 overrides 로 고쳐진 버전으로 올립니다. overrides 는 현재 50개입니다.",
-            "audit:security runs pnpm audit with no exceptions, and transitive dependencies are raised to fixed versions through overrides, 54 of them today.",
+            "audit:security runs pnpm audit with no exceptions, and transitive dependencies are raised to fixed versions through overrides, 55 of them today.",
           ),
         },
         {

@@ -222,8 +222,8 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 54개 — 대부분 보안 권고 대응, 일부는 도구 버전 통일, braces 한 줄은 저장소 포크로 대체). 설치할 때 pnpm이 자동으로 적용한다.",
-        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (54 overrides, mostly answering security advisories, some aligning tool versions, and one swapping braces for a repository fork). pnpm applies both automatically at install time.",
+        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 55개 — 대부분 보안 권고 대응, 일부는 도구 버전 통일, braces 한 줄은 저장소 포크로 대체). 설치할 때 pnpm이 자동으로 적용한다.",
+        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (55 overrides, mostly answering security advisories, some aligning tool versions, and one swapping braces for a repository fork). pnpm applies both automatically at install time.",
       ),
       license: t("원본 라이선스를 따름", "Follows each original"),
       mode: t("설치 단계(pnpm)", "Install step (pnpm)"),
@@ -249,8 +249,8 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "Rust 그래픽 라이브러리 wgpu 29.0.4에 패치 1개를 얹은 벤더 포크. 페이지가 이미 가진 GPU 장치를 wgpu가 넘겨받게 해, 그림 데이터를 CPU로 되읽지 않고 같은 장치 안에서 쓴다.",
-        "A vendored fork of the Rust graphics library wgpu 29.0.4 with one patch. It lets wgpu adopt the GPU device the page already owns, so image data is used on the same device instead of being read back to the CPU.",
+        "Rust 그래픽 라이브러리 wgpu 30.0.1에 패치 1개를 얹은 벤더 포크. 페이지가 이미 가진 GPU 장치를 wgpu가 넘겨받게 해, 그림 데이터를 CPU로 되읽지 않고 같은 장치 안에서 쓴다.",
+        "A vendored fork of the Rust graphics library wgpu 30.0.1 with one patch. It lets wgpu adopt the GPU device the page already owns, so image data is used on the same device instead of being read back to the CPU.",
       ),
       license: same("MIT OR Apache-2.0"),
       mode: t("Rust · 벤더 포크 · 피처 뒤", "Rust · vendored fork · behind a feature"),

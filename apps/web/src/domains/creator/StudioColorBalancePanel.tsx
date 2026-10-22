@@ -27,7 +27,7 @@ const CHIP_CLASS =
   "rounded-md border border-line bg-card px-2 py-0.5 text-[0.6rem] text-fg-2 transition-colors hover:bg-raised hover:text-fg";
 
 // 톤 영역(그림자/중간톤/하이라이트) 정의 — 표시 순서·한글 라벨.
-const TONE_SECTIONS: { tone: keyof ColorBalance; label: string }[] = [
+const TONE_SECTIONS: { tone: "shadows" | "midtones" | "highlights"; label: string }[] = [
   { tone: "shadows", label: "그림자" },
   { tone: "midtones", label: "중간톤" },
   { tone: "highlights", label: "하이라이트" },

@@ -16,8 +16,8 @@ const STATIC_FIRST_EDGE_GATEWAY: EngineeringAtlasEntry = {
   title: t("정적은 곧장, 동적만 Worker가 먼저", "Static goes straight through; only dynamic paths meet the Worker first"),
   status: "configured",
   tagline: t(
-    "화면 파일은 Static Assets가 곧장 내주고, Worker는 26개 경로 패턴만 먼저 받습니다.",
-    "Static Assets serve the screens directly; the Worker first sees only 26 path patterns.",
+    "화면 파일은 Static Assets가 곧장 내주고, Worker는 27개 경로 패턴만 먼저 받습니다.",
+    "Static Assets serve the screens directly; the Worker first sees only 27 path patterns.",
   ),
   background: [
     t(
@@ -25,8 +25,8 @@ const STATIC_FIRST_EDGE_GATEWAY: EngineeringAtlasEntry = {
       "If a server had to work on every page view, cost and waiting time would grow with the audience. ToonStudio builds the screen files and catalog JSON ahead of time and leaves them in Cloudflare Static Assets (a store that hands out files without running code). It is like a shopper taking an item off a convenience-store shelf without calling a clerk.",
     ),
     t(
-      "Worker(Cloudflare 위에서 도는 작은 프로그램)는 wrangler.jsonc의 run_worker_first 26개 패턴에 맞는 요청만 먼저 받습니다. API·Socket.IO가 4개, 링크 미리보기(Open Graph)용 페이지가 16개, 25 MiB를 넘는 대형 파일이 6개입니다. Worker 안에서도 ① /api/health는 곧바로 답하고 ② 사람이 연 미리보기 페이지는 다시 정적 보관소로 돌려보내며 ③ 카카오톡 같은 크롤러일 때만 Core API에 메타태그 HTML을 요청하고 ④ 나머지 API는 용도별 7개 길(core, public-read, social, playground, admin, realtime, large-asset) 중 하나로만 보냅니다.",
-      "The Worker (a small program running on Cloudflare) first receives only requests that match the 26 run_worker_first patterns in wrangler.jsonc: 4 for the API and Socket.IO, 16 for link-preview (Open Graph) pages and 6 for files over 25 MiB. Inside the Worker, (1) /api/health is answered on the spot, (2) a preview page opened by a person is handed back to static assets, (3) only a crawler such as KakaoTalk's makes the Core API render meta-tag HTML, and (4) every other API call goes to exactly one of seven routes: core, public-read, social, playground, admin, realtime or large-asset.",
+      "Worker(Cloudflare 위에서 도는 작은 프로그램)는 wrangler.jsonc의 run_worker_first 27개 패턴에 맞는 요청만 먼저 받습니다. API·Socket.IO가 4개, 링크 미리보기(Open Graph)용 페이지가 16개, 25 MiB를 넘는 대형 파일이 7개입니다. Worker 안에서도 ① /api/health는 곧바로 답하고 ② 사람이 연 미리보기 페이지는 다시 정적 보관소로 돌려보내며 ③ 카카오톡 같은 크롤러일 때만 Core API에 메타태그 HTML을 요청하고 ④ 나머지 API는 용도별 7개 길(core, public-read, social, playground, admin, realtime, large-asset) 중 하나로만 보냅니다.",
+      "The Worker (a small program running on Cloudflare) first receives only requests that match the 27 run_worker_first patterns in wrangler.jsonc: 4 for the API and Socket.IO, 16 for link-preview (Open Graph) pages and 7 for files over 25 MiB. Inside the Worker, (1) /api/health is answered on the spot, (2) a preview page opened by a person is handed back to static assets, (3) only a crawler such as KakaoTalk's makes the Core API render meta-tag HTML, and (4) every other API call goes to exactly one of seven routes: core, public-read, social, playground, admin, realtime or large-asset.",
     ),
     t(
       "대안은 모든 요청을 Worker 하나가 받아 프록시하는 방식입니다. 이러면 화면 파일 하나하나가 Worker 호출이 되어 무료 한도에 빨리 닿습니다. 직접 운영하는 리버스 프록시는 서버를 따로 관리해야 합니다. 정적 우선 구조는 Worker 호출과 잠든 Core API를 깨우는 일을 동적 경로로만 한정합니다. 25 MiB를 넘는 파일은 Static Assets에 올릴 수 없어 압축 사본, R2 저장소, (설정했을 때만) 지정 원본 순서로 내주고, 모두 비면 Core API를 깨우는 대신 503으로 닫습니다.",
@@ -39,7 +39,7 @@ const STATIC_FIRST_EDGE_GATEWAY: EngineeringAtlasEntry = {
   ],
   keyPoints: [
     t("정적 파일은 Worker를 실행하지 않고 곧장 응답", "Static files are served without running the Worker"),
-    t("먼저-실행 패턴 26개: API 4 · 미리보기 16 · 대형 파일 6", "26 worker-first patterns: 4 API, 16 previews, 6 large files"),
+    t("먼저-실행 패턴 27개: API 4 · 미리보기 16 · 대형 파일 7", "27 worker-first patterns: 4 API, 16 previews, 7 large files"),
     t("크롤러일 때만 Core API에 메타태그 HTML을 요청", "Only crawlers make the Core API render meta-tag HTML"),
     t("설정이 틀리면 몰래 우회하지 않고 503으로 닫음", "A bad setting closes with 503 instead of detouring silently"),
   ],
@@ -52,12 +52,12 @@ const STATIC_FIRST_EDGE_GATEWAY: EngineeringAtlasEntry = {
       "Requests that miss the patterns end as plain files; only matches reach the Worker, which picks one route.",
     ),
     alt: t(
-      "브라우저의 요청은 먼저 26개 먼저-실행 패턴과 비교됩니다. 맞지 않으면 Static Assets가 파일을 바로 돌려줍니다. 맞으면 Worker가 받아 헬스 확인은 즉답하고, 사람이 연 미리보기는 Static Assets로 돌려보내며, 대형 파일은 압축 사본과 R2에서 내주고, API와 크롤러 요청은 오리진으로 전달합니다. 설정이 잘못되면 503으로 닫습니다.",
-      "A browser request is first compared with the 26 worker-first patterns. If it does not match, Static Assets return the file directly. If it matches, the Worker answers health checks itself, sends human-opened previews back to Static Assets, serves large files from compressed copies and R2, and forwards API and crawler requests to the origin. A bad configuration closes with 503.",
+      "브라우저의 요청은 먼저 27개 먼저-실행 패턴과 비교됩니다. 맞지 않으면 Static Assets가 파일을 바로 돌려줍니다. 맞으면 Worker가 받아 헬스 확인은 즉답하고, 사람이 연 미리보기는 Static Assets로 돌려보내며, 대형 파일은 압축 사본과 R2에서 내주고, API와 크롤러 요청은 오리진으로 전달합니다. 설정이 잘못되면 503으로 닫습니다.",
+      "A browser request is first compared with the 27 worker-first patterns. If it does not match, Static Assets return the file directly. If it matches, the Worker answers health checks itself, sends human-opened previews back to Static Assets, serves large files from compressed copies and R2, and forwards API and crawler requests to the origin. A bad configuration closes with 503.",
     ),
     nodes: [
       { id: "browser", label: t("브라우저", "Browser"), tone: "local", shape: "pill", at: [0, 1] },
-      { id: "gate", label: t("패턴 일치?", "Pattern match?"), sub: t("26개 패턴", "26 patterns"), tone: "neutral", shape: "diamond", at: [1, 1] },
+      { id: "gate", label: t("패턴 일치?", "Pattern match?"), sub: t("27개 패턴", "27 patterns"), tone: "neutral", shape: "diamond", at: [1, 1] },
       { id: "assets", label: t("Static Assets", "Static Assets"), sub: t("Worker 실행 없음", "No Worker run"), tone: "edge", at: [1, 0] },
       { id: "worker", label: t("Worker", "Worker"), sub: t("동적·크롤러·대형 파일", "Dynamic, crawler, large"), tone: "edge", at: [2, 1] },
       { id: "live", label: t("엣지 즉답", "Edge answer"), sub: t("/api/health/live", "/api/health/live"), tone: "edge", shape: "pill", at: [3, 0] },
@@ -270,8 +270,8 @@ const STATIC_FIRST_EDGE_GATEWAY: EngineeringAtlasEntry = {
       {
         question: t("Worker가 멈추면 사이트 전체가 멈추나요?", "If the Worker stops, does the whole site stop?"),
         answer: t(
-          "정적 요청은 Worker를 거치지 않아 화면 파일 응답에는 영향이 없습니다. 영향을 받는 것은 Worker가 먼저 받는 26개 경로(API, 공유 미리보기, 대형 파일)입니다. README는 이 영역 라우트의 실패 모드를 fail-open이라고 적지만, 실제 동작은 Cloudflare 문서와 대시보드로 따로 확인해야 합니다.",
-          "Static requests bypass the Worker, so screen files are unaffected. What can be affected are the 26 worker-first paths (API, share previews, large files). The README describes this zone route's failure mode as fail-open, but the real behavior needs to be checked against Cloudflare's documentation and the dashboard.",
+          "정적 요청은 Worker를 거치지 않아 화면 파일 응답에는 영향이 없습니다. 영향을 받는 것은 Worker가 먼저 받는 27개 경로(API, 공유 미리보기, 대형 파일)입니다. README는 이 영역 라우트의 실패 모드를 fail-open이라고 적지만, 실제 동작은 Cloudflare 문서와 대시보드로 따로 확인해야 합니다.",
+          "Static requests bypass the Worker, so screen files are unaffected. What can be affected are the 27 worker-first paths (API, share previews, large files). The README describes this zone route's failure mode as fail-open, but the real behavior needs to be checked against Cloudflare's documentation and the dashboard.",
         ),
       },
       {
@@ -297,14 +297,14 @@ const STATIC_FIRST_EDGE_GATEWAY: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "'정적 요청은 Worker를 실행하지 않는다'에는 예외가 있습니다. 먼저-실행 26개 패턴에 걸리는 요청, 특히 링크 미리보기 크롤러와 대형 파일은 Worker를 탑니다. 이 카드는 코드와 설정만 확인했고 운영 대시보드의 실제 상태와 사용량은 확인하지 않았습니다.",
-      "'Static requests never run the Worker' has exceptions: requests that match the 26 worker-first patterns, notably link-preview crawlers and large files, do run it. This card checked code and configuration only; the real dashboard state and usage were not checked.",
+      "'정적 요청은 Worker를 실행하지 않는다'에는 예외가 있습니다. 먼저-실행 27개 패턴에 걸리는 요청, 특히 링크 미리보기 크롤러와 대형 파일은 Worker를 탑니다. 이 카드는 코드와 설정만 확인했고 운영 대시보드의 실제 상태와 사용량은 확인하지 않았습니다.",
+      "'Static requests never run the Worker' has exceptions: requests that match the 27 worker-first patterns, notably link-preview crawlers and large files, do run it. This card checked code and configuration only; the real dashboard state and usage were not checked.",
     ),
   },
   technologies: ["Cloudflare Static Assets", "Cloudflare Workers", "Cloudflare", "Render", "Open Graph"],
   facts: [
     {
-      value: "26",
+      value: "27",
       label: t("Worker가 먼저 받는 경로 패턴 수(테스트가 목록을 고정)", "Worker-first path patterns (a test pins the list)"),
       source: "deploy/cloudflare-static/wrangler.jsonc",
     },
