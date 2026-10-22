@@ -22,6 +22,13 @@ import {
   applyStudioBg3dOutlinerSelectionEffect,
   planStudioBg3dOutlinerMutation,
 } from "./studio-bg3d-outliner-mutation";
+import { createStudioBg3dOrganizationController } from "./studio-bg3d-organization-controller";
+import {
+  createStudioBg3dComponentId,
+  planStudioBg3dOrganizationMutation,
+} from "./studio-bg3d-organization-mutation";
+import { buildStudioBg3dOrganizationView } from "./studio-bg3d-scene-organization";
+import { collectStudioBg3dSkpSources } from "./studio-bg3d-skp-sidecar";
 
 import type { StudioBg3dOutlinerMutationAction } from "./studio-bg3d-outliner-mutation";
 
@@ -116,20 +123,8 @@ export function useStudioBg3dEditor(props) {
     planRemoval: planStudioBg3dSceneEntityRemoval,
   };
 
-  const applyOutlinerMutation = (action: StudioBg3dOutlinerMutationAction) => {
-    const live = h.physicsRuntimeSourceRef.current;
-    const plan = planStudioBg3dOutlinerMutation({
-      snapshot: live,
-      action,
-      dependencies: outlinerMutationDependencies,
-    });
-    if (!plan.ok) {
-      if (plan.reason === "remove-failed") {
-        h.setError("부모를 삭제해도 자식의 월드 변환을 보존할 수 없어 삭제를 취소했습니다.");
-      }
-      return;
-    }
-
+  // 계획을 기존 실행 취소·다시 실행 경로로 커밋한다. 아웃라이너 명령과 태그·컴포넌트·장면 정보 명령이 같은 꼬리를 쓴다.
+  const commitOutlinerPlan = (live, plan) => {
     const before = createStudioBg3dHistorySnapshot(live);
     h.commitImmediateHistoryTransition(
       plan.snapshot.primitives,
@@ -150,6 +145,38 @@ export function useStudioBg3dEditor(props) {
     h.setSelectedIds((current) =>
       applyStudioBg3dOutlinerSelectionEffect(current, plan.selection));
     h.setError(null);
+  };
+
+  const applyOutlinerMutation = (action: StudioBg3dOutlinerMutationAction) => {
+    const live = h.physicsRuntimeSourceRef.current;
+    const plan = planStudioBg3dOutlinerMutation({
+      snapshot: live,
+      action,
+      dependencies: outlinerMutationDependencies,
+    });
+    if (!plan.ok) {
+      if (plan.reason === "remove-failed") {
+        h.setError("부모를 삭제해도 자식의 월드 변환을 보존할 수 없어 삭제를 취소했습니다.");
+      }
+      return;
+    }
+    commitOutlinerPlan(live, plan);
+  };
+
+  // 태그·컴포넌트·장면 정보: 캡처·복원·물리 중에는 시작하지 않고(`busy`), 그 밖에는 계획이 정한 결과를 화면에 돌려준다.
+  const organizationBusy = () =>
+    h.isCapturing || h.isBatchRenderingShots || h.isRestoringScene || h.physicsInteractionLocked;
+  const applyOrganizationMutation = (action) => {
+    if (organizationBusy()) return { ok: false, reason: "busy" };
+    const live = h.physicsRuntimeSourceRef.current;
+    const plan = planStudioBg3dOrganizationMutation({
+      snapshot: live,
+      action,
+      dependencies: { createComponentId: createStudioBg3dComponentId },
+    });
+    if (!plan.ok) return { ok: false, reason: plan.reason };
+    commitOutlinerPlan(live, plan);
+    return { ok: true };
   };
 
   h.outlinerController = createStudioBg3dSceneOutlinerController({
@@ -184,6 +211,21 @@ export function useStudioBg3dEditor(props) {
       applyOutlinerMutation({ type: "duplicate", item });
     },
     onRemove: (item) => applyOutlinerMutation({ type: "remove", item }),
+    organization: createStudioBg3dOrganizationController({
+      view: buildStudioBg3dOrganizationView({
+        entities: [...h.primitives, ...h.customModels],
+        document: h.sceneBaseDocument,
+      }),
+      skpSourceByEntityId: collectStudioBg3dSkpSources({
+        customModels: h.customModels,
+        attachmentByStorageModelId: h.attachmentByStorageModelIdRef.current,
+      }),
+      apply: applyOrganizationMutation,
+      selectEntities: (ids) => {
+        h.setSelectedSharedCharacterElementId?.(null);
+        h.setSelectedIds(new Set(ids));
+      },
+    }),
   });
   h.handleOpenPrecisionModeler = props.onOpenPrecisionModeler
     ? () => {

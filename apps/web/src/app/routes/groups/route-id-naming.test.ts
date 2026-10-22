@@ -9,6 +9,7 @@ import { creatorRoutes } from "./creator.routes";
 import { engagementRoutes } from "./engagement.routes";
 import { experienceRoutes } from "./experience.routes";
 import { integrationRoutes } from "./integrations.routes";
+import { labsRoutes } from "./labs.routes";
 import { legalRoutes } from "./legal.routes";
 import { legacyRedirectRoutes } from "./legacy.routes";
 import { marketRoutes } from "./market.routes";
@@ -105,6 +106,12 @@ const CONVENTIONS: readonly GroupConvention[] = [
     routes: integrationRoutes,
     prefix: "integration-",
     legacyExceptions: ["automation-hub", "publish-center", "developer-platform"],
+  },
+  {
+    group: "labs",
+    routes: labsRoutes,
+    prefix: "labs-",
+    legacyExceptions: ["creator-studio-anchor-lab", "creator-studio-branching-cuttoon"],
   },
   { group: "legal", routes: legalRoutes, prefix: "legal-" },
   { group: "legacy", routes: legacyRedirectRoutes, prefix: "legacy-" },

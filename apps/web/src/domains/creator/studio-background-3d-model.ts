@@ -24,7 +24,7 @@ import type {
   StudioBg3dAnimationPlayback,
   StudioBg3dConstraintLayer,
   StudioBg3dMaterialOverride,
-  StudioBg3dModelTexturePaint,
+  StudioBg3dModelTexturePaint, StudioBg3dNodeOrganization,
   StudioBg3dParsedGlbMetrics,
   StudioBg3dPoseLayer,
   StudioBg3dMorphLayer,
@@ -54,7 +54,7 @@ export {
 
 export { applyBg3dFallbackMaterial, loadBg3dCustomModelFromBlob };
 
-export interface BgCustomModelInstance {
+export interface BgCustomModelInstance extends StudioBg3dNodeOrganization {
   id: string;
   /** BG3D 로컬 SQLite/OPFS private id — 모델 바이너리 자체는 절대 씬 상태/직렬화에 포함되지 않는다. */
   modelId: string;

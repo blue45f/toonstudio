@@ -47,6 +47,13 @@ describe("Studio route registry", () => {
     }
   });
 
+  it("registers the experimental anchor lab without adding it to Studio discovery", () => {
+    expect(studioRoutePath("anchor-lab")).toBe("/studio/anchor-lab");
+    expect(resolveStudioRouteRegistration("/studio/anchor-lab/")?.id).toBe("anchor-lab");
+    expect(studioRouteRegistration("anchor-lab")).toMatchObject({ shell: "studio", resource: "none", preserveRuntimeBy: null });
+    expect(STUDIO_DISCOVERY_ROUTE_IDS).not.toContain("anchor-lab");
+  });
+
   it("resolves canonical and legacy entry points to the same route owner", () => {
     expect(resolveStudioRouteRegistration("/studio/new")?.id).toBe("new");
     expect(resolveStudioRouteRegistration("/studio/space")?.id).toBe("personal-space");

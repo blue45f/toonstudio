@@ -24,6 +24,10 @@ const studioMobileEditingDockSource = readFileSync(
   "utf8",
 );
 const studioChromeSource = readFileSync(new URL("./studio-chrome-ui.tsx", import.meta.url), "utf8");
+const studioQuickControlsSource = readFileSync(
+  new URL("./live/StudioLiveCollaborationQuickControls.tsx", import.meta.url),
+  "utf8",
+);
 // 스튜디오 실행 시 함께 적용되는 스타일 전체가 검사 대상이다: 전역 규칙(globals.css —
 // 앱 툴팁 레이어 등)과 스튜디오 전용 규칙의 정본인 studio-route.css를 합쳐 읽는다.
 // 스튜디오 규칙은 globals.css 머리말 정책상 studio-route.css에만 둔다.
@@ -199,5 +203,17 @@ describe("Studio mobile immersive preference", () => {
     expect(studioGlobalsSource).toContain("border-radius: 9999px");
     expect(studioGlobalsSource).toContain("overflow: visible");
     expect(studioGlobalsSource).toContain("padding-top: 2.75rem");
+  });
+
+  it("몰입 알약이 두 줄로 커져도 실시간 협업 빠른 조작 단추가 알약 아래로 내려가 가려지지 않는다", () => {
+    // 접근성 점검(axe target-size)이 잡은 결함: 오프라인 안내가 붙어 알약이 약 100px 가 되면 sticky top-16(64px)에
+    // 놓인 단추가 알약에 가려져 44×9px 만 보였다. 알약 높이를 재는 변수를 한 줄 기준(4.25rem)과 비교해 내린다.
+    expect(studioQuickControlsSource).toContain('data-studio-live-quick-controls-root="true"');
+    const rule = studioGlobalsSource.match(
+      /\[data-studio-live-quick-controls-root="true"\]\s*\{\s*margin-top:\s*max\(\s*0px,\s*calc\(var\(--studio-immersive-menubar-block,\s*4\.25rem\)\s*-\s*4\.25rem\)\s*\);/u,
+    );
+    expect(rule, "몰입 알약 높이만큼 빠른 조작 단추를 내리는 규칙").not.toBeNull();
+    // 한 줄짜리 알약에서는 위치가 달라지지 않아야 한다: 기준(4.25rem = 68px)이 한 줄 알약 높이 + 12px(약 67px) 이상이다.
+    expect(studioGlobalsSource).toContain("--studio-immersive-menubar-block: calc(0.375rem + 2.75rem + 0.5rem + 2px)");
   });
 });

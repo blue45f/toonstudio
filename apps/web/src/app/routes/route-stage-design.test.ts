@@ -22,6 +22,10 @@ describe("전체 경로의 시각 분류 계약", () => {
     }
   });
 
+  it("캐릭터 앵커 연구실은 캐릭터 영역으로 분류한다", () => {
+    expect(resolveRouteStageDesign("/studio/anchor-lab")).toMatchObject({ domain: "characters", matchedBy: "studio-registry" });
+  });
+
   it("Studio 등록부의 모든 경로와 기존 별칭을 분류한다", () => {
     for (const registration of STUDIO_ROUTE_REGISTRY) {
       for (const path of [registration.pattern, ...registration.aliases]) {

@@ -207,6 +207,25 @@ it("서버가 확인한 로그인 상태 저하를 정확한 기능 이름으로
   expect(screen.getByRole("status").textContent).not.toContain("클라우드 저장");
 });
 
+describe("상태 안내의 역할 구조", () => {
+  // ARIA in HTML: aside(complementary 랜드마크)에는 role="status" 를 줄 수 없다(axe aria-allowed-role).
+  // 상태 영역은 랜드마크가 아니므로 div 로 두고, 낭독은 role=status 가 맡는다.
+  it("장애·복구 안내는 aside 가 아니라 role=status 인 div 이다", () => {
+    const { container } = renderBanner(false);
+    const status = screen.getByRole("status");
+    expect(status.tagName).toBe("DIV");
+    expect(container.querySelector("aside")).toBeNull();
+    expect(screen.queryByRole("complementary")).toBeNull();
+  });
+
+  it("절전 해제 안내(연결 칩)도 aside 가 아니다", () => {
+    mocks.state = { ...mocks.state, report: null, warmingUp: true };
+    const { container } = renderBanner(false);
+    expect(screen.getByRole("status").tagName).toBe("DIV");
+    expect(container.querySelector("aside")).toBeNull();
+  });
+});
+
 describe("절전 해제 안내", () => {
   it("첫 연결 대기 중에는 장애 경고 대신 조용한 연결 안내만 보인다", () => {
     mocks.state = { ...mocks.state, report: null, warmingUp: true };

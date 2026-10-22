@@ -13,7 +13,12 @@ if assets.is_dir():
 for directory in ("brand", "fonts", "icons", "i18n", "locales"):
     path = root / directory
     if path.is_dir():
-        files.update(item for item in path.rglob("*") if item.is_file() and item.suffix in allowed and item.stat().st_size < 8_000_000)
+        files.update(
+            item for item in path.rglob("*")
+            if item.is_file() and item.suffix in allowed and item.stat().st_size < 8_000_000
+            # i18n/studio 는 /studio 화면 전용 문구 묶음(약 24 MB)이라 비스튜디오 QA 묶음에서 뺀다.
+            and not (directory == "i18n" and item.relative_to(path).parts[0] == "studio")
+        )
 # Include compact static catalog data, but not any large downloaded asset corpora.
 for directory in ("data", "catalog"):
     path = root / directory

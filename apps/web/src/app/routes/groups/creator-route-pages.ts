@@ -278,9 +278,24 @@ export const StudioPoserPage = lazyRetry(
   "StudioPoserPage",
 );
 
+export const AnchorLabPage = lazyRetry(
+  () => import("@/domains/creator/anchor-consistency/ui/AnchorLabPage").then((module) => ({
+    default: module.AnchorLabPage,
+  })),
+  "AnchorLabPage",
+);
+
 export const PdfWorkbenchPage = lazyRetry(
   () => import("@/domains/creator/pdf-workbench/PdfWorkbenchPage").then((module) => ({
     default: module.PdfWorkbenchPage,
   })),
   "PdfWorkbenchPage",
+);
+
+// 분기형 컷툰 실험(Labs): 무거운 코드가 없는 목록형 화면이라 사용자가 라우트로 들어올 때만 불러온다.
+export const BranchingCuttoonLabPage = lazyRetry(
+  () => import("@/domains/creator/branching-cuttoon/BranchingCuttoonLabPage").then((module) => ({
+    default: module.BranchingCuttoonLabPage,
+  })),
+  "BranchingCuttoonLabPage",
 );

@@ -77,6 +77,10 @@ onpod.ai 호스팅 이전 평가(2026-10-22, 제안 상태이며 현재 운영 �
 
 1. [`adr/0029-onpod-hosting-migration.md`](adr/0029-onpod-hosting-migration.md) — 무료 한도 대조, 구성요소별 판정, Core API 1단계 이전 절차·롤백·열린 결정(Proposed)
 
+열린 편집기 접근성 1단계(2026-10-22, 현재 구현)는 다음 문서를 추가로 본다.
+
+1. [`features/accessibility-stage1.md`](features/accessibility-stage1.md) — 패널을 열 때마다 하는 axe·키보드 순회·이름/역할 감사의 범위와 방법, 고친 것, 문서화된 예외, 미해결과 확인하지 못한 것(실제 화면 낭독기 낭독은 미확인), 실행 방법과 CI 편입 판단
+
 ## 문서 상태 표기
 
 - **현재**: 소스와 테스트로 지금 검증 가능

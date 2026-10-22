@@ -233,6 +233,20 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
     tier: "labs",
     directory: true,
   }),
+  // 캐릭터 앵커 연구실: Labs(experimental). 편집기 호스트에 연결하지 않는 독립 화면이라 프로젝트 문맥이 필요 없다.
+  // 점수는 휴리스틱 참고 값이며 같은 캐릭터인지 판정하거나 일관성을 보장하지 않는다(docs/features/anchor-consistency.md).
+  route({
+    id: "studio-anchor-lab",
+    path: "/studio/anchor-lab",
+    titleKey: "route.anchorLab",
+    label: { ko: "캐릭터 앵커 연구실", en: "Character anchor lab" },
+    description: {
+      ko: "정/반측 턴테이블 앵커 세트를 만들고 후보 이미지를 휴리스틱 참고 점수로 견주기",
+      en: "Build front/side/back anchor sets and compare candidate images with a heuristic reference score",
+    },
+    purpose: "create",
+    maturity: "experimental",
+  }),
   route({
     id: "production",
     path: "/production",
@@ -361,6 +375,20 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
     access: "project",
     projectContext: "required",
     directory: true,
+  }),
+  // Labs(experimental): 핵심 제작 여정과 같은 위계로 노출하지 않는다. 사이트맵의 "실험·자료" 단계로만 찾을 수 있다.
+  route({
+    id: "studio-branching-cuttoon",
+    path: "/studio/branching-cuttoon",
+    titleKey: "route.branchingCuttoon",
+    label: { ko: "분기형 컷툰 실험", en: "Branching cuttoon lab" },
+    description: {
+      ko: "독자가 선택지를 눌러 이야기가 갈라지는 컷툰을 만들고 미리 읽는 실험 도구",
+      en: "Experimental tool to build and preview a cuttoon whose story branches by reader choices",
+    },
+    purpose: "create",
+    maturity: "experimental",
+    tier: "labs",
   }),
   route({
     id: "studio-project",
