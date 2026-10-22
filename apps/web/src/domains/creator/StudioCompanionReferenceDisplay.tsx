@@ -27,6 +27,7 @@ import type {
 } from "./studio-companion-reference-projection";
 
 import { cn } from "@/shared/lib/utils";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 8;
@@ -273,40 +274,19 @@ function resolveDisplayState(
 function stateCopy(state: ReferenceDisplayState): { title: string; detail: string } {
   switch (state) {
     case "disconnected":
-      return {
-        title: "기본 스튜디오 연결이 끊겼습니다",
-        detail: "편집 탭을 다시 열거나 이 창을 새로 연결해 주세요.",
-      };
+      return { title: frozenStatus5Text("studio.frozenStatus5.refState.disconnectedTitle", "기본 스튜디오 연결이 끊겼습니다"), detail: frozenStatus5Text("studio.frozenStatus5.refState.disconnectedDetail", "편집 탭을 다시 열거나 이 창을 새로 연결해 주세요.") };
     case "reconnecting":
-      return {
-        title: "기본 스튜디오에 다시 연결하는 중",
-        detail: "마지막 합성본은 유지하고 새 입력은 잠시 막았습니다.",
-      };
+      return { title: frozenStatus5Text("studio.frozenStatus5.refState.reconnectingTitle", "기본 스튜디오에 다시 연결하는 중"), detail: frozenStatus5Text("studio.frozenStatus5.refState.reconnectingDetail", "마지막 합성본은 유지하고 새 입력은 잠시 막았습니다.") };
     case "empty":
-      return {
-        title: "레퍼런스가 아직 없습니다",
-        detail: "기본 스튜디오의 레퍼런스 캔버스에 이미지를 추가하면 여기에 표시됩니다.",
-      };
+      return { title: frozenStatus5Text("studio.frozenStatus5.refState.emptyTitle", "레퍼런스가 아직 없습니다"), detail: frozenStatus5Text("studio.frozenStatus5.refState.emptyDetail", "기본 스튜디오의 레퍼런스 캔버스에 이미지를 추가하면 여기에 표시됩니다.") };
     case "unavailable":
-      return {
-        title: "표시할 수 있는 레퍼런스가 없습니다",
-        detail: "불러오지 못한 항목을 기본 스튜디오에서 확인해 주세요.",
-      };
+      return { title: frozenStatus5Text("studio.frozenStatus5.refState.unavailableTitle", "표시할 수 있는 레퍼런스가 없습니다"), detail: frozenStatus5Text("studio.frozenStatus5.refState.unavailableDetail", "불러오지 못한 항목을 기본 스튜디오에서 확인해 주세요.") };
     case "partial":
-      return {
-        title: "일부 레퍼런스만 표시 중",
-        detail: "사용 가능한 항목으로 합성본을 만들었습니다.",
-      };
+      return { title: frozenStatus5Text("studio.frozenStatus5.refState.partialTitle", "일부 레퍼런스만 표시 중"), detail: frozenStatus5Text("studio.frozenStatus5.refState.partialDetail", "사용 가능한 항목으로 합성본을 만들었습니다.") };
     case "loading":
-      return {
-        title: "레퍼런스 미리보기를 준비하고 있어요",
-        detail: "편집을 막지 않도록 안전한 합성본을 만드는 중입니다.",
-      };
+      return { title: frozenStatus5Text("studio.frozenStatus5.refState.loadingTitle", "레퍼런스 미리보기를 준비하고 있어요"), detail: frozenStatus5Text("studio.frozenStatus5.refState.loadingDetail", "편집을 막지 않도록 안전한 합성본을 만드는 중입니다.") };
     case "ready":
-      return {
-        title: "레퍼런스 캔버스가 최신 상태입니다",
-        detail: "스포이드로 합성본의 색을 기본 스튜디오에 보낼 수 있습니다.",
-      };
+      return { title: frozenStatus5Text("studio.frozenStatus5.refState.readyTitle", "레퍼런스 캔버스가 최신 상태입니다"), detail: frozenStatus5Text("studio.frozenStatus5.refState.readyDetail", "스포이드로 합성본의 색을 기본 스튜디오에 보낼 수 있습니다.") };
   }
 }
 

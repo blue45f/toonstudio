@@ -13,12 +13,12 @@
  */
 
 import {
-  applyAntiAiNoisePattern,
-  generateWatermarkTilePositions,
+  applyAntiAiNoisePattern, generateWatermarkTilePositions,
   shouldDrawWatermark,
   watermarkPlacement,
   type WatermarkSettings,
 } from "../studio-watermark";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 import {
   planStudioEpisodeByteBudget,
@@ -567,7 +567,7 @@ export async function prepareVipsRoutedPresetPages(
   } catch (cause) {
     throw new PresetVipsUnavailableError({
       stage: "load",
-      message: "선택된 고품질 축소 엔진(wasm-vips)을 불러오지 못해 내보내기를 중단했어요.",
+      message: frozenStatus6Text("studio.frozenStatus6.exportPresets.vipsLoadFailed", "선택된 고품질 축소 엔진(wasm-vips)을 불러오지 못해 내보내기를 중단했어요."),
       cause,
     });
   }

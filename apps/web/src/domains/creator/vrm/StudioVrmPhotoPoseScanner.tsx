@@ -27,6 +27,7 @@ import {
   initPhotoHandLandmarker,
   initPhotoPoseLandmarker,
 } from "./studio-vrm-webcam-tracking";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import type {
   StudioVrmPhotoHandDetection,
@@ -611,11 +612,7 @@ export function StudioVrmPhotoPoseScanner({
       const displayedError = timedOut
         ? new StudioVrmPhotoPoseError("timeout")
         : caughtError;
-      setError(
-        displayedError instanceof Error
-          ? displayedError.message
-          : "사진 포즈를 인식하지 못했습니다.",
-      );
+      setError(displayedError instanceof Error ? displayedError.message : frozenStatus5Text("studio.frozenStatus5.photoPose.recognizeFailed", "사진 포즈를 인식하지 못했습니다."));
     } finally {
       globalThis.clearTimeout(timeout);
       bitmap?.close();
@@ -854,9 +851,7 @@ export function StudioVrmPhotoPoseScanner({
             </div>
           </fieldset>
           {applyFailed ? (
-            <p role="alert" className="text-[0.64rem] leading-relaxed text-danger">
-              포즈를 캐릭터에 적용하지 못했습니다. 다시 시도해 주세요.
-            </p>
+            <p role="alert" className="text-[0.64rem] leading-relaxed text-danger">{frozenStatus5Text("studio.frozenStatus5.photoPose.applyFailed", "포즈를 캐릭터에 적용하지 못했습니다. 다시 시도해 주세요.")}</p>
           ) : null}
           <div className="grid grid-cols-2 gap-2">
             <button

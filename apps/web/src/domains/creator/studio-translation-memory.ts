@@ -27,6 +27,7 @@ import type {
   StudioTranslationMemoryGlossaryConflict,
   StudioTranslationMemoryGlossaryRule,
 } from "./studio-translation-glossary";
+import { resolveStudioTranslationMemoryExportError, resolveStudioTranslationMemoryImportError, resolveStudioTranslationMemoryStorageError } from "./status-i18n/studio-producer-error-i18n";
 
 /** 옮겨 간 이름을 같은 이름으로 다시 내보낸다 — 기존 호출부·테스트는 그대로 컴파일된다. */
 export {
@@ -151,9 +152,15 @@ export interface StudioTranslationMemoryImportResult {
   readonly truncated: number;
 }
 
+/** D4 생산자 계약: 가져오기 실패는 표시 문구가 아니라 구조화 코드+파라미터로 방출한다. 표시는 표시 지점이 status-i18n/studio-producer-error-i18n 리졸버로 해석한다. */
+export type StudioTranslationMemoryImportErrorCode = "importTooLarge" | "importInvalidJson" | "importNotDocument" | "importUnsupportedDocument" | "importTooManyCandidates";
+export interface StudioTranslationMemoryImportError {
+  readonly code: StudioTranslationMemoryImportErrorCode;
+  readonly params?: Readonly<Record<string, string>>;
+}
 export interface StudioTranslationMemoryImportFailure {
   readonly ok: false;
-  readonly error: string;
+  readonly error: StudioTranslationMemoryImportError;
 }
 
 export interface StudioTranslationMemoryExportResult {
@@ -162,10 +169,16 @@ export interface StudioTranslationMemoryExportResult {
   readonly bytes: number;
 }
 
+/** D4 생산자 계약(R9): 내보내기 실패도 구조화 코드+파라미터로 방출한다. 표시는 표시 지점이 리졸버로 해석하고, SaveResult 문자열 경계에서는 save가 집계자 예외로 해석한다. */
+export type StudioTranslationMemoryExportErrorCode = "exportInvalidEntries" | "exportTooLarge";
+export interface StudioTranslationMemoryExportError { readonly code: StudioTranslationMemoryExportErrorCode; readonly params?: Readonly<Record<string, string>>; }
 export interface StudioTranslationMemoryExportFailure {
   readonly ok: false;
-  readonly error: string;
+  readonly error: StudioTranslationMemoryExportError;
 }
+/** load/save의 저장소 실패 코드. LoadResult·SaveResult가 문자열로 고정된 집계 경계라 방출 지점(load/save) 안에서만 리졸버로 해석한다(집계자 예외, D4). */
+export type StudioTranslationMemoryStorageErrorCode = "storageUnavailable" | "storageReadFailed" | "saveNoStorage" | "saveStorageFull";
+export interface StudioTranslationMemoryStorageError { readonly code: StudioTranslationMemoryStorageErrorCode; readonly params?: Readonly<Record<string, string>>; }
 
 interface MergeStudioTranslationMemoryResult {
   readonly entries: readonly StudioTranslationMemoryEntry[];
@@ -787,19 +800,16 @@ export function importStudioTranslationMemory(
   | StudioTranslationMemoryImportResult
   | StudioTranslationMemoryImportFailure {
   if (utf8Bytes(raw) > STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES) {
-    return {
-      ok: false,
-      error: `가져오기 파일은 ${(STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES / 1_000_000).toFixed(1)}MB 이하여야 합니다.`,
-    };
+    return { ok: false, error: { code: "importTooLarge", params: { size: (STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES / 1_000_000).toFixed(1) } } };
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return { ok: false, error: "번역 메모리 JSON을 해석하지 못했습니다." };
+    return { ok: false, error: { code: "importInvalidJson" } };
   }
   if (!parsed || typeof parsed !== "object") {
-    return { ok: false, error: "번역 메모리 문서 형식이 아닙니다." };
+    return { ok: false, error: { code: "importNotDocument" } };
   }
   const document = parsed as Record<string, unknown>;
   if (
@@ -807,19 +817,13 @@ export function importStudioTranslationMemory(
     || document.version !== STUDIO_TRANSLATION_MEMORY_VERSION
     || !Array.isArray(document.entries)
   ) {
-    return {
-      ok: false,
-      error: "지원하는 ToonStudio 번역 메모리 v1 문서가 아닙니다.",
-    };
+    return { ok: false, error: { code: "importUnsupportedDocument" } };
   }
   if (
     document.entries.length
     > STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_CANDIDATES
   ) {
-    return {
-      ok: false,
-      error: `한 번에 최대 ${STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_CANDIDATES.toLocaleString("ko-KR")}개 후보만 가져올 수 있습니다.`,
-    };
+    return { ok: false, error: { code: "importTooManyCandidates", params: { count: STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_CANDIDATES.toLocaleString("ko-KR") } } };
   }
   const imported = mergeEntriesBounded(document.entries);
   const combined = mergeEntriesBounded([
@@ -843,11 +847,7 @@ export function exportStudioTranslationMemory(
   | StudioTranslationMemoryExportFailure {
   const merged = mergeEntriesBounded(entries);
   if (merged.invalid > 0 || merged.truncated > 0) {
-    return {
-      ok: false,
-      error:
-        "유효하지 않거나 저장 한도를 넘는 항목이 있어 내보내기를 중단했습니다.",
-    };
+    return { ok: false, error: { code: "exportInvalidEntries" } };
   }
   const document: StoredStudioTranslationMemoryDocument = {
     kind: STUDIO_TRANSLATION_MEMORY_KIND,
@@ -857,10 +857,7 @@ export function exportStudioTranslationMemory(
   const json = JSON.stringify(document, null, 2);
   const bytes = utf8Bytes(json);
   if (bytes > STUDIO_TRANSLATION_MEMORY_MAX_EXPORT_BYTES) {
-    return {
-      ok: false,
-      error: `내보내기 결과가 ${(STUDIO_TRANSLATION_MEMORY_MAX_EXPORT_BYTES / 1_000_000).toFixed(1)}MB 제한을 넘습니다.`,
-    };
+    return { ok: false, error: { code: "exportTooLarge", params: { size: (STUDIO_TRANSLATION_MEMORY_MAX_EXPORT_BYTES / 1_000_000).toFixed(1) } } };
   }
   return { ok: true, json, bytes };
 }
@@ -870,26 +867,19 @@ export function loadStudioTranslationMemory(
   key = STUDIO_TRANSLATION_MEMORY_STORAGE_KEY
 ): StudioTranslationMemoryLoadResult {
   if (!storage) {
-    return {
-      entries: [],
-      status: "unavailable",
-      error: "브라우저 로컬 저장소를 사용할 수 없습니다.",
-    };
+    return { entries: [], status: "unavailable", error: resolveStudioTranslationMemoryStorageError({ code: "storageUnavailable" }) };
   }
   let raw: string | null;
   try {
     raw = storage.getItem(key);
   } catch {
-    return {
-      entries: [],
-      status: "unavailable",
-      error: "브라우저 로컬 저장소를 읽을 수 없습니다.",
-    };
+    return { entries: [], status: "unavailable", error: resolveStudioTranslationMemoryStorageError({ code: "storageReadFailed" }) };
   }
   if (!raw) return { entries: [], status: "empty" };
   const imported = importStudioTranslationMemory(raw);
   if (!imported.ok) {
-    return { entries: [], status: "invalid", error: imported.error };
+    // LoadResult.error는 문자열로 고정된 집계 경계라 이 지점에서만 해석한다(표시 인접 집계자 예외, D4 파일럿).
+    return { entries: [], status: "invalid", error: resolveStudioTranslationMemoryImportError(imported.error) };
   }
   return { entries: imported.entries, status: "ok" };
 }
@@ -900,21 +890,15 @@ export function saveStudioTranslationMemory(
   key = STUDIO_TRANSLATION_MEMORY_STORAGE_KEY
 ): StudioTranslationMemorySaveResult {
   if (!storage) {
-    return {
-      ok: false,
-      error: "로컬 저장소가 없어 현재 탭에서만 유지됩니다.",
-    };
+    return { ok: false, error: resolveStudioTranslationMemoryStorageError({ code: "saveNoStorage" }) };
   }
   const exported = exportStudioTranslationMemory(entries);
-  if (!exported.ok) return exported;
+  if (!exported.ok) return { ok: false, error: resolveStudioTranslationMemoryExportError(exported.error) };
   try {
     storage.setItem(key, exported.json);
     return { ok: true };
   } catch {
-    return {
-      ok: false,
-      error: "브라우저 저장 공간이 부족하거나 로컬 저장이 차단되었습니다.",
-    };
+    return { ok: false, error: resolveStudioTranslationMemoryStorageError({ code: "saveStorageFull" }) };
   }
 }
 

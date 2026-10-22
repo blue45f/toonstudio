@@ -35,6 +35,7 @@ import {
   type StudioTranslationMemoryStorage,
 } from "./studio-translation-memory";
 import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
+import { resolveStudioTranslationMemoryExportError, resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
 import {
   createStudioTranslationMemorySqlitePersistence,
   type StudioTranslationMemoryPersistence,
@@ -499,7 +500,7 @@ export function StudioDialogueTranslationMemoryPanel({
         entriesRef.current,
       );
       if (!imported.ok) {
-        setNotice({ tone: "bad", message: imported.error });
+        setNotice({ tone: "bad", message: resolveStudioTranslationMemoryImportError(imported.error) });
         return;
       }
       commitEntries(
@@ -517,7 +518,7 @@ export function StudioDialogueTranslationMemoryPanel({
   function downloadExport(): void {
     const exported = exportStudioTranslationMemory(library.entries);
     if (!exported.ok) {
-      setNotice({ tone: "bad", message: exported.error });
+      setNotice({ tone: "bad", message: resolveStudioTranslationMemoryExportError(exported.error) });
       return;
     }
     if (

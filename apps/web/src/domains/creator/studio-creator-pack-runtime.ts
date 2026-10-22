@@ -60,6 +60,7 @@ import {
 import {
   createCreatorMarketplacePortableDelivery,
 } from "@/platform/creator-marketplace-client";
+import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
 
 export const STUDIO_CREATOR_FILTER_PRESET_LIBRARY_KEY =
   "toonstudio.studio-creator-filter-presets.v1" as const;
@@ -689,13 +690,13 @@ export function installStudioCreatorPack(
 ): StudioCreatorPackInstallResult {
   const validation = validateStudioCreatorPack(pack);
   if (!validation.valid) {
-    return { status: "invalid", installedCount: 0, message: validation.issues[0] ?? "팩 검증에 실패했습니다." };
+    return { status: "invalid", installedCount: 0, message: validation.issues[0] ?? frozenStatus6Text("studio.frozenStatus6.packRuntime.validationFailed", "팩 검증에 실패했습니다.") };
   }
   if (pack.entries.every((entry) => entry.delivery.mode === "builtin-ref")) {
-    return { status: "bundled", installedCount: pack.entries.length, message: "이미 Studio에 내장된 안정적인 참조입니다." };
+    return { status: "bundled", installedCount: pack.entries.length, message: frozenStatus6Text("studio.frozenStatus6.packRuntime.bundledReference", "이미 Studio에 내장된 안정적인 참조입니다.") };
   }
   if (!storage) {
-    return { status: "storage-error", installedCount: 0, message: "브라우저 로컬 저장소를 사용할 수 없습니다." };
+    return { status: "storage-error", installedCount: 0, message: frozenStatus6Text("studio.frozenStatus6.packRuntime.storageUnavailable", "브라우저 로컬 저장소를 사용할 수 없습니다.") };
   }
   const marker = loadStudioMarketplaceLibrary(storage).packages.find(
     (entry) => entry.packageId === pack.metadata.id,
@@ -714,7 +715,7 @@ export function installStudioCreatorPack(
     };
   }
   if (inspectStudioCreatorPackInstallState(pack, storage) === "installed") {
-    return { status: "already-installed", installedCount: pack.entries.length, message: "동일한 버전이 이미 실제 도구 라이브러리에 설치되어 있습니다." };
+    return { status: "already-installed", installedCount: pack.entries.length, message: frozenStatus6Text("studio.frozenStatus6.packRuntime.alreadyInstalled", "동일한 버전이 이미 실제 도구 라이브러리에 설치되어 있습니다.") };
   }
 
   const snapshot = captureStorage(storage);
@@ -722,7 +723,7 @@ export function installStudioCreatorPack(
     return {
       status: "storage-error",
       installedCount: 0,
-      message: "브라우저 로컬 저장소를 안전하게 읽을 수 없어 설치하지 않았습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.packRuntime.installStorageUnreadable", "브라우저 로컬 저장소를 안전하게 읽을 수 없어 설치하지 않았습니다."),
     };
   }
   const runtimeStatus = pack.metadata.kind === "brush"
@@ -734,12 +735,10 @@ export function installStudioCreatorPack(
         : "invalid";
   if (runtimeStatus !== "installed") {
     restoreStorage(storage, snapshot);
-    return {
-      status: runtimeStatus,
-      installedCount: 0,
+    return { status: runtimeStatus, installedCount: 0,
       message: runtimeStatus === "full"
-        ? "해당 Studio 라이브러리가 가득 차서 아무 항목도 설치하지 않았습니다."
-        : "설치를 완료하지 못해 기존 로컬 라이브러리 상태로 되돌렸습니다.",
+        ? frozenStatus6Text("studio.frozenStatus6.packRuntime.libraryFull", "해당 Studio 라이브러리가 가득 차서 아무 항목도 설치하지 않았습니다.")
+        : frozenStatus6Text("studio.frozenStatus6.packRuntime.installIncompleteRolledBack", "설치를 완료하지 못해 기존 로컬 라이브러리 상태로 되돌렸습니다."),
     };
   }
 
@@ -753,12 +752,12 @@ export function installStudioCreatorPack(
     || !hasRuntimeItems(pack, storage)
   ) {
     restoreStorage(storage, snapshot);
-    return { status: "storage-error", installedCount: 0, message: "설치 확인에 실패해 기존 상태로 되돌렸습니다." };
+    return { status: "storage-error", installedCount: 0, message: frozenStatus6Text("studio.frozenStatus6.packRuntime.installRolledBack", "설치 확인에 실패해 기존 상태로 되돌렸습니다.") };
   }
   return {
     status: "installed",
     installedCount: pack.entries.length,
-    message: `${pack.entries.length}개 항목을 실제 Studio 라이브러리에 설치했습니다.`,
+    message: frozenStatus6Text("studio.frozenStatus6.packRuntime.installedCount", { count: pack.entries.length }, `${pack.entries.length}개 항목을 실제 Studio 라이브러리에 설치했습니다.`),
   };
 }
 
@@ -827,21 +826,21 @@ export function uninstallStudioCreatorPack(
     return {
       status: "invalid",
       installedCount: 0,
-      message: validation.issues[0] ?? "팩 검증에 실패했습니다.",
+      message: validation.issues[0] ?? frozenStatus6Text("studio.frozenStatus6.packRuntime.validationFailed", "팩 검증에 실패했습니다."),
     };
   }
   if (pack.entries.every((entry) => entry.delivery.mode === "builtin-ref")) {
     return {
       status: "bundled",
       installedCount: 0,
-      message: "Studio 내장 참조는 로컬 라이브러리에서 제거하지 않습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.packRuntime.bundledNotRemovable", "Studio 내장 참조는 로컬 라이브러리에서 제거하지 않습니다."),
     };
   }
   if (!storage) {
     return {
       status: "storage-error",
       installedCount: 0,
-      message: "브라우저 로컬 저장소를 사용할 수 없습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.packRuntime.storageUnavailable", "브라우저 로컬 저장소를 사용할 수 없습니다."),
     };
   }
 
@@ -854,7 +853,7 @@ export function uninstallStudioCreatorPack(
     return {
       status: "already-uninstalled",
       installedCount: 0,
-      message: "이 팩이 만든 로컬 항목이 없습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.packRuntime.noLocalItems", "이 팩이 만든 로컬 항목이 없습니다."),
     };
   }
 
@@ -863,7 +862,7 @@ export function uninstallStudioCreatorPack(
     return {
       status: "storage-error",
       installedCount: 0,
-      message: "브라우저 로컬 저장소를 안전하게 읽을 수 없어 제거하지 않았습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.packRuntime.removeStorageUnreadable", "브라우저 로컬 저장소를 안전하게 읽을 수 없어 제거하지 않았습니다."),
     };
   }
   const nextLibrary = removeStudioMarketplacePackageFromLibrary(
@@ -884,13 +883,13 @@ export function uninstallStudioCreatorPack(
     return {
       status: "storage-error",
       installedCount: 0,
-      message: "제거를 완료하지 못해 기존 로컬 라이브러리 상태로 되돌렸습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.packRuntime.removeRolledBack", "제거를 완료하지 못해 기존 로컬 라이브러리 상태로 되돌렸습니다."),
     };
   }
   return {
     status: "uninstalled",
     installedCount,
-    message: `${installedCount}개 팩 항목과 설치 마커를 이 기기에서 제거했습니다.`,
+    message: frozenStatus6Text("studio.frozenStatus6.packRuntime.removedCount", { count: installedCount }, `${installedCount}개 팩 항목과 설치 마커를 이 기기에서 제거했습니다.`),
   };
 }
 

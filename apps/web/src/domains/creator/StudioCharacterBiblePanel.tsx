@@ -43,6 +43,7 @@ import {
 } from "./studio-character-relationships";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeleteCharacterBibleEntryRequest } from "./studio-destructive-command-catalog";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
 export interface StudioCharacterBiblePanelProps {
   open: boolean;
@@ -208,9 +209,7 @@ function CharacterFieldEditor({ entry, meta, onPatch }: CharacterFieldEditorProp
 
   return (
     <div
-      className={`min-w-0 border-t px-0 py-3 transition-colors sm:px-3 ${
-        locked ? "border-accent/45 bg-accent-soft/10" : "border-line"
-      }`}
+      className={`min-w-0 border-t px-0 py-3 transition-colors sm:px-3 ${locked ? "border-accent/45 bg-accent-soft/10" : "border-line"}`}
     >
       <div className="flex items-center gap-2">
         <label htmlFor={id} className="min-w-0 flex-1 text-xs font-semibold text-fg-2">
@@ -282,7 +281,7 @@ function commitRelationship(
   try {
     callbacks.onApply(apply());
   } catch (cause) {
-    callbacks.onError(cause instanceof Error ? cause.message : "관계를 저장하지 못했어요.");
+    callbacks.onError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.bible.relationSaveFailed", "관계를 저장하지 못했어요."));
   }
 }
 
@@ -508,7 +507,7 @@ function RelationshipMapView({ bible, selectedCharacterId, ...callbacks }: Relat
   if (map.edges.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-xs leading-relaxed text-fg-3">
-        관계를 추가하면 이곳에 관계 맵이 그려집니다.
+        {frozenStatus5Text("studio.frozenStatus5.bible.mapEmpty", "관계를 추가하면 이곳에 관계 맵이 그려집니다.")}
       </p>
     );
   }
@@ -722,7 +721,7 @@ function CharacterRelationshipsSection({
 
       {drafts.length === 0 ? (
         <p className="rounded-xl border border-dashed border-line px-3 py-3 text-xs leading-relaxed text-fg-3">
-          아직 등록된 관계가 없어요. 아래에서 첫 관계를 추가하세요.
+          {frozenStatus5Text("studio.frozenStatus5.bible.relationsEmpty", "아직 등록된 관계가 없어요. 아래에서 첫 관계를 추가하세요.")}
         </p>
       ) : (
         <ol className="space-y-2" aria-label="구조화된 관계 목록">
@@ -788,7 +787,7 @@ export function StudioCharacterBiblePanel({
       onChange(nextBible);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "캐릭터 바이블을 저장하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.bible.saveFailed", "캐릭터 바이블을 저장하지 못했어요."));
     }
   };
 
@@ -802,7 +801,7 @@ export function StudioCharacterBiblePanel({
       setRequestedCharacterId(id);
       applyChange(nextBible);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "캐릭터를 추가하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.bible.addFailed", "캐릭터를 추가하지 못했어요."));
     }
   };
 
@@ -897,7 +896,7 @@ export function StudioCharacterBiblePanel({
                 <div className="grid min-h-28 place-items-center rounded-xl border border-dashed border-line px-3 text-center">
                   <div>
                     <UserRound size={20} className="mx-auto text-fg-3" aria-hidden />
-                    <p className="mt-1.5 text-xs font-semibold text-fg-2">등장인물을 먼저 추가하세요</p>
+                    <p className="mt-1.5 text-xs font-semibold text-fg-2">{frozenStatus5Text("studio.frozenStatus5.bible.charactersEmpty", "등장인물을 먼저 추가하세요")}</p>
                   </div>
                 </div>
               ) : (

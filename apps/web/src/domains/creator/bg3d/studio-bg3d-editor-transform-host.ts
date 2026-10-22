@@ -10,6 +10,7 @@ import { captureStudio3dPlatesFromAdapter } from "./studio-bg3d-grade-plates-pro
 import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
 import { readStudioBg3dSelectionBounds } from "./studio-bg3d-camera-selection";
 import { hasStudioBg3dSelectedAncestor } from "./studio-bg3d-template-instance";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 export function attachStudioBg3dEditorTransformHost(h) {
   const {
@@ -564,7 +565,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     }
     const preserved = calculateStudioBg3dThreeReparentTransform(entities, id, nextParentId);
     if (!preserved) {
-      setError("현재 부모 변환에는 기울어짐이 생겨 위치를 보존할 수 없습니다. 부모의 비균일 크기 조정을 확인해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.skewParent", "현재 부모 변환에는 기울어짐이 생겨 위치를 보존할 수 없습니다. 부모의 비균일 크기 조정을 확인해 주세요."));
       return;
     }
     const apply = <T extends BgPrimitive | BgCustomModelInstance>(candidate: T): T => {
@@ -592,17 +593,17 @@ export function attachStudioBg3dEditorTransformHost(h) {
       )
     );
     if (!model || !hasEffectiveConstraint) {
-      setError("굽기 전에 강도가 0보다 큰 IK 또는 에임 제약을 켜 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.enableConstraintFirst", "굽기 전에 강도가 0보다 큰 IK 또는 에임 제약을 켜 주세요."));
       return;
     }
     const snapshot = modelRigBakeReadersRef.current.get(id)?.() ?? null;
     if (!snapshot) {
-      setError("현재 리그 결과를 안전하게 고정할 수 없습니다. 조인트 계층·크기 변환과 모델 준비 상태를 확인해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.rigFixFailed", "현재 리그 결과를 안전하게 고정할 수 없습니다. 조인트 계층·크기 변환과 모델 준비 상태를 확인해 주세요."));
       return;
     }
     const transition = createStudioBg3dRigPoseBakeHistoryTransition(model.animation, snapshot);
     if (!transition) {
-      setError("현재 표시 프레임을 정적 포즈로 정규화하지 못했습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.frameNormalizeFailed", "현재 표시 프레임을 정적 포즈로 정규화하지 못했습니다."));
       return;
     }
     const beforeCustomModels = customModels.map((candidate) => {
@@ -737,17 +738,15 @@ export function attachStudioBg3dEditorTransformHost(h) {
   h.groundSelectedEntity = groundSelectedEntity;
   function placeSelectedModelRecipe() {
     if (physicsInteractionLocked) {
-      setError("물리 미리보기 중에는 장면 변형 도구를 잠급니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.physicsLocked", "물리 미리보기 중에는 장면 변형 도구를 잠급니다."));
       return;
     }
     if (selectedIds.size === 0) {
-      setError("배치 정리할 커스텀 모델을 선택해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.selectCustomModel", "배치 정리할 커스텀 모델을 선택해 주세요."));
       return;
     }
     if (selectedIds.size > STUDIO_BG3D_SURFACE_SNAP_MAX_MULTI_INPUTS) {
-      setError(
-        `배치 정리는 한 번에 최대 ${STUDIO_BG3D_SURFACE_SNAP_MAX_MULTI_INPUTS}개까지 지원합니다.`,
-      );
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.arrangeMaxInputs", { max: STUDIO_BG3D_SURFACE_SNAP_MAX_MULTI_INPUTS }, `배치 정리는 한 번에 최대 ${STUDIO_BG3D_SURFACE_SNAP_MAX_MULTI_INPUTS}개까지 지원합니다.`));
       return;
     }
 
@@ -756,13 +755,13 @@ export function attachStudioBg3dEditorTransformHost(h) {
     for (const id of selectedIds) {
       const model = customModels.find((candidate) => candidate.id === id);
       if (!model) {
-        setError("배치 정리는 커스텀 모델에만 사용할 수 있습니다.");
+        setError(frozenStatus6Text("studio.frozenStatus6.transform.customModelOnly", "배치 정리는 커스텀 모델에만 사용할 수 있습니다."));
         return;
       }
       models.push(model);
     }
     if (models.every((model) => isBgObjectTransformBlocked(model))) {
-      setError("선택한 객체의 잠금을 먼저 해제해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.unlockObjectFirst", "선택한 객체의 잠금을 먼저 해제해 주세요."));
       return;
     }
 
@@ -805,7 +804,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     }
 
     if (successCount === 0) {
-      setError(firstFailure ?? "배치 정리를 적용할 수 없습니다.");
+      setError(firstFailure ?? frozenStatus6Text("studio.frozenStatus6.transform.arrangeFailed", "배치 정리를 적용할 수 없습니다."));
       return;
     }
 
@@ -845,13 +844,13 @@ export function attachStudioBg3dEditorTransformHost(h) {
 
     const object = primitiveObjectsRef.current.get(id);
     if (!object) {
-      setError("선택한 객체의 지오메트리를 아직 준비하지 못했습니다. 모델이 표시된 뒤 다시 시도해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.geometryNotReady", "선택한 객체의 지오메트리를 아직 준비하지 못했습니다. 모델이 표시된 뒤 다시 시도해 주세요."));
       return;
     }
 
     const nextLocalPosition = resolveStudioBg3dThreeCenterGroundLocalPosition(object);
     if (!nextLocalPosition) {
-      setError("선택한 객체의 지오메트리 경계가 올바르지 않아 원점 정렬을 취소했습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.geometryBoundsInvalid", "선택한 객체의 지오메트리 경계가 올바르지 않아 원점 정렬을 취소했습니다."));
       return;
     }
 
@@ -891,7 +890,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     const nextDocument = canonicalSceneDocument({ ...sceneBaseDocument, camera: nextView });
     if (!viewport || !beforeDocument || !nextDocument) {
       viewport?.applyView(beforeView);
-      setError("카메라 구도를 안전한 장면 상태로 만들지 못해 명령을 취소했습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.cameraViewUnsafe", "카메라 구도를 안전한 장면 상태로 만들지 못해 명령을 취소했습니다."));
       return false;
     }
     if (JSON.stringify(beforeDocument.camera) === JSON.stringify(nextDocument.camera)) {
@@ -900,7 +899,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     }
     if (!viewport.applyView(nextDocument.camera)) {
       viewport.applyView(beforeDocument.camera);
-      setError("현재 카메라 투영이 아직 준비되지 않아 구도를 변경하지 않았습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.projectionNotReady", "현재 카메라 투영이 아직 준비되지 않아 구도를 변경하지 않았습니다."));
       return false;
     }
     const target = nextDocument.camera.target;
@@ -947,12 +946,12 @@ export function attachStudioBg3dEditorTransformHost(h) {
     ) return;
     const viewport = viewportApiRef.current;
     if (!viewport) {
-      setError("카메라가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.cameraNotReady", "카메라가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요."));
       return;
     }
     const beforeView = viewport.readView();
     if (!viewport.zoomBy(distanceFactor)) {
-      setError("현재 카메라에서는 더 확대하거나 축소할 수 없습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.zoomLimit", "현재 카메라에서는 더 확대하거나 축소할 수 없습니다."));
       return;
     }
     const nextView = viewport.readView();
@@ -966,12 +965,12 @@ export function attachStudioBg3dEditorTransformHost(h) {
     ) return;
     const viewport = viewportApiRef.current;
     if (!viewport) {
-      setError("카메라가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.cameraNotReady", "카메라가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요."));
       return;
     }
     const beforeView = viewport.readView();
     if (!viewport.applyPreset(presetId)) {
-      setError("선택한 카메라 프리셋을 적용하지 못했습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.presetApplyFailed", "선택한 카메라 프리셋을 적용하지 못했습니다."));
       return;
     }
     commitCameraViewCommand(beforeView, viewport.readView());
@@ -979,7 +978,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
   h.applyCameraPreset = applyCameraPreset;
   function focusSelectedEntity() {
     if (captureInFlightRef.current || h.focusSelectionDisabledReason) {
-      setError(h.focusSelectionDisabledReason ?? "3D 장면 캡처가 끝난 뒤 화면 맞춤을 사용해 주세요.");
+      setError(h.focusSelectionDisabledReason ?? frozenStatus6Text("studio.frozenStatus6.transform.fitAfterCapture", "3D 장면 캡처가 끝난 뒤 화면 맞춤을 사용해 주세요."));
       return;
     }
     const bounds = readStudioBg3dSelectionBounds(h.focusSelectionIds, (id) => (
@@ -987,7 +986,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     ));
     const framing = viewportApiRef.current?.readFramingState() ?? null;
     if (!bounds || !framing) {
-      setError("선택한 객체의 실제 경계 또는 카메라 화면을 아직 준비하지 못했습니다. 모델이 표시된 뒤 다시 시도해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.transform.boundsNotReady", "선택한 객체의 실제 경계 또는 카메라 화면을 아직 준비하지 못했습니다. 모델이 표시된 뒤 다시 시도해 주세요."));
       return;
     }
     const nextView = fitStudioBg3dCameraToBounds({
@@ -1001,7 +1000,7 @@ export function attachStudioBg3dEditorTransformHost(h) {
     });
     if (!nextView || !commitCameraViewCommand(framing.view, nextView)) {
       if (!nextView) {
-        setError("선택한 객체를 현재 카메라 투영과 렌즈 이동 범위 안에 맞출 수 없어 구도를 유지했습니다.");
+        setError(frozenStatus6Text("studio.frozenStatus6.transform.fitOutOfRange", "선택한 객체를 현재 카메라 투영과 렌즈 이동 범위 안에 맞출 수 없어 구도를 유지했습니다."));
       }
       return;
     }

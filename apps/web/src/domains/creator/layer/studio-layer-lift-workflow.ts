@@ -9,8 +9,7 @@
  */
 
 import {
-  STUDIO_LAYER_LIFT_ARTIFACT_MAX_COMPRESSED_BYTES,
-  isStudioLayerLiftTrustedArtifactPair,
+  STUDIO_LAYER_LIFT_ARTIFACT_MAX_COMPRESSED_BYTES, isStudioLayerLiftTrustedArtifactPair,
 } from "./studio-layer-lift-artifact";
 import {
   isStudioLayerLiftTrustedWorkerComposition,
@@ -62,6 +61,7 @@ import type { StudioLayerLiftAvailabilityInput } from "./studio-layer-lift-avail
 import type {
   StudioLayerLiftLocalForegroundAnalyzeOptions,
 } from "./studio-layer-lift-local-provider";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 type TrustedWorkflowComposition =
   | StudioLayerLiftTrustedComposition
@@ -798,8 +798,8 @@ export async function finalizeStudioLayerLiftWorkflow(
       ok: false,
       code: "admission-failed",
       message: admission.reason === "aborted"
-        ? "레이어 분리 적용을 취소했습니다."
-        : "원고가 바뀌어 레이어 분리 결과를 적용하지 않았습니다.",
+        ? frozenStatus6Text("studio.frozenStatus6.layerLift.applyCanceled", "레이어 분리 적용을 취소했습니다.")
+        : frozenStatus6Text("studio.frozenStatus6.layerLift.documentChanged", "원고가 바뀌어 레이어 분리 결과를 적용하지 않았습니다."),
       detail: admission.reason,
     });
   }
@@ -808,7 +808,7 @@ export async function finalizeStudioLayerLiftWorkflow(
     return Object.freeze({
       ok: false,
       code: "admission-failed",
-      message: "최종 원고 상태를 확인하지 못해 결과를 적용하지 않았습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.layerLift.finalStateUnknown", "최종 원고 상태를 확인하지 못해 결과를 적용하지 않았습니다."),
       detail: "missing-final-current-state",
     });
   }
@@ -823,7 +823,7 @@ export async function finalizeStudioLayerLiftWorkflow(
     return Object.freeze({
       ok: false,
       code: "artifact-conversion-failed",
-      message: "검증된 배경·전경 PNG를 로컬 레이어 데이터로 변환하지 못했습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.layerLift.pngConversionFailed", "검증된 배경·전경 PNG를 로컬 레이어 데이터로 변환하지 못했습니다."),
       detail: "verified-png-data-url-conversion",
     });
   }

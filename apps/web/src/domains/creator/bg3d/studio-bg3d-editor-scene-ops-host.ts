@@ -29,6 +29,7 @@ import {
 } from "./studio-bg3d-template-instance";
 import { readStudioBg3dTemplateStaticModelWorldBounds } from "./studio-bg3d-template-organizer-bounds";
 import { formatNumber } from "@toonstudio/core/format";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 export function attachStudioBg3dEditorSceneOpsHost(h) {
   const {
@@ -290,7 +291,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       baseDocument: { ...sceneBaseDocument, camera: currentView },
     });
     if (!adaptation.ok) {
-      setError("현재 장면이 안전 예산을 초과해 템플릿 저장을 시작하지 않았습니다. 장면을 나누거나 일부 오브젝트를 정리해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.budgetExceeded", "현재 장면이 안전 예산을 초과해 템플릿 저장을 시작하지 않았습니다. 장면을 나누거나 일부 오브젝트를 정리해 주세요."));
       return false;
     }
     const adapted = adaptation.value;
@@ -302,7 +303,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       adapted.counts.emittedPrimitives !== primitives.length ||
       adapted.counts.emittedCustomModels !== customModels.length
     ) {
-      setError("현재 장면을 손실 없는 템플릿 원본으로 만들 수 없습니다. 문제가 있는 도형이나 모델을 확인해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.losslessSourceUnavailable", "현재 장면을 손실 없는 템플릿 원본으로 만들 수 없습니다. 문제가 있는 도형이나 모델을 확인해 주세요."));
       return false;
     }
     setIsSavingTemplate(true);
@@ -325,7 +326,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     } catch (err) {
       console.error(err);
       studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
-        setError("현재 장면 템플릿을 저장하지 못했습니다. 저장 공간을 확인한 뒤 다시 시도해 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.templateSaveFailed", "현재 장면 템플릿을 저장하지 못했습니다. 저장 공간을 확인한 뒤 다시 시도해 주세요."));
       });
       return false;
     } finally {
@@ -348,7 +349,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     } catch (err) {
       console.error(err);
       studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
-        setError("템플릿을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.templateDeleteFailed", "템플릿을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요."));
       });
     }
   };
@@ -442,11 +443,10 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       live.document.budgets.complexity.maxNodes,
     );
     if (
-      !Number.isSafeInteger(additionalNodeCount) ||
-      additionalNodeCount < 0 ||
+      !Number.isSafeInteger(additionalNodeCount) || additionalNodeCount < 0 ||
       live.primitives.length + live.customModels.length > nodeLimit - additionalNodeCount
     ) {
-      setError(`이 장면에는 오브젝트를 최대 ${formatNumber(nodeLimit)}개까지 둘 수 있습니다. 장면을 나누거나 기존 오브젝트를 정리해 주세요.`);
+      setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.objectLimit", { limit: formatNumber(nodeLimit) }, `이 장면에는 오브젝트를 최대 ${formatNumber(nodeLimit)}개까지 둘 수 있습니다. 장면을 나누거나 기존 오브젝트를 정리해 주세요.`));
       return false;
     }
     return true;
@@ -573,7 +573,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       createSeed: () => generateId(),
     });
     if (!allocation) {
-      setError("템플릿을 한 묶음으로 추적할 안전한 식별자를 만들지 못해 장면을 변경하지 않았습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.bundleIdFailed", "템플릿을 한 묶음으로 추적할 안전한 식별자를 만들지 못해 장면을 변경하지 않았습니다."));
       return false;
     }
     const parts = rawParts.map((part, index) => ({
@@ -632,7 +632,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       entityIds: ids,
     });
     if (!plan.ok) {
-      setError("부모를 삭제해도 자식의 월드 변환을 보존할 수 없어 삭제를 취소했습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.childTransformUnpreservable", "부모를 삭제해도 자식의 월드 변환을 보존할 수 없어 삭제를 취소했습니다."));
       return false;
     }
     // Dual-write: offered remove-prop grade past/future + production adapter undo spine
@@ -724,7 +724,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
         createSeed: () => generateId(),
       });
       if (!allocation) {
-        setError("템플릿 복제 묶음의 안전한 식별자를 만들지 못해 장면을 변경하지 않았습니다.");
+        setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.cloneBundleIdFailed", "템플릿 복제 묶음의 안전한 식별자를 만들지 못해 장면을 변경하지 않았습니다."));
         return;
       }
       instance.nodes.forEach((node, ordinal) => {
@@ -866,7 +866,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
       })
       .catch(() => {
         if (requestStillOwnsCurrentScene()) {
-          setError("템플릿 정리 도구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+          setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.organizerLoadFailed", "템플릿 정리 도구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."));
         }
       })
       .finally(() => {
