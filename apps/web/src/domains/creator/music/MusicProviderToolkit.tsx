@@ -14,7 +14,7 @@ import {
   type MusicProviderCapability,
   type MusicProviderId,
 } from "./studio-music-provider-catalog";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 import type { MusicBrief } from "@toonstudio/core/studio-music";
 

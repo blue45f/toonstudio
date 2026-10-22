@@ -5,21 +5,19 @@ import { describe, expect, it } from "vitest";
 import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
 
 /**
- * creator 하위(export·hybrid-dcc·layer·music·promo·spatial) 상태 문구
- * i18n 키 이관 계약 (A4 잔여 3라운드 c13a).
+ * creator 하위 잔여 패널 상태 문구 i18n 키 이관 계약 (A4 잔여 3라운드 c14).
  *
- * 배경: 22파일의 로딩·실패·성공·빈 상태·확인 중·사용 불가 사유 문구가
- * 호출부에 한국어로 하드코딩돼 en 사용자의 동선이 끊겼다. 표시 정본은
- * studio-sub-status-i18n 등록 모듈의 `studio.subStatus.*` 키이며, 코드
- * 안의 한국어 원문은 `subStatusText(키, …, 한국어 폴백)`의 폴백 인자로만
- * 남아야 한다. 콘텐츠 본문·폼 라벨·placeholder·예시 데이터와 이미
- * useBilingual 쌍으로 처리된 문구(MusicOstFlow)는 대상이 아니다.
+ * 배경: creator 하위 패널(장면 조립·간편 제작·마무리 효과·글 다듬기 등)의 실패·빈 상태 문구가 호출부에 한국어로 하드코딩돼 en 사용자의 동선이
+ * 끊겼다. 표시 정본은 creator-rest-status-i18n 등록 모듈의 등록 모듈의 `creatorRest.status.*`
+ * 키이며, 코드 안의 한국어 원문은 `creatorRestStatusText(키, …, 한국어 폴백)`
+ * 의 폴백 인자로만 남아야 한다. 콘텐츠 본문·폼 라벨·placeholder와
+ * 이미 기존 이관 패턴(tx/bi/ko-en 쌍 등)으로 처리된 문구는 대상이 아니다.
  */
 
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 /** 등록 모듈(registerI18nLocaleEntries)의 locale 블록을 파싱한다. */
@@ -36,38 +34,26 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
   return blocks as Record<"ko" | "en", Record<string, string>>;
 }
 
-const MODULE_FILE = "studio-sub-status-i18n.ts";
-const PREFIX = "studio.subStatus.";
+const MODULE_FILE = "creator-rest-status-i18n.ts";
+const PREFIX = "creatorRest.status.";
 const CONSUMERS = [
-  "export/StudioEnhancedExportMenuPanel.tsx",
-  "export/StudioPromoHandoffSection.tsx",
-  "export/StudioPsdSourceDownloads.tsx",
-  "hybrid-dcc/StudioHybridDccMeshSelectionTools.tsx",
-  "hybrid-dcc/StudioHybridDccPrecisionTools.tsx",
-  "hybrid-dcc/StudioHybridDccTransformGizmo.tsx",
-  "hybrid-dcc/StudioHybridDccTransformUtilities.tsx",
-  "hybrid-dcc/StudioHybridDccViewportParts.tsx",
-  "layer/StudioLayerCompsPanel.tsx",
-  "layer/StudioLayerEffectsStackPanel.tsx",
-  "layer/StudioLayerNavigatorBatchBar.tsx",
-  "layer/StudioLayerNavigatorTree.tsx",
-  "music/MusicExternalImportPanel.tsx",
-  "music/MusicProviderToolkit.tsx",
-  "music/MusicTrackCard.tsx",
-  "promo/PromoDirectorControls.tsx",
-  "promo/PromoMicrophoneRecorder.tsx",
-  "promo/PromoPreflight.tsx",
-  "promo/PromoPreview.tsx",
-  "promo/StudioPromoPage.tsx",
-  "spatial/SpatialWebtoonReader.tsx",
-  "spatial/SpatialWebtoonReaderLauncher.tsx",
+  "scene-assembly/StudioSceneAssemblyPanel.tsx",
+  "comic/StudioSimpleProductionWizard.tsx",
+  "filter/StudioFinishingEffectsPanel.tsx",
+  "writing-polish/StudioWritingPolishPanel.tsx",
+  "drawing/StudioVectorLinePanel.tsx",
+  "lift3d/StudioLift3dPreview.tsx",
+  "lt-convert/StudioPhotoLtBackgroundPanel.tsx",
+  "panel-detect/ui/PanelSourceStep.tsx",
+  "pdf-workbench/pdf-workbench-metadata-panel.tsx",
+  "vector-layer/VectorStrokeEditor.tsx",
 ] as const;
 const MIGRATED_FILES = CONSUMERS;
 
 const blocks = parseRegisterModule(readSource(MODULE_FILE));
 const ALL_KEYS = Object.keys(blocks.ko).sort();
 
-describe("creator sub status i18n r3c13a", () => {
+describe("creator rest status i18n r3c14", () => {
   it("등록 모듈의 ko/en 키가 패리티를 이루고 en에 한글이 없다", () => {
     expect(Object.keys(blocks.en).sort()).toEqual(ALL_KEYS);
     for (const key of ALL_KEYS) {

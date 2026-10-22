@@ -11,7 +11,7 @@ import {
   type StudioHybridDccPrecisionKind,
 } from "./studio-hybrid-dcc-precision-transform";
 import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 const CONTROL = "min-h-9 pointer-coarse:min-h-11 min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40";
 const DEFAULTS = { translate: "10cm", rotate: "15deg", scale: "110%", dimension: "1m" } as const;

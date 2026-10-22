@@ -28,7 +28,7 @@ import { PromoPanelEditor } from "./PromoPanelEditor";
 import { PromoPreflight } from "./PromoPreflight";
 import { promoPreflight } from "./promo-preflight";
 import { PromoPreview } from "./PromoPreview";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 import { PROMO_STEP_ANCHOR, promoStepStatuses } from "./promo-steps";
 import { PromoStepNav } from "./PromoStepNav";
 import {

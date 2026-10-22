@@ -1,5 +1,5 @@
 import type { PromoPreflightIssue } from "./promo-preflight";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 /** 출력 전 점검 목록 — 점검 결과는 화면(단계 안내)과 공유하도록 호출자가 한 번 계산해 넘긴다. */
 export function PromoPreflight({ issues, disabled, onSeek }: {

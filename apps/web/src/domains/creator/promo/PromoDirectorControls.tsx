@@ -1,5 +1,5 @@
 import { directPromo, PROMO_DEFAULT_PRESENTATION, PROMO_DIRECTOR_TEMPLATES, PROMO_ENDING_SECONDS, PROMO_SHORT_MAX_PANELS, PROMO_SHORT_SECONDS, promoMaxPanels, type PromoProject } from "./promo-model";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 export function PromoDirectorControls({ project, disabled, onApply, onShortPreset, onPatch }: {
   project: PromoProject; disabled: boolean; onApply: (project: PromoProject) => void;

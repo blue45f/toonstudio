@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { scanHardcodedStatusStrings } from "../../shared/language/status-i18n";
+import { scanHardcodedStatusStrings } from "../../../shared/language/status-i18n";
 
 /**
  * StudioCuttoonEditorHost 잔여 문구 i18n 이관 계약 (A4 이관 3라운드 — 호스트).
@@ -23,12 +23,12 @@ import { scanHardcodedStatusStrings } from "../../shared/language/status-i18n";
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 function readProdOps(): string {
   return readFileSync(
-    new URL("./production-hub/ProductionOperationsControlWorkspace.tsx", import.meta.url),
+    new URL("../production-hub/ProductionOperationsControlWorkspace.tsx", import.meta.url),
     "utf-8",
   );
 }
@@ -51,7 +51,7 @@ function placeholders(value: string): string[] {
   return [...value.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((match) => match[1] ?? "").sort();
 }
 
-const DICTS = parseRegisterModule(readSource("studio-host-reason-i18n.ts"));
+const DICTS = parseRegisterModule(readSource("status-i18n/studio-host-reason-i18n.ts"));
 const ALL_KEYS = Object.keys(DICTS.ko).sort();
 const count = (prefix: string) => ALL_KEYS.filter((key) => key.startsWith(prefix)).length;
 
@@ -146,8 +146,8 @@ describe("소비 계약 (호스트 + ProductionOperationsControlWorkspace)", () 
   });
 
   it("두 소비 파일 모두 등록 모듈을 import한다 (사전 등록 보장)", () => {
-    expect(CONSUMER_SOURCES.host).toContain('import { hostErrorText } from "./studio-host-reason-i18n";');
-    expect(CONSUMER_SOURCES.prodOps).toContain('import { hostErrorText } from "../studio-host-reason-i18n";');
+    expect(CONSUMER_SOURCES.host).toContain('import { hostErrorText } from "./status-i18n/studio-host-reason-i18n";');
+    expect(CONSUMER_SOURCES.prodOps).toContain('import { hostErrorText } from "../status-i18n/studio-host-reason-i18n";');
   });
 
   it("탐지기 위반이 없다 (기본 모드·생산자 채널 모드 모두 0건)", () => {

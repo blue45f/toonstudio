@@ -10,7 +10,7 @@
  */
 
 import { useT } from "@/shared/lib/i18n";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import "./publish-status-i18n";
 import { useMemo, useState } from "react";
 

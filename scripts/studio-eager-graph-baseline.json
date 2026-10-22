@@ -10,7 +10,7 @@
   },
   "totals": {
     "modules": 1598,
-    "bytes": 19731498
+    "bytes": 19731591
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
@@ -19,7 +19,7 @@
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
       "modules": 1413,
-      "bytes": 18879298
+      "bytes": 18879391
     }
   },
   "forbiddenDomains": {
@@ -381,8 +381,8 @@
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 567,
-      "bytes": 8533354
+      "modules": 565,
+      "bytes": 8511222
     },
     "apps/web/src/domains/creator/ai": {
       "modules": 23,
@@ -410,7 +410,7 @@
     },
     "apps/web/src/domains/creator/canvas": {
       "modules": 61,
-      "bytes": 669780
+      "bytes": 669801
     },
     "apps/web/src/domains/creator/catalog": {
       "modules": 2,
@@ -548,9 +548,13 @@
       "modules": 7,
       "bytes": 31191
     },
+    "apps/web/src/domains/creator/status-i18n": {
+      "modules": 2,
+      "bytes": 22144
+    },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 79,
-      "bytes": 974740
+      "bytes": 974800
     },
     "apps/web/src/domains/creator/studio-production": {
       "modules": 1,
@@ -1349,6 +1353,8 @@
     "apps/web/src/domains/creator/selection/studio-object-selection-set.ts": 2,
     "apps/web/src/domains/creator/selection/studio-selection-exact-mask.ts": 2,
     "apps/web/src/domains/creator/selection/studio-selection-transform-controller.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-editor-shell-status-i18n-r3c11.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-host-reason-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-2d-source-size.ts": 2,
     "apps/web/src/domains/creator/studio-active-stroke-lifecycle.ts": 2,
     "apps/web/src/domains/creator/studio-active-tool-command.ts": 2,
@@ -1542,7 +1548,6 @@
     "apps/web/src/domains/creator/studio-edit-controls.ts": 2,
     "apps/web/src/domains/creator/studio-editor-return-navigation.ts": 2,
     "apps/web/src/domains/creator/studio-editor-scope.ts": 2,
-    "apps/web/src/domains/creator/studio-editor-shell-status-i18n-r3c11.ts": 2,
     "apps/web/src/domains/creator/studio-editor-source-scope.ts": 2,
     "apps/web/src/domains/creator/studio-effect-favorites.ts": 2,
     "apps/web/src/domains/creator/studio-element-geometry.ts": 2,
@@ -1595,7 +1600,6 @@
     "apps/web/src/domains/creator/studio-history-retention-budget.ts": 2,
     "apps/web/src/domains/creator/studio-history-retention-ui.ts": 2,
     "apps/web/src/domains/creator/studio-horizontal-wheel.ts": 2,
-    "apps/web/src/domains/creator/studio-host-reason-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-host-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-humanoid-bones.ts": 2,
     "apps/web/src/domains/creator/studio-id.ts": 2,
@@ -2295,6 +2299,13 @@
       "increases": [
         "총 정적 도달 원본 +215.0 KiB",
         "앱 셸 폐포 +21.9 KiB"
+      ]
+    },
+    {
+      "date": "2026-10-22",
+      "reason": "상태 문구 사전 모듈 4개를 creator 루트에서 status-i18n/ 하위 폴더로 옮겼다(경로만 변경, import 경로 문자열이 늘어난 만큼의 증가)",
+      "increases": [
+        "총 정적 도달 원본 +0.1 KiB"
       ]
     }
   ]

@@ -36,7 +36,7 @@ import {
   studioWorkspaceArrangingSnapshot,
   subscribeStudioWorkspaceArranging,
 } from "../studio-workspace-arrangement";
-import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { useStudioShellFloatingLayout } from "./studio-shell-floating-layout-context";
 import { StudioShellFloatingTarget } from "./StudioShellFloatingTarget";
 import { STUDIO_SHELL_FLOATING_LAYOUT_OPEN_EVENT } from "./studio-shell-floating-layout-events";

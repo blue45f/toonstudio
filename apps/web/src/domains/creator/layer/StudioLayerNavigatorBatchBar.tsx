@@ -22,7 +22,7 @@ import type { StudioLayerNavigatorAction } from "./StudioLayerNavigator";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
 import { cn } from "@/shared/lib/utils";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 export interface StudioLayerNavigatorBatchBarProps {
   selectedIds: readonly string[];

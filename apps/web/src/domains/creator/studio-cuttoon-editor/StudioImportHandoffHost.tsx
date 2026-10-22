@@ -7,7 +7,7 @@ import {
   peekStudioImportHandoff,
   type StudioImportHandoffTarget,
 } from "../studio-import-handoff";
-import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { createStudioFileChangeEvent } from "./studio-synthetic-file-change-event";
 
 interface StudioImportHandoffHostProps {

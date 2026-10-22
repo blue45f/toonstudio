@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from "react";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 /** An optional readiness panel must never unmount the drawing document on failure. */
 export class StudioOfflinePanelBoundary extends Component<

@@ -22,7 +22,7 @@ import {
 } from "../studio-page-modal-lazy-boundaries";
 import { STUDIO_PROJECT_MAX_PAGES } from "../studio-project-file";
 import { StudioSurfaceErrorBoundary } from "../StudioSurfaceErrorBoundary";
-import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {

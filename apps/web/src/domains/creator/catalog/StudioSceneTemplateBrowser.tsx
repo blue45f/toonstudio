@@ -1,6 +1,6 @@
 import { Eye, Search, Star, X } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import { queryStudioCatalog, type StudioCatalogSort } from "./studio-catalog-query";
 import { summarizeStudioSceneTemplate } from "./studio-scene-template-summary";

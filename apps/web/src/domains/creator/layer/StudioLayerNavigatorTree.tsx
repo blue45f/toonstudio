@@ -14,7 +14,7 @@ import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, 
 
 
 import { cn } from "@/shared/lib/utils";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 export interface StudioLayerNavigatorTreeProps {
   nodes: readonly StudioLayerNavigatorNode[];

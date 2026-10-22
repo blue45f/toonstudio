@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { scanHardcodedStatusStrings } from "../../shared/language/status-i18n";
+import { scanHardcodedStatusStrings } from "../../../shared/language/status-i18n";
 
 /**
  * production-hub·storyworld 로딩·실패·빈 상태 문구 i18n 키 이관 계약
@@ -20,12 +20,12 @@ import { scanHardcodedStatusStrings } from "../../shared/language/status-i18n";
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 function readPublicJson(relativePath: string): Record<string, string> {
   return JSON.parse(
-    readFileSync(new URL(`../../../${relativePath}`, import.meta.url), "utf-8"),
+    readFileSync(new URL(`../../../../${relativePath}`, import.meta.url), "utf-8"),
   ) as Record<string, string>;
 }
 

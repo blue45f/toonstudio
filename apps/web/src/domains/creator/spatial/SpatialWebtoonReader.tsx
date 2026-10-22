@@ -7,7 +7,7 @@ import {
   spatialReaderCrops, spatialReaderKeyCommand, validateSpatialReaderFiles, SPATIAL_READER_DEFAULTS,
 } from "./spatial-reader-model";
 import "./spatial-reader.css";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 import type { StudioWebXrMode, StudioWebXrSessionState, StudioWebXrSupportSnapshot } from "../studio-webxr-session";
 import type { SpatialImageSize, SpatialReaderCommand, SpatialReaderCursor, SpatialReaderDirection, SpatialReaderSettings } from "./spatial-reader-model";
 import type { SpatialReaderRuntime } from "./spatial-reader-runtime";

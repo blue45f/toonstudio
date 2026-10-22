@@ -10,7 +10,7 @@ import {
   type MusicProviderId,
 } from "./studio-music-provider-catalog";
 import { importExternalMusicTrack } from "./studio-music-import";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 interface MusicExternalImportPanelProps {
   readonly brief: MusicBrief;

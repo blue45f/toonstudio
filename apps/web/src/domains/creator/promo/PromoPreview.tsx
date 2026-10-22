@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { preparePromoAudioPreview } from "./promo-audio";
 import { drawPromoFrame, loadPromoImages, releasePromoTextCache } from "./promo-canvas";
 import { PROMO_FPS, promoFrameCount, promoSize, promoTimeline } from "./promo-model";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 import type { PromoImages } from "./promo-canvas";
 import type { PromoPanel, PromoProject } from "./promo-model";

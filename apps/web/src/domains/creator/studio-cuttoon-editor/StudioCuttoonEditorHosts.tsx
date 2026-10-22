@@ -11,7 +11,7 @@ import { STUDIO_CANVAS_IMAGE_ACCEPT } from "../studio-legacy-editor-runtime-help
 import { StudioDestructiveConfirmHost } from "../StudioDestructiveConfirmHost";
 import { StudioVrmProjectArchiveAttestationHost } from "../vrm/StudioVrmProjectArchiveAttestationHost";
 import { StudioImportHandoffHost } from "./StudioImportHandoffHost";
-import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { LocalMusicTrack } from "./studio-music-client";
 
 import { musicProviderLabel } from "./studio-music-provider-catalog";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 import { MUSIC_ARCS, MUSIC_INTENSITIES, MUSIC_MOODS, MUSIC_PURPOSES, MUSIC_SONG_STRUCTURES, MUSIC_VOCAL_STYLES, musicFileExtension, musicFilename } from "@toonstudio/core/studio-music";
 

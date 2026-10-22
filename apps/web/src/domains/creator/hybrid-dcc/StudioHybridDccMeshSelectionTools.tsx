@@ -12,7 +12,7 @@ import {
   type StudioHybridDccSelectionComponent,
 } from "./studio-hybrid-dcc-selection-commands";
 import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 interface Props extends StudioHybridDccViewportProps {
   readonly scopeRef: RefObject<HTMLDivElement | null>;

@@ -10,7 +10,7 @@ import { isEffectivelyLocked } from "../studio-layers";
 import { createStudioPixelEditCanvas, encodeStudioPixelEditResultPng, loadStudioPixelEditImage } from "../studio-legacy-editor-runtime-helpers";
 import { StudioFilterDialog, StudioLayerLiftDialog } from "../studio-page-lazy-ui";
 import type { El, ImageEl } from "../studio-element-model";
-import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSession) {

@@ -1,7 +1,7 @@
 import { Glasses } from "lucide-react";
 import { Component, lazy, Suspense, useState, type ReactNode } from "react";
 import type { SpatialReaderDirection } from "./spatial-reader-model";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 const Reader = lazy(() => import("./SpatialWebtoonReader"));
 export interface SpatialWebtoonReaderLauncherProps {

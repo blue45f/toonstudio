@@ -3,7 +3,7 @@ import { Component, useEffect, type ReactNode } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 /**
  * 하이브리드 DCC 뷰포트의 장면 보조 조각 — 로컬 환경맵, 캔버스 오류 경계, 감소된 모션 선호,

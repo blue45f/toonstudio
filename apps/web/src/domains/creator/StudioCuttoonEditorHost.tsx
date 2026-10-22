@@ -1,6 +1,6 @@
 import { enterStudioSelectionTransform } from "./studio-transform-entry";
 import "./studio-host-status-i18n";
-import { hostErrorText } from "./studio-host-reason-i18n";
+import { hostErrorText } from "./status-i18n/studio-host-reason-i18n";
 import {
   formatI18nTemplate,
   getActiveI18nLocale,

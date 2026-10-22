@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { parseStudioPsdSource, type StudioPsdSource } from "./studio-psd-source";
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 /** 현재 문서에 연결된 원본만 표시한다. 다른 문서의 로컬 원본 목록은 노출하지 않는다. */
 export function StudioPsdSourceDownloads({ pages }: {
