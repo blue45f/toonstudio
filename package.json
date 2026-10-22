@@ -319,6 +319,7 @@
     "test:creator-bundle-deploy-plan": "node --test scripts/plan-creator-bundle-deploy.test.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.1.0",
     "@automerge/automerge": "3.5.0",
     "@babylonjs/core": "9.31.0",
     "@babylonjs/loaders": "9.31.0",
