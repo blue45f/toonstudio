@@ -106,7 +106,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "cs": 0.2587,
   "da": 0.2573,
   "de": 0.967,
-  "el": 0.2592,
+  "el": 0.9861,
   "en": 1,
   "es": 0.9777,
   "et": 0.2564,
