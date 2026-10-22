@@ -37,6 +37,7 @@ import {
 } from "../studio-translation-memory";
 import { parseStudioAnimaticSubtitles } from "../animatic/studio-animatic-subtitles";
 import {
+  resolveBg3dShotBatchPublicPlanErrorFromCause,
   resolveBg3dTemplateMigrationDataPreservedNote,
   resolveBg3dTemplateMigrationErrorByCode,
   resolveStudioAnimaticError,
@@ -130,12 +131,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       blocks[match[1] ?? ""] = [...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? "");
     }
-    // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2, bg3dTemplate 6 — 이전 서브코드 5 + 보존 고지 1). 블록 단위 누적으로 패리티를 본다.
+    // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2, bg3dTemplate 6 — 이전 서브코드 5 + 보존 고지 1, shotBatch 2). 블록 단위 누적으로 패리티를 본다.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(53);
+    expect(accumulated.ko).toHaveLength(55);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });
@@ -553,6 +554,42 @@ describe("R10 bg3d template migration — display-side resolution keeps ko copy 
       "기존 3D 템플릿의 전체 크기가 V12 이전 한도를 초과했습니다.",
       "기존 3D 템플릿을 SQLite/OPFS manifest에 최종 게시하지 못했습니다.",
       "\"migration-failed\"",
+    ]) {
+      expect(producer).not.toContain(literal);
+    }
+  });
+});
+
+/**
+ * R10 후속 (A4 D4): 샷 배치 공개 투영 검증 실패 2방출을 전용 오류 클래스의
+ * 코드로 전환했다. 표시 지점(export-run)은 원인 객체 덕 타이핑으로 해석하고,
+ * ko 해석 결과는 이관 전 원문과 글자 단위 동일해야 한다.
+ */
+
+describe("R10 bg3d shot batch public plan — display-side resolution keeps ko copy identical", () => {
+  it("resolves coded causes to the pre-migration ko literals", () => {
+    expect(resolveBg3dShotBatchPublicPlanErrorFromCause({
+      name: "StudioBg3dShotBatchPublicPlanError", code: "publicProfileInvalid",
+    })).toBe("공개 archive 렌더 구현 프로필이 올바르지 않습니다.");
+    expect(resolveBg3dShotBatchPublicPlanErrorFromCause({
+      name: "StudioBg3dShotBatchPublicPlanError", code: "publicPlanDigestInvalid",
+    })).toBe("공개 archive로 투영할 컷 렌더 Plan v2의 digest가 올바르지 않습니다.");
+  });
+
+  it("returns null for other causes so the display keeps the message path", () => {
+    expect(resolveBg3dShotBatchPublicPlanErrorFromCause(new Error("기타 오류"))).toBeNull();
+    expect(resolveBg3dShotBatchPublicPlanErrorFromCause({
+      name: "StudioBg3dShotBatchPublicPlanError", code: "unknownCode",
+    })).toBeNull();
+    expect(resolveBg3dShotBatchPublicPlanErrorFromCause(null)).toBeNull();
+    expect(resolveBg3dShotBatchPublicPlanErrorFromCause("publicProfileInvalid")).toBeNull();
+  });
+
+  it("producer source no longer carries the public plan message literals", () => {
+    const producer = readFileSync(new URL("../bg3d/studio-bg3d-shot-batch.ts", import.meta.url), "utf-8");
+    for (const literal of [
+      "공개 archive 렌더 구현 프로필이 올바르지 않습니다.",
+      "공개 archive로 투영할 컷 렌더 Plan v2의 digest가 올바르지 않습니다.",
     ]) {
       expect(producer).not.toContain(literal);
     }

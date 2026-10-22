@@ -1,5 +1,6 @@
 import { isStudioBg3dShotBatchNumberInRange, isStudioBg3dShotBatchIntegerInRange, STUDIO_BG3D_SHOT_BATCH_MAX_DIMENSION } from "./studio-bg3d-shot-batch-limits";
 import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "./studio-bg3d-lt-render";
+import { StudioBg3dShotBatchPublicPlanError } from "./studio-bg3d-shot-batch-public-plan-error";
 import { isStudioBg3dTilePipelineId, STUDIO_BG3D_TILED_PNG_PROFILE } from "./studio-bg3d-tiled-batch-policy";
 import { buildStudioPackageArchiveBlob } from "../studio-package-archive";
 import { compareStudioValidationStrings } from "../studio-validation-string-order";
@@ -697,25 +698,22 @@ export async function projectStudioBg3dShotBatchPlanForPublicArchive(
   let sourceRevision: string;
   try {
     if (!hasExactKeys(options, ["appProfileId", "sourceRevision"])) {
-      throw new TypeError("공개 archive 렌더 구현 프로필이 올바르지 않습니다.");
+      throw new StudioBg3dShotBatchPublicPlanError("publicProfileInvalid");
     }
     appProfileId = options.appProfileId;
     sourceRevision = options.sourceRevision;
   } catch {
-    throw new TypeError("공개 archive 렌더 구현 프로필이 올바르지 않습니다.");
+    throw new StudioBg3dShotBatchPublicPlanError("publicProfileInvalid");
   }
-  if (
-    !PROFILE_ID_PATTERN.test(appProfileId) ||
-    typeof sourceRevision !== "string"
-  ) {
-    throw new TypeError("공개 archive 렌더 구현 프로필이 올바르지 않습니다.");
+  if (!PROFILE_ID_PATTERN.test(appProfileId) || typeof sourceRevision !== "string") {
+    throw new StudioBg3dShotBatchPublicPlanError("publicProfileInvalid");
   }
   const verifiedPlan = await hydrateStudioBg3dShotBatchPlan(plan);
   if (
     !verifiedPlan ||
     !await verifyStudioBg3dShotBatchSourceRevision(verifiedPlan, sourceRevision)
   ) {
-    throw new TypeError("공개 archive로 투영할 컷 렌더 Plan v2의 digest가 올바르지 않습니다.");
+    throw new StudioBg3dShotBatchPublicPlanError("publicPlanDigestInvalid");
   }
   return createStudioBg3dShotBatchPublicRenderPlan({
     kind: STUDIO_BG3D_SHOT_BATCH_PUBLIC_RENDER_PLAN_KIND,

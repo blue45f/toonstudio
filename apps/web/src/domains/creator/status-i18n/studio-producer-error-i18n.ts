@@ -16,6 +16,9 @@
  *   필드 검증 2코드(createFieldEmpty·createFieldTooLong)는 한국어 라벨 문자열이
  *   아니라 필드 코드(params.field, 7종)를 싣고, 라벨 자체도 이 모듈의
  *   field.* 키로 해석한다. 조사 규칙은 아래 create 구간 주석이 정본이다.
+ * - bg3d 샷 배치 공개 투영 (R10): projectStudioBg3dShotBatchPlanForPublicArchive의
+ *   검증 실패 2코드. 표시 지점(export-run 실패 상세)은 원인 객체 덕 타이핑으로
+ *   해석한다 — 생산자 클래스의 런타임 import는 진입 그래프 경계 때문에 피한다.
  * - bg3d 템플릿 이전 (R10): bg3d-template-library의 이전 실패 서브코드 5종.
  *   구 "migration-failed" 단일 코드를 방출 지점별로 분해했고, 표시 지점
  *   (useStudioBg3dEditorEffects)은 코드 문자열 기반 진입점으로 해석한다.
@@ -439,4 +442,39 @@ export function resolveBg3dTemplateMigrationDataPreservedNote(): string {
     "studio.producerError.bg3dTemplate.migrationDataPreservedNote",
     "기존 IndexedDB 데이터는 삭제하지 않았습니다.",
   );
+}
+
+registerI18nLocaleEntries("ko", {
+  "studio.producerError.shotBatch.publicProfileInvalid": "공개 archive 렌더 구현 프로필이 올바르지 않습니다.",
+  "studio.producerError.shotBatch.publicPlanDigestInvalid": "공개 archive로 투영할 컷 렌더 Plan v2의 digest가 올바르지 않습니다.",
+});
+
+registerI18nLocaleEntries("en", {
+  "studio.producerError.shotBatch.publicProfileInvalid": "The public archive render implementation profile is invalid.",
+  "studio.producerError.shotBatch.publicPlanDigestInvalid": "The digest of the cut render Plan v2 to project into the public archive is invalid.",
+});
+
+const SHOT_BATCH_PUBLIC_PLAN_ERROR_KEYS: Readonly<Record<string, string>> = {
+  publicProfileInvalid: "studio.producerError.shotBatch.publicProfileInvalid",
+  publicPlanDigestInvalid: "studio.producerError.shotBatch.publicPlanDigestInvalid",
+};
+
+const SHOT_BATCH_PUBLIC_PLAN_ERROR_KO: Readonly<Record<string, string>> = {
+  "studio.producerError.shotBatch.publicProfileInvalid": "공개 archive 렌더 구현 프로필이 올바르지 않습니다.",
+  "studio.producerError.shotBatch.publicPlanDigestInvalid": "공개 archive로 투영할 컷 렌더 Plan v2의 digest가 올바르지 않습니다.",
+};
+
+/**
+ * 표시 지점 전용 해석 (bg3d 샷 배치 공개 투영, R10): export-run의 실패 상세
+ * 조립부가 원인 객체만으로 부른다. 생산자 클래스(StudioBg3dShotBatchPublicPlanError)를
+ * 런타임 import하면 studio 진입 그래프에 bg3d 생산자가 끌려오므로, 이름+코드
+ * 덕 타이핑으로 판정한다. 해당하지 않으면 null — 호출자는 기존 메시지 경로로 폴백한다.
+ */
+export function resolveBg3dShotBatchPublicPlanErrorFromCause(cause: unknown): string | null {
+  if (!cause || typeof cause !== "object") return null;
+  const { name, code } = cause as { name?: unknown; code?: unknown };
+  if (name !== "StudioBg3dShotBatchPublicPlanError" || typeof code !== "string") return null;
+  const key = SHOT_BATCH_PUBLIC_PLAN_ERROR_KEYS[code];
+  if (!key) return null;
+  return resolveProducerError(key, SHOT_BATCH_PUBLIC_PLAN_ERROR_KO[key]);
 }
