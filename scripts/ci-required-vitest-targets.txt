@@ -109,6 +109,7 @@ apps/web/src/domains/creator/StudioReliabilityStatusRail.rejected-stroke.test.ts
 apps/web/src/domains/creator/StudioSelectionWorkbenchPanel.interaction.test.tsx
 apps/web/src/domains/creator/StudioSelectionWorkbenchPanel.test.tsx
 apps/web/src/domains/creator/StudioWorkspaceMenu.test.tsx
+apps/web/src/domains/creator/ai/StudioAiProvenancePanel.test.tsx
 apps/web/src/domains/creator/ai/studio-ai-client.test.ts
 apps/web/src/domains/creator/ai/studio-ai-codec-lazy-boundary.test.ts
 apps/web/src/domains/creator/ai/studio-scenario-image-generation.test.ts
