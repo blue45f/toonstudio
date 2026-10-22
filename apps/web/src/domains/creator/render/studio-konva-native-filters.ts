@@ -2,6 +2,8 @@
  * Konva의 Blur/Brighten/Contrast/HSL/Pixelate 내장 필터를 attrs-기반으로 포팅한 순수 버전.
  * 알고리즘은 konva/lib/filters/*.js를 그대로 옮긴 것(verbatim) — 결과가 달라지면 안 되므로
  * studio-konva-native-filters.test.ts가 실제 Konva 함수와 픽셀 단위로 동일한지 검증한다.
+ * 기준 버전은 konva 10.9 이다(HSL 계수·색상 래핑, Pixelate·Blur 의 알파 가중 평균과 pixelRatio 인자가
+ * 10.3 과 달라졌다). Konva 를 올리면 이 시험이 먼저 깨지므로 그때 같은 방식으로 다시 옮긴다.
  *
  * 왜 필요한가: 실제 Konva 필터는 `this.blurRadius()`처럼 Konva.Node에 Factory로 부착된
  * getter 메서드를 읽는다 — Worker(DOM 없음)에서는 이 메서드가 존재하는 진짜 Konva 노드를
@@ -72,19 +74,19 @@ export function nativeHSL(this: NativeFilterThis, imageData: StudioImageDataLike
   const nPixels = data.length;
   const v = 1;
   const s = Math.pow(2, attrNumber(this.attrs, "saturation", 0));
-  const h = Math.abs(attrNumber(this.attrs, "hue", 0) + 360) % 360;
+  const h = (((attrNumber(this.attrs, "hue", 0) % 360) + 360) % 360);
   const l = attrNumber(this.attrs, "luminance", 0) * 127;
   const vsu = v * s * Math.cos((h * Math.PI) / 180);
   const vsw = v * s * Math.sin((h * Math.PI) / 180);
-  const rr = 0.299 * v + 0.701 * vsu + 0.167 * vsw;
+  const rr = 0.299 * v + 0.701 * vsu + 0.168 * vsw;
   const rg = 0.587 * v - 0.587 * vsu + 0.33 * vsw;
   const rb = 0.114 * v - 0.114 * vsu - 0.497 * vsw;
   const gr = 0.299 * v - 0.299 * vsu - 0.328 * vsw;
   const gg = 0.587 * v + 0.413 * vsu + 0.035 * vsw;
-  const gb = 0.114 * v - 0.114 * vsu + 0.293 * vsw;
+  const gb = 0.114 * v - 0.114 * vsu + 0.292 * vsw;
   const br = 0.299 * v - 0.3 * vsu + 1.25 * vsw;
-  const bg = 0.587 * v - 0.586 * vsu - 1.05 * vsw;
-  const bb = 0.114 * v + 0.886 * vsu - 0.2 * vsw;
+  const bg = 0.587 * v - 0.588 * vsu - 1.05 * vsw;
+  const bb = 0.114 * v + 0.886 * vsu - 0.203 * vsw;
   let r: number, g: number, b: number, a: number;
   for (let i = 0; i < nPixels; i += 4) {
     r = data[i + 0];
@@ -99,8 +101,9 @@ export function nativeHSL(this: NativeFilterThis, imageData: StudioImageDataLike
 }
 
 // konva/lib/filters/Pixelate.js verbatim (attrs 기반, Util.error 대신 무시하고 return).
-export function nativePixelate(this: NativeFilterThis, imageData: StudioImageDataLike): void {
-  const pixelSize = Math.ceil(attrNumber(this.attrs, "pixelSize", 8));
+// 10.9: 알파로 가중한 평균(투명 픽셀이 블록을 어둡게 하지 않는다)과 pixelRatio 인자.
+export function nativePixelate(this: NativeFilterThis, imageData: StudioImageDataLike, pixelRatio = 1): void {
+  const pixelSize = Math.ceil(attrNumber(this.attrs, "pixelSize", 8) * pixelRatio);
   const width = imageData.width;
   const height = imageData.height;
   const nBinsX = Math.ceil(width / pixelSize);
@@ -115,30 +118,27 @@ export function nativePixelate(this: NativeFilterThis, imageData: StudioImageDat
       let blue = 0;
       let alpha = 0;
       const xBinStart = xBin * pixelSize;
-      const xBinEnd = xBinStart + pixelSize;
+      const xBinEnd = Math.min(xBinStart + pixelSize, width);
       const yBinStart = yBin * pixelSize;
-      const yBinEnd = yBinStart + pixelSize;
-      let pixelsInBin = 0;
+      const yBinEnd = Math.min(yBinStart + pixelSize, height);
       for (let x = xBinStart; x < xBinEnd; x += 1) {
-        if (x >= width) continue;
         for (let y = yBinStart; y < yBinEnd; y += 1) {
-          if (y >= height) continue;
           const i = (width * y + x) * 4;
-          red += data[i + 0];
-          green += data[i + 1];
-          blue += data[i + 2];
-          alpha += data[i + 3];
-          pixelsInBin += 1;
+          const a = data[i + 3];
+          red += data[i + 0] * a;
+          green += data[i + 1] * a;
+          blue += data[i + 2] * a;
+          alpha += a;
         }
       }
-      red = red / pixelsInBin;
-      green = green / pixelsInBin;
-      blue = blue / pixelsInBin;
-      alpha = alpha / pixelsInBin;
+      if (alpha) {
+        red = red / alpha;
+        green = green / alpha;
+        blue = blue / alpha;
+      }
+      alpha = alpha / ((xBinEnd - xBinStart) * (yBinEnd - yBinStart));
       for (let x = xBinStart; x < xBinEnd; x += 1) {
-        if (x >= width) continue;
         for (let y = yBinStart; y < yBinEnd; y += 1) {
-          if (y >= height) continue;
           const i = (width * y + x) * 4;
           data[i + 0] = red;
           data[i + 1] = green;
@@ -196,6 +196,14 @@ const SHG_TABLE = [
   24, 24, 24, 24, 24, 24, 24,
 ];
 
+// 가로 패스는 알파로 곱한 색을 흐려야 투명 픽셀의 색이 이웃으로 번지지 않는다. 세로 패스가 다시 알파로 나눈다.
+function nativePremultiply(channel: number, alpha: number): number {
+  return alpha === 255 ? channel : (channel * alpha) / 255;
+}
+
+// 논리 반경의 최대값. 고해상도 캐시는 더 큰 커널이 필요하다.
+const NATIVE_BLUR_MAX_RADIUS = 180;
+
 function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: number): void {
   const pixels = imageData.data;
   const width = imageData.width;
@@ -212,8 +220,10 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
   const radiusPlus1 = radius + 1;
   const sumFactor = (radiusPlus1 * (radiusPlus1 + 1)) / 2;
   const stackStart = new NativeBlurStack();
-  const mul_sum = MUL_TABLE[radius];
-  const shg_sum = SHG_TABLE[radius];
+  // 높은 해상도에서 32비트 정수가 넘치지 않도록 부동소수점으로 정규화한다.
+  const normalization = radius <= NATIVE_BLUR_MAX_RADIUS
+    ? MUL_TABLE[radius] / 2 ** SHG_TABLE[radius]
+    : 1 / (radiusPlus1 * radiusPlus1);
 
   let stackEnd: NativeBlurStack | null = null;
   let stack: NativeBlurStack = stackStart;
@@ -229,10 +239,14 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
   yw = yi = 0;
   for (let y = 0; y < height; y++) {
     r_in_sum = g_in_sum = b_in_sum = a_in_sum = r_sum = g_sum = b_sum = a_sum = 0;
-    r_out_sum = radiusPlus1 * (pr = pixels[yi]);
-    g_out_sum = radiusPlus1 * (pg = pixels[yi + 1]);
-    b_out_sum = radiusPlus1 * (pb = pixels[yi + 2]);
-    a_out_sum = radiusPlus1 * (pa = pixels[yi + 3]);
+    pa = pixels[yi + 3];
+    pr = nativePremultiply(pixels[yi], pa);
+    pg = nativePremultiply(pixels[yi + 1], pa);
+    pb = nativePremultiply(pixels[yi + 2], pa);
+    r_out_sum = radiusPlus1 * pr;
+    g_out_sum = radiusPlus1 * pg;
+    b_out_sum = radiusPlus1 * pb;
+    a_out_sum = radiusPlus1 * pa;
     r_sum += sumFactor * pr;
     g_sum += sumFactor * pg;
     b_sum += sumFactor * pb;
@@ -247,10 +261,11 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
     }
     for (let i = 1; i < radiusPlus1; i++) {
       p = yi + ((widthMinus1 < i ? widthMinus1 : i) << 2);
-      r_sum += (stack.r = pr = pixels[p]) * (rbs = radiusPlus1 - i);
-      g_sum += (stack.g = pg = pixels[p + 1]) * rbs;
-      b_sum += (stack.b = pb = pixels[p + 2]) * rbs;
-      a_sum += (stack.a = pa = pixels[p + 3]) * rbs;
+      pa = pixels[p + 3];
+      r_sum += (stack.r = pr = nativePremultiply(pixels[p], pa)) * (rbs = radiusPlus1 - i);
+      g_sum += (stack.g = pg = nativePremultiply(pixels[p + 1], pa)) * rbs;
+      b_sum += (stack.b = pb = nativePremultiply(pixels[p + 2], pa)) * rbs;
+      a_sum += (stack.a = pa) * rbs;
       r_in_sum += pr;
       g_in_sum += pg;
       b_in_sum += pb;
@@ -260,15 +275,10 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
     stackIn = stackStart;
     stackOut = stackEnd;
     for (let x = 0; x < width; x++) {
-      pixels[yi + 3] = pa = (a_sum * mul_sum) >> shg_sum;
-      if (pa !== 0) {
-        pa = 255 / pa;
-        pixels[yi] = ((r_sum * mul_sum) >> shg_sum) * pa;
-        pixels[yi + 1] = ((g_sum * mul_sum) >> shg_sum) * pa;
-        pixels[yi + 2] = ((b_sum * mul_sum) >> shg_sum) * pa;
-      } else {
-        pixels[yi] = pixels[yi + 1] = pixels[yi + 2] = 0;
-      }
+      pixels[yi] = Math.floor(r_sum * normalization);
+      pixels[yi + 1] = Math.floor(g_sum * normalization);
+      pixels[yi + 2] = Math.floor(b_sum * normalization);
+      pixels[yi + 3] = Math.floor(a_sum * normalization);
       r_sum -= r_out_sum;
       g_sum -= g_out_sum;
       b_sum -= b_out_sum;
@@ -278,10 +288,11 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
       b_out_sum -= stackIn!.b;
       a_out_sum -= stackIn!.a;
       p = (yw + ((p = x + radius + 1) < widthMinus1 ? p : widthMinus1)) << 2;
-      r_in_sum += stackIn!.r = pixels[p];
-      g_in_sum += stackIn!.g = pixels[p + 1];
-      b_in_sum += stackIn!.b = pixels[p + 2];
-      a_in_sum += stackIn!.a = pixels[p + 3];
+      pa = pixels[p + 3];
+      r_in_sum += stackIn!.r = nativePremultiply(pixels[p], pa);
+      g_in_sum += stackIn!.g = nativePremultiply(pixels[p + 1], pa);
+      b_in_sum += stackIn!.b = nativePremultiply(pixels[p + 2], pa);
+      a_in_sum += stackIn!.a = pa;
       r_sum += r_in_sum;
       g_sum += g_in_sum;
       b_sum += b_in_sum;
@@ -320,7 +331,8 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
       stack.a = pa;
       stack = stack.next!;
     }
-    let yp = width;
+    // 이 패스는 둘째 행에서 시작하는데, 높이가 1픽셀인 이미지에는 둘째 행이 없다.
+    let yp = Math.min(1, heightMinus1) * width;
     for (let i = 1; i <= radius; i++) {
       yi = (yp + x) << 2;
       r_sum += (stack.r = pr = pixels[yi]) * (rbs = radiusPlus1 - i);
@@ -339,12 +351,12 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
     stackOut = stackEnd;
     for (let y = 0; y < height; y++) {
       p = yi << 2;
-      pixels[p + 3] = pa = (a_sum * mul_sum) >> shg_sum;
+      pixels[p + 3] = pa = Math.floor(a_sum * normalization);
       if (pa > 0) {
         pa = 255 / pa;
-        pixels[p] = ((r_sum * mul_sum) >> shg_sum) * pa;
-        pixels[p + 1] = ((g_sum * mul_sum) >> shg_sum) * pa;
-        pixels[p + 2] = ((b_sum * mul_sum) >> shg_sum) * pa;
+        pixels[p] = Math.floor(r_sum * normalization) * pa;
+        pixels[p + 1] = Math.floor(g_sum * normalization) * pa;
+        pixels[p + 2] = Math.floor(b_sum * normalization) * pa;
       } else {
         pixels[p] = pixels[p + 1] = pixels[p + 2] = 0;
       }
@@ -376,10 +388,14 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
   }
 }
 
-// konva/lib/filters/Blur.js verbatim (attrs 기반).
-export function nativeBlur(this: NativeFilterThis, imageData: StudioImageDataLike): void {
-  // Konva의 stack-blur 테이블은 0..254 반지름만 정의돼 있다. 손상된 저장본의
-  // Infinity/거대값이 무한 루프나 undefined 테이블 조회로 이어지지 않게 제한한다.
-  const radius = Math.min(MUL_TABLE.length - 1, Math.max(0, Math.round(attrNumber(this.attrs, "blurRadius", 0))));
+// konva/lib/filters/Blur.js verbatim (attrs 기반). 10.9: 논리 반경은 180 까지이고 pixelRatio 만큼 커널을 키운다.
+export function nativeBlur(this: NativeFilterThis, imageData: StudioImageDataLike, pixelRatio = 1): void {
+  // 손상된 저장본의 Infinity/거대값(attrNumber 가 유한하지 않은 값은 걸러낸다)이나 비정상 pixelRatio 가
+  // 거대한 커널을 만들지 않게, 곱한 반경을 정수 테이블 한계의 두 배(360)로 제한한다.
+  const ratio = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
+  const radius = Math.min(
+    NATIVE_BLUR_MAX_RADIUS * 2,
+    Math.round(Math.min(attrNumber(this.attrs, "blurRadius", 0), NATIVE_BLUR_MAX_RADIUS) * ratio),
+  );
   if (radius > 0) nativeFilterGaussBlurRGBA(imageData, radius);
 }
