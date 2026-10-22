@@ -188,7 +188,8 @@ function isStudioSvgExportWorkerResponseMessage(
       && typeof entry.id === "string"
       && typeof entry.type === "string"
       && (entry.mode === "skipped" || entry.mode === "approximated")
-      && typeof entry.label === "string"
+      && (typeof entry.label === "string"
+        || (isRecord(entry.label) && typeof entry.label.code === "string"))
     )
     && isStringArray(result.fontFamilies)
     && isStringArray(result.caveats)

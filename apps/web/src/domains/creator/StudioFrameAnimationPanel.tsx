@@ -18,7 +18,7 @@ import {
   isFrameAnimMediaExportSupported,
   isMotionExportCancelled,
   isMotionExportSupported,
-  loadMotionCutImages,
+  loadMotionCutImages, resolveStudioMotionExportErrorFromCause,
   planFrameAnimationExport,
   startFrameAnimationExport,
   startFrameAnimMediaExport,
@@ -256,7 +256,7 @@ export function StudioFrameAnimationPanel({
       }
     } catch (err) {
       if (!isMotionExportCancelled(err)) {
-        setError(err instanceof Error ? err.message : frozenStatus4Text("studio.frozenStatus4.frame.exportFailed", "애니메이션을 내보내지 못했어요."));
+        setError(resolveStudioMotionExportErrorFromCause(err) ?? (err instanceof Error ? err.message : frozenStatus4Text("studio.frozenStatus4.frame.exportFailed", "애니메이션을 내보내지 못했어요.")));
       }
     } finally {
       handleRef.current = null;

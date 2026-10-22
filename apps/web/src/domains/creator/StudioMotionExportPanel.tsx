@@ -16,6 +16,7 @@ import {
   isMotionExportSupported,
   loadMotionCutImages,
   motionExportFileName,
+  resolveStudioMotionExportErrorFromCause,
   planMotionExport,
   startMotionExport,
   type MotionExportHandle,
@@ -102,7 +103,7 @@ export function StudioMotionExportPanel({ work }: { work: WorkDetail }) {
       );
     } catch (err) {
       if (!isMotionExportCancelled(err)) {
-        setError(err instanceof Error ? err.message : panelStatusText("studio.panelStatus.motionExport.exportFailed", "영상을 내보내지 못했어요."));
+        setError(resolveStudioMotionExportErrorFromCause(err) ?? (err instanceof Error ? err.message : panelStatusText("studio.panelStatus.motionExport.exportFailed", "영상을 내보내지 못했어요.")));
       }
     } finally {
       handleRef.current = null;

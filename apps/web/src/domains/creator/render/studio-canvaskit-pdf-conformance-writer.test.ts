@@ -103,17 +103,17 @@ describe("Studio vector PDF conformance candidate writer", () => {
   it("OutputIntent·ICC 서명·프로필 크기·색공간을 fail-closed로 검사한다", () => {
     expect(() =>
       buildVectorPdf(candidate("pdf-a-2b", { outputIntent: undefined })),
-    ).toThrow("ICC OutputIntent");
+    ).toThrow("iccRequired");
     expect(() =>
       buildVectorPdf(candidate("pdf-a-2b", {
         outputIntent: { ...outputIntent(), profileBytes: new Uint8Array(132) },
       })),
-    ).toThrow("ICC 프로파일의 선언 크기");
+    ).toThrow("iccLengthMismatch");
     expect(() =>
       buildVectorPdf(candidate("pdf-a-2b", {
         outputIntent: { ...outputIntent(), components: 4 },
       })),
-    ).toThrow("ICC 색공간과 성분 수");
+    ).toThrow("iccColorSpaceMismatch");
   });
 
   it("PDF/X-4의 TrimBox와 BleedBox 포함 관계를 강제한다", () => {
@@ -121,7 +121,7 @@ describe("Studio vector PDF conformance candidate writer", () => {
       buildVectorPdf(candidate("pdf-x-4", {
         pages: [{ widthPt: 100, heightPt: 100, ops: [] }],
       })),
-    ).toThrow("TrimBox");
+    ).toThrow("trimBoxRequired");
     expect(() =>
       buildVectorPdf(candidate("pdf-x-4", {
         pages: [{
@@ -131,7 +131,7 @@ describe("Studio vector PDF conformance candidate writer", () => {
           trimBox: [-1, 0, 90, 90],
         }],
       })),
-    ).toThrow("MediaBox");
+    ).toThrow("trimBoxOutside");
     expect(() =>
       buildVectorPdf(candidate("pdf-x-4", {
         pages: [{
@@ -142,7 +142,7 @@ describe("Studio vector PDF conformance candidate writer", () => {
           bleedBox: [10, 10, 90, 90],
         }],
       })),
-    ).toThrow("BleedBox");
+    ).toThrow("bleedBoxInvalid");
   });
 
   it("적합성 식별자·날짜를 엄격히 검증한다", () => {
@@ -155,7 +155,7 @@ describe("Studio vector PDF conformance candidate writer", () => {
           modifiedAt,
         },
       })),
-    ).toThrow("32자리 hex");
+    ).toThrow("fileIdFormat");
     expect(() =>
       buildVectorPdf(candidate("pdf-a-2b", {
         conformance: {
@@ -165,7 +165,7 @@ describe("Studio vector PDF conformance candidate writer", () => {
           modifiedAt,
         },
       })),
-    ).toThrow("UTC ISO-8601");
+    ).toThrow("invalidDate");
     expect(() =>
       buildVectorPdf(candidate("pdf-a-2b", {
         conformance: {
@@ -175,7 +175,7 @@ describe("Studio vector PDF conformance candidate writer", () => {
           modifiedAt: createdAt,
         },
       })),
-    ).toThrow("생성 날짜보다");
+    ).toThrow("modifiedBeforeCreated");
   });
 
   it("표시 텍스트가 표준 14 폰트에 기대는 후보 파일을 거부한다", () => {
@@ -201,6 +201,6 @@ describe("Studio vector PDF conformance candidate writer", () => {
         }],
         fonts: [standardFont],
       })),
-    ).toThrow("모든 글꼴 프로그램을 임베드");
+    ).toThrow("fontsMustEmbed");
   });
 });

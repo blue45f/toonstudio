@@ -3522,7 +3522,7 @@ describe("텍스트 직렬화", () => {
     expect(svg).toContain(">かんじ</tspan>");
     expect(
       skipped.some(
-        (entry) => entry.mode === "approximated" && entry.label.includes("가로 루비"),
+        (entry) => entry.mode === "approximated" && typeof entry.label !== "string" && entry.label.code === "rubyPositionApprox",
       ),
     ).toBe(true);
   });
@@ -3587,7 +3587,7 @@ describe("텍스트 직렬화", () => {
     expect(svg).not.toContain('translate(4 21) rotate(90)');
     expect(
       skipped.some(
-        (entry) => entry.id === "t1" && entry.mode === "approximated" && entry.label.includes("세로쓰기"),
+        (entry) => entry.id === "t1" && entry.mode === "approximated" && typeof entry.label !== "string" && entry.label.code === "verticalLatinApprox",
       ),
     ).toBe(true);
   });
@@ -3595,11 +3595,11 @@ describe("텍스트 직렬화", () => {
   it("세로쓰기 — 라틴 폭 근사를 정직하게 고지하고, 한글만이면 고지하지 않는다", () => {
     const mixed = exportPageToSvg(page([textEl({ text: "가OK나", vertical: true })]));
     expect(
-      mixed.skipped.some((s) => s.id === "t1" && s.mode === "approximated" && s.label.includes("세로쓰기"))
+      mixed.skipped.some((s) => s.id === "t1" && s.mode === "approximated" && typeof s.label !== "string" && s.label.code === "verticalLatinApprox")
     ).toBe(true);
 
     const hangulOnly = exportPageToSvg(page([textEl({ text: "가나다", vertical: true })]));
-    expect(hangulOnly.skipped.some((s) => s.id === "t1" && s.label.includes("세로쓰기"))).toBe(false);
+    expect(hangulOnly.skipped.some((s) => s.id === "t1" && typeof s.label !== "string" && s.label.code === "verticalLatinApprox")).toBe(false);
   });
 
   it("세로쓰기 — 열 길이 예산(el.width)을 넘기면 새 열로 넘긴다", () => {
@@ -3633,7 +3633,7 @@ describe("텍스트 직렬화", () => {
     expect(svg).toContain(">か</tspan>");
     expect(svg).toContain(">ん</tspan>");
     expect(svg).toContain(">じ</tspan>");
-    expect(skipped.some((entry) => entry.label.includes("세로 루비"))).toBe(false);
+    expect(skipped.some((entry) => typeof entry.label !== "string" && (entry.label.code === "rubyVerticalWarning" || entry.label.code === "rubyVerticalUnsupported"))).toBe(false);
   });
 
   it("세로쓰기 루비 — surrogate pair를 가르는 범위는 조용히 버리지 않고 skipped로 보고한다", () => {
@@ -3651,14 +3651,14 @@ describe("텍스트 직렬화", () => {
     expect(svg).not.toContain(">え</tspan>");
     expect(
       skipped.some(
-        (entry) => entry.mode === "skipped" && entry.label.includes("split-surrogate-pair"),
+        (entry) => entry.mode === "skipped" && typeof entry.label !== "string" && entry.label.params?.code === "split-surrogate-pair",
       ),
     ).toBe(true);
   });
 
   it("자동 줄바꿈이 필요한 긴 문장은 근사로 정직하게 고지한다", () => {
     const result = exportPageToSvg(page([textEl({ text: "가나다라마바사아자차카타파하", width: 100, align: "left" })]));
-    expect(result.skipped.some((s) => s.id === "t1" && s.mode === "approximated" && s.label.includes("자동 줄바꿈"))).toBe(true);
+    expect(result.skipped.some((s) => s.id === "t1" && s.mode === "approximated" && typeof s.label !== "string" && s.label.code === "manualWrapOnly")).toBe(true);
   });
 
   it("그림자 — feDropShadow 필터(σ=blur/2)로 근사한다", () => {
@@ -3707,7 +3707,7 @@ describe("말풍선 직렬화", () => {
     expect(svg).toContain(">かんじ</tspan>");
     expect(
       skipped.some(
-        (entry) => entry.mode === "approximated" && entry.label.includes("말풍선 가로 루비"),
+        (entry) => entry.mode === "approximated" && typeof entry.label !== "string" && entry.label.code === "rubyPositionApprox" && entry.label.params?.variant === "bubble",
       ),
     ).toBe(true);
   });
@@ -3730,7 +3730,7 @@ describe("말풍선 직렬화", () => {
     expect(svg).toContain(">か</tspan>");
     expect(svg).toContain(">ん</tspan>");
     expect(svg).toContain(">じ</tspan>");
-    expect(skipped.some((entry) => entry.label.includes("세로 루비"))).toBe(false);
+    expect(skipped.some((entry) => typeof entry.label !== "string" && (entry.label.code === "rubyVerticalWarning" || entry.label.code === "rubyVerticalUnsupported"))).toBe(false);
   });
 
   it("speech — 편집한 꼬리 밑동과 곡률이 SVG path에 보존된다", () => {
@@ -3952,12 +3952,12 @@ describe("레이어 규약(클립·혼합)", () => {
   it("표현 불가한 혼합 모드는 보통 합성으로 그리고 근사 고지한다", () => {
     const result = exportPageToSvg(page([rectEl({ blendMode: "destination-out" })]));
     expect(result.svg).not.toContain("mix-blend-mode");
-    expect(result.skipped.some((s) => s.id === "d1" && s.label.includes("혼합 모드"))).toBe(true);
+    expect(result.skipped.some((s) => s.id === "d1" && typeof s.label !== "string" && s.label.code === "blendModeUnsupported")).toBe(true);
   });
 
   it("아래 레이어 클리핑(clipBelow)은 근사로 고지한다", () => {
     const result = exportPageToSvg(page([rectEl({ id: "base" }), rectEl({ id: "top", clipBelow: true })]));
-    expect(result.skipped.some((s) => s.id === "top" && s.mode === "approximated" && s.label.includes("클리핑"))).toBe(true);
+    expect(result.skipped.some((s) => s.id === "top" && s.mode === "approximated" && typeof s.label !== "string" && s.label.code === "clipMaskUnsupported")).toBe(true);
   });
 });
 

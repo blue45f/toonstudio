@@ -10,6 +10,8 @@ import { WATERMARK_POSITIONS, type WatermarkSettings } from "../studio-watermark
 import { resolveStudioCbzWarning, resolveStudioInterchangeExportErrorMessage, resolveStudioOpenRasterWarning } from "./studio-interchange-display-message";
 import { StudioContactSheetPanel } from "../StudioContactSheetPanel";
 import { frozenStatusText } from "../studio-frozen-status-i18n";
+import { resolveStudioPsdExportErrorFromCause, resolveSvgExportSkipLabel } from "../status-i18n/studio-producer-error-i18n-exports";
+import { resolveStudioPdfVectorErrorFromCause } from "../status-i18n/studio-producer-error-i18n-exports-raster";
 
 import {
   loadStudioPsdExportModule,
@@ -869,7 +871,7 @@ export function StudioExportMenuPanel({
       if (!mountedRef.current) return;
       setVectorPdfStatus({
         tone: "warn",
-        text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.vectorFailed", "벡터 PDF를 만들지 못했습니다."),
+        text: resolveStudioPdfVectorErrorFromCause(error) ?? (error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.vectorFailed", "벡터 PDF를 만들지 못했습니다.")),
       });
     } finally {
       if (mountedRef.current) setVectorPdfBusy(false);
@@ -890,7 +892,7 @@ export function StudioExportMenuPanel({
       if (result.skipped.length > 0) {
         setSvgStatus({
           tone: "warn",
-          text: frozenStatusText("studio.frozenStatus.export.svgAborted", { labels: [...new Set(result.skipped.map((item) => item.label))].join(" ") }, "외관이 달라지는 요소가 있어 벡터 SVG 저장을 중단했어요. {labels} 현재 원고의 질감·클리핑·혼합 결과를 유지하려면 외관 보존 SVG를 선택해 주세요."),
+          text: frozenStatusText("studio.frozenStatus.export.svgAborted", { labels: [...new Set(result.skipped.map((item) => resolveSvgExportSkipLabel(item.label)))].join(" ") }, "외관이 달라지는 요소가 있어 벡터 SVG 저장을 중단했어요. {labels} 현재 원고의 질감·클리핑·혼합 결과를 유지하려면 외관 보존 SVG를 선택해 주세요."),
         });
         return;
       }
@@ -963,7 +965,7 @@ export function StudioExportMenuPanel({
       setPsdStatus({ tone: result.skipped.length > 0 ? "warn" : "good", text: psdExportResultMessage(result) });
     } catch (err) {
       if (!mountedRef.current) return;
-      setPsdStatus({ tone: "warn", text: err instanceof Error ? err.message : frozenStatusText("studio.frozenStatus.export.psdFailed", "PSD 내보내기에 실패했어요.") });
+      setPsdStatus({ tone: "warn", text: resolveStudioPsdExportErrorFromCause(err) ?? (err instanceof Error ? err.message : frozenStatusText("studio.frozenStatus.export.psdFailed", "PSD 내보내기에 실패했어요.")) });
     } finally {
       if (mountedRef.current) setPsdBusy(false);
     }

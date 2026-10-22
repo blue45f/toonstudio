@@ -28,6 +28,11 @@ import type {
 } from "../studio-vector-fill-reference";
 import type { StudioVectorReferenceSourceBudgetReceipt } from "../studio-vector-reference-source-budget-receipt";
 
+import { StudioRasterEditError, type StudioRasterEditReason } from "./studio-raster-edit-error";
+
+export { StudioRasterEditError } from "./studio-raster-edit-error";
+export type { StudioRasterEditErrorCode, StudioRasterEditReason, StudioRasterEditReasonCode } from "./studio-raster-edit-error";
+
 const EDITABLE_RASTER_COPY_NAMESPACE = "editable-raster-copy-v1";
 const PNG_BASE64_PREFIX = "data:image/png;base64,";
 const PNG_DATA_URL_PREFIX = "data:image/png;base64,iVBORw0KGgo";
@@ -235,7 +240,7 @@ export type StudioEditableRasterCopyPlanResult =
   | {
       readonly ok: false;
       readonly code: StudioEditableRasterCopyFailureCode;
-      readonly reason: string;
+      readonly reason: StudioRasterEditReason;
     };
 
 export type StudioEditableRasterCopyApplyResult =
@@ -243,7 +248,7 @@ export type StudioEditableRasterCopyApplyResult =
   | {
       readonly ok: false;
       readonly code: "stale-plan" | "invalid-composite";
-      readonly reason: string;
+      readonly reason: StudioRasterEditReason;
     };
 
 export type StudioEditableRasterCopyRenderer = (
@@ -882,7 +887,7 @@ function analyzeStudioRasterPreparationSources(
       exactRenderableVisibleCount: exactRenderableSourceIds.length,
       unsupportedVisibleCount: unsupportedIds.size,
       unsupportedReasons: [...new Set([
-        ...exported.skipped.map((skip) => skip.label),
+        ...exported.skipped.map((skip) => (typeof skip.label === "string" ? skip.label : skip.label.code)),
         ...structurallyUnsupported.values(),
       ])],
       hasPageBackground: input.hasPageBackground ?? true,
@@ -907,45 +912,30 @@ export function summarizeStudioRasterPreparationSources(
  * compositing stays fail-closed, but the message names affected layers, confirms that the original
  * document was preserved, and never exposes an internal SVG or destructive merge requirement.
  */
-const FIDELITY_ACTIONS: readonly { readonly match: RegExp; readonly action: string }[] = [
-  {
-    match: /자동 줄바꿈/u,
-    action:
-      "말풍선·글상자의 글이 상자보다 길어 자동으로 줄이 바뀝니다. 상자를 조금 넓히거나 원하는 자리에서 엔터로 줄을 나눈 뒤 다시 시도해 주세요.",
-  },
-  {
-    match: /세로쓰기/u,
-    action:
-      "세로쓰기 안의 영문·숫자 배치가 달라질 수 있습니다. 해당 텍스트를 가로쓰기로 바꾸거나 줄을 직접 나눈 뒤 다시 시도해 주세요.",
-  },
-  {
-    match: /외부 주소/u,
-    action:
-      "인터넷 주소로 연결된 이미지가 있습니다. 이미지를 작업 파일에 다시 넣거나 해당 레이어를 잠시 숨긴 뒤 다시 시도해 주세요.",
-  },
-  {
-    match: /혼합 모드|클리핑 마스크|아래 레이어로 자르기/u,
-    action:
-      "지원되지 않는 혼합 모드 또는 아래 레이어로 자르기 설정을 잠시 끈 뒤 다시 시도해 주세요.",
-  },
-  {
-    match: /픽셀 필터·색보정/u,
-    action:
-      "기존 색보정 효과를 확정하거나 잠시 끈 뒤 다시 시도해 주세요.",
-  },
-  {
-    match: /중복 요소 id|연결되지 않은 레이어 그룹|레이어 그룹 변형|올바르지 않습니다/u,
-    action:
-      "레이어 구조가 올바르지 않습니다. 해당 레이어를 그룹에서 꺼내거나 복제한 새 레이어로 교체한 뒤 다시 시도해 주세요.",
-  },
+// 조치 문장은 리졸버가 소유하고, 생산자는 조치 코드만 고른다 (A4 D4, R15).
+// 매칭 입력은 SVG skip의 매칭 토큰(구조화 라벨은 코드, 문자열 라벨은 원문)과
+// 구조 사유 문자열이다 — 코드 매칭이 문자열 매칭보다 먼저다.
+const FIDELITY_ACTIONS: readonly { readonly match: RegExp; readonly actionCode: string }[] = [
+  { match: /자동 줄바꿈/u, actionCode: "wrap" },
+  { match: /세로쓰기/u, actionCode: "vertical" },
+  { match: /외부 주소/u, actionCode: "external" },
+  { match: /혼합 모드|클리핑 마스크|아래 레이어로 자르기/u, actionCode: "blend" },
+  { match: /픽셀 필터·색보정/u, actionCode: "filterEffect" },
+  { match: /중복 요소 id|연결되지 않은 레이어 그룹|레이어 그룹 변형|올바르지 않습니다/u, actionCode: "structure" },
 ];
 
-const FIDELITY_FALLBACK_ACTION =
-  "지원되지 않는 효과나 레이어 설정을 잠시 끄거나 해당 레이어를 숨긴 뒤 다시 시도해 주세요.";
+const FIDELITY_ACTION_BY_SKIP_CODE: Readonly<Record<string, string>> = {
+  manualWrapOnly: "wrap",
+  verticalLatinApprox: "vertical",
+  verticalBubbleLatinApprox: "vertical",
+  blendModeUnsupported: "blend",
+  clipMaskUnsupported: "blend",
+};
 
-function fidelityAction(label: string): string {
-  return FIDELITY_ACTIONS.find((entry) => entry.match.test(label))?.action
-    ?? FIDELITY_FALLBACK_ACTION;
+function fidelityActionCode(label: string): string {
+  return FIDELITY_ACTION_BY_SKIP_CODE[label]
+    ?? FIDELITY_ACTIONS.find((entry) => entry.match.test(label))?.actionCode
+    ?? "fallback";
 }
 
 function fidelityLayerLabel(element: El): string {
@@ -953,29 +943,36 @@ function fidelityLayerLabel(element: El): string {
   return raw.replace(/\s+/gu, " ").slice(0, 48);
 }
 
-function affectedLayerDetail(
+function affectedLayerData(
   sourceElements: readonly El[],
   unsupportedSourceIds: readonly string[],
-): string {
+): { readonly layers: string; readonly moreCount: string } {
   const byId = new Map(sourceElements.map((element) => [element.id, element] as const));
   const labels = [...new Set(unsupportedSourceIds)]
     .map((id) => byId.get(id))
     .filter((element): element is El => element !== undefined)
     .map(fidelityLayerLabel);
-  if (labels.length === 0) return "";
-  const shown = labels.slice(0, 3).map((label) => `‘${label}’`).join(" · ");
-  const remainder = labels.length > 3 ? ` 외 ${labels.length - 3}개` : "";
-  return ` 확인이 필요한 레이어: ${shown}${remainder}.`;
+  if (labels.length === 0) return { layers: "", moreCount: "" };
+  return {
+    layers: labels.slice(0, 3).map((label) => `‘${label}’`).join(" · "),
+    moreCount: labels.length > 3 ? String(labels.length - 3) : "",
+  };
 }
 
 function fidelityReason(
+  code: "unsupportedFidelity.filter" | "unsupportedFidelity.effect",
   labels: readonly string[],
   sourceElements: readonly El[],
   unsupportedSourceIds: readonly string[],
-): string {
-  const actions = [...new Set(labels.map(fidelityAction))].slice(0, 2);
-  const detail = actions.length > 0 ? ` ${actions.join(" ")}` : ` ${FIDELITY_FALLBACK_ACTION}`;
-  return `현재 모습의 복사본을 안전하게 만들지 못해 원본은 그대로 유지했습니다.${affectedLayerDetail(sourceElements, unsupportedSourceIds)}${detail}`;
+): StudioRasterEditReason {
+  const actions = [...new Set(labels.map(fidelityActionCode))].slice(0, 2);
+  return {
+    code,
+    params: {
+      ...affectedLayerData(sourceElements, unsupportedSourceIds),
+      actions: (actions.length > 0 ? actions : ["fallback"]).join(","),
+    },
+  };
 }
 
 interface StudioEditableRasterCopyCandidate {
@@ -1007,13 +1004,14 @@ function preflightStudioEditableRasterCopy(
 ): StudioEditableRasterCopyCandidateResult {
   const pageId = input.pageId.trim();
   if (!pageId) {
-    return { ok: false, code: "invalid-page-id", reason: "편집용 복사본을 연결할 페이지를 찾지 못했습니다." };
+    return { ok: false, code: "invalid-page-id", reason: { code: "invalidPageId" } };
   }
   if (input.documentMutationBlockedReason) {
     return {
       ok: false,
       code: "document-locked",
-      reason: input.documentMutationBlockedReason,
+      // 입력 패스스루 잔존: 원문은 params.message로 그대로 싣는다 (§3.13).
+      reason: { code: "documentLocked", params: { message: input.documentMutationBlockedReason } },
     };
   }
   const maxPixelCount = boundedByteBudget(
@@ -1028,8 +1026,8 @@ function preflightStudioEditableRasterCopy(
       ok: false,
       code: "invalid-dimensions",
       reason: requestedPixels && requestedPixels > 0
-        ? `현재 페이지는 ${requestedPixels}픽셀로 필터 허용치 ${maxPixelCount}픽셀을 넘습니다. 페이지를 나누거나 해상도를 낮춰 주세요.`
-        : "페이지 크기가 올바르지 않습니다. 양수 정수 해상도로 조정해 주세요.",
+        ? { code: "invalidDimensions.source", params: { requestedPixels: String(requestedPixels), maxPixelCount: String(maxPixelCount) } }
+        : { code: "invalidDimensions.page" },
     };
   }
 
@@ -1041,7 +1039,7 @@ function preflightStudioEditableRasterCopy(
     return {
       ok: false,
       code: "source-selection-mismatch",
-      reason: `요청한 합성 원본 ${selectedSources.mismatchIds.slice(0, 3).join(" · ")}이(가) 숨김·제외·누락 또는 완전 투명 상태입니다. 표시 상태와 대상을 다시 확인해 주세요.`,
+      reason: { code: "sourceSelectionMismatch.empty", params: { ids: selectedSources.mismatchIds.slice(0, 3).join(" · ") } },
     };
   }
   if (
@@ -1052,8 +1050,8 @@ function preflightStudioEditableRasterCopy(
       ok: false,
       code: "no-visible-source",
       reason: sourceDisposition === "hide-originals"
-        ? "픽셀 선택용 복사본으로 만들 표시 요소가 없습니다. 완전 투명·숨김 레이어가 아닌 선이나 객체를 먼저 추가해 주세요."
-        : "편집용 복사본으로 만들 표시 레이어가 없습니다.",
+        ? { code: "noVisibleSource.pixelSelection" }
+        : { code: "noVisibleSource.default" },
     };
   }
   const requestedDispositionIds = input.sourceDispositionIds
@@ -1069,7 +1067,7 @@ function preflightStudioEditableRasterCopy(
     return {
       ok: false,
       code: "source-selection-mismatch",
-      reason: `숨김 대상으로 지정한 원본 ${unknownDispositionIds.slice(0, 3).join(" · ")}을(를) 현재 문서에서 찾지 못했습니다.`,
+      reason: { code: "sourceSelectionMismatch.changed", params: { ids: unknownDispositionIds.slice(0, 3).join(" · ") } },
     };
   }
   const sourceDispositionIds = [...requestedDispositionIds].filter((id) => sourceIds.has(id));
@@ -1086,7 +1084,7 @@ function preflightStudioEditableRasterCopy(
       return {
         ok: false,
         code: "source-locked",
-        reason: `잠긴 원본 ${lockedDispositionIds.slice(0, 3).join(" · ")}은(는) 숨길 수 없습니다. 요소 또는 그룹 잠금을 해제한 뒤 다시 시도해 주세요.`,
+        reason: { code: "sourceLocked", params: { ids: lockedDispositionIds.slice(0, 3).join(" · ") } },
       };
     }
   }
@@ -1113,14 +1111,14 @@ function preflightStudioEditableRasterCopy(
     return {
       ok: false,
       code: "source-budget-exceeded",
-      reason: "표시 레이어 데이터를 안전하게 읽지 못해 편집용 복사본을 만들지 않았습니다.",
+      reason: { code: "sourceBudgetExceeded.pixels" },
     };
   }
   if (sourceByteLength > maxSourceBytes) {
     return {
       ok: false,
       code: "source-budget-exceeded",
-      reason: "표시 레이어 데이터가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 표시 레이어 수를 줄여 주세요.",
+      reason: { code: "sourceBudgetExceeded.bytes" },
     };
   }
   return {
@@ -1166,6 +1164,7 @@ function finalizeStudioEditableRasterCopyPlan(
       ok: false,
       code: "unsupported-fidelity",
       reason: fidelityReason(
+        "unsupportedFidelity.filter",
         sourceSummary.unsupportedReasons,
         candidate.sourceElements,
         sourceAnalysis.unsupportedSourceIds,
@@ -1177,7 +1176,7 @@ function finalizeStudioEditableRasterCopyPlan(
     return {
       ok: false,
       code: "invalid-dimensions",
-      reason: "페이지 크기가 올바르지 않습니다. 양수 정수 해상도로 조정해 주세요.",
+      reason: { code: "invalidDimensions.page" },
     };
   }
   if (exported.skipped.length > 0) {
@@ -1185,7 +1184,8 @@ function finalizeStudioEditableRasterCopyPlan(
       ok: false,
       code: "unsupported-fidelity",
       reason: fidelityReason(
-        exported.skipped.map((skip) => skip.label),
+        "unsupportedFidelity.effect",
+        exported.skipped.map((skip) => (typeof skip.label === "string" ? skip.label : skip.label.code)),
         candidate.sourceElements,
         exported.skipped.map((skip) => skip.id),
       ),
@@ -1198,7 +1198,7 @@ function finalizeStudioEditableRasterCopyPlan(
     return {
       ok: false,
       code: "svg-budget-exceeded",
-      reason: "현재 모습의 복사본 데이터가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 표시 레이어 수를 줄여 주세요.",
+      reason: { code: "svgBudgetExceeded" },
     };
   }
   return {
@@ -1260,9 +1260,8 @@ function editableRasterCopyVectorInput(
 
 function throwIfEditableRasterPreparationAborted(signal?: AbortSignal): void {
   if (!signal?.aborted) return;
-  const error = new Error("편집용 래스터 복사본 준비를 취소했습니다.");
-  error.name = "AbortError";
-  throw error;
+  // 이관 전 규약 유지: 취소는 이름이 "AbortError"인 오류로 방출한다.
+  throw new StudioRasterEditError("aborted", undefined, { name: "AbortError" });
 }
 
 export function describeStudioEditableRasterSelectionSurface(
@@ -1306,23 +1305,23 @@ function validateStudioEditableRasterCopyRender(
 ): StudioVectorReferenceResult {
   const pngByteLength = pngDataUrlByteLength(result.dataUrl);
   if (!new RegExp(`^${EDITABLE_RASTER_COPY_NAMESPACE}:[0-9a-f]{16}$`, "u").test(result.fingerprint)) {
-    throw new Error("필터를 준비하는 동안 페이지 내용이 바뀌었습니다. 최신 화면에서 다시 시도해 주세요.");
+    throw new StudioRasterEditError("filterStale");
   }
   if (result.width !== plan.width || result.height !== plan.height) {
-    throw new Error("필터 합성 결과의 해상도가 현재 페이지와 다릅니다. 페이지 크기를 확인한 뒤 다시 시도해 주세요.");
+    throw new StudioRasterEditError("filterResolutionMismatch");
   }
   if (result.elementCount !== plan.sourceElementCount) {
-    throw new Error("필터 합성 결과의 레이어 수가 현재 페이지와 다릅니다. 최신 화면에서 다시 시도해 주세요.");
+    throw new StudioRasterEditError("filterLayerCountMismatch");
   }
   if (pngByteLength === null) {
-    throw new Error("필터 합성 결과가 올바른 PNG가 아닙니다. 레이어를 단순화한 뒤 다시 시도해 주세요.");
+    throw new StudioRasterEditError("filterNotPng");
   }
   const maxPngBytes = boundedByteBudget(
     plan.budgets?.maxPngBytes,
     EDITABLE_RASTER_COPY_MAX_PNG_BYTES,
   );
   if (pngByteLength > maxPngBytes) {
-    throw new Error(`필터 합성 PNG가 ${pngByteLength}바이트로 허용치 ${maxPngBytes}바이트를 넘습니다. 페이지를 나누거나 해상도와 레이어 복잡도를 낮춰 주세요.`);
+    throw new StudioRasterEditError("filterPngTooLarge", { pngBytes: String(pngByteLength), maxBytes: String(maxPngBytes) });
   }
   return {
     ...result,
@@ -1380,14 +1379,14 @@ export function materializeStudioEditableRasterCopy(input: {
   readonly newId: string;
 }): ImageEl & El {
   const id = input.newId.trim();
-  if (!id) throw new Error("편집용 래스터 복사본 id가 필요합니다.");
+  if (!id) throw new StudioRasterEditError("copyIdRequired");
   if (
     input.rendered.fingerprint !== input.plan.sourceFingerprint
     || input.rendered.width !== input.plan.width
     || input.rendered.height !== input.plan.height
     || !input.rendered.dataUrl.startsWith(PNG_DATA_URL_PREFIX)
   ) {
-    throw new Error("편집용 래스터 복사본 결과가 현재 계획과 일치하지 않습니다.");
+    throw new StudioRasterEditError("copyResultMismatch");
   }
   return {
     id,
@@ -1515,7 +1514,7 @@ export function applyStudioEditableRasterCopy(input: {
     return {
       ok: false,
       code: "stale-plan",
-      reason: "편집용 래스터를 준비하는 동안 페이지 내용이나 잠금 상태가 바뀌었습니다. 최신 화면에서 다시 시도해 주세요.",
+      reason: { code: "stalePlan" },
     };
   }
 
@@ -1530,14 +1529,14 @@ export function applyStudioEditableRasterCopy(input: {
     return {
       ok: false,
       code: "invalid-composite",
-      reason: "래스터 합성 결과가 올바른 PNG가 아니어서 원본을 변경하지 않았습니다.",
+      reason: { code: "invalidComposite.notPng" },
     };
   }
   if (pngByteLength > maxPngBytes) {
     return {
       ok: false,
       code: "invalid-composite",
-      reason: `필터 합성 PNG가 허용치 ${maxPngBytes}바이트를 넘어 적용하지 않았습니다. 페이지를 나누거나 해상도를 낮춰 주세요.`,
+      reason: { code: "invalidComposite.pngTooLarge", params: { maxBytes: String(maxPngBytes) } },
     };
   }
   if (
@@ -1553,7 +1552,7 @@ export function applyStudioEditableRasterCopy(input: {
     return {
       ok: false,
       code: "invalid-composite",
-      reason: "필터 합성 레이어가 현재 페이지와 일치하지 않아 원본을 변경하지 않았습니다.",
+      reason: { code: "invalidComposite.layerMismatch" },
     };
   }
 

@@ -128,7 +128,7 @@ describe("숫자·문자열 표기", () => {
   });
 
   it("NaN·무한대는 조립 중에 잡는다", () => {
-    expect(() => pdfNumber(Number.NaN)).toThrow("NaN");
+    expect(() => pdfNumber(Number.NaN)).toThrow("nonFiniteNumber");
     expect(() => pdfNumber(Number.POSITIVE_INFINITY)).toThrow();
   });
 
@@ -396,7 +396,7 @@ describe("글꼴 임베드", () => {
         ops: [{ op: "text", text: "漢字", font: "F1", size: 12, x: 10, y: 20, color: { space: "gray", gray: 0 } }],
       }],
       fonts: [standardFont],
-    })).toThrow("CID TrueType 글꼴");
+    })).toThrow("standardFontUnicode");
   });
 
   it("CID 임베드는 Type0 + CIDFontType2 + FontFile2 체인을 만든다", () => {
@@ -441,11 +441,11 @@ describe("글꼴 임베드", () => {
       }],
       fonts: [cidFont],
       fontEmbeddingIntent: "editable",
-    })).toThrow("필요한 글리프");
+    })).toThrow("glyphMissing");
   });
 
   it("CID 글꼴은 문서 의도를 생략하면 임베딩하지 않는다(fail-closed)", () => {
-    expect(() => buildVectorPdf(simpleDoc({ fonts: [cidFont] }))).toThrow("읽기·인쇄 전용인지");
+    expect(() => buildVectorPdf(simpleDoc({ fonts: [cidFont] }))).toThrow("fontEmbedDenied");
   });
 
   it("CFF 윤곽선을 TrueType CIDFontType2/FontFile2로 잘못 포장하지 않는다", () => {
@@ -458,7 +458,7 @@ describe("글꼴 임베드", () => {
         fonts: [cffFont],
         fontEmbeddingIntent: "editable",
       })),
-    ).toThrow("CIDFontType0/FontFile3");
+    ).toThrow("fontEmbedCffUnsupported");
   });
 
   it("Restricted·Bitmap-only 글꼴은 FontFile2 아웃라인 스트림 생성을 막는다", () => {
@@ -472,10 +472,10 @@ describe("글꼴 임베드", () => {
     };
     expect(() =>
       buildVectorPdf(simpleDoc({ fonts: [restricted], fontEmbeddingIntent: "preview-print" })),
-    ).toThrow("Restricted License");
+    ).toThrow("fontEmbedDenied");
     expect(() =>
       buildVectorPdf(simpleDoc({ fonts: [bitmapOnly], fontEmbeddingIntent: "editable" })),
-    ).toThrow("내장 비트맵만");
+    ).toThrow("fontEmbedDenied");
   });
 
   it("Preview & Print 글꼴은 읽기·인쇄 의도만 허용한다", () => {
@@ -485,7 +485,7 @@ describe("글꼴 임베드", () => {
     };
     expect(() =>
       buildVectorPdf(simpleDoc({ fonts: [previewPrint], fontEmbeddingIntent: "editable" })),
-    ).toThrow("읽기·인쇄 전용 PDF");
+    ).toThrow("fontEmbedDenied");
     expect(() =>
       buildVectorPdf(simpleDoc({ fonts: [previewPrint], fontEmbeddingIntent: "preview-print" })),
     ).not.toThrow();
@@ -503,11 +503,11 @@ describe("글꼴 임베드", () => {
         ],
         fonts: [standardFont],
       }),
-    ).toThrow("없는폰트");
+    ).toThrow("missingFontRef");
   });
 
   it("글꼴 리소스 이름이 겹치면 거절한다", () => {
-    expect(() => buildVectorPdf(simpleDoc({ fonts: [standardFont, { ...standardFont }] }))).toThrow("겹쳐요");
+    expect(() => buildVectorPdf(simpleDoc({ fonts: [standardFont, { ...standardFont }] }))).toThrow("duplicateFontName");
   });
 
   it("텍스트 행렬이 좌상단 원점에서 글자를 바로 세운다", () => {
@@ -639,11 +639,11 @@ describe("사전검사 리포트", () => {
 
 describe("입력 검증", () => {
   it("페이지가 없으면 거절한다", () => {
-    expect(() => buildVectorPdf({ pages: [] })).toThrow("내보낼 페이지가 없어요");
+    expect(() => buildVectorPdf({ pages: [] })).toThrow("noPages");
   });
 
   it("페이지 크기가 0이거나 NaN이면 거절한다", () => {
-    expect(() => buildVectorPdf({ pages: [{ widthPt: 0, heightPt: 100, ops: [] }] })).toThrow("크기가 올바르지 않아요");
+    expect(() => buildVectorPdf({ pages: [{ widthPt: 0, heightPt: 100, ops: [] }] })).toThrow("invalidPageSize");
     expect(() => buildVectorPdf({ pages: [{ widthPt: Number.NaN, heightPt: 100, ops: [] }] })).toThrow();
   });
 
@@ -652,7 +652,7 @@ describe("입력 검증", () => {
       buildVectorPdf(
         simpleDoc({ images: [{ name: "Im0", jpegBytes: Uint8Array.from([0x89, 0x50, 0x4e, 0x47]), widthPx: 1, heightPx: 1, colorSpace: "rgb" }] }),
       ),
-    ).toThrow("JPEG 형식이 아니");
+    ).toThrow("imageNotJpeg");
   });
 
   it("클립 패스는 W/W* n으로 방출된다", () => {

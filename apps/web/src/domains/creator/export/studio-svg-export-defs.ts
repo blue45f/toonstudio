@@ -10,9 +10,9 @@ import { getPatternDef, normalizePatternSpec, type StudioPatternSpec } from "../
 import { escapeXml, fmt } from "./studio-svg-export-geometry";
 import { nextId } from "./studio-svg-export-png";
 
-import type { ExportCtx, SvgDrawElLike, SvgExportSkip } from "./studio-svg-export-types";
+import type { ExportCtx, SvgDrawElLike, SvgExportSkip, SvgExportSkipLabel } from "./studio-svg-export-types";
 
-export function addSkip(ctx: ExportCtx, el: { id: string; type: string }, mode: SvgExportSkip["mode"], label: string): void {
+export function addSkip(ctx: ExportCtx, el: { id: string; type: string }, mode: SvgExportSkip["mode"], label: SvgExportSkipLabel): void {
   ctx.skips.push({ id: el.id, type: el.type, mode, label });
 }
 

@@ -42,6 +42,11 @@ import {
 
 import type { StudioPdfFontDocumentIntent, StudioPdfFontResource } from "./studio-canvaskit-pdf-font";
 
+import { StudioPdfVectorError } from "./studio-canvaskit-pdf-vector-error";
+
+export { StudioPdfVectorError } from "./studio-canvaskit-pdf-vector-error";
+export type { StudioPdfVectorErrorCode } from "./studio-canvaskit-pdf-vector-error";
+
 /** px→pt — `studio-pdf-export.ts` 의 PDF_PX_TO_PT 와 반드시 같은 값이어야 한다. */
 export const STUDIO_PDF_PX_TO_PT = 0.75;
 
@@ -229,7 +234,7 @@ const BINARY_MARKER = Uint8Array.from([0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]);
  *  - `-0` 은 `0` 으로 정규화한다(결정성 — 같은 도형이 부호만 다른 바이트를 내지 않게).
  */
 export function pdfNumber(value: number): string {
-  if (!Number.isFinite(value)) throw new Error("PDF에 넣을 수 없는 숫자가 있어요(NaN/무한대).");
+  if (!Number.isFinite(value)) throw new StudioPdfVectorError("nonFiniteNumber");
   const rounded = Math.round(value * 10000) / 10000;
   if (Object.is(rounded, -0) || rounded === 0) return "0";
   if (Number.isInteger(rounded)) return String(rounded);
@@ -339,7 +344,7 @@ class PdfWriter {
     for (let num = 1; num < size; num++) {
       const objOffset = this.offsets.get(num);
       if (objOffset === undefined) {
-        throw new Error(`PDF 조립에 실패했어요(오브젝트 ${num} 누락). 다시 시도해주세요.`);
+        throw new StudioPdfVectorError("missingObject", { num: String(num) });
       }
       // 항목은 정확히 20바이트: 오프셋 10 + 공백 + 세대 5 + 공백 + 타입 1 + 공백 + 개행.
       this.text(`${String(objOffset).padStart(10, "0")} 00000 n \n`);
@@ -539,20 +544,16 @@ function buildContentStream(
       }
       case "text": {
         const resource = fonts.get(item.font);
-        if (!resource) throw new Error(`PDF에 없는 글꼴(${item.font})을 텍스트가 참조하고 있어요.`);
+        if (!resource) throw new StudioPdfVectorError("missingFontRef", { font: item.font });
         if (resource.kind === "standard-14" && textNeedsEmbeddedFont(item.text)) {
-          throw new Error(
-            `PDF 표준 글꼴(${resource.baseFont})로 유니코드 텍스트를 표시할 수 없어요. CID TrueType 글꼴을 임베드해 주세요.`,
-          );
+          throw new StudioPdfVectorError("standardFontUnicode", { baseFont: resource.baseFont });
         }
         if (resource.kind === "truetype-cid") {
           const missing = [...new Set([...item.text].filter(
             (char) => !resource.metrics.cmap.has(char.codePointAt(0) ?? 0),
           ))];
           if (missing.length > 0) {
-            throw new Error(
-              `PDF 글꼴(${resource.baseFont})에 필요한 글리프가 없어요: ${missing.join(" ")}`,
-            );
+            throw new StudioPdfVectorError("glyphMissing", { baseFont: resource.baseFont, glyphs: missing.join(" ") });
           }
         }
         const gsName = gs.use(clamp01(item.alpha), 1);
@@ -602,26 +603,26 @@ function resolvePdfConformanceDeclaration(
 ): ResolvedPdfConformanceDeclaration | null {
   if (!declaration) return null;
   if (declaration.target !== "pdf-a-2b" && declaration.target !== "pdf-x-4") {
-    throw new Error("알 수 없는 PDF 적합성 프로필이에요.");
+    throw new StudioPdfVectorError("unknownProfile");
   }
   const fileIdentifierHex = declaration.fileIdentifierHex.trim().toUpperCase();
   if (!PDF_FILE_IDENTIFIER_PATTERN.test(fileIdentifierHex)) {
-    throw new Error("PDF 적합성 파일 식별자는 16바이트(32자리 hex)여야 해요.");
+    throw new StudioPdfVectorError("fileIdFormat");
   }
   for (const [label, value] of [
-    ["생성", declaration.createdAt],
-    ["수정", declaration.modifiedAt],
+    ["created", declaration.createdAt],
+    ["modified", declaration.modifiedAt],
   ] as const) {
     if (
       !PDF_CONFORMANCE_UTC_PATTERN.test(value)
       || !Number.isFinite(Date.parse(value))
       || new Date(value).toISOString().replace(".000Z", "Z") !== value
     ) {
-      throw new Error(`PDF ${label} 날짜는 초 단위 UTC ISO-8601 형식이어야 해요.`);
+      throw new StudioPdfVectorError("invalidDate", { label });
     }
   }
   if (Date.parse(declaration.modifiedAt) < Date.parse(declaration.createdAt)) {
-    throw new Error("PDF 수정 날짜는 생성 날짜보다 빠를 수 없어요.");
+    throw new StudioPdfVectorError("modifiedBeforeCreated");
   }
   return {
     target: declaration.target,
@@ -686,31 +687,31 @@ function buildPdfConformanceXmp(
   ].join("");
   const bytes = encoder.encode(xmp);
   if (bytes.byteLength > 1024 * 1024) {
-    throw new Error("PDF XMP 메타데이터가 1MiB 안전 예산을 초과했어요.");
+    throw new StudioPdfVectorError("xmpTooLarge");
   }
   return bytes;
 }
 
 function assertPdfConformanceIcc(intent: StudioPdfOutputIntent | undefined): asserts intent is StudioPdfOutputIntent {
   if (!intent) {
-    throw new Error("PDF/A·PDF/X 후보에는 권리가 확인된 ICC OutputIntent가 필요해요.");
+    throw new StudioPdfVectorError("iccRequired");
   }
   const bytes = intent.profileBytes;
   if (bytes.byteLength < 132) {
-    throw new Error("PDF OutputIntent ICC 프로파일이 너무 짧아요.");
+    throw new StudioPdfVectorError("iccTooShort");
   }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (view.getUint32(0, false) !== bytes.byteLength) {
-    throw new Error("PDF OutputIntent ICC 프로파일의 선언 크기와 실제 크기가 다릅니다.");
+    throw new StudioPdfVectorError("iccLengthMismatch");
   }
   const signature = String.fromCharCode(bytes[36]!, bytes[37]!, bytes[38]!, bytes[39]!);
   if (signature !== "acsp") {
-    throw new Error("PDF OutputIntent에 유효한 ICC 프로파일 서명이 없습니다.");
+    throw new StudioPdfVectorError("iccSignatureInvalid");
   }
   const colorSpace = String.fromCharCode(bytes[16]!, bytes[17]!, bytes[18]!, bytes[19]!);
   const expected = intent.components === 4 ? "CMYK" : "RGB ";
   if (colorSpace !== expected) {
-    throw new Error("PDF OutputIntent의 ICC 색공간과 성분 수가 일치하지 않아요.");
+    throw new StudioPdfVectorError("iccColorSpaceMismatch");
   }
 }
 
@@ -728,14 +729,14 @@ function assertPdfConformancePageBoxes(
   if (declaration.target !== "pdf-x-4") return;
   document.pages.forEach((page, index) => {
     if (!page.trimBox) {
-      throw new Error(`PDF/X-4 페이지 ${index + 1}에는 TrimBox가 필요해요.`);
+      throw new StudioPdfVectorError("trimBoxRequired", { page: String(index + 1) });
     }
     const mediaBox: readonly [number, number, number, number] = [0, 0, page.widthPt, page.heightPt];
     if (!boxContains(mediaBox, page.trimBox)) {
-      throw new Error(`PDF/X-4 페이지 ${index + 1}의 TrimBox가 MediaBox를 벗어났어요.`);
+      throw new StudioPdfVectorError("trimBoxOutside", { page: String(index + 1) });
     }
     if (page.bleedBox && (!boxContains(mediaBox, page.bleedBox) || !boxContains(page.bleedBox, page.trimBox))) {
-      throw new Error(`PDF/X-4 페이지 ${index + 1}의 BleedBox가 TrimBox와 MediaBox를 올바르게 감싸지 않아요.`);
+      throw new StudioPdfVectorError("bleedBoxInvalid", { page: String(index + 1) });
     }
   });
 }
@@ -749,10 +750,10 @@ function assertPdfConformancePageBoxes(
  * 페이지가 없거나 크기가 잘못됐거나 참조가 어긋나면 한국어 메시지로 throw.
  */
 export function buildVectorPdf(document: StudioPdfDocument): Uint8Array {
-  if (document.pages.length === 0) throw new Error("PDF로 내보낼 페이지가 없어요.");
+  if (document.pages.length === 0) throw new StudioPdfVectorError("noPages");
   document.pages.forEach((page, index) => {
     if (!Number.isFinite(page.widthPt) || !Number.isFinite(page.heightPt) || page.widthPt <= 0 || page.heightPt <= 0) {
-      throw new Error(`페이지 ${index + 1}의 크기가 올바르지 않아요.`);
+      throw new StudioPdfVectorError("invalidPageSize", { page: String(index + 1) });
     }
   });
   const conformance = resolvePdfConformanceDeclaration(document.conformance);
@@ -765,14 +766,11 @@ export function buildVectorPdf(document: StudioPdfDocument): Uint8Array {
   const fontMap = new Map<string, StudioPdfFontResource>();
   for (const font of fontList) {
     if (fontMap.has(font.resourceName)) {
-      throw new Error(`PDF 글꼴 이름이 겹쳐요(${font.resourceName}).`);
+      throw new StudioPdfVectorError("duplicateFontName", { font: font.resourceName });
     }
     if (font.kind === "truetype-cid") {
       if (font.metrics.hasCffOutlines) {
-        throw new Error(
-          `PDF 글꼴 '${font.baseFont}'을 임베드할 수 없어요: `
-          + "CFF 윤곽선은 CIDFontType0/FontFile3 writer가 필요하며 현재 TrueType FontFile2 경로로는 안전하게 출력할 수 없어요.",
-        );
+        throw new StudioPdfVectorError("fontEmbedCffUnsupported", { baseFont: font.baseFont });
       }
       // 이 writer는 현재 sfnt 원본 전체를 FontFile2에 넣는다. 따라서 subset은 false이고,
       // bitmap-only 폰트가 요구하는 비트맵 스트림 경로는 제공하지 않는다.
@@ -782,7 +780,7 @@ export function buildVectorPdf(document: StudioPdfDocument): Uint8Array {
         payloadKind: "outline",
       });
       if (!embedding.allowed) {
-        throw new Error(`PDF 글꼴 '${font.baseFont}'을 임베드할 수 없어요: ${embedding.message}`);
+        throw new StudioPdfVectorError("fontEmbedDenied", { baseFont: font.baseFont, causeMessage: embedding.message });
       }
     }
     fontMap.set(font.resourceName, font);
@@ -796,17 +794,17 @@ export function buildVectorPdf(document: StudioPdfDocument): Uint8Array {
     for (const fontName of usedFontNames) {
       const font = fontMap.get(fontName);
       if (!font) {
-        throw new Error(`PDF에 없는 글꼴(${fontName})을 텍스트가 참조하고 있어요.`);
+        throw new StudioPdfVectorError("missingFontRef", { font: fontName });
       }
       if (font.kind !== "truetype-cid") {
-        throw new Error("PDF/A·PDF/X 후보의 표시 텍스트는 모든 글꼴 프로그램을 임베드해야 해요.");
+        throw new StudioPdfVectorError("fontsMustEmbed");
       }
     }
   }
   const imageList = document.images ?? [];
   for (const image of imageList) {
     if (image.jpegBytes.length < 4 || image.jpegBytes[0] !== 0xff || image.jpegBytes[1] !== 0xd8) {
-      throw new Error(`이미지 ${image.name}이 JPEG 형식이 아니에요.`);
+      throw new StudioPdfVectorError("imageNotJpeg", { name: image.name });
     }
   }
 
