@@ -24,20 +24,36 @@ export interface CloudflareLargeAssetDescriptor {
    * bundle-v2 배포 인덱스는 재배포 판정 신호라 짧게 둔다.
    */
   readonly cacheControl?: string;
+  /**
+   * 교차 출처 CORS를 열지 않고, 브라우저가 보낸 `Sec-Fetch-Site`가 동일 출처
+   * (`same-origin`)가 아니면 R2에 닿기 전에 403으로 거부하는 경로.
+   * 독립 파일 재배포 제한이 있는 구매 번들 에셋(bundle-v2, 권리 원장이 allow한 팩)에 쓴다.
+   * 브라우저 경유 핫링크·임베드 억제책일 뿐이다: 헤더를 생략하거나 위조하는 클라이언트
+   * (curl·서버 간 호출·이 헤더가 없는 구형 브라우저)는 막지 못하며, 접근 통제도 법적 허락도 아니다.
+   * 이 Worker는 권리 원장을 읽지 않는다 — 어떤 팩을 올릴지는 배포 플래너(원장 게이트)가 정하고,
+   * Worker는 R2에 올라간 객체를 이 가드로만 제한한다. 권리를 철회(allow → hold)해도 이미 올라간
+   * 객체는 R2에서 삭제하기 전까지 계속 서빙된다.
+   */
+  readonly sameOriginOnly?: boolean;
 }
 
 /**
  * Creator Bundle bundle-v2 트리 (bg3d 테마 팩 GLB + 배포 인덱스).
  * 실물은 Static Assets가 아니라 R2에만 있고 Worker가 바인딩으로 서빙한다.
- * 배포 절차와 객체 목록은 scripts/plan-creator-bundle-deploy.mjs와
- * deploy/cloudflare-static/bundle-v2-deploy-manifest.json이 정본이다.
+ * 배포 절차와 객체 규칙(sha256 키, 권리 원장이 allow한 팩만)은
+ * scripts/plan-creator-bundle-deploy.mjs가 정본이다. 커밋된
+ * deploy/cloudflare-static/bundle-v2-deploy-manifest.json은 원장 이전 기록(원본 경로 키)이라
+ * 다시 산출하기 전까지 참고용이며, 그 키로는 아무것도 서빙되지 않는다.
+ *
+ * GLB는 소문자 sha256 hex 64자 키(`<sha256>.glb`)만 서빙한다. 원본 폴더·파일명이 든 옛 경로형 키로
+ * 올라간 객체가 R2에 있더라도 Worker가 내주지 않는다 (경로형 URL은 이 파이프라인에 매칭되지 않는다).
  */
 export const CLOUDFLARE_BUNDLE_V2_PATH_PREFIX = "/assets/studio/bundle-v2/";
 export const CLOUDFLARE_BUNDLE_V2_INDEX_PATH = "/assets/studio/bundle-v2/manifest.json";
 export const CLOUDFLARE_BUNDLE_V2_INDEX_CACHE_CONTROL =
   "public, max-age=300, s-maxage=0";
 const BUNDLE_V2_GLB_PATH_PATTERN =
-  /^\/assets\/studio\/bundle-v2\/.+\.glb$/u;
+  /^\/assets\/studio\/bundle-v2\/[a-f0-9]{64}\.glb$/u;
 
 const MODULAR_STREET_SEATING_PATH =
   "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb";
@@ -72,10 +88,11 @@ export function cloudflareLargeAssetDescriptor(
     return {
       contentType: "application/json",
       cacheControl: CLOUDFLARE_BUNDLE_V2_INDEX_CACHE_CONTROL,
+      sameOriginOnly: true,
     };
   }
   if (BUNDLE_V2_GLB_PATH_PATTERN.test(pathname)) {
-    return { contentType: "model/gltf-binary" };
+    return { contentType: "model/gltf-binary", sameOriginOnly: true };
   }
   return null;
 }
@@ -97,26 +114,8 @@ export function supportsCloudflareStaticSidecar(pathname: string): boolean {
 
 export function cloudflareLargeAssetKey(pathname: string): string | null {
   if (!cloudflareLargeAssetDescriptor(pathname)) return null;
-  const key = pathname.replace(/^\/+/, "");
-  if (!pathname.startsWith(CLOUDFLARE_BUNDLE_V2_PATH_PREFIX)) return key;
-  // bundle-v2 파일명에는 공백·`+`·`&`가 있어 요청 URL에서는 퍼센트 인코딩돼
-  // 도착한다. R2 키는 업로드 시 쓴 디코드된 원문 경로와 같아야 하므로
-  // 조각마다 디코드한다. 깨진 인코딩이나 디코드 후 경로 탈출은 키 없음으로
-  // 거부한다 (서빙 측은 R2 miss → LARGE_ASSET_UNAVAILABLE로 정직하게 실패).
-  const segments: string[] = [];
-  for (const segment of key.split("/")) {
-    let decoded: string;
-    try {
-      decoded = decodeURIComponent(segment);
-    } catch {
-      return null;
-    }
-    if (decoded === "" || decoded === "." || decoded === ".." || decoded.includes("/")) {
-      return null;
-    }
-    segments.push(decoded);
-  }
-  return segments.join("/");
+  // 서빙 경로가 곧 R2 키다. bundle-v2는 고정 인덱스 경로와 소문자 hex 키뿐이라 디코드할 조각이 없다.
+  return pathname.replace(/^\/+/, "");
 }
 
 export function cloudflareLargeAssetSidecarPath(
@@ -124,4 +123,42 @@ export function cloudflareLargeAssetSidecarPath(
   encoding: CloudflareLargeAssetEncoding,
 ): string {
   return `${pathname}.${encoding === "br" ? "br" : "gz"}`;
+}
+
+/**
+ * `sameOriginOnly` 경로의 요청 허용 여부. `Sec-Fetch-Site`는 브라우저만 붙이고
+ * 페이지 스크립트는 바꿀 수 없는 헤더다. 헤더가 없으면 허용한다 — 그래서 curl·서버 간 호출뿐
+ * 아니라 이 헤더를 보내지 않는 구형 브라우저도 이 가드로는 막지 못한다. 헤더가 있으면
+ * `same-origin`만 통과시킨다 (`same-site`·`cross-site`·`none`·알 수 없는 값은 거부).
+ */
+export function cloudflareSameOriginOnlyAllows(headers: Pick<Headers, "get">): boolean {
+  const site = headers.get("sec-fetch-site");
+  return site === null || site.trim().toLowerCase() === "same-origin";
+}
+
+/*
+ * R2 대형 에셋 서빙의 조건부·범위 요청 판정. 게이트웨이 라우팅과 무관한 순수
+ * 함수라 대형 파일 배달 모듈에 둔다.
+ */
+export function matchesIfNoneMatch(request: Request, httpEtag: string): boolean {
+  const raw = request.headers.get("if-none-match");
+  if (!raw) return false;
+  const target = httpEtag.startsWith("W/") ? httpEtag.slice(2) : httpEtag;
+  return raw.split(",").some((candidate) => {
+    const value = candidate.trim();
+    if (value === "*") return true;
+    return (value.startsWith("W/") ? value.slice(2) : value) === target;
+  });
+}
+
+export function r2RangeHeaders(request: Request): Headers | undefined {
+  const range = request.headers.get("range");
+  return range ? new Headers({ range }) : undefined;
+}
+
+export function matchesIfRange(request: Request, httpEtag: string): boolean {
+  const raw = request.headers.get("if-range")?.trim();
+  if (!raw) return true;
+  if (raw.startsWith("W/") || !raw.startsWith('"')) return false;
+  return raw === httpEtag;
 }

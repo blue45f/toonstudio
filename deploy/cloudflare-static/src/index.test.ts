@@ -5,6 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 import { withInlineScriptHashes } from "../../../scripts/cloudflare-static-rules.mjs";
 
 import {
+  cloudflareLargeAssetDescriptor,
+  cloudflareSameOriginOnlyAllows,
+} from "./large-static-assets";
+
+import {
   COMMON_SECURITY_HEADERS,
   createCloudflareStaticGateway,
   createCoreApiRequest,
@@ -39,6 +44,38 @@ function r2Object(
       headers.set("content-disposition", "inline");
     },
   };
+}
+
+// bundle-v2 GLB는 sha256 키로만 서빙한다 (원본 폴더·파일명이 든 옛 경로형 키는 서빙하지 않는다).
+const BUNDLE_V2_SHA256 = "d2227ed901e6a19b768ac404016ff10696a5be849e2b2cfc9600400c24bd13c5";
+const BUNDLE_V2_GLB_URL = `https://www.toonstudio.cloud/assets/studio/bundle-v2/${BUNDLE_V2_SHA256}.glb`;
+const BUNDLE_V2_GLB_KEY = `assets/studio/bundle-v2/${BUNDLE_V2_SHA256}.glb`;
+const BUNDLE_V2_INDEX_URL = "https://www.toonstudio.cloud/assets/studio/bundle-v2/manifest.json";
+const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable, s-maxage=0";
+const SAME_ORIGIN_ONLY_BODY = { error: "BUNDLE_ASSET_SAME_ORIGIN_ONLY" };
+
+/** R2 호출과 업스트림 fetch를 모두 관찰하는 게이트웨이 하니스. 업스트림은 폴백 응답을 돌려준다. */
+function largeAssetHarness(
+  makeObject: () => R2ObjectBodyBinding = () => r2Object("glb-bytes"),
+  overrides: Partial<CloudflareStaticEnv> = {},
+) {
+  const get = vi.fn(async (
+    _key: string,
+    _options?: { readonly range?: Headers },
+  ) => makeObject());
+  const head = vi.fn(async (_key: string) => makeObject());
+  const upstream = vi.fn<typeof fetch>(async () => new Response("origin-fallback"));
+  const env = environment({
+    LARGE_ASSETS: { get, head },
+    LARGE_ASSET_ORIGIN: "https://large-assets.example.test",
+    ...overrides,
+  });
+  return { get, head, upstream, env, gateway: createCloudflareStaticGateway({ fetch: upstream }) };
+}
+
+/** 응답에 실린 `access-control-*` 헤더 이름. 교차 출처 CORS가 닫혀 있으면 비어 있어야 한다. */
+function accessControlHeaderNames(response: Response): string[] {
+  return [...response.headers.keys()].filter((name) => name.startsWith("access-control-"));
 }
 
 describe("Cloudflare static gateway", () => {
@@ -459,7 +496,7 @@ describe("Cloudflare static gateway", () => {
     expect(upstream).not.toHaveBeenCalled();
   });
 
-  it("serves bundle-v2 GLBs from R2 with the decoded object key", async () => {
+  it("serves bundle-v2 GLBs from R2 under the sha256 object key", async () => {
     const get = vi.fn(async (
       _key: string,
       _options?: { readonly range?: Headers },
@@ -468,9 +505,7 @@ describe("Cloudflare static gateway", () => {
     const upstream = vi.fn<typeof fetch>();
     const gateway = createCloudflareStaticGateway({ fetch: upstream });
     const response = await gateway(
-      new Request(
-        "https://www.toonstudio.cloud/assets/studio/bundle-v2/pack-a/native/Some%20Folder/Model%2BA%26B.glb",
-      ),
+      new Request(BUNDLE_V2_GLB_URL),
       environment({ LARGE_ASSETS: { get, head } }),
     );
 
@@ -481,10 +516,7 @@ describe("Cloudflare static gateway", () => {
       "public, max-age=31536000, immutable, s-maxage=0",
     );
     expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
-    expect(get).toHaveBeenCalledWith(
-      "assets/studio/bundle-v2/pack-a/native/Some Folder/Model+A&B.glb",
-      undefined,
-    );
+    expect(get).toHaveBeenCalledWith(BUNDLE_V2_GLB_KEY, undefined);
     expect(upstream).not.toHaveBeenCalled();
   });
 
@@ -515,13 +547,75 @@ describe("Cloudflare static gateway", () => {
     const upstream = vi.fn<typeof fetch>();
     const gateway = createCloudflareStaticGateway({ fetch: upstream });
     const response = await gateway(
-      new Request("https://www.toonstudio.cloud/assets/studio/bundle-v2/pack-a/Missing.glb"),
+      new Request(`https://www.toonstudio.cloud/assets/studio/bundle-v2/${"f".repeat(64)}.glb`),
       environment({ LARGE_ASSETS: { get, head } }),
     );
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
     expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("never falls back to LARGE_ASSET_ORIGIN for bundle-v2, so origin headers cannot break the guard contract", async () => {
+    const get = vi.fn(async (_key: string, _options?: { readonly range?: Headers }) => null);
+    const head = vi.fn(async (_key: string) => null);
+    const upstream = vi.fn<typeof fetch>(async () => new Response("ORIGIN", {
+      status: 200,
+      headers: { "access-control-allow-origin": "*", "cache-control": "public, max-age=60" },
+    }));
+    const gateway = createCloudflareStaticGateway({ fetch: upstream });
+    const env = environment({
+      LARGE_ASSETS: { get, head },
+      LARGE_ASSET_ORIGIN: "https://large-assets.example.test",
+    });
+    for (const path of [`${"a".repeat(64)}.glb`, "manifest.json"]) {
+      const response = await gateway(
+        new Request(`https://www.toonstudio.cloud/assets/studio/bundle-v2/${path}`, {
+          headers: { "sec-fetch-site": "same-origin" },
+        }),
+        env,
+      );
+      expect(response.status).toBe(503);
+      await expect(response.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+      // 응답이 Sec-Fetch-Site에 따라 달라지므로(교차 출처는 403) 이 응답도 같은 Vary를 가진다.
+      expect(response.headers.get("vary")).toBe("Sec-Fetch-Site");
+    }
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  // 계약 변경(권리 원장 도입): 이전에는 `.glb`로 끝나는 모든 bundle-v2 경로를 R2 키로 복원해 서빙했다.
+  // 이제는 소문자 sha256 hex 64자 키만 서빙한다 — 옛 경로형 키로 올라간 객체가 R2에 남아 있어도 열리지 않는다.
+  it.each([
+    ["legacy path-form key", "pack-a/native/Some%20Folder/Model%2BA%26B.glb"],
+    ["legacy single-segment name", "Missing.glb"],
+    ["uppercase hex", `${"A".repeat(64)}.glb`],
+    ["63-char hex", `${"a".repeat(63)}.glb`],
+    ["65-char hex", `${"a".repeat(65)}.glb`],
+    ["uppercase extension", `${"a".repeat(64)}.GLB`],
+    ["compressed sidecar suffix", `${"a".repeat(64)}.glb.br`],
+    ["percent-encoded hex", `%61${"a".repeat(63)}.glb`],
+    ["nested under a sha256 folder", `${"a".repeat(64)}/model.glb`],
+  ])("does not route a bundle-v2 %s to R2 (only sha256 keys are served)", async (_label, path) => {
+    const assetFetch = vi.fn(async () => new Response("static", { status: 200 }));
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("glb-bytes"));
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(
+      new Request(`https://www.toonstudio.cloud/assets/studio/bundle-v2/${path}`, {
+        headers: { "sec-fetch-site": "same-origin" },
+      }),
+      environment({
+        ASSETS: { fetch: assetFetch },
+        LARGE_ASSETS: { get, head: vi.fn(async () => null) },
+      }),
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    expect(response.headers.get("x-toonstudio-large-asset-source")).toBeNull();
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
   });
 
   it("does not route non-GLB bundle-v2 paths to the large-asset pipeline", async () => {
@@ -542,6 +636,400 @@ describe("Cloudflare static gateway", () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("static");
     expect(get).not.toHaveBeenCalled();
+  });
+
+  describe("bundle-v2 same-origin-only delivery", () => {
+    it("treats Sec-Fetch-Site as same-origin only after trimming and lowercasing", () => {
+      const withSite = (value: string | null) => ({ get: () => value });
+
+      expect(cloudflareSameOriginOnlyAllows(withSite(null))).toBe(true);
+      expect(cloudflareSameOriginOnlyAllows(withSite("same-origin"))).toBe(true);
+      expect(cloudflareSameOriginOnlyAllows(withSite("  Same-Origin\t"))).toBe(true);
+      for (const site of ["", "cross-site", "same-site", "none", "same-origin, same-origin"]) {
+        expect(cloudflareSameOriginOnlyAllows(withSite(site))).toBe(false);
+      }
+    });
+
+    it.each([
+      ["same-origin", { "sec-fetch-site": "same-origin" }],
+      ["mixed-case", { "sec-fetch-site": "Same-Origin" }],
+      ["padded", { "sec-fetch-site": "  SAME-ORIGIN  " }],
+      ["missing", {}],
+    ] as Array<[string, Record<string, string>]>)(
+      "serves a bundle-v2 GLB when Sec-Fetch-Site is %s without opening CORS",
+      async (_label, headers) => {
+        const { gateway, env, get, head, upstream } = largeAssetHarness();
+        const response = await gateway(new Request(BUNDLE_V2_GLB_URL, { headers }), env);
+
+        expect(response.status).toBe(200);
+        expect(await response.text()).toBe("glb-bytes");
+        expect(response.headers.get("content-type")).toBe("model/gltf-binary");
+        expect(response.headers.get("cache-control")).toBe(IMMUTABLE_CACHE_CONTROL);
+        expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
+        expect(response.headers.get("vary")).toContain("Sec-Fetch-Site");
+        expect(accessControlHeaderNames(response)).toEqual([]);
+        expect(get).toHaveBeenCalledWith(BUNDLE_V2_GLB_KEY, undefined);
+        expect(head).not.toHaveBeenCalled();
+        expect(upstream).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(["cross-site", "same-site", "none", "bogus", ""])(
+      "rejects a bundle-v2 GLB request with Sec-Fetch-Site %j before touching R2",
+      async (site) => {
+        const { gateway, env, get, head, upstream } = largeAssetHarness();
+        const response = await gateway(
+          new Request(BUNDLE_V2_GLB_URL, { headers: { "sec-fetch-site": site } }),
+          env,
+        );
+
+        expect(response.status).toBe(403);
+        await expect(response.json()).resolves.toEqual(SAME_ORIGIN_ONLY_BODY);
+        expect(response.headers.get("content-type")).toBe("application/json; charset=utf-8");
+        expect(response.headers.get("cache-control")).toBe("no-store");
+        expect(response.headers.get("vary")).toContain("Sec-Fetch-Site");
+        expect(response.headers.get("x-toonstudio-large-asset-source")).toBeNull();
+        expect(response.headers.get("content-security-policy")).toBe(
+          COMMON_SECURITY_HEADERS["Content-Security-Policy"],
+        );
+        expect(accessControlHeaderNames(response)).toEqual([]);
+        expect(get).not.toHaveBeenCalled();
+        expect(head).not.toHaveBeenCalled();
+        expect(upstream).not.toHaveBeenCalled();
+        expect(env.ASSETS.fetch).not.toHaveBeenCalled();
+      },
+    );
+
+    it("rejects a cross-site bundle-v2 HEAD request with an empty body", async () => {
+      const { gateway, env, get, head, upstream } = largeAssetHarness();
+      const response = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        method: "HEAD",
+        headers: { "sec-fetch-site": "cross-site" },
+      }), env);
+
+      expect(response.status).toBe(403);
+      expect(await response.text()).toBe("");
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(response.headers.get("vary")).toContain("Sec-Fetch-Site");
+      expect(response.headers.get("x-toonstudio-large-asset-source")).toBeNull();
+      expect(accessControlHeaderNames(response)).toEqual([]);
+      expect(get).not.toHaveBeenCalled();
+      expect(head).not.toHaveBeenCalled();
+      expect(upstream).not.toHaveBeenCalled();
+    });
+
+    it("serves a same-origin bundle-v2 HEAD request from R2 metadata without CORS", async () => {
+      const { gateway, env, get, head } = largeAssetHarness(() => r2Object("metadata"));
+      const response = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        method: "HEAD",
+        headers: { "sec-fetch-site": "same-origin" },
+      }), env);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toBeNull();
+      expect(response.headers.get("content-length")).toBe("8");
+      expect(response.headers.get("vary")).toContain("Sec-Fetch-Site");
+      expect(accessControlHeaderNames(response)).toEqual([]);
+      expect(head).toHaveBeenCalledWith(BUNDLE_V2_GLB_KEY);
+      expect(get).not.toHaveBeenCalled();
+    });
+
+    it("keeps byte ranges working same-origin and refuses them cross-site", async () => {
+      const { gateway, env, get } = largeAssetHarness(() => r2Object("part", {
+        size: 1024,
+        range: { offset: 0, length: 4 },
+      }));
+      const sameOrigin = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        headers: { range: "bytes=0-3", "sec-fetch-site": "same-origin" },
+      }), env);
+
+      expect(sameOrigin.status).toBe(206);
+      expect(await sameOrigin.text()).toBe("part");
+      expect(sameOrigin.headers.get("content-range")).toBe("bytes 0-3/1024");
+      expect(sameOrigin.headers.get("vary")).toContain("Sec-Fetch-Site");
+      expect(accessControlHeaderNames(sameOrigin)).toEqual([]);
+      expect(get.mock.calls[0]?.[1]?.range?.get("range")).toBe("bytes=0-3");
+
+      const crossSite = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        headers: { range: "bytes=0-3", "sec-fetch-site": "cross-site" },
+      }), env);
+
+      expect(crossSite.status).toBe(403);
+      expect(get).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+      ['"r2-etag"', 304],
+      ['W/"r2-etag"', 304],
+      ['"other", "r2-etag"', 304],
+      ["*", 304],
+      ['"other"', 200],
+    ] as Array<[string, number]>)(
+      "answers If-None-Match %s on a same-origin bundle-v2 GLB with %i",
+      async (ifNoneMatch, status) => {
+        const { gateway, env } = largeAssetHarness();
+        const response = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+          headers: { "if-none-match": ifNoneMatch, "sec-fetch-site": "same-origin" },
+        }), env);
+
+        expect(response.status).toBe(status);
+        expect(response.headers.get("etag")).toBe('"r2-etag"');
+        expect(response.headers.get("vary")).toContain("Sec-Fetch-Site");
+        expect(accessControlHeaderNames(response)).toEqual([]);
+        if (status === 304) {
+          expect(response.body).toBeNull();
+          expect(response.headers.get("content-length")).toBeNull();
+        }
+      },
+    );
+
+    it.each(['"weak"', 'W/"weak"'])(
+      "matches If-None-Match %s against a weak R2 etag with a 304",
+      async (ifNoneMatch) => {
+        const { gateway, env } = largeAssetHarness(() => r2Object("glb-bytes", { etag: 'W/"weak"' }));
+        const response = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+          headers: { "if-none-match": ifNoneMatch, "sec-fetch-site": "same-origin" },
+        }), env);
+
+        expect(response.status).toBe(304);
+        expect(response.headers.get("etag")).toBe('W/"weak"');
+      },
+    );
+
+    it.each([
+      ["same-origin", { "sec-fetch-site": "same-origin" }],
+      ["missing", {}],
+    ] as Array<[string, Record<string, string>]>)(
+      "serves the bundle-v2 index when Sec-Fetch-Site is %s without CORS and keeps its short cache",
+      async (_label, headers) => {
+        const { gateway, env, get } = largeAssetHarness(() => r2Object("{\"files\":5303}"));
+        const response = await gateway(new Request(BUNDLE_V2_INDEX_URL, { headers }), env);
+
+        expect(response.status).toBe(200);
+        expect(await response.text()).toBe("{\"files\":5303}");
+        expect(response.headers.get("content-type")).toBe("application/json");
+        expect(response.headers.get("cache-control")).toBe("public, max-age=300, s-maxage=0");
+        expect(response.headers.get("vary")).toContain("Sec-Fetch-Site");
+        expect(accessControlHeaderNames(response)).toEqual([]);
+        expect(get).toHaveBeenCalledWith("assets/studio/bundle-v2/manifest.json", undefined);
+      },
+    );
+
+    it("rejects a cross-site bundle-v2 index request", async () => {
+      const { gateway, env, get, head, upstream } = largeAssetHarness();
+      const response = await gateway(new Request(BUNDLE_V2_INDEX_URL, {
+        headers: { "sec-fetch-site": "cross-site" },
+      }), env);
+
+      expect(response.status).toBe(403);
+      await expect(response.json()).resolves.toEqual(SAME_ORIGIN_ONLY_BODY);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(response.headers.get("vary")).toContain("Sec-Fetch-Site");
+      expect(accessControlHeaderNames(response)).toEqual([]);
+      expect(get).not.toHaveBeenCalled();
+      expect(head).not.toHaveBeenCalled();
+      expect(upstream).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["GLB", BUNDLE_V2_GLB_URL],
+      ["index", BUNDLE_V2_INDEX_URL],
+    ])("answers a bundle-v2 %s OPTIONS request with 204 and no CORS grants", async (_label, url) => {
+      for (const headers of [{}, { "sec-fetch-site": "same-origin" }] as Array<Record<string, string>>) {
+        const { gateway, env, get, head } = largeAssetHarness();
+        const response = await gateway(new Request(url, { method: "OPTIONS", headers }), env);
+
+        expect(response.status).toBe(204);
+        expect(response.headers.get("allow")).toBe("GET, HEAD, OPTIONS");
+        expect(response.headers.get("vary")).toContain("Sec-Fetch-Site");
+        expect(accessControlHeaderNames(response)).toEqual([]);
+        expect(response.headers.get("content-security-policy")).toBe(
+          COMMON_SECURITY_HEADERS["Content-Security-Policy"],
+        );
+        expect(get).not.toHaveBeenCalled();
+        expect(head).not.toHaveBeenCalled();
+      }
+    });
+
+    it("rejects a cross-site bundle-v2 OPTIONS preflight", async () => {
+      const { gateway, env, get, head, upstream } = largeAssetHarness();
+      const response = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        method: "OPTIONS",
+        headers: {
+          "sec-fetch-site": "cross-site",
+          origin: "https://hotlink.example.test",
+          "access-control-request-method": "GET",
+        },
+      }), env);
+
+      expect(response.status).toBe(403);
+      await expect(response.json()).resolves.toEqual(SAME_ORIGIN_ONLY_BODY);
+      expect(accessControlHeaderNames(response)).toEqual([]);
+      expect(get).not.toHaveBeenCalled();
+      expect(head).not.toHaveBeenCalled();
+      expect(upstream).not.toHaveBeenCalled();
+    });
+
+    it("checks Sec-Fetch-Site before the method gate", async () => {
+      const { gateway, env, get } = largeAssetHarness();
+      const crossSite = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        method: "POST",
+        body: "{}",
+        headers: { "sec-fetch-site": "cross-site" },
+      }), env);
+      const sameOrigin = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        method: "POST",
+        body: "{}",
+        headers: { "sec-fetch-site": "same-origin" },
+      }), env);
+
+      expect(crossSite.status).toBe(403);
+      expect(sameOrigin.status).toBe(405);
+      expect(sameOrigin.headers.get("allow")).toBe("GET, HEAD, OPTIONS");
+      expect(sameOrigin.headers.get("vary")).toBe("Sec-Fetch-Site");
+      expect(get).not.toHaveBeenCalled();
+    });
+
+    it("keeps the 405 for other R2 paths free of Vary (only bundle-v2 depends on Sec-Fetch-Site)", async () => {
+      const { gateway, env } = largeAssetHarness();
+      const response = await gateway(new Request("https://www.toonstudio.cloud/assets/tag2pix-B03WmUfQ.onnx", {
+        method: "POST",
+        body: "{}",
+        headers: { "sec-fetch-site": "same-origin" },
+      }), env);
+
+      expect(response.status).toBe(405);
+      expect(response.headers.get("allow")).toBe("GET, HEAD, OPTIONS");
+      expect(response.headers.get("vary")).toBeNull();
+    });
+
+    it("rejects cross-site requests even when the R2 binding is absent", async () => {
+      const { gateway, env, upstream } = largeAssetHarness(undefined, { LARGE_ASSETS: undefined });
+      const crossSite = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        headers: { "sec-fetch-site": "cross-site" },
+      }), env);
+
+      expect(crossSite.status).toBe(403);
+      await expect(crossSite.json()).resolves.toEqual(SAME_ORIGIN_ONLY_BODY);
+      expect(upstream).not.toHaveBeenCalled();
+
+      const sameOrigin = await gateway(new Request(BUNDLE_V2_GLB_URL, {
+        headers: { "sec-fetch-site": "same-origin" },
+      }), env);
+
+      // 동일 출처 요청도 R2가 없으면 폴백 원본으로 넘기지 않고 정직하게 실패한다 (바이트는 R2에만 있다).
+      expect(sameOrigin.status).toBe(503);
+      await expect(sameOrigin.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
+      expect(sameOrigin.headers.get("vary")).toBe("Sec-Fetch-Site");
+      expect(upstream).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("large-asset CORS outside bundle-v2", () => {
+    const legacyAssets: Array<[string, string, string]> = [
+      ["OpenCascade wasm", "/assets/opencascade.wasm-build123.wasm", "application/wasm"],
+      ["ORT JSEP wasm", "/assets/ort-wasm-simd-threaded.jsep-DC5y_g6C.wasm", "application/wasm"],
+      ["Tag2Pix model", "/assets/tag2pix-B03WmUfQ.onnx", "application/octet-stream"],
+      [
+        "CC0 street seating GLB",
+        "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
+        "model/gltf-binary",
+      ],
+      ["product tour video", "/brand/toonstudio-product-tour.mp4", "video/mp4"],
+    ];
+
+    it("flags only the bundle-v2 index and GLBs as same-origin-only", () => {
+      for (const pathname of [
+        "/assets/studio/bundle-v2/manifest.json",
+        `/assets/studio/bundle-v2/${BUNDLE_V2_SHA256}.glb`,
+      ]) {
+        expect(cloudflareLargeAssetDescriptor(pathname)?.sameOriginOnly).toBe(true);
+      }
+      // 옛 경로형 GLB 키는 대형 에셋 파이프라인에 매칭되지 않는다.
+      expect(cloudflareLargeAssetDescriptor("/assets/studio/bundle-v2/pack-a/native/Model.glb")).toBeNull();
+      for (const [, pathname] of legacyAssets) {
+        const descriptor = cloudflareLargeAssetDescriptor(pathname);
+        expect(descriptor).not.toBeNull();
+        expect(descriptor?.sameOriginOnly).toBeFalsy();
+      }
+      expect(
+        cloudflareLargeAssetDescriptor("/assets/studio/bundle-v2/pack-a/Textures/atlas.png"),
+      ).toBeNull();
+    });
+
+    it.each(legacyAssets)(
+      "keeps wildcard CORS and no Vary on the %s whatever Sec-Fetch-Site says",
+      async (_label, pathname, contentType) => {
+        const { gateway, env, get } = largeAssetHarness();
+        const url = `https://www.toonstudio.cloud${pathname}`;
+        const reference = await gateway(new Request(url), env);
+
+        expect(reference.status).toBe(200);
+        expect(await reference.text()).toBe("glb-bytes");
+        expect(reference.headers.get("content-type")).toBe(contentType);
+        expect(reference.headers.get("cache-control")).toBe(IMMUTABLE_CACHE_CONTROL);
+        expect(reference.headers.get("access-control-allow-origin")).toBe("*");
+        expect(reference.headers.get("access-control-expose-headers")).toBe(
+          "Accept-Ranges, Content-Length, Content-Range, ETag",
+        );
+        expect(reference.headers.get("vary")).toBeNull();
+        expect(reference.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
+
+        for (const site of ["cross-site", "same-site", "none", "same-origin", "bogus"]) {
+          const response = await gateway(
+            new Request(url, { headers: { "sec-fetch-site": site } }),
+            env,
+          );
+
+          expect(response.status).toBe(200);
+          expect(await response.text()).toBe("glb-bytes");
+          expect(Object.fromEntries(response.headers)).toEqual(
+            Object.fromEntries(reference.headers),
+          );
+        }
+        expect(get).toHaveBeenCalledTimes(6);
+      },
+    );
+
+    it.each(legacyAssets)(
+      "keeps the wildcard CORS preflight on the %s whatever Sec-Fetch-Site says",
+      async (_label, pathname) => {
+        const { gateway, env, get, head } = largeAssetHarness();
+        const url = `https://www.toonstudio.cloud${pathname}`;
+
+        for (const headers of [{}, { "sec-fetch-site": "cross-site" }] as Array<Record<string, string>>) {
+          const response = await gateway(new Request(url, { method: "OPTIONS", headers }), env);
+
+          expect(response.status).toBe(204);
+          expect(response.headers.get("access-control-allow-origin")).toBe("*");
+          expect(response.headers.get("access-control-allow-methods")).toBe("GET, HEAD, OPTIONS");
+          expect(response.headers.get("access-control-allow-headers")).toBe(
+            "Range, If-Range, If-None-Match",
+          );
+          expect(response.headers.get("access-control-max-age")).toBe("86400");
+          expect(response.headers.get("allow")).toBeNull();
+          expect(response.headers.get("vary")).toBeNull();
+        }
+        expect(get).not.toHaveBeenCalled();
+        expect(head).not.toHaveBeenCalled();
+      },
+    );
+
+    it("keeps wildcard CORS on a cross-site conditional 304 for a legacy asset", async () => {
+      const { gateway, env } = largeAssetHarness();
+      const response = await gateway(new Request(
+        "https://www.toonstudio.cloud/assets/opencascade.wasm-build123.wasm",
+        { headers: { "if-none-match": '"r2-etag"', "sec-fetch-site": "cross-site" } },
+      ), env);
+
+      expect(response.status).toBe(304);
+      expect(response.body).toBeNull();
+      expect(response.headers.get("access-control-allow-origin")).toBe("*");
+      expect(response.headers.get("access-control-expose-headers")).toBe(
+        "Accept-Ranges, Content-Length, Content-Range, ETag",
+      );
+      expect(response.headers.get("vary")).toBeNull();
+    });
   });
 
   it("serves the ONNX JSEP runtime and Tag2Pix model from R2, not Static Assets", async () => {

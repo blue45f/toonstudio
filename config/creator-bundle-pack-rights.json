@@ -1,0 +1,2625 @@
+{
+  "schema": "toonstudio.creator-bundle-pack-rights.v1",
+  "version": 1,
+  "seededAt": "2026-10-22",
+  "defaultServe": "hold",
+  "statement": "팩별 서빙 판정 원장. 기본값은 hold이고, allow는 라이선스 분류별 요구 증빙(scripts/lib/creator-bundle-pack-rights.mjs의 ALLOW_EVIDENCE_REQUIREMENTS)을 모두 갖춘 팩만 가능하다. 어떤 팩을 열지는 저장소 소유자가 증빙을 제출한 뒤 결정한다.",
+  "bundle": {
+    "store": "itch.io",
+    "name": "Creator Bundle: Volume 1",
+    "url": "https://itch.io/b/3905/creator-bundle-volume-1",
+    "creators": [
+      "EmaceArt",
+      "RG Poly"
+    ]
+  },
+  "source": {
+    "library": "~/3d-asset-library",
+    "catalog": "_catalog/packs.json",
+    "officialCatalog": "apps/web/public/assets/virtual-studio/bundle-v1/manifest.json",
+    "report": "3D 에셋 활용 검토 보고(2026-10-22) §3·§4 방안 1·§6 — ~/3d-asset-library/_catalog/leverage-review-2026-10-22.md (레포 밖 문서)",
+    "licenseFiles": {
+      "loose": 79,
+      "archived": 17,
+      "uniqueHashes": 33
+    },
+    "note": "licenseTexts의 libraryPath는 라이브러리 루트 기준 상대 경로다. 해시는 sha256이며 scripts/verify-creator-bundle-pack-rights.mjs --library-root 로 다시 대조할 수 있다."
+  },
+  "licenseTexts": [
+    {
+      "sha256": "048ebd87422811fa249e1996f5e4c6658b4c0c49a47b5058434c81ebda82e36d",
+      "class": "emaceart-app-shipping-explicit",
+      "heading": "Maciej EmacArt - 3D Assets / Copyright (c) 2026 Maciej EmacArt",
+      "summary": "EmaceArt 라이선스. 개인·상업 사용·수정과 '자기 게임/앱에 포함해 배포'를 명시하고, 에셋 판매와 별도 다운로드로 넘기는 것을 금지한다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": true,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1302,
+      "files": [
+        {
+          "libraryPath": "04-interior/pixeldrift-metro-free/engine/godot/LICENSE.txt",
+          "libraryPack": "pixeldrift-metro-free"
+        }
+      ]
+    },
+    {
+      "sha256": "0534ace843522e78c7d7421de5c9ee287ce1d092310ddd44408e2aea10e68a07",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Low Poly Cemetery Grave Pack (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1079,
+      "files": [
+        {
+          "libraryPath": "05-horror-gothic/graves-kit-with-lods/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "graves-kit-with-lods"
+        },
+        {
+          "libraryPath": "05-horror-gothic/graves-kit-with-lods/engine/godot/LICENSE.txt",
+          "libraryPack": "graves-kit-with-lods"
+        },
+        {
+          "libraryPath": "05-horror-gothic/graves-kit-with-lods/models/glb/LICENSE.txt",
+          "libraryPack": "graves-kit-with-lods"
+        }
+      ]
+    },
+    {
+      "sha256": "12e17cc42df08c3dea072bd5a9f93656075488dca0ebed738b635080c8b2d30f",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / You may use these assets in your own projects, personal and commercial alike.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 384,
+      "files": [
+        {
+          "libraryPath": "03-nature/natureforge-stylized-woodland-forest-pack/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "natureforge-stylized-woodland-forest-pack"
+        },
+        {
+          "libraryPath": "03-nature/natureforge-stylized-woodland-forest-pack/engine/godot/LICENSE.txt",
+          "libraryPack": "natureforge-stylized-woodland-forest-pack"
+        }
+      ]
+    },
+    {
+      "sha256": "1aad8b301684fcf7213a08b3046e6983e5909194befff8c0dd513a32d3c685ad",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "Low Poly Cemetery Statues Pack - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 689,
+      "files": [
+        {
+          "libraryPath": "05-horror-gothic/cemetery-statues/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "cemetery-statues"
+        },
+        {
+          "libraryPath": "05-horror-gothic/cemetery-statues/engine/godot/LICENSE.txt",
+          "libraryPack": "cemetery-statues"
+        },
+        {
+          "libraryPath": "05-horror-gothic/cemetery-statues/models/glb/LICENSE.txt",
+          "libraryPack": "cemetery-statues"
+        },
+        {
+          "libraryPath": "05-horror-gothic/cemetery-statues/models/gltf/LICENSE.txt",
+          "libraryPack": "cemetery-statues"
+        }
+      ]
+    },
+    {
+      "sha256": "22401dbd7a140fae09968c9dd5a4154cccf657b381417121e99ca9b73a1e579c",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "Raft on the Desert - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 677,
+      "files": [
+        {
+          "libraryPath": "03-nature/raft-on-the-desert/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "raft-on-the-desert"
+        },
+        {
+          "libraryPath": "03-nature/raft-on-the-desert/engine/godot/LICENSE.txt",
+          "libraryPack": "raft-on-the-desert"
+        }
+      ]
+    },
+    {
+      "sha256": "22fac2f85a6743b3b380be94821c384c82d78f8a681bf060a06814c05021e87d",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "Maciej EmacArt - 3D Assets / Copyright (c) 2026 Maciej EmacArt",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 603,
+      "files": [
+        {
+          "libraryPath": "05-horror-gothic/ps1-psx-alone-in-the-dusk/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "ps1-psx-alone-in-the-dusk"
+        },
+        {
+          "libraryPath": "05-horror-gothic/ps1-psx-alone-in-the-dusk/engine/godot/LICENSE.txt",
+          "libraryPack": "ps1-psx-alone-in-the-dusk"
+        }
+      ]
+    },
+    {
+      "sha256": "2558f76c328b9078ae5c0586e1ed05bb566d3d5438e25ba6f91a269afb74e088",
+      "class": "emaceart-redistribution-prohibited",
+      "heading": "EmacEArt Asset License / CosmoKit: Stylized Low Poly Planets (Godot 4)",
+      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 독립 파일·에셋 팩으로의 재판매·재배포를 금지한다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 920,
+      "files": [
+        {
+          "libraryPath": "06-scifi/cosmokit-low-poly-planets/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "cosmokit-low-poly-planets"
+        },
+        {
+          "libraryPath": "06-scifi/cosmokit-low-poly-planets/engine/godot/LICENSE.txt",
+          "libraryPack": "cosmokit-low-poly-planets"
+        },
+        {
+          "libraryPath": "06-scifi/cosmokit-low-poly-planets/models/glb/LICENSE.txt",
+          "libraryPack": "cosmokit-low-poly-planets"
+        },
+        {
+          "libraryPath": "06-scifi/cosmokit-low-poly-planets/models/gltf/LICENSE.txt",
+          "libraryPack": "cosmokit-low-poly-planets"
+        }
+      ]
+    },
+    {
+      "sha256": "32f2c5363698291fc6e93afd9ab9b3899fcc483948992a3309943a9a72ee26e3",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "Roadside Tales - Modular Bridge - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 690,
+      "files": [
+        {
+          "libraryPath": "03-nature/roadside-tales-free-modular-bridge/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "roadside-tales-free-modular-bridge"
+        }
+      ]
+    },
+    {
+      "sha256": "32ff7a79bd870e5c521c6b26a5bc69398e59d5f22aea78cd50114f0789c12748",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Epic Woodland: Winter (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1086,
+      "files": [
+        {
+          "libraryPath": "03-nature/winter-atolls-pack-3d-voxel-environment-kit-mega-pack/models/gltf/LICENSE.txt",
+          "libraryPack": "winter-atolls-pack-3d-voxel-environment-kit-mega-pack"
+        }
+      ]
+    },
+    {
+      "sha256": "3acf46f93f2ad2a406c479f69a3043932754b5b07046aea2a8d0ba850cdc2a98",
+      "class": "rg-poly-proprietary",
+      "heading": "RG Poly License 26.12.2025 Kitchen/Restaurant Megapack / By downloading, using, or accessing these 3D models, you agree to the following lic",
+      "summary": "CC0가 아닌 RG Poly 독자 라이선스다. 상업·비상업 게임·앱 사용과 수정은 허용하나, 모델을 단독으로 판매(원본·수정본 모두)하는 것, 있는 그대로 공개 게시·공유·재배포하는 것, 경쟁 에셋 라이브러리를 만드는 것을 금지하고, 완성 프로젝트(게임·앱)의 일부로만 배포하라고 한다. 웹 서비스 호스팅은 다루지 않는다.",
+      "appShippingExplicit": true,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 16870,
+      "files": [
+        {
+          "libraryPath": "04-interior/kitchen-restaurant-megapack/models/mixed/RG POLY License.odt",
+          "libraryPack": "kitchen-restaurant-megapack"
+        }
+      ]
+    },
+    {
+      "sha256": "4a294b80c3e752affdc268da4de95529b03f9734f2c79a79cacd128df56a70af",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Rocks and Stone (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1076,
+      "files": [
+        {
+          "libraryPath": "03-nature/l100-rocks-stones-and-cliffs/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "l100-rocks-stones-and-cliffs"
+        },
+        {
+          "libraryPath": "03-nature/l100-rocks-stones-and-cliffs/engine/godot/LICENSE.txt",
+          "libraryPack": "l100-rocks-stones-and-cliffs"
+        },
+        {
+          "libraryPath": "03-nature/l100-rocks-stones-and-cliffs/models/glb/LICENSE.txt",
+          "libraryPack": "l100-rocks-stones-and-cliffs"
+        },
+        {
+          "libraryPath": "03-nature/l100-rocks-stones-and-cliffs/models/gltf/LICENSE.txt",
+          "libraryPack": "l100-rocks-stones-and-cliffs"
+        }
+      ]
+    },
+    {
+      "sha256": "52c7fcae6d3d271cce9b546e42b2894a003490774b1ab2097bb64c02950b704d",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / LumaGrove Wonky Woods (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1047,
+      "files": [
+        {
+          "libraryPath": "03-nature/lumagrove-wonky-woods/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "lumagrove-wonky-woods"
+        },
+        {
+          "libraryPath": "03-nature/lumagrove-wonky-woods/engine/godot/LICENSE.txt",
+          "libraryPack": "lumagrove-wonky-woods"
+        }
+      ]
+    },
+    {
+      "sha256": "53ac4978664e3a523c73bbd4ecfd5e20787338a3efc7beba060c5ada15d3103c",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / EmacEArt Asset License - free to use in your own projects, personal and",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 420,
+      "files": [
+        {
+          "libraryPath": "04-interior/free-analog-memory-80s-90s-crt-vhs-rooms/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "free-analog-memory-80s-90s-crt-vhs-rooms"
+        },
+        {
+          "libraryPath": "04-interior/free-analog-memory-80s-90s-crt-vhs-rooms/engine/godot/LICENSE.txt",
+          "libraryPack": "free-analog-memory-80s-90s-crt-vhs-rooms"
+        }
+      ]
+    },
+    {
+      "sha256": "55a6a1730ed9fff877c77172c9bd707fc55268380acf09eb384d4ef78dcd52e8",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Plasticine Materials (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1045,
+      "files": [
+        {
+          "libraryPath": "40-materials-textures/toon-plasticine-pbr-material/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "toon-plasticine-pbr-material"
+        },
+        {
+          "libraryPath": "40-materials-textures/toon-plasticine-pbr-material/engine/godot/LICENSE.txt",
+          "libraryPack": "toon-plasticine-pbr-material"
+        }
+      ]
+    },
+    {
+      "sha256": "615a6a8435337f2bb31997cd4636543e33c54463d0c91d56856d47ccb6bbc3b1",
+      "class": "emaceart-no-redistribution-even-modified",
+      "heading": "EmacEArt Stylized Grass - grass shader with wind / Copyright (c) 2026 EmacEArt (Maciej)",
+      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 자기 프로젝트(own projects)에서의 사용을 허가하고, 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하는 것을 'You may not'으로 금지한다. 웹 서비스 호스팅은 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 575,
+      "files": [
+        {
+          "libraryPath": "50-tools-shaders/godot-project-grass-wind-shader/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "godot-project-grass-wind-shader"
+        },
+        {
+          "libraryPath": "50-tools-shaders/godot-project-grass-wind-shader/engine/godot/LICENSE.txt",
+          "libraryPack": "godot-project-grass-wind-shader"
+        }
+      ]
+    },
+    {
+      "sha256": "6204f536dd7b91e74f77cdb48bbbe0df6709cc9e87e3e61dc4dec6471ce38c7b",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "Roadside Tales - Iowa Covered Bridges - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 696,
+      "files": [
+        {
+          "libraryPath": "03-nature/iowa-covered-bridges/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "iowa-covered-bridges"
+        },
+        {
+          "libraryPath": "03-nature/iowa-covered-bridges/engine/godot/LICENSE.txt",
+          "libraryPack": "iowa-covered-bridges"
+        },
+        {
+          "libraryPath": "03-nature/iowa-covered-bridges/models/glb/LICENSE.txt",
+          "libraryPack": "iowa-covered-bridges"
+        },
+        {
+          "libraryPath": "03-nature/iowa-covered-bridges/models/gltf/LICENSE.txt",
+          "libraryPack": "iowa-covered-bridges"
+        }
+      ]
+    },
+    {
+      "sha256": "666cbf821aa5337db3e17e1ac3fa7bf3a232f4f01e079cb4432e193c1030bc94",
+      "class": "emaceart-app-shipping-explicit",
+      "heading": "EmacEArt Asset License / Maciej EmacArt -- 3D Assets",
+      "summary": "EmaceArt 라이선스. 개인·상업 사용·수정과 '자기 게임/앱에 포함해 배포'를 명시하고, 에셋 판매와 별도 다운로드로 넘기는 것을 금지한다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": true,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1379,
+      "files": [
+        {
+          "libraryPath": "02-medieval-fantasy/free-fantasy-medieval-houses/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "free-fantasy-medieval-houses"
+        },
+        {
+          "libraryPath": "02-medieval-fantasy/free-fantasy-medieval-houses/engine/godot/LICENSE.txt",
+          "libraryPack": "free-fantasy-medieval-houses"
+        }
+      ]
+    },
+    {
+      "sha256": "67a9d392fcaf9dca35929922f139ead6c4788c6655eb112ff8f4a3a2fe275bdb",
+      "class": "emaceart-redistribution-prohibited",
+      "heading": "EmacEArt Asset License / Swamp Arch (Godot 4)",
+      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 독립 파일·에셋 팩으로의 재판매·재배포를 금지한다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 914,
+      "files": [
+        {
+          "libraryPath": "03-nature/swamp-builder-architecture/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "swamp-builder-architecture"
+        },
+        {
+          "libraryPath": "03-nature/swamp-builder-architecture/engine/godot/LICENSE.txt",
+          "libraryPack": "swamp-builder-architecture"
+        }
+      ]
+    },
+    {
+      "sha256": "7b293f6cd725b261cbf9f4be54d5465882345070acb4b4a769d7484330e1722f",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / LumaGrove Wonky Woods (models only)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1051,
+      "files": [
+        {
+          "libraryPath": "03-nature/lumagrove-wonky-woods/models/glb/LICENSE.txt",
+          "libraryPack": "lumagrove-wonky-woods"
+        },
+        {
+          "libraryPath": "03-nature/lumagrove-wonky-woods/models/gltf/LICENSE.txt",
+          "libraryPack": "lumagrove-wonky-woods"
+        }
+      ]
+    },
+    {
+      "sha256": "7c791fa9a32416aa604c2a9dbe742ade866d556362540cc6f410076edb182820",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Low Poly Cemetery Tomb Pack (glTF .glb models)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1110,
+      "files": [
+        {
+          "libraryPath": "05-horror-gothic/low-poly-cemetery-kit-necropoly-tombs-module/models/glb/LICENSE.txt",
+          "libraryPack": "low-poly-cemetery-kit-necropoly-tombs-module"
+        },
+        {
+          "libraryPath": "05-horror-gothic/low-poly-cemetery-kit-necropoly-tombs-module/models/gltf/LICENSE.txt",
+          "libraryPack": "low-poly-cemetery-kit-necropoly-tombs-module"
+        }
+      ]
+    },
+    {
+      "sha256": "804bae6af85f557593fd1448312e4c8f49193c1f77578700a161654023b7854c",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt - Low Poly Lava Plants / Copyright (c) 2026 EmacEArt",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 986,
+      "files": [
+        {
+          "libraryPath": "06-scifi/low-poly-lava-plants/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "low-poly-lava-plants"
+        },
+        {
+          "libraryPath": "06-scifi/low-poly-lava-plants/engine/godot/LICENSE.txt",
+          "libraryPack": "low-poly-lava-plants"
+        },
+        {
+          "libraryPath": "06-scifi/low-poly-lava-plants/models/glb/LICENSE.txt",
+          "libraryPack": "low-poly-lava-plants"
+        },
+        {
+          "libraryPath": "06-scifi/low-poly-lava-plants/models/gltf/LICENSE.txt",
+          "libraryPack": "low-poly-lava-plants"
+        }
+      ]
+    },
+    {
+      "sha256": "8a5977f917b27a88d49fe4fecd6244d910f1de664f56a2b009211a28b427550c",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Low Poly Cemetery Tomb Pack (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1078,
+      "files": [
+        {
+          "libraryPath": "05-horror-gothic/low-poly-cemetery-kit-necropoly-tombs-module/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "low-poly-cemetery-kit-necropoly-tombs-module"
+        },
+        {
+          "libraryPath": "05-horror-gothic/low-poly-cemetery-kit-necropoly-tombs-module/engine/godot/LICENSE.txt",
+          "libraryPack": "low-poly-cemetery-kit-necropoly-tombs-module"
+        }
+      ]
+    },
+    {
+      "sha256": "9718cc5f595a5bacd5c4de825e64e4c87ada1525560fa7e2f619b8af66bd710c",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / NatureForge: Stylized Meadow & Farm Kit (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1089,
+      "files": [
+        {
+          "libraryPath": "03-nature/poly-meadows/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "poly-meadows"
+        },
+        {
+          "libraryPath": "03-nature/poly-meadows/engine/godot/LICENSE.txt",
+          "libraryPack": "poly-meadows"
+        }
+      ]
+    },
+    {
+      "sha256": "9add9c52185072b470e39b21b369799d2caf9c1e17dc83550c7500cbe69769fa",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "Roadside Tales - Backroad Bridges - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 673,
+      "files": [
+        {
+          "libraryPath": "03-nature/backroad-bridges-stylized-modular/models/glb/LICENSE.txt",
+          "libraryPack": "backroad-bridges-stylized-modular"
+        },
+        {
+          "libraryPath": "03-nature/backroad-bridges-stylized-modular/models/gltf/LICENSE.txt",
+          "libraryPack": "backroad-bridges-stylized-modular"
+        }
+      ]
+    },
+    {
+      "sha256": "a2267ca0048c3e42a808ab3dee662ff6ea713f9fdb15420a13789b798007dd19",
+      "class": "rg-poly-cc0",
+      "heading": "RG Poly : Cute Dungeon Megapack / Created/distributed by RG Poly",
+      "summary": "CC0(Creative Commons Zero)를 명시하고 개인·교육·상업 프로젝트에서 자유롭게 쓸 수 있다고 적었다. 추가 제한 문구는 없다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 598,
+      "files": [
+        {
+          "libraryPath": "01-city/cute-park-pack/models/mixed/License.txt",
+          "libraryPack": "cute-park-pack"
+        },
+        {
+          "libraryPath": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/License.txt",
+          "libraryPack": "cute-dungeon-megapack"
+        }
+      ]
+    },
+    {
+      "sha256": "b9c7baf664b373065f5e04c12f6cf74d8b862d424fd60b9e07905635979e3a8b",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Epic Woodland: Summer (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1086,
+      "files": [
+        {
+          "libraryPath": "03-nature/voxel-summer/models/glb/LICENSE.txt",
+          "libraryPack": "voxel-summer"
+        },
+        {
+          "libraryPath": "03-nature/voxel-summer/models/gltf/LICENSE.txt",
+          "libraryPack": "voxel-summer"
+        }
+      ]
+    },
+    {
+      "sha256": "bd1c680a6a52d6349cbcd7162174b5e28606363aec3162d55c57ef6ee5d1c462",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Swamp Remake (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1031,
+      "files": [
+        {
+          "libraryPath": "03-nature/swamp-builder-nature/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "swamp-builder-nature"
+        },
+        {
+          "libraryPath": "03-nature/swamp-builder-nature/engine/godot/LICENSE.txt",
+          "libraryPack": "swamp-builder-nature"
+        }
+      ]
+    },
+    {
+      "sha256": "cec170dc025ce7c183a82ecedcbbedfe94e2ac31869fd15f98dd328250dd2391",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / TerraToon: Stylized Tree Pack (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1093,
+      "files": [
+        {
+          "libraryPath": "03-nature/terratoon-stylized-tree-pack/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "terratoon-stylized-tree-pack"
+        },
+        {
+          "libraryPath": "03-nature/terratoon-stylized-tree-pack/engine/godot/LICENSE.txt",
+          "libraryPack": "terratoon-stylized-tree-pack"
+        },
+        {
+          "libraryPath": "03-nature/terratoon-stylized-tree-pack/models/glb/LICENSE.txt",
+          "libraryPack": "terratoon-stylized-tree-pack"
+        },
+        {
+          "libraryPath": "03-nature/terratoon-stylized-tree-pack/models/gltf/LICENSE.txt",
+          "libraryPack": "terratoon-stylized-tree-pack"
+        }
+      ]
+    },
+    {
+      "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+      "class": "emaceart-app-shipping-explicit",
+      "heading": "Maciej EmacArt - 3D Assets / Copyright (c) 2026 Maciej EmacArt",
+      "summary": "EmaceArt 라이선스. 개인·상업 사용·수정과 '자기 게임/앱에 포함해 배포'를 명시하고, 에셋 판매와 별도 다운로드로 넘기는 것을 금지한다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 이 문서는 Blend Textures.zip 안 LICENSE 사본 17개에도 들어 있어, 같은 팩 폴더의 다른 LICENSE와 상충하는 팩이 있다(해당 팩의 mappingNote 참고).",
+      "appShippingExplicit": true,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1303,
+      "files": [
+        {
+          "libraryPath": "04-interior/pixeldrift-metro-3d-pixel-art-subway-vr/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "pixeldrift-metro-3d-pixel-art-subway-vr"
+        },
+        {
+          "libraryPath": "04-interior/pixeldrift-metro-3d-pixel-art-subway-vr/engine/godot/LICENSE.txt",
+          "libraryPack": "pixeldrift-metro-3d-pixel-art-subway-vr"
+        },
+        {
+          "libraryPath": "04-interior/rewind-memory-80s-90s-rooms/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "rewind-memory-80s-90s-rooms"
+        },
+        {
+          "libraryPath": "04-interior/rewind-memory-80s-90s-rooms/engine/godot/LICENSE.txt",
+          "libraryPack": "rewind-memory-80s-90s-rooms"
+        }
+      ],
+      "archivedFiles": [
+        {
+          "libraryPath": "01-city/harboria-victorian-town/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "harboria-victorian-town"
+        },
+        {
+          "libraryPath": "03-nature/iowa-covered-bridges/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "iowa-covered-bridges"
+        },
+        {
+          "libraryPath": "03-nature/l100-rocks-stones-and-cliffs/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "l100-rocks-stones-and-cliffs"
+        },
+        {
+          "libraryPath": "03-nature/low-poly-tiny-forest/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "low-poly-tiny-forest"
+        },
+        {
+          "libraryPath": "03-nature/lumagrove-wonky-woods/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "lumagrove-wonky-woods"
+        },
+        {
+          "libraryPath": "03-nature/raft-on-the-desert/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "raft-on-the-desert"
+        },
+        {
+          "libraryPath": "03-nature/swamp-builder-architecture/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "swamp-builder-architecture"
+        },
+        {
+          "libraryPath": "03-nature/terratoon-stylized-tree-pack/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "terratoon-stylized-tree-pack"
+        },
+        {
+          "libraryPath": "03-nature/voxel-summer/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "voxel-summer"
+        },
+        {
+          "libraryPath": "03-nature/winter-atolls-pack-3d-voxel-environment-kit-mega-pack/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "winter-atolls-pack-3d-voxel-environment-kit-mega-pack"
+        },
+        {
+          "libraryPath": "04-interior/rewind-memory-80s-90s-rooms/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "rewind-memory-80s-90s-rooms"
+        },
+        {
+          "libraryPath": "05-horror-gothic/cemetery-statues/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "cemetery-statues"
+        },
+        {
+          "libraryPath": "05-horror-gothic/haunted-grounds-halloween-props-and-scene/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "haunted-grounds-halloween-props-and-scene"
+        },
+        {
+          "libraryPath": "06-scifi/cosmokit-low-poly-planets/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "cosmokit-low-poly-planets"
+        },
+        {
+          "libraryPath": "06-scifi/surreal-sci-fi-plasticine-plants/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "surreal-sci-fi-plasticine-plants"
+        },
+        {
+          "libraryPath": "30-props/low-poly-food-and-packaging/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "low-poly-food-and-packaging"
+        },
+        {
+          "libraryPath": "50-tools-shaders/stylized-vegetation-wind-shader-urp-2025/models/blend/Blend Textures.zip",
+          "member": "LICENSE.txt",
+          "libraryPack": "stylized-vegetation-wind-shader-urp-2025"
+        }
+      ]
+    },
+    {
+      "sha256": "d61fe56f95ead77538977f08568c327a3ba50c316eb578be58feb82adadabaa1",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Low Poly Food and Packaging (Godot 4)",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1045,
+      "files": [
+        {
+          "libraryPath": "30-props/low-poly-food-and-packaging/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "low-poly-food-and-packaging"
+        },
+        {
+          "libraryPath": "30-props/low-poly-food-and-packaging/engine/godot/LICENSE.txt",
+          "libraryPack": "low-poly-food-and-packaging"
+        },
+        {
+          "libraryPath": "30-props/low-poly-food-and-packaging/models/glb/LICENSE.txt",
+          "libraryPack": "low-poly-food-and-packaging"
+        },
+        {
+          "libraryPath": "30-props/low-poly-food-and-packaging/models/gltf/LICENSE.txt",
+          "libraryPack": "low-poly-food-and-packaging"
+        }
+      ]
+    },
+    {
+      "sha256": "e512acd82407f957a59b74cf1fa4c256604872ed87b87771e9cb2f41ff5c2e59",
+      "class": "emaceart-no-redistribution-even-modified",
+      "heading": "EmacEArt Stylized Skybox - stylized procedural sky for Godot 4 / Copyright (c) 2026 EmacEArt (Maciej)",
+      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 자기 프로젝트(own projects)에서의 사용을 허가하고, 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하는 것을 'You may not'으로 금지한다. 웹 서비스 호스팅은 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 567,
+      "files": [
+        {
+          "libraryPath": "50-tools-shaders/godot-project-skybox-shader/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "godot-project-skybox-shader"
+        },
+        {
+          "libraryPath": "50-tools-shaders/godot-project-skybox-shader/engine/godot/LICENSE.txt",
+          "libraryPack": "godot-project-skybox-shader"
+        }
+      ]
+    },
+    {
+      "sha256": "eb655f669fc9732215d987e1f5065277b86992be9e18df9eb01c0bdbdcd490ce",
+      "class": "emaceart-standalone-ban-soft",
+      "heading": "EmacEArt Asset License / Stylized Water Shader for Godot 4",
+      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 자기 프로젝트(own projects)에서의 개인·상업 사용을 허가하고, 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하지 말아 달라고 '부탁'하는 문구다(grass-wind·skybox 문서는 'You may not'으로 금지해 별도 분류다). 웹 서비스 호스팅은 다루지 않는다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": true,
+      "webServiceHostingAddressed": false,
+      "bytes": 972,
+      "files": [
+        {
+          "libraryPath": "50-tools-shaders/godot-project-water-shader/engine/godot/Documentation/LICENSE.txt",
+          "libraryPack": "godot-project-water-shader"
+        },
+        {
+          "libraryPath": "50-tools-shaders/godot-project-water-shader/engine/godot/LICENSE.txt",
+          "libraryPack": "godot-project-water-shader"
+        }
+      ]
+    },
+    {
+      "sha256": "fe98d0bb7e39f79a09e926b0bb28d3b67fb6525dc0b4674c2ccdb30f7a0b21d9",
+      "class": "rg-poly-cc0-standalone-ban",
+      "heading": "RG Poly : Small Props Pack / Created/distributed by RG Poly",
+      "summary": "CC0 표기와 함께 '재판매·재배포·독립 항목으로의 다운로드 제공 금지'를 적어 자기모순이다.",
+      "appShippingExplicit": false,
+      "modifiedCovered": false,
+      "webServiceHostingAddressed": false,
+      "bytes": 1039,
+      "files": [
+        {
+          "libraryPath": "02-medieval-fantasy/free-medieval-props-small-pack-low-poly/models/mixed/License.txt",
+          "libraryPack": "free-medieval-props-small-pack-low-poly"
+        },
+        {
+          "libraryPath": "02-medieval-fantasy/medieval-megapack-low-poly/models/mixed/License.txt",
+          "libraryPack": "medieval-megapack-low-poly"
+        }
+      ]
+    }
+  ],
+  "packs": [
+    {
+      "id": "cbv1-001-cartoon-city-massive-pack",
+      "group": "pack",
+      "title": "Cartoon City Massive Pack",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-001-cartoon-city-massive-pack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-001-cartoon-city-massive-pack"
+      ],
+      "libraryPacks": [
+        "cartoon-city-massive-pack"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "secondary-lookup",
+          "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ]
+    },
+    {
+      "id": "cbv1-004-old-town-courtyards",
+      "group": "pack",
+      "title": "Old Town — Courtyards",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-004-old-town-courtyards"
+      ],
+      "officialCatalogIds": [
+        "cbv1-004-old-town-courtyards"
+      ],
+      "libraryPacks": [
+        "old-town-courtyards"
+      ],
+      "licenseClass": "unstated-emaceart",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-005-harboria-victorian-town",
+      "group": "pack",
+      "title": "Harboria — Victorian Town",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-005-harboria-victorian-town"
+      ],
+      "officialCatalogIds": [
+        "cbv1-005-harboria-victorian-town"
+      ],
+      "libraryPacks": [
+        "harboria-victorian-town"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "01-city/harboria-victorian-town/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-021-slavica-medieval-village",
+      "group": "pack",
+      "title": "Slavica — Slavic Medieval Village",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-021-slavica-medieval-village"
+      ],
+      "officialCatalogIds": [
+        "cbv1-021-slavica-medieval-village"
+      ],
+      "libraryPacks": [
+        "slavica-slavic-medieval-village"
+      ],
+      "licenseClass": "unstated-emaceart",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [],
+      "note": "풀팩 라이선스 문서는 없고 무료판 문서(SlavicWorldFree)만 있다. 풀팩 귀속은 itch 캡처로 확정해야 한다."
+    },
+    {
+      "id": "cbv1-022-low-poly-medieval-village+cbv1-023-medieval-megapack-low-poly",
+      "group": "pack",
+      "title": "Medieval Village / Megapack",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-022-low-poly-medieval-village",
+        "cbv1-023-medieval-megapack-low-poly"
+      ],
+      "officialCatalogIds": [
+        "cbv1-022-low-poly-medieval-village",
+        "cbv1-023-medieval-megapack-low-poly"
+      ],
+      "libraryPacks": [
+        "low-poly-medieval-village",
+        "medieval-megapack-low-poly"
+      ],
+      "licenseClass": "cc0-with-standalone-ban",
+      "serve": "hold",
+      "holdReason": "license-conflict",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "fe98d0bb7e39f79a09e926b0bb28d3b67fb6525dc0b4674c2ccdb30f7a0b21d9",
+          "paths": [
+            "02-medieval-fantasy/medieval-megapack-low-poly/models/mixed/License.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "reviewRecommendedHold": true,
+      "mappingNote": "인제스션 id는 MedievalMegapack_Godot(cbv1-023)에서만 추적된다. 022 쪽은 카탈로그 선언에만 근거한다.",
+      "note": "Medieval Megapack 안 License.txt는 Small Props 팩 템플릿(CC0 표기 + 독립 다운로드 금지)이다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
+    },
+    {
+      "id": "cbv1-028-lumagrove-wonky-woods",
+      "group": "pack",
+      "title": "LumaGrove — Wonky Woods",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-028-lumagrove-wonky-woods"
+      ],
+      "officialCatalogIds": [
+        "cbv1-028-lumagrove-wonky-woods"
+      ],
+      "libraryPacks": [
+        "lumagrove-wonky-woods"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "7b293f6cd725b261cbf9f4be54d5465882345070acb4b4a769d7484330e1722f",
+          "paths": [
+            "03-nature/lumagrove-wonky-woods/models/glb/LICENSE.txt",
+            "03-nature/lumagrove-wonky-woods/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "52c7fcae6d3d271cce9b546e42b2894a003490774b1ab2097bb64c02950b704d",
+          "paths": [
+            "03-nature/lumagrove-wonky-woods/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/lumagrove-wonky-woods/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/lumagrove-wonky-woods/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-030-nature-megapack-extended",
+      "group": "pack",
+      "title": "Nature Megapack - Extended",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-030-nature-megapack-extended"
+      ],
+      "officialCatalogIds": [
+        "cbv1-030-nature-megapack-extended"
+      ],
+      "libraryPacks": [
+        "nature-megapack-extended"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "secondary-lookup",
+          "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ]
+    },
+    {
+      "id": "cbv1-031-poly-meadows",
+      "group": "pack",
+      "title": "Poly Meadows",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-031-poly-meadows"
+      ],
+      "officialCatalogIds": [
+        "cbv1-031-poly-meadows"
+      ],
+      "libraryPacks": [
+        "poly-meadows"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "9718cc5f595a5bacd5c4de825e64e4c87ada1525560fa7e2f619b8af66bd710c",
+          "paths": [
+            "03-nature/poly-meadows/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/poly-meadows/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-032-low-poly-tiny-forest",
+      "group": "pack",
+      "title": "Low Poly Tiny Forest",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-032-low-poly-tiny-forest"
+      ],
+      "officialCatalogIds": [
+        "cbv1-032-low-poly-tiny-forest"
+      ],
+      "libraryPacks": [
+        "low-poly-tiny-forest",
+        "free-lumagrove-lowpoly-tiny-trees-and-rocks"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/low-poly-tiny-forest/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "인제스션 id 중 하나(tiny-forest-free blend)는 FREE LumaGrove(cbv1-064) 폴더에 분류돼 있다. 증빙은 두 폴더의 합집합이다."
+    },
+    {
+      "id": "cbv1-034-natureforge-woodland-forest",
+      "group": "pack",
+      "title": "NatureForge — Stylized Woodland Forest Pack",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-034-natureforge-woodland-forest"
+      ],
+      "officialCatalogIds": [
+        "cbv1-034-natureforge-woodland-forest"
+      ],
+      "libraryPacks": [
+        "natureforge-stylized-woodland-forest-pack"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "12e17cc42df08c3dea072bd5a9f93656075488dca0ebed738b635080c8b2d30f",
+          "paths": [
+            "03-nature/natureforge-stylized-woodland-forest-pack/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/natureforge-stylized-woodland-forest-pack/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-056-farm-land",
+      "group": "pack",
+      "title": "Farm Land",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-056-farm-land"
+      ],
+      "officialCatalogIds": [
+        "cbv1-056-farm-land"
+      ],
+      "libraryPacks": [
+        "farm-land"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "secondary-lookup",
+          "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ]
+    },
+    {
+      "id": "cbv1-033-rocks-and-stone",
+      "group": "pack",
+      "title": "Rocks and Stone",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-033-rocks-and-stone"
+      ],
+      "officialCatalogIds": [
+        "cbv1-033-l100-rocks-stones-cliffs"
+      ],
+      "libraryPacks": [
+        "l100-rocks-stones-and-cliffs"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "4a294b80c3e752affdc268da4de95529b03f9734f2c79a79cacd128df56a70af",
+          "paths": [
+            "03-nature/l100-rocks-stones-and-cliffs/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/l100-rocks-stones-and-cliffs/engine/godot/LICENSE.txt",
+            "03-nature/l100-rocks-stones-and-cliffs/models/glb/LICENSE.txt",
+            "03-nature/l100-rocks-stones-and-cliffs/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/l100-rocks-stones-and-cliffs/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-029-terratoon-tree-pack",
+      "group": "pack",
+      "title": "TerraToon — Stylized Tree Pack",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-029-terratoon-tree-pack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-029-terratoon-tree-pack"
+      ],
+      "libraryPacks": [
+        "terratoon-stylized-tree-pack"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "cec170dc025ce7c183a82ecedcbbedfe94e2ac31869fd15f98dd328250dd2391",
+          "paths": [
+            "03-nature/terratoon-stylized-tree-pack/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/terratoon-stylized-tree-pack/engine/godot/LICENSE.txt",
+            "03-nature/terratoon-stylized-tree-pack/models/glb/LICENSE.txt",
+            "03-nature/terratoon-stylized-tree-pack/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/terratoon-stylized-tree-pack/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-049-lava-plants",
+      "group": "pack",
+      "title": "Low Poly Lava Plants",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-049-lava-plants"
+      ],
+      "officialCatalogIds": [
+        "cbv1-049-low-poly-lava-plants"
+      ],
+      "libraryPacks": [
+        "low-poly-lava-plants"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "804bae6af85f557593fd1448312e4c8f49193c1f77578700a161654023b7854c",
+          "paths": [
+            "06-scifi/low-poly-lava-plants/engine/godot/Documentation/LICENSE.txt",
+            "06-scifi/low-poly-lava-plants/engine/godot/LICENSE.txt",
+            "06-scifi/low-poly-lava-plants/models/glb/LICENSE.txt",
+            "06-scifi/low-poly-lava-plants/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-042-restaurant-megapack",
+      "group": "pack",
+      "title": "Restaurant Megapack",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-042-restaurant-megapack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-042-kitchen-restaurant-megapack"
+      ],
+      "libraryPacks": [
+        "kitchen-restaurant-megapack"
+      ],
+      "licenseClass": "proprietary-rg-poly",
+      "serve": "hold",
+      "holdReason": "license-conflict",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "3acf46f93f2ad2a406c479f69a3043932754b5b07046aea2a8d0ba850cdc2a98",
+          "paths": [
+            "04-interior/kitchen-restaurant-megapack/models/mixed/RG POLY License.odt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "reviewRecommendedHold": true,
+      "note": "로컬 문서 `RG POLY License.odt`는 CC0가 아니다. 모델을 있는 그대로 공개 게시·재배포하는 것을 금지하고 완성 프로젝트의 일부로만 배포를 허용한다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
+    },
+    {
+      "id": "cbv1-044-pixeldrift-metro",
+      "group": "pack",
+      "title": "PixelDrift Metro — 3D Pixel Art Subway (VR)",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-044-pixeldrift-metro"
+      ],
+      "officialCatalogIds": [
+        "cbv1-044-pixeldrift-metro"
+      ],
+      "libraryPacks": [
+        "pixeldrift-metro-3d-pixel-art-subway-vr"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "04-interior/pixeldrift-metro-3d-pixel-art-subway-vr/engine/godot/Documentation/LICENSE.txt",
+            "04-interior/pixeldrift-metro-3d-pixel-art-subway-vr/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-065-free-analog-memory-rooms",
+      "group": "pack",
+      "title": "FREE Analog Memory — 80s/90s CRT VHS Rooms",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-065-free-analog-memory-rooms"
+      ],
+      "officialCatalogIds": [
+        "cbv1-065-free-analog-memory-rooms"
+      ],
+      "libraryPacks": [
+        "free-analog-memory-80s-90s-crt-vhs-rooms"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "53ac4978664e3a523c73bbd4ecfd5e20787338a3efc7beba060c5ada15d3103c",
+          "paths": [
+            "04-interior/free-analog-memory-80s-90s-crt-vhs-rooms/engine/godot/Documentation/LICENSE.txt",
+            "04-interior/free-analog-memory-80s-90s-crt-vhs-rooms/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-071-pixeldrift-metro-free",
+      "group": "pack",
+      "title": "PixelDrift: Metro — FREE",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-071-pixeldrift-metro-free"
+      ],
+      "officialCatalogIds": [
+        "cbv1-071-pixeldrift-metro-free"
+      ],
+      "libraryPacks": [
+        "pixeldrift-metro-free",
+        "pixeldrift-metro-3d-pixel-art-subway-vr"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "048ebd87422811fa249e1996f5e4c6658b4c0c49a47b5058434c81ebda82e36d",
+          "paths": [
+            "04-interior/pixeldrift-metro-free/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "04-interior/pixeldrift-metro-3d-pixel-art-subway-vr/engine/godot/Documentation/LICENSE.txt",
+            "04-interior/pixeldrift-metro-3d-pixel-art-subway-vr/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "인제스션 id 3개 중 2개(blend)는 유료 PixelDrift Metro(cbv1-044) 폴더에 분류돼 있다. 증빙은 두 폴더의 합집합이다."
+    },
+    {
+      "id": "cbv1-050-scifi-arena-1",
+      "group": "pack",
+      "title": "Sci-Fi Arena: 1",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-050-scifi-arena-1"
+      ],
+      "officialCatalogIds": [
+        "cbv1-050-scifi-arena-1"
+      ],
+      "libraryPacks": [
+        "sci-fi-arena-1"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-051-scifi-arena-2",
+      "group": "pack",
+      "title": "Sci-Fi Arena: 2",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-051-scifi-arena-2"
+      ],
+      "officialCatalogIds": [
+        "cbv1-051-scifi-arena-2"
+      ],
+      "libraryPacks": [
+        "sci-fi-arena-2"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-046-cosmokit-planets",
+      "group": "pack",
+      "title": "CosmoKit — Stylized Low Poly Planets",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-046-cosmokit-planets"
+      ],
+      "officialCatalogIds": [
+        "cbv1-046-cosmokit-low-poly-planets"
+      ],
+      "libraryPacks": [
+        "cosmokit-low-poly-planets"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "2558f76c328b9078ae5c0586e1ed05bb566d3d5438e25ba6f91a269afb74e088",
+          "paths": [
+            "06-scifi/cosmokit-low-poly-planets/engine/godot/Documentation/LICENSE.txt",
+            "06-scifi/cosmokit-low-poly-planets/engine/godot/LICENSE.txt",
+            "06-scifi/cosmokit-low-poly-planets/models/glb/LICENSE.txt",
+            "06-scifi/cosmokit-low-poly-planets/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "06-scifi/cosmokit-low-poly-planets/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(재배포 금지) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-006-polyvania-burton-horror-town",
+      "group": "pack",
+      "title": "Polyvania — Burton Horror Town",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-006-polyvania-burton-horror-town"
+      ],
+      "officialCatalogIds": [
+        "cbv1-006-polyvania-burton-horror-town"
+      ],
+      "libraryPacks": [
+        "polyvania-burton-horror-town"
+      ],
+      "licenseClass": "unstated-emaceart",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-011-necropolyy-graveyard",
+      "group": "pack",
+      "title": "NecroPOLY — Stylized Graveyard",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-011-necropolyy-graveyard"
+      ],
+      "officialCatalogIds": [
+        "cbv1-011-necropolyy-graveyard"
+      ],
+      "libraryPacks": [
+        "necropoly-stylized-graveyard",
+        "low-poly-cemetery-kit-necropoly-tombs-module",
+        "graves-kit-with-lods"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "7c791fa9a32416aa604c2a9dbe742ade866d556362540cc6f410076edb182820",
+          "paths": [
+            "05-horror-gothic/low-poly-cemetery-kit-necropoly-tombs-module/models/glb/LICENSE.txt",
+            "05-horror-gothic/low-poly-cemetery-kit-necropoly-tombs-module/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "8a5977f917b27a88d49fe4fecd6244d910f1de664f56a2b009211a28b427550c",
+          "paths": [
+            "05-horror-gothic/low-poly-cemetery-kit-necropoly-tombs-module/engine/godot/Documentation/LICENSE.txt",
+            "05-horror-gothic/low-poly-cemetery-kit-necropoly-tombs-module/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "0534ace843522e78c7d7421de5c9ee287ce1d092310ddd44408e2aea10e68a07",
+          "paths": [
+            "05-horror-gothic/graves-kit-with-lods/engine/godot/Documentation/LICENSE.txt",
+            "05-horror-gothic/graves-kit-with-lods/engine/godot/LICENSE.txt",
+            "05-horror-gothic/graves-kit-with-lods/models/glb/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "서빙 에셋의 원본 3종은 Graves Kit(cbv1-013)·Tombs Module 폴더에서 왔고 necropoly-stylized-graveyard 폴더에서 온 것은 없다. 증빙은 세 폴더의 합집합이다.",
+      "note": "라이선스 문서는 Tombs Module 변형(Godot·glTF)에만 있다. 같은 팩의 나머지 변형에는 문서가 없다."
+    },
+    {
+      "id": "cbv1-013-graves-kit",
+      "group": "pack",
+      "title": "Graves Kit",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-013-graves-kit"
+      ],
+      "officialCatalogIds": [
+        "cbv1-013-graves-kit-lods"
+      ],
+      "libraryPacks": [
+        "graves-kit-with-lods"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "0534ace843522e78c7d7421de5c9ee287ce1d092310ddd44408e2aea10e68a07",
+          "paths": [
+            "05-horror-gothic/graves-kit-with-lods/engine/godot/Documentation/LICENSE.txt",
+            "05-horror-gothic/graves-kit-with-lods/engine/godot/LICENSE.txt",
+            "05-horror-gothic/graves-kit-with-lods/models/glb/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-012-cemetery-statues",
+      "group": "pack",
+      "title": "Cemetery Statues Pack",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-012-cemetery-statues"
+      ],
+      "officialCatalogIds": [
+        "cbv1-012-cemetery-statues"
+      ],
+      "libraryPacks": [
+        "cemetery-statues"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "1aad8b301684fcf7213a08b3046e6983e5909194befff8c0dd513a32d3c685ad",
+          "paths": [
+            "05-horror-gothic/cemetery-statues/engine/godot/Documentation/LICENSE.txt",
+            "05-horror-gothic/cemetery-statues/engine/godot/LICENSE.txt",
+            "05-horror-gothic/cemetery-statues/models/glb/LICENSE.txt",
+            "05-horror-gothic/cemetery-statues/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "05-horror-gothic/cemetery-statues/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-015-haunted-grounds",
+      "group": "pack",
+      "title": "Haunted Grounds — Halloween Props & Scene",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-015-haunted-grounds"
+      ],
+      "officialCatalogIds": [
+        "cbv1-015-haunted-grounds"
+      ],
+      "libraryPacks": [
+        "haunted-grounds-halloween-props-and-scene"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "05-horror-gothic/haunted-grounds-halloween-props-and-scene/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-035-pirate-island",
+      "group": "pack",
+      "title": "Pirate Island",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-035-pirate-island"
+      ],
+      "officialCatalogIds": [
+        "cbv1-035-pirate-island"
+      ],
+      "libraryPacks": [
+        "pirate-island"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "secondary-lookup",
+          "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ]
+    },
+    {
+      "id": "cbv1-037-voxel-summer",
+      "group": "pack",
+      "title": "Voxel Summer",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-037-voxel-summer"
+      ],
+      "officialCatalogIds": [
+        "cbv1-037-voxel-summer"
+      ],
+      "libraryPacks": [
+        "voxel-summer"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "b9c7baf664b373065f5e04c12f6cf74d8b862d424fd60b9e07905635979e3a8b",
+          "paths": [
+            "03-nature/voxel-summer/models/glb/LICENSE.txt",
+            "03-nature/voxel-summer/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/voxel-summer/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-038-aztec-jungle",
+      "group": "pack",
+      "title": "Aztec Jungle",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-038-aztec-jungle"
+      ],
+      "officialCatalogIds": [
+        "cbv1-038-aztec-jungle"
+      ],
+      "libraryPacks": [
+        "aztec-jungle"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "secondary-lookup",
+          "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ]
+    },
+    {
+      "id": "cbv1-039-raft-on-the-desert",
+      "group": "pack",
+      "title": "Raft on the Desert",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-039-raft-on-the-desert"
+      ],
+      "officialCatalogIds": [
+        "cbv1-039-raft-on-the-desert"
+      ],
+      "libraryPacks": [
+        "raft-on-the-desert"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "22401dbd7a140fae09968c9dd5a4154cccf657b381417121e99ca9b73a1e579c",
+          "paths": [
+            "03-nature/raft-on-the-desert/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/raft-on-the-desert/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/raft-on-the-desert/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-040-swamp-builder-nature+cbv1-041-swamp-builder-architecture",
+      "group": "pack",
+      "title": "Swamp Builder — Nature·Architecture",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-040-swamp-builder-nature",
+        "cbv1-041-swamp-builder-architecture"
+      ],
+      "officialCatalogIds": [
+        "cbv1-040-swamp-builder-nature",
+        "cbv1-041-swamp-builder-architecture"
+      ],
+      "libraryPacks": [
+        "swamp-builder-nature",
+        "swamp-builder-architecture"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "bd1c680a6a52d6349cbcd7162174b5e28606363aec3162d55c57ef6ee5d1c462",
+          "paths": [
+            "03-nature/swamp-builder-nature/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/swamp-builder-nature/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "67a9d392fcaf9dca35929922f139ead6c4788c6655eb112ff8f4a3a2fe275bdb",
+          "paths": [
+            "03-nature/swamp-builder-architecture/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/swamp-builder-architecture/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/swamp-builder-architecture/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁 + 재배포 금지) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-026-iowa-covered-bridges",
+      "group": "pack",
+      "title": "Iowa Covered Bridges",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-026-iowa-covered-bridges"
+      ],
+      "officialCatalogIds": [
+        "cbv1-026-iowa-covered-bridges"
+      ],
+      "libraryPacks": [
+        "iowa-covered-bridges"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "6204f536dd7b91e74f77cdb48bbbe0df6709cc9e87e3e61dc4dec6471ce38c7b",
+          "paths": [
+            "03-nature/iowa-covered-bridges/engine/godot/Documentation/LICENSE.txt",
+            "03-nature/iowa-covered-bridges/engine/godot/LICENSE.txt",
+            "03-nature/iowa-covered-bridges/models/glb/LICENSE.txt",
+            "03-nature/iowa-covered-bridges/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/iowa-covered-bridges/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-080-free-stylized-asia-megapack-urp",
+      "group": "pack",
+      "title": "FREE Stylized Asia Environment Megapack — Unity URP",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-080-free-stylized-asia-megapack-urp"
+      ],
+      "officialCatalogIds": [
+        "cbv1-080-free-stylized-asia-megapack-urp"
+      ],
+      "libraryPacks": [
+        "free-stylized-asia-environment-megapack-unity-urp",
+        "low-poly-asia-pack"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [],
+      "mappingNote": "서빙 에셋의 원본(Asia+Megapack…URP.unitypackage)은 라이브러리에서 cbv1-054 Low Poly Asia Pack 폴더로 분류돼 있다. 생성기는 이 에셋을 080으로, 054는 미수신 보류로 적고 있어 귀속 확인이 필요하다."
+    },
+    {
+      "id": "cbv1-055-winter-atolls-pack",
+      "group": "pack",
+      "title": "Winter Atolls Pack",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-055-winter-atolls-pack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-055-winter-atolls-pack"
+      ],
+      "libraryPacks": [
+        "winter-atolls-pack-3d-voxel-environment-kit-mega-pack"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "32ff7a79bd870e5c521c6b26a5bc69398e59d5f22aea78cd50114f0789c12748",
+          "paths": [
+            "03-nature/winter-atolls-pack-3d-voxel-environment-kit-mega-pack/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "03-nature/winter-atolls-pack-3d-voxel-environment-kit-mega-pack/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "cbv1-066-modular-bridge",
+      "group": "pack",
+      "title": "Modular Bridge",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-066-modular-bridge"
+      ],
+      "officialCatalogIds": [
+        "cbv1-066-roadside-tales-free-modular-bridge"
+      ],
+      "libraryPacks": [
+        "roadside-tales-free-modular-bridge"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "32f2c5363698291fc6e93afd9ab9b3899fcc483948992a3309943a9a72ee26e3",
+          "paths": [
+            "03-nature/roadside-tales-free-modular-bridge/engine/godot/Documentation/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-077-small-props-pack",
+      "group": "pack",
+      "title": "Small Props Pack",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-077-small-props-pack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-077-free-medieval-props"
+      ],
+      "libraryPacks": [
+        "free-medieval-props-small-pack-low-poly"
+      ],
+      "licenseClass": "cc0-with-standalone-ban",
+      "serve": "hold",
+      "holdReason": "license-conflict",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "fe98d0bb7e39f79a09e926b0bb28d3b67fb6525dc0b4674c2ccdb30f7a0b21d9",
+          "paths": [
+            "02-medieval-fantasy/free-medieval-props-small-pack-low-poly/models/mixed/License.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "reviewRecommendedHold": true,
+      "note": "License.txt가 CC0 표기와 '독립 항목으로 다운로드 제공 금지'를 함께 적어 자기모순이다. 공식 카탈로그 이름은 Free Medieval Props — Small Pack Low Poly(cbv1-077)다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
+    },
+    {
+      "id": "cbv1-045-food-packaging",
+      "group": "pack",
+      "title": "Low Poly Food Packaging",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-045-food-packaging"
+      ],
+      "officialCatalogIds": [
+        "cbv1-045-low-poly-food-packaging"
+      ],
+      "libraryPacks": [
+        "low-poly-food-and-packaging"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "d61fe56f95ead77538977f08568c327a3ba50c316eb578be58feb82adadabaa1",
+          "paths": [
+            "30-props/low-poly-food-and-packaging/engine/godot/Documentation/LICENSE.txt",
+            "30-props/low-poly-food-and-packaging/engine/godot/LICENSE.txt",
+            "30-props/low-poly-food-and-packaging/models/glb/LICENSE.txt",
+            "30-props/low-poly-food-and-packaging/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "30-props/low-poly-food-and-packaging/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+    },
+    {
+      "id": "rg-poly-food-pack",
+      "group": "pack",
+      "title": "Food Pack",
+      "creator": "RG Poly",
+      "catalogIds": [],
+      "officialCatalogIds": [],
+      "libraryPacks": [
+        "food-pack-small"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-067-fences-and-walls",
+      "group": "pack",
+      "title": "Fences and Walls",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-067-fences-and-walls"
+      ],
+      "officialCatalogIds": [
+        "cbv1-067-roadside-tales-fences-walls-1-3"
+      ],
+      "libraryPacks": [
+        "roadside-tales-fences-and-wall-bundle-pack-1-3-lods",
+        "modular-fence-narrative-pack-and-spline-tool"
+      ],
+      "licenseClass": "unstated-emaceart",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [],
+      "mappingNote": "서빙 에셋의 원본('Fences and walls glb')은 라이브러리에서 cbv1-027 Modular Fence Narrative Pack 폴더로 분류돼 있다. 귀속 확인이 필요하다."
+    },
+    {
+      "id": "cbv1-076-medieval-weapons",
+      "group": "pack",
+      "title": "Medieval Weapons",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-076-medieval-weapons"
+      ],
+      "officialCatalogIds": [
+        "cbv1-076-free-medieval-weapons"
+      ],
+      "libraryPacks": [
+        "free-medieval-weapons-small-low-poly-pack"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [],
+      "note": "공식 카탈로그 이름은 Free Medieval Weapons — Small Low Poly Pack이다. 폴더 귀속은 추정 판정이다."
+    },
+    {
+      "id": "cbv1-019-blasters-rg",
+      "group": "pack",
+      "title": "Blasters RG",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-019-blasters-rg"
+      ],
+      "officialCatalogIds": [
+        "cbv1-019-blaster-pack"
+      ],
+      "libraryPacks": [
+        "blaster-pack"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-074-blasters-free",
+      "group": "pack",
+      "title": "Blasters Free",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-074-blasters-free"
+      ],
+      "officialCatalogIds": [
+        "cbv1-074-free-blaster-pack-mini"
+      ],
+      "libraryPacks": [
+        "free-blaster-pack-mini-edition"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-003-cartoon-characters-1",
+      "group": "crowd",
+      "title": "Characters 1",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-003-cartoon-characters-1"
+      ],
+      "officialCatalogIds": [
+        "cbv1-003-cartoon-characters-1"
+      ],
+      "libraryPacks": [
+        "cartoon-characters-1"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "secondary-lookup",
+          "claim": "팩 페이지 본문과 itch 메타데이터(Asset license: Creative Commons Zero)에 CC0 명시",
+          "source": "docs/studio/creator-bundle-character-review-20261020.md",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ],
+      "note": "생성기·theme-packs에는 EmaceArt로 적혀 있었으나 공식 카탈로그와 라이브러리 기준 제작사는 RG Poly다(2026-10-22 정정). 번들 안 라이선스 문구는 없다."
+    },
+    {
+      "id": "cbv1-007-cartoon-characters-2",
+      "group": "crowd",
+      "title": "Characters 2",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-007-cartoon-characters-2"
+      ],
+      "officialCatalogIds": [
+        "cbv1-007-cartoon-characters-2"
+      ],
+      "libraryPacks": [
+        "cartoon-characters-2"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "secondary-lookup",
+          "claim": "팩 페이지 본문과 itch 메타데이터(Asset license: Creative Commons Zero)에 CC0 명시",
+          "source": "docs/studio/creator-bundle-character-review-20261020.md",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ],
+      "note": "생성기·theme-packs에는 EmaceArt로 적혀 있었으나 공식 카탈로그와 라이브러리 기준 제작사는 RG Poly다(2026-10-22 정정). 번들 안 라이선스 문구는 없다."
+    },
+    {
+      "id": "cbv1-010-philipp-character",
+      "group": "crowd",
+      "title": "PHILIPP — Stylized Modular Low Poly Character",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-010-philipp-character"
+      ],
+      "officialCatalogIds": [
+        "cbv1-010-philipp-modular-character"
+      ],
+      "libraryPacks": [
+        "philipp-stylized-modular-low-poly-character"
+      ],
+      "licenseClass": "unstated-emaceart",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-009-victorian-citizens",
+      "group": "crowd",
+      "title": "Victorian Citizens",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-009-victorian-citizens"
+      ],
+      "officialCatalogIds": [
+        "cbv1-009-art-deco-victorian-citizens"
+      ],
+      "libraryPacks": [
+        "art-deco-victorian-citizens"
+      ],
+      "licenseClass": "unstated-emaceart",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [],
+      "mappingNote": "인제스션 id가 없어 라이브러리 대응은 제목·카탈로그 번호로만 확인했다."
+    },
+    {
+      "id": "cbv1-002-villagers",
+      "group": "crowd",
+      "title": "Villagers",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-002-villagers"
+      ],
+      "officialCatalogIds": [
+        "cbv1-002-slavic-medieval-villagers"
+      ],
+      "libraryPacks": [
+        "slavic-medieval-villagers-modular-low-poly-characters"
+      ],
+      "licenseClass": "unstated-emaceart",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [],
+      "mappingNote": "인제스션 id가 없어 라이브러리 대응은 제목·카탈로그 번호로만 확인했다."
+    },
+    {
+      "id": "cbv1-043-rewind-memory-80s-90s-rooms",
+      "group": "pending",
+      "title": "Rewind Memory — 80s/90s Rooms",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-043-rewind-memory-80s-90s-rooms"
+      ],
+      "officialCatalogIds": [
+        "cbv1-043-rewind-memory-80s-90s-rooms"
+      ],
+      "libraryPacks": [
+        "rewind-memory-80s-90s-rooms"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
+          "paths": [
+            "04-interior/rewind-memory-80s-90s-rooms/engine/godot/Documentation/LICENSE.txt",
+            "04-interior/rewind-memory-80s-90s-rooms/engine/godot/LICENSE.txt",
+            "04-interior/rewind-memory-80s-90s-rooms/models/blend/Blend Textures.zip::LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-069-gravefield-cemetery-kit",
+      "group": "pending",
+      "title": "Gravefield Cemetery Kit — Dark Corners",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-069-gravefield-cemetery-kit"
+      ],
+      "officialCatalogIds": [
+        "cbv1-069-gravefield-cemetery-kit"
+      ],
+      "libraryPacks": [
+        "gravefield-cemetery-kit-dark-corners"
+      ],
+      "licenseClass": "unstated-emaceart",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-070-ps1-psx-alone-in-the-dusk",
+      "group": "pending",
+      "title": "PS1 PSX Alone in the DUSK",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-070-ps1-psx-alone-in-the-dusk"
+      ],
+      "officialCatalogIds": [
+        "cbv1-070-ps1-psx-alone-in-the-dusk"
+      ],
+      "libraryPacks": [
+        "ps1-psx-alone-in-the-dusk"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "22fac2f85a6743b3b380be94821c384c82d78f8a681bf060a06814c05021e87d",
+          "paths": [
+            "05-horror-gothic/ps1-psx-alone-in-the-dusk/engine/godot/Documentation/LICENSE.txt",
+            "05-horror-gothic/ps1-psx-alone-in-the-dusk/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-025-backroad-bridges",
+      "group": "pending",
+      "title": "Backroad Bridges — Stylized Modular",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-025-backroad-bridges"
+      ],
+      "officialCatalogIds": [
+        "cbv1-025-backroad-bridges"
+      ],
+      "libraryPacks": [
+        "backroad-bridges-stylized-modular"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "9add9c52185072b470e39b21b369799d2caf9c1e17dc83550c7500cbe69769fa",
+          "paths": [
+            "03-nature/backroad-bridges-stylized-modular/models/glb/LICENSE.txt",
+            "03-nature/backroad-bridges-stylized-modular/models/gltf/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-063-free-fantasy-medieval-houses",
+      "group": "pending",
+      "title": "Free Fantasy Medieval Houses",
+      "creator": "EmaceArt",
+      "catalogIds": [
+        "cbv1-063-free-fantasy-medieval-houses"
+      ],
+      "officialCatalogIds": [
+        "cbv1-063-free-fantasy-medieval-houses"
+      ],
+      "libraryPacks": [
+        "free-fantasy-medieval-houses"
+      ],
+      "licenseClass": "emaceart-local-license",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "666cbf821aa5337db3e17e1ac3fa7bf3a232f4f01e079cb4432e193c1030bc94",
+          "paths": [
+            "02-medieval-fantasy/free-fantasy-medieval-houses/engine/godot/Documentation/LICENSE.txt",
+            "02-medieval-fantasy/free-fantasy-medieval-houses/engine/godot/LICENSE.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ]
+    },
+    {
+      "id": "cbv1-008-cute-park-pack",
+      "group": "pending",
+      "title": "Cute Park Pack",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-008-cute-park-pack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-008-cute-park-pack"
+      ],
+      "libraryPacks": [
+        "cute-park-pack"
+      ],
+      "licenseClass": "cc0-text-copied",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "a2267ca0048c3e42a808ab3dee662ff6ea713f9fdb15420a13789b798007dd19",
+          "paths": [
+            "01-city/cute-park-pack/models/mixed/License.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "secondary-lookup",
+          "claim": "itch 메타데이터 CC0 표기(2차 조회)",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ],
+      "note": "로컬 License.txt 본문이 Cute Dungeon Megapack 것을 복사한 파일이라(제목이 Dungeon) 귀속 재확인이 필요하다. itch 페이지 캡처 전까지 hold."
+    },
+    {
+      "id": "cbv1-014-cute-graveyard",
+      "group": "pending",
+      "title": "Cute Graveyard",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-014-cute-graveyard"
+      ],
+      "officialCatalogIds": [
+        "cbv1-014-cute-graveyard"
+      ],
+      "libraryPacks": [
+        "cute-graveyard"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "secondary-lookup",
+          "claim": "itch 메타데이터 CC0 표기(2차 조회)",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
+          "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        }
+      ]
+    },
+    {
+      "id": "cbv1-020-viking-world-stylized",
+      "group": "pending",
+      "title": "Viking World - Stylized",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-020-viking-world-stylized"
+      ],
+      "officialCatalogIds": [
+        "cbv1-020-viking-world-stylized"
+      ],
+      "libraryPacks": [
+        "viking-world-stylized"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-024-cute-dungeon-megapack",
+      "group": "pending",
+      "title": "Cute Dungeon Megapack",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-024-cute-dungeon-megapack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-024-cute-dungeon-megapack"
+      ],
+      "libraryPacks": [
+        "cute-dungeon-megapack"
+      ],
+      "licenseClass": "cc0-explicit",
+      "serve": "hold",
+      "holdReason": "pending-ingest",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [
+        {
+          "kind": "local-license-file",
+          "sha256": "a2267ca0048c3e42a808ab3dee662ff6ea713f9fdb15420a13789b798007dd19",
+          "paths": [
+            "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/License.txt"
+          ],
+          "verifiedAt": "2026-10-22"
+        }
+      ],
+      "note": "로컬 License.txt가 CC0를 명시해 요구 증빙은 충족했다. 다만 미수신(pending) 묶음이라 인제스션·CATALOG_PACKS 편입 전에는 serve를 allow로 바꿔도 아무것도 열리지 않는다. 편입하면서 group을 pack으로 옮긴 뒤 공개 여부는 소유자가 정한다."
+    },
+    {
+      "id": "cbv1-036-desert-canyon",
+      "group": "pending",
+      "title": "Desert Canyon",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-036-desert-canyon"
+      ],
+      "officialCatalogIds": [
+        "cbv1-036-desert-canyon"
+      ],
+      "libraryPacks": [
+        "desert-canyon"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-052-scifi-arena-cargo+cbv1-053-scifi-arena-blue-base",
+      "group": "pending",
+      "title": "Sci-Fi Arena: Cargo / Blue Base",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-052-scifi-arena-cargo",
+        "cbv1-053-scifi-arena-blue-base"
+      ],
+      "officialCatalogIds": [
+        "cbv1-052-scifi-arena-cargo",
+        "cbv1-053-scifi-arena-blue-base"
+      ],
+      "libraryPacks": [
+        "sci-fi-arena-cargo",
+        "sci-fi-arena-blue-base"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-054-low-poly-asia-pack",
+      "group": "pending",
+      "title": "Low Poly Asia Pack",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-054-low-poly-asia-pack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-054-low-poly-asia-pack"
+      ],
+      "libraryPacks": [
+        "low-poly-asia-pack"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": [],
+      "mappingNote": "라이브러리에서는 서빙 중인 Asia Megapack(cbv1-080) 원본이 이 팩 폴더에 분류돼 있다. 생성기의 미수신 사유와 어긋나므로 귀속 확인이 필요하다."
+    },
+    {
+      "id": "cbv1-079-free-stylized-medieval-village-urp",
+      "group": "pending",
+      "title": "Free Stylized Medieval Village — Unity URP",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-079-free-stylized-medieval-village-urp"
+      ],
+      "officialCatalogIds": [
+        "cbv1-079-free-stylized-medieval-village-urp"
+      ],
+      "libraryPacks": [
+        "free-stylized-medieval-village-unity-urp"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    },
+    {
+      "id": "cbv1-016-cars+cbv1-017-cars-megapack+cbv1-018-army-pack+cbv1-081-car-megapack",
+      "group": "pending",
+      "title": "차량·군사 팩",
+      "creator": "RG Poly",
+      "catalogIds": [
+        "cbv1-016-cars",
+        "cbv1-017-cars-megapack",
+        "cbv1-081-car-megapack",
+        "cbv1-018-army-pack"
+      ],
+      "officialCatalogIds": [
+        "cbv1-016-cartoon-cars-1",
+        "cbv1-017-cartoon-cars-2",
+        "cbv1-018-army-pack",
+        "cbv1-081-cartoon-car-megapack"
+      ],
+      "libraryPacks": [
+        "cartoon-cars-1",
+        "cartoon-cars-2",
+        "cartoon-car-megapack",
+        "army-pack"
+      ],
+      "licenseClass": "unstated-rg-poly",
+      "serve": "hold",
+      "holdReason": "evidence-incomplete",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "evidence": []
+    }
+  ]
+}

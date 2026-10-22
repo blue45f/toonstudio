@@ -8,7 +8,11 @@ import {
   CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
   cloudflareLargeAssetDescriptor,
   cloudflareLargeAssetKey,
+  cloudflareSameOriginOnlyAllows,
   isCloudflareOversizedAssetPath,
+  matchesIfNoneMatch,
+  matchesIfRange,
+  r2RangeHeaders,
 } from "./large-static-assets";
 import { createNeisCreatorResourceEdge } from "./neis-creator-resource-edge";
 
@@ -90,13 +94,14 @@ export const COMMON_SECURITY_HEADERS = Object.freeze({
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 } as const);
 
-function jsonError(status: number, code: string): Response {
+function jsonError(status: number, code: string, extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify({ error: code }), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
       ...COMMON_SECURITY_HEADERS,
+      ...extraHeaders,
     },
   });
 }
@@ -602,22 +607,12 @@ function retryableRead(request: Request, route: DynamicRoute): boolean {
     && !isWebSocketUpgrade(request);
 }
 
-function matchesIfNoneMatch(request: Request, httpEtag: string): boolean {
-  const raw = request.headers.get("if-none-match");
-  if (!raw) return false;
-  const target = httpEtag.startsWith("W/") ? httpEtag.slice(2) : httpEtag;
-  return raw.split(",").some((candidate) => {
-    const value = candidate.trim();
-    if (value === "*") return true;
-    return (value.startsWith("W/") ? value.slice(2) : value) === target;
-  });
-}
-
 function r2LargeAssetHeaders(
   object: R2ObjectBinding,
   contentType: string,
   partial: boolean,
   cacheControl: string = CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
+  sameOriginOnly = false,
 ): Headers {
   const headers = new Headers();
   object.writeHttpMetadata(headers);
@@ -625,11 +620,15 @@ function r2LargeAssetHeaders(
   headers.set("cache-control", cacheControl);
   headers.set("etag", object.httpEtag);
   headers.set("accept-ranges", "bytes");
-  headers.set("access-control-allow-origin", "*");
-  headers.set(
-    "access-control-expose-headers",
-    "Accept-Ranges, Content-Length, Content-Range, ETag",
-  );
+  if (sameOriginOnly) {
+    headers.append("vary", "Sec-Fetch-Site");
+  } else {
+    headers.set("access-control-allow-origin", "*");
+    headers.set(
+      "access-control-expose-headers",
+      "Accept-Ranges, Content-Length, Content-Range, ETag",
+    );
+  }
   headers.set("x-toonstudio-large-asset-source", "r2");
   if (partial && object.range) {
     const end = object.range.offset + object.range.length - 1;
@@ -645,43 +644,40 @@ function r2LargeAssetHeaders(
   return headers;
 }
 
-function r2RangeHeaders(request: Request): Headers | undefined {
-  const range = request.headers.get("range");
-  return range ? new Headers({ range }) : undefined;
-}
-
-function matchesIfRange(request: Request, httpEtag: string): boolean {
-  const raw = request.headers.get("if-range")?.trim();
-  if (!raw) return true;
-  if (raw.startsWith("W/") || !raw.startsWith('"')) return false;
-  return raw === httpEtag;
-}
-
 async function serveR2LargeAsset(
   request: Request,
   env: CloudflareStaticEnv,
 ): Promise<Response | null> {
   const requestUrl = new URL(request.url);
   const descriptor = cloudflareLargeAssetDescriptor(requestUrl.pathname);
-  const key = cloudflareLargeAssetKey(requestUrl.pathname);
-  if (!descriptor || !key || !env.LARGE_ASSETS) return null;
+  if (!descriptor) return null;
 
   const method = request.method.toUpperCase();
+  // 동일 출처 전용 경로는 메서드 분기·R2 접근보다 먼저, R2 바인딩 유무와 무관하게 판정한다.
+  if (descriptor.sameOriginOnly && !cloudflareSameOriginOnlyAllows(request.headers)) {
+    const rejection = jsonError(403, "BUNDLE_ASSET_SAME_ORIGIN_ONLY", { vary: "Sec-Fetch-Site" });
+    return method === "HEAD" ? new Response(null, rejection) : rejection;
+  }
+  const key = cloudflareLargeAssetKey(requestUrl.pathname);
+  if (!key || !env.LARGE_ASSETS) return null;
+
   if (method === "OPTIONS") {
     return withSecurityHeaders(new Response(null, {
       status: 204,
-      headers: {
-        "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET, HEAD, OPTIONS",
-        "access-control-allow-headers": "Range, If-Range, If-None-Match",
-        "access-control-max-age": "86400",
-      },
+      headers: descriptor.sameOriginOnly
+        ? { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" }
+        : {
+          "access-control-allow-origin": "*",
+          "access-control-allow-methods": "GET, HEAD, OPTIONS",
+          "access-control-allow-headers": "Range, If-Range, If-None-Match",
+          "access-control-max-age": "86400",
+        },
     }));
   }
   if (method !== "GET" && method !== "HEAD") {
     return withSecurityHeaders(new Response(null, {
       status: 405,
-      headers: { allow: "GET, HEAD, OPTIONS" },
+      headers: descriptor.sameOriginOnly ? { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" } : { allow: "GET, HEAD, OPTIONS" },
     }));
   }
 
@@ -713,6 +709,7 @@ async function serveR2LargeAsset(
       descriptor.contentType,
       partial,
       descriptor.cacheControl ?? CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
+      descriptor.sameOriginOnly,
     );
     if (matchesIfNoneMatch(request, object.httpEtag)) {
       headers.delete("content-length");
@@ -768,6 +765,8 @@ export function createCloudflareStaticGateway(
       // R2 원본 + 엣지 네이티브 압축 조합은 클라이언트별로 정확히 동작한다.
       const r2Response = await serveR2LargeAsset(request, env);
       if (r2Response) return r2Response;
+      // 동일 출처 전용(bundle-v2) 바이트는 R2에만 있다. 폴백 원본의 응답 헤더(CORS 등)가 가드 계약을 깨지 못하게 닫는다.
+      if (cloudflareLargeAssetDescriptor(requestUrl.pathname)?.sameOriginOnly) return jsonError(503, "LARGE_ASSET_UNAVAILABLE", { vary: "Sec-Fetch-Site" });
     }
 
     const configuredCoreSecret = env.CORE_ORIGIN_SECRET;

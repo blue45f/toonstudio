@@ -29,30 +29,38 @@
  *     임베드하는 재익스포트가 끝나야 편입할 수 있다 (2026-10-22 실측 정정:
  *     Godot판 모듈 GLB 9,362개가 공유 아틀라스를 상대 경로로 참조하고 있었다).
  *
+ * 권리 게이트 (fail-closed, 2026-10-22):
+ *   - 팩별 서빙 판정은 권리 원장(config/creator-bundle-pack-rights.json)이 정한다.
+ *     원장에서 allow이고 증빙 자격까지 갖춘 팩만 packs/assets/crowdPacks에 들어간다.
+ *   - hold이거나 원장에 없는 팩은 파일을 읽지 않고 pendingPacks(reason "rights-hold")로만 기록한다.
+ *     원장이 팩 정의를 빠짐없이 덮지 못하면 생성 자체를 거부한다.
+ *   - 허용된 팩에는 팩별 rights(라이선스명·상업 이용 여부)를 싣는다. 로더는 이 값만 쓴다.
+ *   - 원장을 바꾼 뒤에는 이 스크립트를 다시 실행해야 theme-packs.json에 반영된다. 팩 순서가 바뀌므로
+ *     packIndex를 쓰는 장르 씬팩 연결(studio-bg3d-genre-scene-pack-links.ts)도 같은 변경에서 갱신한다.
+ *
  * 사용법:
  *   node scripts/generate-creator-bundle-theme-packs.mjs \
  *     --manifest-v2 <manifest-v2.json 경로> [--asset-root <파일 트리 루트>] \
- *     [--themes <bundle-v1 manifest 경로>] [--out <출력 경로>] [--dry-run]
+ *     [--themes <bundle-v1 manifest 경로>] [--out <출력 경로>] \
+ *     [--pack-rights <권리 원장 경로>] [--dry-run]
  *   --asset-root 기본값은 manifest-v2.json이 있는 폴더 (파일 실재·해시·메트릭 실측에 쓴다).
+ *   --pack-rights 기본값은 config/creator-bundle-pack-rights.json.
  */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const args = process.argv.slice(2);
-function argValue(name) {
-  const i = args.indexOf(name);
-  return i >= 0 ? args[i + 1] : null;
-}
-const manifestV2Path = argValue("--manifest-v2");
-const themesPath = argValue("--themes") ?? "apps/web/public/assets/3d/environments/bundle-v1/manifest.json";
-const outPath = argValue("--out") ?? "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json";
-const dryRun = args.includes("--dry-run");
-if (!manifestV2Path) {
-  console.error("usage: node scripts/generate-creator-bundle-theme-packs.mjs --manifest-v2 <path> [--asset-root <dir>] [--themes <path>] [--out <path>] [--dry-run]");
-  process.exit(2);
-}
-const assetRoot = resolve(argValue("--asset-root") ?? dirname(resolve(manifestV2Path)));
+import {
+  checkLedgerCoversDefs,
+  DEFAULT_PACK_RIGHTS_PATH,
+  evaluateServeDecision,
+  HOLD_PUBLIC_LABEL,
+  loadPackRightsLedger,
+  packRightsProjection,
+  RIGHTS_HOLD_REASON,
+  validatePackRightsLedger,
+} from "./lib/creator-bundle-pack-rights.mjs";
 
 /* ── bg3d 모바일 프로필 예산 (studio-bg3d-glb-validation.ts와 동기 유지) ── */
 const MOBILE_BUDGET = {
@@ -89,7 +97,7 @@ const ALLOWED_REQUIRED_EXTENSIONS = new Set([
  *   swamp-builder-godot의 25파일은 cbv1-ingest-293-swamparch(SwampArch
  *   전량본)의 부분집합과 sha가 전부 일치해 같은 항목으로 편입했다.
  * ────────────────────────────────────────────────────────────────────────── */
-const CATALOG_PACKS = [
+export const CATALOG_PACKS = [
   // 도시
   { catalogIds: ["cbv1-001-cartoon-city-massive-pack"], title: "Cartoon City Massive Pack", creator: "RG Poly", theme: "city", category: "environment", ingest: ["cbv1-ingest-001-001-city"] },
   { catalogIds: ["cbv1-004-old-town-courtyards"], title: "Old Town — Courtyards", creator: "EmaceArt", theme: "city", category: "environment", ingest: ["cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20", "cbv1-ingest-409-old-town-environment-courtyards-blend"], presetSource: ["cbv1-ingest-409-old-town-environment-courtyards-blend"] },
@@ -145,16 +153,17 @@ const CATALOG_PACKS = [
 ];
 
 /** 배경 군중 (렌더 전용 — bg3d 장면에 직접 배치하지 않고 오프라인 렌더 소재로만 쓴다). */
-const CROWD_PACKS = [
-  { catalogIds: ["cbv1-003-characters-1"], title: "Characters 1", creator: "EmaceArt", ingest: ["cbv1-ingest-043-characters-1-godot"] },
-  { catalogIds: ["cbv1-007-characters-2"], title: "Characters 2", creator: "EmaceArt", ingest: ["cbv1-ingest-003-007-characters-2"] },
+export const CROWD_PACKS = [
+  // 제작사·id는 공식 카탈로그(virtual-studio/bundle-v1/manifest.json)와 라이브러리 packs.json 기준이다 (2026-10-22 정정: EmaceArt·characters-N → RG Poly·cartoon-characters-N).
+  { catalogIds: ["cbv1-003-cartoon-characters-1"], title: "Characters 1", creator: "RG Poly", ingest: ["cbv1-ingest-043-characters-1-godot"] },
+  { catalogIds: ["cbv1-007-cartoon-characters-2"], title: "Characters 2", creator: "RG Poly", ingest: ["cbv1-ingest-003-007-characters-2"] },
   { catalogIds: ["cbv1-010-philipp-character"], title: "PHILIPP — Stylized Modular Low Poly Character", creator: "EmaceArt", ingest: ["cbv1-ingest-252-philippstylizedmodularlowpolycharacter-2026-30-5"] },
   { catalogIds: ["cbv1-009-victorian-citizens"], title: "Victorian Citizens", creator: "EmaceArt", ingest: [], note: "귀속은 확정됐으나 매니페스트 v2 최종본에도 단독 팩으로 등록된 모델이 없어 편입 보류 중이다." },
   { catalogIds: ["cbv1-002-villagers"], title: "Villagers", creator: "EmaceArt", ingest: [], note: "귀속은 확정됐으나 매니페스트 v2 최종본에도 단독 팩으로 등록된 모델이 없어 편입 보류 중이다." },
 ];
 
 /** 확정 데이터에 넣지 않는 팩과 사유 (패널의 "준비 중" 표기용). */
-const PENDING_PACKS = [
+export const PENDING_PACKS = [
   { catalogIds: ["cbv1-043-rewind-memory-80s-90s-rooms"], title: "Rewind Memory — 80s/90s Rooms", reason: "retrieval-partial", reasonLabel: "무료판만 수신돼 있고 본편은 대형 파일 회수가 남았다." },
   { catalogIds: ["cbv1-069-gravefield-cemetery-kit"], title: "Gravefield Cemetery Kit — Dark Corners", reason: "retrieval-partial", reasonLabel: "확장 일부만 수신돼 있다." },
   { catalogIds: ["cbv1-070-ps1-psx-alone-in-the-dusk"], title: "PS1 PSX Alone in the DUSK", reason: "retrieval-partial", reasonLabel: "glTF판 회수가 남았다." },
@@ -236,188 +245,275 @@ function budgetFailure(metrics, bytes) {
   return null;
 }
 
-/* ── 본 실행 ─────────────────────────────────────────────────────────────── */
-const manifestV2 = JSON.parse(readFileSync(resolve(manifestV2Path), "utf8"));
-if (manifestV2.kind !== "toonstudio.asset-bundle.v2" || manifestV2.version !== 2) {
-  console.error("manifest-v2 형식이 아닙니다 (kind/version 불일치).");
-  process.exit(2);
-}
-if (manifestV2.inServiceOnly !== true || manifestV2.downloadable !== false) {
-  console.error("서비스 내 사용 전용으로 선언되지 않은 매니페스트는 테마 팩으로 만들 수 없습니다.");
-  process.exit(2);
-}
-const themesDoc = JSON.parse(readFileSync(resolve(themesPath), "utf8"));
-const themeOrder = (Array.isArray(themesDoc.themes) ? themesDoc.themes : [])
-  .map((theme) => ({ id: theme.theme, label: theme.label }));
+/* ── 생성 ────────────────────────────────────────────────────────────────── */
 
-const assetsByPack = new Map();
-for (const asset of manifestV2.assets) {
-  const list = assetsByPack.get(asset.packId) ?? [];
-  list.push(asset);
-  assetsByPack.set(asset.packId, list);
-}
-// GLB 쌍둥이 판정: 같은 인제스션 팩 + 같은 원본 경로(확장자 제외)에 GLB가 있으면 대표된다.
-const stemOf = (sourcePath) => (sourcePath ?? "").replace(/\.[^/.]+$/, "").toLowerCase();
-function hasGlbTwin(asset) {
-  const siblings = assetsByPack.get(asset.packId) ?? [];
-  const stem = stemOf(asset.sourcePath);
-  return siblings.some((sibling) => sibling.format === "glb" && stemOf(sibling.sourcePath) === stem);
-}
-
-const packs = [];
-const assets = [];
-const presets = [];
-const seenAssetIds = new Set();
-let hashMismatch = 0;
-
-for (const def of CATALOG_PACKS) {
-  const packIndex = packs.length;
-  const deferred = { fbx: 0, gltf: 0, blend: 0, overBudget: {} };
-  let twinCovered = 0;
-  let placeable = 0;
-  for (const ingestId of def.ingest) {
-    const list = assetsByPack.get(ingestId) ?? [];
-    const isPresetSource = (def.presetSource ?? []).includes(ingestId);
-    for (const asset of list) {
-      if (asset.role !== "runtime" && asset.format !== "glb") {
-        if (asset.format === "blend") deferred.blend += 1;
-        continue;
-      }
-      if (asset.format !== "glb") {
-        if (asset.missingDependencies?.length) {
-          deferred[asset.format] = (deferred[asset.format] ?? 0) + 1;
-          continue;
-        }
-        if (hasGlbTwin(asset)) { twinCovered += 1; continue; }
-        deferred[asset.format] = (deferred[asset.format] ?? 0) + 1;
-        continue;
-      }
-      // GLB — 실물 검증 (해시·크기) + 메트릭 실측 + 예산 게이트
-      const primary = (asset.files ?? []).find((file) => file.kind === "primary") ?? asset.files?.[0];
-      if (!primary) continue;
-      const fileAbs = join(assetRoot, primary.path);
-      if (!existsSync(fileAbs)) {
-        console.error(`실물 파일이 없습니다: ${primary.path}`);
-        process.exit(2);
-      }
-      const buffer = readFileSync(fileAbs);
-      const sha256 = createHash("sha256").update(buffer).digest("hex");
-      if (primary.sha256 && sha256 !== primary.sha256) {
-        hashMismatch += 1;
-        console.error(`해시 불일치: ${asset.id}`);
-        continue;
-      }
-      if (buffer.length !== primary.bytes) {
-        console.error(`크기 불일치: ${asset.id} manifest=${primary.bytes} disk=${buffer.length}`);
-        process.exit(2);
-      }
-      const metrics = readGlbMetrics(buffer);
-      const failure = budgetFailure(metrics, buffer.length);
-      if (failure) {
-        deferred.overBudget[failure] = (deferred.overBudget[failure] ?? 0) + 1;
-        continue;
-      }
-      if (seenAssetIds.has(asset.id)) continue;
-      seenAssetIds.add(asset.id);
-      const assetIndex = assets.length;
-      assets.push({
-        id: asset.id,
-        pack: packIndex,
-        path: primary.path,
-        bytes: buffer.length,
-        sha256,
-        tris: metrics.triangles,
-      });
-      placeable += 1;
-      // 프리셋: 스토어형 변형의 단독 병합 씬 (그 변형에서 GLB가 이 에셋뿐일 때)
-      if (isPresetSource) {
-        const glbCount = list.filter((entry) => entry.format === "glb").length;
-        if (glbCount === 1 && buffer.length >= 128 * 1024) {
-          presets.push({
-            id: `bundle-preset-${asset.id}`,
-            label: `${def.title} — 완성 장면`,
-            theme: def.theme,
-            pack: packIndex,
-            asset: assetIndex,
-          });
-        }
-      }
-    }
-  }
-  packs.push({
-    catalogIds: def.catalogIds,
-    title: def.title,
-    creator: def.creator,
-    theme: def.theme,
-    category: def.category,
-    ingestPackIds: def.ingest,
-    placeable,
-    twinCovered,
-    deferred,
-    ...(def.note ? { note: def.note } : {}),
-  });
-}
-
-const crowdPacks = CROWD_PACKS.map((def) => {
-  let glbAssets = 0;
-  for (const ingestId of def.ingest) {
-    glbAssets += (assetsByPack.get(ingestId) ?? []).filter((asset) => asset.format === "glb").length;
-  }
+/** 권리 게이트가 theme-packs에서 뺀 팩을 패널에 "준비 중"으로 알리는 pendingPacks 항목. */
+function heldPendingPack(def, entry) {
   return {
     catalogIds: def.catalogIds,
     title: def.title,
-    creator: def.creator,
-    category: "crowd-render-only",
-    glbAssets,
-    ...(def.note ? { note: def.note } : {}),
+    reason: RIGHTS_HOLD_REASON,
+    reasonLabel: entry?.holdLabel ?? HOLD_PUBLIC_LABEL,
   };
-});
+}
 
-const output = {
-  schema: "toonstudio.bg3d-bundle-theme-packs.v1",
-  version: 1,
-  generatedAt: null,
-  sourceManifest: {
-    kind: manifestV2.kind,
-    generatedAt: manifestV2.generatedAt ?? null,
-    totals: manifestV2.totals ?? null,
-  },
-  provider: "itch.io Creator Bundle: Volume 1 (EmaceArt · RG Poly)",
-  rights: {
-    holder: "EmaceArt / RG Poly (구매 라이선스)",
+/**
+ * 인제스션 매니페스트 v2 + 권리 원장 → theme-packs 문서.
+ * 순수 계산이다(파일은 읽기만 하고 쓰지 않는다). 원장이 잘못됐거나 팩 정의를 덮지 못하면 던진다.
+ * 반환: { output, stats } — stats.heldPacks는 원장 때문에 빠진 팩 목록, stats.hashMismatch는 제외한 에셋 수.
+ */
+export function buildThemePacks({ manifestV2, themesDoc, assetRoot, ledger, onError = console.error }) {
+  const ledgerProblems = validatePackRightsLedger(ledger);
+  if (ledgerProblems.length > 0) {
+    throw new Error(`권리 원장이 올바르지 않습니다 (${ledgerProblems.length}건): ${ledgerProblems.slice(0, 5).join(" / ")}`);
+  }
+  const coverageProblems = checkLedgerCoversDefs(ledger, {
+    pack: CATALOG_PACKS,
+    crowd: CROWD_PACKS,
+    pending: PENDING_PACKS,
+  });
+  if (coverageProblems.length > 0) {
+    throw new Error(`권리 원장이 팩 정의를 덮지 못합니다 (${coverageProblems.length}건): ${coverageProblems.slice(0, 5).join(" / ")}`);
+  }
+
+  const themeOrder = (Array.isArray(themesDoc.themes) ? themesDoc.themes : [])
+    .map((theme) => ({ id: theme.theme, label: theme.label }));
+
+  const assetsByPack = new Map();
+  for (const asset of manifestV2.assets) {
+    const list = assetsByPack.get(asset.packId) ?? [];
+    list.push(asset);
+    assetsByPack.set(asset.packId, list);
+  }
+  // GLB 쌍둥이 판정: 같은 인제스션 팩 + 같은 원본 경로(확장자 제외)에 GLB가 있으면 대표된다.
+  const stemOf = (sourcePath) => (sourcePath ?? "").replace(/\.[^/.]+$/, "").toLowerCase();
+  const hasGlbTwin = (asset) => {
+    const siblings = assetsByPack.get(asset.packId) ?? [];
+    const stem = stemOf(asset.sourcePath);
+    return siblings.some((sibling) => sibling.format === "glb" && stemOf(sibling.sourcePath) === stem);
+  };
+
+  const packs = [];
+  const assets = [];
+  const presets = [];
+  const seenAssetIds = new Set();
+  const heldPacks = [];
+  let hashMismatch = 0;
+
+  for (const def of CATALOG_PACKS) {
+    // 권리 게이트: 서빙이 허용되지 않은 팩은 실물 파일을 읽지도 않고 대기 목록으로만 보낸다.
+    const decision = evaluateServeDecision(ledger, def, { group: "pack" });
+    if (!decision.serve) {
+      heldPacks.push({ def, decision });
+      continue;
+    }
+    const packIndex = packs.length;
+    const deferred = { fbx: 0, gltf: 0, blend: 0, overBudget: {} };
+    let twinCovered = 0;
+    let placeable = 0;
+    for (const ingestId of def.ingest) {
+      const list = assetsByPack.get(ingestId) ?? [];
+      const isPresetSource = (def.presetSource ?? []).includes(ingestId);
+      for (const asset of list) {
+        if (asset.role !== "runtime" && asset.format !== "glb") {
+          if (asset.format === "blend") deferred.blend += 1;
+          continue;
+        }
+        if (asset.format !== "glb") {
+          if (asset.missingDependencies?.length) {
+            deferred[asset.format] = (deferred[asset.format] ?? 0) + 1;
+            continue;
+          }
+          if (hasGlbTwin(asset)) { twinCovered += 1; continue; }
+          deferred[asset.format] = (deferred[asset.format] ?? 0) + 1;
+          continue;
+        }
+        // GLB — 실물 검증 (해시·크기) + 메트릭 실측 + 예산 게이트
+        const primary = (asset.files ?? []).find((file) => file.kind === "primary") ?? asset.files?.[0];
+        if (!primary) continue;
+        const fileAbs = join(assetRoot, primary.path);
+        if (!existsSync(fileAbs)) {
+          throw new Error(`실물 파일이 없습니다: ${primary.path}`);
+        }
+        const buffer = readFileSync(fileAbs);
+        const sha256 = createHash("sha256").update(buffer).digest("hex");
+        if (primary.sha256 && sha256 !== primary.sha256) {
+          hashMismatch += 1;
+          onError(`해시 불일치: ${asset.id}`);
+          continue;
+        }
+        if (buffer.length !== primary.bytes) {
+          throw new Error(`크기 불일치: ${asset.id} manifest=${primary.bytes} disk=${buffer.length}`);
+        }
+        const metrics = readGlbMetrics(buffer);
+        const failure = budgetFailure(metrics, buffer.length);
+        if (failure) {
+          deferred.overBudget[failure] = (deferred.overBudget[failure] ?? 0) + 1;
+          continue;
+        }
+        if (seenAssetIds.has(asset.id)) continue;
+        seenAssetIds.add(asset.id);
+        const assetIndex = assets.length;
+        assets.push({
+          id: asset.id,
+          pack: packIndex,
+          path: primary.path,
+          bytes: buffer.length,
+          sha256,
+          tris: metrics.triangles,
+        });
+        placeable += 1;
+        // 프리셋: 스토어형 변형의 단독 병합 씬 (그 변형에서 GLB가 이 에셋뿐일 때)
+        if (isPresetSource) {
+          const glbCount = list.filter((entry) => entry.format === "glb").length;
+          if (glbCount === 1 && buffer.length >= 128 * 1024) {
+            presets.push({
+              id: `bundle-preset-${asset.id}`,
+              label: `${def.title} — 완성 장면`,
+              theme: def.theme,
+              pack: packIndex,
+              asset: assetIndex,
+            });
+          }
+        }
+      }
+    }
+    packs.push({
+      catalogIds: def.catalogIds,
+      title: def.title,
+      creator: def.creator,
+      theme: def.theme,
+      category: def.category,
+      ingestPackIds: def.ingest,
+      placeable,
+      twinCovered,
+      deferred,
+      rights: packRightsProjection(decision.entry),
+      ...(def.note ? { note: def.note } : {}),
+    });
+  }
+
+  const crowdPacks = [];
+  for (const def of CROWD_PACKS) {
+    const decision = evaluateServeDecision(ledger, def, { group: "crowd" });
+    if (!decision.serve) {
+      heldPacks.push({ def, decision });
+      continue;
+    }
+    let glbAssets = 0;
+    for (const ingestId of def.ingest) {
+      glbAssets += (assetsByPack.get(ingestId) ?? []).filter((asset) => asset.format === "glb").length;
+    }
+    crowdPacks.push({
+      catalogIds: def.catalogIds,
+      title: def.title,
+      creator: def.creator,
+      category: "crowd-render-only",
+      glbAssets,
+      ...(def.note ? { note: def.note } : {}),
+    });
+  }
+
+  const output = {
+    schema: "toonstudio.bg3d-bundle-theme-packs.v1",
+    version: 1,
+    generatedAt: null,
+    sourceManifest: {
+      kind: manifestV2.kind,
+      generatedAt: manifestV2.generatedAt ?? null,
+      totals: manifestV2.totals ?? null,
+    },
+    provider: "itch.io Creator Bundle: Volume 1 (EmaceArt · RG Poly)",
+    rights: {
+      holder: "EmaceArt / RG Poly (구매 라이선스)",
+      inServiceOnly: true,
+      downloadable: false,
+      statement: "서비스 안에서만 사용·이용되는 구조 전용. 모델 파일 다운로드·내보내기를 제공하지 않으며, 장면은 참조 단위로 저장하고 렌더된 이미지만 외부로 나간다.",
+    },
     inServiceOnly: true,
     downloadable: false,
-    statement: "서비스 안에서만 사용·이용되는 구조 전용. 모델 파일 다운로드·내보내기를 제공하지 않으며, 장면은 참조 단위로 저장하고 렌더된 이미지만 외부로 나간다.",
-  },
-  inServiceOnly: true,
-  downloadable: false,
-  assetRoot: "/assets/studio/bundle-v2/",
-  budgetProfile: "mobile",
-  themes: themeOrder,
-  packs,
-  assets,
-  presets,
-  crowdPacks,
-  pendingPacks: PENDING_PACKS,
-  totals: {
-    packs: packs.length,
-    placeableAssets: assets.length,
-    presets: presets.length,
-    crowdGlbAssets: crowdPacks.reduce((sum, pack) => sum + pack.glbAssets, 0),
-    deferredAssets: packs.reduce((sum, pack) => sum
-      + pack.deferred.fbx + pack.deferred.gltf + pack.deferred.blend
-      + Object.values(pack.deferred.overBudget).reduce((a, b) => a + b, 0), 0),
-  },
-};
+    assetRoot: "/assets/studio/bundle-v2/",
+    budgetProfile: "mobile",
+    themes: themeOrder,
+    packs,
+    assets,
+    presets,
+    crowdPacks,
+    pendingPacks: [
+      ...PENDING_PACKS,
+      ...heldPacks.map(({ def, decision }) => heldPendingPack(def, decision.entry)),
+    ],
+    totals: {
+      packs: packs.length,
+      placeableAssets: assets.length,
+      presets: presets.length,
+      crowdGlbAssets: crowdPacks.reduce((sum, pack) => sum + pack.glbAssets, 0),
+      deferredAssets: packs.reduce((sum, pack) => sum
+        + pack.deferred.fbx + pack.deferred.gltf + pack.deferred.blend
+        + Object.values(pack.deferred.overBudget).reduce((a, b) => a + b, 0), 0),
+    },
+  };
+  return { output, stats: { heldPacks, hashMismatch } };
+}
 
-console.log(`packs: ${packs.length}, placeable assets: ${assets.length}, presets: ${presets.length}`);
-console.log(`crowd GLB (render-only): ${output.totals.crowdGlbAssets}, deferred: ${output.totals.deferredAssets}, hash mismatches skipped: ${hashMismatch}`);
-for (const pack of packs) {
-  console.log(`  ${pack.title}: placeable ${pack.placeable}, twin ${pack.twinCovered}, deferred ${JSON.stringify(pack.deferred)}`);
+/* ── CLI ─────────────────────────────────────────────────────────────────── */
+
+const USAGE = "usage: node scripts/generate-creator-bundle-theme-packs.mjs --manifest-v2 <path> [--asset-root <dir>] [--themes <path>] [--out <path>] [--pack-rights <path>] [--dry-run]";
+
+function main(argv) {
+  const argValue = (name) => {
+    const i = argv.indexOf(name);
+    return i >= 0 ? argv[i + 1] : null;
+  };
+  const manifestV2Path = argValue("--manifest-v2");
+  const themesPath = argValue("--themes") ?? "apps/web/public/assets/3d/environments/bundle-v1/manifest.json";
+  const outPath = argValue("--out") ?? "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json";
+  const packRightsPath = resolve(argValue("--pack-rights") ?? DEFAULT_PACK_RIGHTS_PATH);
+  const dryRun = argv.includes("--dry-run");
+  if (!manifestV2Path) {
+    console.error(USAGE);
+    process.exit(2);
+  }
+  const assetRoot = resolve(argValue("--asset-root") ?? dirname(resolve(manifestV2Path)));
+
+  const manifestV2 = JSON.parse(readFileSync(resolve(manifestV2Path), "utf8"));
+  if (manifestV2.kind !== "toonstudio.asset-bundle.v2" || manifestV2.version !== 2) {
+    console.error("manifest-v2 형식이 아닙니다 (kind/version 불일치).");
+    process.exit(2);
+  }
+  if (manifestV2.inServiceOnly !== true || manifestV2.downloadable !== false) {
+    console.error("서비스 내 사용 전용으로 선언되지 않은 매니페스트는 테마 팩으로 만들 수 없습니다.");
+    process.exit(2);
+  }
+  const themesDoc = JSON.parse(readFileSync(resolve(themesPath), "utf8"));
+
+  let result;
+  try {
+    const ledger = loadPackRightsLedger(packRightsPath);
+    result = buildThemePacks({ manifestV2, themesDoc, assetRoot, ledger });
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(2);
+  }
+  const { output, stats } = result;
+  const { packs, assets, presets } = output;
+
+  console.log(`packs: ${packs.length}, placeable assets: ${assets.length}, presets: ${presets.length}`);
+  console.log(`crowd GLB (render-only): ${output.totals.crowdGlbAssets}, deferred: ${output.totals.deferredAssets}, hash mismatches skipped: ${stats.hashMismatch}`);
+  console.log(`권리 게이트: 허용 팩 ${packs.length + output.crowdPacks.length}개, hold로 제외한 팩 ${stats.heldPacks.length}개 (원장 ${packRightsPath})`);
+  for (const { def, decision } of stats.heldPacks) {
+    console.log(`  hold: ${def.title} — ${decision.reason === "hold" ? decision.entry.holdReason : decision.reason}`);
+  }
+  for (const pack of packs) {
+    console.log(`  ${pack.title}: placeable ${pack.placeable}, twin ${pack.twinCovered}, deferred ${JSON.stringify(pack.deferred)}`);
+  }
+  if (!dryRun) {
+    writeFileSync(resolve(outPath), JSON.stringify(output) + "\n");
+    console.log(`written: ${resolve(outPath)} (${statSync(resolve(outPath)).size} bytes)`);
+  } else {
+    console.log("dry-run: nothing written");
+  }
 }
-if (!dryRun) {
-  writeFileSync(resolve(outPath), JSON.stringify(output) + "\n");
-  console.log(`written: ${resolve(outPath)} (${statSync(resolve(outPath)).size} bytes)`);
-} else {
-  console.log("dry-run: nothing written");
-}
+
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : null;
+if (invokedPath === fileURLToPath(import.meta.url)) main(process.argv.slice(2));

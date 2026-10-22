@@ -97,6 +97,10 @@ describe("classifyStudioServiceWorkerRequest", () => {
       ["/assets/studio/cc0-20260906/manifest.json", "catalog-data"],
       ["/assets/studio/cc0-20260906/manifest.json?v=diversity-20260913", "catalog-data"],
       ["/assets/studio/cc0-20260906/assets/example/model.glb", "immutable-asset"],
+      // 번들 배포 인덱스는 가용성 신호라 캐시하지 않고, sha256 내용 주소 GLB는 immutable이다.
+      ["/assets/studio/bundle-v2/manifest.json", "passthrough"],
+      ["/assets/studio/bundle-v2/manifest.json?v=1", "passthrough"],
+      [`/assets/studio/bundle-v2/${"a".repeat(64)}.glb`, "immutable-asset"],
       ["/assets/canvaskit-DB1zH3nD.wasm", "heavy-asset"],
       ["/assets/tag2pix-X1y2Z3.onnx", "heavy-asset"],
       ["/assets/sqlite3-opfs-abc123.wasm", "heavy-asset"],
@@ -120,6 +124,15 @@ describe("classifyStudioServiceWorkerRequest", () => {
     for (const [pathname, expected] of cases) {
       expect(classifyStudioServiceWorkerRequest(facts(pathname))).toBe(expected);
     }
+  });
+
+  it("never replays the bundle deploy index, even for a navigation to it", () => {
+    expect(
+      classifyStudioServiceWorkerRequest(
+        facts("/assets/studio/bundle-v2/manifest.json", { mode: "navigate" }),
+      ),
+    ).toBe("passthrough");
+    expect(studioServiceWorkerStrategy("passthrough")).toBe("network-only");
   });
 
   it("keeps the worker script itself off the cache path", () => {

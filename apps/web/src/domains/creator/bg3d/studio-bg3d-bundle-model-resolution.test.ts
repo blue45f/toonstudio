@@ -7,7 +7,6 @@ import {
   resolveBg3dModelHashV12,
   resolveStudioBg3dModelAttachmentSource,
 } from "./bg3d-model-library";
-import { STUDIO_BG3D_BUNDLE_LICENSE_NAME } from "./studio-bg3d-bundle-asset-loader";
 import { resetStudioBg3dBundleThemePacksCache } from "./studio-bg3d-bundle-theme-packs";
 
 /**
@@ -17,6 +16,8 @@ import { resetStudioBg3dBundleThemePacksCache } from "./studio-bg3d-bundle-theme
 
 const JSON_CHUNK = 0x4e4f534a;
 const BUNDLE_ID = "cbv1-ingest-test-001";
+/** 팩별 권리(권리 원장이 allow한 팩에만 생성기가 싣는 값)를 흉내 낸 픽스처 라이선스 이름. */
+const TEST_PACK_LICENSE_NAME = "Creator Bundle: Volume 1 — Test Pack License";
 
 function writeUint32(bytes: Uint8Array, offset: number, value: number): void {
   new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(offset, value, true);
@@ -66,6 +67,13 @@ function rawThemePacks(sha256: string): Record<string, unknown> {
       placeable: 1,
       twinCovered: 0,
       deferred: { fbx: 0, gltf: 0, blend: 0, overBudget: {} },
+      rights: {
+        serve: "allow",
+        status: "licensed",
+        licenseName: TEST_PACK_LICENSE_NAME,
+        commercialUse: true,
+        attributionRequired: false,
+      },
       note: null,
     }],
     assets: [{
@@ -116,7 +124,7 @@ describe("Creator Bundle records through the model library", () => {
       status: "licensed",
       commercialUse: true,
       attributionRequired: false,
-      licenseName: STUDIO_BG3D_BUNDLE_LICENSE_NAME,
+      licenseName: TEST_PACK_LICENSE_NAME,
     });
   });
 
@@ -138,6 +146,6 @@ describe("Creator Bundle records through the model library", () => {
     const attachment = createStudioBg3dModelAttachment(record);
     expect(attachment.source).toBe("bundled");
     expect(attachment.hash).toBe(sha);
-    expect(attachment.rights.licenseName).toBe(STUDIO_BG3D_BUNDLE_LICENSE_NAME);
+    expect(attachment.rights.licenseName).toBe(TEST_PACK_LICENSE_NAME);
   });
 });
