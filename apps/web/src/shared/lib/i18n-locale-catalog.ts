@@ -118,7 +118,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "gl": 0.3308,
   "gu": 0.9828,
   "he": 0.3284,
-  "hi": 0.3314,
+  "hi": 0.9828,
   "hr": 0.3254,
   "hu": 0.3266,
   "hy": 0.3278,
