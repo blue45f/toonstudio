@@ -498,12 +498,8 @@ export function createStudioBg3dShotBatchExportRunner(
           setShotBatchProgress(null);
           setError(resolveStudioBg3dShotBatchPlanErrorFromCause(cause) ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause) ?? (cause instanceof StudioBg3dShotBatchRecoveryError ? cause.message
             : cause instanceof Error && cause.name === "AbortError"
-            ? recoveryAccessRevoked
-              ? frozenStatus6Text("studio.frozenStatus6.shotBatch.accessChangedAbort", "작품 열람 권한 또는 저장 대상이 변경되어 컷 일괄 렌더를 안전하게 중단했습니다.")
-              : frozenStatus6Text("studio.frozenStatus6.shotBatch.aborted", "컷 일괄 렌더를 중단했습니다.")
-              : cause instanceof Error
-                ? cause.message
-                : frozenStatus6Text("studio.frozenStatus6.shotBatch.planFailed", "결정적 컷 계획을 만들지 못했습니다.")));
+              ? recoveryAccessRevoked ? frozenStatus6Text("studio.frozenStatus6.shotBatch.accessChangedAbort", "작품 열람 권한 또는 저장 대상이 변경되어 컷 일괄 렌더를 안전하게 중단했습니다.") : frozenStatus6Text("studio.frozenStatus6.shotBatch.aborted", "컷 일괄 렌더를 중단했습니다.")
+              : cause instanceof Error ? cause.message : frozenStatus6Text("studio.frozenStatus6.shotBatch.planFailed", "결정적 컷 계획을 만들지 못했습니다.")));
           });
       }
       return;

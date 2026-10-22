@@ -1,6 +1,8 @@
 import { enterStudioSelectionTransform } from "./studio-transform-entry";
 import "./studio-host-status-i18n";
 import { hostErrorText } from "./status-i18n/studio-host-reason-i18n";
+import { resolveStudioShortcutAnnouncement } from "./status-i18n/studio-producer-error-i18n-shortcut";
+import { resolveStudioVectorEraseResult, resolveStudioVectorFillPlanFailure, resolveStudioVectorReferenceErrorFromCause } from "./status-i18n/studio-producer-error-i18n-vector";
 import {
   formatI18nTemplate,
   getActiveI18nLocale,
@@ -18431,7 +18433,7 @@ const puppetWarpArmed =
         addText,
         advancedFillActive,
         advancedFillPreview,
-        announceDrawingShortcut,
+        announceDrawingShortcut: (announcement) => announceDrawingShortcut(resolveStudioShortcutAnnouncement(announcement)),
         appSettingsRef,
         applyBrushSlot,
         applyGroupSelectionState,
@@ -22065,7 +22067,7 @@ const puppetWarpArmed =
       )];
       const reason = selectedReason
         ?? (candidateReasons.length === 1 ? candidateReasons[0] : null)
-        ?? entry.vectorFailure.reason;
+        ?? resolveStudioVectorFillPlanFailure(entry.vectorFailure);
       // 단축키(G)로 들어온 경우 도구 행이 그대로라 "키를 먹었다"로 읽힌다. 사유 앞에 무엇이
       // 실패했는지 붙여, 키는 도착했고 채우기가 켜지지 못한 것임을 문장 자체로 알린다.
       const message = t("studio.hostStatus.fillToolEnableFailed", { reason }, "채우기 도구를 켜지 못했어요. {reason}");
@@ -22157,7 +22159,7 @@ const puppetWarpArmed =
           noClip: true,
         };
       } catch (error) {
-        const message = error instanceof Error ? error.message : t("studio.hostStatus.vectorFillLayerCreateFailed", "벡터 채색 레이어를 만들지 못했습니다.");
+        const message = resolveStudioVectorReferenceErrorFromCause(error) ?? (error instanceof Error ? error.message : t("studio.hostStatus.vectorFillLayerCreateFailed", "벡터 채색 레이어를 만들지 못했습니다."));
         setAdvancedFillStatus(message);
         setError(message);
         return;
@@ -23132,7 +23134,7 @@ const puppetWarpArmed =
         !isEffectivelyLocked(el, groups) && !isEffectivelyHidden(el, groups),
     });
     if (!planned.ok) {
-      setError(planned.reason);
+      setError(resolveStudioVectorEraseResult(planned) ?? planned.reason);
       return true;
     }
     if (!commit(planned.nextElements)) return true;
@@ -24222,6 +24224,7 @@ function clearSelectionForEdit() {
 
     try {
       const rasterRuntime = await import("./render/studio-raster-edit-preparation");
+      const { resolveStudioRasterEditReason } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
       if (
         runId !== pixelMarqueeRasterPreparationRunIdRef.current
         || controller.signal.aborted
@@ -24235,7 +24238,7 @@ function clearSelectionForEdit() {
         throw new Error(initialContext.input.documentMutationBlockedReason);
       }
       const planned = rasterRuntime.planStudioEditableRasterCopy(initialContext.input);
-      if (!planned.ok) throw new Error(planned.reason);
+      if (!planned.ok) throw new Error(resolveStudioRasterEditReason(planned.reason));
       const rendered = await rasterRuntime.renderStudioEditableRasterCopy(
         planned.plan,
         renderStudioVectorReference,
@@ -24267,7 +24270,7 @@ function clearSelectionForEdit() {
         composite,
         destinationElements: latestContext.destinationElements,
       });
-      if (!applied.ok) throw new Error(applied.reason);
+      if (!applied.ok) throw new Error(resolveStudioRasterEditReason(applied.reason));
       if (
         runId !== pixelMarqueeRasterPreparationRunIdRef.current
         || controller.signal.aborted
@@ -24405,9 +24408,10 @@ function clearSelectionForEdit() {
       ) return;
       clearPendingPixelSelectionRasterGesture();
       disarmAllPixelTools();
+      const { resolveStudioRasterEditErrorFromCause } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
       setError(
         preparationError instanceof Error
-          ? preparationError.message
+          ? (resolveStudioRasterEditErrorFromCause(preparationError) ?? preparationError.message)
           : t("studio.hostStatus.pixelSelectionRasterPrepareFailed", "픽셀 선택용 래스터 복사본을 준비하지 못했습니다."),
       );
     } finally {
@@ -24779,6 +24783,7 @@ function clearSelectionForEdit() {
 
     try {
       const rasterRuntime = await import("./render/studio-raster-edit-preparation");
+      const { resolveStudioRasterEditReason } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
       if (runId !== studioFilterPreparationRunIdRef.current || controller.signal.aborted) return;
       const initialContext = layerScopedFilter
         ? currentStudioEditablePageRasterContext(
@@ -24789,7 +24794,7 @@ function clearSelectionForEdit() {
         )
         : currentStudioFilterPageRasterContext(layerName, rasterRuntime);
       const planned = rasterRuntime.planStudioEditableRasterCopy(initialContext.input);
-      if (!planned.ok) throw new Error(planned.reason);
+      if (!planned.ok) throw new Error(resolveStudioRasterEditReason(planned.reason));
       const rendered = await rasterRuntime.renderStudioEditableRasterCopy(
         planned.plan,
         renderStudioVectorReference,
@@ -24846,9 +24851,10 @@ function clearSelectionForEdit() {
       );
     } catch (filterError) {
       if (controller.signal.aborted || runId !== studioFilterPreparationRunIdRef.current) return;
+      const { resolveStudioRasterEditErrorFromCause } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
       setError(
         filterError instanceof Error
-          ? filterError.message
+          ? (resolveStudioRasterEditErrorFromCause(filterError) ?? filterError.message)
           : t("studio.hostStatus.filterPreviewPrepareFailed", "현재 페이지의 필터 미리보기를 준비하지 못했습니다.")
       );
     } finally {
@@ -24902,6 +24908,7 @@ function clearSelectionForEdit() {
 
     try {
       const rasterRuntime = await import("./render/studio-raster-edit-preparation");
+      const { resolveStudioRasterEditReason } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
       if (runId !== studioFilterPreparationRunIdRef.current || controller.signal.aborted) return;
       const layerOptions = options?.sourceIds?.length
         ? { sourceIds: options.sourceIds }
@@ -24918,7 +24925,7 @@ function clearSelectionForEdit() {
         renderPreparedStudioVectorReference,
         { rasterExecutionBackend: "offscreen-worker", signal: controller.signal },
       );
-      if (!planned.ok) throw new Error(planned.reason);
+      if (!planned.ok) throw new Error(resolveStudioRasterEditReason(planned.reason));
       const rendered = planned.rendered;
       if (
         runId !== studioFilterPreparationRunIdRef.current ||
@@ -24947,7 +24954,7 @@ function clearSelectionForEdit() {
         composite,
         destinationElements: latestContext.destinationElements,
       });
-      if (!applied.ok) throw new Error(applied.reason);
+      if (!applied.ok) throw new Error(resolveStudioRasterEditReason(applied.reason));
       if (
         runId !== studioFilterPreparationRunIdRef.current ||
         controller.signal.aborted ||
@@ -25070,9 +25077,10 @@ function clearSelectionForEdit() {
       if (pendingRasterRetouchGestureRef.current?.runId === runId) {
         clearPendingRasterRetouchGesture();
       }
+      const { resolveStudioRasterEditErrorFromCause } = await import("./status-i18n/studio-producer-error-i18n-exports-raster");
       setError(
         preparationError instanceof Error
-          ? preparationError.message
+          ? (resolveStudioRasterEditErrorFromCause(preparationError) ?? preparationError.message)
           : t("studio.hostStatus.editRasterPrepareFailed", "편집용 래스터 복사본을 준비하지 못했습니다."),
       );
     } finally {
@@ -25280,14 +25288,14 @@ function clearSelectionForEdit() {
     const handle = globalThis.setTimeout(() => {
       // 아직 획을 긋는 중이면 건너뛴다. 획이 끝나면 문서가 다시 바뀌면서 이 효과가 재실행된다.
       if (cancelled || drawingRef.current) return;
-      void import("./render/studio-raster-edit-preparation")
-        .then((rasterRuntime) => {
+      void Promise.all([import("./render/studio-raster-edit-preparation"), import("./status-i18n/studio-producer-error-i18n-exports-raster")])
+        .then(([rasterRuntime, rasterI18n]) => {
           if (cancelled) return;
           const buildContext = studioFilterPreflightContextRef.current;
           if (!buildContext) return;
           const context = buildContext("필터 사전점검", rasterRuntime);
           const planned = rasterRuntime.planStudioEditableRasterCopy(context.input);
-          setStudioFilterDocumentPreflightReason(planned.ok ? null : planned.reason);
+          setStudioFilterDocumentPreflightReason(planned.ok ? null : rasterI18n.resolveStudioRasterEditReason(planned.reason));
         })
         .catch(() => {
           // 준비 모듈을 못 받은 것 자체는 필터 금지 사유가 아니다. 그 경우엔 눌렀을 때 나오는
