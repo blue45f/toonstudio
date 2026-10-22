@@ -39,7 +39,7 @@ import {
   type StudioPublicationAnalyticsImportResult,
   type StudioPublicationAnalyticsMergeResult,
 } from "./studio-publication-analytics";
-import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import {
   addStudioReleaseScheduleItem,
   exportStudioReleaseScheduleIcalendar,

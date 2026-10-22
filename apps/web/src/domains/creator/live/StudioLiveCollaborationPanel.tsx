@@ -41,7 +41,7 @@ import {
   type StudioLiveRecoveryState,
 } from "./studio-live-collaboration-context";
 import { STUDIO_LIVE_CHAT_TEXT_MAX_LENGTH } from "./studio-live-collaboration-protocol";
-import { frozenStatus2Text } from "../studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import type { StudioLiveInviteRole } from "./studio-live-jam-session";
 import {
   createStudioPeerScreenSignalingRoom,

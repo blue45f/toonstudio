@@ -67,7 +67,7 @@ import type { StudioStoryBibleNarrative } from "./planning/studio-character-prof
 import type { StudioStoryBible } from "./studio-story-bible";
 
 import { cx } from "@/shared/lib/cx";
-import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 
 export type StudioDialogueBatchPanelProps = {
   /** 전체 페이지(요소·그룹 포함) — StudioPage 의 pages 를 그대로 받는다. */

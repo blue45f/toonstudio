@@ -15,7 +15,7 @@ import {
 } from "@/platform/creator-marketplace-client";
 
 import "./studio-panel-status-i18n";
-import "./studio-panel-status-i18n-r4cat5";
+import "./status-i18n/studio-panel-status-i18n-r4cat5";
 
 const FOCUS =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-panel";

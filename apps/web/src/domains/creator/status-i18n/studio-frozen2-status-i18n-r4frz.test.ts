@@ -24,7 +24,7 @@ import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 /** 등록 모듈(registerI18nLocaleEntries)의 locale 블록을 전부 병합해 파싱한다. */
@@ -41,7 +41,7 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
   return blocks as Record<"ko" | "en", Record<string, string>>;
 }
 
-const MODULE_FILE = "studio-frozen2-status-i18n.ts";
+const MODULE_FILE = "status-i18n/studio-frozen2-status-i18n.ts";
 const PREFIX = "studio.frozenStatus2.";
 const CONSUMERS = [
   "StudioWorkspaceInterchangeDialog.tsx",

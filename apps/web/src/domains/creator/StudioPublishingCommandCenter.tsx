@@ -33,7 +33,7 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { buildStudioHref } from "./creator-studio-links";
-import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import {
   confirmStudioDestructiveAction,
   recordStudioDestructiveOutcome,
