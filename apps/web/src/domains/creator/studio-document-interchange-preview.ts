@@ -3,6 +3,8 @@ import {
   STUDIO_PROJECT_MAX_PAGES,
 } from "./studio-project-file";
 
+import { resolveStudioCbzWarning } from "./status-i18n/studio-producer-error-i18n-interchange-cbz";
+import { resolveStudioOpenRasterWarning } from "./status-i18n/studio-producer-error-i18n-interchange-ora";
 import type { StudioCbzImportResult } from "./studio-cbz-interchange";
 import type {
   StudioInterchangeLossConstraint,
@@ -73,7 +75,12 @@ function boundedMessages(
   return visible;
 }
 
-function aggregateCodecWarnings<T extends Readonly<{ code: string; message: string }>>(
+/**
+ * 집계자 예외 (A4 D4, R12): cbz/ora 경고 채널은 생산자가 구조화 코드+variant+params만
+ * 방출하므로, 문자열로 고정된 이 집계 경계에서 리졸버로 해석해 기존 message 합성
+ * 형태(withWarningCount 포함)를 그대로 유지한다. Dialog 렌더는 무변경이다.
+ */
+function aggregateCodecWarnings<T extends Readonly<{ code: string }>>(
   warnings: readonly T[],
   map: (warning: T, count: number) => StudioInterchangeLossConstraint,
 ): StudioInterchangeLossConstraint[] {
@@ -230,7 +237,7 @@ export function createStudioOpenRasterImportLossPreview(
     severity: warning.code === "UNSUPPORTED_XML_ATTRIBUTE" || warning.code === "UNSUPPORTED_XML_ELEMENT"
       ? "notice"
       : "warning",
-    message: withWarningCount(warning.message, count),
+    message: withWarningCount(resolveStudioOpenRasterWarning(warning), count),
   }));
   const budget = embeddedBudgetConstraint(embeddedBytes, options.maxEmbeddedBytes);
   if (budget) constraints.push(budget);
@@ -299,7 +306,7 @@ export function createStudioCbzImportLossPreview(
   const constraints = aggregateCodecWarnings(result.warnings, (warning, count) => ({
     category: warning.code === "COMICINFO_MISSING" ? "editability" : "pages",
     severity: warning.code === "PAGE_COUNT_MISMATCH" ? "warning" : "notice",
-    message: withWarningCount(warning.message, count),
+    message: withWarningCount(resolveStudioCbzWarning(warning), count),
   }));
   const embeddedBytes = estimateBlobDataUrlStorageBytes(
     result.summary.totalEncodedBytes,

@@ -13,6 +13,14 @@ import {
   exportContactSheetPdf,
 } from "../studio-pdf-contact-sheet";
 import { WATERMARK_POSITIONS, type WatermarkSettings } from "../studio-watermark";
+import {
+  resolveStudioCbzErrorFromCause,
+  resolveStudioCbzWarning,
+} from "../status-i18n/studio-producer-error-i18n-interchange-cbz";
+import {
+  resolveStudioOpenRasterErrorFromCause,
+  resolveStudioOpenRasterWarning,
+} from "../status-i18n/studio-producer-error-i18n-interchange-ora";
 import { StudioContactSheetPanel } from "../StudioContactSheetPanel";
 import { frozenStatusText } from "../studio-frozen-status-i18n";
 
@@ -617,7 +625,7 @@ export function StudioExportMenuPanel({
           tone: result.warnings.length > 0 ? "warn" : "good",
           text: [
             frozenStatusText("studio.frozenStatus.export.cbzSaved", { count: pngPages.length, range: rangeLabel }, "CBZ {count}페이지와 ComicInfo.xml을 저장했어요. ({range})"),
-            ...result.warnings.map((item) => item.message),
+            ...result.warnings.map((item) => resolveStudioCbzWarning(item)),
           ].join(" "),
         });
       } else {
@@ -640,7 +648,7 @@ export function StudioExportMenuPanel({
           tone: "warn",
           text: [
             frozenStatusText("studio.frozenStatus.export.oraSaved", "OpenRaster를 저장했어요. 현재 메뉴 경로는 화면과 같은 합성 1레이어이며, 요소별 레이어 교환은 PSD를 사용하세요."),
-            ...result.warnings.map((item) => item.message),
+            ...result.warnings.map((item) => resolveStudioOpenRasterWarning(item)),
           ].join(" "),
         });
       }
@@ -648,7 +656,11 @@ export function StudioExportMenuPanel({
       if (!mountedRef.current) return;
       setArchiveStatus({
         tone: "warn",
-        text: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.archiveFailed", "문서 교환 파일을 만들지 못했습니다."),
+        // A4 D4 (R12): cbz/ora 생산자는 구조화 코드만 방출하므로 표시 지점인 이 catch에서
+        // 덕 타이핑 리졸버로 해석한다. 타 생산자 오류는 기존 message 경로를 유지한다.
+        text: resolveStudioCbzErrorFromCause(error)
+          ?? resolveStudioOpenRasterErrorFromCause(error)
+          ?? (error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.archiveFailed", "문서 교환 파일을 만들지 못했습니다.")),
       });
     } finally {
       if (mountedRef.current) setArchiveBusy(null);

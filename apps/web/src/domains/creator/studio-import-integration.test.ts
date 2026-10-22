@@ -80,7 +80,9 @@ import {
 import {
   buildStudioProjectArchive,
   importStudioProjectArchive,
+  StudioProjectArchiveError,
 } from "./studio-project-archive";
+import { resolveStudioProjectArchiveErrorFromCause } from "./status-i18n/studio-producer-error-i18n-project-archive";
 import { parseStudioProjectFile, serializeStudioProjectFile } from "./studio-project-file";
 import { importPsdFile } from "./studio-psd-import";
 import {
@@ -705,7 +707,7 @@ describe("OpenRaster(.ora) 왕복", () => {
     expect(Array.from(lineartBytes)).toEqual(Array.from(pngHeaderBytes(2, 2, 12)));
   });
 
-  it("mimetype 항목이 틀린 아카이브를 한국어 오류로 거부한다", async () => {
+  it("mimetype 항목이 틀린 아카이브를 구조화 오류로 거부한다", async () => {
     const forged = await buildStudioPackageArchiveBytes(
       [
         { path: "mimetype", data: encoder.encode("image/not-openraster") },
@@ -718,7 +720,8 @@ describe("OpenRaster(.ora) 왕복", () => {
       (cause: unknown) => cause
     );
     expect(failure).toBeInstanceOf(StudioOpenRasterError);
-    expect((failure as StudioOpenRasterError).message).toMatch(/[가-힣]/u);
+    expect((failure as StudioOpenRasterError).code).toBe("MIMETYPE_INVALID");
+    expect((failure as StudioOpenRasterError).variant).toBe("mimetypeLengthInvalid");
   });
 });
 
@@ -760,13 +763,14 @@ describe("CBZ(ComicInfo 포함) 왕복", () => {
     expect(Array.from(firstPage)).toEqual(Array.from(pngHeaderBytes(4, 6, 21)));
   });
 
-  it("ZIP이 아닌 바이트를 한국어 오류로 거부한다", async () => {
+  it("ZIP이 아닌 바이트를 구조화 오류로 거부한다", async () => {
     const failure = await importStudioCbz(encoder.encode("this is not a zip archive")).then(
       () => null,
       (cause: unknown) => cause
     );
     expect(failure).toBeInstanceOf(StudioCbzError);
-    expect((failure as StudioCbzError).message).toMatch(/[가-힣]/u);
+    expect((failure as StudioCbzError).code).toBe("ARCHIVE_INVALID");
+    expect((failure as StudioCbzError).variant).toBe("archiveInvalid");
   });
 });
 
@@ -835,8 +839,11 @@ describe("프로젝트 백업 가져오기", () => {
       () => null,
       (cause: unknown) => cause
     );
-    expect(failure).toBeInstanceOf(Error);
-    expect((failure as Error).message).toMatch(/[가-힣]/u);
+    expect(failure).toBeInstanceOf(StudioProjectArchiveError);
+    // A4 D4: 생산자는 구조화 코드(code+variant)만 방출하고, 표시 문구는 리졸버가 해석한다.
+    expect((failure as StudioProjectArchiveError).code).toBeTruthy();
+    expect((failure as StudioProjectArchiveError).variant).toBeTruthy();
+    expect(resolveStudioProjectArchiveErrorFromCause(failure)).toMatch(/[가-힣]/u);
   });
 
   it("ZIP 리더가 항목 목록과 바이트를 그대로 되돌려준다", async () => {

@@ -120,9 +120,22 @@ export type StudioCbzWarningCode =
   | "IGNORED_ENTRY"
   | "PAGE_COUNT_MISMATCH";
 
+/** 같은 경고 코드라도 방출 지점마다 원문이 달라 리졸버 키를 가르는 접미사. */
+export type StudioCbzWarningVariant =
+  | "countMismatch"
+  | "missing"
+  | "nonImage"
+  | "osMetadata";
+
+/**
+ * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+variant+params만 방출한다.
+ * 문구 해석은 표시·집계 지점에서만 한다
+ * (status-i18n/studio-producer-error-i18n-interchange-cbz.ts).
+ */
 export interface StudioCbzWarning {
   code: StudioCbzWarningCode;
-  message: string;
+  variant: StudioCbzWarningVariant;
+  params?: Readonly<Record<string, string>>;
   path?: string;
 }
 
@@ -179,14 +192,89 @@ export type StudioCbzErrorCode =
   | "PAGE_COUNT_LIMIT"
   | "SIZE_LIMIT";
 
+/** 방출 지점 단위 서브코드 — 리졸버 키는 기존 코드가 아니라 이 variant로 가른다. */
+export type StudioCbzErrorVariant =
+  | "aborted"
+  | "archiveInvalid"
+  | "comicInfoAttributeDuplicate"
+  | "comicInfoAttributeMissingEquals"
+  | "comicInfoAttributeMissingSpace"
+  | "comicInfoAttributeNameInvalid"
+  | "comicInfoAttributeNotQuoted"
+  | "comicInfoAttributeTooMany"
+  | "comicInfoAttributeUnclosed"
+  | "comicInfoAttributeUnsafeChar"
+  | "comicInfoBlackAndWhiteNotBoolean"
+  | "comicInfoBlackAndWhiteValueInvalid"
+  | "comicInfoClosingTagInvalid"
+  | "comicInfoCommaInItem"
+  | "comicInfoCommentInvalid"
+  | "comicInfoCommentUnclosed"
+  | "comicInfoDeclarationUnclosed"
+  | "comicInfoDeclarationUnsupported"
+  | "comicInfoDepthLimit"
+  | "comicInfoElementCountLimit"
+  | "comicInfoElementUnclosed"
+  | "comicInfoEntityInvalid"
+  | "comicInfoForbiddenConstruct"
+  | "comicInfoIntegerInvalid"
+  | "comicInfoIntegerOutOfRange"
+  | "comicInfoMetadataLimit"
+  | "comicInfoMissingValue"
+  | "comicInfoMixedContent"
+  | "comicInfoNotList"
+  | "comicInfoNotString"
+  | "comicInfoNotUtf8"
+  | "comicInfoOpeningTagInvalid"
+  | "comicInfoOutOfRange"
+  | "comicInfoRootInvalid"
+  | "comicInfoRootUnclosed"
+  | "comicInfoTagAttributeMissingSpace"
+  | "comicInfoTagDuplicate"
+  | "comicInfoTagNestingInvalid"
+  | "comicInfoTextComplexityLimit"
+  | "comicInfoTextNotEscaped"
+  | "comicInfoTextOutsideRoot"
+  | "comicInfoUnsafeControlChar"
+  | "comicInfoValueStructureInvalid"
+  | "imageExtensionMismatch"
+  | "imageFormatInvalid"
+  | "imageReadFailed"
+  | "imageUnsupportedData"
+  | "limitInvalid"
+  | "pageCountArchiveLimit"
+  | "pageCountOutOfRange"
+  | "sizeComicInfoBytesOutOfRange"
+  | "sizeComicInfoLimit"
+  | "sizePageBytesOutOfRange"
+  | "sizePageLimit"
+  | "sizePagePixelsLimit"
+  | "sizePageSideLimit"
+  | "sizeTotalDecodedBudget"
+  | "sizeTotalPageBytesLimit";
+
+/**
+ * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+variant+params만 방출한다
+ * (message = 코드). 문구는 표시 지점에서 리졸버로 해석한다
+ * (status-i18n/studio-producer-error-i18n-interchange-cbz.ts).
+ */
 export class StudioCbzError extends Error {
   readonly code: StudioCbzErrorCode;
+  readonly variant: StudioCbzErrorVariant;
+  readonly params?: Readonly<Record<string, string>>;
   readonly path?: string;
 
-  constructor(code: StudioCbzErrorCode, message: string, path?: string) {
-    super(message);
+  constructor(
+    code: StudioCbzErrorCode,
+    variant: StudioCbzErrorVariant,
+    params?: Readonly<Record<string, string>>,
+    path?: string,
+  ) {
+    super(code);
     this.name = "StudioCbzError";
     this.code = code;
+    this.variant = variant;
+    if (params !== undefined) this.params = params;
     if (path !== undefined) this.path = path;
   }
 }
@@ -212,12 +300,17 @@ const MAX_IMAGE_CONTAINER_RECORDS = 131_072;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
-function cbzError(code: StudioCbzErrorCode, message: string, path?: string): StudioCbzError {
-  return new StudioCbzError(code, message, path);
+function cbzError(
+  code: StudioCbzErrorCode,
+  variant: StudioCbzErrorVariant,
+  params?: Readonly<Record<string, string>>,
+  path?: string,
+): StudioCbzError {
+  return new StudioCbzError(code, variant, params, path);
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) throw cbzError("ABORTED", "CBZ 작업이 취소되었습니다.");
+  if (signal?.aborted) throw cbzError("ABORTED", "aborted");
 }
 
 function resolveIntegerLimit(
@@ -228,10 +321,11 @@ function resolveIntegerLimit(
 ): number {
   if (value === undefined) return maximum;
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
-    throw cbzError(
-      "LIMIT_INVALID",
-      `${key} 한도는 ${minimum.toLocaleString("en-US")} 이상 ${maximum.toLocaleString("en-US")} 이하의 정수여야 합니다.`
-    );
+    throw cbzError("LIMIT_INVALID", "limitInvalid", {
+      key,
+      min: minimum.toLocaleString("en-US"),
+      max: maximum.toLocaleString("en-US"),
+    });
   }
   return value;
 }
@@ -322,7 +416,7 @@ function snapshotSource(source: unknown, path: string): StudioPackageArchiveSour
   if (source instanceof Uint8Array) return source.slice();
   if (source instanceof ArrayBuffer) return source.slice(0);
   if (typeof Blob !== "undefined" && source instanceof Blob) return source;
-  throw cbzError("IMAGE_INVALID", "지원하지 않는 CBZ 페이지 데이터입니다.", path);
+  throw cbzError("IMAGE_INVALID", "imageUnsupportedData", undefined, path);
 }
 
 function sourceSize(source: StudioPackageArchiveSource): number {
@@ -344,7 +438,7 @@ async function sourceBytes(
       bytes = new Uint8Array(await source.arrayBuffer());
     } catch (cause) {
       const detail = cause instanceof Error ? `: ${cause.message}` : "";
-      throw cbzError("IMAGE_INVALID", `CBZ 페이지를 읽지 못했습니다${detail}`, path);
+      throw cbzError("IMAGE_INVALID", "imageReadFailed", { detail }, path);
     }
   }
   throwIfAborted(signal);
@@ -762,10 +856,10 @@ function assertDetectedPageBudget(
   path: string
 ): void {
   if (page.width > limits.maxPageDimension || page.height > limits.maxPageDimension) {
-    throw cbzError("SIZE_LIMIT", "CBZ 페이지 한 변의 길이가 안전 한도를 넘었습니다.", path);
+    throw cbzError("SIZE_LIMIT", "sizePageSideLimit", undefined, path);
   }
   if (page.pixelCount > limits.maxPagePixels) {
-    throw cbzError("SIZE_LIMIT", "CBZ 페이지의 디코드 픽셀 수가 안전 한도를 넘었습니다.", path);
+    throw cbzError("SIZE_LIMIT", "sizePagePixelsLimit", undefined, path);
   }
 }
 
@@ -791,7 +885,7 @@ function escapeXml(value: string): string {
 function validateMetadataString(value: unknown, label: string): string | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== "string" || hasUnsafeXmlControl(value)) {
-    throw cbzError("COMICINFO_INVALID", `${label} metadata가 올바른 문자열이 아닙니다.`);
+    throw cbzError("COMICINFO_INVALID", "comicInfoNotString", { label });
   }
   return value;
 }
@@ -804,7 +898,7 @@ function validateOptionalInteger(
 ): number | undefined {
   if (value === undefined) return undefined;
   if (!Number.isSafeInteger(value) || (value as number) < minimum || (value as number) > maximum) {
-    throw cbzError("COMICINFO_INVALID", `${label} metadata가 안전 범위를 벗어났습니다.`);
+    throw cbzError("COMICINFO_INVALID", "comicInfoOutOfRange", { label });
   }
   return value as number;
 }
@@ -812,13 +906,13 @@ function validateOptionalInteger(
 function validateStringList(value: unknown, label: string): string[] | undefined {
   if (value === undefined) return undefined;
   if (!Array.isArray(value)) {
-    throw cbzError("COMICINFO_INVALID", `${label} metadata는 문자열 목록이어야 합니다.`);
+    throw cbzError("COMICINFO_INVALID", "comicInfoNotList", { label });
   }
   return value.map((item) => {
     const validated = validateMetadataString(item, label);
-    if (validated === undefined) throw cbzError("COMICINFO_INVALID", `${label} 값이 없습니다.`);
+    if (validated === undefined) throw cbzError("COMICINFO_INVALID", "comicInfoMissingValue", { label });
     if (validated.includes(",")) {
-      throw cbzError("COMICINFO_INVALID", `${label} 항목에는 목록 구분자인 쉼표를 사용할 수 없습니다.`);
+      throw cbzError("COMICINFO_INVALID", "comicInfoCommaInItem", { label });
     }
     return validated;
   });
@@ -827,36 +921,36 @@ function validateStringList(value: unknown, label: string): string[] | undefined
 function normalizeMetadata(metadata: StudioComicInfoMetadata | undefined): StudioComicInfoMetadata {
   if (!metadata) return {};
   if (metadata.blackAndWhite !== undefined && typeof metadata.blackAndWhite !== "boolean") {
-    throw cbzError("COMICINFO_INVALID", "BlackAndWhite metadata는 boolean이어야 합니다.");
+    throw cbzError("COMICINFO_INVALID", "comicInfoBlackAndWhiteNotBoolean");
   }
   return {
-    title: validateMetadataString(metadata.title, "Title"),
-    series: validateMetadataString(metadata.series, "Series"),
-    number: validateMetadataString(metadata.number, "Number"),
-    count: validateOptionalInteger(metadata.count, "Count", 0, 1_000_000),
-    volume: validateOptionalInteger(metadata.volume, "Volume", 0, 1_000_000),
-    summary: validateMetadataString(metadata.summary, "Summary"),
-    notes: validateMetadataString(metadata.notes, "Notes"),
-    year: validateOptionalInteger(metadata.year, "Year", 0, 9_999),
-    month: validateOptionalInteger(metadata.month, "Month", 1, 12),
-    day: validateOptionalInteger(metadata.day, "Day", 1, 31),
-    writer: validateMetadataString(metadata.writer, "Writer"),
-    penciller: validateMetadataString(metadata.penciller, "Penciller"),
-    inker: validateMetadataString(metadata.inker, "Inker"),
-    colorist: validateMetadataString(metadata.colorist, "Colorist"),
-    letterer: validateMetadataString(metadata.letterer, "Letterer"),
-    coverArtist: validateMetadataString(metadata.coverArtist, "CoverArtist"),
-    editor: validateMetadataString(metadata.editor, "Editor"),
-    publisher: validateMetadataString(metadata.publisher, "Publisher"),
-    imprint: validateMetadataString(metadata.imprint, "Imprint"),
-    genre: validateStringList(metadata.genre, "Genre"),
-    tags: validateStringList(metadata.tags, "Tags"),
-    web: validateMetadataString(metadata.web, "Web"),
-    languageISO: validateMetadataString(metadata.languageISO, "LanguageISO"),
-    format: validateMetadataString(metadata.format, "Format"),
-    ageRating: validateMetadataString(metadata.ageRating, "AgeRating"),
+    title: validateMetadataString(metadata.title, "title"),
+    series: validateMetadataString(metadata.series, "series"),
+    number: validateMetadataString(metadata.number, "number"),
+    count: validateOptionalInteger(metadata.count, "count", 0, 1_000_000),
+    volume: validateOptionalInteger(metadata.volume, "volume", 0, 1_000_000),
+    summary: validateMetadataString(metadata.summary, "summary"),
+    notes: validateMetadataString(metadata.notes, "notes"),
+    year: validateOptionalInteger(metadata.year, "year", 0, 9_999),
+    month: validateOptionalInteger(metadata.month, "month", 1, 12),
+    day: validateOptionalInteger(metadata.day, "day", 1, 31),
+    writer: validateMetadataString(metadata.writer, "writer"),
+    penciller: validateMetadataString(metadata.penciller, "penciller"),
+    inker: validateMetadataString(metadata.inker, "inker"),
+    colorist: validateMetadataString(metadata.colorist, "colorist"),
+    letterer: validateMetadataString(metadata.letterer, "letterer"),
+    coverArtist: validateMetadataString(metadata.coverArtist, "coverArtist"),
+    editor: validateMetadataString(metadata.editor, "editor"),
+    publisher: validateMetadataString(metadata.publisher, "publisher"),
+    imprint: validateMetadataString(metadata.imprint, "imprint"),
+    genre: validateStringList(metadata.genre, "genre"),
+    tags: validateStringList(metadata.tags, "tags"),
+    web: validateMetadataString(metadata.web, "web"),
+    languageISO: validateMetadataString(metadata.languageISO, "languageISO"),
+    format: validateMetadataString(metadata.format, "format"),
+    ageRating: validateMetadataString(metadata.ageRating, "ageRating"),
     blackAndWhite: metadata.blackAndWhite,
-    manga: validateMetadataString(metadata.manga, "Manga"),
+    manga: validateMetadataString(metadata.manga, "manga"),
   };
 }
 
@@ -935,14 +1029,14 @@ async function prepareCbz(
   const metadata = normalizeMetadata(rawInput.metadata);
   throwIfAborted(options.signal);
   if (sources.length === 0 || sources.length > limits.maxPages) {
-    throw cbzError("PAGE_COUNT_LIMIT", "CBZ 페이지 수가 안전 범위를 벗어났습니다.");
+    throw cbzError("PAGE_COUNT_LIMIT", "pageCountOutOfRange");
   }
   if (sources.length + 1 > limits.maxArchiveEntries) {
-    throw cbzError("PAGE_COUNT_LIMIT", "CBZ 페이지와 metadata 항목 수가 archive 한도를 넘었습니다.");
+    throw cbzError("PAGE_COUNT_LIMIT", "pageCountArchiveLimit");
   }
   const metadataCharacters = JSON.stringify(metadata).length;
   if (metadataCharacters > limits.maxMetadataCharacters) {
-    throw cbzError("COMICINFO_INVALID", "ComicInfo metadata가 안전 한도를 넘었습니다.");
+    throw cbzError("COMICINFO_INVALID", "comicInfoMetadataLimit");
   }
 
   const digits = Math.max(4, String(sources.length).length);
@@ -956,21 +1050,17 @@ async function prepareCbz(
     if (!source) continue;
     const size = sourceSize(source);
     if (!Number.isSafeInteger(size) || size <= 0 || size > limits.maxPageBytes) {
-      throw cbzError("SIZE_LIMIT", "CBZ 페이지 크기가 안전 한도를 벗어났습니다.", `page ${index + 1}`);
+      throw cbzError("SIZE_LIMIT", "sizePageBytesOutOfRange", undefined, `page ${index + 1}`);
     }
     const bytes = await sourceBytes(source, `page ${index + 1}`, options.signal);
     const detected = detectPage(bytes);
     if (!detected) {
-      throw cbzError(
-        "IMAGE_INVALID",
-        "CBZ 페이지는 구조와 크기 정보가 올바른 PNG, JPEG, WebP, GIF 중 하나여야 합니다.",
-        `page ${index + 1}`
-      );
+      throw cbzError("IMAGE_INVALID", "imageFormatInvalid", undefined, `page ${index + 1}`);
     }
     assertDetectedPageBudget(detected, limits, `page ${index + 1}`);
     totalPageBytes += bytes.byteLength;
     if (totalPageBytes > limits.maxTotalPageBytes) {
-      throw cbzError("SIZE_LIMIT", "CBZ 전체 페이지 크기가 안전 한도를 넘었습니다.");
+      throw cbzError("SIZE_LIMIT", "sizeTotalPageBytesLimit");
     }
     totalDecodedPixels += detected.decodedPixelCount;
     totalDecodedBytes += detected.decodedByteSize;
@@ -980,7 +1070,7 @@ async function prepareCbz(
       !Number.isSafeInteger(totalDecodedBytes) ||
       totalDecodedBytes > limits.maxTotalDecodedBytes
     ) {
-      throw cbzError("SIZE_LIMIT", "CBZ 전체 페이지의 디코드 메모리 예산을 넘었습니다.");
+      throw cbzError("SIZE_LIMIT", "sizeTotalDecodedBudget");
     }
     pageEntries.push({
       path: `pages/${String(index + 1).padStart(digits, "0")}.${detected.extension}`,
@@ -989,7 +1079,7 @@ async function prepareCbz(
   }
   const comicInfo = buildComicInfoXml(metadata, pageEntries.length);
   if (comicInfo.byteLength > limits.maxComicInfoBytes) {
-    throw cbzError("SIZE_LIMIT", "ComicInfo.xml이 안전 한도를 넘었습니다.");
+    throw cbzError("SIZE_LIMIT", "sizeComicInfoLimit");
   }
   return {
     warnings: [],
@@ -1078,7 +1168,7 @@ function decodeXmlText(value: string): string {
   const entityPattern = /&(?:amp|lt|gt|quot|apos|#\d+|#x[\da-fA-F]+);/gu;
   const unescaped = value.replaceAll(entityPattern, "");
   if (unescaped.includes("&") || unescaped.includes("<") || unescaped.includes(">")) {
-    throw cbzError("COMICINFO_INVALID", "ComicInfo.xml text가 올바르게 escape되지 않았습니다.");
+    throw cbzError("COMICINFO_INVALID", "comicInfoTextNotEscaped");
   }
   return value.replaceAll(entityPattern, (entity) => {
     if (entity === "&amp;") return "&";
@@ -1089,7 +1179,7 @@ function decodeXmlText(value: string): string {
     const hexadecimal = entity.startsWith("&#x");
     const numeric = Number.parseInt(entity.slice(hexadecimal ? 3 : 2, -1), hexadecimal ? 16 : 10);
     if (!isValidXmlCodePoint(numeric)) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml 문자 entity가 올바르지 않습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoEntityInvalid");
     }
     return String.fromCodePoint(numeric);
   }).trim();
@@ -1134,7 +1224,7 @@ function findXmlTagEnd(xml: string, start: number): number {
     else if (character === ">") return index;
     else if (character === "<") break;
   }
-  throw cbzError("COMICINFO_INVALID", "ComicInfo.xml element가 닫히지 않았습니다.");
+  throw cbzError("COMICINFO_INVALID", "comicInfoElementUnclosed");
 }
 
 function parseXmlAttributes(source: string, maximum: number): number {
@@ -1146,36 +1236,36 @@ function parseXmlAttributes(source: string, maximum: number): number {
     if (offset >= source.length) break;
     const match = /^[A-Za-z_][\w:.-]*/u.exec(source.slice(offset));
     const name = match?.[0];
-    if (!name) throw cbzError("COMICINFO_INVALID", "ComicInfo.xml attribute 이름이 올바르지 않습니다.");
+    if (!name) throw cbzError("COMICINFO_INVALID", "comicInfoAttributeNameInvalid");
     offset += name.length;
     while (/\s/u.test(source[offset] ?? "")) offset += 1;
     if (source[offset] !== "=") {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml attribute에 등호가 없습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoAttributeMissingEquals");
     }
     offset += 1;
     while (/\s/u.test(source[offset] ?? "")) offset += 1;
     const quote = source[offset];
     if (quote !== '"' && quote !== "'") {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml attribute 값은 따옴표로 감싸야 합니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoAttributeNotQuoted");
     }
     const end = source.indexOf(quote, offset + 1);
-    if (end < 0) throw cbzError("COMICINFO_INVALID", "ComicInfo.xml attribute 값이 닫히지 않았습니다.");
+    if (end < 0) throw cbzError("COMICINFO_INVALID", "comicInfoAttributeUnclosed");
     const rawValue = source.slice(offset + 1, end);
     if (rawValue.includes("<")) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml attribute 값에 안전하지 않은 문자가 있습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoAttributeUnsafeChar");
     }
     decodeXmlText(rawValue);
     if (names.has(name)) {
-      throw cbzError("COMICINFO_INVALID", `ComicInfo.xml에 ${name} attribute가 중복되었습니다.`);
+      throw cbzError("COMICINFO_INVALID", "comicInfoAttributeDuplicate", { name });
     }
     names.add(name);
     count += 1;
     if (count > maximum) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml element의 attribute가 너무 많습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoAttributeTooMany");
     }
     offset = end + 1;
     if (offset < source.length && !/\s/u.test(source[offset] ?? "")) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml attribute 사이에 공백이 없습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoAttributeMissingSpace");
     }
   }
   return count;
@@ -1188,14 +1278,14 @@ function finalizeComicInfoElement(
 ): void {
   const text = decodeXmlText(element.textParts.join(""));
   if (element.hasChild && text.length > 0) {
-    throw cbzError("COMICINFO_INVALID", `ComicInfo.xml ${element.name} element에 혼합 content가 있습니다.`);
+    throw cbzError("COMICINFO_INVALID", "comicInfoMixedContent", { name: element.name });
   }
   if (parent?.name !== "ComicInfo" || !COMIC_INFO_IMPORTED_FIELDS.has(element.name)) return;
   if (element.attributeCount > 0 || element.hasChild) {
-    throw cbzError("COMICINFO_INVALID", `ComicInfo.xml ${element.name} 값의 구조가 올바르지 않습니다.`);
+    throw cbzError("COMICINFO_INVALID", "comicInfoValueStructureInvalid", { name: element.name });
   }
   if (fields.has(element.name)) {
-    throw cbzError("COMICINFO_INVALID", `ComicInfo.xml에 ${element.name} tag가 중복되었습니다.`);
+    throw cbzError("COMICINFO_INVALID", "comicInfoTagDuplicate", { name: element.name });
   }
   fields.set(element.name, text);
 }
@@ -1208,11 +1298,11 @@ function parseComicInfoFields(
   if (normalizedXml.startsWith("<?xml")) {
     const declarationEnd = normalizedXml.indexOf("?>");
     if (declarationEnd < 0) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml 선언이 닫히지 않았습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoDeclarationUnclosed");
     }
     const declaration = normalizedXml.slice(0, declarationEnd + 2);
     if (!/^<\?xml\s+version\s*=\s*(?:"1\.0"|'1\.0')(?:\s+encoding\s*=\s*(?:"UTF-8"|'UTF-8'))?(?:\s+standalone\s*=\s*(?:"(?:yes|no)"|'(?:yes|no)'))?\s*\?>$/iu.test(declaration)) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml 선언이 지원하는 안전한 형식이 아닙니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoDeclarationUnsupported");
     }
     normalizedXml = normalizedXml.slice(declarationEnd + 2).trim();
   }
@@ -1232,12 +1322,12 @@ function parseComicInfoFields(
       const current = stack.at(-1);
       if (!current) {
         if (text.trim().length > 0) {
-          throw cbzError("COMICINFO_INVALID", "ComicInfo.xml root 밖에 text가 있습니다.");
+          throw cbzError("COMICINFO_INVALID", "comicInfoTextOutsideRoot");
         }
       } else {
         textCharacterCount += text.length;
         if (textCharacterCount > limits.maxComicInfoTextCharacters) {
-          throw cbzError("COMICINFO_INVALID", "ComicInfo.xml text가 안전한 복잡도 한도를 넘습니다.");
+          throw cbzError("COMICINFO_INVALID", "comicInfoTextComplexityLimit");
         }
         current.textParts.push(text);
       }
@@ -1247,27 +1337,27 @@ function parseComicInfoFields(
     if (normalizedXml.startsWith("<!--", offset)) {
       const commentEnd = normalizedXml.indexOf("-->", offset + 4);
       if (commentEnd < 0) {
-        throw cbzError("COMICINFO_INVALID", "ComicInfo.xml 주석이 닫히지 않았습니다.");
+        throw cbzError("COMICINFO_INVALID", "comicInfoCommentUnclosed");
       }
       if (normalizedXml.slice(offset + 4, commentEnd).includes("--")) {
-        throw cbzError("COMICINFO_INVALID", "ComicInfo.xml 주석 내용이 올바르지 않습니다.");
+        throw cbzError("COMICINFO_INVALID", "comicInfoCommentInvalid");
       }
       offset = commentEnd + 3;
       continue;
     }
     if (normalizedXml.startsWith("<!", offset) || normalizedXml.startsWith("<?", offset)) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml DTD, CDATA, 처리 지시문은 허용되지 않습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoForbiddenConstruct");
     }
     const tagEnd = findXmlTagEnd(normalizedXml, offset);
     let body = normalizedXml.slice(offset + 1, tagEnd).trim();
     if (body.startsWith("/")) {
       const closing = body.slice(1).trim();
       if (!/^[A-Za-z_][\w:.-]*$/u.test(closing)) {
-        throw cbzError("COMICINFO_INVALID", "ComicInfo.xml 닫는 tag가 올바르지 않습니다.");
+        throw cbzError("COMICINFO_INVALID", "comicInfoClosingTagInvalid");
       }
       const element = stack.pop();
       if (!element || element.name !== closing) {
-        throw cbzError("COMICINFO_INVALID", "ComicInfo.xml tag 중첩이 올바르지 않습니다.");
+        throw cbzError("COMICINFO_INVALID", "comicInfoTagNestingInvalid");
       }
       const parent = stack.at(-1);
       finalizeComicInfoElement(element, parent, fields);
@@ -1280,10 +1370,10 @@ function parseComicInfoFields(
     if (selfClosing) body = body.replace(/\/\s*$/u, "").trimEnd();
     const nameMatch = /^[A-Za-z_][\w:.-]*/u.exec(body);
     const name = nameMatch?.[0];
-    if (!name) throw cbzError("COMICINFO_INVALID", "ComicInfo.xml 여는 tag가 올바르지 않습니다.");
+    if (!name) throw cbzError("COMICINFO_INVALID", "comicInfoOpeningTagInvalid");
     const attributesSource = body.slice(name.length);
     if (attributesSource.length > 0 && !/^\s/u.test(attributesSource)) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml tag와 attribute 사이에 공백이 없습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoTagAttributeMissingSpace");
     }
     const element: ComicInfoXmlElement = {
       name,
@@ -1297,7 +1387,7 @@ function parseComicInfoFields(
     const parent = stack.at(-1);
     if (!parent) {
       if (rootSeen || rootClosed || name !== "ComicInfo") {
-        throw cbzError("COMICINFO_INVALID", "ComicInfo.xml root가 올바르지 않습니다.");
+        throw cbzError("COMICINFO_INVALID", "comicInfoRootInvalid");
       }
       rootSeen = true;
     } else {
@@ -1305,10 +1395,10 @@ function parseComicInfoFields(
     }
     elementCount += 1;
     if (elementCount > limits.maxComicInfoElements) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml element 수가 안전한 한도를 넘습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoElementCountLimit");
     }
     if (stack.length + 1 > limits.maxComicInfoDepth) {
-      throw cbzError("COMICINFO_INVALID", "ComicInfo.xml 중첩 깊이가 안전한 한도를 넘습니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoDepthLimit");
     }
     if (selfClosing) {
       finalizeComicInfoElement(element, parent, fields);
@@ -1319,7 +1409,7 @@ function parseComicInfoFields(
     offset = tagEnd + 1;
   }
   if (!rootSeen || !rootClosed || stack.length > 0) {
-    throw cbzError("COMICINFO_INVALID", "ComicInfo.xml root 또는 tag가 완전히 닫히지 않았습니다.");
+    throw cbzError("COMICINFO_INVALID", "comicInfoRootUnclosed");
   }
   return fields;
 }
@@ -1332,11 +1422,11 @@ function parseComicInfoInteger(
 ): number | undefined {
   if (value === undefined) return undefined;
   if (!/^\d+$/u.test(value)) {
-    throw cbzError("COMICINFO_INVALID", `ComicInfo.xml ${tag} 값이 정수가 아닙니다.`);
+    throw cbzError("COMICINFO_INVALID", "comicInfoIntegerInvalid", { tag });
   }
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed < minimum || parsed > maximum) {
-    throw cbzError("COMICINFO_INVALID", `ComicInfo.xml ${tag} 값이 안전 범위를 벗어났습니다.`);
+    throw cbzError("COMICINFO_INVALID", "comicInfoIntegerOutOfRange", { tag });
   }
   return parsed;
 }
@@ -1351,16 +1441,16 @@ function parseComicInfo(
   limits: StudioCbzLimits
 ): { metadata: StudioComicInfoMetadata; declaredPageCount?: number } {
   if (bytes.byteLength === 0 || bytes.byteLength > limits.maxComicInfoBytes) {
-    throw cbzError("SIZE_LIMIT", "ComicInfo.xml 크기가 안전 범위를 벗어났습니다.");
+    throw cbzError("SIZE_LIMIT", "sizeComicInfoBytesOutOfRange");
   }
   let xml: string;
   try {
     xml = decoder.decode(bytes);
   } catch {
-    throw cbzError("COMICINFO_INVALID", "ComicInfo.xml이 올바른 UTF-8이 아닙니다.");
+    throw cbzError("COMICINFO_INVALID", "comicInfoNotUtf8");
   }
   if (hasUnsafeXmlControl(xml)) {
-    throw cbzError("COMICINFO_INVALID", "ComicInfo.xml에 안전하지 않은 제어 문자가 있습니다.");
+    throw cbzError("COMICINFO_INVALID", "comicInfoUnsafeControlChar");
   }
   const fields = parseComicInfoFields(xml, limits);
   const field = (tag: string) => fields.get(tag);
@@ -1396,12 +1486,12 @@ function parseComicInfo(
   const blackAndWhite = field("BlackAndWhite");
   if (blackAndWhite !== undefined) {
     if (blackAndWhite !== "Yes" && blackAndWhite !== "No") {
-      throw cbzError("COMICINFO_INVALID", "BlackAndWhite 값은 Yes 또는 No여야 합니다.");
+      throw cbzError("COMICINFO_INVALID", "comicInfoBlackAndWhiteValueInvalid");
     }
     metadata.blackAndWhite = blackAndWhite === "Yes";
   }
   if (JSON.stringify(metadata).length > limits.maxMetadataCharacters) {
-    throw cbzError("COMICINFO_INVALID", "ComicInfo metadata가 안전 한도를 넘었습니다.");
+    throw cbzError("COMICINFO_INVALID", "comicInfoMetadataLimit");
   }
   return {
     metadata,
@@ -1434,11 +1524,11 @@ function isCbzMetadataJunkPath(path: string): boolean {
 
 function rethrowZipFailure(cause: unknown, signal?: AbortSignal, fallbackPath?: string): never {
   if (signal?.aborted || (cause instanceof StudioZipReaderError && cause.code === "ABORTED")) {
-    throw cbzError("ABORTED", "CBZ 작업이 취소되었습니다.", cause instanceof StudioZipReaderError ? cause.path : fallbackPath);
+    throw cbzError("ABORTED", "aborted", undefined, cause instanceof StudioZipReaderError ? cause.path : fallbackPath);
   }
   const detail = cause instanceof Error ? `: ${cause.message}` : "";
   const path = cause instanceof StudioZipReaderError ? cause.path : fallbackPath;
-  throw cbzError("ARCHIVE_INVALID", `CBZ ZIP 항목이 올바르지 않습니다${detail}`, path);
+  throw cbzError("ARCHIVE_INVALID", "archiveInvalid", { detail }, path);
 }
 
 async function readCbzEntry(
@@ -1495,10 +1585,7 @@ export async function importStudioCbz(
     metadata = parsed.metadata;
     declaredPageCount = parsed.declaredPageCount;
   } else {
-    warnings.push({
-      code: "COMICINFO_MISSING",
-      message: "ComicInfo.xml이 없어 페이지 이미지만 가져왔습니다.",
-    });
+    warnings.push({ code: "COMICINFO_MISSING", variant: "missing" });
   }
 
   const imageEntries = archive.entries
@@ -1508,22 +1595,24 @@ export async function importStudioCbz(
       if (isCbzMetadataJunkPath(lower)) {
         warnings.push({
           code: "IGNORED_ENTRY",
+          variant: "osMetadata",
+          params: { path: entry.path },
           path: entry.path,
-          message: `CBZ의 운영체제 metadata 항목 '${entry.path}'을 건너뛰었습니다.`,
         });
         return false;
       }
       if (/\.(?:png|jpe?g|webp|gif)$/u.test(lower)) return true;
       warnings.push({
         code: "IGNORED_ENTRY",
+        variant: "nonImage",
+        params: { path: entry.path },
         path: entry.path,
-        message: `CBZ의 비이미지 항목 '${entry.path}'을 건너뛰었습니다.`,
       });
       return false;
     })
     .sort((left, right) => compareStudioCbzPagePaths(left.path, right.path));
   if (imageEntries.length === 0 || imageEntries.length > limits.maxPages) {
-    throw cbzError("PAGE_COUNT_LIMIT", "CBZ 페이지 수가 안전 범위를 벗어났습니다.");
+    throw cbzError("PAGE_COUNT_LIMIT", "pageCountOutOfRange");
   }
 
   const pages: StudioCbzImportedPage[] = [];
@@ -1537,21 +1626,17 @@ export async function importStudioCbz(
     const entry = imageEntries[index];
     if (!entry) continue;
     if (entry.uncompressedBytes > limits.maxPageBytes) {
-      throw cbzError("SIZE_LIMIT", "CBZ 페이지가 안전 한도를 넘었습니다.", entry.path);
+      throw cbzError("SIZE_LIMIT", "sizePageLimit", undefined, entry.path);
     }
     const bytes = await readCbzEntry(archive, entry, options.signal);
     const detected = detectPage(bytes);
     if (!detected || !imageExtensionMatches(entry.path, detected)) {
-      throw cbzError(
-        "IMAGE_INVALID",
-        "CBZ 페이지의 확장자와 PNG/JPEG/WebP/GIF 구조 및 크기 정보가 일치하지 않습니다.",
-        entry.path
-      );
+      throw cbzError("IMAGE_INVALID", "imageExtensionMismatch", undefined, entry.path);
     }
     assertDetectedPageBudget(detected, limits, entry.path);
     totalPageBytes += bytes.byteLength;
     if (totalPageBytes > limits.maxTotalPageBytes) {
-      throw cbzError("SIZE_LIMIT", "CBZ 전체 페이지 크기가 안전 한도를 넘었습니다.");
+      throw cbzError("SIZE_LIMIT", "sizeTotalPageBytesLimit");
     }
     totalDecodedPixels += detected.decodedPixelCount;
     totalDecodedBytes += detected.decodedByteSize;
@@ -1561,7 +1646,7 @@ export async function importStudioCbz(
       !Number.isSafeInteger(totalDecodedBytes) ||
       totalDecodedBytes > limits.maxTotalDecodedBytes
     ) {
-      throw cbzError("SIZE_LIMIT", "CBZ 전체 페이지의 디코드 메모리 예산을 넘었습니다.");
+      throw cbzError("SIZE_LIMIT", "sizeTotalDecodedBudget");
     }
     maxWidth = Math.max(maxWidth, detected.width);
     maxHeight = Math.max(maxHeight, detected.height);
@@ -1583,7 +1668,8 @@ export async function importStudioCbz(
   if (declaredPageCount !== undefined && declaredPageCount !== pages.length) {
     warnings.push({
       code: "PAGE_COUNT_MISMATCH",
-      message: `ComicInfo.xml은 ${declaredPageCount}페이지, archive는 ${pages.length}페이지입니다.`,
+      variant: "countMismatch",
+      params: { declared: String(declaredPageCount), actual: String(pages.length) },
     });
   }
   return Object.freeze({
