@@ -62,8 +62,8 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
     // 번들 라이선스 구조(서비스 내 사용 전용)가 유지될 때만 연결이 유효하다.
     expect(document.inServiceOnly).toBe(true);
     expect(document.downloadable).toBe(false);
-    // 2026-10-22 임베드 병합·5라운드 재생성 기준: 배치 가능 에셋 총량은 13,597개다.
-    expect(document.totals.placeableAssets).toBe(13597);
+    // 2026-10-22 임베드 병합·5라운드 재생성+이름변경·신규 팩 후속 병합 기준: 배치 가능 에셋 총량은 14,928개다.
+    expect(document.totals.placeableAssets).toBe(14928);
 
     const themeIds = new Set(document.themes.map((theme) => theme.id));
     const assetById = new Map(document.assets.map((asset) => [asset.id, asset]));
