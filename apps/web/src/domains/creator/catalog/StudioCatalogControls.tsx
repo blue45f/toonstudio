@@ -1,5 +1,5 @@
 import { Grid2x2, LayoutGrid, List, Star } from "lucide-react";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import type { StudioCatalogOrientation, StudioCatalogSort, StudioCatalogView } from "./studio-catalog-query";
 

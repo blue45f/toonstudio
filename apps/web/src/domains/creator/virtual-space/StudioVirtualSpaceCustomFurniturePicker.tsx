@@ -16,7 +16,7 @@ import {
 import type { StudioVirtualDecorationState } from "./studio-virtual-space-customization";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import type { StudioVirtualSpaceWorldManifest } from "./studio-virtual-space-world-manifest";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 /**
  * 사용자가 직접 올린 가구를 나란히 놓는 창.

@@ -15,7 +15,7 @@ import {
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { studioLiveParticipantColor } from "./studio-live-canvas-overlay-model";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import { useStudioLiveDisplaySync } from "./use-studio-live-display-sync";
 
 import type {

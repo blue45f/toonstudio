@@ -17,7 +17,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { createCharacterExportPreflight, formatCharacterBytes } from "../export/character-export-preflight";
 import { STUDIO_FOCUS_RING } from "../../studio-panel-ui";
-import { creatorSub2StatusText } from "../../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import {
   CHARACTER_SHAPER_TABLET_QUERY,
   CHARACTER_SHAPER_TOUCH_LANDSCAPE_QUERY,

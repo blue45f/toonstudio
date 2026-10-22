@@ -3,7 +3,7 @@ import {
   translateCurrentStaticSourceText,
   useBilingual,
 } from "@/shared/lib/i18n-bilingual-copy";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import {
   BookOpen,
   CheckCircle2,

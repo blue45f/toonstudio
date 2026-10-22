@@ -12,7 +12,7 @@ import {
   type StudioHybridDccTransformPart,
 } from "./studio-hybrid-dcc-transform-utilities";
 import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 const CONTROL = "min-h-9 pointer-coarse:min-h-11 min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:cursor-not-allowed";
 const PARTS = [["all", "전체 변환"], ["position", "위치"], ["rotationEulerRad", "회전"], ["scale", "크기"]] as const;

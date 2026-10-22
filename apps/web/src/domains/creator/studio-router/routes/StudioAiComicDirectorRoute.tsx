@@ -35,7 +35,7 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../../studi
 import type { StudioCompositionRouteResolution } from "../studio-route-manifest";
 
 import { useT } from "@/shared/lib/i18n";
-import { creatorSub2StatusText } from "../../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 import { cn } from "@/shared/lib/utils";
 

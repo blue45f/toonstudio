@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { scanHardcodedStatusStrings } from "../../shared/language/status-i18n";
+import { scanHardcodedStatusStrings } from "../../../shared/language/status-i18n";
 
 /**
  * production-hub·storyworld 로딩·실패·빈 상태 문구 i18n 키 이관 계약

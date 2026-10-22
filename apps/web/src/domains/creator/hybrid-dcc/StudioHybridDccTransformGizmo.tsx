@@ -5,7 +5,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { hashStudioHybridDccObjectTransform, type StudioHybridDccObjectTransform } from "./studio-hybrid-dcc-object-transform";
 import { createStudioHybridDccTransformRuntime, type StudioHybridDccTransformRuntimeState } from "./studio-hybrid-dcc-transform-runtime";
 import { resolveStudioHybridDccGizmoSnaps, type StudioHybridDccViewportPreferences } from "./studio-hybrid-dcc-viewport-interaction";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 import type { StudioHybridDccTransformGestureSource } from "./studio-hybrid-dcc-transform-gesture";
 import type { Camera, Group, Scene } from "three";

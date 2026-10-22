@@ -8,7 +8,7 @@ import {
 } from "@toonstudio/studio-project-model/pinned-review-share";
 
 import { getApiErrorMessage } from "@/platform/api";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";

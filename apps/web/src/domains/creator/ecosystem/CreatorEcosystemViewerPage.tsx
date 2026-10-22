@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";

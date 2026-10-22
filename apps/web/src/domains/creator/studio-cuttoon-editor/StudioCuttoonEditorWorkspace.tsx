@@ -16,7 +16,7 @@ import { cn } from "@/shared/lib/utils";
 import { StudioCuttoonEditorCanvasColumn } from "./StudioCuttoonEditorCanvasColumn";
 import { StudioCuttoonEditorInspectorColumn } from "./StudioCuttoonEditorInspectorColumn";
 import { StudioCuttoonEditorPanels } from "./StudioCuttoonEditorPanels";
-import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { StudioCuttoonEditorSessionDialogs } from "./StudioCuttoonEditorSessionDialogs";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 

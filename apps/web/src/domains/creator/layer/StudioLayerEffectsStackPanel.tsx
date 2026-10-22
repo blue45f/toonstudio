@@ -27,7 +27,7 @@ import {
   type StudioLayerEffectsStack,
   type StudioReliefEffect,
 } from "./studio-layer-effects-stack";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 export interface StudioLayerEffectsStackPanelProps {
   readonly stack: StudioLayerEffectsStack;

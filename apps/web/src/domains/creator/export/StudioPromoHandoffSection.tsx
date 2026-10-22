@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PROMO_DOCUMENT_CUTS_MAX } from "../promo/promo-handoff-contract";
 import { SHOWCASE_PROMO_PATH } from "../publishing/showcase-links";
 import { downloadBlob } from "./studio-export";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 import {
   exceedsStudioPromoCutLimit,
   listStudioPromoCuts,

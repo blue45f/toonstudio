@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 const MAX_RECORDING_MS = 180_000;
 const MAX_RECORDING_BYTES = 20_000_000;

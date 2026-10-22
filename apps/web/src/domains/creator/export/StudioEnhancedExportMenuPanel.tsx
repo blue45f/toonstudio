@@ -28,7 +28,7 @@ import {
   type StudioExportMenuPanelProps,
 } from "./StudioExportMenuPanel";
 import { StudioPromoHandoffSection } from "./StudioPromoHandoffSection";
-import { subStatusText } from "../studio-sub-status-i18n";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 type PackageRunTone = "info" | "good" | "warn";
 

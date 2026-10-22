@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { scanHardcodedStatusStrings } from "../../shared/language/status-i18n";
+import { scanHardcodedStatusStrings } from "../../../shared/language/status-i18n";
 
 /**
  * StudioCuttoonEditorHost 잔여 문구 i18n 이관 계약 (A4 이관 3라운드 — 호스트).
@@ -28,7 +28,7 @@ function readSource(relativePath: string): string {
 
 function readProdOps(): string {
   return readFileSync(
-    new URL("./production-hub/ProductionOperationsControlWorkspace.tsx", import.meta.url),
+    new URL("../production-hub/ProductionOperationsControlWorkspace.tsx", import.meta.url),
     "utf-8",
   );
 }

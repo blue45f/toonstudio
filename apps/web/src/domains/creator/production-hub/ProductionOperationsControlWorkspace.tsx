@@ -13,7 +13,7 @@ import { downloadBlob } from "../export/studio-export";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
-import { hostErrorText } from "../studio-host-reason-i18n";
+import { hostErrorText } from "../status-i18n/studio-host-reason-i18n";
 
 type ControlView =
   | "schedule"

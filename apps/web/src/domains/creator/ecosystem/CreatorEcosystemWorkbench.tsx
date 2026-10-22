@@ -1,7 +1,7 @@
 import { ArrowRight, CheckCircle2, Download, Languages, LockKeyhole, WandSparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import { completeAutomaticFreeText } from "../studio-server-ai-client";
 import { createOriginalSample, ORIGINAL_CONTENT_CREDIT, SAMPLE_WORKS, type ProcessStage } from "./ecosystem-content";
