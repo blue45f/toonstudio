@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "Съдържание на профила",
   "userProfile.refresh": "Обновяване",
   "userProfile.emptyReviews": "Още не е публикуван от този потребител.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "Създадените произведения не можаха да се заредят. Опитайте отново.",
+  "userProfile.series.error": "Поредиците не можаха да се заредят. Опитайте отново.",
+  "userProfile.emptyReviewsHint": "Оставете първия отзив за заглавие, което обичате.",
+  "userProfile.emptyReviewsCta": "Разгледайте заглавията"
 }
