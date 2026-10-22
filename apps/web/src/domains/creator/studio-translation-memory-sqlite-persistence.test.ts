@@ -35,7 +35,7 @@ function entry(translation: string, now: number): StudioTranslationMemoryEntry {
     translation,
     now,
   });
-  if (!created.ok) throw new Error(created.error);
+  if (!created.ok) throw new Error(created.error.code);
   return created.entry;
 }
 

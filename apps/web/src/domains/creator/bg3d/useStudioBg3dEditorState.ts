@@ -32,6 +32,7 @@ export function useStudioBg3dEditorState(props) {
     getStudioBg3dRoomPreset, collectDeviceSignals, canonicalSceneDocument,
     DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT, StudioBg3dDestructiveMutationGuard, THREE,
     applyOrDeferStudioBg3dHistoryCamera,
+    resolveBg3dTemplateMigrationDataPreservedNote, resolveBg3dTemplateMigrationErrorByCode,
   } = R;
   const [primitiveGeometryPool] = useState(() => new StudioBg3dPrimitiveGeometryPool());
   const [adaptiveDprScale, setAdaptiveDprScale] = useState(1);
@@ -453,13 +454,12 @@ export function useStudioBg3dEditorState(props) {
 
 
 
-
-
   const historyRef = useRef<StudioBg3dHistorySnapshot[]>([]);
   const historyIndexRef = useRef(-1);
   const historyCommandTimelineRef = useRef<StudioBg3dHistoryCommandTimeline | null>(null);
 
   Object.assign(h, {
+    resolveBg3dTemplateMigrationDataPreservedNote, resolveBg3dTemplateMigrationErrorByCode,
     primitiveGeometryPool,
     adaptiveDprScale,
     setAdaptiveDprScale,

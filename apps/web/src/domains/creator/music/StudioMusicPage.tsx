@@ -28,6 +28,7 @@ import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
 
 import { MusicExternalImportPanel } from "./MusicExternalImportPanel";
+import { StudioMusicPageError } from "./studio-music-page-error";
 import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 import { MusicOstFlow } from "./MusicOstFlow";
 import { MusicProviderToolkit } from "./MusicProviderToolkit";
@@ -108,11 +109,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
     save: saveMusicTrack,
     remove: deleteMusicTrack,
   }));
-  const library = useSyncExternalStore(
-    recovery.subscribe,
-    recovery.getSnapshot,
-    recovery.getSnapshot,
-  );
+  const library = useSyncExternalStore(recovery.subscribe, recovery.getSnapshot, recovery.getSnapshot);
   const { tracks, savedIds, pendingIds } = library;
   const libraryLoading = Boolean(ownerId)
     && (library.loading || (!library.loaded && !library.loadError));
@@ -339,13 +336,13 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
   };
 
   const saveAgain = async (track: LocalMusicTrack) => {
-    if (pending.current) throw new Error("진행 중인 음악 생성을 마친 뒤 저장해 주세요.");
+    if (pending.current) throw new StudioMusicPageError("saveWhilePending");
     await recovery.save(track.metadata.id);
     setNotice(frozenStatus4Text("studio.frozenStatus4.music.savedExisting", "기존 음원을 기기에 저장했습니다. 외부 AI 생성 요청은 보내지 않았습니다."));
   };
 
   const remove = async (track: LocalMusicTrack) => {
-    if (pending.current) throw new Error("진행 중인 음악 생성을 마친 뒤 삭제해 주세요.");
+    if (pending.current) throw new StudioMusicPageError("deleteWhilePending");
     await recovery.remove(track.metadata.id);
     setNotice(frozenStatus4Text("studio.frozenStatus4.music.trackDeleted", "이 기기의 음원을 삭제했습니다."));
   };
@@ -364,10 +361,10 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
     const currentLibrary = recovery.getSnapshot();
     if (pending.current || lyricsPending.current || currentLibrary.loading || !currentLibrary.loaded
       || currentLibrary.loadError || currentLibrary.pendingIds.length) {
-      throw new Error("진행 중인 생성·저장을 마친 뒤 외부 음원을 가져와 주세요.");
+      throw new StudioMusicPageError("importWhilePending");
     }
     if (currentLibrary.tracks.length >= 20) {
-      throw new Error("보관함은 계정당 20곡까지입니다. 기존 음원을 다운로드한 뒤 삭제해 주세요.");
+      throw new StudioMusicPageError("libraryFull");
     }
     recovery.retain(track);
     setQuery("");

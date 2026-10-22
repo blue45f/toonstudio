@@ -409,7 +409,7 @@ describe("BG3D V12 legacy template migration", () => {
 
     await expect(library.loadBg3dTemplatesV12WithLegacyMigration({
       authority: harness.authority,
-    })).rejects.toMatchObject({ code: "migration-failed" });
+    })).rejects.toMatchObject({ code: "migration-legacy-read-failed" });
     expect(harness.manifest()).toBeNull();
   });
 
@@ -427,8 +427,8 @@ describe("BG3D V12 legacy template migration", () => {
 
     await expect(library.loadBg3dTemplatesV12WithLegacyMigration({ authority }))
       .rejects.toMatchObject({
-        code: "migration-failed",
-        message: "기존 3D 템플릿을 SQLite/OPFS manifest에 최종 게시하지 못했습니다.",
+        code: "migration-publish-failed",
+        message: "migration-publish-failed",
       });
   });
 
@@ -456,7 +456,7 @@ describe("BG3D V12 legacy template migration", () => {
 
     await expect(library.loadBg3dTemplatesV12WithLegacyMigration({
       authority: harness.authority,
-    })).rejects.toMatchObject({ code: "migration-failed" });
+    })).rejects.toMatchObject({ code: "migration-corrupt-rows" });
     expect(harness.manifest()).toBeNull();
   });
 });
