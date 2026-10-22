@@ -86,11 +86,14 @@ export function AnchorCandidateList({ items, selectedId, previewUrls, onSelect }
               <span className="flex flex-wrap gap-1.5 text-xs">
                 <span className="rounded-full border border-line px-2 py-0.5 text-fg-2">{t(CANDIDATE_STATUS_KEYS[item.status])}</span>
                 {item.score ? (
-                  <span className={cn("rounded-full border px-2 py-0.5 font-medium", BAND_TONE[item.score.band])}>
-                    {t("anchorLab.candidates.card.score", { score: Math.round(item.score.score * 100) })}
-                    {" · "}
-                    {t(BAND_KEYS[item.score.band])}
-                  </span>
+                  <>
+                    <span className={cn("rounded-full border px-2 py-0.5 font-medium", BAND_TONE[item.score.band])}>
+                      {t("anchorLab.candidates.card.score", { score: Math.round(item.score.score * 100) })}
+                    </span>
+                    <span className={cn("rounded-full border px-2 py-0.5", BAND_TONE[item.score.band])}>
+                      {t(BAND_KEYS[item.score.band])}
+                    </span>
+                  </>
                 ) : item.status === "done" ? (
                   <span className="rounded-full border border-line px-2 py-0.5 text-fg-3">{t("anchorLab.candidates.card.noScore")}</span>
                 ) : null}

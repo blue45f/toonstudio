@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { APP_I18N_NAMESPACES } from "@/shared/lib/i18n-asset-manifest";
+import { resolveSiteRouteAuthority } from "@/shared/lib/site-route-authority";
 
 import type { AnchorDifference } from "./anchor-consistency-differences";
 import { ANCHOR_ANGLE_IDS } from "./anchor-capture-spec";
@@ -43,14 +44,14 @@ function placeholdersOf(text: string): string[] {
   return [...text.matchAll(/\{(\w+)\}/gu)].map((match) => match[1] ?? "").sort();
 }
 
-/** 이 화면을 이루는 소스(시험 제외)와, 같은 키를 쓰는 라우트 권위 파일. */
+/** 이 화면을 이루는 소스(시험 제외). */
 function sourceFiles(): string[] {
   const own = [here, path.join(here, "ui")].flatMap((directory) =>
     readdirSync(directory)
       .filter((name) => /\.(ts|tsx)$/u.test(name) && !/\.test\.|test-kit|synthetic|i18n-builtins/u.test(name))
       .map((name) => path.join(directory, name)),
   );
-  return [...own, path.resolve(here, "../../../shared/lib/site-route-authority.ts")];
+  return own;
 }
 
 function usedKeys(): Set<string> {
@@ -66,6 +67,15 @@ function usedKeys(): Set<string> {
 describe("anchorLab 사전", () => {
   it("네임스페이스가 매니페스트에 등록되어 있다", () => {
     expect(APP_I18N_NAMESPACES).toContain("anchorLab");
+  });
+
+  it("라우트 제목은 지연 등록 전에도 풀리도록 셸 route 네임스페이스에 있다(anchorLab 지연 묶음에 두지 않는다)", () => {
+    const route = (locale: string): Record<string, string> =>
+      JSON.parse(readFileSync(path.resolve(here, `../../../../public/i18n/app/route/${locale}.json`), "utf8")) as Record<string, string>;
+    expect(route("ko")["route.anchorLab"]).toBe("캐릭터 앵커 연구실");
+    expect(route("en")["route.anchorLab"]).toBe("Character anchor lab");
+    expect(resolveSiteRouteAuthority("/studio/anchor-lab")?.titleKey).toBe("route.anchorLab");
+    expect(KO["anchorLab.route.title"]).toBeUndefined();
   });
 
   it("ko 와 en 의 키 집합이 같고 모든 키가 anchorLab. 으로 시작한다", () => {

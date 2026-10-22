@@ -1,6 +1,5 @@
 {
   "en": {
-    "anchorLab.route.title": "Character anchor lab",
     "anchorLab.header.eyebrow": "Experimental",
     "anchorLab.header.title": "Character anchor lab",
     "anchorLab.header.lead": "Build an anchor set of a 3D character shot from the front, sides and back, then check on this device how closely AI-drawn candidates resemble it.",
@@ -49,7 +48,7 @@
     "anchorLab.slot.replace": "Replace",
     "anchorLab.slot.clear": "Clear",
     "anchorLab.slot.retry": "Read again",
-    "anchorLab.slot.download": "Download original",
+    "anchorLab.slot.download": "Download",
     "anchorLab.slot.previewAlt": "{angle} anchor image",
     "anchorLab.slot.meta": "{width}×{height}px · {size}",
     "anchorLab.slot.inputLabel": "Select the {angle} image file",
@@ -244,7 +243,6 @@
     "anchorLab.diff.subjectNotSeparated.candidate": "The subject could not be separated from the background in the candidate, so the whole images were compared."
   },
   "ko": {
-    "anchorLab.route.title": "캐릭터 앵커 연구실",
     "anchorLab.header.eyebrow": "실험 기능",
     "anchorLab.header.title": "캐릭터 앵커 연구실",
     "anchorLab.header.lead": "3D 캐릭터를 정면·좌우·후면에서 찍은 앵커 세트를 만들고, AI가 그린 후보 이미지가 앵커와 얼마나 닮았는지 이 기기 안에서 가볍게 점검해요.",
@@ -293,7 +291,7 @@
     "anchorLab.slot.replace": "바꾸기",
     "anchorLab.slot.clear": "비우기",
     "anchorLab.slot.retry": "다시 읽기",
-    "anchorLab.slot.download": "원본 내려받기",
+    "anchorLab.slot.download": "내려받기",
     "anchorLab.slot.previewAlt": "{angle} 앵커 이미지",
     "anchorLab.slot.meta": "{width}×{height}px · {size}",
     "anchorLab.slot.inputLabel": "{angle} 이미지 파일 선택",

@@ -45,7 +45,7 @@ function ImageFrame({ url, alt, caption }: { readonly url: string | undefined; r
           <ImageOff size={28} aria-hidden="true" className="text-fg-3" />
         )}
       </div>
-      <figcaption className="truncate text-sm font-medium text-fg" title={caption}>{caption}</figcaption>
+      <figcaption className="break-all text-sm font-medium text-fg">{caption}</figcaption>
     </figure>
   );
 }

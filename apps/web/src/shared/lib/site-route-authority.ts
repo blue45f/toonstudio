@@ -238,7 +238,7 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
   route({
     id: "studio-anchor-lab",
     path: "/studio/anchor-lab",
-    titleKey: "anchorLab.route.title",
+    titleKey: "route.anchorLab",
     label: { ko: "캐릭터 앵커 연구실", en: "Character anchor lab" },
     description: {
       ko: "정/반측 턴테이블 앵커 세트를 만들고 후보 이미지를 휴리스틱 참고 점수로 견주기",

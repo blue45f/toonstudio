@@ -1,5 +1,4 @@
 {
-  "anchorLab.route.title": "Character anchor lab",
   "anchorLab.header.eyebrow": "Experimental",
   "anchorLab.header.title": "Character anchor lab",
   "anchorLab.header.lead": "Build an anchor set of a 3D character shot from the front, sides and back, then check on this device how closely AI-drawn candidates resemble it.",
@@ -48,7 +47,7 @@
   "anchorLab.slot.replace": "Replace",
   "anchorLab.slot.clear": "Clear",
   "anchorLab.slot.retry": "Read again",
-  "anchorLab.slot.download": "Download original",
+  "anchorLab.slot.download": "Download",
   "anchorLab.slot.previewAlt": "{angle} anchor image",
   "anchorLab.slot.meta": "{width}×{height}px · {size}",
   "anchorLab.slot.inputLabel": "Select the {angle} image file",

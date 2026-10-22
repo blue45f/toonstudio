@@ -41,7 +41,7 @@ describe("site route authority", () => {
       id: "studio-anchor-lab",
       kind: "static",
       canonicalPath: "/studio/anchor-lab",
-      titleKey: "anchorLab.route.title",
+      titleKey: "route.anchorLab",
       maturity: "experimental",
       tier: "labs",
       access: "public",

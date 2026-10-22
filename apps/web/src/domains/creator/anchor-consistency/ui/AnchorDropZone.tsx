@@ -75,7 +75,7 @@ export function AnchorDropZone({
         <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
           <ImagePlus size={20} />
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-56">
           <p className="font-semibold text-fg">{zoneLabel}</p>
           {hint ? <p className="text-sm text-fg-3">{hint}</p> : null}
         </div>
