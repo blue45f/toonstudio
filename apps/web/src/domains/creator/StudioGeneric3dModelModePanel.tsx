@@ -12,12 +12,18 @@ import {
 import { useId } from "react";
 
 import {
-  STUDIO_GENERIC_3D_CLASSIFICATION_LABELS,
-  STUDIO_GENERIC_3D_RIG_LABELS,
   getStudioGeneric3dCapability,
   type StudioGeneric3dClassification,
   type StudioGeneric3dModelManifest,
 } from "./studio-generic-3d-model-mode";
+import {
+  resolveStudioGeneric3dAdmissionMessage,
+  resolveStudioGeneric3dCapabilityDetail,
+  resolveStudioGeneric3dClassificationLabel,
+  resolveStudioGeneric3dLimitationDetail,
+  resolveStudioGeneric3dLimitationTitle,
+  resolveStudioGeneric3dRigLabel,
+} from "./status-i18n/studio-producer-error-i18n-generic3d";
 
 import type { StudioGeneric3dPoseProxy } from "./studio-generic-3d-pose-proxy";
 
@@ -130,7 +136,7 @@ export function StudioGeneric3dModelModePanel({
             {manifest.name}
           </p>
           <p className="mt-1 text-[0.66rem] leading-relaxed text-fg-3">
-            {FORMAT_LABELS[manifest.sourceFormat]} · {STUDIO_GENERIC_3D_RIG_LABELS[manifest.rigStatus]}
+            {FORMAT_LABELS[manifest.sourceFormat]} · {resolveStudioGeneric3dRigLabel(manifest.rigStatus)}
           </p>
         </div>
       </div>
@@ -153,7 +159,7 @@ export function StudioGeneric3dModelModePanel({
         )}
         <span>
           <strong className="font-bold">{admissionLabel(manifest)}</strong>
-          <span className="text-fg-3"> · {manifest.admission.message}</span>
+          <span className="text-fg-3"> · {resolveStudioGeneric3dAdmissionMessage(manifest.admission)}</span>
         </span>
       </div>
 
@@ -176,7 +182,7 @@ export function StudioGeneric3dModelModePanel({
                   )}
                   onClick={() => onClassificationChange(classification)}
                 >
-                  {STUDIO_GENERIC_3D_CLASSIFICATION_LABELS[classification]}
+                  {resolveStudioGeneric3dClassificationLabel(classification)}
                 </button>
               );
             })}
@@ -223,7 +229,7 @@ export function StudioGeneric3dModelModePanel({
           <div className="sr-only">
             {MODE_DEFINITIONS.map((mode) => (
               <p key={mode.id} id={`${id}-${mode.id}-hint`}>
-                {getStudioGeneric3dCapability(manifest, mode.capability).detail}
+                {resolveStudioGeneric3dCapabilityDetail(getStudioGeneric3dCapability(manifest, mode.capability))}
               </p>
             ))}
           </div>
@@ -322,9 +328,9 @@ export function StudioGeneric3dModelModePanel({
                     ? "text-warn"
                     : "text-fg-2",
               )}>
-                {item.title}
+                {resolveStudioGeneric3dLimitationTitle(item)}
               </strong>
-              <span> · {item.detail}</span>
+              <span> · {resolveStudioGeneric3dLimitationDetail(item)}</span>
             </li>
           )) : (
             <li className="py-1 text-[0.66rem] text-good">{r3c07StatusText("studio.panelStatus.r3c07.generic3dMode.noLimitations", "확인된 제한 사항이 없습니다.")}</li>

@@ -18,6 +18,13 @@ import {
   type StudioRevisionPublicationImpact,
 } from "./studio-server-revision-comparison";
 
+import {
+  StudioRevisionCompareComplexityError,
+  StudioRevisionCompareError,
+  type StudioRevisionCompareComplexityLabelCode,
+  type StudioRevisionCompareErrorCode,
+} from "./studio-revision-compare-error";
+
 import { projectRevisionComparisonValue } from "@/shared/lib/revision-comparison-projection";
 
 const STUDIO_REVISION_COMPARE_WORKER_VERSION = 1 as const;
@@ -41,8 +48,6 @@ export const STUDIO_REVISION_COMPARE_MAX_PAGE_ID_LIST = 200;
 export const STUDIO_REVISION_COMPARE_MAX_PAGE_LABELS = 600;
 export const STUDIO_REVISION_COMPARE_MAX_WORKER_ERROR_NAME = 120;
 export const STUDIO_REVISION_COMPARE_MAX_WORKER_ERROR_MESSAGE = 2_000;
-
-const WORKER_CONTRACT_ERROR_MESSAGE = "버전 비교 Worker 응답 계약이 올바르지 않습니다.";
 
 interface StudioRevisionCompareInputComplexity {
   elements: number;
@@ -194,11 +199,9 @@ export function createStudioRevisionCompareModuleWorker(): StudioRevisionCompare
 
 function createAbortError(): Error {
   if (typeof DOMException === "function") {
-    return new DOMException("버전 비교를 취소했습니다.", "AbortError");
+    return new DOMException("aborted", "AbortError");
   }
-  const error = new Error("버전 비교를 취소했습니다.");
-  error.name = "AbortError";
-  return error;
+  return new StudioRevisionCompareError("aborted", "AbortError");
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -211,18 +214,25 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return prototype === Object.prototype || prototype === null;
 }
 
-function complexityError(message: string): RangeError {
-  return new RangeError(`버전 비교 입력이 안전 한도를 넘었습니다: ${message}`);
+function complexityError(
+  labelCode: StudioRevisionCompareComplexityLabelCode,
+  params?: Readonly<Record<string, string>>,
+): StudioRevisionCompareComplexityError {
+  return new StudioRevisionCompareComplexityError(labelCode, params);
+}
+
+function maxParam(maximum: number): Readonly<Record<string, string>> {
+  return { max: maximum.toLocaleString("en-US") };
 }
 
 function incrementBudget(
   current: number,
   increment: number,
   maximum: number,
-  label: string
+  labelCode: StudioRevisionCompareComplexityLabelCode
 ): number {
   if (!Number.isSafeInteger(increment) || increment < 0 || current > maximum - increment) {
-    throw complexityError(`${label} 최대 ${maximum.toLocaleString("en-US")}`);
+    throw complexityError(labelCode, maxParam(maximum));
   }
   return current + increment;
 }
@@ -241,9 +251,9 @@ function isCanonicalArrayIndex(key: string, length: number): boolean {
 function assertStudioRevisionCompareInputComplexity(
   input: StudioServerRevisionComparisonInput
 ): StudioRevisionCompareInputComplexity {
-  if (!isPlainRecord(input)) throw complexityError("입력 객체 형식");
+  if (!isPlainRecord(input)) throw complexityError("inputFormat");
   if (!isRevision(input.targetRevision) || !isRevision(input.baseRevision)) {
-    throw complexityError("revision 형식");
+    throw complexityError("revisionFormat");
   }
 
   const complexity: StudioRevisionCompareInputComplexity = {
@@ -259,27 +269,25 @@ function assertStudioRevisionCompareInputComplexity(
 
   const consumeString = (value: string): void => {
     if (value.length > STUDIO_REVISION_COMPARE_MAX_INDIVIDUAL_STRING_CODE_UNITS) {
-      throw complexityError(
-        `개별 문자열 최대 ${STUDIO_REVISION_COMPARE_MAX_INDIVIDUAL_STRING_CODE_UNITS.toLocaleString("en-US")}자`
-      );
+      throw complexityError("individualString", maxParam(STUDIO_REVISION_COMPARE_MAX_INDIVIDUAL_STRING_CODE_UNITS));
     }
     complexity.stringCodeUnits = incrementBudget(
       complexity.stringCodeUnits,
       value.length,
       STUDIO_REVISION_COMPARE_MAX_STRING_CODE_UNITS,
-      "문자열 총 길이"
+      "stringTotal"
     );
   };
 
   const visit = (value: unknown, depth: number, propertyName?: string): void => {
     if (depth > STUDIO_REVISION_COMPARE_MAX_DEPTH) {
-      throw complexityError(`중첩 깊이 최대 ${STUDIO_REVISION_COMPARE_MAX_DEPTH}`);
+      throw complexityError("depth", { max: String(STUDIO_REVISION_COMPARE_MAX_DEPTH) });
     }
     complexity.nodes = incrementBudget(
       complexity.nodes,
       1,
       STUDIO_REVISION_COMPARE_MAX_NODES,
-      "노드 수"
+      "nodes"
     );
 
     if (typeof value === "string") {
@@ -294,17 +302,17 @@ function assertStudioRevisionCompareInputComplexity(
     ) {
       return;
     }
-    if (typeof value !== "object") throw complexityError("복제할 수 없는 값");
+    if (typeof value !== "object") throw complexityError("uncloneable");
     if (Array.isArray(value) && propertyName === "elements" && !countedElementArrays.has(value)) {
       countedElementArrays.add(value);
       complexity.elements = incrementBudget(
         complexity.elements,
         value.length,
         STUDIO_REVISION_COMPARE_MAX_ELEMENTS,
-        "페이지·마스터 요소 수"
+        "elements"
       );
     }
-    if (active.has(value)) throw complexityError("순환 참조는 허용되지 않음");
+    if (active.has(value)) throw complexityError("circular");
     if (seen.has(value)) return;
     seen.add(value);
     active.add(value);
@@ -315,54 +323,52 @@ function assertStudioRevisionCompareInputComplexity(
           complexity.arrayItems,
           value.length,
           STUDIO_REVISION_COMPARE_MAX_ARRAY_ITEMS,
-          "배열 항목 수"
+          "arrayItems"
         );
 
         const keys = Object.keys(value);
         const ownNames = Object.getOwnPropertyNames(value);
         if (ownNames.length !== keys.length + 1 || !ownNames.includes("length")) {
-          throw complexityError("배열 비열거 속성은 허용되지 않음");
+          throw complexityError("arrayNonEnumerable");
         }
         for (const key of keys) {
           if (!isCanonicalArrayIndex(key, value.length)) {
-            throw complexityError("배열 사용자 정의 속성은 허용되지 않음");
+            throw complexityError("arrayCustomProperty");
           }
           const descriptor = Object.getOwnPropertyDescriptor(value, key);
           if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
-            throw complexityError("배열 속성 형식");
+            throw complexityError("arrayPropertyFormat");
           }
           consumeString(key);
           visit(descriptor.value, depth + 1);
         }
         if (Object.getOwnPropertySymbols(value).length > 0) {
-          throw complexityError("Symbol 속성은 허용되지 않음");
+          throw complexityError("symbolProperty");
         }
         return;
       }
 
-      if (!isPlainRecord(value)) throw complexityError("일반 객체가 아닌 값");
+      if (!isPlainRecord(value)) throw complexityError("nonPlainObject");
       const keys = Object.keys(value);
       if (Object.getOwnPropertyNames(value).length !== keys.length) {
-        throw complexityError("비열거 속성은 허용되지 않음");
+        throw complexityError("nonEnumerable");
       }
       if (keys.length > STUDIO_REVISION_COMPARE_MAX_KEYS_PER_OBJECT) {
-        throw complexityError(
-          `객체당 키 수 최대 ${STUDIO_REVISION_COMPARE_MAX_KEYS_PER_OBJECT.toLocaleString("en-US")}`
-        );
+        throw complexityError("keysPerObject", maxParam(STUDIO_REVISION_COMPARE_MAX_KEYS_PER_OBJECT));
       }
       complexity.objectKeys = incrementBudget(
         complexity.objectKeys,
         keys.length,
         STUDIO_REVISION_COMPARE_MAX_OBJECT_KEYS,
-        "객체 키 수"
+        "objectKeys"
       );
       if (Object.getOwnPropertySymbols(value).length > 0) {
-        throw complexityError("Symbol 속성은 허용되지 않음");
+        throw complexityError("symbolProperty");
       }
       for (const key of keys) {
         const descriptor = Object.getOwnPropertyDescriptor(value, key);
         if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
-          throw complexityError("접근자 속성은 허용되지 않음");
+          throw complexityError("accessorProperty");
         }
         consumeString(key);
         visit(descriptor.value, depth + 1, key);
@@ -375,8 +381,8 @@ function assertStudioRevisionCompareInputComplexity(
   try {
     visit(input, 0);
   } catch (error) {
-    if (error instanceof RangeError) throw error;
-    throw complexityError("검증할 수 없는 객체 구조");
+    if (error instanceof StudioRevisionCompareComplexityError) throw error;
+    throw complexityError("unverifiableStructure");
   }
   return complexity;
 }
@@ -388,9 +394,7 @@ function runDirect(
 ): StudioServerRevisionComparison {
   throwIfAborted(signal);
   if (complexity.elements > STUDIO_REVISION_COMPARE_DIRECT_MAX_ELEMENTS) {
-    throw new RangeError(
-      `선택한 direct 버전 비교는 안전 상한(${STUDIO_REVISION_COMPARE_DIRECT_MAX_ELEMENTS.toLocaleString("en-US")}개 요소)을 적용합니다.`
-    );
+    throw new StudioRevisionCompareError("directLimitExceeded", "RangeError", maxParam(STUDIO_REVISION_COMPARE_DIRECT_MAX_ELEMENTS));
   }
   const comparison = buildStudioServerRevisionComparison(input);
   throwIfAborted(signal);
@@ -398,16 +402,16 @@ function runDirect(
 }
 
 function revisionWorkerFailure(
-  message: string,
+  code: StudioRevisionCompareErrorCode,
   name = "StudioRevisionCompareWorkerError",
-): Error {
-  const error = new Error(message);
-  error.name = name;
-  return error;
+): StudioRevisionCompareError {
+  return new StudioRevisionCompareError(code, name);
 }
 
 function workerError(response: StudioRevisionCompareWorkerFailure): Error {
-  const error = new Error(response.error.message || "버전 비교 Worker 실행에 실패했습니다.");
+  // 잔존 병기: Worker 페이로드가 실어 보낸 동적 message는 발신측 소유 문자열이라 패스스루한다(설계 §2.19).
+  if (!response.error.message) return revisionWorkerFailure("workerFailed");
+  const error = new Error(response.error.message);
   error.name = response.error.name || "Error";
   return error;
 }
@@ -690,18 +694,18 @@ function parseWorkerResponse(value: unknown): StudioRevisionCompareWorkerRespons
   let versionMismatch = false;
   try {
     if (!isPlainRecord(value) || typeof value.type !== "string") {
-      throw new Error(WORKER_CONTRACT_ERROR_MESSAGE);
+      throw new StudioRevisionCompareError("workerContractInvalid");
     }
     if (value.version !== STUDIO_REVISION_COMPARE_WORKER_VERSION) {
       versionMismatch = true;
-      throw new Error("버전 비교 Worker 응답 버전이 올바르지 않습니다.");
+      throw new StudioRevisionCompareError("workerVersionInvalid");
     }
     if (value.type === "studio-revision-compare/success") {
       if (
         !hasOnlyDataKeys(value, SUCCESS_KEYS, ["type", "version", "comparison"]) ||
         !isStudioServerRevisionComparison(value.comparison)
       ) {
-        throw new Error(WORKER_CONTRACT_ERROR_MESSAGE);
+        throw new StudioRevisionCompareError("workerContractInvalid");
       }
       return value as unknown as StudioRevisionCompareWorkerSuccess;
     }
@@ -717,14 +721,14 @@ function parseWorkerResponse(value: unknown): StudioRevisionCompareWorkerRespons
         value.error.message.length === 0 ||
         value.error.message.length > STUDIO_REVISION_COMPARE_MAX_WORKER_ERROR_MESSAGE
       ) {
-        throw new Error(WORKER_CONTRACT_ERROR_MESSAGE);
+        throw new StudioRevisionCompareError("workerContractInvalid");
       }
       return value as unknown as StudioRevisionCompareWorkerFailure;
     }
-    throw new Error(WORKER_CONTRACT_ERROR_MESSAGE);
+    throw new StudioRevisionCompareError("workerContractInvalid");
   } catch {
-    if (versionMismatch) throw new Error("버전 비교 Worker 응답 버전이 올바르지 않습니다.");
-    throw new Error(WORKER_CONTRACT_ERROR_MESSAGE);
+    if (versionMismatch) throw new StudioRevisionCompareError("workerVersionInvalid");
+    throw new StudioRevisionCompareError("workerContractInvalid");
   }
 }
 
@@ -747,7 +751,7 @@ async function projectStudioRevisionComparisonInput(
     !isPlainRecord(projected.baseSnapshot) ||
     !isPlainRecord(projected.localProject)
   ) {
-    throw complexityError("안전 투영 결과 형식");
+    throw complexityError("projectionFormat");
   }
   return projected as unknown as StudioServerRevisionComparisonInput;
 }
@@ -760,10 +764,7 @@ function runWithWorker(
   return new Promise((resolve, reject) => {
     let settled = false;
     const timeout = setTimeout(() => {
-      finish(() => reject(revisionWorkerFailure(
-        "버전 비교 시간이 너무 오래 걸려 중단했습니다.",
-        "TimeoutError",
-      )));
+      finish(() => reject(revisionWorkerFailure("workerTimeout", "TimeoutError")));
     }, 30_000);
     const cleanup = () => {
       clearTimeout(timeout);
@@ -793,16 +794,14 @@ function runWithWorker(
         return;
       }
       if (!comparisonMatchesRequest(response.comparison, input)) {
-        finish(() => reject(new Error("버전 비교 Worker가 다른 revision 결과를 반환했습니다.")));
+        finish(() => reject(revisionWorkerFailure("workerRevisionMismatch")));
         return;
       }
       finish(() => resolve(response.comparison));
     };
     worker.onerror = (event) => {
       event.preventDefault?.();
-      finish(() => reject(revisionWorkerFailure(
-        "버전 비교 Worker 실행에 실패했습니다.",
-      )));
+      finish(() => reject(revisionWorkerFailure("workerFailed")));
     };
     signal?.addEventListener("abort", onAbort, { once: true });
     if (signal?.aborted) {
@@ -816,9 +815,7 @@ function runWithWorker(
         input,
       });
     } catch {
-      finish(() => reject(revisionWorkerFailure(
-        "버전 비교 Worker 요청을 시작하지 못했습니다.",
-      )));
+      finish(() => reject(revisionWorkerFailure("workerRequestFailed")));
     }
   });
 }
@@ -830,7 +827,7 @@ export async function runStudioRevisionComparison(
 ): Promise<StudioServerRevisionComparison> {
   const executionBackend = options.executionBackend ?? "worker";
   if (executionBackend !== "worker" && executionBackend !== "direct") {
-    throw new TypeError("버전 비교 실행 backend가 올바르지 않습니다.");
+    throw new StudioRevisionCompareError("backendInvalid");
   }
   throwIfAborted(options.signal);
   // Validate the raw graph before the projection itself allocates, then ensure no data:/blob:
@@ -846,17 +843,17 @@ export async function runStudioRevisionComparison(
     ? createStudioRevisionCompareModuleWorker
     : options.workerFactory;
   if (!factory) {
-    throw revisionWorkerFailure("버전 비교 Worker를 사용할 수 없습니다.");
+    throw revisionWorkerFailure("workerUnavailable");
   }
 
   let worker: StudioRevisionCompareWorkerLike | null;
   try {
     worker = factory();
   } catch {
-    throw revisionWorkerFailure("버전 비교 Worker를 생성하지 못했습니다.");
+    throw revisionWorkerFailure("workerCreateFailed");
   }
   if (!worker) {
-    throw revisionWorkerFailure("버전 비교 Worker를 사용할 수 없습니다.");
+    throw revisionWorkerFailure("workerUnavailable");
   }
   return runWithWorker(worker, projectedInput, options.signal);
 }

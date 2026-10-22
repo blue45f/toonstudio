@@ -209,7 +209,7 @@ describe("runStudioRevisionComparison", () => {
       workerFactory: null,
     })).rejects.toMatchObject({
       name: "StudioRevisionCompareWorkerError",
-      message: "버전 비교 Worker를 사용할 수 없습니다.",
+      message: "workerUnavailable",
     });
 
     const throwingFactory = vi.fn((): StudioRevisionCompareWorkerLike => {
@@ -220,7 +220,7 @@ describe("runStudioRevisionComparison", () => {
       workerFactory: throwingFactory,
     })).rejects.toMatchObject({
       name: "StudioRevisionCompareWorkerError",
-      message: "버전 비교 Worker를 생성하지 못했습니다.",
+      message: "workerCreateFailed",
     });
     expect(throwingFactory).toHaveBeenCalledOnce();
   });
@@ -232,7 +232,7 @@ describe("runStudioRevisionComparison", () => {
       workerFactory: () => postFailure,
     })).rejects.toMatchObject({
       name: "StudioRevisionCompareWorkerError",
-      message: "버전 비교 Worker 요청을 시작하지 못했습니다.",
+      message: "workerRequestFailed",
     });
     expect(postFailure.postMessageCount).toBe(1);
     expect(postFailure.terminateCount).toBe(1);
@@ -243,7 +243,7 @@ describe("runStudioRevisionComparison", () => {
       workerFactory: () => runtimeFailure,
     })).rejects.toMatchObject({
       name: "StudioRevisionCompareWorkerError",
-      message: "버전 비교 Worker 실행에 실패했습니다.",
+      message: "workerFailed",
     });
     expect(runtimeFailure.postMessageCount).toBe(1);
     expect(runtimeFailure.preventDefault).toHaveBeenCalledOnce();
@@ -282,7 +282,7 @@ describe("runStudioRevisionComparison", () => {
 
     await expect(runStudioRevisionComparison(huge, {
       executionBackend: "direct",
-    })).rejects.toThrow(/direct 버전 비교는 안전 상한/);
+    })).rejects.toThrow(/directLimitExceeded/);
   });
 
   it("rejects null and malformed Worker envelopes instead of trusting TypeScript types", async () => {
@@ -299,7 +299,7 @@ describe("runStudioRevisionComparison", () => {
           executionBackend: "worker",
           workerFactory: () => worker,
         })
-      ).rejects.toThrow(/응답 계약/);
+      ).rejects.toThrow(/workerContractInvalid/);
       expect(worker.terminateCount).toBe(1);
     }
   });
@@ -328,7 +328,7 @@ describe("runStudioRevisionComparison", () => {
       workerFactory: () => oversized,
     }).catch((cause: unknown) => cause);
     expect(error).toBeInstanceOf(Error);
-    expect(String(error)).toContain("응답 계약");
+    expect(String(error)).toContain("workerContractInvalid");
     expect(String(error)).not.toContain(oversizedPrivateMessage);
   });
 
@@ -375,7 +375,7 @@ describe("runStudioRevisionComparison", () => {
           executionBackend: "worker",
           workerFactory: () => new ReplyWorker(response),
         })
-      ).rejects.toThrow(/응답 계약/);
+      ).rejects.toThrow(/workerContractInvalid/);
     }
   });
 

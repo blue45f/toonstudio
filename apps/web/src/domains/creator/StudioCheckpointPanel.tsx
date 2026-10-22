@@ -25,6 +25,7 @@ import type { StudioRevisionChange } from "./studio-revision-diff";
 import type { StudioServerRevisionComparison } from "./studio-server-revision-comparison";
 
 import { getWorkRevisionComparison } from "@/platform/creator-client";
+import { resolveStudioRevisionCompareErrorFromCause } from "./status-i18n/studio-producer-error-i18n-revision-compare";
 
 export interface StudioServerRevisionSummary {
   revision: number;
@@ -340,7 +341,7 @@ export function StudioCheckpointPanel({
       controller.abort();
       if (!shouldReport) return;
       if (cause instanceof Error && cause.name === "AbortError" && requestWasAborted) return;
-      setComparisonError(cause instanceof Error ? cause.message : panelStatusText("studio.panelStatus.checkpoint.compareFailed", "서버 버전을 비교하지 못했어요."));
+      setComparisonError(resolveStudioRevisionCompareErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : panelStatusText("studio.panelStatus.checkpoint.compareFailed", "서버 버전을 비교하지 못했어요.")));
     } finally {
       if (comparisonAbortRef.current === controller) comparisonAbortRef.current = null;
       // 실패 시 sibling fetch/Worker를 취소하기 위해 catch에서 abort하더라도, 여전히 같은
