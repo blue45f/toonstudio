@@ -16,7 +16,7 @@ import {
   StudioVirtualSpacePage, StudioProductionToolchainPage, StudioEngineCenterPage,
   StudioProductionJobsPage, StudioGenerativePage, StudioSpatialReaderPage,
   StudioTemplatesPage, StudioRouter, CreatorAnalyticsPage, StudioPoserPage,
-  PdfWorkbenchPage,
+  PdfWorkbenchPage, BranchingCuttoonLabPage,
 } from "./creator-route-pages";
 import { creatorCreateRoutes, creatorShowcaseRoutes } from "./creator-showcase-routes";
 
@@ -110,6 +110,10 @@ export const creatorRoutes = defineAppRoutes([
   // PDF 워크벤치: 발행·가져온 PDF의 페이지 재배열·병합·분할 후단 작업 화면.
   // /studio/* 와일드카드보다 먼저 둔다.
   { id: "creator-studio-pdf-workbench", path: studioRoutePath("pdf-workbench"), element: <PdfWorkbenchPage /> },
+
+  // 분기형 컷툰 실험(Labs, experimental 성숙도): 독자가 선택지로 이야기를 고르는 컷툰을 목록으로 만들고 미리 읽는다.
+  // /studio/* 와일드카드보다 먼저 둔다. 서버 저장·통계·정산은 없다(docs/features/branching-cuttoon.md).
+  { id: "creator-studio-branching-cuttoon", path: "/studio/branching-cuttoon", element: <BranchingCuttoonLabPage /> },
 
   // /studio/canvas and all scoped editor/production routes continue through the established router.
   { id: "creator-studio", path: "/studio/*", element: <StudioRouter /> },

@@ -301,6 +301,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/studio/jobs", "처리 중 작업", "Production jobs", "무거운 제작 작업과 결과 영수증 관리", "Manage production jobs and result receipts"),
       destination("/studio/ai-lab", "AI 실험실", "AI lab", "사용자 키로 창작 추론 작업 실행", "Run creator-funded inference workflows"),
       destination("/studio/ai-runtime", "개인 AI 런타임", "Personal AI runtime", "직접 운영하는 추론 서버 연결", "Connect a creator-operated inference server"),
+      destination("/studio/branching-cuttoon", "분기형 컷툰 실험", "Branching cuttoon lab", "독자가 선택지로 이야기를 고르는 컷툰을 만들고 미리 읽기", "Build and preview a cuttoon whose story branches by reader choices"),
       destination("/settings/ai", "AI 연결과 사용 순서", "AI connections and routing", "자동 무료 AI, 내 API 키와 기능별 사용 순서 관리", "Manage automatic free AI, personal credentials and per-capability routing"),
       destination("/studio/ecosystem", "창작 생태계", "Creator ecosystem", "제작 도구·작업·리소스를 한곳에서 관리", "Manage creation tools, work and resources together"),
       destination("/studio/analytics", "창작자 애널리틱스", "Creator analytics", "시리즈별 조회·반응·구독 전환과 회차별 리텐션 확인", "Review series views, reactions, subscriptions and episode retention"),
