@@ -149,9 +149,9 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     expect(source.lintStrictMaxWarnings).toBeGreaterThan(0);
     expect(read("package.json")).toContain(`--max-warnings=${source.lintStrictMaxWarnings}`);
     expect(factValues("quality-gates")).toEqual(expect.arrayContaining(["7", "17", "5"]));
-    // 번들 크기는 마지막으로 받아들인 측정값(baseline)에서 2% 넘게 커지면 실패하는 래칫이고, CI build 잡이 이 검사를 돌린다.
+    // 번들 바이트·청크 수는 기록만 하고(상한 없음, 42a1c01c) 구조 계약만 막는다. CI build 잡이 이 검사를 돌린다.
     const bundleCheck = read("scripts/check-studio-bundle.mjs");
-    expect(bundleCheck).toContain("byteTolerance: 0.02");
+    expect(bundleCheck).toContain("bundle size ratchet: disabled");
     expect(bundleCheck).toContain("bundle-baseline.json");
     expect(read(".github/workflows/ci.yml")).toContain("pnpm run check:studio-bundle");
     // 병합을 막는 잡 목록이 구간 설명과 같다.

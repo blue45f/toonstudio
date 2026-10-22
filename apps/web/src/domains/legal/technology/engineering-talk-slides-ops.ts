@@ -197,26 +197,26 @@ export const OPS_SLIDES = [
     section: "quality",
     layout: "metrics",
     eyebrow: t("05 · 성능 게이트", "05 · PERFORMANCE GATE"),
-    title: t("성능 예산은 관찰값, 막는 것은 +2% 래칫", "Performance budgets observe; a +2% ratchet blocks"),
+    title: t("성능 수치는 관찰값, 막는 것은 구조 계약", "Performance numbers observe; structural contracts block"),
     lead: t(
-      "참고 예산은 관찰용이고 이미 크게 넘었습니다. 빌드를 실패시키는 것은 마지막 승인 측정 대비 +2% 래칫입니다.",
-      "Reference budgets are observational and already far exceeded. What fails the build is a +2% ratchet against the last accepted measurement.",
+      "참고 예산은 관찰용이고 이미 크게 넘었습니다. 바이트와 청크 수는 기록만 하고, 빌드를 실패시키는 것은 지연 로딩·워커 격리 같은 구조 계약입니다.",
+      "Reference budgets are observational and already far exceeded. Bytes and chunk counts are only recorded; what fails the build are structural contracts such as lazy loading and worker isolation.",
     ),
     facts: [
       { value: "1.2 MiB", label: t("앱 진입 번들 raw · 참고 예산(0.5 MiB)의 2.5배", "App entry bundle, raw · 2.5× its 0.5 MiB reference") },
       { value: "7.2 MiB", label: t("스튜디오 라우트 raw · 참고 예산(2.9 MiB)의 2.5배", "Studio route, raw · 2.5× its 2.9 MiB reference") },
-      { value: "+2%", label: t("빌드 실패 기준: 마지막 승인 측정 대비", "Build-failing limit: against the last accepted measurement") },
+      { value: "없음", label: t("바이트·청크 수 상한(기록만, 마지막 승인 측정)", "Byte/chunk limit (recorded only, last accepted measurement)") },
       { value: "309", label: t("스튜디오 라우트 정적 청크 수(마지막 승인값)", "Static chunks in the Studio route (last accepted)") },
     ],
     points: [
       t("참고 예산은 ‘설계 목표에서 얼마나 멀어졌나’를 보는 관찰값 — 넘어도 빌드를 막지 않음", "Reference budgets show how far we are from the design target — exceeding them does not block the build"),
-      t("실제로 막는 것은 마지막 승인값 대비 +2% — 늘리려면 사람이 한 번 결정해 기준선을 갱신", "What blocks is +2% over the last accepted value — raising it takes one human decision to update the baseline"),
+      t("바이트·청크 수 상한은 없앴고 마지막 승인값과의 차이는 기록만 함 — 막는 것은 구조 계약", "The byte and chunk-count cap was removed; the gap to the last accepted value is only recorded — structural contracts block"),
       t("3D·CRDT 같은 무거운 엔진이 첫 화면 번들로 돌아오면 별도 가드가 실패", "A separate guard fails if heavy engines such as 3D or CRDT return to the first-screen bundle"),
     ],
     stack: ["Lazy routes", "Web Workers", "WASM", "Bundle budget"],
     notes: t(
-      "가계부로 말하면 목표 지출선은 이미 크게 넘었고, 실제로 막는 건 지난달 대비 +2% 한도입니다. 참고 예산은 관찰용입니다. 앱 진입 번들은 1.2MiB로 참고의 2.5배, 스튜디오 라우트는 7.2MiB로 역시 2.5배입니다.\n눈금을 올리려면 사람이 결정해야 합니다. 근거는 bundle-baseline.json입니다. 다음은 AI 개발 방식입니다. 질문이 나오면 ‘Quality gates’ 카드를 엽니다.",
-      "In household-ledger terms, the target spending line is already far exceeded, and what really blocks is the +2% limit against last month. The reference budgets are observational: the app entry bundle is 1.2 MiB, 2.5 times its reference, and the Studio route is 7.2 MiB, also 2.5 times.\nRaising the line takes a human decision. The basis is bundle-baseline.json. Next, how we build with AI. If asked, open the ‘Quality gates’ card.",
+      "가계부로 말하면 목표 지출선은 이미 크게 넘었지만 지출액 한도로 막지는 않고 기록만 합니다. 막는 건 지연 로딩·워커 격리 같은 구조 규칙입니다. 앱 진입 번들은 1.2MiB로 참고의 2.5배, 스튜디오 라우트는 7.2MiB로 역시 2.5배입니다.\n크기 상한은 2026-10-21에 없앴고(42a1c01c), 기록은 bundle-baseline.json에 남습니다. 다음은 AI 개발 방식입니다. 질문이 나오면 ‘Quality gates’ 카드를 엽니다.",
+      "In household-ledger terms, the target spending line is already far exceeded, and the spending is only recorded, not capped; what blocks are structural rules such as lazy loading and worker isolation. The reference budgets are observational: the app entry bundle is 1.2 MiB, 2.5 times its reference, and the Studio route is 7.2 MiB, also 2.5 times.\nThe size cap was removed on 2026-10-21 (42a1c01c); the record stays in bundle-baseline.json. Next, how we build with AI. If asked, open the ‘Quality gates’ card.",
     ),
     chapterId: "performance",
     evidence: [

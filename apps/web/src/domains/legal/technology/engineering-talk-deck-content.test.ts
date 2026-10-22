@@ -494,10 +494,10 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(slide.notes.ko).toMatch(/axe 스모크\(기본 설정, 모션 감소 없음\)[^\n]*모션 감소·강제 색상은 수동[^\n]*키보드 점검은 스모크에 없습니다/u);
   });
 
-  it("성능: 번들 기준선과 참고 예산, +2% 래칫은 기준선·검사 스크립트와 같다", () => {
+  it("성능: 번들 기준선과 참고 예산, 크기 상한 없음(관찰)은 기준선·검사 스크립트와 같다", () => {
     const slide = slideOf("talk-performance");
     const baseline = JSON.parse(read("scripts/bundle-baseline.json")) as {
-      readonly policy: { readonly byteTolerance: number };
+      readonly policy: { readonly enforced: boolean };
       readonly static: Readonly<Record<string, number>>;
     };
     const checker = read("scripts/check-studio-bundle.mjs");
@@ -516,8 +516,9 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(studio).toBeGreaterThan(budget("studio"));
     expect(slide.facts?.[0]?.label.ko).toContain("2.5배");
     expect(slide.facts?.[1]?.label.ko).toContain("2.5배");
-    expect(baseline.policy.byteTolerance).toBe(0.02);
-    expect(factOf(slide, 2, "마지막 승인 측정")).toBe("+2%");
+    expect(baseline.policy.enforced).toBe(false);
+    expect(factOf(slide, 2, "마지막 승인 측정")).toBe("없음");
+    expect(checker).toContain("bundle size ratchet: disabled");
     expect(factOf(slide, 3, "정적 청크 수")).toBe(String(baseline.static["Studio route chunks"]));
     expect(repoPathExists("docs/perf/bundle-gate.md")).toBe(true);
   });

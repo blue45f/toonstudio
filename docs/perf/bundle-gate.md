@@ -1,5 +1,7 @@
 # 번들 게이트 정책 (`scripts/check-studio-bundle.mjs`)
 
+> **개정 2026-10-22**: 42a1c01c(2026-10-21)로 바이트·청크 수 래칫(허용오차)을 없앴다. 지금 `scripts/check-studio-bundle.mjs`는 크기를 기록·보고만 하고(`bundle-baseline.json`의 `policy.enforced: false`), 지연 로딩·워커 격리 같은 구조 계약만 실패시킨다. 아래 층위 B와 허용오차(`byteTolerance` 등) 서술은 폐지 전 정책의 기록이다.
+
 2026-08-08 기동 실측([`startup-findings.md`](./startup-findings.md))이 게이트의 사각지대 두 겹을
 드러냈다. 이 문서는 그 뒤에 확정된 정책 — **무엇이 빌드를 깨뜨리고, 무엇이 관찰이며,
 기준선을 어떻게 갱신하고, eager-dynamic을 어떻게 판정하는지** — 를 기록한다.
