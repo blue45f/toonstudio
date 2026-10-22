@@ -31,7 +31,7 @@ import {
 import { cx } from "@/shared/lib/cx";
 
 import { frozenStatusText } from "./studio-frozen-status-i18n";
-
+import { resolveStudioPaletteInterchangeErrorFromCause, resolveStudioPaletteInterchangeWarning } from "./status-i18n/studio-producer-error-i18n-palette";
 type StudioPaletteInterchangeModule = typeof import("./studio-palette-interchange");
 type StudioPaletteInterchangeFormat = Parameters<
   StudioPaletteInterchangeModule["exportStudioPalette"]
@@ -608,7 +608,7 @@ export function StudioPaletteLibraryPanel({
       if (!mountedRef.current || outcome === "rejected") return;
       const namedColorCount = imported.palette.colors.filter((color) => Boolean(color.name)).length;
       const details = uniqueDetails([
-        ...imported.warnings.map((item) => item.message),
+        ...imported.warnings.map((item) => resolveStudioPaletteInterchangeWarning(item)),
         ...(imported.skippedColors > 0 ? [frozenStatusText("studio.frozenStatus.palette.importSkipped", { count: imported.skippedColors }, "해석하지 못한 색 {count}개를 건너뛰었습니다.")] : []),
         ...(imported.truncated ? [frozenStatusText("studio.frozenStatus.palette.importTruncated", { max: interchange.STUDIO_PALETTE_INTERCHANGE_LIMITS.maxColors }, "앞쪽 {max}색만 저장했습니다.")] : []),
         ...(namedColorCount > 0 ? [frozenStatusText("studio.frozenStatus.palette.namedColorsValuesOnly", { count: namedColorCount }, "색 이름 {count}개는 현재 라이브러리에서 색값만 저장됩니다.")] : []),
@@ -625,7 +625,7 @@ export function StudioPaletteLibraryPanel({
     } catch (error) {
       setMessage({
         tone: "error",
-        title: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.palette.importFailed", "팔레트 파일을 가져오지 못했어요."),
+        title: resolveStudioPaletteInterchangeErrorFromCause(error) ?? (error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.palette.importFailed", "팔레트 파일을 가져오지 못했어요.")),
         details: [],
       });
     } finally {
@@ -650,7 +650,7 @@ export function StudioPaletteLibraryPanel({
       const fileName = exportFileName(palette, exportFormat);
       downloadBlob(new Blob([part], { type: option.mimeType }), fileName);
       const details = uniqueDetails([
-        ...result.warnings.map((item) => item.message),
+        ...result.warnings.map((item) => resolveStudioPaletteInterchangeWarning(item)),
         ...(result.skippedColors > 0 ? [frozenStatusText("studio.frozenStatus.palette.exportSkipped", { count: result.skippedColors }, "해석하지 못한 색 {count}개를 제외했습니다.")] : []),
         ...(result.truncated ? [
           frozenStatusText("studio.frozenStatus.palette.exportTruncated", { max: exportFormat === "act" || exportFormat === "pal"
@@ -666,7 +666,7 @@ export function StudioPaletteLibraryPanel({
     } catch (error) {
       setMessage({
         tone: error instanceof Error ? "error" : "error",
-        title: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.palette.exportFailed", "팔레트를 내보내지 못했어요."),
+        title: resolveStudioPaletteInterchangeErrorFromCause(error) ?? (error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.palette.exportFailed", "팔레트를 내보내지 못했어요.")),
         details: [],
       });
     } finally {
