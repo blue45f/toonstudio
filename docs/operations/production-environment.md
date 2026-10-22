@@ -118,6 +118,24 @@ Render dashboard에서 암호화하여 저장하고 로컬 임시 파일은 전�
 
 필드를 지우거나 인증 뒤로 옮기면 배포 후 점검이 관리자 인증이나 로그 열람에 의존하게 됩니다. 노출 정책 변경은 별도 결정입니다.
 
+## 단일 소유자 DB 옵트인
+
+상태: migration (2026-10-22, 기본은 `separated`). 공식 설계는 마이그레이터(스키마 소유자)와 런타임 로그인 역할을 분리하고,
+`/api/health/ready`는 마켓플레이스 표 여섯 개(`creator_marketplace_resource`·`…_library_item`·`…_package_moderation`·`…_publish_gate`·
+`…_report`·`…_report_gate`)에서 연결 역할(`current_user`)이 최소 권한이며 `WITH GRANT OPTION`이 없는지 검사합니다. 표 소유자는
+권한을 REVOKE해도 grant option을 항상 가져 이 검사를 통과할 수 없습니다(롤백 트랜잭션 실측). 별도 역할을 만들 수 없는 관리형 DB(예:
+onpod dev 티어는 소유자 역할 하나뿐이고 `CREATEROLE`이 없다)에서는 `/api/health/ready`가 항상 503이 되고 DB 기반 기능이 모두
+`unavailable`이 됩니다.
+
+| 항목 | 규칙 |
+| --- | --- |
+| 설정 | `DATABASE_RUNTIME_ROLE_MODE=separated`(기본, 비워도 같음) \| `single-owner`. 알 수 없는 값은 API가 시작하지 못합니다. |
+| `single-owner`의 효과 | `isSchemaReady()`가 위 여섯 ACL 비교(`ROLE_SEPARATION_ACL_FLAGS`)만 건너뜁니다. 나머지 플래그(트리거·인덱스·생성 열·`authRuntimeDmlReady` 등), 필수 관계 223개, 마이그레이션 마커는 그대로 요구합니다. |
+| 약해지는 보장 | 런타임 역할이 스키마 소유자라 최소 권한·grant option 부재를 DB가 보장하지 않습니다. 앱 코드 결함이 곧 스키마 변경 권한으로 이어질 수 있습니다. 소유자 연결에서는 `creator_career_confirmation_*`(`*_require_ready()`가 "런타임은 스키마를 소유·프로비저닝하지 않는다"로 거부)도 쓸 수 없습니다. |
+| 가시성 | 켜면 시작 때 한국어 경고(`[env] 보안 경고: DATABASE_RUNTIME_ROLE_MODE=single-owner …`)를 남깁니다. 공개 응답(`/api/health/capabilities`)에는 노출하지 않습니다. |
+| 쓸 수 있는 곳 | 공식 운영 전이거나 별도 로그인 역할을 만들 수 없는 평가 환경. 비소유 로그인 역할을 확보하면 이 설정을 지우고 `--runtime-database-role`로 ACL을 적용합니다. |
+| 시험 | `apps/api/src/modules/health/health-readiness.repository.test.ts`(기본 엄격 유지, 옵트인 시 여섯 개만 면제, 다른 플래그·관계·마커 누락은 여전히 거부), `health-readiness-role-separation.test.ts`(면제 판정 함수), `apps/api/src/config/database-role-mode.test.ts`. |
+
 ## Supabase 저장소 인증 형식
 
 신규 서버 전용 키는 `SUPABASE_OBJECT_STORAGE_SECRET_KEY`로 주입한다. 새 키는 JWT가 아니므로

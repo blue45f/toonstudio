@@ -261,6 +261,40 @@ describe("authentication boundary environment validation", () => {
   });
 });
 
+describe("database runtime role mode environment validation", () => {
+  it("accepts separated without any warning", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    expect(
+      validateEnv({ NODE_ENV: "test", DATABASE_RUNTIME_ROLE_MODE: "separated" }, logger),
+    ).toMatchObject({ DATABASE_RUNTIME_ROLE_MODE: "separated" });
+    expect(logger.warn).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it("accepts single-owner and leaves a visible Korean warning that names the weakened guarantee", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    expect(
+      validateEnv({ NODE_ENV: "test", DATABASE_RUNTIME_ROLE_MODE: "single-owner" }, logger),
+    ).toMatchObject({ DATABASE_RUNTIME_ROLE_MODE: "single-owner" });
+    expect(logger.warn).toHaveBeenCalledOnce();
+    const message = String(logger.warn.mock.calls[0]?.[0]);
+    expect(message).toContain("DATABASE_RUNTIME_ROLE_MODE=single-owner");
+    expect(message).toMatch(/[가-힣]/u);
+  });
+
+  it("warns about an unknown value through the schema without the single-owner finding", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    expect(
+      validateEnv({ NODE_ENV: "test", DATABASE_RUNTIME_ROLE_MODE: "owner" }, logger),
+    ).toBeNull();
+    expect(logger.warn).toHaveBeenCalledOnce();
+    expect(String(logger.warn.mock.calls[0]?.[0])).toContain("DATABASE_RUNTIME_ROLE_MODE");
+  });
+});
+
 describe("Studio AI quota environment validation", () => {
   it("accepts the reviewed nine-provider external free-only order", () => {
     const logger = { warn: vi.fn(), error: vi.fn() };

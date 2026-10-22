@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { databaseRuntimeRoleModeStartupFinding } from "./database-role-mode";
 import { edgeOriginAuthStartupFinding } from "./edge-origin-auth";
 
 /**
@@ -145,6 +146,9 @@ const envSchema = z.object({
   WEB_APP_BASE_URL: z.url().optional(),
   // 계정·권한·작품 저장의 트랜잭션 원장. 독립 분석 저장소와 별도로 사용한다.
   DATABASE_URL: z.string().min(1).optional(),
+  // 런타임 DB 역할 구조. 기본 separated(마이그레이터와 런타임 역할 분리). 별도 로그인 역할을 만들 수 없는 관리형 DB(예: onpod
+  // dev 티어)만 single-owner 로 명시한다. 이 값이면 마켓플레이스 ACL 준비성 6개 검사를 건너뛴다(config/database-role-mode.ts).
+  DATABASE_RUNTIME_ROLE_MODE: z.enum(["separated", "single-owner"]).optional(),
   TRAFFIC_ANALYTICS_STORE: z.enum(["postgres", "d1"]).optional(),
   TRAFFIC_ANALYTICS_D1_RPC_URL: z.url().optional(),
   TRAFFIC_ANALYTICS_D1_RPC_TOKEN: z.string().min(32).max(4_096).optional(),
@@ -757,6 +761,12 @@ export function validateEnv(
         `\n${"!".repeat(72)}\n[env] 보안 경고: ${edgeFinding}\n${"!".repeat(72)}\n`,
       );
     }
+  }
+
+  // 단일 소유자 DB 옵트인은 환경(production 여부)과 무관하게 켠 사실을 눈에 띄게 남긴다.
+  const roleModeFinding = databaseRuntimeRoleModeStartupFinding(source);
+  if (roleModeFinding) {
+    logger.warn(`[env] 보안 경고: ${roleModeFinding}`);
   }
 
   return result.success ? result.data : null;
