@@ -98,6 +98,13 @@ const LAZY_APP_BUILTIN_GROUPS = [
     namespaces: ["branchingCuttoon"],
     target: "apps/web/src/domains/creator/branching-cuttoon/i18n/generated/i18n-branching-cuttoon-builtins.json",
   },
+  // 캐릭터 앵커 연구실(/studio/anchor-lab)만 쓰는 신규 네임스페이스. 셸 내장 사전에 넣지 않고 소비 도메인이 등록한다 —
+  // apps/web/src/domains/creator/anchor-consistency/anchor-lab-i18n.ts.
+  {
+    id: "anchor-lab",
+    namespaces: ["anchorLab"],
+    target: "apps/web/src/domains/creator/anchor-consistency/i18n/generated/i18n-anchor-lab-builtins.json",
+  },
 ];
 
 const LAZY_APP_BUILTIN_NAMESPACES = new Set(

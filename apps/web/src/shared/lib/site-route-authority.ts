@@ -233,6 +233,20 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
     tier: "labs",
     directory: true,
   }),
+  // 캐릭터 앵커 연구실: Labs(experimental). 편집기 호스트에 연결하지 않는 독립 화면이라 프로젝트 문맥이 필요 없다.
+  // 점수는 휴리스틱 참고 값이며 같은 캐릭터인지 판정하거나 일관성을 보장하지 않는다(docs/features/anchor-consistency.md).
+  route({
+    id: "studio-anchor-lab",
+    path: "/studio/anchor-lab",
+    titleKey: "route.anchorLab",
+    label: { ko: "캐릭터 앵커 연구실", en: "Character anchor lab" },
+    description: {
+      ko: "정/반측 턴테이블 앵커 세트를 만들고 후보 이미지를 휴리스틱 참고 점수로 견주기",
+      en: "Build front/side/back anchor sets and compare candidate images with a heuristic reference score",
+    },
+    purpose: "create",
+    maturity: "experimental",
+  }),
   route({
     id: "production",
     path: "/production",

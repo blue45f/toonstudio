@@ -16,7 +16,7 @@ import {
   StudioVirtualSpacePage, StudioProductionToolchainPage, StudioEngineCenterPage,
   StudioProductionJobsPage, StudioGenerativePage, StudioSpatialReaderPage,
   StudioTemplatesPage, StudioRouter, CreatorAnalyticsPage, StudioPoserPage,
-  PdfWorkbenchPage, BranchingCuttoonLabPage,
+  PdfWorkbenchPage, BranchingCuttoonLabPage, AnchorLabPage,
 } from "./creator-route-pages";
 import { creatorCreateRoutes, creatorShowcaseRoutes } from "./creator-showcase-routes";
 
@@ -106,6 +106,10 @@ export const creatorRoutes = defineAppRoutes([
   // /studio/poser 데드링크 해소: 실제 포저(데생 인형 + 매직 포저) 독립 진입점.
   // /studio/* 와일드카드보다 먼저 둔다.
   { id: "creator-studio-poser", path: studioRoutePath("poser"), element: <StudioPoserPage /> },
+
+  // 캐릭터 앵커 연구실(Labs·experimental): 정/반측 턴테이블 앵커 세트와 후보 이미지의 휴리스틱 참고 점수.
+  // 편집기 호스트에 연결하지 않는 독립 화면이다. /studio/* 와일드카드보다 먼저 둔다.
+  { id: "creator-studio-anchor-lab", path: studioRoutePath("anchor-lab"), element: <AnchorLabPage /> },
 
   // PDF 워크벤치: 발행·가져온 PDF의 페이지 재배열·병합·분할 후단 작업 화면.
   // /studio/* 와일드카드보다 먼저 둔다.
