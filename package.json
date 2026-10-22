@@ -444,7 +444,7 @@
     "@types/three": "^0.186.0",
     "@typescript/analyze-trace": "0.11.1",
     "@vitejs/plugin-react": "^6.1.2",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "babel-plugin-react-compiler": "^1.0.0",
     "drizzle-kit": "^0.31.11",
     "entities": "8.1.0",
@@ -475,7 +475,7 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.2",
     "vite": "^8.3.4",
-    "vitest": "4.1.11",
+    "vitest": "4.1.12",
     "wesl": "^0.7.31",
     "wrangler": "4.151.1",
     "yaml": "2.9.1"
