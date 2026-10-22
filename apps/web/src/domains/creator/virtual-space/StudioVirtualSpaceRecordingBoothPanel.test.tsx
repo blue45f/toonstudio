@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { configure, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualSpaceRecordingBoothPanel } from "./StudioVirtualSpaceRecordingBoothPanel";
@@ -15,6 +15,9 @@ vi.mock("./studio-recording-booth-asset-client", () => ({
   readStudioRecordingBoothAsset: vi.fn(),
   deleteStudioRecordingBoothAsset: vi.fn(),
 }));
+
+// 녹음 종료 → 테이크 저장 흐름을 여러 단계 기다리는 시험이라, 병렬 부하가 큰 CI 샤드에서 기본 대기 1초를 넘기는 일이 있었다(단독 실행은 0.35초).
+configure({ asyncUtilTimeout: 5_000 });
 
 function config(overrides: Partial<StudioRecordingBoothConfig> = {}): StudioRecordingBoothConfig {
   return {
