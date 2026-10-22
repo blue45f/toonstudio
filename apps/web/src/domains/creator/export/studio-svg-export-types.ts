@@ -247,11 +247,24 @@ export interface SvgExportPageInput {
   theme?: SvgExportTheme;
 }
 
+/**
+ * skip 라벨 (A4 D4, R15 — §3.11): studio-svg-export.ts의 방출 10코드는
+ * 구조화 라벨({code, params})로 방출하고, 타 생산자(draw·elements·freehand)의
+ * 라벨은 문자열 그대로 둔다. 표시는 표시 지점에서 리졸버로 해석한다.
+ * 말풍선 변형은 params.variant="bubble"로 구분한다.
+ */
+export type SvgExportSkipLabel =
+  | string
+  | {
+      readonly code: string;
+      readonly params?: Readonly<Record<string, string>>;
+    };
+
 export interface SvgExportSkip {
   id: string;
   type: string;
   mode: "skipped" | "approximated";
-  label: string;
+  label: SvgExportSkipLabel;
 }
 
 export interface SvgExportResult {

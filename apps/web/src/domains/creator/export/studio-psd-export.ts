@@ -72,6 +72,12 @@ import type {
 } from "../studio-psd-import";
 import type Konva from "konva";
 
+import { resolvePsdExportResultMessage } from "../status-i18n/studio-producer-error-i18n-exports";
+
+import { StudioPsdExportError, type PsdExportBlockingReason } from "./studio-psd-export-error";
+
+export { StudioPsdExportError, type PsdExportBlockingReason, type PsdExportBlockingReasonCode, type StudioPsdExportErrorCode } from "./studio-psd-export-error";
+
 // ---------------------------------------------------------------------------
 // 요소 구조 타입 — StudioPage 의 El 유니온과 구조 호환(필요한 필드만). studio-svg-export.ts 와
 // 같은 순수 모듈 규약 — StudioPage 를 임포트하지 않고 구조 타이핑으로 받는다.
@@ -282,7 +288,7 @@ const PSD_EXPORT_ALTERNATIVES = Object.freeze([
 
 export interface PsdExportPreflight {
   readonly canExport: boolean;
-  readonly blockingReasons: readonly string[];
+  readonly blockingReasons: readonly PsdExportBlockingReason[];
   readonly lossManifest: PsdInterchangeLossManifest;
 }
 
@@ -321,13 +327,13 @@ export function preflightPsdExport(input: {
   const width = Math.round(input.canvasW * scale);
   const height = Math.round(input.canvasH * scale);
   const container = input.container ?? "psd";
-  const blockingReasons: string[] = [];
+  const blockingReasons: PsdExportBlockingReason[] = [];
   const decisions: PsdInterchangeLossDecision[] = [
     exportDecision("bit-depth", "preserved", 1, "Studio 8-bit/channel 픽셀을 PSD 8-bit/channel로 기록합니다."),
     exportDecision("color-space", "preserved", 1, "Studio sRGB 픽셀을 PSD RGB 8-bit로 기록합니다."),
   ];
   if (container === "psb") {
-    blockingReasons.push("PSB 내보내기는 대형 문서 메모리·왕복 검증이 끝나지 않아 제공하지 않습니다.");
+    blockingReasons.push({ code: "psbNotYetSupported" });
     decisions.push(exportDecision(
       "layers",
       "blocked",
@@ -342,12 +348,10 @@ export function preflightPsdExport(input: {
     || width < 1
     || height < 1
   ) {
-    blockingReasons.push("PSD 출력 캔버스 크기와 배율은 유한한 양의 정수 픽셀이어야 합니다.");
+    blockingReasons.push({ code: "canvasSizeInvalid" });
   } else {
     if (width > PSD_EXPORT_MAX_DIMENSION_PX || height > PSD_EXPORT_MAX_DIMENSION_PX) {
-      blockingReasons.push(
-        `PSD 출력 ${width.toLocaleString("ko-KR")}×${height.toLocaleString("ko-KR")}px가 안전 한 변 ${PSD_EXPORT_MAX_DIMENSION_PX.toLocaleString("ko-KR")}px를 넘습니다.`,
-      );
+      blockingReasons.push({ code: "canvasDimensionExceeded", params: { width: width.toLocaleString("ko-KR"), height: height.toLocaleString("ko-KR"), limit: PSD_EXPORT_MAX_DIMENSION_PX.toLocaleString("ko-KR") } });
       decisions.push(exportDecision(
         "resolution",
         "blocked",
@@ -357,9 +361,7 @@ export function preflightPsdExport(input: {
       ));
     }
     if (width * height > PSD_EXPORT_MAX_CANVAS_PIXELS) {
-      blockingReasons.push(
-        `PSD 최소 합성 픽셀 ${Math.ceil(width * height / 1_000_000).toLocaleString("ko-KR")}MP가 브라우저 예산 ${Math.floor(PSD_EXPORT_MAX_CANVAS_PIXELS / 1_000_000)}MP를 넘습니다.`,
-      );
+      blockingReasons.push({ code: "canvasPixelsExceeded", params: { megaPixels: Math.ceil(width * height / 1_000_000).toLocaleString("ko-KR"), budgetMp: String(Math.floor(PSD_EXPORT_MAX_CANVAS_PIXELS / 1_000_000)) } });
       decisions.push(exportDecision(
         "resolution",
         "blocked",
@@ -370,11 +372,9 @@ export function preflightPsdExport(input: {
     }
   }
   if (!Number.isSafeInteger(input.layerCount) || input.layerCount < 0) {
-    blockingReasons.push("PSD 레이어 수가 올바르지 않습니다.");
+    blockingReasons.push({ code: "layerCountInvalid" });
   } else if (input.layerCount > PSD_EXPORT_MAX_LAYERS) {
-    blockingReasons.push(
-      `PSD 레이어 ${input.layerCount.toLocaleString("ko-KR")}개가 안전 예산 ${PSD_EXPORT_MAX_LAYERS.toLocaleString("ko-KR")}개를 넘습니다.`,
-    );
+    blockingReasons.push({ code: "layerCountExceeded", params: { count: input.layerCount.toLocaleString("ko-KR"), limit: PSD_EXPORT_MAX_LAYERS.toLocaleString("ko-KR") } });
   }
   return {
     canExport: blockingReasons.length === 0,
@@ -396,9 +396,7 @@ export function preflightPsdExport(input: {
 
 function assertPsdOutputBudget(buffer: ArrayBuffer): void {
   if (buffer.byteLength > PSD_EXPORT_MAX_FILE_BYTES) {
-    throw new Error(
-      `PSD 결과 ${Math.ceil(buffer.byteLength / 1024 / 1024)}MB가 출력 한도 ${PSD_EXPORT_MAX_FILE_BYTES / 1024 / 1024}MB를 넘습니다. ${PSD_EXPORT_ALTERNATIVES.join(" 또는 ")}해 주세요.`,
-    );
+    throw new StudioPsdExportError("outputTooLarge", { sizeMb: String(Math.ceil(buffer.byteLength / 1024 / 1024)), limitMb: String(PSD_EXPORT_MAX_FILE_BYTES / 1024 / 1024) });
   }
 }
 
@@ -409,17 +407,20 @@ export function psdExportFileName(title: string): string {
 
 /** 내보내기 결과 요약 문구(패널 상태 배너용) — svgExportResultMessage 와 같은 톤. */
 export function psdExportResultMessage(result: PsdExportResult): string {
-  const parts = [`PSD 저장 완료 — 레이어 ${result.layerCount}개`];
-  if (result.skipped.length > 0) parts.push(`알림 ${result.skipped.length}건`);
+  // 요약 함수는 생산자가 곧 표시 문구 함수라, 해석을 함수 내부로 옮긴
+  // 집계 경계 예외로 전환한다(A4 D4, R15 — §3.10).
   const rasterized = result.lossManifest?.decisions
     .filter((decision) => decision.disposition === "rasterized")
     .reduce((total, decision) => total + decision.count, 0) ?? 0;
   const dropped = result.lossManifest?.decisions
     .filter((decision) => decision.disposition === "dropped")
     .reduce((total, decision) => total + decision.count, 0) ?? 0;
-  if (rasterized > 0) parts.push(`래스터화 ${rasterized}건`);
-  if (dropped > 0) parts.push(`편집 구조 제외 ${dropped}건`);
-  return parts.join(" · ");
+  return resolvePsdExportResultMessage({
+    layerCount: result.layerCount,
+    skippedCount: result.skipped.length,
+    rasterizedCount: rasterized,
+    droppedCount: dropped,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -886,7 +887,7 @@ function cropToPanel(
   cropped.height = h;
   const ctx = cropped.getContext("2d");
   if (!ctx) {
-    throw new Error("PSD 패널 크롭 표면을 만들지 못해 내보내기를 중단했어요.");
+    throw new StudioPsdExportError("panelCropSurfaceFailed");
   }
   ctx.drawImage(canvas, x0, y0, w, h, 0, 0, w, h);
   return { canvas: cropped, dx: x0, dy: y0 };
@@ -918,7 +919,7 @@ function capturePsdDrawNode(
 
 function assertPsdPixelBudget(bytes: number): void {
   if (bytes > PSD_EXPORT_MAX_DECODED_BYTES) {
-    throw new Error("PSD 레이어 픽셀이 메모리 한도를 넘어요. 페이지를 나누거나 출력 배율을 낮춰 주세요.");
+    throw new StudioPsdExportError("layerPixelsOverBudget");
   }
 }
 
@@ -930,7 +931,7 @@ function readPsdDrawPixels(
   panel: PsdFrameElLike | null,
 ): { imageData: ImageData; left: number; top: number } | null {
   const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) throw new Error("PSD 획의 픽셀을 읽을 수 없어 내보내기를 중단했어요.");
+  if (!context) throw new StudioPsdExportError("strokePixelsUnreadable");
   const x0 = panel ? Math.round(Math.max(0, panel.x * scale)) : 0;
   const y0 = panel ? Math.round(Math.max(0, panel.y * scale)) : 0;
   const x1 = panel ? Math.round(Math.min(canvas.width, (panel.x + panel.width) * scale)) : canvas.width;
@@ -990,7 +991,7 @@ export function psdLayerCaptureNode(node: Konva.Node, element: PsdExportEl): Kon
     if (ancestor.getAttr("studioLayerMaskOwnerId") === element.id) return ancestor;
     ancestor = ancestor.getParent();
   }
-  throw new Error(`${element.name ?? element.id}: 적용된 레이어 마스크의 캡처 경계를 찾지 못해 PSD 내보내기를 중단했어요.`);
+  throw new StudioPsdExportError("maskCaptureBoundsMissing", { label: element.name ?? element.id });
 }
 
 function capturePsdLayerCanvas(node: Konva.Node, options: Parameters<Konva.Node["toCanvas"]>[0]): HTMLCanvasElement {
@@ -1011,7 +1012,7 @@ function makeBackgroundLayer(width: number, height: number, background: { color:
   canvas.height = Math.max(1, Math.round(height));
   const ctx = canvas.getContext("2d");
   if (!ctx) {
-    throw new Error("PSD 배경 레이어 표면을 만들지 못해 내보내기를 중단했어요.");
+    throw new StudioPsdExportError("backgroundSurfaceFailed");
   }
   const grad = background.gradient;
   if (grad && grad.length >= 2) {
@@ -1206,7 +1207,7 @@ function exportAdjustmentGraphPsd(input: {
   for (const element of adjustments) {
     if (element.adjustmentLayer?.version !== 1
       || !["composite-below", "clip-previous"].includes(element.adjustmentLayer.scope)) {
-      throw new Error("지원하지 않는 보정 레이어 설정이 있어 PSD로 내보낼 수 없어요.");
+      throw new StudioPsdExportError("unsupportedAdjustmentSettings");
     }
   }
   const metadata = JSON.stringify({
@@ -1227,7 +1228,7 @@ function exportAdjustmentGraphPsd(input: {
     })),
   });
   if (new TextEncoder().encode(metadata).byteLength > 4 * 1024 * 1024) {
-    throw new Error("보정 레이어 설정이 PSD 메타데이터 한도를 넘어요. 프로젝트 아카이브로 보관해 주세요.");
+    throw new StudioPsdExportError("adjustmentMetadataOverBudget");
   }
   const escaped = metadata.replace(/&/gu, "&amp;").replace(/</gu, "&lt;").replace(/>/gu, "&gt;");
   const graphXmp = '<rdf:Description rdf:about="" xmlns:tsadjust="https://toonstudio.cloud/ns/adjustment-graph/1.0/">'
@@ -1250,11 +1251,11 @@ function exportAdjustmentGraphPsd(input: {
       documentWidth: canvasW, documentHeight: canvasH, effectiveScale: scale,
     }, () => stage.toCanvas({ pixelRatio: 1 }));
     if (canvas.width !== width || canvas.height !== height) {
-      throw new Error("PSD 보정 합성의 출력 크기가 문서와 일치하지 않아요.");
+      throw new StudioPsdExportError("adjustmentCompositeSizeMismatch");
     }
     gradedCanvas = bakeStudioPageGradeIntoCanvas(canvas, grade);
     const context = gradedCanvas.getContext("2d");
-    if (!context) throw new Error("PSD 보정 합성 픽셀을 읽을 수 없어요.");
+    if (!context) throw new StudioPsdExportError("adjustmentCompositePixelsUnreadable");
     imageData = context.getImageData(0, 0, width, height);
   } finally {
     if (gradedCanvas && gradedCanvas !== canvas) { gradedCanvas.width = 0; gradedCanvas.height = 0; }
@@ -1315,9 +1316,7 @@ export async function exportPagePsd(
     container: opts.container,
   });
   if (!preflight.canExport) {
-    throw new Error(
-      `${preflight.blockingReasons.join(" ")} ${preflight.lossManifest.alternatives.join(" 또는 ")}해 주세요.`,
-    );
+    throw new StudioPsdExportError("preflightBlocked", undefined, { blockingReasons: preflight.blockingReasons });
   }
   const safeEffScale = effScale > 0 ? effScale : 1;
   const psdWidth = Math.max(1, Math.round(canvasW * scale));
@@ -1404,16 +1403,13 @@ export async function exportPagePsd(
           try {
             maskPixels = await decodeStudioMaskPixelsForPsd(el.maskSrc, psdWidth, psdHeight);
           } catch (err) {
-            throw new Error(
-              `${label}: 조정 레이어 마스크를 읽지 못해 PSD 내보내기를 중단했어요.`,
-              { cause: err },
-            );
+            throw new StudioPsdExportError("maskReadFailed", { label }, { cause: err });
           }
           const nativeMask = convertStudioMaskPixelsToPsdLayerMask(maskPixels, {
             disabled: el.maskEnabled === false,
           });
           if (!nativeMask) {
-            throw new Error(`${label}: 조정 레이어 마스크를 PSD 네이티브 마스크로 변환하지 못해 내보내기를 중단했어요.`);
+            throw new StudioPsdExportError("maskConvertFailed", { label });
           }
           layer.mask = nativeMask;
           capturedPixelBytes += psdWidth * psdHeight * 4;
@@ -1611,7 +1607,7 @@ export async function exportPagePsd(
     // 강제 전환하지 않게 한다 — 이 파일의 모든 레이어는 이름이 있고 편집 가능해야 한다.
     buffer = writePsd(psd, { noBackground: true });
   } catch (err) {
-    throw new Error(`PSD 파일을 만들지 못했어요: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+    throw new StudioPsdExportError("buildFailed", { causeMessage: err instanceof Error ? err.message : String(err) }, { cause: err });
   }
   assertPsdOutputBudget(buffer);
 

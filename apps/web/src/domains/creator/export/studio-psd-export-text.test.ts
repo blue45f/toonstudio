@@ -401,7 +401,7 @@ describe("PSD export capability and loss preflight", () => {
       container: "psb",
     })).toMatchObject({
       canExport: false,
-      blockingReasons: [expect.stringContaining("PSB")],
+      blockingReasons: [{ code: "psbNotYetSupported" }],
       lossManifest: {
         target: { container: "psb" },
         decisions: expect.arrayContaining([
@@ -415,13 +415,13 @@ describe("PSD export capability and loss preflight", () => {
       layerCount: 1,
     })).toMatchObject({
       canExport: false,
-      blockingReasons: [expect.stringContaining("안전 한 변")],
+      blockingReasons: [expect.objectContaining({ code: "canvasDimensionExceeded" })],
     });
 
     const { stage } = fakeStage([]);
     await expect(exportPagePsd(stage, [], 720, 1_080, 1, {
       container: "psb",
-    })).rejects.toThrow("PSB 내보내기");
+    })).rejects.toThrow("preflightBlocked");
   });
 
   it("retains the preview smart-filter opacity pixels in the exported PSD layer", async () => {

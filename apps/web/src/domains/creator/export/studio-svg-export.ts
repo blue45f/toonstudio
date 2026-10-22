@@ -59,6 +59,8 @@ import {
   type VerticalTextMeasurer,
 } from "../studio-vertical-text";
 
+import { resolveSvgExportResultMessage } from "../status-i18n/studio-producer-error-i18n-exports";
+
 import { addSkip, gradientDef, shadowFilterDef } from "./studio-svg-export-defs";
 import { serializeDraw, serializeEraserMaskDraw } from "./studio-svg-export-draw";
 import {
@@ -301,10 +303,10 @@ function reportVerticalRubyPlan(
   plan: StudioVerticalRubyLayoutPlan,
 ): void {
   for (const warning of plan.warnings) {
-    addSkip(ctx, el, "approximated", `세로 루비 경고(${warning.code}): ${warning.message}`);
+    addSkip(ctx, el, "approximated", { code: "rubyVerticalWarning", params: { code: warning.code, message: warning.message } });
   }
   for (const unsupported of plan.unsupported) {
-    addSkip(ctx, el, "skipped", `세로 루비 미지원(${unsupported.code}): ${unsupported.message}`);
+    addSkip(ctx, el, "skipped", { code: "rubyVerticalUnsupported", params: { code: unsupported.code, message: unsupported.message } });
   }
 }
 
@@ -337,7 +339,7 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
 
   if (usesPath) {
     if (rubySpans) {
-      addSkip(ctx, el, "skipped", "곡선 텍스트의 루비 주석은 SVG 경로 조판에서 아직 재현할 수 없어요.");
+      addSkip(ctx, el, "skipped", { code: "rubyCurvedTextUnsupported" });
     }
     const pathData = buildTextPathData(textPath, el.width, el.fontSize);
     const pathId = nextId(ctx, "stp");
@@ -390,12 +392,7 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
         ),
       )
     ) {
-      addSkip(
-        ctx,
-        el,
-        "approximated",
-        "세로쓰기 속 라틴/숫자 구간의 폭은 글꼴 실측 없이 근사해 열 나눔이 화면과 조금 다를 수 있어요."
-      );
+      addSkip(ctx, el, "approximated", { code: "verticalLatinApprox" });
     }
     const verticalBlock = verticalTextBlockMarkup({
       layout: verticalLayout,
@@ -454,7 +451,7 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
     : el.fill;
   // 자동 줄바꿈은 SVG 에 없음 — 수동 줄바꿈 없이 박스 폭을 넘길 것으로 추정되면 근사 고지.
   if (content.split("\n").some((line) => estimateLineWidth(line, el.fontSize, letterSpacing) > el.width * 1.02)) {
-    addSkip(ctx, el, "approximated", "자동 줄바꿈은 SVG에 없어 수동 줄바꿈(엔터)만 반영돼요.");
+    addSkip(ctx, el, "approximated", { code: "manualWrapOnly" });
   }
   const block = textBlockMarkup({
     text: content,
@@ -481,9 +478,9 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
       })
     : [];
   if (horizontalRuby.length > 0) {
-    addSkip(ctx, el, "approximated", "가로 루비 위치는 SVG에서 글꼴 advance 근사로 배치돼요.");
+    addSkip(ctx, el, "approximated", { code: "rubyPositionApprox" });
   } else if (rubySpans) {
-    addSkip(ctx, el, "skipped", "유효한 가로 루비 범위를 찾지 못해 루비 주석을 그리지 않았어요.");
+    addSkip(ctx, el, "skipped", { code: "rubyRangeMissing" });
   }
   const rubyBlock = horizontalRubyBlockMarkup(horizontalRuby, {
     offsetX: 0,
@@ -699,12 +696,7 @@ function serializeBubble(ctx: ExportCtx, el: SvgBubbleElLike): string {
         column.items.some((item) => item.rotation === 90 || item.form === "tate-chu-yoko"),
       )
     ) {
-      addSkip(
-        ctx,
-        el,
-        "approximated",
-        "말풍선 세로쓰기 속 라틴/숫자 폭은 글꼴 실측 없이 근사해 열 나눔이 화면과 조금 다를 수 있어요.",
-      );
+      addSkip(ctx, el, "approximated", { code: "verticalBubbleLatinApprox" });
     }
     const verticalRuby = planDialogueVerticalRubyOverlayPlacements(
       content,
@@ -731,7 +723,7 @@ function serializeBubble(ctx: ExportCtx, el: SvgBubbleElLike): string {
     body.push(`<g transform="translate(${fmt(verticalX)} ${fmt(verticalY)})">${baseMarkup}${rubyMarkup}</g>`);
   } else if (content.trim().length > 0) {
     if (content.split("\n").some((line) => estimateLineWidth(line, bFs, letterSpacing) > boxWidth * 1.02)) {
-      addSkip(ctx, el, "approximated", "말풍선 자동 줄바꿈은 SVG에 없어 수동 줄바꿈(엔터)만 반영돼요.");
+      addSkip(ctx, el, "approximated", { code: "manualWrapOnly", params: { variant: "bubble" } });
     }
     body.push(
       textBlockMarkup({
@@ -758,9 +750,9 @@ function serializeBubble(ctx: ExportCtx, el: SvgBubbleElLike): string {
         })
       : [];
     if (horizontalRuby.length > 0) {
-      addSkip(ctx, el, "approximated", "말풍선 가로 루비 위치는 SVG에서 글꼴 advance 근사로 배치돼요.");
+      addSkip(ctx, el, "approximated", { code: "rubyPositionApprox", params: { variant: "bubble" } });
     } else if (rubySpans) {
-      addSkip(ctx, el, "skipped", "유효한 말풍선 가로 루비 범위를 찾지 못해 루비 주석을 그리지 않았어요.");
+      addSkip(ctx, el, "skipped", { code: "rubyRangeMissing", params: { variant: "bubble" } });
     }
     body.push(horizontalRubyBlockMarkup(horizontalRuby, {
       offsetX: bHPad,
@@ -828,7 +820,7 @@ export function exportPageToSvg(input: SvgExportPageInput): SvgExportResult {
       if (!eraserMarkup) continue;
 
       if (el.clipBelow) {
-        addSkip(ctx, el, "approximated", "아래 레이어로 자르기(클리핑 마스크)는 SVG에서 지원되지 않아 자르지 않고 표시돼요.");
+        addSkip(ctx, el, "approximated", { code: "clipMaskUnsupported" });
       }
       const panel = !el.noClip ? containingPanel(el, input.elements) : null;
       if (panel) {
@@ -892,7 +884,7 @@ export function exportPageToSvg(input: SvgExportPageInput): SvgExportResult {
 
     // 아래 레이어 클리핑(알파 마스크) — SVG 로 재현 불가, 자르지 않고 표시(근사 고지).
     if (el.clipBelow) {
-      addSkip(ctx, el, "approximated", "아래 레이어로 자르기(클리핑 마스크)는 SVG에서 지원되지 않아 자르지 않고 표시돼요.");
+      addSkip(ctx, el, "approximated", { code: "clipMaskUnsupported" });
     }
 
     // 패널 클리핑 + 혼합 모드 — 캔버스 wrapClip 과 동일 조건.
@@ -903,7 +895,7 @@ export function exportPageToSvg(input: SvgExportPageInput): SvgExportResult {
       if (CSS_BLEND_MODES.has(blend)) {
         blendStyle = ` style="mix-blend-mode:${blend}"`;
       } else {
-        addSkip(ctx, el, "approximated", `혼합 모드(${blend})는 SVG에서 지원되지 않아 보통 합성으로 표시돼요.`);
+        addSkip(ctx, el, "approximated", { code: "blendModeUnsupported", params: { blend } });
       }
     }
     if (panel) {
@@ -952,11 +944,13 @@ export function exportPageToSvg(input: SvgExportPageInput): SvgExportResult {
 
 /** 내보내기 결과 요약 한 줄(한글) — 내보내기 패널 상태 문구용. 정직하게 제외/근사 개수를 밝힌다. */
 export function svgExportResultMessage(result: SvgExportResult): string {
+  // 요약 함수는 생산자가 곧 표시 문구 함수라, 해석을 함수 내부로 옮긴
+  // 집계 경계 예외로 전환한다(A4 D4, R15 — §3.11).
   const droppedIds = new Set(result.skipped.filter((s) => s.mode === "skipped").map((s) => s.id));
   const approxIds = new Set(result.skipped.filter((s) => s.mode === "approximated" && !droppedIds.has(s.id)).map((s) => s.id));
-  const parts = [`SVG 저장 완료 — 요소 ${result.elementCount}개 벡터 변환`];
-  if (droppedIds.size > 0) parts.push(`제외 ${droppedIds.size}개`);
-  if (approxIds.size > 0) parts.push(`근사 ${approxIds.size}개`);
-  if (droppedIds.size === 0 && approxIds.size === 0 && result.elementCount > 0) parts.push("전부 벡터 보존");
-  return parts.join(" · ");
+  return resolveSvgExportResultMessage({
+    elementCount: result.elementCount,
+    droppedCount: droppedIds.size,
+    approxCount: approxIds.size,
+  });
 }

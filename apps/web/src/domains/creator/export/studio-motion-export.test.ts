@@ -670,17 +670,17 @@ describe("startMotionExport", () => {
       images: [],
       deps: rig.deps,
     });
-    await expect(empty.done).rejects.toThrow("내보낼 컷");
+    await expect(empty.done).rejects.toThrow("noCuts");
 
     const unsupported = startMotionExport({
       plan: makePlan(),
       images: IMAGES,
       deps: { ...rig.deps, isMimeSupported: () => false },
     });
-    await expect(unsupported.done).rejects.toThrow("WebM");
+    await expect(unsupported.done).rejects.toThrow("webmUnsupported");
 
     const short = startMotionExport({ plan: makePlan(2), images: [CUT_IMAGE], deps: rig.deps });
-    await expect(short.done).rejects.toThrow("컷 이미지 수");
+    await expect(short.done).rejects.toThrow("imageCountMismatch");
   });
 
   it("취소 판별 헬퍼는 일반 에러와 구분한다", () => {
