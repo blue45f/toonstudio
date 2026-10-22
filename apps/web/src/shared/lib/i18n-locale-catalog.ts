@@ -122,7 +122,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "hr": 0.255,
   "hu": 0.2559,
   "hy": 0.2569,
-  "id": 0.2522,
+  "id": 0.9772,
   "is": 0.2578,
   "it": 0.2545,
   "ja": 0.9907,
