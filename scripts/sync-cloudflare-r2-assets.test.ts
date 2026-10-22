@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
@@ -17,10 +17,12 @@ import {
 } from "../deploy/cloudflare-static/src/large-static-assets";
 
 import {
+  createRequestPacer,
   discoverR2LargeAssets,
   fileMd5,
   planR2Uploads,
   r2ObjectPutRequest,
+  r2RetryDelayMs,
   type R2LargeAssetUpload,
 } from "./sync-cloudflare-r2-assets.mts";
 
@@ -148,5 +150,37 @@ describe("Cloudflare R2 large asset synchronization", () => {
       "cache-control": CLOUDFLARE_R2_MEDIA_CACHE_CONTROL,
       "content-disposition": "inline",
     });
+  });
+});
+
+describe("Cloudflare R2 REST rate limit", () => {
+  it("waits out Retry-After on 429, the documented five-minute block without it, and backs off on 5xx", () => {
+    expect(r2RetryDelayMs(429, "42", 1)).toBe(42_000);
+    expect(r2RetryDelayMs(429, null, 1)).toBe(300_000);
+    expect(r2RetryDelayMs(429, "Thu, 23 Oct 2026 06:00:00 GMT", 1)).toBe(300_000);
+    expect(r2RetryDelayMs(503, null, 2)).toBe(2_000);
+    expect(r2RetryDelayMs(403, null, 1)).toBeNull();
+  });
+
+  it("spaces request starts across concurrent uploads and holds them all after a 429", async () => {
+    vi.useFakeTimers();
+    try {
+      const pacer = createRequestPacer(2);
+      const origin = Date.now();
+      const startedAt: number[] = [];
+      const first = Array.from({ length: 3 }, () =>
+        pacer.wait().then(() => startedAt.push(Date.now() - origin)));
+      await vi.runAllTimersAsync();
+      await Promise.all(first);
+      expect(startedAt).toEqual([0, 500, 1_000]);
+
+      pacer.pause(10_000);
+      const held = pacer.wait().then(() => startedAt.push(Date.now() - origin));
+      await vi.runAllTimersAsync();
+      await held;
+      expect(startedAt.at(-1)).toBe(11_000);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

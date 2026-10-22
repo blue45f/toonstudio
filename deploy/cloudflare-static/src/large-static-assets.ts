@@ -288,6 +288,18 @@ export function r2AssetResponseHeaders(
   return headers;
 }
 
+/** R2 에셋 사전 요청(OPTIONS) 헤더. GET과 같은 출처 정책을 따른다 — 동일 출처 미디어에는 CORS를 주지 않는다. */
+export function r2PreflightHeaders(descriptor: CloudflareLargeAssetDescriptor): Record<string, string> {
+  if (descriptor.sameOriginOnly) return { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" };
+  if (descriptor.sameOriginResource) return { allow: "GET, HEAD, OPTIONS" };
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, HEAD, OPTIONS",
+    "access-control-allow-headers": "Range, If-Range, If-None-Match",
+    "access-control-max-age": "86400",
+  };
+}
+
 /**
  * R2에 아직 없는 미디어를 Static Assets로 돌린다. Static Assets의 SPA 폴백(HTML 200)은 미디어 자리에서
  * 로더를 깨뜨리므로(2026-10-13 wasm 사고와 같은 실패 모드) 404로 바꾼다.
