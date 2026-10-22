@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import nodeTest from "node:test";
 import { fileURLToPath } from "node:url";
+import { deflateRawSync } from "node:zlib";
 import { test as vitestTest } from "vitest";
 
 import { CATALOG_PACKS, CROWD_PACKS, PENDING_PACKS } from "./generate-creator-bundle-theme-packs.mjs";
@@ -16,9 +20,11 @@ import {
   loadPackRightsLedger,
   missingEvidenceKinds,
   packRightsProjection,
+  readZipMember,
   validatePackRightsLedger,
+  verifyLocalLicenseEvidence,
 } from "./lib/creator-bundle-pack-rights.mjs";
-import { qualifyingEvidence } from "./lib/creator-bundle-pack-rights-test-support.mjs";
+import { fixtureLedger, fixtureLicenseText, ledgerEntry, qualifyingEvidence } from "./lib/creator-bundle-pack-rights-test-support.mjs";
 
 // 루트 `vitest run`(scripts/**/*.test.mjs 수집)과 `node --test` 양쪽에서 같은 파일이 돈다.
 const test = process.env.VITEST ? vitestTest : nodeTest;
@@ -339,3 +345,119 @@ test("allow 요구 표는 모든 라이선스 분류를 덮고 서면 확인 없
     }
   }
 });
+
+/* ── 증빙 재검증: 원장이 기록한 해시와 라이브러리 실물을 다시 대조한다 ───────────────────── */
+
+const VERIFY_SCRIPT = resolve(REPO_ROOT, "scripts/verify-creator-bundle-pack-rights.mjs");
+const sha256Of = (bytes) => createHash("sha256").update(bytes).digest("hex");
+
+/** 멤버 하나짜리 최소 zip (method 0=저장, 8=deflate). CRC는 읽기 쪽이 보지 않아 0으로 둔다. */
+function makeZip(name, content, method = 8) {
+  const raw = Buffer.from(content);
+  const data = method === 8 ? deflateRawSync(raw) : raw;
+  const nameBytes = Buffer.from(name);
+  const local = Buffer.alloc(30);
+  local.writeUInt32LE(0x04034b50, 0);
+  local.writeUInt16LE(20, 4);
+  local.writeUInt16LE(method, 8);
+  local.writeUInt32LE(data.length, 18);
+  local.writeUInt32LE(raw.length, 22);
+  local.writeUInt16LE(nameBytes.length, 26);
+  const central = Buffer.alloc(46);
+  central.writeUInt32LE(0x02014b50, 0);
+  central.writeUInt16LE(20, 4);
+  central.writeUInt16LE(20, 6);
+  central.writeUInt16LE(method, 10);
+  central.writeUInt32LE(data.length, 20);
+  central.writeUInt32LE(raw.length, 24);
+  central.writeUInt16LE(nameBytes.length, 28);
+  const localPart = Buffer.concat([local, nameBytes, data]);
+  const centralPart = Buffer.concat([central, nameBytes]);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(1, 8);
+  eocd.writeUInt16LE(1, 10);
+  eocd.writeUInt32LE(centralPart.length, 12);
+  eocd.writeUInt32LE(localPart.length, 16);
+  return Buffer.concat([localPart, centralPart, eocd]);
+}
+
+function withLibrary(run) {
+  const root = mkdtempSync(join(tmpdir(), "pack-rights-library-"));
+  try {
+    return run(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function writeLibraryFile(root, relative, content) {
+  mkdirSync(dirname(join(root, relative)), { recursive: true });
+  writeFileSync(join(root, relative), content);
+}
+
+test("readZipMember는 저장·deflate 멤버를 꺼내고 없는 멤버·깨진 zip은 null이다", () => {
+  const text = "EmacEArt Asset License — fixture\n".repeat(20);
+  assert.equal(readZipMember(makeZip("LICENSE.txt", text, 8), "LICENSE.txt")?.toString(), text);
+  assert.equal(readZipMember(makeZip("LICENSE.txt", text, 0), "LICENSE.txt")?.toString(), text);
+  assert.equal(readZipMember(makeZip("LICENSE.txt", text), "OTHER.txt"), null);
+  assert.equal(readZipMember(Buffer.from("not a zip"), "LICENSE.txt"), null);
+});
+
+test("로컬 라이선스 문서 재대조는 일치·해시 불일치·누락·zip 멤버를 각각 가려낸다", () => {
+  withLibrary((root) => {
+    const loose = "RG Poly License fixture";
+    const archived = "EmacEArt archived license fixture";
+    writeLibraryFile(root, "pack/License.txt", loose);
+    writeLibraryFile(root, "pack/Blend Textures.zip", makeZip("LICENSE.txt", archived));
+    const ledger = fixtureLedger([], [
+      fixtureLicenseText({ sha256: sha256Of(loose), files: [{ libraryPath: "pack/License.txt" }] }),
+      fixtureLicenseText({
+        sha256: sha256Of(archived),
+        files: [{ libraryPath: "pack/License.txt" }],
+        archivedFiles: [{ libraryPath: "pack/Blend Textures.zip", member: "LICENSE.txt" }],
+      }),
+    ]);
+    // 두 번째 문서의 loose 파일 항목은 일부러 첫 번째 파일을 가리켜 해시 불일치를 만든다.
+    const result = verifyLocalLicenseEvidence({ ledger, libraryRoot: root });
+    assert.equal(result.checked, 3);
+    assert.deepEqual(result.mismatches.map((item) => item.reason), ["hash-mismatch"]);
+
+    ledger.licenseTexts[1].files = [];
+    assert.deepEqual(verifyLocalLicenseEvidence({ ledger, libraryRoot: root }), { checked: 2, mismatches: [] });
+
+    writeLibraryFile(root, "pack/License.txt", "tampered");
+    const tampered = verifyLocalLicenseEvidence({ ledger, libraryRoot: root });
+    assert.equal(tampered.mismatches[0].reason, "hash-mismatch");
+    assert.equal(tampered.mismatches[0].path, "pack/License.txt");
+
+    rmSync(join(root, "pack/Blend Textures.zip"));
+    const missing = verifyLocalLicenseEvidence({ ledger, libraryRoot: root });
+    assert.ok(missing.mismatches.some((item) => item.reason === "missing" && item.path === "pack/Blend Textures.zip::LICENSE.txt"));
+  });
+});
+
+test("검증 CLI는 원장이 유효하면 0, 라이브러리 실물이 어긋나면 1로 끝난다", () => {
+  const ok = spawnSync(process.execPath, [VERIFY_SCRIPT], { encoding: "utf8" });
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.match(ok.stdout, /팩 61개 \(pack 42 · crowd 5 · pending 14\) — allow 0 · hold 61/);
+  assert.match(ok.stdout, /★권고 hold/);
+  withLibrary((root) => {
+    const missingLibrary = spawnSync(process.execPath, [VERIFY_SCRIPT, "--library-root", root], { encoding: "utf8" });
+    assert.equal(missingLibrary.status, 1);
+    assert.match(missingLibrary.stdout, /로컬 라이선스 문서 재대조: 96건 중 불일치 96건/);
+
+    const brokenPath = join(root, "ledger.json");
+    writeFileSync(brokenPath, JSON.stringify({ ...cloneLedger(), defaultServe: "allow" }));
+    const broken = spawnSync(process.execPath, [VERIFY_SCRIPT, "--pack-rights", brokenPath], { encoding: "utf8" });
+    assert.equal(broken.status, 1);
+    assert.match(broken.stdout, /문제: defaultServe는 hold여야 합니다/);
+  });
+});
+
+test("테스트 지원의 원장 항목 빌더는 allow일 때 요구 증빙을 정확히 채운다", () => {
+  const entry = ledgerEntry({ title: "Builder Check", catalogIds: ["cbv1-904-builder"], serve: "allow" });
+  assert.deepEqual(entry.evidence.map((item) => item.kind), ["itch-page-capture", "purchase-receipt"]);
+  assert.deepEqual(validatePackRightsLedger(fixtureLedger([entry])), []);
+});
+
