@@ -28,7 +28,7 @@
   "footer.link.shaper": "Le personnage",
   "footer.link.market": "Marché des créateurs",
   "footer.link.news": "Nouvelles de romans sur le web",
-  "footer.link.about": "About ToonStudio",
+  "footer.link.about": "À propos de ToonStudio",
   "footer.link.guide": "Politique de classement",
   "footer.link.sitemap": "Carte du site",
   "footer.link.settings": "Paramètres",
@@ -49,5 +49,5 @@
   "footer.business.serviceType": "Type de plateforme",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Tous droits réservés.",
   "footer.logoTag": "Créez votre prochain récit",
-  "footer.link.features": "All features at a glance"
+  "footer.link.features": "Toutes les fonctionnalités en un coup d'œil"
 }
