@@ -78,11 +78,11 @@
   "search.explorer.time.hoursAgo": "{count} ঘন্টা আগে",
   "search.explorer.time.daysAgo": "{count} d আগে",
   "search.explorer.loadMore": "আরো লোড করুন",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "জনপ্রিয় অনুসন্ধান",
+  "search.explorer.suggestions.genres": "প্রস্তাবিত ধারা",
+  "search.explorer.suggestions.searchFor": "{query} অনুসন্ধান করুন",
+  "search.explorer.suggestions.genreFilter": "{genre} ধারা দিয়ে সংকীর্ণ করুন",
+  "search.explorer.suggestions.loading": "প্রস্তাবিত অনুসন্ধান লোড হচ্ছে",
+  "search.explorer.suggestions.error": "প্রস্তাবিত অনুসন্ধান লোড করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+  "search.explorer.suggestions.empty": "এখন কোনো পরামর্শ নেই। একটি শিরোনাম, লেখক বা ট্যাগ লিখে দেখুন।"
 }
