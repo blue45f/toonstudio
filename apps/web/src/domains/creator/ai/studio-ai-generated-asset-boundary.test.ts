@@ -81,7 +81,7 @@ describe("Studio AI generated asset fail-closed boundary", () => {
     const value = functionSource("executeGenerateAsset");
     expectInOrder(value, [
       "if (!isStudioAiConfigured(aiSettings))",
-      "setError(\"설정에서 사용자 API 키를 등록한 뒤 다시 시도해 주세요.\")",
+      "setError(t(\"studio.hostStatus.apiKeyRequired\", \"설정에서 사용자 API 키를 등록한 뒤 다시 시도해 주세요.\"))",
       "return;",
       "const provider = studioImageAiProviderContext(aiSettings)",
       "captureStudioAiGeneratedAssetProvenance(provider, \"generated\")",

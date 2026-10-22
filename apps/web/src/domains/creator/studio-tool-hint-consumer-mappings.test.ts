@@ -72,7 +72,8 @@ describe("Studio rich-hint consumer mappings", () => {
 
   it("opens the bubble library from menus while preserving fit-to-text on selection", () => {
     const menubar = readStudioSource("StudioMenubarContent.tsx");
-    const toolBelt = readStudioSource("StudioToolBeltContent.tsx");
+    // 도구 띠의 힌트 매핑은 StudioToolBeltHints.ts 로 옮겨졌다(StudioToolBeltContent 는 TOOL_BELT_HINTS 를 가져다 쓴다).
+    const toolBelt = readStudioSource("StudioToolBeltHints.ts");
 
     expectNearby(menubar, "bubbles: {", 'preview: "bubble"');
     expectNearby(menubar, "bubbles: {", 'previewVariant: "open-library"');
