@@ -229,7 +229,7 @@ export async function persistStudioVrmTexturePaintRuntime(
   const exported = runtime.exportPaintedTargets();
   if (!exported.ok) {
     throw new StudioVrmTexturePaintPersistenceError("runtime-export-failed", {
-      cause: new Error(exported.error.message),
+      cause: new Error(exported.error.code),
     });
   }
   const deps = dependencies(options.dependencies);
@@ -358,7 +358,7 @@ function preflightAlreadyRestoredBindings(
   const exported = runtime.exportPaintedTargets();
   if (!exported.ok) {
     throw new StudioVrmTexturePaintPersistenceError("restore-failed", {
-      cause: new Error(exported.error.message),
+      cause: new Error(exported.error.code),
     });
   }
   const existing = existingRestoreTargets(exported.value);
@@ -452,7 +452,7 @@ export async function rehydrateStudioVrmTexturePaintRuntime(
     const result = await runtime.replaceDocumentTargets(prepared.map(({ texture, image }) => ({
       binding: { bindingKey: texture.bindingKey, materialLocator: texture.materialLocator, textureSlot: texture.textureSlot }, image,
     })), options.signal);
-    if (!result.ok) throw new StudioVrmTexturePaintPersistenceError("restore-failed", { cause: new Error(result.error.message) });
+    if (!result.ok) throw new StudioVrmTexturePaintPersistenceError("restore-failed", { cause: new Error(result.error.code) });
     return Object.freeze({ artifactCount: grouped.size, bindingCount: prepared.length });
   }
   const alreadyRestored = preflightAlreadyRestoredBindings(runtime, prepared);
@@ -474,7 +474,7 @@ export async function rehydrateStudioVrmTexturePaintRuntime(
       });
       if (!result.ok) {
         throw new StudioVrmTexturePaintPersistenceError("restore-failed", {
-          cause: new Error(result.error.message),
+          cause: new Error(result.error.code),
         });
       }
       applied.push(entry);

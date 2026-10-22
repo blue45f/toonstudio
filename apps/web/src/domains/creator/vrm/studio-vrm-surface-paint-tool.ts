@@ -30,6 +30,7 @@ import type {
   StrokeIR,
 } from "@toonstudio/studio-project-model";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import { resolveStudioVrmPaintRuntimeError } from "../status-i18n/studio-producer-error-i18n-vrm-paint";
 
 export const STUDIO_VRM_SURFACE_PAINT_TOOL_ID = "studio-vrm-surface-round-v12";
 export const STUDIO_VRM_SURFACE_PAINT_PROVIDER_ID = "three-vrm-texture-paint";
@@ -417,8 +418,19 @@ function classifyExecutionError(error: unknown): Readonly<{
 }> {
   const detail = errorMessage(error);
   const normalized = detail.toLowerCase();
+  // D4 (R14): 런타임 오류는 provider 경계에서 구조화 코드(runtimeCode)로 넘어온다.
+  // 메모리·업로드 분류는 부분 문자열이 아니라 코드 집합으로 판정하고, 표시는
+  // 이 분류 지점에서만 해석한다(집계자 예외). 코드가 없는 일반 오류는 기존
+  // 부분 문자열·원문 경로를 유지한다.
+  const runtimeCode = error instanceof StudioVrmSurfaceBrushBridgeError
+    ? error.runtimeCode
+    : undefined;
   if (
-    normalized.includes("history-budget")
+    (runtimeCode !== undefined
+      && (runtimeCode === "history-budget"
+        || runtimeCode === "target-rgba-budget"
+        || runtimeCode === "aggregate-rgba-budget"))
+    || normalized.includes("history-budget")
     || normalized.includes("target-rgba-budget")
     || normalized.includes("aggregate-rgba-budget")
     || normalized.includes("out of memory")
@@ -429,7 +441,9 @@ function classifyExecutionError(error: unknown): Readonly<{
     });
   }
   if (
-    normalized.includes("canvas-unavailable")
+    (runtimeCode !== undefined
+      && (runtimeCode === "canvas-unavailable" || runtimeCode === "target-invalid"))
+    || normalized.includes("canvas-unavailable")
     || normalized.includes("target-invalid")
     || normalized.includes("upload")
   ) {
@@ -440,7 +454,7 @@ function classifyExecutionError(error: unknown): Readonly<{
   if (error instanceof StudioVrmSurfaceBrushBridgeError) {
     return Object.freeze({
       code: "runtime",
-      message: `V12 UV 브러시를 완료하지 못했습니다: ${detail}`,
+      message: `V12 UV 브러시를 완료하지 못했습니다: ${runtimeCode !== undefined ? resolveStudioVrmPaintRuntimeError({ code: runtimeCode }) : detail}`,
     });
   }
   return Object.freeze({
