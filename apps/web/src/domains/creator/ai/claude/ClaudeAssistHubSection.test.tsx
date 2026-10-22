@@ -9,6 +9,8 @@ import { lockUserAi, setUserAiConfiguration } from "@/shared/ai/user-ai-store";
 import { EMPTY_AI_CONNECTION } from "@/shared/ai/user-ai-types";
 import { useI18n } from "@/shared/lib/i18n";
 
+import { closeClaudeAssistFeature } from "./claude-assist-dialog-store";
+import { ClaudeAssistDialogHostEntry } from "./ClaudeAssistDialogHostEntry";
 import { ClaudeAssistHubEntry } from "./ClaudeAssistHubEntry";
 
 vi.mock("./ClaudeArtDirectorDialog", () => ({
@@ -53,13 +55,15 @@ function connect(model = "claude-opus-5-5") {
   });
 }
 
+/** 허브와, 대화상자를 그리는 호스트(스튜디오가 늘 마운트해 두는 쪽)를 따로 그린다. */
 function renderHub(onOpenSettings = vi.fn()) {
-  render(
+  const view = render(
     <MemoryRouter>
       <ClaudeAssistHubEntry onOpenSettings={onOpenSettings} />
+      <ClaudeAssistDialogHostEntry />
     </MemoryRouter>,
   );
-  return { onOpenSettings };
+  return { onOpenSettings, ...view };
 }
 
 describe("ClaudeAssistHubSection", () => {
@@ -70,24 +74,26 @@ describe("ClaudeAssistHubSection", () => {
     lockUserAi(false);
     resetClaudeUsage();
     resetClaudeBudgetForTests();
+    closeClaudeAssistFeature();
   });
 
   afterEach(() => {
     cleanup();
+    closeClaudeAssistFeature();
     lockUserAi(false);
     resetClaudeUsage();
     resetClaudeBudgetForTests();
     useI18n.setState({ lang: INITIAL_LANGUAGE });
   });
 
-  it("불러오는 동안은 같은 높이의 빈 틀을 두어 화면이 출렁이지 않게 한다", () => {
+  it("불러오는 동안은 자리를 알리는 빈 틀을 둔다", () => {
     const { container } = render(
       <MemoryRouter>
         <ClaudeAssistHubEntry onOpenSettings={() => undefined} />
       </MemoryRouter>,
     );
     const skeleton = container.querySelector("[aria-hidden='true']");
-    expect(skeleton?.className).toContain("h-28");
+    expect(skeleton?.className).toContain("min-h-28");
   });
 
   it("연결이 없으면 기능을 숨기지 않고 연결 안내와 설정 버튼을 보여 준다", async () => {
@@ -131,6 +137,28 @@ describe("ClaudeAssistHubSection", () => {
     });
     expect(await screen.findByRole("dialog", { name: "plan-dialog" })).toBeTruthy();
 
+    fireEvent.click(screen.getByRole("button", { name: "plan-close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("AI 허브(도구 팝오버)가 닫혀 허브가 사라져도 열린 대화상자는 남는다", async () => {
+    connect();
+    const { rerender } = renderHub();
+    const section = await screen.findByRole("region", { name: "Claude 보조" });
+    await act(async () => {
+      fireEvent.click(within(section).getByRole("button", { name: /AI 명령 도우미/ }));
+    });
+    expect(await screen.findByRole("dialog", { name: "plan-dialog" })).toBeTruthy();
+
+    // 스튜디오는 팝오버 바깥을 누르면 메뉴를 닫아 허브를 내려 버린다. 대화상자는 허브가 아니라 호스트가 쥐고 있어야 한다.
+    rerender(
+      <MemoryRouter>
+        <ClaudeAssistDialogHostEntry />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("region", { name: "Claude 보조" })).toBeNull();
+    expect(screen.getByRole("dialog", { name: "plan-dialog" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "plan-close" }));
     expect(screen.queryByRole("dialog")).toBeNull();
   });

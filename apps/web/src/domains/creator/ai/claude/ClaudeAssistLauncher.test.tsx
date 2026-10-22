@@ -9,6 +9,8 @@ import { lockUserAi, setUserAiConfiguration } from "@/shared/ai/user-ai-store";
 import { EMPTY_AI_CONNECTION, type UserAiConnection } from "@/shared/ai/user-ai-types";
 import { useI18n } from "@/shared/lib/i18n";
 
+import { closeClaudeAssistFeature } from "./claude-assist-dialog-store";
+import { ClaudeAssistDialogHostEntry } from "./ClaudeAssistDialogHostEntry";
 import { ClaudeAssistLauncher } from "./ClaudeAssistLauncher";
 
 // 대화상자 본체는 각자의 시험이 있으므로 여기서는 열고 닫는 계약만 본다.
@@ -59,8 +61,9 @@ function connect(connection: UserAiConnection = claudeConnection()) {
   });
 }
 
+/** 검색 줄 메뉴와, 대화상자를 그리는 호스트(스튜디오가 늘 마운트해 두는 쪽)를 함께 그린다. */
 function renderLauncher() {
-  return render(<MemoryRouter><ClaudeAssistLauncher /></MemoryRouter>);
+  return render(<MemoryRouter><ClaudeAssistLauncher /><ClaudeAssistDialogHostEntry /></MemoryRouter>);
 }
 
 async function openMenu() {
@@ -77,10 +80,12 @@ describe("ClaudeAssistLauncher", () => {
     lockUserAi(false);
     resetClaudeUsage();
     resetClaudeBudgetForTests();
+    closeClaudeAssistFeature();
   });
 
   afterEach(() => {
     cleanup();
+    closeClaudeAssistFeature();
     lockUserAi(false);
     resetClaudeUsage();
     resetClaudeBudgetForTests();
@@ -153,7 +158,9 @@ describe("ClaudeAssistLauncher", () => {
       expect(within(items[3] as HTMLElement).getByText("이미지 필요")).toBeTruthy();
       expect(document.activeElement).toBe(items[0]);
       expect(within(menu).getByRole("menuitem", { name: "AI 설정 열기" }).getAttribute("href")).toBe("/settings/ai?source=studio");
-      expect(within(menu).getByText("아직 Claude 호출이 없어요.")).toBeTruthy();
+      // 사용량 막대는 메뉴 항목이 아니므로 role="menu" 바깥(패널)에 있다.
+      expect(within(menu).queryByRole("progressbar")).toBeNull();
+      expect(within(menu.parentElement as HTMLElement).getByText("아직 Claude 호출이 없어요.")).toBeTruthy();
     });
 
     it("화살표·Home·End로 항목을 옮기고 끝에서는 돌아 나온다", async () => {

@@ -5,6 +5,7 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
+import { ClaudeAssistDialogHostEntry } from "../ai/claude/ClaudeAssistDialogHostEntry";
 import { StudioAiProjectHandoffHost } from "../ai/StudioAiProjectHandoffHost";
 import { STUDIO_BRUSH_PACK_ACCEPT } from "../brush/studio-brush-pack-format";
 import { STUDIO_CANVAS_IMAGE_ACCEPT } from "../studio-legacy-editor-runtime-helpers";
@@ -51,6 +52,8 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
     {/* 파괴적 명령 승인 표면. body 로 포털되므로 위치는 자유롭지만, 스튜디오 셸 안에 두어
         스튜디오가 살아 있는 동안에만 seam 을 소유하게 한다. */}
     <StudioDestructiveConfirmHost />
+    {/* Claude 보조 대화상자. 열림 상태가 저장소에 있어 AI 허브(도구 팝오버)가 닫혀도 대화상자는 남는다. */}
+    <ClaudeAssistDialogHostEntry />
     <StudioVrmProjectArchiveAttestationHost />
     <StudioImportHandoffHost
       brushPackImporting={brushPackImporting}

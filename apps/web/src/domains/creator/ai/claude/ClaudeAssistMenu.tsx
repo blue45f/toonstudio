@@ -17,26 +17,29 @@ import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_FOCUS_RING } from "../../studio-panel-ui";
+import { STUDIO_Z_CLASS } from "../../studio-z-index";
 
-import { CLAUDE_ASSIST_FEATURES, useClaudeAssistDialogs, type ClaudeAssistFeatureId } from "./claude-assist-features";
+import { openClaudeAssistFeature } from "./claude-assist-dialog-store";
+import { CLAUDE_ASSIST_FEATURES, type ClaudeAssistFeatureId } from "./claude-assist-features";
 
 const TRIGGER =
   "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded text-fg-3 transition-colors hover:bg-raised hover:text-fg aria-expanded:bg-raised aria-expanded:text-accent";
 
 interface Position {
   readonly top: number;
-  readonly right: number;
+  readonly left: number;
 }
+
+const VIEWPORT_MARGIN = 8;
 
 export function ClaudeAssistMenu() {
   const t = useT();
   const idBase = useId();
   const menuId = `${idBase}-menu`;
-  const dialogs = useClaudeAssistDialogs();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [position, setPosition] = useState<Position>({ top: 0, right: 0 });
+  const [position, setPosition] = useState<Position>({ top: 0, left: VIEWPORT_MARGIN });
 
   const closeMenu = useCallback((restoreFocus: boolean) => {
     setMenuOpen(false);
@@ -46,7 +49,12 @@ export function ClaudeAssistMenu() {
   useLayoutEffect(() => {
     if (!menuOpen) return;
     const rect = triggerRef.current?.getBoundingClientRect();
-    if (rect) setPosition({ top: rect.bottom + 4, right: Math.max(8, window.innerWidth - rect.right) });
+    if (rect) {
+      // 버튼의 오른쪽 끝에 맞추되, 버튼이 화면 왼쪽에 있어도(인스펙터를 왼쪽에 둔 경우) 패널이 화면 밖으로 나가지 않게 가둔다.
+      const width = panelRef.current?.offsetWidth || 320;
+      const left = Math.min(Math.max(VIEWPORT_MARGIN, rect.right - width), Math.max(VIEWPORT_MARGIN, window.innerWidth - width - VIEWPORT_MARGIN));
+      setPosition({ top: rect.bottom + 4, left });
+    }
     panelRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
   }, [menuOpen]);
 
@@ -72,7 +80,7 @@ export function ClaudeAssistMenu() {
     // 포커스를 버튼에 두고 열어야 대화상자가 닫힐 때 돌아올 곳이 남는다(메뉴 항목은 곧 사라진다).
     triggerRef.current?.focus({ preventScroll: true });
     setMenuOpen(false);
-    dialogs.openFeature(id);
+    openClaudeAssistFeature(id);
   };
 
   const onPanelKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -89,7 +97,9 @@ export function ClaudeAssistMenu() {
       closeMenu(true);
       return;
     } else if (event.key === "Tab") {
-      closeMenu(false);
+      // 패널은 body 끝에 있어 여기서 Tab을 그대로 두면 문서 처음·끝으로 튄다. 버튼으로 포커스를 돌려 놓고 기본 Tab 이동에 맡기면
+      // 버튼 앞뒤의 자연스러운 자리로 간다.
+      closeMenu(true);
       return;
     }
     if (next !== null) {
@@ -127,53 +137,54 @@ export function ClaudeAssistMenu() {
         ? createPortal(
           <div
             ref={panelRef}
-            id={menuId}
-            role="menu"
-            tabIndex={-1}
-            aria-label={label}
+            // 메뉴 항목에서 올라온 키 입력만 처리하는 바깥 틀이라 보조 기술에는 드러내지 않는다.
+            role="presentation"
+            data-studio-shortcut-boundary="true"
             onKeyDown={onPanelKeyDown}
-            style={{ top: position.top, right: position.right }}
-            className="fixed z-[250] w-[min(20rem,calc(100vw-1rem))] space-y-1 rounded-xl border border-line bg-panel p-1.5 shadow-2xl"
+            style={{ top: position.top, left: position.left }}
+            className={cn("fixed w-[min(20rem,calc(100vw-1rem))] rounded-xl border border-line bg-panel p-1.5 shadow-2xl", STUDIO_Z_CLASS.toolPopover)}
           >
-            {CLAUDE_ASSIST_FEATURES.map(({ id, Icon, titleKey, descriptionKey, requirementKey }) => (
-              <button
-                key={id}
-                type="button"
-                role="menuitem"
-                tabIndex={-1}
-                data-claude-assist={id}
-                onClick={() => choose(id)}
-                className={cn("flex min-h-11 w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-raised", STUDIO_FOCUS_RING)}
-              >
-                <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent" aria-hidden>
-                  <Icon size={15} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-fg">{t(titleKey)}</span>
-                    <span className="rounded-full border border-line px-1.5 py-px text-[0.625rem] font-semibold text-fg-3">{t(requirementKey)}</span>
+            <div id={menuId} role="menu" tabIndex={-1} aria-label={label} className="space-y-1">
+              {CLAUDE_ASSIST_FEATURES.map(({ id, Icon, titleKey, descriptionKey, requirementKey }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="menuitem"
+                  tabIndex={-1}
+                  data-claude-assist={id}
+                  onClick={() => choose(id)}
+                  className={cn("flex min-h-11 w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-raised", STUDIO_FOCUS_RING)}
+                >
+                  <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent" aria-hidden>
+                    <Icon size={15} />
                   </span>
-                  <span className="block text-xs text-fg-3">{t(descriptionKey)}</span>
-                </span>
-              </button>
-            ))}
-            <div className="space-y-1.5 border-t border-line px-2.5 pb-1 pt-2">
-              <ClaudeBudgetMeter />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-fg">{t(titleKey)}</span>
+                      <span className="rounded-full border border-line px-1.5 py-px text-[0.625rem] font-semibold text-fg-3">{t(requirementKey)}</span>
+                    </span>
+                    <span className="block text-xs text-fg-3">{t(descriptionKey)}</span>
+                  </span>
+                </button>
+              ))}
               <Link
                 to="/settings/ai?source=studio"
                 role="menuitem"
                 tabIndex={-1}
-                className={cn("inline-flex min-h-11 items-center text-xs font-bold text-accent", STUDIO_FOCUS_RING)}
+                className={cn("flex min-h-11 items-center rounded-lg px-2.5 text-xs font-bold text-accent hover:bg-raised", STUDIO_FOCUS_RING)}
                 onClick={() => closeMenu(false)}
               >
                 {t("claudeAssist.hub.settingsLink")}
               </Link>
             </div>
+            {/* 사용량 막대는 메뉴 항목이 아니므로 role="menu" 바깥에 둔다. */}
+            <div className="border-t border-line px-2.5 pb-1 pt-2">
+              <ClaudeBudgetMeter />
+            </div>
           </div>,
           document.body,
         )
         : null}
-      {dialogs.element}
     </div>
   );
 }

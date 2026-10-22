@@ -17,7 +17,8 @@ import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../../studio-panel-ui";
 
-import { CLAUDE_ASSIST_FEATURES, useClaudeAssistDialogs } from "./claude-assist-features";
+import { openClaudeAssistFeature } from "./claude-assist-dialog-store";
+import { CLAUDE_ASSIST_FEATURES } from "./claude-assist-features";
 
 export interface ClaudeAssistHubSectionProps {
   /** AI 설정 화면으로 간다(허브의 "AI 어시스트 설정"과 같은 동작). */
@@ -29,7 +30,6 @@ export function ClaudeAssistHubSection({ onOpenSettings, onPreloadSettings }: Cl
   const t = useT();
   const rawId = useId().replace(/:/gu, "");
   const route = useClaudeRoute();
-  const dialogs = useClaudeAssistDialogs();
   const modelLabel = route ? claudeModelInfo(route.model)?.label ?? route.model : "";
 
   return (
@@ -64,7 +64,7 @@ export function ClaudeAssistHubSection({ onOpenSettings, onPreloadSettings }: Cl
                 key={id}
                 type="button"
                 data-claude-assist={id}
-                onClick={() => dialogs.openFeature(id)}
+                onClick={() => openClaudeAssistFeature(id)}
                 aria-haspopup="dialog"
                 className={cn(
                   "group flex min-h-[5.25rem] min-w-0 items-start gap-2.5 rounded-xl border border-line bg-card/80 p-2.5 text-left hover:border-line-strong hover:bg-raised",
@@ -117,7 +117,6 @@ export function ClaudeAssistHubSection({ onOpenSettings, onPreloadSettings }: Cl
           </button>
         </div>
       )}
-      {dialogs.element}
     </section>
   );
 }
