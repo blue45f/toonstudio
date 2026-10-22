@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bakeStudioBg3dTagVisibilityIntoDocument,
+  projectStudioBg3dTagVisibility,
+  readStudioBg3dHiddenTagSet,
+} from "./studio-bg3d-hierarchy";
+import {
   DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
   normalizeStudioBg3dSceneDocument,
   type StudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
 import {
-  bakeStudioBg3dTagVisibilityIntoDocument,
   buildStudioBg3dOrganizationView,
-  projectStudioBg3dTagVisibility,
-  readStudioBg3dHiddenTagSet,
   type StudioBg3dOrganizationEntitySource,
 } from "./studio-bg3d-scene-organization";
 

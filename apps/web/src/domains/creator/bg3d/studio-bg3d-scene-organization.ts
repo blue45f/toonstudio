@@ -1,12 +1,10 @@
 /**
- * 장면 구성 정보(태그·컴포넌트 묶음·장면 메타)의 읽기 모델과 렌더 투영.
+ * 장면 구성 정보(태그·컴포넌트 묶음·장면 메타)의 읽기 모델.
  *
  * 순수 모듈이다. 편집기가 쥔 런타임 배열(BgPrimitive·BgCustomModelInstance)과 정본 문서만 읽어
- * 아웃라이너가 그릴 값을 만들고, 숨긴 태그를 렌더용 가시성으로 바꾼다. 문서 쪽의 정규화 규칙은
+ * 아웃라이너가 그릴 값을 만든다. 문서 쪽의 정규화 규칙과 태그 숨김의 렌더 투영(projectStudioBg3dTagVisibility)은
  * studio-bg3d-hierarchy 가 갖고(Studio 진입 그래프에 이미 닿아 있다), 이 모듈은 지연 로드되는 편집 경계에서만 쓴다.
  *
- * 태그 숨김은 오브젝트 가시성과 따로 움직인다: 숨긴 태그가 붙은 오브젝트는 `visible` 값을 바꾸지 않은 채 렌더에서만 빠진다.
- * 그래서 태그를 다시 보이게 해도 사용자가 따로 숨겨 둔 오브젝트는 숨겨진 채로 남는다.
  */
 
 import { isStudioBg3dTagHidden } from "./studio-bg3d-hierarchy";
@@ -102,41 +100,4 @@ export function buildStudioBg3dOrganizationView(input: {
       memo: input.document.meta?.memo ?? "",
     }),
   });
-}
-
-/**
- * 숨긴 태그가 붙은 오브젝트를 렌더용으로 `visible: false` 로 바꾼 배열. 숨길 것이 없으면 입력 배열을 그대로 돌려줘
- * 참조가 바뀌지 않는다(불필요한 다시 그리기를 막는다). 저장되는 `visible` 은 이 투영과 무관하게 그대로다.
- */
-export function projectStudioBg3dTagVisibility<T extends StudioBg3dOrganizationEntitySource>(
-  entities: readonly T[],
-  hiddenTags: ReadonlySet<string> | undefined,
-): readonly T[] {
-  if (hiddenTags === undefined || hiddenTags.size === 0) return entities;
-  let changed = false;
-  const projected = entities.map((entity) => {
-    if (entity.visible === false || !isStudioBg3dTagHidden(entity, hiddenTags)) return entity;
-    changed = true;
-    return { ...entity, visible: false };
-  });
-  return changed ? projected : entities;
-}
-
-/** 문서의 숨긴 태그를 렌더용 집합으로 읽는다. 없으면 undefined. */
-export function readStudioBg3dHiddenTagSet(
-  document: Pick<StudioBg3dSceneDocument, "meta"> | undefined,
-): ReadonlySet<string> | undefined {
-  const hidden = document?.meta?.hiddenTags;
-  return hidden && hidden.length > 0 ? new Set(hidden) : undefined;
-}
-
-/**
- * 숨긴 태그를 문서 노드의 `visible` 에 굽는다 — 문서를 렌더 전용 사본으로 쓰는 경로(특화 런타임 스냅샷)에서만 쓴다.
- * 저장하는 문서에는 쓰지 않는다. 숨길 노드가 없으면 같은 문서를 돌려준다.
- */
-export function bakeStudioBg3dTagVisibilityIntoDocument(document: StudioBg3dSceneDocument): StudioBg3dSceneDocument {
-  const hidden = readStudioBg3dHiddenTagSet(document);
-  if (!hidden) return document;
-  const nodes = projectStudioBg3dTagVisibility(document.nodes, hidden);
-  return nodes === document.nodes ? document : { ...document, nodes };
 }

@@ -6,6 +6,7 @@ import {
   STUDIO_BG3D_SCENE_MAX_HIDDEN_TAGS,
   STUDIO_BG3D_SCENE_MEMO_MAX_CODE_POINTS,
   STUDIO_BG3D_TAG_MAX_CODE_POINTS,
+  bakeStudioBg3dTagVisibilityIntoDocument,
   collectStudioBg3dEffectivelyVisibleEntityIds,
   isStudioBg3dTagHidden,
   normalizeStudioBg3dComponentRef,
@@ -16,6 +17,10 @@ import {
   normalizeStudioBg3dTags,
   withStudioBg3dHiddenTags,
 } from "./studio-bg3d-hierarchy";
+import {
+  STUDIO_BG3D_MAGIC_SELECTION_REASON_MESSAGES,
+  resolveStudioBg3dMagicSelection,
+} from "./studio-bg3d-magic-selection";
 import {
   DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
   STUDIO_BG3D_GLB_MIME,
@@ -230,6 +235,28 @@ describe("태그를 반영한 실효 가시성", () => {
     expect(isStudioBg3dTagHidden({}, new Set(["벽"]))).toBe(false);
     expect(isStudioBg3dTagHidden({ tags: ["벽"] }, undefined)).toBe(false);
     expect(entities[0]?.visible).toBe(true);
+  });
+
+  it("구운 사본으로 판정하는 마법 선택은 태그로 숨긴 오브젝트를 숨김으로 거절하고 저장 문서는 그대로 둔다", () => {
+    const document = canonical({
+      nodes: [node("wall", { tags: ["벽"] }), node("floor", { tags: ["바닥"] })],
+      meta: { hiddenTags: ["벽"] },
+    });
+    const select = (id: string, target: StudioBg3dSceneDocument) =>
+      resolveStudioBg3dMagicSelection({ operation: "insert", document: target, selectedIds: [id] });
+    // 구운 사본이 아니면 숨긴 태그를 모르므로 통과한다 — 호출부가 구운 사본을 넘겨야 하는 이유다.
+    expect(select("wall", document).ok).toBe(true);
+    const baked = bakeStudioBg3dTagVisibilityIntoDocument(document);
+    expect(select("wall", baked)).toEqual({
+      ok: false,
+      reason: "selected-node-hidden",
+      message: STUDIO_BG3D_MAGIC_SELECTION_REASON_MESSAGES["selected-node-hidden"],
+    });
+    expect(select("floor", baked).ok).toBe(true);
+    expect(document.nodes.map((entry) => entry.visible)).toEqual([true, true]);
+    expect(bakeStudioBg3dTagVisibilityIntoDocument(canonical({ nodes: [node("wall")] }))).toEqual(
+      canonical({ nodes: [node("wall")] }),
+    );
   });
 });
 

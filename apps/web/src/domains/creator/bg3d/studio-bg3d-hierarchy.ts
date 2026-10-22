@@ -12,6 +12,7 @@ import { failBudget } from "./studio-bg3d-scene-document-types";
 import type {
   StudioBg3dComponentRef,
   StudioBg3dNodeOrganization,
+  StudioBg3dSceneDocument,
   StudioBg3dSceneMeta,
 } from "./studio-bg3d-scene-document-types";
 
@@ -134,6 +135,44 @@ export function isStudioBg3dTagHidden(
 ): boolean {
   if (hiddenTags === undefined || hiddenTags.size === 0 || entity.tags === undefined) return false;
   return entity.tags.some((tag) => hiddenTags.has(tag));
+}
+
+/**
+ * 숨긴 태그가 붙은 엔티티를 렌더용으로 `visible: false` 사본으로 바꾼 배열. 숨길 것이 없으면 입력 배열을 그대로 돌려줘
+ * 참조가 바뀌지 않는다(불필요한 다시 그리기를 막는다). 저장되는 `visible` 은 이 투영과 무관하게 그대로라서
+ * 태그를 다시 보이게 해도 따로 숨겨 둔 오브젝트는 숨겨진 채로 남는다.
+ */
+export function projectStudioBg3dTagVisibility<T extends StudioBg3dVisibleHierarchyEntity>(
+  entities: readonly T[],
+  hiddenTags: ReadonlySet<string> | undefined,
+): readonly T[] {
+  if (hiddenTags === undefined || hiddenTags.size === 0) return entities;
+  let changed = false;
+  const projected = entities.map((entity) => {
+    if (entity.visible === false || !isStudioBg3dTagHidden(entity, hiddenTags)) return entity;
+    changed = true;
+    return { ...entity, visible: false };
+  });
+  return changed ? projected : entities;
+}
+
+/** 문서의 숨긴 태그를 렌더용 집합으로 읽는다. 없으면 undefined. */
+export function readStudioBg3dHiddenTagSet(
+  document: Pick<StudioBg3dSceneDocument, "meta"> | undefined,
+): ReadonlySet<string> | undefined {
+  const hidden = document?.meta?.hiddenTags;
+  return hidden && hidden.length > 0 ? new Set(hidden) : undefined;
+}
+
+/**
+ * 숨긴 태그를 문서 노드의 `visible` 에 굽는다 — 문서를 렌더 전용 사본으로 쓰는 경로(특화 런타임 스냅샷)에서만 쓴다.
+ * 저장하는 문서에는 쓰지 않는다. 숨길 노드가 없으면 같은 문서를 돌려준다.
+ */
+export function bakeStudioBg3dTagVisibilityIntoDocument(document: StudioBg3dSceneDocument): StudioBg3dSceneDocument {
+  const hidden = readStudioBg3dHiddenTagSet(document);
+  if (!hidden) return document;
+  const nodes = projectStudioBg3dTagVisibility(document.nodes, hidden);
+  return nodes === document.nodes ? document : { ...document, nodes };
 }
 
 /**
