@@ -70,7 +70,7 @@ describe("StudioPage lazy precision stabilizer product boundary", () => {
 
     const finish = sourceBetween(
       "function finishDrawingPointer(",
-      "function onStagePointerCancel("
+      "return finishDrawingPointer;"
     );
     expect(finish.indexOf("authoritativeLiveStroke = sealStudioDrawReleaseInput("))
       .toBeLessThan(finish.indexOf("planStudioDrawPointerRelease({"));

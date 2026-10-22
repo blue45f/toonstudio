@@ -38,7 +38,7 @@ const statusRailSource = readFileSync(
   "utf8",
 );
 const pointerFinishSource = readFileSync(
-  new URL("./studio-cuttoon-editor/studio-cuttoon-stage-pointers-finish.ts", import.meta.url),
+  new URL("./studio-cuttoon-editor/studio-cuttoon-stage-pointers-finish-handler.ts", import.meta.url),
   "utf8",
 );
 const deferredStrokeCommitSource = readFileSync(

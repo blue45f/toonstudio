@@ -79,7 +79,7 @@ describe("studio draw pointer-release planning ownership boundary", () => {
   it("leaves release capture, CRDT sealing, surfaces, commit recovery, and cleanup in StudioPage", () => {
     const page = moduleFacts("../StudioCuttoonEditorHost.tsx").source;
     const start = page.indexOf("function finishDrawingPointer");
-    const end = page.indexOf("function onStagePointerCancel", start);
+    const end = page.indexOf("return finishDrawingPointer;", start);
     const finish = page.slice(start, end);
     const sealStart = page.indexOf("function sealStudioDrawReleaseInput");
     const sealEnd = page.indexOf("function finishStudioSpecialistStroke", sealStart);
@@ -146,7 +146,7 @@ describe("studio draw pointer-release planning ownership boundary", () => {
     const releaseStart = page.indexOf("function releaseStudioLivingInkPresentation", discardStart);
     const releaseEnd = page.indexOf("function armStudioLivingInkCanonicalHandoffTimeout", releaseStart);
     const finishStart = page.indexOf("function finishDrawingPointer");
-    const finishEnd = page.indexOf("function onStagePointerCancel", finishStart);
+    const finishEnd = page.indexOf("return finishDrawingPointer;", finishStart);
 
     expect(clearStart).toBeGreaterThan(-1);
     expect(failStart).toBeGreaterThan(clearStart);

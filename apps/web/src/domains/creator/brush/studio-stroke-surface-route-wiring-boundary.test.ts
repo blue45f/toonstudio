@@ -138,7 +138,7 @@ describe("Studio stroke surface route wiring boundary", () => {
     const finish = sourceSection(
       PAGE_SOURCE,
       "function finishDrawingPointer(",
-      "function onStagePointerCancel(",
+      "return finishDrawingPointer;",
     );
     const specialistFinish = sourceSection(
       PAGE_SOURCE,
