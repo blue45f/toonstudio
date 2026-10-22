@@ -3,6 +3,7 @@ import {
   serializeStudioBg3dSceneDocument,
   type StudioBg3dSceneDocument,
 } from "../bg3d/studio-bg3d-scene-document";
+import { bakeStudioBg3dTagVisibilityIntoDocument } from "../bg3d/studio-bg3d-hierarchy";
 import { studioBg3dFocalLengthToFovDegrees } from "../bg3d/studio-bg3d-lens";
 import { isStudioLinked3dPassRevisionForScene } from "../studio-linked-3d-pass-transaction";
 import {
@@ -48,8 +49,18 @@ function sameRenderValues(left: unknown, right: unknown): boolean {
   return entries.length === other.size && entries.every(([key, value]) => other.has(key) && sameRenderValues(value, other.get(key)));
 }
 
+/**
+ * 화면 결과에 영향을 주는 값만 남긴 장면 본문. 태그·컴포넌트 참조·장면 이름·메모는 보이는 결과를 바꾸지 않으므로 빼되,
+ * 숨긴 태그가 가리는 오브젝트는 `visible` 에 구워 비교한다(태그를 숨기거나 보이면 결과가 달라지므로 재검토 대상이다).
+ */
 function renderBody(scene: StudioBg3dSceneDocument, aspectRatio: number) {
-  const { camera: _camera, shots: _shots, activeShotId: _activeShot, pinnedVersionedCut: _pin, ...body } = scene;
+  const {
+    camera: _camera, shots: _shots, activeShotId: _activeShot, pinnedVersionedCut: _pin, meta: _meta, ...visibleBody
+  } = bakeStudioBg3dTagVisibilityIntoDocument(scene);
+  const body = {
+    ...visibleBody,
+    nodes: visibleBody.nodes.map(({ tags: _tags, componentRef: _componentRef, ...node }) => node),
+  };
   const direction = (values: readonly number[]) => {
     const length = Math.hypot(...values);
     return length > 1e-9 ? values.map((value) => value / length) : values;
