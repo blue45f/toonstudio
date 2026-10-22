@@ -38,7 +38,8 @@ const APP_I18N_BUILT_IN_LOCALE_SET: ReadonlySet<string> = new Set(
   APP_I18N_BUILT_IN_LOCALES,
 );
 const APP_I18N_MAX_ASSET_CHARACTERS = 512_000;
-const APP_I18N_MAX_ENTRY_COUNT = 2_000;
+// 병합 사전이 2,153개(분기형 컷툰·앵커 연구실 추가 뒤)라 2,000 상한에 걸려 모든 지연 로케일이 실패했다. 여유를 두고 올린다.
+const APP_I18N_MAX_ENTRY_COUNT = 3_000;
 const APP_I18N_MAX_VALUE_CHARACTERS = 4_000;
 
 export type AppI18nLocaleState =
