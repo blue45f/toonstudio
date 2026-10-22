@@ -502,8 +502,10 @@ describe("StudioOpfsRecoveryJournal writer fencing and abort", () => {
       );
 
       expect(busy?.code).toBe("LEASE_BUSY");
-      // 강등 배너는 error.message 를 그대로 읽는다 — 사람이 읽을 문장만 있어야 한다.
-      expect(busy?.message).toBe("이 작품의 복구 저장소를 다른 탭이나 창이 사용하고 있어요.");
+      // A4 D4: 생산자는 {code, subcode}만 방출한다(message = 코드 문자열) — 표시는
+      // 집계자 경계에서 리졸버가 해석하므로 식별자는 message가 아니라 diagnostics에만 있다.
+      expect(busy?.subcode).toBe("leaseBusyOtherTab");
+      expect(busy?.message).toBe("LEASE_BUSY");
       expect(busy?.message).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/u);
       // 진단은 지워지지 않고 자리만 옮겼다 — 로그·버그리포트 쪽.
       expect(busy?.diagnostics).toContain("autosave-06cb7b0c-1d1d-474b-8644-a88d56c5c463");

@@ -73,26 +73,23 @@ const SOURCE_KINDS = new Set<StudioAssetRightsMetadata["sourceKind"]>([
 const UTF8 = new TextEncoder();
 const BASE64_CHUNK_BYTES = 24_576;
 
-export type StudioAssetLibraryRepositoryErrorCode =
-  | "invalid"
-  | "corrupt"
-  | "unavailable"
-  | "quota-exceeded"
-  | "not-found";
+import {
+  StudioAssetLibraryCommitAggregateError,
+  StudioAssetLibraryRepositoryError,
+  type StudioAssetLibraryFieldLabelCode,
+  type StudioAssetLibraryOperationCode,
+  type StudioAssetLibraryRepositoryErrorCode,
+  type StudioAssetLibraryRepositoryErrorSubcode,
+} from "./studio-asset-library-repository-error";
 
-export class StudioAssetLibraryRepositoryError extends Error {
-  readonly code: StudioAssetLibraryRepositoryErrorCode;
-
-  constructor(
-    code: StudioAssetLibraryRepositoryErrorCode,
-    message: string,
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = "StudioAssetLibraryRepositoryError";
-    this.code = code;
-  }
-}
+export {
+  StudioAssetLibraryCommitAggregateError,
+  StudioAssetLibraryRepositoryError,
+  type StudioAssetLibraryFieldLabelCode,
+  type StudioAssetLibraryOperationCode,
+  type StudioAssetLibraryRepositoryErrorCode,
+  type StudioAssetLibraryRepositoryErrorSubcode,
+} from "./studio-asset-library-repository-error";
 
 export function isStudioAssetLibraryMemoryFallbackError(
   error: unknown,
@@ -161,7 +158,7 @@ function errorDetail(error: unknown): string {
 
 function asRepositoryError(
   error: unknown,
-  operation: string,
+  operation: StudioAssetLibraryOperationCode,
 ): StudioAssetLibraryRepositoryError {
   if (error instanceof StudioAssetLibraryRepositoryError) return error;
   const detail = errorDetail(error);
@@ -171,23 +168,25 @@ function asRepositoryError(
   if (errorCode === "QUOTA_EXCEEDED" || /quota|SQLITE_FULL|disk is full|space/i.test(detail)) {
     return new StudioAssetLibraryRepositoryError(
       "quota-exceeded",
-      `SQLite/OPFS 에셋 ${operation} 중 저장 공간이 부족합니다.`,
+      "quotaExceeded",
+      { operation },
       { cause: error },
     );
   }
   return new StudioAssetLibraryRepositoryError(
     "unavailable",
-    `SQLite/OPFS 에셋 ${operation}를 완료하지 못했습니다: ${detail}`,
+    "operationFailed",
+    { operation, detail },
     { cause: error },
   );
 }
 
-function invalid(message: string): never {
-  throw new StudioAssetLibraryRepositoryError("invalid", message);
+function invalid(subcode: StudioAssetLibraryRepositoryErrorSubcode, params?: Readonly<Record<string, string>>): never {
+  throw new StudioAssetLibraryRepositoryError("invalid", subcode, params);
 }
 
-function corrupt(message: string, cause?: unknown): never {
-  throw new StudioAssetLibraryRepositoryError("corrupt", message, { cause });
+function corrupt(subcode: StudioAssetLibraryRepositoryErrorSubcode, params?: Readonly<Record<string, string>>, cause?: unknown): never {
+  throw new StudioAssetLibraryRepositoryError("corrupt", subcode, params, { cause });
 }
 
 function exactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
@@ -204,11 +203,15 @@ function containsControlCharacter(value: string): boolean {
   return false;
 }
 
-function boundedCanonicalText(value: unknown, maximum: number, label: string): string {
-  if (typeof value !== "string") invalid(`${label}은 문자열이어야 합니다.`);
+function boundedCanonicalText(
+  value: unknown,
+  maximum: number,
+  label: StudioAssetLibraryFieldLabelCode,
+): string {
+  if (typeof value !== "string") invalid("fieldMustBeString", { label });
   const normalized = value.normalize("NFKC").trim();
   if (!normalized || [...normalized].length > maximum || containsControlCharacter(normalized)) {
-    invalid(`${label}의 길이 또는 문자가 허용 범위를 벗어났습니다.`);
+    invalid("fieldLengthOrChars", { label });
   }
   return normalized;
 }
@@ -216,14 +219,14 @@ function boundedCanonicalText(value: unknown, maximum: number, label: string): s
 function nullableText(
   value: unknown,
   maximum: number,
-  label: string,
+  label: StudioAssetLibraryFieldLabelCode,
   options: { readonly allowEmpty?: boolean } = {},
 ): string | null {
   if (value === null) return null;
-  if (typeof value !== "string") invalid(`${label}은 문자열 또는 null이어야 합니다.`);
+  if (typeof value !== "string") invalid("fieldMustBeStringOrNull", { label });
   const normalized = value.normalize("NFKC").trim();
   if ((!options.allowEmpty && !normalized) || [...normalized].length > maximum) {
-    invalid(`${label}의 길이가 허용 범위를 벗어났습니다.`);
+    invalid("fieldLength", { label });
   }
   return normalized;
 }
@@ -251,7 +254,7 @@ function normalizeRights(
 ): StudioAssetRightsMetadata {
   if (value === undefined) return defaultRights(kind);
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    invalid("에셋 권리 메타데이터가 올바르지 않습니다.");
+    invalid("rightsInvalid");
   }
   const record = value as Record<string, unknown>;
   if (!exactKeys(record, [
@@ -263,38 +266,38 @@ function normalizeRights(
     "attributionRequired",
     "attributionText",
     "rightsConfirmed",
-  ])) invalid("에셋 권리 메타데이터에 알 수 없는 필드가 있습니다.");
+  ])) invalid("rightsUnknownField");
   if (!SOURCE_KINDS.has(record.sourceKind as StudioAssetRightsMetadata["sourceKind"])) {
-    invalid("에셋 권리 sourceKind가 올바르지 않습니다.");
+    invalid("rightsSourceKind");
   }
-  const sourceId = nullableText(record.sourceId, 512, "권리 sourceId");
-  const licenseId = boundedCanonicalText(record.licenseId, 128, "권리 licenseId");
+  const sourceId = nullableText(record.sourceId, 512, "rightsSourceId");
+  const licenseId = boundedCanonicalText(record.licenseId, 128, "rightsLicenseId");
   const licenseLabel = nullableText(
     record.licenseLabel,
     256,
-    "권리 licenseLabel",
+    "rightsLicenseLabel",
     { allowEmpty: true },
   ) ?? "";
-  const licenseUrl = nullableText(record.licenseUrl, 2_048, "권리 licenseUrl");
+  const licenseUrl = nullableText(record.licenseUrl, 2_048, "rightsLicenseUrl");
   if (licenseUrl !== null) {
     try {
-      if (new URL(licenseUrl).protocol !== "https:") invalid("권리 URL은 HTTPS여야 합니다.");
+      if (new URL(licenseUrl).protocol !== "https:") invalid("rightsUrlHttps");
     } catch {
-      invalid("권리 URL이 올바르지 않습니다.");
+      invalid("rightsUrlInvalid");
     }
   }
   const attributionRequired = record.attributionRequired;
   if (attributionRequired !== null && typeof attributionRequired !== "boolean") {
-    invalid("attributionRequired는 boolean 또는 null이어야 합니다.");
+    invalid("attributionType");
   }
   const attributionText = nullableText(
     record.attributionText,
     STUDIO_ASSET_LIBRARY_LIMITS.rightsTextCodePoints,
-    "권리 attributionText",
+    "rightsAttributionText",
     { allowEmpty: true },
   ) ?? "";
   if (typeof record.rightsConfirmed !== "boolean") {
-    invalid("rightsConfirmed는 boolean이어야 합니다.");
+    invalid("rightsConfirmedType");
   }
   return {
     sourceKind: record.sourceKind as StudioAssetRightsMetadata["sourceKind"],
@@ -314,7 +317,7 @@ function compareEntries(left: StudioAssetManifestEntry, right: StudioAssetManife
 
 function canonicalEntry(value: unknown): StudioAssetManifestEntry {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    invalid("에셋 manifest entry가 객체가 아닙니다.");
+    invalid("entryNotObject");
   }
   const record = value as Record<string, unknown>;
   if (!exactKeys(record, [
@@ -328,40 +331,40 @@ function canonicalEntry(value: unknown): StudioAssetManifestEntry {
     "createdAt",
     "kind",
     "rights",
-  ])) invalid("에셋 manifest entry 필드가 올바르지 않습니다.");
+  ])) invalid("entryFields");
   if (typeof record.id !== "string" || !ID_PATTERN.test(record.id)) {
-    invalid("에셋 ID가 안전한 canonical 형식이 아닙니다.");
+    invalid("entryIdFormat");
   }
   const name = boundedCanonicalText(
     record.name,
     STUDIO_ASSET_LIBRARY_LIMITS.nameCodePoints,
-    "에셋 이름",
+    "assetName",
   );
   const contentHash = canonicalizeStudioAssetContentHash(record.contentHash);
-  if (!contentHash || contentHash !== record.contentHash) invalid("에셋 contentHash가 올바르지 않습니다.");
+  if (!contentHash || contentHash !== record.contentHash) invalid("entryContentHash");
   const byteSize = record.byteSize;
   if (!Number.isSafeInteger(byteSize) || (byteSize as number) < 1
     || (byteSize as number) > STUDIO_ASSET_LIBRARY_LIMITS.individualBytes) {
-    invalid("에셋 byteSize가 허용 범위를 벗어났습니다.");
+    invalid("entryByteSize");
   }
   const mimeType = typeof record.mimeType === "string" ? record.mimeType : "";
   if (!MIME_PATTERN.test(mimeType) || mimeType !== mimeType.toLowerCase()) {
-    invalid("에셋 MIME이 canonical 형식이 아닙니다.");
+    invalid("entryMime");
   }
   for (const dimension of [record.width, record.height]) {
     if (!Number.isSafeInteger(dimension) || (dimension as number) < 1 || (dimension as number) > 1_000_000) {
-      invalid("에셋 크기가 허용 범위를 벗어났습니다.");
+      invalid("entrySize");
     }
   }
   if (!Number.isSafeInteger(record.createdAt) || (record.createdAt as number) < 0) {
-    invalid("에셋 createdAt이 올바르지 않습니다.");
+    invalid("entryCreatedAt");
   }
   const kind = record.kind === null
     ? null
     : boundedCanonicalText(
         record.kind,
         STUDIO_ASSET_LIBRARY_LIMITS.kindCodePoints,
-        "에셋 kind",
+        "assetKind",
       );
   return {
     id: record.id,
@@ -379,17 +382,17 @@ function canonicalEntry(value: unknown): StudioAssetManifestEntry {
 
 function buildManifest(entries: readonly StudioAssetManifestEntry[]): StudioAssetManifestV1 {
   if (entries.length > STUDIO_ASSET_LIBRARY_LIMITS.assets) {
-    invalid(`에셋 보관함은 최대 ${STUDIO_ASSET_LIBRARY_LIMITS.assets}개까지 저장할 수 있습니다.`);
+    invalid("tooManyAssets", { max: String(STUDIO_ASSET_LIBRARY_LIMITS.assets) });
   }
   const ids = new Set<string>();
   const canonical = entries.map((entry) => canonicalEntry(entry)).sort(compareEntries);
   let totalBytes = 0;
   for (const entry of canonical) {
-    if (ids.has(entry.id)) invalid(`중복 에셋 ID가 있습니다: ${entry.id}`);
+    if (ids.has(entry.id)) invalid("duplicateAssetId", { id: entry.id });
     ids.add(entry.id);
     totalBytes += entry.byteSize;
     if (!Number.isSafeInteger(totalBytes) || totalBytes > STUDIO_ASSET_LIBRARY_LIMITS.logicalBytes) {
-      invalid("에셋 보관함의 총 원본 바이트가 1 GiB 상한을 넘었습니다.");
+      invalid("totalBytesExceeded");
     }
   }
   return { version: MANIFEST_VERSION, totalBytes, entries: canonical };
@@ -400,7 +403,7 @@ export function serializeStudioAssetManifest(
 ): string {
   const serialized = JSON.stringify(buildManifest(entries));
   if (UTF8.encode(serialized).byteLength > STUDIO_ASSET_LIBRARY_LIMITS.manifestBytes) {
-    invalid("에셋 SQLite manifest가 8 MiB 상한을 넘었습니다.");
+    invalid("manifestTooLarge");
   }
   return serialized;
 }
@@ -408,31 +411,31 @@ export function serializeStudioAssetManifest(
 export function parseStudioAssetManifest(raw: string | null): StudioAssetManifestV1 {
   if (raw === null) return buildManifest([]);
   if (UTF8.encode(raw).byteLength > STUDIO_ASSET_LIBRARY_LIMITS.manifestBytes) {
-    corrupt("에셋 SQLite manifest가 크기 상한을 넘었습니다.");
+    corrupt("manifestSizeLimit");
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch (error) {
-    corrupt("에셋 SQLite manifest JSON이 끊어졌거나 손상되었습니다.", error);
+    corrupt("manifestJsonCorrupt", undefined, error);
   }
   try {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      invalid("에셋 SQLite manifest가 객체가 아닙니다.");
+      invalid("manifestNotObject");
     }
     const record = parsed as Record<string, unknown>;
     if (!exactKeys(record, ["version", "totalBytes", "entries"])
       || record.version !== MANIFEST_VERSION || !Array.isArray(record.entries)) {
-      invalid("에셋 SQLite manifest 버전 또는 필드가 올바르지 않습니다.");
+      invalid("manifestVersionOrFields");
     }
     const manifest = buildManifest(record.entries);
     if (record.totalBytes !== manifest.totalBytes || JSON.stringify(manifest) !== raw) {
-      invalid("에셋 SQLite manifest가 canonical 원장과 일치하지 않습니다.");
+      invalid("manifestCanonicalMismatch");
     }
     return manifest;
   } catch (error) {
     if (error instanceof StudioAssetLibraryRepositoryError && error.code === "corrupt") throw error;
-    corrupt("에셋 SQLite manifest가 손상되었습니다.", error);
+    corrupt("manifestCorrupt", undefined, error);
   }
 }
 
@@ -448,7 +451,7 @@ function encodeDataUrl(bytes: Uint8Array, mimeType: string): string {
   }
   const dataUrl = `data:${mimeType};base64,${base64}`;
   if (dataUrl.length > STUDIO_ASSET_DATA_URL_MAX_CHARS) {
-    corrupt("복원한 에셋 data URL이 제품 경계 상한을 넘었습니다.");
+    corrupt("dataUrlTooLarge");
   }
   return dataUrl;
 }
@@ -477,12 +480,12 @@ async function verifiedBytes(
     stat = await store.stat(entry.contentHash);
     bytes = await store.get(entry.contentHash, { verify: true });
   } catch (error) {
-    corrupt(`에셋 CAS 검증에 실패했습니다: ${entry.id}`, error);
+    corrupt("casVerificationFailed", { id: entry.id }, error);
   }
-  if (!stat || !bytes) corrupt(`에셋 CAS blob이 없습니다: ${entry.id}`);
+  if (!stat || !bytes) corrupt("casBlobMissing", { id: entry.id });
   if (stat.hash !== entry.contentHash || stat.bytes !== entry.byteSize
     || stat.mime !== entry.mimeType || bytes.byteLength !== entry.byteSize) {
-    corrupt(`에셋 CAS hash/size/MIME 원장이 일치하지 않습니다: ${entry.id}`);
+    corrupt("casLedgerMismatch", { id: entry.id });
   }
   return bytes;
 }
@@ -497,7 +500,7 @@ async function hydrateEntry(
 function normalizeSearch(value: string | undefined): string {
   const normalized = (value ?? "").normalize("NFKC").trim().toLocaleLowerCase("ko");
   if ([...normalized].length > STUDIO_ASSET_LIBRARY_LIMITS.queryTextCodePoints) {
-    invalid("에셋 검색어가 너무 깁니다.");
+    invalid("searchTooLong");
   }
   return normalized;
 }
@@ -525,10 +528,7 @@ export function acquireProductStudioAssetCasStore(): Promise<StudioOpfsAssetStor
   productAssetStore ??= Promise.resolve().then(() => {
     const storage = typeof navigator === "undefined" ? null : navigator.storage;
     if (!storage || typeof storage.getDirectory !== "function") {
-      throw new StudioAssetLibraryRepositoryError(
-        "unavailable",
-        "OPFS를 사용할 수 없어 에셋 바이너리 보관함을 열 수 없습니다.",
-      );
+      throw new StudioAssetLibraryRepositoryError("unavailable", "binaryStoreOpfsUnavailable");
     }
     const manager = storage as unknown as StudioOpfsStorageManagerLike;
     const estimator = typeof storage.estimate === "function"
@@ -595,7 +595,7 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
       const [database, store] = await Promise.all([acquireDatabase(), acquireAssetStore()]);
       return { database, store };
     } catch (error) {
-      throw asRepositoryError(error, "열기");
+      throw asRepositoryError(error, "open");
     }
   }
 
@@ -607,7 +607,7 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
         STUDIO_ASSET_LIBRARY_SQLITE_MANIFEST_KEY,
       );
     } catch (error) {
-      throw asRepositoryError(error, "manifest 읽기");
+      throw asRepositoryError(error, "manifestRead");
     }
     return parseStudioAssetManifest(raw);
   }
@@ -621,11 +621,11 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
       try {
         stat = await store.stat(entry.contentHash);
       } catch (error) {
-        corrupt(`에셋 CAS 색인을 읽지 못했습니다: ${entry.id}`, error);
+        corrupt("casIndexReadFailed", { id: entry.id }, error);
       }
       if (!stat || stat.hash !== entry.contentHash || stat.bytes !== entry.byteSize
         || stat.mime !== entry.mimeType) {
-        corrupt(`에셋 CAS manifest 원장이 일치하지 않습니다: ${entry.id}`);
+        corrupt("casManifestLedgerMismatch", { id: entry.id });
       }
     }
   }
@@ -660,10 +660,10 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
           STUDIO_ASSET_LIBRARY_SQLITE_MANIFEST_KEY,
         );
       } catch (reconcileCause) {
-        throw new AggregateError(
+        throw new StudioAssetLibraryCommitAggregateError(
+          "commitReconcileFailed",
           [error, reconcileCause],
-          "SQLite/OPFS 에셋 manifest 커밋 결과를 재확인하지 못했습니다. old/candidate CAS union은 보존됩니다.",
-          { cause: reconcileCause },
+          reconcileCause,
         );
       }
       // A missing manifest is the exact durable representation of the initial empty ledger.
@@ -676,19 +676,15 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
         try {
           await store.setOwnerRefs(STUDIO_ASSET_LIBRARY_CAS_OWNER, oldHashes);
         } catch (rollbackCause) {
-          throw new AggregateError(
+          throw new StudioAssetLibraryCommitAggregateError(
+            "commitRollbackFailed",
             [error, rollbackCause],
-            "SQLite/OPFS 에셋 manifest 미커밋 확인 뒤 owner 참조를 되돌리지 못했습니다.",
-            { cause: rollbackCause },
+            rollbackCause,
           );
         }
-        throw asRepositoryError(error, "manifest 커밋");
+        throw asRepositoryError(error, "manifestCommit");
       } else {
-        throw new StudioAssetLibraryRepositoryError(
-          "unavailable",
-          "SQLite/OPFS 에셋 manifest가 old/candidate 어느 쪽과도 일치하지 않아 CAS union을 보존한 채 중단했습니다.",
-          { cause: error },
-        );
+        throw new StudioAssetLibraryRepositoryError("unavailable", "manifestMismatch", undefined, { cause: error });
       }
     }
     // Manifest is now authoritative. Cleanup is recoverable bookkeeping and cannot roll it back.
@@ -711,10 +707,7 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
     store: StudioOpfsAssetStore,
   ) => Promise<T>): Promise<T> {
     if (!runExclusive) {
-      throw new StudioAssetLibraryRepositoryError(
-        "unavailable",
-        "Web Locks가 없어 여러 탭의 SQLite/OPFS 에셋 쓰기를 안전하게 직렬화할 수 없습니다.",
-      );
+      throw new StudioAssetLibraryRepositoryError("unavailable", "webLocksUnavailable");
     }
     return runExclusive(async () => {
       const { database, store } = await resources();
@@ -746,47 +739,48 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
         } catch (error) {
           throw new StudioAssetLibraryRepositoryError(
             "invalid",
-            `에셋 바이트를 해석하지 못했습니다: ${errorDetail(error)}`,
+            "bytesDecodeFailed",
+            { detail: errorDetail(error) },
             { cause: error },
           );
         }
         if (decoded.bytes.byteLength < 1
           || decoded.bytes.byteLength > STUDIO_ASSET_LIBRARY_LIMITS.individualBytes) {
-          invalid("에셋 원본 바이트가 1 B~64 MiB 범위를 벗어났습니다.");
+          invalid("bytesOutOfRange");
         }
         const id = createId();
         const record = createAssetRecord(input, id, now());
         const name = boundedCanonicalText(
           normalizeAssetName(record.name),
           STUDIO_ASSET_LIBRARY_LIMITS.nameCodePoints,
-          "에셋 이름",
+          "assetName",
         );
         const kind = record.kind === undefined
           ? null
           : boundedCanonicalText(
               record.kind,
               STUDIO_ASSET_LIBRARY_LIMITS.kindCodePoints,
-              "에셋 kind",
+              "assetKind",
             );
-        if (!ID_PATTERN.test(record.id)) invalid("생성된 에셋 ID가 안전한 형식이 아닙니다.");
+        if (!ID_PATTERN.test(record.id)) invalid("generatedIdFormat");
         const current = await readManifest(database);
         if (current.entries.some(({ id: currentId }) => currentId === record.id)) {
-          invalid("생성된 에셋 ID가 기존 행과 충돌했습니다.");
+          invalid("generatedIdConflict");
         }
         let put;
         try {
           put = await store.put(decoded.bytes, { mime: decoded.mimeType });
         } catch (error) {
-          throw asRepositoryError(error, "blob 저장");
+          throw asRepositoryError(error, "blobSave");
         }
         const expectedHash = canonicalizeStudioAssetContentHash(input.contentHash);
         if (input.contentHash !== undefined && (!expectedHash || expectedHash !== put.ref.hash)) {
-          invalid("제공된 contentHash가 실제 에셋 바이트 SHA-256과 일치하지 않습니다.");
+          invalid("contentHashMismatch");
         }
         if (put.ref.bytes !== decoded.bytes.byteLength || put.ref.mime !== decoded.mimeType
           || put.entry.hash !== put.ref.hash || put.entry.bytes !== decoded.bytes.byteLength
           || put.entry.mime !== decoded.mimeType) {
-          corrupt("OPFS CAS 저장 영수증의 hash/size/MIME이 입력과 일치하지 않습니다.");
+          corrupt("casReceiptMismatch");
         }
         const entry = canonicalEntry({
           id: record.id,
@@ -806,7 +800,7 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
           ...current.entries,
         ]);
         const committed = next.entries.find(({ id: currentId }) => currentId === entry.id);
-        if (!committed) corrupt("커밋된 manifest에서 신규 에셋을 찾지 못했습니다.");
+        if (!committed) corrupt("committedEntryMissing");
         return entryToAsset(committed, input.dataUrl);
       }));
     },
@@ -840,11 +834,11 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
       await mutationTail;
       const limit = input.limit ?? 100;
       if (!Number.isSafeInteger(limit) || limit < 1 || limit > STUDIO_ASSET_LIBRARY_LIMITS.queryLimit) {
-        invalid(`에셋 page limit은 1~${STUDIO_ASSET_LIBRARY_LIMITS.queryLimit}이어야 합니다.`);
+        invalid("pageLimit", { max: String(STUDIO_ASSET_LIBRARY_LIMITS.queryLimit) });
       }
       if (input.after && (!Number.isSafeInteger(input.after.createdAt)
         || input.after.createdAt < 0 || !ID_PATTERN.test(input.after.id))) {
-        invalid("에셋 pagination cursor가 올바르지 않습니다.");
+        invalid("cursorInvalid");
       }
       const search = normalizeSearch(input.search);
       const { database, store } = await resources();
@@ -913,7 +907,7 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
 
     delete(id: string) {
       return enqueue(() => mutation(async (database, store) => {
-        if (!ID_PATTERN.test(id)) invalid("삭제할 에셋 ID가 올바르지 않습니다.");
+        if (!ID_PATTERN.test(id)) invalid("deleteIdInvalid");
         const current = await readManifest(database);
         if (!current.entries.some((entry) => entry.id === id)) return;
         await commitManifest(
@@ -946,15 +940,15 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
 
     rename(id: string, newName: string) {
       return enqueue(() => mutation(async (database, store) => {
-        if (!ID_PATTERN.test(id)) invalid("이름을 바꿀 에셋 ID가 올바르지 않습니다.");
+        if (!ID_PATTERN.test(id)) invalid("renameIdInvalid");
         const name = boundedCanonicalText(
           normalizeAssetName(newName),
           STUDIO_ASSET_LIBRARY_LIMITS.nameCodePoints,
-          "에셋 이름",
+          "assetName",
         );
         const current = await readManifest(database);
         if (!current.entries.some((entry) => entry.id === id)) {
-          throw new StudioAssetLibraryRepositoryError("not-found", "에셋을 찾을 수 없습니다.");
+          throw new StudioAssetLibraryRepositoryError("not-found", "notFound");
         }
         await commitManifest(
           database,

@@ -106,30 +106,17 @@ export type StudioAutosaveReconciliation = Readonly<{
   migratedToOpfs: boolean;
 }>;
 
-export class StudioAutosaveDurabilityError extends Error {
-  constructor(cause: unknown) {
-    super(
-      "OPFS와 SQLite 자동저장에 실패했습니다. 현재 작업은 메모리에 남아 있지만 내구 저장되지 않았습니다.",
-      { cause },
-    );
-    this.name = "StudioAutosaveDurabilityError";
-  }
-}
-
-/**
- * Another tab on this origin owns the document. This is deliberately NOT a
- * `StudioAutosaveDurabilityError`: the difference between "storage broke" and "someone else is the
- * author of record" decides whether falling back to the second authority is a repair or a fork.
- */
-export class StudioAutosaveDocumentBusyError extends Error {
-  constructor(cause?: unknown) {
-    super(
-      "이 원고는 다른 탭에서 편집 중입니다. 이 탭의 변경은 저장되지 않습니다.",
-      { cause },
-    );
-    this.name = "StudioAutosaveDocumentBusyError";
-  }
-}
+export {
+  StudioAutosaveDocumentBusyError,
+  StudioAutosaveDurabilityError,
+  StudioAutosaveOpfsError,
+  type StudioAutosaveOpfsErrorCode,
+} from "./studio-autosave-opfs-error";
+import {
+  StudioAutosaveDocumentBusyError,
+  StudioAutosaveDurabilityError,
+  StudioAutosaveOpfsError,
+} from "./studio-autosave-opfs-error";
 
 /**
  * True when a failure means "a different tab or window is the document's writer". Duck-typed on the
@@ -280,7 +267,7 @@ function encodeStudioAutosaveOpfsEnvelope(
   payload: StudioAutosavePayload | null,
 ): Uint8Array {
   if (!validSavedAt(savedAt)) {
-    throw new Error("OPFS 자동저장 시각이 올바르지 않습니다.");
+    throw new StudioAutosaveOpfsError("invalidTimestamp");
   }
   const serialized = payload === null ? null : serializeStudioAutosave(payload);
   const payloadDigest = serialized === null
@@ -302,13 +289,13 @@ function decodeStudioAutosaveOpfsEnvelope(
   bytes: Uint8Array,
 ): StudioAutosaveOpfsEnvelope {
   if (bytes.byteLength === 0 || bytes.byteLength > MAX_AUTOSAVE_BYTES) {
-    throw new Error("OPFS 자동저장 checkpoint 크기가 허용 범위를 벗어났습니다.");
+    throw new StudioAutosaveOpfsError("checkpointTooLarge");
   }
   let value: unknown;
   try {
     value = JSON.parse(TEXT_DECODER.decode(bytes));
   } catch {
-    throw new Error("OPFS 자동저장 checkpoint가 올바른 UTF-8 JSON이 아닙니다.");
+    throw new StudioAutosaveOpfsError("checkpointNotJson");
   }
   if (!isPlainExactRecord(value, [
     "kind",
@@ -319,7 +306,7 @@ function decodeStudioAutosaveOpfsEnvelope(
     "payloadDigest",
     "payload",
   ])) {
-    throw new Error("OPFS 자동저장 checkpoint 스키마가 올바르지 않습니다.");
+    throw new StudioAutosaveOpfsError("checkpointSchema");
   }
   if (
     value.kind !== STUDIO_AUTOSAVE_OPFS_ENVELOPE_KIND
@@ -330,11 +317,11 @@ function decodeStudioAutosaveOpfsEnvelope(
     || !SHA_256_HEX.test(value.autosaveKeyDigest)
     || value.autosaveKeyDigest !== autosaveKeyDigest(autosaveKey)
   ) {
-    throw new Error("OPFS 자동저장 checkpoint identity가 일치하지 않습니다.");
+    throw new StudioAutosaveOpfsError("checkpointIdentity");
   }
   if (value.state === "cleared") {
     if (value.payload !== null || value.payloadDigest !== null) {
-      throw new Error("삭제된 OPFS 자동저장 checkpoint에 payload가 남아 있습니다.");
+      throw new StudioAutosaveOpfsError("deletedCheckpointPayload");
     }
   } else {
     if (
@@ -343,10 +330,10 @@ function decodeStudioAutosaveOpfsEnvelope(
       || !SHA_256_HEX.test(value.payloadDigest)
       || sha256HexPortable(TEXT_ENCODER.encode(value.payload)) !== value.payloadDigest
     ) {
-      throw new Error("OPFS 자동저장 payload 무결성 검증에 실패했습니다.");
+      throw new StudioAutosaveOpfsError("payloadIntegrity");
     }
     if (!parseStudioAutosave(value.payload)) {
-      throw new Error("OPFS 자동저장 payload가 Studio 문서가 아닙니다.");
+      throw new StudioAutosaveOpfsError("payloadNotDocument");
     }
   }
   return Object.freeze(value as unknown as StudioAutosaveOpfsEnvelope);
@@ -362,19 +349,19 @@ async function collectEntryBytes(
     || entry.byteLength <= 0
     || entry.byteLength > MAX_AUTOSAVE_BYTES
   ) {
-    throw new Error("OPFS 자동저장 entry 크기가 허용 범위를 벗어났습니다.");
+    throw new StudioAutosaveOpfsError("entryTooLarge");
   }
   const output = new Uint8Array(entry.byteLength);
   let offset = 0;
   for await (const chunk of journal.readPayload(entry, { signal })) {
     if (!(chunk instanceof Uint8Array) || offset + chunk.byteLength > output.byteLength) {
-      throw new Error("OPFS 자동저장 entry chunk 경계가 손상되었습니다.");
+      throw new StudioAutosaveOpfsError("entryChunkBoundary");
     }
     output.set(chunk, offset);
     offset += chunk.byteLength;
   }
   if (offset !== output.byteLength) {
-    throw new Error("OPFS 자동저장 entry가 부분적으로만 복원되었습니다.");
+    throw new StudioAutosaveOpfsError("entryPartial");
   }
   return output;
 }
@@ -413,7 +400,7 @@ export class StudioAutosaveOpfsSession {
 
   constructor(options: StudioAutosaveOpfsSessionOptions) {
     if (options.autosaveKey.trim().length === 0 || options.ownerId.trim().length === 0) {
-      throw new Error("OPFS 자동저장 세션 identity가 비어 있습니다.");
+      throw new StudioAutosaveOpfsError("sessionIdentityEmpty");
     }
     this.#autosaveKey = options.autosaveKey;
     this.#journal = options.journal;
@@ -424,7 +411,7 @@ export class StudioAutosaveOpfsSession {
 
   #enqueue<T>(operation: () => Promise<T>): Promise<T> {
     if (this.#disposed) {
-      return Promise.reject(new Error("OPFS 자동저장 세션이 이미 종료되었습니다."));
+      return Promise.reject(new StudioAutosaveOpfsError("sessionDisposed"));
     }
     const result = this.#tail.then(operation);
     this.#tail = result.then(() => undefined, () => undefined);
@@ -472,7 +459,7 @@ export class StudioAutosaveOpfsSession {
       this.#autosaveKey,
     )?.payload ?? null;
     if (!normalized || !studioAutosaveHasContent(normalized)) {
-      throw new Error("OPFS 자동저장 checkpoint에 복구할 Studio 내용이 없습니다.");
+      throw new StudioAutosaveOpfsError("checkpointEmpty");
     }
     return Object.freeze({
       state: "snapshot",
@@ -498,7 +485,7 @@ export class StudioAutosaveOpfsSession {
       const current = latestDocumentEntry(scan);
       const revision = (current?.revision ?? 0) + 1;
       if (!Number.isSafeInteger(revision) || revision < 1) {
-        throw new Error("OPFS 자동저장 revision 한도를 초과했습니다.");
+        throw new StudioAutosaveOpfsError("revisionLimit");
       }
       const bytes = encodeStudioAutosaveOpfsEnvelope(
         this.#autosaveKey,
@@ -555,7 +542,7 @@ export class StudioAutosaveOpfsSession {
     signal?: AbortSignal,
   ): Promise<StudioAutosavePersistenceReceipt> {
     if (!studioAutosaveHasContent(payload)) {
-      return Promise.reject(new Error("내용이 없는 Studio 자동저장은 OPFS에 기록하지 않습니다."));
+      return Promise.reject(new StudioAutosaveOpfsError("emptyWrite"));
     }
     return this.#writeEnvelope("snapshot", payload.savedAt, payload, signal);
   }
