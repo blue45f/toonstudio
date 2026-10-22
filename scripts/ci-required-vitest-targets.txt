@@ -605,6 +605,9 @@ scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts
 scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
+scripts/creator-bundle-pack-rights-form.test.mjs
+scripts/creator-bundle-pack-rights-gate.test.mjs
+scripts/creator-bundle-pack-rights.test.mjs
 scripts/creator-bundle-render-rights-parity.test.mjs
 scripts/creator-bundle-render-rights.test.mjs
 scripts/creator-career-confirmation-database-contract.test.mjs
@@ -614,6 +617,7 @@ scripts/deploy-cloudflare-static.test.mjs
 scripts/deploy-standing-approval.test.mjs
 scripts/free-database-federation.test.mjs
 scripts/free-infrastructure-policy.test.mjs
+scripts/generate-creator-bundle-theme-packs.test.mjs
 scripts/generate-latent-pigment-model.test.ts
 scripts/lib/character-psd-reference-compositor.test.mjs
 scripts/lib/path-containment.test.ts
@@ -625,6 +629,8 @@ scripts/lib/studio-memory-growth-policy.test.mjs
 scripts/lib/studio-p2p-failure-diagnostics.test.ts
 scripts/lib/studio-verify-shape-readiness.test.tsx
 scripts/pigment-dependency-install-policy.test.mjs
+scripts/plan-creator-bundle-deploy-cli.test.mjs
+scripts/plan-creator-bundle-deploy.test.mjs
 scripts/prepare-managed-database-bootstrap.test.mjs
 scripts/provision-cloudflare-free-data-plane.test.mjs
 scripts/provision-gcp-free-data-plane.test.mjs

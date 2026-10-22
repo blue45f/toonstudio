@@ -106,7 +106,6 @@ export default defineConfig({
         // 전용 `pnpm test:node-*` 스크립트가 이 파일들을 node --test 로 실행한다.
         "scripts/local-test-stack.test.mjs",
         "scripts/lint-strict-warning-budget.test.mjs",
-        "scripts/plan-creator-bundle-deploy.test.mjs",
       // Timing budgets and exhaustive CPU references remain mandatory in the quiet pass
       // (vitest.perf.config.ts), without V8's hot-loop instrumentation overhead.
       ...SERIAL_TEST_FILES,
