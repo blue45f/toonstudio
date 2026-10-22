@@ -110,8 +110,8 @@ const CHAPTERS = [
     ko: "캐릭터·포즈·3D 장면",
     en: "Characters, posing and 3D",
     summary: {
-      ko: "캐릭터 포즈, 배경, 카메라와 공간을 구성해 어려운 구도를 탐색하고 현재 컷의 2D 제작으로 다시 연결합니다. 배경은 테마 팩 42개, 배치할 수 있는 에셋 5,303개와 프리셋 9개로 빠르게 구성할 수 있습니다.",
-      en: "Explore difficult compositions with character poses, environments, cameras and space, then return that context to 2D production. Environments come together quickly from 42 theme packs, 5,303 placeable assets and 9 presets.",
+      ko: "캐릭터 포즈, 배경, 카메라와 공간을 구성해 어려운 구도를 탐색하고 현재 컷의 2D 제작으로 다시 연결합니다. 배경은 테마 팩 42개, 배치할 수 있는 에셋 13,597개와 프리셋 9개로 빠르게 구성할 수 있습니다.",
+      en: "Explore difficult compositions with character poses, environments, cameras and space, then return that context to 2D production. Environments come together quickly from 42 theme packs, 13,597 placeable assets and 9 presets.",
     },
     feature: { href: "/studio/bg3d", ko: "3D 배경 스튜디오", en: "3D background studio" },
     related: [
