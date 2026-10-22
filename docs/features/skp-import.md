@@ -1,7 +1,7 @@
 # SketchUp(.skp) 가져오기
 
 - 상태: **current** — 소스와 테스트로 확인되는 현재 동작이다.
-- 확인일: 2026-10-16 (`apps/web/src/domains/creator/bg3d/studio-bg3d-skp-*`). 2026-10-16에 자산 메타데이터 저장 절(AI 표기 결과 안내, 취소 신호와 시간 한도)을 고쳤다.
+- 확인일: 2026-10-16 (`apps/web/src/domains/creator/bg3d/studio-bg3d-skp-*`). 2026-10-16에 자산 메타데이터 저장 절(AI 표기 결과 안내, 취소 신호와 시간 한도)을 고쳤다. 2026-10-22에 컴포넌트·태그·장면 **이름** 연결(SKP 사이드카)과 이름 검색을 더했다(→ "컴포넌트·태그·장면 이름 연결").
 - 변환기: [openskp](https://openskp.com/) 1.3.0 (MIT, 순수 TypeScript). **Trimble과 관련 없는 비공식 오픈소스 파서**이며 SketchUp은 Trimble Inc.의 상표다.
 - 범위: 배경 3D 에셋 라이브러리의 "3D 모델 및 연결 파일 가져오기"가 받는 `.skp`. 네이티브 SketchUp SDK·서버 변환·SketchUp 확장은 포함하지 않는다.
 
@@ -69,7 +69,7 @@ file → planStudioBg3dModelImports (32MiB 초과 → skp-too-large)
 | 폴리곤 경고 | 삼각형 250,000개 이상 `high-polygon-count` | `STUDIO_BG3D_SKP_HIGH_TRIANGLE_COUNT` |
 | 드로 콜 | 인스턴스마다 구워진 프리미티브를 **재질별로 병합**해 줄인다(모바일 256·데스크톱 1,024 예산 대응) | `studio-bg3d-skp-mesh-merge.ts` |
 
-가져오지 않는 것: 장면(카메라) 상태, 애니메이션, 태그 가시성 설정, 컴포넌트 계층 자체(이름만 보고서에 담는다). SketchUp에서 **숨긴 면**은 변환에서 제외하지만(`respectEdgeVisibility`), **숨긴 컴포넌트·숨긴 태그의 형상은 결과에 포함될 수 있다**(보고서에 `hidden-instances-included`·`hidden-tags-included` 경고). 이름은 읽을 수 있는 범위만 담는다: 장면 이름과 파일에 적힌 표시 단위는 2021 이후 형식에서만 읽을 수 있고(레거시는 둘 다 비어 있다), 태그의 숨김 표시는 OpenSKP가 읽은 값을 그대로 따른다. OpenSKP의 타입 주석(`Layer.hidden`)은 레거시에서만 채워진다고 적었지만 소스(`collectLayers`의 `8E3C`, 레거시 레이어 레코드)는 두 컨테이너에서 모두 읽으므로 이 구현은 컨테이너로 구분하지 않는다. 2021 이후 형식의 숨김 표시는 실제 파일로 검증하지 못했다(작성기가 레거시 형식만 만든다).
+가져오지 않는 것: 장면(카메라) 상태, 애니메이션, 태그 가시성 설정, 컴포넌트 계층 자체(이름만 보고서에 담는다). 이름은 배치한 모델에 **이름으로만** 연결되며 이 한계는 2026-10-22 연결 이후에도 그대로다(→ "컴포넌트·태그·장면 이름 연결"). SketchUp에서 **숨긴 면**은 변환에서 제외하지만(`respectEdgeVisibility`), **숨긴 컴포넌트·숨긴 태그의 형상은 결과에 포함될 수 있다**(보고서에 `hidden-instances-included`·`hidden-tags-included` 경고). 이름은 읽을 수 있는 범위만 담는다: 장면 이름과 파일에 적힌 표시 단위는 2021 이후 형식에서만 읽을 수 있고(레거시는 둘 다 비어 있다), 태그의 숨김 표시는 OpenSKP가 읽은 값을 그대로 따른다. OpenSKP의 타입 주석(`Layer.hidden`)은 레거시에서만 채워진다고 적었지만 소스(`collectLayers`의 `8E3C`, 레거시 레이어 레코드)는 두 컨테이너에서 모두 읽으므로 이 구현은 컨테이너로 구분하지 않는다. 2021 이후 형식의 숨김 표시는 실제 파일로 검증하지 못했다(작성기가 레거시 형식만 만든다).
 
 ## 단위·좌표·크기 정규화
 
@@ -100,7 +100,7 @@ OpenSKP 1.3.0 README와 소스에서 확인한 사실에 맞춘다.
 
 ## 변환 보고서 v1 — 안정 계약
 
-스키마 정본은 `studio-bg3d-skp-import-report.ts`의 `studioBg3dSkpImportReportSchema`(zod)다. 보고서를 만드는 쪽(`studio-bg3d-skp-report-builder.ts`)은 zod 없이 이 타입만 `import type`으로 쓰고, 변환 Worker의 모듈 그래프에는 zod가 들어가지 않는다(`studio-bg3d-skp-worker-boundary.test.ts`가 고정). `kind = "toonstudio-bg3d-skp-import-report"`, `version = 1`. 후속 작업(컴포넌트·태그·장면 연동, SKP 사이드카, 자산 검색)은 이 계약만 읽는다.
+스키마 정본은 `studio-bg3d-skp-import-report.ts`의 `studioBg3dSkpImportReportSchema`(zod)다. 보고서를 만드는 쪽(`studio-bg3d-skp-report-builder.ts`)은 zod 없이 이 타입만 `import type`으로 쓰고, 변환 Worker의 모듈 그래프에는 zod가 들어가지 않는다(`studio-bg3d-skp-worker-boundary.test.ts`가 고정). `kind = "toonstudio-bg3d-skp-import-report"`, `version = 1`. 컴포넌트·태그·장면 이름 연결(SKP 사이드카)과 이름 검색은 저장된 `skpImport`의 이름만 읽는다([3D 장면의 컴포넌트·태그·장면 정보](bg3d-components-tags-scenes.md)).
 
 | 필드 | 내용 |
 | --- | --- |
@@ -135,6 +135,20 @@ OpenSKP 1.3.0 README와 소스에서 확인한 사실에 맞춘다.
 - **저장 시점과 한도:** 기록은 모델이 장면에 배치된 뒤 가져오기 마무리에서 저장한다. 가져오기 취소 신호를 받고, 저장소가 응답하지 않아도 15초 한도(`studio-bg3d-import-save-interrupt.ts`)에서 기다림을 멈춰 저장 실패로 알린다(저장소 쪽 작업이 이미 쓰는 중일 수 있어 "쓰지 않았다"는 보장은 아니다). 저장이 느려도 장면 배치는 멈추지 않지만, 마무리가 끝나야 썸네일 촬영이 시작되므로 그만큼(최대 15초) 늦어질 수 있다.
 - **롤백 주의:** `skpImport`가 든 기록은 이 필드를 모르는 이전 코드에서 V12 매니페스트 왕복 검사에 걸려 `invalid-stored-metadata`가 될 수 있다. 또 V3 기록(AI 사용 표기 도입 이후에 쓴 기록)은 V2까지만 아는 이전 코드가 읽지 못한다. 메타데이터 저장소는 앞으로만 나아가는 변경으로 다룬다. 이미 열려 있던 옛 빌드 탭이 새 빌드가 쓴 기록을 읽는 경우의 위험(추정)은 [권리 중심 3D 소재 브라우저](bg3d-asset-rights-browser.md)의 "롤백 주의"에 적었다.
 
+### 컴포넌트·태그·장면 이름 연결
+
+2026-10-22 현재 위 이름 기록은 읽는 곳이 세 군데다. 상세 동작과 한도는 [3D 장면의 컴포넌트·태그·장면 정보](bg3d-components-tags-scenes.md)에 있다.
+
+| 읽는 곳 | 하는 일 | 근거 |
+| --- | --- | --- |
+| 3D 장면 아웃라이너 "원본 SKP 이름" | 고른 오브젝트 중 .skp에서 온 모델의 컴포넌트·태그(레이어)·장면 이름을 **글자로** 보인다. 태그 규칙을 통과하는 이름만 "태그로 붙일 이름"으로 제안하고, 사용자가 눌러야 태그가 붙는다. 장면 이름은 메모 후보로만 보이며 "메모에 붙이기"로 초안에 더해도 "장면 정보 저장"을 눌러야 문서에 들어간다 | `studio-bg3d-skp-sidecar.ts`, `StudioBg3dOutlinerSkpSourceSection.tsx` |
+| .skp를 가져와 배치하는 순간 | 배치된 노드에 컴포넌트 참조(`skp-<정규화 GLB 해시 앞 16자리>`, 이름은 모델 표시 이름)를 붙여 같은 .skp의 여러 인스턴스를 컴포넌트 묶음으로 보이게 한다 | `linkStudioBg3dSkpPlacement`, `studio-bg3d-editor-model-import-actions.ts` |
+| 3D 모델 라이브러리 검색 | 저장된 이름(최대 48개)을 소재 이름과 함께 검색하고, 이름으로만 걸린 카드에는 "원본 이름 일치: …"를 보인다 | `studio-bg3d-asset-rights-view.ts`(`sourceNames`), `StudioBg3dAssetNameMatchHint.tsx` |
+
+**되살리지 않는 것(가져오기 안내, 변환 보고서 자세히 보기, 아웃라이너에 같은 말로 적었다):** SketchUp의 컴포넌트 계층, 태그(레이어) 표시 상태, 장면(카메라). 이름만 이어 주므로 장면 이름도 카메라 위치나 표시 상태로 쓰이지 않는다.
+
+**한계:** 이름은 보고서가 목록당 16개까지만 저장한다. 이름 기록은 .skp를 가져온 기기의 메타데이터 저장소에만 있어 다른 기기에서는 "이름 기록이 없어요"로 보인다. 컴포넌트 참조 자동 연결은 가져와 배치하는 순간에만 하고, 라이브러리에서 나중에 놓은 소재는 자동으로 묶이지 않는다. 이름은 파일 안의 믿을 수 없는 글자라 화면에는 글자로만 그리고, 문서에 옮길 때는 태그·메모 규칙(주소·자격 증명 모양·제어 문자 거절)을 다시 통과해야 한다.
+
 ## 권리·출처·법적 고지
 
 - `.skp`는 다른 3D 형식과 같은 **이용 권리 관문**을 쓴다. 권리 기록은 라이브러리 레코드의 `rights`로 저장되고, 이후 `createStudioGeneric3dRightsFromAttachment`가 같은 방식으로 생성형 3D 증거를 만든다. 새 관문은 없다. 권리가 `확인 전`이면 상업 이용이 보류된다.
@@ -152,6 +166,7 @@ OpenSKP 1.3.0 README와 소스에서 확인한 사실에 맞춘다.
 - 실제 openskp 왕복: 작성기가 만든 실제 `.skp` 바이트로 단위·이름·면 방향·텍스처·숨김 처리를 확인한다.
 - 화면: 안내·진행·단위 질문(키보드·초점·Escape)·결과 카드, 자산 라이브러리 패널에서의 권리 관문 공유와 안내 마운트.
 - 계약: 보고서 스키마, 메타데이터 왕복(IndexedDB, V12 매니페스트), 형식 매트릭스(`studio-dcc-format-matrix.test.ts`), 매뉴얼 상수 일치.
+- 이름 연결(2026-10-22): `studio-bg3d-skp-sidecar.test.ts`(이름 읽기·컴포넌트 참조·태그 제안·메모 후보), `studio-bg3d-asset-source-names.test.ts`(검색용 이름 모으기), `StudioBg3dAssetLibraryPanel.names.test.tsx`(이름 검색과 일치 안내), `StudioBg3dSkpImportPanel.sidecar.test.tsx`(되살리지 않는다는 안내), `StudioBg3dSceneOutliner.organization.test.tsx`(원본 SKP 이름 보기).
 
 ```sh
 pnpm exec vitest run apps/web/src/domains/creator/bg3d/studio-bg3d-skp apps/web/src/domains/creator/bg3d/StudioBg3dSkpImportPanel.test.tsx
@@ -162,12 +177,13 @@ pnpm exec vitest run apps/web/src/domains/creator/bg3d/studio-bg3d-skp apps/web/
 - 실제 사용자 `.skp` 코퍼스(대형·구형·3D Warehouse 모델) 검증은 없다. 현재 검증은 openskp 작성기와 합성 바이트까지이며 시중의 모든 변형을 대표하지 않는다.
 - 변환 후 단위 재적용은 **저장 전 질문**으로만 제공한다. 이미 저장된 모델의 단위를 바꾸려면 다시 가져와야 한다.
 - 실제 브라우저(Worker·메모리 한도)에서의 대형 파일 성능은 측정하지 않았다. 한도 값은 2026-10-15 Node 24(4 vCPU)에서 openskp 작성기로 만든 레거시 파일(사각형 면만)을 `buildScene()`+`toGLB()`한 측정을 바탕으로 한 추정이다: 5천 면 1.6MiB 0.6초(프로세스 최대 RSS 증가 약 65MiB), 2만 면 6.9MiB 1.3초(약 260MiB), 10만 면 35MiB 14초(최대 RSS 1.1GiB, 작성기가 쥔 메모리 포함). `parseSkp()`(이름·단위 읽기)는 10만 면에서 17.5초라 24MiB 초과 파일은 건너뛴다. 파일 1MiB당 힙이 대략 20–40MiB 늘어나는 셈이지만, OpenSKP README는 실제 모델에서 이보다 훨씬 크게(113MB 파일에 Node 힙 8–16GB) 늘 수 있다고 밝힌다. 그래서 32MiB(데스크톱)·16MiB(모바일)는 안전 보장이 아니며, 메모리가 부족한 기기에서는 변환이 실패하거나 Worker가 중단될 수 있다(각각 `skp-too-large`, `skp-converter-unavailable`로 알린다).
-- 컴포넌트·태그·장면을 장면 그래프로 되살리는 연동(SKP 사이드카), 이름 기반 에셋 검색은 후속 작업이다. 보고서 v1이 그 입력 계약이다.
+- 컴포넌트·태그·장면 **이름**을 배치한 모델에 잇는 연동(SKP 사이드카)과 이름 기반 소재 검색은 2026-10-22에 더했다(→ "컴포넌트·태그·장면 이름 연결"). 컴포넌트 계층, 태그(레이어) 표시 상태, 장면(카메라)을 장면 그래프로 **되살리는 일은 하지 않았다(이 변경의 범위 밖).** 보고서 v1은 이름만 담고 있어 되살리려면 계약부터 넓혀야 한다(필드를 더하면 `version`을 올리고 이전 버전 읽기를 둔다).
 - SKP Worker는 `scripts/check-studio-bundle.mjs`의 격리 Worker 예산(OBJ·PSD·물리 등)에 아직 등록되지 않았다. 전체 빌드를 돌리지 못해 실제 산출물 크기는 확인하지 못했다. Worker 진입점만 따로 번들한 추정(Vite 8, 2026-10-15)은 진입 청크 약 25KB(gzip 9.6KB)와 지연 로드되는 openskp 청크 약 240KB(gzip 68KB)다.
-- 이 표면의 문구는 같은 디렉터리의 다른 3D 패널처럼 한국어 리터럴이며 i18n 키로 옮기지 않았다. 2026-10-16에 더한 AI 표기 저장 결과 안내 문구도 같은 방식(해요체, 실패에는 다음 행동)이며 번역 키 전환은 후속이다.
+- 이 표면의 문구는 같은 디렉터리의 다른 3D 패널처럼 한국어 리터럴이며 i18n 키로 옮기지 않았다(2026-10-22에 더한 이름 연결 문구는 키 기반 `studio.bg3dScene.*`이고, 범위 안내 한 문장 `studio.bg3dScene.skp.importScope`가 이 패널의 안내와 보고서에 들어간다). 2026-10-16에 더한 AI 표기 저장 결과 안내 문구도 같은 방식(해요체, 실패에는 다음 행동)이며 번역 키 전환은 후속이다.
 
 ## 관련 문서
 
+- [3D 장면의 컴포넌트·태그·장면 정보](bg3d-components-tags-scenes.md) — 이름 기록을 읽어 장면에 잇는 사이드카, 라이브러리 이름 검색, 되살리지 않는 범위
 - [3D 배경 커스텀 모델 업로드 통합 설계](../studio-bg3d-custom-model-upload.md) — 다른 형식과 공통 가져오기 경계
 - [3D 웹툰 도구 벤치마크 2026-07-19](../studio-3d-webtoon-tool-benchmark-2026-07-19.md) — 역사 자료. SKP 정책 결정의 당시 맥락
 - [3D 활용 가이드](../../STUDIO_3D_DCC_MANUAL.md) — 사용자 매뉴얼(생성 문서)
