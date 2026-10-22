@@ -245,11 +245,47 @@ test("legacy section links open the matching section without tabs", async ({ pag
     { hash: "#creator-flow", heading: "#creator-process-title" },
     { hash: "#creator-faq-title", heading: "#creator-support-title" },
   ];
+  // CI 에서만 간헐적으로 제목이 보이는데도 15초 동안 포커스를 못 받는 실패가 있었다(실패 트레이스에는 "inactive" 만 남는다).
+  // 로컬 Chrome·headless shell 에서 CPU 20배·청크·API 지연을 걸어 반복해도 재현되지 않아, 다시 실패하면 원인을 가를 수 있게
+  // 포커스 이동과 제목 노드 교체를 기록해 실패 메시지에 붙인다. 판정 기준(제목이 포커스를 받아야 함)은 그대로다.
+  await page.addInitScript(() => {
+    const log: Array<[number, string, string | number]> = [];
+    (window as unknown as { __creatorFocusLog: typeof log }).__creatorFocusLog = log;
+    const describe = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null;
+      return element?.tagName ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ""}` : String(target);
+    };
+    for (const type of ["focusin", "focusout"] as const) {
+      document.addEventListener(type, (event) => log.push([Math.round(performance.now()), type, describe(event.target)]), true);
+    }
+    // 같은 id 의 제목 노드가 새로 만들어지면(지연 경로 재마운트) 세대 번호가 올라가 기록에 남는다.
+    const seen = new Map<string, { node: Element; generation: number }>();
+    new MutationObserver(() => {
+      for (const heading of document.querySelectorAll("h2[id^='creator-']")) {
+        const known = seen.get(heading.id);
+        if (known?.node === heading) continue;
+        const generation = (known?.generation ?? 0) + 1;
+        seen.set(heading.id, { node: heading, generation });
+        log.push([Math.round(performance.now()), "heading-node", `${heading.id}#${generation}`]);
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
   for (const { hash, heading } of cases) {
     await page.goto(`/about/studio${hash}`, { waitUntil: "domcontentloaded" });
     const title = page.locator(heading);
     await expect(title).toBeVisible();
-    await expect(title).toBeFocused();
+    try {
+      await expect(title).toBeFocused();
+    } catch (error) {
+      const diagnostics = await page.evaluate(() => ({
+        active: document.activeElement?.tagName.toLowerCase() + (document.activeElement?.id ? `#${document.activeElement.id}` : ""),
+        documentHasFocus: document.hasFocus(),
+        hash: location.hash,
+        dialogs: document.querySelectorAll('[role="dialog"][aria-modal="true"]').length,
+        log: (window as unknown as { __creatorFocusLog: unknown[] }).__creatorFocusLog,
+      })).catch((evaluateError: unknown) => ({ evaluateError: String(evaluateError) }));
+      throw new Error(`${hash} 이동 뒤 ${heading} 이 포커스를 받지 못했다: ${JSON.stringify(diagnostics)}`, { cause: error });
+    }
   }
   await expect(page.getByRole("tablist")).toHaveCount(0);
 });
