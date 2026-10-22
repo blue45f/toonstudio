@@ -176,6 +176,48 @@ describe("selectSupersededActionsRuns", () => {
     expect(selected).toEqual([]);
   });
 
+  it("preserves codeql.yml main push runs even when superseded or stale", () => {
+    const codeqlPush = (id, createdAt, status) => ({
+      ...run({
+        id,
+        workflow: 7,
+        event: "push",
+        branch: "main",
+        pr: null,
+        createdAt,
+        status,
+        path: ".github/workflows/codeql.yml",
+      }),
+      name: "CodeQL",
+    });
+    const selected = selectSupersededActionsRuns(
+      [
+        codeqlPush(30, "2026-10-22T17:54:10Z", "in_progress"),
+        codeqlPush(31, "2026-10-22T17:59:26Z", "queued"),
+      ],
+      { now: Date.parse("2026-10-23T12:00:00Z") },
+    );
+    expect(selected).toEqual([]);
+  });
+
+  it("still supersedes codeql.yml pull request runs and non-main push runs", () => {
+    const codeql = (id, createdAt, overrides) => ({
+      ...run({ workflow: 7, pr: 10, createdAt, path: ".github/workflows/codeql.yml", id, ...overrides }),
+      name: "CodeQL",
+    });
+    const pullRequest = selectSupersededActionsRuns(
+      [codeql(32, "2026-10-22T17:00:00Z"), codeql(33, "2026-10-22T17:05:00Z")],
+      { pullRequestStates: new Map([[10, "open"]]) },
+    );
+    expect(pullRequest.map(({ run: selectedRun }) => selectedRun.id)).toEqual([32]);
+
+    const featurePush = selectSupersededActionsRuns([
+      codeql(34, "2026-10-22T17:00:00Z", { event: "push", branch: "feature/a", pr: null }),
+      codeql(35, "2026-10-22T17:05:00Z", { event: "push", branch: "feature/a", pr: null }),
+    ]);
+    expect(featurePush.map(({ run: selectedRun }) => selectedRun.id)).toEqual([34]);
+  });
+
   it("still cancels superseded non-CodeQL dynamic runs", () => {
     const selected = selectSupersededActionsRuns([
       run({

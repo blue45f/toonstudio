@@ -12,6 +12,13 @@ on:
 permissions:
   contents: read
 
+# main push 분석은 끝까지 돌아야 PR 이 비교할 기준 분석이 남는다. main 은 취소 없이 한 번에 하나만 돌리고
+# 그 사이 쌓인 대기 실행은 GitHub 가 최신 하나로 합친다. PR 분석은 새 커밋이 오면 이전 것을 취소한다.
+# scripts/cleanup-superseded-actions-runs.mjs 도 main push 의 이 워크플로 실행은 취소하지 않는다.
+concurrency:
+  group: codeql-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   analyze:
     name: Analyze
