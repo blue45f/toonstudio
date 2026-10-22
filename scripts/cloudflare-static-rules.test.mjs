@@ -131,4 +131,36 @@ describe("Cloudflare static response rules", () => {
     // 해시가 있으면 'inline-speculation-rules' 키워드는 무시되므로 키워드에 기대지 않는다.
     expect(rendered).not.toContain("'inline-speculation-rules'");
   });
+
+  it("detaches a header that a narrower rule re-sets so Cloudflare does not join the values", () => {
+    // Cloudflare _headers 는 겹치는 규칙의 같은 헤더를 쉼표로 이어 붙인다. 좁은 규칙은 '! 이름' 으로 먼저 뗀다.
+    const rendered = renderCloudflareHeaders({
+      headers: [
+        { source: "/assets/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+        {
+          source: "/assets/catalog/manifest.json",
+          headers: [
+            { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+            { key: "CDN-Cache-Control", value: "no-cache" },
+          ],
+        },
+        { source: "/vrm/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=60" }] },
+      ],
+    });
+    expect(rendered).toContain(
+      "/assets/catalog/manifest.json\n  ! Cache-Control\n  Cache-Control: public, max-age=0, must-revalidate\n  CDN-Cache-Control: no-cache",
+    );
+    expect(rendered).toContain("/assets/*\n  Cache-Control: public, max-age=31536000, immutable");
+    expect(rendered).toContain("/vrm/*\n  Cache-Control: public, max-age=60");
+    expect(rendered.match(/! Cache-Control/gu)).toHaveLength(1);
+  });
+
+  it("gives the catalog manifests a single revalidating Cache-Control in production rules", () => {
+    const headers = readFileSync("apps/web/public/_headers", "utf8");
+    for (const manifest of ["/assets/studio/cc0-20260906/manifest.json", "/assets/studio/bundle-renders-v1/manifest.json"]) {
+      expect(headers).toContain(`${manifest}\n  ! Cache-Control\n  Cache-Control: public, max-age=0, must-revalidate\n`);
+    }
+    // 떼는 곳은 두 매니페스트뿐이다. 다른 규칙의 헤더를 잘못 떼면 보안·캐시 헤더가 사라진다.
+    expect(headers.match(/^ {2}! /gmu)).toHaveLength(2);
+  });
 });
