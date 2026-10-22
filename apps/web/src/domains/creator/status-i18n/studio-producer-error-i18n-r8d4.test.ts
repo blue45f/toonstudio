@@ -37,6 +37,11 @@ import {
 } from "../studio-translation-memory";
 import { parseStudioAnimaticSubtitles } from "../animatic/studio-animatic-subtitles";
 import {
+  planStudioBg3dLtLayers,
+  STUDIO_BG3D_LT_LAYER_NAMES,
+  type StudioBg3dLtLayerPlanFailure,
+} from "../bg3d/studio-bg3d-lt-layer-plan";
+import {
   resolveBg3dShotBatchPublicPlanErrorFromCause,
   resolveBg3dTemplateMigrationDataPreservedNote,
   resolveStudioMusicPageError,
@@ -46,6 +51,10 @@ import {
   resolveStudioTranslationMemoryExportError,
   resolveStudioTranslationMemoryImportError,
 } from "./studio-producer-error-i18n";
+import {
+  resolveStudioBg3dLtLayerName,
+  resolveStudioBg3dLtLayerPlanError,
+} from "./studio-producer-error-i18n-bg3d-lt";
 
 /**
  * D4 파일럿 계약 (A4 생산자 진단 T0, 2026-10-23): 생산자
@@ -127,17 +136,26 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
   });
 
   it("keeps ko/en key parity in the resolver module", () => {
-    const source = readFileSync(new URL("./studio-producer-error-i18n.ts", import.meta.url), "utf-8");
+    // R11: 사전이 코어(tm·animatic) + 형제 모듈 5개로 나뉘어, 패리티는 제품군 전체를 누적해 본다.
+    const source = [
+      "./studio-producer-error-i18n.ts",
+      "./studio-producer-error-i18n-glb.ts",
+      "./studio-producer-error-i18n-palette.ts",
+      "./studio-producer-error-i18n-dialogue.ts",
+      "./studio-producer-error-i18n-bg3d-lt.ts",
+      "./studio-producer-error-i18n-bg3d-measure.ts",
+    ].map((rel) => readFileSync(new URL(rel, import.meta.url), "utf-8")).join("\n");
     const blocks: Record<string, string[]> = {};
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       blocks[match[1] ?? ""] = [...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? "");
     }
     // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2, bg3dTemplate 6 — 이전 서브코드 5 + 보존 고지 1, shotBatch 2, music 4). 블록 단위 누적으로 패리티를 본다.
+    // R11: 형제 모듈 구간(glb 55 + palette 23 + dialogue 105 + bg3dLt 50 + bg3dMeasure·shotBatchPlan 56)이 더해져 누적 348키가 된다.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(59);
+    expect(accumulated.ko).toHaveLength(348);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });
@@ -629,6 +647,130 @@ describe("R10 music page callbacks — display-side resolution keeps ko copy ide
       "진행 중인 음악 생성을 마친 뒤 삭제해 주세요.",
       "진행 중인 생성·저장을 마친 뒤 외부 음원을 가져와 주세요.",
       "보관함은 계정당 20곡까지입니다. 기존 음원을 다운로드한 뒤 삭제해 주세요.",
+    ]) {
+      expect(producer).not.toContain(literal);
+    }
+  });
+});
+
+/**
+ * R11 (A4 D4): bg3d LT 레이어 계획 생산자 서브코드 46종 전수 이관.
+ * 기존 code 31종을 문구 단위 서브코드(`<기존 code>.<문구 슬러그>`)로 분해했고,
+ * 동적 1곳(missing-allocation.layerId)은 params.layerName에 역할 코드를 싣고
+ * 해석 시점에 라벨 맵(layerName.*)으로 먼저 해석한다. ko 해석은 원문과 동일해야 한다.
+ */
+
+const LT_PNG = "data:image/png;base64,TUFJTg==";
+
+describe("R11 bg3dLt — producer emits structured subcodes", () => {
+  it("emits pageLocked / duplicateElementId subcodes without messages", () => {
+    const locked = planStudioBg3dLtLayers({
+      elements: [], groups: [], pageLocked: true,
+      render: { pngDataUrl: LT_PNG, width: 100, height: 50, bg3dScene: { sceneId: "s" } },
+    });
+    expect(locked).toEqual({ ok: false, code: "page-locked.pageLocked" });
+    const dup = planStudioBg3dLtLayers({
+      elements: [
+        { id: "x", type: "text" }, { id: "x", type: "text" },
+      ],
+      groups: [],
+      render: { pngDataUrl: LT_PNG, width: 100, height: 50, bg3dScene: { sceneId: "s" } },
+    });
+    expect(dup).toEqual({ ok: false, code: "duplicate-element-id.duplicateElementId" });
+  });
+
+  it("emits layerId with the role code as the layerName param", () => {
+    const result = planStudioBg3dLtLayers({
+      elements: [], groups: [],
+      render: {
+        kind: "separated", width: 100, height: 50, bg3dScene: { sceneId: "s" },
+        layers: [{ role: "tone", pngDataUrl: LT_PNG, width: 100, height: 50 }],
+      },
+      allocations: { bundleId: "b-1", groupId: "g-1", elementIds: {} },
+      newElementTemplate: {
+        id: "t", type: "image", src: LT_PNG, x: 0, y: 0, width: 100, height: 50,
+      },
+    });
+    expect(result).toEqual({
+      ok: false,
+      code: "missing-allocation.layerId",
+      params: { layerName: "tone" },
+    });
+  });
+});
+
+describe("R11 bg3dLt — display-side resolution keeps ko copy identical", () => {
+  it("resolves all 46 subcodes to the exact pre-migration Korean strings", () => {
+    const cases: readonly [StudioBg3dLtLayerPlanFailure, string][] = [
+      [{ ok: false, code: "invalid-render-mode.renderResultFormat" }, "3D LT 렌더 결과 형식이 올바르지 않아요."],
+      [{ ok: false, code: "invalid-render-mode.mixedModes" }, "분리 렌더와 통합 렌더 값이 섞여 있어요."],
+      [{ ok: false, code: "invalid-render-mode.unknownLayerRole" }, "알 수 없는 3D LT 레이어 역할이 포함되어 있어요."],
+      [{ ok: false, code: "invalid-render-mode.unsupportedFormat" }, "지원하지 않는 3D LT 렌더 형식이에요."],
+      [{ ok: false, code: "invalid-render-dimensions.outOfRange" }, "3D LT 렌더 크기가 허용 범위를 벗어났어요."],
+      [{ ok: false, code: "missing-scene.missingScene" }, "다시 편집할 3D 장면 정보가 없어요."],
+      [{ ok: false, code: "missing-render-layer.missingLayer" }, "삽입할 3D LT 레이어가 없어요."],
+      [{ ok: false, code: "duplicate-render-role.duplicateRole" }, "같은 역할의 3D LT 레이어가 중복되었어요."],
+      [{ ok: false, code: "mismatched-layer-dimensions.layerSizeMismatch" }, "분리된 3D LT 레이어의 렌더 크기가 서로 달라요."],
+      [{ ok: false, code: "invalid-png-data-url.layerPng" }, "3D LT 레이어 PNG 데이터가 올바르지 않아요."],
+      [{ ok: false, code: "invalid-png-data-url.combinedPng" }, "통합 3D PNG 데이터가 올바르지 않아요."],
+      [{ ok: false, code: "invalid-png-data-url.existingPngOrFragment" }, "기존 3D PNG 데이터나 장면 프래그먼트가 올바르지 않아요."],
+      [{ ok: false, code: "page-locked.pageLocked" }, "검토 잠금된 페이지에는 3D LT 레이어를 적용할 수 없어요."],
+      [{ ok: false, code: "duplicate-element-id.duplicateElementId" }, "페이지에 중복된 요소 ID가 있어 안전하게 적용할 수 없어요."],
+      [{ ok: false, code: "duplicate-group-id.duplicateGroupId" }, "페이지에 중복된 그룹 ID가 있어 안전하게 적용할 수 없어요."],
+      [{ ok: false, code: "target-not-found.targetNotFound" }, "다시 적용할 3D LT 레이어를 찾지 못했어요."],
+      [{ ok: false, code: "target-not-image.targetNotImage" }, "선택한 요소는 3D LT 이미지 레이어가 아니에요."],
+      [{ ok: false, code: "target-locked.layerLocked" }, "잠긴 3D LT 레이어는 변경할 수 없어요."],
+      [{ ok: false, code: "target-locked.bundleLayerLocked" }, "잠긴 3D LT 번들 레이어는 변경할 수 없어요."],
+      [{ ok: false, code: "target-locked.groupPngLocked" }, "잠긴 그룹의 기존 3D PNG는 변경할 수 없어요."],
+      [{ ok: false, code: "invalid-bundle-metadata.incomplete" }, "기존 3D LT 번들 메타데이터가 불완전해요."],
+      [{ ok: false, code: "invalid-bundle-metadata.mismatch" }, "기존 3D LT 번들 메타데이터가 일치하지 않아요."],
+      [{ ok: false, code: "invalid-bundle-element.nonImageElement" }, "3D LT 번들에 이미지가 아닌 요소가 섞여 있어요."],
+      [{ ok: false, code: "noncontiguous-bundle.noncontiguous" }, "3D LT 번들 레이어 사이에 다른 레이어가 끼어 있어요."],
+      [{ ok: false, code: "inconsistent-bundle-geometry.placement" }, "기존 3D LT 번들의 배치 값이 올바르지 않아요."],
+      [{ ok: false, code: "inconsistent-bundle-geometry.positionOrSize" }, "기존 3D LT 번들 레이어의 위치나 크기가 서로 달라요."],
+      [{ ok: false, code: "inconsistent-bundle-geometry.existingPngPlacement" }, "기존 3D PNG의 배치 값이 올바르지 않아요."],
+      [{ ok: false, code: "inconsistent-bundle-group.missingDedicatedGroup" }, "기존 3D LT 번들에 전용 그룹이 없어요."],
+      [{ ok: false, code: "inconsistent-bundle-group.groupMismatch" }, "기존 3D LT 번들 레이어의 그룹이 서로 달라요."],
+      [{ ok: false, code: "duplicate-bundle-role.duplicateRole" }, "기존 3D LT 번들에 같은 역할의 레이어가 중복되었어요."],
+      [{ ok: false, code: "missing-bundle-group.groupNotFound" }, "기존 3D LT 번들의 전용 그룹을 찾지 못했어요."],
+      [{ ok: false, code: "bundle-group-locked.groupLocked" }, "잠긴 3D LT 그룹은 변경할 수 없어요."],
+      [{ ok: false, code: "mixed-bundle-group.mixedGroup" }, "3D LT 전용 그룹에 관련 없는 레이어가 섞여 있어요."],
+      [{ ok: false, code: "missing-allocation.bundleAndGroupIds" }, "새 3D LT 번들과 그룹 ID가 필요해요."],
+      [{ ok: false, code: "missing-allocation.identifiersUndecided" }, "3D LT 번들 식별자를 결정하지 못했어요."],
+      [{ ok: false, code: "bundle-id-collision.bundleIdCollision" }, "새 3D LT 번들 ID가 기존 번들과 겹쳐요."],
+      [{ ok: false, code: "group-id-collision.groupIdCollision" }, "새 3D LT 그룹 ID가 기존 그룹과 겹쳐요."],
+      [{ ok: false, code: "allocation-collision.existingElement" }, "새 3D LT 레이어 ID가 기존 요소와 겹쳐요."],
+      [{ ok: false, code: "allocation-collision.mutual" }, "새 3D LT 레이어 ID가 서로 겹쳐요."],
+      [{ ok: false, code: "missing-element-template.missingTemplate" }, "새 3D LT 레이어를 만들 이미지 템플릿이 필요해요."],
+      [{ ok: false, code: "invalid-element-template.template" }, "새 3D LT 이미지 템플릿이 올바르지 않아요."],
+      [{ ok: false, code: "invalid-element-template.templatePlacement" }, "새 3D LT 이미지 템플릿의 배치 값이 올바르지 않아요."],
+      [{ ok: false, code: "invalid-element-template.commonPlacementUndecided" }, "3D LT 레이어의 공통 배치 값을 결정하지 못했어요."],
+      [{ ok: false, code: "template-source-mismatch.sourceMismatch" }, "이미지 템플릿이 현재 3D LT 렌더와 일치하지 않아요."],
+      [{ ok: false, code: "template-aspect-mismatch.aspectMismatch" }, "이미지 템플릿과 3D LT 렌더의 화면 비율이 달라요."],
+    ];
+    expect(cases).toHaveLength(45);
+    for (const [error, expected] of cases) {
+      expect(resolveStudioBg3dLtLayerPlanError(error)).toBe(expected);
+    }
+  });
+
+  it("resolves the layerId message through the coded layer-name map for every role", () => {
+    for (const role of ["color", "tone", "texture-line", "main-line"] as const) {
+      expect(resolveStudioBg3dLtLayerName(role)).toBe(STUDIO_BG3D_LT_LAYER_NAMES[role]);
+      expect(resolveStudioBg3dLtLayerPlanError({
+        ok: false, code: "missing-allocation.layerId", params: { layerName: role },
+      })).toBe(`${STUDIO_BG3D_LT_LAYER_NAMES[role]} 레이어 ID가 필요해요.`);
+    }
+    expect(resolveStudioBg3dLtLayerName("unknown-role")).toBe("unknown-role");
+  });
+
+  it("producer source no longer carries the lt error literals", () => {
+    const producer = readFileSync(new URL("../bg3d/studio-bg3d-lt-layer-plan.ts", import.meta.url), "utf-8");
+    for (const literal of [
+      "검토 잠금된 페이지에는 3D LT 레이어를 적용할 수 없어요.",
+      "3D LT 렌더 결과 형식이 올바르지 않아요.",
+      "레이어 ID가 필요해요.",
+      "이미지 템플릿과 3D LT 렌더의 화면 비율이 달라요.",
     ]) {
       expect(producer).not.toContain(literal);
     }

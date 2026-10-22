@@ -115,7 +115,7 @@ function planConnectedInsert() {
     dccSource: null,
   });
   expect(plan.ok).toBe(true);
-  if (!plan.ok) throw new Error(plan.message);
+  if (!plan.ok) throw new Error("code" in plan ? plan.code : plan.message);
   return { source, plan };
 }
 
@@ -176,7 +176,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
     });
 
     expect(updated.ok).toBe(true);
-    if (!updated.ok) throw new Error(updated.message);
+    if (!updated.ok) throw new Error("code" in updated ? updated.code : updated.message);
     expect(updated.anchorElementId).toBe("background-1");
     expect(updated.bundleId).toBe("bundle-1");
     expect(updated.nextElements.filter(({ id }) => id === "background-1")).toHaveLength(1);
@@ -210,7 +210,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
     });
 
     expect(plan.ok).toBe(true);
-    if (!plan.ok) throw new Error(plan.message);
+    if (!plan.ok) throw new Error("code" in plan ? plan.code : plan.message);
     expect(plan.hiddenElementIds).toEqual([]);
     expect(plan.nextElements.find(({ id }) => id === character.id)?.hidden).not.toBe(true);
     expect(studioShared3dStageEntryAsDocument(
@@ -235,7 +235,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
     });
 
     expect(unlinked.ok).toBe(true);
-    if (!unlinked.ok) throw new Error(unlinked.message);
+    if (!unlinked.ok) throw new Error("code" in unlinked ? unlinked.code : unlinked.message);
     expect(unlinked.nextShared3dStage).toBeUndefined();
     expect(unlinked.restoredElementIds).toEqual(["character-1"]);
     expect(unlinked.nextElements.find(({ id }) => id === "character-1")?.hidden).not.toBe(true);
@@ -262,7 +262,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
     });
 
     expect(ordinary.ok).toBe(true);
-    if (!ordinary.ok) throw new Error(ordinary.message);
+    if (!ordinary.ok) throw new Error("code" in ordinary ? ordinary.code : ordinary.message);
     expect(ordinary.operation).toBe("update");
     expect(ordinary.bundleId).toBe("bundle-1");
     expect(ordinary.groupId).toBe("group-1");
@@ -305,7 +305,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
         newElementTemplate: rasterImage("separated-template", VALID_LINE_PNG),
       });
       expect(separated.ok).toBe(true);
-      if (!separated.ok) throw new Error(separated.message);
+      if (!separated.ok) throw new Error("code" in separated ? separated.code : separated.message);
 
       const collapsed = planStudioBg3dRealtimeMergedApply({
         result: insertResult({ mutation: "connect", source, png: VALID_UPDATED_PNG }),
@@ -321,7 +321,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
       });
 
       expect(collapsed.ok).toBe(true);
-      if (!collapsed.ok) throw new Error(collapsed.message);
+      if (!collapsed.ok) throw new Error("code" in collapsed ? collapsed.code : collapsed.message);
       expect(collapsed.anchorElementId).toBe("existing-main-line");
       expect(collapsed.bundleId).toBe("existing-bundle");
       expect(collapsed.nextElements.filter(

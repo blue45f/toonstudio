@@ -17,6 +17,7 @@ import { createCanvasImageElement } from "../studio-image-placement";
 import { isEffectivelyLocked } from "../studio-layers";
 import { commitStudioLinked3dPreparedPass, prepareStudioLinked3dLinePass } from "../studio-linked-3d-pass-transaction";
 import { detachStudioLinked3dCorrections, materializeStudioLinked3dLinePassLocator, removeStudioLinked3dRenderLinks, upsertStudioLinked3dRenderLink } from "../studio-linked-3d-render-document";
+import { resolveStudioBg3dLtLayerPlanError } from "../status-i18n/studio-producer-error-i18n-bg3d-lt";
 import { studioShared3dStageEntryAsDocument } from "../studio-shared-3d-stage-collection";
 
 // The host is a mutable runtime bag by design; keep the dynamic seam isolated to this adapter.
@@ -148,7 +149,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         dccSource: bg3dDccSourceRef.current,
       });
       if (!realtimePlan.ok) {
-        setError(realtimePlan.message);
+        setError("code" in realtimePlan ? resolveStudioBg3dLtLayerPlanError(realtimePlan) : realtimePlan.message);
         return false;
       }
       if (!commit([...realtimePlan.nextElements], {
@@ -235,7 +236,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       newElementTemplate: template,
     });
     if (!plan.ok) {
-      setError(plan.message);
+      setError(resolveStudioBg3dLtLayerPlanError(plan));
       return false;
     }
     const detachResolution = planStudioBg3dLtDetachComposite({

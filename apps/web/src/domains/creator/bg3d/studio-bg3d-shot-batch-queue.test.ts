@@ -84,7 +84,7 @@ async function plan(revision = "scene-a") {
       })),
     },
   });
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(result.subcode);
   return result.plan;
 }
 

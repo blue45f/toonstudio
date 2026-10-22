@@ -129,7 +129,7 @@ function exactLtPlan(): StudioBg3dLtLayerPlanSuccess<TestElement> {
     render: separatedRender(),
     targetElementId: "anchor-layer",
   });
-  if (!result.ok) throw new Error(`${result.code}: ${result.message}`);
+  if (!result.ok) throw new Error(result.code);
   return result;
 }
 
@@ -251,7 +251,7 @@ describe("planStudioBg3dEditableCompositeDetach", () => {
         height: 160,
       }),
     });
-    if (!inserted.ok) throw new Error(`${inserted.code}: ${inserted.message}`);
+    if (!inserted.ok) throw new Error(inserted.code);
 
     const result = planStudioBg3dEditableCompositeDetach<TestElement, TestScene>({
       plan: inserted,

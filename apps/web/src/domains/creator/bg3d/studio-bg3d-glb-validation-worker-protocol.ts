@@ -163,12 +163,14 @@ function isMetrics(value: unknown, verifiedByteLength: number): value is StudioB
 }
 
 function isValidationResult(value: unknown): value is StudioBg3dGlbValidationResult {
-  if (!isRecord(value) || typeof value.ok !== "boolean" || !isNonEmptyMessage(value.message)) {
+  if (!isRecord(value) || typeof value.ok !== "boolean") {
     return false;
   }
   if (value.ok === false) {
+    // A4 D4 (R11): 실패 결과는 표시 문구 없이 코드만 운반한다 — 메시지 검증 대신 코드 열거로 검증한다.
     return typeof value.code === "string" && FAILURE_CODES.has(value.code as StudioBg3dGlbFailureCode);
   }
+  if (!isNonEmptyMessage(value.message)) return false;
   if (
     value.code !== "valid"
     || (value.profile !== "mobile" && value.profile !== "desktop")

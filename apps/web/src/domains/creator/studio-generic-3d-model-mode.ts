@@ -8,8 +8,8 @@ import type {
 } from "./bg3d/studio-bg3d-glb-validation";
 import type { StudioBg3dObjWorkerCanonicalResult } from "./bg3d/studio-bg3d-obj-worker-protocol";
 import type { StudioBg3dAttachmentRights } from "./bg3d/studio-bg3d-scene-document";
-import { STUDIO_GENERIC_3D_SOURCE_FORMATS } from "./generic-3d-model/studio-generic-3d-source-formats";
-import type { StudioGeneric3dSourceFormat } from "./generic-3d-model/studio-generic-3d-source-formats";
+import { STUDIO_GENERIC_3D_SOURCE_FORMATS, type StudioGeneric3dSourceFormat } from "./generic-3d-model/studio-generic-3d-source-formats";
+import { resolveStudioBg3dGlbError } from "./status-i18n/studio-producer-error-i18n-glb";
 
 export { STUDIO_GENERIC_3D_SOURCE_FORMATS };
 export type { StudioGeneric3dSourceFormat };
@@ -637,7 +637,7 @@ function glbAdmission(validation: StudioBg3dGlbValidationResult): StudioGeneric3
       canonicalValidation: "blocked",
       profile: null,
       code: validation.code,
-      message: validation.message,
+      message: resolveStudioBg3dGlbError(validation), // A4 D4 (R11): admission.message는 문자열 고정 집계 경계라 여기서 해석(집계자 예외)
       contentHash: null,
       byteSize: null,
     });

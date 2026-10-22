@@ -141,7 +141,7 @@ describe("editable composite + shared Stage detach integration", () => {
       },
       targetElementId: "anchor-a",
     });
-    if (!ltPlan.ok) throw new Error(`${ltPlan.code}: ${ltPlan.message}`);
+    if (!ltPlan.ok) throw new Error(ltPlan.code);
     const detached = planStudioBg3dEditableCompositeDetach<
       TestElement,
       StudioBg3dSceneDocument
