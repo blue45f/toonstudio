@@ -121,7 +121,7 @@ function template(src: string = PNG.main, overrides: Partial<TestImage> = {}): T
 function unwrap(
   result: StudioBg3dLtLayerPlanResult<TestElement>
 ): Extract<StudioBg3dLtLayerPlanResult<TestElement>, { ok: true }> {
-  if (!result.ok) throw new Error(`${result.code}: ${result.message}`);
+  if (!result.ok) throw new Error(result.code);
   return result;
 }
 
@@ -471,7 +471,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
       render: combined(),
       pageLocked: true,
     });
-    expect(pageLocked).toMatchObject({ ok: false, code: "page-locked" });
+    expect(pageLocked).toMatchObject({ ok: false, code: "page-locked.pageLocked" });
 
     const lockedTarget = image({ id: "legacy", src: PNG.combined, locked: true });
     expect(
@@ -481,7 +481,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         targetElementId: "legacy",
         render: combined(),
       })
-    ).toMatchObject({ ok: false, code: "target-locked" });
+    ).toMatchObject({ ok: false, code: "target-locked.layerLocked" });
 
     const legacyInLockedGroup = image({ id: "legacy-grouped", src: PNG.combined, groupId: "locked" });
     expect(
@@ -491,7 +491,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         targetElementId: "legacy-grouped",
         render: combined(),
       })
-    ).toMatchObject({ ok: false, code: "target-locked" });
+    ).toMatchObject({ ok: false, code: "target-locked.groupPngLocked" });
 
     expect(
       planStudioBg3dLtLayers<TestElement, TestScene>({
@@ -500,7 +500,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         targetElementId: "main",
         render: combined(),
       })
-    ).toMatchObject({ ok: false, code: "bundle-group-locked" });
+    ).toMatchObject({ ok: false, code: "bundle-group-locked.groupLocked" });
   });
 
   it("rejects duplicate roles, mismatched dimensions, invalid URLs, and missing scene", () => {
@@ -511,7 +511,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         groups: [],
         render: duplicateRole,
       })
-    ).toMatchObject({ ok: false, code: "duplicate-render-role" });
+    ).toMatchObject({ ok: false, code: "duplicate-render-role.duplicateRole" });
 
     const mismatch: StudioBg3dLtRenderOutput<TestScene> = {
       kind: "separated",
@@ -522,7 +522,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
     };
     expect(
       planStudioBg3dLtLayers<TestElement, TestScene>({ elements: [], groups: [], render: mismatch })
-    ).toMatchObject({ ok: false, code: "mismatched-layer-dimensions" });
+    ).toMatchObject({ ok: false, code: "mismatched-layer-dimensions.layerSizeMismatch" });
 
     const invalidUrl = {
       kind: "combined",
@@ -533,7 +533,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
     } as const;
     expect(
       planStudioBg3dLtLayers<TestElement, TestScene>({ elements: [], groups: [], render: invalidUrl })
-    ).toMatchObject({ ok: false, code: "invalid-png-data-url" });
+    ).toMatchObject({ ok: false, code: "invalid-png-data-url.combinedPng" });
 
     expect(
       planStudioBg3dLtLayers<TestElement, TestScene>({
@@ -541,7 +541,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         groups: [],
         render: { ...combined(), bg3dScene: null } as unknown as StudioBg3dLtRenderOutput<TestScene>,
       })
-    ).toMatchObject({ ok: false, code: "missing-scene" });
+    ).toMatchObject({ ok: false, code: "missing-scene.missingScene" });
   });
 
   it("rejects duplicate bundle roles, geometry drift, noncontiguous runs, and mixed groups", () => {
@@ -556,7 +556,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         targetElementId: "main-a",
         render: combined(),
       })
-    ).toMatchObject({ ok: false, code: "duplicate-bundle-role" });
+    ).toMatchObject({ ok: false, code: "duplicate-bundle-role.duplicateRole" });
 
     const geometryDrift = [
       bundleImage("tone", "tone"),
@@ -569,7 +569,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         targetElementId: "main",
         render: combined(),
       })
-    ).toMatchObject({ ok: false, code: "inconsistent-bundle-geometry" });
+    ).toMatchObject({ ok: false, code: "inconsistent-bundle-geometry.positionOrSize" });
 
     const split = [
       bundleImage("tone", "tone"),
@@ -583,7 +583,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         targetElementId: "main",
         render: combined(),
       })
-    ).toMatchObject({ ok: false, code: "noncontiguous-bundle" });
+    ).toMatchObject({ ok: false, code: "noncontiguous-bundle.noncontiguous" });
 
     const mixed = [bundleImage("main-line", "main"), other("intruder", "text", "group-lt")];
     expect(
@@ -593,7 +593,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         targetElementId: "main",
         render: combined(),
       })
-    ).toMatchObject({ ok: false, code: "mixed-bundle-group" });
+    ).toMatchObject({ ok: false, code: "mixed-bundle-group.mixedGroup" });
   });
 
   it("requires collision-free allocations and a render-matched template only when creating", () => {
@@ -606,7 +606,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
     } satisfies Parameters<typeof planStudioBg3dLtLayers<TestElement, TestScene>>[0];
     expect(planStudioBg3dLtLayers<TestElement, TestScene>(baseInput)).toMatchObject({
       ok: false,
-      code: "allocation-collision",
+      code: "allocation-collision.existingElement",
     });
 
     expect(
@@ -616,7 +616,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         render: separated(),
         allocations: allocations(),
       })
-    ).toMatchObject({ ok: false, code: "missing-element-template" });
+    ).toMatchObject({ ok: false, code: "missing-element-template.missingTemplate" });
 
     expect(
       planStudioBg3dLtLayers<TestElement, TestScene>({
@@ -626,7 +626,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         allocations: allocations(),
         newElementTemplate: template(PNG.tone),
       })
-    ).toMatchObject({ ok: false, code: "template-source-mismatch" });
+    ).toMatchObject({ ok: false, code: "template-source-mismatch.sourceMismatch" });
 
     expect(
       planStudioBg3dLtLayers<TestElement, TestScene>({
@@ -636,7 +636,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
         allocations: allocations(),
         newElementTemplate: template(PNG.main, { height: 250 }),
       })
-    ).toMatchObject({ ok: false, code: "template-aspect-mismatch" });
+    ).toMatchObject({ ok: false, code: "template-aspect-mismatch.aspectMismatch" });
   });
 
   it("rejects malformed legacy fragments while accepting canonical legacy PNGs", () => {
@@ -649,7 +649,7 @@ describe("planStudioBg3dLtLayers fail-closed validation", () => {
           render: combined(),
           allocations: allocations(),
         })
-      ).toMatchObject({ ok: false, code: "invalid-png-data-url" });
+      ).toMatchObject({ ok: false, code: "invalid-png-data-url.existingPngOrFragment" });
     }
   });
 
