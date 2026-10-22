@@ -13,22 +13,11 @@
 
 import { modelRawInput } from "@toonstudio/studio-brush-platform";
 
-import {
-  executeStudioVrmSurfaceBrushStroke,
-  StudioVrmSurfaceBrushBridgeError,
-} from "./studio-vrm-surface-brush-provider";
+import { executeStudioVrmSurfaceBrushStroke, StudioVrmSurfaceBrushBridgeError } from "./studio-vrm-surface-brush-provider";
 
-import type {
-  StudioVrmTexturePaintRayHit,
-  StudioVrmTexturePaintRuntime,
-} from "./studio-vrm-texture-paint-runtime";
+import type { StudioVrmTexturePaintRayHit, StudioVrmTexturePaintRuntime } from "./studio-vrm-texture-paint-runtime";
 import type { SurfaceBrushExecutionResult } from "../../../../../../packages/studio-brush-platform/src/brush-composition";
-import type {
-  BrushProgramIR,
-  DeviceCalibrationIR,
-  RawInputSampleIR,
-  StrokeIR,
-} from "@toonstudio/studio-project-model";
+import type { BrushProgramIR, DeviceCalibrationIR, RawInputSampleIR, StrokeIR } from "@toonstudio/studio-project-model";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { resolveStudioVrmPaintRuntimeError } from "../status-i18n/studio-producer-error-i18n-vrm-paint";
 
@@ -61,13 +50,7 @@ export const STUDIO_VRM_SURFACE_PAINT_CAPABILITIES = Object.freeze({
 } as const);
 
 export type StudioVrmSurfacePaintToolStatus =
-  | "ready"
-  | "collecting"
-  | "committing"
-  | "cancelling"
-  | "unavailable"
-  | "rejected"
-  | "error";
+  | "ready" | "collecting" | "committing" | "cancelling" | "unavailable" | "rejected" | "error";
 
 export type StudioVrmSurfacePaintToolErrorCode =
   | "busy"

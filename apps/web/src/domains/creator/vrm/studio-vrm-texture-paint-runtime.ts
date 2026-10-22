@@ -1,11 +1,7 @@
 import { StudioVrmPaintMaterialView, type StudioVrmPaintMaterialViewSnapshot } from "./studio-vrm-paint-material-view";
 import * as THREE from "three";
 
-import {
-  runStudioVrmTextureFillWorker,
-  type StudioVrmTextureFillWorkerClientOptions,
-  type StudioVrmTextureFillWorkerClientResult,
-} from "./studio-vrm-texture-fill-worker-client";
+import { runStudioVrmTextureFillWorker, type StudioVrmTextureFillWorkerClientOptions, type StudioVrmTextureFillWorkerClientResult } from "./studio-vrm-texture-fill-worker-client";
 import {
   getCachedStudioVrmTextureGeometryIndex,
   inspectStudioVrmTextureGeometryAdmission,
@@ -30,17 +26,8 @@ import {
   type StudioVrmTexturePaintApplyOptions,
   type StudioVrmTexturePaintOp,
 } from "./studio-vrm-texture-paint-ops";
-import {
-  createStudioVrmTextureStrokeWalker,
-  type StudioVrmTextureStrokeWalker,
-} from "./studio-vrm-texture-stroke-walker";
-import {
-  applyStudioVrmTextureUndoEntry,
-  createStudioVrmTextureUndoRecorder,
-  studioVrmTextureUndoEntryBytes,
-  type StudioVrmTextureUndoEntry,
-  type StudioVrmTextureUndoRecorder,
-} from "./studio-vrm-texture-undo";
+import { createStudioVrmTextureStrokeWalker, type StudioVrmTextureStrokeWalker } from "./studio-vrm-texture-stroke-walker";
+import { applyStudioVrmTextureUndoEntry, createStudioVrmTextureUndoRecorder, studioVrmTextureUndoEntryBytes, type StudioVrmTextureUndoEntry, type StudioVrmTextureUndoRecorder } from "./studio-vrm-texture-undo";
 import {
   isStudioVrmTextureSize,
   resolveStudioVrmTexelIndex,

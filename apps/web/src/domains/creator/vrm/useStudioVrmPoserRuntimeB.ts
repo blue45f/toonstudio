@@ -17,23 +17,15 @@ import {
   parseAvatarForgeState,
   serializeAvatarForgeState,
 } from "./studio-vrm-avatar-forge";
-import {
-  solveStudioVrmFullBodyIk,
-} from "./studio-vrm-full-body-ik";
+import { solveStudioVrmFullBodyIk } from "./studio-vrm-full-body-ik";
 import {
   canCommitStudioVrmIkResult,
   cloneStudioVrmIkConstraints,
   studioVrmSceneLocalPointToWorld,
 } from "./studio-vrm-ik-constraints";
-import {
-  buildStudioVrmPersistentIkSignature,
-} from "./studio-vrm-persistent-ik-signature";
-import {
-  cloneStudioVrmPoseTranslations,
-} from "./studio-vrm-pose-translations";
-import {
-  STUDIO_VRM_IK_NOT_CONVERGED_STATUS,
-} from "./studio-vrm-poser-catalogs";
+import { buildStudioVrmPersistentIkSignature } from "./studio-vrm-persistent-ik-signature";
+import { cloneStudioVrmPoseTranslations } from "./studio-vrm-pose-translations";
+import { STUDIO_VRM_IK_NOT_CONVERGED_STATUS } from "./studio-vrm-poser-catalogs";
 import {
   applyStudioVrmRotationPose,
   extractStudioVrmFingerRotations,
@@ -44,23 +36,15 @@ import {
   applyPoserVisualState,
   type FullVrmState,
 } from "./studio-vrm-poser-utils";
-import {
-  serializeVrmProps,
-} from "./studio-vrm-props";
-import {
-  resolveStudioVrmFrameLoop,
-} from "./studio-vrm-render-policy";
-import {
-  serializeSceneProps,
-} from "./studio-vrm-scene-props";
+import { serializeVrmProps } from "./studio-vrm-props";
+import { resolveStudioVrmFrameLoop } from "./studio-vrm-render-policy";
+import { serializeSceneProps } from "./studio-vrm-scene-props";
 import {
   commitStudioVrmFullStateHistoryTransaction,
   resetStudioVrmFullStateHistory,
   stepStudioVrmFullStateHistory,
 } from "./studio-vrm-state-history";
-import {
-  STUDIO_VRM_USER_IK_CHAINS,
-} from "./studio-vrm-user-ik";
+import { STUDIO_VRM_USER_IK_CHAINS } from "./studio-vrm-user-ik";
 import {
   serializeWardrobe,
 } from "./studio-vrm-wardrobe";
