@@ -38,13 +38,13 @@ const REFERENCE_LOCALE = "en";
  * 로케일은 영어 원문 폴백을 받는다(I18N_GUIDE §3) — 번역된 값은 그대로여서 ko·en 을 뺀 73개 로케일의
  * 비율이 0.40~0.44 로 내려가 모두 하한(0.5) 아래다. 이 상태를 숨기지 않고 목록으로 고정한다.
  * 목록은 줄어들기만 해야 한다. 번역이 채워져 하한을 넘은 로케일은 목록에서 빼야 테스트가 통과하고(`ja`·`zh`·`de`·`fr`·
- * `zh-hant`·`es`·`gu`·`hi`·`ml` 은 검수 번역 반영으로 하한을 넘어 2026-10-22 에 뺐다),
+ * `zh-hant`·`es`·`gu`·`hi`·`ml`·`mr` 은 검수 번역 반영으로 하한을 넘어 2026-10-22 에 뺐다),
  * 새 로케일이나 ko·en 이 하한 아래로 내려가면 목록에 더하지 말고 원인을 고친다.
  */
 const BELOW_TRANSLATED_FLOOR: readonly string[] = [
   "af", "am", "ar", "as", "az", "be", "bg", "bn", "bs", "ca", "cs", "da", "el",
   "et", "eu", "fa", "fi", "fil", "gl", "he", "hr", "hu", "hy", "id", "is",
-  "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "mn", "mr", "ms",
+  "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "mn", "ms",
   "my", "ne", "nl", "no", "or", "pa", "pl", "pt", "ro", "ru", "si", "sk", "sl", "sq", "sr",
   "sv", "sw", "ta", "te", "th", "tr", "uk", "ur", "uz", "vi", "zu",
 ];

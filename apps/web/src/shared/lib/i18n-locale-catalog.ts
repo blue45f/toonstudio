@@ -138,7 +138,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "mk": 0.2592,
   "ml": 0.9819,
   "mn": 0.2569,
-  "mr": 0.2596,
+  "mr": 0.9819,
   "ms": 0.2587,
   "my": 0.2582,
   "ne": 0.2592,
