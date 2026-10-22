@@ -193,6 +193,8 @@ describe("ClaudeCommandPlanDialog", () => {
 
       expect((screen.getByLabelText("요청") as HTMLTextAreaElement).value).toBe("브러시 도구로 바꿔 줘");
       expect(document.querySelector("[data-claude-examples]")).toBeNull();
+      // 눌렀던 예시 칩이 사라져도 포커스가 문서로 떨어지지 않고 입력칸으로 간다.
+      expect(document.activeElement).toBe(screen.getByLabelText("요청"));
     });
 
     it("보낼 명령 수와 비용 상한을 요청 전에 보여 주고, 요청이 비면 만들 수 없다고 이유를 말한다", () => {
@@ -204,8 +206,12 @@ describe("ClaudeCommandPlanDialog", () => {
       expect(screen.getByText("사용할 수 있는 명령 3개를 보냈어요.")).toBeTruthy();
       const run = screen.getByRole("button", { name: MAKE }) as HTMLButtonElement;
       expect(run.disabled).toBe(true);
-      expect(run.getAttribute("aria-describedby")).toBe("claude-plan-need-hint");
-      expect(screen.getByText("요청을 먼저 입력해 주세요.")).toBeTruthy();
+      const hint = screen.getByText("요청을 먼저 입력해 주세요.");
+      expect(hint.getAttribute("data-claude-need-hint")).toBe("true");
+      expect(run.getAttribute("aria-describedby")).toBe(hint.id);
+      // 요청이 없으면 비용 상한을 계산할 수 없다. "단가를 모른다"는 경고가 아니라 "입력하면 계산해요"로 알린다.
+      expect(document.querySelector("[data-claude-cap-chip]")?.textContent).toBe("입력하면 계산해요");
+      expect(document.querySelector("[data-claude-footer-cap]")).toBeNull();
 
       typeRequest("격자");
       expect(run.disabled).toBe(false);
@@ -267,7 +273,8 @@ describe("ClaudeCommandPlanDialog", () => {
 
       expect(screen.getByRole("button", { name: "선택한 2단계 실행" })).toBeTruthy();
       expect(screen.getByRole("button", { name: "계획 다시 만들기 (요금 발생)" })).toBeTruthy();
-      expect(document.querySelector("[data-claude-shortcut-hint]")?.textContent).toContain("선택한 단계 실행");
+      // 단계를 실행하는 단축키는 없다 — 실행은 단추를 직접 눌러야 한다.
+      expect(document.querySelector("[data-claude-shortcut-hint]")).toBeNull();
     });
 
     it("선택한 단계만 순서대로 실행하고 결과와 되돌리기 안내를 보여 준다", async () => {
@@ -290,7 +297,7 @@ describe("ClaudeCommandPlanDialog", () => {
       expect(within(results).getByText("되돌리기(Ctrl+Z / ⌘+Z)로 돌아가는 명령도 있지만, 보기·도구 설정은 직접 바꿔야 할 수 있어요.")).toBeTruthy();
     });
 
-    it("Ctrl+Enter는 계획이 없으면 만들고, 계획이 있으면 실행한다", async () => {
+    it("Ctrl+Enter는 계획을 만들 때만 쓰고, 계획이 나온 뒤에는 단계를 실행하지도 다시 만들지도 않는다", async () => {
       connectClaude();
       const executors = installBindings();
       renderDialog();
@@ -303,10 +310,33 @@ describe("ClaudeCommandPlanDialog", () => {
       expect(executors.fit).not.toHaveBeenCalled();
 
       fireEvent.keyDown(dialog, { key: "Enter", ctrlKey: true });
+      fireEvent.keyDown(dialog, { key: "Enter", metaKey: true });
+      await act(async () => { await Promise.resolve(); });
+      expect(executors.fit).not.toHaveBeenCalled();
+      expect(executors.grid).not.toHaveBeenCalled();
+      expect(runCommandPlan).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText("2단계를 실행했어요.")).toBeNull();
+
+      fireEvent.click(screen.getByRole("button", { name: "선택한 2단계 실행" }));
       await waitFor(() => { expect(screen.getByText("2단계를 실행했어요.")).toBeTruthy(); });
       expect(executors.fit).toHaveBeenCalledTimes(1);
       expect(executors.grid).toHaveBeenCalledTimes(1);
+    });
+
+    it("예산을 넘어도 진행하겠다고 고른 요청은 그 사실을 실행기에 넘긴다", async () => {
+      connectClaude();
+      installBindings();
+      setClaudeBudgetLimit(0.01);
+      renderDialog();
+      typeRequest("격자");
+      fireEvent.click(screen.getByLabelText("이번 한 번만 예산을 넘어도 진행해요"));
+      fireEvent.click(screen.getByRole("button", { name: MAKE }));
+      await screen.findByText("제안한 단계");
+
       expect(runCommandPlan).toHaveBeenCalledTimes(1);
+      expect(runCommandPlan.mock.calls[0]?.[3]).toMatchObject({ budgetOverride: true });
+      // 동의는 한 번만 쓴다. 다시 만들려면 다시 확인해야 한다.
+      expect((screen.getByRole("button", { name: /계획 다시 만들기/ }) as HTMLButtonElement).disabled).toBe(true);
     });
 
     it("요청을 고치면 이전 계획임을 알리고 주 버튼을 다시 만들기로 돌려놓는다", async () => {
@@ -492,6 +522,26 @@ describe("ClaudeCommandPlanDialog", () => {
       fireEvent.click(screen.getByRole("button", { name: "축소 단축키는요?" }));
 
       expect((screen.getByLabelText("질문") as HTMLTextAreaElement).value).toBe("축소 단축키는요?");
+      // 질문이 채워져도 저절로 보내지 않고(요금), 눌렀던 칩 대신 입력칸에 포커스를 둔다.
+      expect(runCommandAnswer).toHaveBeenCalledTimes(1);
+      expect(document.activeElement).toBe(screen.getByLabelText("질문"));
+    });
+
+    it("방식 칩은 방향키로 옮기며 고른다", () => {
+      connectClaude();
+      installBindings();
+      renderDialog();
+
+      const doRadio = screen.getByRole("radio", { name: "실행 계획" });
+      expect(doRadio.getAttribute("aria-checked")).toBe("true");
+      doRadio.focus();
+      fireEvent.keyDown(doRadio, { key: "ArrowRight" });
+
+      expect(screen.getByRole("radio", { name: "방법 알려 줘" }).getAttribute("aria-checked")).toBe("true");
+      expect(screen.getByLabelText("질문")).toBeTruthy();
+      expect(document.activeElement).toBe(screen.getByRole("radio", { name: "방법 알려 줘" }));
+      // 선택된 칩만 탭 순서에 들어 있다.
+      expect(screen.getByRole("radio", { name: "실행 계획" }).getAttribute("tabindex")).toBe("-1");
     });
   });
 
@@ -562,11 +612,17 @@ describe("ClaudeCommandPlanDialog", () => {
 
       typeRequest("격자");
       fireEvent.click(screen.getByRole("button", { name: MAKE }));
-      expect(await screen.findByText(/계획을 만드는 중이에요.*0초 경과/)).toBeTruthy();
+      const status = await waitFor(() => {
+        const node = document.querySelector("[data-claude-task-status]") as HTMLElement;
+        expect(node.textContent).toMatch(/계획을 만드는 중이에요\. · 0초 경과/);
+        return node;
+      });
+      // 매초 바뀌는 경과 시간은 화면에만 보이고, 안내(status) 영역에는 문장만 들어 있다.
+      expect(status.querySelector("[role=status]")?.textContent).toBe("계획을 만드는 중이에요.");
       fireEvent.click(screen.getByRole("button", { name: "중단" }));
 
       await waitFor(() => { expect(signal?.aborted).toBe(true); });
-      expect(await screen.findByText("계획 만들기를 중단했어요. 필요하면 다시 시도해 주세요.")).toBeTruthy();
+      expect(await screen.findByText("계획 만들기를 중단했어요. 이미 처리된 부분은 요금이 청구됐을 수 있어요. 필요하면 다시 시도해 주세요.")).toBeTruthy();
       expect(screen.queryByRole("alert")).toBeNull();
       expect(screen.queryByText("제안한 단계")).toBeNull();
     });

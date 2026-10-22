@@ -6,13 +6,15 @@
  * - **제안과 실행을 나눈다.** Claude는 명령 id 순서만 돌려주고, 실행은 사용자가 단계를 고르고 눌렀을 때만 한다.
  * - 후보는 이미 검색에서 직접 실행해도 된다고 검토된 라이브 바인딩뿐이다. 새 실행기·새 허용 정책은 만들지 않는다.
  *   "알려 줘"는 카탈로그 전체를 근거로 답하되, 실행 버튼은 라이브 바인딩이 있는 명령에만 보인다.
+ * - **Ctrl/⌘+Enter는 계획·답변을 만드는 데만 쓴다.** 스튜디오를 바꾸는 "선택한 단계 실행"은 단추를 직접 눌러야 하고, 계획이 준비된 뒤에는
+ *   단축키가 아무것도 하지 않는다(습관적으로 누른 키가 요금도 스튜디오 변경도 일으키지 않게).
  * - 사용자 결제 키로 명령 목록을 Anthropic에 직접 보내므로, 실행 전에 처리 경로·전송 내용·비용 상한을 보여 주고 세션 예산을 지킨다.
  * - 배경은 투명하게 두어 실행하는 동안 캔버스에서 결과를 볼 수 있다. 배경 조작은 막아 둔다(실행 중 오조작 방지).
  */
 import "@/shared/ai/claude/claude-assist-i18n";
 
 import { ListChecks, LoaderCircle, RefreshCw, Sparkles, Square } from "lucide-react";
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Link } from "react-router-dom";
 
 import { CLAUDE_BUTTON, CLAUDE_PRIMARY_BUTTON } from "@/shared/ai/claude/claude-ui";
@@ -24,7 +26,6 @@ import { useClaudeBudgetGuard } from "@/shared/ai/claude/use-claude-budget-guard
 import { useClaudeRoute } from "@/shared/ai/claude/use-claude-route";
 import { useClaudeUsageText } from "@/shared/ai/claude/use-claude-usage-text";
 import { useI18n, useT } from "@/shared/lib/i18n";
-import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_COMMAND_CATALOG } from "../../studio-command-catalog";
 import {
@@ -47,8 +48,10 @@ import { ClaudeCommandAnswerResult } from "./ClaudeCommandAnswerResult";
 import { ClaudeCommandPlanResult } from "./ClaudeCommandPlanResult";
 import { ClaudeCommandRequestPanel, type ClaudeCommandMode } from "./ClaudeCommandRequestPanel";
 import { ClaudeDialogFrame, ClaudeShortcutHint } from "./ClaudeDialogFrame";
+import { ClaudeTaskStatus } from "./ClaudeTaskStatus";
 import { useClaudeTask } from "./use-claude-task";
 import { useRevealOnChange } from "./use-reveal-on-change";
+import { useRunFocus } from "./use-run-focus";
 
 type Outcome =
   | { readonly kind: "plan"; readonly value: CommandPlanRunResult; readonly request: string }
@@ -88,6 +91,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
   const task = useClaudeTask();
   const execTask = useClaudeTask();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hintId = `${useId()}-need-hint`;
 
   const [mode, setMode] = useState<ClaudeCommandMode>(initialMode);
   const [request, setRequest] = useState(initialRequest);
@@ -103,16 +107,18 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
   const resultRef = useRevealOnChange<HTMLDivElement>(finishedRuns);
 
   const busy = task.running || execTask.running;
+  const { runRef, stopRef } = useRunFocus(busy);
   const itemCount = mode === "do" ? usableCount : knowledge.length;
   const effectiveModel = model || route?.model || "";
   const trimmed = normalize(request);
 
+  // 보낼 요청이 아직 없으면 계산할 수 없다(undefined). "단가를 모른다"(null)와 구분해야 입력 전에 가짜 경고가 뜨지 않는다.
   const capUsd = useMemo(() => {
-    if (!effectiveModel) return null;
+    if (!effectiveModel || trimmed.length === 0 || itemCount === 0) return undefined;
     return mode === "do"
       ? estimateCommandPlanCostCapUsd(effectiveModel, trimmed, candidates)
       : estimateCommandAnswerCostCapUsd(effectiveModel, trimmed, knowledge);
-  }, [candidates, effectiveModel, knowledge, mode, trimmed]);
+  }, [candidates, effectiveModel, itemCount, knowledge, mode, trimmed]);
   const guard = useClaudeBudgetGuard(capUsd);
 
   const planFresh = outcome?.kind === "plan" && mode === "do" && outcome.request === trimmed;
@@ -132,13 +138,16 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
     const claudeRoute = resolveClaudeRoute();
     const asked = trimmed;
     const asking = mode;
+    // 동의는 이 요청에 한 번만 쓴다. 보내기 전에 값을 읽어 전송 계층의 예산 판정에 넘기고 동의를 거둔다.
+    const budgetOverride = guard.overridden;
     guard.consumeOverride();
     setNotice(null);
     const result = await task.start(async (signal): Promise<Outcome> => {
       if (!claudeRoute) throw new Error(t("claudeAssist.common.needConnection"));
+      const options = { model: model || undefined, signal, budgetOverride };
       return asking === "do"
-        ? { kind: "plan", value: await runCommandPlan(claudeRoute, asked, candidates, { model: model || undefined, signal }), request: asked }
-        : { kind: "answer", value: await runCommandAnswer(claudeRoute, asked, knowledge, { model: model || undefined, signal }), request: asked };
+        ? { kind: "plan", value: await runCommandPlan(claudeRoute, asked, candidates, options), request: asked }
+        : { kind: "answer", value: await runCommandAnswer(claudeRoute, asked, knowledge, options), request: asked };
     });
     if (!result) return;
     setOutcome(result);
@@ -150,7 +159,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
   };
 
   const runSteps = async () => {
-    if (outcome?.kind !== "plan") return;
+    if (busy || outcome?.kind !== "plan") return;
     const steps = outcome.value.plan.steps.filter((step) => selected.has(step.commandId));
     if (steps.length === 0) {
       setNotice(t("claudeAssist.plan.noneSelected"));
@@ -167,6 +176,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
   };
 
   const runNow = async (commandId: string) => {
+    if (busy) return;
     const label = knowledge.find((item) => item.commandId === commandId)?.label ?? commandId;
     setNotice(null);
     const finished = await execTask.start((signal) => executeCommandPlanSteps(
@@ -214,6 +224,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
           ? t("claudeAssist.art.needBudget")
           : null;
 
+  const transferText = t(mode === "do" ? "claudeAssist.plan.preflightTransferDo" : "claudeAssist.plan.preflightTransferAsk", { count: itemCount });
   const showPlanResult = outcome?.kind === "plan" && mode === "do";
   const showAnswerResult = outcome?.kind === "answer" && mode === "explain";
   const primary = readyToRun ? "run" : "ask";
@@ -221,16 +232,14 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
     ? (outcome?.kind === "plan" ? t("claudeAssist.plan.remake") : t("claudeAssist.plan.make"))
     : (outcome?.kind === "answer" ? t("claudeAssist.plan.askAgain") : t("claudeAssist.plan.ask"));
 
-  const primaryAction = () => {
-    if (primary === "run") void runSteps();
-    else void ask();
-  };
+  // 단축키는 계획·답변 만들기에만 쓴다. 계획이 준비돼 주 버튼이 "실행"인 동안에는 아무것도 하지 않는다.
+  const shortcutAsk = primary === "ask" ? () => void ask() : undefined;
 
   const footer = (
     <div className="flex flex-wrap items-center gap-3">
       {primary === "run" ? (
         <>
-          <button type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={busy || selected.size === 0} onClick={() => void runSteps()}>
+          <button ref={runRef} type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={busy || selected.size === 0} onClick={() => void runSteps()}>
             <Sparkles size={16} aria-hidden />
             {t("claudeAssist.plan.runSelectedCount", { count: selected.size })}
           </button>
@@ -240,25 +249,25 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
           </button>
         </>
       ) : (
-        <button type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={!paidReady} aria-describedby={needHint ? "claude-plan-need-hint" : undefined} onClick={() => void ask()}>
+        <button ref={runRef} type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={!paidReady} aria-describedby={needHint ? hintId : undefined} onClick={() => void ask()}>
           {task.running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <Sparkles size={16} aria-hidden />}
           {askLabel}
         </button>
       )}
       {busy ? (
-        <button type="button" className={CLAUDE_BUTTON} onClick={stop}>
+        <button ref={stopRef} type="button" className={CLAUDE_BUTTON} onClick={stop}>
           <Square size={14} aria-hidden />
           {t("claudeAssist.common.stop")}
         </button>
       ) : null}
-      {capUsd !== null && trimmed.length > 0 ? (
+      {typeof capUsd === "number" ? (
         <span className="text-xs font-semibold text-fg-2" data-claude-footer-cap="true">
           {t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) })}
         </span>
       ) : null}
       <span className="ml-auto flex items-center gap-3">
-        {needHint ? <span id="claude-plan-need-hint" className="text-xs text-fg-3">{needHint}</span> : null}
-        <ClaudeShortcutHint action={primary === "run" ? t("claudeAssist.plan.shortcutRun") : t("claudeAssist.common.shortcutRun")} />
+        {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
+        {shortcutAsk ? <ClaudeShortcutHint action={t("claudeAssist.common.shortcutRun")} /> : null}
       </span>
     </div>
   );
@@ -272,7 +281,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
       title={t("claudeAssist.plan.title")}
       description={t("claudeAssist.plan.description")}
       onClose={close}
-      onPrimaryShortcut={primaryAction}
+      onPrimaryShortcut={shortcutAsk}
       footer={footer}
     >
       <div className="space-y-4">
@@ -308,20 +317,21 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
           model={effectiveModel}
           capUsd={capUsd}
           guard={guard}
+          summary={transferText}
           rows={[
-            { label: t("claudeAssist.preflight.transfer"), value: t(mode === "do" ? "claudeAssist.plan.preflightTransferDo" : "claudeAssist.plan.preflightTransferAsk", { count: itemCount }) },
+            { label: t("claudeAssist.preflight.transfer"), value: transferText },
             { label: t("claudeAssist.preflight.time"), value: t("claudeAssist.plan.preflightTime") },
             { label: t("claudeAssist.preflight.output"), value: t(mode === "do" ? "claudeAssist.plan.preflightOutputDo" : "claudeAssist.plan.preflightOutputAsk") },
             { label: t("claudeAssist.preflight.protection"), value: t(mode === "do" ? "claudeAssist.plan.preflightProtectionDo" : "claudeAssist.plan.preflightProtectionAsk") },
           ]}
         />
 
-        <div role="status" aria-live="polite" className={cn("min-h-5 text-sm text-fg-2", busy && "font-semibold")}>
-          {task.running ? `${t(mode === "do" ? "claudeAssist.plan.planning" : "claudeAssist.plan.answering")} · ${t("claudeAssist.common.elapsed", { seconds: task.elapsedSeconds })}` : null}
-          {execTask.running ? t("claudeAssist.plan.running") : null}
-          {task.state.status === "stopped" ? t("claudeAssist.plan.stopped") : null}
-          {!busy && task.state.status !== "stopped" ? notice : null}
-        </div>
+        <ClaudeTaskStatus
+          running={busy}
+          elapsedSeconds={execTask.running ? execTask.elapsedSeconds : task.elapsedSeconds}
+          runningText={execTask.running ? t("claudeAssist.plan.running") : t(mode === "do" ? "claudeAssist.plan.planning" : "claudeAssist.plan.answering")}
+          message={task.state.status === "stopped" ? t("claudeAssist.plan.stopped") : notice}
+        />
         {task.state.status === "error" ? (
           <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
             {t("claudeAssist.plan.error", { message: task.state.message })}
@@ -354,7 +364,10 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
                 onRunNow={(commandId) => void runNow(commandId)}
                 runResults={answerResults}
                 busy={busy}
-                onFollowUp={setRequest}
+                onFollowUp={(question) => {
+                  setRequest(question);
+                  textareaRef.current?.focus({ preventScroll: true });
+                }}
                 usageText={usageOf(outcome.value)}
               />
             ) : null}

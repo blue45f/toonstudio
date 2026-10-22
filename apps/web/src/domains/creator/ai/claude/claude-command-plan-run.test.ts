@@ -46,7 +46,30 @@ describe("runCommandPlan", () => {
     const [route, params, , options] = claudeParse.mock.calls[0] ?? [];
     expect(route).toBe(ROUTE);
     expect(params.model).toBe("claude-opus-5-5");
-    expect(options).toEqual({ signal: undefined });
+    // 실행 전 확인에 보인 비용 상한과 같은 값이 전송 계층의 예산 판정으로 넘어간다.
+    expect(options).toEqual({
+      signal: undefined,
+      capUsd: estimateCommandPlanCostCapUsd("claude-opus-5-5", "격자를 켜 줘", CANDIDATES),
+      budgetOverride: undefined,
+    });
+    expect(options.capUsd).toBeGreaterThan(0);
+  });
+
+  it("예산을 넘어도 진행하겠다고 고른 요청만 판정 건너뛰기를 알린다", async () => {
+    claudeParse.mockResolvedValueOnce(reply({ intent: "", steps: [], questions: [] }));
+
+    await runCommandPlan(ROUTE, "격자", CANDIDATES, { budgetOverride: true });
+
+    const [, , , options] = claudeParse.mock.calls[0] ?? [];
+    expect(options.budgetOverride).toBe(true);
+  });
+
+  it("같은 질문을 되풀이해도 한 번만 남긴다", async () => {
+    claudeParse.mockResolvedValueOnce(reply({ intent: "x", steps: [], questions: ["무엇을 할까요?", "무엇을  할까요?", "어느 페이지인가요?"] }));
+
+    const result = await runCommandPlan(ROUTE, "뭔가", CANDIDATES);
+
+    expect(result.plan.questions).toEqual(["무엇을 할까요?", "어느 페이지인가요?"]);
   });
 
   it("사용량과 추정 비용을 캐시 읽기까지 합쳐 돌려준다", async () => {
@@ -122,7 +145,7 @@ describe("runCommandAnswer", () => {
       followUps: ["내보내기는요?"],
     }));
 
-    const result = await runCommandAnswer(ROUTE, "저장 단축키가 뭐야?", KNOWLEDGE);
+    const result = await runCommandAnswer(ROUTE, "저장 단축키가 뭐야?", KNOWLEDGE, { budgetOverride: true });
 
     expect(result.answer.commands).toEqual([{ commandId: "file.save", label: "저장", shortcut: "⌘S", why: "저장해요", executable: false }]);
     expect(result.answer.rejected).toBe(1);
@@ -130,7 +153,11 @@ describe("runCommandAnswer", () => {
     const [route, params, , options] = claudeParse.mock.calls[0] ?? [];
     expect(route).toBe(ROUTE);
     expect(params.output_config).toEqual({ effort: "low" });
-    expect(options).toEqual({ signal: undefined });
+    expect(options).toEqual({
+      signal: undefined,
+      capUsd: estimateCommandAnswerCostCapUsd("claude-opus-5-5", "저장 단축키가 뭐야?", KNOWLEDGE),
+      budgetOverride: true,
+    });
     expect(result.usage.cacheReadTokens).toBe(4_000);
   });
 

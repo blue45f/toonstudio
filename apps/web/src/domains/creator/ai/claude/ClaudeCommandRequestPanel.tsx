@@ -9,6 +9,7 @@ import { cn } from "@/shared/lib/utils";
 import { studioSegmentChipClass } from "../../studio-panel-ui";
 
 import { COMMAND_PLAN_LIMITS } from "./claude-command-plan";
+import { ClaudeChoiceChips } from "./ClaudeChoiceChips";
 
 export type ClaudeCommandMode = "do" | "explain";
 
@@ -46,27 +47,28 @@ export function ClaudeCommandRequestPanel({
   const idBase = useId();
   const requestId = `${idBase}-request`;
   const modeNoteId = `${idBase}-mode-note`;
+  const modeOptions = [
+    { value: "do" as const, label: t("claudeAssist.plan.modeDo") },
+    { value: "explain" as const, label: t("claudeAssist.plan.modeExplain") },
+  ];
+
+  // 예시·최근 요청을 고르면 그 칩(또는 목록)이 사라지므로 포커스를 입력칸으로 옮겨 키보드 사용자가 바로 고치거나 보낼 수 있게 한다.
+  const fill = (value: string) => {
+    onRequest(value);
+    textareaRef?.current?.focus({ preventScroll: true });
+  };
 
   return (
     <div className="space-y-3">
-      <div role="radiogroup" aria-label={t("claudeAssist.plan.modeLabel")} aria-describedby={modeNoteId} className="flex flex-wrap gap-2">
-        {([
-          ["do", "claudeAssist.plan.modeDo"],
-          ["explain", "claudeAssist.plan.modeExplain"],
-        ] as const).map(([value, key]) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={mode === value}
-            disabled={disabled}
-            className={studioSegmentChipClass(mode === value)}
-            onClick={() => onMode(value)}
-          >
-            {t(key)}
-          </button>
-        ))}
-      </div>
+      <ClaudeChoiceChips
+        label={t("claudeAssist.plan.modeLabel")}
+        value={mode}
+        options={modeOptions}
+        onChange={onMode}
+        disabled={disabled}
+        hideLabel
+        describedBy={modeNoteId}
+      />
       <p id={modeNoteId} className="text-xs text-fg-3">
         {mode === "do" ? t("claudeAssist.plan.modeDoNote") : t("claudeAssist.plan.modeExplainNote")}
       </p>
@@ -98,7 +100,7 @@ export function ClaudeCommandRequestPanel({
           <p className="mb-1 text-xs font-semibold text-fg-2">{t("claudeAssist.plan.examplesTitle")}</p>
           <div className="flex flex-wrap gap-1.5">
             {examples.map((example) => (
-              <button key={example} type="button" disabled={disabled} className={studioSegmentChipClass(false)} onClick={() => onRequest(example)}>
+              <button key={example} type="button" disabled={disabled} className={studioSegmentChipClass(false)} onClick={() => fill(example)}>
                 {example}
               </button>
             ))}
@@ -110,7 +112,10 @@ export function ClaudeCommandRequestPanel({
         <div data-claude-recents="true">
           <div className="mb-1 flex items-center justify-between gap-2">
             <p className="text-xs font-semibold text-fg-2">{t("claudeAssist.plan.recentsTitle")}</p>
-            <button type="button" className={cn(CLAUDE_QUIET_BUTTON, "min-h-11 px-2 text-xs")} disabled={disabled} onClick={onClearRecents}>
+            <button type="button" className={cn(CLAUDE_QUIET_BUTTON, "min-h-11 px-2 text-xs")} disabled={disabled} onClick={() => {
+              onClearRecents();
+              textareaRef?.current?.focus({ preventScroll: true });
+            }}>
               {t("claudeAssist.plan.recentsClear")}
             </button>
           </div>
@@ -121,7 +126,7 @@ export function ClaudeCommandRequestPanel({
                 type="button"
                 title={recent}
                 disabled={disabled}
-                onClick={() => onRequest(recent)}
+                onClick={() => fill(recent)}
                 className="min-h-11 truncate rounded-lg border border-line/70 bg-canvas/40 px-3 py-1.5 text-left text-xs text-fg-2 hover:border-accent/40 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {recent}

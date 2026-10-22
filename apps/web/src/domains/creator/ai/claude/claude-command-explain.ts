@@ -128,7 +128,8 @@ export function validateCommandAnswer(raw: CommandAnswerRaw, knowledge: readonly
   return {
     answer: cleanMultilineText(raw.answer, COMMAND_ANSWER_LIMITS.maxAnswerChars),
     commands,
-    followUps: raw.followUps.map((question) => singleLine(question, 120)).filter(Boolean).slice(0, COMMAND_ANSWER_LIMITS.maxFollowUps),
+    // 같은 질문을 되풀이하면 화면 목록의 키가 겹치므로 첫 번째만 남긴다.
+    followUps: [...new Set(raw.followUps.map((question) => singleLine(question, 120)).filter(Boolean))].slice(0, COMMAND_ANSWER_LIMITS.maxFollowUps),
     rejected,
   };
 }

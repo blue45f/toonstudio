@@ -9,23 +9,20 @@ import { resolveClaudeRequestModel } from "@/shared/ai/claude/claude-protocol";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
 
+import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 import {
   buildCommandAnswerRequest,
-  COMMAND_ANSWER_MAX_OUTPUT_TOKENS,
   CommandAnswerSchema,
   validateCommandAnswer,
   type CommandAnswer,
 } from "./claude-command-explain";
 import {
   buildCommandPlanRequest,
-  COMMAND_PLAN_MAX_OUTPUT_TOKENS,
   CommandPlanSchema,
   validateCommandPlan,
   type AiCommandCandidate,
   type CommandPlan,
 } from "./claude-command-plan";
-
-import type Anthropic from "@anthropic-ai/sdk";
 
 import type { ClaudeRoute } from "@/shared/ai/claude/claude-route";
 
@@ -40,6 +37,8 @@ export interface CommandPlanRunOptions {
   /** 비우면 연결의 기본 모델을 쓴다. */
   readonly model?: string;
   readonly signal?: AbortSignal;
+  /** 사용자가 "이번 한 번만 예산을 넘어도 진행"을 직접 고른 요청이면 true. 전송 계층의 예산 판정을 건너뛴다. */
+  readonly budgetOverride?: boolean;
 }
 
 export async function runCommandPlan(
@@ -49,11 +48,17 @@ export async function runCommandPlan(
   options: CommandPlanRunOptions = {},
 ): Promise<CommandPlanRunResult> {
   const requested = resolveClaudeRequestModel(options.model, route.model);
+  const params = buildCommandPlanRequest(requested, request, candidates);
   const { message, parsed } = await claudeParse(
     route,
-    buildCommandPlanRequest(requested, request, candidates),
+    params,
     CommandPlanSchema,
-    { signal: options.signal },
+    {
+      signal: options.signal,
+      // 실행 전 확인에 보인 값과 같은 함수로 잰 상한이다. 전송 계층이 예산 판정과 진행 중 예약에 쓴다.
+      capUsd: estimateStructuredCostCapUsd({ model: requested, request: params, schema: CommandPlanSchema }),
+      budgetOverride: options.budgetOverride,
+    },
   );
   const model = message.model || requested;
   const usage = toClaudeTokenUsage(message.usage);
@@ -65,22 +70,9 @@ export async function runCommandPlan(
   };
 }
 
-/** 요청이 보내는 글자 수만큼의 입력 토큰과 출력 상한으로 계산한 비용 상한. 단가를 모르는 모델은 null. */
-function requestCostCapUsd(model: string, params: Anthropic.MessageCreateParamsNonStreaming, maxOutputTokens: number): number | null {
-  const system = Array.isArray(params.system) ? params.system.reduce((sum, block) => sum + block.text.length, 0) : 0;
-  const user = typeof params.messages[0]?.content === "string" ? params.messages[0].content.length : 0;
-  const estimate = estimateClaudeCostUsd(model, {
-    inputTokens: system + user,
-    outputTokens: maxOutputTokens,
-    cacheReadTokens: 0,
-    cacheWriteTokens: 0,
-  });
-  return estimate ? estimate.usd : null;
-}
-
 /**
- * 계획 요청 한 번이 낼 수 있는 비용의 상한(USD). 출력은 `max_tokens`가 하드 상한이고, 입력은 보내는 글자 수만큼의
- * 토큰이라고 가정한다(한글·영문 모두 보통 글자당 1토큰 이하라 상한으로 쓴다). 단가를 모르는 모델은 null.
+ * 계획 요청 한 번이 낼 수 있는 비용의 상한(USD). 출력은 `max_tokens`가 하드 상한이고, 입력은 보내는 글의 UTF-8 바이트 수
+ * (토큰은 바이트보다 많을 수 없다)와 구조화 출력 스키마로 잰다. 단가를 모르는 모델은 null.
  * 프롬프트 캐시가 적용되면 입력 단가가 내려가므로 실제 비용은 이보다 작을 수 있다.
  */
 export function estimateCommandPlanCostCapUsd(
@@ -88,7 +80,7 @@ export function estimateCommandPlanCostCapUsd(
   request: string,
   candidates: readonly AiCommandCandidate[],
 ): number | null {
-  return requestCostCapUsd(model, buildCommandPlanRequest(model, request, candidates), COMMAND_PLAN_MAX_OUTPUT_TOKENS);
+  return estimateStructuredCostCapUsd({ model, request: buildCommandPlanRequest(model, request, candidates), schema: CommandPlanSchema });
 }
 
 export interface CommandAnswerRunResult {
@@ -106,11 +98,16 @@ export async function runCommandAnswer(
   options: CommandPlanRunOptions = {},
 ): Promise<CommandAnswerRunResult> {
   const requested = resolveClaudeRequestModel(options.model, route.model);
+  const params = buildCommandAnswerRequest(requested, question, knowledge);
   const { message, parsed } = await claudeParse(
     route,
-    buildCommandAnswerRequest(requested, question, knowledge),
+    params,
     CommandAnswerSchema,
-    { signal: options.signal },
+    {
+      signal: options.signal,
+      capUsd: estimateStructuredCostCapUsd({ model: requested, request: params, schema: CommandAnswerSchema }),
+      budgetOverride: options.budgetOverride,
+    },
   );
   const model = message.model || requested;
   const usage = toClaudeTokenUsage(message.usage);
@@ -127,5 +124,5 @@ export function estimateCommandAnswerCostCapUsd(
   question: string,
   knowledge: readonly AiCommandCandidate[],
 ): number | null {
-  return requestCostCapUsd(model, buildCommandAnswerRequest(model, question, knowledge), COMMAND_ANSWER_MAX_OUTPUT_TOKENS);
+  return estimateStructuredCostCapUsd({ model, request: buildCommandAnswerRequest(model, question, knowledge), schema: CommandAnswerSchema });
 }
