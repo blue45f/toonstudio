@@ -12,6 +12,7 @@ import { ServiceStoryJourney } from "@/shared/components/service-story-journey";
 import { creatorHomeLocale } from "./creator-home-content";
 import { ProductTourPlayer } from "./ProductTourPlayer";
 import { ProductTourAdditions } from "./ProductTourAdditions";
+import { ProductTourShorts } from "./ProductTourShorts";
 import { ProductTourMadeNote } from "./ProductTourMadeNote";
 import { ProductTourTechLinks } from "./ProductTourTechLinks";
 import { RouteConditionBadges } from "./RouteConditionBadges";
@@ -192,6 +193,8 @@ export function ProductTourPage() {
           )}
         </IntroTabs>
       </section>
+
+      <ProductTourShorts />
 
       <section className="mk-shell product-tour__downloads" aria-labelledby="product-tour-downloads-title">
         <div className="product-tour__more-head">
