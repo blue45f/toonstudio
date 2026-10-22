@@ -18,6 +18,6 @@
   "auth.callback.message.done": "സൈൻ ഇൻ പൂർത്തിയായി. ഉടനെ റീഡയറക്ട് ചെയ്യും.",
   "auth.callback.message.doneDemo": "ഡെമോ സൈൻ ഇൻ പൂർത്തിയായി. ഉടനെ റീഡയറക്ട് ചെയ്യും.",
   "auth.callback.demo.message": "നിങ്ങൾ ഒരു ഡെമോ അക്കൌണ്ട് ഉപയോഗിച്ച് സൈൻ ഇൻ ചെയ്തിരിക്കുന്നു. ചില സവിശേഷതകൾ പരിമിതമായിരിക്കും.",
-  "auth.callback.backToLogin": "Back to sign in",
-  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
+  "auth.callback.backToLogin": "സൈൻ ഇനിലേക്ക് മടങ്ങുക",
+  "auth.callback.slowHelp": "സാധാരണയേക്കാൾ കൂടുതൽ സമയമെടുക്കുന്നു. ഈ സ്ക്രീൻ തുടർന്നും കാണുകയാണെങ്കിൽ, സൈൻ-ഇൻ പേജിലേക്ക് മടങ്ങി വീണ്ടും ശ്രമിക്കുക."
 }
