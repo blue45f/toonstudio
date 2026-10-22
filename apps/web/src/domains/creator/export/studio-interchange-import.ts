@@ -5,6 +5,8 @@ import { STUDIO_PROJECT_MAX_PAGES } from "../studio-project-file";
 
 import { resolveStudioCbzErrorFromCause } from "../status-i18n/studio-producer-error-i18n-interchange-cbz";
 import { resolveStudioOpenRasterErrorFromCause } from "../status-i18n/studio-producer-error-i18n-interchange-ora";
+import { resolveStudioPsdImportErrorFromCause } from "../status-i18n/studio-producer-error-i18n-psd-import";
+import { resolveStudioWillV1ImportErrorFromCause } from "../status-i18n/studio-producer-error-i18n-will-import";
 import { loadStudioPsdImportModule } from "./studio-document-export-loaders";
 import { studioDocumentImportProgressMessage } from "./studio-document-import-progress-copy";
 
@@ -243,6 +245,7 @@ export function createStudioInterchangeImportOrchestration(
       // 덕 타이핑 리졸버로 해석한다. 타 생산자 오류는 기존 message 경로를 유지한다.
       const message = resolveStudioCbzErrorFromCause(cause)
         ?? resolveStudioOpenRasterErrorFromCause(cause)
+        ?? resolveStudioWillV1ImportErrorFromCause(cause)
         ?? (cause instanceof Error ? cause.message : "문서 파일을 안전하게 검사하지 못했어요.");
       setInterchangeImportStatus({ tone: "bad", text: message });
       setError(message);
@@ -328,7 +331,7 @@ export function createStudioInterchangeImportOrchestration(
       if (controller.signal.aborted || documentImportEpochRef.current !== importEpoch) return;
       setPsdImportStatus({
         tone: "warn",
-        text: err instanceof Error ? err.message : "PSD 파일을 읽지 못했어요.",
+        text: resolveStudioPsdImportErrorFromCause(err) ?? (err instanceof Error ? err.message : "PSD 파일을 읽지 못했어요."),
       });
     } finally {
       if (
@@ -511,7 +514,8 @@ export function createStudioInterchangeImportOrchestration(
       setError(null);
     } catch (cause) {
       if (controller.signal.aborted) return;
-      const message = cause instanceof Error ? cause.message : "문서 가져오기를 적용하지 못했어요.";
+      const message = resolveStudioWillV1ImportErrorFromCause(cause)
+        ?? (cause instanceof Error ? cause.message : "문서 가져오기를 적용하지 못했어요.");
       setInterchangeImportStatus({ tone: "bad", text: message });
       setError(message);
     } finally {

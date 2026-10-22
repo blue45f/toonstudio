@@ -26,6 +26,7 @@ import {
   type StudioPublishProfile,
 } from "../studio-publish-preflight";
 
+import { resolveStudioPublishPackageErrorFromCause, resolveStudioPublishPackageIssue } from "../status-i18n/studio-producer-error-i18n-publish";
 import type { PageState } from "../studio-page-state";
 import type { WatermarkSettings } from "../studio-watermark";
 
@@ -243,7 +244,8 @@ export async function executeStudioPublishPackageExport(
     });
     if (!actualPlan.canExport) {
       throw new Error(
-        actualPlan.errors[0]?.message || "렌더한 파일이 목적지 규격을 통과하지 못했어요."
+        (actualPlan.errors[0] ? resolveStudioPublishPackageIssue(actualPlan.errors[0]) : undefined)
+          || "렌더한 파일이 목적지 규격을 통과하지 못했어요."
       );
     }
 
@@ -364,7 +366,7 @@ export async function executeStudioPublishPackageExport(
   } catch (cause) {
     setPublishPackageExportStatus({
       tone: "bad",
-      text: cause instanceof Error ? cause.message : "게시 패키지를 만들지 못했어요.",
+      text: resolveStudioPublishPackageErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "게시 패키지를 만들지 못했어요."),
     });
   } finally {
     for (const canvas of captured) {

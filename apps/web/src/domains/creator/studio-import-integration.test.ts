@@ -646,12 +646,12 @@ describe("PSD 가져오기(ag-psd 실바이트 왕복)", () => {
     expect(top!.hidden).toBe(true);
   });
 
-  it("깨진 PSD 바이트를 한국어 오류로 거부한다", async () => {
+  it("깨진 PSD 바이트를 parseFailed 구조화 코드로 거부한다", async () => {
     const file = new File([encoder.encode("not a psd") as BlobPart], "broken.psd", {
       type: "image/vnd.adobe.photoshop",
     });
     await expect(importPsdFile(file, 720, { downscaleImpl: identityDownscale }))
-      .rejects.toThrow("PSD 파일을 해석하지 못했어요");
+      .rejects.toThrow("parseFailed");
   });
 });
 

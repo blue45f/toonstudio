@@ -239,7 +239,7 @@ describe("Studio WILL v1 safe import bridge", () => {
         "vendor-claim.will",
         inspectOptions(),
       ),
-    ).rejects.toThrow(/bounded WILL v1 공개 명세 프로필/u);
+    ).rejects.toThrow(/profileUnverified/u);
   });
 
   it("blocks confirmation when neither destination can hold the imported elements", async () => {
@@ -262,7 +262,7 @@ describe("Studio WILL v1 safe import bridge", () => {
       destination: "current-page",
       currentPageElementCount: 10_000,
       existingElementIds: new Set(),
-    })).toThrow(/차단된 WILL v1/u);
+    })).toThrow(/blockedLoss/u);
   });
 
   it("does not let callers bypass a destination that inspection disabled", async () => {
@@ -277,7 +277,7 @@ describe("Studio WILL v1 safe import bridge", () => {
       destination: "new-page",
       currentPageElementCount: 0,
       existingElementIds: new Set(),
-    })).toThrow(/새 페이지/u);
+    })).toThrow(/newPageNotAllowed/u);
   });
 
   it("splits long paths below the CRDT element budget without changing ordering", async () => {

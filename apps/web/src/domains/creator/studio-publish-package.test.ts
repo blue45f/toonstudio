@@ -172,9 +172,9 @@ describe("publish package settings and file names", () => {
   });
 
   it("rejects future settings and malformed JSON", () => {
-    expect(() => normalizeStudioPublishPackageSettings({ version: 2 })).toThrow("최신 버전");
-    expect(() => normalizeStudioPublishPackageSettings({ version: "2" })).toThrow("최신 버전");
-    expect(() => normalizeStudioPublishPackageSettings("{broken")).toThrow("JSON");
+    expect(() => normalizeStudioPublishPackageSettings({ version: 2 })).toThrow("newerVersion");
+    expect(() => normalizeStudioPublishPackageSettings({ version: "2" })).toThrow("newerVersion");
+    expect(() => normalizeStudioPublishPackageSettings("{broken")).toThrow("jsonReadFailed");
   });
 
   it("sanitizes traversal, controls, bidi marks, punctuation, and reserved device names", () => {

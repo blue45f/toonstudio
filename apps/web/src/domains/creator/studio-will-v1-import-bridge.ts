@@ -8,6 +8,11 @@
  */
 
 import { STUDIO_INK_MAX_BRUSH_SIZE } from "./brush/studio-ink-pressure-model";
+import { resolveStudioWillImportCommitStatus, resolveStudioWillImportConstraint } from "./status-i18n/studio-producer-error-i18n-will-import";
+import { StudioWillV1ImportError, type StudioWillV1ImportLabelCode } from "./studio-will-v1-import-bridge-error";
+
+export { StudioWillV1ImportError } from "./studio-will-v1-import-bridge-error";
+export type { StudioWillV1ImportErrorCode, StudioWillV1ImportLabelCode } from "./studio-will-v1-import-bridge-error";
 import { catmullRomPoint } from "./studio-curve-smoothing";
 import {
   summarizeStudioInterchangeLoss,
@@ -161,14 +166,13 @@ type SampledPathAttempt =
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (!signal?.aborted) return;
-  const error = new Error("WILL v1 가져오기를 취소했습니다.");
-  error.name = "AbortError";
-  throw error;
+  // 취소 관례(name = AbortError)는 유지하고 message는 코드를 싣는다 — 표시 지점에서 해석.
+  throw new StudioWillV1ImportError("aborted", undefined, { errorName: "AbortError" });
 }
 
-function finitePositive(value: number, label: string): number {
+function finitePositive(value: number, label: StudioWillV1ImportLabelCode): number {
   if (!Number.isFinite(value) || value <= 0) {
-    throw new Error(`WILL v1 ${label} 값이 올바르지 않습니다.`);
+    throw new StudioWillV1ImportError("invalidValue", { label });
   }
   return value;
 }
@@ -496,7 +500,7 @@ function constraintsForInspection(input: {
     constraints.push({
       category: "resolution",
       severity: "notice",
-      message: `문서 폭을 Studio 캔버스에 맞추기 위해 좌표와 선폭을 ${input.scale.toFixed(4)}배로 조정합니다.`,
+      message: resolveStudioWillImportConstraint("scaled", { scale: input.scale.toFixed(4) }),
     });
   }
   if (input.adaptations.some(({ reason }) =>
@@ -505,7 +509,7 @@ function constraintsForInspection(input: {
     constraints.push({
       category: "editability",
       severity: "warning",
-      message: "Catmull–Rom 곡선을 편집 가능한 Studio 자유곡선 샘플로 변환합니다.",
+      message: resolveStudioWillImportConstraint("catmullResampled"),
     });
   }
   if (input.adaptations.some(({ reason }) =>
@@ -514,7 +518,7 @@ function constraintsForInspection(input: {
     constraints.push({
       category: "editability",
       severity: "notice",
-      message: "WILL의 점별 선폭을 Studio의 기준 굵기와 점별 필압으로 보존합니다.",
+      message: resolveStudioWillImportConstraint("strokeWidthMapped"),
     });
   }
   const splitCount = input.adaptations.find(({ reason }) =>
@@ -524,7 +528,7 @@ function constraintsForInspection(input: {
     constraints.push({
       category: "layers",
       severity: "notice",
-      message: `공동 편집·저장 예산을 지키기 위해 긴 경로를 ${splitCount.toLocaleString("ko-KR")}개 연속 요소로 나눕니다.`,
+      message: resolveStudioWillImportConstraint("pathSplit", { count: splitCount.toLocaleString("ko-KR") }),
     });
   }
   if (input.adaptations.some(({ reason }) =>
@@ -533,42 +537,42 @@ function constraintsForInspection(input: {
     constraints.push({
       category: "editability",
       severity: "warning",
-      message: `Studio 지원 굵기 ${STUDIO_WILL_V1_IMPORT_MIN_BRUSH_SIZE}–${STUDIO_INK_MAX_BRUSH_SIZE.toLocaleString("ko-KR")}px 범위에 맞춰 경로 내부 굵기 비율을 유지하며 균일 조정합니다.`,
+      message: resolveStudioWillImportConstraint("strokeWidthScaled", { min: String(STUDIO_WILL_V1_IMPORT_MIN_BRUSH_SIZE), max: STUDIO_INK_MAX_BRUSH_SIZE.toLocaleString("ko-KR") }),
     });
   }
   if (input.skipped.length > 0) {
     constraints.push({
       category: "editability",
       severity: "warning",
-      message: `Studio 안전 좌표·샘플 예산을 넘은 경로 ${input.skipped.length.toLocaleString("ko-KR")}개는 적용 대상에서 제외합니다.`,
+      message: resolveStudioWillImportConstraint("skippedPaths", { count: input.skipped.length.toLocaleString("ko-KR") }),
     });
   }
   if (input.drafts.length === 0) {
     constraints.push({
       category: "editability",
       gate: "blocking",
-      message: "Studio에서 표시할 수 있는 WILL v1 경로가 없어 가져올 수 없습니다.",
+      message: resolveStudioWillImportConstraint("noDrafts"),
     });
   }
   if (input.drafts.length > STUDIO_WILL_V1_IMPORT_MAX_ELEMENTS_PER_PAGE) {
     constraints.push({
       category: "layers",
       gate: "blocking",
-      message: `가져온 요소 ${input.drafts.length.toLocaleString("ko-KR")}개가 페이지 저장 한도 ${STUDIO_WILL_V1_IMPORT_MAX_ELEMENTS_PER_PAGE.toLocaleString("ko-KR")}개를 넘습니다.`,
+      message: resolveStudioWillImportConstraint("tooManyElements", { count: input.drafts.length.toLocaleString("ko-KR"), max: STUDIO_WILL_V1_IMPORT_MAX_ELEMENTS_PER_PAGE.toLocaleString("ko-KR") }),
     });
   }
   if (input.pageHeight > STUDIO_PROJECT_MAX_CANVAS_HEIGHT) {
     constraints.push({
       category: "resolution",
       gate: "blocking",
-      message: `적용 높이 ${input.pageHeight.toLocaleString("ko-KR")}px가 Studio 페이지 저장 한도 ${STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR")}px를 넘습니다.`,
+      message: resolveStudioWillImportConstraint("pageHeightExceeded", { height: input.pageHeight.toLocaleString("ko-KR"), max: STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR") }),
     });
   }
   if (!input.canUseAnyDestination) {
     constraints.push({
       category: "pages",
       gate: "blocking",
-      message: "새 페이지 저장 한도에 도달했고 현재 페이지의 요소 여유도 부족해 가져올 위치가 없습니다.",
+      message: resolveStudioWillImportConstraint("noDestination"),
     });
   }
   return constraints;
@@ -584,13 +588,13 @@ export async function inspectStudioWillV1Import(
   options: StudioWillV1ImportInspectionOptions,
 ): Promise<PendingStudioWillV1Import> {
   throwIfAborted(options.signal);
-  const canvasWidth = finitePositive(options.canvasWidth, "Studio 캔버스 폭");
+  const canvasWidth = finitePositive(options.canvasWidth, "canvasWidth");
   if (
     !Number.isSafeInteger(options.currentPageElementCount)
     || options.currentPageElementCount < 0
     || options.currentPageElementCount > STUDIO_WILL_V1_IMPORT_MAX_ELEMENTS_PER_PAGE
   ) {
-    throw new Error("현재 페이지 요소 수가 Studio 저장 한도와 일치하지 않습니다.");
+    throw new StudioWillV1ImportError("elementCountMismatch");
   }
   const [
     { importStudioWillV1OpcInWorker },
@@ -605,13 +609,11 @@ export async function inspectStudioWillV1Import(
   });
   throwIfAborted(options.signal);
   if (!assuranceIsBoundedPublicProfile(result, STUDIO_WILL_V1_OPC_PROFILE)) {
-    throw new Error(
-      "이 파일은 ToonStudio bounded WILL v1 공개 명세 프로필로 검증되지 않아 가져오지 않았습니다.",
-    );
+    throw new StudioWillV1ImportError("profileUnverified");
   }
 
-  const scale = canvasWidth / finitePositive(result.width, "문서 폭");
-  const pageHeight = Math.max(1, Math.round(finitePositive(result.height, "문서 높이") * scale));
+  const scale = canvasWidth / finitePositive(result.width, "documentWidth");
+  const pageHeight = Math.max(1, Math.round(finitePositive(result.height, "documentHeight") * scale));
   const pathFingerprints: string[] = [];
   const adaptations = new Map<StudioWillV1ImportAdaptationReason, number>();
   const skipped: StudioWillV1ImportSkip[] = [];
@@ -760,32 +762,30 @@ export function prepareStudioWillV1ImportCommit(
 ): StudioWillV1ImportCommitDraft {
   const summary = summarizeStudioInterchangeLoss(pending.preview);
   if (!summary.canConfirm) {
-    throw new Error("차단된 WILL v1 손실 항목을 해결한 뒤 다시 검사해 주세요.");
+    throw new StudioWillV1ImportError("blockedLoss");
   }
   if (options.destination !== "new-page" && options.destination !== "current-page") {
-    throw new Error("WILL v1을 가져올 위치를 먼저 선택해 주세요.");
+    throw new StudioWillV1ImportError("destinationRequired");
   }
   if (options.destination === "new-page" && !pending.newPageAllowed) {
-    throw new Error("검사 시점의 프로젝트·페이지 한도 때문에 새 페이지에 WILL v1을 추가할 수 없습니다.");
+    throw new StudioWillV1ImportError("newPageNotAllowed");
   }
   if (options.destination === "current-page" && !pending.currentPageAllowed) {
-    throw new Error("검사 시점의 페이지 요소 한도 때문에 현재 페이지에 WILL v1을 추가할 수 없습니다.");
+    throw new StudioWillV1ImportError("currentPageNotAllowed");
   }
   if (
     !Number.isSafeInteger(options.currentPageElementCount)
     || options.currentPageElementCount < 0
     || options.currentPageElementCount > STUDIO_WILL_V1_IMPORT_MAX_ELEMENTS_PER_PAGE
   ) {
-    throw new Error("현재 페이지 요소 수가 Studio 저장 한도와 일치하지 않습니다.");
+    throw new StudioWillV1ImportError("elementCountMismatch");
   }
   if (
     options.destination === "current-page"
     && options.currentPageElementCount + pending.drafts.length
       > STUDIO_WILL_V1_IMPORT_MAX_ELEMENTS_PER_PAGE
   ) {
-    throw new Error(
-      `현재 페이지에 추가하면 요소 저장 한도 ${STUDIO_WILL_V1_IMPORT_MAX_ELEMENTS_PER_PAGE.toLocaleString("ko-KR")}개를 넘습니다. 새 페이지에 추가해 주세요.`,
-    );
+    throw new StudioWillV1ImportError("elementLimitExceeded", { max: STUDIO_WILL_V1_IMPORT_MAX_ELEMENTS_PER_PAGE.toLocaleString("ko-KR") });
   }
   const reserved = new Set(options.existingElementIds);
   const elements = pending.drafts.map((draft): DrawEl => ({
@@ -802,11 +802,11 @@ export function prepareStudioWillV1ImportCommit(
     title: safePageTitle(pending.result, pending.fileName),
     status: Object.freeze({
       tone: warningCount > 0 ? "warn" : "good",
-      text: `WILL v1 선 ${elements.length.toLocaleString("ko-KR")}개를 ${options.destination === "new-page" ? "새 페이지에" : "현재 페이지 위에"} 추가했어요.${
-        warningCount > 0
-          ? ` 변환·제외 알림 ${warningCount.toLocaleString("ko-KR")}건을 손실 미리보기에서 확인했어요.`
-          : ""
-      }`,
+      text: resolveStudioWillImportCommitStatus({
+        count: elements.length.toLocaleString("ko-KR"),
+        destination: options.destination,
+        ...(warningCount > 0 ? { warningCount: warningCount.toLocaleString("ko-KR") } : {}),
+      }),
     }),
   });
 }

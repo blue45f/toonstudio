@@ -27,7 +27,6 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-
 import {
   getStudioPublishPlatformPreset,
   normalizeStudioPublishPackageSettings,
@@ -48,6 +47,7 @@ import {
 } from "./studio-publish-package";
 import { StudioPublishPackageAiSection } from "./publish/StudioPublishPackageAiSection";
 import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
+import { resolveStudioPublishPackageIssue } from "./status-i18n/studio-producer-error-i18n-publish";
 import { AI_USAGE_META } from "./publish/studio-publish-package-ai-usage-meta";
 import {
   STUDIO_REVIEW_PDF_PROFILE_IDS,
@@ -325,7 +325,7 @@ function IssueLedger({
                     <Icon size={14} aria-hidden />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs leading-relaxed text-fg">{issue.message}</p>
+                    <p className="text-xs leading-relaxed text-fg">{resolveStudioPublishPackageIssue(issue)}</p>
                     <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 font-mono text-[0.62rem] text-fg-3">
                       <span>{issue.code}</span>
                       {issue.path && <span className="break-all">{issue.path}</span>}
