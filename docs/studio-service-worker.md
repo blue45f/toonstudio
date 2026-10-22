@@ -26,7 +26,8 @@
 - **critical (install, 원자적)** — 앱 셸 JS/CSS 클로저 + 셸 문서 `/` 와 `/studio` + 고정 정적
   critical URL 23개(`STUDIO_SERVICE_WORKER_STATIC_CRITICAL_URLS`: 부트스트랩 스크립트, 비상 드로잉
   `/offline-draw/*`, 브랜드 아이콘·SVG). 예산은 `STUDIO_PRECACHE_BUDGET.criticalBytes` =
-  2.25 MiB(9 × 256 KiB)이고, 2026-10-01 실측에서 entry 문서 closure는 2,099,509 bytes(약 2.0 MiB)였다
+  2.5 MiB(10 × 256 KiB)이고, 2026-10-01 실측에서 entry 문서 closure는 2,099,509 bytes(약 2.0 MiB),
+  2026-10-22 실측에서는 상태 문구 사전이 앱 셸에 들어와 2,365,965 bytes(약 2.26 MiB)였다
   (`studio-service-worker-precache-plan.ts` 주석). 이 문서의 이전 판이 적은 "현재 10 URL / 975 KiB"는
   낡은 값이며, 빌드마다 달라지는 정확한 URL 수·바이트는 `dist/`가 있어야 재현된다(이번 갱신에서는
   빌드 산출물이 없어 다시 재지 못했다). `addAll` 이 원자적인 것은 의도적이다: 하나라도 404 면 install 이

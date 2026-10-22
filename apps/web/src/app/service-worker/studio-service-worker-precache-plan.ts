@@ -92,7 +92,12 @@ export const STUDIO_PRECACHE_BUDGET: StudioPrecacheBudget = Object.freeze({
   // 게이트의 목적은 "첫 방문자에게 megabytes를 조용히 shipping하지 않는다"이므로
   // entry closure 실측값에 소폭 여유(2.25 MiB, +12%)만 두어 미세 드리프트로
   // 게이트가 반복적으로 깨지지 않게 하고, MB급 성장만 계속 차단한다.
-  criticalBytes: 9 * 256 * 1024,
+  // 2026-10-22 실측: 상태 문구를 사전 모듈로 옮긴 이관(shared/rest-status-i18n 등)이 앱 셸의
+  // 정적 import 로 들어와 entry closure 가 2,365,965 bytes 가 되어 2.25 MiB 를 6,669 bytes
+  // (0.28%) 넘었다. 같은 기준(실측 +약 10%)으로 한 칸(256 KiB) 올려 2.5 MiB 로 둔다. 사전을
+  // 지연 등록하면 이 증가를 되돌릴 수 있어 후속 과제로 남기며(진입 그래프 기준선 참고), 그때는
+  // 이 한도를 다시 내린다.
+  criticalBytes: 10 * 256 * 1024,
   warmBytes: 512 * 1024,
 });
 

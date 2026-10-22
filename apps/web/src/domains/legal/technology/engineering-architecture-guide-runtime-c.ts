@@ -595,7 +595,7 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
       source: "apps/web/src/domains/creator/studio-device-loss-recovery.ts",
     },
     {
-      value: "2.25 MiB",
+      value: "2.5 MiB",
       label: t("서비스 워커 필수(critical) 미리받기 예산 — 넘으면 빌드 실패", "Service Worker critical precache budget; exceeding it fails the build"),
       source: "apps/web/src/app/service-worker/studio-service-worker-precache-plan.ts",
     },
