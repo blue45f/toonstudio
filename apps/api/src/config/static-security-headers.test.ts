@@ -70,6 +70,8 @@ describe("provider-neutral static security headers", () => {
     expect(connections).toContain("https://graph.microsoft.com");
     expect(connections).toContain("https://api.unsplash.com");
     expect(connections).toContain("https://api.openai.com");
+    // Claude(BYOK)는 브라우저가 사용자 키로 공식 API를 직접 호출한다(SDK 사전요청 CORS 확인됨).
+    expect(connections).toContain("https://api.anthropic.com");
     expect(connections).toContain(
       "https://ybsgfhofuvkhywbpytnl.supabase.co",
     );

@@ -9,6 +9,7 @@
  * 판정은 보수적으로 한다: 200만 "확인됨"이고, 401/403만 "키 거절"이다.
  * 그 외 상태·네트워크 실패는 주소/CORS/제공자 사정일 수 있어 단정하지 않는다.
  */
+import { isAnthropicBaseUrl } from "./claude/claude-protocol";
 import {
   userAiConnectionApiKeys,
   type UserAiConnection,
@@ -32,6 +33,11 @@ export async function probeUserAiConnection(
 ): Promise<UserAiConnectionProbeResult> {
   const key = userAiConnectionApiKeys(connection)[0]?.apiKey.trim();
   if (!key) return { status: "no_key" };
+  // Claude는 GET /v1/models를 SDK 가드 경로로 확인한다(헤더·버전이 OpenAI 호환과 다르다).
+  if (isAnthropicBaseUrl(connection.baseUrl)) {
+    const { probeClaudeKey } = await import("./claude/claude-transport");
+    return probeClaudeKey(key, { timeoutMs: USER_AI_PROBE_TIMEOUT_MS, fetchImpl });
+  }
 
   let base: URL;
   try {

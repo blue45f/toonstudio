@@ -40,6 +40,7 @@ import {
   planStudioBg3dLtLayers,
   STUDIO_BG3D_LT_LAYER_NAMES,
   type StudioBg3dLtLayerPlanFailure,
+  type StudioBg3dLtPageElementLike,
 } from "../bg3d/studio-bg3d-lt-layer-plan";
 import {
   resolveBg3dShotBatchPublicPlanErrorFromCause,
@@ -723,7 +724,8 @@ describe("R11 bg3dLt — producer emits structured subcodes", () => {
   });
 
   it("emits layerId with the role code as the layerName param", () => {
-    const result = planStudioBg3dLtLayers({
+    // elements 가 빈 배열이면 TElement 가 never 로 추론돼 newElementTemplate 을 받을 수 없다.
+    const result = planStudioBg3dLtLayers<StudioBg3dLtPageElementLike, { sceneId: string }>({
       elements: [], groups: [],
       render: {
         kind: "separated", width: 100, height: 50, bg3dScene: { sceneId: "s" },

@@ -61,10 +61,11 @@ function createHarness() {
   const counters = { claim: 0, skipWaiting: 0, unregister: 0, preload: 0 };
   const caches = createCacheStorage();
   const fetchCalls: string[] = [];
+  const fetchInits: Array<RequestInit | undefined> = [];
   let network: (url: string) => Promise<Response> = async () => new Response("ok", { status: 200 });
-  const workerFetch = vi.fn(async (target: Request | string | URL) => {
+  const workerFetch = vi.fn(async (target: Request | string | URL, init?: RequestInit) => {
     const url = typeof target === "string" || target instanceof URL ? new URL(target, ORIGIN).href : target.url;
-    fetchCalls.push(url); return network(url);
+    fetchCalls.push(url); fetchInits.push(init); return network(url);
   });
   const scope = {
     addEventListener: (type: string, listener: Listener) => listeners.set(type, listener),
@@ -85,7 +86,7 @@ function createHarness() {
   vi.stubGlobal("fetch", workerFetch); vi.stubGlobal("Request", ScopedRequest);
   vi.stubGlobal("__STUDIO_SERVICE_WORKER_MANIFEST__", MANIFEST);
   return {
-    listeners, counters, caches, fetchCalls,
+    listeners, counters, caches, fetchCalls, fetchInits,
     setNetwork(impl: (url: string) => Promise<Response>) { network = impl; },
     async dispatch(type: string, event: Record<string, unknown> = {}) {
       const pending: Promise<unknown>[] = [];
@@ -230,6 +231,30 @@ describe("fetch routing", () => {
     const { response } = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}/assets/studio-engine.worker-abc123.js`) });
     expect(await response?.text()).toBe("repaired"); expect(harness.fetchCalls).toHaveLength(1);
   });
+  it("drops a cached SPA page under a model URL and refetches the real file past the HTTP cache", async () => {
+    const html = () => new Response("<!doctype html>", { headers: { "content-type": "text/html" } });
+    harness.caches.seed("toonstudio-sw-immutable-v5", "/assets/3d/sofa.glb", html());
+    let calls = 0;
+    harness.setNetwork(async () => (++calls === 1 ? html() : new Response("glb-bytes", { headers: { "content-type": "model/gltf-binary" } })));
+    await loadWorker();
+    const { response, waited } = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}/assets/3d/sofa.glb`) });
+    await waited;
+    expect(await response?.text()).toBe("glb-bytes");
+    expect(harness.fetchCalls).toHaveLength(2);
+    expect(harness.fetchInits[1]).toEqual({ cache: "reload" });
+    const cached = await (await harness.caches.api.open("toonstudio-sw-immutable-v5")).match(`${ORIGIN}/assets/3d/sofa.glb`);
+    expect(await cached?.text()).toBe("glb-bytes");
+  });
+
+  it("never caches the SPA page when an asset is genuinely missing", async () => {
+    harness.setNetwork(async () => new Response("<!doctype html>", { headers: { "content-type": "text/html" } }));
+    await loadWorker();
+    const { response, waited } = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}/assets/3d/missing.glb`) });
+    await waited;
+    expect(response?.headers.get("content-type")).toBe("text/html");
+    expect(harness.caches.entries("toonstudio-sw-immutable-v5")).not.toContain(`${ORIGIN}/assets/3d/missing.glb`);
+  });
+
   it("falls back to the isolated shell for an offline studio navigation", async () => {
     harness.caches.seed(PRECACHE, "/studio", shell("<html>isolated studio shell</html>", true));
     harness.caches.seed(PRECACHE, "/", shell("<html>public shell</html>"));
