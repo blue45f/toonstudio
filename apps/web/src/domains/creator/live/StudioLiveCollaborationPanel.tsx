@@ -41,6 +41,7 @@ import {
   type StudioLiveRecoveryState,
 } from "./studio-live-collaboration-context";
 import { STUDIO_LIVE_CHAT_TEXT_MAX_LENGTH } from "./studio-live-collaboration-protocol";
+import { frozenStatus2Text } from "../studio-frozen2-status-i18n";
 import type { StudioLiveInviteRole } from "./studio-live-jam-session";
 import {
   createStudioPeerScreenSignalingRoom,
@@ -404,12 +405,12 @@ export function StudioLiveCollaborationPanelView({
               <dt className="text-fg-3">기기 복구 저장소</dt>
               <dd className="truncate font-semibold text-fg-2">
                 {syncSnapshot.persistenceDurability === "durable"
-                  ? "보호됨"
+                  ? frozenStatus2Text("studio.frozenStatus2.live.durabilityProtected", "보호됨")
                   : syncSnapshot.persistenceDurability === "not-applicable"
-                    ? "열람 전용"
+                    ? frozenStatus2Text("studio.frozenStatus2.live.durabilityViewOnly", "열람 전용")
                     : syncSnapshot.persistenceDurability === "checking"
-                      ? "확인 중"
-                      : "보호 안 됨"}
+                      ? frozenStatus2Text("studio.frozenStatus2.live.durabilityChecking", "확인 중")
+                      : frozenStatus2Text("studio.frozenStatus2.live.durabilityNotProtected", "보호 안 됨")}
               </dd>
             </div>
             <div className="flex min-w-0 items-center justify-between gap-2 sm:block">
@@ -510,11 +511,7 @@ export function StudioLiveCollaborationPanelView({
               <Button
                 className="min-h-11"
                 disabled={!localFallbackAllowed}
-                title={
-                  localFallbackAllowed
-                    ? undefined
-                    : "권한 회수 또는 인증 실패 뒤에는 이 기기 테스트 모드로 우회할 수 없습니다."
-                }
+                title={localFallbackAllowed ? undefined : frozenStatus2Text("studio.frozenStatus2.live.fallbackUnavailableReason", "권한 회수 또는 인증 실패 뒤에는 이 기기 테스트 모드로 우회할 수 없습니다.")}
                 type="button"
                 variant="quiet"
                 onClick={onUseLocalFallback}
@@ -833,7 +830,7 @@ export function StudioLiveCollaborationPanelView({
                 <Eye className="shrink-0 text-accent" size={15} aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate text-xs text-fg-2">
                   <strong className="font-semibold text-fg">{viewer.viewer.displayName}</strong>
-                  {viewer.status === "live" ? " · 시청 중" : " · 연결 중"}
+                  {viewer.status === "live" ? frozenStatus2Text("studio.frozenStatus2.live.watchingSuffix", " · 시청 중") : frozenStatus2Text("studio.frozenStatus2.live.connectingSuffix", " · 연결 중")}
                 </span>
                 <Button
                   aria-label={`${viewer.viewer.displayName} 시청 종료`}
@@ -916,7 +913,7 @@ export function StudioLiveCollaborationPanelView({
             >
               <span>
                 <LoaderCircle className="mx-auto mb-2 animate-spin motion-reduce:animate-none" size={20} aria-hidden="true" />
-                {watching.status === "requesting" ? "시청 요청 보내는 중" : "P2P 영상 연결 중"}
+                {watching.status === "requesting" ? frozenStatus2Text("studio.frozenStatus2.live.watchRequesting", "시청 요청 보내는 중") : frozenStatus2Text("studio.frozenStatus2.live.p2pConnecting", "P2P 영상 연결 중")}
               </span>
             </div>
           )}
@@ -1083,11 +1080,7 @@ export function StudioLiveCollaborationPanel({
         const session = new StudioScreenIcePolicySession(live.room.workId, {
           onRefreshError: (error, expired) => {
             if (screenControllerRef.current !== controller) return;
-            setScreenError(
-              expired
-                ? "화면 공유 중계 자격이 만료되었습니다. 다시 시도해 주세요."
-                : studioScreenShareErrorMessage(error)
-            );
+            setScreenError(expired ? frozenStatus2Text("studio.frozenStatus2.live.screenRelayExpired", "화면 공유 중계 자격이 만료되었습니다. 다시 시도해 주세요.") : studioScreenShareErrorMessage(error));
           },
         });
         const unsubscribe = session.subscribeConfigurationChange(() => {
@@ -1180,7 +1173,7 @@ export function StudioLiveCollaborationPanel({
     if (!controller || busyAction) return;
     setScreenError(null);
     if (!controller.rejectScreenRequest(request.viewer.sessionId, request.shareId)) {
-      setScreenError("시청 요청 거절을 전달하지 못했습니다. 연결 상태를 확인해 주세요.");
+      setScreenError(frozenStatus2Text("studio.frozenStatus2.live.rejectDeliverFailed", "시청 요청 거절을 전달하지 못했습니다. 연결 상태를 확인해 주세요."));
     }
   }
 
@@ -1192,7 +1185,7 @@ export function StudioLiveCollaborationPanel({
       setChatNotice(null);
       return;
     }
-    setChatNotice("채팅 메시지를 보내지 못했습니다. 연결 상태를 확인해 주세요.");
+    setChatNotice(frozenStatus2Text("studio.frozenStatus2.live.chatSendFailed", "채팅 메시지를 보내지 못했습니다. 연결 상태를 확인해 주세요."));
   }
 
   function handleStopViewer(viewerState: StudioScreenShareViewer) {
@@ -1200,7 +1193,7 @@ export function StudioLiveCollaborationPanel({
     if (!controller || busyAction) return;
     setScreenError(null);
     if (!controller.stopViewer(viewerState.viewer.sessionId, viewerState.shareId)) {
-      setScreenError("시청 종료 신호를 전달하지 못했습니다. 연결 상태를 확인해 주세요.");
+      setScreenError(frozenStatus2Text("studio.frozenStatus2.live.stopSignalFailed", "시청 종료 신호를 전달하지 못했습니다. 연결 상태를 확인해 주세요."));
     }
   }
 
@@ -1211,11 +1204,7 @@ export function StudioLiveCollaborationPanel({
     try {
       await live.exportRecovery();
     } catch (recoveryError) {
-      setScreenError(
-        recoveryError instanceof Error
-          ? recoveryError.message
-          : "공동 편집 복구 파일을 내보내지 못했습니다."
-      );
+      setScreenError(recoveryError instanceof Error ? recoveryError.message : frozenStatus2Text("studio.frozenStatus2.live.recoveryExportFailed", "공동 편집 복구 파일을 내보내지 못했습니다."));
     } finally {
       setBusyAction(null);
     }
@@ -1233,9 +1222,9 @@ export function StudioLiveCollaborationPanel({
           inviteRole === "editor" ? null : inviteRole
         )
       );
-      setInviteLinkNotice("초대 링크를 복사했습니다.");
+      setInviteLinkNotice(frozenStatus2Text("studio.frozenStatus2.live.inviteCopied", "초대 링크를 복사했습니다."));
     } catch {
-      setScreenError("초대 링크를 복사하지 못했습니다. 브라우저 클립보드 권한을 확인해 주세요.");
+      setScreenError(frozenStatus2Text("studio.frozenStatus2.live.inviteCopyFailed", "초대 링크를 복사하지 못했습니다. 브라우저 클립보드 권한을 확인해 주세요."));
     }
   }
 

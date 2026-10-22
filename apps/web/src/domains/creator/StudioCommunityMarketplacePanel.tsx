@@ -1,4 +1,5 @@
 import type { StudioMarketplaceImageAsset } from "./studio-marketplace-assets";
+import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -401,7 +402,7 @@ async function loadStudioCloudLibraryEntries(
         return {
           item,
           record: null,
-          issue: "계정 라이브러리와 공개 카탈로그의 패키지 증거가 일치하지 않습니다.",
+          issue: frozenStatus2Text("studio.frozenStatus2.community.evidenceMismatch", "계정 라이브러리와 공개 카탈로그의 패키지 증거가 일치하지 않습니다."),
         };
       }
       return { item, record, issue: null };
@@ -410,7 +411,7 @@ async function loadStudioCloudLibraryEntries(
       return {
         item,
         record: null,
-        issue: errorText(caught, "현재 공개 릴리스를 불러오지 못했습니다."),
+        issue: errorText(caught, frozenStatus2Text("studio.frozenStatus2.community.releaseLoadFailed", "현재 공개 릴리스를 불러오지 못했습니다.")),
       };
     }
   }));
@@ -438,12 +439,12 @@ function StudioCloudLibraryUnavailableCard({
   const { item, issue } = entry;
   const reason = item.catalog.state === "unavailable"
     ? ({
-        moderated: "관리자 검수로 숨겨진 패키지입니다.",
-        "owner-delisted": "배급자가 현재 공개 목록에서 내린 패키지입니다.",
-        "publisher-unavailable": "배급자 계정을 현재 사용할 수 없습니다.",
-        removed: "현재 공개 카탈로그에서 제거된 패키지입니다.",
+        moderated: frozenStatus2Text("studio.frozenStatus2.community.reasonModerated", "관리자 검수로 숨겨진 패키지입니다."),
+        "owner-delisted": frozenStatus2Text("studio.frozenStatus2.community.reasonDelisted", "배급자가 현재 공개 목록에서 내린 패키지입니다."),
+        "publisher-unavailable": frozenStatus2Text("studio.frozenStatus2.community.reasonPublisherUnavailable", "배급자 계정을 현재 사용할 수 없습니다."),
+        removed: frozenStatus2Text("studio.frozenStatus2.community.reasonRemoved", "현재 공개 카탈로그에서 제거된 패키지입니다."),
       } as const)[item.catalog.reason]
-    : issue ?? "현재 공개 릴리스를 사용할 수 없습니다.";
+    : issue ?? frozenStatus2Text("studio.frozenStatus2.community.releaseUnavailable", "현재 공개 릴리스를 사용할 수 없습니다.");
   return (
     <article className="rounded-lg border border-line bg-card p-2.5">
       <div className="flex items-start gap-2">
@@ -591,14 +592,8 @@ function CommunityRecordCard({
       })
       .catch((error: unknown) => {
         if (active) {
-          onStatus(
-            `${record.name} · ${
-              usesSqlCatalog ? "로컬 SQL 카탈로그" : "기기 저장소"
-            } 상태를 읽지 못했습니다: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-            true,
-          );
+          const storeLabel = usesSqlCatalog ? frozenStatus2Text("studio.frozenStatus2.community.storeSqlCatalog", "로컬 SQL 카탈로그") : frozenStatus2Text("studio.frozenStatus2.community.storeDeviceStorage", "기기 저장소");
+          onStatus(frozenStatus2Text("studio.frozenStatus2.community.installStateReadFailed", { name: record.name, store: storeLabel, detail: error instanceof Error ? error.message : String(error) }, "{name} · {store} 상태를 읽지 못했습니다: {detail}"), true);
         }
       })
       .finally(() => {
@@ -713,7 +708,7 @@ function CommunityRecordCard({
 
   async function synchronizeVerifiedLocalInstall(): Promise<string> {
     if (projection.status !== "installable") {
-      throw new Error("설치 가능한 패키지 증거를 찾을 수 없습니다.");
+      throw new Error(frozenStatus2Text("studio.frozenStatus2.community.installEvidenceMissing", "설치 가능한 패키지 증거를 찾을 수 없습니다."));
     }
     const synchronized = await synchronizeStudioCommunityMarketplaceInstalledPack(
       record,
@@ -742,7 +737,7 @@ function CommunityRecordCard({
         { storage },
       );
       if (verifiedState !== "installed") {
-        throw new Error("현재 기기에서 이 정확한 패키지 설치를 확인할 수 없습니다.");
+        throw new Error(frozenStatus2Text("studio.frozenStatus2.community.installVerifyFailed", "현재 기기에서 이 정확한 패키지 설치를 확인할 수 없습니다."));
       }
       const synchronized = await synchronizeVerifiedLocalInstall();
       if (cloudOperationGenerationRef.current !== generation) return;
@@ -750,15 +745,9 @@ function CommunityRecordCard({
       onStatus(`${record.name} · ${synchronized}`, false);
     } catch (caught: unknown) {
       if (cloudOperationGenerationRef.current !== generation) return;
-      const issue = errorText(
-        caught,
-        "계정 라이브러리 설치 확인을 동기화하지 못했습니다.",
-      );
+      const issue = errorText(caught, frozenStatus2Text("studio.frozenStatus2.community.syncInstallFailed", "계정 라이브러리 설치 확인을 동기화하지 못했습니다."));
       setCloudSyncIssue(issue);
-      onStatus(
-        `${record.name} · 로컬 설치는 그대로 유지됩니다. 계정 설치 확인 실패: ${issue}`,
-        true,
-      );
+      onStatus(frozenStatus2Text("studio.frozenStatus2.community.localKeptSyncFailed", { name: record.name, issue }, "{name} · 로컬 설치는 그대로 유지됩니다. 계정 설치 확인 실패: {issue}"), true);
     } finally {
       if (cloudOperationGenerationRef.current === generation) {
         setCloudSyncPending(false);
@@ -825,15 +814,9 @@ function CommunityRecordCard({
           onStatus(`${record.name} · ${result.message} ${synchronized}`, false);
         } catch (caught: unknown) {
           if (cloudOperationGenerationRef.current !== operationGeneration) return;
-          const issue = errorText(
-            caught,
-            "계정 라이브러리 설치 확인을 동기화하지 못했습니다.",
-          );
+          const issue = errorText(caught, frozenStatus2Text("studio.frozenStatus2.community.syncInstallFailed", "계정 라이브러리 설치 확인을 동기화하지 못했습니다."));
           setCloudSyncIssue(issue);
-          onStatus(
-            `${record.name} · ${result.message} 로컬 설치는 유지되지만 계정 동기화는 실패했습니다: ${issue}`,
-            true,
-          );
+          onStatus(frozenStatus2Text("studio.frozenStatus2.community.localKeptSyncFailedAlt", { name: record.name, message: result.message, issue }, "{name} · {message} 로컬 설치는 유지되지만 계정 동기화는 실패했습니다: {issue}"), true);
         } finally {
           if (cloudOperationGenerationRef.current === operationGeneration) {
             setCloudSyncPending(false);
@@ -963,10 +946,7 @@ function CommunityRecordCard({
         controller.signal.aborted
         || publicActionGenerationRef.current !== generation
       ) return;
-      onStatus(
-        errorText(caught, `${record.name} 에셋 삽입을 완료하지 못했습니다.`),
-        true,
-      );
+      onStatus(errorText(caught, frozenStatus2Text("studio.frozenStatus2.community.assetInsertFailed", { name: record.name }, "{name} 에셋 삽입을 완료하지 못했습니다.")), true);
     } finally {
       if (publicActionControllerRef.current === controller) {
         publicActionControllerRef.current = null;
@@ -1257,7 +1237,7 @@ export function ShareResourceForm({
       try {
         const brushProduct = await openProductBrushLibraryRepository();
         if (brushProduct.authority !== "sqlite") {
-          throw new Error("브러시 SQLite/OPFS 권위를 사용할 수 없습니다.");
+          throw new Error(frozenStatus2Text("studio.frozenStatus2.community.brushAuthorityUnavailable", "브러시 SQLite/OPFS 권위를 사용할 수 없습니다."));
         }
         const [storedBrushes, storedPalettes] = await Promise.all([
           readAllBrushesFromRepository(brushProduct.repository),
@@ -1378,9 +1358,7 @@ export function ShareResourceForm({
       if (controller.signal.aborted || ownedHeadGenerationRef.current !== generation) return;
       if (v2Head && legacyHead) {
         setOwnedHeadStatus("conflict");
-        setOwnedHeadError(
-          "이 후보에 v2와 legacy package 이력이 모두 있어 안전한 후속 릴리스를 결정할 수 없습니다. 두 패키지 이력을 확인해 주세요.",
-        );
+        setOwnedHeadError(frozenStatus2Text("studio.frozenStatus2.community.headConflict", "이 후보에 v2와 legacy package 이력이 모두 있어 안전한 후속 릴리스를 결정할 수 없습니다. 두 패키지 이력을 확인해 주세요."));
         return;
       }
       const exactHead = v2Head ?? legacyHead;
@@ -1405,7 +1383,7 @@ export function ShareResourceForm({
     }).catch((caught: unknown) => {
       if (controller.signal.aborted || ownedHeadGenerationRef.current !== generation) return;
       setOwnedHeadStatus("error");
-      setOwnedHeadError(errorText(caught, "현재 패키지 릴리스를 확인하지 못했습니다."));
+      setOwnedHeadError(errorText(caught, frozenStatus2Text("studio.frozenStatus2.community.headLoadFailed", "현재 패키지 릴리스를 확인하지 못했습니다.")));
     });
 
     return () => controller.abort();
@@ -1809,22 +1787,14 @@ export function StudioCommunityMarketplacePanel({
         if (!active) return;
         setCompatibilityContext(context);
         if (context.supportedEngines === null) {
-          setCompatibilityIssue(
-            "기기 엔진 측정을 완료하지 못해 설치 호환성을 확인할 수 없어요. 잠시 후 다시 시도해 주세요.",
-          );
+          setCompatibilityIssue(frozenStatus2Text("studio.frozenStatus2.community.compatMeasureFailedFull", "기기 엔진 측정을 완료하지 못해 설치 호환성을 확인할 수 없어요. 잠시 후 다시 시도해 주세요."));
         } else if (context.unverifiedEngines.length > 0) {
-          setCompatibilityIssue(
-            context.supportedEngines.length > 0
-              ? "일부 기기 엔진 측정을 완료하지 못했어요. 확인된 엔진용 자료는 계속 사용할 수 있고, 측정되지 않은 엔진이 필요한 자료만 설치를 보류합니다."
-              : "기기 엔진 측정을 완료하지 못해 설치 호환성을 확인할 수 없어요. 잠시 후 다시 시도해 주세요.",
-          );
+          setCompatibilityIssue(context.supportedEngines.length > 0 ? frozenStatus2Text("studio.frozenStatus2.community.compatMeasureFailedPartial", "일부 기기 엔진 측정을 완료하지 못했어요. 확인된 엔진용 자료는 계속 사용할 수 있고, 측정되지 않은 엔진이 필요한 자료만 설치를 보류합니다.") : frozenStatus2Text("studio.frozenStatus2.community.compatMeasureFailedFull", "기기 엔진 측정을 완료하지 못해 설치 호환성을 확인할 수 없어요. 잠시 후 다시 시도해 주세요."));
         }
       })
       .catch((caught: unknown) => {
         if (!active) return;
-        setCompatibilityIssue(
-          errorText(caught, "기기 엔진 호환성을 확인하지 못했습니다."),
-        );
+        setCompatibilityIssue(errorText(caught, frozenStatus2Text("studio.frozenStatus2.community.compatCheckFailed", "기기 엔진 호환성을 확인하지 못했습니다.")));
       });
     return () => {
       active = false;
@@ -1960,16 +1930,7 @@ export function StudioCommunityMarketplacePanel({
         setLibraryEntries([]);
         setNextCursor(null);
         setHasMore(false);
-        setError(
-          errorText(
-            caught,
-            view === "mine"
-              ? t("studio.community.error.loadMine")
-              : view === "library"
-                ? "계정 마켓 라이브러리를 불러오지 못했습니다."
-              : t("studio.community.error.loadCommunity"),
-          ),
-        );
+        setError(errorText(caught, view === "mine" ? t("studio.community.error.loadMine") : view === "library" ? frozenStatus2Text("studio.frozenStatus2.community.libraryLoadFailed", "계정 마켓 라이브러리를 불러오지 못했습니다.") : t("studio.community.error.loadCommunity")));
       })
       .finally(() => {
         if (!isCurrentRequest()) return;
@@ -2154,16 +2115,10 @@ export function StudioCommunityMarketplacePanel({
           delistedAt: new Date().toISOString(),
         },
       }));
-      setStatus({
-        message: `"${record.name}"을(를) 마켓 목록에서 내렸습니다. 카드와 비공개 릴리스 이력은 내 공유 목록에 유지됩니다.`,
-        error: false,
-      });
+      setStatus({ message: frozenStatus2Text("studio.frozenStatus2.community.delisted", { name: record.name }, "\"{name}\"을(를) 마켓 목록에서 내렸습니다. 카드와 비공개 릴리스 이력은 내 공유 목록에 유지됩니다."), error: false });
       return true;
     } catch (caught) {
-      setStatus({
-        message: errorText(caught, "공유 리소스를 마켓 목록에서 내리지 못했습니다."),
-        error: true,
-      });
+      setStatus({ message: errorText(caught, frozenStatus2Text("studio.frozenStatus2.community.delistFailed", "공유 리소스를 마켓 목록에서 내리지 못했습니다.")), error: true });
       return false;
     }
   }
@@ -2193,18 +2148,9 @@ export function StudioCommunityMarketplacePanel({
         receipt.libraryItemId !== item.id
         || receipt.logicalPackId !== item.logicalPackId
       ) {
-        throw new Error("계정 라이브러리 변경 응답의 패키지 증거가 일치하지 않습니다.");
+        throw new Error(frozenStatus2Text("studio.frozenStatus2.community.membershipEvidenceMismatch", "계정 라이브러리 변경 응답의 패키지 증거가 일치하지 않습니다."));
       }
-      setStatus({
-        message: receipt.changed
-          ? archived
-            ? `"${item.name}"을(를) 계정 라이브러리에 보관했습니다. 이 기기의 로컬 설치는 제거하지 않았습니다.`
-            : `"${item.name}"을(를) 계정 라이브러리의 활성 목록으로 복원했습니다. 로컬 설치 상태는 별도로 유지됩니다.`
-          : archived
-            ? `"${item.name}"은(는) 이미 계정 라이브러리에 보관되어 있습니다.`
-            : `"${item.name}"은(는) 이미 계정 라이브러리의 활성 목록에 있습니다.`,
-        error: false,
-      });
+      setStatus({ message: receipt.changed ? (archived ? frozenStatus2Text("studio.frozenStatus2.community.archivedToLibrary", { name: item.name }, "\"{name}\"을(를) 계정 라이브러리에 보관했습니다. 이 기기의 로컬 설치는 제거하지 않았습니다.") : frozenStatus2Text("studio.frozenStatus2.community.restoredToActive", { name: item.name }, "\"{name}\"을(를) 계정 라이브러리의 활성 목록으로 복원했습니다. 로컬 설치 상태는 별도로 유지됩니다.")) : archived ? frozenStatus2Text("studio.frozenStatus2.community.alreadyArchived", { name: item.name }, "\"{name}\"은(는) 이미 계정 라이브러리에 보관되어 있습니다.") : frozenStatus2Text("studio.frozenStatus2.community.alreadyActive", { name: item.name }, "\"{name}\"은(는) 이미 계정 라이브러리의 활성 목록에 있습니다."), error: false });
       if (receipt.changed && libraryFocusRestoreRef.current) {
         libraryFocusRestoreRef.current = {
           ...libraryFocusRestoreRef.current,
@@ -2217,10 +2163,7 @@ export function StudioCommunityMarketplacePanel({
       }
     } catch (caught: unknown) {
       if (controller.signal.aborted) return;
-      setStatus({
-        message: errorText(caught, "계정 라이브러리 보관 상태를 변경하지 못했습니다."),
-        error: true,
-      });
+      setStatus({ message: errorText(caught, frozenStatus2Text("studio.frozenStatus2.community.membershipChangeFailed", "계정 라이브러리 보관 상태를 변경하지 못했습니다.")), error: true });
     } finally {
       if (libraryMutationControllerRef.current === controller) {
         libraryMutationControllerRef.current = null;
@@ -2237,12 +2180,7 @@ export function StudioCommunityMarketplacePanel({
       ...current,
       [release.resource.id]: { ...release, delistedAt: receipt.delistedAt },
     }));
-    setStatus({
-      message: receipt.changed
-        ? `"${release.resource.name}"을(를) 다시 공개했습니다.`
-        : `"${release.resource.name}"은(는) 이미 공개 중입니다.`,
-      error: false,
-    });
+    setStatus({ message: receipt.changed ? frozenStatus2Text("studio.frozenStatus2.community.relisted", { name: release.resource.name }, "\"{name}\"을(를) 다시 공개했습니다.") : frozenStatus2Text("studio.frozenStatus2.community.alreadyPublic", { name: release.resource.name }, "\"{name}\"은(는) 이미 공개 중입니다."), error: false });
   }
 
   function applySearch(event: FormEvent) {

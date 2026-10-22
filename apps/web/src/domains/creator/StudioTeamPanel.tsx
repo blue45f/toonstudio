@@ -27,6 +27,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { StudioLiveCollaborationPanel } from "./live/StudioLiveCollaborationPanel";
+import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
 import {
   STUDIO_TEAM_ASSIGNABLE_ROLES,
   getStudioTeam,
@@ -118,7 +119,7 @@ function textInitials(value: string): string {
 
 function formatTeamDate(value: string): string {
   const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "날짜 확인 불가";
+  if (!Number.isFinite(date.getTime())) return frozenStatus2Text("studio.frozenStatus2.team.dateUnknown", "날짜 확인 불가");
   return TEAM_DATE_FORMATTER.format(date);
 }
 
@@ -255,10 +256,10 @@ function DraftCollaborationReadinessCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 id="studio-team-unsaved-title" className="text-sm font-bold text-fg">
               {isReady
-                ? "임시 협업 작업실이 준비됐어요"
+                ? frozenStatus2Text("studio.frozenStatus2.team.roomReady", "임시 협업 작업실이 준비됐어요")
                 : isProvisioning
-                  ? "임시 협업 작업실을 준비하고 있어요"
-                  : "저장 전 협업을 준비할 수 있어요"}
+                  ? frozenStatus2Text("studio.frozenStatus2.team.roomPreparing", "임시 협업 작업실을 준비하고 있어요")
+                  : frozenStatus2Text("studio.frozenStatus2.team.roomBeforeSave", "저장 전 협업을 준비할 수 있어요")}
             </h3>
             <span className="inline-flex min-h-6 items-center rounded-full border border-accent/30 bg-accent-soft px-2 font-mono text-[10px] font-semibold text-accent">
               초안 {suffix}
@@ -305,7 +306,7 @@ function DraftCollaborationReadinessCard({
               ) : (
                 <Share2 size={15} aria-hidden="true" />
               )}
-              {isProvisioning ? "공유 링크 준비 중" : "공유 링크 만들기"}
+              {isProvisioning ? frozenStatus2Text("studio.frozenStatus2.team.shareLinkBusy", "공유 링크 준비 중") : "공유 링크 만들기"}
             </Button>
           ) : null}
         </div>
@@ -418,7 +419,7 @@ function UnsavedInvitationInbox({
         {invitationsLoading ? (
           <div
             aria-busy="true"
-            aria-label="받은 팀 초대 불러오는 중"
+            aria-label={frozenStatus2Text("studio.frozenStatus2.team.invitationsLoading", "받은 팀 초대 불러오는 중")}
             className="mt-3 space-y-3"
           >
             {[0, 1].map((index) => (
@@ -431,7 +432,7 @@ function UnsavedInvitationInbox({
         ) : invitationsError ? (
           <div className="mt-3 py-6 text-center" role="alert">
             <AlertCircle className="mx-auto text-bad" size={24} aria-hidden="true" />
-            <p className="mt-2 text-sm font-semibold text-fg">초대 목록을 열지 못했어요</p>
+            <p className="mt-2 text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.team.invitationsOpenFailed", "초대 목록을 열지 못했어요")}</p>
             <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-fg-2">
               {invitationsError}
             </p>
@@ -442,9 +443,9 @@ function UnsavedInvitationInbox({
         ) : invitations.length === 0 ? (
           <div className="py-7 text-center">
             <Inbox className="mx-auto text-fg-3" size={25} aria-hidden="true" />
-            <p className="mt-2 text-sm font-semibold text-fg">도착한 초대가 없어요</p>
+            <p className="mt-2 text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.team.noInvitations", "도착한 초대가 없어요")}</p>
             <p className="mt-1 text-xs leading-relaxed text-fg-3">
-              새 초대를 받으면 작품과 역할을 이곳에서 확인할 수 있습니다.
+              {frozenStatus2Text("studio.frozenStatus2.team.noInvitationsDesc", "새 초대를 받으면 작품과 역할을 이곳에서 확인할 수 있습니다.")}
             </p>
           </div>
         ) : (
@@ -482,7 +483,7 @@ function UnsavedInvitationInbox({
                       aria-busy={accepting}
                       aria-label={
                         accepting
-                          ? `${invitation.workTitle} 팀 초대 수락 처리 중`
+                          ? frozenStatus2Text("studio.frozenStatus2.team.acceptingBusy", { title: invitation.workTitle }, "{title} 팀 초대 수락 처리 중")
                           : `${invitation.workTitle} 팀 초대 수락`
                       }
                       className="min-h-11"
@@ -504,7 +505,7 @@ function UnsavedInvitationInbox({
                       aria-busy={declining}
                       aria-label={
                         declining
-                          ? `${invitation.workTitle} 팀 초대 거절 처리 중`
+                          ? frozenStatus2Text("studio.frozenStatus2.team.decliningBusy", { title: invitation.workTitle }, "{title} 팀 초대 거절 처리 중")
                           : `${invitation.workTitle} 팀 초대 거절`
                       }
                       className="min-h-11"
@@ -589,7 +590,7 @@ function TeamActivityDetails({
         </div>
 
         {loading ? (
-          <div aria-busy="true" aria-label="팀 변경 기록 불러오는 중" className="mt-2 space-y-2">
+          <div aria-busy="true" aria-label={frozenStatus2Text("studio.frozenStatus2.team.activityLoading", "팀 변경 기록 불러오는 중")} className="mt-2 space-y-2">
             {[0, 1, 2].map((index) => (
               <div className="h-14 animate-pulse rounded-lg bg-raised/70 motion-reduce:animate-none" key={index} />
             ))}
@@ -605,7 +606,7 @@ function TeamActivityDetails({
         ) : activity.length === 0 ? (
           <div className="py-5 text-center">
             <History className="mx-auto text-fg-3" size={22} aria-hidden="true" />
-            <p className="mt-2 text-xs font-semibold text-fg-2">아직 기록된 변경이 없어요</p>
+            <p className="mt-2 text-xs font-semibold text-fg-2">{frozenStatus2Text("studio.frozenStatus2.team.noActivity", "아직 기록된 변경이 없어요")}</p>
           </div>
         ) : (
           <ol aria-label="최근 팀 변경 기록" className="mt-2 divide-y divide-line">
@@ -761,7 +762,7 @@ export function StudioTeamPanelView({
 
   if (loading) {
     return (
-      <div aria-busy="true" aria-label="팀 작업 공간 불러오는 중" className="space-y-4 px-4 py-5">
+      <div aria-busy="true" aria-label={frozenStatus2Text("studio.frozenStatus2.team.workspaceLoading", "팀 작업 공간 불러오는 중")} className="space-y-4 px-4 py-5">
         <div className="h-16 animate-pulse rounded-xl bg-raised/70 motion-reduce:animate-none" />
         <div className="space-y-2">
           {[0, 1, 2].map((index) => (
@@ -780,7 +781,7 @@ export function StudioTeamPanelView({
       <div className="grid min-h-56 place-items-center px-5 py-8 text-center" role="alert">
         <div className="max-w-xs">
           <AlertCircle className="mx-auto text-bad" size={28} aria-hidden="true" />
-          <h3 className="mt-3 text-sm font-bold text-fg">팀 정보를 열지 못했어요</h3>
+          <h3 className="mt-3 text-sm font-bold text-fg">{frozenStatus2Text("studio.frozenStatus2.team.teamOpenFailed", "팀 정보를 열지 못했어요")}</h3>
           <p className="mt-1.5 text-xs leading-relaxed text-fg-2">{loadError}</p>
           <Button
             className="mt-4 min-h-11"
@@ -955,9 +956,9 @@ export function StudioTeamPanelView({
         {snapshot.members.length === 0 ? (
           <div className="py-8 text-center">
             <UsersRound className="mx-auto text-fg-3" size={26} aria-hidden="true" />
-            <p className="mt-2 text-sm font-semibold text-fg">표시할 팀원이 없어요</p>
+            <p className="mt-2 text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.team.noMembers", "표시할 팀원이 없어요")}</p>
             <p className="mt-1 text-xs text-fg-3">
-              권한이 있다면 위 초대 양식에서 첫 팀원을 추가할 수 있습니다.
+              {frozenStatus2Text("studio.frozenStatus2.team.noMembersDesc", "권한이 있다면 위 초대 양식에서 첫 팀원을 추가할 수 있습니다.")}
             </p>
           </div>
         ) : (
@@ -1249,7 +1250,7 @@ export function StudioTeamPanel({
         ) {
           setSnapshot(null);
           setSnapshotAuthScopeKey(null);
-          setLoadError(messageFrom(error, "팀 작업 공간을 불러오지 못했습니다."));
+          setLoadError(messageFrom(error, frozenStatus2Text("studio.frozenStatus2.team.workspaceLoadFailed", "팀 작업 공간을 불러오지 못했습니다.")));
           setLoadErrorAuthScopeKey(authScopeKey);
         }
       })
@@ -1289,7 +1290,7 @@ export function StudioTeamPanel({
           isStudioTeamRequestScopeCurrent(requestScope, currentScopeRef.current)
         ) {
           setInvitations([]);
-          setInvitationsError(messageFrom(error, "받은 팀 초대를 불러오지 못했습니다."));
+          setInvitationsError(messageFrom(error, frozenStatus2Text("studio.frozenStatus2.team.invitationsLoadFailed", "받은 팀 초대를 불러오지 못했습니다.")));
         }
       })
       .finally(() => {
@@ -1334,7 +1335,7 @@ export function StudioTeamPanel({
         ) {
           setActivity([]);
           setActivityScope(requestScope);
-          setActivityError(messageFrom(error, "팀 변경 기록을 불러오지 못했습니다."));
+          setActivityError(messageFrom(error, frozenStatus2Text("studio.frozenStatus2.team.activityLoadFailed", "팀 변경 기록을 불러오지 못했습니다.")));
         }
       })
       .finally(() => {
@@ -1477,7 +1478,7 @@ export function StudioTeamPanel({
         setNotice(error.message);
         setReloadKey((value) => value + 1);
       } else {
-        setActionError(messageFrom(error, "팀 권한을 변경하지 못했습니다."));
+        setActionError(messageFrom(error, frozenStatus2Text("studio.frozenStatus2.team.permissionChangeFailed", "팀 권한을 변경하지 못했습니다.")));
       }
       return false;
     } finally {
@@ -1523,23 +1524,18 @@ export function StudioTeamPanel({
     if (!workId || !authScopeKey) return;
     const invitationId = visibleSnapshot?.viewer.invitationId;
     if (!invitationId) {
-      setActionError("최신 초대 조건을 확인하지 못했습니다. 패널을 다시 열어 주세요.");
+      setActionError(frozenStatus2Text("studio.frozenStatus2.team.invitationCheckFailed", "최신 초대 조건을 확인하지 못했습니다. 패널을 다시 열어 주세요."));
       return;
     }
     void runMutation(
       `invitation:${action}`,
-      action === "accept" ? "팀 초대를 수락했습니다." : "팀 초대를 거절했습니다.",
+      action === "accept" ? frozenStatus2Text("studio.frozenStatus2.team.acceptedNotice", "팀 초대를 수락했습니다.") : frozenStatus2Text("studio.frozenStatus2.team.declinedNotice", "팀 초대를 거절했습니다."),
       async () => {
         await respondToStudioTeamInvitation(workId, action, invitationId);
         try {
           return await getStudioTeam(workId);
         } catch (error) {
-          throw new StudioTeamPostAcknowledgementRefreshError(
-            action === "accept"
-              ? "초대 수락은 완료됐지만 최신 팀 정보를 불러오지 못했습니다. 다시 시도해 주세요."
-              : "초대 거절은 완료됐지만 최신 팀 정보를 불러오지 못했습니다. 다시 시도해 주세요.",
-            { cause: error }
-          );
+          throw new StudioTeamPostAcknowledgementRefreshError(action === "accept" ? frozenStatus2Text("studio.frozenStatus2.team.refreshAfterAccept", "초대 수락은 완료됐지만 최신 팀 정보를 불러오지 못했습니다. 다시 시도해 주세요.") : frozenStatus2Text("studio.frozenStatus2.team.refreshAfterDecline", "초대 거절은 완료됐지만 최신 팀 정보를 불러오지 못했습니다. 다시 시도해 주세요."), { cause: error });
         }
       }
     ).then((succeeded) => {
@@ -1596,7 +1592,7 @@ export function StudioTeamPanel({
       );
       if (action === "accept") setSharedWorksRefreshKey((value) => value + 1);
       setInboxFocusTarget(nextFocusTarget);
-      setNotice(action === "accept" ? "팀 초대를 수락했습니다." : "팀 초대를 거절했습니다.");
+      setNotice(action === "accept" ? frozenStatus2Text("studio.frozenStatus2.team.acceptedNotice", "팀 초대를 수락했습니다.") : frozenStatus2Text("studio.frozenStatus2.team.declinedNotice", "팀 초대를 거절했습니다."));
     } catch (error) {
       if (!isStudioTeamRequestScopeCurrent(requestScope, currentScopeRef.current)) return;
       if (shouldReloadStudioTeamInvitation(error)) {
@@ -1605,7 +1601,7 @@ export function StudioTeamPanel({
         setInvitationsLoaded(false);
         setInvitationsReloadKey((value) => value + 1);
       } else {
-        setActionError(messageFrom(error, "팀 초대에 응답하지 못했습니다."));
+        setActionError(messageFrom(error, frozenStatus2Text("studio.frozenStatus2.team.respondFailed", "팀 초대에 응답하지 못했습니다.")));
       }
     } finally {
       if (isStudioTeamRequestScopeCurrent(requestScope, currentScopeRef.current)) {

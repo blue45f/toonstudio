@@ -63,6 +63,7 @@ import {
   type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
 import { STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES, validateStudioHybridDccFanPolygon } from "./studio-hybrid-dcc-polygon-validation";
+import { frozenStatus2Text } from "../studio-frozen2-status-i18n";
 import { resolveStudioHybridDccScreenComponentCandidate } from "./studio-hybrid-dcc-screen-selection";
 import { createStudioHybridDccSelectionGate } from "./studio-hybrid-dcc-selection-gate";
 import { detectStudioHybridDccWebglCapability } from "./studio-hybrid-dcc-webgl-probe";
@@ -1025,7 +1026,7 @@ function StudioHybridDccAssetMesh({
           }
           if (!Number.isSafeInteger(event.faceIndex) || (event.faceIndex ?? -1) < 0) {
             onSelect(asset.assetId);
-            onSelectionError?.("클릭한 삼각형을 편집 메시의 점·선·면으로 찾지 못했습니다.");
+            onSelectionError?.(frozenStatus2Text("studio.frozenStatus2.hybrid.selectionNotFound", "클릭한 삼각형을 편집 메시의 점·선·면으로 찾지 못했습니다."));
             return;
           }
           const source: StudioHybridDccMeshSelectionSource = {
@@ -1063,11 +1064,7 @@ function StudioHybridDccAssetMesh({
               viewportSize,
             );
             if (nearest === null) {
-              onSelectionError?.(
-                selectionMode === "vertex"
-                  ? "꼭짓점 가까이를 클릭해 주세요. 면 가운데는 임의의 점으로 선택하지 않습니다."
-                  : "모서리 가까이를 클릭해 주세요. 면 가운데는 임의의 선으로 선택하지 않습니다.",
-              );
+              onSelectionError?.(selectionMode === "vertex" ? frozenStatus2Text("studio.frozenStatus2.hybrid.clickNearVertex", "꼭짓점 가까이를 클릭해 주세요. 면 가운데는 임의의 점으로 선택하지 않습니다.") : frozenStatus2Text("studio.frozenStatus2.hybrid.clickNearEdge", "모서리 가까이를 클릭해 주세요. 면 가운데는 임의의 선으로 선택하지 않습니다."));
               return;
             }
             elementId = nearest;
@@ -1630,7 +1627,7 @@ export function StudioHybridDccViewport({
         <div className="absolute inset-0 grid place-items-center px-5 text-center" role="status">
           <div className="max-w-sm">
             <CircleDashed className="mx-auto mb-3 animate-spin text-fg-3 motion-reduce:animate-none" size={26} aria-hidden="true" />
-            <p className="text-sm font-semibold text-fg">3D 렌더러를 확인하는 중입니다.</p>
+            <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.hybrid.rendererChecking", "3D 렌더러를 확인하는 중입니다.")}</p>
           </div>
         </div>
       ) : detectedWebgl === false ? (
@@ -1638,9 +1635,9 @@ export function StudioHybridDccViewport({
         <div className="absolute inset-0 grid place-items-center px-5 text-center" role="alert">
           <div className="max-w-sm">
             <AlertTriangle className="mx-auto mb-3 text-warn" size={26} aria-hidden="true" />
-            <p className="text-sm font-semibold text-fg">WebGL 3D 렌더링을 사용할 수 없습니다.</p>
+            <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.hybrid.webglUnavailable", "WebGL 3D 렌더링을 사용할 수 없습니다.")}</p>
             <p className="mt-1 text-xs leading-relaxed text-fg-2">
-              브라우저의 하드웨어 가속을 켠 뒤 뷰포트를 다시 열어 주세요. 편집 메시 원본은 변경되지 않았습니다.
+              {frozenStatus2Text("studio.frozenStatus2.hybrid.webglUnavailableDetail", "브라우저의 하드웨어 가속을 켠 뒤 뷰포트를 다시 열어 주세요. 편집 메시 원본은 변경되지 않았습니다.")}
             </p>
           </div>
         </div>
@@ -1648,12 +1645,10 @@ export function StudioHybridDccViewport({
         <div className="absolute inset-0 grid place-items-center px-5 text-center">
           <div className="max-w-sm">
             <AlertTriangle className="mx-auto mb-3 text-bad" size={26} aria-hidden="true" />
-            <p className="text-sm font-semibold text-fg">
-              표시할 수 있는 메시가 없습니다.
-            </p>
+            <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.hybrid.noDisplayableMesh", "표시할 수 있는 메시가 없습니다.")}</p>
             <p className="mt-1 text-xs leading-relaxed text-fg-2">
               {snapshot.errors[0]?.message
-                ?? "메시 진단을 실행해 잘못된 정점 또는 면을 복구해 주세요."}
+                ?? frozenStatus2Text("studio.frozenStatus2.hybrid.meshDiagnosticFallback", "메시 진단을 실행해 잘못된 정점 또는 면을 복구해 주세요.")}
             </p>
           </div>
         </div>
@@ -1670,12 +1665,8 @@ export function StudioHybridDccViewport({
         >
           <div className="pointer-events-auto max-w-sm rounded-2xl border border-line bg-panel/90 px-5 py-4 shadow-[0_18px_48px_oklch(0.08_0.008_70/0.34)] backdrop-blur">
             <CircleDashed className="mx-auto mb-3 text-fg-3" size={26} aria-hidden="true" />
-            <p className="text-sm font-semibold text-fg">
-              3D 작업대가 비어 있습니다.
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-fg-2">
-              큐브를 추가하거나 모델을 가져오면 실제 편집 메시가 여기에 나타납니다.
-            </p>
+            <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.hybrid.emptyStage", "3D 작업대가 비어 있습니다.")}</p>
+            <p className="mt-1 text-xs leading-relaxed text-fg-2">{frozenStatus2Text("studio.frozenStatus2.hybrid.emptyStageDesc", "큐브를 추가하거나 모델을 가져오면 실제 편집 메시가 여기에 나타납니다.")}</p>
             {onEmptyStart ? (
               <div className="mt-3 flex flex-wrap justify-center gap-2">
                 <button
@@ -1947,9 +1938,9 @@ export function StudioHybridDccViewport({
         <div className="absolute inset-0 z-30 grid place-items-center bg-canvas/95 px-5 text-center" role="alert">
           <div className="max-w-sm">
             <AlertTriangle className="mx-auto mb-3 text-warn" size={26} aria-hidden="true" />
-            <p className="text-sm font-semibold text-fg">그래픽 컨텍스트가 중단되었습니다.</p>
+            <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.hybrid.contextLost", "그래픽 컨텍스트가 중단되었습니다.")}</p>
             <p className="mt-1 text-xs leading-relaxed text-fg-2">
-              브라우저가 WebGL을 복구할 때까지 3D 미리보기를 잠시 멈췄습니다.
+              {frozenStatus2Text("studio.frozenStatus2.hybrid.contextLostDetail", "브라우저가 WebGL을 복구할 때까지 3D 미리보기를 잠시 멈췄습니다.")}
             </p>
           </div>
         </div>

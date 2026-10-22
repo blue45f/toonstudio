@@ -47,6 +47,7 @@ import {
   type StudioPublishThumbnailSlot,
 } from "./studio-publish-package";
 import { StudioPublishPackageAiSection } from "./publish/StudioPublishPackageAiSection";
+import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
 import { AI_USAGE_META } from "./publish/studio-publish-package-ai-usage-meta";
 import {
   STUDIO_REVIEW_PDF_PROFILE_IDS,
@@ -300,11 +301,7 @@ function IssueLedger({
           {title}
         </h3>
         <span
-          className={`rounded-full border px-2 py-0.5 text-[0.65rem] font-bold tabular-nums ${
-            isError
-              ? "border-bad/35 bg-bad/10 text-bad"
-              : "border-warn/35 bg-warn/10 text-warn"
-          }`}
+          className={`rounded-full border px-2 py-0.5 text-[0.65rem] font-bold tabular-nums ${isError ? "border-bad/35 bg-bad/10 text-bad" : "border-warn/35 bg-warn/10 text-warn"}`}
         >
           {issues.length.toLocaleString("ko-KR")}
         </span>
@@ -312,7 +309,7 @@ function IssueLedger({
       {issues.length === 0 ? (
         <div className="mt-3 flex min-h-20 items-center gap-3 rounded-xl border border-dashed border-line px-4 text-xs text-fg-3">
           <CheckCircle2 size={17} className="shrink-0 text-good" aria-hidden />
-          {isError ? "내보내기를 막는 오류가 없습니다." : "추가로 확인할 경고가 없습니다."}
+          {isError ? frozenStatus2Text("studio.frozenStatus2.publishPkg.noBlockingErrors", "내보내기를 막는 오류가 없습니다.") : frozenStatus2Text("studio.frozenStatus2.publishPkg.noMoreWarnings", "추가로 확인할 경고가 없습니다.")}
         </div>
       ) : (
         <>
@@ -521,11 +518,7 @@ export function StudioPublishPackagePanel({
     globalThis.document.getElementById(`publish-package-tab-${tab}`)?.focus();
   };
 
-  const sourceCanvasStatus = hasCanvasError
-    ? "오류 확인 필요"
-    : hasCanvasMetadataMissing
-      ? "메타데이터 없음"
-      : "메타데이터 확인";
+  const sourceCanvasStatus = hasCanvasError ? frozenStatus2Text("studio.frozenStatus2.publishPkg.sourceCanvasError", "오류 확인 필요") : hasCanvasMetadataMissing ? frozenStatus2Text("studio.frozenStatus2.publishPkg.sourceCanvasMetaMissing", "메타데이터 없음") : frozenStatus2Text("studio.frozenStatus2.publishPkg.sourceCanvasMetaOk", "메타데이터 확인");
   const targetWidth = preset.episode.targetWidth
     ? `${preset.episode.targetWidth.toLocaleString("ko-KR")}px 폭`
     : "원본 폭 유지";
@@ -564,7 +557,7 @@ export function StudioPublishPackagePanel({
                       : "border-bad/35 bg-bad/10 text-bad"
                   }`}
                 >
-                  {plan.canExport ? "내보내기 가능" : `오류 ${plan.errors.length}`}
+                  {plan.canExport ? frozenStatus2Text("studio.frozenStatus2.publishPkg.canExport", "내보내기 가능") : frozenStatus2Text("studio.frozenStatus2.publishPkg.errorCountBadge", { count: plan.errors.length }, "오류 {count}")}
                 </span>
               </div>
               <p
@@ -599,9 +592,7 @@ export function StudioPublishPackagePanel({
               <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden />
             )}
             <span>
-              {plan.canExport
-                ? `차단 오류 없음 · 경고 ${plan.warnings.length.toLocaleString("ko-KR")}건은 내보내기 전에 확인하세요.`
-                : `차단 오류 ${plan.errors.length.toLocaleString("ko-KR")}건을 해결해야 실제 파일 생성을 시작할 수 있습니다.`}
+              {plan.canExport ? frozenStatus2Text("studio.frozenStatus2.publishPkg.summaryNoBlockers", { count: plan.warnings.length.toLocaleString("ko-KR") }, "차단 오류 없음 · 경고 {count}건은 내보내기 전에 확인하세요.") : frozenStatus2Text("studio.frozenStatus2.publishPkg.summaryBlockers", { count: plan.errors.length.toLocaleString("ko-KR") }, "차단 오류 {count}건을 해결해야 실제 파일 생성을 시작할 수 있습니다.")}
             </span>
           </div>
         </header>
@@ -1006,8 +997,8 @@ export function StudioPublishPackagePanel({
                 {plan.artifacts.length === 0 ? (
                   <div className="mt-3 flex min-h-28 flex-col items-center justify-center rounded-xl border border-dashed border-line px-4 text-center">
                     <FileArchive size={20} className="text-fg-3" aria-hidden />
-                    <p className="mt-2 text-xs font-semibold text-fg-2">계획된 파일이 없습니다.</p>
-                    <p className="mt-1 text-[0.68rem] text-fg-3">회차 이미지 원본과 설정을 확인하세요.</p>
+                    <p className="mt-2 text-xs font-semibold text-fg-2">{frozenStatus2Text("studio.frozenStatus2.publishPkg.noPlannedFiles", "계획된 파일이 없습니다.")}</p>
+                    <p className="mt-1 text-[0.68rem] text-fg-3">{frozenStatus2Text("studio.frozenStatus2.publishPkg.noPlannedFilesDesc", "회차 이미지 원본과 설정을 확인하세요.")}</p>
                   </div>
                 ) : (
                   <ol className="mt-3 divide-y divide-line overflow-hidden rounded-xl border border-line bg-card/25">
@@ -1044,7 +1035,7 @@ export function StudioPublishPackagePanel({
                   <Metric label="스키마" value={plan.manifest.schema} />
                   <Metric label="버전" value={`v${plan.manifest.version}`} />
                   <Metric label="AI 사용" value={AI_USAGE_META[plan.manifest.ai.usage].label} />
-                  <Metric label="검증 상태" value={plan.manifest.validation.canExport ? "통과" : "오류 있음"} />
+                  <Metric label="검증 상태" value={plan.manifest.validation.canExport ? "통과" : frozenStatus2Text("studio.frozenStatus2.publishPkg.validationFailedValue", "오류 있음")} />
                 </dl>
               </section>
             </div>
@@ -1059,13 +1050,7 @@ export function StudioPublishPackagePanel({
             <p
               role="status"
               aria-live="polite"
-              className={`mb-2 rounded-lg border px-3 py-2 text-xs leading-relaxed ${
-                exportStatus.tone === "good"
-                  ? "border-good/35 bg-good/10 text-good"
-                  : exportStatus.tone === "bad"
-                    ? "border-bad/35 bg-bad/10 text-bad"
-                    : "border-cool/35 bg-cool/10 text-cool"
-              }`}
+              className={`mb-2 rounded-lg border px-3 py-2 text-xs leading-relaxed ${exportStatus.tone === "good" ? "border-good/35 bg-good/10 text-good" : exportStatus.tone === "bad" ? "border-bad/35 bg-bad/10 text-bad" : "border-cool/35 bg-cool/10 text-cool"}`}
             >
               {exportStatus.text}
               {exportBusy && exportProgress
@@ -1101,14 +1086,14 @@ export function StudioPublishPackagePanel({
                   ) : (
                     <FileArchive size={15} aria-hidden />
                   )}
-                  {exportBusy ? "패키지 생성 중…" : "패키지 내보내기"}
+                  {exportBusy ? frozenStatus2Text("studio.frozenStatus2.publishPkg.busyCreating", "패키지 생성 중…") : "패키지 내보내기"}
                 </button>
               )}
             </div>
           </div>
           {!plan.canExport && onBeginExport && (
             <p id="publish-package-export-blocked" className="mt-1 text-right text-[0.65rem] text-bad">
-              차단 오류 {plan.errors.length.toLocaleString("ko-KR")}건을 해결하면 실제 파일 생성을 시작할 수 있습니다.
+              {frozenStatus2Text("studio.frozenStatus2.publishPkg.exportBlockedReason", { count: plan.errors.length.toLocaleString("ko-KR") }, "차단 오류 {count}건을 해결하면 실제 파일 생성을 시작할 수 있습니다.")}
             </p>
           )}
         </footer>

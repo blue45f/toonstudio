@@ -39,6 +39,7 @@ import {
   type StudioPublicationAnalyticsImportResult,
   type StudioPublicationAnalyticsMergeResult,
 } from "./studio-publication-analytics";
+import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
 import {
   addStudioReleaseScheduleItem,
   exportStudioReleaseScheduleIcalendar,
@@ -281,11 +282,7 @@ function DiagnosticLedger({
             {diagnostics.map((diagnostic, index) => (
               <li
                 key={`${diagnostic.code}-${diagnostic.row ?? "global"}-${index}`}
-                className={`rounded-lg border px-2.5 py-2 text-[0.68rem] leading-relaxed ${
-                  diagnostic.severity === "error"
-                    ? "border-bad/30 bg-bad/10 text-bad"
-                    : "border-warn/30 bg-warn/10 text-warn"
-                }`}
+                className={`rounded-lg border px-2.5 py-2 text-[0.68rem] leading-relaxed ${diagnostic.severity === "error" ? "border-bad/30 bg-bad/10 text-bad" : "border-warn/30 bg-warn/10 text-warn"}`}
               >
                 <span className="font-semibold">{diagnostic.code}</span>
                 {diagnostic.row ? ` · ${diagnostic.row}행` : ""}
@@ -296,7 +293,7 @@ function DiagnosticLedger({
         </details>
       ) : (
         <p className="mt-2 flex items-center gap-1.5 text-[0.68rem] text-good">
-          <CheckCircle2 size={13} aria-hidden /> 추가 진단이 없습니다.
+          <CheckCircle2 size={13} aria-hidden /> {frozenStatus2Text("studio.frozenStatus2.pubops.noDiagnostics", "추가 진단이 없습니다.")}
         </p>
       )}
     </div>
@@ -423,10 +420,7 @@ export function StudioPublicationOperationsPanel({
       onScheduleChange(updateStudioReleaseScheduleItem(schedule, itemId, patch));
       setScheduleNotice(null);
     } catch (error) {
-      setScheduleNotice({
-        tone: "error",
-        text: error instanceof Error ? error.message : "일정을 수정하지 못했어요.",
-      });
+      setScheduleNotice({ tone: "error", text: error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.pubops.updateScheduleFailed", "일정을 수정하지 못했어요.") });
     }
   }
 
@@ -443,12 +437,9 @@ export function StudioPublicationOperationsPanel({
         status: "draft",
       });
       onScheduleChange(next);
-      setScheduleNotice({ tone: "success", text: "새 로컬 릴리스 일정을 추가했어요." });
+      setScheduleNotice({ tone: "success", text: frozenStatus2Text("studio.frozenStatus2.pubops.scheduleAdded", "새 로컬 릴리스 일정을 추가했어요.") });
     } catch (error) {
-      setScheduleNotice({
-        tone: "error",
-        text: error instanceof Error ? error.message : "일정을 추가하지 못했어요.",
-      });
+      setScheduleNotice({ tone: "error", text: error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.pubops.addScheduleFailed", "일정을 추가하지 못했어요.") });
     }
   }
 
@@ -460,10 +451,7 @@ export function StudioPublicationOperationsPanel({
         includeNotes: calendarIncludeNotes,
       });
       if (exported.eventCount === 0) {
-        setScheduleNotice({
-          tone: "warning",
-          text: "내보낼 수 있는 일정이 없어요. 제목·날짜·시간·IANA 시간대를 확인해 주세요.",
-        });
+        setScheduleNotice({ tone: "warning", text: frozenStatus2Text("studio.frozenStatus2.pubops.noExportableSchedule", "내보낼 수 있는 일정이 없어요. 제목·날짜·시간·IANA 시간대를 확인해 주세요.") });
         return;
       }
       const blob = new Blob([exported.content], { type: exported.mimeType });
@@ -473,19 +461,9 @@ export function StudioPublicationOperationsPanel({
       anchor.download = exported.filename;
       anchor.click();
       globalThis.setTimeout(() => globalThis.URL.revokeObjectURL(objectUrl), 0);
-      setScheduleNotice({
-        tone: exported.skippedItemIds.length > 0 ? "warning" : "success",
-        text: `캘린더 ${formatCount(exported.eventCount)}건을 로컬 파일로 만들었어요.${
-          exported.skippedItemIds.length > 0
-            ? ` 유효하지 않은 ${formatCount(exported.skippedItemIds.length)}건은 제외했습니다.`
-            : ""
-        }`,
-      });
+      setScheduleNotice({ tone: exported.skippedItemIds.length > 0 ? "warning" : "success", text: `${frozenStatus2Text("studio.frozenStatus2.pubops.calendarCreated", { count: formatCount(exported.eventCount) }, "캘린더 {count}건을 로컬 파일로 만들었어요.")}${exported.skippedItemIds.length > 0 ? frozenStatus2Text("studio.frozenStatus2.pubops.calendarSkipped", { count: formatCount(exported.skippedItemIds.length) }, " 유효하지 않은 {count}건은 제외했습니다.") : ""}` });
     } catch (error) {
-      setScheduleNotice({
-        tone: "error",
-        text: error instanceof Error ? error.message : "캘린더 파일을 만들지 못했어요.",
-      });
+      setScheduleNotice({ tone: "error", text: error instanceof Error ? error.message : frozenStatus2Text("studio.frozenStatus2.pubops.calendarCreateFailed", "캘린더 파일을 만들지 못했어요.") });
     }
   }
 
@@ -514,22 +492,22 @@ export function StudioPublicationOperationsPanel({
     event.target.value = "";
     if (!file) return;
     if (file.size > STUDIO_PUBLICATION_ANALYTICS_LIMITS.maxCsvCodeUnits * 4) {
-      setCsvFileNotice({ tone: "error", text: "파일이 로컬 CSV 읽기 한도를 넘었어요." });
+      setCsvFileNotice({ tone: "error", text: frozenStatus2Text("studio.frozenStatus2.pubops.csvTooLarge", "파일이 로컬 CSV 읽기 한도를 넘었어요.") });
       return;
     }
     try {
       const text = await file.text();
       if (text.length > STUDIO_PUBLICATION_ANALYTICS_LIMITS.maxCsvCodeUnits) {
-        setCsvFileNotice({ tone: "error", text: "CSV 텍스트가 허용 길이를 넘었어요. 파일을 나눠 주세요." });
+        setCsvFileNotice({ tone: "error", text: frozenStatus2Text("studio.frozenStatus2.pubops.csvTextTooLong", "CSV 텍스트가 허용 길이를 넘었어요. 파일을 나눠 주세요.") });
         return;
       }
       setCsvText(text);
       setCsvSourceLabel(file.name.slice(0, STUDIO_PUBLICATION_ANALYTICS_LIMITS.maxSourceLabelCodeUnits));
-      setCsvFileNotice({ tone: "success", text: `${file.name}을 로컬에서 읽었어요. 아직 저장하지 않았습니다.` });
+      setCsvFileNotice({ tone: "success", text: frozenStatus2Text("studio.frozenStatus2.pubops.csvFileRead", { name: file.name }, "{name}을 로컬에서 읽었어요. 아직 저장하지 않았습니다.") });
       setCsvImportResult(null);
       setCsvMergeResult(null);
     } catch {
-      setCsvFileNotice({ tone: "error", text: "브라우저에서 CSV 파일을 읽지 못했어요." });
+      setCsvFileNotice({ tone: "error", text: frozenStatus2Text("studio.frozenStatus2.pubops.csvReadFailed", "브라우저에서 CSV 파일을 읽지 못했어요.") });
     }
   }
 
@@ -948,7 +926,7 @@ export function StudioPublicationOperationsPanel({
 
               <section aria-labelledby="saved-records-title">
                 <div className="flex flex-wrap items-end justify-between gap-2"><div><h3 id="saved-records-title" className="text-sm font-bold text-fg">저장된 로컬 기록</h3><p className="mt-0.5 text-xs text-fg-3">원본 CSV 대신 정규화된 지표와 출처 라벨만 보관합니다.</p></div><button type="button" onClick={handleClearAllRecords} disabled={normalizedAnalytics.records.length === 0} className={`${BUTTON_CLASS} ${clearAllArmed ? "border-bad/40 bg-bad/10 text-bad" : ""}`}><Trash2 size={14} aria-hidden /> {clearAllArmed ? "다시 눌러 모두 삭제" : "모두 삭제"}</button></div>
-                {visibleRecords.length === 0 ? <p className="mt-3 rounded-xl border border-dashed border-line bg-card/20 px-3 py-6 text-center text-xs text-fg-3">저장된 기록이 없습니다.</p> : (
+                {visibleRecords.length === 0 ? <p className="mt-3 rounded-xl border border-dashed border-line bg-card/20 px-3 py-6 text-center text-xs text-fg-3">{frozenStatus2Text("studio.frozenStatus2.pubops.noSavedRecords", "저장된 기록이 없습니다.")}</p> : (
                   <div className="mt-3 overflow-x-auto rounded-xl border border-line"><table className="min-w-[54rem] w-full text-left text-xs"><caption className="sr-only">삭제할 수 있는 저장된 분석 기록</caption><thead className="bg-raised/70 text-[0.68rem] text-fg-3"><tr><th className="px-3 py-2 font-semibold">날짜</th><th className="px-3 py-2 font-semibold">게시처</th><th className="px-3 py-2 font-semibold">회차·제목</th><th className="px-3 py-2 font-semibold">출처</th><th className="px-3 py-2 text-right font-semibold">조회 / 반응 / 구독</th><th className="w-12 px-2 py-2"><span className="sr-only">삭제</span></th></tr></thead><tbody className="divide-y divide-line bg-card/25">{visibleRecords.map((record) => <tr key={record.id}><td className="px-3 py-2.5 font-display tabular-nums text-fg">{record.date}</td><td className="px-3 py-2.5 text-fg-2">{ANALYTICS_DESTINATION_LABELS[record.destination]}</td><td className="max-w-64 px-3 py-2.5"><p className="truncate font-semibold text-fg">{[record.episode, record.title].filter(Boolean).join(" · ")}</p></td><td className="max-w-48 px-3 py-2.5"><p className="truncate text-fg-3">{record.source.label} · {record.source.kind === "csv" ? "CSV" : "수동"}</p></td><td className="px-3 py-2.5 text-right tabular-nums text-fg-2">{formatCount(record.views)} / {formatCount(record.likes + record.comments)} / {formatCount(record.subscribersGained)}</td><td className="px-2 py-1.5"><button type="button" onClick={() => removeAnalyticsRecord(record.id)} aria-label={`${record.date} ${record.episode || record.title} 기록 삭제`} className="grid size-8 place-items-center rounded-lg text-fg-3 transition-colors hover:bg-bad/10 hover:text-bad focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"><Trash2 size={14} aria-hidden /></button></td></tr>)}</tbody></table></div>
                 )}
                 {recordPageCount > 1 && <nav aria-label="저장 기록 페이지" className="mt-3 flex items-center justify-end gap-2"><button type="button" className={BUTTON_CLASS} disabled={safeRecordsPage === 0} onClick={() => setRecordsPage(Math.max(0, safeRecordsPage - 1))}><ChevronLeft size={14} aria-hidden /> 이전</button><span className="text-[0.68rem] tabular-nums text-fg-3">{safeRecordsPage + 1} / {recordPageCount}</span><button type="button" className={BUTTON_CLASS} disabled={safeRecordsPage >= recordPageCount - 1} onClick={() => setRecordsPage(Math.min(recordPageCount - 1, safeRecordsPage + 1))}>다음 <ChevronRight size={14} aria-hidden /></button></nav>}
