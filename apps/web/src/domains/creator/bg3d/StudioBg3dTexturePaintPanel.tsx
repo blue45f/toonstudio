@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { useT } from "@/shared/lib/i18n";
+import { r5CreatorStatusText } from "../r5-cat1-status-i18n";
 import "../studio-bg3d-panel-status-i18n";
 import { Brush, Download, Eraser, Redo2, Undo2 } from "lucide-react";
 
@@ -92,7 +93,7 @@ export function StudioBg3dTexturePaintPanel({
   const handleClear = () => {
     if (!paint) return;
     setRedoStack([]);
-    setNotice("표면 그림을 모두 지웠습니다. 실행 취소로 되돌릴 수 없습니다.");
+    setNotice(r5CreatorStatusText("r5cat1.creator.bg3dTexturePaint.clearedNotice", "표면 그림을 모두 지웠습니다. 실행 취소로 되돌릴 수 없습니다."));
     onPaintChange(primitive.id, null);
   };
 

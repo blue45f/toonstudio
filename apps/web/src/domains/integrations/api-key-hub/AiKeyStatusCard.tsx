@@ -16,6 +16,7 @@ import {
 
 import { summarizeAiKeyStatus } from "./api-key-hub-model";
 import { integrationsStatusText } from "../integrations-status-i18n";
+import { r5IntegrationsStatusText } from "../r5-cat1-status-i18n";
 
 const CAPABILITY_LABELS: Record<string, string> = {
   text: "글·대사",
@@ -148,8 +149,7 @@ export function AiKeyStatusCard() {
       ) : (
         <div className="mt-4 flex-1">
           <p className="text-sm leading-6 text-fg-2">
-            아직 연결된 AI 키가 없어요. 키 하나만 연결하면 글·이미지 생성 기능을 바로 쓸 수 있습니다.
-            무료 제공자부터 시작할 수 있어요.
+            {r5IntegrationsStatusText("r5cat1.integrations.aiKey.empty", "아직 연결된 AI 키가 없어요. 키 하나만 연결하면 글·이미지 생성 기능을 바로 쓸 수 있습니다. 무료 제공자부터 시작할 수 있어요.")}
           </p>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-6 text-fg-3">
             <li>키 없이도 자동 무료 AI가 먼저 동작합니다</li>

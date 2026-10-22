@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { hasLearningActivity, MAX_LEARNING_BACKUP_BYTES, readLearningBackup, summarizeLearningProgress, writeLearningBackup, type BackupPreview } from "./learning-backup";
 import { LESSONS, TERMS } from "./learning-content";
 import { learnStatusText } from "./learn-status-i18n";
+import { r5LearnStatusText } from "./r5-cat1-status-i18n";
 
 import type { LearningStore } from "./use-learning-progress";
 
@@ -123,7 +124,7 @@ export function LearningRecordTools({ store }: { store: LearningStore }) {
       {store.conflict && (
         <div className="learn-caution">
           <h3>다른 탭의 기록과 충돌했습니다</h3>
-          <p>동시에 편집한 기록을 자동 병합하지 않습니다. 먼저 이 화면의 기록과 다른 탭의 기록을 각각 백업하세요.</p>
+          <p>{r5LearnStatusText("r5cat1.learn.recordTools.conflictBody", "동시에 편집한 기록을 자동 병합하지 않습니다. 먼저 이 화면의 기록과 다른 탭의 기록을 각각 백업하세요.")}</p>
           {confirmRevision === null ? <button type="button" onClick={() => setConfirmRevision(store.revision)}>이 화면 기록으로 저장…</button> : (
             <div role="group" aria-label="충돌 기록 저장 확인">
               <p>다른 탭이 저장한 학습 기록을 이 화면의 기록으로 대체합니다. 백업을 보관했는지 확인하세요.</p>

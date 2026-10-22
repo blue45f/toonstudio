@@ -26,6 +26,7 @@ import "./material-discovery/material-discovery.css";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { ResourceLayout } from "./ResourceLayout";
 import { resourceStatusText } from "./resource-status-i18n";
+import { r5ResourcesStatusText } from "./r5-cat1-status-i18n";
 
 const CATALOG = parseMaterialCatalog(catalogData);
 const PAGE_SIZE = 24;
@@ -128,7 +129,7 @@ function MaterialAtlasWorkspace({ catalog }: { catalog: MaterialCatalog }) {
       const { board, missing } = parseMaterialBoard(await file.text(), catalog.assets, MATERIAL_STUDIES);
       changeParams({ items: board.selectedIds.join(","), study: board.studyId, q: "", kind: "", provider: "" });
       setNote(board.note);
-      setStatus(missing ? `보드를 불러왔습니다. 현재 카탈로그에 없는 소재 ${missing}개는 제외했습니다.` : "보드와 제작 메모를 불러왔습니다.");
+      setStatus(missing ? r5ResourcesStatusText("r5cat1.creatorResources.atlas.boardLoadedMissing", { missing }, "보드를 불러왔습니다. 현재 카탈로그에 없는 소재 {missing}개는 제외했습니다.") : r5ResourcesStatusText("r5cat1.creatorResources.atlas.boardLoaded", "보드와 제작 메모를 불러왔습니다."));
     } catch (cause) { setError(cause instanceof Error ? cause.message : resourceStatusText("resources.status.atlas.boardLoadFailed", "보드를 불러오지 못했습니다.")); }
   };
   const share = async () => {

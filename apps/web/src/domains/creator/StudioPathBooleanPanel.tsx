@@ -15,6 +15,7 @@
  * 실행된다. Worker 실패 시 이 섹션으로 자동 폴백하는 일은 없다.
  */
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r5CreatorStatusText } from "./r5-cat1-status-i18n";
 import { Combine, Expand, Loader2, Zap } from "lucide-react";
 
 import { PANEL_CHIP_CLASS, PANEL_LABEL_ROW, PANEL_RANGE_CLASS } from "./studio-panel-ui";
@@ -152,7 +153,7 @@ function StudioPathBooleanFastCombineSection({
   const fastStatus = section.busy
     ? r3c07StatusText("studio.panelStatus.r3c07.pathBoolean.combining", "빠른 결합으로 도형을 결합하는 중...")
     : section.unavailableReason
-      ?? "곡선을 다각형으로 근사해 즉시 결합합니다. 구멍·분리 영역도 결과에 그대로 남습니다. 기본 결합이 실패해도 이 경로가 자동으로 실행되지는 않습니다.";
+      ?? r5CreatorStatusText("r5cat1.creator.pathBoolean.fastIdleStatus", "곡선을 다각형으로 근사해 즉시 결합합니다. 구멍·분리 영역도 결과에 그대로 남습니다. 기본 결합이 실패해도 이 경로가 자동으로 실행되지는 않습니다.");
 
   return (
     <div className="space-y-2 border-t border-line pt-2.5">
