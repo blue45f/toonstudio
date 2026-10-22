@@ -12,10 +12,10 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeleteWriterRoomItemRequest } from "./studio-destructive-command-catalog";
 import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
+import { resolveStudioWriterRoomErrorFromCause } from "./status-i18n/studio-producer-error-i18n-comments";
 import { SFX_CATEGORIES, SFX_LIBRARY } from "./studio-sfx-presets";
 import {
   admitStudioWriterRoomStage,
@@ -1672,7 +1672,7 @@ export function StudioWriterRoomPanel({
                   );
                   setActionError(null);
                 } catch (cause) {
-                  setActionError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.writer.stageToggleFailed", "단계 완료 상태를 바꾸지 못했어요."));
+                  setActionError(resolveStudioWriterRoomErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.writer.stageToggleFailed", "단계 완료 상태를 바꾸지 못했어요.")));
                 }
               }}
               className="size-4 accent-[var(--color-good)]"
