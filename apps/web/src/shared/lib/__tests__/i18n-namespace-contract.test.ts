@@ -69,6 +69,20 @@ const GUARDED_NEW_SURFACE_FILES = [
   "apps/web/src/domains/creator/panel-detect/ui/PanelReflowStep.tsx",
   "apps/web/src/domains/creator/panel-detect/ui/PanelReviewStep.tsx",
   "apps/web/src/domains/creator/panel-detect/ui/PanelSourceStep.tsx",
+  // 캐릭터 앵커 연구실(anchorLab 네임스페이스). 화면 문구는 키로만 쓰고 파일 이름·앵커 id 같은 사용자 값은 {자리표시} 값으로만 넘긴다.
+  "apps/web/src/domains/creator/anchor-consistency/anchor-lab-i18n.ts",
+  "apps/web/src/domains/creator/anchor-consistency/anchor-lab-copy.ts",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorCandidateList.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorCandidatePanel.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorCompareView.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorDropZone.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorExportPanel.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorIdentityPanel.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorLabPage.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorLimitsNotice.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorSetPanel.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorShotPanel.tsx",
+  "apps/web/src/domains/creator/anchor-consistency/ui/AnchorSlotCard.tsx",
 ];
 
 function readNamespaceSnapshot(namespace: string): I18nNamespaceSnapshot {
