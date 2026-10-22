@@ -181,6 +181,17 @@ const envSchema = z.object({
     },
     z.enum(["on", "off"]).optional(),
   ),
+  // 서버 표지 바이트 최적화(폭 변환 대상이 아닌 표지의 재인코딩 축소). 미설정=끔 —
+  // 폭 변환과 같은 CPU 비용(메인 스레드 동기 디코드)이라 별도 opt-in으로 분리했다.
+  // 정책(`coverTranscodeByteOptimizeEnabled`)과 같은 규칙(공백·대소문자 무시, 빈 값=미설정)으로 읽는다.
+  COVER_SERVER_TRANSCODE_OPTIMIZE: z.preprocess(
+    (value) => {
+      if (typeof value !== "string") return value;
+      const normalized = value.trim().toLowerCase();
+      return normalized === "" ? undefined : normalized;
+    },
+    z.enum(["on", "off"]).optional(),
+  ),
   // 장기 실행 Nest API의 Socket.IO 다중 인스턴스 adapter. postgres 모드는 LISTEN 가능한
   // direct PostgreSQL URL과 listener + publisher를 위한 최소 2개 연결을 사용한다.
   STUDIO_LIVE_CLUSTER_ADAPTER: z.enum(["memory", "postgres"]).optional(),

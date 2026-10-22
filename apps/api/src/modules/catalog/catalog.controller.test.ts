@@ -361,6 +361,145 @@ describe("CatalogController cover server transcode", () => {
   });
 });
 
+describe("CatalogController cover byte optimize (separate opt-in)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  // 바이트 최적화의 본래 사각지대: 폭(w)이 없어 폭 변환 경로를 타지 못하는 표지.
+  // 불투명 PNG는 같은 치수의 JPEG로 바꿔 바이트만 줄이고, 캐시 정책은 건드리지 않는다.
+  it("shrinks an opaque PNG to a same-size JPEG without a width when the owner turned only optimize on", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    vi.stubEnv("COVER_SERVER_TRANSCODE_OPTIMIZE", "on");
+    const { Image, encodePng, decode } = await import("image-js");
+    const data = new Uint8Array(320 * 480 * 4);
+    for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
+    const png = encodePng(new Image(320, 480, { data, colorModel: "RGBA" }));
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(png, { headers: { "content-type": "image/png" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.png", res as unknown as Response, undefined, undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "image/jpeg");
+    const served = (res.send as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Buffer;
+    expect(Buffer.isBuffer(served)).toBe(true);
+    expect(served.length).toBeLessThan(png.byteLength);
+    const decoded = decode(served);
+    expect(decoded.width).toBe(320);
+    expect(decoded.height).toBe(480);
+    // 캐시 정책은 최적화를 켜도 바꾸지 않는다(고정 테스트와 같은 값).
+    expect(res.setHeader).toHaveBeenCalledWith(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400"
+    );
+    expect(res.setHeader).toHaveBeenCalledWith("Vary", "Accept");
+  });
+
+  it("resizes an oversized JPEG to the requested width under optimize alone (transcode off)", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    vi.stubEnv("COVER_SERVER_TRANSCODE_OPTIMIZE", "on");
+    const { Image, encode, decode } = await import("image-js");
+    const data = new Uint8Array(800 * 1200 * 4);
+    for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
+    const jpeg = encode(new Image(800, 1200, { data, colorModel: "RGBA" }), { format: "jpeg" });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(jpeg, { headers: { "content-type": "image/jpeg" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.jpg", res as unknown as Response, "320", undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    const served = (res.send as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Buffer;
+    expect(served.length).toBeLessThan(jpeg.byteLength);
+    const decoded = decode(served);
+    expect(decoded.width).toBe(320);
+    expect(decoded.height).toBe(480);
+  });
+
+  // 기본값(끔)에서는 최적화 대상 표지라도 업스트림 바이트·헤더가 기존과 완전히 동일해야 한다.
+  it.each([
+    ["미설정", undefined],
+    ["빈 값", ""],
+    ["off", "off"],
+    ["오타(true)", "true"],
+  ])("relays the upstream bytes and headers untouched when byte optimize is %s", async (_label, flag) => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    if (flag === undefined) delete process.env.COVER_SERVER_TRANSCODE_OPTIMIZE;
+    else vi.stubEnv("COVER_SERVER_TRANSCODE_OPTIMIZE", flag);
+    const { Image, encodePng } = await import("image-js");
+    const data = new Uint8Array(320 * 480 * 4);
+    for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
+    const png = encodePng(new Image(320, 480, { data, colorModel: "RGBA" }));
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(png, { headers: { "content-type": "image/png" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.png", res as unknown as Response, undefined, undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "image/png");
+    expect(res.setHeader).toHaveBeenCalledWith(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400"
+    );
+    expect(res.setHeader).toHaveBeenCalledWith("Vary", "Accept");
+    expect(res.send).toHaveBeenCalledWith(Buffer.from(png));
+  });
+
+  // 두 플래그가 모두 켜지고 폭 변환이 결과를 내면, 최적화는 그 결과를 다시
+  // 인코딩하지 않는다 — 서빙 바이트가 폭 변환 함수의 출력과 정확히 같다.
+  it("serves the transcode result untouched when both flags are on and transcode already reduced", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    vi.stubEnv("COVER_SERVER_TRANSCODE", "on");
+    vi.stubEnv("COVER_SERVER_TRANSCODE_OPTIMIZE", "on");
+    const { Image, encode } = await import("image-js");
+    const { transcodeCoverToWidth } = await import("./cover-transcode");
+    const data = new Uint8Array(800 * 1200 * 4);
+    for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
+    const jpeg = encode(new Image(800, 1200, { data, colorModel: "RGBA" }), { format: "jpeg" });
+    const expected = transcodeCoverToWidth(Buffer.from(jpeg), "image/jpeg", 320);
+    expect(expected).not.toBeNull();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(jpeg, { headers: { "content-type": "image/jpeg" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.jpg", res as unknown as Response, "320", undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith(expected!.body);
+  });
+
+  it("passes a WebP upstream through untouched even when byte optimize is on", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    vi.stubEnv("COVER_SERVER_TRANSCODE_OPTIMIZE", "on");
+    const webp = Uint8Array.from([
+      0x52, 0x49, 0x46, 0x46, 0x1a, 0, 0, 0, 0x57, 0x45, 0x42, 0x50,
+      0x56, 0x50, 0x38, 0x20, 0x0e, 0, 0, 0, 0x90, 0x01, 0, 0x9d, 0x01, 0x2a, 0x01, 0, 0x01, 0,
+    ]);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(webp, { headers: { "content-type": "image/webp" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.webp", res as unknown as Response, "320", undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith(Buffer.from(webp));
+  });
+});
+
 describe("cover transport negotiation helpers", () => {
   it.each([
     ["160", 160],

@@ -24,8 +24,8 @@ import { searchParamsFromBody } from "../../../../../packages/core/src/search-pa
 
 import { CatalogService } from "./catalog.service";
 import { resolveAffiliateDestination, resolveCoverFetchUrl } from "./catalog-url-policy";
-import { transcodeCoverToWidth } from "./cover-transcode";
-import { coverServerTranscodeEnabled } from "./cover-transcode-policy";
+import { optimizeCoverBytes, transcodeCoverToWidth } from "./cover-transcode";
+import { coverServerTranscodeEnabled, coverTranscodeByteOptimizeEnabled } from "./cover-transcode-policy";
 
 import type { Request, Response } from "express";
 
@@ -163,8 +163,18 @@ export class CatalogController {
       const servedType = sniffed ?? headerType;
       const transcoded =
         width && coverServerTranscodeEnabled() ? transcodeCoverToWidth(body, servedType, width) : null;
-      const servedBody = transcoded?.body ?? body;
-      res.setHeader("Content-Type", transcoded?.contentType ?? servedType);
+      // 바이트 최적화: 폭 변환이 결과를 내지 못한 경우에만 재인코딩으로 바이트를
+      // 줄인다(별도 opt-in — cover-transcode-policy.ts). 폭 변환 결과를 다시
+      // 인코딩하지 않아 이중 손실이 없고, 최적화는 원본보다 작을 때만 채택되므로
+      // 켜도 바이트가 늘지 않는다. 두 플래그가 모두 꺼져 있으면(기본) reduced는
+      // null이라 아래 응답은 기존과 바이트·헤더·캐시 정책까지 완전히 동일하다.
+      // 캐시 헤더는 어느 경로에서도 바꾸지 않는다 — 변형 구분은 URL의 w와
+      // Vary: Accept가 담당하는 기존 정책 그대로다.
+      const reduced =
+        transcoded ??
+        (coverTranscodeByteOptimizeEnabled() ? optimizeCoverBytes(body, servedType, width) : null);
+      const servedBody = reduced?.body ?? body;
+      res.setHeader("Content-Type", reduced?.contentType ?? servedType);
       // 표지는 제3자 저작물이라 권리침해 신고·정책 변경(킬스위치) 시 빠르게 빠져야 한다 →
       // immutable 을 쓰지 않고 재검증 가능한 캐시로 둔다(브라우저 1시간·엣지 1일·SWR 1일).
       // (2026-10-14 확인 기록: 이 정책은 의도된 값이며 변경하지 않는다. 폭 변형은 URL의

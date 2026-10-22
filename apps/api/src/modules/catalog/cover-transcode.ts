@@ -26,6 +26,12 @@ export { COVER_MAX_DECODE_PIXELS, COVER_MAX_DECODE_RAW_BYTES } from "./cover-dec
 //   불투명 이미지는 JPEG(q82)로, 알파가 있는 PNG는 투명도 보존을 위해 PNG로 낸다.
 // - 어떤 단계에서 실패해도(손상된 바이트, 미지원 변형 등) null을 돌려주고
 //   호출부는 원본을 그대로 중계한다 — 표지 표시를 깨지 않는 것이 우선이다.
+//
+// 바이트 최적화(optimizeCoverBytes)는 폭 변환의 형제 경로다. 폭 변환은 "폭이
+// 지정됐고 원본이 더 클 때"만 동작하므로, 폭 없는 요청과 이미 폭이 맞는 표지
+// (예: 320px인데 수백 KB인 불투명 PNG)는 바이트가 줄지 않았다. 최적화 경로는
+// 그 경우까지 재인코딩으로 바이트를 줄이되, 결과가 원본보다 작을 때만 채택하고,
+// 켜고 끄는 정책은 cover-transcode-policy.ts의 별도 opt-in 플래그가 정한다.
 
 export interface CoverTranscodeResult {
   readonly body: Buffer;
@@ -110,6 +116,47 @@ export function transcodeCoverToWidth(
       width: resized.width,
       height: resized.height,
     };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 폭 변환 대상이 아닌 표지의 바이트만 줄인다. 폭이 지정됐으면 그 폭으로 줄이는
+ * 것까지 포함하지만(폭 변환 플래그가 꺼진 환경에서 최적화만 켠 경우), 폭이
+ * 없거나 원본이 이미 목표 폭 이하이면 크기는 그대로 두고 재인코딩만 한다 —
+ * 불투명 PNG의 JPEG 전환과 고품질 JPEG의 q82 재압축이 실제 축소분이다.
+ *
+ * 안전장치: 재인코딩 결과가 원본보다 작을 때만 결과를 돌려준다. 크거나 같으면
+ * null이라 호출부는 원본을 그대로 중계한다 — 최적화를 켰다고 바이트가 늘거나,
+ * 이득이 없는데 손실 재인코딩으로 화질만 떨어지는 일이 없다. 포맷 판정·사전
+ * 검사·디코드는 폭 변환과 같은 경로(sniffCoverFormat·decodeGuarded)를 쓰고,
+ * 투명 PNG는 알파 보존을 위해 PNG로 유지하는 규칙도 같다.
+ */
+export function optimizeCoverBytes(
+  body: Buffer,
+  contentType: string,
+  targetWidth?: number,
+): CoverTranscodeResult | null {
+  const type = contentType.split(";")[0]?.trim().toLowerCase() ?? "";
+  if (type !== "image/jpeg" && type !== "image/jpg" && type !== "image/png") return null;
+
+  const format = sniffCoverFormat(body);
+  if (format === null) return null;
+  const image = decodeGuarded(body, format);
+  if (image === null) return null;
+
+  const shouldResize =
+    targetWidth !== undefined && Number.isInteger(targetWidth) && targetWidth >= 1 && image.width > targetWidth;
+
+  try {
+    const output = shouldResize ? image.resize({ width: targetWidth }) : image;
+    const keepPng = format === "png" && image.alpha && hasVisibleTransparency(image);
+    const encoded = keepPng
+      ? { body: Buffer.from(encodePng(output)), contentType: "image/png" }
+      : { body: Buffer.from(encodeJpeg(output, { quality: COVER_JPEG_QUALITY })), contentType: "image/jpeg" };
+    if (encoded.body.length >= body.length) return null;
+    return { ...encoded, width: output.width, height: output.height };
   } catch {
     return null;
   }
