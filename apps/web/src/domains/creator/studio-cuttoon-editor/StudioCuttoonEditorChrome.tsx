@@ -31,7 +31,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import { useStudioMarketplaceCloudSyncFocus } from "./studio-marketplace-cloud-sync-focus";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 const StudioOptionsBars = lazyRetry(() => import("../StudioOptionsBars").then((module) => ({ default: module.StudioOptionsBars })), "StudioOptionsBars");
 

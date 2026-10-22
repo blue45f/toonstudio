@@ -23,7 +23,7 @@ import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import { storyboardTeamReviewInUse } from "./page/studio-storyboard-team-review";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import { requestStudioCreationMode, type StudioCreationMode } from "./studio-creation-mode";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeletePageRequest } from "./studio-destructive-command-catalog";

@@ -26,7 +26,7 @@ import {
 import { useCallback, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { getStudioVrmQualityTier } from "./studio-vrm-gpu-capability";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { buildStudioVrmJointLimitProximityMap } from "./studio-vrm-joint-limit-proximity";
 import {
   evaluateStudioVrmPoseBalance,

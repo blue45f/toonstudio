@@ -34,7 +34,7 @@ import type { ReactNode } from "react";
 
 import { StudioScene3dBg3dCutPanel } from "../scene3d/StudioScene3dBg3dCutPanel";
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS,
   STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES,

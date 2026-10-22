@@ -1,5 +1,5 @@
 import { toolbarViewWidth } from "./studio-toolbar-configuration";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import type { StudioToolbarView } from "./studio-app-settings";
 /**
  * Studio chrome UI — toolbar, dock, and menu-shell primitives shared by StudioPage.

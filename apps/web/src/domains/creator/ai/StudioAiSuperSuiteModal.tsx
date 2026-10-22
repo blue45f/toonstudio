@@ -38,7 +38,7 @@ import {
   studioWorkbenchTabPanelProps,
 } from "../studio-workbench-tabs";
 import { useStudioCopyFeedback } from "../use-studio-copy-feedback";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 
 import { StudioAiEmotionBubbleMatcher } from "./studio-ai-emotion-bubble-matcher";

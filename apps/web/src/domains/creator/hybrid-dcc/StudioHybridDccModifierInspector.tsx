@@ -10,7 +10,7 @@ import {
 import { useId, useState } from "react";
 
 import { StudioThreeDToggleControl } from "../StudioThreeDToggle";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import { cn } from "@/shared/lib/utils";
 

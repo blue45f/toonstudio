@@ -9,7 +9,7 @@ import { TriangleAlert } from "lucide-react";
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
 import { StudioBg3dCompositionOverlay } from "./StudioBg3dCompositionOverlay";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { StudioBg3dEngineRecoveryActions } from "./StudioBg3dEngineRecoveryActions";
 import { StudioBg3dInferenceHud } from "./StudioBg3dInferenceHud";
 import type { StudioBg3dCompositionGuideMode } from "./studio-bg3d-composition-guide";

@@ -33,7 +33,7 @@ import { createPortal } from "react-dom";
 
 import { MarketplaceBrushStudioBridge } from "../MarketplaceBrushStudioBridge";
 import { BRUSH_PRESETS } from "../studio-brush";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   STUDIO_FOCUS_RING,
   StudioContextPill,

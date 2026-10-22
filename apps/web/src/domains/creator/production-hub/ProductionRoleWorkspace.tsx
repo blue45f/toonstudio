@@ -52,7 +52,7 @@ import type { ProductionClientCommand } from "./production-api";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 export type ProductionRoleLens = "story" | "art" | "producer";
 type WorkspaceView = "workcells" | "pipeline" | "crew";

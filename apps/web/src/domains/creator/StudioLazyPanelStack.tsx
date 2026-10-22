@@ -10,7 +10,7 @@ import {
 
 import { createEmptyStudioAiProvenanceDocument } from "./ai/studio-ai-provenance";
 import { selectWheelColors } from "./studio-color-wheel";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import {
   StudioAiProvenancePanel,
   StudioAutoActionsPanel,

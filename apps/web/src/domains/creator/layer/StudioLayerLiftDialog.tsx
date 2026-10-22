@@ -44,7 +44,7 @@ import {
   STUDIO_FOCUS_RING,
 } from "../studio-panel-ui";
 import { useStudioModalSheet } from "../useStudioModalSheet";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import {
   STUDIO_LAYER_LIFT_CORRECTION_MAX_POINTS,

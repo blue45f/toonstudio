@@ -22,7 +22,7 @@ import {
   type ProductionWorkspace,
 } from "./studio-production-workspace-runtime";
 import { applyProductionRoleAssignment } from "./production-role-assignment";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";

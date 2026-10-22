@@ -38,7 +38,7 @@ import {
 import { StudioFloatingSurface } from "../StudioFloatingSurface";
 import { VirtualizedBrushGrid } from "./studio-brush-virtual";
 import { useStudioFloatingSurfaceLayout } from "../use-studio-floating-surface-layout";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import {
   filterStudioBrushCatalogItems,

@@ -28,7 +28,7 @@ import {
   type StudioProjectCenterSearchRecord,
 } from "./studio-project-center-search-model";
 import { StudioSurfaceState } from "./StudioSurfaceState";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
 import { cn } from "@/shared/lib/utils";
 

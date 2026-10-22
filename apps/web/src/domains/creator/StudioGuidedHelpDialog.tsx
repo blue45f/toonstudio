@@ -43,7 +43,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { buildStudioToolHelp } from "./studio-current-tool-help";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import {
   searchStudioGuidedHelp,
   STUDIO_GUIDED_HELP_ARTICLE_BY_ID,

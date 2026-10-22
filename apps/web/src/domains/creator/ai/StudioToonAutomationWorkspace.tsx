@@ -23,7 +23,7 @@ import {
   STUDIO_TOUCH_TARGET,
 } from "../studio-panel-ui";
 import { StudioToonProductionBoard } from "./StudioToonProductionBoard";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   scenarioImageReferenceSignature,
   type StudioScenarioImageGenerationRequest,

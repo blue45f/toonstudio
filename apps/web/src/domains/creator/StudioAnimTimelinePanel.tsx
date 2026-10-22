@@ -8,7 +8,7 @@
  */
 import { ChevronLeft, ChevronRight, Download, Eye, EyeOff, FileText, GanttChartSquare, Ghost, Lock, Pause, Play, Plus, Printer, Trash2, X } from "lucide-react";
 import { Fragment, useEffect } from "react";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
 import {
   MAX_CLIP_NAME_LENGTH,

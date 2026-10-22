@@ -26,7 +26,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { frozenD1Text } from "../status-i18n/studio-frozen-d1-status-i18n";
 
 import {

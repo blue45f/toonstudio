@@ -23,7 +23,7 @@ import {
   WebtoonColorHarmonyAssistant,
   type SkinToneId,
 } from "./assistant/webtoon-color-harmony-assistant";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import {
   PERSPECTIVE_GUIDES,
   WebtoonCroquisPoseGuide,

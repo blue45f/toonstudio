@@ -34,7 +34,7 @@ import {
   type AvatarForgeState,
 } from "./studio-vrm-avatar-forge";
 import { resolveStudioVrmAvatarForgeVisualProportionMetrics } from "./studio-vrm-avatar-forge-face-controller";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   applyStudioVrmCharacterVariant,
   listStudioVrmCharacterVariantSummaries,

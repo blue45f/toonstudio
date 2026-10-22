@@ -15,7 +15,7 @@ import { createPortal } from "react-dom";
 
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeleteWriterRoomItemRequest } from "./studio-destructive-command-catalog";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import { SFX_CATEGORIES, SFX_LIBRARY } from "./studio-sfx-presets";
 import {
   admitStudioWriterRoomStage,

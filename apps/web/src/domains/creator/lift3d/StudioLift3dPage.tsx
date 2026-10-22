@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { downloadBlob } from "../export/studio-export";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import {
   STUDIO_LIFT3D_LIMITS,

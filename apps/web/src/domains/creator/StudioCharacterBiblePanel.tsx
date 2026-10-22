@@ -43,7 +43,7 @@ import {
 } from "./studio-character-relationships";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeleteCharacterBibleEntryRequest } from "./studio-destructive-command-catalog";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
 export interface StudioCharacterBiblePanelProps {
   open: boolean;

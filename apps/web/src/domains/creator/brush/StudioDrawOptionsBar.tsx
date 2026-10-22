@@ -27,7 +27,7 @@ import {
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
 
 import { BRUSH_OPACITY_HINT_VARIANT, BRUSH_SIZE_HINT_VARIANT, STUDIO_STABILIZER_STRENGTH_PRESETS, iconBtn } from "./studio-draw-options-bar-constants";
-import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { SizePreview } from "./studio-draw-options-bar-parts";
 
 import {

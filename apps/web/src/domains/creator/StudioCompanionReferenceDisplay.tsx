@@ -27,7 +27,7 @@ import type {
 } from "./studio-companion-reference-projection";
 
 import { cn } from "@/shared/lib/utils";
-import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 8;
