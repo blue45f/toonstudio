@@ -5796,8 +5796,14 @@ export function StudioCuttoonEditor({
       );
       openBrushLibraryFromMenu();
     } catch (caught) {
+      // A4 D4 (R14): 브러시 팩 생산자는 구조화 코드만 방출하므로, 이 표시
+      // 지점에서 리졸버로 해석한다(리졸버는 가벼워 동적 import로 경계 유지).
+      const { resolveStudioBrushPackErrorFromCause } = await import(
+        "./status-i18n/studio-producer-error-i18n-brush"
+      );
       setError(
-        caught instanceof Error ? caught.message : t("studio.hostStatus.brushPresetImportFailed", "브러시 프리셋 파일을 가져오지 못했어요."),
+        resolveStudioBrushPackErrorFromCause(caught)
+        ?? (caught instanceof Error ? caught.message : t("studio.hostStatus.brushPresetImportFailed", "브러시 프리셋 파일을 가져오지 못했어요.")),
       );
     } finally {
       setBrushPackImporting(false);
