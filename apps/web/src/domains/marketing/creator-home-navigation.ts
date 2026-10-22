@@ -89,6 +89,12 @@ export type CreatorNavigationHost = {
   subscribeUnblocked?: (callback: () => void) => () => void;
 };
 
+/**
+ * 지연 로딩 경로의 제목이 첫 프레임 뒤에 나타날 수 있어, 제목이 생길 때까지 기다리는 프레임 수 한도다
+ * (60fps 기준 약 10초). 한도를 넘기면 포기해 아무것도 붙잡지 않는다.
+ */
+export const CREATOR_SECTION_TARGET_WAIT_FRAMES = 600;
+
 /** Resolve lazy-route headings without selectors, history writes or delayed focus after unmount. */
 export function bindCreatorSectionNavigation(host: CreatorNavigationHost): () => void {
   let frame: number | undefined;
@@ -106,22 +112,30 @@ export function bindCreatorSectionNavigation(host: CreatorNavigationHost): () =>
     const focusedControl = host.getFocusedControl?.();
     const section = creatorSectionFromHash(hash);
     if (!section) return;
-    frame = host.requestFrame(() => {
-      if (disposed || request !== revision || hash !== host.getHash()) return;
-      frame = undefined;
-      if (host.isBlocked?.()) {
-        blocked = true;
-        return;
-      }
-      // Native history may already focus the destination heading before this deferred frame.
-      // That native focus is the fragment navigation we are here to normalize; only a different
-      // interactive control chosen by the user should cancel the deferred correction.
-      const target = host.findTarget(section.headingId);
-      if (!target) return;
-      const currentControl = host.getFocusedControl?.();
-      if (currentControl && currentControl !== focusedControl && currentControl !== target) return;
-      focusCreatorSection(hash, host.findTarget, true);
-    });
+    const attempt = (framesLeft: number) => {
+      frame = host.requestFrame(() => {
+        if (disposed || request !== revision || hash !== host.getHash()) return;
+        frame = undefined;
+        if (host.isBlocked?.()) {
+          blocked = true;
+          return;
+        }
+        // Native history may already focus the destination heading before this deferred frame.
+        // That native focus is the fragment navigation we are here to normalize; only a different
+        // interactive control chosen by the user should cancel the deferred correction.
+        const target = host.findTarget(section.headingId);
+        if (!target) {
+          // 처음 접속해 지연 로딩 경로가 아직 그려지지 않았으면 제목이 없다. 한 번 놓치면 키보드·화면 낭독기
+          // 사용자의 초점이 본문 맨 위에 남으므로, 제목이 생길 때까지 한도 안에서 다음 프레임에 다시 찾는다.
+          if (framesLeft > 0) attempt(framesLeft - 1);
+          return;
+        }
+        const currentControl = host.getFocusedControl?.();
+        if (currentControl && currentControl !== focusedControl && currentControl !== target) return;
+        focusCreatorSection(hash, host.findTarget, true);
+      });
+    };
+    attempt(CREATOR_SECTION_TARGET_WAIT_FRAMES);
   };
 
   const unsubscribe = host.subscribe(schedule);
