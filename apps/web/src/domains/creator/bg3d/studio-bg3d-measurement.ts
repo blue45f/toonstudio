@@ -67,10 +67,14 @@ export type StudioBg3dMeasurementFailureReason =
   | "result-out-of-bounds"
   | "serialized-budget-exceeded";
 
+export type StudioBg3dMeasurementErrorCode = "pointNotFinite" | "distanceOutOfBounds" | "lockResultOutOfBounds" | "samePoints" | "lockNeedsDirection" | "toleranceOutOfRange" | "referenceBudgetExceeded" | "referenceInvalid" | "duplicateReferenceId" | "referenceDirectionInvalid" | "lockLengthOutOfRange" | "guideLockLengthOutOfRange" | "lockLengthMismatch" | "guideIdInvalid" | "deleteGuideIdInvalid" | "zeroLengthGuide" | "guideStateInvalid" | "guideOrUnitInvalid" | "labelUnavailable" | "guideIdOrStateInvalid" | "documentInvalid" | "unitInvalid" | "guideBudgetExceeded" | "idExhausted" | "serializedBudgetExceeded" | "guideNotFound";
+
+/** D4 생산자 계약: 실패는 표시 문구 대신 구조화 코드(서브코드)+파라미터로 방출한다. 표시는 표시 지점이 status-i18n/studio-producer-error-i18n 리졸버로 해석한다. */
 export interface StudioBg3dMeasurementFailure {
   readonly ok: false;
   readonly reason: StudioBg3dMeasurementFailureReason;
-  readonly message: string;
+  readonly code: StudioBg3dMeasurementErrorCode;
+  readonly params?: Readonly<Record<string, string>>;
 }
 
 export interface StudioBg3dWorldMeasurement {
@@ -206,9 +210,10 @@ type MutableVec3 = [number, number, number];
 
 function failure(
   reason: StudioBg3dMeasurementFailureReason,
-  message: string,
+  code: StudioBg3dMeasurementErrorCode,
+  params?: Readonly<Record<string, string>>,
 ): StudioBg3dMeasurementFailure {
-  return Object.freeze({ ok: false, reason, message });
+  return Object.freeze(params ? { ok: false, reason, code, params: Object.freeze(params) } : { ok: false, reason, code });
 }
 
 function canonicalNumber(value: number): number {
@@ -331,15 +336,12 @@ export function measureStudioBg3dWorldPoints(
   const start = readVec3(startWorld);
   const end = readVec3(endWorld);
   if (!start || !end) {
-    return failure(
-      "invalid-point",
-      `측정점은 각 축이 ±${STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE.toLocaleString("ko-KR")}m 안인 유한한 XYZ 좌표여야 합니다.`,
-    );
+    return failure("invalid-point", "pointNotFinite", { maxCoordinate: STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE.toLocaleString("ko-KR") });
   }
   const delta = tuple(subtract(end, start));
   const distanceMeters = vectorLength(delta);
   if (!Number.isFinite(distanceMeters)) {
-    return failure("result-out-of-bounds", "측정 거리가 안전한 계산 범위를 벗어났습니다.");
+    return failure("result-out-of-bounds", "distanceOutOfBounds");
   }
   const midpoint = tuple(multiply(tuple(add(start, end)), 0.5));
   const directionWorld = distanceMeters < MIN_DIRECTION_LENGTH
@@ -425,21 +427,15 @@ export function classifyStudioBg3dMeasurementInference(input: {
   if (!measured.ok) return measured;
   const direction = measured.measurement.directionWorld;
   if (!direction) {
-    return failure("degenerate-direction", "같은 점 두 개로는 축·평행·수직 방향을 추론할 수 없습니다.");
+    return failure("degenerate-direction", "samePoints");
   }
   const toleranceDegrees = readTolerance(input.toleranceDegrees);
   if (toleranceDegrees === null) {
-    return failure(
-      "invalid-tolerance",
-      `추론 허용 각도는 0° 초과 ${STUDIO_BG3D_MEASUREMENT_MAX_TOLERANCE_DEGREES}° 이하여야 합니다.`,
-    );
+    return failure("invalid-tolerance", "toleranceOutOfRange", { maxDegrees: String(STUDIO_BG3D_MEASUREMENT_MAX_TOLERANCE_DEGREES) });
   }
   const references = input.references ?? [];
   if (!Array.isArray(references) || references.length > STUDIO_BG3D_MEASUREMENT_MAX_REFERENCES) {
-    return failure(
-      "reference-budget-exceeded",
-      `추론 기준 방향은 최대 ${STUDIO_BG3D_MEASUREMENT_MAX_REFERENCES}개까지 사용할 수 있습니다.`,
-    );
+    return failure("reference-budget-exceeded", "referenceBudgetExceeded", { maxReferences: String(STUDIO_BG3D_MEASUREMENT_MAX_REFERENCES) });
   }
 
   const matches: StudioBg3dMeasurementInferenceMatch[] = [];
@@ -459,21 +455,15 @@ export function classifyStudioBg3dMeasurementInference(input: {
   const referenceIds = new Set<string>();
   for (const reference of references) {
     if (!isPlainRecord(reference) || !validGuideId(reference.id)) {
-      return failure("invalid-reference", "추론 기준 방향의 ID 또는 벡터가 올바르지 않습니다.");
+      return failure("invalid-reference", "referenceInvalid");
     }
     if (referenceIds.has(reference.id)) {
-      return failure(
-        "duplicate-reference-id",
-        `추론 기준 ID '${reference.id}'가 중복되었습니다.`,
-      );
+      return failure("duplicate-reference-id", "duplicateReferenceId", { referenceId: reference.id });
     }
     referenceIds.add(reference.id);
     const referenceDirection = normalizeDirection(reference.directionWorld);
     if (!referenceDirection) {
-      return failure(
-        "invalid-reference",
-        `추론 기준 '${reference.id}'의 방향 벡터가 비어 있거나 유효 범위를 벗어났습니다.`,
-      );
+      return failure("invalid-reference", "referenceDirectionInvalid", { referenceId: reference.id });
     }
     const alignment = dot(direction, referenceDirection);
     const parallelError = clampedAcosDegrees(Math.abs(alignment));
@@ -531,18 +521,12 @@ export function lockStudioBg3dMeasurementLength(input: {
     || input.lockedLengthMeters < MIN_LOCKED_LENGTH_METERS
     || input.lockedLengthMeters > MAX_LOCKED_LENGTH_METERS
   ) {
-    return failure(
-      "invalid-length",
-      `잠금 길이는 ${MIN_LOCKED_LENGTH_METERS}m 이상 ${Math.round(MAX_LOCKED_LENGTH_METERS).toLocaleString("ko-KR")}m 이하여야 합니다.`,
-    );
+    return failure("invalid-length", "lockLengthOutOfRange", { minLength: String(MIN_LOCKED_LENGTH_METERS), maxLength: Math.round(MAX_LOCKED_LENGTH_METERS).toLocaleString("ko-KR") });
   }
   const direction = measured.measurement.directionWorld
     ?? normalizeDirection(input.fallbackDirectionWorld);
   if (!direction) {
-    return failure(
-      "degenerate-direction",
-      "길이를 잠그려면 포인터를 움직이거나 유효한 기준 방향을 제공해 주세요.",
-    );
+    return failure("degenerate-direction", "lockNeedsDirection");
   }
   const end = tuple(add(
     measured.measurement.startWorld,
@@ -551,10 +535,7 @@ export function lockStudioBg3dMeasurementLength(input: {
   if (end.some((component) =>
     Math.abs(component) > STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE
   )) {
-    return failure(
-      "result-out-of-bounds",
-      "길이 잠금 결과가 3D 장면의 안전한 world 좌표 범위를 벗어났습니다.",
-    );
+    return failure("result-out-of-bounds", "lockResultOutOfBounds");
   }
   const lockedMeasurement = measureStudioBg3dWorldPoints(
     measured.measurement.startWorld,
@@ -628,15 +609,12 @@ export function createStudioBg3dMeasurementGuide(input: {
   readonly visible?: boolean;
 }): StudioBg3dMeasurementGuideResult {
   if (!validGuideId(input.id)) {
-    return failure(
-      "invalid-guide-id",
-      "측정 가이드 ID는 영문·숫자로 시작하는 80자 이하의 안정 ID여야 합니다.",
-    );
+    return failure("invalid-guide-id", "guideIdInvalid");
   }
   const measured = measureStudioBg3dWorldPoints(input.startWorld, input.endWorld);
   if (!measured.ok) return measured;
   if (!measured.measurement.directionWorld) {
-    return failure("invalid-guide", "길이가 0인 측정 가이드는 만들 수 없습니다.");
+    return failure("invalid-guide", "zeroLengthGuide");
   }
   const lockedLengthMeters = input.lockedLengthMeters ?? null;
   if (lockedLengthMeters !== null) {
@@ -645,18 +623,15 @@ export function createStudioBg3dMeasurementGuide(input: {
       || lockedLengthMeters < MIN_LOCKED_LENGTH_METERS
       || lockedLengthMeters > MAX_LOCKED_LENGTH_METERS
     ) {
-      return failure("invalid-length", "측정 가이드의 잠금 길이가 유효 범위를 벗어났습니다.");
+      return failure("invalid-length", "guideLockLengthOutOfRange");
     }
     const tolerance = Math.max(1e-9, measured.measurement.distanceMeters * 1e-9);
     if (Math.abs(lockedLengthMeters - measured.measurement.distanceMeters) > tolerance) {
-      return failure(
-        "invalid-length",
-        "잠금 길이와 가이드의 실제 두 점 거리가 일치하지 않습니다.",
-      );
+      return failure("invalid-length", "lockLengthMismatch");
     }
   }
   if (input.visible !== undefined && typeof input.visible !== "boolean") {
-    return failure("invalid-guide", "측정 가이드 표시 상태가 올바르지 않습니다.");
+    return failure("invalid-guide", "guideStateInvalid");
   }
   return Object.freeze({
     ok: true,
@@ -677,12 +652,12 @@ export function resolveStudioBg3dMeasurementGuide(
 ): StudioBg3dResolvedMeasurementGuideResult {
   const canonical = canonicalGuide(guide);
   if (!canonical || !isUnit(unit)) {
-    return failure("invalid-guide", "측정 가이드 또는 표시 단위가 올바르지 않습니다.");
+    return failure("invalid-guide", "guideOrUnitInvalid");
   }
   const measured = measureStudioBg3dWorldPoints(canonical.startWorld, canonical.endWorld);
   if (!measured.ok) return measured;
   const label = formatStudioBg3dMeasurementLength(measured.measurement.distanceMeters, unit);
-  if (!label) return failure("invalid-guide", "측정 거리 라벨을 만들 수 없습니다.");
+  if (!label) return failure("invalid-guide", "labelUnavailable");
   return deepFreeze({
     ok: true,
     resolved: {
@@ -802,15 +777,12 @@ export function addStudioBg3dMeasurementGuide(
   },
 ): StudioBg3dMeasurementDocumentMutationResult {
   const canonical = canonicalDocument(document);
-  if (!canonical) return failure("invalid-document", "측정 가이드 문서가 올바르지 않습니다.");
+  if (!canonical) return failure("invalid-document", "documentInvalid");
   if (canonical.guides.length >= STUDIO_BG3D_MEASUREMENT_MAX_GUIDES) {
-    return failure(
-      "guide-budget-exceeded",
-      `영구 측정 가이드는 장면당 최대 ${STUDIO_BG3D_MEASUREMENT_MAX_GUIDES}개까지 저장할 수 있습니다.`,
-    );
+    return failure("guide-budget-exceeded", "guideBudgetExceeded", { maxGuides: String(STUDIO_BG3D_MEASUREMENT_MAX_GUIDES) });
   }
   const id = allocateStudioBg3dMeasurementGuideId(canonical.guides);
-  if (!id) return failure("id-space-exhausted", "새 측정 가이드의 안정 ID를 만들 수 없습니다.");
+  if (!id) return failure("id-space-exhausted", "idExhausted");
   const created = createStudioBg3dMeasurementGuide({ id, ...input });
   if (!created.ok) return created;
   const next = deepFreeze({
@@ -818,10 +790,7 @@ export function addStudioBg3dMeasurementGuide(
     guides: [...canonical.guides, created.guide],
   });
   if (!withinSerializedBudget(next)) {
-    return failure(
-      "serialized-budget-exceeded",
-      `측정 가이드 문서가 저장 한도 ${STUDIO_BG3D_MEASUREMENT_MAX_BYTES / 1024}KiB를 넘습니다.`,
-    );
+    return failure("serialized-budget-exceeded", "serializedBudgetExceeded", { maxKiB: String(STUDIO_BG3D_MEASUREMENT_MAX_BYTES / 1024) });
   }
   return Object.freeze({ ok: true, document: next, guide: created.guide });
 }
@@ -831,13 +800,13 @@ export function deleteStudioBg3dMeasurementGuide(
   guideId: string,
 ): StudioBg3dMeasurementDocumentMutationResult {
   const canonical = canonicalDocument(document);
-  if (!canonical) return failure("invalid-document", "측정 가이드 문서가 올바르지 않습니다.");
+  if (!canonical) return failure("invalid-document", "documentInvalid");
   if (!validGuideId(guideId)) {
-    return failure("invalid-guide-id", "삭제할 측정 가이드 ID가 올바르지 않습니다.");
+    return failure("invalid-guide-id", "deleteGuideIdInvalid");
   }
   const index = canonical.guides.findIndex((guide) => guide.id === guideId);
   if (index < 0) {
-    return failure("guide-not-found", `측정 가이드 '${guideId}'를 찾지 못했습니다.`);
+    return failure("guide-not-found", "guideNotFound", { guideId });
   }
   return Object.freeze({
     ok: true,
@@ -854,13 +823,13 @@ export function setStudioBg3dMeasurementGuideVisibility(
   visible: boolean,
 ): StudioBg3dMeasurementDocumentMutationResult {
   const canonical = canonicalDocument(document);
-  if (!canonical) return failure("invalid-document", "측정 가이드 문서가 올바르지 않습니다.");
+  if (!canonical) return failure("invalid-document", "documentInvalid");
   if (!validGuideId(guideId) || typeof visible !== "boolean") {
-    return failure("invalid-guide", "측정 가이드 ID 또는 표시 상태가 올바르지 않습니다.");
+    return failure("invalid-guide", "guideIdOrStateInvalid");
   }
   const index = canonical.guides.findIndex((guide) => guide.id === guideId);
   if (index < 0) {
-    return failure("guide-not-found", `측정 가이드 '${guideId}'를 찾지 못했습니다.`);
+    return failure("guide-not-found", "guideNotFound", { guideId });
   }
   if (canonical.guides[index].visible === visible) {
     return Object.freeze({ ok: true, document: canonical });
@@ -881,8 +850,8 @@ export function setStudioBg3dMeasurementUnit(
   unit: StudioBg3dMeasurementUnit,
 ): StudioBg3dMeasurementDocumentMutationResult {
   const canonical = canonicalDocument(document);
-  if (!canonical) return failure("invalid-document", "측정 가이드 문서가 올바르지 않습니다.");
-  if (!isUnit(unit)) return failure("invalid-document", "측정 표시 단위가 올바르지 않습니다.");
+  if (!canonical) return failure("invalid-document", "documentInvalid");
+  if (!isUnit(unit)) return failure("invalid-document", "unitInvalid");
   if (canonical.unit === unit) return Object.freeze({ ok: true, document: canonical });
   return Object.freeze({
     ok: true,

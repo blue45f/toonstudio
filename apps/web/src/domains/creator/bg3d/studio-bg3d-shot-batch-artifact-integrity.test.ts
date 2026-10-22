@@ -272,7 +272,7 @@ async function plan() {
     passes: ["beauty", "depth"],
     layeredPsd: true,
   });
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(result.subcode);
   return result.plan;
 }
 
