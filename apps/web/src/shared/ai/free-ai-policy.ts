@@ -1,4 +1,5 @@
 import { isPrivateOrLocalAiHostname } from "./ai-host-policy";
+import { anthropicConnectionIssue, isAnthropicBaseUrl } from "./claude/claude-protocol";
 
 export const USER_AI_COST_POLICIES = [
   "unverified",
@@ -298,6 +299,10 @@ export function freeAiConnectionPolicyIssue(
   }
   if (!connection.apiKey.trim()) {
     return "클라우드 AI 연결에는 본인 API 키가 필요합니다.";
+  }
+  // Claude(Anthropic)는 무료 티어가 없고 Messages API를 쓰므로 전용 정책으로 판정한다.
+  if (isAnthropicBaseUrl(connection.baseUrl)) {
+    return anthropicConnectionIssue(connection, capability);
   }
   if (connection.costPolicy === "user-funded-byok") {
     return capabilityModelIssue(connection, capability);
