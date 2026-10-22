@@ -52,6 +52,16 @@ Supported connection policies:
 | `user-funded-byok` | Any validated public HTTPS cloud API. Charges may be applied by the user’s provider account. |
 | `unverified` | Blocked until the migrated or modified connection is reviewed. |
 
+## Claude (Anthropic Messages) connections
+
+A connection whose base URL is exactly `https://api.anthropic.com` uses the `anthropic-messages` wire protocol instead of the OpenAI-compatible one. The wire protocol is inferred from the host, so no new connection policy exists: it is a `user-funded-byok` connection and follows every rule above.
+
+- Requests go from the browser straight to Anthropic with the user's own key. The ToonStudio API never sees the key or the content, and no operator-funded Claude route exists.
+- The official SDK (`@anthropic-ai/sdk`) is loaded lazily and is handed only a guarded `fetch`: official origin only, cookies and site headers removed, the credential header must equal the user's key, redirects are errors, responses are read up to a cap. `maxRetries` is `0`: an ambiguous failure is never resent, and the model is never switched automatically.
+- Claude-native features (vision, structured outputs: art director, command helper, translation, alt text) show the processing route, what is sent, an upper bound on the cost and the failure policy before every request, and honour a user-set session budget. See [Claude AI 보조](../features/claude-ai-assist.md).
+- Prices shown in the UI are estimates from the public price table with its reference date; the Anthropic console is the source of truth for billing.
+- Production needs the static CSP change (`connect-src` includes `https://api.anthropic.com`) to be deployed through the normal static release approval before any Claude request can leave the browser.
+
 ## Safe fallback
 
 The runtime advances only after a definitive pre-inference rejection:
