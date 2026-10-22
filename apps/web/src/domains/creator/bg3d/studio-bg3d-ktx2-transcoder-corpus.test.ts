@@ -247,11 +247,13 @@ function transcodeFirstMip(
 }
 
 describe("Studio KTX2 pinned transcoder release gate", () => {
-  it("pins Three r184 and exact executable asset bytes before evaluation", async () => {
+  it("pins Three r186 and exact executable asset bytes before evaluation", async () => {
     const packageJson = JSON.parse(
       readFileSync(path.resolve(process.cwd(), "node_modules/three/package.json"), "utf-8"),
     ) as { version?: unknown };
-    expect(packageJson.version).toBe("0.184.0");
+    // r184 -> r186 (0.186.1): the transcoder JS/WASM bytes are unchanged, so the manifest hashes below still hold.
+    // Re-attest the hashes (and this version) on every Three bump; the byte checks, not the version, are the real gate.
+    expect(packageJson.version).toBe("0.186.1");
 
     const javascript = Uint8Array.from(readFileSync(TRANSCODER_JS_PATH));
     const wasm = Uint8Array.from(readFileSync(TRANSCODER_WASM_PATH));
