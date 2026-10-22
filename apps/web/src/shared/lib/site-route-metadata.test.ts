@@ -122,6 +122,20 @@ describe("site route metadata", () => {
     });
   });
 
+  it("exposes the character anchor lab as an experimental labs route without a project", () => {
+    for (const path of ["/studio/anchor-lab", "/studio/anchor-lab/", "/studio/anchor-lab?from=sitemap"]) {
+      expect(resolveSiteRouteMetadata(path), path).toMatchObject({
+        canonicalPath: "/studio/anchor-lab",
+        product: "studio",
+        purpose: "create",
+        maturity: "experimental",
+        tier: "labs",
+        access: "public",
+        projectContext: "none",
+      });
+    }
+  });
+
   it("separates the core product, connected ecosystem and optional labs", () => {
     expect(resolveSiteRouteMetadata("/studio/new")).toMatchObject({ tier: "core" });
     expect(resolveSiteRouteMetadata("/ranking")).toMatchObject({ tier: "ecosystem" });

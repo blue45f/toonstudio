@@ -284,6 +284,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/studio/3d/dcc/material", "재질·UV", "Materials & UV", "표면 재질과 UV 구성", "Build surface materials and UV layouts"),
       destination("/studio/3d/dcc/shot", "컷·선화", "Shot & line art", "카메라 컷과 비사실 렌더 설계", "Design camera shots and non-photoreal rendering"),
       destination("/studio/lift3d", "2D → 3D 변환", "2D to 3D lift", "이미지 소재를 3D 장면으로 확장", "Lift image subjects into 3D scenes"),
+      destination("/studio/anchor-lab", "캐릭터 앵커 연구실 (실험)", "Character anchor lab (experimental)", "정/반측 턴테이블 앵커 세트를 만들고 후보 이미지를 휴리스틱 참고 점수로 견주기", "Build front/side/back anchor sets and compare candidate images with a heuristic reference score"),
     ],
   },
   {
