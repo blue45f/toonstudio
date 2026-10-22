@@ -359,6 +359,8 @@ export interface StudioBg3dLayerListItem {
   readonly visible: boolean;
   readonly locked: boolean;
   readonly parentId?: string | null;
+  /** 장면 구성 정보의 태그. 태그 숨김(meta.hiddenTags)이 실제로 가려 내는 오브젝트를 판정할 때만 읽는다. */
+  readonly tags?: readonly string[];
 }
 
 export function filterStudioBg3dLayerItems(

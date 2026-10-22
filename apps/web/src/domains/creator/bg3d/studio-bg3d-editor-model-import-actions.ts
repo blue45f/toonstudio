@@ -54,6 +54,7 @@ import {
 import {
   deriveStudioBg3dSessionGlbValidationPolicy as deriveStudioBg3dGlbValidationPolicy,
 } from "./studio-bg3d-session-glb-policy";
+import { linkStudioBg3dSkpPlacement } from "./studio-bg3d-skp-sidecar";
 
 import type { BgPrimitive } from "../studio-background-3d-primitives";
 import type {
@@ -429,8 +430,12 @@ export function createStudioBg3dModelImportActions(
             libraryEntries,
             nextAttachmentByStorageId,
             nextStorageIdByAttachment,
+            // .skp 소재는 해시에서 만든 컴포넌트 참조를 붙여, 같은 파일을 여러 번 놓아도 아웃라이너에서 한 묶음으로 보이게 한다.
             placements: saved.map((record, index) =>
-              createBgCustomModelInstance(record.id, liveModels.length + index)
+              linkStudioBg3dSkpPlacement(
+                createBgCustomModelInstance(record.id, liveModels.length + index),
+                plannedSkpSourcePaths[index] == null ? null : { contentHash: record.contentHash, name: record.name },
+              )
             ),
           };
         },

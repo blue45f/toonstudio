@@ -47,7 +47,7 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
   // 몰입형은 모든 폭에서 한 줄로 접고, 일반 화면은 휴대폰 폭(<640px)에서만 설명을 접는다.
   const collapsed = !detailsExpanded;
   const compact = immersive && collapsed;
-  const bannerRef = useRef<HTMLElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const visible = state.status === "degraded" || recoveryVisible;
 
   // 실제 알림 높이를 공유해 OST·베타 안내가 경고·재시도 버튼을 가리거나 그 아래 숨지 않게 한다.
@@ -100,7 +100,7 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
       );
 
   return (
-    <aside
+    <div
       ref={bannerRef}
       role="status"
       aria-live="polite"
@@ -159,7 +159,7 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
           </div>
         ) : null}
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -183,10 +183,10 @@ const WARMUP_CHIP_CLASS = cn(
  */
 function ServiceWarmupNotice() {
   const bt = useBilingual(COPY_SCOPE);
-  const chipRef = useRef<HTMLElement>(null);
+  const chipRef = useRef<HTMLDivElement>(null);
   useOverlayClearance(chipRef, true);
   return (
-    <aside
+    <div
       ref={chipRef}
       role="status"
       aria-live="polite"
@@ -199,7 +199,7 @@ function ServiceWarmupNotice() {
         <strong className="font-bold text-fg">{bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}</strong>{" "}
         <span className="sr-only">{bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}</span>
       </span>
-    </aside>
+    </div>
   );
 }
 

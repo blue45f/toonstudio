@@ -5,6 +5,7 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import { bakeStudioBg3dTagVisibilityIntoDocument } from "./studio-bg3d-hierarchy";
 import { resolveStudioBg3dInsertQualityPlan } from "./studio-bg3d-insert-quality-policy";
 import { studioBg3dLineNeedsDepth } from "./studio-bg3d-line-output-rules";
 
@@ -406,9 +407,10 @@ export function attachStudioBg3dEditorInsertHost(h) {
         setError(compatibilityMessage);
         return;
       }
+      // 숨긴 태그가 가리는 오브젝트는 렌더에서 빠지므로 숨김으로 판정한다(저장할 adapted.document 는 건드리지 않는 사본이다).
       const magicSelection = resolveStudioBg3dMagicSelection({
         operation,
-        document: adapted.document,
+        document: bakeStudioBg3dTagVisibilityIntoDocument(adapted.document),
         selectedIds: Object.freeze([...selectedIds]),
       });
       if (!magicSelection.ok) {

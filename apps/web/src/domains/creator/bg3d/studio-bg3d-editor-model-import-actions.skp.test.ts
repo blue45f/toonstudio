@@ -254,6 +254,37 @@ describe("importModelFiles with a SketchUp file", () => {
     expect(studioBg3dSkpImportSession.getSnapshot().results).toHaveLength(1);
   });
 
+  it("links only the placed .skp to a component group derived from its hash, and leaves other formats alone", async () => {
+    const h = harness();
+    runtime.plan.mockReturnValue(planOf(
+      { format: "glb", primaryPath: "prop.glb" },
+      { format: "skp", primaryPath: "room.skp" },
+    ));
+    runtime.convert.mockImplementation(async (_files: unknown, options: { skp?: StudioBg3dSkpImportOptions }) => {
+      options.skp?.onReport?.({ sourcePath: "room.skp", sourceName: "room.skp", report: createSkpReportFixture() });
+      return [new Blob([new Uint8Array([1])]), new Blob([new Uint8Array([2])])];
+    });
+    runtime.importVerified.mockResolvedValue([
+      { id: "glb-model", contentHash: `sha256:${"1".repeat(64)}`, byteSize: 10 },
+      { id: "skp-model", contentHash: HASH, byteSize: 2_000 },
+    ]);
+    runtime.getStored.mockImplementation(async (id: string) => ({
+      ...storedRecord(id),
+      name: id === "skp-model" ? "방" : "소품",
+      contentHash: id === "skp-model" ? HASH : `sha256:${"1".repeat(64)}`,
+      byteSize: id === "skp-model" ? 2_000 : 10,
+    }));
+
+    await h.actions().importModelFiles([file("prop.glb"), file("room.skp")], RIGHTS);
+
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledTimes(1);
+    const placed: readonly { modelId: string; componentRef?: { id: string; name: string } }[] =
+      h.context.replaceCanonicalDocumentState.mock.calls[0]?.[0]?.customModels ?? [];
+    expect(placed.map((instance) => instance.modelId)).toEqual(["glb-model", "skp-model"]);
+    expect(placed[0]).not.toHaveProperty("componentRef");
+    expect(placed[1]?.componentRef).toEqual({ id: `skp-${"f".repeat(16)}`, name: "방" });
+  });
+
   it("does not load or involve the SketchUp wiring for other formats", async () => {
     const h = harness();
     runtime.plan.mockReturnValue(planOf({ format: "glb", primaryPath: "prop.glb" }));

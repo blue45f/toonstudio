@@ -149,7 +149,11 @@ export function StudioLiveCollaborationQuickControls({
   };
 
   return (
-    <div className="pointer-events-auto relative shrink-0" ref={rootRef}>
+    <div
+      className="pointer-events-auto relative shrink-0"
+      data-studio-live-quick-controls-root="true"
+      ref={rootRef}
+    >
       <button
         ref={triggerRef}
         type="button"

@@ -362,6 +362,20 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
     projectContext: "required",
     directory: true,
   }),
+  // Labs(experimental): 핵심 제작 여정과 같은 위계로 노출하지 않는다. 사이트맵의 "실험·자료" 단계로만 찾을 수 있다.
+  route({
+    id: "studio-branching-cuttoon",
+    path: "/studio/branching-cuttoon",
+    titleKey: "route.branchingCuttoon",
+    label: { ko: "분기형 컷툰 실험", en: "Branching cuttoon lab" },
+    description: {
+      ko: "독자가 선택지를 눌러 이야기가 갈라지는 컷툰을 만들고 미리 읽는 실험 도구",
+      en: "Experimental tool to build and preview a cuttoon whose story branches by reader choices",
+    },
+    purpose: "create",
+    maturity: "experimental",
+    tier: "labs",
+  }),
   route({
     id: "studio-project",
     path: "/studio/p/:projectId/*",

@@ -2,6 +2,7 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
 import type { StudioFloatingSurfaceLayout } from "./studio-floating-surface";
 import { StudioDesktopFloatingSurface } from "./StudioDesktopFloatingSurface";
+import { useStudioWindowKeyboardFocus } from "./a11y/use-studio-window-keyboard-focus";
 
 const PROJECT_CENTER_DEFAULT_LAYOUT: StudioFloatingSurfaceLayout = {
   version: 2,
@@ -34,6 +35,8 @@ export function StudioProjectCenterSurface({
   onClose,
   children,
 }: StudioProjectCenterSurfaceProps) {
+  // 이 표면은 열려 있는 동안에만 마운트된다. 메뉴바의 "프로젝트 센터" 단추를 키보드로 눌렀다면 포커스를 받는다.
+  useStudioWindowKeyboardFocus("#studio-project-actions-menu", true);
   const content = (
     <div
       onClickCapture={(event) => handleProjectAction(event, onClose)}
@@ -52,6 +55,7 @@ export function StudioProjectCenterSurface({
         data-studio-project-actions-menu="true"
         role="dialog"
         aria-label="프로젝트 센터"
+        tabIndex={-1}
       >
         {content}
       </div>

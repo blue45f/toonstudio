@@ -16,6 +16,7 @@ import {
   describeStudioBg3dSkpWarning,
   formatStudioBg3dSkpDimensions,
 } from "./studio-bg3d-skp-import-copy";
+import { StudioBg3dSkpSidecarScopeNote } from "./StudioBg3dSkpSidecarScopeNote";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
 
 import { useT } from "@/shared/lib/i18n";
@@ -220,6 +221,7 @@ function ResultCard({
           <li>{describeStudioBg3dSkpNameList("컴포넌트", report.names.components)}</li>
           <li>{describeStudioBg3dSkpNameList("태그", report.names.tags)}</li>
           <li>{describeStudioBg3dSkpNameList("장면", report.names.scenes)}</li>
+          {imported ? <li><StudioBg3dSkpSidecarScopeNote /></li> : null}
           {imported ? <li>{describeStudioBg3dSkpMetadataStatus(entry.metadata)}</li> : null}
         </ul>
       </details>
@@ -256,6 +258,7 @@ export function StudioBg3dSkpImportPanel({
           SketchUp(.skp) 가져오기 안내
         </summary>
         <p className="pb-1">{STUDIO_BG3D_SKP_SUPPORT_SUMMARY}</p>
+        <p className="pb-1"><StudioBg3dSkpSidecarScopeNote /></p>
         <p className="pb-1">{STUDIO_BG3D_SKP_LEGAL_NOTICE}</p>
       </details>
 
