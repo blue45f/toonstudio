@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const ROOT_HOME = "apps/web/src/domains/creator-resources/CreatorHomePage.tsx";
 const HOME_EXPERIENCE = "apps/web/src/domains/marketing/CreatorHomeExperience.tsx";
+const HOME_DASHBOARD = "apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx";
+const HOME_INTRODUCTION = "apps/web/src/domains/marketing/CreatorStudioIntroduction.tsx";
 const PRODUCT_INTENT = "apps/web/src/domains/creator-resources/ProductIntentStart.tsx";
 const MAKE_HUB = "apps/web/src/domains/creator-resources/MakeHubPage.tsx";
 const CREATOR_ROUTES = "apps/web/src/app/routes/groups/creator-resources.routes.tsx";
@@ -21,15 +23,22 @@ describe("purpose-first product UX foundation", () => {
   it("puts the task launcher before detailed creator guidance", () => {
     const root = readFileSync(ROOT_HOME, "utf8");
     const experience = readFileSync(HOME_EXPERIENCE, "utf8");
+    const dashboard = readFileSync(HOME_DASHBOARD, "utf8");
+    const introduction = readFileSync(HOME_INTRODUCTION, "utf8");
     expect(root).toContain("<CreatorHomeExperience />");
     expect(root).not.toContain("<StudioWorkspacePage");
+    // 같은 컴포넌트가 홈(대시보드)과 소개(/about/studio)를 그린다. 시작 런처는 두 화면 모두에 있다.
+    expect(experience).toContain("{!introduction && <ReferenceCreatorDashboard />}");
+    expect(dashboard).toContain('id="creator-start"');
+    expect(dashboard).toContain('id="creator-toolkit-title"');
     const routes = readFileSync("apps/web/src/app/routes/groups/marketing.routes.tsx", "utf8");
     expect(routes).toContain('path: "/about/studio"');
+    // 소개 화면에서는 런처가 기능 브리지(상세 안내)보다 앞에 온다.
     const launcher = '<ProductIntentStart headingId="creator-toolkit-title" />';
-    expect(experience).toContain(launcher);
-    expect(experience.indexOf('id="creator-start"')).toBeLessThan(experience.indexOf(launcher));
-    expect(experience.indexOf(launcher)).toBeLessThan(experience.indexOf("<StudioIntroBridge />"));
-    expect(experience.match(/<ProductIntentStart\b/gu)).toHaveLength(1);
+    expect(introduction).toContain(launcher);
+    expect(introduction.indexOf('id="creator-start"')).toBeLessThan(introduction.indexOf(launcher));
+    expect(introduction.indexOf(launcher)).toBeLessThan(introduction.indexOf("<StudioIntroBridge />"));
+    expect(introduction.match(/<ProductIntentStart\b/gu)).toHaveLength(1);
   });
 
   it("opens the true global command palette from the home search launcher", () => {

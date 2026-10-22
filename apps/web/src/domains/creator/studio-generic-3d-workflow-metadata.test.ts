@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { STUDIO_GENERIC_3D_SOURCE_FORMATS } from "./generic-3d-model/studio-generic-3d-source-formats";
 import {
   STUDIO_GENERIC_3D_WORKFLOW_METADATA_KEY,
   STUDIO_GENERIC_3D_WORKFLOW_METADATA_VERSION,
@@ -30,13 +31,17 @@ describe("normalizeStudioGeneric3dClassification", () => {
 });
 
 describe("normalizeStudioGeneric3dSourceFormat", () => {
-  it("accepts generic formats and rejects VRM/other formats", () => {
+  it("accepts every generic source format and rejects VRM/other formats", () => {
     expect(normalizeStudioGeneric3dSourceFormat("glb")).toBe("glb");
     expect(normalizeStudioGeneric3dSourceFormat("gltf")).toBe("gltf");
     expect(normalizeStudioGeneric3dSourceFormat("obj")).toBe("obj");
     expect(normalizeStudioGeneric3dSourceFormat("obj-mtl")).toBe("obj-mtl");
+    // 다포맷 네이티브 지원(2ab82534)으로 일반 3D 소스 형식은 열거(STUDIO_GENERIC_3D_SOURCE_FORMATS) 전체다 — 열거와 함께 움직이게 한다.
+    for (const format of STUDIO_GENERIC_3D_SOURCE_FORMATS) {
+      expect(normalizeStudioGeneric3dSourceFormat(format)).toBe(format);
+    }
     expect(normalizeStudioGeneric3dSourceFormat("vrm")).toBeNull();
-    expect(normalizeStudioGeneric3dSourceFormat("fbx")).toBeNull();
+    expect(normalizeStudioGeneric3dSourceFormat("blend")).toBeNull();
     expect(normalizeStudioGeneric3dSourceFormat("glb\n")).toBeNull();
   });
 });
