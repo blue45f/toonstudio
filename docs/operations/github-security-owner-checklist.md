@@ -26,7 +26,8 @@
 
 - **읽지 못한 것**: Dependabot alerts 토글 자체, 열린 알림 건수와 심각도, Code scanning alerts 건수, Secret scanning alerts 건수. 해당 조회는 "Resource not accessible by integration"(403) 또는 프록시 차단으로 거절됐다. Dependabot security updates가 켜져 있으면 alerts도 켜져 있을 가능성이 높지만 이는 추정이고 §2-2에서 소유자가 확인한다.
 - **대체 점검(알림 목록을 대신하지 않는다)**: 의존성은 OSV 일괄 조회, 소스는 semgrep(`p/security-audit`·`p/owasp-top-ten`·`p/secrets` 등)으로 훑었다. 이번 점검 과정에서 고친 것은 AES-GCM 복호화 3곳의 인증 태그 길이 명시, 포맷 게이트웨이 입력 예외 4건, creator-inference의 `accelerate` 하한이다. GitHub Security 탭의 알림과 1:1로 일치한다고 주장하지 않는다.
-- **판단이 남은 항목**: `transformers`는 4.x 전체가 영향권이고 수정본이 5.10 이상뿐이라(huggingface-hub 1.5 이상 필요) 범위를 올리지 않았다. 해당 알림이 열려 있으면 근거(`services/creator-inference/requirements-models.txt` 주석)를 보고 "사용하지 않는 코드 경로"로 닫을지 GPU 자격 검증을 거쳐 5.x로 올릴지 소유자가 정한다.
+- **2차 대체 점검 (2026-10-22, 같은 403 제약)**: Cargo.lock 7개·pnpm/npm 잠금(패키지 1,990개)·Python 요구사항·GitHub Actions 참조 13개를 OSV로 전수 대조했다. npm은 `pnpm audit`과 같이 0건, Rust는 `paste`(RUSTSEC-2024-0436, 유지보수 중단 공지라 GHSA 없음)뿐이었다. 새로 고친 것은 `actions/download-artifact@v4` 2곳(GHSA-cxww-7g56-2vh6, 영향 범위가 4.0.0~4.1.2라 메이저만 적은 `@v4`는 영향권으로 평가될 수 있어 `@v6`으로 올림)과 `transformers` 하한(4.53.0)이다. PR 체크런으로 읽은 코드 스캐닝 결과 중 새 알림은 PR #2388의 높은 심각도 `js/redos` 1건뿐이고, 그 정규식은 이미 `4f2df714`에서 바뀌어 있다. 최근 닫힌 PR 60건 중 37건은 `main`에서 기준 분석을 찾지 못해(예: JS/TS·Rust 구성 없음) 신규 알림을 판정하지 못했다. 같은 기간 `main` push CodeQL 실행 30건 중 26건이 `cancelled`라 그 영향으로 보이지만 원인은 확정하지 않았다. 이 목록도 Security 탭과 1:1로 일치한다고 주장하지 않는다.
+- **판단이 남은 항목**: `transformers`는 4.x 전체가 영향권이고 수정본이 5.10 이상뿐이라(huggingface-hub 1.5 이상 필요) 5.x로 올리지 않았다. 2026-10-22에 하한을 4.53.0으로 올려 4.x에서 고쳐지는 11건은 벗어났고, 5.x 전용 5건(GHSA-29pf-2h5f-8g72·GHSA-69w3-r845-3855·GHSA-fgcw-684q-jj6r·GHSA-x9r9-c232-4q39·GHSA-xrqw-3rrv-vx5w)이 남는다. 해당 알림이 열려 있으면 근거(`services/creator-inference/requirements-models.txt` 주석)를 보고 "사용하지 않는 코드 경로"로 닫을지 GPU 자격 검증을 거쳐 5.x로 올릴지 소유자가 정한다.
 
 ## 2. 소유자가 확인할 4건
 
