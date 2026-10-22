@@ -24,6 +24,8 @@ export function ClaudeArtDirectorDropzone({ preparing, onPick, onPasteFromClipbo
 
   const onDrop = (event: DragEvent<HTMLElement>) => {
     event.preventDefault();
+    // 대화상자 전체가 받는 끌어놓기와 겹쳐 두 번 처리되지 않게 여기서 끝낸다.
+    event.stopPropagation();
     setDragging(false);
     onDropFiles(event.dataTransfer?.files);
   };

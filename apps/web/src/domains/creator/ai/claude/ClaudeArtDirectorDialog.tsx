@@ -11,7 +11,7 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
 import { LoaderCircle, RefreshCw, Sparkles, Square } from "lucide-react";
-import { useCallback, useMemo, useState, type ClipboardEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useState, type ClipboardEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { CLAUDE_BUTTON, CLAUDE_PRIMARY_BUTTON } from "@/shared/ai/claude/claude-ui";
@@ -22,20 +22,21 @@ import { ClaudePreflight } from "@/shared/ai/claude/ClaudePreflight";
 import { useClaudeBudgetGuard } from "@/shared/ai/claude/use-claude-budget-guard";
 import { useClaudeRoute } from "@/shared/ai/claude/use-claude-route";
 import { useT } from "@/shared/lib/i18n";
-import { cn } from "@/shared/lib/utils";
 
-import { estimateArtDirectorCostCapUsd } from "./claude-art-director";
+import { estimateArtDirectorCostCapUsd, type ArtDirectorContext } from "./claude-art-director";
 import { runArtDirectorReview, type ArtDirectorRunResult } from "./claude-art-director-run";
 import { DEFAULT_ART_DIRECTOR_FORM, type ArtDirectorForm, type ArtDirectorPresetCaps } from "./claude-art-director-form";
-import { firstImageFile } from "./claude-image-files";
+import { firstImageFile, pickDroppedFile } from "./claude-image-files";
 import { ClaudeArtDirectorPreview, type ArtDirectorHighlight } from "./ClaudeArtDirectorPreview";
 import { ClaudeArtDirectorResult } from "./ClaudeArtDirectorResult";
 import { ClaudeArtDirectorSetup } from "./ClaudeArtDirectorSetup";
 import { ClaudeDialogFrame, ClaudeShortcutHint } from "./ClaudeDialogFrame";
 import { ClaudeImageInputPane } from "./ClaudeImageInputPane";
+import { ClaudeTaskStatus } from "./ClaudeTaskStatus";
 import { useArtDirectorImage } from "./use-art-director-image";
 import { useClaudeTask } from "./use-claude-task";
 import { useRevealOnChange } from "./use-reveal-on-change";
+import { useRunFocus } from "./use-run-focus";
 
 export interface ClaudeArtDirectorDialogProps {
   readonly onClose: () => void;
@@ -48,8 +49,11 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
 
   const [form, setForm] = useState<ArtDirectorForm>(DEFAULT_ART_DIRECTOR_FORM);
   const [results, setResults] = useState<ReadonlyMap<number, ArtDirectorRunResult>>(new Map());
-  const [highlight, setHighlight] = useState<ArtDirectorHighlight | null>(null);
+  // 강조는 어느 구간의 검토 항목인지와 함께 기억한다. 항목 id는 검토마다 `issue-1`부터 다시 매겨지므로, 구간을 옮긴 뒤에도 남아 다른 구간의
+  // 같은 번호 항목이 눌린 것처럼 보이지 않게 한다.
+  const [highlightState, setHighlightState] = useState<{ readonly segment: number; readonly value: ArtDirectorHighlight } | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
+  const hintId = `${useId()}-need-hint`;
   // 실행이 끝날 때마다 하나씩 올라가는 표식. 결과가 나오면 좁은 화면에서도 결과가 보이도록 스크롤한다.
   const [finishedRuns, setFinishedRuns] = useState(0);
   const resultRef = useRevealOnChange<HTMLDivElement>(finishedRuns);
@@ -58,27 +62,39 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
   const resetOutcome = useCallback(() => {
     resetTask();
     setResults(new Map());
-    setHighlight(null);
+    setHighlightState(null);
   }, [resetTask]);
 
   const image = useArtDirectorImage({ onSourceChange: resetOutcome });
   const { rendered, segmentIndex } = image;
+  const highlight = highlightState && highlightState.segment === segmentIndex ? highlightState.value : null;
+  const onHighlight = useCallback(
+    (value: ArtDirectorHighlight | null) => setHighlightState(value ? { segment: segmentIndex, value } : null),
+    [segmentIndex],
+  );
   const running = task.running;
+  const { runRef, stopRef } = useRunFocus(running);
   const connectionModel = route?.model ?? "";
 
   const resolved = useMemo(
     () => resolveClaudePreset(form.presetId, connectionModel, { customModel: form.customModel, customDepth: form.customDepth }),
     [connectionModel, form.customDepth, form.customModel, form.presetId],
   );
+  // 비용 상한은 실제 요청과 같은 글(매체·장르·분위기·메모)로 잰다. 깊이(effort)는 요금표에 영향이 없어 빠진다.
+  const costContext = useMemo<ArtDirectorContext>(
+    () => ({ medium: form.medium, genre: form.genre, mood: form.mood, notes: form.notes }),
+    [form.genre, form.medium, form.mood, form.notes],
+  );
   const caps = useMemo<ArtDirectorPresetCaps>(() => {
     const entries = CLAUDE_PRESET_IDS.map((id: ClaudePresetId) => {
       if (!rendered) return [id, undefined] as const;
       const preset = resolveClaudePreset(id, connectionModel, { customModel: form.customModel, customDepth: form.customDepth });
-      return [id, estimateArtDirectorCostCapUsd(preset.model, rendered.input)] as const;
+      return [id, estimateArtDirectorCostCapUsd(preset.model, rendered.input, costContext)] as const;
     });
     return Object.fromEntries(entries) as ArtDirectorPresetCaps;
-  }, [connectionModel, form.customDepth, form.customModel, rendered]);
-  const capUsd = rendered ? caps[form.presetId] ?? null : null;
+  }, [connectionModel, costContext, form.customDepth, form.customModel, rendered]);
+  // 이미지가 아직 없으면 계산할 수 없다(undefined). "단가를 모른다"(null)와 구분해야 입력 전에 가짜 경고가 뜨지 않는다.
+  const capUsd = rendered ? caps[form.presetId] ?? null : undefined;
   const guard = useClaudeBudgetGuard(capUsd);
 
   const patchForm = useCallback((patch: Partial<ArtDirectorForm>) => {
@@ -99,20 +115,28 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
 
   const canRun = Boolean(route && rendered && !image.preparing && !running && guard.allowed);
 
+  // 이미지를 올리면 올리기 구역이 사라지며 포커스가 body로 떨어진다. 바로 실행할 수 있게 실행 버튼으로 옮긴다.
+  const hasImage = Boolean(rendered);
+  useEffect(() => {
+    if (hasImage && document.activeElement === document.body) runRef.current?.focus({ preventScroll: true });
+  }, [hasImage, runRef]);
+
   const run = async () => {
     if (!canRun || !rendered) return;
     const claudeRoute = resolveClaudeRoute();
     const index = rendered.segment.index;
     const input = rendered.input;
+    // 동의는 이 요청에 한 번만 쓴다. 보내기 전에 값을 읽어 전송 계층의 예산 판정에 넘기고 동의를 거둔다.
+    const budgetOverride = guard.overridden;
     guard.consumeOverride();
-    setHighlight(null);
+    setHighlightState(null);
     const outcome = await task.start(async (signal) => {
       if (!claudeRoute) throw new Error(t("claudeAssist.common.needConnection"));
       return runArtDirectorReview(
         claudeRoute,
         input,
         { medium: form.medium, depth: resolved.depth, genre: form.genre, mood: form.mood, notes: form.notes },
-        { model: resolved.model, signal },
+        { model: resolved.model, signal, budgetOverride },
       );
     });
     if (!outcome) return;
@@ -138,28 +162,29 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
   const footer = (
     <div className="flex flex-wrap items-center gap-3">
       <button
+        ref={runRef}
         type="button"
         className={CLAUDE_PRIMARY_BUTTON}
         disabled={!canRun}
-        aria-describedby={needHint ? "claude-art-need-hint" : undefined}
+        aria-describedby={needHint ? hintId : undefined}
         onClick={() => void run()}
       >
         {running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : result ? <RefreshCw size={16} aria-hidden /> : <Sparkles size={16} aria-hidden />}
         {result && !running ? t("claudeAssist.art.rerun") : t("claudeAssist.art.run")}
       </button>
       {running ? (
-        <button type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
+        <button ref={stopRef} type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
           <Square size={14} aria-hidden />
           {t("claudeAssist.common.stop")}
         </button>
       ) : null}
-      {capUsd !== null && rendered ? (
+      {typeof capUsd === "number" ? (
         <span className="text-xs font-semibold text-fg-2" data-claude-footer-cap="true">
           {t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) })}
         </span>
       ) : null}
       <span className="ml-auto flex items-center gap-3">
-        {needHint ? <span id="claude-art-need-hint" className="text-xs text-fg-3">{needHint}</span> : null}
+        {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
         <ClaudeShortcutHint action={t("claudeAssist.common.shortcutRun")} />
       </span>
     </div>
@@ -174,6 +199,7 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
       description={t("claudeAssist.art.description")}
       onClose={close}
       onPaste={onPaste}
+      onDropFiles={(files) => { if (!running) loadFile(pickDroppedFile(files)); }}
       onPrimaryShortcut={() => void run()}
       footer={footer}
     >
@@ -208,6 +234,9 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
             model={resolved.model}
             capUsd={capUsd}
             guard={guard}
+            summary={rendered
+              ? t("claudeAssist.art.preflightTransfer", { width: rendered.input.width, height: rendered.input.height, size: sizeKb })
+              : t("claudeAssist.art.preflightTransferNone")}
             rows={[
               {
                 label: t("claudeAssist.preflight.transfer"),
@@ -221,12 +250,18 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
             ]}
           />
 
-          <div role="status" aria-live="polite" className={cn("min-h-5 text-sm text-fg-2", running && "font-semibold")}>
-            {image.preparing ? t("claudeAssist.art.preparing") : null}
-            {running ? `${t("claudeAssist.art.running")} · ${t("claudeAssist.common.elapsed", { seconds: task.elapsedSeconds })}` : null}
-            {task.state.status === "stopped" ? t("claudeAssist.art.stopped") : null}
-            {task.state.status === "idle" && result ? t("claudeAssist.art.done") : null}
-          </div>
+          <ClaudeTaskStatus
+            running={running}
+            elapsedSeconds={task.elapsedSeconds}
+            runningText={t("claudeAssist.art.running")}
+            message={image.preparing
+              ? t("claudeAssist.art.preparing")
+              : task.state.status === "stopped"
+                ? t("claudeAssist.art.stopped")
+                : task.state.status === "idle" && result
+                  ? t("claudeAssist.art.done")
+                  : null}
+          />
           {task.state.status === "error" ? (
             <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
               {t("claudeAssist.art.error", { message: task.state.message })}
@@ -235,7 +270,7 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
 
           {result ? (
             <div ref={resultRef}>
-              <ClaudeArtDirectorResult result={result} highlight={highlight} onHighlight={setHighlight} />
+              <ClaudeArtDirectorResult result={result} highlight={highlight} onHighlight={onHighlight} />
             </div>
           ) : rendered && task.state.status === "idle" ? (
             <p className="text-sm text-fg-3">{t("claudeAssist.art.notReviewed")}</p>

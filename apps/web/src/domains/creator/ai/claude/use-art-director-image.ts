@@ -50,15 +50,20 @@ export function useArtDirectorImage(options: UseArtDirectorImageOptions = {}): A
   const [errorCode, setErrorCode] = useState<ArtDirectorImageErrorCode | null>(null);
   const latest = useRef<LoadedImage>(EMPTY);
   const token = useRef(0);
+  const mounted = useRef(true);
 
   useEffect(() => {
     latest.current = loaded;
   }, [loaded]);
 
-  useEffect(() => () => {
-    token.current += 1;
-    latest.current.rendered?.dispose();
-    latest.current.source?.dispose();
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      token.current += 1;
+      latest.current.rendered?.dispose();
+      latest.current.source?.dispose();
+    };
   }, []);
 
   const replace = useCallback((next: LoadedImage) => {
@@ -70,6 +75,8 @@ export function useArtDirectorImage(options: UseArtDirectorImageOptions = {}): A
   }, []);
 
   const load = useCallback(async (file: Blob) => {
+    // 닫힌 뒤에 끝난 클립보드 읽기 등이 뒤늦게 불러도 자원을 만들지 않는다(만들면 아무도 해제하지 못한다).
+    if (!mounted.current) return;
     const mine = ++token.current;
     setPreparing(true);
     setErrorCode(null);
@@ -98,7 +105,7 @@ export function useArtDirectorImage(options: UseArtDirectorImageOptions = {}): A
 
   const select = useCallback(async (index: number) => {
     const current = latest.current;
-    if (!current.source || index === current.segmentIndex) return;
+    if (!mounted.current || !current.source || index === current.segmentIndex) return;
     const mine = ++token.current;
     setPreparing(true);
     setErrorCode(null);

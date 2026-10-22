@@ -13,8 +13,10 @@
  */
 import { z } from "zod";
 
-import { claudeModelSupportsEffort, estimateClaudeCostUsd } from "@/shared/ai/claude/claude-models";
-import { cleanMultilineText, cleanSingleLineText } from "@/shared/ai/claude/claude-text";
+import { claudeModelSupportsEffort } from "@/shared/ai/claude/claude-models";
+import { cleanMultilineTextDetailed, cleanSingleLineText, cleanSingleLineTextDetailed } from "@/shared/ai/claude/claude-text";
+
+import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 
 import type Anthropic from "@anthropic-ai/sdk";
 
@@ -52,7 +54,19 @@ export const ART_DIRECTOR_LIMITS = Object.freeze({
   maxImageEdge: 1568,
   /** 한 번에 분석하는 구간의 최대 세로/가로 비율. 세로로 아주 긴 웹툰은 이 비율로 나눠 본다. */
   maxSegmentAspect: 2.2,
-  maxSegments: 4,
+  /** 한 이미지에서 고를 수 있는 구간 수. 구간마다 따로 요청(과금)하므로 목록만 늘고 비용은 사용자가 고른 만큼만 든다. */
+  maxSegments: 24,
+});
+
+/** 모델 출력을 화면에 올리기 전에 자르는 글자 수. 프롬프트가 같은 값을 모델에게 알려 주므로 한곳에 둔다. */
+export const ART_DIRECTOR_TEXT_LIMITS = Object.freeze({
+  summary: 800,
+  title: 80,
+  detail: 600,
+  fix: 600,
+  strength: 200,
+  nextAction: 240,
+  stepLabel: 80,
 });
 
 const RegionSchema = z.object({
@@ -62,7 +76,11 @@ const RegionSchema = z.object({
   height: z.number(),
 });
 
-/** 모델 출력 스키마. 구조화 출력(output_config.format)으로 강제하고, 이후 정규화로 다시 검증한다. */
+/**
+ * 모델 출력 스키마. 구조화 출력(output_config.format)으로 구조를 강제하고, 이후 정규화로 값을 다시 검증한다.
+ * SDK는 `enum`을 실제 제약으로 보내지 않고 설명 글로만 옮기므로(실측), 분류 값은 문자열로 받고 정규화에서 허용 값으로 맞춘다 —
+ * 그렇지 않으면 모델이 값 하나만 틀려도 이미 과금된 응답 전체를 버리게 된다.
+ */
 export const ArtDirectorReviewSchema = z.object({
   summary: z.string(),
   scores: z.object({
@@ -77,9 +95,9 @@ export const ArtDirectorReviewSchema = z.object({
     region: RegionSchema.nullable(),
   })),
   issues: z.array(z.object({
-    category: z.enum(ART_DIRECTOR_CATEGORIES),
-    severity: z.enum(ART_DIRECTOR_SEVERITIES),
-    confidence: z.enum(ART_DIRECTOR_CONFIDENCES),
+    category: z.string().describe(ART_DIRECTOR_CATEGORIES.join(" | ")),
+    severity: z.string().describe(ART_DIRECTOR_SEVERITIES.join(" | ")),
+    confidence: z.string().describe(ART_DIRECTOR_CONFIDENCES.join(" | ")),
     title: z.string(),
     detail: z.string(),
     fix: z.string(),
@@ -115,6 +133,8 @@ export interface ArtDirectorReview {
   readonly readingOrder: ReadonlyArray<{ readonly step: number; readonly label: string; readonly region: ArtDirectorRegion | null }>;
   readonly issues: readonly ArtDirectorIssue[];
   readonly nextActions: readonly string[];
+  /** 길이·개수 제한 때문에 줄이거나 버린 항목 수. 0이면 모델이 준 그대로다. */
+  readonly trimmed: number;
 }
 
 export type ArtDirectorMedium = "vertical-scroll" | "page";
@@ -151,8 +171,10 @@ const SYSTEM_PROMPT = [
   "- 세로 스크롤 웹툰(모바일 폭 360~430px)에서 읽히는지를 기준으로 판단하세요. medium이 page이면 페이지 단위 가독성을 보세요.",
   "- 문제마다 위치(region)를 '보낸 이미지의 픽셀 좌표'로 적으세요(좌상단 원점, x·y·width·height). 위치를 특정할 수 없으면 null입니다.",
   "- 평가 축: 읽는 순서(reading_flow), 구도·시선(composition), 말풍선 위치·가림(balloon), 글자 가독성(lettering), 명암 대비(contrast), 색 분위기(color), 인체(anatomy), 원근·공간(perspective), 컷 호흡·여백(pacing), 모바일 가독성(mobile_readability), 컷 간 일관성(consistency).",
-  "- issues는 심각도 순으로 최대 10개, strengths는 최대 4개, nextActions는 우선순위 순으로 최대 5개입니다.",
-  "- readingOrder에는 독자가 실제로 읽을 순서를 1부터 적고, 각 단계의 영역을 함께 적으세요.",
+  `- category는 다음 값 중 하나만 쓰세요: ${ART_DIRECTOR_CATEGORIES.join(", ")}. severity와 confidence는 ${ART_DIRECTOR_SEVERITIES.join(", ")} 중 하나만 씁니다.`,
+  `- issues는 심각도 순으로 최대 ${ART_DIRECTOR_LIMITS.maxIssues}개, strengths는 최대 ${ART_DIRECTOR_LIMITS.maxStrengths}개, nextActions는 우선순위 순으로 최대 ${ART_DIRECTOR_LIMITS.maxNextActions}개입니다.`,
+  `- readingOrder에는 독자가 실제로 읽을 순서를 1부터 최대 ${ART_DIRECTOR_LIMITS.maxReadingSteps}단계까지 적고, 각 단계의 영역을 함께 적으세요.`,
+  `- 글자 수 제한(넘으면 앱이 잘라 냅니다): summary ${ART_DIRECTOR_TEXT_LIMITS.summary}자, title ${ART_DIRECTOR_TEXT_LIMITS.title}자, detail·fix 각 ${ART_DIRECTOR_TEXT_LIMITS.detail}자, strengths 각 ${ART_DIRECTOR_TEXT_LIMITS.strength}자, nextActions 각 ${ART_DIRECTOR_TEXT_LIMITS.nextAction}자, readingOrder label ${ART_DIRECTOR_TEXT_LIMITS.stepLabel}자.`,
   "- scores는 1~5의 정수입니다(composition 구도, readability 가독성, mood 분위기).",
   "- 모든 문장은 한국어 해요체로 간결하게 쓰세요. 칭찬만 나열하지 말고, 고칠 점은 '무엇을 어떻게' 바꿀지까지 적으세요.",
 ].join("\n");
@@ -199,31 +221,19 @@ export function buildArtDirectorRequest(
   };
 }
 
-/**
- * 이미지 한 장을 보내는 요청 한 번이 낼 수 있는 비용의 상한(USD). 출력은 `max_tokens`가 하드 상한이라 그만큼 썼다고
- * 가정하고, 입력은 이미지 토큰(가로×세로÷750)에 시스템·메모 텍스트 약 900토큰을 더해 추정한다. 단가를 모르는 모델은 null.
- */
-export function estimateImageRequestCostCapUsd(
-  model: string,
-  image: { readonly width: number; readonly height: number },
-  maxOutputTokens: number,
-): number | null {
-  if (!(image.width > 0) || !(image.height > 0)) return null;
-  const estimate = estimateClaudeCostUsd(model, {
-    inputTokens: Math.ceil((image.width * image.height) / 750) + 900,
-    outputTokens: maxOutputTokens,
-    cacheReadTokens: 0,
-    cacheWriteTokens: 0,
-  });
-  return estimate ? estimate.usd : null;
-}
+const DEFAULT_COST_CONTEXT: ArtDirectorContext = Object.freeze({ medium: "vertical-scroll" });
 
-/** 검토 한 번이 낼 수 있는 비용의 상한(USD). */
+/**
+ * 검토 한 번이 낼 수 있는 비용의 상한(USD). 실행 전 확인과 실제 실행이 같은 요청으로 이 함수를 불러, 화면에 보인 값과 예산 판정에 쓰인 값이
+ * 같다. 이미지 본문은 글자 수가 아니라 크기로 세므로 본문 없이 계산해도 된다. 단가를 모르는 모델이거나 크기가 이상하면 null.
+ */
 export function estimateArtDirectorCostCapUsd(
   model: string,
   image: { readonly width: number; readonly height: number },
+  context: ArtDirectorContext = DEFAULT_COST_CONTEXT,
 ): number | null {
-  return estimateImageRequestCostCapUsd(model, image, ART_DIRECTOR_MAX_OUTPUT_TOKENS);
+  const request = buildArtDirectorRequest(model, { mediaType: "image/png", data: "", width: image.width, height: image.height }, context);
+  return estimateStructuredCostCapUsd({ model, request, schema: ArtDirectorReviewSchema, image });
 }
 
 export interface ArtDirectorArea {
@@ -274,51 +284,92 @@ function score(value: number): number {
   return Number.isFinite(value) ? Math.min(5, Math.max(1, Math.round(value))) : 1;
 }
 
+/** 모델이 준 분류 값을 허용 값으로 맞춘다(대소문자·공백·하이픈 차이는 받아들이고, 모르는 값은 안전한 기본값으로). */
+function pickLabel<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
+  const key = typeof value === "string" ? value.trim().toLowerCase().replace(/[\s-]+/gu, "_") : "";
+  return (allowed as readonly string[]).includes(key) ? (key as T) : fallback;
+}
+
+function uniqueTexts(items: readonly string[]): string[] {
+  return [...new Set(items)];
+}
+
 /** 모델 출력을 화면에 올릴 수 있는 형태로 검증·정리한다. 순서와 개수 제한은 여기서 확정한다. */
 export function normalizeArtDirectorReview(
   raw: ArtDirectorRawReview,
   size: { readonly width: number; readonly height: number },
 ): ArtDirectorReview {
   // 정리(검증) → 정렬 → 상한 → id 부여 순서다. 빈 항목이 상한 안에 자리를 차지하거나 id에 빈 번호가
-  // 생기지 않도록, 걸러내는 일은 반드시 잘라내기 전에 끝낸다.
-  const issues = raw.issues
-    .map((issue, index) => ({
-      index,
-      category: issue.category,
-      severity: issue.severity,
-      confidence: issue.confidence,
-      title: cleanSingleLineText(issue.title, 80),
-      detail: cleanMultilineText(issue.detail, 600),
-      fix: cleanMultilineText(issue.fix, 600),
-      region: clampRegion(issue.region, size.width, size.height),
-    }))
-    .filter((issue) => issue.title.length > 0 && (issue.detail.length > 0 || issue.fix.length > 0))
-    .sort((left, right) => SEVERITY_RANK[left.severity] - SEVERITY_RANK[right.severity] || left.index - right.index)
-    .slice(0, ART_DIRECTOR_LIMITS.maxIssues)
-    .map(({ index: _index, ...issue }, position): ArtDirectorIssue => ({ id: `issue-${position + 1}`, ...issue }));
+  // 생기지 않도록, 걸러내는 일은 반드시 잘라내기 전에 끝낸다. 잘려 나간 글과 상한 때문에 버린 항목은 세어 두었다가 알린다.
+  let trimmed = 0;
+  const clip = (clipped: boolean) => {
+    if (clipped) trimmed += 1;
+  };
 
-  const readingOrder = raw.readingOrder
+  const cleanedIssues = raw.issues
+    .map((issue, index) => {
+      const title = cleanSingleLineTextDetailed(issue.title, ART_DIRECTOR_TEXT_LIMITS.title);
+      const detail = cleanMultilineTextDetailed(issue.detail, ART_DIRECTOR_TEXT_LIMITS.detail);
+      const fix = cleanMultilineTextDetailed(issue.fix, ART_DIRECTOR_TEXT_LIMITS.fix);
+      return {
+        index,
+        category: pickLabel(issue.category, ART_DIRECTOR_CATEGORIES, "other"),
+        severity: pickLabel(issue.severity, ART_DIRECTOR_SEVERITIES, "medium"),
+        confidence: pickLabel(issue.confidence, ART_DIRECTOR_CONFIDENCES, "low"),
+        title,
+        detail,
+        fix,
+        region: clampRegion(issue.region, size.width, size.height),
+      };
+    })
+    .filter((issue) => issue.title.text.length > 0 && (issue.detail.text.length > 0 || issue.fix.text.length > 0))
+    .sort((left, right) => SEVERITY_RANK[left.severity] - SEVERITY_RANK[right.severity] || left.index - right.index);
+  trimmed += Math.max(0, cleanedIssues.length - ART_DIRECTOR_LIMITS.maxIssues);
+  const issues = cleanedIssues
+    .slice(0, ART_DIRECTOR_LIMITS.maxIssues)
+    .map(({ index: _index, title, detail, fix, ...issue }, position): ArtDirectorIssue => {
+      clip(title.clipped);
+      clip(detail.clipped);
+      clip(fix.clipped);
+      return { id: `issue-${position + 1}`, ...issue, title: title.text, detail: detail.text, fix: fix.text };
+    });
+
+  // 순서가 없거나 이름이 빈 단계는 먼저 거르고, 그다음에 정렬·상한·번호 매기기를 해서 번호에 빈틈이 생기지 않게 한다.
+  const cleanedSteps = raw.readingOrder
     .filter((item) => Number.isFinite(item.step))
-    .sort((left, right) => left.step - right.step)
-    .slice(0, ART_DIRECTOR_LIMITS.maxReadingSteps)
-    .map((item, index) => ({
-      step: index + 1,
-      label: cleanSingleLineText(item.label, 80),
-      region: clampRegion(item.region, size.width, size.height),
-    }))
-    .filter((item) => item.label.length > 0);
+    .map((item) => ({ step: item.step, label: cleanSingleLineTextDetailed(item.label, ART_DIRECTOR_TEXT_LIMITS.stepLabel), region: clampRegion(item.region, size.width, size.height) }))
+    .filter((item) => item.label.text.length > 0)
+    .sort((left, right) => left.step - right.step);
+  trimmed += Math.max(0, cleanedSteps.length - ART_DIRECTOR_LIMITS.maxReadingSteps);
+  const readingOrder = cleanedSteps.slice(0, ART_DIRECTOR_LIMITS.maxReadingSteps).map((item, index) => {
+    clip(item.label.clipped);
+    return { step: index + 1, label: item.label.text, region: item.region };
+  });
+
+  const summary = cleanMultilineTextDetailed(raw.summary, ART_DIRECTOR_TEXT_LIMITS.summary);
+  clip(summary.clipped);
+
+  const listOf = (items: readonly string[], limit: number, count: number): string[] => {
+    const cleaned = items.map((item) => cleanSingleLineTextDetailed(item, limit)).filter((item) => item.text.length > 0);
+    const unique = uniqueTexts(cleaned.map((item) => item.text));
+    trimmed += Math.max(0, unique.length - count);
+    const kept = unique.slice(0, count);
+    for (const item of cleaned) if (item.clipped && kept.includes(item.text)) clip(true);
+    return kept;
+  };
 
   return {
-    summary: cleanMultilineText(raw.summary, 800),
+    summary: summary.text,
     scores: {
       composition: score(raw.scores.composition),
       readability: score(raw.scores.readability),
       mood: score(raw.scores.mood),
     },
-    strengths: raw.strengths.map((item) => cleanSingleLineText(item, 200)).filter(Boolean).slice(0, ART_DIRECTOR_LIMITS.maxStrengths),
+    strengths: listOf(raw.strengths, ART_DIRECTOR_TEXT_LIMITS.strength, ART_DIRECTOR_LIMITS.maxStrengths),
     readingOrder,
     issues,
-    nextActions: raw.nextActions.map((item) => cleanSingleLineText(item, 240)).filter(Boolean).slice(0, ART_DIRECTOR_LIMITS.maxNextActions),
+    nextActions: listOf(raw.nextActions, ART_DIRECTOR_TEXT_LIMITS.nextAction, ART_DIRECTOR_LIMITS.maxNextActions),
+    trimmed,
   };
 }
 
@@ -331,7 +382,8 @@ export interface ArtDirectorSegment {
 
 /**
  * 세로로 아주 긴 웹툰은 한 장으로 줄이면 글자가 뭉개진다. 가로 대비 `maxSegmentAspect` 높이로 나눠
- * 구간별로 보게 하고, 경계에서 컷이 잘리지 않도록 6%씩 겹친다. 최대 `maxSegments`개까지만 만든다.
+ * 구간별로 보게 하고, 경계에서 컷이 잘리지 않도록 6%씩 겹친다. 최대 `maxSegments`개까지만 만들고,
+ * 그보다 긴 이미지는 `describeArtDirectorCoverage`로 어디까지 다루는지 사용자에게 알린다.
  */
 export function planArtDirectorSegments(width: number, height: number): ArtDirectorSegment[] {
   if (!(width > 0) || !(height > 0)) return [];
@@ -347,6 +399,30 @@ export function planArtDirectorSegments(width: number, height: number): ArtDirec
     if (top + sliceHeight >= height) break;
   }
   return segments;
+}
+
+export interface ArtDirectorCoverage {
+  /** 원본 세로 길이(px). */
+  readonly totalHeight: number;
+  /** 구간들이 다루는 위쪽부터의 길이(px). */
+  readonly coveredHeight: number;
+  /** 다루는 비율(0~100, 내림). */
+  readonly percent: number;
+  /** 구간 수 상한 때문에 아래쪽이 빠졌는가. */
+  readonly truncated: boolean;
+}
+
+/** 구간들이 원본의 어디까지를 다루는지. 상한을 넘는 아주 긴 이미지에서 "전체"처럼 보이지 않게 하려는 값이다. */
+export function describeArtDirectorCoverage(height: number, segments: readonly ArtDirectorSegment[]): ArtDirectorCoverage {
+  const last = segments.at(-1);
+  const coveredHeight = last ? Math.min(height, last.top + last.height) : 0;
+  const totalHeight = Math.max(0, height);
+  return {
+    totalHeight,
+    coveredHeight,
+    percent: totalHeight > 0 ? Math.min(100, Math.floor((coveredHeight / totalHeight) * 100)) : 0,
+    truncated: coveredHeight < totalHeight,
+  };
 }
 
 /** 긴 변이 `maxEdge`를 넘지 않도록 비율을 유지해 맞춘 크기(확대는 하지 않는다). */
@@ -372,26 +448,34 @@ const CATEGORY_LABEL_KO: Readonly<Record<ArtDirectorCategory, string>> = {
   other: "기타",
 };
 
+/**
+ * 모델이 준 글을 마크다운 한 줄 안에 안전하게 넣는다. 줄바꿈이 있으면 이어 붙은 줄이 머리글·목록으로 바뀌어 복사본의 구조를 깨뜨리므로
+ * 공백으로 합치고, 줄머리의 마크다운 표시(`#`·`>`·`-`·`+`·`*`·`|`·`1.`)는 이스케이프한다.
+ */
+function markdownInline(text: string): string {
+  return text.replace(/\s+/gu, " ").trim().replace(/^(#{1,6}(?=\s|$)|>|[-+*](?=\s)|\|)/u, "\\$1").replace(/^(\d+)\.(?=\s)/u, "$1\\.");
+}
+
 /** 클립보드 복사·메모용 마크다운. 화면 문구와 별개의 산출물이라 한국어 고정이다. */
 export function artDirectorReviewToMarkdown(review: ArtDirectorReview): string {
-  const lines = ["# AI 아트 디렉터 리뷰", "", review.summary, ""];
+  const lines = ["# AI 아트 디렉터 리뷰", "", markdownInline(review.summary), ""];
   lines.push(`- 구도 ${review.scores.composition}/5 · 가독성 ${review.scores.readability}/5 · 분위기 ${review.scores.mood}/5`, "");
   if (review.strengths.length > 0) {
-    lines.push("## 잘된 점", ...review.strengths.map((item) => `- ${item}`), "");
+    lines.push("## 잘된 점", ...review.strengths.map((item) => `- ${markdownInline(item)}`), "");
   }
   if (review.issues.length > 0) {
     lines.push("## 고칠 점");
     review.issues.forEach((issue, index) => {
       lines.push(
-        `${index + 1}. [${issue.severity}] ${CATEGORY_LABEL_KO[issue.category]} — ${issue.title}`,
-        `   - 문제: ${issue.detail}`,
-        `   - 제안: ${issue.fix}`,
+        `${index + 1}. [${issue.severity}] ${CATEGORY_LABEL_KO[issue.category]} — ${markdownInline(issue.title)}`,
+        `   - 문제: ${markdownInline(issue.detail)}`,
+        `   - 제안: ${markdownInline(issue.fix)}`,
       );
     });
     lines.push("");
   }
   if (review.nextActions.length > 0) {
-    lines.push("## 다음 할 일", ...review.nextActions.map((item, index) => `${index + 1}. ${item}`), "");
+    lines.push("## 다음 할 일", ...review.nextActions.map((item, index) => `${index + 1}. ${markdownInline(item)}`), "");
   }
   return lines.join("\n").trimEnd();
 }

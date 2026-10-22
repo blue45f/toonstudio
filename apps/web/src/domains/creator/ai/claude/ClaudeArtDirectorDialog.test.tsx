@@ -165,7 +165,7 @@ describe("ClaudeArtDirectorDialog", () => {
       expect(screen.getByText(/이미지를 클립보드로/)).toBeTruthy();
       const run = screen.getByRole("button", { name: RUN }) as HTMLButtonElement;
       expect(run.disabled).toBe(true);
-      expect(run.getAttribute("aria-describedby")).toBe("claude-art-need-hint");
+      expect(run.getAttribute("aria-describedby")).toBe(document.querySelector("[data-claude-need-hint]")?.id);
       expect(screen.getByText("먼저 분석할 이미지를 올려 주세요.")).toBeTruthy();
     });
 
@@ -188,13 +188,14 @@ describe("ClaudeArtDirectorDialog", () => {
       await chooseImage();
 
       expect(preset("기본").checked).toBe(true);
-      // 입력 1967토큰, 출력 8000토큰 상한. Haiku 5.5 $0.1/$0.5, Opus 5.5 $4/$20 (100만 토큰당)
+      // 입력은 UTF-8 바이트 상한(고정 지시 2,149토큰은 캐시 쓰기 ×1.25, 나머지 + 스키마 + 이미지 1,125토큰), 출력 8000토큰 상한.
+      // Haiku 5.5 $0.1/$0.5, Opus 5.5 $4/$20 (100만 토큰당)
       const quick = preset("빠르게").closest("label") as HTMLElement;
       const standard = preset("기본").closest("label") as HTMLElement;
-      expect(within(quick).getByText("최대 약 $0.0042")).toBeTruthy();
-      expect(within(standard).getByText("최대 약 $0.17")).toBeTruthy();
-      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.17");
-      expect(document.querySelector("[data-claude-cap-chip]")?.textContent).toBe("최대 약 $0.17");
+      expect(within(quick).getByText("최대 약 $0.0046")).toBeTruthy();
+      expect(within(standard).getByText("최대 약 $0.18")).toBeTruthy();
+      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.18");
+      expect(document.querySelector("[data-claude-cap-chip]")?.textContent).toBe("최대 약 $0.18");
       expect(screen.getByText(/원본 800×1000px/)).toBeTruthy();
       expect(screen.getByText(/전송 크기 800×1000px · 2KB/)).toBeTruthy();
     });
@@ -205,7 +206,7 @@ describe("ClaudeArtDirectorDialog", () => {
       await chooseImage();
 
       fireEvent.click(preset("빠르게"));
-      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.0042");
+      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.0046");
       expect(within(document.querySelector("[data-claude-preflight]") as HTMLElement).getByText("Claude Haiku 5.5")).toBeTruthy();
 
       fireEvent.click(screen.getByRole("button", { name: RUN }));
@@ -239,7 +240,7 @@ describe("ClaudeArtDirectorDialog", () => {
       fireEvent.click(preset("직접 고르기"));
       fireEvent.change(screen.getByLabelText("사용할 모델"), { target: { value: "claude-fable-5-1" } });
       fireEvent.change(screen.getByLabelText("생각 깊이"), { target: { value: "high" } });
-      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.42");
+      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.46");
       fireEvent.click(screen.getByRole("button", { name: RUN }));
       await screen.findByText("대사 글자가 묻혀요");
 
@@ -269,7 +270,7 @@ describe("ClaudeArtDirectorDialog", () => {
       const run = screen.getByRole("button", { name: RUN }) as HTMLButtonElement;
       expect(run.disabled).toBe(true);
       expect(screen.getByText("예산 확인을 체크하면 실행할 수 있어요.")).toBeTruthy();
-      expect(screen.getByRole("alert").textContent).toContain("이 요청은 최대 $0.17까지 들 수 있어 예산을 넘을 수 있어요.");
+      expect(screen.getByRole("alert").textContent).toContain("이 요청은 최대 $0.18까지 들 수 있어 예산을 넘을 수 있어요.");
 
       fireEvent.click(screen.getByLabelText("이번 한 번만 예산을 넘어도 진행해요"));
       expect(run.disabled).toBe(false);
@@ -320,7 +321,7 @@ describe("ClaudeArtDirectorDialog", () => {
       expect(within(result).getByText("중요")).toBeTruthy();
       expect(within(result).getByText("글자 가독성")).toBeTruthy();
       expect(within(result).getByText(/모델 claude-opus-5-5 · 입력 2,000 · 출력 1,500 토큰 · 추정 \$0\.04/)).toBeTruthy();
-      expect(screen.getByRole("status").textContent).toBe("분석을 마쳤어요.");
+      expect(document.querySelector("[data-claude-task-status] [role=status]")?.textContent).toBe("분석을 마쳤어요.");
       expect(screen.getByRole("button", { name: "다시 분석하기 (요금 발생)" })).toBeTruthy();
     });
 
@@ -420,11 +421,13 @@ describe("ClaudeArtDirectorDialog", () => {
       await chooseImage();
 
       fireEvent.click(screen.getByRole("button", { name: RUN }));
-      expect(await screen.findByText(/분석하는 중이에요.*0초 경과/)).toBeTruthy();
+      expect(await screen.findByText(/분석하는 중이에요/)).toBeTruthy();
+      // 매초 바뀌는 경과 시간은 화면에만 보이고 안내 영역(role=status)에는 들어가지 않는다.
+      expect(screen.getByText(/0초 경과/).closest("[role=status]")).toBeNull();
       fireEvent.click(screen.getByRole("button", { name: "중단" }));
 
       await waitFor(() => { expect(signal?.aborted).toBe(true); });
-      expect(await screen.findByText("분석을 중단했어요. 필요하면 다시 시도해 주세요.")).toBeTruthy();
+      expect(await screen.findByText("분석을 중단했어요. 이미 처리된 부분은 요금이 청구됐을 수 있어요. 필요하면 다시 시도해 주세요.")).toBeTruthy();
       expect(screen.queryByRole("alert")).toBeNull();
       expect(screen.queryByRole("region", { name: "리뷰" })).toBeNull();
     });
@@ -552,5 +555,172 @@ describe("ClaudeArtDirectorDialog", () => {
     expect(screen.getByRole("button", { name: "Choose image" })).toBeTruthy();
     expect(screen.getByText("Check before you run")).toBeTruthy();
     expect(screen.getByRole("radio", { name: /Quick/ })).toBeTruthy();
+  });
+});
+
+describe("ClaudeArtDirectorDialog — 리뷰 반영", () => {
+  beforeEach(() => {
+    useI18n.setState({ lang: "ko" });
+    localStorage.clear();
+    sessionStorage.clear();
+    lockUserAi(false);
+    resetClaudeUsage();
+    resetClaudeBudgetForTests();
+    runArtDirectorReview.mockReset();
+    runArtDirectorReview.mockResolvedValue(outcome());
+    fakeDeps.size = { width: 800, height: 1_000 };
+    fakeDeps.revoked.length = 0;
+    fakeDeps.urls = 0;
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    lockUserAi(false);
+    resetClaudeUsage();
+    resetClaudeBudgetForTests();
+    useI18n.setState({ lang: INITIAL_LANGUAGE });
+  });
+
+  it("이미지를 올리기 전에는 '가격을 몰라요'나 예산 경고 대신 '입력하면 계산해요'를 보여 준다", () => {
+    connectClaude();
+    setClaudeBudgetLimit(0.1);
+    renderDialog();
+
+    expect(document.querySelector("[data-claude-cap-chip]")?.textContent).toBe("입력하면 계산해요");
+    expect(screen.queryByText("가격을 몰라요")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByLabelText("이번 한 번만 예산을 넘어도 진행해요")).toBeNull();
+  });
+
+  it("'이번 한 번만'을 고른 요청은 전송 계층에 예산 판정 건너뛰기(budgetOverride)를 알리고, 평소에는 알리지 않는다", async () => {
+    connectClaude();
+    setClaudeBudgetLimit(0.1);
+    renderDialog();
+    await chooseImage();
+
+    fireEvent.click(screen.getByLabelText("이번 한 번만 예산을 넘어도 진행해요"));
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    await screen.findByText("대사 글자가 묻혀요");
+    expect(runArtDirectorReview.mock.calls[0]?.[3]).toMatchObject({ budgetOverride: true });
+
+    act(() => { setClaudeBudgetLimit(50); });
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    await waitFor(() => expect(runArtDirectorReview).toHaveBeenCalledTimes(2));
+    expect(runArtDirectorReview.mock.calls[1]?.[3]).toMatchObject({ budgetOverride: false });
+  });
+
+  it("동의한 뒤 더 비싼 방식으로 바꾸면 같은 체크가 남아 있어도 다시 확인한다", async () => {
+    connectClaude();
+    setClaudeBudgetLimit(0.1);
+    renderDialog();
+    await chooseImage();
+
+    fireEvent.click(screen.getByLabelText("이번 한 번만 예산을 넘어도 진행해요"));
+    expect((screen.getByRole("button", { name: RUN }) as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(preset("직접 고르기"));
+    fireEvent.change(screen.getByLabelText("사용할 모델"), { target: { value: "claude-fable-5-1" } });
+
+    expect((screen.getByLabelText("이번 한 번만 예산을 넘어도 진행해요") as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByRole("button", { name: RUN }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("이미지를 올리면 포커스가 실행 버튼으로 가고, 실행하면 중단 버튼으로, 끝나면 실행 버튼으로 돌아온다", async () => {
+    connectClaude();
+    let finish: (value: ArtDirectorRunResult) => void = () => undefined;
+    runArtDirectorReview.mockImplementation(() => new Promise<ArtDirectorRunResult>((resolve) => { finish = resolve; }));
+    renderDialog();
+    await chooseImage();
+
+    const run = screen.getByRole("button", { name: RUN });
+    await waitFor(() => expect(document.activeElement).toBe(run));
+
+    fireEvent.click(run);
+    const stop = await screen.findByRole("button", { name: "중단" });
+    await waitFor(() => expect(document.activeElement).toBe(stop));
+
+    await act(async () => { finish(outcome()); });
+    await screen.findByText("대사 글자가 묻혀요");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /다시 분석하기/ })));
+  });
+
+  it("이미지를 지우면 포커스가 올리기 버튼으로 간다", async () => {
+    connectClaude();
+    renderDialog();
+    await chooseImage();
+
+    fireEvent.click(screen.getByRole("button", { name: "이미지 지우기" }));
+
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "이미지 선택" })));
+  });
+
+  it("매우 긴 이미지는 어디까지만 구간으로 나눌 수 있는지 알린다", async () => {
+    connectClaude();
+    fakeDeps.size = { width: 800, height: 60_000 };
+    renderDialog();
+    await chooseImage(pngFile(800, 60_000));
+
+    const note = document.querySelector("[data-claude-coverage]");
+    expect(note?.textContent).toMatch(/원본 세로 60000px 중 위쪽 \d+px\(\d+%\)만 구간으로 나눌 수 있어요/);
+    expect(screen.getAllByRole("option").length).toBeGreaterThan(4);
+  });
+
+  it("구간을 옮기면 이전 구간에서 고른 강조는 남지 않는다", async () => {
+    connectClaude();
+    fakeDeps.size = { width: 800, height: 6_000 };
+    renderDialog();
+    await chooseImage(pngFile(800, 6_000));
+
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    await screen.findByText("대사 글자가 묻혀요");
+    const issueButton = screen.getByRole("button", { name: /대사 글자가 묻혀요/ });
+    fireEvent.click(issueButton);
+    expect(issueButton.getAttribute("aria-pressed")).toBe("true");
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("분석할 구간"), { target: { value: "1" } });
+    });
+    await waitFor(() => expect(screen.getByLabelText("분석할 구간")).toHaveProperty("value", "1"));
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    await waitFor(() => expect(runArtDirectorReview).toHaveBeenCalledTimes(2));
+    await screen.findByText("대사 글자가 묻혀요");
+
+    expect(screen.getByRole("button", { name: /대사 글자가 묻혀요/ }).getAttribute("aria-pressed")).toBe("false");
+    expect(document.querySelector("[data-overlay-issue]")).not.toBeNull();
+    expect(document.querySelector("[data-overlay-issue].ring-2")).toBeNull();
+  });
+
+  it("대화상자 안 어디에 파일을 끌어다 놓아도 이미지로 불러오고, 브라우저가 파일을 열어 버리지 않는다", async () => {
+    connectClaude();
+    renderDialog();
+    const dialog = screen.getByRole("dialog", { name: "AI 아트 디렉터" });
+    const file = pngFile(800, 1_000);
+
+    const dragOver = new Event("dragover", { bubbles: true, cancelable: true });
+    Object.defineProperty(dragOver, "dataTransfer", { value: { types: ["Files"], files: [file] } });
+    dialog.querySelector("header")?.dispatchEvent(dragOver);
+    expect(dragOver.defaultPrevented).toBe(true);
+
+    const drop = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(drop, "dataTransfer", { value: { types: ["Files"], files: [file] } });
+    await act(async () => {
+      dialog.querySelector("header")?.dispatchEvent(drop);
+    });
+    expect(drop.defaultPrevented).toBe(true);
+    await screen.findByAltText("분석할 이미지 미리보기");
+  });
+
+  it("잘린 항목이 있으면 몇 곳이 줄었는지 알린다", async () => {
+    connectClaude();
+    const trimmed = outcome();
+    runArtDirectorReview.mockResolvedValue({ ...trimmed, review: { ...trimmed.review, trimmed: 3 } });
+    renderDialog();
+    await chooseImage();
+
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    await screen.findByText("대사 글자가 묻혀요");
+
+    expect(document.querySelector("[data-claude-trimmed]")?.textContent).toContain("3곳의 내용이 줄었어요");
   });
 });

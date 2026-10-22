@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { runArtDirectorReview } from "./claude-art-director-run";
 
-import type { ArtDirectorRawReview } from "./claude-art-director";
+import { estimateArtDirectorCostCapUsd, type ArtDirectorRawReview } from "./claude-art-director";
 
 const claudeParse = vi.hoisted(() => vi.fn());
 vi.mock("@/shared/ai/claude/claude-transport", () => ({ claudeParse }));
@@ -35,6 +35,11 @@ function reply(model = "claude-opus-5-5") {
 }
 
 describe("runArtDirectorReview", () => {
+  it("사용자가 '이번 한 번만'을 고른 요청만 예산 판정을 건너뛰도록 전송 계층에 알린다", async () => {
+    await runArtDirectorReview(ROUTE, IMAGE, { medium: "page" }, { budgetOverride: true });
+    expect(claudeParse.mock.calls[0]?.[3]).toMatchObject({ budgetOverride: true });
+  });
+
   beforeEach(() => {
     claudeParse.mockReset();
     claudeParse.mockResolvedValue(reply());
@@ -48,7 +53,9 @@ describe("runArtDirectorReview", () => {
     expect(route).toBe(ROUTE);
     expect(params.model).toBe("claude-opus-5-5");
     expect(params.output_config).toEqual({ effort: "high" });
-    expect(options).toEqual({ signal: undefined });
+    // 전송 계층이 예산 판정·예약에 쓰도록, 실행 전 확인에 보인 값과 같은 함수로 잰 상한을 함께 넘긴다.
+    expect(options).toEqual({ signal: undefined, capUsd: estimateArtDirectorCostCapUsd("claude-opus-5-5", IMAGE, { medium: "vertical-scroll", depth: "high" }), budgetOverride: undefined });
+    expect(options.capUsd).toBeGreaterThan(0.16);
 
     expect(result.review.issues[0]?.region).toEqual({ x: 0.1, y: 0.1, width: 0.4, height: 0.1 });
     expect(result.review.issues[0]?.id).toBe("issue-1");

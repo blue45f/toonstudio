@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
+
+import { claudeImageTokenBound, utf8Length } from "@/shared/ai/claude/claude-cost-cap";
 
 import {
+  ART_DIRECTOR_CATEGORIES,
   ART_DIRECTOR_LIMITS,
   ART_DIRECTOR_MAX_OUTPUT_TOKENS,
+  ART_DIRECTOR_TEXT_LIMITS,
   artDirectorReviewToMarkdown,
   ArtDirectorReviewSchema,
   buildArtDirectorRequest,
   describeArtDirectorArea,
+  describeArtDirectorCoverage,
   estimateArtDirectorCostCapUsd,
   fitWithinEdge,
   normalizeArtDirectorReview,
@@ -161,11 +167,71 @@ describe("아트 디렉터 결과 정규화", () => {
     expect(review.scores).toEqual({ composition: 5, readability: 1, mood: 1 });
   });
 
-  it("스키마는 알 수 없는 범주를 거절한다", () => {
-    expect(ArtDirectorReviewSchema.safeParse({
+  it("분류 값은 문자열로 받고 정규화에서 허용 값으로 맞춘다 — 값 하나가 틀렸다고 이미 과금된 응답 전체를 버리지 않는다", () => {
+    // SDK는 enum을 실제 제약으로 보내지 않고 설명 글로만 옮긴다(실측). 그래서 모델이 "critical"처럼 목록 밖의 값을 줄 수 있다.
+    const parsed = ArtDirectorReviewSchema.safeParse({
       ...raw(),
-      issues: [{ ...raw().issues[0], category: "made_up" }],
-    }).success).toBe(false);
+      issues: [{ ...raw().issues[0], category: "made_up", severity: "critical", confidence: "very high" }],
+    });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const review = normalizeArtDirectorReview(parsed.data, { width: 1_000, height: 1_800 });
+    expect(review.issues[0]).toMatchObject({ category: "other", severity: "medium", confidence: "low" });
+  });
+
+  it("대소문자·공백·하이픈 차이는 받아들인다", () => {
+    const review = normalizeArtDirectorReview(raw({
+      issues: [
+        { category: " Reading-Flow ", severity: "HIGH", confidence: "Medium", title: "순서", detail: "d", fix: "f", region: null },
+        { category: "Mobile Readability", severity: "low", confidence: "high", title: "모바일", detail: "d", fix: "f", region: null },
+      ],
+    }), { width: 1_000, height: 1_800 });
+    expect(review.issues.map((issue) => [issue.category, issue.severity, issue.confidence])).toEqual([
+      ["reading_flow", "high", "medium"],
+      ["mobile_readability", "low", "high"],
+    ]);
+  });
+
+  it("빈 이름의 읽는 순서 단계는 먼저 걸러, 상한을 다 쓰거나 번호에 빈틈을 만들지 않는다", () => {
+    const empties = Array.from({ length: 12 }, (_value, index) => ({ step: index + 1, label: "  ", region: null }));
+    const review = normalizeArtDirectorReview(raw({
+      readingOrder: [...empties, { step: 13, label: "진짜 단계", region: null }, { step: 2.5, label: "사이 단계", region: null }],
+    }), { width: 1_000, height: 1_800 });
+    expect(review.readingOrder.map((item) => [item.step, item.label])).toEqual([[1, "사이 단계"], [2, "진짜 단계"]]);
+  });
+
+  it("같은 장점·할 일·경고는 한 번만 남긴다 (화면에서 키로 쓰인다)", () => {
+    const review = normalizeArtDirectorReview(raw({
+      strengths: ["대비가 좋아요", "대비가 좋아요", "구도가 안정적이에요"],
+      nextActions: ["글자부터", "글자부터"],
+    }), { width: 1_000, height: 1_800 });
+    expect(review.strengths).toEqual(["대비가 좋아요", "구도가 안정적이에요"]);
+    expect(review.nextActions).toEqual(["글자부터"]);
+  });
+
+  it("길이·개수 제한으로 줄이거나 버린 항목 수를 알려 준다", () => {
+    const clean = normalizeArtDirectorReview(raw(), { width: 1_000, height: 1_800 });
+    expect(clean.trimmed).toBe(0);
+
+    const long = "가".repeat(ART_DIRECTOR_TEXT_LIMITS.detail + 50);
+    const trimmed = normalizeArtDirectorReview(raw({
+      summary: "나".repeat(ART_DIRECTOR_TEXT_LIMITS.summary + 1),
+      issues: [{ category: "balloon", severity: "high", confidence: "high", title: "제목", detail: long, fix: long, region: null }],
+      strengths: ["1", "2", "3", "4", "5", "6"],
+    }), { width: 1_000, height: 1_800 });
+    // summary 1 + detail 1 + fix 1 + 상한을 넘은 장점 2
+    expect(trimmed.trimmed).toBe(5);
+  });
+});
+
+describe("아트 디렉터 프롬프트가 모델에게 알리는 한도", () => {
+  it("분류 값, 개수 상한, 글자 수 상한을 고정 지시에 적는다", () => {
+    const params = buildArtDirectorRequest("claude-opus-5-5", IMAGE, { medium: "page" });
+    const system = Array.isArray(params.system) ? params.system.map((block) => block.text).join("\n") : String(params.system);
+    for (const category of ART_DIRECTOR_CATEGORIES) expect(system).toContain(category);
+    expect(system).toContain(`최대 ${ART_DIRECTOR_LIMITS.maxReadingSteps}단계`);
+    expect(system).toContain(`summary ${ART_DIRECTOR_TEXT_LIMITS.summary}자`);
+    expect(system).toContain(`detail·fix 각 ${ART_DIRECTOR_TEXT_LIMITS.detail}자`);
   });
 });
 
@@ -175,12 +241,33 @@ describe("긴 이미지 구간 분할", () => {
     expect(planArtDirectorSegments(1_000, 2_500)).toEqual([{ index: 0, top: 0, height: 2_500 }]);
   });
 
-  it("긴 웹툰은 겹쳐서 나누고 최대 4구간까지만 만든다", () => {
+  it("긴 웹툰은 겹쳐서 나눈다", () => {
     const segments = planArtDirectorSegments(800, 12_000);
-    expect(segments).toHaveLength(ART_DIRECTOR_LIMITS.maxSegments);
+    expect(segments.length).toBeGreaterThan(4);
     expect(segments[0]).toMatchObject({ index: 0, top: 0, height: 1_760 });
     expect(segments[1]?.top).toBeLessThan((segments[0]?.top ?? 0) + (segments[0]?.height ?? 0));
     for (const segment of segments) expect(segment.top + segment.height).toBeLessThanOrEqual(12_000);
+    // 이 길이는 상한 안이라 끝까지 다룬다.
+    expect(describeArtDirectorCoverage(12_000, segments)).toMatchObject({ coveredHeight: 12_000, percent: 100, truncated: false });
+  });
+
+  it("구간 수에는 상한이 있다", () => {
+    const segments = planArtDirectorSegments(800, 200_000);
+    expect(segments).toHaveLength(ART_DIRECTOR_LIMITS.maxSegments);
+  });
+
+  it("상한을 넘는 아주 긴 이미지는 어디까지 다루는지 알려 준다 — 구간 목록이 '전체'처럼 보이지 않게", () => {
+    const segments = planArtDirectorSegments(800, 40_000);
+    const coverage = describeArtDirectorCoverage(40_000, segments);
+    expect(coverage.truncated).toBe(true);
+    expect(coverage.coveredHeight).toBeLessThan(40_000);
+    expect(coverage.percent).toBe(Math.floor((coverage.coveredHeight / 40_000) * 100));
+    expect(coverage.totalHeight).toBe(40_000);
+  });
+
+  it("구간이 없으면 다루는 높이는 0이다", () => {
+    expect(describeArtDirectorCoverage(1_000, [])).toMatchObject({ coveredHeight: 0, percent: 0, truncated: true });
+    expect(describeArtDirectorCoverage(0, [])).toMatchObject({ percent: 0, truncated: false });
   });
 
   it("마지막 구간은 이미지 끝에서 멈춘다", () => {
@@ -214,16 +301,38 @@ describe("마크다운 내보내기", () => {
 
 
 describe("비용 상한 추정", () => {
-  it("출력 상한과 이미지 토큰으로 계산하고, 비싼 모델일수록 크다", () => {
+  it("고정 지시는 캐시 쓰기(1.25배)로, 스키마·이미지·글은 입력으로, 출력은 상한만큼 센다", () => {
+    const size = { width: 1_000, height: 1_568 };
+    const context = { medium: "vertical-scroll" } as const;
+    const request = buildArtDirectorRequest("claude-opus-5-5", { mediaType: "image/png", data: "", ...size }, context);
+    const system = Array.isArray(request.system) ? request.system[0]?.text ?? "" : "";
+    const content = request.messages[0]?.content;
+    const userText = Array.isArray(content) ? (content[1] as { text: string }).text : "";
+    const cached = utf8Length(system);
+    const plain = utf8Length(userText) + 100 + claudeImageTokenBound(size.width, size.height)
+      + utf8Length(JSON.stringify(z.toJSONSchema(ArtDirectorReviewSchema)));
+    // Opus 5.5: 입력 $4 / 출력 $20 (100만 토큰당).
+    expect(estimateArtDirectorCostCapUsd("claude-opus-5-5", size, context)).toBeCloseTo(
+      (plain * 4 + cached * 4 * 1.25 + ART_DIRECTOR_MAX_OUTPUT_TOKENS * 20) / 1_000_000,
+      8,
+    );
+  });
+
+  it("비싼 모델일수록 크다", () => {
     const size = { width: 1_000, height: 1_568 };
     const haiku = estimateArtDirectorCostCapUsd("claude-haiku-5-5", size);
     const opus = estimateArtDirectorCostCapUsd("claude-opus-5-5", size);
     const fable = estimateArtDirectorCostCapUsd("claude-fable-5-1", size);
     expect(haiku).not.toBeNull();
-    // 입력 ceil(1000*1568/750)+900 = 2991토큰, 출력 8000토큰. Opus 5.5: $4/$20 per 1M.
-    expect(opus).toBeCloseTo((2_991 * 4 + 8_000 * 20) / 1_000_000, 6);
     expect(haiku ?? 0).toBeLessThan(opus ?? 0);
     expect(opus ?? 0).toBeLessThan(fable ?? 0);
+  });
+
+  it("메모·장르가 길어지면 상한도 커진다 (실제 요청과 같은 글로 잰다)", () => {
+    const size = { width: 800, height: 1_000 };
+    const plain = estimateArtDirectorCostCapUsd("claude-opus-5-5", size, { medium: "page" }) ?? 0;
+    const withNotes = estimateArtDirectorCostCapUsd("claude-opus-5-5", size, { medium: "page", notes: "가".repeat(300), genre: "나".repeat(40) }) ?? 0;
+    expect(withNotes).toBeGreaterThan(plain);
   });
 
   it("단가를 모르는 모델이거나 크기가 잘못되면 null", () => {
@@ -245,5 +354,30 @@ describe("영역 설명", () => {
   it("이미지 대부분을 덮으면 전체로 본다", () => {
     expect(describeArtDirectorArea({ x: 0, y: 0, width: 1, height: 0.9 }).whole).toBe(true);
     expect(describeArtDirectorArea({ x: 0, y: 0, width: 1, height: 0.5 }).whole).toBe(false);
+  });
+});
+
+describe("마크다운 내보내기 안전성", () => {
+  const review = (overrides: Partial<ArtDirectorRawReview>) => normalizeArtDirectorReview(raw(overrides), { width: 1_000, height: 1_800 });
+
+  it("여러 줄 글의 이어진 줄이 머리글·목록으로 바뀌지 않는다", () => {
+    const markdown = artDirectorReviewToMarkdown(review({
+      issues: [{ category: "balloon", severity: "high", confidence: "high", title: "제목", detail: "첫째 줄\n# 가짜 제목\n- 가짜 항목", fix: "고치기", region: null }],
+    }));
+    expect(markdown).not.toMatch(/^# 가짜 제목/mu);
+    expect(markdown).not.toMatch(/^\s*- 가짜 항목/mu);
+    expect(markdown).toContain("첫째 줄 # 가짜 제목 - 가짜 항목");
+  });
+
+  it("글머리에 온 마크다운 표시는 이스케이프한다", () => {
+    const markdown = artDirectorReviewToMarkdown(review({
+      summary: "# 요약을 머리글로 위장",
+      strengths: ["> 인용으로 위장", "1. 번호로 위장"],
+      nextActions: ["- 목록으로 위장"],
+    }));
+    expect(markdown).toContain("\\# 요약을 머리글로 위장");
+    expect(markdown).toContain("- \\> 인용으로 위장");
+    expect(markdown).toContain("- 1\\. 번호로 위장");
+    expect(markdown).toContain("1. \\- 목록으로 위장");
   });
 });

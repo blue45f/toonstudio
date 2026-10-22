@@ -1,7 +1,6 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
 import { Check, Copy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 
 import { CLAUDE_BUTTON, CLAUDE_CARD } from "@/shared/ai/claude/claude-ui";
 import { useClaudeUsageText } from "@/shared/ai/claude/use-claude-usage-text";
@@ -17,6 +16,9 @@ import {
   type ArtDirectorSeverity,
 } from "./claude-art-director";
 import type { ArtDirectorRunResult } from "./claude-art-director-run";
+import { ClaudeCopyStatus } from "./ClaudeCopyStatus";
+import { useCopyFeedback } from "./use-copy-feedback";
+
 import type { ArtDirectorHighlight } from "./ClaudeArtDirectorPreview";
 
 const CATEGORY_KEY: Readonly<Record<ArtDirectorCategory, string>> = {
@@ -112,21 +114,8 @@ export function ClaudeArtDirectorResult({ result, highlight, onHighlight }: Clau
   const areaText = useAreaText();
   const usageOf = useClaudeUsageText();
   const { review } = result;
-  const [copied, setCopied] = useState(false);
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const canCopy = typeof navigator !== "undefined" && typeof navigator.clipboard?.writeText === "function";
-
-  useEffect(() => () => {
-    if (copyTimer.current) clearTimeout(copyTimer.current);
-  }, []);
-
-  const copy = () => {
-    void navigator.clipboard.writeText(artDirectorReviewToMarkdown(review)).then(() => {
-      setCopied(true);
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-      copyTimer.current = setTimeout(() => setCopied(false), 2_000);
-    }, () => undefined);
-  };
+  const clipboard = useCopyFeedback<"review">();
+  const copied = clipboard.copied === "review";
 
   const toggle = (next: ArtDirectorHighlight) => {
     onHighlight(sameHighlight(highlight, next) ? null : next);
@@ -138,13 +127,14 @@ export function ClaudeArtDirectorResult({ result, highlight, onHighlight }: Clau
     <section aria-label={t("claudeAssist.art.resultTitle")} className={cn(CLAUDE_CARD, "space-y-4")}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-bold text-fg">{t("claudeAssist.art.resultTitle")}</h3>
-        {canCopy ? (
-          <button type="button" className={CLAUDE_BUTTON} onClick={copy}>
+        {clipboard.canCopy ? (
+          <button type="button" className={CLAUDE_BUTTON} onClick={() => clipboard.copy("review", artDirectorReviewToMarkdown(review))}>
             {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
             {copied ? t("claudeAssist.art.copied") : t("claudeAssist.art.copy")}
           </button>
         ) : null}
       </div>
+      <ClaudeCopyStatus copied={copied} failed={clipboard.failed} />
 
       <div>
         <h4 className="text-xs font-bold text-fg-2">{t("claudeAssist.art.summary")}</h4>
@@ -257,6 +247,9 @@ export function ClaudeArtDirectorResult({ result, highlight, onHighlight }: Clau
       ) : null}
 
       <div className="space-y-1 border-t border-line pt-3 text-xs text-fg-3">
+        {review.trimmed > 0 ? (
+          <p className="font-semibold text-warn" data-claude-trimmed="true">{t("claudeAssist.common.trimmedNotice", { count: review.trimmed })}</p>
+        ) : null}
         <p>{usageText}</p>
         <p>{t("claudeAssist.art.overlayNote")}</p>
       </div>

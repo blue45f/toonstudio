@@ -1,13 +1,14 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
 import { Image as ImageIcon } from "lucide-react";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { CLAUDE_BUTTON, CLAUDE_INPUT, CLAUDE_QUIET_BUTTON } from "@/shared/ai/claude/claude-ui";
 import { useT } from "@/shared/lib/i18n";
 
+import { describeArtDirectorCoverage } from "./claude-art-director";
 import { readClipboardImage, type ArtDirectorImageErrorCode, type ArtDirectorRenderedSegment } from "./claude-art-director-image";
-import { firstImageFile } from "./claude-image-files";
+import { pickDroppedFile } from "./claude-image-files";
 import { ClaudeArtDirectorDropzone } from "./ClaudeArtDirectorDropzone";
 
 import type { ArtDirectorImageController } from "./use-art-director-image";
@@ -44,9 +45,19 @@ export function ClaudeImageInputPane({ image, running, renderPreview, belowPrevi
   const t = useT();
   const idBase = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropzoneRef = useRef<HTMLDivElement>(null);
+  const hadImage = useRef(false);
   const [clipboardNote, setClipboardNote] = useState<string | null>(null);
   const { rendered, source, segmentIndex } = image;
   const segmentCount = source?.segments.length ?? 0;
+  const coverage = source ? describeArtDirectorCoverage(source.height, source.segments) : null;
+
+  // 이미지를 지우면 올리기 구역이 다시 나타난다. 지우기 버튼이 사라지며 포커스가 body로 떨어지지 않게 올리기 버튼으로 옮긴다.
+  const hasImage = Boolean(rendered);
+  useEffect(() => {
+    if (hadImage.current && !hasImage) dropzoneRef.current?.querySelector<HTMLElement>("button:not([disabled])")?.focus({ preventScroll: true });
+    hadImage.current = hasImage;
+  }, [hasImage]);
 
   const loadFile = (file: File | null) => {
     setClipboardNote(null);
@@ -103,14 +114,21 @@ export function ClaudeImageInputPane({ image, running, renderPreview, belowPrevi
               <p className="mt-1 text-xs text-fg-3">{t("claudeAssist.art.segmentHint")}</p>
             </div>
           ) : null}
+          {coverage?.truncated ? (
+            <p role="note" className="rounded-xl border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2" data-claude-coverage="true">
+              {t("claudeAssist.art.coverageTruncated", { total: coverage.totalHeight, covered: coverage.coveredHeight, percent: coverage.percent })}
+            </p>
+          ) : null}
         </>
       ) : (
-        <ClaudeArtDirectorDropzone
-          preparing={image.preparing}
-          onPick={pick}
-          onPasteFromClipboard={() => void pasteFromClipboard()}
-          onDropFiles={(files) => { if (!running) loadFile(firstImageFile(files)); }}
-        />
+        <div ref={dropzoneRef}>
+          <ClaudeArtDirectorDropzone
+            preparing={image.preparing}
+            onPick={pick}
+            onPasteFromClipboard={() => void pasteFromClipboard()}
+            onDropFiles={(files) => { if (!running) loadFile(pickDroppedFile(files)); }}
+          />
+        </div>
       )}
       <input
         ref={fileInputRef}
