@@ -103,6 +103,8 @@ endpoint는 `no-store`이며 private content를 service worker cache에 넣지 �
   (2026-10-22 소유자 결정으로 5.x 로 올림). 5.x 로 만든 새 runtime image 는 `gpu-smoke.py` 로
   세 엔진의 실제 추론을 검증한 뒤에만 승인한다. 자동 시험은 CPU 에서 호출 모양만 확인하며
   TripoSR upstream 코드와의 호환은 확인하지 못했다.
+- `fastapi==0.161.0`, `starlette>=1.3.1,<2`: starlette 0.50 의 GHSA 5건 대응. fastapi 0.128 은
+  `starlette<0.51` 로 막아 취약한 버전에 머물게 한다.
 - CPU test profile `pytest==9.0.3`: GHSA-6w46-j5rx-g56g 대응
 
 ```sh
