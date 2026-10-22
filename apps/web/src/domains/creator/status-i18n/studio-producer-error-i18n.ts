@@ -17,6 +17,12 @@
  *   채널은 표시 지점(StudioAnimaticTimelinePanel)까지 코드를 통과시킨다.
  *   R9 통합 후속: 같은 Failure 타입을 재사용하는 자막 파서(parseStudioAnimaticSubtitles)의
  *   방출 2코드(subtitlesEmpty·subtitlesNoCues)도 이 구간에 등록한다 — 소비처는 .ok만 본다.
+ * - R11 구간은 이 파일의 형제 모듈로 분리했다(래칫 800줄 분할 관례):
+ *   glb 검증 55코드는 studio-producer-error-i18n-glb.ts, palette 오류 5+경고 18은
+ *   studio-producer-error-i18n-palette.ts, dialogue 세부 74+warning 18+loss 13은
+ *   studio-producer-error-i18n-dialogue.ts, bg3d LT 계획 46+라벨 4는
+ *   studio-producer-error-i18n-bg3d-lt.ts, bg3d 측정 26+샷 배치 계획 30은
+ *   studio-producer-error-i18n-bg3d-measure.ts에 있다.
  * 후속 생산자는 이 모듈에 코드 구간을 추가하는 반복으로 소진한다.
  */
 
