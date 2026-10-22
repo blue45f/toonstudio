@@ -11,7 +11,7 @@ import type {
   StudioEditableMeshFailureCode,
   StudioEditableMeshResult,
   StudioMeshVec3,
-} from "./studio-editable-half-edge-mesh";
+} from "../studio-editable-half-edge-mesh";
 
 /** Kernel pieces the bevel needs from the mesh module. */
 export interface StudioEditableMeshBevelKernel {

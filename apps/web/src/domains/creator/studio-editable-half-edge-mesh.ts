@@ -9,7 +9,7 @@
  */
 
 import { hashStudioEditableMeshAuthority } from "./studio-editable-mesh-authority-digest";
-import { bevelEditableMeshEdges } from "./studio-editable-mesh-bevel";
+import { bevelEditableMeshEdges } from "./hybrid-dcc/studio-editable-mesh-bevel";
 
 export const STUDIO_EDITABLE_MESH_REVISION = 1 as const;
 
