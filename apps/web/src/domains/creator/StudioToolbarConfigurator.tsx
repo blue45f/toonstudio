@@ -95,7 +95,7 @@ export function StudioToolbarConfigurator({ value, onApply, onCancel }: {
                 <button type="button" className={iconAction} aria-label={`${label(tool)} 위로`} disabled={index === 0} onClick={() => move(tool, index - 1)}><ArrowUp size={16} aria-hidden /></button>
                 <button type="button" className={iconAction} aria-label={`${label(tool)} 아래로`} disabled={index === draft.visibleIds.length - 1} onClick={() => move(tool, index + 1)}><ArrowDown size={16} aria-hidden /></button>
                 <button type="button" className={iconAction} aria-label={`${label(tool)} 맨 아래로`} disabled={index === draft.visibleIds.length - 1} onClick={() => move(tool, draft.visibleIds.length - 1)}><ChevronsDown size={16} aria-hidden /></button>
-                <button type="button" className={action} aria-label={`${label(tool)} 숨기기`} disabled={draft.visibleIds.length <= 1}
+                <button type="button" className={action} aria-label={`${label(tool)} 도구막대에서 해제`} disabled={draft.visibleIds.length <= 1}
                   onClick={() => change(unpinStudioToolbarTools(draft, [tool]))}>해제</button>
               </div>
             </li>;
@@ -107,7 +107,7 @@ export function StudioToolbarConfigurator({ value, onApply, onCancel }: {
         <ul className="max-h-[min(26rem,50dvh)] space-y-1 overflow-y-auto overscroll-contain">
           {available.filter(matches).map((tool) => <li key={tool} className="flex min-h-11 items-center gap-2">
             <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-xs"><input type="checkbox" aria-label={`${label(tool)} 선택`} checked={selected.includes(tool)} onChange={() => toggle(tool)} />{label(tool)}</label>
-            <button type="button" className={action} aria-label={`${label(tool)} 표시하기`} onClick={() => change(pinStudioToolbarTools(draft, [tool]))}>추가</button>
+            <button type="button" className={action} aria-label={`${label(tool)} 도구막대에 추가`} onClick={() => change(pinStudioToolbarTools(draft, [tool]))}>추가</button>
           </li>)}
         </ul>
         {!available.filter(matches).length ? <p className="py-3 text-xs text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.toolbarConfigurator.searchEmpty", "추가할 검색 결과가 없습니다.")}</p> : null}

@@ -142,13 +142,14 @@ export function StudioColorHarmoniesPanel({
         </span>
         <button
           type="button"
-          aria-label="배색 기준색 고정"
+          aria-label="배색 기준 고정"
           aria-pressed={lockedBase !== null}
           onClick={() => setLockedBase(lockedBase === null ? currentColor : null)}
-          className="flex min-h-11 items-center gap-1 rounded-lg border border-line px-2 text-[0.65rem] text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          className="flex min-h-11 items-center gap-1 rounded-lg border border-line px-2 text-[0.65rem] text-fg-2 hover:bg-raised aria-pressed:border-accent/60 aria-pressed:bg-accent-soft aria-pressed:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
         >
           {lockedBase === null ? <UnlockKeyhole className="size-3.5" aria-hidden /> : <LockKeyhole className="size-3.5" aria-hidden />}
-          {lockedBase === null ? "기준 고정" : "고정됨"}
+          {/* 보이는 글자가 접근 이름에 들어 있어야 한다(WCAG 2.5.3). 상태가 바뀌어도 글자와 이름은 그대로 두고 aria-pressed·아이콘·색으로 알린다. */}
+          기준 고정
         </button>
         {lockedBase !== null && (
           <button
