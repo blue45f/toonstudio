@@ -2,6 +2,8 @@ import { useRef, type ChangeEvent } from "react";
 
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 
+import { resolveStudioProjectArchiveErrorFromCause } from "./status-i18n/studio-producer-error-i18n-project-archive";
+
 import type {
   StudioProjectArchiveOrchestrationInput,
 } from "./studio-project-archive-orchestration-runtime";
@@ -75,7 +77,8 @@ export function createStudioProjectArchiveIntentController(
         });
       } catch (error) {
         input.setError(
-          error instanceof Error ? error.message : "프로젝트 내보내기 도구를 불러오지 못했어요.",
+          resolveStudioProjectArchiveErrorFromCause(error) ??
+            (error instanceof Error ? error.message : "프로젝트 내보내기 도구를 불러오지 못했어요."),
         );
       }
     },
@@ -94,7 +97,8 @@ export function createStudioProjectArchiveIntentController(
         });
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "프로젝트 archive 도구를 불러오지 못했어요.";
+          resolveStudioProjectArchiveErrorFromCause(error) ??
+          (error instanceof Error ? error.message : "프로젝트 archive 도구를 불러오지 못했어요.");
         input.setProjectArchiveStatus({ tone: "bad", text: message });
         input.setError(message);
       }
@@ -118,12 +122,13 @@ export function createStudioProjectArchiveIntentController(
         });
       } catch (error) {
         const message =
-          error instanceof Error
+          resolveStudioProjectArchiveErrorFromCause(error) ??
+          (error instanceof Error
             ? error.message
             : studioProjectArchiveImportCopy(
                 "프로젝트 불러오기 도구를 불러오지 못했어요.",
                 "Couldn't load the project import tool.",
-              );
+              ));
         input.setProjectArchiveStatus({ tone: "bad", text: message });
         input.setError(message);
       }
@@ -147,7 +152,8 @@ export function createStudioProjectArchiveIntentController(
         });
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "프로젝트 archive 도구를 불러오지 못했어요.";
+          resolveStudioProjectArchiveErrorFromCause(error) ??
+          (error instanceof Error ? error.message : "프로젝트 archive 도구를 불러오지 못했어요.");
         input.setProjectArchiveStatus({ tone: "bad", text: message });
         input.setError(message);
       }

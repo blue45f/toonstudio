@@ -154,25 +154,39 @@ export type StudioProjectArchiveDiagnosticCode =
 export interface StudioProjectArchiveDiagnostic {
   severity: StudioProjectArchiveDiagnosticSeverity;
   code: StudioProjectArchiveDiagnosticCode;
-  message: string;
+  /** 구조화 메시지 서브코드 (A4 D4) — 표시 문구는 status-i18n 리졸버가 해석한다. */
+  variant: string;
+  params?: Readonly<Record<string, string>>;
   path?: string;
   pointer?: string;
 }
 
 export class StudioProjectArchiveError extends Error {
   readonly code: StudioProjectArchiveDiagnosticCode;
+  /** 구조화 메시지 서브코드 (A4 D4) — 표시 문구는 status-i18n 리졸버가 해석한다. */
+  readonly variant: string;
+  readonly params?: Readonly<Record<string, string>>;
   readonly diagnostics: StudioProjectArchiveDiagnostic[];
 
   constructor(
     code: StudioProjectArchiveDiagnosticCode,
-    message: string,
+    variant: string,
     details: Pick<StudioProjectArchiveDiagnostic, "path" | "pointer"> = {},
+    params?: Readonly<Record<string, string>>,
     cause?: unknown,
   ) {
-    super(message, cause === undefined ? undefined : { cause });
+    super(code, cause === undefined ? undefined : { cause });
     this.name = "StudioProjectArchiveError";
     this.code = code;
-    this.diagnostics = [{ severity: "error", code, message, ...details }];
+    this.variant = variant;
+    if (params !== undefined) this.params = params;
+    this.diagnostics = [{
+      severity: "error",
+      code,
+      variant,
+      ...(params !== undefined ? { params } : {}),
+      ...details,
+    }];
   }
 }
 
@@ -482,7 +496,7 @@ export function collectStudioBg3dProjectArchivePlan(
   try {
     project = parseStudioProjectFile(boundedProject);
   } catch {
-    fail("PROJECT_INVALID", "3D 배경 archive 계획을 만들 수 없는 프로젝트입니다.");
+    fail("PROJECT_INVALID", "bg3dPlanProjectInvalid");
   }
   const boundedParsedProject = canonicalizeProjectValue(project, "", 0, {
     seen: new WeakSet(),
@@ -494,12 +508,12 @@ export function collectStudioBg3dProjectArchivePlan(
     textEncoder.encode(canonicalJson(boundedParsedProject)).byteLength
     > limits.maxProjectBytes
   ) {
-    fail("PROJECT_SIZE_LIMIT", "3D 배경 archive 계획의 project.json 크기가 안전 한도를 넘었습니다.");
+    fail("PROJECT_SIZE_LIMIT", "bg3dPlanProjectTooLarge");
   }
   try {
     project = parseStudioProjectFile(boundedParsedProject);
   } catch {
-    fail("PROJECT_INVALID", "3D 배경 archive 계획의 canonical 프로젝트를 만들 수 없습니다.");
+    fail("PROJECT_INVALID", "bg3dPlanCanonicalFailed");
   }
   const byHash = new Map<string, StudioBg3dProjectArchiveAttachmentPlan>();
   let totalAttachmentBytes = 0;
@@ -511,7 +525,7 @@ export function collectStudioBg3dProjectArchivePlan(
       if (!isRecord(element) || element.type !== "image" || element.bg3dScene === undefined) continue;
       const serialized = serializeStudioBg3dSceneDocument(element.bg3dScene);
       const scene = serialized ? parseStudioBg3dSceneDocument(serialized) : null;
-      if (!scene) fail("PROJECT_INVALID", "프로젝트의 3D 배경 장면이 canonical 형식이 아닙니다.");
+      if (!scene) fail("PROJECT_INVALID", "bg3dSceneNotCanonical");
       const sceneValidationBudgets = deriveStudioBg3dGlbBudgetProfiles(scene);
       for (let attachmentIndex = 0; attachmentIndex < scene.attachments.length; attachmentIndex += 1) {
         const attachment = scene.attachments[attachmentIndex];
@@ -523,7 +537,7 @@ export function collectStudioBg3dProjectArchivePlan(
         };
         referenceCount += 1;
         if (referenceCount > limits.maxReferences) {
-          fail("REFERENCE_LIMIT", "프로젝트의 3D 배경 모델 참조 수가 archive 안전 한도를 넘었습니다.");
+          fail("REFERENCE_LIMIT", "bg3dReferenceCountExceeded");
         }
         const existing = byHash.get(sha256);
         if (existing) {
@@ -538,7 +552,7 @@ export function collectStudioBg3dProjectArchivePlan(
             || existing.mimeType !== attachment.mime
             || !rightsMatch
           ) {
-            fail("DOCUMENT_REFERENCE_CONFLICT", "같은 3D 모델 해시에 서로 다른 크기, MIME 또는 이용 권리가 선언되었습니다.", {
+            fail("DOCUMENT_REFERENCE_CONFLICT", "bg3dHashDeclarationConflict", {
               pointer: reference.pointer,
             });
           }
@@ -550,16 +564,16 @@ export function collectStudioBg3dProjectArchivePlan(
           continue;
         }
         if (byHash.size >= limits.maxAttachments) {
-          fail("ATTACHMENT_COUNT_LIMIT", "프로젝트의 3D 배경 모델 수가 archive 안전 한도를 넘었습니다.");
+          fail("ATTACHMENT_COUNT_LIMIT", "bg3dModelCountExceeded");
         }
         if (attachment.byteSize > limits.maxAttachmentBytes) {
-          fail("ATTACHMENT_SIZE_LIMIT", "3D 배경 모델 하나의 크기가 archive 안전 한도를 넘었습니다.", {
+          fail("ATTACHMENT_SIZE_LIMIT", "bg3dModelTooLarge", {
             pointer: reference.pointer,
           });
         }
         totalAttachmentBytes += attachment.byteSize;
         if (totalAttachmentBytes > limits.maxTotalAttachmentBytes) {
-          fail("ATTACHMENT_SIZE_LIMIT", "프로젝트의 3D 배경 모델 합계가 archive 안전 한도를 넘었습니다.");
+          fail("ATTACHMENT_SIZE_LIMIT", "bg3dModelTotalTooLarge");
         }
         byHash.set(sha256, {
           sha256,
@@ -590,26 +604,35 @@ export function collectStudioBg3dProjectArchivePlan(
 
 export function fail(
   code: StudioProjectArchiveDiagnosticCode,
-  message: string,
-  details: Pick<StudioProjectArchiveDiagnostic, "path" | "pointer"> = {}
+  variant: string,
+  details: Pick<StudioProjectArchiveDiagnostic, "path" | "pointer"> = {},
+  params?: Readonly<Record<string, string>>
 ): never {
-  throw new StudioProjectArchiveError(code, message, details);
+  throw new StudioProjectArchiveError(code, variant, details, params);
 }
 
 function warning(
   diagnostics: StudioProjectArchiveDiagnostic[],
   code: StudioProjectArchiveDiagnosticCode,
-  message: string,
-  details: Pick<StudioProjectArchiveDiagnostic, "path" | "pointer"> = {}
+  variant: string,
+  details: Pick<StudioProjectArchiveDiagnostic, "path" | "pointer"> = {},
+  params?: Readonly<Record<string, string>>
 ): void {
   if (!diagnostics.some((candidate) =>
     candidate.severity === "warning"
     && candidate.code === code
-    && candidate.message === message
+    && candidate.variant === variant
+    && JSON.stringify(candidate.params ?? null) === JSON.stringify(params ?? null)
     && candidate.path === details.path
     && candidate.pointer === details.pointer
   )) {
-    diagnostics.push({ severity: "warning", code, message, ...details });
+    diagnostics.push({
+      severity: "warning",
+      code,
+      variant,
+      ...(params !== undefined ? { params } : {}),
+      ...details,
+    });
   }
 }
 
@@ -622,10 +645,10 @@ function diagnosticsAreSelfContained(diagnostics: readonly StudioProjectArchiveD
 function rethrowPackageArchiveError(cause: unknown): never {
   if (cause instanceof StudioPackageArchiveError) {
     if (cause.code === "ENTRY_COUNT_LIMIT") {
-      fail("ATTACHMENT_COUNT_LIMIT", "ZIP 파일 수가 프로젝트 archive 안전 한도를 넘었습니다.");
+      fail("ATTACHMENT_COUNT_LIMIT", "zipEntryCountExceeded");
     }
     if (cause.code === "ENTRY_SIZE_LIMIT") {
-      fail("ATTACHMENT_SIZE_LIMIT", "ZIP 항목 크기가 프로젝트 archive 안전 한도를 넘었습니다.", {
+      fail("ATTACHMENT_SIZE_LIMIT", "zipEntryTooLarge", {
         path: cause.path,
       });
     }
@@ -634,15 +657,15 @@ function rethrowPackageArchiveError(cause: unknown): never {
       || cause.code === "ARCHIVE_SIZE_LIMIT"
       || cause.code === "ZIP32_OVERFLOW"
     ) {
-      fail("ARCHIVE_SIZE_LIMIT", "완성 프로젝트 archive 크기가 브라우저 안전 한도를 넘었습니다.");
+      fail("ARCHIVE_SIZE_LIMIT", "builtArchiveTooLarge");
     }
     if (cause.code === "PATH_INVALID" || cause.code === "PATH_DUPLICATE") {
-      fail(cause.code === "PATH_DUPLICATE" ? "DUPLICATE_PATH" : "PATH_INVALID", cause.message, {
+      fail(cause.code === "PATH_DUPLICATE" ? "DUPLICATE_PATH" : "PATH_INVALID", "fromPackageArchive", {
         path: cause.path,
-      });
+      }, { detail: cause.message });
     }
   }
-  fail("ARCHIVE_INVALID", "프로젝트 ZIP archive를 조립하지 못했습니다.");
+  fail("ARCHIVE_INVALID", "zipAssembleFailed");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -662,7 +685,7 @@ function resolvePositiveLimit(
 ): number {
   if (value === undefined) return hardMaximum;
   if (!Number.isSafeInteger(value) || value <= 0 || value > hardMaximum) {
-    fail("ARCHIVE_INVALID", `${label} 한도가 올바르지 않습니다.`);
+    fail("ARCHIVE_INVALID", "limitInvalid", {}, { label });
   }
   return value;
 }
@@ -733,7 +756,7 @@ function assertDecodedProjectWithinLimits(
     const current = pending.pop();
     if (!current) break;
     if (current.depth > limits.maxDepth) {
-      fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 중첩 깊이가 안전 한도를 넘었습니다.");
+      fail("PROJECT_SIZE_LIMIT", "jsonDepthExceeded");
     }
     const children = Array.isArray(current.value)
       ? current.value
@@ -741,12 +764,12 @@ function assertDecodedProjectWithinLimits(
         ? Object.values(current.value)
         : [];
     if (children.length > 0 && current.depth >= limits.maxDepth) {
-      fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 중첩 깊이가 안전 한도를 넘었습니다.");
+      fail("PROJECT_SIZE_LIMIT", "jsonDepthExceeded");
     }
     for (const child of children) {
       nodes += 1;
       if (nodes > limits.maxJsonNodes) {
-        fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 노드 수가 안전 한도를 넘었습니다.");
+        fail("PROJECT_SIZE_LIMIT", "jsonNodeCountExceeded");
       }
       pending.push({ value: child, depth: current.depth + 1 });
     }
@@ -795,7 +818,7 @@ function addMinimumCanonicalJsonBytes(
 ): void {
   const current = context.minimumJsonBytes ?? 0;
   if (!Number.isSafeInteger(amount) || amount < 0 || current > context.limits.maxProjectBytes - amount) {
-    fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 크기가 안전 한도를 넘었습니다.", { pointer });
+    fail("PROJECT_SIZE_LIMIT", "jsonSizeExceeded", { pointer });
   }
   context.minimumJsonBytes = current + amount;
 }
@@ -809,10 +832,10 @@ function canonicalizeProjectValue(
 ): unknown {
   context.nodes += 1;
   if (context.nodes > context.limits.maxJsonNodes) {
-    fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 노드 수가 안전 한도를 넘었습니다.", { pointer });
+    fail("PROJECT_SIZE_LIMIT", "jsonNodeCountExceeded", { pointer });
   }
   if (depth > context.limits.maxDepth) {
-    fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 중첩 깊이가 안전 한도를 넘었습니다.", { pointer });
+    fail("PROJECT_SIZE_LIMIT", "jsonDepthExceeded", { pointer });
   }
   if (value === null) {
     addMinimumCanonicalJsonBytes(context, 4, pointer);
@@ -828,7 +851,7 @@ function canonicalizeProjectValue(
   }
   if (typeof value === "number") {
     if (!Number.isFinite(value)) {
-      fail("PROJECT_INVALID", "프로젝트에 유한하지 않은 숫자가 포함되어 있습니다.", { pointer });
+      fail("PROJECT_INVALID", "nonFiniteNumber", { pointer });
     }
     addMinimumCanonicalJsonBytes(context, String(value).length, pointer);
     return Object.is(value, -0) ? 0 : value;
@@ -837,20 +860,20 @@ function canonicalizeProjectValue(
     return inArray ? null : undefined;
   }
   if (typeof value === "bigint" || !isPlainRecord(value) && !Array.isArray(value)) {
-    fail("PROJECT_INVALID", "프로젝트에 JSON으로 저장할 수 없는 값이 포함되어 있습니다.", { pointer });
+    fail("PROJECT_INVALID", "unserializableValue", { pointer });
   }
   const object = value as object;
   if (context.seen.has(object)) {
-    fail("PROJECT_INVALID", "프로젝트에 순환 참조가 포함되어 있습니다.", { pointer });
+    fail("PROJECT_INVALID", "circularReference", { pointer });
   }
   context.seen.add(object);
   try {
     if (Array.isArray(value)) {
       if (depth >= context.limits.maxDepth && value.length > 0) {
-        fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 중첩 깊이가 안전 한도를 넘었습니다.", { pointer });
+        fail("PROJECT_SIZE_LIMIT", "jsonDepthExceeded", { pointer });
       }
       if (context.nodes > context.limits.maxJsonNodes - value.length) {
-        fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 노드 수가 안전 한도를 넘었습니다.", { pointer });
+        fail("PROJECT_SIZE_LIMIT", "jsonNodeCountExceeded", { pointer });
       }
       addMinimumCanonicalJsonBytes(context, 2 + Math.max(0, value.length - 1), pointer);
       return value.map((item, index) =>
@@ -860,21 +883,16 @@ function canonicalizeProjectValue(
     const output: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     const keys = Object.keys(value).sort();
     if (depth >= context.limits.maxDepth && keys.length > 0) {
-      fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 중첩 깊이가 안전 한도를 넘었습니다.", { pointer });
+      fail("PROJECT_SIZE_LIMIT", "jsonDepthExceeded", { pointer });
     }
     if (context.nodes > context.limits.maxJsonNodes - keys.length) {
-      fail("PROJECT_SIZE_LIMIT", "프로젝트 JSON 노드 수가 안전 한도를 넘었습니다.", { pointer });
+      fail("PROJECT_SIZE_LIMIT", "jsonNodeCountExceeded", { pointer });
     }
     addMinimumCanonicalJsonBytes(context, 2 + Math.max(0, keys.length - 1), pointer);
     for (const key of keys) {
       const nextPointer = childPointer(pointer, key);
       if (credentialShapedKey(key)) {
-        warning(
-          context.diagnostics,
-          "PRIVACY_FIELD_REMOVED",
-          "프로젝트 archive에서 자격 증명 또는 비공개 AI 원문 필드를 제거했습니다.",
-          { pointer: nextPointer }
-        );
+        warning(context.diagnostics, "PRIVACY_FIELD_REMOVED", "privacyFieldRemoved", { pointer: nextPointer });
         continue;
       }
       addMinimumCanonicalJsonBytes(context, key.length + 3, nextPointer);
@@ -894,7 +912,7 @@ function canonicalJson(value: unknown): string {
     }
     if (typeof candidate === "string") return JSON.stringify(candidate);
     if (Array.isArray(candidate)) return `[${candidate.map(serialize).join(",")}]`;
-    if (!isRecord(candidate)) fail("CANONICAL_JSON_REQUIRED", "canonical JSON 값이 올바르지 않습니다.");
+    if (!isRecord(candidate)) fail("CANONICAL_JSON_REQUIRED", "invalidValue");
     return `{${Object.keys(candidate).sort().map((key) => `${JSON.stringify(key)}:${serialize(candidate[key])}`).join(",")}}`;
   };
   return serialize(value);
@@ -902,7 +920,7 @@ function canonicalJson(value: unknown): string {
 
 async function sha256Bytes(bytes: Uint8Array): Promise<string> {
   if (!globalThis.crypto?.subtle) {
-    fail("ARCHIVE_INVALID", "이 브라우저에서는 SHA-256 무결성 검사를 사용할 수 없습니다.");
+    fail("ARCHIVE_INVALID", "sha256Unavailable");
   }
   const digestInput = bytes.byteOffset === 0
     && bytes.buffer instanceof ArrayBuffer
@@ -1001,11 +1019,11 @@ function glbJson(bytes: Uint8Array): Record<string, unknown> | null {
   return offset === bytes.length && chunkIndex > 0 ? document : null;
 }
 
-function decodeUtf8(bytes: Uint8Array, code: StudioProjectArchiveDiagnosticCode, message: string): string {
+function decodeUtf8(bytes: Uint8Array, code: StudioProjectArchiveDiagnosticCode, variant: string): string {
   try {
     return fatalTextDecoder.decode(bytes);
   } catch {
-    fail(code, message);
+    fail(code, variant);
   }
 }
 
@@ -1034,7 +1052,7 @@ function objTextValid(bytes: Uint8Array): boolean {
 function validateDeclaredMime(declared: string, allowed: readonly string[]): void {
   if (!declared || declared === "application/octet-stream") return;
   if (!allowed.includes(declared)) {
-    fail("MIME_MISMATCH", "attachment의 선언 MIME 형식과 실제 자산 종류가 다릅니다.");
+    fail("MIME_MISMATCH", "declaredMimeMismatch");
   }
 }
 
@@ -1045,20 +1063,20 @@ function inspectAttachmentBytes(
   diagnostics: StudioProjectArchiveDiagnostic[]
 ): string {
   if (kind === "psd-source") {
-    try { validateStudioPsdSourceBytes(bytes); } catch { fail("MIME_SIGNATURE_MISMATCH", "PSD 원본 attachment의 서명 또는 크기가 올바르지 않습니다."); }
+    try { validateStudioPsdSourceBytes(bytes); } catch { fail("MIME_SIGNATURE_MISMATCH", "psdSignatureInvalid"); }
     validateDeclaredMime(declaredMimeType, [STUDIO_PSD_SOURCE_MIME]);
     return STUDIO_PSD_SOURCE_MIME;
   }
   if (kind === "raster" || kind === "mask" || kind === "reference") {
     const detected = rasterMimeType(bytes);
-    if (!detected) fail("MIME_SIGNATURE_MISMATCH", "래스터 attachment의 파일 서명이 올바르지 않습니다.");
+    if (!detected) fail("MIME_SIGNATURE_MISMATCH", "rasterSignatureInvalid");
     validateDeclaredMime(declaredMimeType, [detected]);
     return detected;
   }
   if (kind === "vrm" || kind === "glb") {
     const document = glbJson(bytes);
     if (!document) {
-      fail("MIME_SIGNATURE_MISMATCH", `${kind.toUpperCase()} attachment의 파일 서명이 올바르지 않습니다.`);
+      fail("MIME_SIGNATURE_MISMATCH", "modelSignatureInvalid", {}, { kind: kind.toUpperCase() });
     }
     inspectGltfExternalDependencies(document, diagnostics);
     const canonical = kind === "vrm" ? "model/vrm" : "model/gltf-binary";
@@ -1067,26 +1085,22 @@ function inspectAttachmentBytes(
   }
   if (kind === "gltf") {
     const document = gltfJson(bytes);
-    if (!document) fail("MIME_SIGNATURE_MISMATCH", "glTF attachment의 JSON 구조가 올바르지 않습니다.");
+    if (!document) fail("MIME_SIGNATURE_MISMATCH", "gltfStructureInvalid");
     validateDeclaredMime(declaredMimeType, ["model/gltf+json", "application/json"]);
     inspectGltfExternalDependencies(document, diagnostics);
     return "model/gltf+json";
   }
   if (kind === "obj") {
-    if (!objTextValid(bytes)) fail("MIME_SIGNATURE_MISMATCH", "OBJ attachment의 텍스트 구조가 올바르지 않습니다.");
+    if (!objTextValid(bytes)) fail("MIME_SIGNATURE_MISMATCH", "objStructureInvalid");
     validateDeclaredMime(declaredMimeType, ["model/obj", "text/plain"]);
-    const text = decodeUtf8(bytes, "MIME_SIGNATURE_MISMATCH", "OBJ attachment를 읽지 못했습니다.");
+    const text = decodeUtf8(bytes, "MIME_SIGNATURE_MISMATCH", "objReadFailed");
     if (/^[^\S\n\r\u2028\u2029]*mtllib\s+\S/mu.test(text)) { // 줄 첫머리 공백은 같은 줄만 읽는다(빈 줄 열에서 제곱 시간 방지)
-      warning(
-        diagnostics,
-        "EXTERNAL_ATTACHMENT_DEPENDENCY",
-        "OBJ가 archive에 포함되지 않은 재질 파일을 참조할 수 있습니다."
-      );
+      warning(diagnostics, "EXTERNAL_ATTACHMENT_DEPENDENCY", "objExternalMaterial");
     }
     return "model/obj";
   }
   const detected = audioMimeType(bytes);
-  if (!detected) fail("MIME_SIGNATURE_MISMATCH", "audio attachment의 파일 서명이 올바르지 않습니다.");
+  if (!detected) fail("MIME_SIGNATURE_MISMATCH", "audioSignatureInvalid");
   validateDeclaredMime(declaredMimeType, [detected]);
   return detected;
 }
@@ -1106,11 +1120,7 @@ function inspectGltfExternalDependencies(
       // A nested data URI carries its own bytes. A toonstudio-asset URI is not self-contained
       // until a future glTF resource manifest explicitly binds that hash to an archive attachment.
       if (!isRecord(candidate) || typeof candidate.uri !== "string" || candidate.uri.startsWith("data:")) continue;
-      warning(
-        diagnostics,
-        "EXTERNAL_ATTACHMENT_DEPENDENCY",
-        `glTF ${collectionName} 항목이 archive 외부 파일을 참조합니다.`
-      );
+      warning(diagnostics, "EXTERNAL_ATTACHMENT_DEPENDENCY", "gltfExternalReference", {}, { collection: collectionName });
     }
   }
 }
@@ -1135,7 +1145,7 @@ function extensionFor(mimeType: string, kinds: ReadonlySet<StudioProjectArchiveA
     "audio/webm": "webm",
   };
   const extension = extensions[mimeType];
-  if (!extension) fail("MIME_MISMATCH", "지원하지 않는 attachment MIME 형식입니다.");
+  if (!extension) fail("MIME_MISMATCH", "unsupportedMime");
   return extension;
 }
 
@@ -1168,13 +1178,13 @@ export function resolveStudioProjectArchiveAttachment(
 
 function decodeBase64(value: string): Uint8Array {
   if (value.length === 0 || value.length % 4 !== 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(value)) {
-    fail("MIME_SIGNATURE_MISMATCH", "래스터 data URL의 Base64 데이터가 올바르지 않습니다.");
+    fail("MIME_SIGNATURE_MISMATCH", "rasterDataUrlBase64Invalid");
   }
   let binary: string;
   try {
     binary = globalThis.atob(value);
   } catch {
-    fail("MIME_SIGNATURE_MISMATCH", "래스터 data URL을 해석하지 못했습니다.");
+    fail("MIME_SIGNATURE_MISMATCH", "rasterDataUrlParseFailed");
   }
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
@@ -1199,12 +1209,12 @@ function parseRasterDataUrl(
   const mimeType = normalizeMimeType(match[1]);
   if (!["image/png", "image/jpeg", "image/gif", "image/webp"].includes(mimeType)) return null;
   if (match[2].length > Math.ceil(maxAttachmentBytes / 3) * 4 + 4) {
-    fail("ATTACHMENT_SIZE_LIMIT", "래스터 data URL이 개별 attachment 안전 한도를 넘었습니다.");
+    fail("ATTACHMENT_SIZE_LIMIT", "rasterDataUrlTooLarge");
   }
   const bytes = decodeBase64(match[2]);
   const detected = rasterMimeType(bytes);
   if (detected !== mimeType) {
-    fail("MIME_SIGNATURE_MISMATCH", "래스터 data URL의 MIME과 실제 파일 서명이 다릅니다.");
+    fail("MIME_SIGNATURE_MISMATCH", "rasterDataUrlMimeMismatch");
   }
   return { mimeType, bytes };
 }
@@ -1225,7 +1235,7 @@ function sourceToBlob(source: StudioPackageArchiveSource, mimeType: string): Blo
   if (source instanceof ArrayBuffer) {
     return new Blob([source.slice(0)], { type: mimeType });
   }
-  fail("ARCHIVE_INVALID", "지원하지 않는 attachment 바이트 형식입니다.");
+  fail("ARCHIVE_INVALID", "unsupportedAttachmentBytes");
 }
 
 async function addAttachmentCandidate(
@@ -1234,22 +1244,22 @@ async function addAttachmentCandidate(
 ): Promise<MutableAttachment> {
   context.attachmentCandidates += 1;
   if (context.attachmentCandidates > context.limits.maxAttachments) {
-    fail("ATTACHMENT_COUNT_LIMIT", "프로젝트 attachment 수가 안전 한도를 넘었습니다.");
+    fail("ATTACHMENT_COUNT_LIMIT", "projectAttachmentCountExceeded");
   }
   const declaredMime = normalizeMimeType(
     input.mimeType || (input.data instanceof Blob ? input.data.type : "")
   );
   const blob = sourceToBlob(input.data, declaredMime);
   if (blob.size <= 0 || blob.size > context.limits.maxAttachmentBytes) {
-    fail("ATTACHMENT_SIZE_LIMIT", "개별 프로젝트 attachment 크기가 안전 한도를 넘었습니다.");
+    fail("ATTACHMENT_SIZE_LIMIT", "singleAttachmentTooLarge");
   }
   context.processedAttachmentBytes += blob.size;
   if (context.processedAttachmentBytes > context.limits.maxTotalAttachmentBytes) {
-    fail("ATTACHMENT_SIZE_LIMIT", "프로젝트 attachment 입력 합계가 안전 한도를 넘었습니다.");
+    fail("ATTACHMENT_SIZE_LIMIT", "attachmentInputTotalTooLarge");
   }
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (bytes.byteLength !== blob.size) {
-    fail("ATTACHMENT_SIZE_LIMIT", "attachment가 보고한 크기와 실제 바이트 크기가 다릅니다.");
+    fail("ATTACHMENT_SIZE_LIMIT", "reportedSizeMismatch");
   }
   const detectedMimeType = inspectAttachmentBytes(bytes, input.kind, declaredMime, context.diagnostics);
   const sha256 = await sha256Bytes(bytes);
@@ -1258,13 +1268,13 @@ async function addAttachmentCandidate(
     if (rasterMimeType(bytes) === null && existing.detectedMimeType !== detectedMimeType
       && !(new Set([existing.detectedMimeType, detectedMimeType]).size === 2
         && [existing.detectedMimeType, detectedMimeType].every((mime) => ["model/vrm", "model/gltf-binary"].includes(mime)))) {
-      fail("MIME_MISMATCH", "동일한 attachment 바이트가 충돌하는 MIME 종류로 선언되었습니다.");
+      fail("MIME_MISMATCH", "conflictingMimeDeclaration");
     }
     existing.kinds.add(input.kind);
     return existing;
   }
   if (context.attachments.size >= context.limits.maxAttachments) {
-    fail("ATTACHMENT_COUNT_LIMIT", "중복 제거 후 attachment 수가 안전 한도를 넘었습니다.");
+    fail("ATTACHMENT_COUNT_LIMIT", "dedupedAttachmentCountExceeded");
   }
   const attachment: MutableAttachment = {
     sha256,
@@ -1288,16 +1298,11 @@ async function extractEmbeddedAssets(
     const parsed = parseRasterDataUrl(value, context.limits.maxAttachmentBytes);
     if (!parsed) {
       if (/^data:image\/(?:png|jpeg|gif|webp)(?:;|,)/iu.test(value)) {
-        fail("MIME_SIGNATURE_MISMATCH", "래스터 data URL 형식 또는 Base64 데이터가 올바르지 않습니다.", {
+        fail("MIME_SIGNATURE_MISMATCH", "rasterDataUrlShapeInvalid", {
           pointer,
         });
       }
-      warning(
-        context.diagnostics,
-        "UNSUPPORTED_EMBEDDED_DATA",
-        "지원하지 않는 inline data URL은 project.json 내부에 그대로 보존했습니다.",
-        { pointer }
-      );
+      warning(context.diagnostics, "UNSUPPORTED_EMBEDDED_DATA", "unsupportedInlineDataPreserved", { pointer });
       return value;
     }
     const usage = referenceUsage(pointer);
@@ -1370,7 +1375,7 @@ function migrateLegacyStudio3dImageFragments(project: Record<string, unknown>): 
             STUDIO_VRM_SCENE_DOCUMENT_MAX_BYTES
           ) * 3
       ) {
-        fail("PROJECT_INVALID", "레거시 3D 배경 fragment를 안전하게 변환할 수 없습니다.", { pointer });
+        fail("PROJECT_INVALID", "legacyBg3dFragmentConvertFailed", { pointer });
       }
       let decodedFragment: string;
       let decoded: unknown;
@@ -1378,7 +1383,7 @@ function migrateLegacyStudio3dImageFragments(project: Record<string, unknown>): 
         decodedFragment = decodeURIComponent(encodedFragment);
         decoded = JSON.parse(decodedFragment) as unknown;
       } catch {
-        fail("PROJECT_INVALID", "레거시 3D 배경 fragment를 해석할 수 없습니다.", { pointer });
+        fail("PROJECT_INVALID", "legacyBg3dFragmentParseFailed", { pointer });
       }
       if (
         isRecord(decoded)
@@ -1388,18 +1393,14 @@ function migrateLegacyStudio3dImageFragments(project: Record<string, unknown>): 
           bundledModels: SAMPLE_VRMS.map(({ id, name }) => ({ id, name })),
         });
         if (!migratedVrm) {
-          fail("PROJECT_INVALID", "레거시 3D 데생 인형 fragment를 해석할 수 없습니다.", { pointer });
+          fail("PROJECT_INVALID", "legacyFigureFragmentParseFailed", { pointer });
         }
         if (migratedVrm.status === "unresolved-model") {
-          fail(
-            "PROJECT_INVALID",
-            "레거시 업로드 VRM을 먼저 Studio에서 다시 열어 모델 attachment로 저장해 주세요.",
-            { pointer }
-          );
+          fail("PROJECT_INVALID", "legacyVrmReopenRequired", { pointer });
         }
         const canonicalVrmSceneJson = serializeStudioVrmSceneDocument(migratedVrm.document);
         if (!canonicalVrmSceneJson) {
-          fail("PROJECT_INVALID", "레거시 3D 데생 인형 장면을 canonical 형식으로 저장할 수 없습니다.", {
+          fail("PROJECT_INVALID", "legacyFigureSceneNotCanonical", {
             pointer,
           });
         }
@@ -1415,29 +1416,21 @@ function migrateLegacyStudio3dImageFragments(project: Record<string, unknown>): 
         || decoded.tool !== "bg3d"
         || !Array.isArray(decoded.primitives)
       ) {
-        fail("PROJECT_INVALID", "지원하지 않는 레거시 이미지 fragment입니다.", { pointer });
+        fail("PROJECT_INVALID", "legacyImageFragmentUnsupported", { pointer });
       }
       if (Array.isArray(decoded.customModels) && decoded.customModels.length > 0) {
-        fail(
-          "PROJECT_INVALID",
-          "레거시 3D 모델을 먼저 Studio에서 다시 열어 GLB attachment로 저장해 주세요.",
-          { pointer }
-        );
+        fail("PROJECT_INVALID", "legacyModelReopenRequired", { pointer });
       }
       if (!decoded.primitives.every(primitivePreservesTransform)) {
-        fail(
-          "PROJECT_INVALID",
-          "레거시 3D 배경 요소의 위치·회전·크기를 손실 없이 변환할 수 없습니다.",
-          { pointer }
-        );
+        fail("PROJECT_INVALID", "legacyBg3dTransformLossy", { pointer });
       }
       const migrated = migrateStudioBg3dSceneDocument(decodedFragment);
       if (!migrated || migrated.nodes.length !== decoded.primitives.length) {
-        fail("PROJECT_INVALID", "레거시 3D 배경 요소를 손실 없이 변환할 수 없습니다.", { pointer });
+        fail("PROJECT_INVALID", "legacyBg3dElementLossy", { pointer });
       }
       const canonicalSceneJson = serializeStudioBg3dSceneDocument(migrated);
       if (!canonicalSceneJson) {
-        fail("PROJECT_INVALID", "레거시 3D 배경 장면을 canonical 형식으로 저장할 수 없습니다.", {
+        fail("PROJECT_INVALID", "legacyBg3dSceneNotCanonical", {
           pointer,
         });
       }
@@ -1481,18 +1474,18 @@ function addDocumentReference(
       || documentReferenceMode(existingReference) !== mode
     )
   ) {
-    fail("DOCUMENT_REFERENCE_CONFLICT", "하나의 프로젝트 위치에 서로 다른 attachment 용도가 선언되었습니다.", {
+    fail("DOCUMENT_REFERENCE_CONFLICT", "pointerUsageConflict", {
       pointer: reference.pointer,
     });
   }
   context.references += 1;
   if (context.references > context.limits.maxReferences) {
-    fail("REFERENCE_LIMIT", "프로젝트 attachment 문서 참조 수가 안전 한도를 넘었습니다.");
+    fail("REFERENCE_LIMIT", "documentReferenceCountExceeded");
   }
   const owner = context.pointerOwners.get(reference.pointer);
   const existingMode = context.pointerModes.get(reference.pointer);
   if (owner && (owner !== attachment.sha256 || existingMode !== mode)) {
-    fail("DOCUMENT_REFERENCE_CONFLICT", "하나의 프로젝트 위치가 서로 다른 attachment를 참조합니다.", {
+    fail("DOCUMENT_REFERENCE_CONFLICT", "pointerAttachmentConflict", {
       pointer: reference.pointer,
     });
   }
@@ -1502,13 +1495,13 @@ function addDocumentReference(
 }
 
 function decodePointerSegment(value: string): string {
-  if (/~(?![01])/u.test(value)) fail("DOCUMENT_REFERENCE_MISSING", "JSON Pointer escape가 올바르지 않습니다.");
+  if (/~(?![01])/u.test(value)) fail("DOCUMENT_REFERENCE_MISSING", "pointerEscapeInvalid");
   return value.replace(/~1/gu, "/").replace(/~0/gu, "~");
 }
 
 function pointerSegments(pointer: string): string[] {
   if (!pointer.startsWith("/") || pointer.length > 2_048) {
-    fail("DOCUMENT_REFERENCE_MISSING", "attachment JSON Pointer가 올바르지 않습니다.", { pointer });
+    fail("DOCUMENT_REFERENCE_MISSING", "pointerInvalid", { pointer });
   }
   return pointer.slice(1).split("/").map(decodePointerSegment);
 }
@@ -1582,12 +1575,7 @@ function scanExternalProjectDependencies(
       /^(?:https?:|blob:)/iu.test(value)
       || (probableAsset && (value.startsWith("/") || hasUriScheme))
     ) {
-      warning(
-        diagnostics,
-        "EXTERNAL_PROJECT_DEPENDENCY",
-        "프로젝트 필드가 archive 외부 자산을 참조합니다.",
-        { pointer }
-      );
+      warning(diagnostics, "EXTERNAL_PROJECT_DEPENDENCY", "fieldExternalAsset", { pointer });
     }
     return;
   }
@@ -1616,12 +1604,12 @@ function linked3dArchiveCoverage(
   } catch (cause) {
     if (!(cause instanceof StudioLinked3dPassProjectArchiveError)) throw cause;
     if (cause.code === "attachment-missing") {
-      fail("ATTACHMENT_MISSING", cause.message);
+      fail("ATTACHMENT_MISSING", "fromLinked3d", {}, { detail: cause.message });
     }
     if (cause.code === "attachment-mismatch") {
-      fail("DOCUMENT_REFERENCE_MISMATCH", cause.message);
+      fail("DOCUMENT_REFERENCE_MISMATCH", "fromLinked3d", {}, { detail: cause.message });
     }
-    fail("PROJECT_INVALID", cause.message);
+    fail("PROJECT_INVALID", "fromLinked3d", {}, { detail: cause.message });
   }
 }
 
@@ -1655,7 +1643,7 @@ function assertProjectAssetUrisCovered(
   collectProjectAssetUris(value, "", projectUris);
   for (const [pointer, sha256] of projectUris) {
     if (pointerOwners.get(pointer) !== sha256 || !attachmentHashes.has(sha256)) {
-      fail("ATTACHMENT_MISSING", "project.json의 content-addressed 자산 참조가 manifest attachment와 연결되지 않습니다.", {
+      fail("ATTACHMENT_MISSING", "projectAssetUriUnlinked", {
         pointer,
       });
     }
@@ -1701,12 +1689,7 @@ function warnUncoveredReferenceBoardAttachments(
 ): void {
   for (const reference of collectReferenceBoardIntegrityReferences(project)) {
     if (isCovered(reference)) continue;
-    warning(
-      diagnostics,
-      "EXTERNAL_PROJECT_DEPENDENCY",
-      "참고 보드 이미지 바이트가 project archive에 포함되지 않았습니다.",
-      { pointer: reference.pointer }
-    );
+    warning(diagnostics, "EXTERNAL_PROJECT_DEPENDENCY", "referenceBoardBytesAbsent", { pointer: reference.pointer });
   }
 }
 
@@ -1742,7 +1725,7 @@ function collectVrmSurfacePaintArchivePlan(
   try {
     parsed = parseStudioProjectFile(project);
   } catch {
-    fail("PROJECT_INVALID", "VRM 표면 페인팅 참조를 확인할 프로젝트가 올바르지 않습니다.");
+    fail("PROJECT_INVALID", "vrmPaintProjectInvalid");
   }
   const references: VrmSurfacePaintArchiveReference[] = [];
   const visitElements = (elements: readonly unknown[], basePointer: string): void => {
@@ -1751,7 +1734,7 @@ function collectVrmSurfacePaintArchivePlan(
       const serialized = serializeStudioVrmSceneDocument(element.vrmScene);
       const scene = serialized ? parseStudioVrmSceneDocument(serialized) : null;
       if (!scene) {
-        fail("PROJECT_INVALID", "VRM 표면 페인팅 장면 문서가 올바르지 않습니다.");
+        fail("PROJECT_INVALID", "vrmPaintSceneInvalid");
       }
       scene.surfacePaint.textures.forEach((
         texture: StudioVrmSurfacePaintTexture,
@@ -1786,11 +1769,7 @@ function collectVrmSurfacePaintArchivePlan(
         || existing.height !== reference.height
       )
     ) {
-      fail(
-        "DOCUMENT_REFERENCE_MISMATCH",
-        "같은 VRM 표면 페인팅 PNG 해시에 서로 다른 무결성 정보가 선언되었습니다.",
-        { pointer: reference.pointer },
-      );
+      fail("DOCUMENT_REFERENCE_MISMATCH", "vrmPaintHashIntegrityConflict", { pointer: reference.pointer });
     }
     const documentReference: StudioProjectArchiveDocumentReference = {
       pointer: reference.pointer,
@@ -1824,25 +1803,13 @@ function assertVrmSurfacePaintIntegrityReferencesCovered(
   for (const attachment of plan) {
     const evidence = attachmentsByHash.get(attachment.sha256);
     if (!evidence) {
-      fail(
-        "ATTACHMENT_MISSING",
-        "VRM 표면 페인팅 PNG 바이트가 프로젝트 archive에 없습니다.",
-        { pointer: attachment.documentReferences[0]?.pointer },
-      );
+      fail("ATTACHMENT_MISSING", "vrmPaintPngAbsent", { pointer: attachment.documentReferences[0]?.pointer });
     }
     if (evidence.byteSize !== attachment.byteSize) {
-      fail(
-        "DOCUMENT_REFERENCE_MISMATCH",
-        "VRM 표면 페인팅 PNG 크기가 장면 문서와 다릅니다.",
-        { pointer: attachment.documentReferences[0]?.pointer },
-      );
+      fail("DOCUMENT_REFERENCE_MISMATCH", "vrmPaintSizeDiffersFromScene", { pointer: attachment.documentReferences[0]?.pointer });
     }
     if (evidence.mimeType !== "image/png" || !evidence.kinds.includes("raster")) {
-      fail(
-        "MIME_MISMATCH",
-        "VRM 표면 페인팅은 검증 가능한 PNG raster attachment만 참조할 수 있습니다.",
-        { pointer: attachment.documentReferences[0]?.pointer },
-      );
+      fail("MIME_MISMATCH", "vrmPaintRequiresPng", { pointer: attachment.documentReferences[0]?.pointer });
     }
     for (const reference of attachment.documentReferences) {
       if (!evidence.documentReferences.some((candidate) =>
@@ -1850,11 +1817,7 @@ function assertVrmSurfacePaintIntegrityReferencesCovered(
         && candidate.usage === "raster"
         && documentReferenceMode(candidate) === "sha256-prefixed"
       )) {
-        fail(
-          "ATTACHMENT_MISSING",
-          "VRM 표면 페인팅 해시가 archive PNG attachment와 연결되지 않았습니다.",
-          { pointer: reference.pointer },
-        );
+        fail("ATTACHMENT_MISSING", "vrmPaintHashUnlinked", { pointer: reference.pointer });
       }
     }
   }
@@ -1871,7 +1834,7 @@ async function validateVrmSurfacePaintPng(
     || bytes.byteLength < 24
     || !signature.every((value, index) => bytes[index] === value)
   ) {
-    fail("MIME_SIGNATURE_MISMATCH", "VRM 표면 페인팅 PNG 파일 서명이 올바르지 않습니다.");
+    fail("MIME_SIGNATURE_MISMATCH", "vrmPaintPngSignatureInvalid");
   }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (
@@ -1883,11 +1846,7 @@ async function validateVrmSurfacePaintPng(
     || view.getUint32(16, false) !== plan.width
     || view.getUint32(20, false) !== plan.height
   ) {
-    fail(
-      "DOCUMENT_REFERENCE_MISMATCH",
-      "VRM 표면 페인팅 PNG 크기가 장면 문서의 무결성 정보와 다릅니다.",
-      { pointer: plan.documentReferences[0]?.pointer },
-    );
+    fail("DOCUMENT_REFERENCE_MISMATCH", "vrmPaintSizeDiffersFromIntegrity", { pointer: plan.documentReferences[0]?.pointer });
   }
   try {
     await verifyStudioVrmTexturePaintArtifact({
@@ -1901,11 +1860,7 @@ async function validateVrmSurfacePaintPng(
       height: plan.height,
     }, bytes);
   } catch {
-    fail(
-      "MIME_SIGNATURE_MISMATCH",
-      "VRM 표면 페인팅 PNG가 구조·CRC·SHA-256 무결성 검사를 통과하지 못했습니다.",
-      { pointer: plan.documentReferences[0]?.pointer },
-    );
+    fail("MIME_SIGNATURE_MISMATCH", "vrmPaintPngIntegrityFailed", { pointer: plan.documentReferences[0]?.pointer });
   }
 }
 
@@ -1918,16 +1873,16 @@ function assertBg3dIntegrityReferencesCovered(
   for (const attachment of plan.attachments) {
     const evidence = attachmentsByHash.get(attachment.sha256);
     if (!evidence) {
-      fail("ATTACHMENT_MISSING", "3D 배경 장면의 GLB 바이트가 프로젝트 archive에 없습니다.");
+      fail("ATTACHMENT_MISSING", "bg3dGlbAbsent");
     }
     if (evidence.byteSize !== attachment.byteSize) {
-      fail("DOCUMENT_REFERENCE_MISMATCH", "3D 배경 장면의 모델 크기가 archive GLB 바이트와 다릅니다.");
+      fail("DOCUMENT_REFERENCE_MISMATCH", "bg3dModelSizeMismatch");
     }
     if (
       evidence.mimeType !== STUDIO_BG3D_GLB_MIME
       || !evidence.kinds.includes("glb")
     ) {
-      fail("MIME_MISMATCH", "3D 배경 장면은 검증 가능한 GLB attachment만 참조할 수 있습니다.");
+      fail("MIME_MISMATCH", "bg3dRequiresGlb");
     }
     for (const reference of attachment.documentReferences) {
       const matched = evidence.documentReferences.some((candidate) =>
@@ -1936,7 +1891,7 @@ function assertBg3dIntegrityReferencesCovered(
         && documentReferenceMode(candidate) === "sha256-prefixed"
       );
       if (!matched) {
-        fail("ATTACHMENT_MISSING", "3D 배경 장면 해시가 archive GLB attachment와 연결되지 않았습니다.", {
+        fail("ATTACHMENT_MISSING", "bg3dHashUnlinked", {
           pointer: reference.pointer,
         });
       }
@@ -1961,16 +1916,10 @@ async function validateBg3dArchiveGlb(
     profile: "desktop",
     budgets: attachment.validationBudgets,
     supportedRequiredExtensions: STUDIO_BG3D_CANONICAL_REQUIRED_GLTF_EXTENSIONS,
-  }).catch(() => fail(
-    "MIME_SIGNATURE_MISMATCH",
-    "3D 배경 GLB의 무결성·내장 리소스·복잡도 안전 검사를 실행하지 못했습니다."
-  ));
+  }).catch(() => fail("MIME_SIGNATURE_MISMATCH", "bg3dGlbValidationUnavailable"));
   const result = validationOutcome.result;
   if (!result.ok) {
-    fail(
-      "MIME_SIGNATURE_MISMATCH",
-      "3D 배경 GLB가 무결성·내장 리소스·복잡도 안전 검사를 통과하지 못했습니다."
-    );
+    fail("MIME_SIGNATURE_MISMATCH", "bg3dGlbValidationFailed");
   }
   return result;
 }
@@ -2016,7 +1965,7 @@ function finalizeManifestAttachment(attachment: MutableAttachment): StudioProjec
 
 function validateCanonicalManifest(manifest: StudioProjectArchiveManifest, limits: StudioProjectArchiveLimits): void {
   if (manifest.attachments.length > limits.maxAttachments) {
-    fail("ATTACHMENT_COUNT_LIMIT", "manifest attachment 수가 안전 한도를 넘었습니다.");
+    fail("ATTACHMENT_COUNT_LIMIT", "manifestAttachmentCountExceeded");
   }
   const paths = new Set<string>();
   const hashes = new Set<string>();
@@ -2027,25 +1976,25 @@ function validateCanonicalManifest(manifest: StudioProjectArchiveManifest, limit
   let previousPath = "";
   for (const attachment of manifest.attachments) {
     if (attachment.path <= previousPath) {
-      fail("MANIFEST_INVALID", "manifest attachment 목록이 canonical 경로 순서가 아닙니다.");
+      fail("MANIFEST_INVALID", "attachmentOrderInvalid");
     }
     previousPath = attachment.path;
     if (paths.has(attachment.path) || hashes.has(attachment.sha256)) {
-      fail("MANIFEST_INVALID", "manifest attachment 경로 또는 해시가 중복되었습니다.", { path: attachment.path });
+      fail("MANIFEST_INVALID", "attachmentPathDuplicated", { path: attachment.path });
     }
     paths.add(attachment.path);
     hashes.add(attachment.sha256);
     const kindSet = new Set(attachment.kinds);
     if (kindSet.size !== attachment.kinds.length || [...attachment.kinds].sort(compareKinds).join("\0") !== attachment.kinds.join("\0")) {
-      fail("MANIFEST_INVALID", "manifest attachment 종류가 canonical 순서가 아닙니다.", { path: attachment.path });
+      fail("MANIFEST_INVALID", "attachmentKindOrderInvalid", { path: attachment.path });
     }
     const expectedPath = attachmentPath(attachment.sha256, attachment.mimeType, kindSet);
     if (attachment.path !== expectedPath) {
-      fail("MANIFEST_INVALID", "manifest content-addressed 경로가 해시 또는 MIME과 맞지 않습니다.", { path: attachment.path });
+      fail("MANIFEST_INVALID", "contentPathMismatch", { path: attachment.path });
     }
     attachmentBytes += attachment.byteSize;
     if (attachment.byteSize > limits.maxAttachmentBytes || attachmentBytes > limits.maxTotalAttachmentBytes) {
-      fail("ATTACHMENT_SIZE_LIMIT", "manifest attachment 크기가 안전 한도를 넘었습니다.", { path: attachment.path });
+      fail("ATTACHMENT_SIZE_LIMIT", "manifestAttachmentTooLarge", { path: attachment.path });
     }
     let previousReference = "";
     for (const reference of attachment.documentReferences) {
@@ -2054,13 +2003,13 @@ function validateCanonicalManifest(manifest: StudioProjectArchiveManifest, limit
         (manifest.version === 1 && reference.mode !== undefined)
         || (manifest.version === STUDIO_PROJECT_ARCHIVE_VERSION && reference.mode === undefined)
       ) {
-        fail("MANIFEST_INVALID", "manifest 버전에 맞는 문서 참조 mode가 아닙니다.", {
+        fail("MANIFEST_INVALID", "referenceModeInvalid", {
           path: attachment.path,
           pointer: reference.pointer,
         });
       }
       if (!kindSet.has(reference.usage)) {
-        fail("MANIFEST_INVALID", "manifest 문서 참조 usage가 attachment 종류와 연결되지 않습니다.", {
+        fail("MANIFEST_INVALID", "referenceUsageUnlinked", {
           path: attachment.path,
           pointer: reference.pointer,
         });
@@ -2068,13 +2017,13 @@ function validateCanonicalManifest(manifest: StudioProjectArchiveManifest, limit
       const mode = documentReferenceMode(reference);
       const key = `${reference.pointer}\u0000${reference.usage}\u0000${mode}`;
       if (key <= previousReference) {
-        fail("MANIFEST_INVALID", "manifest 문서 참조가 canonical 순서가 아닙니다.", { path: attachment.path });
+        fail("MANIFEST_INVALID", "referenceOrderInvalid", { path: attachment.path });
       }
       previousReference = key;
       const owner = pointers.get(reference.pointer);
       const existingMode = pointerModes.get(reference.pointer);
       if (owner && (owner !== attachment.sha256 || existingMode !== mode)) {
-        fail("DOCUMENT_REFERENCE_CONFLICT", "manifest의 한 문서 위치가 여러 attachment를 참조합니다.", {
+        fail("DOCUMENT_REFERENCE_CONFLICT", "manifestPointerConflict", {
           pointer: reference.pointer,
         });
       }
@@ -2082,14 +2031,14 @@ function validateCanonicalManifest(manifest: StudioProjectArchiveManifest, limit
       pointerModes.set(reference.pointer, mode);
     }
   }
-  if (references > limits.maxReferences) fail("REFERENCE_LIMIT", "manifest 문서 참조 수가 안전 한도를 넘었습니다.");
+  if (references > limits.maxReferences) fail("REFERENCE_LIMIT", "manifestReferenceCountExceeded");
   if (
     manifest.totals.entryCount !== manifest.attachments.length + 2
     || manifest.totals.attachmentCount !== manifest.attachments.length
     || manifest.totals.attachmentBytes !== attachmentBytes
     || manifest.totals.contentBytes !== manifest.project.byteSize + attachmentBytes
   ) {
-    fail("MANIFEST_INVALID", "manifest 합계가 실제 선언 항목과 일치하지 않습니다.");
+    fail("MANIFEST_INVALID", "totalsMismatch");
   }
 }
 
@@ -2099,10 +2048,10 @@ export async function buildStudioProjectArchive(
   options: StudioProjectArchiveOptions = {}
 ): Promise<BuildStudioProjectArchiveResult> {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
-    fail("PROJECT_INVALID", "프로젝트 archive 입력이 올바르지 않습니다.");
+    fail("PROJECT_INVALID", "archiveInputInvalid");
   }
   if (input.attachments !== undefined && !Array.isArray(input.attachments)) {
-    fail("ATTACHMENT_COUNT_LIMIT", "attachment 입력 목록이 배열이 아닙니다.");
+    fail("ATTACHMENT_COUNT_LIMIT", "attachmentInputNotArray");
   }
   const limits = resolveLimits(options.limits);
   const diagnostics: StudioProjectArchiveDiagnostic[] = [];
@@ -2118,8 +2067,9 @@ export async function buildStudioProjectArchive(
   } catch (cause) {
     throw new StudioProjectArchiveError(
       "PROJECT_INVALID",
-      "올바르지 않은 ToonStudio 프로젝트라 archive를 만들 수 없습니다.",
+      "projectFileInvalid",
       {},
+      undefined,
       cause,
     );
   }
@@ -2129,7 +2079,7 @@ export async function buildStudioProjectArchive(
     limits,
     nodes: 0,
   });
-  if (!isRecord(canonicalProjectValue)) fail("PROJECT_INVALID", "프로젝트 JSON 루트가 올바르지 않습니다.");
+  if (!isRecord(canonicalProjectValue)) fail("PROJECT_INVALID", "projectRootInvalid");
   migrateLegacyStudio3dImageFragments(canonicalProjectValue);
   const context: BuildContext = {
     limits,
@@ -2146,53 +2096,49 @@ export async function buildStudioProjectArchive(
   for (const candidate of input.attachments ?? []) {
     if (!isRecord(candidate)
       || !STUDIO_PROJECT_ARCHIVE_ATTACHMENT_KINDS.includes(candidate.kind as StudioProjectArchiveAttachmentKind)) {
-      fail("MIME_MISMATCH", "지원하지 않는 attachment 종류입니다.");
+      fail("MIME_MISMATCH", "unsupportedKind");
     }
     if (candidate.documentReferences !== undefined && !Array.isArray(candidate.documentReferences)) {
-      fail("DOCUMENT_REFERENCE_MISSING", "attachment 문서 참조 목록이 배열이 아닙니다.");
+      fail("DOCUMENT_REFERENCE_MISSING", "referenceListNotArray");
     }
     const attachmentInput = candidate as unknown as StudioProjectArchiveAttachmentInput;
     const attachment = await addAttachmentCandidate(context, attachmentInput);
     const references = candidate.documentReferences ?? [];
     if (references.length === 0) {
-      warning(
-        diagnostics,
-        "ATTACHMENT_ORPHANED",
-        "attachment가 project.json 문서 위치와 연결되지 않았습니다."
-      );
+      warning(diagnostics, "ATTACHMENT_ORPHANED", "orphaned");
     }
     for (const reference of references) {
       const parsedReference = DocumentReferenceInputSchema.safeParse(reference);
       if (!parsedReference.success) {
-        fail("DOCUMENT_REFERENCE_MISSING", "attachment 문서 참조 형식이 올바르지 않습니다.");
+        fail("DOCUMENT_REFERENCE_MISSING", "referenceShapeInvalid");
       }
       const documentReference: StudioProjectArchiveDocumentReference = parsedReference.data;
       if (documentReference.usage !== attachmentInput.kind) {
-        fail("DOCUMENT_REFERENCE_CONFLICT", "attachment reference usage와 attachment kind가 다릅니다.", {
+        fail("DOCUMENT_REFERENCE_CONFLICT", "usageKindMismatch", {
           pointer: documentReference.pointer,
         });
       }
       const current = getPointer(canonicalProjectValue, documentReference.pointer);
       if (!current.found) {
-        fail("DOCUMENT_REFERENCE_MISSING", "attachment가 가리키는 프로젝트 위치를 찾을 수 없습니다.", {
+        fail("DOCUMENT_REFERENCE_MISSING", "pointerTargetMissing", {
           pointer: documentReference.pointer,
         });
       }
       const currentHash = studioProjectArchiveAssetSha256(current.value);
       if (documentReferenceMode(documentReference) === "sha256-prefixed") {
         if (current.value !== sha256Prefixed(attachment.sha256)) {
-          fail("DOCUMENT_REFERENCE_MISMATCH", "프로젝트의 SHA-256 참조가 attachment 바이트와 일치하지 않습니다.", {
+          fail("DOCUMENT_REFERENCE_MISMATCH", "sha256ReferenceMismatch", {
             pointer: documentReference.pointer,
           });
         }
       } else {
         if (currentHash && currentHash !== attachment.sha256) {
-          fail("DOCUMENT_REFERENCE_CONFLICT", "프로젝트 위치에 이미 다른 attachment가 연결되어 있습니다.", {
+          fail("DOCUMENT_REFERENCE_CONFLICT", "pointerAlreadyLinked", {
             pointer: documentReference.pointer,
           });
         }
         if (!setPointer(canonicalProjectValue, documentReference.pointer, assetUri(attachment.sha256))) {
-          fail("DOCUMENT_REFERENCE_MISSING", "attachment 프로젝트 위치를 갱신하지 못했습니다.", {
+          fail("DOCUMENT_REFERENCE_MISSING", "pointerUpdateFailed", {
             pointer: documentReference.pointer,
           });
         }
@@ -2222,13 +2168,13 @@ export async function buildStudioProjectArchive(
   for (const planned of surfacePaintPlan) {
     const source = context.attachments.get(planned.sha256);
     if (!source) {
-      fail("ATTACHMENT_MISSING", "VRM 표면 페인팅 PNG 바이트를 찾지 못했습니다.");
+      fail("ATTACHMENT_MISSING", "vrmPaintPngNotFound");
     }
     let bytes: Uint8Array;
     try {
       bytes = new Uint8Array(await source.blob.arrayBuffer());
     } catch {
-      fail("MIME_SIGNATURE_MISMATCH", "VRM 표면 페인팅 PNG 바이트를 읽지 못했습니다.");
+      fail("MIME_SIGNATURE_MISMATCH", "vrmPaintPngReadFailed");
     }
     await validateVrmSurfacePaintPng(planned, bytes);
   }
@@ -2240,7 +2186,7 @@ export async function buildStudioProjectArchive(
   let bg3dCumulativeBytes = 0;
   for (const planned of bg3dPlan.attachments) {
     const source = context.attachments.get(planned.sha256);
-    if (!source) fail("ATTACHMENT_MISSING", "3D 배경 GLB 바이트를 찾지 못했습니다.");
+    if (!source) fail("ATTACHMENT_MISSING", "bg3dGlbNotFound");
     const result = await validateBg3dArchiveGlb(
       planned,
       new Uint8Array(await source.blob.arrayBuffer()),
@@ -2277,7 +2223,7 @@ export async function buildStudioProjectArchive(
   const canonicalProjectJson = canonicalJson(canonicalProjectValue);
   const projectBytes = textEncoder.encode(canonicalProjectJson);
   if (projectBytes.byteLength > limits.maxProjectBytes) {
-    fail("PROJECT_SIZE_LIMIT", "content-addressed project.json 크기가 안전 한도를 넘었습니다.");
+    fail("PROJECT_SIZE_LIMIT", "contentProjectTooLarge");
   }
   const projectSha256 = await sha256Bytes(projectBytes);
   const finalizedAttachments = [...context.attachments.values()]
@@ -2305,7 +2251,7 @@ export async function buildStudioProjectArchive(
   const manifestJson = canonicalJson(manifest);
   const manifestBytes = textEncoder.encode(manifestJson);
   if (manifestBytes.byteLength > limits.maxManifestBytes) {
-    fail("MANIFEST_INVALID", "manifest.json 크기가 안전 한도를 넘었습니다.");
+    fail("MANIFEST_INVALID", "manifestTooLarge");
   }
   const mutableByHash = context.attachments;
   const entries = [
@@ -2313,7 +2259,7 @@ export async function buildStudioProjectArchive(
     { path: "project.json", data: projectBytes },
     ...finalizedAttachments.map((item) => {
       const source = mutableByHash.get(item.sha256);
-      if (!source) fail("ATTACHMENT_MISSING", "내부 attachment 데이터를 찾지 못했습니다.", { path: item.path });
+      if (!source) fail("ATTACHMENT_MISSING", "internalDataMissing", { path: item.path });
       return { path: item.path, data: source.blob };
     }),
   ];
@@ -2356,12 +2302,12 @@ function parseCanonicalJson<T>(
     text = fatalTextDecoder.decode(bytes);
     decoded = JSON.parse(text);
   } catch {
-    fail(code, `${label} JSON을 해석하지 못했습니다.`);
+    fail(code, "canonicalJsonParseFailed", {}, { label });
   }
   const parsed = schema.safeParse(decoded);
-  if (!parsed.success) fail(code, `${label} schema가 올바르지 않습니다.`);
+  if (!parsed.success) fail(code, "canonicalSchemaInvalid", {}, { label });
   if (canonicalJson(parsed.data) !== text) {
-    fail("CANONICAL_JSON_REQUIRED", `${label}이 canonical JSON 형식이 아닙니다.`);
+    fail("CANONICAL_JSON_REQUIRED", "notCanonical", {}, { label });
   }
   return parsed.data;
 }
@@ -2454,14 +2400,14 @@ function parseCanonicalProject(
     text = fatalTextDecoder.decode(bytes);
     decoded = JSON.parse(text);
   } catch {
-    fail("PROJECT_INVALID", "project.json을 해석하지 못했습니다.");
+    fail("PROJECT_INVALID", "projectJsonParseFailed");
   }
   if (!isRecord(decoded)) {
-    fail("CANONICAL_JSON_REQUIRED", "project.json이 canonical JSON 형식이 아닙니다.");
+    fail("CANONICAL_JSON_REQUIRED", "projectJsonNotCanonical");
   }
   assertDecodedProjectWithinLimits(decoded, limits);
   if (canonicalJson(decoded) !== text) {
-    fail("CANONICAL_JSON_REQUIRED", "project.json이 canonical JSON 형식이 아닙니다.");
+    fail("CANONICAL_JSON_REQUIRED", "projectJsonNotCanonical");
   }
   const sanitized = canonicalizeProjectValue(decoded, "", 0, {
     seen: new WeakSet(),
@@ -2470,16 +2416,13 @@ function parseCanonicalProject(
     nodes: 0,
   });
   if (!isRecord(sanitized) || canonicalJson(sanitized) !== text) {
-    fail(
-      "PROJECT_INVALID",
-      "project.json에 writer가 허용하지 않는 비공개 또는 비정규 필드가 포함되어 있습니다."
-    );
+    fail("PROJECT_INVALID", "projectJsonForbiddenField");
   }
   let stored: StudioProjectFile;
   try {
     stored = parseStudioProjectFile(sanitized);
   } catch {
-    fail("PROJECT_INVALID", "project.json이 ToonStudio 프로젝트 schema와 맞지 않습니다.");
+    fail("PROJECT_INVALID", "projectJsonSchemaMismatch");
   }
   const writerCanonical = canonicalizeProjectValue(stored, "", 0, {
     seen: new WeakSet(),
@@ -2503,10 +2446,7 @@ function parseCanonicalProject(
       && !writerMatchesHistoricalProjection
     )
   ) {
-    fail(
-      "PROJECT_INVALID",
-      "project.json이 현재 writer의 canonical 프로젝트 구조와 일치하지 않습니다."
-    );
+    fail("PROJECT_INVALID", "projectJsonStructureMismatch");
   }
   return { stored, value: sanitized };
 }
@@ -2531,9 +2471,9 @@ export async function importStudioProjectArchive(
   const zipEntries = await parseZipEntries(reader, limits);
   const byPath = new Map(zipEntries.map((entry) => [entry.path, entry]));
   const manifestEntry = byPath.get("manifest.json");
-  if (!manifestEntry) fail("MANIFEST_INVALID", "manifest.json이 없는 프로젝트 archive입니다.");
+  if (!manifestEntry) fail("MANIFEST_INVALID", "manifestMissing");
   if (manifestEntry.uncompressedBytes > limits.maxManifestBytes) {
-    fail("MANIFEST_INVALID", "manifest.json 크기가 안전 한도를 넘었습니다.");
+    fail("MANIFEST_INVALID", "manifestTooLarge");
   }
   const manifest = parseCanonicalJson(
     await readVerifiedEntry(reader, manifestEntry),
@@ -2545,22 +2485,22 @@ export async function importStudioProjectArchive(
   const expectedPaths = new Set(["manifest.json", manifest.project.path, ...manifest.attachments.map((item) => item.path)]);
   for (const path of expectedPaths) {
     if (!byPath.has(path)) {
-      fail(path === "project.json" ? "PROJECT_MISSING" : "ATTACHMENT_MISSING", "manifest가 선언한 파일이 archive에 없습니다.", { path });
+      fail(path === "project.json" ? "PROJECT_MISSING" : "ATTACHMENT_MISSING", "manifestDeclaredFileAbsent", { path });
     }
   }
   for (const path of byPath.keys()) {
-    if (!expectedPaths.has(path)) fail("UNEXPECTED_ENTRY", "manifest에 없는 파일이 archive에 포함되어 있습니다.", { path });
+    if (!expectedPaths.has(path)) fail("UNEXPECTED_ENTRY", "unexpectedEntry", { path });
   }
-  if (byPath.size !== manifest.totals.entryCount) fail("MANIFEST_INVALID", "manifest 파일 수 합계가 ZIP과 다릅니다.");
+  if (byPath.size !== manifest.totals.entryCount) fail("MANIFEST_INVALID", "entryCountDiffersFromZip");
 
   const projectEntry = byPath.get(manifest.project.path);
-  if (!projectEntry) fail("PROJECT_MISSING", "project.json이 없는 프로젝트 archive입니다.");
+  if (!projectEntry) fail("PROJECT_MISSING", "projectMissing");
   if (projectEntry.uncompressedBytes !== manifest.project.byteSize || projectEntry.uncompressedBytes > limits.maxProjectBytes) {
-    fail("PROJECT_SIZE_LIMIT", "project.json 크기가 manifest 또는 안전 한도와 다릅니다.");
+    fail("PROJECT_SIZE_LIMIT", "projectSizeDiffersFromManifest");
   }
   const projectBytes = await readVerifiedEntry(reader, projectEntry);
   if (await sha256Bytes(projectBytes) !== manifest.project.sha256) {
-    fail("HASH_MISMATCH", "project.json SHA-256 무결성 검사가 실패했습니다.", { path: manifest.project.path });
+    fail("HASH_MISMATCH", "projectHashFailed", { path: manifest.project.path });
   }
   const parsedProject = parseCanonicalProject(
     projectBytes,
@@ -2605,27 +2545,27 @@ export async function importStudioProjectArchive(
 
   for (const metadata of manifest.attachments) {
     const entry = byPath.get(metadata.path);
-    if (!entry) fail("ATTACHMENT_MISSING", "attachment 파일이 archive에 없습니다.", { path: metadata.path });
+    if (!entry) fail("ATTACHMENT_MISSING", "fileAbsent", { path: metadata.path });
     if (entry.uncompressedBytes !== metadata.byteSize) {
-      fail("ATTACHMENT_SIZE_LIMIT", "attachment 크기가 manifest와 다릅니다.", { path: metadata.path });
+      fail("ATTACHMENT_SIZE_LIMIT", "sizeDiffersFromManifest", { path: metadata.path });
     }
     const bytes = await readVerifiedEntry(reader, entry);
     if (await sha256Bytes(bytes) !== metadata.sha256) {
-      fail("HASH_MISMATCH", "attachment SHA-256 무결성 검사가 실패했습니다.", { path: metadata.path });
+      fail("HASH_MISMATCH", "attachmentHashFailed", { path: metadata.path });
     }
     if (!manifestMimeAllowed(metadata.mimeType, metadata.kinds)) {
-      fail("MIME_MISMATCH", "VRM attachment MIME 선언이 올바르지 않습니다.", { path: metadata.path });
+      fail("MIME_MISMATCH", "vrmMimeInvalid", { path: metadata.path });
     }
     const detectedKinds = new Set(metadata.kinds);
     for (const kind of metadata.kinds) {
       const detected = inspectAttachmentBytes(bytes, kind, metadata.mimeType, diagnostics);
       const vrmGlbAlias = metadata.kinds.includes("vrm") && (kind === "vrm" || kind === "glb");
       if (!vrmGlbAlias && metadata.mimeType !== detected) {
-        fail("MIME_MISMATCH", "attachment MIME 선언이 실제 파일과 다릅니다.", { path: metadata.path });
+        fail("MIME_MISMATCH", "declaredMimeDiffersFromFile", { path: metadata.path });
       }
     }
     if (attachmentPath(metadata.sha256, metadata.mimeType, detectedKinds) !== metadata.path) {
-      fail("PATH_INVALID", "attachment content-addressed 경로가 올바르지 않습니다.", { path: metadata.path });
+      fail("PATH_INVALID", "contentPathInvalid", { path: metadata.path });
     }
     const plannedSurfacePaint = surfacePaintPlanByHash.get(metadata.sha256);
     if (plannedSurfacePaint) {
@@ -2639,7 +2579,7 @@ export async function importStudioProjectArchive(
         ? sha256Prefixed(metadata.sha256)
         : assetUri(metadata.sha256);
       if (!current.found || current.value !== expected) {
-        fail("DOCUMENT_REFERENCE_MISMATCH", "project.json의 attachment 참조가 manifest와 다릅니다.", {
+        fail("DOCUMENT_REFERENCE_MISMATCH", "projectReferenceDiffersFromManifest", {
           path: metadata.path,
           pointer: reference.pointer,
         });
@@ -2654,7 +2594,7 @@ export async function importStudioProjectArchive(
           rehydratedDataUrl ??= `data:${metadata.mimeType};base64,${bytesToBase64(bytes)}`
         )
       ) {
-        fail("DOCUMENT_REFERENCE_MISMATCH", "프로젝트 data URL 참조를 복원하지 못했습니다.", {
+        fail("DOCUMENT_REFERENCE_MISMATCH", "dataUrlReferenceRestoreFailed", {
           path: metadata.path,
           pointer: reference.pointer,
         });
@@ -2704,7 +2644,7 @@ export async function importStudioProjectArchive(
   try {
     project = parseStudioProjectFile(rehydratedValue);
   } catch {
-    fail("PROJECT_INVALID", "attachment 복원 후 프로젝트가 studio-project-file 경계와 맞지 않습니다.");
+    fail("PROJECT_INVALID", "restoredProjectInvalid");
   }
   return {
     project,
