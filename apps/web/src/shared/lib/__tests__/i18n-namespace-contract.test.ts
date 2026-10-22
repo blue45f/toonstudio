@@ -79,6 +79,21 @@ const GUARDED_NEW_SURFACE_FILES = [
   "apps/web/src/domains/creator/bg3d/StudioBg3dOutlinerTagSection.tsx",
   "apps/web/src/domains/creator/bg3d/StudioBg3dSkpSidecarScopeNote.tsx",
   "apps/web/src/domains/creator/bg3d/studio-bg3d-organization-feedback.ts",
+  // 분기형 컷툰 실험 화면(branchingCuttoon 네임스페이스). 화면 문구는 키로만 쓴다. 사용자가 쓴 제목·라벨은 번역 원문이 아니라
+  // {자리표시} 값으로만 넘기고, 샘플 이야기도 키로 적는다.
+  "apps/web/src/domains/creator/branching-cuttoon/branching-cuttoon-copy.ts",
+  "apps/web/src/domains/creator/branching-cuttoon/branching-cuttoon-i18n.ts",
+  "apps/web/src/domains/creator/branching-cuttoon/branching-cuttoon-sample.ts",
+  "apps/web/src/domains/creator/branching-cuttoon/use-branching-t.ts",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingChoiceRow.tsx",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingCuttoonLabPage.tsx",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingCuttoonPlayer.tsx",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingCutRow.tsx",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingIssuePanel.tsx",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingNodeForm.tsx",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingNodeList.tsx",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingPlayerStates.tsx",
+  "apps/web/src/domains/creator/branching-cuttoon/BranchingTransferPanel.tsx",
 ];
 
 function readNamespaceSnapshot(namespace: string): I18nNamespaceSnapshot {
