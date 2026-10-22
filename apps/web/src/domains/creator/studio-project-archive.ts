@@ -678,14 +678,30 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return prototype === Object.prototype || prototype === null;
 }
 
+/**
+ * 한도 라벨 코드 (A4 D4 R13) — 생산자는 라벨 원문 대신 코드만 운반하고,
+ * 표시 라벨은 status-i18n 리졸버의 `studio.producerError.projectArchive.label.*` 키가 해석한다.
+ */
+type StudioProjectArchiveLimitLabelCode =
+  | "archive"
+  | "attachment"
+  | "attachmentTotal"
+  | "projectJson"
+  | "manifestJson"
+  | "attachmentCount"
+  | "referenceCount"
+  | "path"
+  | "jsonDepth"
+  | "jsonNodeCount";
+
 function resolvePositiveLimit(
   value: number | undefined,
   hardMaximum: number,
-  label: string
+  labelCode: StudioProjectArchiveLimitLabelCode
 ): number {
   if (value === undefined) return hardMaximum;
   if (!Number.isSafeInteger(value) || value <= 0 || value > hardMaximum) {
-    fail("ARCHIVE_INVALID", "limitInvalid", {}, { label });
+    fail("ARCHIVE_INVALID", "limitInvalid", {}, { labelCode });
   }
   return value;
 }
@@ -705,42 +721,42 @@ function resolveLimits(value: Partial<StudioProjectArchiveLimits> | undefined): 
     maxTotalAttachmentBytes: resolvePositiveLimit(
       value?.maxTotalAttachmentBytes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxTotalAttachmentBytes,
-      "attachment 합계"
+      "attachmentTotal"
     ),
     maxProjectBytes: resolvePositiveLimit(
       value?.maxProjectBytes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxProjectBytes,
-      "project.json"
+      "projectJson"
     ),
     maxManifestBytes: resolvePositiveLimit(
       value?.maxManifestBytes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxManifestBytes,
-      "manifest.json"
+      "manifestJson"
     ),
     maxAttachments: resolvePositiveLimit(
       value?.maxAttachments,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxAttachments,
-      "attachment 수"
+      "attachmentCount"
     ),
     maxReferences: resolvePositiveLimit(
       value?.maxReferences,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxReferences,
-      "문서 참조 수"
+      "referenceCount"
     ),
     maxPathBytes: resolvePositiveLimit(
       value?.maxPathBytes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxPathBytes,
-      "경로"
+      "path"
     ),
     maxDepth: resolvePositiveLimit(
       value?.maxDepth,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxDepth,
-      "JSON 깊이"
+      "jsonDepth"
     ),
     maxJsonNodes: resolvePositiveLimit(
       value?.maxJsonNodes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxJsonNodes,
-      "JSON 노드 수"
+      "jsonNodeCount"
     ),
   };
 }
