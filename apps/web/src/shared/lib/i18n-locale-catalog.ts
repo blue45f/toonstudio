@@ -161,7 +161,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "te": 0.2244,
   "th": 0.2209,
   "tr": 0.224,
-  "uk": 0.2248,
+  "uk": 0.8401,
   "ur": 0.2252,
   "uz": 0.2193,
   "vi": 0.2217,
