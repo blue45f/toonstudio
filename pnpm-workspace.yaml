@@ -99,10 +99,13 @@ overrides:
   'path-to-regexp@>=8.0.0 <8.4.2': 8.4.2
   serialize-javascript: '>=7.0.3'
   piscina: '>=4.9.3'
-  vitest: '4.1.11'
-  '@vitest/coverage-v8': '4.1.11'
-  '@vitest/ui': '4.1.11'
-  '@vitest/mocker@>=2.1.0 <4.1.11': 4.1.11
+  # GHSA-qxg6-89mg-rqv8(수동 모의 등록을 통한 코드 주입)·GHSA-xp26-3454-mjgp(Windows 역슬래시로 리다이렉트
+  # 허용 목록 우회): @vitest/mocker 4.1.12 에서 수정. 개발 전용이지만 audit:security 가 푸시를 막으므로
+  # vitest 계열을 같은 수정 릴리스로 올린다(coverage-v8 은 vitest 와 정확히 같은 버전이어야 한다).
+  vitest: '4.1.12'
+  '@vitest/coverage-v8': '4.1.12'
+  '@vitest/ui': '4.1.12'
+  '@vitest/mocker@>=2.1.0 <4.1.12': 4.1.12
   vite: '>=8.0.16'
   jspdf: '>=4.2.1'
   babylonjs-gltf2interface: '9.19.0'
