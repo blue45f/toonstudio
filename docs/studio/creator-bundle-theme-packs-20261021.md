@@ -8,24 +8,37 @@
 theme-packs.json을 재생성해 배치 가능은 5,303개로, 보류(deferred)는 11,721개로
 정정했다. 외부 참조 GLB는 텍스처 임베드 재익스포트가 끝나야 편입할 수 있다.
 
+2026-10-22 정정 2 (권리 게이트): 구매 번들의 서빙 판정을 코드 상수가 아니라 팩별 권리 원장
+(`config/creator-bundle-pack-rights.json`)으로 옮겼다. 원장의 기본값은 hold이고, 증빙이 없는
+팩은 allow가 될 수 없다. 생성기·배포 플래너·Worker가 같은 원장을 따라 fail-closed로 닫힌다
+("팩별 권리 원장" 절). 이 문서의 배치 가능 5,303개는 **원장 이전 스냅샷**이며, 원장을 적용해
+theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성"). 어떤 팩을 열지는 증빙 제출 뒤
+저장소 소유자가 정한다.
+
 ## 구조
 
 - 데이터: `apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json`
   - `scripts/generate-creator-bundle-theme-packs.mjs`가 인제스션 매니페스트 v2
-    (`toonstudio.asset-bundle.v2`)에서 생성한다. 수신 완료·런타임 가능(GLB) 에셋만
-    확정 데이터에 들어가고, 회수 중(부분 수신)인 팩은 `pendingPacks`로만 표기한다.
-    회수가 끝나면 재생성 한 번으로 자동 편입된다.
+    (`toonstudio.asset-bundle.v2`)와 권리 원장에서 생성한다. 수신 완료·런타임 가능(GLB)이고
+    **원장이 allow한** 에셋만 확정 데이터에 들어간다. 회수 중(부분 수신)·귀속 불확정 팩과
+    원장 hold·미등록 팩은 `pendingPacks`로만 표기한다(원장 사유는 `reason: "rights-hold"`).
+    회수가 끝나거나 원장이 allow로 바뀌면 재생성 한 번으로 편입된다.
+  - 허용된 팩의 `packs[].rights`는 원장이 주는 팩별 권리 요약(`serve`, `status`, `licenseName`,
+    `commercialUse`, `attributionRequired`)이다. 증빙 경로·사유 같은 내부 기록은 싣지 않는다.
   - 배치 가능 판정은 bg3d 모바일 검증 예산(바이트·노드·삼각형·드로우콜·머티리얼·
     텍스처·애니메이션·스킨)을 GLB 헤더 실측으로 적용한 결과다. 예산 초과·쌍둥이
     GLB 없음(FBX/glTF 단독)은 `deferred`로 집계해 패널에 사유와 함께 보여준다.
   - 프리빌트 프리셋은 단독 병합 GLB(스토어형 변형)만 쓴다. 데모 씬 파일
     (.unity/.tscn)은 런타임에서 읽을 수 없어 프리셋으로 만들지 않는다.
   - 배경 군중 캐릭터 팩은 배치 가능 에셋에 넣지 않고 `crowdPacks`(렌더 전용)로
-    분리한다. 셰이퍼 마네킹과 혼합하지 않는다.
+    분리한다. 셰이퍼 마네킹과 혼합하지 않는다. Characters 1/2의 제작사는 RG Poly이고 id는
+    공식 카탈로그의 `cbv1-003-cartoon-characters-1`·`cbv1-007-cartoon-characters-2`다
+    (2026-10-22 정정: 생성기가 EmaceArt·`characters-N`으로 적고 있었다).
 - 코드:
   - `studio-bg3d-bundle-theme-packs.ts` — 스키마·엄격 파서·캐시 로더·조회.
     파서는 `inServiceOnly: true`/`downloadable: false` 선언이 없거나 다운로드
-    동선 필드(`downloadUrl` 등)가 있으면 데이터 전체를 거부한다.
+    동선 필드(`downloadUrl` 등)가 있으면 데이터 전체를 거부한다. `packs[].rights`가 있으면
+    `serve: "allow"`인 경우만 받아들인다.
   - `studio-bg3d-bundle-asset-loader.ts` — 배포 바이트 로더 + 검증 레코드 해석.
     검증 준비 함수(`prepareVerifiedBg3dModelRecord`)는 순환 import를 피하려고
     모델 라이브러리가 주입한다.
@@ -36,13 +49,47 @@ theme-packs.json을 재생성해 배치 가능은 5,303개로, 보류(deferred)�
     번들 해석으로 폴백하고, 해시 해석 2곳과 첨부 출처 판정
     (`resolveStudioBg3dModelAttachmentSource` → `"bundled"`)에도 번들을 편입했다.
 
+## 팩별 권리 원장
+
+- 위치·형식: `config/creator-bundle-pack-rights.json` (`toonstudio.creator-bundle-pack-rights.v1`).
+  검증·조회는 `scripts/lib/creator-bundle-pack-rights.mjs`가 맡는다.
+- 범위: 생성기의 팩 42 · 군중 팩 5 · 보류 팩 14, 모두 61개. 라이선스 문서 79개를 sha256 33종으로
+  분류한 표(`licenseTexts`)와 팩별 항목(`packs`)을 가진다. zip 안에 든 사본 17개는
+  `archivedFiles`에 따로 적는다.
+- 판정: 항목마다 `serve`가 `hold`(기본) 또는 `allow`다. 원장에 없는 팩은 hold와 같다.
+- allow 조건: 팩의 라이선스 분류가 요구하는 증빙을 전부 갖춰야 한다. 요구 표는 코드
+  (`ALLOW_EVIDENCE_REQUIREMENTS`)에 있고 검증기와 서빙 판정이 같은 함수를 쓴다.
+
+  | 분류 | allow에 필요한 증빙 |
+  | --- | --- |
+  | `cc0-explicit` | 번들 안 라이선스 문서(`local-license-file`) |
+  | `cc0-text-copied` | itch 팩 페이지 캡처 |
+  | `cc0-with-standalone-ban`, `proprietary-rg-poly` | 제작사 서면 확인 |
+  | `unstated-rg-poly` | itch 팩 페이지 캡처 + 구매 영수증 |
+  | `emaceart-local-license` | 구매 영수증 + 제작사 서면 확인 |
+  | `unstated-emaceart` | itch 팩 페이지 캡처 + 구매 영수증 + 제작사 서면 확인 |
+
+  제작사 서면 확인은 웹 서비스 안 서빙(`web-service-hosting`)을 다룰 때만 인정한다. 에이전트의 2차
+  조회 기록(`secondary-lookup`)은 기록만 남고 어떤 요구도 채우지 못한다. 라이선스 문서 33종
+  어느 것도 웹 서비스 호스팅·하위 사용자를 다루지 않는다.
+- 시드(2026-10-22): 61개 전부 hold. Cute Dungeon Megapack만 요구 증빙(CC0 문서)을 이미 갖춰 allow로
+  바꿀 수 있고, 권고 hold 3팩(Restaurant 1,023 · Medieval 1,265 · Small Props 342)은 서면 확인 전까지
+  제외한다. 이 구분은 증빙 상태를 기록한 것이며 개방 결정은 소유자에게 있다.
+- 팩 귀속 주의: 인제스션 id의 원본 파일이 라이브러리에서 다른 팩 폴더로 분류된 팩 5개(Asia Megapack,
+  NecroPOLY, Fences and Walls, PixelDrift Metro FREE, Low Poly Tiny Forest)는 두 경로의 증빙을
+  합쳐 기록하고 항목의 `mappingNote`에 이유를 적었다. 소유자 확인이 필요하다.
+- 증빙 재검증: `pnpm run verify:creator-bundle-pack-rights -- --library-root <라이브러리 루트>`가 원장
+  검증, 팩별 부족 증빙 요약, 로컬 라이선스 문서 해시 재대조를 한다.
+
 ## 라이선스 구조 (서비스 안에서만 사용)
 
 - 에셋 파일 다운로드/내보내기 경로는 신설하지 않는다. 패널에는 추가(배치)
   동선만 있고, 장면은 에셋 id·콘텐츠 해시 참조로 저장된다. 밖으로 나가는 것은
   렌더된 이미지뿐이다.
-- 레코드 권리는 `licensed / commercialUse: true / attributionRequired: false`,
-  라이선스명은 "Creator Bundle: Volume 1 (EmaceArt · RG Poly)"로 고정한다.
+- 레코드 권리는 팩별이다. 로더는 `packs[].rights`를 `StudioBg3dAttachmentRights`로 옮기고
+  (`status`는 `licensed` 또는 `public-domain`, 라이선스명은 팩별), `rights`가 없는 팩(원장 이전
+  스냅샷 데이터)은 `unknown`·`commercialUse: false`로 닫는다. 예전의 전 팩 일괄
+  `licensed / commercialUse: true` 상수는 없앴다.
 - GLB 실파일은 매니페스트 v2 서빙 루트(`/assets/studio/bundle-v2/`)에서 참조로
   서빙된다 (다포맷 설계 문서 `asset-multiformat-native-support-design-20261020.md`와
   같은 루트).
@@ -58,33 +105,54 @@ node scripts/generate-creator-bundle-theme-packs.mjs \
   --manifest-v2 <manifest-v2.json 경로> \
   [--asset-root <파일 트리 루트>] \
   [--themes <bundle-v1 manifest 경로>] \
-  [--out <출력 경로>] [--dry-run]
+  [--out <출력 경로>] \
+  [--pack-rights <권리 원장 경로>] [--dry-run]
 ```
 
 `--asset-root` 기본값은 `manifest-v2.json`이 있는 폴더, `--themes`와 `--out`의
-기본값은 각각 bundle-v1 `manifest.json`과 같은 폴더의 `theme-packs.json`이다.
+기본값은 각각 bundle-v1 `manifest.json`과 같은 폴더의 `theme-packs.json`,
+`--pack-rights`의 기본값은 `config/creator-bundle-pack-rights.json`이다.
 생성기는 실물 파일의 sha256을 전수 대조해 매니페스트와 어긋나는 에셋을 제외하고,
-그 건수를 실행 로그에 남긴다.
+그 건수를 실행 로그에 남긴다. 원장이 팩 정의를 덮지 못하거나 증빙 없는 allow가 있으면 아무것도
+쓰지 않고 종료 코드 2로 닫는다.
+
+원장을 적용한 재생성은 팩 순서를 바꾼다. `packIndex`로 팩을 가리키는 장르 씬팩 연결
+(`studio-bg3d-genre-scene-pack-links.ts`)과 그 대조 테스트(배치 가능 5,303 · 연결 합계 1,477)는
+같은 변경에서 갱신해야 한다. 이 변경에서는 소유자 트리가 필요한 실데이터 재생성을 하지 않았으므로
+커밋된 theme-packs.json은 원장 이전 스냅샷이다(Characters 1/2의 제작사·id만 정정).
 
 ## 배포 (bundle-v2 → R2) — migration (2026-10-22 레포 측 완성, 실배포는 소유자 실행 대기)
 
-- 서빙 경로: `/assets/studio/bundle-v2/<theme-packs 에셋 path>`. 실물은 레포·
+- 서빙 경로: `/assets/studio/bundle-v2/<sha256>.glb`. 실물은 레포·
   Static Assets가 아니라 R2 버킷 `toonspectrum-public-assets`에만 두고,
   Cloudflare Static Worker가 바인딩(`LARGE_ASSETS`)으로 서빙한다
   (`deploy/cloudflare-static/src/large-static-assets.ts`의 bundle-v2
   디스크립터 + `wrangler.jsonc`의 run_worker_first `/assets/studio/bundle-v2/*`).
-  파일명에 공백·`+`·`&`가 있어 요청 URL은 조각별 퍼센트 인코딩으로 도착하고,
-  Worker는 조각마다 디코드한 값을 R2 키로 쓴다 (로더의
-  `studioBg3dBundleAssetUrl` 인코딩과 대칭).
-- 객체 목록 정본: `deploy/cloudflare-static/bundle-v2-deploy-manifest.json`
-  (2026-10-22 산출: GLB 5,303개·588,132,208바이트 + 배포 인덱스 1개 =
-  5,304객체·588,132,367바이트). `scripts/plan-creator-bundle-deploy.mjs`가
-  theme-packs와 실물 트리를 전수 대조(실재·바이트·sha256·외부 uri 게이트)해
-  재생성한다. GLB 중 1개(35.5MiB 프리셋)가 Static Assets 파일 상한(25MiB)을
+- 키는 에셋 sha256의 내용 주소 키다. 원본 폴더·파일명이 URL에 들어가지 않고, 같은 바이트는 한
+  객체로 합쳐지며, 내용이 바뀌면 키가 바뀌므로 immutable 1년 캐시가 안전하다. theme-packs.json이
+  sha256을 공개하므로 키는 공개 데이터에서 계산된다. 불투명 키는 URL 추측·열거를 어렵게 하는
+  핫링크 억제책일 뿐 법적 허락이 아니다. 키 방식 확정은 첫 업로드 전에만 비용이 0이라 소유자
+  결정 대기 항목이다.
+- Worker 가드: bundle-v2 경로(GLB와 배포 인덱스)에만 교차 출처 CORS를 열지 않는다. 브라우저가
+  보낸 `Sec-Fetch-Site`가 `same-origin`이 아니면(`same-site`·`cross-site`·`none` 포함) R2에 닿기
+  전에 403 `BUNDLE_ASSET_SAME_ORIGIN_ONLY`로 거부하고, 헤더가 없는 호출(curl·구형 브라우저)은
+  허용한다. 응답은 `access-control-allow-origin`을 달지 않고 `Vary: Sec-Fetch-Site`를 붙인다.
+  다른 R2 경로(wasm·onnx·CC0 GLB·투어 영상)의 응답은 그대로다. 접근 통제가 아니라 브라우저
+  경유 핫링크·임베드·주소창 직접 열기를 막는 억제책이며, 헤더를 생략하는 클라이언트는 막지 못한다.
+- 플래너는 권리 원장에서 allow인 팩의 에셋만 계획에 넣는다. hold·미등록 팩의 에셋은 실물을
+  읽지 않고 제외하며, 제외 에셋이 생기면(theme-packs가 원장보다 오래됨) 경고하고 `--production`을
+  거부한다. 허용된 에셋이 하나도 없으면 `--write`·`--production`을 거부한다.
+- 객체 목록 기록: `deploy/cloudflare-static/bundle-v2-deploy-manifest.json`은 2026-10-22 산출
+  스냅샷(GLB 5,303개·588,132,208바이트 + 배포 인덱스 1개 = 5,304객체·588,132,367바이트)이며
+  원본 경로 키·hold 팩 객체를 포함하는 **원장 이전 기록**이다. 업로드의 입력이 아니므로(업로드는
+  실행 때마다 새 계획을 만든다) 재생성 전까지 참고용으로만 쓴다.
+  `scripts/plan-creator-bundle-deploy.mjs`가 theme-packs와 실물 트리를 전수 대조(실재·바이트·sha256·
+  외부 uri 게이트)해 재생성한다. GLB 중 1개(35.5MiB 프리셋)가 Static Assets 파일 상한(25MiB)을
   넘는 것도 R2 단일 경로를 택한 이유다.
 - 완료 신호: 배포 인덱스 `assets/studio/bundle-v2/manifest.json`은 업로드
   마지막 객체로만 올라간다. 패널은 이 인덱스의 files/bytes 합계가 테마 팩
   데이터와 맞을 때만 배치를 열고, 아니면 "배포 미완료" 빈 상태를 보여준다.
+  인덱스는 `keyScheme: "sha256"`·`objects`·`objectBytes`도 싣는다.
 - 실행 (승인 주체: 저장소 소유자, 입력: 인제스션 v2 산출 트리가 있는 기기와
   wrangler 로그인):
 
@@ -103,3 +171,15 @@ pnpm run deploy:creator-bundle-assets -- --asset-root <output-v2 트리>
   패널은 자동으로 미배포 상태로 남는다 (부분 업로드가 배치 가능으로
   오인되지 않는다). 롤백은 R2 객체 삭제가 아니라 인덱스 객체 삭제만으로
   배치를 닫을 수 있다.
+- 배포 후 스모크(Worker 반영 뒤): `Sec-Fetch-Site: cross-site`로 GLB를 요청해 403,
+  헤더 없이 요청해 200(ACAO 없음, `Vary: Sec-Fetch-Site` 있음)임을 확인한다.
+
+## 소유자 결정 대기 (이 변경이 정하지 않는 것)
+
+- 제작사 서면 확인 발송 여부와 내용(Q1 웹 서비스 안 GLB 서빙, Q2 직접 URL 접근이 독립 파일
+  재배포인지, Q3 변환·WebP 파생 GLB 호스팅, Q4 유료 멤버십 포함, Q5 다수 사용자).
+- itch 번들 영수증·약관, 팩 페이지 캡처(조회일 포함) 제공.
+- hold 팩 최종 확정. 권고는 Restaurant 1,023 · Medieval 1,265 · Small Props 342를 서면 확인 전까지
+  제외하는 것이다.
+- R2 키 불투명화 최종 확정, 텍스처 교정 범위와 손실 허용선, theme-packs 캐시 정책, 번들 총량 상한.
+- `ASSET-INVENTORY.md` §3 정책 개정(제안만 기록됨).

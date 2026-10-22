@@ -20,6 +20,7 @@
 | 스크린톤/톤 | `screentone/`, `studio-tones.ts`, `StudioTonePanel.tsx` | 다수 | 프로젝트 원본 | 도트/선 스크린톤 엔진 |
 | 브러시 엔진 | `studio-brush*.ts`, `brush/`, `brush-lab/` | 다수 | 프로젝트 원본 | 별도 브러시 팀 담당 |
 | 가상공간 캐릭터 | `virtual-space/studio-virtual-space-character-assets.ts` | 다수 | 프로젝트 원본 | 스프라이트 시스템 연동 |
+| Creator Bundle 3D 테마 팩 (2026-10-22 추가) | `apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json` + R2 `bundle-v2` | 팩 42 · 배치 가능 5,303 (원장 이전 스냅샷) | 구매 라이선스(EmaceArt · RG Poly), 팩별 상이 — CC0가 아님 | 서비스 내 전용. 서빙 판정은 팩별 권리 원장(`config/creator-bundle-pack-rights.json`), 기본값 hold. 아래 §3 |
 
 **합계: 배경 61종(9+28+24+8신규), 소재 192종, FX 61종, 텍스처 8종(신규), 캐릭터/소품/가이드 38종+**
 
@@ -70,6 +71,38 @@
 - 유료/저작권 불명 에셋 무단 사용 금지
 - 신규 절차적 에셋은 전부 프로젝트 원본 벡터 (외부 아트/폰트/이모지 없음)
 - 사용자의 자체 원본 JPG 9종은 손대지 않음
+
+### 3.1 사실 정정 (2026-10-22): 구매 번들 예외가 이미 코드에 들어 있다
+위 원칙은 CC0 카탈로그(§2.1~2.2) 기준이다. 저장소에는 이 원칙의 밖에 itch.io 구매 번들 「Creator Bundle:
+Volume 1」(EmaceArt · RG Poly)의 3D 에셋 배선이 이미 있다(`docs/studio/creator-bundle-theme-packs-20261021.md`).
+이 번들은 CC0가 아니라 팩별로 다른 구매 라이선스이며, 「서비스 안에서만 사용, 원본 모델 다운로드·내보내기
+미제공」 구조로만 쓴다. `THIRD_PARTY_NOTICES.md`(생성 문서)에는 번들 항목이 없다.
+
+팩별 로컬 라이선스 문서 현황(라이브러리 `~/3d-asset-library` 기준, 79개 문서 → sha256 33종):
+- EmaceArt: 팩 안 문서는 개인·상업 사용을 허용하고 판매·독립 파일·다른 팩 안 재배포를 금지하거나 부탁한다.
+  「앱에 포함해 배포」를 명시한 변형은 The80s·PixelDrift Metro·SlavicWorldFree 계열뿐이다. **웹 서비스
+  호스팅·하위 사용자는 어느 변형도 허용도 금지도 하지 않으며**, 일부 변형은 수정본에도 같은 제한을 적어
+  변환·재압축이 면책이 되지 않는다. 풀팩 문서가 없고 무료판 문서만 있는 팩이 있다(Slavica 등).
+- RG Poly: 이전 인벤토리의 「RG Poly 대형 팩은 로컬 라이선스 없음」은 Restaurant와 Medieval에 한해
+  틀렸다. Cute Dungeon은 CC0 문서가 있고, Cute Park의 문서는 Dungeon 것을 복사한 파일이라 귀속
+  재확인이 필요하며, Small Props는 CC0 표기와 「독립 항목으로 다운로드 제공 금지」가 함께 있어
+  자기모순이다. Restaurant의 `RG POLY License.odt`는 CC0가 아니고 모델의 있는 그대로의 공개 게시·재배포와
+  경쟁 라이브러리 제작을 금지하며 완성 프로젝트의 일부로만 배포를 허용한다. Medieval Megapack의
+  License.txt는 Small Props 템플릿이다. 반면 City·Nature·Farm·Pirate·Aztec·Characters 등은 로컬 문구가
+  없고 itch 팩 페이지의 CC0 표기(2차 조회)에만 기댄다.
+- itch 번들 약관과 구매 영수증은 읽지 못했다(확인 필요).
+
+운영 방식: 팩별 서빙 판정은 권리 원장(`config/creator-bundle-pack-rights.json`)의 `serve: hold | allow` 한 줄이며
+기본값은 hold다. 증빙(라이선스 문서·itch 팩 페이지 캡처·구매 영수증·제작사 서면 확인)을 요구 표대로 갖춘
+팩만 allow가 될 수 있고, 생성기·배포 플래너·Worker가 이를 따른다. 로컬 변환·검증·QA 렌더는 어느 팩이든
+할 수 있으나 공개 R2 업로드는 팩 단위 게이트를 지난 팩만 한다.
+
+### 3.2 제안 (소유자 결정 대기 — 적용하지 않음)
+위 §3의 「CC0-1.0만 허용」을 다음처럼 개정하는 안이다. 소유자가 정하기 전까지 §3 본문은 바꾸지 않는다.
+- 외부 에셋은 CC0-1.0, 또는 **팩별 증빙을 갖춘 구매 번들 예외**(서비스 내 전용, 다운로드·내보내기 없음,
+  권리 원장 allow)만 허용한다.
+- 함께 정할 것: 번들 GLB의 공개 서빙 자체를 허용할지, 서빙을 이 선언에 맞춰 동일 출처·불투명 키로
+  제한할지(현재 구현은 후자), `THIRD_PARTY_NOTICES`에 번들 항목을 둘지.
 
 ## 4. 남은 작업 (후속)
 - [ ] `titleKo`를 UI에 표시 (`MaterialAtlasPage` 등에서 `titleKo ?? title`)
