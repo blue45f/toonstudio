@@ -1,23 +1,8 @@
-import {
-  STUDIO_PROJECT_ARCHIVE_LIMITS,
-  type StudioProjectArchiveDocumentReference,
-  type StudioProjectArchiveImportedAttachment,
-  type StudioProjectArchiveManifest,
-  type StudioProjectArchiveManifestAttachment,
-  type StudioProjectArchiveAttachmentInput,
-  type StudioProjectArchiveLimits,
-} from "../studio-project-archive";
-import {
-  parseStudioProjectFile,
-  type StudioProjectFile,
-} from "../studio-project-file";
+import { STUDIO_PROJECT_ARCHIVE_LIMITS, type StudioProjectArchiveDocumentReference, type StudioProjectArchiveImportedAttachment, type StudioProjectArchiveManifest } from "../studio-project-archive";
+import type { StudioProjectArchiveManifestAttachment, StudioProjectArchiveAttachmentInput, StudioProjectArchiveLimits } from "../studio-project-archive";
+import { parseStudioProjectFile, type StudioProjectFile } from "../studio-project-file";
 
-import {
-  STUDIO_VRM_SCENE_DOCUMENT_KIND,
-  parseStudioVrmSceneDocument,
-  serializeStudioVrmSceneDocument,
-  type StudioVrmSurfacePaintTexture,
-} from "./studio-vrm-scene-document";
+import { STUDIO_VRM_SCENE_DOCUMENT_KIND, parseStudioVrmSceneDocument, serializeStudioVrmSceneDocument, type StudioVrmSurfacePaintTexture } from "./studio-vrm-scene-document";
 import {
   STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_KIND,
   STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME,
@@ -35,14 +20,7 @@ import {
 // 집계 경계라, 그 함수 내부에서만 아래 리졸버로 해석한다. 그 밖의 생산자는 코드를
 // 그대로 방출하고 표시 지점(오케스트레이션 런타임)에서 해석한다.
 import { resolveStudioVrmPaintLibraryNotice } from "../status-i18n/studio-producer-error-i18n-vrm-paint";
-import {
-  StudioVrmTexturePaintLibraryError,
-  deleteStudioVrmTexturePaintLibraryCreationBatchIfMatches,
-  getStudioVrmTexturePaintLibraryArtifact,
-  saveStudioVrmTexturePaintLibraryArtifact,
-  type StudioVrmTexturePaintLibraryCreationReceipt,
-  type StudioVrmTexturePaintLibraryOptions,
-} from "./studio-vrm-texture-paint-library";
+import { StudioVrmTexturePaintLibraryError, deleteStudioVrmTexturePaintLibraryCreationBatchIfMatches, getStudioVrmTexturePaintLibraryArtifact, saveStudioVrmTexturePaintLibraryArtifact, type StudioVrmTexturePaintLibraryCreationReceipt, type StudioVrmTexturePaintLibraryOptions } from "./studio-vrm-texture-paint-library";
 
 /**
  * Project/archive bridge for content-addressed VRM surface-paint PNGs.
@@ -68,17 +46,9 @@ export interface StudioVrmTexturePaintProjectLibraryDiagnostic {
 }
 
 export type StudioVrmTexturePaintProjectLibraryErrorCode =
-  | "ABORTED"
-  | "ARCHIVE_METADATA_CONFLICT"
-  | "ARTIFACT_VERIFICATION_FAILED"
-  | "CANONICAL_SCENE_FINGERPRINT_MISMATCH"
-  | "CRYPTO_UNAVAILABLE"
-  | "LIBRARY_INSTALL_FAILED"
-  | "LIBRARY_READ_FAILED"
-  | "PROJECT_INVALID"
-  | "PROJECT_LIMIT_EXCEEDED"
-  | "SCENE_INVALID"
-  | "SURFACE_PAINT_METADATA_CONFLICT";
+  | "ABORTED" | "ARCHIVE_METADATA_CONFLICT" | "ARTIFACT_VERIFICATION_FAILED" | "CANONICAL_SCENE_FINGERPRINT_MISMATCH"
+  | "CRYPTO_UNAVAILABLE" | "LIBRARY_INSTALL_FAILED" | "LIBRARY_READ_FAILED" | "PROJECT_INVALID"
+  | "PROJECT_LIMIT_EXCEEDED" | "SCENE_INVALID" | "SURFACE_PAINT_METADATA_CONFLICT";
 
 /**
  * D4 구조화 방출 (R14, 2026-10-23): 생산자는 표시 문구 대신 구조화 코드를 방출한다.
@@ -112,9 +82,7 @@ export class StudioVrmTexturePaintProjectLibraryError extends Error {
     readonly params?: Readonly<Record<string, string>>,
   ) {
     super(detailCode, options);
-    this.name = code === "ABORTED"
-      ? "AbortError"
-      : "StudioVrmTexturePaintProjectLibraryError";
+    this.name = code === "ABORTED" ? "AbortError" : "StudioVrmTexturePaintProjectLibraryError";
   }
 }
 

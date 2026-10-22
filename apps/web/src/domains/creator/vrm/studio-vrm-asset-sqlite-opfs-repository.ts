@@ -8,25 +8,10 @@
  */
 
 import { acquireStudioLocalDatabase } from "../studio-local-database-runtime";
-import {
-  createStudioOpfsAssetStore,
-  type StudioOpfsAssetStore,
-  type StudioOpfsDigest,
-  type StudioOpfsPutResult,
-} from "../studio-opfs-asset-store";
-import {
-  createStudioOpfsNativeFileSystem,
-  isStudioOpfsError,
-  type StudioOpfsFileSystem,
-  type StudioOpfsStorageManagerLike,
-} from "../studio-opfs-filesystem";
+import { createStudioOpfsAssetStore, type StudioOpfsAssetStore, type StudioOpfsDigest, type StudioOpfsPutResult } from "../studio-opfs-asset-store";
+import { createStudioOpfsNativeFileSystem, isStudioOpfsError, type StudioOpfsFileSystem, type StudioOpfsStorageManagerLike } from "../studio-opfs-filesystem";
 
-import {
-  STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_KIND,
-  STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME,
-  STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_SCHEMA_VERSION,
-  type StudioVrmTexturePaintArtifactMetadata,
-} from "./studio-vrm-texture-paint-artifact";
+import { STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_KIND, STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_MIME, STUDIO_VRM_TEXTURE_PAINT_ARTIFACT_SCHEMA_VERSION, type StudioVrmTexturePaintArtifactMetadata } from "./studio-vrm-texture-paint-artifact";
 
 import type { StudioLocalDatabase } from "../studio-local-database";
 
@@ -277,14 +262,7 @@ export interface StudioVrmAssetCleanupResult {
 }
 
 export type StudioVrmAssetRepositoryErrorCode =
-  | "aborted"
-  | "closed"
-  | "conflict"
-  | "corrupt"
-  | "invalid"
-  | "limit"
-  | "missing"
-  | "unavailable";
+  | "aborted" | "closed" | "conflict" | "corrupt" | "invalid" | "limit" | "missing" | "unavailable";
 
 /**
  * D4 구조화 방출 (R14, 2026-10-23): 한글 표시 대상 방출에만 세부 코드를 부착한다.
@@ -293,11 +271,7 @@ export type StudioVrmAssetRepositoryErrorCode =
  * 영문 fail 방출은 세부 코드 없이 기존 메시지를 유지한다(범위 밖).
  */
 export type StudioVrmAssetRepositoryDetailCode =
-  | "aborted"
-  | "database-open-failed"
-  | "delete-conflict"
-  | "opfs-unavailable"
-  | "thumbnail-base64-unavailable";
+  | "aborted" | "database-open-failed" | "delete-conflict" | "opfs-unavailable" | "thumbnail-base64-unavailable";
 
 export class StudioVrmAssetRepositoryError extends Error {
   readonly code: StudioVrmAssetRepositoryErrorCode;
