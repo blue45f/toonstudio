@@ -40,7 +40,7 @@
   "revenue.settlement.pgFee": "Frais de paiement (3.3%)",
   "revenue.settlement.platformFee": "Frais de plateforme ({rate}%)",
   "revenue.settlement.policyNote": "Même politique que le règlement du marché. Versements à partir de {min} ; taux de prélèvement net {rate}%.",
-  "revenue.settlement.requestPayout": "Request payout",
+  "revenue.settlement.requestPayout": "Demander un versement (en préparation)",
   "revenue.settlement.title": "Règlement",
   "revenue.settlement.withholdingTax": "Retenue à la source (3.3%)",
   "revenue.source.custom": "Autre",

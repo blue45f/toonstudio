@@ -42,7 +42,7 @@
   "revenue.settlement.pgFee": "支付手续费 (3.3%)",
   "revenue.settlement.platformFee": "平台手续费 ({rate}%)",
   "revenue.settlement.policyNote": "与市场结算采用相同政策。满 {min} 起可提现；实际到账比例为 {rate}%。",
-  "revenue.settlement.requestPayout": "Request payout",
+  "revenue.settlement.requestPayout": "申请提现（准备中）",
   "revenue.settlement.title": "待结算",
   "revenue.settlement.withholdingTax": "预扣税 (3.3%)",
   "revenue.source.custom": "其他",
