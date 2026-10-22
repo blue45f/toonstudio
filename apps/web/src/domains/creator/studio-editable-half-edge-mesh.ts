@@ -9,6 +9,7 @@
  */
 
 import { hashStudioEditableMeshAuthority } from "./studio-editable-mesh-authority-digest";
+import { bevelEditableMeshEdges } from "./hybrid-dcc/studio-editable-mesh-bevel";
 
 export const STUDIO_EDITABLE_MESH_REVISION = 1 as const;
 
@@ -1603,173 +1604,26 @@ export function insetStudioEditableMeshFaces(
 }
 
 /**
- * Bevel selected edges with topology change (MOD-006).
- * Manifold edge with two faces: insert four offset verts + one chamfer face (segments=1).
- * Cube one-edge bevel: 8v/6f → 12v/7f.
+ * Bevel (chamfer, one segment) selected edges (MOD-006). The algorithm, the topology it produces (cube, one edge:
+ * 8v/6f/12e -> 10v/7f/15e) and the inputs it rejects instead of returning an open mesh live in
+ * `studio-editable-mesh-bevel.ts`.
  */
 export function bevelStudioEditableMeshEdges(
   mesh: StudioEditableMesh,
   halfEdgeIds: readonly number[],
   amount: number,
 ): StudioEditableMeshResult<StudioEditableMesh> {
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return fail("invalid-parameter", "amount must be > 0");
-  }
-  if (halfEdgeIds.length === 0) return fail("empty-selection", "no edges");
-
-  const t = Math.min(0.49, Math.max(0.01, amount));
-  const idMap = new Map(mesh.vertices.map((v, i) => [v.id, i] as const));
-  const positions: StudioMeshVec3[] = mesh.vertices.map((v) => v.position);
-  const faceLoops: number[][] = mesh.faces.map((face) =>
-    faceLoopVertexIds(mesh, face.id).map((id) => idMap.get(id)!),
+  return bevelEditableMeshEdges(
+    {
+      faceLoopVertexIds,
+      createMeshFromPolygons: createStudioEditableMeshFromPolygons,
+      meshStats: studioEditableMeshStats,
+      areaEpsilon: STUDIO_EDITABLE_MESH_LIMITS.areaEpsilon,
+    },
+    mesh,
+    halfEdgeIds,
+    amount,
   );
-
-  // Undirected selected edges (by original vertex ids)
-  const undirected = new Set<string>();
-  for (const heId of halfEdgeIds) {
-    const he = mesh.halfEdges.find((h) => h.id === heId);
-    if (!he) return fail("not-found", `he ${heId}`);
-    const a = mesh.halfEdges[he.prev]!.vertex;
-    const b = he.vertex;
-    undirected.add(a < b ? `${a}|${b}` : `${b}|${a}`);
-  }
-
-  const newFaces: number[][] = [];
-
-  for (const key of undirected) {
-    const [aIdStr, bIdStr] = key.split("|");
-    const aOrig = Number(aIdStr);
-    const bOrig = Number(bIdStr);
-    const aIdx = idMap.get(aOrig);
-    const bIdx = idMap.get(bOrig);
-    if (aIdx === undefined || bIdx === undefined) {
-      return fail("topology-failed", "bevel edge vertices missing");
-    }
-
-    // Find faces that contain directed edge a→b or b→a
-    type Hit = { faceIndex: number; dir: "ab" | "ba"; prev: number; next: number };
-    const hits: Hit[] = [];
-    for (let fi = 0; fi < faceLoops.length; fi += 1) {
-      const loop = faceLoops[fi]!;
-      for (let i = 0; i < loop.length; i += 1) {
-        const u = loop[i]!;
-        const v = loop[(i + 1) % loop.length]!;
-        const prev = loop[(i + loop.length - 1) % loop.length]!;
-        const next = loop[(i + 2) % loop.length]!;
-        if (u === aIdx && v === bIdx) {
-          hits.push({ faceIndex: fi, dir: "ab", prev, next });
-        } else if (u === bIdx && v === aIdx) {
-          hits.push({ faceIndex: fi, dir: "ba", prev, next });
-        }
-      }
-    }
-    if (hits.length === 0) {
-      return fail("topology-failed", "selected edge not found on any face");
-    }
-    if (hits.length > 2) {
-      return fail("non-manifold", "cannot bevel non-manifold edge");
-    }
-
-    const posOf = (idx: number) => positions[idx]!;
-    const makeOffset = (from: number, toward: number): number => {
-      const p = add(posOf(from), scale(sub(posOf(toward), posOf(from)), t));
-      const idx = positions.length;
-      positions.push(p);
-      return idx;
-    };
-
-    if (hits.length === 1) {
-      // Boundary edge: insert two verts and a thin bevel strip as a quad with a degenerate back
-      const hit = hits[0]!;
-      const a1 = makeOffset(aIdx, hit.prev);
-      const b1 = makeOffset(bIdx, hit.next);
-      const loop = faceLoops[hit.faceIndex]!;
-      const replaced: number[] = [];
-      for (let i = 0; i < loop.length; i += 1) {
-        const u = loop[i]!;
-        const v = loop[(i + 1) % loop.length]!;
-        replaced.push(u);
-        if (
-          (hit.dir === "ab" && u === aIdx && v === bIdx)
-          || (hit.dir === "ba" && u === bIdx && v === aIdx)
-        ) {
-          if (hit.dir === "ab") {
-            replaced[replaced.length - 1] = a1;
-            replaced.push(b1);
-          } else {
-            replaced[replaced.length - 1] = b1;
-            replaced.push(a1);
-          }
-        }
-      }
-      faceLoops[hit.faceIndex] = replaced;
-      newFaces.push([aIdx, bIdx, b1, a1]);
-      continue;
-    }
-
-    // Two-face manifold bevel
-    const hitAb = hits.find((h) => h.dir === "ab") ?? hits[0]!;
-    const hitBa = hits.find((h) => h.dir === "ba") ?? hits[1]!;
-    // On ab face: ... prev - a - b - next ...
-    const a1 = makeOffset(aIdx, hitAb.prev);
-    const b1 = makeOffset(bIdx, hitAb.next);
-    // On ba face: ... prev - b - a - next ... so prev is neighbor of b, next neighbor of a
-    const b2 = makeOffset(bIdx, hitBa.prev);
-    const a2 = makeOffset(aIdx, hitBa.next);
-
-    for (const hit of [hitAb, hitBa]) {
-      const loop = faceLoops[hit.faceIndex]!;
-      const replaced: number[] = [];
-      for (let i = 0; i < loop.length; i += 1) {
-        const u = loop[i]!;
-        const v = loop[(i + 1) % loop.length]!;
-        if (hit.dir === "ab" && u === aIdx && v === bIdx) {
-          replaced.push(a1, b1);
-          // skip emitting original u; next iteration will emit from b's successors
-          // We already consumed the edge; don't push u
-          continue;
-        }
-        if (hit.dir === "ba" && u === bIdx && v === aIdx) {
-          replaced.push(b2, a2);
-          continue;
-        }
-        // Avoid double-pushing when previous step advanced past edge
-        if (replaced.length > 0 && replaced[replaced.length - 1] === u) {
-          // already placed as end of bevel insert
-        } else {
-          replaced.push(u);
-        }
-      }
-      // Dedup consecutive
-      const clean: number[] = [];
-      for (const idx of replaced) {
-        if (clean.length === 0 || clean[clean.length - 1] !== idx) clean.push(idx);
-      }
-      if (clean.length >= 2 && clean[0] === clean[clean.length - 1]) clean.pop();
-      faceLoops[hit.faceIndex] = clean;
-    }
-    // Chamfer face along the original edge
-    newFaces.push([a1, b1, b2, a2]);
-  }
-
-  const polygons = [...faceLoops, ...newFaces].filter((loop) => loop.length >= 3);
-  try {
-    const next = createStudioEditableMeshFromPolygons(positions, polygons);
-    const before = studioEditableMeshStats(mesh);
-    const after = studioEditableMeshStats(next);
-    if (after.vertexCount <= before.vertexCount && after.faceCount <= before.faceCount) {
-      return fail(
-        "topology-failed",
-        `bevel did not increase topology (v ${before.vertexCount}→${after.vertexCount}, f ${before.faceCount}→${after.faceCount})`,
-      );
-    }
-    return ok(next);
-  } catch (error) {
-    return fail(
-      "topology-failed",
-      error instanceof Error ? error.message : "bevel rebuild failed",
-    );
-  }
 }
 
 /** JSON-safe mesh snapshot for OPFS recovery / undo stacks. */

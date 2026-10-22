@@ -15,7 +15,7 @@ import {
   STUDIO_BG3D_RECIPE_VERIFY_FAILED_MESSAGE,
   type StudioBg3dEditorRecipeHost,
 } from "./studio-bg3d-editor-recipe-run";
-import { STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE, STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE } from "./studio-bg3d-asset-placement-recipes";
+import { STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE, STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE } from "./studio-bg3d-asset-placement-catalog";
 import { STUDIO_BG3D_SCALE_GUIDE_HEIGHT_M } from "./studio-bg3d-scale-guide";
 import { CUTAWAY_ROOM_INNER_FACE, buildCutawayRoomScene, hideEveryRoomObject } from "./studio-bg3d-room-cutaway.test-fixture";
 

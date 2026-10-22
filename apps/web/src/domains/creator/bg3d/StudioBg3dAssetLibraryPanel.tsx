@@ -23,7 +23,7 @@ import { StudioBg3dAssetCardRightsActions, type StudioBg3dAssetCardPanel } from 
 import { StudioBg3dAssetRightsFilterBar } from "./StudioBg3dAssetRightsFilterBar";
 import { StudioBg3dAssetRightsSummary } from "./StudioBg3dAssetRightsInfo";
 import { StudioBg3dSkpImportPanel } from "./StudioBg3dSkpImportPanel";
-import { listStudioBg3dAssetPlacementRecipes } from "./studio-bg3d-asset-placement-recipes";
+import { listStudioBg3dAssetPlacementRecipes } from "./studio-bg3d-asset-placement-catalog";
 import { getStudioBg3dBundledProvenance } from "./studio-bg3d-asset-rights-catalog";
 import {
   STUDIO_BG3D_ASSET_RIGHTS_EMPTY_RESULT_HINT,
@@ -44,7 +44,7 @@ import { STUDIO_BG3D_SKP_WAREHOUSE_NOTICE } from "./studio-bg3d-skp-import-copy"
 
 import type { Bg3dModelImportItem, Bg3dModelLibraryEntry } from "./bg3d-model-library";
 import type { StudioBg3dAssetAiGenerated, StudioBg3dAssetAiTraining } from "./studio-bg3d-asset-metadata";
-import type { StudioBg3dAssetPlacementRecipeId } from "./studio-bg3d-asset-placement-recipes";
+import type { StudioBg3dAssetPlacementRecipeId } from "./studio-bg3d-asset-placement-catalog";
 import type { StudioBg3dAssetRightsFilterKey } from "./studio-bg3d-asset-rights-copy";
 import type { StudioBg3dAssetRightsFilter, StudioBg3dAssetRightsView } from "./studio-bg3d-asset-rights-view";
 import type { StudioBg3dAssetRightsLoadState } from "./useStudioBg3dAssetRights";
@@ -250,6 +250,8 @@ export function StudioBg3dAssetLibraryPanel({
     ...(aiTraining !== "unknown" ? { aiTraining } : {}),
   };
 
+  // 접힌 폼 머리글: 권리 종류와 지금 고른 AI 생성·AI 학습 표기.
+  const rightsHeader = `${RIGHTS_PRESETS.find((preset) => preset.id === rightsStatus)?.label} · ${describeStudioBg3dImportAiHeader(aiGenerated, aiTraining)}`;
   const views = useMemo(
     () => rightsViews ?? buildStudioBg3dAssetRightsViews(entries, { provenanceOf: getStudioBg3dBundledProvenance }),
     [entries, rightsViews],
@@ -366,8 +368,8 @@ export function StudioBg3dAssetLibraryPanel({
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-bold text-fg marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9">
           <ShieldCheck size={14} className="shrink-0 text-accent" aria-hidden />
           <span className="min-w-0 flex-1 truncate">이용 권리 기록</span>
-          <span className="max-w-[60%] shrink truncate text-[0.65rem] font-semibold text-fg-3">
-            {RIGHTS_PRESETS.find((preset) => preset.id === rightsStatus)?.label} · {describeStudioBg3dImportAiHeader(aiGenerated)}
+          <span className="max-w-[60%] shrink truncate text-[0.65rem] font-semibold text-fg-3" title={rightsHeader}>
+            {rightsHeader}
           </span>
           <ChevronDown
             size={14}

@@ -321,7 +321,7 @@ export function ProductionManuscriptSnapshotPanel({
     } finally {
       setRestoring(false);
     }
-  }, [artifactId, headRevisionId, onChanged, refresh, restoreTarget]);
+  }, [artifactId, headRevisionId, onChanged, refresh, restoreTarget, t]);
 
   const isHeadSnapshot = (snapshot: ProductionManuscriptSnapshot) =>
     headRevisionId !== null && snapshot.revisionId === headRevisionId;

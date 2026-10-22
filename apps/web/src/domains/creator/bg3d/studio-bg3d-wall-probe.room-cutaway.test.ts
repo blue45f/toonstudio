@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE,
-  planStudioBg3dAssetPlacement,
-} from "./studio-bg3d-asset-placement-recipes";
+import { STUDIO_BG3D_ASSET_PLACEMENT_WALL_NOT_FOUND_MESSAGE } from "./studio-bg3d-asset-placement-catalog";
+import { planStudioBg3dAssetPlacement } from "./studio-bg3d-asset-placement.test-fixture";
 import { STUDIO_BG3D_RESTORE_WALLS_LABEL } from "./studio-bg3d-build-notice";
 import {
   CUTAWAY_ROOM_INNER_FACE,

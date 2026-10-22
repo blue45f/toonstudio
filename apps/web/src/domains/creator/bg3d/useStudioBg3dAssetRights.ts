@@ -71,13 +71,16 @@ export function useStudioBg3dAssetRights(
   }, [importedKey, revision, load]);
 
   const result = loaded?.result ?? null;
+  // 다시 읽는 동안에는 직전 값을 계속 쓰지만, 직전 읽기의 실패 사실은 지금 목록에 대한 것이 아니라 소재 카드에 알리지 않는다.
+  const failed = loaded?.key === importedKey ? loaded.result.failed : undefined;
   const views = useMemo(
     () => buildStudioBg3dAssetRightsViews(entries, {
       libraryRightsById: result?.libraryRightsById,
       metadataByHash: result?.metadataByHash,
+      failed,
       provenanceOf,
     }),
-    [entries, result, provenanceOf],
+    [entries, result, failed, provenanceOf],
   );
 
   let state: StudioBg3dAssetRightsLoadState = "ready";

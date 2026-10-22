@@ -8,6 +8,8 @@
  *
  * 라이브러리와 메타데이터가 같은 칸(권리 상태·상업 사용)을 다르게 말하면 **더 제한적인 쪽**을 쓴다(미확인이 가장 제한적).
  * 어느 쪽도 다른 쪽의 허용을 늘리지 못하고, 어긋났다는 사실(conflict)은 화면에 알린다.
+ * 가져온 소재의 권리 상태·상업 사용은 라이브러리 레코드가 근거다(장면에 붙는 첨부 권리가 거기서 온다). 레코드를 읽지 못했거나
+ * 없으면 메타데이터가 허용이라고 적었어도 미확인으로 닫고, AI 표기·제공처·작성자·날짜처럼 허용을 늘리지 않는 사실만 덧붙인다.
  *
  * 사실을 하나의 정규화된 메타데이터 기록으로 만든 뒤 그 기록에서 상태를 읽으므로, 카드에 보이는 값과 필터가
  * 쓰는 값은 구조적으로 같다. 어디에서도 알 수 없으면 "미확인"이며, 미확인이 허용으로 읽히는 길은 없다.
@@ -43,7 +45,10 @@ import type { StudioBg3dAttachmentRights } from "./studio-bg3d-scene-document-ty
 /** 소재가 라이브러리에 들어온 길. 기본 제공(배포 카탈로그) 또는 사용자가 가져온 파일. */
 export type StudioBg3dAssetOrigin = "bundled" | "imported";
 export type StudioBg3dAssetAttribution = "required" | "not-required" | "unknown";
-/** 권리 사실을 어디서 읽었는가. entry-only 는 어디서도 읽지 못해 목록 항목만 있는 상태다. */
+/**
+ * 권리 사실을 어디서 읽었는가. metadata 는 라이브러리 레코드 없이 메타데이터 기록만 읽은 상태로 권리 상태·상업 사용은 미확인이고,
+ * entry-only 는 어디서도 읽지 못해 목록 항목만 있는 상태다.
+ */
 export type StudioBg3dAssetRightsBasis = "catalog" | "library" | "metadata" | "entry-only";
 
 /** 카드 필터가 들고 있는 선택. 권리 패싯에 출처를 더한 것이다. */
@@ -68,6 +73,8 @@ export interface StudioBg3dAssetRightsSources {
   readonly metadataByHash?: ReadonlyMap<string, StudioBg3dAssetMetadata>;
   /** 번들 소재의 출처 기록. 번들이 아니거나 기록이 없으면 undefined. */
   readonly provenanceOf?: (entryId: string) => StudioBg3dBundledProvenanceLike | undefined;
+  /** 읽다가 실패한 원천. 없으면(아직 읽는 중이거나 실패가 없으면) 실패가 없는 것으로 본다. */
+  readonly failed?: { readonly library: boolean; readonly metadata: boolean };
 }
 
 export interface StudioBg3dAssetRightsView {
@@ -85,6 +92,11 @@ export interface StudioBg3dAssetRightsView {
   readonly acquiredOn: string | null;
   /** 라이브러리 기록과 메타데이터 기록이 권리 상태·상업 사용을 다르게 말해 더 제한적인 쪽을 쓴 경우. */
   readonly conflict: boolean;
+  /**
+   * 가져온 소재의 값이 읽기 실패 때문에 비었을 수 있는가: 라이브러리 레코드가 없는데 라이브러리를 읽지 못했거나, 콘텐츠 해시가 있어
+   * 저장소 기록이 있을 수 있는데 메타데이터를 읽지 못한 경우. 읽는 중이거나 실패가 없거나 해시 없는 옛 항목의 저장소 실패는 false 다.
+   */
+  readonly readFailed: boolean;
   /** 질의에 쓰는 정규화 기록(상태만 담는다). 콘텐츠 해시가 없는 항목은 null 이다. */
   readonly record: StudioBg3dAssetMetadata | null;
 }
@@ -156,6 +168,17 @@ const STATUS_RESTRICTIVENESS: Readonly<Record<StudioBg3dAssetRightsStatus, numbe
   unknown: 3,
 };
 
+/**
+ * 라이브러리 레코드의 표기 필요 여부를 화면의 답으로 옮긴다: true 면 필요, 알 수 없으면 null.
+ * 폼의 "표기 필요" 칸은 체크하지 않으면 false 가 되어 "필요 없다고 답했다"와 "답하지 않았다"를 가를 수 없다. 직접 제작·공개 이용은
+ * false 가 표기 의무가 없다는 뜻으로 읽히지만, 구매·허가는 라이선스마다 표기 조건이 달라 false 를 불필요로 읽지 않는다(true 만 안다).
+ */
+function libraryAttributionRequired(library: StudioBg3dAttachmentRights, finalStatus: StudioBg3dAssetRightsStatus): boolean | null {
+  if (finalStatus === "unknown" || finalStatus !== library.status) return null;
+  if (library.attributionRequired) return true;
+  return finalStatus === "licensed" ? null : false;
+}
+
 function importedFacts(
   library: StudioBg3dAttachmentRights | undefined,
   metadata: StudioBg3dAssetMetadata | undefined,
@@ -182,24 +205,26 @@ function importedFacts(
       basis: "library",
       status,
       commercialUse,
-      // 라이브러리 레코드가 권리 상태를 알고(폼에서 골랐고) 그 답이 최종 판정에 쓰였을 때만 표기 필요 여부도 폼의 답이다: true 필요,
-      // false 불필요. 권리 상태를 모르는(기본값) 레코드이거나, 메타데이터의 더 제한적인 상태가 이겨 폼의 답이 다른 상태에 대한 것이
-      // 된 경우에는 표기 여부도 모른다.
-      attributionRequired: status === "unknown" || status !== library.status ? null : library.attributionRequired,
+      // 라이브러리 레코드가 권리 상태를 알고(폼에서 골랐고) 그 답이 최종 판정에 쓰였을 때만 표기 필요 여부도 폼의 답이다.
+      // 권리 상태를 모르는(기본값) 레코드이거나, 메타데이터의 더 제한적인 상태가 이겨 폼의 답이 다른 상태에 대한 것이 된 경우에는
+      // 표기 여부도 모른다.
+      attributionRequired: libraryAttributionRequired(library, status),
       attributionText: library.attribution ?? null,
       licenseName: library.licenseName ?? extras?.license ?? null,
       conflict,
     };
   }
   if (extras) {
+    // 라이브러리 레코드가 없다(읽지 못했거나 목록과 어긋났다). 메타데이터는 콘텐츠 해시 기준이라 같은 파일을 다른 답으로 다시 가져온
+    // 기록이 남아 있을 수 있어, 그 기록의 권리 상태·상업 사용은 믿지 않고 미확인으로 닫는다.
     return {
       ...overlay,
       basis: "metadata",
-      status: extras.status,
-      commercialUse: extras.commercialUse,
+      status: "unknown",
+      commercialUse: false,
       attributionRequired: null,
       attributionText: null,
-      licenseName: extras.license ?? null,
+      licenseName: null,
       conflict: false,
     };
   }
@@ -291,6 +316,9 @@ export function buildStudioBg3dAssetRightsView(
   const record = recordFor(entry, facts);
   const state = record ? readStudioBg3dAssetRightsState(record.rights) : UNKNOWN_STUDIO_BG3D_ASSET_RIGHTS_STATE;
   const known = state.license !== "unknown";
+  const failed = sources.failed;
+  const readFailed = origin === "imported" && facts.basis !== "library"
+    && Boolean(failed?.library || (entry.contentHash && failed?.metadata));
   return Object.freeze({
     entryId: entry.id,
     origin,
@@ -305,6 +333,7 @@ export function buildStudioBg3dAssetRightsView(
     author: displayText(facts.author),
     acquiredOn: displayText(facts.acquiredOn),
     conflict: facts.conflict,
+    readFailed,
     record,
   });
 }

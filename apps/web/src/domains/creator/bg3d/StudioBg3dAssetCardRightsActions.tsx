@@ -8,7 +8,7 @@ import type { KeyboardEvent, MouseEvent } from "react";
 import type {
   StudioBg3dAssetPlacementRecipeDefinition,
   StudioBg3dAssetPlacementRecipeId,
-} from "./studio-bg3d-asset-placement-recipes";
+} from "./studio-bg3d-asset-placement-catalog";
 import type { StudioBg3dAssetRightsView } from "./studio-bg3d-asset-rights-view";
 
 export type StudioBg3dAssetCardPanel = "rights" | "recipes";

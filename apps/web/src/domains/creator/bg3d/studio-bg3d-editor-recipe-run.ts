@@ -6,6 +6,11 @@
  * 이 모듈은 three·배치 계획·벽 탐지를 끌어오므로 편집기 정적 그래프에 넣지 않는다. 가볍게 붙는 호스트
  * (studio-bg3d-editor-recipe-host)가 처음 눌렀을 때만 동적으로 불러온다.
  *
+ * 의존성 주입: 이 모듈은 편집기 활성화 그래프에 이미 있는 모듈(편집 이력 스냅샷, 장면 변경 조정자, 첨부 한도 검사, 준비·물리
+ * 판정, 기존 배치 계산 등)을 값으로 가져오지 않는다. 지연 모듈이 그런 모듈을 값으로 가져오면 번들러가 그 모듈을 활성화 본체
+ * 청크에서 떼어 별도 공유 청크로 만들어 활성화 청크 수 상한을 넘긴다. 필요한 값은 가벼운 접합부가 정적으로 가져와 실행할 때
+ * `deps` 인자로 넘긴다(여기서는 타입만 가져온다).
+ *
  * 모든 실패·막힘은 오류 줄(역할 없음)이 아니라 상태 줄(setSurfaceSnapStatus, role=status)로 알린다. 성공과 같은 길이라
  * 화면 읽기 프로그램에도 전달된다. 문구는 해요체이고 실패에는 다음 행동이 있다(문구 가드 시험이 직접 검사한다).
  */
@@ -15,32 +20,31 @@ import {
   createBgCustomModelInstance,
   type BgCustomModelInstance,
 } from "../studio-background-3d-model";
-import { readStudioBg3dObjectWorldBounds } from "./studio-bg3d-camera-application";
-import { createStudioBg3dHistorySnapshot, type StudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
-import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
-import {
-  StudioBg3dModelPlacementAdmissionError,
-  assertStudioBg3dModelAttachmentAdmission,
-} from "./studio-bg3d-model-placement-admission";
-import {
-  StudioBg3dStaleModalOperationError,
-  studioBg3dModalOperationCoordinator,
-  type StudioBg3dModalSession,
-} from "./studio-bg3d-modal-operation-coordinator";
-import { isStudioBg3dPhysicsTransientPhase, type StudioBg3dPhysicsPhase } from "./studio-bg3d-physics-ui";
-import { STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS } from "./studio-bg3d-scene-document-types";
-import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
-import { probeStudioBg3dNearestWall } from "./studio-bg3d-wall-probe";
 import {
   STUDIO_BG3D_ASSET_PLACEMENT_INVALID_RECIPE_MESSAGE,
   STUDIO_BG3D_ASSET_PLACEMENT_RECIPES,
   isStudioBg3dAssetPlacementRecipeId,
-  planStudioBg3dAssetPlacement,
-  type StudioBg3dPlacementBounds,
-} from "./studio-bg3d-asset-placement-recipes";
+} from "./studio-bg3d-asset-placement-catalog";
+import { createStudioBg3dAssetPlacementPlanner } from "./studio-bg3d-asset-placement-recipes";
+import { readStudioBg3dObjectWorldBounds } from "./studio-bg3d-camera-application";
+import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
+import { probeStudioBg3dNearestWall } from "./studio-bg3d-wall-probe";
 
 import type * as THREE from "three";
+import type { StudioBg3dAssetPlacementMath, StudioBg3dPlacementBounds } from "./studio-bg3d-asset-placement-recipes";
+import type { createStudioBg3dHistorySnapshot, StudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
+import type {
+  StudioBg3dModelPlacementAdmissionError,
+  assertStudioBg3dModelAttachmentAdmission,
+} from "./studio-bg3d-model-placement-admission";
+import type {
+  StudioBg3dModalSession,
+  StudioBg3dStaleModalOperationError,
+  studioBg3dModalOperationCoordinator,
+} from "./studio-bg3d-modal-operation-coordinator";
+import type { StudioBg3dPhysicsPhase, isStudioBg3dPhysicsTransientPhase } from "./studio-bg3d-physics-ui";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
+import type { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
 import type { StudioBg3dCanonicalDocumentState } from "./useStudioBg3dCanonicalDocumentState";
 
 /** 벽을 찾을 때 광선을 쏘는 높이의 상한(바닥 위, 미터). 모델 키의 절반과 이 값 중 작은 쪽을 쓴다. */
@@ -48,6 +52,24 @@ const WALL_PROBE_MAX_HEIGHT_METERS = 1.2;
 const WALL_PROBE_MIN_HEIGHT_METERS = 0.1;
 
 const COMMAND_ID = "bg3d.asset.place-recipe";
+
+/**
+ * 활성화 그래프의 모듈이 가진 값을 실행 때 받는다. 접합부(studio-bg3d-editor-recipe-host)가 정적으로 가져와 채운다.
+ * 형식은 원래 함수·클래스의 타입을 그대로 따른다.
+ */
+export interface StudioBg3dRecipeRunDeps {
+  readonly isSceneEditReady: typeof isStudioBg3dSceneEditReady;
+  readonly isPhysicsTransientPhase: typeof isStudioBg3dPhysicsTransientPhase;
+  readonly createHistorySnapshot: typeof createStudioBg3dHistorySnapshot;
+  readonly modalCoordinator: typeof studioBg3dModalOperationCoordinator;
+  readonly StaleModalOperationError: typeof StudioBg3dStaleModalOperationError;
+  readonly PlacementAdmissionError: typeof StudioBg3dModelPlacementAdmissionError;
+  readonly assertAttachmentAdmission: typeof assertStudioBg3dModelAttachmentAdmission;
+  /** 장면 문서가 허용하는 모델 첨부 수의 상한. */
+  readonly maxAttachments: number;
+  /** 배치 계획이 쓰는 기존 계산(studio-bg3d-placement-recipe, studio-bg3d-object-ops). */
+  readonly placementMath: StudioBg3dAssetPlacementMath;
+}
 
 /** 편집기가 들고 있는 상태 중 이 호스트가 읽는 것만 적는다. 모듈 의존은 호스트 백에 두지 않는다. */
 export interface StudioBg3dEditorRecipeHost {
@@ -147,8 +169,8 @@ function unionWorldBounds(objects: Iterable<THREE.Object3D>): StudioBg3dPlacemen
   return min && max ? { min, max } : null;
 }
 
-function failureMessage(failure: unknown): string {
-  if (failure instanceof StudioBg3dThreeOperationError || failure instanceof StudioBg3dModelPlacementAdmissionError) {
+function failureMessage(failure: unknown, deps: StudioBg3dRecipeRunDeps): string {
+  if (failure instanceof StudioBg3dThreeOperationError || failure instanceof deps.PlacementAdmissionError) {
     return failure.message;
   }
   if (failure instanceof RecipePlacementUnavailableError) return STUDIO_BG3D_RECIPE_BOUNDS_UNAVAILABLE_MESSAGE;
@@ -156,7 +178,7 @@ function failureMessage(failure: unknown): string {
 }
 
 /** 지금 장면을 건드리면 안 되는 이유를 하나 고른다(없으면 null). 순서가 안내 우선순위다. */
-function busyReason(h: StudioBg3dEditorRecipeHost): string | null {
+function busyReason(h: StudioBg3dEditorRecipeHost, deps: StudioBg3dRecipeRunDeps): string | null {
   if (h.isCapturing) return STUDIO_BG3D_RECIPE_BUSY_MESSAGES.capturing;
   if (h.isRestoringScene) return STUDIO_BG3D_RECIPE_BUSY_MESSAGES.restoringScene;
   if (h.isUploadingModel) return STUDIO_BG3D_RECIPE_BUSY_MESSAGES.uploadingModel;
@@ -164,7 +186,7 @@ function busyReason(h: StudioBg3dEditorRecipeHost): string | null {
   if (h.isQuadView) return STUDIO_BG3D_RECIPE_BUSY_MESSAGES.quadView;
   if (h.applyingTemplateId !== null) return STUDIO_BG3D_RECIPE_BUSY_MESSAGES.applyingTemplate;
   if (h.deletingModelId !== null) return STUDIO_BG3D_RECIPE_BUSY_MESSAGES.deletingModel;
-  if (isStudioBg3dPhysicsTransientPhase(h.physicsPhaseRef.current)) return STUDIO_BG3D_RECIPE_BUSY_MESSAGES.physicsBusy;
+  if (deps.isPhysicsTransientPhase(h.physicsPhaseRef.current)) return STUDIO_BG3D_RECIPE_BUSY_MESSAGES.physicsBusy;
   return null;
 }
 
@@ -179,11 +201,13 @@ export async function placeStudioBg3dModelWithRecipe(
   h: StudioBg3dEditorRecipeHost,
   modelId: string,
   recipe: string,
+  deps: StudioBg3dRecipeRunDeps,
 ): Promise<boolean> {
   const notify = (tone: "info" | "error" | "success", message: string): void => {
     h.setSurfaceSnapStatus({ tone, message });
   };
-  if (!isStudioBg3dSceneEditReady(h)) {
+  const planPlacement = createStudioBg3dAssetPlacementPlanner(deps.placementMath);
+  if (!deps.isSceneEditReady(h)) {
     notify("info", STUDIO_BG3D_RECIPE_BUSY_MESSAGES.notReady);
     return false;
   }
@@ -202,7 +226,7 @@ export async function placeStudioBg3dModelWithRecipe(
     notify("info", STUDIO_BG3D_RECIPE_BUSY_MESSAGES.sessionChanged);
     return false;
   }
-  const busy = busyReason(h);
+  const busy = busyReason(h, deps);
   if (busy) {
     notify("info", busy);
     return false;
@@ -216,7 +240,7 @@ export async function placeStudioBg3dModelWithRecipe(
 
   let placed = false;
   try {
-    await studioBg3dModalOperationCoordinator.runSceneMutation(
+    await deps.modalCoordinator.runSceneMutation(
       session,
       async (lease) => {
         lease.throwIfRevoked();
@@ -241,11 +265,11 @@ export async function placeStudioBg3dModelWithRecipe(
           notify("error", STUDIO_BG3D_RECIPE_ATTACHMENT_MISSING_MESSAGE);
           return;
         }
-        assertStudioBg3dModelAttachmentAdmission({
+        deps.assertAttachmentAdmission({
           models: runtime.customModels,
           attachments: h.attachmentByStorageModelIdRef.current,
           candidateAttachments: [attachment],
-          maximumAttachments: STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS,
+          maximumAttachments: deps.maxAttachments,
           maximumCumulativeBytes: runtime.document.budgets.complexity.maxModelBytes,
         });
 
@@ -267,7 +291,7 @@ export async function placeStudioBg3dModelWithRecipe(
           : null;
 
         const seed = createBgCustomModelInstance(modelId, runtime.customModels.length);
-        const plan = planStudioBg3dAssetPlacement({
+        const plan = planPlacement({
           recipe: recipeId,
           localBounds,
           seed: { position: seed.position, rotation: seed.rotation, scale: seed.scale },
@@ -289,7 +313,7 @@ export async function placeStudioBg3dModelWithRecipe(
           scale: [plan.scale[0], plan.scale[1], plan.scale[2]],
         };
         const nextCustomModels = [...runtime.customModels, next];
-        const before = createStudioBg3dHistorySnapshot({
+        const before = deps.createHistorySnapshot({
           primitives: runtime.primitives,
           customModels: runtime.customModels,
           document: runtime.document,
@@ -308,8 +332,8 @@ export async function placeStudioBg3dModelWithRecipe(
       },
     );
   } catch (failure) {
-    if (!h.isModalAssetSessionCurrent(session) || failure instanceof StudioBg3dStaleModalOperationError) return false;
-    notify("error", failureMessage(failure));
+    if (!h.isModalAssetSessionCurrent(session) || failure instanceof deps.StaleModalOperationError) return false;
+    notify("error", failureMessage(failure, deps));
     return false;
   }
   return placed;

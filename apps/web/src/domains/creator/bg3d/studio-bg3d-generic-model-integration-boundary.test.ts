@@ -65,9 +65,10 @@ describe("Studio BG3D generic model mode integration boundary", () => {
     expectInOrder(upload, [
       "deriveStudioBg3dGlbValidationPolicy(sceneBaseDocument, deviceQuality)",
       "modelImportRuntime.planStudioBg3dModelImports(files)",
-      'item.format === "gltf"',
+      // glTF 전용 분기는 없어졌다: obj 만 따로 판정하고 나머지 포맷은 `return item.format` 으로 원래 포맷 그대로 보존한다.
       'item.format === "obj"',
       'hasSelectedMtl ? "obj-mtl" : "obj"',
+      "return item.format;",
       "modelImportRuntime.convertStudioBg3dModelFilesToGlb(files",
       "profile: policy.profile",
       "budgets: policy.budgets",

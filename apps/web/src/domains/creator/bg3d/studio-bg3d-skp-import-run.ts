@@ -6,7 +6,7 @@
  * 자산 메타데이터에 기록한다. 액션이 SKP 세부를 몰라도 되게 하고, 화면 저장소·기록 모듈은 주입해 테스트한다.
  */
 
-import { combineStudioBg3dImportAiUseStatus, hasStudioBg3dImportAiUse } from "./studio-bg3d-import-ai-use";
+import { combineImportAiUseStatusLazy, hasImportAiUseLazy } from "./studio-bg3d-import-ai-use-lazy";
 import { persistStudioBg3dSkpAssetMetadata } from "./studio-bg3d-skp-asset-metadata";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
 
@@ -119,7 +119,7 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
       return {
         input: { sourceName: event.sourceName, report: event.report, status: "imported", reason: null, metadata },
         // AI 표기는 보고서와 같은 기록에 담기므로 기록 결과가 곧 AI 표기의 결과다.
-        aiUse: hasStudioBg3dImportAiUse(asset.aiUse) ? metadata : "skipped",
+        aiUse: hasImportAiUseLazy(asset.aiUse) ? metadata : "skipped",
       };
     }
     return {
@@ -150,7 +150,7 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
       for (const event of reports) {
         const result = await resultFor(event, outcome);
         inputs.push(result.input);
-        aiUse = combineStudioBg3dImportAiUseStatus(aiUse, result.aiUse);
+        aiUse = combineImportAiUseStatusLazy(aiUse, result.aiUse);
       }
       session.publishResults(inputs);
       return aiUse;

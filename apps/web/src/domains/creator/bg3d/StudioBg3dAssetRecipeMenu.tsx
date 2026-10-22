@@ -1,10 +1,10 @@
 import { cx, FOCUS_RING, NOTICE_TEXT } from "./studio-bg3d-asset-panel-styles";
-import { STUDIO_BG3D_ASSET_PLACEMENT_MENU_FOOTER } from "./studio-bg3d-asset-placement-recipes";
+import { STUDIO_BG3D_ASSET_PLACEMENT_MENU_FOOTER } from "./studio-bg3d-asset-placement-catalog";
 
 import type {
   StudioBg3dAssetPlacementRecipeDefinition,
   StudioBg3dAssetPlacementRecipeId,
-} from "./studio-bg3d-asset-placement-recipes";
+} from "./studio-bg3d-asset-placement-catalog";
 
 interface StudioBg3dAssetRecipeMenuProps {
   readonly id: string;
