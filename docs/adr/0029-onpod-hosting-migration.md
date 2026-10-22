@@ -1,6 +1,6 @@
 # ADR-0029: onpod.ai 무료 플랜으로의 호스팅 이전 평가와 단계 계획
 
-- 상태: Proposed
+- 상태: Proposed — 같은 날 [ADR-0030](0030-seoul-origin-hybrid-infrastructure.md)이 DB 판정("이전하지 않음")을 소유자 결정으로 대체했고 이 문서가 남긴 실측 항목의 결과를 기록했다. 나머지 판정(정적 웹·엣지 이전 불가, Core API 1단계)은 ADR-0030이 이어받는다
 - 날짜: 2026-10-22
 - 범위: Core API 런타임, 정적 웹·엣지 게이트웨이, 실시간 조정자, 대형 에셋, DB의 호스팅 위치. 제품 기능과 데이터 모델은 범위 밖이다.
 - 관련: [최소 비용·수동 전용 배포 정책](../operations/minimum-cost-deployment-policy.md), [운영 DB / 데이터 플레인 정본](../operations/canonical-database-topology.md), [`DEPLOY.md`](../../DEPLOY.md), [`deploy/STANDING_APPROVAL.json`](../../deploy/STANDING_APPROVAL.json), [`render.yaml`](../../render.yaml), [정적 에셋 게이트웨이](../../deploy/cloudflare-static/README.md), [`config/free-infrastructure-policy.json`](../../config/free-infrastructure-policy.json)
