@@ -15,6 +15,7 @@ import {
   PENDING_PACKS,
 } from "./generate-creator-bundle-theme-packs.mjs";
 import {
+  HOLD_PUBLIC_LABEL,
   loadPackRightsLedger,
   packRightsKey,
   requiredEvidenceKinds,
@@ -167,7 +168,7 @@ test("생성 결과의 합계는 배포 플래너 인덱스와 일치하고, 원
     const pirate = titleToEntry(ledger, "Pirate Island");
     pirate.serve = "hold";
     pirate.holdReason = "evidence-incomplete";
-    pirate.holdLabel = "라이선스 증빙 확인이 끝나면 공개한다.";
+    pirate.holdLabel = HOLD_PUBLIC_LABEL;
     delete pirate.grant;
     const stale = createBundleV2DeployPlan({ themePacks: output, assetRoot: root, ledger });
     assert.deepEqual(stale.errors, []);
@@ -178,15 +179,108 @@ test("생성 결과의 합계는 배포 플래너 인덱스와 일치하고, 원
   });
 });
 
-test("커밋된 원장(전 팩 hold)으로 생성하면 허용 팩이 없고 61개 팩이 모두 대기 목록에 있다", () => {
+test("커밋된 원장으로 생성하면 원장이 열지 않은 팩은 전부 대기 목록에 있고 합계가 맞는다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
     const ledger = loadPackRightsLedger();
+    const opened = ledger.packs.filter((entry) => entry.serve === "allow");
+    if (opened.length > 0) {
+      // 소유자가 팩을 연 뒤에는 픽스처 트리에 그 팩의 실물이 없어 생성이 실패한다.
+      // 열린 팩 경로는 위의 openPack 테스트들이 맡고, 여기서는 아무 실물도 읽지 않는 닫힌 상태만 본다.
+      return;
+    }
     const { output } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
     assert.equal(output.packs.length, 0);
     assert.equal(output.assets.length, 0);
     assert.equal(output.crowdPacks.length, 0);
     assert.equal(output.totals.placeableAssets, 0);
     assert.equal(output.pendingPacks.length, CATALOG_PACKS.length + CROWD_PACKS.length + PENDING_PACKS.length);
+  });
+});
+
+test("대기 목록의 hold 팩 문구는 원장 holdLabel 그대로이고 사유·약속을 드러내지 않는 같은 문장이다", () => {
+  withFixtureTree(({ root, manifestV2, themesDoc }) => {
+    const ledger = cloneLedger();
+    openPack(ledger, "Old Town — Courtyards");
+    const { output } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
+    const held = output.pendingPacks.filter((pack) => pack.reason === "rights-hold");
+    assert.ok(held.length > 0);
+    for (const pack of held) {
+      assert.equal(pack.reasonLabel, titleToEntry(ledger, pack.title).holdLabel, pack.title);
+    }
+    assert.deepEqual([...new Set(held.map((pack) => pack.reasonLabel))], [HOLD_PUBLIC_LABEL]);
+  });
+});
+
+test("원장이 연 군중 팩(Characters 1)은 crowdPacks에 들어가고 합계에 반영되며 배치용 권리 블록은 없다", () => {
+  withFixtureTree(({ root, manifestV2, themesDoc }) => {
+    const ledger = cloneLedger();
+    openPack(ledger, "Characters 1");
+    const { output, stats } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
+    assert.deepEqual(output.crowdPacks, [{
+      catalogIds: ["cbv1-003-cartoon-characters-1"],
+      title: "Characters 1",
+      creator: "RG Poly",
+      category: "crowd-render-only",
+      glbAssets: 1,
+      ...(output.crowdPacks[0]?.note ? { note: output.crowdPacks[0].note } : {}),
+    }]);
+    assert.equal(output.totals.crowdGlbAssets, 1);
+    // 군중 팩은 렌더 전용이라 packs·assets·권리 블록에 들어가지 않고, 대기 목록에서도 빠진다.
+    assert.equal(output.packs.length, 0);
+    assert.equal(output.assets.length, 0);
+    assert.equal(output.crowdPacks[0].rights, undefined);
+    assert.ok(!output.pendingPacks.some((pack) => pack.title === "Characters 1"));
+    assert.ok(!stats.heldPacks.some(({ def }) => def.title === "Characters 1"));
+    assert.equal(stats.heldPacks.length, CATALOG_PACKS.length + CROWD_PACKS.length - 1);
+  });
+});
+
+test("닫힌 팩의 실물은 읽지 않는다 — 실물이 없어도 생성이 성공하고, 열린 팩의 실물이 없으면 던진다", () => {
+  withFixtureTree(({ root, manifestV2, themesDoc }) => {
+    const ledger = cloneLedger();
+    openPack(ledger, "Old Town — Courtyards");
+    // 닫힌 팩(Pirate Island·Small Props·Characters 1)의 실물을 모두 지운다. 읽으려 들면 '실물 파일이 없습니다'로 던진다.
+    for (const asset of manifestV2.assets) {
+      if (asset.packId !== INGEST.oldTown) rmSync(join(root, asset.files[0].path));
+    }
+    const { output } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
+    assert.deepEqual(output.packs.map((pack) => pack.title), ["Old Town — Courtyards"]);
+    assert.equal(output.assets.length, 2);
+
+    // 열린 팩의 실물이 사라지면 조용히 건너뛰지 않고 던진다.
+    const oldTown = manifestV2.assets.find((asset) => asset.packId === INGEST.oldTown);
+    rmSync(join(root, oldTown.files[0].path));
+    assert.throws(
+      () => buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger }),
+      /실물 파일이 없습니다/,
+    );
+  });
+});
+
+test("열린 팩의 에셋은 크기 불일치면 던지고 해시 불일치면 건너뛰며 건수를 센다", () => {
+  withFixtureTree(({ root, manifestV2, themesDoc }) => {
+    const ledger = cloneLedger();
+    openPack(ledger, "Old Town — Courtyards");
+
+    const wrongSize = structuredClone(manifestV2);
+    const target = wrongSize.assets.find((asset) => asset.packId === INGEST.oldTown);
+    target.files[0].bytes += 1;
+    assert.throws(
+      () => buildThemePacks({ manifestV2: wrongSize, themesDoc, assetRoot: root, ledger }),
+      /크기 불일치/,
+    );
+
+    const wrongHash = structuredClone(manifestV2);
+    wrongHash.assets.find((asset) => asset.packId === INGEST.oldTown).files[0].sha256 = "0".repeat(64);
+    const errors = [];
+    const { output, stats } = buildThemePacks({
+      manifestV2: wrongHash, themesDoc, assetRoot: root, ledger, onError: (message) => errors.push(message),
+    });
+    assert.equal(stats.hashMismatch, 1);
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /해시 불일치/);
+    assert.equal(output.assets.length, 1, "해시가 어긋난 에셋은 배치 가능에 들어가지 않는다");
+    assert.equal(output.packs[0].placeable, 1);
   });
 });
 

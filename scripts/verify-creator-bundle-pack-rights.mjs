@@ -3,7 +3,7 @@
  * verify-creator-bundle-pack-rights.mjs
  *
  * Creator Bundle 팩별 권리 원장(config/creator-bundle-pack-rights.json)을 검증하고 상태를 보여 준다.
- *   1) 원장 스키마·증빙·고유성 검증 (실패하면 종료 코드 1)
+ *   1) 원장 스키마·증빙·고유성 검증과 생성기 팩 정의(팩 42·군중 5·보류 14) 완전성 대조 (실패하면 종료 코드 1)
  *   2) 묶음별 allow/hold 개수와, hold 팩이 allow가 되려면 아직 모자란 증빙 종류 요약
  *   3) --library-root를 주면 원장이 기록한 로컬 라이선스 문서(79개 + zip 안 사본)의 sha256을 실물과 다시 대조
  *
@@ -16,7 +16,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { CATALOG_PACKS, CROWD_PACKS, PENDING_PACKS } from "./generate-creator-bundle-theme-packs.mjs";
 import {
+  checkLedgerCoversDefs,
   DEFAULT_PACK_RIGHTS_PATH,
   missingEvidenceKinds,
   summarizePackRightsLedger,
@@ -30,6 +32,7 @@ function parseArgs(argv) {
   const options = { packRightsPath: DEFAULT_PACK_RIGHTS_PATH, libraryRoot: null, json: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    if (arg === "--") continue; // `pnpm run verify:… -- --library-root …` 형태의 맨 `--`
     if (arg === "--pack-rights") options.packRightsPath = resolve(argv[++i] ?? "");
     else if (arg === "--library-root") options.libraryRoot = resolve(argv[++i] ?? "");
     else if (arg === "--json") options.json = true;
@@ -50,7 +53,11 @@ function main(argv) {
     console.error(`권리 원장을 읽을 수 없습니다 (${options.packRightsPath}): ${error instanceof Error ? error.message : String(error)}`);
     process.exit(2);
   }
-  const problems = validatePackRightsLedger(ledger);
+  const problems = [
+    ...validatePackRightsLedger(ledger),
+    // 생성기의 팩 정의(팩 42·군중 5·보류 14)를 원장이 빠짐없이, 같은 묶음으로 덮는지도 본다.
+    ...checkLedgerCoversDefs(ledger, { pack: CATALOG_PACKS, crowd: CROWD_PACKS, pending: PENDING_PACKS }),
+  ];
   const summary = summarizePackRightsLedger(ledger);
   const holds = (Array.isArray(ledger.packs) ? ledger.packs : [])
     .filter((entry) => entry.serve !== "allow")
@@ -58,7 +65,7 @@ function main(argv) {
       group: entry.group,
       title: entry.title,
       licenseClass: entry.licenseClass,
-      ownerRecommendedHold: entry.ownerRecommendedHold === true,
+      reviewRecommendedHold: entry.reviewRecommendedHold === true,
       missing: missingEvidenceKinds(ledger, entry),
     }));
   const evidence = options.libraryRoot
@@ -74,8 +81,12 @@ function main(argv) {
     for (const problem of problems.slice(0, 30)) console.log(`  문제: ${problem}`);
     if (problems.length > 30) console.log(`  … 외 ${problems.length - 30}건`);
     for (const hold of holds) {
-      const need = hold.missing.length === 0 ? "증빙 충족 — 소유자가 열 수 있음" : `부족: ${hold.missing.join(", ")}`;
-      console.log(`  hold [${hold.group}] ${hold.title} (${hold.licenseClass})${hold.ownerRecommendedHold ? " ★권고 hold" : ""} — ${need}`);
+      // pending 묶음은 미수신이라 serve를 allow로 바꿔도 열리지 않는다(검증기가 거부한다). 편입 뒤에 소유자가 정한다.
+      const ready = hold.group === "pending"
+        ? "증빙 충족 — 단 미수신(인제스션·CATALOG_PACKS 편입 전)이라 편입한 뒤에야 소유자가 열 수 있음"
+        : "증빙 충족 — 소유자가 열 수 있음";
+      const need = hold.missing.length === 0 ? ready : `부족: ${hold.missing.join(", ")}`;
+      console.log(`  hold [${hold.group}] ${hold.title} (${hold.licenseClass})${hold.reviewRecommendedHold ? " ★검토 권고 hold" : ""} — ${need}`);
     }
     if (evidence) {
       console.log(`로컬 라이선스 문서 재대조: ${evidence.checked}건 중 불일치 ${evidence.mismatches.length}건`);

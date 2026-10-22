@@ -17,7 +17,7 @@
     "library": "~/3d-asset-library",
     "catalog": "_catalog/packs.json",
     "officialCatalog": "apps/web/public/assets/virtual-studio/bundle-v1/manifest.json",
-    "report": "3D 에셋 활용 검토 보고(2026-10-22) §3·§4 방안 1·§6",
+    "report": "3D 에셋 활용 검토 보고(2026-10-22) §3·§4 방안 1·§6 — ~/3d-asset-library/_catalog/leverage-review-2026-10-22.md (레포 밖 문서)",
     "licenseFiles": {
       "loose": 79,
       "archived": 17,
@@ -46,7 +46,7 @@
       "sha256": "0534ace843522e78c7d7421de5c9ee287ce1d092310ddd44408e2aea10e68a07",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Low Poly Cemetery Grave Pack (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -70,7 +70,7 @@
       "sha256": "12e17cc42df08c3dea072bd5a9f93656075488dca0ebed738b635080c8b2d30f",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / You may use these assets in your own projects, personal and commercial alike.",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -90,7 +90,7 @@
       "sha256": "1aad8b301684fcf7213a08b3046e6983e5909194befff8c0dd513a32d3c685ad",
       "class": "emaceart-standalone-ban-soft",
       "heading": "Low Poly Cemetery Statues Pack - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": true,
       "webServiceHostingAddressed": false,
@@ -118,7 +118,7 @@
       "sha256": "22401dbd7a140fae09968c9dd5a4154cccf657b381417121e99ca9b73a1e579c",
       "class": "emaceart-standalone-ban-soft",
       "heading": "Raft on the Desert - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": true,
       "webServiceHostingAddressed": false,
@@ -138,7 +138,7 @@
       "sha256": "22fac2f85a6743b3b380be94821c384c82d78f8a681bf060a06814c05021e87d",
       "class": "emaceart-standalone-ban-soft",
       "heading": "Maciej EmacArt - 3D Assets / Copyright (c) 2026 Maciej EmacArt",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -186,7 +186,7 @@
       "sha256": "32f2c5363698291fc6e93afd9ab9b3899fcc483948992a3309943a9a72ee26e3",
       "class": "emaceart-standalone-ban-soft",
       "heading": "Roadside Tales - Modular Bridge - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": true,
       "webServiceHostingAddressed": false,
@@ -202,7 +202,7 @@
       "sha256": "32ff7a79bd870e5c521c6b26a5bc69398e59d5f22aea78cd50114f0789c12748",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Epic Woodland: Winter (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -234,7 +234,7 @@
       "sha256": "4a294b80c3e752affdc268da4de95529b03f9734f2c79a79cacd128df56a70af",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Rocks and Stone (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -262,7 +262,7 @@
       "sha256": "52c7fcae6d3d271cce9b546e42b2894a003490774b1ab2097bb64c02950b704d",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / LumaGrove Wonky Woods (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -282,7 +282,7 @@
       "sha256": "53ac4978664e3a523c73bbd4ecfd5e20787338a3efc7beba060c5ada15d3103c",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / EmacEArt Asset License - free to use in your own projects, personal and",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -302,7 +302,7 @@
       "sha256": "55a6a1730ed9fff877c77172c9bd707fc55268380acf09eb384d4ef78dcd52e8",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Plasticine Materials (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -322,7 +322,7 @@
       "sha256": "615a6a8435337f2bb31997cd4636543e33c54463d0c91d56856d47ccb6bbc3b1",
       "class": "emaceart-no-redistribution-even-modified",
       "heading": "EmacEArt Stylized Grass - grass shader with wind / Copyright (c) 2026 EmacEArt (Maciej)",
-      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하는 것을 금지한다. 웹 서비스 호스팅은 다루지 않는다.",
+      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 자기 프로젝트(own projects)에서의 사용을 허가하고, 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하는 것을 'You may not'으로 금지한다. 웹 서비스 호스팅은 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": true,
       "webServiceHostingAddressed": false,
@@ -342,7 +342,7 @@
       "sha256": "6204f536dd7b91e74f77cdb48bbbe0df6709cc9e87e3e61dc4dec6471ce38c7b",
       "class": "emaceart-standalone-ban-soft",
       "heading": "Roadside Tales - Iowa Covered Bridges - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": true,
       "webServiceHostingAddressed": false,
@@ -410,7 +410,7 @@
       "sha256": "7b293f6cd725b261cbf9f4be54d5465882345070acb4b4a769d7484330e1722f",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / LumaGrove Wonky Woods (models only)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -430,7 +430,7 @@
       "sha256": "7c791fa9a32416aa604c2a9dbe742ade866d556362540cc6f410076edb182820",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Low Poly Cemetery Tomb Pack (glTF .glb models)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -450,7 +450,7 @@
       "sha256": "804bae6af85f557593fd1448312e4c8f49193c1f77578700a161654023b7854c",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt - Low Poly Lava Plants / Copyright (c) 2026 EmacEArt",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -478,7 +478,7 @@
       "sha256": "8a5977f917b27a88d49fe4fecd6244d910f1de664f56a2b009211a28b427550c",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Low Poly Cemetery Tomb Pack (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -498,7 +498,7 @@
       "sha256": "9718cc5f595a5bacd5c4de825e64e4c87ada1525560fa7e2f619b8af66bd710c",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / NatureForge: Stylized Meadow & Farm Kit (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -518,7 +518,7 @@
       "sha256": "9add9c52185072b470e39b21b369799d2caf9c1e17dc83550c7500cbe69769fa",
       "class": "emaceart-standalone-ban-soft",
       "heading": "Roadside Tales - Backroad Bridges - EmacEArt Asset License / Copyright (c) 2026 EmacEArt (Maciej)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 수정본에도 같은 제한이 적용된다고 적어, 변환·재압축이 면책이 되지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": true,
       "webServiceHostingAddressed": false,
@@ -558,7 +558,7 @@
       "sha256": "b9c7baf664b373065f5e04c12f6cf74d8b862d424fd60b9e07905635979e3a8b",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Epic Woodland: Summer (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -578,7 +578,7 @@
       "sha256": "bd1c680a6a52d6349cbcd7162174b5e28606363aec3162d55c57ef6ee5d1c462",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Swamp Remake (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -598,7 +598,7 @@
       "sha256": "cec170dc025ce7c183a82ecedcbbedfe94e2ac31869fd15f98dd328250dd2391",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / TerraToon: Stylized Tree Pack (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -626,7 +626,7 @@
       "sha256": "d1bd757f018aefde6747227975bc0d8238026e9c337e8145aa4b33a0ba8ce65c",
       "class": "emaceart-app-shipping-explicit",
       "heading": "Maciej EmacArt - 3D Assets / Copyright (c) 2026 Maciej EmacArt",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용·수정과 '자기 게임/앱에 포함해 배포'를 명시하고, 에셋 판매와 별도 다운로드로 넘기는 것을 금지한다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 개인·상업 사용·수정과 '자기 게임/앱에 포함해 배포'를 명시하고, 에셋 판매와 별도 다운로드로 넘기는 것을 금지한다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다. 이 문서는 Blend Textures.zip 안 LICENSE 사본 17개에도 들어 있어, 같은 팩 폴더의 godot LICENSE와 상충하는 팩이 있다(해당 팩의 mappingNote 참고).",
       "appShippingExplicit": true,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -741,7 +741,7 @@
       "sha256": "d61fe56f95ead77538977f08568c327a3ba50c316eb578be58feb82adadabaa1",
       "class": "emaceart-standalone-ban-soft",
       "heading": "EmacEArt Asset License / Low Poly Food and Packaging (Godot 4)",
-      "summary": "EmaceArt 라이선스. 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
+      "summary": "EmaceArt 라이선스. 자기 프로젝트(own projects)에서의 개인·상업 사용은 허용하고, 에셋을 되팔거나 독립 파일·다른 에셋 팩 안에 넣어 넘기지 말아 달라고 부탁하는 문구다. 웹 서비스 호스팅·하위 사용자는 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": false,
       "webServiceHostingAddressed": false,
@@ -769,7 +769,7 @@
       "sha256": "e512acd82407f957a59b74cf1fa4c256604872ed87b87771e9cb2f41ff5c2e59",
       "class": "emaceart-no-redistribution-even-modified",
       "heading": "EmacEArt Stylized Skybox - stylized procedural sky for Godot 4 / Copyright (c) 2026 EmacEArt (Maciej)",
-      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하는 것을 금지한다. 웹 서비스 호스팅은 다루지 않는다.",
+      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 자기 프로젝트(own projects)에서의 사용을 허가하고, 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하는 것을 'You may not'으로 금지한다. 웹 서비스 호스팅은 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": true,
       "webServiceHostingAddressed": false,
@@ -789,7 +789,7 @@
       "sha256": "eb655f669fc9732215d987e1f5065277b86992be9e18df9eb01c0bdbdcd490ce",
       "class": "emaceart-no-redistribution-even-modified",
       "heading": "EmacEArt Asset License / Stylized Water Shader for Godot 4",
-      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하는 것을 금지한다. 웹 서비스 호스팅은 다루지 않는다.",
+      "summary": "EmaceArt 라이선스(셰이더·툴 계열). 자기 프로젝트(own projects)에서의 개인·상업 사용을 허가하고, 에셋 자체를 단독·수정본·다른 팩/템플릿의 일부로 판매하거나 재배포하지 말아 달라고 '부탁'하는 문구다(같은 분류의 grass-wind·skybox 문서는 'You may not'으로 금지). 웹 서비스 호스팅은 다루지 않는다.",
       "appShippingExplicit": false,
       "modifiedCovered": true,
       "webServiceHostingAddressed": false,
@@ -844,12 +844,12 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
-          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
         }
       ]
@@ -871,7 +871,7 @@
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -891,7 +891,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -920,7 +920,7 @@
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [],
       "note": "풀팩 라이선스 문서는 없고 무료판 문서(SlavicWorldFree)만 있다. 풀팩 귀속은 itch 캡처로 확정해야 한다."
     },
@@ -944,7 +944,7 @@
       "licenseClass": "cc0-with-standalone-ban",
       "serve": "hold",
       "holdReason": "license-conflict",
-      "holdLabel": "제작사 확인이 끝날 때까지 공개하지 않는다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -955,7 +955,7 @@
           "verifiedAt": "2026-10-22"
         }
       ],
-      "ownerRecommendedHold": true,
+      "reviewRecommendedHold": true,
       "mappingNote": "인제스션 id는 MedievalMegapack_Godot(cbv1-023)에서만 추적된다. 022 쪽은 카탈로그 선언에만 근거한다.",
       "note": "Medieval Megapack 안 License.txt는 Small Props 팩 템플릿(CC0 표기 + 독립 다운로드 금지)이다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
     },
@@ -976,7 +976,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1004,7 +1004,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-030-nature-megapack-extended",
@@ -1023,12 +1024,12 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
-          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
         }
       ]
@@ -1050,7 +1051,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1081,7 +1082,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1111,7 +1112,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1141,12 +1142,12 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
-          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
         }
       ]
@@ -1168,7 +1169,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1189,7 +1190,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-029-terratoon-tree-pack",
@@ -1208,7 +1210,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1229,7 +1231,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-049-lava-plants",
@@ -1248,7 +1251,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1280,7 +1283,7 @@
       "licenseClass": "proprietary-rg-poly",
       "serve": "hold",
       "holdReason": "license-conflict",
-      "holdLabel": "제작사 확인이 끝날 때까지 공개하지 않는다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1291,7 +1294,7 @@
           "verifiedAt": "2026-10-22"
         }
       ],
-      "ownerRecommendedHold": true,
+      "reviewRecommendedHold": true,
       "note": "로컬 문서 `RG POLY License.odt`는 CC0가 아니다. 모델을 있는 그대로 공개 게시·재배포하는 것을 금지하고 완성 프로젝트의 일부로만 배포를 허용한다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
     },
     {
@@ -1311,7 +1314,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1341,7 +1344,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1372,7 +1375,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1411,7 +1414,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -1431,7 +1434,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -1451,7 +1454,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1472,7 +1475,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(재배포 금지) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-006-polyvania-burton-horror-town",
@@ -1491,7 +1495,7 @@
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -1513,7 +1517,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1564,7 +1568,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1595,7 +1599,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1616,7 +1620,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-015-haunted-grounds",
@@ -1635,7 +1640,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1664,12 +1669,12 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
-          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
         }
       ]
@@ -1691,7 +1696,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1710,7 +1715,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-038-aztec-jungle",
@@ -1729,12 +1735,12 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
-          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
         }
       ]
@@ -1756,7 +1762,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1775,7 +1781,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-040-swamp-builder-nature+cbv1-041-swamp-builder-architecture",
@@ -1797,7 +1804,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1825,7 +1832,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) + godot LICENSE(재배포 금지) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-026-iowa-covered-bridges",
@@ -1844,7 +1852,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1865,7 +1873,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-080-free-stylized-asia-megapack-urp",
@@ -1885,7 +1894,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [],
       "mappingNote": "서빙 에셋의 원본(Asia+Megapack…URP.unitypackage)은 라이브러리에서 cbv1-054 Low Poly Asia Pack 폴더로 분류돼 있다. 생성기는 이 에셋을 080으로, 054는 미수신 보류로 적고 있어 귀속 확인이 필요하다."
     },
@@ -1906,7 +1915,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1924,7 +1933,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "cbv1-066-modular-bridge",
@@ -1943,7 +1953,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1972,7 +1982,7 @@
       "licenseClass": "cc0-with-standalone-ban",
       "serve": "hold",
       "holdReason": "license-conflict",
-      "holdLabel": "제작사 확인이 끝날 때까지 공개하지 않는다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1983,7 +1993,7 @@
           "verifiedAt": "2026-10-22"
         }
       ],
-      "ownerRecommendedHold": true,
+      "reviewRecommendedHold": true,
       "note": "License.txt가 CC0 표기와 '독립 항목으로 다운로드 제공 금지'를 함께 적어 자기모순이다. 공식 카탈로그 이름은 Free Medieval Props — Small Pack Low Poly(cbv1-077)다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
     },
     {
@@ -2003,7 +2013,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2024,7 +2034,8 @@
           ],
           "verifiedAt": "2026-10-22"
         }
-      ]
+      ],
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
     },
     {
       "id": "rg-poly-food-pack",
@@ -2039,7 +2050,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2060,7 +2071,7 @@
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [],
       "mappingNote": "서빙 에셋의 원본('Fences and walls glb')은 라이브러리에서 cbv1-027 Modular Fence Narrative Pack 폴더로 분류돼 있다. 귀속 확인이 필요하다."
     },
@@ -2081,7 +2092,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [],
       "note": "공식 카탈로그 이름은 Free Medieval Weapons — Small Low Poly Pack이다. 폴더 귀속은 추정 판정이다."
     },
@@ -2102,7 +2113,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2122,7 +2133,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2142,7 +2153,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "secondary-lookup",
@@ -2170,7 +2181,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "secondary-lookup",
@@ -2198,7 +2209,7 @@
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2218,7 +2229,7 @@
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [],
       "mappingNote": "인제스션 id가 없어 라이브러리 대응은 제목·카탈로그 번호로만 확인했다."
     },
@@ -2239,7 +2250,7 @@
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [],
       "mappingNote": "인제스션 id가 없어 라이브러리 대응은 제목·카탈로그 번호로만 확인했다."
     },
@@ -2260,7 +2271,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2291,7 +2302,7 @@
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2311,7 +2322,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2341,7 +2352,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2371,7 +2382,7 @@
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2401,7 +2412,7 @@
       "licenseClass": "cc0-text-copied",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2414,7 +2425,7 @@
         {
           "kind": "secondary-lookup",
           "claim": "itch 메타데이터 CC0 표기(2차 조회)",
-          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
         }
       ],
@@ -2437,12 +2448,12 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 메타데이터 CC0 표기(2차 조회)",
-          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1",
+          "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
         }
       ]
@@ -2464,7 +2475,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2483,8 +2494,8 @@
       ],
       "licenseClass": "cc0-explicit",
       "serve": "hold",
-      "holdReason": "awaiting-owner-open",
-      "holdLabel": "공개 준비 중이다.",
+      "holdReason": "pending-ingest",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2495,7 +2506,7 @@
           "verifiedAt": "2026-10-22"
         }
       ],
-      "note": "로컬 License.txt가 CC0를 명시한다. 요구 증빙은 충족했으나 공개 여부는 소유자 결정이다."
+      "note": "로컬 License.txt가 CC0를 명시해 요구 증빙은 충족했다. 다만 미수신(pending) 묶음이라 인제스션·CATALOG_PACKS 편입 전에는 serve를 allow로 바꿔도 아무것도 열리지 않는다. 편입하면서 group을 pack으로 옮긴 뒤 공개 여부는 소유자가 정한다."
     },
     {
       "id": "cbv1-036-desert-canyon",
@@ -2514,7 +2525,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2537,7 +2548,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2557,7 +2568,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": [],
       "mappingNote": "라이브러리에서는 서빙 중인 Asia Megapack(cbv1-080) 원본이 이 팩 폴더에 분류돼 있다. 생성기의 미수신 사유와 어긋나므로 귀속 확인이 필요하다."
     },
@@ -2578,7 +2589,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     },
     {
@@ -2607,7 +2618,7 @@
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
       "holdReason": "evidence-incomplete",
-      "holdLabel": "라이선스 증빙 확인이 끝나면 공개한다.",
+      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
       "evidence": []
     }
   ]

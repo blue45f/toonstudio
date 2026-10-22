@@ -16,15 +16,23 @@ import {
   checkLedgerCoversDefs,
   evaluateServeDecision,
   findPackRights,
-  LICENSE_CLASSES,
   loadPackRightsLedger,
   missingEvidenceKinds,
-  packRightsProjection,
   readZipMember,
+  summarizePackRightsLedger,
   validatePackRightsLedger,
   verifyLocalLicenseEvidence,
 } from "./lib/creator-bundle-pack-rights.mjs";
-import { fixtureLedger, fixtureLicenseText, ledgerEntry, qualifyingEvidence } from "./lib/creator-bundle-pack-rights-test-support.mjs";
+import {
+  cloneLedger,
+  entryOf,
+  fixtureLedger,
+  fixtureLicenseText,
+  flipToAllow,
+  ledgerEntry,
+  problemsFor,
+  qualifyingEvidence,
+} from "./lib/creator-bundle-pack-rights-test-support.mjs";
 
 // 루트 `vitest run`(scripts/**/*.test.mjs 수집)과 `node --test` 양쪽에서 같은 파일이 돈다.
 const test = process.env.VITEST ? vitestTest : nodeTest;
@@ -36,32 +44,12 @@ const GENERATOR_DEFS = { pack: CATALOG_PACKS, crowd: CROWD_PACKS, pending: PENDI
 const THEME_PACKS_PATH = "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json";
 const OFFICIAL_CATALOG_PATH = "apps/web/public/assets/virtual-studio/bundle-v1/manifest.json";
 
-const cloneLedger = () => structuredClone(loadPackRightsLedger());
-
-function entryOf(ledger, title) {
-  const entry = ledger.packs.find((candidate) => candidate.title === title);
-  assert.ok(entry, `원장에 ${title}가 없습니다.`);
-  return entry;
-}
-
-/** 팩을 allow로 바꾼다. evidence를 넘기면 그 증빙으로 교체하고, 아니면 기존 증빙을 그대로 둔다. */
-function flipToAllow(entry, { evidence } = {}) {
-  entry.serve = "allow";
-  delete entry.holdReason;
-  delete entry.holdLabel;
-  entry.grant = {
-    status: "licensed",
-    licenseName: "Creator Bundle: Volume 1 — test grant",
-    commercialUse: true,
-    attributionRequired: false,
-  };
-  if (evidence) entry.evidence = evidence;
-  return entry;
-}
-
-function problemsFor(ledger) {
-  return validatePackRightsLedger(ledger);
-}
+/*
+ * 시드 스냅샷 — 소유자가 팩을 열거나 검토 권고를 바꿀 때 이 두 상수와 "시드 스냅샷" 테스트만 함께 바뀐다(소유자 결정).
+ * 나머지 테스트는 원장에서 값을 파생해, 팩 하나를 여는 변경이 무관한 테스트를 건드리지 않게 한다.
+ */
+const EXPECTED_ALLOWED_TITLES = [];
+const REVIEW_RECOMMENDED_HOLD_TITLES = ["Medieval Village / Megapack", "Restaurant Megapack", "Small Props Pack"];
 
 /* ── 완전성: 팩 42 · 군중 5 · 보류 14가 전부 원장에 있고 기본값은 hold ────────────────── */
 
@@ -114,11 +102,24 @@ test("기본값은 hold이고, allow는 증빙 자격을 갖춘 팩에만 서빙
   assert.equal(unknown.reason, "missing-entry");
 });
 
-test("권고 hold 3팩(Restaurant·Medieval·Small Props)은 제작사 서면 확인 없이는 열리지 않는다", () => {
+test("시드 스냅샷: 개방된 팩은 EXPECTED_ALLOWED_TITLES뿐이고 검토 권고 hold 3팩은 그대로다 (바꾸려면 소유자 결정)", () => {
   const ledger = loadPackRightsLedger();
-  for (const title of ["Restaurant Megapack", "Medieval Village / Megapack", "Small Props Pack"]) {
+  const titlesWhere = (predicate) => ledger.packs.filter(predicate).map((entry) => entry.title).sort();
+  assert.deepEqual(
+    titlesWhere((entry) => entry.serve === "allow"),
+    [...EXPECTED_ALLOWED_TITLES].sort(),
+    "개방된 팩이 달라졌습니다. 팩을 여는 것은 소유자 결정이므로 EXPECTED_ALLOWED_TITLES를 의도적으로 고쳤는지 확인하세요.",
+  );
+  assert.deepEqual(
+    titlesWhere((entry) => entry.reviewRecommendedHold === true),
+    [...REVIEW_RECOMMENDED_HOLD_TITLES].sort(),
+  );
+});
+
+test("검토 권고 hold 팩(Restaurant·Medieval·Small Props)은 제작사 서면 확인 없이는 열리지 않는다", () => {
+  const ledger = loadPackRightsLedger();
+  for (const title of REVIEW_RECOMMENDED_HOLD_TITLES) {
     const entry = entryOf(ledger, title);
-    assert.equal(entry.ownerRecommendedHold, true, title);
     assert.ok(
       entry.serve === "hold" || entry.evidence.some((item) => item.kind === "producer-written-confirmation"),
       `${title}: 서면 확인 없이 allow입니다.`,
@@ -161,187 +162,6 @@ test("원장 제작사·카탈로그 번호는 공식 81팩 카탈로그와 일�
       const pack = official.get(id);
       assert.ok(pack, `${entry.title}: 공식 카탈로그에 ${id}가 없습니다.`);
       assert.equal(pack.creator, entry.creator, `${entry.title}: 제작사가 공식 카탈로그(${pack.creator})와 다릅니다.`);
-    }
-  }
-});
-
-/* ── 게이트: 증빙 없는 allow는 테스트가 실제로 실패한다 (negative) ───────────────────────── */
-
-test("증빙 없이 allow로 바꾸면 검증이 실패하고 서빙 판정도 닫힌다", () => {
-  const ledger = cloneLedger();
-  const pirate = flipToAllow(entryOf(ledger, "Pirate Island"));
-  const problems = problemsFor(ledger);
-  assert.ok(problems.length > 0, "증빙 없는 allow가 통과했습니다 — 게이트가 뚫렸습니다.");
-  assert.ok(problems.some((problem) => /Pirate Island/u.test(problem) && /itch-page-capture/u.test(problem)));
-  assert.ok(problems.some((problem) => /Pirate Island/u.test(problem) && /purchase-receipt/u.test(problem)));
-  // 원장 검증을 우회해 들어온 allow여도 서빙 판정이 한 번 더 닫는다.
-  const decision = evaluateServeDecision(ledger, pirate);
-  assert.equal(decision.serve, false);
-  assert.equal(decision.reason, "invalid-evidence");
-  assert.deepEqual(missingEvidenceKinds(ledger, pirate), ["itch-page-capture", "purchase-receipt"]);
-});
-
-test("2차 조회 기록만 있는 팩은 allow가 될 수 없다", () => {
-  const ledger = cloneLedger();
-  const characters = entryOf(ledger, "Characters 1");
-  assert.ok(characters.evidence.some((item) => item.kind === "secondary-lookup"), "시드의 2차 조회 기록");
-  flipToAllow(characters);
-  assert.ok(problemsFor(ledger).some((problem) => /Characters 1/u.test(problem) && /itch-page-capture/u.test(problem)));
-});
-
-test("권고 hold 3팩은 서면 확인 없이 allow로 바꿀 수 없다", () => {
-  for (const title of ["Restaurant Megapack", "Medieval Village / Megapack", "Small Props Pack"]) {
-    const ledger = cloneLedger();
-    flipToAllow(entryOf(ledger, title));
-    const problems = problemsFor(ledger);
-    assert.ok(problems.some((problem) => problem.includes(title) && /producer-written-confirmation/u.test(problem)), title);
-  }
-});
-
-test("웹 서비스 서빙을 다루지 않는 제작사 확인은 서면 확인으로 인정하지 않는다", () => {
-  const ledger = cloneLedger();
-  const restaurant = entryOf(ledger, "Restaurant Megapack");
-  flipToAllow(restaurant, {
-    evidence: [
-      ...restaurant.evidence,
-      qualifyingEvidence("producer-written-confirmation", { covers: ["personal-use"] }),
-    ],
-  });
-  assert.ok(problemsFor(ledger).some((problem) => /web-service-hosting/u.test(problem)));
-  // covers에 웹 서비스 호스팅이 들어가면 같은 팩이 열린다.
-  restaurant.evidence = [...restaurant.evidence.slice(0, -1), qualifyingEvidence("producer-written-confirmation")];
-  assert.deepEqual(problemsFor(ledger), []);
-  assert.equal(evaluateServeDecision(ledger, restaurant).serve, true);
-});
-
-test("itch 캡처는 itch.io 주소와 조회일이 있어야 하고 영수증은 보관 위치가 있어야 한다", () => {
-  const cases = [
-    qualifyingEvidence("itch-page-capture", { url: "https://example.com/pack" }),
-    qualifyingEvidence("itch-page-capture", { retrievedAt: undefined }),
-    qualifyingEvidence("itch-page-capture", { verifiedAt: "어제" }),
-    qualifyingEvidence("purchase-receipt", { ref: "" }),
-  ];
-  for (const bad of cases) {
-    const ledger = cloneLedger();
-    const pirate = entryOf(ledger, "Pirate Island");
-    const good = (kind) => qualifyingEvidence(kind);
-    const evidence = bad.kind === "itch-page-capture"
-      ? [bad, good("purchase-receipt")]
-      : [good("itch-page-capture"), bad];
-    flipToAllow(pirate, { evidence });
-    assert.ok(problemsFor(ledger).length > 0, `${JSON.stringify(bad)}가 통과했습니다.`);
-  }
-});
-
-test("문서 분류가 팩 분류와 맞지 않는 로컬 라이선스 증빙은 인정하지 않는다", () => {
-  const ledger = cloneLedger();
-  const dungeon = entryOf(ledger, "Cute Dungeon Megapack");
-  const emaceHash = ledger.licenseTexts.find((text) => text.class === "emaceart-standalone-ban-soft").sha256;
-  flipToAllow(dungeon, {
-    evidence: [qualifyingEvidence("local-license-file", { sha256: emaceHash, paths: ["x/License.txt"] })],
-  });
-  assert.ok(problemsFor(ledger).some((problem) => /문서 분류/u.test(problem)));
-});
-
-test("원장에 로컬 문서가 있는 팩이 unstated 분류이거나 그 반대면 검증이 실패한다", () => {
-  const ledger = cloneLedger();
-  entryOf(ledger, "LumaGrove — Wonky Woods").licenseClass = "unstated-emaceart";
-  assert.ok(problemsFor(ledger).some((problem) => /로컬 라이선스 문서가 있는데/u.test(problem)));
-  const reverse = cloneLedger();
-  entryOf(reverse, "Pirate Island").licenseClass = "emaceart-local-license";
-  assert.ok(problemsFor(reverse).some((problem) => /local-license-file 증빙 기록이 있어야/u.test(problem)));
-});
-
-test("요구 증빙을 모두 갖추면 열리고, 공개 투영에는 권리 요약만 실린다", () => {
-  const ledger = cloneLedger();
-  const dungeon = flipToAllow(entryOf(ledger, "Cute Dungeon Megapack"));
-  dungeon.grant.status = "public-domain";
-  dungeon.grant.licenseName = "CC0 1.0 (RG Poly)";
-  const pirate = flipToAllow(entryOf(ledger, "Pirate Island"), {
-    evidence: [
-      ...entryOf(ledger, "Pirate Island").evidence,
-      qualifyingEvidence("itch-page-capture"),
-      qualifyingEvidence("purchase-receipt"),
-    ],
-  });
-  assert.deepEqual(problemsFor(ledger), []);
-  assert.equal(evaluateServeDecision(ledger, dungeon).serve, true);
-  assert.equal(evaluateServeDecision(ledger, pirate).serve, true);
-  assert.deepEqual(packRightsProjection(dungeon), {
-    serve: "allow",
-    status: "public-domain",
-    licenseName: "CC0 1.0 (RG Poly)",
-    commercialUse: true,
-    attributionRequired: false,
-  });
-  assert.deepEqual(allowEligibilityProblems(ledger, dungeon), []);
-});
-
-test("Cute Dungeon은 요구 증빙을 이미 갖췄지만 시드에서는 소유자가 열기 전까지 hold다", () => {
-  const ledger = loadPackRightsLedger();
-  const dungeon = entryOf(ledger, "Cute Dungeon Megapack");
-  assert.equal(dungeon.serve, "hold");
-  assert.equal(dungeon.holdReason, "awaiting-owner-open");
-  assert.deepEqual(missingEvidenceKinds(ledger, dungeon), []);
-  // Cute Park는 License.txt 본문이 Dungeon 것을 복사한 파일이라 itch 캡처가 더 필요하다.
-  assert.deepEqual(missingEvidenceKinds(ledger, entryOf(ledger, "Cute Park Pack")), ["itch-page-capture"]);
-});
-
-test("구조 위반(기본값 allow·알 수 없는 분류·중복·holdLabel 누락)은 전부 거부한다", () => {
-  const defaultAllow = cloneLedger();
-  defaultAllow.defaultServe = "allow";
-  assert.ok(problemsFor(defaultAllow).some((problem) => /defaultServe/u.test(problem)));
-
-  const unknownClass = cloneLedger();
-  entryOf(unknownClass, "Pirate Island").licenseClass = "made-up-class";
-  assert.ok(problemsFor(unknownClass).some((problem) => /licenseClass/u.test(problem)));
-  flipToAllow(entryOf(unknownClass, "Pirate Island"));
-  assert.equal(evaluateServeDecision(unknownClass, entryOf(unknownClass, "Pirate Island")).serve, false);
-
-  const duplicate = cloneLedger();
-  duplicate.packs.push(structuredClone(entryOf(duplicate, "Pirate Island")));
-  assert.ok(problemsFor(duplicate).some((problem) => /중복/u.test(problem)));
-
-  const noLabel = cloneLedger();
-  delete entryOf(noLabel, "Pirate Island").holdLabel;
-  assert.ok(problemsFor(noLabel).some((problem) => /holdLabel/u.test(problem)));
-
-  const badServe = cloneLedger();
-  entryOf(badServe, "Pirate Island").serve = "maybe";
-  assert.ok(problemsFor(badServe).some((problem) => /serve는/u.test(problem)));
-
-  const allowWithHoldLabel = cloneLedger();
-  flipToAllow(entryOf(allowWithHoldLabel, "Cute Dungeon Megapack"));
-  entryOf(allowWithHoldLabel, "Cute Dungeon Megapack").holdLabel = "공개 준비 중이다.";
-  assert.ok(problemsFor(allowWithHoldLabel).some((problem) => /holdLabel가 없어야/u.test(problem)));
-});
-
-test("생성기 정의와 원장이 어긋나면 완전성 검사가 실패한다", () => {
-  const missing = cloneLedger();
-  missing.packs = missing.packs.filter((entry) => entry.title !== "Pirate Island");
-  assert.ok(checkLedgerCoversDefs(missing, GENERATOR_DEFS).some((problem) => /원장에 없는 pack 팩.*Pirate Island/u.test(problem)));
-
-  const extra = cloneLedger();
-  extra.packs.push({ ...structuredClone(entryOf(extra, "Pirate Island")), id: "extra", catalogIds: ["cbv1-998-extra"], title: "Extra" });
-  assert.ok(checkLedgerCoversDefs(extra, GENERATOR_DEFS).some((problem) => /생성기에 없는 원장 항목.*Extra/u.test(problem)));
-
-  const wrongGroup = cloneLedger();
-  entryOf(wrongGroup, "Pirate Island").group = "pending";
-  assert.ok(checkLedgerCoversDefs(wrongGroup, GENERATOR_DEFS).some((problem) => /묶음이 다릅니다.*Pirate Island/u.test(problem)));
-
-  const wrongCreator = cloneLedger();
-  entryOf(wrongCreator, "Characters 1").creator = "EmaceArt";
-  assert.ok(checkLedgerCoversDefs(wrongCreator, GENERATOR_DEFS).some((problem) => /제작사가 다릅니다.*Characters 1/u.test(problem)));
-});
-
-test("allow 요구 표는 모든 라이선스 분류를 덮고 서면 확인 없이 열 수 있는 EmaceArt 분류가 없다", () => {
-  assert.deepEqual(Object.keys(ALLOW_EVIDENCE_REQUIREMENTS).sort(), [...LICENSE_CLASSES].sort());
-  for (const [licenseClass, kinds] of Object.entries(ALLOW_EVIDENCE_REQUIREMENTS)) {
-    assert.ok(kinds.length > 0, licenseClass);
-    assert.ok(!kinds.includes("secondary-lookup"), licenseClass);
-    if (licenseClass.includes("emaceart")) {
-      assert.ok(kinds.includes("producer-written-confirmation"), licenseClass);
-      assert.ok(kinds.includes("purchase-receipt"), licenseClass);
     }
   }
 });
@@ -438,14 +258,26 @@ test("로컬 라이선스 문서 재대조는 일치·해시 불일치·누락·
 });
 
 test("검증 CLI는 원장이 유효하면 0, 라이브러리 실물이 어긋나면 1로 끝난다", () => {
+  const ledger = loadPackRightsLedger();
+  const summary = summarizePackRightsLedger(ledger);
+  const groups = Object.entries(summary.byGroup).map(([group, count]) => `${group} ${count}`).join(" · ");
+  const documentCount = ledger.licenseTexts.reduce(
+    (sum, text) => sum + text.files.length + (text.archivedFiles ?? []).length,
+    0,
+  );
   const ok = spawnSync(process.execPath, [VERIFY_SCRIPT], { encoding: "utf8" });
   assert.equal(ok.status, 0, ok.stderr);
-  assert.match(ok.stdout, /팩 61개 \(pack 42 · crowd 5 · pending 14\) — allow 0 · hold 61/);
-  assert.match(ok.stdout, /★권고 hold/);
+  assert.ok(
+    ok.stdout.includes(`팩 ${summary.total}개 (${groups}) — allow ${summary.allow} · hold ${summary.hold}`),
+    ok.stdout.split("\n").slice(0, 3).join(" | "),
+  );
+  if (ledger.packs.some((entry) => entry.serve === "hold" && entry.reviewRecommendedHold === true)) {
+    assert.match(ok.stdout, /★검토 권고 hold/);
+  }
   withLibrary((root) => {
     const missingLibrary = spawnSync(process.execPath, [VERIFY_SCRIPT, "--library-root", root], { encoding: "utf8" });
     assert.equal(missingLibrary.status, 1);
-    assert.match(missingLibrary.stdout, /로컬 라이선스 문서 재대조: 96건 중 불일치 96건/);
+    assert.ok(missingLibrary.stdout.includes(`로컬 라이선스 문서 재대조: ${documentCount}건 중 불일치 ${documentCount}건`));
 
     const brokenPath = join(root, "ledger.json");
     writeFileSync(brokenPath, JSON.stringify({ ...cloneLedger(), defaultServe: "allow" }));
@@ -461,3 +293,39 @@ test("테스트 지원의 원장 항목 빌더는 allow일 때 요구 증빙을 
   assert.deepEqual(validatePackRightsLedger(fixtureLedger([entry])), []);
 });
 
+test("프로토타입 키를 라이선스 분류로 써도 던지지 않고 거부하며 서빙은 닫힌다", () => {
+  // 로컬 라이선스 문서 증빙이 있는 팩(LumaGrove)은 분류 조회가 문서 분류 표를 거치므로 프로토타입 키가 가장 위험하다.
+  for (const title of ["LumaGrove — Wonky Woods", "Pirate Island"]) {
+    for (const licenseClass of ["constructor", "__proto__", "toString", "hasOwnProperty", "valueOf"]) {
+      const ledger = cloneLedger();
+      const entry = entryOf(ledger, title);
+      entry.licenseClass = licenseClass;
+      let problems;
+      assert.doesNotThrow(() => { problems = problemsFor(ledger); }, `${title}/${licenseClass}`);
+      assert.ok(problems.some((problem) => /licenseClass/u.test(problem)), `${title}/${licenseClass}: 알 수 없는 분류가 통과했습니다.`);
+      flipToAllow(entry, { evidence: [...entry.evidence, qualifyingEvidence("itch-page-capture"), qualifyingEvidence("purchase-receipt")] });
+      assert.doesNotThrow(() => evaluateServeDecision(ledger, entry), `${title}/${licenseClass}`);
+      assert.equal(evaluateServeDecision(ledger, entry).serve, false, `${title}/${licenseClass}`);
+      assert.ok(allowEligibilityProblems(ledger, entry).length > 0, `${title}/${licenseClass}`);
+      assert.deepEqual(missingEvidenceKinds(ledger, entry), [], `${title}/${licenseClass}`);
+    }
+  }
+});
+
+test("검증 CLI는 생성기 정의를 덮지 못하는 원장(팩 누락)도 종료 코드 1로 닫는다", () => {
+  withLibrary((root) => {
+    const ledger = cloneLedger();
+    ledger.packs = ledger.packs.filter((entry) => entry.title !== "Pirate Island");
+    const path = join(root, "ledger.json");
+    writeFileSync(path, JSON.stringify(ledger));
+    const result = spawnSync(process.execPath, [VERIFY_SCRIPT, "--pack-rights", path], { encoding: "utf8" });
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /문제: 원장에 없는 pack 팩입니다: Pirate Island/);
+  });
+});
+
+test("검증 CLI는 pnpm run 형태의 맨 -- 를 건너뛰고 옵션을 읽는다", () => {
+  const result = spawnSync(process.execPath, [VERIFY_SCRIPT, "--", "--json"], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).summary.total, loadPackRightsLedger().packs.length);
+});

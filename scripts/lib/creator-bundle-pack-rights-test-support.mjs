@@ -3,9 +3,20 @@
  * creator-bundle-pack-rights.test.mjs, generate-creator-bundle-theme-packs.test.mjs,
  * plan-creator-bundle-deploy.test.mjs가 같은 픽스처 규칙을 쓰도록 한곳에 둔다.
  */
-import { PACK_RIGHTS_SCHEMA, requiredEvidenceKinds } from "./creator-bundle-pack-rights.mjs";
+import assert from "node:assert/strict";
+
+import {
+  HOLD_PUBLIC_LABEL,
+  loadPackRightsLedger,
+  PACK_RIGHTS_SCHEMA,
+  requiredEvidenceKinds,
+  validatePackRightsLedger,
+} from "./creator-bundle-pack-rights.mjs";
 
 const VERIFIED_AT = "2026-10-22";
+
+/** 로컬 라이선스 증빙 픽스처(fixtureLicenseText)가 기록한 라이브러리 팩 이름. ledgerEntry의 기본 libraryPacks와 같다. */
+export const FIXTURE_LIBRARY_PACK = "fixture";
 
 /** 분류별 allow 요구를 정확히 채우는 증빙 한 건을 만든다. */
 export function qualifyingEvidence(kind, overrides = {}) {
@@ -52,7 +63,7 @@ export function fixtureLicenseText(overrides = {}) {
     appShippingExplicit: false,
     modifiedCovered: false,
     webServiceHostingAddressed: false,
-    files: [{ libraryPath: "fixture/License.txt", libraryPack: "fixture" }],
+    files: [{ libraryPath: "fixture/License.txt", libraryPack: FIXTURE_LIBRARY_PACK }],
     ...overrides,
   };
 }
@@ -65,6 +76,7 @@ export function ledgerEntry({
   title,
   catalogIds = [],
   creator = "RG Poly",
+  libraryPacks = [FIXTURE_LIBRARY_PACK],
   group = "pack",
   licenseClass = "unstated-rg-poly",
   serve = "hold",
@@ -79,6 +91,7 @@ export function ledgerEntry({
     creator,
     catalogIds,
     officialCatalogIds: [],
+    libraryPacks,
     licenseClass,
     serve,
     evidence: evidence
@@ -95,7 +108,7 @@ export function ledgerEntry({
     };
   } else {
     entry.holdReason = holdReason;
-    entry.holdLabel = "라이선스 증빙 확인이 끝나면 공개한다.";
+    entry.holdLabel = HOLD_PUBLIC_LABEL;
   }
   return entry;
 }
@@ -135,3 +148,30 @@ export function selfContainedGlb(label = "base") {
     images: [{ bufferView: 0, mimeType: "image/png" }],
   });
 }
+
+/* ── 커밋된 원장을 복사해 다루는 테스트 도우미 ─────────────────────────────────────────────── */
+
+export const cloneLedger = () => structuredClone(loadPackRightsLedger());
+
+export function entryOf(ledger, title) {
+  const entry = ledger.packs.find((candidate) => candidate.title === title);
+  assert.ok(entry, `원장에 ${title}가 없습니다.`);
+  return entry;
+}
+
+/** 팩을 allow로 바꾼다. evidence를 넘기면 그 증빙으로 교체하고, 아니면 기존 증빙을 그대로 둔다. */
+export function flipToAllow(entry, { evidence } = {}) {
+  entry.serve = "allow";
+  delete entry.holdReason;
+  delete entry.holdLabel;
+  entry.grant = {
+    status: "licensed",
+    licenseName: "Creator Bundle: Volume 1 — test grant",
+    commercialUse: true,
+    attributionRequired: false,
+  };
+  if (evidence) entry.evidence = evidence;
+  return entry;
+}
+
+export const problemsFor = (ledger) => validatePackRightsLedger(ledger);

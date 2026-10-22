@@ -23,10 +23,16 @@
  *     theme-packs.json이 sha256을 공개하므로 키는 공개 데이터에서 계산된다.
  *
  * 게이트 (fail-closed):
- *   - 권리 원장(config/creator-bundle-pack-rights.json)에서 allow이고 증빙 자격을 갖춘 팩의 에셋만
- *     계획에 넣는다. hold·원장에 없는 팩의 에셋은 실물 파일을 읽지도 않고 제외한다.
- *     theme-packs.json이 원장보다 오래돼 제외 에셋이 생기면(stale) 경고하고, --production은 거부한다.
+ *   - 권리 원장(config/creator-bundle-pack-rights.json)에서 allow이고 증빙 자격을 갖춘 배치 가능 팩(group "pack")의
+ *     에셋만 계획에 넣는다. hold·원장에 없는 팩·묶음/제목/제작사가 어긋난 팩의 에셋은 실물 파일을 읽지도 않고 제외한다.
+ *   - theme-packs.json의 팩별 권리 블록이 원장 투영(packRightsProjection)과 다르거나 없으면(원장 이전 스냅샷·
+ *     grant 변경 뒤 미재생성) 그 팩도 제외한다(rights-drift). 클라이언트가 읽는 권리 표기가 원장보다 넓어질 수 없다.
+ *   - 에셋 경로는 에셋 루트 상대 경로여야 하고 소속 팩의 ingestPackIds 폴더 아래여야 한다(로더와 같은 규칙).
+ *     다른 팩 폴더나 루트 밖 파일은 허용된 팩의 이름으로 올라갈 수 없다.
+ *   - 제외 에셋이 생기면(stale) 경고하고, --production은 거부한다.
  *     생성기(generate-creator-bundle-theme-packs.mjs)를 다시 실행해야 인덱스 합계가 맞는다.
+ *   - 이 도구는 R2 객체를 지우지 않는다. 이미 올라간 팩의 권리를 철회(allow → hold)하면 해당 sha256 객체는
+ *     소유자가 직접 삭제해야 한다(인덱스를 내려도 Worker는 GLB 키를 직접 서빙한다).
  *   - 런타임 검증기(studio-bg3d-glb-validation.ts)가 external-resource-uri로
  *     거부하는 GLB(buffers/images의 uri 속성 보유)가 theme-packs에 배치 가능으로
  *     남아 있으면 계획을 만들지 않고 실패한다. 생성기를 먼저 고쳐 재생성할 것.
@@ -46,11 +52,13 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 import {
   DEFAULT_PACK_RIGHTS_PATH,
   evaluateServeDecision,
   loadPackRightsLedger,
+  packRightsProjection,
   validatePackRightsLedger,
 } from "./lib/creator-bundle-pack-rights.mjs";
 
@@ -128,6 +136,35 @@ export function buildBundleV2DeployIndex(themePacks, included) {
 }
 
 /**
+ * theme-packs 팩 하나의 서빙 판정. 원장이 allow여도 theme-packs의 권리 블록이 원장 투영과 다르면
+ * (없거나 grant가 바뀐 낡은 데이터) rights-drift로 닫는다.
+ */
+function decidePack(ledger, pack) {
+  const decision = evaluateServeDecision(ledger, pack, { group: "pack" });
+  if (decision.serve && !isDeepStrictEqual(pack?.rights, packRightsProjection(decision.entry))) {
+    return { ...decision, serve: false, reason: "rights-drift" };
+  }
+  return decision;
+}
+
+/**
+ * 에셋 경로 점검(문제 문장 또는 null). 로더(relativeServingPath · ingestPackIds 접두사)와 같은 규칙이다.
+ * 심볼릭 링크는 따라가지 않는다 — 내용은 sha256·크기·GLB 헤더로 고정된다.
+ */
+function assetPathProblem(path, pack) {
+  if (typeof path !== "string" || path.length === 0 || path.length > 1024) return "경로가 비었거나 너무 깁니다";
+  if (path.startsWith("/") || path.includes("\\") || /^[a-zA-Z][a-zA-Z0-9+.-]*:/u.test(path)
+    || path.split("/").some((segment) => segment === "" || segment === "." || segment === "..")) {
+    return "에셋 루트 상대 경로가 아닙니다";
+  }
+  const ingestPackIds = Array.isArray(pack?.ingestPackIds) ? pack.ingestPackIds : [];
+  if (!ingestPackIds.some((id) => typeof id === "string" && id.length > 0 && path.startsWith(`${id}/`))) {
+    return "소속 팩의 ingestPackIds 폴더 아래가 아닙니다";
+  }
+  return null;
+}
+
+/**
  * theme-packs + 실물 트리 + 권리 원장을 대조해 배포 계획을 만든다.
  * 반환: { plan, errors } — errors가 비어 있지 않으면 plan은 null이다.
  * 권리 원장에서 서빙이 허용되지 않은 팩의 에셋은 실물을 읽지 않고 plan.excludedByRights로만 기록한다.
@@ -156,13 +193,13 @@ export function createBundleV2DeployPlan({ themePacks, assetRoot, ledger, readFi
   if (themePacks.inServiceOnly !== true || themePacks.downloadable !== false) {
     errors.push("theme-packs가 서비스 내 사용 전용(inServiceOnly/downloadable)으로 선언되지 않았습니다.");
   }
-  const decisions = themePacks.packs.map((pack) => evaluateServeDecision(ledger, pack));
+  const decisions = themePacks.packs.map((pack) => decidePack(ledger, pack));
   const excluded = new Map();
   const objectsBySha = new Map();
   let includedAssets = 0;
   let assetBytes = 0;
   for (const asset of themePacks.assets) {
-    const decision = decisions[asset.pack];
+    const decision = Number.isSafeInteger(asset.pack) ? decisions[asset.pack] : undefined;
     if (!decision) {
       errors.push(`에셋의 팩 참조가 올바르지 않습니다: ${asset.id}`);
       continue;
@@ -178,6 +215,11 @@ export function createBundleV2DeployPlan({ themePacks, assetRoot, ledger, readFi
     }
     if (typeof asset.sha256 !== "string" || !SHA256_HEX.test(asset.sha256)) {
       errors.push(`에셋 sha256이 올바르지 않습니다: ${asset.id}`);
+      continue;
+    }
+    const pathProblem = assetPathProblem(asset.path, themePacks.packs[asset.pack]);
+    if (pathProblem) {
+      errors.push(`에셋 경로가 올바르지 않습니다 (${asset.id}): ${pathProblem}`);
       continue;
     }
     const abs = join(assetRoot, asset.path);
@@ -297,6 +339,8 @@ function parseArgs(argv) {
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    // `pnpm run <script> -- --asset-root …` 형태는 맨 `--`를 그대로 넘기므로 건너뛴다 (문서의 실행 예시 형태).
+    if (arg === "--") continue;
     if (arg === "--dry-run") options.mode = "dry-run";
     else if (arg === "--write") options.mode = "write";
     else if (arg === "--production") options.mode = "production";
@@ -372,6 +416,7 @@ function main() {
       console.log(`  제외: ${record.title} — 에셋 ${record.assets}개 (${record.reason})`);
     }
     console.log("경고: theme-packs.json이 원장보다 오래됐습니다. 생성기(generate-creator-bundle-theme-packs.mjs)를 다시 실행해야 배포 인덱스 합계가 theme-packs와 맞습니다.");
+    console.log("참고: 이 도구는 R2 객체를 지우지 않습니다. 이미 올라간 팩의 권리를 철회했다면 해당 sha256 객체는 소유자가 직접 삭제해야 합니다.");
   }
   if (refusal) {
     console.error(refusal);

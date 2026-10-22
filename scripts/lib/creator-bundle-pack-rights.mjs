@@ -11,6 +11,12 @@
  *     전부 갖춘 팩만 가능하다. 2차 조회 기록(`secondary-lookup`)은 어떤 요구도 채우지 못한다.
  *   - 이 모듈은 어떤 팩을 열지 정하지 않는다. 증빙 제출·서면 확인·최종 개방은 소유자 결정이다.
  *
+ * 한계 — 증빙 검사는 형식·일관성 검사다:
+ *   영수증·itch 캡처·제작사 서면 확인의 실물은 레포 밖에 있어 코드가 진위를 판정할 수 없다. 이 모듈은
+ *   필수 필드·URL 호스트·달력상 유효하고 미래가 아닌 날짜·자리표시 아닌 보관 위치까지만 거른다.
+ *   실물과 대조되는 증빙은 `local-license-file`(sha256, `verifyLocalLicenseEvidence`)뿐이다.
+ *   그래서 allow 전환은 항상 소유자가 직접 하는 원장 편집이고, 이 게이트는 실수·누락을 막는 안전장치다.
+ *
  * 소비자: 생성기(generate-creator-bundle-theme-packs.mjs), 배포 플래너
  * (plan-creator-bundle-deploy.mjs), 검증 CLI(verify-creator-bundle-pack-rights.mjs), 완전성 테스트.
  */
@@ -27,6 +33,11 @@ export const DEFAULT_PACK_RIGHTS_PATH = resolve(REPO_ROOT, "config/creator-bundl
 
 /** 원장 팩이 속한 묶음. 생성기의 CATALOG_PACKS / CROWD_PACKS / PENDING_PACKS와 1:1이다. */
 export const PACK_GROUPS = Object.freeze(["pack", "crowd", "pending"]);
+/**
+ * 서빙 판정이 실제로 일어나는 묶음. pending은 미수신·보류라 생성기가 serve와 무관하게 pendingPacks로만
+ * 내보내므로 allow가 아무것도 열지 못한다 — 편입(CATALOG_PACKS)하면서 group을 pack으로 옮긴 뒤에야 판정 대상이다.
+ */
+export const SERVABLE_GROUPS = Object.freeze(["pack", "crowd"]);
 export const SERVE_STATES = Object.freeze(["hold", "allow"]);
 
 /**
@@ -108,10 +119,24 @@ export const WEB_SERVICE_COVERAGE = "web-service-hosting";
 
 export const RIGHTS_HOLD_REASON = "rights-hold";
 
+/**
+ * 패널의 "준비 중인 팩" 목록에 hold 팩마다 그대로 보이는 문구. 사유(제작사 확인·증빙·충돌)와 공개 약속을
+ * 드러내지 않도록 모든 hold 팩이 같은 중립 문장을 쓴다. 사유는 holdReason(내부 필드)에만 둔다.
+ */
+export const HOLD_PUBLIC_LABEL = "준비 중이며 공개 시점은 정해지지 않았다.";
+
 const SHA256_HEX = /^[a-f0-9]{64}$/u;
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/u;
 const CREATORS = Object.freeze(["EmaceArt", "RG Poly"]);
 const GRANT_STATUSES = Object.freeze(["licensed", "public-domain"]);
+/** 보관 위치(ref)로 인정하지 않는 자리표시 단어. */
+const PLACEHOLDER_REFS = Object.freeze(new Set([
+  "tbd", "todo", "fixme", "n/a", "na", "none", "null", "undefined", "unknown", "pending",
+  "test", "dummy", "sample", "example", "placeholder",
+]));
+const MIN_REF_LENGTH = 6;
+/** 가장 앞선 시간대(UTC+14)의 오늘까지는 허용한다 — 어느 나라에서 적었든 정상 날짜가 미래로 오판되지 않게. */
+const EVIDENCE_DATE_SLACK_MS = 14 * 60 * 60 * 1000;
 
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -121,8 +146,48 @@ function nonEmptyText(value, maximum = 600) {
   return typeof value === "string" && value.trim().length > 0 && value.length <= maximum;
 }
 
-function isIsoDate(value) {
-  return typeof value === "string" && ISO_DATE.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+/** 달력에 실제로 있는 YYYY-MM-DD인지. 2026-02-31처럼 형식만 맞는 날짜는 거부한다. */
+function isCalendarDate(value) {
+  const match = typeof value === "string" ? ISO_DATE.exec(value) : null;
+  if (!match) return false;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+/** 증빙 날짜가 넘을 수 없는 상한(YYYY-MM-DD). `now`는 테스트 주입용이다. */
+function latestEvidenceDate(now) {
+  const base = now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date();
+  return new Date(base.getTime() + EVIDENCE_DATE_SLACK_MS).toISOString().slice(0, 10);
+}
+
+/** 날짜 필드 점검. 문제가 없으면 null. */
+function dateProblem(where, field, value, today) {
+  if (!isCalendarDate(value)) return `${where}: ${field}(YYYY-MM-DD)이 없거나 달력에 없는 날짜입니다.`;
+  if (value > today) return `${where}: ${field}가 미래 날짜입니다 (${value}).`;
+  return null;
+}
+
+/** 보관 위치(ref)로 쓸 수 있는 문자열인지. 너무 짧은 값·한 글자 반복·자리표시 단어는 거부한다. */
+function isMeaningfulRef(value) {
+  if (!nonEmptyText(value, 400)) return false;
+  const text = value.trim();
+  if (text.length < MIN_REF_LENGTH || new Set(text).size === 1) return false;
+  return !PLACEHOLDER_REFS.has(text.toLowerCase());
+}
+
+/** https itch.io(또는 하위 도메인)의 팩 페이지 주소인지. zitch.io·itch.io@evil.com 같은 닮은꼴을 거부한다. */
+function isItchPackUrl(value) {
+  if (typeof value !== "string") return false;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  return url.protocol === "https:" && url.username === "" && url.password === ""
+    && (url.hostname === "itch.io" || url.hostname.endsWith(".itch.io"))
+    && url.pathname.length > 1;
 }
 
 /**
@@ -132,6 +197,13 @@ function isIsoDate(value) {
 export function packRightsKey(def) {
   const ids = Array.isArray(def?.catalogIds) ? [...def.catalogIds].sort() : [];
   return ids.length > 0 ? ids.join("+") : `title:${def?.title ?? ""}`;
+}
+
+/** 로컬 라이선스 문서를 기대하는 팩 분류의 허용 문서 분류. 그 외(unstated-*·알 수 없는 값)는 undefined. */
+function expectedTextClasses(licenseClass) {
+  return typeof licenseClass === "string" && Object.hasOwn(COMPATIBLE_TEXT_CLASSES, licenseClass)
+    ? COMPATIBLE_TEXT_CLASSES[licenseClass]
+    : undefined;
 }
 
 /** 원장 팩 하나의 allow 필수 증빙 종류. 분류가 알려지지 않았으면 null(어떤 증빙으로도 allow 불가). */
@@ -147,25 +219,48 @@ function licenseTextByHash(ledger) {
     .map((text) => [text.sha256, text]));
 }
 
+/** 증빙 점검이 공유하는 맥락: 문서 해시 표와 날짜 상한. */
+function evidenceContext(ledger, now) {
+  return { textsByHash: licenseTextByHash(ledger), today: latestEvidenceDate(now) };
+}
+
+/** 라이선스 문서 한 종류가 기록한 실물 위치 → 라이브러리 팩 이름. zip 안 사본은 `경로::멤버`로 적는다. */
+function licenseFileLocations(text) {
+  const locations = new Map();
+  for (const file of Array.isArray(text.files) ? text.files : []) {
+    if (isRecord(file) && typeof file.libraryPath === "string") locations.set(file.libraryPath, file.libraryPack);
+  }
+  for (const file of Array.isArray(text.archivedFiles) ? text.archivedFiles : []) {
+    if (isRecord(file) && typeof file.libraryPath === "string" && typeof file.member === "string") {
+      locations.set(`${file.libraryPath}::${file.member}`, file.libraryPack);
+    }
+  }
+  return locations;
+}
+
 /** 증빙 한 건이 자기 종류의 필수 필드를 갖췄는지 점검한다. 문제 문장 배열을 돌려준다. */
-function evidenceProblems(evidence, entry, textsByHash) {
+function evidenceProblems(evidence, entry, context) {
   if (!isRecord(evidence)) return ["증빙 항목이 객체가 아닙니다."];
   if (!EVIDENCE_KINDS.includes(evidence.kind)) return [`알 수 없는 증빙 종류입니다: ${String(evidence.kind)}`];
   const problems = [];
   const where = `증빙 ${evidence.kind}`;
+  const addDateProblem = (field) => {
+    const problem = dateProblem(where, field, evidence[field], context.today);
+    if (problem) problems.push(problem);
+  };
   if (NON_QUALIFYING_EVIDENCE_KINDS.includes(evidence.kind)) {
     if (!nonEmptyText(evidence.claim)) problems.push(`${where}: claim(주장 요약)이 비어 있습니다.`);
     if (!nonEmptyText(evidence.source)) problems.push(`${where}: source(출처)가 비어 있습니다.`);
     return problems;
   }
-  if (!isIsoDate(evidence.verifiedAt)) problems.push(`${where}: verifiedAt(YYYY-MM-DD)이 없거나 형식이 틀립니다.`);
+  addDateProblem("verifiedAt");
   switch (evidence.kind) {
     case "local-license-file": {
       if (!SHA256_HEX.test(evidence.sha256 ?? "")) {
         problems.push(`${where}: sha256이 64자리 소문자 16진수가 아닙니다.`);
         break;
       }
-      const text = textsByHash.get(evidence.sha256);
+      const text = context.textsByHash.get(evidence.sha256);
       if (!text) {
         problems.push(`${where}: licenseTexts에 분류되지 않은 해시입니다 (${evidence.sha256.slice(0, 12)}).`);
         break;
@@ -173,25 +268,36 @@ function evidenceProblems(evidence, entry, textsByHash) {
       if (!Array.isArray(evidence.paths) || evidence.paths.length === 0
         || evidence.paths.some((path) => !nonEmptyText(path, 400))) {
         problems.push(`${where}: paths(라이브러리 상대 경로)가 비어 있습니다.`);
+      } else {
+        // 증빙은 자기 팩의 문서여야 한다: 경로가 그 해시로 기록된 실물이고, 적어도 하나는 이 팩의 라이브러리 폴더에 있다.
+        const locations = licenseFileLocations(text);
+        const unrecorded = evidence.paths.filter((path) => !locations.has(path));
+        if (unrecorded.length > 0) {
+          problems.push(`${where}: paths가 해시 ${evidence.sha256.slice(0, 12)}로 기록된 문서가 아닙니다 (${unrecorded[0]}).`);
+        }
+        const ownPacks = Array.isArray(entry.libraryPacks) ? entry.libraryPacks : [];
+        if (!evidence.paths.some((path) => locations.has(path) && ownPacks.includes(locations.get(path)))) {
+          problems.push(`${where}: paths 중 이 팩(libraryPacks)의 라이브러리 폴더에 있는 문서가 없습니다.`);
+        }
       }
-      const compatible = COMPATIBLE_TEXT_CLASSES[entry.licenseClass];
+      const compatible = expectedTextClasses(entry.licenseClass);
       if (compatible && !compatible.includes(text.class)) {
         problems.push(`${where}: 문서 분류 ${text.class}는 팩 분류 ${entry.licenseClass}와 맞지 않습니다.`);
       }
       break;
     }
     case "itch-page-capture":
-      if (!/^https:\/\/[a-z0-9.-]*itch\.io\//iu.test(evidence.url ?? "")) {
-        problems.push(`${where}: url이 itch.io 팩 페이지 주소가 아닙니다.`);
+      if (!isItchPackUrl(evidence.url)) {
+        problems.push(`${where}: url이 https itch.io 팩 페이지 주소가 아닙니다.`);
       }
-      if (!isIsoDate(evidence.retrievedAt)) problems.push(`${where}: retrievedAt(조회일)이 없거나 형식이 틀립니다.`);
-      if (!nonEmptyText(evidence.ref)) problems.push(`${where}: ref(캡처 보관 위치)가 비어 있습니다.`);
+      addDateProblem("retrievedAt");
+      if (!isMeaningfulRef(evidence.ref)) problems.push(`${where}: ref(캡처 보관 위치)가 비었거나 자리표시입니다.`);
       break;
     case "purchase-receipt":
-      if (!nonEmptyText(evidence.ref)) problems.push(`${where}: ref(영수증·약관 보관 위치)가 비어 있습니다.`);
+      if (!isMeaningfulRef(evidence.ref)) problems.push(`${where}: ref(영수증·약관 보관 위치)가 비었거나 자리표시입니다.`);
       break;
     case "producer-written-confirmation":
-      if (!nonEmptyText(evidence.ref)) problems.push(`${where}: ref(서면 확인 보관 위치)가 비어 있습니다.`);
+      if (!isMeaningfulRef(evidence.ref)) problems.push(`${where}: ref(서면 확인 보관 위치)가 비었거나 자리표시입니다.`);
       if (!Array.isArray(evidence.covers) || !evidence.covers.includes(WEB_SERVICE_COVERAGE)) {
         problems.push(`${where}: covers에 ${WEB_SERVICE_COVERAGE}가 없어 웹 서비스 서빙 확인으로 인정되지 않습니다.`);
       }
@@ -203,40 +309,76 @@ function evidenceProblems(evidence, entry, textsByHash) {
 }
 
 /**
- * 팩 하나의 allow 자격 점검. 문제 문장 배열(빈 배열이면 자격 충족)을 돌려준다.
- * 검증기와 서빙 판정이 같은 함수를 쓴다 — 원장 검증을 우회해 들어온 allow도 여기서 닫힌다.
+ * grant 블록 점검(문제 문장 배열). attributionRequired=true는 원장 스키마에 attribution 문구 필드가 없어
+ * 로더가 권리를 unknown으로 닫아 버리므로, 필드가 생기기 전까지는 받지 않는다.
  */
-export function allowEligibilityProblems(ledger, entry) {
-  const required = requiredEvidenceKinds(entry?.licenseClass);
-  if (!required) return [`라이선스 분류 ${String(entry?.licenseClass)}에는 allow 요구 증빙이 정의돼 있지 않습니다.`];
-  const textsByHash = licenseTextByHash(ledger);
-  const evidence = Array.isArray(entry.evidence) ? entry.evidence : [];
+function grantProblems(entry) {
+  const grant = entry?.grant;
+  if (!isRecord(grant)) return ["allow 팩에는 grant(status·licenseName·commercialUse·attributionRequired)가 필요합니다."];
   const problems = [];
+  if (!GRANT_STATUSES.includes(grant.status)) problems.push(`grant.status는 ${GRANT_STATUSES.join("|")}여야 합니다.`);
+  if (!nonEmptyText(grant.licenseName, 200)) problems.push("grant.licenseName이 비어 있습니다.");
+  if (typeof grant.commercialUse !== "boolean") problems.push("grant.commercialUse는 boolean이어야 합니다.");
+  if (typeof grant.attributionRequired !== "boolean") {
+    problems.push("grant.attributionRequired는 boolean이어야 합니다.");
+  } else if (grant.attributionRequired) {
+    problems.push("grant.attributionRequired=true는 지원하지 않습니다 (스키마에 attribution 문구 필드가 없어 로더가 권리를 unknown으로 닫습니다).");
+  }
+  return problems;
+}
+
+/**
+ * 팩 하나의 allow 자격 점검. 문제 문장 배열(빈 배열이면 자격 충족)을 돌려준다.
+ * 묶음(서빙 대상인가)·grant·분류별 필수 증빙을 모두 본다. 검증기와 서빙 판정이 같은 함수를 쓰므로
+ * 원장 검증을 거치지 않고 들어온 allow도 증빙·grant·묶음이 모자라면 여기서 닫힌다.
+ * (진위 판정은 아니다 — 파일 머리의 "한계" 참고.) `now`는 날짜 상한 계산용 테스트 주입값이다.
+ */
+export function allowEligibilityProblems(ledger, entry, { now } = {}) {
+  if (!isRecord(entry)) return ["원장 항목이 객체가 아닙니다."];
+  const problems = [];
+  if (entry.group === "pending") {
+    problems.push("pending 묶음 팩은 인제스션·CATALOG_PACKS 편입 전이라 allow가 아무것도 열지 못합니다 (편입하면서 group을 pack으로 옮긴 뒤 판정합니다).");
+  } else if (!SERVABLE_GROUPS.includes(entry.group)) {
+    problems.push(`group ${String(entry.group)}은 서빙 판정 대상이 아닙니다.`);
+  }
+  problems.push(...grantProblems(entry));
+  const required = requiredEvidenceKinds(entry.licenseClass);
+  if (!required) {
+    problems.push(`라이선스 분류 ${String(entry.licenseClass)}에는 allow 요구 증빙이 정의돼 있지 않습니다.`);
+    return problems;
+  }
+  const context = evidenceContext(ledger, now);
+  const evidence = Array.isArray(entry.evidence) ? entry.evidence : [];
   for (const kind of required) {
     const candidates = evidence.filter((item) => isRecord(item) && item.kind === kind);
     if (candidates.length === 0) {
       problems.push(`필수 증빙 ${kind}가 없습니다.`);
       continue;
     }
-    const clean = candidates.some((item) => evidenceProblems(item, entry, textsByHash).length === 0);
-    if (!clean) {
-      problems.push(...candidates.flatMap((item) => evidenceProblems(item, entry, textsByHash)));
-    }
+    const results = candidates.map((item) => evidenceProblems(item, entry, context));
+    if (!results.some((result) => result.length === 0)) problems.push(...results.flat());
   }
   return problems;
 }
 
 /** allow 자격을 아직 못 채운 증빙 종류. hold 사유 표시와 소유자 안내에 쓴다. */
-export function missingEvidenceKinds(ledger, entry) {
+export function missingEvidenceKinds(ledger, entry, { now } = {}) {
   const required = requiredEvidenceKinds(entry?.licenseClass) ?? [];
-  const textsByHash = licenseTextByHash(ledger);
+  const context = evidenceContext(ledger, now);
   const evidence = Array.isArray(entry?.evidence) ? entry.evidence : [];
   return required.filter((kind) => !evidence.some((item) => isRecord(item)
-    && item.kind === kind && evidenceProblems(item, entry, textsByHash).length === 0));
+    && item.kind === kind && evidenceProblems(item, entry, context).length === 0));
 }
 
-/** 공개 서빙 판정이 theme-packs.json에 싣는 팩별 권리 블록 (허용된 팩 전용). */
+/**
+ * 공개 서빙 판정이 theme-packs.json에 싣는 팩별 권리 블록 (허용된 팩 전용).
+ * grant가 올바르지 않으면 던진다 — 검증 안 된 값을 공개 JSON에 싣지 않는다.
+ */
 export function packRightsProjection(entry) {
+  const problems = grantProblems(entry);
+  if (problems.length > 0) {
+    throw new TypeError(`권리 블록을 만들 수 없습니다 (${String(entry?.title)}): ${problems.join(" / ")}`);
+  }
   return {
     serve: "allow",
     status: entry.grant.status,
@@ -254,30 +396,28 @@ export function findPackRights(ledger, def) {
 }
 
 /**
- * 서빙 판정. `serve`가 true인 경우는 원장에 있고, allow이며, 증빙 자격까지 충족한 팩뿐이다.
- * reason: allow | hold | missing-entry | invalid-evidence
+ * 서빙 판정. `serve`가 true인 경우는 원장에 있고, allow이며, 증빙·grant·묶음 자격까지 충족한 팩뿐이다.
+ * - `group`을 주면 원장 항목이 그 묶음이어야 한다 (배치 가능 팩만 다루는 플래너는 "pack"을 준다).
+ * - def에 title·creator가 있으면 원장 항목과 같아야 한다 (카탈로그 번호 없는 팩의 제목 위장 방지).
+ * reason: allow | hold | missing-entry | group-mismatch | identity-mismatch | invalid-evidence
  */
-export function evaluateServeDecision(ledger, def) {
+export function evaluateServeDecision(ledger, def, { group, now } = {}) {
   const entry = findPackRights(ledger, def);
   if (!entry) return { serve: false, reason: "missing-entry", entry: null, problems: [] };
   if (entry.serve !== "allow") return { serve: false, reason: "hold", entry, problems: [] };
-  const problems = allowEligibilityProblems(ledger, entry);
+  if (group !== undefined && entry.group !== group) {
+    return { serve: false, reason: "group-mismatch", entry, problems: [`원장 묶음 ${String(entry.group)} ≠ 기대 묶음 ${group}`] };
+  }
+  const mismatched = ["title", "creator"].filter((field) => def?.[field] !== undefined && def[field] !== entry[field]);
+  if (mismatched.length > 0) {
+    return { serve: false, reason: "identity-mismatch", entry, problems: mismatched.map((field) => `${field}가 원장과 다릅니다.`) };
+  }
+  const problems = allowEligibilityProblems(ledger, entry, { now });
   if (problems.length > 0) return { serve: false, reason: "invalid-evidence", entry, problems };
   return { serve: true, reason: "allow", entry, problems: [] };
 }
 
-function validateGrant(entry, where) {
-  const problems = [];
-  const grant = entry.grant;
-  if (!isRecord(grant)) return [`${where}: allow 팩에는 grant(status·licenseName·commercialUse·attributionRequired)가 필요합니다.`];
-  if (!GRANT_STATUSES.includes(grant.status)) problems.push(`${where}: grant.status는 ${GRANT_STATUSES.join("|")}여야 합니다.`);
-  if (!nonEmptyText(grant.licenseName, 200)) problems.push(`${where}: grant.licenseName이 비어 있습니다.`);
-  if (typeof grant.commercialUse !== "boolean") problems.push(`${where}: grant.commercialUse는 boolean이어야 합니다.`);
-  if (typeof grant.attributionRequired !== "boolean") problems.push(`${where}: grant.attributionRequired는 boolean이어야 합니다.`);
-  return problems;
-}
-
-function validateEntry(ledger, entry, index, textsByHash) {
+function validateEntry(ledger, entry, index, context) {
   const where = `packs[${index}]${isRecord(entry) && typeof entry.title === "string" ? ` ${entry.title}` : ""}`;
   if (!isRecord(entry)) return [`${where}: 객체가 아닙니다.`];
   const problems = [];
@@ -290,6 +430,9 @@ function validateEntry(ledger, entry, index, textsByHash) {
   if (!Array.isArray(entry.officialCatalogIds) || entry.officialCatalogIds.some((id) => !nonEmptyText(id, 200))) {
     problems.push(`${where}: officialCatalogIds는 문자열 배열이어야 합니다.`);
   }
+  if (!Array.isArray(entry.libraryPacks) || entry.libraryPacks.some((name) => !nonEmptyText(name, 200))) {
+    problems.push(`${where}: libraryPacks는 문자열 배열이어야 합니다 (로컬 라이선스 증빙을 이 팩에 묶는 기준).`);
+  }
   if (!LICENSE_CLASSES.includes(entry.licenseClass)) {
     problems.push(`${where}: licenseClass가 알려진 분류가 아닙니다 (${String(entry.licenseClass)}).`);
   }
@@ -301,7 +444,7 @@ function validateEntry(ledger, entry, index, textsByHash) {
     return problems;
   }
   for (const [evidenceIndex, evidence] of entry.evidence.entries()) {
-    problems.push(...evidenceProblems(evidence, entry, textsByHash)
+    problems.push(...evidenceProblems(evidence, entry, context)
       .map((problem) => `${where} evidence[${evidenceIndex}]: ${problem}`));
   }
   // 분류와 로컬 문서의 일관성: unstated-*는 로컬 문서가 없어야 하고, 나머지는 있어야 한다.
@@ -309,12 +452,12 @@ function validateEntry(ledger, entry, index, textsByHash) {
   if (String(entry.licenseClass).startsWith("unstated-") && localFiles.length > 0) {
     problems.push(`${where}: 로컬 라이선스 문서가 있는데 ${entry.licenseClass}로 분류돼 있습니다.`);
   }
-  if (COMPATIBLE_TEXT_CLASSES[entry.licenseClass] && localFiles.length === 0) {
+  if (expectedTextClasses(entry.licenseClass) && localFiles.length === 0) {
     problems.push(`${where}: ${entry.licenseClass} 분류는 local-license-file 증빙 기록이 있어야 합니다.`);
   }
   if (entry.serve === "allow") {
-    problems.push(...allowEligibilityProblems(ledger, entry).map((problem) => `${where}: allow 불가 — ${problem}`));
-    problems.push(...validateGrant(entry, where));
+    problems.push(...allowEligibilityProblems(ledger, entry, { now: context.now })
+      .map((problem) => `${where}: allow 불가 — ${problem}`));
     for (const field of ["holdReason", "holdLabel"]) {
       if (entry[field] !== undefined && entry[field] !== null) {
         problems.push(`${where}: allow 팩에는 ${field}가 없어야 합니다.`);
@@ -330,8 +473,9 @@ function validateEntry(ledger, entry, index, textsByHash) {
 /**
  * 원장 전체 검증. 문제 문장 배열(빈 배열이면 통과)을 돌려준다.
  * 구조·고유성·allow 증빙·라이선스 문서 분류 일관성을 본다. 생성기와 대조는 checkLedgerCoversDefs가 한다.
+ * `now`는 증빙 날짜 상한(미래 날짜 거부) 계산용 테스트 주입값이다.
  */
-export function validatePackRightsLedger(ledger) {
+export function validatePackRightsLedger(ledger, { now } = {}) {
   if (!isRecord(ledger)) return ["원장이 객체가 아닙니다."];
   const problems = [];
   if (ledger.schema !== PACK_RIGHTS_SCHEMA || ledger.version !== 1) {
@@ -356,22 +500,24 @@ export function validatePackRightsLedger(ledger) {
     if (!LICENSE_TEXT_CLASSES.includes(text.class)) problems.push(`${where}: class가 알려진 문서 분류가 아닙니다 (${String(text.class)}).`);
     if (!nonEmptyText(text.summary, 400)) problems.push(`${where}: summary가 비어 있습니다.`);
     if (!Array.isArray(text.files) || text.files.length === 0
-      || text.files.some((file) => !isRecord(file) || !nonEmptyText(file.libraryPath, 400))) {
-      problems.push(`${where}: files(libraryPath)가 비어 있습니다.`);
+      || text.files.some((file) => !isRecord(file) || !nonEmptyText(file.libraryPath, 400)
+        || !nonEmptyText(file.libraryPack, 200))) {
+      problems.push(`${where}: files({libraryPath, libraryPack})가 비어 있습니다.`);
     }
     // zip 안에 든 사본(예: Blend Textures.zip의 LICENSE.txt)은 archivedFiles에 압축 파일 경로와 멤버 이름으로 적는다.
     if (text.archivedFiles !== undefined
       && (!Array.isArray(text.archivedFiles) || text.archivedFiles.some((file) => !isRecord(file)
-        || !nonEmptyText(file.libraryPath, 400) || !nonEmptyText(file.member, 400)))) {
-      problems.push(`${where}: archivedFiles는 {libraryPath, member} 배열이어야 합니다.`);
+        || !nonEmptyText(file.libraryPath, 400) || !nonEmptyText(file.member, 400)
+        || !nonEmptyText(file.libraryPack, 200)))) {
+      problems.push(`${where}: archivedFiles는 {libraryPath, member, libraryPack} 배열이어야 합니다.`);
     }
   }
-  const textsByHash = licenseTextByHash(ledger);
+  const context = { ...evidenceContext(ledger, now), now };
   const seenKeys = new Map();
   const seenIds = new Set();
   const seenCatalogIds = new Map();
   for (const [index, entry] of ledger.packs.entries()) {
-    problems.push(...validateEntry(ledger, entry, index, textsByHash));
+    problems.push(...validateEntry(ledger, entry, index, context));
     if (!isRecord(entry)) continue;
     if (!nonEmptyText(entry.id, 200)) problems.push(`packs[${index}]: id가 비어 있습니다.`);
     else if (seenIds.has(entry.id)) problems.push(`packs[${index}]: id가 중복됩니다 (${entry.id}).`);

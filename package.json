@@ -232,7 +232,7 @@
     "write:creator-bundle-deploy-manifest": "node scripts/plan-creator-bundle-deploy.mjs --write",
     "deploy:creator-bundle-assets": "node scripts/plan-creator-bundle-deploy.mjs --production",
     "verify:creator-bundle-pack-rights": "node scripts/verify-creator-bundle-pack-rights.mjs",
-    "test:creator-bundle-rights": "node --test scripts/creator-bundle-pack-rights.test.mjs scripts/generate-creator-bundle-theme-packs.test.mjs scripts/plan-creator-bundle-deploy.test.mjs",
+    "test:creator-bundle-rights": "node --test scripts/creator-bundle-pack-rights.test.mjs scripts/creator-bundle-pack-rights-gate.test.mjs scripts/generate-creator-bundle-theme-packs.test.mjs scripts/plan-creator-bundle-deploy.test.mjs && vitest run scripts/creator-bundle-serving-parity.test.mjs",
     "typecheck:cloudflare-static": "tsc -p deploy/cloudflare-static/tsconfig.json",
     "test:cloudflare-static": "vitest run deploy/cloudflare-static/src/index.test.ts scripts/cloudflare-static-rules.test.mjs scripts/deploy-cloudflare-static.test.mjs scripts/prepare-cloudflare-static-assets.test.ts scripts/sync-cloudflare-r2-assets.test.ts",
     "verify:cloudflare-static": "pnpm run generate:cloudflare-static-rules -- --check && pnpm run typecheck:cloudflare-static && pnpm run test:cloudflare-static",

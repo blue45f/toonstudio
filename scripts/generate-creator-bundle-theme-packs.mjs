@@ -55,6 +55,7 @@ import {
   checkLedgerCoversDefs,
   DEFAULT_PACK_RIGHTS_PATH,
   evaluateServeDecision,
+  HOLD_PUBLIC_LABEL,
   loadPackRightsLedger,
   packRightsProjection,
   RIGHTS_HOLD_REASON,
@@ -243,7 +244,7 @@ function heldPendingPack(def, entry) {
     catalogIds: def.catalogIds,
     title: def.title,
     reason: RIGHTS_HOLD_REASON,
-    reasonLabel: entry?.holdLabel ?? "라이선스 증빙 확인이 끝나면 공개한다.",
+    reasonLabel: entry?.holdLabel ?? HOLD_PUBLIC_LABEL,
   };
 }
 
@@ -292,7 +293,7 @@ export function buildThemePacks({ manifestV2, themesDoc, assetRoot, ledger, onEr
 
   for (const def of CATALOG_PACKS) {
     // 권리 게이트: 서빙이 허용되지 않은 팩은 실물 파일을 읽지도 않고 대기 목록으로만 보낸다.
-    const decision = evaluateServeDecision(ledger, def);
+    const decision = evaluateServeDecision(ledger, def, { group: "pack" });
     if (!decision.serve) {
       heldPacks.push({ def, decision });
       continue;
@@ -385,7 +386,7 @@ export function buildThemePacks({ manifestV2, themesDoc, assetRoot, ledger, onEr
 
   const crowdPacks = [];
   for (const def of CROWD_PACKS) {
-    const decision = evaluateServeDecision(ledger, def);
+    const decision = evaluateServeDecision(ledger, def, { group: "crowd" });
     if (!decision.serve) {
       heldPacks.push({ def, decision });
       continue;
