@@ -10,7 +10,7 @@
  * result for round-trip retention.
  */
 
-import { stripTrailingNuls } from "./nul-text";
+import { stripTrailingNuls, utf16UnitsToString } from "./nul-text";
 
 export interface AbrComputedBrush {
   kind: "computed";
@@ -101,7 +101,7 @@ export function importAbr(bytes: Uint8Array): AbrImportResult {
           cursor += 2;
         }
         // Trailing NUL is part of the stored length in real files.
-        name = stripTrailingNuls(String.fromCharCode(...chars)) || name;
+        name = stripTrailingNuls(utf16UnitsToString(chars)) || name;
       }
       const angleDeg = view.getInt16(cursor, false);
       cursor += 2;

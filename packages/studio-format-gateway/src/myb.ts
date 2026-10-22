@@ -325,7 +325,8 @@ function buildSettingReports(document: MybDocument): MybSettingReport[] {
     .map((setting) => {
       const value = document.settings[setting];
       const inputNames = Object.keys(value?.inputs ?? {}).sort();
-      const classification = MYB_SETTING_TABLE[setting] ?? {
+      // 설정 이름은 바깥 파일의 키다. 소유 속성만 표에서 읽어야 `constructor` 같은 Object.prototype 키가 분류로 새어 들어오지 않는다.
+      const classification = (Object.hasOwn(MYB_SETTING_TABLE, setting) ? MYB_SETTING_TABLE[setting] : undefined) ?? {
         disposition: "parsed-inert" as const,
         note: "unknown setting name",
       };

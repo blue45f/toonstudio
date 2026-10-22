@@ -1,6 +1,7 @@
 import { brushProgramIRSchema } from "@toonstudio/studio-project-model";
 
 import { MybParseError, importMybBrush } from "./myb";
+import { decodeNumericCharacterReference } from "./xml-character-reference";
 
 import type {
   BrushProgramIR,
@@ -211,14 +212,7 @@ const XML_NAMED_ENTITIES: Record<string, string> = {
 
 function decodeXmlEntities(value: string): string {
   return value.replace(/&(#x?[0-9a-fA-F]+|[a-z]+);/g, (whole, body: string) => {
-    if (body.startsWith("#x") || body.startsWith("#X")) {
-      const code = Number.parseInt(body.slice(2), 16);
-      return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
-    }
-    if (body.startsWith("#")) {
-      const code = Number.parseInt(body.slice(1), 10);
-      return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
-    }
+    if (body.startsWith("#")) return decodeNumericCharacterReference(body) ?? whole; // 범위 밖·대리쌍 참조는 원문 그대로
     return Object.hasOwn(XML_NAMED_ENTITIES, body) ? XML_NAMED_ENTITIES[body] : whole; // 소유 속성만: `constructor` 등 Object.prototype 키 제외
   });
 }

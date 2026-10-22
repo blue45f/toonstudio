@@ -20,6 +20,14 @@ import {
 
 import type { AbrPreviewBrush, AbrTipMask } from "../abr-preview";
 
+describe("ABR 미리보기 이름 읽기", () => {
+  it("함수 인자 수 한도를 넘는 긴 UTF-16 이름도 예외 없이 읽는다", () => {
+    const name = "가".repeat(300_000);
+    const decoded = decodeAbrPreviewBrushes(buildComputedAbr({ version: 2, name, spacingPct: 25, angleDeg: 0, roundness: 50, diameterPx: 32 }));
+    expect(decoded.brushes[0]).toMatchObject({ name });
+  });
+});
+
 function onlyBrush(bytes: Uint8Array): AbrPreviewBrush {
   const decoded = decodeAbrPreviewBrushes(bytes);
   expect(decoded.brushes).toHaveLength(1);

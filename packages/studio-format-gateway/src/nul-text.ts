@@ -17,3 +17,16 @@ export function stripTrailingNuls(text: string): string {
   while (end > 0 && text.charCodeAt(end - 1) === 0) end -= 1;
   return end === text.length ? text : text.slice(0, end);
 }
+
+/**
+ * UTF-16 코드 유닛 배열을 문자열로 바꾼다. 파일이 길이를 정하는 이름에 `String.fromCharCode(...units)` 를 쓰면 인자 수가 엔진 한도
+ * (대략 12만 개)를 넘는 순간 통제되지 않는 RangeError(스택 초과)로 터지므로, 조각으로 나눠 잇는다.
+ */
+export function utf16UnitsToString(units: readonly number[]): string {
+  const chunkUnits = 0x2000;
+  let text = "";
+  for (let offset = 0; offset < units.length; offset += chunkUnits) {
+    text += String.fromCharCode(...units.slice(offset, offset + chunkUnits));
+  }
+  return text;
+}
