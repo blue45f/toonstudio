@@ -1,4 +1,8 @@
 import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import {
+  studioRasterReplayErrorInfoFromCause,
+  type StudioRasterReplayErrorInfo,
+} from "./status-i18n/studio-producer-error-i18n-live-raster";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import {
@@ -48,7 +52,8 @@ export interface StudioRasterCrdtSurfaceProps {
   readonly onVisibleOperationIdsChange?: (operationIds: readonly string[]) => void;
   readonly onHandoffCandidateChange?: (candidate: StudioRasterHandoffCandidate | null) => void;
   readonly onConflict?: (operationIds: readonly string[]) => void;
-  readonly onError?: (message: string) => void;
+  /** replay 구조화 오류는 {code, params}로 넘기고 표시 지점(StageHost)에서 해석한다(A4 D4, R12). */
+  readonly onError?: (error: string | StudioRasterReplayErrorInfo) => void;
 }
 
 interface ReadyRasterFrame {
@@ -62,7 +67,7 @@ interface StudioRasterSurfaceCallbacks {
   readonly onVisibleOperationIdsChange?: (operationIds: readonly string[]) => void;
   readonly onHandoffCandidateChange?: (candidate: StudioRasterHandoffCandidate | null) => void;
   readonly onConflict?: (operationIds: readonly string[]) => void;
-  readonly onError?: (message: string) => void;
+  readonly onError?: (error: string | StudioRasterReplayErrorInfo) => void;
 }
 
 function sameStringArray(left: readonly string[], right: readonly string[]): boolean {
@@ -312,9 +317,10 @@ export function StudioRasterCrdtSurface({
       publishStudioRasterVisibleOperationIds(visibleOperationIdsRef, callbacksRef, []);
       callbacksRef.current.onHandoffCandidateChange?.(null);
       callbacksRef.current.onError?.(
-        cause instanceof Error
-          ? cause.message
-          : panelStatusText("studio.panelStatus.rasterCrdt.replayFailed", "실시간 픽셀 캔버스를 재생하지 못했습니다.")
+        studioRasterReplayErrorInfoFromCause(cause) ??
+          (cause instanceof Error
+            ? cause.message
+            : panelStatusText("studio.panelStatus.rasterCrdt.replayFailed", "실시간 픽셀 캔버스를 재생하지 못했습니다."))
       );
     });
 
