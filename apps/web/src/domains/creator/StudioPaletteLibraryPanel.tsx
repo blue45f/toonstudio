@@ -32,10 +32,9 @@ import { cx } from "@/shared/lib/cx";
 
 import { frozenStatusText } from "./studio-frozen-status-i18n";
 import { resolveStudioPaletteInterchangeErrorFromCause, resolveStudioPaletteInterchangeWarning } from "./status-i18n/studio-producer-error-i18n-palette";
+
 type StudioPaletteInterchangeModule = typeof import("./studio-palette-interchange");
-type StudioPaletteInterchangeFormat = Parameters<
-  StudioPaletteInterchangeModule["exportStudioPalette"]
->[0];
+type StudioPaletteInterchangeFormat = Parameters<StudioPaletteInterchangeModule["exportStudioPalette"]>[0];
 
 let paletteInterchangeModulePromise: Promise<StudioPaletteInterchangeModule> | null = null;
 
@@ -864,7 +863,7 @@ export function StudioPaletteLibraryPanel({
           {WEBTOON_PRESETS.map((preset) => (
             <article key={preset.name} className="rounded-lg border border-line bg-card p-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-fg-1">{preset.name}</span>
+                <span className="text-xs font-semibold text-fg">{preset.name}</span>
                 <button
                   type="button"
                   aria-label={`${preset.name} 내 팔레트로 저장`}
@@ -1025,7 +1024,7 @@ export function StudioPaletteLibraryPanel({
                           type="button"
                           onClick={() => setExpandedPaletteIds((prev) => new Set([...prev, palette.id]))}
                           aria-label={`${palette.name} 모든 ${palette.colors.length}색 펼치기`}
-                          className="flex size-11 items-center justify-center rounded-lg border border-line px-1 text-[0.62rem] font-semibold text-fg-3 hover:bg-raised hover:text-fg-1"
+                          className="flex size-11 items-center justify-center rounded-lg border border-line px-1 text-[0.62rem] font-semibold text-fg-3 hover:bg-raised hover:text-fg"
                         >
                           +{palette.colors.length - SWATCH_PREVIEW_COUNT}
                         </button>

@@ -1,4 +1,6 @@
+import { userAiWireProtocol } from "./claude/claude-protocol";
 import { assertFreeAiConnection } from "./free-ai-policy";
+import { readBoundedResponseBytes } from "./user-ai-bounded-read";
 import {
   FreeAiRuntimeBudgetError,
   guardFreeAiRuntimeRequest,
@@ -11,6 +13,10 @@ import {
   requireUserAiConnection,
   userAiAutomaticExternalConnectionsForCapability,
 } from "./user-ai-store";
+import {
+  UserAiTransportError,
+  type UserAiTransportErrorCode,
+} from "./user-ai-transport-error";
 import {
   validateUserAiBaseUrl,
   validateUserAiPath,
@@ -29,23 +35,7 @@ export interface UserAiRequestOptions {
   connection?: UserAiResolvedConnection;
 }
 
-export type UserAiTransportErrorCode =
-  | "not-configured"
-  | "quota-exhausted"
-  | "all-free-exhausted"
-  | "authentication"
-  | "http-error";
-
-export class UserAiTransportError extends Error {
-  constructor(
-    readonly code: UserAiTransportErrorCode,
-    message: string,
-    readonly status?: number,
-  ) {
-    super(message);
-    this.name = "UserAiTransportError";
-  }
-}
+export { UserAiTransportError, type UserAiTransportErrorCode };
 
 export function isUserAiQuotaExhaustion(error: unknown): boolean {
   return error instanceof FreeAiRuntimeBudgetError
@@ -54,42 +44,6 @@ export function isUserAiQuotaExhaustion(error: unknown): boolean {
 }
 
 const MAX_JSON_BYTES = 80 * 1024 * 1024;
-
-async function readBounded(
-  response: Response,
-  maximum: number,
-): Promise<Uint8Array<ArrayBuffer>> {
-  if (!response.body || Number(response.headers.get("content-length") ?? 0) > maximum) {
-    await response.body?.cancel();
-    throw new Error("AI 응답 용량이 허용 범위를 넘었습니다.");
-  }
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let length = 0;
-  try {
-    for (;;) {
-      const item = await reader.read();
-      if (item.done) break;
-      length += item.value.byteLength;
-      if (length > maximum) {
-        throw new Error("AI 응답 용량이 허용 범위를 넘었습니다.");
-      }
-      chunks.push(item.value);
-    }
-  } catch (error) {
-    await reader.cancel().catch(() => undefined);
-    throw error;
-  } finally {
-    reader.releaseLock();
-  }
-  const bytes = new Uint8Array(length);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.length;
-  }
-  return bytes;
-}
 
 /** Direct zero-cost user-to-provider transport: no cookies, redirects, retries or operator fallback. */
 export async function userAiFetch(
@@ -114,6 +68,20 @@ export async function userAiFetch(
   const revision = currentRevision;
   const validatedPath = validateUserAiPath(path);
   const method = options.method ?? (body === undefined ? "GET" : "POST");
+  // Claude 연결은 Messages API로 번역해 보내고 OpenAI 형식 응답으로 돌려준다(호출자 변경 없음).
+  // 번역·SDK 계층은 Claude 연결을 실제로 쓰는 순간에만 내려받는다(앱 첫 로드·스튜디오 진입 번들에 싣지 않는다).
+  if (userAiWireProtocol(connection) === "anthropic-messages") {
+    const { claudeBridgedResponse } = await import("./claude/claude-transport");
+    return claudeBridgedResponse(
+      capability,
+      validatedPath,
+      method,
+      body,
+      connection,
+      revision,
+      { signal: options.signal },
+    );
+  }
   const guardedRequest = await guardFreeAiRuntimeRequest(
     connection,
     capability,
@@ -175,7 +143,7 @@ export async function userAiFetch(
       : requestedMaximum;
     const bytes = response.status === 204
       ? null
-      : await readBounded(response, responseMaximum);
+      : await readBoundedResponseBytes(response, responseMaximum);
     signal.throwIfAborted();
     if (!response.ok) {
       if (response.status === 402 || response.status === 429) {
