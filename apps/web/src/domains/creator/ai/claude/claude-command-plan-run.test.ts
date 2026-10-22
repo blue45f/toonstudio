@@ -114,13 +114,13 @@ describe("estimateCommandPlanCostCapUsd", () => {
     expect(many ?? 0).toBeGreaterThan(few ?? 0);
   });
 
-  it("비활성 후보는 보내지 않으므로 비용에 넣지 않는다", () => {
+  it("비활성 후보도 이름을 보내므로 비용에 들어간다(카탈로그를 상태와 무관하게 고정하려고)", () => {
     const base = estimateCommandPlanCostCapUsd("claude-opus-5-5", "격자", [CANDIDATES[0] as AiCommandCandidate]);
     const withDisabled = estimateCommandPlanCostCapUsd("claude-opus-5-5", "격자", [
       CANDIDATES[0] as AiCommandCandidate,
       { commandId: "view.rulers", label: "눈금자", disabled: true },
     ]);
-    expect(withDisabled).toBe(base);
+    expect(withDisabled ?? 0).toBeGreaterThan(base ?? 0);
   });
 
   it("단가를 모르는 모델이면 null", () => {
