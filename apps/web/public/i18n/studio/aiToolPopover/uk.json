@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Постачальник текстових AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "Серверний текстовий постачальник AI",
   "studio.aiToolPopover.serverProviderAuto": "автоматичне перемикання",
-  "studio.aiToolPopover.serverFallbackMessage": "Коли баланс/ліміт пакету буде вичерпано, ви перейдете до іншого постачальника. Загальні помилки не надсилаються автоматично повторно, щоб запобігти подвійному стягненню плати."
+  "studio.aiToolPopover.serverFallbackMessage": "Коли баланс/ліміт пакету буде вичерпано, ви перейдете до іншого постачальника. Загальні помилки не надсилаються автоматично повторно, щоб запобігти подвійному стягненню плати.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }
