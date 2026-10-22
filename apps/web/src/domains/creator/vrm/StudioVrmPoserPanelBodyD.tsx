@@ -34,6 +34,7 @@ import {
 import {
   StudioVrmScenePropVisual,
 } from "./StudioVrmSemanticVisual";
+import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 import type {
   ScenePropAttachmentConfig as PropAttachmentConfig,
 } from "./studio-vrm-scene-props";
@@ -105,7 +106,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                 </summary>
                 {springJointCount === 0 ? (
                   <p className="rounded-lg border border-dashed border-line/70 bg-card/40 px-2.5 py-2 text-[0.68rem] text-fg-3">
-                    {vrm ? "이 모델에는 흔들림 뼈 정보가 없어요." : "모델을 먼저 불러오세요."}
+                    {vrm ? frozenStatus4Text("studio.frozenStatus4.vrmD.noSpringBones", "이 모델에는 흔들림 뼈 정보가 없어요.") : frozenStatus4Text("studio.frozenStatus4.vrmD.loadModelFirst", "모델을 먼저 불러오세요.")}
                   </p>
                 ) : (
                   <>
@@ -196,7 +197,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                 </summary>
                 {!vrm ? (
                   <p className="rounded-lg border border-dashed border-line/70 bg-card/40 px-2.5 py-2 text-[0.68rem] text-fg-3">
-                    모델을 먼저 불러오세요.
+                    {frozenStatus4Text("studio.frozenStatus4.vrmD.loadModelFirst", "모델을 먼저 불러오세요.")}
                   </p>
                 ) : (
                   <>
@@ -223,14 +224,14 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                               faceDetected ? "bg-green-500 animate-pulse" : "bg-red-500"
                             )}
                           />
-                          {faceDetected ? "얼굴 감지됨" : "얼굴 감지 중..."}
+                          {faceDetected ? frozenStatus4Text("studio.frozenStatus4.vrmD.faceDetected", "얼굴 감지됨") : frozenStatus4Text("studio.frozenStatus4.vrmD.faceSearching", "얼굴 감지 중...")}
                         </div>
                         {faceLostLong && (
                           <div
                             className="absolute inset-x-2 bottom-2 rounded bg-black/70 px-2 py-1 text-center text-[0.66rem] font-semibold text-amber-300"
                             role="status"
                           >
-                            얼굴이 보이지 않아요 — 카메라 정면에 위치해 주세요
+                            {frozenStatus4Text("studio.frozenStatus4.vrmD.faceNotVisible", "얼굴이 보이지 않아요 — 카메라 정면에 위치해 주세요")}
                           </div>
                         )}
                         {calibrating && (
@@ -241,8 +242,8 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                           >
                             <p className="text-[0.72rem] font-bold leading-relaxed text-white">
                               {calibrationCountdown > 0
-                                ? `정면을 보고 무표정을 유지하세요… ${calibrationCountdown}`
-                                : `측정 중… ${Math.round(calibrationProgress * 100)}%`}
+                                ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibHoldStill", { count: calibrationCountdown }, "정면을 보고 무표정을 유지하세요… {count}")
+                                : frozenStatus4Text("studio.frozenStatus4.vrmD.calibMeasuring", { percent: Math.round(calibrationProgress * 100) }, "측정 중… {percent}%")}
                             </p>
                           </div>
                         )}
@@ -252,7 +253,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                     {webcamLoading && (
                       <div className="flex items-center justify-center gap-2 rounded-lg border border-line bg-card/50 py-4 text-xs text-fg-2">
                         <Loader2 className="animate-spin motion-reduce:animate-none text-accent" size={16} />
-                        AI 트래킹 모델 및 카메라 로딩 중...
+                        {frozenStatus4Text("studio.frozenStatus4.vrmD.trackingLoading", "AI 트래킹 모델 및 카메라 로딩 중...")}
                       </div>
                     )}
 
@@ -263,7 +264,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                           <div className="flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-500 mb-3 leading-relaxed">
                             <AlertTriangle className="shrink-0 mt-0.5" size={14} />
                             <div>
-                              <p className="font-semibold mb-1 text-[0.72rem]">⚠️ 비보안 환경 접속 (카메라 비활성화)</p>
+                              <p className="font-semibold mb-1 text-[0.72rem]">{frozenStatus4Text("studio.frozenStatus4.vrmD.insecureEnvTitle", "⚠️ 비보안 환경 접속 (카메라 비활성화)")}</p>
                               <p className="text-[0.65rem] opacity-90 text-left">
                                 현재 비보안(HTTP) 주소로 접속 중입니다. 브라우저 정책상 웹캠은 HTTPS 또는 localhost 에서만 동작합니다.
                                 <br />
@@ -278,7 +279,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                           <div className="flex items-start gap-2 rounded-lg border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-500 mb-3 leading-relaxed">
                             <AlertTriangle className="shrink-0 mt-0.5" size={14} />
                             <div className="flex-1">
-                              <p className="font-semibold mb-1 text-[0.72rem]">⚠️ 카메라 권한 차단됨 (팝업이 뜨지 않음)</p>
+                              <p className="font-semibold mb-1 text-[0.72rem]">{frozenStatus4Text("studio.frozenStatus4.vrmD.cameraDeniedTitle", "⚠️ 카메라 권한 차단됨 (팝업이 뜨지 않음)")}</p>
                               <p className="text-[0.65rem] opacity-90 text-left mb-1.5">
                                 브라우저 UI에서는 허용한 것처럼 보이지만, 여전히 즉시 차단됩니다. (두 단계 권한 모두 확인 필요)
                               </p>
@@ -306,9 +307,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                           <AlertTriangle className="shrink-0 mt-0.5" size={14} />
                           <div>
                             <p className="font-semibold mb-1 text-[0.72rem]">
-                              {webcamErrorStage === "engine"
-                                ? "동작 인식 엔진 오류"
-                                : "카메라 권한 및 연결 오류"}
+                              {webcamErrorStage === "engine" ? frozenStatus4Text("studio.frozenStatus4.vrmD.errorEngineTitle", "동작 인식 엔진 오류") : frozenStatus4Text("studio.frozenStatus4.vrmD.errorCameraTitle", "카메라 권한 및 연결 오류")}
                             </p>
                             <p className="whitespace-pre-line text-[0.65rem] opacity-90">{webcamError}</p>
                           </div>
@@ -505,12 +504,12 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                               <div className="flex items-center justify-between">
                                 <span>
                                   정면 캘리브레이션
-                                  {calibrated && !calibrating ? " · 적용됨" : ""}
+                                  {calibrated && !calibrating ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibApplied", " · 적용됨") : ""}
                                   {calibrationPersistenceStatus === "sqlite" && calibrated
-                                    ? " · SQLite 저장됨"
+                                    ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibSavedSqlite", " · SQLite 저장됨")
                                     : ""}
-                                  {calibrationPersistenceStatus === "saving" ? " · 저장 중" : ""}
-                                  {calibrationPersistenceStatus === "memory" ? " · 현재 탭만" : ""}
+                                  {calibrationPersistenceStatus === "saving" ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibSaving", " · 저장 중") : ""}
+                                  {calibrationPersistenceStatus === "memory" ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibMemoryOnly", " · 현재 탭만") : ""}
                                 </span>
                                 {calibrated && !calibrating && (
                                   <button
@@ -525,8 +524,8 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                               {calibrating ? (
                                 <p className="rounded bg-accent-soft/40 px-2 py-1.5 font-semibold text-accent" role="status">
                                   {calibrationCountdown > 0
-                                    ? `정면을 보고 무표정을 유지하세요… ${calibrationCountdown}`
-                                    : `측정 중… ${Math.round(calibrationProgress * 100)}%`}
+                                    ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibHoldStill", { count: calibrationCountdown }, "정면을 보고 무표정을 유지하세요… {count}")
+                                    : frozenStatus4Text("studio.frozenStatus4.vrmD.calibMeasuring", { percent: Math.round(calibrationProgress * 100) }, "측정 중… {percent}%")}
                                 </p>
                               ) : (
                                 <button

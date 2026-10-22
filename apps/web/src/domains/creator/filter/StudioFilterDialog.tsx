@@ -74,6 +74,7 @@ import {
   type StudioFilterPackValues,
 } from "./studio-filter-pack";
 import { isStudioFilterUnionWaveKind } from "./studio-filter-union-wave";
+import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 
 import type { ImageFilterFields } from "../render/studio-konva-filter-fields";
 import type { CurvePoint, CurveRgbChannels } from "../studio-curves";
@@ -917,7 +918,7 @@ export function StudioFilterDialog({
     setGalleryOpen(false);
     setGalleryFocusKind(nextKind);
     galleryPickPendingFocusRef.current = true;
-    setGalleryPickAnnouncement(`${STUDIO_FILTER_LABELS[nextKind]} 필터로 바꿨습니다`);
+    setGalleryPickAnnouncement(frozenStatus4Text("studio.frozenStatus4.filter.gallerySwitched", { label: STUDIO_FILTER_LABELS[nextKind] }, "{label} 필터로 바꿨습니다"));
   };
   /** Roving focus inside the category radiogroup — one tab stop, arrows to move between chips. */
   const moveGalleryViewWithKey = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -982,9 +983,7 @@ export function StudioFilterDialog({
       toggleStudioEffectFavorite(current, studioFilterEffectId(nextKind)),
     );
   };
-  const lockMessage =
-    mutationLockReason ??
-    "선택한 이미지 또는 문서가 잠겨 있어 적용할 수 없습니다. 잠금을 해제하면 현재 미리보기 값을 적용할 수 있습니다.";
+  const lockMessage = mutationLockReason ?? frozenStatus4Text("studio.frozenStatus4.filter.locked", "선택한 이미지 또는 문서가 잠겨 있어 적용할 수 없습니다. 잠금을 해제하면 현재 미리보기 값을 적용할 수 있습니다.");
   const descriptionId = "studio-filter-dialog-description";
   const compositeNoticeId = "studio-filter-composite-notice";
   const lockMessageId = "studio-filter-lock-message";
@@ -1314,7 +1313,7 @@ export function StudioFilterDialog({
                       role="status"
                       className="grid min-h-24 place-items-center rounded-xl border border-dashed border-line px-3 text-center text-xs text-fg-3"
                     >
-                      검색 또는 분류에 맞는 필터가 없습니다.
+                      {frozenStatus4Text("studio.frozenStatus4.filter.emptyNoFilters", "검색 또는 분류에 맞는 필터가 없습니다.")}
                     </div>
                   )}
                 </div>
@@ -1345,12 +1344,12 @@ export function StudioFilterDialog({
                   )}
                 >
                   {filterLibraryAuthority === "sqlite"
-                    ? `${filterLibraryTotalCount}개 · 무제한 · 로컬 SQL`
+                    ? frozenStatus4Text("studio.frozenStatus4.filter.catalogSql", { count: filterLibraryTotalCount }, "{count}개 · 무제한 · 로컬 SQL")
                     : filterLibraryAuthority === "memory-session"
-                      ? `${filterLibraryTotalCount}개 · 비영속 메모리 세션 · 브라우저 종료 시 사라짐`
+                      ? frozenStatus4Text("studio.frozenStatus4.filter.catalogMemory", { count: filterLibraryTotalCount }, "{count}개 · 비영속 메모리 세션 · 브라우저 종료 시 사라짐")
                       : filterLibraryAuthority === "error"
-                        ? "필터 카탈로그 SQL을 읽지 못했습니다. 기존 데이터로 조용히 강등하지 않았습니다."
-                        : "로컬 SQL 필터 카탈로그 연결 중…"}
+                        ? frozenStatus4Text("studio.frozenStatus4.filter.catalogReadFailed", "필터 카탈로그 SQL을 읽지 못했습니다. 기존 데이터로 조용히 강등하지 않았습니다.")
+                        : frozenStatus4Text("studio.frozenStatus4.filter.catalogConnecting", "로컬 SQL 필터 카탈로그 연결 중…")}
                 </p>
                 {installedPackPresets.length > 0 ? (
                   <section
@@ -1398,7 +1397,7 @@ export function StudioFilterDialog({
                         )}
                       >
                         {filterLibraryPageLoading
-                          ? "프리셋 불러오는 중…"
+                          ? frozenStatus4Text("studio.frozenStatus4.filter.busyLoadingPresets", "프리셋 불러오는 중…")
                           : `더 불러오기 (${installedCreatorPresets.length}/${filterLibraryTotalCount})`}
                       </button>
                     ) : null}
@@ -1670,7 +1669,7 @@ export function StudioFilterDialog({
               })}
             >
               {applying
-                ? "적용 중…"
+                ? frozenStatus4Text("studio.frozenStatus4.filter.busyApplying", "적용 중…")
                 : applicationScope === "inside"
                   ? "선택 안에 적용"
                   : applicationScope === "outside"
