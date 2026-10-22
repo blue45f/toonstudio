@@ -132,11 +132,12 @@ describe("translation-in-progress marking (picker contract)", () => {
   it("marks locales under the completeness threshold, whatever side of the translated floor they sit on", () => {
     expect(isAppI18nTranslationInProgress("en")).toBe(false);
     expect(isAppI18nTranslationInProgress("ko")).toBe(false);
-    // ja sits near half completeness, far under the 0.9 threshold, so it is marked.
-    expect(APP_I18N_LOCALE_TRANSLATED_RATIO.ja).toBeLessThan(
+    // de sits near 0.4 completeness (the English fallback copies of the migrated namespaces), far under the 0.9
+    // threshold, so it is marked. ja stopped being the example once its reviewed translations landed.
+    expect(APP_I18N_LOCALE_TRANSLATED_RATIO.de).toBeLessThan(
       APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD,
     );
-    expect(isAppI18nTranslationInProgress("ja")).toBe(true);
+    expect(isAppI18nTranslationInProgress("de")).toBe(true);
     // The flag is exactly "under the completeness threshold" for every published locale, so a locale
     // that clears the 0.5 translated floor (none do since 2026-10-15) is still marked until 0.9.
     for (const [locale, ratio] of Object.entries(APP_I18N_LOCALE_TRANSLATED_RATIO)) {
@@ -153,9 +154,9 @@ describe("translation-in-progress marking (picker contract)", () => {
     const options = getLanguageOptions("en");
     const byCode = new Map(options.map((option) => [option.code, option]));
 
-    expect(byCode.get("ja")?.translationInProgress).toBe(true);
-    expect(byCode.get("ja")?.completenessRatio).toBe(
-      APP_I18N_LOCALE_TRANSLATED_RATIO.ja,
+    expect(byCode.get("de")?.translationInProgress).toBe(true);
+    expect(byCode.get("de")?.completenessRatio).toBe(
+      APP_I18N_LOCALE_TRANSLATED_RATIO.de,
     );
     expect(byCode.get("ko")?.translationInProgress).toBe(false);
     expect(byCode.get("en")?.translationInProgress).toBe(false);

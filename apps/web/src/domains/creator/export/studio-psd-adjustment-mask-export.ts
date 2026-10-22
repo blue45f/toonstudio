@@ -112,7 +112,7 @@ export async function decodeStudioMaskPixelsForPsd(
   maskSrc: string,
   width: number,
   height: number,
-): Promise<PixelData> {
+): Promise<StudioMaskPixelDataLike> {
   if (!positiveInteger(width) || !positiveInteger(height)) {
     throw new Error("조정 레이어 마스크의 출력 크기가 올바르지 않아요.");
   }

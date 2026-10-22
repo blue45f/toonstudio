@@ -9,7 +9,7 @@ import type { HiringOffer } from "../../../../../../packages/contracts/src/creat
 
 import Link from "@/shared/navigation/router-link";
 import { getApiErrorMessage } from "@/platform/api";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
@@ -17,7 +17,7 @@ export function HiringOffersPanel({ actor }: { actor: string }) {
   const t = useT();
   const [items, setItems] = useState<HiringOffer[] | null>(null), [refresh, setRefresh] = useState(0), [busy, setBusy] = useState(false), [error, setError] = useState(""), [note, setNote] = useState("");
   const keys = useRef(new Map<string, string>());
-  useEffect(() => { const c = new AbortController(); void hiringMatchingClient.offers(c.signal).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, t("collaboration.hiringOffers.loadFailed", "제안을 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); }); return () => c.abort(); }, [refresh]);
+  useEffect(() => { const c = new AbortController(); void hiringMatchingClient.offers(c.signal).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringOffers.loadFailed", "제안을 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); }); return () => c.abort(); }, [refresh]);
   async function act(offer: HiringOffer, action: "accept" | "decline" | "cancel") {
     if (busy) return; setBusy(true); setError(""); setNote("");
     const key = `${offer.id}:${action}`; if (!keys.current.has(key)) keys.current.set(key, crypto.randomUUID());

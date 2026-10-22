@@ -11,7 +11,11 @@ import type { CharacterRecipe, CharacterSlotEntry } from "./character-shaper-con
 import type { CharacterShaperBinding, CharacterShaperShelfProps } from "./character-shaper-ui-contract";
 
 const translations = vi.hoisted(() => new Map<string, string>());
-vi.mock("@/shared/lib/i18n", () => ({ useT: () => (key: string, fallback: string) => translations.get(key) ?? fallback }));
+vi.mock("@/shared/lib/i18n", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  // 상태 문구 사전 모듈이 import 시점에 등록 함수를, 렌더 중에는 번역 해석 함수를 쓴다 — 번역기만 바꾸고 나머지는 실제 모듈을 쓴다.
+  useT: () => (key: string, fallback: string) => translations.get(key) ?? fallback,
+}));
 vi.mock("./character-shaper-preview", () => ({ CharacterSlotPreview: () => <svg aria-hidden /> }));
 vi.mock("./character-shaper-catalog", () => ({ CHARACTER_GENRE_TAG_LABELS: { school: "학원", daily: "일상" } }));
 

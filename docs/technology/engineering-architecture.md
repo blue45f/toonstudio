@@ -745,7 +745,7 @@ flowchart TB
 
 **오해하기 쉬운 점**: '모든 PR 이 취약점 감사와 전수 접근성 검사를 통과한다'고 말하면 틀립니다. pnpm audit 는 core 에 없고 야간·수동(의존성이 바뀐 푸시 훅 포함)에서 돌며, 전수 접근성 감사는 수동입니다.
 
-**보충**: 스튜디오 번들 검사(`scripts/check-studio-bundle.mjs`)는 두 층입니다. 코드 안의 '참고 예산'은 차단하지 않는 관측이고, 실제 관문은 `scripts/bundle-baseline.json` 에 기록된 마지막 수용 측정값을 2% 넘게 넘으면 실패하는 래칫입니다(엔진 격리 같은 구조 검사도 실패로 칩니다). 서비스 워커 프리캐시 예산(2026-10-08 기준 critical 2.25 MiB, warm 512 KiB)은 빌드를 실패시킵니다.
+**보충**: 스튜디오 번들 검사(`scripts/check-studio-bundle.mjs`)는 두 층입니다. 코드 안의 '참고 예산'은 차단하지 않는 관측이고, 실제 관문은 `scripts/bundle-baseline.json` 에 기록된 마지막 수용 측정값을 2% 넘게 넘으면 실패하는 래칫입니다(엔진 격리 같은 구조 검사도 실패로 칩니다). 서비스 워커 프리캐시 예산(2026-10-22 기준 critical 2.5 MiB, warm 512 KiB)은 빌드를 실패시킵니다.
 
 **보충**: 취약점 감사(`pnpm audit`)는 core 가 아니라 푸시 훅(의존성 파일이 바뀐 경우)·야간 진단·수동 실행에서 돕니다. `ci.yml` 의 lint 잡이 실행하는 것은 `quality:imports` 와 `quality:secrets` 이고 audit 은 없습니다. CodeQL 은 PR·main push 와 주 1회 돌지만 core 에는 속하지 않습니다. 새 파일 1,000줄 검사는 core 가 아니라 PR 마다 도는 전체 시험(진단)과 로컬 `pnpm test` 가 지킵니다.
 

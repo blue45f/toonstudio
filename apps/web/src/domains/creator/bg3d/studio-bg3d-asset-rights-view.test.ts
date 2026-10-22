@@ -206,6 +206,19 @@ describe("가져온 소재의 권리 보기", () => {
       });
       expect(confirmed.state.aiTraining).toBe("allowed");
     });
+
+    it("라이브러리와 메타데이터가 다른 말을 하면(충돌) 허용은 모르는 것으로 닫고, 금지는 그대로 보인다", () => {
+      const conflicting = (aiTraining: string) => buildStudioBg3dAssetRightsView(entry("n5", "6"), {
+        libraryRightsById: new Map([["n5", licensed]]),
+        metadataByHash: new Map([[hash("6"), allowed({ status: "owned", license: undefined, aiTraining })]]),
+      });
+      const closed = conflicting("allowed");
+      expect(closed.conflict).toBe(true);
+      expect(closed.state.aiTraining).toBe("unknown");
+      const prohibited = conflicting("prohibited");
+      expect(prohibited.conflict).toBe(true);
+      expect(prohibited.state.aiTraining).toBe("prohibited");
+    });
   });
 
   describe("라이브러리와 메타데이터가 다르게 말하면 더 제한적인 쪽을 쓴다", () => {

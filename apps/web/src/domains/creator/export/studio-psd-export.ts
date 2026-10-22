@@ -1400,7 +1400,7 @@ export async function exportPagePsd(
         // 경계를 찾지 못할 때 중단하는 것과 같은 규약).
         if (el.maskSrc) {
           assertPsdPixelBudget(capturedPixelBytes + psdWidth * psdHeight * 4);
-          let maskPixels: PixelData;
+          let maskPixels: Awaited<ReturnType<typeof decodeStudioMaskPixelsForPsd>>;
           try {
             maskPixels = await decodeStudioMaskPixelsForPsd(el.maskSrc, psdWidth, psdHeight);
           } catch (err) {

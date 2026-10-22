@@ -98,7 +98,7 @@ export function createStudioAssetLibraryMutations(
       } else {
         assetMemoryModeRef.current = true;
         setAssetStorageState("memory");
-        setError(`SQLite/OPFS 에셋 보관함을 열지 못해 현재 탭 메모리만 사용합니다. 새로고침하면 변경이 사라집니다: ${
+        setError(`SQLite/OPFS 소재 서재를 열지 못해 현재 탭 메모리만 사용합니다. 새로고침하면 변경이 사라집니다: ${
           err instanceof Error ? err.message : String(err)
         }`);
       }

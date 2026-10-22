@@ -16,7 +16,7 @@
  */
 import { Globe2, Link2, Link2Off, Plus, Save, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 import "./storyworld-status-i18n";
 
 import type { StoryworldProject } from "./studio-storyworld-causality";
@@ -248,7 +248,7 @@ export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
     void loadStoryworldUniverseRegistry().then((loaded) => {
       if (active) setRegistry(loaded);
     }).catch((caught: unknown) => {
-      if (active) setLoadError(caught instanceof Error ? caught.message : t("studio.storyworldStatus.universe.loadFailed", "공유 세계관을 열 수 없습니다."));
+      if (active) setLoadError(caught instanceof Error ? caught.message : translateNow("studio.storyworldStatus.universe.loadFailed", "공유 세계관을 열 수 없습니다."));
     });
     return () => { active = false; };
   }, [attempt]);

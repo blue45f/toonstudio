@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../studio-brush-canvas-status-i18n";
 import { createPortal } from "react-dom";
@@ -43,7 +43,7 @@ export default function StudioColorProofDialog({ host, onClose }: { host: Studio
     let current = true; setTransform(null); setPreview(null);
     if (host.page.colorProof) void loadStudioColorProofProfile(host.page.colorProof).then(value => {
       if (current) { setTransform(value); setError(null); }
-    }, cause => { if (current) setError(cause instanceof Error ? cause.message : t("studio.brushCanvasStatus.color.proofProfileReadFailed", "ICC 프로필을 읽지 못했습니다.")); });
+    }, cause => { if (current) setError(cause instanceof Error ? cause.message : translateNow("studio.brushCanvasStatus.color.proofProfileReadFailed", "ICC 프로필을 읽지 못했습니다.")); });
     return () => { current = false; abortRef.current?.abort(); };
   }, [host.page.colorProof]);
 

@@ -265,7 +265,7 @@ describe("studio host status i18n batch2", () => {
       expect(HANGUL.test(en[key] ?? ""), `en value has Hangul: ${key}`).toBe(false);
     }
     expect(ko["studio.customFonts.readFailed"]).toBe(
-      "글꼴 파일을 읽지 못했어요. 파일이 손상됐는지 확인해주세요.",
+      "글꼴 파일을 읽지 못했어요. 파일이 손상됐는지 확인해 주세요.",
     );
     expect(ko["studio.customFonts.fileTooLarge"]).toBe(
       "글꼴 파일이 {selectedFileSize}로 한 개당 {limitSize} 한도를 넘었어요. 필요한 굵기만 서브셋한 WOFF2로 변환해 주세요.",

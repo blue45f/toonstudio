@@ -97,4 +97,39 @@ describe("StudioSaveStatusChromeMount: 게시 제안 카드는 메뉴바 흐름 
     expect(document.querySelector(SUGGESTION)).toBeNull();
     expect(document.querySelector(ANCHOR)).toBeNull();
   });
+
+  it("메뉴바도 슬롯도 없으면 카드를 자리 요소 없이 제자리에 그린다", async () => {
+    await act(async () => {
+      render(<StudioSaveStatusChromeMount store={savedStore()} publishSuggestion={suggestionProps} />);
+    });
+    expect(document.querySelector(SUGGESTION), "첫 저장 뒤 제안 카드").not.toBeNull();
+    expect(document.querySelector(ANCHOR)).toBeNull();
+  });
+
+  it("슬롯만 있고 메뉴바가 없으면 저장 상태는 슬롯에 들어가고 카드는 슬롯 밖 제자리에 그려진다", async () => {
+    const slot = document.createElement("div");
+    slot.id = "studio-document-chrome-slot";
+    document.body.append(slot);
+    await act(async () => {
+      render(<StudioSaveStatusChromeMount store={savedStore()} publishSuggestion={suggestionProps} />);
+    });
+    expect(slot.querySelector('[data-studio-save-status-chrome-mount="true"]')).not.toBeNull();
+    expect(document.querySelector(SUGGESTION)).not.toBeNull();
+    expect(slot.querySelector(SUGGESTION)).toBeNull();
+    expect(document.querySelector(ANCHOR)).toBeNull();
+  });
+
+  it("마운트가 사라지면 메뉴바에 붙였던 카드 자리도 함께 없어진다", async () => {
+    const { menubar } = mountMenubar();
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(<StudioSaveStatusChromeMount store={savedStore()} publishSuggestion={suggestionProps} />);
+    });
+    expect(menubar.querySelector(ANCHOR)).not.toBeNull();
+    await act(async () => {
+      view.unmount();
+    });
+    expect(menubar.querySelector(ANCHOR)).toBeNull();
+    expect(document.querySelector(SUGGESTION)).toBeNull();
+  });
 });

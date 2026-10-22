@@ -245,27 +245,26 @@ export function StudioAiEpisodeProductionModal({
   );
   const [anchors, setAnchors] = useState<AnchorDraft>(DEFAULT_ANCHORS);
 
-  // 해석 계층 (T4): 이슈 렌더(issue.title/description/resolution)는 그대로 두고,
-  // 계획의 이슈만 id+파라미터로 표시 시점 로케일 해석을 거친 사본으로 교체한다.
-  const plan = useMemo(
-    () => {
-      const produced = planStudioAiEpisodeProduction({
-        episodeTitle,
-        script,
-        mode,
-        variants,
-        locks,
-        characterAnchor: anchors.character,
-        costumeAnchor: anchors.costume,
-        locationAnchor: anchors.location,
-        lightingAnchor: anchors.lighting,
-        styleAnchor: anchors.style,
-        propAnchor: anchors.props,
-      });
-      return { ...produced, issues: produced.issues.map(resolveStudioAiEpisodeIssue) };
-    },
-    [anchors, episodeTitle, locks, mode, script, t, variants]
+  const produced = useMemo(
+    () => planStudioAiEpisodeProduction({
+      episodeTitle,
+      script,
+      mode,
+      variants,
+      locks,
+      characterAnchor: anchors.character,
+      costumeAnchor: anchors.costume,
+      locationAnchor: anchors.location,
+      lightingAnchor: anchors.lighting,
+      styleAnchor: anchors.style,
+      propAnchor: anchors.props,
+    }),
+    [anchors, episodeTitle, locks, mode, script, variants]
   );
+  // 해석 계층 (T4): 이슈 렌더(issue.title/description/resolution)는 그대로 두고, 계획의 이슈만 id+파라미터로 표시 시점
+  // 로케일 해석을 거친 사본으로 교체한다. 표시 시점의 언어를 읽으므로 메모에 두지 않고 렌더마다 푼다(이슈 몇 줄의 사본이라
+  // 비용이 없다). 메모에 두면 언어가 바뀌어도 낡은 문구가 남고, 쓰지 않는 `t` 를 의존성에 넣어 흉내 내야 한다.
+  const plan = { ...produced, issues: produced.issues.map(resolveStudioAiEpisodeIssue) };
 
   const clipboard = useStudioCopyFeedback(2400);
   const firstBatchPrompt = plan.batches[0]?.positivePrompt ?? "";

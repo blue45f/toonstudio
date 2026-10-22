@@ -29,7 +29,7 @@ import {
 
 import type { StudioDrawingInputDeckProps } from "./StudioDrawingInputDeck";
 
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import "../studio-brush-canvas-status-i18n";
@@ -133,7 +133,7 @@ export function StudioDrawingInputProfileLibraryPanel({
       );
     } catch (cause) {
       setNotice(
-        t("studio.brushCanvasStatus.brush.profileOpenFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "입력 프로필 저장소를 열지 못했습니다. 현재 작업 설정은 그대로 유지됩니다: {detail}"),
+        translateNow("studio.brushCanvasStatus.brush.profileOpenFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "입력 프로필 저장소를 열지 못했습니다. 현재 작업 설정은 그대로 유지됩니다: {detail}"),
       );
     } finally {
       setBusy(false);
@@ -158,7 +158,7 @@ export function StudioDrawingInputProfileLibraryPanel({
   const saveCurrent = useCallback(async (): Promise<void> => {
     const normalizedName = normalizeStudioDrawingInputProfileName(name);
     if (!normalizedName) {
-      setNotice(t("studio.brushCanvasStatus.brush.profileNameRequired", "프로필 이름을 입력해 주세요."));
+      setNotice(translateNow("studio.brushCanvasStatus.brush.profileNameRequired", "프로필 이름을 입력해 주세요."));
       return;
     }
     setBusy(true);
@@ -181,7 +181,7 @@ export function StudioDrawingInputProfileLibraryPanel({
       );
     } catch (cause) {
       setNotice(
-        t("studio.brushCanvasStatus.brush.profileSaveFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "입력 프로필을 저장하지 못했습니다. 현재 입력감은 바뀌지 않았습니다: {detail}"),
+        translateNow("studio.brushCanvasStatus.brush.profileSaveFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "입력 프로필을 저장하지 못했습니다. 현재 입력감은 바뀌지 않았습니다: {detail}"),
       );
     } finally {
       setBusy(false);
@@ -197,7 +197,7 @@ export function StudioDrawingInputProfileLibraryPanel({
       setNotice(`${profile.name} 프로필을 삭제했습니다.`);
     } catch (cause) {
       setNotice(
-        t("studio.brushCanvasStatus.brush.profileDeleteFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "프로필을 삭제하지 못했습니다: {detail}"),
+        translateNow("studio.brushCanvasStatus.brush.profileDeleteFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "프로필을 삭제하지 못했습니다: {detail}"),
       );
     } finally {
       setBusy(false);

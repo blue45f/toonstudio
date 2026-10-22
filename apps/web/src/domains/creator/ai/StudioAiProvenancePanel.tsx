@@ -244,6 +244,7 @@ function SafeTechnicalDetails({ operation }: { operation: StudioAiOperation }) {
 }
 
 function OperationRow({ operation }: { operation: StudioAiOperation }) {
+  const t = useT();
   return (
     <article className="px-3 py-4 sm:px-5">
       <div className="flex items-start gap-3">

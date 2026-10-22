@@ -9,7 +9,7 @@
  */
 import { ClipboardList, Download, FileText, ListChecks, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 import "../storyworld-status-i18n";
 
 import type {
@@ -137,7 +137,7 @@ export function StudioStoryPlausibilityHub(props: StudioStoryPlausibilityHubProp
   useEffect(() => {
     const counts = countsRef.current;
     if (generatedAtIso !== null && counts !== null) {
-      setMessage(t("studio.storyworldStatus.hub.checkDone", { error: counts.error, warning: counts.warning, suggestion: counts.suggestion }, "점검을 마쳤어요. 오류 {error}, 경고 {warning}, 제안 {suggestion}."));
+      setMessage(translateNow("studio.storyworldStatus.hub.checkDone", { error: counts.error, warning: counts.warning, suggestion: counts.suggestion }, "점검을 마쳤어요. 오류 {error}, 경고 {warning}, 제안 {suggestion}."));
     }
   }, [generatedAtIso]);
 

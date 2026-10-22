@@ -63,9 +63,11 @@ describe("Studio lazy i18n assets", () => {
       // 캐릭터 선반 조작 안내 studio.character.shelf.interactionHint{Touch,Mouse,Keyboard}·
       // shapeNote·favoritesNote 5키이며, 75개 팩이 모두 같은 키 집합을 가진다. 래칫이므로 이후
       // 키를 늘리거나 줄이는 변경은 여기서 한 번 더 눈에 띄어야 한다.
-      // 1_530 → 1_635: 상태 문구 이관(A4, 2026-10-22)이 네임스페이스 정본에 등록한 studio.* 상태 키 103개 — 에디터 호스트
-      // (studio.hostStatus.*)·패널(studio.panelStatus.*·vrmPanelStatus.*·bg3dPanelStatus.*)·AI·게시 표면의 로딩·실패 문구 — 와,
-      // 평면 팩에만 있어 정본이 없던 studio.settings.advancedTools.{expand,collapse} 2키를 settings 네임스페이스로 옮긴 것이다.
+      // 1_530 → 1_635: 네임스페이스 정본에 있던 103키를 동기화로 평면 팩에 옮겼다(2026-10-22). canvas 네임스페이스의
+      // studio.canvas.panelLoading.* 69키, customFonts 네임스페이스의 studio.customFonts.* 33키, aiToolPopover 의
+      // studio.aiToolPopover.masterEditAiCutDisabled 1키다. 여기에 평면 팩에만 있어 정본이 없던
+      // studio.settings.advancedTools.{expand,collapse} 2키를 settings 네임스페이스로 옮겨 105키가 늘었다.
+      // 에디터 호스트의 상태 문구(studio.hostStatus.* 등)는 TS 등록이라 이 숫자에 들지 않는다.
       // 동기화(sync-i18n-legacy-assets)로 75개 팩이 모두 같은 키 집합을 가진다.
       expect(Object.keys(dictionary ?? {})).toHaveLength(1_635);
     }

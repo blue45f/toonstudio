@@ -189,7 +189,7 @@ export function ReviewVoiceCommentaryPanel({
     if (blob && voiceCommentaryAudioSizeProblem(blob.size) === "too-large") {
       setRecorder({
         kind: "error",
-        message: t("productionHub.status.voiceRecordingTooLarge", { mb: Math.round(VOICE_COMMENTARY_MAX_AUDIO_BYTES / (1024 * 1024)) }, "녹음이 저장 상한({mb}MB)을 넘어 서버에 저장·공유할 수 없습니다. 더 짧게 나눠 녹화해 주세요. 방금 녹음은 이 탭에서만 들을 수 있습니다."),
+        message: t("productionHub.status.voiceRecordingTooLarge", { mb: Math.round(VOICE_COMMENTARY_MAX_AUDIO_BYTES / (1024 * 1024)) }, "녹음이 저장 상한({mb}MB)을 넘어 서버에 저장·공유할 수 없어요. 더 짧게 나눠 녹화해 주세요. 방금 녹음은 이 탭에서만 들을 수 있어요."),
       });
     } else {
       setRecorder({ kind: "idle" });
@@ -265,7 +265,7 @@ export function ReviewVoiceCommentaryPanel({
             <button type="button" onClick={() => void startRecording()} disabled={!captureView}>
               <Mic size={14} aria-hidden /> 해설 녹화 시작
             </button>
-            {!captureView ? <p style={{ fontSize: 12, opacity: 0.7 }}>{t("productionHub.status.voiceCaptureUnavailable", "이 표면에서는 아직 화면 위치 기록을 연결하지 않아 녹화를 시작할 수 없습니다. 핀은 종전대로 남길 수 있습니다.")}</p> : null}
+            {!captureView ? <p style={{ fontSize: 12, opacity: 0.7 }}>{t("productionHub.status.voiceCaptureUnavailable", "이 표면에서는 아직 화면 위치 기록을 연결하지 않아 녹화를 시작할 수 없어요. 핀은 종전대로 남길 수 있어요.")}</p> : null}
           </div>
         )
       ) : null}
@@ -321,7 +321,7 @@ export function ReviewVoiceCommentaryPanel({
               />
             </audio>
           ) : (
-            <p style={{ fontSize: 12, opacity: 0.7 }}>{t("productionHub.status.voiceNotStored", "이 해설의 음성은 아직 서버에 저장되지 않아 재생할 수 없습니다. 위치 기록은 아래 목록으로 확인할 수 있습니다.")}</p>
+            <p style={{ fontSize: 12, opacity: 0.7 }}>{t("productionHub.status.voiceNotStored", "이 해설의 음성은 아직 서버에 저장되지 않아 재생할 수 없어요. 위치 기록은 아래 목록으로 확인할 수 있어요.")}</p>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {/* 오디오가 없어도 버튼은 살아 있어야 한다 — togglePlay가 첫 키프레임

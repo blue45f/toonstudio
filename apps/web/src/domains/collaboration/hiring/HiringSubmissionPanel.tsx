@@ -10,7 +10,7 @@ import type { CollaborationAction } from "../collaboration-application-panel";
 
 import Link from "@/shared/navigation/router-link";
 import { getApiErrorMessage } from "@/platform/api";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
@@ -23,14 +23,14 @@ export function HiringSubmissionPanel({ postId, postVersion, busy, act }: { post
   const retry = useRef<{ digest: string; mutationId: string } | null>(null);
   useEffect(() => {
     const c = new AbortController();
-    void hiringClient.resumes(c.signal).then((v) => { if (!c.signal.aborted) { setResumes(v); setResumeError(""); } }).catch(async (e) => { const m = await getApiErrorMessage(e, t("collaboration.hiringSubmission.resumesLoadFailed", "이력서를 불러오지 못했어요.")); if (!c.signal.aborted) setResumeError(m); });
+    void hiringClient.resumes(c.signal).then((v) => { if (!c.signal.aborted) { setResumes(v); setResumeError(""); } }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringSubmission.resumesLoadFailed", "이력서를 불러오지 못했어요.")); if (!c.signal.aborted) setResumeError(m); });
     return () => c.abort();
   }, [refresh]);
   useEffect(() => {
     setVersions([]); setVersionId(""); setIndexes([]); setConsent(false); setVersionError("");
     if (!resumeId) return;
     const c = new AbortController();
-    void hiringClient.versions(resumeId, c.signal).then((v) => { if (!c.signal.aborted) { const owned = v.filter((version) => version.resumeId === resumeId); setVersions(owned); setVersionId(owned[0]?.id ?? ""); } }).catch(async (e) => { const m = await getApiErrorMessage(e, t("collaboration.hiringSubmission.versionsLoadFailed", "버전을 불러오지 못했어요.")); if (!c.signal.aborted) setVersionError(m); });
+    void hiringClient.versions(resumeId, c.signal).then((v) => { if (!c.signal.aborted) { const owned = v.filter((version) => version.resumeId === resumeId); setVersions(owned); setVersionId(owned[0]?.id ?? ""); } }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringSubmission.versionsLoadFailed", "버전을 불러오지 못했어요.")); if (!c.signal.aborted) setVersionError(m); });
     return () => c.abort();
   }, [resumeId, refresh]);
   const error = resumeError || versionError;
@@ -65,7 +65,7 @@ export function HiringSnapshotPanel({ postId, applicationId }: { postId: string;
   useEffect(() => {
     if (!opened) return;
     const c = new AbortController();
-    void hiringClient.snapshots(postId, applicationId, c.signal).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, t("collaboration.hiringSnapshot.loadFailed", "제출 이력서를 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); });
+    void hiringClient.snapshots(postId, applicationId, c.signal).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringSnapshot.loadFailed", "제출 이력서를 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); });
     return () => c.abort();
   }, [postId, applicationId, opened]);
   return <div className="mt-4 space-y-3"><button type="button" className={collabButton} onClick={() => { setOpened(!opened); setItems(null); setError(""); }}>{opened ? "제출 이력서 닫기" : "제출 이력서 확인"}</button>{opened && <>{error && <CollabNotice error>{error}</CollabNotice>}{!items && !error && <div role="status" aria-label={t("collaboration.hiringSnapshot.loading", "제출 이력서를 불러오는 중")} className="space-y-2" aria-hidden="true"><div className="skeleton h-20 rounded-xl" /><div className="skeleton h-20 rounded-xl" /></div>}{items?.length === 0 && <p className="text-sm">첨부한 저장 이력서가 없는 지원입니다.</p>}{items?.map((s) => <div key={s.id}><p className="my-2 text-sm">제출 버전 {s.resumeRevision} · {new Date(s.submittedAt).toLocaleString("ko-KR")}</p>{s.content ? <ResumePreview content={s.content} /> : <p className="text-sm">철회 또는 삭제로 제출본 내용이 지워졌어요.</p>}</div>)}</>}</div>;

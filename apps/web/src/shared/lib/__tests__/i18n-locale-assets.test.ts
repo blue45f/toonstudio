@@ -37,7 +37,7 @@ const REFERENCE_LOCALE = "en";
  * 1,356개로 늘어나는 동안 — market·productionHub 같은 신규 네임스페이스는 ko/en 만 작성되고 나머지
  * 로케일은 영어 원문 폴백을 받는다(I18N_GUIDE §3) — 번역된 값은 그대로여서 ko·en 을 뺀 73개 로케일의
  * 비율이 0.40~0.44 로 내려가 모두 하한(0.5) 아래다. 이 상태를 숨기지 않고 목록으로 고정한다.
- * 목록은 줄어들기만 해야 한다. 번역이 채워져 하한을 넘은 로케일은 목록에서 빼야 테스트가 통과하고(`ja` 는 검수 번역 반영으로
+ * 목록은 줄어들기만 해야 한다. 번역이 채워져 하한을 넘은 로케일은 목록에서 빼야 테스트가 통과하고(`ja`·`zh` 는 검수 번역 반영으로
  * 하한을 넘어 2026-10-22 에 뺐다),
  * 새 로케일이나 ko·en 이 하한 아래로 내려가면 목록에 더하지 말고 원인을 고친다.
  */
@@ -46,7 +46,7 @@ const BELOW_TRANSLATED_FLOOR: readonly string[] = [
   "et", "eu", "fa", "fi", "fil", "fr", "gl", "gu", "he", "hi", "hr", "hu", "hy", "id", "is",
   "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "ml", "mn", "mr", "ms",
   "my", "ne", "nl", "no", "or", "pa", "pl", "pt", "ro", "ru", "si", "sk", "sl", "sq", "sr",
-  "sv", "sw", "ta", "te", "th", "tr", "uk", "ur", "uz", "vi", "zh", "zh-hant", "zu",
+  "sv", "sw", "ta", "te", "th", "tr", "uk", "ur", "uz", "vi", "zh-hant", "zu",
 ];
 /** The app-shell key surface every published dictionary was authored against. */
 const BASELINE_APP_KEY_COUNT = 525;

@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { createStudioRecoveryNewDrawingHref } from "./studio-recovery-notice-model";
 
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import "../studio-brush-canvas-status-i18n";
@@ -45,7 +45,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
       try {
         await onRestore();
       } catch {
-        setError(t("studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailed", "자동으로 이어 열지 못했어요. 현재 그림은 그대로 유지했어요."));
+        setError(translateNow("studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailed", "자동으로 이어 열지 못했어요. 현재 그림은 그대로 유지했어요."));
       } finally {
         // A successful restore clears `hasAutosave` in the parent and unmounts this notice.
         // If the notice is still mounted on the next task, the restore guard stopped the
@@ -136,7 +136,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
             type="button"
             disabled={busy !== null}
             onClick={() => void run(blockedReason ? "backup" : "restore")}
-            className={cn(actionClass, "bg-accent text-on-accent hover:bg-accent-hover")}
+            className={cn(actionClass, "bg-accent text-on-accent hover:bg-accent-2")}
           >
             {busy === "restore" ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden /> : blockedReason ? <Download size={15} aria-hidden /> : <RotateCcw size={15} aria-hidden />}
             {busy === "restore" ? t("studio.brushCanvasStatus.canvas.recoveryOpening", "그림 여는 중…") : blockedReason ? "백업 파일 받기" : manualRestoreRequired ? "이어서 그리기" : "다시 이어 열기"}

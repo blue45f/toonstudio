@@ -9,17 +9,17 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1589,
-    "bytes": 19511374
+    "modules": 1598,
+    "bytes": 19731498
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
-      "modules": 222,
-      "bytes": 1168275
+      "modules": 224,
+      "bytes": 1190663
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1406,
-      "bytes": 18675491
+      "modules": 1413,
+      "bytes": 18879298
     }
   },
   "forbiddenDomains": {
@@ -230,7 +230,7 @@
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 13,
-      "bytes": 451353,
+      "bytes": 451526,
       "files": [
         "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx",
         "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts",
@@ -354,7 +354,7 @@
   "folders": {
     "apps/web/src/app": {
       "modules": 9,
-      "bytes": 45461
+      "bytes": 45756
     },
     "apps/web/src/app/components": {
       "modules": 1,
@@ -362,7 +362,7 @@
     },
     "apps/web/src/app/errors": {
       "modules": 3,
-      "bytes": 13505
+      "bytes": 13855
     },
     "apps/web/src/app/routes": {
       "modules": 45,
@@ -373,20 +373,20 @@
       "bytes": 12047
     },
     "apps/web/src/domains/auth": {
-      "modules": 15,
-      "bytes": 63569
+      "modules": 16,
+      "bytes": 68303
     },
     "apps/web/src/domains/character-chat": {
       "modules": 1,
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 561,
-      "bytes": 8384458
+      "modules": 567,
+      "bytes": 8533354
     },
     "apps/web/src/domains/creator/ai": {
-      "modules": 22,
-      "bytes": 218154
+      "modules": 23,
+      "bytes": 262118
     },
     "apps/web/src/domains/creator/assistant": {
       "modules": 3,
@@ -410,7 +410,7 @@
     },
     "apps/web/src/domains/creator/canvas": {
       "modules": 61,
-      "bytes": 667326
+      "bytes": 669780
     },
     "apps/web/src/domains/creator/catalog": {
       "modules": 2,
@@ -430,7 +430,7 @@
     },
     "apps/web/src/domains/creator/color": {
       "modules": 4,
-      "bytes": 8771
+      "bytes": 8937
     },
     "apps/web/src/domains/creator/comipo": {
       "modules": 1,
@@ -550,7 +550,7 @@
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 79,
-      "bytes": 972693
+      "bytes": 974740
     },
     "apps/web/src/domains/creator/studio-production": {
       "modules": 1,
@@ -578,7 +578,7 @@
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 13,
-      "bytes": 451353
+      "bytes": 451526
     },
     "apps/web/src/domains/creator/writer-room": {
       "modules": 1,
@@ -600,6 +600,10 @@
       "modules": 4,
       "bytes": 19812
     },
+    "apps/web/src/shared": {
+      "modules": 1,
+      "bytes": 9704
+    },
     "apps/web/src/shared/ai": {
       "modules": 8,
       "bytes": 94499
@@ -614,7 +618,7 @@
     },
     "apps/web/src/shared/components": {
       "modules": 50,
-      "bytes": 209644
+      "bytes": 210844
     },
     "apps/web/src/shared/hooks": {
       "modules": 2,
@@ -622,11 +626,11 @@
     },
     "apps/web/src/shared/i18n": {
       "modules": 1,
-      "bytes": 103778
+      "bytes": 109271
     },
     "apps/web/src/shared/lib": {
       "modules": 74,
-      "bytes": 272107
+      "bytes": 272719
     },
     "apps/web/src/shared/navigation": {
       "modules": 3,
@@ -654,7 +658,7 @@
     },
     "packages/studio-engine-registry": {
       "modules": 19,
-      "bytes": 315454
+      "bytes": 315490
     },
     "packages/studio-engine-skia": {
       "modules": 11,
@@ -736,6 +740,7 @@
     "apps/web/src/domains/auth/components/auth-menu-profile-image.ts": 1,
     "apps/web/src/domains/auth/components/auth-menu-shell.tsx": 1,
     "apps/web/src/domains/auth/components/auth-menu-trigger.tsx": 1,
+    "apps/web/src/domains/auth/components/auth-rest-status-i18n.ts": 1,
     "apps/web/src/domains/auth/components/guest-migration-bridge.tsx": 1,
     "apps/web/src/domains/auth/components/schedule-idle.ts": 2,
     "apps/web/src/domains/auth/components/session-provider.tsx": 1,
@@ -803,6 +808,7 @@
     "apps/web/src/domains/creator/ai/studio-ai-client.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-comic-composer-intent.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-composition-suggestion.ts": 2,
+    "apps/web/src/domains/creator/ai/studio-ai-error-i18n-t4t5.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-error-i18n.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-generated-asset-model.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-image-reference-resolution.ts": 2,
@@ -1378,6 +1384,7 @@
     "apps/web/src/domains/creator/studio-bg3d-model-texture-paint.ts": 2,
     "apps/web/src/domains/creator/studio-bounded-asset-response.ts": 2,
     "apps/web/src/domains/creator/studio-brand-kit.ts": 2,
+    "apps/web/src/domains/creator/studio-brush-canvas-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-brush.ts": 2,
     "apps/web/src/domains/creator/studio-canonical-brush-draw-adapter.ts": 2,
     "apps/web/src/domains/creator/studio-canonical-brush-plan.ts": 2,
@@ -1535,6 +1542,7 @@
     "apps/web/src/domains/creator/studio-edit-controls.ts": 2,
     "apps/web/src/domains/creator/studio-editor-return-navigation.ts": 2,
     "apps/web/src/domains/creator/studio-editor-scope.ts": 2,
+    "apps/web/src/domains/creator/studio-editor-shell-status-i18n-r3c11.ts": 2,
     "apps/web/src/domains/creator/studio-editor-source-scope.ts": 2,
     "apps/web/src/domains/creator/studio-effect-favorites.ts": 2,
     "apps/web/src/domains/creator/studio-element-geometry.ts": 2,
@@ -1587,6 +1595,7 @@
     "apps/web/src/domains/creator/studio-history-retention-budget.ts": 2,
     "apps/web/src/domains/creator/studio-history-retention-ui.ts": 2,
     "apps/web/src/domains/creator/studio-horizontal-wheel.ts": 2,
+    "apps/web/src/domains/creator/studio-host-reason-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-host-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-humanoid-bones.ts": 2,
     "apps/web/src/domains/creator/studio-id.ts": 2,
@@ -1735,6 +1744,8 @@
     "apps/web/src/domains/creator/studio-panel-autofit.ts": 2,
     "apps/web/src/domains/creator/studio-panel-shot-tags.ts": 2,
     "apps/web/src/domains/creator/studio-panel-split.ts": 2,
+    "apps/web/src/domains/creator/studio-panel-status-i18n-r3c06.ts": 2,
+    "apps/web/src/domains/creator/studio-panel-status-i18n-r3c07.ts": 2,
     "apps/web/src/domains/creator/studio-panel-ui.tsx": 2,
     "apps/web/src/domains/creator/studio-path-boolean.ts": 2,
     "apps/web/src/domains/creator/studio-pathfinder-boolean-adapter.ts": 2,
@@ -1898,6 +1909,7 @@
     "apps/web/src/domains/creator/studio-view-inspection-store.ts": 2,
     "apps/web/src/domains/creator/studio-view-tools-hud-loader.ts": 2,
     "apps/web/src/domains/creator/studio-view-workspace.ts": 2,
+    "apps/web/src/domains/creator/studio-vrm-panel-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-watermark.ts": 2,
     "apps/web/src/domains/creator/studio-web-drawing-assist-kit.ts": 2,
     "apps/web/src/domains/creator/studio-web-drawing-coloring-kit.ts": 2,
@@ -2122,6 +2134,7 @@
     "apps/web/src/shared/navigation/navigation.ts": 1,
     "apps/web/src/shared/navigation/return-context.ts": 2,
     "apps/web/src/shared/navigation/router-link.tsx": 3,
+    "apps/web/src/shared/rest-status-i18n.ts": 1,
     "apps/web/src/shared/seo/use-document-title.ts": 1,
     "packages/contracts/src/avatar.ts": 1,
     "packages/contracts/src/creator-asset-contract.ts": 2,
@@ -2274,6 +2287,14 @@
       "increases": [
         "총 정적 도달 원본 +118.3 KiB",
         "금지 도메인 apps/web/src/domains/creator/bg3d +1개"
+      ]
+    },
+    {
+      "date": "2026-10-22",
+      "reason": "main 에 병합된 A4 상태 문구 이관(3라운드)이 상태 문구 사전 모듈을 정적으로 들여와 Studio 진입 그래프 +182 KiB, 앱 셸 +14 KiB 가 늘었다. 병합 뒤 기준선만 바로잡고, 사전의 지연 등록은 후속 과제로 둔다.",
+      "increases": [
+        "총 정적 도달 원본 +215.0 KiB",
+        "앱 셸 폐포 +21.9 KiB"
       ]
     }
   ]

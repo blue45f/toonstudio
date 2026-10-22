@@ -10,7 +10,7 @@ import type { CreatorCareerItem, CreatorCareerVersion } from "../../../../../../
 
 import { getApiErrorMessage } from "@/platform/api";
 import { useApp } from "@/shared/lib/store";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
@@ -34,19 +34,19 @@ function ConfirmationContent({ items }: { items: CreatorCareerItem[] }) {
   useEffect(() => { const c = new AbortController(); life.current = c; return () => { c.abort(); }; }, []);
   useEffect(() => {
     const c = new AbortController(); setReady(false); setLoadError("");
-    void client.capability(c.signal).then(() => { if (!c.signal.aborted) setReady(true); }).catch(() => { if (!c.signal.aborted) setLoadError(t("collaboration.careerConfirmation.storageUnavailable", "상대방 확인 저장소를 사용할 수 없어요. 기존 경력 작성·권리 설정·이력서 가져오기는 계속 사용할 수 있습니다.")); });
+    void client.capability(c.signal).then(() => { if (!c.signal.aborted) setReady(true); }).catch(() => { if (!c.signal.aborted) setLoadError(translateNow("collaboration.careerConfirmation.storageUnavailable", "상대방 확인 저장소를 사용할 수 없어요. 기존 경력 작성·권리 설정·이력서 가져오기는 계속 사용할 수 있습니다.")); });
     return () => c.abort();
   }, [reload]);
   useEffect(() => {
     if (!ready) return;
     const c = new AbortController(); setCollaborators(null); setCollaboratorKey(""); setPreview(null); setConsent(false);
-    void client.collaborators(collaboratorCursor, c.signal).then((v) => { if (!c.signal.aborted) setCollaborators(v); }).catch(async (e) => { const message = await getApiErrorMessage(e, t("collaboration.careerConfirmation.collaboratorsLoadFailed", "현재 팀원을 불러오지 못했어요.")); if (!c.signal.aborted) setError(message); });
+    void client.collaborators(collaboratorCursor, c.signal).then((v) => { if (!c.signal.aborted) setCollaborators(v); }).catch(async (e) => { const message = await getApiErrorMessage(e, translateNow("collaboration.careerConfirmation.collaboratorsLoadFailed", "현재 팀원을 불러오지 못했어요.")); if (!c.signal.aborted) setError(message); });
     return () => c.abort();
   }, [ready, collaboratorCursor]);
   useEffect(() => {
     if (!ready) return;
     const c = new AbortController(); setPage(null); setReview(null); setAttest(false);
-    void client.list(direction, cursor, c.signal).then((v) => { if (!c.signal.aborted) setPage(v); }).catch(async (e) => { const message = await getApiErrorMessage(e, t("collaboration.careerConfirmation.requestsLoadFailed", "확인 요청을 불러오지 못했어요.")); if (!c.signal.aborted) setError(message); });
+    void client.list(direction, cursor, c.signal).then((v) => { if (!c.signal.aborted) setPage(v); }).catch(async (e) => { const message = await getApiErrorMessage(e, translateNow("collaboration.careerConfirmation.requestsLoadFailed", "확인 요청을 불러오지 못했어요.")); if (!c.signal.aborted) setError(message); });
     return () => c.abort();
   }, [ready, direction, cursor]);
   const selected = items.find((i) => i.id === careerId && i.rights !== "pending");
@@ -58,7 +58,7 @@ function ConfirmationContent({ items }: { items: CreatorCareerItem[] }) {
     const c = new AbortController();
     void client.preview({ careerId: selected.id, versionId: selected.currentVersionId, teamId: teammate.teamId, targetAccountId: teammate.targetAccountId }, c.signal)
       .then((v) => { if (!c.signal.aborted && v.careerId === selected.id && v.versionId === selected.currentVersionId && v.targetAccountId === teammate.targetAccountId && v.teamId === teammate.teamId) setPreview(v); })
-      .catch(async (e) => { const message = await getApiErrorMessage(e, t("collaboration.careerConfirmation.previewLoadFailed", "공유 미리보기를 불러오지 못했어요.")); if (!c.signal.aborted) setError(message); });
+      .catch(async (e) => { const message = await getApiErrorMessage(e, translateNow("collaboration.careerConfirmation.previewLoadFailed", "공유 미리보기를 불러오지 못했어요.")); if (!c.signal.aborted) setError(message); });
     return () => c.abort();
   }, [selected, teammate, reload]);
   async function run(key: string, work: (mutationId: string, signal: AbortSignal) => Promise<{ state: CareerConfirmationState }>) {

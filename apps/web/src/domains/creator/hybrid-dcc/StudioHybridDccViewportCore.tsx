@@ -62,7 +62,7 @@ import {
   STUDIO_HYBRID_DCC_OBJECT_TRANSFORM_REVISION,
   type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
-import { validateStudioHybridDccFanPolygon } from "./studio-hybrid-dcc-polygon-validation";
+import { STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES, validateStudioHybridDccFanPolygon } from "./studio-hybrid-dcc-polygon-validation";
 import { resolveStudioHybridDccScreenComponentCandidate } from "./studio-hybrid-dcc-screen-selection";
 import { createStudioHybridDccSelectionGate } from "./studio-hybrid-dcc-selection-gate";
 import { detectStudioHybridDccWebglCapability } from "./studio-hybrid-dcc-webgl-probe";
@@ -196,7 +196,7 @@ const STUDIO_HYBRID_DCC_RENDER_PROFILE = Object.freeze({
   maxSynchronousLinearWorkTotal: 2_000_000,
   maxSynchronousPolygonPairWorkTotal: 3_000_000,
   maxSynchronousTrianglesTotal: 180_000,
-  maxFaceLoopVertices: 128,
+  maxFaceLoopVertices: STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES,
 });
 
 export interface StudioHybridDccRendererProfileTarget {

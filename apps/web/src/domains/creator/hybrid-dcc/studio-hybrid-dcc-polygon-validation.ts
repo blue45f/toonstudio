@@ -1,5 +1,11 @@
 export type StudioHybridDccPolygonPoint3 = readonly [number, number, number];
 
+/**
+ * Most corners one face may have before the viewport refuses to draw it. The viewport reads its draw profile from this
+ * value, and edge bevel checks its result against it, so a bevel cannot hand back a face the viewport would drop.
+ */
+export const STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES = 128;
+
 function cross2d(
   a: readonly [number, number],
   b: readonly [number, number],

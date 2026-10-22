@@ -389,13 +389,12 @@ function nativeFilterGaussBlurRGBA(imageData: StudioImageDataLike, radius: numbe
 }
 
 // konva/lib/filters/Blur.js verbatim (attrs 기반). 10.9: 논리 반경은 180 까지이고 pixelRatio 만큼 커널을 키운다.
+// Konva 는 곱한 반경에 상한을 두지 않는다(정규화가 부동소수라 넘치지 않는다). 손상된 pixelRatio 가 반경만큼 커널 노드를
+// 할당하게 하지 않도록 비율만 막는다: 화면 배율 8 이하에서는 Konva 와 픽셀 단위로 같고, 그 위는 의도한 이탈이다.
+const NATIVE_BLUR_MAX_PIXEL_RATIO = 8;
+
 export function nativeBlur(this: NativeFilterThis, imageData: StudioImageDataLike, pixelRatio = 1): void {
-  // 손상된 저장본의 Infinity/거대값(attrNumber 가 유한하지 않은 값은 걸러낸다)이나 비정상 pixelRatio 가
-  // 거대한 커널을 만들지 않게, 곱한 반경을 정수 테이블 한계의 두 배(360)로 제한한다.
-  const ratio = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
-  const radius = Math.min(
-    NATIVE_BLUR_MAX_RADIUS * 2,
-    Math.round(Math.min(attrNumber(this.attrs, "blurRadius", 0), NATIVE_BLUR_MAX_RADIUS) * ratio),
-  );
+  const ratio = Number.isFinite(pixelRatio) && pixelRatio > 0 ? Math.min(pixelRatio, NATIVE_BLUR_MAX_PIXEL_RATIO) : 1;
+  const radius = Math.round(Math.min(attrNumber(this.attrs, "blurRadius", 0), NATIVE_BLUR_MAX_RADIUS) * ratio);
   if (radius > 0) nativeFilterGaussBlurRGBA(imageData, radius);
 }

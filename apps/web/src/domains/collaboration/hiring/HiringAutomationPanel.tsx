@@ -7,7 +7,7 @@ import type { AutomaticInvitationState } from "./hiring-automation-client";
 import type { HiringSlot } from "../../../../../../packages/contracts/src/creator-hiring";
 
 import { getApiErrorMessage } from "@/platform/api";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
@@ -37,7 +37,7 @@ function AutomaticCampaign({ slot, postVersion }: { slot: HiringSlot; postVersio
           timer = setTimeout(() => { if (document.visibilityState === "visible") void read(); }, 15000);
         }
       } catch (cause) {
-        const message = await getApiErrorMessage(cause, t("collaboration.hiringAutomation.statusUnconfirmed", "자동 초대 상태를 확인하지 못했어요."));
+        const message = await getApiErrorMessage(cause, translateNow("collaboration.hiringAutomation.statusUnconfirmed", "자동 초대 상태를 확인하지 못했어요."));
         if (!controller.signal.aborted) { setState(null); setError(message); }
       }
     }

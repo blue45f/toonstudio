@@ -18,7 +18,7 @@ import { Container } from "@/shared/components/section";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
@@ -55,7 +55,7 @@ export function CreatorCareerGalleryPage() {
         }
       })
       .catch(async (caught) => {
-        const message = await getApiErrorMessage(caught, t("collaboration.careerGallery.loadFailed", "전시를 불러오지 못했어요."));
+        const message = await getApiErrorMessage(caught, translateNow("collaboration.careerGallery.loadFailed", "전시를 불러오지 못했어요."));
         if (!controller.signal.aborted) setError(message);
       });
     return () => controller.abort();

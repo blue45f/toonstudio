@@ -39,7 +39,7 @@ import {
 
 import type { StudioDrawingInputDeckProps } from "./StudioDrawingInputDeck";
 
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import "../studio-brush-canvas-status-i18n";
@@ -251,14 +251,14 @@ export function StudioDrawingInputDeckPanel({
   const copyTelemetryReport = useCallback(async (): Promise<void> => {
     const clipboard = globalThis.navigator?.clipboard;
     if (!clipboard?.writeText) {
-      setNotice(t("studio.brushCanvasStatus.brush.clipboardUnavailable", "이 브라우저에서는 클립보드 복사를 사용할 수 없습니다."));
+      setNotice(translateNow("studio.brushCanvasStatus.brush.clipboardUnavailable", "이 브라우저에서는 클립보드 복사를 사용할 수 없습니다."));
       return;
     }
     try {
       await clipboard.writeText(formatStudioDrawingTelemetryReport(telemetry));
       setNotice("좌표와 획 내용을 제외한 입력 진단을 복사했습니다.");
     } catch {
-      setNotice(t("studio.brushCanvasStatus.brush.copyDiagnosticsFailed", "입력 진단을 복사하지 못했습니다. 브라우저 권한을 확인해 주세요."));
+      setNotice(translateNow("studio.brushCanvasStatus.brush.copyDiagnosticsFailed", "입력 진단을 복사하지 못했습니다. 브라우저 권한을 확인해 주세요."));
     }
   }, [telemetry]);
 

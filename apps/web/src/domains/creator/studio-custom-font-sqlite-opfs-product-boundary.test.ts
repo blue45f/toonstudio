@@ -32,7 +32,7 @@ describe("/studio custom-font V12 product authority boundary", () => {
     expect(panel).toContain("hydrationGenerationRef");
     expect(panel).toContain("mutationGenerationRef");
     expect(panel).toContain('data-studio-custom-font-authority={storageState}');
-    expect(panel).toContain("현재 탭 메모리만 사용합니다");
+    expect(panel).toContain("현재 탭 메모리만 사용해요");
     expect(panel).not.toContain("browserCustomFontStorage");
     expect(panel).not.toContain("listCustomFonts(");
     expect(panel).not.toContain("saveCustomFonts(");
