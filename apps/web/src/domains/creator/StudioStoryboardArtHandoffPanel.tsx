@@ -18,6 +18,8 @@ import {
   type StudioStoryBeat,
 } from "./studio-storyboard-planner";
 
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
+
 export interface StudioStoryboardArtHandoffPanelProps {
   readonly episodeId: string;
   /** 이 회차의 콘티 비트. 비어 있으면 패널 자체를 그리지 않는다. */
@@ -55,8 +57,7 @@ export function StudioStoryboardArtHandoffPanel({
       <section aria-label="작화 샷 계획">
         <h3>작화 샷 계획</h3>
         <p>
-          이 회차 비트에 다른 회차 표시가 섞여 있어 작화 계획을 만들 수
-          없어요. 비트의 회차 연결을 먼저 확인해 주세요.
+          {r4CreatorStatusText("r4cat1.creator.artHandoff.blocked", "이 회차 비트에 다른 회차 표시가 섞여 있어 작화 계획을 만들 수 없어요. 비트의 회차 연결을 먼저 확인해 주세요.")}
         </p>
       </section>
     );

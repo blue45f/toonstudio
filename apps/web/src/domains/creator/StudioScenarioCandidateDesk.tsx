@@ -1,4 +1,5 @@
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
 import { Check, Images, ShieldCheck, Sparkles, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -163,7 +164,7 @@ export function StudioScenarioCandidateDesk({
           <p className="mt-1 text-[0.62rem] font-semibold text-fg-2" role="status" aria-live="polite">
             승인 {readiness.approved}/{readiness.total}
             {" · "}승인 필요 {readiness.unapproved + readiness.stale}
-            {" · "}미생성·실패 {readiness.missing + readiness.failed}
+            {" · "}{r4CreatorStatusText("r4cat1.creator.scenarioDesk.missingOrFailed", "미생성·실패")} {readiness.missing + readiness.failed}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-1">
@@ -173,7 +174,7 @@ export function StudioScenarioCandidateDesk({
             disabled={busy || readiness.missingIndexes.length === 0}
             className="min-h-11 rounded-md border border-line bg-panel px-2 text-[0.65rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-45 sm:min-h-7"
           >
-            미생성·실패
+            {r4CreatorStatusText("r4cat1.creator.scenarioDesk.missingOrFailed", "미생성·실패")}
           </button>
           <button
             type="button"

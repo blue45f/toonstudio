@@ -1,6 +1,8 @@
 import { FileText, Link2, Plus, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
+
 import {
   buildStoryCrosslinkIndex,
   splitDocumentByMentions,
@@ -111,13 +113,11 @@ export function StoryBibleCrosslinkPanel({
 
       {entities.length === 0 ? (
         <div className="m-4 rounded-xl border border-dashed border-line p-6 text-center text-xs leading-relaxed text-fg-3 sm:mx-5">
-          아직 연결할 항목이 없습니다. 먼저 장면·장소·소품을 등록하면, 다른 기록에
-          그 이름이 나올 때 자동으로 연결됩니다.
+          {r4CreatorStatusText("r4cat1.creator.storyBible.emptyEntities", "아직 연결할 항목이 없습니다. 먼저 장면·장소·소품을 등록하면, 다른 기록에 그 이름이 나올 때 자동으로 연결됩니다.")}
         </div>
       ) : documents.length === 0 ? (
         <div className="m-4 rounded-xl border border-dashed border-line p-6 text-center text-xs leading-relaxed text-fg-3 sm:mx-5">
-          연결을 찾을 기록이 아직 없습니다. 항목 설명이나 약속·회수 원장에 내용을
-          적으면 이름이 서로 이어지기 시작합니다.
+          {r4CreatorStatusText("r4cat1.creator.storyBible.emptyDocuments", "연결을 찾을 기록이 아직 없습니다. 항목 설명이나 약속·회수 원장에 내용을 적으면 이름이 서로 이어지기 시작합니다.")}
         </div>
       ) : (
         <div className="grid gap-4 p-4 sm:px-5 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
