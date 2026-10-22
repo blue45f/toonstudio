@@ -99,6 +99,11 @@ export interface StudioBg3dAssetRightsView {
   readonly readFailed: boolean;
   /** 질의에 쓰는 정규화 기록(상태만 담는다). 콘텐츠 해시가 없는 항목은 null 이다. */
   readonly record: StudioBg3dAssetMetadata | null;
+  /**
+   * 가져온 .skp 가 남긴 컴포넌트·태그(레이어)·장면 이름(화면용 글, 최대 48개). 이름으로 소재를 찾는 검색만 읽으며 권리 판정과 무관하다.
+   * 이름 기록이 없으면 빈 목록이다.
+   */
+  readonly sourceNames?: readonly string[];
 }
 
 type EntryLike = Pick<
@@ -267,6 +272,25 @@ function displayText(value: string | null | undefined): string | null {
   return Array.from(cleaned).slice(0, DISPLAY_TEXT_MAX_CODE_POINTS).join("");
 }
 
+/** 이름 검색에 쓰는 이름의 최대 개수. 저장 한도(목록마다 16개)의 세 목록을 모두 담고도 남는다. */
+const SOURCE_NAMES_MAX_COUNT = 48;
+const NO_SOURCE_NAMES: readonly string[] = Object.freeze([]);
+
+/** 메타데이터 기록에 남은 .skp 이름을 화면용 글로 모은다. 파일에서 온 글이라 보이지 않는 글자를 빼고 길이를 줄인다. */
+function sourceNamesOf(metadata: StudioBg3dAssetMetadata | undefined): readonly string[] {
+  const names = metadata?.skpImport?.names;
+  if (!names) return NO_SOURCE_NAMES;
+  const shown: string[] = [];
+  for (const list of [names.components, names.tags, names.scenes]) {
+    for (const item of list.items) {
+      const text = displayText(item);
+      if (text) shown.push(text);
+      if (shown.length >= SOURCE_NAMES_MAX_COUNT) return Object.freeze(shown);
+    }
+  }
+  return shown.length > 0 ? Object.freeze(shown) : NO_SOURCE_NAMES;
+}
+
 function safeTimestamp(value: unknown): number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : 0;
 }
@@ -341,6 +365,7 @@ export function buildStudioBg3dAssetRightsView(
     conflict: facts.conflict,
     readFailed,
     record,
+    sourceNames: sourceNamesOf(metadata),
   });
 }
 

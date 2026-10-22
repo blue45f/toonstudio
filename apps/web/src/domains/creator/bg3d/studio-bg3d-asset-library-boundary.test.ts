@@ -52,6 +52,7 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "../studio-bg3d-panel-status-i18n",
       "./StudioBg3dAssetAiUseFields",
       "./StudioBg3dAssetCardRightsActions",
+      "./StudioBg3dAssetNameMatchHint",
       "./StudioBg3dAssetRightsFilterBar",
       "./StudioBg3dAssetRightsInfo",
       "./StudioBg3dSkpImportPanel",
@@ -121,6 +122,7 @@ describe("Studio BG3D asset-library ownership boundary", () => {
     for (const file of [
       "./StudioBg3dAssetAiUseFields.tsx",
       "./StudioBg3dAssetCardRightsActions.tsx",
+      "./StudioBg3dAssetNameMatchHint.tsx",
       "./StudioBg3dAssetRecipeMenu.tsx",
       "./StudioBg3dAssetRightsFilterBar.tsx",
       "./StudioBg3dAssetRightsInfo.tsx",
