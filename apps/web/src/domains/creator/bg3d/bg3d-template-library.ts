@@ -68,8 +68,19 @@ export type Bg3dTemplateLibraryErrorCode =
   | "max-entries"
   | "storage-unavailable"
   | "storage-blocked"
-  | "migration-failed"
+  | "migration-legacy-read-failed" | "migration-corrupt-rows"
+  | "migration-conversion-failed" | "migration-total-size-exceeded"
+  | "migration-publish-failed"
   | "transaction-failed";
+
+/** A4 D4 (R10): 이전 실패 서브코드 집합 — 표시는 리졸버가 해석한다. */
+export const BG3D_TEMPLATE_MIGRATION_ERROR_CODES: ReadonlySet<Bg3dTemplateLibraryErrorCode> = new Set([
+  "migration-legacy-read-failed", "migration-corrupt-rows", "migration-conversion-failed",
+  "migration-total-size-exceeded", "migration-publish-failed",
+]);
+export function isBg3dTemplateMigrationErrorCode(code: Bg3dTemplateLibraryErrorCode): boolean {
+  return BG3D_TEMPLATE_MIGRATION_ERROR_CODES.has(code);
+}
 
 export class Bg3dTemplateLibraryError extends Error {
   readonly code: Bg3dTemplateLibraryErrorCode;
@@ -726,11 +737,7 @@ export async function loadBg3dTemplatesV12WithLegacyMigration(
       try {
         legacyRows = await readLegacyBg3dTemplateRows();
       } catch (cause) {
-        throw libraryError(
-          "migration-failed",
-          "기존 IndexedDB 3D 템플릿을 SQLite/OPFS로 이전하지 못했습니다.",
-          cause,
-        );
+        throw libraryError("migration-legacy-read-failed", "migration-legacy-read-failed", cause);
       }
 
       const scanned = scanStoredRecords(legacyRows.records);
@@ -739,10 +746,7 @@ export async function loadBg3dTemplatesV12WithLegacyMigration(
         scanned.rejectedCount > 0 ||
         scanned.entries.length !== legacyRows.totalCount
       ) {
-        throw libraryError(
-          "migration-failed",
-          "기존 3D 템플릿 저장소에 손상되거나 지원하지 않는 행이 있어 자동 이전을 중단했습니다.",
-        );
+        throw libraryError("migration-corrupt-rows", "migration-corrupt-rows");
       }
 
       const records = scanned.entries.map((entry) => recordFromDraft({
@@ -752,10 +756,7 @@ export async function loadBg3dTemplatesV12WithLegacyMigration(
         document: entry.document,
       }));
       if (records.some((record) => record === null)) {
-        throw libraryError(
-          "migration-failed",
-          "기존 3D 템플릿을 정규 V12 행으로 변환하지 못했습니다.",
-        );
+        throw libraryError("migration-conversion-failed", "migration-conversion-failed");
       }
       const canonicalRecords = records as StoredBg3dTemplateRecord[];
       const totalBytes = canonicalRecords.reduce(
@@ -763,10 +764,7 @@ export async function loadBg3dTemplatesV12WithLegacyMigration(
         0,
       );
       if (totalBytes > BG3D_TEMPLATE_LIBRARY_V12_MAX_TOTAL_BYTES) {
-        throw libraryError(
-          "migration-failed",
-          "기존 3D 템플릿의 전체 크기가 V12 이전 한도를 초과했습니다.",
-        );
+        throw libraryError("migration-total-size-exceeded", "migration-total-size-exceeded");
       }
 
       const next = canonicalV12TemplateManifest({
@@ -783,14 +781,13 @@ export async function loadBg3dTemplatesV12WithLegacyMigration(
       };
     });
   } catch (cause) {
-    if (cause instanceof Bg3dTemplateLibraryError && cause.code === "migration-failed") {
+    if (
+      cause instanceof Bg3dTemplateLibraryError &&
+      isBg3dTemplateMigrationErrorCode(cause.code)
+    ) {
       throw cause;
     }
-    throw libraryError(
-      "migration-failed",
-      "기존 3D 템플릿을 SQLite/OPFS manifest에 최종 게시하지 못했습니다.",
-      cause,
-    );
+    throw libraryError("migration-publish-failed", "migration-publish-failed", cause);
   }
 }
 

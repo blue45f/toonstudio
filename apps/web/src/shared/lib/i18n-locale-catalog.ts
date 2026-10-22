@@ -144,7 +144,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "ne": 0.2592,
   "nl": 0.2592,
   "no": 0.2569,
-  "or": 0.2596,
+  "or": 0.9819,
   "pa": 0.9819,
   "pl": 0.255,
   "pt": 0.2578,

@@ -40,7 +40,6 @@ import {
   freezeStudioBg3dShotAnimationsForBatch,
   projectStudioBg3dShotVisibilityToRuntime,
 } from "./studio-bg3d-shot-runtime";
-
 import type { StudioBg3dCaptureAdapter } from "./studio-bg3d-capture-adapter";
 import type {
   StudioBg3dSharedCharacterCaptureAuthorityLease,
@@ -70,6 +69,7 @@ import type { RefObject } from "react";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
 import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
+import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
 
 /** Live progress the editor renders while a shot batch renders, packages, and downloads. */
 export interface StudioBg3dShotBatchProgress {
@@ -980,9 +980,9 @@ export function createStudioBg3dShotBatchExportRunner(
         : recoverySession.degradedReason
           ? ` ${recoverySession.degradedReason}`
           : "";
-      const failureDetail = cause instanceof Error && cause.message.trim().length > 0
-        ? ` 원인: ${cause.message.trim()}`
-        : "";
+      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause)
+        ?? (cause instanceof Error ? cause.message.trim() : "");
+      const failureDetail = failureMessage ? ` 원인: ${failureMessage}` : "";
       if (componentActiveRef.current) {
         if (aborted) {
           setError(

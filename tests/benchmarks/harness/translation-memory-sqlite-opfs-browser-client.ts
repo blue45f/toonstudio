@@ -143,7 +143,7 @@ function createEntry(index: number, editIndex: number | null = null): StudioTran
     status: "approved",
     now: 1_000 + index + (editIndex ?? 0) * 10_000,
   });
-  if (!result.ok) throw new Error(result.error);
+  if (!result.ok) throw new Error(result.error.code);
   return result.entry;
 }
 

@@ -145,7 +145,7 @@ describe("Studio BG3D template organizer integration boundary", () => {
     expect(effectsSource).toContain("loadBg3dTemplates()");
     expect(effectsSource).toContain("templateLibraryLoadRevision,");
     expect(effectsSource).toContain("setTemplateLibraryNotice(null)");
-    expect(effectsSource).toContain('cause.code === "migration-failed"');
+    expect(effectsSource).toContain("resolveBg3dTemplateMigrationErrorByCode(cause.code)");
     expect(effectsSource).not.toContain(
       '(!modelsPanelActivated && activePanelTab !== "templates")',
     );
