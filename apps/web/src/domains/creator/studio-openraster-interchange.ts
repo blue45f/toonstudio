@@ -128,28 +128,12 @@ export type StudioOpenRasterWarningCode =
   | "UNSUPPORTED_XML_ELEMENT";
 
 /** 같은 경고 코드라도 방출 지점마다 원문이 달라 리졸버 키를 가르는 접미사. */
-export type StudioOpenRasterWarningVariant =
-  | "dimensionMismatch"
-  | "export"
-  | "import"
-  | "masksIgnored"
-  | "mergedBitDepth"
-  | "thumbnailProfile"
-  | "unsupportedAttribute"
-  | "unsupportedElement";
+import { StudioOpenRasterError, oraError } from "./studio-openraster-interchange-error";
+import type { StudioOpenRasterErrorVariant, StudioOpenRasterWarning, StudioOpenRasterWarningVariant } from "./studio-openraster-interchange-error";
+export type { StudioOpenRasterWarning } from "./studio-openraster-interchange-error";
+export { StudioOpenRasterError } from "./studio-openraster-interchange-error";
+export type { StudioOpenRasterErrorVariant, StudioOpenRasterWarningVariant } from "./studio-openraster-interchange-error";
 
-/**
- * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+variant+params만 방출한다.
- * 문구 해석은 표시·집계 지점에서만 한다
- * (status-i18n/studio-producer-error-i18n-interchange-ora.ts).
- */
-export interface StudioOpenRasterWarning {
-  code: StudioOpenRasterWarningCode;
-  variant: StudioOpenRasterWarningVariant;
-  params?: Readonly<Record<string, string>>;
-  layerIndex?: number;
-  path?: string;
-}
 
 export type StudioOpenRasterGroupIsolation = "isolate" | "auto";
 
@@ -262,116 +246,12 @@ export type StudioOpenRasterErrorCode =
   | "STACK_XML_INVALID";
 
 /** 방출 지점 단위 서브코드 — 리졸버 키는 기존 코드가 아니라 이 variant로 가른다. */
-export type StudioOpenRasterErrorVariant =
-  | "aborted"
-  | "archiveEntryReadFailed"
-  | "archiveEntryVerifyFailed"
-  | "archiveInvalid"
-  | "canvasDimensionOutOfRange"
-  | "documentNameOutOfRange"
-  | "groupCountLimit"
-  | "groupIsolationInvalid"
-  | "groupNameOutOfRange"
-  | "groupStackOutsideLayerStack"
-  | "imageBudgetExceeded"
-  | "imageReadFailed"
-  | "imageUnsupportedData"
-  | "layerCountLimit"
-  | "layerCountOutOfRange"
-  | "layerNameOutOfRange"
-  | "layerOffsetOutOfRange"
-  | "layerOpacityOutOfRange"
-  | "layerOutsideStack"
-  | "layerSourceDuplicate"
-  | "layerSourcePathInvalid"
-  | "layerSourcePathSegmentUnsafe"
-  | "layerSourceReservedEntry"
-  | "limitInvalid"
-  | "mimetypeLengthInvalid"
-  | "mimetypeNotFirstStored"
-  | "mimetypeNotUtf8"
-  | "mimetypeValueInvalid"
-  | "noLayersToImport"
-  | "opacityNotNumber"
-  | "opacityOutOfRange"
-  | "pngDimensionsZero"
-  | "pngFirstChunkNotIhdr"
-  | "pngIhdrFormatInvalid"
-  | "pngIhdrIncomplete"
-  | "pngDimensionLimit"
-  | "pngPixelLimit"
-  | "pngSignatureInvalid"
-  | "pngSizeChanged"
-  | "pngSizeLimit"
-  | "requiredLayerPngMissing"
-  | "requiredMergedImageMissing"
-  | "requiredStackXmlMissing"
-  | "requiredThumbnailMissing"
-  | "resolutionPairRequired"
-  | "rootStackNotUnique"
-  | "sizeLayerPngLimit"
-  | "sizeMergedImageByteLimit"
-  | "sizeStackXmlByteLimit"
-  | "sizeStackXmlBytesOutOfRange"
-  | "sizeStackXmlLimit"
-  | "sizeThumbnailByteLimit"
-  | "stackAttributeDuplicate"
-  | "stackAttributeMissingEquals"
-  | "stackAttributeNameInvalid"
-  | "stackAttributeNotQuoted"
-  | "stackAttributeTooMany"
-  | "stackAttributeUnclosed"
-  | "stackClosingTagInvalid"
-  | "stackCommentUnclosed"
-  | "stackDeclarationElementForbidden"
-  | "stackDeclarationInvalid"
-  | "stackDepthLimit"
-  | "stackDtdForbidden"
-  | "stackElementCountLimit"
-  | "stackImageRootNotUnique"
-  | "stackIntegerInvalid"
-  | "stackIntegerOutOfRange"
-  | "stackInvalidEntity"
-  | "stackNestingInvalid"
-  | "stackNotUtf8"
-  | "stackProcessingInstructionUnclosed"
-  | "stackSelfClosingTagInvalid"
-  | "stackStructureIncomplete"
-  | "stackTagNameInvalid"
-  | "stackTagUnclosed"
-  | "stackTextOutsideRoot"
-  | "stackTopLevelElementForbidden"
-  | "stackUnexpectedText"
-  | "stackUnknownEntity"
-  | "versionNotSemver"
-  | "visibilityInvalid"
-  | "xmlTextOutOfRange";
 
 /**
  * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+variant+params만 방출한다
  * (message = 코드). 문구는 표시 지점에서 리졸버로 해석한다
  * (status-i18n/studio-producer-error-i18n-interchange-ora.ts).
  */
-export class StudioOpenRasterError extends Error {
-  readonly code: StudioOpenRasterErrorCode;
-  readonly variant: StudioOpenRasterErrorVariant;
-  readonly params?: Readonly<Record<string, string>>;
-  readonly path?: string;
-
-  constructor(
-    code: StudioOpenRasterErrorCode,
-    variant: StudioOpenRasterErrorVariant,
-    params?: Readonly<Record<string, string>>,
-    path?: string,
-  ) {
-    super(code);
-    this.name = "StudioOpenRasterError";
-    this.code = code;
-    this.variant = variant;
-    if (params !== undefined) this.params = params;
-    if (path !== undefined) this.path = path;
-  }
-}
 
 interface PreparedOpenRaster {
   entries: StudioPackageArchiveEntry[];
@@ -456,14 +336,6 @@ const COMPOSITE_TO_BLEND = new Map(
   [...BLEND_TO_COMPOSITE].map(([blend, composite]) => [composite, blend] as const)
 );
 
-function oraError(
-  code: StudioOpenRasterErrorCode,
-  variant: StudioOpenRasterErrorVariant,
-  params?: Readonly<Record<string, string>>,
-  path?: string,
-): StudioOpenRasterError {
-  return new StudioOpenRasterError(code, variant, params, path);
-}
 
 function freezeWarnings(
   warnings: readonly StudioOpenRasterWarning[],

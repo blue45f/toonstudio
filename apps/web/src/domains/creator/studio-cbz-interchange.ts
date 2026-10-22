@@ -121,11 +121,10 @@ export type StudioCbzWarningCode =
   | "PAGE_COUNT_MISMATCH";
 
 /** 같은 경고 코드라도 방출 지점마다 원문이 달라 리졸버 키를 가르는 접미사. */
-export type StudioCbzWarningVariant =
-  | "countMismatch"
-  | "missing"
-  | "nonImage"
-  | "osMetadata";
+import { StudioCbzError, cbzError } from "./studio-cbz-interchange-error";
+import type { StudioCbzErrorVariant, StudioCbzWarningVariant } from "./studio-cbz-interchange-error";
+export { StudioCbzError } from "./studio-cbz-interchange-error";
+export type { StudioCbzErrorVariant, StudioCbzWarningVariant } from "./studio-cbz-interchange-error";
 
 /**
  * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+variant+params만 방출한다.
@@ -193,91 +192,12 @@ export type StudioCbzErrorCode =
   | "SIZE_LIMIT";
 
 /** 방출 지점 단위 서브코드 — 리졸버 키는 기존 코드가 아니라 이 variant로 가른다. */
-export type StudioCbzErrorVariant =
-  | "aborted"
-  | "archiveInvalid"
-  | "comicInfoAttributeDuplicate"
-  | "comicInfoAttributeMissingEquals"
-  | "comicInfoAttributeMissingSpace"
-  | "comicInfoAttributeNameInvalid"
-  | "comicInfoAttributeNotQuoted"
-  | "comicInfoAttributeTooMany"
-  | "comicInfoAttributeUnclosed"
-  | "comicInfoAttributeUnsafeChar"
-  | "comicInfoBlackAndWhiteNotBoolean"
-  | "comicInfoBlackAndWhiteValueInvalid"
-  | "comicInfoClosingTagInvalid"
-  | "comicInfoCommaInItem"
-  | "comicInfoCommentInvalid"
-  | "comicInfoCommentUnclosed"
-  | "comicInfoDeclarationUnclosed"
-  | "comicInfoDeclarationUnsupported"
-  | "comicInfoDepthLimit"
-  | "comicInfoElementCountLimit"
-  | "comicInfoElementUnclosed"
-  | "comicInfoEntityInvalid"
-  | "comicInfoForbiddenConstruct"
-  | "comicInfoIntegerInvalid"
-  | "comicInfoIntegerOutOfRange"
-  | "comicInfoMetadataLimit"
-  | "comicInfoMissingValue"
-  | "comicInfoMixedContent"
-  | "comicInfoNotList"
-  | "comicInfoNotString"
-  | "comicInfoNotUtf8"
-  | "comicInfoOpeningTagInvalid"
-  | "comicInfoOutOfRange"
-  | "comicInfoRootInvalid"
-  | "comicInfoRootUnclosed"
-  | "comicInfoTagAttributeMissingSpace"
-  | "comicInfoTagDuplicate"
-  | "comicInfoTagNestingInvalid"
-  | "comicInfoTextComplexityLimit"
-  | "comicInfoTextNotEscaped"
-  | "comicInfoTextOutsideRoot"
-  | "comicInfoUnsafeControlChar"
-  | "comicInfoValueStructureInvalid"
-  | "imageExtensionMismatch"
-  | "imageFormatInvalid"
-  | "imageReadFailed"
-  | "imageUnsupportedData"
-  | "limitInvalid"
-  | "pageCountArchiveLimit"
-  | "pageCountOutOfRange"
-  | "sizeComicInfoBytesOutOfRange"
-  | "sizeComicInfoLimit"
-  | "sizePageBytesOutOfRange"
-  | "sizePageLimit"
-  | "sizePagePixelsLimit"
-  | "sizePageSideLimit"
-  | "sizeTotalDecodedBudget"
-  | "sizeTotalPageBytesLimit";
 
 /**
  * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+variant+params만 방출한다
  * (message = 코드). 문구는 표시 지점에서 리졸버로 해석한다
  * (status-i18n/studio-producer-error-i18n-interchange-cbz.ts).
  */
-export class StudioCbzError extends Error {
-  readonly code: StudioCbzErrorCode;
-  readonly variant: StudioCbzErrorVariant;
-  readonly params?: Readonly<Record<string, string>>;
-  readonly path?: string;
-
-  constructor(
-    code: StudioCbzErrorCode,
-    variant: StudioCbzErrorVariant,
-    params?: Readonly<Record<string, string>>,
-    path?: string,
-  ) {
-    super(code);
-    this.name = "StudioCbzError";
-    this.code = code;
-    this.variant = variant;
-    if (params !== undefined) this.params = params;
-    if (path !== undefined) this.path = path;
-  }
-}
 
 interface DetectedPage {
   mimeType: StudioCbzPageMimeType;
@@ -300,14 +220,6 @@ const MAX_IMAGE_CONTAINER_RECORDS = 131_072;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
-function cbzError(
-  code: StudioCbzErrorCode,
-  variant: StudioCbzErrorVariant,
-  params?: Readonly<Record<string, string>>,
-  path?: string,
-): StudioCbzError {
-  return new StudioCbzError(code, variant, params, path);
-}
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw cbzError("ABORTED", "aborted");

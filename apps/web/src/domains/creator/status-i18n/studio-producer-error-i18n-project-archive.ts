@@ -592,3 +592,8 @@ export function resolveStudioProjectArchiveErrorFromCause(cause: unknown): strin
     ...(safeParams ? { params: safeParams } : {}),
   });
 }
+
+/** 표시 지점 전용 해석 (project-archive, 폴백 결합형): 구조화 오류면 해석 문구, Error면 원문 메시지, 그 외에는 호출자가 준 폴백 문구를 돌려준다. */
+export function resolveStudioProjectArchiveErrorMessage(cause: unknown, fallback: string): string {
+  return resolveStudioProjectArchiveErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : fallback);
+}

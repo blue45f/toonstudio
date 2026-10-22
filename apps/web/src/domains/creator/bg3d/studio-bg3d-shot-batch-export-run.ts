@@ -954,7 +954,6 @@ export function createStudioBg3dShotBatchExportRunner(
             else if (cause instanceof Error && cause.message.includes("복원")) {
               failureCode = "scene-restore-failed";
             } else if (cause instanceof Error && (cause.message.includes("PNG") ||
-              // A4 D4 (R12): 복구 오류는 message가 서브코드라 PNG 판정을 서브코드로도 본다.
               (cause instanceof StudioBg3dShotBatchRecoveryError && cause.subcode.toLowerCase().includes("png")))) {
               failureCode = "encode-failed";
             }
@@ -983,9 +982,7 @@ export function createStudioBg3dShotBatchExportRunner(
         : recoverySession.degradedReason
           ? ` ${recoverySession.degradedReason}`
           : "";
-      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause)
-        ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause)
-        ?? (cause instanceof Error ? cause.message.trim() : "");
+      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause) ?? resolveStudioBg3dShotBatchRecoveryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message.trim() : "");
       const failureDetail = failureMessage ? ` 원인: ${failureMessage}` : "";
       if (componentActiveRef.current) {
         if (aborted) {
