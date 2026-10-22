@@ -40,7 +40,7 @@
   "revenue.settlement.pgFee": "決済手数料 (3.3%)",
   "revenue.settlement.platformFee": "プラットフォーム手数料 ({rate}%)",
   "revenue.settlement.policyNote": "マーケット精算と同じポリシーが適用されます。{min}以上から出金でき、実際の受取率は{rate}%です。",
-  "revenue.settlement.requestPayout": "Request payout",
+  "revenue.settlement.requestPayout": "出金を申請する（準備中）",
   "revenue.settlement.title": "精算予定",
   "revenue.settlement.withholdingTax": "源泉徴収 (3.3%)",
   "revenue.source.custom": "その他",

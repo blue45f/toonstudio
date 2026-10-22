@@ -40,7 +40,7 @@
   "revenue.settlement.pgFee": "Zahlungsgebühr (3.3%)",
   "revenue.settlement.platformFee": "Plattformgebühr ({rate}%)",
   "revenue.settlement.policyNote": "Dieselbe Richtlinie wie bei der Marktplatz-Abrechnung. Auszahlungen ab {min}; Netto-Behaltensrate {rate}%.",
-  "revenue.settlement.requestPayout": "Request payout",
+  "revenue.settlement.requestPayout": "Auszahlung anfordern (in Vorbereitung)",
   "revenue.settlement.title": "Abrechnung",
   "revenue.settlement.withholdingTax": "Quellensteuer (3.3%)",
   "revenue.source.custom": "Sonstiges",
