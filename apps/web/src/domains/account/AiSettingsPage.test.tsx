@@ -12,6 +12,10 @@ vi.mock("@/shared/ai/UnifiedAiSettings", () => ({
   UnifiedAiSettings: () => <div data-testid="unified-ai-settings" />,
 }));
 
+vi.mock("@/shared/ai/claude/ClaudeConnectionCard", () => ({
+  ClaudeConnectionCard: () => <div data-testid="claude-connection-card" />,
+}));
+
 vi.mock("@/shared/seo/use-document-title", () => ({
   useDocumentTitle: vi.fn(),
 }));
@@ -37,6 +41,7 @@ it("renders the bilingual header, back link, and settings surface", () => {
   const backLink = screen.getByRole("link", { name: /설정/ });
   expect(backLink.getAttribute("href")).toBe("/settings");
   expect(screen.getByTestId("unified-ai-settings")).toBeTruthy();
+  expect(screen.getByTestId("claude-connection-card")).toBeTruthy();
 });
 
 it("labels the back link from the source query param", () => {
