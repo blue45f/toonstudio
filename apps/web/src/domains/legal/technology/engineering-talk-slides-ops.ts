@@ -166,7 +166,7 @@ export const OPS_SLIDES = [
     ),
     facts: [
       { value: "5,100+", label: t("웹 테스트 파일(Vitest, git 추적 기준)", "Web test files (Vitest, tracked by git)") },
-      { value: "51", label: t("E2E 스펙(Playwright)", "E2E specs (Playwright)") },
+      { value: "52", label: t("E2E 스펙(Playwright)", "E2E specs (Playwright)") },
       { value: "101", label: t("GitHub Actions 워크플로 파일", "GitHub Actions workflow files") },
       { value: "0", label: t("앱 간 직접 import(래칫)", "Cross-app imports (ratchet)") },
     ],
@@ -177,8 +177,8 @@ export const OPS_SLIDES = [
     ],
     stack: ["Vitest", "Testing Library", "Playwright", "@axe-core/playwright", "GitHub Actions"],
     notes: t(
-      "건강검진표처럼 오늘 센 값만 읽습니다. 웹 테스트 파일 5,100개 이상, E2E 스펙 51개, 워크플로 101개입니다.\n래칫: 앱 간 import는 0, 레거시 shared→domain(30)과 도메인 간 깊은 import(76)는 상한이라 늘면 CI가 실패하며, 깊은 import 실측은 73입니다.\n접근성은 코어 게이트가 axe 스모크(기본 설정, 모션 감소 없음), 모션 감소·강제 색상은 수동, 키보드 점검은 스모크에 없습니다. 근거는 architecture-boundary-ratchet.json입니다. 다음은 성능입니다. 질문이 나오면 ‘Architecture boundary ratchet’ 카드를 엽니다.",
-      "Read it like a health-check sheet: only values counted today. Web test files exceed 5,100, with 51 E2E specs and 101 workflows.\nRatchet: cross-app imports stay at 0, and legacy shared→domain (30) and cross-domain deep imports (76) are caps, so CI fails if they grow; measured deep imports are 73.\nAccessibility: the core gate is an axe smoke (default config, no reduced motion), reduced motion and forced colors are manual and keyboard checks are not in the smoke. The basis is architecture-boundary-ratchet.json. Next, performance. If asked, open the ‘Architecture boundary ratchet’ card.",
+      "건강검진표처럼 오늘 센 값만 읽습니다. 웹 테스트 파일 5,100개 이상, E2E 스펙 52개, 워크플로 101개입니다.\n래칫: 앱 간 import는 0, 레거시 shared→domain(30)과 도메인 간 깊은 import(76)는 상한이라 늘면 CI가 실패하며, 깊은 import 실측은 73입니다.\n접근성은 코어 게이트가 axe 스모크(기본 설정, 모션 감소 없음), 모션 감소·강제 색상은 수동, 키보드 점검은 스모크에 없습니다. 근거는 architecture-boundary-ratchet.json입니다. 다음은 성능입니다. 질문이 나오면 ‘Architecture boundary ratchet’ 카드를 엽니다.",
+      "Read it like a health-check sheet: only values counted today. Web test files exceed 5,100, with 52 E2E specs and 101 workflows.\nRatchet: cross-app imports stay at 0, and legacy shared→domain (30) and cross-domain deep imports (76) are caps, so CI fails if they grow; measured deep imports are 73.\nAccessibility: the core gate is an axe smoke (default config, no reduced motion), reduced motion and forced colors are manual and keyboard checks are not in the smoke. The basis is architecture-boundary-ratchet.json. Next, performance. If asked, open the ‘Architecture boundary ratchet’ card.",
     ),
     chapterId: "quality",
     evidence: [
