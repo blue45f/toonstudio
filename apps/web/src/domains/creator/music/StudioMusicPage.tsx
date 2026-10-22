@@ -109,11 +109,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
     save: saveMusicTrack,
     remove: deleteMusicTrack,
   }));
-  const library = useSyncExternalStore(
-    recovery.subscribe,
-    recovery.getSnapshot,
-    recovery.getSnapshot,
-  );
+  const library = useSyncExternalStore(recovery.subscribe, recovery.getSnapshot, recovery.getSnapshot);
   const { tracks, savedIds, pendingIds } = library;
   const libraryLoading = Boolean(ownerId)
     && (library.loading || (!library.loaded && !library.loadError));
