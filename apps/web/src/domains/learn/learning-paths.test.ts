@@ -31,7 +31,7 @@ describe("learning path catalogue", () => {
   });
 
   it("ships unique, resolvable paths and includes every lesson in at least one path", () => {
-    assert.equal(LEARNING_PATHS.length, 8);
+    assert.equal(LEARNING_PATHS.length, 12);
     assert.equal(new Set(LEARNING_PATHS.map((path) => path.id)).size, LEARNING_PATHS.length);
     const lessonIds = new Set(LESSONS.map((lesson) => lesson.id));
     const included = new Set<string>();
