@@ -1,6 +1,6 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, LoaderCircle, PanelTop } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { CLAUDE_BUTTON, CLAUDE_INPUT, CLAUDE_QUIET_BUTTON } from "@/shared/ai/claude/claude-ui";
@@ -8,6 +8,8 @@ import { useT } from "@/shared/lib/i18n";
 
 import { describeArtDirectorCoverage } from "./claude-art-director";
 import { readClipboardImage, type ArtDirectorImageErrorCode, type ArtDirectorRenderedSegment } from "./claude-art-director-image";
+import { getStudioCanvasCapture, useStudioCanvasCaptureAvailable } from "./claude-canvas-capture-registry";
+import { canvasToImageFile } from "./claude-canvas-image";
 import { pickDroppedFile } from "./claude-image-files";
 import { ClaudeArtDirectorDropzone } from "./ClaudeArtDirectorDropzone";
 
@@ -38,7 +40,7 @@ export interface ClaudeImageInputPaneProps {
 }
 
 /**
- * 이미지 입력 구역: 올리기(선택·끌어놓기·클립보드 버튼) → 보낼 이미지 미리보기(원본·전송 크기) → 바꾸기·지우기 →
+ * 이미지 입력 구역: 올리기(선택·끌어놓기·클립보드 버튼, 스튜디오 안에서는 캔버스에서 가져오기) → 보낼 이미지 미리보기(원본·전송 크기) → 바꾸기·지우기 →
  * 긴 이미지의 구간 고르기. 오류와 클립보드 안내를 한곳에서 알려 줘서 이미지를 받는 모든 Claude 보조가 같은 경험을 준다.
  */
 export function ClaudeImageInputPane({ image, running, renderPreview, belowPreview }: ClaudeImageInputPaneProps) {
@@ -48,6 +50,8 @@ export function ClaudeImageInputPane({ image, running, renderPreview, belowPrevi
   const dropzoneRef = useRef<HTMLDivElement>(null);
   const hadImage = useRef(false);
   const [clipboardNote, setClipboardNote] = useState<string | null>(null);
+  const canCaptureCanvas = useStudioCanvasCaptureAvailable();
+  const [capturing, setCapturing] = useState(false);
   const { rendered, source, segmentIndex } = image;
   const segmentCount = source?.segments.length ?? 0;
   const coverage = source ? describeArtDirectorCoverage(source.height, source.segments) : null;
@@ -70,6 +74,22 @@ export function ClaudeImageInputPane({ image, running, renderPreview, belowPrevi
     else setClipboardNote(t(CLIPBOARD_MESSAGE_KEY[outcome.reason]));
   };
   const pick = () => fileInputRef.current?.click();
+  // 스튜디오가 켜져 있으면 지금 보고 있는 페이지를 이 브라우저 안에서 그림으로 만들어 올린 파일과 같은 관문으로 보낸다. 전송은 실행 때만 일어난다.
+  const fromCanvas = async () => {
+    const capture = getStudioCanvasCapture();
+    if (!capture) return;
+    setClipboardNote(t("claudeAssist.art.fromCanvasBusy"));
+    setCapturing(true);
+    try {
+      const canvas = await capture();
+      if (!canvas) throw new Error("no-canvas");
+      loadFile(await canvasToImageFile(canvas));
+    } catch {
+      setClipboardNote(t("claudeAssist.art.fromCanvasFailed"));
+    } finally {
+      setCapturing(false);
+    }
+  };
 
   return (
     <div className="min-w-0 space-y-3">
@@ -87,10 +107,16 @@ export function ClaudeImageInputPane({ image, running, renderPreview, belowPrevi
           </p>
           {belowPreview}
           <div className="flex flex-wrap gap-2">
-            <button type="button" className={CLAUDE_BUTTON} disabled={running} onClick={pick}>
+            <button type="button" className={CLAUDE_BUTTON} disabled={running || capturing} onClick={pick}>
               <ImageIcon size={16} aria-hidden />
               {t("claudeAssist.art.replace")}
             </button>
+            {canCaptureCanvas ? (
+              <button type="button" className={CLAUDE_BUTTON} disabled={running || capturing || image.preparing} onClick={() => void fromCanvas()}>
+                {capturing ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <PanelTop size={16} aria-hidden />}
+                {t("claudeAssist.art.fromCanvas")}
+              </button>
+            ) : null}
             <button type="button" className={CLAUDE_QUIET_BUTTON} disabled={running} onClick={image.clear}>
               {t("claudeAssist.art.remove")}
             </button>
@@ -127,6 +153,8 @@ export function ClaudeImageInputPane({ image, running, renderPreview, belowPrevi
             onPick={pick}
             onPasteFromClipboard={() => void pasteFromClipboard()}
             onDropFiles={(files) => { if (!running) loadFile(pickDroppedFile(files)); }}
+            onFromCanvas={canCaptureCanvas ? () => void fromCanvas() : undefined}
+            capturing={capturing}
           />
         </div>
       )}

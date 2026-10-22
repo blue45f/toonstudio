@@ -10,6 +10,7 @@ import { EMPTY_AI_CONNECTION } from "@/shared/ai/user-ai-types";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { normalizeArtDirectorReview, type ArtDirectorRawReview } from "./claude-art-director";
+import { installStudioCanvasCapture, resetStudioCanvasCaptureForTests } from "./claude-canvas-capture-registry";
 import { ClaudeArtDirectorDialog } from "./ClaudeArtDirectorDialog";
 
 import type { ArtDirectorBitmap, ArtDirectorImageDeps } from "./claude-art-director-image";
@@ -17,6 +18,10 @@ import type { ArtDirectorRunResult } from "./claude-art-director-run";
 
 const runArtDirectorReview = vi.hoisted(() => vi.fn());
 vi.mock("./claude-art-director-run", () => ({ runArtDirectorReview }));
+
+// jsdom에는 canvas.toBlob이 없어, 캔버스를 파일로 바꾸는 부분만 바꿔 끼운다(그 부분은 claude-canvas-image.test.ts가 시험한다).
+const canvasToImageFile = vi.hoisted(() => vi.fn());
+vi.mock("./claude-canvas-image", () => ({ canvasToImageFile }));
 
 /** 캔버스·ImageBitmap이 없는 jsdom에서도 화면 흐름을 시험하도록 브라우저 구현만 바꿔 끼운다. */
 const fakeDeps = vi.hoisted(() => ({
@@ -131,6 +136,8 @@ describe("ClaudeArtDirectorDialog", () => {
     resetClaudeBudgetForTests();
     runArtDirectorReview.mockReset();
     runArtDirectorReview.mockResolvedValue(outcome());
+    canvasToImageFile.mockReset();
+    resetStudioCanvasCaptureForTests();
     fakeDeps.size = { width: 800, height: 1_000 };
     fakeDeps.revoked.length = 0;
     fakeDeps.urls = 0;
@@ -722,5 +729,50 @@ describe("ClaudeArtDirectorDialog — 리뷰 반영", () => {
     await screen.findByText("대사 글자가 묻혀요");
 
     expect(document.querySelector("[data-claude-trimmed]")?.textContent).toContain("3곳의 내용이 줄었어요");
+  });
+
+  describe("스튜디오 캔버스에서 가져오기", () => {
+    it("스튜디오 밖(캡처가 등록되지 않음)에서는 단추가 없고 클립보드 안내가 남는다", () => {
+      connectClaude();
+      renderDialog();
+
+      expect(screen.queryByRole("button", { name: "캔버스에서 가져오기" })).toBeNull();
+      expect(document.querySelector("[data-claude-dropzone]")?.textContent).toContain("이미지를 클립보드로");
+    });
+
+    it("스튜디오가 켜져 있으면 단추를 보이고, 누르면 현재 페이지를 올린 이미지와 같은 길로 불러온다", async () => {
+      connectClaude();
+      const canvas = document.createElement("canvas");
+      const capture = vi.fn().mockResolvedValue(canvas);
+      canvasToImageFile.mockResolvedValue(pngFile(800, 1_000, "canvas-page.png"));
+      renderDialog();
+      let uninstall = () => undefined;
+      act(() => { uninstall = installStudioCanvasCapture(capture); });
+
+      const button = await screen.findByRole("button", { name: "캔버스에서 가져오기" });
+      expect(document.querySelector("[data-claude-dropzone]")?.textContent).not.toContain("이미지를 클립보드로");
+      await act(async () => { fireEvent.click(button); });
+
+      await screen.findByAltText("분석할 이미지 미리보기");
+      expect(capture).toHaveBeenCalledTimes(1);
+      expect(canvasToImageFile).toHaveBeenCalledWith(canvas);
+      expect(screen.getByText(/원본 800×1000px/)).toBeTruthy();
+      // 불러온 뒤에도 같은 단추로 현재 페이지를 다시 가져올 수 있다.
+      expect(screen.getByRole("button", { name: "캔버스에서 가져오기" })).toBeTruthy();
+      act(() => uninstall());
+      await waitFor(() => expect(screen.queryByRole("button", { name: "캔버스에서 가져오기" })).toBeNull());
+    });
+
+    it("캔버스를 가져오지 못하면 이유와 다음 행동을 알리고 이미지는 바뀌지 않는다", async () => {
+      connectClaude();
+      renderDialog();
+      act(() => { installStudioCanvasCapture(vi.fn().mockRejectedValue(new Error("다른 내보내기 작업이 끝난 뒤 다시 시도해 주세요."))); });
+
+      await act(async () => { fireEvent.click(await screen.findByRole("button", { name: "캔버스에서 가져오기" })); });
+
+      const note = await screen.findByText("캔버스를 이미지로 가져오지 못했어요. 잠시 뒤 다시 시도하거나 이미지를 직접 올려 주세요.");
+      expect(note.getAttribute("role")).toBe("status");
+      expect(screen.queryByAltText("분석할 이미지 미리보기")).toBeNull();
+    });
   });
 });
