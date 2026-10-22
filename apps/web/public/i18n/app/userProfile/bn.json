@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "প্রোফাইলের বিষয়বস্তু",
   "userProfile.refresh": "রিফ্রেশ",
   "userProfile.emptyReviews": "এই ব্যবহারকারীর দ্বারা এখনো কোন পর্যালোচনা প্রকাশিত হয়নি।",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "তৈরি করা কাজ লোড করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "userProfile.series.error": "সিরিজ লোড করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "userProfile.emptyReviewsHint": "আপনার ভালো লাগা কোনো শিরোনামে প্রথম পর্যালোচনা দিন।",
+  "userProfile.emptyReviewsCta": "শিরোনাম দেখুন"
 }

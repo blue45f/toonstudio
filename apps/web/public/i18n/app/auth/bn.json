@@ -18,6 +18,6 @@
   "auth.callback.message.done": "সাইন-ইন সম্পন্ন, শিগগিরই পুনর্নির্দেশ।",
   "auth.callback.message.doneDemo": "ডেমো সাইন ইন সম্পন্ন। শীঘ্রই পুনর্নির্দেশ।",
   "auth.callback.demo.message": "আপনি একটি ডেমো অ্যাকাউন্ট দিয়ে সাইন ইন করেছেন। কিছু বৈশিষ্ট্য সীমিত হতে পারে।",
-  "auth.callback.backToLogin": "Back to sign in",
-  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
+  "auth.callback.backToLogin": "সাইন ইন-এ ফিরে যান",
+  "auth.callback.slowHelp": "এটি স্বাভাবিকের চেয়ে বেশি সময় নিচ্ছে। যদি এই পর্দা থেকেই যায়, তাহলে সাইন-ইনে ফিরে গিয়ে আবার চেষ্টা করুন।"
 }
