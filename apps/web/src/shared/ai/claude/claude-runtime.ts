@@ -8,6 +8,7 @@
  * - 키는 사용자 브라우저에서 사용자 본인의 Anthropic 계정으로만 간다. 앱 서버를 거치지 않는다.
  * - `maxRetries: 0` — 처리 여부가 불명확한 실패를 자동 재전송해 중복 과금을 만들지 않는다.
  * - SDK `fetch`는 가드 `fetch`(공식 origin 고정·쿠키 제거·리비전 검사·응답 상한)로 교체한다.
+ * - SDK의 OpenTelemetry 추적과 추적 헤더 전파는 끈다. 나중에 앱에 추적 SDK가 들어와도 `traceparent`·`baggage`가 키와 함께 나가지 않는다.
  * - 오류는 사용자에게 보여도 안전한 문구로만 바꾼다(요청 본문·키 값·원문 응답을 싣지 않는다).
  */
 import Anthropic from "@anthropic-ai/sdk";
@@ -21,6 +22,7 @@ import {
   CLAUDE_REQUEST_TIMEOUT_MS,
 } from "./claude-guarded-fetch";
 import { ANTHROPIC_API_ORIGIN } from "./claude-protocol";
+import { assertClaudeMessageComplete } from "./claude-stop-reason";
 
 import type { z } from "zod";
 
@@ -40,6 +42,11 @@ export interface ClaudeRuntimeOptions {
    * 오류로 끝나더라도 빠뜨리지 않고 기록하기 위한 훅이다.
    */
   readonly onMessage?: (message: Anthropic.Message) => void;
+  /**
+   * 요청이 Anthropic에 도달해 처리됐을 수 있는 시점에 한 번 호출된다(본문을 넘긴 뒤의 취소·시간 초과, 또는 성공 응답 수신).
+   * 이 뒤에 사용량을 받지 못하고 끝나면 요금이 청구됐을 수 있어, 호출 쪽이 "확인되지 않은 요청"으로 센다.
+   */
+  readonly onPossiblyBilled?: () => void;
 }
 
 const CANCELLED_MESSAGE =
@@ -57,6 +64,7 @@ export function createClaudeClient(
     // BYOK: 사용자가 직접 넣은 자기 키로 자기 계정에 요청한다. 앱 서버나 제3자에는 보내지 않는다.
     dangerouslyAllowBrowser: true,
     maxRetries: 0,
+    openTelemetry: false,
     timeout: options.timeoutMs ?? CLAUDE_REQUEST_TIMEOUT_MS,
     fetch: createClaudeGuardedFetch({
       apiKey: route.apiKey,
@@ -64,6 +72,7 @@ export function createClaudeClient(
       signal: options.signal,
       timeoutMs: options.timeoutMs,
       fetchImpl: options.fetchImpl,
+      onPossiblyBilled: options.onPossiblyBilled,
     }),
   });
 }
@@ -201,20 +210,7 @@ export async function runClaudeParse<Schema extends z.ZodType>(
     throw mapClaudeError(error);
   }
   options.onMessage?.(message);
-  if (message.stop_reason === "refusal") {
-    throw new UserAiTransportError(
-      "http-error",
-      "Claude 안전 정책으로 이 요청을 처리하지 않았어요. 요청 내용을 조정해 보세요.",
-      200,
-    );
-  }
-  if (message.stop_reason === "max_tokens") {
-    throw new UserAiTransportError(
-      "http-error",
-      "Claude 응답이 길이 제한에서 잘렸어요. 입력을 줄이거나 다시 시도하세요. 자동으로 재전송하지 않았어요.",
-      200,
-    );
-  }
+  assertClaudeMessageComplete(message);
   const text = message.content
     .filter((block): block is Anthropic.TextBlock => block.type === "text")
     .map((block) => block.text)

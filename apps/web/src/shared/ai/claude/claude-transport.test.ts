@@ -10,10 +10,12 @@ import { lockUserAi, setUserAiConfiguration } from "../user-ai-store";
 import { completeUserAiTextDetailed, userAiFetch, userAiLegacyJson } from "../user-ai-transport";
 import { DEFAULT_USER_AI_ROUTING, type UserAiConnection } from "../user-ai-types";
 
+import { resetClaudeBudgetForTests, setClaudeBudgetLimit } from "./claude-budget";
 import { listClaudeRoutes, resolveClaudeRoute } from "./claude-route";
-import { claudeCreate, claudeParse, listClaudeModelsForKey } from "./claude-transport";
+import { ClaudeBudgetError, claudeCreate, claudeParse, listClaudeModelsForKey } from "./claude-transport";
 import {
   getClaudeUsageSnapshot,
+  recordClaudeUsage,
   resetClaudeUsage,
 } from "./claude-usage-meter";
 
@@ -96,6 +98,7 @@ function lastRequest(fetchMock: ReturnType<typeof vi.fn>) {
 
 beforeEach(() => {
   resetClaudeUsage();
+  resetClaudeBudgetForTests();
   configure();
 });
 
@@ -103,6 +106,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   lockUserAi(false);
   resetClaudeUsage();
+  resetClaudeBudgetForTests();
 });
 
 describe("OpenAI 호환 호출자 → Claude 브리지", () => {
@@ -242,6 +246,8 @@ describe("오류 처리 — 자동 재시도·키 누출 없음", () => {
   it.each([
     ["refusal", /안전 정책/u],
     ["max_tokens", /길이 제한/u],
+    ["model_context_window_exceeded", /읽을 수 있는 길이/u],
+    ["pause_turn", /멈췄어요/u],
   ])("stop_reason %s는 조용히 넘기지 않는다", async (stop, pattern) => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(messageBody({ stop_reason: stop }))));
     await expect(completeUserAiTextDetailed("s", "u")).rejects.toThrow(pattern);
@@ -292,6 +298,169 @@ describe("사용량 미터", () => {
     await completeUserAiTextDetailed("s", "u");
     expect(getClaudeUsageSnapshot().unpricedRequests).toBe(1);
     expect(getClaudeUsageSnapshot().estimatedUsd).toBe(0);
+  });
+});
+
+describe("예산 한도 강제 — 대화상자 밖의 호출도 같은 규칙", () => {
+  const params = { model: "claude-sonnet-5-5", max_tokens: 1_000, messages: [{ role: "user" as const, content: "평가" }] };
+
+  it("OpenAI 호환 호출은 한도를 넘을 수 있으면 보내지 않는다 (기본 상한 6,144토큰 ≈ $0.06)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(messageBody()));
+    vi.stubGlobal("fetch", fetchMock);
+    setClaudeBudgetLimit(0.05);
+
+    const error: unknown = await completeUserAiTextDetailed("s", "u").then(() => null, (reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(ClaudeBudgetError);
+    expect((error as Error).message).toMatch(/예산 한도\(\$0\.05\)를 넘을 수 있어/u);
+    expect((error as Error).message).toMatch(/다시 시도해 주세요/u);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(getClaudeUsageSnapshot()).toMatchObject({ pendingRequests: 0, pendingUsd: 0, unconfirmedRequests: 0 });
+  });
+
+  it("한도 안이면 보낸다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(messageBody()));
+    vi.stubGlobal("fetch", fetchMock);
+    setClaudeBudgetLimit(1);
+
+    await expect(completeUserAiTextDetailed("s", "u")).resolves.toMatchObject({ content: "안녕하세요" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("이미 쓴 금액까지 더해 판정한다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(messageBody()));
+    vi.stubGlobal("fetch", fetchMock);
+    setClaudeBudgetLimit(1);
+    recordClaudeUsage("claude-sonnet-5-5", { input_tokens: 495_000, output_tokens: 0 }); // $0.99
+
+    await expect(completeUserAiTextDetailed("s", "u")).rejects.toBeInstanceOf(ClaudeBudgetError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("한도가 있는데 단가를 모르는 모델이면 비용을 가늠할 수 없다고 알리고 보내지 않는다", async () => {
+    configure("manual", { textModel: "claude-experimental-9" });
+    const fetchMock = vi.fn().mockResolvedValue(json(messageBody()));
+    vi.stubGlobal("fetch", fetchMock);
+    setClaudeBudgetLimit(5);
+
+    await expect(completeUserAiTextDetailed("s", "u")).rejects.toThrow(/단가를 몰라/u);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("claudeParse·claudeCreate도 비용 상한 없이는 한도가 있을 때 보내지 않고, 사용자가 허용한 요청(budgetOverride)만 통과한다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(messageBody({
+      content: [{ type: "text", text: "{\"score\":1}", citations: null }],
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+    const route = resolveClaudeRoute();
+    if (!route) throw new Error("route");
+    setClaudeBudgetLimit(0.01);
+    const Schema = z.object({ score: z.number() });
+
+    await expect(claudeParse(route, params, Schema)).rejects.toBeInstanceOf(ClaudeBudgetError);
+    await expect(claudeParse(route, params, Schema, { capUsd: 0.5 })).rejects.toBeInstanceOf(ClaudeBudgetError);
+    await expect(claudeCreate(route, params, { capUsd: 0.5 })).rejects.toBeInstanceOf(ClaudeBudgetError);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await expect(claudeParse(route, params, Schema, { capUsd: 0.5, budgetOverride: true })).resolves.toMatchObject({ parsed: { score: 1 } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("한도가 없으면 비용 상한 없이도 보낸다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(messageBody()));
+    vi.stubGlobal("fetch", fetchMock);
+    const route = resolveClaudeRoute();
+    if (!route) throw new Error("route");
+
+    await claudeCreate(route, params);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("진행 중인 요청의 상한을 예약해 동시에 나가는 요청이 한도를 함께 넘지 않게 한다", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { release = resolve; }));
+    vi.stubGlobal("fetch", fetchMock);
+    const route = resolveClaudeRoute();
+    if (!route) throw new Error("route");
+    setClaudeBudgetLimit(0.3);
+
+    const first = claudeCreate(route, params, { capUsd: 0.2 });
+    await vi.waitFor(() => expect(getClaudeUsageSnapshot()).toMatchObject({ pendingRequests: 1, pendingUsd: 0.2 }));
+    await expect(claudeCreate(route, params, { capUsd: 0.2 })).rejects.toBeInstanceOf(ClaudeBudgetError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    release(json(messageBody()));
+    await first;
+    expect(getClaudeUsageSnapshot()).toMatchObject({ pendingRequests: 0, pendingUsd: 0, unconfirmedRequests: 0, requests: 1 });
+  });
+});
+
+describe("응답을 받지 못한 요청의 집계", () => {
+  const params = { model: "claude-sonnet-5-5", max_tokens: 1_000, messages: [{ role: "user" as const, content: "평가" }] };
+
+  it("본문을 넘긴 뒤 취소하면 '확인되지 않은 요청'으로 남고 예산 판정에 더해진다", async () => {
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    })));
+    const route = resolveClaudeRoute();
+    if (!route) throw new Error("route");
+    const controller = new AbortController();
+
+    const pending = claudeCreate(route, params, { capUsd: 0.2, signal: controller.signal });
+    await vi.waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalled());
+    controller.abort();
+    await expect(pending).rejects.toThrow(/취소/u);
+
+    const snapshot = getClaudeUsageSnapshot();
+    expect(snapshot).toMatchObject({ pendingRequests: 0, pendingUsd: 0, unconfirmedRequests: 1, unconfirmedUsd: 0.2, requests: 0, estimatedUsd: 0 });
+
+    // 확인되지 않은 최대 비용 $0.2가 이미 쓴 것으로 계산되므로 $0.25 한도에서 $0.1 요청도 넘을 수 있다고 본다.
+    setClaudeBudgetLimit(0.25);
+    await expect(claudeCreate(route, params, { capUsd: 0.1 })).rejects.toBeInstanceOf(ClaudeBudgetError);
+  });
+
+  it("서버가 오류 응답을 돌려준 요청은 청구되지 않았다고 보고 세지 않는다", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(apiError(500, "api_error", "internal")));
+    const route = resolveClaudeRoute();
+    if (!route) throw new Error("route");
+
+    await expect(claudeCreate(route, params, { capUsd: 0.2 })).rejects.toThrow(/Claude 서버/u);
+
+    expect(getClaudeUsageSnapshot()).toMatchObject({ pendingRequests: 0, pendingUsd: 0, unconfirmedRequests: 0, unconfirmedUsd: 0 });
+  });
+
+  it("연결 자체가 실패한 요청(오프라인·CORS)도 세지 않는다", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    const route = resolveClaudeRoute();
+    if (!route) throw new Error("route");
+
+    await expect(claudeCreate(route, params, { capUsd: 0.2 })).rejects.toThrow();
+
+    expect(getClaudeUsageSnapshot()).toMatchObject({ pendingRequests: 0, unconfirmedRequests: 0 });
+  });
+
+  it("사용량을 받은 호출은 거절·잘림 오류로 끝나도 확인되지 않은 요청이 아니다", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(messageBody({ stop_reason: "max_tokens" }))));
+    const route = resolveClaudeRoute();
+    if (!route) throw new Error("route");
+
+    await expect(claudeCreate(route, params, { capUsd: 0.2 })).rejects.toThrow(/길이 제한/u);
+
+    expect(getClaudeUsageSnapshot()).toMatchObject({ requests: 1, pendingRequests: 0, unconfirmedRequests: 0 });
+  });
+
+  it("응답을 받는 동안 설정이 바뀌어 결과를 쓰지 못한 요청도 '확인되지 않은 요청'이다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      configure("manual", { label: "바뀐 연결" });
+      return json(messageBody());
+    }));
+    const route = resolveClaudeRoute();
+    if (!route) throw new Error("route");
+
+    // 설정이 바뀌면 진행 중 요청이 함께 취소되므로 "취소" 문구나 "연결 변경" 문구 중 하나로 끝난다.
+    await expect(claudeCreate(route, params, { capUsd: 0.2 })).rejects.toThrow(/취소|연결이 변경/u);
+
+    expect(getClaudeUsageSnapshot()).toMatchObject({ unconfirmedRequests: 1, unconfirmedUsd: 0.2, requests: 0 });
   });
 });
 
