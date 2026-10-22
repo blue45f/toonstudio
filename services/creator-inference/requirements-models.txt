@@ -3,8 +3,13 @@
 -r requirements-core.txt
 # Security floor: GHSA-98h9-4798-4q5v and GHSA-7wx4-6vff-v64p.
 diffusers==0.38.0
+# Security: transformers 4.x 전체가 GHSA-29pf-2h5f-8g72(<5.3.0)·GHSA-fgcw-684q-jj6r(<5.5.0)·GHSA-x9r9-c232-4q39(4.49~5.8.1)
+# 영향권이고 수정본은 5.10 이상(huggingface-hub 1.5 이상 필요)뿐이다. 이 작업자는 검토한 로컬 가중치를
+# `local_files_only=True`·`use_safetensors=True` 로만 읽고 trust_remote_code·Trainer·save_pretrained·load_custom_generate·
+# 채팅 템플릿을 쓰지 않아 해당 경로를 부르지 않는다. 5.x 이행은 gpu-smoke.py 로 GPU 자격 검증을 마친 뒤 올린다.
 transformers>=4.49,<5
-accelerate>=1.2,<2
+# Security floor: GHSA-4j2p-28q2-5m79 (sharded checkpoint weight_map 경로 순회, 1.14.0 까지 영향).
+accelerate>=1.15.0,<2
 # Diffusers 0.38 requires safetensors 0.8; keep stable releases only.
 safetensors>=0.8,<1
 huggingface-hub>=0.34,<1
