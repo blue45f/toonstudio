@@ -133,6 +133,7 @@ jobs:
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
             /apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
             !/apps/web/public/vrm/
             !/artifacts/
             !/docs/
@@ -151,6 +152,9 @@ jobs:
       # 의존성 설치 전에 끝나는 파일 크기 래칫: 새 파일 줄 수 상한, 기록된 초과 파일 증가 금지, 새 @ts-nocheck 금지(상한 값은 기준선 한 곳에만 둔다).
       - name: Source file size ratchet (no build, dependency-free)
         run: node scripts/check-source-file-size.mjs
+      # 렌더 이미지 경로의 매니페스트·이미지가 팩별 권리 원장과 어긋나면(닫힌 팩의 완성 슬롯, 낡은 rights 블록, 서빙될 고아 파일) 설치 전에 막는다.
+      - name: Creator Bundle render rights match the pack-rights ledger (no build, dependency-free)
+        run: node scripts/sync-creator-bundle-render-rights.mjs --check --files git
       # 네임스페이스 정본(public/i18n/**)만 고치고 평면 팩·내장 사전 재생성을 빠뜨리면 화면이 읽는 팩이 낡는다. 설치 전에 끝나는 검사로 막는다.
       - name: i18n generated assets match the namespace sources (no build, dependency-free)
         run: |
@@ -213,6 +217,7 @@ jobs:
             /apps/web/public/assets/3d/environments/expansion-v1/manifest.json
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
             !/apps/web/public/vrm/
             /apps/web/public/vrm/sample.vrm
             !/artifacts/

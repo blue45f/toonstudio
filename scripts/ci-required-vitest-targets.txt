@@ -436,6 +436,7 @@ apps/web/src/domains/creator/studio-autosave-opfs-session.test.ts
 apps/web/src/domains/creator/studio-autosave-snapshot-fence.test.ts
 apps/web/src/domains/creator/studio-autosave-sqlite-store.test.ts
 apps/web/src/domains/creator/studio-batch-rename.test.ts
+apps/web/src/domains/creator/studio-bundle-asset-delivery.test.ts
 apps/web/src/domains/creator/studio-color-range
 apps/web/src/domains/creator/studio-color-range-worker-client.test.ts
 apps/web/src/domains/creator/studio-comment-editor-selection.test.ts
@@ -604,6 +605,8 @@ scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts
 scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
+scripts/creator-bundle-render-rights-parity.test.mjs
+scripts/creator-bundle-render-rights.test.mjs
 scripts/creator-career-confirmation-database-contract.test.mjs
 scripts/creator-hiring-automation-database-contract.test.mjs
 scripts/deploy-cloudflare-analytics.test.mjs
