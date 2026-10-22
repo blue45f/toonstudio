@@ -151,6 +151,12 @@ jobs:
       # 의존성 설치 전에 끝나는 파일 크기 래칫: 새 파일 줄 수 상한, 기록된 초과 파일 증가 금지, 새 @ts-nocheck 금지(상한 값은 기준선 한 곳에만 둔다).
       - name: Source file size ratchet (no build, dependency-free)
         run: node scripts/check-source-file-size.mjs
+      # 네임스페이스 정본(public/i18n/**)만 고치고 평면 팩·내장 사전 재생성을 빠뜨리면 화면이 읽는 팩이 낡는다. 설치 전에 끝나는 검사로 막는다.
+      - name: i18n generated assets match the namespace sources (no build, dependency-free)
+        run: |
+          set -euo pipefail
+          node scripts/sync-i18n-legacy-assets.mjs --check
+          node scripts/generate-i18n-builtins.mjs --check
       - run: pnpm install --frozen-lockfile --prefer-offline
       # 빌드 없이 Studio 진입 그래프의 정적 성장을 원인 import 와 함께 알린다(typecheck 보다 먼저 몇 초 안에 실패).
       - name: Studio entry graph ratchet (static imports only, no build)
