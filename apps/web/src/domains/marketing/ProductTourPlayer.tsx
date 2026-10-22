@@ -43,6 +43,7 @@ import {
   type ProductTourRemotionCompositionProps,
 } from "./ProductTourRemotionComposition";
 import { useProductTourVoiceGuide } from "./use-product-tour-voice-guide";
+import { useProductTourSpaceToggle } from "./use-product-tour-space-toggle";
 
 import "./marketing-page.css";
 import "./product-tour-player.css";
@@ -310,6 +311,17 @@ export function ProductTourPlayer({ locale, controllerRef }: {
   }, [playFrom, useFallback]);
 
   useImperativeHandle(controllerRef, () => ({ playFrom: seek }), [seek]);
+
+  /** Space 토글: 시작 전이면 현재 위치에서 시작하고, 재생 중에는 재생기 자체 상태로 토글한다. */
+  const togglePlayPause = useCallback(() => {
+    if (!started) {
+      playFrom(requestedStartRef.current);
+      return;
+    }
+    playerRef.current?.toggle();
+  }, [playFrom, started]);
+
+  useProductTourSpaceToggle({ sectionRef, togglePlayPause, active: started });
 
   const toggleFullscreen = useCallback(() => {
     const player = playerRef.current;

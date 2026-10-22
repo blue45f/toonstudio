@@ -18,8 +18,9 @@ import { SCENE_NODES_B } from "./ir-present-scenes-b";
  * /brand/ir-present/audio/ 아래에 둔다. 배경음(bgm.m4a)은 제품 투어 배경음과 같은 곡을
  * 복사해 쓴다(원본: /brand/product-tour/toonstudio-product-tour-bgm.m4a).
  *
- * 조작은 아티팩트와 같다: ←/→ 이동, Space 자동 발표 재생·정지, F 전체화면, M 소리, C 목차,
- * 터치 스와이프. 자동재생 정책 때문에 소리는 첫 상호작용 뒤에 시작한다.
+ * 조작은 아티팩트와 같다: ←/→ 이동, Space 자동 발표 재생·정지, F 전체화면, M 소리, B 배경음,
+ * C 목차, 터치 스와이프. 자동재생 정책 때문에 소리는 첫 상호작용 뒤에 시작한다.
+ * 배경음만 켜고 끄는 토글(B)도 따로 있고, 선택은 localStorage에 기억한다.
  * 자동 발표 중에는 씬 내레이션이 끝나면 다음 씬으로 넘어가고, 내레이션이 없으면
  * 씬별 체류 시간(dwell)을 쓴다.
  */
@@ -27,6 +28,16 @@ import { SCENE_NODES_B } from "./ir-present-scenes-b";
 const AUDIO_DIR = "/brand/ir-present/audio";
 const BGM_BASE_VOLUME = 0.14;
 const BGM_DUCK_VOLUME = 0.045;
+const BGM_PREF_KEY = "ir-present-bgm-on";
+
+/* 배경음 토글의 저장된 선택을 읽는다. 저장값이 없거나 읽을 수 없으면 켜짐(기존 동작)이 기본값. */
+const readBgmPref = (): boolean => {
+  try {
+    return window.localStorage.getItem(BGM_PREF_KEY) !== "off";
+  } catch {
+    return true;
+  }
+};
 
 const SCENE_NODES = [...SCENE_NODES_A, ...SCENE_NODES_B];
 
@@ -40,6 +51,7 @@ export function IrPresentPage() {
   });
   const [playing, setPlaying] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
+  const [bgmOn, setBgmOn] = useState<boolean>(readBgmPref);
   const [soundMode, setSoundMode] = useState<"on" | "narr" | "off">("on");
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const [toastState, setToastState] = useState<{ id: number; msg: string } | null>(null);
@@ -51,6 +63,7 @@ export function IrPresentPage() {
   const idxRef = useRef(idx);
   const playingRef = useRef(false);
   const soundOnRef = useRef(true);
+  const bgmOnRef = useRef(readBgmPref());
   const unlockedRef = useRef(false);
   const gapTimerRef = useRef<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -74,7 +87,7 @@ export function IrPresentPage() {
   const unlockAudio = () => {
     if (unlockedRef.current) return;
     unlockedRef.current = true;
-    if (soundOnRef.current) {
+    if (soundOnRef.current && bgmOnRef.current) {
       const p = bgmRef.current?.play();
       if (p) p.catch(() => {});
     }
@@ -158,11 +171,35 @@ export function IrPresentPage() {
       if (playingRef.current) scheduleAdvance(dwellMs(idxRef.current));
     } else {
       setSoundMode("on");
-      if (unlockedRef.current) {
+      if (unlockedRef.current && bgmOnRef.current) {
         const p = bgmRef.current?.play();
         if (p) p.catch(() => {});
       }
       if (playingRef.current) playSceneAudio();
+    }
+  };
+
+  /* 배경음만 켜고 끈다. 내레이션·씬 진행·전체 소리(M) 상태에는 영향을 주지 않는다. */
+  const applyBgm = (on: boolean) => {
+    bgmOnRef.current = on;
+    setBgmOn(on);
+    try {
+      window.localStorage.setItem(BGM_PREF_KEY, on ? "on" : "off");
+    } catch {
+      /* 저장할 수 없는 환경에서는 이번 세션에만 적용한다. */
+    }
+    const bgm = bgmRef.current;
+    if (!bgm) return;
+    if (!on) {
+      bgm.pause();
+      return;
+    }
+    /* 다시 켤 때는 지금 내레이션이 재생 중인지에 맞춰 덕킹 볼륨으로 복귀한다. */
+    const narr = narrRef.current;
+    bgm.volume = narr && !narr.paused && !narr.ended ? BGM_DUCK_VOLUME : BGM_BASE_VOLUME;
+    if (soundOnRef.current && unlockedRef.current) {
+      const p = bgm.play();
+      if (p) p.catch(() => {});
     }
   };
 
@@ -255,7 +292,7 @@ export function IrPresentPage() {
     window.addEventListener("keydown", unlock);
     const introTimer = window.setTimeout(() => {
       if (!playingRef.current && window.innerWidth > 720) {
-        showToast("← → 이동 · Space 자동 발표 · F 전체화면 · M 소리 · C 목차", 4200);
+        showToast("← → 이동 · Space 자동 발표 · F 전체화면 · M 소리 · B 배경음 · C 목차", 4200);
       }
     }, 900);
     return () => {
@@ -296,6 +333,11 @@ export function IrPresentPage() {
       const next = !soundOnRef.current;
       applySound(next);
       showToast(next ? "소리를 켰습니다" : "소리를 껐습니다 (M)");
+    } else if (k === "b" || k === "B") {
+      unlockAudio();
+      const next = !bgmOnRef.current;
+      applyBgm(next);
+      showToast(next ? "배경음을 켰습니다" : "배경음을 껐습니다 (B)");
     } else if (k === "c" || k === "C") {
       setChaptersOpen((open) => !open);
     } else if (k === "Escape" && chaptersOpen) {
@@ -404,11 +446,15 @@ export function IrPresentPage() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none" /><path className="sw" style={{ display: soundOn ? undefined : "none" }} d="M15.5 8.5a5 5 0 0 1 0 7" /><path className="sw" style={{ display: soundOn ? undefined : "none" }} d="M18 6a8.5 8.5 0 0 1 0 12" /></svg>
             소리
           </button>
+          <button className="hud-btn" type="button" aria-pressed={bgmOn} aria-label="배경음 켜기/끄기 (B)" onClick={(event) => { unlockAudio(); const next = !bgmOnRef.current; applyBgm(next); showToast(next ? "배경음을 켰습니다" : "배경음을 껐습니다 (B)"); event.currentTarget.blur(); }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18.5v-13L19 3.5v13" /><circle cx="6.5" cy="18.5" r="2.5" /><circle cx="16.5" cy="16.5" r="2.5" /><path style={{ display: bgmOn ? "none" : undefined }} d="M4 4l16 16" /></svg>
+            배경음
+          </button>
           <button className="hud-btn" type="button" aria-label="전체화면 (F)" onClick={(event) => { toggleFullscreen(); event.currentTarget.blur(); }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
             전체화면
           </button>
-          <span className="hud-keys"><b>←</b> <b>→</b> 이동 · <b>Space</b> 재생 · <b>F</b> 전체화면 · <b>M</b> 소리 · <b>C</b> 목차</span>
+          <span className="hud-keys"><b>←</b> <b>→</b> 이동 · <b>Space</b> 재생 · <b>F</b> 전체화면 · <b>M</b> 소리 · <b>B</b> 배경음 · <b>C</b> 목차</span>
         </footer>
 
         <div

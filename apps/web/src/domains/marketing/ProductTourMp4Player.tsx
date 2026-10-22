@@ -31,6 +31,7 @@ import {
   type ProductTourPlaybackController,
 } from "./product-tour-playback";
 import { useProductTourVoiceGuide } from "./use-product-tour-voice-guide";
+import { useProductTourSpaceToggle } from "./use-product-tour-space-toggle";
 
 import "./marketing-page.css";
 import "./product-tour-player.css";
@@ -324,6 +325,23 @@ export function ProductTourMp4Player({
   };
 
   useImperativeHandle(controllerRef, () => ({ playFrom: (seconds: number) => seekTo(seconds) }));
+
+  /** Space 토글: 마운트 전이면 현재 위치에서 시작하고, 이후에는 영상 요소의 실제 상태로 토글한다. */
+  const togglePlayPause = () => {
+    const video = videoRef.current;
+    if (!mounted || !video) {
+      seekTo(requestedStartRef.current);
+      return;
+    }
+    if (video.paused || video.ended) {
+      const current = Number.isFinite(video.currentTime) ? video.currentTime : requestedStartRef.current;
+      playFrom(video, video.ended ? 0 : current, true);
+    } else {
+      video.pause();
+    }
+  };
+
+  useProductTourSpaceToggle({ sectionRef, togglePlayPause, active: mounted });
 
   const toggleCaptions = () => {
     const tracks = videoRef.current?.textTracks;

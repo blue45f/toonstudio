@@ -321,6 +321,49 @@ describe("ProductTourPlayer Remotion runtime", () => {
     expect(playerHarness.play).toHaveBeenCalledOnce();
   });
 
+  it("Space로 재생·정지를 토글하되 시작 전·버튼 위·화면 밖에서는 가로채지 않는다", () => {
+    const { container } = renderPlayer("ko");
+    const screen = container.querySelector<HTMLElement>(".product-tour-player__screen")!;
+    const rectSpy = vi.spyOn(screen, "getBoundingClientRect")
+      .mockReturnValue({ x: 0, y: 0, top: 0, left: 0, bottom: 400, right: 800, width: 800, height: 400, toJSON: () => ({}) } as DOMRect);
+
+    // 시작 전에는 Space를 페이지 기본 동작에 맡긴다.
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(playerHarness.toggle).not.toHaveBeenCalled();
+    expect(playerHarness.play).not.toHaveBeenCalled();
+
+    fireEvent.click(container.querySelector<HTMLButtonElement>(".product-tour-player__poster")!);
+    expect(playerHarness.play).toHaveBeenCalledOnce();
+
+    // 재생이 시작된 뒤 본문 위 Space는 재생기 자체 토글로 이어진다.
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(playerHarness.toggle).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(playerHarness.toggle).toHaveBeenCalledTimes(2);
+
+    // 버튼에 초점이 있으면 Space 기본 동작(버튼 활성화)에 맡긴다.
+    fireEvent.keyDown(container.querySelector<HTMLElement>(".product-tour-player__chapter > button")!, { key: " " });
+    expect(playerHarness.toggle).toHaveBeenCalledTimes(2);
+
+    // 영상 화면이 뷰포트를 벗어나면 Space를 스크롤에 양보한다.
+    rectSpy.mockReturnValue({ x: 0, y: 900, top: 900, left: 0, bottom: 1300, right: 800, width: 800, height: 400, toJSON: () => ({}) } as DOMRect);
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(playerHarness.toggle).toHaveBeenCalledTimes(2);
+  });
+
+  it("재생 전이라도 재생기 영역을 눌러 둔 뒤의 Space는 현재 위치에서 시작한다", () => {
+    const { container } = renderPlayer("ko");
+    const screen = container.querySelector<HTMLElement>(".product-tour-player__screen")!;
+    vi.spyOn(screen, "getBoundingClientRect")
+      .mockReturnValue({ x: 0, y: 0, top: 0, left: 0, bottom: 400, right: 800, width: 800, height: 400, toJSON: () => ({}) } as DOMRect);
+
+    fireEvent.pointerDown(container.querySelector<HTMLElement>("#product-tour-video")!);
+    fireEvent.keyDown(document.body, { key: " " });
+
+    expect(playerHarness.seekTo).toHaveBeenCalledWith(0);
+    expect(playerHarness.play).toHaveBeenCalledOnce();
+  });
+
   it("일시정지 상태에서 호환 모드로 바꾸면 임의로 재생하지 않는다", async () => {
     const { container, getByRole } = renderPlayer("ko");
     fireEvent.click(container.querySelector<HTMLButtonElement>(".product-tour-player__poster")!);
