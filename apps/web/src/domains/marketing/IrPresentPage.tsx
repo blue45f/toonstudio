@@ -357,13 +357,14 @@ export function IrPresentPage() {
           </div>
         </div>
 
-        <main className="scenes">
+        {/* 주 영역(main)은 AppShell 이 하나만 소유한다(app-shell-main-ownership). 장면 묶음은 일반 컨테이너다. */}
+        <div className="scenes">
           {SCENE_NODES.map((node, i) => (
             <section key={SCENE_META[i].title} aria-hidden={i !== idx} className={i === idx ? `scene active${backward ? " from-left" : ""}` : "scene"}>
               {node}
             </section>
           ))}
-        </main>
+        </div>
 
         <button className="edge-nav edge-prev" type="button" aria-label="이전 씬" disabled={idx === 0} onClick={() => { unlockAudio(); step(-1); }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
