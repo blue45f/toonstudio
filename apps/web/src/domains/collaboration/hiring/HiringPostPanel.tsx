@@ -13,7 +13,7 @@ import { emptyTerms } from "./hiring-form-values";
 import type { HiringSlot, HiringSlotTerms } from "../../../../../../packages/contracts/src/creator-hiring";
 
 import { getApiErrorMessage } from "@/platform/api";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
@@ -23,7 +23,7 @@ export function HiringPostPanel({ postId, postVersion, canManage }: { postId: st
   const [edit, setEdit] = useState<{ slot: HiringSlot | null; terms: HiringSlotTerms } | null>(null), [busy, setBusy] = useState(false);
   useEffect(() => {
     const c = new AbortController();
-    void hiringSlotsClient.list(postId, c.signal).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, t("collaboration.hiringPost.loadFailed", "모집 조건을 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); });
+    void hiringSlotsClient.list(postId, c.signal).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringPost.loadFailed", "모집 조건을 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); });
     return () => c.abort();
   }, [postId, postVersion, refresh]);
   async function act(work: () => Promise<unknown>) {

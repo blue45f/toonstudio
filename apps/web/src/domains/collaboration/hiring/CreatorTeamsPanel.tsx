@@ -5,7 +5,7 @@ import { CollabField, CollabNotice, collabButton, collabInput, collabPrimary } f
 import type { CreatorTeam, CreatorTeamGroup, CreatorTeamInvite, CreatorTeamMember } from "../../../../../../packages/contracts/src/creator-hiring";
 
 import { api, getApiErrorMessage } from "@/platform/api";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
@@ -14,7 +14,7 @@ export function CreatorTeamsPanel({ actor }: { actor: string }) {
   const t = useT();
   const [teams, setTeams] = useState<CreatorTeam[]>([]), [invitations, setInvitations] = useState<CreatorTeamInvite[]>([]), [selected, setSelected] = useState("");
   const [name, setName] = useState(""), [error, setError] = useState(""), [note, setNote] = useState(""), [busy, setBusy] = useState(false), [loaded, setLoaded] = useState(false), [refresh, setRefresh] = useState(0);
-  useEffect(() => { const c = new AbortController(); void Promise.all([api.get<CreatorTeam[]>(root, { signal: c.signal }), api.get<CreatorTeamInvite[]>(`${root}/invitations`, { signal: c.signal })]).then(([t, i]) => { if (!c.signal.aborted) { setTeams(t); setInvitations(i); setLoaded(true); } }).catch(async (e) => { const m = await getApiErrorMessage(e, t("collaboration.teams.loadFailed", "팀을 불러오지 못했어요.")); if (!c.signal.aborted) { setError(m); setLoaded(true); } }); return () => c.abort(); }, [refresh]);
+  useEffect(() => { const c = new AbortController(); void Promise.all([api.get<CreatorTeam[]>(root, { signal: c.signal }), api.get<CreatorTeamInvite[]>(`${root}/invitations`, { signal: c.signal })]).then(([t, i]) => { if (!c.signal.aborted) { setTeams(t); setInvitations(i); setLoaded(true); } }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.teams.loadFailed", "팀을 불러오지 못했어요.")); if (!c.signal.aborted) { setError(m); setLoaded(true); } }); return () => c.abort(); }, [refresh]);
   async function act(work: () => Promise<unknown>, success = "") { if (busy) return; setBusy(true); setError(""); setNote(""); try { await work(); setRefresh((v) => v + 1); if (success) setNote(success); } catch (e) { setError(await getApiErrorMessage(e, t("collaboration.teams.requestFailed", "팀 요청을 처리하지 못했어요."))); } finally { setBusy(false); } }
   const team = teams.find((t) => t.id === selected);
   return <section className="space-y-4 rounded-2xl border border-line p-5"><h2 className="text-xl font-bold">내 팀·그룹</h2><p className="text-sm text-fg-3">팀은 구성원 정리와 회의·알림을 위한 공간입니다. 초대 수락이나 그룹 가입으로 원고와 다른 사람의 이력서 권한이 생기지 않습니다.</p>{error && <CollabNotice error>{error}</CollabNotice>}{note && <CollabNotice>{note}</CollabNotice>}
@@ -31,7 +31,7 @@ function TeamDetails({ team, actor, changed }: { team: CreatorTeam; actor: strin
   const [name, setName] = useState(team.name), [target, setTarget] = useState("");
   const [edit, setEdit] = useState<{ id: string | null; name: string; memberIds: string[] } | null>(null), [error, setError] = useState(""), [busy, setBusy] = useState(false), [membersLoaded, setMembersLoaded] = useState(false);
   const path = `${root}/${team.id}`, owner = team.myRole === "owner";
-  useEffect(() => { const c = new AbortController(); void Promise.all([api.get<CreatorTeamMember[]>(`${path}/members`, { signal: c.signal }), api.get<CreatorTeamGroup[]>(`${path}/groups`, { signal: c.signal })]).then(([m, g]) => { if (!c.signal.aborted) { setMembers(m); setGroups(g); setMembersLoaded(true); } }).catch(async (e) => { const message = await getApiErrorMessage(e, t("collaboration.teams.membersLoadFailed", "팀 구성을 불러오지 못했어요.")); if (!c.signal.aborted) { setError(message); setMembersLoaded(true); } }); return () => c.abort(); }, [path]);
+  useEffect(() => { const c = new AbortController(); void Promise.all([api.get<CreatorTeamMember[]>(`${path}/members`, { signal: c.signal }), api.get<CreatorTeamGroup[]>(`${path}/groups`, { signal: c.signal })]).then(([m, g]) => { if (!c.signal.aborted) { setMembers(m); setGroups(g); setMembersLoaded(true); } }).catch(async (e) => { const message = await getApiErrorMessage(e, translateNow("collaboration.teams.membersLoadFailed", "팀 구성을 불러오지 못했어요.")); if (!c.signal.aborted) { setError(message); setMembersLoaded(true); } }); return () => c.abort(); }, [path]);
   async function act(work: () => Promise<unknown>) { if (busy) return; setBusy(true); setError(""); try { await work(); changed(); } catch (e) { setError(await getApiErrorMessage(e, t("collaboration.teams.updateFailed", "팀을 변경하지 못했어요."))); } finally { setBusy(false); } }
   return <div className="space-y-4 border-t border-line pt-4"><h3 className="text-lg font-bold">{team.name}</h3>{error && <CollabNotice error>{error}</CollabNotice>}
     {owner && <><form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void act(() => api.patch(path, { name, expectedRevision: team.revision })); }}><CollabField label="팀 이름 변경"><input required maxLength={100} className={collabInput} value={name} onChange={(e) => setName(e.target.value)} /></CollabField><button type="submit" className={collabButton} disabled={busy}>이름 저장</button></form>

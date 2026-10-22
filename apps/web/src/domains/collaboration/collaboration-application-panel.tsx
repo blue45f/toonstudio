@@ -8,7 +8,7 @@ import { getApiErrorMessage } from "@/platform/api";
 import { collaborationClient } from "@/platform/collaboration-client";
 import { formatI18nTemplate, translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 import { saveCollaborationOnboarding } from "@/shared/lib/collaboration-onboarding";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "./collaboration-account-status-i18n";
 
@@ -141,9 +141,9 @@ export function ApplicationsPanel({ id, busy, act }: { id: string; busy: boolean
   useEffect(() => {
     const controller = new AbortController();
     void collaborationClient.applications(id, controller.signal).then((result) => {
-      if (!Array.isArray(result)) throw new Error(t("collaboration.application.responseUnconfirmed", "지원서 응답을 확인하지 못했어요."));
+      if (!Array.isArray(result)) throw new Error(translateNow("collaboration.application.responseUnconfirmed", "지원서 응답을 확인하지 못했어요."));
       if (!controller.signal.aborted) setItems(result);
-    }).catch(async (reason) => { const message = await getApiErrorMessage(reason, t("collaboration.application.loadFailed", "지원서를 불러오지 못했어요.")); if (!controller.signal.aborted) setError(message); });
+    }).catch(async (reason) => { const message = await getApiErrorMessage(reason, translateNow("collaboration.application.loadFailed", "지원서를 불러오지 못했어요.")); if (!controller.signal.aborted) setError(message); });
     return () => controller.abort();
   }, [id]);
   // 온보딩 문맥은 서버에 남은 지원 항목에서 언제든 다시 만들 수 있다 — 확정 직후의

@@ -10,7 +10,7 @@ import {
   type AuthProviderDiscovery,
 } from "@/domains/auth/public/connected-accounts";
 import { persistSession } from "@/domains/auth/public/session/auth-session-store";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration/collaboration-account-status-i18n";
 import { api, apiPath } from "@/platform/api";
@@ -75,12 +75,12 @@ export function ConnectedAccountsSettings({ userId }: { userId: string | null })
       const accountPayload = await accountResponse.json<LinkedAccounts>().catch(() => null);
       const providerPayload = await providerResponse.json<unknown>().catch(() => null);
       if (!accountResponse.ok || !accountPayload) {
-        throw new Error(t("account.connected.loadFailed", "연결된 로그인 수단을 불러오지 못했어요."));
+        throw new Error(translateNow("account.connected.loadFailed", "연결된 로그인 수단을 불러오지 못했어요."));
       }
       setAccounts(accountPayload);
       setDiscovery(parseAuthProviderDiscovery(providerPayload));
     } catch (caught: unknown) {
-      setError(caught instanceof Error ? caught.message : t("account.connected.loadFallbackFailed", "로그인 수단을 불러오지 못했어요."));
+      setError(caught instanceof Error ? caught.message : translateNow("account.connected.loadFallbackFailed", "로그인 수단을 불러오지 못했어요."));
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export function ConnectedAccountsSettings({ userId }: { userId: string | null })
       if (!response.ok) {
         return {
           ok: false,
-          error: responseError(payload, t("account.connected.googleLinkFailed", "Google 계정을 연결하지 못했어요.")),
+          error: responseError(payload, translateNow("account.connected.googleLinkFailed", "Google 계정을 연결하지 못했어요.")),
         };
       }
       await load();
@@ -122,7 +122,7 @@ export function ConnectedAccountsSettings({ userId }: { userId: string | null })
       if (caught instanceof DOMException && caught.name === "AbortError") {
         return { ok: false, error: "Google 계정 연결이 취소되었어요." };
       }
-      return { ok: false, error: t("account.connected.linkServerUnavailable", "계정 연결 서버에 접속하지 못했어요.") };
+      return { ok: false, error: translateNow("account.connected.linkServerUnavailable", "계정 연결 서버에 접속하지 못했어요.") };
     } finally {
       setBusyProvider(null);
     }

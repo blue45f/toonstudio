@@ -10,7 +10,7 @@ import { ChoiceSet } from "./ResumeEditor";
 import type { CreatorHiringRole, HiringAvailability, HiringAvailabilityInput } from "../../../../../../packages/contracts/src/creator-hiring";
 
 import { getApiErrorMessage } from "@/platform/api";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
@@ -19,7 +19,7 @@ export function HiringAvailabilityPanel() {
   const t = useT();
   const [draft, setDraft] = useState<HiringAvailabilityInput | null>(null), [saved, setSaved] = useState<HiringAvailability | null>(null);
   const [error, setError] = useState(""), [busy, setBusy] = useState(false), [note, setNote] = useState("");
-  useEffect(() => { const c = new AbortController(); void hiringMatchingClient.availability(c.signal).then((v) => { if (!c.signal.aborted) { setSaved(v); setDraft(v ? { startsAt: v.startsAt, endsAt: v.endsAt, roles: v.roles, tools: v.tools, formats: v.formats, capacity: v.capacity, minRate: v.minRate, rateUnit: v.rateUnit, discoverable: v.discoverable, notificationOptIn: v.notificationOptIn, expectedRevision: v.revision } : initial()); } }).catch(async (e) => { const m = await getApiErrorMessage(e, t("collaboration.hiringAvailability.loadFailed", "작업 가능 정보를 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); }); return () => c.abort(); }, []);
+  useEffect(() => { const c = new AbortController(); void hiringMatchingClient.availability(c.signal).then((v) => { if (!c.signal.aborted) { setSaved(v); setDraft(v ? { startsAt: v.startsAt, endsAt: v.endsAt, roles: v.roles, tools: v.tools, formats: v.formats, capacity: v.capacity, minRate: v.minRate, rateUnit: v.rateUnit, discoverable: v.discoverable, notificationOptIn: v.notificationOptIn, expectedRevision: v.revision } : initial()); } }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringAvailability.loadFailed", "작업 가능 정보를 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); }); return () => c.abort(); }, []);
   const change = <K extends keyof HiringAvailabilityInput>(key: K, value: HiringAvailabilityInput[K]) => setDraft((d) => d ? { ...d, [key]: value } : d);
   async function save() {
     if (!draft || busy) return; setBusy(true); setError(""); setNote("");
