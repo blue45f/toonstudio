@@ -30,6 +30,8 @@ import {
 
 import { cx } from "@/shared/lib/cx";
 
+import { frozenStatusText } from "./studio-frozen-status-i18n";
+
 type StudioPaletteInterchangeModule = typeof import("./studio-palette-interchange");
 type StudioPaletteInterchangeFormat = Parameters<
   StudioPaletteInterchangeModule["exportStudioPalette"]
@@ -214,12 +216,12 @@ function detectPaletteFormat(fileName: string, bytes: Uint8Array): StudioPalette
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/^\uFEFF/u, "").trimStart();
   } catch {
-    throw new Error(`지원하는 팔레트 형식을 판별하지 못했어요. ${PALETTE_FORMAT_HELP} 파일을 선택해 주세요.`);
+    throw new Error(frozenStatusText("studio.frozenStatus.palette.formatUndetectable", { help: PALETTE_FORMAT_HELP }, "지원하는 팔레트 형식을 판별하지 못했어요. {help} 파일을 선택해 주세요."));
   }
   if (text.startsWith("GIMP Palette")) return "gpl";
   if (text.startsWith("{")) return "json";
   if (/--[\p{L}\p{N}_-]+\s*:/u.test(text)) return "css";
-  throw new Error(`지원하는 팔레트 형식을 판별하지 못했어요. ${PALETTE_FORMAT_HELP} 파일을 선택해 주세요.`);
+  throw new Error(frozenStatusText("studio.frozenStatus.palette.formatUndetectable", { help: PALETTE_FORMAT_HELP }, "지원하는 팔레트 형식을 판별하지 못했어요. {help} 파일을 선택해 주세요."));
 }
 
 function safePaletteBaseName(name: string): string {
@@ -368,10 +370,8 @@ export function StudioPaletteLibraryPanel({
         setStorageState("unavailable");
         setMessage({
           tone: "error",
-          title: `SQLite/OPFS 팔레트 라이브러리를 열지 못했습니다: ${
-            cause instanceof Error ? cause.message : String(cause)
-          }`,
-          details: ["기존 localStorage 팔레트는 자동으로 읽지 않습니다."],
+          title: frozenStatusText("studio.frozenStatus.palette.openFailed", { detail: cause instanceof Error ? cause.message : String(cause) }, "SQLite/OPFS 팔레트 라이브러리를 열지 못했습니다: {detail}"),
+          details: [frozenStatusText("studio.frozenStatus.palette.localStorageNotRead", "기존 localStorage 팔레트는 자동으로 읽지 않습니다.")],
         });
       }
     };
@@ -402,7 +402,7 @@ export function StudioPaletteLibraryPanel({
       } catch (cause) {
         setMessage({
           tone: "error",
-          title: cause instanceof Error ? cause.message : "팔레트 변경을 적용하지 못했습니다.",
+          title: cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.palette.applyFailed", "팔레트 변경을 적용하지 못했습니다."),
           details: [],
         });
         return "rejected";
@@ -422,7 +422,7 @@ export function StudioPaletteLibraryPanel({
     } catch (cause) {
       if (!mountedRef.current || generation !== mutationGenerationRef.current) return "rejected";
       if (cause instanceof StudioPaletteSqliteRepositoryError && cause.code !== "unavailable") {
-        setMessage({ tone: "error", title: cause.message, details: ["항목을 줄이거나 데이터를 고친 뒤 다시 시도해 주세요."] });
+        setMessage({ tone: "error", title: cause.message, details: [frozenStatusText("studio.frozenStatus.palette.fixAndRetry", "항목을 줄이거나 데이터를 고친 뒤 다시 시도해 주세요.")] });
         return "rejected";
       }
       try {
@@ -430,7 +430,7 @@ export function StudioPaletteLibraryPanel({
       } catch (validationError) {
         setMessage({
           tone: "error",
-          title: validationError instanceof Error ? validationError.message : "팔레트 변경을 적용하지 못했습니다.",
+          title: validationError instanceof Error ? validationError.message : frozenStatusText("studio.frozenStatus.palette.applyFailed", "팔레트 변경을 적용하지 못했습니다."),
           details: [],
         });
         return "rejected";
@@ -439,9 +439,9 @@ export function StudioPaletteLibraryPanel({
       setStorageState("memory");
       setMessage({
         tone: "error",
-        title: "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다.",
+        title: frozenStatusText("studio.frozenStatus.palette.memorySaveFailed", "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다."),
         details: [
-          "새로고침하면 이 변경은 사라집니다.",
+          frozenStatusText("studio.frozenStatus.palette.refreshLosesChange", "새로고침하면 이 변경은 사라집니다."),
           cause instanceof Error ? cause.message : String(cause),
         ],
       });
@@ -544,13 +544,13 @@ export function StudioPaletteLibraryPanel({
       ).then((outcome) => {
         if (!mountedRef.current || outcome === "rejected") return;
         setMessage(outcome === "durable"
-          ? { tone: "success", title: `“${palette.name}” 팔레트를 만들었어요.`, details: [`${palette.colors.length}색`] }
-          : { tone: "warning", title: `“${palette.name}” 팔레트는 현재 탭 메모리에만 있습니다.`, details: ["새로고침하면 사라집니다."] });
+          ? { tone: "success", title: frozenStatusText("studio.frozenStatus.palette.created", { name: palette.name }, "“{name}” 팔레트를 만들었어요."), details: [frozenStatusText("studio.frozenStatus.palette.colorCount", { count: palette.colors.length }, "{count}색")] }
+          : { tone: "warning", title: frozenStatusText("studio.frozenStatus.palette.memoryOnly", { name: palette.name }, "“{name}” 팔레트는 현재 탭 메모리에만 있습니다."), details: [frozenStatusText("studio.frozenStatus.palette.refreshLoses", "새로고침하면 사라집니다.")] });
       });
     } catch (error) {
       setMessage({
         tone: "error",
-        title: error instanceof Error ? error.message : "팔레트를 만들지 못했어요.",
+        title: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.palette.createFailed", "팔레트를 만들지 못했어요."),
         details: [],
       });
     }
@@ -567,8 +567,8 @@ export function StudioPaletteLibraryPanel({
       ).then((outcome) => {
         if (!mountedRef.current || outcome === "rejected") return;
         setMessage(outcome === "durable"
-          ? { tone: "success", title: `“${palette.name}” 팔레트를 만들었어요.`, details: [`${palette.colors.length}색`] }
-          : { tone: "warning", title: `“${palette.name}” 팔레트는 현재 탭 메모리에만 있습니다.`, details: ["새로고침하면 사라집니다."] });
+          ? { tone: "success", title: frozenStatusText("studio.frozenStatus.palette.created", { name: palette.name }, "“{name}” 팔레트를 만들었어요."), details: [frozenStatusText("studio.frozenStatus.palette.colorCount", { count: palette.colors.length }, "{count}색")] }
+          : { tone: "warning", title: frozenStatusText("studio.frozenStatus.palette.memoryOnly", { name: palette.name }, "“{name}” 팔레트는 현재 탭 메모리에만 있습니다."), details: [frozenStatusText("studio.frozenStatus.palette.refreshLoses", "새로고침하면 사라집니다.")] });
         setNewName("");
         setNewColorsText("");
         setCreatorOpen(false);
@@ -576,7 +576,7 @@ export function StudioPaletteLibraryPanel({
     } catch (error) {
       setMessage({
         tone: "error",
-        title: error instanceof Error ? error.message : "팔레트를 만들지 못했어요.",
+        title: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.palette.createFailed", "팔레트를 만들지 못했어요."),
         details: [],
       });
     }
@@ -592,7 +592,7 @@ export function StudioPaletteLibraryPanel({
     try {
       const interchange = await loadStudioPaletteInterchangeModule();
       if (file.size > interchange.STUDIO_PALETTE_INTERCHANGE_LIMITS.maxBytes) {
-        throw new Error("팔레트 파일이 4MB 안전 처리 한도를 초과했습니다.");
+        throw new Error(frozenStatusText("studio.frozenStatus.palette.fileTooLarge", "팔레트 파일이 4MB 안전 처리 한도를 초과했습니다."));
       }
       const bytes = new Uint8Array(await file.arrayBuffer());
       const format = detectPaletteFormat(file.name, bytes);
@@ -609,23 +609,23 @@ export function StudioPaletteLibraryPanel({
       const namedColorCount = imported.palette.colors.filter((color) => Boolean(color.name)).length;
       const details = uniqueDetails([
         ...imported.warnings.map((item) => item.message),
-        ...(imported.skippedColors > 0 ? [`해석하지 못한 색 ${imported.skippedColors}개를 건너뛰었습니다.`] : []),
-        ...(imported.truncated ? [`앞쪽 ${interchange.STUDIO_PALETTE_INTERCHANGE_LIMITS.maxColors}색만 저장했습니다.`] : []),
-        ...(namedColorCount > 0 ? [`색 이름 ${namedColorCount}개는 현재 라이브러리에서 색값만 저장됩니다.`] : []),
+        ...(imported.skippedColors > 0 ? [frozenStatusText("studio.frozenStatus.palette.importSkipped", { count: imported.skippedColors }, "해석하지 못한 색 {count}개를 건너뛰었습니다.")] : []),
+        ...(imported.truncated ? [frozenStatusText("studio.frozenStatus.palette.importTruncated", { max: interchange.STUDIO_PALETTE_INTERCHANGE_LIMITS.maxColors }, "앞쪽 {max}색만 저장했습니다.")] : []),
+        ...(namedColorCount > 0 ? [frozenStatusText("studio.frozenStatus.palette.namedColorsValuesOnly", { count: namedColorCount }, "색 이름 {count}개는 현재 라이브러리에서 색값만 저장됩니다.")] : []),
       ]);
       setMessage(outcome === "durable" ? {
         tone: details.length > 0 ? "warning" : "success",
-        title: `${formatOption(format).shortLabel}에서 “${palette.name}” ${palette.colors.length}색을 가져왔어요.`,
+        title: frozenStatusText("studio.frozenStatus.palette.importedFrom", { format: formatOption(format).shortLabel, name: palette.name, count: palette.colors.length }, "{format}에서 “{name}” {count}색을 가져왔어요."),
         details,
       } : {
         tone: "warning",
-        title: `“${palette.name}” 팔레트는 현재 탭 메모리에만 있습니다.`,
-        details: ["SQLite/OPFS 저장에 실패했습니다. 새로고침하면 사라집니다.", ...details],
+        title: frozenStatusText("studio.frozenStatus.palette.memoryOnly", { name: palette.name }, "“{name}” 팔레트는 현재 탭 메모리에만 있습니다."),
+        details: [frozenStatusText("studio.frozenStatus.palette.sqliteSaveFailedRefresh", "SQLite/OPFS 저장에 실패했습니다. 새로고침하면 사라집니다."), ...details],
       });
     } catch (error) {
       setMessage({
         tone: "error",
-        title: error instanceof Error ? error.message : "팔레트 파일을 가져오지 못했어요.",
+        title: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.palette.importFailed", "팔레트 파일을 가져오지 못했어요."),
         details: [],
       });
     } finally {
@@ -651,22 +651,22 @@ export function StudioPaletteLibraryPanel({
       downloadBlob(new Blob([part], { type: option.mimeType }), fileName);
       const details = uniqueDetails([
         ...result.warnings.map((item) => item.message),
-        ...(result.skippedColors > 0 ? [`해석하지 못한 색 ${result.skippedColors}개를 제외했습니다.`] : []),
+        ...(result.skippedColors > 0 ? [frozenStatusText("studio.frozenStatus.palette.exportSkipped", { count: result.skippedColors }, "해석하지 못한 색 {count}개를 제외했습니다.")] : []),
         ...(result.truncated ? [
-          `앞쪽 ${exportFormat === "act" || exportFormat === "pal"
+          frozenStatusText("studio.frozenStatus.palette.exportTruncated", { max: exportFormat === "act" || exportFormat === "pal"
             ? interchange.STUDIO_INDEXED_PALETTE_MAX_COLORS
-            : interchange.STUDIO_PALETTE_INTERCHANGE_LIMITS.maxColors}색만 내보냈습니다.`,
+            : interchange.STUDIO_PALETTE_INTERCHANGE_LIMITS.maxColors }, "앞쪽 {max}색만 내보냈습니다."),
         ] : []),
       ]);
       setMessage({
         tone: details.length > 0 ? "warning" : "success",
-        title: `${option.shortLabel} 파일 “${fileName}” 다운로드를 시작했어요.`,
+        title: frozenStatusText("studio.frozenStatus.palette.exportStarted", { format: option.shortLabel, fileName }, "{format} 파일 “{fileName}” 다운로드를 시작했어요."),
         details,
       });
     } catch (error) {
       setMessage({
         tone: error instanceof Error ? "error" : "error",
-        title: error instanceof Error ? error.message : "팔레트를 내보내지 못했어요.",
+        title: error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.palette.exportFailed", "팔레트를 내보내지 못했어요."),
         details: [],
       });
     } finally {
@@ -696,14 +696,14 @@ export function StudioPaletteLibraryPanel({
 
       <p className="mb-2 text-[0.6rem] font-semibold text-fg-3" aria-live="polite">
         {storageState === "loading"
-          ? "SQLite/OPFS 팔레트 확인 중"
+          ? frozenStatusText("studio.frozenStatus.palette.storageChecking", "SQLite/OPFS 팔레트 확인 중")
           : storageState === "sqlite"
-            ? "이 기기 SQLite/OPFS 저장"
+            ? frozenStatusText("studio.frozenStatus.palette.storageSqlite", "이 기기 SQLite/OPFS 저장")
             : storageState === "memory"
-              ? "현재 탭 메모리 임시 · 새로고침 시 사라짐"
+              ? frozenStatusText("studio.frozenStatus.palette.storageMemory", "현재 탭 메모리 임시 · 새로고침 시 사라짐")
               : storageState === "unavailable"
-                ? "SQLite/OPFS 사용 불가 · 저장되지 않음"
-                : "주입 저장소"}
+                ? frozenStatusText("studio.frozenStatus.palette.storageUnavailable", "SQLite/OPFS 사용 불가 · 저장되지 않음")
+                : frozenStatusText("studio.frozenStatus.palette.storageInjected", "주입 저장소")}
       </p>
 
       {message && (
@@ -735,7 +735,7 @@ export function StudioPaletteLibraryPanel({
 
       {busyOperation && (
         <p className="sr-only" role="status" aria-live="polite">
-          {busyOperation.kind === "import" ? "팔레트 파일을 확인하고 있어요." : "팔레트 파일을 만들고 있어요."}
+          {busyOperation.kind === "import" ? frozenStatusText("studio.frozenStatus.palette.busyImporting", "팔레트 파일을 확인하고 있어요.") : frozenStatusText("studio.frozenStatus.palette.busyExporting", "팔레트 파일을 만들고 있어요.")}
         </p>
       )}
 
@@ -747,7 +747,7 @@ export function StudioPaletteLibraryPanel({
           )}
           onPointerEnter={preloadStudioPaletteInterchangeModule}
         >
-          <Upload size={14} aria-hidden /> {busyOperation?.kind === "import" ? "확인 중…" : "파일 가져오기"}
+          <Upload size={14} aria-hidden /> {busyOperation?.kind === "import" ? frozenStatusText("studio.frozenStatus.palette.checking", "확인 중…") : "파일 가져오기"}
           <input
             type="file"
             accept={PALETTE_IMPORT_ACCEPT}
@@ -762,7 +762,7 @@ export function StudioPaletteLibraryPanel({
           type="button"
           onClick={handleCreateFromRecent}
           disabled={busy || !seedColors || seedColors.length === 0}
-          title={seedColors && seedColors.length > 0 ? "최근 사용한 색으로 새 팔레트 만들기" : "최근 사용한 색이 없어요"}
+          title={seedColors && seedColors.length > 0 ? "최근 사용한 색으로 새 팔레트 만들기" : frozenStatusText("studio.frozenStatus.palette.noRecentColors", "최근 사용한 색이 없어요")}
           className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 text-[0.68rem] font-semibold text-fg-2 transition-colors duration-150 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={14} aria-hidden /> 최근 색으로 만들기
@@ -911,7 +911,7 @@ export function StudioPaletteLibraryPanel({
 
           {palettes.length === 0 ? (
             <p className="rounded-lg border border-dashed border-line px-3 py-5 text-center text-[0.68rem] leading-relaxed text-fg-3">
-              아직 저장된 팔레트가 없어요.<br />GPL·Adobe·JASC·CSS·JSON 파일을 가져오거나 최근 색으로 시작하세요.
+              {frozenStatusText("studio.frozenStatus.palette.emptyTitle", "아직 저장된 팔레트가 없어요.")}<br />{frozenStatusText("studio.frozenStatus.palette.emptyDesc", "GPL·Adobe·JASC·CSS·JSON 파일을 가져오거나 최근 색으로 시작하세요.")}
             </p>
           ) : (
             <div className="max-h-80 space-y-1.5 overflow-y-auto pr-1" aria-label={`저장된 팔레트 ${palettes.length}개`}>

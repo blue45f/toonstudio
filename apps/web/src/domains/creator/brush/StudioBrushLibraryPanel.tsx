@@ -1,5 +1,6 @@
 import { BRUSH_SOURCE_ARCHIVE_MAX_BYTES } from "./studio-brush-original-source";
 import { StudioBrushOriginalSourceActions } from "./StudioBrushOriginalSourceActions";
+import { frozenStatusText } from "../studio-frozen-status-i18n";
 // 브러시 라이브러리 패널 — OPFS SQLite를 제품 권위로 사용하고 StudioPage가 소유한 배열은
 // 기존 데스크톱/모바일 소비자를 위한 controlled projection으로 갱신한다. 이름 붙은 브러시 설정을
 // 저장·고정·복제·이름변경·안전 삭제하고,
@@ -215,9 +216,9 @@ function SavedBrushStrokePreview({ brush }: { brush: StudioSavedBrush }) {
   );
 }
 
-const storageErrorMessage = "브러시를 이 브라우저에 저장하지 못했어요. 저장소 권한이나 여유 공간을 확인해주세요.";
-const storageQuotaMessage = "브러시 개수 제한은 없지만 이 기기의 저장 공간이 부족해 저장하지 못했어요. 불필요한 파일을 정리한 뒤 다시 시도해주세요.";
-const libraryUnreadableMessage = "저장된 브러시 데이터를 안전하게 읽지 못해 변경을 막았어요. 브라우저 저장 데이터를 백업한 뒤 복구해주세요.";
+function storageErrorMessage(): string { return frozenStatusText("studio.frozenStatus.brush.storageFailed", "브러시를 이 브라우저에 저장하지 못했어요. 저장소 권한이나 여유 공간을 확인해주세요."); }
+function storageQuotaMessage(): string { return frozenStatusText("studio.frozenStatus.brush.storageQuota", "브러시 개수 제한은 없지만 이 기기의 저장 공간이 부족해 저장하지 못했어요. 불필요한 파일을 정리한 뒤 다시 시도해주세요."); }
+function libraryUnreadableMessage(): string { return frozenStatusText("studio.frozenStatus.brush.libraryUnreadable", "저장된 브러시 데이터를 안전하게 읽지 못해 변경을 막았어요. 브라우저 저장 데이터를 백업한 뒤 복구해주세요."); }
 const BRUSH_LIBRARY_PRODUCT_PAGE_SIZE = 256;
 
 function brushLibraryAuthorityLabel(
@@ -225,15 +226,15 @@ function brushLibraryAuthorityLabel(
   displayedTotal: string,
 ): string {
   if (authority === "sqlite") {
-    return `저장·가져오기·공유·재적용 · ${displayedTotal}개 · 무제한 · 로컬 SQL`;
+    return frozenStatusText("studio.frozenStatus.brush.authoritySqlite", { total: displayedTotal }, "저장·가져오기·공유·재적용 · {total}개 · 무제한 · 로컬 SQL");
   }
   if (authority === "memory-session") {
-    return `세션 편집·가져오기·공유·재적용 · ${displayedTotal}개 · 비영속 메모리 · 브라우저 종료 시 사라짐`;
+    return frozenStatusText("studio.frozenStatus.brush.authoritySession", { total: displayedTotal }, "세션 편집·가져오기·공유·재적용 · {total}개 · 비영속 메모리 · 브라우저 종료 시 사라짐");
   }
   if (authority === "error") {
-    return "브러시 카탈로그를 사용할 수 없습니다 · 저장되지 않음";
+    return frozenStatusText("studio.frozenStatus.brush.authorityError", "브러시 카탈로그를 사용할 수 없습니다 · 저장되지 않음");
   }
-  return "로컬 SQL 브러시 카탈로그 연결 중…";
+  return frozenStatusText("studio.frozenStatus.brush.authorityLoading", "로컬 SQL 브러시 카탈로그 연결 중…");
 }
 
 function brushMutationMessage(
@@ -243,7 +244,7 @@ function brushMutationMessage(
 ): string {
   return authority === "sqlite"
     ? durable
-    : `${session} 브라우저를 닫으면 사라져요.`;
+    : frozenStatusText("studio.frozenStatus.brush.mutationSessionSuffix", { session }, "{session} 브라우저를 닫으면 사라져요.");
 }
 
 type BrushExposureTier = "core" | "all" | "experimental";
@@ -352,14 +353,14 @@ export function StudioBrushLibraryPanel({
     if (!savedSiblingByPresetId.has(presetId)) savedSiblingByPresetId.set(presetId, brush);
   }
   const exposureEmptyMessage = exposureTier !== "all" && exposureGovernanceFailed
-    ? "브러시 노출 단계 정보를 불러오지 못해 이 보기를 열 수 없어요. 전체 보기를 이용해 주세요."
+    ? frozenStatusText("studio.frozenStatus.brush.exposureLoadFailed", "브러시 노출 단계 정보를 불러오지 못해 이 보기를 열 수 없어요. 전체 보기를 이용해 주세요.")
     : exposureTier !== "all" && exposureGovernance === null
-      ? "브러시 노출 단계 정보를 불러오는 중이에요…"
+      ? frozenStatusText("studio.frozenStatus.brush.exposureLoading", "브러시 노출 단계 정보를 불러오는 중이에요…")
       : exposureTier === "core"
-        ? "핵심 단계 프리셋으로 저장한 브러시가 없어요."
+        ? frozenStatusText("studio.frozenStatus.brush.exposureCoreEmpty", "핵심 단계 프리셋으로 저장한 브러시가 없어요.")
         : exposureTier === "experimental"
-          ? "실험 단계 프리셋으로 저장한 브러시가 없어요."
-          : "격리된 프리셋으로 저장한 브러시는 새 목록에 표시하지 않아요.";
+          ? frozenStatusText("studio.frozenStatus.brush.exposureExperimentalEmpty", "실험 단계 프리셋으로 저장한 브러시가 없어요.")
+          : frozenStatusText("studio.frozenStatus.brush.exposureQuarantined", "격리된 프리셋으로 저장한 브러시는 새 목록에 표시하지 않아요.");
   const displayedTotal = totalCount === null
     ? `${brushes.length}${hasMorePages ? "+" : ""}`
     : String(totalCount);
@@ -399,12 +400,8 @@ export function StudioBrushLibraryPanel({
       .catch((caught: unknown) => {
         if (!active || generation !== pageGenerationRef.current) return;
         setRepositoryAuthority("error");
-        setError(
-          caught instanceof BrushLibraryRepositoryError
-            && (caught.code === "corrupt" || caught.code === "unsupported-version")
-            ? libraryUnreadableMessage
-            : storageErrorMessage,
-        );
+        setError(caught instanceof BrushLibraryRepositoryError && (caught.code === "corrupt" || caught.code === "unsupported-version")
+          ? libraryUnreadableMessage() : storageErrorMessage());
       })
       .finally(() => {
         if (active && generation === pageGenerationRef.current) setPageLoading(false);
@@ -475,7 +472,7 @@ export function StudioBrushLibraryPanel({
 
   function setRepositoryError(caught: unknown): void {
     if (caught instanceof BrushLibraryRepositoryError && caught.code === "quota-exceeded") {
-      setError(storageQuotaMessage);
+      setError(storageQuotaMessage());
       setDoneMsg(null);
       return;
     }
@@ -487,9 +484,9 @@ export function StudioBrushLibraryPanel({
         || caught.code === "read-error"
       )
     ) {
-      setError(libraryUnreadableMessage);
+      setError(libraryUnreadableMessage());
     } else {
-      setError(storageErrorMessage);
+      setError(storageErrorMessage());
     }
     setDoneMsg(null);
   }
@@ -596,8 +593,8 @@ export function StudioBrushLibraryPanel({
       await refreshFromRepository(product);
       setDoneMsg(brushMutationMessage(
         product.authority,
-        `"${brush.name}" 브러시를 지금 설정으로 덮어썼어요.`,
-        `"${brush.name}" 브러시를 현재 세션 설정으로 바꿨어요.`,
+        frozenStatusText("studio.frozenStatus.brush.overwrittenDurable", { name: brush.name }, "\"{name}\" 브러시를 지금 설정으로 덮어썼어요."),
+        frozenStatusText("studio.frozenStatus.brush.overwrittenSession", { name: brush.name }, "\"{name}\" 브러시를 현재 세션 설정으로 바꿨어요."),
       ));
     } catch (caught) {
       setRepositoryError(caught);
@@ -617,8 +614,8 @@ export function StudioBrushLibraryPanel({
       await refreshFromRepository(product);
       setDoneMsg(brushMutationMessage(
         product.authority,
-        `"${duplicated.name}" 브러시를 복제했어요.`,
-        `"${duplicated.name}" 브러시를 현재 세션에서 복제했어요.`,
+        frozenStatusText("studio.frozenStatus.brush.duplicatedDurable", { name: duplicated.name }, "\"{name}\" 브러시를 복제했어요."),
+        frozenStatusText("studio.frozenStatus.brush.duplicatedSession", { name: duplicated.name }, "\"{name}\" 브러시를 현재 세션에서 복제했어요."),
       ));
       setError(null);
       setRenamingId(duplicated.id);
@@ -708,8 +705,8 @@ export function StudioBrushLibraryPanel({
     const created = createBrush(newName, currentSnapshot);
     if (!await storeNewBrush(created, (authority) => brushMutationMessage(
       authority,
-      `"${created.name}" 브러시를 저장했어요.`,
-      `"${created.name}" 브러시를 현재 세션에 보관했어요.`,
+      frozenStatusText("studio.frozenStatus.brush.savedDurable", { name: created.name }, "\"{name}\" 브러시를 저장했어요."),
+      frozenStatusText("studio.frozenStatus.brush.savedSession", { name: created.name }, "\"{name}\" 브러시를 현재 세션에 보관했어요."),
     ))) return;
     setNewName("");
     setCreatorOpen(false);
@@ -747,18 +744,16 @@ export function StudioBrushLibraryPanel({
         : onlyBrush
           ? `${label} 브러시 "${onlyBrush.name}"을(를) 현재 비영속 세션에 추가했어요.`
           : `${label}에서 브러시 ${imported}개를 현재 비영속 세션에 추가했어요.`];
-      if (skipped > 0) details.push(`중복 ID ${skipped}개는 건너뛰었어요.`);
+      if (skipped > 0) details.push(frozenStatusText("studio.frozenStatus.brush.importSkippedDuplicates", { count: skipped }, "중복 ID {count}개는 건너뛰었어요."));
       if (product.authority === "memory-session") {
-        details.push("브라우저를 닫으면 사라지므로 필요한 브러시는 파일로 내보내 주세요.");
+        details.push(frozenStatusText("studio.frozenStatus.brush.exportBeforeClose", "브라우저를 닫으면 사라지므로 필요한 브러시는 파일로 내보내 주세요."));
       }
       details.push(...studioBrushPackImportNotes(committed.result));
       setError(null);
       setDoneMsg(details.join(" "));
     } catch (caught) {
       if (caught instanceof BrushLibraryRepositoryError) setRepositoryError(caught);
-      else setError(
-        caught instanceof Error ? caught.message : "브러시 프리셋 파일을 가져오지 못했어요.",
-      );
+      else setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.presetImportFailed", "브러시 프리셋 파일을 가져오지 못했어요."));
     } finally {
       setImporting(false);
       setRepositoryBusy(false);
@@ -805,18 +800,18 @@ export function StudioBrushLibraryPanel({
         setDoneMsg(details.join(" "));
       } catch (caught) {
         if (caught instanceof BrushLibraryRepositoryError) setRepositoryError(caught);
-        else setError(caught instanceof Error ? caught.message : "ABR 브러시 팩을 가져오지 못했어요.");
+        else setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.abrImportFailed", "ABR 브러시 팩을 가져오지 못했어요."));
       } finally {
         setImporting(false);
       }
       return;
     }
     if (format !== "json") {
-      setError("브러시 파일 형식을 알아보지 못했어요. .abr · .myb · .kpp · .sut · .sutg · .bundle · .json 파일을 선택해 주세요.");
+      setError(frozenStatusText("studio.frozenStatus.brush.formatUnknown", "브러시 파일 형식을 알아보지 못했어요. .abr · .myb · .kpp · .sut · .sutg · .bundle · .json 파일을 선택해 주세요."));
       return;
     }
     if (file.size > MAX_IMPORT_FILE_BYTES) {
-      setError("브러시 보존 파일이 허용 크기를 넘었습니다. 일반 설정은 2MB, 원본 포함 파일은 원본 8MiB와 설정 한도 안에서 지원합니다.");
+      setError(frozenStatusText("studio.frozenStatus.brush.preservedTooLarge", "브러시 보존 파일이 허용 크기를 넘었습니다. 일반 설정은 2MB, 원본 포함 파일은 원본 8MiB와 설정 한도 안에서 지원합니다."));
       return;
     }
     setImporting(true);
@@ -824,7 +819,7 @@ export function StudioBrushLibraryPanel({
     reader.onload = async (loadEvent) => {
       const text = loadEvent.target?.result;
       if (typeof text !== "string") {
-        setError("브러시 설정 파일을 읽지 못했어요.");
+        setError(frozenStatusText("studio.frozenStatus.brush.settingsReadFailed", "브러시 설정 파일을 읽지 못했어요."));
         setImporting(false);
         return;
       }
@@ -839,13 +834,13 @@ export function StudioBrushLibraryPanel({
           ? parts.join(" ")
           : `${parts.join(" ")} 현재 비영속 세션에만 추가했으며 브라우저를 닫으면 사라져요.`);
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "브러시 설정 파일을 가져오지 못했어요.");
+        setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.settingsImportFailed", "브러시 설정 파일을 가져오지 못했어요."));
       } finally {
         setImporting(false);
       }
     };
     reader.onerror = () => {
-      setError("브러시 설정 파일을 읽지 못했어요.");
+      setError(frozenStatusText("studio.frozenStatus.brush.settingsReadFailed", "브러시 설정 파일을 읽지 못했어요."));
       setImporting(false);
     };
     reader.readAsText(file);
@@ -857,7 +852,7 @@ export function StudioBrushLibraryPanel({
         ? await (await import("./studio-brush-original-source-store")).prepareStudioBrushSourceExport(brush) : brush;
       downloadBlob(new Blob([writeBrushJson(exported)], { type: "application/json;charset=utf-8" }), brushFileName(brush));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "브러시 원본을 보존해 내보내지 못했습니다.");
+      setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.exportOriginalFailed", "브러시 원본을 보존해 내보내지 못했습니다."));
     }
   }
 
@@ -877,7 +872,7 @@ export function StudioBrushLibraryPanel({
       && (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] }));
     if (!canShareFile) {
       downloadBlob(file, file.name);
-      setDoneMsg(`공유 시트를 지원하지 않아 "${brush.name}" 파일을 내려받았어요.`);
+      setDoneMsg(frozenStatusText("studio.frozenStatus.brush.shareDownloaded", { name: brush.name }, "공유 시트를 지원하지 않아 \"{name}\" 파일을 내려받았어요."));
       return;
     }
       await navigator.share({
@@ -885,10 +880,10 @@ export function StudioBrushLibraryPanel({
         text: "이 브러시 설정을 ToonStudio에서 가져올 수 있어요.",
         files: [file],
       });
-      setDoneMsg(`"${brush.name}" 브러시를 공유했어요.`);
+      setDoneMsg(frozenStatusText("studio.frozenStatus.brush.shared", { name: brush.name }, "\"{name}\" 브러시를 공유했어요."));
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError") return;
-      setError(caught instanceof Error ? caught.message : "브러시 공유를 열지 못했어요. 내보내기로 파일을 저장해 다시 시도해 주세요.");
+      setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.shareFailed", "브러시 공유를 열지 못했어요. 내보내기로 파일을 저장해 다시 시도해 주세요."));
     }
   }
 
@@ -933,7 +928,7 @@ export function StudioBrushLibraryPanel({
           {importing
             ? <LoaderCircle size={12} className="animate-spin" aria-hidden />
             : <Upload size={12} aria-hidden />}
-          {importing ? "변환 중…" : "가져오기"}
+          {importing ? frozenStatusText("studio.frozenStatus.brush.converting", "변환 중…") : "가져오기"}
           <input
             type="file"
             accept={STUDIO_BRUSH_PACK_ACCEPT}
@@ -988,7 +983,7 @@ export function StudioBrushLibraryPanel({
           ? "현재 브러시 저장"
           : repositoryAuthority === "memory-session"
             ? "현재 브러시 세션에 보관"
-            : "브러시 카탈로그 준비 중"}
+            : frozenStatusText("studio.frozenStatus.brush.catalogPreparing", "브러시 카탈로그 준비 중")}
       </button>
       {creatorOpen ? (
         <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-card p-2">
@@ -1252,7 +1247,7 @@ export function StudioBrushLibraryPanel({
                             </button>
                           ) : (
                             <span
-                              title="이 변형 프리셋으로 저장한 브러시가 없어요 — 브러시 카탈로그에서 선택할 수 있어요"
+                              title={frozenStatusText("studio.frozenStatus.brush.variantEmpty", "이 변형 프리셋으로 저장한 브러시가 없어요 — 브러시 카탈로그에서 선택할 수 있어요")}
                               className="flex min-h-11 items-center rounded-lg border border-dashed border-line/60 px-2 text-[0.6rem] text-fg-3 lg:min-h-8"
                             >
                               {entry.label}
@@ -1318,7 +1313,7 @@ export function StudioBrushLibraryPanel({
               className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60 lg:min-h-9"
             >
               {pageLoading ? <LoaderCircle size={13} className="animate-spin" aria-hidden /> : null}
-              {pageLoading ? "불러오는 중…" : `더 불러오기 (${brushes.length}/${displayedTotal})`}
+              {pageLoading ? frozenStatusText("studio.frozenStatus.brush.loadingMore", "불러오는 중…") : `더 불러오기 (${brushes.length}/${displayedTotal})`}
             </button>
           ) : null}
         </>
