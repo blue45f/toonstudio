@@ -16,7 +16,17 @@ import type { StudioImageDataLike } from "./studio-filters";
 export type RgbShift = [number, number, number];
 
 /** 그림자·중간톤·하이라이트 세 톤 영역의 채널 쉬프트 묶음. */
-export type ColorBalance = { shadows: RgbShift; midtones: RgbShift; highlights: RgbShift };
+export type ColorBalance = {
+  shadows: RgbShift;
+  midtones: RgbShift;
+  highlights: RgbShift;
+  /**
+   * 휘도 보존(Photoshop Color Balance의 Preserve Luminosity) — true면 채널
+   * 쉬프트를 적용한 뒤 각 픽셀의 휘도(Rec.601 luma)를 적용 전 값으로 되돌린다.
+   * 미설정/false가 기존 동작이며, PSD 가져오기가 원본 옵션을 그대로 실어 보낸다.
+   */
+  preserveLuminosity?: boolean;
+};
 
 /** 항등(보정 없음) — 세 영역 전부 [0,0,0]. */
 export const DEFAULT_COLOR_BALANCE: ColorBalance = {
@@ -60,6 +70,11 @@ export function normalizeColorBalance(cb?: Partial<ColorBalance> | null): ColorB
     shadows: normalizeShift(src.shadows),
     midtones: normalizeShift(src.midtones),
     highlights: normalizeShift(src.highlights),
+    // boolean으로 명시된 경우에만 싣는다 — 미설정 문서의 정규화 결과가 기존과
+    // 바이트 단위로 같아야 하기 때문이다(키 자체를 만들지 않는다).
+    ...(typeof src.preserveLuminosity === "boolean"
+      ? { preserveLuminosity: src.preserveLuminosity }
+      : {}),
   };
 }
 
@@ -86,6 +101,11 @@ export function isIdentityColorBalance(cb: ColorBalance): boolean {
  *   shift[c] = (sW*shadows[c] + mW*midtones[c] + hW*highlights[c]) * 1.275
  *   data[c]  = clamp(orig + shift)   (Uint8ClampedArray가 반올림·0..255 클램프)
  * 알파(+3)는 보존한다.
+ *
+ * preserveLuminosity가 켜져 있으면 쉬프트 후 픽셀을 원본 휘도 비율로 되돌린다:
+ *   c'' = c' * (L / L')   (L·L'는 Rec.601 luma — 포토 필터 엔진의 휘도 보존과
+ *   같은 규약. L'=0이면 곱셈으로 복원할 수 없어 쉬프트 결과를 그대로 둔다.
+ *   0..255 클램프에 걸리는 극단 픽셀에서는 휘도가 근사적으로만 보존된다.)
  */
 export function applyColorBalance(img: StudioImageDataLike, cb: ColorBalance): void {
   const safe = normalizeColorBalance(cb);
@@ -101,20 +121,34 @@ export function applyColorBalance(img: StudioImageDataLike, cb: ColorBalance): v
   const hG = highlights[1];
   const hB = highlights[2];
 
+  const preserveLuminosity = safe.preserveLuminosity === true;
   const data = img.data;
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i]!;
     const g = data[i + 1]!;
     const b = data[i + 2]!;
-    const t = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    const t = luma / 255;
     const sW = (1 - t) * (1 - t);
     const hW = t * t;
     const mid = 2 * t - 1;
     const mW = Math.max(0, 1 - mid * mid);
 
-    data[i] = r + (sW * sR + mW * mR + hW * hR) * COLOR_BALANCE_GAIN;
-    data[i + 1] = g + (sW * sG + mW * mG + hW * hG) * COLOR_BALANCE_GAIN;
-    data[i + 2] = b + (sW * sB + mW * mB + hW * hB) * COLOR_BALANCE_GAIN;
+    let nr = r + (sW * sR + mW * mR + hW * hR) * COLOR_BALANCE_GAIN;
+    let ng = g + (sW * sG + mW * mG + hW * hG) * COLOR_BALANCE_GAIN;
+    let nb = b + (sW * sB + mW * mB + hW * hB) * COLOR_BALANCE_GAIN;
+    if (preserveLuminosity) {
+      const shiftedLuma = 0.299 * nr + 0.587 * ng + 0.114 * nb;
+      if (shiftedLuma > 0) {
+        const scale = luma / shiftedLuma;
+        nr *= scale;
+        ng *= scale;
+        nb *= scale;
+      }
+    }
+    data[i] = nr;
+    data[i + 1] = ng;
+    data[i + 2] = nb;
   }
 }
 
