@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 /**
- * 분기형 컷툰 코어 모듈은 순수하다: 네트워크·시간·난수·브라우저 저장소·동적 import 에 기대지 않고,
+ * 분기형 컷툰 모델 모듈은 순수하다: 네트워크·시간·난수·브라우저 저장소·동적 import 에 기대지 않고,
  * 같은 폴더 안의 모듈과 이 폴더 밖으로 나가지 않는 상대 경로만 가져온다. 소스를 직접 읽어 확인한다.
  */
 const FOLDER = fileURLToPath(new URL("./", import.meta.url));
@@ -16,7 +16,7 @@ function code(name: string): string {
     .replace(/^\s*\/\/.*$/gmu, "");
 }
 
-describe("분기형 컷툰 코어 순수성", () => {
+describe("분기형 컷툰 모델 순수성", () => {
   it("검사할 소스가 있다", () => {
     expect(SOURCES.length).toBeGreaterThanOrEqual(8);
   });

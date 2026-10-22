@@ -1,5 +1,5 @@
 /**
- * 분기형 컷툰 그래프 v1 — 공개 진입점(`@toonstudio/core/branching-cuttoon`).
+ * 분기형 컷툰 그래프 v1 — 공개 진입점(같은 도메인의 화면은 `./model` 로 가져온다).
  * 데이터 모델·검증기·가져오기/내보내기·편집·독자 진행 상태를 모은 순수 모듈 묶음이다. 설명은 docs/features/branching-cuttoon.md.
  */
 export {
