@@ -184,18 +184,24 @@ function importedFacts(
   metadata: StudioBg3dAssetMetadata | undefined,
 ): RightsFacts {
   const extras = metadata?.rights;
-  const overlay = {
+  const overlay: Pick<RightsFacts, "provider" | "author" | "acquiredOn" | "aiGenerated" | "aiTraining"> = {
     provider: extras?.provider ?? null,
     author: extras?.author ?? null,
     acquiredOn: extras?.purchaseOrDownloadDate ?? null,
     aiGenerated: extras?.aiGenerated ?? null,
     aiTraining: extras?.aiTraining ?? null,
   };
+  // AI 학습 "허용"은 권리를 확인한 기록이 있을 때만 믿는다. 라이브러리 기록이 없거나 읽지 못했거나 권리가 미확인이면 허용은 모르는 것으로
+  // 닫고, 더 제한적인 "금지"만 그대로 보인다(머리글의 "허용을 늘리지 않는다"와 같은 규칙).
+  const closeUnconfirmedAiTraining = (confirmed: boolean) => {
+    if (!confirmed && overlay.aiTraining === "allowed") overlay.aiTraining = null;
+  };
   if (library) {
     // 두 기록이 모두 있으면 더 제한적인 쪽을 쓴다: 권리 상태는 더 제한적인 값, 상업 사용은 둘 다 허용일 때만 허용.
     const status = !extras || STATUS_RESTRICTIVENESS[library.status] >= STATUS_RESTRICTIVENESS[extras.status]
       ? library.status
       : extras.status;
+    closeUnconfirmedAiTraining(status !== "unknown");
     const commercialUse = library.commercialUse && (extras?.commercialUse ?? true);
     const conflict = extras !== undefined
       && (extras.status !== library.status
@@ -217,6 +223,7 @@ function importedFacts(
   if (extras) {
     // 라이브러리 레코드가 없다(읽지 못했거나 목록과 어긋났다). 메타데이터는 콘텐츠 해시 기준이라 같은 파일을 다른 답으로 다시 가져온
     // 기록이 남아 있을 수 있어, 그 기록의 권리 상태·상업 사용은 믿지 않고 미확인으로 닫는다.
+    closeUnconfirmedAiTraining(false);
     return {
       ...overlay,
       basis: "metadata",

@@ -179,6 +179,35 @@ describe("가져온 소재의 권리 보기", () => {
     expect(view).toMatchObject({ provider: "ACON 3D", author: "스튜디오 봄", acquiredOn: "2026-07-22", conflict: false });
   });
 
+  describe("AI 학습 허용은 권리를 확인한 기록이 있을 때만 믿는다", () => {
+    const allowed = (rights: Record<string, unknown>) => storedMetadata("6", { status: "licensed", commercialUse: true, teamShareAllowed: false, license: "표준", aiTraining: "allowed", ...rights });
+
+    it("라이브러리 기록이 없으면(읽지 못했거나 어긋남) 메타데이터의 허용을 모르는 것으로 닫는다", () => {
+      const view = buildStudioBg3dAssetRightsView(entry("n1", "6"), { metadataByHash: new Map([[hash("6"), allowed({})]]) });
+      expect(view.basis).toBe("metadata");
+      expect(view.state.aiTraining).toBe("unknown");
+    });
+
+    it("라이브러리 기록이 있어도 권리가 미확인이면 허용을 모르는 것으로 닫는다", () => {
+      const view = buildStudioBg3dAssetRightsView(entry("n2", "6"), {
+        libraryRightsById: new Map([["n2", { status: "unknown", commercialUse: false, attributionRequired: false }]]),
+        metadataByHash: new Map([[hash("6"), allowed({ status: "unknown" })]]),
+      });
+      expect(view.state.license).toBe("unknown");
+      expect(view.state.aiTraining).toBe("unknown");
+    });
+
+    it("금지는 더 제한적이라 라이브러리 기록이 없어도 그대로 보이고, 권리를 확인한 기록이 있으면 허용도 보인다", () => {
+      const prohibited = buildStudioBg3dAssetRightsView(entry("n3", "6"), { metadataByHash: new Map([[hash("6"), allowed({ aiTraining: "prohibited" })]]) });
+      expect(prohibited.state.aiTraining).toBe("prohibited");
+      const confirmed = buildStudioBg3dAssetRightsView(entry("n4", "6"), {
+        libraryRightsById: new Map([["n4", licensed]]),
+        metadataByHash: new Map([[hash("6"), allowed({})]]),
+      });
+      expect(confirmed.state.aiTraining).toBe("allowed");
+    });
+  });
+
   describe("라이브러리와 메타데이터가 다르게 말하면 더 제한적인 쪽을 쓴다", () => {
     const withMetadata = (library: StudioBg3dAttachmentRights, rights: unknown) =>
       buildStudioBg3dAssetRightsView(entry("m1", "5"), {
