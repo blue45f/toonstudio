@@ -44,6 +44,16 @@ export const CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS = CLOUDFLARE_R2_MEDIA_PREFIXES.
   (prefix) => Object.keys(R2_MEDIA_CONTENT_TYPES).map((extension) => `${prefix.slice(1)}**/*.${extension}`),
 );
 
+/**
+ * `wrangler.jsonc`의 `run_worker_first`에 넣는 R2 미디어 패턴(`*`는 하위 경로까지 맞는다).
+ * `run_worker_first`를 배열로 쓰면 `Sec-Fetch-Mode` 판별이 꺼져, Static Assets에 없는 경로는 Worker가 아니라
+ * SPA `index.html`(200)로 응답된다. 2026-10-23 첫 배포에서 미디어 7,158개가 HTML로 나가 바로 롤백했다.
+ * 확장자별로 넣어 매니페스트 JSON은 지금처럼 Static Assets가 경로별 헤더 규칙과 함께 바로 내준다.
+ */
+export const CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS = CLOUDFLARE_R2_MEDIA_PREFIXES.flatMap(
+  (prefix) => Object.keys(R2_MEDIA_CONTENT_TYPES).map((extension) => `${prefix}*.${extension}`),
+);
+
 export const CLOUDFLARE_LARGE_ASSET_ENCODINGS = ["br", "gzip"] as const;
 export type CloudflareLargeAssetEncoding =
   (typeof CLOUDFLARE_LARGE_ASSET_ENCODINGS)[number];
