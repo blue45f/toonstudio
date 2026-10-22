@@ -56,6 +56,7 @@ import {
 
 import type { StudioUnifiedAssetItem } from "./studio-unified-asset-catalog";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 const FOCUS =
@@ -233,6 +234,7 @@ export function StudioUnifiedAssetWorkspace({
   selectionPlacementAvailable = false,
   reviewLocked = false,
 }: StudioUnifiedAssetWorkspaceProps) {
+  const t = useT();
   const searchId = useId();
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -544,11 +546,8 @@ export function StudioUnifiedAssetWorkspace({
                   );
                 })}
                 <input
-                  ref={uploadInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  tabIndex={-1}
+                  ref={uploadInputRef} type="file" accept="image/*" className="sr-only" tabIndex={-1}
+                  aria-label={t("studio.assetMenu.uploadAria", "이미지 소재 업로드")}
                   onChange={(event) => {
                     if (reviewLocked) {
                       setStatus({

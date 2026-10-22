@@ -219,7 +219,7 @@ export function StudioInspectorAsideShell({
       allowedDockEdges={["left", "right"]}
       onClose={() => setRightPanelOpen(false)}
     >
-        <aside
+        <section
           id="studio-inspector"
           ref={propsSheetRef}
           role={isMobile ? "dialog" : "region"}
@@ -747,7 +747,7 @@ export function StudioInspectorAsideShell({
               setSharedDocumentNotice(null);
             }}
           />
-        </aside>
+        </section>
     </StudioDetachablePanelSlot>
   );
 }

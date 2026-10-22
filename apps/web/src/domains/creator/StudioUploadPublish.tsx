@@ -14,7 +14,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { buildStudioHref } from "./creator-studio-links";
-import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import { creatorWorkHref } from "./publishing/showcase-links";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDiscardLocalChangesRequest } from "./studio-destructive-command-catalog";

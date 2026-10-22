@@ -3,6 +3,7 @@
 
 import type {
   StudioBg3dMaterialOverride,
+  StudioBg3dNodeOrganization,
   StudioBg3dTexturePaint,
 } from "./bg3d/studio-bg3d-scene-document";
 
@@ -21,7 +22,8 @@ export type BgPrimitiveKind =
   | "ring"
   | "capsule";
 
-export interface BgPrimitive {
+/** `tags`·`componentRef` 는 문서 노드와 같은 장면 구성 정보다(StudioBg3dNodeOrganization). 없으면 태그·컴포넌트가 없다. */
+export interface BgPrimitive extends StudioBg3dNodeOrganization {
   id: string;
   kind: BgPrimitiveKind;
   position: [number, number, number];

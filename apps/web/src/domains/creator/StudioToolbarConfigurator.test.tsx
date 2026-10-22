@@ -45,11 +45,18 @@ describe("toolbar draft editor", () => {
     expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "도구막대 보기 방식" }).value).toBe("list");
     expect(onApply).not.toHaveBeenCalled();
   });
+  it("keeps every visible button label inside its accessible name (WCAG 2.5.3)", () => {
+    setup();
+    const pinned = screen.getByRole("region", { name: "도구막대에 표시" });
+    const buttons = within(pinned).getAllByRole("button").filter((button) => button.getAttribute("aria-label") && button.textContent?.trim());
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) expect(button.getAttribute("aria-label")).toContain(button.textContent!.trim());
+  });
   it("retains exactly one tool and keeps saved work profiles separate from document commands", () => {
     const onApply = vi.fn(); const value = { ...defaultStudioAppSettings().toolbar, configured: true, visibleIds: ["pen"] as const };
     render(<StudioToolbarConfigurator value={{ ...value, visibleIds: [...value.visibleIds] }} onApply={onApply} onCancel={vi.fn()} />);
     const pinned = screen.getByRole("region", { name: "도구막대에 표시" });
-    expect(within(pinned).getByRole<HTMLButtonElement>("button", { name: "펜 숨기기" }).disabled).toBe(true);
+    expect(within(pinned).getByRole<HTMLButtonElement>("button", { name: "펜 도구막대에서 해제" }).disabled).toBe(true);
     const details = screen.getByText("작업별 구성 · 내 구성 저장").closest("details")!; details.open = true;
     fireEvent.change(screen.getByRole("textbox", { name: "새 도구 구성 이름" }), { target: { value: "내 선화" } });
     fireEvent.click(screen.getByRole("button", { name: "구성 저장" }));

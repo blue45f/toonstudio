@@ -9,6 +9,7 @@ import { cutsRoutes } from "./cuts.routes";
 import { engagementRoutes } from "./engagement.routes";
 import { experienceRoutes } from "./experience.routes";
 import { integrationRoutes } from "./integrations.routes";
+import { labsRoutes } from "./labs.routes";
 import { legalRoutes } from "./legal.routes";
 import { legacyRedirectRoutes } from "./legacy.routes";
 import { marketRoutes } from "./market.routes";
@@ -33,6 +34,8 @@ export const appRoutes = [
   ...marketingRoutes,
   ...referenceRoutes,
   ...communityRoutes,
+  // Labs 실험 화면은 /studio/* 와일드카드를 가진 creatorRoutes 보다 먼저 맡는다.
+  ...labsRoutes,
   ...creatorRoutes,
   ...productionRoutes,
   ...creatorResourcesRoutes,

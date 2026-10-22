@@ -189,6 +189,7 @@ def test_deleted_receipt_erases_private_payload_and_files(client, runtime):
 @pytest.mark.parametrize(('manifest', 'package', 'patched', 'vulnerable'), [
     ('requirements-models.txt', 'diffusers', '0.38.0', '0.37.0'),
     ('requirements-models.txt', 'safetensors', '0.8.0', '0.7.0'),
+    ('requirements-models.txt', 'accelerate', '1.15.0', '1.14.0'),
     ('requirements-test.txt', 'pytest', '9.0.3', '9.0.2'),
 ])
 def test_dependency_security_floor(manifest, package, patched, vulnerable):

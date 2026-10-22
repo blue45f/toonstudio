@@ -27,7 +27,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { StudioLiveCollaborationPanel } from "./live/StudioLiveCollaborationPanel";
-import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import {
   STUDIO_TEAM_ASSIGNABLE_ROLES,
   getStudioTeam,

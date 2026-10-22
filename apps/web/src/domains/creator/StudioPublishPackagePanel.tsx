@@ -47,7 +47,7 @@ import {
   type StudioPublishThumbnailSlot,
 } from "./studio-publish-package";
 import { StudioPublishPackageAiSection } from "./publish/StudioPublishPackageAiSection";
-import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
+import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import { AI_USAGE_META } from "./publish/studio-publish-package-ai-usage-meta";
 import {
   STUDIO_REVIEW_PDF_PROFILE_IDS,

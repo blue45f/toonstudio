@@ -6,6 +6,8 @@ export interface StudioFilterResponsiveLayout {
   readonly theme: string;
   readonly bodyHeight: number;
   readonly panelWithinViewport: boolean;
+  /** 실패 사유에 함께 적는 진단 값: 패널 사각형과 적용된 translate. */
+  readonly panelBox?: { top: number; bottom: number; left: number; right: number; translate: string };
   readonly panelOverflowX: number;
   readonly actions: ReadonlyArray<{
     label: string; disabled: boolean; withinViewport: boolean; withinPanel: boolean;
@@ -18,7 +20,12 @@ export interface StudioFilterResponsiveLayout {
 /** 비활성 버튼도 화면 안에 있어야 하며, 활성 버튼은 실제 포인터 목표여야 한다. */
 export function studioFilterResponsiveLayoutIssues(layout: StudioFilterResponsiveLayout): string[] {
   const issues: string[] = [];
-  if (!layout.panelWithinViewport) issues.push("필터 창이 뷰포트 밖에 있습니다");
+  if (!layout.panelWithinViewport) {
+    const box = layout.panelBox;
+    issues.push(box
+      ? `필터 창이 뷰포트 밖에 있습니다 (패널 위 ${Math.round(box.top)}·아래 ${Math.round(box.bottom)}·왼쪽 ${Math.round(box.left)}·오른쪽 ${Math.round(box.right)}, 뷰포트 ${layout.width}x${layout.height}, translate ${box.translate})`
+      : "필터 창이 뷰포트 밖에 있습니다");
+  }
   if (layout.panelOverflowX > 1) issues.push("필터 창에 가로 넘침이 있습니다");
   if (layout.bodyHeight < 44) issues.push("필터 본문에 한 개의 터치 컨트롤 높이도 확보되지 않았습니다");
   if (layout.actions.length !== 2) issues.push("취소와 적용 두 동작이 모두 있어야 합니다");
@@ -97,6 +104,10 @@ export async function measureStudioFilterResponsiveLayout(page: Page): Promise<S
       bodyHeight: body?.getBoundingClientRect().height ?? 0,
       panelWithinViewport: bounds.left >= -0.5 && bounds.top >= -0.5
         && bounds.right <= innerWidth + 0.5 && bounds.bottom <= innerHeight + 0.5,
+      panelBox: {
+        top: bounds.top, bottom: bounds.bottom, left: bounds.left, right: bounds.right,
+        translate: getComputedStyle(panel).translate,
+      },
       panelOverflowX: panel.scrollWidth - panel.clientWidth,
       degradedBannerOverlaps: bannerBox !== null && actionBoxes.some((box) => (
         bannerBox.left < box.right && bannerBox.right > box.left

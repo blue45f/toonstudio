@@ -23,6 +23,7 @@ import {
   type StudioBg3dAssetAiTrainingChoice,
 } from "./StudioBg3dAssetAiUseFields";
 import { StudioBg3dAssetCardRightsActions, type StudioBg3dAssetCardPanel } from "./StudioBg3dAssetCardRightsActions";
+import { StudioBg3dAssetNameMatchHint } from "./StudioBg3dAssetNameMatchHint";
 import { StudioBg3dAssetRightsFilterBar } from "./StudioBg3dAssetRightsFilterBar";
 import { StudioBg3dAssetRightsSummary } from "./StudioBg3dAssetRightsInfo";
 import { StudioBg3dSkpImportPanel } from "./StudioBg3dSkpImportPanel";
@@ -282,6 +283,7 @@ export function StudioBg3dAssetLibraryPanel({
       view?.licenseName ?? "",
       view?.provider ?? "",
       view?.author ?? "",
+      ...(view?.sourceNames ?? []),
     ].some((value) =>
       value.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
     );
@@ -530,7 +532,7 @@ export function StudioBg3dAssetLibraryPanel({
           value={query}
           aria-label="3D 모델 라이브러리 검색"
           aria-controls={MODEL_RESULTS_ID}
-          placeholder="모델 이름·형식 검색…"
+          placeholder={t("studio.bg3dScene.library.searchPlaceholder", "모델 이름·형식·컴포넌트·태그·장면 이름 검색…")}
           spellCheck={false}
           className="min-h-11 w-full rounded-lg border border-line bg-card py-1.5 pl-8 pr-2 text-xs text-fg placeholder:text-fg-3 focus-visible:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9"
           onChange={(event) => {
@@ -702,6 +704,7 @@ export function StudioBg3dAssetLibraryPanel({
                 </span>
               </button>
 
+              <StudioBg3dAssetNameMatchHint query={normalizedQuery} entryName={entry.name} names={view.sourceNames} />
               <StudioBg3dAssetCardRightsActions
                 entryId={entry.id}
                 entryName={entry.name}
