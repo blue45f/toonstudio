@@ -258,8 +258,8 @@ pnpm run cloudflare:static:dry-run
 git switch main
 git pull --ff-only
 git status --short
-RENDER_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com pnpm run verify:render-core-origin
-export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com
+RENDER_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai pnpm run verify:render-core-origin
+export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
 export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy
