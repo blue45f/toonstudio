@@ -64,6 +64,31 @@ describe("ProductTourMp4Player", () => {
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
   });
 
+  it("Space로 재생·정지를 토글하고 버튼 위에서는 가로채지 않는다", () => {
+    const { container } = renderPlayer("ko");
+    fireEvent.click(container.querySelector<HTMLButtonElement>(".product-tour-player__poster")!);
+    const video = container.querySelector<HTMLVideoElement>("video")!;
+    const screen = container.querySelector<HTMLElement>(".product-tour-player__screen")!;
+    vi.spyOn(screen, "getBoundingClientRect")
+      .mockReturnValue({ x: 0, y: 0, top: 0, left: 0, bottom: 400, right: 800, width: 800, height: 400, toJSON: () => ({}) } as DOMRect);
+    fireEvent.loadedMetadata(video);
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
+
+    // jsdom은 재생 상태를 스스로 바꾸지 않으므로 paused를 고정해 양방향 토글을 확인한다.
+    const paused = vi.spyOn(HTMLMediaElement.prototype, "paused", "get").mockReturnValue(false);
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalledOnce();
+
+    paused.mockReturnValue(true);
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
+
+    // 음성 안내 버튼 위의 Space는 버튼 기본 동작에 맡긴다.
+    fireEvent.keyDown(container.querySelector<HTMLElement>(".product-tour-player__mix-button")!, { key: " " });
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalledOnce();
+  });
+
   it("suspends site BGM while playing and restores it on pause", () => {
     const { container } = renderPlayer("ko");
     fireEvent.click(container.querySelector<HTMLButtonElement>(".product-tour-player__poster")!);
