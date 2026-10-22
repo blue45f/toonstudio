@@ -1,8 +1,9 @@
 import { defineBilingualText, translateParallelBilingualCopy, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { SITE_URL } from "@toonstudio/core/business";
-import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronDown, Clapperboard, MonitorPlay, Ratio, Subtitles } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronDown, Clapperboard, MonitorPlay, Ratio, Sparkles, Subtitles } from "lucide-react";
 import { useRef, type MouseEvent } from "react";
 
+import { BRAND_FILM_CLOSING_CLIP } from "./brand-clips";
 import { BrandFilmStoryboard } from "./BrandFilmStoryboard";
 import { CreatorBrandFilm } from "./CreatorBrandFilm";
 import { CREATOR_FILM, HOME_COPY, creatorHomeLocale } from "./creator-home-content";
@@ -53,6 +54,7 @@ const PAGE_COPY = {
     closingTitle: "이제 당신의 장면을 시작하세요.",
     closingBody:
       "웹툰 기획부터 드로잉, 3D 장면, 협업과 연재·운영까지 하나의 제작 흐름으로 이어집니다.",
+    backdropBadge: "생성형 AI 배경 영상",
     promo: "내 작품 홍보 영상 만들기",
   },
   en: {
@@ -85,6 +87,7 @@ const PAGE_COPY = {
     closingTitle: "Start your next scene.",
     closingBody:
       "Connect planning, drawing, 3D scenes, collaboration, publishing and series operations in one production flow.",
+    backdropBadge: "AI-generated backdrop",
     promo: "Create a promo for my work",
   },
 } as const;
@@ -207,10 +210,27 @@ export function BrandFilmPage() {
         </details>
 
         <section className="mk-closing brand-film-page__closing" aria-labelledby="brand-film-closing-title">
+          <div className="brand-film-page__closing-media" aria-hidden="true">
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              tabIndex={-1}
+              src={BRAND_FILM_CLOSING_CLIP.src}
+              width={BRAND_FILM_CLOSING_CLIP.width}
+              height={BRAND_FILM_CLOSING_CLIP.height}
+            />
+          </div>
           <div>
             <p className="mk-eyebrow">{copy.closingEyebrow}</p>
             <h2 id="brand-film-closing-title" className="mk-h2">{copy.closingTitle}</h2>
             <p className="mk-body">{copy.closingBody}</p>
+            <span className="brand-film-page__clip-badge">
+              <Sparkles size={13} aria-hidden="true" />
+              {copy.backdropBadge}
+            </span>
           </div>
           <div className="mk-actions">
             <Link href="/studio/new" className="mk-button mk-button--primary">

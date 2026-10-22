@@ -1,5 +1,5 @@
 import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowRight, LayoutGrid, Map as MapIcon } from "lucide-react";
+import { ArrowRight, LayoutGrid, Map as MapIcon, Sparkles } from "lucide-react";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { sitePageHeaderArtFor } from "@/domains/legal/public/site-page-header-art";
@@ -11,6 +11,7 @@ import { resolveSiteRouteMetadata } from "@/shared/lib/site-route-metadata";
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle, useMetaDescription } from "@/shared/seo/use-document-title";
 
+import { FEATURES_AMBIENT_CLIP } from "./brand-clips";
 import {
   FEATURE_OVERVIEW_CATEGORIES,
   FEATURE_OVERVIEW_CATALOG_PLATFORM_COUNT,
@@ -50,6 +51,7 @@ const PAGE_COPY = {
     itemsUnit: "개 기능",
     ctaTitle: "찾는 기능이 여기 없나요?",
     ctaBody: "이 페이지는 대표 기능만 추린 요약입니다. 실험 도구와 세부 페이지를 포함한 전체 목록은 사이트맵에서 검색할 수 있습니다.",
+    ambientBadge: "생성형 AI 배경 영상",
     ctaSitemap: "사이트맵에서 전체 찾기",
     ctaSupport: "문의하기",
   },
@@ -75,6 +77,7 @@ const PAGE_COPY = {
     itemsUnit: "features",
     ctaTitle: "Can't find the feature you need?",
     ctaBody: "This page is a curated summary of the main features. The sitemap lets you search the complete directory, including experimental tools and detail pages.",
+    ambientBadge: "AI-generated backdrop",
     ctaSitemap: "Search the full sitemap",
     ctaSupport: "Contact support",
   },
@@ -285,16 +288,39 @@ export function FeaturesOverviewPage() {
       })}
 
       <section
-        className="mt-14 flex flex-col gap-4 rounded-3xl border border-line/70 bg-gradient-to-r from-accent-soft/70 via-panel/70 to-panel/40 p-5 sm:mt-20 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+        className="relative isolate mt-14 flex flex-col gap-4 overflow-hidden rounded-3xl border border-line/70 p-5 sm:mt-20 sm:flex-row sm:items-center sm:justify-between sm:p-6"
         aria-labelledby="features-overview-cta-title"
       >
-        <div>
+        {/* 배경은 생성형 AI로 만든 개념 영상이다. 장식이라 본문 흐름에서 빼고,
+            움직임 최소화를 선호하면 숨긴다(다른 표면의 장식 영상 계약과 동일). */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          tabIndex={-1}
+          src={FEATURES_AMBIENT_CLIP.src}
+          width={FEATURES_AMBIENT_CLIP.width}
+          height={FEATURES_AMBIENT_CLIP.height}
+          className="absolute inset-0 -z-10 h-full w-full object-cover opacity-40 motion-reduce:hidden"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-gradient-to-r from-accent-soft/70 via-panel/70 to-panel/40"
+        />
+        <div className="relative">
           <h2 id="features-overview-cta-title" className="font-display text-lg font-bold text-fg">
             {copy.ctaTitle}
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-fg-2">{copy.ctaBody}</p>
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-xs font-bold text-white">
+            <Sparkles size={13} aria-hidden="true" />
+            {copy.ambientBadge}
+          </span>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="relative flex flex-wrap gap-2">
           <Link href="/sitemap" className={buttonClass({ size: "md", className: "min-h-11" })}>
             <MapIcon size={16} aria-hidden="true" />
             {copy.ctaSitemap}
