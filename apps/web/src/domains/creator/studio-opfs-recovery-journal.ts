@@ -54,67 +54,19 @@ const FRAME_KIND_CODE: Readonly<Record<FrameKind, number>> = Object.freeze({
   descriptor: 4,
 });
 
-export type StudioOpfsRecoveryJournalErrorCode =
-  | "ABORTED"
-  | "INVALID_ARGUMENT"
-  | "OPFS_UNAVAILABLE"
-  | "LOCK_UNAVAILABLE"
-  | "LEASE_BUSY"
-  | "LEASE_LOST"
-  | "IMMUTABLE_CONFLICT"
-  | "ENTRY_TOO_LARGE"
-  | "JOURNAL_LIMIT_EXCEEDED"
-  | "COMPACTION_REQUIRED"
-  | "QUOTA_EXCEEDED"
-  | "STORAGE_FAILED"
-  | "CORRUPT_ENTRY"
-  | "CORRUPT_MANIFEST"
-  | "UNSUPPORTED_VERSION";
+import {
+  describeStudioOpfsRecoveryJournalError,
+  StudioOpfsRecoveryJournalError,
+  type StudioOpfsRecoveryJournalErrorCode,
+  type StudioOpfsRecoveryJournalErrorSubcode,
+} from "./studio-opfs-recovery-journal-error";
 
-export class StudioOpfsRecoveryJournalError extends Error {
-  readonly code: StudioOpfsRecoveryJournalErrorCode;
-  readonly path: string | null;
-  /**
-   * 내부 식별자(writer ownerId, epoch, 토큰 …)를 담는 진단 전용 자리.
-   *
-   * `message` 는 저장 강등 배너처럼 **사용자 화면에 그대로 흘러가는** 문자열이다
-   * (`studio-storage-recovery-runtime`의 `causeMessage`). 그래서 사람이 읽을 문장만
-   * 남기고, 사람이 읽을 수 없는 식별자는 지우는 대신 이 필드로 옮긴다 — 진단 가치는
-   * 로그·버그리포트 쪽에 그대로 두고 청중만 나눈다.
-   */
-  readonly diagnostics: string | null;
-  override readonly cause?: unknown;
-
-  constructor(
-    code: StudioOpfsRecoveryJournalErrorCode,
-    message: string,
-    options: {
-      readonly path?: string;
-      readonly cause?: unknown;
-      readonly diagnostics?: string;
-    } = {},
-  ) {
-    super(message);
-    this.name = "StudioOpfsRecoveryJournalError";
-    this.code = code;
-    this.path = options.path ?? null;
-    this.diagnostics = options.diagnostics ?? null;
-    this.cause = options.cause;
-  }
-}
-
-/**
- * 로그·버그리포트용 한 줄. 사용자 문구 + 코드 + 내부 진단을 한 번에 붙인다.
- * 화면에 쓰지 말 것 — 화면은 `error.message` 만 쓴다.
- */
-export function describeStudioOpfsRecoveryJournalError(
-  error: StudioOpfsRecoveryJournalError,
-): string {
-  const parts = [`[${error.code}] ${error.message}`];
-  if (error.path) parts.push(`path=${error.path}`);
-  if (error.diagnostics) parts.push(error.diagnostics);
-  return parts.join(" ");
-}
+export {
+  describeStudioOpfsRecoveryJournalError,
+  StudioOpfsRecoveryJournalError,
+  type StudioOpfsRecoveryJournalErrorCode,
+  type StudioOpfsRecoveryJournalErrorSubcode,
+} from "./studio-opfs-recovery-journal-error";
 
 export interface StudioOpfsRecoveryJournalLimits {
   readonly maxChunkBytes: number;
@@ -368,14 +320,19 @@ interface StagedEntry {
 
 function journalError(
   code: StudioOpfsRecoveryJournalErrorCode,
-  message: string,
+  subcode: StudioOpfsRecoveryJournalErrorSubcode,
+  params?: Readonly<Record<string, string>>,
   options?: {
     readonly path?: string;
     readonly cause?: unknown;
     readonly diagnostics?: string;
   },
 ): never {
-  const error = new StudioOpfsRecoveryJournalError(code, message, options);
+  const error = new StudioOpfsRecoveryJournalError(code, code, {
+    ...options,
+    subcode,
+    ...(params !== undefined ? { params } : {}),
+  });
   // 진단이 붙은 오류는 삼켜지더라도(강등 폴백 경로) 개발자 콘솔에는 남는다 —
   // 화면에서 뺀 내부 식별자가 어디에도 없어지지 않게 하는 반대편 절반.
   if (error.diagnostics) {
@@ -385,7 +342,7 @@ function journalError(
 }
 
 function createAbortError(): StudioOpfsRecoveryJournalError {
-  return new StudioOpfsRecoveryJournalError("ABORTED", "OPFS 복구 저널 작업을 취소했습니다.");
+  return new StudioOpfsRecoveryJournalError("ABORTED", "ABORTED", { subcode: "aborted" });
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
@@ -415,7 +372,7 @@ function assertStorageId(value: string, label: string): void {
   if (!SAFE_STORAGE_ID.test(value)) {
     journalError(
       "INVALID_ARGUMENT",
-      `${label}은 소문자 영숫자로 시작하는 1~96자의 안전한 저장소 ID여야 합니다.`,
+      "invalidArgumentStorageId", { label },
     );
   }
 }
@@ -424,7 +381,7 @@ function assertEntryId(value: string, label: string): void {
   if (!SAFE_OWNER_ID.test(value)) {
     journalError(
       "INVALID_ARGUMENT",
-      `${label}은 영숫자로 시작하는 1~160자의 안전한 ID여야 합니다.`,
+      "invalidArgumentEntryId", { label },
     );
   }
 }
@@ -434,12 +391,12 @@ function normalizeIdentity(
 ): StudioOpfsRecoveryJournalIdentity {
   assertStorageId(identity.documentId, "documentId");
   if (!Number.isSafeInteger(identity.documentVersion) || identity.documentVersion < 1) {
-    journalError("INVALID_ARGUMENT", "documentVersion은 1 이상의 안전한 정수여야 합니다.");
+    journalError("INVALID_ARGUMENT", "invalidArgumentDocumentVersion");
   }
   if (!SAFE_ENGINE_VERSION.test(identity.engineVersion)) {
     journalError(
       "INVALID_ARGUMENT",
-      "engineVersion은 영숫자로 시작하는 1~96자의 버전 문자열이어야 합니다.",
+      "invalidArgumentEngineVersion",
     );
   }
   return Object.freeze({ ...identity });
@@ -456,7 +413,7 @@ function boundedInteger(
   if (!Number.isSafeInteger(resolved) || resolved < minimum || resolved > maximum) {
     journalError(
       "INVALID_ARGUMENT",
-      `${label}은 ${minimum.toLocaleString("en-US")}~${maximum.toLocaleString("en-US")} 범위여야 합니다.`,
+      "invalidArgumentRange", { label, min: minimum.toLocaleString("en-US"), max: maximum.toLocaleString("en-US") },
     );
   }
   return resolved;
@@ -560,7 +517,7 @@ function frameKindFromCode(value: number): FrameKind | null {
 function encodeFrame(kind: FrameKind, value: unknown): Uint8Array {
   const body = TEXT_ENCODER.encode(JSON.stringify(value));
   if (body.byteLength > MAX_METADATA_BYTES) {
-    journalError("JOURNAL_LIMIT_EXCEEDED", "복구 저널 메타데이터가 허용 크기를 초과했습니다.");
+    journalError("JOURNAL_LIMIT_EXCEEDED", "journalLimitExceededMetadata");
   }
   const output = new Uint8Array(FRAME_HEADER_BYTES + body.byteLength + FRAME_TRAILER_BYTES);
   output.set(FRAME_MAGIC, 0);
@@ -581,56 +538,58 @@ function encodeFrame(kind: FrameKind, value: unknown): Uint8Array {
 }
 
 function decodeFrame(path: string, bytes: Uint8Array, expectedKind: FrameKind): unknown {
-  const fail = (message: string): never => journalError(
+  const fail = (
+    subcode: StudioOpfsRecoveryJournalErrorSubcode,
+    params?: Readonly<Record<string, string>>,
+  ): never => journalError(
     expectedKind === "manifest" || expectedKind === "head"
       ? "CORRUPT_MANIFEST"
       : "CORRUPT_ENTRY",
-    message,
+    subcode,
+    params,
     { path },
   );
   if (bytes.byteLength < FRAME_HEADER_BYTES + FRAME_TRAILER_BYTES) {
-    fail("복구 저널 frame이 중간에서 끊겼습니다.");
+    fail("frameTruncated");
   }
   if (!bytesEqual(bytes.subarray(0, FRAME_MAGIC.byteLength), FRAME_MAGIC)) {
-    fail("복구 저널 frame magic이 올바르지 않습니다.");
+    fail("frameMagicInvalid");
   }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const version = view.getUint8(4);
   if (version !== STUDIO_OPFS_RECOVERY_JOURNAL_VERSION) {
-    journalError("UNSUPPORTED_VERSION", "지원하지 않는 OPFS 복구 저널 frame 버전입니다.", {
+    journalError("UNSUPPORTED_VERSION", "unsupportedVersionFrame", undefined, {
       path,
     });
   }
   const actualKind = frameKindFromCode(view.getUint8(5));
   if (actualKind !== expectedKind || view.getUint16(6, true) !== 0) {
-    fail("복구 저널 frame 종류 또는 예약 영역이 올바르지 않습니다.");
+    fail("frameKindInvalid");
   }
   const bodyLength = view.getUint32(8, true);
   const expectedLength = FRAME_HEADER_BYTES + bodyLength + FRAME_TRAILER_BYTES;
   if (bytes.byteLength !== expectedLength) {
-    fail("복구 저널 frame 길이가 기록된 길이와 다릅니다.");
+    fail("frameLengthMismatch");
   }
   const trailerOffset = FRAME_HEADER_BYTES + bodyLength;
   if (!bytesEqual(
     bytes.subarray(trailerOffset, trailerOffset + FRAME_END_MAGIC.byteLength),
     FRAME_END_MAGIC,
   )) {
-    fail("복구 저널 frame 끝 표식이 없어 torn write로 판단했습니다.");
+    fail("frameEndMarkerMissing");
   }
   if (view.getUint32(trailerOffset + FRAME_END_MAGIC.byteLength, true)
     !== (bodyLength ^ 0xffff_ffff) >>> 0) {
-    fail("복구 저널 frame 길이 보수가 일치하지 않습니다.");
+    fail("frameLengthComplementMismatch");
   }
   const body = bytes.subarray(FRAME_HEADER_BYTES, trailerOffset);
   if (calculateStudioCrc32(body) !== view.getUint32(12, true)) {
-    fail("복구 저널 frame CRC32가 일치하지 않습니다.");
+    fail("frameCrcMismatch");
   }
   try {
     return JSON.parse(TEXT_DECODER.decode(body)) as unknown;
   } catch (cause) {
-    return fail(`복구 저널 frame JSON을 해석할 수 없습니다: ${
-      cause instanceof Error ? cause.message : "unknown"
-    }`);
+    return fail("frameJsonUnparsable", { detail: cause instanceof Error ? cause.message : "unknown" });
   }
 }
 
@@ -649,13 +608,13 @@ function validateStoredLease(
     "acquiredAt",
     "expiresAt",
   ])) {
-    journalError("CORRUPT_ENTRY", "복구 저널 writer lease 구조가 손상되었습니다.", { path });
+    journalError("CORRUPT_ENTRY", "corruptEntryLeaseStructure", undefined, { path });
   }
   if (
     value.format !== STUDIO_OPFS_RECOVERY_JOURNAL_FORMAT
     || value.version !== STUDIO_OPFS_RECOVERY_JOURNAL_VERSION
   ) {
-    journalError("UNSUPPORTED_VERSION", "지원하지 않는 복구 저널 writer lease입니다.", { path });
+    journalError("UNSUPPORTED_VERSION", "unsupportedVersionLease", undefined, { path });
   }
   if (
     value.documentId !== identity.documentId
@@ -668,7 +627,7 @@ function validateStoredLease(
     || !isSafeInteger(value.expiresAt)
     || value.expiresAt <= value.acquiredAt
   ) {
-    journalError("CORRUPT_ENTRY", "복구 저널 writer lease 값이 손상되었습니다.", { path });
+    journalError("CORRUPT_ENTRY", "corruptEntryLeaseValues", undefined, { path });
   }
   return value as unknown as StoredLease;
 }
@@ -684,7 +643,7 @@ function validateManifestReference(
     "descriptorCrc32",
     "storedBytes",
   ])) {
-    journalError("CORRUPT_MANIFEST", "manifest entry 참조 구조가 손상되었습니다.", { path });
+    journalError("CORRUPT_MANIFEST", "corruptManifestEntryReferenceStructure", undefined, { path });
   }
   if (
     (value.kind !== "operation" && value.kind !== "checkpoint")
@@ -693,7 +652,7 @@ function validateManifestReference(
     || !isCrc32(value.descriptorCrc32)
     || !isSafeInteger(value.storedBytes, 1)
   ) {
-    journalError("CORRUPT_MANIFEST", "manifest entry 참조 값이 손상되었습니다.", { path });
+    journalError("CORRUPT_MANIFEST", "corruptManifestEntryReferenceValues", undefined, { path });
   }
   return value as unknown as ManifestEntryReference;
 }
@@ -719,13 +678,13 @@ function validateStoredManifest(
     "createdAt",
     "entries",
   ])) {
-    journalError("CORRUPT_MANIFEST", "복구 저널 manifest 구조가 손상되었습니다.", { path });
+    journalError("CORRUPT_MANIFEST", "corruptManifestStructure", undefined, { path });
   }
   if (
     value.format !== STUDIO_OPFS_RECOVERY_JOURNAL_FORMAT
     || value.version !== STUDIO_OPFS_RECOVERY_JOURNAL_VERSION
   ) {
-    journalError("UNSUPPORTED_VERSION", "지원하지 않는 OPFS 복구 저널 manifest입니다.", {
+    journalError("UNSUPPORTED_VERSION", "unsupportedVersionManifest", undefined, {
       path,
     });
   }
@@ -736,7 +695,7 @@ function validateStoredManifest(
   ) {
     journalError(
       "UNSUPPORTED_VERSION",
-      "문서 또는 replay engine 버전이 현재 복구 저널과 일치하지 않습니다.",
+      "unsupportedVersionManifestIdentity", undefined,
       { path },
     );
   }
@@ -752,7 +711,7 @@ function validateStoredManifest(
     || !isSafeInteger(value.createdAt)
     || !Array.isArray(value.entries)
   ) {
-    journalError("CORRUPT_MANIFEST", "복구 저널 manifest 값이 손상되었습니다.", { path });
+    journalError("CORRUPT_MANIFEST", "corruptManifestValues", undefined, { path });
   }
   const entries = value.entries.map((entry, index) =>
     validateManifestReference(entry, `${path}#entry-${index}`));
@@ -760,7 +719,7 @@ function validateStoredManifest(
   let storedBytes = 0;
   for (const entry of entries) {
     if (entry.sequence <= previousSequence) {
-      journalError("CORRUPT_MANIFEST", "manifest entry 순서가 결정적 증가 순서가 아닙니다.", {
+      journalError("CORRUPT_MANIFEST", "corruptManifestEntryOrder", undefined, {
         path,
       });
     }
@@ -771,7 +730,7 @@ function validateStoredManifest(
     (entries.at(-1)?.sequence ?? 0) > value.lastSequence
     || storedBytes !== value.totalStoredBytes
   ) {
-    journalError("CORRUPT_MANIFEST", "manifest 집계 값이 entry 목록과 일치하지 않습니다.", {
+    journalError("CORRUPT_MANIFEST", "corruptManifestTotalsMismatch", undefined, {
       path,
     });
   }
@@ -796,13 +755,13 @@ function validateStoredHead(
     "manifestPath",
     "manifestCrc32",
   ])) {
-    journalError("CORRUPT_MANIFEST", "복구 저널 head 구조가 손상되었습니다.", { path });
+    journalError("CORRUPT_MANIFEST", "corruptManifestHeadStructure", undefined, { path });
   }
   if (
     value.format !== STUDIO_OPFS_RECOVERY_JOURNAL_FORMAT
     || value.version !== STUDIO_OPFS_RECOVERY_JOURNAL_VERSION
   ) {
-    journalError("UNSUPPORTED_VERSION", "지원하지 않는 OPFS 복구 저널 head입니다.", { path });
+    journalError("UNSUPPORTED_VERSION", "unsupportedVersionHead", undefined, { path });
   }
   if (
     value.phase !== "committed"
@@ -811,7 +770,7 @@ function validateStoredHead(
     || value.manifestPath !== expectedManifestPath
     || !isCrc32(value.manifestCrc32)
   ) {
-    journalError("CORRUPT_MANIFEST", "복구 저널 head 값이 손상되었습니다.", { path });
+    journalError("CORRUPT_MANIFEST", "corruptManifestHeadValues", undefined, { path });
   }
   return value as unknown as StoredHead;
 }
@@ -822,7 +781,7 @@ function validateStoredChunk(
   path: string,
 ): StoredChunkReference {
   if (!isRecord(value) || !hasExactKeys(value, ["path", "byteLength", "crc32"])) {
-    journalError("CORRUPT_ENTRY", "복구 저널 chunk 참조 구조가 손상되었습니다.", { path });
+    journalError("CORRUPT_ENTRY", "corruptEntryChunkReferenceStructure", undefined, { path });
   }
   if (
     typeof value.path !== "string"
@@ -830,7 +789,7 @@ function validateStoredChunk(
     || !isSafeInteger(value.byteLength, 1)
     || !isCrc32(value.crc32)
   ) {
-    journalError("CORRUPT_ENTRY", "복구 저널 chunk 참조 값이 손상되었습니다.", { path });
+    journalError("CORRUPT_ENTRY", "corruptEntryChunkReferenceValues", undefined, { path });
   }
   return value as unknown as StoredChunkReference;
 }
@@ -859,13 +818,13 @@ function validateStoredDescriptor(
     "chunks",
     "compactThroughSequence",
   ])) {
-    journalError("CORRUPT_ENTRY", "복구 저널 descriptor 구조가 손상되었습니다.", { path });
+    journalError("CORRUPT_ENTRY", "corruptEntryDescriptorStructure", undefined, { path });
   }
   if (
     value.format !== STUDIO_OPFS_RECOVERY_JOURNAL_FORMAT
     || value.version !== STUDIO_OPFS_RECOVERY_JOURNAL_VERSION
   ) {
-    journalError("UNSUPPORTED_VERSION", "지원하지 않는 복구 저널 descriptor입니다.", { path });
+    journalError("UNSUPPORTED_VERSION", "unsupportedVersionDescriptor", undefined, { path });
   }
   if (
     value.documentId !== identity.documentId
@@ -874,7 +833,7 @@ function validateStoredDescriptor(
   ) {
     journalError(
       "UNSUPPORTED_VERSION",
-      "복구 entry의 문서 또는 engine 버전이 현재 저널과 일치하지 않습니다.",
+      "unsupportedVersionDescriptorIdentity", undefined,
       { path },
     );
   }
@@ -892,7 +851,7 @@ function validateStoredDescriptor(
     || !isSafeInteger(value.byteLength)
     || !Array.isArray(value.chunks)
   ) {
-    journalError("CORRUPT_ENTRY", "복구 저널 descriptor 값이 손상되었습니다.", { path });
+    journalError("CORRUPT_ENTRY", "corruptEntryDescriptorValues", undefined, { path });
   }
   if (
     (value.kind === "operation" && value.compactThroughSequence !== null)
@@ -904,13 +863,13 @@ function validateStoredDescriptor(
       )
     )
   ) {
-    journalError("CORRUPT_ENTRY", "복구 checkpoint 경계가 올바르지 않습니다.", { path });
+    journalError("CORRUPT_ENTRY", "corruptEntryCheckpointBoundary", undefined, { path });
   }
   const chunks = value.chunks.map((chunk, index) =>
     validateStoredChunk(chunk, basePath, `${path}#chunk-${index}`));
   const byteLength = chunks.reduce((total, chunk) => total + chunk.byteLength, 0);
   if (byteLength !== value.byteLength || (byteLength === 0) !== (chunks.length === 0)) {
-    journalError("CORRUPT_ENTRY", "복구 descriptor의 payload 길이가 chunk 합계와 다릅니다.", {
+    journalError("CORRUPT_ENTRY", "corruptEntryDescriptorPayloadLength", undefined, {
       path,
     });
   }
@@ -953,11 +912,11 @@ function sourceByteLength(
   if (!Number.isSafeInteger(known) || (known as number) < 0) {
     journalError(
       "INVALID_ARGUMENT",
-      "AsyncIterable payload는 정확한 byteLength를 함께 제공해야 합니다.",
+      "invalidArgumentByteLengthRequired",
     );
   }
   if (declared !== undefined && declared !== known) {
-    journalError("INVALID_ARGUMENT", "선언한 payload byteLength가 실제 길이와 다릅니다.");
+    journalError("INVALID_ARGUMENT", "invalidArgumentByteLengthMismatch");
   }
   return known as number;
 }
@@ -981,7 +940,7 @@ async function* sourceChunks(
   for await (const rawChunk of stream) {
     throwIfAborted(signal);
     if (!(rawChunk instanceof Uint8Array)) {
-      journalError("INVALID_ARGUMENT", "payload stream은 Uint8Array chunk만 반환해야 합니다.");
+      journalError("INVALID_ARGUMENT", "invalidArgumentStreamChunkType");
     }
     let offset = 0;
     if (pending.byteLength > 0) {
@@ -1014,7 +973,7 @@ function defaultRandomToken(): string {
   if (typeof randomUuid !== "function") {
     journalError(
       "LOCK_UNAVAILABLE",
-      "보안 난수 생성기를 사용할 수 없어 OPFS writer lease를 만들 수 없습니다.",
+      "lockUnavailableRandom",
     );
   }
   return `lease-${randomUuid.call(globalThis.crypto)}`;
@@ -1029,12 +988,12 @@ function mapStorageError(error: unknown, path?: string): never {
     ? (error as { readonly name?: unknown }).name
     : null;
   if (code === "QUOTA_EXCEEDED" || name === "QuotaExceededError") {
-    journalError("QUOTA_EXCEEDED", "OPFS 복구 저널 저장 공간이 부족합니다.", {
+    journalError("QUOTA_EXCEEDED", "quotaExceededStorage", undefined, {
       path,
       cause: error,
     });
   }
-  journalError("STORAGE_FAILED", "OPFS 복구 저널 저장소 작업에 실패했습니다.", {
+  journalError("STORAGE_FAILED", "storageFailedStorage", undefined, {
     path,
     cause: error,
   });
@@ -1092,13 +1051,13 @@ export function createStudioOpfsRecoveryJournalAdapter(input: {
   if (input.fileSystem.kind !== "opfs") {
     journalError(
       "OPFS_UNAVAILABLE",
-      "대형 작품 복구 저널에는 native OPFS가 필요합니다. 기존 recovery vault 사용 여부를 명시적으로 결정하세요.",
+      "opfsUnavailableNativeRequired",
     );
   }
   if (input.lockManager === null) {
     journalError(
       "LOCK_UNAVAILABLE",
-      "origin-wide Web Lock이 없어 OPFS writer epoch를 안전하게 fence할 수 없습니다.",
+      "lockUnavailableOriginLock",
     );
   }
   const fileSystem = input.fileSystem;
@@ -1171,7 +1130,7 @@ export class StudioOpfsRecoveryJournal {
     if (longestEntryPath.length > OPFS_FILESYSTEM_MAX_PATH_CHARS) {
       journalError(
         "INVALID_ARGUMENT",
-        `rootPath와 documentId 조합은 OPFS 경로 ${OPFS_FILESYSTEM_MAX_PATH_CHARS}자 한도를 넘을 수 없습니다.`,
+        "invalidArgumentRootPathLength", { max: String(OPFS_FILESYSTEM_MAX_PATH_CHARS) },
       );
     }
     this.#lockName = `toonstudio-opfs-recovery:${this.#identity.documentId}`;
@@ -1209,7 +1168,7 @@ export class StudioOpfsRecoveryJournal {
     if (attempt >= Number.MAX_SAFE_INTEGER) {
       journalError(
         "JOURNAL_LIMIT_EXCEEDED",
-        "복구 entry staging attempt 공간을 모두 사용했습니다.",
+        "journalLimitExceededStagingAttempts",
       );
     }
     this.#stagingAttempts.set(key, attempt + 1);
@@ -1274,7 +1233,7 @@ export class StudioOpfsRecoveryJournal {
       if (bytesEqual(existing, bytes)) return;
       journalError(
         "IMMUTABLE_CONFLICT",
-        "같은 OPFS 복구 entry 경로에 다른 immutable 내용이 이미 존재합니다.",
+        "immutableConflictEntryPath", undefined,
         { path },
       );
     }
@@ -1297,7 +1256,7 @@ export class StudioOpfsRecoveryJournal {
       || !isSafeInteger(writer.epoch, 1)
       || !isSafeInteger(writer.expiresAt)
     ) {
-      journalError("LEASE_LOST", "writer lease가 다른 복구 저널에 속합니다.");
+      journalError("LEASE_LOST", "leaseLostForeignLease");
     }
     const stored = await this.#readLease(signal);
     const now = this.#now();
@@ -1309,7 +1268,7 @@ export class StudioOpfsRecoveryJournal {
       || stored.expiresAt !== writer.expiresAt
       || stored.expiresAt <= now
     ) {
-      journalError("LEASE_LOST", "OPFS 복구 저널 writer lease가 만료되었거나 교체되었습니다.");
+      journalError("LEASE_LOST", "leaseLostExpiredOrReplaced");
     }
     return stored;
   }
@@ -1330,12 +1289,12 @@ export class StudioOpfsRecoveryJournal {
     );
     const manifestBytes = await this.#read(manifestPath, signal);
     if (manifestBytes === null) {
-      journalError("CORRUPT_MANIFEST", "committed head가 가리키는 manifest가 없습니다.", {
+      journalError("CORRUPT_MANIFEST", "corruptManifestCommittedMissing", undefined, {
         path: manifestPath,
       });
     }
     if (calculateStudioCrc32(manifestBytes) !== head.manifestCrc32) {
-      journalError("CORRUPT_MANIFEST", "head의 manifest CRC32가 실제 파일과 다릅니다.", {
+      journalError("CORRUPT_MANIFEST", "corruptManifestHeadCrcMismatch", undefined, {
         path: manifestPath,
       });
     }
@@ -1345,7 +1304,7 @@ export class StudioOpfsRecoveryJournal {
       manifestPath,
     );
     if (manifest.generation !== head.generation) {
-      journalError("CORRUPT_MANIFEST", "head와 manifest generation이 일치하지 않습니다.", {
+      journalError("CORRUPT_MANIFEST", "corruptManifestHeadGenerationMismatch", undefined, {
         path: manifestPath,
       });
     }
@@ -1358,12 +1317,12 @@ export class StudioOpfsRecoveryJournal {
   ): Promise<StudioOpfsRecoveryEntry> {
     const descriptorBytes = await this.#read(reference.descriptorPath, signal);
     if (descriptorBytes === null) {
-      journalError("CORRUPT_ENTRY", "manifest가 가리키는 immutable descriptor가 없습니다.", {
+      journalError("CORRUPT_ENTRY", "corruptEntryDescriptorMissing", undefined, {
         path: reference.descriptorPath,
       });
     }
     if (calculateStudioCrc32(descriptorBytes) !== reference.descriptorCrc32) {
-      journalError("CORRUPT_ENTRY", "immutable descriptor CRC32가 manifest와 다릅니다.", {
+      journalError("CORRUPT_ENTRY", "corruptEntryDescriptorCrcMismatch", undefined, {
         path: reference.descriptorPath,
       });
     }
@@ -1378,7 +1337,7 @@ export class StudioOpfsRecoveryJournal {
     for (const chunk of descriptor.chunks) {
       const bytes = await this.#read(chunk.path, signal);
       if (bytes === null) {
-        journalError("CORRUPT_ENTRY", "복구 entry payload chunk가 없습니다.", {
+        journalError("CORRUPT_ENTRY", "corruptEntryChunkMissing", undefined, {
           path: chunk.path,
         });
       }
@@ -1388,14 +1347,14 @@ export class StudioOpfsRecoveryJournal {
       ) {
         journalError(
           "CORRUPT_ENTRY",
-          "복구 entry payload chunk가 부분 기록되었거나 CRC32가 손상되었습니다.",
+          "corruptEntryChunkCorrupt", undefined,
           { path: chunk.path },
         );
       }
       storedBytes += bytes.byteLength;
     }
     if (storedBytes !== reference.storedBytes) {
-      journalError("CORRUPT_ENTRY", "manifest의 저장 크기와 실제 entry 크기가 다릅니다.", {
+      journalError("CORRUPT_ENTRY", "corruptEntryStoredSizeMismatch", undefined, {
         path: reference.descriptorPath,
       });
     }
@@ -1434,7 +1393,7 @@ export class StudioOpfsRecoveryJournal {
       if (foundHead) {
         journalError(
           "CORRUPT_MANIFEST",
-          "두 manifest head 모두 torn/corrupt 상태라 결정적인 복구 지점을 찾지 못했습니다.",
+          "corruptManifestBothHeadsTorn",
         );
       }
       const manifest = emptyManifest(this.#identity);
@@ -1465,7 +1424,7 @@ export class StudioOpfsRecoveryJournal {
     ) {
       journalError(
         "CORRUPT_MANIFEST",
-        "같은 generation을 가리키는 두 committed manifest가 서로 다릅니다.",
+        "corruptManifestSameGenerationConflict",
       );
     }
     const selected = candidates[0]!;
@@ -1479,7 +1438,7 @@ export class StudioOpfsRecoveryJournal {
       if (previousRevision !== undefined && entry.revision < previousRevision) {
         journalError(
           "CORRUPT_MANIFEST",
-          "같은 page의 복구 revision이 뒤로 이동해 replay 순서를 결정할 수 없습니다.",
+          "corruptManifestRevisionRegressed", undefined,
           { path: entry.descriptorPath },
         );
       }
@@ -1496,7 +1455,7 @@ export class StudioOpfsRecoveryJournal {
     ) {
       journalError(
         "CORRUPT_MANIFEST",
-        "manifest 집계 또는 구성 개수가 현재 저널 한도와 일치하지 않습니다.",
+        "corruptManifestTotalsOrLimits", undefined,
         { path: selected.manifestPath },
       );
     }
@@ -1533,7 +1492,7 @@ export class StudioOpfsRecoveryJournal {
       if (existing && existing.expiresAt > now) {
         journalError(
           "LEASE_BUSY",
-          "이 작품의 복구 저장소를 다른 탭이나 창이 사용하고 있어요.",
+          "leaseBusyOtherTab", undefined,
           {
             diagnostics:
               `lease ownerId=${existing.ownerId} epoch=${existing.epoch}`
@@ -1544,7 +1503,7 @@ export class StudioOpfsRecoveryJournal {
       const scan = await this.#scanInternal(input.signal);
       const previousEpoch = Math.max(existing?.epoch ?? 0, scan.publicScan.writerEpoch);
       if (previousEpoch >= Number.MAX_SAFE_INTEGER) {
-        journalError("JOURNAL_LIMIT_EXCEEDED", "복구 저널 writer epoch 공간을 모두 사용했습니다.");
+        journalError("JOURNAL_LIMIT_EXCEEDED", "journalLimitExceededEpochSpace");
       }
       const epoch = previousEpoch + 1;
       const token = this.#randomToken();
@@ -1569,7 +1528,7 @@ export class StudioOpfsRecoveryJournal {
         || verified.epoch !== epoch
         || verified.ownerId !== input.ownerId
       ) {
-        journalError("LEASE_LOST", "writer lease 저장 직후 fencing 검증에 실패했습니다.", {
+        journalError("LEASE_LOST", "leaseLostFencingVerification", undefined, {
           path,
         });
       }
@@ -1658,7 +1617,7 @@ export class StudioOpfsRecoveryJournal {
     ) {
       journalError(
         "QUOTA_EXCEEDED",
-        "구세대/orphan 복구 파일을 제한 내에서 정리했지만 OPFS quota reserve가 부족합니다.",
+        "quotaExceededReserve",
       );
     }
   }
@@ -1675,17 +1634,17 @@ export class StudioOpfsRecoveryJournal {
     assertEntryId(input.id, `${kind} id`);
     assertStorageId(input.pageId, "pageId");
     if (!Number.isSafeInteger(input.revision) || input.revision < 0) {
-      journalError("INVALID_ARGUMENT", "revision은 0 이상의 안전한 정수여야 합니다.");
+      journalError("INVALID_ARGUMENT", "invalidArgumentRevision");
     }
     const createdAt = input.createdAt ?? this.#now();
     if (!Number.isSafeInteger(createdAt) || createdAt < 0) {
-      journalError("INVALID_ARGUMENT", "createdAt은 0 이상의 안전한 정수 timestamp여야 합니다.");
+      journalError("INVALID_ARGUMENT", "invalidArgumentCreatedAt");
     }
     const byteLength = sourceByteLength(input.payload, input.byteLength);
     if (byteLength > this.#limits.maxEntryBytes) {
       journalError(
         "ENTRY_TOO_LARGE",
-        `복구 entry는 최대 ${this.#limits.maxEntryBytes.toLocaleString("en-US")}바이트입니다.`,
+        "entryTooLarge", { max: this.#limits.maxEntryBytes.toLocaleString("en-US") },
       );
     }
     const chunks: StoredChunkReference[] = [];
@@ -1695,7 +1654,7 @@ export class StudioOpfsRecoveryJournal {
     for await (const chunk of sourceChunks(input.payload, this.#limits.maxChunkBytes, signal)) {
       streamedBytes += chunk.byteLength;
       if (streamedBytes > byteLength || streamedBytes > this.#limits.maxEntryBytes) {
-        journalError("INVALID_ARGUMENT", "payload stream이 선언한 byteLength를 초과했습니다.");
+        journalError("INVALID_ARGUMENT", "invalidArgumentStreamExceedsDeclared");
       }
       const path = this.#chunkPath(
         kind,
@@ -1716,7 +1675,7 @@ export class StudioOpfsRecoveryJournal {
     if (streamedBytes !== byteLength) {
       journalError(
         "INVALID_ARGUMENT",
-        "payload stream이 선언한 byteLength보다 일찍 끝났습니다.",
+        "invalidArgumentStreamEndedEarly",
       );
     }
     const descriptor: StoredDescriptor = {
@@ -1773,7 +1732,7 @@ export class StudioOpfsRecoveryJournal {
   ): Promise<void> {
     await this.#assertLease(writer, signal);
     if (current.manifest.generation >= Number.MAX_SAFE_INTEGER) {
-      journalError("JOURNAL_LIMIT_EXCEEDED", "복구 manifest generation 공간을 모두 사용했습니다.");
+      journalError("JOURNAL_LIMIT_EXCEEDED", "journalLimitExceededGenerationSpace");
     }
     const generation = current.manifest.generation + 1;
     const slot: ManifestSlot = generation % 2 === 1 ? "a" : "b";
@@ -1844,16 +1803,16 @@ export class StudioOpfsRecoveryJournal {
       await this.#assertLease(writer, options.signal);
       const current = await this.#scanInternal(options.signal);
       if (current.publicScan.writerEpoch > writer.epoch) {
-        journalError("LEASE_LOST", "더 높은 writer epoch가 이미 manifest에 반영되었습니다.");
+        journalError("LEASE_LOST", "leaseLostHigherEpoch");
       }
       if (current.manifest.lastSequence >= Number.MAX_SAFE_INTEGER) {
-        journalError("JOURNAL_LIMIT_EXCEEDED", "복구 저널 sequence 공간을 모두 사용했습니다.");
+        journalError("JOURNAL_LIMIT_EXCEEDED", "journalLimitExceededSequenceSpace");
       }
       const previousPageEntry = [...current.publicScan.entries]
         .reverse()
         .find((entry) => entry.pageId === input.pageId);
       if (previousPageEntry && input.revision < previousPageEntry.revision) {
-        journalError("INVALID_ARGUMENT", "같은 page의 revision은 감소할 수 없습니다.");
+        journalError("INVALID_ARGUMENT", "invalidArgumentRevisionDecrease");
       }
       if (
         kind === "checkpoint"
@@ -1862,7 +1821,7 @@ export class StudioOpfsRecoveryJournal {
       ) {
         journalError(
           "INVALID_ARGUMENT",
-          "checkpoint는 같은 page의 최신 active entry까지 포함해야 replay 순서가 보존됩니다.",
+          "invalidArgumentCheckpointCoverage",
         );
       }
       const expectedBytes = sourceByteLength(input.payload, input.byteLength);
@@ -1878,7 +1837,7 @@ export class StudioOpfsRecoveryJournal {
       ) {
         journalError(
           "COMPACTION_REQUIRED",
-          "복구 저널 한도에 도달했습니다. payload를 쓰기 전에 checkpoint compaction이 필요합니다.",
+          "compactionRequiredJournalLimit",
         );
       }
       await this.#ensureQuota(
@@ -1896,7 +1855,7 @@ export class StudioOpfsRecoveryJournal {
       ) {
         journalError(
           "INVALID_ARGUMENT",
-          "checkpoint compactThroughSequence는 현재 journal head를 넘을 수 없습니다.",
+          "invalidArgumentCompactThrough",
         );
       }
       const staged = await this.#stageEntry(
@@ -1929,13 +1888,13 @@ export class StudioOpfsRecoveryJournal {
       if (nextEntries.length > this.#limits.maxEntries) {
         journalError(
           "COMPACTION_REQUIRED",
-          "복구 operation 개수 한도에 도달했습니다. checkpoint compaction이 필요합니다.",
+          "compactionRequiredOperationCount",
         );
       }
       if (checkpointCount > this.#limits.maxCheckpoints) {
         journalError(
           "COMPACTION_REQUIRED",
-          "복구 checkpoint 개수 한도에 도달했습니다. 더 넓은 compaction 경계가 필요합니다.",
+          "compactionRequiredCheckpointCount",
         );
       }
       const totalStoredBytes = nextEntries.reduce(
@@ -1945,7 +1904,7 @@ export class StudioOpfsRecoveryJournal {
       if (totalStoredBytes > this.#limits.maxJournalBytes) {
         journalError(
           "JOURNAL_LIMIT_EXCEEDED",
-          "compaction 이후에도 복구 저널 byte 한도를 초과합니다.",
+          "journalLimitExceededBytesAfterCompaction",
         );
       }
       await this.#commitManifest(
@@ -1994,7 +1953,7 @@ export class StudioOpfsRecoveryJournal {
       || entry.documentVersion !== this.#identity.documentVersion
       || entry.engineVersion !== this.#identity.engineVersion
     ) {
-      journalError("UNSUPPORTED_VERSION", "다른 문서/engine의 복구 entry는 읽을 수 없습니다.");
+      journalError("UNSUPPORTED_VERSION", "unsupportedVersionForeignEntry");
     }
     for (const chunk of entry.chunks) {
       const bytes = await this.#read(chunk.path, options.signal);
@@ -2003,7 +1962,7 @@ export class StudioOpfsRecoveryJournal {
         || bytes.byteLength !== chunk.byteLength
         || calculateStudioCrc32(bytes) !== chunk.crc32
       ) {
-        journalError("CORRUPT_ENTRY", "복구 payload chunk 검증에 실패했습니다.", {
+        journalError("CORRUPT_ENTRY", "corruptEntryPayloadChunkVerification", undefined, {
           path: chunk.path,
         });
       }

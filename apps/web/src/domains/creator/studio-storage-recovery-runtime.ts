@@ -20,6 +20,8 @@
  */
 
 import { studioAutosaveDocumentBusy } from "./studio-autosave-opfs-session";
+import { resolveStudioAutosaveErrorFromCause } from "./status-i18n/studio-producer-error-i18n-autosave";
+import { resolveStudioOpfsRecoveryJournalErrorFromCause } from "./status-i18n/studio-producer-error-i18n-opfs-recovery";
 import { createStudioOpfsRecoveryRuntime } from "./studio-opfs-recovery-runtime";
 import {
   clearStudioReliabilityChannel,
@@ -45,6 +47,13 @@ function causeName(cause: unknown): string {
 }
 
 function causeMessage(cause: unknown): string {
+  // 집계자 예외 (A4 D4): 구조화 생산자 오류(자동저장 검증·내구성, OPFS 복구 저널)는
+  // 이 경계에서만 리졸버로 해석한다. AggregateError는 원소별로 재귀해 각각 해석한다.
+  if (!(cause instanceof AggregateError)) {
+    const resolved = resolveStudioOpfsRecoveryJournalErrorFromCause(cause)
+      ?? resolveStudioAutosaveErrorFromCause(cause);
+    if (resolved !== null) return resolved;
+  }
   if (cause instanceof AggregateError && cause.errors.length > 0) {
     const nested = cause.errors
       .map((error) => causeMessage(error))

@@ -1,4 +1,5 @@
 import { createStudioAssetFavoriteId, type StudioAssetFavoriteId } from "../studio-asset-favorites";
+import { resolveStudioAssetLibraryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-asset-library";
 import { loadStudioCanvasImageFile } from "../studio-legacy-editor-runtime-helpers";
 
 import type { StudioAsset, StudioAssetWithContentHash } from "../studio-asset-library";
@@ -94,12 +95,12 @@ export function createStudioAssetLibraryMutations(
         && err.code === "corrupt";
       if (failClosed) {
         setAssetStorageState("unavailable");
-        setError(`${err.message} 손상된 manifest나 누락된 blob을 일부만 불러오지 않았습니다.`);
+        setError(`${resolveStudioAssetLibraryErrorFromCause(err) ?? err.message} 손상된 manifest나 누락된 blob을 일부만 불러오지 않았습니다.`);
       } else {
         assetMemoryModeRef.current = true;
         setAssetStorageState("memory");
         setError(`SQLite/OPFS 소재 서재를 열지 못해 현재 탭 메모리만 사용합니다. 새로고침하면 변경이 사라집니다: ${
-          err instanceof Error ? err.message : String(err)
+          resolveStudioAssetLibraryErrorFromCause(err) ?? (err instanceof Error ? err.message : String(err))
         }`);
       }
     } finally {
@@ -186,7 +187,7 @@ export function createStudioAssetLibraryMutations(
           setAssetsLoading(false);
           setAssetStorageState("memory");
           setError(`SQLite/OPFS 저장에 실패해 에셋을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라집니다: ${
-            cause instanceof Error ? cause.message : String(cause)
+            resolveStudioAssetLibraryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : String(cause))
           }`);
         }
         return saved;
@@ -209,7 +210,7 @@ export function createStudioAssetLibraryMutations(
           // A failed persistent delete is not a successful memory-only delete. Retain both the
           // row and storage authority, so retry remains possible and reload cannot resurrect it.
           throw new Error(`에셋 원본을 삭제하지 못해 보관함에 유지했습니다. 다시 시도해 주세요: ${
-            cause instanceof Error ? cause.message : String(cause)
+            resolveStudioAssetLibraryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : String(cause))
           }`, { cause });
         }
       }
@@ -241,7 +242,7 @@ export function createStudioAssetLibraryMutations(
           assetMemoryModeRef.current = true;
           setAssetStorageState("memory");
           setError(`SQLite/OPFS 이름 변경에 실패해 현재 탭 메모리에서만 반영합니다. 새로고침하면 사라집니다: ${
-            cause instanceof Error ? cause.message : String(cause)
+            resolveStudioAssetLibraryErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : String(cause))
           }`);
         }
       }
@@ -262,7 +263,7 @@ export function createStudioAssetLibraryMutations(
       const { src, width, height } = await loadStudioCanvasImageFile(file);
       await saveStudioAssetMutation({ name: file.name, dataUrl: src, width, height });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "에셋 업로드 실패");
+      setError(resolveStudioAssetLibraryErrorFromCause(err) ?? (err instanceof Error ? err.message : "에셋 업로드 실패"));
     } finally {
       e.target.value = "";
     }
@@ -275,7 +276,7 @@ export function createStudioAssetLibraryMutations(
     } catch (err) {
       if (!editorMountedRef.current) return;
       setAssetsLoading(false);
-      setError(err instanceof Error ? err.message : "에셋 삭제 실패");
+      setError(resolveStudioAssetLibraryErrorFromCause(err) ?? (err instanceof Error ? err.message : "에셋 삭제 실패"));
     }
   }
 

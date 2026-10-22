@@ -281,7 +281,13 @@ describe("StudioAutosaveOpfsSession", () => {
     const bytes = journal.payloads.get(entry.descriptorPath)!;
     bytes[Math.floor(bytes.byteLength / 2)] ^= 0x01;
 
-    await expect(target.readLatest()).rejects.toThrow(/무결성|JSON/u);
+    // A4 D4: 검증 오류는 {code}만 방출한다 — 깨진 바이트는 JSON 해석 또는 무결성 코드로 수렴한다.
+    const failure = await target.readLatest().then(
+      () => null,
+      (cause: unknown) => cause as { name?: unknown; code?: unknown },
+    );
+    expect(failure?.name).toBe("StudioAutosaveOpfsError");
+    expect(["checkpointNotJson", "payloadIntegrity"]).toContain(failure?.code);
   });
 
   it("renews a near-expiry writer and reacquires an expired writer", async () => {
@@ -390,7 +396,7 @@ describe("StudioAutosaveOpfsSession", () => {
     const disposal = target.dispose();
     await expect(
       target.write(payload("2026-07-30T01:01:00.000Z", "stale")),
-    ).rejects.toThrow("OPFS 자동저장 세션이 이미 종료되었습니다.");
+    ).rejects.toThrow("sessionDisposed");
     releaseAppend();
     await inFlight;
     await disposal;
