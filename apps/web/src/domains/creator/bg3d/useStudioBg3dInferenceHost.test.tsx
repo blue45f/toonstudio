@@ -146,7 +146,7 @@ describe("에디터 호스트 ↔ 추론 서비스 연결", () => {
   it("영구 측정 가이드가 있으면 가이드 끝점이 후보가 된다", () => {
     let document = createStudioBg3dMeasurementDocument("m");
     const added = addStudioBg3dMeasurementGuide(document, { startWorld: [5, 0, 5], endWorld: [8, 0, 5] });
-    if (!added.ok) throw new Error(added.message);
+    if (!added.ok) throw new Error(added.code);
     document = added.document;
     const { host } = makeHost({ measurementActive: true, measurementStartWorld: [0, 0, 0], measurementDocument: document });
     const { result } = mount(host);

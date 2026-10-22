@@ -262,7 +262,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
     });
 
     expect(ordinary.ok).toBe(true);
-    if (!ordinary.ok) throw new Error("code" in ordinary ? ordinary.code : ordinary.message);
+    if (!ordinary.ok) throw new Error(ordinary.code);
     expect(ordinary.operation).toBe("update");
     expect(ordinary.bundleId).toBe("bundle-1");
     expect(ordinary.groupId).toBe("group-1");
@@ -305,7 +305,7 @@ describe("Studio BG3D realtime-room insert materialization", () => {
         newElementTemplate: rasterImage("separated-template", VALID_LINE_PNG),
       });
       expect(separated.ok).toBe(true);
-      if (!separated.ok) throw new Error("code" in separated ? separated.code : separated.message);
+      if (!separated.ok) throw new Error(separated.code);
 
       const collapsed = planStudioBg3dRealtimeMergedApply({
         result: insertResult({ mutation: "connect", source, png: VALID_UPDATED_PNG }),

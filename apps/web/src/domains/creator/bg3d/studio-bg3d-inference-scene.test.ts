@@ -133,13 +133,13 @@ describe("영구 측정 가이드", () => {
   it("보이는 가이드만 후보 선분과 기준 방향이 된다", () => {
     let document = createStudioBg3dMeasurementDocument("cm");
     const first = addStudioBg3dMeasurementGuide(document, { startWorld: [0, 0, 0], endWorld: [2, 0, 0] });
-    if (!first.ok) throw new Error(first.message);
+    if (!first.ok) throw new Error(first.code);
     document = first.document;
     const second = addStudioBg3dMeasurementGuide(document, { startWorld: [0, 0, 0], endWorld: [0, 0, 3] });
     if (!second.ok || !second.guide) throw new Error("가이드 추가 실패");
     document = second.document;
     const hidden = setStudioBg3dMeasurementGuideVisibility(document, second.guide.id, false);
-    if (!hidden.ok) throw new Error(hidden.message);
+    if (!hidden.ok) throw new Error(hidden.code);
     const sources = buildStudioBg3dInferenceGuideSources(hidden.document);
     expect(sources.lines).toHaveLength(1);
     expect(sources.lines[0]?.label).toContain("측정 가이드 1");
@@ -153,7 +153,7 @@ describe("영구 측정 가이드", () => {
   it("가이드 끝점이 추론 후보가 되고 가이드와 평행한 위치는 '평행' 추론이 된다", () => {
     let document = createStudioBg3dMeasurementDocument("m");
     const added = addStudioBg3dMeasurementGuide(document, { startWorld: [0, 0, 0], endWorld: [2, 0, 2] });
-    if (!added.ok) throw new Error(added.message);
+    if (!added.ok) throw new Error(added.code);
     document = added.document;
     const { lines, directions } = buildStudioBg3dInferenceGuideSources(document);
     const service = createStudioBg3dInferenceService({ now: () => 0, scheduler: () => () => undefined });
