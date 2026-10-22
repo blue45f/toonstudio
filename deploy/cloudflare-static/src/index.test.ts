@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { withInlineScriptHashes } from "../../../scripts/cloudflare-static-rules.mjs";
 
 import {
+  CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS,
   cloudflareLargeAssetDescriptor,
   cloudflareSameOriginOnlyAllows,
 } from "./large-static-assets";
@@ -105,7 +106,7 @@ describe("Cloudflare static gateway", () => {
     );
   });
 
-  it("keeps the Worker-first route list limited to dynamic and crawler paths", () => {
+  it("keeps the Worker-first route list limited to dynamic, crawler, large-file and R2 media paths", () => {
     const wrangler = JSON.parse(
       readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8"),
     ) as {
@@ -148,7 +149,10 @@ describe("Cloudflare static gateway", () => {
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
       "/assets/studio/bundle-v2/*",
       "/brand/toonstudio-product-tour.mp4",
+      ...CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS,
     ]);
+    // Cloudflare Static Assets는 run_worker_first 항목을 100개까지 받는다.
+    expect(wrangler.assets?.run_worker_first?.length).toBeLessThanOrEqual(100);
     expect(wrangler.assets?.run_worker_first).not.toContain("/market/*");
     expect(wrangler.r2_buckets).toEqual([{
       binding: "LARGE_ASSETS",

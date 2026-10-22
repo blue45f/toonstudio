@@ -149,9 +149,10 @@ describe("StudioCommunityMarketplacePanel", () => {
     expect(source).toContain('"localInstall",');
     expect(source).toContain('"assetInsert",');
     expect(source).not.toContain("actionLabel: string");
-    // 액션 라벨은 frozenD1 라벨 키로 해석한다 (설계 §1.2).
-    expect(source).toContain('frozenD1Text("studio.frozenD1.community.actionLocalInstall", "로컬 설치")');
-    expect(source).toContain('frozenD1Text("studio.frozenD1.community.actionAssetInsert", "에셋 삽입")');
+    // 액션 라벨은 frozenD1 라벨 키로 해석한다 (설계 §1.2). 이 라벨은 재검증 문장의 목적어 자리에만
+    // 들어가므로 목적격 조사까지 담는다("{action} 중단했습니다" → "로컬 설치를 중단했습니다").
+    expect(source).toContain('frozenD1Text("studio.frozenD1.community.actionLocalInstall", "로컬 설치를")');
+    expect(source).toContain('frozenD1Text("studio.frozenD1.community.actionAssetInsert", "에셋 삽입을")');
     // 문장 생산 3곳은 완결 키 호출이며 ko 폴백이 §1.3 확정 문안과 바이트 일치한다.
     expect(source).toContain('"studio.frozenD1.community.revalidationNotFound"');
     expect(source).toContain(

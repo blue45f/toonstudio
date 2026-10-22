@@ -71,6 +71,8 @@ import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/stu
 import { resolveStudioBg3dShotBatchRecoveryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
 import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
+import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
+import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
 
 /** Live progress the editor renders while a shot batch renders, packages, and downloads. */
 export interface StudioBg3dShotBatchProgress {

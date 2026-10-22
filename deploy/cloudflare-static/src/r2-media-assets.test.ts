@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it, vi } from "vitest";
 
 import {
   CLOUDFLARE_R2_MEDIA_CACHE_CONTROL,
   CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS,
   CLOUDFLARE_R2_MEDIA_PREFIXES,
+  CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS,
   cloudflareR2MediaDescriptor,
   supportsCloudflareStaticSidecar,
 } from "./large-static-assets";
@@ -82,6 +85,22 @@ describe("R2 media offload descriptors", () => {
     expect(supportsCloudflareStaticSidecar(
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
     )).toBe(true);
+  });
+
+  it("routes every media path removed from Static Assets through the Worker before the SPA fallback", () => {
+    // run_worker_first 가 배열이면 Sec-Fetch-Mode 판별이 꺼진다. 여기서 빠진 미디어는 SPA index.html(200)로 나간다.
+    const wrangler = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as {
+      assets?: { run_worker_first?: string[] };
+    };
+    const workerFirst = wrangler.assets?.run_worker_first ?? [];
+    expect(CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS).toHaveLength(CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS.length);
+    for (const ignored of CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS) {
+      const workerFirstPattern = `/${ignored.replace("**/*.", "*.")}`;
+      expect(CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS).toContain(workerFirstPattern);
+      expect(workerFirst).toContain(workerFirstPattern);
+    }
+    expect(workerFirst).not.toContain("/assets/3d/*");
+    expect(workerFirst.some((pattern) => pattern.endsWith(".json"))).toBe(false);
   });
 
   it("ignores every offloaded prefix and media extension on Static Assets", () => {
