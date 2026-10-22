@@ -88,6 +88,7 @@ import type { PropInstance } from "../vrm/studio-vrm-props";
 import type { WardrobeEquip, WardrobeSlot, WardrobeState } from "../vrm/studio-vrm-wardrobe";
 import { readStudioVrmPoserShaperSurface, type StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 import type { VRM } from "@pixiv/three-vrm";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 /* -------------------------------------------------------------------------- */
 /* Raw host state — what one undo step restores                               */
@@ -257,23 +258,21 @@ function deriveSnapshot(input: SnapshotInput): CharacterHostSnapshot {
 
 /** Non-null while the host cannot accept a mutation; the string is shown to the creator as-is. */
 export function characterShaperBusyReason(h: StudioVrmPoserHost): string | null {
-  if (h.isCapturing === true) return "캡처가 끝난 뒤에 다시 적용할 수 있습니다.";
-  if (h.isThumbnailCapturing === true) return "썸네일을 만드는 중입니다. 잠시 뒤 다시 시도해 주세요.";
-  if (h.isSharingPose === true) return "포즈를 공유하는 중입니다. 끝나면 다시 적용할 수 있습니다.";
-  if (h.broadcastPreviewActive === true) return "방송 미리보기를 끄면 다시 적용할 수 있습니다.";
-  if (h.proportionRigStatus === "applying") return "체형 리그를 적용하는 중입니다.";
-  if (h.proportionRigStatus === "reload-required") {
-    return readString(h.proportionRigMessage) ?? "체형 리그를 다시 불러와야 합니다.";
-  }
-  if (h.status === "loading") return "VRM 캐릭터를 불러오는 중입니다.";
+  if (h.isCapturing === true) return frozenStatus6Text("studio.frozenStatus6.shaper.capturing", "캡처가 끝난 뒤에 다시 적용할 수 있습니다.");
+  if (h.isThumbnailCapturing === true) return frozenStatus6Text("studio.frozenStatus6.shaper.thumbnailing", "썸네일을 만드는 중입니다. 잠시 뒤 다시 시도해 주세요.");
+  if (h.isSharingPose === true) return frozenStatus6Text("studio.frozenStatus6.shaper.sharingPose", "포즈를 공유하는 중입니다. 끝나면 다시 적용할 수 있습니다.");
+  if (h.broadcastPreviewActive === true) return frozenStatus6Text("studio.frozenStatus6.shaper.broadcastPreview", "방송 미리보기를 끄면 다시 적용할 수 있습니다.");
+  if (h.proportionRigStatus === "applying") return frozenStatus6Text("studio.frozenStatus6.shaper.rigApplying", "체형 리그를 적용하는 중입니다.");
+  if (h.proportionRigStatus === "reload-required") return readString(h.proportionRigMessage) ?? frozenStatus6Text("studio.frozenStatus6.shaper.rigReloadRequired", "체형 리그를 다시 불러와야 합니다.");
+  if (h.status === "loading") return frozenStatus6Text("studio.frozenStatus6.shaper.characterLoading", "VRM 캐릭터를 불러오는 중입니다.");
   if (h.status === "error") {
-    return "VRM 캐릭터를 불러오지 못했습니다. 모델 상태를 확인한 뒤 다시 시도해 주세요.";
+    return frozenStatus6Text("studio.frozenStatus6.shaper.characterLoadFailed", "VRM 캐릭터를 불러오지 못했습니다. 모델 상태를 확인한 뒤 다시 시도해 주세요.");
   }
-  if (h.status !== "ready") return "VRM 캐릭터를 먼저 불러오세요.";
+  if (h.status !== "ready") return frozenStatus6Text("studio.frozenStatus6.shaper.characterNotLoaded", "VRM 캐릭터를 먼저 불러오세요.");
   // 위의 구체적인 사유들이 지금의 워드로브 잠금 조건과 같지만, 그건 우연이다. 잠금의 authority는
   // 호스트가 들고 있으므로 마지막에 그 값 자체를 확인한다 — 호스트가 잠금 조건을 하나 더 늘렸을 때
   // 셰이퍼만 조용히 옷을 갈아입히는 일이 없어야 한다.
-  if (h.wardrobeInteractionLocked === true) return "지금은 옷을 바꿀 수 없습니다. 잠시 뒤 다시 시도해 주세요.";
+  if (h.wardrobeInteractionLocked === true) return frozenStatus6Text("studio.frozenStatus6.shaper.wardrobeLocked", "지금은 옷을 바꿀 수 없습니다. 잠시 뒤 다시 시도해 주세요.");
   return null;
 }
 
@@ -741,11 +740,11 @@ export function useCharacterShaperBinding(
       }
       return { ok: true, reason: null };
     } catch (error) {
-      const reason = error instanceof Error ? error.message : "캐릭터 문서를 화면에 적용하지 못했습니다.";
+      const reason = error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.shaper.documentApplyFailed", "캐릭터 문서를 화면에 적용하지 못했습니다.");
       try {
         restoreHostState(before);
       } catch (restoreError) {
-        const detail = restoreError instanceof Error ? restoreError.message : "복원 오류";
+        const detail = restoreError instanceof Error ? restoreError.message : frozenStatus6Text("studio.frozenStatus6.shaper.restoreFailedDetail", "복원 오류");
         return { ok: false, reason: `${reason} · 이전 상태 복원도 실패했습니다: ${detail}` };
       }
       return { ok: false, reason };
@@ -761,7 +760,7 @@ export function useCharacterShaperBinding(
     if (blocked !== null) return { ok: false, plan, reason: blocked };
     if (previewRef.current !== null) return { ok: false, plan, reason: PREVIEW_LOCK_REASON };
     if (plan.availability.status === "unavailable") {
-      return { ok: false, plan, reason: plan.availability.reason ?? "이 모델에는 적용할 수 없습니다." };
+      return { ok: false, plan, reason: plan.availability.reason ?? frozenStatus6Text("studio.frozenStatus6.shaper.modelUnavailable", "이 모델에는 적용할 수 없습니다.") };
     }
     // Nothing to do (already applied) is a success with no history step, not a warning.
     if (plan.steps.length === 0) return { ok: true, plan, reason: null };
@@ -834,7 +833,7 @@ export function useCharacterShaperBinding(
       return {
         ok: false,
         plan: prepared,
-        reason: prepared.availability.reason ?? "이 모델에는 적용할 수 없습니다.",
+        reason: prepared.availability.reason ?? frozenStatus6Text("studio.frozenStatus6.shaper.modelUnavailable", "이 모델에는 적용할 수 없습니다."),
       };
     }
     const current = previewRef.current;
@@ -866,7 +865,7 @@ export function useCharacterShaperBinding(
       return {
         ok: false,
         plan: prepared,
-        reason: error instanceof Error ? error.message : "후보를 미리 볼 수 없습니다.",
+        reason: error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.shaper.previewUnavailable", "후보를 미리 볼 수 없습니다."),
       };
     }
   }, [captureHostState, modelId, planForContext, recipe, restoreHostState, runSteps, snapshot]);
@@ -977,7 +976,7 @@ export function useCharacterShaperBinding(
       const missing = prepared.requiredHostMethods.find((name) => typeof host[name] !== "function");
       if (missing) throw new Error("프리셋의 모든 변경을 적용할 수 있는 편집기가 필요합니다.");
     } catch (error) {
-      return { ok: false, reason: error instanceof Error ? error.message : "프리셋을 적용할 수 없습니다." };
+      return { ok: false, reason: error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.shaper.presetApplyUnavailable", "프리셋을 적용할 수 없습니다.") };
     }
     const before = captureHostState();
     try {
@@ -989,11 +988,11 @@ export function useCharacterShaperBinding(
       pushHistory(`프리셋: ${preset.name}`, before);
       return { ok: true, reason: null };
     } catch (error) {
-      const reason = error instanceof Error ? error.message : "프리셋을 적용하지 못했습니다.";
+      const reason = error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.shaper.presetApplyFailed", "프리셋을 적용하지 못했습니다.");
       try {
         restoreHostState(before);
       } catch (restoreError) {
-        const detail = restoreError instanceof Error ? restoreError.message : "복원 오류";
+        const detail = restoreError instanceof Error ? restoreError.message : frozenStatus6Text("studio.frozenStatus6.shaper.restoreFailedDetail", "복원 오류");
         return { ok: false, reason: `${reason} · 이전 상태 복원도 실패했습니다: ${detail}` };
       }
       return { ok: false, reason };
@@ -1003,7 +1002,7 @@ export function useCharacterShaperBinding(
 
   const applyGradeRecommend = useCallback((image: ShaperImage) => {
     if (busyRef.current !== null || previewRef.current !== null) {
-      return { ok: false, reason: busyRef.current ?? "미리보기 중에는 추천을 적용할 수 없습니다." };
+      return { ok: false, reason: busyRef.current ?? frozenStatus6Text("studio.frozenStatus6.shaper.recommendBusy", "미리보기 중에는 추천을 적용할 수 없습니다.") };
     }
     const planned = planShaperGradeRecommend(image, gradeCharacterRef.current);
     if (!planned.ok) return { ok: false, reason: planned.reason };
@@ -1027,7 +1026,7 @@ export function useCharacterShaperBinding(
 
   const applyGradePoseFromImage = useCallback((image: ShaperImage, source: "photo" | "camera" = "photo") => {
     if (busyRef.current !== null || previewRef.current !== null) {
-      return { ok: false, reason: busyRef.current ?? "미리보기 중에는 포즈를 적용할 수 없습니다." };
+      return { ok: false, reason: busyRef.current ?? frozenStatus6Text("studio.frozenStatus6.shaper.poseBusy", "미리보기 중에는 포즈를 적용할 수 없습니다.") };
     }
     const planned = planShaperGradePoseFromImage(image, gradeCharacterRef.current, source);
     if (!planned.ok) return { ok: false, reason: planned.reason };

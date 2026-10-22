@@ -1,12 +1,10 @@
-import type {
-  StudioLiveParticipant,
-  StudioLiveWebRtcIcePayload,
-} from "./live/studio-live-collaboration-protocol";
+import type { StudioLiveParticipant, StudioLiveWebRtcIcePayload } from "./live/studio-live-collaboration-protocol";
 import type {
   StudioLivePeer,
   StudioLiveRoomEvent,
   StudioLiveSignalEnvelope,
 } from "./live/studio-live-collaboration-room";
+import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
 
 export interface StudioScreenShareRoom {
   readonly participant: StudioLiveParticipant;
@@ -959,7 +957,7 @@ export class StudioScreenShareController {
       const payload = candidatePayload(peer.shareId, event.candidate);
       if (!payload) return;
       if (!this.room.sendWebRtcIce(targetSessionId, payload)) {
-        this.emit({ type: "error", message: "WebRTC 네트워크 후보를 보내지 못했습니다." });
+        this.emit({ type: "error", message: frozenStatus6Text("studio.frozenStatus6.screenShare.iceSendFailed", "WebRTC 네트워크 후보를 보내지 못했습니다.") });
       }
     };
   }

@@ -63,6 +63,7 @@ import type {
 import type { StudioShared3dStageDccSource } from "../studio-shared-3d-stage-document";
 import type { StudioWebGpuCanvasHandle } from "../StudioWebGpuCanvas";
 import type { MutableRefObject, SetStateAction } from "react";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 /**
  * 대기(지연) 획 커밋 배치 — StudioPage 의 pendingStrokeCommitsRef 가 들고 있는 배치에서
@@ -351,13 +352,11 @@ export function createStudioDeferredStrokeCommitEngine(
         extraPatch.canvasH > STUDIO_PROJECT_MAX_CANVAS_HEIGHT
       )
     ) {
-      setError(
-        `페이지 높이는 1–${STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR")}px 범위여야 저장할 수 있어요.`,
-      );
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.canvasHeightRange", { max: STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR") }, `페이지 높이는 1–${STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR")}px 범위여야 저장할 수 있어요.`));
       return false;
     }
     if (documentSaveInFlightRef.current) {
-      setError("저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.saveInProgress", "저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요."));
       return false;
     }
     if (collaborationAccessRef.current.locked) {
@@ -385,7 +384,7 @@ export function createStudioDeferredStrokeCommitEngine(
     let resolved = applyBubbleAnchors(nextElements);
     if (masterEditMode) {
       if (bg3dDccSourceRef.current) {
-        setError("DCC Shot 연결은 일반 페이지에서만 만들 수 있어요. 문서 마스터를 닫고 다시 추가해 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.deferred.dccShotMasterOnly", "DCC Shot 연결은 일반 페이지에서만 만들 수 있어요. 문서 마스터를 닫고 다시 추가해 주세요."));
         return false;
       }
       const reservedMasterState = validateStudioLinked3dReservedPageState({
@@ -393,14 +392,14 @@ export function createStudioDeferredStrokeCommitEngine(
         elements: resolved,
       });
       if (!reservedMasterState.ok) {
-        setError("문서 마스터에는 연결형 3D pass locator나 correction을 둘 수 없어요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.deferred.masterLocatorForbidden", "문서 마스터에는 연결형 3D pass locator나 correction을 둘 수 없어요."));
         return false;
       }
       setMaster((m) => withMasterElements(m, resolved)); // extraPatch는 마스터엔 개념 없음 — 무시
       return true;
     }
     if (pageEditLocked) {
-      setError("이 페이지는 검토 잠금 상태예요. 페이지 검토에서 잠금을 해제한 뒤 편집해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.reviewLocked", "이 페이지는 검토 잠금 상태예요. 페이지 검토에서 잠금을 해제한 뒤 편집해 주세요."));
       return false;
     }
     if (commitTargetPage) {
@@ -461,7 +460,7 @@ export function createStudioDeferredStrokeCommitEngine(
       && commitTargetPage?.linked3dRender !== undefined
       && linkedRenderReconciliation === null
     ) {
-      setError("연결된 3D Shot과 Canvas 레이어가 어긋나 변경을 적용하지 않았어요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.shotMisaligned", "연결된 3D Shot과 Canvas 레이어가 어긋나 변경을 적용하지 않았어요."));
       return false;
     }
     const reconciledLinked3dRender = linkedRenderReconciliation ?? undefined;
@@ -470,7 +469,7 @@ export function createStudioDeferredStrokeCommitEngine(
         commitTargetPage.linked3dRender,
       );
       if (!previousLinkedDocument) {
-        setError("연결된 3D render receipt가 손상되어 변경을 적용하지 않았어요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.deferred.receiptCorrupt", "연결된 3D render receipt가 손상되어 변경을 적용하지 않았어요."));
         return false;
       }
       const retainedBundleIds = new Set(
@@ -482,7 +481,7 @@ export function createStudioDeferredStrokeCommitEngine(
       if (retiredBundleIds.length > 0) {
         const detached = detachStudioLinked3dCorrections(resolved, retiredBundleIds);
         if (!detached) {
-          setError("분리할 3D artist correction provenance가 손상되어 변경을 적용하지 않았어요.");
+          setError(frozenStatus6Text("studio.frozenStatus6.deferred.provenanceCorrupt", "분리할 3D artist correction provenance가 손상되어 변경을 적용하지 않았어요."));
           return false;
         }
         resolved = detached;
@@ -512,7 +511,7 @@ export function createStudioDeferredStrokeCommitEngine(
       elements: resolved,
     });
     if (!reservedState.ok) {
-      setError("연결된 3D pass locator나 correction이 receipt와 달라 변경을 적용하지 않았어요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.locatorReceiptMismatch", "연결된 3D pass locator나 correction이 receipt와 달라 변경을 적용하지 않았어요."));
       return false;
     }
     if (finalLinked3dRender !== undefined) {
@@ -522,7 +521,7 @@ export function createStudioDeferredStrokeCommitEngine(
         shared3dStage: finalShared3dStage,
       });
       if (!linkedValidation.ok) {
-        setError("연결된 3D Stage·Shot·Canvas layer가 달라 변경을 적용하지 않았어요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.deferred.stageLayerMismatch", "연결된 3D Stage·Shot·Canvas layer가 달라 변경을 적용하지 않았어요."));
         return false;
       }
     }
@@ -559,7 +558,7 @@ export function createStudioDeferredStrokeCommitEngine(
   function commitCoalesced(nextElements: El[], key: string) {
     if (!editorMountedRef.current) return;
     if (documentSaveInFlightRef.current) {
-      setError("저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.saveInProgress", "저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요."));
       return;
     }
     if (collaborationAccessRef.current.locked) {
@@ -578,7 +577,7 @@ export function createStudioDeferredStrokeCommitEngine(
     const commitPageId = currentPageIdRef.current || activePage.id;
     const commitTargetPage = commitBasePages.find((page) => page.id === commitPageId);
     if (!commitTargetPage) {
-      setError("현재 페이지를 찾지 못해 연속 편집을 적용하지 않았어요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.pageNotFound", "현재 페이지를 찾지 못해 연속 편집을 적용하지 않았어요."));
       return;
     }
     const commitBaseElements = commitTargetPage.elements;
@@ -598,7 +597,7 @@ export function createStudioDeferredStrokeCommitEngine(
       return;
     }
     if (pageEditLocked) {
-      setError("이 페이지는 검토 잠금 상태예요. 페이지 검토에서 잠금을 해제한 뒤 편집해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.reviewLocked", "이 페이지는 검토 잠금 상태예요. 페이지 검토에서 잠금을 해제한 뒤 편집해 주세요."));
       return;
     }
     const admissionError = studioLayerCompPageAdmissionError(
@@ -971,7 +970,7 @@ export function createStudioDeferredStrokeCommitEngine(
   ): boolean {
     if (!editorMountedRef.current) return false;
     if (nextPages.length === 0 || nextPages.length > STUDIO_PROJECT_MAX_PAGES) {
-      setError(`프로젝트는 1–${STUDIO_PROJECT_MAX_PAGES}페이지 범위에서 편집할 수 있어요.`);
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.pageCountRange", { max: STUDIO_PROJECT_MAX_PAGES }, `프로젝트는 1–${STUDIO_PROJECT_MAX_PAGES}페이지 범위에서 편집할 수 있어요.`));
       return false;
     }
     const invalidCanvasPage = nextPages.find((page) => (
@@ -980,13 +979,11 @@ export function createStudioDeferredStrokeCommitEngine(
       page.canvasH > STUDIO_PROJECT_MAX_CANVAS_HEIGHT
     ));
     if (invalidCanvasPage) {
-      setError(
-        `페이지 높이는 1–${STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR")}px 범위여야 저장할 수 있어요.`,
-      );
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.canvasHeightRange", { max: STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR") }, `페이지 높이는 1–${STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR")}px 범위여야 저장할 수 있어요.`));
       return false;
     }
     if (documentSaveInFlightRef.current) {
-      setError("저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.saveInProgress", "저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요."));
       return false;
     }
     if (collaborationAccessRef.current.locked) {
@@ -994,7 +991,7 @@ export function createStudioDeferredStrokeCommitEngine(
       return false;
     }
     if (drawingRef.current || requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession()) {
-      setError("현재 획을 마친 뒤 페이지 구성을 변경할 수 있어요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.strokeInProgressPageLayout", "현재 획을 마친 뒤 페이지 구성을 변경할 수 있어요."));
       return false;
     }
     // Reject before flushing another accepted stroke or invalidating resource work. Rebasing below
@@ -1017,9 +1014,7 @@ export function createStudioDeferredStrokeCommitEngine(
     // flows opt out below instead of accidentally classifying every new array as a deletion.
     const pendingBatch = pendingStrokeCommitsRef.current;
     if (pendingBatch && !flushPendingStrokeCommitsRef.current()) {
-      setError(
-        "마지막 획을 원고에 확정하지 못해 페이지 작업을 실행하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요."
-      );
+      setError(frozenStatus6Text("studio.frozenStatus6.deferred.commitFirstPageOp", "마지막 획을 원고에 확정하지 못해 페이지 작업을 실행하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요."));
       return false;
     }
     const currentHistory = pagesHistoryRef.current;
@@ -1047,7 +1042,7 @@ export function createStudioDeferredStrokeCommitEngine(
     if (!options.bypassReviewLock) {
       const changedLockedPageId = findChangedLockedPageId(currentPages, rebasedNextPages);
       if (changedLockedPageId) {
-        setError("잠긴 페이지가 포함된 변경이에요. 페이지 검토에서 잠금을 해제한 뒤 다시 시도해 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.deferred.lockedPageIncluded", "잠긴 페이지가 포함된 변경이에요. 페이지 검토에서 잠금을 해제한 뒤 다시 시도해 주세요."));
         return false;
       }
     }

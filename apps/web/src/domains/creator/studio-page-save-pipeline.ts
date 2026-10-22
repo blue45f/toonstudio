@@ -46,6 +46,7 @@ import type { StudioSharedDocument } from "./studio-shared-document-client";
 import type { WorkDetail } from "@/platform/creator-client";
 import type Konva from "konva";
 import type { Location, NavigateFunction } from "react-router-dom";
+import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
 
 // 저장 DTO 빌더는 첫 화면에 필요 없는 사용자 의도 런타임이라 studio-save-payload 를 정적으로
 // 참조하지 않는다 — 타입은 lazy 로더의 모듈 시그니처에서만 유도해 청크 경계를 그대로 지킨다.
@@ -304,8 +305,8 @@ export async function runStudioPageSavePipeline(
   if (!loggedIn) {
     setError(
       status === "draft"
-        ? "로그인 후 서버 초안으로 저장할 수 있어요."
-        : "로그인 후 게시할 수 있어요."
+        ? frozenStatus6Text("studio.frozenStatus6.pageSave.loginForDraft", "로그인 후 서버 초안으로 저장할 수 있어요.")
+        : frozenStatus6Text("studio.frozenStatus6.pageSave.loginForPublish", "로그인 후 게시할 수 있어요.")
     );
     return;
   }
@@ -315,7 +316,7 @@ export async function runStudioPageSavePipeline(
   }
   if (documentSaveInFlightRef.current) return;
   if (status === "published" && sharedDocument && sharedDocument.role !== "owner") {
-    setError("공동 편집자는 원고 내용만 저장할 수 있어요. 게시 상태 변경은 작품 소유자에게 요청해 주세요.");
+    setError(frozenStatus6Text("studio.frozenStatus6.pageSave.coeditorContentOnly", "공동 편집자는 원고 내용만 저장할 수 있어요. 게시 상태 변경은 작품 소유자에게 요청해 주세요."));
     return;
   }
   const metadataError = validateStudioWorkMetadata({ title, description, tagsText });
@@ -336,9 +337,7 @@ export async function runStudioPageSavePipeline(
       flushPendingStrokeCommitsRef.current();
     });
     if (pendingStrokeCommitsRef.current) {
-      setError(
-        "마지막 획을 원고에 확정하지 못해 저장을 시작하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요."
-      );
+      setError(frozenStatus6Text("studio.frozenStatus6.pageSave.commitFirstSave", "마지막 획을 원고에 확정하지 못해 저장을 시작하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요."));
       return;
     }
   }
@@ -353,7 +352,7 @@ export async function runStudioPageSavePipeline(
     savePages.some((page) => normalizePageReviewState(page.review).status === "changes-requested")
   ) {
     clearPendingSaveIntent();
-    setError("수정 요청 상태인 페이지가 있어 게시할 수 없어요. 검토 메모를 반영한 뒤 상태를 변경해 주세요.");
+    setError(frozenStatus6Text("studio.frozenStatus6.pageSave.changesRequested", "수정 요청 상태인 페이지가 있어 게시할 수 없어요. 검토 메모를 반영한 뒤 상태를 변경해 주세요."));
     setPageReviewOpen(true);
     return;
   }
@@ -368,7 +367,7 @@ export async function runStudioPageSavePipeline(
     if (!structuralResult.canPublish || !publishComplianceResult.readyForDestinationReview) {
       const blockedCount = structuralResult.errors.length + publishComplianceResult.errors.length;
       clearPendingSaveIntent();
-      setError(`게시 전 필수 점검 ${blockedCount}개를 확인해 주세요.`);
+      setError(frozenStatus6Text("studio.frozenStatus6.pageSave.blockedChecks", { count: blockedCount }, `게시 전 필수 점검 ${blockedCount}개를 확인해 주세요.`));
       setPublishPreflightOpen(true);
       return;
     }
@@ -834,7 +833,7 @@ export async function runStudioPageSavePipeline(
     }
 
     if (!canApplyStudioMutation(saveMutationTicket, { allowDuringSave: true })) {
-      setError("저장 요청 중 원고가 바뀌어 현재 로컬 변경을 유지했습니다. 내용을 확인한 뒤 다시 저장해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.pageSave.changedDuringSave", "저장 요청 중 원고가 바뀌어 현재 로컬 변경을 유지했습니다. 내용을 확인한 뒤 다시 저장해 주세요."));
       return;
     }
 
@@ -892,7 +891,7 @@ export async function runStudioPageSavePipeline(
     if (!keepSharedEditorOpen) navigate(creatorWorkHref(savedWorkId));
   } catch (err) {
     if (saveScopeStillCurrent()) {
-      let message = err instanceof Error ? err.message : "저장에 실패했어요.";
+      let message = err instanceof Error ? err.message : frozenStatus6Text("studio.frozenStatus6.pageSave.saveFailed", "저장에 실패했어요.");
       if (
         !(err instanceof StudioApiPayloadSafetyError) &&
         sharedDocument &&
@@ -921,7 +920,7 @@ export async function runStudioPageSavePipeline(
                 : current
             );
             if (fresh.access !== "edit") {
-              message = "팀 편집 권한이 변경되어 서버 저장을 중단했습니다. 로컬 변경은 내보낸 뒤 소유자에게 전달해 주세요.";
+              message = frozenStatus6Text("studio.frozenStatus6.pageSave.teamPermissionChanged", "팀 편집 권한이 변경되어 서버 저장을 중단했습니다. 로컬 변경은 내보낸 뒤 소유자에게 전달해 주세요.");
             }
           }
         } catch {
@@ -941,7 +940,7 @@ export async function runStudioPageSavePipeline(
                   }
                 : current
             );
-            message = "팀 권한을 확인하지 못해 안전하게 읽기 전용으로 전환했습니다. 로컬 변경을 내보낸 뒤 다시 접속해 주세요.";
+            message = frozenStatus6Text("studio.frozenStatus6.pageSave.teamPermissionUnknown", "팀 권한을 확인하지 못해 안전하게 읽기 전용으로 전환했습니다. 로컬 변경을 내보낸 뒤 다시 접속해 주세요.");
           }
         }
       }
@@ -965,9 +964,7 @@ export async function runStudioPageSavePipeline(
         });
       } catch {
         if (saveScopeStillCurrent()) {
-          setError(
-            "저장은 중단했지만 업로드된 3D pass 정리를 완료하지 못했습니다. 다음 저장에서 같은 영수증으로 다시 확인해 주세요."
-          );
+          setError(frozenStatus6Text("studio.frozenStatus6.pageSave.cleanupIncomplete", "저장은 중단했지만 업로드된 3D pass 정리를 완료하지 못했습니다. 다음 저장에서 같은 영수증으로 다시 확인해 주세요."));
         }
       }
     }
