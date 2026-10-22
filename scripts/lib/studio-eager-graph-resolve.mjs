@@ -136,7 +136,11 @@ function createCachedHost(root) {
  *   root: string,
  * }} `file` 은 저장소 상대 POSIX 경로다.
  */
-export function createModuleResolver({ root, tsconfigPath = "tsconfig.json" }) {
+export function createModuleResolver({ root: requestedRoot, tsconfigPath = "tsconfig.json" }) {
+  // 해석 호스트는 심볼릭 링크를 실제 경로로 풀어 돌려준다. 루트가 심볼릭 링크 아래(macOS 의 /tmp·/var 등)면
+  // path.relative 가 ../ 로 빠져나가 워크스페이스 모듈이 외부 패키지로 잘못 분류되고, 그만큼 그래프가 작게 측정돼
+  // 래칫이 조용히 통과한다. 루트도 실제 경로로 맞춰 둘이 같은 기준에서 비교되게 한다.
+  const root = fs.realpathSync(requestedRoot);
   const options = loadCompilerOptions(root, tsconfigPath);
   const host = createCachedHost(root);
   const cache = ts.createModuleResolutionCache(root, (file) => file, options);

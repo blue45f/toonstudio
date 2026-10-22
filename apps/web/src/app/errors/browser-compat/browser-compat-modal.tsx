@@ -1,4 +1,4 @@
-import { restStatusText } from "../../../shared/rest-status-i18n";
+import { restStatusText } from "../../../shared/rest-status-i18n-core";
 import { Suspense } from "react";
 
 import { lazyRetry } from "@/shared/lib/lazy-retry";

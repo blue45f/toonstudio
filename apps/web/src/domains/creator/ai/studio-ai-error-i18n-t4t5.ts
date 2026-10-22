@@ -13,16 +13,24 @@
  * `.scenarioImage.*` scenario-image, `.comicApi.*` comic-director-api,
  * `.canon.*` character-canon, `.session.*` comic-director-session 영속,
  * `.bridge.*` stroke-proposal-bridge, `.onnx.*` onnx-colorize-layers.
+ *
+ * `.scenarioImage.*` 4개 키와 `aiErrorText` 는 진입 그래프에 닿는 `studio-scenario-image-generation.ts` 가 쓰므로
+ * `./studio-ai-error-i18n-t4t5-core` 에 따로 둔다. 이 모듈은 나머지 키(지연 AI 표면 전용)를 등록하고 코어를 함께 불러오며,
+ * 진입 그래프에 닿는 파일은 이 모듈 대신 코어를 import 한다.
  */
 import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
 
-import { aiErrorText } from "./studio-ai-error-i18n";
+import {
+  aiErrorText,
+  STUDIO_AI_ERROR_T4T5_CORE_EN,
+  STUDIO_AI_ERROR_T4T5_CORE_KO,
+} from "./studio-ai-error-i18n-t4t5-core";
 import type { StudioAiEpisodeIssue } from "./studio-ai-episode-production-director";
 import type { ScenarioImageQualityFinding } from "../studio-scenario-layout";
 
-export { aiErrorText };
+export { aiErrorText } from "./studio-ai-error-i18n-t4t5-core";
 
-const KO = {
+const KO_REST = {
   // episode-director 이슈 템플릿 (id × title/description/resolution)
   "studio.aiError.issue.inputEmpty.title": "대본이 비어 있어요",
   "studio.aiError.issue.inputEmpty.description": "장면과 컷을 계획할 원문이 없어 생성 묶음을 만들 수 없습니다.",
@@ -96,11 +104,6 @@ const KO = {
   "studio.aiError.preflight.imageUnavailable": "이미지 API가 연결되지 않아 실행할 수 없습니다. AI 어시스트 설정에서 키를 등록해 주세요.",
   "studio.aiError.preflight.textUnavailable": "텍스트 AI가 연결되지 않아 실행할 수 없습니다. 로그인하면 자동 무료 AI를 먼저 사용하며, 무료 경로를 사용할 수 없으면 통합 AI 설정에서 개인 클라우드 API 키와 모델을 연결하세요.",
   "studio.aiError.preflight.connectionUnverified": "연결 상태가 정상으로 확인되지 않았습니다 ({connectionLabel}). AI 어시스트 설정에서 다시 확인해 주세요.",
-  // scenario-image-generation
-  "studio.aiError.scenarioImage.referenceAssetsLoading": "AI 참조 에셋을 불러오는 중이에요. 잠시 뒤 다시 시도해 주세요.",
-  "studio.aiError.scenarioImage.referenceLimitExceeded": "AI 이미지 참조는 최대 {count}개까지 사용할 수 있어요. 참조 팩에서 일부를 제거해 주세요.",
-  "studio.aiError.scenarioImage.referenceAssetsMissing": "연결된 AI 참조 에셋 {count}개를 찾을 수 없어요. 참조 팩에서 제거하거나 에셋을 다시 추가해 주세요.",
-  "studio.aiError.scenarioImage.batchLimitExceeded": "한 번에 최대 {count}개까지 생성할 수 있어요. 선택 컷 또는 후보 수를 줄여 나눠 생성해 주세요.",
   // comic-director-api
   "studio.aiError.comicApi.loginRequired": "로그인하면 AI 코믹 디렉터 세션을 클라우드에 저장할 수 있어요.",
   "studio.aiError.comicApi.serverUnreachable": "AI 코믹 디렉터 저장 서버에 연결하지 못했어요.",
@@ -127,9 +130,11 @@ const KO = {
   "studio.aiError.onnx.highlightSkippedReason": "하이라이트는 원본 선화에 정보가 없고 모델의 밝은 영역이 밑색 레이어에 이미 들어 있어 별도 레이어로 만들지 않았습니다.",
 } as const;
 
+const KO = { ...STUDIO_AI_ERROR_T4T5_CORE_KO, ...KO_REST } as const;
+
 type AiErrorT4T5Key = keyof typeof KO;
 
-const EN: Readonly<Record<AiErrorT4T5Key, string>> = {
+const EN_REST: Readonly<Record<keyof typeof KO_REST, string>> = {
   "studio.aiError.issue.inputEmpty.title": "The script is empty",
   "studio.aiError.issue.inputEmpty.description": "There is no source text to plan scenes and cuts from, so no generation batches can be created.",
   "studio.aiError.issue.inputEmpty.resolution": "Enter at least one line with a scene title and action or dialogue.",
@@ -198,10 +203,6 @@ const EN: Readonly<Record<AiErrorT4T5Key, string>> = {
   "studio.aiError.preflight.imageUnavailable": "The image API is not connected, so this cannot run. Add a key in the AI assist settings.",
   "studio.aiError.preflight.textUnavailable": "Text AI is not connected, so this cannot run. Sign in to use the automatic free AI first; if no free route is available, connect a personal cloud API key and model in the unified AI settings.",
   "studio.aiError.preflight.connectionUnverified": "The connection status could not be verified as healthy ({connectionLabel}). Check again in the AI assist settings.",
-  "studio.aiError.scenarioImage.referenceAssetsLoading": "AI reference assets are still loading. Please try again in a moment.",
-  "studio.aiError.scenarioImage.referenceLimitExceeded": "You can use up to {count} AI image references. Remove some from the reference pack.",
-  "studio.aiError.scenarioImage.referenceAssetsMissing": "Could not find {count} connected AI reference assets. Remove them from the reference pack or add the assets again.",
-  "studio.aiError.scenarioImage.batchLimitExceeded": "You can generate up to {count} at a time. Reduce the selected cuts or candidates and generate in batches.",
   "studio.aiError.comicApi.loginRequired": "Sign in to save AI Comic Director sessions to the cloud.",
   "studio.aiError.comicApi.serverUnreachable": "Could not connect to the AI Comic Director storage server.",
   "studio.aiError.comicApi.responseUnparseable": "Could not parse the AI Comic Director server response.",
@@ -223,8 +224,11 @@ const EN: Readonly<Record<AiErrorT4T5Key, string>> = {
   "studio.aiError.onnx.highlightSkippedReason": "Highlights are not made into a separate layer because the source line art has no highlight information and the model's bright areas are already in the base color layer.",
 };
 
-registerI18nLocaleEntries("ko", KO);
-registerI18nLocaleEntries("en", EN);
+const EN: Readonly<Record<AiErrorT4T5Key, string>> = { ...STUDIO_AI_ERROR_T4T5_CORE_EN, ...EN_REST };
+
+// 코어가 등록하는 `.scenarioImage.*` 4개 키는 코어가 직접 등록하므로 나머지만 등록한다.
+registerI18nLocaleEntries("ko", KO_REST);
+registerI18nLocaleEntries("en", EN_REST);
 
 /** 이 트랜치가 등록한 키의 ko 원문 (테스트·영속 해석 폴백용). */
 export const STUDIO_AI_ERROR_T4T5_KO: Readonly<Record<string, string>> = KO;

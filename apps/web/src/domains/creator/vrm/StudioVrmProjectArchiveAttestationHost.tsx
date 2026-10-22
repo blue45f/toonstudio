@@ -16,7 +16,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { useT } from "@/shared/lib/i18n";
-import "../studio-vrm-panel-status-i18n";
+import "../status-i18n/studio-vrm-panel-status-i18n-core";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_Z_CLASS } from "../studio-z-index";

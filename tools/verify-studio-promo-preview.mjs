@@ -58,6 +58,16 @@ function preview({ hidden = false, hasAudio = true, playing = true } = {}) {
           Object.hasOwn(values ?? {}, key) ? String(values[key]) : match
         ),
     },
+    // 상태 문구 사전은 등록하지 않은 상태로 두고, 헬퍼의 계약대로 호출부의 한국어 폴백을 {token} 보간만 거쳐 돌려준다.
+    "../status-i18n/studio-sub-status-i18n": {
+      subStatusText: (_key, paramsOrFallback, koFallback) => {
+        const params = typeof paramsOrFallback === "string" ? undefined : paramsOrFallback;
+        const fallback = typeof paramsOrFallback === "string" ? paramsOrFallback : koFallback ?? "";
+        return params
+          ? fallback.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token) => (Object.hasOwn(params, token) ? String(params[token]) : placeholder))
+          : fallback;
+      },
+    },
     "./promo-audio": { preparePromoAudioPreview: async () => null },
     "./promo-canvas": { drawPromoFrame: () => {}, loadPromoImages: async () => new Map(), releasePromoTextCache: () => {} },
     "./promo-model": { PROMO_FPS: 30, promoMusicGain: () => 0.25, promoTimeline: () => [], promoFrameCount: () => 450, promoSize: () => ({ width: 480, height: 854 }) },

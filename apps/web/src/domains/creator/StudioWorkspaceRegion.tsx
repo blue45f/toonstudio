@@ -1,4 +1,4 @@
-import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ComponentType, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 
 import {

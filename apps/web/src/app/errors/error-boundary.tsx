@@ -1,4 +1,4 @@
-import { restStatusText } from "../../shared/rest-status-i18n";
+import { restStatusText } from "../../shared/rest-status-i18n-core";
 import { AlertTriangle, Download, Monitor, RefreshCw, WifiOff } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 

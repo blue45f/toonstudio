@@ -10,16 +10,16 @@
   },
   "totals": {
     "modules": 1598,
-    "bytes": 19731591
+    "bytes": 19614809
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
       "modules": 224,
-      "bytes": 1190663
+      "bytes": 1181031
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
       "modules": 1413,
-      "bytes": 18879391
+      "bytes": 18772241
     }
   },
   "forbiddenDomains": {
@@ -230,7 +230,7 @@
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 13,
-      "bytes": 451526,
+      "bytes": 451543,
       "files": [
         "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx",
         "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts",
@@ -362,7 +362,7 @@
     },
     "apps/web/src/app/errors": {
       "modules": 3,
-      "bytes": 13855
+      "bytes": 13865
     },
     "apps/web/src/app/routes": {
       "modules": 45,
@@ -374,19 +374,19 @@
     },
     "apps/web/src/domains/auth": {
       "modules": 16,
-      "bytes": 68303
+      "bytes": 65803
     },
     "apps/web/src/domains/character-chat": {
       "modules": 1,
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 565,
-      "bytes": 8511222
+      "modules": 562,
+      "bytes": 8418057
     },
     "apps/web/src/domains/creator/ai": {
       "modules": 23,
-      "bytes": 262118
+      "bytes": 235679
     },
     "apps/web/src/domains/creator/assistant": {
       "modules": 3,
@@ -549,8 +549,8 @@
       "bytes": 31191
     },
     "apps/web/src/domains/creator/status-i18n": {
-      "modules": 2,
-      "bytes": 22144
+      "modules": 5,
+      "bytes": 34581
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 79,
@@ -582,7 +582,7 @@
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 13,
-      "bytes": 451526
+      "bytes": 451543
     },
     "apps/web/src/domains/creator/writer-room": {
       "modules": 1,
@@ -606,7 +606,7 @@
     },
     "apps/web/src/shared": {
       "modules": 1,
-      "bytes": 9704
+      "bytes": 2562
     },
     "apps/web/src/shared/ai": {
       "modules": 8,
@@ -744,7 +744,7 @@
     "apps/web/src/domains/auth/components/auth-menu-profile-image.ts": 1,
     "apps/web/src/domains/auth/components/auth-menu-shell.tsx": 1,
     "apps/web/src/domains/auth/components/auth-menu-trigger.tsx": 1,
-    "apps/web/src/domains/auth/components/auth-rest-status-i18n.ts": 1,
+    "apps/web/src/domains/auth/components/auth-rest-status-i18n-core.ts": 1,
     "apps/web/src/domains/auth/components/guest-migration-bridge.tsx": 1,
     "apps/web/src/domains/auth/components/schedule-idle.ts": 2,
     "apps/web/src/domains/auth/components/session-provider.tsx": 1,
@@ -812,7 +812,7 @@
     "apps/web/src/domains/creator/ai/studio-ai-client.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-comic-composer-intent.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-composition-suggestion.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-ai-error-i18n-t4t5.ts": 2,
+    "apps/web/src/domains/creator/ai/studio-ai-error-i18n-t4t5-core.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-error-i18n.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-generated-asset-model.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-image-reference-resolution.ts": 2,
@@ -1355,6 +1355,9 @@
     "apps/web/src/domains/creator/selection/studio-selection-transform-controller.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-editor-shell-status-i18n-r3c11.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-host-reason-i18n.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c06-core.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c07-core.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-vrm-panel-status-i18n-core.ts": 2,
     "apps/web/src/domains/creator/studio-2d-source-size.ts": 2,
     "apps/web/src/domains/creator/studio-active-stroke-lifecycle.ts": 2,
     "apps/web/src/domains/creator/studio-active-tool-command.ts": 2,
@@ -1748,8 +1751,6 @@
     "apps/web/src/domains/creator/studio-panel-autofit.ts": 2,
     "apps/web/src/domains/creator/studio-panel-shot-tags.ts": 2,
     "apps/web/src/domains/creator/studio-panel-split.ts": 2,
-    "apps/web/src/domains/creator/studio-panel-status-i18n-r3c06.ts": 2,
-    "apps/web/src/domains/creator/studio-panel-status-i18n-r3c07.ts": 2,
     "apps/web/src/domains/creator/studio-panel-ui.tsx": 2,
     "apps/web/src/domains/creator/studio-path-boolean.ts": 2,
     "apps/web/src/domains/creator/studio-pathfinder-boolean-adapter.ts": 2,
@@ -1913,7 +1914,6 @@
     "apps/web/src/domains/creator/studio-view-inspection-store.ts": 2,
     "apps/web/src/domains/creator/studio-view-tools-hud-loader.ts": 2,
     "apps/web/src/domains/creator/studio-view-workspace.ts": 2,
-    "apps/web/src/domains/creator/studio-vrm-panel-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-watermark.ts": 2,
     "apps/web/src/domains/creator/studio-web-drawing-assist-kit.ts": 2,
     "apps/web/src/domains/creator/studio-web-drawing-coloring-kit.ts": 2,
@@ -2138,7 +2138,7 @@
     "apps/web/src/shared/navigation/navigation.ts": 1,
     "apps/web/src/shared/navigation/return-context.ts": 2,
     "apps/web/src/shared/navigation/router-link.tsx": 3,
-    "apps/web/src/shared/rest-status-i18n.ts": 1,
+    "apps/web/src/shared/rest-status-i18n-core.ts": 1,
     "apps/web/src/shared/seo/use-document-title.ts": 1,
     "packages/contracts/src/avatar.ts": 1,
     "packages/contracts/src/creator-asset-contract.ts": 2,
@@ -2307,6 +2307,11 @@
       "increases": [
         "총 정적 도달 원본 +0.1 KiB"
       ]
+    },
+    {
+      "date": "2026-10-22",
+      "reason": "상태 문구 사전 6개를 진입 그래프 코어(소비 파일이 쓰는 키와 헬퍼)와 지연 표면 전용 본문으로 나눴다. 본문 6개가 진입 그래프에서 빠져 총 원본이 줄었다(늘어난 항목 없음).",
+      "increases": []
     }
   ]
 }
