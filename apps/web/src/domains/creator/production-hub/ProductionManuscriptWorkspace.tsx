@@ -707,7 +707,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
               {copyStatus === "copied"
                 ? "현재 원고 운영 화면 링크를 복사했습니다."
                 : copyStatus === "error"
-                  ? t("productionHub.status.screenLinkCopyFailed", "현재 화면 링크를 복사하지 못했습니다.")
+                  ? t("productionHub.status.screenLinkCopyFailed", "현재 화면 링크를 복사하지 못했어요. 주소창의 주소를 직접 복사해 주세요.")
                   : ""}
             </span>
           </div>

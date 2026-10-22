@@ -341,7 +341,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
     try {
       await operation();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("productionHub.status.taskCompleteFailed", "작업을 완료하지 못했습니다."));
+      setError(cause instanceof Error ? cause.message : t("productionHub.status.taskCompleteFailed", "작업을 완료하지 못했어요. 잠시 후 다시 시도해 주세요."));
     } finally {
       setBusyKey(null);
     }

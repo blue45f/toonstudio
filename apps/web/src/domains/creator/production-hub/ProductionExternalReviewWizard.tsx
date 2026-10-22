@@ -78,7 +78,7 @@ export function ProductionExternalReviewWizard({
       setLink(url);
       setIndex(2);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("productionHub.status.reviewLinkCreateFailed", "링크를 만들지 못했습니다. 다시 시도해 주세요."));
+      setError(cause instanceof Error ? cause.message : t("productionHub.status.reviewLinkCreateFailed", "링크를 만들지 못했어요. 다시 시도해 주세요."));
     } finally {
       setBusy(false);
     }
@@ -90,7 +90,7 @@ export function ProductionExternalReviewWizard({
       await navigator.clipboard.writeText(link);
       setCopied(true);
     } catch {
-      setError(t("productionHub.status.reviewLinkAutoCopyFailed", "자동 복사에 실패했습니다. 아래 링크를 직접 복사해 주세요."));
+      setError(t("productionHub.status.reviewLinkAutoCopyFailed", "자동 복사에 실패했어요. 아래 링크를 직접 복사해 주세요."));
     }
   };
 

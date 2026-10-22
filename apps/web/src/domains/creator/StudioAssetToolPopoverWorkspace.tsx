@@ -23,7 +23,7 @@ export function StudioAssetToolPopoverWorkspace({
   }
 
   return (
-    <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.unifiedAssets", "통합 에셋을 여는 중...")} />}>
+    <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.unifiedAssets", "통합 소재를 여는 중...")} />}>
       <LazyStudioInsertBatchPreflight toolBelt={toolBelt} />
       <LazyStudioUnifiedAssetToolPopoverContent toolBelt={toolBelt} />
     </Suspense>

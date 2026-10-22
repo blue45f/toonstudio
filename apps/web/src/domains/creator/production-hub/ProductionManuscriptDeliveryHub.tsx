@@ -364,7 +364,7 @@ function ProductionManuscriptDeliveryHubForActor({
         </span>}
       </div>
       <span className="sr-only" role="status" aria-live="polite">
-        {copyStatus === "copied" ? "현재 업무 화면 링크를 복사했습니다." : copyStatus === "error" ? t("productionHub.status.workScreenLinkCopyFailed", "현재 업무 화면 링크를 복사하지 못했습니다.") : ""}
+        {copyStatus === "copied" ? "현재 업무 화면 링크를 복사했습니다." : copyStatus === "error" ? t("productionHub.status.workScreenLinkCopyFailed", "현재 업무 화면 링크를 복사하지 못했어요. 주소창의 주소를 직접 복사해 주세요.") : ""}
       </span>
     </section>
 

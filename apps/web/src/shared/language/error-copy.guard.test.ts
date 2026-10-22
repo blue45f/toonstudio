@@ -21,6 +21,8 @@ const ALLOWLIST: Readonly<Record<string, string>> = {
   "productionHub.operations.releaseCheckFailed": "선택지 라벨(자동화 트리거)",
   // 사용자가 방금 누른 "실패 기록" 동작의 완료 알림 — 오류가 아니라 기록이 끝났다는 확인이다.
   "productionHub.operations.releaseFailedRecorded": "완료 알림(동작 결과 확인)",
+  // 사용자 글꼴 저장소 상태 배지의 라벨 — 같은 상황의 안내 문구(storageIntegrityImportBlocked)가 다음 행동을 안내한다.
+  "studio.customFonts.storageIntegrityBadge": "상태 배지 라벨",
 };
 
 function readNamespace(namespace: string): Record<string, unknown> {

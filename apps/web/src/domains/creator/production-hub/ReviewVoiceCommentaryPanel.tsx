@@ -134,12 +134,12 @@ export function ReviewVoiceCommentaryPanel({
 
   const startRecording = async () => {
     if (!recorderSupported()) {
-      setRecorder({ kind: "unsupported", reason: t("productionHub.status.voiceRecordingUnsupported", "이 브라우저에서는 음성 녹음을 지원하지 않아 해설을 녹화할 수 없습니다. 핀으로 남겨 주세요.") });
+      setRecorder({ kind: "unsupported", reason: t("productionHub.status.voiceRecordingUnsupported", "이 브라우저에서는 음성 녹음을 지원하지 않아 해설을 녹화할 수 없어요. 핀으로 남겨 주세요.") });
       return;
     }
     const capture = captureView?.();
     if (!capture) {
-      setRecorder({ kind: "error", message: t("productionHub.status.voiceCaptureStateFailed", "현재 화면 상태를 읽지 못해 녹화를 시작할 수 없습니다.") });
+      setRecorder({ kind: "error", message: t("productionHub.status.voiceCaptureStateFailed", "현재 화면 상태를 읽지 못해 녹화를 시작할 수 없어요. 화면을 새로고침한 뒤 다시 시도해 주세요.") });
       return;
     }
     try {
@@ -165,7 +165,7 @@ export function ReviewVoiceCommentaryPanel({
       setElapsedMs(0);
       setRecorder({ kind: "recording", startedAtMs: Date.now() });
     } catch {
-      setRecorder({ kind: "error", message: t("productionHub.status.voiceMicPermissionFailed", "마이크 권한을 얻지 못해 녹화를 시작하지 못했습니다. 브라우저 권한을 확인해 주세요.") });
+      setRecorder({ kind: "error", message: t("productionHub.status.voiceMicPermissionFailed", "마이크 권한을 얻지 못해 녹화를 시작하지 못했어요. 브라우저 권한을 확인해 주세요.") });
     }
   };
 
@@ -271,7 +271,7 @@ export function ReviewVoiceCommentaryPanel({
       ) : null}
 
       {tracks.length === 0 && !loading ? (
-        <p>{t("productionHub.status.noVoiceCommentary", "아직 음성 해설이 없습니다. 해설이 없어도 핀 검수는 종전대로 동작합니다.")}</p>
+        <p>{t("productionHub.status.noVoiceCommentary", "아직 음성 해설이 없어요. 해설이 없어도 핀 검수는 종전대로 동작해요.")}</p>
       ) : null}
 
       {tracks.length > 0 ? (
