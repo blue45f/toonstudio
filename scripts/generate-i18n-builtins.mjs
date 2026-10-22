@@ -91,6 +91,13 @@ const LAZY_APP_BUILTIN_GROUPS = [
     namespaces: ["panelImport"],
     target: "apps/web/src/domains/creator/panel-detect/i18n/generated/i18n-panel-import-builtins.json",
   },
+  // 분기형 컷툰 실험(Labs) 화면만 쓰는 신규 네임스페이스. 셸 내장 사전에 넣지 않고 소비 도메인이 등록한다 —
+  // apps/web/src/domains/creator/branching-cuttoon/branching-cuttoon-i18n.ts.
+  {
+    id: "branching-cuttoon",
+    namespaces: ["branchingCuttoon"],
+    target: "apps/web/src/domains/creator/branching-cuttoon/i18n/generated/i18n-branching-cuttoon-builtins.json",
+  },
 ];
 
 const LAZY_APP_BUILTIN_NAMESPACES = new Set(
