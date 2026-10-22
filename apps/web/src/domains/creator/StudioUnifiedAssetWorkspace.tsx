@@ -29,6 +29,7 @@ import {
 } from "react";
 
 import { StudioUnifiedAssetPreviewSurface } from "./StudioUnifiedAssetPreviewSurface";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 import { canDragStudioInsertHubEntry } from "./studio-insert-hub-drag";
 import {
   buildStudioInsertHubEntries,
@@ -133,9 +134,9 @@ function browserStorage(): Storage | null {
 }
 
 function successMessage(item: StudioUnifiedAssetItem): string {
-  if (item.useMode === "open") return `${item.title} 편집 도구를 열었습니다.`;
-  if (item.useMode === "apply") return `${item.title} 장면을 배치했습니다.`;
-  return `${item.title}을(를) 캔버스에 삽입했습니다.`;
+  if (item.useMode === "open") return frozenStatus4Text("studio.frozenStatus4.assets.successOpened", { title: item.title }, "{title} 편집 도구를 열었습니다.");
+  if (item.useMode === "apply") return frozenStatus4Text("studio.frozenStatus4.assets.successApplied", { title: item.title }, "{title} 장면을 배치했습니다.");
+  return frozenStatus4Text("studio.frozenStatus4.assets.successInserted", { title: item.title }, "{title}을(를) 캔버스에 삽입했습니다.");
 }
 
 function quickActionIcon(actionId: StudioInsertActionId) {
@@ -354,16 +355,13 @@ export function StudioUnifiedAssetWorkspace({
   async function handleUseItem(item: StudioUnifiedAssetItem): Promise<void> {
     if (pendingId || reviewLocked) {
       if (reviewLocked) {
-        setStatus({ tone: "error", message: "검토 잠금을 해제한 뒤 에셋을 추가해 주세요." });
+        setStatus({ tone: "error", message: frozenStatus4Text("studio.frozenStatus4.assets.addLocked", "검토 잠금을 해제한 뒤 에셋을 추가해 주세요.") });
       }
       return;
     }
     if (item.discoverability === "caution" && acknowledgedCautionId !== item.id) {
       setSelectedId(item.id);
-      setStatus({
-        tone: "error",
-        message: "권리와 출처 확인이 필요한 에셋입니다. 상세 패널에서 확인 후 사용해 주세요.",
-      });
+      setStatus({ tone: "error", message: frozenStatus4Text("studio.frozenStatus4.assets.cautionRights", "권리와 출처 확인이 필요한 에셋입니다. 상세 패널에서 확인 후 사용해 주세요.") });
       return;
     }
     setPendingId(item.id);
@@ -371,17 +369,12 @@ export function StudioUnifiedAssetWorkspace({
     try {
       const used = await onUseItem(item, preferences.placementMode);
       if (used === false) {
-        throw new Error("현재 캔버스 상태에서는 이 에셋을 사용할 수 없습니다.");
+        throw new Error(frozenStatus4Text("studio.frozenStatus4.assets.cannotUseAsset", "현재 캔버스 상태에서는 이 에셋을 사용할 수 없습니다."));
       }
       commitPreferences(recordStudioInsertRecent(preferences, item.id));
       setStatus({ tone: "success", message: successMessage(item) });
     } catch (caught: unknown) {
-      setStatus({
-        tone: "error",
-        message: caught instanceof Error
-          ? caught.message
-          : "에셋을 사용하지 못했습니다. 캔버스 상태를 확인해 주세요.",
-      });
+      setStatus({ tone: "error", message: caught instanceof Error ? caught.message : frozenStatus4Text("studio.frozenStatus4.assets.useFailed", "에셋을 사용하지 못했습니다. 캔버스 상태를 확인해 주세요.") });
     } finally {
       setPendingId(null);
     }
@@ -398,12 +391,9 @@ export function StudioUnifiedAssetWorkspace({
     setStatus(null);
     try {
       const used = await onUseAction(actionId);
-      if (used === false) throw new Error("현재 상태에서는 이 도구를 열 수 없습니다.");
+      if (used === false) throw new Error(frozenStatus4Text("studio.frozenStatus4.assets.cannotOpenTool", "현재 상태에서는 이 도구를 열 수 없습니다."));
     } catch (caught: unknown) {
-      setStatus({
-        tone: "error",
-        message: caught instanceof Error ? caught.message : "도구를 열지 못했습니다.",
-      });
+      setStatus({ tone: "error", message: caught instanceof Error ? caught.message : frozenStatus4Text("studio.frozenStatus4.assets.openToolFailed", "도구를 열지 못했습니다.") });
     } finally {
       setPendingId(null);
     }
@@ -550,18 +540,10 @@ export function StudioUnifiedAssetWorkspace({
                   aria-label={t("studio.assetMenu.uploadAria", "이미지 소재 업로드")}
                   onChange={(event) => {
                     if (reviewLocked) {
-                      setStatus({
-                        tone: "error",
-                        message: "검토 잠금을 해제한 뒤 이미지를 가져와 주세요.",
-                      });
+                      setStatus({ tone: "error", message: frozenStatus4Text("studio.frozenStatus4.assets.importLocked", "검토 잠금을 해제한 뒤 이미지를 가져와 주세요.") });
                     } else if (onUploadImage) {
                       void Promise.resolve(onUploadImage(event)).catch((caught: unknown) => {
-                        setStatus({
-                          tone: "error",
-                          message: caught instanceof Error
-                            ? caught.message
-                            : "이미지를 가져오지 못했습니다.",
-                        });
+                        setStatus({ tone: "error", message: caught instanceof Error ? caught.message : frozenStatus4Text("studio.frozenStatus4.assets.importFailed", "이미지를 가져오지 못했습니다.") });
                       });
                     }
                     event.currentTarget.value = "";
@@ -815,7 +797,7 @@ export function StudioUnifiedAssetWorkspace({
                             )}
                           >
                             {item.useMode === "open" ? <Box size={14} aria-hidden /> : <Plus size={14} aria-hidden />}
-                            <span className="truncate">{pendingId === item.id ? "처리 중…" : item.useLabel}</span>
+                            <span className="truncate">{pendingId === item.id ? frozenStatus4Text("studio.frozenStatus4.assets.busyProcessing", "처리 중…") : item.useLabel}</span>
                           </button>
                         </div>
                       </article>
@@ -826,7 +808,7 @@ export function StudioUnifiedAssetWorkspace({
                 <div className="grid min-h-72 place-items-center rounded-xl border border-dashed border-line bg-card p-6 text-center">
                   <div>
                     <ImageIcon size={30} className="mx-auto text-fg-3" aria-hidden />
-                    <h4 className="mt-3 text-sm font-black text-fg">조건에 맞는 에셋이 없습니다.</h4>
+                    <h4 className="mt-3 text-sm font-black text-fg">{frozenStatus4Text("studio.frozenStatus4.assets.emptyNoAssets", "조건에 맞는 에셋이 없습니다.")}</h4>
                     <p className="mt-1 text-xs leading-relaxed text-fg-3">검색어 또는 분류를 넓히거나 새 장면을 만들어 보세요.</p>
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
                       <button
@@ -945,7 +927,7 @@ export function StudioUnifiedAssetWorkspace({
                     )}
                   >
                     {selected.useMode === "open" ? <Box size={16} aria-hidden /> : <Plus size={16} aria-hidden />}
-                    {pendingId === selected.id ? "처리 중…" : selected.useLabel}
+                    {pendingId === selected.id ? frozenStatus4Text("studio.frozenStatus4.assets.busyProcessing", "처리 중…") : selected.useLabel}
                   </button>
                   {selectedEntry && canDragStudioInsertHubEntry(selectedEntry) ? (
                     <p className="mt-2 text-center text-[0.68rem] text-fg-3">카드의 드래그 핸들로 캔버스 위치에 바로 놓을 수 있습니다.</p>
@@ -955,7 +937,7 @@ export function StudioUnifiedAssetWorkspace({
                 <div className="grid min-h-72 place-items-center text-center text-xs text-fg-3">
                   <div>
                     <Search size={24} className="mx-auto mb-2" aria-hidden />
-                    에셋을 선택하면 실제 미리보기와 적용 옵션이 표시됩니다.
+                    {frozenStatus4Text("studio.frozenStatus4.assets.emptySelectAsset", "에셋을 선택하면 실제 미리보기와 적용 옵션이 표시됩니다.")}
                   </div>
                 </div>
               )}

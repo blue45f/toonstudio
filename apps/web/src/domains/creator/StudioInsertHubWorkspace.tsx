@@ -32,6 +32,7 @@ import {
 } from "react";
 
 import { StudioAssetDecisionPanel } from "./StudioAssetDecisionPanel";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 import { svgToDataUrl } from "./studio-characters";
 import {
   filterStudioInsertHubEntriesByIntent,
@@ -217,17 +218,17 @@ function EntryPreview({ entry }: { readonly entry: StudioInsertHubEntry }) {
 function successMessage(entry: StudioInsertHubEntry): string {
   if (entry.kind === "action") {
     if (entry.actionId === "text") {
-      return "편집 가능한 텍스트를 추가했습니다.";
+      return frozenStatus4Text("studio.frozenStatus4.insertHub.successTextAdded", "편집 가능한 텍스트를 추가했습니다.");
     }
-    return `${entry.title} 도구를 열었습니다.`;
+    return frozenStatus4Text("studio.frozenStatus4.insertHub.successToolOpened", { title: entry.title }, "{title} 도구를 열었습니다.");
   }
   if (entry.item.useMode === "open") {
-    return `${entry.title} 편집 도구를 열었습니다.`;
+    return frozenStatus4Text("studio.frozenStatus4.insertHub.successEditorOpened", { title: entry.title }, "{title} 편집 도구를 열었습니다.");
   }
   if (entry.item.useMode === "apply") {
-    return `${entry.title} 장면을 배치했습니다.`;
+    return frozenStatus4Text("studio.frozenStatus4.insertHub.successScenePlaced", { title: entry.title }, "{title} 장면을 배치했습니다.");
   }
-  return `${entry.title}을(를) 캔버스에 삽입했습니다.`;
+  return frozenStatus4Text("studio.frozenStatus4.insertHub.successInserted", { title: entry.title }, "{title}을(를) 캔버스에 삽입했습니다.");
 }
 
 function countAvailablePreferenceIds(
@@ -417,21 +418,13 @@ export function StudioInsertHubWorkspace({
           ? await outcome
           : outcome;
       if (used === false) {
-        throw new Error(
-          "현재 캔버스 상태에서는 이 에셋을 사용할 수 없습니다.",
-        );
+        throw new Error(frozenStatus4Text("studio.frozenStatus4.insertHub.cannotUseAsset", "현재 캔버스 상태에서는 이 에셋을 사용할 수 없습니다."));
       }
       rememberRecent(entry.id);
       if (entry.kind === "asset") setSelectedAssetId(null);
       setStatus({ tone: "success", message: successMessage(entry) });
     } catch (caught: unknown) {
-      setStatus({
-        tone: "error",
-        message:
-          caught instanceof Error
-            ? caught.message
-            : "항목을 사용하지 못했습니다. 캔버스 상태를 확인해 주세요.",
-      });
+      setStatus({ tone: "error", message: caught instanceof Error ? caught.message : frozenStatus4Text("studio.frozenStatus4.insertHub.useFailed", "항목을 사용하지 못했습니다. 캔버스 상태를 확인해 주세요.") });
     } finally {
       setPendingId(null);
     }
@@ -447,18 +440,9 @@ export function StudioInsertHubWorkspace({
     try {
       await onUploadImage(event);
       rememberRecent("action:upload");
-      setStatus({
-        tone: "success",
-        message: "기기 이미지를 캔버스에 가져왔습니다.",
-      });
+      setStatus({ tone: "success", message: frozenStatus4Text("studio.frozenStatus4.insertHub.imageImported", "기기 이미지를 캔버스에 가져왔습니다.") });
     } catch (caught: unknown) {
-      setStatus({
-        tone: "error",
-        message:
-          caught instanceof Error
-            ? caught.message
-            : "이미지를 가져오지 못했습니다.",
-      });
+      setStatus({ tone: "error", message: caught instanceof Error ? caught.message : frozenStatus4Text("studio.frozenStatus4.insertHub.importFailed", "이미지를 가져오지 못했습니다.") });
     } finally {
       input.value = "";
       setPendingId(null);
@@ -962,7 +946,7 @@ export function StudioInsertHubWorkspace({
                           <ImageIcon size={13} aria-hidden />
                         )}
                         {pendingId === entry.id
-                          ? "처리 중…"
+                          ? frozenStatus4Text("studio.frozenStatus4.insertHub.busyProcessing", "처리 중…")
                           : entry.kind === "asset"
                             ? "적용 전 검토"
                             : entry.useLabel}
@@ -983,10 +967,10 @@ export function StudioInsertHubWorkspace({
               )}
               <p className="mt-2 text-xs font-bold text-fg-2">
                 {collection === "favorites"
-                  ? "즐겨찾기한 삽입 항목이 없습니다."
+                  ? frozenStatus4Text("studio.frozenStatus4.insertHub.emptyFavorites", "즐겨찾기한 삽입 항목이 없습니다.")
                   : collection === "recent"
-                    ? "아직 사용한 삽입 항목이 없습니다."
-                    : "조건에 맞는 삽입 항목이 없습니다."}
+                    ? frozenStatus4Text("studio.frozenStatus4.insertHub.emptyRecent", "아직 사용한 삽입 항목이 없습니다.")
+                    : frozenStatus4Text("studio.frozenStatus4.insertHub.emptyNoMatch", "조건에 맞는 삽입 항목이 없습니다.")}
               </p>
               <p className="mt-1 text-[0.66rem] leading-relaxed text-fg-3">
                 조건을 초기화하거나 검색 문맥을 AI 제작 도구로 넘겨 새 에셋을

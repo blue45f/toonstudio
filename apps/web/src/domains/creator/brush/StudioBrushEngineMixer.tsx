@@ -49,6 +49,7 @@ import {
   openProductBrushLibraryRepository,
 } from "./studio-brush-library-sqlite-repository";
 import { materializeStudioBrushCatalogSelection } from "./studio-brush-selection";
+import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 
 import type { NormalizedStudioBrushDynamicsSettings } from "./studio-brush-dynamics";
 
@@ -178,7 +179,7 @@ export function StudioBrushEngineStackPanel({
         </ul>
       ) : (
         <p className="mt-2 flex items-center gap-1.5 text-[0.66rem] font-medium text-good">
-          <CheckCircle2 size={13} aria-hidden /> 현재 조합에서 즉시 수정할 품질 위험이 없습니다.
+          <CheckCircle2 size={13} aria-hidden /> {frozenStatus4Text("studio.frozenStatus4.mixer.noQualityRisk", "현재 조합에서 즉시 수정할 품질 위험이 없습니다.")}
         </p>
       )}
     </MixerCard>
@@ -289,7 +290,7 @@ export function StudioBrushTraitImportControls({ settings, onSettingsChange }: T
     let sourceDynamics = studioBrushDynamicsSettingsForBrushId(sourceId);
     if (!sourceDynamics) sourceDynamics = await materializeSourceDynamics(sourceId);
     if (!sourceDynamics) {
-      setStatus({ tone: "error", message: `"${sourceName}" 브러시에서 특성을 가져오지 못했어요.` });
+      setStatus({ tone: "error", message: frozenStatus4Text("studio.frozenStatus4.mixer.importTraitsFailed", { name: sourceName }, "\"{name}\" 브러시에서 특성을 가져오지 못했어요.") });
       return;
     }
     const sectionLabel = STUDIO_BRUSH_MIX_TRAIT_SECTIONS.find(
@@ -297,7 +298,7 @@ export function StudioBrushTraitImportControls({ settings, onSettingsChange }: T
     )?.label ?? sectionId;
     setPreviousSettings(settings);
     onSettingsChange(mergeStudioBrushMixTraitSection(sectionId, settings, sourceDynamics));
-    setStatus({ tone: "done", message: `${sectionLabel} — "${sourceName}"에서 가져왔어요.` });
+    setStatus({ tone: "done", message: frozenStatus4Text("studio.frozenStatus4.mixer.sectionImported", { section: sectionLabel, name: sourceName }, "{section} — \"{name}\"에서 가져왔어요.") });
   }
 
   async function handleRecipeApply(recipeId: StudioBrushMixRecipeId) {
@@ -313,17 +314,12 @@ export function StudioBrushTraitImportControls({ settings, onSettingsChange }: T
       }
       const result = applyStudioBrushMixRecipe(recipeId, settings, sources);
       if (result.appliedStepCount === 0) {
-        setStatus({ tone: "error", message: `"${recipe.name}"에 필요한 브러시 재질을 불러오지 못했어요.` });
+        setStatus({ tone: "error", message: frozenStatus4Text("studio.frozenStatus4.mixer.recipeMaterialFailed", { name: recipe.name }, "\"{name}\"에 필요한 브러시 재질을 불러오지 못했어요.") });
         return;
       }
       setPreviousSettings(settings);
       onSettingsChange(result.settings);
-      setStatus({
-        tone: result.missingSourceBrushIds.length > 0 ? "error" : "done",
-        message: result.missingSourceBrushIds.length > 0
-          ? `${recipe.name}: ${result.appliedStepCount}단계를 적용했고 ${result.missingSourceBrushIds.length}개 소스는 건너뛰었어요.`
-          : `${recipe.name}: ${result.appliedStepCount}개 엔진 특성을 조합했어요.`,
-      });
+      setStatus({ tone: result.missingSourceBrushIds.length > 0 ? "error" : "done", message: result.missingSourceBrushIds.length > 0 ? frozenStatus4Text("studio.frozenStatus4.mixer.recipePartial", { name: recipe.name, applied: result.appliedStepCount, missing: result.missingSourceBrushIds.length }, "{name}: {applied}단계를 적용했고 {missing}개 소스는 건너뛰었어요.") : frozenStatus4Text("studio.frozenStatus4.mixer.recipeApplied", { name: recipe.name, applied: result.appliedStepCount }, "{name}: {applied}개 엔진 특성을 조합했어요.") });
     } finally {
       setApplyingRecipeId(null);
     }
@@ -429,7 +425,7 @@ export function StudioBrushTraitImportControls({ settings, onSettingsChange }: T
               onClick={() => {
                 onSettingsChange(previousSettings);
                 setPreviousSettings(null);
-                setStatus({ tone: "done", message: "직전 엔진 조합으로 되돌렸어요." });
+                setStatus({ tone: "done", message: frozenStatus4Text("studio.frozenStatus4.mixer.undoMix", "직전 엔진 조합으로 되돌렸어요.") });
               }}
               className={cn(
                 "inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-line px-2 text-[0.65rem] font-semibold text-fg-2 hover:bg-raised",
@@ -483,10 +479,7 @@ export function StudioBrushTraitImportControls({ settings, onSettingsChange }: T
           onClick={() => {
             setPreviousSettings(settings);
             onSettingsChange(stabilizeStudioBrushMixQuality(settings));
-            setStatus({
-              tone: "done",
-              message: `연속 획 품질 위험 ${quality.issues.length}건을 보수적으로 안정화했어요.`,
-            });
+            setStatus({ tone: "done", message: frozenStatus4Text("studio.frozenStatus4.mixer.stabilized", { count: quality.issues.length }, "연속 획 품질 위험 {count}건을 보수적으로 안정화했어요.") });
           }}
           className={cn(
             "mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft/25 px-3 py-2.5 text-[0.68rem] font-bold text-accent transition-colors hover:bg-accent-soft/45",
@@ -539,7 +532,7 @@ export function StudioBrushSaveAsCustomControls({ snapshot, baseBrushName }: Sav
   async function handleSave() {
     if (saving) return;
     if (!trimmedName) {
-      setNameError("브러시 이름을 입력해 주세요. 공백만으로는 저장할 수 없습니다.");
+      setNameError(frozenStatus4Text("studio.frozenStatus4.mixer.nameRequired", "브러시 이름을 입력해 주세요. 공백만으로는 저장할 수 없습니다."));
       return;
     }
     setSaving(true);
@@ -553,19 +546,9 @@ export function StudioBrushSaveAsCustomControls({ snapshot, baseBrushName }: Sav
       const product = await openProductBrushLibraryRepository();
       await product.repository.put(created);
       notifyStudioBrushLibraryChanged();
-      setStatus({
-        tone: "done",
-        message: product.authority === "sqlite"
-          ? `"${created.name}" 브러시를 내 브러시에 저장했어요.`
-          : `"${created.name}" 브러시를 현재 세션에 보관했어요. 브라우저를 닫으면 사라지므로 필요하면 파일로 내보내 주세요.`,
-      });
+      setStatus({ tone: "done", message: product.authority === "sqlite" ? frozenStatus4Text("studio.frozenStatus4.mixer.savedToLibrary", { name: created.name }, "\"{name}\" 브러시를 내 브러시에 저장했어요.") : frozenStatus4Text("studio.frozenStatus4.mixer.savedToSession", { name: created.name }, "\"{name}\" 브러시를 현재 세션에 보관했어요. 브라우저를 닫으면 사라지므로 필요하면 파일로 내보내 주세요.") });
     } catch (caught) {
-      setStatus({
-        tone: "error",
-        message: caught instanceof Error && caught.message
-          ? `저장하지 못했어요: ${caught.message}`
-          : "저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
-      });
+      setStatus({ tone: "error", message: caught instanceof Error && caught.message ? frozenStatus4Text("studio.frozenStatus4.mixer.saveFailedDetail", { detail: caught.message }, "저장하지 못했어요: {detail}") : frozenStatus4Text("studio.frozenStatus4.mixer.saveFailed", "저장하지 못했어요. 잠시 후 다시 시도해 주세요.") });
     } finally {
       setSaving(false);
     }
@@ -630,7 +613,7 @@ export function StudioBrushSaveAsCustomControls({ snapshot, baseBrushName }: Sav
             {saving
               ? <LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
               : <Save size={14} aria-hidden />}
-            {saving ? "저장 중" : "내 브러시에 저장"}
+            {saving ? frozenStatus4Text("studio.frozenStatus4.mixer.busySaving", "저장 중") : "내 브러시에 저장"}
           </button>
         </div>
         {nameError ? (

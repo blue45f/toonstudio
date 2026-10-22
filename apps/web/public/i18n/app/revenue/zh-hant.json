@@ -40,7 +40,7 @@
   "revenue.settlement.pgFee": "支付手續費 (3.3%)",
   "revenue.settlement.platformFee": "平台手續費 ({rate}%)",
   "revenue.settlement.policyNote": "與市場結算採用相同政策。滿 {min} 起可提現；實際到帳比例為 {rate}%。",
-  "revenue.settlement.requestPayout": "Request payout",
+  "revenue.settlement.requestPayout": "申請提現（準備中）",
   "revenue.settlement.title": "待結算",
   "revenue.settlement.withholdingTax": "預扣稅 (3.3%)",
   "revenue.source.custom": "其他",

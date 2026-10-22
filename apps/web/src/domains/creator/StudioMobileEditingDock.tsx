@@ -63,6 +63,7 @@ import { elementLabel } from "./studio-element-label";
 import { requestStudioCommandSearch } from "./studio-help-center-channel";
 import { preloadStudioInspectorDrawingSurface } from "./studio-inspector-aside-loader";
 import { localizeStudioText } from "./studio-localize-text";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 import {
   STUDIO_MOBILE_DRAW_SHEET_COMPACT_MIN_HEIGHT,
   STUDIO_MOBILE_DRAW_SHEET_DEFAULT_SNAP,
@@ -201,14 +202,14 @@ function StudioMobileFilterSelect({
   const preloadStudioFilterDialog = useStudioFilterDialogIntent();
   const guidanceId = useId();
   const unavailableReason = filterUnavailableReason ?? (
-    filterMutationLocked ? "편집 잠금을 해제한 뒤 필터를 적용하세요." : null
+    filterMutationLocked ? frozenStatus4Text("studio.frozenStatus4.dock.filterLocked", "편집 잠금을 해제한 뒤 필터를 적용하세요.") : null
   );
   const disabled = unavailableReason !== null || filterPreparationBusy;
   const guidance = filterPreparationBusy
-    ? `${filterTargetLabel}: 필터 미리보기를 준비하는 중입니다.`
+    ? frozenStatus4Text("studio.frozenStatus4.dock.filterPreparing", { target: filterTargetLabel }, "{target}: 필터 미리보기를 준비하는 중입니다.")
     : unavailableReason
       ? `${filterTargetLabel}: ${unavailableReason}`
-      : `${filterTargetLabel}: 적용할 필터를 선택하세요.`;
+      : frozenStatus4Text("studio.frozenStatus4.dock.filterSelect", { target: filterTargetLabel }, "{target}: 적용할 필터를 선택하세요.");
   const shellClassName = cn(
     "relative flex min-h-[44px] min-w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-[0.62rem] font-semibold text-fg-2",
     STUDIO_EASE,
@@ -682,12 +683,8 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   const undoDisabled = (hi === 0 && !sidecarUndoAvailable) || collaborationDocumentLocked;
   const redoDisabled =
     (hi >= history.length - 1 && !sidecarRedoAvailable) || collaborationDocumentLocked;
-  const undoUnavailableTitle = collaborationDocumentLocked
-    ? "공동 작업 문서 잠금을 해제한 뒤 편집 기록을 이동할 수 있어요."
-    : "아직 되돌릴 편집 기록이 없어요.";
-  const redoUnavailableTitle = collaborationDocumentLocked
-    ? "공동 작업 문서 잠금을 해제한 뒤 편집 기록을 이동할 수 있어요."
-    : "다시 적용할 편집 기록이 없어요.";
+  const undoUnavailableTitle = collaborationDocumentLocked ? frozenStatus4Text("studio.frozenStatus4.dock.historyLocked", "공동 작업 문서 잠금을 해제한 뒤 편집 기록을 이동할 수 있어요.") : frozenStatus4Text("studio.frozenStatus4.dock.undoEmpty", "아직 되돌릴 편집 기록이 없어요.");
+  const redoUnavailableTitle = collaborationDocumentLocked ? frozenStatus4Text("studio.frozenStatus4.dock.historyLocked", "공동 작업 문서 잠금을 해제한 뒤 편집 기록을 이동할 수 있어요.") : frozenStatus4Text("studio.frozenStatus4.dock.redoEmpty", "다시 적용할 편집 기록이 없어요.");
   const brushDefaultRestoreModified = brushDefaultRestore.modifiedCount > 0;
   const brushDefaultRestoreDisabled =
     brushDefaultRestore.loading
@@ -695,17 +692,10 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
     || (!brushDefaultRestoreModified && !brushDefaultRestore.undoAvailable);
   const brushDefaultRestoreDescriptionId =
     `${scrollDescriptionId}-brush-default-restore`;
-  const brushDefaultRestoreDescription = brushDefaultRestore.loading
-    ? `${brushDefaultRestore.sourceName} 기본값을 확인하고 있어요.`
-    : !brushDefaultRestore.available
-      ? "브러시 목록에서 다시 선택하면 안전한 기본값 기준을 새로 불러옵니다."
-      : brushDefaultRestore.undoAvailable
-        ? "방금 적용한 전체 설정 복원을 한 번 되돌릴 수 있어요."
-        : brushDefaultRestoreModified
-          ? `굵기·불투명도·필압·보정·촉 중 ${brushDefaultRestore.modifiedCount}개 설정이 기본값과 달라요. 현재 색상은 유지됩니다.`
-          : "굵기·불투명도·필압·보정·촉이 이미 기본값이에요. 현재 색상은 유지됩니다.";
+  const brushDefaultRestoreDescription = brushDefaultRestore.loading ? frozenStatus4Text("studio.frozenStatus4.dock.restoreDescChecking", { source: brushDefaultRestore.sourceName }, "{source} 기본값을 확인하고 있어요.") : !brushDefaultRestore.available ? frozenStatus4Text("studio.frozenStatus4.dock.restoreDescReselect", "브러시 목록에서 다시 선택하면 안전한 기본값 기준을 새로 불러옵니다.")
+    : brushDefaultRestore.undoAvailable ? frozenStatus4Text("studio.frozenStatus4.dock.restoreDescUndoable", "방금 적용한 전체 설정 복원을 한 번 되돌릴 수 있어요.") : brushDefaultRestoreModified ? frozenStatus4Text("studio.frozenStatus4.dock.restoreDescModified", { count: brushDefaultRestore.modifiedCount }, "굵기·불투명도·필압·보정·촉 중 {count}개 설정이 기본값과 달라요. 현재 색상은 유지됩니다.") : frozenStatus4Text("studio.frozenStatus4.dock.restoreDescDefault", "굵기·불투명도·필압·보정·촉이 이미 기본값이에요. 현재 색상은 유지됩니다.");
   const brushDefaultRestoreLabel = brushDefaultRestore.loading
-    ? "확인 중"
+    ? frozenStatus4Text("studio.frozenStatus4.dock.restoreBusyLabel", "확인 중")
     : !brushDefaultRestore.available
       ? "기준 없음"
       : brushDefaultRestore.undoAvailable
@@ -813,7 +803,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
             <span aria-hidden className="h-8 w-px shrink-0 bg-line" />
             {openSelectionTransform ? <StudioContextActionButton
               icon={Maximize2} label="변형" disabled={selectionLocked}
-              title={selectionLocked ? "잠긴 선택 항목은 변형할 수 없어요" : "선택한 레이어의 위치·크기·회전"}
+              title={selectionLocked ? frozenStatus4Text("studio.frozenStatus4.dock.transformLocked", "잠긴 선택 항목은 변형할 수 없어요") : "선택한 레이어의 위치·크기·회전"}
               data-studio-mobile-transform="true" onClick={openSelectionTransform}
             /> : null}
             <StudioContextActionButton
@@ -976,7 +966,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 </button>
               </div>
             </div>
-            <Suspense fallback={<p className="py-6 text-center text-xs text-fg-3">브러시를 불러오는 중…</p>}>
+            <Suspense fallback={<p className="py-6 text-center text-xs text-fg-3">{frozenStatus4Text("studio.frozenStatus4.dock.brushLoading", "브러시를 불러오는 중…")}</p>}>
               <StudioBrushLibraryPanel
                 currentSnapshot={currentBrushSnapshot}
                 brushes={savedBrushes}
@@ -1359,9 +1349,9 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                   aria-describedby={brushDefaultRestoreDescriptionId}
                   aria-label={
                     brushDefaultRestore.loading
-                      ? `${brushDefaultRestore.sourceName} 기본값을 불러오는 중`
+                      ? frozenStatus4Text("studio.frozenStatus4.dock.restoreAriaLoading", { source: brushDefaultRestore.sourceName }, "{source} 기본값을 불러오는 중")
                       : !brushDefaultRestore.available
-                        ? `${brushDefaultRestore.sourceName} 기본값 없음, 브러시를 다시 선택하세요`
+                        ? frozenStatus4Text("studio.frozenStatus4.dock.restoreAriaUnavailable", { source: brushDefaultRestore.sourceName }, "{source} 기본값 없음, 브러시를 다시 선택하세요")
                         : brushDefaultRestore.undoAvailable
                           ? `${brushDefaultRestore.sourceName} 기본값 복원 되돌리기`
                           : brushDefaultRestoreModified
