@@ -13,6 +13,7 @@ import { creatorHomeLocale } from "./creator-home-content";
 import { ProductTourPlayer } from "./ProductTourPlayer";
 import { ProductTourAdditions } from "./ProductTourAdditions";
 import { ProductTourShorts } from "./ProductTourShorts";
+import { ProductTourIntroBackdrop, ProductTourOutroBand } from "./ProductTourAmbientClips";
 import { ProductTourMadeNote } from "./ProductTourMadeNote";
 import { ProductTourTechLinks } from "./ProductTourTechLinks";
 import { RouteConditionBadges } from "./RouteConditionBadges";
@@ -97,6 +98,7 @@ export function ProductTourPage() {
   return (
     <div className="mk-page product-tour" lang={locale}>
       <header className="mk-shell product-tour__hero">
+        <ProductTourIntroBackdrop />
         <div className="product-tour__hero-copy">
           <p className="mk-eyebrow">
             <Clapperboard size={15} aria-hidden="true" />
@@ -223,6 +225,8 @@ export function ProductTourPage() {
           </a>
         </div>
       </section>
+
+      <ProductTourOutroBand />
 
       <section className="mk-shell product-tour__next" aria-label={bi("이어서 보기", "Keep exploring")}>
         <ServiceFlowNext current="tour" />
