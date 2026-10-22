@@ -30,7 +30,6 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -84,6 +83,9 @@ import {
   type ProductionManuscriptSort,
 } from "./production-manuscript-ux";
 import { useT } from "@/shared/lib/i18n";
+
+import { Badge, CapabilityGrid, DemoWorkspace, ProcessNavigator } from "./ProductionManuscriptNavigator";
+import { VIEW_ITEMS, episodeLabels, type ManuscriptView } from "./production-manuscript-navigator-catalog";
 
 const ProductionAdoptionCenter = lazy(async () => ({
   default: (await import("./ProductionAdoptionCenter")).ProductionAdoptionCenter,
@@ -327,16 +329,6 @@ function processEditorHref(
   const suffix = query.toString();
   return `/studio/work/${encodeURIComponent(workId)}/${surface}${suffix ? `?${suffix}` : ""}`;
 }
-
-import {
-  Badge,
-  CapabilityGrid,
-  DemoWorkspace,
-  ProcessNavigator,
-  VIEW_ITEMS,
-  episodeLabels,
-  type ManuscriptView,
-} from "./ProductionManuscriptNavigator";
 
 export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, execute }: ProductionManuscriptWorkspaceProps) {
   const t = useT();
