@@ -126,14 +126,24 @@ describe("ClaudeConnectionCard", () => {
     expect(screen.getByLabelText("예산 한도 (USD)")).toBeTruthy();
   });
 
-  it("toggles key visibility with an accessible pressed state", () => {
+  it("toggles key visibility with a label that names the next action (no second pressed state)", () => {
     render(<ClaudeConnectionCard />);
 
     const toggle = screen.getByRole("button", { name: "키 보기" });
-    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    expect(toggle.hasAttribute("aria-pressed")).toBe(false);
     fireEvent.click(toggle);
     expect(screen.getByLabelText("Anthropic API 키").getAttribute("type")).toBe("text");
-    expect(screen.getByRole("button", { name: "키 숨기기" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "키 숨기기" }).hasAttribute("aria-pressed")).toBe(false);
+  });
+
+  it("keeps password managers from offering to save or fill the API key", () => {
+    render(<ClaudeConnectionCard />);
+
+    const input = screen.getByLabelText("Anthropic API 키");
+    expect(input.getAttribute("autocomplete")).toBe("off");
+    expect(input.getAttribute("data-lpignore")).toBe("true");
+    expect(input.getAttribute("data-1p-ignore")).toBe("true");
+    expect(input.getAttribute("data-bwignore")).toBe("true");
   });
 
   it("asks for the key and for consent before it calls Anthropic", () => {

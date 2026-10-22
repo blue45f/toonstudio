@@ -19,9 +19,14 @@ export interface ClaudePreflightRow {
 export interface ClaudePreflightProps {
   /** 이번 요청에 실제로 쓸 모델 ID. */
   readonly model: string;
-  /** 이번 요청의 비용 상한(USD). 단가를 모르는 모델이면 null. */
-  readonly capUsd: number | null;
+  /** 이번 요청의 비용 상한(USD). 단가를 모르는 모델이면 null, 보낼 이미지·글이 아직 없으면 undefined. */
+  readonly capUsd: number | null | undefined;
   readonly guard: ClaudeBudgetGuard;
+  /**
+   * 무엇이 어디로 나가는지 한 문장. 자세한 줄을 펼치지 않아도 항상 보이는 곳에 둔다(외부 전송 고지는 접어 두지 않는다).
+   * 보통 `rows`의 "외부 전송" 줄과 같은 문장을 넘긴다.
+   */
+  readonly summary?: string;
   /** 기능마다 다른 줄(외부 전송·예상 시간·결과·원본 보호). 호출자가 번역해 넘긴다. */
   readonly rows: readonly ClaudePreflightRow[];
   readonly className?: string;
@@ -30,17 +35,19 @@ export interface ClaudePreflightProps {
 /**
  * 실행 전 확인 — 스튜디오 AI 어시스트 허브의 "실행 전 확인"과 같은 어휘(처리 경로·외부 전송·비용·예상 시간·결과·실패 정책·
  * 원본 보호)로, 사용자 결제 키로 Anthropic에 직접 보내기 전에 무엇이 어디로 얼마까지 나가는지 한눈에 보여 준다.
- * 요약 줄(모델·비용 상한)은 항상 보이고, 자세한 줄은 펼쳐 본다. 세션 예산을 넘을 수 있으면 요약 아래에 따로 알린다.
+ * 요약 줄(모델·비용 상한)과 "무엇이 어디로 나가는지" 한 문장은 항상 보이고, 자세한 줄은 펼쳐 본다. 세션 예산을 넘을 수 있으면 따로 알린다.
  */
-export function ClaudePreflight({ model, capUsd, guard, rows, className }: ClaudePreflightProps) {
+export function ClaudePreflight({ model, capUsd, guard, rows, summary, className }: ClaudePreflightProps) {
   const t = useT();
   const detailsId = useId();
   const info = claudeModelInfo(model);
   const modelLabel = info?.label ?? model;
-  const capText = capUsd === null
-    ? t("claudeAssist.preflight.capUnknown")
-    : t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) });
-  const attention = guard.verdict.kind === "exceeds" || guard.verdict.kind === "unknown-cost";
+  const capText = capUsd === undefined
+    ? t("claudeAssist.preflight.capPending")
+    : capUsd === null
+      ? t("claudeAssist.preflight.capUnknown")
+      : t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) });
+  const attention = !guard.pending && (guard.verdict.kind === "exceeds" || guard.verdict.kind === "unknown-cost");
   const limit = guard.limitUsd === null ? "" : formatClaudeUsd(guard.limitUsd);
 
   return (
@@ -58,7 +65,7 @@ export function ClaudePreflight({ model, capUsd, guard, rows, className }: Claud
           <span
             className={cn(
               "shrink-0 rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold",
-              capUsd === null ? "border-warn/35 bg-warn/10 text-warn" : "border-accent/30 bg-accent/10 text-accent",
+              capUsd === null ? "border-warn/35 bg-warn/10 text-warn" : capUsd === undefined ? "border-line bg-card text-fg-3" : "border-accent/30 bg-accent/10 text-accent",
             )}
             data-claude-cap-chip="true"
           >
@@ -77,9 +84,11 @@ export function ClaudePreflight({ model, capUsd, guard, rows, className }: Claud
           ))}
           <dt className="font-semibold text-fg-3">{t("claudeAssist.preflight.cost")}</dt>
           <dd className="min-w-0 text-fg-2">
-            {capUsd === null
-              ? t("claudeAssist.preflight.costUnknown")
-              : t("claudeAssist.preflight.costValue", { cost: formatClaudeUsd(capUsd) })}
+            {capUsd === undefined
+              ? t("claudeAssist.preflight.costPending")
+              : capUsd === null
+                ? t("claudeAssist.preflight.costUnknown")
+                : t("claudeAssist.preflight.costValue", { cost: formatClaudeUsd(capUsd) })}
             {info ? (
               <span className="mt-0.5 block text-fg-3">
                 {t("claudeAssist.card.priceLine", { input: `$${info.inputUsdPerMTok}`, output: `$${info.outputUsdPerMTok}` })}
@@ -92,6 +101,15 @@ export function ClaudePreflight({ model, capUsd, guard, rows, className }: Claud
           <dd className="min-w-0 text-fg-2">{t("claudeAssist.preflight.failureValue")}</dd>
         </dl>
       </details>
+
+      {summary ? (
+        <p className="px-1 text-[0.6875rem] leading-relaxed text-fg-2" data-claude-preflight-summary="true">
+          <span className="font-semibold text-fg">{t("claudeAssist.preflight.transfer")}</span>
+          {" · "}
+          {summary}
+          <span className="mt-0.5 block text-fg-3">{t("claudeAssist.preflight.failureShort")}</span>
+        </p>
+      ) : null}
 
       {attention ? (
         <div role="alert" className="space-y-2 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2" data-claude-budget-alert="true">
@@ -110,6 +128,11 @@ export function ClaudePreflight({ model, capUsd, guard, rows, className }: Claud
                 })}
             </span>
           </p>
+          {guard.unconfirmedRequests > 0 ? (
+            <p className="text-fg-3" data-claude-unconfirmed="true">
+              {t("claudeAssist.budget.unconfirmed", { count: guard.unconfirmedRequests, cost: formatClaudeUsd(guard.unconfirmedUsd) })}
+            </p>
+          ) : null}
           <label className="flex min-h-11 cursor-pointer items-center gap-2 font-semibold text-fg">
             <input type="checkbox" checked={guard.overridden} onChange={(event) => guard.setOverridden(event.target.checked)} />
             {t("claudeAssist.budget.override")}

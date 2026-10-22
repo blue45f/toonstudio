@@ -325,13 +325,18 @@ export function ClaudeConnectionCard() {
                 placeholder={t("claudeAssist.card.apiKeyPlaceholder")}
                 autoComplete="off"
                 autoCapitalize="off"
+                autoCorrect="off"
                 spellCheck={false}
                 disabled={busy}
+                // 로그인 폼이 아니다. 비밀번호 관리자가 이 키를 저장하자고 묻거나 채우지 않게 한다(키는 이 브라우저의 저장소에만 둔다).
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
               />
               <button
                 type="button"
                 className={cn(CLAUDE_BUTTON, "shrink-0 px-3")}
-                aria-pressed={showKey}
                 aria-label={showKey ? t("claudeAssist.card.hideKey") : t("claudeAssist.card.showKey")}
                 onClick={() => setShowKey((value) => !value)}
               >

@@ -28,6 +28,11 @@ export function ClaudeBudgetMeter({ className, showUsage = true }: { readonly cl
             : t("claudeAssist.hub.usageLine", { cost: formatClaudeUsd(usage.estimatedUsd), requests: formatNumber(usage.requests) })}
         </p>
       ) : null}
+      {usage.unconfirmedRequests > 0 ? (
+        <p className="text-[0.6875rem] text-fg-3" data-claude-unconfirmed="true">
+          {t("claudeAssist.budget.unconfirmed", { count: usage.unconfirmedRequests, cost: formatClaudeUsd(usage.unconfirmedUsd) })}
+        </p>
+      ) : null}
       {limitUsd === null || percent === null ? (
         <p className="text-[0.6875rem] text-fg-3">{t("claudeAssist.budget.none")}</p>
       ) : (
