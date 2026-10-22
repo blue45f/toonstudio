@@ -45,7 +45,7 @@ const BELOW_TRANSLATED_FLOOR: readonly string[] = [
   "af", "am", "ar", "as", "az", "be", "bg", "bn", "bs", "ca", "cs", "da", "el",
   "et", "eu", "fa", "fi", "fil", "gl", "he", "hr", "hu", "hy", "id", "is",
   "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "mn", "ms",
-  "my", "ne", "nl", "no", "or", "pa", "pl", "pt", "ro", "ru", "si", "sk", "sl", "sq", "sr",
+  "my", "ne", "nl", "no", "or", "pl", "pt", "ro", "ru", "si", "sk", "sl", "sq", "sr",
   "sv", "sw", "ta", "te", "th", "tr", "uk", "ur", "uz", "vi", "zu",
 ];
 /** The app-shell key surface every published dictionary was authored against. */
