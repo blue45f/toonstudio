@@ -80,8 +80,9 @@ theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성
   「itch 캡처 후 개방」 표현과 요구 표(예: Fences는 캡처 + 영수증 + 서면 확인)가 다른 부분도 소유자가 정한다.
 - 증빙 검사의 한계: 이 게이트는 **형식·일관성 검사**이지 증빙의 진위 판정이 아니다. 필수 필드, itch 주소
   (https `itch.io`·`*.itch.io`의 팩 페이지; 닮은 도메인·자격 정보·루트 주소는 거부), 달력에 있고 미래가 아닌
-  날짜(UTC+14의 오늘까지), 자리표시가 아닌 보관 위치(`ref`, 6자 이상), 로컬 라이선스 문서가 그 해시로 기록된
-  자기 팩의 파일(`libraryPacks`)인지까지 거른다. 영수증·캡처·서면 확인의 실물은 레포 밖이라 대조하지 않으며,
+  날짜(UTC+14의 오늘까지), 자리표시가 아닌 보관 위치(`ref`: 영폭 공백·한글 채움 문자만 있거나 `TBD`·`추후 제출`·숫자만 있는 값은 거부, 6자 이상),
+  제어·서식 문자가 없는 텍스트, 로컬 라이선스 문서가 그 해시로 기록된 자기 팩의 파일(`libraryPacks`; 라이브러리
+  팩 폴더 이름은 `libraryPath`의 팩 폴더와 같아야 한다)인지까지 거른다. 영수증·캡처·서면 확인의 실물은 레포 밖이라 대조하지 않으며,
   실물과 대조되는 증빙은 `local-license-file`(sha256)뿐이다. 그래서 allow 전환은 항상 소유자가 직접 하는 원장
   편집이고, 이 게이트는 실수·누락을 막는 안전장치다.
 - 증빙 항목 형식(`evidence[]`): 모든 증빙은 `kind`와 `verifiedAt`(YYYY-MM-DD)을 가진다.
@@ -95,18 +96,21 @@ theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성
 - 팩을 여는 절차(소유자): ① 증빙을 보관하고 `evidence`에 항목 추가 → ② `serve`를 `allow`로 바꾸고
   `holdReason`·`holdLabel`을 지우고 `grant`(`status`·`licenseName`·`commercialUse`·`attributionRequired`)를 추가 →
   ③ `pnpm run verify:creator-bundle-pack-rights`로 검증 → ④ 생성기 재실행과 장르 씬팩 연결 갱신 →
-  ⑤ 플래너 `--dry-run`으로 제외·합계 확인 후 승인된 업로드.
+  ⑤ 플래너 `--dry-run`으로 제외·합계 확인 후 승인된 업로드 →
+  ⑥ 시드 스냅샷 테스트의 `EXPECTED_ALLOWED_TITLES`(`scripts/creator-bundle-pack-rights.test.mjs`)와 Cute Dungeon·권고 hold
+  같은 시드 사실 테스트를 같은 변경에서 갱신한다(팩을 여는 것은 소유자 결정이라 이 테스트들이 일부러 알려 준다).
 - 시드(2026-10-22): 61개 전부 hold. Cute Dungeon Megapack은 요구 증빙(CC0 문서)을 이미 갖췄지만 미수신
   (`pending`) 묶음이라 편입 전에는 `serve`를 allow로 바꿔도 아무것도 열리지 않는다(`holdReason: pending-ingest`).
   검토 보고(2026-10-22)는 Restaurant(보류 1,023개)·Medieval(보류 1,265개)·Small Props(배치 가능 342개)를 서면
   확인 전까지 제외하라고 권고했고, 원장은 이를 `reviewRecommendedHold`로 표시한다. 이 구분은 증빙 상태를 기록한
   것이며 개방·제외 확정은 소유자에게 있다.
-- hold 팩의 사용자 노출 문구: 패널의 「준비 중인 팩」에 보이는 `holdLabel`은 모든 hold 팩이 같은 중립 문장
-  (`HOLD_PUBLIC_LABEL`)이다. 제작사 확인·증빙·충돌 같은 사유와 공개 약속은 쓰지 않고, 사유는 내부 필드
+- hold 팩의 사용자 노출 문구: 원장 hold 때문에 `pendingPacks`(`rights-hold`)로 가서 패널의 「준비 중인 팩」에 보이는
+  `holdLabel`은 모든 hold 팩이 같은 중립 문장(`HOLD_PUBLIC_LABEL`)이다. 미수신 `pending` 묶음 14개의 화면 문구는
+  생성기 `PENDING_PACKS`의 기존 사유(회수 상태 등 권리와 무관)가 정하고 그 팩들의 `holdLabel`은 화면에 쓰이지 않는다. 제작사 확인·증빙·충돌 같은 사유와 공개 약속은 쓰지 않고, 사유는 내부 필드
   `holdReason`에만 둔다.
 - 상반된 라이선스 문서: 같은 팩 안에 서로 다른 라이선스 문서가 공존하는 팩 11개(LumaGrove, Rocks and Stone,
   TerraToon, CosmoKit, Cemetery Statues, Voxel Summer, Raft on the Desert, Swamp Builder, Iowa Covered Bridges,
-  Winter Atolls, Low Poly Food Packaging)는 `mappingNote`에 상충을 적었다. 팩 폴더의 godot LICENSE와
+  Winter Atolls, Low Poly Food Packaging)는 `mappingNote`에 상충을 적었다. 팩 폴더의 LICENSE와
   `Blend Textures.zip` 안 LICENSE(「앱에 포함해 배포」 명시)의 우선순위는 제작사 서면 확인 대상이다.
 - 팩 귀속 주의: 인제스션 id의 원본 파일이 라이브러리에서 다른 팩 폴더로 분류된 팩 5개(Asia Megapack,
   NecroPOLY, Fences and Walls, PixelDrift Metro FREE, Low Poly Tiny Forest)는 두 경로의 증빙을
@@ -183,11 +187,12 @@ node scripts/generate-creator-bundle-theme-packs.mjs \
   헤더를 생략하는 클라이언트는 막지 못한다 — 올라간 팩의 바이트는 사실상 공개라고 보아야 한다. 권리 원장은
   Worker가 아니라 업로드 단계(플래너)에서만 강제된다.
 - 플래너는 권리 원장에서 allow인 배치 가능 팩(`group: pack`)의 에셋만 계획에 넣는다. hold·미등록 팩, 묶음·제목·
-  제작사가 원장과 다른 팩, theme-packs의 권리 블록이 원장 투영과 다르거나 없는 팩(`rights-drift`)의 에셋은 실물을
-  읽지 않고 제외하며, 제외 에셋이 생기면(theme-packs가 원장보다 오래됨) 경고하고 `--production`을 거부한다.
-  허용된 에셋이 하나도 없으면 `--write`·`--production`을 거부한다. 에셋 경로는 에셋 루트 상대 경로여야 하고
-  소속 팩의 `ingestPackIds` 폴더 아래여야 한다(로더와 같은 규칙). 다른 팩 폴더나 루트 밖 파일은 허용된 팩의
-  이름으로 올라갈 수 없다.
+  제작사가 원장과 다른 팩, theme-packs의 `ingestPackIds`가 생성기 팩 정의(`CATALOG_PACKS`)의 인제스션 폴더와 다른
+  팩(`ingest-mismatch`), 권리 블록이 원장 투영과 다르거나 없는 팩(`rights-drift`)의 에셋은 실물을 읽지 않고
+  제외하며, 제외 에셋이 생기면(theme-packs가 원장보다 오래됨) 경고하고 `--production`을 거부한다. 허용된 에셋이
+  하나도 없으면 `--write`·`--production`을 거부한다. 에셋 경로는 에셋 루트 상대 경로여야 하고 소속 팩의
+  `ingestPackIds` 폴더 아래여야 하며(로더와 같은 규칙), 심볼릭 링크를 해석한 실제 파일도 그 폴더 안의 일반
+  파일이어야 한다. 다른 팩 폴더나 루트 밖 파일은 허용된 팩의 이름으로 올라갈 수 없다.
 - 객체 목록 기록: `deploy/cloudflare-static/bundle-v2-deploy-manifest.json`은 2026-10-22 산출
   스냅샷(GLB 5,303개·588,132,208바이트 + 배포 인덱스 1개 = 5,304객체·588,132,367바이트)이며
   원본 경로 키·hold 팩 객체를 포함하는 **원장 이전 기록**이다. 업로드의 입력이 아니므로(업로드는

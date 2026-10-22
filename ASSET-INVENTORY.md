@@ -82,7 +82,7 @@ Volume 1」(EmaceArt · RG Poly)의 3D 에셋 배선이 이미 있다(`docs/stud
 팩별 로컬 라이선스 문서 현황(라이브러리 `~/3d-asset-library` 기준, 79개 문서 → sha256 33종):
 - EmaceArt: 팩 안 문서는 개인·상업 사용을 허용하고 판매·독립 파일·다른 팩 안 재배포를 금지하거나 부탁한다.
   「앱에 포함해 배포」를 명시한 변형은 The80s·PixelDrift Metro·SlavicWorldFree 계열과 `Blend Textures.zip`
-  안 LICENSE 사본 17개다. 같은 팩 폴더의 godot LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁 또는 재배포 금지)와 이 zip 사본이
+  안 LICENSE 사본 17개다. 같은 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁 또는 재배포 금지)와 이 zip 사본이
   함께 있어 서로 다른 문구가 공존하는 팩이 11개 있고(Iowa Covered Bridges·Cemetery Statues·Raft on the Desert
   등), 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다. **웹 서비스 호스팅·하위 사용자는 어느 변형도 허용도
   금지도 하지 않으며**, 일부 변형은 수정본에도 같은 제한을 적어 변환·재압축이 면책이 되지 않는다. 풀팩 문서가
