@@ -1,5 +1,4 @@
 /** Product Creator Pack orchestration with SQLite authority for brush/filter/palette assets. */
-
 import {
   sanitizeBrushSnapshot,
   type StudioSavedBrush,
@@ -42,6 +41,7 @@ import {
 import { acquireStudioLocalDatabase } from "./studio-local-database-runtime";
 import { studioLocalDatabaseOwnershipBusyUserMessage } from "./studio-local-database-ownership";
 import { compareStudioMarketplaceVersions } from "./studio-marketplace-packages";
+import { resolveStudioCommunityPackErrorFromCause, resolveStudioCommunityPackReason } from "./status-i18n/studio-producer-error-i18n-community-pack";
 import {
   getProductStudioPaletteSqliteRepository,
   StudioPaletteSqliteRepositoryError,
@@ -633,7 +633,7 @@ function errorResult(action: string, error: unknown): StudioCreatorPackInstallRe
       message: `${action}에 실패했습니다. 팔레트 라이브러리가 가득 찼습니다.`,
     };
   }
-  const detail = error instanceof Error ? error.message : String(error);
+  const detail = resolveStudioCommunityPackErrorFromCause(error) ?? (error instanceof Error ? error.message : String(error));
   return {
     status: "storage-error",
     installedCount: 0,
@@ -894,7 +894,7 @@ export async function installStudioCreatorPackProduct(
       return {
         status: "conflict",
         installedCount: 0,
-        message: migration.reason,
+        message: resolveStudioCommunityPackReason(migration.reason),
       };
     }
     const result = await installStudioCreatorPackProductUnlocked(pack, options);
@@ -1032,7 +1032,7 @@ export async function uninstallStudioCreatorPackProduct(
         return {
           status: "conflict",
           installedCount: 0,
-          message: migration.reason,
+          message: resolveStudioCommunityPackReason(migration.reason),
         };
       }
       const result = await uninstallStudioCreatorPackProductUnlocked(pack, options);

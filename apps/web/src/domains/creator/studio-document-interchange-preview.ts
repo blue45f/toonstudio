@@ -5,6 +5,11 @@ import {
 
 import { resolveStudioCbzWarning } from "./status-i18n/studio-producer-error-i18n-interchange-cbz";
 import { resolveStudioOpenRasterWarning } from "./status-i18n/studio-producer-error-i18n-interchange-ora";
+import {
+  resolveStudioPsdDecision,
+  resolveStudioPsdDecisionAlternative,
+  resolveStudioPsdSkipEntry,
+} from "./status-i18n/studio-producer-error-i18n-psd-import";
 import type { StudioCbzImportResult } from "./studio-cbz-interchange";
 import type {
   StudioInterchangeLossConstraint,
@@ -126,14 +131,17 @@ export function createStudioPsdImportLossPreview(
   const constraints: StudioInterchangeLossConstraint[] =
     result.lossManifest?.decisions
       .filter((decision) => decision.disposition !== "preserved")
-      .map((decision) => ({
-        category: psdFeatureCategory(decision.feature),
-        ...(decision.disposition === "blocked" ? { gate: "blocking" as const } : {}),
-        severity: "warning" as const,
-        message: decision.alternative
-          ? `${decision.message} 대안: ${decision.alternative}`
-          : decision.message,
-      })) ?? [];
+      .map((decision) => {
+        // A4 D4 (R15): 가져오기 결정은 코드로, 내보내기 결정은 message로 해석한다.
+        const message = resolveStudioPsdDecision(decision);
+        const alternative = resolveStudioPsdDecisionAlternative(decision);
+        return {
+          category: psdFeatureCategory(decision.feature),
+          ...(decision.disposition === "blocked" ? { gate: "blocking" as const } : {}),
+          severity: "warning" as const,
+          message: alternative ? `${message} 대안: ${alternative}` : message,
+        };
+      }) ?? [];
   // 조정 레이어 대응표·충실도 리포트는 손실 고지와 별개로 항상 보여 준다 —
   // "전부 복원됨"으로 읽히지 않게 정확/근사/파라미터만 보존/제외를 나눠 표기한다.
   if (result.adjustmentReport) {
@@ -146,7 +154,7 @@ export function createStudioPsdImportLossPreview(
       });
     });
   }
-  constraints.push(...boundedMessages(result.skipped, "editability"));
+  constraints.push(...boundedMessages(result.skipped.map(resolveStudioPsdSkipEntry), "editability"));
   if (result.originalFile) constraints.push({
     category: "editability", severity: "notice",
     message: "적용하면 원본 PSD를 이 기기에 그대로 보관하고 프로젝트에 연결합니다. 다른 기기로 옮길 때는 원본을 포함하는 프로젝트 아카이브를 사용하세요.",
