@@ -5,6 +5,7 @@ import type { LocalMusicTrack } from "./studio-music-client";
 
 import { musicProviderLabel } from "./studio-music-provider-catalog";
 import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
+import { resolveStudioMusicPageError } from "../status-i18n/studio-producer-error-i18n";
 
 import { MUSIC_ARCS, MUSIC_INTENSITIES, MUSIC_MOODS, MUSIC_PURPOSES, MUSIC_SONG_STRUCTURES, MUSIC_VOCAL_STYLES, musicFileExtension, musicFilename } from "@toonstudio/core/studio-music";
 
@@ -58,7 +59,7 @@ export function MusicTrackCard({ track, saved, busy, pending, onDelete, onSave, 
       if (kind === "save") await onSave();
       else { await onDelete(); setConfirming(false); }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : subStatusText("studio.subStatus.track.libraryFailed", "보관함 작업을 완료하지 못했습니다. 음원 파일을 먼저 다운로드해 주세요."));
+      setError(resolveStudioMusicPageError(reason) ?? (reason instanceof Error ? reason.message : subStatusText("studio.subStatus.track.libraryFailed", "보관함 작업을 완료하지 못했습니다. 음원 파일을 먼저 다운로드해 주세요.")));
     } finally { actionLock.current = false; setAction(null); }
   };
   return (

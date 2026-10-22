@@ -11,6 +11,7 @@ import {
 } from "./studio-music-provider-catalog";
 import { importExternalMusicTrack } from "./studio-music-import";
 import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
+import { resolveStudioMusicPageError } from "../status-i18n/studio-producer-error-i18n";
 
 interface MusicExternalImportPanelProps {
   readonly brief: MusicBrief;
@@ -70,7 +71,7 @@ export function MusicExternalImportPanel({
       setFileInputKey((value) => value + 1);
       onNotice(subStatusText("studio.subStatus.musicExt.saved", { provider: provider.name }, "{provider} 결과를 검증해 이 기기 보관함에 저장했습니다."));
     } catch (reason) {
-      onError(reason instanceof Error ? reason.message : subStatusText("studio.subStatus.musicExt.importFailed", "외부 음원을 가져오지 못했습니다."));
+      onError(resolveStudioMusicPageError(reason) ?? (reason instanceof Error ? reason.message : subStatusText("studio.subStatus.musicExt.importFailed", "외부 음원을 가져오지 못했습니다.")));
     } finally {
       setBusy(false);
     }
