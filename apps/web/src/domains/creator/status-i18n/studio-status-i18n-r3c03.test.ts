@@ -31,7 +31,7 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
     for (const entry of (match[2] ?? "").matchAll(/"([^"]+)":\s*"((?:[^"\\]|\\.)*)"/g)) {
       entries[entry[1] ?? ""] = entry[2] ?? "";
     }
-    blocks[match[1] ?? ""] = entries;
+    blocks[match[1] ?? ""] = { ...(blocks[match[1] ?? ""] ?? {}), ...entries };
   }
   return blocks as Record<"ko" | "en", Record<string, string>>;
 }
@@ -263,10 +263,20 @@ const MODULES = [
   { file: "studio-scene3d-status-i18n.ts", keys: SCENE3D_KEYS },
 ] as const;
 
+/** 코어를 따로 둔 등록 모듈은 코어 소스까지 합쳐 읽는다(키가 두 모듈에 나뉘어 등록된다). */
+const CORE_SOURCES: Readonly<Record<string, string>> = {
+  "studio-vrm-panel-status-i18n.ts": "status-i18n/studio-vrm-panel-status-i18n-core.ts",
+};
+
+function readRegistration(file: string): string {
+  const core = CORE_SOURCES[file];
+  return core ? `${readSource(file)}\n${readSource(core)}` : readSource(file);
+}
+
 describe("studio bg3d/vrm/scene-3d status i18n r3c03", () => {
   it("확장·신규 모듈의 ko/en 키가 패리티를 이루고 신규 키 ko 원문·플레이스홀더가 정확하다", () => {
     for (const mod of MODULES) {
-      const blocks = parseRegisterModule(readSource(mod.file));
+      const blocks = parseRegisterModule(readRegistration(mod.file));
       expect(Object.keys(blocks.ko).sort(), mod.file).toEqual(Object.keys(blocks.en).sort());
       for (const key of mod.keys) {
         expect(blocks.ko[key], `ko missing ${key}`).toBe(EXPECTED_KO[key]);
@@ -283,12 +293,12 @@ describe("studio bg3d/vrm/scene-3d status i18n r3c03", () => {
     const consumerSource = CONSUMERS.map((file) => readSource(file)).join("\n");
     const registered = new Set<string>();
     for (const mod of MODULES) {
-      const blocks = parseRegisterModule(readSource(mod.file));
+      const blocks = parseRegisterModule(readRegistration(mod.file));
       for (const key of Object.keys(blocks.ko)) registered.add(key);
     }
     // batch3 이전 등록분까지 포함한 전체 등록 집합으로 dangling을 판정한다.
     for (const file of ["studio-bg3d-panel-status-i18n.ts", "studio-vrm-panel-status-i18n.ts"]) {
-      const blocks = parseRegisterModule(readSource(file));
+      const blocks = parseRegisterModule(readRegistration(file));
       for (const key of Object.keys(blocks.ko)) registered.add(key);
     }
     for (const key of [...BG3D_R3_KEYS, ...VRM_R3_KEYS, ...SCENE3D_KEYS]) {

@@ -26,7 +26,7 @@ import {
   type StudioScenarioImageGenerationRequest,
 } from "./studio-scenario-candidate-workflow";
 import { captureStudioAiGeneratedAssetProvenance } from "./studio-ai-generated-asset-model";
-import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
+import { aiErrorText } from "./studio-ai-error-i18n-t4t5-core";
 import {
   parseStudioAiRequestedSize,
   studioImageAiProviderContext,

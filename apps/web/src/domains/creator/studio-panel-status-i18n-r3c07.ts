@@ -6,13 +6,14 @@
  * panelStatusText 선례)로 호출한다. 네임스페이스는 studio.panelStatus.r3c07.*로
  * 분리했다 — 기존 모듈(studio-panel-status-i18n·-r3c06)의 키 개수 단언을
  * 깨지 않기 위해서다. 대상 표면: c07 클러스터 creator 루트 파일 후반부.
+ *
+ * 진입 그래프(앱 셸·Studio 첫 청크) 소비 파일이 쓰는 키 21개와 해석 헬퍼는 `./status-i18n/studio-panel-status-i18n-r3c07-core` 로 옮겼다.
+ * 이 모듈은 지연 표면 전용 키 139개만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
+ * 그대로다. 진입 그래프에 닿는 파일에서는 이 모듈 대신 코어를 import 한다.
  */
-import {
-  FALLBACK_CHAIN,
-  getLang,
-  registerI18nLocaleEntries,
-  resolveTranslationForDisplay,
-} from "@/shared/lib/i18n";
+import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
+
+export { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
 
 registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.createSeries.loadFailed": "시리즈를 불러오지 못했습니다.",
@@ -44,8 +45,6 @@ registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.creatorPack.checkingSql": "로컬 SQL 확인 중…",
   "studio.panelStatus.r3c07.creatorPack.packsEmpty": "조건에 맞는 Creator Pack이 없습니다.",
   "studio.panelStatus.r3c07.draftSync.syncFailed": "동기화 작업을 완료하지 못했습니다.",
-  "studio.panelStatus.r3c07.drawingPractice.originalNotFound": "따라 그리기 원본을 찾지 못했어요",
-  "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription": "내 그림은 그대로 유지됩니다. 같은 원본을 다시 가져오세요.",
   "studio.panelStatus.r3c07.effectsWorkspace.budgetExceeded": "효과 스택 저장 예산을 초과해 기존 스택을 유지했습니다.",
   "studio.panelStatus.r3c07.effectsWorkspace.applyFailed": "레시피를 적용하지 못했습니다.",
   "studio.panelStatus.r3c07.effectsWorkspace.recipesEmpty": "일치하는 레시피가 없습니다",
@@ -69,8 +68,6 @@ registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.looks.favoritesEmpty": "즐겨찾기한 룩이 없어요. 별 아이콘으로 추가해 보세요.",
   "studio.panelStatus.r3c07.looks.searchEmpty": "검색 결과가 없어요.",
   "studio.panelStatus.r3c07.multiObject.objectsEmpty": "배치된 3D 소품이 없습니다. 룸 프리셋을 적용하거나 모델을 추가하세요.",
-  "studio.panelStatus.r3c07.onDemandModule.loadFailed": "창을 불러오지 못했습니다. 캔버스는 유지됩니다.",
-  "studio.panelStatus.r3c07.onDemandModule.loading": "요청한 창을 불러오는 중…",
   "studio.panelStatus.r3c07.onnxLineExtract.extractFailed": "선 추출에 실패했어요.",
   "studio.panelStatus.r3c07.onnxUpscale.upscaleFailed": "업스케일에 실패했어요.",
   "studio.panelStatus.r3c07.pageOrganizerGrid.searchEmpty": "일치하는 페이지가 없습니다.",
@@ -104,9 +101,6 @@ registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.rasterToolRecovery.preparingComposite": "페이지 합성본을 준비 중입니다. 다른 선택 도구를 누르면 마지막에 고른 도구로 이어서 실행합니다.",
   "studio.panelStatus.r3c07.rasterToolRecovery.preparingPreview": "미리보기 준비 중…",
   "studio.panelStatus.r3c07.rasterToolRecovery.preparingEffectCopy": "효과용 이미지 복사본 준비 중…",
-  "studio.panelStatus.r3c07.reliabilityRail.unhandledFailure": "처리하지 못한 실패 있음",
-  "studio.panelStatus.r3c07.reliabilityRail.recovered": "실패에서 회복됨",
-  "studio.panelStatus.r3c07.reliabilityRail.recoveryUnavailable": "지금은 복구할 수 없습니다. 편집기가 준비된 뒤 다시 시도하세요.",
   "studio.panelStatus.r3c07.retouchGuide.copyUnavailable": "현재 상태에서는 편집용 이미지 복사본을 준비할 수 없습니다. 잠금과 표시할 내용을 확인하세요.",
   "studio.panelStatus.r3c07.revisionCompare.loadFailed": "변경 내용을 확인하지 못했어요",
   "studio.panelStatus.r3c07.saveSync.serverUnavailable": "서버에 연결할 수 없어요. 작업은 이 기기에 보관 중이고, 연결이 돌아오면 자동으로 동기화해요.",
@@ -137,11 +131,6 @@ registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.smartShapeDialog.restoreFailed": "원고가 바뀌어 원본을 복원하지 못했어요.",
   "studio.panelStatus.r3c07.stockImage.searchEmpty": "검색 결과가 없습니다.",
   "studio.panelStatus.r3c07.svgPreview.preparing": "SVG 미리보기 준비 중",
-  "studio.panelStatus.r3c07.toolBeltGroups.documentLocked": "이 문서는 지금 편집할 수 없어요.",
-  "studio.panelStatus.r3c07.toolBeltUtility.timelapseBlocked": "마스터 편집 중에는 타임랩스를 녹화할 수 없습니다.",
-  "studio.panelStatus.r3c07.toolBeltUtility.timelineBlocked": "마스터 편집 중에는 타임라인을 열 수 없습니다.",
-  "studio.panelStatus.r3c07.toolBeltQuickActions.undoEmpty": "되돌릴 이전 작업이 없습니다.",
-  "studio.panelStatus.r3c07.toolBeltQuickActions.redoEmpty": "다시 적용할 작업이 없습니다.",
   "studio.panelStatus.r3c07.toolbarConfigurator.searchEmpty": "추가할 검색 결과가 없습니다.",
   "studio.panelStatus.r3c07.transformField.invalidInput": "숫자 또는 안전한 수식을 입력해 주세요.",
   "studio.panelStatus.r3c07.transformPrecision.sizeUnsupported": "이 선택은 수치 크기 조절을 지원하지 않아요.",
@@ -152,14 +141,8 @@ registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.unifiedSmartManager.bulkAdjustUnsupported": "이미지 조정 프리셋 일괄 적용은 아직 지원하지 않아요. 조정은 에셋을 삽입한 뒤 에디터에서 적용해 주세요.",
   "studio.panelStatus.r3c07.unifiedPopover.unsupportedKind": "지원하지 않는 통합 에셋 종류입니다: {id}",
   "studio.panelStatus.r3c07.unifiedPopover.unsupportedAction": "지원하지 않는 삽입 동작입니다: {action}",
-  "studio.panelStatus.r3c07.workflowAccess.openFailed": "도구를 열지 못했어요. 작품 상태를 확인하고 다시 시도해 주세요.",
-  "studio.panelStatus.r3c07.workspaceArrangementToolbar.opening": "배치 도구 여는 중…",
-  "studio.panelStatus.r3c07.workspaceArrangementToolbar.loadFailed": "배치 도구를 불러오지 못했어요. 다시 눌러 주세요. 현재 원고와 배치는 유지됩니다.",
   "studio.panelStatus.r3c07.workspaceMenuGate.menuOpening": "작업공간 메뉴를 여는 중입니다.",
   "studio.panelStatus.r3c07.workspaceMenuGate.moveToolsOpening": "작업공간 이동 도구를 여는 중입니다.",
-  "studio.panelStatus.r3c07.workspaceRegion.panelOpening": "패널 도구 여는 중…",
-  "studio.panelStatus.r3c07.workspaceRegion.menuLoadFailed": "설정을 불러오지 못했어요.",
-  "studio.panelStatus.r3c07.workspaceRegion.menuOpening": "배치 설정 여는 중…",
   "studio.panelStatus.r3c07.worldWiki.sourcesEmpty": "공개할 설정 항목이 아직 없어요",
   "studio.panelStatus.r3c07.wrapAround.piecesEmpty": "아직 저장된 조각이 없어요.",
   "studio.panelStatus.r3c07.writerRoomNovel.budgetExceeded": "Writer Room 문서가 2,000,000바이트 저장 예산을 초과해 소설 변환 결과를 반영하지 않았어요.",
@@ -171,9 +154,6 @@ registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.workFx.marksEmpty": "아직 마크가 없어요. 위 컷 이미지를 클릭해 첫 마크를 찍어보세요.",
   "studio.panelStatus.r3c07.communityUi.seriesSaveFailed": "시리즈를 저장하지 못했습니다.",
   "studio.panelStatus.r3c07.creativeVisuals.shapeUnavailable": "현재 작업 상태에서는 이 도형을 사용할 수 없습니다.",
-  "studio.panelStatus.r3c07.mobileDock.panelLoading": "작업 패널 불러오는 중",
-  "studio.panelStatus.r3c07.smartShapeEditing.noStroke": "교정할 스트로크가 없어요.",
-  "studio.panelStatus.r3c07.smartShapeEditing.locked": "잠긴 원고나 레이어에서는 도형을 교정할 수 없어요.",
   "studio.panelStatus.r3c07.pathBoolean.combining": "빠른 결합으로 도형을 결합하는 중...",
 });
 
@@ -207,8 +187,6 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.r3c07.creatorPack.checkingSql": "Checking local SQL…",
   "studio.panelStatus.r3c07.creatorPack.packsEmpty": "No Creator Pack matches your conditions.",
   "studio.panelStatus.r3c07.draftSync.syncFailed": "Could not complete the sync operation.",
-  "studio.panelStatus.r3c07.drawingPractice.originalNotFound": "Could not find the tracing original",
-  "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription": "Your drawing is kept as is. Import the same original again.",
   "studio.panelStatus.r3c07.effectsWorkspace.budgetExceeded": "The effect stack storage budget was exceeded, so the existing stack was kept.",
   "studio.panelStatus.r3c07.effectsWorkspace.applyFailed": "Could not apply the recipe.",
   "studio.panelStatus.r3c07.effectsWorkspace.recipesEmpty": "No matching recipes",
@@ -232,8 +210,6 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.r3c07.looks.favoritesEmpty": "No favorite looks yet. Add one with the star icon.",
   "studio.panelStatus.r3c07.looks.searchEmpty": "No search results.",
   "studio.panelStatus.r3c07.multiObject.objectsEmpty": "No 3D props placed. Apply a room preset or add a model.",
-  "studio.panelStatus.r3c07.onDemandModule.loadFailed": "Could not load the window. The canvas is kept.",
-  "studio.panelStatus.r3c07.onDemandModule.loading": "Loading the requested window…",
   "studio.panelStatus.r3c07.onnxLineExtract.extractFailed": "Line extraction failed.",
   "studio.panelStatus.r3c07.onnxUpscale.upscaleFailed": "Upscaling failed.",
   "studio.panelStatus.r3c07.pageOrganizerGrid.searchEmpty": "No matching pages.",
@@ -267,9 +243,6 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.r3c07.rasterToolRecovery.preparingComposite": "Preparing the page composite. Pressing another selection tool continues with the last tool you chose.",
   "studio.panelStatus.r3c07.rasterToolRecovery.preparingPreview": "Preparing the preview…",
   "studio.panelStatus.r3c07.rasterToolRecovery.preparingEffectCopy": "Preparing the effect image copy…",
-  "studio.panelStatus.r3c07.reliabilityRail.unhandledFailure": "There is an unhandled failure",
-  "studio.panelStatus.r3c07.reliabilityRail.recovered": "Recovered from failure",
-  "studio.panelStatus.r3c07.reliabilityRail.recoveryUnavailable": "Recovery is not possible right now. Try again after the editor is ready.",
   "studio.panelStatus.r3c07.retouchGuide.copyUnavailable": "The editing image copy cannot be prepared in the current state. Check the lock and what is shown.",
   "studio.panelStatus.r3c07.revisionCompare.loadFailed": "Could not check the changes",
   "studio.panelStatus.r3c07.saveSync.serverUnavailable": "Cannot connect to the server. Your work is stored on this device and will sync automatically when the connection returns.",
@@ -300,11 +273,6 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.r3c07.smartShapeDialog.restoreFailed": "The manuscript changed, so the original could not be restored.",
   "studio.panelStatus.r3c07.stockImage.searchEmpty": "No search results.",
   "studio.panelStatus.r3c07.svgPreview.preparing": "Preparing the SVG preview",
-  "studio.panelStatus.r3c07.toolBeltGroups.documentLocked": "This document cannot be edited right now.",
-  "studio.panelStatus.r3c07.toolBeltUtility.timelapseBlocked": "Timelapse cannot be recorded during master editing.",
-  "studio.panelStatus.r3c07.toolBeltUtility.timelineBlocked": "The timeline cannot be opened during master editing.",
-  "studio.panelStatus.r3c07.toolBeltQuickActions.undoEmpty": "No previous work to undo.",
-  "studio.panelStatus.r3c07.toolBeltQuickActions.redoEmpty": "No work to reapply.",
   "studio.panelStatus.r3c07.toolbarConfigurator.searchEmpty": "No search results to add.",
   "studio.panelStatus.r3c07.transformField.invalidInput": "Enter a number or a safe formula.",
   "studio.panelStatus.r3c07.transformPrecision.sizeUnsupported": "This selection does not support numeric resizing.",
@@ -315,14 +283,8 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.r3c07.unifiedSmartManager.bulkAdjustUnsupported": "Batch application of image adjustment presets is not supported yet. Apply adjustments in the editor after inserting the asset.",
   "studio.panelStatus.r3c07.unifiedPopover.unsupportedKind": "Unsupported unified asset kind: {id}",
   "studio.panelStatus.r3c07.unifiedPopover.unsupportedAction": "Unsupported insert action: {action}",
-  "studio.panelStatus.r3c07.workflowAccess.openFailed": "Could not open the tool. Check the work status and try again.",
-  "studio.panelStatus.r3c07.workspaceArrangementToolbar.opening": "Opening the arrangement tools…",
-  "studio.panelStatus.r3c07.workspaceArrangementToolbar.loadFailed": "Could not load the arrangement tools. Press again. Your current manuscript and arrangement are kept.",
   "studio.panelStatus.r3c07.workspaceMenuGate.menuOpening": "Opening the workspace menu.",
   "studio.panelStatus.r3c07.workspaceMenuGate.moveToolsOpening": "Opening the workspace move tools.",
-  "studio.panelStatus.r3c07.workspaceRegion.panelOpening": "Opening the panel tools…",
-  "studio.panelStatus.r3c07.workspaceRegion.menuLoadFailed": "Could not load the settings.",
-  "studio.panelStatus.r3c07.workspaceRegion.menuOpening": "Opening the arrangement settings…",
   "studio.panelStatus.r3c07.worldWiki.sourcesEmpty": "No setting entries to publish yet",
   "studio.panelStatus.r3c07.wrapAround.piecesEmpty": "No saved pieces yet.",
   "studio.panelStatus.r3c07.writerRoomNovel.budgetExceeded": "The Writer Room document exceeded the 2,000,000-byte storage budget, so the novel conversion result was not applied.",
@@ -334,33 +296,5 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.r3c07.workFx.marksEmpty": "No marks yet. Click the cut image above to place the first mark.",
   "studio.panelStatus.r3c07.communityUi.seriesSaveFailed": "Could not save the series.",
   "studio.panelStatus.r3c07.creativeVisuals.shapeUnavailable": "This shape cannot be used in the current work state.",
-  "studio.panelStatus.r3c07.mobileDock.panelLoading": "Loading the work panel",
-  "studio.panelStatus.r3c07.smartShapeEditing.noStroke": "No stroke to correct.",
-  "studio.panelStatus.r3c07.smartShapeEditing.locked": "Shapes cannot be corrected on a locked manuscript or layer.",
   "studio.panelStatus.r3c07.pathBoolean.combining": "Combining shapes with quick union...",
 });
-
-/**
- * 비컴포넌트 생산자용 생산 시점 로케일 해석 헬퍼 (studio-panel-status-i18n-r3c06의
- * `panelStatusText` 선례). 키가 사전에 없으면 koFallback을 그대로 돌려준다.
- * `{token}` 보간은 useT 리졸버와 같은 규약으로 한 번만 치환한다.
- */
-export function r3c07StatusText(key: string, koFallback: string): string;
-export function r3c07StatusText(
-  key: string,
-  params: Readonly<Record<string, string | number>>,
-  koFallback: string,
-): string;
-export function r3c07StatusText(
-  key: string,
-  paramsOrFallback: Readonly<Record<string, string | number>> | string,
-  koFallback?: string,
-): string {
-  const params = typeof paramsOrFallback === "string" ? undefined : paramsOrFallback;
-  const fallback = typeof paramsOrFallback === "string" ? paramsOrFallback : koFallback ?? "";
-  const text = resolveTranslationForDisplay(getLang(), key, FALLBACK_CHAIN, fallback);
-  if (!params) return text;
-  return text.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
-    Object.hasOwn(params, token) ? String(params[token]) : placeholder,
-  );
-}

@@ -428,6 +428,7 @@ apps/web/src/domains/creator/selection/StudioInspectorMultiSelectionSection.stro
 apps/web/src/domains/creator/selection/studio-saved-selections-project.test.ts
 apps/web/src/domains/creator/selection/studio-selection-exact-mask.test.ts
 apps/web/src/domains/creator/selection/studio-selection-source-browser.test.ts
+apps/web/src/domains/creator/status-i18n/status-dictionary-core-split-contract.test.ts
 apps/web/src/domains/creator/studio-2d-asset-quality.test.ts
 apps/web/src/domains/creator/studio-2d-review-content.test.ts
 apps/web/src/domains/creator/studio-autosave-explicit-delete.test.ts

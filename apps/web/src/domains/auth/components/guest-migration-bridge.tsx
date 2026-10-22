@@ -1,4 +1,4 @@
-import { authRestStatusText } from "./auth-rest-status-i18n";
+import { authRestStatusText } from "./auth-rest-status-i18n-core";
 import { useEffect, useRef } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";

@@ -477,7 +477,9 @@ const EXPECTED_RESIDUALS: readonly { file: string; rule: string; snippet: string
 
 describe("studio panel status i18n r3c07", () => {
   it("신규 모듈의 ko/en 키가 패리티를 이루고 신규 키 ko 원문·플레이스홀더가 정확하다", () => {
-    const blocks = parseRegisterModule(readSource("studio-panel-status-i18n-r3c07.ts"));
+    const blocks = parseRegisterModule(
+      `${readSource("studio-panel-status-i18n-r3c07.ts")}\n${readSource("status-i18n/studio-panel-status-i18n-r3c07-core.ts")}`,
+    );
     expect(Object.keys(blocks.ko).sort()).toEqual(Object.keys(blocks.en).sort());
     expect(Object.keys(blocks.ko).length).toBe(R3C07_KEYS.length);
     for (const key of R3C07_KEYS) {

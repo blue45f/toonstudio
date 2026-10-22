@@ -32,7 +32,7 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
     for (const entry of (match[2] ?? "").matchAll(/"([^"]+)":\s*"((?:[^"\\]|\\.)*)"/g)) {
       entries[entry[1] ?? ""] = entry[2] ?? "";
     }
-    blocks[match[1] ?? ""] = entries;
+    blocks[match[1] ?? ""] = { ...(blocks[match[1] ?? ""] ?? {}), ...entries };
   }
   return blocks as Record<"ko" | "en", Record<string, string>>;
 }
@@ -279,7 +279,9 @@ const BG3D_CONSUMERS = [
 
 describe("studio vrm/bg3d panel status i18n batch3", () => {
   it("studio.vrmPanelStatus 등록 모듈의 ko/en 키가 패리티를 이루고 en에 한글이 없다", () => {
-    const blocks = parseRegisterModule(readSource("studio-vrm-panel-status-i18n.ts"));
+    const blocks = parseRegisterModule(
+      `${readSource("studio-vrm-panel-status-i18n.ts")}\n${readSource("status-i18n/studio-vrm-panel-status-i18n-core.ts")}`,
+    );
     expect(Object.keys(blocks.ko).sort()).toEqual(Object.keys(blocks.en).sort());
     expect(Object.keys(blocks.ko).length).toBe(VRM_PANEL_STATUS_KEYS.length);
     for (const key of VRM_PANEL_STATUS_KEYS) {
