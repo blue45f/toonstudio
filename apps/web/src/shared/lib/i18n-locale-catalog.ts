@@ -149,7 +149,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "pl": 0.255,
   "pt": 0.2578,
   "ro": 0.2541,
-  "ru": 0.2596,
+  "ru": 0.9819,
   "si": 0.2569,
   "sk": 0.255,
   "sl": 0.2541,
