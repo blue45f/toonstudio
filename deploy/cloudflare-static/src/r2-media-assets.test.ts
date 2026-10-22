@@ -142,6 +142,18 @@ describe("R2 media offload delivery", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
   });
 
+  it("answers preflight with the same origin policy as the media GET", async () => {
+    const harness = mediaHarness();
+    const assets = await harness.request("/assets/3d/environments/room.glb", { method: "OPTIONS" });
+    expect(assets.status).toBe(204);
+    expect([...assets.headers.keys()].filter((name) => name.startsWith("access-control-"))).toEqual([]);
+
+    const vrm = await harness.request("/vrm/hero.vrm", { method: "OPTIONS" });
+    expect(vrm.status).toBe(204);
+    expect(vrm.headers.get("access-control-allow-origin")).toBe("*");
+    expect(harness.get).not.toHaveBeenCalled();
+  });
+
   it("leaves media-prefix manifests on Static Assets without touching R2", async () => {
     const harness = mediaHarness();
     const response = await harness.request("/assets/studio/cc0-20260906/manifest.json");

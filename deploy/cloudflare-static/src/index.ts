@@ -13,6 +13,7 @@ import {
   matchesIfNoneMatch,
   matchesIfRange,
   r2AssetResponseHeaders,
+  r2PreflightHeaders,
   r2RangeHeaders,
   staticMediaFallback,
   type AssetsBinding,
@@ -593,17 +594,7 @@ async function serveR2LargeAsset(
   if (!key || !env.LARGE_ASSETS) return null;
 
   if (method === "OPTIONS") {
-    return withSecurityHeaders(new Response(null, {
-      status: 204,
-      headers: descriptor.sameOriginOnly
-        ? { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" }
-        : {
-          "access-control-allow-origin": "*",
-          "access-control-allow-methods": "GET, HEAD, OPTIONS",
-          "access-control-allow-headers": "Range, If-Range, If-None-Match",
-          "access-control-max-age": "86400",
-        },
-    }));
+    return withSecurityHeaders(new Response(null, { status: 204, headers: r2PreflightHeaders(descriptor) }));
   }
   if (method !== "GET" && method !== "HEAD") {
     return withSecurityHeaders(new Response(null, {

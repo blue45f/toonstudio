@@ -34,7 +34,72 @@ export interface R2UploadPlan {
 
 const CLOUDFLARE_API = "https://api.cloudflare.com/client/v4";
 const UPLOAD_CONCURRENCY = 8;
-const UPLOAD_ATTEMPTS = 3;
+/**
+ * R2 REST API는 계정 전체에 5분당 1,200건 한도가 있고, 넘으면 다음 5분 동안 모든 API 호출이 429로 막힌다
+ * (https://developers.cloudflare.com/r2/platform/limits/). 2026-10-23 첫 이관 때 동시 8개로 2,500건째에서
+ * 막혔다. 한도의 3/4인 초당 3건만 쓰고 나머지는 wrangler 배포와 같은 계정의 다른 작업에 남긴다.
+ */
+const R2_REST_REQUESTS_PER_SECOND = 3;
+const R2_RATE_LIMIT_BLOCK_MS = 5 * 60_000;
+const R2_REQUEST_ATTEMPTS = 5;
+
+export interface RequestPacer {
+  /** 다음 요청 자리가 날 때까지 기다린다. */
+  readonly wait: () => Promise<void>;
+  /** 한도에 걸렸을 때 이후의 모든 요청을 이 시간만큼 미룬다. */
+  readonly pause: (milliseconds: number) => void;
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds));
+}
+
+/** 동시 업로드들이 함께 쓰는 간격 조절기: 요청 시작을 초당 requestsPerSecond건 이하로 벌린다. */
+export function createRequestPacer(requestsPerSecond: number): RequestPacer {
+  const intervalMs = 1_000 / requestsPerSecond;
+  let nextSlotAt = 0;
+  return {
+    async wait() {
+      const now = Date.now();
+      const slotAt = Math.max(now, nextSlotAt);
+      nextSlotAt = slotAt + intervalMs;
+      if (slotAt > now) await sleep(slotAt - now);
+    },
+    pause(milliseconds) {
+      nextSlotAt = Math.max(nextSlotAt, Date.now() + milliseconds);
+    },
+  };
+}
+
+/**
+ * 실패한 응답을 다시 보낼 때까지 기다릴 시간(ms). 429는 Cloudflare가 주는 `Retry-After`(초)를 따르고,
+ * 없으면 문서상 차단 시간인 5분을 기다린다. 5xx는 짧게 물러난다. 그 밖의 실패는 다시 보내지 않는다(null).
+ */
+export function r2RetryDelayMs(status: number, retryAfter: string | null, attempt: number): number | null {
+  if (status === 429) {
+    const seconds = Number(retryAfter);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds * 1_000 : R2_RATE_LIMIT_BLOCK_MS;
+  }
+  return status >= 500 ? 1_000 * attempt : null;
+}
+
+const requestPacer = createRequestPacer(R2_REST_REQUESTS_PER_SECOND);
+
+/** 모든 Cloudflare API 호출이 같은 간격 조절기를 거치고, 한도 초과·일시 장애는 기다렸다 다시 보낸다. */
+async function cloudflareFetch(url: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 1; ; attempt += 1) {
+    await requestPacer.wait();
+    const response = await fetch(url, init);
+    const delay = response.ok
+      ? null
+      : r2RetryDelayMs(response.status, response.headers.get("retry-after"), attempt);
+    if (delay === null || attempt === R2_REQUEST_ATTEMPTS) return response;
+    await response.body?.cancel();
+    console.log(`Cloudflare API ${response.status}: retrying in ${Math.ceil(delay / 1_000)}s (${attempt}/${R2_REQUEST_ATTEMPTS})`);
+    if (response.status === 429) requestPacer.pause(delay);
+    else await sleep(delay);
+  }
+}
 
 function walkFiles(directory: string): string[] {
   const files: string[] = [];
@@ -124,7 +189,7 @@ export function r2ObjectPutRequest(
 }
 
 async function cloudflareJson(url: string, token: string): Promise<Record<string, unknown>> {
-  const response = await fetch(url, { headers: { authorization: `Bearer ${token}` } });
+  const response = await cloudflareFetch(url, { headers: { authorization: `Bearer ${token}` } });
   const body = await response.json() as Record<string, unknown>;
   if (!response.ok || body.success !== true) {
     throw new Error(`Cloudflare API ${response.status} for ${url.replace(/\?.*$/u, "")}: ${JSON.stringify(body.errors ?? body)}`);
@@ -165,16 +230,11 @@ export async function listR2Objects(
   return objects;
 }
 
-async function uploadWithRetry(asset: R2LargeAssetUpload, accountId: string, token: string): Promise<void> {
+async function uploadObject(asset: R2LargeAssetUpload, accountId: string, token: string): Promise<void> {
   const { url, headers } = r2ObjectPutRequest(asset, accountId, token);
-  for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt += 1) {
-    const response = await fetch(url, { method: "PUT", headers, body: readFileSync(asset.absolutePath) });
-    if (response.ok) return;
-    const retryable = response.status === 429 || response.status >= 500;
-    if (!retryable || attempt === UPLOAD_ATTEMPTS) {
-      throw new Error(`R2 upload failed for ${asset.key}: HTTP ${response.status} ${await response.text()}`);
-    }
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 1_000 * attempt));
+  const response = await cloudflareFetch(url, { method: "PUT", headers, body: readFileSync(asset.absolutePath) });
+  if (!response.ok) {
+    throw new Error(`R2 upload failed for ${asset.key}: HTTP ${response.status} ${await response.text()}`);
   }
 }
 
@@ -206,11 +266,15 @@ export async function syncCloudflareR2Assets(
   for (const asset of assets) localMd5.set(asset.key, await fileMd5(asset.absolutePath));
   const plan = planR2Uploads(assets, localMd5, remote);
   const uploadBytes = plan.uploads.reduce((sum, asset) => sum + asset.bytes, 0);
-  console.log(`R2 production: ${plan.unchanged.length} unchanged, ${plan.uploads.length} to upload (${uploadBytes} bytes)`);
+  const minutes = Math.ceil(plan.uploads.length / R2_REST_REQUESTS_PER_SECOND / 60);
+  console.log(
+    `R2 production: ${plan.unchanged.length} unchanged, ${plan.uploads.length} to upload (${uploadBytes} bytes, `
+      + `about ${minutes} min at ${R2_REST_REQUESTS_PER_SECOND} requests/s)`,
+  );
 
   let done = 0;
   await runPool(plan.uploads, async (asset) => {
-    await uploadWithRetry(asset, accountId, token);
+    await uploadObject(asset, accountId, token);
     done += 1;
     if (done % 250 === 0 || done === plan.uploads.length) {
       console.log(`R2 production: uploaded ${done}/${plan.uploads.length}`);
