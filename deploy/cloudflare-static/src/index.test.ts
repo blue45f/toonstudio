@@ -578,6 +578,8 @@ describe("Cloudflare static gateway", () => {
       expect(response.status).toBe(503);
       await expect(response.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
       expect(response.headers.get("access-control-allow-origin")).toBeNull();
+      // 응답이 Sec-Fetch-Site에 따라 달라지므로(교차 출처는 403) 이 응답도 같은 Vary를 가진다.
+      expect(response.headers.get("vary")).toBe("Sec-Fetch-Site");
     }
     expect(upstream).not.toHaveBeenCalled();
   });
@@ -884,7 +886,21 @@ describe("Cloudflare static gateway", () => {
       expect(crossSite.status).toBe(403);
       expect(sameOrigin.status).toBe(405);
       expect(sameOrigin.headers.get("allow")).toBe("GET, HEAD, OPTIONS");
+      expect(sameOrigin.headers.get("vary")).toBe("Sec-Fetch-Site");
       expect(get).not.toHaveBeenCalled();
+    });
+
+    it("keeps the 405 for other R2 paths free of Vary (only bundle-v2 depends on Sec-Fetch-Site)", async () => {
+      const { gateway, env } = largeAssetHarness();
+      const response = await gateway(new Request("https://www.toonstudio.cloud/assets/tag2pix-B03WmUfQ.onnx", {
+        method: "POST",
+        body: "{}",
+        headers: { "sec-fetch-site": "same-origin" },
+      }), env);
+
+      expect(response.status).toBe(405);
+      expect(response.headers.get("allow")).toBe("GET, HEAD, OPTIONS");
+      expect(response.headers.get("vary")).toBeNull();
     });
 
     it("rejects cross-site requests even when the R2 binding is absent", async () => {
@@ -904,6 +920,7 @@ describe("Cloudflare static gateway", () => {
       // 동일 출처 요청도 R2가 없으면 폴백 원본으로 넘기지 않고 정직하게 실패한다 (바이트는 R2에만 있다).
       expect(sameOrigin.status).toBe(503);
       await expect(sameOrigin.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
+      expect(sameOrigin.headers.get("vary")).toBe("Sec-Fetch-Site");
       expect(upstream).not.toHaveBeenCalled();
     });
   });

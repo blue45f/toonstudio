@@ -94,13 +94,14 @@ export const COMMON_SECURITY_HEADERS = Object.freeze({
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 } as const);
 
-function jsonError(status: number, code: string): Response {
+function jsonError(status: number, code: string, extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify({ error: code }), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
       ...COMMON_SECURITY_HEADERS,
+      ...extraHeaders,
     },
   });
 }
@@ -654,8 +655,7 @@ async function serveR2LargeAsset(
   const method = request.method.toUpperCase();
   // 동일 출처 전용 경로는 메서드 분기·R2 접근보다 먼저, R2 바인딩 유무와 무관하게 판정한다.
   if (descriptor.sameOriginOnly && !cloudflareSameOriginOnlyAllows(request.headers)) {
-    const rejection = jsonError(403, "BUNDLE_ASSET_SAME_ORIGIN_ONLY");
-    rejection.headers.set("vary", "Sec-Fetch-Site");
+    const rejection = jsonError(403, "BUNDLE_ASSET_SAME_ORIGIN_ONLY", { vary: "Sec-Fetch-Site" });
     return method === "HEAD" ? new Response(null, rejection) : rejection;
   }
   const key = cloudflareLargeAssetKey(requestUrl.pathname);
@@ -677,7 +677,7 @@ async function serveR2LargeAsset(
   if (method !== "GET" && method !== "HEAD") {
     return withSecurityHeaders(new Response(null, {
       status: 405,
-      headers: { allow: "GET, HEAD, OPTIONS" },
+      headers: descriptor.sameOriginOnly ? { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" } : { allow: "GET, HEAD, OPTIONS" },
     }));
   }
 
@@ -766,7 +766,7 @@ export function createCloudflareStaticGateway(
       const r2Response = await serveR2LargeAsset(request, env);
       if (r2Response) return r2Response;
       // 동일 출처 전용(bundle-v2) 바이트는 R2에만 있다. 폴백 원본의 응답 헤더(CORS 등)가 가드 계약을 깨지 못하게 닫는다.
-      if (cloudflareLargeAssetDescriptor(requestUrl.pathname)?.sameOriginOnly) return jsonError(503, "LARGE_ASSET_UNAVAILABLE");
+      if (cloudflareLargeAssetDescriptor(requestUrl.pathname)?.sameOriginOnly) return jsonError(503, "LARGE_ASSET_UNAVAILABLE", { vary: "Sec-Fetch-Site" });
     }
 
     const configuredCoreSecret = env.CORE_ORIGIN_SECRET;

@@ -28,8 +28,8 @@ export interface CloudflareLargeAssetDescriptor {
    * 교차 출처 CORS를 열지 않고, 브라우저가 보낸 `Sec-Fetch-Site`가 동일 출처
    * (`same-origin`)가 아니면 R2에 닿기 전에 403으로 거부하는 경로.
    * 독립 파일 재배포 제한이 있는 구매 번들 에셋(bundle-v2, 권리 원장이 allow한 팩)에 쓴다.
-   * 브라우저 경유 핫링크·임베드 억제책일 뿐이다: 헤더를 생략하거나 위조하는 비브라우저
-   * 클라이언트(curl·서버 간 호출)는 막지 못하며, 접근 통제도 법적 허락도 아니다.
+   * 브라우저 경유 핫링크·임베드 억제책일 뿐이다: 헤더를 생략하거나 위조하는 클라이언트
+   * (curl·서버 간 호출·이 헤더가 없는 구형 브라우저)는 막지 못하며, 접근 통제도 법적 허락도 아니다.
    * 이 Worker는 권리 원장을 읽지 않는다 — 어떤 팩을 올릴지는 배포 플래너(원장 게이트)가 정하고,
    * Worker는 R2에 올라간 객체를 이 가드로만 제한한다. 권리를 철회(allow → hold)해도 이미 올라간
    * 객체는 R2에서 삭제하기 전까지 계속 서빙된다.
@@ -127,8 +127,8 @@ export function cloudflareLargeAssetSidecarPath(
 
 /**
  * `sameOriginOnly` 경로의 요청 허용 여부. `Sec-Fetch-Site`는 브라우저만 붙이고
- * 페이지 스크립트는 바꿀 수 없는 헤더다. 헤더가 없는 호출자(curl·구형 브라우저·
- * 서버 간 호출)는 브라우저 교차 출처 접근이 아니므로 허용하고, 헤더가 있으면
+ * 페이지 스크립트는 바꿀 수 없는 헤더다. 헤더가 없으면 허용한다 — 그래서 curl·서버 간 호출뿐
+ * 아니라 이 헤더를 보내지 않는 구형 브라우저도 이 가드로는 막지 못한다. 헤더가 있으면
  * `same-origin`만 통과시킨다 (`same-site`·`cross-site`·`none`·알 수 없는 값은 거부).
  */
 export function cloudflareSameOriginOnlyAllows(headers: Pick<Headers, "get">): boolean {
