@@ -43,6 +43,8 @@ export type StudioBg3dSceneDocumentBudgetErrorCode =
   | "two-bone-ik-count-budget-exceeded"
   | "shot-count-budget-exceeded"
   | "shot-visibility-count-budget-exceeded"
+  | "tag-count-budget-exceeded"
+  | "hidden-tag-count-budget-exceeded"
   | "document-byte-budget-exceeded";
 
 /**
@@ -549,7 +551,39 @@ export interface StudioBg3dLegacyMigrationOptions {
   readonly attachmentIdByLegacyStorageKey?: ReadonlyMap<string, string>;
 }
 
-interface StudioBg3dSceneNodeBase {
+/**
+ * 컴포넌트 참조 — 같은 `id` 를 가진 노드를 한 컴포넌트의 인스턴스로 묶어 본다(아웃라이너 묶음 보기).
+ * 이름 기반 표지일 뿐이다: 형상·계층·SketchUp 컴포넌트 정의를 되살리지 않는다.
+ */
+export interface StudioBg3dComponentRef {
+  /** 노드 id 와 같은 규칙의 식별자. 같은 값이면 같은 컴포넌트다. */
+  readonly id: string;
+  /** 사용자에게 보이는 이름(이름 바꾸기 대상). 신뢰할 수 없는 텍스트이므로 텍스트로만 그린다. */
+  readonly name: string;
+}
+
+/**
+ * 노드의 장면 구성 정보. 둘 다 선택 필드다: 없으면 태그·컴포넌트가 없는 것이며, 정규화는 빈 값을 생략한다
+ * (이 키가 없는 기존 문서는 바이트 단위로 그대로 열린다).
+ */
+export interface StudioBg3dNodeOrganization {
+  /** 정렬·중복 제거된 태그 목록(노드당 최대 8개). 태그 숨김은 `meta.hiddenTags` 가 정하며 `visible` 과 따로 움직인다. */
+  readonly tags?: readonly string[];
+  readonly componentRef?: StudioBg3dComponentRef;
+}
+
+/**
+ * 장면 메타. 모든 필드가 선택이고 비어 있으면 `meta` 자체를 생략한다.
+ * - `hiddenTags`: 숨긴 태그(태그 가시성 사전의 `false` 항목만 기록, 정렬·중복 제거). 이 태그가 붙은 노드는
+ *   `visible` 값과 무관하게 렌더에서 빠진다. 사전을 객체 대신 목록으로 둔 것은 임의 문자열 키의 프로토타입 오염을 피하기 위해서다.
+ */
+export interface StudioBg3dSceneMeta {
+  readonly name?: string;
+  readonly memo?: string;
+  readonly hiddenTags?: readonly string[];
+}
+
+interface StudioBg3dSceneNodeBase extends StudioBg3dNodeOrganization {
   readonly id: string;
   readonly name: string;
   readonly transform: StudioBg3dTransform;
@@ -700,6 +734,8 @@ export interface StudioBg3dShot {
   readonly background?: StudioBg3dShotBackgroundOverride;
   readonly lighting?: StudioBg3dShotLightingOverride;
   readonly output?: StudioBg3dShotOutputOverride;
+  /** 이 컷이 기억하는 숨긴 태그 집합. 없으면(이전 컷) 컷을 적용해도 태그 가시성을 바꾸지 않는다. */
+  readonly hiddenTags?: readonly string[];
 }
 
 export interface StudioBg3dShotCreateRequest {
@@ -725,4 +761,6 @@ export interface StudioBg3dSceneDocument {
   readonly activeShotId?: string;
   /** 원고 레이어 재편집에도 고정한 컷 원본·버전·승인 상태를 함께 보존한다. */
   readonly pinnedVersionedCut?: StudioScene3dVersionedCut;
+  /** 장면 이름·메모·숨긴 태그. 선택 필드라 이 키가 없는 기존 v3 문서는 바이트 단위로 그대로 열린다. */
+  readonly meta?: StudioBg3dSceneMeta;
 }
