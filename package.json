@@ -317,7 +317,7 @@
     "@automerge/automerge": "3.5.0",
     "@babylonjs/core": "9.31.0",
     "@babylonjs/loaders": "9.31.0",
-    "@dimforge/rapier3d-deterministic-compat": "0.19.3",
+    "@dimforge/rapier3d-deterministic-compat": "0.21.0",
     "@gltf-transform/core": "4.5.1",
     "@gltf-transform/extensions": "4.5.1",
     "@gltf-transform/functions": "4.4.2",
