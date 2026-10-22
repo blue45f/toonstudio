@@ -129,7 +129,7 @@ describe("라이브러리 해설 영역 5~8 · 숫자 주장", () => {
   it("WASM·모델 파일 크기 주장이 설치본과 맞다(MB, 10진)", () => {
     const claims: readonly (readonly [string, string, number, number])[] = [
       ["storage", "node_modules/@sqlite.org/sqlite-wasm/dist/sqlite3.wasm", 0.86, 0.05],
-      ["ai", "node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm", 26.8, 0.2],
+      ["ai", "node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm", 28.3, 0.2],
       ["ai", "node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm", 11.2, 0.1],
       ["ai", "node_modules/@techstark/opencv-js/dist/opencv.js", 13.3, 0.2],
       ["ai", "apps/web/src/domains/creator/assets/tag2pix.onnx", 79.3, 0.2],

@@ -272,8 +272,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
       license: same("BSD-3-Clause"),
       mode: t("WASM · 지연 로드 · Worker", "WASM · lazy · Worker"),
       note: t(
-        "wasm 약 7.2MB. 0.41.1로 고정하고 ADR 개정 없이 올리지 않는다(ADR-0004). 조사 문서의 4K 전체 체인 측정(p50 34.3ms)은 60fps 기준에 못 미쳤다 — 측정 환경은 그 문서 참고.",
-        "The wasm is about 7.2 MB. Pinned at 0.41.1 and not upgraded without an ADR revision (ADR-0004). The survey's 4K full-chain measurement (p50 34.3 ms) missed the 60 fps gate; see that document for the setup.",
+        "wasm 약 7.3MB. 0.42.0로 고정하고 ADR 개정 없이 올리지 않는다(ADR-0004). 조사 문서의 4K 전체 체인 측정(p50 34.3ms)은 60fps 기준에 못 미쳤다 — 측정 환경은 그 문서 참고.",
+        "The wasm is about 7.3 MB. Pinned at 0.42.0 and not upgraded without an ADR revision (ADR-0004). The survey's 4K full-chain measurement (p50 34.3 ms) missed the 60 fps gate; see that document for the setup.",
       ),
     },
     evidence: [

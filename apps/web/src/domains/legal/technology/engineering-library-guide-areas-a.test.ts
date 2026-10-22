@@ -141,9 +141,9 @@ describe("라이브러리 해설 영역 1~4 · 숫자·상태 주장", () => {
     const megabytes = (path: string): number => statSync(path).size / 1_000_000;
     const kilobytes = (path: string): number => statSync(path).size / 1_000;
 
-    expect(Math.abs(megabytes("node_modules/canvaskit-wasm/bin/canvaskit.wasm") - 7.2)).toBeLessThanOrEqual(0.1);
-    expect(card("brush-engines", "canvaskit")).toContain("약 7.2MB");
-    expect(card("brush-engines", "canvaskit")).toContain("about 7.2 MB");
+    expect(Math.abs(megabytes("node_modules/canvaskit-wasm/bin/canvaskit.wasm") - 7.3)).toBeLessThanOrEqual(0.1);
+    expect(card("brush-engines", "canvaskit")).toContain("약 7.3MB");
+    expect(card("brush-engines", "canvaskit")).toContain("about 7.3 MB");
 
     expect(Math.abs(kilobytes("packages/studio-brush-platform/src/libmypaint/mypaint-wasm.wasm") - 83)).toBeLessThanOrEqual(1);
     expect(card("brush-engines", "libmypaint")).toContain("약 83KB");

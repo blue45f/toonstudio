@@ -43,8 +43,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
     {
       title: t("고쳐 쓴 곳은 기록으로 남긴다", "What we changed stays on record"),
       body: t(
-        "pnpm 패치 7개와 override 54개는 pnpm-workspace.yaml에 모았고, 포크 2개(braces·wgpu-toon)는 저장소 안 폴더로 둡니다. 설치 때 자동 적용되고, 빌드가 라이선스 고지를 만들며 허용 목록 밖 라이선스는 감사에서 실패합니다(wasm-vips 내장 LGPL은 생성 고지에 MIT로만 나옵니다).",
-        "The 7 pnpm patches and 54 overrides are gathered in pnpm-workspace.yaml, and the 2 forks (braces and wgpu-toon) live in folders inside the repository. They apply automatically at install, the build generates license notices, and a license outside the allowlist fails the audit (the LGPL parts bundled in wasm-vips appear in the generated notice only as MIT).",
+        "pnpm 패치 7개와 override 55개는 pnpm-workspace.yaml에 모았고, 포크 2개(braces·wgpu-toon)는 저장소 안 폴더로 둡니다. 설치 때 자동 적용되고, 빌드가 라이선스 고지를 만들며 허용 목록 밖 라이선스는 감사에서 실패합니다(wasm-vips 내장 LGPL은 생성 고지에 MIT로만 나옵니다).",
+        "The 7 pnpm patches and 55 overrides are gathered in pnpm-workspace.yaml, and the 2 forks (braces and wgpu-toon) live in folders inside the repository. They apply automatically at install, the build generates license notices, and a license outside the allowlist fails the audit (the LGPL parts bundled in wasm-vips appear in the generated notice only as MIT).",
       ),
     },
     {
@@ -64,12 +64,12 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
       "Source is installed with pnpm, bundled by Vite and passes the check gates to become a build, and exporting happens inside that app on the device itself.",
     ),
     alt: t(
-      "왼쪽에서 오른쪽으로 읽습니다. 소스 코드가 pnpm으로 설치되고(패치 7개와 override 54개 적용) Vite로 묶입니다. 검사는 서로 다른 곳을 봅니다. Vitest는 소스를 직접 돌리고, Playwright(axe)는 개발 서버를 열고, 번들 검사와 라이선스 고지는 빌드 결과를 확인합니다. 이 작업들이 병렬로 모두 통과해야 배포 후보가 됩니다. 사용자가 앱에서 작품을 내보낼 때는 서버 없이 기기에서 wasm-vips가 초대형 페이지를 줄이고 ag-psd가 PSD를 만듭니다. 작품의 PDF 내보내기는 라이브러리 없이 직접 조립하고, pdf-lib와 pdf.js는 이미 있는 PDF를 합치고 나누는 작업대에서, Remotion은 홍보 영상 편집기의 렌더 키트(ZIP) 생성과 /product-tour 재생에서 씁니다.",
-      "Read from left to right. Source code is installed with pnpm (7 patches and 54 overrides applied) and bundled by Vite. The checks look at different things: Vitest runs the source directly, Playwright with axe opens the dev server, and the bundle check and license notices inspect the build output. All of these jobs run in parallel and must pass for a commit to become a release candidate. When a user exports artwork in the app, on the device without a server wasm-vips shrinks huge pages and ag-psd builds the PSD. Exporting artwork to PDF is assembled by hand with no library; pdf-lib and pdf.js are used in the workbench for existing PDFs, and Remotion for the promo editor's render kit (ZIP) and the /product-tour playback.",
+      "왼쪽에서 오른쪽으로 읽습니다. 소스 코드가 pnpm으로 설치되고(패치 7개와 override 55개 적용) Vite로 묶입니다. 검사는 서로 다른 곳을 봅니다. Vitest는 소스를 직접 돌리고, Playwright(axe)는 개발 서버를 열고, 번들 검사와 라이선스 고지는 빌드 결과를 확인합니다. 이 작업들이 병렬로 모두 통과해야 배포 후보가 됩니다. 사용자가 앱에서 작품을 내보낼 때는 서버 없이 기기에서 wasm-vips가 초대형 페이지를 줄이고 ag-psd가 PSD를 만듭니다. 작품의 PDF 내보내기는 라이브러리 없이 직접 조립하고, pdf-lib와 pdf.js는 이미 있는 PDF를 합치고 나누는 작업대에서, Remotion은 홍보 영상 편집기의 렌더 키트(ZIP) 생성과 /product-tour 재생에서 씁니다.",
+      "Read from left to right. Source code is installed with pnpm (7 patches and 55 overrides applied) and bundled by Vite. The checks look at different things: Vitest runs the source directly, Playwright with axe opens the dev server, and the bundle check and license notices inspect the build output. All of these jobs run in parallel and must pass for a commit to become a release candidate. When a user exports artwork in the app, on the device without a server wasm-vips shrinks huge pages and ag-psd builds the PSD. Exporting artwork to PDF is assembled by hand with no library; pdf-lib and pdf.js are used in the workbench for existing PDFs, and Remotion for the promo editor's render kit (ZIP) and the /product-tour playback.",
     ),
     nodes: [
       { id: "source", label: t("소스 코드", "Source code"), sub: t("TypeScript · React", "TypeScript, React"), tone: "neutral", shape: "pill", at: [0, 1] },
-      { id: "pnpm", label: t("pnpm 설치", "pnpm install"), sub: t("패치 7 · override 54", "7 patches, 54 overrides"), tone: "neutral", at: [1, 1] },
+      { id: "pnpm", label: t("pnpm 설치", "pnpm install"), sub: t("패치 7 · override 55", "7 patches, 55 overrides"), tone: "neutral", at: [1, 1] },
       { id: "vite", label: t("Vite 8 빌드", "Vite 8 build"), sub: t("청크 분리 · 지연 로드", "Chunk split, lazy load"), tone: "neutral", at: [2, 1] },
       { id: "vitest", label: t("Vitest", "Vitest"), sub: t("단위·계약 테스트", "Unit, contract tests"), tone: "good", at: [1, 0] },
       { id: "playwright", label: t("Playwright", "Playwright"), sub: t("실제 브라우저 · axe", "Real browser, axe"), tone: "good", at: [1, 2] },
@@ -173,8 +173,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
       kind: "tool",
       oneLine: t("설치한 오픈소스를 정확한 버전에 묶어 작게 고쳐 쓰는 기록", "A record of installed open source pinned to exact versions and lightly modified"),
       usedFor: t(
-        "라이브러리 패치 7개와 하위 의존성 버전을 강제한 override 54개를 pnpm-workspace.yaml에 모아, 설치할 때 자동으로 적용합니다.",
-        "Gathers 7 library patches and 54 overrides that force sub-dependency versions in pnpm-workspace.yaml, and applies them automatically at install time.",
+        "라이브러리 패치 7개와 하위 의존성 버전을 강제한 override 55개를 pnpm-workspace.yaml에 모아, 설치할 때 자동으로 적용합니다.",
+        "Gathers 7 library patches and 55 overrides that force sub-dependency versions in pnpm-workspace.yaml, and applies them automatically at install time.",
       ),
       why: t(
         "운영 CSP가 unsafe-eval을 열지 않아, new Function을 쓰는 라이브러리 3곳은 CSP를 풀지 않고 코드를 고쳐 씁니다. 포크보다 변경 범위가 작고 눈에 띄며, 보안 권고는 override로 한곳에서 정리합니다.",

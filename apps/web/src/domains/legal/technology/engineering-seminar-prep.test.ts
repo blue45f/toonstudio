@@ -147,7 +147,7 @@ const PREP_FACTS: readonly PrepFact[] = [
     },
   },
   {
-    atlasId: "oss-pnpm-patches-no-unsafe-eval", needles: ["포크 2개", "29.0.4", "toon-fabric", "unsafe-eval", "braces", "깊이 100"],
+    atlasId: "oss-pnpm-patches-no-unsafe-eval", needles: ["포크 2개", "30.0.1", "toon-fabric", "unsafe-eval", "braces", "깊이 100"],
     check: () => {
       // 패치 개수는 하드코딩하지 않고 pnpm-workspace.yaml 의 patchedDependencies 에서 센다. 패치 파일 수와도 맞아야 한다.
       const count = patchedDependencyCount();
@@ -156,7 +156,7 @@ const PREP_FACTS: readonly PrepFact[] = [
       expect(item?.answer.ko).toContain(`pnpm 패치 ${count}개`);
       expect(item?.answer.en).toContain(`${["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"][count]} pnpm patches`);
       const cargo = readText("crates", "vendor", "wgpu-toon", "Cargo.toml");
-      expect(cargo).toMatch(/name = "wgpu"\s+version = "29\.0\.4"/u);
+      expect(cargo).toMatch(/name = "wgpu"\s+version = "30\.0\.1"/u);
       expect(cargo).toContain("toon-fabric = []");
       expect(flat("pnpm-workspace.yaml")).toContain("'braces@>=3.0.0 <3.0.4': 'file:patches/braces'");
       expect(readText("patches", "braces", "lib", "constants.js")).toContain("MAX_DEPTH: 100,");

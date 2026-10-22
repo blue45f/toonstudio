@@ -380,7 +380,7 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
     },
     technologies: ["WebGPU", "Vello", "wgpu", "Rust / WASM"],
     facts: [
-      { value: "29.0.4", label: t("고정한 wgpu 버전(포크 기준)", "Pinned wgpu version (the fork's base)"), source: "crates/studio-engine-vello/Cargo.toml" },
+      { value: "30.0.1", label: t("고정한 wgpu 버전(포크 기준)", "Pinned wgpu version (the fork's base)"), source: "crates/studio-engine-vello/Cargo.toml" },
       { value: "6", label: t("입양 패치 조각 수(toon-fabric 피처 뒤)", "Patch hunks behind the toon-fabric feature"), source: "crates/studio-engine-vello/Cargo.toml" },
     ],
     reviewedAt: "2026-10-07",
@@ -576,7 +576,7 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
     technologies: ["CanvasKit", "WebGL2", "Konva", "WebAssembly"],
     facts: [
       { value: "128", label: t("SkPicture 배치 하나에 묶는 최대 항목 수", "Maximum items grouped into one SkPicture batch"), source: SKIA },
-      { value: "0.41.1", label: t("고정한 canvaskit-wasm 버전(WebGL 빌드)", "Pinned canvaskit-wasm version (WebGL build)"), source: "packages/studio-engine-skia/package.json" },
+      { value: "0.42.0", label: t("고정한 canvaskit-wasm 버전(WebGL 빌드)", "Pinned canvaskit-wasm version (WebGL build)"), source: "packages/studio-engine-skia/package.json" },
     ],
     reviewedAt: "2026-10-07",
   },
