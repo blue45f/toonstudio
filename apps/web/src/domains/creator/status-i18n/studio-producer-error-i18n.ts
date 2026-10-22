@@ -16,6 +16,9 @@
  *   필드 검증 2코드(createFieldEmpty·createFieldTooLong)는 한국어 라벨 문자열이
  *   아니라 필드 코드(params.field, 7종)를 싣고, 라벨 자체도 이 모듈의
  *   field.* 키로 해석한다. 조사 규칙은 아래 create 구간 주석이 정본이다.
+ * - 음악 페이지 콜백 (R10): StudioMusicPage의 저장·삭제·외부 가져오기 거부
+ *   4코드. 표시 지점(MusicTrackCard·MusicExternalImportPanel catch)이 원인
+ *   객체 덕 타이핑으로 해석한다.
  * - bg3d 샷 배치 공개 투영 (R10): projectStudioBg3dShotBatchPlanForPublicArchive의
  *   검증 실패 2코드. 표시 지점(export-run 실패 상세)은 원인 객체 덕 타이핑으로
  *   해석한다 — 생산자 클래스의 런타임 import는 진입 그래프 경계 때문에 피한다.
@@ -477,4 +480,47 @@ export function resolveBg3dShotBatchPublicPlanErrorFromCause(cause: unknown): st
   const key = SHOT_BATCH_PUBLIC_PLAN_ERROR_KEYS[code];
   if (!key) return null;
   return resolveProducerError(key, SHOT_BATCH_PUBLIC_PLAN_ERROR_KO[key]);
+}
+
+registerI18nLocaleEntries("ko", {
+  "studio.producerError.music.saveWhilePending": "진행 중인 음악 생성을 마친 뒤 저장해 주세요.",
+  "studio.producerError.music.deleteWhilePending": "진행 중인 음악 생성을 마친 뒤 삭제해 주세요.",
+  "studio.producerError.music.importWhilePending": "진행 중인 생성·저장을 마친 뒤 외부 음원을 가져와 주세요.",
+  "studio.producerError.music.libraryFull": "보관함은 계정당 20곡까지입니다. 기존 음원을 다운로드한 뒤 삭제해 주세요.",
+});
+
+registerI18nLocaleEntries("en", {
+  "studio.producerError.music.saveWhilePending": "Please save after the music generation in progress has finished.",
+  "studio.producerError.music.deleteWhilePending": "Please delete after the music generation in progress has finished.",
+  "studio.producerError.music.importWhilePending": "Please import the external track after the generation or saving in progress has finished.",
+  "studio.producerError.music.libraryFull": "The library holds up to 20 tracks per account. Download the existing tracks, then delete them.",
+});
+
+const MUSIC_PAGE_ERROR_KEYS: Readonly<Record<string, string>> = {
+  saveWhilePending: "studio.producerError.music.saveWhilePending",
+  deleteWhilePending: "studio.producerError.music.deleteWhilePending",
+  importWhilePending: "studio.producerError.music.importWhilePending",
+  libraryFull: "studio.producerError.music.libraryFull",
+};
+
+const MUSIC_PAGE_ERROR_KO: Readonly<Record<string, string>> = {
+  "studio.producerError.music.saveWhilePending": "진행 중인 음악 생성을 마친 뒤 저장해 주세요.",
+  "studio.producerError.music.deleteWhilePending": "진행 중인 음악 생성을 마친 뒤 삭제해 주세요.",
+  "studio.producerError.music.importWhilePending": "진행 중인 생성·저장을 마친 뒤 외부 음원을 가져와 주세요.",
+  "studio.producerError.music.libraryFull": "보관함은 계정당 20곡까지입니다. 기존 음원을 다운로드한 뒤 삭제해 주세요.",
+};
+
+/**
+ * 표시 지점 전용 해석 (음악 페이지 콜백, R10): MusicTrackCard·
+ * MusicExternalImportPanel의 catch가 원인 객체만으로 부른다. 생산자 클래스
+ * (StudioMusicPageError)가 아닌 원인은 null — 호출자는 기존 메시지·폴백
+ * 경로를 유지한다 (보관함 저장소 오류 등 다른 생산자의 메시지는 그대로 표시).
+ */
+export function resolveStudioMusicPageError(reason: unknown): string | null {
+  if (!reason || typeof reason !== "object") return null;
+  const { name, code } = reason as { name?: unknown; code?: unknown };
+  if (name !== "StudioMusicPageError" || typeof code !== "string") return null;
+  const key = MUSIC_PAGE_ERROR_KEYS[code];
+  if (!key) return null;
+  return resolveProducerError(key, MUSIC_PAGE_ERROR_KO[key]);
 }

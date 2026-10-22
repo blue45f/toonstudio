@@ -39,6 +39,7 @@ import { parseStudioAnimaticSubtitles } from "../animatic/studio-animatic-subtit
 import {
   resolveBg3dShotBatchPublicPlanErrorFromCause,
   resolveBg3dTemplateMigrationDataPreservedNote,
+  resolveStudioMusicPageError,
   resolveBg3dTemplateMigrationErrorByCode,
   resolveStudioAnimaticError,
   resolveStudioTranslationMemoryCreateError,
@@ -131,12 +132,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       blocks[match[1] ?? ""] = [...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? "");
     }
-    // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2, bg3dTemplate 6 — 이전 서브코드 5 + 보존 고지 1, shotBatch 2). 블록 단위 누적으로 패리티를 본다.
+    // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2, bg3dTemplate 6 — 이전 서브코드 5 + 보존 고지 1, shotBatch 2, music 4). 블록 단위 누적으로 패리티를 본다.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(55);
+    expect(accumulated.ko).toHaveLength(59);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });
@@ -590,6 +591,44 @@ describe("R10 bg3d shot batch public plan — display-side resolution keeps ko c
     for (const literal of [
       "공개 archive 렌더 구현 프로필이 올바르지 않습니다.",
       "공개 archive로 투영할 컷 렌더 Plan v2의 digest가 올바르지 않습니다.",
+    ]) {
+      expect(producer).not.toContain(literal);
+    }
+  });
+});
+
+/**
+ * R10 후속 (A4 D4): StudioMusicPage 콜백의 거부 4방출을 전용 오류 클래스의
+ * 코드로 전환했다. 표시 지점(카드·가져오기 패널 catch)이 원인 객체 덕
+ * 타이핑으로 해석하고, ko 해석 결과는 이관 전 원문과 글자 단위 동일해야 한다.
+ */
+
+describe("R10 music page callbacks — display-side resolution keeps ko copy identical", () => {
+  it("resolves coded reasons to the pre-migration ko literals", () => {
+    const coded = (code: string) => ({ name: "StudioMusicPageError", code });
+    expect(resolveStudioMusicPageError(coded("saveWhilePending")))
+      .toBe("진행 중인 음악 생성을 마친 뒤 저장해 주세요.");
+    expect(resolveStudioMusicPageError(coded("deleteWhilePending")))
+      .toBe("진행 중인 음악 생성을 마친 뒤 삭제해 주세요.");
+    expect(resolveStudioMusicPageError(coded("importWhilePending")))
+      .toBe("진행 중인 생성·저장을 마친 뒤 외부 음원을 가져와 주세요.");
+    expect(resolveStudioMusicPageError(coded("libraryFull")))
+      .toBe("보관함은 계정당 20곡까지입니다. 기존 음원을 다운로드한 뒤 삭제해 주세요.");
+  });
+
+  it("returns null for other producers' errors so their messages pass through", () => {
+    expect(resolveStudioMusicPageError(new Error("보관함은 계정당 20곡까지입니다. 음원을 다운로드하거나 기존 곡을 삭제해 주세요."))).toBeNull();
+    expect(resolveStudioMusicPageError({ name: "StudioMusicPageError", code: "unknownCode" })).toBeNull();
+    expect(resolveStudioMusicPageError(null)).toBeNull();
+  });
+
+  it("producer source no longer carries the callback message literals", () => {
+    const producer = readFileSync(new URL("../music/StudioMusicPage.tsx", import.meta.url), "utf-8");
+    for (const literal of [
+      "진행 중인 음악 생성을 마친 뒤 저장해 주세요.",
+      "진행 중인 음악 생성을 마친 뒤 삭제해 주세요.",
+      "진행 중인 생성·저장을 마친 뒤 외부 음원을 가져와 주세요.",
+      "보관함은 계정당 20곡까지입니다. 기존 음원을 다운로드한 뒤 삭제해 주세요.",
     ]) {
       expect(producer).not.toContain(literal);
     }
