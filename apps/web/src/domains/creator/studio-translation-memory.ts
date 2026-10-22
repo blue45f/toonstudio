@@ -27,6 +27,7 @@ import type {
   StudioTranslationMemoryGlossaryConflict,
   StudioTranslationMemoryGlossaryRule,
 } from "./studio-translation-glossary";
+import { resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
 
 /** 옮겨 간 이름을 같은 이름으로 다시 내보낸다 — 기존 호출부·테스트는 그대로 컴파일된다. */
 export {
@@ -151,9 +152,15 @@ export interface StudioTranslationMemoryImportResult {
   readonly truncated: number;
 }
 
+/** D4 생산자 계약: 가져오기 실패는 표시 문구가 아니라 구조화 코드+파라미터로 방출한다. 표시는 표시 지점이 status-i18n/studio-producer-error-i18n 리졸버로 해석한다. */
+export type StudioTranslationMemoryImportErrorCode = "importTooLarge" | "importInvalidJson" | "importNotDocument" | "importUnsupportedDocument" | "importTooManyCandidates";
+export interface StudioTranslationMemoryImportError {
+  readonly code: StudioTranslationMemoryImportErrorCode;
+  readonly params?: Readonly<Record<string, string>>;
+}
 export interface StudioTranslationMemoryImportFailure {
   readonly ok: false;
-  readonly error: string;
+  readonly error: StudioTranslationMemoryImportError;
 }
 
 export interface StudioTranslationMemoryExportResult {
@@ -787,19 +794,16 @@ export function importStudioTranslationMemory(
   | StudioTranslationMemoryImportResult
   | StudioTranslationMemoryImportFailure {
   if (utf8Bytes(raw) > STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES) {
-    return {
-      ok: false,
-      error: `가져오기 파일은 ${(STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES / 1_000_000).toFixed(1)}MB 이하여야 합니다.`,
-    };
+    return { ok: false, error: { code: "importTooLarge", params: { size: (STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES / 1_000_000).toFixed(1) } } };
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return { ok: false, error: "번역 메모리 JSON을 해석하지 못했습니다." };
+    return { ok: false, error: { code: "importInvalidJson" } };
   }
   if (!parsed || typeof parsed !== "object") {
-    return { ok: false, error: "번역 메모리 문서 형식이 아닙니다." };
+    return { ok: false, error: { code: "importNotDocument" } };
   }
   const document = parsed as Record<string, unknown>;
   if (
@@ -807,19 +811,13 @@ export function importStudioTranslationMemory(
     || document.version !== STUDIO_TRANSLATION_MEMORY_VERSION
     || !Array.isArray(document.entries)
   ) {
-    return {
-      ok: false,
-      error: "지원하는 ToonStudio 번역 메모리 v1 문서가 아닙니다.",
-    };
+    return { ok: false, error: { code: "importUnsupportedDocument" } };
   }
   if (
     document.entries.length
     > STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_CANDIDATES
   ) {
-    return {
-      ok: false,
-      error: `한 번에 최대 ${STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_CANDIDATES.toLocaleString("ko-KR")}개 후보만 가져올 수 있습니다.`,
-    };
+    return { ok: false, error: { code: "importTooManyCandidates", params: { count: STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_CANDIDATES.toLocaleString("ko-KR") } } };
   }
   const imported = mergeEntriesBounded(document.entries);
   const combined = mergeEntriesBounded([
@@ -889,7 +887,8 @@ export function loadStudioTranslationMemory(
   if (!raw) return { entries: [], status: "empty" };
   const imported = importStudioTranslationMemory(raw);
   if (!imported.ok) {
-    return { entries: [], status: "invalid", error: imported.error };
+    // LoadResult.error는 문자열로 고정된 집계 경계라 이 지점에서만 해석한다(표시 인접 집계자 예외, D4 파일럿).
+    return { entries: [], status: "invalid", error: resolveStudioTranslationMemoryImportError(imported.error) };
   }
   return { entries: imported.entries, status: "ok" };
 }

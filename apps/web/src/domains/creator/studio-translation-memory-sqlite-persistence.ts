@@ -7,6 +7,7 @@
  */
 
 import { acquireStudioLocalDatabase } from "./studio-local-database-runtime";
+import { resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
 import {
   exportStudioTranslationMemory,
   importStudioTranslationMemory,
@@ -58,7 +59,8 @@ export function createStudioTranslationMemorySqlitePersistence(
         if (raw === null) return { entries: [], status: "empty" };
         const imported = importStudioTranslationMemory(raw);
         if (!imported.ok) {
-          return { entries: [], status: "invalid", error: imported.error };
+          // LoadResult.error 문자열 집계 경계 — loadStudioTranslationMemory와 같은 예외 지점(D4 파일럿).
+          return { entries: [], status: "invalid", error: resolveStudioTranslationMemoryImportError(imported.error) };
         }
         if (
           imported.rejected > 0
