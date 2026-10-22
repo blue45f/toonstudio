@@ -293,13 +293,18 @@ describe("모서리 모따기: 일직선 모서리가 지나는 꼭짓점", () =
       for (const id of allEdges(mesh)) {
         for (const amount of [0.1, 0.3]) {
           const result = bevelStudioEditableMeshEdges(mesh, [id], amount);
-          // 거절은 허용하지만(이유 코드가 있다) 열리거나 뒤틀린 메시를 돌려주는 일은 없어야 한다.
-          if (!result.ok) throw new Error(`${name} edge ${id} amount ${amount}: ${result.code} ${result.detail}`);
+          // 작은 값(0.1)은 모두 깎여야 한다. 큰 값(0.3)은 좁은 고리 폭을 넘어 접힐 수 있어 거절해도 되지만(이유 코드가 있다)
+          // 열리거나 뒤틀린 메시를 돌려주는 일은 없어야 한다.
+          if (!result.ok) {
+            expect(amount, `${name} edge ${id}: ${result.detail}`).toBeGreaterThan(0.1);
+            expect(result.code).toBe("topology-failed");
+            continue;
+          }
           expectClosedSolid(result.value, `${name} edge ${id} amount ${amount}`);
           bevelled += 1;
         }
       }
-      expect(bevelled).toBe(allEdges(mesh).length * 2);
+      expect(bevelled).toBeGreaterThanOrEqual(allEdges(mesh).length);
     });
   }
 });
