@@ -99,6 +99,8 @@ endpoint는 `no-store`이며 private content를 service worker cache에 넣지 �
 
 - `diffusers==0.38.0`: GHSA-98h9-4798-4q5v, GHSA-7wx4-6vff-v64p 대응
 - `safetensors>=0.8,<1`
+- `transformers>=4.53.0,<5`: 4.x 에서 고쳐지는 GHSA 11건 대응. 5.x 에서만 고쳐지는 5건은
+  `requirements-models.txt` 주석의 근거로 두고 GPU 자격 검증을 거친 5.x 이행 때 해소한다.
 - CPU test profile `pytest==9.0.3`: GHSA-6w46-j5rx-g56g 대응
 
 ```sh

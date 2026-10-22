@@ -58,7 +58,7 @@ jobs:
 
       - name: Download coverage from every CI shard
         if: steps.secrets.outputs.configured == 'true'
-        uses: actions/download-artifact@v4 # NOSONAR S7637 신뢰된 1st-party 액션
+        uses: actions/download-artifact@v6 # NOSONAR S7637 신뢰된 1st-party 액션
         with:
           pattern: sonar-coverage-*
           path: coverage
