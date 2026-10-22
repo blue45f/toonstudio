@@ -8,6 +8,7 @@ import {
   type StudioCommentsDocument,
 } from "./studio-comments";
 import { loadStudioTeamCommentClient } from "./studio-page-lazy-ui";
+import { resolveStudioCommentClusterErrorFromCause } from "./status-i18n/studio-producer-error-i18n-comments";
 import {
   decideStudioTeamCommentLiveResponse,
   mergeStudioTeamCommentMutationReceipt,
@@ -263,9 +264,9 @@ export function createStudioTeamCommentLiveRefreshRuntime(
             || registry.isCurrent(ticket, currentStudioTeamCommentOperationContext());
           registry.invalidate(ticket);
           if (!shouldReport) return;
-          const message = cause instanceof Error
+          const message = resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error
             ? cause.message
-            : "변경된 팀 댓글을 불러오지 못했어요.";
+            : "변경된 팀 댓글을 불러오지 못했어요.");
           setStudioCommentSyncError(message);
           targets.delete(change.threadId);
           return;
@@ -577,9 +578,9 @@ export function createStudioCommentPinReanchor(
               : current;
           });
         }
-        const message = cause instanceof Error
+        const message = resolveStudioCommentClusterErrorFromCause(cause) ?? (cause instanceof Error
           ? cause.message
-          : "댓글 위치를 저장하지 못했어요.";
+          : "댓글 위치를 저장하지 못했어요.");
         setStudioCommentInteractionNotice(message);
         setStudioCommentSyncError(message);
         throw new Error(message, { cause });
