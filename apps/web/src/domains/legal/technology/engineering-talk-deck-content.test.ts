@@ -584,12 +584,12 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(nextgen).toContain("27종");
     expect(nextgen).toContain("3개");
 
-    // 아키텍처: Worker 가 먼저 받는 경로 27개(3D 엔진 무대 제거 cfb9c3fa 로 줄었다), 오픈소스 117개. 고쳐 쓴 의존성(pnpm 패치·포크)은 개수를 슬라이드에 쓰지 않는다.
+    // 아키텍처: Worker 가 먼저 받는 경로 55개(3D 엔진 무대 제거 cfb9c3fa 로 27개가 됐고, R2 미디어 이관으로 28개가 늘었다), 오픈소스 117개. 고쳐 쓴 의존성(pnpm 패치·포크)은 개수를 슬라이드에 쓰지 않는다.
     const staticConfig = read("deploy/cloudflare-static/wrangler.jsonc");
     const workerFirst = /"run_worker_first":\s*\[([^\]]*)\]/u.exec(staticConfig)?.[1] ?? "";
-    expect(workerFirst.match(/"[^"]+"/gu)).toHaveLength(27);
-    expect(slideOf("talk-architecture").notes.ko).toContain("27개");
-    expect(slideOf("talk-architecture").notes.en).toContain("27 worker-first");
+    expect(workerFirst.match(/"[^"]+"/gu)).toHaveLength(55);
+    expect(slideOf("talk-architecture").notes.ko).toContain("55개");
+    expect(slideOf("talk-architecture").notes.en).toContain("55 worker-first");
     const openSource = findEngineeringMap("open-source");
     expect(openSource?.intro.ko).toContain("117개");
     expect(openSource?.intro.ko).toContain("2026-10-07");

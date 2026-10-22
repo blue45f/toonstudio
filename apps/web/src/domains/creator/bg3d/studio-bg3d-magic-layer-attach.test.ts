@@ -87,7 +87,7 @@ function plan(
       marker: "template",
     },
   });
-  if (!result.ok) throw new Error(`${result.code}: ${result.message}`);
+  if (!result.ok) throw new Error(result.code);
   return result;
 }
 

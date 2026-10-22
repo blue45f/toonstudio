@@ -185,10 +185,11 @@ type PublicRevalidationAction = "localInstall" | "assetInsert";
 
 function publicRevalidationActionLabel(action: PublicRevalidationAction): string {
   return action === "localInstall"
-    ? frozenD1Text("studio.frozenD1.community.actionLocalInstall", "로컬 설치")
-    : frozenD1Text("studio.frozenD1.community.actionAssetInsert", "에셋 삽입");
+    ? frozenD1Text("studio.frozenD1.community.actionLocalInstall", "로컬 설치를")
+    : frozenD1Text("studio.frozenD1.community.actionAssetInsert", "에셋 삽입을");
 }
 
+class PublicRevalidationError extends Error {} // 상품명이 든 완결 문장이라 설치 실패 표시에서 이름을 다시 붙이지 않는다.
 function publicRevalidationError(
   record: CreatorMarketplaceResourceRecord,
   action: PublicRevalidationAction,
@@ -196,12 +197,12 @@ function publicRevalidationError(
 ): Error {
   const actionLabel = publicRevalidationActionLabel(action);
   if (caught instanceof NotFoundError) {
-    return new Error(frozenD1Text(
+    return new PublicRevalidationError(frozenD1Text(
       "studio.frozenD1.community.revalidationNotFound",
       { name: record.name, action: actionLabel },
       "{name}의 공개 상태를 더 이상 확인할 수 없어 {action} 중단했습니다. 관리자 숨김, 배급자 목록 내림 또는 배급자 계정 상태 변경일 수 있습니다. 공개 목록을 새로고침한 뒤 다시 시도해 주세요."));
   }
-  return new Error(frozenD1Text(
+  return new PublicRevalidationError(frozenD1Text(
     "studio.frozenD1.community.revalidationUnconfirmed",
     {
       name: record.name,
@@ -712,7 +713,7 @@ function CommunityRecordCard({
       || publicActionGenerationRef.current !== generation
     ) return null;
     if (!hasExactCreatorMarketplacePublicEvidence(record, current)) {
-      throw new Error(frozenD1Text(
+      throw new PublicRevalidationError(frozenD1Text(
         "studio.frozenD1.community.revalidationEvidenceChanged",
         { name: record.name, action: publicRevalidationActionLabel(action) },
         "{name}의 현재 공개 릴리스 증거가 이 카드와 달라 {action} 중단했습니다. 공개 목록을 새로고침한 뒤 정확한 최신 릴리스에서 다시 시도해 주세요."));
@@ -849,10 +850,9 @@ function CommunityRecordCard({
       onInstallStateChanged();
     } catch (caught: unknown) {
       if (cloudOperationGenerationRef.current !== operationGeneration) return;
-      onStatus(
-        `${record.name} · ${errorText(caught, "로컬 설치 작업을 완료하지 못했습니다.")}`,
-        true,
-      );
+      onStatus(caught instanceof PublicRevalidationError
+        ? caught.message
+        : `${record.name} · ${errorText(caught, "로컬 설치 작업을 완료하지 못했습니다.")}`, true);
     } finally {
       if (publicActionControllerRef.current === publicController) {
         publicActionControllerRef.current = null;
