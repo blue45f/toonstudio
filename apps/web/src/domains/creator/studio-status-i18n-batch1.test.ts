@@ -209,7 +209,7 @@ describe("studio panel status i18n batch1", () => {
       expect(HANGUL.test(en[key] ?? ""), `en value has Hangul: ${key}`).toBe(false);
     }
     expect(ko["studio.customFonts.deleteIntegrityFailed"]).toBe(
-      "사용자 글꼴 저장소 무결성 오류로 삭제를 중단했습니다.",
+      "사용자 글꼴 저장소 무결성 오류로 삭제를 중단했어요. 새로고침한 뒤 다시 시도해 주세요.",
     );
     expect(ko["studio.customFonts.storageCheckingBadge"]).toBe("SQLite/OPFS 사용자 글꼴 확인 중");
   });

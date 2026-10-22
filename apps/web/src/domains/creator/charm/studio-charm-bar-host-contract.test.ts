@@ -43,7 +43,7 @@ const CHARM_INSERT_COMMANDS: readonly { readonly name: string; readonly writes: 
  * 각 명령이 본문(중첩 함수 포함)에서 이름으로 부를 수 있다고 사람이 검토한 함수. 쓰기 판정 방법과 한계는
  * `studio-charm-host-writes.test-support.ts` 에 있다. 목록에 없는 새 호출이 생기면 시험이 실패한다:
  * 그 호출이 문서를 바꾸는지(되돌리기 한 단계가 유지되는지) 확인한 뒤 여기에 더한다.
- * `reject`·`resolve`·`String` 은 파일을 읽는 Promise 콜백 안의 호출이다.
+ * `reject`·`resolve`·`String` 은 파일을 읽는 Promise 콜백 안의 호출이다. `t` 는 실패 안내 문구를 만드는 번역 함수라 문서를 바꾸지 않는다.
  */
 const REVIEWED_CALLEES: Readonly<Record<string, readonly string[]>> = {
   addRenderedImage: ["setError", "createCanvasImageElement", "uid", "nextAssetInsertionPlacement", "addEl"],
@@ -68,6 +68,7 @@ const REVIEWED_CALLEES: Readonly<Record<string, readonly string[]>> = {
     "setSelectedId",
     "setTool",
     "setMenu",
+    "t",
   ],
   addSfxPreset: ["setMenu", "captureStudioMutationTicket", "spawnCenter", "canApplyStudioMutation", "addEl", "uid", "createSfxTextConfig"],
   openStudioObjectInsert: [

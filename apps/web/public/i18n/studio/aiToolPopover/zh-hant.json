@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "文字人工智慧提供者",
   "studio.aiToolPopover.serverTextAiProviderAria": "伺服器文字AI提供者",
   "studio.aiToolPopover.serverProviderAuto": "自動切換",
-  "studio.aiToolPopover.serverFallbackMessage": "當餘額/套餐限制用完時，您將切換到另一個提供者。一般錯誤不會自動重新發送，以防止重複計費。"
+  "studio.aiToolPopover.serverFallbackMessage": "當餘額/套餐限制用完時，您將切換到另一個提供者。一般錯誤不會自動重新發送，以防止重複計費。",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

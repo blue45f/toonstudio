@@ -7,6 +7,15 @@ import { StudioAiCharacterConsistencyPanel } from "./StudioAiCharacterConsistenc
 
 afterEach(cleanup);
 
+// 패널 제목 옆의 AI 연결 상태 배지도 role="status" 라서, 패널 자신의 안내(배지가 아닌 쪽)만 가려 읽는다.
+function panelStatus(): HTMLElement {
+  const found = screen
+    .getAllByRole("status")
+    .filter((node) => !node.hasAttribute("data-studio-ai-connection-status"));
+  expect(found).toHaveLength(1);
+  return found[0]!;
+}
+
 describe("StudioAiCharacterConsistencyPanel", () => {
   it("offers a 44px reference-selection CTA and delegates selection-mode entry", () => {
     const onRequestSelectReference = vi.fn();
@@ -26,7 +35,7 @@ describe("StudioAiCharacterConsistencyPanel", () => {
 
     const recovery = screen.getByRole("button", { name: "기준 이미지 선택하기" });
     expect(recovery.className).toContain("min-h-11");
-    expect(screen.getByRole("status").textContent).toContain(
+    expect(panelStatus().textContent).toContain(
       "캐릭터 이미지를 먼저 선택하세요",
     );
     expect(screen.getByText(/Esc를 누르면 선택을 취소/)).toBeTruthy();

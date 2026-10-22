@@ -48,6 +48,8 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "lucide-react",
       "react",
       "@/shared/lib/i18n-bilingual-copy",
+      "@/shared/lib/i18n",
+      "../studio-bg3d-panel-status-i18n",
       "./StudioBg3dAssetAiUseFields",
       "./StudioBg3dAssetCardRightsActions",
       "./StudioBg3dAssetRightsFilterBar",
@@ -99,7 +101,13 @@ describe("Studio BG3D asset-library ownership boundary", () => {
     // meshes is constructed by a renderer-free client module (studio-host-architecture-ratchet
     // keeps `new Worker(` out of creator components).
     const presets = moduleImports("./StudioReferenceRebuildPresets.tsx");
-    expect(presets.valueImports).toEqual(["react", "./studio-reference-rebuild-worker-client"]);
+    // 번역 함수와 상태 문구 사전 등록(부수 효과 모듈)만 더해졌고 렌더러·브라우저 API 는 여전히 없다.
+    expect(presets.valueImports).toEqual([
+      "react",
+      "./studio-reference-rebuild-worker-client",
+      "@/shared/lib/i18n",
+      "../studio-bg3d-panel-status-i18n",
+    ]);
     expect(presets.dynamicImports).toEqual([]);
     const workerClient = moduleImports("./studio-reference-rebuild-worker-client.ts");
     expect(workerClient.valueImports).toEqual([]);

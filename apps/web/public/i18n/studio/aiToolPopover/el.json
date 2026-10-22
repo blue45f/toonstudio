@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Παροχέας τεχνητής νοημοσύνης κειμένου",
   "studio.aiToolPopover.serverTextAiProviderAria": "Πάροχος τεχνητής νοημοσύνης κειμένου διακομιστή",
   "studio.aiToolPopover.serverProviderAuto": "αυτόματη εναλλαγή",
-  "studio.aiToolPopover.serverFallbackMessage": "Όταν εξαντληθεί το όριο υπολοίπου/πακέτου, θα μεταβείτε σε άλλο πάροχο. Τα γενικά σφάλματα δεν αποστέλλονται ξανά αυτόματα για να αποφευχθεί η διπλή φόρτιση."
+  "studio.aiToolPopover.serverFallbackMessage": "Όταν εξαντληθεί το όριο υπολοίπου/πακέτου, θα μεταβείτε σε άλλο πάροχο. Τα γενικά σφάλματα δεν αποστέλλονται ξανά αυτόματα για να αποφευχθεί η διπλή φόρτιση.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

@@ -350,9 +350,18 @@ describe("면 모델링 작업대: 거리 입력과 미리보기", () => {
     const popoverButton = document.createElement("button");
     popover.append(popoverButton);
     const outsideInput = document.createElement("input");
-    document.body.append(innerDialog, popover, outsideInput);
+    // 알림 대화상자와 aria-modal 층(포털로 뜨는 확인창)도 Esc 의 주인이다.
+    const alertDialog = document.createElement("div");
+    alertDialog.setAttribute("role", "alertdialog");
+    const alertButton = document.createElement("button");
+    alertDialog.append(alertButton);
+    const modalLayer = document.createElement("div");
+    modalLayer.setAttribute("aria-modal", "true");
+    const modalButton = document.createElement("button");
+    modalLayer.append(modalButton);
+    document.body.append(innerDialog, popover, outsideInput, alertDialog, modalLayer);
     try {
-      for (const source of [dialogButton, popoverButton, outsideInput]) {
+      for (const source of [dialogButton, popoverButton, outsideInput, alertButton, modalButton]) {
         const notIntercepted = fireEvent.keyDown(source, { key: "Escape" });
         expect(notIntercepted).toBe(true);
         expect(viewport().getAttribute("data-mesh-hash")).toBe(previewHash);
@@ -362,6 +371,8 @@ describe("면 모델링 작업대: 거리 입력과 미리보기", () => {
       innerDialog.remove();
       popover.remove();
       outsideInput.remove();
+      alertDialog.remove();
+      modalLayer.remove();
     }
   });
 

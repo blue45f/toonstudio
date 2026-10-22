@@ -373,8 +373,24 @@ describe("CatalogController cover byte optimize (separate opt-in)", () => {
     vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
     vi.stubEnv("COVER_SERVER_TRANSCODE_OPTIMIZE", "on");
     const { Image, encodePng, decode } = await import("image-js");
+    // 규칙적인 무늬(예: 화소 번호 나머지)는 PNG 가 JPEG 보다 훨씬 작게 압축돼 최적화가 채택되지 않는다(원본이 더 작다).
+    // 표지처럼 완만한 색 변화에 잡음이 섞인, 고정 시드의 사진 같은 무늬를 쓴다.
     const data = new Uint8Array(320 * 480 * 4);
-    for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
+    let seed = 20261022;
+    const noise = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 0x100000000 - 0.5;
+    };
+    for (let y = 0; y < 480; y++) {
+      for (let x = 0; x < 320; x++) {
+        const offset = (y * 320 + x) * 4;
+        const base = 128 + 60 * Math.sin(x / 23) + 50 * Math.cos(y / 31);
+        for (let channel = 0; channel < 3; channel++) {
+          data[offset + channel] = Math.max(0, Math.min(255, Math.round(base + channel * 12 + noise() * 24)));
+        }
+        data[offset + 3] = 255;
+      }
+    }
     const png = encodePng(new Image(320, 480, { data, colorModel: "RGBA" }));
     const fetchMock = vi.fn().mockResolvedValue(
       new globalThis.Response(png, { headers: { "content-type": "image/png" } })

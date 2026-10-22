@@ -96,7 +96,9 @@ describe("Studio BG3D control-field ownership boundary", () => {
     const sceneNodesSource = moduleSource("./StudioBg3dSceneNodes.tsx");
 
     expect(moduleSource("./StudioBg3dCaptureBridge.tsx")).toContain("function CaptureBridge(");
-    expect(sceneNodesSource).toContain("function BgCustomModelMesh(");
+    // BgCustomModelMesh 는 한 번 더 StudioBg3dCustomModelMesh.tsx 로 갈라졌고, SceneNodes 가 다시 내보낸다.
+    expect(moduleSource("./StudioBg3dCustomModelMesh.tsx")).toContain("function BgCustomModelMesh(");
+    expect(sceneNodesSource).toContain('from "./StudioBg3dCustomModelMesh"');
     expect(sceneNodesSource).toContain("function BgCustomModelInstanceBatch(");
   });
 });

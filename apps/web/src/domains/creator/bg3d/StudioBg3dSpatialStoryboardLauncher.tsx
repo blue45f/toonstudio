@@ -22,7 +22,7 @@ export function StudioBg3dSpatialStoryboardLauncher({ hidden = false }: { readon
       </button>
       <div id={contentId} hidden={!expanded}>
         {expanded && !hidden ? (
-          <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.spatialStoryboardTools", "공간 콘티 도구를 불러오는 중입니다.")} />}>
+          <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.spatialStoryboardTools", "공간 콘티 도구를 불러오는 중이에요.")} />}>
             <SpatialStoryboardPanel />
           </Suspense>
         ) : null}

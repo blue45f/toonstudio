@@ -47,12 +47,12 @@ const EMPTY_COPY_KEYS: Readonly<Record<CollabInboxTab, string>> = {
 };
 
 const EMPTY_COPY: Readonly<Record<CollabInboxTab, string>> = {
-  all: "아직 협업 알림이 없습니다. 팀원이 나를 언급하거나 검수를 요청하면 여기에 모입니다.",
-  unread: "안 읽은 알림이 없습니다. 다 확인했어요.",
-  mention: "나를 언급한 댓글이 없습니다.",
-  "review-request": "받은 검수 요청이 없습니다.",
-  approval: "승인 결과가 없습니다.",
-  handover: "인계 알림이 없습니다.",
+  all: "아직 협업 알림이 없어요. 팀원이 나를 언급하거나 검수를 요청하면 여기에 모여요.",
+  unread: "안 읽은 알림이 없어요. 다 확인했어요.",
+  mention: "나를 언급한 댓글이 없어요.",
+  "review-request": "받은 검수 요청이 없어요.",
+  approval: "승인 결과가 없어요.",
+  handover: "인계 알림이 없어요.",
 };
 
 function relativeTime(createdAt: string, now: Date): string {

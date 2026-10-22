@@ -265,7 +265,7 @@ export function ProductionRiskEditorDialog({
       await onSave(nextRisk);
       onClose();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : t("productionHub.status.riskSaveFailed", "위험 항목을 저장하지 못했습니다."));
+      setError(saveError instanceof Error ? saveError.message : t("productionHub.status.riskSaveFailed", "위험 항목을 저장하지 못했어요. 잠시 후 다시 시도해 주세요."));
     } finally {
       setSaving(false);
     }

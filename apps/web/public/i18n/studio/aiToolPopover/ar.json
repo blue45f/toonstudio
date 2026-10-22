@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "مزود الذكاء الاصطناعي للنص",
   "studio.aiToolPopover.serverTextAiProviderAria": "مزود الذكاء الاصطناعي لنص الخادم",
   "studio.aiToolPopover.serverProviderAuto": "التبديل التلقائي",
-  "studio.aiToolPopover.serverFallbackMessage": "عند استنفاد الحد الأقصى للرصيد/الباقة، سوف تقوم بالتحويل إلى مزود آخر. لا يتم إعادة إرسال الأخطاء العامة تلقائيًا لمنع الشحن المزدوج."
+  "studio.aiToolPopover.serverFallbackMessage": "عند استنفاد الحد الأقصى للرصيد/الباقة، سوف تقوم بالتحويل إلى مزود آخر. لا يتم إعادة إرسال الأخطاء العامة تلقائيًا لمنع الشحن المزدوج.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

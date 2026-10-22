@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ටෙක්ස්ට් AI සපයන්නා",
   "studio.aiToolPopover.serverTextAiProviderAria": "සේවාදායක පෙළ AI සපයන්නා",
   "studio.aiToolPopover.serverProviderAuto": "ස්වයංක්රීය මාරු කිරීම",
-  "studio.aiToolPopover.serverFallbackMessage": "ශේෂය/පැකේජ සීමාව අවසන් වූ විට, ඔබ වෙනත් සැපයුම්කරුවෙකු වෙත මාරු වනු ඇත. ද්විත්ව ආරෝපණය වැළැක්වීම සඳහා සාමාන්‍ය දෝෂ ස්වයංක්‍රීයව නැවත යවන්නේ නැත."
+  "studio.aiToolPopover.serverFallbackMessage": "ශේෂය/පැකේජ සීමාව අවසන් වූ විට, ඔබ වෙනත් සැපයුම්කරුවෙකු වෙත මාරු වනු ඇත. ද්විත්ව ආරෝපණය වැළැක්වීම සඳහා සාමාන්‍ය දෝෂ ස්වයංක්‍රීයව නැවත යවන්නේ නැත.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

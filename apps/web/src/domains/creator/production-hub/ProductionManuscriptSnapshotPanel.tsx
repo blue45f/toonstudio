@@ -232,7 +232,7 @@ export function ProductionManuscriptSnapshotPanel({
       revisionMessage: head.message,
     }, memoDraft);
     if (!created) {
-      setError(t("productionHub.status.snapshotSaveFailed", "스냅샷을 저장하지 못했습니다."));
+      setError(t("productionHub.status.snapshotSaveFailed", "스냅샷을 저장하지 못했어요. 잠시 후 다시 시도해 주세요."));
       return;
     }
     setMemoDraft("");
@@ -317,7 +317,7 @@ export function ProductionManuscriptSnapshotPanel({
       refresh();
       onChanged();
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, t("productionHub.status.snapshotRestoreFailed", "스냅샷을 복원하지 못했습니다.")));
+      setError(await getApiErrorMessage(cause, t("productionHub.status.snapshotRestoreFailed", "스냅샷을 복원하지 못했어요. 잠시 후 다시 시도해 주세요.")));
     } finally {
       setRestoring(false);
     }

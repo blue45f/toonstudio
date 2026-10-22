@@ -334,6 +334,7 @@ apps/web/src/domains/creator/handoff-envelope
 apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccFaceModelingTools.interaction.test.tsx
 apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccFaceModelingTools.test.tsx
 apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccPanel.face-modeling.test.tsx
+apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-edge-bevel-drawable.test.ts
 apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-edge-bevel.test.ts
 apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-face-intersection.test.ts
 apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-face-modeling-geometry.test.ts
@@ -491,6 +492,7 @@ apps/web/src/domains/creator/studio-shell/StudioProjectCreatePage.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioProjectLibraryPage.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioQuickStart.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioRolePersonalizationCenter.test.tsx
+apps/web/src/domains/creator/studio-shell/StudioSaveStatusChromeMount.floating-suggestion.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioVisualGuidance.test.tsx
 apps/web/src/domains/creator/studio-shell/studio-creator-lobby-layout.contract.test.ts
 apps/web/src/domains/creator/studio-shell/useStudioModalSheet.details.test.ts

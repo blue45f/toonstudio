@@ -15,6 +15,11 @@ const drawOptionsSource = readFileSync(
   resolve(process.cwd(), "apps/web/src/domains/creator/brush/StudioDrawOptionsBar.tsx"),
   "utf8"
 );
+// 크기·불투명도 프리셋의 힌트 변형(preset-*)은 컴포넌트에서 분리된 상수 파일에 있다.
+const drawOptionsConstantsSource = readFileSync(
+  resolve(process.cwd(), "apps/web/src/domains/creator/brush/studio-draw-options-bar-constants.ts"),
+  "utf8"
+);
 // 스튜디오 전용 규칙의 정본은 studio-route.css다 — globals.css 머리말 정책상 스튜디오
 // 규칙은 그쪽에만 두고 스튜디오 라우트 청크에서만 로드한다(docs/perf/bundle-gate.md).
 const studioRouteSource = readFileSync(resolve(process.cwd(), "apps/web/src/shared/styles/studio-route.css"), "utf8");
@@ -723,10 +728,10 @@ describe("StudioDrawOptionsBar", () => {
 
   it("uses exact rich previews for every size and opacity preset without native titles", () => {
     for (const sizeVariant of ["xs", "s", "m", "l", "xl", "xxl"]) {
-      expect(drawOptionsSource).toContain(`preset-${sizeVariant}`);
+      expect(drawOptionsConstantsSource).toContain(`preset-${sizeVariant}`);
     }
     for (const opacityVariant of [20, 40, 60, 80, 100]) {
-      expect(drawOptionsSource).toContain(`preset-${opacityVariant}`);
+      expect(drawOptionsConstantsSource).toContain(`preset-${opacityVariant}`);
     }
     expect(drawOptionsSource).toContain("BRUSH_SIZE_HINT_VARIANT[chip.id]");
     expect(drawOptionsSource).toContain("BRUSH_OPACITY_HINT_VARIANT[chip.id]");

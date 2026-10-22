@@ -110,7 +110,7 @@ describe("live wet-ink product boundary", () => {
     expect(begin).toContain('return rejectSelectedSurface("습식 매체"');
 
     const finishStart = studioPageSource.indexOf("function finishDrawingPointer(");
-    const finishEnd = studioPageSource.indexOf("function onStagePointerCancel", finishStart);
+    const finishEnd = studioPageSource.indexOf("return finishDrawingPointer;", finishStart);
     const finish = studioPageSource.slice(finishStart, finishEnd);
     const seal = finish.indexOf("liveWetInkOverlayRendererRef.current.end(finished");
     const sealGuard = finish.indexOf(
@@ -194,7 +194,7 @@ describe("live wet-ink product boundary", () => {
   it("does not restore a Konva shadow for a fast Living Ink contact", () => {
     const finish = studioPageSource.slice(
       studioPageSource.indexOf("function finishDrawingPointer"),
-      studioPageSource.indexOf("function onStagePointerCancel"),
+      studioPageSource.indexOf("return finishDrawingPointer;"),
     );
     const clear = finish.indexOf(
       "clearDraftPreview({ preserveInkForDeferredCommit: deferInkCleanup })",

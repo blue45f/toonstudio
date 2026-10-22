@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Изпратете SMS на доставчик на AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "Доставчик на сървърен текст AI",
   "studio.aiToolPopover.serverProviderAuto": "автоматично превключване",
-  "studio.aiToolPopover.serverFallbackMessage": "Когато лимитът на баланса/пакета е изчерпан, ще преминете към друг доставчик. Общите грешки не се изпращат автоматично, за да се предотврати двойно таксуване."
+  "studio.aiToolPopover.serverFallbackMessage": "Когато лимитът на баланса/пакета е изчерпан, ще преминете към друг доставчик. Общите грешки не се изпращат автоматично, за да се предотврати двойно таксуване.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

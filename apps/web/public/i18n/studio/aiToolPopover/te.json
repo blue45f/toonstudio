@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "టెక్స్ట్ AI ప్రొవైడర్",
   "studio.aiToolPopover.serverTextAiProviderAria": "సర్వర్ టెక్స్ట్ AI ప్రొవైడర్",
   "studio.aiToolPopover.serverProviderAuto": "స్వయంచాలక మార్పిడి",
-  "studio.aiToolPopover.serverFallbackMessage": "బ్యాలెన్స్/ప్యాకేజీ పరిమితి ముగిసినప్పుడు, మీరు మరొక ప్రొవైడర్‌కి మారతారు. డబుల్ ఛార్జింగ్‌ను నిరోధించడానికి సాధారణ ఎర్రర్‌లు స్వయంచాలకంగా మళ్లీ పంపబడవు."
+  "studio.aiToolPopover.serverFallbackMessage": "బ్యాలెన్స్/ప్యాకేజీ పరిమితి ముగిసినప్పుడు, మీరు మరొక ప్రొవైడర్‌కి మారతారు. డబుల్ ఛార్జింగ్‌ను నిరోధించడానికి సాధారణ ఎర్రర్‌లు స్వయంచాలకంగా మళ్లీ పంపబడవు.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

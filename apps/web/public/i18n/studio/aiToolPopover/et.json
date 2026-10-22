@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Tekst AI pakkuja",
   "studio.aiToolPopover.serverTextAiProviderAria": "Serveri teksti AI pakkuja",
   "studio.aiToolPopover.serverProviderAuto": "automaatne ümberlülitus",
-  "studio.aiToolPopover.serverFallbackMessage": "Kui saldo/paketi limiit on ammendatud, lülitute teisele pakkujale. Üldisi vigu ei saadeta topeltlaadimise vältimiseks automaatselt uuesti."
+  "studio.aiToolPopover.serverFallbackMessage": "Kui saldo/paketi limiit on ammendatud, lülitute teisele pakkujale. Üldisi vigu ei saadeta topeltlaadimise vältimiseks automaatselt uuesti.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

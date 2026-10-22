@@ -472,7 +472,7 @@ describe("ProductionEpisodeProcessMatrix (C-4 차수 비교 모드)", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "차수 비교" }));
-    expect(screen.getByText("비교할 차수 기록이 없습니다. 리비전이 쌓이면 1차·2차·수정본으로 나뉘어 표시됩니다.")).toBeTruthy();
+    expect(screen.getByText("비교할 차수 기록이 없어요. 리비전이 쌓이면 1차·2차·수정본으로 나뉘어 표시돼요.")).toBeTruthy();
   });
 
   it("차수 셀 클릭으로 원고를 연다", () => {

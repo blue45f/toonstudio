@@ -14,7 +14,7 @@ describe("Studio live retained-media overlay integration", () => {
     const editor = readStudioCuttoonEditorSource();
     const finish = editor.slice(
       editor.indexOf("function finishDrawingPointer("),
-      editor.indexOf("function onStagePointerCancel"),
+      editor.indexOf("return finishDrawingPointer;"),
     );
     const seal = finish.indexOf("liveRetainedMediaOverlayRendererRef.current.end(finished)");
     const reject = finish.indexOf(

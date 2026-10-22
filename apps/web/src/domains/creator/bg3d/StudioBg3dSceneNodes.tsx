@@ -65,6 +65,8 @@ import type {
   StudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
 
+import { BgCustomModelMesh, type StudioBg3dRigBakeReader } from "./StudioBg3dCustomModelMesh";
+
 /** Imported model metadata the placement preview ghost renders before the instance exists. */
 export interface StudioBg3dPlacementPreviewAsset {
   readonly modelId: string;
@@ -537,8 +539,6 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
     </group>
   );
 }
-
-import { BgCustomModelMesh, type StudioBg3dRigBakeReader } from "./StudioBg3dCustomModelMesh";
 
 export { BgCustomModelMesh, type StudioBg3dRigBakeReader };
 

@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Proveedor de IA de texto",
   "studio.aiToolPopover.serverTextAiProviderAria": "Proveedor de IA de texto del servidor",
   "studio.aiToolPopover.serverProviderAuto": "conmutación automática",
-  "studio.aiToolPopover.serverFallbackMessage": "Cuando se agote el límite de saldo/paquete, cambiará a otro proveedor. Los errores generales no se resienten automáticamente para evitar la doble carga."
+  "studio.aiToolPopover.serverFallbackMessage": "Cuando se agote el límite de saldo/paquete, cambiará a otro proveedor. Los errores generales no se resienten automáticamente para evitar la doble carga.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

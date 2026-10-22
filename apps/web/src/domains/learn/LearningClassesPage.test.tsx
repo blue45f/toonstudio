@@ -100,7 +100,10 @@ describe("클래스 페이지", () => {
     expect(screen.queryByText(/청구/u)).toBeNull();
     expect(screen.getByText(/포인트는 활동으로 모아요/u)).toBeTruthy();
     expect(screen.getByText(/내 포인트/u)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /한 문장에서 세 컷의 이야기로/u }).getAttribute("href")).toBe("/learn/lessons/story-board");
+    // 클래스가 8개로 늘면서 같은 강좌가 여러 클래스의 커리큘럼에 함께 나온다. 어디에 나오든 같은 강좌로 가야 한다.
+    const storyBoardLinks = screen.getAllByRole("link", { name: /한 문장에서 세 컷의 이야기로/u });
+    expect(storyBoardLinks.length).toBeGreaterThan(0);
+    for (const link of storyBoardLinks) expect(link.getAttribute("href")).toBe("/learn/lessons/story-board");
     expect(screen.getAllByText(/연결 강좌 0\/5 완료/u)).toHaveLength(2);
   });
 

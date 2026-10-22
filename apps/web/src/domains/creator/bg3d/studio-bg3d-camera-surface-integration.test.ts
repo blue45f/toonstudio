@@ -5,12 +5,14 @@ import { describe, expect, it } from "vitest";
 // 2026-08-21 intentional change: the R3F scene-node components (BgViewportController,
 // BgGroundHelper, BgPrimitiveMesh, BgCustomModelMesh, …) moved out of StudioBackground3D.tsx
 // into StudioBg3dSceneNodes.tsx during the editor split. Their markers resolve there now.
+// BgCustomModelMesh was split again into StudioBg3dCustomModelMesh.tsx (its surface-pick guard lives there).
 import { readStudioBg3dEditorSource } from "./read-studio-bg3d-editor-source";
 
 const source = [
   readStudioBg3dEditorSource(),
   ...[
     "./StudioBg3dSceneNodes.tsx",
+    "./StudioBg3dCustomModelMesh.tsx",
     "./StudioBg3dShapesPanel.tsx",
     "./StudioBg3dViewPanelContent.tsx",
     "./StudioBg3dLtPanel.tsx",

@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Fournisseur d'IA de texte",
   "studio.aiToolPopover.serverTextAiProviderAria": "Fournisseur d'IA de texte de serveur",
   "studio.aiToolPopover.serverProviderAuto": "commutation automatique",
-  "studio.aiToolPopover.serverFallbackMessage": "Lorsque la limite de solde/forfait est épuisée, vous passerez à un autre fournisseur. Les erreurs générales ne sont pas automatiquement renvoyées pour éviter une double facturation."
+  "studio.aiToolPopover.serverFallbackMessage": "Lorsque la limite de solde/forfait est épuisée, vous passerez à un autre fournisseur. Les erreurs générales ne sont pas automatiquement renvoyées pour éviter une double facturation.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

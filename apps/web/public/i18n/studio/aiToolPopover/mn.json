@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "AI үйлчилгээ үзүүлэгчийг бичнэ үү",
   "studio.aiToolPopover.serverTextAiProviderAria": "Серверийн текстийн AI үйлчилгээ үзүүлэгч",
   "studio.aiToolPopover.serverProviderAuto": "автомат шилжих",
-  "studio.aiToolPopover.serverFallbackMessage": "Үлдэгдэл/багцын хязгаар дууссаны дараа та өөр үйлчилгээ үзүүлэгч рүү шилжих болно. Давхар цэнэглэхээс сэргийлэхийн тулд ерөнхий алдааг автоматаар дахин илгээдэггүй."
+  "studio.aiToolPopover.serverFallbackMessage": "Үлдэгдэл/багцын хязгаар дууссаны дараа та өөр үйлчилгээ үзүүлэгч рүү шилжих болно. Давхар цэнэглэхээс сэргийлэхийн тулд ерөнхий алдааг автоматаар дахин илгээдэггүй.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

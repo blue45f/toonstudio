@@ -45,12 +45,12 @@ import type {
   StudioCanvasViewportHandlers,
   StudioCanvasViewportProps,
 } from "./StudioCanvasViewportTypes";
-
-export type { StudioCanvasViewportDocumentLayerProps };
 import type { StudioPaperSurfaceSettings } from "../brush/studio-paper-granulation-runtime";
 import type { StudioLiveGesturePreviewRenderPlan } from "../live/studio-live-gesture-preview-projection";
 import type { El, FrameEl, ImageEl } from "../studio-element-model";
 import type Konva from "konva";
+
+export type { StudioCanvasViewportDocumentLayerProps };
 
 export function StudioCanvasViewportDocumentLayer({
   activeGroupId,

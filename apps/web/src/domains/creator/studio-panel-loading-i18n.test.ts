@@ -155,7 +155,7 @@ describe("studio panel loading i18n", () => {
 
   it("ko 사전 값이 기존 하드코딩 문구와 동일하다 (문구 변경 없는 이관)", () => {
     const ko = readDictionary("ko");
-    expect(ko["studio.canvas.panelLoading.assetLibrary"]).toBe("에셋 보관함을 여는 중...");
+    expect(ko["studio.canvas.panelLoading.assetLibrary"]).toBe("소재 서재를 여는 중...");
     expect(ko["studio.canvas.panelLoading.sceneTemplates"]).toBe("장면 템플릿을 여는 중…");
     expect(ko["studio.canvas.panelLoading.webtoonBackgroundTools"]).toBe(
       "웹툰 배경 도구를 불러오는 중이에요…",

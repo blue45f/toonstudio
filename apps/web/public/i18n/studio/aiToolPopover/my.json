@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "AI ပံ့ပိုးပေးသူကို စာပို့ပါ။",
   "studio.aiToolPopover.serverTextAiProviderAria": "ဆာဗာ စာသား AI ပံ့ပိုးပေးသူ",
   "studio.aiToolPopover.serverProviderAuto": "အလိုအလျောက်ပြောင်းခြင်း။",
-  "studio.aiToolPopover.serverFallbackMessage": "လက်ကျန်/ပက်ကေ့ချ်ကန့်သတ်ချက် ကုန်ဆုံးသွားသောအခါ၊ သင်သည် အခြားဝန်ဆောင်မှုပေးသူထံ ပြောင်းသွားပါမည်။ နှစ်ထပ်အားသွင်းခြင်းကို တားဆီးရန် အထွေထွေ အမှားအယွင်းများကို အလိုအလျောက် တုံ့ပြန်မည်မဟုတ်ပါ။"
+  "studio.aiToolPopover.serverFallbackMessage": "လက်ကျန်/ပက်ကေ့ချ်ကန့်သတ်ချက် ကုန်ဆုံးသွားသောအခါ၊ သင်သည် အခြားဝန်ဆောင်မှုပေးသူထံ ပြောင်းသွားပါမည်။ နှစ်ထပ်အားသွင်းခြင်းကို တားဆီးရန် အထွေထွေ အမှားအယွင်းများကို အလိုအလျောက် တုံ့ပြန်မည်မဟုတ်ပါ။",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

@@ -404,9 +404,19 @@ describe("PostgresHealthReadinessRepository", () => {
         /\bCREATE TABLE(?: IF NOT EXISTS)? public\.([a-z_]+)/gu,
       ),
     ]).map((match) => match[1]!);
+    // Godot 공간 배치·배경 표(0106·0107)는 스키마 접두어 없이 따옴표 이름으로 선언한다.
+    const bareQuotedMigrationRelations = [
+      "../../platform/database/migrations/0106_studio_godot_space_layout.sql",
+      "../../platform/database/migrations/0107_studio_godot_space_background.sql",
+    ].flatMap((path) => [
+      ...readFileSync(new URL(path, import.meta.url), "utf8").matchAll(
+        /\bCREATE TABLE(?: IF NOT EXISTS)? "([^"]+)"/gu,
+      ),
+    ]).map((match) => match[1]!);
     const migrationRelations = [
       ...quotedMigrationRelations,
       ...unquotedMigrationRelations,
+      ...bareQuotedMigrationRelations,
     ];
     expect(migrationRelations.toSorted()).toEqual([
       ...ASSET_PLATFORM_RELATIONS,
@@ -416,6 +426,8 @@ describe("PostgresHealthReadinessRepository", () => {
       "membership_resource_state",
       "membership_resource_usage_event",
       "membership_reward_reversal",
+      "studio_godot_space_background",
+      "studio_godot_space_layout",
       "traffic_page_view",
       "traffic_session",
       "traffic_share_event",

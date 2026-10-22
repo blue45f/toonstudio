@@ -317,6 +317,18 @@ export function useT(): TranslationResolver {
   return getTranslationResolver(lang);
 }
 
+/**
+ * 호출한 시점의 언어로 바로 번역한다. 훅이 아니라서 효과·콜백의 의존성에 넣지 않아도 되고, 언어를 바꿀 때 그 효과가
+ * 다시 돌지 않는다. 실패 안내처럼 문구가 만들어지는 순간의 언어로 풀면 되는 곳에 쓰고, 화면에 그리는 문구에는 useT 를 쓴다.
+ */
+export function translateNow(
+  key: string,
+  fallbackOrValues?: string | Readonly<Record<string, string | number>>,
+  fallbackText?: string,
+): string {
+  return getTranslationResolver(getLang())(key, fallbackOrValues, fallbackText);
+}
+
 export function triggerTranslationBundleUpdate() {
   useI18n.setState((state) => ({
     translationBundleRevision: state.translationBundleRevision + 1,

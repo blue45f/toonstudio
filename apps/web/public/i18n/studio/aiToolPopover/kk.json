@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Мәтіндік AI провайдері",
   "studio.aiToolPopover.serverTextAiProviderAria": "Сервер мәтіндік AI провайдері",
   "studio.aiToolPopover.serverProviderAuto": "автоматты ауыстыру",
-  "studio.aiToolPopover.serverFallbackMessage": "Баланс/пакет лимиті таусылғанда, сіз басқа провайдерге ауысасыз. Қосарланған зарядтауды болдырмау үшін жалпы қателер автоматты түрде қайта жіберілмейді."
+  "studio.aiToolPopover.serverFallbackMessage": "Баланс/пакет лимиті таусылғанда, сіз басқа провайдерге ауысасыз. Қосарланған зарядтауды болдырмау үшін жалпы қателер автоматты түрде қайта жіберілмейді.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

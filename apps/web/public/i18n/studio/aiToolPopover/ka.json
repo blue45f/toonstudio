@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ტექსტური AI პროვაიდერი",
   "studio.aiToolPopover.serverTextAiProviderAria": "სერვერის ტექსტის AI პროვაიდერი",
   "studio.aiToolPopover.serverProviderAuto": "ავტომატური გადართვა",
-  "studio.aiToolPopover.serverFallbackMessage": "როდესაც ბალანსი/პაკეტის ლიმიტი ამოიწურება, თქვენ გადახვალთ სხვა პროვაიდერზე. ზოგადი შეცდომები ავტომატურად არ გაიგზავნება ორმაგი დატენვის თავიდან ასაცილებლად."
+  "studio.aiToolPopover.serverFallbackMessage": "როდესაც ბალანსი/პაკეტის ლიმიტი ამოიწურება, თქვენ გადახვალთ სხვა პროვაიდერზე. ზოგადი შეცდომები ავტომატურად არ გაიგზავნება ორმაგი დატენვის თავიდან ასაცილებლად.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

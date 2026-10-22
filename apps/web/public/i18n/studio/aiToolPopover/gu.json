@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "AI પ્રદાતાને ટેક્સ્ટ કરો",
   "studio.aiToolPopover.serverTextAiProviderAria": "સર્વર ટેક્સ્ટ AI પ્રદાતા",
   "studio.aiToolPopover.serverProviderAuto": "સ્વચાલિત સ્વિચિંગ",
-  "studio.aiToolPopover.serverFallbackMessage": "જ્યારે બેલેન્સ/પેકેજ મર્યાદા સમાપ્ત થઈ જાય, ત્યારે તમે બીજા પ્રદાતા પર સ્વિચ કરશો. ડબલ ચાર્જિંગને રોકવા માટે સામાન્ય ભૂલો આપમેળે મોકલવામાં આવતી નથી."
+  "studio.aiToolPopover.serverFallbackMessage": "જ્યારે બેલેન્સ/પેકેજ મર્યાદા સમાપ્ત થઈ જાય, ત્યારે તમે બીજા પ્રદાતા પર સ્વિચ કરશો. ડબલ ચાર્જિંગને રોકવા માટે સામાન્ય ભૂલો આપમેળે મોકલવામાં આવતી નથી.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

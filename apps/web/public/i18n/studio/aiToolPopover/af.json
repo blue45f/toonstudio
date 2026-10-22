@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Teks AI-verskaffer",
   "studio.aiToolPopover.serverTextAiProviderAria": "Bediener teks AI Verskaffer",
   "studio.aiToolPopover.serverProviderAuto": "outomatiese skakeling",
-  "studio.aiToolPopover.serverFallbackMessage": "Wanneer die saldo-/pakketlimiet uitgeput is, sal jy na 'n ander verskaffer oorskakel. Algemene foute word nie outomaties weer gestuur om dubbele laai te voorkom nie."
+  "studio.aiToolPopover.serverFallbackMessage": "Wanneer die saldo-/pakketlimiet uitgeput is, sal jy na 'n ander verskaffer oorskakel. Algemene foute word nie outomaties weer gestuur om dubbele laai te voorkom nie.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

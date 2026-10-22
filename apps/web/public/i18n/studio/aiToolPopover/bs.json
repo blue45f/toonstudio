@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Dobavljač AI teksta",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI Provider",
   "studio.aiToolPopover.serverProviderAuto": "automatsko prebacivanje",
-  "studio.aiToolPopover.serverFallbackMessage": "Kada je limit/ograničenje paketa iscrpljeno, preći ćete na drugog provajdera. Opšte greške se ne šalju automatski kako bi se spriječilo dvostruko punjenje."
+  "studio.aiToolPopover.serverFallbackMessage": "Kada je limit/ograničenje paketa iscrpljeno, preći ćete na drugog provajdera. Opšte greške se ne šalju automatski kako bi se spriječilo dvostruko punjenje.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

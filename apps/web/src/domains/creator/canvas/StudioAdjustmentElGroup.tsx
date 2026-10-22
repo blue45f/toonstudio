@@ -207,6 +207,6 @@ export function StudioAdjustmentElGroup({ element, width, height, cacheKey, pixe
       node.clearCache();
       node.filters([]);
     };
-  }, [cacheKey, width, height, pixelRatio]);
+  }, [cacheKey, width, height, pixelRatio, element.maskEnabled, element.maskSrc]);
   return <Group ref={ref}>{children}</Group>;
 }

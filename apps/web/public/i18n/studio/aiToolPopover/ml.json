@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ടെക്സ്റ്റ് AI ദാതാവ്",
   "studio.aiToolPopover.serverTextAiProviderAria": "സെർവർ ടെക്സ്റ്റ് AI ദാതാവ്",
   "studio.aiToolPopover.serverProviderAuto": "ഓട്ടോമാറ്റിക് സ്വിച്ചിംഗ്",
-  "studio.aiToolPopover.serverFallbackMessage": "ബാലൻസ്/പാക്കേജ് പരിധി തീരുമ്പോൾ, നിങ്ങൾ മറ്റൊരു ദാതാവിലേക്ക് മാറും. ഇരട്ട ചാർജ്ജിംഗ് തടയുന്നതിന് പൊതുവായ പിശകുകൾ സ്വയമേവ പുനഃസ്ഥാപിക്കില്ല."
+  "studio.aiToolPopover.serverFallbackMessage": "ബാലൻസ്/പാക്കേജ് പരിധി തീരുമ്പോൾ, നിങ്ങൾ മറ്റൊരു ദാതാവിലേക്ക് മാറും. ഇരട്ട ചാർജ്ജിംഗ് തടയുന്നതിന് പൊതുവായ പിശകുകൾ സ്വയമേവ പുനഃസ്ഥാപിക്കില്ല.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

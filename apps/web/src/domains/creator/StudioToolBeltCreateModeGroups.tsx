@@ -234,7 +234,7 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
                 contentClassName: "overflow-y-auto overflow-x-hidden",
               }}
             >
-              <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetMenu", "에셋 메뉴를 여는 중...")} />}>
+              <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetMenu", "소재 메뉴를 여는 중...")} />}>
                 <LazyStudioAssetToolPopoverBody toolBelt={toolBelt} />
               </Suspense>
             </StudioFloatingToolPopover>

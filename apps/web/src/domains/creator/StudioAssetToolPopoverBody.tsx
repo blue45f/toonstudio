@@ -617,7 +617,7 @@ export function StudioAssetToolPopoverBody({
                     </>
                   )}
                   {studioStickerAssetsLoading && !studioStickerAssetsLoaded && (
-                    <p className="mb-2 rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">{t("studio.canvas.panelLoading.stickerAssets", "스티커 에셋을 불러오는 중...")}</p>
+                    <p className="mb-2 rounded-lg border border-line bg-card px-2 py-2 text-xs text-fg-3">{t("studio.canvas.panelLoading.stickerAssets", "스티커 소재를 불러오는 중...")}</p>
                   )}
                   {studioStickerAssetsError && (
                     <p className="mb-2 rounded-lg border border-bad/40 bg-bad/10 px-2 py-2 text-xs text-bad">
@@ -687,7 +687,7 @@ export function StudioAssetToolPopoverBody({
                 </>
               )}
               {menu === "asset" && (
-                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetLibrary", "에셋 보관함을 여는 중...")} />}>
+                <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.assetLibrary", "소재 서재를 여는 중...")} />}>
                   <StudioAssetMenuPanel
                     assetTab={assetTab}
                     setAssetTab={setAssetTab}

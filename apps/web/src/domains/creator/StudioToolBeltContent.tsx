@@ -2,7 +2,6 @@ import { memo } from "react";
 
 import { StudioToolbarDivider } from "./studio-chrome-ui";
 import { studioToolButtonClass } from "./studio-panel-ui";
-import { studioToolHintFromLabel, type StudioToolHintSpec } from "./studio-tool-hints";
 import {
   studioUiDensityAllows,
   type StudioUiChromeRegion,
@@ -10,7 +9,6 @@ import {
 } from "./studio-ui-density";
 import { studioWorkModeAllowsRegion } from "./studio-cuttoon-editor/runtime/studio-work-mode-gating";
 import type { StudioWorkMode } from "./studio-work-mode";
-import { STUDIO_VIEW_ACTION_HINTS } from "./studio-view-action-hints";
 import { TOOL_BELT_HINTS } from "./StudioToolBeltHints";
 import { StudioToolBeltCanvasControls } from "./StudioToolBeltCanvasControls";
 import { StudioToolBeltCreateModeGroups } from "./StudioToolBeltCreateModeGroups";

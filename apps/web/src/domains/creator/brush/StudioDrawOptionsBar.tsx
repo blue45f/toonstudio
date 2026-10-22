@@ -26,6 +26,9 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
 
+import { BRUSH_OPACITY_HINT_VARIANT, BRUSH_SIZE_HINT_VARIANT, STUDIO_STABILIZER_STRENGTH_PRESETS, iconBtn } from "./studio-draw-options-bar-constants";
+import { SizePreview } from "./studio-draw-options-bar-parts";
+
 import {
   BRUSH_PRESETS,
   STUDIO_BRUSH_OPACITY_CHIPS,
@@ -156,14 +159,6 @@ export interface StudioDrawOptionsBarProps {
   dockInsets?: Readonly<{ left: number; right: number }>;
   className?: string;
 }
-
-import {
-  BRUSH_OPACITY_HINT_VARIANT,
-  BRUSH_SIZE_HINT_VARIANT,
-  STUDIO_STABILIZER_STRENGTH_PRESETS,
-  SizePreview,
-  iconBtn,
-} from "./studio-draw-options-bar-parts";
 
 export function StudioDrawOptionsBar({
   drawMode,
