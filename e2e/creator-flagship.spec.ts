@@ -3,6 +3,7 @@ import {
   STUDIO_BETA_NOTICE_REVISION,
   STUDIO_BETA_NOTICE_STORAGE_KEY,
 } from "../apps/web/src/domains/creator/studio-beta-notice-storage";
+import { STUDIO_START_GATEWAY_HREF } from "../apps/web/src/domains/creator/studio-start-entry";
 import { WORKSPACE_TOUR_STORAGE_KEY } from "../apps/web/src/domains/creator/workspace/studio-workspace-tour-state";
 import { CREATOR_EXPERIENCE_STORAGE_KEY } from "../apps/web/src/shared/lib/creator-experience-mode";
 import { assertStudioWorkspaceHome } from "../scripts/lib/studio-workspace-browser-contract.mjs";
@@ -266,12 +267,12 @@ for (const width of [320, 390, 912, 1024, 1280]) {
     const library = page.getByRole("region", { name: "작품 관리", exact: true });
     await expect(library).toBeVisible();
     await expect(library.getByRole("heading", { name: "내 작업", exact: true })).toBeVisible();
-    // 작업 우선 진입의 주 행동은 로비 히어로의 "새 작품 시작"(/studio/new)과 "작업 가져오기"(/studio/import)다.
+    // 작업 우선 진입의 주 행동은 로비 히어로의 "새 작품 시작"(작품 시작 정문 /create — 시작 입구 단일화)과 "작업 가져오기"(/studio/import)다.
     // 목록 머리글은 같은 동선을 중복해 두지 않으므로(활성 뷰) 로비의 링크가 유일한 시작점이어야 한다.
     const startNew = library.getByRole("link", { name: "새 작품 시작", exact: true });
     const importWork = library.getByRole("link", { name: "작업 가져오기", exact: true });
     await expect(startNew).toBeVisible();
-    await expect(startNew).toHaveAttribute("href", "/studio/new");
+    await expect(startNew).toHaveAttribute("href", STUDIO_START_GATEWAY_HREF);
     await expect(importWork).toBeVisible();
     await expect(importWork).toHaveAttribute("href", "/studio/import");
     const views = library.getByRole("navigation", { name: "내 작업 보기", exact: true });
