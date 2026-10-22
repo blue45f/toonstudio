@@ -73,6 +73,16 @@ describe("public shell integration", () => {
     expect(shell).toMatch(/<ErrorBoundary resetKey=\{pathname\}>\s*<Suspense fallback=\{null\}><SiteNextSteps \/><\/Suspense>/u);
   });
 
+  it("PWA 설치 안내는 셸과 호스트 이중 게이트로 발표·영상 화면에서 제외한다", () => {
+    expect(shell).toContain("const pwaInstallPromptAllowed = supportsPwaInstallPrompts(pathname);");
+    expect(shell).toContain("pwaInstallPromptAllowed ? (");
+    expect(shell).toContain("immersiveVirtualExperience || !pwaInstallPromptAllowed ? null : <PwaInstallNudge />");
+    const nudgeHost = readFileSync(new URL("../shared/components/pwa-install-nudge-host.tsx", import.meta.url), "utf8");
+    const showcaseHost = readFileSync(new URL("../shared/pwa/PwaInstallShowcaseHost.tsx", import.meta.url), "utf8");
+    expect(nudgeHost).toContain("supportsPwaInstallPrompts(pathname)");
+    expect(showcaseHost).toContain("supportsPwaInstallPrompts(pathname)");
+  });
+
   it("loads onward artwork UI only on eligible public pages, behind its own failure boundary", () => {
     expect(shell).toContain("const PublicSiteNextSteps = lazy(");
     expect(shell).not.toContain('import { PublicSiteNextSteps }');

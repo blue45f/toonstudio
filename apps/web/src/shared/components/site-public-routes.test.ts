@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-import { isDiscoverPurposeRoute, isPublicCreativeRoute, supportsPublicSiteOnwardJourney } from "./site-public-routes";
+import { isDiscoverPurposeRoute, isPublicCreativeRoute, supportsPublicSiteOnwardJourney, supportsPwaInstallPrompts } from "./site-public-routes";
 
 describe("public creative chrome route boundaries", () => {
   it("라우터와 같은 대소문자 규칙으로 공개·개인·정책 동선을 분류한다", () => {
@@ -33,6 +33,18 @@ describe("public creative chrome route boundaries", () => {
   it.each(["/discover", "/learn", "/market", "/community"])("공개 창작 목적지 %s의 다음 탐색은 유지한다", (pathname) => {
     expect(supportsPublicSiteOnwardJourney(pathname)).toBe(true);
   });
+
+  it.each(["/ir/present", "/IR/PRESENT/", "/about/technology/deck", "/about/technology/videos", "/brand-film", "/brand-film/"])(
+    "전체화면 발표·영상 %s에서는 PWA 설치 안내를 제외한다", (pathname) => {
+      expect(supportsPwaInstallPrompts(pathname)).toBe(false);
+    },
+  );
+
+  it.each(["/", "/ir", "/discover", "/learn", "/learn/process", "/product-tour", "/about/technology", "/about/technology/architecture", "/market", "/community", "/studio", "/settings", "/install"])(
+    "발표·영상 제외 집합 밖의 %s에서는 PWA 설치 안내를 유지한다", (pathname) => {
+      expect(supportsPwaInstallPrompts(pathname)).toBe(true);
+    },
+  );
 
   it.each([
     "/", "/about", "/about/", "/help", "/support", "/contact", "/business", "/collaborate", "/creators", "/research/assets",

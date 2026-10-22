@@ -96,7 +96,7 @@ export const SCENE_NODES_B: ReactNode[] = [
       <p className="kicker rv">Product Deep Dive · 1/2</p>
       <h2 className="headline rv">소개가 아니라,<br /><em>실제로 구현된 것</em>들입니다</h2>
       <div className="deep-grid">
-        <article className="deep-card text-card rv">
+        <article className="deep-card rv">
           <div className="engine-visual" aria-hidden="true" style={{ alignItems: "stretch", height: 110 }}>
             <div style={{ flex: 1.2, display: "flex", flexDirection: "column", gap: 5 }}><i style={{ flex: 1 }} /><i style={{ flex: 1.6 }} /></div>
             <div style={{ flex: 2, display: "flex", flexDirection: "column", gap: 5 }}><i style={{ flex: 2.2 }} /><i style={{ flex: 1 }} /></div>
@@ -108,7 +108,7 @@ export const SCENE_NODES_B: ReactNode[] = [
             <p>작품의 세계관과 공간을 <b>무대로 구성해 장면을 탐색하는 제작 공간</b>이에요. 클래식 2D 무대 위에 3D 배경(bg3d — 테마 팩 42개 · 배치 가능 에셋 5,303개 · 프리셋 9종)을 올려서, 같은 장소를 여러 각도에서 반복해 쓸 수 있습니다. 배경을 매번 새로 그리는 대신, 무대를 세우고 카메라를 움직이는 거예요.</p>
           </div>
         </article>
-        <article className="deep-card text-card rv">
+        <article className="deep-card rv">
           <div className="engine-visual" aria-hidden="true" style={{ height: 110 }}><i style={{ height: "38%" }} /><i style={{ height: "56%" }} /><i style={{ height: "44%" }} /><i style={{ height: "72%" }} /><i style={{ height: "62%" }} /><i style={{ height: "88%" }} /><i style={{ height: "78%" }} /><i style={{ height: "100%" }} /><i style={{ height: "84%" }} /><i style={{ height: "66%" }} /></div>
           <div className="body">
             <div className="no">DEEP 02 · DRAWING ENGINE</div>
