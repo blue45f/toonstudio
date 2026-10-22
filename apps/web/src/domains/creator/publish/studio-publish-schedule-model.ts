@@ -5,6 +5,13 @@
  * 패턴(케이던스) 계산, 예약 큐 상태 전이, 재시도 백오프, 발행 전 체크리스트를
  * 담당한다. 렌더링·저장소·네트워크에 의존하지 않으므로 vitest에서 직접
  * 검증할 수 있으며, API 서비스(`apps/api`)와 웹 UI가 같은 규칙을 공유한다.
+ *
+ * 수렴 경계 (2026-10-22 실측, rem-item2-calendar): 케이던스 계산
+ * (computeCadenceOccurrences)은 production-release-calendar의 주간 함수와
+ * 겉보기만 비슷하다 — 이쪽은 IANA 시간대·복수 요일·"기준 시각 엄격히 이후"
+ * 가 계약이고, 저쪽은 로컬 시간대·단일 요일·격주·당일 포함이 계약이라 서로
+ * 교체하면 게시 예정일이 달라진다. 차이는
+ * production-release-calendar-convergence.test.ts가 고정한다.
  */
 
 export const STUDIO_PUBLISH_SCHEDULE_SCHEMA_VERSION = 1 as const;
@@ -346,7 +353,11 @@ export function computeCadenceOccurrences(
   const weekdaySet = new Set(cadence.weekdays);
   for (let day = 0; day < maxSearchDays && occurrences.length < count; day += 1) {
     const cursorDate = new Date(cursor);
-    const localDate = dayFormatter.format(cursorDate);
+    // 커서는 "타임존 로컬 날짜"를 UTC 자정으로 표기한 명목 날짜다. 요일 판정
+    // (getUTCDay)과 날짜 변환이 같은 명목 날짜를 봐야 한다 — 명목 날짜를
+    // 타임존으로 다시 포맷하면 UTC보다 뒤처진 시간대(미주 등)에서 하루가
+    // 밀려 엉뚱한 요일에 발행 예정이 잡힌다 (2026-10-22 수렴 실측에서 확인).
+    const localDate = cursorDate.toISOString().slice(0, 10);
     if (weekdaySet.has(cursorDate.getUTCDay())) {
       const utc = convertLocalToUtc(localDate, cadence.timeOfDay, cadence.timeZone);
       if (utc && Date.parse(utc) > fromMs) {

@@ -130,7 +130,9 @@ export interface PinTaskSyncContext {
    * 핀 담당자 ID를 워크스페이스 담당 ID로 바꿀 때 지정한다.
    * 핀 담당자는 검수 aggregate의 배정 ID이고, 워크스페이스 할 일은 역할 배정 ID를
    * 쓰므로, 두 ID 공간이 다른 호스트는 여기서 변환해야 인박스에 바로 걸린다.
-   * 지정하지 않으면 핀 담당자 ID를 그대로 쓴다.
+   * 지정하지 않으면 핀 담당자 ID를 그대로 쓴다 — 단, 워크스페이스 단위 진입점
+   * (applyPinTaskSyncToWorkspace)은 훅이 없을 때 역할 배정에서 해석할 수 없는
+   * ID를 걸러내므로, 그 경로에서는 깨진 참조가 저장 단계까지 가지 않는다.
    */
   readonly resolveAssigneeId?: (source: PinTaskSource) => string | null;
   /** 핀 생성 시각에서 날짜를 뽑을 수 없을 때 쓸 기한 (YYYY-MM-DD) */
@@ -242,6 +244,14 @@ function refreshPinTask(
 
 export interface PinTaskSyncResult {
   readonly tasks: readonly ProductionTask[];
+  /**
+   * 워크스페이스 경계 방어(applyPinTaskSyncToWorkspace)가 버린 핀 담당자 ID.
+   * 변환 훅 없이 동기화할 때, 워크스페이스 역할 배정에서 해석할 수 없는 담당자
+   * ID는 assigneeIds에 싣지 않는다 — 그냥 사라지지 않고 여기에 그대로 보고한다.
+   * 표시용 담당 이름(owner)은 할 일에 그대로 남으므로, 버려지는 것은 ID 매칭뿐이다.
+   * 훅이 주입된 경우와 syncPinTasks 단독 호출에서는 가드가 동작하지 않아 항상 빈 배열이다.
+   */
+  readonly droppedAssigneeIds: readonly string[];
   /** 새로 등록된 핀 할 일 ID */
   readonly addedTaskIds: readonly string[];
   /** 이번 동기화로 완료된 핀 할 일 ID */
@@ -310,6 +320,9 @@ export function syncPinTasks(
     || next.some((task, index) => task !== tasks[index]);
   return {
     tasks: changed ? next : tasks,
+    // 이 함수(목록 수준)는 워크스페이스를 모르므로 가드를 걸지 않는다.
+    // 가드와 버려진 ID 보고는 워크스페이스를 아는 applyPinTaskSyncToWorkspace 몫이다.
+    droppedAssigneeIds: [],
     addedTaskIds,
     completedTaskIds,
     reopenedTaskIds,
@@ -318,17 +331,52 @@ export function syncPinTasks(
   };
 }
 
-/** 워크스페이스 단위 편의 함수. 바뀐 것이 없으면 같은 워크스페이스 객체를 돌려준다. */
+/**
+ * 워크스페이스 단위 편의 함수. 바뀐 것이 없으면 같은 워크스페이스 객체를 돌려준다.
+ *
+ * 방어 (2026-10-22): 담당자 변환 훅(resolveAssigneeId)이 없으면, 핀 담당자 ID는
+ * 검수 aggregate의 배정 ID 공간이라 워크스페이스 역할 배정 ID로 해석할 수 없다.
+ * 예전에는 그 ID가 assigneeIds에 그대로 실려, 동기화는 성공하는데
+ * serializeProductionWorkspace의 참조 검증(assigneeIds ⊆ 역할 배정 id·memberId)에서
+ * throw해 워크스페이스 전체 저장이 깨졌다. 그래서 이 경계에서는 역할 배정에
+ * 실재하는 ID(배정 id 또는 그 memberId — 저장 검증과 같은 집합)만 통과시키고,
+ * 나머지는 싣지 않는다. 버린 ID는 조용히 버리지 않고 결과의 droppedAssigneeIds로
+ * 보고하며, 표시용 담당 이름(owner)은 할 일에 그대로 남아 누가 담당이었는지는
+ * 화면에서 사라지지 않는다. 훅이 주입된 경우에는 가드를 전혀 걸지 않아
+ * 기존 동작(호스트 변환 결과 그대로)이 바이트 단위로 유지된다.
+ */
 export function applyPinTaskSyncToWorkspace(
   workspace: ProductionWorkspace,
   document: StudioCommentsDocument,
   context?: PinTaskSyncContext,
 ): { readonly workspace: ProductionWorkspace; readonly result: PinTaskSyncResult } {
-  const result = syncPinTasks(
-    workspace.tasks,
-    pinTaskSourcesFromDocument(document),
-    context,
-  );
+  const sources = pinTaskSourcesFromDocument(document);
+  if (context?.resolveAssigneeId) {
+    const result = syncPinTasks(workspace.tasks, sources, context);
+    if (!result.changed) return { workspace, result };
+    return { workspace: { ...workspace, tasks: [...result.tasks] }, result };
+  }
+  const validAssigneeIds = new Set<string>();
+  for (const assignment of workspace.roleAssignments) {
+    validAssigneeIds.add(assignment.id);
+    if (assignment.memberId) validAssigneeIds.add(assignment.memberId);
+  }
+  const droppedAssigneeIds: string[] = [];
+  const guardedContext: PinTaskSyncContext = {
+    ...(context ?? {}),
+    resolveAssigneeId: (source) => {
+      if (!source.assigneeId) return null;
+      if (validAssigneeIds.has(source.assigneeId)) return source.assigneeId;
+      if (!droppedAssigneeIds.includes(source.assigneeId)) {
+        droppedAssigneeIds.push(source.assigneeId);
+      }
+      return null;
+    },
+  };
+  const synced = syncPinTasks(workspace.tasks, sources, guardedContext);
+  const result = droppedAssigneeIds.length > 0
+    ? { ...synced, droppedAssigneeIds }
+    : synced;
   if (!result.changed) return { workspace, result };
   return { workspace: { ...workspace, tasks: [...result.tasks] }, result };
 }
