@@ -120,6 +120,10 @@
   Cache-Control: public, max-age=0, must-revalidate
   CDN-Cache-Control: no-cache
 
+/assets/studio/bundle-renders-v1/manifest.json
+  Cache-Control: public, max-age=0, must-revalidate
+  CDN-Cache-Control: no-cache
+
 /vrm/*
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, HEAD, OPTIONS
