@@ -23,6 +23,7 @@ import {
   STUDIO_TOUCH_TARGET,
 } from "../studio-panel-ui";
 import { StudioToonProductionBoard } from "./StudioToonProductionBoard";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 import {
   scenarioImageReferenceSignature,
   type StudioScenarioImageGenerationRequest,
@@ -349,17 +350,17 @@ export function StudioToonAutomationWorkspace({
       maxSegmentChars: 64,
       onEnd: () => {
         speechSessionRef.current = null;
-        setNotice("자연스러운 호흡으로 음성 검수를 마쳤습니다.");
+        setNotice(frozenStatus5Text("studio.frozenStatus5.automation.reviewDone", "자연스러운 호흡으로 음성 검수를 마쳤습니다."));
       },
       onError: () => {
         speechSessionRef.current = null;
-        setNotice("이 브라우저에서 음성 검수를 재생하지 못했습니다.");
+        setNotice(frozenStatus5Text("studio.frozenStatus5.automation.reviewPlayFailed", "이 브라우저에서 음성 검수를 재생하지 못했습니다."));
       },
     });
     speechSessionRef.current = session;
     setNotice(session
       ? "별도 과금 없는 시스템 음성으로 발음·호흡을 보정해 대본 일부를 검수합니다."
-      : "이 브라우저에서는 음성 검수를 사용할 수 없습니다.");
+      : frozenStatus5Text("studio.frozenStatus5.automation.reviewUnavailable", "이 브라우저에서는 음성 검수를 사용할 수 없습니다."));
   };
 
   const fillAnimationPrompts = () => {
@@ -454,11 +455,8 @@ export function StudioToonAutomationWorkspace({
                 aria-pressed={document.mode === mode}
                 onClick={() => patch({ mode })}
                 disabled={disabled}
-                className={cn(
-                  "min-h-9 rounded-md px-3 text-xs font-bold",
-                  STUDIO_FOCUS_RING,
-                  document.mode === mode ? "bg-accent text-on-accent" : "text-fg-3 hover:bg-raised",
-                )}
+                className={cn("min-h-9 rounded-md px-3 text-xs font-bold", STUDIO_FOCUS_RING,
+                  document.mode === mode ? "bg-accent text-on-accent" : "text-fg-3 hover:bg-raised")}
               >
                 {mode === "webtoon" ? "웹툰" : "30초 애니메이션"}
               </button>
@@ -752,7 +750,7 @@ export function StudioToonAutomationWorkspace({
               {document.characters.length === 0 ? (
                 <section className="rounded-2xl border border-dashed border-line p-10 text-center">
                   <UserRound size={28} className="mx-auto text-fg-3" aria-hidden />
-                  <p className="mt-3 text-sm font-bold">등록된 캐릭터가 없습니다.</p>
+                  <p className="mt-3 text-sm font-bold">{frozenStatus5Text("studio.frozenStatus5.automation.charactersEmpty", "등록된 캐릭터가 없습니다.")}</p>
                   <p className="mt-1 text-xs text-fg-3">작품 바이블의 캐릭터 기준과 별도로, 생성 후보·3면 기준·화자 음성을 묶어 관리합니다.</p>
                   <button type="button" className={cn(PRIMARY, "mt-4")} onClick={addCharacter} disabled={disabled}>
                     첫 캐릭터 추가

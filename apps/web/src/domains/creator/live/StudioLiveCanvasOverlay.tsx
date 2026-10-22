@@ -26,6 +26,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 
 import {
   nudgeStudioCommentPointAnchor,
@@ -685,7 +686,7 @@ export function StudioLiveCanvasOverlay({
     if (stopPropagation) event.stopPropagation();
     if (!session.moved) {
       session.moved = true;
-      setReanchorAnnouncement("댓글 위치 이동 중입니다. 손가락이나 포인터를 놓으면 저장합니다.");
+      setReanchorAnnouncement(frozenStatus5Text("studio.frozenStatus5.live.movingGuide", "댓글 위치 이동 중입니다. 손가락이나 포인터를 놓으면 저장합니다."));
     }
     session.latestAnchor = anchor;
     setDragPreview((current) => (
@@ -719,7 +720,7 @@ export function StudioLiveCanvasOverlay({
       anchor: droppedAnchor,
       source: "pointer",
     });
-    setReanchorAnnouncement("댓글 위치를 옮겼습니다.");
+    setReanchorAnnouncement(frozenStatus5Text("studio.frozenStatus5.live.moved", "댓글 위치를 옮겼습니다."));
   };
   const cancelPinDrag = (
     event: ReactPointerEvent<HTMLButtonElement> | PointerEvent,
@@ -733,7 +734,7 @@ export function StudioLiveCanvasOverlay({
     if (session.moved) {
       event.preventDefault();
       if (stopPropagation) event.stopPropagation();
-      setReanchorAnnouncement("댓글 위치 이동을 취소했습니다.");
+      setReanchorAnnouncement(frozenStatus5Text("studio.frozenStatus5.live.moveCanceled", "댓글 위치 이동을 취소했습니다."));
     }
   };
   globalDragHandlersRef.current = {
@@ -787,7 +788,7 @@ export function StudioLiveCanvasOverlay({
         const reanchorDisabledReason = reanchorTarget
           && onCommentPinReanchor
           && blockedByReanchorPolicy
-          ? commentPinReanchorDisabledReason ?? "이 댓글 위치를 옮길 권한이 없어요."
+          ? commentPinReanchorDisabledReason ?? frozenStatus5Text("studio.frozenStatus5.live.noPermission", "이 댓글 위치를 옮길 권한이 없어요.")
           : undefined;
         const reanchorable = Boolean(
           reanchorTarget
@@ -904,7 +905,7 @@ export function StudioLiveCanvasOverlay({
                     dragSessionRef.current = null;
                     releasePinPointerCapture(dragSession);
                     setDragPreview(null);
-                    setReanchorAnnouncement("댓글 위치 이동을 취소했습니다.");
+                    setReanchorAnnouncement(frozenStatus5Text("studio.frozenStatus5.live.moveCanceled", "댓글 위치 이동을 취소했습니다."));
                   }
                   setActiveCommentPreviewKey(null);
                   return;
@@ -944,13 +945,11 @@ export function StudioLiveCanvasOverlay({
                       anchor: nextAnchor,
                       source: "keyboard",
                     });
-                    setReanchorAnnouncement(event.shiftKey
-                      ? "댓글 위치를 크게 옮겼습니다."
-                      : "댓글 위치를 조금 옮겼습니다.");
+                    setReanchorAnnouncement(event.shiftKey ? frozenStatus5Text("studio.frozenStatus5.live.movedLarge", "댓글 위치를 크게 옮겼습니다.") : frozenStatus5Text("studio.frozenStatus5.live.movedSmall", "댓글 위치를 조금 옮겼습니다."));
                   } else if (reanchorDisabledReason) {
                     event.preventDefault();
                     event.stopPropagation();
-                    setReanchorAnnouncement(`댓글 위치를 옮길 수 없습니다. ${reanchorDisabledReason}`);
+                    setReanchorAnnouncement(frozenStatus5Text("studio.frozenStatus5.live.moveFailed", { reason: reanchorDisabledReason }, "댓글 위치를 옮길 수 없습니다. {reason}"));
                   }
                   return;
                 }

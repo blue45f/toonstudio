@@ -28,6 +28,7 @@ import {
   type StudioProjectCenterSearchRecord,
 } from "./studio-project-center-search-model";
 import { StudioSurfaceState } from "./StudioSurfaceState";
+import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -60,7 +61,7 @@ function StudioProjectCenterFileControlHost({
               data-studio-file-control-center-loading="true"
               className="mt-2 rounded-2xl border border-line bg-canvas/55 px-4 py-5 text-center text-[0.66rem] text-fg-3"
             >
-              파일 제어 센터를 불러오는 중…
+              {frozenStatus5Text("studio.frozenStatus5.search.fileControlLoading", "파일 제어 센터를 불러오는 중…")}
             </div>
           )}
         >
@@ -622,12 +623,10 @@ export function StudioProjectCenterSearch(): ReactElement {
   const invokeAction = useCallback((action: IndexedProjectAction) => {
     if (isActionDisabled(action.target)) {
       const reason = compactText(action.target.getAttribute("title"));
-      setAnnouncement(
-        reason || `${action.label}은 현재 프로젝트 상태에서 사용할 수 없습니다.`,
-      );
+      setAnnouncement(reason || frozenStatus5Text("studio.frozenStatus5.search.actionUnavailable", { label: action.label }, "{label}은 현재 프로젝트 상태에서 사용할 수 없습니다."));
       return;
     }
-    setAnnouncement(`${action.label} 실행`);
+    setAnnouncement(frozenStatus5Text("studio.frozenStatus5.search.actionExecuted", { label: action.label }, "{label} 실행"));
     rememberRecent(action.key);
     delegatedActionTargetRef.current = action.target;
     try {
@@ -734,15 +733,15 @@ export function StudioProjectCenterSearch(): ReactElement {
   const activeResult = visibleResults[Math.max(0, activeIndex)];
   const fileControlVisible = !resultMode && scope === "file-control";
   const emptyTitle = queryActive
-    ? "일치하는 프로젝트 도구가 없습니다"
+    ? frozenStatus5Text("studio.frozenStatus5.search.emptyNoMatch", "일치하는 프로젝트 도구가 없습니다")
     : scope === "favorites"
-      ? "즐겨찾기한 프로젝트 도구가 없습니다"
-      : "최근 실행한 프로젝트 도구가 없습니다";
+      ? frozenStatus5Text("studio.frozenStatus5.search.emptyFavorites", "즐겨찾기한 프로젝트 도구가 없습니다")
+      : frozenStatus5Text("studio.frozenStatus5.search.emptyRecent", "최근 실행한 프로젝트 도구가 없습니다");
   const emptyDescription = queryActive
-    ? "백업, archive, 검수, publish, 버전처럼 작업 목적을 입력해 보세요."
+    ? frozenStatus5Text("studio.frozenStatus5.search.emptyNoMatchHint", "백업, archive, 검수, publish, 버전처럼 작업 목적을 입력해 보세요.")
     : scope === "favorites"
-      ? "검색 결과의 별 버튼으로 반복 작업을 고정할 수 있습니다."
-      : "프로젝트 도구를 실행하면 이 기기의 최근 목록에 기록됩니다.";
+      ? frozenStatus5Text("studio.frozenStatus5.search.emptyFavoritesHint", "검색 결과의 별 버튼으로 반복 작업을 고정할 수 있습니다.")
+      : frozenStatus5Text("studio.frozenStatus5.search.emptyRecentHint", "프로젝트 도구를 실행하면 이 기기의 최근 목록에 기록됩니다.");
 
   return (
     <>

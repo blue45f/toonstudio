@@ -14,6 +14,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "../../../shared/lib/utils";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 import { PANEL_LAYOUTS, type PanelLayoutPreset } from "../studio-panel-layouts";
 import {
   SCENE_TEMPLATE_CATEGORIES,
@@ -249,7 +250,7 @@ function QuickComicPreflightPanel({
       ) : (
         <p className="mt-3 flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2.5 text-xs font-semibold text-fg-2">
           <CheckCircle2 size={16} className="text-accent" aria-hidden="true" />
-          추가로 확인할 가독성 문제가 없습니다.
+          {frozenStatus5Text("studio.frozenStatus5.quickComic.readabilityOk", "추가로 확인할 가독성 문제가 없습니다.")}
         </p>
       )}
       {hiddenIssueCount > 0 ? (
@@ -852,12 +853,7 @@ export function StudioQuickComicWizard({
                   </dl>
                 </div>
               ) : (
-                <p
-                  role="alert"
-                  className="rounded-xl border border-danger/45 bg-danger/10 p-3 text-sm text-danger"
-                >
-                  선택한 구성을 읽지 못했습니다. 이전 단계에서 레이아웃을 다시 골라 주세요.
-                </p>
+                <p role="alert" className="rounded-xl border border-danger/45 bg-danger/10 p-3 text-sm text-danger">{frozenStatus5Text("studio.frozenStatus5.quickComic.layoutLoadFailed", "선택한 구성을 읽지 못했습니다. 이전 단계에서 레이아웃을 다시 골라 주세요.")}</p>
               )}
             </section>
           ) : null}

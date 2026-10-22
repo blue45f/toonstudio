@@ -29,6 +29,7 @@ import {
   StudioEmptyState,
 } from "../studio-panel-ui";
 import { copyStudioText } from "../studio-workbench-clipboard";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 import {
   loadStudioWorkbenchPrefs,
   pickStudioWorkbenchOption,
@@ -451,11 +452,7 @@ export function StudioWebtoonAssistantModal({
         data-testid="studio-webtoon-assistant-modal"
         data-studio-shortcut-boundary="true"
         tabIndex={-1}
-        className={cn(
-          "relative z-10 flex max-h-[100dvh] w-full flex-col overflow-hidden",
-          "border border-line-strong bg-card text-fg shadow-2xl",
-          "sm:max-h-[calc(100dvh-2rem)] sm:w-[min(96vw,56rem)] sm:rounded-2xl",
-        )}
+        className={cn("relative z-10 flex max-h-[100dvh] w-full flex-col overflow-hidden", "border border-line-strong bg-card text-fg shadow-2xl", "sm:max-h-[calc(100dvh-2rem)] sm:w-[min(96vw,56rem)] sm:rounded-2xl")}
       >
         {/* Modal Header */}
         <header className="flex shrink-0 items-start justify-between gap-2 border-b border-line bg-raised px-3 py-2.5 sm:px-4 sm:py-3">
@@ -860,7 +857,7 @@ export function StudioWebtoonAssistantModal({
               {filteredSfx.length === 0 ? (
                 <StudioEmptyState
                   icon={<Search size={20} aria-hidden />}
-                  title="검색 결과가 없습니다"
+                  title={frozenStatus5Text("studio.frozenStatus5.webtoonAssistant.sfxSearchEmpty", "검색 결과가 없습니다")}
                   description="카테고리를 '전체 효과음'으로 바꾸거나 다른 낱말로 찾아보세요."
                   action={
                     <button
@@ -941,7 +938,7 @@ export function StudioWebtoonAssistantModal({
                               <Copy className="size-3" aria-hidden />
                             )}
                             <span>
-                              {copyResult ? (copyResult.ok ? "복사됨" : "복사 실패") : "텍스트 복사"}
+                              {copyResult ? (copyResult.ok ? frozenStatus5Text("studio.frozenStatus5.webtoonAssistant.copied", "복사됨") : frozenStatus5Text("studio.frozenStatus5.webtoonAssistant.copyFailed", "복사 실패")) : "텍스트 복사"}
                             </span>
                           </button>
                           {onInsertSfxText && (

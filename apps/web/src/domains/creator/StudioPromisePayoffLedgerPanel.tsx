@@ -18,6 +18,7 @@ import { useState } from "react";
 
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeletePromisePayoffEntryRequest } from "./studio-destructive-command-catalog";
+import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
 import {
   addStudioPromisePayoffEntry,
   diagnoseStudioPromisePayoffLedger,
@@ -292,7 +293,7 @@ export function StudioPromisePayoffLedgerPanel({
       if (nextId) setRequestedEntryId(nextId);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "약속 원장을 저장하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.saveFailed", "약속 원장을 저장하지 못했어요."));
     }
   }
 
@@ -305,7 +306,7 @@ export function StudioPromisePayoffLedgerPanel({
       applyChange(next, added?.id);
       setFilter("all");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "약속을 추가하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.addFailed", "약속을 추가하지 못했어요."));
     }
   }
 
@@ -394,9 +395,7 @@ export function StudioPromisePayoffLedgerPanel({
                 try {
                   applyChange(setStudioPromisePayoffCurrentEpisode(ledger, episode));
                 } catch (cause) {
-                  setError(
-                    cause instanceof Error ? cause.message : "현재 회차를 바꾸지 못했어요."
-                  );
+                  setError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.episodeChangeFailed", "현재 회차를 바꾸지 못했어요."));
                 }
               }}
               className="min-h-11 w-16 rounded border border-transparent bg-transparent px-1 py-0.5 text-right tabular-nums outline-none hover:border-line focus:border-accent"
@@ -513,8 +512,8 @@ export function StudioPromisePayoffLedgerPanel({
                   <BookOpenCheck size={22} className="mx-auto text-fg-3" aria-hidden />
                   <p className="mt-2 text-xs font-bold text-fg-2">
                     {ledger.entries.length === 0
-                      ? "첫 약속을 실제 컷과 연결하세요"
-                      : "조건에 맞는 약속이 없어요"}
+                      ? frozenStatus5Text("studio.frozenStatus5.promise.emptyFirst", "첫 약속을 실제 컷과 연결하세요")
+                      : frozenStatus5Text("studio.frozenStatus5.promise.emptyNoMatch", "조건에 맞는 약속이 없어요")}
                   </p>
                   <p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">
                     첫 등장, 중간 단서, 회수 장면을 한 원장에서 추적합니다.

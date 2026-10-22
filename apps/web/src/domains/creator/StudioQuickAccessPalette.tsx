@@ -17,6 +17,7 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
+import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
 
 import {
   STUDIO_EASE,
@@ -780,9 +781,7 @@ export function StudioQuickAccessPalette({
             className="flex min-h-28 flex-col items-center justify-center rounded-lg border border-dashed border-line px-4 text-center"
           >
             <Command size={20} aria-hidden className="text-fg-3" />
-            <p className="mt-2 text-xs font-semibold text-fg">
-              이 세트가 비어 있어요
-            </p>
+            <p className="mt-2 text-xs font-semibold text-fg">{frozenStatus5Text("studio.frozenStatus5.quick.setEmpty", "이 세트가 비어 있어요")}</p>
             <p className="mt-1 text-[0.6875rem] leading-4 text-fg-3">
               편집을 열고 자주 쓰는 명령을 추가해 보세요.
             </p>
@@ -840,8 +839,8 @@ export function StudioQuickAccessPalette({
             ) : (
               <p className="mt-1.5 rounded-lg border border-dashed border-line px-3 py-3 text-center text-[0.6875rem] text-fg-3">
                 {query.trim()
-                  ? "일치하는 추가 명령이 없어요."
-                  : "모든 등록 명령이 현재 세트에 있어요."}
+                  ? frozenStatus5Text("studio.frozenStatus5.quick.noMatchingCommands", "일치하는 추가 명령이 없어요.")
+                  : frozenStatus5Text("studio.frozenStatus5.quick.allCommandsIncluded", "모든 등록 명령이 현재 세트에 있어요.")}
               </p>
             )}
           </div>

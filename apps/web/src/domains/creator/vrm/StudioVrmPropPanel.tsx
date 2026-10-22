@@ -17,6 +17,7 @@ import {
 } from "react";
 
 import { StudioThreeDToggleControl } from "../StudioThreeDToggle";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 
 import { isStudioVrmPropSelectable, studioVrmPropQualityNotice } from "./studio-vrm-prop-quality-policy";
 import {
@@ -198,22 +199,22 @@ function autoGripDescription(
   readiness: AutoGripReadiness,
 ): string {
   if (!definition?.grip || !isHandBone(item.bone)) {
-    return "손 부착과 그립 프로필이 모두 있는 소품에서 사용할 수 있습니다.";
+    return frozenStatus5Text("studio.frozenStatus5.vrmProp.gripNoProfile", "손 부착과 그립 프로필이 모두 있는 소품에서 사용할 수 있습니다.");
   }
   if (readiness.kind === "ready") {
     return `${GRIP_KIND_LABELS[definition.grip.kind]} 접촉점과 이 캐릭터의 손가락 길이를 실측합니다. 켜면 이 손에서는 소품 그립이 현재 포즈보다 우선합니다.`;
   }
   switch (readiness.reason) {
     case "incomplete-rig":
-      return "이 캐릭터에서 필요한 손가락 관절을 모두 찾지 못해 자동 그립을 적용할 수 없습니다. 현재 손 포즈는 그대로 유지됩니다.";
+      return frozenStatus5Text("studio.frozenStatus5.vrmProp.gripIncompleteRig", "이 캐릭터에서 필요한 손가락 관절을 모두 찾지 못해 자동 그립을 적용할 수 없습니다. 현재 손 포즈는 그대로 유지됩니다.");
     case "contact-conflict":
-      return "같은 손에 자동 그립 소품이 둘 이상 연결되어 있습니다. 한 소품만 켜면 손가락이 다시 맞춰집니다.";
+      return frozenStatus5Text("studio.frozenStatus5.vrmProp.gripContactConflict", "같은 손에 자동 그립 소품이 둘 이상 연결되어 있습니다. 한 소품만 켜면 손가락이 다시 맞춰집니다.");
     case "invalid-contact":
-      return "소품 접촉점이나 자동 크기 값을 안전하게 계산하지 못했습니다. 스마트 소켓 맞춤을 초기화해 보세요.";
+      return frozenStatus5Text("studio.frozenStatus5.vrmProp.gripInvalidContact", "소품 접촉점이나 자동 크기 값을 안전하게 계산하지 못했습니다. 스마트 소켓 맞춤을 초기화해 보세요.");
     case "not-hand":
-      return "부착 부위를 왼손 또는 오른손으로 선택하면 사용할 수 있습니다.";
+      return frozenStatus5Text("studio.frozenStatus5.vrmProp.gripNotHand", "부착 부위를 왼손 또는 오른손으로 선택하면 사용할 수 있습니다.");
     case "unsupported":
-      return "이 소품은 손가락 자동 그립을 지원하지 않습니다.";
+      return frozenStatus5Text("studio.frozenStatus5.vrmProp.gripUnsupported", "이 소품은 손가락 자동 그립을 지원하지 않습니다.");
   }
 }
 
@@ -1248,7 +1249,7 @@ export function StudioVrmPropPanel({
 
         {items.length === 0 ? (
           <div className="rounded-lg border border-dashed border-line bg-panel/35 px-3 py-4 text-center">
-            <p className="text-xs font-semibold text-fg-2">아직 장착된 소품이 없습니다.</p>
+            <p className="text-xs font-semibold text-fg-2">{frozenStatus5Text("studio.frozenStatus5.vrmProp.equippedEmpty", "아직 장착된 소품이 없습니다.")}</p>
             <p className="mt-1 text-[0.64rem] leading-relaxed text-fg-3">
               아래 추천에서 빠르게 추가하거나 전체 카탈로그를 검색하세요.
             </p>
@@ -1428,13 +1429,10 @@ export function StudioVrmPropPanel({
 
           {filteredDefinitions.length === 0 ? (
             <div className="rounded-lg border border-dashed border-line px-3 py-5 text-center">
-              <p className="text-xs font-semibold text-fg-2">검색 결과가 없습니다.</p>
+              <p className="text-xs font-semibold text-fg-2">{frozenStatus5Text("studio.frozenStatus5.vrmProp.searchEmpty", "검색 결과가 없습니다.")}</p>
               <button
                 type="button"
-                className={cn(
-                  "mt-2 min-h-11 rounded-lg border border-line bg-card px-3 text-[0.68rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg",
-                  FOCUS_RING
-                )}
+                className={cn("mt-2 min-h-11 rounded-lg border border-line bg-card px-3 text-[0.68rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg", FOCUS_RING)}
                 onClick={() => {
                   setQuery("");
                   setCategory("all");

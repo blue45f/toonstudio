@@ -31,6 +31,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import { useStudioMarketplaceCloudSyncFocus } from "./studio-marketplace-cloud-sync-focus";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 
 const StudioOptionsBars = lazyRetry(() => import("../StudioOptionsBars").then((module) => ({ default: module.StudioOptionsBars })), "StudioOptionsBars");
 
@@ -551,12 +552,9 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
 
       <div
         data-studio-global-status-rail
-        className={cn(
-          "shrink-0 px-2",
-          mobileImmersive
-            ? "max-h-[min(24dvh,10rem)] overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
-            : "empty:hidden"
-        )}
+        className={cn("shrink-0 px-2", mobileImmersive
+          ? "max-h-[min(24dvh,10rem)] overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+          : "empty:hidden")}
       >
         {densityShowsStatusRail && error ? (
           <div role="alert" className="my-1 flex items-start justify-between gap-2 rounded-lg border border-bad/40 bg-bad/10 px-2.5 py-1.5 text-xs text-bad">
@@ -613,7 +611,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
               }}
             >
               {studioMarketplaceCloudSyncRetryPending
-                ? "계정 설치 확인 중…"
+                ? frozenStatus5Text("studio.frozenStatus5.cuttoon.accountChecking", "계정 설치 확인 중…")
                 : "계정 설치 확인 다시 시도"}
             </button>
             <button
@@ -670,10 +668,10 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
               <strong className="block text-sm font-semibold">
                 {!sharedDocument
                   ? workHydrated
-                    ? "공동 문서를 열지 못했어요"
-                    : "공동 문서 권한을 확인하고 있어요"
+                    ? frozenStatus5Text("studio.frozenStatus5.cuttoon.sharedDocOpenFailed", "공동 문서를 열지 못했어요")
+                    : frozenStatus5Text("studio.frozenStatus5.cuttoon.sharedDocCheckingPermission", "공동 문서 권한을 확인하고 있어요")
                   : collaborationOperationSyncPending
-                    ? "동시 편집 연산 동기화 중"
+                    ? frozenStatus5Text("studio.frozenStatus5.cuttoon.syncingOperations", "동시 편집 연산 동기화 중")
                     : collaborationReadOnly
                     ? `${collaborationRoleLabel()} · 읽기 전용`
                     : `${collaborationRoleLabel()} · 공동 편집 가능`}

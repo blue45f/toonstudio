@@ -38,6 +38,7 @@ import {
 import { StudioFloatingSurface } from "../StudioFloatingSurface";
 import { VirtualizedBrushGrid } from "./studio-brush-virtual";
 import { useStudioFloatingSurfaceLayout } from "../use-studio-floating-surface-layout";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 
 import {
   filterStudioBrushCatalogItems,
@@ -1151,7 +1152,7 @@ export function StudioBrushLibrarySheet({
     try {
       const selection = await materializeStudioBrushCatalogSelection(item.id);
       if (!requestIsCurrent()) return;
-      if (!selection) throw new Error("브러시 프로필을 찾을 수 없습니다.");
+      if (!selection) throw new Error(frozenStatus5Text("studio.frozenStatus5.brushSheet.profileNotFound", "브러시 프로필을 찾을 수 없습니다."));
       waitForActivation = !closeOnSelection && item.id !== activeBrushId;
       if (waitForActivation) setAwaitingActivationId(item.id);
       onSelect(selection);
@@ -1172,11 +1173,9 @@ export function StudioBrushLibrarySheet({
       const failed = { ...lifecycle, phase: "failed" as const };
       selectionLifecycleRef.current = failed;
       onSelectionLifecycle?.(failed);
-      setSelectionError(
-        error instanceof Error && error.message
-          ? error.message
-          : "브러시를 불러오지 못했습니다. 다시 시도해 주세요."
-      );
+      setSelectionError(error instanceof Error && error.message
+        ? error.message
+        : frozenStatus5Text("studio.frozenStatus5.brushSheet.loadFailed", "브러시를 불러오지 못했습니다. 다시 시도해 주세요."));
     } finally {
       if (requestIsCurrent() && !waitForActivation) setPendingSelectionId(null);
     }
@@ -1376,7 +1375,7 @@ export function StudioBrushLibrarySheet({
           {personalSearch
             ? `${tab === "favorites" ? "즐겨찾기" : "최근 사용"} 안에서 검색합니다. 다른 브러시는 전체 탭에서 찾으세요.`
             : normalizedQuery
-            ? `재질 분류와 관계없이 전체 ${operationCatalogCount}종에서 검색 중`
+            ? frozenStatus5Text("studio.frozenStatus5.brushSheet.searchingAll", { count: operationCatalogCount }, "재질 분류와 관계없이 전체 {count}종에서 검색 중")
             : operation === "erase"
               ? "지우는 강도와 결과를 비교해 선택하세요."
               : "재질·엔진을 고르거나 이름·용도·질감·특성으로 전체 검색"}
@@ -1587,10 +1586,10 @@ export function StudioBrushLibrarySheet({
           <div className="flex h-28 flex-col items-center justify-center rounded-xl border border-dashed border-line text-center">
             <p className="text-xs text-fg-3">
               {tab === "favorites"
-                ? `즐겨찾기한 ${operationLabel}가 없어요. ☆로 추가해 보세요.`
+                ? frozenStatus5Text("studio.frozenStatus5.brushSheet.emptyFavorites", { label: operationLabel }, "즐겨찾기한 {label}가 없어요. ☆로 추가해 보세요.")
                 : tab === "recent"
-                  ? `최근 사용한 ${operationLabel}가 아직 없어요.`
-                  : "검색 결과가 없습니다."}
+                  ? frozenStatus5Text("studio.frozenStatus5.brushSheet.emptyRecent", { label: operationLabel }, "최근 사용한 {label}가 아직 없어요.")
+                  : frozenStatus5Text("studio.frozenStatus5.brushSheet.emptySearch", "검색 결과가 없습니다.")}
             </p>
           </div>
         ) : (

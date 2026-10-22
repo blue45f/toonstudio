@@ -9,6 +9,7 @@ import { TriangleAlert } from "lucide-react";
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
 import { StudioBg3dCompositionOverlay } from "./StudioBg3dCompositionOverlay";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 import { StudioBg3dEngineRecoveryActions } from "./StudioBg3dEngineRecoveryActions";
 import { StudioBg3dInferenceHud } from "./StudioBg3dInferenceHud";
 import type { StudioBg3dCompositionGuideMode } from "./studio-bg3d-composition-guide";
@@ -736,7 +737,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                   <StudioToolHintTarget
                     hint={BG3D_VIEWPORT_HINTS.undo}
                     disabled={!canUndo}
-                    unavailableReason={!canUndo ? "되돌릴 3D 장면 변경이 없습니다." : undefined}
+                    unavailableReason={!canUndo ? frozenStatus5Text("studio.frozenStatus5.bg3dViewport.undoUnavailable", "되돌릴 3D 장면 변경이 없습니다.") : undefined}
                     preferredSide="right"
                   >
                     <button
@@ -752,7 +753,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                   <StudioToolHintTarget
                     hint={BG3D_VIEWPORT_HINTS.redo}
                     disabled={!canRedo}
-                    unavailableReason={!canRedo ? "다시 적용할 3D 장면 변경이 없습니다." : undefined}
+                    unavailableReason={!canRedo ? frozenStatus5Text("studio.frozenStatus5.bg3dViewport.redoUnavailable", "다시 적용할 3D 장면 변경이 없습니다.") : undefined}
                     preferredSide="right"
                   >
                     <button
@@ -1157,11 +1158,8 @@ export function StudioBg3dEditorViewport({ h, simplified = false }) {
                     <div className="pointer-events-auto">
                       <Suspense
                         fallback={
-                          <div
-                            role="status"
-                            aria-label="턴테이블 컨트롤을 불러오는 중입니다."
-                            className="h-14 w-60 animate-pulse rounded-lg border border-line bg-card/60 motion-reduce:animate-none"
-                          />
+                          <div role="status" aria-label={frozenStatus5Text("studio.frozenStatus5.bg3dViewport.turntableLoading", "턴테이블 컨트롤을 불러오는 중입니다.")}
+                            className="h-14 w-60 animate-pulse rounded-lg border border-line bg-card/60 motion-reduce:animate-none" />
                         }
                       >
                         <StudioBg3dTurntableController

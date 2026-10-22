@@ -1,4 +1,5 @@
 import { toolbarViewWidth } from "./studio-toolbar-configuration";
+import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
 import type { StudioToolbarView } from "./studio-app-settings";
 /**
  * Studio chrome UI — toolbar, dock, and menu-shell primitives shared by StudioPage.
@@ -655,9 +656,7 @@ export const StudioDockButton = forwardRef<
     <StudioToolHintTarget
       disabled={disabled}
       unavailableReason={
-        disabled
-          ? hintUnavailableReason ?? (typeof title === "string" ? title : "현재 작업 상태에서는 이 도구를 사용할 수 없어요.")
-          : undefined
+        disabled ? hintUnavailableReason ?? (typeof title === "string" ? title : frozenStatus5Text("studio.frozenStatus5.chrome.toolUnavailable", "현재 작업 상태에서는 이 도구를 사용할 수 없어요.")) : undefined
       }
       preferredSide="top"
       className="min-w-11 flex-none"

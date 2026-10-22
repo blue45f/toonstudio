@@ -27,6 +27,7 @@ import {
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
 
 import { BRUSH_OPACITY_HINT_VARIANT, BRUSH_SIZE_HINT_VARIANT, STUDIO_STABILIZER_STRENGTH_PRESETS, iconBtn } from "./studio-draw-options-bar-constants";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 import { SizePreview } from "./studio-draw-options-bar-parts";
 
 import {
@@ -489,15 +490,11 @@ export function StudioDrawOptionsBar({
             {onShapeFillChange ? (
               <StudioToolHintTarget
                 disabled={shapeKind === "line" || shapeKind === "arrow"}
-                unavailableReason={
-                  shapeKind === "line" || shapeKind === "arrow"
-                    ? "선과 화살표는 내부 영역이 없어요. 사각형·타원·다각형을 선택하면 채우기를 사용할 수 있어요."
-                    : undefined
-                }
+                unavailableReason={shapeKind === "line" || shapeKind === "arrow" ? frozenStatus5Text("studio.frozenStatus5.drawOptions.fillUnavailable", "선과 화살표는 내부 영역이 없어요. 사각형·타원·다각형을 선택하면 채우기를 사용할 수 있어요.") : undefined}
                 hint={studioToolHintFromLabel(
                   shapeFill ? "도형 채우기 끄기" : "도형 채우기",
                   shapeKind === "line" || shapeKind === "arrow"
-                    ? "선과 화살표는 내부 영역이 없어 채울 수 없습니다. 사각형·타원·다각형을 선택하면 활성화돼요."
+                    ? frozenStatus5Text("studio.frozenStatus5.drawOptions.fillUnavailableHint", "선과 화살표는 내부 영역이 없어 채울 수 없습니다. 사각형·타원·다각형을 선택하면 활성화돼요.")
                     : shapeFill
                       ? "도형 내부를 비워 윤곽선만 그립니다."
                       : "새 도형의 내부를 현재 주 색으로 채웁니다. 윤곽선과 채움은 함께 유지돼요.",
@@ -801,7 +798,7 @@ export function StudioDrawOptionsBar({
                 }}
                 aria-label={
                   brushDefaultRestore?.loading
-                    ? `${brushPresetResetSource} 기본값을 불러오는 중`
+                    ? frozenStatus5Text("studio.frozenStatus5.drawOptions.resettingDefaults", { source: brushPresetResetSource }, `${brushPresetResetSource} 기본값을 불러오는 중`)
                     : !brushPresetResetAvailable
                       ? `${brushPresetResetSource} 기본값 없음, 브러시를 다시 선택하세요`
                       : brushPresetUndoAvailable

@@ -34,6 +34,7 @@ import {
   type AvatarForgeState,
 } from "./studio-vrm-avatar-forge";
 import { resolveStudioVrmAvatarForgeVisualProportionMetrics } from "./studio-vrm-avatar-forge-face-controller";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 import {
   applyStudioVrmCharacterVariant,
   listStudioVrmCharacterVariantSummaries,
@@ -440,11 +441,9 @@ export function StudioVrmAvatarForgePanel({
                 aria-selected={selected}
                 title={item.hint}
                 onClick={() => setView(item.id)}
-                className={`flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-lg border px-1 text-[0.66rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
-                  selected
+                className={`flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-lg border px-1 text-[0.66rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${selected
                     ? "border-accent/45 bg-accent-soft text-accent shadow-sm"
-                    : "border-transparent text-fg-3 hover:bg-raised hover:text-fg"
-                }`}
+                    : "border-transparent text-fg-3 hover:bg-raised hover:text-fg"}`}
               >
                 <Icon size={14} className="shrink-0 max-[360px]:hidden" aria-hidden />
                 <span className="min-w-0 truncate">{item.label}</span>
@@ -536,7 +535,7 @@ export function StudioVrmAvatarForgePanel({
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-line bg-card/55 p-4 text-center text-[0.65rem] text-fg-3">
-                검색 조건과 일치하는 스타일이 없습니다.
+                {frozenStatus5Text("studio.frozenStatus5.forge.stylesEmpty", "검색 조건과 일치하는 스타일이 없습니다.")}
               </div>
             )}
 
@@ -686,8 +685,8 @@ export function StudioVrmAvatarForgePanel({
             {proportionUnavailableReason ? (
               <p role="alert" className="rounded-lg border border-danger/35 bg-danger/10 px-3 py-2 text-[0.62rem] leading-relaxed text-danger">
                 {disabled
-                  ? `리그를 안전한 상태로 확인할 때까지 아바타 조형을 잠시 중단했습니다. ${proportionUnavailableReason}`
-                  : `이 모델은 리그 안전 체형 편집을 사용할 수 없습니다. ${proportionUnavailableReason} 헤어·얼굴 편집은 계속 사용할 수 있어요.`}
+                  ? frozenStatus5Text("studio.frozenStatus5.forge.rigPaused", { reason: proportionUnavailableReason }, "리그를 안전한 상태로 확인할 때까지 아바타 조형을 잠시 중단했습니다. {reason}")
+                  : frozenStatus5Text("studio.frozenStatus5.forge.rigUnsupported", { reason: proportionUnavailableReason }, "이 모델은 리그 안전 체형 편집을 사용할 수 없습니다. {reason} 헤어·얼굴 편집은 계속 사용할 수 있어요.")}
               </p>
             ) : null}
           </div>
@@ -1055,7 +1054,7 @@ export function StudioVrmAvatarForgePanel({
               ) : (
                 <p className="mt-3 rounded-lg border border-line bg-card/60 px-3 py-2 text-[0.6rem] leading-relaxed text-fg-3">
                   {semanticFaceMorphProfile?.message
-                    ?? "모델을 불러오면 native morph와 적응형 얼굴 메시를 함께 검사합니다."}
+                    ?? frozenStatus5Text("studio.frozenStatus5.forge.faceProfileFallback", "모델을 불러오면 native morph와 적응형 얼굴 메시를 함께 검사합니다.")}
                 </p>
               )}
             </div>
@@ -1231,7 +1230,7 @@ export function StudioVrmAvatarForgePanel({
             className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft px-2 text-[0.7rem] font-extrabold text-accent transition-colors hover:bg-accent/15 disabled:opacity-40"
           >
             <Sparkles size={14} aria-hidden />
-            {generateBusy ? "생성 중…" : "VRM 생성"}
+            {generateBusy ? frozenStatus5Text("studio.frozenStatus5.forge.generating", "생성 중…") : "VRM 생성"}
           </button>
           <button
             type="button"

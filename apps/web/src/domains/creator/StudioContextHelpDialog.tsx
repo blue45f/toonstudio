@@ -22,6 +22,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { buildStudioToolHelp } from "./studio-current-tool-help";
+import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
 import {
   filterStudioHelpRecipes,
   getStudioContextHelpGuide,
@@ -330,13 +331,11 @@ function ToolPanel({
       <div className="mx-auto flex min-h-full w-full max-w-3xl items-center px-5 py-12 sm:px-8">
         <div className="w-full rounded-3xl border border-dashed border-border bg-card/60 p-8 text-center">
           <HelpCircle className="mx-auto size-10 text-muted-foreground" aria-hidden="true" />
-          <h2 className="mt-4 text-xl font-bold text-foreground">현재 도구를 확인할 수 없습니다</h2>
+          <h2 className="mt-4 text-xl font-bold text-foreground">{frozenStatus5Text("studio.frozenStatus5.contextHelp.toolUnknown", "현재 도구를 확인할 수 없습니다")}</h2>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
             캔버스로 돌아가 도구를 선택한 뒤 다시 열거나, 기능·설정 검색에서 알고 있는 이름을 검색하세요.
           </p>
-          <button
-            type="button"
-            onClick={onOpenCommandSearch}
+          <button type="button" onClick={onOpenCommandSearch}
             className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <Search className="size-4" aria-hidden="true" />
@@ -449,7 +448,7 @@ function ToolPanel({
         </>
       ) : (
         <section className="rounded-2xl border border-dashed border-border bg-card/50 p-6">
-          <h3 className="text-base font-bold text-foreground">핵심 도구 가이드를 준비 중입니다</h3>
+          <h3 className="text-base font-bold text-foreground">{frozenStatus5Text("studio.frozenStatus5.contextHelp.guideInPreparation", "핵심 도구 가이드를 준비 중입니다")}</h3>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             명령 설명과 별칭은 사용할 수 있으며, 상세 작성형 가이드가 없는 도구는 기능·설정 검색과 진단으로 이어집니다.
           </p>
@@ -610,7 +609,7 @@ function TroubleshootingPanel({
       ) : (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center">
           <Search className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
-          <p className="mt-3 text-sm font-semibold text-foreground">일치하는 해결 레시피가 없습니다</p>
+          <p className="mt-3 text-sm font-semibold text-foreground">{frozenStatus5Text("studio.frozenStatus5.contextHelp.noRecipes", "일치하는 해결 레시피가 없습니다")}</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">더 짧은 증상으로 검색하거나 F1 기능·설정 검색을 사용하세요.</p>
         </div>
       )}

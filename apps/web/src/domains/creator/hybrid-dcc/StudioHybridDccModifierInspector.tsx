@@ -10,6 +10,7 @@ import {
 import { useId, useState } from "react";
 
 import { StudioThreeDToggleControl } from "../StudioThreeDToggle";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -865,10 +866,7 @@ export function StudioHybridDccModifierInspector({
       aria-labelledby={titleId}
       aria-busy={busy}
       data-studio-hybrid-dcc-modifier-inspector="true"
-      className={cn(
-        "w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-line bg-panel text-fg",
-        className,
-      )}
+      className={cn("w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-line bg-panel text-fg", className)}
     >
       <header className="min-w-0 px-3 py-3">
         <div className="flex min-w-0 items-start gap-3">
@@ -936,7 +934,7 @@ export function StudioHybridDccModifierInspector({
         >
           <p className="flex items-center gap-2 text-xs font-semibold">
             <TriangleAlert size={16} className="shrink-0" aria-hidden="true" />
-            미리보기를 계산하지 못했습니다
+            {frozenStatus5Text("studio.frozenStatus5.hybridModifier.previewFailed", "미리보기를 계산하지 못했습니다")}
           </p>
           <p className="mt-1 break-words text-xs leading-relaxed [overflow-wrap:anywhere]">
             {error} 설정을 수정하거나 문제가 된 변형을 잠시 끈 뒤 다시 확인해 주세요.
@@ -946,7 +944,7 @@ export function StudioHybridDccModifierInspector({
 
       {empty ? (
         <div className="border-y border-line px-4 py-7 text-center" data-studio-hybrid-dcc-modifier-empty="true">
-          <p className="text-sm font-semibold text-fg">아직 쌓인 변형이 없습니다</p>
+          <p className="text-sm font-semibold text-fg">{frozenStatus5Text("studio.frozenStatus5.hybridModifier.modifiersEmpty", "아직 쌓인 변형이 없습니다")}</p>
           <p className="mx-auto mt-1 max-w-[32ch] text-xs leading-relaxed text-fg-3">
             대칭, 반복, 두께 같은 작업을 추가하면 원본을 지키면서 결과를 비교할 수 있습니다.
           </p>

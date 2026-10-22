@@ -38,6 +38,7 @@ import {
   studioWorkbenchTabPanelProps,
 } from "../studio-workbench-tabs";
 import { useStudioCopyFeedback } from "../use-studio-copy-feedback";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 
 import { StudioAiEmotionBubbleMatcher } from "./studio-ai-emotion-bubble-matcher";
@@ -174,11 +175,9 @@ export function StudioAiSuperSuiteModal({
   // 더 필요해서 기본 1500ms 대신 조금 길게 잡는다.
   const clipboard = useStudioCopyFeedback(2400);
   const copyStatusMessage =
-    clipboard.current === null
-      ? ""
-      : clipboard.current.status === "copied"
-        ? "클립보드에 복사했어요."
-        : "클립보드에 복사하지 못했어요. 텍스트를 직접 선택해 복사해 주세요.";
+    clipboard.current === null ? "" : clipboard.current.status === "copied"
+      ? frozenStatus5Text("studio.frozenStatus5.superSuite.clipboardCopied", "클립보드에 복사했어요.")
+      : frozenStatus5Text("studio.frozenStatus5.superSuite.clipboardCopyFailed", "클립보드에 복사하지 못했어요. 텍스트를 직접 선택해 복사해 주세요.");
 
   // ── 선택 상태 저장·복원 ──────────────────────────────────────────────────
   const saveArmedRef = useRef(false);

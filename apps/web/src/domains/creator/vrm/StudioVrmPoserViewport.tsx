@@ -26,6 +26,7 @@ import {
 import { useCallback, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { getStudioVrmQualityTier } from "./studio-vrm-gpu-capability";
+import { frozenStatus5Text } from "../studio-frozen5-status-i18n";
 import { buildStudioVrmJointLimitProximityMap } from "./studio-vrm-joint-limit-proximity";
 import {
   evaluateStudioVrmPoseBalance,
@@ -638,13 +639,9 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       <StudioToolHintTarget
                         hint={VRM_VIEWPORT_HINTS.undo}
                         disabled={!viewportCanUndo}
-                        unavailableReason={
-                          texturePaintStrokeActive
-                            ? "표면 페인트 획을 마친 뒤 실행 취소할 수 있습니다."
-                            : !viewportCanUndo
-                              ? "되돌릴 캐릭터 변경이 없습니다."
-                              : undefined
-                        }
+                        unavailableReason={texturePaintStrokeActive
+                          ? frozenStatus5Text("studio.frozenStatus5.vrmViewport.undoPaintLocked", "표면 페인트 획을 마친 뒤 실행 취소할 수 있습니다.")
+                          : !viewportCanUndo ? frozenStatus5Text("studio.frozenStatus5.vrmViewport.undoUnavailable", "되돌릴 캐릭터 변경이 없습니다.") : undefined}
                         preferredSide="right"
                       >
                         <button
@@ -660,13 +657,9 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       <StudioToolHintTarget
                         hint={VRM_VIEWPORT_HINTS.redo}
                         disabled={!viewportCanRedo}
-                        unavailableReason={
-                          texturePaintStrokeActive
-                            ? "표면 페인트 획을 마친 뒤 다시 실행할 수 있습니다."
-                            : !viewportCanRedo
-                              ? "다시 적용할 캐릭터 변경이 없습니다."
-                              : undefined
-                        }
+                        unavailableReason={texturePaintStrokeActive
+                          ? frozenStatus5Text("studio.frozenStatus5.vrmViewport.redoPaintLocked", "표면 페인트 획을 마친 뒤 다시 실행할 수 있습니다.")
+                          : !viewportCanRedo ? frozenStatus5Text("studio.frozenStatus5.vrmViewport.redoUnavailable", "다시 적용할 캐릭터 변경이 없습니다.") : undefined}
                         preferredSide="right"
                       >
                         <button
@@ -830,7 +823,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                   <div className="absolute inset-0 grid place-items-center bg-card/45 p-6 text-center backdrop-blur-sm" role="status" aria-live="polite">
                     <div>
                       <Loader2 className="mx-auto animate-spin motion-reduce:animate-none text-accent" size={30} aria-hidden />
-                      <p className="mt-3 text-sm font-semibold text-fg">VRM을 불러오는 중입니다.</p>
+                      <p className="mt-3 text-sm font-semibold text-fg">{frozenStatus5Text("studio.frozenStatus5.vrmViewport.loading", "VRM을 불러오는 중입니다.")}</p>
                     </div>
                   </div>
                 ) : null}
@@ -840,8 +833,8 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="mt-0.5 shrink-0 text-accent" size={16} aria-hidden />
                       <div>
-                        <p className="font-semibold text-fg">불러오기에 실패했습니다.</p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-fg-3">{error || "파일 형식 또는 경로를 확인해 주세요."}</p>
+                        <p className="font-semibold text-fg">{frozenStatus5Text("studio.frozenStatus5.vrmViewport.loadFailed", "불러오기에 실패했습니다.")}</p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-fg-3">{error || frozenStatus5Text("studio.frozenStatus5.vrmViewport.loadFailedDetail", "파일 형식 또는 경로를 확인해 주세요.")}</p>
                       </div>
                     </div>
                   </div>

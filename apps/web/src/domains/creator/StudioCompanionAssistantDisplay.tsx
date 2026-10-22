@@ -23,6 +23,7 @@ import {
   WebtoonColorHarmonyAssistant,
   type SkinToneId,
 } from "./assistant/webtoon-color-harmony-assistant";
+import { frozenStatus5Text } from "./studio-frozen5-status-i18n";
 import {
   PERSPECTIVE_GUIDES,
   WebtoonCroquisPoseGuide,
@@ -794,7 +795,7 @@ export function StudioCompanionAssistantDisplay({
             </div>
           ) : (
             <div className="rounded-xl border border-good/35 bg-good/10 p-2.5 text-good">
-              <p className="font-bold">현재 입력에서는 긴 공백·과밀 경고가 없습니다.</p>
+              <p className="font-bold">{frozenStatus5Text("studio.frozenStatus5.assistant.noWarnings", "현재 입력에서는 긴 공백·과밀 경고가 없습니다.")}</p>
             </div>
           )}
 
@@ -875,7 +876,7 @@ export function StudioCompanionAssistantDisplay({
           {filteredSfx.length === 0 ? (
             <StudioEmptyState
               icon={<Search className="size-5" aria-hidden />}
-              title="검색 결과가 없습니다"
+              title={frozenStatus5Text("studio.frozenStatus5.assistant.sfxSearchEmpty", "검색 결과가 없습니다")}
               description="다른 낱말이나 태그로 찾아보세요. 예: 쿵, 심장, 번개, 문, 폭발."
               action={
                 sfxIsFiltered ? (
@@ -988,15 +989,9 @@ export function StudioCompanionAssistantDisplay({
             </>
           )}
 
-          <p
-            role="status"
-            aria-live="polite"
-            className={cn(
-              "min-h-3 text-[0.6rem] font-semibold leading-tight",
-              sfxCopy.current?.status === "failed" || insertFeedback.includes("실패")
-                ? "text-bad"
-                : "text-good",
-            )}
+          <p role="status" aria-live="polite"
+            className={cn("min-h-3 text-[0.6rem] font-semibold leading-tight",
+              sfxCopy.current?.status === "failed" || insertFeedback.includes("실패") ? "text-bad" : "text-good")}
           >
             {insertFeedback || copyStatusMessage}
           </p>
@@ -1123,8 +1118,8 @@ export function StudioCompanionAssistantDisplay({
             <p role="status" aria-live="polite" className="mt-1 min-h-3 text-[0.6rem] font-semibold text-good">
               {colorCopy.current
                 ? colorCopy.current.status === "copied"
-                  ? "색상 코드를 복사했습니다"
-                  : "색상 코드 복사에 실패했습니다"
+                  ? frozenStatus5Text("studio.frozenStatus5.assistant.colorCopied", "색상 코드를 복사했습니다")
+                  : frozenStatus5Text("studio.frozenStatus5.assistant.colorCopyFailed", "색상 코드 복사에 실패했습니다")
                 : ""}
             </p>
           </div>
