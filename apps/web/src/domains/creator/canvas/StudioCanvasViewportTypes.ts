@@ -41,6 +41,8 @@ import type {
 } from "../studio-drawing-practice-document";
 import type { DrawMode, DrawShapeKind, StudioMenu, Tool } from "../studio-editor-tool-model";
 import type { DrawEl, El, ImageEl } from "../studio-element-model";
+import type { StudioPaperSurfaceSettings } from "../brush/studio-paper-granulation-runtime";
+import type { StudioLiveGesturePreviewRenderPlan } from "../live/studio-live-gesture-preview-projection";
 import type { StudioTutorialTryAction } from "../studio-feature-tutorials";
 import type { OnionSkinSettings } from "../studio-frame-animation";
 import type { SharedGutterSegment } from "../studio-frame-folder";
@@ -597,3 +599,78 @@ export interface StudioCanvasViewportProps {
   stableHandlers: StudioCanvasViewportHandlers;
   setRightPanelOpen: import("react").Dispatch<import("react").SetStateAction<boolean>>;
 }
+
+/**
+ * 문서 레이어(StudioCanvasViewportDocumentLayer) 전용 props.
+ * 본체 props(StudioCanvasViewportProps)의 부분집합 + 레이어 전용 필드로 구성된다.
+ */
+export interface StudioCanvasViewportDocumentLayerProps {
+  activeGroupId: StudioCanvasViewportProps["activeGroupId"];
+  activePage: StudioCanvasViewportProps["activePage"];
+  activeSurfaceReviewLocked: StudioCanvasViewportProps["activeSurfaceReviewLocked"];
+  advancedFillArmed: StudioCanvasViewportProps["advancedFillArmed"];
+  advancedFillPreview: StudioCanvasViewportProps["advancedFillPreview"];
+  animTimeline: StudioCanvasViewportProps["animTimeline"];
+  bubbleShapeArmed: StudioCanvasViewportProps["bubbleShapeArmed"];
+  bubbleShapeDraft: StudioCanvasViewportProps["bubbleShapeDraft"];
+  canvasInteractionBlocked: StudioCanvasViewportProps["canvasInteractionBlocked"];
+  commentPinArmed: StudioCanvasViewportProps["commentPinArmed"];
+  canonicalDryMediaHiddenElementId: string | null;
+  commitTextTransformEnd: StudioCanvasViewportHandlers["commitTextTransformEnd"];
+  cropArmed: StudioCanvasViewportProps["cropArmed"];
+  dodgeBurnArmed: StudioCanvasViewportProps["dodgeBurnArmed"];
+  drawingRef: StudioCanvasViewportProps["drawingRef"];
+  effScale: StudioCanvasViewportProps["effScale"];
+  endLiveResourceEdit: StudioCanvasViewportHandlers["endLiveResourceEdit"];
+  filterMaskPaintArmed: StudioCanvasViewportProps["filterMaskPaintArmed"];
+  frameAnimOpen: StudioCanvasViewportProps["frameAnimOpen"];
+  frameAnimTargetId: StudioCanvasViewportProps["frameAnimTargetId"];
+  groupMovementBlockedIds: ReadonlySet<string>;
+  groups: StudioCanvasViewportProps["groups"];
+  healCloneArmed: StudioCanvasViewportProps["healCloneArmed"];
+  historyBrushArmed: StudioCanvasViewportProps["historyBrushArmed"];
+  isCanvasGroupDragActive: StudioCanvasViewportHandlers["isCanvasGroupDragActive"];
+  isExporting: StudioCanvasViewportProps["isExporting"];
+  layerMaskPaintArmed: StudioCanvasViewportProps["layerMaskPaintArmed"];
+  liquifyArmed: StudioCanvasViewportProps["liquifyArmed"];
+  localHiddenElementIds: StudioCanvasViewportProps["localHiddenElementIds"];
+  marqueeIds: StudioCanvasViewportProps["marqueeIds"];
+  masterEditMode: StudioCanvasViewportProps["masterEditMode"];
+  masterRenderEls: StudioCanvasViewportProps["masterRenderEls"];
+  nodeEditArmed: StudioCanvasViewportProps["nodeEditArmed"];
+  nodeEditDraft: StudioCanvasViewportProps["nodeEditDraft"];
+  nodeInteractionBegin: StudioCanvasViewportHandlers["nodeInteractionBegin"];
+  onionSkin: StudioCanvasViewportProps["onionSkin"];
+  onHokusaiCanonicalImageReady: StudioCanvasViewportHandlers["onHokusaiCanonicalImageReady"];
+  onLivingInkCanonicalImageReady: StudioCanvasViewportHandlers["onLivingInkCanonicalImageReady"];
+  pagesHi: StudioCanvasViewportProps["pagesHi"];
+  paperSurfaceForPreview: StudioPaperSurfaceSettings;
+  panelSplitArmed: StudioCanvasViewportProps["panelSplitArmed"];
+  patchEl: (id: string, patch: Partial<El>) => void;
+  patchElementAfterDragRestore: (id: string, patch: Partial<El>) => void;
+  pixelToolArmed: StudioCanvasViewportProps["pixelToolArmed"];
+  puppetWarpArmed: StudioCanvasViewportProps["puppetWarpArmed"];
+  quickMaskArmed: StudioCanvasViewportProps["quickMaskArmed"];
+  selectElementFromCanvas: StudioCanvasViewportHandlers["selectElementFromCanvas"];
+  selectedId: StudioCanvasViewportProps["selectedId"];
+  selectionLockState: "unlocked" | "locked" | "mixed";
+  setElementNodeRef: StudioCanvasViewportHandlers["setElementNodeRef"];
+  smudgeArmed: StudioCanvasViewportProps["smudgeArmed"];
+  snapBoundFunc: StudioCanvasViewportHandlers["snapBoundFunc"];
+  startEditText: StudioCanvasViewportHandlers["startEditText"];
+  studioFilterPageComposite: StudioCanvasViewportProps["studioFilterPageComposite"];
+  studioFilterPreview: StudioCanvasViewportProps["studioFilterPreview"];
+  studioLiveGesturePreviewRenderPlan: StudioLiveGesturePreviewRenderPlan;
+  studioRasterHiddenOperationIds: StudioCanvasViewportProps["studioRasterHiddenOperationIds"];
+  studioWorkAssetRenderPlaceholders: StudioCanvasViewportProps["studioWorkAssetRenderPlaceholders"];
+  studioWorkAssetRenderProjection: StudioCanvasViewportProps["studioWorkAssetRenderProjection"];
+  timelineOpen: StudioCanvasViewportProps["timelineOpen"];
+  timelinePlayhead: StudioCanvasViewportProps["timelinePlayhead"];
+  timelinePlaying: StudioCanvasViewportProps["timelinePlaying"];
+  timelinePreviewFrame: StudioCanvasViewportProps["timelinePreviewFrame"];
+  timelapseCapturing: StudioCanvasViewportProps["timelapseCapturing"];
+  tool: StudioCanvasViewportProps["tool"];
+  webtoonTheme: StudioCanvasViewportProps["webtoonTheme"];
+  wetMixArmed: StudioCanvasViewportProps["wetMixArmed"];
+}
+

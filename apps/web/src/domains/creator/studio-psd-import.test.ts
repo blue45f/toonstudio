@@ -307,6 +307,64 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     ]));
   });
 
+  it("조정 레이어의 마스크도 래스터와 같은 경로로 maskSrc에 보존된다", async () => {
+    const mask = { top: 0, left: 0, bottom: 100, right: 100 };
+    const psd = samplePsd([
+      leaf({ name: "마스크조정", adjustment: { type: "invert" }, mask }),
+    ]);
+    const captured: Parameters<NonNullable<PsdImportDeps["rasterizeMaskImpl"]>>[0][] = [];
+    const result = await importPsdFile(
+      new File([], "t.psd"),
+      720,
+      depsFor(psd, undefined, (input) => {
+        captured.push(input);
+        return { maskSrc: "data:image/png;base64,ADJMASK", warnings: [] };
+      }),
+    );
+    expect(captured).toHaveLength(1);
+    expect(captured[0]).toMatchObject({ masks: [{ kind: "primary", mask }] });
+    expect(result.adjustmentLayers?.[0]).toMatchObject({
+      kind: "invert",
+      maskSrc: "data:image/png;base64,ADJMASK",
+    });
+    expect(result.adjustmentLayers?.[0]?.maskEnabled).toBeUndefined();
+    expect(result.skipped).toEqual([]);
+  });
+
+  it("조정 레이어의 꺼진 마스크는 maskEnabled=false로, 실패한 마스크는 경고만 남긴다", async () => {
+    const offPsd = samplePsd([
+      leaf({ name: "꺼진조정", adjustment: { type: "invert" }, mask: { disabled: true } }),
+    ]);
+    const off = await importPsdFile(
+      new File([], "t.psd"),
+      720,
+      depsFor(offPsd, undefined, () => ({
+        maskSrc: "data:image/png;base64,OFFMASK",
+        disabled: true,
+        warnings: [],
+      })),
+    );
+    expect(off.adjustmentLayers?.[0]).toMatchObject({
+      maskSrc: "data:image/png;base64,OFFMASK",
+      maskEnabled: false,
+    });
+
+    const brokenPsd = samplePsd([
+      leaf({ name: "손상조정", adjustment: { type: "invert" }, mask: {} }),
+    ]);
+    const broken = await importPsdFile(
+      new File([], "t.psd"),
+      720,
+      depsFor(brokenPsd, undefined, () => ({
+        warnings: ["마스크 픽셀 데이터가 없거나 손상되어 원본 레이어를 가리지 않고 가져왔어요."],
+      })),
+    );
+    // 조정 레이어 자체는 복원되고 마스크만 빠진다 — 침묵하지 않는다.
+    expect(broken.adjustmentLayers?.[0]?.kind).toBe("invert");
+    expect(broken.adjustmentLayers?.[0]?.maskSrc).toBeUndefined();
+    expect(broken.skipped.join(" ")).toContain("손상조정");
+  });
+
   it("전수 대응 4종(흑백·포토 필터·선택 색상·컬러 룩업)도 조정 레이어로 복원된다", async () => {
     const psd = samplePsd([
       leaf({ name: "흑백1", adjustment: { type: "black & white", reds: 40, yellows: 60, greens: 40, cyans: 60, blues: 20, magentas: 80 } }),
