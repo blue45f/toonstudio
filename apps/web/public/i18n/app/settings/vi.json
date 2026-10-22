@@ -1,5 +1,5 @@
 {
-  "settings.eyebrow": "SETTINGS",
+  "settings.eyebrow": "CÀI ĐẶT",
   "settings.title": "Cài đặt",
   "settings.subtitle": "Cung cấp cho các cài đặt hiển thị và lọc hoặc đặt lại.",
   "settings.section.display": "Khán giả",
@@ -28,7 +28,7 @@
   "settings.age.verify": "Kiểm tra tuổi tác",
   "settings.data.export": "Xuất bản sao lưu thư viện",
   "settings.data.exportDesc": "Chữ xếp hạng, đọc trạng thái, đăng ký và thu thập vào JSON.",
-  "settings.data.import": "Import backup",
+  "settings.data.import": "Nhập bản sao lưu",
   "settings.data.importDesc": "Khôi phục từ một tệp sao lưu và ghi lại dữ liệu trình duyệt hiện tại.",
   "settings.data.recent": "Danh sách gần đây",
   "settings.data.recentDesc": "Đánh rõ các tiêu đề gần đây được hiển thị trong Home, Library, và Search.",

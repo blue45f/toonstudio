@@ -164,7 +164,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "uk": 0.9898,
   "ur": 0.2592,
   "uz": 0.2522,
-  "vi": 0.255,
+  "vi": 0.9884,
   "zh": 0.9837,
   "zh-hant": 0.9837,
   "zu": 0.2592,
