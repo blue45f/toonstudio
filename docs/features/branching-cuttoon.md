@@ -19,7 +19,7 @@
 | 읽던 위치·초안의 이 브라우저 저장과 복원, 저장 실패 시에도 읽기 계속 | current | `branching-cuttoon-storage.ts`, `branching-cuttoon-storage.test.ts` |
 | 최소 플레이어(컷 세로 나열, 선택지, 되돌아가기, 처음부터, 결말, 장면 전환 안내) | current | `BranchingCuttoonPlayer.tsx`, `BranchingCuttoonPlayer.test.tsx` |
 | 최소 제작 화면(장면·컷·선택지 목록 편집, 점검 결과, 오류에서 장면으로 이동, 샘플) | current | `BranchingCuttoonLabPage.tsx`, `BranchingCuttoonLabPage.test.tsx` |
-| Labs 경로 등록(라우트 권위·메타·사이트맵·경로 이름 문구) | current | `site-route-authority.ts`, `site-route-metadata.ts`, `site-directory-data.ts` |
+| Labs 경로 등록(라우트 권위·메타·사이트맵·공간 캠퍼스 분류·경로 이름 문구) | current | `site-route-authority.ts`, `site-route-metadata.ts`, `site-directory-data.ts`, `campus-bindings.ts`, `branching-cuttoon-route.test.ts` |
 | 서버 저장·발행 연결 | **target** — 아직 없다 | "목표 상태" |
 | 독자 통계·정산 | **target** — 아직 없다 | "목표 상태" |
 | 컷 이미지·편집기 문서의 컷과 연결 | **target** — 아직 없다 | "목표 상태" |
@@ -49,7 +49,7 @@
 
 ### 크기 한도
 
-글자 수는 UTF-16 코드 단위가 아니라 코드 포인트로 센다. 아래 값은 `BRANCHING_CUTTOON_LIMITS` 와 같아야 하고, `branching-cuttoon-docs.test.ts` 가 표와 코드를 대조한다.
+글자 수는 UTF-16 코드 단위가 아니라 코드 포인트로 센다. 아래 값은 `BRANCHING_CUTTOON_LIMITS` 와 같아야 하고, `model/branching-cuttoon-docs.test.ts` 가 표와 코드를 대조한다.
 
 | 한도 | 이름 | 값 |
 | --- | --- | --- |
