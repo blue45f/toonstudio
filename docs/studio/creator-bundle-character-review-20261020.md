@@ -4,6 +4,10 @@
 - 기준일: 2026-10-20, 전부 팩 페이지 실측 기준 (페이지에서 읽지 못한 항목은 "미확인"으로 표기)
 - 데이터 산출: `studio-unity-bundle-characters.ts` (이 폴더, 레포 미러 경로 `apps/web/src/domains/creator/virtual-space/`)
 - 전제: 기존 전수 카탈로그(`um-bundle-catalog`)는 캐릭터를 crowd 역할로만 분류했다. 본 검토는 캐릭터 표면 5종으로 판정을 확장한다.
+- 2026-10-22 주: 권리 원장(`config/creator-bundle-pack-rights.json`)은 Characters 1/2(제작사 RG Poly)를 hold로 둔다.
+  번들 사본에는 라이선스 문구가 없고(라이브러리에 README만 있다) 이 문서의 CC0 판정은 팩 페이지를 읽은 2차 조회라
+  서빙 허용 요구 증빙(itch 팩 페이지 캡처 + 구매 영수증)을 채우지 못한다. 아래 「권리 장벽이 없다」는 서술은 팩
+  페이지 기준의 기록일 뿐 서빙 허가가 아니다.
 
 ## 1. 조사 범위
 

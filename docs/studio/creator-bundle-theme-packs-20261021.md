@@ -10,8 +10,9 @@ theme-packs.json을 재생성해 배치 가능은 5,303개로, 보류(deferred)�
 
 2026-10-22 정정 2 (권리 게이트): 구매 번들의 서빙 판정을 코드 상수가 아니라 팩별 권리 원장
 (`config/creator-bundle-pack-rights.json`)으로 옮겼다. 원장의 기본값은 hold이고, 증빙이 없는
-팩은 allow가 될 수 없다. 생성기·배포 플래너·Worker가 같은 원장을 따라 fail-closed로 닫힌다
-("팩별 권리 원장" 절). 이 문서의 배치 가능 5,303개는 **원장 이전 스냅샷**이며, 원장을 적용해
+팩은 allow가 될 수 없다. 생성기와 배포 플래너가 같은 원장을 따라 fail-closed로 닫힌다
+("팩별 권리 원장" 절). Worker는 원장을 읽지 않고 R2에 올라간 객체를 동일 출처 가드로만 제한한다
+("배포" 절). 이 문서의 배치 가능 5,303개는 **원장 이전 스냅샷**이며, 원장을 적용해
 theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성"). 어떤 팩을 열지는 증빙 제출 뒤
 저장소 소유자가 정한다.
 
@@ -72,9 +73,41 @@ theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성
   제작사 서면 확인은 웹 서비스 안 서빙(`web-service-hosting`)을 다룰 때만 인정한다. 에이전트의 2차
   조회 기록(`secondary-lookup`)은 기록만 남고 어떤 요구도 채우지 못한다. 라이선스 문서 33종
   어느 것도 웹 서비스 호스팅·하위 사용자를 다루지 않는다.
-- 시드(2026-10-22): 61개 전부 hold. Cute Dungeon Megapack만 요구 증빙(CC0 문서)을 이미 갖춰 allow로
-  바꿀 수 있고, 권고 hold 3팩(Restaurant 1,023 · Medieval 1,265 · Small Props 342)은 서면 확인 전까지
-  제외한다. 이 구분은 증빙 상태를 기록한 것이며 개방 결정은 소유자에게 있다.
+
+  이 요구 표와 「`web-service-hosting` 한 가지만 다루면 서면 확인으로 인정한다」는 규칙은 **구현 기본값이며
+  소유자 결정 대기**다. 서면 확인이 직접 URL 접근(Q2)·변환 파생 GLB(Q3)·유료 멤버십(Q4)·다수 사용자(Q5)까지
+  다루는지는 코드가 판정하지 못하고 사람이 문서를 읽어 판단한다. 검토 보고(2026-10-22) §6.3의
+  「itch 캡처 후 개방」 표현과 요구 표(예: Fences는 캡처 + 영수증 + 서면 확인)가 다른 부분도 소유자가 정한다.
+- 증빙 검사의 한계: 이 게이트는 **형식·일관성 검사**이지 증빙의 진위 판정이 아니다. 필수 필드, itch 주소
+  (https `itch.io`·`*.itch.io`의 팩 페이지; 닮은 도메인·자격 정보·루트 주소는 거부), 달력에 있고 미래가 아닌
+  날짜(UTC+14의 오늘까지), 자리표시가 아닌 보관 위치(`ref`, 6자 이상), 로컬 라이선스 문서가 그 해시로 기록된
+  자기 팩의 파일(`libraryPacks`)인지까지 거른다. 영수증·캡처·서면 확인의 실물은 레포 밖이라 대조하지 않으며,
+  실물과 대조되는 증빙은 `local-license-file`(sha256)뿐이다. 그래서 allow 전환은 항상 소유자가 직접 하는 원장
+  편집이고, 이 게이트는 실수·누락을 막는 안전장치다.
+- 증빙 항목 형식(`evidence[]`): 모든 증빙은 `kind`와 `verifiedAt`(YYYY-MM-DD)을 가진다.
+  `local-license-file`은 `sha256`·`paths`(zip 안 사본은 `<zip 경로>::<멤버>`), `itch-page-capture`는
+  `url`(itch.io 주소)·`retrievedAt`(조회일)·`ref`(캡처 보관 위치), `purchase-receipt`는 `ref`,
+  `producer-written-confirmation`은 `ref`·`covers`(`web-service-hosting` 포함)다. `secondary-lookup`은
+  `claim`·`source`만 가진다.
+- 묶음(`group`) 규칙: allow는 `pack`(배치 가능)과 `crowd`(렌더 전용 군중)만 의미가 있다. `pending`(미수신·보류)
+  묶음은 생성기가 `serve`와 무관하게 `pendingPacks`로만 내보내므로 allow가 아무것도 열지 못하고, 검증기가
+  pending 묶음의 allow를 거부한다. 수신·편입(`CATALOG_PACKS`)하면서 `group`을 `pack`으로 옮긴 뒤에야 판정 대상이다.
+- 팩을 여는 절차(소유자): ① 증빙을 보관하고 `evidence`에 항목 추가 → ② `serve`를 `allow`로 바꾸고
+  `holdReason`·`holdLabel`을 지우고 `grant`(`status`·`licenseName`·`commercialUse`·`attributionRequired`)를 추가 →
+  ③ `pnpm run verify:creator-bundle-pack-rights`로 검증 → ④ 생성기 재실행과 장르 씬팩 연결 갱신 →
+  ⑤ 플래너 `--dry-run`으로 제외·합계 확인 후 승인된 업로드.
+- 시드(2026-10-22): 61개 전부 hold. Cute Dungeon Megapack은 요구 증빙(CC0 문서)을 이미 갖췄지만 미수신
+  (`pending`) 묶음이라 편입 전에는 `serve`를 allow로 바꿔도 아무것도 열리지 않는다(`holdReason: pending-ingest`).
+  검토 보고(2026-10-22)는 Restaurant(보류 1,023개)·Medieval(보류 1,265개)·Small Props(배치 가능 342개)를 서면
+  확인 전까지 제외하라고 권고했고, 원장은 이를 `reviewRecommendedHold`로 표시한다. 이 구분은 증빙 상태를 기록한
+  것이며 개방·제외 확정은 소유자에게 있다.
+- hold 팩의 사용자 노출 문구: 패널의 「준비 중인 팩」에 보이는 `holdLabel`은 모든 hold 팩이 같은 중립 문장
+  (`HOLD_PUBLIC_LABEL`)이다. 제작사 확인·증빙·충돌 같은 사유와 공개 약속은 쓰지 않고, 사유는 내부 필드
+  `holdReason`에만 둔다.
+- 상반된 라이선스 문서: 같은 팩 안에 서로 다른 라이선스 문서가 공존하는 팩 11개(LumaGrove, Rocks and Stone,
+  TerraToon, CosmoKit, Cemetery Statues, Voxel Summer, Raft on the Desert, Swamp Builder, Iowa Covered Bridges,
+  Winter Atolls, Low Poly Food Packaging)는 `mappingNote`에 상충을 적었다. 팩 폴더의 godot LICENSE와
+  `Blend Textures.zip` 안 LICENSE(「앱에 포함해 배포」 명시)의 우선순위는 제작사 서면 확인 대상이다.
 - 팩 귀속 주의: 인제스션 id의 원본 파일이 라이브러리에서 다른 팩 폴더로 분류된 팩 5개(Asia Megapack,
   NecroPOLY, Fences and Walls, PixelDrift Metro FREE, Low Poly Tiny Forest)는 두 경로의 증빙을
   합쳐 기록하고 항목의 `mappingNote`에 이유를 적었다. 소유자 확인이 필요하다.
@@ -90,9 +123,9 @@ theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성
   (`status`는 `licensed` 또는 `public-domain`, 라이선스명은 팩별), `rights`가 없는 팩(원장 이전
   스냅샷 데이터)은 `unknown`·`commercialUse: false`로 닫는다. 예전의 전 팩 일괄
   `licensed / commercialUse: true` 상수는 없앴다.
-- GLB 실파일은 매니페스트 v2 서빙 루트(`/assets/studio/bundle-v2/`)에서 참조로
-  서빙된다 (다포맷 설계 문서 `asset-multiformat-native-support-design-20261020.md`와
-  같은 루트).
+- GLB 실파일은 매니페스트 v2 서빙 루트(`/assets/studio/bundle-v2/`)에서 참조로 서빙된다. 다포맷 설계의
+  매니페스트 v2 디스크립터(`studio-bundle-manifest-v2.ts`)는 아직 원본 경로형 URL을 만들어 sha256 서빙과 맞지
+  않는다(프로덕션 소비자가 없고 테스트에서만 쓴다). 소비 경로로 연결할 때 별도 정합이 필요하다.
 
 ## 재생성
 
@@ -121,6 +154,11 @@ node scripts/generate-creator-bundle-theme-packs.mjs \
 같은 변경에서 갱신해야 한다. 이 변경에서는 소유자 트리가 필요한 실데이터 재생성을 하지 않았으므로
 커밋된 theme-packs.json은 원장 이전 스냅샷이다(Characters 1/2의 제작사·id만 정정).
 
+시드 상태(61개 전부 hold) 그대로 재생성하면 `packs`·`assets`가 비어 배치 가능이 0이 된다. 재생성은 소유자가
+팩을 allow로 연 뒤에야 의미가 있다. 재생성 전에는 업로드하지 않는다(theme-packs가 원장보다 오래되면 플래너가
+`--production`을 거부한다). 또한 커밋된 스냅샷은 그때까지 원장이 hold로 둔 팩의 원본 경로와 sha256을 공개 JSON으로
+계속 열거한다 — 키를 불투명하게 해도 목록 자체는 공개 데이터에 있다.
+
 ## 배포 (bundle-v2 → R2) — migration (2026-10-22 레포 측 완성, 실배포는 소유자 실행 대기)
 
 - 서빙 경로: `/assets/studio/bundle-v2/<sha256>.glb`. 실물은 레포·
@@ -132,16 +170,24 @@ node scripts/generate-creator-bundle-theme-packs.mjs \
   객체로 합쳐지며, 내용이 바뀌면 키가 바뀌므로 immutable 1년 캐시가 안전하다. theme-packs.json이
   sha256을 공개하므로 키는 공개 데이터에서 계산된다. 불투명 키는 URL 추측·열거를 어렵게 하는
   핫링크 억제책일 뿐 법적 허락이 아니다. 키 방식 확정은 첫 업로드 전에만 비용이 0이라 소유자
-  결정 대기 항목이다.
+  결정 대기 항목이다. 현재 구현은 sha256 키와 동일 출처 가드가 유일한 방식이며, 되돌리려면 로더·플래너·Worker·
+  테스트를 함께 바꿔야 한다. Worker는 소문자 hex 64자 키(`<sha256>.glb`)만 서빙하므로, 원본 경로 키로
+  올라간 객체가 R2에 남아 있어도 열리지 않는다(경로형 GLB 요청은 대형 에셋 파이프라인에 매칭되지 않는다).
 - Worker 가드: bundle-v2 경로(GLB와 배포 인덱스)에만 교차 출처 CORS를 열지 않는다. 브라우저가
   보낸 `Sec-Fetch-Site`가 `same-origin`이 아니면(`same-site`·`cross-site`·`none` 포함) R2에 닿기
   전에 403 `BUNDLE_ASSET_SAME_ORIGIN_ONLY`로 거부하고, 헤더가 없는 호출(curl·구형 브라우저)은
   허용한다. 응답은 `access-control-allow-origin`을 달지 않고 `Vary: Sec-Fetch-Site`를 붙인다.
-  다른 R2 경로(wasm·onnx·CC0 GLB·투어 영상)의 응답은 그대로다. 접근 통제가 아니라 브라우저
-  경유 핫링크·임베드·주소창 직접 열기를 막는 억제책이며, 헤더를 생략하는 클라이언트는 막지 못한다.
-- 플래너는 권리 원장에서 allow인 팩의 에셋만 계획에 넣는다. hold·미등록 팩의 에셋은 실물을
-  읽지 않고 제외하며, 제외 에셋이 생기면(theme-packs가 원장보다 오래됨) 경고하고 `--production`을
-  거부한다. 허용된 에셋이 하나도 없으면 `--write`·`--production`을 거부한다.
+  R2에 객체가 없으면 `LARGE_ASSET_ORIGIN` 폴백으로 넘기지 않고 `503 LARGE_ASSET_UNAVAILABLE`로 닫아, 폴백
+  원본의 CORS 헤더가 가드 계약을 깨지 못하게 한다. 다른 R2 경로(wasm·onnx·CC0 GLB·투어 영상)의 응답은
+  그대로다. 접근 통제가 아니라 브라우저 경유 핫링크·임베드·주소창 직접 열기를 막는 억제책이며,
+  헤더를 생략하는 클라이언트는 막지 못한다 — 올라간 팩의 바이트는 사실상 공개라고 보아야 한다. 권리 원장은
+  Worker가 아니라 업로드 단계(플래너)에서만 강제된다.
+- 플래너는 권리 원장에서 allow인 배치 가능 팩(`group: pack`)의 에셋만 계획에 넣는다. hold·미등록 팩, 묶음·제목·
+  제작사가 원장과 다른 팩, theme-packs의 권리 블록이 원장 투영과 다르거나 없는 팩(`rights-drift`)의 에셋은 실물을
+  읽지 않고 제외하며, 제외 에셋이 생기면(theme-packs가 원장보다 오래됨) 경고하고 `--production`을 거부한다.
+  허용된 에셋이 하나도 없으면 `--write`·`--production`을 거부한다. 에셋 경로는 에셋 루트 상대 경로여야 하고
+  소속 팩의 `ingestPackIds` 폴더 아래여야 한다(로더와 같은 규칙). 다른 팩 폴더나 루트 밖 파일은 허용된 팩의
+  이름으로 올라갈 수 없다.
 - 객체 목록 기록: `deploy/cloudflare-static/bundle-v2-deploy-manifest.json`은 2026-10-22 산출
   스냅샷(GLB 5,303개·588,132,208바이트 + 배포 인덱스 1개 = 5,304객체·588,132,367바이트)이며
   원본 경로 키·hold 팩 객체를 포함하는 **원장 이전 기록**이다. 업로드의 입력이 아니므로(업로드는
@@ -167,10 +213,16 @@ pnpm run deploy:creator-bundle-assets -- --asset-root <output-v2 트리>
 ```
 
 - 성공 기준: 업로드 완료 로그 + 패널에서 배포 상태가 "가능"으로 바뀌고 임의
-  에셋 1개가 장면에 배치되는 것. 실패 시: 인덱스가 없거나 합계가 어긋나면
-  패널은 자동으로 미배포 상태로 남는다 (부분 업로드가 배치 가능으로
-  오인되지 않는다). 롤백은 R2 객체 삭제가 아니라 인덱스 객체 삭제만으로
-  배치를 닫을 수 있다.
+  에셋 1개가 장면에 배치되는 것. 실패 시: 인덱스가 없거나 합계가 어긋나거나 키 방식(`keyScheme`)이 sha256이
+  아니면 패널은 자동으로 미배포 상태로 남는다 (부분 업로드·옛 방식 인덱스가 배치 가능으로 오인되지 않는다).
+  패널을 닫는 롤백은 인덱스 객체 삭제만으로 된다. 서비스 워커가 인덱스를 영구 캐시하면 이 신호가 사용자에게
+  닿지 않으므로 `studio-service-worker-policy.ts`가 인덱스를 `passthrough`(캐시하지 않음)로 분류한다. sha256 키
+  GLB는 내용 주소라 `/assets/` immutable 규칙 그대로 둔다.
+- 권리 철회(allow → hold)는 인덱스 삭제로 끝나지 않는다. Worker는 인덱스와 무관하게 `<sha256>.glb` 키를 직접
+  서빙하므로, 이미 올라간 팩의 권리를 철회하면 해당 R2 객체를 소유자가 직접 삭제해야 한다. 삭제 대상 키는 그
+  팩의 `assets[].sha256`로 계산한 `assets/studio/bundle-v2/<sha256>.glb`이고, 재생성 전 theme-packs.json
+  스냅샷에서 구한다(서비스 워커·브라우저에 이미 캐시된 사본은 만료되기 전까지 남는다). 플래너는 R2 객체를
+  지우지 않으며 이 변경도 삭제 기능을 두지 않았다.
 - 배포 후 스모크(Worker 반영 뒤): `Sec-Fetch-Site: cross-site`로 GLB를 요청해 403,
   헤더 없이 요청해 200(ACAO 없음, `Vary: Sec-Fetch-Site` 있음)임을 확인한다.
 
@@ -179,7 +231,8 @@ pnpm run deploy:creator-bundle-assets -- --asset-root <output-v2 트리>
 - 제작사 서면 확인 발송 여부와 내용(Q1 웹 서비스 안 GLB 서빙, Q2 직접 URL 접근이 독립 파일
   재배포인지, Q3 변환·WebP 파생 GLB 호스팅, Q4 유료 멤버십 포함, Q5 다수 사용자).
 - itch 번들 영수증·약관, 팩 페이지 캡처(조회일 포함) 제공.
+- allow 요구 증빙 표(분류별)와 서면 확인 인정 범위(현재 `web-service-hosting` 한 가지). 질문서 초안 작성과 발송.
 - hold 팩 최종 확정. 권고는 Restaurant 1,023 · Medieval 1,265 · Small Props 342를 서면 확인 전까지
   제외하는 것이다.
 - R2 키 불투명화 최종 확정, 텍스처 교정 범위와 손실 허용선, theme-packs 캐시 정책, 번들 총량 상한.
-- `ASSET-INVENTORY.md` §3 정책 개정(제안만 기록됨).
+- `ASSET-INVENTORY.md` §3 정책 개정(제안만 기록됨)과 `THIRD_PARTY_NOTICES`의 번들 항목(§3.2 결정 뒤 작업).
