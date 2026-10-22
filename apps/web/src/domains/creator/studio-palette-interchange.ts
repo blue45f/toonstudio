@@ -41,9 +41,14 @@ export type StudioPaletteInterchangeWarningCode =
   | "unknown-block-skipped"
   | "wide-gamut-clipped";
 
+/** 같은 경고 코드라도 방출 지점(형식·방향)마다 원문이 달라 리졸버 키를 가르는 접미사. */
+export type StudioPaletteInterchangeWarningVariant =
+  | "aco" | "act" | "ase" | "css" | "export" | "gpl" | "import" | "json";
+
 export interface StudioPaletteInterchangeWarning {
   readonly code: StudioPaletteInterchangeWarningCode;
-  readonly message: string;
+  readonly variant?: StudioPaletteInterchangeWarningVariant;
+  readonly params?: Readonly<Record<string, string>>;
 }
 
 export interface StudioPaletteInterchangeImportResult {
@@ -68,17 +73,14 @@ export type StudioPaletteInterchangeErrorCode =
   | "size"
   | "unsupported-version";
 
-const ERROR_MESSAGES: Readonly<Record<StudioPaletteInterchangeErrorCode, string>> = Object.freeze({
-  empty: "팔레트 파일이 비어 있습니다.",
-  invalid: "팔레트 파일 구조가 올바르지 않거나 손상되었습니다.",
-  "no-colors": "팔레트에서 읽을 수 있는 색을 찾지 못했습니다.",
-  size: "팔레트 파일이 4MB 안전 처리 한도를 초과했습니다.",
-  "unsupported-version": "아직 지원하지 않는 팔레트 파일 버전입니다.",
-});
-
+/**
+ * A4 D4 (R11): 생산자는 표시 문구 대신 구조화 코드만 방출한다(message = 코드).
+ * 문구는 표시 지점에서 리졸버(status-i18n/studio-producer-error-i18n.ts의
+ * palette 구간 — resolveStudioPaletteInterchangeError)로 해석한다.
+ */
 export class StudioPaletteInterchangeError extends Error {
   constructor(readonly code: StudioPaletteInterchangeErrorCode, options?: ErrorOptions) {
-    super(ERROR_MESSAGES[code], options);
+    super(code, options);
     this.name = "StudioPaletteInterchangeError";
   }
 }
@@ -193,9 +195,10 @@ function parseCssColorToken(value: string): ParsedColorToken | null {
 
 function warning(
   code: StudioPaletteInterchangeWarningCode,
-  message: string
+  params?: Readonly<Record<string, string>>,
+  variant?: StudioPaletteInterchangeWarningVariant
 ): StudioPaletteInterchangeWarning {
-  return { code, message };
+  return { code, ...(variant ? { variant } : {}), ...(params ? { params } : {}) };
 }
 
 function uniqueWarnings(
@@ -203,7 +206,7 @@ function uniqueWarnings(
 ): StudioPaletteInterchangeWarning[] {
   const seen = new Set<string>();
   return warnings.filter((item) => {
-    const key = `${item.code}:${item.message}`;
+    const key = `${item.code}:${item.variant ?? ""}:${JSON.stringify(item.params ?? {})}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -219,7 +222,7 @@ function finalizeImport(
   if (colors.length === 0) fail("no-colors");
   const truncated = colors.length > STUDIO_PALETTE_INTERCHANGE_LIMITS.maxColors;
   if (truncated) {
-    warnings.push(warning("truncated", `색 ${STUDIO_PALETTE_INTERCHANGE_LIMITS.maxColors}개까지만 가져왔습니다.`));
+    warnings.push(warning("truncated", { max: String(STUDIO_PALETTE_INTERCHANGE_LIMITS.maxColors) }, "import"));
   }
   return {
     palette: {
@@ -255,18 +258,18 @@ function prepareExport(
     }
     const alpha = candidate.alpha ?? parsed.alpha;
     if (Number.isFinite(alpha) && alpha < 1) {
-      warnings.push(warning("alpha-discarded", "Studio 팔레트는 불투명 sRGB 스와치만 보존하므로 알파를 제거했습니다."));
+      warnings.push(warning("alpha-discarded"));
     }
     if (candidate.colorSpace && candidate.colorSpace !== "srgb") {
-      warnings.push(warning("wide-gamut-clipped", "광색역 색은 현재 sRGB 헥스 값으로 클리핑해 저장했습니다."));
+      warnings.push(warning("wide-gamut-clipped"));
     }
     colors.push({ hex: parsed.hex, ...(candidate.name ? { name: cleanName(candidate.name, "색상") } : {}) });
   }
   const truncated = colors.length > maxColors;
-  if (truncated) warnings.push(warning("truncated", `색 ${maxColors}개까지만 내보냈습니다.`));
+  if (truncated) warnings.push(warning("truncated", { max: String(maxColors) }, "export"));
   const limited = colors.slice(0, maxColors);
   if (limited.length === 0) fail("no-colors");
-  if (skippedColors > 0) warnings.push(warning("color-skipped", `해석할 수 없는 색 ${skippedColors}개를 건너뛰었습니다.`));
+  if (skippedColors > 0) warnings.push(warning("color-skipped", { count: String(skippedColors) }));
   return {
     colors: limited,
     name: cleanName(palette.name, "ToonStudio 팔레트"),
@@ -467,15 +470,15 @@ export function importAdobeAsePalette(input: Uint8Array | ArrayBuffer): StudioPa
       const hex = aseColor(block, model);
       if (hex === null) {
         skippedColors++;
-        warnings.push(warning("color-skipped", `지원하지 않는 ASE 색공간 “${model.trim()}” 색을 건너뛰었습니다.`));
+        warnings.push(warning("color-skipped", { model: model.trim() }, "ase"));
         continue;
       }
       block.u16(); // global/spot/normal — Studio has no swatch-type distinction.
       if (block.remaining !== 0) fail("invalid");
-      if (model !== "RGB ") warnings.push(warning("non-rgb-converted", "ASE의 Lab/CMYK/Gray 색을 표시용 sRGB로 변환했습니다."));
+      if (model !== "RGB ") warnings.push(warning("non-rgb-converted", undefined, "ase"));
       colors.push({ hex, name });
     } else {
-      warnings.push(warning("unknown-block-skipped", "알 수 없는 ASE 확장 블록을 안전하게 건너뛰었습니다."));
+      warnings.push(warning("unknown-block-skipped"));
     }
   }
   if (cursor.remaining !== 0) fail("invalid");
@@ -589,8 +592,8 @@ export function importAdobeAcoPalette(input: Uint8Array | ArrayBuffer): StudioPa
   const selected = second ?? first;
   const warnings: StudioPaletteInterchangeWarning[] = [];
   const skipped = first.skipped + (second?.skipped ?? 0);
-  if (selected.converted) warnings.push(warning("non-rgb-converted", "ACO의 HSB/Lab/CMYK/Gray 색을 표시용 sRGB로 변환했습니다."));
-  if (skipped > 0) warnings.push(warning("color-skipped", `지원하지 않는 ACO 색공간 색 ${skipped}개를 건너뛰었습니다.`));
+  if (selected.converted) warnings.push(warning("non-rgb-converted", undefined, "aco"));
+  if (skipped > 0) warnings.push(warning("color-skipped", { count: String(skipped) }, "aco"));
   return finalizeImport("Adobe ACO 팔레트", selected.colors, skipped, warnings);
 }
 
@@ -632,10 +635,7 @@ function warningsForNamelessPalette(
   const warnings = [...prepared.warnings];
   const namedColors = prepared.colors.filter((color) => Boolean(color.name)).length;
   if (namedColors > 0) {
-    warnings.push(warning(
-      "names-discarded",
-      `${formatLabel} 형식은 색 이름을 저장하지 않아 이름 ${namedColors}개를 제외했습니다.`
-    ));
+    warnings.push(warning("names-discarded", { format: formatLabel, count: String(namedColors) }));
   }
   return uniqueWarnings(warnings);
 }
@@ -670,10 +670,7 @@ export function importAdobeActPalette(
   }
   const warnings = transparentIndex === 0xffff
     ? []
-    : [warning(
-      "alpha-discarded",
-      `ACT 투명 색 인덱스 ${transparentIndex}는 현재 불투명 Studio 스와치로 가져와 투명도를 제거했습니다.`
-    )];
+    : [warning("alpha-discarded", { index: String(transparentIndex) }, "act")];
   return finalizeImport("Adobe ACT 팔레트", colors, 0, warnings);
 }
 
@@ -757,7 +754,7 @@ export function importGplPalette(input: string | Uint8Array): StudioPaletteInter
       parsed.colors.map((color) => ({ hex: color.hex, ...(color.name ? { name: color.name } : {}) })),
       parsed.skippedLines,
       parsed.skippedLines > 0
-        ? [warning("color-skipped", `해석할 수 없는 GPL 줄 ${parsed.skippedLines}개를 건너뛰었습니다.`)]
+        ? [warning("color-skipped", { count: String(parsed.skippedLines) }, "gpl")]
         : []
     );
   } catch (error) {
@@ -793,10 +790,10 @@ export function importCssVariablePalette(input: string | Uint8Array): StudioPale
       skipped++;
       continue;
     }
-    if (parsed.alpha < 1) warnings.push(warning("alpha-discarded", "CSS 색상의 알파를 제거하고 불투명 sRGB 스와치로 가져왔습니다."));
+    if (parsed.alpha < 1) warnings.push(warning("alpha-discarded", undefined, "css"));
     colors.push({ hex: parsed.hex, name: cleanName(match[1]!.replaceAll("-", " "), "색상") });
   }
-  if (skipped > 0) warnings.push(warning("color-skipped", `색으로 해석할 수 없는 CSS 변수 ${skipped}개를 건너뛰었습니다.`));
+  if (skipped > 0) warnings.push(warning("color-skipped", { count: String(skipped) }, "css"));
   return finalizeImport("CSS 변수 팔레트", colors, skipped, warnings);
 }
 
@@ -869,13 +866,13 @@ export function importJsonPalette(input: string | Uint8Array): StudioPaletteInte
       skipped++;
       continue;
     }
-    if (rawAlpha < 1) warnings.push(warning("alpha-discarded", "JSON 팔레트의 알파를 제거하고 불투명 sRGB 스와치로 가져왔습니다."));
+    if (rawAlpha < 1) warnings.push(warning("alpha-discarded", undefined, "json"));
     const sourceSpace = isRecord(candidate) && typeof candidate.colorSpace === "string" ? candidate.colorSpace : "srgb";
-    if (sourceSpace !== "srgb") warnings.push(warning("wide-gamut-clipped", "JSON 광색역 표시는 sRGB 헥스 값으로 클리핑해 가져왔습니다."));
+    if (sourceSpace !== "srgb") warnings.push(warning("wide-gamut-clipped", undefined, "json"));
     const name = isRecord(candidate) && typeof candidate.name === "string" ? cleanName(candidate.name, "색상") : undefined;
     colors.push({ hex: parsed.hex, ...(name ? { name } : {}) });
   }
-  if (skipped > 0) warnings.push(warning("color-skipped", `해석할 수 없는 JSON 색 ${skipped}개를 건너뛰었습니다.`));
+  if (skipped > 0) warnings.push(warning("color-skipped", { count: String(skipped) }, "json"));
   return finalizeImport(typeof value.name === "string" ? value.name : "JSON 팔레트", colors, skipped, warnings);
 }
 
