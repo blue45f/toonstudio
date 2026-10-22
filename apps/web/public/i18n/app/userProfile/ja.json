@@ -20,8 +20,8 @@
   "userProfile.metaTemplate": "{author} プロフィール · {reviews} レビュー · {works} 作品 · 平均評価 {avg} — ToonStudio。",
   "userProfile.tabsLabel": "プロフィールの内容",
   "userProfile.tabs.works": "制作した作品",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "制作した作品を読み込めませんでした。もう一度お試しください。",
+  "userProfile.series.error": "シリーズを読み込めませんでした。もう一度お試しください。",
+  "userProfile.emptyReviewsHint": "気に入った作品に最初のレビューを書いてみましょう。",
+  "userProfile.emptyReviewsCta": "作品を探す"
 }

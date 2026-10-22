@@ -78,11 +78,11 @@
   "search.explorer.time.justNow": "たった今更新されました",
   "search.explorer.time.hoursAgo": "{count}時間前",
   "search.explorer.time.daysAgo": "{count}日前",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "人気の検索キーワード",
+  "search.explorer.suggestions.genres": "おすすめジャンル",
+  "search.explorer.suggestions.searchFor": "{query}を検索",
+  "search.explorer.suggestions.genreFilter": "ジャンル「{genre}」で絞り込む",
+  "search.explorer.suggestions.loading": "おすすめの検索キーワードを読み込み中",
+  "search.explorer.suggestions.error": "おすすめの検索キーワードを読み込めませんでした。しばらくしてからもう一度お試しください。",
+  "search.explorer.suggestions.empty": "今はおすすめの検索キーワードがありません。作品名・作者・タグを直接入力してみてください。"
 }
