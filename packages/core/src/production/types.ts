@@ -1,3 +1,5 @@
+import type { ProductionRisk, ProductionRiskAssessment, ProductionRiskPolicy, ProductionRiskResponse, ProductionRiskSignal } from "./risk-types";
+
 export const PRODUCTION_MODEL_VERSION = 2 as const;
 export const PRODUCTION_RISK_MODEL_VERSION = 2 as const;
 
@@ -1008,21 +1010,7 @@ export interface AssetRequirement {
   readonly status: "identified" | "sourcing" | "ready" | "blocked" | "cancelled";
 }
 
-export type {
-  ProductionRiskCategory,
-  ProductionRiskSeverity,
-  ProductionRiskResponseStatus,
-  ProductionRiskStatus,
-  ProductionRiskSource,
-  ProductionRiskSignalState,
-  ProductionRiskConfidence,
-  ProductionRiskPolicy,
-  ProductionRiskEvidence,
-  ProductionRiskSignal,
-  ProductionRiskResponse,
-  ProductionRiskAssessment,
-  ProductionRisk,
-} from "./risk-types";
+export type { ProductionRiskCategory, ProductionRiskSeverity, ProductionRiskResponseStatus, ProductionRiskStatus, ProductionRiskSource, ProductionRiskSignalState, ProductionRiskConfidence, ProductionRiskPolicy, ProductionRiskEvidence, ProductionRiskSignal, ProductionRiskResponse, ProductionRiskAssessment, ProductionRisk } from "./risk-types";
 
 export interface DecisionRecord {
   readonly id: string;

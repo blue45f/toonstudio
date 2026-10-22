@@ -165,6 +165,15 @@ import type { ReactElement } from "react";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
+// ── 마네킹 포즈 실루엣 (측면 스틱 피규어) ─────────────────────────────────
+// 프리셋마다 "이게 어떤 포즈인지" 10초 안에 파악할 수 있게, 실제 관절 각도에서
+// 그린 실루엣 미니어처다. 이미지 에셋이 없어도 동작하는 순수 SVG라
+// 다크/라이트·모바일·reduced-motion 대응이 자동으로 된다.
+// 좌표 감각(studio-mannequin-poses.ts): 몸통 X+ = 앞으로 숙임,
+// 팔다리 X− = 앞으로 스윙, 팔꿈치 X− = 앞굽힘, 무릎 X+ = 뒤굽힘.
+
+import { StudioMannequinPoseSection } from "./StudioMannequinPoserPoseSection";
+
 export type { StudioMannequinCaptureResult } from "./studio-mannequin-scene";
 
 export interface StudioMannequinPoserPanelProps {
@@ -420,15 +429,6 @@ export function StudioMannequinBodySection({
     </div>
   );
 }
-
-// ── 마네킹 포즈 실루엣 (측면 스틱 피규어) ─────────────────────────────────
-// 프리셋마다 "이게 어떤 포즈인지" 10초 안에 파악할 수 있게, 실제 관절 각도에서
-// 그린 실루엣 미니어처다. 이미지 에셋이 없어도 동작하는 순수 SVG라
-// 다크/라이트·모바일·reduced-motion 대응이 자동으로 된다.
-// 좌표 감각(studio-mannequin-poses.ts): 몸통 X+ = 앞으로 숙임,
-// 팔다리 X− = 앞으로 스윙, 팔꿈치 X− = 앞굽힘, 무릎 X+ = 뒤굽힘.
-
-import { StudioMannequinPoseSection } from "./StudioMannequinPoserPoseSection";
 
 export { StudioMannequinPoseSection };
 
@@ -862,11 +862,12 @@ export function StudioMannequinPoserPanel({
     setParams(nextParams);
   }, []);
 
-  const commitPose = useCallback((nextPose: StudioMannequinPose) => {
+  const commitPose = useCallback((nextPose: StudioMannequinPose): StudioMannequinPose => {
     stateRevisionRef.current += 1;
     poseRef.current = nextPose;
     stateRef.current = { ...stateRef.current, pose: nextPose };
     setPose(nextPose);
+    return nextPose;
   }, []);
 
   /** 사용자 결정 직전에 현재 포즈를 히스토리에 기록한다. 웹캠 루프에서는 호출하지 않는다. */
@@ -875,17 +876,12 @@ export function StudioMannequinPoserPanel({
     setPoseHistorySnapshot(poseHistoryRef.current);
   }
 
-  /**
-   * 사용자 결정(프리셋·미러·초기화·사진 적용 등)으로 포즈를 바꿀 때 사용한다. 자동 접지가 켜져 있으면 커밋 전에 발 관통을 골반 오프셋으로 보정한다.
-   * 실제로 커밋한 포즈(보정 후)를 돌려준다 — 호출한 쪽이 "방금 내가 적용한 포즈"와 이후 pose 상태를 같은 객체로 견줄 수 있다.
-   */
+  /** 사용자 결정(프리셋·미러·초기화·사진 적용 등)으로 포즈를 바꿀 때 사용한다. 자동 접지가 켜져 있으면 커밋 전에 발 관통을 골반 오프셋으로 보정하고, 커밋한 포즈를 돌려준다. */
   const commitPoseWithHistory = useCallback(
     (nextPose: StudioMannequinPose): StudioMannequinPose => {
       recordPoseHistory();
       rotateGestureRecordedRef.current = true;
-      const committed = groundFootPose(nextPose, stateRef.current.params).pose;
-      commitPose(committed);
-      return committed;
+      return commitPose(groundFootPose(nextPose, stateRef.current.params).pose);
     },
     [commitPose, groundFootPose],
   );
@@ -1662,8 +1658,6 @@ export function StudioMannequinPoserPanel({
       return false;
     }
 
-    // 자동 접지가 골반을 보정하면 커밋되는 포즈는 plan.pose 와 다른 객체다. 보정 후 포즈를 기준으로 삼아야
-    // "포즈가 바뀌면 배너를 닫는" 효과가 방금 적용한 결과를 사용자 편집으로 오인해 배너를 곧바로 닫지 않는다.
     photoPoseAppliedPoseRef.current = commitPoseWithHistory(plan.pose);
     setPhotoPoseApplyStatus({
       sourceName: payload.sourceName,

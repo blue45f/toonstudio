@@ -27,11 +27,10 @@ import {
   type PsdLayerMaskRasterResult,
   type PsdLayerMaskSource,
 } from "./studio-psd-mask-import";
-import type { RawFlattenedLeaf } from "./studio-psd-import-types";
+import type { PsdImportedElement, PsdImportedAdjustmentLayer, PsdImportResult, PsdImportEncodedPngMemory, PsdInterchangeContainer, PsdInterchangeDisposition, PsdInterchangeFeature, PsdInterchangeProfile, PsdInterchangeLossDecision, PsdInterchangeLossManifest, PsdHeaderInfo, PsdImportPreflight, PsdImportDeps, FlattenedPsdLayer, RawFlattenedLeaf } from "./studio-psd-import-types";
+import type { StudioPsdFolder } from "./export/studio-psd-folder-structure";
 
-export type {
-  PsdImportedElement, PsdImportedAdjustmentLayer, PsdImportResult, PsdImportEncodedPngMemory, PsdInterchangeContainer, PsdInterchangeDisposition, PsdInterchangeFeature, PsdInterchangeProfile, PsdInterchangeLossDecision, PsdInterchangeLossManifest, PsdHeaderInfo, PsdImportPreflight, PsdImportDeps, FlattenedPsdLayer
-} from "./studio-psd-import-types";
+export type { PsdImportedElement, PsdImportedAdjustmentLayer, PsdImportResult, PsdImportEncodedPngMemory, PsdInterchangeContainer, PsdInterchangeDisposition, PsdInterchangeFeature, PsdInterchangeProfile, PsdInterchangeLossDecision, PsdInterchangeLossManifest, PsdHeaderInfo, PsdImportPreflight, PsdImportDeps, FlattenedPsdLayer };
 
 
 function clamp01(n: number): number {
