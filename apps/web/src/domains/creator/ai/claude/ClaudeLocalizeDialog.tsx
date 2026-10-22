@@ -11,7 +11,7 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
 import { Languages, LoaderCircle, RefreshCw, Sparkles, Square } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { CLAUDE_PRESET_IDS, resolveClaudePreset, type ClaudePresetId } from "@/shared/ai/claude/claude-effort-presets";
@@ -31,8 +31,10 @@ import { estimateLocalizeCostCapUsd, runLocalize, type LocalizeRunResult } from 
 import { ClaudeDialogFrame, ClaudeShortcutHint } from "./ClaudeDialogFrame";
 import { ClaudeLocalizeResult } from "./ClaudeLocalizeResult";
 import { ClaudeLocalizeSetup } from "./ClaudeLocalizeSetup";
-import { useRevealOnChange } from "./use-reveal-on-change";
+import { ClaudeTaskStatus } from "./ClaudeTaskStatus";
 import { useClaudeTask } from "./use-claude-task";
+import { useRevealOnChange } from "./use-reveal-on-change";
+import { useRunFocus } from "./use-run-focus";
 
 interface LocalizeOutcome {
   readonly run: LocalizeRunResult;
@@ -43,6 +45,9 @@ interface LocalizeOutcome {
 export interface ClaudeLocalizeDialogProps {
   readonly onClose: () => void;
 }
+
+/** 이 줄 수를 넘으면 나눠서 번역하라고 권한다(깊이가 높고 글자 폭 예산이 있으면 응답이 길어져 잘릴 수 있다). */
+const MANY_LINES = 25;
 
 function sameLines(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((line, index) => line === b[index]);
@@ -62,12 +67,14 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
   // 실행이 끝날 때마다 하나씩 올라가는 표식. 결과가 나오면 좁은 화면에서도 결과가 보이도록 스크롤한다.
   const [finishedRuns, setFinishedRuns] = useState(0);
   const resultRef = useRevealOnChange<HTMLDivElement>(finishedRuns);
+  const idBase = useId();
 
   const running = task.running;
+  const { runRef, stopRef } = useRunFocus(running);
   const connectionModel = route?.model ?? "";
 
   const parsed = useMemo(() => parseLocalizeLines(text), [text]);
-  const problem = useMemo(() => findLinesProblem(parsed.lines), [parsed.lines]);
+  const problem = useMemo(() => findLinesProblem(parsed.lines, parsed.lineNumbers), [parsed.lineNumbers, parsed.lines]);
   const glossary = useMemo(() => parseGlossary(form.glossaryText), [form.glossaryText]);
   const totalChars = useMemo(() => parsed.lines.reduce((sum, line) => sum + [...line].length, 0), [parsed.lines]);
 
@@ -86,7 +93,9 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
     () => resolveClaudePreset(form.presetId, connectionModel, { customModel: form.customModel, customDepth: form.customDepth }),
     [connectionModel, form.customDepth, form.customModel, form.presetId],
   );
-  const sendable = problem === null;
+  // 원문과 번역할 언어가 같으면 요금만 나가고 달라지는 것이 없다. 보내기 전에 막고 이유를 알린다.
+  const sameLanguage = form.sourceLang !== "auto" && form.sourceLang === form.targetLang;
+  const sendable = problem === null && !sameLanguage;
   const caps = useMemo(() => {
     const entries = CLAUDE_PRESET_IDS.map((id: ClaudePresetId) => {
       if (!sendable) return [id, undefined] as const;
@@ -95,7 +104,8 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
     });
     return Object.fromEntries(entries) as Record<ClaudePresetId, number | null | undefined>;
   }, [connectionModel, form.customDepth, form.customModel, input, sendable]);
-  const capUsd = sendable ? caps[form.presetId] ?? null : null;
+  // 보낼 수 있는 입력이 아직 없으면 계산할 수 없다(undefined). "단가를 모른다"(null)와 구분해야 입력 전에 가짜 경고가 뜨지 않는다.
+  const capUsd = sendable ? caps[form.presetId] ?? null : undefined;
   const guard = useClaudeBudgetGuard(capUsd);
 
   const patchForm = useCallback((patch: Partial<LocalizeForm>) => {
@@ -108,10 +118,12 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
     if (!canRun) return;
     const claudeRoute = resolveClaudeRoute();
     const runInput = input;
+    // 동의는 이 요청에 한 번만 쓴다. 보내기 전에 값을 읽어 전송 계층의 예산 판정에 넘기고 동의를 거둔다.
+    const budgetOverride = guard.overridden;
     guard.consumeOverride();
     const result = await task.start(async (signal) => {
       if (!claudeRoute) throw new Error(t("claudeAssist.common.needConnection"));
-      return runLocalize(claudeRoute, runInput, { model: resolved.model, depth: resolved.depth, signal });
+      return runLocalize(claudeRoute, runInput, { model: resolved.model, depth: resolved.depth, signal, budgetOverride });
     });
     if (!result) return;
     setOutcome({ run: result, input: runInput });
@@ -141,30 +153,36 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
     ? null
     : problem?.kind === "empty"
       ? t("claudeAssist.localize.needLines")
-      : !guard.allowed
-        ? t("claudeAssist.art.needBudget")
-        : null;
-  const describedBy = needHint ? "claude-localize-need-hint" : problemText ? "claude-localize-problem" : undefined;
+      : sameLanguage
+        ? t("claudeAssist.localize.sameLanguage")
+        : !guard.allowed
+          ? t("claudeAssist.art.needBudget")
+          : null;
+  const hintId = `${idBase}-need-hint`;
+  const problemId = `${idBase}-problem`;
+  const linesId = `${idBase}-lines`;
+  const linesHintId = `${idBase}-lines-hint`;
+  const describedBy = needHint ? hintId : problemText ? problemId : undefined;
 
   const footer = (
     <div className="flex flex-wrap items-center gap-3">
-      <button type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={!canRun} aria-describedby={describedBy} onClick={() => void run()}>
+      <button ref={runRef} type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={!canRun} aria-describedby={describedBy} onClick={() => void run()}>
         {running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : hasResult ? <RefreshCw size={16} aria-hidden /> : <Sparkles size={16} aria-hidden />}
         {hasResult && !running ? t("claudeAssist.localize.rerun") : t("claudeAssist.localize.run")}
       </button>
       {running ? (
-        <button type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
+        <button ref={stopRef} type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
           <Square size={14} aria-hidden />
           {t("claudeAssist.common.stop")}
         </button>
       ) : null}
-      {capUsd !== null && sendable ? (
+      {typeof capUsd === "number" ? (
         <span className="text-xs font-semibold text-fg-2" data-claude-footer-cap="true">
           {t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) })}
         </span>
       ) : null}
       <span className="ml-auto flex items-center gap-3">
-        {needHint ? <span id="claude-localize-need-hint" className="text-xs text-fg-3">{needHint}</span> : null}
+        {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
         <ClaudeShortcutHint action={t("claudeAssist.common.shortcutRun")} />
       </span>
     </div>
@@ -184,7 +202,7 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="min-w-0 space-y-2 lg:sticky lg:top-0 lg:self-start">
           <div className="flex items-center justify-between gap-2">
-            <label htmlFor="claude-localize-lines" className="text-xs font-bold text-fg-2">{t("claudeAssist.localize.linesLabel")}</label>
+            <label htmlFor={linesId} className="text-xs font-bold text-fg-2">{t("claudeAssist.localize.linesLabel")}</label>
             {text.length === 0 ? (
               <button type="button" className={cn(CLAUDE_QUIET_BUTTON, "min-h-11 px-2 text-xs")} disabled={running} onClick={() => setText(t("claudeAssist.localize.sampleText"))}>
                 {t("claudeAssist.localize.sample")}
@@ -196,23 +214,24 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
             )}
           </div>
           <textarea
-            id="claude-localize-lines"
+            id={linesId}
             data-claude-initial-focus
             className={cn(CLAUDE_INPUT, "min-h-56 resize-y font-medium leading-relaxed lg:min-h-80")}
             value={text}
             disabled={running}
             spellCheck={false}
             placeholder={t("claudeAssist.localize.linesPlaceholder")}
-            aria-describedby="claude-localize-lines-hint"
+            aria-describedby={linesHintId}
             aria-invalid={problemText ? true : undefined}
             onChange={(event) => setText(event.target.value)}
           />
-          <div id="claude-localize-lines-hint" className="space-y-0.5 text-xs text-fg-3">
+          <div id={linesHintId} className="space-y-0.5 text-xs text-fg-3">
             <p>{t("claudeAssist.localize.linesHint")}</p>
             <p data-claude-localize-count="true">{t("claudeAssist.localize.lineCount", { count: parsed.lines.length, max: LOCALIZE_LIMITS.maxLines })}</p>
             {parsed.lines.length > 0 && parsed.skippedEmpty > 0 ? <p>{t("claudeAssist.localize.skippedEmpty", { count: parsed.skippedEmpty })}</p> : null}
+            {parsed.lines.length > MANY_LINES ? <p data-claude-many-lines="true">{t("claudeAssist.localize.manyLinesHint", { count: parsed.lines.length })}</p> : null}
           </div>
-          {problemText ? <p id="claude-localize-problem" role="status" className="text-xs font-semibold text-warn">{problemText}</p> : null}
+          {problemText ? <p id={problemId} role="status" className="text-xs font-semibold text-warn">{problemText}</p> : null}
         </div>
 
         <div className="min-w-0 space-y-4">
@@ -229,6 +248,9 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
             model={resolved.model}
             capUsd={capUsd}
             guard={guard}
+            summary={parsed.lines.length > 0
+              ? t("claudeAssist.localize.preflightTransfer", { count: parsed.lines.length, chars: totalChars, terms: glossary.entries.length })
+              : t("claudeAssist.localize.preflightTransferNone")}
             rows={[
               {
                 label: t("claudeAssist.preflight.transfer"),
@@ -242,11 +264,16 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
             ]}
           />
 
-          <div role="status" aria-live="polite" className={cn("min-h-5 text-sm text-fg-2", running && "font-semibold")}>
-            {running ? `${t("claudeAssist.localize.running")} · ${t("claudeAssist.common.elapsed", { seconds: task.elapsedSeconds })}` : null}
-            {task.state.status === "stopped" ? t("claudeAssist.localize.stopped") : null}
-            {task.state.status === "idle" && outcome ? t("claudeAssist.localize.done") : null}
-          </div>
+          <ClaudeTaskStatus
+            running={running}
+            elapsedSeconds={task.elapsedSeconds}
+            runningText={t("claudeAssist.localize.running")}
+            message={task.state.status === "stopped"
+              ? t("claudeAssist.localize.stopped")
+              : task.state.status === "idle" && outcome
+                ? t("claudeAssist.localize.done")
+                : null}
+          />
           {task.state.status === "error" ? (
             <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
               {t("claudeAssist.localize.error", { message: task.state.message })}

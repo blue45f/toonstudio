@@ -46,6 +46,7 @@ export function ClaudeLocalizeSetup({ form, onChange, disabled, connectionModel,
   const t = useT();
   const idBase = useId();
   const swappable = form.sourceLang !== "auto";
+  const sameLanguage = form.sourceLang !== "auto" && form.sourceLang === form.targetLang;
 
   return (
     <div className="space-y-4">
@@ -76,6 +77,8 @@ export function ClaudeLocalizeSetup({ form, onChange, disabled, connectionModel,
           </select>
         </div>
       </div>
+
+      {sameLanguage ? <p role="status" className="-mt-2 text-xs font-semibold text-warn">{t("claudeAssist.localize.sameLanguage")}</p> : null}
 
       <ClaudeChoiceChips
         label={t("claudeAssist.localize.toneLabel")}
@@ -108,6 +111,9 @@ export function ClaudeLocalizeSetup({ form, onChange, disabled, connectionModel,
         />
         {glossary.invalidLines.length > 0 ? (
           <p role="status" className="mt-1 text-xs text-warn">{t("claudeAssist.localize.glossaryInvalid", { count: glossary.invalidLines.length })}</p>
+        ) : null}
+        {glossary.duplicateLines.length > 0 ? (
+          <p role="status" className="mt-1 text-xs text-warn">{t("claudeAssist.localize.glossaryDuplicate", { count: glossary.duplicateLines.length })}</p>
         ) : null}
         {glossary.overflow > 0 ? (
           <p role="status" className="mt-1 text-xs text-warn">{t("claudeAssist.localize.glossaryOverflow", { max: LOCALIZE_LIMITS.maxGlossary, count: glossary.overflow })}</p>

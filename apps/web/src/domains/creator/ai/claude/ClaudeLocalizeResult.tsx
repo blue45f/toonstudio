@@ -1,7 +1,6 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
 import { Check, Copy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 
 import { CLAUDE_BUTTON, CLAUDE_INPUT, CLAUDE_QUIET_BUTTON } from "@/shared/ai/claude/claude-ui";
 import { useT } from "@/shared/lib/i18n";
@@ -19,6 +18,8 @@ import {
   type LocalizeBudget,
   type LocalizeResultView,
 } from "./claude-localize";
+import { ClaudeCopyStatus } from "./ClaudeCopyStatus";
+import { useCopyFeedback } from "./use-copy-feedback";
 
 export interface ClaudeLocalizeResultProps {
   readonly view: LocalizeResultView;
@@ -39,14 +40,9 @@ type CopyKind = "text" | "tsv" | "json";
  */
 export function ClaudeLocalizeResult({ view, edits, onEdit, budget, glossary, languages, usageText }: ClaudeLocalizeResultProps) {
   const t = useT();
-  const [copied, setCopied] = useState<CopyKind | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const canCopy = typeof navigator !== "undefined" && typeof navigator.clipboard?.writeText === "function";
+  const clipboard = useCopyFeedback<CopyKind>();
+  const { canCopy, copied } = clipboard;
   const limit = LOCALIZE_BUDGET_RATIO[budget];
-
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
 
   const current = (index: number, fallback: string): string => edits.get(index) ?? fallback;
   const rows = view.lines.map((line) => {
@@ -72,15 +68,11 @@ export function ClaudeLocalizeResult({ view, edits, onEdit, budget, glossary, la
       : kind === "tsv"
         ? localizeToTsv(exportLines)
         : localizeToJson(exportLines, { sourceLang: languages.source, targetLang: languages.target });
-    void navigator.clipboard.writeText(value).then(() => {
-      setCopied(kind);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setCopied(null), 2_000);
-    }, () => undefined);
+    clipboard.copy(kind, value);
   };
 
   return (
-    <section aria-label={t("claudeAssist.localize.resultTitle")} className="space-y-3 rounded-2xl border border-line p-3" data-claude-localize-result="true">
+    <section aria-label={t("claudeAssist.localize.resultTitle")} className="space-y-3 rounded-2xl border border-line p-3" data-claude-localize-result="true" data-claude-shortcut-off="true">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-bold text-fg">{t("claudeAssist.localize.resultTitle")}</h3>
         {canCopy ? (
@@ -99,6 +91,8 @@ export function ClaudeLocalizeResult({ view, edits, onEdit, budget, glossary, la
         ) : null}
       </div>
 
+      <ClaudeCopyStatus copied={copied !== null} failed={clipboard.failed} />
+
       <p className="text-sm text-fg-2" data-claude-localize-summary="true">
         {t("claudeAssist.localize.summary", { count: rows.length - missing, over, terms: termChecks, missing })}
       </p>
@@ -110,6 +104,7 @@ export function ClaudeLocalizeResult({ view, edits, onEdit, budget, glossary, la
         </div>
       ) : null}
       {view.discarded > 0 ? <p className="text-xs text-fg-3">{t("claudeAssist.localize.discarded", { count: view.discarded })}</p> : null}
+      {view.indexShifted ? <p role="note" className="rounded-xl border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-fg-2" data-claude-index-shifted="true">{t("claudeAssist.localize.indexShifted")}</p> : null}
 
       <ol className="space-y-2">
         {rows.map(({ line, text, ratio, over: isOver, misses, edited }) => (
@@ -158,7 +153,12 @@ export function ClaudeLocalizeResult({ view, edits, onEdit, budget, glossary, la
         ))}
       </ol>
 
-      <p className="border-t border-line pt-2 text-xs text-fg-3">{usageText}</p>
+      <div className="space-y-1 border-t border-line pt-2 text-xs text-fg-3">
+        {view.trimmed > 0 ? (
+          <p className="font-semibold text-warn" data-claude-trimmed="true">{t("claudeAssist.common.trimmedNotice", { count: view.trimmed })}</p>
+        ) : null}
+        <p>{usageText}</p>
+      </div>
     </section>
   );
 }

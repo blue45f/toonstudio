@@ -128,7 +128,7 @@ describe("ClaudeLocalizeDialog", () => {
 
       const run = screen.getByRole("button", { name: RUN }) as HTMLButtonElement;
       expect(run.disabled).toBe(true);
-      expect(run.getAttribute("aria-describedby")).toBe("claude-localize-need-hint");
+      expect(run.getAttribute("aria-describedby")).toBe(document.querySelector("[data-claude-need-hint]")?.id);
       expect(screen.getByText("대사를 먼저 입력해 주세요.")).toBeTruthy();
       expect(screen.getByLabelText("말풍선 대사").hasAttribute("data-claude-initial-focus")).toBe(true);
     });
@@ -188,7 +188,7 @@ describe("ClaudeLocalizeDialog", () => {
       expect(screen.getByText("대사가 51줄이에요. 한 번에 50줄까지 번역할 수 있어요. 나누어 실행해 주세요.")).toBeTruthy();
       const run = screen.getByRole("button", { name: RUN }) as HTMLButtonElement;
       expect(run.disabled).toBe(true);
-      expect(run.getAttribute("aria-describedby")).toBe("claude-localize-problem");
+      expect(run.getAttribute("aria-describedby")).toBe(screen.getByText("대사가 51줄이에요. 한 번에 50줄까지 번역할 수 있어요. 나누어 실행해 주세요.").id);
       expect(footerCap()).toBeUndefined();
       expect(screen.getByLabelText("말풍선 대사").getAttribute("aria-invalid")).toBe("true");
     });
@@ -407,7 +407,7 @@ describe("ClaudeLocalizeDialog", () => {
       fireEvent.click(within(region).getByRole("button", { name: "번역만 복사" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
       expect(writeText).toHaveBeenLastCalledWith("Oh, it's raining.\nNo umbrella, says sky\nWanna share?");
-      await screen.findByText("복사했어요.");
+      await waitFor(() => expect(within(region).getByRole("button", { name: "복사했어요." })).toBeTruthy());
 
       fireEvent.click(within(region).getByRole("button", { name: "표(TSV) 복사" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
@@ -503,12 +503,14 @@ describe("ClaudeLocalizeDialog", () => {
 
       fireEvent.click(screen.getByRole("button", { name: RUN }));
       await screen.findByRole("button", { name: "중단" });
-      expect(screen.getByText(/번역하는 중이에요\. 줄이 많으면 몇 분 걸릴 수 있어요\. · 0초 경과/)).toBeTruthy();
+      expect(screen.getByText(/번역하는 중이에요\. 줄이 많으면 몇 분 걸릴 수 있어요\./)).toBeTruthy();
+      // 매초 바뀌는 경과 시간은 화면에만 보이고 안내 영역(role=status)에는 들어가지 않는다.
+      expect(screen.getByText(/0초 경과/).closest("[role=status]")).toBeNull();
       expect((screen.getByLabelText("말풍선 대사") as HTMLTextAreaElement).disabled).toBe(true);
 
       fireEvent.click(screen.getByRole("button", { name: "중단" }));
       expect(signal?.aborted).toBe(true);
-      await screen.findByText("번역을 중단했어요. 필요하면 다시 시도해 주세요.");
+      await screen.findByText("번역을 중단했어요. 이미 처리된 부분은 요금이 청구됐을 수 있어요. 필요하면 다시 시도해 주세요.");
       expect(screen.queryByRole("alert")).toBeNull();
       expect((screen.getByLabelText("말풍선 대사") as HTMLTextAreaElement).disabled).toBe(false);
     });
@@ -531,5 +533,153 @@ describe("ClaudeLocalizeDialog", () => {
       expect(onClose).toHaveBeenCalledTimes(1);
       expect(signal?.aborted).toBe(true);
     });
+  });
+});
+
+describe("ClaudeLocalizeDialog — 리뷰 반영", () => {
+  beforeEach(() => {
+    useI18n.setState({ lang: "ko" });
+    localStorage.clear();
+    sessionStorage.clear();
+    lockUserAi(false);
+    resetClaudeUsage();
+    resetClaudeBudgetForTests();
+    runLocalize.mockReset();
+    runLocalize.mockResolvedValue(result());
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    lockUserAi(false);
+    resetClaudeUsage();
+    resetClaudeBudgetForTests();
+    useI18n.setState({ lang: INITIAL_LANGUAGE });
+  });
+
+  it("대사를 넣기 전에는 '입력하면 계산해요'를 보여 주고 예산 경고를 띄우지 않는다", () => {
+    connectClaude();
+    setClaudeBudgetLimit(0.02);
+    renderDialog();
+
+    expect(document.querySelector("[data-claude-cap-chip]")?.textContent).toBe("입력하면 계산해요");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByLabelText("이번 한 번만 예산을 넘어도 진행해요")).toBeNull();
+  });
+
+  it("너무 긴 줄은 입력칸에서 보이는 줄 번호(빈 줄 포함)로 알린다", () => {
+    connectClaude();
+    renderDialog();
+    fireEvent.change(screen.getByLabelText("말풍선 대사"), { target: { value: `짧아요\n\n\n${"가".repeat(241)}` } });
+
+    expect(screen.getByText(/^4번째 줄이 241자예요/)).toBeTruthy();
+  });
+
+  it("원문과 번역할 언어가 같으면 보내지 않고 이유를 알린다", () => {
+    connectClaude();
+    renderDialog();
+    typeLines();
+    fireEvent.change(screen.getByLabelText("원문 언어"), { target: { value: "ko" } });
+    fireEvent.change(screen.getByLabelText("번역할 언어"), { target: { value: "ko" } });
+
+    expect((screen.getByRole("button", { name: RUN }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getAllByText("원문 언어와 번역할 언어가 같아요. 하나를 바꿔 주세요.").length).toBeGreaterThan(0);
+    expect(footerCap()).toBeUndefined();
+  });
+
+  it("줄이 많으면 나눠서 번역하라고 권한다", () => {
+    connectClaude();
+    renderDialog();
+    typeLines(Array.from({ length: 26 }, (_, index) => `대사 ${index + 1}`));
+
+    expect(document.querySelector("[data-claude-many-lines]")?.textContent).toContain("26줄");
+    typeLines(LINES);
+    expect(document.querySelector("[data-claude-many-lines]")).toBeNull();
+  });
+
+  it("용어집에 같은 원문이 겹치면 몇 줄이 건너뛰어졌는지 알린다", () => {
+    connectClaude();
+    renderDialog();
+    fireEvent.change(screen.getByLabelText("용어집 (선택)"), { target: { value: "지훈 = Jihoon\n지훈 = Ji-hoon\nＪ = x" } });
+
+    expect(screen.getByText("같은 원문이 겹치는 1줄은 앞의 것만 써요.")).toBeTruthy();
+  });
+
+  it("'이번 한 번만'을 고른 요청만 전송 계층에 예산 판정 건너뛰기를 알린다", async () => {
+    connectClaude();
+    setClaudeBudgetLimit(0.02);
+    renderDialog();
+    typeLines();
+
+    fireEvent.click(screen.getByLabelText("이번 한 번만 예산을 넘어도 진행해요"));
+    await runAndWait();
+
+    expect(runLocalize.mock.calls[0]?.[2]).toMatchObject({ budgetOverride: true });
+  });
+
+  it("결과를 고치는 칸에서는 Ctrl+Enter가 새 요청을 보내지 않아 고친 번역이 지워지지 않는다", async () => {
+    connectClaude();
+    renderDialog();
+    typeLines();
+    await runAndWait();
+    const region = screen.getByRole("region", { name: "번역 결과" });
+    const field = within(region).getByLabelText("1번 번역");
+    fireEvent.change(field, { target: { value: "내가 고친 번역" } });
+
+    fireEvent.keyDown(field, { key: "Enter", ctrlKey: true });
+
+    expect(runLocalize).toHaveBeenCalledTimes(1);
+    expect((within(region).getByLabelText("1번 번역") as HTMLTextAreaElement).value).toBe("내가 고친 번역");
+  });
+
+  it("번호를 0부터 매겨 밀어 맞춘 결과면 줄이 제대로 짝지어졌는지 확인하라고 알린다", async () => {
+    connectClaude();
+    const shifted = result();
+    runLocalize.mockResolvedValue({ ...shifted, view: { ...shifted.view, indexShifted: true } });
+    renderDialog();
+    typeLines();
+    await runAndWait();
+
+    expect(document.querySelector("[data-claude-index-shifted]")?.textContent).toContain("0부터 매겨서");
+  });
+
+  it("줄어든 항목이 있으면 몇 곳인지 알린다", async () => {
+    connectClaude();
+    const trimmed = result();
+    runLocalize.mockResolvedValue({ ...trimmed, view: { ...trimmed.view, trimmed: 2 } });
+    renderDialog();
+    typeLines();
+    await runAndWait();
+
+    expect(document.querySelector("[data-claude-trimmed]")?.textContent).toContain("2곳의 내용이 줄었어요");
+  });
+
+  it("복사에 실패하면 조용히 넘기지 않고 알린다", async () => {
+    connectClaude();
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
+    renderDialog();
+    typeLines();
+    await runAndWait();
+    const region = screen.getByRole("region", { name: "번역 결과" });
+
+    fireEvent.click(within(region).getByRole("button", { name: "번역만 복사" }));
+
+    expect((await within(region).findByRole("alert")).textContent).toMatch(/복사하지 못했어요/);
+  });
+
+  it("실행하면 포커스가 중단 버튼으로 가고, 끝나면 실행 버튼으로 돌아온다", async () => {
+    connectClaude();
+    let finish: (value: LocalizeRunResult) => void = () => undefined;
+    runLocalize.mockImplementation(() => new Promise<LocalizeRunResult>((resolve) => { finish = resolve; }));
+    renderDialog();
+    typeLines();
+
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    const stop = await screen.findByRole("button", { name: "중단" });
+    await waitFor(() => expect(document.activeElement).toBe(stop));
+
+    await act(async () => { finish(result()); });
+    await screen.findByRole("region", { name: "번역 결과" });
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /다시 번역하기/ })));
   });
 });

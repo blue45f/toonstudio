@@ -56,7 +56,13 @@ describe("runLocalize", () => {
     expect(params.model).toBe("claude-haiku-5-5");
     expect(params.output_config).toEqual({ effort: "low" });
     expect(params.max_tokens).toBe(localizeMaxOutputTokens(2));
-    expect(options).toEqual({ signal: controller.signal, timeoutMs: LOCALIZE_TIMEOUT_MS });
+    // 전송 계층이 예산 판정·예약에 쓰도록, 실행 전 확인에 보인 값과 같은 함수로 잰 상한을 함께 넘긴다.
+    expect(options).toEqual({
+      signal: controller.signal,
+      timeoutMs: LOCALIZE_TIMEOUT_MS,
+      capUsd: estimateLocalizeCostCapUsd("claude-haiku-5-5", INPUT, "low"),
+      budgetOverride: undefined,
+    });
     expect(result.model).toBe("claude-haiku-5-5");
   });
 
@@ -88,5 +94,21 @@ describe("estimateLocalizeCostCapUsd", () => {
 
   it("단가를 모르는 모델이면 null", () => {
     expect(estimateLocalizeCostCapUsd("claude-future-9", INPUT, "medium")).toBeNull();
+  });
+
+  it("한글 위주의 큰 입력(50줄×240자)도 실측 토큰(글자당 약 1.6토큰)보다 작게 가늠하지 않는다", () => {
+    const lines = Array.from({ length: 50 }, () => "가나다라 마바사 아자차카 ".repeat(20).slice(0, 240));
+    const cap = estimateLocalizeCostCapUsd("claude-opus-5-5", { ...INPUT, lines }, "medium") ?? 0;
+    const realisticInputTokens = 50 * 240 * 1.6 + 1_500; // 글 + 고정 지시·스키마
+    const realisticUsd = (realisticInputTokens * 4 + localizeMaxOutputTokens(50) * 20) / 1_000_000;
+    expect(cap).toBeGreaterThanOrEqual(realisticUsd);
+  });
+});
+
+describe("runLocalize — 예산", () => {
+  it("사용자가 '이번 한 번만'을 고른 요청만 전송 계층에 예산 판정 건너뛰기를 알린다", async () => {
+    claudeParse.mockResolvedValueOnce(reply({ items: [], warnings: [] }));
+    await runLocalize(ROUTE, INPUT, { depth: "medium", budgetOverride: true });
+    expect(claudeParse.mock.calls.at(-1)?.[3]).toMatchObject({ budgetOverride: true });
   });
 });
