@@ -29,6 +29,8 @@
  * 키 원문은 로그·오류 메시지·반환값 어디에도 넣지 않는다.
  */
 
+import { aiErrorText } from "./studio-ai-error-i18n";
+
 export interface StudioFalKeyStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -117,7 +119,10 @@ function defaultSleep(ms: number): Promise<void> {
   });
 }
 
-function failure<T>(code: StudioLoraErrorCode, error: string): StudioLoraResult<T> {
+function failure<T>(
+  code: StudioLoraErrorCode,
+  error: string,
+): StudioLoraResult<T> {
   return { ok: false, code, error };
 }
 
@@ -135,18 +140,18 @@ function describeFalError(status: number, payload: unknown): string {
   if (isRecord(payload)) {
     const detail = payload["detail"];
     if (typeof detail === "string" && detail.trim()) {
-      return `fal 요청이 거부됐습니다(HTTP ${status}): ${detail.slice(0, 200)}`;
+      return aiErrorText("studio.aiError.fal.requestRejected", { status, message: detail.slice(0, 200) }, "fal 요청이 거부됐습니다(HTTP {status}): {message}");
     }
     if (Array.isArray(detail)) {
       const first = detail.find((item) => isRecord(item) && typeof item["msg"] === "string");
       if (isRecord(first)) {
-        return `fal 요청이 거부됐습니다(HTTP ${status}): ${String(first["msg"]).slice(0, 200)}`;
+        return aiErrorText("studio.aiError.fal.requestRejected", { status, message: String(first["msg"]).slice(0, 200) }, "fal 요청이 거부됐습니다(HTTP {status}): {message}");
       }
     }
     const message = readString(payload, "message") ?? readString(payload, "error");
-    if (message) return `fal 요청이 거부됐습니다(HTTP ${status}): ${message.slice(0, 200)}`;
+    if (message) return aiErrorText("studio.aiError.fal.requestRejected", { status, message: message.slice(0, 200) }, "fal 요청이 거부됐습니다(HTTP {status}): {message}");
   }
-  return `fal 요청이 거부됐습니다(HTTP ${status}).`;
+  return aiErrorText("studio.aiError.fal.requestRejectedBare", { status }, "fal 요청이 거부됐습니다(HTTP {status}).");
 }
 
 interface FalCallOutcome {
@@ -172,7 +177,7 @@ async function callFal(
       },
     });
   } catch {
-    return failure("network_error", "fal 서버에 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.");
+    return failure("network_error", aiErrorText("studio.aiError.fal.networkUnreachable", "fal 서버에 연결하지 못했습니다. 네트워크 상태를 확인해 주세요."));
   }
   const payload: unknown = await response.json().catch(() => null);
   return { ok: true, data: { status: response.status, payload } };
@@ -207,7 +212,7 @@ async function submitFalQueueRequest(
   input: Record<string, unknown>,
 ): Promise<StudioLoraResult<FalQueueSubmission>> {
   if (!isStudioFalConfigured(apiKey)) {
-    return failure("not_configured", "fal.ai 키가 등록되어 있지 않습니다.");
+    return failure("not_configured", aiErrorText("studio.aiError.fal.notConfigured", "fal.ai 키가 등록되어 있지 않습니다."));
   }
   const outcome = await callFal(deps, apiKey, `${FAL_QUEUE_BASE_URL}/${modelId}`, {
     method: "POST",
@@ -220,7 +225,7 @@ async function submitFalQueueRequest(
   }
   const submission = parseFalQueueSubmission(payload);
   if (!submission) {
-    return failure("parse_error", "fal 큐 제출 응답에서 요청 ID를 찾지 못했습니다.");
+    return failure("parse_error", aiErrorText("studio.aiError.fal.queueSubmissionIdMissing", "fal 큐 제출 응답에서 요청 ID를 찾지 못했습니다."));
   }
   return { ok: true, data: submission };
 }
@@ -256,10 +261,10 @@ export async function submitStudioLoraTraining(
   },
 ): Promise<StudioLoraResult<FalQueueSubmission>> {
   if (!options.imagesDataUrl.trim()) {
-    return failure("invalid_input", "학습 이미지 묶음 주소가 비어 있습니다.");
+    return failure("invalid_input", aiErrorText("studio.aiError.fal.trainingImagesUrlEmpty", "학습 이미지 묶음 주소가 비어 있습니다."));
   }
   if (!options.triggerWord.trim()) {
-    return failure("invalid_input", "트리거 워드를 입력하세요.");
+    return failure("invalid_input", aiErrorText("studio.aiError.fal.triggerWordRequired", "트리거 워드를 입력하세요."));
   }
   return submitFalQueueRequest(deps, apiKey, FAL_LORA_TRAINING_MODEL_ID, buildFalLoraTrainingInput(options));
 }
@@ -275,7 +280,7 @@ export async function uploadStudioLoraFile(
   file: { readonly name: string; readonly contentType: string; readonly body: Blob },
 ): Promise<StudioLoraResult<{ readonly fileUrl: string }>> {
   if (!isStudioFalConfigured(apiKey)) {
-    return failure("not_configured", "fal.ai 키가 등록되어 있지 않습니다.");
+    return failure("not_configured", aiErrorText("studio.aiError.fal.notConfigured", "fal.ai 키가 등록되어 있지 않습니다."));
   }
   const initiated = await callFal(deps, apiKey, FAL_STORAGE_INITIATE_URL, {
     method: "POST",
@@ -289,7 +294,7 @@ export async function uploadStudioLoraFile(
   const fileUrl = isRecord(payload) ? readString(payload, "file_url") : null;
   const uploadUrl = isRecord(payload) ? readString(payload, "upload_url") : null;
   if (!fileUrl || !uploadUrl) {
-    return failure("parse_error", "fal 스토리지 업로드 응답에서 주소를 찾지 못했습니다.");
+    return failure("parse_error", aiErrorText("studio.aiError.fal.storageUploadAddressesMissing", "fal 스토리지 업로드 응답에서 주소를 찾지 못했습니다."));
   }
   let putResponse: Response;
   try {
@@ -299,10 +304,10 @@ export async function uploadStudioLoraFile(
       body: file.body,
     });
   } catch {
-    return failure("network_error", "fal 스토리지에 파일을 올리지 못했습니다.");
+    return failure("network_error", aiErrorText("studio.aiError.fal.storageUploadNetwork", "fal 스토리지에 파일을 올리지 못했습니다."));
   }
   if (!putResponse.ok) {
-    return failure("provider_error", `fal 스토리지 업로드가 거부됐습니다(HTTP ${putResponse.status}).`);
+    return failure("provider_error", aiErrorText("studio.aiError.fal.storageUploadRejected", { status: putResponse.status }, "fal 스토리지 업로드가 거부됐습니다(HTTP {status})."));
   }
   return { ok: true, data: { fileUrl } };
 }
@@ -331,7 +336,7 @@ export async function fetchFalQueueStatus(
   target: { readonly modelId: string; readonly requestId: string; readonly statusUrl?: string | null },
 ): Promise<StudioLoraResult<FalQueueStatusOutcome>> {
   if (!isStudioFalConfigured(apiKey)) {
-    return failure("not_configured", "fal.ai 키가 등록되어 있지 않습니다.");
+    return failure("not_configured", aiErrorText("studio.aiError.fal.notConfigured", "fal.ai 키가 등록되어 있지 않습니다."));
   }
   const url = target.statusUrl
     ?? `${FAL_QUEUE_BASE_URL}/${target.modelId}/requests/${target.requestId}/status`;
@@ -355,7 +360,7 @@ export async function fetchFalQueueResult(
   target: { readonly modelId: string; readonly requestId: string; readonly responseUrl?: string | null },
 ): Promise<StudioLoraResult<{ readonly httpStatus: number; readonly payload: unknown }>> {
   if (!isStudioFalConfigured(apiKey)) {
-    return failure("not_configured", "fal.ai 키가 등록되어 있지 않습니다.");
+    return failure("not_configured", aiErrorText("studio.aiError.fal.notConfigured", "fal.ai 키가 등록되어 있지 않습니다."));
   }
   const url = target.responseUrl
     ?? `${FAL_QUEUE_BASE_URL}/${target.modelId}/requests/${target.requestId}`;
@@ -446,8 +451,8 @@ export async function generateStudioLoraImage(
   },
   poll: StudioLoraGenerationPollOptions = {},
 ): Promise<StudioLoraResult<FalGeneratedImage>> {
-  if (!options.prompt.trim()) return failure("invalid_input", "생성할 장면을 입력하세요.");
-  if (!options.loraFileUrl.trim()) return failure("invalid_input", "학습된 모델 파일 주소가 없습니다.");
+  if (!options.prompt.trim()) return failure("invalid_input", aiErrorText("studio.aiError.fal.generationPromptRequired", "생성할 장면을 입력하세요."));
+  if (!options.loraFileUrl.trim()) return failure("invalid_input", aiErrorText("studio.aiError.fal.generationModelUrlMissing", "학습된 모델 파일 주소가 없습니다."));
   const submission = await submitFalQueueRequest(
     deps,
     apiKey,
@@ -468,7 +473,7 @@ export async function generateStudioLoraImage(
     if (!statusOutcome.ok) return statusOutcome;
     const { status, httpStatus, payload } = statusOutcome.data;
     if (httpStatus === 404) {
-      return failure("provider_error", "fal에서 생성 요청을 찾을 수 없습니다.");
+      return failure("provider_error", aiErrorText("studio.aiError.fal.generationRequestNotFound", "fal에서 생성 요청을 찾을 수 없습니다."));
     }
     if (httpStatus < 200 || httpStatus >= 300) {
       return failure("provider_error", describeFalError(httpStatus, payload));
@@ -484,15 +489,15 @@ export async function generateStudioLoraImage(
         return failure("provider_error", describeFalError(result.data.httpStatus, result.data.payload));
       }
       const image = parseFalLoraGenerationResult(result.data.payload);
-      if (!image) return failure("parse_error", "fal 생성 결과에서 이미지를 찾지 못했습니다.");
+      if (!image) return failure("parse_error", aiErrorText("studio.aiError.fal.generationImageMissing", "fal 생성 결과에서 이미지를 찾지 못했습니다."));
       return { ok: true, data: image };
     }
     if (status === null) {
-      return failure("parse_error", "fal 생성 상태 응답을 해석하지 못했습니다.");
+      return failure("parse_error", aiErrorText("studio.aiError.fal.generationStatusUnparsable", "fal 생성 상태 응답을 해석하지 못했습니다."));
     }
   }
   return failure(
     "network_error",
-    "fal 생성이 제한 시간 안에 끝나지 않았습니다. 요청 자체는 fal에서 계속 처리될 수 있습니다.",
+    aiErrorText("studio.aiError.fal.generationStillProcessing", "fal 생성이 제한 시간 안에 끝나지 않았습니다. 요청 자체는 fal에서 계속 처리될 수 있습니다."),
   );
 }

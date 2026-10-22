@@ -20,7 +20,10 @@ import {
 import type { StudioCopyFeedbackStatus } from "../use-studio-copy-feedback";
 import type { ReactElement } from "react";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "./studio-ai-status-i18n";
 
 /**
  * 복사 버튼 — useStudioCopyFeedback 이 확정한 결과만 표시한다.
@@ -41,6 +44,7 @@ export function StudioCopyTextButton({
   readonly variant?: "solid" | "quiet";
   readonly label: string;
 }): ReactElement {
+  const t = useT();
   const status = statusFor(copyKey);
   const copied = status === "copied";
   const failed = status === "failed";
@@ -63,7 +67,7 @@ export function StudioCopyTextButton({
       )}
     >
       <Icon size={12} aria-hidden />
-      <span>{copied ? "복사됨" : failed ? "복사 실패" : "복사"}</span>
+      <span>{copied ? t("studio.aiStatus.copy.copied", "복사됨") : failed ? t("studio.aiStatus.copy.failed", "복사 실패") : "복사"}</span>
     </button>
   );
 }

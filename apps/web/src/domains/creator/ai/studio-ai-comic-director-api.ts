@@ -6,6 +6,7 @@ import {
   type StudioAiComicDirectorSessionDocument,
   type StudioAiVisualBibleDocument,
 } from "./studio-ai-comic-director-session";
+import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
 
 import { withCsrfProtection } from "@/shared/lib/csrf";
 import { useApp } from "@/shared/lib/store";
@@ -180,7 +181,7 @@ export function createStudioAiComicDirectorApiClient(input: {
       return {
         ok: false,
         code: "not_authenticated",
-        message: "로그인하면 AI 코믹 디렉터 세션을 클라우드에 저장할 수 있어요.",
+        message: aiErrorText("studio.aiError.comicApi.loginRequired", "로그인하면 AI 코믹 디렉터 세션을 클라우드에 저장할 수 있어요."),
       };
     }
     let response: Response;
@@ -201,7 +202,7 @@ export function createStudioAiComicDirectorApiClient(input: {
       return {
         ok: false,
         code: "network_error",
-        message: "AI 코믹 디렉터 저장 서버에 연결하지 못했어요.",
+        message: aiErrorText("studio.aiError.comicApi.serverUnreachable", "AI 코믹 디렉터 저장 서버에 연결하지 못했어요."),
       };
     }
     let body: unknown;
@@ -212,7 +213,7 @@ export function createStudioAiComicDirectorApiClient(input: {
       return {
         ok: false,
         code: "parse_error",
-        message: "AI 코믹 디렉터 서버 응답을 해석하지 못했어요.",
+        message: aiErrorText("studio.aiError.comicApi.responseUnparseable", "AI 코믹 디렉터 서버 응답을 해석하지 못했어요."),
       };
     }
     if (!response.ok) {
@@ -227,7 +228,7 @@ export function createStudioAiComicDirectorApiClient(input: {
               : "http_error",
         message: serverMessage(
           body,
-          `요청이 실패했습니다 (HTTP ${response.status}).`,
+          aiErrorText("studio.aiError.comicApi.requestFailedWithStatus", { status: response.status }, "요청이 실패했습니다 (HTTP {status})."),
         ),
         ...(typeof parsed?.currentRevision === "number"
           ? { currentRevision: parsed.currentRevision }

@@ -106,7 +106,7 @@ export function StudioStrokeProposalReviewPanel({
           role="alert"
           className="rounded-lg border border-warn/35 bg-warn/10 p-2 text-xs text-warn"
         >
-          문서가 변경되어 이 보정안은 적용할 수 없습니다. 다시 생성해 주세요.
+          {t("studio.aiStatus.strokeProposal.documentChanged", "문서가 변경되어 이 보정안은 적용할 수 없습니다. 다시 생성해 주세요.")}
         </p>
       ) : null}
       {error ? <p role="alert" className="text-xs text-bad">{error}</p> : null}

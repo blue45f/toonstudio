@@ -3,6 +3,8 @@
 // 게스트는 이 브라우저의 로컬 저장소(IndexedDB, 구 localStorage 값은 1회 이관)에만
 // 저장하고, 로그인 상태에서는 apiPost로 서버에 write-through 한다(기존 useApp
 // 스토어의 평점/읽기 상태와 같은 패턴). 이 모듈은 저장 매체를 모르는 순수 모델이다.
+import { aiErrorText } from "../studio-ai-error-i18n-t4t5";
+
 import { apiPost } from "@/shared/lib/store-api-post";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 
@@ -124,10 +126,10 @@ export function validateCanonSheetDraft(
 ): readonly string[] {
   const errors: string[] = [];
   if (!normalizeText(draft.name, CANON_NAME_MAX)) {
-    errors.push("캐릭터 이름을 입력해 주세요.");
+    errors.push(aiErrorText("studio.aiError.canon.nameRequired", "캐릭터 이름을 입력해 주세요."));
   }
   if (!normalizeText(draft.appearance, CANON_APPEARANCE_MAX)) {
-    errors.push("외모 설명을 입력해 주세요. 얼굴·머리·체형이 드러나면 좋아요.");
+    errors.push(aiErrorText("studio.aiError.canon.appearanceRequired", "외모 설명을 입력해 주세요. 얼굴·머리·체형이 드러나면 좋아요."));
   }
   return errors;
 }

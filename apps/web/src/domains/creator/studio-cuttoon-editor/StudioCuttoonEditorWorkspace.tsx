@@ -16,6 +16,7 @@ import { cn } from "@/shared/lib/utils";
 import { StudioCuttoonEditorCanvasColumn } from "./StudioCuttoonEditorCanvasColumn";
 import { StudioCuttoonEditorInspectorColumn } from "./StudioCuttoonEditorInspectorColumn";
 import { StudioCuttoonEditorPanels } from "./StudioCuttoonEditorPanels";
+import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
 import { StudioCuttoonEditorSessionDialogs } from "./StudioCuttoonEditorSessionDialogs";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
@@ -325,7 +326,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
 
         {!isMobile && !canvasOnlyMode && !mobileImmersive && !presentationPanelsHidden
           && s.studioOptionsBarsDrawModel.libraryDockOpen ? (
-          <Suspense fallback={<div role="status" className="hidden w-64 shrink-0 border-r border-line bg-panel p-3 text-sm text-fg-2 lg:block xl:w-[17rem]">브러시 라이브러리를 여는 중…</div>}>
+          <Suspense fallback={<div role="status" className="hidden w-64 shrink-0 border-r border-line bg-panel p-3 text-sm text-fg-2 lg:block xl:w-[17rem]">{editorShellStatusText("studio.editorShellStatus.workspace.brushLibraryOpening", "브러시 라이브러리를 여는 중…")}</div>}>
             <LazyStudioBrushWorkbenchDock
               key={`${s.studioOptionsBarsDrawModel.workspaceOwnerScope}:${drawMode === "eraser" ? "erase" : "paint"}`}
               width={s.appSettings.general.brushPanelWidth ?? 240}

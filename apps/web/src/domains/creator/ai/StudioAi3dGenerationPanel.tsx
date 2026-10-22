@@ -13,6 +13,7 @@ import {
   type Studio3dGenerationMode,
 } from "./studio-3d-generation-client";
 import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
+import { aiStatusText } from "./studio-ai-status-i18n";
 
 const TERMINAL = new Set(["ready", "failed", "cancelled", "expired"]);
 
@@ -35,6 +36,20 @@ const STATE_LABELS: Readonly<Record<Studio3dGenerationJob["state"], string>> = O
   failed: "생성 실패",
   cancelled: "취소됨",
   expired: "기한 만료",
+});
+
+const STATE_LABEL_KEYS: Readonly<Record<Studio3dGenerationJob["state"], string>> = Object.freeze({
+  queued: "studio.aiStatus.gen3d.queued",
+  uploading: "studio.aiStatus.gen3d.uploading",
+  "generating-geometry": "studio.aiStatus.gen3d.generatingGeometry",
+  "generating-texture": "studio.aiStatus.gen3d.generatingTexture",
+  downloading: "studio.aiStatus.gen3d.downloading",
+  validating: "studio.aiStatus.gen3d.validating",
+  importing: "studio.aiStatus.gen3d.importing",
+  ready: "studio.aiStatus.gen3d.ready",
+  failed: "studio.aiStatus.gen3d.failed",
+  cancelled: "studio.aiStatus.gen3d.cancelled",
+  expired: "studio.aiStatus.gen3d.expired",
 });
 
 export interface StudioAi3dGenerationPanelProps {
@@ -122,7 +137,7 @@ export function StudioAi3dGenerationPanel({
       void client.advance(job.id, controller.signal).then((next) => {
         setJob(next);
         setHistory((current) => [next, ...current.filter((item) => item.id !== next.id)]);
-        setStatusMessage(STATE_LABELS[next.state]);
+        setStatusMessage(aiStatusText(STATE_LABEL_KEYS[next.state], STATE_LABELS[next.state]));
       }).catch((caught: unknown) => {
         if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : String(caught));
       });
@@ -162,7 +177,7 @@ export function StudioAi3dGenerationPanel({
       );
       setJob(next);
       setHistory((current) => [next, ...current.filter((item) => item.id !== next.id)]);
-      setStatusMessage(STATE_LABELS[next.state]);
+      setStatusMessage(aiStatusText(STATE_LABEL_KEYS[next.state], STATE_LABELS[next.state]));
     } catch (caught) {
       if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -321,7 +336,7 @@ export function StudioAi3dGenerationPanel({
         role="status"
         className="rounded-lg border border-line/70 bg-panel/45 px-2.5 py-2 text-xs text-fg-2"
       >
-        {job ? `${STATE_LABELS[job.state]} · ${job.request.tier} · 예상 ${job.estimatedCredits} credit` : statusMessage}
+        {job ? `${aiStatusText(STATE_LABEL_KEYS[job.state], STATE_LABELS[job.state])} · ${job.request.tier} · 예상 ${job.estimatedCredits} credit` : statusMessage}
       </div>
       {error ? <p role="alert" className="rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-bad">{error}</p> : null}
 
@@ -343,7 +358,7 @@ export function StudioAi3dGenerationPanel({
           <ul className="max-h-48 overflow-y-auto border-t border-line p-2 text-xs">
             {history.slice(0, 20).map((item) => (
               <li key={item.id} className="flex min-h-11 items-center justify-between gap-2 border-b border-line/50 last:border-0">
-                <button type="button" onClick={() => setJob(item)} className="min-h-11 min-w-0 flex-1 truncate text-left">{MODE_LABELS[item.request.mode]} · {STATE_LABELS[item.state]}</button>
+                <button type="button" onClick={() => setJob(item)} className="min-h-11 min-w-0 flex-1 truncate text-left">{MODE_LABELS[item.request.mode]} · {aiStatusText(STATE_LABEL_KEYS[item.state], STATE_LABELS[item.state])}</button>
                 <span className="shrink-0 text-fg-3">{item.actualCredits ?? item.estimatedCredits} {translateCurrentStaticSourceText("domains.creator.ai.StudioAi3dGenerationPanel", "en", "cr")}</span>
               </li>
             ))}

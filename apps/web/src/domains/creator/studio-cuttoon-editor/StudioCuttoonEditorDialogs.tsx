@@ -22,6 +22,7 @@ import {
 } from "../studio-page-modal-lazy-boundaries";
 import { STUDIO_PROJECT_MAX_PAGES } from "../studio-project-file";
 import { StudioSurfaceErrorBoundary } from "../StudioSurfaceErrorBoundary";
+import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
@@ -114,7 +115,7 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
             aria-live="polite"
             className="fixed right-3 top-16 z-[70] rounded-lg border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg shadow-lg"
           >
-            빠른 액세스를 여는 중…
+            {editorShellStatusText("studio.editorShellStatus.dialogs.quickAccessOpening", "빠른 액세스를 여는 중…")}
           </div>
         )}
       >
@@ -137,7 +138,7 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
             role="status"
             aria-live="polite"
           >
-            빠른 웹툰 조립 화면을 여는 중…
+            {editorShellStatusText("studio.editorShellStatus.dialogs.quickAssemblyOpening", "빠른 웹툰 조립 화면을 여는 중…")}
           </div>
         )}
       >
@@ -155,7 +156,7 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
             role="status"
             aria-live="polite"
           >
-            장면 스냅샷 라이브러리를 여는 중…
+            {editorShellStatusText("studio.editorShellStatus.dialogs.snapshotLibraryOpening", "장면 스냅샷 라이브러리를 여는 중…")}
           </div>
         )}
       >
@@ -176,7 +177,7 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
             role="status"
             aria-live="polite"
           >
-            애니매틱 타임라인을 여는 중…
+            {editorShellStatusText("studio.editorShellStatus.dialogs.animaticTimelineOpening", "애니매틱 타임라인을 여는 중…")}
           </div>
         )}
       >
@@ -204,7 +205,7 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
             role="status"
             aria-live="polite"
           >
-            제작 바이블을 여는 중…
+            {editorShellStatusText("studio.editorShellStatus.dialogs.productionBibleOpening", "제작 바이블을 여는 중…")}
           </div>
         )}
       >
@@ -225,11 +226,11 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
   {hybridDccRouteRequested && !hybridDccOpen ? (
     <StudioHybridDccRouteGate
       detail={hybridDccRouteAccess === "pending"
-        ? "권한·원고·협업 경계를 확인한 뒤 같은 작품의 3D 작업을 엽니다. 기다리는 동안 캔버스와 로컬 3D 원본은 변경되지 않습니다."
-        : "이 작품의 3D 원본을 편집할 수 없어 안전하게 캔버스로 돌아갑니다."}
+        ? editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckingDetail", "권한·원고·협업 경계를 확인한 뒤 같은 작품의 3D 작업을 엽니다. 기다리는 동안 캔버스와 로컬 3D 원본은 변경되지 않습니다.")
+        : editorShellStatusText("studio.editorShellStatus.dialogs.dccGateDeniedDetail", "이 작품의 3D 원본을 편집할 수 없어 안전하게 캔버스로 돌아갑니다.")}
       label={hybridDccRouteAccess === "pending"
-        ? "3D 작업 권한을 확인하는 중입니다."
-        : "3D 편집 권한을 확인하지 못했습니다."}
+        ? editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckingLabel", "3D 작업 권한을 확인하는 중입니다.")
+        : editorShellStatusText("studio.editorShellStatus.dialogs.dccGateCheckFailedLabel", "3D 편집 권한을 확인하지 못했습니다.")}
       onClose={() => setHybridDccOpen(false)}
       returnFocus={hybridDccReturnFocusRef.current}
     />
@@ -248,8 +249,8 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
       <Suspense
         fallback={(
           <StudioHybridDccRouteGate
-            detail="편집 권한과 로컬 복구 범위는 확인됐습니다. 무거운 3D 편집 모듈만 불러오는 중입니다."
-            label="전문 3D 제작 도구를 여는 중입니다."
+            detail={editorShellStatusText("studio.editorShellStatus.dialogs.dccModuleLoadingDetail", "편집 권한과 로컬 복구 범위는 확인됐습니다. 무거운 3D 편집 모듈만 불러오는 중입니다.")}
+            label={editorShellStatusText("studio.editorShellStatus.dialogs.dccModuleLoadingLabel", "전문 3D 제작 도구를 여는 중입니다.")}
             onClose={() => setHybridDccOpen(false)}
             returnFocus={hybridDccReturnFocusRef.current}
           />

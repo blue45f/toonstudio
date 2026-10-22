@@ -1,3 +1,5 @@
+import { aiErrorText } from "./studio-ai-error-i18n";
+
 export type Studio3dGenerationMode = "text-to-3d" | "image-to-3d" | "multiview-to-3d" | "texture-only";
 export type Studio3dGenerationJobState = "queued" | "uploading" | "generating-geometry" | "generating-texture" | "downloading" | "validating" | "importing" | "ready" | "failed" | "cancelled" | "expired";
 export interface Studio3dGenerationArtifactRevision {
@@ -66,8 +68,42 @@ const MAX_JSON_BYTES = 4 * 1024 * 1024;
 const MODES = new Set(["text-to-3d", "image-to-3d", "multiview-to-3d", "texture-only"]);
 const STATES = new Set(["queued", "uploading", "generating-geometry", "generating-texture", "downloading", "validating", "importing", "ready", "failed", "cancelled", "expired"]);
 
+/**
+ * 3D 생성 요청 오류 코드 (T3, 2026-10-22). 메시지는 생산 시점에 현재
+ * 로케일로 해석해 싣고(aiErrorText), code는 상태·사유 기반의 안정
+ * 식별자다. 서버가 준 메시지를 그대로 실은 경우(server_message)는
+ * 설계 §3.4-②대로 본문을 유지하되 코드로 구분한다. 로컬 검증
+ * 오류는 HTTP 상태가 없어 status 0을 쓴다.
+ */
+export type Studio3dGenerationErrorCode =
+  | "invalid_response"
+  | "response_too_large"
+  | "auth_required"
+  | "rate_limited"
+  | "server_unavailable"
+  | "request_rejected"
+  | "server_message"
+  | "user_identity_required"
+  | "idempotency_key_required"
+  | "inline_input_too_large"
+  | "job_id_required"
+  | "artifact_download_blocked"
+  | "artifact_empty"
+  | "artifact_size_mismatch"
+  | "secure_context_required"
+  | "artifact_integrity_mismatch"
+  | "artifact_wrong_document"
+  | "input_limit_invalid"
+  | "input_size_range"
+  | "input_size_mismatch";
+
 export class Studio3dGenerationRequestError extends Error {
-  constructor(message: string, readonly status: number, readonly retryAfterMs: number | null = null) {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly retryAfterMs: number | null = null,
+    readonly code: Studio3dGenerationErrorCode = "request_rejected",
+  ) {
     super(message);
     this.name = "Studio3dGenerationRequestError";
   }
@@ -81,7 +117,7 @@ function nonempty(value: unknown): value is string {
 function nonnegative(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
-function invalidResponse(): never { throw new Error("3D 생성 서버의 응답 형식이 올바르지 않아요. 원본 작업은 변경하지 않았어요."); }
+function invalidResponse(): never { throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.invalidResponse", "3D 생성 서버의 응답 형식이 올바르지 않아요. 원본 작업은 변경하지 않았어요."), 0, null, "invalid_response"); }
 export function validateStudio3dGenerationJob(value: unknown): Studio3dGenerationJob {
   if (!object(value) || !nonempty(value.id) || !STATES.has(String(value.state))
     || !Number.isSafeInteger(value.generation) || !nonnegative(value.generation)
@@ -106,7 +142,7 @@ async function responseBytes(response: Response, maxBytes: number, signal?: Abor
   const declared = Number(response.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) {
     await response.body?.cancel().catch(() => undefined);
-    throw new RangeError("3D 생성 응답이 허용 크기를 초과했어요.");
+    throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.responseTooLarge", "3D 생성 응답이 허용 크기를 초과했어요."), 0, null, "response_too_large");
   }
   if (!response.body) return new Uint8Array();
   const reader = response.body.getReader();
@@ -123,7 +159,7 @@ async function responseBytes(response: Response, maxBytes: number, signal?: Abor
       size += value.byteLength;
       if (size > maxBytes) {
         await reader.cancel().catch(() => undefined);
-        throw new RangeError("3D 생성 응답이 허용 크기를 초과했어요.");
+        throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.responseTooLarge", "3D 생성 응답이 허용 크기를 초과했어요."), 0, null, "response_too_large");
       }
       chunks.push(value);
     }
@@ -141,15 +177,20 @@ async function responseJson(response: Response, signal?: AbortSignal): Promise<u
   let payload: unknown;
   try { payload = JSON.parse(new TextDecoder().decode(bytes)); } catch { payload = undefined; }
   if (!response.ok) {
-    const defaultMessage = response.status === 401 || response.status === 403 ? "3D 생성을 사용하려면 로그인과 이용 권한을 확인해 주세요."
-      : response.status === 429 ? "3D 생성 요청이 많아요. 잠시 후 다시 시도해 주세요."
-      : response.status >= 500 ? "3D 생성 서버가 응답하지 못했어요. 원본을 유지한 채 다시 시도할 수 있어요."
-      : `3D 생성 요청에 실패했어요. (HTTP ${response.status})`;
-    const message = object(payload) && typeof payload.message === "string" && !/[<>]/u.test(payload.message)
-      ? payload.message.slice(0, 500) : defaultMessage;
+    const defaultCode: Studio3dGenerationErrorCode = response.status === 401 || response.status === 403 ? "auth_required"
+      : response.status === 429 ? "rate_limited"
+      : response.status >= 500 ? "server_unavailable"
+      : "request_rejected";
+    const defaultMessage = defaultCode === "auth_required" ? aiErrorText("studio.aiError.threed.authRequired", "3D 생성을 사용하려면 로그인과 이용 권한을 확인해 주세요.")
+      : defaultCode === "rate_limited" ? aiErrorText("studio.aiError.threed.rateLimited", "3D 생성 요청이 많아요. 잠시 후 다시 시도해 주세요.")
+      : defaultCode === "server_unavailable" ? aiErrorText("studio.aiError.threed.serverUnavailable", "3D 생성 서버가 응답하지 못했어요. 원본을 유지한 채 다시 시도할 수 있어요.")
+      : aiErrorText("studio.aiError.threed.requestRejected", { status: response.status }, "3D 생성 요청에 실패했어요. (HTTP {status})");
+    // 서버 메시지는 <> 검사·500자 절단을 통과한 경우에만 본문으로 채택한다(설계 §3.4-②).
+    const serverMessage = object(payload) && typeof payload.message === "string" && !/[<>]/u.test(payload.message)
+      ? payload.message.slice(0, 500) : null;
     const raw = response.headers.get("retry-after");
     const seconds = raw && /^\d+$/u.test(raw) ? Number(raw) : NaN;
-    throw new Studio3dGenerationRequestError(message, response.status, Number.isFinite(seconds) ? Math.min(seconds * 1000, 3_600_000) : null);
+    throw new Studio3dGenerationRequestError(serverMessage ?? defaultMessage, response.status, Number.isFinite(seconds) ? Math.min(seconds * 1000, 3_600_000) : null, serverMessage ? "server_message" : defaultCode);
   }
   if (payload === undefined) invalidResponse();
   return payload;
@@ -170,7 +211,7 @@ export class Studio3dGenerationHttpClient {
   readonly #fetch: typeof fetch;
   readonly #revisions = new Map<string, Studio3dGenerationArtifactRevision>();
   constructor(private readonly options: Studio3dGenerationClientOptions) {
-    if (!options.userId.trim()) throw new TypeError("Studio 3D generation client requires a user identity.");
+    if (!options.userId.trim()) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.userIdentityRequired", "Studio 3D generation client requires a user identity."), 0, null, "user_identity_required");
     this.#baseUrl = normalizedBaseUrl(options.baseUrl);
     this.#fetch = options.fetchImpl ?? fetch;
   }
@@ -196,13 +237,13 @@ export class Studio3dGenerationHttpClient {
     return status as unknown as Studio3dGenerationStatus;
   }
   async create(input: Studio3dGenerationCreateInput, idempotencyKey: string, signal?: AbortSignal): Promise<Studio3dGenerationJob> {
-    if (!idempotencyKey.trim()) throw new TypeError("중복 생성을 막기 위한 요청 ID가 필요해요.");
+    if (!idempotencyKey.trim()) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.idempotencyKeyRequired", "중복 생성을 막기 위한 요청 ID가 필요해요."), 0, null, "idempotency_key_required");
     const encodedCharacters = (input.images ?? []).reduce(
       (total, item) => total + item.dataBase64.length,
       input.model?.dataBase64.length ?? 0,
     );
     if (encodedCharacters > Math.ceil(STUDIO_3D_INLINE_INPUT_MAX_BYTES * 4 / 3) + 128) {
-      throw new RangeError("현재 3D 요청은 입력 파일 합계 10MB까지 지원해요. 더 큰 자산은 객체 저장소 업로드가 필요합니다.");
+      throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.inlineInputTooLarge", "현재 3D 요청은 입력 파일 합계 10MB까지 지원해요. 더 큰 자산은 객체 저장소 업로드가 필요합니다."), 0, null, "inline_input_too_large");
     }
     const response = await this.#fetch(`${this.#baseUrl}/jobs`, { method: "POST", headers: requestHeaders(this.options, idempotencyKey), credentials: "include", body: JSON.stringify(input), signal });
     return this.#remember(await responseJson(response, signal));
@@ -217,7 +258,7 @@ export class Studio3dGenerationHttpClient {
     return this.#jobRequest(jobId, "", "GET", signal);
   }
   async #jobRequest(jobId: string, suffix: string, method: "GET" | "POST", signal?: AbortSignal): Promise<Studio3dGenerationJob> {
-    if (!jobId.trim()) throw new TypeError("3D 생성 작업 ID가 필요해요.");
+    if (!jobId.trim()) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.jobIdRequired", "3D 생성 작업 ID가 필요해요."), 0, null, "job_id_required");
     const response = await this.#fetch(`${this.#baseUrl}/jobs/${encodeURIComponent(jobId)}${suffix}`, { method, headers: requestHeaders(this.options), credentials: "include", signal });
     return this.#remember(await responseJson(response, signal));
   }
@@ -232,30 +273,30 @@ export class Studio3dGenerationHttpClient {
     headers.delete("Content-Type");
     headers.set("Accept", "model/gltf-binary, application/octet-stream");
     const response = await this.#fetch(`${this.#baseUrl}/artifacts/${encodeURIComponent(revisionId)}`, { headers, credentials: "include", signal });
-    if (!response.ok) { await responseJson(response, signal); throw new Error("3D 결과를 내려받지 못했어요."); }
+    if (!response.ok) { await responseJson(response, signal); throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.artifactDownloadFailed", "3D 결과를 내려받지 못했어요."), 0, null, "artifact_download_blocked"); }
     const expected = this.#revisions.get(revisionId);
     const bytes = await responseBytes(response, expected?.byteLength ?? MAX_ARTIFACT_BYTES, signal);
-    if (!bytes.length) throw new Error("3D 결과 파일이 비어 있어요.");
+    if (!bytes.length) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.artifactEmpty", "3D 결과 파일이 비어 있어요."), 0, null, "artifact_empty");
     if (expected) {
-      if (bytes.byteLength !== expected.byteLength) throw new Error("3D 결과의 크기가 기록과 달라요. 다시 내려받아 주세요.");
-      if (!globalThis.crypto?.subtle) throw new Error("3D 결과 무결성 검증에는 보안 연결이 필요해요.");
+      if (bytes.byteLength !== expected.byteLength) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.artifactSizeMismatch", "3D 결과의 크기가 기록과 달라요. 다시 내려받아 주세요."), 0, null, "artifact_size_mismatch");
+      if (!globalThis.crypto?.subtle) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.secureContextRequired", "3D 결과 무결성 검증에는 보안 연결이 필요해요."), 0, null, "secure_context_required");
       const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
       signal?.throwIfAborted();
       const hex = Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("");
-      if (hex !== expected.contentHashSha256.toLowerCase()) throw new Error("3D 결과 검증에 실패했어요. 손상된 파일은 삽입하지 않았어요.");
+      if (hex !== expected.contentHashSha256.toLowerCase()) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.artifactIntegrityMismatch", "3D 결과 검증에 실패했어요. 손상된 파일은 삽입하지 않았어요."), 0, null, "artifact_integrity_mismatch");
     }
     const mime = expected?.mimeType ?? response.headers.get("content-type")?.split(";")[0] ?? "application/octet-stream";
-    if (mime.includes("html") || mime.includes("json") || mime.includes("javascript")) throw new Error("3D 모델 대신 오류 문서가 반환되었어요.");
+    if (mime.includes("html") || mime.includes("json") || mime.includes("javascript")) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.artifactWrongDocument", "3D 모델 대신 오류 문서가 반환되었어요."), 0, null, "artifact_wrong_document");
     return new Blob([bytes], { type: mime });
   }
 }
 export async function studioFileToGenerationInput(file: File, maxBytes: number, label?: string, signal?: AbortSignal): Promise<Studio3dGenerationBinaryInput> {
   signal?.throwIfAborted();
-  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_ARTIFACT_BYTES) throw new RangeError("입력 파일의 크기 제한이 올바르지 않아요.");
-  if (file.size < 1 || file.size > maxBytes) throw new RangeError(`File must be between 1 byte and ${maxBytes} bytes.`);
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_ARTIFACT_BYTES) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.inputLimitInvalid", "입력 파일의 크기 제한이 올바르지 않아요."), 0, null, "input_limit_invalid");
+  if (file.size < 1 || file.size > maxBytes) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.inputSizeRange", { maxBytes }, "File must be between 1 byte and {maxBytes} bytes."), 0, null, "input_size_range");
   const bytes = new Uint8Array(await file.arrayBuffer());
   signal?.throwIfAborted();
-  if (bytes.byteLength !== file.size || bytes.byteLength > maxBytes) throw new RangeError("입력 파일의 실제 크기가 파일 정보와 달라요.");
+  if (bytes.byteLength !== file.size || bytes.byteLength > maxBytes) throw new Studio3dGenerationRequestError(aiErrorText("studio.aiError.threed.inputSizeMismatch", "입력 파일의 실제 크기가 파일 정보와 달라요."), 0, null, "input_size_mismatch");
   let binary = "";
   const chunkSize = 32_768;
   for (let offset = 0; offset < bytes.length; offset += chunkSize) {

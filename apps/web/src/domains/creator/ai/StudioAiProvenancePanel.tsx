@@ -92,6 +92,13 @@ const STATUS_LABELS: Record<StudioAiOperationStatus, string> = {
   cancelled: "취소됨",
 };
 
+const STATUS_LABEL_KEYS: Record<StudioAiOperationStatus, string> = {
+  pending: "studio.aiStatus.provenance.statusPending",
+  succeeded: "studio.aiStatus.provenance.statusSucceeded",
+  failed: "studio.aiStatus.provenance.statusFailed",
+  cancelled: "studio.aiStatus.provenance.statusCancelled",
+};
+
 const TRANSPORT_LABELS: Record<StudioAiOperationTransport, string> = {
   server: "서버 보호 경로",
   byok: "브라우저 직접 연결",
@@ -223,7 +230,7 @@ function SafeTechnicalDetails({ operation }: { operation: StudioAiOperation }) {
               <dt className="text-fg-3">{t("studio.aiStatus.errorCategory", "오류 범주")}</dt>
               <dd className="font-semibold text-fg-2">
                 {ERROR_CATEGORY_LABELS[operation.error.category]}
-                {operation.error.retriable ? " · 다시 시도 가능" : " · 자동 재시도 안 함"}
+                {operation.error.retriable ? t("studio.aiStatus.provenance.retriableSuffix", " · 다시 시도 가능") : t("studio.aiStatus.provenance.notRetriableSuffix", " · 자동 재시도 안 함")}
               </dd>
             </>
           )}
@@ -250,7 +257,7 @@ function OperationRow({ operation }: { operation: StudioAiOperation }) {
               className={`inline-flex min-h-7 items-center gap-1 rounded-full border px-2 text-[0.65rem] font-semibold ${statusTone(operation.status)}`}
             >
               <StatusIcon status={operation.status} />
-              {STATUS_LABELS[operation.status]}
+              {t(STATUS_LABEL_KEYS[operation.status], STATUS_LABELS[operation.status])}
             </span>
           </div>
           <p className="mt-1 break-words text-xs leading-relaxed text-fg-2">
@@ -520,7 +527,7 @@ export function StudioAiProvenancePanel({
                   className={`${BUTTON_CLASS} ${statusFilter === status ? statusTone(status) : ""}`}
                 >
                   <StatusIcon status={status} />
-                  {STATUS_LABELS[status]} {formatCount(statusCounts[status])}
+                  {t(STATUS_LABEL_KEYS[status], STATUS_LABELS[status])} {formatCount(statusCounts[status])}
                 </button>
               ))}
             </div>
