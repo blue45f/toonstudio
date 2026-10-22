@@ -95,6 +95,24 @@ describe("parseStudioBg3dBundleThemePacks", () => {
     expect(data.packs[0]?.rights).toBeNull();
   });
 
+  it("keeps restrictive pack rights exactly as written instead of normalizing them to the defaults", () => {
+    // 기본값(상업 이용 가능·출처 표기 불필요)과 다른 값이 그대로 전달돼야 한다 — 권리를 넓히는 정규화가 없다.
+    const data = parseStudioBg3dBundleThemePacks(mutate((raw) => {
+      const rights = ((raw.packs as Record<string, unknown>[])[0] as Record<string, unknown>).rights as Record<string, unknown>;
+      rights.status = "public-domain";
+      rights.licenseName = "CC0 1.0";
+      rights.commercialUse = false;
+      rights.attributionRequired = true;
+    }));
+    expect(data.packs[0]?.rights).toEqual({
+      serve: "allow",
+      status: "public-domain",
+      licenseName: "CC0 1.0",
+      commercialUse: false,
+      attributionRequired: true,
+    });
+  });
+
   it("rejects pack rights that are not an allowed, well-formed grant", () => {
     const rightsOf = (raw: Record<string, unknown>) => ((raw.packs as Record<string, unknown>[])[0] as Record<string, unknown>).rights as Record<string, unknown>;
     // 서빙이 허용되지 않은 팩은 데이터에 있을 수 없다 (생성기는 hold 팩을 pendingPacks로만 보낸다).
@@ -209,6 +227,7 @@ describe("loadStudioBg3dBundleDeployAvailability", () => {
   it("is available only when the deploy index matches the theme-pack totals", async () => {
     const matching = {
       schema: "toonstudio.bundle-v2-deploy-index.v1", version: 1, files: 1, bytes: 128, packs: 1,
+      keyScheme: "sha256",
     };
     await expect(loadStudioBg3dBundleDeployAvailability(data, { fetcher: indexFetcher(matching) }))
       .resolves.toBe("available");
@@ -221,6 +240,18 @@ describe("loadStudioBg3dBundleDeployAvailability", () => {
     await expect(loadStudioBg3dBundleDeployAvailability(data, {
       fetcher: indexFetcher({ ...matching, schema: "other" }),
     })).resolves.toBe("unavailable");
+  });
+
+  it("is unavailable when the index was uploaded with another key scheme, even if the totals match", async () => {
+    // 옛 경로형 키로 올라간 인덱스(keyScheme 없음)는 합계가 같아도 로더가 요청하는 sha256 URL의 객체를 가리키지 못한다.
+    const legacy = { schema: "toonstudio.bundle-v2-deploy-index.v1", version: 1, files: 1, bytes: 128, packs: 1 };
+    await expect(loadStudioBg3dBundleDeployAvailability(data, { fetcher: indexFetcher(legacy) }))
+      .resolves.toBe("unavailable");
+    for (const keyScheme of ["path", "SHA256", "", null, 256]) {
+      await expect(loadStudioBg3dBundleDeployAvailability(data, {
+        fetcher: indexFetcher({ ...legacy, keyScheme }),
+      })).resolves.toBe("unavailable");
+    }
   });
 
   it("treats a missing index and fetch failures as unavailable, never available", async () => {

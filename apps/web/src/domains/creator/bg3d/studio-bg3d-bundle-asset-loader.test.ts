@@ -294,6 +294,36 @@ describe("studioBg3dBundleAssetRights (팩별 권리 조회)", () => {
     });
   });
 
+  it.each([
+    { commercialUse: false, attributionRequired: false },
+    { commercialUse: true, attributionRequired: true },
+    { commercialUse: false, attributionRequired: true },
+  ])("passes a restrictive pack grant through unchanged (commercialUse=$commercialUse, attributionRequired=$attributionRequired)", async (grant) => {
+    // 기본값(상업 이용 가능·출처 표기 불필요)과 다른 값이 레코드 권리까지 그대로 가야 한다 — 권리를 넓히는 정규화가 없다.
+    const raw = multiPackRaw();
+    const packs = raw.packs as Record<string, unknown>[];
+    packs[1] = {
+      ...packs[1],
+      rights: { serve: "allow", status: "licensed", licenseName: "Restrictive Test License", ...grant },
+    };
+    const data = parseStudioBg3dBundleThemePacks(raw);
+    const restrictive = data.assets[1];
+    if (!restrictive) throw new Error("fixture asset missing");
+    const expected = { status: "licensed", licenseName: "Restrictive Test License", ...grant };
+    expect(studioBg3dBundleAssetRights(restrictive, data)).toEqual(expected);
+    // 같은 값이 레코드 소스의 권리로도 전달된다 (다른 팩의 권리와 섞이지 않는다).
+    const source = await resolveStudioBg3dBundleRecordSource("cbv1-ingest-test-002", {
+      loadData: () => loadStudioBg3dBundleThemePacks({
+        fetcher: async () => ({ ok: true, status: 200, json: async () => raw }),
+      }),
+    });
+    expect(source?.rights).toEqual(expected);
+    const sibling = data.assets[0];
+    if (!sibling) throw new Error("fixture asset missing");
+    expect(studioBg3dBundleAssetRights(sibling, data).commercialUse).toBe(true);
+    expect(studioBg3dBundleAssetRights(sibling, data).attributionRequired).toBe(false);
+  });
+
   it("closes the rights as unknown and non-commercial when the pack carries no rights block", async () => {
     const data = parseStudioBg3dBundleThemePacks(multiPackRaw());
     const legacy = data.assets[2];

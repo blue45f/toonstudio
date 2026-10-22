@@ -508,14 +508,16 @@ export function countStudioBg3dBundlePackDeferred(pack: StudioBg3dBundleThemePac
 /* ── 배포 가용성 판정 ──────────────────────────────────────────────────────
  * theme-packs.json은 메타데이터라 GLB 실물 배포 여부와 무관하게 읽힌다.
  * 실물 배포의 완료 신호는 배포 절차(scripts/plan-creator-bundle-deploy.mjs)가
- * 마지막 객체로 올리는 배포 인덱스다. 인덱스가 없거나 합계가 테마 팩
- * 데이터와 어긋나면 "배포 미완료"로 판정해, 패널이 배치 가능으로
+ * 마지막 객체로 올리는 배포 인덱스다. 인덱스가 없거나 키 방식(keyScheme)이 다르거나
+ * 합계가 테마 팩 데이터와 어긋나면 "배포 미완료"로 판정해, 패널이 배치 가능으로
  * 오인시키지 않게 한다. */
 
 export const STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL =
   "/assets/studio/bundle-v2/manifest.json" as const;
 export const STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_SCHEMA =
   "toonstudio.bundle-v2-deploy-index.v1" as const;
+/** 로더 URL(studioBg3dBundleAssetUrl)과 짝인 R2 키 방식. 인덱스가 다른 방식이면 객체를 찾을 수 없다. */
+export const STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_KEY_SCHEME = "sha256" as const;
 
 export type StudioBg3dBundleDeployAvailability = "available" | "unavailable";
 
@@ -544,6 +546,8 @@ export async function loadStudioBg3dBundleDeployAvailability(
     if (!index || index.schema !== STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_SCHEMA || index.version !== 1) {
       return "unavailable";
     }
+    // 옛 경로형 키로 올라간 인덱스(keyScheme 없음)는 합계가 같아도 sha256 URL의 객체를 가리키지 못한다.
+    if (index.keyScheme !== STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_KEY_SCHEME) return "unavailable";
     const expectedBytes = data.assets.reduce((sum, asset) => sum + asset.bytes, 0);
     return index.files === data.totals.placeableAssets && index.bytes === expectedBytes
       ? "available"
