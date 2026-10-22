@@ -875,12 +875,17 @@ export function StudioMannequinPoserPanel({
     setPoseHistorySnapshot(poseHistoryRef.current);
   }
 
-  /** 사용자 결정(프리셋·미러·초기화·사진 적용 등)으로 포즈를 바꿀 때 사용한다. 자동 접지가 켜져 있으면 커밋 전에 발 관통을 골반 오프셋으로 보정한다. */
+  /**
+   * 사용자 결정(프리셋·미러·초기화·사진 적용 등)으로 포즈를 바꿀 때 사용한다. 자동 접지가 켜져 있으면 커밋 전에 발 관통을 골반 오프셋으로 보정한다.
+   * 실제로 커밋한 포즈(보정 후)를 돌려준다 — 호출한 쪽이 "방금 내가 적용한 포즈"와 이후 pose 상태를 같은 객체로 견줄 수 있다.
+   */
   const commitPoseWithHistory = useCallback(
-    (nextPose: StudioMannequinPose) => {
+    (nextPose: StudioMannequinPose): StudioMannequinPose => {
       recordPoseHistory();
       rotateGestureRecordedRef.current = true;
-      commitPose(groundFootPose(nextPose, stateRef.current.params).pose);
+      const committed = groundFootPose(nextPose, stateRef.current.params).pose;
+      commitPose(committed);
+      return committed;
     },
     [commitPose, groundFootPose],
   );
@@ -1657,8 +1662,9 @@ export function StudioMannequinPoserPanel({
       return false;
     }
 
-    commitPoseWithHistory(plan.pose);
-    photoPoseAppliedPoseRef.current = plan.pose;
+    // 자동 접지가 골반을 보정하면 커밋되는 포즈는 plan.pose 와 다른 객체다. 보정 후 포즈를 기준으로 삼아야
+    // "포즈가 바뀌면 배너를 닫는" 효과가 방금 적용한 결과를 사용자 편집으로 오인해 배너를 곧바로 닫지 않는다.
+    photoPoseAppliedPoseRef.current = commitPoseWithHistory(plan.pose);
     setPhotoPoseApplyStatus({
       sourceName: payload.sourceName,
       confidencePercent: Math.round(payload.confidence.overall * 100),

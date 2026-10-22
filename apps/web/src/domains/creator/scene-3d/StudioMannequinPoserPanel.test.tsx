@@ -686,7 +686,10 @@ describe("StudioMannequinPoserPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("status").textContent).toContain("엔진 준비 완료");
+      // 패널에는 AI 연결 상태 배지(role=status)도 함께 있어 status 가 하나가 아니다 — 카메라 안내는 내용으로 골라 읽는다.
+      expect(
+        screen.getAllByRole("status").find((node) => node.textContent?.includes("엔진 준비 완료")),
+      ).toBeTruthy();
     });
     expect(screen.getByRole("button", { name: "카메라 연결 취소" })).toBeTruthy();
 
