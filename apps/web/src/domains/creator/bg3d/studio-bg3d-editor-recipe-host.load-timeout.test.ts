@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StudioBg3dEditorRecipeHost } from "./studio-bg3d-editor-recipe-run";
 
 // 본문 모듈의 불러오기가 끝나지 않거나 늦게 끝나는 상황(멈춘 네트워크)을 만든다. 시험마다 새 모듈 레지스트리로 시작한다.
-const gate = vi.hoisted(() => ({ load: null as Promise<object> | null, place: vi.fn() }));
+const gate = vi.hoisted(() => ({ load: new Promise<object>(() => {}), place: vi.fn() }));
 vi.mock("./studio-bg3d-editor-recipe-run", () => gate.load);
 
 async function setup() {
