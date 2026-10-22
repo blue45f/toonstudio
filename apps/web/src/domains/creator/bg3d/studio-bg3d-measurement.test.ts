@@ -31,7 +31,7 @@ function measurement(
 ) {
   const result = measureStudioBg3dWorldPoints(start, end);
   expect(result.ok).toBe(true);
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(result.code);
   return result.measurement;
 }
 
@@ -45,7 +45,7 @@ function addGuide(
     endWorld: end,
   });
   expect(result.ok).toBe(true);
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(result.code);
   return result;
 }
 
@@ -93,6 +93,8 @@ describe("Studio BG3D world measurement", () => {
       expect(measureStudioBg3dWorldPoints(point, [0, 0, 0])).toMatchObject({
         ok: false,
         reason: "invalid-point",
+        code: "pointNotFinite",
+        params: { maxCoordinate: "10,000" },
       });
     }
   });
@@ -118,7 +120,7 @@ describe("Studio BG3D axis / parallel / perpendicular inference", () => {
       },
       evaluatedReferences: 2,
     });
-    if (!result.ok) throw new Error(result.message);
+    if (!result.ok) throw new Error(result.code);
     expect(result.matches).toEqual([
       { kind: "axis", axis: "x", sign: -1, angularErrorDegrees: 0 },
       { kind: "parallel", referenceId: "edge-x", sign: -1, angularErrorDegrees: 0 },
@@ -152,12 +154,12 @@ describe("Studio BG3D axis / parallel / perpendicular inference", () => {
     expect(classifyStudioBg3dMeasurementInference({
       startWorld: [0, 0, 0],
       endWorld: [0, 0, 0],
-    })).toMatchObject({ ok: false, reason: "degenerate-direction" });
+    })).toMatchObject({ ok: false, reason: "degenerate-direction", code: "samePoints" });
     expect(classifyStudioBg3dMeasurementInference({
       startWorld: [0, 0, 0],
       endWorld: [1, 0, 0],
       toleranceDegrees: 30,
-    })).toMatchObject({ ok: false, reason: "invalid-tolerance" });
+    })).toMatchObject({ ok: false, reason: "invalid-tolerance", code: "toleranceOutOfRange", params: { maxDegrees: "15" } });
     expect(classifyStudioBg3dMeasurementInference({
       startWorld: [0, 0, 0],
       endWorld: [1, 0, 0],
@@ -165,12 +167,12 @@ describe("Studio BG3D axis / parallel / perpendicular inference", () => {
         { id: "same", directionWorld: [1, 0, 0] },
         { id: "same", directionWorld: [0, 1, 0] },
       ],
-    })).toMatchObject({ ok: false, reason: "duplicate-reference-id" });
+    })).toMatchObject({ ok: false, reason: "duplicate-reference-id", code: "duplicateReferenceId", params: { referenceId: "same" } });
     expect(classifyStudioBg3dMeasurementInference({
       startWorld: [0, 0, 0],
       endWorld: [1, 0, 0],
       references: [{ id: "zero", directionWorld: [0, 0, 0] }],
-    })).toMatchObject({ ok: false, reason: "invalid-reference" });
+    })).toMatchObject({ ok: false, reason: "invalid-reference", code: "referenceDirectionInvalid", params: { referenceId: "zero" } });
     expect(classifyStudioBg3dMeasurementInference({
       startWorld: [0, 0, 0],
       endWorld: [1, 0, 0],
@@ -178,7 +180,7 @@ describe("Studio BG3D axis / parallel / perpendicular inference", () => {
         { length: STUDIO_BG3D_MEASUREMENT_MAX_REFERENCES + 1 },
         (_, index) => ({ id: `ref-${index}`, directionWorld: [1, 0, 0] as const }),
       ),
-    })).toMatchObject({ ok: false, reason: "reference-budget-exceeded" });
+    })).toMatchObject({ ok: false, reason: "reference-budget-exceeded", code: "referenceBudgetExceeded", params: { maxReferences: "128" } });
   });
 });
 
@@ -217,17 +219,17 @@ describe("Studio BG3D numeric length lock", () => {
       startWorld: [0, 0, 0],
       proposedEndWorld: [1, 0, 0],
       lockedLengthMeters: 0,
-    })).toMatchObject({ ok: false, reason: "invalid-length" });
+    })).toMatchObject({ ok: false, reason: "invalid-length", code: "lockLengthOutOfRange" });
     expect(lockStudioBg3dMeasurementLength({
       startWorld: [0, 0, 0],
       proposedEndWorld: [0, 0, 0],
       lockedLengthMeters: 1,
-    })).toMatchObject({ ok: false, reason: "degenerate-direction" });
+    })).toMatchObject({ ok: false, reason: "degenerate-direction", code: "lockNeedsDirection" });
     expect(lockStudioBg3dMeasurementLength({
       startWorld: [STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE, 0, 0],
       proposedEndWorld: [STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE - 1, 0, 0],
       lockedLengthMeters: 20_001,
-    })).toMatchObject({ ok: false, reason: "result-out-of-bounds" });
+    })).toMatchObject({ ok: false, reason: "result-out-of-bounds", code: "lockResultOutOfBounds" });
   });
 });
 
@@ -266,7 +268,7 @@ describe("Studio BG3D persistent measurement guides", () => {
         visible: true,
       },
     });
-    if (!created.ok) throw new Error(created.message);
+    if (!created.ok) throw new Error(created.code);
     expect(resolveStudioBg3dMeasurementGuide(created.guide, "cm")).toMatchObject({
       ok: true,
       resolved: {
@@ -284,18 +286,18 @@ describe("Studio BG3D persistent measurement guides", () => {
       id: "__proto__",
       startWorld: [0, 0, 0],
       endWorld: [1, 0, 0],
-    })).toMatchObject({ ok: false, reason: "invalid-guide-id" });
+    })).toMatchObject({ ok: false, reason: "invalid-guide-id", code: "guideIdInvalid" });
     expect(createStudioBg3dMeasurementGuide({
       id: "zero",
       startWorld: [0, 0, 0],
       endWorld: [0, 0, 0],
-    })).toMatchObject({ ok: false, reason: "invalid-guide" });
+    })).toMatchObject({ ok: false, reason: "invalid-guide", code: "zeroLengthGuide" });
     expect(createStudioBg3dMeasurementGuide({
       id: "wrong-lock",
       startWorld: [0, 0, 0],
       endWorld: [1, 0, 0],
       lockedLengthMeters: 2,
-    })).toMatchObject({ ok: false, reason: "invalid-length" });
+    })).toMatchObject({ ok: false, reason: "invalid-length", code: "lockLengthMismatch" });
   });
 
   it("allocates monotonic IDs, deletes without mutation, and does not reuse a deleted ID", () => {
@@ -306,7 +308,7 @@ describe("Studio BG3D persistent measurement guides", () => {
     expect(second.guide?.id).toBe("measure-guide-0002");
     const deleted = deleteStudioBg3dMeasurementGuide(second.document, "measure-guide-0001");
     expect(deleted.ok).toBe(true);
-    if (!deleted.ok) throw new Error(deleted.message);
+    if (!deleted.ok) throw new Error(deleted.code);
     const third = addGuide(deleted.document, [0, 0, 0], [0, 0, 3]);
     expect(third.guide?.id).toBe("measure-guide-0003");
     expect(empty.guides).toEqual([]);
@@ -328,7 +330,7 @@ describe("Studio BG3D persistent measurement guides", () => {
       ok: true,
       document: { guides: [{ visible: false }] },
     });
-    if (!hidden.ok) throw new Error(hidden.message);
+    if (!hidden.ok) throw new Error(hidden.code);
     expect(setStudioBg3dMeasurementUnit(hidden.document, "mm")).toMatchObject({
       ok: true,
       document: { unit: "mm" },
@@ -336,7 +338,7 @@ describe("Studio BG3D persistent measurement guides", () => {
     expect(deleteStudioBg3dMeasurementGuide(
       hidden.document,
       "missing-guide",
-    )).toMatchObject({ ok: false, reason: "guide-not-found" });
+    )).toMatchObject({ ok: false, reason: "guide-not-found", code: "guideNotFound", params: { guideId: "missing-guide" } });
   });
 
   it("round-trips a canonical bounded document and rejects unknown fields/duplicates/corruption", () => {
@@ -374,14 +376,14 @@ describe("Studio BG3D persistent measurement guides", () => {
         endWorld: [1 + index / 1_000, 0, 0],
       });
       expect(result.ok, `guide ${index + 1}`).toBe(true);
-      if (!result.ok) throw new Error(result.message);
+      if (!result.ok) throw new Error(result.code);
       document = result.document;
     }
     expect(document.guides).toHaveLength(STUDIO_BG3D_MEASUREMENT_MAX_GUIDES);
     expect(addStudioBg3dMeasurementGuide(document, {
       startWorld: [0, 0, 0],
       endWorld: [2, 0, 0],
-    })).toMatchObject({ ok: false, reason: "guide-budget-exceeded" });
+    })).toMatchObject({ ok: false, reason: "guide-budget-exceeded", code: "guideBudgetExceeded", params: { maxGuides: "256" } });
   });
 
   it("uses an explicit small versioned document root", () => {

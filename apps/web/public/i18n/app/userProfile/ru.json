@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "Содержание профиля",
   "userProfile.refresh": "Одновременно",
   "userProfile.emptyReviews": "Никаких отзывов не опубликованного этим пользователем.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "Не удалось загрузить созданные произведения. Попробуйте снова.",
+  "userProfile.series.error": "Не удалось загрузить серии. Попробуйте снова.",
+  "userProfile.emptyReviewsHint": "Оставьте первый отзыв о произведении, которое вам нравится.",
+  "userProfile.emptyReviewsCta": "Просмотреть произведения"
 }
