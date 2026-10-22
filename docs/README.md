@@ -73,6 +73,10 @@ UI/UX 자동 측정 하니스와 기준선(2026-10-16, 역사 자료)은 다음 
 1. [`../scripts/ux-audit/README.md`](../scripts/ux-audit/README.md) — 측정 항목, 점수 규칙, 실행·보안 규칙(현재 구현)
 2. [`reports/ux-audit-baseline-2026-10-16.md`](reports/ux-audit-baseline-2026-10-16.md) — 개발 서버 기준 합계 95.12 와 시간 지표 최악 가정 하한 89.71, 감점 유형별 회수 점수, 미측정 항목, 다시 재는 법
 
+onpod.ai 호스팅 이전 평가(2026-10-22, 제안 상태이며 현재 운영 구성이 아니다)는 다음 문서를 추가로 본다.
+
+1. [`adr/0029-onpod-hosting-migration.md`](adr/0029-onpod-hosting-migration.md) — 무료 한도 대조, 구성요소별 판정, Core API 1단계 이전 절차·롤백·열린 결정(Proposed)
+
 ## 문서 상태 표기
 
 - **현재**: 소스와 테스트로 지금 검증 가능
