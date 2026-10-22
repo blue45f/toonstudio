@@ -13,9 +13,73 @@ export const CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS = [
   "brand/toonstudio-product-tour.mp4",
 ] as const;
 
+/**
+ * R2로 옮긴 대용량 바이너리 미디어(2026-10-23). Static Assets 무료 한도(배포당 파일 20,000개)를
+ * 넘지 않게, 3D 모델·캐릭터·텍스처를 R2에 두고 Worker가 같은 경로로 서빙한다. 서빙 경로가 곧 R2
+ * 키라 앱 코드·CSP·DNS는 바뀌지 않는다. JSON 매니페스트·라이선스 텍스트는 경로별 헤더 규칙이 있어
+ * Static Assets에 남는다. R2에 객체가 없으면 Static Assets로 폴백한다(단계 이관·롤백 안전망).
+ */
+export const CLOUDFLARE_R2_MEDIA_PREFIXES = [
+  "/assets/studio/cc0-20260906/",
+  "/assets/virtual-studio/",
+  "/assets/3d/",
+  "/vrm/",
+] as const;
+const R2_MEDIA_CONTENT_TYPES: Readonly<Record<string, string>> = {
+  glb: "model/gltf-binary",
+  vrm: "application/octet-stream",
+  png: "image/png",
+  jpg: "image/jpeg",
+  webp: "image/webp",
+  hdr: "image/vnd.radiance",
+  ogg: "audio/ogg",
+};
+/** Static Assets 시절 `/assets/*`·`/vrm/*` 헤더 규칙과 같은 캐시 정책(엣지 캐시를 막지 않는다). */
+export const CLOUDFLARE_R2_MEDIA_CACHE_CONTROL = "public, max-age=31536000, immutable";
+// 인코딩이 필요 없는 경로만 R2로 보낸다(이관 대상 7,159개 전부 해당). 그 밖의 문자는 Static Assets가 처리한다.
+const R2_MEDIA_SAFE_PATH_PATTERN = /^\/[A-Za-z0-9._~/-]+$/u;
+
+/** `.assetsignore`에 더해 Static Assets 업로드에서 빼는 패턴. R2 동기화가 끝난 뒤에만 배포된다. */
+export const CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS = CLOUDFLARE_R2_MEDIA_PREFIXES.flatMap(
+  (prefix) => Object.keys(R2_MEDIA_CONTENT_TYPES).map((extension) => `${prefix.slice(1)}**/*.${extension}`),
+);
+
+/**
+ * `wrangler.jsonc`의 `run_worker_first`에 넣는 R2 미디어 패턴(`*`는 하위 경로까지 맞는다).
+ * `run_worker_first`를 배열로 쓰면 `Sec-Fetch-Mode` 판별이 꺼져, Static Assets에 없는 경로는 Worker가 아니라
+ * SPA `index.html`(200)로 응답된다. 2026-10-23 첫 배포에서 미디어 7,158개가 HTML로 나가 바로 롤백했다.
+ * 확장자별로 넣어 매니페스트 JSON은 지금처럼 Static Assets가 경로별 헤더 규칙과 함께 바로 내준다.
+ */
+export const CLOUDFLARE_R2_MEDIA_WORKER_FIRST_PATTERNS = CLOUDFLARE_R2_MEDIA_PREFIXES.flatMap(
+  (prefix) => Object.keys(R2_MEDIA_CONTENT_TYPES).map((extension) => `${prefix}*.${extension}`),
+);
+
 export const CLOUDFLARE_LARGE_ASSET_ENCODINGS = ["br", "gzip"] as const;
 export type CloudflareLargeAssetEncoding =
   (typeof CLOUDFLARE_LARGE_ASSET_ENCODINGS)[number];
+
+export interface AssetsBinding {
+  fetch(request: Request): Promise<Response>;
+}
+
+export interface R2ObjectBinding {
+  readonly size: number;
+  readonly httpEtag: string;
+  readonly range?: { readonly offset: number; readonly length: number };
+  writeHttpMetadata(headers: Headers): void;
+}
+
+export interface R2ObjectBodyBinding extends R2ObjectBinding {
+  readonly body: ReadableStream<Uint8Array>;
+}
+
+export interface R2BucketBinding {
+  get(
+    key: string,
+    options?: { readonly range?: Headers },
+  ): Promise<R2ObjectBodyBinding | null>;
+  head(key: string): Promise<R2ObjectBinding | null>;
+}
 
 export interface CloudflareLargeAssetDescriptor {
   readonly contentType: string;
@@ -35,6 +99,14 @@ export interface CloudflareLargeAssetDescriptor {
    * 객체는 R2에서 삭제하기 전까지 계속 서빙된다.
    */
   readonly sameOriginOnly?: boolean;
+  /** R2에 없으면 Static Assets로 폴백하는 미디어 경로(`CLOUDFLARE_R2_MEDIA_PREFIXES`). */
+  readonly staticFallback?: boolean;
+  /**
+   * Static Assets의 `/assets/*` 규칙처럼 교차 출처 읽기를 열지 않는다: CORS 헤더 없이
+   * `Cross-Origin-Resource-Policy: same-origin`을 붙인다. 라이선스 팩이 섞인 미디어를
+   * R2로 옮겨도 핫링크 억제 수준이 그대로 유지된다.
+   */
+  readonly sameOriginResource?: boolean;
 }
 
 /**
@@ -94,7 +166,24 @@ export function cloudflareLargeAssetDescriptor(
   if (BUNDLE_V2_GLB_PATH_PATTERN.test(pathname)) {
     return { contentType: "model/gltf-binary", sameOriginOnly: true };
   }
-  return null;
+  return cloudflareR2MediaDescriptor(pathname);
+}
+
+export function cloudflareR2MediaDescriptor(
+  pathname: string,
+): CloudflareLargeAssetDescriptor | null {
+  if (!R2_MEDIA_SAFE_PATH_PATTERN.test(pathname) || pathname.includes("/../") || pathname.includes("//")) {
+    return null;
+  }
+  if (!CLOUDFLARE_R2_MEDIA_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null;
+  const contentType = R2_MEDIA_CONTENT_TYPES[pathname.slice(pathname.lastIndexOf(".") + 1).toLowerCase()];
+  if (!contentType) return null;
+  return {
+    contentType,
+    cacheControl: CLOUDFLARE_R2_MEDIA_CACHE_CONTROL,
+    staticFallback: true,
+    sameOriginResource: pathname.startsWith("/assets/"),
+  };
 }
 
 export function isCloudflareOversizedAssetPath(pathname: string): boolean {
@@ -109,6 +198,9 @@ export function supportsCloudflareStaticSidecar(pathname: string): boolean {
   // bundle-v2도 R2가 유일한 원본이다. dist에 우연히 섞여도 sidecar를 만들지
   // 않는다 (배포는 plan-creator-bundle-deploy.mjs 경로로만 한다).
   if (pathname.startsWith(CLOUDFLARE_BUNDLE_V2_PATH_PREFIX)) return false;
+  // R2 미디어 이관 대상은 Static Assets에 올라가지 않으니 압축 사본도 만들지 않는다.
+  // 단 25 MiB를 넘어 이관 전부터 명시 등록된 경로(모듈러 벤치)는 기존 계약대로 사본을 둔다.
+  if (pathname !== MODULAR_STREET_SEATING_PATH && cloudflareR2MediaDescriptor(pathname)) return false;
   return pathname !== PRODUCT_TOUR_PATH && isCloudflareOversizedAssetPath(pathname);
 }
 
@@ -161,4 +253,75 @@ export function matchesIfRange(request: Request, httpEtag: string): boolean {
   if (!raw) return true;
   if (raw.startsWith("W/") || !raw.startsWith('"')) return false;
   return raw === httpEtag;
+}
+
+/**
+ * R2 객체 응답 헤더. 대형 에셋은 교차 출처 읽기를 열고(CORS), 동일 출처 리소스(미디어 `/assets/*`)는
+ * Static Assets 규칙처럼 `Cross-Origin-Resource-Policy: same-origin`으로 닫는다. 구매 번들
+ * (`sameOriginOnly`)은 CORS 없이 `Vary: Sec-Fetch-Site`만 붙인다.
+ */
+export function r2AssetResponseHeaders(
+  object: R2ObjectBinding,
+  descriptor: CloudflareLargeAssetDescriptor,
+  partial: boolean,
+): Headers {
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("content-type", descriptor.contentType);
+  headers.set("cache-control", descriptor.cacheControl ?? CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL);
+  headers.set("etag", object.httpEtag);
+  headers.set("accept-ranges", "bytes");
+  if (descriptor.sameOriginOnly) {
+    headers.append("vary", "Sec-Fetch-Site");
+  } else if (descriptor.sameOriginResource) {
+    headers.set("cross-origin-resource-policy", "same-origin");
+    headers.set("cross-origin-embedder-policy", "credentialless");
+  } else {
+    headers.set("access-control-allow-origin", "*");
+    headers.set(
+      "access-control-expose-headers",
+      "Accept-Ranges, Content-Length, Content-Range, ETag",
+    );
+  }
+  headers.set("x-toonstudio-large-asset-source", "r2");
+  if (partial && object.range) {
+    const end = object.range.offset + object.range.length - 1;
+    headers.set(
+      "content-range",
+      `bytes ${object.range.offset}-${end}/${object.size}`,
+    );
+    headers.set("content-length", String(object.range.length));
+  } else {
+    headers.delete("content-range");
+    headers.set("content-length", String(object.size));
+  }
+  return headers;
+}
+
+/** R2 에셋 사전 요청(OPTIONS) 헤더. GET과 같은 출처 정책을 따른다 — 동일 출처 미디어에는 CORS를 주지 않는다. */
+export function r2PreflightHeaders(descriptor: CloudflareLargeAssetDescriptor): Record<string, string> {
+  if (descriptor.sameOriginOnly) return { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" };
+  if (descriptor.sameOriginResource) return { allow: "GET, HEAD, OPTIONS" };
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, HEAD, OPTIONS",
+    "access-control-allow-headers": "Range, If-Range, If-None-Match",
+    "access-control-max-age": "86400",
+  };
+}
+
+/**
+ * R2에 아직 없는 미디어를 Static Assets로 돌린다. Static Assets의 SPA 폴백(HTML 200)은 미디어 자리에서
+ * 로더를 깨뜨리므로(2026-10-13 wasm 사고와 같은 실패 모드) 404로 바꾼다.
+ */
+export async function staticMediaFallback(
+  request: Request,
+  assets: AssetsBinding,
+): Promise<Response> {
+  const response = await assets.fetch(request);
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (contentType.startsWith("text/html")) {
+    return new Response(null, { status: 404, headers: { "cache-control": "no-store" } });
+  }
+  return response;
 }

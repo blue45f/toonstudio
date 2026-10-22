@@ -334,7 +334,8 @@ async function expectFailure(
 ): Promise<void> {
   const result = await validate(bytes, overrides);
   expect(result).toMatchObject({ ok: false, code });
-  expect(result.message).toMatch(/[가-힣]/u);
+  // A4 D4 (R11): 실패는 표시 문구 없이 코드만 방출한다.
+  expect(result).toEqual({ ok: false, code });
 }
 
 describe("validateStudioBg3dGlb valid self-contained files", () => {
@@ -488,7 +489,7 @@ describe("validateStudioBg3dGlb metadata and integrity boundary", () => {
     });
   });
 
-  it("rejects a hash mismatch and sanitizes the message", async () => {
+  it("rejects a hash mismatch without echoing file-controlled strings", async () => {
     const bytes = validGlb();
     const secretLikeValue = `https://example.invalid/private?token=${["sk", "redacted"].join("-")}`;
     const result = await validate(bytes, {
@@ -496,8 +497,9 @@ describe("validateStudioBg3dGlb metadata and integrity boundary", () => {
     });
 
     expect(result).toMatchObject({ ok: false, code: "hash-mismatch" });
-    expect(result.message).not.toContain(secretLikeValue);
-    expect(result.message).not.toMatch(/https?:|sk-/u);
+    expect(result).not.toHaveProperty("message");
+    expect(JSON.stringify(result)).not.toContain(secretLikeValue);
+    expect(JSON.stringify(result)).not.toMatch(/https?:|sk-/u);
   });
 
   it("returns stable failures for unavailable and malformed digest implementations", async () => {
@@ -576,8 +578,9 @@ describe("validateStudioBg3dGlb self-contained resource policy", () => {
     const result = await validate(bytes);
 
     expect(result).toMatchObject({ ok: false, code: "external-resource-uri" });
-    expect(result.message).not.toContain(uri);
-    expect(result.message).not.toMatch(/https?:|blob:|data:|file:/u);
+    expect(result).not.toHaveProperty("message");
+    expect(JSON.stringify(result)).not.toContain(uri);
+    expect(JSON.stringify(result)).not.toMatch(/https?:|blob:|data:|file:/u);
   });
 
   it("rejects external image URIs and missing embedded BIN data", async () => {

@@ -20,6 +20,7 @@ export function useStudioBg3dEditorEffects(h) {
     Scissors, Trash2, SunMoon, Undo2,
     Unlock, Upload, WandSparkles, X,
     ZoomIn, ZoomOut, Suspense, useEffect,
+    resolveBg3dTemplateMigrationDataPreservedNote, resolveBg3dTemplateMigrationErrorByCode,
     useEffectEvent, useCallback, useLayoutEffect, useRef,
     useState, Fragment, lazy, createPortal,
     flushSync, createStudioBg3dAiMethodReferenceCapture, COMPOSITE_CATEGORIES, COMPOSITE_CATEGORY_LABELS,
@@ -645,18 +646,16 @@ export function useStudioBg3dEditorEffects(h) {
       .catch((cause: unknown) => {
         if (!active) return;
         studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
-          const migrationFailed = Boolean(
-            cause && typeof cause === "object" &&
-              "code" in cause && cause.code === "migration-failed",
-          );
-          const migrationFailureMessage = migrationFailed && cause instanceof Error
-            ? cause.message
-            : null;
+          const migrationFailureMessage =
+            cause && typeof cause === "object" && "code" in cause &&
+            typeof cause.code === "string"
+              ? resolveBg3dTemplateMigrationErrorByCode(cause.code)
+              : null;
           setTemplateLibraryStatus("error");
           setTemplateLibraryNotice({
             tone: "error",
             message: migrationFailureMessage
-              ? `${migrationFailureMessage} 기존 IndexedDB 데이터는 삭제하지 않았습니다.`
+              ? `${migrationFailureMessage} ${resolveBg3dTemplateMigrationDataPreservedNote()}`
               : "SQLite/OPFS 템플릿 저장소를 열지 못했습니다. 브라우저 저장공간과 사이트 권한을 확인한 뒤 다시 시도해 주세요.",
           });
         });

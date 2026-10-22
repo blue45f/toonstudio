@@ -1,7 +1,7 @@
 # 운영 환경변수와 자격 증명
 
 툰스튜디오 운영 자격 증명은 Git 저장소에 평문으로 저장하지 않는다. 정적 웹의 기본 권위는
-Cloudflare Static Assets, 동적 Core API의 기본 권위는 Render `toonstudio-core-api`다. 실제
+Cloudflare Static Assets, 동적 Core API의 기본 권위는 onpod `toonstudio-api`(서울, 2026-10-23 컷오버)다. Render `toonspectrum-core-api`는 같은 날 삭제했다. 인프라 현재 사실은 [인프라 지도](infrastructure-map.md)가 정본이고, 아래 Render 절은 퇴역 기록이다. 실제
 비밀값은 공급자의 encrypted environment, Render Secret File 또는 GitHub `production` Environment
 Secrets에 보관하고 저장소에는 변수명·검증 규칙·자동화 코드만 둔다. Vercel 런타임과 배포 코드는
 퇴역했으며 Cloudflare/Render 운영 경로에 포함하지 않는다.
@@ -22,7 +22,7 @@ Secrets에 보관하고 저장소에는 변수명·검증 규칙·자동화 코�
 
 ## Render Core API
 
-`render.yaml`의 `toonstudio-core-api`는 `API_RUNTIME_ROLE=full`인 기본 동적 권위다. 서비스는
+(퇴역 기록, 2026-10-23 삭제) `render.yaml`의 `toonspectrum-core-api`는 `API_RUNTIME_ROLE=full`인 동적 권위였다. 서비스는
 `autoDeployTrigger: off`를 유지하며 build/start에서 migration을 실행하지 않는다.
 
 필수값:
@@ -150,12 +150,12 @@ onpod dev 티어는 소유자 역할 하나뿐이고 `CREATEROLE`이 없다)에�
 
 공급자 계약: <https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys>
 
-## Render 전환 검증
+## Core origin 전환 검증
 
-환경 주입과 수동 deploy가 완료된 뒤 Cloudflare origin을 바꾸기 전에 다음을 실행한다.
+환경 주입과 이미지 교체가 끝난 뒤 Cloudflare origin을 바꾸거나 다시 배포하기 전에 다음을 실행한다. 이름은 Render 시절 그대로지만 검증기는 공급자와 무관하게 `live`·`ready` 계약만 확인한다.
 
 ```bash
-RENDER_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com \
+RENDER_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai \
   pnpm run verify:render-core-origin
 ```
 
@@ -181,10 +181,10 @@ pnpm run verify:cloudflare-static
 pnpm run cloudflare:static:dry-run
 ```
 
-Render 검증 후에만 다음 origin으로 수동 배포한다.
+검증을 통과한 뒤에만 다음 origin으로 수동 배포한다. Worker 시크릿 `CORE_ORIGIN_SECRET`은 onpod 앱의 `CLOUDFLARE_EDGE_ORIGIN_SECRET`(로컬 `ONPOD_API_ENV_CLOUDFLARE_EDGE_ORIGIN_SECRET`)과 같은 값이어야 한다.
 
 ```bash
-export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com
+export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
 export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy

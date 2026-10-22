@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS,
+  CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS,
   CLOUDFLARE_STATIC_MAX_FILE_BYTES,
 } from "../deploy/cloudflare-static/src/large-static-assets";
 
@@ -64,7 +65,7 @@ describe("Cloudflare static large asset preparation", () => {
     );
     expect(gunzipSync(readFileSync(gzipPath)).length).toBe(originalBytes);
     expect(readFileSync(join(dist, ".assetsignore"), "utf8")).toBe(
-      `${CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS.join("\n")}\n`,
+      `${[...CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS, ...CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS].join("\n")}\n`,
     );
   });
 

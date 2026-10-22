@@ -94,12 +94,12 @@ Cursor, Gemini, OpenCode용 어댑터는 이 문서를 다시 복제하지 않�
 이 정책은 이전의 main 자동 배포와 `[deploy]` 예외 지침을 대체한다.
 세부 절차는 `docs/operations/minimum-cost-deployment-policy.md`와 `DEPLOY.md`를 따른다.
 
-- 인프라의 위치·자원·비밀값 저장 위치·연결 경로에 대한 **현재 사실**은 [`docs/operations/infrastructure-map.md`](docs/operations/infrastructure-map.md)가 정본 지도다(결정 근거는 `docs/adr/0030-seoul-origin-hybrid-infrastructure.md`). 배포·DB·도메인·비밀값 작업 전에 먼저 읽고, 인프라를 바꾸는 변경은 같은 변경에서 이 지도를 고친다. 이 지도의 onpod 단위는 소유자가 2026-10-22 대화에서 승인했고 아직 상시 승인 범위(`deploy/STANDING_APPROVAL.json`) 밖이므로, 컷오버·DNS·삭제·유료 전환은 지도 8절의 승인 항목을 따른다.
+- 인프라의 위치·자원·비밀값 저장 위치·연결 경로에 대한 **현재 사실**은 [`docs/operations/infrastructure-map.md`](docs/operations/infrastructure-map.md)가 정본 지도다(결정 근거는 `docs/adr/0030-seoul-origin-hybrid-infrastructure.md`). 배포·DB·도메인·비밀값 작업 전에 먼저 읽고, 인프라를 바꾸는 변경은 같은 변경에서 이 지도를 고친다. 이 지도의 onpod 단위는 소유자가 2026-10-22 대화에서 승인했고 2026-10-23 컷오버를 마쳤다. 아직 상시 승인 범위(`deploy/STANDING_APPROVAL.json`) 밖이므로 onpod 앱 이미지 교체·환경변수·DNS·삭제·유료 전환은 지도 3·8절의 승인 항목을 따른다.
 - PR 생성·병합·브랜치 정리는 그 자체로 배포가 아니다. 2026-10-16 저장소 소유자 결정으로 `deploy/STANDING_APPROVAL.json`이 유효한 범위(Cloudflare 정적 웹, apex 리다이렉트 Worker, Core API 컨테이너 릴리스와 Render 이미지 배포, 추가형 DB migration)는 매번 명시 승인 없이 배포한다. 배포 시점의 `origin/main` 끝 SHA를 승인 SHA로 간주하고 필수 CI(core·verify) 녹색, 사전 검증 통과, 롤백 대상 기록, 배포 후 스모크, 동일 SHA 중복 배포 금지를 지킨다. 범위 밖(환경변수·시크릿·도메인·유료 플랜 변경, 파괴적 migration, `adopt`/`repair` 모드, 새 배포 단위)은 사용자의 별도 명시적 승인이 필요하다. 정적 웹은 2026-10-13 결정의 `deploy/cloudflare-static/STANDING_APPROVAL.json`도 계속 유효하며, 파일 삭제·파손 시 명시 승인 방식으로 fail-closed 복귀한다.
 - Vercel 런타임·설정·배포 워크플로는 퇴역 상태이며 다시 추가하지 않는다.
-- 승인한 40자리 main SHA 하나만 변경된 Cloudflare/Render 배포 단위에 반영한다.
+- 승인한 40자리 main SHA 하나만 변경된 Cloudflare/onpod 배포 단위에 반영한다.
 - PR CI, core/verify, 테스트·보안·브랜치 보호는 유지하며 비용을 이유로 우회하지 않는다.
-- 정적 웹은 검증된 `dist/`를 Cloudflare Static Assets에 수동 배포하고 Core API는 Render 수동 release만 사용한다.
+- 정적 웹은 검증된 `dist/`를 Cloudflare Static Assets에 수동 배포하고, Core API는 `api-container-release`로 만든 GHCR 이미지를 onpod `toonstudio-api`에 이미지 지정 교체로만 반영한다(인프라 지도 6.6절). Render는 2026-10-23 퇴역했다.
 - 원격 자동 source build, dashboard 자동 재배포, `[deploy]` 예외, 동일 SHA 중복 배포·자동 재시도는 금지한다.
 - Turbo/유료 동시 빌드/유료 러너/플랜 변경/자동 배포 재활성화는 별도 승인이 필요하다.
 - 운영 도메인·데이터·환경변수는 단순 병합이나 배포의 일부로 임의 변경하지 않는다. DB migration은 추가형(새 테이블·인덱스·제약)만 `production-database-migrations.yml`의 `apply` 모드로 적용하고, 삭제·이름 변경·제약 강화는 expand/contract 로 나눠 별도 승인을 받는다.

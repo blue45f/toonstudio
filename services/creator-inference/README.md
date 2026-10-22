@@ -99,8 +99,10 @@ endpoint는 `no-store`이며 private content를 service worker cache에 넣지 �
 
 - `diffusers==0.38.0`: GHSA-98h9-4798-4q5v, GHSA-7wx4-6vff-v64p 대응
 - `safetensors>=0.8,<1`
-- `transformers>=4.53.0,<5`: 4.x 에서 고쳐지는 GHSA 11건 대응. 5.x 에서만 고쳐지는 5건은
-  `requirements-models.txt` 주석의 근거로 두고 GPU 자격 검증을 거친 5.x 이행 때 해소한다.
+- `transformers>=5.10.1,<6`, `huggingface-hub>=1.5,<2`: transformers 의 알려진 GHSA 16건 대응
+  (2026-10-22 소유자 결정으로 5.x 로 올림). 5.x 로 만든 새 runtime image 는 `gpu-smoke.py` 로
+  세 엔진의 실제 추론을 검증한 뒤에만 승인한다. 자동 시험은 CPU 에서 호출 모양만 확인하며
+  TripoSR upstream 코드와의 호환은 확인하지 못했다.
 - CPU test profile `pytest==9.0.3`: GHSA-6w46-j5rx-g56g 대응
 
 ```sh

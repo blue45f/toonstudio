@@ -5,6 +5,8 @@
 > Vercel 런타임·설정·배포 workflow는 퇴역했으며 Cloudflare/Render만 운영 권위로 사용합니다.
 > [최소 비용 배포 정책](docs/operations/minimum-cost-deployment-policy.md)이 이전 자동 배포 지침을 대체합니다.
 
+> **2026-10-23 인프라 변경:** Core API는 onpod `toonstudio-api`(서울), PostgreSQL 원장은 onpod `toonstudio-db`로 옮겼고 Render `toonspectrum-core-api`는 삭제했다. 현재 사실·절차는 [인프라 지도](docs/operations/infrastructure-map.md)가 정본이다. 이 문서의 Render·Supabase·Neon 서술은 퇴역 기록이며 onpod 단위는 아직 상시 승인 범위 밖이다.
+
 > 운영 DB/데이터 플레인과 Neon `neondb`의 legacy 경계는 [`docs/operations/canonical-database-topology.md`](docs/operations/canonical-database-topology.md)를 정본으로 사용합니다.
 
 기본 운영 권위는 무료 우선으로 분리합니다. Cloudflare Static Assets가 SPA와 정적 카탈로그를
@@ -23,8 +25,8 @@ version으로 수행합니다.
 | 프론트 | Vite + React SPA | Cloudflare Static Assets | `dist/` |
 | 카탈로그 | 정적 스냅샷 | Cloudflare Static Assets | `apps/web/public/data/*.json` |
 | Edge gateway | Cloudflare Worker | Cloudflare | 동적 경로만 Core API로 전달 |
-| Core API | NestJS | Render `toonspectrum-core-api` | 인증·ACL·거래·원장 transaction |
-| DB | PostgreSQL | Supabase PostgreSQL (현재 권위, Neon은 legacy 보존) | 동적 데이터 + checksum migration 원장 |
+| Core API | NestJS | onpod `toonstudio-api`(서울, 2026-10-23~; Render는 삭제) | 인증·ACL·거래·원장 transaction |
+| DB | PostgreSQL | onpod `toonstudio-db`(서울, 2026-10-23~; Supabase는 미사용, Neon은 삭제) | 동적 데이터 + checksum migration 원장 |
 | Studio realtime | Durable Objects | Cloudflare | presence·comment invalidation·screen-share signaling |
 | 분산 제한/조정 | Redis | Upstash(선택) | auth rate-limit·lease·coordination |
 | private object storage | 목적별 private buckets | Supabase/R2/B2 | source·derived·export 고정 라우팅 |
@@ -71,8 +73,8 @@ pnpm run verify:free-infrastructure
 pnpm run verify:cloudflare-static
 pnpm run cloudflare:static:dry-run
 
-RENDER_CORE_API_ORIGIN=https://toonspectrum-core-api.onrender.com pnpm run verify:render-core-origin
-export CLOUDFLARE_CORE_API_ORIGIN=https://toonspectrum-core-api.onrender.com
+RENDER_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai pnpm run verify:render-core-origin
+export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
 export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy

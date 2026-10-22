@@ -64,7 +64,7 @@ function seedApproved(
     now: 100,
     ...overrides,
   });
-  if (!created.ok) throw new Error(created.error);
+  if (!created.ok) throw new Error(created.error.code);
   expect(saveStudioTranslationMemory(localStorage, [created.entry]).ok).toBe(
     true
   );

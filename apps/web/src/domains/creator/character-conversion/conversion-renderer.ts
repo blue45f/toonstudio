@@ -1,11 +1,25 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, validateStudioBg3dGlb } from "../bg3d/studio-bg3d-glb-validation";
+import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, validateStudioBg3dGlb, type StudioBg3dGlbFailureCode } from "../bg3d/studio-bg3d-glb-validation";
 import { sha256HexPortable } from "../studio-sha256";
 import { checkConversionAbort, pngBytes, rasterCanvas } from "./conversion-browser";
 import { CHARACTER_VIEWS, type CharacterRender, type CharacterView } from "./conversion-contract";
 import { deriveCharacterPasses } from "./conversion-raster";
 
+/**
+ * A4 D4 (R11): GLB 검증 실패는 표시 문구 대신 구조화 코드를 실어 던진다.
+ * 표시 지점(StudioCharacterConversionPage catch)은 이 이름+코드를 덕 타이핑으로
+ * 판정해 리졸버로 해석한다 — 페이지가 이 모듈을 정적 import하면 THREE가
+ * 진입 그래프에 끌려오므로 클래스 자체는 import하지 않는다.
+ */
+export class StudioCharacterGlbValidationError extends Error {
+  readonly code: StudioBg3dGlbFailureCode;
+  constructor(code: StudioBg3dGlbFailureCode) {
+    super(code);
+    this.name = "StudioCharacterGlbValidationError";
+    this.code = code;
+  }
+}
 export interface CharacterCameraOptions { yaw: number; pitch: number; animationTime: number }
 export function characterCameraPosition(view: CharacterView, radius: number, yaw = 0, pitch = 0): THREE.Vector3 {
   if (!CHARACTER_VIEWS.includes(view) || !Number.isFinite(radius) || radius <= 0 || !Number.isFinite(yaw) || Math.abs(yaw) > 180 || !Number.isFinite(pitch) || Math.abs(pitch) > 60) throw new Error("카메라 설정이 올바르지 않습니다.");
@@ -30,7 +44,7 @@ export async function renderCharacterGlb(file: File, size: number, views: readon
   checkConversionAbort(signal);
   const bytes = new Uint8Array(await file.arrayBuffer()); const sha256 = sha256HexPortable(bytes);
   const validated = await validateStudioBg3dGlb(bytes, { declared: { byteSize: bytes.length, sha256 }, cumulative: { usedBytes: 0, maximumBytes: 64 * 1024 * 1024 }, profile: "mobile", budgets: DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, supportedRequiredExtensions: ["KHR_materials_unlit", "KHR_texture_transform", "KHR_mesh_quantization", "KHR_materials_emissive_strength"] });
-  if (!validated.ok) throw new Error(validated.message);
+  if (!validated.ok) throw new StudioCharacterGlbValidationError(validated.code);
   if (validated.metrics.estimatedDecodedImageBytes > 128 * 1024 * 1024 || validated.usesBasisTextures) throw new Error("텍스처를 PNG·JPEG로 내보내고, 디코딩 후 총 128MiB 이하로 줄여 주세요.");
   checkConversionAbort(signal);
   const manager = new THREE.LoadingManager();

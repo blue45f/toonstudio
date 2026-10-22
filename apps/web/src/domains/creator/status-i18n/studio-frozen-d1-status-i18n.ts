@@ -40,16 +40,16 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenD1.community.revalidationUnconfirmed": "{name}의 현재 공개 상태를 다시 확인하지 못해 {action} 안전하게 중단했습니다. {detail} 다시 시도해 주세요.",
   "studio.frozenD1.community.revalidationEvidenceChanged": "{name}의 현재 공개 릴리스 증거가 이 카드와 달라 {action} 중단했습니다. 공개 목록을 새로고침한 뒤 정확한 최신 릴리스에서 다시 시도해 주세요.",
   "studio.frozenD1.community.revalidationDetailFallback": "네트워크 상태를 확인해 주세요.",
-  "studio.frozenD1.community.actionLocalInstall": "로컬 설치",
-  "studio.frozenD1.community.actionAssetInsert": "에셋 삽입",
+  "studio.frozenD1.community.actionLocalInstall": "로컬 설치를",
+  "studio.frozenD1.community.actionAssetInsert": "에셋 삽입을",
 });
 registerI18nLocaleEntries("en", {
   "studio.frozenD1.community.revalidationNotFound": "Could not confirm that {name} is still public, so {action} was stopped. It may have been hidden by an admin, delisted by the publisher, or affected by a publisher account change. Refresh the public list and try again.",
   "studio.frozenD1.community.revalidationUnconfirmed": "Could not re-check the current public status of {name}, so {action} was stopped safely. {detail} Please try again.",
   "studio.frozenD1.community.revalidationEvidenceChanged": "The current public release evidence for {name} differs from this card, so {action} was stopped. Refresh the public list and try again from the exact latest release.",
   "studio.frozenD1.community.revalidationDetailFallback": "Please check your network status.",
-  "studio.frozenD1.community.actionLocalInstall": "Local install",
-  "studio.frozenD1.community.actionAssetInsert": "Asset insert",
+  "studio.frozenD1.community.actionLocalInstall": "the local install",
+  "studio.frozenD1.community.actionAssetInsert": "the asset insert",
 });
 
 // ── StudioLiveCanvasOverlay 절단편 (설계 §2.1 — ko 원문 무변경)

@@ -4,10 +4,7 @@ import {
   cloneBgCustomModelInstances,
   type BgCustomModelInstance,
 } from "../studio-background-3d-model";
-import {
-  clonePrimitives,
-  type BgPrimitive,
-} from "../studio-background-3d-primitives";
+import { clonePrimitives, type BgPrimitive } from "../studio-background-3d-primitives";
 
 import {
   applyStudioBg3dViewportAfterTransition,
@@ -43,7 +40,6 @@ import {
   freezeStudioBg3dShotAnimationsForBatch,
   projectStudioBg3dShotVisibilityToRuntime,
 } from "./studio-bg3d-shot-runtime";
-
 import type { StudioBg3dCaptureAdapter } from "./studio-bg3d-capture-adapter";
 import type {
   StudioBg3dSharedCharacterCaptureAuthorityLease,
@@ -71,6 +67,9 @@ import type { StudioBg3dShotBatchRuntime } from "./studio-bg3d-shot-batch-runtim
 import type { StudioBg3dShotContactSheetImage } from "./studio-bg3d-shot-contact-sheet-contract";
 import type { RefObject } from "react";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
+import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
+import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
 
 /** Live progress the editor renders while a shot batch renders, packages, and downloads. */
 export interface StudioBg3dShotBatchProgress {
@@ -462,7 +461,7 @@ export function createStudioBg3dShotBatchExportRunner(
         contactSheet: shotBatchIncludeContactSheet,
         exportHeight: shotBatchExportHeight,
       });
-      if (!batchPlanResult.ok) throw new Error(batchPlanResult.message);
+      if (!batchPlanResult.ok) throw new StudioBg3dShotBatchPlanError(batchPlanResult.subcode);
       batchPlan = batchPlanResult.plan;
       assertStudioBg3dShotPsdCaptureSupported({
         includeLayeredPsd: batchPlan.includeLayeredPsd,
@@ -494,14 +493,14 @@ export function createStudioBg3dShotBatchExportRunner(
           setLineArtPreview(originalLineArtPreview);
           setIsCapturing(false);
           setShotBatchProgress(null);
-          setError(cause instanceof StudioBg3dShotBatchRecoveryError ? cause.message
+          setError(resolveStudioBg3dShotBatchPlanErrorFromCause(cause) ?? (cause instanceof StudioBg3dShotBatchRecoveryError ? cause.message
             : cause instanceof Error && cause.name === "AbortError"
             ? recoveryAccessRevoked
               ? frozenStatus6Text("studio.frozenStatus6.shotBatch.accessChangedAbort", "작품 열람 권한 또는 저장 대상이 변경되어 컷 일괄 렌더를 안전하게 중단했습니다.")
               : frozenStatus6Text("studio.frozenStatus6.shotBatch.aborted", "컷 일괄 렌더를 중단했습니다.")
               : cause instanceof Error
                 ? cause.message
-                : frozenStatus6Text("studio.frozenStatus6.shotBatch.planFailed", "결정적 컷 계획을 만들지 못했습니다."));
+                : frozenStatus6Text("studio.frozenStatus6.shotBatch.planFailed", "결정적 컷 계획을 만들지 못했습니다.")));
           });
       }
       return;
@@ -981,9 +980,9 @@ export function createStudioBg3dShotBatchExportRunner(
         : recoverySession.degradedReason
           ? ` ${recoverySession.degradedReason}`
           : "";
-      const failureDetail = cause instanceof Error && cause.message.trim().length > 0
-        ? ` 원인: ${cause.message.trim()}`
-        : "";
+      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause)
+        ?? (cause instanceof Error ? cause.message.trim() : "");
+      const failureDetail = failureMessage ? ` 원인: ${failureMessage}` : "";
       if (componentActiveRef.current) {
         if (aborted) {
           setError(
