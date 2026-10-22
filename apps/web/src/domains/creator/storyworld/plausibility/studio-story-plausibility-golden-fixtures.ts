@@ -441,7 +441,7 @@ export const GOLDEN_STORIES: readonly GoldenStory[] = [
   {
     id: orphanPayoff.id, kind: "defect", title: orphanPayoff.title, project: orphanPayoff,
     note: "복선을 심기 전에 거둔다",
-    expected: [{ module: "causality", code: "orphan-payoff", category: "foreshadowing", severity: "error" }],
+    expected: [{ module: "causality", code: "orphan-payoff-first-before-first-setup", category: "foreshadowing", severity: "error" }],
   },
   {
     id: emotionalWhiplash.id, kind: "defect", title: emotionalWhiplash.title, project: emotionalWhiplash,

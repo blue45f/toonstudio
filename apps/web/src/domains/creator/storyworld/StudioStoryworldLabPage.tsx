@@ -37,7 +37,7 @@ import { loadStoryworldIssueDispositions, saveStoryworldIssueDispositions } from
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { storyworldDraftStore } from "./draft-store";
 import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
-import { IssueList, IssuesTab } from "./StudioStoryworldIssues";
+import { IssueList, IssuesTab, resolveStoryworldIssue } from "./StudioStoryworldIssues";
 import { AxisCards, EmptyState, Panel } from "./StudioStoryworldLabShared";
 import { scoreTone } from "./studio-storyworld-lab-display";
 import {
@@ -289,10 +289,10 @@ function MultiverseTab({ project, result }: {
     : [];
   const sceneTitleById = new Map(project.scenes.map((scene) => [scene.id, `${scene.order}. ${scene.title}`]));
   const branchIssueMessageById = branch
-    ? new Map(branch.branch.issues.map((issue) => [issue.id, issue.message]))
+    ? new Map(branch.branch.issues.map((issue) => [issue.id, resolveStoryworldIssue(issue)]))
     : new Map<string, string>();
   const baselineIssueMessageById = branch
-    ? new Map(branch.baseline.issues.map((issue) => [issue.id, issue.message]))
+    ? new Map(branch.baseline.issues.map((issue) => [issue.id, resolveStoryworldIssue(issue)]))
     : new Map<string, string>();
   const candidateLabelById = new Map(frontier.map((candidate) => [candidate.id, candidate.label]));
 
