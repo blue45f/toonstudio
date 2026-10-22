@@ -27,7 +27,7 @@
   "account.profile.namePlaceholder": "ชื่อการแสดง",
   "account.profile.bioLabel": "บิโอ",
   "account.profile.bioPlaceholder": "บอกเราเรื่องตัวคุณในแถวเดียว",
-  "account.profile.bioLength": "{length}/280",
+  "account.profile.bioLength": "{length} /280",
   "account.profile.saveButton": "เก็บโปรไฟล์",
   "account.profile.saving": "เก็บเงิน",
   "account.profile.saved": "การบันทึก",

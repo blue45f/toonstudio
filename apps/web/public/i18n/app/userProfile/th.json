@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "เนื้อหาโปรไฟล์",
   "userProfile.refresh": "อารมณ์ใหม่",
   "userProfile.emptyReviews": "ยังไม่มีรีวิวที่ผู้ใช้นี้ตีพิมพ์",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "ไม่สามารถโหลดผลงานที่สร้างได้ โปรดลองอีกครั้ง",
+  "userProfile.series.error": "ไม่สามารถโหลดซีรีส์ได้ โปรดลองอีกครั้ง",
+  "userProfile.emptyReviewsHint": "ฝากรีวิวแรกไว้บนผลงานที่คุณชื่นชอบ",
+  "userProfile.emptyReviewsCta": "เรียกดูผลงาน"
 }
