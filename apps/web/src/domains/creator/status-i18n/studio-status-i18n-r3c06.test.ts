@@ -435,15 +435,12 @@ const CONSUMERS = [
   "StudioWorkspaceArrangementControls.tsx",
 ] as const;
 
-/** 탐지기 잔여 허용 목록 — 본문·분류 라벨·모듈 상수 맵 (r3-c06.md 근거). */
-const EXPECTED_RESIDUALS: readonly { file: string; rule: string; snippet: string }[] = [
-  { file: "StudioLocalAssetManager.tsx", rule: "jsx-text", snippet: "현재 기기의 이미지 보관함입니다. 삭제에 실패한 원본은 목록에 유지합니다. 3D 렌더 이미지는 평면 이미지이며 3D 모델 원본과 별개입니다." },
-  { file: "StudioLocalizationQaReport.tsx", rule: "named-status-map-entry", snippet: "치명 오류가 있으면 점수와 무관하게 미달입니다." },
-  { file: "StudioAssetRightsManifestPanel.tsx", rule: "display-prop-literal", snippet: "차단 오류" },
-  { file: "StudioFinishQualityView.tsx", rule: "display-prop-literal", snippet: "오류" },
-  { file: "StudioFinishQualityView.tsx", rule: "display-prop-literal", snippet: "오류 위치로 이동해 원고와 검토 상태를 정리하세요." },
-  { file: "StudioProductionInsightsPanel.tsx", rule: "display-prop-literal", snippet: "오류" },
-];
+/**
+ * 탐지기 잔여 허용 목록 — 3라운드의 잔여 6건(본문·분류 라벨·모듈 상수 맵,
+ * r3-c06.md 근거)은 4라운드에서 형제 모듈 studio-panel-status-i18n-r4.ts로
+ * 전량 이관돼 비었다 (studio-status-i18n-r4 계약과 짝).
+ */
+const EXPECTED_RESIDUALS: readonly { file: string; rule: string; snippet: string }[] = [];
 
 describe("studio panel status i18n r3c06", () => {
   it("신규 모듈의 ko/en 키가 패리티를 이루고 신규 키 ko 원문·플레이스홀더가 정확하다", () => {
@@ -463,7 +460,12 @@ describe("studio panel status i18n r3c06", () => {
   it("신규 키가 소비 파일에서 실제로 참조되고 미등록 참조가 없다", () => {
     const consumerSource = CONSUMERS.map((file) => readSource(file)).join("\n");
     const original = parseRegisterModule(readSource("studio-panel-status-i18n.ts"));
-    const registered = new Set([...Object.keys(original.ko), ...R3C06_KEYS]);
+    const r4 = parseRegisterModule(readSource("studio-panel-status-i18n-r4.ts"));
+    const registered = new Set([
+      ...Object.keys(original.ko),
+      ...R3C06_KEYS,
+      ...Object.keys(r4.ko),
+    ]);
     for (const key of R3C06_KEYS) {
       expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
     }
@@ -477,7 +479,7 @@ describe("studio panel status i18n r3c06", () => {
     }
   });
 
-  it("이관 파일의 탐지기 위반이 문서화된 잔여 6건과 정확히 일치한다", () => {
+  it("이관 파일의 탐지기 위반이 없다 (4라운드에서 잔여 6건 전량 이관)", () => {
     const actual: { file: string; rule: string; snippet: string }[] = [];
     for (const file of CONSUMERS) {
       for (const violation of scanHardcodedStatusStrings(readSource(file))) {

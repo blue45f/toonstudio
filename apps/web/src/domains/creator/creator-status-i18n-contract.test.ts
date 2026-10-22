@@ -40,10 +40,12 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * studio-brush-canvas-status-i18n, studio-frozen-status-i18n,
  * studio-host-reason-i18n, storyworld-status-i18n 등)과 app/productionHub
  * 사전 키 (r3-c02~c14·동결·WriterRoom 배치 계약과 짝).
- * 탐지기 잔여 6건이 남은 5파일(StudioAssetRightsManifestPanel,
- * StudioFinishQualityView, StudioLocalAssetManager,
- * StudioLocalizationQaReport, StudioProductionInsightsPanel — r3-c06 잔여)은
- * 위반이 해소될 때까지 등록에서 제외한다.
+ * 8차 등록 (A4 4라운드, 2026-10-22): r3-c06 잔여 6건이 남아 7차 등록에서
+ * 제외됐던 5파일(StudioAssetRightsManifestPanel, StudioFinishQualityView,
+ * StudioLocalAssetManager, StudioLocalizationQaReport,
+ * StudioProductionInsightsPanel) — 잔여 6건을 형제 모듈
+ * studio-panel-status-i18n-r4.ts의 studio.panelStatus.* 키로 이관해
+ * 탐지기 위반 0건을 확인하고 등록한다 (studio-status-i18n-r4 계약과 짝).
  * 표시 정본은 studio.vrmPanelStatus.* (studio-vrm-panel-status-i18n 등록)·
  * studio.bg3dPanelStatus.* (studio-bg3d-panel-status-i18n 등록) 키
  * (studio-status-i18n-batch3 계약과 짝).
@@ -62,6 +64,11 @@ const GUARDED_FILES = [
   "studio-router/routes/StudioAiComicDirectorRoute.tsx",
   "studio-router/StudioRouter.tsx",
   "StudioAssetLegacyPanel.tsx",
+  "StudioAssetRightsManifestPanel.tsx",
+  "StudioFinishQualityView.tsx",
+  "StudioLocalAssetManager.tsx",
+  "StudioLocalizationQaReport.tsx",
+  "StudioProductionInsightsPanel.tsx",
   "StudioAssetToolPopoverBody.tsx",
   "StudioAssetToolPopoverWorkspace.tsx",
   "StudioInspectorBubbleAppearanceControls.tsx",
