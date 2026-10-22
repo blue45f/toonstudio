@@ -302,7 +302,7 @@
   font-weight: 750;
 }
 
-/* 세로 쇼츠 2편 — 9:16 영상을 자르지 않고 전체 프레임 그대로 보여 준다. */
+/* 세로 쇼츠 4편 — 9:16 영상을 자르지 않고 전체 프레임 그대로 보여 준다. */
 .product-tour__shorts { padding-block: clamp(20px, 3.4vw, 44px) 0; }
 
 .product-tour__shorts-grid {
