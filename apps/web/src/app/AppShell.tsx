@@ -25,7 +25,7 @@ import { isAmbientRouteAllowed } from "@/shared/ambient/ambient-routes";
 import { CommandPaletteHost } from "@/shared/components/command-palette-host";
 import { EntryIntro } from "@/shared/components/EntryIntro";
 import { PwaInstallNudgeHost as PwaInstallNudge } from "@/shared/components/pwa-install-nudge-host";
-import { isPublicCreativeRoute, supportsPublicSiteOnwardJourney } from "@/shared/components/site-public-routes";
+import { isPublicCreativeRoute, supportsPublicSiteOnwardJourney, supportsPwaInstallPrompts } from "@/shared/components/site-public-routes";
 import { SiteConnectionNotice } from "@/shared/components/site-experience/SiteConnectionNotice";
 import { SiteExperienceFrame } from "@/shared/components/site-experience/SiteExperienceFrame";
 import { supportsSiteExperience } from "@/shared/components/site-experience/site-experience-policy";
@@ -196,6 +196,8 @@ export function AppShell({
     ? null
     : workspaceTaskRoute(pathname, search) ?? campusTaskRoute(campus);
   const normalizedPath = trimTrailingSlashes(pathname) || "/";
+  // PWA 설치 안내는 발표·영상 화면에서만 제외한다(호스트 자체 게이트와 이중 구조).
+  const pwaInstallPromptAllowed = supportsPwaInstallPrompts(pathname);
   // 몰입 예외(전역 크롬 제거) 판정은 shell-chrome-policy의 명시 목록이 단일 기준이다.
   const { immersiveVirtualHome, immersiveVirtualProject, immersiveVirtualExperience } =
     resolveShellChrome({
@@ -225,7 +227,9 @@ export function AppShell({
       <Suspense fallback={null}><StoreSync /></Suspense>
       <GuestMigrationBridge />
       <AccountNudgeHost />
-      <Suspense fallback={null}><PwaInstallShowcaseHost /></Suspense>
+      {pwaInstallPromptAllowed ? (
+        <Suspense fallback={null}><PwaInstallShowcaseHost /></Suspense>
+      ) : null}
       <Suspense fallback={null}><PwaConnectionPulse /></Suspense>
       {showGlobalOverlays && !immersiveVirtualExperience ? (
         <Suspense fallback={null}><CreatorAdaptiveOnboardingGate /></Suspense>
@@ -252,7 +256,7 @@ export function AppShell({
           } />
         </Suspense>
         {enhancedSite ? <SiteConnectionNotice /> : null}
-        {immersiveVirtualExperience ? null : <PwaInstallNudge />}
+        {immersiveVirtualExperience || !pwaInstallPromptAllowed ? null : <PwaInstallNudge />}
         <main
           id="main-content"
           tabIndex={-1}
