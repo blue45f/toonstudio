@@ -150,8 +150,13 @@ export function useStudioVirtualSpaceRecordingBooth(
   const [error, setError] = useState<string | null>(null);
   const [loginNudge, setLoginNudge] = useState(false);
 
+  // 세션 ref 는 상태를 바꾸는 자리에서 곧바로 맞춘다. 렌더 효과로만 맞추면 시작 직후 효과가 돌기 전에 들어온 종료·취소가
+  // ref 를 비어 있다고 보고 조용히 무시해, 화면은 녹음 중인데 녹음이 끝나지 않았다.
   const sessionRef = useRef<StudioRecordingSession | null>(null);
-  useEffect(() => { sessionRef.current = session; }, [session]);
+  const commitSession = useCallback((next: StudioRecordingSession | null) => {
+    sessionRef.current = next;
+    setSession(next);
+  }, []);
   const driverRef = useRef(driver);
   driverRef.current = driver;
 
@@ -183,10 +188,10 @@ export function useStudioVirtualSpaceRecordingBooth(
     } catch (reason) {
       setError(errorCodeOf(reason));
     } finally {
-      setSession(null);
+      commitSession(null);
       setElapsedSec(0);
     }
-  }, [driver]);
+  }, [driver, commitSession]);
 
   const stopRecordingRef = useRef(stopRecording);
   stopRecordingRef.current = stopRecording;
@@ -214,12 +219,12 @@ export function useStudioVirtualSpaceRecordingBooth(
     }
     try {
       const next = await driver.startBoothSession({ ...config, reverb });
-      setSession(next);
+      commitSession(next);
       setElapsedSec(0);
     } catch (reason) {
       setError(errorCodeOf(reason));
     }
-  }, [access, config, driver, reverb]);
+  }, [access, config, driver, reverb, commitSession]);
 
   const cancelRecording = useCallback(async () => {
     const current = sessionRef.current;
@@ -229,9 +234,9 @@ export function useStudioVirtualSpaceRecordingBooth(
     } catch {
       // 취소 실패는 세션 정리로 간주한다(장치는 드라이버가 정리).
     }
-    setSession(null);
+    commitSession(null);
     setElapsedSec(0);
-  }, [driver]);
+  }, [driver, commitSession]);
 
   const savingTakeIdsRef = useRef<ReadonlySet<string>>(new Set());
   const addTakeToProject = useCallback((takeId: string) => {
