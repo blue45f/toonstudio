@@ -12,6 +12,7 @@ import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle, useMetaDescription } from "@/shared/seo/use-document-title";
 
 import { FEATURES_AMBIENT_CLIP } from "./brand-clips";
+import { featureOverviewCategoryClip } from "./tool-clips";
 import {
   FEATURE_OVERVIEW_CATEGORIES,
   FEATURE_OVERVIEW_CATALOG_PLATFORM_COUNT,
@@ -226,6 +227,7 @@ export function FeaturesOverviewPage() {
       {FEATURE_OVERVIEW_CATEGORIES.map((category, categoryIndex) => {
         const Icon = category.icon;
         const titleId = `features-${category.id}-title`;
+        const headerClip = featureOverviewCategoryClip(category.id);
         return (
           <section
             key={category.id}
@@ -233,25 +235,65 @@ export function FeaturesOverviewPage() {
             className="mt-12 scroll-mt-24 sm:mt-16"
             aria-labelledby={titleId}
           >
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div className="flex max-w-3xl items-start gap-4">
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-line bg-panel text-accent">
-                  <Icon size={20} aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="font-display text-xs font-bold uppercase tracking-[0.15em] text-accent">
-                    {String(categoryIndex + 1).padStart(2, "0")}
-                  </p>
-                  <h2 id={titleId} className="mt-1 font-display text-2xl font-bold tracking-[-0.035em] text-fg sm:text-3xl">
-                    {text(category.title)}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-fg-3">{text(category.summary)}</p>
+            {/* 카테고리 헤더 밴드: 대표 도구의 분위기를 그린 생성형 AI 영상을
+                배경으로 깐다. 장식이라 본문 흐름에서 빼고, 움직임 최소화를
+                선호하면 숨기며, 성격은 배지로 밝힌다(아래 CTA 밴드와 같은 계약). */}
+            <div
+              className={
+                headerClip
+                  ? "relative isolate overflow-hidden rounded-3xl border border-line/70 px-4 py-4 sm:px-5 sm:py-5"
+                  : undefined
+              }
+            >
+              {headerClip ? (
+                <>
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                    src={headerClip.src}
+                    width={headerClip.width}
+                    height={headerClip.height}
+                    className="absolute inset-0 -z-10 h-full w-full object-cover opacity-40 motion-reduce:hidden"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 -z-10 bg-gradient-to-r from-panel/85 via-panel/75 to-panel/50"
+                  />
+                </>
+              ) : null}
+              <div className="relative flex flex-wrap items-end justify-between gap-3">
+                <div className="flex max-w-3xl items-start gap-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-line bg-panel text-accent">
+                    <Icon size={20} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="font-display text-xs font-bold uppercase tracking-[0.15em] text-accent">
+                      {String(categoryIndex + 1).padStart(2, "0")}
+                    </p>
+                    <h2 id={titleId} className="mt-1 font-display text-2xl font-bold tracking-[-0.035em] text-fg sm:text-3xl">
+                      {text(category.title)}
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-fg-3">{text(category.summary)}</p>
+                  </div>
                 </div>
+                <span className="flex flex-col items-end gap-2">
+                  <span className="rounded-full border border-line bg-card px-3 py-1.5 text-xs font-bold text-fg-3">
+                    {category.items.length}
+                    {copy.itemsUnit}
+                  </span>
+                  {headerClip ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-xs font-bold text-white">
+                      <Sparkles size={13} aria-hidden="true" />
+                      {copy.ambientBadge}
+                    </span>
+                  ) : null}
+                </span>
               </div>
-              <span className="rounded-full border border-line bg-card px-3 py-1.5 text-xs font-bold text-fg-3">
-                {category.items.length}
-                {copy.itemsUnit}
-              </span>
             </div>
 
             <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
