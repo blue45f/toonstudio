@@ -30,7 +30,9 @@ export interface AnchorCandidateAnchorScore {
 export interface AnchorCandidateScore {
   /** 앵커 각도마다의 비교 결과(정본 각도 순서). */
   readonly perAnchor: readonly AnchorCandidateAnchorScore[];
-  /** 점수가 가장 높은 앵커 각도(같으면 정본 순서가 앞선 쪽). */
+  /** 점수가 가장 높은 앵커와 그 비교(같으면 정본 순서가 앞선 쪽). */
+  readonly best: AnchorCandidateAnchorScore;
+  /** `best` 의 각도. */
   readonly bestAngleId: AnchorAngleId;
   /** 가장 비슷한 앵커와의 참고 점수(0~1). */
   readonly score: number;
@@ -59,6 +61,7 @@ export function scoreCandidateAgainstAnchors(
   if (!best) return null;
   return Object.freeze({
     perAnchor: Object.freeze(perAnchor),
+    best,
     bestAngleId: best.angleId,
     score: best.comparison.score,
     band: anchorScoreBand(best.comparison.score),
@@ -70,6 +73,18 @@ export function scoreCandidateAgainstAnchors(
 /** 사용자가 고른 앵커 각도의 비교 결과. 앵커 세트에 없는 각도면 null. */
 export function comparisonForAnchor(score: AnchorCandidateScore, angleId: AnchorAngleId): AnchorPairComparison | null {
   return score.perAnchor.find((entry) => entry.angleId === angleId)?.comparison ?? null;
+}
+
+/**
+ * 화면이 이 후보에 대해 보여 줄 앵커와 비교. 정렬 키(`sortAnchorCandidates`)와 목록·나란히 보기의 점수가 같은 값을 읽도록
+ * 한 곳에서 고른다. `angleId` 가 앵커 세트에 있으면 그 앵커, 비우거나 세트에 없으면 가장 비슷한 앵커다.
+ */
+export function displayedAnchorScore(score: AnchorCandidateScore, angleId: AnchorAngleId | null): AnchorCandidateAnchorScore {
+  if (angleId) {
+    const chosen = score.perAnchor.find((entry) => entry.angleId === angleId);
+    if (chosen) return chosen;
+  }
+  return score.best;
 }
 
 export type AnchorSortMode = "score-desc" | "score-asc" | "name" | "input-order" | AnchorFeatureId;
@@ -86,15 +101,10 @@ export interface RankableAnchorCandidate {
 const NAME_COLLATOR = new Intl.Collator("ko", { numeric: true, sensitivity: "base" });
 
 function sortValue(candidate: RankableAnchorCandidate, mode: AnchorSortMode, angleId: AnchorAngleId | null): number | null {
-  const score = candidate.score;
-  if (!score) return null;
-  if (mode === "score-desc" || mode === "score-asc") {
-    const chosen = angleId ? comparisonForAnchor(score, angleId) : null;
-    return chosen ? chosen.score : score.score;
-  }
-  const chosen = (angleId ? comparisonForAnchor(score, angleId) : null) ?? comparisonForAnchor(score, score.bestAngleId);
+  if (!candidate.score) return null;
   if (mode === "name" || mode === "input-order") return null;
-  return chosen ? chosen.similarities[mode] : null;
+  const { comparison } = displayedAnchorScore(candidate.score, angleId);
+  return mode === "score-desc" || mode === "score-asc" ? comparison.score : comparison.similarities[mode];
 }
 
 /**

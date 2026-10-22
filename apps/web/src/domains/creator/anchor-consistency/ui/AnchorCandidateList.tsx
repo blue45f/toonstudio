@@ -3,6 +3,9 @@
  *
  * 목록은 하나의 탭 정지점(선택한 후보)을 가진 로빙 tabindex 목록이다. 위/왼쪽은 이전, 아래/오른쪽은 다음, Home/End 는 처음과 끝.
  * 고른 후보는 aria-pressed 로 알린다. 상태와 점수는 색이 아니라 글로 쓴다.
+ *
+ * 카드의 점수는 `item.displayed`(견줄 앵커를 골랐으면 그 앵커, 자동이면 후보마다 가장 비슷한 앵커와의 비교)를 그린다.
+ * 정렬 키와 나란히 보기가 같은 값을 읽으므로 숫자와 순서, 목록과 나란히 보기가 어긋나지 않는다.
  */
 import { ImageOff } from "lucide-react";
 import { useRef, type KeyboardEvent } from "react";
@@ -85,13 +88,13 @@ export function AnchorCandidateList({ items, selectedId, previewUrls, onSelect }
               <span className="block truncate text-sm font-medium text-fg" title={item.name}>{item.name}</span>
               <span className="flex flex-wrap gap-1.5 text-xs">
                 <span className="rounded-full border border-line px-2 py-0.5 text-fg-2">{t(CANDIDATE_STATUS_KEYS[item.status])}</span>
-                {item.score ? (
+                {item.displayed ? (
                   <>
-                    <span className={cn("rounded-full border px-2 py-0.5 font-medium", BAND_TONE[item.score.band])}>
-                      {t("anchorLab.candidates.card.score", { score: Math.round(item.score.score * 100) })}
+                    <span className={cn("rounded-full border px-2 py-0.5 font-medium", BAND_TONE[item.displayed.comparison.band])}>
+                      {t("anchorLab.candidates.card.score", { score: Math.round(item.displayed.comparison.score * 100) })}
                     </span>
-                    <span className={cn("rounded-full border px-2 py-0.5", BAND_TONE[item.score.band])}>
-                      {t(BAND_KEYS[item.score.band])}
+                    <span className={cn("rounded-full border px-2 py-0.5", BAND_TONE[item.displayed.comparison.band])}>
+                      {t(BAND_KEYS[item.displayed.comparison.band])}
                     </span>
                   </>
                 ) : item.status === "done" ? (

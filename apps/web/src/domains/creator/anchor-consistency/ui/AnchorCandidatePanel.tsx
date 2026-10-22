@@ -43,6 +43,8 @@ export function AnchorCandidatePanel({ candidates, frames, anchorPreviewUrls, ri
     : counts.total > 0 && counts.failed === 0
       ? t("anchorLab.candidates.progressDone", { count: counts.total })
       : "";
+  const hasScores = candidates.items.some((item) => item.displayed !== null);
+  const basisAngle = candidates.anchorChoice === "best" ? t("anchorLab.candidates.anchorSelect.best") : t(ANGLE_NAME_KEYS[candidates.anchorChoice]);
   const reason = !rightsConfirmed ? t("anchorLab.rights.locked") : !hasAnchors ? t("anchorLab.candidates.needAnchor") : undefined;
 
   return (
@@ -137,6 +139,7 @@ export function AnchorCandidatePanel({ candidates, frames, anchorPreviewUrls, ri
             </div>
           </div>
           <p className="text-xs text-fg-3">{t("anchorLab.candidates.sortNote")}</p>
+          {hasScores ? <p className="text-sm text-fg-2">{t("anchorLab.score.chosenAnchor", { angle: basisAngle })}</p> : null}
           <p role="status" className="min-h-5 text-sm text-fg-2">{progress}</p>
 
           <AnchorCandidateList

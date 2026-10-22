@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { AnchorAngleId } from "./anchor-capture-spec";
+import { ANCHOR_ANGLE_IDS, type AnchorAngleId } from "./anchor-capture-spec";
 import { anchorScoreBand } from "./anchor-consistency-compare";
 import {
   comparisonForAnchor,
+  displayedAnchorScore,
   scoreCandidateAgainstAnchors,
   sortAnchorCandidates,
   type AnchorCandidateScore,
@@ -11,7 +12,7 @@ import {
   type RankableAnchorCandidate,
 } from "./anchor-consistency-score";
 import { extractAnchorFeatures, type AnchorImageFeatures } from "./anchor-image-features";
-import { FIGURE_STYLE_B, figureRaster, noiseRaster, type FigureImageOptions } from "./anchor-synthetic-raster";
+import { FIGURE_STYLE_A, FIGURE_STYLE_B, figureRaster, noiseRaster, type FigureImageOptions } from "./anchor-synthetic-raster";
 
 // 합성 그림으로 점수·정렬 규칙을 확인한다. 실제 작품의 일관성을 재는 시험이 아니다.
 
@@ -153,5 +154,51 @@ describe("후보 정렬", () => {
     const snapshot = ties.map((candidate) => candidate.id);
     expect(sortAnchorCandidates(ties, "score-desc").map((candidate) => candidate.id)).toEqual(["t1", "t2", "t3"]);
     expect(ties.map((candidate) => candidate.id)).toEqual(snapshot);
+  });
+});
+
+describe("화면에 보여 줄 점수와 정렬 키", () => {
+  // 앵커 여섯 장은 스타일 A 를 넓은 포즈와 선 포즈로 번갈아 놓는다. 넓은 후보는 윗옷 색만 조금 다르고, 선 후보는 같은 스타일이다.
+  const sixAnchors = ANCHOR_ANGLE_IDS.map((angleId, index) =>
+    anchorAt(angleId, featuresOf({ style: FIGURE_STYLE_A, pose: (index + 1) % 2 === 0 ? "stand" : "wide" })),
+  );
+  const wideShifted = scoreOf(sixAnchors, featuresOf({ style: { ...FIGURE_STYLE_A, top: [196, 44, 54] }, pose: "wide" }));
+  const standing = scoreOf(sixAnchors, featuresOf({ style: FIGURE_STYLE_A, pose: "stand" }));
+  const candidates: RankableAnchorCandidate[] = [
+    { id: "wide", name: "wide", order: 0, score: wideShifted },
+    { id: "stand", name: "stand", order: 1, score: standing },
+  ];
+  const idsBy = (mode: "score-desc" | "score-asc", angleId: AnchorAngleId | null): string[] =>
+    sortAnchorCandidates(candidates, mode, angleId).map((candidate) => candidate.id);
+
+  it("각도를 비우면 가장 비슷한 앵커, 고르면 그 앵커, 세트에 없는 각도면 다시 가장 비슷한 앵커를 돌려준다", () => {
+    expect(displayedAnchorScore(standing, null)).toBe(standing.best);
+    expect(displayedAnchorScore(standing, null).angleId).toBe(standing.bestAngleId);
+    const front = displayedAnchorScore(standing, "front");
+    expect(front.angleId).toBe("front");
+    expect(front.comparison).toBe(comparisonForAnchor(standing, "front"));
+    const partial = scoreOf([anchorAt("front", FRONT), anchorAt("left", SIDE)], FRONT);
+    expect(displayedAnchorScore(partial, "back")).toBe(partial.best);
+  });
+
+  it("시험 장면: 자동이면 선 후보가 위지만 정면을 고르면 순서가 뒤집힌다(견줄 앵커에 따라 순위가 달라진다)", () => {
+    expect(idsBy("score-desc", null)).toEqual(["stand", "wide"]);
+    expect(idsBy("score-desc", "front")).toEqual(["wide", "stand"]);
+    expect(displayedAnchorScore(standing, "front").comparison.score).toBeLessThan(standing.score);
+  });
+
+  it("정렬 키는 화면이 보여 줄 점수와 같다 — 어떤 앵커를 골라도 보여 주는 점수가 정렬 방향대로 단조롭다", () => {
+    for (const angleId of [null, ...ANCHOR_ANGLE_IDS]) {
+      const shown = (id: string): number => {
+        const score = candidates.find((candidate) => candidate.id === id)?.score;
+        return score ? displayedAnchorScore(score, angleId).comparison.score : Number.NaN;
+      };
+      const desc = idsBy("score-desc", angleId).map(shown);
+      const asc = idsBy("score-asc", angleId).map(shown);
+      for (let index = 1; index < desc.length; index += 1) {
+        expect(desc[index - 1] ?? Number.NaN).toBeGreaterThanOrEqual(desc[index] ?? Number.NaN);
+        expect(asc[index - 1] ?? Number.NaN).toBeLessThanOrEqual(asc[index] ?? Number.NaN);
+      }
+    }
   });
 });

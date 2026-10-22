@@ -27,9 +27,10 @@ import {
 import type { AnchorPairComparison } from "../anchor-consistency-compare";
 import { describeAnchorDifferences, type AnchorDifference } from "../anchor-consistency-differences";
 import {
-  comparisonForAnchor,
+  displayedAnchorScore,
   scoreCandidateAgainstAnchors,
   sortAnchorCandidates,
+  type AnchorCandidateAnchorScore,
   type AnchorCandidateScore,
   type AnchorReferenceFeatures,
   type AnchorSortMode,
@@ -48,11 +49,16 @@ export interface AnchorCandidateItem {
   readonly features?: AnchorImageFeatures;
   readonly errorCode?: AnchorCandidateErrorCode;
   readonly errorParams?: Readonly<Record<string, number>>;
-  /** 앵커 특징이 준비되고 후보 분석이 끝났을 때만 있다. */
+  /** 앵커 특징이 준비되고 후보 분석이 끝났을 때만 있다. 여섯 앵커와의 비교를 모두 담는다. */
   readonly score: AnchorCandidateScore | null;
+  /**
+   * 목록과 나란히 보기가 그리는 점수. 견줄 앵커를 골랐으면 그 앵커와의 비교, 자동이면 후보마다 가장 비슷한 앵커와의 비교다.
+   * 정렬 키와 같은 값을 쓰므로 화면의 숫자와 순서가 어긋나지 않는다. `score` 와 같은 시점에만 있다.
+   */
+  readonly displayed: AnchorCandidateAnchorScore | null;
 }
 
-type CandidateRecord = Omit<AnchorCandidateItem, "score">;
+type CandidateRecord = Omit<AnchorCandidateItem, "score" | "displayed">;
 
 export type AnchorFeaturesStatus = "idle" | "computing" | "ready" | "error";
 
@@ -181,30 +187,35 @@ export function useAnchorCandidates(options: UseAnchorCandidatesOptions): Anchor
   const anchorAngles = useMemo(() => anchorFeatures.map((entry) => entry.angleId), [anchorFeatures]);
   const effectiveChoice: AnchorAngleId | "best" = anchorChoice !== "best" && anchorAngles.includes(anchorChoice) ? anchorChoice : "best";
 
+  const comparedAngleId = effectiveChoice === "best" ? null : effectiveChoice;
   const scored = useMemo<readonly AnchorCandidateItem[]>(
-    () => records.map((record) => ({
-      ...record,
-      score: record.features && anchorFeatures.length > 0 ? scoreCandidateAgainstAnchors(anchorFeatures, record.features) : null,
-    })),
-    [anchorFeatures, records],
+    () => records.map((record) => {
+      const score = record.features && anchorFeatures.length > 0 ? scoreCandidateAgainstAnchors(anchorFeatures, record.features) : null;
+      return { ...record, score, displayed: score ? displayedAnchorScore(score, comparedAngleId) : null };
+    }),
+    [anchorFeatures, comparedAngleId, records],
   );
   const items = useMemo(
-    () => sortAnchorCandidates(scored, sortMode, effectiveChoice === "best" ? null : effectiveChoice),
-    [effectiveChoice, scored, sortMode],
+    () => sortAnchorCandidates(scored, sortMode, comparedAngleId),
+    [comparedAngleId, scored, sortMode],
   );
 
   const selectedItem = items.find((item) => item.id === selectedId) ?? items[0] ?? null;
   const selection = useMemo<AnchorSelection | null>(() => {
     const features = selectedItem?.features;
-    const score = selectedItem?.score;
-    if (!selectedItem || !features || !score) return null;
-    const angleId = effectiveChoice === "best" ? score.bestAngleId : effectiveChoice;
-    const comparison = comparisonForAnchor(score, angleId);
-    const anchor = anchorFeatures.find((entry) => entry.angleId === angleId);
-    if (!comparison || !anchor) return null;
-    // comparison 은 같은 두 특징으로 compareAnchorFeatures 가 만든 값이라 차이 항목이 점수와 같은 입력에서 나온다.
-    return { item: selectedItem, anchorAngleId: angleId, comparison, differences: describeAnchorDifferences(anchor.features, features, comparison) };
-  }, [anchorFeatures, effectiveChoice, selectedItem]);
+    const displayed = selectedItem?.displayed;
+    if (!selectedItem || !features || !displayed) return null;
+    const anchor = anchorFeatures.find((entry) => entry.angleId === displayed.angleId);
+    if (!anchor) return null;
+    // 나란히 보기는 목록 카드와 같은 displayed 를 읽는다. 이 비교는 같은 두 특징으로 compareAnchorFeatures 가 만든 값이라
+    // 차이 항목이 점수와 같은 입력에서 나온다.
+    return {
+      item: selectedItem,
+      anchorAngleId: displayed.angleId,
+      comparison: displayed.comparison,
+      differences: describeAnchorDifferences(anchor.features, features, displayed.comparison),
+    };
+  }, [anchorFeatures, selectedItem]);
 
   const counts = useMemo(() => {
     let settled = 0;

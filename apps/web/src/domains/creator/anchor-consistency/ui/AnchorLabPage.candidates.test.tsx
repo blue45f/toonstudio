@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { ANCHOR_CANDIDATE_LIMITS } from "../anchor-candidate-session";
+import { ANCHOR_ANGLE_IDS } from "../anchor-capture-spec";
 import { FIGURE_STYLE_A, FIGURE_STYLE_B, figureRaster, noiseRaster } from "../anchor-synthetic-raster";
 import { fakePngFile } from "../anchor-test-kit";
 import { AnchorLabPage } from "./AnchorLabPage";
@@ -36,13 +37,19 @@ afterEach(() => {
   useI18n.setState({ lang: previousLanguage });
 });
 
-/** 앵커 여섯 장(seed 1~6)은 스타일 A, 후보는 seed 11(스타일 A 비슷), 12(스타일 B 다름), 13(잡음). */
+/**
+ * 앵커 여섯 장(seed 1~6)은 스타일 A, 후보는 seed 11(스타일 A 비슷), 12(스타일 B 다름), 13(잡음).
+ * seed 15 는 넓은 포즈에 윗옷 색만 조금 다르고, seed 16 은 스타일 A 선 포즈다. 앵커가 넓은 포즈(정면·좌측·우측)와 선 포즈
+ * (좌 3/4·후면·우 3/4)를 번갈아 가져서 견줄 앵커에 따라 두 후보의 순위가 뒤집힌다.
+ */
 function renderPage(options: { readonly strict?: boolean } = {}): FakeDecoder {
   const decoder = createFakeDecoder();
   for (let seed = 1; seed <= 6; seed += 1) decoder.register(seed, figureRaster({ style: FIGURE_STYLE_A, pose: seed % 2 === 0 ? "stand" : "wide" }));
   decoder.register(11, figureRaster({ style: FIGURE_STYLE_A, noise: { amount: 4, seed: 3 } }));
   decoder.register(12, figureRaster({ style: FIGURE_STYLE_B, pose: "arms-up" }));
   decoder.register(13, noiseRaster(128, 192, 7));
+  decoder.register(15, figureRaster({ style: { ...FIGURE_STYLE_A, top: [196, 44, 54] }, pose: "wide" }));
+  decoder.register(16, figureRaster({ style: FIGURE_STYLE_A, pose: "stand" }));
   const page = <AnchorLabPage deps={{ candidates: decoder.deps, export: createFakeExport().deps }} />;
   render(options.strict ? <StrictMode>{page}</StrictMode> : page);
   return decoder;
@@ -56,6 +63,13 @@ const candidateInput = (): HTMLInputElement => screen.getByLabelText(tk("candida
 const list = (): HTMLElement => screen.getByRole("list", { name: tk("candidates.list") });
 const cards = (): HTMLButtonElement[] => within(list()).getAllByRole("button") as HTMLButtonElement[];
 const orderOf = (): string[] => cards().map((card) => card.textContent?.match(/(similar|different|noise|bad)\.png/u)?.[0] ?? "");
+
+/** 목록 카드를 보이는 순서대로 읽는다: 이름과 카드 배지의 참고 점수(없으면 null). */
+const shownScores = (): Array<{ readonly name: string; readonly score: number | null }> =>
+  cards().map((card) => {
+    const match = /참고 (\d+)점/u.exec(card.textContent ?? "");
+    return { name: card.querySelector("span[title]")?.getAttribute("title") ?? "", score: match?.[1] ? Number(match[1]) : null };
+  });
 
 async function addCandidates(files: File[]): Promise<void> {
   fireEvent.change(candidateInput(), { target: { files } });
@@ -213,6 +227,53 @@ describe("후보 비교 — 키보드와 나란히 보기", () => {
     expect(within(compare).getByText(tk("score.chosenAnchor", { angle: tk("angle.back") }))).toBeTruthy();
     fireEvent.change(select, { target: { value: "best" } });
     expect(within(compare).getByText(/가장 비슷한 앵커: /u)).toBeTruthy();
+  });
+
+  it("견줄 앵커를 고르면 목록 카드의 점수와 순서가 그 앵커 기준으로 함께 바뀌고, 나란히 보기와 같은 숫자다", async () => {
+    renderPage();
+    await prepareFullSet();
+    await addCandidates([fakePngFile("wide-shifted.png", 700, 1000, 15), fakePngFile("stand.png", 700, 1000, 16)]);
+    await waitFor(() => { expect(screen.getAllByText(/^참고 \d+점/u)).toHaveLength(2); });
+    const compare = screen.getByRole("region", { name: tk("compare.title") });
+    const select = screen.getByLabelText(tk("candidates.anchorSelect.label")) as HTMLSelectElement;
+
+    // 자동: 후보마다 가장 비슷한 앵커와의 점수라 선 포즈 후보(같은 스타일)가 위다. 목록 머리에 기준을 밝힌다.
+    const automatic = shownScores();
+    expect(automatic.map((entry) => entry.name)).toEqual(["stand.png", "wide-shifted.png"]);
+    expect(screen.getByText(tk("score.chosenAnchor", { angle: tk("candidates.anchorSelect.best") }))).toBeTruthy();
+
+    // 정면을 고르면 정렬과 카드 숫자가 모두 정면 기준이 된다: 넓은 후보가 위로 오고, 선 후보의 숫자는 자동일 때보다 낮아진다.
+    fireEvent.change(select, { target: { value: "front" } });
+    const front = shownScores();
+    expect(front.map((entry) => entry.name)).toEqual(["wide-shifted.png", "stand.png"]);
+    const scoreOf = (entries: typeof front, name: string): number => entries.find((entry) => entry.name === name)?.score ?? Number.NaN;
+    expect(scoreOf(front, "stand.png")).toBeLessThan(scoreOf(automatic, "stand.png"));
+    expect(scoreOf(front, "wide-shifted.png")).toBeGreaterThan(scoreOf(front, "stand.png"));
+    const basis = screen.getAllByText(tk("score.chosenAnchor", { angle: tk("angle.front") }));
+    expect(basis.some((node) => !compare.contains(node))).toBe(true);
+
+    // 나란히 보기의 숫자도 카드와 같다(고른 후보가 바뀌어도).
+    for (const entry of front) {
+      fireEvent.click(cards().find((card) => card.querySelector("span[title]")?.getAttribute("title") === entry.name) as HTMLButtonElement);
+      expect(within(compare).getByText(tk("score.value", { score: entry.score ?? -1 }))).toBeTruthy();
+    }
+
+    // 어떤 앵커를 골라도 카드 숫자는 목록 순서대로 내려가고(높은 순), 점수 낮은 순으로 바꾸면 올라간다.
+    const sort = screen.getByLabelText(tk("candidates.sort.label")) as HTMLSelectElement;
+    for (const angleId of ANCHOR_ANGLE_IDS) {
+      fireEvent.change(select, { target: { value: angleId } });
+      fireEvent.change(sort, { target: { value: "score-desc" } });
+      const desc = shownScores().map((entry) => entry.score ?? Number.NaN);
+      expect(desc).toEqual([...desc].sort((left, right) => right - left));
+      fireEvent.change(sort, { target: { value: "score-asc" } });
+      const asc = shownScores().map((entry) => entry.score ?? Number.NaN);
+      expect(asc).toEqual([...asc].sort((left, right) => left - right));
+    }
+
+    // 자동으로 되돌리면 카드 숫자도 처음 값으로 돌아온다.
+    fireEvent.change(sort, { target: { value: "score-desc" } });
+    fireEvent.change(select, { target: { value: "best" } });
+    expect(shownScores()).toEqual(automatic);
   });
 
   it("후보를 지우면 다음 후보가 선택된다", async () => {
