@@ -35,6 +35,29 @@ export function productTourShortcut(event: {
   }
 }
 
+/** Space 기본 동작(버튼·링크 활성화, 입력, 영상 자체 조작)이 살아 있는 대상에서는 토글을 가로채지 않는다. */
+const SPACE_NATIVE_SELECTOR = "input, textarea, select, [contenteditable], button, a[href], summary, [role='button'], video, audio";
+
+/**
+ * Space 재생·정지 토글로 받아들일 키 입력인지 판정한다.
+ * 수정 키 조합과 키 반복은 제외하고, 대상에 Space 기본 동작이 있으면 재생기·브라우저의
+ * 기본 동작(버튼 활성화, 네이티브 영상 조작)에 맡긴다.
+ */
+export function productTourSpaceToggle(event: {
+  readonly key: string;
+  readonly altKey: boolean;
+  readonly ctrlKey: boolean;
+  readonly metaKey: boolean;
+  readonly shiftKey: boolean;
+  readonly repeat: boolean;
+  readonly target: EventTarget | null;
+}): boolean {
+  if (event.key !== " " && event.key !== "Spacebar") return false;
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat) return false;
+  if (event.target instanceof Element && event.target.closest(SPACE_NATIVE_SELECTOR)) return false;
+  return true;
+}
+
 export function clampProductTourChapter(index: number): number {
   return Math.min(CHAPTERS.length - 1, Math.max(0, index));
 }
