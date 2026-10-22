@@ -67,13 +67,13 @@ onpod 자신의 매뉴얼도 **회사 서비스·납품물에는 `--free-tier`�
 
 ## 1단계 절차 (수동 릴리스 순서에 맞춤)
 
-1. **사전(소유자)**: onpod 가입(Google 로그인과 약관 동의는 소유자만 할 수 있다) → 콘솔에서 API 키 발급 → 클라우드 환경 설정에 환경 변수 `ONPOD_TOKEN`으로 저장한다(새 세션부터 적용). 대화에 붙여 넣지 않는다. 기본 발급물은 계정 전권 토큰(`op_u_…`)이다. 범위를 좁힌 `opk_` 키는 기업 계정용으로 적혀 있으므로, 발급할 수 있다면 `pods:write`·`domains:write`·`registry:read` 정도로 좁힌다.
+1. **사전(소유자)**: onpod 가입(Google 로그인과 약관 동의는 소유자만 할 수 있다) → 콘솔에서 API 키 발급 → 클라우드 환경 설정에 환경 변수 `ONPOD_TOKEN`으로 저장한다(새 세션부터 적용). 대화에 붙여 넣지 않는다. 토큰을 쓰지 않는 길도 있다: claude.ai 커넥터에 사용자 지정 URL `https://api.onpod.ai/mcp`를 추가하면 OAuth로 로그인하고 배포할 프로젝트를 고른다(매뉴얼). 기본 발급물은 계정 전권 토큰(`op_u_…`)이다. 범위를 좁힌 `opk_` 키는 기업 계정용으로 적혀 있으므로, 발급할 수 있다면 `pods:write`·`domains:write`·`registry:read` 정도로 좁힌다.
 2. **약관 확인(소유자)**: 무료 플랜의 상업적 이용 허락과 유휴 삭제 정책을 onpod에 서면으로 확인한다. 답을 받기 전에는 4번(전환)을 하지 않는다.
-3. **앱 생성**: `onpod app deploy --shape single --free-tier --name toonstudio-core-api --image ghcr.io/blue45f/toonspectrum-core-api:<승인한 40자리 SHA> --port 3000 --env …`. 환경 변수 이름은 [`render.yaml`](../../render.yaml)의 `envVars`와 같다. 비공개 값(`DATABASE_URL`, `AUTH_SESSION_SECRET`, `AUTH_STATE_SECRET`, `CLOUDFLARE_EDGE_ORIGIN_SECRET` 등)은 이 세션이 Render에서 읽을 수 없으므로 소유자가 자신의 `.env.infrastructure.local`에서 주입하거나(권장, 세션 유지) 새 값을 발급한다(모든 로그인 세션이 무효가 된다).
+3. **앱 생성**: `onpod app deploy --shape single --free-tier --name toonstudio-core-api --image ghcr.io/blue45f/toonspectrum-core-api:<승인한 40자리 SHA> --port 3000 --env PORT=3000 --env …`. 앱은 `PORT`가 있으면 그 값을, 없으면 `NEST_API_PORT`, 그것도 없으면 4001을 연다([`apps/api/src/main.ts`](../../apps/api/src/main.ts)). 이미지는 3000을 열어 두므로 `--port`와 `PORT`를 같은 값으로 준다. 환경 변수 이름은 [`render.yaml`](../../render.yaml)의 `envVars`와 같다. 비공개 값(`DATABASE_URL`, `AUTH_SESSION_SECRET`, `AUTH_STATE_SECRET`, `CLOUDFLARE_EDGE_ORIGIN_SECRET` 등)은 Render 대시보드의 암호화 값이라 사람이 옮기려면 번거롭다. 이 세션 환경에는 로컬 전용 저장소(`.env.infrastructure.local`)에 Render API 키가 있어, 소유자가 승인하면 값을 화면·로그·저장소에 내보내지 않고 메모리에서만 읽어 onpod에 주입할 수 있다. 승인하지 않으면 소유자가 직접 주입하거나 새 값을 발급한다(모든 로그인 세션이 무효가 된다).
 4. **검증 후 전환**: `RENDER_CORE_API_ORIGIN=https://toonstudio-core-api.onpod.ai pnpm run verify:render-core-origin`이 통과해야 한다(스크립트는 공급자와 무관하게 HTTPS origin의 `/api/health/live`·`/ready` 계약을 본다). 통과하면 Cloudflare 정적 Worker의 `CORE_API_ORIGIN`을 새 origin으로 바꿔 `cloudflare-static-production` 절차로 배포한다. 환경 변수 변경이므로 이 시점에도 소유자 확인을 한 번 받는다.
-5. **관찰(24~72시간)**: 콜드 스타트 시간, 512 MB에서의 메모리 부족 재시작, Socket.IO가 기본 주소에서 100초 무트래픽에 끊기는지(끊기면 하트비트 또는 `*.direct.onpod.ai` 사용), 요청 본문·시간 한도.
+5. **관찰(24~72시간)**: 콜드 스타트 시간, 512 MB에서의 메모리 부족 재시작, Socket.IO가 기본 주소에서 100초 무트래픽에 끊기는지(끊기면 하트비트 또는 `*.direct.onpod.ai` 사용), 요청 본문·시간 한도. 신뢰 프록시 홉 수(`AUTH_TRUSTED_PROXY_MAX_FORWARDED_HOPS=2`)는 Cloudflare Worker → onpod 게이트웨이 → 앱 경로에서 맞는지 요청 한 건으로 앱이 본 클라이언트 IP를 대조해 확인한다. 어긋나면 IP 기반 속도 제한이 틀어진다.
 6. **롤백**: Worker 변수를 이전 Render origin으로 되돌려 재배포한다. 앱 자체는 `onpod app rollback`으로 직전 이미지·환경으로 되돌린다. Render 서비스는 안정이 확인될 때까지 멈추기만 하고 지우지 않는다.
-7. **정리**: [최소 비용 정책](../operations/minimum-cost-deployment-policy.md)의 운영 권위 표와 [`DEPLOY.md`](../../DEPLOY.md)를 갱신한다.
+7. **정리**: [최소 비용 정책](../operations/minimum-cost-deployment-policy.md)의 운영 권위 표와 [`DEPLOY.md`](../../DEPLOY.md)를 갱신한다. Render에는 Core API 외에 2026-09-09 검증용 정적 사이트가 19개 이상 남아 있다(2026-10-22 조회). 삭제는 별도 승인 항목으로 둔다.
 
 ## 위험
 
@@ -86,4 +86,4 @@ onpod 자신의 매뉴얼도 **회사 서비스·납품물에는 `--free-tier`�
 
 1. 위 1~3번 범위로 진행해도 되는가, 아니면 4번 조건을 받아들여 전체 이전을 설계하는가.
 2. 상업적 이용·유휴 삭제 확인 전에 시험 배포(전환 없음)를 해도 되는가.
-3. 비공개 값 이전을 소유자가 직접 하는가, 새로 발급하는가.
+3. 비공개 값 이전을 (a) 이 세션이 값을 노출하지 않고 메모리에서만 옮기는 방식으로 하는가, (b) 소유자가 직접 하는가, (c) 새로 발급하는가.
