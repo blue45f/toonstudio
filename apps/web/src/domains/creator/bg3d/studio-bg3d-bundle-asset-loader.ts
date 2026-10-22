@@ -23,8 +23,6 @@ import {
  * 해시 참조로만 저장된다.
  */
 
-export const STUDIO_BG3D_BUNDLE_LICENSE_NAME = "Creator Bundle: Volume 1 (EmaceArt · RG Poly)";
-
 export interface StudioBg3dBundleAssetBytes {
   readonly bytes: Uint8Array;
   readonly mimeType: "model/gltf-binary";
@@ -51,12 +49,30 @@ export type StudioBg3dBundleRecordPreparer = (
   options: Bg3dModelVerificationOptions,
 ) => Promise<Bg3dVerifiedStoredRecord>;
 
-const BUNDLE_RIGHTS: StudioBg3dAttachmentRights = {
-  status: "licensed",
-  commercialUse: true,
+/** 팩별 권리가 없는 번들 에셋(원장 이전 스냅샷 데이터)은 권리 미상으로 닫는다 — 상업 이용도 허용하지 않는다. */
+const UNPROVEN_BUNDLE_RIGHTS: StudioBg3dAttachmentRights = Object.freeze({
+  status: "unknown",
+  commercialUse: false,
   attributionRequired: false,
-  licenseName: STUDIO_BG3D_BUNDLE_LICENSE_NAME,
-};
+});
+
+/**
+ * 번들 에셋의 레코드 권리. 소속 팩의 권리 블록(권리 원장이 allow한 팩에만 생성기가 싣는다)에서 옮기고,
+ * 블록이 없으면 unknown이다. 전 팩 일괄 licensed 상수는 쓰지 않는다.
+ */
+export function studioBg3dBundleAssetRights(
+  asset: StudioBg3dBundleThemePackAsset,
+  data: Pick<StudioBg3dBundleThemePacks, "packs">,
+): StudioBg3dAttachmentRights {
+  const rights = data.packs[asset.packIndex]?.rights;
+  if (!rights) return UNPROVEN_BUNDLE_RIGHTS;
+  return Object.freeze({
+    status: rights.status,
+    commercialUse: rights.commercialUse,
+    attributionRequired: rights.attributionRequired,
+    licenseName: rights.licenseName,
+  });
+}
 
 const byteCache = new Map<string, Promise<StudioBg3dBundleAssetBytes>>();
 const verifiedRecordPromiseById = new Map<string, Promise<Bg3dVerifiedStoredRecord>>();
@@ -114,7 +130,7 @@ function toRecordSource(
     fileName: asset.path.split("/").at(-1) ?? asset.id,
     byteSize: asset.bytes,
     sha256: asset.sha256,
-    rights: BUNDLE_RIGHTS,
+    rights: studioBg3dBundleAssetRights(asset, data),
     loadSource: () => loadStudioBg3dBundleAssetBytes(asset, url),
     releaseSource: () => releaseStudioBg3dBundleAssetBytes(asset.id),
   };

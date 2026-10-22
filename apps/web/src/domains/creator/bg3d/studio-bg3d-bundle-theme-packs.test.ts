@@ -38,6 +38,13 @@ function validRawThemePacks(): Record<string, unknown> {
       placeable: 1,
       twinCovered: 0,
       deferred: { fbx: 1, gltf: 0, blend: 0, overBudget: {} },
+      rights: {
+        serve: "allow",
+        status: "licensed",
+        licenseName: "Creator Bundle: Volume 1 — Test License",
+        commercialUse: true,
+        attributionRequired: false,
+      },
       note: null,
     }],
     assets: [{
@@ -71,6 +78,36 @@ describe("parseStudioBg3dBundleThemePacks", () => {
     expect(data.presets[0]?.assetIndex).toBe(0);
     expect(Object.isFrozen(data)).toBe(true);
     expect(Object.isFrozen(data.assets)).toBe(true);
+    expect(data.packs[0]?.rights).toEqual({
+      serve: "allow",
+      status: "licensed",
+      licenseName: "Creator Bundle: Volume 1 — Test License",
+      commercialUse: true,
+      attributionRequired: false,
+    });
+    expect(Object.isFrozen(data.packs[0]?.rights)).toBe(true);
+  });
+
+  it("treats a pack without a rights block as a pre-ledger snapshot (rights: null)", () => {
+    const data = parseStudioBg3dBundleThemePacks(mutate((raw) => {
+      delete (raw.packs as Record<string, unknown>[])[0]?.rights;
+    }));
+    expect(data.packs[0]?.rights).toBeNull();
+  });
+
+  it("rejects pack rights that are not an allowed, well-formed grant", () => {
+    const rightsOf = (raw: Record<string, unknown>) => ((raw.packs as Record<string, unknown>[])[0] as Record<string, unknown>).rights as Record<string, unknown>;
+    // 서빙이 허용되지 않은 팩은 데이터에 있을 수 없다 (생성기는 hold 팩을 pendingPacks로만 보낸다).
+    expect(() => parseStudioBg3dBundleThemePacks(mutate((raw) => { rightsOf(raw).serve = "hold"; }))).toThrow(TypeError);
+    expect(() => parseStudioBg3dBundleThemePacks(mutate((raw) => { delete rightsOf(raw).serve; }))).toThrow(TypeError);
+    expect(() => parseStudioBg3dBundleThemePacks(mutate((raw) => { rightsOf(raw).status = "owned"; }))).toThrow(TypeError);
+    expect(() => parseStudioBg3dBundleThemePacks(mutate((raw) => { rightsOf(raw).status = "unknown"; }))).toThrow(TypeError);
+    expect(() => parseStudioBg3dBundleThemePacks(mutate((raw) => { rightsOf(raw).licenseName = ""; }))).toThrow(TypeError);
+    expect(() => parseStudioBg3dBundleThemePacks(mutate((raw) => { rightsOf(raw).commercialUse = "yes"; }))).toThrow(TypeError);
+    expect(() => parseStudioBg3dBundleThemePacks(mutate((raw) => { rightsOf(raw).downloadUrl = "https://example.invalid/x.glb"; }))).toThrow(TypeError);
+    expect(() => parseStudioBg3dBundleThemePacks(mutate((raw) => {
+      (raw.packs as Record<string, unknown>[])[0]!.rights = "allow";
+    }))).toThrow(TypeError);
   });
 
   it("rejects a document that is not declared in-service-only", () => {
@@ -144,17 +181,21 @@ describe("loadStudioBg3dBundleThemePacks + lookups", () => {
     expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_A}`)?.id).toBe("cbv1-ingest-test-001");
     expect(isStudioBg3dBundleAssetId("cbv1-ingest-unknown-999")).toBe(false);
     if (!asset) return;
-    expect(studioBg3dBundleAssetUrl(asset, data)).toBe("/assets/studio/bundle-v2/test-pack/scene.glb");
+    expect(studioBg3dBundleAssetUrl(asset, data)).toBe(`/assets/studio/bundle-v2/${SHA_A}.glb`);
   });
 
-  it("encodes path segments when building serving URLs", async () => {
+  it("builds serving URLs from the sha256 key, never from the original folder or file name", async () => {
     const raw = validRawThemePacks();
     ((raw.assets as Record<string, unknown>[])[0] as Record<string, unknown>).path = "test-pack/My Scene #1.glb";
     const fetcher = async () => ({ ok: true, status: 200, json: async () => raw });
     const data = await loadStudioBg3dBundleThemePacks({ fetcher });
     const asset = findStudioBg3dBundleAsset("cbv1-ingest-test-001");
     if (!asset) throw new Error("fixture asset missing");
-    expect(studioBg3dBundleAssetUrl(asset, data)).toBe("/assets/studio/bundle-v2/test-pack/My%20Scene%20%231.glb");
+    const url = studioBg3dBundleAssetUrl(asset, data);
+    expect(url).toBe(`/assets/studio/bundle-v2/${SHA_A}.glb`);
+    expect(url).not.toContain("My");
+    expect(url).not.toContain("test-pack");
+    expect(studioBg3dBundleAssetUrl(asset, { assetRoot: "/assets/studio/bundle-v2" })).toBe(url);
   });
 });
 
@@ -209,6 +250,13 @@ describe("shipped theme-packs.json invariants", () => {
       data.packs.reduce((sum, pack) => sum + countStudioBg3dBundlePackDeferred(pack), 0),
     );
     expect(data.packs.reduce((sum, pack) => sum + pack.placeable, 0)).toBe(data.assets.length);
+  });
+
+  it("is either entirely pre-ledger (no pack rights) or entirely ledger-gated (every pack allowed)", () => {
+    const data = parseStudioBg3dBundleThemePacks(raw);
+    const withRights = data.packs.filter((pack) => pack.rights !== null);
+    expect([0, data.packs.length]).toContain(withRights.length);
+    expect(withRights.every((pack) => pack.rights?.serve === "allow")).toBe(true);
   });
 
   it("keeps every preset pointing at an asset of the same pack", () => {
