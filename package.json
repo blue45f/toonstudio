@@ -271,6 +271,7 @@
     "audit:studio-cc0-classification": "tsx scripts/audit-studio-cc0-classification.mts --strict",
     "verify:asset-postcuration": "pnpm run audit:visual-assets:strict && pnpm run audit:studio-cc0-classification && pnpm run audit:marketplace-asset-similarity",
     "test:a11y": "PLAYWRIGHT_CHANNEL='' playwright test e2e/a11y-smoke.spec.ts",
+    "test:a11y:editor": "PLAYWRIGHT_CHANNEL='' playwright test --config playwright.studio-editor-a11y.config.ts",
     "studio:virtual-space-world:generate": "tsx scripts/generate-virtual-studio-default-world.mts",
     "studio:virtual-art-v6:generate": "python3 scripts/generate-virtual-studio-living-town-v6.py",
     "studio:scene-assistant-art:generate": "python3 scripts/generate-studio-scene-assistant-art.py",
