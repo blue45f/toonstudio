@@ -1461,7 +1461,7 @@ import { scheduleIdle } from "@/domains/auth/components/schedule-idle";
 import { useIsMobile } from "@/shared/hooks/use-media-query";
 import { useResizable } from "@/shared/hooks/use-resizable";
 import { loadChunkWithReloadRecovery } from "@/shared/lib/chunk-load-recovery";
-import { useT } from "@/shared/lib/i18n";
+import { translateNow, useT } from "@/shared/lib/i18n";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { STUDIO_WORK_ASSET_MAX_ASSETS_PER_WORK } from "@/shared/lib/studio-work-asset-contract";
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
@@ -1940,7 +1940,7 @@ export function StudioCuttoonEditor({
         && !flushPendingStrokeCommitsRef.current()
       ) {
         setError(
-          t("studio.hostStatus.pageStrokeCommitFailed", "마지막 획을 원래 페이지에 확정하지 못해 페이지를 전환하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.")
+          translateNow("studio.hostStatus.pageStrokeCommitFailed", "마지막 획을 원래 페이지에 확정하지 못해 페이지를 전환하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.")
         );
         return false;
       }
@@ -3052,7 +3052,7 @@ export function StudioCuttoonEditor({
         const projected = commentClient.studioTeamCommentsToLocalDocument(snapshot, {
           unfilteredSnapshotComplete: true,
         });
-        if (!projected) throw new Error(t("studio.hostStatus.teamCommentsProjectFailed", "팀 댓글 전체 기록을 안전하게 투영하지 못했어요."));
+        if (!projected) throw new Error(translateNow("studio.hostStatus.teamCommentsProjectFailed", "팀 댓글 전체 기록을 안전하게 투영하지 못했어요."));
         if (
           signal.aborted
           || studioTeamCommentsLoadGenerationRef.current !== generation
@@ -3113,7 +3113,7 @@ export function StudioCuttoonEditor({
         if (signal.aborted) return;
         setStudioTeamCommentCapabilities(null);
         setStudioCommentSyncError(
-          cause instanceof Error ? cause.message : t("studio.hostStatus.teamCommentsLoadFailed", "팀 댓글을 불러오지 못했어요.")
+          cause instanceof Error ? cause.message : translateNow("studio.hostStatus.teamCommentsLoadFailed", "팀 댓글을 불러오지 못했어요.")
         );
       }
     };
@@ -4905,7 +4905,7 @@ export function StudioCuttoonEditor({
       .catch((err) => {
         if (!editorMountedRef.current || generation !== clipHydrationGenerationRef.current) return;
         setClipStorageState("unavailable");
-        setError(t("studio.hostStatus.clipStorageOpenFailed", { detail: err instanceof Error ? err.message : String(err) }, "SQLite/OPFS 클립 보관함을 열지 못했습니다. 기존 저장 키는 자동으로 읽지 않으며 현재 목록은 저장되지 않았습니다: {detail}"));
+        setError(translateNow("studio.hostStatus.clipStorageOpenFailed", { detail: err instanceof Error ? err.message : String(err) }, "SQLite/OPFS 클립 보관함을 열지 못했습니다. 기존 저장 키는 자동으로 읽지 않으며 현재 목록은 저장되지 않았습니다: {detail}"));
         clipsLoadRef.current = null;
       });
     return () => {
@@ -5175,7 +5175,7 @@ export function StudioCuttoonEditor({
       })
       .catch(() => {
         if (active) {
-          setError(t("studio.hostStatus.brushLibraryOpenFailed", "브러시 라이브러리를 열지 못했어요. 저장소 권한과 여유 공간을 확인해주세요."));
+          setError(translateNow("studio.hostStatus.brushLibraryOpenFailed", "브러시 라이브러리를 열지 못했어요. 저장소 권한과 여유 공간을 확인해주세요."));
         }
       });
     return () => {
@@ -9074,7 +9074,7 @@ export function StudioCuttoonEditor({
       livingInkRejectedAuthorityRef.current = null;
       livingInkConfigRef.current = null;
       setLivingInkState("unavailable");
-      setLivingInkStateMessage(qualityFailure ?? t("studio.hostStatus.livingInkFieldUnavailable", "수채 번짐 필드를 만들 수 없습니다."));
+      setLivingInkStateMessage(qualityFailure ?? translateNow("studio.hostStatus.livingInkFieldUnavailable", "수채 번짐 필드를 만들 수 없습니다."));
       if (qualityFailure) setError(qualityFailure);
       void livingInkCoordinatorRef.current.dispose();
       return;
@@ -9093,7 +9093,7 @@ export function StudioCuttoonEditor({
       livingInkConfigRef.current = null;
       setLivingInkState("failed");
       setLivingInkStateMessage(
-        t("studio.hostStatus.livingInkWorkerAcceptFailed", "로컬 canonical 저장 뒤 Worker 상태 수락에 실패했습니다. PNG는 보존하고 다시 열기 전까지 물리 편집을 비활성화합니다."),
+        translateNow("studio.hostStatus.livingInkWorkerAcceptFailed", "로컬 canonical 저장 뒤 Worker 상태 수락에 실패했습니다. PNG는 보존하고 다시 열기 전까지 물리 편집을 비활성화합니다."),
       );
       return;
     }
@@ -9159,7 +9159,7 @@ export function StudioCuttoonEditor({
       if (!ready && receipt) {
         livingInkAcceptedAuthorityRef.current = null;
         setError(
-          t("studio.hostStatus.livingInkGpuReopenVerifyFailed", "저장된 수채 번짐 PNG는 그대로 보존했지만 GPU 상태 재열기 검증에 실패해 물·정착 편집을 비활성화했습니다."),
+          translateNow("studio.hostStatus.livingInkGpuReopenVerifyFailed", "저장된 수채 번짐 PNG는 그대로 보존했지만 GPU 상태 재열기 검증에 실패해 물·정착 편집을 비활성화했습니다."),
         );
         return;
       }
@@ -9175,7 +9175,7 @@ export function StudioCuttoonEditor({
       if (!isCurrent() || (cause instanceof DOMException && cause.name === "AbortError")) return;
       const message = cause instanceof Error
         ? cause.message
-        : t("studio.hostStatus.livingInkPngIntegrityFailed", "수채 번짐 저장 PNG 무결성을 확인하지 못했습니다.");
+        : translateNow("studio.hostStatus.livingInkPngIntegrityFailed", "수채 번짐 저장 PNG 무결성을 확인하지 못했습니다.");
       livingInkAcceptedAuthorityRef.current = null;
       livingInkRejectedAuthorityRef.current = null;
       livingInkConfigRef.current = null;
@@ -9250,7 +9250,7 @@ export function StudioCuttoonEditor({
     pendingCatalogInputRef.current ??= new StudioPendingCatalogInput((message) => announceDrawingShortcutRef.current(message), (gesture, restoredStrokeId) => {
       const record = serializeStudioCatalogInputRecovery(gesture, restoredStrokeId);
       void acquireStudioCatalogInputRecoveryRepository().then((repository) => repository.save(record)).catch(() => {
-        announceDrawingShortcutRef.current(t("studio.hostStatus.brushInputRecoverySaveFailed", "브러시 원본 입력은 메모리에 보관했지만 기기 복구 저장을 마치지 못했어요."));
+        announceDrawingShortcutRef.current(translateNow("studio.hostStatus.brushInputRecoverySaveFailed", "브러시 원본 입력은 메모리에 보관했지만 기기 복구 저장을 마치지 못했어요."));
       });
     });
     return pendingCatalogInputRef.current;
@@ -9278,7 +9278,7 @@ export function StudioCuttoonEditor({
       const records = await repository.loadUnrestored(catalogInputOwnerScope, autosaveKey);
       if (cancelled || !stageRef.current) return;
       pendingCatalogInput().restore(records.map((record) => restoreStudioCatalogInputRecovery(record, stageRef.current!, catalogInputScope)));
-    }).catch(() => { if (!cancelled) announceDrawingShortcutRef.current(t("studio.hostStatus.brushInputRecoveryReadFailed", "보관된 브러시 입력을 읽지 못했어요. 원본 저장은 유지됩니다.")); });
+    }).catch(() => { if (!cancelled) announceDrawingShortcutRef.current(translateNow("studio.hostStatus.brushInputRecoveryReadFailed", "보관된 브러시 입력을 읽지 못했어요. 원본 저장은 유지됩니다.")); });
     return () => { cancelled = true; };
   }, [catalogInputOwnerScope, catalogInputScope, autosaveKey, pendingCatalogInput]);
   const pendingStrokeAdmissionRef = useRef<StudioPendingStrokeAdmissionQueue | null>(null);
@@ -12985,7 +12985,7 @@ export function StudioCuttoonEditor({
           durable: false,
           message: ownershipBusy
             ? STUDIO_WATERMARK_PREFERENCES_OWNERSHIP_BUSY_HINT
-            : t("studio.hostStatus.watermarkLoadFailed", { detail }, "워터마크 설정 저장소를 불러오지 못했습니다. 현재 탭에서만 유지됩니다: {detail}"),
+            : translateNow("studio.hostStatus.watermarkLoadFailed", { detail }, "워터마크 설정 저장소를 불러오지 못했습니다. 현재 탭에서만 유지됩니다: {detail}"),
           cause,
         }));
       });
@@ -14467,7 +14467,7 @@ const pixelToolArmed =
         if (runId !== pixelMagneticFieldRunIdRef.current) return;
         const reason = error instanceof Error && error.message.trim()
           ? error.message.trim()
-          : t("studio.hostStatus.magneticLassoFieldLoadFailed", "자석 올가미 휘도장을 불러오지 못했습니다.");
+          : translateNow("studio.hostStatus.magneticLassoFieldLoadFailed", "자석 올가미 휘도장을 불러오지 못했습니다.");
         pixelMagneticFieldStateRef.current = {
           status: "unavailable",
           key: magneticLassoFieldKey,
@@ -14808,7 +14808,7 @@ const puppetWarpArmed =
         if (!isStudioCuttoonSourceFormat(w.format)) {
           setWorkHydrationFailed(true);
           setWorkHydrationUnsupportedFormat(true);
-          setError(t("studio.hostStatus.uploadWorkEditorBlocked", "업로드형 작품은 컷툰 편집기로 열 수 없어요. 업로드 편집 화면에서 수정해 주세요."));
+          setError(translateNow("studio.hostStatus.uploadWorkEditorBlocked", "업로드형 작품은 컷툰 편집기로 열 수 없어요. 업로드 편집 화면에서 수정해 주세요."));
           return;
         }
         const doc = w.doc as {
@@ -14972,7 +14972,7 @@ const puppetWarpArmed =
       .catch((e) => {
         if (!alive || controller.signal.aborted) return;
         setWorkHydrationFailed(true);
-        const message = e instanceof Error ? e.message : t("studio.hostStatus.workLoadFailed", "원고를 불러오지 못했습니다.");
+        const message = e instanceof Error ? e.message : translateNow("studio.hostStatus.workLoadFailed", "원고를 불러오지 못했습니다.");
         setWorkHydrationError(message);
         setError(message);
       });
@@ -15857,7 +15857,7 @@ const puppetWarpArmed =
         if (controller.signal.aborted) return;
         setSharedError(caughtError instanceof Error
           ? caughtError.message
-          : t("studio.hostStatus.sharedAssetsLoadFailed", "공유 에셋을 불러오지 못했어요."));
+          : translateNow("studio.hostStatus.sharedAssetsLoadFailed", "공유 에셋을 불러오지 못했어요."));
         setShared([]);
         setSharedNextOffset(null);
       })
@@ -16338,7 +16338,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (cause) {
       ecosystemSampleImportRef.current = sampleId;
-      setError(cause instanceof Error ? cause.message : t("studio.hostStatus.sampleWorkLoadFailed", "예제 작품을 불러오지 못했습니다."));
+      setError(cause instanceof Error ? cause.message : translateNow("studio.hostStatus.sampleWorkLoadFailed", "예제 작품을 불러오지 못했습니다."));
     }
   }, [autosaveChecked, commitPages, elements.length, hasAutosave, pages.length, params, remixId,
     setCurrentPageId, setQuickStartOpen, setTitle, sourceHydrationPending, workHydrated, workId]);
@@ -26468,7 +26468,7 @@ function clearSelectionForEdit() {
       })
       .catch((cause) => {
         if (!requestIsCurrent()) return;
-        setServerRevisionError(cause instanceof Error ? cause.message : t("studio.hostStatus.serverRevisionsLoadFailed", "서버 버전 목록을 불러오지 못했어요."));
+        setServerRevisionError(cause instanceof Error ? cause.message : translateNow("studio.hostStatus.serverRevisionsLoadFailed", "서버 버전 목록을 불러오지 못했어요."));
       })
       .finally(() => {
         if (editorMountedRef.current && requestId === serverRevisionRequestRef.current) {
