@@ -25,6 +25,7 @@ import {
   type StudioAnimaticDocument,
   type StudioAnimaticSegment,
 } from "../studio-animatic-timeline";
+import { resolveStudioAnimaticError } from "../status-i18n/studio-producer-error-i18n";
 
 export const STUDIO_ANIMATIC_LOTTIE_VERSION = "5.7.4";
 export const STUDIO_ANIMATIC_LOTTIE_MAX_BYTES = 4_000_000;
@@ -267,7 +268,7 @@ export function buildStudioAnimaticLottie(
   options: StudioAnimaticLottieOptions = {},
 ): StudioAnimaticLottieResult {
   const planned = planStudioAnimaticPreview(document, false);
-  if (!planned.ok) return { ok: false, error: planned.error };
+  if (!planned.ok) return { ok: false, error: resolveStudioAnimaticError(planned.error) };
   const { plan } = planned;
   if (document.segments.length === 0 || plan.totalDurationMs <= 0) {
     return { ok: false, error: "내보낼 컷이 없습니다." };

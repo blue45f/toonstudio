@@ -29,6 +29,7 @@ import type {
   RawInputSampleIR,
   StrokeIR,
 } from "@toonstudio/studio-project-model";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 export const STUDIO_VRM_SURFACE_PAINT_TOOL_ID = "studio-vrm-surface-round-v12";
 export const STUDIO_VRM_SURFACE_PAINT_PROVIDER_ID = "three-vrm-texture-paint";
@@ -221,7 +222,7 @@ const INITIAL_SNAPSHOT: StudioVrmSurfacePaintToolSnapshot = Object.freeze({
   status: "ready",
   activePointerId: null,
   sampleCount: 0,
-  message: "V12 UV 브러시가 준비됐습니다.",
+  message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.brushReady", "V12 UV 브러시가 준비됐습니다."),
   errorCode: null,
   lastCommit: null,
 });
@@ -424,7 +425,7 @@ function classifyExecutionError(error: unknown): Readonly<{
   ) {
     return Object.freeze({
       code: "memory",
-      message: "이 획을 원자적으로 되돌릴 메모리가 부족해 텍스처를 변경하지 않았습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.memoryInsufficient", "이 획을 원자적으로 되돌릴 메모리가 부족해 텍스처를 변경하지 않았습니다."),
     });
   }
   if (
@@ -432,9 +433,8 @@ function classifyExecutionError(error: unknown): Readonly<{
     || normalized.includes("target-invalid")
     || normalized.includes("upload")
   ) {
-    return Object.freeze({
-      code: "upload",
-      message: "아틀라스 업로드가 실패해 획 전체를 되돌리고 마지막 성공 결과를 유지했습니다. 다음 작업 전에 provider 또는 도구를 명시적으로 선택하세요.",
+    return Object.freeze({ code: "upload",
+      message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.uploadFailed", "아틀라스 업로드가 실패해 획 전체를 되돌리고 마지막 성공 결과를 유지했습니다. 다음 작업 전에 provider 또는 도구를 명시적으로 선택하세요."),
     });
   }
   if (error instanceof StudioVrmSurfaceBrushBridgeError) {
@@ -468,7 +468,7 @@ function inspectRuntimeAdmission(
     return Object.freeze({
       status: "unavailable",
       reason: "runtime-unavailable",
-      message: "선택한 V12 UV 표면 브러시 runtime이 이미 종료됐습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.runtimeEnded", "선택한 V12 UV 표면 브러시 runtime이 이미 종료됐습니다."),
     });
   }
   if (
@@ -479,14 +479,14 @@ function inspectRuntimeAdmission(
     return Object.freeze({
       status: "unavailable",
       reason: "busy",
-      message: "선택한 V12 UV 표면 브러시 runtime이 다른 표면 작업을 처리 중입니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.runtimeBusy", "선택한 V12 UV 표면 브러시 runtime이 다른 표면 작업을 처리 중입니다."),
     });
   }
   if (snapshot.status === "invalid") {
     return Object.freeze({
       status: "unavailable",
       reason: "runtime-invalid",
-      message: "선택한 V12 UV 표면 브러시 runtime의 현재 텍스처 대상이 유효하지 않습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.targetInvalid", "선택한 V12 UV 표면 브러시 runtime의 현재 텍스처 대상이 유효하지 않습니다."),
     });
   }
   return null;
@@ -539,7 +539,7 @@ export class StudioVrmSurfacePaintTool {
       return createBeginFailureReceipt({
         status: "unavailable",
         reason: "tool-disposed",
-        message: "선택한 V12 UV 표면 브러시 도구가 이미 종료됐습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.toolEnded", "선택한 V12 UV 표면 브러시 도구가 이미 종료됐습니다."),
       }, this.snapshot.lastCommit);
     }
     if (this.active) {
@@ -548,7 +548,7 @@ export class StudioVrmSurfacePaintTool {
       return createBeginFailureReceipt({
         status: "unavailable",
         reason: "busy",
-        message: "이전 V12 UV 표면 획이 아직 끝나지 않았습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.previousStrokeActive", "이전 V12 UV 표면 획이 아직 끝나지 않았습니다."),
       }, this.snapshot.lastCommit);
     }
     const runtime = input.runtime;
@@ -556,7 +556,7 @@ export class StudioVrmSurfacePaintTool {
       const receipt = createBeginFailureReceipt({
         status: "unavailable",
         reason: "runtime-unavailable",
-        message: "선택한 V12 UV 표면 브러시 provider가 연결되지 않았습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.providerDisconnected", "선택한 V12 UV 표면 브러시 provider가 연결되지 않았습니다."),
       }, this.snapshot.lastCommit);
       this.publish({
         status: receipt.status,
@@ -583,7 +583,7 @@ export class StudioVrmSurfacePaintTool {
       const receipt = createBeginFailureReceipt({
         status: "rejected",
         reason: "invalid-input",
-        message: "포인터 또는 브러시 값이 유효하지 않아 선택한 표면 획을 거부했습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.invalidPointerOrBrush", "포인터 또는 브러시 값이 유효하지 않아 선택한 표면 획을 거부했습니다."),
       }, this.snapshot.lastCommit);
       this.publish({
         status: receipt.status,
@@ -601,7 +601,7 @@ export class StudioVrmSurfacePaintTool {
       const receipt = createBeginFailureReceipt({
         status: "rejected",
         reason: "unsupported-face-index",
-        message: "UV seam을 증명할 faceIndex가 없어 선택한 표면 획을 거부했습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.seamFaceMissing", "UV seam을 증명할 faceIndex가 없어 선택한 표면 획을 거부했습니다."),
       }, this.snapshot.lastCommit);
       this.publish({
         status: receipt.status,
@@ -627,7 +627,7 @@ export class StudioVrmSurfacePaintTool {
       status: "collecting",
       activePointerId: input.sample.pointerId,
       sampleCount: 1,
-      message: "V12 UV 획을 수집 중입니다. 포인터를 놓으면 한 번에 아틀라스에 저장합니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.collectingStroke", "V12 UV 획을 수집 중입니다. 포인터를 놓으면 한 번에 아틀라스에 저장합니다."),
       errorCode: null,
     });
     return Object.freeze({
@@ -666,7 +666,7 @@ export class StudioVrmSurfacePaintTool {
       status: "collecting",
       activePointerId: active.pointerId,
       sampleCount: active.samples.length,
-      message: "V12 UV 획을 수집 중입니다. 포인터를 놓으면 한 번에 아틀라스에 저장합니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.collectingStroke", "V12 UV 획을 수집 중입니다. 포인터를 놓으면 한 번에 아틀라스에 저장합니다."),
       errorCode: null,
     });
     return true;
@@ -686,7 +686,7 @@ export class StudioVrmSurfacePaintTool {
       status: "committing",
       activePointerId: pointerId,
       sampleCount: active.samples.length,
-      message: "UV chart 경계를 나눈 뒤 아틀라스에 한 획으로 저장하는 중입니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.chartSplitting", "UV chart 경계를 나눈 뒤 아틀라스에 한 획으로 저장하는 중입니다."),
       errorCode: null,
     });
 
@@ -711,7 +711,7 @@ export class StudioVrmSurfacePaintTool {
         status: "error",
         activePointerId: null,
         sampleCount: 0,
-        message: "V12 획 데이터를 만들 수 없어 표면을 변경하지 않았습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.strokeDataFailed", "V12 획 데이터를 만들 수 없어 표면을 변경하지 않았습니다."),
         errorCode: "invalid-input",
       });
       return Object.freeze({ ok: false, cancelled: false, error });
@@ -770,7 +770,7 @@ export class StudioVrmSurfacePaintTool {
             status: "ready",
             activePointerId: null,
             sampleCount: 0,
-            message: "V12 UV 획을 취소해 아틀라스와 실행 취소 기록을 그대로 유지했습니다.",
+            message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.strokeCanceled", "V12 UV 획을 취소해 아틀라스와 실행 취소 기록을 그대로 유지했습니다."),
             errorCode: null,
           });
         } else {
@@ -806,7 +806,7 @@ export class StudioVrmSurfacePaintTool {
           status: "cancelling",
           activePointerId: active.pointerId,
           sampleCount: active.samples.length,
-          message: "진행 중인 V12 UV 획을 원자적으로 취소하는 중입니다.",
+          message: frozenStatus6Text("studio.frozenStatus6.surfacePaint.strokeCanceling", "진행 중인 V12 UV 획을 원자적으로 취소하는 중입니다."),
           errorCode: null,
         });
       }
@@ -821,7 +821,7 @@ export class StudioVrmSurfacePaintTool {
         sampleCount: 0,
         message: deviceFailure
           ? "그래픽 장치 연결이 끊겨 진행 중인 표면 획을 취소하고 마지막 성공 결과를 유지했습니다. 다음 작업 전에 복구된 provider 또는 다른 도구를 명시적으로 선택하세요."
-          : "V12 UV 획을 취소해 아틀라스와 실행 취소 기록을 그대로 유지했습니다.",
+          : frozenStatus6Text("studio.frozenStatus6.surfacePaint.strokeCanceled", "V12 UV 획을 취소해 아틀라스와 실행 취소 기록을 그대로 유지했습니다."),
         errorCode: deviceFailure ? "device-failure" : null,
       });
     }

@@ -8,6 +8,7 @@
  */
 
 import { sha256HexPortable } from "./studio-sha256";
+import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
 
 export const STUDIO_DOCUMENT_ENVELOPE_LIMITS = Object.freeze({
   maxBytes: 32 * 1024 * 1024,
@@ -818,9 +819,8 @@ export function canonicalizeStudioDocumentEnvelope<
       ok: false,
       diagnostics: [
         diagnostic({
-          severity: "error",
-          code: "INVALID_JSON_VALUE",
-          message: "Studio 문서 envelope를 안전하게 검증하지 못했습니다.",
+          severity: "error", code: "INVALID_JSON_VALUE",
+          message: frozenStatus6Text("studio.frozenStatus6.envelope.invalidJsonValue", "Studio 문서 envelope를 안전하게 검증하지 못했습니다."),
           recoverable: false,
           recovery: "repair-source",
         }),
@@ -860,7 +860,7 @@ export function parseCanonicalStudioDocumentEnvelope<
         diagnostic({
           severity: "error",
           code: "NON_CANONICAL_SERIALIZATION",
-          message: "Studio 문서 envelope가 canonical JSON 표현과 일치하지 않습니다.",
+          message: frozenStatus6Text("studio.frozenStatus6.envelope.canonicalMismatch", "Studio 문서 envelope가 canonical JSON 표현과 일치하지 않습니다."),
           recoverable: true,
           recovery: "preserve-source",
         }),
@@ -1422,7 +1422,7 @@ export class StudioDocumentMigratorRegistry {
         {
           severity: "error",
           code: "MIGRATION_BUDGET_EXCEEDED",
-          message: "Studio 문서 migration 단계 수가 실행 budget을 넘었습니다.",
+          message: frozenStatus6Text("studio.frozenStatus6.envelope.stepBudgetExceeded", "Studio 문서 migration 단계 수가 실행 budget을 넘었습니다."),
           recoverable: true,
           recovery: "increase-budget",
           formatId: source.format.id,
@@ -1443,7 +1443,7 @@ export class StudioDocumentMigratorRegistry {
         {
           severity: "error",
           code: "MIGRATION_BUDGET_EXCEEDED",
-          message: "Studio 문서 migration 누적 바이트가 실행 budget을 넘었습니다.",
+          message: frozenStatus6Text("studio.frozenStatus6.envelope.byteBudgetExceeded", "Studio 문서 migration 누적 바이트가 실행 budget을 넘었습니다."),
           recoverable: true,
           recovery: "increase-budget",
           formatId: source.format.id,
@@ -1463,7 +1463,7 @@ export class StudioDocumentMigratorRegistry {
         {
           severity: "error",
           code: "CHECKSUM_UNAVAILABLE",
-          message: "Studio 문서 migration provenance checksum을 계산하지 못했습니다.",
+          message: frozenStatus6Text("studio.frozenStatus6.envelope.checksumFailed", "Studio 문서 migration provenance checksum을 계산하지 못했습니다."),
           recoverable: true,
           recovery: "retry-runtime",
           formatId: source.format.id,
@@ -1485,7 +1485,7 @@ export class StudioDocumentMigratorRegistry {
           {
             severity: "error",
             code: "MIGRATION_INVARIANT_VIOLATION",
-            message: "등록된 Studio 문서 migration 경로가 실행 중 끊어졌습니다.",
+            message: frozenStatus6Text("studio.frozenStatus6.envelope.pathBroken", "등록된 Studio 문서 migration 경로가 실행 중 끊어졌습니다."),
             recoverable: true,
             recovery: "fix-migrator",
             formatId: source.format.id,
@@ -1515,7 +1515,7 @@ export class StudioDocumentMigratorRegistry {
           {
             severity: "error",
             code: "MIGRATOR_FAILED",
-            message: "Studio 문서 migrator 실행이 실패했습니다.",
+            message: frozenStatus6Text("studio.frozenStatus6.envelope.migratorFailed", "Studio 문서 migrator 실행이 실패했습니다."),
             recoverable: true,
             recovery: "fix-migrator",
             formatId: source.format.id,
@@ -1585,7 +1585,7 @@ export class StudioDocumentMigratorRegistry {
           {
             severity: "error",
             code: "MIGRATION_BUDGET_EXCEEDED",
-            message: "Studio 문서 migration 누적 바이트가 실행 budget을 넘었습니다.",
+            message: frozenStatus6Text("studio.frozenStatus6.envelope.byteBudgetExceeded", "Studio 문서 migration 누적 바이트가 실행 budget을 넘었습니다."),
             recoverable: true,
             recovery: "increase-budget",
             formatId: source.format.id,
@@ -1605,7 +1605,7 @@ export class StudioDocumentMigratorRegistry {
           {
             severity: "error",
             code: "CHECKSUM_UNAVAILABLE",
-            message: "Studio 문서 migration provenance checksum을 계산하지 못했습니다.",
+            message: frozenStatus6Text("studio.frozenStatus6.envelope.checksumFailed", "Studio 문서 migration provenance checksum을 계산하지 못했습니다."),
             recoverable: true,
             recovery: "retry-runtime",
             formatId: source.format.id,

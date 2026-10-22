@@ -28,6 +28,7 @@ import {
   type StudioAnimaticPageLike,
   type StudioAnimaticStorage,
 } from "./studio-animatic-timeline";
+import { resolveStudioAnimaticError } from "./status-i18n/studio-producer-error-i18n";
 
 const PAGES: StudioAnimaticPageLike[] = [
   {
@@ -92,7 +93,7 @@ function createDocument(): StudioAnimaticDocument {
   const created = createStudioAnimaticFromPages(PAGES, {
     workScope: "episode-01",
   });
-  if (!created.ok) throw new Error(created.error);
+  if (!created.ok) throw new Error(resolveStudioAnimaticError(created.error));
   return created.document;
 }
 
@@ -183,7 +184,7 @@ describe("studio animatic preview planning and sampling", () => {
       zoom: 1.5,
     });
     const planned = planStudioAnimaticPreview(document);
-    if (!planned.ok) throw new Error(planned.error);
+    if (!planned.ok) throw new Error(resolveStudioAnimaticError(planned.error));
 
     const sample = sampleStudioAnimaticPreview(
       document,
@@ -210,7 +211,7 @@ describe("studio animatic preview planning and sampling", () => {
       zoom: 2,
     });
     const planned = planStudioAnimaticPreview(document, true);
-    if (!planned.ok) throw new Error(planned.error);
+    if (!planned.ok) throw new Error(resolveStudioAnimaticError(planned.error));
     const sample = sampleStudioAnimaticPreview(
       document,
       planned.plan,
@@ -233,7 +234,7 @@ describe("studio animatic preview planning and sampling", () => {
   it("wraps only when loop is explicitly enabled", () => {
     let document = createDocument();
     const planned = planStudioAnimaticPreview(document);
-    if (!planned.ok) throw new Error(planned.error);
+    if (!planned.ok) throw new Error(resolveStudioAnimaticError(planned.error));
     expect(
       sampleStudioAnimaticPreview(
         document,

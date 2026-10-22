@@ -1598,4 +1598,56 @@ describe("StudioCommunityMarketplacePanel request races", () => {
       screen.getByRole("button", { name: "기기에서 제거" }),
     ));
   });
+
+  it("공개 재검증 NotFound는 문장 A 전체를 onStatus로 전달한다 (D1 W2-T)", async () => {
+    const current = cloudBrushRecord();
+    mocks.listPublic.mockResolvedValue(page([current]));
+    mocks.inspectInstallState.mockResolvedValue("available");
+    mocks.projectPack.mockReturnValue(installableProjection(current));
+    mocks.getResource.mockRejectedValue(new NotFoundError());
+
+    render(<StudioCommunityMarketplacePanel initialOpen />);
+    fireEvent.click(await screen.findByRole("button", { name: "무료 설치" }));
+
+    // onStatus 메시지는 handleInstall catch의 `{name} · ` 접두 + 문장 A 전체다.
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "계정 잉크 브러시 · 계정 잉크 브러시의 공개 상태를 더 이상 확인할 수 없어 로컬 설치 중단했습니다. 관리자 숨김, 배급자 목록 내림 또는 배급자 계정 상태 변경일 수 있습니다. 공개 목록을 새로고침한 뒤 다시 시도해 주세요.",
+    );
+    expect(mocks.installPack).not.toHaveBeenCalled();
+  });
+
+  it("공개 재검증 네트워크 오류는 detail을 포함한 문장 B 전체를 onStatus로 전달한다 (D1 W2-T)", async () => {
+    const current = cloudBrushRecord();
+    mocks.listPublic.mockResolvedValue(page([current]));
+    mocks.inspectInstallState.mockResolvedValue("available");
+    mocks.projectPack.mockReturnValue(installableProjection(current));
+    mocks.getResource.mockRejectedValue(new Error("네트워크 연결이 끊겼습니다."));
+
+    render(<StudioCommunityMarketplacePanel initialOpen />);
+    fireEvent.click(await screen.findByRole("button", { name: "무료 설치" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "계정 잉크 브러시 · 계정 잉크 브러시의 현재 공개 상태를 다시 확인하지 못해 로컬 설치 안전하게 중단했습니다. 네트워크 연결이 끊겼습니다. 다시 시도해 주세요.",
+    );
+    expect(mocks.installPack).not.toHaveBeenCalled();
+  });
+
+  it("공개 재검증 증거 불일치는 문장 C 전체를 onStatus로 전달한다 (D1 W2-T)", async () => {
+    const current = cloudBrushRecord();
+    mocks.listPublic.mockResolvedValue(page([current]));
+    mocks.inspectInstallState.mockResolvedValue("available");
+    mocks.projectPack.mockReturnValue(installableProjection(current));
+    mocks.getResource.mockResolvedValue({
+      ...current,
+      manifestHash: "c".repeat(64),
+    });
+
+    render(<StudioCommunityMarketplacePanel initialOpen />);
+    fireEvent.click(await screen.findByRole("button", { name: "무료 설치" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "계정 잉크 브러시 · 계정 잉크 브러시의 현재 공개 릴리스 증거가 이 카드와 달라 로컬 설치 중단했습니다. 공개 목록을 새로고침한 뒤 정확한 최신 릴리스에서 다시 시도해 주세요.",
+    );
+    expect(mocks.installPack).not.toHaveBeenCalled();
+  });
 });

@@ -34,6 +34,7 @@ import type { ReactNode } from "react";
 
 import { StudioScene3dBg3dCutPanel } from "../scene3d/StudioScene3dBg3dCutPanel";
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS,
   STUDIO_BG3D_ASSISTANT_OUTPUT_STYLES,
@@ -450,11 +451,9 @@ function ChooseStep({
           ) : (
             <div className="scene-assistant__empty-state">
               <Box size={24} aria-hidden />
-              <strong>표시할 준비된 소재가 없습니다.</strong>
+              <strong>{frozenStatus5Text("studio.frozenStatus5.bg3dAssistant.assetsEmpty", "표시할 준비된 소재가 없습니다.")}</strong>
               <span>정밀 편집에서 모델을 가져오거나 전체 라이브러리를 확인할 수 있습니다.</span>
-              <button type="button" onClick={onOpenProfessional}>
-                <SlidersHorizontal size={15} aria-hidden /> 전체 라이브러리 열기
-              </button>
+              <button type="button" onClick={onOpenProfessional}><SlidersHorizontal size={15} aria-hidden /> 전체 라이브러리 열기</button>
             </div>
           )}
         </section>

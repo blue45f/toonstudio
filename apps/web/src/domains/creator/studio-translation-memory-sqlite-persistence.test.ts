@@ -12,6 +12,7 @@ import {
   STUDIO_TRANSLATION_MEMORY_SQLITE_KEY,
   STUDIO_TRANSLATION_MEMORY_SQLITE_NAMESPACE,
 } from "./studio-translation-memory-sqlite-persistence";
+import { resolveStudioTranslationMemoryExportError } from "./status-i18n/studio-producer-error-i18n";
 
 import type { StudioLocalDatabase } from "./studio-local-database";
 
@@ -149,7 +150,7 @@ describe("studio translation-memory SQLite persistence", () => {
     });
     const authored = entry("Hello", 10);
     const exported = exportStudioTranslationMemory([authored]);
-    if (!exported.ok) throw new Error(exported.error);
+    if (!exported.ok) throw new Error(resolveStudioTranslationMemoryExportError(exported.error));
 
     await persistence.save([authored]);
     await expect(

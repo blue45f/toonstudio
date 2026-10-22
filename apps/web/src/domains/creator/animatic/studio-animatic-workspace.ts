@@ -5,6 +5,8 @@ import {
   type StudioAnimaticPageLike,
 } from "../studio-animatic-timeline";
 
+import { resolveStudioAnimaticError } from "../status-i18n/studio-producer-error-i18n";
+
 import type { StudioOpfsAssetRef } from "../studio-opfs-asset-store";
 
 export const ANIMATIC_WORKSPACE_KIND = "toonstudio.storyboard-workspace";
@@ -165,7 +167,7 @@ export function validateStudioAnimaticWorkspace(value: unknown): StudioAnimaticW
 
 export function createStudioAnimaticWorkspace(pages: readonly StudioAnimaticPageLike[], workScope: string, timeline?: StudioAnimaticDocument): StudioAnimaticWorkspaceDocument {
   const created = timeline ? { ok: true as const, document: timeline } : createStudioAnimaticFromPages(pages, { workScope });
-  if (!created.ok) throw new Error(created.error);
+  if (!created.ok) throw new Error(resolveStudioAnimaticError(created.error));
   return { kind: ANIMATIC_WORKSPACE_KIND, version: 1, workScope, timeline: created.document, artwork: [], audio: [], markers: [], shots: [], variants: [], reviews: [] };
 }
 

@@ -44,6 +44,7 @@ import {
   STUDIO_FOCUS_RING,
 } from "../studio-panel-ui";
 import { useStudioModalSheet } from "../useStudioModalSheet";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import {
   STUDIO_LAYER_LIFT_CORRECTION_MAX_POINTS,
@@ -386,7 +387,7 @@ function StudioLayerLiftCorrectionCanvas({
           aria-live="polite"
         >
           <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
-          보정 경계를 다시 합성하는 중…
+          {frozenStatus5Text("studio.frozenStatus5.liftLayer.recompositing", "보정 경계를 다시 합성하는 중…")}
         </div>
       ) : null}
     </div>
@@ -639,16 +640,16 @@ export function StudioLayerLiftDialog({
                       <p className="mt-3 text-sm font-bold text-fg">
                         {phase === "analyzing"
                           ? generalSubject
-                            ? "일반 피사체 경계를 찾고 있어요"
-                            : "인물·캐릭터 경계를 찾고 있어요"
+                            ? frozenStatus5Text("studio.frozenStatus5.liftLayer.analyzingGeneral", "일반 피사체 경계를 찾고 있어요")
+                            : frozenStatus5Text("studio.frozenStatus5.liftLayer.analyzingPerson", "인물·캐릭터 경계를 찾고 있어요")
                           : phase === "error"
-                            ? "분석을 완료하지 못했습니다"
-                            : "분석 준비 완료"}
+                            ? frozenStatus5Text("studio.frozenStatus5.liftLayer.analyzeFailed", "분석을 완료하지 못했습니다")
+                            : frozenStatus5Text("studio.frozenStatus5.liftLayer.readyToAnalyze", "분석 준비 완료")}
                       </p>
                       <p className="mt-1 text-xs leading-relaxed text-fg-3">
                         {phase === "analyzing"
-                          ? progressLabel ?? "첫 실행은 로컬 모델을 준비하느라 조금 더 걸릴 수 있습니다."
-                          : error ?? "오른쪽에서 분석을 시작해 주세요."}
+                          ? progressLabel ?? frozenStatus5Text("studio.frozenStatus5.liftLayer.firstRunSlow", "첫 실행은 로컬 모델을 준비하느라 조금 더 걸릴 수 있습니다.")
+                          : error ?? frozenStatus5Text("studio.frozenStatus5.liftLayer.startOnRight", "오른쪽에서 분석을 시작해 주세요.")}
                       </p>
                     </div>
                   </div>
@@ -748,18 +749,18 @@ export function StudioLayerLiftDialog({
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-fg">
                   {phase === "analyzing"
-                    ? "기기에서 분석 중"
+                    ? frozenStatus5Text("studio.frozenStatus5.liftLayer.analyzingOnDevice", "기기에서 분석 중")
                     : phase === "applying"
-                      ? "레이어 그룹 적용 중"
+                      ? frozenStatus5Text("studio.frozenStatus5.liftLayer.applyingGroup", "레이어 그룹 적용 중")
                       : phase === "error"
-                        ? "다시 확인이 필요해요"
+                        ? frozenStatus5Text("studio.frozenStatus5.liftLayer.recheckNeeded", "다시 확인이 필요해요")
                         : preview
                           ? `${CONFIDENCE_LABELS[preview.confidenceBand]} · ${percent(preview.confidenceScore)}`
-                          : "분석 준비"}
+                          : frozenStatus5Text("studio.frozenStatus5.liftLayer.readyShort", "분석 준비")}
                 </p>
                 <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-2">
                   {phase === "error"
-                    ? error ?? "이미지와 모델 상태를 확인한 뒤 다시 분석해 주세요."
+                    ? error ?? frozenStatus5Text("studio.frozenStatus5.liftLayer.retryAfterCheck", "이미지와 모델 상태를 확인한 뒤 다시 분석해 주세요.")
                     : progressLabel ?? "이미지 픽셀은 추론 서버에 업로드하지 않습니다."}
                 </p>
               </div>
@@ -946,7 +947,7 @@ export function StudioLayerLiftDialog({
                 aria-live="polite"
                 className="mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2 text-[0.68rem] leading-relaxed text-warn"
               >
-                {mutationLockReason ?? "현재 문서 상태에서는 결과를 적용할 수 없습니다."}
+                {mutationLockReason ?? frozenStatus5Text("studio.frozenStatus5.liftLayer.mutationLockedFallback", "현재 문서 상태에서는 결과를 적용할 수 없습니다.")}
               </p>
             ) : null}
           </aside>
@@ -957,11 +958,8 @@ export function StudioLayerLiftDialog({
             <button
               type="button"
               onClick={onCancel}
-              className={cn(
-                "min-h-11 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg",
-                STUDIO_EASE,
-                STUDIO_FOCUS_RING,
-              )}
+              className={cn("min-h-11 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg",
+                STUDIO_EASE, STUDIO_FOCUS_RING)}
             >
               {busy ? "작업 중단" : "취소"}
             </button>

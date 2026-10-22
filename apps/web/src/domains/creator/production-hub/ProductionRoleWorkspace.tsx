@@ -52,6 +52,7 @@ import type { ProductionClientCommand } from "./production-api";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 export type ProductionRoleLens = "story" | "art" | "producer";
 type WorkspaceView = "workcells" | "pipeline" | "crew";
@@ -157,10 +158,7 @@ function toneClass(tone: Tone): string {
 }
 function Pill({ children, tone = "neutral" }: { readonly children: ReactNode; readonly tone?: Tone }) {
   return (
-    <span className={cn(
-      "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold",
-      toneClass(tone),
-    )}>
+    <span className={cn("inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold", toneClass(tone))}>
       {children}
     </span>
   );
@@ -435,7 +433,7 @@ function TaskInspector({
       const next = transitionProductionTask(task, target, completed);
       await saveTask(next, `${STATUS_LABELS[target]} 상태로 이동했습니다.`);
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : "작업 상태를 변경하지 못했습니다.");
+      setActionError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.role.transitionFailed", "작업 상태를 변경하지 못했습니다."));
     }
   };
 
@@ -551,7 +549,7 @@ function TaskInspector({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold text-fg">{dependency?.title ?? task.dependencyTaskIds[index]}</p>
                   <p className="mt-0.5 text-[0.6875rem] text-fg-3">
-                    {dependency ? STATUS_LABELS[dependency.status] : "작업을 찾을 수 없음"}
+                    {dependency ? STATUS_LABELS[dependency.status] : frozenStatus5Text("studio.frozenStatus5.role.taskNotFound", "작업을 찾을 수 없음")}
                   </p>
                 </div>
               </div>

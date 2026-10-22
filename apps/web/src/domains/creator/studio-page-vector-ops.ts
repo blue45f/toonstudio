@@ -33,6 +33,7 @@ import type { StudioEditorMutationTicket } from "./studio-editor-scope";
 import type { DrawEl, El } from "./studio-element-model";
 import type { PageState } from "./studio-page-state";
 import type { StudioQualityWorkerClient } from "./studio-quality-worker-client";
+import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
 
 /**
  * Editor surface the async vector commands operate on. Values are captured per render (the
@@ -282,10 +283,10 @@ export function createStudioPageVectorOps(
         );
         setError(
           result.reason === "budget-exceeded"
-            ? "선택한 획이 너무 복잡해 안전한 경로 예산 안에서 정리하지 못했어요."
+            ? frozenStatus6Text("studio.frozenStatus6.vectorOps.budgetExceeded", "선택한 획이 너무 복잡해 안전한 경로 예산 안에서 정리하지 못했어요.")
             : result.reason === "ineligible-element"
-              ? "이 브러시는 질감과 획 의미를 보존하기 위해 경로 정리를 제한해요."
-              : "경로 정리 결과를 안전하게 검증하지 못했어요. 다시 시도해 주세요."
+              ? frozenStatus6Text("studio.frozenStatus6.vectorOps.ineligibleBrush", "이 브러시는 질감과 획 의미를 보존하기 위해 경로 정리를 제한해요.")
+              : frozenStatus6Text("studio.frozenStatus6.vectorOps.verifyFailed", "경로 정리 결과를 안전하게 검증하지 못했어요. 다시 시도해 주세요.")
         );
         return;
       }
@@ -309,8 +310,8 @@ export function createStudioPageVectorOps(
         ) {
           setError(
             staleReason === "locked"
-              ? "계산 중 획이나 작업면이 잠겨 경로 정리 결과를 적용하지 않았어요."
-              : "계산 중 페이지·선택 또는 획이 바뀌어 오래된 경로 정리 결과를 적용하지 않았어요."
+              ? frozenStatus6Text("studio.frozenStatus6.vectorOps.staleLockedRefine", "계산 중 획이나 작업면이 잠겨 경로 정리 결과를 적용하지 않았어요.")
+              : frozenStatus6Text("studio.frozenStatus6.vectorOps.staleChangedRefine", "계산 중 페이지·선택 또는 획이 바뀌어 오래된 경로 정리 결과를 적용하지 않았어요.")
           );
         }
         return;
@@ -334,7 +335,7 @@ export function createStudioPageVectorOps(
     } catch (cause) {
       if (!controller.signal.aborted) {
         console.error("Failed to refine vector path with Paper worker:", cause);
-        setError("벡터 경로 엔진을 시작하지 못했어요. 다시 시도해 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.engineStartFailed", "벡터 경로 엔진을 시작하지 못했어요. 다시 시도해 주세요."));
       }
     } finally {
       if (paperVectorRefinementRunIdRef.current === runId) {
@@ -360,16 +361,14 @@ export function createStudioPageVectorOps(
         drawingPointerTransportRef,
       ).getSession()
     ) {
-      setError("현재 획을 마친 뒤 도형을 결합할 수 있어요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.commitStrokeFirst", "현재 획을 마친 뒤 도형을 결합할 수 있어요."));
       return;
     }
     if (
       pendingStrokeCommitsRef.current
       && !flushPendingStrokeCommitsRef.current()
     ) {
-      setError(
-        "마지막 획을 원고에 확정하지 못해 도형 결합을 시작하지 않았어요. 잠금·동기화 상태를 확인해 주세요.",
-      );
+        setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.commitFirstCombine", "마지막 획을 원고에 확정하지 못해 도형 결합을 시작하지 않았어요. 잠금·동기화 상태를 확인해 주세요."));
       return;
     }
     if (pathBooleanActiveRef.current) return;
@@ -388,7 +387,7 @@ export function createStudioPageVectorOps(
     if (
       selectionEls.some((el) => isEffectivelyLocked(el, groupsAtStart))
     ) {
-      setError("잠긴 도형은 결합할 수 없어요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.lockedShape", "잠긴 도형은 결합할 수 없어요."));
       return;
     }
     const groupIds = new Set(
@@ -396,12 +395,12 @@ export function createStudioPageVectorOps(
     );
     if (groupIds.size > 1) {
       setError(
-        "서로 다른 그룹의 도형은 바로 결합할 수 없어요. 같은 그룹 안에서 선택하거나 먼저 그룹을 해제해 주세요.",
+        frozenStatus6Text("studio.frozenStatus6.vectorOps.differentGroups", "서로 다른 그룹의 도형은 바로 결합할 수 없어요. 같은 그룹 안에서 선택하거나 먼저 그룹을 해제해 주세요."),
       );
       return;
     }
     if (pageEditLocked && !masterEditMode) {
-      setError("이 페이지는 검토 잠금 상태예요. 잠금을 해제한 뒤 편집해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.reviewLocked", "이 페이지는 검토 잠금 상태예요. 잠금을 해제한 뒤 편집해 주세요."));
       return;
     }
 
@@ -484,8 +483,8 @@ export function createStudioPageVectorOps(
         ) {
           setError(
             staleReason === "locked"
-              ? "계산 중 페이지나 도형이 잠겨 결합 결과를 적용하지 않았어요."
-              : "계산 중 페이지·선택 또는 도형이 바뀌어 오래된 결합 결과를 적용하지 않았어요."
+              ? frozenStatus6Text("studio.frozenStatus6.vectorOps.staleLockedCombine", "계산 중 페이지나 도형이 잠겨 결합 결과를 적용하지 않았어요.")
+              : frozenStatus6Text("studio.frozenStatus6.vectorOps.staleChangedCombine", "계산 중 페이지·선택 또는 도형이 바뀌어 오래된 결합 결과를 적용하지 않았어요.")
           );
         }
         return;
@@ -563,8 +562,8 @@ export function createStudioPageVectorOps(
         console.error("Failed to apply path boolean combine:", err);
         setError(
           err instanceof Error && err.name === "TimeoutError"
-            ? "선택한 Skia 도형 결합 시간이 초과되어 원본 도형을 유지했어요. 다음 작업 전에 provider를 다시 선택해 주세요."
-            : "선택한 Skia 도형 결합 provider를 사용할 수 없어 원본 도형을 유지했어요. 다른 엔진은 자동으로 실행하지 않았습니다.",
+            ? frozenStatus6Text("studio.frozenStatus6.vectorOps.skiaTimeout", "선택한 Skia 도형 결합 시간이 초과되어 원본 도형을 유지했어요. 다음 작업 전에 provider를 다시 선택해 주세요.")
+            : frozenStatus6Text("studio.frozenStatus6.vectorOps.skiaProviderUnavailable", "선택한 Skia 도형 결합 provider를 사용할 수 없어 원본 도형을 유지했어요. 다른 엔진은 자동으로 실행하지 않았습니다."),
         );
       }
     } finally {
@@ -591,16 +590,14 @@ export function createStudioPageVectorOps(
         drawingPointerTransportRef,
       ).getSession()
     ) {
-      setError("현재 획을 마친 뒤 도형을 결합할 수 있어요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.commitStrokeFirst", "현재 획을 마친 뒤 도형을 결합할 수 있어요."));
       return;
     }
     if (
       pendingStrokeCommitsRef.current
       && !flushPendingStrokeCommitsRef.current()
     ) {
-      setError(
-        "마지막 획을 원고에 확정하지 못해 도형 결합을 시작하지 않았어요. 잠금·동기화 상태를 확인해 주세요.",
-      );
+        setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.commitFirstCombine", "마지막 획을 원고에 확정하지 못해 도형 결합을 시작하지 않았어요. 잠금·동기화 상태를 확인해 주세요."));
       return;
     }
     if (pathBooleanActiveRef.current) return;
@@ -619,7 +616,7 @@ export function createStudioPageVectorOps(
     if (
       selectionEls.some((el) => isEffectivelyLocked(el, groupsAtStart))
     ) {
-      setError("잠긴 도형은 결합할 수 없어요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.lockedShape", "잠긴 도형은 결합할 수 없어요."));
       return;
     }
     const groupIds = new Set(
@@ -627,12 +624,12 @@ export function createStudioPageVectorOps(
     );
     if (groupIds.size > 1) {
       setError(
-        "서로 다른 그룹의 도형은 바로 결합할 수 없어요. 같은 그룹 안에서 선택하거나 먼저 그룹을 해제해 주세요.",
+        frozenStatus6Text("studio.frozenStatus6.vectorOps.differentGroups", "서로 다른 그룹의 도형은 바로 결합할 수 없어요. 같은 그룹 안에서 선택하거나 먼저 그룹을 해제해 주세요."),
       );
       return;
     }
     if (pageEditLocked && !masterEditMode) {
-      setError("이 페이지는 검토 잠금 상태예요. 잠금을 해제한 뒤 편집해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.vectorOps.reviewLocked", "이 페이지는 검토 잠금 상태예요. 잠금을 해제한 뒤 편집해 주세요."));
       return;
     }
 
@@ -712,8 +709,8 @@ export function createStudioPageVectorOps(
         ) {
           setError(
             staleReason === "locked"
-              ? "계산 중 페이지나 도형이 잠겨 결합 결과를 적용하지 않았어요."
-              : "계산 중 페이지·선택 또는 도형이 바뀌어 오래된 결합 결과를 적용하지 않았어요."
+              ? frozenStatus6Text("studio.frozenStatus6.vectorOps.staleLockedCombine", "계산 중 페이지나 도형이 잠겨 결합 결과를 적용하지 않았어요.")
+              : frozenStatus6Text("studio.frozenStatus6.vectorOps.staleChangedCombine", "계산 중 페이지·선택 또는 도형이 바뀌어 오래된 결합 결과를 적용하지 않았어요.")
           );
         }
         return;
@@ -788,7 +785,7 @@ export function createStudioPageVectorOps(
         // 실패해도 다른 provider를 자동 실행하지 않고 원본을 보존한다.
         console.error("Failed to apply sync path boolean combine:", err);
         setError(
-          "빠른 결합(다각형)을 처리하지 못해 원본 도형을 유지했어요. 기본 결합은 자동으로 실행하지 않았습니다.",
+          frozenStatus6Text("studio.frozenStatus6.vectorOps.quickCombineFailed", "빠른 결합(다각형)을 처리하지 못해 원본 도형을 유지했어요. 기본 결합은 자동으로 실행하지 않았습니다."),
         );
       }
     } finally {

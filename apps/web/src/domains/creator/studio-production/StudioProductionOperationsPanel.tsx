@@ -22,6 +22,7 @@ import {
   type ProductionWorkspace,
 } from "./studio-production-workspace-runtime";
 import { applyProductionRoleAssignment } from "./production-role-assignment";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
@@ -386,9 +387,7 @@ export function StudioProductionOperationsPanel({
         ) : null}
 
         {orderedHierarchy.length === 0 ? (
-          <p className="mt-4 rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-2">
-            아직 제작 구조가 없습니다. 에피소드부터 추가하세요.
-          </p>
+          <p className="mt-4 rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-2">{frozenStatus5Text("studio.frozenStatus5.productionOps.structureEmpty", "아직 제작 구조가 없습니다. 에피소드부터 추가하세요.")}</p>
         ) : (
           <div className="mt-4 space-y-1">
             {orderedHierarchy.map(({ node, depth }) => {
@@ -756,9 +755,7 @@ export function StudioProductionOperationsPanel({
           인계 브리프 추가
         </button>
         {workspace.handoffs.length === 0 ? (
-          <p className="mt-4 rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-2">
-            아직 인계 브리프가 없습니다.
-          </p>
+          <p className="mt-4 rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-2">{frozenStatus5Text("studio.frozenStatus5.productionOps.handoffsEmpty", "아직 인계 브리프가 없습니다.")}</p>
         ) : (
           <div className="mt-4 space-y-2">
             {workspace.handoffs.map((handoff) => {

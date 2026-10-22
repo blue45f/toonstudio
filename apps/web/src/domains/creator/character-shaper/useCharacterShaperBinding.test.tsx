@@ -376,6 +376,27 @@ describe("useCharacterShaperBinding", () => {
     expect(result.current.history.length).toBe(0);
   });
 
+  it("returns the preview lock reason from the resolver while a preview is active (D3)", () => {
+    const fake = createFakeHost();
+    const { result } = renderBinding(fake);
+
+    act(() => {
+      result.current.preview?.(entryOf("eyes:romance-sparkle"));
+    });
+
+    let outcome: ReturnType<typeof result.current.commit> | undefined;
+    act(() => {
+      outcome = result.current.commit(entryOf("eyes:original"));
+    });
+
+    // 모듈 상수 시절의 상수 단언이 아니라, 리졸버가 반환한 실제 사유 문구를 단언한다.
+    expect(outcome).toMatchObject({
+      ok: false,
+      reason: "미리보기 후보를 확정하거나 닫은 뒤에 다른 편집을 할 수 있습니다.",
+    });
+    expect(result.current.previewEntryId).toBe("eyes:romance-sparkle");
+  });
+
   it("promotes the matching preview to one undoable commit without applying it twice", () => {
     const fake = createFakeHost();
     const { result } = renderBinding(fake);

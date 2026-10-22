@@ -78,11 +78,11 @@
   "search.explorer.time.hoursAgo": "{count} કલાક પહેલા",
   "search.explorer.time.daysAgo": "{count} દિવસ પહેલા",
   "search.explorer.loadMore": "વધુ લોડ કરો",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "લોકપ્રિય શોધો",
+  "search.explorer.suggestions.genres": "ભલામણ કરેલી શૈલીઓ",
+  "search.explorer.suggestions.searchFor": "{query} શોધો",
+  "search.explorer.suggestions.genreFilter": "શૈલી {genre} દ્વારા સંકુચિત કરો",
+  "search.explorer.suggestions.loading": "સૂચવેલી શોધો લોડ કરી રહ્યા છીએ",
+  "search.explorer.suggestions.error": "સૂચવેલી શોધો લોડ થઈ શકી નહીં. કૃપા કરીને થોડી વાર પછી ફરી પ્રયાસ કરો.",
+  "search.explorer.suggestions.empty": "હાલમાં કોઈ સૂચનો નથી. કૃતિ, લેખક અથવા ટેગ લખીને જુઓ."
 }

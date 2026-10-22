@@ -12,11 +12,12 @@ import {
   validateStudioAnimaticDocument,
   type StudioAnimaticDocument,
 } from "../studio-animatic-timeline";
+import { resolveStudioAnimaticError } from "../status-i18n/studio-producer-error-i18n";
 import { cameraKeyframesToTracks, sampleCameraTracksAt } from "./animatic-keyframe-model";
 
 function createDocument(): StudioAnimaticDocument {
   const created = createStudioAnimaticFromPages([{ id: "page-1", name: "오프닝", canvasH: 1200 }], { workScope: "episode-1" });
-  if (!created.ok) throw new Error(created.error);
+  if (!created.ok) throw new Error(resolveStudioAnimaticError(created.error));
   return created.document;
 }
 
@@ -62,7 +63,7 @@ describe("animatic camera keyframe editing", () => {
     const segmentId = document.segments[0]!.id;
     document = setStudioAnimaticCameraEndpoint(document, segmentId, "end", { panXPercent: 100, opacity: 0, easing: "ease-in" });
     const planned = planStudioAnimaticPreview(document, false);
-    if (!planned.ok) throw new Error(planned.error);
+    if (!planned.ok) throw new Error(resolveStudioAnimaticError(planned.error));
     const mid = sampleStudioAnimaticPreview(document, planned.plan, planned.plan.totalDurationMs / 2, false)!;
     // ease-in은 중간 지점에서 선형(50)보다 뒤처진다
     expect(mid.camera.panXPercent).toBeLessThan(50);
@@ -76,7 +77,7 @@ describe("animatic camera keyframe editing", () => {
     const segmentId = document.segments[0]!.id;
     document = setStudioAnimaticCameraEndpoint(document, segmentId, "end", { zoom: 3, easing: "hold" });
     const planned = planStudioAnimaticPreview(document, false);
-    if (!planned.ok) throw new Error(planned.error);
+    if (!planned.ok) throw new Error(resolveStudioAnimaticError(planned.error));
     const mid = sampleStudioAnimaticPreview(document, planned.plan, planned.plan.totalDurationMs / 2, false)!;
     expect(mid.camera.zoom).toBe(1);
   });
