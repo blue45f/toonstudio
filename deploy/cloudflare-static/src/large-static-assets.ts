@@ -24,6 +24,12 @@ export interface CloudflareLargeAssetDescriptor {
    * bundle-v2 배포 인덱스는 재배포 판정 신호라 짧게 둔다.
    */
   readonly cacheControl?: string;
+  /**
+   * 교차 출처 CORS를 열지 않고, 브라우저가 보낸 `Sec-Fetch-Site`가 동일 출처
+   * (`same-origin`)가 아니면 R2에 닿기 전에 403으로 거부하는 경로.
+   * 구매 라이선스가 독립 파일 재배포를 금지하는 번들 에셋(bundle-v2)에 쓴다.
+   */
+  readonly sameOriginOnly?: boolean;
 }
 
 /**
@@ -72,10 +78,11 @@ export function cloudflareLargeAssetDescriptor(
     return {
       contentType: "application/json",
       cacheControl: CLOUDFLARE_BUNDLE_V2_INDEX_CACHE_CONTROL,
+      sameOriginOnly: true,
     };
   }
   if (BUNDLE_V2_GLB_PATH_PATTERN.test(pathname)) {
-    return { contentType: "model/gltf-binary" };
+    return { contentType: "model/gltf-binary", sameOriginOnly: true };
   }
   return null;
 }
@@ -124,4 +131,42 @@ export function cloudflareLargeAssetSidecarPath(
   encoding: CloudflareLargeAssetEncoding,
 ): string {
   return `${pathname}.${encoding === "br" ? "br" : "gz"}`;
+}
+
+/**
+ * `sameOriginOnly` 경로의 요청 허용 여부. `Sec-Fetch-Site`는 브라우저만 붙이고
+ * 페이지 스크립트는 바꿀 수 없는 헤더다. 헤더가 없는 호출자(curl·구형 브라우저·
+ * 서버 간 호출)는 브라우저 교차 출처 접근이 아니므로 허용하고, 헤더가 있으면
+ * `same-origin`만 통과시킨다 (`same-site`·`cross-site`·`none`·알 수 없는 값은 거부).
+ */
+export function cloudflareSameOriginOnlyAllows(headers: Pick<Headers, "get">): boolean {
+  const site = headers.get("sec-fetch-site");
+  return site === null || site.trim().toLowerCase() === "same-origin";
+}
+
+/*
+ * R2 대형 에셋 서빙의 조건부·범위 요청 판정. 게이트웨이 라우팅과 무관한 순수
+ * 함수라 대형 파일 배달 모듈에 둔다.
+ */
+export function matchesIfNoneMatch(request: Request, httpEtag: string): boolean {
+  const raw = request.headers.get("if-none-match");
+  if (!raw) return false;
+  const target = httpEtag.startsWith("W/") ? httpEtag.slice(2) : httpEtag;
+  return raw.split(",").some((candidate) => {
+    const value = candidate.trim();
+    if (value === "*") return true;
+    return (value.startsWith("W/") ? value.slice(2) : value) === target;
+  });
+}
+
+export function r2RangeHeaders(request: Request): Headers | undefined {
+  const range = request.headers.get("range");
+  return range ? new Headers({ range }) : undefined;
+}
+
+export function matchesIfRange(request: Request, httpEtag: string): boolean {
+  const raw = request.headers.get("if-range")?.trim();
+  if (!raw) return true;
+  if (raw.startsWith("W/") || !raw.startsWith('"')) return false;
+  return raw === httpEtag;
 }
