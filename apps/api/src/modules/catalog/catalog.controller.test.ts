@@ -373,9 +373,30 @@ describe("CatalogController cover byte optimize (separate opt-in)", () => {
     vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
     vi.stubEnv("COVER_SERVER_TRANSCODE_OPTIMIZE", "on");
     const { Image, encodePng, decode } = await import("image-js");
-    const data = new Uint8Array(320 * 480 * 4);
-    for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
-    const png = encodePng(new Image(320, 480, { data, colorModel: "RGBA" }));
+    // 사진형 표지 픽스처: 부드러운 그라디언트에 시드 고정 잡음을 얹어, PNG 로는 잘 줄지 않고 JPEG 로는
+    // 크게 줄어든다(실측 PNG 약 440KB · JPEG q82 약 12KB). 이전 픽스처(i>>2 % 251 톱니)는 PNG 가
+    // 5.7KB 까지 줄어 JPEG(35KB)가 더 커서 "원본보다 작을 때만 채택" 안전장치가 올바르게 PNG 를
+    // 그대로 돌려줬고, 그래서 이 시험이 항상 실패했다(최적화 코드가 아니라 픽스처의 결함).
+    const width = 320;
+    const height = 480;
+    const data = new Uint8Array(width * height * 4);
+    let seed = 0x9e3779b9;
+    const noise = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return ((seed >>> 24) % 17) - 8;
+    };
+    const channel = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const base = 128 + 80 * Math.sin(x / 23) * Math.cos(y / 31);
+        const offset = (y * width + x) * 4;
+        data[offset] = channel(base + noise());
+        data[offset + 1] = channel(base * 0.8 + 20 + noise());
+        data[offset + 2] = channel(255 - base + noise());
+        data[offset + 3] = 255;
+      }
+    }
+    const png = encodePng(new Image(width, height, { data, colorModel: "RGBA" }));
     const fetchMock = vi.fn().mockResolvedValue(
       new globalThis.Response(png, { headers: { "content-type": "image/png" } })
     );
