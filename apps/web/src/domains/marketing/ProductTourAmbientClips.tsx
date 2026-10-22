@@ -2,7 +2,7 @@ import { Sparkles } from "lucide-react";
 
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 
-import { PRODUCT_TOUR_INTRO_CLIP, PRODUCT_TOUR_OUTRO_CLIP } from "./product-tour-clips";
+import { PRODUCT_TOUR_INTRO_CLIP, PRODUCT_TOUR_OUTRO_CLIP, productTourChapterLoop } from "./product-tour-clips";
 
 /**
  * 투어 도입·마무리의 배경 클립. 두 편 모두 생성형 AI로 만든 배경 영상이라
@@ -30,6 +30,32 @@ export function ProductTourIntroBackdrop() {
         <Sparkles size={13} aria-hidden="true" />
         {bi("생성형 AI 배경 영상", "AI-generated backdrop")}
       </span>
+    </div>
+  );
+}
+
+/**
+ * 챕터 카드의 배경 루프. 도입·마무리와 같은 장식 영상 계약(자동재생·무음·루프,
+ * 본문 흐름에서 제외)을 따르고, 생성형 AI 영상이라는 성격은 카드가 모인
+ * '챕터별 기능' 탭의 안내 문구로 밝힌다. 배경이 없는 챕터(overview)는
+ * 아무것도 그리지 않는다.
+ */
+export function ProductTourChapterBackdrop({ chapterId }: { readonly chapterId: string }) {
+  const loop = productTourChapterLoop(chapterId);
+  if (!loop) return null;
+  return (
+    <div className="product-tour__chapter-media" aria-hidden="true">
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        tabIndex={-1}
+        src={loop.src}
+        width={loop.width}
+        height={loop.height}
+      />
     </div>
   );
 }

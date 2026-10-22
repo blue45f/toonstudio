@@ -1,7 +1,8 @@
 /**
- * 제품 투어 페이지의 도입·마무리 배경 클립과 챕터 전환용 스테이징 클립.
+ * 제품 투어 페이지의 도입·마무리 배경 클립, 챕터 카드 배경 루프와
+ * 챕터 전환용 스테이징 클립.
  * 전부 생성형 AI로 만든 배경 영상이라 실제 제품 화면 캡처가 아니다.
- * 화면에서도 그 성격을 밝힌다(배경 위 배지와 마무리 섹션 안내 문구).
+ * 화면에서도 그 성격을 밝힌다(배경 위 배지와 섹션 안내 문구).
  *
  * 전환 클립 3편은 자산만 반입했다. 투어 플레이어(ProductTourPlayer)는 단일 MP4
  * 한 편의 시간 오프셋으로 챕터를 오가는 구조(챕터 시작점으로 seek)라, 챕터
@@ -39,6 +40,46 @@ export const PRODUCT_TOUR_OUTRO_CLIP: ProductTourAmbientClip = {
     body: "The tour closes on an AI-generated backdrop of a studio under lamplight — a concept clip that sets the mood, not an actual product screen.",
   },
 };
+
+/** 챕터 배경 루프가 있는 챕터 id. overview는 도입 클립이 깔린 히어로가 이미 있어 제외한다. */
+export type ProductTourChapterLoopId =
+  | "plan"
+  | "draw"
+  | "comic"
+  | "three-d"
+  | "space"
+  | "assist"
+  | "production"
+  | "learn"
+  | "finish";
+
+export interface ProductTourChapterLoop {
+  readonly chapterId: ProductTourChapterLoopId;
+  readonly src: string;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * 챕터 카드 배경 루프 9편 — 챕터 분위기를 그린 생성형 AI 영상이라 실제 제품
+ * 화면이 아니다. 카드 이미지의 표기(실제 캡처·개념 도해)와는 별개의 장식
+ * 배경이며, 그 성격은 '챕터별 기능' 탭의 안내 문구로 밝힌다.
+ */
+export const PRODUCT_TOUR_CHAPTER_LOOPS: readonly ProductTourChapterLoop[] = [
+  { chapterId: "plan", src: "/brand/promo-chapter-loops/chapter-plan.mp4", width: 1344, height: 768 },
+  { chapterId: "draw", src: "/brand/promo-chapter-loops/chapter-draw.mp4", width: 1344, height: 768 },
+  { chapterId: "comic", src: "/brand/promo-chapter-loops/chapter-comic.mp4", width: 1344, height: 768 },
+  { chapterId: "three-d", src: "/brand/promo-chapter-loops/chapter-three-d.mp4", width: 1344, height: 768 },
+  { chapterId: "space", src: "/brand/promo-chapter-loops/chapter-space.mp4", width: 1344, height: 768 },
+  { chapterId: "assist", src: "/brand/promo-chapter-loops/chapter-assist.mp4", width: 1344, height: 768 },
+  { chapterId: "production", src: "/brand/promo-chapter-loops/chapter-production.mp4", width: 1344, height: 768 },
+  { chapterId: "learn", src: "/brand/promo-chapter-loops/chapter-learn.mp4", width: 1344, height: 768 },
+  { chapterId: "finish", src: "/brand/promo-chapter-loops/chapter-finish.mp4", width: 1344, height: 768 },
+];
+
+export function productTourChapterLoop(chapterId: string): ProductTourChapterLoop | undefined {
+  return PRODUCT_TOUR_CHAPTER_LOOPS.find((loop) => loop.chapterId === chapterId);
+}
 
 /** 챕터 전환 삽입 보류 중 — 자산만 반입한 스테이징 클립(파일 상단 주석 참고). */
 export const PRODUCT_TOUR_TRANSITION_CLIPS = [
