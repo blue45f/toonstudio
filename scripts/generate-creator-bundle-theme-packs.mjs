@@ -79,67 +79,76 @@ const ALLOWED_REQUIRED_EXTENSIONS = new Set([
  *   서로 다른 모듈(묘지 모듈 등)은 각각 편입한다. 변형 중복은 넣지 않는다.
  * presetSource: blend 스토어형 변형 — GLB 1개가 팩 전체를 담은 병합 씬이라
  *   프리빌트 프리셋 후보가 된다.
+ * 2026-10-22 갱신: 5라운드 종결(STATUS §143)로 인제스션 팩 ID가 재부여돼
+ *   매핑 표를 새 ID로 교체했다. 대응 근거는 구·신 매니페스트 파일 sha256
+ *   겹침 전수 대조다(대부분 팩이 파일 단위 100% 일치, 묘지상·묘지 키트·
+ *   무덤 키트는 gltf/glb 변형 팩으로 분할, Winter Atolls는 blend/glb 분할).
+ *   메트로 FBX 248파일이 모인 범용 팩 cbv1-ingest-127-fbxs-2는 메트로
+ *   항목에 넣지 않았다(전부 FBX라 배치 가능 수치에는 영향이 없고, 범용
+ *   팩 전체를 특정 제품으로 귀속시키지 않기 위해서다). 구
+ *   swamp-builder-godot의 25파일은 cbv1-ingest-293-swamparch(SwampArch
+ *   전량본)의 부분집합과 sha가 전부 일치해 같은 항목으로 편입했다.
  * ────────────────────────────────────────────────────────────────────────── */
 const CATALOG_PACKS = [
   // 도시
   { catalogIds: ["cbv1-001-cartoon-city-massive-pack"], title: "Cartoon City Massive Pack", creator: "RG Poly", theme: "city", category: "environment", ingest: ["cbv1-ingest-001-001-city"] },
-  { catalogIds: ["cbv1-004-old-town-courtyards"], title: "Old Town — Courtyards", creator: "EmaceArt", theme: "city", category: "environment", ingest: ["cbv1-ingest-145-oldtownenvironmentcourtyardslite-2026-08-20", "cbv1-ingest-224-old-town-environment-courtyards-blend"], presetSource: ["cbv1-ingest-224-old-town-environment-courtyards-blend"] },
-  { catalogIds: ["cbv1-005-harboria-victorian-town"], title: "Harboria — Victorian Town", creator: "EmaceArt", theme: "city", category: "environment", ingest: ["cbv1-ingest-002-005-harboria-full", "cbv1-ingest-212-harboria-blend"], presetSource: ["cbv1-ingest-212-harboria-blend"], note: "FBX 원본 회수는 끝났고 배치 가능 에셋은 blend 변형의 병합 GLB뿐이다. 나머지는 GLB 변환 후 채워진다." },
+  { catalogIds: ["cbv1-004-old-town-courtyards"], title: "Old Town — Courtyards", creator: "EmaceArt", theme: "city", category: "environment", ingest: ["cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20", "cbv1-ingest-409-old-town-environment-courtyards-blend"], presetSource: ["cbv1-ingest-409-old-town-environment-courtyards-blend"] },
+  { catalogIds: ["cbv1-005-harboria-victorian-town"], title: "Harboria — Victorian Town", creator: "EmaceArt", theme: "city", category: "environment", ingest: ["cbv1-ingest-002-005-harboria-full", "cbv1-ingest-394-harboria-blend"], presetSource: ["cbv1-ingest-394-harboria-blend"], note: "FBX 원본 회수는 끝났고 배치 가능 에셋은 blend 변형의 병합 GLB뿐이다. 나머지는 GLB 변환 후 채워진다." },
   // 중세·판타지 — 021·022/023은 회수 종결·확정 승격으로 편입 (2026-10-21 최종 재생성). 020/024는 미수신, 063은 귀속 판정 유지로 pending.
   { catalogIds: ["cbv1-021-slavica-medieval-village"], title: "Slavica — Slavic Medieval Village", creator: "EmaceArt", theme: "medieval-fantasy", category: "environment", ingest: ["cbv1-ingest-005-021-slavica-full"], note: "FBX 원본 회수는 끝났고, GLB 변환 후 에셋이 채워진다." },
   { catalogIds: ["cbv1-022-low-poly-medieval-village", "cbv1-023-medieval-megapack-low-poly"], title: "Medieval Village / Megapack", creator: "RG Poly", theme: "medieval-fantasy", category: "environment", ingest: ["cbv1-ingest-006-022-medieval-godot"] },
   // 자연
-  { catalogIds: ["cbv1-028-lumagrove-wonky-woods"], title: "LumaGrove — Wonky Woods", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-135-lumagrovewonkywoods-godot-2026-09-29", "cbv1-ingest-221-lumagrove-wonky-woods-low-poly-nature-asset-pack"], presetSource: ["cbv1-ingest-221-lumagrove-wonky-woods-low-poly-nature-asset-pack"] },
+  { catalogIds: ["cbv1-028-lumagrove-wonky-woods"], title: "LumaGrove — Wonky Woods", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-231-lumagrovewonkywoods", "cbv1-ingest-404-lumagrove-wonky-woods-low-poly-nature-asset-pack"], presetSource: ["cbv1-ingest-404-lumagrove-wonky-woods-low-poly-nature-asset-pack"] },
   { catalogIds: ["cbv1-030-nature-megapack-extended"], title: "Nature Megapack - Extended", creator: "RG Poly", theme: "nature", category: "environment", ingest: ["cbv1-ingest-007-030-nature-godot"] },
-  { catalogIds: ["cbv1-031-poly-meadows"], title: "Poly Meadows", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-225-poly-meadows-blend"], presetSource: ["cbv1-ingest-225-poly-meadows-blend"] },
-  { catalogIds: ["cbv1-032-low-poly-tiny-forest"], title: "Low Poly Tiny Forest", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-131-lowpolynatureproject-ea04-tiny-forest-free", "cbv1-ingest-220-low-poly-stylized-tiny-forest-blend"], presetSource: ["cbv1-ingest-220-low-poly-stylized-tiny-forest-blend"] },
-  { catalogIds: ["cbv1-034-natureforge-woodland-forest"], title: "NatureForge — Stylized Woodland Forest Pack", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-143-natureforgeprostylizedwoodland-godot-2026-10-18-"] },
-  { catalogIds: ["cbv1-056-farm-land"], title: "Farm Land", creator: "RG Poly", theme: "nature", category: "environment", ingest: ["cbv1-ingest-080-farm-pack-godot"] },
-  { catalogIds: ["cbv1-033-rocks-and-stone"], title: "Rocks and Stone", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-160-rocksandstone-godot-2026-09-29", "cbv1-ingest-213-l100-rocks-stones-and-clifs-blend"], presetSource: ["cbv1-ingest-213-l100-rocks-stones-and-clifs-blend"] },
-  { catalogIds: ["cbv1-029-terratoon-tree-pack"], title: "TerraToon — Stylized Tree Pack", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-238-terratoon-stylized-tree-pack-low-poly-forest-fol"] },
-  { catalogIds: ["cbv1-049-lava-plants"], title: "Low Poly Lava Plants", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-129-lowpolylavaplants-2025-09-12-20-54-22"] },
+  { catalogIds: ["cbv1-031-poly-meadows"], title: "Poly Meadows", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-410-poly-meadows-blend"], presetSource: ["cbv1-ingest-410-poly-meadows-blend"] },
+  { catalogIds: ["cbv1-032-low-poly-tiny-forest"], title: "Low Poly Tiny Forest", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-228-lowpolynatureproject-ea04-tiny-forest-free", "cbv1-ingest-403-low-poly-stylized-tiny-forest-blend"], presetSource: ["cbv1-ingest-403-low-poly-stylized-tiny-forest-blend"] },
+  { catalogIds: ["cbv1-034-natureforge-woodland-forest"], title: "NatureForge — Stylized Woodland Forest Pack", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-243-natureforgeprostylizedwoodland-godot-2026-10-18-"] },
+  { catalogIds: ["cbv1-056-farm-land"], title: "Farm Land", creator: "RG Poly", theme: "nature", category: "environment", ingest: ["cbv1-ingest-132-farm-pack"] },
+  { catalogIds: ["cbv1-033-rocks-and-stone"], title: "Rocks and Stone", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-276-rocksandstone", "cbv1-ingest-395-l100-rocks-stones-and-clifs-blend"], presetSource: ["cbv1-ingest-395-l100-rocks-stones-and-clifs-blend"] },
+  { catalogIds: ["cbv1-029-terratoon-tree-pack"], title: "TerraToon — Stylized Tree Pack", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-297-terratoonstylizedtreepack"] },
+  { catalogIds: ["cbv1-049-lava-plants"], title: "Low Poly Lava Plants", creator: "EmaceArt", theme: "nature", category: "environment", ingest: ["cbv1-ingest-226-lowpolylavaplants-2025-09-12-20-54-22"] },
   // 실내
-  { catalogIds: ["cbv1-042-restaurant-megapack"], title: "Restaurant Megapack", creator: "RG Poly", theme: "interior", category: "environment", ingest: ["cbv1-ingest-156-restaurant-godot-43-9l2x"] },
-  { catalogIds: ["cbv1-044-pixeldrift-metro"], title: "PixelDrift Metro — 3D Pixel Art Subway (VR)", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-138-metro-2026-31-1-00-17-18"] },
-  { catalogIds: ["cbv1-065-free-analog-memory-rooms"], title: "FREE Analog Memory — 80s/90s CRT VHS Rooms", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-010-80s-store"], presetSource: ["cbv1-ingest-010-80s-store"] },
-  { catalogIds: ["cbv1-071-pixeldrift-metro-free"], title: "PixelDrift: Metro — FREE", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-150-pixelart-ea01-metro-2-v1", "cbv1-ingest-151-pixelart-ea01-metro-v11-2-v2", "cbv1-ingest-153-pixeldriftmetrofree-godot4-project"] },
+  { catalogIds: ["cbv1-042-restaurant-megapack"], title: "Restaurant Megapack", creator: "RG Poly", theme: "interior", category: "environment", ingest: ["cbv1-ingest-270-restaurant-godot"] },
+  { catalogIds: ["cbv1-044-pixeldrift-metro"], title: "PixelDrift Metro — 3D Pixel Art Subway (VR)", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-238-metro-2026-31-1-00-17-18"] },
+  { catalogIds: ["cbv1-065-free-analog-memory-rooms"], title: "FREE Analog Memory — 80s/90s CRT VHS Rooms", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-011-80s-store"], presetSource: ["cbv1-ingest-011-80s-store"] },
+  { catalogIds: ["cbv1-071-pixeldrift-metro-free"], title: "PixelDrift: Metro — FREE", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-257-pixelart-ea01-metro-2-v1", "cbv1-ingest-258-pixelart-ea01-metro-v11-2-v2", "cbv1-ingest-260-pixeldriftmetrofree"] },
   // SF
-  { catalogIds: ["cbv1-050-scifi-arena-1"], title: "Sci-Fi Arena: 1", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-162-sci-fi-arena-pack-2022-3-6f1"] },
-  { catalogIds: ["cbv1-051-scifi-arena-2"], title: "Sci-Fi Arena: 2", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-161-sci-fi-arena-pack-2-2022-3-6f1"] },
-  { catalogIds: ["cbv1-046-cosmokit-planets"], title: "CosmoKit — Stylized Low Poly Planets", creator: "EmaceArt", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-032-cosmokitstylizedlowpolyplanets-godot-2026-09-29", "cbv1-ingest-181-cosmokit-low-poly-planet-pack-blend"], presetSource: ["cbv1-ingest-181-cosmokit-low-poly-planet-pack-blend"] },
+  { catalogIds: ["cbv1-050-scifi-arena-1"], title: "Sci-Fi Arena: 1", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1"] },
+  { catalogIds: ["cbv1-051-scifi-arena-2"], title: "Sci-Fi Arena: 2", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1"] },
+  { catalogIds: ["cbv1-046-cosmokit-planets"], title: "CosmoKit — Stylized Low Poly Planets", creator: "EmaceArt", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-046-cosmokitstylizedlowpolyplanets", "cbv1-ingest-333-cosmokit-low-poly-planet-pack-blend"], presetSource: ["cbv1-ingest-333-cosmokit-low-poly-planet-pack-blend"] },
   // 공포
-  { catalogIds: ["cbv1-006-polyvania-burton-horror-town"], title: "Polyvania — Burton Horror Town", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-226-polyvania-blend-41-emsu"], note: "blend 원본만 수신돼 있어 GLB 변환 후 에셋이 채워진다." },
-  { catalogIds: ["cbv1-011-necropolyy-graveyard"], title: "NecroPOLY — Stylized Graveyard", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-125-lowpolycemeterykitnecropolygravesmodule-2026-09-", "cbv1-ingest-218-low-poly-cemetery-kit-necropoly-tombs-module-god", "cbv1-ingest-217-low-poly-cemetery-kit-necropoly-tombs-module-ble"], presetSource: ["cbv1-ingest-217-low-poly-cemetery-kit-necropoly-tombs-module-ble"] },
-  { catalogIds: ["cbv1-013-graves-kit"], title: "Graves Kit", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-216-low-poly-cemetery-grave-kit-with-lods-godot", "cbv1-ingest-215-low-poly-cemetery-grave-kit-with-lods-blend"], presetSource: ["cbv1-ingest-215-low-poly-cemetery-grave-kit-with-lods-blend"] },
-  { catalogIds: ["cbv1-012-cemetery-statues"], title: "Cemetery Statues Pack", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-028-cemeterystatuespack-godot-2026-09-29"] },
+  { catalogIds: ["cbv1-006-polyvania-burton-horror-town"], title: "Polyvania — Burton Horror Town", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-411-polyvania-blend"], note: "blend 원본만 수신돼 있어 GLB 변환 후 에셋이 채워진다." },
+  { catalogIds: ["cbv1-011-necropolyy-graveyard"], title: "NecroPOLY — Stylized Graveyard", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09-", "cbv1-ingest-247-necropolytombkit", "cbv1-ingest-401-low-poly-cemetery-kit-necropoly-tombs-module-god", "cbv1-ingest-400-low-poly-cemetery-kit-necropoly-tombs-module-ble"], presetSource: ["cbv1-ingest-400-low-poly-cemetery-kit-necropoly-tombs-module-ble"] },
+  { catalogIds: ["cbv1-013-graves-kit"], title: "Graves Kit", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-246-necropolygravekit", "cbv1-ingest-399-low-poly-cemetery-grave-kit-with-lods-godot", "cbv1-ingest-398-low-poly-cemetery-grave-kit-with-lods-blend"], presetSource: ["cbv1-ingest-398-low-poly-cemetery-grave-kit-with-lods-blend"] },
+  { catalogIds: ["cbv1-012-cemetery-statues"], title: "Cemetery Statues Pack", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-038-cemeterystatuespack", "cbv1-ingest-039-cemeterystatuespack-godot-2026-09-29"] },
   { catalogIds: ["cbv1-015-haunted-grounds"], title: "Haunted Grounds — Halloween Props & Scene", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-004-015-haunted-grounds"], note: "FBX 원본만 수신돼 있어 GLB 변환 후 에셋이 채워진다." },
   // 사막·열대
-  { catalogIds: ["cbv1-035-pirate-island"], title: "Pirate Island", creator: "RG Poly", theme: "desert-tropical", category: "environment", ingest: ["cbv1-ingest-149-pirateisland-godot-28-s0w2"] },
-  { catalogIds: ["cbv1-037-voxel-summer"], title: "Voxel Summer", creator: "EmaceArt", theme: "desert-tropical", category: "environment", ingest: ["cbv1-ingest-050-epicvoxelworldsummeratollsforestmodularassetpack", "cbv1-ingest-183-epicvoxel-low-poly-voxel-summer-blend"], presetSource: ["cbv1-ingest-183-epicvoxel-low-poly-voxel-summer-blend"] },
-  { catalogIds: ["cbv1-038-aztec-jungle"], title: "Aztec Jungle", creator: "RG Poly", theme: "desert-tropical", category: "environment", ingest: ["cbv1-ingest-021-aztecjungle-godot"] },
-  { catalogIds: ["cbv1-039-raft-on-the-desert"], title: "Raft on the Desert", creator: "EmaceArt", theme: "desert-tropical", category: "environment", ingest: ["cbv1-ingest-228-raft-on-the-desert-godot"] },
+  { catalogIds: ["cbv1-035-pirate-island"], title: "Pirate Island", creator: "RG Poly", theme: "desert-tropical", category: "environment", ingest: ["cbv1-ingest-255-pirateisland-godot"] },
+  { catalogIds: ["cbv1-037-voxel-summer"], title: "Voxel Summer", creator: "EmaceArt", theme: "desert-tropical", category: "environment", ingest: ["cbv1-ingest-071-epicvoxelworldsummeratollsforestmodularassetpack", "cbv1-ingest-336-epicvoxel-low-poly-voxel-summer-blend"], presetSource: ["cbv1-ingest-336-epicvoxel-low-poly-voxel-summer-blend"] },
+  { catalogIds: ["cbv1-038-aztec-jungle"], title: "Aztec Jungle", creator: "RG Poly", theme: "desert-tropical", category: "environment", ingest: ["cbv1-ingest-026-aztecjungle-godot"] },
+  { catalogIds: ["cbv1-039-raft-on-the-desert"], title: "Raft on the Desert", creator: "EmaceArt", theme: "desert-tropical", category: "environment", ingest: ["cbv1-ingest-267-raftonthedesert-godotproject"] },
   // 늪 (040 Nature + 041 Architecture는 파일만으로 분리할 수 없어 통합 편입)
-  { catalogIds: ["cbv1-040-swamp-builder-nature", "cbv1-041-swamp-builder-architecture"], title: "Swamp Builder — Nature·Architecture", creator: "EmaceArt", theme: "swamp", category: "environment", ingest: ["cbv1-ingest-235-swamp-builder-godot", "cbv1-ingest-236-swampia-godot-35-3yuh", "cbv1-ingest-234-swamp-builder-blend"], presetSource: ["cbv1-ingest-234-swamp-builder-blend"] },
+  { catalogIds: ["cbv1-040-swamp-builder-nature", "cbv1-041-swamp-builder-architecture"], title: "Swamp Builder — Nature·Architecture", creator: "EmaceArt", theme: "swamp", category: "environment", ingest: ["cbv1-ingest-293-swamparch", "cbv1-ingest-295-swampremake", "cbv1-ingest-422-swamp-builder-blend"], presetSource: ["cbv1-ingest-422-swamp-builder-blend"] },
   // 기타
-  { catalogIds: ["cbv1-026-iowa-covered-bridges"], title: "Iowa Covered Bridges", creator: "EmaceArt", theme: "other", category: "environment", ingest: ["cbv1-ingest-159-roadsidetalesiowacoveredbridges-2026-09-6-17-41-", "cbv1-ingest-232-roadside-tales-iowa-covered-bridges-blend"], presetSource: ["cbv1-ingest-232-roadside-tales-iowa-covered-bridges-blend"] },
-  { catalogIds: ["cbv1-080-free-stylized-asia-megapack-urp"], title: "FREE Stylized Asia Environment Megapack — Unity URP", creator: "RG Poly", theme: "other", category: "environment", ingest: ["cbv1-ingest-015-asia-megapack-low-poly-refreshed-urp-2022-3-38f1"] },
-  { catalogIds: ["cbv1-055-winter-atolls-pack"], title: "Winter Atolls Pack", creator: "EmaceArt", theme: "other", category: "environment", ingest: ["cbv1-ingest-182-epic-3d-winter-map-for-roblox-and-unity-blend-33"], presetSource: ["cbv1-ingest-182-epic-3d-winter-map-for-roblox-and-unity-blend-33"], note: "Epic 3D Winter Map 변형으로 귀속한 팩이다." },
-  { catalogIds: ["cbv1-066-modular-bridge"], title: "Modular Bridge", creator: "EmaceArt", theme: "other", category: "environment", ingest: ["cbv1-ingest-026-bridge-v-1-2"], presetSource: ["cbv1-ingest-026-bridge-v-1-2"] },
+  { catalogIds: ["cbv1-026-iowa-covered-bridges"], title: "Iowa Covered Bridges", creator: "EmaceArt", theme: "other", category: "environment", ingest: ["cbv1-ingest-275-roadsidetalesiowacoveredbridges-2026-09-6-17-41-", "cbv1-ingest-418-roadside-tales-iowa-covered-bridges-blend"], presetSource: ["cbv1-ingest-418-roadside-tales-iowa-covered-bridges-blend"] },
+  { catalogIds: ["cbv1-080-free-stylized-asia-megapack-urp"], title: "FREE Stylized Asia Environment Megapack — Unity URP", creator: "RG Poly", theme: "other", category: "environment", ingest: ["cbv1-ingest-020-asia-megapack-low-poly-refreshed-urp-2022-3-38f1"] },
+  { catalogIds: ["cbv1-055-winter-atolls-pack"], title: "Winter Atolls Pack", creator: "EmaceArt", theme: "other", category: "environment", ingest: ["cbv1-ingest-334-epic-3d-winter-map-for-roblox-and-unity-blend", "cbv1-ingest-335-epic-3d-winter-map-for-roblox-and-unity-blend-33"], presetSource: ["cbv1-ingest-335-epic-3d-winter-map-for-roblox-and-unity-blend-33"], note: "Epic 3D Winter Map 변형으로 귀속한 팩이다." },
+  { catalogIds: ["cbv1-066-modular-bridge"], title: "Modular Bridge", creator: "EmaceArt", theme: "other", category: "environment", ingest: ["cbv1-ingest-032-bridge-v-1-2"], presetSource: ["cbv1-ingest-032-bridge-v-1-2"] },
   // 소품 (테마가 아니라 장면 조합용 카테고리)
-  { catalogIds: ["cbv1-077-small-props-pack"], title: "Small Props Pack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-166-small-props-pack"] },
-  { catalogIds: ["cbv1-045-food-packaging"], title: "Low Poly Food Packaging", creator: "EmaceArt", theme: null, category: "prop", ingest: ["cbv1-ingest-126-lowpolyfoodandpackaging-godot-2026-09-25"] },
-  { catalogIds: [], title: "Food Pack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-093-food-pack"], note: "카탈로그 번호는 정본 카탈로그에서 확인되지 않아 비워 뒀다." },
-  { catalogIds: ["cbv1-067-fences-and-walls"], title: "Fences and Walls", creator: "EmaceArt", theme: null, category: "prop", ingest: ["cbv1-ingest-091-fences-and-walls-glb"] },
-  { catalogIds: ["cbv1-076-medieval-weapons"], title: "Medieval Weapons", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-180-weapons"], note: "Weapons 폴더 귀속은 추정 판정(STATUS §2)이다." },
-  { catalogIds: ["cbv1-019-blasters-rg"], title: "Blasters RG", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-023-blasters-rg"] },
-  { catalogIds: ["cbv1-074-blasters-free"], title: "Blasters Free", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-022-blasters-free"] },
+  { catalogIds: ["cbv1-077-small-props-pack"], title: "Small Props Pack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-285-small-props-pack"] },
+  { catalogIds: ["cbv1-045-food-packaging"], title: "Low Poly Food Packaging", creator: "EmaceArt", theme: null, category: "prop", ingest: ["cbv1-ingest-222-lowpolyfoodandpackaging"] },
+  { catalogIds: [], title: "Food Pack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-154-food-pack"], note: "카탈로그 번호는 정본 카탈로그에서 확인되지 않아 비워 뒀다." },
+  { catalogIds: ["cbv1-067-fences-and-walls"], title: "Fences and Walls", creator: "EmaceArt", theme: null, category: "prop", ingest: ["cbv1-ingest-151-fences-and-walls-glb"] },
+  { catalogIds: ["cbv1-076-medieval-weapons"], title: "Medieval Weapons", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-329-weapons"], note: "Weapons 폴더 귀속은 추정 판정(STATUS §2)이다." },
+  { catalogIds: ["cbv1-019-blasters-rg"], title: "Blasters RG", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-028-blasters-rg"] },
+  { catalogIds: ["cbv1-074-blasters-free"], title: "Blasters Free", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-027-blasters-free"] },
 ];
 
 /** 배경 군중 (렌더 전용 — bg3d 장면에 직접 배치하지 않고 오프라인 렌더 소재로만 쓴다). */
 const CROWD_PACKS = [
-  { catalogIds: ["cbv1-003-characters-1"], title: "Characters 1", creator: "EmaceArt", ingest: ["cbv1-ingest-031-characters-1-godot-40-3jio"] },
+  { catalogIds: ["cbv1-003-characters-1"], title: "Characters 1", creator: "EmaceArt", ingest: ["cbv1-ingest-043-characters-1-godot"] },
   { catalogIds: ["cbv1-007-characters-2"], title: "Characters 2", creator: "EmaceArt", ingest: ["cbv1-ingest-003-007-characters-2"] },
-  { catalogIds: ["cbv1-010-philipp-character"], title: "PHILIPP — Stylized Modular Low Poly Character", creator: "EmaceArt", ingest: ["cbv1-ingest-147-philippstylizedmodularlowpolycharacter-2026-30-5"] },
+  { catalogIds: ["cbv1-010-philipp-character"], title: "PHILIPP — Stylized Modular Low Poly Character", creator: "EmaceArt", ingest: ["cbv1-ingest-252-philippstylizedmodularlowpolycharacter-2026-30-5"] },
   { catalogIds: ["cbv1-009-victorian-citizens"], title: "Victorian Citizens", creator: "EmaceArt", ingest: [], note: "귀속은 확정됐으나 매니페스트 v2 최종본에도 단독 팩으로 등록된 모델이 없어 편입 보류 중이다." },
   { catalogIds: ["cbv1-002-villagers"], title: "Villagers", creator: "EmaceArt", ingest: [], note: "귀속은 확정됐으나 매니페스트 v2 최종본에도 단독 팩으로 등록된 모델이 없어 편입 보류 중이다." },
 ];
