@@ -33,6 +33,10 @@ import {
   type KeyboardEvent,
 } from "react";
 
+import {
+  resolveStudioBrushLibraryErrorFromCause,
+  resolveStudioBrushPackErrorFromCause,
+} from "../status-i18n/studio-producer-error-i18n-brush";
 import { downloadBlob } from "../export/studio-export";
 import { BRUSH_PRESETS } from "../studio-brush";
 import { useStudioInspectorFocusScroll } from "../studio-inspector-focus-effect";
@@ -753,7 +757,11 @@ export function StudioBrushLibraryPanel({
       setDoneMsg(details.join(" "));
     } catch (caught) {
       if (caught instanceof BrushLibraryRepositoryError) setRepositoryError(caught);
-      else setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.presetImportFailed", "브러시 프리셋 파일을 가져오지 못했어요."));
+      else setError(
+        resolveStudioBrushPackErrorFromCause(caught)
+        ?? resolveStudioBrushLibraryErrorFromCause(caught)
+        ?? (caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.presetImportFailed", "브러시 프리셋 파일을 가져오지 못했어요.")),
+      );
     } finally {
       setImporting(false);
       setRepositoryBusy(false);
@@ -834,7 +842,10 @@ export function StudioBrushLibraryPanel({
           ? parts.join(" ")
           : `${parts.join(" ")} 현재 비영속 세션에만 추가했으며 브라우저를 닫으면 사라져요.`);
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.settingsImportFailed", "브러시 설정 파일을 가져오지 못했어요."));
+        setError(
+          resolveStudioBrushLibraryErrorFromCause(caught)
+          ?? (caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.settingsImportFailed", "브러시 설정 파일을 가져오지 못했어요.")),
+        );
       } finally {
         setImporting(false);
       }
@@ -852,7 +863,10 @@ export function StudioBrushLibraryPanel({
         ? await (await import("./studio-brush-original-source-store")).prepareStudioBrushSourceExport(brush) : brush;
       downloadBlob(new Blob([writeBrushJson(exported)], { type: "application/json;charset=utf-8" }), brushFileName(brush));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.exportOriginalFailed", "브러시 원본을 보존해 내보내지 못했습니다."));
+      setError(
+        resolveStudioBrushLibraryErrorFromCause(caught)
+        ?? (caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.exportOriginalFailed", "브러시 원본을 보존해 내보내지 못했습니다.")),
+      );
     }
   }
 
@@ -883,7 +897,10 @@ export function StudioBrushLibraryPanel({
       setDoneMsg(frozenStatusText("studio.frozenStatus.brush.shared", { name: brush.name }, "\"{name}\" 브러시를 공유했어요."));
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError") return;
-      setError(caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.shareFailed", "브러시 공유를 열지 못했어요. 내보내기로 파일을 저장해 다시 시도해 주세요."));
+      setError(
+        resolveStudioBrushLibraryErrorFromCause(caught)
+        ?? (caught instanceof Error ? caught.message : frozenStatusText("studio.frozenStatus.brush.shareFailed", "브러시 공유를 열지 못했어요. 내보내기로 파일을 저장해 다시 시도해 주세요.")),
+      );
     }
   }
 
