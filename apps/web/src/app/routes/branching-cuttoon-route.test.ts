@@ -22,6 +22,7 @@ import {
   SITE_ROUTE_AUTHORITIES,
 } from "@/shared/lib/site-route-authority";
 import { resolveSiteRouteMetadata } from "@/shared/lib/site-route-metadata";
+import { campusBinding } from "@/shared/lib/spatial-campus/campus-bindings";
 
 /**
  * 분기형 컷툰은 Labs(experimental) 경로 하나로만 노출한다. 핵심 제작 여정과 같은 위계(주 내비게이션·핵심 계층)로 올라가지 않고,
@@ -77,6 +78,10 @@ describe("분기형 컷툰 Labs 경로 계약", () => {
     expect(own).toBeGreaterThanOrEqual(0);
     expect(wildcard).toBeGreaterThan(own);
     expect(paths.filter((path) => path === PATH)).toHaveLength(1);
+  });
+
+  it("공간 캠퍼스 분류에 등록돼 있다(작업실 구역, 개인 경로)", () => {
+    expect(campusBinding("creator-studio-branching-cuttoon", PATH)).toMatchObject({ districtId: "atelier", private: true });
   });
 
   it("스튜디오 영역이라 검색에 색인되지 않는다", () => {

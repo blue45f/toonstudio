@@ -111,8 +111,7 @@ export const creatorRoutes = defineAppRoutes([
   // /studio/* 와일드카드보다 먼저 둔다.
   { id: "creator-studio-pdf-workbench", path: studioRoutePath("pdf-workbench"), element: <PdfWorkbenchPage /> },
 
-  // 분기형 컷툰 실험(Labs, experimental 성숙도): 독자가 선택지로 이야기를 고르는 컷툰을 목록으로 만들고 미리 읽는다.
-  // /studio/* 와일드카드보다 먼저 둔다. 서버 저장·통계·정산은 없다(docs/features/branching-cuttoon.md).
+  // 분기형 컷툰 실험(Labs, experimental): /studio/* 와일드카드보다 먼저 둔다. 설명은 docs/features/branching-cuttoon.md.
   { id: "creator-studio-branching-cuttoon", path: "/studio/branching-cuttoon", element: <BranchingCuttoonLabPage /> },
 
   // /studio/canvas and all scoped editor/production routes continue through the established router.
