@@ -27,7 +27,7 @@ import type {
   StudioTranslationMemoryGlossaryConflict,
   StudioTranslationMemoryGlossaryRule,
 } from "./studio-translation-glossary";
-import { resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
+import { resolveStudioTranslationMemoryExportError, resolveStudioTranslationMemoryImportError, resolveStudioTranslationMemoryStorageError } from "./status-i18n/studio-producer-error-i18n";
 
 /** 옮겨 간 이름을 같은 이름으로 다시 내보낸다 — 기존 호출부·테스트는 그대로 컴파일된다. */
 export {
@@ -169,10 +169,16 @@ export interface StudioTranslationMemoryExportResult {
   readonly bytes: number;
 }
 
+/** D4 생산자 계약(R9): 내보내기 실패도 구조화 코드+파라미터로 방출한다. 표시는 표시 지점이 리졸버로 해석하고, SaveResult 문자열 경계에서는 save가 집계자 예외로 해석한다. */
+export type StudioTranslationMemoryExportErrorCode = "exportInvalidEntries" | "exportTooLarge";
+export interface StudioTranslationMemoryExportError { readonly code: StudioTranslationMemoryExportErrorCode; readonly params?: Readonly<Record<string, string>>; }
 export interface StudioTranslationMemoryExportFailure {
   readonly ok: false;
-  readonly error: string;
+  readonly error: StudioTranslationMemoryExportError;
 }
+/** load/save의 저장소 실패 코드. LoadResult·SaveResult가 문자열로 고정된 집계 경계라 방출 지점(load/save) 안에서만 리졸버로 해석한다(집계자 예외, D4). */
+export type StudioTranslationMemoryStorageErrorCode = "storageUnavailable" | "storageReadFailed" | "saveNoStorage" | "saveStorageFull";
+export interface StudioTranslationMemoryStorageError { readonly code: StudioTranslationMemoryStorageErrorCode; readonly params?: Readonly<Record<string, string>>; }
 
 interface MergeStudioTranslationMemoryResult {
   readonly entries: readonly StudioTranslationMemoryEntry[];
@@ -841,11 +847,7 @@ export function exportStudioTranslationMemory(
   | StudioTranslationMemoryExportFailure {
   const merged = mergeEntriesBounded(entries);
   if (merged.invalid > 0 || merged.truncated > 0) {
-    return {
-      ok: false,
-      error:
-        "유효하지 않거나 저장 한도를 넘는 항목이 있어 내보내기를 중단했습니다.",
-    };
+    return { ok: false, error: { code: "exportInvalidEntries" } };
   }
   const document: StoredStudioTranslationMemoryDocument = {
     kind: STUDIO_TRANSLATION_MEMORY_KIND,
@@ -855,10 +857,7 @@ export function exportStudioTranslationMemory(
   const json = JSON.stringify(document, null, 2);
   const bytes = utf8Bytes(json);
   if (bytes > STUDIO_TRANSLATION_MEMORY_MAX_EXPORT_BYTES) {
-    return {
-      ok: false,
-      error: `내보내기 결과가 ${(STUDIO_TRANSLATION_MEMORY_MAX_EXPORT_BYTES / 1_000_000).toFixed(1)}MB 제한을 넘습니다.`,
-    };
+    return { ok: false, error: { code: "exportTooLarge", params: { size: (STUDIO_TRANSLATION_MEMORY_MAX_EXPORT_BYTES / 1_000_000).toFixed(1) } } };
   }
   return { ok: true, json, bytes };
 }
@@ -868,21 +867,13 @@ export function loadStudioTranslationMemory(
   key = STUDIO_TRANSLATION_MEMORY_STORAGE_KEY
 ): StudioTranslationMemoryLoadResult {
   if (!storage) {
-    return {
-      entries: [],
-      status: "unavailable",
-      error: "브라우저 로컬 저장소를 사용할 수 없습니다.",
-    };
+    return { entries: [], status: "unavailable", error: resolveStudioTranslationMemoryStorageError({ code: "storageUnavailable" }) };
   }
   let raw: string | null;
   try {
     raw = storage.getItem(key);
   } catch {
-    return {
-      entries: [],
-      status: "unavailable",
-      error: "브라우저 로컬 저장소를 읽을 수 없습니다.",
-    };
+    return { entries: [], status: "unavailable", error: resolveStudioTranslationMemoryStorageError({ code: "storageReadFailed" }) };
   }
   if (!raw) return { entries: [], status: "empty" };
   const imported = importStudioTranslationMemory(raw);
@@ -899,21 +890,15 @@ export function saveStudioTranslationMemory(
   key = STUDIO_TRANSLATION_MEMORY_STORAGE_KEY
 ): StudioTranslationMemorySaveResult {
   if (!storage) {
-    return {
-      ok: false,
-      error: "로컬 저장소가 없어 현재 탭에서만 유지됩니다.",
-    };
+    return { ok: false, error: resolveStudioTranslationMemoryStorageError({ code: "saveNoStorage" }) };
   }
   const exported = exportStudioTranslationMemory(entries);
-  if (!exported.ok) return exported;
+  if (!exported.ok) return { ok: false, error: resolveStudioTranslationMemoryExportError(exported.error) };
   try {
     storage.setItem(key, exported.json);
     return { ok: true };
   } catch {
-    return {
-      ok: false,
-      error: "브라우저 저장 공간이 부족하거나 로컬 저장이 차단되었습니다.",
-    };
+    return { ok: false, error: resolveStudioTranslationMemoryStorageError({ code: "saveStorageFull" }) };
   }
 }
 

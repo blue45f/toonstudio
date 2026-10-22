@@ -7,7 +7,7 @@
  */
 
 import { acquireStudioLocalDatabase } from "./studio-local-database-runtime";
-import { resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
+import { resolveStudioTranslationMemoryExportError, resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
 import {
   exportStudioTranslationMemory,
   importStudioTranslationMemory,
@@ -86,7 +86,8 @@ export function createStudioTranslationMemorySqlitePersistence(
 
     save(entries) {
       const exported = exportStudioTranslationMemory(entries);
-      if (!exported.ok) return Promise.resolve(exported);
+      // SaveResult.error 문자열 집계 경계 — saveStudioTranslationMemory와 같은 예외 지점(D4).
+      if (!exported.ok) return Promise.resolve({ ok: false, error: resolveStudioTranslationMemoryExportError(exported.error) });
 
       const write = saveTail.then(async (): Promise<StudioTranslationMemorySaveResult> => {
         try {
