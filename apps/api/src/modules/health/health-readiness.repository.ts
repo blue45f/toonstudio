@@ -1,7 +1,9 @@
+import { resolveDatabaseRuntimeRoleMode, type DatabaseRuntimeRoleMode } from "../../config/database-role-mode";
 import { dbPool } from "../../platform/database";
 import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-contract";
 
 import { containsEvery, timedHealthQuery } from "./health-readiness-query";
+import { roleSeparationAclReady } from "./health-readiness-role-separation";
 
 import type { QueryablePool } from "./health-readiness-query";
 
@@ -314,7 +316,8 @@ export interface HealthReadinessRepository {
 export class PostgresHealthReadinessRepository
   implements HealthReadinessRepository
 {
-  constructor(private readonly pool: QueryablePool = dbPool) {}
+  // roleMode 기본은 엄격한 separated. 단일 소유자 DB를 인정하려면 single-owner 를 명시한다(config/database-role-mode.ts).
+  constructor(private readonly pool: QueryablePool = dbPool, private readonly roleMode: DatabaseRuntimeRoleMode = "separated") {}
 
   async isDatabaseReachable(): Promise<boolean> {
     const result = await this.pool.query<DatabasePingRow>(
@@ -1643,16 +1646,11 @@ export class PostgresHealthReadinessRepository
       state.authAccountUserIndexReady !== true ||
       state.authRuntimeDmlReady !== true ||
       state.personalCloudConnectionAclReady !== true ||
-      state.marketplaceResourceAclReady !== true ||
+      !roleSeparationAclReady(state, this.roleMode) ||
       state.marketplaceResourceLifecycleTriggerReady !== true ||
       state.marketplaceResourceTimestampPrecisionReady !== true ||
-      state.marketplaceCloudLibraryAclReady !== true ||
       state.marketplaceCloudLibraryTriggerReady !== true ||
-      state.marketplacePackageModerationAclReady !== true ||
       state.marketplacePackageModerationTriggerReady !== true ||
-      state.marketplacePublishGateAclReady !== true ||
-      state.marketplaceReportAclReady !== true ||
-      state.marketplaceReportGateAclReady !== true ||
       state.marketplaceSearchGenerated !== true ||
       state.marketplaceSearchIndexReady !== true ||
       state.marketplaceTagIndexReady !== true ||
@@ -1686,6 +1684,7 @@ export class PostgresHealthReadinessRepository
 
 export const healthReadinessRepositoryProvider = {
   provide: HEALTH_READINESS_REPOSITORY,
+  // 알 수 없는 DATABASE_RUNTIME_ROLE_MODE 값은 부팅 단계에서 예외로 막는다(조용히 엄격 모드로 돌리지 않는다).
   useFactory: (): HealthReadinessRepository =>
-    new PostgresHealthReadinessRepository(),
+    new PostgresHealthReadinessRepository(undefined, resolveDatabaseRuntimeRoleMode(process.env)),
 };

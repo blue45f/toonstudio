@@ -48,7 +48,7 @@ ADR-0029는 Core API만 onpod로 옮기고 DB는 Supabase를 유지하라고 제
 
 ## 열린 문제 (해결 전 컷오버 금지)
 
-1. **마켓플레이스 ACL 준비성**: 단일 소유자 역할은 SQL로 해결되지 않는다. A) onpod가 비소유 로그인 역할을 발급하게 한다(권장, 코드 변경 없음). B) `isSchemaReady()`의 여섯 비교를 환경변수 스위치로 건너뛰는 임시 코드 변경(새 이미지 릴리스 필요, 런타임 비소유 보장이 약해짐). 소유자 결정 사항이다.
+1. **마켓플레이스 ACL 준비성**: 단일 소유자 역할은 SQL로 해결되지 않는다. A) onpod가 비소유 로그인 역할을 발급하게 한다(권장, 코드 변경 없음). B) `isSchemaReady()`의 여섯 비교를 명시적 옵트인(`DATABASE_RUNTIME_ROLE_MODE=single-owner`)으로 건너뛰는 코드 변경(**구현·시험 완료, 초안 PR**, 새 이미지 릴리스 필요, 런타임 비소유 보장이 약해짐, 기본은 엄격 유지). 소유자 결정 사항이다.
 2. **클라이언트 IP**: 신뢰 프록시 설정이 정확한 IP 목록만 받고 onpod 피어가 가변이며 ingress가 표준 헤더를 덮어쓴다. **구현·시험 완료(릴리스 전)**: Worker가 core 요청에 전용 헤더 `x-toonstudio-client-ip`를 싣고, API는 `AUTH_EDGE_CLIENT_IP_ENABLED=true`일 때 에지 출처 비밀을 증명한 요청에서만 신뢰한다(기본 꺼짐, 켜면 비밀 필수). 적용은 Worker 릴리스 → API 이미지 릴리스 → 환경변수 순서이고 환경변수 변경은 별도 승인이다. 규칙은 [production-environment.md](../operations/production-environment.md#클라이언트-ip-전달)에 있다.
 3. **원격에만 있는 비밀값**(OAuth·Toss·AI 공급자 등): 확보 경로를 소유자가 정한다. 확보 전에는 Render와 Worker 시크릿을 삭제·중지하지 않는다.
 4. **0093 마이그레이션 결함**: 비한정 `CREATE FUNCTION`이 슈퍼유저가 아닌 마이그레이터에서 실패한다. 운영에도 영향이 있다.
