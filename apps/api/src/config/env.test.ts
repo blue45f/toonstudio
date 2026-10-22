@@ -206,6 +206,26 @@ describe("authentication boundary environment validation", () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
+  it("accepts the edge client IP header switch and warns on a malformed value", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    expect(
+      validateEnv(
+        { NODE_ENV: "test", AUTH_EDGE_CLIENT_IP_ENABLED: "true" },
+        logger,
+      ),
+    ).toMatchObject({ AUTH_EDGE_CLIENT_IP_ENABLED: "true" });
+    expect(logger.warn).not.toHaveBeenCalled();
+
+    expect(
+      validateEnv(
+        { NODE_ENV: "test", AUTH_EDGE_CLIENT_IP_ENABLED: "TRUE" },
+        logger,
+      ),
+    ).toBeNull();
+    expect(logger.warn).toHaveBeenCalledOnce();
+  });
+
   it("warns without fatal error for malformed auth boundary values", () => {
     const logger = { warn: vi.fn(), error: vi.fn() };
 

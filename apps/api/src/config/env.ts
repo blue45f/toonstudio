@@ -120,6 +120,9 @@ const envSchema = z.object({
     .optional(),
   AUTH_DISTRIBUTED_RATE_LIMIT_ENABLED: z.enum(["true", "false"]).optional(),
   AUTH_TRUSTED_PROXY_ENABLED: z.enum(["true", "false"]).optional(),
+  // 에지 게이트웨이가 전용 헤더(x-toonstudio-client-ip)에 실은 접속자 IP 를 신뢰한다. 요청이 에지 출처 인증
+  // 비밀(CLOUDFLARE_EDGE_ORIGIN_SECRET)을 증명할 때만 인정하며, 켜려면 그 비밀이 반드시 있어야 한다.
+  AUTH_EDGE_CLIENT_IP_ENABLED: z.enum(["true", "false"]).optional(),
   AUTH_TRUSTED_PROXY_IPS: z.string().min(1).optional(),
   AUTH_TRUSTED_CLIENT_IP_HEADER: z
     .enum([

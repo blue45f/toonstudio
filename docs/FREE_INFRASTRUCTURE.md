@@ -88,6 +88,21 @@ Neon의 quota `402`도 해소되지 않았으므로 기존 DB를 정상 rollback
 공급자는 DB를 늘려도 무료 읽기·쓰기·저장량 합계가 늘지 않는다. 독립 무료량이 실제로 추가되는지와
 요청당 행·저장·전송 비용을 측정한 뒤 채택한다.
 
+### onpod — 서울 재구축의 Core API·DB 자리(마이그레이션 중, 컷오버 전)
+
+상태: **migration**. 이 소절을 제외한 내용의 기준일은 2026-09-26이다. 현재 구성의 정본은 [인프라 지도](operations/infrastructure-map.md)다.
+
+onpod(`ai3inc`, 한국 리전 PaaS)는 단일 개인 계정(잔액 0원, 전 자원 무료)에서 2026-10-22 소유자 결정으로 다음을 맡는다:
+PostgreSQL 원장 `toonstudio-db`(dev 플랜 무료)와 Core API `toonstudio-api`(무료 티어). 웹 정적·엣지·R2·실시간은 측정
+결과(헤더·교차 출처 격리·메서드·용량) 때문에 Cloudflare에 남는다. 컷오버(Worker 원점 전환)는 하지 않았고, 선불
+크레딧 과금은 정책 파일의 청구 경계 분류에 해당하지 않아 `config/free-infrastructure-policy.json`에는 아직 등록하지 않았다
+(소유자 결정 대기).
+
+- 사용 전제: 새 배포 단위(앱·사이트 생성), 시크릿·환경변수 주입, 유료 플랜 변경은 `AGENTS.md` 8절에 따라 사용자의 별도 명시적 승인이 먼저 필요하다. 이번 DB·앱은 2026-10-22 소유자의 대화 승인(D1 안)으로 만들었고 상시 승인 범위는 바뀌지 않았다. 크레딧 충전·버킷 생성·CI 연결은 8절에 명시돼 있지 않으나 이 문서가 같은 승인 대상으로 취급한다.
+- 결정 경로: 결정과 근거는 [ADR-0030](adr/0030-seoul-origin-hybrid-infrastructure.md)(Accepted)이고, ADR-0029(`docs/adr/0029-onpod-hosting-migration.md`, Proposed)의 DB 판정은 이 결정으로 대체됐다.
+- 자격 증명: 값은 문서에 적지 않는다. 위치는 CLI 로그인 파일과 로컬 전용 `.env.infrastructure.local`의 `ONPOD_*` 키다. ADR-0029(Proposed)가 폐기를 권고한 전권·무기한 키와 이 Mac의 토큰이 같은 키인지는 소유자가 확인한다(평가 기록 7절).
+- 확인한 사실, 벤더 수치의 기준과 확인일, 미확인 목록: [onpod 평가 기록](reports/onpod-evaluation-2026-10-22.md)
+
 ## 현재 구현된 전환 경계
 
 ### 정적 웹 분리

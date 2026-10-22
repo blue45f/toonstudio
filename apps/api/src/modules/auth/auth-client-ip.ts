@@ -1,6 +1,14 @@
+import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 
 import { z } from "zod";
+
+import {
+  EDGE_ORIGIN_AUTH_HEADER,
+  EdgeOriginAuthConfigurationError,
+  edgeOriginSecretMatches,
+  resolveEdgeOriginSecret,
+} from "../../config/edge-origin-auth";
 
 /**
  * The API must not accept a client supplied forwarding header merely because it
@@ -11,6 +19,11 @@ import { z } from "zod";
  * `trust proxy` switch.  Deployment owners can safely expand the allowlist at
  * their ingress boundary without turning arbitrary `x-forwarded-for` values
  * into rate-limit identities.
+ *
+ * 두 번째 신뢰 경로(`AUTH_EDGE_CLIENT_IP_ENABLED`): onpod 같은 PaaS ingress 는 `X-Forwarded-For`·
+ * `X-Real-IP`·`CF-Connecting-IP` 를 앞단 주소로 덮어쓰고 피어 IP 도 호스트마다 달라 위 허용 목록을
+ * 유지할 수 없다. 에지 게이트웨이(Cloudflare Worker)가 실제 접속자 IP 를 전용 헤더에 싣고, API 는 같은
+ * 요청이 에지 출처 인증 비밀(`x-toonstudio-origin-secret`)을 증명할 때만 그 헤더를 신뢰한다.
  */
 const ClientIpHeaderSchema = z.enum([
   "x-forwarded-for",
@@ -26,17 +39,31 @@ const MaximumForwardedHopsSchema = z
   .transform(Number)
   .pipe(z.number().int().min(1).max(32));
 
+/**
+ * 에지 게이트웨이가 실제 접속자 IP 를 싣는 전용 헤더. 커스텀 헤더라 PaaS ingress 가 덮어쓰지 않는다
+ * (2026-10-22 실측: Worker 경유 요청의 표준 IP 헤더는 모두 Cloudflare 이그레스 주소로 바뀌고 이 헤더만 보존된다).
+ */
+export const EDGE_CLIENT_IP_HEADER = "x-toonstudio-client-ip";
+
 export type AuthClientIpHeader = z.infer<typeof ClientIpHeaderSchema>;
+
+export interface AuthEdgeClientIpPolicy {
+  readonly header: typeof EDGE_CLIENT_IP_HEADER;
+  /** 에지 출처 인증 비밀. 요청이 같은 비밀을 증명할 때만 전용 헤더를 신뢰한다. */
+  readonly secret: Buffer;
+}
 
 export type AuthClientIpPolicy =
   | {
       readonly mode: "direct";
+      readonly edgeClientIp?: AuthEdgeClientIpPolicy;
     }
   | {
       readonly mode: "trusted-proxy";
       readonly trustedProxyIps: ReadonlySet<string>;
       readonly clientIpHeader: AuthClientIpHeader;
       readonly maximumForwardedHops: number;
+      readonly edgeClientIp?: AuthEdgeClientIpPolicy;
     };
 
 export type AuthClientIpEnvironment = Partial<
@@ -44,7 +71,9 @@ export type AuthClientIpEnvironment = Partial<
     | "AUTH_TRUSTED_PROXY_ENABLED"
     | "AUTH_TRUSTED_PROXY_IPS"
     | "AUTH_TRUSTED_CLIENT_IP_HEADER"
-    | "AUTH_TRUSTED_PROXY_MAX_FORWARDED_HOPS",
+    | "AUTH_TRUSTED_PROXY_MAX_FORWARDED_HOPS"
+    | "AUTH_EDGE_CLIENT_IP_ENABLED"
+    | "CLOUDFLARE_EDGE_ORIGIN_SECRET",
     string | undefined
   >
 >;
@@ -62,6 +91,44 @@ export class AuthClientIpConfigurationError extends Error {
  * proxy header implicitly.
  */
 export function resolveAuthClientIpPolicy(
+  environment: AuthClientIpEnvironment,
+): AuthClientIpPolicy {
+  const forwarded = resolveForwardedProxyPolicy(environment);
+  const edgeClientIp = resolveEdgeClientIpPolicy(environment);
+  return edgeClientIp === null ? forwarded : { ...forwarded, edgeClientIp };
+}
+
+/**
+ * 전용 헤더 신뢰(`AUTH_EDGE_CLIENT_IP_ENABLED=true`)는 에지 출처 인증 비밀이 반드시 있어야 켜진다.
+ * 비밀이 없거나 형식이 틀리면 부팅을 막는다(헤더를 증명할 수단이 없는 채로 신뢰하지 않는다).
+ */
+function resolveEdgeClientIpPolicy(
+  environment: AuthClientIpEnvironment,
+): AuthEdgeClientIpPolicy | null {
+  const enabled = environment.AUTH_EDGE_CLIENT_IP_ENABLED;
+  if (enabled === undefined || enabled === "" || enabled === "false") {
+    return null;
+  }
+  if (enabled !== "true") {
+    throw new AuthClientIpConfigurationError();
+  }
+
+  let secret: Buffer | null;
+  try {
+    secret = resolveEdgeOriginSecret(environment);
+  } catch (error) {
+    if (error instanceof EdgeOriginAuthConfigurationError) {
+      throw new AuthClientIpConfigurationError();
+    }
+    throw error;
+  }
+  if (secret === null) {
+    throw new AuthClientIpConfigurationError();
+  }
+  return { header: EDGE_CLIENT_IP_HEADER, secret };
+}
+
+function resolveForwardedProxyPolicy(
   environment: AuthClientIpEnvironment,
 ): AuthClientIpPolicy {
   const enabled = environment.AUTH_TRUSTED_PROXY_ENABLED;
@@ -114,6 +181,11 @@ export function resolveAuthClientIp(
   request: AuthClientIpRequest,
   policy: AuthClientIpPolicy,
 ): string {
+  if (policy.edgeClientIp !== undefined) {
+    const edgeClientIp = resolveEdgeClientIp(request, policy.edgeClientIp);
+    if (edgeClientIp !== null) return edgeClientIp;
+  }
+
   const remoteAddress = normalizeIp(request.socket?.remoteAddress);
   if (policy.mode === "direct" || remoteAddress === null) {
     return remoteAddress ?? "unknown";
@@ -154,11 +226,18 @@ const MAXIMUM_CACHED_ENVIRONMENT_POLICIES = 16;
 const policiesByEnvironment = new Map<string, AuthClientIpPolicy>();
 
 function clientIpEnvironmentKey(environment: AuthClientIpEnvironment): string {
+  const edgeEnabled = environment.AUTH_EDGE_CLIENT_IP_ENABLED;
+  const edgeSecret = environment.CLOUDFLARE_EDGE_ORIGIN_SECRET;
   return [
     environment.AUTH_TRUSTED_PROXY_ENABLED,
     environment.AUTH_TRUSTED_PROXY_IPS,
     environment.AUTH_TRUSTED_CLIENT_IP_HEADER,
     environment.AUTH_TRUSTED_PROXY_MAX_FORWARDED_HOPS,
+    edgeEnabled,
+    // 전용 헤더 신뢰가 켜진 경우에만 비밀이 정책에 들어간다. 키에는 비밀 원문 대신 해시를 쓴다.
+    edgeEnabled === "true" && edgeSecret !== undefined
+      ? createHash("sha256").update(edgeSecret).digest("hex")
+      : undefined,
   ]
     .map((value) => value ?? "\u0000")
     .join("\u0001");
@@ -209,9 +288,25 @@ function parseTrustedProxyIps(value: string | undefined): ReadonlySet<string> | 
   return new Set(entries as string[]);
 }
 
+/**
+ * 에지 출처 인증 비밀을 증명한 요청에서만 전용 헤더의 단일 IP 를 돌려준다. 비밀 불일치·누락, 헤더 누락,
+ * IP 가 아닌 값, 목록 값("a, b" 처럼 여러 개)은 모두 null 이라 호출자가 기존 신뢰 경계로 되돌아간다.
+ */
+function resolveEdgeClientIp(
+  request: AuthClientIpRequest,
+  policy: AuthEdgeClientIpPolicy,
+): string | null {
+  const supplied = readHeader(request.headers, EDGE_ORIGIN_AUTH_HEADER);
+  if (supplied === undefined || !edgeOriginSecretMatches(supplied, policy.secret)) {
+    return null;
+  }
+  const raw = readHeader(request.headers, policy.header);
+  return raw === undefined ? null : normalizeIp(raw);
+}
+
 function readHeader(
   headers: AuthClientIpRequest["headers"],
-  name: AuthClientIpHeader,
+  name: string,
 ): string | undefined {
   if (!headers) return undefined;
   const value = headers[name] ?? headers[name.toLowerCase()];

@@ -4,6 +4,7 @@ import {
 } from "../../../packages/core/src/legal-policy";
 import { parsePublicSharePath } from "../../../packages/core/src/public-share-path";
 
+import { CORE_CLIENT_IP_HEADER, trustedConnectingIp } from "./core-client-ip";
 import {
   CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
   cloudflareLargeAssetDescriptor,
@@ -509,26 +510,6 @@ function removePublicReadCredentials(headers: Headers): void {
   }
 }
 
-function containsForbiddenForwardedIpCharacter(value: string): boolean {
-  for (let index = 0; index < value.length; index += 1) {
-    const codePoint = value.charCodeAt(index);
-    if (codePoint <= 0x20 || codePoint === 0x7f) return true;
-  }
-  return false;
-}
-
-function trustedConnectingIp(request: Request): string | null {
-  const value = request.headers.get("cf-connecting-ip")?.trim();
-  if (
-    !value
-    || value.length > 64
-    || containsForbiddenForwardedIpCharacter(value)
-  ) {
-    return null;
-  }
-  return value;
-}
-
 async function cancelRetryResponse(response: Response): Promise<void> {
   try {
     await response.body?.cancel();
@@ -563,10 +544,13 @@ export function createUpstreamApiRequest(
   headers.delete("x-forwarded-for");
   headers.delete("x-real-ip");
   headers.delete(CORE_ORIGIN_AUTH_HEADER);
+  headers.delete(CORE_CLIENT_IP_HEADER);
   if (route === "public-read" || route === "large-asset" || ogQuery) {
     removePublicReadCredentials(headers);
   } else if (connectingIp) {
     headers.set("x-forwarded-for", connectingIp);
+    // 출처 비밀과 함께 보낼 때만 싣는다. Core API 는 같은 요청이 비밀을 증명할 때만 이 헤더를 신뢰한다.
+    if (coreOriginSecret) headers.set(CORE_CLIENT_IP_HEADER, connectingIp);
   }
   headers.set("x-forwarded-host", incoming.host);
   headers.set("x-forwarded-proto", "https");

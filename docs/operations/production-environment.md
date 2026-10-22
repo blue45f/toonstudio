@@ -84,6 +84,22 @@ Render dashboard에서 암호화하여 저장하고 로컬 임시 파일은 전�
 1. `GET https://www.toonstudio.cloud/api/health/capabilities` 응답의 `edgeOriginAuth`가 `enforced`인지 봅니다.
 2. Render 원본 주소로 직접 `GET /api/auth/providers`를 보내 HTTP 403이 오는지 봅니다.
 
+### 클라이언트 IP 전달
+
+상태: migration (2026-10-22, 기본은 꺼짐). onpod 같은 PaaS ingress는 `X-Forwarded-For`·`X-Real-IP`·`CF-Connecting-IP`를 앞단 주소로
+덮어쓰고 소켓 피어 IP도 앱·호스트마다 달라 `AUTH_TRUSTED_PROXY_IPS`(정확한 IP 목록)를 유지할 수 없습니다. 임시 Worker 미리보기와 헤더
+에코 앱으로 실측한 결과 Worker 경유 요청의 표준 IP 헤더 네 개(`x-forwarded-for`의 첫 값, `x-real-ip`, `cf-connecting-ip`,
+`x-onpod-client-ip`)가 모두 Cloudflare 이그레스 주소(`2a06:98c0:3600::103`)였고, Worker가 보낸 커스텀 헤더 `x-toonstudio-client-ip`와
+`x-toonstudio-origin-secret`은 값 그대로 도착했습니다. 이 상태에서는 인증 속도 제한이 사용자별이 아니라 하나의 공유 신원으로 동작합니다.
+
+| 항목 | 규칙 |
+| --- | --- |
+| 게이트웨이 | Worker는 core로 보내는 요청에서 클라이언트가 보낸 `x-toonstudio-client-ip`를 항상 지우고, `CORE_ORIGIN_SECRET`이 있으며 접속자 IP(`cf-connecting-ip`)를 알 때만 그 값을 이 헤더에 싣습니다. public-read·대형 에셋·OG 경로에는 싣지 않습니다. |
+| API | `AUTH_EDGE_CLIENT_IP_ENABLED=true`이면 같은 요청이 `x-toonstudio-origin-secret`을 증명할 때만 이 헤더의 단일 IP를 신뢰합니다. 비밀 불일치·누락, IP가 아닌 값, 목록 값이면 기존 신뢰 경계(`AUTH_TRUSTED_PROXY_*` 또는 소켓 주소)로 되돌아갑니다. 증명된 전용 헤더가 있으면 프록시 체인보다 먼저 씁니다. |
+| 켜는 조건 | `CLOUDFLARE_EDGE_ORIGIN_SECRET`이 유효해야 합니다. 없거나 형식이 틀리면 API가 시작하지 못합니다(증명 수단 없이 헤더를 신뢰하지 않습니다). 꺼져 있으면(기본) 헤더가 있어도 무시합니다. |
+| 배포 순서 | 1) Worker 릴리스(헤더를 싣습니다. 이전 API는 무시합니다) → 2) API 이미지 릴리스 → 3) 대상 환경에 `AUTH_EDGE_CLIENT_IP_ENABLED=true`. 되돌릴 때는 3)만 끕니다. |
+| 확인 | 켠 뒤 서로 다른 두 네트워크에서 같은 속도 제한 경로를 호출해 한쪽의 제한이 다른 쪽으로 번지지 않는지 봅니다(API에 접속자 IP를 돌려주는 경로는 없습니다). 시험은 `apps/api/src/modules/auth/auth-client-ip.test.ts`와 `deploy/cloudflare-static/src/index.test.ts`가 맡습니다. |
+
 ### 상태 응답의 `edgeOriginAuth` 노출은 의도한 선택입니다
 
 `GET /api/health/capabilities`는 인증 없이 읽을 수 있고 `Cache-Control: no-store`로 답합니다. 응답의 `edgeOriginAuth`

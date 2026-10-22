@@ -361,6 +361,77 @@ describe("Cloudflare static gateway", () => {
     );
   });
 
+  it("carries the real client IP in a dedicated header that PaaS ingress rewrites cannot replace", async () => {
+    const upstream = vi.fn<typeof fetch>(async () => new Response("ok"));
+    const coreOriginSecret = "cloudflare-to-render-origin-secret-0123456789";
+    const gateway = createCloudflareStaticGateway({ fetch: upstream });
+
+    const response = await gateway(
+      new Request("https://www.toonstudio.cloud/api/auth/session", {
+        headers: {
+          "cf-connecting-ip": "203.0.113.5",
+          "x-forwarded-for": "198.51.100.1",
+          "x-real-ip": "198.51.100.2",
+          "x-toonstudio-client-ip": "198.51.100.99",
+        },
+      }),
+      environment({ CORE_ORIGIN_SECRET: coreOriginSecret }),
+    );
+
+    expect(response.status).toBe(200);
+    const proxied = upstream.mock.calls[0]?.[0] as Request;
+    // 클라이언트가 보낸 값은 버리고 Cloudflare 가 알려 준 접속자 IP 로만 채운다.
+    expect(proxied.headers.get("x-toonstudio-client-ip")).toBe("203.0.113.5");
+    expect(proxied.headers.get("x-forwarded-for")).toBe("203.0.113.5");
+    expect(proxied.headers.get("x-toonstudio-origin-secret")).toBe(coreOriginSecret);
+    expect(proxied.headers.get("cf-connecting-ip")).toBeNull();
+    expect(proxied.headers.get("x-real-ip")).toBeNull();
+  });
+
+  it("never forwards a client-supplied dedicated IP header", async () => {
+    const coreOriginSecret = "cloudflare-to-render-origin-secret-0123456789";
+    const spoofed = { "x-toonstudio-client-ip": "198.51.100.99" };
+
+    // 접속자 IP 를 알 수 없으면 전용 헤더도 없다.
+    const noConnectingIp = vi.fn<typeof fetch>(async () => new Response("ok"));
+    await createCloudflareStaticGateway({ fetch: noConnectingIp })(
+      new Request("https://www.toonstudio.cloud/api/auth/session", { headers: spoofed }),
+      environment({ CORE_ORIGIN_SECRET: coreOriginSecret }),
+    );
+    expect((noConnectingIp.mock.calls[0]?.[0] as Request).headers.get("x-toonstudio-client-ip")).toBeNull();
+
+    // 출처 비밀이 없으면 접속자 IP 를 알아도 전용 헤더를 싣지 않는다(API 가 증명 없이 신뢰하지 못한다).
+    const noSecret = vi.fn<typeof fetch>(async () => new Response("ok"));
+    await createCloudflareStaticGateway({ fetch: noSecret })(
+      new Request("https://www.toonstudio.cloud/api/auth/session", {
+        headers: { ...spoofed, "cf-connecting-ip": "203.0.113.5" },
+      }),
+      environment(),
+    );
+    const withoutSecret = noSecret.mock.calls[0]?.[0] as Request;
+    expect(withoutSecret.headers.get("x-toonstudio-client-ip")).toBeNull();
+    expect(withoutSecret.headers.get("x-forwarded-for")).toBe("203.0.113.5");
+  });
+
+  it("keeps public reads anonymous even when a dedicated IP header is supplied", async () => {
+    const upstream = vi.fn<typeof fetch>(async () => new Response("ok"));
+    await createCloudflareStaticGateway({ fetch: upstream })(
+      new Request("https://www.toonstudio.cloud/api/titles?genre=fantasy", {
+        headers: {
+          "cf-connecting-ip": "203.0.113.5",
+          "x-toonstudio-client-ip": "198.51.100.99",
+        },
+      }),
+      environment({
+        CORE_ORIGIN_SECRET: "cloudflare-to-render-origin-secret-0123456789",
+        PUBLIC_READ_API_ORIGINS: "https://catalog-a.example.test",
+      }),
+    );
+    const proxied = upstream.mock.calls[0]?.[0] as Request;
+    expect(proxied.headers.get("x-toonstudio-client-ip")).toBeNull();
+    expect(proxied.headers.get("x-forwarded-for")).toBeNull();
+  });
+
   it("fails closed when the Core origin secret binding is weak", async () => {
     const upstream = vi.fn<typeof fetch>();
     const gateway = createCloudflareStaticGateway({ fetch: upstream });

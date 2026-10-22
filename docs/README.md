@@ -1,7 +1,7 @@
 # ToonStudio 문서 안내
 
 - 상태: **현재 문서 체계**
-- 최종 갱신: **2026-10-15**
+- 최종 갱신: **2026-10-22**
 
 ## 문서 권위 순서
 
@@ -73,9 +73,17 @@ UI/UX 자동 측정 하니스와 기준선(2026-10-16, 역사 자료)은 다음 
 1. [`../scripts/ux-audit/README.md`](../scripts/ux-audit/README.md) — 측정 항목, 점수 규칙, 실행·보안 규칙(현재 구현)
 2. [`reports/ux-audit-baseline-2026-10-16.md`](reports/ux-audit-baseline-2026-10-16.md) — 개발 서버 기준 합계 95.12 와 시간 지표 최악 가정 하한 89.71, 감점 유형별 회수 점수, 미측정 항목, 다시 재는 법
 
-onpod.ai 호스팅 이전 평가(2026-10-22, 제안 상태이며 현재 운영 구성이 아니다)는 다음 문서를 추가로 본다.
+인프라의 현재 구성(2026-10-22 재구축 진행 중, 마이그레이션 상태)은 인프라·배포·DB·도메인·비밀값 작업 전에 다음 문서를 먼저 본다.
 
-1. [`adr/0029-onpod-hosting-migration.md`](adr/0029-onpod-hosting-migration.md) — 무료 한도 대조, 구성요소별 판정, Core API 1단계 이전 절차·롤백·열린 결정(Proposed)
+1. [`operations/infrastructure-map.md`](operations/infrastructure-map.md) — 구성요소별 위치·비용·상태, 요청 경로, 비밀값 저장 위치(이름만), 배포·DB 접속 문자열 동기화·롤백 절차, 측정으로 확인한 제약, 열린 결정
+2. [`adr/0030-seoul-origin-hybrid-infrastructure.md`](adr/0030-seoul-origin-hybrid-infrastructure.md) — Core API·DB는 onpod 서울, 웹 엣지는 Cloudflare 유지(Accepted). 근거 측정, 대안, 컷오버 전 열린 문제
+3. [`../deploy/onpod/README.md`](../deploy/onpod/README.md) — onpod DB에 운영 스키마를 올리는 재현 도구(상시 승인 배포 단위가 아니다)
+
+onpod.ai 호스팅 이전 평가(2026-10-22, 평가 시점의 기록이며 현재 구성은 위 문서가 정본이다)는 다음 문서를 추가로 본다.
+
+1. [`adr/0029-onpod-hosting-migration.md`](adr/0029-onpod-hosting-migration.md) — 무료 한도 대조, 구성요소별 판정, Core API 1단계 이전 절차·롤백(Proposed, DB 판정은 ADR-0030이 대체)
+2. [`reports/onpod-evaluation-2026-10-22.md`](reports/onpod-evaluation-2026-10-22.md) — 설치·로그인·MCP 검증 결과, 벤더 수치의 기준과 확인일, 정책 적합성, 미확인 목록(재구축 승인 전 스냅샷)
+3. [`FREE_INFRASTRUCTURE.md`](FREE_INFRASTRUCTURE.md) — 무료 우선 정책 안에서의 위치를 요약한 onpod 소절
 
 열린 편집기 접근성 1단계(2026-10-22, 현재 구현)는 다음 문서를 추가로 본다.
 
