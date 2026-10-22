@@ -13,6 +13,11 @@ import type {
 import type { StudioShared3dStageResolution } from "../studio-shared-3d-stage-document";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-bg3d-panel-status-i18n";
+
+type StatusT = ReturnType<typeof useT>;
 
 export interface StudioBg3dSharedStagePanelProps {
   readonly resolution: StudioShared3dStageResolution;
@@ -58,16 +63,16 @@ function resolveSharedStageStatusCopy({
   | "targetHasLinkedCharacters"
   | "mutationKind"
   | "captureDisabled"
->): SharedStageStatusCopy {
+>, t: StatusT): SharedStageStatusCopy {
   if (resolution.phase === "unlinked" && mutationKind === "background-only") {
     return captureDisabled
       ? {
-          label: "장면 처리 중",
-          message: "3D 배경을 캡처하거나 원본을 복원하는 중입니다. 작업이 끝나기 전에는 적용 방식을 바꿀 수 없습니다.",
+          label: t("studio.bg3dPanelStatus.sharedStage.processingLabel", "장면 처리 중"),
+          message: t("studio.bg3dPanelStatus.sharedStage.processingBackgroundMessage", "3D 배경을 캡처하거나 원본을 복원하는 중입니다. 작업이 끝나기 전에는 적용 방식을 바꿀 수 없습니다."),
         }
       : {
-          label: "배경만 추가 예정",
-          message: "캐릭터는 연결하지 않고 배경만 추가할 예정입니다. 아래 적용을 누르기 전에는 저장되지 않습니다.",
+          label: t("studio.bg3dPanelStatus.sharedStage.backgroundOnlyLabel", "배경만 추가 예정"),
+          message: t("studio.bg3dPanelStatus.sharedStage.backgroundOnlyMessage", "캐릭터는 연결하지 않고 배경만 추가할 예정입니다. 아래 적용을 누르기 전에는 저장되지 않습니다."),
         };
   }
 
@@ -88,32 +93,32 @@ function resolveSharedStageStatusCopy({
 
     if (unavailableCount > 0) {
       return {
-        label: "캐릭터 확인 필요",
-        message: `캐릭터 ${unavailableCount}명의 렌더 인스턴스를 준비하지 못했습니다. 모델을 확인한 뒤 연결해 주세요.`,
+        label: t("studio.bg3dPanelStatus.sharedStage.checkNeededLabel", "캐릭터 확인 필요"),
+        message: t("studio.bg3dPanelStatus.sharedStage.unavailableMessage", { count: unavailableCount }, "캐릭터 {count}명의 렌더 인스턴스를 준비하지 못했습니다. 모델을 확인한 뒤 연결해 주세요."),
       };
     }
     if (loadingCount > 0) {
       return {
-        label: "캐릭터 준비 중",
-        message: `캐릭터 렌더 ${readyCount}/${characters.length}명 준비됨 · 모두 준비되면 이 배경과 연결할 수 있습니다.`,
+        label: t("studio.bg3dPanelStatus.sharedStage.preparingLabel", "캐릭터 준비 중"),
+        message: t("studio.bg3dPanelStatus.sharedStage.preparingMessage", { ready: readyCount, total: characters.length }, "캐릭터 렌더 {ready}/{total}명 준비됨 · 모두 준비되면 이 배경과 연결할 수 있습니다."),
       };
     }
     if (captureDisabled) {
       return {
-        label: "장면 처리 중",
-        message: "배경과 캐릭터 장면을 캡처하거나 원본을 복원하는 중입니다. 작업이 끝나기 전에는 적용 방식을 바꿀 수 없습니다.",
+        label: t("studio.bg3dPanelStatus.sharedStage.processingLabel", "장면 처리 중"),
+        message: t("studio.bg3dPanelStatus.sharedStage.processingWithCharactersMessage", "배경과 캐릭터 장면을 캡처하거나 원본을 복원하는 중입니다. 작업이 끝나기 전에는 적용 방식을 바꿀 수 없습니다."),
       };
     }
     const previewOnlyCount = Math.max(0, readyCount - captureElementCount);
     if (previewOnlyCount > 0) {
       return {
-        label: "캐릭터 확인 필요",
-        message: `캐릭터 ${previewOnlyCount}명의 현재 설정을 결과에 빠짐없이 담을 수 없어 연결 적용 전 확인이 필요합니다.`,
+        label: t("studio.bg3dPanelStatus.sharedStage.checkNeededLabel", "캐릭터 확인 필요"),
+        message: t("studio.bg3dPanelStatus.sharedStage.previewOnlyMessage", { count: previewOnlyCount }, "캐릭터 {count}명의 현재 설정을 결과에 빠짐없이 담을 수 없어 연결 적용 전 확인이 필요합니다."),
       };
     }
     return {
-      label: "연결 예정",
-      message: `캐릭터 ${captureElementCount}명을 이 배경과 연결할 예정입니다. 아래 적용을 누르기 전에는 저장되지 않습니다.`,
+      label: t("studio.bg3dPanelStatus.sharedStage.connectPlannedLabel", "연결 예정"),
+      message: t("studio.bg3dPanelStatus.sharedStage.connectPlannedMessage", { count: captureElementCount }, "캐릭터 {count}명을 이 배경과 연결할 예정입니다. 아래 적용을 누르기 전에는 저장되지 않습니다."),
     };
   }
 
@@ -153,6 +158,7 @@ export function StudioBg3dSharedStagePanel({
   onSelectCharacter,
   onCommitCharacterTransform,
 }: StudioBg3dSharedStagePanelProps) {
+  const t = useT();
   const statusCopy = resolveSharedStageStatusCopy({
     resolution,
     characters,
@@ -161,7 +167,7 @@ export function StudioBg3dSharedStagePanel({
     targetHasLinkedCharacters,
     mutationKind,
     captureDisabled,
-  });
+  }, t);
 
   return (
     <>

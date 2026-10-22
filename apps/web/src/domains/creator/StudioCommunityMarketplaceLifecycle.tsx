@@ -8,10 +8,13 @@ import type {
 } from "@/shared/lib/creator-marketplace-resource-contract";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
 import {
   listCreatorMarketplaceOwnedHistory,
   relistCreatorMarketplaceResource,
 } from "@/platform/creator-marketplace-client";
+
+import "./studio-panel-status-i18n";
 
 const FOCUS =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-panel";
@@ -66,6 +69,7 @@ export function StudioOwnedReleaseLifecycleActions({
   onDelist,
   onRelisted,
 }: StudioOwnedReleaseLifecycleActionsProps) {
+  const t = useT();
   const [armedAction, setArmedAction] = useState<"delist" | "relist" | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,13 +98,23 @@ export function StudioOwnedReleaseLifecycleActions({
       const changed = await onDelist(release);
       if (requestGenerationRef.current !== generation) return;
       if (!changed) {
-        setError("목록 내리기를 완료하지 못했습니다. 다시 시도해 주세요.");
+        setError(
+          t(
+            "studio.panelStatus.marketplaceLifecycle.delistIncompleteRetry",
+            "목록 내리기를 완료하지 못했습니다. 다시 시도해 주세요.",
+          ),
+        );
         return;
       }
       setArmedAction(null);
     } catch (caught) {
       if (requestGenerationRef.current !== generation) return;
-      setError(lifecycleError(caught, "목록 내리기를 완료하지 못했습니다."));
+      setError(
+        lifecycleError(
+          caught,
+          t("studio.panelStatus.marketplaceLifecycle.delistIncomplete", "목록 내리기를 완료하지 못했습니다."),
+        ),
+      );
     } finally {
       if (requestGenerationRef.current === generation) setPending(false);
     }
@@ -125,7 +139,12 @@ export function StudioOwnedReleaseLifecycleActions({
       setArmedAction(null);
     } catch (caught) {
       if (requestGenerationRef.current !== generation) return;
-      setError(lifecycleError(caught, "다시 공개하지 못했습니다."));
+      setError(
+        lifecycleError(
+          caught,
+          t("studio.panelStatus.marketplaceLifecycle.relistFailed", "다시 공개하지 못했습니다."),
+        ),
+      );
     } finally {
       if (requestControllerRef.current === controller) {
         requestControllerRef.current = null;
@@ -176,7 +195,9 @@ export function StudioOwnedReleaseLifecycleActions({
                 : "border-warn/30 bg-warn/10 text-warn",
             )}
           >
-            {pending ? "처리 중…" : `${label} 확인`}
+            {pending
+              ? t("studio.panelStatus.marketplaceLifecycle.processing", "처리 중…")
+              : `${label} 확인`}
           </button>
         </div>
       ) : (
@@ -214,6 +235,7 @@ export function StudioOwnedPackageHistory({
 }: {
   readonly head: CreatorMarketplaceOwnedRelease;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [retryGeneration, setRetryGeneration] = useState(0);
   const [state, setState] = useState<HistoryState>({ status: "idle", page: null, error: null });
@@ -251,14 +273,17 @@ export function StudioOwnedPackageHistory({
       setState({
         status: "error",
         page: null,
-        error: lifecycleError(caught, "내 릴리스 이력을 불러오지 못했습니다."),
+        error: lifecycleError(
+          caught,
+          t("studio.panelStatus.marketplaceLifecycle.historyLoadFailed", "내 릴리스 이력을 불러오지 못했습니다."),
+        ),
       });
     });
     return () => {
       controller.abort();
       invalidateActiveRequest();
     };
-  }, [head.resource.packageId, invalidateActiveRequest, open, retryGeneration]);
+  }, [head.resource.packageId, invalidateActiveRequest, open, retryGeneration, t]);
 
   const loadMore = useCallback(() => {
     if (state.status !== "ready" || !state.page.hasMore) return;
@@ -286,10 +311,15 @@ export function StudioOwnedPackageHistory({
       setLoadingMore(false);
     }).catch((caught: unknown) => {
       if (controller.signal.aborted || generationRef.current !== generation) return;
-      setLoadMoreError(lifecycleError(caught, "이전 릴리스를 더 불러오지 못했습니다."));
+      setLoadMoreError(
+        lifecycleError(
+          caught,
+          t("studio.panelStatus.marketplaceLifecycle.historyLoadMoreFailed", "이전 릴리스를 더 불러오지 못했습니다."),
+        ),
+      );
       setLoadingMore(false);
     });
-  }, [head.resource.packageId, state]);
+  }, [head.resource.packageId, state, t]);
 
   return (
     <details
@@ -311,21 +341,24 @@ export function StudioOwnedPackageHistory({
       <div className="border-t border-line p-2">
         {state.status === "loading" || state.status === "idle" ? (
           <p role="status" className="flex items-center gap-1.5 text-[0.56rem] text-fg-2">
-            <LoaderCircle size={12} className="animate-spin" aria-hidden /> 이력을 불러오는 중…
+            <LoaderCircle size={12} className="animate-spin" aria-hidden />{" "}
+            {t("studio.panelStatus.marketplaceLifecycle.historyLoading", "이력을 불러오는 중…")}
           </p>
         ) : null}
         {state.status === "error" ? (
           <div role="alert" className="text-[0.56rem] text-bad">
             <p>{state.error}</p>
             <button type="button" className={cx("mt-2", ACTION)} onClick={() => setRetryGeneration((value) => value + 1)}>
-              다시 시도
+              {t("studio.panelStatus.marketplaceLifecycle.retry", "다시 시도")}
             </button>
           </div>
         ) : null}
         {state.status === "ready" ? (
           <>
             {state.page.items.length === 0 ? (
-              <p className="text-[0.56rem] text-fg-3">저장된 릴리스 이력이 없습니다.</p>
+              <p className="text-[0.56rem] text-fg-3">
+                {t("studio.panelStatus.marketplaceLifecycle.historyEmpty", "저장된 릴리스 이력이 없습니다.")}
+              </p>
             ) : (
               <ol className="space-y-1.5">
                 {state.page.items.map((release) => (
@@ -348,7 +381,11 @@ export function StudioOwnedPackageHistory({
             {loadMoreError ? <p role="alert" className="mt-2 text-[0.56rem] text-bad">{loadMoreError}</p> : null}
             {state.page.hasMore ? (
               <button type="button" disabled={loadingMore} onClick={loadMore} className={cx("mt-2 w-full", ACTION)}>
-                {loadingMore ? "더 불러오는 중…" : loadMoreError ? "다시 불러오기" : "이전 릴리스 더 보기"}
+                {loadingMore
+                  ? t("studio.panelStatus.marketplaceLifecycle.loadingMore", "더 불러오는 중…")
+                  : loadMoreError
+                    ? t("studio.panelStatus.marketplaceLifecycle.reloadMore", "다시 불러오기")
+                    : "이전 릴리스 더 보기"}
               </button>
             ) : null}
           </>

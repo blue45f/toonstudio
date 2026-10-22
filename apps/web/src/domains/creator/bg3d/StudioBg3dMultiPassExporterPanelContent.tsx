@@ -34,6 +34,9 @@ import {
   type MultiPassPsdNotice,
 } from "./StudioBg3dMultiPassPsdPreview";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-bg3d-panel-status-i18n";
 
 const PRESET_LABELS: Readonly<Record<MultiPassExportPreset, string>> = Object.freeze({
   manuscript: "원고 기본",
@@ -131,6 +134,7 @@ export function StudioBg3dMultiPassExporterPanel({
   });
   const [activePreset, setActivePreset] = useState<ActiveMultiPassPreset>("manuscript");
   const copy = useBilingual("scene3d-multipass-psd-output");
+  const t = useT();
   const planned = useMemo(() => planMultiPassExport(config), [config]);
   const psdOutputBlocked =
     (config.format === "psd" || config.format === "clip-studio-layers") && planned.psdBlocked;
@@ -176,18 +180,18 @@ export function StudioBg3dMultiPassExporterPanel({
     psdFlowToken.current = token;
     setPsdNotice(null);
     setPsdPhase("resolving");
-    setPsdProgress({ label: "분리 패스 준비 중", completed: 0, total: 3 });
+    setPsdProgress({ label: t("studio.bg3dPanelStatus.multiPassExporter.preparingPasses", "분리 패스 준비 중"), completed: 0, total: 3 });
     void (async () => {
       try {
         const source = await resolveMultiPassPsdPasses(config);
         if (psdFlowToken.current !== token) return;
         if (!source) {
-          setPsdNotice({ tone: "info", text: "패스 소스가 없어 PSD 미리보기를 열 수 없습니다." });
+          setPsdNotice({ tone: "info", text: t("studio.bg3dPanelStatus.multiPassExporter.noPassSource", "패스 소스가 없어 PSD 미리보기를 열 수 없습니다.") });
           setPsdPhase("idle");
           setPsdProgress(null);
           return;
         }
-        setPsdProgress({ label: "선화·음영·밑색·배경 합성 중", completed: 1, total: 3 });
+        setPsdProgress({ label: t("studio.bg3dPanelStatus.multiPassExporter.composingPasses", "선화·음영·밑색·배경 합성 중"), completed: 1, total: 3 });
         const composed = composeBg3dMultiPassLayers({
           width: source.width,
           height: source.height,
@@ -204,7 +208,7 @@ export function StudioBg3dMultiPassExporterPanel({
         if (psdFlowToken.current !== token) return;
         setPsdNotice({
           tone: "bad",
-          text: "분리 패스를 준비하지 못했습니다.",
+          text: t("studio.bg3dPanelStatus.multiPassExporter.prepareFailed", "분리 패스를 준비하지 못했습니다."),
           detail: error instanceof Error ? error.message : undefined,
         });
         setPsdPhase("idle");
@@ -218,7 +222,7 @@ export function StudioBg3dMultiPassExporterPanel({
     if (!composed || psdPhase === "exporting") return;
     const token = psdFlowToken.current;
     setPsdPhase("exporting");
-    setPsdProgress({ label: "PSD 파일 만드는 중", completed: 2, total: 3 });
+    setPsdProgress({ label: t("studio.bg3dPanelStatus.multiPassExporter.creatingPsd", "PSD 파일 만드는 중"), completed: 2, total: 3 });
     setPsdNotice(null);
     void (async () => {
       try {
@@ -239,7 +243,7 @@ export function StudioBg3dMultiPassExporterPanel({
         });
         if (psdFlowToken.current !== token) return;
         if (!downloadBlob(result.blob, `${safeFileStem(psdTitle)}-multipass.psd`)) {
-          throw new Error("이 브라우저에서는 파일을 내려받을 수 없습니다.");
+          throw new Error(t("studio.bg3dPanelStatus.multiPassExporter.downloadUnavailable", "이 브라우저에서는 파일을 내려받을 수 없습니다."));
         }
         setPsdProgress({ label: "완료", completed: 3, total: 3 });
         const skippedDetail = result.receipt.skipped.length > 0
@@ -255,7 +259,7 @@ export function StudioBg3dMultiPassExporterPanel({
         if (psdFlowToken.current !== token) return;
         setPsdNotice({
           tone: "bad",
-          text: "PSD를 저장하지 못했습니다.",
+          text: t("studio.bg3dPanelStatus.multiPassExporter.psdSaveFailed", "PSD를 저장하지 못했습니다."),
           detail: error instanceof Error ? error.message : undefined,
         });
         setPsdPhase("preview");
@@ -274,7 +278,7 @@ export function StudioBg3dMultiPassExporterPanel({
     if (!onStartMultiPassExport) {
       setPsdNotice({
         tone: "info",
-        text: "내보내기 연결이 없습니다. 형식에서 PSD를 선택하면 이 패널에서 바로 저장할 수 있습니다.",
+        text: t("studio.bg3dPanelStatus.multiPassExporter.noExportConnection", "내보내기 연결이 없습니다. 형식에서 PSD를 선택하면 이 패널에서 바로 저장할 수 있습니다."),
       });
       return;
     }
@@ -531,7 +535,7 @@ export function StudioBg3dMultiPassExporterPanel({
       {psdPhase === "resolving" ? (
         <div className="flex items-center gap-2 rounded-lg border border-line bg-panel px-2.5 py-2" role="status" aria-live="polite">
           <Loader2 className="size-3.5 animate-spin text-accent motion-reduce:animate-none" aria-hidden />
-          <span className="text-[0.62rem] text-fg-3">{psdProgress?.label ?? "분리 패스 준비 중"}</span>
+          <span className="text-[0.62rem] text-fg-3">{psdProgress?.label ?? t("studio.bg3dPanelStatus.multiPassExporter.preparingPasses", "분리 패스 준비 중")}</span>
         </div>
       ) : null}
       {!psdFlowActive && psdNotice ? (

@@ -21,6 +21,12 @@ import {
 } from "./studio-scene-snapshot-library";
 import { getProductStudioSceneSnapshotSqliteRepository } from "./studio-scene-snapshot-sqlite-repository";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "./studio-panel-status-i18n";
+
+type StatusT = ReturnType<typeof useT>;
+
 import type { PageState } from "./studio-page-state";
 import type {
   StudioSceneSnapshot,
@@ -62,33 +68,33 @@ function formatTimestamp(timestamp: number): string {
   }).format(timestamp);
 }
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: unknown, t: StatusT): string {
   if (error instanceof StudioSceneSnapshotLibraryError) {
     switch (error.code) {
       case "item-too-large":
-        return "이 페이지는 개별 스냅샷 용량 제한을 넘습니다.";
+        return t("studio.panelStatus.sceneSnapshot.snapshotTooLarge", "이 페이지는 개별 스냅샷 용량 제한을 넘습니다.");
       case "data-url-too-large":
-        return "페이지에 포함된 원본 이미지 데이터가 너무 큽니다. 대형 이미지를 에셋 링크로 바꿔 주세요.";
+        return t("studio.panelStatus.sceneSnapshot.dataUrlTooLarge", "페이지에 포함된 원본 이미지 데이터가 너무 큽니다. 대형 이미지를 에셋 링크로 바꿔 주세요.");
       case "3d-payload-too-large":
-        return "페이지의 3D 편집 데이터가 너무 큽니다. 필요한 장면만 남긴 뒤 다시 저장해 주세요.";
+        return t("studio.panelStatus.sceneSnapshot.payload3dTooLarge", "페이지의 3D 편집 데이터가 너무 큽니다. 필요한 장면만 남긴 뒤 다시 저장해 주세요.");
       case "max-entries":
-        return "개인 라이브러리가 가득 찼습니다. 사용하지 않는 스냅샷을 삭제해 주세요.";
+        return t("studio.panelStatus.sceneSnapshot.libraryFull", "개인 라이브러리가 가득 찼습니다. 사용하지 않는 스냅샷을 삭제해 주세요.");
       case "total-too-large":
-        return "개인 라이브러리 전체 용량 제한을 넘습니다.";
+        return t("studio.panelStatus.sceneSnapshot.totalTooLarge", "개인 라이브러리 전체 용량 제한을 넘습니다.");
       case "corrupt-data":
-        return "손상된 로컬 스냅샷이 있어 저장하지 않았습니다. 정상 항목을 백업한 뒤 라이브러리를 정리해 주세요.";
+        return t("studio.panelStatus.sceneSnapshot.corruptData", "손상된 로컬 스냅샷이 있어 저장하지 않았습니다. 정상 항목을 백업한 뒤 라이브러리를 정리해 주세요.");
       case "storage-blocked":
-        return "다른 탭이 로컬 라이브러리 갱신을 막고 있습니다. 다른 Studio 탭을 닫아 주세요.";
+        return t("studio.panelStatus.sceneSnapshot.storageBlocked", "다른 탭이 로컬 라이브러리 갱신을 막고 있습니다. 다른 Studio 탭을 닫아 주세요.");
       case "storage-unavailable":
       case "clone-unavailable":
-        return "SQLite/OPFS 개인 장면 라이브러리를 사용할 수 없습니다. 저장되지 않았습니다.";
+        return t("studio.panelStatus.sceneSnapshot.storageUnavailable", "SQLite/OPFS 개인 장면 라이브러리를 사용할 수 없습니다. 저장되지 않았습니다.");
       case "not-found":
-        return "선택한 장면 스냅샷을 찾지 못했습니다.";
+        return t("studio.panelStatus.sceneSnapshot.snapshotNotFound", "선택한 장면 스냅샷을 찾지 못했습니다.");
       default:
-        return "로컬 장면 라이브러리 작업을 완료하지 못했습니다.";
+        return t("studio.panelStatus.sceneSnapshot.operationFailed", "로컬 장면 라이브러리 작업을 완료하지 못했습니다.");
     }
   }
-  return "로컬 장면 라이브러리 작업을 완료하지 못했습니다.";
+  return t("studio.panelStatus.sceneSnapshot.operationFailed", "로컬 장면 라이브러리 작업을 완료하지 못했습니다.");
 }
 
 export function StudioSceneSnapshotPanel({
@@ -98,6 +104,7 @@ export function StudioSceneSnapshotPanel({
   onApply,
   repository = DEFAULT_REPOSITORY,
 }: StudioSceneSnapshotPanelProps) {
+  const t = useT();
   const nameId = useId();
   const tagsId = useId();
   const [snapshots, setSnapshots] = useState<StudioSceneSnapshot[]>([]);
@@ -138,7 +145,7 @@ export function StudioSceneSnapshotPanel({
       })
       .catch((cause: unknown) => {
         if (!mountedRef.current || generation !== loadGenerationRef.current) return;
-        setError(errorMessage(cause));
+        setError(errorMessage(cause, t));
         setStorageState("unavailable");
       })
       .finally(() => {
@@ -147,7 +154,7 @@ export function StudioSceneSnapshotPanel({
     return () => {
       if (loadGenerationRef.current === generation) loadGenerationRef.current += 1;
     };
-  }, [repository]);
+  }, [repository, t]);
 
   const visibleSnapshots = filterStudioSceneSnapshots(snapshots, query);
   const usedBytes = snapshots.reduce((total, snapshot) => total + snapshot.byteSize, 0);
@@ -173,7 +180,7 @@ export function StudioSceneSnapshotPanel({
       setStorageState(repository.authority === "sqlite" ? "sqlite" : "injected");
     } catch (cause) {
       if (mountedRef.current && generation === operationGenerationRef.current) {
-        setError(errorMessage(cause));
+        setError(errorMessage(cause, t));
         setStorageState("unavailable");
       }
     } finally {
@@ -193,7 +200,7 @@ export function StudioSceneSnapshotPanel({
       setStorageState(repository.authority === "sqlite" ? "sqlite" : "injected");
     } catch (cause) {
       if (mountedRef.current && generation === operationGenerationRef.current) {
-        setError(errorMessage(cause));
+        setError(errorMessage(cause, t));
         setStorageState("unavailable");
       }
     } finally {
@@ -214,7 +221,7 @@ export function StudioSceneSnapshotPanel({
       setStorageState(repository.authority === "sqlite" ? "sqlite" : "injected");
     } catch (cause) {
       if (mountedRef.current && generation === operationGenerationRef.current) {
-        setError(errorMessage(cause));
+        setError(errorMessage(cause, t));
         setStorageState("unavailable");
       }
     } finally {
@@ -227,7 +234,7 @@ export function StudioSceneSnapshotPanel({
       onApply(cloneStudioSceneSnapshot(snapshot));
       setError(null);
     } catch (cause) {
-      setError(errorMessage(cause));
+      setError(errorMessage(cause, t));
     }
   }
 
@@ -255,11 +262,11 @@ export function StudioSceneSnapshotPanel({
                 data-studio-scene-snapshot-authority={storageState}
               >
                 {storageState === "loading"
-                  ? "SQLite/OPFS 확인 중"
+                  ? t("studio.panelStatus.sceneSnapshot.storageChecking", "SQLite/OPFS 확인 중")
                   : storageState === "sqlite"
                     ? "SQLite/OPFS 저장"
                     : storageState === "unavailable"
-                      ? "저장소 사용 불가"
+                      ? t("studio.panelStatus.sceneSnapshot.storageUnavailableBadge", "저장소 사용 불가")
                       : "주입 저장소"}
               </span>
             </div>
@@ -328,7 +335,9 @@ export function StudioSceneSnapshotPanel({
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Camera size={17} aria-hidden="true" />
-            {busyId === "capture" ? "보관 중…" : "현재 페이지 스냅샷 보관"}
+            {busyId === "capture"
+              ? t("studio.panelStatus.sceneSnapshot.capturing", "보관 중…")
+              : "현재 페이지 스냅샷 보관"}
           </button>
         </form>
 
@@ -371,7 +380,10 @@ export function StudioSceneSnapshotPanel({
         ) : null}
 
         {loading ? (
-          <div className="space-y-2" aria-label="장면 스냅샷 불러오는 중">
+          <div
+            className="space-y-2"
+            aria-label={t("studio.panelStatus.sceneSnapshot.loadingSnapshots", "장면 스냅샷 불러오는 중")}
+          >
             {[0, 1, 2].map((index) => (
               <div
                 key={index}
@@ -383,7 +395,9 @@ export function StudioSceneSnapshotPanel({
           <div className="rounded-xl border border-dashed border-line-strong px-4 py-8 text-center">
             <Camera size={24} className="mx-auto text-fg-3" aria-hidden="true" />
             <p className="mt-2 text-sm font-semibold text-fg">
-              {query.trim() ? "검색 결과가 없습니다" : "보관한 장면이 없습니다"}
+              {query.trim()
+                ? t("studio.panelStatus.sceneSnapshot.searchEmpty", "검색 결과가 없습니다")
+                : t("studio.panelStatus.sceneSnapshot.libraryEmpty", "보관한 장면이 없습니다")}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-fg-3">
               {query.trim()
@@ -460,7 +474,9 @@ export function StudioSceneSnapshotPanel({
                         onClick={() => void deleteSnapshot(snapshot.id)}
                         className="min-h-11 rounded-xl bg-danger px-3 text-xs font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger disabled:opacity-50"
                       >
-                        {busy ? "삭제 중…" : "삭제"}
+                        {busy
+                          ? t("studio.panelStatus.sceneSnapshot.deleting", "삭제 중…")
+                          : "삭제"}
                       </button>
                     </div>
                   ) : (
@@ -481,7 +497,9 @@ export function StudioSceneSnapshotPanel({
                         className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-line bg-card px-2 text-xs font-semibold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
                       >
                         <Copy size={15} aria-hidden="true" />
-                        {busy ? "복제 중…" : "복제"}
+                        {busy
+                          ? t("studio.panelStatus.sceneSnapshot.duplicating", "복제 중…")
+                          : "복제"}
                       </button>
                       <button
                         type="button"

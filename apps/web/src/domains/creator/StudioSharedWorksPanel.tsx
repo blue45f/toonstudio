@@ -34,7 +34,12 @@ import {
 import type { StudioTeamRole } from "./studio-team-client";
 
 import { Button } from "@/shared/components/ui/button";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "./studio-panel-status-i18n";
+
+type StatusT = ReturnType<typeof useT>;
 
 const ROLE_LABEL: Record<StudioTeamRole, string> = {
   owner: "소유자",
@@ -80,9 +85,11 @@ export interface StudioSharedWorksPanelViewProps {
   onOpenWork?: (work: StudioSharedWork) => void;
 }
 
-function formatUpdatedAt(value: string): string {
+function formatUpdatedAt(value: string, t: StatusT): string {
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? UPDATED_AT_FORMATTER.format(date) : "날짜 확인 불가";
+  return Number.isFinite(date.getTime())
+    ? UPDATED_AT_FORMATTER.format(date)
+    : t("studio.panelStatus.sharedWorks.dateUnavailable", "날짜 확인 불가");
 }
 
 function roleBadgeClass(role: StudioTeamRole): string {
@@ -92,7 +99,7 @@ function roleBadgeClass(role: StudioTeamRole): string {
   return "border-line-strong bg-raised text-fg-2";
 }
 
-function accessCopy(work: StudioSharedWork): {
+function accessCopy(work: StudioSharedWork, t: StatusT): {
   label: string;
   detail: string;
   Icon: typeof Eye;
@@ -103,11 +110,15 @@ function accessCopy(work: StudioSharedWork): {
   if (work.access === "comment") {
     return {
       label: "검토로 열기",
-      detail: "검토 전용 · 서버 저장 불가",
+      detail: t("studio.panelStatus.sharedWorks.commentAccessDetail", "검토 전용 · 서버 저장 불가"),
       Icon: MessageSquareText,
     };
   }
-  return { label: "읽기 전용으로 열기", detail: "읽기 전용 · 서버 저장 불가", Icon: Eye };
+  return {
+    label: "읽기 전용으로 열기",
+    detail: t("studio.panelStatus.sharedWorks.readOnlyAccessDetail", "읽기 전용 · 서버 저장 불가"),
+    Icon: Eye,
+  };
 }
 
 function CurrentReadOnlyNotice({ work }: { work: StudioSharedWork }) {
@@ -138,7 +149,8 @@ function SharedWorkRow({
   current: boolean;
   onOpenWork?: (work: StudioSharedWork) => void;
 }) {
-  const copy = accessCopy(work);
+  const t = useT();
+  const copy = accessCopy(work, t);
   const body = (
     <>
       <div className="min-w-0 flex-1 py-3">
@@ -160,7 +172,7 @@ function SharedWorkRow({
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3">
           <span className={work.access === "edit" ? "text-good" : "text-warn"}>{copy.detail}</span>
           <span aria-hidden="true">·</span>
-          <time dateTime={work.updatedAt}>{formatUpdatedAt(work.updatedAt)} 수정</time>
+          <time dateTime={work.updatedAt}>{formatUpdatedAt(work.updatedAt, t)} 수정</time>
         </div>
       </div>
       <span className="flex min-h-11 shrink-0 items-center gap-1.5 pl-2 text-xs font-semibold text-accent">
@@ -223,6 +235,7 @@ export function StudioSharedWorksPanelView({
   onLoadMore,
   onOpenWork,
 }: StudioSharedWorksPanelViewProps) {
+  const t = useT();
   const headingId = useId();
   const currentWork = works.find((work) => work.workId === currentWorkId) ?? null;
 
@@ -281,7 +294,7 @@ export function StudioSharedWorksPanelView({
       ) : loading && works.length === 0 ? (
         <div
           aria-busy="true"
-          aria-label="팀 작품 불러오는 중"
+          aria-label={t("studio.panelStatus.sharedWorks.loadingWorks", "팀 작품 불러오는 중")}
           className="mt-3 space-y-1"
         >
           {[0, 1, 2].map((index) => (
@@ -297,16 +310,20 @@ export function StudioSharedWorksPanelView({
       ) : error ? (
         <div className="py-7 text-center" role="alert">
           <AlertCircle className="mx-auto text-bad" size={25} aria-hidden="true" />
-          <p className="mt-2 text-sm font-semibold text-fg">팀 작품을 열지 못했어요</p>
+          <p className="mt-2 text-sm font-semibold text-fg">
+            {t("studio.panelStatus.sharedWorks.openFailedTitle", "팀 작품을 열지 못했어요")}
+          </p>
           <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-fg-2">{error}</p>
           <Button className="mt-4 min-h-11" size="sm" type="button" variant="outline" onClick={onRetry}>
-            <RefreshCw size={15} aria-hidden="true" /> 다시 시도
+            <RefreshCw size={15} aria-hidden="true" /> {t("studio.panelStatus.sharedWorks.retry", "다시 시도")}
           </Button>
         </div>
       ) : works.length === 0 ? (
         <div className="py-7 text-center">
           <UsersRound className="mx-auto text-fg-3" size={25} aria-hidden="true" />
-          <p className="mt-2 text-sm font-semibold text-fg">참여 중인 팀 작품이 없어요</p>
+          <p className="mt-2 text-sm font-semibold text-fg">
+            {t("studio.panelStatus.sharedWorks.emptyWorks", "참여 중인 팀 작품이 없어요")}
+          </p>
           <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-fg-3">
             팀 초대를 수락하면 여기에서 역할과 저장 가능 여부를 확인하고 바로 열 수 있습니다.
           </p>
@@ -341,7 +358,9 @@ export function StudioSharedWorksPanelView({
           ) : null}
           <Button
             aria-busy={loadingMore}
-            aria-label={loadingMore ? "팀 작품 더 불러오는 중" : "팀 작품 더 불러오기"}
+            aria-label={loadingMore
+              ? t("studio.panelStatus.sharedWorks.loadingMore", "팀 작품 더 불러오는 중")
+              : t("studio.panelStatus.sharedWorks.loadMore", "팀 작품 더 불러오기")}
             className="min-h-11 w-full"
             disabled={loading || loadingMore}
             size="sm"
@@ -358,7 +377,11 @@ export function StudioSharedWorksPanelView({
             ) : (
               <ChevronRight className="rotate-90" size={15} aria-hidden="true" />
             )}
-            {loadingMore ? "더 불러오는 중" : loadMoreError ? "다시 불러오기" : "작품 더 불러오기"}
+            {loadingMore
+              ? t("studio.panelStatus.sharedWorks.loadingMoreShort", "더 불러오는 중")
+              : loadMoreError
+                ? t("studio.panelStatus.sharedWorks.reloadMore", "다시 불러오기")
+                : t("studio.panelStatus.sharedWorks.loadMoreWorks", "작품 더 불러오기")}
           </Button>
         </div>
       ) : paginationComplete ? (
@@ -368,7 +391,7 @@ export function StudioSharedWorksPanelView({
           className="mt-3 text-center text-xs text-fg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           tabIndex={-1}
         >
-          모든 팀 작품을 불러왔습니다.
+          {t("studio.panelStatus.sharedWorks.allLoaded", "모든 팀 작품을 불러왔습니다.")}
         </p>
       ) : null}
 
@@ -377,10 +400,10 @@ export function StudioSharedWorksPanelView({
   );
 }
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: unknown, t: StatusT): string {
   return error instanceof Error && error.message
     ? error.message
-    : "공유 작품을 불러오지 못했습니다.";
+    : t("studio.panelStatus.sharedWorks.loadFailedFallback", "공유 작품을 불러오지 못했습니다.");
 }
 
 export function StudioSharedWorksPanel({
@@ -392,6 +415,7 @@ export function StudioSharedWorksPanel({
   className,
   onOpenWork,
 }: StudioSharedWorksPanelProps) {
+  const t = useT();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const loadMoreEndRef = useRef<HTMLParagraphElement>(null);
   const loadMoreAbortRef = useRef<AbortController | null>(null);
@@ -487,7 +511,7 @@ export function StudioSharedWorksPanel({
           setWorks([]);
           setWorksAuthScopeKey(null);
           setNextCursor(null);
-          setError(errorMessage(cause));
+          setError(errorMessage(cause, t));
           setErrorAuthScopeKey(authScopeKey);
         }
       })
@@ -506,7 +530,7 @@ export function StudioSharedWorksPanel({
       });
 
     return () => controller.abort();
-  }, [authReady, authScopeKey, open, refreshKey, reloadKey]);
+  }, [authReady, authScopeKey, open, refreshKey, reloadKey, t]);
 
   async function handleLoadMore() {
     if (
@@ -557,7 +581,7 @@ export function StudioSharedWorksPanel({
       ) {
         return;
       }
-      setLoadMoreError(errorMessage(cause));
+      setLoadMoreError(errorMessage(cause, t));
     } finally {
       if (
         requestId === loadMoreRequestIdRef.current &&

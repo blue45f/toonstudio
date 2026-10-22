@@ -11,6 +11,10 @@ import {
   type StudioBg3dBundleThemePacks,
 } from "./studio-bg3d-bundle-theme-packs";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-bg3d-panel-status-i18n";
+
 const PAGE_SIZE = 24;
 const CONTROL =
   "min-h-11 rounded-lg border border-line bg-card px-3 text-xs text-fg-2 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50";
@@ -48,6 +52,7 @@ export function StudioBg3dBundleThemePackPanel({
   readonly onAdd: (id: string) => void;
   readonly disabled?: boolean;
 }) {
+  const t = useT();
   const searchId = "bg3d-bundle-theme-pack-search";
   const [data, setData] = useState<StudioBg3dBundleThemePacks | null>(null);
   const [availability, setAvailability] = useState<"checking" | StudioBg3dBundleDeployAvailability>("checking");
@@ -69,7 +74,7 @@ export function StudioBg3dBundleThemePackPanel({
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          setLoadError(error instanceof Error ? error.message : "테마 팩을 불러오지 못했습니다.");
+          setLoadError(error instanceof Error ? error.message : t("studio.bg3dPanelStatus.bundleThemePack.loadFailed", "테마 팩을 불러오지 못했습니다."));
         }
       });
     return () => controller.abort();
@@ -166,7 +171,7 @@ export function StudioBg3dBundleThemePackPanel({
           disabled={busy}
           onClick={() => add(asset.id)}
         >
-          {addingId === asset.id ? "배치 준비 중…" : "장면에 추가"}
+          {addingId === asset.id ? t("studio.bg3dPanelStatus.bundleThemePack.placing", "배치 준비 중…") : "장면에 추가"}
         </button>
       </article>
     );
@@ -205,7 +210,7 @@ export function StudioBg3dBundleThemePackPanel({
         이미지뿐입니다.
       </p>
       {data && availability === "checking" ? (
-        <p role="status" className="mt-2 text-xs text-fg-3">에셋 배포 상태를 확인하는 중입니다.</p>
+        <p role="status" className="mt-2 text-xs text-fg-3">{t("studio.bg3dPanelStatus.bundleThemePack.checkingAvailability", "에셋 배포 상태를 확인하는 중입니다.")}</p>
       ) : null}
       {data && availability === "unavailable" ? (
         <p
@@ -221,11 +226,11 @@ export function StudioBg3dBundleThemePackPanel({
         <div role="alert" className="mt-2 space-y-2 text-xs text-fg-2">
           <p>{loadError}</p>
           <button type="button" className={CONTROL} onClick={() => setRevision((value) => value + 1)}>
-            다시 불러오기
+            {t("studio.bg3dPanelStatus.bundleThemePack.reload", "다시 불러오기")}
           </button>
         </div>
       ) : !data ? (
-        <p role="status" className="mt-2 text-xs text-fg-3">테마 팩을 불러오는 중입니다.</p>
+        <p role="status" className="mt-2 text-xs text-fg-3">{t("studio.bg3dPanelStatus.bundleThemePack.loadingPacks", "테마 팩을 불러오는 중입니다.")}</p>
       ) : (
         <div className="mt-2 space-y-3">
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="테마 팩 그룹">
@@ -309,7 +314,7 @@ export function StudioBg3dBundleThemePackPanel({
                           disabled={placementBlocked || addingId !== null}
                           onClick={() => add(asset.id)}
                         >
-                          {addingId === asset.id ? "배치 준비 중…" : "장면에 배치"}
+                          {addingId === asset.id ? t("studio.bg3dPanelStatus.bundleThemePack.placing", "배치 준비 중…") : "장면에 배치"}
                         </button>
                       </div>
                     );
@@ -326,7 +331,7 @@ export function StudioBg3dBundleThemePackPanel({
                 </div>
               ) : (
                 <p className="py-4 text-center text-xs text-fg-3">
-                  이 그룹에는 아직 배치 가능한 에셋이 없습니다. 검색어나 그룹을 바꿔 주세요.
+                  {t("studio.bg3dPanelStatus.bundleThemePack.groupEmpty", "이 그룹에는 아직 배치 가능한 에셋이 없습니다. 검색어나 그룹을 바꿔 주세요.")}
                 </p>
               )}
               {pages > 1 ? (

@@ -6,6 +6,7 @@
  * (dataUrlToBlob만 기존 계약대로 data URL이 아니면 throw한다).
  */
 import { formatNumber } from "@toonstudio/core/format";
+import { aiErrorText } from "./studio-ai-error-i18n";
 
 import {
   STUDIO_AI_IMAGE_REFERENCE_LIMITS,
@@ -53,7 +54,7 @@ export interface StudioAiResolvedImageReference {
 export function dataUrlToBlob(dataUrl: string): Blob {
   const commaIndex = dataUrl.indexOf(",");
   if (!dataUrl.startsWith("data:") || commaIndex === -1) {
-    throw new Error("data URL 형식이 아닙니다(원격 URL 이미지는 지원하지 않습니다).");
+    throw new Error(aiErrorText("studio.aiError.reference.dataUrlNotSupported", "data URL 형식이 아닙니다(원격 URL 이미지는 지원하지 않습니다)."));
   }
   const header = dataUrl.slice("data:".length, commaIndex);
   const payload = dataUrl.slice(commaIndex + 1);
@@ -131,14 +132,14 @@ export function prepareStudioAiRoleReferences(
     return {
       ok: false,
       code: "invalid_input",
-      error: "역할이 지정된 기준 이미지를 한 개 이상 선택하세요.",
+      error: aiErrorText("studio.aiError.reference.roleReferenceRequired", "역할이 지정된 기준 이미지를 한 개 이상 선택하세요."),
     };
   }
   if (values.length > STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages) {
     return {
       ok: false,
       code: "invalid_input",
-      error: `기준 이미지는 최대 ${STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages}개까지 사용할 수 있습니다.`,
+      error: aiErrorText("studio.aiError.reference.maxImagesExceeded", { count: STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxImages }, "기준 이미지는 최대 {count}개까지 사용할 수 있습니다."),
     };
   }
 
@@ -148,7 +149,7 @@ export function prepareStudioAiRoleReferences(
       return {
         ok: false,
         code: "invalid_input",
-        error: "기준 이미지 정보가 올바르지 않습니다.",
+        error: aiErrorText("studio.aiError.reference.referenceInfoInvalid", "기준 이미지 정보가 올바르지 않습니다."),
       };
     }
     const reference = normalizeResolvedRoleReference(value);
@@ -156,7 +157,7 @@ export function prepareStudioAiRoleReferences(
       return {
         ok: false,
         code: "invalid_input",
-        error: "기준 이미지의 ID 또는 역할이 올바르지 않습니다.",
+        error: aiErrorText("studio.aiError.reference.referenceIdOrRoleInvalid", "기준 이미지의 ID 또는 역할이 올바르지 않습니다."),
       };
     }
     candidates.push({ reference, dataUrl: value.dataUrl });
@@ -198,7 +199,7 @@ export function prepareStudioAiRoleReferences(
         return {
           ok: false,
           code: "invalid_input",
-          error: `중복된 기준 이미지 ID(${candidate.reference.id})의 내용이 서로 다릅니다.`,
+          error: aiErrorText("studio.aiError.reference.duplicateReferenceConflict", { id: candidate.reference.id }, "중복된 기준 이미지 ID({id})의 내용이 서로 다릅니다."),
         };
       }
       continue;
@@ -212,7 +213,7 @@ export function prepareStudioAiRoleReferences(
       return {
         ok: false,
         code: "invalid_input",
-        error: `한 역할에는 기준 이미지를 최대 ${STUDIO_AI_IMAGE_REFERENCE_LIMITS.maxReferencesPerRole}개까지 사용할 수 있습니다.`,
+        error: aiErrorText("studio.aiError.reference.perRoleLimitExceeded", { count: STUDIO_AI_IMAGE_REFERENCE_LIMITS.maxReferencesPerRole }, "한 역할에는 기준 이미지를 최대 {count}개까지 사용할 수 있습니다."),
       };
     }
     prepared.push(candidate);
@@ -235,7 +236,7 @@ export function inspectStudioAiReferenceImageDataUrl(
     return {
       ok: false,
       code: "invalid_input",
-      error: "기준 이미지는 PNG, JPEG 또는 WebP base64 data URL이어야 합니다.",
+      error: aiErrorText("studio.aiError.reference.dataUrlFormatRequired", "기준 이미지는 PNG, JPEG 또는 WebP base64 data URL이어야 합니다."),
     };
   }
   const headerParts = dataUrl
@@ -251,14 +252,14 @@ export function inspectStudioAiReferenceImageDataUrl(
     return {
       ok: false,
       code: "invalid_input",
-      error: "기준 이미지는 PNG, JPEG 또는 WebP 형식만 사용할 수 있습니다.",
+      error: aiErrorText("studio.aiError.reference.formatOnly", "기준 이미지는 PNG, JPEG 또는 WebP 형식만 사용할 수 있습니다."),
     };
   }
   if (!headerParts.slice(1).some((part) => part.toLowerCase() === "base64")) {
     return {
       ok: false,
       code: "invalid_input",
-      error: "기준 이미지는 base64로 인코딩된 data URL이어야 합니다.",
+      error: aiErrorText("studio.aiError.reference.base64Required", "기준 이미지는 base64로 인코딩된 data URL이어야 합니다."),
     };
   }
   const payload = dataUrl.slice(commaIndex + 1);
@@ -266,7 +267,7 @@ export function inspectStudioAiReferenceImageDataUrl(
     return {
       ok: false,
       code: "invalid_input",
-      error: "기준 이미지의 base64 데이터가 올바르지 않습니다.",
+      error: aiErrorText("studio.aiError.reference.base64Invalid", "기준 이미지의 base64 데이터가 올바르지 않습니다."),
     };
   }
   const padding =
@@ -276,7 +277,7 @@ export function inspectStudioAiReferenceImageDataUrl(
     return {
       ok: false,
       code: "invalid_input",
-      error: "기준 이미지의 디코딩 크기가 올바르지 않습니다.",
+      error: aiErrorText("studio.aiError.reference.decodedSizeInvalid", "기준 이미지의 디코딩 크기가 올바르지 않습니다."),
     };
   }
   if (
@@ -286,14 +287,14 @@ export function inspectStudioAiReferenceImageDataUrl(
     return {
       ok: false,
       code: "invalid_input",
-      error: `기준 이미지 한 장의 디코딩 크기는 ${formatNumber(STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxDecodedBytesPerImage)}바이트를 넘을 수 없습니다.`,
+      error: aiErrorText("studio.aiError.reference.singleImageSizeExceeded", { count: formatNumber(STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxDecodedBytesPerImage) }, "기준 이미지 한 장의 디코딩 크기는 {count}바이트를 넘을 수 없습니다."),
     };
   }
   if (!STRICT_BASE64_PAYLOAD_PATTERN.test(payload)) {
     return {
       ok: false,
       code: "invalid_input",
-      error: "기준 이미지의 base64 데이터가 올바르지 않습니다.",
+      error: aiErrorText("studio.aiError.reference.base64Invalid", "기준 이미지의 base64 데이터가 올바르지 않습니다."),
     };
   }
   const canonicalMimeType = mimeType as StudioAiReferenceImageMimeType;

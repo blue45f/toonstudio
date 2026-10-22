@@ -76,6 +76,7 @@ import {
   type StudioAiResolvedImageReference,
 } from "./studio-ai-reference-images";
 import { isStudioAiConfigured, type StudioAiSettings } from "./studio-ai-settings";
+import { aiErrorText } from "./studio-ai-error-i18n";
 
 import {
   extractFirstB64Json,
@@ -175,13 +176,13 @@ function isAbortError(error: unknown): boolean {
 }
 
 function networkErrorMessage(error: unknown): string {
-  if (isAbortError(error)) return "요청이 취소되었습니다.";
+  if (isAbortError(error)) return aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다.");
   // 브라우저 fetch 실패의 error.message는 "Failed to fetch" 같은 원문 영문이라 그대로 노출하지
   // 않는다 — 사용자가 원인(CORS·오프라인·엔드포인트 오타)을 추측할 수 있는 한국어로 안내한다.
   if (error instanceof TypeError) {
-    return "엔드포인트에 연결할 수 없어요. 주소·네트워크 상태와 CORS 허용 여부를 확인해 주세요.";
+    return aiErrorText("studio.aiError.client.endpointUnreachable", "엔드포인트에 연결할 수 없어요. 주소·네트워크 상태와 CORS 허용 여부를 확인해 주세요.");
   }
-  return error instanceof Error ? error.message : "네트워크 요청에 실패했습니다.";
+  return error instanceof Error ? error.message : aiErrorText("studio.aiError.client.networkRequestFailed", "네트워크 요청에 실패했습니다.");
 }
 
 function createStudioAiAbortError(): Error {
@@ -206,7 +207,7 @@ function importOptionalStudioAiCodec<T>(importCodec: () => Promise<T>, signal?: 
     const abort = () => { cleanup(); reject(createStudioAiAbortError()); };
     const timer = globalThis.setTimeout(() => {
       cleanup();
-      const error = new Error("스토리 편집 도구를 불러오는 시간이 초과됐어요. 다시 시도해 주세요.");
+      const error = new Error(aiErrorText("studio.aiError.client.storyToolsLoadTimeout", "스토리 편집 도구를 불러오는 시간이 초과됐어요. 다시 시도해 주세요."));
       error.name = "TimeoutError";
       reject(error);
     }, 30_000);
@@ -251,19 +252,19 @@ async function parseHttpResponse(res: Response, signal?: AbortSignal): Promise<S
     // fetch가 헤더를 받은 뒤 응답 body를 읽는 도중 취소될 수도 있다. 이 경우에도 요청 단계에서
     // 취소된 것과 같은 network_error 계약을 유지한다(parse_error로 오인하지 않는다).
     if (signal?.aborted || isAbortError(error)) {
-      return { ok: false, code: "network_error", error: "요청이 취소되었습니다." };
+      return { ok: false, code: "network_error", error: aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다.") };
     }
-    return { ok: false, code: "parse_error", error: "응답 본문을 읽지 못했습니다." };
+    return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.responseBodyReadFailed", "응답 본문을 읽지 못했습니다.") };
   }
   if (!res.ok) {
-    const message = extractErrorMessage(text) ?? (res.statusText || "알 수 없는 오류");
-    return { ok: false, code: "http_error", error: `요청이 실패했습니다 (HTTP ${res.status}): ${message}` };
+    const message = extractErrorMessage(text) ?? (res.statusText || aiErrorText("studio.aiError.client.unknownError", "알 수 없는 오류"));
+    return { ok: false, code: "http_error", error: aiErrorText("studio.aiError.client.httpRequestFailed", { status: res.status, message }, "요청이 실패했습니다 (HTTP {status}): {message}") };
   }
   if (!text) return { ok: true, data: {} };
   try {
     return { ok: true, data: JSON.parse(text) };
   } catch {
-    return { ok: false, code: "parse_error", error: "응답을 해석하지 못했습니다(JSON 형식이 아닙니다)." };
+    return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.responseNotJson", "응답을 해석하지 못했습니다(JSON 형식이 아닙니다).") };
   }
 }
 
@@ -343,12 +344,12 @@ function unifiedCloudFailure(error: unknown): StudioAiResult<never> {
     return { ok: false, code: "http_error", error: error.message };
   }
   if (isAbortError(error)) {
-    return { ok: false, code: "network_error", error: "요청이 취소되었습니다." };
+    return { ok: false, code: "network_error", error: aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다.") };
   }
   return {
     ok: false,
     code: "network_error",
-    error: error instanceof Error ? error.message : "클라우드 AI 요청에 실패했습니다.",
+    error: error instanceof Error ? error.message : aiErrorText("studio.aiError.client.cloudRequestFailed", "클라우드 AI 요청에 실패했습니다."),
   };
 }
 
@@ -465,9 +466,9 @@ export async function generateBackgroundImage(
   opts: { size?: StudioAiImageSize; signal?: AbortSignal } = {}
 ): Promise<StudioAiResult<{ dataUrl: string; width: number; height: number; model: string }>> {
   const trimmed = prompt.trim();
-  if (!trimmed) return { ok: false, code: "invalid_input", error: "배경 프롬프트를 입력하세요." };
+  if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.backgroundPromptRequired", "배경 프롬프트를 입력하세요.") };
   if (!isStudioAiConfigured(settings)) {
-    return { ok: false, code: "not_configured", error: "설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요.") };
   }
   const size = opts.size ?? DEFAULT_STUDIO_AI_IMAGE_SIZE;
   const result = await postImageJson(settings, {
@@ -479,7 +480,7 @@ export async function generateBackgroundImage(
   }, opts.signal);
   if (!result.ok) return result;
   const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다." };
+  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
   const { width, height } = parseImageSize(size);
   return {
     ok: true,
@@ -505,16 +506,16 @@ export async function colorizeLineArt(
   prompt: string
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   const trimmed = prompt.trim();
-  if (!trimmed) return { ok: false, code: "invalid_input", error: "채색 지시 프롬프트를 입력하세요." };
-  if (!lineArtSrc) return { ok: false, code: "invalid_input", error: "채색할 이미지가 없습니다." };
+  if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.colorizePromptRequired", "채색 지시 프롬프트를 입력하세요.") };
+  if (!lineArtSrc) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.colorizeImageMissing", "채색할 이미지가 없습니다.") };
   if (!isStudioAiConfigured(settings)) {
-    return { ok: false, code: "not_configured", error: "설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요.") };
   }
   let blob: Blob;
   try {
     blob = dataUrlToBlob(lineArtSrc);
   } catch (e) {
-    return { ok: false, code: "invalid_input", error: e instanceof Error ? e.message : "이미지를 읽지 못했습니다." };
+    return { ok: false, code: "invalid_input", error: e instanceof Error ? e.message : aiErrorText("studio.aiError.client.imageReadFailed", "이미지를 읽지 못했습니다.") };
   }
   const form = new FormData();
   form.set("image", blob, "lineart.png");
@@ -525,7 +526,7 @@ export async function colorizeLineArt(
   const result = await postImageForm(settings, form);
   if (!result.ok) return result;
   const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다." };
+  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
   return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
 }
 
@@ -569,15 +570,15 @@ export async function convertImageToAnimeStyle(
   extraDirection = "",
   purpose: WebtoonStylePurposeId = "episode"
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
-  if (!imageSrc) return { ok: false, code: "invalid_input", error: "변환할 이미지가 없습니다." };
+  if (!imageSrc) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.animeImageMissing", "변환할 이미지가 없습니다.") };
   if (!isStudioAiConfigured(settings)) {
-    return { ok: false, code: "not_configured", error: "설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요.") };
   }
   let blob: Blob;
   try {
     blob = dataUrlToBlob(imageSrc);
   } catch (e) {
-    return { ok: false, code: "invalid_input", error: e instanceof Error ? e.message : "이미지를 읽지 못했습니다." };
+    return { ok: false, code: "invalid_input", error: e instanceof Error ? e.message : aiErrorText("studio.aiError.client.imageReadFailed", "이미지를 읽지 못했습니다.") };
   }
   const form = new FormData();
   form.set("image", blob, "source.png");
@@ -588,7 +589,7 @@ export async function convertImageToAnimeStyle(
   const result = await postImageForm(settings, form);
   if (!result.ok) return result;
   const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다." };
+  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
   return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
 }
 
@@ -636,16 +637,16 @@ export async function generateConsistentCharacterImage(
   opts: { signal?: AbortSignal } = {}
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   const trimmed = situationPrompt.trim();
-  if (!trimmed) return { ok: false, code: "invalid_input", error: "새로 그리고 싶은 상황을 입력하세요." };
-  if (!referenceImageSrc) return { ok: false, code: "invalid_input", error: "기준 캐릭터 이미지를 선택하세요." };
+  if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.characterSituationRequired", "새로 그리고 싶은 상황을 입력하세요.") };
+  if (!referenceImageSrc) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.characterReferenceRequired", "기준 캐릭터 이미지를 선택하세요.") };
   if (!isStudioAiConfigured(settings)) {
-    return { ok: false, code: "not_configured", error: "설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요.") };
   }
   let blob: Blob;
   try {
     blob = dataUrlToBlob(referenceImageSrc);
   } catch (e) {
-    return { ok: false, code: "invalid_input", error: e instanceof Error ? e.message : "기준 이미지를 읽지 못했습니다." };
+    return { ok: false, code: "invalid_input", error: e instanceof Error ? e.message : aiErrorText("studio.aiError.client.referenceImageReadFailed", "기준 이미지를 읽지 못했습니다.") };
   }
   const form = new FormData();
   form.set("image", blob, "character-reference.png");
@@ -656,7 +657,7 @@ export async function generateConsistentCharacterImage(
   const result = await postImageForm(settings, form, opts.signal);
   if (!result.ok) return result;
   const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다." };
+  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
   return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
 }
 
@@ -672,26 +673,14 @@ export async function generateImageWithRoleReferences(
   scenePrompt: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
-  if (typeof scenePrompt !== "string") {
-    return {
-      ok: false,
-      code: "invalid_input",
-      error: "새로 그리고 싶은 장면을 입력하세요.",
-    };
-  }
+  if (typeof scenePrompt !== "string") return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.scenePromptRequired", "새로 그리고 싶은 장면을 입력하세요.") };
   const trimmedScenePrompt = scenePrompt.trim();
-  if (!trimmedScenePrompt) {
-    return {
-      ok: false,
-      code: "invalid_input",
-      error: "새로 그리고 싶은 장면을 입력하세요.",
-    };
-  }
+  if (!trimmedScenePrompt) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.scenePromptRequired", "새로 그리고 싶은 장면을 입력하세요.") };
   if (!Array.isArray(references)) {
     return {
       ok: false,
       code: "invalid_input",
-      error: "기준 이미지 목록이 올바르지 않습니다.",
+      error: aiErrorText("studio.aiError.client.referenceListInvalid", "기준 이미지 목록이 올바르지 않습니다."),
     };
   }
   let preparedResult: StudioAiResult<
@@ -703,7 +692,7 @@ export async function generateImageWithRoleReferences(
     return {
       ok: false,
       code: "invalid_input",
-      error: "기준 이미지 정보를 안전하게 읽지 못했습니다.",
+      error: aiErrorText("studio.aiError.client.referenceInfoReadFailed", "기준 이미지 정보를 안전하게 읽지 못했습니다."),
     };
   }
   if (!preparedResult.ok) return preparedResult;
@@ -711,14 +700,14 @@ export async function generateImageWithRoleReferences(
     return {
       ok: false,
       code: "not_configured",
-      error: "설정에서 API 키를 등록하세요.",
+      error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요."),
     };
   }
   if (opts.signal?.aborted) {
     return {
       ok: false,
       code: "network_error",
-      error: "요청이 취소되었습니다.",
+      error: aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다."),
     };
   }
 
@@ -773,7 +762,7 @@ export async function generateImageWithRoleReferences(
     return {
       ok: false,
       code: "invalid_input",
-      error: `장면 프롬프트와 기준 이미지 지시문의 합계는 ${formatNumber(STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxPromptCharacters)}자를 넘을 수 없습니다.`,
+      error: aiErrorText("studio.aiError.client.promptAndReferenceTooLong", { count: formatNumber(STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxPromptCharacters) }, "장면 프롬프트와 기준 이미지 지시문의 합계는 {count}자를 넘을 수 없습니다."),
     };
   }
 
@@ -794,7 +783,7 @@ export async function generateImageWithRoleReferences(
       return {
         ok: false,
         code: "network_error",
-        error: "요청이 취소되었습니다.",
+        error: aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다."),
       };
     }
     const entry = preparedByReferenceId.get(binding.referenceId);
@@ -802,7 +791,7 @@ export async function generateImageWithRoleReferences(
       return {
         ok: false,
         code: "invalid_input",
-        error: "기준 이미지 binding을 해석하지 못했습니다.",
+        error: aiErrorText("studio.aiError.client.referenceBindingFailed", "기준 이미지 binding을 해석하지 못했습니다."),
       };
     }
     const metadata = inspectStudioAiReferenceImageDataUrl(entry.dataUrl);
@@ -815,7 +804,7 @@ export async function generateImageWithRoleReferences(
       return {
         ok: false,
         code: "invalid_input",
-        error: `기준 이미지의 전체 디코딩 크기는 ${formatNumber(STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxTotalDecodedBytes)}바이트를 넘을 수 없습니다.`,
+        error: aiErrorText("studio.aiError.client.referenceTotalSizeExceeded", { count: formatNumber(STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS.maxTotalDecodedBytes) }, "기준 이미지의 전체 디코딩 크기는 {count}바이트를 넘을 수 없습니다."),
       };
     }
     inspected.push({
@@ -834,7 +823,7 @@ export async function generateImageWithRoleReferences(
       return {
         ok: false,
         code: "network_error",
-        error: "요청이 취소되었습니다.",
+        error: aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다."),
       };
     }
 
@@ -848,7 +837,7 @@ export async function generateImageWithRoleReferences(
         return {
           ok: false,
           code: "invalid_input",
-          error: "기준 이미지의 형식 또는 디코딩 크기가 선언과 일치하지 않습니다.",
+          error: aiErrorText("studio.aiError.client.referenceFormatOrSizeMismatch", "기준 이미지의 형식 또는 디코딩 크기가 선언과 일치하지 않습니다."),
         };
       }
       if (
@@ -860,25 +849,20 @@ export async function generateImageWithRoleReferences(
         return {
           ok: false,
           code: "invalid_input",
-          error: "기준 이미지의 실제 파일 형식이 MIME 선언과 일치하지 않습니다.",
+          error: aiErrorText("studio.aiError.client.referenceMimeMismatch", "기준 이미지의 실제 파일 형식이 MIME 선언과 일치하지 않습니다."),
         };
       }
       if (opts.signal?.aborted) {
         return {
           ok: false,
           code: "network_error",
-          error: "요청이 취소되었습니다.",
+          error: aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다."),
         };
       }
     } catch (error) {
       return {
-        ok: false,
-        code: opts.signal?.aborted ? "network_error" : "invalid_input",
-        error: opts.signal?.aborted
-          ? "요청이 취소되었습니다."
-          : error instanceof Error
-            ? error.message
-            : "기준 이미지를 읽지 못했습니다.",
+        ok: false, code: opts.signal?.aborted ? "network_error" : "invalid_input",
+        error: opts.signal?.aborted ? aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다.") : error instanceof Error ? error.message : aiErrorText("studio.aiError.client.referenceImageReadFailed", "기준 이미지를 읽지 못했습니다."),
       };
     }
     admitted.push({
@@ -891,7 +875,7 @@ export async function generateImageWithRoleReferences(
     return {
       ok: false,
       code: "network_error",
-      error: "요청이 취소되었습니다.",
+      error: aiErrorText("studio.aiError.client.requestCancelled", "요청이 취소되었습니다."),
     };
   }
   const form = new FormData();
@@ -909,7 +893,7 @@ export async function generateImageWithRoleReferences(
     return {
       ok: false,
       code: "parse_error",
-      error: "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.",
+      error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다."),
     };
   }
   return {
@@ -938,9 +922,9 @@ export async function suggestSceneComposition(
   answerTuning?: AnswerTuning
 ): Promise<StudioAiResult<StudioTextAiData<{ suggestion: string }>>> {
   const trimmed = sceneText.trim();
-  if (!trimmed) return { ok: false, code: "invalid_input", error: "장면 시나리오/대사를 입력하세요." };
+  if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.sceneTextRequired", "장면 시나리오/대사를 입력하세요.") };
   if (!isStudioTextAiConfigured(settings, transport)) {
-    return { ok: false, code: "not_configured", error: "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.serverLoginOrApiKeyRequired", "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요.") };
   }
   const result = await postTextCompletion(settings, {
     task: "composition",
@@ -954,7 +938,7 @@ export async function suggestSceneComposition(
   }, transport);
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
-  if (!content) return { ok: false, code: "parse_error", error: "응답에서 제안 텍스트를 찾을 수 없습니다." };
+  if (!content) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.suggestionTextMissing", "응답에서 제안 텍스트를 찾을 수 없습니다.") };
   return {
     ok: true,
     data: {
@@ -986,9 +970,9 @@ export async function generateScenarioScenes(
     import("../studio-scenario-scenes")
 ): Promise<StudioAiResult<StudioTextAiData<ScenarioScenesPlan>>> {
   const trimmed = storyText.trim();
-  if (!trimmed) return { ok: false, code: "invalid_input", error: "스토리 아이디어를 입력하세요." };
+  if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.storyIdeaRequired", "스토리 아이디어를 입력하세요.") };
   if (!isStudioTextAiConfigured(settings, transport)) {
-    return { ok: false, code: "not_configured", error: "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.serverLoginOrApiKeyRequired", "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요.") };
   }
   const signal = opts.signal ?? transport.signal;
   let scenarioCodec: typeof import("../studio-scenario-scenes");
@@ -1009,7 +993,7 @@ export async function generateScenarioScenes(
   }, { ...transport, signal });
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
-  if (!content) return { ok: false, code: "parse_error", error: "응답에서 장면 구성 텍스트를 찾을 수 없습니다." };
+  if (!content) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.scenarioTextMissing", "응답에서 장면 구성 텍스트를 찾을 수 없습니다.") };
   const parsed = parseScenarioScenesResponse(content);
   if (!parsed.ok) return { ok: false, code: "parse_error", error: parsed.error };
   return {
@@ -1042,7 +1026,7 @@ export async function generateStudioWriterRoomDraft(
     return {
       ok: false,
       code: "not_configured",
-      error: "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요.",
+      error: aiErrorText("studio.aiError.client.serverLoginOrApiKeyRequired", "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요."),
     };
   }
   const signal = input.signal ?? transport.signal;
@@ -1065,7 +1049,7 @@ export async function generateStudioWriterRoomDraft(
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
   if (!content) {
-    return { ok: false, code: "parse_error", error: "응답에서 Writer Room 초안을 찾을 수 없습니다." };
+    return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.writerRoomDraftMissing", "응답에서 Writer Room 초안을 찾을 수 없습니다.") };
   }
   const parsed = parseStudioWriterRoomAiDraft(content, input.stage);
   if (!parsed.ok) return { ok: false, code: "parse_error", error: parsed.error };
@@ -1092,9 +1076,9 @@ export async function translateDialogueBatch(
   glossary: string,
   transport: StudioTextAiTransport = DEFAULT_TEXT_AI_TRANSPORT
 ): Promise<StudioAiResult<StudioTextAiData<{ translations: { id: string; text: string }[] }>>> {
-  if (items.length === 0) return { ok: false, code: "invalid_input", error: "번역할 대사가 없습니다." };
+  if (items.length === 0) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.dialogueEmpty", "번역할 대사가 없습니다.") };
   if (!isStudioTextAiConfigured(settings, transport)) {
-    return { ok: false, code: "not_configured", error: "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.serverLoginOrApiKeyRequired", "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요.") };
   }
   const { system, user } = buildTranslationPrompt(items, targetLocaleLabel, glossary);
   const result = await postTextCompletion(settings, {
@@ -1107,7 +1091,7 @@ export async function translateDialogueBatch(
   }, transport);
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
-  if (!content) return { ok: false, code: "parse_error", error: "응답에서 번역 텍스트를 찾을 수 없습니다." };
+  if (!content) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.translationTextMissing", "응답에서 번역 텍스트를 찾을 수 없습니다.") };
   const parsed = parseTranslationResponse(content, items.map((it) => it.id));
   if (!parsed.ok) return { ok: false, code: "parse_error", error: parsed.error };
   return {
@@ -1139,9 +1123,9 @@ export async function suggestDialogueLines(
   transport: StudioTextAiTransport = DEFAULT_TEXT_AI_TRANSPORT
 ): Promise<StudioAiResult<StudioTextAiData<{ candidates: DialogueSuggestionCandidate[] }>>> {
   const trimmed = situationText.trim();
-  if (!trimmed) return { ok: false, code: "invalid_input", error: "장면 상황을 입력하세요." };
+  if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.situationRequired", "장면 상황을 입력하세요.") };
   if (!isStudioTextAiConfigured(settings, transport)) {
-    return { ok: false, code: "not_configured", error: "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.serverLoginOrApiKeyRequired", "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요.") };
   }
   const { system, user } = buildDialogueSuggestPrompt(trimmed, opts.existingContext ?? "");
   const result = await postTextCompletion(settings, {
@@ -1157,7 +1141,7 @@ export async function suggestDialogueLines(
   }, transport);
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
-  if (!content) return { ok: false, code: "parse_error", error: "응답에서 대사 제안을 찾을 수 없습니다." };
+  if (!content) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.dialogueSuggestionMissing", "응답에서 대사 제안을 찾을 수 없습니다.") };
   const parsed = parseDialogueSuggestResponse(content);
   if (!parsed.ok) return { ok: false, code: "parse_error", error: parsed.error };
   return {
@@ -1189,9 +1173,9 @@ export async function suggestColorPalette(
   opts: { answerTuning?: AnswerTuning } = {}
 ): Promise<StudioAiResult<StudioTextAiData<PaletteSuggestion>>> {
   const trimmed = moodText.trim();
-  if (!trimmed) return { ok: false, code: "invalid_input", error: "장르/무드를 입력하세요." };
+  if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.moodRequired", "장르/무드를 입력하세요.") };
   if (!isStudioTextAiConfigured(settings, transport)) {
-    return { ok: false, code: "not_configured", error: "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.serverLoginOrApiKeyRequired", "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요.") };
   }
   let paletteCodec: typeof import("../studio-palette-suggest");
   try {
@@ -1214,7 +1198,7 @@ export async function suggestColorPalette(
   }, transport);
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
-  if (!content) return { ok: false, code: "parse_error", error: "응답에서 팔레트 제안을 찾을 수 없습니다." };
+  if (!content) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.paletteSuggestionMissing", "응답에서 팔레트 제안을 찾을 수 없습니다.") };
   const parsed = parsePaletteSuggestResponse(content);
   if (!parsed.ok) return { ok: false, code: "parse_error", error: parsed.error };
   return {
@@ -1236,7 +1220,7 @@ export async function testAiConnection(
   settings: StudioAiSettings
 ): Promise<StudioAiResult<{ latencyMs: number }>> {
   if (!isStudioAiConfigured(settings)) {
-    return { ok: false, code: "not_configured", error: "설정에서 API 키를 등록하세요." };
+    return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요.") };
   }
   const startedAt = Date.now();
   const body = {

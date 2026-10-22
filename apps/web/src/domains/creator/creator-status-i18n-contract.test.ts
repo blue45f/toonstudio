@@ -26,6 +26,17 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * 표시 정본은 productionHub.status.* (app/productionHub 사전)·studio.aiStatus.*
  * (ai/studio-ai-status-i18n 등록)·studio.publish.status.* (publish/publish-status-i18n
  * 등록)·studio.aiToolPopover.* 키와 useBilingual 쌍 (studio-status-i18n-tranche2 계약과 짝).
+ * 4차 등록 (A4 잔여 배치 1, 2026-10-22): creator 루트 패널 7파일.
+ * 표시 정본은 studio.panelStatus.* (studio-panel-status-i18n 등록)·
+ * studio.customFonts.* (public/i18n/studio/customFonts 사전) 키
+ * (studio-status-i18n-batch1 계약과 짝).
+ * 5차 등록 (A4 잔여 배치 2, 2026-10-22): StudioCuttoonEditorHost 1파일.
+ * 표시 정본은 studio.hostStatus.* (studio-host-status-i18n 등록) 키
+ * (studio-status-i18n-batch2 계약과 짝).
+ * 6차 등록 (A4 잔여 배치 3, 2026-10-22): VRM 패널 3파일·bg3d 패널 6파일.
+ * 표시 정본은 studio.vrmPanelStatus.* (studio-vrm-panel-status-i18n 등록)·
+ * studio.bg3dPanelStatus.* (studio-bg3d-panel-status-i18n 등록) 키
+ * (studio-status-i18n-batch3 계약과 짝).
  * 파일 크기 래칫 기준선 파일 3개(StudioInspectorImageToolsSection·
  * StudioBg3dEditorSidebarExtras·StudioLift3dPage)는 훅 대신
  * StudioPanelLoading의 labelKey/labelFallback 소품으로 키를 경유한다.
@@ -98,6 +109,23 @@ const GUARDED_FILES = [
   "ai/StudioToonProductionBoard.tsx",
   "ai/StudioAiProductionLaunchpad.tsx",
   "ai/StudioAiToolPopoverBody.tsx",
+  "StudioFileControlCenter.tsx",
+  "StudioSharedWorksPanel.tsx",
+  "StudioCommunityMarketplaceLifecycle.tsx",
+  "CreatorCommunityPublicationPanel.tsx",
+  "StudioSceneSnapshotPanel.tsx",
+  "StudioSelectionWorkbenchPanel.tsx",
+  "StudioCustomFontsPanel.tsx",
+  "StudioCuttoonEditorHost.tsx",
+  "vrm/StudioVrmPoseMaterialPanel.tsx",
+  "vrm/StudioVrmAvatarReferenceRecommendationsPanel.tsx",
+  "vrm/StudioVrmCharacterLibraryPanel.tsx",
+  "bg3d/StudioBg3dImmersivePanel.tsx",
+  "bg3d/StudioReferenceRebuildPresets.tsx",
+  "bg3d/StudioBg3dSharedStagePanel.tsx",
+  "bg3d/StudioBg3dAssetLibraryPanel.tsx",
+  "bg3d/StudioBg3dMultiPassExporterPanelContent.tsx",
+  "bg3d/StudioBg3dBundleThemePackPanel.tsx",
 ] as const;
 
 function readGuarded(file: (typeof GUARDED_FILES)[number]): string {

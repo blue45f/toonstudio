@@ -5,6 +5,7 @@ import {
   userAiAutomaticExternalConnectionsForCapability,
 } from "@/shared/ai/user-ai-store";
 import { userAiRoutingSettings } from "@/shared/ai/user-ai-types";
+import { aiErrorText } from "./ai/studio-ai-error-i18n";
 
 export type StudioServerAiTask = "assistant" | "composition" | "scenario" | "translation" | "dialogue" | "palette";
 export type StudioFreePoolProvider = "gemini" | "qwen" | "groq" | "sambanova" | "zai" | "mistral" | "cloudflare" | "openrouter" | "siliconflow" | "deepseek";
@@ -313,11 +314,11 @@ const PERSONAL_FALLBACK_CODES = new Set([
 ]);
 
 function loginRequiredMessage(): string {
-  return "로그인하면 자동 무료 AI를 바로 사용할 수 있어요. 현재 입력은 그대로 유지됩니다. 로그인하지 않으려면 통합 AI 설정에서 개인 무료 API 키를 연결하세요.";
+  return aiErrorText("studio.aiError.server.loginRequired", "로그인하면 자동 무료 AI를 바로 사용할 수 있어요. 현재 입력은 그대로 유지됩니다. 로그인하지 않으려면 통합 AI 설정에서 개인 무료 API 키를 연결하세요.");
 }
 
 function exhaustedMessage(): string {
-  return "현재 사용할 수 있는 자동 무료 AI와 개인 무료 키의 한도가 모두 소진됐어요. 통합 AI 설정에서 다른 무료 경로를 연결하거나 한도가 갱신된 뒤 다시 시도해 주세요.";
+  return aiErrorText("studio.aiError.server.poolExhausted", "현재 사용할 수 있는 자동 무료 AI와 개인 무료 키의 한도가 모두 소진됐어요. 통합 AI 설정에서 다른 무료 경로를 연결하거나 한도가 갱신된 뒤 다시 시도해 주세요.");
 }
 
 async function completeWithPersonalFreeAi(
@@ -364,7 +365,7 @@ export async function completeStudioServerText(
 ): Promise<StudioServerAiResult<StudioServerAiCompletion>> {
   const operationId = canonicalStudioServerAiOperationId(input.operationId);
   if (!operationId) {
-    return { ok: false, code: "invalid_input", error: "AI 요청 식별자가 올바르지 않아요." };
+    return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.server.invalidOperationId", "AI 요청 식별자가 올바르지 않아요.") };
   }
   const { operationId: _operationId, ...requestInput } = input;
   const configuration = getUserAiSnapshot().configuration;
@@ -396,7 +397,7 @@ export async function completeStudioServerText(
     const data = parseStudioServerAiCompletion(raw);
     return data
       ? { ok: true, data }
-      : { ok: false, code: "parse_error", error: "자동 무료 AI 응답 형식을 확인하지 못했어요." };
+      : { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.server.responseFormatUnconfirmed", "자동 무료 AI 응답 형식을 확인하지 못했어요.") };
   } catch (error) {
     const code = httpErrorCode(error);
     if (code === "FREE_AI_LOGIN_REQUIRED") {
@@ -415,13 +416,13 @@ export async function completeStudioServerText(
       return {
         ok: false,
         code: "network_error",
-        error: "AI 요청이 취소되었습니다. 같은 요청을 다른 공급자로 자동 재전송하지 않았습니다.",
+        error: aiErrorText("studio.aiError.server.requestCancelledNoRetry", "AI 요청이 취소되었습니다. 같은 요청을 다른 공급자로 자동 재전송하지 않았습니다."),
       };
     }
     return {
       ok: false,
       code: code === "FREE_AI_POOL_EXHAUSTED" ? "free_exhausted" : "http_error",
-      error: await getApiErrorMessage(error, "자동 무료 AI 요청에 실패했어요."),
+      error: await getApiErrorMessage(error, aiErrorText("studio.aiError.server.requestFailed", "자동 무료 AI 요청에 실패했어요.")),
     };
   }
 }

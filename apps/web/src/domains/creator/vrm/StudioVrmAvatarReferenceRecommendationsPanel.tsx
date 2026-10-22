@@ -33,6 +33,12 @@ import {
   StudioVrmAvatarForgePreview,
 } from "./StudioVrmAvatarForgePreview";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-vrm-panel-status-i18n";
+
+type StatusT = ReturnType<typeof useT>;
+
 /**
  * THESIS: A reference photo narrows the preset shelf but never edits the avatar by itself.
  * OWN-WORLD: Inherit Avatar Forge's warm-ink panel, persimmon action, hairline dividers and compact controls.
@@ -77,18 +83,18 @@ function safeCatalogue(
   }
 }
 
-function progressLabel(progress: StudioVrmAvatarReferenceProgress | null): string {
-  if (!progress) return "이미지 준비 중";
-  if (progress.stage === "admission" || progress.stage === "reading") return "파일 확인 중";
+function progressLabel(progress: StudioVrmAvatarReferenceProgress | null, t: StatusT): string {
+  if (!progress) return t("studio.vrmPanelStatus.avatarRecommendations.progressPreparing", "이미지 준비 중");
+  if (progress.stage === "admission" || progress.stage === "reading") return t("studio.vrmPanelStatus.avatarRecommendations.progressCheckingFile", "파일 확인 중");
   if (
     progress.stage === "inspecting"
     || progress.stage === "decoding"
     || progress.stage === "transforming"
-  ) return "안전한 크기로 전처리 중";
-  if (progress.stage === "model") return "검증된 MediaPipe 모델 준비 중";
-  if (progress.stage === "embedding") return "이미지 특징 추출 중";
-  if (progress.stage === "ranking") return "프리셋 유사도 비교 중";
-  return "추천 준비 완료";
+  ) return t("studio.vrmPanelStatus.avatarRecommendations.progressPreprocessing", "안전한 크기로 전처리 중");
+  if (progress.stage === "model") return t("studio.vrmPanelStatus.avatarRecommendations.progressModelPreparing", "검증된 MediaPipe 모델 준비 중");
+  if (progress.stage === "embedding") return t("studio.vrmPanelStatus.avatarRecommendations.progressEmbedding", "이미지 특징 추출 중");
+  if (progress.stage === "ranking") return t("studio.vrmPanelStatus.avatarRecommendations.progressRanking", "프리셋 유사도 비교 중");
+  return t("studio.vrmPanelStatus.avatarRecommendations.progressReady", "추천 준비 완료");
 }
 
 function selectionFor(
@@ -116,6 +122,7 @@ export function StudioVrmAvatarReferenceRecommendationsPanel({
   onCatalogueRetry,
   analyzeImage = analyzeStudioVrmAvatarReferenceImage,
 }: StudioVrmAvatarReferenceRecommendationsPanelProps) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const mediaPipeConsentDescriptionId = useId();
   const abortRef = useRef<AbortController | null>(null);
@@ -296,7 +303,7 @@ export function StudioVrmAvatarReferenceRecommendationsPanel({
               aria-hidden
             />
             <div>
-              <p className="font-bold text-fg">검증된 추천 기준을 불러오는 중</p>
+              <p className="font-bold text-fg">{t("studio.vrmPanelStatus.avatarRecommendations.catalogueLoading", "검증된 추천 기준을 불러오는 중")}</p>
               <p className="mt-1 text-fg-3">Forge를 사용할 때만 작은 기준 파일을 확인합니다.</p>
             </div>
           </div>
@@ -306,7 +313,7 @@ export function StudioVrmAvatarReferenceRecommendationsPanel({
             <div className="min-w-0 flex-1">
               <p>
                 {catalogueUnavailableReason
-                  ?? "검증된 프리셋 추천 기준을 사용할 수 없습니다. 스타일 탭에서 프리셋을 직접 선택해 주세요."}
+                  ?? t("studio.vrmPanelStatus.avatarRecommendations.catalogueUnavailable", "검증된 프리셋 추천 기준을 사용할 수 없습니다. 스타일 탭에서 프리셋을 직접 선택해 주세요.")}
               </p>
               {onCatalogueRetry ? (
                 <button
@@ -316,7 +323,7 @@ export function StudioVrmAvatarReferenceRecommendationsPanel({
                   className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-[0.64rem] font-bold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40"
                 >
                   <RotateCcw size={13} aria-hidden />
-                  추천 기준 다시 불러오기
+                  {t("studio.vrmPanelStatus.avatarRecommendations.catalogueRetry", "추천 기준 다시 불러오기")}
                 </button>
               ) : null}
             </div>
@@ -324,7 +331,7 @@ export function StudioVrmAvatarReferenceRecommendationsPanel({
         ) : !runtimeSupported ? (
           <div role="status" className="flex items-start gap-2 rounded-xl border border-line bg-panel/55 p-3 text-[0.65rem] leading-relaxed text-fg-2">
             <TriangleAlert size={15} className="mt-0.5 shrink-0 text-warn" aria-hidden />
-            <p>이 브라우저는 전용 이미지 Worker와 OffscreenCanvas 전처리를 지원하지 않습니다.</p>
+            <p>{t("studio.vrmPanelStatus.avatarRecommendations.runtimeUnsupported", "이 브라우저는 전용 이미지 Worker와 OffscreenCanvas 전처리를 지원하지 않습니다.")}</p>
           </div>
         ) : (
           <>
@@ -380,7 +387,7 @@ export function StudioVrmAvatarReferenceRecommendationsPanel({
             {busy ? (
               <div role="status" aria-live="polite" className="mt-3">
                 <div className="flex items-center justify-between gap-2 text-[0.62rem] text-fg-3">
-                  <span>{progressLabel(progress)}</span>
+                  <span>{progressLabel(progress, t)}</span>
                   <span className="tabular-nums">{Math.round((progress?.progress ?? 0) * 100)}%</span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-raised">
