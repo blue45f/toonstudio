@@ -94,9 +94,13 @@ describe("Studio BG3D control-field ownership boundary", () => {
     // 2026-08-21 intentional change: the R3F mesh nodes moved from StudioBackground3D.tsx into
     // StudioBg3dSceneNodes.tsx (editor split); both still sit behind the one lazy editor chunk.
     const sceneNodesSource = moduleSource("./StudioBg3dSceneNodes.tsx");
+    // 래칫 분해로 BgCustomModelMesh 본문은 StudioBg3dCustomModelMesh.tsx로 한 번 더 옮겨 갔고,
+    // SceneNodes는 같은 이름으로 재노출해 노드 표면의 소유자로 남는다.
+    const customModelMeshSource = moduleSource("./StudioBg3dCustomModelMesh.tsx");
 
     expect(moduleSource("./StudioBg3dCaptureBridge.tsx")).toContain("function CaptureBridge(");
-    expect(sceneNodesSource).toContain("function BgCustomModelMesh(");
+    expect(customModelMeshSource).toContain("function BgCustomModelMesh(");
+    expect(sceneNodesSource).toContain("export { BgCustomModelMesh,");
     expect(sceneNodesSource).toContain("function BgCustomModelInstanceBatch(");
   });
 });

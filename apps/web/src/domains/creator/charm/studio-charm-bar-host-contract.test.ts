@@ -44,6 +44,7 @@ const CHARM_INSERT_COMMANDS: readonly { readonly name: string; readonly writes: 
  * `studio-charm-host-writes.test-support.ts` 에 있다. 목록에 없는 새 호출이 생기면 시험이 실패한다:
  * 그 호출이 문서를 바꾸는지(되돌리기 한 단계가 유지되는지) 확인한 뒤 여기에 더한다.
  * `reject`·`resolve`·`String` 은 파일을 읽는 Promise 콜백 안의 호출이다.
+ * `t` 는 오류 문구를 만드는 번역 함수다(2026-10-22 검토: 문서·히스토리를 바꾸지 않는 순수 문자열 조회).
  */
 const REVIEWED_CALLEES: Readonly<Record<string, readonly string[]>> = {
   addRenderedImage: ["setError", "createCanvasImageElement", "uid", "nextAssetInsertionPlacement", "addEl"],
@@ -60,6 +61,7 @@ const REVIEWED_CALLEES: Readonly<Record<string, readonly string[]>> = {
     "reject",
     "resolve",
     "String",
+    "t",
     "canApplyStudioMutation",
     "createCanvasImageElement",
     "uid",

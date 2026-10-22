@@ -72,11 +72,15 @@ describe("Studio rich-hint consumer mappings", () => {
 
   it("opens the bubble library from menus while preserving fit-to-text on selection", () => {
     const menubar = readStudioSource("StudioMenubarContent.tsx");
+    // 래칫 분해로 힌트 표가 StudioToolBeltContent.tsx에서 StudioToolBeltHints.ts로 옮겨 갔다.
+    // 힌트 정의는 새 파일에서, 그 표를 툴벨트가 소비하는 배선은 본문에서 함께 확인한다.
+    const toolBeltHints = readStudioSource("StudioToolBeltHints.ts");
     const toolBelt = readStudioSource("StudioToolBeltContent.tsx");
 
     expectNearby(menubar, "bubbles: {", 'preview: "bubble"');
     expectNearby(menubar, "bubbles: {", 'previewVariant: "open-library"');
-    expectNearby(toolBelt, "bubble: studioToolHintFromLabel(", '"bubble",\n    "open-library"');
+    expectNearby(toolBeltHints, "bubble: studioToolHintFromLabel(", '"bubble",\n    "open-library"');
+    expect(toolBelt).toContain("TOOL_BELT_HINTS");
   });
 
   it("uses purpose-built previews for the drawing dock instead of generic ink and rotation", () => {

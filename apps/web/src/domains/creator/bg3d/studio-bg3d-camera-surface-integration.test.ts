@@ -11,6 +11,8 @@ const source = [
   readStudioBg3dEditorSource(),
   ...[
     "./StudioBg3dSceneNodes.tsx",
+    // 래칫 분해로 BgCustomModelMesh 가 옮겨 간 파일 — 렌더 경로 3곳의 표면 클릭 가드를 모두 센다.
+    "./StudioBg3dCustomModelMesh.tsx",
     "./StudioBg3dShapesPanel.tsx",
     "./StudioBg3dViewPanelContent.tsx",
     "./StudioBg3dLtPanel.tsx",

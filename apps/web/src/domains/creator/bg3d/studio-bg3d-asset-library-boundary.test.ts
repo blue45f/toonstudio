@@ -48,6 +48,9 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "lucide-react",
       "react",
       "@/shared/lib/i18n-bilingual-copy",
+      // 상태 문구 번역 이관(A4 배치 3): 문자열 사전만 등록하는 렌더러 없는 모듈 (2026-10-22 검토).
+      "@/shared/lib/i18n",
+      "../studio-bg3d-panel-status-i18n",
       "./StudioBg3dAssetAiUseFields",
       "./StudioBg3dAssetCardRightsActions",
       "./StudioBg3dAssetRightsFilterBar",
@@ -99,7 +102,13 @@ describe("Studio BG3D asset-library ownership boundary", () => {
     // meshes is constructed by a renderer-free client module (studio-host-architecture-ratchet
     // keeps `new Worker(` out of creator components).
     const presets = moduleImports("./StudioReferenceRebuildPresets.tsx");
-    expect(presets.valueImports).toEqual(["react", "./studio-reference-rebuild-worker-client"]);
+    expect(presets.valueImports).toEqual([
+      "react",
+      "./studio-reference-rebuild-worker-client",
+      // 상태 문구 번역 이관(A4 배치 3): 문자열 사전만 등록하는 렌더러 없는 모듈 (2026-10-22 검토).
+      "@/shared/lib/i18n",
+      "../studio-bg3d-panel-status-i18n",
+    ]);
     expect(presets.dynamicImports).toEqual([]);
     const workerClient = moduleImports("./studio-reference-rebuild-worker-client.ts");
     expect(workerClient.valueImports).toEqual([]);

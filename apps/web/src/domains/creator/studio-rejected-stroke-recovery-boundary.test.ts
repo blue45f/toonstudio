@@ -9,10 +9,13 @@ const liveSurfaceStart = readFileSync(
   new URL("./studio-cuttoon-editor/studio-live-surface-start.ts", import.meta.url),
   "utf8",
 );
-const pointersFinish = readFileSync(
-  new URL("./studio-cuttoon-editor/studio-cuttoon-stage-pointers-finish.ts", import.meta.url),
-  "utf8",
-);
+// 입구 파일 + 래칫 분해로 본문이 옮겨 간 핸들러를 함께 검사한다(검사 범위는 줄지 않는다).
+const pointersFinish = [
+  "./studio-cuttoon-editor/studio-cuttoon-stage-pointers-finish.ts",
+  "./studio-cuttoon-editor/studio-cuttoon-stage-pointers-finish-handler.ts",
+]
+  .map((file) => readFileSync(new URL(file, import.meta.url), "utf8"))
+  .join("\n");
 const recoveryHost = readFileSync(
   new URL("./studio-rejected-stroke-recovery-host.ts", import.meta.url),
   "utf8",

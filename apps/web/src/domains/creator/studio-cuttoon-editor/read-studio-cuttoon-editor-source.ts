@@ -14,12 +14,17 @@ export const STUDIO_CUTTOON_STAGE_POINTER_FILES = [
   "./studio-cuttoon-stage-pointers-down-draw.ts",
   "./studio-cuttoon-stage-pointers-snap.ts",
   "./studio-cuttoon-stage-pointers-move.ts",
+  // 래칫 분해로 본문이 옮겨 간 핸들러 — 입구 파일 바로 뒤에 두어 원래 함수 순서를 유지한다.
+  "./studio-cuttoon-stage-pointers-move-handler.ts",
   "./studio-cuttoon-stage-pointers-fixed-rate.ts",
   "./studio-cuttoon-stage-pointers-freehand.ts",
   "./studio-cuttoon-stage-pointers-batch.ts",
   "./studio-cuttoon-stage-pointers-publish.ts",
   "./studio-cuttoon-stage-pointers-queue.ts",
   "./studio-cuttoon-stage-pointers-release.ts",
+  // 래칫 분해로 finishDrawingPointer 본문이 옮겨 간 핸들러 — 원래 순서(finishDrawingPointer →
+  // onStagePointerCancel)를 지키려고 취소 핸들러가 남은 입구 파일보다 앞에 둔다.
+  "./studio-cuttoon-stage-pointers-finish-handler.ts",
   "./studio-cuttoon-stage-pointers-finish.ts",
   "./studio-cuttoon-stage-pointers-up.ts",
   "./studio-cuttoon-stage-pointers-cursors.ts",

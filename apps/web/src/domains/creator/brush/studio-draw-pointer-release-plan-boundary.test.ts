@@ -78,9 +78,14 @@ describe("studio draw pointer-release planning ownership boundary", () => {
 
   it("leaves release capture, CRDT sealing, surfaces, commit recovery, and cleanup in StudioPage", () => {
     const page = moduleFacts("../StudioCuttoonEditorHost.tsx").source;
-    const start = page.indexOf("function finishDrawingPointer");
-    const end = page.indexOf("function onStagePointerCancel", start);
-    const finish = page.slice(start, end);
+    // 래칫 분해로 finishDrawingPointer 본문이 핸들러 파일로 옮겨 갔다. 합성 소스에서 취소 핸들러까지
+    // 자르면 입구 파일의 바인딩 코드까지 함께 세어 크기 상한이 왜곡되므로 핸들러 파일 끝까지만 본다.
+    const finishHandlerSource = readFileSync(
+      new URL("../studio-cuttoon-editor/studio-cuttoon-stage-pointers-finish-handler.ts", import.meta.url),
+      "utf8",
+    );
+    const start = finishHandlerSource.indexOf("function finishDrawingPointer");
+    const finish = finishHandlerSource.slice(start);
     const sealStart = page.indexOf("function sealStudioDrawReleaseInput");
     const sealEnd = page.indexOf("function finishStudioSpecialistStroke", sealStart);
     const sealInput = page.slice(sealStart, sealEnd);
