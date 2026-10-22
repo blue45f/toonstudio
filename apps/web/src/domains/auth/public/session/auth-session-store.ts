@@ -10,7 +10,7 @@ import {
 } from "./auth-session-state";
 import { normalizeClientSession } from "./auth-session-storage";
 
-import { api, apiPath } from "@/platform/api";
+import { api, apiPath, WRITE_TIMEOUT_MS } from "@/platform/api";
 
 export {
   SESSION_KEY,
@@ -313,31 +313,45 @@ export async function signIn(provider?: string, options?: Record<string, unknown
   }
 
   // 로그인 실패(비-2xx)도 정상 흐름으로 { ok:false, error } 를 돌려주므로 ky 예외를 끄고 Response 를 직접 다룬다.
-  const response = await api.raw(apiPath("/auth/login"), {
-    method: "POST",
-    throwHttpErrors: false,
-    json: { email: options?.email, password: options?.password },
-  });
-  const payload = (await response.json().catch(() => null)) as
-    | { user?: NonNullable<Session>["user"]; error?: string }
-    | null;
+  // 공유 클라이언트는 timeout: false 가 기본이라 오리진이 응답하지 않으면 이 요청이 끝나지
+  // 않고 폼의 제출 상태가 "처리 중…"에 고정된다. 쓰기 기본 상한을 걸어 반드시 끝나게 하고,
+  // 전송 실패(네트워크 단절·타임아웃)는 throw 로 흘리지 않고 Google 경로와 같은 연결 오류
+  // 결과로 돌려줘 폼이 오류를 표시하고 다시 시도할 수 있게 한다.
+  try {
+    const response = await api.raw(apiPath("/auth/login"), {
+      method: "POST",
+      throwHttpErrors: false,
+      timeout: WRITE_TIMEOUT_MS,
+      json: { email: options?.email, password: options?.password },
+    });
+    const payload = (await response.json().catch(() => null)) as
+      | { user?: NonNullable<Session>["user"]; error?: string }
+      | null;
 
-  if (!response.ok || !payload?.user) {
+    if (!response.ok || !payload?.user) {
+      return {
+        ok: false,
+        error: payload?.error ?? authFailureFallback(response.status, "auth-failed"),
+        status: response.status,
+        url: null,
+      };
+    }
+
+    persistSession({ user: payload.user, token: null });
     return {
-      ok: false,
-      error: payload?.error ?? authFailureFallback(response.status, "auth-failed"),
+      ok: true,
+      error: null,
       status: response.status,
       url: null,
     };
+  } catch {
+    return {
+      ok: false,
+      error: "로그인 서버에 연결하지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.",
+      status: 0,
+      url: null,
+    };
   }
-
-  persistSession({ user: payload.user, token: null });
-  return {
-    ok: true,
-    error: null,
-    status: response.status,
-    url: null,
-  };
 }
 
 async function performSignOut(

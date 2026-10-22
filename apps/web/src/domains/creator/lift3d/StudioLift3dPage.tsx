@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { downloadBlob } from "../export/studio-export";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
 import {
   STUDIO_LIFT3D_LIMITS,
@@ -286,11 +287,7 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
       if (superseded()) return;
       setDecoded(null);
       setResult(null);
-      setDecodeError(
-        error instanceof StudioLift3dDecodeError
-          ? error.message
-          : "이미지를 여는 중 문제가 생겼습니다. 다른 파일로 다시 시도해 주세요.",
-      );
+      setDecodeError(error instanceof StudioLift3dDecodeError ? error.message : frozenStatus5Text("studio.frozenStatus5.lift.decodeFailed", "이미지를 여는 중 문제가 생겼습니다. 다른 파일로 다시 시도해 주세요."));
     } finally {
       // 뒤늦게 끝난 호출이 아직 도는 최신 디코딩의 "변환 중" 을 풀어 버리면 안 된다.
       if (!superseded()) setBusy(false);
@@ -365,11 +362,9 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
         setResult(null);
         setWarnings([]);
         resultRevisionRef.current = null;
-        setLiftError(
-          error instanceof Error
-            ? `변환 중 문제가 생겼습니다: ${error.message}`
-            : "변환 중 알 수 없는 문제가 생겼습니다. 해상도를 낮춰 다시 시도해 주세요.",
-        );
+        setLiftError(error instanceof Error
+          ? frozenStatus5Text("studio.frozenStatus5.lift.convertFailedWithDetail", { detail: error.message }, "변환 중 문제가 생겼습니다: {detail}")
+          : frozenStatus5Text("studio.frozenStatus5.lift.convertFailedUnknown", "변환 중 알 수 없는 문제가 생겼습니다. 해상도를 낮춰 다시 시도해 주세요."));
       } finally {
         setBusy(false);
       }
@@ -443,11 +438,11 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
         ? staleModel
           // 모델이 달라졌으면 GLB 해시도 달라, 지금 설정으로 다시 등록하는 것이 실제로 통한다.
           // 권리 표기는 저장 중 잠겨 있으므로 이 문구가 통하지 않는 조합을 권할 일이 없다.
-          ? `${prefix}등록했습니다. 지금 화면의 설정으로는 다시 등록해 주세요.`
-          : "배경 3D 편집기의 모델 목록에 등록했습니다."
+          ? frozenStatus5Text("studio.frozenStatus5.lift.libraryRegisteredStale", { prefix }, "{prefix}등록했습니다. 지금 화면의 설정으로는 다시 등록해 주세요.")
+          : frozenStatus5Text("studio.frozenStatus5.lift.libraryRegistered", "배경 3D 편집기의 모델 목록에 등록했습니다.")
         : `${prefix}${saved.detail}`);
     } catch {
-      setLibraryNotice("3D 모델 라이브러리를 열 수 없습니다. 대신 GLB 파일로 저장해 주세요.");
+      setLibraryNotice(frozenStatus5Text("studio.frozenStatus5.lift.libraryOpenFailed", "3D 모델 라이브러리를 열 수 없습니다. 대신 GLB 파일로 저장해 주세요."));
     } finally {
       setLibrarySaving(false);
     }
@@ -736,7 +731,7 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
                 </p>
               ) : tab === "source" ? (
                 sourceUrl === null ? (
-                  <p className="text-sm text-fg-3">원화 미리보기를 사용할 수 없습니다.</p>
+                  <p className="text-sm text-fg-3">{frozenStatus5Text("studio.frozenStatus5.lift.previewUnavailable", "원화 미리보기를 사용할 수 없습니다.")}</p>
                 ) : (
                   <img
                     src={sourceUrl}
@@ -746,7 +741,7 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
                 )
               ) : result === null ? (
                 <p className="max-w-[36ch] text-center text-sm leading-relaxed text-fg-3">
-                  {busy ? "변환하는 중입니다..." : liftError ?? "아직 변환 결과가 없습니다."}
+                  {busy ? frozenStatus5Text("studio.frozenStatus5.lift.converting", "변환하는 중입니다...") : liftError ?? frozenStatus5Text("studio.frozenStatus5.lift.noResultYet", "아직 변환 결과가 없습니다.")}
                 </p>
               ) : tab === "mask" && maskPixels !== null ? (
                 <RasterPreview

@@ -76,13 +76,13 @@
   "search.explorer.time.justNow": "हाल ही में अद्यतन",
   "search.explorer.time.minutesAgo": "{count} m पहले",
   "search.explorer.time.hoursAgo": "{count} घंटे पहले",
-  "search.explorer.time.daysAgo": "{count} d ago",
+  "search.explorer.time.daysAgo": "{count} दिन पहले",
   "search.explorer.loadMore": "अधिक लोड करें",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "लोकप्रिय खोजें",
+  "search.explorer.suggestions.genres": "अनुशंसित शैलियां",
+  "search.explorer.suggestions.searchFor": "{query} खोजें",
+  "search.explorer.suggestions.genreFilter": "शैली {genre} से संकीर्ण करें",
+  "search.explorer.suggestions.loading": "सुझाई गई खोजें लोड हो रही हैं",
+  "search.explorer.suggestions.error": "सुझाई गई खोजें लोड नहीं हो सकीं। कृपया थोड़ी देर बाद फिर से प्रयास करें।",
+  "search.explorer.suggestions.empty": "अभी कोई सुझाव नहीं है। कोई शीर्षक, लेखक या टैग लिखकर देखें।"
 }

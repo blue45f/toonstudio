@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "പൊതു അന്വേഷണം",
+  "contact.body": "സേവന ഉപയോഗം, അക്കൗണ്ടുകൾ, ഡാറ്റ പ്രദർശനം എന്നിവയെക്കുറിച്ചുള്ള പൊതു അന്വേഷണങ്ങൾ അയയ്ക്കുക.",
+  "contact.bizTitle": "ബിസിനസ് & പങ്കാളിത്ത അന്വേഷണങ്ങൾ",
+  "contact.bizBody": "പരസ്യം, പ്ലാറ്റ്ഫോം സംയോജനങ്ങൾ, ഉള്ളടക്ക പങ്കാളിത്തങ്ങൾ എന്നിവ ഉൾപ്പെടെയുള്ള ബിസിനസ് നിർദ്ദേശങ്ങൾ സമർപ്പിക്കുക.",
+  "contact.bugTitle": "ബഗ് റിപ്പോർട്ട്",
+  "contact.bugBody": "പിശകുകൾ, ലേഔട്ട് പ്രശ്നങ്ങൾ, അല്ലെങ്കിൽ ഡാറ്റ പ്രദർശനത്തിലെ അപാകതകൾ എന്നിവ റിപ്പോർട്ട് ചെയ്യുക."
 }

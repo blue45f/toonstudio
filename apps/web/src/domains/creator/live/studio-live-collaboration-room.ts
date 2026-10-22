@@ -87,6 +87,7 @@ import {
   parseStudioLiveLockResourceScope,
   studioLiveLockResourcesConflict,
 } from "@/shared/lib/studio-live-lock-resource";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 const DEFAULT_HEARTBEAT_MS = 10_000;
 const DEFAULT_PRESENCE_TTL_MS = 30_000;
@@ -511,8 +512,7 @@ export class StudioLiveRoom {
   /** Explicitly managed leases never fall back to local arbitration or automatic heartbeats. */
   claimAuthoritativeLockAsync(resource: string, renewLeaseId?: string): Promise<StudioLiveLockAcquireResult> {
     if (this.authoritativeLockCapability !== "fenced-v2") {
-      return Promise.resolve({ status: "denied", resource, requestId: "unavailable",
-        code: "unsupported_authority", message: "서버가 확인하는 공유 자리 기능을 사용할 수 없습니다." });
+      return Promise.resolve({ status: "denied", resource, requestId: "unavailable", code: "unsupported_authority", message: frozenStatus6Text("studio.frozenStatus6.liveRoom.unsupportedAuthority", "서버가 확인하는 공유 자리 기능을 사용할 수 없습니다.") });
     }
     this.manuallyRenewedLocks.add(resource);
     return this.claimLockAsync(resource, { renewLeaseId, leaseMs: 15_000 }).then((result) => {
@@ -888,7 +888,7 @@ export class StudioLiveRoom {
   claimLockAsync(resource: string, managed?: { renewLeaseId?: string; leaseMs: number }): Promise<StudioLiveLockAcquireResult> {
     if (managed && this.authoritativeLockCapability !== "fenced-v2") {
       return Promise.resolve({ status: "revoked", resource, requestId: "unavailable",
-        code: "authority_unavailable", message: "공유 자리 서버 연결이 변경되었습니다." });
+        code: "authority_unavailable", message: frozenStatus6Text("studio.frozenStatus6.liveRoom.authorityConnectionChanged", "공유 자리 서버 연결이 변경되었습니다.") });
     }
     const pendingRelease = this.pendingLockReleases.get(resource);
     if (pendingRelease) {
@@ -917,7 +917,7 @@ export class StudioLiveRoom {
         resource,
         requestId,
         code: "invalid_request",
-        message: error instanceof Error ? error.message : "편집 잠금 요청이 올바르지 않습니다.",
+        message: error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.liveRoom.lockRequestInvalid", "편집 잠금 요청이 올바르지 않습니다."),
       });
     }
     if (!this.ready) {
@@ -926,7 +926,7 @@ export class StudioLiveRoom {
         resource,
         requestId,
         code: "not_ready",
-        message: "공동작업 연결이 준비되지 않았습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.liveRoom.connectionNotReady", "공동작업 연결이 준비되지 않았습니다."),
       });
     }
 
@@ -938,7 +938,7 @@ export class StudioLiveRoom {
         resource,
         requestId,
         code: "lock_conflict",
-        message: `${conflict.owner.displayName || "다른 편집자"}가 이 영역을 편집 중입니다.`,
+        message: frozenStatus6Text("studio.frozenStatus6.liveRoom.lockConflictOwner", { owner: conflict.owner.displayName || "다른 편집자" }, `${conflict.owner.displayName || "다른 편집자"}가 이 영역을 편집 중입니다.`),
         lock: { ...conflict, owner: copyParticipant(conflict.owner) },
       });
     }
@@ -959,7 +959,7 @@ export class StudioLiveRoom {
           resource,
           requestId,
           code: "transport_error",
-          message: "로컬 편집 잠금 요청을 보내지 못했습니다.",
+          message: frozenStatus6Text("studio.frozenStatus6.liveRoom.localLockSendFailed", "로컬 편집 잠금 요청을 보내지 못했습니다."),
         });
       }
       const lock = this.locks.get(resource);
@@ -969,7 +969,7 @@ export class StudioLiveRoom {
           resource,
           requestId,
           code: "lock_conflict",
-          message: "다른 편집 세션이 이 영역의 잠금을 먼저 획득했습니다.",
+          message: frozenStatus6Text("studio.frozenStatus6.liveRoom.lockTaken", "다른 편집 세션이 이 영역의 잠금을 먼저 획득했습니다."),
         });
       }
       return Promise.resolve({
@@ -988,7 +988,7 @@ export class StudioLiveRoom {
         resource,
         requestId,
         code: "unsupported_transport",
-        message: "현재 팀 연결은 서버 확인형 편집 잠금을 지원하지 않습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.liveRoom.lockUnsupported", "현재 팀 연결은 서버 확인형 편집 잠금을 지원하지 않습니다."),
       });
     }
     let resolveResult!: (result: StudioLiveLockAcquireResult) => void;
@@ -1008,7 +1008,7 @@ export class StudioLiveRoom {
         status: "timeout",
         resource,
         requestId,
-        message: "팀 서버의 편집 잠금 응답 시간이 초과되었습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.liveRoom.lockResponseTimeout", "팀 서버의 편집 잠금 응답 시간이 초과되었습니다."),
       });
     }, this.lockAckTimeoutMs);
 
@@ -1027,7 +1027,7 @@ export class StudioLiveRoom {
         resource,
         requestId,
         code: "transport_error",
-        message: error instanceof Error ? error.message : "편집 잠금 요청을 보내지 못했습니다.",
+        message: error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.liveRoom.lockSendFailed", "편집 잠금 요청을 보내지 못했습니다."),
       });
       return promise;
     }
@@ -1039,7 +1039,7 @@ export class StudioLiveRoom {
           resource,
           requestId,
           code: "transport_error",
-          message: error instanceof Error ? error.message : "편집 잠금 요청을 확인하지 못했습니다.",
+          message: error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.liveRoom.lockConfirmFailed", "편집 잠금 요청을 확인하지 못했습니다."),
         });
       }
     );
@@ -1083,7 +1083,7 @@ export class StudioLiveRoom {
         requestId,
         claimId: "unavailable",
         code: "invalid_request",
-        message: error instanceof Error ? error.message : "편집 잠금 해제 요청이 올바르지 않습니다.",
+        message: error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.liveRoom.unlockRequestInvalid", "편집 잠금 해제 요청이 올바르지 않습니다."),
       });
     }
     const current = this.locks.get(resource);
@@ -1094,7 +1094,7 @@ export class StudioLiveRoom {
         requestId,
         claimId: current?.claimId ?? "unavailable",
         code: "not_owned",
-        message: "현재 세션이 소유한 편집 잠금이 없습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.liveRoom.noOwnedLock", "현재 세션이 소유한 편집 잠금이 없습니다."),
       });
     }
     if (!this.ready) {
@@ -1104,7 +1104,7 @@ export class StudioLiveRoom {
         requestId,
         claimId: current.claimId,
         code: "not_ready",
-        message: "공동작업 연결이 준비되지 않았습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.liveRoom.connectionNotReady", "공동작업 연결이 준비되지 않았습니다."),
       });
     }
 
@@ -1158,7 +1158,7 @@ export class StudioLiveRoom {
               requestId,
               claimId: current.claimId,
               code: "unsupported_transport",
-              message: "현재 팀 연결은 서버 확인형 잠금 해제를 지원하지 않습니다.",
+              message: frozenStatus6Text("studio.frozenStatus6.liveRoom.unlockUnsupported", "현재 팀 연결은 서버 확인형 잠금 해제를 지원하지 않습니다."),
             }
       );
     }
@@ -1180,7 +1180,7 @@ export class StudioLiveRoom {
         resource,
         requestId,
         claimId: current.claimId,
-        message: "팀 서버의 편집 잠금 해제 응답 시간이 초과되었습니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.liveRoom.unlockResponseTimeout", "팀 서버의 편집 잠금 해제 응답 시간이 초과되었습니다."),
       });
     }, Math.max(this.lockAckTimeoutMs, STUDIO_LIVE_LOCK_MAX_LEASE_MS + 500));
 
@@ -1194,7 +1194,7 @@ export class StudioLiveRoom {
         requestId,
         claimId: current.claimId,
         code: "transport_error",
-        message: error instanceof Error ? error.message : "편집 잠금 해제 요청을 보내지 못했습니다.",
+        message: error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.liveRoom.unlockSendFailed", "편집 잠금 해제 요청을 보내지 못했습니다."),
       });
       return promise;
     }
@@ -1207,7 +1207,7 @@ export class StudioLiveRoom {
           requestId,
           claimId: current.claimId,
           code: "transport_error",
-          message: error instanceof Error ? error.message : "편집 잠금 해제를 확인하지 못했습니다.",
+          message: error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.liveRoom.unlockConfirmFailed", "편집 잠금 해제를 확인하지 못했습니다."),
         });
       }
     );
@@ -1319,7 +1319,7 @@ export class StudioLiveRoom {
       if (response) this.emitCrdt({ type: "sync-response", response, senderSessionId: null });
       return response;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "CRDT 문서를 동기화하지 못했습니다.";
+      const message = error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.liveRoom.crdtSyncFailed", "CRDT 문서를 동기화하지 못했습니다.");
       this.emitCrdt({ type: "error", operation: "sync", message });
       throw error;
     }
@@ -1337,7 +1337,7 @@ export class StudioLiveRoom {
     try {
       return await this.transport.publishCrdtUpdate(request);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "CRDT 변경을 게시하지 못했습니다.";
+      const message = error instanceof Error ? error.message : frozenStatus6Text("studio.frozenStatus6.liveRoom.crdtPublishFailed", "CRDT 변경을 게시하지 못했습니다.");
       this.emitCrdt({ type: "error", operation: "publish", message });
       throw error;
     }
@@ -1605,7 +1605,7 @@ export class StudioLiveRoom {
       const entry = this.outboundInkQueue[0]!;
       if (this.transport?.sendInk?.(entry.wire) !== true) {
         if (!sentAny) {
-          this.emit({ type: "transport-error", message: "실시간 잉크 메시지를 보내지 못했습니다." });
+          this.emit({ type: "transport-error", message: frozenStatus6Text("studio.frozenStatus6.liveRoom.inkSendFailed", "실시간 잉크 메시지를 보내지 못했습니다.") });
         }
         return sentAny;
       }
@@ -1992,7 +1992,7 @@ export class StudioLiveRoom {
 
   private sendEnvelope(envelope: StudioLiveEnvelope): boolean {
     if (!this.transport?.send(envelope)) {
-      this.emit({ type: "transport-error", message: "공동작업 메시지를 보내지 못했습니다." });
+      this.emit({ type: "transport-error", message: frozenStatus6Text("studio.frozenStatus6.liveRoom.envelopeSendFailed", "공동작업 메시지를 보내지 못했습니다.") });
       return false;
     }
     return true;

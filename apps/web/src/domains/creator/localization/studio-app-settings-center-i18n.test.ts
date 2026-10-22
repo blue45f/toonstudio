@@ -4,7 +4,7 @@ import {
   formatStudioAppSettingsCenterText,
   studioAppSettingsCenterProfileCopyKey,
   studioAppSettingsCenterSearchCopyKey,
-} from "./studio-app-settings-center-i18n";
+} from "../studio-app-settings-center-i18n";
 
 import { resolveTranslation } from "@/shared/lib/i18n";
 

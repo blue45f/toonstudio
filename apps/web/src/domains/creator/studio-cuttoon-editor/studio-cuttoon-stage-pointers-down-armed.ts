@@ -10,8 +10,7 @@ import { captureStudioNodeEditPointer } from "../vector/studio-node-edit-pointer
 
 import { resolveStudioCapturedBrushDynamicsPresetId } from "../brush/studio-brush-dynamics";
 import {
-  advanceStudioBrushVelocityPressure,
-  initializeStudioBrushVelocityPressure,
+  advanceStudioBrushVelocityPressure, initializeStudioBrushVelocityPressure,
   resolveStudioBrushReleasePressure,
 } from "../brush/studio-brush-velocity-pressure";
 import { isCompleteStudioDrawOp } from "../brush/studio-draw-completion";
@@ -199,6 +198,7 @@ import {
   snapPointToObjectGuides,
   type GuideBox,
 } from "../studio-smart-guides";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import {
   shouldSynchronizeStudioStagePointerPosition,
   snapshotStudioStagePointerBatchMapper,
@@ -372,11 +372,11 @@ export function bindStudioCuttoonStagePointersDownArmed(
           });
           return true;
         }
-        setError("선화 이미지 안을 드래그해 시드를 찍어 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.downArmed.dragInsideLineart", "선화 이미지 안을 드래그해 시드를 찍어 주세요."));
         return true;
       }
       if (pos && !planSize) {
-        setError("먼저 자동 채색 힌트 계획을 한 번 실행해 선화 크기를 맞춰 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.downArmed.runHintPlanFirst", "먼저 자동 채색 힌트 계획을 한 번 실행해 선화 크기를 맞춰 주세요."));
         return true;
       }
     }
@@ -405,9 +405,9 @@ export function bindStudioCuttoonStagePointersDownArmed(
       if (pos && selected?.type === "bubble") {
         const clickedId = studioElementIdOf(e.target);
         if (activeSurfaceReviewLocked || isEffectivelyLocked(selected, groups)) {
-          setError("말풍선 또는 상위 그룹의 잠금을 해제한 뒤 꼬리 대상을 지정해 주세요.");
+          setError(frozenStatus6Text("studio.frozenStatus6.downArmed.unlockForTailTarget", "말풍선 또는 상위 그룹의 잠금을 해제한 뒤 꼬리 대상을 지정해 주세요."));
         } else if (clickedId && clickedId === selected.id) {
-          setError("말풍선 자기 자신은 부착 대상으로 고를 수 없어요.");
+          setError(frozenStatus6Text("studio.frozenStatus6.downArmed.selfTailTarget", "말풍선 자기 자신은 부착 대상으로 고를 수 없어요."));
         } else if (clickedId) {
           patchEl(selected.id, { tailAnchorId: clickedId, tailAnchorPoint: undefined } as Partial<El>);
         } else {

@@ -20,6 +20,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import {
   Suspense,
   lazy,
@@ -905,13 +906,10 @@ export const StudioPageListPane = memo(function StudioPageListPane({
             className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pr-0.5"
           >
             {navigationEntries.length === 0 ? (
-              <div
-                aria-live="polite"
-                className="grid min-h-40 place-items-center rounded-xl border border-dashed border-line bg-card/50 p-5 text-center"
-              >
+              <div aria-live="polite" className="grid min-h-40 place-items-center rounded-xl border border-dashed border-line bg-card/50 p-5 text-center">
                 <div>
                   <Search size={22} aria-hidden className="mx-auto mb-2 text-fg-3" />
-                  <p className="text-sm font-bold text-fg-2">조건에 맞는 페이지가 없습니다</p>
+                  <p className="text-sm font-bold text-fg-2">{frozenStatus5Text("studio.frozenStatus5.pageList.pagesEmpty", "조건에 맞는 페이지가 없습니다")}</p>
                   <p className="mt-1 text-xs leading-relaxed text-fg-3">
                     이름, 번호, 콘티 메모, 샷 태그, 검토 상태와 담당자를 검색할 수 있습니다.
                   </p>

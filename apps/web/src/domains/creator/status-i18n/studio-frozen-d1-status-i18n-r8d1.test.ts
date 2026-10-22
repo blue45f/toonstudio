@@ -1,31 +1,28 @@
 import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
-
-import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
-
 /**
- * 파일 크기 래칫 동결 패널 상태 문구 i18n 키 이관 계약 4
- * (A4 cat4 동결 tsx 꼬리 이관 — frozen4).
+ * 절단편 문장 설계 D1 모듈 계약 (A4 D1 — frozenD1, 설계 r8-design-d1-final
+ * §2.5 T-L7).
  *
- * 배경: 래칫 기준선과 동률이라 순증이 불가능한 동결 패널 17파일의
- * 로딩·실패·성공·빈 상태·확인 중·사용 불가 사유 문구가 호출부에 한국어로
- * 하드코딩돼 en 사용자의 동선이 끊겼다. 표시 정본은
- * studio-frozen4-status-i18n 등록 모듈의 `studio.frozenStatus4.*` 키이며,
- * 코드 안의 한국어 원문은 `frozenStatus4Text(키, …, 한국어 폴백)`의 폴백
- * 인자로만 남아야 한다. 3·4·5라운드 모듈(studio-frozen-status-i18n.ts,
- * studio-frozen2-status-i18n.ts, studio-frozen3-status-i18n.ts)은 각 테스트가
- * 전 키의 소비 파일을 단언해 확장할 수 없어 형제 모듈로 분리했다. 소비
- * 파일의 줄 수는 이관 전과 같거나 줄어야 하며(래칫 동결), 증가분은 같은
- * 파일의 다중행 호출 접기와 중복 문구 키 통합으로 상쇄한다. 콘텐츠 본문·
- * 폼 라벨·placeholder·예시 데이터는 대상이 아니다. 잔여 탐지기 위반은
- * 없어야 한다(전 파일 0으로 고정).
+ * 배경: Community 공개 재검증 문장(완결 키)과 LiveCanvasOverlay 접근성
+ * 라벨 절단편·title(완결 키)이 호출부에 한국어로 하드코딩돼 en 사용자의
+ * 동선이 끊겼다. 표시 정본은 studio-frozen-d1-status-i18n 등록 모듈의
+ * `studio.frozenD1.*` 키이며, 코드 안의 한국어 원문은
+ * `frozenD1Text(키, …, 한국어 폴백)`의 폴백 인자로만 남아야 한다.
+ * frozen1~6 모듈은 각 테스트가 전 키의 소비 파일을 단언해 확장할 수 없어
+ * D1 전용 형제 모듈로 분리했다. Community 소비(StudioCommunityMarketplace
+ * Panel)는 W2, Live 소비(StudioLiveCanvasOverlay)는 W3 단위이며, 전 키
+ * 소비 단언은 두 단위가 모두 랜딩한 트리에서 성립하는 완료 계약이다.
+ *
+ * 키 수 실측 정정: 설계 §4는 절단편 9종·총 19키로 적었으나 §2.1 표의
+ * 절단편은 10종이라 총 키는 20개다(모듈 헤더 주석 참조). 이 테스트는
+ * 20키 전집합을 명시 목록으로 고정한다.
  */
 
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 /** 등록 모듈(registerI18nLocaleEntries)의 locale 블록을 전부 병합해 파싱한다. */
@@ -43,14 +40,12 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
 }
 
 /**
- * frozenStatus4Text 호출을 균형 괄호 스캔으로 전부 추출한다. 파라미터 객체
- * 안에 중첩된 frozenStatus4Text 호출(예: 손 적용 상태의 측면 값 합성)도
- * 각각 잡는다. 반환값은 [키, 폴백] 쌍이며, 폴백은 최상위 인자 중 마지막
- * 문자열 리터럴이다.
+ * frozenD1Text 호출을 균형 괄호 스캔으로 전부 추출한다. 반환값은
+ * [키, 폴백] 쌍이며, 폴백은 최상위 인자 중 마지막 문자열 리터럴이다.
  */
 function extractFrozenCalls(source: string): Array<[string, string]> {
   const results: Array<[string, string]> = [];
-  const needle = "frozenStatus4Text(";
+  const needle = "frozenD1Text(";
   let idx = 0;
   for (;;) {
     const at = source.indexOf(needle, idx);
@@ -85,8 +80,6 @@ function extractFrozenCalls(source: string): Array<[string, string]> {
         paren -= 1;
         if (paren === 0) {
           parts.push(current);
-          current = "";
-          pos += 1;
           break;
         }
       } else if (c === "{") brace += 1;
@@ -103,7 +96,7 @@ function extractFrozenCalls(source: string): Array<[string, string]> {
       pos += 1;
     }
     const unquote = (raw: string): string | null => {
-      const match = /^"((?:[^"\\]|\\.)*)"$/s.exec(raw.trim());
+      const match = /^"((?:[^"\\]|\\[\s\S])*)"$/.exec(raw.trim());
       return match ? (match[1] ?? "").replace(/\\"/g, '"') : null;
     };
     const key = parts.length > 0 ? unquote(parts[0] ?? "") : null;
@@ -113,74 +106,65 @@ function extractFrozenCalls(source: string): Array<[string, string]> {
   return results;
 }
 
-const MODULE_FILE = "studio-frozen4-status-i18n.ts";
-const PREFIX = "studio.frozenStatus4.";
+const MODULE_FILE = "status-i18n/studio-frozen-d1-status-i18n.ts";
+const PREFIX = "studio.frozenD1.";
 const CONSUMERS = [
-  "filter/StudioFilterDialog.tsx",
-  "promo/PromoVoiceDirector.tsx",
-  "StudioFrameAnimationPanel.tsx",
-  "StudioDraftSaveCenterImpl.tsx",
-  "StudioCommentThreadPopover.tsx",
-  "StudioUnifiedAssetWorkspace.tsx",
-  "StudioInsertHubWorkspace.tsx",
-  "StudioInsertBatchPreflight.tsx",
-  "music/StudioMusicPage.tsx",
-  "StudioKonvaImageNode.tsx",
-  "brush/StudioBrushEngineMixer.tsx",
-  "StudioMobileEditingDock.tsx",
-  "StudioOriginalAssetMarketplacePanel.tsx",
-  "vrm/StudioVrmPoserPanelBodyB.tsx",
-  "scene-3d/StudioMagicPoserPanel.tsx",
-  "vrm/StudioVrmPoserPanelBodyA.tsx",
-  "vrm/StudioVrmPoserPanelBodyD.tsx",
+  "StudioCommunityMarketplacePanel.tsx",
+  "live/StudioLiveCanvasOverlay.tsx",
 ] as const;
 
-/** 이관 전 줄 수(래칫 기준선) — 소비 파일은 이 줄 수를 넘을 수 없다. */
+/** 래칫 기준선 — 소비 파일은 이 줄 수를 넘을 수 없다(기존 frozen 테스트와 동일 값). */
 const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
-  "filter/StudioFilterDialog.tsx": 1685,
-  "promo/PromoVoiceDirector.tsx": 935,
-  "StudioFrameAnimationPanel.tsx": 859,
-  "StudioDraftSaveCenterImpl.tsx": 878,
-  "StudioCommentThreadPopover.tsx": 984,
-  "StudioUnifiedAssetWorkspace.tsx": 984,
-  "StudioInsertHubWorkspace.tsx": 1036,
-  "StudioInsertBatchPreflight.tsx": 971,
-  "music/StudioMusicPage.tsx": 923,
-  "StudioKonvaImageNode.tsx": 2068,
-  "brush/StudioBrushEngineMixer.tsx": 835,
-  "StudioMobileEditingDock.tsx": 2003,
-  "StudioOriginalAssetMarketplacePanel.tsx": 970,
-  "vrm/StudioVrmPoserPanelBodyB.tsx": 1026,
-  "scene-3d/StudioMagicPoserPanel.tsx": 1130,
-  "vrm/StudioVrmPoserPanelBodyA.tsx": 1030,
-  "vrm/StudioVrmPoserPanelBodyD.tsx": 818,
+  "StudioCommunityMarketplacePanel.tsx": 2602,
+  "live/StudioLiveCanvasOverlay.tsx": 1579,
 };
 
-/** 이관 뒤 탐지기 위반 수(실측 고정) — 17파일 전부 상태 채널 위반 0. */
-const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
-  "filter/StudioFilterDialog.tsx": 0,
-  "promo/PromoVoiceDirector.tsx": 0,
-  "StudioFrameAnimationPanel.tsx": 0,
-  "StudioDraftSaveCenterImpl.tsx": 0,
-  "StudioCommentThreadPopover.tsx": 0,
-  "StudioUnifiedAssetWorkspace.tsx": 0,
-  "StudioInsertHubWorkspace.tsx": 0,
-  "StudioInsertBatchPreflight.tsx": 0,
-  "music/StudioMusicPage.tsx": 0,
-  "StudioKonvaImageNode.tsx": 0,
-  "brush/StudioBrushEngineMixer.tsx": 0,
-  "StudioMobileEditingDock.tsx": 0,
-  "StudioOriginalAssetMarketplacePanel.tsx": 0,
-  "vrm/StudioVrmPoserPanelBodyB.tsx": 0,
-  "scene-3d/StudioMagicPoserPanel.tsx": 0,
-  "vrm/StudioVrmPoserPanelBodyA.tsx": 0,
-  "vrm/StudioVrmPoserPanelBodyD.tsx": 0,
-};
+/** D1 전 키 명시 목록 — Community 6 + Live 절단편 10 + title 4 = 20키. */
+const EXPECTED_KEYS = [
+  "studio.frozenD1.community.actionAssetInsert",
+  "studio.frozenD1.community.actionLocalInstall",
+  "studio.frozenD1.community.revalidationDetailFallback",
+  "studio.frozenD1.community.revalidationEvidenceChanged",
+  "studio.frozenD1.community.revalidationNotFound",
+  "studio.frozenD1.community.revalidationUnconfirmed",
+  "studio.frozenD1.live.allRead",
+  "studio.frozenD1.live.latestAuthor",
+  "studio.frozenD1.live.latestComment",
+  "studio.frozenD1.live.openWithEnter",
+  "studio.frozenD1.live.pinPosition",
+  "studio.frozenD1.live.pinTitleBlocked",
+  "studio.frozenD1.live.pinTitleOpened",
+  "studio.frozenD1.live.pinTitleOpenedUnread",
+  "studio.frozenD1.live.pinTitleReanchorable",
+  "studio.frozenD1.live.reanchorBlocked",
+  "studio.frozenD1.live.reanchorHint",
+  "studio.frozenD1.live.reanchoring",
+  "studio.frozenD1.live.unreadThreads",
+  "studio.frozenD1.live.unresolvedThreads",
+].sort();
+
+/** 설계 §2.2 C1 순서 — Live 절단편이 소비 파일에 등장하는 순서. */
+const FRAGMENT_ORDER = [
+  "studio.frozenD1.live.pinPosition",
+  "studio.frozenD1.live.latestAuthor",
+  "studio.frozenD1.live.latestComment",
+  "studio.frozenD1.live.unresolvedThreads",
+  "studio.frozenD1.live.unreadThreads",
+  "studio.frozenD1.live.allRead",
+  "studio.frozenD1.live.reanchoring",
+  "studio.frozenD1.live.reanchorHint",
+  "studio.frozenD1.live.reanchorBlocked",
+  "studio.frozenD1.live.openWithEnter",
+];
 
 const blocks = parseRegisterModule(readSource(MODULE_FILE));
 const ALL_KEYS = Object.keys(blocks.ko).sort();
 
-describe("frozen panel status i18n r5frz4", () => {
+describe("frozen D1 status i18n r8d1", () => {
+  it("등록 모듈의 키 집합이 D1 명시 목록과 정확히 일치한다", () => {
+    expect(ALL_KEYS).toEqual(EXPECTED_KEYS);
+  });
+
   it("등록 모듈의 ko/en 키가 패리티를 이루고 en에 한글이 없다", () => {
     expect(Object.keys(blocks.en).sort()).toEqual(ALL_KEYS);
     for (const key of ALL_KEYS) {
@@ -219,11 +203,13 @@ describe("frozen panel status i18n r5frz4", () => {
     }
   });
 
-  it("이관 파일의 탐지기 위반이 파일별 고정값을 넘지 않는다", () => {
-    for (const file of CONSUMERS) {
-      const violations = scanHardcodedStatusStrings(readSource(file));
-      expect(violations.length, `${file}: ${JSON.stringify(violations)}`).toBe(EXPECTED_VIOLATIONS[file]);
+  it("Live 절단편이 C1 순서대로 소비 파일에 등장한다 (로케일 무관 순서 계약)", () => {
+    const liveSource = readSource("live/StudioLiveCanvasOverlay.tsx");
+    const positions = FRAGMENT_ORDER.map((key) => liveSource.indexOf(`"${key}"`));
+    for (const [index, key] of FRAGMENT_ORDER.entries()) {
+      expect(positions[index], `fragment missing in Live consumer: ${key}`).toBeGreaterThanOrEqual(0);
     }
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
   it("소비 파일 줄 수가 래칫 기준선을 넘지 않는다 (줄중립)", () => {
