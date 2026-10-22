@@ -221,7 +221,13 @@ export function IrPresentPage() {
         };
         requestAnimationFrame(tick);
       });
-      return () => timers.forEach((t) => window.clearTimeout(t));
+      return () => {
+        timers.forEach((t) => window.clearTimeout(t));
+        // 씬을 떠나는 시점에 아직 등장하지 않은 요소는 등장 완료 상태로 확정한다.
+        // 타이머가 정리(cleanup)되면서 스태거 후반부 요소만 희미하게 남는 상태를 막고,
+        // 다시 돌아온 씬은 완성된 상태로 보이게 한다(이미 등장한 요소는 다시 애니메이션하지 않는 기존 원칙과 같다).
+        active.querySelectorAll(".rv:not(.in)").forEach((el) => el.classList.add("in"));
+      };
     }
     return undefined;
   }, [idx]);
