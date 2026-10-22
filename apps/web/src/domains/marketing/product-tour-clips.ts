@@ -10,8 +10,8 @@
  * 대신 주제가 맞는 소개 표면의 배경으로 재배선했다: drawing은
  * /about/workflow 작화 단계 패널 배경(단계 매핑은
  * domains/marketing/public/workflow-stages.ts가 소유한다), serial은 투어
- * 페이지 '새로 더해진 기능' 카드(제작 관리 보드)의 배경. bg3d는 아직
- * 자산만 반입한 상태다.
+ * 페이지 '새로 더해진 기능' 카드(제작 관리 보드)의 배경, bg3d는
+ * /about/studio 제작 흐름의 '2D·3D 제작' 단계 카드 배경이다.
  */
 export interface ProductTourAmbientClip {
   readonly id: "intro" | "outro";
@@ -108,7 +108,13 @@ export const PRODUCT_TOUR_TRANSITION_SERIAL_CLIP = {
   height: 768,
 } as const;
 
-/** 챕터 전환 삽입 보류 중 — 자산만 반입한 스테이징 클립(파일 상단 주석 참고). */
-export const PRODUCT_TOUR_TRANSITION_CLIPS = [
-  { id: "bg3d", src: "/brand/product-tour/tour-transition-2-bg3d.mp4", width: 1344, height: 768 },
-] as const;
+/**
+ * /about/studio 제작 흐름 '2D·3D 제작' 단계 카드 배경으로 재배선한 전환 클립 —
+ * 3D 배경 장면을 그린 생성형 AI 영상이다. 성격은 카드 안의 배지로 밝힌다.
+ */
+export const PRODUCT_TOUR_TRANSITION_BG3D_CLIP = {
+  id: "bg3d",
+  src: "/brand/product-tour/tour-transition-2-bg3d.mp4",
+  width: 1344,
+  height: 768,
+} as const;

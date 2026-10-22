@@ -3,14 +3,14 @@
  * 전부 생성형 AI로 만든 배경 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(배경 위 배지와 섹션 안내 문구).
  *
- * 자산만 반입하고 삽입을 보류한 클립 2편:
- * - home-hero-day(랜딩 히어로용 밝은 낮 스튜디오 파노라마): 랜딩 히어로는 전용
- *   아트와 인터랙티브 스튜디오 프리뷰가 이미 한 구성을 이루고 있어, 영상 배경을
- *   얹으면 서로 겹친다. 히어로 구성을 다시 설계하는 별도 결정이 있기 전까지
- *   보류한다(전환 클립 3편의 자산 반입 선례와 같은 판단).
+ * 나머지 2편도 히어로·챕터 카드가 아닌 밴드·카드 배경으로 재배선했다:
+ * - home-hero-day(밝은 낮 스튜디오 파노라마): 랜딩 히어로는 전용 아트와
+ *   인터랙티브 스튜디오 프리뷰가 이미 한 구성을 이뤄 히어로 배경으로는
+ *   겹치지만, /about/studio 마무리 섹션은 텍스트만 있는 밴드라 그 배경으로
+ *   배선했다(STUDIO_INTRO_CLOSING_CLIP).
  * - brand-4-cafe-street-flythrough(3D 카페 거리 비행): 투어 3D 챕터 카드에는
- *   챕터 배경 루프가 이미 깔려 있고, bg3d 스튜디오 표면은 이 마케팅 변경의
- *   경계 밖에 있다. 자연스러운 자리가 생기면 그때 배선한다.
+ *   챕터 배경 루프가 이미 깔려 있어 중복을 피하고, 홈 핵심 작업실 그리드의
+ *   3D 카드 배경으로 배선했다(HOME_CORE_STUDIO_3D_BACKDROP_CLIP).
  */
 export interface BrandClip {
   readonly src: string;
@@ -55,8 +55,25 @@ export const FEATURES_AMBIENT_CLIP: BrandClip = {
   height: 768,
 };
 
-/** 삽입 보류 중 — 자산만 반입한 스테이징 클립(파일 상단 주석 참고). */
-export const BRAND_CLIPS_STAGED = [
-  { id: "home-hero-day", src: "/brand/brand-clips/home-hero-day.mp4", width: 1344, height: 768 },
-  { id: "cafe-street-flythrough", src: "/brand/brand-clips/brand-4-cafe-street-flythrough.mp4", width: 1344, height: 768 },
-] as const;
+/**
+ * /about/studio 마무리 밴드의 배경 — 밝은 낮의 스튜디오 파노라마를 그린
+ * 생성형 AI 영상이다. 성격은 밴드 안의 배지로 밝힌다.
+ */
+export const STUDIO_INTRO_CLOSING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-day.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 홈 핵심 작업실 그리드에서 3D 카드의 배경 — 3D 카페 거리를 비행하는
+ * 생성형 AI 영상이다. 카드 이미지(콘셉트 아트)와는 별개의 장식 배경이며,
+ * 성격은 그리드 아래 안내 문구로 밝힌다. studioId는 reference-home-content의
+ * HomeCoreStudioId와 맞춘다.
+ */
+export const HOME_CORE_STUDIO_3D_BACKDROP_CLIP = {
+  studioId: "three-d",
+  src: "/brand/brand-clips/brand-4-cafe-street-flythrough.mp4",
+  width: 1344,
+  height: 768,
+} as const;

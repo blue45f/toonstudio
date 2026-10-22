@@ -200,6 +200,16 @@
 .creator-home .reference-dashboard .rd-core-card > img { width: 100%; height: 132px; block-size: 132px; object-fit: cover; object-position: center 30%; }
 .rd-core-card[data-core-studio="three-d"] > img { object-position: center 18%; }
 .rd-core-copy { display: grid; align-content: start; gap: 6px; padding: 12px 14px 10px; }
+/* 3D 카드의 배경 클립 — 생성형 AI 영상을 카드 맨 뒤에 깔고, 이미지 행 아래
+   본문 영역에서만 비치게 카드색 스크림으로 덮는다. 성격은 그리드 아래 안내
+   문구로 밝히고, 움직임 최소화·고대비에서는 영상 자체를 숨긴다. */
+.rd-core-card-media { position: absolute; inset: 0; overflow: hidden; }
+.rd-core-card-media video { display: block; width: 100%; height: 100%; object-fit: cover; opacity: .38; }
+.rd-core-card-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--rd-panel) 88%, transparent) 0 118px, color-mix(in srgb, var(--rd-panel) 45%, transparent)); }
+.rd-core-card > img, .rd-core-copy { position: relative; }
+.rd-core-note { margin-top: 10px; color: var(--rd-muted); font-size: 12.5px; line-height: 1.6; }
+@media (prefers-reduced-motion: reduce) { .rd-core-card-media { display: none; } }
+@media (prefers-contrast: more), (forced-colors: active) { .rd-core-card-media { display: none; } }
 .rd-core-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: var(--rd-cyan); font-size: 12px; font-weight: 800; letter-spacing: .1em; }
 .reference-dashboard .rd-core-copy h3 { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
 .reference-dashboard .rd-core-copy p { color: var(--rd-muted); font-size: 13px; line-height: 1.6; }
