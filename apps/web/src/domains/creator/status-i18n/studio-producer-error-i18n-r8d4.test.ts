@@ -37,6 +37,8 @@ import {
 } from "../studio-translation-memory";
 import { parseStudioAnimaticSubtitles } from "../animatic/studio-animatic-subtitles";
 import {
+  resolveBg3dTemplateMigrationDataPreservedNote,
+  resolveBg3dTemplateMigrationErrorByCode,
   resolveStudioAnimaticError,
   resolveStudioTranslationMemoryCreateError,
   resolveStudioTranslationMemoryExportError,
@@ -128,12 +130,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       blocks[match[1] ?? ""] = [...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? "");
     }
-    // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2). 블록 단위 누적으로 패리티를 본다.
+    // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2, bg3dTemplate 6 — 이전 서브코드 5 + 보존 고지 1). 블록 단위 누적으로 패리티를 본다.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(47);
+    expect(accumulated.ko).toHaveLength(53);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });
@@ -504,6 +506,53 @@ describe("R10 TM create — display-side resolution applies the particle rule", 
       "\"대상 언어\"",
       "\"번역문\"",
       "\"원문 리비전\"",
+    ]) {
+      expect(producer).not.toContain(literal);
+    }
+  });
+});
+
+/**
+ * R10 후속 (A4 D4): bg3d 템플릿 라이브러리의 이전 실패를 구 "migration-failed"
+ * 단일 코드에서 방출 지점별 서브코드 5종으로 분해했다. 생산자는 코드 문자열을
+ * 메시지로 실어 방출하고, 표시 지점(useStudioBg3dEditorEffects)은 코드 기반
+ * 진입점으로 해석한다. ko 해석 결과는 이관 전 원문과 글자 단위 동일해야 한다.
+ */
+
+describe("R10 bg3d template migration — display-side resolution keeps ko copy identical", () => {
+  it("resolves each migration subcode to the pre-migration ko literal", () => {
+    expect(resolveBg3dTemplateMigrationErrorByCode("migration-legacy-read-failed"))
+      .toBe("기존 IndexedDB 3D 템플릿을 SQLite/OPFS로 이전하지 못했습니다.");
+    expect(resolveBg3dTemplateMigrationErrorByCode("migration-corrupt-rows"))
+      .toBe("기존 3D 템플릿 저장소에 손상되거나 지원하지 않는 행이 있어 자동 이전을 중단했습니다.");
+    expect(resolveBg3dTemplateMigrationErrorByCode("migration-conversion-failed"))
+      .toBe("기존 3D 템플릿을 정규 V12 행으로 변환하지 못했습니다.");
+    expect(resolveBg3dTemplateMigrationErrorByCode("migration-total-size-exceeded"))
+      .toBe("기존 3D 템플릿의 전체 크기가 V12 이전 한도를 초과했습니다.");
+    expect(resolveBg3dTemplateMigrationErrorByCode("migration-publish-failed"))
+      .toBe("기존 3D 템플릿을 SQLite/OPFS manifest에 최종 게시하지 못했습니다.");
+  });
+
+  it("returns null for non-migration codes so the display falls back", () => {
+    expect(resolveBg3dTemplateMigrationErrorByCode("storage-unavailable")).toBeNull();
+    expect(resolveBg3dTemplateMigrationErrorByCode("migration-failed")).toBeNull();
+    expect(resolveBg3dTemplateMigrationErrorByCode("unknown-code")).toBeNull();
+  });
+
+  it("resolves the preserved-data note to the pre-migration suffix", () => {
+    expect(resolveBg3dTemplateMigrationDataPreservedNote())
+      .toBe("기존 IndexedDB 데이터는 삭제하지 않았습니다.");
+  });
+
+  it("producer source no longer carries the migration message literals or the unified code", () => {
+    const producer = readFileSync(new URL("../bg3d/bg3d-template-library.ts", import.meta.url), "utf-8");
+    for (const literal of [
+      "기존 IndexedDB 3D 템플릿을 SQLite/OPFS로 이전하지 못했습니다.",
+      "기존 3D 템플릿 저장소에 손상되거나 지원하지 않는 행이 있어 자동 이전을 중단했습니다.",
+      "기존 3D 템플릿을 정규 V12 행으로 변환하지 못했습니다.",
+      "기존 3D 템플릿의 전체 크기가 V12 이전 한도를 초과했습니다.",
+      "기존 3D 템플릿을 SQLite/OPFS manifest에 최종 게시하지 못했습니다.",
+      "\"migration-failed\"",
     ]) {
       expect(producer).not.toContain(literal);
     }

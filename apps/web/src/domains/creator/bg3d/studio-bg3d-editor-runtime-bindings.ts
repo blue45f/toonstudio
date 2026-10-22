@@ -126,6 +126,10 @@ export {
   type StudioGeneric3dControlMode,
 } from "../StudioGeneric3dModelModePanel";
 export { StudioToolHintTarget } from "../StudioToolHint";
+export {
+  resolveBg3dTemplateMigrationDataPreservedNote,
+  resolveBg3dTemplateMigrationErrorByCode,
+} from "../status-i18n/studio-producer-error-i18n";
 export { useStudioBg3dSharedCharacterStatus } from "../useStudioBg3dSharedCharacterStatus";
 export { useStudioModalSheet } from "../useStudioModalSheet";
 

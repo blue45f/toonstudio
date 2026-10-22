@@ -16,6 +16,10 @@
  *   필드 검증 2코드(createFieldEmpty·createFieldTooLong)는 한국어 라벨 문자열이
  *   아니라 필드 코드(params.field, 7종)를 싣고, 라벨 자체도 이 모듈의
  *   field.* 키로 해석한다. 조사 규칙은 아래 create 구간 주석이 정본이다.
+ * - bg3d 템플릿 이전 (R10): bg3d-template-library의 이전 실패 서브코드 5종.
+ *   구 "migration-failed" 단일 코드를 방출 지점별로 분해했고, 표시 지점
+ *   (useStudioBg3dEditorEffects)은 코드 문자열 기반 진입점으로 해석한다.
+ *   보존 고지 접미사도 이 구간의 키로 함께 해석한다.
  * - animatic (R9): studio-animatic-timeline의 Failure 23코드 전부. LoadResult·
  *   SaveResult는 문자열 집계 경계라 load/save 함수 안에서만 해석하고, Failure
  *   채널은 표시 지점(StudioAnimaticTimelinePanel)까지 코드를 통과시킨다.
@@ -30,6 +34,7 @@ import {
   registerI18nLocaleEntries,
   resolveTranslationForDisplay,
 } from "@/shared/lib/i18n";
+import type { Bg3dTemplateLibraryErrorCode } from "../bg3d/bg3d-template-library";
 import type { StudioAnimaticError } from "../studio-animatic-timeline";
 import type {
   StudioTranslationMemoryCreateError,
@@ -378,4 +383,60 @@ const ANIMATIC_ERROR_KO: Readonly<Record<StudioAnimaticError["code"], string>> =
  */
 export function resolveStudioAnimaticError(error: StudioAnimaticError): string {
   return resolveProducerError(ANIMATIC_ERROR_KEYS[error.code], ANIMATIC_ERROR_KO[error.code], error.params);
+}
+
+registerI18nLocaleEntries("ko", {
+  "studio.producerError.bg3dTemplate.migrationLegacyReadFailed": "기존 IndexedDB 3D 템플릿을 SQLite/OPFS로 이전하지 못했습니다.",
+  "studio.producerError.bg3dTemplate.migrationCorruptRows": "기존 3D 템플릿 저장소에 손상되거나 지원하지 않는 행이 있어 자동 이전을 중단했습니다.",
+  "studio.producerError.bg3dTemplate.migrationConversionFailed": "기존 3D 템플릿을 정규 V12 행으로 변환하지 못했습니다.",
+  "studio.producerError.bg3dTemplate.migrationTotalSizeExceeded": "기존 3D 템플릿의 전체 크기가 V12 이전 한도를 초과했습니다.",
+  "studio.producerError.bg3dTemplate.migrationPublishFailed": "기존 3D 템플릿을 SQLite/OPFS manifest에 최종 게시하지 못했습니다.",
+  "studio.producerError.bg3dTemplate.migrationDataPreservedNote": "기존 IndexedDB 데이터는 삭제하지 않았습니다.",
+});
+
+registerI18nLocaleEntries("en", {
+  "studio.producerError.bg3dTemplate.migrationLegacyReadFailed": "Could not migrate the existing IndexedDB 3D templates to SQLite/OPFS.",
+  "studio.producerError.bg3dTemplate.migrationCorruptRows": "The existing 3D template store contains corrupted or unsupported rows, so the automatic migration was stopped.",
+  "studio.producerError.bg3dTemplate.migrationConversionFailed": "Could not convert the existing 3D templates into canonical V12 rows.",
+  "studio.producerError.bg3dTemplate.migrationTotalSizeExceeded": "The total size of the existing 3D templates exceeds the V12 migration limit.",
+  "studio.producerError.bg3dTemplate.migrationPublishFailed": "Could not publish the existing 3D templates to the SQLite/OPFS manifest.",
+  "studio.producerError.bg3dTemplate.migrationDataPreservedNote": "Your existing IndexedDB data was not deleted.",
+});
+
+const BG3D_TEMPLATE_MIGRATION_ERROR_KEYS: Readonly<
+  Partial<Record<Bg3dTemplateLibraryErrorCode, string>>
+> = {
+  "migration-legacy-read-failed": "studio.producerError.bg3dTemplate.migrationLegacyReadFailed",
+  "migration-corrupt-rows": "studio.producerError.bg3dTemplate.migrationCorruptRows",
+  "migration-conversion-failed": "studio.producerError.bg3dTemplate.migrationConversionFailed",
+  "migration-total-size-exceeded": "studio.producerError.bg3dTemplate.migrationTotalSizeExceeded",
+  "migration-publish-failed": "studio.producerError.bg3dTemplate.migrationPublishFailed",
+};
+
+const BG3D_TEMPLATE_MIGRATION_ERROR_KO: Readonly<Record<string, string>> = {
+  "studio.producerError.bg3dTemplate.migrationLegacyReadFailed": "기존 IndexedDB 3D 템플릿을 SQLite/OPFS로 이전하지 못했습니다.",
+  "studio.producerError.bg3dTemplate.migrationCorruptRows": "기존 3D 템플릿 저장소에 손상되거나 지원하지 않는 행이 있어 자동 이전을 중단했습니다.",
+  "studio.producerError.bg3dTemplate.migrationConversionFailed": "기존 3D 템플릿을 정규 V12 행으로 변환하지 못했습니다.",
+  "studio.producerError.bg3dTemplate.migrationTotalSizeExceeded": "기존 3D 템플릿의 전체 크기가 V12 이전 한도를 초과했습니다.",
+  "studio.producerError.bg3dTemplate.migrationPublishFailed": "기존 3D 템플릿을 SQLite/OPFS manifest에 최종 게시하지 못했습니다.",
+};
+
+/**
+ * 표시 지점 전용 해석 (bg3d 템플릿 이전, R10): useStudioBg3dEditorEffects의
+ * 로드 실패 catch가 코드 문자열만으로 부른다(호스트 백 경유라 생산자 클래스를
+ * 직접 import하지 않는 표시 지점 사정에 맞춘 코드 기반 진입점).
+ * 이전 서브코드가 아니면 null — 호출자는 일반 저장소 오류 문구로 폴백한다.
+ */
+export function resolveBg3dTemplateMigrationErrorByCode(code: string): string | null {
+  const key = BG3D_TEMPLATE_MIGRATION_ERROR_KEYS[code as Bg3dTemplateLibraryErrorCode];
+  if (!key) return null;
+  return resolveProducerError(key, BG3D_TEMPLATE_MIGRATION_ERROR_KO[key]);
+}
+
+/** 이전 실패 안내에 붙는 보존 고지 — 이관 전 표시 지점의 접미 문구 그대로다. */
+export function resolveBg3dTemplateMigrationDataPreservedNote(): string {
+  return resolveProducerError(
+    "studio.producerError.bg3dTemplate.migrationDataPreservedNote",
+    "기존 IndexedDB 데이터는 삭제하지 않았습니다.",
+  );
 }
