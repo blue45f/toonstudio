@@ -29,6 +29,8 @@ vi.mock("../components/AdminAuditLogs", () => ({ AdminAuditLogs: ({ userId }: { 
 vi.mock("../components/AdminCampaigns", () => ({ AdminCampaigns: ({ uid }: { uid: string }) => <p>campaigns:{uid}</p> }));
 vi.mock("../components/AdminOperatingMode", () => ({ AdminOperatingMode: ({ uid }: { uid: string }) => <p>operation-policy:{uid}</p> }));
 vi.mock("../components/AdminOps", () => ({ AdminOps: ({ uid }: { uid: string }) => <p>ops:{uid}</p> }));
+// 운영 경로는 연동 화면도 함께 그린다. 실제 화면은 상태 문구 사전까지 불러와 느리게 풀리고, 이 시험은 길 안내만 본다.
+vi.mock("../components/AdminIntegrations", () => ({ AdminIntegrations: () => <p>integrations</p> }));
 vi.mock("../AdminMembersPage", () => ({ AdminMembersPage: () => { const gate = useAdminGate(); return <p>members:{gate.uid}:{gate.gate.kind}</p>; } }));
 vi.mock("../AdminCommunityPage", () => ({ AdminCommunityPage: () => { const gate = useAdminGate(); return <p>community:{gate.uid}:{gate.gate.kind}</p>; } }));
 

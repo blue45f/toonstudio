@@ -85,6 +85,9 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "./StudioReferenceRebuildPresets",
       "./studio-bg3d-asset-rights-catalog",
       "./useStudioBg3dAssetRights",
+      // 상태 문구를 번역 함수로 그리면서 번역기와 문구 사전 등록 모듈이 값 import 로 들어왔다. 둘 다 렌더러·파일 입력과 무관하다.
+      "@/shared/lib/i18n",
+      "../studio-bg3d-panel-status-i18n",
     ]);
     expect(imports.dynamicImports).toEqual([]);
     const wrapper = moduleSource("./StudioBg3dAssetLibraryPanelWithPresets.tsx");
