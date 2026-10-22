@@ -102,13 +102,28 @@ describe("새 문구의 말투·오류 문형 가드", () => {
     }
   });
 
-  it("사이드바의 지연 로드 안내도 해요체다(컴포넌트에 직접 적힌 문구)", () => {
-    const sidebar = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "StudioBg3dEditorSidebar.tsx"), "utf8");
-    const labels = [...sidebar.matchAll(/label="([^"]*(?:웹툰 배경|방 만들기) 도구를 불러오는[^"]*)"/gu)].map((match) => match[1]!);
-    expect(labels).toHaveLength(2);
-    for (const label of labels) {
-      expect(findToneViolations(label, "polite"), label).toEqual([]);
-      expect(registersInFlow([label]).has("polite"), label).toBe(true);
+  it("사이드바의 지연 로드 안내도 해요체다(번역 키로 옮겨진 문구: 컴포넌트의 폴백과 ko 사전 값)", () => {
+    // 이 안내는 label 속성에 한국어를 직접 적지 않고 t("키", "한국어 폴백") 으로 옮겨졌다(문구는 그대로).
+    // 화면에는 ko 사전의 값이 나오고 컴포넌트에는 폴백이 남으므로, 두 곳을 모두 같은 가드로 읽는다.
+    const here = dirname(fileURLToPath(import.meta.url));
+    const sidebar = readFileSync(join(here, "StudioBg3dEditorSidebar.tsx"), "utf8");
+    const koDictionary = JSON.parse(
+      readFileSync(join(here, "../../../../public/i18n/studio/canvas/ko.json"), "utf8"),
+    ) as Record<string, string | undefined>;
+    const notices = [
+      ...sidebar.matchAll(/\bt\("(studio\.canvas\.panelLoading\.(?:webtoonBackgroundTools|roomBuilderTools))",\s*"([^"]*)"\)/gu),
+    ].map((match) => ({ key: match[1] ?? "", fallback: match[2] ?? "" }));
+    // 안내가 사이드바에서 사라지거나 다른 모양으로 바뀌면 빈 검사가 되므로, 두 안내를 정확히 찾았는지부터 확인한다.
+    expect(notices.map(({ key }) => key).sort()).toEqual([
+      "studio.canvas.panelLoading.roomBuilderTools",
+      "studio.canvas.panelLoading.webtoonBackgroundTools",
+    ]);
+    for (const { key, fallback } of notices) {
+      for (const [where, text] of [["사이드바 폴백", fallback], ["ko 사전", koDictionary[key] ?? ""]] as const) {
+        const label = `${key} ${where}: ${text}`;
+        expect(findToneViolations(text, "polite"), label).toEqual([]);
+        expect(registersInFlow([text]).has("polite"), label).toBe(true);
+      }
     }
   });
 });

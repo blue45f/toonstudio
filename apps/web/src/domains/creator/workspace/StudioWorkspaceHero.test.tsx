@@ -45,7 +45,8 @@ describe("studio workspace hero rendering", () => {
     );
     const cta = screen.getByRole("link", { name: /새 작품 만들기/ });
     expect(cta.getAttribute("data-tour-target")).toBe("continue");
-    expect(cta.getAttribute("href")).toBe("/studio/new");
+    // 이어갈 작품이 없으면 resumeHref(양식 직행)가 아니라 작품 시작 정문(/create)으로 간다(A5 — 시작 입구 단일화).
+    expect(cta.getAttribute("href")).toBe("/create");
     expect(screen.queryByRole("progressbar")).toBeNull();
   });
 });

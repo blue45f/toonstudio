@@ -13,30 +13,13 @@ import type { ReactElement } from "react";
 import { cn } from "@/shared/lib/utils";
 
 import type { StudioMannequinFootGroundingResult } from "./studio-mannequin-foot-grounding";
+import { describeStudioMannequinFootGroundingResult } from "./studio-mannequin-foot-grounding-status-text";
 
 export interface StudioMannequinFootGroundingToggleProps {
   readonly enabled: boolean;
   readonly onToggle: (enabled: boolean) => void;
   /** 마지막 접지 판정. 아직 포즈 변경이 없으면 null. */
   readonly lastResult: StudioMannequinFootGroundingResult | null;
-}
-
-export function describeStudioMannequinFootGroundingResult(
-  result: StudioMannequinFootGroundingResult,
-): string {
-  if (result.applied) {
-    return `자동 접지: 발바닥 밀착을 위해 골반을 ${(result.pelvisLiftMeters * 100).toFixed(1)}cm 올렸어요`;
-  }
-  if (result.supportGuardBlocked) {
-    return "자동 접지: 앉은 자세로 보고 발 관통을 그대로 뒀어요";
-  }
-  const { leftToeAngleDeg, rightToeAngleDeg } = result.groundingState;
-  const toeRoll = Math.max(leftToeAngleDeg, rightToeAngleDeg);
-  if (toeRoll > 0) return `자동 접지: toe roll ${toeRoll}° (걸음 자세)`;
-  if (result.groundingState.isLeftGrounded && result.groundingState.isRightGrounded) {
-    return "자동 접지: 양발 접지 중";
-  }
-  return "자동 접지: 접지 보정 없음";
 }
 
 export function StudioMannequinFootGroundingToggle({

@@ -5,8 +5,11 @@ import {
   applyStudioBg3dGlbTexturePaint,
   collectStudioBg3dGlbTexturePaintTargets,
 } from "./studio-bg3d-glb-texture-paint-three";
-import type { StudioBg3dGlbPaintCanvas, StudioBg3dGlbPaintCanvas2d } from "./studio-bg3d-glb-texture-paint";
-import type { StudioBg3dModelTexturePaint } from "./studio-bg3d-glb-texture-paint";
+import type {
+  StudioBg3dGlbPaintCanvas,
+  StudioBg3dGlbPaintCanvas2d,
+  StudioBg3dModelTexturePaint,
+} from "./studio-bg3d-glb-texture-paint";
 
 function stubContext(): StudioBg3dGlbPaintCanvas2d {
   const noop = () => undefined;

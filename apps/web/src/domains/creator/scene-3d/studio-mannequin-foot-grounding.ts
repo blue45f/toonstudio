@@ -46,8 +46,6 @@ type Mat3 = readonly [
   number, number, number,
 ];
 
-const IDENTITY_MAT3: Mat3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-
 function matMul(a: Mat3, b: Mat3): Mat3 {
   return [
     a[0] * b[0] + a[1] * b[3] + a[2] * b[6],
