@@ -16,7 +16,7 @@ describe("Character contact naturalness CI bootstrap", () => {
     const actionSteps = steps.filter((step) => step.uses);
 
     expect(actionSteps.slice(0, 3).map((step) => step.uses)).toEqual([
-      "actions/checkout@v6",
+      "actions/checkout@v7",
       "pnpm/action-setup@v6",
       "actions/setup-node@v6",
     ]);

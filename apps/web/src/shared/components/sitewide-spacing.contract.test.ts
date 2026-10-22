@@ -44,9 +44,8 @@ describe("install prompt and creator home spacing contracts", () => {
     expect(homePage).toContain('import "./creator-home-spacing.css"');
     expect(homePage.indexOf("creator-film.css")).toBeLessThan(homePage.indexOf("creator-home-spacing.css"));
     expect(homeExperience).toContain('import "./creator-home-spacing.css"');
-    expect(homeExperience.indexOf('className="cf-hero cf-shell"')).toBeLessThan(
-      homeExperience.indexOf('className="cf-shell cf-home-wayfinding"'),
-    );
+    // 첫 화면은 ReferenceCreatorDashboard 가 그린다(옛 필름형 cf-hero/cf-shell 마크업은 이 파일에 없다).
+    expect(homeExperience).toContain("<ReferenceCreatorDashboard />");
     expect(homeExperience).not.toContain("<CreatorHomeNavigation");
     expect(homeSpacingCss).toContain("--ch-page-gutter");
     expect(homeSpacingCss).toContain("--cf-shell-inline-total");
