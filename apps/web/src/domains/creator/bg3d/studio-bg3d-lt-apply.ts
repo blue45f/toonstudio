@@ -27,10 +27,12 @@ import {
 
 import {
   planStudioBg3dEditableCompositeDetach,
+  type StudioBg3dEditableCompositeDetachErrorCode,
   type StudioBg3dEditableCompositeDetachSuccess,
 } from "./studio-bg3d-editable-composite-detach-plan";
 import {
   planStudioBg3dLtLayers,
+  type StudioBg3dLtLayerPlanFailure,
   type StudioBg3dLtLayerPlanSuccess,
 } from "./studio-bg3d-lt-layer-plan";
 
@@ -59,6 +61,17 @@ export interface StudioBg3dLtApplyFailure {
   readonly message: string;
 }
 
+/**
+ * detach 생산자 실패의 코드 동반 통과 변형 (D4 전환 중간형): detach 생산자가 아직
+ * message를 함께 방출하므로 코드와 message를 같이 실어 표시 연속성을 유지한다.
+ * detach 생산자 전환이 끝나면 message 병기를 제거한다.
+ */
+export interface StudioBg3dLtDetachApplyFailure {
+  readonly ok: false;
+  readonly code: StudioBg3dEditableCompositeDetachErrorCode;
+  readonly message: string;
+}
+
 export interface StudioBg3dMergedCompositePlanSuccess {
   readonly ok: true;
   readonly anchorElementId: string;
@@ -82,7 +95,7 @@ export function planStudioBg3dMergedComposite(input: {
   readonly allocatedBundleId: string;
   readonly allocatedGroupId: string;
   readonly magicMaskMessage: string;
-}): StudioBg3dLtApplyFailure | StudioBg3dMergedCompositePlanSuccess {
+}): StudioBg3dLtApplyFailure | StudioBg3dLtLayerPlanFailure | StudioBg3dMergedCompositePlanSuccess {
   const {
     result,
     elements,
@@ -131,7 +144,7 @@ export function planStudioBg3dMergedComposite(input: {
       bg3dScene: result.bg3dScene,
     } satisfies El,
   });
-  if (!plan.ok) return { ok: false, message: plan.message };
+  if (!plan.ok) return plan;
 
   return {
     ok: true,
@@ -174,7 +187,7 @@ export function planStudioBg3dRealtimeMergedApply(input: {
   readonly allocatedBundleId: string;
   readonly allocatedGroupId: string;
   readonly dccSource: StudioShared3dStageDccSource | null;
-}): StudioBg3dLtApplyFailure | StudioBg3dRealtimeMergedApplyPlanSuccess {
+}): StudioBg3dLtApplyFailure | StudioBg3dLtLayerPlanFailure | StudioBg3dRealtimeMergedApplyPlanSuccess {
   const merged = planStudioBg3dMergedComposite({
     result: input.result,
     elements: input.elements,
@@ -280,7 +293,7 @@ export function planStudioBg3dLtDetachComposite(input: {
   readonly plan: StudioBg3dLtLayerPlanSuccess<El>;
   readonly targetElementId: string | undefined;
   readonly pageLocked: boolean;
-}): StudioBg3dLtApplyFailure | {
+}): StudioBg3dLtApplyFailure | StudioBg3dLtDetachApplyFailure | {
   readonly ok: true;
   readonly detachEditableComposite: boolean;
   readonly detachPlan: StudioBg3dEditableCompositeDetachSuccess<El> | null;
@@ -315,7 +328,7 @@ export function planStudioBg3dLtDetachComposite(input: {
       })
     : null;
   if (detachPlan && !detachPlan.ok) {
-    return { ok: false, message: detachPlan.message };
+    return { ok: false, code: detachPlan.code, message: detachPlan.message };
   }
   return { ok: true, detachEditableComposite, detachPlan };
 }
