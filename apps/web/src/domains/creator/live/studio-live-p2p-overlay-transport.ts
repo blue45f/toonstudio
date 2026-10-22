@@ -101,22 +101,16 @@ export const STUDIO_LIVE_P2P_INK_INBOUND_MAX_PACKETS = 480;
 export const STUDIO_LIVE_P2P_INK_INBOUND_MAX_BYTES = 4 * 1024 * 1024;
 
 const STUDIO_LIVE_P2P_FABRIC_BUFFER_LIMITS = Object.freeze({
-  control: 128 * 1024,
-  realtime: 96 * 1024,
-  bulk: 512 * 1024,
+  control: 128 * 1024, realtime: 96 * 1024, bulk: 512 * 1024,
 } satisfies Readonly<Record<StudioPeerTrafficClass, number>>);
 const STUDIO_LIVE_P2P_NO_BINARY_LANES: readonly string[] = Object.freeze([]);
 const STUDIO_LIVE_P2P_RELIABLE_INK_LANES: readonly string[] = Object.freeze([STUDIO_LIVE_INK_CAPABILITY]);
 
 const STUDIO_LIVE_P2P_EPHEMERAL_KINDS = new Set<StudioLiveMessageKind>([
-  "presence:heartbeat",
-  "cursor:update",
-  "chat:message",
-  "preview:gesture",
+  "presence:heartbeat", "cursor:update", "chat:message", "preview:gesture",
 ]);
 const STUDIO_LIVE_P2P_COOPERATIVE_LOCK_KINDS = new Set<StudioLiveMessageKind>([
-  "lock:claim",
-  "lock:release",
+  "lock:claim", "lock:release",
 ]);
 
 export function isStudioLiveP2pMeshShareId(shareId: string): boolean {
@@ -166,11 +160,7 @@ function isDirectRelayEnvelope(
   return envelope.kind === "direct:relay";
 }
 
-interface StudioLiveP2pInkInboundWindow {
-  startedAt: number;
-  packetCount: number;
-  byteCount: number;
-}
+interface StudioLiveP2pInkInboundWindow { startedAt: number; packetCount: number; byteCount: number; }
 
 interface StudioLiveP2pPeerLink {
   readonly sessionId: string;
@@ -191,6 +181,17 @@ interface StudioLiveP2pPeerLink {
 }
 
 type StudioLiveP2pEphemeralSendResult = "sent" | "fallback" | "rejected";
+
+/** A4 D4 (R13): 생산자는 표시 문구 대신 구조화 코드만 방출한다(message = 코드, 도메인 liveP2p). */
+export type StudioLiveP2pErrorCode =
+  | "sync-request-invalid" | "sync-request-duplicate" | "update-invalid" | "publish-channel-not-ready" | "publish-partial-failed";
+
+export class StudioLiveP2pError extends Error {
+  constructor(readonly code: StudioLiveP2pErrorCode) {
+    super(code);
+    this.name = "StudioLiveP2pError";
+  }
+}
 
 /**
  * STUN-only data-channel mesh on top of the room's signaling transport.
@@ -226,21 +227,16 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
    * is served through the primary transport's targeted relay (direct:relay) instead,
    * which is what keeps spatial presence alive under STUN-only ICE. */
   private readonly relayPeerSessionIds = new Set<string>();
-  private readonly relayInboundWindows = new Map<string, {
-    startedAt: number;
-    count: number;
-    bytes: number;
-  }>();
+  private readonly relayInboundWindows = new Map<string,
+    { startedAt: number; count: number; bytes: number }>();
   private readonly peers = new Map<string, StudioLiveP2pPeerLink>();
   private readonly listeners = new Set<(value: unknown) => void>();
   private readonly inkListeners = new Set<(value: unknown) => void>();
   private readonly controlListeners = new Set<(event: StudioLiveTransportControlEvent) => void>();
   private readonly meshReadyChannels = new WeakSet<StudioLiveP2pRtcDataChannel>();
   private readonly crdtListeners = new Set<(message: StudioCrdtTransportMessage) => void>();
-  private readonly pendingCrdtSync = new Map<string, {
-    resolve: (response: StudioCrdtSyncResponse | null) => void;
-    timeout: ReturnType<typeof setTimeout>;
-  }>();
+  private readonly pendingCrdtSync = new Map<string,
+    { resolve: (response: StudioCrdtSyncResponse | null) => void; timeout: ReturnType<typeof setTimeout> }>();
   private readonly seenCrdtUpdateIds = new Set<string>();
   private readonly deliveredCrdtGeneration = new Map<string, number>();
   private meshGeneration = 0;
@@ -425,6 +421,8 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
         status: "timeout",
         resource: request.resource,
         requestId: request.requestId,
+        // A4 D4 (R13): 잠금 결과는 조건부 구간 — 코드만 부착하고 메시지 병기를 유지한다(설계 §3.8).
+        code: "no-authoritative-lock-path",
         message: "권위 있는 편집 잠금 경로가 없습니다.",
       });
     }
@@ -440,6 +438,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
         resource: request.resource,
         requestId: request.requestId,
         claimId: request.claimId,
+        // A4 D4 (R13): 잠금 결과 조건부 구간 — 기존 공용 code는 유지하고 메시지만 병기한다(설계 §3.8).
         code: "transport_error",
         message: "권위 있는 편집 잠금 경로가 없습니다.",
       });
@@ -585,10 +584,10 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       expectedWorkId: this.context.workId,
     });
     if (!parsed) {
-      return Promise.reject(new Error("CRDT 동기화 요청이 올바르지 않습니다."));
+      return Promise.reject(new StudioLiveP2pError("sync-request-invalid"));
     }
     if (this.pendingCrdtSync.has(parsed.requestId)) {
-      return Promise.reject(new Error("같은 CRDT 동기화 요청이 이미 진행 중입니다."));
+      return Promise.reject(new StudioLiveP2pError("sync-request-duplicate"));
     }
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
@@ -617,12 +616,12 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       expectedWorkId: this.context.workId,
     });
     if (!parsed) {
-      return Promise.reject(new Error("CRDT 업데이트가 올바르지 않습니다."));
+      return Promise.reject(new StudioLiveP2pError("update-invalid"));
     }
     if (this.closed || this.peers.size === 0
       || this.peers.size !== this.knownPeerSessionIds.size
       || this.openPeerChannelCount() !== this.peers.size) {
-      return Promise.reject(new Error("P2P 원고 전송 채널이 준비되지 않았습니다."));
+      return Promise.reject(new StudioLiveP2pError("publish-channel-not-ready"));
     }
     const duplicate = this.deliveredCrdtGeneration.get(parsed.updateId) === this.meshGeneration;
     if (!duplicate) {
@@ -640,7 +639,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
         },
       });
       if (!delivered) {
-        return Promise.reject(new Error("일부 P2P 참여자에게 원고를 전송하지 못해 다시 시도합니다."));
+        return Promise.reject(new StudioLiveP2pError("publish-partial-failed"));
       }
       this.rememberMeshCrdtUpdateId(parsed.updateId);
       // Receiving an ID or delivering it to a previous set of peers is not proof that a new
