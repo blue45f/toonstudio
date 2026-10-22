@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { StudioProductionBibleError } from "./studio-production-bible-error";
+import { resolveStudioProductionBibleImportError } from "./status-i18n/studio-producer-error-i18n-bible";
 import {
   createEmptyStudioPromisePayoffLedger,
   mergeStudioPromisePayoffLedgers,
@@ -7,6 +9,8 @@ import {
   StudioPromisePayoffLedgerSchema,
   type StudioPromisePayoffLedger,
 } from "./studio-promise-payoff-ledger";
+
+export { StudioProductionBibleError, type StudioProductionBibleErrorCode, type StudioProductionBibleImportError, type StudioProductionBibleImportErrorCode } from "./studio-production-bible-error";
 
 export const STUDIO_PRODUCTION_BIBLE_VERSION = 1 as const;
 export const STUDIO_PRODUCTION_BIBLE_MAX_ENTRIES = 256;
@@ -130,7 +134,8 @@ export interface StudioProductionBibleReferenceIssue {
     | "linkedPropIds"
     | "referenceAssetIds";
   readonly referenceId: string;
-  readonly message: string;
+  /** A4 D4 (R15): 표시 문구 대신 코드 해석용 params만 싣는다 — template은 issue code가 정한다. */
+  readonly messageParams: { readonly name: string; readonly targetKind?: StudioProductionBibleEntryKind };
 }
 
 export interface StudioProductionBibleDiagnosticOptions {
@@ -199,10 +204,7 @@ export interface StudioProductionBiblePersistenceResult {
 }
 
 export interface StudioProductionBibleRepositoryOptions {
-  /**
-   * V12 never reads legacy stores by default. Tests/dev import tools must opt in and inject the
-   * exact adapters they intend to inspect; browser globals are deliberately never discovered.
-   */
+  /** V12 never reads legacy stores by default. Tests/dev import tools must opt in and inject the exact adapters they intend to inspect; browser globals are deliberately never discovered. */
   readonly legacyDataPolicy?: "discard" | "import-explicit";
   readonly indexedDB?: IDBFactory | null;
   readonly localStorage?: StudioProductionBibleLocalStorage | null;
@@ -418,10 +420,7 @@ export function createEmptyStudioProductionBible(): StudioProductionBible {
   };
 }
 
-/**
- * Normalizes current and early scene/location/prop containers. Records without a client-owned ID
- * are dropped rather than receiving an unstable ID derived from a mutable name.
- */
+/** Normalizes current and early scene/location/prop containers. Records without a client-owned ID are dropped rather than receiving an unstable ID derived from a mutable name. */
 export function normalizeStudioProductionBible(value: unknown): StudioProductionBible {
   let decoded = value;
   if (typeof value === "string") {
@@ -463,18 +462,18 @@ export function serializeStudioProductionBible(
 
 export function parseStudioProductionBibleImport(
   text: string
-): { ok: true; bible: StudioProductionBible } | { ok: false; error: string } {
+): { ok: true; bible: StudioProductionBible } | { ok: false; error: StudioProductionBibleImportError } {
   if (new TextEncoder().encode(text).byteLength > STUDIO_PRODUCTION_BIBLE_MAX_IMPORT_BYTES) {
     return {
       ok: false,
-      error: `바이블 파일은 ${Math.floor(STUDIO_PRODUCTION_BIBLE_MAX_IMPORT_BYTES / 1024 / 1024)}MB 이하여야 해요.`,
+      error: { code: "importTooLarge", params: { size: String(Math.floor(STUDIO_PRODUCTION_BIBLE_MAX_IMPORT_BYTES / 1024 / 1024)) } },
     };
   }
   let decoded: unknown;
   try {
     decoded = JSON.parse(text) as unknown;
   } catch {
-    return { ok: false, error: "장면·장소·소품 바이블 JSON을 해석하지 못했어요." };
+    return { ok: false, error: { code: "importInvalidJson" } };
   }
   if (
     !Array.isArray(decoded)
@@ -482,7 +481,7 @@ export function parseStudioProductionBibleImport(
     && !(isRecord(decoded) && Array.isArray(decoded.entries))
     && !(isRecord(decoded) && isRecord(decoded.promisePayoffLedger))
   ) {
-    return { ok: false, error: "지원하는 바이블 항목 목록을 찾지 못했어요." };
+    return { ok: false, error: { code: "importNotDocument" } };
   }
   return { ok: true, bible: normalizeStudioProductionBible(decoded) };
 }
@@ -511,15 +510,15 @@ export function addStudioProductionBibleEntry(
     createStudioProductionBibleEntryId
 ): StudioProductionBible {
   if (bible.entries.length >= STUDIO_PRODUCTION_BIBLE_MAX_ENTRIES) {
-    throw new Error(
-      `장면·장소·소품은 합쳐서 최대 ${STUDIO_PRODUCTION_BIBLE_MAX_ENTRIES}개까지 저장할 수 있어요.`
-    );
+    throw new StudioProductionBibleError("tooManyEntries", {
+      max: String(STUDIO_PRODUCTION_BIBLE_MAX_ENTRIES),
+    });
   }
   const id = normalizeId(input.id) || normalizeId(createId(input.kind));
   const entry = normalizeEntry({ ...input, id, kind: input.kind });
-  if (!entry) throw new Error("유효한 종류와 안정적인 항목 ID가 필요해요.");
+  if (!entry) throw new StudioProductionBibleError("invalidEntryId");
   if (bible.entries.some((candidate) => candidate.id === entry.id)) {
-    throw new Error("이미 사용 중인 바이블 항목 ID예요.");
+    throw new StudioProductionBibleError("duplicateId");
   }
   return canonicalBible([...bible.entries, entry], bible.promisePayoffLedger);
 }
@@ -529,16 +528,16 @@ export function patchStudioProductionBibleEntry(
   entryId: string,
   patch: StudioProductionBibleEntryPatch
 ): StudioProductionBible {
-  if (!isRecord(patch)) throw new Error("올바르지 않은 바이블 수정 내용이에요.");
+  if (!isRecord(patch)) throw new StudioProductionBibleError("invalidPatch");
   for (const key of Object.keys(patch)) {
     if (!PATCH_FIELDS.has(key)) {
-      throw new Error(`수정할 수 없는 바이블 필드예요: ${key}`);
+      throw new StudioProductionBibleError("forbiddenField", { field: key });
     }
   }
   const index = bible.entries.findIndex((entry) => entry.id === entryId);
   if (index < 0) return bible;
   const next = normalizeEntry({ ...bible.entries[index], ...patch });
-  if (!next) throw new Error("바이블 항목을 정규화하지 못했어요.");
+  if (!next) throw new StudioProductionBibleError("normalizeFailed");
   const entries = bible.entries.slice();
   entries[index] = next;
   return canonicalBible(entries, bible.promisePayoffLedger);
@@ -728,7 +727,7 @@ export function diagnoseStudioProductionBibleReferences(
           entryKind: entry.kind,
           field,
           referenceId,
-          message: `${kindLabel(entry.kind)} "${entry.name || entry.id}"이(가) 없는 ${kindLabel(expectedKind)} ID "${referenceId}"을(를) 참조합니다.`,
+          messageParams: { name: entry.name || entry.id },
         });
       } else if (target.kind !== expectedKind) {
         issues.push({
@@ -737,7 +736,7 @@ export function diagnoseStudioProductionBibleReferences(
           entryKind: entry.kind,
           field,
           referenceId,
-          message: `참조 "${referenceId}"은(는) ${kindLabel(target.kind)}이지만 ${kindLabel(expectedKind)} 연결에 들어 있습니다.`,
+          messageParams: { name: entry.name || entry.id, targetKind: target.kind },
         });
       }
     }
@@ -753,7 +752,7 @@ export function diagnoseStudioProductionBibleReferences(
           entryKind: entry.kind,
           field: "linkedCharacterIds",
           referenceId,
-          message: `${kindLabel(entry.kind)} "${entry.name || entry.id}"이(가) 캐릭터 바이블에 없는 ID "${referenceId}"을(를) 참조합니다.`,
+          messageParams: { name: entry.name || entry.id },
         });
       }
     }
@@ -768,7 +767,7 @@ export function diagnoseStudioProductionBibleReferences(
           entryKind: entry.kind,
           field: "referenceAssetIds",
           referenceId,
-          message: `${kindLabel(entry.kind)} "${entry.name || entry.id}"이(가) 로컬 에셋에 없는 ID "${referenceId}"을(를) 참조합니다.`,
+          messageParams: { name: entry.name || entry.id },
         });
       }
     }
@@ -1025,8 +1024,7 @@ function warningText(messages: readonly string[]): string | undefined {
  * Explicit legacy import/test repository. The default policy is discard and therefore touches no
  * IndexedDB or localStorage global. Supplying `legacyDataPolicy: "import-explicit"` plus concrete
  * adapters is the only way to inspect the pre-V12 stores. Product code uses the SQLite repository.
- * Memory always receives the last accepted edit so an injected-adapter failure is surfaced without
- * losing the in-session value.
+ * Memory always receives the last accepted edit so an injected-adapter failure is surfaced without losing the in-session value.
  */
 export class StudioProductionBibleLocalRepository {
   private readonly memory = new Map<string, StudioProductionBible>();
@@ -1062,7 +1060,7 @@ export class StudioProductionBibleLocalRepository {
               localOnly: true,
             };
           }
-          warnings.push(`IndexedDB 레거시 바이블을 가져오지 않았습니다: ${imported.error}`);
+          warnings.push(`IndexedDB 레거시 바이블을 가져오지 않았습니다: ${resolveStudioProductionBibleImportError(imported.error)}`);
         }
       } catch {
         warnings.push("IndexedDB를 읽지 못해 로컬 저장소로 전환했습니다.");
@@ -1085,7 +1083,7 @@ export class StudioProductionBibleLocalRepository {
               ...(warningText(warnings) ? { warning: warningText(warnings) } : {}),
             };
           }
-          warnings.push(`localStorage 레거시 바이블을 가져오지 않았습니다: ${imported.error}`);
+          warnings.push(`localStorage 레거시 바이블을 가져오지 않았습니다: ${resolveStudioProductionBibleImportError(imported.error)}`);
         }
       } catch {
         warnings.push("localStorage를 읽지 못해 메모리 복구본을 사용합니다.");

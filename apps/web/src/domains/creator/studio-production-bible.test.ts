@@ -149,10 +149,10 @@ describe("studio production bible schema and stable operations", () => {
         kind: "scene",
         name: "중복",
       })
-    ).toThrow(/이미 사용 중/);
+    ).toThrow(/duplicateId/);
     expect(() =>
       patchStudioProductionBibleEntry(renamed, generated, { id: "changed" } as never)
-    ).toThrow(/수정할 수 없는/);
+    ).toThrow(/forbiddenField/);
   });
 
   it("bounds entry, name, and list growth without mutating the source", () => {
@@ -176,7 +176,7 @@ describe("studio production bible schema and stable operations", () => {
     for (let index = 0; index < STUDIO_PRODUCTION_BIBLE_MAX_ENTRIES; index += 1) {
       full = withEntry(full, "prop", `prop-${index}`);
     }
-    expect(() => withEntry(full, "prop", "overflow")).toThrow(/최대/);
+    expect(() => withEntry(full, "prop", "overflow")).toThrow(/tooManyEntries/);
   });
 
   it("duplicates with a new stable ID and cleans inbound links on delete", () => {

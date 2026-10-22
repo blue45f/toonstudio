@@ -168,7 +168,10 @@ describe("generic 3D model manifest", () => {
     expect(manifest.admission.status).toBe("ready");
     expect(getStudioGeneric3dCapability(manifest, "bone-pose").availability).toBe("available");
     expect(getStudioGeneric3dCapability(manifest, "skinned-deformation").availability).toBe("available");
-    expect(getStudioGeneric3dCapability(manifest, "animation-playback").detail).toContain("3개");
+    expect(getStudioGeneric3dCapability(manifest, "animation-playback")).toMatchObject({
+      detailCode: "animationAvailable",
+      detailParams: { count: "3" },
+    });
     expect(getStudioGeneric3dCapability(manifest, "normal-map").availability).toBe("available");
   });
 
@@ -203,8 +206,11 @@ describe("generic 3D model manifest", () => {
     });
 
     expect(manifest.admission.status).toBe("blocked");
-    // A4 D4 (R11): 집계 경계에서 코드를 해석해 이관 전 생산자 원문과 같은 문구가 실린다.
-    expect(manifest.admission.message).toBe("이 기기의 삼각형 수 기준을 초과했습니다. 메시를 경량화해 주세요.");
+    // A4 D4 (R11·R15): 집계 경계에서 GLB 코드를 해석한 문구가 패스스루 params에 실린다.
+    expect(manifest.admission).toMatchObject({
+      messageCode: "passthrough",
+      messageParams: { text: "이 기기의 삼각형 수 기준을 초과했습니다. 메시를 경량화해 주세요." },
+    });
     expect(manifest.rigStatus).toBe("unverified");
     expect(manifest.classification).toBe("creature");
     expect(manifest.classificationSource).toBe("manual");
