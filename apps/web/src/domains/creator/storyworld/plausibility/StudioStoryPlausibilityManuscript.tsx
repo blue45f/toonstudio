@@ -8,6 +8,7 @@
 import { FileUp, Merge, Scissors } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useT } from "@/shared/lib/i18n";
+import { r5CreatorStatusText } from "../../r5-cat1-status-i18n";
 import "../storyworld-status-i18n";
 
 import type { StoryworldProject } from "../studio-storyworld-causality";
@@ -334,7 +335,7 @@ export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
             </div>
           ) : null}
           {mode === "replace" && props.isExampleSeed ? (
-            <p className="plausibility-hint">지금 설정은 처음 보여 드린 예시라서, 새로 시작해도 잃을 내 작업이 없어요.</p>
+            <p className="plausibility-hint">{r5CreatorStatusText("r5cat1.creator.plausibility.exampleSeedHint", "지금 설정은 처음 보여 드린 예시라서, 새로 시작해도 잃을 내 작업이 없어요.")}</p>
           ) : null}
           <label className="plausibility-field">
             <span>작품 이름 (선택)</span>

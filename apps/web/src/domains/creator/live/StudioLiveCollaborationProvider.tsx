@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { useStudioLiveAutoReconnect } from "./use-studio-live-auto-reconnect";
+import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { studioAutomergeOfflineBranchEnabled } from "../offline-branch/studio-offline-branch-feature";
 
 import { resolveStudioLiveCanonicalAuthority } from "./studio-live-canonical-authority";
@@ -399,7 +400,7 @@ export function StudioLiveCollaborationProvider({
     if (transportPreference === "server" && !transportFactory) {
       setAvailability("error");
       setMode("server");
-      setError("인증된 팀 연결 정보가 없어 이 기기 테스트 모드로 자동 전환하지 않았습니다. 다시 로그인해 주세요.");
+      setError(frozenStatus3Text("studio.frozenStatus3.liveProv.noTeamConnection", "인증된 팀 연결 정보가 없어 이 기기 테스트 모드로 자동 전환하지 않았습니다. 다시 로그인해 주세요."));
       onRoomChange?.(null);
       return;
     }
@@ -428,7 +429,7 @@ export function StudioLiveCollaborationProvider({
       } catch (cause) {
         if (cancelled) return;
         setAvailability("error");
-        setError(messageFrom(cause, "공동작업 세션을 만들지 못했습니다."));
+        setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.sessionCreateFailed", "공동작업 세션을 만들지 못했습니다.")));
         onRoomChange?.(null);
         return;
       }
@@ -459,7 +460,7 @@ export function StudioLiveCollaborationProvider({
         });
       } catch (cause) {
         setAvailability("error");
-        setError(messageFrom(cause, "공동작업 세션을 만들지 못했습니다."));
+        setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.sessionCreateFailed", "공동작업 세션을 만들지 못했습니다.")));
         onRoomChange?.(null);
         return;
       }
@@ -587,7 +588,7 @@ export function StudioLiveCollaborationProvider({
           if (document.hidden) nextRoom.clearCursor();
           nextRoom.updatePresence({ visibility: document.hidden ? "idle" : "active" });
         } catch (cause) {
-          if (!cancelled) setError(messageFrom(cause, "작업 상태를 팀에 알리지 못했습니다."));
+          if (!cancelled) setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.presenceNotifyFailed", "작업 상태를 팀에 알리지 못했습니다.")));
         }
       };
       let visibilityListenerActive = false;
@@ -666,10 +667,7 @@ export function StudioLiveCollaborationProvider({
                   () => crdtBinding!.flushAndWaitForDraftProtection(),
                 ).catch((promotionCause) => {
                   if (!cancelled) {
-                    setError(messageFrom(
-                      promotionCause,
-                      "오프라인 변경을 서버 정본에 합치지 못했습니다.",
-                    ));
+                    setError(messageFrom(promotionCause, frozenStatus3Text("studio.frozenStatus3.liveProv.offlineMergeFailed", "오프라인 변경을 서버 정본에 합치지 못했습니다.")));
                   }
                 });
               }
@@ -791,10 +789,7 @@ export function StudioLiveCollaborationProvider({
                   },
                 });
             } catch (offlineCause) {
-              setError(messageFrom(
-                offlineCause,
-                "오프라인 변경 보관함을 준비하지 못했습니다. 온라인 공동 편집은 계속 사용할 수 있습니다.",
-              ));
+              setError(messageFrom(offlineCause, frozenStatus3Text("studio.frozenStatus3.liveProv.offlineOutboxFailed", "오프라인 변경 보관함을 준비하지 못했습니다. 온라인 공동 편집은 계속 사용할 수 있습니다.")));
               offlineBranchPeerSync?.close();
               offlineBranchPeerSync = null;
               await offlineBranchRuntime?.close().catch(() => undefined);
@@ -870,7 +865,7 @@ export function StudioLiveCollaborationProvider({
           setLocks([]);
           setChatMessages([]);
           setAvailability("error");
-          setError(messageFrom(cause, "공동작업 채널에 연결하지 못했습니다."));
+          setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.channelConnectFailed", "공동작업 채널에 연결하지 못했습니다.")));
         }
       })();
 
@@ -936,7 +931,7 @@ export function StudioLiveCollaborationProvider({
       previousPageIdRef.current = currentPageId;
       room.updatePresence({ pageId: currentPageId, tool: currentTool });
     } catch (cause) {
-      setError(messageFrom(cause, "현재 작업 페이지를 팀에 알리지 못했습니다."));
+      setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.pageNotifyFailed", "현재 작업 페이지를 팀에 알리지 못했습니다.")));
     }
   }, [currentPageId, currentTool, room]);
 
@@ -966,7 +961,7 @@ export function StudioLiveCollaborationProvider({
       !outboxScope ||
       !workId
     ) {
-      throw new Error("내보낼 수 있는 공동 편집 복구 frontier가 없습니다.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.liveProv.recoveryNoFrontier", "내보낼 수 있는 공동 편집 복구 frontier가 없습니다."));
     }
     const recoveryModule = await import( "./studio-crdt-recovery-vault");
     const currentBoundary =
@@ -974,13 +969,13 @@ export function StudioLiveCollaborationProvider({
         ? recoveryBoundaryRef.current
         : null;
     if (!currentBoundary) {
-      throw new Error("현재 공동 편집 복구 경계를 확인할 수 없습니다.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.liveProv.recoveryBoundaryUnknown", "현재 공동 편집 복구 경계를 확인할 수 없습니다."));
     }
     const vault = recoveryModule.createStudioCrdtRecoveryVault();
     const entries = await vault.list(outboxScope, workId);
     const matchingEntry = findStudioLiveRecoveryBoundaryEntry(entries, currentBoundary);
     if (!matchingEntry) {
-      throw new Error("거부된 변경을 복구 저장소에 보존하는 중입니다. 잠시 뒤 다시 시도해 주세요.");
+      throw new Error(frozenStatus3Text("studio.frozenStatus3.liveProv.recoveryPreserving", "거부된 변경을 복구 저장소에 보존하는 중입니다. 잠시 뒤 다시 시도해 주세요."));
     }
     await recoveryModule.downloadStudioCrdtRecoveryBundle({
       vault,
@@ -1050,7 +1045,7 @@ export function StudioLiveCollaborationProvider({
       try {
         return room.sendChatMessage(text) !== null;
       } catch (cause) {
-        setError(messageFrom(cause, "채팅 메시지를 보내지 못했습니다."));
+        setError(messageFrom(cause, frozenStatus3Text("studio.frozenStatus3.liveProv.chatSendFailed", "채팅 메시지를 보내지 못했습니다.")));
         return false;
       }
     },

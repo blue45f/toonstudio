@@ -1,4 +1,5 @@
 import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
 /**
  * 통합 Command Search — 감사 §2.8 이 지적한 네 개의 부분 검색창을 대신하는
  * 단일 표면.
@@ -118,11 +119,12 @@ export interface StudioCommandSearchHandlerAvailability {
   help: boolean;
 }
 
-const NO_ACTION: StudioCommandSearchAction = Object.freeze({
-  kind: "none",
-  badge: "열 수 없음",
-  hint: "이 항목은 아직 검색에서 열 수 없습니다",
-});
+const noAction = (): StudioCommandSearchAction =>
+  Object.freeze({
+    kind: "none",
+    badge: "열 수 없음",
+    hint: r4CreatorStatusText("r4cat1.creator.commandSearch.noActionHint", "이 항목은 아직 검색에서 열 수 없습니다"),
+  });
 
 const SELECTION_REQUIRED_ACTION: StudioCommandSearchAction = Object.freeze({
   kind: "none",
@@ -144,15 +146,15 @@ function studioCommandSearchAction(
       }
       return available.inspector
         ? { kind: "inspector", badge: "이동", hint: "인스펙터로 이동" }
-        : NO_ACTION;
+        : noAction();
     case "palette":
       return available.palette
         ? { kind: "palette", badge: "펼치기", hint: "팔레트 펼치기" }
-        : NO_ACTION;
+        : noAction();
     case "tutorial":
       return available.tutorial
         ? { kind: "tutorial", badge: "튜토리얼", hint: "튜토리얼 열기" }
-        : NO_ACTION;
+        : noAction();
     case "command": {
       const binding = commandBindings.get(target.commandId);
       if (binding) {
@@ -168,11 +170,11 @@ function studioCommandSearchAction(
       // opts in. Search never infers safety from a missing `danger` flag.
       return available.help
         ? { kind: "help", badge: "도움말", hint: "도움말 열기" }
-        : NO_ACTION;
+        : noAction();
     }
     default:
       // `panel`(자동 액션)처럼 아직 소비자가 없는 타깃. 열리는 척하지 않는다.
-      return NO_ACTION;
+      return noAction();
   }
 }
 

@@ -1,4 +1,4 @@
-import { formatI18nTemplate, translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy"; import { r5CreatorStatusText } from "../r5-cat1-status-i18n";
 import {
   ChevronRight,
   Clapperboard,
@@ -605,7 +605,7 @@ export function StudioAiComicDirectorPanel({
         eventType: "quality.completed",
       });
     } catch (qualityError) {
-      const message = qualityError instanceof Error ? qualityError.message : "후보 품질을 분석하지 못했습니다.";
+      const message = qualityError instanceof Error ? qualityError.message : r5CreatorStatusText("r5cat1.creator.aiComicDirector.qualityFailed", "후보 품질을 분석하지 못했습니다.");
       setMediaMessage(message);
       await finishJob(job, { status: "failed", error: message, eventType: "quality.failed" });
     } finally {
@@ -724,7 +724,7 @@ export function StudioAiComicDirectorPanel({
         eventType: "decomposition.completed",
       });
     } catch (layerError) {
-      const message = layerError instanceof Error ? layerError.message : "레이어를 분리하지 못했습니다.";
+      const message = layerError instanceof Error ? layerError.message : r5CreatorStatusText("r5cat1.creator.aiComicDirector.layerSplitFailed", "레이어를 분리하지 못했습니다.");
       setMediaMessage(message);
       await finishJob(job, { status: "failed", error: message, eventType: "decomposition.failed" });
     } finally {

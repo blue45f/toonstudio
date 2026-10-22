@@ -1,4 +1,5 @@
 import { communityStatusText } from "../community-status-i18n";
+import { r4CommunityStatusText } from "../r4-cat1-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { EyeOff, MessageCircle, Send, AlertTriangle, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -433,7 +434,7 @@ function ReviewReplyItem({
             {collapsed ? "답글 펼치기" : "답글 접기"} ({children.length})
           </button>
           ) : null}
-        {!canReply ? <p className="mt-2 text-xs text-fg-3">이 단계에서는 더 이상 답글을 달 수 없습니다.</p> : null}
+        {!canReply ? <p className="mt-2 text-xs text-fg-3">{r4CommunityStatusText("r4cat1.community.reviewReplies.closed", "이 단계에서는 더 이상 답글을 달 수 없습니다.")}</p> : null}
 
       {isOpen && (
         <div className="mt-2">

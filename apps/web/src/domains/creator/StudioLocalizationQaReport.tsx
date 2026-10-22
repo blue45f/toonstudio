@@ -1,4 +1,4 @@
-import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4"; import { r5CreatorStatusText } from "./r5-cat1-status-i18n";
 // 현지화 QA 리포트 — 대사 번역 패널 안에서 열리는 회차 단위 품질 보고서.
 //
 // 계산은 하나도 하지 않는다. `studio-localization-qa.runStudioLocalizationQa()`가 낸
@@ -39,13 +39,13 @@ const SEVERITY_META: Readonly<
 const VERDICT_META = {
   pass: { label: "통과", chip: "border-good/35 bg-good/10 text-good", icon: CheckCircle2 },
   fail: { label: "미달", chip: "border-bad/35 bg-bad/10 text-bad", icon: ShieldAlert },
-  unscorable: { label: "채점 불가", chip: "border-warn/35 bg-warn/10 text-warn", icon: Info },
+  unscorable: { label: r5CreatorStatusText("r5cat1.creator.localizationQa.unscorable", "채점 불가"), chip: "border-warn/35 bg-warn/10 text-warn", icon: Info },
 } as const;
 
 const FAIL_REASON_LABEL: Readonly<Record<string, string>> = {
-  "critical-error": "치명 오류가 있으면 점수와 무관하게 미달입니다.",
+  "critical-error": panelStatusTextR4("studio.panelStatus.localizationQa.criticalErrorFailReason", "치명 오류가 있으면 점수와 무관하게 미달입니다."),
   "below-threshold": "품질 점수가 합격선에 못 미칩니다.",
-  "empty-denominator": "검사할 대사가 없어 점수를 낼 수 없습니다.",
+  "empty-denominator": r5CreatorStatusText("r5cat1.creator.localizationQa.emptyCues", "검사할 대사가 없어 점수를 낼 수 없습니다."),
 };
 
 function severityChip(severity: StudioMqmSeverity) {

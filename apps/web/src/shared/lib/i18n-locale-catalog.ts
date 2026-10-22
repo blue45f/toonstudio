@@ -105,7 +105,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "ca": 0.3248,
   "cs": 0.3302,
   "da": 0.3284,
-  "de": 0.3343,
+  "de": 0.9656,
   "el": 0.3308,
   "en": 1,
   "es": 0.3343,
@@ -114,7 +114,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "fa": 0.3278,
   "fi": 0.3248,
   "fil": 0.3213,
-  "fr": 0.3373,
+  "fr": 0.9419,
   "gl": 0.3308,
   "gu": 0.3314,
   "he": 0.3284,
@@ -166,7 +166,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "uz": 0.3219,
   "vi": 0.3254,
   "zh": 0.9828,
-  "zh-hant": 0.3432,
+  "zh-hant": 0.9828,
   "zu": 0.3308,
 };
 

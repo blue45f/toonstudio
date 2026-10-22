@@ -1,4 +1,4 @@
-import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -368,7 +368,7 @@ export function StudioAssetRightsManifestPanel({
           <SummaryMetric label="고유 에셋" value={result.manifest.summary.assetCount} />
           <SummaryMetric label="사용 위치" value={result.manifest.summary.placementCount} />
           <SummaryMetric
-            label="차단 오류"
+            label={panelStatusTextR4("studio.panelStatus.assetRights.blockingError", "차단 오류")}
             value={result.manifest.summary.errorCount}
             tone={result.manifest.summary.errorCount > 0 ? "bad" : "neutral"}
           />

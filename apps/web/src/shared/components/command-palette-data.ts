@@ -38,6 +38,7 @@ import {
 import type { PaletteCommand, PalettePage, PaletteStudioTool, PaletteMode } from "./command-palette-types";
 
 import { useApp } from "@/shared/lib/store";
+import { r5SharedStatusText } from "../r5-cat1-status-i18n";
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 import {
   SITE_NAVIGATION_ITEMS,
@@ -134,7 +135,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
           ctx.closePalette();
         }
       } catch {
-        ctx.showToast("링크 복사에 실패했습니다.");
+        ctx.showToast(r5SharedStatusText("r5cat1.shared.commandPalette.linkCopyFailed", "링크 복사에 실패했습니다."));
       }
     },
   },

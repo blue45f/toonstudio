@@ -38,6 +38,7 @@ import type {
 } from "./character-shaper-reference-recommend";
 import type { CharacterSlotEntry } from "./character-shaper-contract";
 import type { CharacterShaperReferenceDrawerProps } from "./character-shaper-ui-contract";
+import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import type { TrackingOptions } from "../vrm/studio-vrm-webcam-tracking";
 import type { StudioVrmPhotoPoseApplyPayload, StudioVrmPhotoPoseHandoff } from "../vrm/StudioVrmPhotoPoseScanner";
 import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -216,12 +217,12 @@ export function CharacterShaperReferenceDrawer({
     setApplied(null);
     if (!file.type.startsWith("image/")) {
       setPickedImage(null);
-      setPalette({ status: "error", palette: null, fileName: file.name, message: "이미지 파일만 읽을 수 있습니다." });
+      setPalette({ status: "error", palette: null, fileName: file.name, message: frozenStatus3Text("studio.frozenStatus3.refDrawer.imageOnlyAllowed", "이미지 파일만 읽을 수 있습니다.") });
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
       setPickedImage(null);
-      setPalette({ status: "error", palette: null, fileName: file.name, message: "24MB 이하 이미지를 올려 주세요." });
+      setPalette({ status: "error", palette: null, fileName: file.name, message: frozenStatus3Text("studio.frozenStatus3.refDrawer.imageTooLarge", "24MB 이하 이미지를 올려 주세요.") });
       return;
     }
     setPickedImage(file);
@@ -233,12 +234,7 @@ export function CharacterShaperReferenceDrawer({
         if (requestRef.current !== request) return;
         if (!image) {
           setGradeImage(null);
-          setPalette({
-            status: "error",
-            palette: null,
-            fileName: file.name,
-            message: "이 브라우저에서는 이미지를 읽을 수 없습니다.",
-          });
+          setPalette({ status: "error", palette: null, fileName: file.name, message: frozenStatus3Text("studio.frozenStatus3.refDrawer.imageUnreadableHere", "이 브라우저에서는 이미지를 읽을 수 없습니다.") });
           return;
         }
         setGradeImage({ width: image.width, height: image.height, rgba: image.data });
@@ -257,12 +253,7 @@ export function CharacterShaperReferenceDrawer({
         setRecommend({ status: "ready", result: combination });
       } catch {
         if (requestRef.current !== request) return;
-        setPalette({
-          status: "error",
-          palette: null,
-          fileName: file.name,
-          message: "이미지를 읽지 못했습니다. 다른 파일로 다시 시도해 주세요.",
-        });
+        setPalette({ status: "error", palette: null, fileName: file.name, message: frozenStatus3Text("studio.frozenStatus3.refDrawer.imageReadFailed", "이미지를 읽지 못했습니다. 다른 파일로 다시 시도해 주세요.") });
       }
     })();
   };
@@ -326,7 +317,7 @@ export function CharacterShaperReferenceDrawer({
     const result = binding.previewEntryId === entry.id && binding.commitPreview
       ? binding.commitPreview(entry)
       : binding.commit(entry);
-    setApplied(result.ok ? `${entry.label} 프리셋을 적용했습니다.` : (result.reason ?? "지금은 적용할 수 없습니다."));
+    setApplied(result.ok ? frozenStatus3Text("studio.frozenStatus3.refDrawer.presetApplied", { label: entry.label }, "{label} 프리셋을 적용했습니다.") : (result.reason ?? frozenStatus3Text("studio.frozenStatus3.refDrawer.applyUnavailableNow", "지금은 적용할 수 없습니다.")));
   };
 
   const applyComboAll = (dimensions: readonly ReferenceDimensionRecommendation[]) => {
@@ -339,7 +330,7 @@ export function CharacterShaperReferenceDrawer({
         : binding.commit(entry);
       if (result.ok) appliedCount += 1;
     }
-    setApplied(`추천 조합 ${dimensions.length}개 중 ${appliedCount}개를 적용했습니다.`);
+    setApplied(frozenStatus3Text("studio.frozenStatus3.refDrawer.comboApplied", { total: dimensions.length, applied: appliedCount }, "추천 조합 {total}개 중 {applied}개를 적용했습니다."));
   };
 
   const retryRecommendation = () => {
@@ -372,7 +363,7 @@ export function CharacterShaperReferenceDrawer({
     {
       id: "iris",
       label: "눈동자 색으로",
-      blockedReason: binding.profile.irisTintable === false ? "이 모델에서는 홍채 메시를 찾지 못했습니다." : null,
+      blockedReason: binding.profile.irisTintable === false ? frozenStatus3Text("studio.frozenStatus3.refDrawer.irisBlockedReason", "이 모델에서는 홍채 메시를 찾지 못했습니다.") : null,
       apply: (color) => binding.commitColor("iris", color),
     },
     {
@@ -505,7 +496,7 @@ export function CharacterShaperReferenceDrawer({
                       <span className="tabular-nums">{row.color.toUpperCase()}</span>
                     </>
                   ) : (
-                    "찾지 못했습니다"
+                    frozenStatus3Text("studio.frozenStatus3.refDrawer.notFoundValue", "찾지 못했습니다")
                   )}
                 </dd>
               </div>
@@ -524,7 +515,7 @@ export function CharacterShaperReferenceDrawer({
                 onClick={() => {
                   if (activeSwatch === null || target.blockedReason !== null) return;
                   target.apply(activeSwatch);
-                  setApplied(`${target.label.replace(" 색으로", "")} 색을 ${activeSwatch.toUpperCase()}로 바꿨습니다.`);
+                  setApplied(frozenStatus3Text("studio.frozenStatus3.refDrawer.colorChanged", { name: target.label.replace(" 색으로", ""), color: activeSwatch.toUpperCase() }, "{name} 색을 {color}로 바꿨습니다."));
                 }}
                 className={BUTTON}
               >
@@ -546,7 +537,7 @@ export function CharacterShaperReferenceDrawer({
           disabled={binding.busyReason !== null}
           onClick={() => {
             const result = binding.applyGradeRecommend?.(gradeImage);
-            if (result?.ok) setApplied("참고 이미지 프리셋 추천을 적용했습니다.");
+            if (result?.ok) setApplied(frozenStatus3Text("studio.frozenStatus3.refDrawer.gradePresetApplied", "참고 이미지 프리셋 추천을 적용했습니다."));
             else if (result?.reason) setApplied(result.reason);
           }}
         >
@@ -783,7 +774,7 @@ export function CharacterShaperReferenceDrawer({
                   aria-hidden
                   className={cn("size-1.5 rounded-full", faceDetected ? "bg-good" : "bg-warn")}
                 />
-                {faceDetected ? "얼굴 감지됨" : "얼굴을 찾는 중"}
+                {faceDetected ? frozenStatus3Text("studio.frozenStatus3.refDrawer.faceDetected", "얼굴 감지됨") : frozenStatus3Text("studio.frozenStatus3.refDrawer.faceSearching", "얼굴을 찾는 중")}
               </p>
             </div>
           ) : null}
@@ -791,7 +782,7 @@ export function CharacterShaperReferenceDrawer({
           {webcamLoading ? (
             <p role="status" className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold text-accent">
               <LoaderCircle size={13} aria-hidden className="animate-spin motion-reduce:animate-none" />
-              카메라와 트래킹 모델을 준비하는 중
+              {frozenStatus3Text("studio.frozenStatus3.refDrawer.webcamPreparing", "카메라와 트래킹 모델을 준비하는 중")}
             </p>
           ) : null}
 

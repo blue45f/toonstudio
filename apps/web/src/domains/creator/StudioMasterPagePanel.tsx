@@ -9,6 +9,8 @@ import { pageDisplayName } from "./studio-page-meta";
 
 import { cn } from "@/shared/lib/utils";
 
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
+
 /** 패널이 필요로 하는 최소 페이지 형태 — StudioPage 의 PageState 가 구조적으로 만족한다. */
 export type MasterPanelPageLike = {
   id: string;
@@ -133,8 +135,7 @@ export function StudioMasterPagePanel({
           <p className="text-[0.72rem] font-semibold text-fg-2">페이지별 표시</p>
           {masterCount === 0 && !editMode ? (
             <p className="rounded-lg border border-dashed border-line px-2 py-3 text-center text-[0.72rem] leading-relaxed text-fg-3">
-              아직 마스터 요소가 없어요. 위의 &lsquo;마스터 편집 시작&rsquo;을 누르고 로고나 문구를
-              추가해 보세요.
+              {r4CreatorStatusText("r4cat1.creator.masterPage.empty", "아직 마스터 요소가 없어요. 위의 ‘마스터 편집 시작’을 누르고 로고나 문구를 추가해 보세요.")}
             </p>
           ) : (
             <ul className="space-y-1">

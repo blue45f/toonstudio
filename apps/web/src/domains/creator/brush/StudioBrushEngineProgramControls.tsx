@@ -19,6 +19,7 @@ import {
 import { studioBrushPresetById } from "./studio-draw-ux";
 
 import { cn } from "@/shared/lib/utils";
+import { r5CreatorStatusText } from "../r5-cat1-status-i18n";
 
 const ENGINE_FAMILY_GUIDE: Readonly<Record<StudioBrushRenderFamily, {
   readonly label: string;
@@ -178,7 +179,7 @@ function StudioOilProgramMatrix({
           </p>
           <p className="mt-0.5 text-pretty text-fg-3">
             실제 유화 획에 적용되는 강모·소모·두께 구성입니다. 현재 효과 {activeCount}개
-            {presetName ? "" : " — 같은 기본 프리셋은 없습니다"}
+            {presetName ? "" : r5CreatorStatusText("r5cat1.creator.brushProgram.noSamePreset", " — 같은 기본 프리셋은 없습니다")}
           </p>
         </div>
         {changed ? (

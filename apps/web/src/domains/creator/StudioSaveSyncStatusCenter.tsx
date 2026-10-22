@@ -11,6 +11,7 @@
  */
 
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
 import {
   CheckCircle2,
   Clock,
@@ -228,7 +229,7 @@ export function StudioSaveSyncStatusCenter({
                 className="flex min-h-9 items-center gap-1.5 rounded-lg border border-danger/40 bg-raised px-2.5 text-[0.72rem] font-semibold text-danger hover:bg-danger/10 pointer-coarse:min-h-11"
               >
                 <RotateCcw className="size-3.5" aria-hidden />
-                <span>지금 다시 시도</span>
+                <span>{r4CreatorStatusText("r4cat1.creator.saveSync.retryNow", "지금 다시 시도")}</span>
               </button>
             ) : null}
             {view.canRecheckConnection && onRecheckConnection ? (

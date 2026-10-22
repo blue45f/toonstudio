@@ -51,6 +51,7 @@ import {
   STUDIO_ICON_STROKE,
   studioChromeIconClass,
 } from "./studio-chrome-ui";
+import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -141,37 +142,37 @@ function trapFocus(event: ReactKeyboardEvent<HTMLElement>, root: HTMLElement | n
 function failureText(reason: StudioWorkspaceInterchangeFailureReason): string {
   switch (reason) {
     case "catalog-full":
-      return "내 작업공간이 24개로 가득 찼습니다. 일부를 삭제하거나 같은 이름 교체를 선택해 주세요.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.catalogFull", "내 작업공간이 24개로 가득 찼습니다. 일부를 삭제하거나 같은 이름 교체를 선택해 주세요.");
     case "duplicate-workspace-id":
     case "duplicate-workspace-name":
-      return "파일 안에 중복된 작업공간 ID 또는 이름이 있습니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.duplicateIdOrName", "파일 안에 중복된 작업공간 ID 또는 이름이 있습니다.");
     case "id-factory-exhausted":
-      return "충돌하지 않는 작업공간 ID를 만들지 못했습니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.idFactoryExhausted", "충돌하지 않는 작업공간 ID를 만들지 못했습니다.");
     case "invalid-action":
     case "invalid-scope":
-      return "가져오기 방식 또는 범위가 올바르지 않습니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.invalidActionOrScope", "가져오기 방식 또는 범위가 올바르지 않습니다.");
     case "invalid-current-state":
-      return "현재 작업공간 상태를 안전하게 읽지 못했습니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.invalidCurrentState", "현재 작업공간 상태를 안전하게 읽지 못했습니다.");
     case "invalid-id":
     case "invalid-name":
-      return "파일에 허용되지 않는 작업공간 ID 또는 이름이 있습니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.invalidIdOrName", "파일에 허용되지 않는 작업공간 ID 또는 이름이 있습니다.");
     case "invalid-shape":
     case "non-json-value":
-      return "툰스튜디오 작업공간 JSON 형식이 아닙니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.invalidShape", "툰스튜디오 작업공간 JSON 형식이 아닙니다.");
     case "payload-too-large":
-      return "작업공간 파일은 64KB 이하여야 합니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.payloadTooLarge", "작업공간 파일은 64KB 이하여야 합니다.");
     case "sensitive-field":
-      return "프로젝트·계정·토큰처럼 작업공간에 포함될 수 없는 민감 필드가 발견되었습니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.sensitiveField", "프로젝트·계정·토큰처럼 작업공간에 포함될 수 없는 민감 필드가 발견되었습니다.");
     case "too-many-workspaces":
-      return "한 파일에는 작업공간을 최대 24개까지 담을 수 있습니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.tooManyWorkspaces", "한 파일에는 작업공간을 최대 24개까지 담을 수 있습니다.");
     case "unknown-apply-workspace":
-      return "바로 적용할 작업공간을 선택해 주세요.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.unknownApplyWorkspace", "바로 적용할 작업공간을 선택해 주세요.");
     case "unsupported-kind":
-      return "다른 종류의 파일입니다. 툰스튜디오 작업공간 파일을 선택해 주세요.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.unsupportedKind", "다른 종류의 파일입니다. 툰스튜디오 작업공간 파일을 선택해 주세요.");
     case "unsupported-version":
-      return "이 버전의 툰스튜디오에서 아직 지원하지 않는 작업공간 파일입니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.unsupportedVersion", "이 버전의 툰스튜디오에서 아직 지원하지 않는 작업공간 파일입니다.");
     default:
-      return "작업공간 파일을 처리하지 못했습니다.";
+      return frozenStatus2Text("studio.frozenStatus2.workspace.defaultFailed", "작업공간 파일을 처리하지 못했습니다.");
   }
 }
 
@@ -494,10 +495,10 @@ export function StudioWorkspaceInterchangeDialog({
       return;
     }
     if (!downloadJson(encoded.text)) {
-      setError("이 브라우저에서는 파일 다운로드를 시작하지 못했습니다.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.downloadFailed", "이 브라우저에서는 파일 다운로드를 시작하지 못했습니다."));
       return;
     }
-    setNotice(`${encoded.document.workspaces.length}개 작업공간 파일을 만들었습니다.`);
+    setNotice(frozenStatus2Text("studio.frozenStatus2.workspace.exportFileCreated", { count: encoded.document.workspaces.length }, "{count}개 작업공간 파일을 만들었습니다."));
     setNoticeTone("success");
   }
 
@@ -509,10 +510,10 @@ export function StudioWorkspaceInterchangeDialog({
       return;
     }
     if (!(await copyJson(encoded.text))) {
-      setError("클립보드 권한을 확인한 뒤 다시 시도해 주세요.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.clipboardRetry", "클립보드 권한을 확인한 뒤 다시 시도해 주세요."));
       return;
     }
-    setNotice(`${encoded.document.workspaces.length}개 작업공간 JSON을 복사했습니다.`);
+    setNotice(frozenStatus2Text("studio.frozenStatus2.workspace.exportJsonCopied", { count: encoded.document.workspaces.length }, "{count}개 작업공간 JSON을 복사했습니다."));
     setNoticeTone("success");
   }
 
@@ -533,9 +534,7 @@ export function StudioWorkspaceInterchangeDialog({
     setApplyWorkspaceId(documentValue.workspaces[0]?.id ?? "");
     setImportAction("add");
     setImportScopes(IMPORT_SCOPES);
-    setNotice(
-      `${documentValue.workspaces.length}개 작업공간을 ${sourceLabel}에서 검사했습니다. 적용 전 계획을 확인해 주세요.`,
-    );
+    setNotice(frozenStatus2Text("studio.frozenStatus2.workspace.inspectedFrom", { count: documentValue.workspaces.length, source: sourceLabel }, "{count}개 작업공간을 {source}에서 검사했습니다. 적용 전 계획을 확인해 주세요."));
     setNoticeTone("neutral");
   }
 
@@ -560,7 +559,7 @@ export function StudioWorkspaceInterchangeDialog({
       acceptImportDocument(decoded.document, sourceLabel);
     } catch {
       if (epoch === importEpochRef.current) {
-        setError(`${sourceLabel}을(를) 읽지 못했습니다. 권한과 데이터 상태를 확인해 주세요.`);
+        setError(frozenStatus2Text("studio.frozenStatus2.workspace.readFailed", { source: sourceLabel }, "{source}을(를) 읽지 못했습니다. 권한과 데이터 상태를 확인해 주세요."));
       }
     } finally {
       if (epoch === importEpochRef.current) setImportBusy(false);
@@ -574,22 +573,22 @@ export function StudioWorkspaceInterchangeDialog({
     if (file.size > STUDIO_WORKSPACE_INTERCHANGE_MAX_BYTES) {
       resetMessages();
       clearImportPayload(file.name);
-      setError("작업공간 파일은 64KB 이하여야 합니다.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.payloadTooLarge", "작업공간 파일은 64KB 이하여야 합니다."));
       return;
     }
-    await loadImportText(file.text(), "파일", file.name);
+    await loadImportText(file.text(), frozenStatus2Text("studio.frozenStatus2.workspace.sourceFile", "파일"), file.name);
   }
 
   async function loadClipboardImport(): Promise<void> {
     if (typeof navigator === "undefined" || !navigator.clipboard?.readText) {
       resetMessages();
       clearImportPayload("클립보드 JSON");
-      setError("이 브라우저에서는 클립보드 읽기를 지원하지 않습니다.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.clipboardReadUnsupported", "이 브라우저에서는 클립보드 읽기를 지원하지 않습니다."));
       return;
     }
     await loadImportText(
       navigator.clipboard.readText(),
-      "클립보드",
+      frozenStatus2Text("studio.frozenStatus2.workspace.sourceClipboard", "클립보드"),
       "클립보드 JSON",
     );
   }
@@ -597,7 +596,7 @@ export function StudioWorkspaceInterchangeDialog({
   function commitImport(): void {
     resetMessages();
     if (!importPlanResult) {
-      setError("가져올 작업공간과 범위를 선택해 주세요.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.selectImportFirst", "가져올 작업공간과 범위를 선택해 주세요."));
       return;
     }
     if (!importPlanResult.ok) {
@@ -605,7 +604,7 @@ export function StudioWorkspaceInterchangeDialog({
       return;
     }
     if (requiresDiscardConfirmation && !discardConfirmed) {
-      setError("현재 저장 전 배치를 버리는 데 동의해야 바로 적용할 수 있습니다.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.discardConsentRequired", "현재 저장 전 배치를 버리는 데 동의해야 바로 적용할 수 있습니다."));
       return;
     }
 
@@ -617,7 +616,7 @@ export function StudioWorkspaceInterchangeDialog({
         importPlanResult.plan,
       );
     } catch {
-      setError("가져온 설정을 저장 가능한 작업공간 상태로 만들지 못했습니다. 현재 상태는 변경하지 않았습니다.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.saveStateFailed", "가져온 설정을 저장 가능한 작업공간 상태로 만들지 못했습니다. 현재 상태는 변경하지 않았습니다."));
       return;
     }
 
@@ -625,11 +624,11 @@ export function StudioWorkspaceInterchangeDialog({
     try {
       saveResult = onStateChange(nextState);
     } catch {
-      setError("작업공간 저장 경로가 응답하지 않아 현재 상태는 변경하지 않았습니다.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.savePathUnresponsive", "작업공간 저장 경로가 응답하지 않아 현재 상태는 변경하지 않았습니다."));
       return;
     }
     if (saveResult.failure === "owner-mismatch") {
-      setError("로그인 상태가 바뀌어 이전 계정의 작업공간에는 적용하지 않았습니다.");
+      setError(frozenStatus2Text("studio.frozenStatus2.workspace.ownerMismatch", "로그인 상태가 바뀌어 이전 계정의 작업공간에는 적용하지 않았습니다."));
       return;
     }
 
@@ -638,20 +637,13 @@ export function StudioWorkspaceInterchangeDialog({
       try {
         onApplyLayout(nextState.liveLayout, nextState.activeWorkspaceId);
       } catch {
-        applyWarning = " 가져오기는 저장했지만 화면 전환에 실패했습니다. 작업공간 메뉴에서 다시 적용해 주세요.";
+        applyWarning = frozenStatus2Text("studio.frozenStatus2.workspace.applyWarning", " 가져오기는 저장했지만 화면 전환에 실패했습니다. 작업공간 메뉴에서 다시 적용해 주세요.");
       }
     }
     const stored = saveResult.status === "persisted";
     const pendingPersistence = saveResult.status === "session-only" && saveResult.failure === null;
-    setNotice(
-      `${importPlanResult.plan.operations.length}개 작업공간을 가져왔습니다. ${
-        stored
-          ? "이 기기 저장까지 확인했습니다."
-          : pendingPersistence
-            ? "이 기기 저장을 확인하는 중입니다."
-            : "저장소 문제로 이 세션에서만 유지됩니다."
-      }${applyWarning}`,
-    );
+    const storageNote = stored ? frozenStatus2Text("studio.frozenStatus2.workspace.storagePersisted", "이 기기 저장까지 확인했습니다.") : pendingPersistence ? frozenStatus2Text("studio.frozenStatus2.workspace.storagePending", "이 기기 저장을 확인하는 중입니다.") : frozenStatus2Text("studio.frozenStatus2.workspace.storageSessionOnly", "저장소 문제로 이 세션에서만 유지됩니다.");
+    setNotice(`${frozenStatus2Text("studio.frozenStatus2.workspace.importedCount", { count: importPlanResult.plan.operations.length }, "{count}개 작업공간을 가져왔습니다.")} ${storageNote}${applyWarning}`);
     setNoticeTone(applyWarning || (!stored && !pendingPersistence) ? "warning" : stored ? "success" : "neutral");
     clearImportPayload();
   }
@@ -994,7 +986,7 @@ export function StudioWorkspaceInterchangeDialog({
                     )}
                   >
                     <Clipboard size={STUDIO_ICON_SIZE.contextMenu} strokeWidth={STUDIO_ICON_STROKE} aria-hidden />
-                    {importBusy ? "검사 중…" : "JSON 붙여넣기"}
+                    {importBusy ? frozenStatus2Text("studio.frozenStatus2.workspace.busyChecking", "검사 중…") : "JSON 붙여넣기"}
                   </button>
                 </div>
               </div>

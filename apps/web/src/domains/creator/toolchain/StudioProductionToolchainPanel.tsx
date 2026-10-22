@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 
+import { r4CreatorStatusText } from "../r4-cat1-status-i18n";
 import { StudioProductionJobWorkspace } from "./StudioProductionJobWorkspace";
 import { StudioToonBridgeConnectionCard } from "./StudioToonBridgeConnectionCard";
 import {
@@ -127,7 +128,7 @@ export function StudioProductionToolchainPanel({
             href={href("/studio/jobs", projectId)}
             className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-fg px-4 text-xs font-bold text-canvas"
           >
-            처리 중 작업 <ArrowRight size={14} aria-hidden="true" />
+            {r4CreatorStatusText("r4cat1.creator.toolchain.processingJobs", "처리 중 작업")} <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </div>
       </div>

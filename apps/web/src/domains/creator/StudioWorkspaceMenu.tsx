@@ -53,6 +53,7 @@ import {
 import { STUDIO_QUICK_ACTION_PRESENTATION } from "./studio-quick-action-presentation";
 import { QUICK_ACTION_SLOTS } from "./studio-quick-actions";
 import { studioSearchTextMatches } from "./studio-search-text";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 import {
   resolveStudioWorkspaceRecommendation,
   studioWorkspaceSearchAliases,
@@ -419,15 +420,15 @@ function trapTabKey(event: ReactKeyboardEvent<HTMLElement>, root: HTMLElement | 
 
 function errorText(error: unknown): string {
   if (error instanceof StudioWorkspaceOwnerChangedError) {
-    return "로그인 상태가 바뀌어 이전 계정의 작업공간 변경을 적용하지 않았어요. 메뉴를 다시 열어 주세요.";
+    return frozenStatus3Text("studio.frozenStatus3.wsMenu.errorOwnerChanged", "로그인 상태가 바뀌어 이전 계정의 작업공간 변경을 적용하지 않았어요. 메뉴를 다시 열어 주세요.");
   }
   if (error instanceof RangeError) {
     return error.message.includes("at most")
-      ? "내 작업공간은 최대 24개까지 저장할 수 있어요."
-      : "선택한 작업공간을 찾을 수 없어요. 목록을 다시 확인해 주세요.";
+      ? frozenStatus3Text("studio.frozenStatus3.wsMenu.errorMaxWorkspaces", "내 작업공간은 최대 24개까지 저장할 수 있어요.")
+      : frozenStatus3Text("studio.frozenStatus3.wsMenu.errorNotFound", "선택한 작업공간을 찾을 수 없어요. 목록을 다시 확인해 주세요.");
   }
-  if (error instanceof TypeError) return "이름을 1~48자로 입력해 주세요.";
-  return "작업공간을 변경하지 못했어요. 다시 시도해 주세요.";
+  if (error instanceof TypeError) return frozenStatus3Text("studio.frozenStatus3.wsMenu.errorNameLength", "이름을 1~48자로 입력해 주세요.");
+  return frozenStatus3Text("studio.frozenStatus3.wsMenu.errorChangeFailed", "작업공간을 변경하지 못했어요. 다시 시도해 주세요.");
 }
 
 function persistenceFailureText(
@@ -435,23 +436,23 @@ function persistenceFailureText(
 ): string {
   switch (failure) {
     case "storage-unavailable":
-      return "브라우저 저장소를 사용할 수 없어";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragStorageUnavailable", "브라우저 저장소를 사용할 수 없어");
     case "ownership-busy":
-      return "다른 Studio 탭이 로컬 저장소를 사용 중이라";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragOwnershipBusy", "다른 Studio 탭이 로컬 저장소를 사용 중이라");
     case "read-failed":
-      return "기존 저장 상태를 확인하지 못해";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragReadFailed", "기존 저장 상태를 확인하지 못해");
     case "write-failed":
-      return "브라우저 저장에 실패해";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragWriteFailed", "브라우저 저장에 실패해");
     case "verification-failed":
-      return "저장 결과를 확인하지 못해";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragVerificationFailed", "저장 결과를 확인하지 못해");
     case "owner-mismatch":
-      return "사용자 전환 중 다른 계정의 저장을 막아";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragOwnerMismatch", "사용자 전환 중 다른 계정의 저장을 막아");
     case "invalid-payload":
-      return "저장 데이터가 올바르지 않아";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragInvalidPayload", "저장 데이터가 올바르지 않아");
     case "payload-too-large":
-      return "작업공간 설정 용량이 너무 커";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragPayloadTooLarge", "작업공간 설정 용량이 너무 커");
     default:
-      return "아직 브라우저에 저장하지 않아";
+      return frozenStatus3Text("studio.frozenStatus3.wsMenu.fragNotSavedYet", "아직 브라우저에 저장하지 않아");
   }
 }
 
@@ -461,9 +462,9 @@ function persistenceNotice(
 ): string {
   const action = actionMessage.replace(/[.!?]+$/u, "");
   if (result.status === "persisted") {
-    return `${action} · 이 기기 저장을 확인했어요.`;
+    return frozenStatus3Text("studio.frozenStatus3.wsMenu.noticePersisted", { action }, "{action} · 이 기기 저장을 확인했어요.");
   }
-  return `${action} · ${persistenceFailureText(result.failure)} 이 세션에서만 유지됩니다.`;
+  return frozenStatus3Text("studio.frozenStatus3.wsMenu.noticeSessionOnly", { action, reason: persistenceFailureText(result.failure) }, "{action} · {reason} 이 세션에서만 유지됩니다.");
 }
 
 export function StudioWorkspaceMenu({
@@ -743,11 +744,7 @@ export function StudioWorkspaceMenu({
     returnFocus?: HTMLElement | null
   ) {
     if (id === syncedState.activeWorkspaceId) {
-      setNotice(
-        dirty
-          ? "현재 작업공간입니다. 변경을 버리려면 ‘저장된 배치 다시 불러오기’를 사용하세요."
-          : "이미 사용 중인 작업공간입니다."
-      );
+      setNotice(dirty ? frozenStatus3Text("studio.frozenStatus3.wsMenu.noticeCurrentWorkspace", "현재 작업공간입니다. 변경을 버리려면 ‘저장된 배치 다시 불러오기’를 사용하세요.") : frozenStatus3Text("studio.frozenStatus3.wsMenu.noticeAlreadyActive", "이미 사용 중인 작업공간입니다."));
       setNoticeTone("neutral");
       setError(null);
       return;
@@ -1035,7 +1032,7 @@ export function StudioWorkspaceMenu({
     direction: StudioWorkspaceMoveDirection
   ) {
     if (reorderBlockedBySearch) {
-      setNotice("순서를 바꾸려면 검색어를 먼저 지워 주세요.");
+      setNotice(frozenStatus3Text("studio.frozenStatus3.wsMenu.noticeReorderSearch", "순서를 바꾸려면 검색어를 먼저 지워 주세요."));
       setNoticeTone("neutral");
       return;
     }
@@ -1551,7 +1548,7 @@ export function StudioWorkspaceMenu({
               >
                 {filteredBuiltins.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-line px-3 py-3 text-center text-xs text-fg-3">
-                    일치하는 기본 작업공간이 없어요.
+                    {frozenStatus3Text("studio.frozenStatus3.wsMenu.emptyNoBuiltinMatch", "일치하는 기본 작업공간이 없어요.")}
                   </p>
                 ) : null}
                 {filteredBuiltins.map((workspace) => {
@@ -1655,11 +1652,11 @@ export function StudioWorkspaceMenu({
               >
                 {syncedState.customWorkspaces.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-line px-3 py-3 text-center text-xs text-fg-3">
-                    저장한 작업공간이 없어요. 관리에서 현재 배치를 저장할 수 있어요.
+                    {frozenStatus3Text("studio.frozenStatus3.wsMenu.emptyNoSavedGuide", "저장한 작업공간이 없어요. 관리에서 현재 배치를 저장할 수 있어요.")}
                   </p>
                 ) : filteredCustom.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-line px-3 py-3 text-center text-xs text-fg-3">
-                    일치하는 내 작업공간이 없어요.
+                    {frozenStatus3Text("studio.frozenStatus3.wsMenu.emptyNoCustomMatch", "일치하는 내 작업공간이 없어요.")}
                   </p>
                 ) : (
                   filteredCustom.map((workspace) => {
@@ -1827,14 +1824,14 @@ export function StudioWorkspaceMenu({
 
                 {syncedState.customWorkspaces.length === 0 ? (
                   <div className="mt-1.5 rounded-lg border border-dashed border-line px-3 py-4 text-center">
-                    <p className="text-xs font-semibold text-fg-2">저장한 작업공간이 없어요.</p>
+                    <p className="text-xs font-semibold text-fg-2">{frozenStatus3Text("studio.frozenStatus3.wsMenu.emptyNoSavedTitle", "저장한 작업공간이 없어요.")}</p>
                     <p className="mt-1 text-[0.6875rem] leading-relaxed text-fg-3">
                       현재 패널과 주요 도구 배치를 이름 붙여 다시 사용할 수 있어요.
                     </p>
                   </div>
                 ) : filteredCustom.length === 0 ? (
                   <p className="mt-1.5 rounded-lg border border-dashed border-line px-3 py-3 text-center text-xs text-fg-3">
-                    일치하는 내 작업공간이 없어요.
+                    {frozenStatus3Text("studio.frozenStatus3.wsMenu.emptyNoCustomMatch", "일치하는 내 작업공간이 없어요.")}
                   </p>
                 ) : (
                   <div className="mt-1.5 space-y-1.5">
@@ -2198,7 +2195,7 @@ export function StudioWorkspaceMenu({
                   <p className="mt-0.5 text-[0.6875rem] text-fg-3">
                     {activeIsCustom
                       ? "저장된 배치는 그대로 두고, 기기마다 도크만 다르게 세웁니다."
-                      : "기본 작업공간은 고칠 수 없어요. 복사본을 저장한 뒤 조정하세요."}
+                      : frozenStatus3Text("studio.frozenStatus3.wsMenu.builtinCannotEdit", "기본 작업공간은 고칠 수 없어요. 복사본을 저장한 뒤 조정하세요.")}
                   </p>
                   <div
                     role="group"
@@ -2468,7 +2465,7 @@ export function StudioWorkspaceMenu({
             </div>
             {!activeIsCustom && atCustomLimit ? (
               <p id={`${switchGuardDescriptionId}-limit`} className="mt-2 text-[0.6875rem] leading-relaxed text-warn">
-                내 작업공간이 24개라 사본을 만들 수 없어요. 취소한 뒤 하나를 삭제하거나 저장하지 않고 전환하세요.
+                {frozenStatus3Text("studio.frozenStatus3.wsMenu.limitReached", "내 작업공간이 24개라 사본을 만들 수 없어요. 취소한 뒤 하나를 삭제하거나 저장하지 않고 전환하세요.")}
               </p>
             ) : null}
             <p className="mt-3 text-[0.6875rem] text-fg-3">Esc를 누르면 전환을 취소합니다.</p>

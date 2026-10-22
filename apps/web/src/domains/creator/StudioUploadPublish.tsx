@@ -14,6 +14,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { buildStudioHref } from "./creator-studio-links";
+import { frozenStatus2Text } from "./studio-frozen2-status-i18n";
 import { creatorWorkHref } from "./publishing/showcase-links";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDiscardLocalChangesRequest } from "./studio-destructive-command-catalog";
@@ -267,9 +268,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
           return;
         }
         setHydrationStatus("error");
-        setHydrationError(
-          cause instanceof Error ? cause.message : "작품을 불러오지 못했습니다."
-        );
+        setHydrationError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.workLoadFailed", "작품을 불러오지 못했습니다."));
       });
     return () => controller.abort();
   }, [authUserId, hydrationAttempt, workId]);
@@ -332,11 +331,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
         ) {
           return;
         }
-        failClosed(
-          cause instanceof Error
-            ? cause.message
-            : "공동 문서 권한을 다시 확인하지 못했습니다. 작품을 다시 불러와 주세요."
-        );
+        failClosed(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.permissionRecheckFailed", "공동 문서 권한을 다시 확인하지 못했습니다. 작품을 다시 불러와 주세요."));
       }
     };
 
@@ -406,13 +401,13 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
     if (mutationLocked) return;
     if (files.length === 0) return;
     if (pages.length + files.length > MAX_PAGES) {
-      setError(`이미지는 최대 ${MAX_PAGES}장까지 올릴 수 있어요.`);
+      setError(frozenStatus2Text("studio.frozenStatus2.upload.maxPages", { max: MAX_PAGES }, "이미지는 최대 {max}장까지 올릴 수 있어요."));
       return;
     }
     try {
       assertStudioUploadSourceBatch(files);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "이미지 원본 크기를 확인하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.imageSizeCheckFailed", "이미지 원본 크기를 확인하지 못했습니다."));
       return;
     }
     setLoadingFiles(true);
@@ -452,7 +447,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
       }
     } catch (err) {
       if (isFileScopeCurrent()) {
-        setError(err instanceof Error ? err.message : "이미지를 불러오지 못했습니다.");
+        setError(err instanceof Error ? err.message : frozenStatus2Text("studio.frozenStatus2.upload.imageLoadFailed", "이미지를 불러오지 못했습니다."));
       }
     } finally {
       if (isFileScopeCurrent()) setLoadingFiles(false);
@@ -500,26 +495,26 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
         workRevision
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "기존 작품을 다시 불러와 주세요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.reloadWork", "기존 작품을 다시 불러와 주세요."));
       return;
     }
     const sharedMetaSnapshot = sharedMeta;
     if (publishScope.workId) {
       if (!sharedMetaSnapshot || !canEditStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError("현재 역할은 공동 원고를 저장할 수 없습니다.");
+        setError(frozenStatus2Text("studio.frozenStatus2.upload.cannotSaveShared", "현재 역할은 공동 원고를 저장할 수 없습니다."));
         return;
       }
       if (status === "published" && !canPublishStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError("작품 게시 상태는 소유자만 변경할 수 있습니다.");
+        setError(frozenStatus2Text("studio.frozenStatus2.upload.ownerOnlyStatus", "작품 게시 상태는 소유자만 변경할 수 있습니다."));
         return;
       }
     }
     if (!title.trim()) {
-      setError("제목을 입력해주세요.");
+      setError(frozenStatus2Text("studio.frozenStatus2.upload.titleRequired", "제목을 입력해주세요."));
       return;
     }
     if (pages.length === 0) {
-      setError("이미지를 1장 이상 추가해주세요.");
+      setError(frozenStatus2Text("studio.frozenStatus2.upload.imagesRequired", "이미지를 1장 이상 추가해주세요."));
       return;
     }
     // 게시 규격 자동 맞춤 — 긴 이미지는 자체 규격 높이로 분할하고 넓은 이미지는
@@ -532,7 +527,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
         findPublishSpecPreset("toonstudio")
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "이미지 규격을 맞추지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.autoFitFailed", "이미지 규격을 맞추지 못했어요."));
       return;
     }
     const pageSnapshot = fittedPages.map((page) => ({ ...page }));
@@ -595,7 +590,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
               baseRevision === undefined ||
               !sharedMetaSnapshot
             ) {
-              throw new Error("공동 문서 저장 범위를 확인하지 못했어요.");
+              throw new Error(frozenStatus2Text("studio.frozenStatus2.upload.sharedScopeCheckFailed", "공동 문서 저장 범위를 확인하지 못했어요."));
             }
             const fresh = await client.getMeta(
               publishScope.workId,
@@ -609,10 +604,10 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
             );
             assertStudioUploadSharedMetaUnchanged(sharedMetaSnapshot, fresh);
             if (!canEditStudioUploadSharedDocument(fresh)) {
-              throw new Error("공동 문서 편집 권한이 변경되었습니다.");
+              throw new Error(frozenStatus2Text("studio.frozenStatus2.upload.permissionChanged", "공동 문서 편집 권한이 변경되었습니다."));
             }
             if (status === "published" && !canPublishStudioUploadSharedDocument(fresh)) {
-              throw new Error("작품 게시 상태는 소유자만 변경할 수 있습니다.");
+              throw new Error(frozenStatus2Text("studio.frozenStatus2.upload.ownerOnlyStatus", "작품 게시 상태는 소유자만 변경할 수 있습니다."));
             }
             const patch = {
               baseRevision,
@@ -642,7 +637,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
             };
           }
           if (client.kind !== "create") {
-            throw new Error("새 작품 게시 클라이언트를 확인하지 못했어요.");
+            throw new Error(frozenStatus2Text("studio.frozenStatus2.upload.createClientCheckFailed", "새 작품 게시 클라이언트를 확인하지 못했어요."));
           }
           const payload = {
             ...editableContent,
@@ -679,9 +674,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
         if (sharedMetaSnapshot.role === "owner" && status === "published") {
           navigate(creatorWorkHref(saved.workId));
         } else {
-          setSuccessMessage(
-            `공동 변경사항을 revision ${saved.revision ?? sharedMetaSnapshot.revision}로 저장했습니다.`
-          );
+          setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.upload.sharedSaved", { revision: saved.revision ?? sharedMetaSnapshot.revision }, "공동 변경사항을 revision {revision}로 저장했습니다."));
         }
       } else {
         navigate(creatorWorkHref(saved.workId));
@@ -706,14 +699,10 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
           setHydratedScope(null);
           setSharedMeta(null);
           setHydrationStatus("error");
-          setHydrationError(
-            cause instanceof Error
-              ? cause.message
-              : "공동 문서 권한 또는 버전이 변경되었습니다. 다시 불러와 주세요."
-          );
+          setHydrationError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.sharedPermissionOrVersion", "공동 문서 권한 또는 버전이 변경되었습니다. 다시 불러와 주세요."));
           setError(null);
         } else {
-          setError(cause instanceof Error ? cause.message : "게시에 실패했어요.");
+          setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.publishFailed", "게시에 실패했어요."));
         }
       }
     } finally {
@@ -801,8 +790,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
           className="mb-4 flex items-center gap-2 rounded-xl border border-line bg-card/60 px-3 py-2 text-sm text-fg-2"
           role="status"
         >
-          <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> 기존 작품을
-          불러오는 중…
+          <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> {frozenStatus2Text("studio.frozenStatus2.upload.hydratingExisting", "기존 작품을 불러오는 중…")}
         </div>
       )}
 
@@ -811,14 +799,12 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
           className="mb-4 rounded-xl border border-bad/40 bg-bad/10 px-3 py-3"
           role="alert"
         >
-          <p className="text-sm font-semibold text-fg">기존 작품을 열지 못했어요</p>
+          <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.upload.hydrationHeadingFailed", "기존 작품을 열지 못했어요")}</p>
           <p className="mt-1 text-sm leading-relaxed text-fg-2">
-            {hydrationError ?? "작품을 다시 불러와 주세요."}
+            {hydrationError ?? frozenStatus2Text("studio.frozenStatus2.upload.reloadFallback", "작품을 다시 불러와 주세요.")}
           </p>
           {dirty && (
-            <p className="mt-2 text-xs leading-relaxed text-warn">
-              화면의 미저장 변경은 보존되어 있습니다. 다시 불러오면 서버 원고로 교체됩니다.
-            </p>
+            <p className="mt-2 text-xs leading-relaxed text-warn">{frozenStatus2Text("studio.frozenStatus2.upload.unsavedPreserved", "화면의 미저장 변경은 보존되어 있습니다. 다시 불러오면 서버 원고로 교체됩니다.")}</p>
           )}
           <button
             className={buttonClass({

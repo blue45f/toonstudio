@@ -1,0 +1,621 @@
+/**
+ * 파일 크기 래칫 동결 패널 상태 문구 사전 3 (A4 잔여 5라운드 — 동결 tsx 줄중립 이관).
+ *
+ * 소비 파일이 전부 래칫 기준선과 동률이라 순증이 불가능하므로, 문구는 이
+ * 모듈로 이관하고 소비 파일에서는 import 1줄 증가분을 같은 파일 안의 다중행
+ * 템플릿·호출·삼항 접기와 중복 문구 키 통합으로 상쇄해 줄 수를 중립(±0 이하)으로
+ * 맞춘다. 3·4라운드 모듈(studio-frozen-status-i18n.ts,
+ * studio-frozen2-status-i18n.ts)은 각 테스트가 전 키의 소비 파일을 단언해
+ * 확장이 불가능하므로 형제 모듈로 분리했다.
+ *
+ * `registerI18nLocaleEntries`로 ko/en 키를 등록한다. ko 값은 이관 전 원문
+ * 그대로, en은 신규 번역이며 두 로케일의 키 집합은 항상 일치해야 한다
+ * (studio-frozen3-status-i18n-r5frz.test.ts가 패리티를 고정한다). 상태 문구
+ * (로딩·실패·성공·빈 상태·확인 중·사용 불가 사유·잡혀서 표시되는 throw·콜백)만
+ * 다루며, 콘텐츠 본문·폼 라벨·placeholder·예시 데이터는 대상이 아니다.
+ * 비컴포넌트 생산자(throw·콜백)도 있어 현재 로케일로 해석하는
+ * `frozenStatus3Text` 헬퍼를 함께 둔다 (studio-frozen-status-i18n 선례).
+ */
+
+import {
+  FALLBACK_CHAIN,
+  getLang,
+  registerI18nLocaleEntries,
+  resolveTranslationForDisplay,
+} from "@/shared/lib/i18n";
+
+// ── StudioProductionBiblePanel
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.bible.persistenceChecking": "SQLite/OPFS 상태 확인 중 · 서버 동기화 없음",
+  "studio.frozenStatus3.bible.persistenceUnavailable": "SQLite/OPFS 사용 불가 · 저장되지 않음",
+  "studio.frozenStatus3.bible.persistenceMemory": "메모리 임시 · 새로고침 전까지",
+  "studio.frozenStatus3.bible.persistenceSaved": "이 기기 SQLite/OPFS 저장 · 서버 동기화 없음",
+  "studio.frozenStatus3.bible.persistenceReady": "SQLite/OPFS 준비 · 첫 변경 시 저장",
+  "studio.frozenStatus3.bible.persistenceLegacyIdb": "명시적으로 가져온 레거시 IndexedDB · V12 제품 저장 아님",
+  "studio.frozenStatus3.bible.persistenceLegacyLocal": "명시적으로 가져온 레거시 localStorage · V12 제품 저장 아님",
+  "studio.frozenStatus3.bible.saveFailed": "프로덕션 바이블을 저장하지 못했어요.",
+  "studio.frozenStatus3.bible.addFailed": "{kind}을(를) 추가하지 못했어요.",
+  "studio.frozenStatus3.bible.duplicateFailed": "항목을 복제하지 못했어요.",
+  "studio.frozenStatus3.bible.clipboardUnsupported": "이 브라우저에서 클립보드 복사를 지원하지 않아요.",
+  "studio.frozenStatus3.bible.copySucceeded": "정규화된 JSON을 클립보드에 복사했어요.",
+  "studio.frozenStatus3.bible.copyFailed": "JSON을 복사하지 못했어요.",
+  "studio.frozenStatus3.bible.importFailed": "JSON을 가져오지 못했어요.",
+  "studio.frozenStatus3.bible.importSucceeded": "{added}개 자료 추가 · {updated}개 자료 병합 · {promisesAdded}개 약속 추가 · {promisesUpdated}개 약속 병합 · {conflicts}개 종류 충돌 보존",
+  "studio.frozenStatus3.bible.emptyFirst": "첫 항목을 추가하세요",
+  "studio.frozenStatus3.bible.emptyNoMatch": "조건에 맞는 항목이 없어요",
+  "studio.frozenStatus3.bible.emptyNoLocations": "등록된 다른 장소가 없습니다.",
+  "studio.frozenStatus3.bible.emptyNoProps": "등록된 다른 소품이 없습니다.",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.bible.persistenceChecking": "Checking SQLite/OPFS status · No server sync",
+  "studio.frozenStatus3.bible.persistenceUnavailable": "SQLite/OPFS unavailable · Not saved",
+  "studio.frozenStatus3.bible.persistenceMemory": "Temporary in memory · Until refresh",
+  "studio.frozenStatus3.bible.persistenceSaved": "Saved in this device's SQLite/OPFS · No server sync",
+  "studio.frozenStatus3.bible.persistenceReady": "SQLite/OPFS ready · Saves on the first change",
+  "studio.frozenStatus3.bible.persistenceLegacyIdb": "Explicitly imported legacy IndexedDB · Not V12 product storage",
+  "studio.frozenStatus3.bible.persistenceLegacyLocal": "Explicitly imported legacy localStorage · Not V12 product storage",
+  "studio.frozenStatus3.bible.saveFailed": "Could not save the production bible.",
+  "studio.frozenStatus3.bible.addFailed": "Could not add the {kind}.",
+  "studio.frozenStatus3.bible.duplicateFailed": "Could not duplicate the entry.",
+  "studio.frozenStatus3.bible.clipboardUnsupported": "This browser does not support copying to the clipboard.",
+  "studio.frozenStatus3.bible.copySucceeded": "Copied the normalized JSON to the clipboard.",
+  "studio.frozenStatus3.bible.copyFailed": "Could not copy the JSON.",
+  "studio.frozenStatus3.bible.importFailed": "Could not import the JSON.",
+  "studio.frozenStatus3.bible.importSucceeded": "Added {added} entries · Merged {updated} entries · Added {promisesAdded} promises · Merged {promisesUpdated} promises · Preserved {conflicts} kind conflicts",
+  "studio.frozenStatus3.bible.emptyFirst": "Add your first entry",
+  "studio.frozenStatus3.bible.emptyNoMatch": "No entries match these conditions",
+  "studio.frozenStatus3.bible.emptyNoLocations": "There are no other registered places.",
+  "studio.frozenStatus3.bible.emptyNoProps": "There are no other registered props.",
+});
+
+// ── StudioProductionHubPageV2
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.hub.persistenceLoading": "저장 상태 확인 중",
+  "studio.frozenStatus3.hub.persistenceSaving": "저장 중",
+  "studio.frozenStatus3.hub.persistenceSavedTeam": "팀에 저장됨",
+  "studio.frozenStatus3.hub.persistenceSavedDevice": "이 기기에 저장됨",
+  "studio.frozenStatus3.hub.persistenceDemo": "샘플 · 저장 안 함",
+  "studio.frozenStatus3.hub.persistenceError": "저장을 확인해 주세요",
+  "studio.frozenStatus3.hub.loadFailed": "제작 운영 데이터를 불러오지 못했습니다.",
+  "studio.frozenStatus3.hub.waitForSave": "저장 상태 확인 또는 이전 변경 저장이 끝난 뒤 다시 시도해 주세요.",
+  "studio.frozenStatus3.hub.cannotChangeInMode": "현재 모드에서는 변경할 수 없습니다.",
+  "studio.frozenStatus3.hub.demoNotSaved": "{message} 데모 변경은 저장되지 않습니다.",
+  "studio.frozenStatus3.hub.cannotSaveInMode": "현재 모드에서는 제작 운영 데이터를 저장할 수 없습니다.",
+  "studio.frozenStatus3.hub.saveFailed": "제작 운영 데이터를 저장하지 못했습니다.",
+  "studio.frozenStatus3.hub.pinNeedsSavedWork": "검수 핀이 있는 회차로 이동하려면 저장된 작품에서 열어 주세요.",
+  "studio.frozenStatus3.hub.projectNotFound": "연결된 제작 프로젝트를 찾지 못해 회차 룸으로 이동하지 못했습니다.",
+  "studio.frozenStatus3.hub.verifySaveNeeded": "저장 상태 확인이 필요합니다.",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.hub.persistenceLoading": "Checking save status",
+  "studio.frozenStatus3.hub.persistenceSaving": "Saving",
+  "studio.frozenStatus3.hub.persistenceSavedTeam": "Saved to the team",
+  "studio.frozenStatus3.hub.persistenceSavedDevice": "Saved on this device",
+  "studio.frozenStatus3.hub.persistenceDemo": "Sample · Not saved",
+  "studio.frozenStatus3.hub.persistenceError": "Check the save status",
+  "studio.frozenStatus3.hub.loadFailed": "Could not load the production data.",
+  "studio.frozenStatus3.hub.waitForSave": "Try again after the save status check or the previous change finishes saving.",
+  "studio.frozenStatus3.hub.cannotChangeInMode": "You cannot make changes in the current mode.",
+  "studio.frozenStatus3.hub.demoNotSaved": "{message} Demo changes are not saved.",
+  "studio.frozenStatus3.hub.cannotSaveInMode": "Production data cannot be saved in the current mode.",
+  "studio.frozenStatus3.hub.saveFailed": "Could not save the production data.",
+  "studio.frozenStatus3.hub.pinNeedsSavedWork": "Open it from a saved work to go to the episode with the review pin.",
+  "studio.frozenStatus3.hub.projectNotFound": "Could not find the linked production project, so the episode room was not opened.",
+  "studio.frozenStatus3.hub.verifySaveNeeded": "The save status needs to be checked.",
+});
+
+// ── StudioLiveCollaborationProvider
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.liveProv.noTeamConnection": "인증된 팀 연결 정보가 없어 이 기기 테스트 모드로 자동 전환하지 않았습니다. 다시 로그인해 주세요.",
+  "studio.frozenStatus3.liveProv.sessionCreateFailed": "공동작업 세션을 만들지 못했습니다.",
+  "studio.frozenStatus3.liveProv.presenceNotifyFailed": "작업 상태를 팀에 알리지 못했습니다.",
+  "studio.frozenStatus3.liveProv.offlineMergeFailed": "오프라인 변경을 서버 정본에 합치지 못했습니다.",
+  "studio.frozenStatus3.liveProv.offlineOutboxFailed": "오프라인 변경 보관함을 준비하지 못했습니다. 온라인 공동 편집은 계속 사용할 수 있습니다.",
+  "studio.frozenStatus3.liveProv.channelConnectFailed": "공동작업 채널에 연결하지 못했습니다.",
+  "studio.frozenStatus3.liveProv.pageNotifyFailed": "현재 작업 페이지를 팀에 알리지 못했습니다.",
+  "studio.frozenStatus3.liveProv.chatSendFailed": "채팅 메시지를 보내지 못했습니다.",
+  "studio.frozenStatus3.liveProv.recoveryNoFrontier": "내보낼 수 있는 공동 편집 복구 frontier가 없습니다.",
+  "studio.frozenStatus3.liveProv.recoveryBoundaryUnknown": "현재 공동 편집 복구 경계를 확인할 수 없습니다.",
+  "studio.frozenStatus3.liveProv.recoveryPreserving": "거부된 변경을 복구 저장소에 보존하는 중입니다. 잠시 뒤 다시 시도해 주세요.",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.liveProv.noTeamConnection": "There is no authenticated team connection, so it did not switch automatically to this device's test mode. Sign in again.",
+  "studio.frozenStatus3.liveProv.sessionCreateFailed": "Could not create the collaboration session.",
+  "studio.frozenStatus3.liveProv.presenceNotifyFailed": "Could not notify the team of the work status.",
+  "studio.frozenStatus3.liveProv.offlineMergeFailed": "Could not merge the offline changes into the server copy.",
+  "studio.frozenStatus3.liveProv.offlineOutboxFailed": "Could not prepare the offline changes outbox. Online co-editing remains available.",
+  "studio.frozenStatus3.liveProv.channelConnectFailed": "Could not connect to the collaboration channel.",
+  "studio.frozenStatus3.liveProv.pageNotifyFailed": "Could not notify the team of the current work page.",
+  "studio.frozenStatus3.liveProv.chatSendFailed": "Could not send the chat message.",
+  "studio.frozenStatus3.liveProv.recoveryNoFrontier": "There is no co-editing recovery frontier to export.",
+  "studio.frozenStatus3.liveProv.recoveryBoundaryUnknown": "Could not check the current co-editing recovery boundary.",
+  "studio.frozenStatus3.liveProv.recoveryPreserving": "The rejected changes are being preserved in the recovery store. Try again shortly.",
+});
+
+// ── StudioDialogueTranslationMemoryPanel
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.tm.loadFailed": "SQLite 번역 메모리를 읽지 못했습니다: {detail}",
+  "studio.frozenStatus3.tm.saveAfterLoad": "SQLite 번역 메모리를 불러온 뒤 저장할 수 있습니다.",
+  "studio.frozenStatus3.tm.invalidRecovery": "손상된 저장 데이터를 덮어쓰지 않았습니다. 검증된 JSON을 명시적으로 가져와 복구하세요.",
+  "studio.frozenStatus3.tm.savingToSqlite": "{message} SQLite에 저장 중입니다.",
+  "studio.frozenStatus3.tm.savedWithError": "{message} {error}",
+  "studio.frozenStatus3.tm.tabOnlyFallback": "현재 탭에서만 유지됩니다.",
+  "studio.frozenStatus3.tm.saveFailed": "SQLite 번역 메모리 저장을 완료하지 못했습니다: {detail}",
+  "studio.frozenStatus3.tm.approveBlocked": "원문 변경 또는 용어집 충돌을 해소한 뒤 승인할 수 있습니다.",
+  "studio.frozenStatus3.tm.draftSaved": "번역 초안을 저장했습니다.",
+  "studio.frozenStatus3.tm.approved": "번역을 승인했습니다.",
+  "studio.frozenStatus3.tm.reviewed": "번역을 검토됨 상태로 변경했습니다.",
+  "studio.frozenStatus3.tm.invalidated": "번역을 무효화하고 재검토 대상으로 표시했습니다.",
+  "studio.frozenStatus3.tm.reuseBlocked": "원문 변경 또는 용어집 충돌을 먼저 검토하세요.",
+  "studio.frozenStatus3.tm.reused": "선택한 번역을 현재 대사에 재사용했습니다.",
+  "studio.frozenStatus3.tm.importTooLarge": "가져오기 파일은 {size}MB 이하여야 합니다.",
+  "studio.frozenStatus3.tm.importSucceeded": "{accepted}개 항목을 가져왔습니다. 중복 {duplicates}개·제외 {excluded}개.",
+  "studio.frozenStatus3.tm.importReadFailed": "번역 메모리 파일을 읽지 못했습니다.",
+  "studio.frozenStatus3.tm.downloadUnsupported": "이 브라우저에서는 JSON 파일 다운로드를 시작할 수 없습니다.",
+  "studio.frozenStatus3.tm.exported": "{size}KB JSON을 내보냈습니다.",
+  "studio.frozenStatus3.tm.storageLoading": "SQLite 번역 메모리 불러오는 중",
+  "studio.frozenStatus3.tm.storageTabOnly": "현재 탭 메모리에서만 유지",
+  "studio.frozenStatus3.tm.storageInvalid": "SQLite 저장 데이터 손상",
+  "studio.frozenStatus3.tm.storageSaving": "SQLite/OPFS에 저장 중",
+  "studio.frozenStatus3.tm.storageSqlite": "SQLite/OPFS에 로컬 저장",
+  "studio.frozenStatus3.tm.storageHost": "호스트 로컬 저장소 사용",
+  "studio.frozenStatus3.tm.noteNoSync": "서버·팀원·다른 기기에는 자동 동기화하지 않습니다.",
+  "studio.frozenStatus3.tm.noteBeforeWrite": " 기존 저장 데이터를 확인하기 전에는 쓰기를 시작하지 않습니다.",
+  "studio.frozenStatus3.tm.noteMayDisappear": " 새로고침하면 사라질 수 있습니다.",
+  "studio.frozenStatus3.tm.noteMoveByJson": " 필요하면 JSON으로 직접 옮기세요.",
+  "studio.frozenStatus3.tm.emptyNoSource": "원문이 없습니다.",
+  "studio.frozenStatus3.tm.emptyNoExactMatch": "이 조건과 정확히 일치하는 로컬 번역이 없습니다.",
+  "studio.frozenStatus3.tm.busyImporting": "가져오는 중…",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.tm.loadFailed": "Could not read the SQLite translation memory: {detail}",
+  "studio.frozenStatus3.tm.saveAfterLoad": "You can save after the SQLite translation memory has loaded.",
+  "studio.frozenStatus3.tm.invalidRecovery": "The damaged stored data was not overwritten. Import a verified JSON explicitly to recover.",
+  "studio.frozenStatus3.tm.savingToSqlite": "{message} Saving to SQLite.",
+  "studio.frozenStatus3.tm.savedWithError": "{message} {error}",
+  "studio.frozenStatus3.tm.tabOnlyFallback": "It is kept only in the current tab.",
+  "studio.frozenStatus3.tm.saveFailed": "Could not finish saving the SQLite translation memory: {detail}",
+  "studio.frozenStatus3.tm.approveBlocked": "You can approve after resolving the source change or glossary conflict.",
+  "studio.frozenStatus3.tm.draftSaved": "Saved the translation draft.",
+  "studio.frozenStatus3.tm.approved": "Approved the translation.",
+  "studio.frozenStatus3.tm.reviewed": "Marked the translation as reviewed.",
+  "studio.frozenStatus3.tm.invalidated": "Invalidated the translation and marked it for re-review.",
+  "studio.frozenStatus3.tm.reuseBlocked": "Review the source change or glossary conflict first.",
+  "studio.frozenStatus3.tm.reused": "Reused the selected translation in the current line.",
+  "studio.frozenStatus3.tm.importTooLarge": "The import file must be {size}MB or smaller.",
+  "studio.frozenStatus3.tm.importSucceeded": "Imported {accepted} entries. {duplicates} duplicates · {excluded} excluded.",
+  "studio.frozenStatus3.tm.importReadFailed": "Could not read the translation memory file.",
+  "studio.frozenStatus3.tm.downloadUnsupported": "This browser cannot start a JSON file download.",
+  "studio.frozenStatus3.tm.exported": "Exported a {size}KB JSON.",
+  "studio.frozenStatus3.tm.storageLoading": "Loading the SQLite translation memory",
+  "studio.frozenStatus3.tm.storageTabOnly": "Kept only in the current tab's memory",
+  "studio.frozenStatus3.tm.storageInvalid": "SQLite stored data is damaged",
+  "studio.frozenStatus3.tm.storageSaving": "Saving to SQLite/OPFS",
+  "studio.frozenStatus3.tm.storageSqlite": "Saved locally in SQLite/OPFS",
+  "studio.frozenStatus3.tm.storageHost": "Using the host local storage",
+  "studio.frozenStatus3.tm.noteNoSync": "It is not synced automatically to servers, teammates, or other devices.",
+  "studio.frozenStatus3.tm.noteBeforeWrite": " Writing does not start until the existing stored data has been checked.",
+  "studio.frozenStatus3.tm.noteMayDisappear": " It may disappear when you refresh.",
+  "studio.frozenStatus3.tm.noteMoveByJson": " Move it directly as JSON if needed.",
+  "studio.frozenStatus3.tm.emptyNoSource": "There is no source text.",
+  "studio.frozenStatus3.tm.emptyNoExactMatch": "There is no local translation that exactly matches these conditions.",
+  "studio.frozenStatus3.tm.busyImporting": "Importing…",
+});
+
+// ── StudioAnimaticTimelinePanel
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.anim.loadFailed": "SQLite 애니매틱 읽기를 완료하지 못했습니다: {detail}",
+  "studio.frozenStatus3.anim.savingToLocalSql": "{message} 로컬 SQL에 저장 중…",
+  "studio.frozenStatus3.anim.saveFailed": "SQLite 애니매틱 저장을 완료하지 못했습니다: {detail}",
+  "studio.frozenStatus3.anim.savedWithError": "{message} {error}",
+  "studio.frozenStatus3.anim.tabOnlyFallback": "현재 탭에서만 유지됩니다.",
+  "studio.frozenStatus3.anim.budgetBlocked": "길이·프레임·항목 예산을 넘는 변경은 적용하지 않았습니다.",
+  "studio.frozenStatus3.anim.importTooLarge": "가져오기 파일은 {size}KB 이하여야 합니다.",
+  "studio.frozenStatus3.anim.otherScope": "다른 작품 범위의 애니매틱은 이 타임라인에 가져올 수 없습니다.",
+  "studio.frozenStatus3.anim.importReadFailed": "애니매틱 파일을 읽지 못했습니다.",
+  "studio.frozenStatus3.anim.downloadUnsupported": "이 브라우저에서는 JSON 다운로드를 시작할 수 없습니다.",
+  "studio.frozenStatus3.anim.exported": "{size}KB 애니매틱 JSON을 내보냈습니다.",
+  "studio.frozenStatus3.anim.rebuilt": "현재 페이지·컷 순서로 애니매틱을 다시 구성했습니다.",
+  "studio.frozenStatus3.anim.imported": "애니매틱 JSON을 가져왔습니다.",
+  "studio.frozenStatus3.anim.workspaceBusy": "스토리보드와 미디어를 준비하고 저장하는 중…",
+  "studio.frozenStatus3.anim.workspaceSaved": "스토리보드와 미디어를 이 기기에 저장했습니다.",
+  "studio.frozenStatus3.anim.storageModeTab": "현재 탭의 무음 미리보기",
+  "studio.frozenStatus3.anim.storageModeSql": "로컬 SQL 무음 미리보기",
+  "studio.frozenStatus3.anim.storageModeBrowser": "브라우저 로컬 무음 미리보기",
+  "studio.frozenStatus3.anim.emptyNoPreview": "미리 볼 페이지·컷이 없습니다.",
+  "studio.frozenStatus3.anim.budgetExceeded": "예산 초과",
+  "studio.frozenStatus3.anim.busyImporting": "가져오는 중…",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.anim.loadFailed": "Could not finish reading the SQLite animatic: {detail}",
+  "studio.frozenStatus3.anim.savingToLocalSql": "{message} Saving to local SQL…",
+  "studio.frozenStatus3.anim.saveFailed": "Could not finish saving the SQLite animatic: {detail}",
+  "studio.frozenStatus3.anim.savedWithError": "{message} {error}",
+  "studio.frozenStatus3.anim.tabOnlyFallback": "It is kept only in the current tab.",
+  "studio.frozenStatus3.anim.budgetBlocked": "Changes that exceed the duration, frame, or item budget were not applied.",
+  "studio.frozenStatus3.anim.importTooLarge": "The import file must be {size}KB or smaller.",
+  "studio.frozenStatus3.anim.otherScope": "An animatic from a different work scope cannot be imported into this timeline.",
+  "studio.frozenStatus3.anim.importReadFailed": "Could not read the animatic file.",
+  "studio.frozenStatus3.anim.downloadUnsupported": "This browser cannot start a JSON download.",
+  "studio.frozenStatus3.anim.exported": "Exported a {size}KB animatic JSON.",
+  "studio.frozenStatus3.anim.rebuilt": "Rebuilt the animatic in the current page and cut order.",
+  "studio.frozenStatus3.anim.imported": "Imported the animatic JSON.",
+  "studio.frozenStatus3.anim.workspaceBusy": "Preparing and saving the storyboard and media…",
+  "studio.frozenStatus3.anim.workspaceSaved": "Saved the storyboard and media on this device.",
+  "studio.frozenStatus3.anim.storageModeTab": "Silent preview in the current tab",
+  "studio.frozenStatus3.anim.storageModeSql": "Local SQL silent preview",
+  "studio.frozenStatus3.anim.storageModeBrowser": "Browser-local silent preview",
+  "studio.frozenStatus3.anim.emptyNoPreview": "There are no pages or cuts to preview.",
+  "studio.frozenStatus3.anim.budgetExceeded": "Over budget",
+  "studio.frozenStatus3.anim.busyImporting": "Importing…",
+});
+
+// ── StudioWorkspaceMenu
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.wsMenu.errorOwnerChanged": "로그인 상태가 바뀌어 이전 계정의 작업공간 변경을 적용하지 않았어요. 메뉴를 다시 열어 주세요.",
+  "studio.frozenStatus3.wsMenu.errorMaxWorkspaces": "내 작업공간은 최대 24개까지 저장할 수 있어요.",
+  "studio.frozenStatus3.wsMenu.errorNotFound": "선택한 작업공간을 찾을 수 없어요. 목록을 다시 확인해 주세요.",
+  "studio.frozenStatus3.wsMenu.errorNameLength": "이름을 1~48자로 입력해 주세요.",
+  "studio.frozenStatus3.wsMenu.errorChangeFailed": "작업공간을 변경하지 못했어요. 다시 시도해 주세요.",
+  "studio.frozenStatus3.wsMenu.fragStorageUnavailable": "브라우저 저장소를 사용할 수 없어",
+  "studio.frozenStatus3.wsMenu.fragOwnershipBusy": "다른 Studio 탭이 로컬 저장소를 사용 중이라",
+  "studio.frozenStatus3.wsMenu.fragReadFailed": "기존 저장 상태를 확인하지 못해",
+  "studio.frozenStatus3.wsMenu.fragWriteFailed": "브라우저 저장에 실패해",
+  "studio.frozenStatus3.wsMenu.fragVerificationFailed": "저장 결과를 확인하지 못해",
+  "studio.frozenStatus3.wsMenu.fragOwnerMismatch": "사용자 전환 중 다른 계정의 저장을 막아",
+  "studio.frozenStatus3.wsMenu.fragInvalidPayload": "저장 데이터가 올바르지 않아",
+  "studio.frozenStatus3.wsMenu.fragPayloadTooLarge": "작업공간 설정 용량이 너무 커",
+  "studio.frozenStatus3.wsMenu.fragNotSavedYet": "아직 브라우저에 저장하지 않아",
+  "studio.frozenStatus3.wsMenu.noticePersisted": "{action} · 이 기기 저장을 확인했어요.",
+  "studio.frozenStatus3.wsMenu.noticeSessionOnly": "{action} · {reason} 이 세션에서만 유지됩니다.",
+  "studio.frozenStatus3.wsMenu.noticeReorderSearch": "순서를 바꾸려면 검색어를 먼저 지워 주세요.",
+  "studio.frozenStatus3.wsMenu.noticeCurrentWorkspace": "현재 작업공간입니다. 변경을 버리려면 ‘저장된 배치 다시 불러오기’를 사용하세요.",
+  "studio.frozenStatus3.wsMenu.noticeAlreadyActive": "이미 사용 중인 작업공간입니다.",
+  "studio.frozenStatus3.wsMenu.emptyNoBuiltinMatch": "일치하는 기본 작업공간이 없어요.",
+  "studio.frozenStatus3.wsMenu.emptyNoSavedGuide": "저장한 작업공간이 없어요. 관리에서 현재 배치를 저장할 수 있어요.",
+  "studio.frozenStatus3.wsMenu.emptyNoCustomMatch": "일치하는 내 작업공간이 없어요.",
+  "studio.frozenStatus3.wsMenu.emptyNoSavedTitle": "저장한 작업공간이 없어요.",
+  "studio.frozenStatus3.wsMenu.builtinCannotEdit": "기본 작업공간은 고칠 수 없어요. 복사본을 저장한 뒤 조정하세요.",
+  "studio.frozenStatus3.wsMenu.limitReached": "내 작업공간이 24개라 사본을 만들 수 없어요. 취소한 뒤 하나를 삭제하거나 저장하지 않고 전환하세요.",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.wsMenu.errorOwnerChanged": "Your sign-in changed, so the workspace change for the previous account was not applied. Reopen the menu.",
+  "studio.frozenStatus3.wsMenu.errorMaxWorkspaces": "You can save up to 24 of your own workspaces.",
+  "studio.frozenStatus3.wsMenu.errorNotFound": "Could not find the selected workspace. Check the list again.",
+  "studio.frozenStatus3.wsMenu.errorNameLength": "Enter a name of 1 to 48 characters.",
+  "studio.frozenStatus3.wsMenu.errorChangeFailed": "Could not change the workspace. Try again.",
+  "studio.frozenStatus3.wsMenu.fragStorageUnavailable": "the browser storage is unavailable, so",
+  "studio.frozenStatus3.wsMenu.fragOwnershipBusy": "another Studio tab is using the local storage, so",
+  "studio.frozenStatus3.wsMenu.fragReadFailed": "the existing save state could not be checked, so",
+  "studio.frozenStatus3.wsMenu.fragWriteFailed": "saving to the browser failed, so",
+  "studio.frozenStatus3.wsMenu.fragVerificationFailed": "the save result could not be verified, so",
+  "studio.frozenStatus3.wsMenu.fragOwnerMismatch": "a save from another account was blocked during the user switch, so",
+  "studio.frozenStatus3.wsMenu.fragInvalidPayload": "the save data is not valid, so",
+  "studio.frozenStatus3.wsMenu.fragPayloadTooLarge": "the workspace settings are too large, so",
+  "studio.frozenStatus3.wsMenu.fragNotSavedYet": "it has not been saved to the browser yet, so",
+  "studio.frozenStatus3.wsMenu.noticePersisted": "{action} · Saving to this device was confirmed.",
+  "studio.frozenStatus3.wsMenu.noticeSessionOnly": "{action} · {reason} it is kept only for this session.",
+  "studio.frozenStatus3.wsMenu.noticeReorderSearch": "Clear the search term first to change the order.",
+  "studio.frozenStatus3.wsMenu.noticeCurrentWorkspace": "This is the current workspace. To discard changes, use Reload saved layout.",
+  "studio.frozenStatus3.wsMenu.noticeAlreadyActive": "This workspace is already in use.",
+  "studio.frozenStatus3.wsMenu.emptyNoBuiltinMatch": "No default workspace matches.",
+  "studio.frozenStatus3.wsMenu.emptyNoSavedGuide": "No workspaces saved. You can save the current layout in Manage.",
+  "studio.frozenStatus3.wsMenu.emptyNoCustomMatch": "None of your workspaces match.",
+  "studio.frozenStatus3.wsMenu.emptyNoSavedTitle": "No workspaces saved.",
+  "studio.frozenStatus3.wsMenu.builtinCannotEdit": "Default workspaces cannot be edited. Save a copy and adjust that instead.",
+  "studio.frozenStatus3.wsMenu.limitReached": "You already have 24 workspaces, so a copy cannot be made. Cancel, delete one, or switch without saving.",
+});
+
+// ── StudioContinuityPanel
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.cont.reviewLoading": "검토 기록을 불러오는 중…",
+  "studio.frozenStatus3.cont.reviewSaving": "검토 기록을 SQLite/OPFS에 저장 중…",
+  "studio.frozenStatus3.cont.reviewSaved": "검토 기록: SQLite/OPFS 저장됨",
+  "studio.frozenStatus3.cont.reviewMemory": "검토 기록은 현재 탭에만 보관됩니다. 저장된 원본은 변경하지 않습니다.",
+  "studio.frozenStatus3.cont.summaryAllDone": "자동 검사와 최종 수동 확인을 모두 마쳤습니다",
+  "studio.frozenStatus3.cont.summaryResolveBlocking": "마감 전에 차단 {blocking}개·오류 {error}개를 해결하세요",
+  "studio.frozenStatus3.cont.summaryRasterPending": "이미지 디코딩·해상도 검사가 끝날 때까지 마감 판정을 보류합니다",
+  "studio.frozenStatus3.cont.summaryReviewOutstanding": "차단 오류는 없으며 경고·확인 {count}개를 판단해야 합니다",
+  "studio.frozenStatus3.cont.summaryManualRemaining": "수동 확인 {count}개가 남았습니다",
+  "studio.frozenStatus3.cont.rasterProgress": "이미지 원본 {completed}/{total} 검사 중입니다.",
+  "studio.frozenStatus3.cont.rasterChecked": "이미지 참조 {count}개를 확인했습니다.",
+  "studio.frozenStatus3.cont.rasterUnavailable": "이 환경에서는 이미지 원본 해상도 검사를 실행할 수 없습니다.",
+  "studio.frozenStatus3.cont.readyBadge": "마감 준비 완료",
+  "studio.frozenStatus3.cont.reviewBadge": "확인 필요",
+  "studio.frozenStatus3.cont.emptyNoIssues": "현재 조건에 표시할 문제가 없습니다",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.cont.reviewLoading": "Loading the review records…",
+  "studio.frozenStatus3.cont.reviewSaving": "Saving the review records to SQLite/OPFS…",
+  "studio.frozenStatus3.cont.reviewSaved": "Review records: saved in SQLite/OPFS",
+  "studio.frozenStatus3.cont.reviewMemory": "Review records are kept only in the current tab. The saved original is not changed.",
+  "studio.frozenStatus3.cont.summaryAllDone": "All automatic checks and the final manual review are complete",
+  "studio.frozenStatus3.cont.summaryResolveBlocking": "Resolve {blocking} blocking items and {error} errors before the deadline",
+  "studio.frozenStatus3.cont.summaryRasterPending": "The deadline verdict is on hold until the image decoding and resolution checks finish",
+  "studio.frozenStatus3.cont.summaryReviewOutstanding": "There are no blocking errors, and {count} warnings or review items need a decision",
+  "studio.frozenStatus3.cont.summaryManualRemaining": "{count} manual checks remain",
+  "studio.frozenStatus3.cont.rasterProgress": "Checking image originals {completed}/{total}.",
+  "studio.frozenStatus3.cont.rasterChecked": "Checked {count} image references.",
+  "studio.frozenStatus3.cont.rasterUnavailable": "Image original resolution checks cannot run in this environment.",
+  "studio.frozenStatus3.cont.readyBadge": "Ready for the deadline",
+  "studio.frozenStatus3.cont.reviewBadge": "Needs review",
+  "studio.frozenStatus3.cont.emptyNoIssues": "No issues to show for the current conditions",
+});
+
+// ── StudioSelectionToolsPanel
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.sel.busyWait": "다른 픽셀 작업을 적용하는 동안 기다려 주세요.",
+  "studio.frozenStatus3.sel.selectPixelsFirst": "먼저 이미지에서 픽셀 영역을 선택하세요.",
+  "studio.frozenStatus3.sel.noTransformableBoundary": "전체 이미지 선택에는 변형할 점선 선택 경계가 없습니다.",
+  "studio.frozenStatus3.sel.noSelectionToClear": "해제할 선택 영역이 없습니다.",
+  "studio.frozenStatus3.sel.noSubpathToRemove": "제거할 하위 선택 영역이 없습니다.",
+  "studio.frozenStatus3.sel.noSelectionUndo": "되돌릴 선택 작업이 없습니다.",
+  "studio.frozenStatus3.sel.noSelectionRedo": "다시 적용할 선택 작업이 없습니다.",
+  "studio.frozenStatus3.sel.contentChangeFirst": "내용 스케일이나 회전 값을 먼저 변경하세요.",
+  "studio.frozenStatus3.sel.brightnessNonZero": "밝기 값을 0이 아닌 값으로 조절하세요.",
+  "studio.frozenStatus3.sel.hueNonZero": "색조 값을 0°가 아닌 값으로 조절하세요.",
+  "studio.frozenStatus3.sel.extractColorFirst": "먼저 캔버스에서 색을 추출하세요.",
+  "studio.frozenStatus3.sel.noSamplesToClear": "지울 색 샘플이 없습니다.",
+  "studio.frozenStatus3.sel.emptyNoSamples": "아직 추출한 색이 없습니다. 아래 버튼을 켜고 이미지에서 색을 클릭하세요.",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.sel.busyWait": "Wait while another pixel operation is being applied.",
+  "studio.frozenStatus3.sel.selectPixelsFirst": "Select a pixel area in the image first.",
+  "studio.frozenStatus3.sel.noTransformableBoundary": "A whole-image selection has no dotted selection boundary to transform.",
+  "studio.frozenStatus3.sel.noSelectionToClear": "There is no selection to clear.",
+  "studio.frozenStatus3.sel.noSubpathToRemove": "There is no sub-selection to remove.",
+  "studio.frozenStatus3.sel.noSelectionUndo": "There is no selection operation to undo.",
+  "studio.frozenStatus3.sel.noSelectionRedo": "There is no selection operation to redo.",
+  "studio.frozenStatus3.sel.contentChangeFirst": "Change the content scale or rotation value first.",
+  "studio.frozenStatus3.sel.brightnessNonZero": "Set the brightness to a value other than 0.",
+  "studio.frozenStatus3.sel.hueNonZero": "Set the hue to a value other than 0°.",
+  "studio.frozenStatus3.sel.extractColorFirst": "Extract a color from the canvas first.",
+  "studio.frozenStatus3.sel.noSamplesToClear": "There are no color samples to clear.",
+  "studio.frozenStatus3.sel.emptyNoSamples": "No colors extracted yet. Turn on the button below and click a color in the image.",
+});
+
+// ── CharacterShaperInspector
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.shaper.unsupportedModel": "이 모델은 지원하지 않습니다",
+  "studio.frozenStatus3.shaper.irisNotFoundNote": "이 모델에서는 홍채 메시를 찾지 못해 색을 바꿀 수 없습니다.",
+  "studio.frozenStatus3.shaper.noOriginalHairMesh": "이 모델에는 감출 원본 헤어 메시가 없습니다.",
+  "studio.frozenStatus3.shaper.emptyNoCostume": "아직 이 슬롯에 입힌 옷이 없습니다. 왼쪽 카드에서 하나 골라 보세요.",
+  "studio.frozenStatus3.shaper.emptyNoOriginalCostume": "이 모델에는 이 부위로 분류된 원본 의상 메시가 없습니다.",
+  "studio.frozenStatus3.shaper.emptyNoAccessory": "아직 장착한 액세서리가 없습니다.",
+  "studio.frozenStatus3.shaper.emptyNoExpression": "이 모델에는 조절할 수 있는 표정이 없습니다.",
+  "studio.frozenStatus3.shaper.capabilityIrisNotFound": "홍채 메시를 찾지 못했습니다",
+  "studio.frozenStatus3.shaper.capabilityMetricsFailed": "측정 중이거나 실패했습니다",
+  "studio.frozenStatus3.shaper.capabilityBoneNotFound": "본을 찾지 못했습니다",
+  "studio.frozenStatus3.shaper.capabilityNotYetAvailable": "이 모델에서는 아직 사용할 수 없습니다",
+  "studio.frozenStatus3.shaper.emptyModelNotLoaded": "모델을 불러오면 이 슬롯의 정밀 조절이 열립니다.",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.shaper.unsupportedModel": "This model is not supported",
+  "studio.frozenStatus3.shaper.irisNotFoundNote": "The iris mesh was not found in this model, so the color cannot be changed.",
+  "studio.frozenStatus3.shaper.noOriginalHairMesh": "This model has no original hair mesh to hide.",
+  "studio.frozenStatus3.shaper.emptyNoCostume": "No clothes have been put on this slot yet. Pick one from the cards on the left.",
+  "studio.frozenStatus3.shaper.emptyNoOriginalCostume": "This model has no original costume mesh classified for this part.",
+  "studio.frozenStatus3.shaper.emptyNoAccessory": "No accessories have been equipped yet.",
+  "studio.frozenStatus3.shaper.emptyNoExpression": "This model has no expressions that can be adjusted.",
+  "studio.frozenStatus3.shaper.capabilityIrisNotFound": "Iris mesh not found",
+  "studio.frozenStatus3.shaper.capabilityMetricsFailed": "Measuring or failed",
+  "studio.frozenStatus3.shaper.capabilityBoneNotFound": "Bone not found",
+  "studio.frozenStatus3.shaper.capabilityNotYetAvailable": "Not yet available in this model",
+  "studio.frozenStatus3.shaper.emptyModelNotLoaded": "Load a model to open the fine controls for this slot.",
+});
+
+// ── CharacterShaperReferenceDrawer
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.refDrawer.imageOnlyAllowed": "이미지 파일만 읽을 수 있습니다.",
+  "studio.frozenStatus3.refDrawer.imageTooLarge": "24MB 이하 이미지를 올려 주세요.",
+  "studio.frozenStatus3.refDrawer.imageUnreadableHere": "이 브라우저에서는 이미지를 읽을 수 없습니다.",
+  "studio.frozenStatus3.refDrawer.imageReadFailed": "이미지를 읽지 못했습니다. 다른 파일로 다시 시도해 주세요.",
+  "studio.frozenStatus3.refDrawer.presetApplied": "{label} 프리셋을 적용했습니다.",
+  "studio.frozenStatus3.refDrawer.applyUnavailableNow": "지금은 적용할 수 없습니다.",
+  "studio.frozenStatus3.refDrawer.comboApplied": "추천 조합 {total}개 중 {applied}개를 적용했습니다.",
+  "studio.frozenStatus3.refDrawer.colorChanged": "{name} 색을 {color}로 바꿨습니다.",
+  "studio.frozenStatus3.refDrawer.gradePresetApplied": "참고 이미지 프리셋 추천을 적용했습니다.",
+  "studio.frozenStatus3.refDrawer.irisBlockedReason": "이 모델에서는 홍채 메시를 찾지 못했습니다.",
+  "studio.frozenStatus3.refDrawer.notFoundValue": "찾지 못했습니다",
+  "studio.frozenStatus3.refDrawer.faceDetected": "얼굴 감지됨",
+  "studio.frozenStatus3.refDrawer.faceSearching": "얼굴을 찾는 중",
+  "studio.frozenStatus3.refDrawer.webcamPreparing": "카메라와 트래킹 모델을 준비하는 중",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.refDrawer.imageOnlyAllowed": "Only image files can be read.",
+  "studio.frozenStatus3.refDrawer.imageTooLarge": "Upload an image of 24MB or smaller.",
+  "studio.frozenStatus3.refDrawer.imageUnreadableHere": "Images cannot be read in this browser.",
+  "studio.frozenStatus3.refDrawer.imageReadFailed": "Could not read the image. Try again with a different file.",
+  "studio.frozenStatus3.refDrawer.presetApplied": "Applied the {label} preset.",
+  "studio.frozenStatus3.refDrawer.applyUnavailableNow": "It cannot be applied right now.",
+  "studio.frozenStatus3.refDrawer.comboApplied": "Applied {applied} of the {total} recommended combinations.",
+  "studio.frozenStatus3.refDrawer.colorChanged": "Changed the {name} color to {color}.",
+  "studio.frozenStatus3.refDrawer.gradePresetApplied": "Applied the reference image preset recommendation.",
+  "studio.frozenStatus3.refDrawer.irisBlockedReason": "The iris mesh was not found in this model.",
+  "studio.frozenStatus3.refDrawer.notFoundValue": "Not found",
+  "studio.frozenStatus3.refDrawer.faceDetected": "Face detected",
+  "studio.frozenStatus3.refDrawer.faceSearching": "Looking for a face",
+  "studio.frozenStatus3.refDrawer.webcamPreparing": "Preparing the camera and tracking model",
+});
+
+// ── StudioHelpCenterDialog
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.help.adapterProbeFailed": "어댑터 프로브 실패",
+  "studio.frozenStatus3.help.toolDescriptionMissing": "카탈로그에 이 도구의 한 줄 설명이 아직 없습니다.",
+  "studio.frozenStatus3.help.noSaveFailureReport": "최근 저장 실패·강등 보고 없음",
+  "studio.frozenStatus3.help.storageReading": "브라우저 저장소를 읽는 중입니다…",
+  "studio.frozenStatus3.help.storageReadFailed": "브라우저 저장소를 읽지 못했습니다(사생활 보호 모드일 수 있습니다). 이 상태에서는 임시저장이 남지 않으니 작업을 파일로 내보내 두세요.",
+  "studio.frozenStatus3.help.toolUnknown": "지금 어떤 도구가 캔버스를 쥐고 있는지 확인하지 못했습니다. 도구를 한 번 누른 뒤 다시 열어 주세요.",
+  "studio.frozenStatus3.help.noRelatedItems": "검색 색인이 찾은 관련 항목이 없습니다.",
+  "studio.frozenStatus3.help.noMatchingTerm": "맞는 용어를 찾지 못했습니다.",
+  "studio.frozenStatus3.help.measuring": "기기 능력을 측정하는 중입니다…",
+  "studio.frozenStatus3.help.measureFailed": "측정 결과를 만들지 못했습니다. ‘다시 측정’을 눌러 주세요.",
+  "studio.frozenStatus3.help.bugReportSummary": "오류 {errors}건 · 진단 {measured}항목 실측",
+  "studio.frozenStatus3.help.copiedToClipboard": "클립보드에 복사했습니다.",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.help.adapterProbeFailed": "Adapter probe failed",
+  "studio.frozenStatus3.help.toolDescriptionMissing": "The catalog does not have a one-line description for this tool yet.",
+  "studio.frozenStatus3.help.noSaveFailureReport": "No recent save failure or downgrade reports",
+  "studio.frozenStatus3.help.storageReading": "Reading the browser storage…",
+  "studio.frozenStatus3.help.storageReadFailed": "Could not read the browser storage (it may be private browsing mode). In this state autosaves do not remain, so export your work to a file.",
+  "studio.frozenStatus3.help.toolUnknown": "Could not tell which tool is holding the canvas right now. Press a tool once, then open this again.",
+  "studio.frozenStatus3.help.noRelatedItems": "The search index found no related items.",
+  "studio.frozenStatus3.help.noMatchingTerm": "No matching term was found.",
+  "studio.frozenStatus3.help.measuring": "Measuring the device capabilities…",
+  "studio.frozenStatus3.help.measureFailed": "Could not create the measurement results. Press Measure again.",
+  "studio.frozenStatus3.help.bugReportSummary": "{errors} errors · {measured} diagnostics measured",
+  "studio.frozenStatus3.help.copiedToClipboard": "Copied to the clipboard.",
+});
+
+// ── StudioMenubarContent
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.menubar.undoUnavailable": "되돌릴 편집 작업이 아직 없습니다.",
+  "studio.frozenStatus3.menubar.redoUnavailable": "다시 적용할 편집 작업이 아직 없습니다.",
+  "studio.frozenStatus3.menubar.saveBusyRetry": "현재 저장 작업이 끝난 뒤 다시 시도하세요.",
+  "studio.frozenStatus3.menubar.publishOwnerOnly": "공유 문서의 게시는 소유자만 할 수 있습니다.",
+  "studio.frozenStatus3.menubar.fitNotConnected": "이 화면에는 화면 맞춤 명령이 아직 연결되지 않았습니다.",
+  "studio.frozenStatus3.menubar.exportOpening": "내보내기 옵션을 여는 중...",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.menubar.undoUnavailable": "There are no edits to undo yet.",
+  "studio.frozenStatus3.menubar.redoUnavailable": "There are no edits to redo yet.",
+  "studio.frozenStatus3.menubar.saveBusyRetry": "Try again after the current save finishes.",
+  "studio.frozenStatus3.menubar.publishOwnerOnly": "Only the owner can publish a shared document.",
+  "studio.frozenStatus3.menubar.fitNotConnected": "The fit-to-screen command is not connected on this screen yet.",
+  "studio.frozenStatus3.menubar.exportOpening": "Opening the export options...",
+});
+
+// ── StudioLayerNavigator
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.layer.mergeFallbackNote": "이미지가 아닌 레이어 {count}개가 있어 한 장으로 굽지 못해요 — 원본을 지키는 그룹으로 묶이고 레이어 수는 줄지 않습니다.",
+  "studio.frozenStatus3.layer.createGroupReadOnly": "읽기 전용 작업공간에서는 그룹을 만들 수 없어요.",
+  "studio.frozenStatus3.layer.groupUnsupported": "현재 작업면은 레이어 그룹을 지원하지 않아요.",
+  "studio.frozenStatus3.layer.createGroupFilterFirst": "검색·필터를 지운 뒤 그룹을 만들 수 있어요.",
+  "studio.frozenStatus3.layer.createGroupAlreadyGrouped": "기존 그룹이 포함되어 있어요. 먼저 그룹을 해제해 주세요.",
+  "studio.frozenStatus3.layer.otherEditingLayer": "다른 참가자가 편집 중인 레이어예요.",
+  "studio.frozenStatus3.layer.changeGroupReadOnly": "읽기 전용 작업공간에서는 그룹을 바꿀 수 없어요.",
+  "studio.frozenStatus3.layer.changeGroupFallback": "현재 선택의 그룹을 바꿀 수 없어요.",
+  "studio.frozenStatus3.layer.otherEditingGroup": "다른 참가자가 편집 중인 그룹이에요.",
+  "studio.frozenStatus3.layer.reorderFilterFirst": "검색·필터를 지운 뒤 레이어 순서를 바꿀 수 있어요.",
+  "studio.frozenStatus3.layer.reorderFallback": "현재 상태에서는 레이어 순서를 바꿀 수 없어요.",
+  "studio.frozenStatus3.layer.reorderMoved": "{count}개 레이어를 {direction} 이동했습니다.",
+  "studio.frozenStatus3.layer.movedIntoGroup": "{label}를 그룹 안으로 이동했습니다.",
+  "studio.frozenStatus3.layer.reorderedInGroup": "{label}의 그룹 내 순서를 변경했습니다.",
+  "studio.frozenStatus3.layer.reorderReadOnly": "읽기 전용 작업공간에서는 레이어 순서를 바꿀 수 없어요.",
+  "studio.frozenStatus3.layer.reorderAllFilterFirst": "검색·필터를 지운 뒤 전체 레이어 순서를 바꿀 수 있어요.",
+  "studio.frozenStatus3.layer.selectLayerFirst": "먼저 레이어를 선택하세요.",
+  "studio.frozenStatus3.layer.groupUnsupportedBare": "현재 작업면은 레이어 그룹을 지원하지 않아요",
+  "studio.frozenStatus3.layer.groupTitleFilterFirst": "검색·필터를 지운 뒤 그룹을 바꿀 수 있어요",
+  "studio.frozenStatus3.layer.ungroupTitleFilterFirst": "검색·필터를 지운 뒤 그룹을 해제할 수 있어요",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.layer.mergeFallbackNote": "There are {count} non-image layers, so they cannot be baked into one — they are grouped to preserve the originals and the layer count does not decrease.",
+  "studio.frozenStatus3.layer.createGroupReadOnly": "Groups cannot be created in a read-only workspace.",
+  "studio.frozenStatus3.layer.groupUnsupported": "The current surface does not support layer groups.",
+  "studio.frozenStatus3.layer.createGroupFilterFirst": "Clear the search and filters to create a group.",
+  "studio.frozenStatus3.layer.createGroupAlreadyGrouped": "An existing group is included. Ungroup it first.",
+  "studio.frozenStatus3.layer.otherEditingLayer": "Another participant is editing this layer.",
+  "studio.frozenStatus3.layer.changeGroupReadOnly": "Groups cannot be changed in a read-only workspace.",
+  "studio.frozenStatus3.layer.changeGroupFallback": "The group of the current selection cannot be changed.",
+  "studio.frozenStatus3.layer.otherEditingGroup": "Another participant is editing this group.",
+  "studio.frozenStatus3.layer.reorderFilterFirst": "Clear the search and filters to change the layer order.",
+  "studio.frozenStatus3.layer.reorderFallback": "The layer order cannot be changed in the current state.",
+  "studio.frozenStatus3.layer.reorderMoved": "Moved {count} layers {direction}.",
+  "studio.frozenStatus3.layer.movedIntoGroup": "Moved {label} into the group.",
+  "studio.frozenStatus3.layer.reorderedInGroup": "Changed the order of {label} within the group.",
+  "studio.frozenStatus3.layer.reorderReadOnly": "The layer order cannot be changed in a read-only workspace.",
+  "studio.frozenStatus3.layer.reorderAllFilterFirst": "Clear the search and filters to change the whole layer order.",
+  "studio.frozenStatus3.layer.selectLayerFirst": "Select a layer first.",
+  "studio.frozenStatus3.layer.groupUnsupportedBare": "The current surface does not support layer groups",
+  "studio.frozenStatus3.layer.groupTitleFilterFirst": "Clear the search and filters to change the group",
+  "studio.frozenStatus3.layer.ungroupTitleFilterFirst": "Clear the search and filters to ungroup",
+});
+
+// ── CreateWorkPage
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.work.settingsSaveFailed": "설정을 저장하지 못했습니다.",
+  "studio.frozenStatus3.work.commentsLoadFailed": "댓글을 불러오지 못했습니다.",
+  "studio.frozenStatus3.work.workLoadFailed": "창작물을 불러오지 못했습니다.",
+  "studio.frozenStatus3.work.likeFailed": "좋아요를 처리하지 못했습니다.",
+  "studio.frozenStatus3.work.bookmarkFailed": "북마크를 처리하지 못했습니다.",
+  "studio.frozenStatus3.work.deleteFailed": "창작물을 삭제하지 못했습니다.",
+  "studio.frozenStatus3.work.readerChecking": "실제 비로그인 독자 응답으로 확인 중",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.work.settingsSaveFailed": "Could not save the settings.",
+  "studio.frozenStatus3.work.commentsLoadFailed": "Could not load the comments.",
+  "studio.frozenStatus3.work.workLoadFailed": "Could not load the work.",
+  "studio.frozenStatus3.work.likeFailed": "Could not process the like.",
+  "studio.frozenStatus3.work.bookmarkFailed": "Could not process the bookmark.",
+  "studio.frozenStatus3.work.deleteFailed": "Could not delete the work.",
+  "studio.frozenStatus3.work.readerChecking": "Checking with an actual signed-out reader response",
+});
+
+// ── StudioHybridDccPanel
+registerI18nLocaleEntries("ko", {
+  "studio.frozenStatus3.hybrid.previewRestoreFailed": "비파괴 변형 미리보기 복구 실패 · {detail}",
+  "studio.frozenStatus3.hybrid.runCompleted": "{label} 완료 · 오브젝트 {objects}개 · 컷 {shots}개 · UV {uv} · 오류 {errors}개",
+  "studio.frozenStatus3.hybrid.runFailed": "{label} 실패 · {detail}",
+  "studio.frozenStatus3.hybrid.uvNone": "없음",
+  "studio.frozenStatus3.hybrid.selectObjectFirst": "먼저 오브젝트를 선택하세요.",
+  "studio.frozenStatus3.hybrid.faceToolGuide": "면 편집 도구입니다. 3번 키 또는 ‘면’을 누른 뒤 면을 선택하세요.",
+  "studio.frozenStatus3.hybrid.faceNoneSelected": "선택한 면이 없습니다. 3D 화면에서 편집할 면을 먼저 선택하세요.",
+  "studio.frozenStatus3.hybrid.edgeToolGuide": "모서리 편집 도구입니다. 2번 키 또는 ‘선’을 누른 뒤 모서리를 선택하세요.",
+  "studio.frozenStatus3.hybrid.edgeNoneSelected": "선택한 모서리가 없습니다. 3D 화면에서 편집할 모서리를 먼저 선택하세요.",
+  "studio.frozenStatus3.hybrid.objectSelectFailed": "오브젝트 선택 실패 · {detail}",
+  "studio.frozenStatus3.hybrid.startObjectFirst": "점·선·면 편집을 시작할 오브젝트를 먼저 선택하세요.",
+  "studio.frozenStatus3.hybrid.modeChangeFailed": "편집 선택 모드 변경 실패 · {detail}",
+  "studio.frozenStatus3.hybrid.meshSourceNotFound": "선택한 메시 원본을 찾지 못했습니다.",
+  "studio.frozenStatus3.hybrid.meshSelectFailed": "메시 요소 선택 실패 · {detail}",
+  "studio.frozenStatus3.hybrid.clearSelectionFailed": "선택 해제 실패 · {detail}",
+  "studio.frozenStatus3.hybrid.handoffCompleted": "3D 배경 편집기로 전달 완료 · 모델 {assets}개 · 컷 {shots}개 · 보존 보고 {losses}개",
+  "studio.frozenStatus3.hybrid.handoffFailed": "3D 배경 편집기 전달 실패 · {detail}",
+  "studio.frozenStatus3.hybrid.numberConvertFailed": "숫자 변환 실패: 유효한 숫자를 입력해 주세요.",
+  "studio.frozenStatus3.hybrid.visibilityNowHidden": "{asset} 숨김 · 원본은 그대로 보존됩니다.",
+  "studio.frozenStatus3.hybrid.visibilityNowShown": "{asset} 표시 · 원본은 그대로 보존됩니다.",
+  "studio.frozenStatus3.hybrid.visibilityChangeFailed": "표시 상태 변경 실패 · {detail}",
+});
+registerI18nLocaleEntries("en", {
+  "studio.frozenStatus3.hybrid.previewRestoreFailed": "Failed to restore the non-destructive modifier preview · {detail}",
+  "studio.frozenStatus3.hybrid.runCompleted": "{label} done · {objects} objects · {shots} shots · UV {uv} · {errors} errors",
+  "studio.frozenStatus3.hybrid.runFailed": "{label} failed · {detail}",
+  "studio.frozenStatus3.hybrid.uvNone": "None",
+  "studio.frozenStatus3.hybrid.selectObjectFirst": "Select an object first.",
+  "studio.frozenStatus3.hybrid.faceToolGuide": "This is a face editing tool. Press the 3 key or Face, then select a face.",
+  "studio.frozenStatus3.hybrid.faceNoneSelected": "No face is selected. Select a face to edit in the 3D view first.",
+  "studio.frozenStatus3.hybrid.edgeToolGuide": "This is an edge editing tool. Press the 2 key or Edge, then select an edge.",
+  "studio.frozenStatus3.hybrid.edgeNoneSelected": "No edge is selected. Select an edge to edit in the 3D view first.",
+  "studio.frozenStatus3.hybrid.objectSelectFailed": "Object selection failed · {detail}",
+  "studio.frozenStatus3.hybrid.startObjectFirst": "Select an object to start vertex, edge, and face editing first.",
+  "studio.frozenStatus3.hybrid.modeChangeFailed": "Failed to change the edit selection mode · {detail}",
+  "studio.frozenStatus3.hybrid.meshSourceNotFound": "Could not find the selected mesh source.",
+  "studio.frozenStatus3.hybrid.meshSelectFailed": "Mesh element selection failed · {detail}",
+  "studio.frozenStatus3.hybrid.clearSelectionFailed": "Failed to clear the selection · {detail}",
+  "studio.frozenStatus3.hybrid.handoffCompleted": "Handed off to the 3D background editor · {assets} models · {shots} shots · {losses} preservation reports",
+  "studio.frozenStatus3.hybrid.handoffFailed": "Failed to hand off to the 3D background editor · {detail}",
+  "studio.frozenStatus3.hybrid.numberConvertFailed": "Number conversion failed: enter a valid number.",
+  "studio.frozenStatus3.hybrid.visibilityNowHidden": "{asset} hidden · The original is preserved as is.",
+  "studio.frozenStatus3.hybrid.visibilityNowShown": "{asset} shown · The original is preserved as is.",
+  "studio.frozenStatus3.hybrid.visibilityChangeFailed": "Failed to change the visibility state · {detail}",
+});
+
+export function frozenStatus3Text(key: string, koFallback: string): string;
+export function frozenStatus3Text(
+  key: string,
+  params: Readonly<Record<string, string | number>>,
+  koFallback: string,
+): string;
+export function frozenStatus3Text(
+  key: string,
+  paramsOrFallback: Readonly<Record<string, string | number>> | string,
+  koFallback?: string,
+): string {
+  const params = typeof paramsOrFallback === "string" ? undefined : paramsOrFallback;
+  const fallback = typeof paramsOrFallback === "string" ? paramsOrFallback : koFallback ?? "";
+  const text = resolveTranslationForDisplay(getLang(), key, FALLBACK_CHAIN, fallback);
+  if (!params) return text;
+  return text.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
+    Object.hasOwn(params, token) ? String(params[token]) : placeholder,
+  );
+}

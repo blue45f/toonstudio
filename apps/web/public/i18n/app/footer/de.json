@@ -28,9 +28,9 @@
   "footer.link.shaper": "Charakterform",
   "footer.link.market": "Creator-Markt",
   "footer.link.news": "Toon & Web-Novel Nachrichten",
-  "footer.link.about": "About ToonStudio",
+  "footer.link.about": "Über ToonStudio",
   "footer.link.guide": "Ranglistepolitik",
-  "footer.link.sitemap": "Sitemap",
+  "footer.link.sitemap": "Seitenübersicht",
   "footer.link.settings": "Einstellungen",
   "footer.link.support": "Unterstützung",
   "footer.link.terms": "Dienstleistungsbedingungen",
@@ -49,5 +49,5 @@
   "footer.business.serviceType": "Typ der Plattform",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Alle Rechte vorbehalten.",
   "footer.logoTag": "Erstellen Sie Ihre nächste Geschichte",
-  "footer.link.features": "All features at a glance"
+  "footer.link.features": "Alle Funktionen auf einen Blick"
 }
