@@ -648,7 +648,6 @@
     "deploy/cloudflare-realtime/src/protocol.ts": 1152,
     "deploy/cloudflare-realtime/src/room-store.ts": 2398,
     "deploy/cloudflare-realtime/src/room.ts": 1554,
-    "deploy/cloudflare-static/src/index.ts": 838,
     "hidden_files/scratch/patched.ts": 1202,
     "hidden_files/scratch/runB/bundle.cjs": 1428,
     "hidden_files/scratch/runB/studio-dialogue-spellcheck.ts": 1202,

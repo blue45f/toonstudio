@@ -108,6 +108,16 @@ Cloudflare Static Assets의 개별 파일 한도는 25 MiB다. 배포 전에 `pr
 
 `sync:cloudflare-r2-assets:dry-run`은 빌드 산출물과 허용 목록을 검증하고 원격 쓰기를 하지 않는다. 운영 배포에서는 `prepare:cloudflare-static-assets`가 sidecar를 만든 뒤 `sync:cloudflare-r2-assets`가 승인된 원본 초과 파일을 R2에 먼저 업로드하고 Worker를 배포한다.
 
+### R2 미디어 이관 (2026-10-23)
+
+Static Assets 무료 플랜은 배포 버전당 파일 **20,000개**가 한도다. 2026-10-23 빌드가 18,273개에 이르러, 3D 모델·캐릭터·텍스처 같은 바이너리 미디어를 R2로 옮겼다.
+
+- 대상: `/assets/studio/cc0-20260906/`, `/assets/virtual-studio/`, `/assets/3d/`, `/vrm/` 아래의 `glb`·`vrm`·`png`·`jpg`·`webp`·`hdr`·`ogg`(약 7,160개·3 GB). 정본은 `src/large-static-assets.ts`의 `CLOUDFLARE_R2_MEDIA_PREFIXES`다. JSON 매니페스트·라이선스 텍스트는 경로별 헤더 규칙 때문에 Static Assets에 남는다.
+- 서빙: 경로와 R2 키가 같아서 앱 코드·CSP·DNS는 바뀌지 않는다. Static Assets에서 빠진 경로는 비탐색 요청이라 Worker가 받아 R2에서 내준다(`run_worker_first`에 넣지 않는다). `/assets/*`는 Static Assets 규칙처럼 CORS 없이 `Cross-Origin-Resource-Policy: same-origin`을, `/vrm/*`는 `Access-Control-Allow-Origin: *`를 붙인다. R2에 객체가 없으면 Static Assets로 폴백하고, SPA 폴백 HTML이 오면 404로 바꾼다.
+- 배포 순서: `prepare:cloudflare-static-assets`가 `.assetsignore`에 미디어 패턴을 쓰고, `sync:cloudflare-r2-assets`가 R2 목록(etag = MD5)과 로컬 파일을 비교해 **바뀐 파일만** 병렬로 올린 뒤 Worker를 배포한다. 동기화가 실패하면 배포가 멈추므로 R2에 없는 미디어가 운영에 나가지 않는다. 25 MiB 초과 대형 에셋도 같은 비교로 매번 다시 올리지 않는다.
+- 인증: 셸의 `CLOUDFLARE_API_TOKEN`(R2 편집 권한)과, 계정이 여럿 보이면 `CLOUDFLARE_ACCOUNT_ID`.
+- 비용: R2 무료 한도(저장 10 GB·월, 읽기 1,000만 회·월, 송신 무료) 안이다. Worker 요청 수가 늘어나는 점(무료 하루 10만 회)은 이관 경로의 실제 요청량을 보며 관찰한다.
+
 ## 수동 운영 배포
 
 자동 Git 배포는 허용하지 않는다. 검토된 `main`의 깨끗한 worktree에서만 다음 명령을 실행한다.
