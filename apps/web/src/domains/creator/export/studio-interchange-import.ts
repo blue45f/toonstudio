@@ -3,6 +3,8 @@ import { uid } from "../studio-id";
 import { createBlankPage } from "../studio-pages";
 import { STUDIO_PROJECT_MAX_PAGES } from "../studio-project-file";
 
+import { resolveStudioCbzErrorFromCause } from "../status-i18n/studio-producer-error-i18n-interchange-cbz";
+import { resolveStudioOpenRasterErrorFromCause } from "../status-i18n/studio-producer-error-i18n-interchange-ora";
 import { loadStudioPsdImportModule } from "./studio-document-export-loaders";
 import { studioDocumentImportProgressMessage } from "./studio-document-import-progress-copy";
 
@@ -237,7 +239,11 @@ export function createStudioInterchangeImportOrchestration(
       setProjectActionsOpen(false);
     } catch (cause) {
       if (controller.signal.aborted || documentImportEpochRef.current !== importEpoch) return;
-      const message = cause instanceof Error ? cause.message : "문서 파일을 안전하게 검사하지 못했어요.";
+      // A4 D4 (R12): cbz/ora 생산자는 구조화 코드만 방출하므로 표시 지점인 이 catch에서
+      // 덕 타이핑 리졸버로 해석한다. 타 생산자 오류는 기존 message 경로를 유지한다.
+      const message = resolveStudioCbzErrorFromCause(cause)
+        ?? resolveStudioOpenRasterErrorFromCause(cause)
+        ?? (cause instanceof Error ? cause.message : "문서 파일을 안전하게 검사하지 못했어요.");
       setInterchangeImportStatus({ tone: "bad", text: message });
       setError(message);
     } finally {
