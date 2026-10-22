@@ -236,7 +236,7 @@
 .ir-present .frag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; }
 .ir-present .frag-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 22px 22px 18px; display: flex; flex-direction: column; }
 .ir-present .frag-card .f-cat { font-family: var(--grot); font-size: 12px; font-weight: 700; letter-spacing: .16em; color: var(--accent); text-transform: uppercase; margin-bottom: 7px; }
-.ir-present .frag-card h3 { margin: 0 0 12px; font-size: 19px; font-weight: 800; }
+.ir-present .frag-card h3 { margin: 0 0 12px; font-size: 19px; font-weight: 800; color: var(--ink); }
 .ir-present .frag-tools { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 13px; }
 .ir-present .frag-tools span { font-size: 13.5px; font-weight: 700; color: var(--ink); border: 1px solid var(--line-strong); border-radius: 99px; padding: 4px 11px; background: rgba(255,238,224,.04); }
 .ir-present .frag-tools span small { color: var(--muted); font-weight: 600; margin-left: 4px; font-size: 11px; }
@@ -295,7 +295,7 @@
 .ir-present .deep-card .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
 .ir-present .deep-card .body { padding: 28px 28px 26px; display: flex; flex-direction: column; flex: 1; }
 .ir-present .deep-card .no { font-family: var(--grot); font-size: 13px; font-weight: 700; letter-spacing: .16em; color: var(--accent); margin-bottom: 12px; }
-.ir-present .deep-card h3 { margin: 0 0 10px; font-size: clamp(21px, 2.4vw, 25px); font-weight: 800; letter-spacing: -0.01em; }
+.ir-present .deep-card h3 { margin: 0 0 10px; font-size: clamp(21px, 2.4vw, 25px); font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
 .ir-present .deep-card p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
 .ir-present .deep-card p b { color: var(--ink); }
 .ir-present .deep-card .engine-visual { padding: 30px 28px 6px; display: flex; align-items: flex-end; gap: 5px; height: 128px; }
@@ -455,7 +455,7 @@
         background: rgba(10,8,7,.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
         padding: 40px 18px calc(var(--hud-h) + 22px); overflow-y: auto; }
 .ir-present .chapters-overlay.open { display: block; }
-.ir-present .chapters-panel { width: min(860px, 100%); margin: 0 auto; background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: 22px; padding: 32px 34px; }
+.ir-present .chapters-panel { width: min(860px, 100%); margin: 0 auto; background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: 22px; padding: 32px 34px; color: var(--ink); }
 .ir-present .chapters-panel h2 { margin: 0 0 6px; font-size: 26px; font-weight: 800; }
 .ir-present .chapters-panel .sub { color: var(--muted); font-size: 14.5px; margin: 0 0 22px; }
 .ir-present .chapter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
