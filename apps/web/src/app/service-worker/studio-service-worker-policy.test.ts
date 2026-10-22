@@ -101,6 +101,10 @@ describe("classifyStudioServiceWorkerRequest", () => {
       ["/assets/studio/bundle-v2/manifest.json", "passthrough"],
       ["/assets/studio/bundle-v2/manifest.json?v=1", "passthrough"],
       [`/assets/studio/bundle-v2/${"a".repeat(64)}.glb`, "immutable-asset"],
+      // 렌더 매니페스트는 권리 원장 스탬프를 싣는 게이트라 철회·개방이 바로 닿도록 캐시하지 않고, 이미지는 그대로 immutable이다.
+      ["/assets/studio/bundle-renders-v1/manifest.json", "passthrough"],
+      ["/assets/studio/bundle-renders-v1/manifest.json?v=bundle-renders-v1", "passthrough"],
+      ["/assets/studio/bundle-renders-v1/assets/cbv1-045-food-props-render-001/prop.webp", "immutable-asset"],
       ["/assets/canvaskit-DB1zH3nD.wasm", "heavy-asset"],
       ["/assets/tag2pix-X1y2Z3.onnx", "heavy-asset"],
       ["/assets/sqlite3-opfs-abc123.wasm", "heavy-asset"],

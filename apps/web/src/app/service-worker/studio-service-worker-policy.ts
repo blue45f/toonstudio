@@ -161,6 +161,10 @@ export function classifyStudioServiceWorkerRequest(
   // so it is never replayed from the immutable cache. The GLBs next to it are content-addressed
   // (`<sha256>.glb`) and stay under the `/assets/` immutable rule below.
   if (pathname === "/assets/studio/bundle-v2/manifest.json") return "passthrough";
+  // The bundle render manifest carries the rights stamps from the pack-rights ledger (a slot is delivered only while its
+  // `rights` block is present), so opening and withdrawing a pack must reach installed clients immediately instead of
+  // being replayed from the immutable cache. Images stay under the `/assets/` rule: only slots the manifest lists are requested.
+  if (pathname === "/assets/studio/bundle-renders-v1/manifest.json") return "passthrough";
 
   if (facts.mode === "navigate") {
     return isStudioServiceWorkerIsolatedPath(pathname)

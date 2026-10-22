@@ -373,6 +373,19 @@
       ]
     },
     {
+      "source": "/assets/studio/bundle-renders-v1/manifest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
       "source": "/vrm/(.*)",
       "headers": [
         {

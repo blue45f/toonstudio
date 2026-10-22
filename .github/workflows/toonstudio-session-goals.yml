@@ -60,6 +60,7 @@ jobs:
             /apps/web/public/assets/virtual-studio/bundle-v1/manifest.json
             /apps/web/public/assets/3d/ENVIRONMENT_LICENSES.md
             /apps/web/public/assets/studio/cc0-20260906/manifest.json
+            /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
             /apps/web/public/assets/virtual-studio/world/default-world.json
             /apps/web/public/assets/virtual-studio/world-v2/characters/pixel-maker/
             /apps/web/public/assets/virtual-studio/living-town-v6/imagegen25-character/

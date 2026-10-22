@@ -21,7 +21,8 @@
  *   그래서 allow 전환은 항상 소유자가 직접 하는 원장 편집이고, 이 게이트는 실수·누락을 막는 안전장치다.
  *
  * 소비자: 생성기(generate-creator-bundle-theme-packs.mjs), 배포 플래너
- * (plan-creator-bundle-deploy.mjs), 검증 CLI(verify-creator-bundle-pack-rights.mjs), 완전성 테스트.
+ * (plan-creator-bundle-deploy.mjs), 검증 CLI(verify-creator-bundle-pack-rights.mjs), 렌더 이미지 경로 판정·스탬프
+ * (creator-bundle-render-rights.mjs, sync-creator-bundle-render-rights.mjs), 완전성 테스트.
  */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -380,10 +381,14 @@ export function missingEvidenceKinds(ledger, entry, { now } = {}) {
 }
 
 /**
- * 공개 서빙 판정이 theme-packs.json에 싣는 팩별 권리 블록 (허용된 팩 전용).
- * grant가 올바르지 않으면 던진다 — 검증 안 된 값을 공개 JSON에 싣지 않는다.
+ * 공개 서빙 판정이 theme-packs.json·렌더 매니페스트에 싣는 팩별 권리 블록 (허용된 팩 전용).
+ * allow가 아닌 항목이거나 grant가 올바르지 않으면 던진다 — hold로 되돌린 뒤 grant가 남은 항목이나 검증 안 된 값을 공개 JSON에 싣지 않는다.
+ * (증빙·묶음 자격까지는 보지 않는다 — 호출자가 evaluateServeDecision의 serve가 true일 때만 부른다.)
  */
 export function packRightsProjection(entry) {
+  if (entry?.serve !== "allow") {
+    throw new TypeError(`권리 블록을 만들 수 없습니다 (${String(entry?.title)}): serve가 allow가 아닙니다.`);
+  }
   const problems = grantProblems(entry);
   if (problems.length > 0) {
     throw new TypeError(`권리 블록을 만들 수 없습니다 (${String(entry?.title)}): ${problems.join(" / ")}`);
@@ -403,6 +408,20 @@ export function findPackRights(ledger, def) {
   if (key === INVALID_PACK_KEY) return null;
   const entries = Array.isArray(ledger?.packs) ? ledger.packs : [];
   return entries.find((entry) => isRecord(entry) && packRightsKey(entry) === key) ?? null;
+}
+
+/**
+ * 카탈로그 번호 하나로 원장 항목을 찾는다 — 생성기 번호(catalogIds)든 공식 81팩 카탈로그 번호(officialCatalogIds)든 된다.
+ * 렌더 슬롯의 `derivedFromPack`은 공식 번호를 쓰고 그 번호는 항목 16개에서 생성기 번호와 다르므로, 번호 전체를 이어 만든
+ * 키로 찾는 findPackRights로는 닿지 않는다. 번호가 문자열이 아니거나 비었거나, 서로 다른 항목 둘 이상이 같은 번호를 주장하면
+ * (검증기가 거부하는 원장) 어느 쪽도 고르지 않고 null이다 — 호출자는 hold로 다뤄야 한다. 일치는 정확히 같은 문자열뿐이다.
+ */
+export function findPackRightsByCatalogId(ledger, catalogId) {
+  if (typeof catalogId !== "string" || catalogId === "") return null;
+  const entries = Array.isArray(ledger?.packs) ? ledger.packs : [];
+  const owners = entries.filter((entry) => isRecord(entry)
+    && [entry.catalogIds, entry.officialCatalogIds].some((ids) => Array.isArray(ids) && ids.includes(catalogId)));
+  return owners.length === 1 ? owners[0] : null;
 }
 
 /**
@@ -543,6 +562,7 @@ export function validatePackRightsLedger(ledger, { now } = {}) {
   const seenKeys = new Map();
   const seenIds = new Set();
   const seenCatalogIds = new Map();
+  const seenOfficialIds = new Map();
   const libraryOwners = new Map();
   for (const [index, entry] of ledger.packs.entries()) {
     problems.push(...validateEntry(ledger, entry, index, context));
@@ -560,6 +580,20 @@ export function validatePackRightsLedger(ledger, { now } = {}) {
       if (seenCatalogIds.has(id)) problems.push(`packs[${index}]: catalogId가 다른 항목과 겹칩니다 (${id}).`);
       seenCatalogIds.set(id, index);
     }
+    // 렌더 슬롯은 공식 번호(officialCatalogIds)로도 팩을 찾는다(findPackRightsByCatalogId) — 번호는 생성기·공식 번호를 가로질러도
+    // 한 항목에만 속해야 한다. 한 항목 안에서 두 번호가 같은 것은 시드에도 있는 정상 형태다. (생성기 번호끼리 겹침은 위에서 이미 본다.)
+    const officialIds = Array.isArray(entry.officialCatalogIds) ? entry.officialCatalogIds : [];
+    const generatorIds = Array.isArray(entry.catalogIds) ? entry.catalogIds : [];
+    const otherClaimant = (id, ...claims) => claims.map((owners) => owners.get(id)).find((owner) => owner !== undefined && owner !== index);
+    for (const [id, claimedBy] of [
+      ...officialIds.map((id) => [id, otherClaimant(id, seenOfficialIds, seenCatalogIds)]),
+      ...generatorIds.map((id) => [id, otherClaimant(id, seenOfficialIds)]),
+    ]) {
+      if (claimedBy !== undefined) {
+        problems.push(`packs[${index}]: 카탈로그 번호 ${id}가 packs[${claimedBy}]의 번호와 겹칩니다 (생성기·공식 번호를 가로질러 한 팩에만 속해야 합니다).`);
+      }
+    }
+    for (const id of officialIds) seenOfficialIds.set(id, index);
     // 라이브러리 폴더를 두 항목이 함께 주장하면 한 팩의 문서가 다른 팩의 증빙이 될 수 있다 — 문서화된 공유 폴더만 허용한다.
     for (const name of Array.isArray(entry.libraryPacks) ? entry.libraryPacks : []) {
       if (typeof name !== "string") continue;
