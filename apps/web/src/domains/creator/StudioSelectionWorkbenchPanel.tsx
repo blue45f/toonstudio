@@ -59,6 +59,7 @@ import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import "./studio-panel-status-i18n";
+import "./studio-panel-status-i18n-r4cat5";
 
 export type StudioSelectionWorkbenchCommitIntent =
   | "select-opaque"
@@ -623,7 +624,7 @@ export function StudioSelectionWorkbenchPanel({
           </ul>
         ) : (
           <p className="text-[0.62rem] leading-relaxed text-fg-3">
-            {onSaveSelections ? "자주 다시 쓰는 선택을 이름으로 저장하세요. 작품 자동저장과 프로젝트 아카이브에 함께 보존됩니다." : "자주 다시 쓰는 선택 경계를 이름으로 저장해 두세요. 프로젝트 데이터에는 포함되지 않습니다."}
+            {onSaveSelections ? t("studio.panelStatusCat5.selectionWorkbench.savedSelectionsEmptyWithArchive", "자주 다시 쓰는 선택을 이름으로 저장하세요. 작품 자동저장과 프로젝트 아카이브에 함께 보존됩니다.") : t("studio.panelStatusCat5.selectionWorkbench.savedSelectionsEmptyLocalOnly", "자주 다시 쓰는 선택 경계를 이름으로 저장해 두세요. 프로젝트 데이터에는 포함되지 않습니다.")}
           </p>
         )}
       </div>

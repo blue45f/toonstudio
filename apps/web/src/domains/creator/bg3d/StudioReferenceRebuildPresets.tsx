@@ -5,6 +5,7 @@ import { createStudioReferenceRebuildWorker } from "./studio-reference-rebuild-w
 import { useT } from "@/shared/lib/i18n";
 
 import "../studio-bg3d-panel-status-i18n";
+import "../studio-bg3d-panel-status-i18n-r4cat5";
 
 const PRESETS = [
   ["school-room", "채광 교실"],
@@ -88,7 +89,7 @@ export function StudioReferenceRebuildPresets({ disabled, onFile, onBusyChange }
       stop();
       try {
         latest.current.onFile(file);
-        setMessage("기존 가져오기 경로로 전달했습니다. 안전 검사와 저장 결과는 모델 목록에서 확인하세요.");
+        setMessage(t("studio.bg3dPanelStatusCat5.referenceRebuild.delivered", "기존 가져오기 경로로 전달했습니다. 안전 검사와 저장 결과는 모델 목록에서 확인하세요."));
       } catch (error) {
         setMessage(error instanceof Error ? error.message : t("studio.bg3dPanelStatus.referenceRebuild.deliverFailed", "모델을 전달하지 못했습니다."));
       }
