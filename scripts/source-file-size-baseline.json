@@ -163,7 +163,7 @@
     "apps/web/src/domains/creator/brush/StudioBrushLibrarySheet.tsx": 1963,
     "apps/web/src/domains/creator/brush/StudioBrushStudio.tsx": 1686,
     "apps/web/src/domains/creator/brush/StudioDrawNode.tsx": 2957,
-    "apps/web/src/domains/creator/brush/StudioDrawOptionsBar.tsx": 1398,
+    "apps/web/src/domains/creator/brush/StudioDrawOptionsBar.tsx": 1393,
     "apps/web/src/domains/creator/brush/StudioDrawingPaletteStack.tsx": 974,
     "apps/web/src/domains/creator/brush/studio-brush-alias-profile.ts": 899,
     "apps/web/src/domains/creator/brush/studio-brush-backend-quality-policy.ts": 1684,
