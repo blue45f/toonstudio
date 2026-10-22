@@ -142,16 +142,21 @@ export type StudioVrmTexturePaintRuntimeErrorCode =
   | "target-rgba-budget"
   | "uv-missing";
 
+/**
+ * D4 구조화 방출 (R14, 2026-10-23): 런타임 오류는 {code, params}만 방출한다.
+ * 표시 문구는 표시 지점(status-i18n/studio-producer-error-i18n-vrm-paint의
+ * vrmPaintRuntime 구간 리졸버)에서만 해석한다.
+ */
 export interface StudioVrmTexturePaintRuntimeError {
   readonly code: StudioVrmTexturePaintRuntimeErrorCode;
-  readonly message: string;
+  readonly params?: Readonly<Record<string, string>>;
 }
 
 export type StudioVrmTexturePaintRuntimeGuidanceCode = "geometry-triangle-budget";
 
 export interface StudioVrmTexturePaintRuntimeGuidance {
   readonly code: StudioVrmTexturePaintRuntimeGuidanceCode;
-  readonly message: string;
+  readonly params: Readonly<Record<string, string>>;
   readonly triangleCount: number;
   readonly maxTriangles: number;
 }
@@ -571,45 +576,47 @@ class StudioVrmTexturePaintFault extends Error {
   }
 }
 
-const ERROR_MESSAGES: Readonly<Record<StudioVrmTexturePaintRuntimeErrorCode, string>> =
-  Object.freeze({
-    "aggregate-rgba-budget": "텍스처와 실행 취소 기록의 전체 상주 메모리 한도를 초과합니다.",
-    "binding-conflict": "저장된 표면 텍스처와 현재 모델의 재질 결합이 서로 충돌합니다.",
-    "binding-missing": "저장된 표면 텍스처가 가리키는 모델 재질을 찾지 못했습니다.",
-    "canvas-unavailable": "페인팅 캔버스를 사용할 수 없습니다.",
-    "channel-unsupported": "이 재질은 선택한 페인팅 채널을 지원하지 않습니다.",
-    disposed: "텍스처 페인팅이 이미 종료되었습니다.",
-    "fill-memory-budget": "이 텍스처는 안전한 ColorDrop 메모리 한도를 초과합니다.",
-    "fill-worker-failed": "ColorDrop 영역 계산을 완료하지 못했습니다.",
-    "fill-worker-unavailable": "이 브라우저에서는 안전한 ColorDrop Worker를 사용할 수 없습니다.",
-    "history-budget": "이 획은 실행 취소 메모리 한도를 초과합니다.",
-    "hit-outside-scene": "현재 캐릭터 밖의 지점입니다.",
-    "invalid-dimensions": "텍스처 크기 또는 RGBA 데이터가 올바르지 않습니다.",
-    "invalid-pointer": "포인터 정보가 올바르지 않습니다.",
-    "invalid-style": "브러시 설정이 올바르지 않습니다.",
-    "map-missing": "재질에 색상 텍스처가 없습니다.",
-    "material-missing": "색상 재질을 찾을 수 없습니다.",
-    "mesh-missing": "페인팅할 메시를 찾을 수 없습니다.",
-    "pointer-active": "다른 페인팅 입력이 진행 중입니다.",
-    "pointer-mismatch": "현재 획을 시작한 포인터가 아닙니다.",
-    "read-concurrency-budget": "동시에 불러올 수 있는 텍스처 수를 초과했습니다.",
-    "source-changed": "불러오는 동안 원본 텍스처가 변경되었습니다.",
-    "source-compressed": "압축 GPU 텍스처에는 직접 칠할 수 없습니다.",
-    "source-read-aborted": "텍스처 불러오기를 취소했습니다.",
-    "source-read-active": "이 텍스처를 이미 불러오는 중입니다.",
-    "source-unreadable": "텍스처를 읽을 수 없습니다. CORS 설정을 확인하세요.",
-    "stale-completion": "이전 텍스처 준비 결과를 무시했습니다.",
-    "stroke-sample-budget": "한 획의 입력 지점 한도를 초과했습니다.",
-    "surface-operation-invalid": "표면 브러시 텍스처 연산이 올바르지 않습니다.",
-    "surface-session-invalid": "표면 브러시 세션이 만료되었거나 다른 대상에 속합니다.",
-    "target-invalid": "페인팅 대상을 더 이상 사용할 수 없습니다.",
-    "target-mismatch": "한 획으로 서로 다른 텍스처를 칠할 수 없습니다.",
-    "target-rgba-budget": "이 텍스처는 안전한 페인팅 상주 메모리 한도를 초과합니다.",
-    "uv-missing": "이 지점의 UV 좌표를 사용할 수 없습니다.",
-  });
+/** D4: 코드 집합만 유지한다 — 문구는 vrmPaintRuntime 리졸버 구간이 소유한다. */
+const ERROR_CODES: Readonly<ReadonlySet<StudioVrmTexturePaintRuntimeErrorCode>> =
+  Object.freeze(new Set<StudioVrmTexturePaintRuntimeErrorCode>([
+    "aggregate-rgba-budget",
+    "binding-conflict",
+    "binding-missing",
+    "canvas-unavailable",
+    "channel-unsupported",
+    "disposed",
+    "fill-memory-budget",
+    "fill-worker-failed",
+    "fill-worker-unavailable",
+    "history-budget",
+    "hit-outside-scene",
+    "invalid-dimensions",
+    "invalid-pointer",
+    "invalid-style",
+    "map-missing",
+    "material-missing",
+    "mesh-missing",
+    "pointer-active",
+    "pointer-mismatch",
+    "read-concurrency-budget",
+    "source-changed",
+    "source-compressed",
+    "source-read-aborted",
+    "source-read-active",
+    "source-unreadable",
+    "stale-completion",
+    "stroke-sample-budget",
+    "surface-operation-invalid",
+    "surface-session-invalid",
+    "target-invalid",
+    "target-mismatch",
+    "target-rgba-budget",
+    "uv-missing",
+  ]));
 
 function frozenError(code: StudioVrmTexturePaintRuntimeErrorCode): StudioVrmTexturePaintRuntimeError {
-  return Object.freeze({ code, message: ERROR_MESSAGES[code] });
+  if (!ERROR_CODES.has(code)) throw new StudioVrmTexturePaintFault(code);
+  return Object.freeze({ code });
 }
 
 function frozenGeometryBudgetGuidance(
@@ -618,9 +625,10 @@ function frozenGeometryBudgetGuidance(
 ): StudioVrmTexturePaintRuntimeGuidance {
   return Object.freeze({
     code: "geometry-triangle-budget",
-    message:
-      `고밀도 메시(${triangleCount}면)는 안전 한도 ${maxTriangles}면을 넘어 `
-      + "UV 분석을 생략하고 면 단위 안전 모드로 칠합니다.",
+    params: Object.freeze({
+      triangleCount: String(triangleCount),
+      maxTriangles: String(maxTriangles),
+    }),
     triangleCount,
     maxTriangles,
   });

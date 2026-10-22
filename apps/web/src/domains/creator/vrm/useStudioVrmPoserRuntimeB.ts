@@ -4,6 +4,10 @@ import {
   useLayoutEffect,
 } from "react";
 import * as THREE from "three";
+import {
+  resolveStudioVrmPaintRuntimeError,
+  resolveStudioVrmPaintRuntimeGuidance,
+} from "../status-i18n/studio-producer-error-i18n-vrm-paint";
 
 /**
  * Studio VRM poser runtime slice extracted from `StudioVrmPoser.tsx` (behavior unchanged).
@@ -647,12 +651,19 @@ export function useStudioVrmPoserRuntimeB(h: StudioVrmPoserHost): void {
     && texturePaintSurfaceToolSnapshot.status !== "ready"
       ? texturePaintSurfaceToolSnapshot.message
       : "";
+  // 표시 지점 해석 (A4 D4 R14): 스냅샷은 {code, params}만 싣고 문구는 여기서만 만든다.
+  const texturePaintErrorText = texturePaintSnapshot?.error
+    ? resolveStudioVrmPaintRuntimeError(texturePaintSnapshot.error)
+    : "";
+  const texturePaintGuidanceText = texturePaintSnapshot?.guidance
+    ? resolveStudioVrmPaintRuntimeGuidance(texturePaintSnapshot.guidance)
+    : "";
   const texturePaintStatus = texturePaintDisabledReason
     || texturePaintBudgetErrorStatus
     || (texturePaintBrushProductBlocked ? STUDIO_VRM_SURFACE_BRUSH_UNAVAILABLE_REASON : "")
     || texturePaintSurfaceStatus
-    || texturePaintSnapshot?.error?.message
-    || texturePaintSnapshot?.guidance?.message
+    || texturePaintErrorText
+    || texturePaintGuidanceText
     || (texturePaintSnapshot?.status === "loading"
       ? texturePaintSampling
         ? "표면의 baseColor 채널에서 정확한 색상을 읽는 중입니다."
