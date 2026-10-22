@@ -42,7 +42,7 @@ const REFERENCE_LOCALE = "en";
  * 새 로케일이나 ko·en 이 하한 아래로 내려가면 목록에 더하지 말고 원인을 고친다.
  */
 const BELOW_TRANSLATED_FLOOR: readonly string[] = [
-  "af", "am", "ar", "as", "az", "be", "bs", "ca", "cs", "da", "el",
+  "af", "am", "ar", "as", "az", "be", "bs", "ca", "cs", "da",
   "et", "eu", "fa", "fi", "fil", "gl", "he", "hr", "hu", "hy", "id", "is",
   "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "mn", "ms",
   "my", "ne", "nl", "no", "pl", "pt", "ro", "si", "sk", "sl", "sq", "sr",
