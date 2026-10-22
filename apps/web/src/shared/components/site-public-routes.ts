@@ -56,6 +56,25 @@ export function supportsPublicSiteOnwardJourney(pathname: string): boolean {
     && isPublicCreativeRoute(normalized);
 }
 
+/**
+ * PWA 설치 안내(너짓·자동 쇼케이스)를 띄우지 않는 방해 없는 화면.
+ * 전체화면 발표(/ir/present — 위 홍보 여정 제외와 같은 발표 분류)와,
+ * 배경 효과까지 끄는 작업 집중 분류(ambient-routes)의 기술 발표 모드·영상 페이지가 근거다.
+ * 제외 목록 방식이라 이 집합 밖의 공개·앱 경로에서는 설치 안내가 기존대로 유지된다.
+ */
+const PWA_INSTALL_PROMPT_EXCLUDED_PATHS = new Set([
+  "/ir/present",
+  "/about/technology/deck",
+  "/about/technology/videos",
+  "/brand-film",
+]);
+
+/** 발표·영상처럼 방해가 없어야 하는 화면에서만 PWA 설치 안내를 제외한다. */
+export function supportsPwaInstallPrompts(pathname: string): boolean {
+  const normalized = trimTrailingSlashes(pathname.toLowerCase()) || "/";
+  return !PWA_INSTALL_PROMPT_EXCLUDED_PATHS.has(normalized);
+}
+
 export function isDiscoverPurposeRoute(pathname: string): boolean {
   const normalized = trimTrailingSlashes(pathname.toLowerCase()) || "/";
   return DISCOVER_PURPOSE_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`));

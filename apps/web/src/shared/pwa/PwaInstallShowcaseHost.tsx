@@ -1,5 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 
+import { supportsPwaInstallPrompts } from "@/shared/components/site-public-routes";
 import { getPwaInstallSnapshot } from "@/shared/lib/pwa-install-store";
 
 import {
@@ -40,8 +42,12 @@ const AUTO_OPEN_DELAY_MS = 1_800;
  * - `toonstudio:open-install-showcase` 이벤트 (설정 메뉴 등에서 수동 호출)
  *
  * 이미 설치된 상태(standalone)에서는 절대 열지 않는다.
+ * 발표·영상 화면(supportsPwaInstallPrompts 제외 경로)에서는 AppShell 게이트와
+ * 이중으로 자체 차단해 자동·수동·오프라인 어떤 경로로도 열지 않는다.
  */
 export function PwaInstallShowcaseHost() {
+  const { pathname } = useLocation();
+  const promptsBlocked = !supportsPwaInstallPrompts(pathname);
   const [open, setOpen] = useState(false);
   const [trigger, setTrigger] = useState<DialogProps["trigger"]>(null);
   const schedulerRef = useRef<ReturnType<typeof createBrowserPwaShowcaseScheduler> | null>(null);
@@ -62,6 +68,7 @@ export function PwaInstallShowcaseHost() {
   }, [scheduler]);
 
   useEffect(() => {
+    if (promptsBlocked) return;
     if (typeof window === "undefined") return;
     const snapshot = getPwaInstallSnapshot();
     if (snapshot.standalone || snapshot.status === "installed") return;
@@ -92,8 +99,8 @@ export function PwaInstallShowcaseHost() {
       window.removeEventListener(PWA_INSTALL_SHOWCASE_OPEN_EVENT, onManualOpen);
       window.removeEventListener("offline", onOffline);
     };
-  }, [scheduler]);
+  }, [scheduler, promptsBlocked]);
 
-  if (!open) return null;
+  if (promptsBlocked || !open) return null;
   return <LazyShowcase onClose={close} onInstalled={handleInstalled} trigger={trigger} />;
 }
