@@ -17,7 +17,7 @@ import type {
 } from "./vrm/studio-vrm-license-product-gate";
 import type { MutableRefObject } from "react";
 import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
-import { resolveStudioProjectArchiveErrorFromCause } from "./status-i18n/studio-producer-error-i18n-project-archive";
+import { resolveStudioProjectArchiveErrorMessage } from "./status-i18n/studio-producer-error-i18n-project-archive";
 
 const STUDIO_PROJECT_ARCHIVE_IMPORT_COPY_SCOPE = "creator.studio.projectArchive";
 
@@ -530,7 +530,7 @@ export function createStudioProjectArchiveOrchestration({
       );
       setError(null);
     } catch (cause) {
-      const message = resolveStudioProjectArchiveErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus6Text("studio.frozenStatus6.archiveOrch.createFailed", "프로젝트 archive를 만들지 못했어요."));
+      const message = resolveStudioProjectArchiveErrorMessage(cause, frozenStatus6Text("studio.frozenStatus6.archiveOrch.createFailed", "프로젝트 archive를 만들지 못했어요."));
       setProjectArchiveStatus({ tone: "bad", text: message });
       setError(message);
     } finally {
@@ -596,14 +596,7 @@ export function createStudioProjectArchiveOrchestration({
       });
       setError(null);
     } catch (error) {
-      const message =
-        resolveStudioProjectArchiveErrorFromCause(error) ??
-        (error instanceof Error
-          ? error.message
-          : studioProjectArchiveImportCopy(
-              "프로젝트 파일을 읽는 도중 오류가 발생했습니다.",
-              "Something went wrong while reading the project file.",
-            ));
+      const message = resolveStudioProjectArchiveErrorMessage(error, studioProjectArchiveImportCopy("프로젝트 파일을 읽는 도중 오류가 발생했습니다.", "Something went wrong while reading the project file."));
       setProjectArchiveStatus({ tone: "bad", text: message });
       setError(message);
     }
@@ -831,8 +824,7 @@ export function createStudioProjectArchiveOrchestration({
       setProjectArchiveStatus(texturePaintArchivePresentation.notice);
       setError(null);
     } catch (cause) {
-      const message =
-        resolveStudioProjectArchiveErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus6Text("studio.frozenStatus6.archiveOrch.readFailed", "프로젝트 archive를 읽지 못했어요."));
+      const message = resolveStudioProjectArchiveErrorMessage(cause, frozenStatus6Text("studio.frozenStatus6.archiveOrch.readFailed", "프로젝트 archive를 읽지 못했어요."));
       setProjectArchiveStatus({ tone: "bad", text: message });
       setError(message);
     } finally {

@@ -5,22 +5,9 @@ import {
   publishStudioExportPrintBoxMm,
   publishStudioExportResolutionDpi,
 } from "../render/studio-raster-resolution-metadata";
-import {
-  CONTACT_SHEET_PAGE_PRESETS,
-  contactSheetResultMessage,
-  DEFAULT_CONTACT_SHEET_COLUMNS,
-  DEFAULT_CONTACT_SHEET_ROWS,
-  exportContactSheetPdf,
-} from "../studio-pdf-contact-sheet";
+import { CONTACT_SHEET_PAGE_PRESETS, contactSheetResultMessage, DEFAULT_CONTACT_SHEET_COLUMNS, DEFAULT_CONTACT_SHEET_ROWS, exportContactSheetPdf } from "../studio-pdf-contact-sheet";
 import { WATERMARK_POSITIONS, type WatermarkSettings } from "../studio-watermark";
-import {
-  resolveStudioCbzErrorFromCause,
-  resolveStudioCbzWarning,
-} from "../status-i18n/studio-producer-error-i18n-interchange-cbz";
-import {
-  resolveStudioOpenRasterErrorFromCause,
-  resolveStudioOpenRasterWarning,
-} from "../status-i18n/studio-producer-error-i18n-interchange-ora";
+import { resolveStudioCbzWarning, resolveStudioInterchangeExportErrorMessage, resolveStudioOpenRasterWarning } from "./studio-interchange-display-message";
 import { StudioContactSheetPanel } from "../StudioContactSheetPanel";
 import { frozenStatusText } from "../studio-frozen-status-i18n";
 
@@ -656,11 +643,8 @@ export function StudioExportMenuPanel({
       if (!mountedRef.current) return;
       setArchiveStatus({
         tone: "warn",
-        // A4 D4 (R12): cbz/ora 생산자는 구조화 코드만 방출하므로 표시 지점인 이 catch에서
-        // 덕 타이핑 리졸버로 해석한다. 타 생산자 오류는 기존 message 경로를 유지한다.
-        text: resolveStudioCbzErrorFromCause(error)
-          ?? resolveStudioOpenRasterErrorFromCause(error)
-          ?? (error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.export.archiveFailed", "문서 교환 파일을 만들지 못했습니다.")),
+        // A4 D4 (R12): cbz/ora 구조화 오류는 집계 해석 경계에서 문구로 바꾼다.
+        text: resolveStudioInterchangeExportErrorMessage(error),
       });
     } finally {
       if (mountedRef.current) setArchiveBusy(null);
