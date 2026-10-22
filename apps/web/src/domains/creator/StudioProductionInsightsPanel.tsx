@@ -1,4 +1,4 @@
-import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
 import {
   AlertTriangle,
   BarChart3,
@@ -78,7 +78,7 @@ const ISSUE_SEVERITY_ROWS: ReadonlyArray<{
   label: string;
   className: string;
 }> = [
-  { severity: "error", label: "오류", className: "text-bad" },
+  { severity: "error", label: panelStatusTextR4("studio.panelStatus.productionInsights.severityError", "오류"), className: "text-bad" },
   { severity: "warning", label: "경고", className: "text-warn" },
   { severity: "info", label: "정보", className: "text-cool" },
 ];

@@ -1,4 +1,4 @@
-import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
 // 현지화 QA 리포트 — 대사 번역 패널 안에서 열리는 회차 단위 품질 보고서.
 //
 // 계산은 하나도 하지 않는다. `studio-localization-qa.runStudioLocalizationQa()`가 낸
@@ -43,7 +43,7 @@ const VERDICT_META = {
 } as const;
 
 const FAIL_REASON_LABEL: Readonly<Record<string, string>> = {
-  "critical-error": "치명 오류가 있으면 점수와 무관하게 미달입니다.",
+  "critical-error": panelStatusTextR4("studio.panelStatus.localizationQa.criticalErrorFailReason", "치명 오류가 있으면 점수와 무관하게 미달입니다."),
   "below-threshold": "품질 점수가 합격선에 못 미칩니다.",
   "empty-denominator": "검사할 대사가 없어 점수를 낼 수 없습니다.",
 };

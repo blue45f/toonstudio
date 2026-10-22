@@ -1,4 +1,4 @@
-import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
 import { useEffect, useId, useRef, useState } from "react";
 
 import {
@@ -72,7 +72,7 @@ export function StudioLocalAssetManager({ assets, loading, onDeleteAsset, onUseA
     <section aria-label="내 에셋 관리" className="space-y-3" data-studio-local-asset-manager="true">
       <header className="rounded-xl border border-line bg-card p-3">
         <h3 className="text-sm font-bold text-fg">내 에셋 관리 · {assets.length}개</h3>
-        <p className="mt-1 text-xs leading-relaxed text-fg-3">현재 기기의 이미지 보관함입니다. 삭제에 실패한 원본은 목록에 유지합니다. 3D 렌더 이미지는 평면 이미지이며 3D 모델 원본과 별개입니다.</p>
+        <p className="mt-1 text-xs leading-relaxed text-fg-3">{panelStatusTextR4("studio.panelStatus.localAssets.libraryGuide", "현재 기기의 이미지 보관함입니다. 삭제에 실패한 원본은 목록에 유지합니다. 3D 렌더 이미지는 평면 이미지이며 3D 모델 원본과 별개입니다.")}</p>
         <button type="button" className={`${CONTROL} mt-2`} onClick={onOpen3d} disabled={pending}>3D 모델 원본 관리 열기</button>
       </header>
       <div className="grid grid-cols-[1fr_auto] gap-2">
