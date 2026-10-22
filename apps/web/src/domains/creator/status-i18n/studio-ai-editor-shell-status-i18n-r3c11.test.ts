@@ -21,11 +21,11 @@ import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 function readSharedSource(relativePath: string): string {
-  return readFileSync(new URL(`./../../shared/${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../../../shared/${relativePath}`, import.meta.url), "utf-8");
 }
 
 /** 등록 모듈(registerI18nLocaleEntries)의 locale 블록을 파싱한다. */
@@ -207,7 +207,7 @@ describe("studio ai/editor-shell/shared-ai status i18n r3c11", () => {
   });
 
   it("studio.editorShellStatus 등록 모듈의 ko/en 키가 패리티를 이루고 en에 한글이 없다", () => {
-    const blocks = parseRegisterModule(readSource("studio-editor-shell-status-i18n-r3c11.ts"));
+    const blocks = parseRegisterModule(readSource("status-i18n/studio-editor-shell-status-i18n-r3c11.ts"));
     expect(Object.keys(blocks.ko).sort()).toEqual(Object.keys(blocks.en).sort());
     expect(Object.keys(blocks.ko).length).toBe(EDITOR_SHELL_KEYS.length);
     expectParity(blocks, EDITOR_SHELL_KEYS);
@@ -220,7 +220,7 @@ describe("studio ai/editor-shell/shared-ai status i18n r3c11", () => {
   });
 
   it("studio.editorShellStatus 키가 소비 파일에서 실제로 참조되고 미등록 참조가 없다", () => {
-    const blocks = parseRegisterModule(readSource("studio-editor-shell-status-i18n-r3c11.ts"));
+    const blocks = parseRegisterModule(readSource("status-i18n/studio-editor-shell-status-i18n-r3c11.ts"));
     const consumerSource = EDITOR_SHELL_CONSUMERS.map((file) => readSource(file)).join("\n");
     expectConsumed(
       consumerSource,

@@ -16,7 +16,7 @@ import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
  */
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 function parseRegisterModule(source: string): Record<"ko" | "en", Record<string, string>> {
@@ -149,7 +149,7 @@ const CONSUMER_FILES = [
   "virtual-space/StudioVirtualSpaceCustomFurniturePicker.tsx",
 ] as const;
 
-const MODULE_SOURCE = readSource("studio-creator-sub2-status-i18n-r3c13b.ts");
+const MODULE_SOURCE = readSource("status-i18n/studio-creator-sub2-status-i18n-r3c13b.ts");
 const REGISTERED = parseRegisterModule(MODULE_SOURCE);
 const CONSUMER_SOURCES = CONSUMER_FILES.map((file) => readSource(file)).join("\n");
 

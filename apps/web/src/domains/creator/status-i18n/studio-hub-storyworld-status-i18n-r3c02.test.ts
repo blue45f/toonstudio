@@ -20,12 +20,12 @@ import { scanHardcodedStatusStrings } from "../../../shared/language/status-i18n
 const HANGUL = /[가-힣]/;
 
 function readSource(relativePath: string): string {
-  return readFileSync(new URL(`./${relativePath}`, import.meta.url), "utf-8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
 }
 
 function readPublicJson(relativePath: string): Record<string, string> {
   return JSON.parse(
-    readFileSync(new URL(`../../../${relativePath}`, import.meta.url), "utf-8"),
+    readFileSync(new URL(`../../../../${relativePath}`, import.meta.url), "utf-8"),
   ) as Record<string, string>;
 }
 
