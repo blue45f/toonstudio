@@ -45,8 +45,17 @@ describe("bundle-v2 서빙 규칙 정합 (로더 · 플래너 · Worker)", () =>
     expect(cloudflareLargeAssetKey(`/${BUNDLE_V2_INDEX_KEY}`)).toBe(BUNDLE_V2_INDEX_KEY);
   });
 
-  it("원본 폴더·파일명이 든 옛 경로형 URL은 어떤 키로도 이어지지 않는다", () => {
-    // 옛 규칙의 키(원본 경로)로 올린 객체는 더 이상 로더가 요청하지 않는다. 플래너도 만들지 않는다.
+  it("원본 폴더·파일명이 든 옛 경로형 URL은 플래너가 키로 만들지 않고 Worker도 R2 키로 복원하지 않는다", () => {
+    // 옛 규칙의 키(원본 경로)로 올린 객체가 R2에 남아 있어도 Worker가 내주지 않는다 (sha256 키만 서빙한다).
     expect(() => bundleV2ObjectKey("cbv1-ingest-001-001-city/native/Basketball.glb")).toThrow(TypeError);
+    for (const legacy of [
+      "/assets/studio/bundle-v2/cbv1-ingest-001-001-city/native/Basketball.glb",
+      "/assets/studio/bundle-v2/cbv1-ingest-001-001-city/native/Some%20Folder/Model%2BA%26B.glb",
+      `/assets/studio/bundle-v2/${SHAS[0].toUpperCase()}.glb`,
+      `/assets/studio/bundle-v2/${SHAS[0]}.glb.br`,
+    ]) {
+      expect(cloudflareLargeAssetDescriptor(legacy), legacy).toBeNull();
+      expect(cloudflareLargeAssetKey(legacy), legacy).toBeNull();
+    }
   });
 });

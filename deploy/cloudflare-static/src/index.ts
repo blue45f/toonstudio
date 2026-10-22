@@ -765,6 +765,8 @@ export function createCloudflareStaticGateway(
       // R2 원본 + 엣지 네이티브 압축 조합은 클라이언트별로 정확히 동작한다.
       const r2Response = await serveR2LargeAsset(request, env);
       if (r2Response) return r2Response;
+      // 동일 출처 전용(bundle-v2) 바이트는 R2에만 있다. 폴백 원본의 응답 헤더(CORS 등)가 가드 계약을 깨지 못하게 닫는다.
+      if (cloudflareLargeAssetDescriptor(requestUrl.pathname)?.sameOriginOnly) return jsonError(503, "LARGE_ASSET_UNAVAILABLE");
     }
 
     const configuredCoreSecret = env.CORE_ORIGIN_SECRET;

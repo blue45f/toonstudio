@@ -46,9 +46,10 @@ function r2Object(
   };
 }
 
-const BUNDLE_V2_GLB_URL =
-  "https://www.toonstudio.cloud/assets/studio/bundle-v2/pack-a/native/Some%20Folder/Model%2BA%26B.glb";
-const BUNDLE_V2_GLB_KEY = "assets/studio/bundle-v2/pack-a/native/Some Folder/Model+A&B.glb";
+// bundle-v2 GLB는 sha256 키로만 서빙한다 (원본 폴더·파일명이 든 옛 경로형 키는 서빙하지 않는다).
+const BUNDLE_V2_SHA256 = "d2227ed901e6a19b768ac404016ff10696a5be849e2b2cfc9600400c24bd13c5";
+const BUNDLE_V2_GLB_URL = `https://www.toonstudio.cloud/assets/studio/bundle-v2/${BUNDLE_V2_SHA256}.glb`;
+const BUNDLE_V2_GLB_KEY = `assets/studio/bundle-v2/${BUNDLE_V2_SHA256}.glb`;
 const BUNDLE_V2_INDEX_URL = "https://www.toonstudio.cloud/assets/studio/bundle-v2/manifest.json";
 const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable, s-maxage=0";
 const SAME_ORIGIN_ONLY_BODY = { error: "BUNDLE_ASSET_SAME_ORIGIN_ONLY" };
@@ -495,7 +496,7 @@ describe("Cloudflare static gateway", () => {
     expect(upstream).not.toHaveBeenCalled();
   });
 
-  it("serves bundle-v2 GLBs from R2 with the decoded object key", async () => {
+  it("serves bundle-v2 GLBs from R2 under the sha256 object key", async () => {
     const get = vi.fn(async (
       _key: string,
       _options?: { readonly range?: Headers },
@@ -504,9 +505,7 @@ describe("Cloudflare static gateway", () => {
     const upstream = vi.fn<typeof fetch>();
     const gateway = createCloudflareStaticGateway({ fetch: upstream });
     const response = await gateway(
-      new Request(
-        "https://www.toonstudio.cloud/assets/studio/bundle-v2/pack-a/native/Some%20Folder/Model%2BA%26B.glb",
-      ),
+      new Request(BUNDLE_V2_GLB_URL),
       environment({ LARGE_ASSETS: { get, head } }),
     );
 
@@ -517,10 +516,7 @@ describe("Cloudflare static gateway", () => {
       "public, max-age=31536000, immutable, s-maxage=0",
     );
     expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
-    expect(get).toHaveBeenCalledWith(
-      "assets/studio/bundle-v2/pack-a/native/Some Folder/Model+A&B.glb",
-      undefined,
-    );
+    expect(get).toHaveBeenCalledWith(BUNDLE_V2_GLB_KEY, undefined);
     expect(upstream).not.toHaveBeenCalled();
   });
 
@@ -551,13 +547,73 @@ describe("Cloudflare static gateway", () => {
     const upstream = vi.fn<typeof fetch>();
     const gateway = createCloudflareStaticGateway({ fetch: upstream });
     const response = await gateway(
-      new Request("https://www.toonstudio.cloud/assets/studio/bundle-v2/pack-a/Missing.glb"),
+      new Request(`https://www.toonstudio.cloud/assets/studio/bundle-v2/${"f".repeat(64)}.glb`),
       environment({ LARGE_ASSETS: { get, head } }),
     );
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
     expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("never falls back to LARGE_ASSET_ORIGIN for bundle-v2, so origin headers cannot break the guard contract", async () => {
+    const get = vi.fn(async (_key: string, _options?: { readonly range?: Headers }) => null);
+    const head = vi.fn(async (_key: string) => null);
+    const upstream = vi.fn<typeof fetch>(async () => new Response("ORIGIN", {
+      status: 200,
+      headers: { "access-control-allow-origin": "*", "cache-control": "public, max-age=60" },
+    }));
+    const gateway = createCloudflareStaticGateway({ fetch: upstream });
+    const env = environment({
+      LARGE_ASSETS: { get, head },
+      LARGE_ASSET_ORIGIN: "https://large-assets.example.test",
+    });
+    for (const path of [`${"a".repeat(64)}.glb`, "manifest.json"]) {
+      const response = await gateway(
+        new Request(`https://www.toonstudio.cloud/assets/studio/bundle-v2/${path}`, {
+          headers: { "sec-fetch-site": "same-origin" },
+        }),
+        env,
+      );
+      expect(response.status).toBe(503);
+      await expect(response.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    }
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  // 계약 변경(권리 원장 도입): 이전에는 `.glb`로 끝나는 모든 bundle-v2 경로를 R2 키로 복원해 서빙했다.
+  // 이제는 소문자 sha256 hex 64자 키만 서빙한다 — 옛 경로형 키로 올라간 객체가 R2에 남아 있어도 열리지 않는다.
+  it.each([
+    ["legacy path-form key", "pack-a/native/Some%20Folder/Model%2BA%26B.glb"],
+    ["legacy single-segment name", "Missing.glb"],
+    ["uppercase hex", `${"A".repeat(64)}.glb`],
+    ["63-char hex", `${"a".repeat(63)}.glb`],
+    ["65-char hex", `${"a".repeat(65)}.glb`],
+    ["uppercase extension", `${"a".repeat(64)}.GLB`],
+    ["compressed sidecar suffix", `${"a".repeat(64)}.glb.br`],
+    ["percent-encoded hex", `%61${"a".repeat(63)}.glb`],
+    ["nested under a sha256 folder", `${"a".repeat(64)}/model.glb`],
+  ])("does not route a bundle-v2 %s to R2 (only sha256 keys are served)", async (_label, path) => {
+    const assetFetch = vi.fn(async () => new Response("static", { status: 200 }));
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("glb-bytes"));
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(
+      new Request(`https://www.toonstudio.cloud/assets/studio/bundle-v2/${path}`, {
+        headers: { "sec-fetch-site": "same-origin" },
+      }),
+      environment({
+        ASSETS: { fetch: assetFetch },
+        LARGE_ASSETS: { get, head: vi.fn(async () => null) },
+      }),
+    );
+
+    expect(get).not.toHaveBeenCalled();
+    expect(response.headers.get("x-toonstudio-large-asset-source")).toBeNull();
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
   });
 
   it("does not route non-GLB bundle-v2 paths to the large-asset pipeline", async () => {
@@ -845,8 +901,10 @@ describe("Cloudflare static gateway", () => {
         headers: { "sec-fetch-site": "same-origin" },
       }), env);
 
-      expect(await sameOrigin.text()).toBe("origin-fallback");
-      expect(upstream).toHaveBeenCalledOnce();
+      // 동일 출처 요청도 R2가 없으면 폴백 원본으로 넘기지 않고 정직하게 실패한다 (바이트는 R2에만 있다).
+      expect(sameOrigin.status).toBe(503);
+      await expect(sameOrigin.json()).resolves.toEqual({ error: "LARGE_ASSET_UNAVAILABLE" });
+      expect(upstream).not.toHaveBeenCalled();
     });
   });
 
@@ -866,10 +924,12 @@ describe("Cloudflare static gateway", () => {
     it("flags only the bundle-v2 index and GLBs as same-origin-only", () => {
       for (const pathname of [
         "/assets/studio/bundle-v2/manifest.json",
-        "/assets/studio/bundle-v2/pack-a/native/Model.glb",
+        `/assets/studio/bundle-v2/${BUNDLE_V2_SHA256}.glb`,
       ]) {
         expect(cloudflareLargeAssetDescriptor(pathname)?.sameOriginOnly).toBe(true);
       }
+      // 옛 경로형 GLB 키는 대형 에셋 파이프라인에 매칭되지 않는다.
+      expect(cloudflareLargeAssetDescriptor("/assets/studio/bundle-v2/pack-a/native/Model.glb")).toBeNull();
       for (const [, pathname] of legacyAssets) {
         const descriptor = cloudflareLargeAssetDescriptor(pathname);
         expect(descriptor).not.toBeNull();

@@ -102,6 +102,8 @@ Cloudflare Static Assets의 개별 파일 한도는 25 MiB다. 배포 전에 `pr
 
 일반 GET·HEAD는 R2 원본을 그대로 돌려주고 압축은 엣지에 맡긴다. Worker가 압축 sidecar를 `content-encoding`과 함께 돌려주면 엣지가 한 겹 더 압축해 단일 라벨 이중 압축이 되었고(2026-10-13 운영 실측: 전 경로 이중 brotli), 어떤 클라이언트도 해제하지 못했다. 두 객체의 원본은 Standard 클래스 R2 버킷 `toonspectrum-public-assets`에 동일 key로 저장하며 Worker의 `LARGE_ASSETS` binding으로 직접 읽는다. byte Range, HEAD와 `If-None-Match`를 처리하고 1년 immutable 캐시(`s-maxage=0`으로 엣지 재검증 강제) 및 원본 MIME을 적용한다. R2가 없거나 일시적으로 읽히지 않을 때만 명시적으로 설정한 `LARGE_ASSET_ORIGIN`으로 폴백하며 Authorization, Cookie, 사용자·관리자·세션 헤더는 전달하지 않는다. 변수를 생략하면 Core API fallback을 추론하지 않는다.
 
+`/assets/studio/bundle-v2/*`(Creator Bundle 구매 번들 GLB와 배포 인덱스)는 위 R2 경로의 예외다. 구매 라이선스가 독립 파일 재배포를 금지하므로 교차 출처 CORS를 열지 않는다: `access-control-allow-origin`·`access-control-expose-headers`를 달지 않고 `Vary: Sec-Fetch-Site`를 붙이며, 브라우저가 보낸 `Sec-Fetch-Site`가 `same-origin`이 아니면(`same-site`·`cross-site`·`none` 포함) R2에 닿기 전에 `403 BUNDLE_ASSET_SAME_ORIGIN_ONLY`로 거부한다(`no-store`). R2에 객체가 없어도 `LARGE_ASSET_ORIGIN` 폴백 없이 `503 LARGE_ASSET_UNAVAILABLE`로 닫는다. 헤더가 없는 호출(curl·구형 브라우저)은 허용하므로 핫링크 억제책일 뿐 접근 통제가 아니다. 이 경로의 R2 키는 에셋 sha256(`<sha256>.glb`)이고 Worker는 이 형식(소문자 hex 64자 + `.glb`)만 서빙한다(원본 경로 키로 올라간 객체는 열리지 않는다). Worker는 권리 원장을 읽지 않으며 업로드 대상을 원장이 allow한 팩으로 제한하는 일은 배포 플래너가 맡는다. 이미 올라간 객체는 권리를 철회해도 R2에서 삭제하기 전까지 서빙된다(`docs/studio/creator-bundle-theme-packs-20261021.md`). 다른 R2 경로의 응답은 바꾸지 않는다.
+
 `sync:cloudflare-r2-assets:dry-run`은 빌드 산출물과 허용 목록을 검증하고 원격 쓰기를 하지 않는다. 운영 배포에서는 `prepare:cloudflare-static-assets`가 sidecar를 만든 뒤 `sync:cloudflare-r2-assets`가 승인된 원본 초과 파일을 R2에 먼저 업로드하고 Worker를 배포한다.
 
 ## 수동 운영 배포

@@ -157,6 +157,10 @@ export function classifyStudioServiceWorkerRequest(
   if (SW_RUNTIME_PATHS.has(pathname)) return "sw-runtime";
   // Release catalogues change independently of audio files; never replay a cached empty catalogue.
   if (pathname === "/audio/playlist.json") return "passthrough";
+  // The bundle deploy index is an availability signal (re-upload or rollback must show immediately),
+  // so it is never replayed from the immutable cache. The GLBs next to it are content-addressed
+  // (`<sha256>.glb`) and stay under the `/assets/` immutable rule below.
+  if (pathname === "/assets/studio/bundle-v2/manifest.json") return "passthrough";
 
   if (facts.mode === "navigate") {
     return isStudioServiceWorkerIsolatedPath(pathname)
