@@ -73,6 +73,10 @@ UI/UX 자동 측정 하니스와 기준선(2026-10-16, 역사 자료)은 다음 
 1. [`../scripts/ux-audit/README.md`](../scripts/ux-audit/README.md) — 측정 항목, 점수 규칙, 실행·보안 규칙(현재 구현)
 2. [`reports/ux-audit-baseline-2026-10-16.md`](reports/ux-audit-baseline-2026-10-16.md) — 개발 서버 기준 합계 95.12 와 시간 지표 최악 가정 하한 89.71, 감점 유형별 회수 점수, 미측정 항목, 다시 재는 법
 
+열린 편집기 접근성 1단계(2026-10-22, 현재 구현)는 다음 문서를 추가로 본다.
+
+1. [`features/accessibility-stage1.md`](features/accessibility-stage1.md) — 패널을 열 때마다 하는 axe·키보드 순회·이름/역할 감사의 범위와 방법, 고친 것, 문서화된 예외, 미해결과 확인하지 못한 것(실제 화면 낭독기 낭독은 미확인), 실행 방법과 CI 편입 판단
+
 ## 문서 상태 표기
 
 - **현재**: 소스와 테스트로 지금 검증 가능
