@@ -88,7 +88,7 @@ export function ProductionFocusedAiWorkflow({
       setNotice("편집기에서 선택 영역과 실행 조건을 다시 확인합니다. 아직 생성이나 과금은 시작되지 않았습니다.");
       navigate(editorHref);
     } catch {
-      setNotice(t("productionHub.status.aiAssistHandoffFailed", "AI 보조 요청을 안전하게 전달하지 못했어요. 편집기에서 도우미 버튼을 눌러 직접 열어 주세요."));
+      setNotice(t("productionHub.status.aiAssistHandoffFailed", "AI 보조 요청을 안전하게 전달하지 못했어요. 편집기에서 AI 메뉴를 눌러 직접 시작해 주세요."));
     }
   };
   return <section className="rounded-3xl border border-accent/30 bg-card p-4 sm:p-6" aria-labelledby="focused-ai-title" data-production-focused-ai="">

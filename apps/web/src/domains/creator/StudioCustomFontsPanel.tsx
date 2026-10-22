@@ -271,7 +271,7 @@ export function StudioCustomFontsPanel({
         storageErrorCode(cause) === "invalid-cursor"
           ? tText(
             t,
-            "글꼴 서재가 바뀌어 목록 cursor가 만료됐어요. 패널을 다시 열어주세요.",
+            "글꼴 저장소가 바뀌어 목록 cursor가 만료됐어요. 패널을 다시 열어 주세요.",
             "studio.customFonts.cursorExpired",
           )
           : tText(
@@ -324,7 +324,7 @@ export function StudioCustomFontsPanel({
         setError(
           tText(
             t,
-            `서재 용량이 ${formatCustomFontBytes(usedBytes)}/${formatCustomFontBytes(MAX_CUSTOM_FONT_TOTAL_BYTES)}라 ${formatCustomFontBytes(file.size)}를 더 담을 수 없어요.`,
+            `기기 저장소 용량이 ${formatCustomFontBytes(usedBytes)}/${formatCustomFontBytes(MAX_CUSTOM_FONT_TOTAL_BYTES)}라 ${formatCustomFontBytes(file.size)}를 더 담을 수 없어요.`,
             "studio.customFonts.capacityExceeded",
             {
               used: formatCustomFontBytes(usedBytes),
@@ -365,7 +365,7 @@ export function StudioCustomFontsPanel({
           storageState === "loading"
             ? tText(
               t,
-              "사용자 글꼴 SQLite/OPFS 서재를 확인하는 중이에요. 잠시 뒤 다시 시도해주세요.",
+              "사용자 글꼴 SQLite/OPFS 저장소를 확인하는 중이에요. 잠시 후 다시 시도해 주세요.",
               "studio.customFonts.storageCheckingImport",
             )
             : tText(
@@ -427,12 +427,12 @@ export function StudioCustomFontsPanel({
               code === "quota-exceeded"
                 ? tText(
                   t,
-                  "기기 저장 공간이 부족해 글꼴을 담지 않았어요. 기존 서재는 그대로 유지돼요.",
+                  "기기 저장 공간이 부족해 글꼴을 담지 않았어요. 기존 저장소는 그대로 유지돼요.",
                   "studio.customFonts.quotaExceededSave",
                 )
                 : tText(
                   t,
-                  "SQLite/OPFS 저장을 완료하지 못해 글꼴을 담지 않았어요. 기존 서재는 그대로 유지돼요. 잠시 후 다시 시도해 주세요.",
+                  "SQLite/OPFS 저장을 완료하지 못해 글꼴을 담지 않았어요. 기존 저장소는 그대로 유지돼요. 잠시 후 다시 시도해 주세요.",
                   "studio.customFonts.durableSaveFailed",
                 ),
             );
@@ -477,7 +477,7 @@ export function StudioCustomFontsPanel({
     } catch {
       setError(tText(
         t,
-        "글꼴 파일을 읽지 못했어요. 파일이 손상됐는지 확인해주세요.",
+        "글꼴 파일을 읽지 못했어요. 파일이 손상됐는지 확인해 주세요.",
         "studio.customFonts.readFailed",
       ));
     } finally {
@@ -532,7 +532,7 @@ export function StudioCustomFontsPanel({
       setNotice(
         tText(
           t,
-          `“${font.family}” 글꼴을 SQLite/OPFS 서재에서 삭제했어요.`,
+          `“${font.family}” 글꼴을 SQLite/OPFS 저장소에서 삭제했어요.`,
           "studio.customFonts.deleteSuccess",
           { fontName: font.family },
         ),
@@ -553,7 +553,7 @@ export function StudioCustomFontsPanel({
         setError(
           tText(
             t,
-            "사용자 글꼴을 기기 서재에서 삭제하지 못해 목록을 그대로 두었어요. 잠시 후 다시 시도해 주세요.",
+            "사용자 글꼴을 기기 저장소에서 삭제하지 못해 목록을 그대로 두었어요. 잠시 후 다시 시도해 주세요.",
             "studio.customFonts.deleteFailedKeepList",
           ),
         );

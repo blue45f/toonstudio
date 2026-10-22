@@ -126,7 +126,7 @@
   "productionHub.snapshot.noHeadForSnapshot": "작업본(HEAD)이 없어 스냅샷을 만들 수 없습니다.",
   "productionHub.snapshot.noWorkingCopy": "작업본이 없어 스냅샷을 만들 수 없습니다",
   "productionHub.status.adoptionUnavailable": "현재 선택 원고에서 사용할 수 없습니다.",
-  "productionHub.status.aiAssistHandoffFailed": "AI 보조 요청을 안전하게 전달하지 못했어요. 편집기에서 도우미 버튼을 눌러 직접 열어 주세요.",
+  "productionHub.status.aiAssistHandoffFailed": "AI 보조 요청을 안전하게 전달하지 못했어요. 편집기에서 AI 메뉴를 눌러 직접 시작해 주세요.",
   "productionHub.status.aiWorkflowFailurePolicyNote": "실패·취소·재시도와 중복 청구 방지는 실제 편집기 실행 경계에서 확인해요.",
   "productionHub.status.bulkEditCheckFailed": "변경 내용을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
   "productionHub.status.checkingPinnedPages": "고정 페이지를 확인 중…",
