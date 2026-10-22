@@ -57,7 +57,7 @@ const VITE_ERROR_OVERLAY_SELECTOR = [
   "[data-vite-error-overlay]",
 ].join(",");
 const EXPECTED_R3F_VERSION = "9.6.1";
-const EXPECTED_THREE_VERSION = "0.184.0";
+const EXPECTED_THREE_VERSION = "0.186.1";
 const R3F_CONTEXT_LOSS_DIAGNOSTIC = "THREE.WebGLRenderer: Context Lost.";
 const SHARED_POSE_CATALOG_API_PATH = "/api/creator/assets/catalog";
 export function classifyStudio3dPngEncoderWorker(url: string): "vrm" | "bg3d" | null {
