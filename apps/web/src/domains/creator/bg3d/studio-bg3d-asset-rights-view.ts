@@ -205,7 +205,8 @@ function importedFacts(
         || (library.status !== "unknown" && extras.commercialUse !== library.commercialUse));
     return {
       ...overlay,
-      aiTraining: aiTrainingFor(status !== "unknown"),
+      // 두 기록이 서로 다른 말을 하면 허용은 어느 쪽 답인지 알 수 없다. 표기 필요 여부처럼 다른 상태의 답을 옮기지 않도록 닫는다.
+      aiTraining: aiTrainingFor(status !== "unknown" && !conflict),
       basis: "library",
       status,
       commercialUse,
