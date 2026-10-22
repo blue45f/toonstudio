@@ -5,14 +5,14 @@
  * 그대로, en은 신규 번역이며 두 로케일의 키 집합은 항상 일치해야 한다
  * (대응하는 r3c14 테스트가 패리티를 고정한다). 콘텐츠 본문·폼 라벨·
  * placeholder는 대상이 아니며 로딩·실패·빈 상태 문구만 다룬다.
+ *
+ * 진입 그래프(앱 셸·Studio 첫 청크) 소비 파일이 쓰는 키 4개와 해석 헬퍼는 `./rest-status-i18n-core` 로 옮겼다.
+ * 이 모듈은 지연 표면 전용 키 43개만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
+ * 그대로다. 진입 그래프에 닿는 파일에서는 이 모듈 대신 코어를 import 한다.
  */
+import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
 
-import {
-  FALLBACK_CHAIN,
-  getLang,
-  registerI18nLocaleEntries,
-  resolveTranslationForDisplay,
-} from "@/shared/lib/i18n";
+export { restStatusText } from "./rest-status-i18n-core";
 
 registerI18nLocaleEntries("ko", {
   "rest.status.comments.saving": "저장 중...",
@@ -32,7 +32,6 @@ registerI18nLocaleEntries("ko", {
   "rest.status.compare.loading": "작품 비교 불러오는 중",
   "rest.status.compare.loadFailed": "작품 목록을 불러오지 못했어요.",
   "rest.status.compare.loadFailedMessage": "네트워크 상태를 확인한 뒤 다시 시도해 주세요. 작품을 아직 고르지 않은 상태와는 다른, 불러오기 실패 상태입니다.",
-  "rest.status.common.retry": "다시 시도",
   "rest.status.comparePicker.searching": "검색 중",
   "rest.status.comparePicker.noResults": "결과 없음",
   "rest.status.comparePicker.searchPrompt": "비교할 작품을 검색하세요",
@@ -46,9 +45,6 @@ registerI18nLocaleEntries("ko", {
   "rest.status.availability.linkPreparing": "링크 준비 중",
   "rest.status.hero.platformChecking": "플랫폼 확인 중",
   "rest.status.fanWorks.empty": "아직 팬 창작물이 없어요.",
-  "rest.status.errors.autoRecoverFailed": "자동으로 복구하지 못했어요. 네트워크 연결을 확인한 뒤 다시 시도해 주세요.",
-  "rest.status.errors.retryOrHome": "다시 시도하거나 홈으로 이동해 주세요.",
-  "rest.status.browserCompat.loading": "브라우저 호환성 안내를 불러오는 중…",
   "rest.status.browserCompat.title": "최신 브라우저 업데이트가 필요합니다",
   "rest.status.browserCompat.copyFailed": "복사할 수 없어요 — 주소창에서 직접 복사해 주세요",
   "rest.status.feedback.requiredMissing": "필수 항목을 입력해 주세요.",
@@ -82,7 +78,6 @@ registerI18nLocaleEntries("en", {
   "rest.status.compare.loading": "Loading title comparison",
   "rest.status.compare.loadFailed": "Could not load the title list.",
   "rest.status.compare.loadFailedMessage": "Check your network and try again. This is a loading failure, not an unselected state.",
-  "rest.status.common.retry": "Try again",
   "rest.status.comparePicker.searching": "Searching",
   "rest.status.comparePicker.noResults": "No results",
   "rest.status.comparePicker.searchPrompt": "Search for a title to compare",
@@ -96,9 +91,6 @@ registerI18nLocaleEntries("en", {
   "rest.status.availability.linkPreparing": "Preparing link",
   "rest.status.hero.platformChecking": "Checking platforms",
   "rest.status.fanWorks.empty": "No fan works yet.",
-  "rest.status.errors.autoRecoverFailed": "Automatic recovery failed. Check your network connection and try again.",
-  "rest.status.errors.retryOrHome": "Try again or go back home.",
-  "rest.status.browserCompat.loading": "Loading browser compatibility notice…",
   "rest.status.browserCompat.title": "A newer browser is required",
   "rest.status.browserCompat.copyFailed": "Could not copy — copy it directly from the address bar",
   "rest.status.feedback.requiredMissing": "Please fill in the required fields.",
@@ -113,23 +105,3 @@ registerI18nLocaleEntries("en", {
   "rest.status.collaboration.creatorsLoadFailed": "Could not load creators open to collaboration.",
   "rest.status.collaboration.settingsLoadFailed": "Could not load collaboration settings.",
 });
-
-export function restStatusText(key: string, koFallback: string): string;
-export function restStatusText(
-  key: string,
-  params: Readonly<Record<string, string | number>>,
-  koFallback: string,
-): string;
-export function restStatusText(
-  key: string,
-  paramsOrFallback: Readonly<Record<string, string | number>> | string,
-  koFallback?: string,
-): string {
-  const params = typeof paramsOrFallback === "string" ? undefined : paramsOrFallback;
-  const fallback = typeof paramsOrFallback === "string" ? paramsOrFallback : koFallback ?? "";
-  const text = resolveTranslationForDisplay(getLang(), key, FALLBACK_CHAIN, fallback);
-  if (!params) return text;
-  return text.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
-    Object.hasOwn(params, token) ? String(params[token]) : placeholder,
-  );
-}

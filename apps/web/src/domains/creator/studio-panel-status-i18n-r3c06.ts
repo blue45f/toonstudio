@@ -10,13 +10,14 @@
  * 등록 키 개수를 정확히 단언해, 키 177개를 같은 블록에 넣으면 기존
  * 계약이 깨진다. 네임스페이스는 기존 studio.panelStatus.*를 그대로 잇는다.
  * 대상 표면: c06 클러스터 creator 루트 31파일(WriterRoomReviewSurfaces 제외).
+ *
+ * 진입 그래프(앱 셸·Studio 첫 청크) 소비 파일이 쓰는 키 6개와 해석 헬퍼는 `./status-i18n/studio-panel-status-i18n-r3c06-core` 로 옮겼다.
+ * 이 모듈은 지연 표면 전용 키 171개만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
+ * 그대로다. 진입 그래프에 닿는 파일에서는 이 모듈 대신 코어를 import 한다.
  */
-import {
-  FALLBACK_CHAIN,
-  getLang,
-  registerI18nLocaleEntries,
-  resolveTranslationForDisplay,
-} from "@/shared/lib/i18n";
+import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
+
+export { panelStatusText } from "./status-i18n/studio-panel-status-i18n-r3c06-core";
 
 registerI18nLocaleEntries("ko", {
   "studio.panelStatus.assetQuality3d.backToAuto": "자동 모드로 돌아왔습니다. 다음 모델 불러오기부터 안전 한도를 적용합니다.",
@@ -175,12 +176,6 @@ registerI18nLocaleEntries("ko", {
   "studio.panelStatus.scenePreview.sizeMismatch": "실제 이미지 크기({actualSize})가 검수 기록과 다릅니다. 이 파일은 재검수 전 삽입할 수 없습니다.",
   "studio.panelStatus.scenePreview.timeoutDescription": "연결 상태를 확인한 뒤 원본을 다시 불러와 주세요.",
   "studio.panelStatus.scenePreview.timeoutTitle": "이미지 연결 시간이 초과됐어요",
-  "studio.panelStatus.threeDPreviewStack.mannequinLoading": "3D 데생 인형을 여는 중",
-  "studio.panelStatus.threeDPreviewStack.poserLoading": "포저를 여는 중",
-  "studio.panelStatus.threeDPreviewStack.scenarioLoading": "시나리오 자동 생성 도구를 여는 중",
-  "studio.panelStatus.threeDPreviewStack.scrollPreviewLoading": "스크롤 미리보기를 여는 중",
-  "studio.panelStatus.threeDPreviewStack.storyboardLoading": "스토리보드 그리드를 여는 중",
-  "studio.panelStatus.threeDPreviewStack.timelapseLoading": "타임랩스 도구를 여는 중",
   "studio.panelStatus.timelapse.capturing": "그리기 과정을 캡처하는 중… ({captured}/{total}단계)",
   "studio.panelStatus.timelapse.creatingFile": "영상 파일 생성 중…",
   "studio.panelStatus.timelapse.emptyContent": "아직 그린 내용이 없어요. 먼저 그림을 그려보세요.",
@@ -355,12 +350,6 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.scenePreview.sizeMismatch": "The actual image size ({actualSize}) differs from the review record. This file cannot be inserted before re-review.",
   "studio.panelStatus.scenePreview.timeoutDescription": "Check your connection, then reload the original.",
   "studio.panelStatus.scenePreview.timeoutTitle": "The image connection timed out",
-  "studio.panelStatus.threeDPreviewStack.mannequinLoading": "Opening the 3D drawing mannequin",
-  "studio.panelStatus.threeDPreviewStack.poserLoading": "Opening the poser",
-  "studio.panelStatus.threeDPreviewStack.scenarioLoading": "Opening the scenario auto-generation tool",
-  "studio.panelStatus.threeDPreviewStack.scrollPreviewLoading": "Opening the scroll preview",
-  "studio.panelStatus.threeDPreviewStack.storyboardLoading": "Opening the storyboard grid",
-  "studio.panelStatus.threeDPreviewStack.timelapseLoading": "Opening the timelapse tool",
   "studio.panelStatus.timelapse.capturing": "Capturing the drawing process… ({captured}/{total} steps)",
   "studio.panelStatus.timelapse.creatingFile": "Creating the video file…",
   "studio.panelStatus.timelapse.emptyContent": "Nothing drawn yet. Draw something first.",
@@ -377,28 +366,3 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.workspaceArrangement.tabEmpty": "No arrangement saved in this tab.",
   "studio.panelStatus.workspaceArrangement.tabStorageUnavailable": "Tab storage space is unavailable.",
 });
-
-/**
- * 비컴포넌트 생산자용 생산 시점 로케일 해석 헬퍼 (studio-bg3d-panel-status-i18n의
- * `bg3dPanelStatusText` 선례). 키가 사전에 없으면 koFallback을 그대로 돌려준다.
- * `{token}` 보간은 useT 리졸버와 같은 규약으로 한 번만 치환한다.
- */
-export function panelStatusText(key: string, koFallback: string): string;
-export function panelStatusText(
-  key: string,
-  params: Readonly<Record<string, string | number>>,
-  koFallback: string,
-): string;
-export function panelStatusText(
-  key: string,
-  paramsOrFallback: Readonly<Record<string, string | number>> | string,
-  koFallback?: string,
-): string {
-  const params = typeof paramsOrFallback === "string" ? undefined : paramsOrFallback;
-  const fallback = typeof paramsOrFallback === "string" ? paramsOrFallback : koFallback ?? "";
-  const text = resolveTranslationForDisplay(getLang(), key, FALLBACK_CHAIN, fallback);
-  if (!params) return text;
-  return text.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
-    Object.hasOwn(params, token) ? String(params[token]) : placeholder,
-  );
-}

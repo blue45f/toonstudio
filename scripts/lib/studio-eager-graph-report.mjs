@@ -92,6 +92,21 @@ function formatLazy(violation) {
   return lines;
 }
 
+function formatPinned(violation) {
+  const lines = [
+    `[지연 고정 파일이 진입 그래프에 정적으로 닿음] ${violation.items.length}개 — 지연 표면 전용 본문이 앱 셸·Studio 첫 청크에 다시 묶입니다.`,
+  ];
+  const shown = violation.items.slice(0, 4);
+  for (const item of shown) {
+    lines.push(`  ${kib(item.bytes).padStart(10)}  ${item.file}`);
+    if (item.gateway?.from) lines.push(`      원인 import: ${item.gateway.from}  →  ${item.gateway.to}`);
+  }
+  if (violation.items.length > shown.length) lines.push(`  … 외 ${violation.items.length - shown.length}개`);
+  if (shown[0]) lines.push("  첫 파일의 최단 경로:", ...formatPath(shown[0].path, "    "));
+  lines.push("  진입 그래프에 닿는 파일은 본문 모듈 대신 같은 이름에 -core 가 붙은 모듈을 import 하세요(쓰는 키가 코어에 없으면 코어로 옮깁니다).");
+  return lines;
+}
+
 /** 위반 한 건을 줄로 바꾼다. */
 export function formatViolation(violation) {
   switch (violation.kind) {
@@ -104,6 +119,7 @@ export function formatViolation(violation) {
       ];
     case "forbidden-domain": return formatForbidden(violation);
     case "lazy-invalidated": return formatLazy(violation);
+    case "pinned-lazy": return formatPinned(violation);
     case "baseline-incomplete":
       return [`[기준선에 없는 금지 도메인] ${violation.prefix} — node scripts/check-studio-eager-graph.mjs --update-baseline 으로 현재 도달 수를 기록하세요.`];
     default: return [`[알 수 없는 위반] ${JSON.stringify(violation)}`];

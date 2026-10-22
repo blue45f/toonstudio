@@ -1,4 +1,4 @@
-import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
 import { BookOpen, ChevronDown, Search, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 

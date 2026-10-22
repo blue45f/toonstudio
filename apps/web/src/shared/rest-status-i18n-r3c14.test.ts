@@ -29,7 +29,7 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
     for (const entry of (match[2] ?? "").matchAll(/"([^"]+)":\s*"((?:[^"\\]|\\.)*)"/g)) {
       entries[entry[1] ?? ""] = (entry[2] ?? "").replace(/\\"/g, '"');
     }
-    blocks[match[1] ?? ""] = entries;
+    blocks[match[1] ?? ""] = { ...(blocks[match[1] ?? ""] ?? {}), ...entries };
   }
   return blocks as Record<"ko" | "en", Record<string, string>>;
 }
@@ -58,7 +58,7 @@ const CONSUMERS = [
 ] as const;
 const MIGRATED_FILES = CONSUMERS;
 
-const blocks = parseRegisterModule(readSource(MODULE_FILE));
+const blocks = parseRegisterModule(`${readSource(MODULE_FILE)}\n${readSource("rest-status-i18n-core.ts")}`);
 const ALL_KEYS = Object.keys(blocks.ko).sort();
 
 describe("rest status i18n r3c14", () => {

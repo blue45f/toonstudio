@@ -1,4 +1,4 @@
-import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import { panelStatusText } from "./status-i18n/studio-panel-status-i18n-r3c06-core";
 import { Loader2 } from "lucide-react";
 import { Suspense, memo, useEffect, useMemo } from "react";
 

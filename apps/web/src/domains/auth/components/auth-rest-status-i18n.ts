@@ -5,14 +5,14 @@
  * 그대로, en은 신규 번역이며 두 로케일의 키 집합은 항상 일치해야 한다
  * (대응하는 r3c14 테스트가 패리티를 고정한다). 콘텐츠 본문·폼 라벨·
  * placeholder는 대상이 아니며 로딩·실패·빈 상태 문구만 다룬다.
+ *
+ * 진입 그래프(앱 셸·Studio 첫 청크) 소비 파일이 쓰는 키 1개와 해석 헬퍼는 `./auth-rest-status-i18n-core` 로 옮겼다.
+ * 이 모듈은 지연 표면 전용 키 15개만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
+ * 그대로다. 진입 그래프에 닿는 파일에서는 이 모듈 대신 코어를 import 한다.
  */
+import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
 
-import {
-  FALLBACK_CHAIN,
-  getLang,
-  registerI18nLocaleEntries,
-  resolveTranslationForDisplay,
-} from "@/shared/lib/i18n";
+export { authRestStatusText } from "./auth-rest-status-i18n-core";
 
 registerI18nLocaleEntries("ko", {
   "authRest.status.google.browserOnly": "Google 로그인은 브라우저에서만 사용할 수 있어요.",
@@ -30,7 +30,6 @@ registerI18nLocaleEntries("ko", {
   "authRest.status.authMenu.signOutCheckFailed": "로그아웃 확인에 실패했어요. 연결을 확인한 뒤 다시 시도해 주세요.",
   "authRest.status.authMenu.cleaningUp": "실시간 연결 정리 중…",
   "authRest.status.authMenu.signOutRetry": "로그아웃 다시 시도",
-  "authRest.status.guestMigration.failed": "게스트로 만든 내용을 계정으로 옮기지 못했어요. 잠시 뒤 다시 시도해 주세요.",
 });
 
 registerI18nLocaleEntries("en", {
@@ -49,25 +48,4 @@ registerI18nLocaleEntries("en", {
   "authRest.status.authMenu.signOutCheckFailed": "Could not confirm sign-out. Check your connection and try again.",
   "authRest.status.authMenu.cleaningUp": "Closing live connections…",
   "authRest.status.authMenu.signOutRetry": "Retry sign-out",
-  "authRest.status.guestMigration.failed": "Could not move your guest content to your account. Please try again shortly.",
 });
-
-export function authRestStatusText(key: string, koFallback: string): string;
-export function authRestStatusText(
-  key: string,
-  params: Readonly<Record<string, string | number>>,
-  koFallback: string,
-): string;
-export function authRestStatusText(
-  key: string,
-  paramsOrFallback: Readonly<Record<string, string | number>> | string,
-  koFallback?: string,
-): string {
-  const params = typeof paramsOrFallback === "string" ? undefined : paramsOrFallback;
-  const fallback = typeof paramsOrFallback === "string" ? paramsOrFallback : koFallback ?? "";
-  const text = resolveTranslationForDisplay(getLang(), key, FALLBACK_CHAIN, fallback);
-  if (!params) return text;
-  return text.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
-    Object.hasOwn(params, token) ? String(params[token]) : placeholder,
-  );
-}
