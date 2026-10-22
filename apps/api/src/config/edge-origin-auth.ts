@@ -38,6 +38,30 @@ function configuredSecret(
 }
 
 /**
+ * 에지 출처 인증 공유 비밀을 해석한다. 설정이 없으면 null, 형식이 틀리면(공백 포함·32바이트 미만)
+ * EdgeOriginAuthConfigurationError 를 던진다. 클라이언트 IP 전용 헤더 신뢰처럼 같은 비밀로 출처를 증명해야
+ * 하는 다른 경계가 같은 검증을 쓰게 한다.
+ */
+export function resolveEdgeOriginSecret(
+  environment: EdgeOriginAuthEnvironment,
+): Buffer | null {
+  return configuredSecret(environment);
+}
+
+/**
+ * 요청이 보낸 비밀이 기대값과 같은지 상수 시간으로 비교한다. 문자열 한 개만 인정한다(배열·누락은 불일치).
+ */
+export function edgeOriginSecretMatches(
+  supplied: string | string[] | undefined,
+  expected: Buffer,
+): boolean {
+  if (typeof supplied !== "string") return false;
+  const bytes = Buffer.from(supplied, "utf8");
+  return bytes.byteLength === expected.byteLength
+    && timingSafeEqual(bytes, expected);
+}
+
+/**
  * 이 설정으로 에지 출처 인증이 실제로 집행되는지. 공유 비밀이 없거나(선택 사항) 잘못된 값이면 "disabled" 다.
  * 잘못된 값은 미들웨어 생성이 실패해 서버가 뜨지 못하므로 집행 중이라고 말하지 않는다.
  */
@@ -78,12 +102,6 @@ function isHealthProbe(request: Request): boolean {
     || request.path === "/api/health/ready";
 }
 
-function suppliedSecret(request: Request): Buffer | null {
-  const value = request.headers[EDGE_ORIGIN_AUTH_HEADER];
-  if (typeof value !== "string") return null;
-  return Buffer.from(value, "utf8");
-}
-
 export function createEdgeOriginAuthMiddleware(
   environment: EdgeOriginAuthEnvironment = process.env,
 ) {
@@ -94,10 +112,10 @@ export function createEdgeOriginAuthMiddleware(
       return;
     }
 
-    const supplied = suppliedSecret(request);
-    const accepted = supplied !== null
-      && supplied.byteLength === expected.byteLength
-      && timingSafeEqual(supplied, expected);
+    const accepted = edgeOriginSecretMatches(
+      request.headers[EDGE_ORIGIN_AUTH_HEADER],
+      expected,
+    );
     if (!accepted) {
       response.status(403).json({
         statusCode: 403,

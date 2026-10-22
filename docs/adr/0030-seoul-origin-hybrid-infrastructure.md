@@ -28,7 +28,7 @@ ADR-0029는 Core API만 onpod로 옮기고 DB는 Supabase를 유지하라고 제
 | 무료 서버 앱으로 Core API가 서는가 | `toonstudio-api` 배포 | 선다. 공개 GHCR 이미지를 자격 등록 없이 배포했고 `/api/health/live` 200이다. 부팅 정점 RSS 약 482 MiB(한도 512 MiB)로 여유가 작다 |
 | 운영 스키마가 onpod DB에 올라가는가 | 공식 부트스트랩 순서 재현 | 올라간다. 마이그레이션 113개 적용, 원장 114행, 검증 12/12. 다만 TLS·역할 제약으로 공식 러너를 그대로 쓸 수 없다 |
 | 앱이 완전한가 | `/api/health/ready`·`capabilities` | **아니다.** 마켓플레이스 ACL 플래그 6개가 false라 준비성이 503이고 DB 기반 기능이 `unavailable`이다 |
-| onpod 뒤에서 클라이언트 IP를 볼 수 있는가 | 헤더 에코 앱 | ingress가 `X-Forwarded-For`를 `실제 클라이언트, 프록시`로 덮어쓴다. Worker 경유 시 API가 실제 사용자 IP를 못 볼 가능성이 높다 |
+| onpod 뒤에서 클라이언트 IP를 볼 수 있는가 | 헤더 에코 앱(직접·임시 Worker 미리보기 경유, 2026-10-22·23) | 표준 헤더로는 불가. 직접 접속은 `X-Forwarded-For`가 `접속자, 프록시`로 덮이고, **Worker 경유는 표준 IP 헤더 4개가 모두 Cloudflare 이그레스 주소**가 된다. 커스텀 헤더는 값 그대로 통과한다 |
 
 ## 결과와 트레이드오프
 
@@ -49,7 +49,7 @@ ADR-0029는 Core API만 onpod로 옮기고 DB는 Supabase를 유지하라고 제
 ## 열린 문제 (해결 전 컷오버 금지)
 
 1. **마켓플레이스 ACL 준비성**: 단일 소유자 역할은 SQL로 해결되지 않는다. A) onpod가 비소유 로그인 역할을 발급하게 한다(권장, 코드 변경 없음). B) `isSchemaReady()`의 여섯 비교를 환경변수 스위치로 건너뛰는 임시 코드 변경(새 이미지 릴리스 필요, 런타임 비소유 보장이 약해짐). 소유자 결정 사항이다.
-2. **클라이언트 IP**: 신뢰 프록시 설정이 정확한 IP 목록만 받고 onpod 피어가 가변이며 ingress가 헤더를 덮어쓴다. Worker가 출처 비밀을 증명한 요청에서만 신뢰하는 전용 헤더를 API가 인정하도록 `auth-client-ip.ts`를 확장하는 방안을 컷오버 전에 실측과 함께 검토한다.
+2. **클라이언트 IP**: 신뢰 프록시 설정이 정확한 IP 목록만 받고 onpod 피어가 가변이며 ingress가 표준 헤더를 덮어쓴다. **구현·시험 완료(릴리스 전)**: Worker가 core 요청에 전용 헤더 `x-toonstudio-client-ip`를 싣고, API는 `AUTH_EDGE_CLIENT_IP_ENABLED=true`일 때 에지 출처 비밀을 증명한 요청에서만 신뢰한다(기본 꺼짐, 켜면 비밀 필수). 적용은 Worker 릴리스 → API 이미지 릴리스 → 환경변수 순서이고 환경변수 변경은 별도 승인이다. 규칙은 [production-environment.md](../operations/production-environment.md#클라이언트-ip-전달)에 있다.
 3. **원격에만 있는 비밀값**(OAuth·Toss·AI 공급자 등): 확보 경로를 소유자가 정한다. 확보 전에는 Render와 Worker 시크릿을 삭제·중지하지 않는다.
 4. **0093 마이그레이션 결함**: 비한정 `CREATE FUNCTION`이 슈퍼유저가 아닌 마이그레이터에서 실패한다. 운영에도 영향이 있다.
 5. 메모리 여유(약 30 MiB), 사용자 도메인·약관(상업적 이용) 확인은 컷오버 전 관찰 항목이다.

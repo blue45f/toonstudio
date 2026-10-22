@@ -43,6 +43,8 @@ readiness, runtime config, 관리자 경로처럼 운영 상태나 기준 권위
 
 core·social·playground·admin·realtime 요청의 전달 IP는 클라이언트 입력을 신뢰하지 않고 Cloudflare가 제공한 bounded `CF-Connecting-IP`만 `X-Forwarded-For`로 다시 구성한다. public-read replica에는 IP도 전달하지 않는다. 재시도 대상 응답의 body는 취소해 연결·메모리 자원을 회수한다.
 
+`CORE_ORIGIN_SECRET`이 설정된 core 요청에는 같은 접속자 IP를 전용 헤더 `x-toonstudio-client-ip`에도 싣는다(클라이언트가 보낸 값은 항상 먼저 지운다). onpod 같은 PaaS ingress는 `X-Forwarded-For`·`X-Real-IP`·`CF-Connecting-IP`를 앞단 주소로 덮어써서(2026-10-22 실측: Worker 경유 요청이 모두 Cloudflare 이그레스 주소로 보인다) 표준 헤더만으로는 API가 실제 접속자를 알 수 없지만, 커스텀 헤더는 그대로 통과한다. Core API는 `AUTH_EDGE_CLIENT_IP_ENABLED=true`일 때 같은 요청이 `x-toonstudio-origin-secret`을 증명한 경우에만 이 헤더를 신뢰한다. public-read·대형 에셋·OG 경로와 출처 비밀이 없는 요청에는 싣지 않는다. 규칙은 [`docs/operations/production-environment.md`](../../docs/operations/production-environment.md#클라이언트-ip-전달)를 따른다.
+
 각 upstream 요청에는 다음 관측 헤더가 추가된다.
 
 - `x-toonstudio-edge: cloudflare-static-gateway-v2`

@@ -6,7 +6,9 @@ import {
   EdgeOriginAuthConfigurationError,
   EDGE_ORIGIN_AUTH_HEADER,
   edgeOriginAuthStartupFinding,
+  edgeOriginSecretMatches,
   resolveEdgeOriginAuthStatus,
+  resolveEdgeOriginSecret,
 } from "./edge-origin-auth";
 
 function request(
@@ -76,6 +78,35 @@ describe("Cloudflare edge origin authentication", () => {
     expect(() => createEdgeOriginAuthMiddleware({
       CLOUDFLARE_EDGE_ORIGIN_SECRET: `${secret} `,
     })).toThrow(EdgeOriginAuthConfigurationError);
+  });
+});
+
+describe("Cloudflare edge origin shared secret helpers", () => {
+  const secret = "edge-origin-secret-with-at-least-thirty-two-bytes";
+
+  it("resolves the shared secret or null, and rejects weak or padded values", () => {
+    expect(resolveEdgeOriginSecret({})).toBeNull();
+    expect(resolveEdgeOriginSecret({ CLOUDFLARE_EDGE_ORIGIN_SECRET: "" })).toBeNull();
+    expect(
+      resolveEdgeOriginSecret({ CLOUDFLARE_EDGE_ORIGIN_SECRET: secret })?.equals(
+        Buffer.from(secret, "utf8"),
+      ),
+    ).toBe(true);
+    expect(() => resolveEdgeOriginSecret({ CLOUDFLARE_EDGE_ORIGIN_SECRET: "too-short" }))
+      .toThrow(EdgeOriginAuthConfigurationError);
+    expect(() => resolveEdgeOriginSecret({ CLOUDFLARE_EDGE_ORIGIN_SECRET: `${secret} ` }))
+      .toThrow(EdgeOriginAuthConfigurationError);
+  });
+
+  it("matches only one exact string value", () => {
+    const expected = Buffer.from(secret, "utf8");
+    expect(edgeOriginSecretMatches(secret, expected)).toBe(true);
+    expect(edgeOriginSecretMatches(`${secret}x`, expected)).toBe(false);
+    expect(edgeOriginSecretMatches(secret.slice(0, -1), expected)).toBe(false);
+    expect(edgeOriginSecretMatches("x".repeat(secret.length), expected)).toBe(false);
+    expect(edgeOriginSecretMatches(undefined, expected)).toBe(false);
+    expect(edgeOriginSecretMatches([secret], expected)).toBe(false);
+    expect(edgeOriginSecretMatches("", expected)).toBe(false);
   });
 });
 
