@@ -7,7 +7,7 @@ import { getAuthSession, getLastUnauthorizedDropHadSession } from "../domains/au
 import { registerUnauthorizedSessionProbe } from "../platform/api-error";
 import { installStaticCatalog } from "../shared/catalog/catalog-static";
 import { getNextgenLabSettingsSnapshot } from "../shared/lib/nextgen-lab-settings";
-import { installSpeculationRules } from "../shared/lib/speculation-rules";
+import { installSpeculationRules, runWhenDocumentActivated, STUDIO_PRERENDER_URLS } from "../shared/lib/speculation-rules";
 import { initializeCreatorContinuity } from "../shared/lib/creator-continuity";
 import { initializePwaInstallCapture } from "../shared/lib/pwa-install-store";
 import "../shared/lib/programmatic-reload-hmr";
@@ -45,47 +45,53 @@ function loadStudioBg3dMagicProductionProofFromExplicitDiagnosticQuery(): void {
   });
 }
 
-// API 카탈로그 모드(기본): /api/* 서버 경로에서 KMAS 병합/런타임 정책을 적용한다.
-// VITE_CATALOG_SOURCE=static 일 때만 정적 파일/클라이언트 계산 라우팅을 설치한다.
-installStaticCatalog();
-loadStudioBg3dMagicProductionProofFromExplicitDiagnosticQuery();
-// `beforeinstallprompt` can fire before deferred UI mounts. Capture it at entry while the
-// continuity store hydrates only the allow-listed route and launch-preference envelope.
-initializePwaInstallCapture();
-initializeCreatorContinuity();
-// 실험 기능(Speculation Rules): 공개 페이지에서는 스튜디오 문서(문서 이동 대상)를 미리
-// 렌더링할 수 있게 규칙만 심어 둔다. 이미 스튜디오 문서 안이면 심지 않는다.
-// 미지원 브라우저는 태그를 무시하므로 폴백이 필요 없다.
-{
-  const pathname = globalThis.location.pathname;
-  const onStudioDocument = pathname === "/studio" || pathname.startsWith("/studio/");
-  if (!onStudioDocument) {
-    installSpeculationRules({
-      urls: ["/studio"],
-      isEnabled: () => getNextgenLabSettingsSnapshot().studioPrerender,
-    });
+// 프리렌더(Speculation Rules)된 /studio 문서는 사용자가 실제로 열 때까지 부팅하지 않는다. 미리 끝나는 것은
+// HTML·엔트리 번들의 다운로드와 파싱이고, 페이지뷰·저장소 잠금·동기화 같은 부수효과는 활성화 뒤에만 생긴다.
+function bootApplication(): void {
+  // API 카탈로그 모드(기본): /api/* 서버 경로에서 KMAS 병합/런타임 정책을 적용한다.
+  // VITE_CATALOG_SOURCE=static 일 때만 정적 파일/클라이언트 계산 라우팅을 설치한다.
+  installStaticCatalog();
+  loadStudioBg3dMagicProductionProofFromExplicitDiagnosticQuery();
+  // `beforeinstallprompt` can fire before deferred UI mounts. Capture it at entry while the
+  // continuity store hydrates only the allow-listed route and launch-preference envelope.
+  initializePwaInstallCapture();
+  initializeCreatorContinuity();
+  // 실험 기능(Speculation Rules): 공개 페이지에서는 스튜디오 문서(문서 이동 대상)를 미리
+  // 렌더링할 수 있게 규칙만 심어 둔다. 이미 스튜디오 문서 안이면 심지 않는다.
+  // 미지원 브라우저는 태그를 무시하므로 폴백이 필요 없다.
+  {
+    const pathname = globalThis.location.pathname;
+    const onStudioDocument = pathname === "/studio" || pathname.startsWith("/studio/");
+    if (!onStudioDocument) {
+      installSpeculationRules({
+        urls: STUDIO_PRERENDER_URLS,
+        isEnabled: () => getNextgenLabSettingsSnapshot().studioPrerender,
+      });
+    }
+  }
+  // --font-serif(Nanum Myeongjo)는 index.html 렌더 차단 경로에서 뺐다. 첫 진입 경로가 웹 크롬이면
+  // 여기서 — 렌더가 시작되기 전에 — 요청을 출발시켜 랜딩의 폰트 스왑 창이 넓어지지 않게 한다.
+  // 이후 SPA 라우팅은 App.tsx 의 SerifWebFontBridge 가 이어받는다(멱등).
+  ensureSerifWebFontForRoute(globalThis.location.pathname);
+
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  )
+  // Service Worker 등록은 첫 페인트와 경쟁하지 않도록 load 이후 동적 import 로 미룬다.
+  // (정적 import 로 두면 등록 로직과 업데이트 프롬프트가 app entry 청크에 들어간다.)
+  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+    const startServiceWorker = (): void => {
+      void import("./service-worker/studio-service-worker-registration")
+        .then((module) => {
+          module.registerStudioServiceWorker();
+        })
+        .catch(() => {});
+    };
+    if (document.readyState === "complete") startServiceWorker();
+    else globalThis.addEventListener("load", startServiceWorker, { once: true });
   }
 }
-// --font-serif(Nanum Myeongjo)는 index.html 렌더 차단 경로에서 뺐다. 첫 진입 경로가 웹 크롬이면
-// 여기서 — 렌더가 시작되기 전에 — 요청을 출발시켜 랜딩의 폰트 스왑 창이 넓어지지 않게 한다.
-// 이후 SPA 라우팅은 App.tsx 의 SerifWebFontBridge 가 이어받는다(멱등).
-ensureSerifWebFontForRoute(globalThis.location.pathname);
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-)
-// Service Worker 등록은 첫 페인트와 경쟁하지 않도록 load 이후 동적 import 로 미룬다.
-// (정적 import 로 두면 등록 로직과 업데이트 프롬프트가 app entry 청크에 들어간다.)
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  const startServiceWorker = (): void => {
-    void import("./service-worker/studio-service-worker-registration")
-      .then((module) => {
-        module.registerStudioServiceWorker();
-      })
-      .catch(() => {});
-  };
-  if (document.readyState === "complete") startServiceWorker();
-  else globalThis.addEventListener("load", startServiceWorker, { once: true });
-}
+runWhenDocumentActivated(bootApplication);

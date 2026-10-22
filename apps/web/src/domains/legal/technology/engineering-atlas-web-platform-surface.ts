@@ -259,11 +259,11 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
     id: "speculation-rules-prerender",
     category: "web-platform",
     name: "Speculation Rules",
-    title: t("공개 페이지에서 스튜디오를 미리 렌더링 (운영 CSP 에 막힐 가능성 높음)", "Prerendering the studio from public pages (likely blocked by the production CSP)"),
+    title: t("공개 페이지에서 스튜디오를 미리 준비 (부팅은 활성화 뒤)", "Preparing the studio from public pages (boot waits for activation)"),
     status: "experimental",
     tagline: t(
-      "스튜디오 진입용 규칙을 넣었지만, 운영 CSP 에 막혀 효과가 없을 가능성이 높습니다.",
-      "A rule was added for studio entry, but the production CSP most likely blocks it, so it probably has no effect.",
+      "CSP 가 규칙 해시로 허용하고, 숨은 스튜디오 문서는 사용자가 실제로 열 때까지 부팅하지 않습니다.",
+      "The CSP allows the rule by its hash, and the hidden studio document does not boot until the user actually opens it.",
     ),
     background: [
       t(
@@ -275,31 +275,31 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
         "The implementation is small: one rule JSON (prerender, list, /studio, eagerness moderate) is added once to the head as script type=speculationrules. Moderate means start when intent shows, such as a pointer hover, and only same-origin absolute paths are allowed. A code comment says only Chromium-family browsers act on it and others ignore the tag, so it is progressive enhancement needing no fallback. It can be switched off with Prepare the studio ahead of time in settings.",
       ),
       t(
-        "여기서 켜졌다와 동작한다를 구분해야 합니다. 운영 CSP 의 script-src 에는 인라인 규칙을 허용하는 'inline-speculation-rules' 키워드도 nonce 도 없고 해시가 하나뿐인데, 그 해시는 index.html 의 JSON-LD 블록의 것이지 주입하는 규칙 JSON 의 것이 아닙니다. 로컬 Chromium 141 에서 운영 script-src 를 그대로 재현하면 script-src-elem 위반으로 규칙이 무효였습니다(운영 사이트 자체는 측정하지 않음). appendChild 는 예외 없이 성공해서 코드는 설치됐다고 기록하므로, 코드 안에서는 성공과 차단을 구분할 수 없습니다.",
-        "Here, turned on and working must be told apart. The production CSP script-src has neither the 'inline-speculation-rules' keyword that would permit inline rules nor a nonce, and it carries a single hash that belongs to the JSON-LD block in index.html, not to the injected rule JSON. Reproducing the production script-src as is in a local Chromium 141 made the rule void with a script-src-elem violation (the production site itself was not measured). appendChild succeeds without an exception and the code records the rules as installed, so success and blocking cannot be told apart from inside the code.",
+        "CSP 는 규칙 JSON 의 해시('sha256-GrX39s3Az4qEddGQLCYCCB+jrL9X7dvOAVgBXB8l6nM=')로 허용합니다. script-src 에 해시가 하나라도 있으면 'inline-speculation-rules' 키워드는 'unsafe-inline' 처럼 무시되어, 운영 모양 CSP 로 Chromium 156 에서 재 보니 키워드만으로는 프리렌더 요청조차 나가지 않았고 해시를 넣자 요청과 부팅이 일어났습니다(2026-10-23). 규칙 문자열이 바뀌면 해시가 달라지므로, 대상 주소를 STUDIO_PRERENDER_URLS 하나로 두고 CSP 생성기(cloudflare-static-rules.mjs)가 같은 문자열의 해시를 지키게 했습니다. 두 문자열이 다르면 시험이 실패합니다.",
+        "The CSP allows the rule by the hash of its JSON ('sha256-GrX39s3Az4qEddGQLCYCCB+jrL9X7dvOAVgBXB8l6nM='). When script-src holds any hash, the 'inline-speculation-rules' keyword is ignored the way 'unsafe-inline' is: with a production-shaped CSP in Chromium 156, the keyword alone did not even send the prerender request, while the hash produced both the request and the boot (2026-10-23). Because the hash changes with the rule string, the target lives in one STUDIO_PRERENDER_URLS constant and the CSP generator (cloudflare-static-rules.mjs) keeps the hash of the same string; a test fails if the two strings differ.",
       ),
       t(
-        "또 앱 어디에도 document.prerendering 이나 prerenderingchange 처리가 없어, 프리렌더 중인 스튜디오 문서가 잠금·저장소·분석 같은 부팅 코드를 그대로 실행할 수 있습니다(미확인). 프리렌더 대상이 COOP 격리 문서라는 점도 활성화 동작을 코드로 확인할 수 없습니다. 고치려면 규칙 JSON 의 해시(sha256-GrX39s3Az4qEddGQLCYCCB+jrL9X7dvOAVgBXB8l6nM=, 규칙 문자열이 바뀌면 다시 계산)를 script-src 에 더해야 하며, 키워드만 더하면 해시가 있어 무시됩니다(로컬 재현). CSP 를 바꿀지는 사용자가 정할 일입니다.",
-        "Also, nothing in the app handles document.prerendering or prerenderingchange, so a studio document being prerendered could run its boot code, such as locks, storage and analytics, as usual (unconfirmed). It also cannot be confirmed from code how activation behaves when the target is a COOP-isolated document. To fix it, the hash of the rule JSON (sha256-GrX39s3Az4qEddGQLCYCCB+jrL9X7dvOAVgBXB8l6nM=, recomputed whenever the rule string changes) must be added to script-src; adding only the keyword is ignored while a hash is present (local reproduction). Whether to change the CSP is the owner's decision.",
+        "격리(COOP/COEP) 문서도 프리렌더됩니다. DevTools 를 붙이지 않은 헤드리스 Chromium 156 에서 /studio 가 숨은 채 부팅했고 crossOriginIsolated 도 참이었습니다(DevTools 가 붙으면 PrerenderingDisabledByDevTools 로 꺼져 자동화 도구로는 잴 수 없습니다). 그래서 부작용을 막는 쪽이 핵심입니다. 스튜디오 홈은 그리는 순간 페이지뷰 전송, 로컬 SQLite 소유 잠금, 라이브러리 동기화를 시작하는데, 숨은 문서가 그 잠금을 쥐면 이미 열린 편집기 탭이 세션 전용 저장으로 떨어집니다. 그래서 main.tsx 는 앱 부팅 전체를 prerenderingchange 뒤로 미루고, 미리 끝나는 일은 HTML·엔트리 번들의 다운로드와 파싱으로 한정합니다. 복구 안내 타이머(offline-draw/bootstrap.js)도 같은 경계를 따르고, 페이지뷰 로드 시간에서는 activationStart 를 뺍니다.",
+        "Isolated (COOP/COEP) documents are prerendered too: in headless Chromium 156 without DevTools attached, /studio booted while hidden and crossOriginIsolated was true (with DevTools attached it is switched off as PrerenderingDisabledByDevTools, so automation tools cannot measure it). Stopping side effects is therefore the core. The studio home starts a page-view send, the local SQLite ownership lock and library sync the moment it renders, and if a hidden document takes that lock an already open editor tab drops to session-only saving. So main.tsx defers the whole app boot until prerenderingchange, and what finishes ahead is limited to downloading and parsing the HTML and entry bundles. The recovery-notice timer (offline-draw/bootstrap.js) follows the same boundary, and the page-view load time subtracts activationStart.",
       ),
     ],
     keyPoints: [
       t("공개 → /studio 문서 이동을 미리 렌더링하려는 시도", "An attempt to prerender the public-to-studio move"),
-      t("운영 CSP 그대로면 규칙이 막힘(로컬 재현, 운영 미측정)", "The production CSP blocks the rule (local reproduction; production unmeasured)"),
-      t("document.prerendering 가드가 없다", "No document.prerendering guard exists"),
-      t("운영 사이트 실측이 없어 실험으로 표시", "Production was not measured, so it stays experimental"),
+      t("CSP 는 규칙 해시로 허용(키워드는 해시가 있으면 무시됨, Chromium 156 실측)", "The CSP allows the rule by hash (the keyword is ignored next to a hash; measured in Chromium 156)"),
+      t("앱 부팅 전체가 prerenderingchange 뒤로 미뤄진다", "The whole app boot waits for prerenderingchange"),
+      t("운영 사이트의 체감 효과는 아직 재지 않아 실험으로 표시", "The effect on the production site is not measured yet, so it stays experimental"),
     ],
     diagram: {
       id: "speculation-rules-prerender-diagram",
       kind: "sequence",
-      title: t("미리 렌더링 흐름과 확인되지 않은 지점", "The prerender flow and its unverified points"),
+      title: t("미리 준비 흐름과 활성화 경계", "The prepare-ahead flow and the activation boundary"),
       caption: t(
-        "규칙 주입 단계에서 운영 CSP 가 막는 것을 로컬에서 재현했고, 부팅 코드와 격리 문서 활성화는 검증되지 않았습니다.",
-        "The production CSP blocking the rule at injection was reproduced locally; boot code and activation of the isolated document are unverified.",
+        "CSP 가 규칙 해시로 허용하면 엔진이 /studio 를 숨은 채 받아 두고, 앱 부팅은 클릭으로 활성화된 뒤에 시작합니다. 격리 문서의 프리렌더 부팅은 Chromium 156 에서 확인했고 활성화 뒤 체감 속도는 운영에서 재지 않았습니다.",
+        "With the rule allowed by its hash, the engine fetches /studio hidden and the app boot starts only after a click activates it. Prerender boot of the isolated document was confirmed in Chromium 156; post-activation speed was not measured in production.",
       ),
       alt: t(
-        "공개 페이지가 규칙 JSON 을 주입하면 브라우저 엔진이 CSP 를 확인하는데, 운영 CSP 에는 인라인 규칙을 허용하는 키워드도 nonce 도 규칙 JSON 의 해시도 없어 로컬 재현에서는 차단됐습니다. 아래 단계는 규칙이 받아들여졌을 때의 흐름입니다. 방문자가 스튜디오 링크에 포인터를 올리면 엔진이 숨은 상태로 스튜디오를 프리렌더하고, 클릭하면 활성화되지만 격리 문서의 활성화는 확인되지 않았습니다.",
-        "The public page injects the rule JSON and the browser engine checks the CSP; the production CSP has no keyword permitting inline rules, no nonce and no hash of the rule JSON, so the rule was blocked in a local reproduction. The steps below are the flow if the rule were accepted. When the visitor hovers the studio link, the engine prerenders the studio hidden and a click activates it, though activation of an isolated document is unconfirmed.",
+        "공개 페이지가 규칙 JSON 을 주입하면 브라우저 엔진이 CSP 의 규칙 해시를 확인하고 받아들입니다. 방문자가 스튜디오 링크에 포인터를 올리면 엔진이 숨은 상태로 /studio 를 받아 HTML 과 엔트리 번들을 준비하지만, 앱은 아직 부팅하지 않습니다. 클릭하면 문서가 활성화되고 prerenderingchange 를 받은 뒤에야 앱이 부팅합니다.",
+        "The public page injects the rule JSON and the browser engine accepts it by its hash in the CSP. When the visitor hovers the studio link, the engine fetches /studio hidden and prepares the HTML and entry bundles, but the app does not boot yet. A click activates the document, and the app boots only after prerenderingchange.",
       ),
       actors: [
         { id: "visitor", label: t("방문자", "Visitor"), tone: "neutral" },
@@ -318,7 +318,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
           from: "engine",
           to: "engine",
           label: t("CSP script-src 확인", "Check CSP script-src"),
-          note: t("키워드·해시 없음, 로컬 재현에서 차단", "No keyword or hash; blocked locally"),
+          note: t("규칙 해시로 허용(키워드는 해시 옆에서 무시됨)", "Allowed by the rule hash (the keyword is ignored next to a hash)"),
         },
         {
           from: "visitor",
@@ -331,13 +331,13 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
           to: "studio",
           label: t("숨은 상태로 프리렌더", "Prerender while hidden"),
           style: "dashed",
-          note: t("document.prerendering 가드 없음", "No document.prerendering guard"),
+          note: t("HTML·번들만 준비, 앱은 부팅하지 않음", "Only HTML and bundles are prepared; the app does not boot"),
         },
         {
           from: "visitor",
           to: "studio",
           label: t("클릭하면 활성화", "Click to activate"),
-          note: t("격리 문서의 활성화는 미확인", "Activation of an isolated document is unconfirmed"),
+          note: t("prerenderingchange 뒤 앱 부팅", "The app boots after prerenderingchange"),
         },
       ],
     },
@@ -354,8 +354,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
       {
         feature: t("설정 · 실험 기능", "Settings · experimental features"),
         role: t(
-          "스튜디오 미리 준비하기 토글(기본 켜짐)로 사용자가 끌 수 있고, 지원 여부는 감지 결과로 표시합니다. 운영 CSP 그대로면 토글을 켜 둬도 효과가 없을 가능성이 높습니다.",
-          "A toggle (on by default) lets users turn it off, and support is shown from detection results. With the production CSP as is, leaving the toggle on most likely has no effect.",
+          "스튜디오 미리 준비하기 토글(기본 켜짐)로 사용자가 끌 수 있고, 지원 여부는 감지 결과로 표시합니다.",
+          "A toggle (on by default) lets users turn it off, and support is shown from detection results.",
         ),
         paths: [
           "apps/web/src/shared/lib/nextgen-lab-settings.ts",
@@ -365,10 +365,10 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
       {
         feature: t("보안 헤더 (CSP)", "Security headers (CSP)"),
         role: t(
-          "script-src 에 'inline-speculation-rules' 도 nonce 도 없고 등록된 해시 하나는 index.html 의 JSON-LD 블록의 것이라 규칙 JSON 의 것이 아닙니다. 로컬 재현에서 규칙이 무효였던 이유입니다.",
-          "script-src has neither 'inline-speculation-rules' nor a nonce, and its single registered hash belongs to the JSON-LD block in index.html, not to the rule JSON. This is why the rule was void in the local reproduction.",
+          "script-src 에 index.html JSON-LD 해시와 규칙 JSON 해시가 함께 있습니다. 생성기가 두 해시만 남기고, 규칙 문자열이 앱과 다르면 시험이 실패합니다.",
+          "script-src carries the index.html JSON-LD hash and the rule JSON hash. The generator keeps only those two, and a test fails if the rule string drifts from the app.",
         ),
-        paths: ["config/http-response-headers.json"],
+        paths: ["config/http-response-headers.json", "scripts/cloudflare-static-rules.mjs", "apps/web/src/app/main.tsx"],
       },
     ],
     samples: [
@@ -389,8 +389,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
           ["}"],
         ]),
         explain: t(
-          "return true 는 태그를 넣었다는 뜻이지 브라우저가 규칙을 받아들였다는 뜻이 아닙니다. 실제 코드(speculation-rules.ts)도 같은 한계가 있어 이 카드는 실험 상태로 둡니다.",
-          "Returning true means the tag was added, not that the browser accepted the rule. The real code (speculation-rules.ts) has the same limit, which is why this card stays experimental.",
+          "return true 는 태그를 넣었다는 뜻이지 브라우저가 규칙을 받아들였다는 뜻이 아닙니다. CSP 가 막아도 appendChild 는 성공하므로, 허용 여부는 생성기의 해시 시험과 실브라우저 측정으로 확인합니다.",
+          "Returning true means the tag was added, not that the browser accepted the rule. appendChild succeeds even when the CSP blocks it, so acceptance is checked by the generator's hash test and real-browser measurement.",
         ),
         source: "apps/web/src/shared/lib/speculation-rules.ts",
         verify: "types",
@@ -434,19 +434,19 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
     chapterIds: ["nextgen-web-experiments", "pwa-continuity"],
     talk: {
       pitch: t(
-        "공개 페이지에서 스튜디오로 갈 때의 로딩을 줄이려고 브라우저에 곧 갈 것 같으니 미리 그려 두라는 귀띔을 넣었습니다. 켜져 있고 사용자가 끌 수도 있지만, 운영과 같은 보안 정책(CSP)을 로컬 Chromium 에서 재현하면 이 귀띔이 막혀 미리 그려지지 않았습니다(운영 사이트 자체는 측정하지 않음). 고치려면 CSP 에 규칙 해시를 더해야 하고 CSP 변경은 사용자가 정할 일입니다. 그래서 효과를 단정하지 않고 실험으로 표시합니다.",
-        "To cut the loading when going from a public page to the studio, we hint to the browser that the user will probably go there and to render it ahead. It is on and users can turn it off, but reproducing the production security policy (CSP) in a local Chromium blocked the hint, so nothing was prerendered (the production site itself was not measured). Fixing it means adding the rule's hash to the CSP, and changing the CSP is the owner's decision. So we do not claim an effect and mark it experimental.",
+        "공개 페이지에서 스튜디오로 갈 때의 로딩을 줄이려고, 곧 갈 것 같으니 미리 받아 두라는 귀띔을 브라우저에 넣었습니다. 처음에는 보안 정책(CSP)에 막혀 아무 일도 없었는데, 정책에 규칙의 지문(해시)을 넣으면 숨은 스튜디오가 실제로 실행된다는 것을 확인했습니다. 숨은 문서가 저장소 잠금을 쥐거나 방문으로 집계되면 안 되므로, 앱은 사용자가 실제로 열 때까지 부팅하지 않고 파일만 미리 받아 둡니다.",
+        "To cut the loading from a public page to the studio, we hint to the browser to fetch the studio ahead. At first the security policy (CSP) blocked it and nothing happened; adding the rule's fingerprint (hash) to the policy made the hidden studio actually run. Because a hidden document must not take the storage lock or count as a visit, the app does not boot until the user opens it, and only the files are fetched ahead.",
       ),
       analogy: t(
-        "식당에서 단골이 문 앞에 서면 음식을 미리 데워 두는 것과 같습니다. 다만 주방 문(보안 정책)이 잠겨 있어 지금은 데워 두기가 막히는 것으로 로컬에서 재현됐습니다.",
-        "It is like warming a regular's meal when they reach the door. Only, the kitchen door (the security policy) turned out locked in a local reproduction, so the warming is blocked for now.",
+        "식당에서 단골이 문 앞에 서면 재료를 꺼내 두되, 손님이 앉기 전에는 불을 켜지 않는 것과 같습니다.",
+        "It is like laying out a regular's ingredients when they reach the door, without lighting the stove until they sit down.",
       ),
       questions: [
         {
           question: t("정말 빨라지나요?", "Does it really make things faster?"),
           answer: t(
-            "측정하지 못했습니다. 로컬 Chromium 에서 운영 CSP 를 재현하면 규칙이 막혀 프리렌더가 시작되지 않았고, 프리렌더 중 부팅 코드와 격리 문서의 활성화는 확인하지 못했습니다. 규칙 JSON 해시를 CSP 에 더하면 동작했지만 CSP 변경은 사용자가 정할 일입니다.",
-            "It was not measured. Reproducing the production CSP in a local Chromium blocked the rule so no prerender started, and boot code during prerender and activation of the isolated document were not checked. Adding the rule JSON's hash to the CSP made it work, but changing the CSP is the owner's decision.",
+            "운영 체감 속도는 아직 재지 않았습니다. 확인한 것은 규칙 해시가 있으면 Chromium 이 /studio 를 숨은 채 받아 부팅까지 할 수 있다는 점이고, 앱은 부팅을 활성화 뒤로 미루므로 미리 끝나는 일은 HTML·엔트리 번들의 다운로드와 파싱입니다.",
+            "The production speed-up is not measured yet. What was confirmed is that with the rule hash Chromium can fetch and even boot /studio hidden; since the app defers its boot until activation, what finishes ahead is downloading and parsing the HTML and entry bundles.",
           ),
         },
         {
@@ -465,8 +465,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
         },
       ],
       pitfall: t(
-        "스튜디오 이동이 미리 준비된다고 단정하지 마세요. 운영 CSP 그대로면 규칙이 막혀 설정의 '스튜디오 미리 준비하기' 토글이 효과가 없을 가능성이 높습니다(로컬 Chromium 141 재현, 운영 사이트는 측정하지 않음). 'inline-speculation-rules' 키워드만 더해도 해시가 있으면 무시되어 소용없고, 규칙 JSON 의 해시(sha256-GrX39s3Az4qEddGQLCYCCB+jrL9X7dvOAVgBXB8l6nM=, 규칙 문자열이 바뀌면 다시 계산)를 script-src 에 더하면 동작했으며 CSP 변경은 사용자가 정할 일입니다. 또 document.prerendering 가드가 없습니다. 이 카드가 experimental 인 이유입니다.",
-        "Do not claim that studio entry is prepared ahead. With the production CSP as is, the rule is blocked and the 'prepare the studio ahead' toggle in settings most likely has no effect (local Chromium 141 reproduction; the production site was not measured). Adding only the 'inline-speculation-rules' keyword is ignored while a hash is present and does not help; adding the rule JSON's hash (sha256-GrX39s3Az4qEddGQLCYCCB+jrL9X7dvOAVgBXB8l6nM=, recomputed whenever the rule string changes) to script-src made it work, and changing the CSP is the owner's decision. There is also no document.prerendering guard. That is why this card is experimental.",
+        "CSP 에 'inline-speculation-rules' 키워드를 더하는 것으로 고쳤다고 생각하지 마세요. script-src 에 해시가 있으면 키워드는 무시되어 규칙이 조용히 막힙니다(Chromium 156 실측). 또 규칙을 허용한 채 앱 부팅의 활성화 경계를 지우면, 숨은 문서가 페이지뷰로 집계되고 로컬 저장소 잠금을 쥡니다. 두 조건은 시험이 함께 지킵니다.",
+        "Do not assume adding the 'inline-speculation-rules' keyword to the CSP fixes it: with a hash in script-src the keyword is ignored and the rule is silently blocked (measured in Chromium 156). And if the app-boot activation boundary is removed while the rule is allowed, hidden documents count as visits and take the local storage lock. Tests guard both conditions together.",
       ),
     },
     technologies: ["Speculation Rules", "CSP", "COOP", "Prerender"],
@@ -482,7 +482,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
         source: "apps/web/src/app/main.tsx",
       },
     ],
-    reviewedAt: "2026-10-07",
+    reviewedAt: "2026-10-23",
   },
   {
     id: "intl-segmenter-korean-lines",
