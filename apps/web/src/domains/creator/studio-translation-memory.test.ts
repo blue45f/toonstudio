@@ -40,7 +40,7 @@ function createEntry(
     now: 100,
     ...overrides,
   });
-  if (!result.ok) throw new Error(result.error);
+  if (!result.ok) throw new Error(result.error.code);
   return result.entry;
 }
 
@@ -248,7 +248,7 @@ describe("studio translation memory glossary integrity", () => {
     });
 
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain("용어집 충돌");
+    if (!result.ok) expect(result.error.code).toBe("createGlossaryConflict");
   });
 });
 

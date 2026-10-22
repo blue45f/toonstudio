@@ -180,6 +180,12 @@ export interface StudioTranslationMemoryExportFailure {
 export type StudioTranslationMemoryStorageErrorCode = "storageUnavailable" | "storageReadFailed" | "saveNoStorage" | "saveStorageFull";
 export interface StudioTranslationMemoryStorageError { readonly code: StudioTranslationMemoryStorageErrorCode; readonly params?: Readonly<Record<string, string>>; }
 
+/** D4 생산자 계약(R10): create 실패도 구조화 코드+파라미터로 방출한다. 필드 검증은 한국어 라벨 문자열이 아니라 필드 코드(params.field)를 싣고, 라벨·조사 해석은 표시 지점 리졸버가 담당한다. */
+export type StudioTranslationMemoryFieldCode = "workScope" | "sourceText" | "speaker" | "sourceLanguage" | "targetLanguage" | "translation" | "sourceRevision";
+export type StudioTranslationMemoryCreateErrorCode = "createFieldEmpty" | "createFieldTooLong" | "createUnsupportedStatus" | "createGlossaryConflict";
+export interface StudioTranslationMemoryCreateError { readonly code: StudioTranslationMemoryCreateErrorCode; readonly params?: Readonly<Record<string, string>>; }
+export interface StudioTranslationMemoryCreateFailure { readonly ok: false; readonly error: StudioTranslationMemoryCreateError; }
+
 interface MergeStudioTranslationMemoryResult {
   readonly entries: readonly StudioTranslationMemoryEntry[];
   readonly invalid: number;
@@ -268,19 +274,16 @@ function entryCharacterCost(entry: StudioTranslationMemoryEntry): number {
 
 function validateInputField(
   value: string,
-  label: string,
+  field: StudioTranslationMemoryFieldCode,
   maxChars: number,
   allowEmpty = false
-): { ok: true; value: string } | { ok: false; error: string } {
+): { ok: true; value: string } | { ok: false; error: StudioTranslationMemoryCreateError } {
   const normalized = normalizeStoredText(value);
   if (!allowEmpty && normalized.length === 0) {
-    return { ok: false, error: `${label}이(가) 비어 있습니다.` };
+    return { ok: false, error: { code: "createFieldEmpty", params: { field } } };
   }
   if (normalized.length > maxChars) {
-    return {
-      ok: false,
-      error: `${label}은(는) ${maxChars.toLocaleString("ko-KR")}자 이하여야 합니다.`,
-    };
+    return { ok: false, error: { code: "createFieldTooLong", params: { field, max: maxChars.toLocaleString("ko-KR") } } };
   }
   return { ok: true, value: normalized };
 }
@@ -295,53 +298,53 @@ export function createStudioTranslationMemoryEntry(
   input: CreateStudioTranslationMemoryEntryInput
 ):
   | { readonly ok: true; readonly entry: StudioTranslationMemoryEntry }
-  | { readonly ok: false; readonly error: string } {
+  | StudioTranslationMemoryCreateFailure {
   const workScope = validateInputField(
     input.workScope,
-    "작품 범위",
+    "workScope",
     STUDIO_TRANSLATION_MEMORY_MAX_SCOPE_CHARS
   );
   if (!workScope.ok) return workScope;
   const sourceText = validateInputField(
     input.sourceText,
-    "원문",
+    "sourceText",
     STUDIO_TRANSLATION_MEMORY_MAX_SOURCE_CHARS
   );
   if (!sourceText.ok) return sourceText;
   const speaker = validateInputField(
     input.speaker ?? "",
-    "화자",
+    "speaker",
     STUDIO_TRANSLATION_MEMORY_MAX_SPEAKER_CHARS,
     true
   );
   if (!speaker.ok) return speaker;
   const sourceLocale = validateInputField(
     input.sourceLocale,
-    "원문 언어",
+    "sourceLanguage",
     STUDIO_TRANSLATION_MEMORY_MAX_LOCALE_CHARS
   );
   if (!sourceLocale.ok) return sourceLocale;
   const targetLocale = validateInputField(
     input.targetLocale,
-    "대상 언어",
+    "targetLanguage",
     STUDIO_TRANSLATION_MEMORY_MAX_LOCALE_CHARS
   );
   if (!targetLocale.ok) return targetLocale;
   const translation = validateInputField(
     input.translation,
-    "번역문",
+    "translation",
     STUDIO_TRANSLATION_MEMORY_MAX_TRANSLATION_CHARS
   );
   if (!translation.ok) return translation;
   const sourceRevision = validateInputField(
     normalizeRevision(input.sourceRevision),
-    "원문 리비전",
+    "sourceRevision",
     STUDIO_TRANSLATION_MEMORY_MAX_REVISION_CHARS
   );
   if (!sourceRevision.ok) return sourceRevision;
   const status = input.status ?? "draft";
   if (!isValidStatus(status)) {
-    return { ok: false, error: "지원하지 않는 번역 메모리 상태입니다." };
+    return { ok: false, error: { code: "createUnsupportedStatus" } };
   }
 
   const now = validNow(input.now);
@@ -360,10 +363,7 @@ export function createStudioTranslationMemoryEntry(
     rules: input.glossaryRules ?? [],
   });
   if (status === "approved" && glossaryConflicts.length > 0) {
-    return {
-      ok: false,
-      error: "용어집 충돌이 있는 번역은 충돌을 해소한 뒤 승인할 수 있습니다.",
-    };
+    return { ok: false, error: { code: "createGlossaryConflict" } };
   }
 
   return {

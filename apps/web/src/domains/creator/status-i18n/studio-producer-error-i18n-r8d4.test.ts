@@ -25,12 +25,20 @@ import {
   STUDIO_TRANSLATION_MEMORY_KIND,
   STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES,
   STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_CANDIDATES,
+  STUDIO_TRANSLATION_MEMORY_MAX_LOCALE_CHARS,
+  STUDIO_TRANSLATION_MEMORY_MAX_REVISION_CHARS,
+  STUDIO_TRANSLATION_MEMORY_MAX_SCOPE_CHARS,
+  STUDIO_TRANSLATION_MEMORY_MAX_SOURCE_CHARS,
+  STUDIO_TRANSLATION_MEMORY_MAX_SPEAKER_CHARS,
+  STUDIO_TRANSLATION_MEMORY_MAX_TRANSLATION_CHARS,
   STUDIO_TRANSLATION_MEMORY_VERSION,
   type StudioTranslationMemoryEntry,
+  type StudioTranslationMemoryStatus,
 } from "../studio-translation-memory";
 import { parseStudioAnimaticSubtitles } from "../animatic/studio-animatic-subtitles";
 import {
   resolveStudioAnimaticError,
+  resolveStudioTranslationMemoryCreateError,
   resolveStudioTranslationMemoryExportError,
   resolveStudioTranslationMemoryImportError,
 } from "./studio-producer-error-i18n";
@@ -120,12 +128,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       blocks[match[1] ?? ""] = [...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? "");
     }
-    // R9: 등록 블록이 구간별로 늘었다(tm 11 + animatic 25 — 본체 23 + 자막 파서 2). 블록 단위 누적으로 패리티를 본다.
+    // R10: 등록 블록이 구간별로 늘었다(tm 22 = 파일럿·R9 11 + create 11(라벨 7 + 메시지 4), animatic 25 — 본체 23 + 자막 파서 2). 블록 단위 누적으로 패리티를 본다.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(36);
+    expect(accumulated.ko).toHaveLength(47);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });
@@ -308,7 +316,7 @@ describe("R9 TM remainder — export codes and storage boundaries", () => {
       workScope: "episode-01", sourceText: "안녕", speaker: "유나",
       sourceLocale: "ko", targetLocale: "en", translation: "Hello", sourceRevision: "r1",
     });
-    if (!created.ok) throw new Error(created.error);
+    if (!created.ok) throw new Error(created.error.code);
     return created.entry;
   }
 
@@ -350,6 +358,152 @@ describe("R9 TM remainder — export codes and storage boundaries", () => {
       "MB 제한을 넘습니다.",
       "브라우저 로컬 저장소를 사용할 수 없습니다.",
       "브라우저 저장 공간이 부족하거나 로컬 저장이 차단되었습니다.",
+    ]) {
+      expect(producer).not.toContain(literal);
+    }
+  });
+});
+
+/**
+ * R10 후속 (A4 D4): TM create 채널 전수 이관 — 필드 라벨 코드화 + 조사 규칙.
+ * 생산자는 필드 코드(params.field 7종)와 고정 코드 2종만 방출하고, 표시는
+ * 패널 saveDraft의 setNotice 1곳에서만 리졸버로 해석한다. ko 해석 결과는
+ * 이관 전 템플릿에 조사 규칙(받침 있음 → 이/은, 없음 → 가/는)을 적용한
+ * 문자열과 글자 단위로 동일해야 한다. 고정 방출 2건은 원문 그대로다.
+ */
+
+describe("R10 TM create — producer emits structured codes", () => {
+  const base = {
+    workScope: "episode-01",
+    sourceText: "안녕",
+    speaker: "유나",
+    sourceLocale: "ko",
+    targetLocale: "en",
+    translation: "Hello",
+    sourceRevision: "r1",
+  } as const;
+  type BaseOverride = Partial<Record<keyof typeof base, string>>;
+
+  it("emits createFieldEmpty with the field code for each required field", () => {
+    const cases: readonly [BaseOverride, string][] = [
+      [{ workScope: "" }, "workScope"],
+      [{ sourceText: "" }, "sourceText"],
+      [{ sourceLocale: "" }, "sourceLanguage"],
+      [{ targetLocale: "" }, "targetLanguage"],
+      [{ translation: "" }, "translation"],
+      [{ sourceRevision: "" }, "sourceRevision"],
+    ];
+    for (const [override, field] of cases) {
+      const result = createStudioTranslationMemoryEntry({ ...base, ...override });
+      expect(result).toEqual({ ok: false, error: { code: "createFieldEmpty", params: { field } } });
+    }
+    // 화자는 빈 값을 허용하는 유일한 필드다(allowEmpty) — empty 방출이 없다.
+    expect(createStudioTranslationMemoryEntry({ ...base, speaker: "" }).ok).toBe(true);
+  });
+
+  it("emits createFieldTooLong with field code and ko-KR formatted max for all 7 fields", () => {
+    const cases: readonly [BaseOverride, string, number][] = [
+      [{ workScope: "x".repeat(STUDIO_TRANSLATION_MEMORY_MAX_SCOPE_CHARS + 1) }, "workScope", STUDIO_TRANSLATION_MEMORY_MAX_SCOPE_CHARS],
+      [{ sourceText: "x".repeat(STUDIO_TRANSLATION_MEMORY_MAX_SOURCE_CHARS + 1) }, "sourceText", STUDIO_TRANSLATION_MEMORY_MAX_SOURCE_CHARS],
+      [{ speaker: "x".repeat(STUDIO_TRANSLATION_MEMORY_MAX_SPEAKER_CHARS + 1) }, "speaker", STUDIO_TRANSLATION_MEMORY_MAX_SPEAKER_CHARS],
+      [{ sourceLocale: "x".repeat(STUDIO_TRANSLATION_MEMORY_MAX_LOCALE_CHARS + 1) }, "sourceLanguage", STUDIO_TRANSLATION_MEMORY_MAX_LOCALE_CHARS],
+      [{ targetLocale: "x".repeat(STUDIO_TRANSLATION_MEMORY_MAX_LOCALE_CHARS + 1) }, "targetLanguage", STUDIO_TRANSLATION_MEMORY_MAX_LOCALE_CHARS],
+      [{ translation: "x".repeat(STUDIO_TRANSLATION_MEMORY_MAX_TRANSLATION_CHARS + 1) }, "translation", STUDIO_TRANSLATION_MEMORY_MAX_TRANSLATION_CHARS],
+      [{ sourceRevision: "x".repeat(STUDIO_TRANSLATION_MEMORY_MAX_REVISION_CHARS + 1) }, "sourceRevision", STUDIO_TRANSLATION_MEMORY_MAX_REVISION_CHARS],
+    ];
+    for (const [override, field, max] of cases) {
+      const result = createStudioTranslationMemoryEntry({ ...base, ...override });
+      expect(result).toEqual({
+        ok: false,
+        error: { code: "createFieldTooLong", params: { field, max: max.toLocaleString("ko-KR") } },
+      });
+    }
+  });
+
+  it("emits createUnsupportedStatus and createGlossaryConflict", () => {
+    const unsupported = createStudioTranslationMemoryEntry({
+      ...base,
+      status: "archived" as unknown as StudioTranslationMemoryStatus,
+    });
+    expect(unsupported).toEqual({ ok: false, error: { code: "createUnsupportedStatus" } });
+    const conflict = createStudioTranslationMemoryEntry({
+      workScope: "episode-01",
+      sourceText: "민수가 왔다.",
+      speaker: "",
+      sourceLocale: "ko",
+      targetLocale: "en",
+      translation: "Minsoo is here.",
+      sourceRevision: "1",
+      status: "approved",
+      glossaryRules: [{ sourceTerm: "민수", targetTerm: "Minsu" }],
+    });
+    expect(conflict).toEqual({ ok: false, error: { code: "createGlossaryConflict" } });
+  });
+});
+
+describe("R10 TM create — display-side resolution applies the particle rule", () => {
+  it("resolves all 7 field labels with the correct particle for both templates", () => {
+    // 받침 있는 라벨(원문·번역문·원문 리비전) → 이/은, 없는 라벨(작품 범위·화자·원문 언어·대상 언어) → 가/는.
+    const cases: readonly [string, string, string, string][] = [
+      ["workScope", "200", "작품 범위가 비어 있습니다.", "작품 범위는 200자 이하여야 합니다."],
+      ["sourceText", "4,000", "원문이 비어 있습니다.", "원문은 4,000자 이하여야 합니다."],
+      ["speaker", "160", "화자가 비어 있습니다.", "화자는 160자 이하여야 합니다."],
+      ["sourceLanguage", "48", "원문 언어가 비어 있습니다.", "원문 언어는 48자 이하여야 합니다."],
+      ["targetLanguage", "48", "대상 언어가 비어 있습니다.", "대상 언어는 48자 이하여야 합니다."],
+      ["translation", "8,000", "번역문이 비어 있습니다.", "번역문은 8,000자 이하여야 합니다."],
+      ["sourceRevision", "160", "원문 리비전이 비어 있습니다.", "원문 리비전은 160자 이하여야 합니다."],
+    ];
+    expect(cases).toHaveLength(7);
+    for (const [field, max, emptyExpected, tooLongExpected] of cases) {
+      expect(resolveStudioTranslationMemoryCreateError({ code: "createFieldEmpty", params: { field } }))
+        .toBe(emptyExpected);
+      expect(resolveStudioTranslationMemoryCreateError({ code: "createFieldTooLong", params: { field, max } }))
+        .toBe(tooLongExpected);
+    }
+  });
+
+  it("resolves the two fixed codes to the exact pre-migration Korean strings", () => {
+    expect(resolveStudioTranslationMemoryCreateError({ code: "createUnsupportedStatus" }))
+      .toBe("지원하지 않는 번역 메모리 상태입니다.");
+    expect(resolveStudioTranslationMemoryCreateError({ code: "createGlossaryConflict" }))
+      .toBe("용어집 충돌이 있는 번역은 충돌을 해소한 뒤 승인할 수 있습니다.");
+  });
+
+  it("end-to-end: emitted codes resolve to the particle-selected ko strings", () => {
+    const emptyScope = createStudioTranslationMemoryEntry({
+      workScope: "", sourceText: "안녕", speaker: "유나", sourceLocale: "ko",
+      targetLocale: "en", translation: "Hello", sourceRevision: "r1",
+    });
+    if (!emptyScope.ok) {
+      expect(resolveStudioTranslationMemoryCreateError(emptyScope.error)).toBe("작품 범위가 비어 있습니다.");
+    } else {
+      throw new Error("expected createFieldEmpty");
+    }
+    const longSource = createStudioTranslationMemoryEntry({
+      workScope: "episode-01", sourceText: "x".repeat(STUDIO_TRANSLATION_MEMORY_MAX_SOURCE_CHARS + 1),
+      speaker: "유나", sourceLocale: "ko", targetLocale: "en", translation: "Hello", sourceRevision: "r1",
+    });
+    if (!longSource.ok) {
+      expect(resolveStudioTranslationMemoryCreateError(longSource.error)).toBe("원문은 4,000자 이하여야 합니다.");
+    } else {
+      throw new Error("expected createFieldTooLong");
+    }
+  });
+
+  it("producer source no longer carries the create message literals or Korean labels", () => {
+    const producer = readFileSync(new URL("../studio-translation-memory.ts", import.meta.url), "utf-8");
+    for (const literal of [
+      "지원하지 않는 번역 메모리 상태입니다.",
+      "용어집 충돌이 있는 번역은 충돌을 해소한 뒤 승인할 수 있습니다.",
+      "이(가) 비어 있습니다",
+      "은(는)",
+      "\"작품 범위\"",
+      "\"원문\"",
+      "\"화자\"",
+      "\"원문 언어\"",
+      "\"대상 언어\"",
+      "\"번역문\"",
+      "\"원문 리비전\"",
     ]) {
       expect(producer).not.toContain(literal);
     }

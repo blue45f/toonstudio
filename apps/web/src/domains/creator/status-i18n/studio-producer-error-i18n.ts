@@ -12,6 +12,10 @@
  * - tm 저장소 (R9): load/save가 LoadResult·SaveResult 문자열 집계 경계에서만
  *   해석하는 4코드. 결과 타입이 문자열로 고정돼 있어 코드가 경계 밖으로
  *   나가지 않는다(집계자 예외 — 표시 지점 통과가 원칙, 문자열 고정 경계만 예외).
+ * - tm 생성 (R10): createStudioTranslationMemoryEntry의 CreateFailure 4코드.
+ *   필드 검증 2코드(createFieldEmpty·createFieldTooLong)는 한국어 라벨 문자열이
+ *   아니라 필드 코드(params.field, 7종)를 싣고, 라벨 자체도 이 모듈의
+ *   field.* 키로 해석한다. 조사 규칙은 아래 create 구간 주석이 정본이다.
  * - animatic (R9): studio-animatic-timeline의 Failure 23코드 전부. LoadResult·
  *   SaveResult는 문자열 집계 경계라 load/save 함수 안에서만 해석하고, Failure
  *   채널은 표시 지점(StudioAnimaticTimelinePanel)까지 코드를 통과시킨다.
@@ -28,7 +32,9 @@ import {
 } from "@/shared/lib/i18n";
 import type { StudioAnimaticError } from "../studio-animatic-timeline";
 import type {
+  StudioTranslationMemoryCreateError,
   StudioTranslationMemoryExportError,
+  StudioTranslationMemoryFieldCode,
   StudioTranslationMemoryImportError,
   StudioTranslationMemoryStorageError,
 } from "../studio-translation-memory";
@@ -142,6 +148,114 @@ export function resolveStudioTranslationMemoryStorageError(
   error: StudioTranslationMemoryStorageError,
 ): string {
   return resolveProducerError(TM_STORAGE_ERROR_KEYS[error.code], TM_STORAGE_ERROR_KO[error.code], error.params);
+}
+
+registerI18nLocaleEntries("ko", {
+  "studio.producerError.tm.field.workScope": "작품 범위",
+  "studio.producerError.tm.field.sourceText": "원문",
+  "studio.producerError.tm.field.speaker": "화자",
+  "studio.producerError.tm.field.sourceLanguage": "원문 언어",
+  "studio.producerError.tm.field.targetLanguage": "대상 언어",
+  "studio.producerError.tm.field.translation": "번역문",
+  "studio.producerError.tm.field.sourceRevision": "원문 리비전",
+  "studio.producerError.tm.createFieldEmpty": "{field}이(가) 비어 있습니다.",
+  "studio.producerError.tm.createFieldTooLong": "{field}은(는) {max}자 이하여야 합니다.",
+  "studio.producerError.tm.createUnsupportedStatus": "지원하지 않는 번역 메모리 상태입니다.",
+  "studio.producerError.tm.createGlossaryConflict": "용어집 충돌이 있는 번역은 충돌을 해소한 뒤 승인할 수 있습니다.",
+});
+
+registerI18nLocaleEntries("en", {
+  "studio.producerError.tm.field.workScope": "Work scope",
+  "studio.producerError.tm.field.sourceText": "Source text",
+  "studio.producerError.tm.field.speaker": "Speaker",
+  "studio.producerError.tm.field.sourceLanguage": "Source language",
+  "studio.producerError.tm.field.targetLanguage": "Target language",
+  "studio.producerError.tm.field.translation": "Translation",
+  "studio.producerError.tm.field.sourceRevision": "Source revision",
+  "studio.producerError.tm.createFieldEmpty": "{field} must not be empty.",
+  "studio.producerError.tm.createFieldTooLong": "{field} must be {max} characters or fewer.",
+  "studio.producerError.tm.createUnsupportedStatus": "Unsupported translation memory status.",
+  "studio.producerError.tm.createGlossaryConflict": "A translation with glossary conflicts cannot be approved until the conflicts are resolved.",
+});
+
+const TM_CREATE_FIELD_LABEL_KEYS: Readonly<Record<StudioTranslationMemoryFieldCode, string>> = {
+  workScope: "studio.producerError.tm.field.workScope",
+  sourceText: "studio.producerError.tm.field.sourceText",
+  speaker: "studio.producerError.tm.field.speaker",
+  sourceLanguage: "studio.producerError.tm.field.sourceLanguage",
+  targetLanguage: "studio.producerError.tm.field.targetLanguage",
+  translation: "studio.producerError.tm.field.translation",
+  sourceRevision: "studio.producerError.tm.field.sourceRevision",
+};
+
+/** 필드 코드별 ko 라벨 원문 — 미등록 로케일·미해석 시 폴백이며 이관 전 생산자 라벨과 동일하다. */
+const TM_CREATE_FIELD_LABEL_KO: Readonly<Record<StudioTranslationMemoryFieldCode, string>> = {
+  workScope: "작품 범위",
+  sourceText: "원문",
+  speaker: "화자",
+  sourceLanguage: "원문 언어",
+  targetLanguage: "대상 언어",
+  translation: "번역문",
+  sourceRevision: "원문 리비전",
+};
+
+const TM_CREATE_ERROR_KEYS: Readonly<Record<StudioTranslationMemoryCreateError["code"], string>> = {
+  createFieldEmpty: "studio.producerError.tm.createFieldEmpty",
+  createFieldTooLong: "studio.producerError.tm.createFieldTooLong",
+  createUnsupportedStatus: "studio.producerError.tm.createUnsupportedStatus",
+  createGlossaryConflict: "studio.producerError.tm.createGlossaryConflict",
+};
+
+/** 코드별 ko 원문 템플릿 — 미등록 로케일·미해석 시 폴백. 필드 템플릿은 이관 전 병기 형태(이(가)/은(는))를 유지하고, 조사 선택은 resolveStudioTranslationMemoryCreateError가 수행한다. */
+const TM_CREATE_ERROR_KO: Readonly<Record<StudioTranslationMemoryCreateError["code"], string>> = {
+  createFieldEmpty: "{field}이(가) 비어 있습니다.",
+  createFieldTooLong: "{field}은(는) {max}자 이하여야 합니다.",
+  createUnsupportedStatus: "지원하지 않는 번역 메모리 상태입니다.",
+  createGlossaryConflict: "용어집 충돌이 있는 번역은 충돌을 해소한 뒤 승인할 수 있습니다.",
+};
+
+/**
+ * 조사 선택 규칙 (R10 명문화): ko 템플릿은 이(가)·은(는) 병기 마커를 유지하고,
+ * 해석 시점에 해석된 ko 라벨의 마지막 한글 음절 받침 유무로 하나로 선택한다
+ * (받침 있음 → 이/은, 받침 없음 → 가/는). 받침은 한글 음절 U+AC00–U+D7A3의
+ * 종성 인덱스((코드 − 0xAC00) % 28)가 0이 아닌지로 판정한다. en 템플릿은
+ * 조사 마커가 없어 이 규칙이 적용되지 않는다. 라벨이 한글 음절로 끝나지
+ * 않으면 받침 없음으로 간주한다(병기 마커가 없는 템플릿에서는 무영향).
+ */
+function hasKoreanFinalConsonant(label: string): boolean {
+  const last = [...label.trim()].at(-1);
+  if (!last) return false;
+  const code = last.codePointAt(0) ?? 0;
+  if (code < 0xac00 || code > 0xd7a3) return false;
+  return (code - 0xac00) % 28 !== 0;
+}
+
+function applyKoreanParticles(text: string, label: string): string {
+  const batchim = hasKoreanFinalConsonant(label);
+  return text
+    .replaceAll("이(가)", batchim ? "이" : "가")
+    .replaceAll("은(는)", batchim ? "은" : "는");
+}
+
+function isTranslationMemoryFieldCode(value: string | undefined): value is StudioTranslationMemoryFieldCode {
+  return value !== undefined && Object.hasOwn(TM_CREATE_FIELD_LABEL_KEYS, value);
+}
+
+/**
+ * 표시 지점 전용 해석 (tm 생성): 패널의 saveDraft 실패 notice가 부른다.
+ * 필드 코드(params.field)는 라벨 키로 먼저 해석해 {field}에 넣고, ko 병기
+ * 조사는 위 규칙으로 선택한다. 알 수 없는 필드 코드는 원문 값을 그대로 쓴다.
+ */
+export function resolveStudioTranslationMemoryCreateError(
+  error: StudioTranslationMemoryCreateError,
+): string {
+  const fieldParam = error.params?.field;
+  const label = isTranslationMemoryFieldCode(fieldParam)
+    ? resolveProducerError(TM_CREATE_FIELD_LABEL_KEYS[fieldParam], TM_CREATE_FIELD_LABEL_KO[fieldParam])
+    : (fieldParam ?? "");
+  const params: Record<string, string> = { ...error.params, field: label };
+  const resolved = resolveProducerError(TM_CREATE_ERROR_KEYS[error.code], TM_CREATE_ERROR_KO[error.code], params);
+  return applyKoreanParticles(resolved, label);
 }
 
 registerI18nLocaleEntries("ko", {

@@ -35,7 +35,7 @@ import {
   type StudioTranslationMemoryStorage,
 } from "./studio-translation-memory";
 import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
-import { resolveStudioTranslationMemoryExportError, resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
+import { resolveStudioTranslationMemoryCreateError, resolveStudioTranslationMemoryExportError, resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
 import {
   createStudioTranslationMemorySqlitePersistence,
   type StudioTranslationMemoryPersistence,
@@ -441,7 +441,7 @@ export function StudioDialogueTranslationMemoryPanel({
       glossaryRules: resolvedGlossaryRules,
     });
     if (!created.ok) {
-      setNotice({ tone: "bad", message: created.error });
+      setNotice({ tone: "bad", message: resolveStudioTranslationMemoryCreateError(created.error) });
       return;
     }
     const entry = matches.exact
