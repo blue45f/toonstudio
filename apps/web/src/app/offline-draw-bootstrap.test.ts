@@ -57,6 +57,21 @@ describe("늦은 Studio 시작과 긴급 복구 안내", () => {
     expect(document.getElementById("toon-local-recovery")).toBeNull();
   });
 
+  it("프리렌더 중인 숨은 문서에서는 활성화 전까지 긴급 안내를 만들지 않는다", async () => {
+    Object.defineProperty(document, "prerendering", { configurable: true, value: true });
+    try {
+      start();
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(document.getElementById("toon-local-recovery")).toBeNull();
+      Object.defineProperty(document, "prerendering", { configurable: true, value: false });
+      document.dispatchEvent(new Event("prerenderingchange"));
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(document.getElementById("toon-local-recovery")).not.toBeNull();
+    } finally {
+      delete (document as { prerendering?: boolean }).prerendering;
+    }
+  });
+
   it("Studio 외부 경로에는 복구 안내를 만들지 않는다", async () => {
     history.replaceState(null, "", "/");
     start();

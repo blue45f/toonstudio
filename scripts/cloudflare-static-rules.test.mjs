@@ -4,8 +4,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
+  buildSpeculationRulesJson,
+  STUDIO_PRERENDER_URLS,
+} from "../apps/web/src/shared/lib/speculation-rules.ts";
+
+import {
   renderCloudflareHeaders,
   renderCloudflareWorkerSecurityPolicy,
+  STUDIO_SPECULATION_RULES_JSON,
   verifyCloudflareStaticRules,
   withInlineScriptHashes,
 } from "./cloudflare-static-rules.mjs";
@@ -111,5 +117,18 @@ describe("Cloudflare static response rules", () => {
     expect(headers).toContain(
       "/messages\n  X-Robots-Tag: noindex, nofollow, noarchive",
     );
+  });
+
+  it("allows the injected /studio prerender rule by its hash in every generated policy", () => {
+    // 앱이 넣는 규칙 문자열과 생성기의 문자열이 한 글자라도 다르면 CSP 해시가 맞지 않아 규칙이 조용히 막힌다.
+    expect(STUDIO_SPECULATION_RULES_JSON).toBe(buildSpeculationRulesJson(STUDIO_PRERENDER_URLS));
+    const hash = `'sha256-${createHash("sha256").update(STUDIO_SPECULATION_RULES_JSON).digest("base64")}'`;
+    const policy = withInlineScriptHashes(JSON.parse(readFileSync("config/http-response-headers.json", "utf8")));
+    const rendered = renderCloudflareHeaders(policy);
+    expect(rendered).toContain(hash);
+    expect(readFileSync("apps/web/public/_headers", "utf8")).toContain(hash);
+    expect(readFileSync("deploy/cloudflare-static/src/index.ts", "utf8")).toContain(hash);
+    // 해시가 있으면 'inline-speculation-rules' 키워드는 무시되므로 키워드에 기대지 않는다.
+    expect(rendered).not.toContain("'inline-speculation-rules'");
   });
 });

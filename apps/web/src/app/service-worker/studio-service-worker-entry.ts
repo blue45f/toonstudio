@@ -16,6 +16,7 @@ import {
   isStudioServiceWorkerCachedResponseUsable,
   isStudioServiceWorkerMessage,
   isStudioServiceWorkerResponseCacheable,
+  isStudioServiceWorkerSpaFallbackForAsset,
   legacyStudioServiceWorkerCacheNames,
   planStudioServiceWorkerCacheTrim,
   staleStudioServiceWorkerCacheNames,
@@ -104,6 +105,7 @@ async function readCached(
     if (isStudioServiceWorkerCachedResponseUsable({
       routeClass, destination: request.destination, url: request.url, status: cached.status,
       crossOriginResourcePolicy: cached.headers.get("cross-origin-resource-policy"),
+      contentType: cached.headers.get("content-type"),
     })) return cached;
     await cache.delete(request);
   } catch { /* A restricted Cache API is a miss, not a failed network request. */ }
@@ -162,7 +164,15 @@ async function handleCacheFirst(
     ? await readCached("precache", request, routeClass) : undefined;
   const cached = critical ?? await readCached(bucket, request, routeClass);
   if (cached) return cached;
-  const response = await fetch(request);
+  const isSpaFallback = (candidate: Response): boolean => isStudioServiceWorkerSpaFallbackForAsset({
+    routeClass, url: request.url, contentType: candidate.headers.get("content-type"),
+  });
+  let response = await fetch(request);
+  if (isSpaFallback(response)) {
+    // The browser HTTP cache may still hold an `immutable` SPA page for this URL; ask the network once.
+    response = await fetch(request, { cache: "reload" });
+    if (isSpaFallback(response)) return response;
+  }
   await persist(bucket, request, response);
   return response;
 }
