@@ -1241,7 +1241,7 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     install.blur();
 
     expect((await screen.findByRole("alert")).textContent)
-      .toContain("더 이상 공개 상태를 확인할 수 없어 로컬 설치");
+      .toContain("공개 상태를 더 이상 확인할 수 없어 로컬 설치");
     expect(screen.getByRole("alert").textContent)
       .toContain("공개 목록을 새로고침한 뒤 다시 시도");
     expect(mocks.getResource).toHaveBeenCalledWith(
@@ -1345,7 +1345,7 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     insert.blur();
 
     expect((await screen.findByRole("alert")).textContent)
-      .toContain("더 이상 공개 상태를 확인할 수 없어 에셋 삽입");
+      .toContain("공개 상태를 더 이상 확인할 수 없어 에셋 삽입");
     expect(useAsset).not.toHaveBeenCalled();
     await waitFor(() => expect(document.activeElement).toBe(insert));
   });
@@ -1378,7 +1378,7 @@ describe("StudioCommunityMarketplacePanel request races", () => {
     fireEvent.click(await screen.findByRole("button", { name: "무료 설치" }));
 
     expect((await screen.findByRole("alert")).textContent)
-      .toContain("더 이상 공개 상태를 확인할 수 없어 로컬 설치");
+      .toContain("공개 상태를 더 이상 확인할 수 없어 로컬 설치");
     expect(mocks.getResource).toHaveBeenCalledTimes(2);
     expect(mocks.installPack).not.toHaveBeenCalled();
   });

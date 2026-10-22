@@ -22,6 +22,7 @@ import {
 import {
   CLOUDFLARE_LARGE_ASSET_ENCODINGS,
   CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS,
+  CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS,
   CLOUDFLARE_STATIC_MAX_FILE_BYTES,
   cloudflareLargeAssetSidecarPath,
   isCloudflareOversizedAssetPath,
@@ -131,10 +132,12 @@ export async function prepareCloudflareStaticAssets(
     }
   }
 
+  // R2 미디어 이관 패턴도 Static Assets 업로드에서 뺀다. 배포 스크립트는 R2 동기화가 끝난 뒤에만
+  // Worker를 올리므로, 이 파일이 쓰여도 R2에 없는 미디어가 운영에 나가는 순서는 생기지 않는다.
   const ignorePath = resolve(distDirectory, ".assetsignore");
   writeFileSync(
     ignorePath,
-    `${CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS.join("\n")}\n`,
+    `${[...CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS, ...CLOUDFLARE_R2_MEDIA_IGNORE_PATTERNS].join("\n")}\n`,
     "utf8",
   );
   console.log(`Wrote ${ignorePath}`);

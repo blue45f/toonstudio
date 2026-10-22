@@ -21,7 +21,7 @@
 | --- | --- | --- | --- | --- |
 | 도메인 `toonstudio.cloud` | Cloudflare DNS(네임서버 `elsa`·`tom`) | 도메인 갱신비 | current | 소유자가 유지하기로 한 유일한 기존 자원(2026-10-22). `api.` 하위 레코드는 없다. 퇴역 Vercel을 가리키는 `origin.` CNAME과 Vercel 팀의 도메인 등록이 남아 있다(8절) [직접] |
 | 웹 정적 + 엣지 게이트웨이 | Cloudflare Static Assets + Worker `toonspectrum-web`(`deploy/cloudflare-static`) | 무료 | current | 버전 `8d9e24ee`(main `38847c624`). onpod 정적으로 옮길 수 없다(7.1절) |
-| 대형 에셋 | Cloudflare R2 `toonspectrum-public-assets` | 무료 한도 | current | 25 MiB 초과 파일. onpod 버킷은 GB당 과금이라 옮기지 않는다 |
+| 대형 에셋·미디어 | Cloudflare R2 `toonspectrum-public-assets` | 무료 한도 | current | 25 MiB 초과 파일과, PR #2431부터 3D·캐릭터·텍스처 미디어 약 7,160개(3 GB). Static Assets 파일 수 한도(배포당 20,000개) 때문에 옮겼다. 경로는 그대로이고 Worker가 R2에서 내준다(`deploy/cloudflare-static/README.md`). onpod 버킷은 GB당 과금이라 쓰지 않는다 |
 | 실시간 조정 | Cloudflare Worker + Durable Objects, `realtime.toonstudio.cloud`(`deploy/cloudflare-realtime`) | 무료 | current | 방 단위 단일 기록자 의미를 onpod 무료 앱이 대신하지 못한다 |
 | 트래픽 분석 | Cloudflare Worker `toonspectrum-analytics` + D1(`TRAFFIC_ANALYTICS_STORE=d1`) | 무료 | current | Core API가 RPC로 기록한다. onpod DB에는 분석 표가 없다(7.2절) |
 | apex 리다이렉트 | Cloudflare Worker(`deploy/cloudflare-apex-redirect`) | 무료 | current | |
