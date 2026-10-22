@@ -1,6 +1,6 @@
 # Creator Bundle 테마 팩 — bg3d 제품 배선 (2026-10-21)
 
-상태: current (배포 경로는 migration — 아래 "배포" 절). 대상 표면은 bg3d 에셋 라이브러리뿐이며 그리기·셰이퍼 등 무관한 표면은 건드리지 않는다.
+상태: current (배포 경로는 migration — 아래 "배포" 절). 대상 표면은 bg3d 에셋 라이브러리와, 같은 권리 원장에 잇는 2D 렌더 이미지 경로(`bundle-renders-v1`, 아래 「렌더 이미지 경로의 권리 연동」)뿐이며 그리기·셰이퍼 등 무관한 표면은 건드리지 않는다.
 
 2026-10-22 정정: 생성기의 배치 가능 판정이 런타임 검증기의 external-resource-uri
 거부(buffers/images의 uri 속성)를 반영하지 않아, 외부 텍스처를 참조하는 Godot판
@@ -138,6 +138,12 @@ theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성
 - 증빙 재검증: `pnpm run verify:creator-bundle-pack-rights -- --library-root <라이브러리 루트>`가 원장
   검증, 팩별 부족 증빙 요약, 로컬 라이선스 문서 해시 재대조를 한다.
 
+## 렌더 이미지 경로(bundle-renders-v1)의 권리 연동
+
+2D 렌더 이미지 경로(`apps/web/public/assets/studio/bundle-renders-v1/manifest.json` → `studio-bundle-asset-delivery.ts`)도 같은 원장을 따른다. 이 매니페스트는 슬롯마다 `license`를 스스로 선언하지만 전달 여부와 권리 표기는 선언이 아니라 원장이 정한다. 슬롯의 `derivedFromPack`(공식 81팩 번호)을 원장의 `catalogIds`·`officialCatalogIds`로 조회하고(`findPackRightsByCatalogId` — 한 항목으로 특정되지 않으면 원장에 없는 팩이라 hold), 완성 슬롯(`curationStatus`가 `draft`로 시작하지 않는 슬롯)은 그 팩이 allow이고 증빙·grant·묶음 자격을 채웠을 때(`evaluateServeDecision`)만 전달 대상이다. 웹 로더는 원장을 읽지 않으므로(3D 경로의 `packs[].rights`와 같은 방식) 전달 대상 슬롯에는 `pnpm run sync:creator-bundle-render-rights`가 원장 투영(`packRightsProjection`)에 `ledgerPackId`를 더한 `rights` 블록을 싣고, 로더는 이 블록이 없는 완성 슬롯을 초안처럼 건너뛴다(블록이 있는데 형식이 잘못되면 던지고, 모르는 키는 무시한다). 캔버스 레코드의 라이선스 이름도 이 블록에서 오고, 매니페스트의 `license.id`는 표시용 선언일 뿐이다. `pnpm run verify:creator-bundle-render-rights`(CI 사전 점검 단계)는 닫힌 팩에서 파생한 슬롯이 완성 상태이거나, 블록이 없거나 원장 투영과 다르거나, `license.provider`가 원장 제작사와 다르거나, 경로가 자기 슬롯 폴더를 벗어나거나, 전달 대상이 아닌 파일(닫힌 팩·초안·참조 없는 이미지, 심볼릭 링크)이 공개 폴더에 있으면 실패한다 — 이 폴더는 빌드 때 그대로 공개되므로 매니페스트가 걸러도 이미지 파일이 있으면 서빙되기 때문이고, 파일 목록은 스파스 체크아웃에서도 전체가 보이는 `git ls-files`를 기준으로 한다. 시험(`scripts/creator-bundle-render-rights*.test.mjs`, `studio-bundle-asset-delivery.test.ts`)은 필수 회귀 목록에 있으며, CI 판정과 로더가 같은 슬롯을 전달하는지를 변조 입력 모음으로 대조한다. 시드(2026-10-22)의 4개 슬롯은 모두 초안이고 그 팩들이 hold라 아무것도 전달되지 않는다. 팩을 연 뒤의 순서는 ① 슬롯을 완성으로 올리고 이미지를 넣는다 → ② `sync:creator-bundle-render-rights`로 스탬프한다 → ③ `verify:creator-bundle-render-rights`로 확인한다.
+
+한계: 로더가 믿는 것은 스탬프된 블록이라 진위는 CI의 대조가 지킨다(손으로 고친 블록은 CI에서 걸리지만 로더는 알아보지 못한다). allow는 팩 단위 판정이라 렌더 이미지만 따로 허용하는 구분이 없고, 슬롯이 실제로 그 팩의 모델에서 렌더됐는지와 미리보기 이미지가 바뀌지 않았는지는 코드가 판정하지 못한다(한 슬롯은 한 팩에서만 파생한다고 선언한다). `.gitignore`에 걸리는 이름(`__tmp*`)의 파일은 git이 못 보지만 로컬 빌드는 복사하므로, 배포 직전 빌드 산출물에 `--pack-dir <dist>/assets/studio/bundle-renders-v1 --files fs`로 같은 점검을 돌려야 완전하다(배포 도구에는 아직 연결하지 않았다). 권리를 거둔 뒤(allow → hold)에는 점검이 슬롯을 초안으로 내리고 블록·이미지를 지우도록 막지만, 이미 배포된 이미지는 정적 호스팅에서 소유자가 지워야 한다. 서비스 워커는 이 매니페스트를 캐시하지 않고(`passthrough`, 응답 헤더도 `no-cache`) 철회가 설치된 클라이언트에 바로 닿는다. 이미지는 immutable이라 캐시에 남을 수 있지만 매니페스트가 가리키지 않는 슬롯은 요청되지 않는다.
+
 ## 라이선스 구조 (서비스 안에서만 사용)
 
 - 에셋 파일 다운로드/내보내기 경로는 신설하지 않는다. 패널에는 추가(배치)
@@ -146,7 +152,7 @@ theme-packs.json을 재생성하면 허용된 팩만 남는다(아래 "재생성
 - 레코드 권리는 팩별이다. 로더는 `packs[].rights`를 `StudioBg3dAttachmentRights`로 옮기고
   (`status`는 `licensed` 또는 `public-domain`, 라이선스명은 팩별), `rights`가 없는 팩(원장 이전
   스냅샷 데이터)은 `unknown`·`commercialUse: false`로 닫는다. 예전의 전 팩 일괄
-  `licensed / commercialUse: true` 상수는 없앴다.
+  `licensed / commercialUse: true` 상수는 없앴다. (2D 렌더 이미지 경로는 `rights` 블록이 없는 완성 슬롯을 unknown으로 낮추지 않고 전달하지 않는다.)
 - GLB 실파일은 매니페스트 v2 서빙 루트(`/assets/studio/bundle-v2/`)에서 참조로 서빙된다. 다포맷 설계의
   매니페스트 v2 디스크립터(`studio-bundle-manifest-v2.ts`)는 아직 원본 경로형 URL을 만들어 sha256 서빙과 맞지
   않는다(프로덕션 소비자가 없고 테스트에서만 쓴다). 소비 경로로 연결할 때 별도 정합이 필요하다.
@@ -205,7 +211,7 @@ node scripts/generate-creator-bundle-theme-packs.mjs \
   원본의 CORS 헤더가 가드 계약을 깨지 못하게 한다. 다른 R2 경로(wasm·onnx·CC0 GLB·투어 영상)의 응답은
   그대로다. 접근 통제가 아니라 브라우저 경유 핫링크·임베드·주소창 직접 열기를 막는 억제책이며,
   헤더를 생략하는 클라이언트는 막지 못한다 — 올라간 팩의 바이트는 사실상 공개라고 보아야 한다. 권리 원장은
-  Worker가 아니라 업로드 단계(플래너)에서만 강제된다.
+  Worker가 아니라 업로드 단계(플래너)에서만 강제된다(bundle-v2 GLB 경로 한정 — 렌더 이미지 경로는 커밋 단계의 `verify:creator-bundle-render-rights`가 강제한다).
 - 플래너는 권리 원장에서 allow인 배치 가능 팩(`group: pack`)의 에셋만 계획에 넣는다. hold·미등록 팩, 묶음·제목·
   제작사가 원장과 다른 팩, theme-packs의 `ingestPackIds`가 생성기 팩 정의(`CATALOG_PACKS`)의 인제스션 폴더와 다른
   팩(`ingest-mismatch`), 권리 블록이 원장 투영과 다르거나 없는 팩(`rights-drift`)의 에셋은 실물을 읽지 않고
@@ -267,4 +273,5 @@ pnpm run deploy:creator-bundle-assets -- --asset-root <output-v2 트리>
 - hold 팩 최종 확정. 권고는 Restaurant(보류 1,023) · Medieval(배치 가능 1,265) · Small Props(배치 가능 342)를 서면 확인 전까지
   제외하는 것이다.
 - R2 키 불투명화 최종 확정, 텍스처 교정 범위와 손실 허용선, theme-packs 캐시 정책, 번들 총량 상한.
+- 렌더 이미지(파생물)에만 적용되는 허용 구분이 필요한지(지금은 팩 단위 allow가 렌더 전달의 필요조건이다), 렌더의 출처 모델 해시(`sourceModelSha256`)를 팩과 대조하는 장치를 둘지, 배포 직전 산출물 점검을 배포 도구에 연결할지.
 - `ASSET-INVENTORY.md` §3 정책 개정(제안만 기록됨)과 `THIRD_PARTY_NOTICES`의 번들 항목(§3.2 결정 뒤 작업).
