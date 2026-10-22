@@ -48,13 +48,14 @@ describe("LanguagePicker", () => {
     render(<LanguagePicker value="ko" onChange={() => undefined} />);
 
     fireEvent.click(screen.getByRole("button", { name: "언어 선택" }));
-    // ja is only about half complete (under the 0.9 completeness threshold), so it is labelled.
+    // af (Afrikaans) is only about a third complete (under the 0.9 completeness threshold), so it is labelled.
+    // (ja·de·fr·zh-hant 는 검수 번역이 끝나 90%를 넘었다 — 예시 로케일은 아직 진행 중인 것으로 고른다.)
     fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
-      target: { value: "日本語" },
+      target: { value: "Afrikaans" },
     });
-    const japanese = screen.getByRole("option");
-    expect(japanese.textContent).toContain("번역 진행 중");
-    expect(japanese.textContent).toContain("%");
+    const afrikaans = screen.getByRole("option");
+    expect(afrikaans.textContent).toContain("번역 진행 중");
+    expect(afrikaans.textContent).toContain("%");
 
     fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
       target: { value: "한국어" },
