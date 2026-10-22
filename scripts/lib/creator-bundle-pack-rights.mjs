@@ -357,6 +357,12 @@ export function validatePackRightsLedger(ledger) {
       || text.files.some((file) => !isRecord(file) || !nonEmptyText(file.libraryPath, 400))) {
       problems.push(`${where}: files(libraryPath)가 비어 있습니다.`);
     }
+    // zip 안에 든 사본(예: Blend Textures.zip의 LICENSE.txt)은 archivedFiles에 압축 파일 경로와 멤버 이름으로 적는다.
+    if (text.archivedFiles !== undefined
+      && (!Array.isArray(text.archivedFiles) || text.archivedFiles.some((file) => !isRecord(file)
+        || !nonEmptyText(file.libraryPath, 400) || !nonEmptyText(file.member, 400)))) {
+      problems.push(`${where}: archivedFiles는 {libraryPath, member} 배열이어야 합니다.`);
+    }
   }
   const textsByHash = licenseTextByHash(ledger);
   const seenKeys = new Map();
