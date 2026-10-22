@@ -258,7 +258,7 @@ export function StudioVrmPoseMaterialPanel({
       mountedRef.current = false;
       mutationGenerationRef.current += 1;
     };
-  }, [legacyStorageSeam, repository]);
+  }, [legacyStorageSeam, repository, t]);
 
   const storageReadOnly = ["future", "corrupt", "read-error", "unavailable"].includes(
     panelState.loadStatus

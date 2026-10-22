@@ -30,7 +30,6 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -72,6 +71,17 @@ import { OneClickVersionShare } from "./OneClickVersionShare";
 import { createProductionManuscriptSnapshot } from "./production-manuscript-snapshots";
 import { ProductionManuscriptProcessBrowser } from "./ProductionManuscriptProcessBrowser";
 import { ProcessCompareLauncher } from "./ProcessCompareBridge";
+import {
+  Badge,
+  CapabilityGrid,
+  DemoWorkspace,
+  ProcessNavigator,
+} from "./ProductionManuscriptNavigator";
+import {
+  VIEW_ITEMS,
+  episodeLabels,
+  type ManuscriptView,
+} from "./production-manuscript-navigator-model";
 import {
   isProductionManuscriptFilter,
   isProductionManuscriptLayout,
@@ -327,16 +337,6 @@ function processEditorHref(
   const suffix = query.toString();
   return `/studio/work/${encodeURIComponent(workId)}/${surface}${suffix ? `?${suffix}` : ""}`;
 }
-
-import {
-  Badge,
-  CapabilityGrid,
-  DemoWorkspace,
-  ProcessNavigator,
-  VIEW_ITEMS,
-  episodeLabels,
-  type ManuscriptView,
-} from "./ProductionManuscriptNavigator";
 
 export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, execute }: ProductionManuscriptWorkspaceProps) {
   const t = useT();

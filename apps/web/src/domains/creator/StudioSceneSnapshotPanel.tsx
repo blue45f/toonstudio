@@ -25,13 +25,13 @@ import { useT } from "@/shared/lib/i18n";
 
 import "./studio-panel-status-i18n";
 
-type StatusT = ReturnType<typeof useT>;
-
 import type { PageState } from "./studio-page-state";
 import type {
   StudioSceneSnapshot,
   StudioSceneSnapshotTheme,
 } from "./studio-scene-snapshot-library";
+
+type StatusT = ReturnType<typeof useT>;
 
 export interface StudioSceneSnapshotRepository {
   list: () => Promise<StudioSceneSnapshot[]>;
@@ -332,7 +332,7 @@ export function StudioSceneSnapshotPanel({
           <button
             type="submit"
             disabled={Boolean(busyId) || !name.trim()}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Camera size={17} aria-hidden="true" />
             {busyId === "capture"

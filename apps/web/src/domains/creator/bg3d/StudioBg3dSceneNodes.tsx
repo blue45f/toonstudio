@@ -57,6 +57,7 @@ import {
   type StudioBg3dThreeInstancingSuccess,
 } from "./studio-bg3d-three-instancing";
 import { applyStudioBg3dThreeRenderSettings } from "./studio-bg3d-three-render-settings";
+import { BgCustomModelMesh, type StudioBg3dRigBakeReader } from "./StudioBg3dCustomModelMesh";
 
 import type { BgPrimitive } from "../studio-background-3d-primitives";
 import type { StudioBg3dPlacementPreviewState } from "./studio-bg3d-placement-session";
@@ -537,8 +538,6 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
     </group>
   );
 }
-
-import { BgCustomModelMesh, type StudioBg3dRigBakeReader } from "./StudioBg3dCustomModelMesh";
 
 export { BgCustomModelMesh, type StudioBg3dRigBakeReader };
 

@@ -1948,7 +1948,7 @@ export function StudioCuttoonEditor({
     currentPageIdRef.current = nextPageId;
     setCurrentPageIdState(nextPageId);
     return true;
-  }, []);
+  }, [t]);
   const {
     aiProvenance,
     animaticWorkspace,
@@ -3156,7 +3156,7 @@ export function StudioCuttoonEditor({
     studioTeamCommentRefreshSessionRef,
     studioTeamCommentsLoadGenerationRef,
     studioTeamCommentsScopeRef,
-    studioTeamCommentsWorkId,
+    studioTeamCommentsWorkId, t,
   ]);
   useEffect(() => {
     if (commentsOpen) {
@@ -4914,7 +4914,7 @@ export function StudioCuttoonEditor({
       }
       clipsLoadRef.current = null;
     };
-  }, [editorMountedRef, menu]);
+  }, [editorMountedRef, menu, t]);
   // 전체화면 상태 동기화 — ESC 등으로 빠져나가도 토글 상태가 맞도록 이벤트로 추적.
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -5181,7 +5181,7 @@ export function StudioCuttoonEditor({
     return () => {
       active = false;
     };
-  }, [productBrushRepository]);
+  }, [productBrushRepository, t]);
   useEffect(() => {
     const active = pendingBrushDeletes.filter((pending) => pending.id !== pausedBrushDeleteId);
     if (active.length === 0) return;
@@ -9197,7 +9197,7 @@ export function StudioCuttoonEditor({
     livingInkCanonicalSrc,
     livingInkMaterial,
     livingInkPhysicalModeEnabled,
-    livingInkReplayToken,
+    livingInkReplayToken, t,
   ]);
 
   useEffect(() => () => {
@@ -9254,7 +9254,7 @@ export function StudioCuttoonEditor({
       });
     });
     return pendingCatalogInputRef.current;
-  }, []);
+  }, [t]);
   const catalogInputOwnerScope = JSON.stringify([studioAuthUserId, autosaveKey, activePage.id, masterEditMode]);
   const catalogInputScope = `${catalogInputOwnerScope}:${collaborationAccessRef.current.documentGeneration}`;
   function capturePendingCatalogInput(pointer: PointerEvent, stage: Konva.Stage | null): boolean {
@@ -9280,7 +9280,7 @@ export function StudioCuttoonEditor({
       pendingCatalogInput().restore(records.map((record) => restoreStudioCatalogInputRecovery(record, stageRef.current!, catalogInputScope)));
     }).catch(() => { if (!cancelled) announceDrawingShortcutRef.current(t("studio.hostStatus.brushInputRecoveryReadFailed", "보관된 브러시 입력을 읽지 못했어요. 원본 저장은 유지됩니다.")); });
     return () => { cancelled = true; };
-  }, [catalogInputOwnerScope, catalogInputScope, autosaveKey, pendingCatalogInput]);
+  }, [catalogInputOwnerScope, catalogInputScope, autosaveKey, pendingCatalogInput, t]);
   const pendingStrokeAdmissionRef = useRef<StudioPendingStrokeAdmissionQueue | null>(null);
   const pendingStrokeAdmission = (): StudioPendingStrokeAdmissionQueue => {
     pendingStrokeAdmissionRef.current ??= new StudioPendingStrokeAdmissionQueue({
@@ -12993,7 +12993,7 @@ export function StudioCuttoonEditor({
       active = false;
       unsubscribe();
     };
-  }, [acquireWatermarkPreferenceRuntime, watermarkPreferenceWanted]);
+  }, [acquireWatermarkPreferenceRuntime, watermarkPreferenceWanted, t]);
   const ensureWatermarkLoaded = async () => {
     try {
       const runtime = await acquireWatermarkPreferenceRuntime();
@@ -14480,7 +14480,7 @@ const pixelToolArmed =
     magneticLassoFieldSrc,
     magneticLassoFieldFlipX,
     magneticLassoFieldFlipY,
-    selectedImageElementId,
+    selectedImageElementId, t,
   ]);
   /** 현재 제스처의 exact provider를 시작 전에 결정한다. */
   const currentMagneticLassoField = (target: ImageEl) => {
@@ -15011,7 +15011,7 @@ const puppetWarpArmed =
     studioProjectDocumentSessionRef,
     studioRevisionProjectGenerationRef,
     workAuthScopeKey,
-    workId,
+    workId, t,
   ]);
 
   // 시리즈·챌린지 딥링크로 들어온 경우 게시 맥락 배너를 채운다.
@@ -15865,7 +15865,7 @@ const puppetWarpArmed =
         if (!controller.signal.aborted) setSharedLoading(false);
       });
     return () => controller.abort();
-  }, [menu, assetTab, assetSearchQuery, assetSortOrder]);
+  }, [menu, assetTab, assetSearchQuery, assetSortOrder, t]);
 
   // 마켓 상세의 "스튜디오에서 불러오기" 딥링크(?assetMarket=community 또는 ?installMarketResource=...)
   // 자산 메뉴의 커뮤니티 탭을 열고, 전달된 리소스 ID가 있으면 백그라운드에서 SQLite 설치 및 캔버스 로드를 수행한다.
@@ -16341,7 +16341,7 @@ const puppetWarpArmed =
       setError(cause instanceof Error ? cause.message : t("studio.hostStatus.sampleWorkLoadFailed", "예제 작품을 불러오지 못했습니다."));
     }
   }, [autosaveChecked, commitPages, elements.length, hasAutosave, pages.length, params, remixId,
-    setCurrentPageId, setQuickStartOpen, setTitle, sourceHydrationPending, workHydrated, workId]);
+    setCurrentPageId, setQuickStartOpen, setTitle, sourceHydrationPending, workHydrated, workId, t]);
 
   // 커밋 지연 파이프라인의 동기화/폐기 — 타이머·이벤트 핸들러가 stale 클로저 없이 최신
   // 상태(commit/pages/elements)로 실행되도록 렌더마다 ref 에 재바인딩한다(updateScrollPosRef 패턴).
@@ -26487,7 +26487,7 @@ function clearSelectionForEdit() {
     serverCurrentRevision,
     sharedDocument?.role,
     studioAuthUserId,
-    workId,
+    workId, t,
   ]);
 
   async function openOwnerFxPanel() {

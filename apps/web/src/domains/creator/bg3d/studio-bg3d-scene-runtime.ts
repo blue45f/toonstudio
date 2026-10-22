@@ -32,7 +32,6 @@ import {
   failAdapter,
   type StudioBg3dDocumentToRuntimeInput,
   type StudioBg3dDocumentToRuntimeResult,
-  type StudioBg3dRuntimeAdapterCounts,
   type StudioBg3dRuntimeAdapterDiagnostic,
   type StudioBg3dRuntimeAdapterDiagnosticCode,
   type StudioBg3dRuntimeAdapterDirection,
@@ -40,6 +39,12 @@ import {
   type StudioBg3dRuntimeToDocumentInput,
   type StudioBg3dRuntimeToDocumentResult,
 } from "./studio-bg3d-scene-runtime-contract";
+
+import type { BgCustomModelInstance } from "../studio-background-3d-model";
+import type {
+  BgPrimitive,
+  BgPrimitiveKind,
+} from "../studio-background-3d-primitives";
 
 export {
   STUDIO_BG3D_RUNTIME_ADAPTER_MAX_DIAGNOSTICS,
@@ -55,12 +60,6 @@ export {
   type StudioBg3dRuntimeToDocumentInput,
   type StudioBg3dRuntimeToDocumentResult,
 } from "./studio-bg3d-scene-runtime-contract";
-
-import type { BgCustomModelInstance } from "../studio-background-3d-model";
-import type {
-  BgPrimitive,
-  BgPrimitiveKind,
-} from "../studio-background-3d-primitives";
 
 interface PendingNode {
   readonly node: StudioBg3dSceneNode;

@@ -78,7 +78,7 @@ export function StudioBg3dBundleThemePackPanel({
         }
       });
     return () => controller.abort();
-  }, [data, revision]);
+  }, [data, revision, t]);
 
   // 메타데이터만으로 "배치 가능"이라 주장하지 않는다: GLB 실물 배포의 완료
   // 신호(배포 인덱스)가 테마 팩 합계와 맞을 때만 배치를 연다.

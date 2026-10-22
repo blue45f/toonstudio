@@ -6,7 +6,6 @@ import {
   COLLABORATION_MODELS,
   DECISION_DOMAINS,
   PRODUCTION_ROLE_TYPES,
-  PRODUCTION_SCOPE_KINDS,
   PRODUCTION_STUDIO_DOCUMENT_ROLES,
   REVIEW_LANES,
 } from "../../../../../packages/core/src/production";
@@ -21,8 +20,6 @@ import {
   ProductionRevisionRefSchema,
   ProductionScopeRefSchema,
 } from "./production-collaboration-schema-primitives";
-
-export { ProductionRevisionRefSchema, ProductionScopeRefSchema };
 import {
   AssetRequirementSchema,
   CutPlanSchema,
@@ -34,6 +31,7 @@ import {
   SeriesMasterSchema,
 } from "./production-collaboration-planning.dto";
 
+export { ProductionRevisionRefSchema, ProductionScopeRefSchema };
 
 const ProductionStudioRevisionLinkSchema = z.object({
   id: IdentitySchema,

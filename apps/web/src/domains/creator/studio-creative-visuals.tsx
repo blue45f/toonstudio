@@ -8,12 +8,12 @@ import { StudioToolHintTarget } from "./StudioToolHint";
 
 import { StudioStarterCardArt, type StudioStarterArtId } from "./studio-creative-starter-art";
 
-export { StudioStarterCardArt, type StudioStarterArtId };
-
 import type { StudioToolHintSpec } from "./studio-tool-hints";
 import type { ReactElement } from "react";
 
 import { cn } from "@/shared/lib/utils";
+
+export { StudioStarterCardArt, type StudioStarterArtId };
 
 /** Re-export pure kind list for pickers (SSOT: studio-draw-hud). */
 export const STUDIO_DRAW_SHAPE_PICKER_KINDS = DRAW_SHAPE_PICKER_KINDS;
@@ -404,8 +404,8 @@ export function StudioOpacityGlyph({
       className={cn("text-current", className)}
       data-studio-opacity-glyph="true"
     >
-      <rect x={1} y={1} width={12} height={12} rx={2} fill="oklch(0.35 0.01 70 / 0.45)" />
-      <path d="M1 1 H7 V7 H1 Z M7 7 H13 V13 H7 Z" fill="oklch(0.55 0.01 70 / 0.35)" />
+      <rect x={1} y={1} width={12} height={12} rx={2} fill="var(--color-line-strong)" fillOpacity={0.45} />
+      <path d="M1 1 H7 V7 H1 Z M7 7 H13 V13 H7 Z" fill="var(--color-fg)" fillOpacity={0.15} />
       <rect
         x={1}
         y={1}

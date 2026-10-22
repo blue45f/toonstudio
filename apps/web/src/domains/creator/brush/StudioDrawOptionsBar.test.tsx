@@ -11,10 +11,16 @@ import { STUDIO_ALL_BRUSH_CATALOG_ITEMS } from "./studio-brush-catalog";
 import { StudioBrushLibrarySheet } from "./StudioBrushLibrarySheet";
 import { StudioDrawOptionsBar } from "./StudioDrawOptionsBar";
 
-const drawOptionsSource = readFileSync(
-  resolve(process.cwd(), "apps/web/src/domains/creator/brush/StudioDrawOptionsBar.tsx"),
-  "utf8"
-);
+// 막대 본체와 분리해 낸 부품 파일(미리보기)·상수 파일(힌트 변형·보정 프리셋)을 한 소스로 검사한다.
+// 파일을 나눠도 검사 대상은 줄어들지 않는다: `toContain` 은 세 파일 어디에 있어도 찾고,
+// `not.toContain` 은 세 파일 모두에서 금지한다. 본체를 맨 앞에 두어 위치(indexOf) 검사는 본체 기준이다.
+const drawOptionsSource = [
+  "StudioDrawOptionsBar.tsx",
+  "studio-draw-options-bar-parts.tsx",
+  "studio-draw-options-bar-constants.ts",
+]
+  .map((file) => readFileSync(resolve(process.cwd(), "apps/web/src/domains/creator/brush", file), "utf8"))
+  .join("\n");
 // 스튜디오 전용 규칙의 정본은 studio-route.css다 — globals.css 머리말 정책상 스튜디오
 // 규칙은 그쪽에만 두고 스튜디오 라우트 청크에서만 로드한다(docs/perf/bundle-gate.md).
 const studioRouteSource = readFileSync(resolve(process.cwd(), "apps/web/src/shared/styles/studio-route.css"), "utf8");

@@ -60,6 +60,13 @@ import { StudioToolHintTarget } from "../StudioToolHint";
 
 import { STUDIO_BRUSH_SIZE_RANGE } from "./studio-draw-ux";
 import { MATERIAL_BRUSH_OPACITY_RANGE, MATERIAL_BRUSH_STROKE_WIDTH_RANGE } from "./studio-brush-library";
+import {
+  BRUSH_OPACITY_HINT_VARIANT,
+  BRUSH_SIZE_HINT_VARIANT,
+  STUDIO_STABILIZER_STRENGTH_PRESETS,
+  iconBtn,
+} from "./studio-draw-options-bar-constants";
+import { SizePreview } from "./studio-draw-options-bar-parts";
 import { StudioBrushPresetIcon } from "./StudioBrushPresetIcon";
 import { StudioBrushTray } from "./StudioBrushTray";
 import { StudioPreciseNumberInput } from "./StudioPreciseNumberInput";
@@ -156,14 +163,6 @@ export interface StudioDrawOptionsBarProps {
   dockInsets?: Readonly<{ left: number; right: number }>;
   className?: string;
 }
-
-import {
-  BRUSH_OPACITY_HINT_VARIANT,
-  BRUSH_SIZE_HINT_VARIANT,
-  STUDIO_STABILIZER_STRENGTH_PRESETS,
-  SizePreview,
-  iconBtn,
-} from "./studio-draw-options-bar-parts";
 
 export function StudioDrawOptionsBar({
   drawMode,

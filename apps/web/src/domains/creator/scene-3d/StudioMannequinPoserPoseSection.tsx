@@ -5,7 +5,7 @@
  * props로 받는다 — 이 파일은 포즈 프리셋 탐색·미리보기·적용 호출만 책임진다.
  */
 
-import { FlipHorizontal2, PersonStanding, Pin, RotateCcw, X } from "lucide-react";
+import { FlipHorizontal2, PersonStanding, Pin, RotateCcw } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
 import { StudioSectionHeader, StudioToggleChip } from "../studio-panel-ui";
