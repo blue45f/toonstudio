@@ -471,7 +471,6 @@ const CONSUMERS = [
 /** 탐지기 잔여 허용 목록 — 버튼 동사 라벨 (r3-c07.md 근거). */
 const EXPECTED_RESIDUALS: readonly { file: string; rule: string; snippet: string }[] = [
   { file: "StudioOnDemandModuleStatus.tsx", rule: "jsx-text", snippet: "다시 시도" },
-  { file: "StudioSaveSyncStatusCenter.tsx", rule: "jsx-text", snippet: "지금 다시 시도" },
   { file: "StudioWorkspaceRegion.tsx", rule: "jsx-text", snippet: "다시 시도" },
 ];
 
@@ -508,7 +507,7 @@ describe("studio panel status i18n r3c07", () => {
     }
   });
 
-  it("이관 파일의 탐지기 위반이 문서화된 잔여 3건과 정확히 일치한다", () => {
+  it("이관 파일의 탐지기 위반이 문서화된 잔여 2건과 정확히 일치한다", () => {
     const actual: { file: string; rule: string; snippet: string }[] = [];
     for (const file of CONSUMERS) {
       for (const violation of scanHardcodedStatusStrings(readSource(file))) {
