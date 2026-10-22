@@ -283,8 +283,8 @@ export type StudioBg3dGlbFailureCode =
 export interface StudioBg3dGlbValidationFailure {
   readonly ok: false;
   readonly code: StudioBg3dGlbFailureCode;
-  /** Stable, sanitized Korean UI copy. Never contains file-controlled strings. */
-  readonly message: string;
+  // A4 D4 (R11): 표시 문구는 방출하지 않는다. 표시는 표시 지점이 코드를
+  // status-i18n/studio-producer-error-i18n.ts의 glb 구간으로 해석한다.
 }
 
 export interface StudioBg3dGlbValidationSuccess {
@@ -309,64 +309,6 @@ export interface StudioBg3dGlbValidationSuccess {
 export type StudioBg3dGlbValidationResult =
   | StudioBg3dGlbValidationFailure
   | StudioBg3dGlbValidationSuccess;
-
-const FAILURE_MESSAGES: Readonly<Record<StudioBg3dGlbFailureCode, string>> = Object.freeze({
-  "invalid-input": "3D 모델 파일의 이진 데이터를 읽을 수 없습니다. 파일을 다시 선택해 주세요.",
-  "invalid-options": "3D 모델 안전 검사 설정이 올바르지 않습니다. 작업공간을 새로고침해 주세요.",
-  "invalid-declared-metadata": "3D 모델의 크기 또는 무결성 정보를 확인할 수 없습니다. 파일을 다시 등록해 주세요.",
-  "mime-type-mismatch": "지원되는 GLB 형식의 3D 모델만 불러올 수 있습니다.",
-  "byte-size-mismatch": "3D 모델의 기록된 크기와 실제 파일 크기가 다릅니다. 원본 파일을 다시 등록해 주세요.",
-  "file-too-large": "3D 모델은 파일 하나당 최대 100MiB까지 불러올 수 있습니다. 모델을 최적화해 주세요.",
-  "model-byte-budget-exceeded": "이 기기의 3D 모델 용량 기준을 초과했습니다. 더 작은 모델을 사용해 주세요.",
-  "cumulative-byte-budget-exceeded": "프로젝트의 3D 모델 누적 용량 기준을 초과했습니다. 사용하지 않는 모델을 정리해 주세요.",
-  "digest-unavailable": "이 환경에서는 3D 모델 무결성 검사를 사용할 수 없습니다. 최신 브라우저에서 다시 시도해 주세요.",
-  "digest-failed": "3D 모델 무결성 검사를 완료하지 못했습니다. 파일을 다시 선택해 주세요.",
-  "hash-mismatch": "3D 모델이 등록 이후 변경되었거나 손상되었습니다. 신뢰할 수 있는 원본을 다시 등록해 주세요.",
-  "truncated-header": "3D 모델 파일이 완전하지 않습니다. 원본 GLB 파일을 다시 받아 주세요.",
-  "invalid-magic": "이 파일은 유효한 GLB 모델이 아닙니다. GLB 2.0 형식으로 내보내 주세요.",
-  "unsupported-version": "GLB 2.0 모델만 지원합니다. 모델을 GLB 2.0으로 다시 내보내 주세요.",
-  "declared-length-mismatch": "3D 모델 컨테이너 길이가 실제 파일과 맞지 않습니다. 원본 파일을 다시 내보내 주세요.",
-  "missing-json-chunk": "3D 모델에 필수 장면 정보가 없습니다. GLB 파일을 다시 내보내 주세요.",
-  "json-chunk-too-large": "3D 모델의 장면 정보가 안전 처리 한도를 초과했습니다. 모델을 단순화해 주세요.",
-  "invalid-chunk-alignment": "3D 모델 내부 블록 정렬이 올바르지 않습니다. GLB 파일을 다시 내보내 주세요.",
-  "invalid-chunk-bounds": "3D 모델 내부 블록이 잘렸거나 손상되었습니다. 원본 파일을 다시 받아 주세요.",
-  "duplicate-json-chunk": "3D 모델에 장면 정보 블록이 중복되어 있습니다. GLB 파일을 다시 내보내 주세요.",
-  "duplicate-bin-chunk": "3D 모델에 이진 리소스 블록이 중복되어 있습니다. GLB 파일을 다시 내보내 주세요.",
-  "unsupported-chunk-type": "지원하지 않는 내부 블록이 포함된 GLB 모델입니다. 표준 GLB 2.0으로 다시 내보내 주세요.",
-  "invalid-json-encoding": "3D 모델 장면 정보의 문자 인코딩이 올바르지 않습니다. GLB 파일을 다시 내보내 주세요.",
-  "invalid-json": "3D 모델 장면 정보를 해석할 수 없습니다. GLB 파일을 다시 내보내 주세요.",
-  "invalid-gltf-root": "3D 모델의 glTF 2.0 장면 구조가 올바르지 않습니다. 파일을 다시 내보내 주세요.",
-  "unsupported-required-extension": "현재 안전하게 처리할 수 없는 필수 3D 확장이 포함되어 있습니다. 호환 옵션으로 다시 내보내 주세요.",
-  "external-resource-uri": "외부 파일이나 네트워크 리소스를 참조하는 모델은 불러올 수 없습니다. 모든 리소스를 GLB 안에 포함해 주세요.",
-  "missing-bin-chunk": "3D 모델에 필요한 내장 리소스가 없습니다. 텍스처와 메시를 GLB 안에 포함해 주세요.",
-  "invalid-buffer": "3D 모델의 내장 이진 리소스 정보가 올바르지 않습니다. 파일을 다시 내보내 주세요.",
-  "invalid-buffer-view": "3D 모델의 내장 리소스 범위가 올바르지 않습니다. 파일을 다시 내보내 주세요.",
-  "invalid-accessor": "3D 모델의 기하 데이터 개수 정보를 확인할 수 없습니다. 파일을 다시 내보내 주세요.",
-  "invalid-mesh": "3D 모델의 메시 구조가 올바르지 않습니다. 파일을 다시 내보내 주세요.",
-  "invalid-node": "3D 모델의 장면 노드 구조가 올바르지 않습니다. 파일을 다시 내보내 주세요.",
-  "invalid-animation": "3D 모델의 애니메이션 구조가 올바르지 않습니다. 애니메이션을 정리해 다시 내보내 주세요.",
-  "invalid-skin": "3D 모델의 스킨 또는 조인트 구조가 올바르지 않습니다. 리깅을 정리해 다시 내보내 주세요.",
-  "invalid-image": "3D 모델의 내장 이미지 구조가 올바르지 않습니다. 지원 형식으로 다시 내보내 주세요.",
-  "basis-transcode-failed": "3D 모델의 Basis 텍스처를 안전하게 디코딩할 수 없습니다. 텍스처를 다시 내보내 주세요.",
-  "arithmetic-overflow": "3D 모델의 복잡도를 안전하게 계산할 수 없습니다. 모델을 단순화해 주세요.",
-  "node-budget-exceeded": "이 기기의 장면 노드 수 기준을 초과했습니다. 모델 계층을 단순화해 주세요.",
-  "triangle-budget-exceeded": "이 기기의 삼각형 수 기준을 초과했습니다. 메시를 경량화해 주세요.",
-  "draw-call-budget-exceeded": "이 기기의 드로콜 기준을 초과했습니다. 메시와 재질을 병합해 주세요.",
-  "material-budget-exceeded": "이 기기의 재질 수 기준을 초과했습니다. 재질을 정리하거나 병합해 주세요.",
-  "light-budget-exceeded": "이 기기의 조명 수 기준을 초과했습니다. 조명 수를 줄여 주세요.",
-  "animation-count-budget-exceeded": "이 기기의 애니메이션 클립 수 기준을 초과했습니다. 사용하지 않는 동작을 정리해 주세요.",
-  "animation-channel-budget-exceeded": "이 기기의 애니메이션 채널 수 기준을 초과했습니다. 애니메이션 트랙을 단순화해 주세요.",
-  "animation-keyframe-budget-exceeded": "이 기기의 애니메이션 키프레임 기준을 초과했습니다. 키프레임을 줄여 주세요.",
-  "animation-value-budget-exceeded": "이 기기의 애니메이션 데이터 메모리 기준을 초과했습니다. 애니메이션을 압축하거나 단순화해 주세요.",
-  "skin-count-budget-exceeded": "이 기기의 스킨 수 기준을 초과했습니다. 리깅 구조를 단순화해 주세요.",
-  "joint-count-budget-exceeded": "이 기기의 조인트 수 기준을 초과했습니다. 본 구조를 단순화해 주세요.",
-  "morph-target-budget-exceeded": "이 기기의 모프 타깃 수 기준을 초과했습니다. 표정·변형 타깃을 정리해 주세요.",
-  "accessor-element-budget-exceeded": "이 기기의 3D 데이터 요소 수 기준을 초과했습니다. 메시와 애니메이션을 단순화해 주세요.",
-  "geometry-memory-budget-exceeded": "이 기기의 디코딩된 3D 데이터 메모리 기준을 초과했습니다. 메시·리깅·애니메이션을 최적화해 주세요.",
-  "texture-count-budget-exceeded": "이 기기의 텍스처 개수 기준을 초과했습니다. 텍스처를 정리해 주세요.",
-  "texture-byte-budget-exceeded": "이 기기의 내장 텍스처 용량 기준을 초과했습니다. 텍스처를 압축해 주세요.",
-  "texture-dimension-budget-exceeded": "이 기기의 텍스처 해상도 기준을 초과했습니다. 텍스처 크기를 낮춰 주세요.",
-});
 
 interface GlbChunk {
   readonly offset: number;
@@ -401,7 +343,7 @@ interface CountResult {
 }
 
 function failure(code: StudioBg3dGlbFailureCode): StudioBg3dGlbValidationFailure {
-  return Object.freeze({ ok: false, code, message: FAILURE_MESSAGES[code] });
+  return Object.freeze({ ok: false, code });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
