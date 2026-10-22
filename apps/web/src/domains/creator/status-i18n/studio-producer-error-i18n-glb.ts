@@ -15,6 +15,11 @@ import {
   resolveTranslationForDisplay,
 } from "@/shared/lib/i18n";
 
+import type {
+  StudioBg3dGlbFailureCode,
+  StudioBg3dGlbValidationFailure,
+} from "../bg3d/studio-bg3d-glb-validation";
+
 
 function resolveProducerError(
   key: string,
@@ -27,11 +32,6 @@ function resolveProducerError(
     Object.hasOwn(values, token) ? String(values[token]) : placeholder,
   );
 }
-
-import type {
-  StudioBg3dGlbFailureCode,
-  StudioBg3dGlbValidationFailure,
-} from "../bg3d/studio-bg3d-glb-validation";
 
 registerI18nLocaleEntries("ko", {
   "studio.producerError.glb.invalidInput": "3D 모델 파일의 이진 데이터를 읽을 수 없습니다. 파일을 다시 선택해 주세요.",
