@@ -123,7 +123,7 @@ describe("Auto Actions import/export safety", () => {
     expect(() => normalizeStudioAutoActionSet({
       ...actionSet([{ id: "hide", type: "element.set-hidden", hidden: true }]),
       version: 2,
-    })).toThrow(/새로운 Action Set 버전/u);
+    })).toThrow(/futureVersion/u);
   });
 
   it("prototype pollution 키·getter·순환 참조를 실행 전에 거부한다", () => {
@@ -134,21 +134,21 @@ describe("Auto Actions import/export safety", () => {
       "name":"safe",
       "commands":[{"id":"x","type":"element.set-hidden","hidden":true,"__proto__":{"polluted":true}}]
     }`;
-    expect(() => importStudioAutoActionSetJson(pollutionJson)).toThrow(/안전하지 않은 키/u);
+    expect(() => importStudioAutoActionSetJson(pollutionJson)).toThrow(/unsafeKey/u);
     expect(({} as { polluted?: boolean }).polluted).toBeUndefined();
 
     const withGetter = actionSet([{ id: "x", type: "element.set-hidden", hidden: true }]);
     Object.defineProperty(withGetter, "description", { enumerable: true, get: () => "unsafe" });
-    expect(() => normalizeStudioAutoActionSet(withGetter)).toThrow(/접근자/u);
+    expect(() => normalizeStudioAutoActionSet(withGetter)).toThrow(/accessor/u);
 
     const cyclic = actionSet([{ id: "x", type: "element.set-hidden", hidden: true }]) as Record<string, unknown>;
     cyclic.self = cyclic;
-    expect(() => normalizeStudioAutoActionSet(cyclic)).toThrow(/순환 참조/u);
+    expect(() => normalizeStudioAutoActionSet(cyclic)).toThrow(/circular/u);
   });
 
   it("JSON·단계 수·중복 ID·값 범위 상한을 적용한다", () => {
     expect(() => importStudioAutoActionSetJson("x".repeat(STUDIO_AUTO_ACTION_LIMITS.maxJsonCodeUnits + 1)))
-      .toThrow(/너무 큽니다/u);
+      .toThrow(/sizeLimitJson/u);
     const commands = Array.from({ length: STUDIO_AUTO_ACTION_LIMITS.maxCommands + 1 }, (_, index) => ({
       id: `step-${index}`,
       type: "element.set-hidden",

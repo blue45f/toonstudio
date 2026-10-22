@@ -129,7 +129,7 @@ describe("복선 장부·약속 장부 어댑터", () => {
   });
 
   it("약속·회수 장부 코드를 심각도별로 나눈다", () => {
-    const warning = (code: StudioPromisePayoffWarningCode): StudioPromisePayoffWarning => ({ code, severity: "normal", entryId: "e1", message: "원문" });
+    const warning = (code: StudioPromisePayoffWarningCode): StudioPromisePayoffWarning => ({ code, severity: "normal", entryId: "e1", params: { label: "우산" } });
     const codes: readonly StudioPromisePayoffWarningCode[] = [
       "PAYOFF_BEFORE_SEED", "OVERDUE", "FORESHADOW_BEFORE_SEED", "MISSING_PAYOFF", "DUE_NOW", "MISSING_SEED", "UNSCHEDULED_PAYOFF",
     ];

@@ -134,7 +134,7 @@ describe("planStudioAdvancedFillVectorTarget", () => {
     expect(plan).toEqual({
       ok: false,
       code: "no-visible-vector-draw",
-      reason: "페이지에 표시 중인 벡터 선화가 없습니다. 펜이나 도형으로 선화를 추가한 뒤 다시 시도해 주세요.",
+      detail: "noVisibleDraw",
       insertionIndex: 1,
     });
   });
@@ -323,8 +323,10 @@ describe("describeStudioAdvancedFillVectorReferenceExclusion", () => {
       expect(failure.ok).toBe(false);
       if (failure.ok) continue;
       const notice = describeStudioAdvancedFillVectorReferenceExclusion(failure);
-      expect(notice).toContain("벡터 선화는 채우기 경계에서 빼고 래스터 경계만으로 계산했어요.");
-      expect(notice).toContain(failure.reason);
+      expect(notice).toEqual(expect.objectContaining({
+        code: "exclusionNotice",
+        detail: failure.detail,
+      }));
     }
   });
 
@@ -467,10 +469,10 @@ describe("renderStudioVectorReference generic seam", () => {
     vi.stubGlobal("document", undefined);
     try {
       await expect(renderPreparedStudioVectorReference(prepared))
-        .rejects.toThrow(/Offscreen/u);
+        .rejects.toThrow(/offscreenWorkerUnavailable/u);
       await expect(renderPreparedStudioVectorReference(prepared, {
         rasterExecutionBackend: "browser-direct",
-      })).rejects.toThrow(/브라우저/u);
+      })).rejects.toThrow(/imageUnavailable/u);
     } finally {
       vi.unstubAllGlobals();
     }

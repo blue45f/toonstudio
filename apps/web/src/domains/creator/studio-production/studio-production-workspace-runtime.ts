@@ -1,5 +1,9 @@
 import { studioReviewTaskReferenceSchema, studioReviewTaskReferencesAreValid, type StudioReviewTaskReference } from "@toonstudio/studio-project-model";
 import type { StudioLocalDatabase } from "../studio-local-database";
+import { StudioProductionWorkspaceError } from "./studio-production-workspace-error";
+
+export { StudioProductionWorkspaceError } from "./studio-production-workspace-error";
+export type { StudioProductionWorkspaceErrorCode } from "./studio-production-workspace-error";
 import {
   parsePitchDocument,
   pitchDocumentHasContent,
@@ -8,8 +12,7 @@ import {
 
 export const STUDIO_PRODUCTION_NAMESPACE = "studio-production-command-center-v1";
 export const STUDIO_PRODUCTION_WORKSPACE_VERSION = 3 as const;
-export const STUDIO_PRODUCTION_INVALIDATION_TYPE =
-  "studio-production-workspace-invalidated" as const;
+export const STUDIO_PRODUCTION_INVALIDATION_TYPE = "studio-production-workspace-invalidated" as const;
 
 export const STUDIO_PRODUCTION_WORKSPACE_MODES = [
   "local-draft",
@@ -76,17 +79,13 @@ export const STUDIO_PRODUCTION_AUTHORITY_FIELDS = [
   "publishing",
 ] as const;
 
-export type StudioProductionWorkspaceMode =
-  (typeof STUDIO_PRODUCTION_WORKSPACE_MODES)[number];
+export type StudioProductionWorkspaceMode = (typeof STUDIO_PRODUCTION_WORKSPACE_MODES)[number];
 export type ProductionStage = (typeof STUDIO_PRODUCTION_STAGES)[number];
 export type ProductionRole = (typeof STUDIO_PRODUCTION_ROLES)[number];
-export type ProductionHierarchyKind =
-  (typeof STUDIO_PRODUCTION_HIERARCHY_KINDS)[number];
+export type ProductionHierarchyKind = (typeof STUDIO_PRODUCTION_HIERARCHY_KINDS)[number];
 export type ProductionPriority = (typeof STUDIO_PRODUCTION_PRIORITIES)[number];
-export type ProductionHandoffStatus =
-  (typeof STUDIO_PRODUCTION_HANDOFF_STATUSES)[number];
-export type ProductionAuthorityField =
-  (typeof STUDIO_PRODUCTION_AUTHORITY_FIELDS)[number];
+export type ProductionHandoffStatus = (typeof STUDIO_PRODUCTION_HANDOFF_STATUSES)[number];
+export type ProductionAuthorityField = (typeof STUDIO_PRODUCTION_AUTHORITY_FIELDS)[number];
 export type ProductionTaskStatus = "todo" | "doing" | "blocked" | "done";
 export type ProductionReviewSeverity = "blocker" | "major" | "minor";
 export type ProductionReviewStatus = "open" | "resolved";
@@ -976,13 +975,13 @@ export function parseProductionWorkspace(
 ): ProductionWorkspace | null {
   if (raw === null || raw === "") return null;
   if (raw.length > MAX_SERIALIZED_LENGTH) {
-    throw new Error("저장된 제작 운영 데이터가 크기 제한을 초과했습니다.");
+    throw new StudioProductionWorkspaceError("storedTooLarge");
   }
   let value: unknown;
   try {
     value = JSON.parse(raw) as unknown;
   } catch {
-    throw new Error("저장된 제작 운영 데이터를 읽을 수 없습니다.");
+    throw new StudioProductionWorkspaceError("storedUnreadable");
   }
   if (
     !isRecord(value)
@@ -990,10 +989,10 @@ export function parseProductionWorkspace(
       && value.schemaVersion !== 2
       && value.schemaVersion !== STUDIO_PRODUCTION_WORKSPACE_VERSION)
   ) {
-    throw new Error("지원하지 않는 제작 운영 데이터 형식입니다.");
+    throw new StudioProductionWorkspaceError("unsupportedFormat");
   }
   if (value.scopeKey !== scopeKey || !isStudioProductionScopeKey(value.scopeKey)) {
-    throw new Error("제작 운영 데이터의 작품 범위가 일치하지 않습니다.");
+    throw new StudioProductionWorkspaceError("scopeMismatch");
   }
   const legacy = value.schemaVersion !== STUDIO_PRODUCTION_WORKSPACE_VERSION;
   const title = requiredString(value.title, MAX_TITLE_LENGTH);
@@ -1022,7 +1021,7 @@ export function parseProductionWorkspace(
     || !Array.isArray(value.slides)
     || value.slides.length > MAX_SLIDES
   ) {
-    throw new Error("저장된 제작 운영 데이터가 올바르지 않습니다.");
+    throw new StudioProductionWorkspaceError("storedInvalid");
   }
   const tasks = value.tasks.map(parseTask);
   const reviews = value.reviews.map(parseReview);
@@ -1035,7 +1034,7 @@ export function parseProductionWorkspace(
     ? undefined
     : parsePitchDocument(value.pitchDocument);
   if (value.pitchDocument !== undefined && parsedPitchDocument === null) {
-    throw new Error("저장된 제작 운영 항목이 올바르지 않습니다.");
+    throw new StudioProductionWorkspaceError("itemInvalid");
   }
   const pitchDocument: ProductionPitchDocument | undefined = parsedPitchDocument ?? undefined;
   const members = parseMembers(value.members);
@@ -1055,7 +1054,7 @@ export function parseProductionWorkspace(
       && value.inviteToken !== undefined
       && inviteToken === null)
   ) {
-    throw new Error("저장된 제작 운영 항목이 올바르지 않습니다.");
+    throw new StudioProductionWorkspaceError("itemInvalid");
   }
   const canonical = {
     tasks: tasks as ProductionTask[],
@@ -1065,12 +1064,12 @@ export function parseProductionWorkspace(
     handoffs: handoffs as ProductionHandoffBrief[],
   };
   if (!referencesAreValid(canonical)) {
-    throw new Error("제작 운영 데이터 참조가 올바르지 않습니다.");
+    throw new StudioProductionWorkspaceError("referenceInvalid");
   }
   if (!studioReviewTaskReferencesAreValid(scopeKey, canonical.tasks, canonical.handoffs)
     || (versions as ProductionVersionSnapshot[]).some((version) =>
       !studioReviewTaskReferencesAreValid(scopeKey, version.tasks, version.handoffs ?? []))) {
-    throw new Error("제작 작업의 검수본 또는 인계 범위가 일치하지 않습니다.");
+    throw new StudioProductionWorkspaceError("handoffMismatch");
   }
   return {
     schemaVersion: STUDIO_PRODUCTION_WORKSPACE_VERSION,
@@ -1091,10 +1090,10 @@ export function serializeProductionWorkspace(
   workspace: ProductionWorkspace,
 ): string {
   const normalized = parseProductionWorkspace(JSON.stringify(workspace), workspace.scopeKey);
-  if (!normalized) throw new Error("제작 운영 공간을 직렬화할 수 없습니다.");
+  if (!normalized) throw new StudioProductionWorkspaceError("serializeFailed");
   const raw = JSON.stringify(normalized);
   if (raw.length > MAX_SERIALIZED_LENGTH) {
-    throw new Error("제작 운영 공간이 저장 크기 제한을 초과했습니다.");
+    throw new StudioProductionWorkspaceError("serializeTooLarge");
   }
   return raw;
 }

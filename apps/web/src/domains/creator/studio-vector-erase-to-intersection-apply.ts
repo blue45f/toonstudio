@@ -13,6 +13,8 @@ import {
   STUDIO_ERASE_TO_INTERSECTION_LABEL,
   type StudioStrokePerPointAttributes,
   type StudioStrokePiece,
+  type StudioVectorEraseReasonCode,
+  type StudioVectorEraseReasonParams,
 } from "./studio-vector-erase-to-intersection";
 
 import type { DrawEl, El } from "./studio-element-model";
@@ -79,7 +81,12 @@ function compactDrawEl(el: DrawEl): DrawEl {
 }
 
 export type StudioVectorEraseApplyResult =
-  | { readonly ok: false; readonly reason: string }
+  | {
+      readonly ok: false;
+      readonly reason: string;
+      readonly reasonCode?: StudioVectorEraseReasonCode;
+      readonly params?: StudioVectorEraseReasonParams;
+    }
   | {
       readonly ok: true;
       readonly targetId: string;
@@ -155,7 +162,13 @@ export function planStudioVectorEraseToIntersectionApply(input: {
   );
 
   if (!planned.ok) {
-    return { ok: false, reason: planned.reason };
+    // 순수 코어의 구조화 사유는 그대로 통과시키고, 이 모듈 자체 사유는 코드가 없다.
+    return {
+      ok: false,
+      reason: planned.reason,
+      ...(planned.reasonCode !== undefined ? { reasonCode: planned.reasonCode } : {}),
+      ...(planned.params !== undefined ? { params: planned.params } : {}),
+    };
   }
 
   if (planned.pieces.length === 0) {

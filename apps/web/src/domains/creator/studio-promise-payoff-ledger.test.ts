@@ -178,10 +178,10 @@ describe("studio Promise·Payoff ledger canonical contract", () => {
     expect(advanced.currentEpisode).toBe(10);
     expect(removed.entries).toHaveLength(0);
     expect(removeStudioPromisePayoffEntry(removed, "missing")).toEqual(removed);
-    expect(() => setStudioPromisePayoffCurrentEpisode(advanced, 0)).toThrow(/1 이상/u);
+    expect(() => setStudioPromisePayoffCurrentEpisode(advanced, 0)).toThrow(/invalidEpisode/u);
     expect(() =>
       patchStudioPromisePayoffEntry(advanced, "promise-key", { id: "changed" } as never)
-    ).toThrow(/수정할 수 없는/u);
+    ).toThrow(/forbiddenField/u);
   });
 
   it("bounds long text, links, and entry growth", () => {
@@ -212,7 +212,7 @@ describe("studio Promise·Payoff ledger canonical contract", () => {
         title: `${index}`,
       });
     }
-    expect(() => addStudioPromisePayoffEntry(full)).toThrow(/최대/u);
+    expect(() => addStudioPromisePayoffEntry(full)).toThrow(/tooManyEntries/u);
   });
 
   it("serializes the same normalized content byte-identically", () => {
@@ -396,7 +396,8 @@ describe("studio Promise·Payoff first-reader recap candidates", () => {
         severity: "high",
       }),
     ]);
-    expect(candidates[0]?.message).toContain("16화 간격");
+    expect(candidates[0]?.code).toBe("recapGap");
+    expect(candidates[0]?.params).toEqual(expect.objectContaining({ gapEpisodes: "16" }));
   });
 
   it("flags a recorded appearance in the current episode after a long silence", () => {

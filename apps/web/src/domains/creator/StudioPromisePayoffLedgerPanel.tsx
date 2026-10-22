@@ -19,6 +19,7 @@ import { useState } from "react";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeletePromisePayoffEntryRequest } from "./studio-destructive-command-catalog";
 import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
+import { resolveStudioPromisePayoffErrorFromCause, resolveStudioPromisePayoffRecapCandidate, resolveStudioPromisePayoffWarning } from "./status-i18n/studio-producer-error-i18n-promise";
 import {
   addStudioPromisePayoffEntry,
   diagnoseStudioPromisePayoffLedger,
@@ -53,10 +54,7 @@ import {
   type StudioPromisePayoffWarningSeverity,
 } from "./studio-promise-payoff-ledger";
 
-export interface StudioPromisePayoffSceneOption {
-  readonly id: string;
-  readonly label: string;
-}
+export interface StudioPromisePayoffSceneOption { readonly id: string; readonly label: string; }
 
 export interface StudioPromisePayoffLedgerPanelProps {
   readonly ledger: StudioPromisePayoffLedger;
@@ -293,7 +291,7 @@ export function StudioPromisePayoffLedgerPanel({
       if (nextId) setRequestedEntryId(nextId);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.saveFailed", "약속 원장을 저장하지 못했어요."));
+      setError(resolveStudioPromisePayoffErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.saveFailed", "약속 원장을 저장하지 못했어요.")));
     }
   }
 
@@ -306,7 +304,7 @@ export function StudioPromisePayoffLedgerPanel({
       applyChange(next, added?.id);
       setFilter("all");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.addFailed", "약속을 추가하지 못했어요."));
+      setError(resolveStudioPromisePayoffErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.addFailed", "약속을 추가하지 못했어요.")));
     }
   }
 
@@ -395,7 +393,7 @@ export function StudioPromisePayoffLedgerPanel({
                 try {
                   applyChange(setStudioPromisePayoffCurrentEpisode(ledger, episode));
                 } catch (cause) {
-                  setError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.episodeChangeFailed", "현재 회차를 바꾸지 못했어요."));
+                  setError(resolveStudioPromisePayoffErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.promise.episodeChangeFailed", "현재 회차를 바꾸지 못했어요.")));
                 }
               }}
               className="min-h-11 w-16 rounded border border-transparent bg-transparent px-1 py-0.5 text-right tabular-nums outline-none hover:border-line focus:border-accent"
@@ -447,7 +445,7 @@ export function StudioPromisePayoffLedgerPanel({
                   }}
                   className={`min-h-11 w-full border-l-2 px-2 py-1.5 text-left text-[0.68rem] leading-relaxed transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${warningTone(candidate.severity)}`}
                 >
-                  {candidate.message}
+                  {resolveStudioPromisePayoffRecapCandidate(candidate)}
                 </button>
               </li>
             ))}
@@ -646,10 +644,10 @@ export function StudioPromisePayoffLedgerPanel({
                   <ul className="mt-2 space-y-1.5">
                     {selectedWarnings.map((warning) => (
                       <li
-                        key={`${warning.code}:${warning.message}`}
+                        key={`${warning.code}:${JSON.stringify(warning.params)}`}
                         className={`border-l-2 px-2 py-1.5 text-[0.68rem] leading-relaxed ${warningTone(warning.severity)}`}
                       >
-                        {warning.message}
+                        {resolveStudioPromisePayoffWarning(warning)}
                       </li>
                     ))}
                   </ul>

@@ -19,6 +19,7 @@
  * 넘겨 그 section 의 aspect-ratio 로 확정된 박스를 레터박스 없이 정확히 채우게 한다.
  */
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { resolveStudioScrollRhythmEndingLabel, resolveStudioScrollRhythmInsight } from "./status-i18n/studio-producer-error-i18n-scroll-rhythm";
 import { Activity, LocateFixed, Pause, Play, Smartphone, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
@@ -138,7 +139,7 @@ function RhythmSummaryCard({
       <div className="mt-2.5 rounded-lg border border-line bg-card px-2.5 py-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[0.68rem] text-fg-4">마지막 비트</span>
-          <span className="text-[0.7rem] font-semibold text-fg-2">{analysis.ending.label}</span>
+          <span className="text-[0.7rem] font-semibold text-fg-2">{resolveStudioScrollRhythmEndingLabel(analysis.ending.mode)}</span>
         </div>
         {analysis.ending.mode !== "none" && (
           <p className="mt-1 text-[0.64rem] leading-4 text-fg-4">
@@ -157,34 +158,37 @@ function RhythmSummaryCard({
             {r3c07StatusText("studio.panelStatus.r3c07.scrollPreview.noIssues", "현재 분석 예산 안에서 큰 리듬 문제를 찾지 못했습니다.")}
           </p>
         ) : (
-          analysis.insights.slice(0, 5).map((insight, index) => (
-            <div
-              key={`${insight.code}-${insight.pageId ?? "document"}-${index}`}
-              data-insight-code={insight.code}
-              data-page-id={insight.pageId ?? undefined}
-              className="rounded-lg border border-line bg-card px-2.5 py-2"
-            >
-              <div className="flex items-start gap-2">
-                <span
-                  aria-hidden
-                  className={cn("mt-1 size-1.5 shrink-0 rounded-full", insightTone(insight.severity))}
-                />
-                <div className="min-w-0">
-                  <p className="text-[0.68rem] font-semibold text-fg">
-                    {insight.title}
-                    {insight.pageId && pageLabels.has(insight.pageId) && (
-                      <span className="ml-1 font-normal text-fg-4">
-                        · {pageLabels.get(insight.pageId)}
-                      </span>
-                    )}
-                  </p>
-                  <p className="mt-0.5 text-[0.62rem] leading-4 text-fg-4">
-                    {insight.suggestion}
-                  </p>
+          analysis.insights.slice(0, 5).map((insight, index) => {
+            const insightText = resolveStudioScrollRhythmInsight(insight);
+            return (
+              <div
+                key={`${insight.code}-${insight.pageId ?? "document"}-${index}`}
+                data-insight-code={insight.code}
+                data-page-id={insight.pageId ?? undefined}
+                className="rounded-lg border border-line bg-card px-2.5 py-2"
+              >
+                <div className="flex items-start gap-2">
+                  <span
+                    aria-hidden
+                    className={cn("mt-1 size-1.5 shrink-0 rounded-full", insightTone(insight.severity))}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-[0.68rem] font-semibold text-fg">
+                      {insightText.title}
+                      {insight.pageId && pageLabels.has(insight.pageId) && (
+                        <span className="ml-1 font-normal text-fg-4">
+                          · {pageLabels.get(insight.pageId)}
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-[0.62rem] leading-4 text-fg-4">
+                      {insightText.suggestion}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </aside>

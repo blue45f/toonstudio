@@ -188,7 +188,7 @@ describe("studio production workspace", () => {
       "work:chapter-1",
       createEmptyProductionWorkspace("work:chapter-1", NOW),
       (workspace) => workspace,
-    )).rejects.toThrow(/읽을 수 없습니다/u);
+    )).rejects.toThrow(/storedUnreadable/u);
     expect(database.kvSet).not.toHaveBeenCalled();
   });
 

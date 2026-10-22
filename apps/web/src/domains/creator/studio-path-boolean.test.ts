@@ -256,12 +256,12 @@ describe("combineStudioShapes — 불리언 결과", () => {
 
   it("떨어진 도형 교차 → ok:false + 사유", async () => {
     const result = await combineStudioShapes(a, rectSpec(300, 300, 400, 400), "intersect");
-    expect(result).toEqual({ ok: false, reason: "두 도형이 겹치지 않아 교차 영역이 없어요." });
+    expect(result).toEqual({ ok: false, reason: "emptyIntersect", reasonCode: "emptyIntersect" });
   });
 
   it("동일 도형 제외 → ok:false + 사유", async () => {
     const result = await combineStudioShapes(a, rectSpec(0, 0, 100, 100), "exclude");
-    expect(result).toEqual({ ok: false, reason: "두 도형이 완전히 겹쳐 남는 면이 없어요." });
+    expect(result).toEqual({ ok: false, reason: "emptyExclude", reasonCode: "emptyExclude" });
   });
 
   it("타원 ∪ 사각형: 결과가 두 넓이 사이·결정적", async () => {
@@ -283,10 +283,16 @@ describe("combineStudioShapes — 불리언 결과", () => {
     const broken: StudioPathBooleanShapeSpec = { kind: "rect", points: [0, 0] };
     const below = await combineStudioShapes(broken, b, "union");
     expect(below.ok).toBe(false);
-    if (!below.ok) expect(below.reason.startsWith("아래 도형:")).toBe(true);
+    if (!below.ok) {
+      expect(below.reasonCode).toBe("prefixBelow");
+      expect(below.params).toEqual({ innerCode: "corruptCoordinates" });
+    }
     const above = await combineStudioShapes(a, broken, "union");
     expect(above.ok).toBe(false);
-    if (!above.ok) expect(above.reason.startsWith("위 도형:")).toBe(true);
+    if (!above.ok) {
+      expect(above.reasonCode).toBe("prefixAbove");
+      expect(above.params).toEqual({ innerCode: "corruptCoordinates" });
+    }
   });
 });
 
@@ -316,11 +322,13 @@ describe("combineStudioShapePolygons / studioPathBooleanOutputFromPolygons", () 
   it("빈 MultiPolygon 은 op 별 사유로 실패한다", () => {
     expect(studioPathBooleanOutputFromPolygons([], "union")).toEqual({
       ok: false,
-      reason: "결합 결과가 비어 있어요.",
+      reason: "emptyUnion",
+      reasonCode: "emptyUnion",
     });
     expect(studioPathBooleanOutputFromPolygons([], "subtract")).toEqual({
       ok: false,
-      reason: "위 도형이 아래 도형을 완전히 덮어 남는 면이 없어요.",
+      reason: "emptySubtract",
+      reasonCode: "emptySubtract",
     });
   });
 });
@@ -350,19 +358,15 @@ describe("DrawEl 연동 헬퍼", () => {
     ).not.toBeNull();
   });
 
-  it("선택 게이트: 2개 아님·비도형·면 없는 종류를 한국어 사유로 막는다", () => {
+  it("선택 게이트: 2개 아님·비도형·면 없는 종류를 사유 코드로 막는다", () => {
     const shapeA = drawEl({ id: "a" }) as El;
     const shapeB = drawEl({ id: "b", points: [50, 50, 150, 150] }) as El;
     expect(studioPathBooleanUnavailableReason([shapeA, shapeB])).toBeNull();
-    expect(studioPathBooleanUnavailableReason([shapeA])).toBe(
-      "캔버스에서 도형 2개를 함께 선택하세요(드래그 선택)."
-    );
+    expect(studioPathBooleanUnavailableReason([shapeA])).toBe("gateTwoShapes");
     const sticker = { id: "s", type: "sticker", text: "★", x: 0, y: 0, fontSize: 20, rotation: 0 } as El;
-    expect(studioPathBooleanUnavailableReason([shapeA, sticker])).toBe(
-      "그리기 도형끼리만 결합할 수 있어요(이미지·글자·말풍선 제외)."
-    );
+    expect(studioPathBooleanUnavailableReason([shapeA, sticker])).toBe("gateDrawShapesOnly");
     expect(studioPathBooleanUnavailableReason([shapeA, drawEl({ id: "l", kind: "line" }) as El])).toBe(
-      "선·화살표는 면이 없어 결합할 수 없어요."
+      "gateLineArrow"
     );
   });
 

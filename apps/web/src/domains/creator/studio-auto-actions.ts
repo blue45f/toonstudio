@@ -316,24 +316,13 @@ const DEFAULT_STUDIO_AUTO_ACTION_SET_INPUT = {
   ],
 } as const;
 
-export class StudioAutoActionValidationError extends Error {
-  readonly code:
-    | "invalid_json"
-    | "invalid_structure"
-    | "future_version"
-    | "unsafe_key"
-    | "size_limit"
-    | "work_limit";
-
-  constructor(
-    code: StudioAutoActionValidationError["code"],
-    message: string
-  ) {
-    super(message);
-    this.name = "StudioAutoActionValidationError";
-    this.code = code;
-  }
-}
+// A4 D4 (R15): 검증 오류 정의는 studio-auto-actions-error.ts로 추출했다(기준선 포화).
+export { StudioAutoActionValidationError } from "./studio-auto-actions-error";
+export type {
+  StudioAutoActionValidationDetail,
+  StudioAutoActionValidationErrorCode,
+} from "./studio-auto-actions-error";
+import { StudioAutoActionValidationError } from "./studio-auto-actions-error";
 
 class StudioAutoActionPageTransformError extends Error {
   readonly failure: StudioAutoActionFailure;
@@ -373,27 +362,24 @@ function assertSafeStructuredValue(root: unknown): void {
     if (!current) break;
     nodes += 1;
     if (nodes > STUDIO_AUTO_ACTION_LIMITS.maxTreeNodes) {
-      throw new StudioAutoActionValidationError("size_limit", "Action Set 구조가 너무 큽니다.");
+      throw new StudioAutoActionValidationError("size_limit", "sizeLimitStructure");
     }
     if (current.depth > STUDIO_AUTO_ACTION_LIMITS.maxTreeDepth) {
-      throw new StudioAutoActionValidationError("size_limit", "Action Set 중첩 깊이가 너무 큽니다.");
+      throw new StudioAutoActionValidationError("size_limit", "sizeLimitDepth");
     }
     if (typeof current.value === "string") {
       stringCodeUnits += current.value.length;
       if (stringCodeUnits > STUDIO_AUTO_ACTION_LIMITS.maxJsonCodeUnits) {
-        throw new StudioAutoActionValidationError("size_limit", "Action Set 문자열 데이터가 너무 큽니다.");
+        throw new StudioAutoActionValidationError("size_limit", "sizeLimitStrings");
       }
       continue;
     }
     if (current.value === null || ["number", "boolean"].includes(typeof current.value)) continue;
     if (typeof current.value !== "object") {
-      throw new StudioAutoActionValidationError(
-        "invalid_structure",
-        "Action Set에는 JSON으로 표현할 수 있는 값만 사용할 수 있습니다."
-      );
+      throw new StudioAutoActionValidationError("invalid_structure", "nonJsonValue");
     }
     if (seen.has(current.value)) {
-      throw new StudioAutoActionValidationError("invalid_structure", "순환 참조 Action Set은 지원하지 않습니다.");
+      throw new StudioAutoActionValidationError("invalid_structure", "circular");
     }
     seen.add(current.value);
     if (Array.isArray(current.value)) {
@@ -401,19 +387,19 @@ function assertSafeStructuredValue(root: unknown): void {
       continue;
     }
     if (!isPlainRecord(current.value)) {
-      throw new StudioAutoActionValidationError("invalid_structure", "Action Set 객체 형식이 안전하지 않습니다.");
+      throw new StudioAutoActionValidationError("invalid_structure", "unsafeObject");
     }
     const descriptors = Object.getOwnPropertyDescriptors(current.value);
     for (const key of Reflect.ownKeys(descriptors)) {
       if (typeof key !== "string") {
-        throw new StudioAutoActionValidationError("invalid_structure", "Symbol 키는 사용할 수 없습니다.");
+        throw new StudioAutoActionValidationError("invalid_structure", "symbolKey");
       }
       if (DANGEROUS_KEYS.has(key)) {
-        throw new StudioAutoActionValidationError("unsafe_key", `안전하지 않은 키를 거부했습니다: ${key}`);
+        throw new StudioAutoActionValidationError("unsafe_key", "unsafeKey", { key });
       }
       const descriptor = descriptors[key];
       if (!descriptor || descriptor.get || descriptor.set) {
-        throw new StudioAutoActionValidationError("invalid_structure", "접근자 속성은 사용할 수 없습니다.");
+        throw new StudioAutoActionValidationError("invalid_structure", "accessor");
       }
       stack.push({ value: descriptor.value, depth: current.depth + 1 });
     }
@@ -430,14 +416,15 @@ function zodIssueMessage(error: z.ZodError): string {
 export function normalizeStudioAutoActionSet(value: unknown): StudioAutoActionSet {
   assertSafeStructuredValue(value);
   if (isPlainRecord(value) && typeof value.version === "number" && value.version > STUDIO_AUTO_ACTION_SET_VERSION) {
-    throw new StudioAutoActionValidationError(
-      "future_version",
-      `이 앱보다 새로운 Action Set 버전(${value.version})은 가져올 수 없습니다.`
-    );
+    throw new StudioAutoActionValidationError("future_version", "futureVersion", {
+      version: String(value.version),
+    });
   }
   const result = StudioAutoActionSetSchema.safeParse(value);
   if (!result.success) {
-    throw new StudioAutoActionValidationError("invalid_structure", zodIssueMessage(result.error));
+    throw new StudioAutoActionValidationError("invalid_structure", "zodIssue", undefined, {
+      message: zodIssueMessage(result.error),
+    });
   }
   return result.data;
 }
@@ -449,16 +436,16 @@ export function createDefaultStudioAutoActionSet(): StudioAutoActionSet {
 
 export function importStudioAutoActionSetJson(json: string): StudioAutoActionSet {
   if (typeof json !== "string" || json.length === 0) {
-    throw new StudioAutoActionValidationError("invalid_json", "Action Set JSON이 비어 있습니다.");
+    throw new StudioAutoActionValidationError("invalid_json", "emptyJson");
   }
   if (json.length > STUDIO_AUTO_ACTION_LIMITS.maxJsonCodeUnits) {
-    throw new StudioAutoActionValidationError("size_limit", "Action Set JSON 파일이 너무 큽니다.");
+    throw new StudioAutoActionValidationError("size_limit", "sizeLimitJson");
   }
   let value: unknown;
   try {
     value = JSON.parse(json);
   } catch {
-    throw new StudioAutoActionValidationError("invalid_json", "Action Set JSON을 해석할 수 없습니다.");
+    throw new StudioAutoActionValidationError("invalid_json", "invalidJson");
   }
   return normalizeStudioAutoActionSet(value);
 }
@@ -467,7 +454,7 @@ export function exportStudioAutoActionSetJson(value: unknown, pretty = true): st
   const normalized = normalizeStudioAutoActionSet(value);
   const json = JSON.stringify(normalized, null, pretty ? 2 : 0);
   if (json.length > STUDIO_AUTO_ACTION_LIMITS.maxJsonCodeUnits) {
-    throw new StudioAutoActionValidationError("size_limit", "내보낼 Action Set JSON이 너무 큽니다.");
+    throw new StudioAutoActionValidationError("size_limit", "sizeLimitExport");
   }
   return json;
 }
@@ -475,7 +462,9 @@ export function exportStudioAutoActionSetJson(value: unknown, pretty = true): st
 function normalizeScope(value: unknown): StudioAutoActionScope {
   const result = StudioAutoActionScopeSchema.safeParse(value);
   if (!result.success) {
-    throw new StudioAutoActionValidationError("invalid_structure", `scope: ${zodIssueMessage(result.error)}`);
+    throw new StudioAutoActionValidationError("invalid_structure", "zodIssue", undefined, {
+      message: `scope: ${zodIssueMessage(result.error)}`,
+    });
   }
   if (result.data.kind !== "selected-pages") return result.data;
   return { ...result.data, pageIds: [...new Set(result.data.pageIds)] };
@@ -483,32 +472,30 @@ function normalizeScope(value: unknown): StudioAutoActionScope {
 
 function validatePages<P extends StudioAutoActionPageBase>(pages: readonly P[]): Map<string, P> {
   if (!Array.isArray(pages) || pages.length === 0 || pages.length > STUDIO_AUTO_ACTION_LIMITS.maxPages) {
-    throw new StudioAutoActionValidationError(
-      "size_limit",
-      `페이지는 1~${STUDIO_AUTO_ACTION_LIMITS.maxPages}개여야 합니다.`
-    );
+    throw new StudioAutoActionValidationError("size_limit", "pageCount", {
+      max: String(STUDIO_AUTO_ACTION_LIMITS.maxPages),
+    });
   }
   const byId = new Map<string, P>();
   let totalElements = 0;
   for (const page of pages) {
     if (!isPlainRecord(page) || hasDangerousOwnKey(page)) {
-      throw new StudioAutoActionValidationError("invalid_structure", "페이지 객체 형식이 안전하지 않습니다.");
+      throw new StudioAutoActionValidationError("invalid_structure", "invalidPageObject");
     }
     if (typeof page.id !== "string" || !page.id || page.id.length > STUDIO_AUTO_ACTION_LIMITS.maxIdCodeUnits) {
-      throw new StudioAutoActionValidationError("invalid_structure", "페이지 ID가 올바르지 않습니다.");
+      throw new StudioAutoActionValidationError("invalid_structure", "invalidPageId");
     }
     if (byId.has(page.id)) {
-      throw new StudioAutoActionValidationError("invalid_structure", `페이지 ID가 중복되었습니다: ${page.id}`);
+      throw new StudioAutoActionValidationError("invalid_structure", "duplicatePageId", { pageId: page.id });
     }
     if (!Array.isArray(page.elements) || page.elements.length > STUDIO_AUTO_ACTION_LIMITS.maxElementsPerPage) {
-      throw new StudioAutoActionValidationError(
-        "size_limit",
-        `페이지당 요소는 ${STUDIO_AUTO_ACTION_LIMITS.maxElementsPerPage}개 이하여야 합니다.`
-      );
+      throw new StudioAutoActionValidationError("size_limit", "elementsPerPage", {
+        max: String(STUDIO_AUTO_ACTION_LIMITS.maxElementsPerPage),
+      });
     }
     totalElements += page.elements.length;
     if (totalElements > STUDIO_AUTO_ACTION_LIMITS.maxTotalElements) {
-      throw new StudioAutoActionValidationError("size_limit", "문서의 전체 요소 수가 Auto Actions 상한을 넘었습니다.");
+      throw new StudioAutoActionValidationError("size_limit", "sizeLimitElementCount");
     }
     byId.set(page.id, page as P);
   }
@@ -549,10 +536,10 @@ function validateWorkUnits<P extends StudioAutoActionPageBase>(
   const enabledPageCommands = actionSet.commands.filter((command) => command.enabled && !isElementCommand(command)).length;
   const workUnits = elementCount * enabledElementCommands + targetPageIds.length * enabledPageCommands;
   if (workUnits > STUDIO_AUTO_ACTION_LIMITS.maxWorkUnits) {
-    throw new StudioAutoActionValidationError(
-      "work_limit",
-      `예상 작업량 ${formatNumber(workUnits)}이 안전 상한 ${formatNumber(STUDIO_AUTO_ACTION_LIMITS.maxWorkUnits)}을 넘었습니다.`
-    );
+    throw new StudioAutoActionValidationError("work_limit", "workLimit", {
+      work: formatNumber(workUnits),
+      max: formatNumber(STUDIO_AUTO_ACTION_LIMITS.maxWorkUnits),
+    });
   }
 }
 

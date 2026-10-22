@@ -9,7 +9,8 @@ import type { StudioFillPageReference, StudioFillReferenceLayer  } from "../stud
 import { flipNormalizedPoint } from "../studio-magic-wand";
 import { canvasPointToNormalized } from "../studio-selection-tools";
 import type { SelectionFrame } from "../studio-selection-tools";
-import { describeStudioAdvancedFillVectorReferenceExclusion, planStudioAdvancedFillVectorTarget, renderStudioAdvancedFillVectorReference } from "../studio-vector-fill-reference";
+import { describeStudioAdvancedFillVectorReferenceExclusion, planStudioAdvancedFillVectorTarget, renderStudioAdvancedFillVectorReference, StudioVectorReferenceError } from "../studio-vector-fill-reference";
+import { resolveStudioVectorFillExclusionNotice, resolveStudioVectorReferenceErrorFromCause } from "../status-i18n/studio-producer-error-i18n-vector";
 
 // The host is a mutable runtime bag by design; keep the dynamic seam isolated to this adapter.
 type StudioAdvancedFillRunHost = Record<string, unknown>;
@@ -108,7 +109,7 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
       if (vectorTarget) {
         const vectorInput = currentAdvancedFillVectorInput();
         const vectorPlan = planStudioAdvancedFillVectorTarget(vectorInput);
-        if (!vectorPlan.ok) throw new Error(vectorPlan.reason);
+        if (!vectorPlan.ok) throw new StudioVectorReferenceError(vectorPlan.code, vectorPlan.detail, vectorPlan.params);
         vectorTarget = vectorPlan.target;
         setAdvancedFillVirtualTarget(vectorTarget);
         const cachedReference = advancedFillVirtualReferenceRef.current;
@@ -170,7 +171,8 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
           // 미지원 합성 또는 예산 초과로 참조를 못 만든 경우에도 채우기 전체를 막지 않는다.
           // 참조만 빼고 진행하고 무엇을 왜 뺐는지 결과에 붙인다. 적용 전까지는 미리보기라
           // 경계 하나 빠진 결과를 눈으로 확인할 수 있다.
-          vectorReferenceExclusion = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan);
+          const exclusionNotice = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan);
+          vectorReferenceExclusion = exclusionNotice ? resolveStudioVectorFillExclusionNotice(exclusionNotice) : null;
         }
         const scopedRasterReferences = collectOverlappingStudioFillReferenceLayers(
           layers,
@@ -295,7 +297,7 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
       setError(null);
     } catch (err) {
       if (runId !== advancedFillRunIdRef.current || controller.signal.aborted) return;
-      const message = err instanceof Error ? err.message : "고급 채우기에 실패했습니다.";
+      const message = resolveStudioVectorReferenceErrorFromCause(err) ?? (err instanceof Error ? err.message : "고급 채우기에 실패했습니다.");
       setAdvancedFillStatus(message);
       setError(message);
     } finally {
@@ -394,7 +396,7 @@ export function bindStudioLassoFillRun(h: StudioAdvancedFillRunHost) {
       if (vectorTarget) {
         const vectorInput = currentAdvancedFillVectorInput();
         const vectorPlan = planStudioAdvancedFillVectorTarget(vectorInput);
-        if (!vectorPlan.ok) throw new Error(vectorPlan.reason);
+        if (!vectorPlan.ok) throw new StudioVectorReferenceError(vectorPlan.code, vectorPlan.detail, vectorPlan.params);
         vectorTarget = vectorPlan.target;
         setAdvancedFillVirtualTarget(vectorTarget);
         const cachedReference = advancedFillVirtualReferenceRef.current;
@@ -452,7 +454,8 @@ export function bindStudioLassoFillRun(h: StudioAdvancedFillRunHost) {
             fillReference: true,
           });
         } else if (!vectorPlan.ok) {
-          vectorReferenceExclusion = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan);
+          const exclusionNotice = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan);
+          vectorReferenceExclusion = exclusionNotice ? resolveStudioVectorFillExclusionNotice(exclusionNotice) : null;
         }
         const scopedRasterReferences = collectOverlappingStudioFillReferenceLayers(
           layers,
@@ -558,7 +561,7 @@ export function bindStudioLassoFillRun(h: StudioAdvancedFillRunHost) {
       setError(null);
     } catch (err) {
       if (runId !== advancedFillRunIdRef.current || controller.signal.aborted) return;
-      const message = err instanceof Error ? err.message : "둘러싸기 채우기에 실패했습니다.";
+      const message = resolveStudioVectorReferenceErrorFromCause(err) ?? (err instanceof Error ? err.message : "둘러싸기 채우기에 실패했습니다.");
       setAdvancedFillStatus(message);
       setError(message);
     } finally {

@@ -12,6 +12,11 @@
  * plus the Advanced Fill canvas pixel cap.
  */
 import { loadStudioSvgExportWorkerClientModule } from "./export/studio-document-export-loaders";
+import { StudioVectorReferenceError } from "./studio-vector-fill-reference-error";
+
+export { StudioVectorReferenceError } from "./studio-vector-fill-reference-error";
+export type { StudioVectorFillDetailCode } from "./studio-vector-fill-reference-error";
+import type { StudioVectorFillDetailCode } from "./studio-vector-fill-reference-error";
 import {
   currentStudioAdvancedFillBrowserMaxPixels,
   formatStudioAdvancedFillRasterSizeError,
@@ -346,7 +351,9 @@ export type StudioAdvancedFillVectorTargetPlan =
   | {
       readonly ok: false;
       readonly code: StudioAdvancedFillVectorPlanFailureCode;
-      readonly reason: string;
+      /** A4 D4 (R15): 표시 문구 대신 세부 코드+params만 싣는다(리졸버 vectorFill 구간). */
+      readonly detail: StudioVectorFillDetailCode;
+      readonly params?: Readonly<Record<string, string>>;
       /** Deterministic fallback is useful to callers rendering a disabled insertion preview. */
       readonly insertionIndex: number;
     };
@@ -367,20 +374,7 @@ export interface StudioAdvancedFillVectorTargetInput {
   readonly budgets?: StudioVectorReferenceBudgets;
 }
 
-export class StudioVectorReferenceError extends Error {
-  readonly code:
-    | StudioAdvancedFillVectorPlanFailureCode
-    | "aborted"
-    | "png-budget-exceeded"
-    | "invalid-png-output"
-    | "raster-unavailable";
-
-  constructor(code: StudioVectorReferenceError["code"], message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "StudioVectorReferenceError";
-    this.code = code;
-  }
-}
+// A4 D4 (R15): 오류 클래스·세부 코드 정의는 studio-vector-fill-reference-error.ts로 추출했다.
 
 interface NormalizedStudioVectorReferenceBudgets {
   readonly maxPixelCount: number;
@@ -419,7 +413,7 @@ function normalizeBudgets(
 }
 
 function vectorReferenceAbortError(): StudioVectorReferenceError {
-  const error = new StudioVectorReferenceError("aborted", "벡터 선화 참조 생성을 취소했습니다.");
+  const error = new StudioVectorReferenceError("aborted", "aborted");
   error.name = "AbortError";
   return error;
 }
@@ -475,11 +469,7 @@ function sourceSerializedByteLength(elements: readonly SvgExportEl[]): number {
   try {
     return utf8ByteLength(JSON.stringify(elements));
   } catch (error) {
-    throw new StudioVectorReferenceError(
-      "source-budget-exceeded",
-      "벡터 선화 데이터를 안전하게 읽지 못했습니다. 문제가 있는 획을 삭제하거나 페이지를 복제해 다시 시도해 주세요.",
-      { cause: error },
-    );
+    throw new StudioVectorReferenceError("source-budget-exceeded", "sourceUnreadable", undefined, { cause: error });
   }
 }
 
@@ -493,7 +483,8 @@ function validateVectorDimensions(
   } catch (error) {
     throw new StudioVectorReferenceError(
       "invalid-dimensions",
-      formatStudioAdvancedFillRasterSizeError(error),
+      "invalidDimensionsDetail",
+      { detail: formatStudioAdvancedFillRasterSizeError(error) },
       { cause: error },
     );
   }
@@ -511,10 +502,7 @@ function assertSourceBudget(
   );
   const sourceByteLength = receivedByteLength ?? sourceSerializedByteLength(elements);
   if (sourceByteLength > budgets.maxSourceBytes) {
-    throw new StudioVectorReferenceError(
-      "source-budget-exceeded",
-      "벡터 선화 데이터가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 표시 획 수를 줄인 뒤 다시 시도해 주세요.",
-    );
+    throw new StudioVectorReferenceError("source-budget-exceeded", "sourceTooLarge");
   }
 }
 
@@ -524,18 +512,12 @@ function assertSvgResult(
   fingerprintNamespace: string,
 ): { readonly fingerprint: string; readonly svgByteLength: number } {
   if (result.skipped.length > 0) {
-    throw new StudioVectorReferenceError(
-      "unsupported-vector-fidelity",
-      "일부 레이어의 현재 모습을 정확한 참조 이미지로 만들 수 없습니다. 영향을 받는 레이어의 지원되지 않는 합성 설정을 해제하거나 잠시 숨긴 뒤 다시 시도해 주세요.",
-    );
+    throw new StudioVectorReferenceError("unsupported-vector-fidelity", "unsupportedFidelity");
   }
   const svgBytes = UTF8_ENCODER.encode(result.svg);
   const svgByteLength = svgBytes.byteLength;
   if (svgByteLength > maxSvgBytes) {
-    throw new StudioVectorReferenceError(
-      "svg-budget-exceeded",
-      "벡터 선화의 렌더 데이터가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 표시 획 수를 줄인 뒤 다시 시도해 주세요.",
-    );
+    throw new StudioVectorReferenceError("svg-budget-exceeded", "svgTooLarge");
   }
   return {
     fingerprint: fingerprintStudioVectorReferenceBytes(svgBytes, fingerprintNamespace),
@@ -568,11 +550,11 @@ function blobToDataUrl(blob: Blob, signal?: AbortSignal): Promise<string> {
       reject(vectorReferenceAbortError());
     });
     reader.onerror = () => finish(() => reject(
-      reader.error ?? new StudioVectorReferenceError("raster-unavailable", "벡터 선화 PNG를 읽지 못했습니다."),
+      reader.error ?? new StudioVectorReferenceError("raster-unavailable", "pngReadFailed"),
     ));
     reader.onload = () => finish(() => {
       if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new StudioVectorReferenceError("raster-unavailable", "벡터 선화 PNG를 data URL로 만들지 못했습니다."));
+      else reject(new StudioVectorReferenceError("raster-unavailable", "pngDataUrlFailed"));
     });
     signal?.addEventListener("abort", onAbort, { once: true });
     if (signal?.aborted) {
@@ -586,7 +568,7 @@ function blobToDataUrl(blob: Blob, signal?: AbortSignal): Promise<string> {
 function loadSvgBlobImage(blob: Blob, signal?: AbortSignal): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     if (typeof Image !== "function" || typeof URL.createObjectURL !== "function") {
-      reject(new StudioVectorReferenceError("raster-unavailable", "이 브라우저에서는 벡터 선화를 이미지로 만들 수 없습니다."));
+      reject(new StudioVectorReferenceError("raster-unavailable", "imageUnavailable"));
       return;
     }
     const objectUrl = URL.createObjectURL(blob);
@@ -608,7 +590,7 @@ function loadSvgBlobImage(blob: Blob, signal?: AbortSignal): Promise<HTMLImageEl
     });
     image.onload = () => finish(() => resolve(image));
     image.onerror = () => finish(() => reject(
-      new StudioVectorReferenceError("raster-unavailable", "벡터 선화 SVG를 이미지로 읽지 못했습니다."),
+      new StudioVectorReferenceError("raster-unavailable", "svgImageReadFailed"),
     ));
     signal?.addEventListener("abort", onAbort, { once: true });
     if (signal?.aborted) {
@@ -641,12 +623,9 @@ function canvasToPngBlob(
     }
     canvas.toBlob((blob) => finish(() => {
       if (!blob) {
-        reject(new StudioVectorReferenceError("raster-unavailable", "벡터 선화 PNG를 인코딩하지 못했습니다."));
+        reject(new StudioVectorReferenceError("raster-unavailable", "pngEncodeFailed"));
       } else if (blob.size > maxOutputBytes) {
-        reject(new StudioVectorReferenceError(
-          "png-budget-exceeded",
-          "벡터 선화 PNG가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 해상도를 낮춰 주세요.",
-        ));
+        reject(new StudioVectorReferenceError("png-budget-exceeded", "pngTooLarge"));
       } else {
         resolve(blob);
       }
@@ -663,7 +642,7 @@ export const rasterizeStudioVectorReferenceInBrowser: StudioVectorReferenceRaste
 }) => {
   throwIfAborted(signal);
   if (typeof document === "undefined") {
-    throw new StudioVectorReferenceError("raster-unavailable", "이 브라우저에서는 벡터 선화 캔버스를 만들 수 없습니다.");
+    throw new StudioVectorReferenceError("raster-unavailable", "canvasUnavailable");
   }
   const svgBlob = new Blob([svg], { type: SVG_EXPORT_MIME });
   const image = await loadSvgBlobImage(svgBlob, signal);
@@ -674,7 +653,7 @@ export const rasterizeStudioVectorReferenceInBrowser: StudioVectorReferenceRaste
   try {
     const context = canvas.getContext("2d", { alpha: true });
     if (!context) {
-      throw new StudioVectorReferenceError("raster-unavailable", "벡터 선화 캔버스를 만들 수 없습니다.");
+      throw new StudioVectorReferenceError("raster-unavailable", "canvasCreateFailed");
     }
     context.clearRect(0, 0, width, height);
     context.drawImage(image, 0, 0, width, height);
@@ -683,13 +662,10 @@ export const rasterizeStudioVectorReferenceInBrowser: StudioVectorReferenceRaste
       const dataUrl = canvas.toDataURL("image/png");
       const byteLength = pngDataUrlByteLength(dataUrl);
       if (byteLength === null) {
-        throw new StudioVectorReferenceError("invalid-png-output", "벡터 선화 PNG 형식을 확인하지 못했습니다.");
+        throw new StudioVectorReferenceError("invalid-png-output", "pngFormatUnverified");
       }
       if (byteLength > maxOutputBytes) {
-        throw new StudioVectorReferenceError(
-          "png-budget-exceeded",
-          "벡터 선화 PNG가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 해상도를 낮춰 주세요.",
-        );
+        throw new StudioVectorReferenceError("png-budget-exceeded", "pngTooLarge");
       }
       return { dataUrl, width, height };
     }
@@ -723,16 +699,10 @@ export async function rasterizeStudioVectorReferenceOffscreen(
       ? (source: Blob) => globalThis.createImageBitmap(source)
       : null);
   if (!createBitmap) {
-    throw new StudioVectorReferenceError(
-      "raster-unavailable",
-      "선택한 Offscreen 벡터 래스터 엔진에서 SVG 비트맵 디코더를 사용할 수 없습니다.",
-    );
+    throw new StudioVectorReferenceError("raster-unavailable", "offscreenDecoderUnavailable");
   }
   if (typeof Worker !== "function") {
-    throw new StudioVectorReferenceError(
-      "raster-unavailable",
-      "선택한 Offscreen 벡터 래스터 Worker를 사용할 수 없습니다.",
-    );
+    throw new StudioVectorReferenceError("raster-unavailable", "offscreenWorkerUnavailable");
   }
 
   let bitmap: ImageBitmap | null = null;
@@ -746,10 +716,7 @@ export async function rasterizeStudioVectorReferenceOffscreen(
     );
     throwIfAborted(request.signal);
     if (bitmap.width <= 0 || bitmap.height <= 0) {
-      throw new StudioVectorReferenceError(
-        "raster-unavailable",
-        "선택한 Offscreen 벡터 래스터 엔진이 유효한 SVG 비트맵을 만들지 못했습니다.",
-      );
+      throw new StudioVectorReferenceError("raster-unavailable", "offscreenInvalidBitmap");
     }
 
     if (options.createSession) {
@@ -759,10 +726,7 @@ export async function rasterizeStudioVectorReferenceOffscreen(
       leasedSession = session !== null;
     }
     if (!session) {
-      throw new StudioVectorReferenceError(
-        "raster-unavailable",
-        "선택한 Offscreen 벡터 래스터 Worker를 시작하지 못했습니다.",
-      );
+      throw new StudioVectorReferenceError("raster-unavailable", "offscreenWorkerStartFailed");
     }
     sharedStudioVectorReferenceRasterRunId += 1;
     const result = await session.run(
@@ -805,10 +769,7 @@ export async function rasterizeStudioVectorReferenceOffscreen(
       invalidateStudioVectorReferenceRasterSession(session);
     }
     if (!result.ok) {
-      throw new StudioVectorReferenceError(
-        "raster-unavailable",
-        `선택한 Offscreen 벡터 래스터 Worker가 작업을 완료하지 못했습니다. ${result.message}`,
-      );
+      throw new StudioVectorReferenceError("raster-unavailable", "offscreenWorkerIncomplete", { detail: result.message });
     }
     if (
       result.width !== request.width
@@ -816,22 +777,13 @@ export async function rasterizeStudioVectorReferenceOffscreen(
       || result.payload.kind !== "encoded"
       || result.payload.mime !== "image/png"
     ) {
-      throw new StudioVectorReferenceError(
-        "raster-unavailable",
-        "선택한 Offscreen 벡터 래스터 Worker가 유효한 PNG 결과를 반환하지 않았습니다.",
-      );
+      throw new StudioVectorReferenceError("raster-unavailable", "offscreenInvalidPngResult");
     }
     if (!await isStudioOffscreenRasterEncodedBlobExact(result.payload.blob, "image/png")) {
-      throw new StudioVectorReferenceError(
-        "raster-unavailable",
-        "선택한 Offscreen 벡터 래스터 Worker가 PNG 대신 다른 컨테이너를 반환했습니다.",
-      );
+      throw new StudioVectorReferenceError("raster-unavailable", "offscreenWrongContainer");
     }
     if (result.payload.blob.size > request.maxOutputBytes) {
-      throw new StudioVectorReferenceError(
-        "png-budget-exceeded",
-        "벡터 선화 PNG가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 해상도를 낮춰 주세요.",
-      );
+      throw new StudioVectorReferenceError("png-budget-exceeded", "pngTooLarge");
     }
     return {
       dataUrl: await blobToDataUrl(result.payload.blob, request.signal),
@@ -847,11 +799,7 @@ export async function rasterizeStudioVectorReferenceOffscreen(
     }
     if (leasedSession && session) invalidateStudioVectorReferenceRasterSession(session);
     if (error instanceof StudioVectorReferenceError) throw error;
-    throw new StudioVectorReferenceError(
-      "raster-unavailable",
-      "선택한 Offscreen 벡터 래스터 엔진을 실행하지 못했습니다.",
-      { cause: error },
-    );
+    throw new StudioVectorReferenceError("raster-unavailable", "offscreenRunFailed", undefined, { cause: error });
   } finally {
     if (leasedSession) releaseStudioVectorReferenceRasterSession();
     else session?.dispose();
@@ -964,17 +912,14 @@ async function renderPreparedStudioVectorReferenceWithRasterizer(
   });
   throwIfAborted(signal);
   if (rasterized.width !== prepared.width || rasterized.height !== prepared.height) {
-    throw new StudioVectorReferenceError("invalid-png-output", "벡터 선화 PNG의 페이지 크기가 일치하지 않습니다.");
+    throw new StudioVectorReferenceError("invalid-png-output", "pngSizeMismatch");
   }
   const pngByteLength = pngDataUrlByteLength(rasterized.dataUrl);
   if (pngByteLength === null) {
-    throw new StudioVectorReferenceError("invalid-png-output", "벡터 선화 PNG 형식을 확인하지 못했습니다.");
+    throw new StudioVectorReferenceError("invalid-png-output", "pngFormatUnverified");
   }
   if (pngByteLength > prepared.maxPngBytes) {
-    throw new StudioVectorReferenceError(
-      "png-budget-exceeded",
-      "벡터 선화 PNG가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 해상도를 낮춰 주세요.",
-    );
+    throw new StudioVectorReferenceError("png-budget-exceeded", "pngTooLarge");
   }
   return {
     dataUrl: rasterized.dataUrl,
@@ -1097,7 +1042,7 @@ function prepareAdvancedFillVectorInput(
     return {
       ok: false,
       code: "invalid-page-id",
-      reason: "벡터 채색 레이어를 연결할 페이지를 찾지 못했습니다.",
+      detail: "invalidPageId",
       insertionIndex: safeInsertionIndex,
     };
   }
@@ -1111,7 +1056,7 @@ function prepareAdvancedFillVectorInput(
     return {
       ok: false,
       code: "no-visible-vector-draw",
-      reason: "페이지에 표시 중인 벡터 선화가 없습니다. 펜이나 도형으로 선화를 추가한 뒤 다시 시도해 주세요.",
+      detail: "noVisibleDraw",
       insertionIndex: safeInsertionIndex,
     };
   }
@@ -1135,7 +1080,8 @@ function prepareAdvancedFillVectorInput(
       return {
         ok: false,
         code: error.code === "invalid-dimensions" ? "invalid-dimensions" : "source-budget-exceeded",
-        reason: error.message,
+        detail: error.detail,
+        ...(error.params !== undefined ? { params: error.params } : {}),
         insertionIndex: safeInsertionIndex,
       };
     }
@@ -1161,7 +1107,7 @@ export function planStudioAdvancedFillVectorTarget(
     return {
       ok: false,
       code: "svg-budget-exceeded",
-      reason: "벡터 선화의 최소 직렬화 크기가 안전 처리 한도를 넘었습니다. 페이지를 나누거나 표시 획 수를 줄여 주세요.",
+      detail: "minSerializedTooLarge",
       insertionIndex: prepared.insertionIndex,
     };
   }
@@ -1194,11 +1140,21 @@ export function planStudioAdvancedFillVectorTarget(
  * @returns 뺄 것이 애초에 없으면(`no-visible-vector-draw`) null — 알릴 사실이 없다.
  */
 
+export interface StudioVectorFillExclusionNotice {
+  readonly code: "exclusionNotice";
+  readonly detail: StudioVectorFillDetailCode;
+  readonly params?: Readonly<Record<string, string>>;
+}
+
 export function describeStudioAdvancedFillVectorReferenceExclusion(
   failure: Extract<StudioAdvancedFillVectorTargetPlan, { readonly ok: false }>,
-): string | null {
+): StudioVectorFillExclusionNotice | null {
   if (failure.code === "no-visible-vector-draw") return null;
-  return `벡터 선화는 채우기 경계에서 빼고 래스터 경계만으로 계산했어요. ${failure.reason}`;
+  return {
+    code: "exclusionNotice",
+    detail: failure.detail,
+    ...(failure.params !== undefined ? { params: failure.params } : {}),
+  };
 }
 
 export async function renderStudioAdvancedFillVectorReference(
@@ -1207,7 +1163,7 @@ export async function renderStudioAdvancedFillVectorReference(
 ): Promise<StudioVectorReferenceResult> {
   const prepared = prepareAdvancedFillVectorInput(input);
   if ("ok" in prepared) {
-    throw new StudioVectorReferenceError(prepared.code, prepared.reason);
+    throw new StudioVectorReferenceError(prepared.code, prepared.detail, prepared.params);
   }
   const rendered = await renderStudioVectorReference(
     {
@@ -1241,7 +1197,7 @@ export function materializeStudioAdvancedFillVectorTarget(
   resultSrc: string,
 ): StudioAdvancedFillMaterializedVectorTarget {
   if (pngDataUrlByteLength(resultSrc) === null) {
-    throw new StudioVectorReferenceError("invalid-png-output", "벡터 채색 결과가 올바른 PNG 형식이 아닙니다.");
+    throw new StudioVectorReferenceError("invalid-png-output", "fillResultInvalidPng");
   }
   return {
     id: target.id,
