@@ -21,6 +21,7 @@ import {
   type FormEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 
 import {
   STUDIO_COMMENTS_MAX_BODY_LENGTH,
@@ -337,14 +338,14 @@ export function StudioCommentThreadPopover({
   const busy = syncing || submitting || pendingMutation !== null;
   const replyRestriction = mutationDisabledReason
     ?? (thread.resolved
-      ? "해결된 댓글입니다. 다시 열면 답글을 남길 수 있어요."
+      ? frozenStatus4Text("studio.frozenStatus4.comment.resolvedReason", "해결된 댓글입니다. 다시 열면 답글을 남길 수 있어요.")
       : atReplyLimit
-        ? `답글은 댓글당 최대 ${STUDIO_COMMENTS_MAX_REPLIES_PER_THREAD}개까지 남길 수 있어요.`
+        ? frozenStatus4Text("studio.frozenStatus4.comment.replyLimit", { max: STUDIO_COMMENTS_MAX_REPLIES_PER_THREAD }, "답글은 댓글당 최대 {max}개까지 남길 수 있어요.")
         : !capabilities.reply
-          ? "현재 권한으로는 답글을 남길 수 없어요."
+          ? frozenStatus4Text("studio.frozenStatus4.comment.replyNoPermission", "현재 권한으로는 답글을 남길 수 없어요.")
           : null);
   const resolveRestriction = mutationDisabledReason
-    ?? (!capabilities.resolve ? "현재 권한으로는 해결 상태를 변경할 수 없어요." : null);
+    ?? (!capabilities.resolve ? frozenStatus4Text("studio.frozenStatus4.comment.resolveNoPermission", "현재 권한으로는 해결 상태를 변경할 수 없어요.") : null);
   const uniqueResolveRestriction = resolveRestriction === replyRestriction
     ? null
     : resolveRestriction;
@@ -531,7 +532,7 @@ export function StudioCommentThreadPopover({
       suppressDeferredFocusRef.current = true;
       if (pendingMutationRef.current || syncing || submitting) return;
       if (replyBody.trim()) {
-        setNotice("작성 중인 답글은 유지했어요. 캔버스 작업을 계속하거나 답글을 등록할 수 있어요.");
+        setNotice(frozenStatus4Text("studio.frozenStatus4.comment.draftKept", "작성 중인 답글은 유지했어요. 캔버스 작업을 계속하거나 답글을 등록할 수 있어요."));
         return;
       }
       shouldRestoreFocusRef.current = false;
@@ -585,13 +586,13 @@ export function StudioCommentThreadPopover({
     try {
       const accepted = await onSubmitReply(thread.id, body);
       if (accepted === false) {
-        throw new Error("답글을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+        throw new Error(frozenStatus4Text("studio.frozenStatus4.comment.saveFailedLong", "답글을 저장하지 못했어요. 잠시 후 다시 시도해 주세요."));
       }
       if (mutationRevisionRef.current !== mutationRevision) return;
-      setNotice("답글을 등록했어요.");
+      setNotice(frozenStatus4Text("studio.frozenStatus4.comment.saved", "답글을 등록했어요."));
     } catch (cause) {
       if (mutationRevisionRef.current !== mutationRevision) return;
-      setError(cause instanceof Error ? cause.message : "답글을 저장하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus4Text("studio.frozenStatus4.comment.saveFailed", "답글을 저장하지 못했어요."));
       globalThis.requestAnimationFrame(() => textareaRef.current?.focus());
     } finally {
       if (mutationRevisionRef.current === mutationRevision) {
@@ -612,19 +613,13 @@ export function StudioCommentThreadPopover({
     try {
       const accepted = await onResolveChange(thread.id, nextResolved);
       if (accepted === false) {
-        throw new Error(nextResolved
-          ? "댓글을 해결 처리하지 못했어요."
-          : "댓글을 다시 열지 못했어요.");
+        throw new Error(nextResolved ? frozenStatus4Text("studio.frozenStatus4.comment.resolveFailed", "댓글을 해결 처리하지 못했어요.") : frozenStatus4Text("studio.frozenStatus4.comment.reopenFailed", "댓글을 다시 열지 못했어요."));
       }
       if (mutationRevisionRef.current !== mutationRevision) return;
-      setNotice(nextResolved ? "댓글을 해결 처리했어요." : "댓글을 다시 열었어요.");
+      setNotice(nextResolved ? frozenStatus4Text("studio.frozenStatus4.comment.resolvedNotice", "댓글을 해결 처리했어요.") : frozenStatus4Text("studio.frozenStatus4.comment.reopenedNotice", "댓글을 다시 열었어요."));
     } catch (cause) {
       if (mutationRevisionRef.current !== mutationRevision) return;
-      setError(cause instanceof Error
-        ? cause.message
-        : nextResolved
-          ? "댓글을 해결 처리하지 못했어요."
-          : "댓글을 다시 열지 못했어요.");
+      setError(cause instanceof Error ? cause.message : nextResolved ? frozenStatus4Text("studio.frozenStatus4.comment.resolveFailed", "댓글을 해결 처리하지 못했어요.") : frozenStatus4Text("studio.frozenStatus4.comment.reopenFailed", "댓글을 다시 열지 못했어요."));
     } finally {
       if (mutationRevisionRef.current === mutationRevision) {
         pendingMutationRef.current = null;
@@ -710,7 +705,7 @@ export function StudioCommentThreadPopover({
                   {thread.resolved
                     ? <CheckCircle2 size={10} aria-hidden />
                     : <CircleDot size={10} aria-hidden />}
-                  {thread.resolved ? "해결됨" : "검토 중"}
+                  {thread.resolved ? frozenStatus4Text("studio.frozenStatus4.comment.badgeResolved", "해결됨") : frozenStatus4Text("studio.frozenStatus4.comment.badgeReviewing", "검토 중")}
                 </span>
                 {unread ? (
                   <span className="inline-flex items-center rounded-md bg-accent px-1.5 py-0.5 text-[0.62rem] font-bold text-on-accent">
@@ -953,7 +948,7 @@ export function StudioCommentThreadPopover({
                     <CheckCircle2 size={13} aria-hidden />
                   )}
                   {pendingMutation === "resolve"
-                    ? "변경 중"
+                    ? frozenStatus4Text("studio.frozenStatus4.comment.busyChanging", "변경 중")
                     : thread.resolved
                       ? "다시 열기"
                       : "해결"}
@@ -971,7 +966,7 @@ export function StudioCommentThreadPopover({
                   ) : (
                     <Send size={13} aria-hidden />
                   )}
-                  {pendingMutation === "reply" || submitting ? "등록 중" : "답글"}
+                  {pendingMutation === "reply" || submitting ? frozenStatus4Text("studio.frozenStatus4.comment.busySubmitting", "등록 중") : "답글"}
                 </button>
               </footer>
             </form>

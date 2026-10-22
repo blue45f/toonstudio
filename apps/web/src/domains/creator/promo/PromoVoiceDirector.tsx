@@ -19,6 +19,7 @@ import {
 } from "../creator-intelligence/studio-creator-intelligence-client";
 import type { PromoCloudVoiceClipInput } from "./promo-cloud-voice";
 import { scopedPromoCoalesceKey } from "./promo-history";
+import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 import { downloadPromoBlob } from "./promo-media";
 import { PROMO_VOICE_PRESETS } from "./promo-voice-director";
 import {
@@ -144,7 +145,7 @@ export function PromoVoiceDirector({
       .catch(() => {
         if (!active) return;
         setCloudStatus(null);
-        setCloudStatusError("클라우드 음성 연결 상태를 확인하지 못했어요.");
+        setCloudStatusError(frozenStatus4Text("studio.frozenStatus4.promo.cloudCheckFailed", "클라우드 음성 연결 상태를 확인하지 못했어요."));
       });
     return () => {
       active = false;
@@ -209,7 +210,7 @@ export function PromoVoiceDirector({
       onEnd: () => {
         previewRef.current = null;
         setActivePreview(null);
-        setNotice("전체 음성 타임라인 미리듣기를 마쳤어요.");
+        setNotice(frozenStatus4Text("studio.frozenStatus4.promo.previewTimelineDone", "전체 음성 타임라인 미리듣기를 마쳤어요."));
       },
       onError: (error) => {
         previewRef.current = null;
@@ -218,7 +219,7 @@ export function PromoVoiceDirector({
       },
     });
     if (!session) {
-      setNotice("재생할 대사 클립이 없거나 시스템 음성을 시작하지 못했어요.");
+      setNotice(frozenStatus4Text("studio.frozenStatus4.promo.previewNoClip", "재생할 대사 클립이 없거나 시스템 음성을 시작하지 못했어요."));
       return;
     }
     previewRef.current = session;
@@ -231,7 +232,7 @@ export function PromoVoiceDirector({
     const clipPlan = planByClipId.get(clipId);
     const item = sequence.items.find((candidate) => candidate.id === clipId);
     if (!clipPlan || !item) {
-      setNotice("미리 들을 대사를 찾지 못했어요.");
+      setNotice(frozenStatus4Text("studio.frozenStatus4.promo.previewClipNotFound", "미리 들을 대사를 찾지 못했어요."));
       return;
     }
     const session = speakNaturalBrowserSpeech({
@@ -249,7 +250,7 @@ export function PromoVoiceDirector({
       },
     });
     if (!session) {
-      setNotice("이 브라우저에서 대사 미리듣기를 시작하지 못했어요.");
+      setNotice(frozenStatus4Text("studio.frozenStatus4.promo.previewStartFailed", "이 브라우저에서 대사 미리듣기를 시작하지 못했어요."));
       return;
     }
     previewRef.current = session;
@@ -362,12 +363,12 @@ export function PromoVoiceDirector({
       captionMode: studio.captionMode,
       clips: generatedStudio.clips.map((clip) => ({ ...clip, speakerId })),
     });
-    setNotice("현재 장면 자막과 CTA에서 대사 클립을 다시 만들었어요.");
+    setNotice(frozenStatus4Text("studio.frozenStatus4.promo.clipsRebuilt", "현재 장면 자막과 CTA에서 대사 클립을 다시 만들었어요."));
   };
 
   const syncWithScenes = () => {
     onChange(syncPromoVoiceStudio(voiceProject, studio));
-    setNotice("장면 순서와 길이에 맞춰 연결된 대사 시간을 다시 맞췄어요.");
+    setNotice(frozenStatus4Text("studio.frozenStatus4.promo.clipsRetimed", "장면 순서와 길이에 맞춰 연결된 대사 시간을 다시 맞췄어요."));
   };
 
   const addPronunciation = () => {
@@ -424,7 +425,7 @@ export function PromoVoiceDirector({
       ...(provider === "gemini" ? { voice: geminiVoice } : {}),
     }));
     if (provider === "deepgram" && clips.some((clip) => clip.language !== "en")) {
-      setNotice("현재 연결된 Deepgram Aura 영어 음성은 영문 대사에만 사용해 주세요. 한국어와 일본어는 Gemini 또는 무료 로컬 음성을 사용합니다.");
+      setNotice(frozenStatus4Text("studio.frozenStatus4.promo.deepgramEnglishOnly", "현재 연결된 Deepgram Aura 영어 음성은 영문 대사에만 사용해 주세요. 한국어와 일본어는 Gemini 또는 무료 로컬 음성을 사용합니다."));
       return;
     }
     onChange(studio);
@@ -480,10 +481,10 @@ export function PromoVoiceDirector({
         <span>
           예상 {timelineSeconds.toFixed(1)}초
           {sequence.overrunCount > 0
-            ? ` · 구간 초과 ${sequence.overrunCount}개`
-            : " · 모든 대사가 배정 구간 안에 있음"}
+            ? frozenStatus4Text("studio.frozenStatus4.promo.summaryOverrun", { count: sequence.overrunCount }, " · 구간 초과 {count}개")
+            : frozenStatus4Text("studio.frozenStatus4.promo.summaryAllFit", " · 모든 대사가 배정 구간 안에 있음")}
           {sequence.overlapCount > 0
-            ? ` · 음성 겹침 ${sequence.overlapCount}개`
+            ? frozenStatus4Text("studio.frozenStatus4.promo.summaryOverlap", { count: sequence.overlapCount }, " · 음성 겹침 {count}개")
             : ""}
         </span>
       </div>
@@ -716,11 +717,11 @@ export function PromoVoiceDirector({
               <div className="promo-voice-clip-status">
                 <span>
                   {clip.panelId ? "장면 연결됨" : "자유 타이밍"}
-                  {clipPlan ? ` · 예상 ${(clipPlan.estimatedDurationMs / 1_000).toFixed(1)}초` : ""}
+                  {clipPlan ? frozenStatus4Text("studio.frozenStatus4.promo.clipEta", { seconds: (clipPlan.estimatedDurationMs / 1_000).toFixed(1) }, " · 예상 {seconds}초") : ""}
                 </span>
                 {clipPlan && clipPlan.overrunMs > 0 ? (
                   <strong>
-                    배정 구간보다 {(clipPlan.overrunMs / 1_000).toFixed(1)}초 길어요
+                    {frozenStatus4Text("studio.frozenStatus4.promo.clipOverrun", { seconds: (clipPlan.overrunMs / 1_000).toFixed(1) }, "배정 구간보다 {seconds}초 길어요")}
                   </strong>
                 ) : null}
               </div>
@@ -871,10 +872,10 @@ export function PromoVoiceDirector({
         <p className="promo-cloud-status" role="status">
           {cloudStatusError
             || (!cloudStatus
-              ? "클라우드 음성 연결 상태를 확인하는 중이에요."
+              ? frozenStatus4Text("studio.frozenStatus4.promo.cloudChecking", "클라우드 음성 연결 상태를 확인하는 중이에요.")
               : `Gemini ${geminiReady ? "연결됨" : "미연결"} · Deepgram ${deepgramReady ? "연결됨" : "미연결"}`)}
           {hasDeepgramUnsupportedClip
-            ? " · 현재 대사에 비영문이 있어 Deepgram 버튼은 비활성화됩니다."
+            ? frozenStatus4Text("studio.frozenStatus4.promo.cloudDeepgramDisabled", " · 현재 대사에 비영문이 있어 Deepgram 버튼은 비활성화됩니다.")
             : ""}
         </p>
       </div>
@@ -911,14 +912,12 @@ export function PromoVoiceDirector({
       </div>
       {sequence.overrunCount > 0 ? (
         <p className="promo-error">
-          배정 구간을 넘는 대사가 {sequence.overrunCount}개 있어요. 문장을 줄이거나
-          구간 길이·화자 속도를 조절한 뒤 음성 파일을 만들어 주세요.
+          {frozenStatus4Text("studio.frozenStatus4.promo.warnOverrun", { count: sequence.overrunCount }, "배정 구간을 넘는 대사가 {count}개 있어요. 문장을 줄이거나 구간 길이·화자 속도를 조절한 뒤 음성 파일을 만들어 주세요.")}
         </p>
       ) : null}
       {sequence.overlapCount > 0 ? (
         <p className="promo-error">
-          앞 대사가 끝나기 전에 시작하는 대사가 {sequence.overlapCount}개 있어요.
-          시작 시간을 뒤로 옮기거나 문장을 줄여 음성 깨짐과 지연을 방지해 주세요.
+          {frozenStatus4Text("studio.frozenStatus4.promo.warnOverlap", { count: sequence.overlapCount }, "앞 대사가 끝나기 전에 시작하는 대사가 {count}개 있어요. 시작 시간을 뒤로 옮기거나 문장을 줄여 음성 깨짐과 지연을 방지해 주세요.")}
         </p>
       ) : null}
       <p className="promo-muted">

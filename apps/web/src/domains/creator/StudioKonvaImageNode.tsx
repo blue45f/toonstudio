@@ -45,6 +45,7 @@ import {
 } from "./studio-animated-image-filter-runtime";
 import { resizableNodeProps } from "./studio-node-props";
 import { computePanelAutoFitPatch } from "./studio-panel-autofit";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 import { sha256HexPortable } from "./studio-sha256";
 import { toKonvaSkewAttrs } from "./studio-skew";
 
@@ -934,7 +935,7 @@ export function StudioKonvaImageNode({
     animatedFilterActive && animatedFilterPresentationKey !== animatedFilterRequestKey
       ? {
           ...animatedFilterStatus,
-          message: "현재 GIF 프레임에 필터 캐시를 처음 적용하는 중입니다.",
+          message: frozenStatus4Text("studio.frozenStatus4.konva.gifFirstApply", "현재 GIF 프레임에 필터 캐시를 처음 적용하는 중입니다."),
           state: "preparing",
         }
       : animatedFilterStatus;
@@ -1130,10 +1131,7 @@ export function StudioKonvaImageNode({
     if (!workerFailureNoticeRef.current) {
       const notice = { key: workerRequestKey };
       workerFailureNoticeRef.current = notice;
-      toast(
-        "대형 고급 필터와 바깥 테두리를 함께 처리할 Worker 경로가 필요해 이전 화면을 유지합니다.",
-        { tone: "info", durationMs: 5_000 },
-      );
+      toast(frozenStatus4Text("studio.frozenStatus4.konva.workerPathNeeded", "대형 고급 필터와 바깥 테두리를 함께 처리할 Worker 경로가 필요해 이전 화면을 유지합니다."), { tone: "info", durationMs: 5_000 });
       globalThis.setTimeout(() => {
         if (workerFailureNoticeRef.current === notice) {
           workerFailureNoticeRef.current = null;
@@ -1213,10 +1211,7 @@ export function StudioKonvaImageNode({
       if (!workerFailureNoticeRef.current) {
         const notice = { key: requestKey };
         workerFailureNoticeRef.current = notice;
-        toast(
-          `선택한 이미지 필터 엔진을 사용할 수 없습니다. ${message}`,
-          { tone: "info", durationMs: 5_000 },
-        );
+        toast(frozenStatus4Text("studio.frozenStatus4.konva.engineUnavailable", { message }, "선택한 이미지 필터 엔진을 사용할 수 없습니다. {message}"), { tone: "info", durationMs: 5_000 });
         globalThis.setTimeout(() => {
           if (workerFailureNoticeRef.current === notice) workerFailureNoticeRef.current = null;
         }, 5_000);
@@ -1224,7 +1219,7 @@ export function StudioKonvaImageNode({
     };
 
     if (!gpuFilterModule) {
-      markSelectedFilterUnavailable("WebGPU 필터 모듈을 불러오지 못해 이전 화면을 유지합니다.");
+      markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.gpuModuleLoadFailed", "WebGPU 필터 모듈을 불러오지 못해 이전 화면을 유지합니다."));
       return;
     }
 
@@ -1242,7 +1237,7 @@ export function StudioKonvaImageNode({
     // frame back during pointer movement.
     const selectedFilterLane = filterIslandPlan.selectedLane;
     if (filterIslandPlan.status === "unavailable") {
-      markSelectedFilterUnavailable("선택한 provider가 비활성화되어 이전 화면을 유지합니다.");
+      markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.providerDisabled", "선택한 provider가 비활성화되어 이전 화면을 유지합니다."));
       return;
     }
     const useRetainedGpuPreview =
@@ -1262,7 +1257,7 @@ export function StudioKonvaImageNode({
       selectedFilterLane,
     );
     if (selectedFilterLane === "gpu-chain" && !useRetainedGpuPreview) {
-      markSelectedFilterUnavailable("WebGPU presentation 계약을 충족하지 못해 이전 화면을 유지합니다.");
+      markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.presentationContractFailed", "WebGPU presentation 계약을 충족하지 못해 이전 화면을 유지합니다."));
       return;
     }
     if (selectedFilterLane === "worker" && !filterWorkerClientSettled) {
@@ -1274,7 +1269,7 @@ export function StudioKonvaImageNode({
       ? filterWorkerClient
       : null;
     if (selectedFilterLane === "worker" && !selectedWorkerClient) {
-      markSelectedFilterUnavailable("필터 Worker 모듈을 불러오지 못해 이전 화면을 유지합니다.");
+      markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.workerModuleLoadFailed", "필터 Worker 모듈을 불러오지 못해 이전 화면을 유지합니다."));
       return;
     }
     if (!useRetainedGpuPreview) {
@@ -1313,7 +1308,7 @@ export function StudioKonvaImageNode({
         workerSourcePixelsRef.current = sourcePixels;
         return sourcePixels;
       } catch (error) {
-        markSelectedFilterUnavailable("원본 픽셀을 준비하지 못해 이전 화면을 유지합니다.", error);
+        markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.sourcePixelsFailed", "원본 픽셀을 준비하지 못해 이전 화면을 유지합니다."), error);
         return null;
       }
     };
@@ -1339,10 +1334,7 @@ export function StudioKonvaImageNode({
           ),
           surface,
           onFailure: (failure) => {
-            markSelectedFilterUnavailable(
-              `WebGPU ${failure.phase} 단계가 실패해 이전 화면을 유지합니다.`,
-              failure.message,
-            );
+            markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.gpuPhaseFailed", { phase: failure.phase }, "WebGPU {phase} 단계가 실패해 이전 화면을 유지합니다."), failure.message);
           },
         },
       ).then((frame) => {
@@ -1367,7 +1359,7 @@ export function StudioKonvaImageNode({
         return frame;
       }).catch((error) => {
         if (!cancelled) {
-          markSelectedFilterUnavailable("WebGPU 미리보기가 실패해 이전 화면을 유지합니다.", error);
+          markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.gpuPreviewFailed", "WebGPU 미리보기가 실패해 이전 화면을 유지합니다."), error);
         }
         return null;
       });
@@ -1440,7 +1432,7 @@ export function StudioKonvaImageNode({
           setWorkerFilteredCanvas({ canvas: outCanvas, filterKey, height, source, src, width });
           return true;
         } catch (error) {
-          markSelectedFilterUnavailable("필터 결과를 표시 표면에 확정하지 못했습니다.", error);
+          markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.commitFailed", "필터 결과를 표시 표면에 확정하지 못했습니다."), error);
           return false;
         }
       };
@@ -1496,10 +1488,7 @@ export function StudioKonvaImageNode({
               if (!workerFailureNoticeRef.current) {
                 const notice = { key: requestKey };
                 workerFailureNoticeRef.current = notice;
-                toast(
-                  "고급 필터 Worker를 사용할 수 없어 마지막으로 계산된 화면을 유지합니다.",
-                  { tone: "info", durationMs: 5_000 },
-                );
+                toast(frozenStatus4Text("studio.frozenStatus4.konva.workerUnavailableKept", "고급 필터 Worker를 사용할 수 없어 마지막으로 계산된 화면을 유지합니다."), { tone: "info", durationMs: 5_000 });
                 globalThis.setTimeout(() => {
                   if (workerFailureNoticeRef.current === notice) {
                     workerFailureNoticeRef.current = null;
@@ -1508,7 +1497,7 @@ export function StudioKonvaImageNode({
               }
               return;
             }
-            markSelectedFilterUnavailable("필터 Worker 실행이 실패해 이전 화면을 유지합니다.", error);
+            markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.workerRunFailed", "필터 Worker 실행이 실패해 이전 화면을 유지합니다."), error);
           });
       };
       // The same in-flight preview promise is consumed by the immediate presentation and this
@@ -1518,20 +1507,20 @@ export function StudioKonvaImageNode({
         void runGpuPreview().then(async (frame) => {
           if (!frame || cancelled) {
             if (!cancelled) {
-              markSelectedFilterUnavailable("WebGPU 프레임을 만들지 못해 이전 화면을 유지합니다.");
+              markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.gpuFrameFailed", "WebGPU 프레임을 만들지 못해 이전 화면을 유지합니다."));
             }
             return;
           }
           const finalPixels = await frame.readbackFinal();
           if (cancelled) return;
           if (!finalPixels) {
-            markSelectedFilterUnavailable("WebGPU 최종 readback이 실패해 이전 화면을 유지합니다.");
+            markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.gpuReadbackFailed", "WebGPU 최종 readback이 실패해 이전 화면을 유지합니다."));
             return;
           }
           commitFilteredPixels(finalPixels);
         }).catch((error) => {
           if (!cancelled) {
-            markSelectedFilterUnavailable("WebGPU 필터 실행이 실패해 이전 화면을 유지합니다.", error);
+            markSelectedFilterUnavailable(frozenStatus4Text("studio.frozenStatus4.konva.gpuRunFailed", "WebGPU 필터 실행이 실패해 이전 화면을 유지합니다."), error);
           }
         });
         return;
