@@ -9,6 +9,7 @@ import {
   STUDIO_SERVICE_WORKER_RUNTIME_LIMITS,
   classifyStudioServiceWorkerRequest,
   isStudioServiceWorkerCachedResponseUsable,
+  isStudioServiceWorkerSpaFallbackForAsset,
   isStudioServiceWorkerMessage,
   isStudioServiceWorkerResponseCacheable,
   isStudioServiceWorkerWorkerAssetUrl,
@@ -270,6 +271,20 @@ describe("cached response usability (self-healing CORP guard)", () => {
         crossOriginResourcePolicy: "same-origin",
       }),
     ).toBe(true);
+  });
+
+  it("treats the SPA shell under an asset URL as a fallback, never as the asset", () => {
+    const html = "text/html; charset=utf-8";
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "immutable-asset", url: `${ORIGIN}/assets/3d/sofa.glb`, contentType: html })).toBe(true);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "static-media", url: `${ORIGIN}/vrm/hero.vrm`, contentType: html })).toBe(true);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "heavy-asset", url: `${ORIGIN}/assets/model.onnx`, contentType: html })).toBe(true);
+    // 진짜 HTML 파일, HTML 이 아닌 자산, 자산이 아닌 경로는 건드리지 않는다.
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "immutable-asset", url: `${ORIGIN}/assets/docs/page.html`, contentType: html })).toBe(false);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "immutable-asset", url: `${ORIGIN}/assets/3d/sofa.glb`, contentType: "model/gltf-binary" })).toBe(false);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "navigation", url: `${ORIGIN}/studio`, contentType: html })).toBe(false);
+    expect(
+      isStudioServiceWorkerCachedResponseUsable({ routeClass: "immutable-asset", url: `${ORIGIN}/assets/3d/sofa.glb`, status: 200, contentType: html }),
+    ).toBe(false);
   });
 
   it("does not demand CORP from ordinary scripts", () => {
