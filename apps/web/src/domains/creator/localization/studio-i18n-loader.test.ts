@@ -69,7 +69,9 @@ describe("Studio lazy i18n assets", () => {
       // studio.settings.advancedTools.{expand,collapse} 2키를 settings 네임스페이스로 옮겨 105키가 늘었다.
       // 에디터 호스트의 상태 문구(studio.hostStatus.* 등)는 TS 등록이라 이 숫자에 들지 않는다.
       // 동기화(sync-i18n-legacy-assets)로 75개 팩이 모두 같은 키 집합을 가진다.
-      expect(Object.keys(dictionary ?? {})).toHaveLength(1_635);
+      // 1_635 → 1_726: 3D 배경 편집기의 태그·컴포넌트·장면 정보 화면과 .skp 원본 이름·소재 이름 검색 안내를 전용 네임스페이스
+      // (studio.bg3dScene.*) 91키로 게시했다(2026-10-22). 75개 팩이 모두 같은 키 집합을 가진다.
+      expect(Object.keys(dictionary ?? {})).toHaveLength(1_726);
     }
     // The mobile dock used to hardcode Korean labels; every pack must now carry the keys that
     // replaced them, so an `en` viewport cannot fall back to Korean chrome.
