@@ -13,6 +13,7 @@ import { downloadBlob } from "../export/studio-export";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
+import { hostErrorText } from "../studio-host-reason-i18n";
 
 type ControlView =
   | "schedule"
@@ -348,8 +349,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
   };
 
   const saveRecord = (
-    record: Extract<ProductionClientCommand, { readonly type: "upsert-operations-record" }>["record"],
-    message: string,
+    record: Extract<ProductionClientCommand, { readonly type: "upsert-operations-record" }>["record"], message: string,
   ) => execute({ type: "upsert-operations-record", record }, message);
 
   const applyScenario = (scenario: ScheduleRecoveryScenario) => run(`scenario:${scenario.id}`, async () => {
@@ -429,7 +429,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
         && !CLOSED_STATUSES.has(task.status)))
       .map((cut) => cut.cutId);
     if (duplicateCutIds.length > 0) {
-      throw new Error(`이미 같은 공정이 배정된 컷이 있습니다: ${duplicateCutIds.join(", ")}`);
+      throw new Error(hostErrorText("studio.hostError.duplicateProcessCuts", { cutIds: duplicateCutIds.join(", ") }, "이미 같은 공정이 배정된 컷이 있습니다: {cutIds}"));
     }
     const episode = aggregate.episodes.find((entry) => entry.episodeId === cutEpisodeId);
     const reviewers = assignments
