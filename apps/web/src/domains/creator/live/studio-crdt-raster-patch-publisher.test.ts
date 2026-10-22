@@ -142,7 +142,7 @@ describe("studio raster patch publisher", () => {
     const setup = dependencies({ canWriteLayer: vi.fn(async () => false) });
 
     await expect(publishStudioRasterPatch(input(), setup.value)).rejects.toMatchObject({
-      code: "layer_locked",
+      code: "layer-locked",
     });
     expect(setup.value.canWriteLayer).toHaveBeenCalledOnce();
     expect(setup.value.canWriteLayer).toHaveBeenCalledWith({
@@ -165,7 +165,7 @@ describe("studio raster patch publisher", () => {
     const setup = dependencies({ canWriteLayer, compensate });
 
     await expect(publishStudioRasterPatch(input(), setup.value)).rejects.toMatchObject({
-      code: "layer_locked",
+      code: "layer-locked",
     });
     expect(canWriteLayer).toHaveBeenCalledTimes(2);
     expect(setup.value.upload).toHaveBeenCalledOnce();
@@ -334,7 +334,7 @@ describe("studio raster patch publisher", () => {
       input(),
       preflight.value,
       { signal: alreadyAborted.signal }
-    )).rejects.toMatchObject({ name: "AbortError" });
+    )).rejects.toMatchObject({ code: "aborted" });
     expect(preflight.value.encode).not.toHaveBeenCalled();
     expect(preflight.value.upload).not.toHaveBeenCalled();
     expect(preflight.append).not.toHaveBeenCalled();
@@ -349,7 +349,7 @@ describe("studio raster patch publisher", () => {
       input(),
       active.value,
       { signal: duringUpload.signal }
-    )).rejects.toMatchObject({ name: "AbortError" });
+    )).rejects.toMatchObject({ code: "aborted" });
     expect(active.append).not.toHaveBeenCalled();
   });
 
@@ -361,7 +361,7 @@ describe("studio raster patch publisher", () => {
     const setup = dependencies({ upload });
 
     await expect(publishStudioRasterPatch(input(), setup.value)).rejects.toMatchObject({
-      code: "upload_receipt_mismatch",
+      code: "upload-receipt-mismatch",
     });
     expect(setup.append).not.toHaveBeenCalled();
   });
@@ -373,7 +373,7 @@ describe("studio raster patch publisher", () => {
       rect,
       pixels: rgba(2, 1),
     }), patchBudget.value, { maxPatchCount: 1 })).rejects.toMatchObject({
-      code: "patch_count_budget",
+      code: "patch-count-budget",
     });
     expect(patchBudget.value.encode).not.toHaveBeenCalled();
     expect(patchBudget.value.upload).not.toHaveBeenCalled();
@@ -381,7 +381,7 @@ describe("studio raster patch publisher", () => {
     const byteBudget = dependencies();
     await expect(publishStudioRasterPatch(input(), byteBudget.value, {
       maxTotalBytes: 24,
-    })).rejects.toMatchObject({ code: "total_byte_budget" });
+    })).rejects.toMatchObject({ code: "total-byte-budget" });
     expect(byteBudget.value.encode).toHaveBeenCalledOnce();
     expect(byteBudget.value.upload).not.toHaveBeenCalled();
     expect(byteBudget.append).not.toHaveBeenCalled();
@@ -429,7 +429,7 @@ describe("studio raster patch publisher", () => {
       height: 1,
       rgba: Uint8ClampedArray.of(200, 100, 50, 128),
       signal: new AbortController().signal,
-    })).rejects.toMatchObject({ code: "canvas_context_unavailable" });
+    })).rejects.toMatchObject({ code: "canvas-context-unavailable" });
     expect(offscreen).toHaveBeenCalledOnce();
     expect(html).not.toHaveBeenCalled();
   });

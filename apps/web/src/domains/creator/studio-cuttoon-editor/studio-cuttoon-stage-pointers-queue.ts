@@ -7,6 +7,8 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { flushSync } from "react-dom";
 
+import { resolveStudioRasterPatchPublishNotice } from "../status-i18n/studio-producer-error-i18n-live-raster";
+
 import { resolveStudioCapturedBrushDynamicsPresetId } from "../brush/studio-brush-dynamics";
 import {
   advanceStudioBrushVelocityPressure,
@@ -606,11 +608,7 @@ export function bindStudioCuttoonStagePointersQueue(
         (cause instanceof DOMException && cause.name === "AbortError") ||
         !scopeIsCurrent()
       ) return;
-      setError(
-        cause instanceof Error
-          ? `실시간 픽셀 획 게시: ${cause.message} 기존 벡터 획은 안전하게 유지됩니다.`
-          : "실시간 픽셀 획을 게시하지 못해 기존 벡터 획을 유지했습니다."
-      );
+      setError(resolveStudioRasterPatchPublishNotice(cause));
     }).finally(() => {
       studioRasterPublicationControllersRef.current.delete(controller);
     });
