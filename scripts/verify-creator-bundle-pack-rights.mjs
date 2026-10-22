@@ -21,6 +21,7 @@ import {
   checkLedgerCoversDefs,
   DEFAULT_PACK_RIGHTS_PATH,
   missingEvidenceKinds,
+  requiredEvidenceKinds,
   summarizePackRightsLedger,
   validatePackRightsLedger,
   verifyLocalLicenseEvidence,
@@ -60,7 +61,7 @@ function main(argv) {
   ];
   const summary = summarizePackRightsLedger(ledger);
   const holds = (Array.isArray(ledger.packs) ? ledger.packs : [])
-    .filter((entry) => entry.serve !== "allow")
+    .filter((entry) => entry !== null && typeof entry === "object" && entry.serve !== "allow")
     .map((entry) => ({
       group: entry.group,
       title: entry.title,
@@ -82,9 +83,10 @@ function main(argv) {
     if (problems.length > 30) console.log(`  … 외 ${problems.length - 30}건`);
     for (const hold of holds) {
       // pending 묶음은 미수신이라 serve를 allow로 바꿔도 열리지 않는다(검증기가 거부한다). 편입 뒤에 소유자가 정한다.
-      const ready = hold.group === "pending"
-        ? "증빙 충족 — 단 미수신(인제스션·CATALOG_PACKS 편입 전)이라 편입한 뒤에야 소유자가 열 수 있음"
-        : "증빙 충족 — 소유자가 열 수 있음";
+      // grant는 열 때 소유자가 채우므로 "증빙 충족"은 열 준비가 끝났다는 뜻이 아니다.
+      let ready = "증빙 충족 — 소유자가 grant를 채워 열 수 있음";
+      if (hold.group === "pending") ready = "증빙 충족 — 단 미수신(인제스션·CATALOG_PACKS 편입 전)이라 편입한 뒤에야 소유자가 열 수 있음";
+      if (requiredEvidenceKinds(hold.licenseClass) === null) ready = "라이선스 분류를 알 수 없어 열 수 없음";
       const need = hold.missing.length === 0 ? ready : `부족: ${hold.missing.join(", ")}`;
       console.log(`  hold [${hold.group}] ${hold.title} (${hold.licenseClass})${hold.reviewRecommendedHold ? " ★검토 권고 hold" : ""} — ${need}`);
     }

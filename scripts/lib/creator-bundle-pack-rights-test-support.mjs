@@ -13,7 +13,8 @@ import {
   validatePackRightsLedger,
 } from "./creator-bundle-pack-rights.mjs";
 
-const VERIFIED_AT = "2026-10-22";
+// 증빙 날짜는 미래일 수 없으므로 고정 날짜 대신 실행 시점의 오늘(UTC)을 쓴다 — 테스트가 시계에 묶이지 않게.
+const VERIFIED_AT = new Date().toISOString().slice(0, 10);
 
 /** 로컬 라이선스 증빙 픽스처(fixtureLicenseText)가 기록한 라이브러리 팩 이름. ledgerEntry의 기본 libraryPacks와 같다. */
 export const FIXTURE_LIBRARY_PACK = "fixture";
@@ -175,3 +176,20 @@ export function flipToAllow(entry, { evidence } = {}) {
 }
 
 export const problemsFor = (ledger) => validatePackRightsLedger(ledger);
+
+/** 소유자가 allow 요구를 채우는 증빙 종류. 이 종류들은 소유자가 원장에 넣는 값이라 테스트 기준선에서 비운다. */
+const OWNER_PROVIDED_EVIDENCE_KINDS = Object.freeze(["itch-page-capture", "purchase-receipt", "producer-written-confirmation"]);
+
+/**
+ * 커밋된 원장에서 꺼낸 팩 항목을 "아직 열리지 않은 시드 상태"로 되돌린다: hold로 두고 grant와 소유자 제공 증빙을
+ * 지우며, 라이브러리 실물 증빙(local-license-file)과 2차 조회 기록은 그대로 둔다. 소유자가 나중에 그 팩에 증빙을
+ * 넣거나 열더라도 이 항목을 기준선으로 쓰는 부정 테스트가 시드 상태에 묶이지 않게 한다.
+ */
+export function resetToHold(entry) {
+  entry.serve = "hold";
+  entry.holdReason ??= "evidence-incomplete";
+  entry.holdLabel ??= HOLD_PUBLIC_LABEL;
+  delete entry.grant;
+  entry.evidence = entry.evidence.filter((item) => !OWNER_PROVIDED_EVIDENCE_KINDS.includes(item.kind));
+  return entry;
+}

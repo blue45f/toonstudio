@@ -20,7 +20,7 @@ import {
   packRightsKey,
   requiredEvidenceKinds,
 } from "./lib/creator-bundle-pack-rights.mjs";
-import { qualifyingEvidence, selfContainedGlb } from "./lib/creator-bundle-pack-rights-test-support.mjs";
+import { qualifyingEvidence, resetToHold, selfContainedGlb } from "./lib/creator-bundle-pack-rights-test-support.mjs";
 import { assessPlanForMode, createBundleV2DeployPlan } from "./plan-creator-bundle-deploy.mjs";
 
 // 루트 `vitest run`(scripts/**/*.test.mjs 수집)과 `node --test` 양쪽에서 같은 파일이 돈다.
@@ -179,15 +179,11 @@ test("생성 결과의 합계는 배포 플래너 인덱스와 일치하고, 원
   });
 });
 
-test("커밋된 원장으로 생성하면 원장이 열지 않은 팩은 전부 대기 목록에 있고 합계가 맞는다", () => {
+test("원장의 모든 팩을 hold로 두면 허용 팩이 없고 61개 팩이 모두 대기 목록에 있으며 합계가 맞는다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const ledger = loadPackRightsLedger();
-    const opened = ledger.packs.filter((entry) => entry.serve === "allow");
-    if (opened.length > 0) {
-      // 소유자가 팩을 연 뒤에는 픽스처 트리에 그 팩의 실물이 없어 생성이 실패한다.
-      // 열린 팩 경로는 위의 openPack 테스트들이 맡고, 여기서는 아무 실물도 읽지 않는 닫힌 상태만 본다.
-      return;
-    }
+    // 소유자가 이미 연 팩이 있더라도 닫힌 상태를 만들어 본다 (커밋된 원장의 시드 상태에 묶이지 않는다).
+    const ledger = cloneLedger();
+    for (const entry of ledger.packs) resetToHold(entry);
     const { output } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
     assert.equal(output.packs.length, 0);
     assert.equal(output.assets.length, 0);

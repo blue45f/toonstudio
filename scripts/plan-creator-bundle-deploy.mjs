@@ -27,7 +27,10 @@
  *     에셋만 계획에 넣는다. hold·원장에 없는 팩·묶음/제목/제작사가 어긋난 팩의 에셋은 실물 파일을 읽지도 않고 제외한다.
  *   - theme-packs.json의 팩별 권리 블록이 원장 투영(packRightsProjection)과 다르거나 없으면(원장 이전 스냅샷·
  *     grant 변경 뒤 미재생성) 그 팩도 제외한다(rights-drift). 클라이언트가 읽는 권리 표기가 원장보다 넓어질 수 없다.
+ *   - theme-packs 팩의 ingestPackIds는 생성기의 팩 정의(CATALOG_PACKS)가 정한 인제스션 폴더와 같아야 한다
+ *     (다르면 ingest-mismatch로 제외). 손으로 고친 theme-packs가 허용된 팩에 다른 팩 폴더를 달 수 없다.
  *   - 에셋 경로는 에셋 루트 상대 경로여야 하고 소속 팩의 ingestPackIds 폴더 아래여야 한다(로더와 같은 규칙).
+ *     실제 파일은 심볼릭 링크를 해석한 뒤에도 그 폴더 안의 일반 파일이어야 한다.
  *     다른 팩 폴더나 루트 밖 파일은 허용된 팩의 이름으로 올라갈 수 없다.
  *   - 제외 에셋이 생기면(stale) 경고하고, --production은 거부한다.
  *     생성기(generate-creator-bundle-theme-packs.mjs)를 다시 실행해야 인덱스 합계가 맞는다.
@@ -48,16 +51,18 @@
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
+import { CATALOG_PACKS } from "./generate-creator-bundle-theme-packs.mjs";
 import {
   DEFAULT_PACK_RIGHTS_PATH,
   evaluateServeDecision,
   loadPackRightsLedger,
+  packRightsKey,
   packRightsProjection,
   validatePackRightsLedger,
 } from "./lib/creator-bundle-pack-rights.mjs";
@@ -136,32 +141,55 @@ export function buildBundleV2DeployIndex(themePacks, included) {
 }
 
 /**
- * theme-packs 팩 하나의 서빙 판정. 원장이 allow여도 theme-packs의 권리 블록이 원장 투영과 다르면
- * (없거나 grant가 바뀐 낡은 데이터) rights-drift로 닫는다.
+ * theme-packs 팩 하나의 서빙 판정. 원장이 allow여도 (1) 생성기 팩 정의가 정한 인제스션 폴더와 다르면
+ * ingest-mismatch, (2) theme-packs의 권리 블록이 원장 투영과 다르면(없거나 grant가 바뀐 낡은 데이터)
+ * rights-drift로 닫는다.
  */
-function decidePack(ledger, pack) {
+function decidePack(ledger, pack, defsByKey) {
   const decision = evaluateServeDecision(ledger, pack, { group: "pack" });
-  if (decision.serve && !isDeepStrictEqual(pack?.rights, packRightsProjection(decision.entry))) {
+  if (!decision.serve) return decision;
+  const def = defsByKey.get(packRightsKey(pack));
+  if (!def || !isDeepStrictEqual(pack.ingestPackIds, def.ingest)) {
+    return { ...decision, serve: false, reason: "ingest-mismatch" };
+  }
+  if (!isDeepStrictEqual(pack.rights, packRightsProjection(decision.entry))) {
     return { ...decision, serve: false, reason: "rights-drift" };
   }
   return decision;
 }
 
 /**
- * 에셋 경로 점검(문제 문장 또는 null). 로더(relativeServingPath · ingestPackIds 접두사)와 같은 규칙이다.
- * 심볼릭 링크는 따라가지 않는다 — 내용은 sha256·크기·GLB 헤더로 고정된다.
+ * 에셋 경로 점검. 로더(relativeServingPath · ingestPackIds 접두사)와 같은 규칙이다.
+ * 반환: { problem: 문제 문장 또는 null, ingestId: 경로가 속한 인제스션 폴더 이름 }.
  */
-function assetPathProblem(path, pack) {
-  if (typeof path !== "string" || path.length === 0 || path.length > 1024) return "경로가 비었거나 너무 깁니다";
+function assetPathCheck(path, pack) {
+  if (typeof path !== "string" || path.length === 0 || path.length > 1024) {
+    return { problem: "경로가 비었거나 너무 깁니다", ingestId: null };
+  }
   if (path.startsWith("/") || path.includes("\\") || /^[a-zA-Z][a-zA-Z0-9+.-]*:/u.test(path)
     || path.split("/").some((segment) => segment === "" || segment === "." || segment === "..")) {
-    return "에셋 루트 상대 경로가 아닙니다";
+    return { problem: "에셋 루트 상대 경로가 아닙니다", ingestId: null };
   }
   const ingestPackIds = Array.isArray(pack?.ingestPackIds) ? pack.ingestPackIds : [];
-  if (!ingestPackIds.some((id) => typeof id === "string" && id.length > 0 && path.startsWith(`${id}/`))) {
-    return "소속 팩의 ingestPackIds 폴더 아래가 아닙니다";
+  const ingestId = ingestPackIds.find((id) => typeof id === "string" && id.length > 0 && path.startsWith(`${id}/`));
+  return ingestId === undefined
+    ? { problem: "소속 팩의 ingestPackIds 폴더 아래가 아닙니다", ingestId: null }
+    : { problem: null, ingestId };
+}
+
+/**
+ * 실제 파일이 심볼릭 링크를 해석한 뒤에도 소속 인제스션 폴더 안의 일반 파일인지 확인한다(문제 문장 또는 null).
+ * 문자열 접두사만으로는 `allowed/link -> ../held` 같은 링크가 다른 팩 폴더의 파일을 가리켜도 통과하므로 따로 본다.
+ */
+function assetFileProblem(assetRoot, ingestId, path) {
+  try {
+    const folder = realpathSync(join(assetRoot, ingestId));
+    const real = realpathSync(join(assetRoot, path));
+    if (!real.startsWith(`${folder}${sep}`)) return "심볼릭 링크를 해석한 실제 경로가 소속 팩 폴더 밖입니다";
+    return statSync(real).isFile() ? null : "일반 파일이 아닙니다";
+  } catch (error) {
+    return `읽을 수 없습니다 (${error?.code ?? error?.message ?? "알 수 없는 오류"})`;
   }
-  return null;
 }
 
 /**
@@ -169,9 +197,11 @@ function assetPathProblem(path, pack) {
  * 반환: { plan, errors } — errors가 비어 있지 않으면 plan은 null이다.
  * 권리 원장에서 서빙이 허용되지 않은 팩의 에셋은 실물을 읽지 않고 plan.excludedByRights로만 기록한다.
  * ledger가 없거나 검증에 실패하면 어떤 객체도 만들지 않는다 (fail-closed).
- * readFile은 테스트 주입용이다.
+ * readFile·packDefs(기본 생성기의 CATALOG_PACKS)는 테스트 주입용이다.
  */
-export function createBundleV2DeployPlan({ themePacks, assetRoot, ledger, readFile = readFileSync }) {
+export function createBundleV2DeployPlan({
+  themePacks, assetRoot, ledger, readFile = readFileSync, packDefs = CATALOG_PACKS,
+}) {
   const errors = [];
   if (themePacks?.schema !== "toonstudio.bg3d-bundle-theme-packs.v1"
     || !Array.isArray(themePacks.assets) || !Array.isArray(themePacks.packs)) {
@@ -193,12 +223,17 @@ export function createBundleV2DeployPlan({ themePacks, assetRoot, ledger, readFi
   if (themePacks.inServiceOnly !== true || themePacks.downloadable !== false) {
     errors.push("theme-packs가 서비스 내 사용 전용(inServiceOnly/downloadable)으로 선언되지 않았습니다.");
   }
-  const decisions = themePacks.packs.map((pack) => decidePack(ledger, pack));
+  const defsByKey = new Map(packDefs.map((def) => [packRightsKey(def), def]));
+  const decisions = themePacks.packs.map((pack) => decidePack(ledger, pack, defsByKey));
   const excluded = new Map();
   const objectsBySha = new Map();
   let includedAssets = 0;
   let assetBytes = 0;
   for (const asset of themePacks.assets) {
+    if (asset === null || typeof asset !== "object") {
+      errors.push("에셋 항목이 객체가 아닙니다.");
+      continue;
+    }
     const decision = Number.isSafeInteger(asset.pack) ? decisions[asset.pack] : undefined;
     if (!decision) {
       errors.push(`에셋의 팩 참조가 올바르지 않습니다: ${asset.id}`);
@@ -207,7 +242,7 @@ export function createBundleV2DeployPlan({ themePacks, assetRoot, ledger, readFi
     if (!decision.serve) {
       const pack = themePacks.packs[asset.pack];
       const record = excluded.get(asset.pack)
-        ?? { title: pack.title, catalogIds: pack.catalogIds ?? [], reason: decision.reason, assets: 0, bytes: 0 };
+        ?? { title: pack?.title ?? "(제목 없음)", catalogIds: pack?.catalogIds ?? [], reason: decision.reason, assets: 0, bytes: 0 };
       record.assets += 1;
       record.bytes += Number.isSafeInteger(asset.bytes) ? asset.bytes : 0;
       excluded.set(asset.pack, record);
@@ -217,7 +252,7 @@ export function createBundleV2DeployPlan({ themePacks, assetRoot, ledger, readFi
       errors.push(`에셋 sha256이 올바르지 않습니다: ${asset.id}`);
       continue;
     }
-    const pathProblem = assetPathProblem(asset.path, themePacks.packs[asset.pack]);
+    const { problem: pathProblem, ingestId } = assetPathCheck(asset.path, themePacks.packs[asset.pack]);
     if (pathProblem) {
       errors.push(`에셋 경로가 올바르지 않습니다 (${asset.id}): ${pathProblem}`);
       continue;
@@ -227,7 +262,18 @@ export function createBundleV2DeployPlan({ themePacks, assetRoot, ledger, readFi
       errors.push(`실물 파일이 없습니다: ${asset.path}`);
       continue;
     }
-    const buffer = readFile(abs);
+    const fileProblem = assetFileProblem(assetRoot, ingestId, asset.path);
+    if (fileProblem) {
+      errors.push(`에셋 파일이 올바르지 않습니다 (${asset.id}): ${fileProblem}`);
+      continue;
+    }
+    let buffer;
+    try {
+      buffer = readFile(abs);
+    } catch (error) {
+      errors.push(`실물 파일을 읽을 수 없습니다 (${asset.id}): ${error?.code ?? error?.message ?? "알 수 없는 오류"}`);
+      continue;
+    }
     if (buffer.length !== asset.bytes) {
       errors.push(`크기 불일치: ${asset.id} theme-packs=${asset.bytes} disk=${buffer.length}`);
       continue;

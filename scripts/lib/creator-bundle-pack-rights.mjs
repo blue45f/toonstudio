@@ -14,7 +14,9 @@
  * 한계 — 증빙 검사는 형식·일관성 검사다:
  *   영수증·itch 캡처·제작사 서면 확인의 실물은 레포 밖에 있어 코드가 진위를 판정할 수 없다. 이 모듈은
  *   필수 필드·URL 호스트·달력상 유효하고 미래가 아닌 날짜·자리표시 아닌 보관 위치까지만 거른다.
- *   실물과 대조되는 증빙은 `local-license-file`(sha256, `verifyLocalLicenseEvidence`)뿐이다.
+ *   실물과 대조할 수 있는 증빙은 `local-license-file`뿐이며, 그것도 검증 CLI가 `--library-root`를 받았을 때만
+ *   `verifyLocalLicenseEvidence`가 각 경로 파일의 sha256을 원장 기록과 다시 맞춰 본다(문서 분류의 옳고 그름은
+ *   보지 않는다). 서빙 판정과 `validatePackRightsLedger`는 파일을 읽지 않는다.
  *   그래서 allow 전환은 항상 소유자가 직접 하는 원장 편집이고, 이 게이트는 실수·누락을 막는 안전장치다.
  *
  * 소비자: 생성기(generate-creator-bundle-theme-packs.mjs), 배포 플래너
@@ -120,8 +122,10 @@ export const WEB_SERVICE_COVERAGE = "web-service-hosting";
 export const RIGHTS_HOLD_REASON = "rights-hold";
 
 /**
- * 패널의 "준비 중인 팩" 목록에 hold 팩마다 그대로 보이는 문구. 사유(제작사 확인·증빙·충돌)와 공개 약속을
- * 드러내지 않도록 모든 hold 팩이 같은 중립 문장을 쓴다. 사유는 holdReason(내부 필드)에만 둔다.
+ * 패널의 "준비 중인 팩" 목록에 원장 hold 때문에 pendingPacks(rights-hold)로 가는 팩(pack·crowd 묶음)마다 그대로
+ * 보이는 문구. 사유(제작사 확인·증빙·충돌)와 공개 약속을 드러내지 않도록 모든 hold 팩이 같은 중립 문장을 쓰고,
+ * 사유는 holdReason(내부 필드)에만 둔다. pending 묶음 14개의 화면 문구는 생성기의 PENDING_PACKS가 정하며
+ * (회수 상태 등 권리와 무관한 사유) 그 팩들의 holdLabel은 화면에 쓰이지 않는다.
  */
 export const HOLD_PUBLIC_LABEL = "준비 중이며 공개 시점은 정해지지 않았다.";
 
@@ -129,21 +133,44 @@ const SHA256_HEX = /^[a-f0-9]{64}$/u;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/u;
 const CREATORS = Object.freeze(["EmaceArt", "RG Poly"]);
 const GRANT_STATUSES = Object.freeze(["licensed", "public-domain"]);
-/** 보관 위치(ref)로 인정하지 않는 자리표시 단어. */
-const PLACEHOLDER_REFS = Object.freeze(new Set([
-  "tbd", "todo", "fixme", "n/a", "na", "none", "null", "undefined", "unknown", "pending",
-  "test", "dummy", "sample", "example", "placeholder",
+/**
+ * 보관 위치(ref)로 인정하지 않는 자리표시 단어(영문·한글). 문자열을 문자·숫자 단위 낱말로 쪼갠 뒤 낱말이 전부 이
+ * 목록에 들면 자리표시로 본다 — 진짜 보관 위치는 폴더·파일명 같은 다른 낱말을 하나는 가진다.
+ * "n/a"는 n·a로, "http://"는 http로 쪼개지므로 함께 넣는다.
+ */
+const PLACEHOLDER_TOKENS = Object.freeze(new Set([
+  "tbd", "todo", "fixme", "wip", "n", "a", "na", "none", "null", "undefined", "unknown", "pending", "later", "soon",
+  "test", "dummy", "sample", "example", "placeholder", "foo", "bar", "baz", "lorem", "ipsum", "xxx", "yyy", "zzz",
+  "http", "https", "ftp", "file",
+  "추후", "제출", "예정", "미정", "해당", "없음", "미확인", "임시", "예시", "샘플", "테스트", "나중", "확인", "필요",
+  "준비", "중", "대기",
 ]));
 const MIN_REF_LENGTH = 6;
 /** 가장 앞선 시간대(UTC+14)의 오늘까지는 허용한다 — 어느 나라에서 적었든 정상 날짜가 미래로 오판되지 않게. */
 const EVIDENCE_DATE_SLACK_MS = 14 * 60 * 60 * 1000;
+/** itch.io 서비스 시작(2013) 이전 날짜는 증빙일 수 없다. */
+const EVIDENCE_DATE_FLOOR = "2013-01-01";
+/** 화면에 보이지 않거나 빈 칸을 흉내 내는 문자: 제어·서식(영폭 공백 등)·구분(공백류)과 한글 채움 문자. */
+const INVISIBLE_OR_FILLER = /[\p{Cc}\p{Cf}\p{Z}\u115F\u1160\u2800\u3164\uFFA0]/gu;
+const CONTROL_OR_FORMAT_CHARACTER = /[\p{Cc}\p{Cf}]/u;
 
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** 보이지 않는 문자와 공백을 걷어낸 글자만 남긴다. */
+function visibleText(value) {
+  return typeof value === "string" ? value.replace(INVISIBLE_OR_FILLER, "") : "";
+}
+
+/**
+ * 비어 있지 않고 길이 제한을 지키는 문자열. 영폭 공백·한글 채움 문자만으로 이뤄진 값은 비었다고 보고,
+ * 제어 문자(줄바꿈 포함)와 서식 문자(영폭 공백·방향 지정 문자 등)는 거부한다 — 웹 로더가 제어 문자를 거부하므로
+ * 한 줄이 theme-packs 전체를 깨뜨릴 수 있고, 방향 지정 문자는 화면에서 글자 순서를 속인다.
+ */
 function nonEmptyText(value, maximum = 600) {
-  return typeof value === "string" && value.trim().length > 0 && value.length <= maximum;
+  return typeof value === "string" && value.length <= maximum
+    && visibleText(value).length > 0 && !CONTROL_OR_FORMAT_CHARACTER.test(value);
 }
 
 /** 달력에 실제로 있는 YYYY-MM-DD인지. 2026-02-31처럼 형식만 맞는 날짜는 거부한다. */
@@ -155,8 +182,9 @@ function isCalendarDate(value) {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
-/** 증빙 날짜가 넘을 수 없는 상한(YYYY-MM-DD). `now`는 테스트 주입용이다. */
+/** 증빙 날짜가 넘을 수 없는 상한(YYYY-MM-DD). `now`는 테스트 주입용 Date다(잘못된 Date는 실제 시각으로 대체). */
 function latestEvidenceDate(now) {
+  if (now !== undefined && !(now instanceof Date)) throw new TypeError("now는 Date여야 합니다.");
   const base = now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date();
   return new Date(base.getTime() + EVIDENCE_DATE_SLACK_MS).toISOString().slice(0, 10);
 }
@@ -165,38 +193,57 @@ function latestEvidenceDate(now) {
 function dateProblem(where, field, value, today) {
   if (!isCalendarDate(value)) return `${where}: ${field}(YYYY-MM-DD)이 없거나 달력에 없는 날짜입니다.`;
   if (value > today) return `${where}: ${field}가 미래 날짜입니다 (${value}).`;
+  if (value < EVIDENCE_DATE_FLOOR) return `${where}: ${field}가 ${EVIDENCE_DATE_FLOOR} 이전입니다 (${value}).`;
   return null;
 }
 
-/** 보관 위치(ref)로 쓸 수 있는 문자열인지. 너무 짧은 값·한 글자 반복·자리표시 단어는 거부한다. */
+/**
+ * 보관 위치(ref)로 쓸 수 있는 문자열인지. 보이는 글자가 너무 적거나 단조롭거나 글자가 하나도 없는 값,
+ * 자리표시 낱말(영문·한글)로만 이뤄진 값은 거부한다. 진위 판정이 아니라 "아무 값이나 채운" 항목을 거르는 검사다.
+ */
 function isMeaningfulRef(value) {
   if (!nonEmptyText(value, 400)) return false;
-  const text = value.trim();
-  if (text.length < MIN_REF_LENGTH || new Set(text).size === 1) return false;
-  return !PLACEHOLDER_REFS.has(text.toLowerCase());
+  const visible = visibleText(value);
+  if (visible.length < MIN_REF_LENGTH || new Set(visible).size < 3 || !/\p{L}/u.test(visible)) return false;
+  if ((visible.match(/[\p{L}\p{N}]/gu) ?? []).length < 4) return false;
+  const tokens = value.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  return tokens.some((token) => !PLACEHOLDER_TOKENS.has(token));
 }
 
-/** https itch.io(또는 하위 도메인)의 팩 페이지 주소인지. zitch.io·itch.io@evil.com 같은 닮은꼴을 거부한다. */
+/**
+ * itch.io의 팩 페이지(`<제작자>.itch.io/<팩>`)나 번들 페이지(`itch.io/b/<번호>/…`) 주소인지.
+ * zitch.io·itch.io@evil.com 같은 닮은꼴, 공백·제어 문자·역슬래시가 낀 문자열, 포트·빈 호스트 라벨,
+ * 제작자 페이지·로그인 같은 팩 페이지가 아닌 주소를 거부한다. 끝 점 하나(FQDN 표기)는 허용한다.
+ */
 function isItchPackUrl(value) {
-  if (typeof value !== "string") return false;
+  if (typeof value !== "string" || /[\p{Cc}\p{Cf}\\\s]/u.test(value)) return false;
   let url;
   try {
     url = new URL(value);
   } catch {
     return false;
   }
-  return url.protocol === "https:" && url.username === "" && url.password === ""
-    && (url.hostname === "itch.io" || url.hostname.endsWith(".itch.io"))
-    && url.pathname.length > 1;
+  if (url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.port !== "") return false;
+  const host = url.hostname.replace(/\.$/u, "");
+  const labels = host.split(".");
+  if (labels.some((label) => label === "")) return false;
+  const segments = url.pathname.split("/").filter(Boolean);
+  if (host === "itch.io") return segments[0] === "b" && segments.length >= 2;
+  return host.endsWith(".itch.io") && labels.length === 3 && segments.length >= 1;
 }
+
+const INVALID_PACK_KEY = "\u0000invalid-catalog-ids";
 
 /**
  * 팩 식별 키. 카탈로그 번호가 있으면 번호들을 정렬해 잇고, 없으면 제목으로 식별한다
- * (카탈로그 번호가 없는 RG Poly "Food Pack"만 해당).
+ * (카탈로그 번호가 없는 RG Poly "Food Pack"만 해당). 두 종류는 접두사(`ids:`·`title:`)로 구분한다.
  */
 export function packRightsKey(def) {
-  const ids = Array.isArray(def?.catalogIds) ? [...def.catalogIds].sort() : [];
-  return ids.length > 0 ? ids.join("+") : `title:${def?.title ?? ""}`;
+  const raw = def?.catalogIds;
+  // 문자열 배열이 아닌 catalogIds는 어떤 팩과도 일치하지 않는 키로 닫는다 (제목 키와 충돌시키는 위장 방지).
+  if (raw !== undefined && !(Array.isArray(raw) && raw.every((id) => typeof id === "string"))) return INVALID_PACK_KEY;
+  const ids = Array.isArray(raw) ? [...raw].sort() : [];
+  return ids.length > 0 ? `ids:${ids.join("+")}` : `title:${typeof def?.title === "string" ? def.title : ""}`;
 }
 
 /** 로컬 라이선스 문서를 기대하는 팩 분류의 허용 문서 분류. 그 외(unstated-*·알 수 없는 값)는 undefined. */
@@ -208,7 +255,8 @@ function expectedTextClasses(licenseClass) {
 
 /** 원장 팩 하나의 allow 필수 증빙 종류. 분류가 알려지지 않았으면 null(어떤 증빙으로도 allow 불가). */
 export function requiredEvidenceKinds(licenseClass) {
-  return Object.hasOwn(ALLOW_EVIDENCE_REQUIREMENTS, licenseClass)
+  // 문자열이 아닌 값(배열 등)은 속성 키로 강제 변환돼 다른 분류처럼 보일 수 있으므로 먼저 거른다.
+  return typeof licenseClass === "string" && Object.hasOwn(ALLOW_EVIDENCE_REQUIREMENTS, licenseClass)
     ? ALLOW_EVIDENCE_REQUIREMENTS[licenseClass]
     : null;
 }
@@ -398,7 +446,7 @@ export function findPackRights(ledger, def) {
 /**
  * 서빙 판정. `serve`가 true인 경우는 원장에 있고, allow이며, 증빙·grant·묶음 자격까지 충족한 팩뿐이다.
  * - `group`을 주면 원장 항목이 그 묶음이어야 한다 (배치 가능 팩만 다루는 플래너는 "pack"을 준다).
- * - def에 title·creator가 있으면 원장 항목과 같아야 한다 (카탈로그 번호 없는 팩의 제목 위장 방지).
+ * - def의 title·creator는 문자열로 있어야 하고 원장 항목과 같아야 한다 (카탈로그 번호 없는 팩의 제목 위장 방지).
  * reason: allow | hold | missing-entry | group-mismatch | identity-mismatch | invalid-evidence
  */
 export function evaluateServeDecision(ledger, def, { group, now } = {}) {
@@ -408,9 +456,9 @@ export function evaluateServeDecision(ledger, def, { group, now } = {}) {
   if (group !== undefined && entry.group !== group) {
     return { serve: false, reason: "group-mismatch", entry, problems: [`원장 묶음 ${String(entry.group)} ≠ 기대 묶음 ${group}`] };
   }
-  const mismatched = ["title", "creator"].filter((field) => def?.[field] !== undefined && def[field] !== entry[field]);
+  const mismatched = ["title", "creator"].filter((field) => typeof def?.[field] !== "string" || def[field] !== entry[field]);
   if (mismatched.length > 0) {
-    return { serve: false, reason: "identity-mismatch", entry, problems: mismatched.map((field) => `${field}가 원장과 다릅니다.`) };
+    return { serve: false, reason: "identity-mismatch", entry, problems: mismatched.map((field) => `${field}가 원장과 다르거나 없습니다.`) };
   }
   const problems = allowEligibilityProblems(ledger, entry, { now });
   if (problems.length > 0) return { serve: false, reason: "invalid-evidence", entry, problems };
@@ -443,9 +491,11 @@ function validateEntry(ledger, entry, index, context) {
     problems.push(`${where}: evidence는 배열이어야 합니다.`);
     return problems;
   }
+  const evidenceMessages = new Set();
   for (const [evidenceIndex, evidence] of entry.evidence.entries()) {
-    problems.push(...evidenceProblems(evidence, entry, context)
-      .map((problem) => `${where} evidence[${evidenceIndex}]: ${problem}`));
+    const found = evidenceProblems(evidence, entry, context);
+    for (const problem of found) evidenceMessages.add(problem);
+    problems.push(...found.map((problem) => `${where} evidence[${evidenceIndex}]: ${problem}`));
   }
   // 분류와 로컬 문서의 일관성: unstated-*는 로컬 문서가 없어야 하고, 나머지는 있어야 한다.
   const localFiles = entry.evidence.filter((item) => isRecord(item) && item.kind === "local-license-file");
@@ -456,7 +506,9 @@ function validateEntry(ledger, entry, index, context) {
     problems.push(`${where}: ${entry.licenseClass} 분류는 local-license-file 증빙 기록이 있어야 합니다.`);
   }
   if (entry.serve === "allow") {
+    // 증빙 항목 자체의 문제는 위에서 이미 항목별로 적었으므로 allow 점검에서는 중복을 뺀다.
     problems.push(...allowEligibilityProblems(ledger, entry, { now: context.now })
+      .filter((problem) => !evidenceMessages.has(problem))
       .map((problem) => `${where}: allow 불가 — ${problem}`));
     for (const field of ["holdReason", "holdLabel"]) {
       if (entry[field] !== undefined && entry[field] !== null) {
@@ -503,6 +555,13 @@ export function validatePackRightsLedger(ledger, { now } = {}) {
       || text.files.some((file) => !isRecord(file) || !nonEmptyText(file.libraryPath, 400)
         || !nonEmptyText(file.libraryPack, 200))) {
       problems.push(`${where}: files({libraryPath, libraryPack})가 비어 있습니다.`);
+    }
+    // libraryPack은 libraryPath의 팩 폴더(`<분류>/<팩>/…`의 두 번째 조각)와 같아야 한다 — 증빙을 다른 팩에 묶는 자기 선언을 막는다.
+    for (const file of [...(Array.isArray(text.files) ? text.files : []), ...(Array.isArray(text.archivedFiles) ? text.archivedFiles : [])]) {
+      if (isRecord(file) && typeof file.libraryPath === "string" && typeof file.libraryPack === "string"
+        && file.libraryPath.split("/")[1] !== file.libraryPack) {
+        problems.push(`${where}: libraryPack(${file.libraryPack})이 libraryPath의 팩 폴더와 다릅니다 (${file.libraryPath}).`);
+      }
     }
     // zip 안에 든 사본(예: Blend Textures.zip의 LICENSE.txt)은 archivedFiles에 압축 파일 경로와 멤버 이름으로 적는다.
     if (text.archivedFiles !== undefined
@@ -591,6 +650,7 @@ export function loadPackRightsLedger(path = DEFAULT_PACK_RIGHTS_PATH, { readFile
 export function summarizePackRightsLedger(ledger) {
   const summary = { total: 0, byGroup: {}, allow: 0, hold: 0 };
   for (const entry of Array.isArray(ledger?.packs) ? ledger.packs : []) {
+    if (!isRecord(entry)) continue;
     summary.total += 1;
     summary.byGroup[entry.group] = (summary.byGroup[entry.group] ?? 0) + 1;
     if (entry.serve === "allow") summary.allow += 1;

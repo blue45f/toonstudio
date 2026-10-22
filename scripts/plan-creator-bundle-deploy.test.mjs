@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import nodeTest from "node:test";
 import { fileURLToPath } from "node:url";
 import { test as vitestTest } from "vitest";
 
+import { CATALOG_PACKS } from "./generate-creator-bundle-theme-packs.mjs";
 import {
   findPackRights,
   loadPackRightsLedger,
@@ -53,6 +54,21 @@ const HELD_PACK = {
 const UNLISTED_PACK = {
   catalogIds: ["cbv1-903-fixture-unlisted"], title: "Unlisted Pack", creator: "RG Poly", ingestPackIds: ["unlisted"],
 };
+
+// 플래너는 theme-packs 팩의 ingestPackIds를 생성기 팩 정의(CATALOG_PACKS)와 대조한다. API 테스트는 픽스처 정의를 주입한다.
+const FIXTURE_DEFS = [ALLOWED_PACK, HELD_PACK, UNLISTED_PACK].map((pack) => ({
+  catalogIds: pack.catalogIds, title: pack.title, creator: pack.creator, ingest: pack.ingestPackIds,
+}));
+const planFor = (args) => createBundleV2DeployPlan({ packDefs: FIXTURE_DEFS, ...args });
+
+// CLI는 생성기의 실제 팩 정의를 쓰므로 CLI 테스트는 실제 팩(Pirate Island·Old Town)으로 픽스처를 만든다.
+function realPack(title) {
+  const def = CATALOG_PACKS.find((candidate) => candidate.title === title);
+  assert.ok(def, `생성기 정의에 ${title}가 없습니다.`);
+  return { catalogIds: def.catalogIds, title: def.title, creator: def.creator, ingestPackIds: def.ingest };
+}
+const REAL_ALLOWED = realPack("Pirate Island");
+const REAL_HELD = realPack("Old Town — Courtyards");
 
 function ledgerWithAllowedAndHeld() {
   return fixtureLedger([
@@ -126,7 +142,7 @@ test("계획은 GLB 전수 대조를 통과하면 sha256 키 객체와 인덱스
     const rel = "allowed/native/Some Folder/Model+A&B.glb";
     writeTree(root, { [rel]: SELF_CONTAINED });
     const themePacks = themePacksFor([assetEntry("cbv1-ingest-001-m001", 0, rel, SELF_CONTAINED)]);
-    const { plan, errors } = createBundleV2DeployPlan({
+    const { plan, errors } = planFor({
       themePacks, assetRoot: root, ledger: ledgerWithAllowedAndHeld(),
     });
     assert.deepEqual(errors, []);
@@ -166,7 +182,7 @@ test("hold 팩의 에셋은 실물을 읽지 않고 제외하며, 인덱스 합�
       assetEntry("held-m001", 1, "held/h1.glb", heldGlb),
       assetEntry("held-m002", 1, "held/h2.glb", heldGlb2),
     ]);
-    const { plan, errors } = createBundleV2DeployPlan({
+    const { plan, errors } = planFor({
       themePacks, assetRoot: root, ledger: ledgerWithAllowedAndHeld(),
     });
     assert.deepEqual(errors, []);
@@ -196,7 +212,7 @@ test("원장에 없는 팩의 에셋도 제외한다 (미등록은 hold와 같�
       [assetEntry("unlisted-m001", 0, "unlisted/u.glb", SELF_CONTAINED)],
       [UNLISTED_PACK],
     );
-    const { plan, errors } = createBundleV2DeployPlan({
+    const { plan, errors } = planFor({
       themePacks, assetRoot: root, ledger: ledgerWithAllowedAndHeld(),
     });
     assert.deepEqual(errors, []);
@@ -212,7 +228,7 @@ test("원장이 없거나 잘못됐으면 어떤 객체도 만들지 않는다 (
     const rel = "allowed/a.glb";
     writeTree(root, { [rel]: SELF_CONTAINED });
     const themePacks = themePacksFor([assetEntry("allowed-m001", 0, rel, SELF_CONTAINED)]);
-    const missing = createBundleV2DeployPlan({ themePacks, assetRoot: root });
+    const missing = planFor({ themePacks, assetRoot: root });
     assert.equal(missing.plan, null);
     assert.match(missing.errors[0], /권리 원장이 없어/);
 
@@ -220,7 +236,7 @@ test("원장이 없거나 잘못됐으면 어떤 객체도 만들지 않는다 (
     const unproven = fixtureLedger([
       ledgerEntry({ ...ALLOWED_PACK, serve: "allow", evidence: [] }),
     ]);
-    const rejected = createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger: unproven });
+    const rejected = planFor({ themePacks, assetRoot: root, ledger: unproven });
     assert.equal(rejected.plan, null);
     assert.match(rejected.errors[0], /권리 원장이 올바르지 않습니다/);
 
@@ -231,11 +247,11 @@ test("원장이 없거나 잘못됐으면 어떤 객체도 만들지 않는다 (
         evidence: [{ kind: "secondary-lookup", claim: "itch CC0 표기", source: "report" }],
       }),
     ]);
-    assert.equal(createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger: secondaryOnly }).plan, null);
+    assert.equal(planFor({ themePacks, assetRoot: root, ledger: secondaryOnly }).plan, null);
 
     // pending 묶음은 allow할 수 없고, 그런 원장은 계획 단계에서 통째로 거부된다.
     const pendingAllow = fixtureLedger([ledgerEntry({ ...ALLOWED_PACK, group: "pending", serve: "allow" })]);
-    const pending = createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger: pendingAllow });
+    const pending = planFor({ themePacks, assetRoot: root, ledger: pendingAllow });
     assert.equal(pending.plan, null);
     assert.match(pending.errors[0], /pending 묶음 팩은 인제스션/);
   });
@@ -262,7 +278,10 @@ test("배치 가능 팩(group pack)이 아닌 묶음과 제목·제작사가 다
       ], [crowdPack, foodPack, spoof], ledger),
     };
     themePacks.packs[2] = { ...spoof, rights: packRightsProjection(findPackRights(ledger, foodPack)) };
-    const { plan, errors } = createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger });
+    const packDefs = [crowdPack, foodPack].map((pack) => ({
+      catalogIds: pack.catalogIds, title: pack.title, creator: pack.creator, ingest: pack.ingestPackIds,
+    }));
+    const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger, packDefs });
     assert.deepEqual(errors, []);
     const reasons = Object.fromEntries(plan.excludedByRights.map((record) => [record.title, record.reason]));
     assert.equal(reasons["Crowd Pack"], "group-mismatch");
@@ -300,7 +319,7 @@ test("theme-packs의 권리 블록이 원장 투영과 다르거나 없으면 �
         ...themePacksFor([assetEntry("allowed-m001", 0, "allowed/a.glb", SELF_CONTAINED)], [ALLOWED_PACK], ledger),
         packs: [pack],
       };
-      const { plan, errors } = createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger });
+      const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger });
       assert.deepEqual(errors, [], label);
       assert.equal(plan.totals.glbObjects, 0, label);
       assert.equal(plan.excludedByRights[0].reason, "rights-drift", label);
@@ -311,7 +330,7 @@ test("theme-packs의 권리 블록이 원장 투영과 다르거나 없으면 �
   withTempRoot((root) => {
     writeTree(root, { "allowed/a.glb": SELF_CONTAINED });
     const themePacks = themePacksFor([assetEntry("allowed-m001", 0, "allowed/a.glb", SELF_CONTAINED)], [ALLOWED_PACK], ledger);
-    const { plan, errors } = createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger });
+    const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger });
     assert.deepEqual(errors, []);
     assert.equal(plan.totals.glbObjects, 1);
     assert.deepEqual(plan.excludedByRights, []);
@@ -330,7 +349,7 @@ test("rights-drift 팩이 있으면 다른 팩이 정상이어도 stale로 보�
       assetEntry("unlisted-m001", 1, "unlisted/u.glb", selfContainedGlb("unlisted")),
     ], [ALLOWED_PACK, UNLISTED_PACK], ledger);
     themePacks.packs[1].rights = { ...themePacks.packs[1].rights, commercialUse: true };
-    const { plan, errors } = createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger });
+    const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger });
     assert.deepEqual(errors, []);
     assert.equal(plan.totals.glbObjects, 1);
     assert.equal(plan.excludedByRights[0].reason, "rights-drift");
@@ -361,21 +380,22 @@ test("에셋 경로는 에셋 루트 상대 경로이고 소속 팩 폴더 아�
     ];
     for (const [label, path, pattern] of rejected) {
       const themePacks = themePacksFor([{ ...assetEntry("allowed-m001", 0, "allowed/a.glb", SELF_CONTAINED), path }]);
-      const { plan, errors } = createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger });
+      const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger });
       assert.equal(plan, null, label);
       assert.match(errors[0], /에셋 경로가 올바르지 않습니다/, label);
       assert.match(errors[0], pattern, label);
     }
-    // ingestPackIds가 없는 팩은 어떤 경로도 소속을 증명하지 못한다.
+    // ingestPackIds가 없는 팩은 생성기 정의와 달라 판정 단계에서 닫힌다 (경로 점검까지 가지 않는다).
     const noIngest = { ...ALLOWED_PACK };
     delete noIngest.ingestPackIds;
     const themePacks = themePacksFor([assetEntry("allowed-m001", 0, "allowed/a.glb", SELF_CONTAINED)], [noIngest]);
-    const result = createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger });
-    assert.equal(result.plan, null);
-    assert.match(result.errors[0], /ingestPackIds 폴더 아래가 아닙니다/);
+    const result = planFor({ themePacks, assetRoot: root, ledger });
+    assert.deepEqual(result.errors, []);
+    assert.equal(result.plan.totals.glbObjects, 0);
+    assert.equal(result.plan.excludedByRights[0].reason, "ingest-mismatch");
     // 정상 경로(여러 단계 폴더)는 통과한다.
     const nested = themePacksFor([assetEntry("allowed-m001", 0, "allowed/a.glb", SELF_CONTAINED)]);
-    assert.deepEqual(createBundleV2DeployPlan({ themePacks: nested, assetRoot: root, ledger }).errors, []);
+    assert.deepEqual(planFor({ themePacks: nested, assetRoot: root, ledger }).errors, []);
   });
 });
 
@@ -386,7 +406,7 @@ test("같은 바이트의 에셋은 한 객체로 합치되 인덱스는 에셋 
       assetEntry("allowed-m001", 0, "allowed/a.glb", SELF_CONTAINED),
       assetEntry("allowed-m002", 0, "allowed/copy-of-a.glb", SELF_CONTAINED),
     ]);
-    const { plan, errors } = createBundleV2DeployPlan({
+    const { plan, errors } = planFor({
       themePacks, assetRoot: root, ledger: ledgerWithAllowedAndHeld(),
     });
     assert.deepEqual(errors, []);
@@ -407,7 +427,7 @@ test("외부 uri GLB가 허용된 팩의 배치 가능에 남아 있으면 계�
     const rel = "allowed/External.glb";
     writeTree(root, { [rel]: EXTERNAL });
     const themePacks = themePacksFor([assetEntry("allowed-m001", 0, rel, EXTERNAL)]);
-    const { plan, errors } = createBundleV2DeployPlan({
+    const { plan, errors } = planFor({
       themePacks, assetRoot: root, ledger: ledgerWithAllowedAndHeld(),
     });
     assert.equal(plan, null);
@@ -422,11 +442,11 @@ test("실물 누락과 해시 불일치는 각각 오류로 보고한다", () =>
     writeTree(root, { [rel]: SELF_CONTAINED });
     const ledger = ledgerWithAllowedAndHeld();
     const good = themePacksFor([assetEntry("allowed-m001", 0, rel, SELF_CONTAINED)]);
-    const missing = createBundleV2DeployPlan({ themePacks: good, assetRoot: join(root, "nope"), ledger });
+    const missing = planFor({ themePacks: good, assetRoot: join(root, "nope"), ledger });
     assert.equal(missing.plan, null);
     assert.match(missing.errors[0], /실물 파일이 없습니다/);
     const wrongHash = themePacksFor([{ ...good.assets[0], sha256: "0".repeat(64) }]);
-    const mismatch = createBundleV2DeployPlan({ themePacks: wrongHash, assetRoot: root, ledger });
+    const mismatch = planFor({ themePacks: wrongHash, assetRoot: root, ledger });
     assert.equal(mismatch.plan, null);
     assert.match(mismatch.errors[0], /해시 불일치/);
   });
@@ -438,7 +458,7 @@ test("계획 입력 검증: 형식·루트·서비스 전용 표기·팩 참조�
     writeTree(root, { [rel]: SELF_CONTAINED, "allowed/garbage.glb": Buffer.from("not a glb at all, but sha and size match") });
     const ledger = ledgerWithAllowedAndHeld();
     const base = () => themePacksFor([assetEntry("allowed-m001", 0, rel, SELF_CONTAINED)]);
-    const run = (themePacks) => createBundleV2DeployPlan({ themePacks, assetRoot: root, ledger });
+    const run = (themePacks) => planFor({ themePacks, assetRoot: root, ledger });
     const expectError = (label, themePacks, pattern) => {
       const { plan, errors } = run(themePacks);
       assert.equal(plan, null, label);
@@ -466,6 +486,92 @@ test("계획 입력 검증: 형식·루트·서비스 전용 표기·팩 참조�
   });
 });
 
+test("theme-packs 팩의 ingestPackIds가 생성기 팩 정의와 다르면 allow여도 제외한다 — 손으로 고친 파일이 다른 팩 폴더를 달 수 없다", () => {
+  withTempRoot((root) => {
+    // 허용된 팩이 hold 팩의 폴더를 자기 폴더로 선언한다. 폴더에는 sha256·크기가 맞는 실물이 있다.
+    writeTree(root, { "held/h1.glb": SELF_CONTAINED });
+    const ledger = ledgerWithAllowedAndHeld();
+    const forged = { ...ALLOWED_PACK, ingestPackIds: ["held"] };
+    const themePacks = themePacksFor([assetEntry("allowed-m001", 0, "held/h1.glb", SELF_CONTAINED)], [forged, HELD_PACK], ledger);
+    const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger });
+    assert.deepEqual(errors, []);
+    assert.equal(plan.totals.glbObjects, 0);
+    assert.equal(plan.excludedByRights[0].reason, "ingest-mismatch");
+    assert.match(assessPlanForMode(plan, "production").refusal, /배포할 GLB가 없습니다/);
+
+    // 폴더를 늘려도(정의에 없는 폴더 추가) 정의와 같지 않으면 제외한다.
+    const extended = { ...ALLOWED_PACK, ingestPackIds: [...ALLOWED_PACK.ingestPackIds, "held"] };
+    const extendedPacks = themePacksFor([assetEntry("allowed-m001", 0, "held/h1.glb", SELF_CONTAINED)], [extended, HELD_PACK], ledger);
+    assert.equal(planFor({ themePacks: extendedPacks, assetRoot: root, ledger }).plan.excludedByRights[0].reason, "ingest-mismatch");
+
+    // 정의에 없는 팩(원장에는 allow)도 제외한다.
+    const noDef = planFor({ themePacks, assetRoot: root, ledger, packDefs: [] });
+    assert.equal(noDef.plan.excludedByRights[0].reason, "ingest-mismatch");
+  });
+});
+
+test("심볼릭 링크로 다른 팩 폴더의 파일을 가리키면 sha256이 맞아도 올리지 않는다", () => {
+  withTempRoot((root) => {
+    writeTree(root, { "held/h1.glb": SELF_CONTAINED, "allowed/real.glb": SELF_CONTAINED });
+    symlinkSync(join(root, "held/h1.glb"), join(root, "allowed/link-to-held.glb"));
+    symlinkSync(join(root, "held"), join(root, "allowed/dirlink"));
+    const ledger = ledgerWithAllowedAndHeld();
+    for (const path of ["allowed/link-to-held.glb", "allowed/dirlink/h1.glb"]) {
+      const themePacks = themePacksFor([assetEntry("allowed-m001", 0, path, SELF_CONTAINED)]);
+      const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger });
+      assert.equal(plan, null, path);
+      assert.match(errors[0], /에셋 파일이 올바르지 않습니다.*소속 팩 폴더 밖/, path);
+    }
+    // 같은 팩 폴더 안의 일반 파일은 통과한다.
+    const ok = themePacksFor([assetEntry("allowed-m001", 0, "allowed/real.glb", SELF_CONTAINED)]);
+    assert.deepEqual(planFor({ themePacks: ok, assetRoot: root, ledger }).errors, []);
+  });
+});
+
+test("비정상 입력(null 항목·디렉터리 경로·읽기 오류)은 던지지 않고 오류로 보고한다", () => {
+  withTempRoot((root) => {
+    writeTree(root, { "allowed/a.glb": SELF_CONTAINED });
+    mkdirSync(join(root, "allowed/subdir"), { recursive: true });
+    const ledger = ledgerWithAllowedAndHeld();
+    const base = () => themePacksFor([assetEntry("allowed-m001", 0, "allowed/a.glb", SELF_CONTAINED)]);
+
+    const nullAsset = { ...base(), assets: [null] };
+    const asset = planFor({ themePacks: nullAsset, assetRoot: root, ledger });
+    assert.equal(asset.plan, null);
+    assert.match(asset.errors[0], /에셋 항목이 객체가 아닙니다/);
+
+    // null 팩을 가리키는 에셋은 제외로 기록되고 던지지 않는다.
+    const nullPack = { ...base(), packs: [null, HELD_PACK] };
+    const pack = planFor({ themePacks: nullPack, assetRoot: root, ledger });
+    assert.deepEqual(pack.errors, []);
+    assert.equal(pack.plan.excludedByRights[0].reason, "missing-entry");
+
+    const directory = themePacksFor([{ ...assetEntry("allowed-m001", 0, "allowed/subdir", SELF_CONTAINED), path: "allowed/subdir" }]);
+    const dir = planFor({ themePacks: directory, assetRoot: root, ledger });
+    assert.equal(dir.plan, null);
+    assert.match(dir.errors[0], /에셋 파일이 올바르지 않습니다.*일반 파일이 아닙니다/);
+
+    const failing = planFor({
+      themePacks: base(), assetRoot: root, ledger, readFile: () => { throw Object.assign(new Error("denied"), { code: "EACCES" }); },
+    });
+    assert.equal(failing.plan, null);
+    assert.match(failing.errors[0], /실물 파일을 읽을 수 없습니다.*EACCES/);
+  });
+});
+
+test("커밋된 theme-packs.json의 모든 팩은 생성기 팩 정의와 같은 인제스션 폴더를 가진다", () => {
+  const themePacks = JSON.parse(readFileSync(
+    join(REPO_ROOT, "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json"),
+    "utf8",
+  ));
+  const defs = new Map(CATALOG_PACKS.map((def) => [def.title, def]));
+  for (const pack of themePacks.packs) {
+    const def = defs.get(pack.title);
+    assert.ok(def, `${pack.title}: 생성기 팩 정의에 없습니다.`);
+    assert.deepEqual(pack.ingestPackIds, def.ingest, `${pack.title}: 인제스션 폴더가 생성기 정의와 다릅니다. 생성기를 다시 실행하세요.`);
+  }
+});
+
 test("커밋된 원장과 커밋된 theme-packs.json으로 계획하면 원장이 열지 않은 팩의 에셋은 실물을 읽지 않고 전부 제외한다", () => {
   const ledger = loadPackRightsLedger();
   const themePacks = JSON.parse(readFileSync(
@@ -487,38 +593,52 @@ test("커밋된 원장과 커밋된 theme-packs.json으로 계획하면 원장�
     assert.match(assessPlanForMode(plan, "production").refusal, /배포할 GLB가 없습니다/);
     assert.match(assessPlanForMode(plan, "write").refusal, /배포할 GLB가 없습니다/);
   } else {
-    // 팩이 열렸다면 실물 트리가 있어야 계획이 나온다. 트리가 없을 때 오류는 열린 팩의 실물 누락뿐이어야 한다
-    // (닫힌 팩의 에셋은 여전히 읽지 않는다).
-    assert.equal(plan, null);
-    assert.ok(errors.length > 0);
-    assert.ok(errors.every((error) => /실물 파일이 없습니다|권리 원장이 올바르지 않습니다|에셋 경로가 올바르지 않습니다/.test(error)), errors.slice(0, 3).join(" | "));
+    // 팩이 열렸다면 두 경우가 있다: theme-packs가 재생성 전이면 권리 블록이 없어 rights-drift로 제외돼 계획이 나오고,
+    // 재생성됐으면 실물 트리가 없어 열린 팩의 실물 누락 오류가 난다. 어느 쪽이든 닫힌 팩의 폴더는 건드리지 않는다.
     const openedIngest = opened.flatMap((entry) => themePacks.packs
       .filter((pack) => entry.catalogIds.some((id) => pack.catalogIds?.includes(id)))
       .flatMap((pack) => pack.ingestPackIds));
-    assert.ok(errors.every((error) => openedIngest.some((id) => error.includes(`${id}/`))), "닫힌 팩의 실물을 읽으려 했습니다.");
+    if (plan === null) {
+      assert.ok(errors.length > 0);
+      assert.ok(errors.every((error) => /실물 파일이 없습니다|권리 원장이 올바르지 않습니다|에셋 경로가 올바르지 않습니다/.test(error)), errors.slice(0, 3).join(" | "));
+      assert.ok(errors.every((error) => openedIngest.some((id) => error.includes(`${id}/`))), "닫힌 팩의 실물을 읽으려 했습니다.");
+    } else {
+      for (const object of plan.objects.filter((candidate) => candidate.source !== null)) {
+        assert.ok(openedIngest.some((id) => object.source.startsWith(`${id}/`)), `닫힌 팩의 객체가 계획에 있습니다: ${object.source}`);
+      }
+    }
   }
 });
 
+// CLI 테스트용: 실제 팩 정의(Pirate Island 허용 · Old Town hold)로 만든 원장과 theme-packs.
+function cliLedger() {
+  return fixtureLedger([
+    ledgerEntry({ ...REAL_ALLOWED, serve: "allow" }),
+    ledgerEntry({ ...REAL_HELD, serve: "hold" }),
+  ]);
+}
+const cliThemePacks = (assets) => themePacksFor(assets, [REAL_ALLOWED, REAL_HELD], cliLedger());
+
 test("CLI dry-run은 hold를 제외하고 sha256 키를 출력하며 아무것도 쓰지 않는다", () => {
   withTempRoot((root) => {
-    const rel = "allowed/a.glb";
+    const rel = `${REAL_ALLOWED.ingestPackIds[0]}/a.glb`;
     writeTree(root, { [rel]: SELF_CONTAINED });
-    const themePacks = themePacksFor([
+    const themePacks = cliThemePacks([
       assetEntry("allowed-m001", 0, rel, SELF_CONTAINED),
-      assetEntry("held-m001", 1, "held/h1.glb", selfContainedGlb("held")),
+      assetEntry("held-m001", 1, `${REAL_HELD.ingestPackIds[0]}/h1.glb`, selfContainedGlb("held")),
     ]);
     const themePacksPath = join(root, "theme-packs.json");
     const ledgerPath = join(root, "ledger.json");
     const outPath = join(root, "manifest-out.json");
     writeFileSync(themePacksPath, JSON.stringify(themePacks));
-    writeFileSync(ledgerPath, JSON.stringify(ledgerWithAllowedAndHeld()));
+    writeFileSync(ledgerPath, JSON.stringify(cliLedger()));
     const result = spawnSync(process.execPath, [
       SCRIPT, "--dry-run", "--asset-root", root, "--theme-packs", themePacksPath,
       "--pack-rights", ledgerPath, "--out", outPath,
     ], { encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, new RegExp(`assets/studio/bundle-v2/${sha256Of(SELF_CONTAINED)}\\.glb`));
-    assert.match(result.stdout, /제외: Held Pack — 에셋 1개 \(hold\)/);
+    assert.match(result.stdout, /제외: Old Town — Courtyards — 에셋 1개 \(hold\)/);
     assert.match(result.stdout, /이 도구는 R2 객체를 지우지 않습니다/);
     assert.match(result.stdout, /dry-run: 매니페스트를 쓰지 않고 업로드도 하지 않았습니다/);
     assert.throws(() => readFileSync(outPath), /ENOENT/);
@@ -541,12 +661,12 @@ test("CLI는 잘못된 원장이면 계획 단계 이전에 종료 코드 2로 �
 
 test("CLI는 pnpm run 형태의 맨 -- 를 건너뛰고 옵션을 읽는다", () => {
   withTempRoot((root) => {
-    const rel = "allowed/a.glb";
+    const rel = `${REAL_ALLOWED.ingestPackIds[0]}/a.glb`;
     writeTree(root, { [rel]: SELF_CONTAINED });
     const themePacksPath = join(root, "theme-packs.json");
     const ledgerPath = join(root, "ledger.json");
-    writeFileSync(themePacksPath, JSON.stringify(themePacksFor([assetEntry("allowed-m001", 0, rel, SELF_CONTAINED)])));
-    writeFileSync(ledgerPath, JSON.stringify(ledgerWithAllowedAndHeld()));
+    writeFileSync(themePacksPath, JSON.stringify(cliThemePacks([assetEntry("allowed-m001", 0, rel, SELF_CONTAINED)])));
+    writeFileSync(ledgerPath, JSON.stringify(cliLedger()));
     const result = spawnSync(process.execPath, [
       SCRIPT, "--dry-run", "--", "--asset-root", root, "--theme-packs", themePacksPath, "--pack-rights", ledgerPath,
     ], { encoding: "utf8" });

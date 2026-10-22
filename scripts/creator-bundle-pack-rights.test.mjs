@@ -116,6 +116,16 @@ test("시드 스냅샷: 개방된 팩은 EXPECTED_ALLOWED_TITLES뿐이고 검토
   );
 });
 
+test("시드 스냅샷: Cute Dungeon은 요구 증빙을 이미 갖췄지만 미수신(pending) 묶음이라 편입 전에는 allow가 열지 못한다", () => {
+  const ledger = loadPackRightsLedger();
+  const dungeon = entryOf(ledger, "Cute Dungeon Megapack");
+  assert.equal(dungeon.group, "pending");
+  assert.equal(dungeon.holdReason, "pending-ingest");
+  assert.deepEqual(missingEvidenceKinds(ledger, dungeon), []);
+  // Cute Park는 License.txt 본문이 Dungeon 것을 복사한 파일이라 itch 캡처가 더 필요하다.
+  assert.deepEqual(missingEvidenceKinds(ledger, entryOf(ledger, "Cute Park Pack")), ["itch-page-capture"]);
+});
+
 test("검토 권고 hold 팩(Restaurant·Medieval·Small Props)은 제작사 서면 확인 없이는 열리지 않는다", () => {
   const ledger = loadPackRightsLedger();
   for (const title of REVIEW_RECOMMENDED_HOLD_TITLES) {

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import nodeTest from "node:test";
 import { fileURLToPath } from "node:url";
 import { test as vitestTest } from "vitest";
@@ -16,17 +18,22 @@ import {
   LICENSE_CLASSES,
   loadPackRightsLedger,
   missingEvidenceKinds,
+  packRightsKey,
   packRightsProjection,
+  requiredEvidenceKinds,
+  summarizePackRightsLedger,
   validatePackRightsLedger,
 } from "./lib/creator-bundle-pack-rights.mjs";
 import {
   cloneLedger,
   entryOf,
   fixtureLedger,
+  fixtureLicenseText,
   flipToAllow,
   ledgerEntry,
   problemsFor,
   qualifyingEvidence,
+  resetToHold,
 } from "./lib/creator-bundle-pack-rights-test-support.mjs";
 
 // allow 게이트(증빙·grant·묶음·신원)의 부정 테스트 모음. 시드·완전성·증빙 재검증은 creator-bundle-pack-rights.test.mjs에 있다.
@@ -44,7 +51,7 @@ const REVIEW_RECOMMENDED_HOLD_TITLES = ["Medieval Village / Megapack", "Restaura
 
 test("증빙 없이 allow로 바꾸면 검증이 실패하고 서빙 판정도 닫힌다", () => {
   const ledger = cloneLedger();
-  const pirate = flipToAllow(entryOf(ledger, "Pirate Island"));
+  const pirate = flipToAllow(resetToHold(entryOf(ledger, "Pirate Island")));
   const problems = problemsFor(ledger);
   assert.ok(problems.length > 0, "증빙 없는 allow가 통과했습니다 — 게이트가 뚫렸습니다.");
   assert.ok(problems.some((problem) => /Pirate Island/u.test(problem) && /itch-page-capture/u.test(problem)));
@@ -58,7 +65,7 @@ test("증빙 없이 allow로 바꾸면 검증이 실패하고 서빙 판정도 �
 
 test("2차 조회 기록만 있는 팩은 allow가 될 수 없다", () => {
   const ledger = cloneLedger();
-  const characters = entryOf(ledger, "Characters 1");
+  const characters = resetToHold(entryOf(ledger, "Characters 1"));
   assert.ok(characters.evidence.some((item) => item.kind === "secondary-lookup"), "시드의 2차 조회 기록");
   flipToAllow(characters);
   assert.ok(problemsFor(ledger).some((problem) => /Characters 1/u.test(problem) && /itch-page-capture/u.test(problem)));
@@ -67,7 +74,7 @@ test("2차 조회 기록만 있는 팩은 allow가 될 수 없다", () => {
 test("검토 권고 hold 팩은 서면 확인 없이 allow로 바꿀 수 없다", () => {
   for (const title of REVIEW_RECOMMENDED_HOLD_TITLES) {
     const ledger = cloneLedger();
-    flipToAllow(entryOf(ledger, title));
+    flipToAllow(resetToHold(entryOf(ledger, title)));
     const problems = problemsFor(ledger);
     assert.ok(problems.some((problem) => problem.includes(title) && /producer-written-confirmation/u.test(problem)), title);
   }
@@ -75,7 +82,7 @@ test("검토 권고 hold 팩은 서면 확인 없이 allow로 바꿀 수 없다"
 
 test("웹 서비스 서빙을 다루지 않는 제작사 확인은 서면 확인으로 인정하지 않는다", () => {
   const ledger = cloneLedger();
-  const restaurant = entryOf(ledger, "Restaurant Megapack");
+  const restaurant = resetToHold(entryOf(ledger, "Restaurant Megapack"));
   flipToAllow(restaurant, {
     evidence: [
       ...restaurant.evidence,
@@ -153,16 +160,6 @@ test("요구 증빙을 모두 갖추면 열리고, 공개 투영에는 권리 �
   assert.deepEqual(allowEligibilityProblems(ledger, dungeon), []);
 });
 
-test("Cute Dungeon은 요구 증빙을 이미 갖췄지만 미수신(pending) 묶음이라 편입 전에는 allow가 열지 못한다", () => {
-  const ledger = loadPackRightsLedger();
-  const dungeon = entryOf(ledger, "Cute Dungeon Megapack");
-  assert.equal(dungeon.group, "pending");
-  assert.equal(dungeon.holdReason, "pending-ingest");
-  assert.deepEqual(missingEvidenceKinds(ledger, dungeon), []);
-  // Cute Park는 License.txt 본문이 Dungeon 것을 복사한 파일이라 itch 캡처가 더 필요하다.
-  assert.deepEqual(missingEvidenceKinds(ledger, entryOf(ledger, "Cute Park Pack")), ["itch-page-capture"]);
-});
-
 test("구조 위반(기본값 allow·알 수 없는 분류·중복·holdLabel 누락)은 전부 거부한다", () => {
   const defaultAllow = cloneLedger();
   defaultAllow.defaultServe = "allow";
@@ -179,7 +176,7 @@ test("구조 위반(기본값 allow·알 수 없는 분류·중복·holdLabel �
   assert.ok(problemsFor(duplicate).some((problem) => /중복/u.test(problem)));
 
   const noLabel = cloneLedger();
-  delete entryOf(noLabel, "Pirate Island").holdLabel;
+  delete resetToHold(entryOf(noLabel, "Pirate Island")).holdLabel;
   assert.ok(problemsFor(noLabel).some((problem) => /holdLabel/u.test(problem)));
 
   const badServe = cloneLedger();
@@ -187,8 +184,8 @@ test("구조 위반(기본값 allow·알 수 없는 분류·중복·holdLabel �
   assert.ok(problemsFor(badServe).some((problem) => /serve는/u.test(problem)));
 
   const allowWithHoldLabel = cloneLedger();
-  flipToAllow(entryOf(allowWithHoldLabel, "Cute Dungeon Megapack"));
-  entryOf(allowWithHoldLabel, "Cute Dungeon Megapack").holdLabel = "공개 준비 중이다.";
+  flipToAllow(entryOf(allowWithHoldLabel, "Pirate Island"));
+  entryOf(allowWithHoldLabel, "Pirate Island").holdLabel = "공개 준비 중이다.";
   assert.ok(problemsFor(allowWithHoldLabel).some((problem) => /holdLabel가 없어야/u.test(problem)));
 });
 
@@ -227,7 +224,7 @@ test("allow 요구 표는 모든 라이선스 분류를 덮고 서면 확인 없
 /** Pirate Island(캡처+영수증 필요)를 정상 증빙 두 건으로 allow로 바꾼다. 증빙마다 필드를 덮어쓸 수 있다. */
 function allowPirate({ capture, receipt } = {}) {
   const ledger = cloneLedger();
-  const pirate = entryOf(ledger, "Pirate Island");
+  const pirate = resetToHold(entryOf(ledger, "Pirate Island"));
   flipToAllow(pirate, {
     evidence: [
       ...pirate.evidence,
@@ -252,6 +249,11 @@ test("itch 캡처 URL은 https itch.io 팩 페이지만 인정하고 닮은 도�
     "https://itch.io@evil.com/x", "https://user:pw@itch.io/x", "https://evil.com/itch.io/x",
     "https://itch.io.evil.com/x", "https://creator.itch.io/", "https://itch.io", "ftp://itch.io/x",
     "itch.io/x", "", "   ",
+    // 리뷰 2차: 빈 호스트 라벨·포트·팩 페이지가 아닌 주소·공백/개행 패딩·역슬래시·깊은 하위 도메인.
+    "https://.itch.io/x", "https://..itch.io/x", "https://itch.io:8443/x", "https://rgpoly.itch.io:444/pack",
+    "https://itch.io//", "https://itch.io/login", "https://itch.io/b/", "  https://rgpoly.itch.io/pack  ",
+    "https://rgpoly.itch.io/pack\n", "https://rgpoly.itch.io/pa\tck", "https://itch.io\\.evil.com/x",
+    "https://a.b.itch.io/pack", "https://rgpoly.itch.io/\u200bpack", "https://rg poly.itch.io/pack",
   ];
   for (const url of rejected) {
     assertClosed(allowPirate({ capture: { url } }), /itch\.io 팩 페이지 주소/u, JSON.stringify(url));
@@ -261,6 +263,7 @@ test("itch 캡처 URL은 https itch.io 팩 페이지만 인정하고 닮은 도�
     "https://itch.io/b/3905/creator-bundle-volume-1",
     "https://emaceart.itch.io/cute-pack",
     "https://rg-poly.itch.io/pirate-island?download",
+    "https://rgpoly.itch.io./pirate-island", // 끝 점 하나(FQDN 표기)는 허용한다.
   ];
   for (const url of accepted) {
     const { ledger, pirate } = allowPirate({ capture: { url } });
@@ -270,7 +273,10 @@ test("itch 캡처 URL은 https itch.io 팩 페이지만 인정하고 닮은 도�
 });
 
 test("증빙 날짜는 달력에 있는 과거·오늘 날짜여야 하고 불가능하거나 미래인 날짜는 거부한다", () => {
-  const badDates = ["2026-02-31", "2026-13-01", "2026-00-10", "2026-04-31", "2026-1-1", "20261022", "2999-01-01", "9999-12-31", "어제", "", 20261022, null];
+  const badDates = [
+    "2026-02-31", "2026-13-01", "2026-00-10", "2026-04-31", "2026-1-1", "20261022", "2999-01-01", "9999-12-31",
+    "어제", "", 20261022, null, "1000-01-01", "2012-12-31", // itch.io 시작(2013) 이전은 증빙일 수 없다.
+  ];
   for (const verifiedAt of badDates) {
     assertClosed(allowPirate({ receipt: { verifiedAt } }), /verifiedAt/u, `verifiedAt ${String(verifiedAt)}`);
   }
@@ -278,9 +284,9 @@ test("증빙 날짜는 달력에 있는 과거·오늘 날짜여야 하고 불�
     assertClosed(allowPirate({ capture: { retrievedAt } }), /retrievedAt/u, `retrievedAt ${String(retrievedAt)}`);
   }
   assertClosed(allowPirate({ capture: { verifiedAt: "2999-01-01" } }), /verifiedAt/u, "캡처 verifiedAt 미래");
-  // 윤년 2월 29일은 달력에 있다.
-  const leap = allowPirate({ receipt: { verifiedAt: "2024-02-29" } });
-  assert.deepEqual(problemsFor(leap.ledger), []);
+  // 윤년 2월 29일은 달력에 있고, 하한 당일(2013-01-01)은 허용한다.
+  assert.deepEqual(problemsFor(allowPirate({ receipt: { verifiedAt: "2024-02-29" } }).ledger), []);
+  assert.deepEqual(problemsFor(allowPirate({ receipt: { verifiedAt: "2013-01-01" } }).ledger), []);
 });
 
 test("증빙 날짜 상한은 주입한 현재 시각 기준 UTC+14의 오늘까지다", () => {
@@ -308,7 +314,7 @@ test("증빙 보관 위치(ref)는 비었거나 자리표시면 거부한다 —
     assertClosed(allowPirate({ capture: { ref } }), /캡처 보관 위치/u, `capture ${String(ref)}`);
     assertClosed(allowPirate({ receipt: { ref } }), /영수증·약관 보관 위치/u, `receipt ${String(ref)}`);
     const ledger = cloneLedger();
-    const restaurant = entryOf(ledger, "Restaurant Megapack");
+    const restaurant = resetToHold(entryOf(ledger, "Restaurant Megapack"));
     flipToAllow(restaurant, {
       evidence: [...restaurant.evidence, qualifyingEvidence("producer-written-confirmation", { ref })],
     });
@@ -352,22 +358,21 @@ test("로컬 라이선스 증빙은 해시로 기록된 자기 팩 문서여야 
 });
 
 test("pending 묶음 팩은 증빙을 다 갖춰도 allow할 수 없다 (편입 전이라 allow가 아무것도 열지 못한다)", () => {
-  const ledger = cloneLedger();
-  const dungeon = entryOf(ledger, "Cute Dungeon Megapack");
-  assert.equal(dungeon.group, "pending");
-  assert.deepEqual(missingEvidenceKinds(ledger, dungeon), [], "요구 증빙은 이미 충족");
-  flipToAllow(dungeon);
+  const pendingPack = { title: "Pending Pack", catalogIds: ["cbv1-905-pending"] };
+  const ledger = fixtureLedger([ledgerEntry({ ...pendingPack, group: "pending", serve: "allow" })]);
+  const entry = findPackRights(ledger, pendingPack);
+  assert.deepEqual(missingEvidenceKinds(ledger, entry), [], "요구 증빙은 이미 충족");
   assert.ok(problemsFor(ledger).some((problem) => /pending 묶음 팩은 인제스션·CATALOG_PACKS 편입 전/u.test(problem)));
-  const decision = evaluateServeDecision(ledger, dungeon);
+  const decision = evaluateServeDecision(ledger, { ...pendingPack, creator: "RG Poly" });
   assert.equal(decision.serve, false);
   assert.equal(decision.reason, "invalid-evidence");
   // 편입하면서 group을 pack으로 옮기면 같은 증빙으로 열린다.
-  dungeon.group = "pack";
+  entry.group = "pack";
   assert.deepEqual(problemsFor(ledger), []);
-  assert.equal(evaluateServeDecision(ledger, dungeon, { group: "pack" }).serve, true);
+  assert.equal(evaluateServeDecision(ledger, { ...pendingPack, creator: "RG Poly" }, { group: "pack" }).serve, true);
   // 알 수 없는 묶음 값은 서빙 대상이 아니다.
-  dungeon.group = "other";
-  assert.ok(allowEligibilityProblems(ledger, dungeon).some((problem) => /서빙 판정 대상이 아닙니다/u.test(problem)));
+  entry.group = "other";
+  assert.ok(allowEligibilityProblems(ledger, entry).some((problem) => /서빙 판정 대상이 아닙니다/u.test(problem)));
 });
 
 test("서빙 판정은 기대 묶음과 제목·제작사가 원장과 같을 때만 연다", () => {
@@ -496,7 +501,7 @@ test("나머지 구조 검증 분기도 각각 거부한다 (증빙 종류·제�
   rejects("title이 빔", (ledger) => { entryOf(ledger, "Pirate Island").title = ""; }, /title이 비어/u);
   rejects("catalogIds가 배열이 아님", (ledger) => { entryOf(ledger, "Pirate Island").catalogIds = "x"; }, /catalogIds는/u);
   rejects("officialCatalogIds가 배열이 아님", (ledger) => { entryOf(ledger, "Pirate Island").officialCatalogIds = null; }, /officialCatalogIds는/u);
-  rejects("hold인데 holdReason 없음", (ledger) => { delete entryOf(ledger, "Pirate Island").holdReason; }, /holdReason이 필요/u);
+  rejects("hold인데 holdReason 없음", (ledger) => { delete resetToHold(entryOf(ledger, "Pirate Island")).holdReason; }, /holdReason이 필요/u);
   rejects("객체가 아닌 팩 항목", (ledger) => { ledger.packs.push(null); }, /객체가 아닙니다/u);
   rejects("schema가 다름", (ledger) => { ledger.schema = "other"; }, /schema\/version/u);
   rejects("version이 다름", (ledger) => { ledger.version = 2; }, /schema\/version/u);
@@ -537,7 +542,7 @@ test("완전성 검사는 제목 불일치와 생성기 묶음 안 중복도 가
 test("hold 팩의 사용자 노출 문구(holdLabel)는 사유·권리 용어와 공개 약속을 드러내지 않는다", () => {
   const ledger = loadPackRightsLedger();
   const holds = ledger.packs.filter((entry) => entry.serve === "hold");
-  assert.ok(holds.length > 0 || ledger.packs.every((entry) => entry.serve === "allow"));
+  assert.equal(holds.length + ledger.packs.filter((entry) => entry.serve === "allow").length, ledger.packs.length);
   for (const entry of holds) {
     assert.doesNotMatch(entry.holdLabel, /제작사|증빙|영수증|서면|충돌|라이선스|저작권|권리|공개한다|공개합니다/u, entry.title);
   }
@@ -558,5 +563,143 @@ test("커밋된 theme-packs.json은 원장과 어긋나지 않는다 — 권리 
   }
   for (const pending of themePacks.pendingPacks.filter((entry) => entry.reason === "rights-hold")) {
     assert.notEqual(findPackRights(ledger, pending)?.serve, "allow", `${pending.title}: 원장이 연 팩이 rights-hold로 남아 있습니다.`);
+  }
+});
+
+/* ── 2차 독립 검토 반영: 보이지 않는 문자·분류 타입 혼동·URL·키·정보 표시 ───────────────────── */
+
+test("보이지 않는 문자·자리표시 낱말·글자 없는 보관 위치는 거부하고 실제 위치처럼 보이는 값은 받는다", () => {
+  const rejected = [
+    "\u200b\u200c\u200b\u200c\u200b\u200c", "\u3164\u2800\u3164\u2800\u3164\u2800", "\u00a0".repeat(8), "\ufeff".repeat(8),
+    "TBD TBD", "tbd...", "pending (todo)", "N/A (none)", "추후 제출 예정", "미정 미정 미정", "해당 없음 없음",
+    "123456", "http://", "https://", "-_-_-_", "aaaaaa", "ababab", "\tmeaningful-looking\n", "owner\u202email/receipt.pdf",
+  ];
+  for (const ref of rejected) {
+    assertClosed(allowPirate({ receipt: { ref } }), /영수증·약관 보관 위치/u, JSON.stringify(ref));
+    assertClosed(allowPirate({ capture: { ref } }), /캡처 보관 위치/u, JSON.stringify(ref));
+  }
+  const accepted = [
+    "owner-receipts/itch-bundle-3905.pdf", "receipts/2026-10-22-itch.pdf", "mail emace 2026-10-25 답변.eml",
+    "https://drive.example.com/d/abc123", "영수증_itch_번들.pdf",
+  ];
+  for (const ref of accepted) {
+    const { ledger, pirate } = allowPirate({ receipt: { ref } });
+    assert.deepEqual(problemsFor(ledger), [], ref);
+    assert.equal(evaluateServeDecision(ledger, pirate).serve, true, ref);
+  }
+});
+
+test("grant.licenseName·holdLabel은 보이지 않는 문자만 있거나 제어·서식 문자가 든 값을 받지 않는다", () => {
+  for (const licenseName of ["\u200b", "\u3164", "   ", "CC0\n1.0", "CC0\t1.0", "CC0\u0000x", "CC0\u007fx", "CC0\u202e1.0"]) {
+    const { ledger, pirate } = allowPirate();
+    pirate.grant.licenseName = licenseName;
+    assertClosed({ ledger, pirate }, /grant\.licenseName/u, JSON.stringify(licenseName));
+    assert.throws(() => packRightsProjection(pirate), TypeError, JSON.stringify(licenseName));
+  }
+  for (const holdLabel of ["\u200b", "준비 중\n", "   ", "\u3164\u3164"]) {
+    const ledger = cloneLedger();
+    resetToHold(entryOf(ledger, "Pirate Island")).holdLabel = holdLabel;
+    assert.ok(problemsFor(ledger).some((problem) => /holdLabel/u.test(problem)), JSON.stringify(holdLabel));
+  }
+});
+
+test("문자열이 아닌 licenseClass(배열·객체)는 속성 키로 강제 변환돼 다른 분류처럼 통하지 못한다", () => {
+  const texts = [fixtureLicenseText({ class: "rg-poly-proprietary" })]; // cc0-explicit와 호환되지 않는 문서
+  const build = (licenseClass) => {
+    const ledger = fixtureLedger([ledgerEntry({
+      title: "Coerce Pack", catalogIds: ["cbv1-906-coerce"], licenseClass: "cc0-explicit", serve: "allow",
+      evidence: [qualifyingEvidence("local-license-file")],
+    })], texts);
+    ledger.packs[0].licenseClass = licenseClass;
+    return ledger;
+  };
+  const pack = { title: "Coerce Pack", catalogIds: ["cbv1-906-coerce"], creator: "RG Poly" };
+  assert.equal(evaluateServeDecision(build("cc0-explicit"), pack).serve, false, "기준선: 비호환 문서는 거부");
+  for (const licenseClass of [["cc0-explicit"], [["cc0-explicit"]], { toString: () => "cc0-explicit" }, 1, null]) {
+    const ledger = build(licenseClass);
+    assert.equal(requiredEvidenceKinds(licenseClass), null, String(licenseClass));
+    assert.equal(evaluateServeDecision(ledger, pack).serve, false, String(licenseClass));
+    assert.ok(problemsFor(ledger).some((problem) => /licenseClass/u.test(problem)), String(licenseClass));
+  }
+});
+
+test("문서의 libraryPack은 libraryPath의 팩 폴더와 같아야 하고, 라이브러리 팩 폴더는 문서화된 3곳만 공유한다", () => {
+  const ledger = cloneLedger();
+  ledger.licenseTexts[0].files[0].libraryPack = "someone-elses-pack";
+  assert.ok(problemsFor(ledger).some((problem) => /libraryPack\(someone-elses-pack\)이 libraryPath의 팩 폴더와 다릅니다/u.test(problem)));
+  const archived = cloneLedger();
+  const withArchive = archived.licenseTexts.find((text) => Array.isArray(text.archivedFiles));
+  withArchive.archivedFiles[0].libraryPack = "someone-elses-pack";
+  assert.ok(problemsFor(archived).some((problem) => /팩 폴더와 다릅니다/u.test(problem)));
+
+  // 팩 폴더 이름을 둘 이상의 원장 항목이 주장하는 경우는 mappingNote로 설명된 3곳뿐이다 (귀속 변경은 소유자 확인 사항).
+  const owners = new Map();
+  for (const entry of loadPackRightsLedger().packs) {
+    for (const name of entry.libraryPacks) owners.set(name, [...(owners.get(name) ?? []), entry.title]);
+  }
+  const shared = [...owners].filter(([, titles]) => titles.length > 1).map(([name]) => name).sort();
+  assert.deepEqual(shared, ["graves-kit-with-lods", "low-poly-asia-pack", "pixeldrift-metro-3d-pixel-art-subway-vr"]);
+});
+
+test("서빙 판정은 제목·제작사가 문자열로 없으면 닫고, 비정상 catalogIds는 어떤 팩과도 일치시키지 않는다", () => {
+  const ledger = fixtureLedger([
+    ledgerEntry({ title: "Allowed Pack", catalogIds: ["cbv1-901-allowed"], serve: "allow" }),
+    ledgerEntry({ title: "Food Pack", catalogIds: [], serve: "allow" }),
+  ]);
+  const allowed = { catalogIds: ["cbv1-901-allowed"], title: "Allowed Pack", creator: "RG Poly" };
+  assert.equal(evaluateServeDecision(ledger, allowed).serve, true);
+  assert.equal(evaluateServeDecision(ledger, { catalogIds: allowed.catalogIds }).reason, "identity-mismatch");
+  assert.equal(evaluateServeDecision(ledger, { ...allowed, creator: undefined }).reason, "identity-mismatch");
+  assert.equal(evaluateServeDecision(ledger, { ...allowed, title: ["Allowed Pack"] }).reason, "identity-mismatch");
+  const food = { title: "Food Pack", creator: "RG Poly" };
+  assert.equal(evaluateServeDecision(ledger, food).serve, true);
+  for (const catalogIds of ["junk", ["title:Food Pack"], [1], [["cbv1-901-allowed"]], {}, null]) {
+    const spoof = { ...food, catalogIds };
+    assert.equal(evaluateServeDecision(ledger, spoof).serve, false, JSON.stringify(catalogIds));
+    assert.equal(evaluateServeDecision(ledger, spoof).reason, "missing-entry", JSON.stringify(catalogIds));
+  }
+  // 번호 키와 제목 키는 접두사로 구분돼 충돌하지 않는다.
+  assert.notEqual(packRightsKey({ catalogIds: ["title:Food Pack"] }), packRightsKey({ title: "Food Pack" }));
+  assert.equal(packRightsKey({ catalogIds: ["b", "a"] }), packRightsKey({ catalogIds: ["a", "b"] }));
+});
+
+test("now는 Date로만 주입할 수 있다 — Date가 아닌 값은 조용히 무시하지 않고 던진다", () => {
+  const { ledger, pirate } = allowPirate({ receipt: { verifiedAt: "2026-12-31" } });
+  const future = new Date("2027-01-01T00:00:00Z");
+  assert.equal(evaluateServeDecision(ledger, pirate, { now: future }).serve, true);
+  assert.throws(() => evaluateServeDecision(ledger, pirate, { now: future.getTime() }), TypeError);
+  assert.throws(() => validatePackRightsLedger(ledger, { now: "2027-01-01" }), TypeError);
+  assert.throws(() => allowEligibilityProblems(ledger, pirate, { now: {} }), TypeError);
+});
+
+test("증빙 하나의 문제는 한 줄로만 보고하고, 팩 항목이 null이어도 요약은 던지지 않는다", () => {
+  const { ledger } = allowPirate({ receipt: { ref: "" } });
+  const lines = problemsFor(ledger).filter((problem) => /영수증·약관 보관 위치/u.test(problem));
+  assert.equal(lines.length, 1, lines.join(" | "));
+  assert.deepEqual(summarizePackRightsLedger({ packs: [null, { group: "pack", serve: "hold" }, "x"] }), {
+    total: 1, byGroup: { pack: 1 }, allow: 0, hold: 1,
+  });
+});
+
+test("검증 CLI는 null 팩 항목에도 스택 트레이스 없이 문제로 보고하고, 열 수 있는 정도를 사실대로 적는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "pack-rights-cli-"));
+  try {
+    const ledger = cloneLedger();
+    // 증빙은 다 갖췄지만 grant가 없는 hold, 알 수 없는 분류의 hold, null 항목을 한 원장에 넣는다.
+    const pirate = resetToHold(entryOf(ledger, "Pirate Island"));
+    pirate.evidence.push(qualifyingEvidence("itch-page-capture"), qualifyingEvidence("purchase-receipt"));
+    entryOf(ledger, "Farm Land").licenseClass = "made-up-class";
+    ledger.packs.push(null);
+    const path = join(root, "ledger.json");
+    writeFileSync(path, JSON.stringify(ledger));
+    const script = resolve(REPO_ROOT, "scripts/verify-creator-bundle-pack-rights.mjs");
+    const result = spawnSync(process.execPath, [script, "--pack-rights", path], { encoding: "utf8" });
+    assert.equal(result.status, 1);
+    assert.doesNotMatch(result.stderr, /TypeError|at .*\.mjs/u);
+    assert.match(result.stdout, /문제: packs\[\d+\]: 객체가 아닙니다/u);
+    assert.match(result.stdout, /Pirate Island \(unstated-rg-poly\).* — 증빙 충족 — 소유자가 grant를 채워 열 수 있음/u);
+    assert.match(result.stdout, /Farm Land \(made-up-class\).* — 라이선스 분류를 알 수 없어 열 수 없음/u);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
