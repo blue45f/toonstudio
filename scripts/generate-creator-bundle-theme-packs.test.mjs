@@ -16,11 +16,10 @@ import {
 } from "./generate-creator-bundle-theme-packs.mjs";
 import {
   HOLD_PUBLIC_LABEL,
-  loadPackRightsLedger,
   packRightsKey,
   requiredEvidenceKinds,
 } from "./lib/creator-bundle-pack-rights.mjs";
-import { qualifyingEvidence, resetToHold, selfContainedGlb } from "./lib/creator-bundle-pack-rights-test-support.mjs";
+import { holdAllLedger, qualifyingEvidence, selfContainedGlb } from "./lib/creator-bundle-pack-rights-test-support.mjs";
 import { assessPlanForMode, createBundleV2DeployPlan } from "./plan-creator-bundle-deploy.mjs";
 
 // 루트 `vitest run`(scripts/**/*.test.mjs 수집)과 `node --test` 양쪽에서 같은 파일이 돈다.
@@ -63,9 +62,7 @@ function openPack(ledger, title) {
   };
 }
 
-function cloneLedger() {
-  return structuredClone(loadPackRightsLedger());
-}
+
 
 function withFixtureTree(run) {
   const root = mkdtempSync(join(tmpdir(), "bundle-theme-packs-test-"));
@@ -111,7 +108,7 @@ function withFixtureTree(run) {
 
 test("원장이 열어 준 팩만 packs·assets에 들어가고 hold 팩은 pendingPacks(rights-hold)로 간다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const ledger = cloneLedger();
+    const ledger = holdAllLedger();
     openPack(ledger, "Old Town — Courtyards");
     openPack(ledger, "Pirate Island");
     const { output, stats } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
@@ -150,7 +147,7 @@ test("원장이 열어 준 팩만 packs·assets에 들어가고 hold 팩은 pend
 
 test("생성 결과의 합계는 배포 플래너 인덱스와 일치하고, 원장이 바뀌면 stale로 드러난다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const ledger = cloneLedger();
+    const ledger = holdAllLedger();
     openPack(ledger, "Old Town — Courtyards");
     openPack(ledger, "Pirate Island");
     const { output } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
@@ -182,8 +179,7 @@ test("생성 결과의 합계는 배포 플래너 인덱스와 일치하고, 원
 test("원장의 모든 팩을 hold로 두면 허용 팩이 없고 61개 팩이 모두 대기 목록에 있으며 합계가 맞는다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
     // 소유자가 이미 연 팩이 있더라도 닫힌 상태를 만들어 본다 (커밋된 원장의 시드 상태에 묶이지 않는다).
-    const ledger = cloneLedger();
-    for (const entry of ledger.packs) resetToHold(entry);
+    const ledger = holdAllLedger();
     const { output } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
     assert.equal(output.packs.length, 0);
     assert.equal(output.assets.length, 0);
@@ -195,7 +191,7 @@ test("원장의 모든 팩을 hold로 두면 허용 팩이 없고 61개 팩이 �
 
 test("대기 목록의 hold 팩 문구는 원장 holdLabel 그대로이고 사유·약속을 드러내지 않는 같은 문장이다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const ledger = cloneLedger();
+    const ledger = holdAllLedger();
     openPack(ledger, "Old Town — Courtyards");
     const { output } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
     const held = output.pendingPacks.filter((pack) => pack.reason === "rights-hold");
@@ -209,7 +205,7 @@ test("대기 목록의 hold 팩 문구는 원장 holdLabel 그대로이고 사�
 
 test("원장이 연 군중 팩(Characters 1)은 crowdPacks에 들어가고 합계에 반영되며 배치용 권리 블록은 없다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const ledger = cloneLedger();
+    const ledger = holdAllLedger();
     openPack(ledger, "Characters 1");
     const { output, stats } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
     assert.deepEqual(output.crowdPacks, [{
@@ -233,7 +229,7 @@ test("원장이 연 군중 팩(Characters 1)은 crowdPacks에 들어가고 합�
 
 test("닫힌 팩의 실물은 읽지 않는다 — 실물이 없어도 생성이 성공하고, 열린 팩의 실물이 없으면 던진다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const ledger = cloneLedger();
+    const ledger = holdAllLedger();
     openPack(ledger, "Old Town — Courtyards");
     // 닫힌 팩(Pirate Island·Small Props·Characters 1)의 실물을 모두 지운다. 읽으려 들면 '실물 파일이 없습니다'로 던진다.
     for (const asset of manifestV2.assets) {
@@ -255,7 +251,7 @@ test("닫힌 팩의 실물은 읽지 않는다 — 실물이 없어도 생성이
 
 test("열린 팩의 에셋은 크기 불일치면 던지고 해시 불일치면 건너뛰며 건수를 센다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const ledger = cloneLedger();
+    const ledger = holdAllLedger();
     openPack(ledger, "Old Town — Courtyards");
 
     const wrongSize = structuredClone(manifestV2);
@@ -282,14 +278,14 @@ test("열린 팩의 에셋은 크기 불일치면 던지고 해시 불일치면 
 
 test("원장이 팩 정의를 덮지 못하거나 증빙 없는 allow가 있으면 생성을 거부한다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const missingEntry = cloneLedger();
+    const missingEntry = holdAllLedger();
     missingEntry.packs = missingEntry.packs.filter((entry) => entry.title !== "Pirate Island");
     assert.throws(
       () => buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger: missingEntry }),
       /덮지 못합니다.*Pirate Island/,
     );
 
-    const unproven = cloneLedger();
+    const unproven = holdAllLedger();
     const entry = titleToEntry(unproven, "Pirate Island");
     entry.serve = "allow";
     entry.grant = { status: "licensed", licenseName: "x", commercialUse: true, attributionRequired: false };
@@ -314,7 +310,7 @@ test("Characters 1/2는 공식 카탈로그 기준 제작사(RG Poly)와 id를 �
 
 test("CLI는 원장을 --pack-rights로 받아 hold 팩을 빼고 theme-packs를 쓴다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
-    const ledger = cloneLedger();
+    const ledger = holdAllLedger();
     openPack(ledger, "Old Town — Courtyards");
     const manifestPath = join(root, "manifest-v2.json");
     const themesPath = join(root, "themes.json");

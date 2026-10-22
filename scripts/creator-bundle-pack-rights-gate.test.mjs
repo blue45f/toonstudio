@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import nodeTest from "node:test";
+import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 import { test as vitestTest } from "vitest";
 
@@ -25,12 +26,17 @@ import {
   validatePackRightsLedger,
 } from "./lib/creator-bundle-pack-rights.mjs";
 import {
+  allowPirate,
+  assertClosed,
   cloneLedger,
   entryOf,
+  FIXTURE_LIBRARY_PACK,
   fixtureLedger,
   fixtureLicenseText,
   flipToAllow,
+  holdAllLedger,
   ledgerEntry,
+  PINNED_EVIDENCE_DATE,
   problemsFor,
   qualifyingEvidence,
   resetToHold,
@@ -221,28 +227,6 @@ test("allow 요구 표는 모든 라이선스 분류를 덮고 서면 확인 없
 
 /* ── 증빙·grant·묶음 게이트 강화 (적대 리뷰 반영) ─────────────────────────────────────────── */
 
-/** Pirate Island(캡처+영수증 필요)를 정상 증빙 두 건으로 allow로 바꾼다. 증빙마다 필드를 덮어쓸 수 있다. */
-function allowPirate({ capture, receipt } = {}) {
-  const ledger = cloneLedger();
-  const pirate = resetToHold(entryOf(ledger, "Pirate Island"));
-  flipToAllow(pirate, {
-    evidence: [
-      ...pirate.evidence,
-      qualifyingEvidence("itch-page-capture", capture),
-      qualifyingEvidence("purchase-receipt", receipt),
-    ],
-  });
-  return { ledger, pirate };
-}
-
-/** 검증기가 거부하고, 검증을 거치지 않은 서빙 판정도 같은 입력을 닫는지 함께 본다. */
-function assertClosed({ ledger, pirate }, pattern, label) {
-  assert.ok(problemsFor(ledger).some((problem) => pattern.test(problem)), `${label}: 검증기가 거부하지 않았습니다.`);
-  const decision = evaluateServeDecision(ledger, pirate);
-  assert.equal(decision.serve, false, `${label}: 서빙 판정이 열렸습니다.`);
-  assert.equal(decision.reason, "invalid-evidence", label);
-}
-
 test("itch 캡처 URL은 https itch.io 팩 페이지만 인정하고 닮은 도메인·자격 정보·루트 주소는 거부한다", () => {
   const rejected = [
     "https://zitch.io/a", "https://evilitch.io/x", "https://notitch.io/a", "http://itch.io/x",
@@ -290,9 +274,13 @@ test("증빙 날짜는 달력에 있는 과거·오늘 날짜여야 하고 불�
 });
 
 test("증빙 날짜 상한은 주입한 현재 시각 기준 UTC+14의 오늘까지다", () => {
-  const { ledger, pirate } = allowPirate({ receipt: { verifiedAt: "2026-10-23" } });
+  const pinned = { verifiedAt: PINNED_EVIDENCE_DATE, retrievedAt: PINNED_EVIDENCE_DATE };
+  const { ledger, pirate } = allowPirate({ capture: pinned, receipt: { verifiedAt: "2026-10-23" } });
   const early = new Date("2026-10-22T09:00:00Z"); // +14h = 2026-10-22 → 10-23은 미래
   const late = new Date("2026-10-22T11:00:00Z"); // +14h = 2026-10-23 → 허용
+  // 경계는 정확히 UTC+14다: 09:59:59Z까지는 10-23이 미래이고 10:00:00Z부터 오늘이다 (13시간·15시간 경계는 둘 중 하나가 어긋난다).
+  assert.ok(validatePackRightsLedger(ledger, { now: new Date("2026-10-22T09:59:59Z") }).some((problem) => /미래 날짜/u.test(problem)));
+  assert.deepEqual(validatePackRightsLedger(ledger, { now: new Date("2026-10-22T10:00:00Z") }), []);
   assert.ok(validatePackRightsLedger(ledger, { now: early }).some((problem) => /미래 날짜/u.test(problem)));
   assert.deepEqual(validatePackRightsLedger(ledger, { now: late }), []);
   assert.equal(evaluateServeDecision(ledger, pirate, { now: early }).serve, false);
@@ -301,8 +289,8 @@ test("증빙 날짜 상한은 주입한 현재 시각 기준 UTC+14의 오늘까
   assert.deepEqual(allowEligibilityProblems(ledger, pirate, { now: late }), []);
   assert.deepEqual(missingEvidenceKinds(ledger, pirate, { now: early }), ["purchase-receipt"]);
   assert.deepEqual(missingEvidenceKinds(ledger, pirate, { now: late }), []);
-  // 잘못된 now는 실제 현재 시각으로 대체돼 던지지 않는다.
-  assert.doesNotThrow(() => validatePackRightsLedger(ledger, { now: new Date("not a date") }));
+  // 잘못된 now(Invalid Date)는 실제 시계로 조용히 대체하지 않고 던진다 — Date가 아닌 값과 같은 계약이다.
+  assert.throws(() => validatePackRightsLedger(ledger, { now: new Date("not a date") }), TypeError);
 });
 
 test("증빙 보관 위치(ref)는 비었거나 자리표시면 거부한다 — 캡처·영수증·서면 확인 모두", () => {
@@ -542,28 +530,61 @@ test("완전성 검사는 제목 불일치와 생성기 묶음 안 중복도 가
 test("hold 팩의 사용자 노출 문구(holdLabel)는 사유·권리 용어와 공개 약속을 드러내지 않는다", () => {
   const ledger = loadPackRightsLedger();
   const holds = ledger.packs.filter((entry) => entry.serve === "hold");
-  assert.equal(holds.length + ledger.packs.filter((entry) => entry.serve === "allow").length, ledger.packs.length);
   for (const entry of holds) {
     assert.doesNotMatch(entry.holdLabel, /제작사|증빙|영수증|서면|충돌|라이선스|저작권|권리|공개한다|공개합니다/u, entry.title);
   }
   assert.doesNotMatch(HOLD_PUBLIC_LABEL, /제작사|증빙|영수증|서면|충돌|라이선스|저작권|권리|공개한다|공개합니다/u);
 });
 
-test("커밋된 theme-packs.json은 원장과 어긋나지 않는다 — 권리 블록이 있으면 원장 투영과 같고, 없으면(원장 이전 스냅샷) 원장이 그 팩을 열지 않았다", () => {
-  const ledger = loadPackRightsLedger();
-  const themePacks = readJson(THEME_PACKS_PATH);
+/**
+ * theme-packs.json과 원장의 어긋남을 문장 배열로 돌려준다 (빈 배열이면 일치). 권리 블록이 있으면 원장 투영과 같아야 하고,
+ * 없으면(원장 이전 스냅샷) 원장이 그 팩을 열지 않았어야 한다.
+ */
+function driftProblems(ledger, themePacks) {
+  const problems = [];
   for (const pack of themePacks.packs) {
     const decision = evaluateServeDecision(ledger, pack, { group: "pack" });
     if (pack.rights === undefined) {
-      assert.equal(decision.serve, false, `${pack.title}: 원장은 열었는데 theme-packs.json이 재생성되지 않았습니다.`);
-    } else {
-      assert.equal(decision.serve, true, `${pack.title}: 권리 블록이 있는데 원장이 열지 않았습니다.`);
-      assert.deepEqual(pack.rights, packRightsProjection(decision.entry), `${pack.title}: 권리 블록이 원장 투영과 다릅니다.`);
+      if (decision.serve) problems.push(`${pack.title}: 원장은 열었는데 theme-packs.json이 재생성되지 않았습니다.`);
+    } else if (!decision.serve) {
+      problems.push(`${pack.title}: 권리 블록이 있는데 원장이 열지 않았습니다.`);
+    } else if (!isDeepStrictEqual(pack.rights, packRightsProjection(decision.entry))) {
+      problems.push(`${pack.title}: 권리 블록이 원장 투영과 다릅니다.`);
     }
   }
   for (const pending of themePacks.pendingPacks.filter((entry) => entry.reason === "rights-hold")) {
-    assert.notEqual(findPackRights(ledger, pending)?.serve, "allow", `${pending.title}: 원장이 연 팩이 rights-hold로 남아 있습니다.`);
+    if (findPackRights(ledger, pending)?.serve === "allow") {
+      problems.push(`${pending.title}: 원장이 연 팩이 rights-hold로 남아 있습니다.`);
+    }
   }
+  return problems;
+}
+
+test("커밋된 theme-packs.json은 원장과 어긋나지 않는다 — 권리 블록이 있으면 원장 투영과 같고, 없으면(원장 이전 스냅샷) 원장이 그 팩을 열지 않았다", () => {
+  assert.deepEqual(driftProblems(loadPackRightsLedger(), readJson(THEME_PACKS_PATH)), []);
+});
+
+test("어긋남 점검은 시드에 열린 팩이 없어도 실제로 어긋남을 가려낸다 (합성 입력)", () => {
+  const themePacks = readJson(THEME_PACKS_PATH);
+  const pirateIndex = themePacks.packs.findIndex((pack) => pack.title === "Pirate Island");
+  assert.ok(pirateIndex >= 0);
+  // 원장은 열었는데 theme-packs에 권리 블록이 없다 → 재생성 필요.
+  const { ledger, pirate } = allowPirate();
+  assert.deepEqual(driftProblems(ledger, themePacks), ["Pirate Island: 원장은 열었는데 theme-packs.json이 재생성되지 않았습니다."]);
+  // 재생성된 것처럼 권리 블록을 맞추면 일치한다.
+  const regenerated = structuredClone(themePacks);
+  regenerated.packs[pirateIndex].rights = packRightsProjection(pirate);
+  assert.deepEqual(driftProblems(ledger, regenerated), []);
+  // grant가 바뀐 낡은 블록은 어긋난다.
+  const stale = structuredClone(regenerated);
+  stale.packs[pirateIndex].rights.commercialUse = false;
+  assert.deepEqual(driftProblems(ledger, stale), ["Pirate Island: 권리 블록이 원장 투영과 다릅니다."]);
+  // 증빙 없이 allow로 바꾼 원장에 권리 블록이 실려 있으면 서빙 판정이 닫혀 어긋남으로 잡힌다 (게이트가 꺼져 있으면 잡히지 않는다).
+  const unproven = holdAllLedger();
+  flipToAllow(entryOf(unproven, "Pirate Island"));
+  assert.deepEqual(driftProblems(unproven, regenerated), ["Pirate Island: 권리 블록이 있는데 원장이 열지 않았습니다."]);
+  // hold로 돌아간 팩의 권리 블록도 마찬가지다.
+  assert.deepEqual(driftProblems(holdAllLedger(), regenerated), ["Pirate Island: 권리 블록이 있는데 원장이 열지 않았습니다."]);
 });
 
 /* ── 2차 독립 검토 반영: 보이지 않는 문자·분류 타입 혼동·URL·키·정보 표시 ───────────────────── */
@@ -608,13 +629,15 @@ test("문자열이 아닌 licenseClass(배열·객체)는 속성 키로 강제 �
   const build = (licenseClass) => {
     const ledger = fixtureLedger([ledgerEntry({
       title: "Coerce Pack", catalogIds: ["cbv1-906-coerce"], licenseClass: "cc0-explicit", serve: "allow",
-      evidence: [qualifyingEvidence("local-license-file")],
+      libraryPacks: [FIXTURE_LIBRARY_PACK], evidence: [qualifyingEvidence("local-license-file")],
     })], texts);
     ledger.packs[0].licenseClass = licenseClass;
     return ledger;
   };
   const pack = { title: "Coerce Pack", catalogIds: ["cbv1-906-coerce"], creator: "RG Poly" };
-  assert.equal(evaluateServeDecision(build("cc0-explicit"), pack).serve, false, "기준선: 비호환 문서는 거부");
+  const baseline = evaluateServeDecision(build("cc0-explicit"), pack);
+  assert.equal(baseline.serve, false, "기준선: 비호환 문서는 거부");
+  assert.ok(baseline.problems.some((problem) => /문서 분류 rg-poly-proprietary는 팩 분류 cc0-explicit와 맞지 않습니다/u.test(problem)), baseline.problems.join(" | "));
   for (const licenseClass of [["cc0-explicit"], [["cc0-explicit"]], { toString: () => "cc0-explicit" }, 1, null]) {
     const ledger = build(licenseClass);
     assert.equal(requiredEvidenceKinds(licenseClass), null, String(licenseClass));
@@ -664,7 +687,8 @@ test("서빙 판정은 제목·제작사가 문자열로 없으면 닫고, 비�
 });
 
 test("now는 Date로만 주입할 수 있다 — Date가 아닌 값은 조용히 무시하지 않고 던진다", () => {
-  const { ledger, pirate } = allowPirate({ receipt: { verifiedAt: "2026-12-31" } });
+  const pinned = { verifiedAt: PINNED_EVIDENCE_DATE, retrievedAt: PINNED_EVIDENCE_DATE };
+  const { ledger, pirate } = allowPirate({ capture: pinned, receipt: { verifiedAt: "2026-12-31" } });
   const future = new Date("2027-01-01T00:00:00Z");
   assert.equal(evaluateServeDecision(ledger, pirate, { now: future }).serve, true);
   assert.throws(() => evaluateServeDecision(ledger, pirate, { now: future.getTime() }), TypeError);

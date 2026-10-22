@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 
 import {
+  evaluateServeDecision,
   HOLD_PUBLIC_LABEL,
   loadPackRightsLedger,
   PACK_RIGHTS_SCHEMA,
@@ -15,9 +16,19 @@ import {
 
 // 증빙 날짜는 미래일 수 없으므로 고정 날짜 대신 실행 시점의 오늘(UTC)을 쓴다 — 테스트가 시계에 묶이지 않게.
 const VERIFIED_AT = new Date().toISOString().slice(0, 10);
+/**
+ * `now`를 과거·미래 시각으로 주입하는 테스트용 고정 증빙 날짜. 기본 증빙 날짜(실행 당일)는 주입한 시각의 상한을 넘을 수 있으므로,
+ * 상한을 시험하는 테스트는 증빙 날짜를 전부 이 값으로 고정해 실행 날짜와 무관하게 한다.
+ */
+export const PINNED_EVIDENCE_DATE = "2026-01-15";
 
-/** 로컬 라이선스 증빙 픽스처(fixtureLicenseText)가 기록한 라이브러리 팩 이름. ledgerEntry의 기본 libraryPacks와 같다. */
+/**
+ * 로컬 라이선스 증빙 픽스처(fixtureLicenseText)가 기록한 라이브러리 팩 이름과 경로(`<분류>/<팩>/…` 형태).
+ * 이 증빙을 자기 팩의 것으로 인정받으려는 항목만 libraryPacks에 FIXTURE_LIBRARY_PACK을 명시한다 — 폴더를 둘 이상의
+ * 항목이 주장하면 검증기가 거부하므로 ledgerEntry의 기본 libraryPacks는 빈 배열이다.
+ */
 export const FIXTURE_LIBRARY_PACK = "fixture";
+export const FIXTURE_LICENSE_PATH = `01-x/${FIXTURE_LIBRARY_PACK}/License.txt`;
 
 /** 분류별 allow 요구를 정확히 채우는 증빙 한 건을 만든다. */
 export function qualifyingEvidence(kind, overrides = {}) {
@@ -26,7 +37,7 @@ export function qualifyingEvidence(kind, overrides = {}) {
       return {
         kind,
         sha256: "a".repeat(64),
-        paths: ["fixture/License.txt"],
+        paths: [FIXTURE_LICENSE_PATH],
         verifiedAt: VERIFIED_AT,
         ...overrides,
       };
@@ -64,7 +75,7 @@ export function fixtureLicenseText(overrides = {}) {
     appShippingExplicit: false,
     modifiedCovered: false,
     webServiceHostingAddressed: false,
-    files: [{ libraryPath: "fixture/License.txt", libraryPack: FIXTURE_LIBRARY_PACK }],
+    files: [{ libraryPath: FIXTURE_LICENSE_PATH, libraryPack: FIXTURE_LIBRARY_PACK }],
     ...overrides,
   };
 }
@@ -77,7 +88,7 @@ export function ledgerEntry({
   title,
   catalogIds = [],
   creator = "RG Poly",
-  libraryPacks = [FIXTURE_LIBRARY_PACK],
+  libraryPacks = [],
   group = "pack",
   licenseClass = "unstated-rg-poly",
   serve = "hold",
@@ -192,4 +203,36 @@ export function resetToHold(entry) {
   delete entry.grant;
   entry.evidence = entry.evidence.filter((item) => !OWNER_PROVIDED_EVIDENCE_KINDS.includes(item.kind));
   return entry;
+}
+
+/**
+ * 모든 팩을 hold로 되돌린 원장 사본. 소유자가 시드에서 팩을 열어도 이 기준선을 쓰는 테스트가 시드 상태에 묶이지 않는다.
+ * (resetToHold는 라이브러리 실물 증빙과 2차 조회 기록을 그대로 둔다.)
+ */
+export function holdAllLedger() {
+  const ledger = cloneLedger();
+  for (const entry of ledger.packs) resetToHold(entry);
+  return ledger;
+}
+
+/** Pirate Island(캡처+영수증 필요)만 정상 증빙 두 건으로 allow로 바꾼 hold 기준선 원장. 증빙마다 필드를 덮어쓸 수 있다. */
+export function allowPirate({ capture, receipt } = {}) {
+  const ledger = holdAllLedger();
+  const pirate = entryOf(ledger, "Pirate Island");
+  flipToAllow(pirate, {
+    evidence: [
+      ...pirate.evidence,
+      qualifyingEvidence("itch-page-capture", capture),
+      qualifyingEvidence("purchase-receipt", receipt),
+    ],
+  });
+  return { ledger, pirate };
+}
+
+/** 검증기가 거부하고, 검증을 거치지 않은 서빙 판정도 같은 입력을 닫는지 함께 본다. */
+export function assertClosed({ ledger, pirate }, pattern, label) {
+  assert.ok(problemsFor(ledger).some((problem) => pattern.test(problem)), `${label}: 검증기가 거부하지 않았습니다.`);
+  const decision = evaluateServeDecision(ledger, pirate);
+  assert.equal(decision.serve, false, `${label}: 서빙 판정이 열렸습니다.`);
+  assert.equal(decision.reason, "invalid-evidence", label);
 }

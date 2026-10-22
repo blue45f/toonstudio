@@ -24,6 +24,7 @@ import {
   verifyLocalLicenseEvidence,
 } from "./lib/creator-bundle-pack-rights.mjs";
 import {
+  allowPirate,
   cloneLedger,
   entryOf,
   fixtureLedger,
@@ -100,6 +101,15 @@ test("기본값은 hold이고, allow는 증빙 자격을 갖춘 팩에만 서빙
   const unknown = evaluateServeDecision(ledger, { catalogIds: ["cbv1-999-unknown"], title: "Unknown" });
   assert.equal(unknown.serve, false);
   assert.equal(unknown.reason, "missing-entry");
+
+  // 시드에는 열린 팩이 없어도 "allow는 자격을 갖춘 팩에만" 절반을 직접 시험한다: 요구 증빙을 채우면 열리고, 하나 빠지면 닫힌다.
+  const { ledger: opened, pirate } = allowPirate();
+  for (const entry of opened.packs) {
+    assert.equal(evaluateServeDecision(opened, entry).serve, entry.serve === "allow", `${entry.title}: 열린 팩이 있는 원장에서 서빙 판정이 어긋납니다.`);
+  }
+  assert.equal(evaluateServeDecision(opened, pirate, { group: "pack" }).serve, true);
+  pirate.evidence = pirate.evidence.filter((item) => item.kind !== "purchase-receipt");
+  assert.equal(evaluateServeDecision(opened, pirate, { group: "pack" }).reason, "invalid-evidence");
 });
 
 test("시드 스냅샷: 개방된 팩은 EXPECTED_ALLOWED_TITLES뿐이고 검토 권고 hold 3팩은 그대로다 (바꾸려면 소유자 결정)", () => {

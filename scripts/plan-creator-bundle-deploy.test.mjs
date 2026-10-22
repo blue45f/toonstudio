@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import nodeTest from "node:test";
@@ -9,117 +7,51 @@ import { fileURLToPath } from "node:url";
 import { test as vitestTest } from "vitest";
 
 import { CATALOG_PACKS } from "./generate-creator-bundle-theme-packs.mjs";
+import { findPackRights, loadPackRightsLedger, packRightsProjection } from "./lib/creator-bundle-pack-rights.mjs";
 import {
-  findPackRights,
-  loadPackRightsLedger,
-  packRightsProjection,
-} from "./lib/creator-bundle-pack-rights.mjs";
-import {
+  allowPirate,
+  cloneLedger,
+  entryOf,
   fixtureLedger,
+  flipToAllow,
   ledgerEntry,
   makeGlb,
+  resetToHold,
   selfContainedGlb,
 } from "./lib/creator-bundle-pack-rights-test-support.mjs";
+import {
+  ALLOWED_PACK,
+  assetEntry,
+  HELD_PACK,
+  ledgerWithAllowedAndHeld,
+  planFor,
+  SELF_CONTAINED,
+  sha256Of,
+  themePacksFor,
+  UNLISTED_PACK,
+  withTempRoot,
+  writeTree,
+} from "./lib/plan-creator-bundle-deploy-test-support.mjs";
 import {
   assessPlanForMode,
   BUNDLE_V2_INDEX_KEY,
   bundleV2ObjectKey,
   bundleV2PublicPath,
   createBundleV2DeployPlan,
+  findIngestOverlaps,
   glbHasExternalResourceUri,
 } from "./plan-creator-bundle-deploy.mjs";
 
 // 루트 `vitest run`(scripts/**/*.test.mjs 수집)과 `node --test` 양쪽에서 같은 파일이 돈다.
 const test = process.env.VITEST ? vitestTest : nodeTest;
 
-const SCRIPT = resolve(dirname(fileURLToPath(import.meta.url)), "plan-creator-bundle-deploy.mjs");
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const sha256Of = (buffer) => createHash("sha256").update(buffer).digest("hex");
-
-const SELF_CONTAINED = selfContainedGlb("allow-a");
 const EXTERNAL = makeGlb({
   asset: { version: "2.0" },
   buffers: [{ byteLength: 0 }],
   images: [{ uri: "../Textures/atlas.png" }],
 });
-
-// 생성기가 내는 theme-packs 팩과 같은 모양: 카탈로그 번호·제목·제작사·인제스션 폴더(ingestPackIds).
-const ALLOWED_PACK = {
-  catalogIds: ["cbv1-901-fixture-allowed"], title: "Allowed Pack", creator: "RG Poly", ingestPackIds: ["allowed"],
-};
-const HELD_PACK = {
-  catalogIds: ["cbv1-902-fixture-held"], title: "Held Pack", creator: "RG Poly", ingestPackIds: ["held"],
-};
-const UNLISTED_PACK = {
-  catalogIds: ["cbv1-903-fixture-unlisted"], title: "Unlisted Pack", creator: "RG Poly", ingestPackIds: ["unlisted"],
-};
-
-// 플래너는 theme-packs 팩의 ingestPackIds를 생성기 팩 정의(CATALOG_PACKS)와 대조한다. API 테스트는 픽스처 정의를 주입한다.
-const FIXTURE_DEFS = [ALLOWED_PACK, HELD_PACK, UNLISTED_PACK].map((pack) => ({
-  catalogIds: pack.catalogIds, title: pack.title, creator: pack.creator, ingest: pack.ingestPackIds,
-}));
-const planFor = (args) => createBundleV2DeployPlan({ packDefs: FIXTURE_DEFS, ...args });
-
-// CLI는 생성기의 실제 팩 정의를 쓰므로 CLI 테스트는 실제 팩(Pirate Island·Old Town)으로 픽스처를 만든다.
-function realPack(title) {
-  const def = CATALOG_PACKS.find((candidate) => candidate.title === title);
-  assert.ok(def, `생성기 정의에 ${title}가 없습니다.`);
-  return { catalogIds: def.catalogIds, title: def.title, creator: def.creator, ingestPackIds: def.ingest };
-}
-const REAL_ALLOWED = realPack("Pirate Island");
-const REAL_HELD = realPack("Old Town — Courtyards");
-
-function ledgerWithAllowedAndHeld() {
-  return fixtureLedger([
-    ledgerEntry({ ...ALLOWED_PACK, serve: "allow" }),
-    ledgerEntry({ ...HELD_PACK, serve: "hold" }),
-  ]);
-}
-
-function writeTree(root, files) {
-  for (const [rel, buffer] of Object.entries(files)) {
-    const target = join(root, rel);
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, buffer);
-  }
-}
-
-/**
- * 생성기가 만든 것처럼, 원장이 allow한 팩에는 원장 투영과 같은 권리 블록을 싣는다.
- * 원장 이전 스냅샷을 흉내 내려면 팩에서 rights를 지운다.
- */
-function generatedPack(pack, ledger) {
-  const entry = findPackRights(ledger, pack);
-  return entry?.serve === "allow" ? { ...pack, rights: packRightsProjection(entry) } : { ...pack };
-}
-
-function themePacksFor(assets, packs = [ALLOWED_PACK, HELD_PACK], ledger = ledgerWithAllowedAndHeld()) {
-  return {
-    schema: "toonstudio.bg3d-bundle-theme-packs.v1",
-    version: 1,
-    inServiceOnly: true,
-    downloadable: false,
-    assetRoot: "/assets/studio/bundle-v2/",
-    sourceManifest: { generatedAt: "2026-10-21T05:14:22.108Z" },
-    totals: { packs: packs.length, placeableAssets: assets.length, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 },
-    packs: packs.map((pack) => generatedPack(pack, ledger)),
-    assets,
-  };
-}
-
-function assetEntry(id, pack, path, buffer) {
-  return { id, pack, path, bytes: buffer.length, sha256: sha256Of(buffer), tris: 12 };
-}
-
-function withTempRoot(run) {
-  const root = mkdtempSync(join(tmpdir(), "bundle-v2-plan-test-"));
-  try {
-    return run(root);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-}
 
 test("R2 키와 공개 경로는 sha256 불투명 키다 (원본 폴더·파일명이 들어가지 않는다)", () => {
   const sha = "ab".repeat(32);
@@ -135,6 +67,16 @@ test("외부 uri 판정은 검증기와 같이 uri 속성 존재로 결정한다
   assert.equal(glbHasExternalResourceUri(SELF_CONTAINED), false);
   assert.equal(glbHasExternalResourceUri(EXTERNAL), true);
   assert.equal(glbHasExternalResourceUri(Buffer.alloc(4)), null);
+  // 런타임 검증기는 buffers·images의 uri "속성 존재"(Object.hasOwn)로 거부한다 — 값이 문자열이 아니어도, 비어 있어도 같다.
+  const withResources = (resources) => makeGlb({ asset: { version: "2.0" }, ...resources });
+  for (const resources of [
+    { buffers: [{ byteLength: 0, uri: "scene.bin" }] }, { buffers: [{ byteLength: 0, uri: null }] },
+    { images: [{ uri: 7 }] }, { images: [{ uri: "" }] }, { images: [{ bufferView: 0 }, { uri: "a.png" }] },
+  ]) {
+    assert.equal(glbHasExternalResourceUri(withResources(resources)), true, JSON.stringify(resources));
+  }
+  // uri가 없거나 항목이 객체가 아니면 외부 리소스가 아니다.
+  assert.equal(glbHasExternalResourceUri(withResources({ buffers: [null, { byteLength: 0 }], images: [null, { bufferView: 0 }] })), false);
 });
 
 test("계획은 GLB 전수 대조를 통과하면 sha256 키 객체와 인덱스를 마지막 객체로 산출한다", () => {
@@ -528,6 +470,90 @@ test("심볼릭 링크로 다른 팩 폴더의 파일을 가리키면 sha256이 
   });
 });
 
+test("인제스션 폴더 자체가 다른 팩 폴더로 가는 심볼릭 링크면 그 폴더의 파일은 올리지 않는다", () => {
+  withTempRoot((root) => {
+    writeTree(root, { "held/h1.glb": SELF_CONTAINED });
+    symlinkSync(join(root, "held"), join(root, "allowed")); // 허용된 팩의 폴더가 held 폴더로 가는 링크
+    const themePacks = themePacksFor([assetEntry("allowed-m001", 0, "allowed/h1.glb", SELF_CONTAINED)]);
+    const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger: ledgerWithAllowedAndHeld() });
+    assert.equal(plan, null);
+    assert.match(errors[0], /에셋 파일이 올바르지 않습니다.*인제스션 폴더가 심볼릭 링크/);
+  });
+});
+
+test("이름이 접두사로 겹치는 형제 폴더로 가는 링크는 소속 폴더 밖이다 — 경로 구분자까지 비교한다", () => {
+  withTempRoot((root) => {
+    writeTree(root, { "allowed/real.glb": SELF_CONTAINED, "allowed-evil/x.glb": SELF_CONTAINED });
+    symlinkSync(join(root, "allowed-evil/x.glb"), join(root, "allowed/link.glb"));
+    const themePacks = themePacksFor([assetEntry("allowed-m001", 0, "allowed/link.glb", SELF_CONTAINED)]);
+    const { plan, errors } = planFor({ themePacks, assetRoot: root, ledger: ledgerWithAllowedAndHeld() });
+    assert.equal(plan, null);
+    assert.match(errors[0], /소속 팩 폴더 밖/);
+  });
+});
+
+test("인제스션 폴더가 둘 이상인 팩은 자기 폴더끼리의 링크를 허용하고, 폴더 자신을 가리키는 링크는 일반 파일이 아니라고 닫는다", () => {
+  withTempRoot((root) => {
+    const multi = { catalogIds: ["cbv1-904-fixture-multi"], title: "Multi Pack", creator: "RG Poly", ingestPackIds: ["multi-a", "multi-b"] };
+    const defs = [{ catalogIds: multi.catalogIds, title: multi.title, creator: multi.creator, ingest: multi.ingestPackIds }];
+    const ledger = fixtureLedger([ledgerEntry({ ...multi, serve: "allow" })]);
+    writeTree(root, { "multi-b/x.glb": SELF_CONTAINED });
+    mkdirSync(join(root, "multi-a"), { recursive: true });
+    symlinkSync(join(root, "multi-b/x.glb"), join(root, "multi-a/to-b.glb"));
+    symlinkSync(join(root, "multi-a"), join(root, "multi-a/self"));
+    const plan = (path) => createBundleV2DeployPlan({
+      themePacks: themePacksFor([assetEntry("multi-m001", 0, path, SELF_CONTAINED)], [multi], ledger),
+      assetRoot: root, ledger, packDefs: defs,
+    });
+    assert.deepEqual(plan("multi-a/to-b.glb").errors, [], "같은 팩의 다른 폴더 안 파일로 가는 링크는 허용");
+    const self = plan("multi-a/self");
+    assert.equal(self.plan, null);
+    assert.match(self.errors[0], /일반 파일이 아닙니다/);
+  });
+});
+
+test("생성기 팩 정의의 인제스션 폴더가 서로 겹치면 계획을 만들지 않는다 — 실제 정의는 서로소다", () => {
+  assert.deepEqual(findIngestOverlaps(CATALOG_PACKS), []);
+  assert.deepEqual(findIngestOverlaps([{ title: "Same", ingest: ["a", "a"] }]), [], "한 팩이 폴더를 두 번 적은 것은 겹침이 아니다");
+  const def = (pack, ingest) => ({ catalogIds: pack.catalogIds, title: pack.title, creator: pack.creator, ingest });
+  const cases = {
+    "같은 폴더": [["shared"], ["shared"]],
+    "상위·하위 폴더": [["pack"], ["pack/sub"]],
+    "대소문자만 다름": [["Pack"], ["pack"]],
+    "유니코드 정규화만 다름": [["caf\u00e9"], ["cafe\u0301"]],
+  };
+  withTempRoot((root) => {
+    for (const [label, [first, second]] of Object.entries(cases)) {
+      const defs = [def(ALLOWED_PACK, first), def(HELD_PACK, second)];
+      assert.equal(findIngestOverlaps(defs).length, 1, label);
+      const { plan, errors } = createBundleV2DeployPlan({
+        themePacks: themePacksFor([]), assetRoot: root, ledger: ledgerWithAllowedAndHeld(), packDefs: defs,
+      });
+      assert.equal(plan, null, label);
+      assert.match(errors[0], /인제스션 폴더가 겹쳐/, label);
+    }
+  });
+});
+
+test("커밋된 theme-packs.json으로 계획할 때 팩 하나를 열면: 증빙 없는 allow는 원장 단계에서 닫히고, 증빙을 갖춘 allow는 권리 블록이 재생성될 때까지 rights-drift로 제외된다", () => {
+  const themePacks = JSON.parse(readFileSync(
+    join(REPO_ROOT, "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json"),
+    "utf8",
+  ));
+  const assetRoot = join(tmpdir(), "bundle-v2-plan-test-no-such-asset-root");
+  const unproven = cloneLedger();
+  flipToAllow(resetToHold(entryOf(unproven, "Pirate Island")));
+  const closed = createBundleV2DeployPlan({ themePacks, assetRoot, ledger: unproven });
+  assert.equal(closed.plan, null);
+  assert.match(closed.errors[0], /권리 원장이 올바르지 않습니다.*Pirate Island/);
+
+  const { ledger } = allowPirate(); // 요구 증빙을 갖춘 allow
+  const opened = createBundleV2DeployPlan({ themePacks, assetRoot, ledger });
+  assert.deepEqual(opened.errors, []);
+  assert.equal(opened.plan.excludedByRights.find((record) => record.title === "Pirate Island")?.reason, "rights-drift");
+  assert.equal(opened.plan.totals.glbObjects, 0, "권리 블록이 없는 낡은 theme-packs는 열린 팩이어도 올리지 않는다");
+});
+
 test("비정상 입력(null 항목·디렉터리 경로·읽기 오류)은 던지지 않고 오류로 보고한다", () => {
   withTempRoot((root) => {
     writeTree(root, { "allowed/a.glb": SELF_CONTAINED });
@@ -608,69 +634,4 @@ test("커밋된 원장과 커밋된 theme-packs.json으로 계획하면 원장�
       }
     }
   }
-});
-
-// CLI 테스트용: 실제 팩 정의(Pirate Island 허용 · Old Town hold)로 만든 원장과 theme-packs.
-function cliLedger() {
-  return fixtureLedger([
-    ledgerEntry({ ...REAL_ALLOWED, serve: "allow" }),
-    ledgerEntry({ ...REAL_HELD, serve: "hold" }),
-  ]);
-}
-const cliThemePacks = (assets) => themePacksFor(assets, [REAL_ALLOWED, REAL_HELD], cliLedger());
-
-test("CLI dry-run은 hold를 제외하고 sha256 키를 출력하며 아무것도 쓰지 않는다", () => {
-  withTempRoot((root) => {
-    const rel = `${REAL_ALLOWED.ingestPackIds[0]}/a.glb`;
-    writeTree(root, { [rel]: SELF_CONTAINED });
-    const themePacks = cliThemePacks([
-      assetEntry("allowed-m001", 0, rel, SELF_CONTAINED),
-      assetEntry("held-m001", 1, `${REAL_HELD.ingestPackIds[0]}/h1.glb`, selfContainedGlb("held")),
-    ]);
-    const themePacksPath = join(root, "theme-packs.json");
-    const ledgerPath = join(root, "ledger.json");
-    const outPath = join(root, "manifest-out.json");
-    writeFileSync(themePacksPath, JSON.stringify(themePacks));
-    writeFileSync(ledgerPath, JSON.stringify(cliLedger()));
-    const result = spawnSync(process.execPath, [
-      SCRIPT, "--dry-run", "--asset-root", root, "--theme-packs", themePacksPath,
-      "--pack-rights", ledgerPath, "--out", outPath,
-    ], { encoding: "utf8" });
-    assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, new RegExp(`assets/studio/bundle-v2/${sha256Of(SELF_CONTAINED)}\\.glb`));
-    assert.match(result.stdout, /제외: Old Town — Courtyards — 에셋 1개 \(hold\)/);
-    assert.match(result.stdout, /이 도구는 R2 객체를 지우지 않습니다/);
-    assert.match(result.stdout, /dry-run: 매니페스트를 쓰지 않고 업로드도 하지 않았습니다/);
-    assert.throws(() => readFileSync(outPath), /ENOENT/);
-  });
-});
-
-test("CLI는 잘못된 원장이면 계획 단계 이전에 종료 코드 2로 닫는다", () => {
-  withTempRoot((root) => {
-    const themePacksPath = join(root, "theme-packs.json");
-    const ledgerPath = join(root, "ledger.json");
-    writeFileSync(themePacksPath, JSON.stringify(themePacksFor([])));
-    writeFileSync(ledgerPath, JSON.stringify({ schema: "other" }));
-    const result = spawnSync(process.execPath, [
-      SCRIPT, "--dry-run", "--asset-root", root, "--theme-packs", themePacksPath, "--pack-rights", ledgerPath,
-    ], { encoding: "utf8" });
-    assert.equal(result.status, 2);
-    assert.match(result.stderr, /권리 원장이 올바르지 않습니다/);
-  });
-});
-
-test("CLI는 pnpm run 형태의 맨 -- 를 건너뛰고 옵션을 읽는다", () => {
-  withTempRoot((root) => {
-    const rel = `${REAL_ALLOWED.ingestPackIds[0]}/a.glb`;
-    writeTree(root, { [rel]: SELF_CONTAINED });
-    const themePacksPath = join(root, "theme-packs.json");
-    const ledgerPath = join(root, "ledger.json");
-    writeFileSync(themePacksPath, JSON.stringify(cliThemePacks([assetEntry("allowed-m001", 0, rel, SELF_CONTAINED)])));
-    writeFileSync(ledgerPath, JSON.stringify(cliLedger()));
-    const result = spawnSync(process.execPath, [
-      SCRIPT, "--dry-run", "--", "--asset-root", root, "--theme-packs", themePacksPath, "--pack-rights", ledgerPath,
-    ], { encoding: "utf8" });
-    assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, new RegExp(`assets/studio/bundle-v2/${sha256Of(SELF_CONTAINED)}\\.glb`));
-  });
 });

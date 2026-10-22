@@ -178,14 +178,46 @@ function assetPathCheck(path, pack) {
 }
 
 /**
- * 실제 파일이 심볼릭 링크를 해석한 뒤에도 소속 인제스션 폴더 안의 일반 파일인지 확인한다(문제 문장 또는 null).
- * 문자열 접두사만으로는 `allowed/link -> ../held` 같은 링크가 다른 팩 폴더의 파일을 가리켜도 통과하므로 따로 본다.
+ * 생성기 팩 정의의 인제스션 폴더가 서로 겹치는 쌍(같은 폴더·한쪽이 다른 쪽의 하위·대소문자/NFC만 다른 이름)을 찾는다.
+ * 겹치면 "이 폴더의 파일이 어느 팩의 것인가"가 모호해져 허용된 팩의 이름으로 다른 팩의 파일을 올릴 수 있다.
+ * 같은 팩이 폴더를 두 번 적은 것은 겹침이 아니다.
  */
-function assetFileProblem(assetRoot, ingestId, path) {
+export function findIngestOverlaps(defs) {
+  const folders = defs.flatMap((def) => (Array.isArray(def?.ingest) ? def.ingest : [])
+    .filter((id) => typeof id === "string" && id.length > 0)
+    .map((id) => ({ title: def.title, id, folded: id.normalize("NFC").toLowerCase() })));
+  const overlaps = [];
+  for (let i = 0; i < folders.length; i += 1) {
+    for (let j = i + 1; j < folders.length; j += 1) {
+      const [a, b] = [folders[i], folders[j]];
+      if (a.title === b.title) continue;
+      if (a.folded === b.folded || a.folded.startsWith(`${b.folded}/`) || b.folded.startsWith(`${a.folded}/`)) {
+        overlaps.push(`${a.title}(${a.id}) ↔ ${b.title}(${b.id})`);
+      }
+    }
+  }
+  return overlaps;
+}
+
+/**
+ * 실제 파일이 심볼릭 링크를 해석한 뒤에도 소속 팩의 인제스션 폴더 안의 일반 파일인지 확인한다(문제 문장 또는 null).
+ * - 경로가 속한 인제스션 폴더는 에셋 루트 바로 아래의 실제 디렉터리여야 한다 (`allowed -> held` 같은 폴더 링크 금지).
+ * - 해석된 파일은 그 팩의 인제스션 폴더들 중 하나 안에 있어야 한다 (같은 팩의 다른 폴더로 가는 링크는 허용).
+ * 문자열 접두사만으로는 링크가 다른 팩 폴더의 파일을 가리켜도 통과하므로 따로 본다. 하드 링크는 경로로 구분할 수
+ * 없다 — 내용은 sha256·크기·GLB 헤더로 고정되고 트리 자체는 소유자의 것이라 신뢰한다.
+ */
+function assetFileProblem(assetRoot, pack, ingestId, path) {
   try {
-    const folder = realpathSync(join(assetRoot, ingestId));
+    const rootReal = realpathSync(assetRoot);
+    if (realpathSync(join(assetRoot, ingestId)) !== join(rootReal, ingestId)) {
+      return "인제스션 폴더가 심볼릭 링크이거나 에셋 루트 밖을 가리킵니다";
+    }
     const real = realpathSync(join(assetRoot, path));
-    if (!real.startsWith(`${folder}${sep}`)) return "심볼릭 링크를 해석한 실제 경로가 소속 팩 폴더 밖입니다";
+    const ownFolders = pack.ingestPackIds.map((id) => join(rootReal, id));
+    if (ownFolders.includes(real)) return "일반 파일이 아닙니다";
+    if (!ownFolders.some((folder) => real.startsWith(`${folder}${sep}`))) {
+      return "심볼릭 링크를 해석한 실제 경로가 소속 팩 폴더 밖입니다";
+    }
     return statSync(real).isFile() ? null : "일반 파일이 아닙니다";
   } catch (error) {
     return `읽을 수 없습니다 (${error?.code ?? error?.message ?? "알 수 없는 오류"})`;
@@ -222,6 +254,13 @@ export function createBundleV2DeployPlan({
   }
   if (themePacks.inServiceOnly !== true || themePacks.downloadable !== false) {
     errors.push("theme-packs가 서비스 내 사용 전용(inServiceOnly/downloadable)으로 선언되지 않았습니다.");
+  }
+  const overlaps = findIngestOverlaps(packDefs);
+  if (overlaps.length > 0) {
+    return {
+      plan: null,
+      errors: [`생성기 팩 정의의 인제스션 폴더가 겹쳐 파일의 팩 귀속이 모호합니다 (${overlaps.length}건): ${overlaps.slice(0, 5).join(" / ")}`],
+    };
   }
   const defsByKey = new Map(packDefs.map((def) => [packRightsKey(def), def]));
   const decisions = themePacks.packs.map((pack) => decidePack(ledger, pack, defsByKey));
@@ -262,7 +301,7 @@ export function createBundleV2DeployPlan({
       errors.push(`실물 파일이 없습니다: ${asset.path}`);
       continue;
     }
-    const fileProblem = assetFileProblem(assetRoot, ingestId, asset.path);
+    const fileProblem = assetFileProblem(assetRoot, themePacks.packs[asset.pack], ingestId, asset.path);
     if (fileProblem) {
       errors.push(`에셋 파일이 올바르지 않습니다 (${asset.id}): ${fileProblem}`);
       continue;
