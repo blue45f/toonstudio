@@ -6,6 +6,9 @@ import {
 
 import { canonicalJson } from "./production-integration-artifacts";
 
+/** GCM 인증 태그는 항상 16바이트로 봉하고 연다. 길이를 정하지 않으면 Node 가 4·8·12~15바이트 태그도 받아들여 위조 비용이 떨어진다(DEP0182). */
+const AUTH_TAG_LENGTH = 16;
+
 export interface GoogleCredentialEnvelope {
   readonly accessToken: string;
   readonly refreshToken: string | null;
@@ -19,7 +22,7 @@ export function encryptIntegrationCredential(
   key: Buffer,
 ): string {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: AUTH_TAG_LENGTH });
   const ciphertext = Buffer.concat([
     cipher.update(canonicalJson(credential), "utf8"),
     cipher.final(),
@@ -31,7 +34,9 @@ export function encryptIntegrationCredential(
     tag.toString("base64url"),
     ciphertext.toString("base64url"),
   ].join(".");
-}export function decryptIntegrationCredential(
+}
+
+export function decryptIntegrationCredential(
   ciphertext: string,
   key: Buffer,
 ): GoogleCredentialEnvelope {
@@ -45,12 +50,17 @@ export function encryptIntegrationCredential(
   ) {
     throw new Error("invalid production integration credential envelope");
   }
+  const tag = Buffer.from(tagRaw, "base64url");
+  if (tag.length !== AUTH_TAG_LENGTH) {
+    throw new Error("invalid production integration credential envelope");
+  }
   const decipher = createDecipheriv(
     "aes-256-gcm",
     key,
     Buffer.from(ivRaw, "base64url"),
+    { authTagLength: AUTH_TAG_LENGTH },
   );
-  decipher.setAuthTag(Buffer.from(tagRaw, "base64url"));
+  decipher.setAuthTag(tag);
   const plaintext = Buffer.concat([
     decipher.update(Buffer.from(bodyRaw, "base64url")),
     decipher.final(),

@@ -38,6 +38,7 @@ apps/api/src/modules/learning/learning.rate-limit.test.ts
 apps/api/src/modules/membership-wallet/membership-wallet.controller.claim.test.ts
 apps/api/src/modules/og/og-page.test.ts
 apps/api/src/modules/production-collaboration/production-collaboration.service.test.ts
+apps/api/src/modules/production-collaboration/production-integration-crypto.test.ts
 apps/api/src/modules/production-collaboration/production-integration-google-oauth.test.ts
 apps/api/src/modules/production-collaboration/production-integration-providers.test.ts
 apps/api/src/modules/production-collaboration/production-notification-safety.test.ts
