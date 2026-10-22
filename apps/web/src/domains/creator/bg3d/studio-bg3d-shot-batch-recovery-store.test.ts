@@ -350,10 +350,22 @@ describe("Studio BG3D durable shot-batch recovery", () => {
       }
 
       expect(cause).toBeInstanceOf(StudioBg3dShotBatchRecoveryError);
-      expect(cause).toMatchObject({ code: "storage-unavailable" });
+      expect(cause).toMatchObject({
+        code: "storage-unavailable",
+        subcode: "storageUnavailable.randomUnavailable",
+      });
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("emits structured subcodes instead of display messages (A4 D4)", () => {
+    const error = new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.artifactList");
+
+    expect(error.code).toBe("corrupt");
+    expect(error.subcode).toBe("corrupt.artifactList");
+    expect(error.message).toBe("corrupt.artifactList");
+    expect(error.name).toBe("StudioBg3dShotBatchRecoveryError");
   });
 
   it("keeps an active same-tab memory session valid beyond the 30 second lease window", async () => {
