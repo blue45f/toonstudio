@@ -71,7 +71,7 @@ export function attachStudioBg3dEditorMeasureHost(h) {
     STUDIO_BG3D_MAGIC_OBJECT_ID_RUNTIME_CAPABILITIES, resolveStudioBg3dMagicSelection,
     STUDIO_BG3D_MEASUREMENT_MAX_REFERENCES, classifyStudioBg3dMeasurementInference,
     createStudioBg3dMeasurementDocument, formatStudioBg3dMeasurementLength,
-    lockStudioBg3dMeasurementLength, measureStudioBg3dWorldPoints,
+    lockStudioBg3dMeasurementLength, measureStudioBg3dWorldPoints, resolveStudioBg3dMeasurementError,
     resolveStudioBg3dMeasurementGuide, readStudioBg3dMeasurementPointFromThreeEvent,
     StudioBg3dStaleModalOperationError, studioBg3dModalOperationCoordinator,
     createStudioBg3dModelAttachment, getStoredBg3dModel, getStoredBg3dModelByHash,
@@ -355,7 +355,7 @@ export function attachStudioBg3dEditorMeasureHost(h) {
           fallbackDirectionWorld: measurementDraft?.directionWorld ?? [1, 0, 0],
         });
     if (!measured.ok) {
-      setMeasurementStatus(measured.message);
+      setMeasurementStatus(resolveStudioBg3dMeasurementError(measured));
       return null;
     }
     const measurement = measured.measurement;

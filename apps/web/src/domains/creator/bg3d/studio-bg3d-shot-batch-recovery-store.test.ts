@@ -256,7 +256,7 @@ async function fixture(
     },
     passes: ["beauty"],
   });
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(result.subcode);
   return { plan: result.plan, sourceRevision };
 }
 

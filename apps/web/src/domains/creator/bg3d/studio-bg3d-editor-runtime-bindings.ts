@@ -306,6 +306,7 @@ export {
   type StudioBg3dWorldMeasurement,
 } from "./studio-bg3d-measurement";
 export { readStudioBg3dMeasurementPointFromThreeEvent } from "./studio-bg3d-measurement-three-adapter";
+export { resolveStudioBg3dMeasurementError } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
 export {
   StudioBg3dStaleModalOperationError,
   studioBg3dModalOperationCoordinator,
