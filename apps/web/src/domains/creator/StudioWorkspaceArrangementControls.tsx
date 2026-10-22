@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import {
   Check,
   LayoutGrid,
@@ -79,22 +80,22 @@ export function StudioWorkspaceArrangementControls({
         if (alive.current) {
           setNotice(saved
             ? "클릭 시점의 배치를 이 기기에 저장했어요."
-            : "기기 저장을 확인하지 못했어요. 현재 배치는 유지됩니다.");
+            : panelStatusText("studio.panelStatus.workspaceArrangement.deviceSaveUnconfirmed", "기기 저장을 확인하지 못했어요. 현재 배치는 유지됩니다."));
         }
       } else {
         const saved = await device.load();
         if (!alive.current) return;
         if (before !== captureStudioWorkspaceArrangement()) {
-          setNotice("불러오는 동안 배치가 바뀌어 현재 배치를 유지했어요.");
+          setNotice(panelStatusText("studio.panelStatus.workspaceArrangement.changedDuringLoad", "불러오는 동안 배치가 바뀌어 현재 배치를 유지했어요."));
         } else {
           setNotice(saved && applyStudioWorkspaceArrangement(saved)
             ? "이 기기에 저장한 배치를 복원했어요."
-            : "기기에 저장한 배치가 없거나 읽을 수 없어요.");
+            : panelStatusText("studio.panelStatus.workspaceArrangement.deviceEmptyOrUnreadable", "기기에 저장한 배치가 없거나 읽을 수 없어요."));
         }
       }
     } catch {
       if (alive.current) {
-        setNotice("기기 저장소를 사용할 수 없어요. 탭 저장을 사용해 주세요.");
+        setNotice(panelStatusText("studio.panelStatus.workspaceArrangement.deviceStorageUnavailable", "기기 저장소를 사용할 수 없어요. 탭 저장을 사용해 주세요."));
       }
     } finally {
       if (alive.current) setBusy(false);
@@ -247,7 +248,7 @@ export function StudioWorkspaceArrangementControls({
                 const saved = saveStudioWorkspaceArrangement();
                 setNotice(saved
                   ? "현재 탭에 고정 영역 배치를 저장했어요."
-                  : "탭 저장 공간을 사용할 수 없어요.");
+                  : panelStatusText("studio.panelStatus.workspaceArrangement.tabStorageUnavailable", "탭 저장 공간을 사용할 수 없어요."));
               }}
             >
               <Save size={14} aria-hidden />탭에 저장
@@ -259,7 +260,7 @@ export function StudioWorkspaceArrangementControls({
                 const restored = restoreStudioWorkspaceArrangement();
                 setNotice(restored
                   ? "저장한 고정 영역 배치를 복원했어요."
-                  : "이 탭에 저장한 배치가 없어요.");
+                  : panelStatusText("studio.panelStatus.workspaceArrangement.tabEmpty", "이 탭에 저장한 배치가 없어요."));
               }}
             >
               <Undo2 size={14} aria-hidden />탭 배치 불러오기

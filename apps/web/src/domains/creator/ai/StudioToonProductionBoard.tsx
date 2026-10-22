@@ -1,5 +1,5 @@
 import { useT } from "@/shared/lib/i18n";
-import "./studio-ai-status-i18n";
+import { aiStatusText } from "./studio-ai-status-i18n";
 import {
   ChevronLeft,
   ChevronRight,
@@ -61,11 +61,11 @@ function sceneStatus(
   referenceSignature: string,
 ): string {
   const status = scenarioCandidateReviewStatus(item, referenceSignature);
-  if (status === "approved") return "승인됨";
-  if (status === "failed") return "오류";
-  if (status === "stale") return "재검토";
-  if (status === "unapproved") return "검토 필요";
-  return "미생성";
+  if (status === "approved") return aiStatusText("studio.aiStatus.toonBoard.reviewApproved", "승인됨");
+  if (status === "failed") return aiStatusText("studio.aiStatus.toonBoard.reviewFailed", "오류");
+  if (status === "stale") return aiStatusText("studio.aiStatus.toonBoard.reviewStale", "재검토");
+  if (status === "unapproved") return aiStatusText("studio.aiStatus.toonBoard.reviewUnapproved", "검토 필요");
+  return aiStatusText("studio.aiStatus.toonBoard.reviewNotGenerated", "미생성");
 }
 export function StudioToonProductionBoard({
   items,
@@ -182,7 +182,7 @@ export function StudioToonProductionBoard({
             ["전체 장면", summary.total],
             ["그림 있음", summary.generated],
             ["승인 완료", summary.approved],
-            ["오류", summary.failed],
+            [t("studio.aiStatus.toonBoard.reviewFailed", "오류"), summary.failed],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-line bg-card p-3">
               <p className="text-[0.65rem] font-semibold text-fg-3">{label}</p>

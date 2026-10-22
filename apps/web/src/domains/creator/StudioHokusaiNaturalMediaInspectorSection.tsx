@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import {
   Brush,
   Check,
@@ -223,7 +224,7 @@ export function StudioHokusaiNaturalMediaInspectorSection({
         if (controller.signal.aborted) return;
         const detail = errorMessage(
           cause,
-          "Hokusai 자연매체 엔진을 확인하지 못했습니다.",
+          panelStatusText("studio.panelStatus.hokusaiNaturalMedia.engineCheckFailed", "Hokusai 자연매체 엔진을 확인하지 못했습니다."),
         );
         setCapability("unavailable");
         setCapabilityMessage(detail);
@@ -289,7 +290,7 @@ export function StudioHokusaiNaturalMediaInspectorSection({
       })
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
-        setError(errorMessage(cause, "자연매체 획 변환에 실패했습니다."));
+        setError(errorMessage(cause, panelStatusText("studio.panelStatus.hokusaiNaturalMedia.transformFailed", "자연매체 획 변환에 실패했습니다.")));
       })
       .finally(() => {
         if (generationRef.current === controller) {
@@ -312,11 +313,11 @@ export function StudioHokusaiNaturalMediaInspectorSection({
     busy
       ? "변환 중"
       : capability === "checking"
-        ? "확인 중"
+        ? panelStatusText("studio.panelStatus.hokusaiNaturalMedia.checking", "확인 중")
         : capability === "ready"
           ? "사용 가능"
           : capability === "unavailable"
-            ? "사용 불가"
+            ? panelStatusText("studio.panelStatus.hokusaiNaturalMedia.unavailable", "사용 불가")
             : "확인 전";
 
   return (

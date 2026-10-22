@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 
 import { downloadBlob } from "../export/studio-export";
 import { createStudioAnimaticSqlitePersistence } from "../studio-animatic-sqlite-persistence";
@@ -75,7 +76,7 @@ export function StudioAnimaticWorkspacePanel({ workScope, pages, workspace, pers
     validateStudioAnimaticWorkspace(next);
     // Product edits already create immutable paths. Retain their structural sharing in the
     // document Undo journal; the importer alone needs the validator's canonical cloned result.
-    if (!onCommit(current, next)) throw new Error("원고가 바뀌어 적용하지 못했습니다. 현재 스토리보드에서 다시 시도하세요.");
+    if (!onCommit(current, next)) throw new Error(creatorSub2StatusText("studio.creatorSub2.status.animatic.workspacePanel.changed", "원고가 바뀌어 적용하지 못했습니다. 현재 스토리보드에서 다시 시도하세요."));
   }
   function applyEdit(next: StudioAnimaticWorkspaceDocument): void {
     // Synchronous text/slider edits must preserve focus and pointer capture. The
@@ -102,10 +103,10 @@ export function StudioAnimaticWorkspacePanel({ workScope, pages, workspace, pers
       if (index < 0) throw new Error("원고에서 삭제된 페이지입니다. 타임라인의 컷을 먼저 정리하세요.");
       const canvases = await capturePages([index]);
       const canvas = canvases[0];
-      if (!canvas) throw new Error("원고 캡처를 완료하지 못했습니다.");
+      if (!canvas) throw new Error(creatorSub2StatusText("studio.creatorSub2.status.animatic.workspacePanel.captureFailed", "원고 캡처를 완료하지 못했습니다."));
       try {
         if (canvas.width * canvas.height * 4 > ANIMATIC_WORKSPACE_LIMITS.assetBytes) throw new Error("캡처한 원고가 미리보기 메모리 한도를 넘었습니다.");
-        const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("원고 PNG를 만들지 못했습니다.")), "image/png"));
+        const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error(creatorSub2StatusText("studio.creatorSub2.status.animatic.workspacePanel.pngFailed", "원고 PNG를 만들지 못했습니다."))), "image/png"));
         const asset = await repository.putAsset(new Uint8Array(await blob.arrayBuffer()), "image/png");
         const entry = { pageId, asset, width: canvas.width, height: canvas.height, documentWidth: 720, documentHeight: pages[index]!.canvasH ?? 1280 };
         const previous = artwork.findIndex((item) => item.pageId === pageId);
@@ -124,7 +125,7 @@ export function StudioAnimaticWorkspacePanel({ workScope, pages, workspace, pers
     const waveform = studioAnimaticWaveform(Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index)));
     commit({ ...current, audio: [...current.audio, { id: crypto.randomUUID(), name: file.name.slice(0, 200), asset, durationMs: buffer.duration * 1000, startMs: playhead.current, trimStartMs: 0, trimEndMs: buffer.duration * 1000, volume: 1, muted: false, waveform }] });
   }
-  if (!current) return <section className="p-4" role={error ? "alert" : "status"}>{error ?? "스토리보드 작업을 불러오는 중…"}</section>;
+  if (!current) return <section className="p-4" role={error ? "alert" : "status"}>{error ?? creatorSub2StatusText("studio.creatorSub2.status.animatic.workspacePanel.loading", "스토리보드 작업을 불러오는 중…")}</section>;
   return <StudioAnimaticTimelinePanel workScope={workScope} pages={pages} persistence={null}
     externalDocument={current.timeline} reducedMotion={reducedMotion} onClose={onClose} className={className}
     workspaceStatus={{ busy: busy || persistenceStatus.busy || media.busy, error: error ?? media.error ?? persistenceStatus.error }}

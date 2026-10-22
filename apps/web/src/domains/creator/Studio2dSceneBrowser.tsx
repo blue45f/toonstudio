@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -57,10 +58,10 @@ function SceneCard({ scene, disabled, onPick, onPreview }: {
         {[asset.containsPeople ? "인물 포함" : null, asset.containsText ? "문자 형태 포함" : null].filter(Boolean).join(" · ")}
       </p>}
       {asset && !isLargeStudio2dAsset(asset) && <p className="text-[0.64rem] text-fg-3">소형 컷용 · 확대 주의</p>}
-      {state.reason === "timeout" && <p className="text-[0.64rem] text-bad">연결이 지연되었습니다. 다시 불러와 주세요.</p>}
+      {state.reason === "timeout" && <p className="text-[0.64rem] text-bad">{panelStatusText("studio.panelStatus.sceneBrowser.imageDelayed", "연결이 지연되었습니다. 다시 불러와 주세요.")}</p>}
       {status === "mismatch" && <p className="text-[0.64rem] text-bad">원본 크기가 검수 기록과 다릅니다.</p>}
       {(status === "error" || status === "mismatch") ? <button type="button" className="w-full rounded-lg border border-bad/40 px-1 py-1.5 text-xs text-bad"
-        onClick={retry}>이미지 다시 불러오기</button>
+        onClick={retry}>{panelStatusText("studio.panelStatus.sceneBrowser.imageReload", "이미지 다시 불러오기")}</button>
         : <button type="button" aria-label={`${title} 삽입`} disabled={disabled || status !== "ready"}
           onClick={() => { if (!disabled && status === "ready") onPick(scene); }}
           className="w-full rounded-lg border border-line px-2 py-1.5 text-xs font-medium hover:border-accent disabled:cursor-not-allowed disabled:opacity-40">삽입</button>}
@@ -141,27 +142,27 @@ export function Studio2dSceneBrowser({ groups, query, onQueryChange, genre, onGe
       <input id={`${id}-empty`} type="checkbox" checked={emptySceneOnly} onChange={(event) => setEmptySceneOnly(event.target.checked)} />인물 없는 이미지 배경만
     </label>
     <div className="flex items-center justify-between gap-2 text-xs">
-      <p role="status" aria-live="polite" className="text-fg-3">{loading ? "배경을 불러오는 중…" : `${results.length}개 장면`}</p>
+      <p role="status" aria-live="polite" className="text-fg-3">{loading ? panelStatusText("studio.panelStatus.sceneBrowser.loading", "배경을 불러오는 중…") : `${results.length}개 장면`}</p>
       <button type="button" className="rounded px-2 py-1 text-fg-3 underline" onClick={reset}>필터 초기화</button>
     </div>
     {loading && !error ? <StudioSurfaceState
       state="loading" announce="none" compact
       visual={{ src: "/brand/theme-scenes/starlight-studio.svg", objectPosition: "center 42%" }}
       title="장면을 준비하고 있어요"
-      description="검수된 2D 배경과 원본 크기 정보를 함께 불러오고 있습니다."
+      description={panelStatusText("studio.panelStatus.sceneBrowser.loadingDescription", "검수된 2D 배경과 원본 크기 정보를 함께 불러오고 있습니다.")}
     /> : null}
     {error ? <StudioSurfaceState
       state="error" compact
       visual={{ src: "/brand/theme-scenes/graphite-studio.svg", objectPosition: "center 44%" }}
-      title="배경 목록을 불러오지 못했어요"
+      title={panelStatusText("studio.panelStatus.sceneBrowser.loadFailedTitle", "배경 목록을 불러오지 못했어요")}
       description={error}
     /> : null}
-    {disabled && <p className="text-xs text-fg-3">현재 편집 상태에서는 삽입할 수 없습니다. 미리보기는 사용할 수 있습니다.</p>}
+    {disabled && <p className="text-xs text-fg-3">{panelStatusText("studio.panelStatus.sceneBrowser.insertUnavailable", "현재 편집 상태에서는 삽입할 수 없습니다. 미리보기는 사용할 수 있습니다.")}</p>}
     {!loading && !error && results.length === 0 ? <StudioSurfaceState
       state="empty" announce="none" compact
       visual={{ src: "/brand/theme-scenes/ink-studio.svg", objectPosition: "center 46%" }}
-      title="조건에 맞는 배경이 없습니다."
-      description="검색어나 필터를 바꾸거나 모든 장면으로 돌아가 보세요."
+      title={panelStatusText("studio.panelStatus.sceneBrowser.emptyTitle", "조건에 맞는 배경이 없습니다.")}
+      description={panelStatusText("studio.panelStatus.sceneBrowser.emptyDescription", "검색어나 필터를 바꾸거나 모든 장면으로 돌아가 보세요.")}
       action={<button type="button" className="rounded-lg border border-current/25 bg-card/80 px-3 py-1.5 text-xs font-semibold text-fg hover:bg-raised" onClick={reset}>모든 장면 보기</button>}
     /> : null}
     <div ref={gridRef} data-studio-2d-grid="true" className={cn("grid max-h-[min(52dvh,32rem)] grid-cols-2 gap-2 overflow-y-auto pr-1", loading && "opacity-70")}>

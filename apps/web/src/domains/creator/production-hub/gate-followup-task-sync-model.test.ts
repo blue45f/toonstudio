@@ -86,6 +86,31 @@ function followUp(partial: Partial<StageGateFollowUp> = {}): StageGateFollowUp {
   };
 }
 
+function workspaceWithAssignments() {
+  return {
+    ...createEmptyProductionWorkspace("work:test"),
+    roleAssignments: [
+      { id: "assignment-artist", memberId: "artist-1", displayName: "작가", roles: ["story"], hierarchyNodeId: null },
+      { id: "assignment-lead", memberId: "lead-1", displayName: "리드", roles: ["reviewer"], hierarchyNodeId: null },
+    ],
+  } as ReturnType<typeof createEmptyProductionWorkspace>;
+}
+
+function rejectedGateBy(submittedById: string, submittedByName: string): StageConsensusGate {
+  return gate({
+    rounds: [
+      {
+        round: 1,
+        submittedById,
+        submittedByName,
+        revisionRef: "rev-1",
+        submittedAt: "2026-10-11T08:00:00.000Z",
+        decisions: [decision({ value: "request-changes", reason: "무게감이 부족해요" })],
+      },
+    ],
+  });
+}
+
 describe("gate follow-up task identity", () => {
   it("후속 작업 ID가 곧 할 일 ID이고, 종류를 ID에서 되읽는다", () => {
     const rework = followUp();
@@ -276,6 +301,80 @@ describe("applyGateFollowUpSyncToWorkspace", () => {
     const again = applyGateFollowUpSyncToWorkspace(restored!, [rejectedGate(2), conditional]);
     expect(again.result.changed).toBe(false);
     expect(again.workspace).toBe(restored);
+  });
+
+  it("방어: 훅 없이 memberId·배정 ID 어디에도 없는 담당자는 걸러내고 dropped로 보고한다 (직렬화 무throw)", () => {
+    // 게이트 담당자 기본값은 회원 ID 공간이라 역할 배정의 memberId와 일치하면
+    // 정당한 기본값이지만, 워크스페이스의 어떤 역할 배정에도 없는 회원 ID는
+    // 저장 검증(assigneeIds ⊆ 배정 id·memberId)을 통과하지 못해 동기화는
+    // 성공하는데 워크스페이스 전체 저장이 throw하는 조합이 된다.
+    const workspace = workspaceWithAssignments();
+    const { workspace: synced, result } = applyGateFollowUpSyncToWorkspace(workspace, [
+      rejectedGateBy("outsider-1", "외부 작가"),
+    ]);
+    const task = synced.tasks.find((entry) => entry.id === followUp().id);
+    expect(task?.assigneeIds).toEqual([]);
+    // 표시용 담당 이름은 남는다 — 사라지는 것은 ID 매칭뿐이다.
+    expect(task?.owner).toBe("외부 작가");
+    expect(result.droppedAssigneeIds).toEqual(["outsider-1"]);
+
+    expect(() => serializeProductionWorkspace(synced)).not.toThrow();
+    const restored = parseProductionWorkspace(serializeProductionWorkspace(synced), "work:test");
+    expect(restored?.tasks.map((entry) => entry.id)).toEqual([followUp().id]);
+
+    // 재동기화는 멱등이고, 버린 ID는 매 호출 다시 보고한다.
+    const again = applyGateFollowUpSyncToWorkspace(restored!, [rejectedGateBy("outsider-1", "외부 작가")]);
+    expect(again.result.changed).toBe(false);
+    expect(again.workspace).toBe(restored);
+    expect(again.result.droppedAssigneeIds).toEqual(["outsider-1"]);
+  });
+
+  it("방어: 훅이 없어도 배정 ID·memberId로 해석되는 담당자는 그대로 유지되고 직렬화를 통과한다", () => {
+    const workspace = workspaceWithAssignments();
+    // memberId 일치 (정당한 기본값)
+    const byMember = applyGateFollowUpSyncToWorkspace(workspace, [rejectedGate(1)]);
+    expect(byMember.workspace.tasks[0]?.assigneeIds).toEqual(["artist-1"]);
+    expect(byMember.result.droppedAssigneeIds).toEqual([]);
+    expect(() => serializeProductionWorkspace(byMember.workspace)).not.toThrow();
+
+    // 배정 ID 자체와 일치
+    const byAssignment = applyGateFollowUpSyncToWorkspace(workspace, [
+      rejectedGateBy("assignment-artist", "작가"),
+    ]);
+    expect(byAssignment.workspace.tasks[0]?.assigneeIds).toEqual(["assignment-artist"]);
+    expect(byAssignment.result.droppedAssigneeIds).toEqual([]);
+    expect(() => serializeProductionWorkspace(byAssignment.workspace)).not.toThrow();
+  });
+
+  it("방어: 이미 들어간 해석 불가능한 담당자 ID는 다음 동기화에서 정리된다", () => {
+    // 목록 수준 build는 워크스페이스를 모르므로 가드 없이 만든다 — 그 상태가
+    // 인메모리에 남아 있어도 워크스페이스 진입점의 refresh 경로가 정리한다.
+    const stale = buildGateFollowUpTask(followUp({ assigneeId: "outsider-1", assigneeName: "외부 작가" }));
+    expect(stale.assigneeIds).toEqual(["outsider-1"]);
+    const workspace = { ...workspaceWithAssignments(), tasks: [stale] };
+    const { workspace: synced, result } = applyGateFollowUpSyncToWorkspace(workspace, [
+      rejectedGateBy("outsider-1", "외부 작가"),
+    ]);
+    expect(synced.tasks[0]?.assigneeIds).toEqual([]);
+    expect(result.droppedAssigneeIds).toEqual(["outsider-1"]);
+    expect(() => serializeProductionWorkspace(synced)).not.toThrow();
+  });
+
+  it("방어: 훅이 주입되면 가드를 걸지 않는다 (훅 결과 그대로, dropped 빈 배열) — 무회귀 고정", () => {
+    const workspace = workspaceWithAssignments();
+    const { workspace: synced, result } = applyGateFollowUpSyncToWorkspace(
+      workspace,
+      [rejectedGate(1)],
+      { resolveAssigneeId: () => "hook-result-not-in-assignments" },
+    );
+    expect(synced.tasks[0]?.assigneeIds).toEqual(["hook-result-not-in-assignments"]);
+    expect(result.droppedAssigneeIds).toEqual([]);
+  });
+
+  it("목록 수준 syncGateFollowUpTasks는 가드를 걸지 않는다 (dropped 항상 빈 배열)", () => {
+    const result = syncGateFollowUpTasks([], [followUp({ assigneeId: "outsider-1" })]);
+    expect(result.tasks[0]?.assigneeIds).toEqual(["outsider-1"]);
+    expect(result.droppedAssigneeIds).toEqual([]);
   });
 });
 

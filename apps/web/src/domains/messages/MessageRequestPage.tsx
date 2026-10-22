@@ -16,6 +16,9 @@ import { Container } from "@/shared/components/section";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useT } from "@/shared/lib/i18n";
+
+import "./message-status-i18n";
 
 const CATEGORY_OPTIONS: ReadonlyArray<{
   value: MessagingRequestCategory;
@@ -34,6 +37,7 @@ function contextType(value: string | null): MessagingContextType {
 
 export function MessageRequestPage() {
   useDocumentTitle("새 메시지 요청 · ToonStudio");
+  const t = useT();
   const session = useSession();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -67,7 +71,7 @@ export function MessageRequestPage() {
       });
       navigate(`/messages/${encodeURIComponent(result.thread.id)}`, { replace: true });
     } catch (requestError) {
-      setError(await getApiErrorMessage(requestError, "메시지 요청을 보내지 못했어요."));
+      setError(await getApiErrorMessage(requestError, t("messages.status.request.sendFailed", "메시지 요청을 보내지 못했어요.")));
     } finally {
       setBusy(false);
     }
@@ -86,7 +90,7 @@ export function MessageRequestPage() {
     return (
       <div data-route-pending="" className="grid min-h-[55vh] place-items-center px-6 text-center">
         <div>
-          <LoadingState variant="pulse" label="로그인 상태 확인 중" className="justify-center" />
+          <LoadingState variant="pulse" label={t("messages.status.request.sessionChecking", "로그인 상태 확인 중")} className="justify-center" />
           <p className="mt-3 text-sm text-fg-2">로그인 상태를 확인하고 있어요.</p>
         </div>
       </div>
@@ -99,7 +103,7 @@ export function MessageRequestPage() {
         <div role="alert" className="rounded-3xl border border-warn/35 bg-card p-8 text-center sm:p-12">
           <MailPlus size={36} className="mx-auto text-warn" aria-hidden="true" />
           <h1 className="mt-4 text-2xl font-bold">새 메시지</h1>
-          <p className="mt-2 text-sm leading-relaxed text-fg-2">로그인 상태를 확인하지 못했어요. 받는 회원과 작성 중인 주소는 유지됩니다.</p>
+          <p className="mt-2 text-sm leading-relaxed text-fg-2">{t("messages.status.request.sessionCheckFailed", "로그인 상태를 확인하지 못했어요. 받는 회원과 작성 중인 주소는 유지됩니다.")}</p>
           <button type="button" onClick={() => window.location.reload()} className={buttonClass({ size: "sm", variant: "outline", className: "mt-5" })}>다시 확인</button>
         </div>
       </Container>
@@ -133,7 +137,7 @@ export function MessageRequestPage() {
       <Container size="prose" className="py-16 sm:py-24">
         <section aria-label="받는 회원 확인 안내" className="rounded-3xl border border-line bg-card p-8 text-center sm:p-12">
           <MailPlus size={36} className="mx-auto text-fg-3" />
-          <h1 className="mt-4 text-2xl font-bold">받는 회원을 확인할 수 없어요.</h1>
+          <h1 className="mt-4 text-2xl font-bold">{t("messages.status.request.recipientNotFound", "받는 회원을 확인할 수 없어요.")}</h1>
           <p className="mt-2 text-sm text-fg-2">회원 프로필의 메시지 버튼에서 다시 시작해 주세요.</p>
           <Link href="/messages" className={buttonClass({ size: "sm", variant: "outline", className: "mt-5" })}>메시지함으로</Link>
         </section>

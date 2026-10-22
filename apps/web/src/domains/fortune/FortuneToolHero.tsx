@@ -3,6 +3,7 @@ import { ArrowRight, Heart } from "lucide-react";
 import { fortuneKstDate } from "@toonstudio/core/fortune";
 import { cn } from "@/shared/lib/utils";
 import { FortuneSceneArt } from "./FortuneSceneArt";
+import { fortuneStatusText } from "./fortune-status-i18n";
 import type { FortuneSceneTheme } from "./fortune-cinematic-model";
 import { useFortuneStore } from "./fortune-store";
 import { ELEMENT_COLORS, ELEMENT_KO, FORTUNE_TAB_META, type FortuneTab } from "./fortune-page-data";
@@ -221,12 +222,12 @@ export function FortuneToolHero({ tab }: { tab: FortuneTab }) {
     ? null
     : content.needsPartnerBirth
       ? savedBirthDate && savedPartnerBirthDate
-        ? "두 사람의 생년월일이 저장돼 있어요. 캐릭터를 고르면 바로 궁합을 볼 수 있어요."
+        ? fortuneStatusText("fortune.status.toolHero.savedBoth", "두 사람의 생년월일이 저장돼 있어요. 캐릭터를 고르면 바로 궁합을 볼 수 있어요.")
         : savedBirthDate
-          ? "내 생년월일은 저장돼 있어요. 상대의 생년월일은 캐릭터를 고른 뒤 입력해요."
+          ? fortuneStatusText("fortune.status.toolHero.savedMine", "내 생년월일은 저장돼 있어요. 상대의 생년월일은 캐릭터를 고른 뒤 입력해요.")
           : null
       : savedBirthDate
-        ? "저장된 생년월일이 있어요. 캐릭터를 고르면 바로 시작해요."
+        ? fortuneStatusText("fortune.status.toolHero.savedBirth", "저장된 생년월일이 있어요. 캐릭터를 고르면 바로 시작해요.")
         : null;
 
   return (

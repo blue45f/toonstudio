@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   ChevronDown,
   CircleStop,
@@ -353,7 +354,7 @@ export function StudioFloodFillPanel({
             )}
           >
             {selectedScopeUnavailable
-              ? "선택한 참조 범위에 사용할 수 있는 레이어가 없습니다."
+              ? r3c07StatusText("studio.panelStatus.r3c07.floodFill.scopeUnavailable", "선택한 참조 범위에 사용할 수 있는 레이어가 없습니다.")
               : STUDIO_ADVANCED_FILL_REFERENCE_SCOPE_DESCRIPTIONS[settings.referenceScope]}
           </p>
         </div>

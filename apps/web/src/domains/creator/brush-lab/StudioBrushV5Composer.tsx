@@ -8,6 +8,9 @@ import {
 } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import {
   BRUSH_STUDIO_V5_FINISHES,
@@ -281,6 +284,7 @@ function capabilitySnapshot(): CapabilitySnapshot {
 }
 
 export function StudioBrushV5Composer({ scope }: { scope: string }) {
+  const t = useT();
   const draftKey = `${DRAFT_KEY_PREFIX}${encodeURIComponent(scope)}`;
   const [draft, setDraft] = useState<BrushStudioV5Draft>(() => readDraft(draftKey));
   const [library, setLibrary] = useState<readonly StoredBrushStudioV5Program[]>(() => readLibrary());
@@ -363,7 +367,7 @@ export function StudioBrushV5Composer({ scope }: { scope: string }) {
       if (file.size > 2 * 1024 * 1024) throw new Error("브러시 파일은 2MiB 이하만 가져올 수 있습니다.");
       replace(parseBrushStudioV5Draft(await file.text()), `"${file.name}"에서 브러시 프로그램을 가져왔습니다.`);
     } catch (reason) {
-      setImportError(reason instanceof Error ? reason.message : "브러시 파일을 읽지 못했습니다.");
+      setImportError(reason instanceof Error ? reason.message : t("studio.brushCanvasStatus.brushLab.v5FileReadFailed", "브러시 파일을 읽지 못했습니다."));
     }
   }
 
@@ -500,7 +504,7 @@ export function StudioBrushV5Composer({ scope }: { scope: string }) {
               <ScoreCard label="개성" value={analysis.uniquenessScore} />
               <ScoreCard label="복잡도" value={analysis.complexityScore} />
             </div>
-            {analysis.issues.length ? <ul className="mt-3 space-y-2">{analysis.issues.map((issue) => <li key={issue.id} className={`rounded-xl border p-3 text-xs leading-relaxed ${issue.severity === "error" ? "border-warn/50 bg-warn/5 text-warn" : issue.severity === "warning" ? "border-line-strong bg-raised/55 text-fg-2" : "border-line bg-bg-2/45 text-fg-3"}`}><strong className="block text-fg">{issue.title}</strong>{issue.description}</li>)}</ul> : <p className="mt-3 rounded-xl border border-good/35 bg-good/5 p-3 text-xs font-semibold text-good">현재 조합에서 즉시 차단할 충돌이 없습니다.</p>}
+            {analysis.issues.length ? <ul className="mt-3 space-y-2">{analysis.issues.map((issue) => <li key={issue.id} className={`rounded-xl border p-3 text-xs leading-relaxed ${issue.severity === "error" ? "border-warn/50 bg-warn/5 text-warn" : issue.severity === "warning" ? "border-line-strong bg-raised/55 text-fg-2" : "border-line bg-bg-2/45 text-fg-3"}`}><strong className="block text-fg">{issue.title}</strong>{issue.description}</li>)}</ul> : <p className="mt-3 rounded-xl border border-good/35 bg-good/5 p-3 text-xs font-semibold text-good">{t("studio.brushCanvasStatus.brushLab.v5NoBlockingIssues", "현재 조합에서 즉시 차단할 충돌이 없습니다.")}</p>}
           </section>
 
           <section className={CARD}>

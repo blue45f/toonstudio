@@ -1,5 +1,8 @@
 import { BellRing, Camera, Check, CheckCheck, History, Lightbulb, MapPin, Package } from "lucide-react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import {
   getStudioBg3dPlaceSetLatestVersion,
   summarizeStudioBg3dPlaceSetImpacts,
@@ -78,6 +81,7 @@ export function StudioBg3dPlaceSetPackagePanel({
   onPublishCurrent,
   onSelectUsage,
 }: StudioBg3dPlaceSetPackagePanelProps) {
+  const t = useT();
   const latest = getStudioBg3dPlaceSetLatestVersion(placeSet);
   const summary = summarizeStudioBg3dPlaceSetImpacts(notices, acknowledgedIds);
   const acknowledged = new Set(acknowledgedIds);
@@ -102,7 +106,7 @@ export function StudioBg3dPlaceSetPackagePanel({
             현재 정본 v{latest.version} — 세트를 열면 이 상태로 시작합니다
           </span>
         ) : (
-          <span className="text-xs text-muted">아직 등록된 정본이 없습니다</span>
+          <span className="text-xs text-muted">{t("studio.bg3dPanelStatus.placeSetPackage.noCanonical", "아직 등록된 정본이 없습니다")}</span>
         )}
         {onPublishCurrent ? (
           <button
@@ -122,7 +126,7 @@ export function StudioBg3dPlaceSetPackagePanel({
           버전 이력
         </h3>
         {versionsDescending.length === 0 ? (
-          <p className="text-xs text-muted">버전이 없습니다.</p>
+          <p className="text-xs text-muted">{t("studio.bg3dPanelStatus.placeSetPackage.noVersions", "버전이 없습니다.")}</p>
         ) : (
           <ul className="flex flex-col gap-1">
             {versionsDescending.map((entry) => (
@@ -156,7 +160,7 @@ export function StudioBg3dPlaceSetPackagePanel({
         </h3>
         {notices.length === 0 ? (
           <p className="text-xs text-muted">
-            옛 정본을 쓰는 회차·컷이 없습니다. 모든 사용처가 현재 정본과 같습니다.
+            {t("studio.bg3dPanelStatus.placeSetPackage.noStaleUsage", "옛 정본을 쓰는 회차·컷이 없습니다. 모든 사용처가 현재 정본과 같습니다.")}
           </p>
         ) : (
           <>

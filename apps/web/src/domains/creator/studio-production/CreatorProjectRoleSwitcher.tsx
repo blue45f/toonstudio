@@ -1,4 +1,5 @@
 import { BellRing, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useMemo, useState } from "react";
 
 import { updateMyProfile, type MeProfile } from "@/platform/me-client";
@@ -70,9 +71,7 @@ export function CreatorProjectRoleSwitcher({
     void persistProfile(
       withCreatorProjectRolePreference(profile.creatorRoleProfile, projectKey, role),
       `role:${role}`,
-      locale === "ko"
-        ? "프로젝트 작업 모드를 저장하지 못했습니다."
-        : "Could not save the project workspace role.",
+      r3c04StatusText("studio.r3c04Status.production.roleSwitcher.roleSaveFailed", "프로젝트 작업 모드를 저장하지 못했습니다."),
     );
   };
 
@@ -81,9 +80,7 @@ export function CreatorProjectRoleSwitcher({
     void persistProfile(
       withCreatorProjectNotificationPreference(profile.creatorRoleProfile, projectKey, next),
       "notification",
-      locale === "ko"
-        ? "프로젝트 알림 설정을 저장하지 못했습니다."
-        : "Could not save the project notification level.",
+      r3c04StatusText("studio.r3c04Status.production.roleSwitcher.notificationSaveFailed", "프로젝트 알림 설정을 저장하지 못했습니다."),
     );
   };
   return (

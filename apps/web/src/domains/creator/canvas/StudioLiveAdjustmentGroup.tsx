@@ -6,6 +6,7 @@ import { acknowledgeStudioRasterImagePresentationDraw, registerStudioMountedRast
 import { refreshStudioRasterPresentationCaches, registerStudioRasterCapturePreparation, registerStudioRasterPresentationCache } from "../render/studio-raster-presentation-cache";
 import type { StudioLiveAdjustmentElement } from "../studio-live-adjustment";
 import { publishStudioLiveAdjustmentStatus } from "../studio-live-adjustment-status";
+import { brushCanvasStatusText } from "../studio-brush-canvas-status-i18n";
 
 import type Konva from "konva";
 import type { StudioAdjustmentLayerMask } from "../studio-adjustment-layer-runtime";
@@ -20,7 +21,7 @@ async function decodeMask(src: string, signal: AbortSignal): Promise<HTMLImageEl
     const cleanup = () => { image.onload = null; image.onerror = null; signal.removeEventListener("abort", abort); };
     const abort = () => { cleanup(); image.removeAttribute("src"); reject(signal.reason); };
     image.onload = () => { cleanup(); resolve(image); };
-    image.onerror = () => { cleanup(); reject(new Error("보정 레이어 마스크를 불러오지 못했어요.")); };
+    image.onerror = () => { cleanup(); reject(new Error(brushCanvasStatusText("studio.brushCanvasStatus.canvas.adjustMaskLoadFailed", "보정 레이어 마스크를 불러오지 못했어요."))); };
     if (signal.aborted) { abort(); return; }
     signal.addEventListener("abort", abort, { once: true });
     image.src = src;
@@ -50,7 +51,7 @@ function renderMask(element: StudioLiveAdjustmentElement, sources: readonly Mask
     const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
     try {
       const context = canvas.getContext("2d", { willReadFrequently: true });
-      if (!context) throw new Error("보정 마스크 캔버스를 만들지 못했어요.");
+      if (!context) throw new Error(brushCanvasStatusText("studio.brushCanvasStatus.canvas.adjustMaskCanvasFailed", "보정 마스크 캔버스를 만들지 못했어요."));
       if (density !== 1) context.scale(density, density);
       context.translate(element.x, element.y); context.rotate(element.rotation * Math.PI / 180);
       if (element.flipped) { context.translate(element.width, 0); context.scale(-1, 1); }
@@ -94,7 +95,7 @@ export function StudioLiveAdjustmentGroup({ element, width, height, sourceIds, c
     };
     const fail = (error: unknown) => {
       ready = false;
-      publish(element.id, { state: "error", message: error instanceof Error ? error.message : "보정 레이어를 계산하지 못했어요." });
+      publish(element.id, { state: "error", message: error instanceof Error ? error.message : brushCanvasStatusText("studio.brushCanvasStatus.canvas.adjustComputeFailed", "보정 레이어를 계산하지 못했어요.") });
     };
     publish(element.id, { state: "loading" });
     const recache = () => {
@@ -136,12 +137,12 @@ export function StudioLiveAdjustmentGroup({ element, width, height, sourceIds, c
       if (target === previous) return () => undefined;
       const restore = () => {
         density = previous;
-        if (!recache() || !refreshStudioRasterPresentationCaches(node)) throw new Error("보정 레이어 화면 캐시를 복원하지 못했어요.");
+        if (!recache() || !refreshStudioRasterPresentationCaches(node)) throw new Error(brushCanvasStatusText("studio.brushCanvasStatus.canvas.adjustCacheRestoreFailed", "보정 레이어 화면 캐시를 복원하지 못했어요."));
       };
       density = target;
       if (!recache() || !refreshStudioRasterPresentationCaches(node)) {
         try { restore(); } catch { /* The capture remains blocked even if restoration fails. */ }
-        throw new Error("요청한 출력 배율에서 보정 레이어를 계산하지 못했어요. 출력 배율을 낮춰 주세요.");
+        throw new Error(brushCanvasStatusText("studio.brushCanvasStatus.canvas.adjustComputeAtScaleFailed", "요청한 출력 배율에서 보정 레이어를 계산하지 못했어요. 출력 배율을 낮춰 주세요."));
       }
       return restore;
     });

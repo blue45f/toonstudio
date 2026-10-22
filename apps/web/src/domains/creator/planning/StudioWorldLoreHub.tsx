@@ -21,6 +21,7 @@
  *   로어까지 확장). 슬롯이 없으면 배지·목록 없이 기존과 동일하게 동작한다.
  */
 import { useMemo, useState, type ReactNode } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import type { StudioStoryCharacter } from "../studio-story-bible";
 import {
@@ -275,7 +276,7 @@ export function StudioWorldLoreHub({
 
       {lore.entries.length === 0 ? (
         <div>
-          <p>아직 적어 둔 설정이 없어요. 세계를 이루는 것들부터 하나씩 세워 보세요.</p>
+          <p>{r3c04StatusText("studio.r3c04Status.planning.worldLore.emptySettings", "아직 적어 둔 설정이 없어요. 세계를 이루는 것들부터 하나씩 세워 보세요.")}</p>
           <button type="button" onClick={startWithExamples}>
             예시 세계로 시작하기
           </button>{" "}
@@ -587,7 +588,7 @@ export function StudioWorldLoreHub({
                       {entry.origin === "example" ? " · 예시" : ""}
                     </p>
                     {entry.status === "intentional-gap" && (
-                      <p>의도적으로 비워 둔 설정이에요 — 내용을 채우지 않아도 오류가 아니에요.</p>
+                      <p>{r3c04StatusText("studio.r3c04Status.planning.worldLore.intentionalGapNote", "의도적으로 비워 둔 설정이에요 — 내용을 채우지 않아도 오류가 아니에요.")}</p>
                     )}
                     {entry.status === "speculative" && (
                       <p>아직 추측 단계예요. 확정하면 다른 설정과의 충돌이 여기서 막혀요.</p>
@@ -656,7 +657,7 @@ export function StudioWorldLoreHub({
       })}
 
       {lore.entries.length > 0 && visible.length === 0 && (
-        <p>찾는 설정이 없어요. 다른 말로 찾아보거나, 새 설정으로 추가해 보세요.</p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.worldLore.searchEmpty", "찾는 설정이 없어요. 다른 말로 찾아보거나, 새 설정으로 추가해 보세요.")}</p>
       )}
 
       {retired.length > 0 && (

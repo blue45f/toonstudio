@@ -3,6 +3,8 @@
  * 폼은 모두 보이는 이름표가 있는 입력만 쓰고, 입력을 고르지 않으면 저장할 수 없는 폼은 이유를 글로 알린다.
  */
 import { Plus, Trash2 } from "lucide-react";
+import { useT } from "@/shared/lib/i18n";
+import "../storyworld-status-i18n";
 
 import type { StoryworldMotive, StoryworldProject, StoryworldScene, StoryworldSceneRole } from "../studio-storyworld-causality";
 import {
@@ -63,9 +65,10 @@ export function MotiveForm({ project, scene, value, onChange, readOnly }: FormBa
   readonly onChange: (next: readonly MotiveRowDraft[]) => void;
 }) {
   const earlier = earlierScenes(project, scene.id);
+  const t = useT();
   const update = (index: number, patch: Partial<MotiveRowDraft>) =>
     onChange(value.map((row, position) => (position === index ? { ...row, ...patch } : row)));
-  if (value.length === 0) return <p className="plausibility-hint">이 이야기에는 아직 인물이 없어요. 설정 관리에서 인물을 먼저 만들어 주세요.</p>;
+  if (value.length === 0) return <p className="plausibility-hint">{t("studio.storyworldStatus.questionForms.noCharacters", "이 이야기에는 아직 인물이 없어요. 설정 관리에서 인물을 먼저 만들어 주세요.")}</p>;
   return (
     <div className="plausibility-field">
       {value.map((row, index) => {
@@ -109,12 +112,13 @@ export function CauseForm({ project, scene, value, onChange, readOnly }: FormBas
   readonly onChange: (next: CauseDraft) => void;
 }) {
   const earlier = earlierScenes(project, scene.id);
+  const t = useT();
   const facts = project.facts.filter((fact) => isToggleFact(project, fact.id));
   return (
     <div className="plausibility-field">
       <fieldset className="plausibility-field" disabled={readOnly}>
         <legend>원인이 된 앞 장면</legend>
-        {earlier.length === 0 ? <p className="plausibility-hint">이 장면보다 앞에 있는 장면이 없어요.</p> : null}
+        {earlier.length === 0 ? <p className="plausibility-hint">{t("studio.storyworldStatus.questionForms.noEarlierScene", "이 장면보다 앞에 있는 장면이 없어요.")}</p> : null}
         {earlier.map((candidate) => (
           <label key={candidate.id}>
             <input
@@ -128,7 +132,7 @@ export function CauseForm({ project, scene, value, onChange, readOnly }: FormBas
       </fieldset>
       <fieldset className="plausibility-field" disabled={readOnly}>
         <legend>이 장면이 일어나려면 이미 성립해 있어야 하는 일</legend>
-        {facts.length === 0 ? <p className="plausibility-hint">고를 수 있는 설정이 아직 없어요. 설정 관리에서 사실을 먼저 적어 주세요.</p> : null}
+        {facts.length === 0 ? <p className="plausibility-hint">{t("studio.storyworldStatus.questionForms.noFactsYet", "고를 수 있는 설정이 아직 없어요. 설정 관리에서 사실을 먼저 적어 주세요.")}</p> : null}
         {facts.map((fact) => (
           <label key={fact.id}>
             <input
@@ -233,6 +237,7 @@ export function CoincidenceForm({ project, scene, value, onChange, readOnly }: F
   readonly value: CoincidenceDraft;
   readonly onChange: (next: CoincidenceDraft) => void;
 }) {
+  const t = useT();
   const earlier = earlierScenes(project, scene.id);
   return (
     <fieldset className="plausibility-field" disabled={readOnly}>
@@ -251,7 +256,7 @@ export function CoincidenceForm({ project, scene, value, onChange, readOnly }: F
       {value.choice === "foreshadowed" ? (
         <fieldset className="plausibility-field">
           <legend>단서가 있는 앞 장면</legend>
-          {earlier.length === 0 ? <p className="plausibility-hint">이 장면보다 앞에 있는 장면이 없어요.</p> : null}
+          {earlier.length === 0 ? <p className="plausibility-hint">{t("studio.storyworldStatus.questionForms.noEarlierScene", "이 장면보다 앞에 있는 장면이 없어요.")}</p> : null}
           {earlier.map((candidate) => (
             <label key={candidate.id}>
               <input
@@ -274,11 +279,12 @@ export function ConsequenceForm({ project, value, onChange, readOnly }: FormBase
   readonly value: ConsequenceDraft;
   readonly onChange: (next: ConsequenceDraft) => void;
 }) {
+  const t = useT();
   const toggleFacts = project.facts.filter((fact) => isToggleFact(project, fact.id));
   const group = (legend: string, key: keyof ConsequenceDraft, facts: readonly { readonly id: string; readonly label: string }[]) => (
     <fieldset className="plausibility-field" disabled={readOnly}>
       <legend>{legend}</legend>
-      {facts.length === 0 ? <p className="plausibility-hint">고를 수 있는 설정이 없어요.</p> : null}
+      {facts.length === 0 ? <p className="plausibility-hint">{t("studio.storyworldStatus.questionForms.noFacts", "고를 수 있는 설정이 없어요.")}</p> : null}
       {facts.map((fact) => (
         <label key={fact.id}>
           <input checked={value[key].includes(fact.id)} onChange={() => onChange({ ...value, [key]: toggle(value[key], fact.id) })} type="checkbox" />

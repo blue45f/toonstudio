@@ -1,4 +1,5 @@
 import { FileText, Plus, Presentation, Save, Trash2 } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useRef, useState } from "react";
 
 import {
@@ -111,7 +112,7 @@ export function StudioPitchDocumentCard({
   const submit = (apply: boolean) => {
     const normalized = normalizedDocument(draft);
     if (!normalized) {
-      onNotice("이름이 비어 있는 캐릭터 행이 있어 기획서를 저장하지 않았습니다.");
+      onNotice(r3c04StatusText("studio.r3c04Status.production.pitchDocument.saveBlocked", "이름이 비어 있는 캐릭터 행이 있어 기획서를 저장하지 않았습니다."));
       return;
     }
     setDraft(normalized);
@@ -185,9 +186,7 @@ export function StudioPitchDocumentCard({
         <fieldset className="space-y-3">
           <legend className="text-xs font-semibold text-fg-2">주요 캐릭터</legend>
           {draft.characters.length === 0 ? (
-            <p className="rounded-xl border border-line bg-panel p-3 text-xs leading-relaxed text-fg-2">
-              아직 등록한 캐릭터가 없습니다. “캐릭터 추가”로 주인공부터 적어 보세요.
-            </p>
+            <p className="rounded-xl border border-line bg-panel p-3 text-xs leading-relaxed text-fg-2">{r3c04StatusText("studio.r3c04Status.production.pitchDocument.emptyCharacters", "아직 등록한 캐릭터가 없습니다. “캐릭터 추가”로 주인공부터 적어 보세요.")}</p>
           ) : null}
           {draft.characters.map((character, index) => (
             <article key={character.id} className="grid gap-2 rounded-xl border border-line bg-panel p-3">

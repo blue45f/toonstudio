@@ -1,4 +1,5 @@
 import { Grid2x2, LayoutGrid, List, Star } from "lucide-react";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 
 import type { StudioCatalogOrientation, StudioCatalogSort, StudioCatalogView } from "./studio-catalog-query";
 
@@ -49,6 +50,6 @@ export function StudioCatalogStorageNotice({ authority, onRetry }: {
 }) {
   return authority === "memory-only" ? <div role="status" className="flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 p-2 text-xs text-fg-2">
     <span className="min-w-0 flex-1">즐겨찾기·보기 설정은 아직 저장되지 않았습니다. 이번 화면에서만 유지됩니다.</span>
-    <button type="button" className={STUDIO_CATALOG_CONTROL} onClick={onRetry}>저장 다시 시도</button>
+    <button type="button" className={STUDIO_CATALOG_CONTROL} onClick={onRetry}>{creatorSub2StatusText("studio.creatorSub2.status.catalog.controls.storageRetry", "저장 다시 시도")}</button>
   </div> : null;
 }

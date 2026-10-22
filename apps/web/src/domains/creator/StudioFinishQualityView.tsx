@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -329,7 +330,7 @@ export function StudioFinishQualityView({
           <div>
             <CheckCircle2 size={22} aria-hidden className="mx-auto text-good" />
             <p className="mt-2 text-xs font-bold text-fg">
-              {result.issues.length === 0 ? "자동 검사에서 문제를 찾지 못했습니다" : "현재 필터에 맞는 문제가 없습니다"}
+              {result.issues.length === 0 ? panelStatusText("studio.panelStatus.finishQuality.noIssues", "자동 검사에서 문제를 찾지 못했습니다") : panelStatusText("studio.panelStatus.finishQuality.noFilteredIssues", "현재 필터에 맞는 문제가 없습니다")}
             </p>
           </div>
         </div>

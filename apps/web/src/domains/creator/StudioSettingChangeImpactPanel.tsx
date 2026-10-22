@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { AlertTriangle, BellRing, Check, Clapperboard, Flag, Image, XCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -192,8 +193,8 @@ export function StudioSettingChangeImpactPanel({
             <Check size={21} className="mx-auto text-good" aria-hidden />
             <p className="mt-2 text-xs font-semibold text-fg-2">
               {notices.length === 0
-                ? "아직 영향을 주는 설정 변경이 없어요"
-                : "미확인 영향이 없어요"}
+                ? r3c07StatusText("studio.panelStatus.r3c07.settingImpact.changesEmpty", "아직 영향을 주는 설정 변경이 없어요")
+                : r3c07StatusText("studio.panelStatus.r3c07.settingImpact.unconfirmedEmpty", "미확인 영향이 없어요")}
             </p>
             <p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">
               바이블의 사실·의상·외형·장소가 바뀌면 여기에 영향 목록이 쌓입니다.

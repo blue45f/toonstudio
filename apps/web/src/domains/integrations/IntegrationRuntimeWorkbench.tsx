@@ -15,6 +15,7 @@ import { getApiErrorMessage } from "@/platform/api";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { integrationPlatformClient } from "./integration-platform-client";
+import { integrationsStatusText } from "./integrations-status-i18n";
 import type {
   IntegrationRuntimeConnectorStatus,
   IntegrationRuntimeExecutionResponse,
@@ -30,12 +31,19 @@ import {
 const FIELD = "min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60";
 const BUTTON = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold transition hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45";
 
-const RECEIPT_LABELS: Readonly<Record<IntegrationRuntimeReceipt["state"], string>> = {
-  pending: "처리 중",
-  succeeded: "성공",
-  failed: "실패",
-  uncertain: "결과 불확실",
+const RECEIPT_LABEL_KEYS: Readonly<
+  Record<IntegrationRuntimeReceipt["state"], { key: string; ko: string }>
+> = {
+  pending: { key: "integrations.status.runtime.receiptPending", ko: "처리 중" },
+  succeeded: { key: "integrations.status.runtime.receiptSucceeded", ko: "성공" },
+  failed: { key: "integrations.status.runtime.receiptFailed", ko: "실패" },
+  uncertain: { key: "integrations.status.runtime.receiptUncertain", ko: "결과 불확실" },
 };
+
+function receiptLabel(state: IntegrationRuntimeReceipt["state"]): string {
+  const entry = RECEIPT_LABEL_KEYS[state];
+  return integrationsStatusText(entry.key, entry.ko);
+}
 
 function dateLabel(value: string): string {
   const date = new Date(value);
@@ -402,7 +410,7 @@ export function IntegrationRuntimeWorkbench() {
                           <p className="mt-1 text-xs text-fg-3">{receipt.operation}</p>
                         </div>
                         <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${receiptTone(receipt.state)}`}>
-                          {RECEIPT_LABELS[receipt.state]}
+                          {receiptLabel(receipt.state)}
                         </span>
                       </div>
                       <dl className="mt-3 grid gap-2 text-xs text-fg-2 sm:grid-cols-2">

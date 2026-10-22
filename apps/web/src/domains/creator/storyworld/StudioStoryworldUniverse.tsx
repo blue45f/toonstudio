@@ -16,6 +16,8 @@
  */
 import { Globe2, Link2, Link2Off, Plus, Save, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "./storyworld-status-i18n";
 
 import type { StoryworldProject } from "./studio-storyworld-causality";
 import {
@@ -77,6 +79,7 @@ function SharedElementCard({ registry, universe, element, project, scopeKey, lor
   readonly loreElements?: readonly StoryworldLocalElementOption[];
   readonly onCommit: (registry: StoryworldUniverseRegistry) => void;
 }) {
+  const t = useT();
   const [name, setName] = useState(element.name);
   const [description, setDescription] = useState(element.description ?? "");
   const [tags, setTags] = useState((element.tags ?? []).join(", "));
@@ -105,7 +108,7 @@ function SharedElementCard({ registry, universe, element, project, scopeKey, lor
 
       <div className="storyworld-universe-usage">
         <h4>작품별 사용 현황</h4>
-        {universe.members.length === 0 ? <p className="storyworld-settings-hint">멤버 작품이 없습니다.</p> : null}
+        {universe.members.length === 0 ? <p className="storyworld-settings-hint">{t("studio.storyworldStatus.universe.noMemberWorks", "멤버 작품이 없습니다.")}</p> : null}
         <ul>
           {matrix?.cells.map((cell) => (
             <li key={cell.scopeKey}>
@@ -225,6 +228,7 @@ export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
   /** 이 작품의 세계관 설정 항목 후보(세계관 설정 허브 소유). 없으면 설정 항목 지정만 비활성 안내가 된다. */
   readonly loreElements?: readonly StoryworldLocalElementOption[];
 }) {
+  const t = useT();
   const [registry, setRegistry] = useState<StoryworldUniverseRegistry | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -244,7 +248,7 @@ export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
     void loadStoryworldUniverseRegistry().then((loaded) => {
       if (active) setRegistry(loaded);
     }).catch((caught: unknown) => {
-      if (active) setLoadError(caught instanceof Error ? caught.message : "공유 세계관을 열 수 없습니다.");
+      if (active) setLoadError(caught instanceof Error ? caught.message : t("studio.storyworldStatus.universe.loadFailed", "공유 세계관을 열 수 없습니다."));
     });
     return () => { active = false; };
   }, [attempt]);
@@ -264,7 +268,7 @@ export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
     setRegistry(next);
     setSaveError(null);
     void saveStoryworldUniverseRegistry(next).catch(() => {
-      setSaveError("공유 세계관을 저장하지 못했습니다. 변경은 이 탭에만 남아 있습니다.");
+      setSaveError(t("studio.storyworldStatus.universe.saveFailed", "공유 세계관을 저장하지 못했습니다. 변경은 이 탭에만 남아 있습니다."));
     });
   };
 
@@ -272,7 +276,7 @@ export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
     return (
       <div className="storyworld-tab-stack">
         <section className="storyworld-panel">
-          <h2>공유 세계관을 열 수 없습니다</h2>
+          <h2>{t("studio.storyworldStatus.universe.loadFailedTitle", "공유 세계관을 열 수 없습니다")}</h2>
           <p role="alert">{loadError} 저장된 원본은 변경하지 않았습니다.</p>
           <button className="storyworld-button" onClick={() => setAttempt((value) => value + 1)} type="button">다시 열기</button>
         </section>
@@ -283,7 +287,7 @@ export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
     return (
       <div className="storyworld-tab-stack">
         <section className="storyworld-panel">
-          <p role="status">공유 세계관 레지스트리를 여는 중입니다.</p>
+          <p role="status">{t("studio.storyworldStatus.universe.loadingRegistry", "공유 세계관 레지스트리를 여는 중입니다.")}</p>
         </section>
       </div>
     );
@@ -338,7 +342,7 @@ export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
         </div>
 
         {universe === null ? (
-          <p className="storyworld-settings-hint">아직 공유 세계관이 없습니다. 위에서 만들면 이 작품을 멤버로 넣을 수 있습니다.</p>
+          <p className="storyworld-settings-hint">{t("studio.storyworldStatus.universe.emptyUniverses", "아직 공유 세계관이 없습니다. 위에서 만들면 이 작품을 멤버로 넣을 수 있습니다.")}</p>
         ) : (
           <>
             <div className="storyworld-universe-meta">
@@ -438,7 +442,7 @@ export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
 
             <div className="storyworld-universe-elements">
               {universe.sharedElements.length === 0 ? (
-                <p className="storyworld-settings-hint">아직 공유 요소가 없습니다. 공유할 캐릭터·장소·사실·설정 항목을 정의하고, 각 작품에서 자기 요소를 지정해 연결하세요.</p>
+                <p className="storyworld-settings-hint">{t("studio.storyworldStatus.universe.emptySharedElements", "아직 공유 요소가 없습니다. 공유할 캐릭터·장소·사실·설정 항목을 정의하고, 각 작품에서 자기 요소를 지정해 연결하세요.")}</p>
               ) : null}
               {universe.sharedElements.map((element) => (
                 <SharedElementCard

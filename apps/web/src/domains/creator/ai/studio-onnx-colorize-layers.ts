@@ -35,6 +35,7 @@
 
 import { writePsdUint8Array, type BlendMode, type Layer, type Psd } from "ag-psd";
 
+import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
 import {
   sampleStudioTag2pixModelColor,
   studioTag2pixHslToRgb,
@@ -119,12 +120,10 @@ function assertCanvasSize(width: number, height: number): void {
     !Number.isSafeInteger(width) || width < 1 ||
     !Number.isSafeInteger(height) || height < 1
   ) {
-    throw new RangeError("레이어 분리 캔버스 크기가 올바르지 않습니다.");
+    throw new RangeError(aiErrorText("studio.aiError.onnx.canvasSizeInvalid", "레이어 분리 캔버스 크기가 올바르지 않습니다."));
   }
   if (width * height > STUDIO_COLORIZE_LAYER_PSD_MAX_CANVAS_PIXELS) {
-    throw new RangeError(
-      `레이어 분리 내보내기는 ${STUDIO_COLORIZE_LAYER_PSD_MAX_CANVAS_PIXELS.toLocaleString("ko-KR")}px까지 지원합니다. 더 작은 이미지로 다시 채색해 주세요.`,
-    );
+    throw new RangeError(aiErrorText("studio.aiError.onnx.canvasTooLarge", { maxPixels: STUDIO_COLORIZE_LAYER_PSD_MAX_CANVAS_PIXELS.toLocaleString("ko-KR") }, "레이어 분리 내보내기는 {maxPixels}px까지 지원합니다. 더 작은 이미지로 다시 채색해 주세요."));
   }
 }
 
@@ -135,7 +134,7 @@ function assertRgbaShape(
   label: string,
 ): void {
   if (!(rgba instanceof Uint8ClampedArray) || rgba.length !== width * height * 4) {
-    throw new TypeError(`${label} 레이어의 크기가 ${width}×${height}와 맞지 않습니다.`);
+    throw new TypeError(aiErrorText("studio.aiError.onnx.layerSizeMismatch", { label, width, height }, "{label} 레이어의 크기가 {width}×{height}와 맞지 않습니다."));
   }
 }
 
@@ -154,7 +153,7 @@ export function splitStudioColorizeLayers(
   const { colorPlane, sourceRgba, sourceWidth: width, sourceHeight: height } = input;
   assertCanvasSize(width, height);
   if (sourceRgba.length !== width * height * 4) {
-    throw new RangeError("원본 RGBA 버퍼 길이가 이미지 크기와 일치하지 않습니다.");
+    throw new RangeError(aiErrorText("studio.aiError.onnx.sourceBufferSizeMismatch", "원본 RGBA 버퍼 길이가 이미지 크기와 일치하지 않습니다."));
   }
 
   const pixels = width * height;
@@ -215,7 +214,7 @@ export function splitStudioColorizeLayers(
     skipped: Object.freeze([
       Object.freeze({
         layer: "highlight",
-        reason: "하이라이트는 원본 선화에 정보가 없고 모델의 밝은 영역이 밑색 레이어에 이미 들어 있어 별도 레이어로 만들지 않았습니다.",
+        reason: aiErrorText("studio.aiError.onnx.highlightSkippedReason", "하이라이트는 원본 선화에 정보가 없고 모델의 밝은 영역이 밑색 레이어에 이미 들어 있어 별도 레이어로 만들지 않았습니다."),
       }),
     ]),
   });
@@ -353,10 +352,10 @@ export function buildStudioColorizeLayerPsd(
   const ordered = [...STUDIO_COLORIZE_LAYER_ORDER]
     .map((id) => input.layers.find((layer) => layer.id === id))
     .filter((layer): layer is StudioColorizeLayerRaster => !!layer);
-  if (ordered.length === 0) throw new Error("PSD로 저장할 레이어가 없습니다.");
+  if (ordered.length === 0) throw new Error(aiErrorText("studio.aiError.onnx.noLayersForPsd", "PSD로 저장할 레이어가 없습니다."));
   const seen = new Set<StudioColorizeLayerId>();
   for (const layer of ordered) {
-    if (seen.has(layer.id)) throw new TypeError("채색 레이어 ID가 중복되었습니다.");
+    if (seen.has(layer.id)) throw new TypeError(aiErrorText("studio.aiError.onnx.duplicateLayerId", "채색 레이어 ID가 중복되었습니다."));
     seen.add(layer.id);
     assertRgbaShape(layer.rgba, width, height, STUDIO_COLORIZE_LAYER_LABELS[layer.id]);
   }
@@ -398,10 +397,7 @@ export function buildStudioColorizeLayerPsd(
       compress: false,
     });
   } catch (error) {
-    throw new Error(
-      `PSD 파일을 만들지 못했습니다: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error },
-    );
+    throw new Error(aiErrorText("studio.aiError.onnx.psdCreationFailed", { message: error instanceof Error ? error.message : String(error) }, "PSD 파일을 만들지 못했습니다: {message}"), { cause: error });
   }
   if (
     bytes.byteLength < 6 ||
@@ -409,7 +405,7 @@ export function buildStudioColorizeLayerPsd(
     bytes[0] !== 0x38 || bytes[1] !== 0x42 || bytes[2] !== 0x50 || bytes[3] !== 0x53 ||
     bytes[4] !== 0 || bytes[5] !== 1
   ) {
-    throw new RangeError("채색 레이어 PSD 결과가 signature, version 또는 출력 예산을 벗어났습니다.");
+    throw new RangeError(aiErrorText("studio.aiError.onnx.psdResultOutOfBudget", "채색 레이어 PSD 결과가 signature, version 또는 출력 예산을 벗어났습니다."));
   }
   const blobBuffer = bytes.buffer instanceof ArrayBuffer &&
     bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength

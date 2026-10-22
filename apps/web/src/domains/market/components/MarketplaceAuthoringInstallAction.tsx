@@ -1,3 +1,4 @@
+import { marketStatusText } from "../market-status-i18n";
 import { useMemo, useState, type ReactElement } from "react";
 
 import {
@@ -170,13 +171,13 @@ function findManifestUrl(record: Record<string, unknown>): string | null {
 
 async function loadRemoteEnvelope(url: string): Promise<Record<string, unknown> | null> {
   const response = await fetch(url, { credentials: "same-origin" });
-  if (!response.ok) throw new Error(`제작 manifest를 불러오지 못했습니다 (${response.status}).`);
+  if (!response.ok) throw new Error(marketStatusText("market.status.authoringInstall.manifestLoadFailed", { status: response.status }, "제작 manifest를 불러오지 못했습니다 ({status})."));
   const size = Number(response.headers.get("content-length") ?? 0);
-  if (size > MAX_REMOTE_MANIFEST_BYTES) throw new Error("제작 manifest가 허용 크기를 초과했습니다.");
+  if (size > MAX_REMOTE_MANIFEST_BYTES) throw new Error(marketStatusText("market.status.authoringInstall.manifestTooLarge", "제작 manifest가 허용 크기를 초과했습니다."));
   const contentType = response.headers.get("content-type") ?? "";
   if (!/(json|text)/iu.test(contentType) && !/\.json(?:$|\?)/iu.test(url)) return null;
   const body = await response.text();
-  if (body.length > MAX_REMOTE_MANIFEST_BYTES) throw new Error("제작 manifest가 허용 크기를 초과했습니다.");
+  if (body.length > MAX_REMOTE_MANIFEST_BYTES) throw new Error(marketStatusText("market.status.authoringInstall.manifestTooLarge", "제작 manifest가 허용 크기를 초과했습니다."));
   const parsed: unknown = JSON.parse(body);
   return findAuthoringEnvelope(parsed);
 }
@@ -224,7 +225,7 @@ export function MarketplaceAuthoringInstallAction({
       target.searchParams.set("returnTo", `${window.location.pathname}${window.location.search}`);
       window.location.assign(`${target.pathname}${target.search}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Studio 업데이트 초안을 만들지 못했습니다.");
+      setError(caught instanceof Error ? caught.message : marketStatusText("market.status.authoringInstall.draftCreateFailed", "Studio 업데이트 초안을 만들지 못했습니다."));
       setBusy(false);
     }
   };
@@ -249,7 +250,7 @@ export function MarketplaceAuthoringInstallAction({
           onClick={() => void open()}
           className="min-h-11 shrink-0 rounded-lg bg-accent px-4 text-xs font-bold text-on-accent disabled:cursor-wait disabled:opacity-60"
         >
-          {busy ? "준비 중" : targetLabel}
+          {busy ? marketStatusText("market.status.authoringInstall.preparing", "준비 중") : targetLabel}
         </button>
       </div>
       {error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}

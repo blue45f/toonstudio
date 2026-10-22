@@ -8,6 +8,14 @@ import {
   type StudioStrokeProposalTransaction,
 } from "./studio-stroke-proposal";
 import { studioDeterministicContentId } from "../studio-deterministic-serialization";
+import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
+
+/**
+ * 브리지 자체가 코드화해 던진 오류 표식 (T5). 검증 모듈(studio-stroke-proposal)의
+ * 영문 검증 문구 같은 타자 오류는 catch에서 일반 문구로 뭉개고, 이 표식이 있는
+ * 오류만 지역화된 메시지를 그대로 표시한다.
+ */
+class CodedProposalError extends Error {}
 
 interface StudioStrokeProposalBridgeSnapshot {
   readonly connected: boolean;
@@ -66,7 +74,12 @@ export async function requestStudioStrokeProposal(): Promise<void> {
     emit({
       ...snapshot,
       busy: false,
-      error: error instanceof Error ? error.message : String(error),
+      // 검증 실패의 세부 사유(영문 원문 포함)는 사용자 행동으로 이어지지 않으므로
+      // 일반 문구로 차단한다. 브리지가 코드화한 오류만 메시지를 유지한다 (T5).
+      error:
+        error instanceof CodedProposalError
+          ? error.message
+          : aiErrorText("studio.aiError.bridge.proposalFailed", "획 제안을 만들지 못했어요. 잠시 뒤 다시 시도해 주세요."),
     });
   }
 }
@@ -167,7 +180,7 @@ function localProposal(
   documentGeneration: number,
   strokes: readonly StudioCommittedStrokeContext[],
 ): StudioStrokeProposalResponse {
-  if (strokes.length < 1) throw new Error("최근 확정 획이 없어 제안할 수 없습니다.");
+  if (strokes.length < 1) throw new CodedProposalError(aiErrorText("studio.aiError.bridge.noRecentStroke", "최근 확정 획이 없어 제안할 수 없습니다."));
   const source = strokes.slice(-Math.min(6, strokes.length));
   const sourceHash = studioDeterministicContentId(source);
   return validateStudioStrokeProposalResponse({
@@ -274,7 +287,7 @@ export function useStudioAiCanvasBridge<TElement>(input: {
         transaction.addedStrokes.forEach((stroke, index) => {
           const sourceId = stroke.id.split(":")[1];
           const source = (sourceId && sourceById.get(sourceId)) ?? elements.at(-1);
-          if (!source) throw new Error("제안 획의 원본 요소를 찾을 수 없습니다.");
+          if (!source) throw new Error(aiErrorText("studio.aiError.bridge.sourceElementMissing", "제안 획의 원본 요소를 찾을 수 없습니다."));
           appendElement(cloneElementForProposal(source, transaction, index));
         });
       },

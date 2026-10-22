@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import {
   WEBTOON_SHOT_ANGLE_PRESETS,
   createShotBookmark,
@@ -115,6 +118,7 @@ export function StudioBg3dCinematicDirectorPanel({
   captureAspectRatio = null,
   onCaptureAspectRatioChange,
 }: StudioBg3dCinematicDirectorPanelProps): React.JSX.Element {
+  const t = useT();
   const [selectedAngle, setSelectedAngle] = useState<WebtoonShotAngleKind>("eye-level-dialogue");
   const [selectedShake, setSelectedShake] = useState<CameraShakePreset>("none");
   const [shakeIntensity, setShakeIntensity] = useState(1.0);
@@ -560,7 +564,7 @@ export function StudioBg3dCinematicDirectorPanel({
           className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-cool/45 bg-cool/10 text-[0.68rem] font-bold text-cool hover:bg-cool/15 disabled:opacity-45"
         >
           <BrainCircuit className={`size-3.5 ${aiReferenceBusy ? "animate-pulse motion-reduce:animate-none" : ""}`} />
-          {aiReferenceBusy ? "현재 컷 참조 준비 중" : "현재 컷을 AI 구도·포즈 참조로 보내기"}
+          {aiReferenceBusy ? t("studio.bg3dPanelStatus.cinematicDirector.preparingReference", "현재 컷 참조 준비 중") : "현재 컷을 AI 구도·포즈 참조로 보내기"}
         </button>
       ) : null}
 

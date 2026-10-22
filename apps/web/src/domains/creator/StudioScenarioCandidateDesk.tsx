@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Check, Images, ShieldCheck, Sparkles, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -430,7 +431,7 @@ export function StudioScenarioCandidateDesk({
                 </div>
               ) : (
                 <p className="mt-2 rounded-md border border-dashed border-line px-2 py-2 text-[0.65rem] text-fg-3">
-                  아직 후보가 없습니다. 이 컷을 선택해 생성하거나 기존 단일 생성 버튼을 사용하세요.
+                  {r3c07StatusText("studio.panelStatus.r3c07.scenarioDesk.candidatesEmpty", "아직 후보가 없습니다. 이 컷을 선택해 생성하거나 기존 단일 생성 버튼을 사용하세요.")}
                 </p>
               )}
 

@@ -17,6 +17,9 @@ import {
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 
 // 프리셋 칩 — StudioLevelsPanel/StudioCurvePanel과 동일 idiom(활성 시 accent 보더 + raised 배경).
@@ -33,7 +36,6 @@ const RANGE_CLASS = "w-24 accent-accent cursor-pointer disabled:cursor-not-allow
 const READOUT_CLASS = "w-8 text-right text-[10px] tabular-nums text-fg-3";
 
 // 모양이 "없음"이면 휘어짐이 의미가 없어 잠근다 — 잠긴 이유는 컨트롤이 직접 말해야 한다.
-const CURVE_LOCKED_REASON = "모양이 \"없음\"이면 휘어짐을 조절할 수 없습니다. 다른 모양을 먼저 고르세요.";
 
 export function StudioTextPathPanel({
   value,
@@ -46,6 +48,7 @@ export function StudioTextPathPanel({
   onApplyPreset: (v: TextPathConfig) => void;
   onReset: () => void;
 }): React.ReactElement {
+  const t = useT();
   // 직선(휨 없음)이면 리셋 비활성 + "직선" 프리셋 칩을 활성으로 표시.
   const flat = isFlatTextPath(value);
   // none 모양은 휘어짐 자체가 의미 없으므로 curve 슬라이더를 잠근다.
@@ -125,7 +128,7 @@ export function StudioTextPathPanel({
             disabled={curveDisabled}
             // 잠긴 이유를 슬라이더 자신이 말한다 — 회색 상자는 사유 없이 두지 않는다
             // (밀도 감사 `disabled-without-reason`).
-            title={curveDisabled ? CURVE_LOCKED_REASON : undefined}
+            title={curveDisabled ? t("studio.brushCanvasStatus.lettering.textPathCurveLockedReason", "모양이 \"없음\"이면 휘어짐을 조절할 수 없습니다. 다른 모양을 먼저 고르세요.") : undefined}
             onChange={(e) => onPatch({ curve: Number(e.target.value) })}
             data-inspector-control-id="typography.path.curve"
             data-inspector-priority="advanced"

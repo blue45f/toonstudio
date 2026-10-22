@@ -5,10 +5,15 @@ import { DeviceTest } from "./CreatorMeetingDeviceTest";
 import { meetingIsTerminal } from "./creator-meeting-client";
 import { useCreatorMeetingRoom } from "./use-creator-meeting-room";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "../collaboration-account-status-i18n";
+
 export function MeetingRoom({ id, actor }: { id: string; actor: string }) {
   return <RoomContent key={`${id}:${actor}`} id={id} actor={actor} />;
 }
 function RoomContent({ id, actor }: { id: string; actor: string }) {
+  const t = useT();
   const session = useCreatorMeetingRoom(id, actor);
   const { room, messages, busy, error, phase } = session;
   const [text, setText] = useState("");
@@ -27,7 +32,7 @@ function RoomContent({ id, actor }: { id: string; actor: string }) {
     {session.notice && <CollabNotice>{session.notice}</CollabNotice>}
     {phase === "loading" && <p role="status">방 상태를 확인하고 있어요.</p>}
     {phase === "paused" && <p role="status">화면이 숨겨졌거나 연결이 끊겨 조회를 멈췄어요. 돌아오면 최신 방 상태를 다시 확인합니다.</p>}
-    <button type="button" className={collabButton} disabled={busy || session.checking || phase === "paused"} onClick={session.refresh}>{session.checking ? "상태 확인 중…" : "방 상태 다시 확인"}</button>
+    <button type="button" className={collabButton} disabled={busy || session.checking || phase === "paused"} onClick={session.refresh}>{session.checking ? t("collaboration.meetingRoom.checkingStatus", "상태 확인 중…") : "방 상태 다시 확인"}</button>
     {room && <>
       <h3 className="text-xl font-bold">{room.title}</h3>
       <p role="status">내 상태: {labels[room.myStatus]} · {room.status === "ended" ? "종료된 회의" : meetingIsTerminal(room) ? "자동 조회 중지" : "화면이 열려 있는 동안 5초 간격으로 확인"}</p>
@@ -57,9 +62,9 @@ function RoomContent({ id, actor }: { id: string; actor: string }) {
               <option value="lobby">{host ? "대기실 전체 공지 (초대·대기·입장 참여자 모두)" : "호스트에게 보내기 (본인·호스트만 표시)"}</option><option value="admitted">입장 승인된 참여자</option>
             </select></CollabField>}
             <CollabField label="메시지"><textarea className={collabInput} required maxLength={2000} value={text} onChange={(event) => setText(event.target.value)} /></CollabField>
-            <button type="submit" className={collabPrimary} disabled={busy || !text.trim()}>{busy ? "전송 확인 중…" : "텍스트 보내기"}</button>
+            <button type="submit" className={collabPrimary} disabled={busy || !text.trim()}>{busy ? t("collaboration.meetingRoom.sendingCheck", "전송 확인 중…") : "텍스트 보내기"}</button>
           </fieldset>
-          <p className="text-xs text-fg-3">전송 실패 시 자동 재전송하지 않습니다. 작성 내용은 이 화면 메모리에만 유지하며 방·계정이 바뀌면 지웁니다.</p>
+          <p className="text-xs text-fg-3">{t("collaboration.meetingRoom.sendFailureNote", "전송 실패 시 자동 재전송하지 않습니다. 작성 내용은 이 화면 메모리에만 유지하며 방·계정이 바뀌면 지웁니다.")}</p>
         </form>}
       </>}
     </>}

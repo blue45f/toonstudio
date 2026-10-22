@@ -13,6 +13,7 @@ import { Camera, Ellipsis, FileImage, ImageDown, Images, Layers, Paintbrush, Vid
 import { useEffect, useId, useRef, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
+import "../studio-r3c04-status-i18n";
 import { roundExportSize } from "../vrm/studio-vrm-poser-helpers";
 import { encodeStudioVrmCapturePngBlob, captureStudioVrmRgbaCooperatively } from "../vrm/studio-vrm-raster-capture";
 
@@ -208,19 +209,19 @@ export function CharacterShaperOutputDock({
   const runExport = (kind: ExportKind) => {
     if (exportBlocked || exportRef.current !== null) return;
     const capture = readCapture();
-    if (!capture) { fail("캡처할 3D 장면이 아직 준비되지 않았습니다."); return; }
-    if (!h.vrm) { fail("내보낼 캐릭터가 없습니다."); return; }
+    if (!capture) { fail(t("studio.r3c04Status.shaper.outputDock.captureNotReady", "캡처할 3D 장면이 아직 준비되지 않았습니다.")); return; }
+    if (!h.vrm) { fail(t("studio.r3c04Status.shaper.outputDock.noCharacter", "내보낼 캐릭터가 없습니다.")); return; }
     let session: CharacterExportSession;
     try {
       session = acquireCharacterExportSession(h, () => hostRef.current);
     } catch (error) {
-      fail(error instanceof Error ? error.message : "캡처를 시작하지 못했습니다.");
+      fail(error instanceof Error ? error.message : t("studio.r3c04Status.shaper.outputDock.captureStartFailed", "캡처를 시작하지 못했습니다."));
       return;
     }
     exportRef.current = session;
     setRunning(kind);
     setNotice(null);
-    setProgress(kind === "png" ? "PNG로 굽는 중" : kind === "psd" ? "레이어를 나누는 중 · 밑색 · 음영 · 하이라이트 · 주선" : "다각도 설정화 준비 중");
+    setProgress(kind === "png" ? t("studio.r3c04Status.shaper.outputDock.progressPng", "PNG로 굽는 중") : kind === "psd" ? t("studio.r3c04Status.shaper.outputDock.progressPsd", "레이어를 나누는 중 · 밑색 · 음영 · 하이라이트 · 주선") : t("studio.r3c04Status.shaper.outputDock.progressSheet", "다각도 설정화 준비 중"));
     void (async () => {
       let releaseHelpers: (() => void) | undefined;
       try {
@@ -230,7 +231,7 @@ export function CharacterShaperOutputDock({
         // Finish the frozen raw-bone pose and cloth solve before taking the first layer.
         h.vrm.update?.(0);
         for (const sync of h.wardrobeXpbdCaptureSyncRef?.current?.values() ?? []) {
-          if (!sync().ok) throw new Error("의상 천 물리를 현재 포즈에 맞추지 못했습니다. 다시 시도해 주세요.");
+          if (!sync().ok) throw new Error(t("studio.r3c04Status.shaper.outputDock.clothSyncFailed", "의상 천 물리를 현재 포즈에 맞추지 못했습니다. 다시 시도해 주세요."));
         }
         const sourceCamera = capture.camera as ThreeCamera;
         const gl = capture.gl as { domElement: HTMLCanvasElement };
@@ -314,7 +315,7 @@ export function CharacterShaperOutputDock({
         session.assertCurrent();
         if (!aliveRef.current) return;
         if (!downloadBlob(blob, `${safeFileStem(modelName)}-${timestamp()}${kind.startsWith("sheet") ? `-${kind}` : ""}.${kind === "psd" ? "psd" : "png"}`)) {
-          fail("이 브라우저에서는 파일을 내려받을 수 없습니다.");
+          fail(t("studio.r3c04Status.shaper.outputDock.downloadUnavailable", "이 브라우저에서는 파일을 내려받을 수 없습니다."));
           return;
         }
         setNotice(receipt);
@@ -322,7 +323,7 @@ export function CharacterShaperOutputDock({
         if (session.signal.aborted) {
           if (aliveRef.current) setNotice({ tone: "info", text: "내보내기를 취소했습니다." });
         } else {
-          fail(kind === "png" ? "PNG를 저장하지 못했습니다." : kind === "psd" ? "PSD를 내보내지 못했습니다." : "설정화를 내보내지 못했습니다.",
+          fail(kind === "png" ? t("studio.r3c04Status.shaper.outputDock.pngSaveFailed", "PNG를 저장하지 못했습니다.") : kind === "psd" ? t("studio.r3c04Status.shaper.outputDock.psdExportFailed", "PSD를 내보내지 못했습니다.") : t("studio.r3c04Status.shaper.outputDock.sheetExportFailed", "설정화를 내보내지 못했습니다."),
             error instanceof Error ? error.message : undefined);
         }
       } finally {

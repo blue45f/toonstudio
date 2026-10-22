@@ -6,6 +6,9 @@ import { StudioReferenceRebuildPresets } from "./StudioReferenceRebuildPresets";
 import { getStudioBg3dBundledProvenance } from "./studio-bg3d-asset-rights-catalog";
 import { useStudioBg3dAssetRights } from "./useStudioBg3dAssetRights";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 type Props = ComponentProps<typeof ExistingAssetLibraryPanel>;
 
 /**
@@ -14,6 +17,7 @@ type Props = ComponentProps<typeof ExistingAssetLibraryPanel>;
  * 아니라 이 합성 계층이 맡고 패널에는 읽은 결과만 속성으로 넘긴다.
  */
 export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
+  const t = useT();
   const scopeRef = useRef<HTMLDivElement>(null);
   const [isBuilding, setIsBuilding] = useState(false);
   const rights = useStudioBg3dAssetRights(props.entries, getStudioBg3dBundledProvenance);
@@ -23,10 +27,10 @@ export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
     const importButton = input?.nextElementSibling;
     if (!input || props.isUploading || props.isRestoringScene || props.deletingModelId !== null
       || !(importButton instanceof HTMLButtonElement) || importButton.disabled) {
-      throw new Error("현재 가져오기를 시작할 수 없습니다. 진행 중인 작업과 이용 권리 입력을 확인해 주세요.");
+      throw new Error(t("studio.bg3dPanelStatus.assetLibraryWithPresets.importStartBlocked", "현재 가져오기를 시작할 수 없습니다. 진행 중인 작업과 이용 권리 입력을 확인해 주세요."));
     }
     if (typeof DataTransfer !== "function") {
-      throw new Error("이 브라우저는 직접 전달을 지원하지 않습니다. 검토실에서 GLB를 저장한 뒤 가져와 주세요.");
+      throw new Error(t("studio.bg3dPanelStatus.assetLibraryWithPresets.directTransferUnsupported", "이 브라우저는 직접 전달을 지원하지 않습니다. 검토실에서 GLB를 저장한 뒤 가져와 주세요."));
     }
     const transfer = new DataTransfer();
     transfer.items.add(file);

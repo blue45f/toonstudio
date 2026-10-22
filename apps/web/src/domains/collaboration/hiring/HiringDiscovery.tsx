@@ -7,11 +7,15 @@ import { hiringMatchingClient } from "./hiring-matching-client";
 import type { HiringCandidate, HiringCandidatePage, HiringSlot } from "../../../../../../packages/contracts/src/creator-hiring";
 
 import { getApiErrorMessage } from "@/platform/api";
+import { useT } from "@/shared/lib/i18n";
+
+import "../collaboration-account-status-i18n";
 
 export function HiringDiscovery({ slot, postVersion = 1 }: { slot: HiringSlot; postVersion?: number }) {
   return <CandidateDiscovery key={`${slot.postId}:${slot.id}:${slot.revision}:${slot.state}:${postVersion}`} slot={slot} />;
 }
 function CandidateDiscovery({ slot }: { slot: HiringSlot }) {
+  const t = useT();
   const [page, setPage] = useState<HiringCandidatePage | null>(null);
   const [trail, setTrail] = useState<(string | undefined)[]>([undefined]);
   const [busy, setBusy] = useState<"search" | "offer" | null>(null);
@@ -51,7 +55,7 @@ function CandidateDiscovery({ slot }: { slot: HiringSlot }) {
         || new Set(next.items.map((candidate) => candidate.userId)).size !== next.items.length) throw new Error("Invalid candidate page");
       offset.current = Date.parse(next.observedAt) - Date.now(); setNow(Date.parse(next.observedAt)); setPage(next);
     } catch (cause) {
-      const message = await getApiErrorMessage(cause, "후보를 찾지 못했어요. 모집 조건을 확인한 뒤 다시 조회해 주세요.");
+      const message = await getApiErrorMessage(cause, t("collaboration.hiringDiscovery.searchFailedRetry", "후보를 찾지 못했어요. 모집 조건을 확인한 뒤 다시 조회해 주세요."));
       if (search.current === controller && !controller.signal.aborted) setError(message);
     } finally {
       if (search.current === controller) { search.current = null; setBusy(null); }
@@ -70,9 +74,9 @@ function CandidateDiscovery({ slot }: { slot: HiringSlot }) {
       await hiringMatchingClient.send(slot.postId, slot.id, { candidateId: candidate.userId, expectedRevision: slot.revision, ...request }, controller.signal);
       if (sending.current !== controller || controller.signal.aborted) return;
       requests.current.delete(candidate.userId); setSent((value) => new Set([...value, candidate.userId]));
-      setNote(`제안 저장을 확인했어요. 답변 만료는 ${new Date(request.expiresAt).toLocaleString("ko-KR")}입니다. 아직 열람·수락된 것은 아닙니다.`);
+      setNote(t("collaboration.hiringDiscovery.offerSavedExpires", { date: new Date(request.expiresAt).toLocaleString("ko-KR") }, "제안 저장을 확인했어요. 답변 만료는 {date}입니다. 아직 열람·수락된 것은 아닙니다."));
     } catch (cause) {
-      const message = await getApiErrorMessage(cause, "제안 결과를 확인하지 못했어요. 같은 요청으로 다시 확인할 수 있어요.");
+      const message = await getApiErrorMessage(cause, t("collaboration.hiringDiscovery.offerResultUnconfirmed", "제안 결과를 확인하지 못했어요. 같은 요청으로 다시 확인할 수 있어요."));
       if (sending.current === controller && !controller.signal.aborted) setError(message);
     } finally { if (sending.current === controller) { sending.current = null; setBusy(null); } }
   }
@@ -83,17 +87,17 @@ function CandidateDiscovery({ slot }: { slot: HiringSlot }) {
     <div className="flex flex-wrap gap-2"><button type="button" className={collabButton} disabled={busy !== null || !open} onClick={() => { void discover([undefined]); }}>조건에 맞는 후보 찾기</button>
       {busy === "search" && <button type="button" className={collabButton} onClick={cancelSearch}>후보 조회 취소</button>}
       {error && <button type="button" className={collabButton} disabled={busy !== null || !open} onClick={() => { void discover(trail); }}>현재 페이지 다시 조회</button>}</div>
-    {!open && <CollabNotice>모집이 중단되었어요. 다시 열린 모집 자리에서 후보를 찾아 주세요.</CollabNotice>}
+    {!open && <CollabNotice>{t("collaboration.hiringDiscovery.slotClosedNotice", "모집이 중단되었어요. 다시 열린 모집 자리에서 후보를 찾아 주세요.")}</CollabNotice>}
     {busy && <p role="status">{busy === "search" ? "최신 조건과 작업 여력을 확인하고 있어요." : "제안 저장 결과를 확인하고 있어요."}</p>}
     {error && <CollabNotice error>{error}</CollabNotice>}{note && <CollabNotice>{note}</CollabNotice>}
     {page && <p role="status" className="text-sm">{trail.length}페이지 · 이 페이지 {page.items.length}명 · 조건 버전 {page.termsRevision}</p>}
-    {page?.items.length === 0 && <p>{trail.length === 1 ? "조회 시점에 조건과 작업 여력이 맞는 공개 후보가 없어요." : "이 위치 이후에 현재 조건과 작업 여력이 맞는 후보가 없어요. 이전 페이지 또는 처음부터 다시 확인해 주세요."}</p>}
+    {page?.items.length === 0 && <p>{trail.length === 1 ? t("collaboration.hiringDiscovery.emptyFirst", "조회 시점에 조건과 작업 여력이 맞는 공개 후보가 없어요.") : t("collaboration.hiringDiscovery.emptyAfter", "이 위치 이후에 현재 조건과 작업 여력이 맞는 후보가 없어요. 이전 페이지 또는 처음부터 다시 확인해 주세요.")}</p>}
     {page?.items.map((candidate) => {
       const expired = Date.parse(candidate.expiresAt) <= now;
       return <article key={candidate.userId} className="space-y-2 rounded border border-line p-3">
         <h5 className="font-semibold">{candidate.displayName}</h5><p className="text-sm">{candidate.reasons.join(" · ")}</p>
         <p className="text-xs">직접 확인 {new Date(candidate.confirmedAt).toLocaleTimeString("ko-KR")} · 만료 {new Date(candidate.expiresAt).toLocaleTimeString("ko-KR")}</p>
-        {expired && <p className="text-xs">작업 가능 확인이 만료되었어요. 후보를 다시 조회해 주세요.</p>}
+        {expired && <p className="text-xs">{t("collaboration.hiringDiscovery.candidateExpired", "작업 가능 확인이 만료되었어요. 후보를 다시 조회해 주세요.")}</p>}
         <button type="button" className={collabButton} disabled={busy !== null || expired || sent.has(candidate.userId) || !open} onClick={() => { void send(candidate, Date.now()); }}>{sent.has(candidate.userId) ? "제안 저장 완료" : "이 조건으로 30분 유효 제안 보내기"}</button>
       </article>;
     })}

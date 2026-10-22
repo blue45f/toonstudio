@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { Heart, MessageCircle, Palette, PenLine } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -44,7 +45,7 @@ export function TitleFanWorks({ titleId }: { titleId: string }) {
           className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line bg-card/30 px-6 py-10 text-center transition-colors hover:border-accent/50"
         >
           <Palette size={24} className="text-accent" />
-          <p className="text-sm font-medium text-fg">아직 팬 창작물이 없어요.</p>
+          <p className="text-sm font-medium text-fg">{restStatusText("rest.status.fanWorks.empty", "아직 팬 창작물이 없어요.")}</p>
           <p className="text-xs text-fg-3">스튜디오로 이 웹툰의 첫 팬 창작물을 만들어보세요.</p>
         </Link>
       ) : (

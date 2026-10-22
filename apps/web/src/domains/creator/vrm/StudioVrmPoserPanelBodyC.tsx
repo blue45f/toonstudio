@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import * as THREE from "three";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-vrm-panel-status-i18n";
+
 import {
   COSTUME_SLOT_LABELS,
   COSTUME_PALETTES,
@@ -66,6 +69,7 @@ import type { LightingParams, VrmMaterialFx  } from "./studio-vrm-poser-utils";
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 
 export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
+  const t = useT();
   const {
     error,
     vrm,
@@ -531,7 +535,7 @@ export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
                 </summary>
                 {costumeMeshes.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-line/70 bg-card/40 px-2.5 py-2 text-[0.68rem] text-fg-3">
-                    {vrm ? "이 모델은 의상 분리 정보가 없어요." : "모델을 먼저 불러오세요."}
+                    {vrm ? t("studio.vrmPanelStatus.poserBody.noCostumeSeparation", "이 모델은 의상 분리 정보가 없어요.") : t("studio.vrmPanelStatus.poserBody.loadModelFirst", "모델을 먼저 불러오세요.")}
                   </p>
                 ) : (
                   <>
@@ -638,7 +642,7 @@ export function StudioVrmPoserPanelBodyC({ h }: { h: StudioVrmPoserHost }) {
                 </p>
                 {!hasMToonMaterial ? (
                   <p className="rounded-lg border border-dashed border-line/70 bg-card/40 px-2.5 py-2 text-[0.68rem] text-fg-3">
-                    {vrm ? "이 모델은 MToon 재질이 아니라 재질 효과를 지원하지 않아요." : "모델을 먼저 불러오세요."}
+                    {vrm ? t("studio.vrmPanelStatus.poserBody.noMToonSupport", "이 모델은 MToon 재질이 아니라 재질 효과를 지원하지 않아요.") : t("studio.vrmPanelStatus.poserBody.loadModelFirst", "모델을 먼저 불러오세요.")}
                   </p>
                 ) : (
                   <div className="space-y-3">

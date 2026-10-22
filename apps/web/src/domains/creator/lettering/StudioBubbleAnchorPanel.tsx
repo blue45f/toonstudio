@@ -24,6 +24,9 @@ import {
 } from "lucide-react";
 
 import { StudioToggleChip } from "../studio-panel-ui";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import type { ReactElement } from "react";
 
@@ -50,6 +53,7 @@ export function StudioBubbleAnchorPanel({
   onTogglePick,
   onDetach,
 }: StudioBubbleAnchorPanelProps): ReactElement {
+  const t = useT();
   const attached = !!anchorId || !!anchorPoint;
 
   return (
@@ -96,7 +100,7 @@ export function StudioBubbleAnchorPanel({
         ) : (
           <p className="flex items-start gap-2 text-xs leading-relaxed text-warn" role="status" aria-live="polite" aria-atomic="true">
             <TriangleAlert size={14} className="mt-0.5 shrink-0" aria-hidden />
-            <span>부착 대상을 찾을 수 없어요(삭제됨). 부착이 자동으로 해제됩니다.</span>
+            <span>{t("studio.brushCanvasStatus.lettering.anchorTargetMissing", "부착 대상을 찾을 수 없어요(삭제됨). 부착이 자동으로 해제됩니다.")}</span>
           </p>
         )
       ) : anchorPoint ? (

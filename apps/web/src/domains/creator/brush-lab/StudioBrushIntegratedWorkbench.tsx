@@ -4,6 +4,9 @@ import type { BrushStudioV6Program } from "./brush-studio-v6-engine";
 import { LoaderCircle } from "lucide-react";
 import { useLayoutEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import { MarketplaceBrushStudioBridge } from "../MarketplaceBrushStudioBridge";
 import { StudioBrushV6Workbench } from "./StudioBrushV6Workbench";
@@ -16,6 +19,7 @@ const BRUSH_V6_PROGRAM_EVENT = "toonspectrum:brush-v6-program";
 
 /** Connects product brushes, V6 editing and marketplace publishing on one Brush Editor route. */
 export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: string }) {
+  const t = useT();
   const location = useLocation();
   const [ready, setReady] = useState(false);
   const [generation, setGeneration] = useState(0);
@@ -60,22 +64,22 @@ export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: stri
                 setInitialProgram(loaded.program); setSnapshot(loaded.program);
                 setNotice(`‘${loaded.program.name}’의 실제 재료 설정을 열었습니다. 원본은 보존하고 저장 시 새 브러시로 추가합니다.${loaded.persistent ? "" : " 현재 라이브러리는 세션 전용입니다."}`);
               } else {
-                setNotice("불러오는 동안 편집 내용이 변경되어 가장 최근의 저장된 편집 내용을 유지했습니다.");
+                setNotice(t("studio.brushCanvasStatus.brushLab.changedDuringLoad", "불러오는 동안 편집 내용이 변경되어 가장 최근의 저장된 편집 내용을 유지했습니다."));
               }
               setGeneration((current) => current + 1);
             } catch {
-              setLoadError("편집 저장소를 확인하지 못했습니다. 원본은 변경하지 않았습니다.");
+              setLoadError(t("studio.brushCanvasStatus.brushLab.storageCheckFailed", "편집 저장소를 확인하지 못했습니다. 원본은 변경하지 않았습니다."));
             }
             setReady(true);
           }, (error: unknown) => {
             if (cancelled) return;
-            setLoadError(error instanceof Error ? error.message : "브러시 원본을 읽지 못했습니다.");
+            setLoadError(error instanceof Error ? error.message : t("studio.brushCanvasStatus.brushLab.originalReadFailed", "브러시 원본을 읽지 못했습니다."));
             setReady(true);
           });
           return () => { cancelled = true; window.removeEventListener(BRUSH_V6_PROGRAM_EVENT, capture); };
         }
       } catch {
-        setLoadError("저장된 편집 내용을 읽지 못했습니다. 기존 설정을 덮어쓰지 않았습니다.");
+        setLoadError(t("studio.brushCanvasStatus.brushLab.savedReadFailed", "저장된 편집 내용을 읽지 못했습니다. 기존 설정을 덮어쓰지 않았습니다."));
       }
     }
     setReady(true);
@@ -86,7 +90,7 @@ export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: stri
     return (
       <div className="flex min-h-32 items-center justify-center rounded-2xl border border-line bg-card/55 text-sm text-fg-3" role="status">
         <LoaderCircle size={16} className="mr-2 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-        브러시 프로그램 연결 중
+        {t("studio.brushCanvasStatus.brushLab.connecting", "브러시 프로그램 연결 중")}
       </div>
     );
   }

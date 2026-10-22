@@ -17,6 +17,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { requestStudioAiComicComposerOpen } from "../../ai/studio-ai-comic-composer-intent";
 import { StudioToonAutomationWorkspace } from "../../ai/StudioToonAutomationWorkspace";
 import { createStudioAiComicDirectorApiClient } from "../../ai/studio-ai-comic-director-api";
+import { resolvePersistedAiErrorText } from "../../ai/studio-ai-error-i18n-t4t5";
 import { createStudioToonProductionHandoff } from "../../ai/studio-toon-production-board";
 import type { StudioScenarioImageGenerationRequest } from "../../ai/studio-scenario-candidate-workflow";
 import {
@@ -34,6 +35,7 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../../studi
 import type { StudioCompositionRouteResolution } from "../studio-route-manifest";
 
 import { useT } from "@/shared/lib/i18n";
+import { creatorSub2StatusText } from "../../studio-creator-sub2-status-i18n-r3c13b";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 import { cn } from "@/shared/lib/utils";
 
@@ -43,7 +45,7 @@ interface StudioAiComicDirectorRouteProps {
 
 function uid(): string {
   return createSecureRandomUuid(
-    "이 브라우저에서는 안전한 AI 코믹 디렉터 세션 ID를 만들 수 없습니다.",
+    creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.sessionIdUnavailable", "이 브라우저에서는 안전한 AI 코믹 디렉터 세션 ID를 만들 수 없습니다."),
   );
 }
 
@@ -634,9 +636,9 @@ export function StudioAiComicDirectorRoute({
                       <article key={job.id} className="rounded-xl border border-line bg-card p-3">
                         <div className="flex items-center gap-2"><strong className="text-xs">{job.kind}</strong><span className="ml-auto rounded-full border border-line px-2 py-0.5 text-[0.58rem]">{job.status}</span></div>
                         <p className="mt-1 text-[0.62rem] text-fg-3">{job.progressDone}/{job.progressTotal} · {job.operationId}</p>
-                        {job.error ? <p className="mt-1 text-[0.62rem] text-bad">{job.error}</p> : null}
+                        {job.error ? <p className="mt-1 text-[0.62rem] text-bad">{resolvePersistedAiErrorText(job.error)}</p> : null}
                       </article>
-                    )) : <p className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">아직 작업 기록이 없습니다.</p>}
+                    )) : <p className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.router.aiDirector.jobsEmpty", "아직 작업 기록이 없습니다.")}</p>}
                   </div>
                 </section>
                 <section className="rounded-2xl border border-line bg-panel p-4">

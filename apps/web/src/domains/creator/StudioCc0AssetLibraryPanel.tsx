@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import {
@@ -57,7 +58,7 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
     loadStudioCc0Catalog(controller.signal).then(items => {
       if (!controller.signal.aborted) setCatalog(items);
     }).catch((error: unknown) => {
-      if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : "에셋 목록을 불러오지 못했습니다.");
+      if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : panelStatusText("studio.panelStatus.cc0Library.loadFailed", "에셋 목록을 불러오지 못했습니다."));
     });
     return () => controller.abort();
   }, [open, catalog, revision]);
@@ -101,11 +102,11 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
       const item = await createStudioCc0ImageRecord(asset, controller.signal);
       if (controller.signal.aborted || insertController.current !== controller) return;
       const added = onUseAsset(item);
-      setNotice(added ? `${asset.name} 에셋을 삽입했습니다.` : "캔버스에 삽입하지 못했습니다. 편집 가능한 컷을 선택해 주세요.");
+      setNotice(added ? `${asset.name} 에셋을 삽입했습니다.` : panelStatusText("studio.panelStatus.cc0Library.insertCanvasUnavailable", "캔버스에 삽입하지 못했습니다. 편집 가능한 컷을 선택해 주세요."));
       if (added) setPreview(null);
     } catch (error: unknown) {
       if (!controller.signal.aborted && insertController.current === controller) {
-        setNotice(error instanceof Error ? error.message : "에셋 삽입에 실패했습니다.");
+        setNotice(error instanceof Error ? error.message : panelStatusText("studio.panelStatus.cc0Library.insertFailed", "에셋 삽입에 실패했습니다."));
       }
     } finally {
       // A cancelled predecessor must not clear the loading state of a newer insertion.
@@ -117,7 +118,7 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
   }
   function renderUseButton(asset: StudioCc0Asset) {
     if (asset.kind !== "model") {
-      return <button className={`${CONTROL} mt-2 w-full`} type="button" disabled={inserting !== null} onClick={() => {void insert(asset);}}>{inserting === asset.id ? "검증·삽입 중…" : "캔버스에 삽입"}</button>;
+      return <button className={`${CONTROL} mt-2 w-full`} type="button" disabled={inserting !== null} onClick={() => {void insert(asset);}}>{inserting === asset.id ? panelStatusText("studio.panelStatus.cc0Library.inserting", "검증·삽입 중…") : "캔버스에 삽입"}</button>;
     }
     if (!asset.original) {
       return <a className={`${CONTROL} mt-2 flex items-center justify-center`} href={studioCc0AssetUrl(asset.path)} download={`${asset.id}.glb`}>GLB 받기</a>;
@@ -143,15 +144,15 @@ export function StudioCc0AssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="에셋 종류">{KINDS.map(item => <button key={item.id} type="button" className={`${CONTROL} ${kind === item.id ? "border-accent font-bold text-accent" : ""}`} aria-pressed={kind === item.id} onClick={() => {setKind(item.id); setPage(0);}}>{item.label}</button>)}</div>
         <label className="block text-xs font-semibold text-fg-2">표현 스타일<select aria-label="에셋 표현 스타일" className={`${CONTROL} mt-1 w-full`} value={style} onChange={event => {setStyle(event.target.value as StudioCc0StyleFilter); setPage(0);}}><option value="all">전체 · 디테일 원본 우선</option><option value="detailed">디테일 PBR 모델 · 재질</option><option value="stylized">스타일라이즈 · 로우폴리 모델</option></select></label>
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-fg-2"><input type="checkbox" checked={includeComponents} onChange={event => {setIncludeComponents(event.target.checked); setPage(0);}} />조립부품 포함 · 벽/도로/지형 타일</label>
-        {loadError ? <div role="alert" className="space-y-2 text-xs text-fg-2"><p>{loadError}</p><button type="button" className={CONTROL} onClick={() => setRevision(value => value + 1)}>다시 불러오기</button></div>
-          : !catalog ? <p role="status" className="text-xs text-fg-3">에셋 목록을 불러오는 중입니다.</p>
+        {loadError ? <div role="alert" className="space-y-2 text-xs text-fg-2"><p>{loadError}</p><button type="button" className={CONTROL} onClick={() => setRevision(value => value + 1)}>{panelStatusText("studio.panelStatus.cc0Library.reload", "다시 불러오기")}</button></div>
+          : !catalog ? <p role="status" className="text-xs text-fg-3">{panelStatusText("studio.panelStatus.cc0Library.loadingList", "에셋 목록을 불러오는 중입니다.")}</p>
           : <>
             <p role="status" className="text-xs text-fg-3">검색 결과 {filtered.length}종 · {currentPage + 1}/{pages}페이지</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{visible.map(asset => <article key={asset.id} className="min-w-0 rounded-lg border border-line bg-panel p-2" data-cc0-asset-id={asset.id}>
               <button type="button" className={`block aspect-square w-full rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${imageClass(asset)}`} aria-label={`${asset.name} 확대 미리보기`} onClick={() => setPreview(asset)}><img src={studioCc0AssetUrl(asset.previewPath ?? asset.path)} alt="" loading="lazy" decoding="async" width={384} height={384} className="aspect-square w-full rounded-md object-contain" /></button>
               <p className="mt-1 break-words text-xs font-semibold text-fg">{asset.name}</p><p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">{categoryLabel(asset)}<br />{studioCc0StyleLabel(asset)}{isStudioCc0AssemblyComponent(asset) ? " · 조립부품" : ""}<br />{asset.kind === "model" && <>{studioCc0ReviewLabel(asset)}<br /></>}{asset.width && asset.height ? `${asset.width}×${asset.height} · ` : ""}<a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">{asset.provider}</a> · CC0</p>{renderUseButton(asset)}
             </article>)}</div>
-            {filtered.length === 0 && <p className="py-4 text-center text-xs text-fg-3">검색 결과가 없습니다. 검색어나 스타일을 바꾸거나 조립부품 포함을 선택해 주세요.</p>}
+            {filtered.length === 0 && <p className="py-4 text-center text-xs text-fg-3">{panelStatusText("studio.panelStatus.cc0Library.searchEmpty", "검색 결과가 없습니다. 검색어나 스타일을 바꾸거나 조립부품 포함을 선택해 주세요.")}</p>}
             {pages > 1 && <nav className="flex items-center justify-between gap-2" aria-label="에셋 페이지"><button type="button" className={CONTROL} disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>이전</button><span className="text-xs text-fg-3">{currentPage + 1} / {pages}</span><button type="button" className={CONTROL} disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>다음</button></nav>}
           </>}
         <p role="status" aria-live="polite" className="text-xs leading-relaxed text-fg-2">{notice}</p>

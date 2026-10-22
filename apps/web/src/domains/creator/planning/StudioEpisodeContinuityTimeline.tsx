@@ -10,6 +10,7 @@
  *   이 표면은 검사 결과를 읽기 좋게 펼치는 것만 맡는다.
  */
 import { useMemo } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { StudioStoryLocation } from "../studio-story-bible";
 import {
   buildEpisodeContinuityTimeline,
@@ -128,7 +129,7 @@ export function StudioEpisodeContinuityTimeline({
           </ul>
         </div>
       ) : (
-        <p>기록된 회차 사이에서는 역행·겹침 후보가 없어요.</p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.continuity.noCandidates", "기록된 회차 사이에서는 역행·겹침 후보가 없어요.")}</p>
       )}
 
       {timeline.ignoredLocationRefCount > 0 || timeline.ignoredTagCount > 0 ? (

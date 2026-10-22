@@ -25,6 +25,8 @@ import type { StudioBg3dProductionBatchRuntime } from "./studio-bg3d-pro-suite-r
 import type { StudioBg3dShot } from "./studio-bg3d-scene-document";
 import { formatNumber } from "@toonstudio/core/format";
 
+import { bg3dPanelStatusText } from "../studio-bg3d-panel-status-i18n";
+
 const PRESET_LABELS: Readonly<Record<StudioBg3dProductionBatchPreset, string>> = Object.freeze({
   review: "검수",
   manuscript: "원고",
@@ -49,7 +51,7 @@ function resolveStartDisabledReason(
   batch: StudioBg3dProductionBatchRuntime,
 ): string | null {
   if (disabled || batch.isRendering) return "다른 3D 캡처 또는 장면 작업이 진행 중입니다.";
-  if (!batch.recoveryReady) return "현재 문서의 복구 권한을 준비하지 못했습니다.";
+  if (!batch.recoveryReady) return bg3dPanelStatusText("studio.bg3dPanelStatus.productionMultiPassExporter.recoveryPermissionFailed", "현재 문서의 복구 권한을 준비하지 못했습니다.");
   if (batch.blockedReason) return batch.blockedReason;
   if (batch.selectedShotIds.length === 0) return "배치 출력할 컷을 하나 이상 선택하세요.";
   if (batch.selectedPasses.length === 0) return "PNG 렌더 패스를 하나 이상 선택하세요.";

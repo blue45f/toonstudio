@@ -27,6 +27,8 @@ import type { PaperGrainKind } from "./brush/studio-paper-texture";
 import type { MagicResizePreset, MagicResizeStrategy } from "./studio-magic-resize";
 
 import { useT } from "@/shared/lib/i18n";
+
+import "./studio-panel-status-i18n-r3c06";
 import { cn } from "@/shared/lib/utils";
 
 export interface StudioInspectorUserGuide {
@@ -180,7 +182,7 @@ export function StudioInspectorCanvasControls({
   const panelGutterReasonId = useId();
   const fixedAmount = 240;
   const panelGutterDisabledReason = controlsDisabled
-    ? controlsDisabledReason ?? "문서 설정이 잠겨 있어 패널 여백을 변경할 수 없어요."
+    ? controlsDisabledReason ?? t("studio.panelStatus.canvasControls.documentLocked", "문서 설정이 잠겨 있어 패널 여백을 변경할 수 없어요.")
     : templateGutterUnavailableReason
       ? templateGutterUnavailableCopy(t, templateGutterUnavailableReason)
       : null;

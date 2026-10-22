@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 // 현지화 QA 리포트 — 대사 번역 패널 안에서 열리는 회차 단위 품질 보고서.
 //
 // 계산은 하나도 하지 않는다. `studio-localization-qa.runStudioLocalizationQa()`가 낸
@@ -236,8 +237,7 @@ export function StudioLocalizationQaReport({
         )}
         {character.status === "ran" && character.attributedCueCount === 0 && (
           <p className="mt-1.5 rounded-lg border border-warn/35 bg-warn/10 px-1.5 py-1 text-[0.58rem] leading-relaxed text-warn">
-            화자가 지정된 대사가 없어 인물 카드 규칙을 한 건도 검사하지 못했어요. 인물 카드에서 대사 화자를
-            지정하세요. 인물 규칙 오류 0건을 &quot;통과&quot;로 읽지 마세요.
+            {panelStatusText("studio.panelStatus.localizationQa.noAttributedCues", "화자가 지정된 대사가 없어 인물 카드 규칙을 한 건도 검사하지 못했어요. 인물 카드에서 대사 화자를 지정하세요. 인물 규칙 오류 0건을 \"통과\"로 읽지 마세요.")}
           </p>
         )}
         {character.status === "ran" && character.attributedCueCount > 0 && character.unattributedCueCount > 0 && (
@@ -276,8 +276,7 @@ export function StudioLocalizationQaReport({
         )}
         {report.legibilityCheckedCueCount === 0 && report.checkedCueCount > 0 && (
           <p className="mt-1.5 text-[0.58rem] leading-relaxed text-fg-3">
-            명도 대비를 판정한 대사가 없습니다(반투명·그라데이션 채우기이거나 색을 읽지
-            못했습니다). 대비 미달 0개를 "통과"로 읽지 마세요.
+            {panelStatusText("studio.panelStatus.localizationQa.noLegibilityCues", "명도 대비를 판정한 대사가 없습니다(반투명·그라데이션 채우기이거나 색을 읽지 못했습니다). 대비 미달 0개를 \"통과\"로 읽지 마세요.")}
           </p>
         )}
         {/* 점수의 한계를 화면이 직접 말한다 — 임계값 99는 단어 분모로만 교정돼 있다. */}
@@ -321,8 +320,8 @@ export function StudioLocalizationQaReport({
       {sections.length === 0 ? (
         <StudioEmptyState
           icon={<CheckCircle2 size={20} aria-hidden />}
-          title="지적할 곳이 없어요"
-          description={`${report.checkedCueCount}개 대사에서 문체·넘침 문제를 찾지 못했습니다.`}
+          title={panelStatusText("studio.panelStatus.localizationQa.emptyTitle", "지적할 곳이 없어요")}
+          description={panelStatusText("studio.panelStatus.localizationQa.emptyDescription", {"count": report.checkedCueCount}, "{count}개 대사에서 문체·넘침 문제를 찾지 못했습니다.")}
         />
       ) : (
         <div className="space-y-2.5">

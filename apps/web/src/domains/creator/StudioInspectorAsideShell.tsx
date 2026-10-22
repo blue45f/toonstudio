@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import "./studio-inspector-responsive.css";
 import { StudioEditTargetSummary } from "./StudioEditTargetSummary";
 import { StudioPinnedColorPanelSlot } from "./color/StudioPinnedColorPanelSlot";
@@ -564,7 +565,7 @@ export function StudioInspectorAsideShell({
                             className="animate-spin motion-reduce:animate-none"
                             aria-hidden
                           />
-                          레이어 탐색기 불러오는 중
+                          {r3c07StatusText("studio.panelStatus.r3c07.inspectorAside.layerExplorerLoading", "레이어 탐색기 불러오는 중")}
                         </span>
                       </div>
                     }

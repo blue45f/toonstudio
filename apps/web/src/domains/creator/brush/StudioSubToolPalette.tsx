@@ -1,4 +1,7 @@
 import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import { studioToolSearchTerms } from "../studio-tool-search";
 
@@ -29,6 +32,7 @@ export function StudioSubToolPalette({
   categories = STUDIO_SUB_TOOL_PALETTE_CATEGORIES,
   className = "",
 }: StudioSubToolPaletteProps) {
+  const t = useT();
   const id = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -177,7 +181,7 @@ export function StudioSubToolPalette({
               </div>
             );
           })}
-          {!currentTools.length ? <div className="p-4 text-center text-xs leading-relaxed text-fg-3">{searching ? "일치하는 대표 도구가 없습니다. 다른 표현은 전체 라이브러리에서 찾을 수 있습니다." : "도구가 없습니다."}</div> : null}
+          {!currentTools.length ? <div className="p-4 text-center text-xs leading-relaxed text-fg-3">{searching ? t("studio.brushCanvasStatus.brush.subToolSearchEmpty", "일치하는 대표 도구가 없습니다. 다른 표현은 전체 라이브러리에서 찾을 수 있습니다.") : t("studio.brushCanvasStatus.brush.subToolEmpty", "도구가 없습니다.")}</div> : null}
         </div>
       </div>
       <p className="border-t border-line px-3 py-2 text-[0.65rem] leading-relaxed text-fg-3">

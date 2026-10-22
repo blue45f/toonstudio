@@ -2,6 +2,7 @@
  * Recipe browser and deterministic render-load diagnostics for the canonical smart-filter stack.
  */
 
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useId, useMemo, useState } from "react";
 
 import {
@@ -82,8 +83,8 @@ export function StudioEffectsWorkspacePanel({
     if (receipt.status !== "accepted" || !receipt.recipe) {
       setAnnouncement({
         message: receipt.status === "serialized-byte-budget-exceeded"
-          ? "효과 스택 저장 예산을 초과해 기존 스택을 유지했습니다."
-          : "레시피를 적용하지 못했습니다.",
+          ? r3c07StatusText("studio.panelStatus.r3c07.effectsWorkspace.budgetExceeded", "효과 스택 저장 예산을 초과해 기존 스택을 유지했습니다.")
+          : r3c07StatusText("studio.panelStatus.r3c07.effectsWorkspace.applyFailed", "레시피를 적용하지 못했습니다."),
         tone: "error",
       });
       return;
@@ -323,7 +324,7 @@ export function StudioEffectsWorkspacePanel({
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-line px-3 py-5 text-center">
-            <p className="text-xs font-semibold text-fg-2">일치하는 레시피가 없습니다</p>
+            <p className="text-xs font-semibold text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.effectsWorkspace.recipesEmpty", "일치하는 레시피가 없습니다")}</p>
             <p className="mt-1 text-[0.61rem] text-fg-3">검색어를 줄이거나 다른 제작 목적을 선택하세요.</p>
           </div>
         )}

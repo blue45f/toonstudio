@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -85,7 +86,7 @@ export function Picker({
       <div className="max-h-72 overflow-y-auto p-1.5" aria-busy={loading}>
         {results.length === 0 ? (
           <p className="px-2 py-8 text-center text-xs text-fg-3">
-            {loading ? "검색 중" : q.trim() ? "결과 없음" : "비교할 작품을 검색하세요"}
+            {loading ? restStatusText("rest.status.comparePicker.searching", "검색 중") : q.trim() ? restStatusText("rest.status.comparePicker.noResults", "결과 없음") : restStatusText("rest.status.comparePicker.searchPrompt", "비교할 작품을 검색하세요")}
           </p>
         ) : (
           results.map((t) => (

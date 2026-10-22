@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -53,7 +54,7 @@ export function StudioSmartShapeEditDialog({ source, onConfirm, onCancel }: {
   const safeIndex = activePoint * 2 + 1 < points.length ? activePoint : 0;
   const submit = () => {
     const result = commitStudioSmartShapeEdit(source, kind, transformed);
-    if (!result || !onConfirm(result)) setError("원고나 레이어가 바뀌어 적용하지 못했어요. 취소한 뒤 현재 스트로크를 다시 선택해 주세요.");
+    if (!result || !onConfirm(result)) setError(r3c07StatusText("studio.panelStatus.r3c07.smartShapeDialog.applyFailed", "원고나 레이어가 바뀌어 적용하지 못했어요. 취소한 뒤 현재 스트로크를 다시 선택해 주세요."));
   };
   const changeKind = (next: StudioSmartShapeEditKind) => {
     setKind(next); setPoints(createStudioSmartShapePath(source, next));
@@ -106,7 +107,7 @@ export function StudioSmartShapeEditDialog({ source, onConfirm, onCancel }: {
         <div className="mt-4 flex flex-wrap justify-end gap-2">
           {readStudioSmartShapeSnapshot(source) ? <button type="button" className={CONTROL} onClick={() => {
             const restored = restoreStudioSmartShapeOriginal(source);
-            if (restored && !onConfirm(restored)) setError("원고가 바뀌어 원본을 복원하지 못했어요.");
+            if (restored && !onConfirm(restored)) setError(r3c07StatusText("studio.panelStatus.r3c07.smartShapeDialog.restoreFailed", "원고가 바뀌어 원본을 복원하지 못했어요."));
           }}>원래 자유선 복원</button> : null}
           <button type="button" className={CONTROL} onClick={onCancel}>취소</button>
           <button type="submit" className={`${CONTROL} border-accent bg-accent text-on-accent`}>도형 확정</button>

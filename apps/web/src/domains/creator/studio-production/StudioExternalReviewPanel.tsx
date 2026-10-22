@@ -7,6 +7,7 @@ import {
   Send,
   XCircle,
 } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 
 import {
@@ -43,7 +44,7 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
   const [notice, setNotice] = useState<string | null>(null);
   const load = useCallback(async (signal?: AbortSignal) => {
     if (!token) {
-      setState({ kind: "error", message: "검토 링크 토큰이 없습니다." });
+      setState({ kind: "error", message: r3c04StatusText("studio.r3c04Status.production.externalReview.noToken", "검토 링크 토큰이 없습니다.") });
       return;
     }
     setState({ kind: "loading" });
@@ -55,7 +56,7 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
       if (signal?.aborted) return;
       setState({
         kind: "error",
-        message: cause instanceof Error ? cause.message : "검토 원고를 불러오지 못했습니다.",
+        message: cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.externalReview.loadFailed", "검토 원고를 불러오지 못했습니다."),
       });
     }
   }, [token]);
@@ -94,7 +95,7 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
   const submit = async () => {
     if (!token || state.kind !== "ready" || state.snapshot.link.role !== "commenter") return;
     if (!reviewerName.trim() || (kind !== "approve" && !body.trim())) {
-      setNotice("검토자 이름과 댓글 또는 반려 사유를 입력해 주세요.");
+      setNotice(r3c04StatusText("studio.r3c04Status.production.externalReview.inputRequired", "검토자 이름과 댓글 또는 반려 사유를 입력해 주세요."));
       return;
     }
     setSubmitting(true);
@@ -123,7 +124,7 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
       setSelectedAnchor(null);
       setNotice(kind === "approve" ? "승인 의견을 저장했습니다." : "검토 의견을 저장했습니다.");
     } catch (cause) {
-      setNotice(cause instanceof Error ? cause.message : "검토 의견을 저장하지 못했습니다.");
+      setNotice(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.externalReview.saveFailed", "검토 의견을 저장하지 못했습니다."));
     } finally {
       setSubmitting(false);
     }
@@ -133,7 +134,7 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
     return (
       <div className="flex min-h-72 items-center justify-center rounded-2xl border border-line bg-card" role="status">
         <Loader2 className="mr-2 size-5 animate-spin text-accent" aria-hidden="true" />
-        검토 원고를 불러오는 중입니다.
+        {r3c04StatusText("studio.r3c04Status.production.externalReview.loading", "검토 원고를 불러오는 중입니다.")}
       </div>
     );
   }
@@ -142,10 +143,10 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
     return (
       <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6" role="alert">
         <AlertTriangle className="size-8 text-red-600" aria-hidden="true" />
-        <h2 className="mt-3 text-base font-black">검토 원고를 열 수 없습니다</h2>
+        <h2 className="mt-3 text-base font-black">{r3c04StatusText("studio.r3c04Status.production.externalReview.cannotOpen", "검토 원고를 열 수 없습니다")}</h2>
         <p className="mt-1 text-sm text-fg-2">{state.message}</p>
         <button type="button" className={cn(buttonClass({ variant: "outline", size: "sm" }), "mt-4")} onClick={() => void load()}>
-          다시 시도
+          {r3c04StatusText("studio.r3c04Status.production.externalReview.retry", "다시 시도")}
         </button>
       </div>
     );
@@ -177,9 +178,7 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
         </header>
 
         {snapshot.work.pages.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-fg-2">
-            이 링크에 공개된 렌더 페이지가 없습니다.
-          </p>
+          <p className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-fg-2">{r3c04StatusText("studio.r3c04Status.production.externalReview.emptyPages", "이 링크에 공개된 렌더 페이지가 없습니다.")}</p>
         ) : (
           <div className="space-y-5">
             {snapshot.work.pages.map((page, index) => (
@@ -353,7 +352,7 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
                 disabled={submitting}
               >
                 <Send className="size-4" aria-hidden="true" />
-                {submitting ? "저장 중" : "의견 저장"}
+                {submitting ? r3c04StatusText("studio.r3c04Status.production.externalReview.saving", "저장 중") : "의견 저장"}
               </button>
             </div>
           )}

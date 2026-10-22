@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { AlertTriangle, CheckCircle2, Download, ShieldCheck, X, XCircle } from "lucide-react";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
@@ -391,7 +392,7 @@ export function StudioPublishPreflightPanel({
 
           {issues.length === 0 ? (
             <p className="mt-4 rounded-xl border border-line bg-card/50 px-3 py-4 text-center text-xs text-fg-3">
-              발견된 문제가 없습니다. 실제 업로드 직전에는 목적지의 최신 공지와 규격도 다시 확인하세요.
+              {r3c07StatusText("studio.panelStatus.r3c07.publishPreflight.noIssues", "발견된 문제가 없습니다. 실제 업로드 직전에는 목적지의 최신 공지와 규격도 다시 확인하세요.")}
             </p>
           ) : (
             <ol className="mt-4 space-y-2" aria-label="게시 사전검사 결과">

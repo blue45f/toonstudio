@@ -14,6 +14,7 @@ import { planningStatusLabel, productionAssignmentName, type BilingualLabel } fr
 import { ProductionEmptyState, ProductionMetric, ProductionPill, ProductionSectionCard } from "./production-ui";
 
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 
 const AUTHORITY_DOMAINS = ["canon", "dialogue", "layout", "visual-direction", "color", "publication", "rights"] as const satisfies readonly DecisionAuthorityRule["domain"][];
 
@@ -76,6 +77,7 @@ export function ProductionPlanningSurface({
   readonly canEdit: boolean;
 }) {
   const bt = useBilingual("ProductionPlanningSurface");
+  const t = useT();
   const charter = [...aggregate.charters].sort((a, b) => b.revision - a.revision)[0] ?? null;
   const brief = [...aggregate.projectBriefs].sort((a, b) => b.revision - a.revision)[0] ?? null;
   const seriesMaster = [...aggregate.seriesMasters].sort((a, b) => b.revision - a.revision)[0] ?? null;
@@ -109,7 +111,7 @@ export function ProductionPlanningSurface({
                 <div className="rounded-xl border border-line bg-panel p-3"><p className="text-xs font-bold text-fg">{hubText("사업·제약")}</p><p className="mt-2 text-xs leading-5 text-fg-2">{[...brief.businessGoals, ...brief.constraints].join(" · ")}</p></div>
               </div>
             </div>
-          ) : <ProductionEmptyState title={hubText("작품 요약이 없습니다")} description={hubText("한 줄 소개, 독자, 공개 플랫폼과 권리 기준을 먼저 정해 주세요.")} />}
+          ) : <ProductionEmptyState title={t("productionHub.status.planningEmptySummary", "작품 요약이 없습니다")} description={hubText("한 줄 소개, 독자, 공개 플랫폼과 권리 기준을 먼저 정해 주세요.")} />}
         </ProductionSectionCard>
 
         <ProductionSectionCard title={hubText("작품 공통 설정")} description={hubText("모든 회차가 함께 쓰는 세계·캐릭터·그림 스타일 기준입니다.")}>
@@ -122,7 +124,7 @@ export function ProductionPlanningSurface({
               </div>
               {seriesMaster.forbiddenElements.length ? <div className="rounded-xl border border-bad/30 bg-bad/10 p-3"><p className="text-xs font-bold text-fg">{hubText("금지 요소")}</p><p className="mt-1 text-xs leading-5 text-fg-2">{seriesMaster.forbiddenElements.join(" · ")}</p></div> : null}
             </div>
-          ) : <ProductionEmptyState title={hubText("작품 공통 설정이 없습니다")} description={hubText("캐릭터·장소·세계 규칙과 그림 기준을 하나의 최신 버전으로 정리하세요.")} />}
+          ) : <ProductionEmptyState title={t("productionHub.status.planningEmptySettings", "작품 공통 설정이 없습니다")} description={hubText("캐릭터·장소·세계 규칙과 그림 기준을 하나의 최신 버전으로 정리하세요.")} />}
         </ProductionSectionCard>
       </div>
 
@@ -150,7 +152,7 @@ export function ProductionPlanningSurface({
               <div className="rounded-xl border border-accent/30 bg-accent-soft p-4"><p className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-accent">{hubEnText("Core Experience")}</p><p className="mt-2 text-sm font-semibold leading-6 text-fg">{charter.coreExperience}</p></div>
               <div className="grid gap-2 md:grid-cols-2">{[["스토리 자율", charter.storyAutonomy], ["작화 자율", charter.artAutonomy], ["공동 결정", charter.jointDecisionAreas], ["피드백 원칙", charter.feedbackPrinciples]].map(([label, items]) => <div key={label as string} className="rounded-xl border border-line bg-panel p-3"><p className="text-xs font-bold text-fg">{label as string}</p><ul className="mt-2 space-y-1 text-xs leading-5 text-fg-2">{(items as readonly string[]).map((item) => <li key={item}>• {item}</li>)}</ul></div>)}</div>
             </div>
-          ) : <ProductionEmptyState title={hubText("창작 합의가 없습니다")} description={hubText("자율 영역, 함께 결정할 내용과 피드백 원칙을 합의해 주세요.")} />}
+          ) : <ProductionEmptyState title={t("productionHub.status.planningEmptyCharter", "창작 합의가 없습니다")} description={hubText("자율 영역, 함께 결정할 내용과 피드백 원칙을 합의해 주세요.")} />}
         </ProductionSectionCard>
 
         <ProductionSectionCard title={hubText("창작 결정권 매트릭스")} description={hubText("프로젝트 관리자 권한과 창작 최종결정권을 분리합니다.")}>

@@ -1,3 +1,4 @@
+import { restStatusText } from "../../rest-status-i18n";
 import {
   ChevronDown,
   ChevronUp,
@@ -135,7 +136,7 @@ function CommentComposer({
             className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Send size={12} aria-hidden />
-            {submitting ? "저장 중..." : submitLabel}
+            {submitting ? restStatusText("rest.status.comments.saving", "저장 중...") : submitLabel}
           </button>
         </div>
       </div>
@@ -205,7 +206,7 @@ export function ThreadedCommentSection<T extends ThreadedCommentRecord>({
   maxDepth = 4,
   title = "댓글",
   description = "의견을 나누고 서로의 이야기에 답해 보세요.",
-  emptyText = "아직 댓글이 없습니다. 첫 댓글을 남겨 보세요.",
+  emptyText = restStatusText("rest.status.comments.empty", "아직 댓글이 없습니다. 첫 댓글을 남겨 보세요."),
   placeholder = "댓글을 입력해 주세요.",
   loginText = "댓글을 남기려면 로그인해 주세요.",
   draftStorageKey,
@@ -307,7 +308,7 @@ export function ThreadedCommentSection<T extends ThreadedCommentRecord>({
       clearDraft(draftKey);
       if (parentId) setOpenReplyId(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "댓글을 등록하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : restStatusText("rest.status.comments.createFailed", "댓글을 등록하지 못했습니다."));
     } finally {
       stopBusy(busyKey);
     }
@@ -332,7 +333,7 @@ export function ThreadedCommentSection<T extends ThreadedCommentRecord>({
       clearDraft(draftKey);
       setEditingId(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "댓글을 수정하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : restStatusText("rest.status.comments.updateFailed", "댓글을 수정하지 못했습니다."));
     } finally {
       stopBusy(busyKey);
     }
@@ -350,7 +351,7 @@ export function ThreadedCommentSection<T extends ThreadedCommentRecord>({
       if (editingId === commentId) setEditingId(null);
       if (openReplyId === commentId) setOpenReplyId(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "댓글을 삭제하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : restStatusText("rest.status.comments.deleteFailed", "댓글을 삭제하지 못했습니다."));
     } finally {
       stopBusy(busyKey);
     }
@@ -365,7 +366,7 @@ export function ThreadedCommentSection<T extends ThreadedCommentRecord>({
       const result = await onToggleLike(commentId);
       setComments((current) => applyThreadedCommentLike(current, commentId, result));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "댓글 공감을 처리하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : restStatusText("rest.status.comments.likeFailed", "댓글 공감을 처리하지 못했습니다."));
     } finally {
       stopBusy(busyKey);
     }
@@ -380,7 +381,7 @@ export function ThreadedCommentSection<T extends ThreadedCommentRecord>({
       setCopiedId(commentId);
       window.setTimeout(() => setCopiedId((current) => current === commentId ? null : current), 1_500);
     } catch {
-      setError("댓글 링크를 복사하지 못했습니다. 주소창의 링크를 복사해 주세요.");
+      setError(restStatusText("rest.status.comments.copyLinkFailed", "댓글 링크를 복사하지 못했습니다. 주소창의 링크를 복사해 주세요."));
     }
   }
 
@@ -609,14 +610,14 @@ export function ThreadedCommentSection<T extends ThreadedCommentRecord>({
         </div>
       ) : (
         <p className="mt-4 rounded-xl border border-dashed border-line bg-card/40 px-3 py-3 text-center text-xs text-fg-3">
-          {disabled ? "현재 이 게시물에는 댓글을 작성할 수 없습니다." : loginText}
+          {disabled ? restStatusText("rest.status.comments.disabled", "현재 이 게시물에는 댓글을 작성할 수 없습니다.") : loginText}
         </p>
       )}
 
       {error ? (
         <div className="mt-3 flex items-start justify-between gap-3 rounded-xl border border-bad/35 bg-bad/10 px-3 py-2 text-xs text-bad" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} aria-label="오류 닫기" className="shrink-0">
+          <button type="button" onClick={() => setError(null)} aria-label={restStatusText("rest.status.comments.closeError", "오류 닫기")} className="shrink-0">
             <X size={14} aria-hidden />
           </button>
         </div>

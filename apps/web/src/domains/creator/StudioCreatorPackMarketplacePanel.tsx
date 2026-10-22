@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   Box,
   Brush,
@@ -92,11 +93,7 @@ function PackCard({
         onStatus({
           status: "storage-error",
           installedCount: 0,
-          message: `${pack.metadata.name} · ${
-            usesSqlCatalog ? "로컬 SQL 카탈로그" : "기기 저장소"
-          } 상태를 읽지 못했습니다: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          message: r3c07StatusText("studio.panelStatus.r3c07.creatorPack.statusReadFailed", { name: pack.metadata.name, source: usesSqlCatalog ? "로컬 SQL 카탈로그" : "기기 저장소", detail: error instanceof Error ? error.message : String(error) }, "{name} · {source} 상태를 읽지 못했습니다: {detail}"),
         });
       })
       .finally(() => {
@@ -198,7 +195,7 @@ function PackCard({
           {installed
             ? <Trash2 size={14} aria-hidden />
             : <PackageCheck size={14} aria-hidden />}
-          {pending ? "로컬 SQL 확인 중…" : actionLabel}
+          {pending ? r3c07StatusText("studio.panelStatus.r3c07.creatorPack.checkingSql", "로컬 SQL 확인 중…") : actionLabel}
         </button>
         <span className="inline-flex min-h-11 items-center rounded-lg border border-line px-2 text-[0.54rem] font-semibold text-fg-3">
           {bundled
@@ -338,7 +335,7 @@ export function StudioCreatorPackMarketplacePanel({
             </div>
             {visible.length === 0 ? (
               <p role="status" className="mt-2 rounded-lg border border-dashed border-line px-3 py-5 text-center text-xs text-fg-3">
-                조건에 맞는 Creator Pack이 없습니다.
+                {r3c07StatusText("studio.panelStatus.r3c07.creatorPack.packsEmpty", "조건에 맞는 Creator Pack이 없습니다.")}
               </p>
             ) : null}
             {status ? (

@@ -15,6 +15,7 @@ import {
 } from "@/shared/ai/user-ai-types";
 
 import { summarizeAiKeyStatus } from "./api-key-hub-model";
+import { integrationsStatusText } from "../integrations-status-i18n";
 
 const CAPABILITY_LABELS: Record<string, string> = {
   text: "글·대사",
@@ -107,7 +108,7 @@ export function AiKeyStatusCard() {
                       onClick={() => void runProbe(connection)}
                     >
                       <PlugZap size={12} aria-hidden />
-                      {probe?.testing ? "확인 중…" : "연결 테스트"}
+                      {probe?.testing ? integrationsStatusText("integrations.status.aiKey.checking", "확인 중…") : "연결 테스트"}
                     </button>
                   </div>
                   {probe?.testing ? (

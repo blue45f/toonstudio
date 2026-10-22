@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 
 import type { SvgExportEl } from "../export/studio-svg-export-types";
 import type { StudioSceneTemplateSummary } from "./studio-scene-template-summary";
@@ -36,7 +37,7 @@ export function StudioIllustrationScenePreview({ summary, label, fallback }: {
     .replace(/href="#([^"]+)"/gu, `href="#${prefix}-$1"`), [svg, prefix]);
   if (!markup) return <div className="size-full" aria-busy={rendered?.summary !== summary}>
     {fallback}
-    <span className="sr-only">{rendered?.summary === summary ? "작화 미리보기를 불러오지 못해 구성도를 표시합니다." : "배경과 대사 미리보기를 불러오는 중입니다."}</span>
+    <span className="sr-only">{rendered?.summary === summary ? creatorSub2StatusText("studio.creatorSub2.status.catalog.illustrationPreview.loadFailed", "작화 미리보기를 불러오지 못해 구성도를 표시합니다.") : creatorSub2StatusText("studio.creatorSub2.status.catalog.illustrationPreview.loading", "배경과 대사 미리보기를 불러오는 중입니다.")}</span>
   </div>;
   // 문자열은 사용자 HTML이 아니라 escapeXml을 거친 자체 SVG 내보내기 결과다.
   return <div role="img" aria-label={`${label} · 배경과 편집 가능한 대사 미리보기`}

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   STUDIO_3D_INLINE_INPUT_MAX_BYTES,
   Studio3dGenerationHttpClient,
+  Studio3dGenerationRequestError,
   type Studio3dGenerationJob,
 } from "./studio-3d-generation-client";
 
@@ -126,5 +127,33 @@ describe("Studio3dGenerationHttpClient", () => {
         ),
     });
     await expect(client.list()).rejects.toThrow("credit budget exceeded");
+  });
+
+  it("keeps the server message as the body but tags it with the server_message code (T3)", async () => {
+    const client = new Studio3dGenerationHttpClient({
+      userId: "user-1",
+      fetchImpl: vi
+        .fn<typeof fetch>()
+        .mockImplementation(async () =>
+          jsonResponse({ message: "credit budget exceeded" }, 429),
+        ),
+    });
+    const caught: unknown = await client.list().catch((error: unknown) => error);
+    expect(caught).toBeInstanceOf(Studio3dGenerationRequestError);
+    expect((caught as Studio3dGenerationRequestError).code).toBe("server_message");
+    expect((caught as Studio3dGenerationRequestError).status).toBe(429);
+  });
+
+  it("uses the status-based default message and code when the server sends no message (T3)", async () => {
+    const client = new Studio3dGenerationHttpClient({
+      userId: "user-1",
+      fetchImpl: vi
+        .fn<typeof fetch>()
+        .mockImplementation(async () => jsonResponse({}, 429)),
+    });
+    const caught: unknown = await client.list().catch((error: unknown) => error);
+    expect(caught).toBeInstanceOf(Studio3dGenerationRequestError);
+    expect((caught as Studio3dGenerationRequestError).code).toBe("rate_limited");
+    expect((caught as Studio3dGenerationRequestError).message).toContain("잠시 후 다시 시도해 주세요");
   });
 });

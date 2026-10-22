@@ -5,6 +5,7 @@
  * 룸 레이아웃 프리셋 적용, 바닥 스냅, 복제, 삭제, 개별 Transform 슬라이더를 제공한다.
  */
 
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Copy, GripVertical, Layers, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -79,7 +80,7 @@ export function StudioMultiObjectPanel({
         </span>
         {objects.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line/70 bg-card/60 p-3 text-[0.7rem] leading-relaxed text-fg-3">
-            배치된 3D 소품이 없습니다. 룸 프리셋을 적용하거나 모델을 추가하세요.
+            {r3c07StatusText("studio.panelStatus.r3c07.multiObject.objectsEmpty", "배치된 3D 소품이 없습니다. 룸 프리셋을 적용하거나 모델을 추가하세요.")}
           </p>
         ) : (
           <div className="max-h-48 space-y-0.5 overflow-y-auto rounded-md border border-line/50 bg-card/40 p-1">

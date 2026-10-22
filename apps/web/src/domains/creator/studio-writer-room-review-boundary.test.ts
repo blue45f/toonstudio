@@ -83,19 +83,27 @@ describe("Studio Writer Room review surface boundary", () => {
 
   it("prevents review leaves from reaching orchestration, stores, CRDT, or AI clients", () => {
     const review = moduleEdges("./StudioWriterRoomReviewSurfaces.tsx");
+    const reviewI18n = moduleEdges("./studio-writer-room-review-status-i18n.ts");
     const ui = moduleEdges("./studio-writer-room-ui.ts");
     const forbiddenDependency =
       /(?:StudioPage|StudioLazyPanelStack|studio-page-lazy-ui|collaborat|(?:^|[-/])crdt(?:[-/]|$)|ai-client|stores?\/)/iu;
 
-    for (const specifier of [...review.allImports, ...ui.allImports]) {
+    for (const specifier of [...review.allImports, ...ui.allImports, ...reviewI18n.allImports]) {
       expect(specifier).not.toMatch(forbiddenDependency);
     }
+    // 개정 (A4 잔여 3라운드 WriterRoom 과제, 2026-10-22): 리뷰 표면의 로딩·실패·
+    // 빈 상태 문구 9건을 키로 이관하기 위해 표면 전용 사전 모듈 1개를 화이트리스트에
+    // 추가했다. 목록은 여전히 닫힌 정확 일치이며, 사전 모듈 자체도 i18n 인프라
+    // (@/shared/lib/i18n) 하나만 의존하도록 아래에서 함께 고정한다.
     expect(review.valueImports).toEqual([
       "lucide-react",
       "react",
       "./studio-writer-room",
       "./studio-writer-room-ui",
+      "./studio-writer-room-review-status-i18n",
     ]);
+    expect(reviewI18n.valueImports).toEqual(["@/shared/lib/i18n"]);
+    expect(reviewI18n.dynamicImports).toEqual([]);
     expect(ui.valueImports).toEqual([]);
     expect(review.source).not.toMatch(/\b(?:memo|useCallback|useMemo)\s*\(/u);
     expect(review.source).not.toContain('"use no memo"');

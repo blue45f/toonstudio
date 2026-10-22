@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { StudioHudPill } from "../studio-chrome-ui";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import {
   StudioLtConvertDialog,
   type StudioLtConvertDialogSource,
@@ -61,11 +62,11 @@ function statusText(input: {
   readonly transparent: boolean;
   readonly paintMode: boolean;
 }): { readonly text: string; readonly accent: boolean } {
-  if (input.compareActive) return { text: "기준 상태 보는 중", accent: true };
+  if (input.compareActive) return { text: r3c04StatusText("studio.r3c04Status.shaper.viewportHud.comparing", "기준 상태 보는 중"), accent: true };
   if (input.busyReason) return { text: input.busyReason, accent: true };
-  if (input.status === "loading") return { text: "VRM 불러오는 중", accent: false };
-  if (input.status === "error") return { text: "불러오기 실패", accent: false };
-  if (input.status === "empty") return { text: "모델 없음", accent: false };
+  if (input.status === "loading") return { text: r3c04StatusText("studio.r3c04Status.shaper.viewportHud.loading", "VRM 불러오는 중"), accent: false };
+  if (input.status === "error") return { text: r3c04StatusText("studio.r3c04Status.shaper.viewportHud.loadFailed", "불러오기 실패"), accent: false };
+  if (input.status === "empty") return { text: r3c04StatusText("studio.r3c04Status.shaper.viewportHud.emptyModel", "모델 없음"), accent: false };
   const parts = [input.cameraLabel];
   if (input.paintMode) parts.push("표면 드로잉");
   if (input.transparent) parts.push("투명 배경");
@@ -194,7 +195,7 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
       setLtSource({
         status: "error",
         imageData: null,
-        error: "3D 뷰 캡처를 사용할 수 없어요. 이미지 파일을 불러와 변환할 수 있습니다.",
+        error: r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureUnavailable", "3D 뷰 캡처를 사용할 수 없어요. 이미지 파일을 불러와 변환할 수 있습니다."),
         label: "3D 뷰 캡처",
       });
       return;
@@ -207,7 +208,7 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
           setLtSource({
             status: "error",
             imageData: null,
-            error: "3D 뷰 캡처 결과가 비어 있습니다.",
+            error: r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureEmpty", "3D 뷰 캡처 결과가 비어 있습니다."),
             label: "3D 뷰 캡처",
           });
           return;
@@ -227,7 +228,7 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
           error:
             error instanceof Error
               ? error.message
-              : "3D 뷰 캡처에 실패했습니다.",
+              : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureFailed", "3D 뷰 캡처에 실패했습니다."),
           label: "3D 뷰 캡처",
         });
       });
@@ -259,7 +260,7 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
           error:
             error instanceof Error
               ? error.message
-              : "이미지를 불러오지 못했습니다.",
+              : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.imageLoadFailed", "이미지를 불러오지 못했습니다."),
           label: file.name,
         });
       },
@@ -277,8 +278,8 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
         const saved = payloads.map(downloadLtPayloadAsPng);
         setLtApplyError(
           saved.every(Boolean)
-            ? "레이어에 바로 넣는 기능은 준비 중이라 선화·톤 PNG 파일로 저장했어요."
-            : "레이어 저장을 아직 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
+            ? r3c04StatusText("studio.r3c04Status.shaper.viewportHud.ltSavedAsPng", "레이어에 바로 넣는 기능은 준비 중이라 선화·톤 PNG 파일로 저장했어요.")
+            : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.ltNotConnected", "레이어 저장을 아직 연결하지 못했어요. 잠시 후 다시 시도해 주세요."),
         );
         return;
       }

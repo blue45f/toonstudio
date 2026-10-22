@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useId, useMemo, useState } from "react";
 
 import { collectStudioDocumentColors } from "./studio-document-colors";
@@ -219,7 +220,7 @@ export function StudioInspectorMultiSelectionSection({
           </div>
         ) : strokeColorState.lockedCount > 0 ? (
           <p className="mb-3 text-[0.6rem] leading-snug text-fg-3" data-testid="studio-multi-selection-locked-note">
-            선택한 선 요소가 모두 잠겨 있어 선 스타일을 바꿀 수 없어요. 잠금을 풀면 바꿀 수 있어요.
+            {r3c07StatusText("studio.panelStatus.r3c07.inspectorMultiSelection.lockedNote", "선택한 선 요소가 모두 잠겨 있어 선 스타일을 바꿀 수 없어요. 잠금을 풀면 바꿀 수 있어요.")}
           </p>
         ) : null}
         <StudioInspectorSelectionActions

@@ -39,7 +39,10 @@ import {
 
 import type { StudioDrawingInputDeckProps } from "./StudioDrawingInputDeck";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "../studio-brush-canvas-status-i18n";
 
 const TELEMETRY_FRAME_LIMIT = 96;
 const TELEMETRY_UI_INTERVAL_MS = 50;
@@ -61,7 +64,7 @@ const QUALITY_META: Readonly<
     className: "border-warn/35 bg-warn/10 text-warn",
   }),
   limited: Object.freeze({
-    label: "입력 확인 중",
+    label: "입력 확인 중", // i18n-exempt: 렌더 지점 배지에서 studio.brushCanvasStatus.brush.checkingInput 키로 해석한다
     detail: "표본이 적거나 이벤트 빈도가 낮습니다. 몇 획 더 그려 보세요.",
     className: "border-line-strong bg-raised text-fg-2",
   }),
@@ -137,6 +140,7 @@ export function StudioDrawingInputDeckPanel({
   onOpenBrushStudio,
   onClose,
 }: StudioDrawingInputDeckPanelProps): ReactElement {
+  const t = useT();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const telemetryFramesRef = useRef<StudioDrawingTelemetryFrame[]>([]);
   const telemetryTimerRef = useRef<number | null>(null);
@@ -247,14 +251,14 @@ export function StudioDrawingInputDeckPanel({
   const copyTelemetryReport = useCallback(async (): Promise<void> => {
     const clipboard = globalThis.navigator?.clipboard;
     if (!clipboard?.writeText) {
-      setNotice("이 브라우저에서는 클립보드 복사를 사용할 수 없습니다.");
+      setNotice(t("studio.brushCanvasStatus.brush.clipboardUnavailable", "이 브라우저에서는 클립보드 복사를 사용할 수 없습니다."));
       return;
     }
     try {
       await clipboard.writeText(formatStudioDrawingTelemetryReport(telemetry));
       setNotice("좌표와 획 내용을 제외한 입력 진단을 복사했습니다.");
     } catch {
-      setNotice("입력 진단을 복사하지 못했습니다. 브라우저 권한을 확인해 주세요.");
+      setNotice(t("studio.brushCanvasStatus.brush.copyDiagnosticsFailed", "입력 진단을 복사하지 못했습니다. 브라우저 권한을 확인해 주세요."));
     }
   }, [telemetry]);
 
@@ -424,7 +428,7 @@ export function StudioDrawingInputDeckPanel({
                 qualityMeta.className
               )}
             >
-              {qualityMeta.label}
+              {telemetry?.quality === "limited" ? t("studio.brushCanvasStatus.brush.checkingInput", "입력 확인 중") : qualityMeta.label}
             </span>
             <p className="min-w-0 text-[0.57rem] leading-relaxed text-fg-3">
               {qualityMeta.detail}

@@ -9,6 +9,7 @@ import { ArrowRight, ArrowLeft, Search, Star, Sparkles, BookOpen, Trash2, Bookma
 import { FORTUNE_EXPERIENCES, FORTUNE_GROUPS, FORTUNE_DISCLAIMER, buildFortuneReading, fortuneKstDate, fortuneReadingText } from "@toonstudio/core/fortune";
 import type { FortuneBirthInput, FortuneGroup, FortuneReading } from "@toonstudio/core/fortune";
 import { FortuneBirthFields } from "./FortuneBirthFields";
+import { fortuneStatusText } from "./fortune-status-i18n";
 import { FortuneCampusDirectory } from "./FortuneCampusDirectory";
 import { fortuneCampusRoom } from "./fortune-campus-map";
 import { useCampus } from "@/shared/components/spatial-campus/campus-context";
@@ -75,7 +76,7 @@ function FortuneObservatorySession({ characterContent, accountId, forceCharacter
   const saveTodayCards = (text: string) => { const entry = { id: `today-cards-${Date.now()}`, title: "오늘의 카드", text, savedAt: fortuneKstDate() }; const stored = persist({ ...preferences, notebook: [entry, ...preferences.notebook].slice(0, 12) }); if (stored) setNotice("오늘의 카드를 이 브라우저의 보관함에 추가했어요. 아래 ‘나의 보관함’에서 다시 볼 수 있어요."); };
   const invalidateReading = () => { sequence.current += 1; setReading(null); setRunning(false); setError(""); };
   const clearInputs = () => { sequence.current += 1; setBirth({ date: "", calendar: "solar" }); setPartner({ date: "", calendar: "solar" }); setQuestion(""); setPick(null); setReading(null); setError(""); setRunning(false); setNotice("현재 입력과 결과를 지웠어요."); };
-  const clearSaved = () => { const ok = clearFortunePreferences(accountId); setPreferences({ favorites: [], notebook: [] }); setNotice(ok ? "관측소의 즐겨찾기와 보관함을 모두 지웠어요." : "브라우저 저장소를 지울 수 없어요. 브라우저 설정에서 사이트 데이터를 확인해 주세요."); };
+  const clearSaved = () => { const ok = clearFortunePreferences(accountId); setPreferences({ favorites: [], notebook: [] }); setNotice(ok ? "관측소의 즐겨찾기와 보관함을 모두 지웠어요." : fortuneStatusText("fortune.status.observatory.storageClearFailed", "브라우저 저장소를 지울 수 없어요. 브라우저 설정에서 사이트 데이터를 확인해 주세요.")); };
   const run = async (event: FormEvent) => {
     event.preventDefault(); if (!selected || running) return;
     if (selected.id.startsWith("tarot") && pick === null) { setError("마음이 가는 카드를 먼저 골라 주세요."); return; }

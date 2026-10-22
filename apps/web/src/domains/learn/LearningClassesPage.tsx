@@ -23,6 +23,7 @@ import {
   type ClassProduct,
 } from "./learning-classes";
 import { getLessonState, type LearningLevel } from "./learning-paths";
+import { learnStatusText } from "./learn-status-i18n";
 import { useLearningProgress, type LearningStore } from "./use-learning-progress";
 
 import "./learning-classes.css";
@@ -32,8 +33,6 @@ const LEVEL_LABELS: Readonly<Record<LearningLevel, string>> = {
   growing: "기초를 익힌 뒤",
   advanced: "완성·게시 단계",
 };
-
-const SAVE_WARNING = "수강 등록 기록을 이 기기에 저장하지 못했습니다. 새로고침하면 등록 내역이 사라질 수 있습니다.";
 
 function browserStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
@@ -116,8 +115,8 @@ function ClassCard({
     setStage("idle");
     setNotice(
       result.kind === "storage-unavailable"
-        ? "포인트 지갑을 불러오지 못했습니다. 잠시 뒤 다시 시도하세요."
-        : "수강 등록을 완료하지 못했습니다. 잠시 뒤 다시 시도하세요.",
+        ? learnStatusText("learn.status.classes.walletLoadFailed", "포인트 지갑을 불러오지 못했습니다. 잠시 뒤 다시 시도하세요.")
+        : learnStatusText("learn.status.classes.enrollFailed", "수강 등록을 완료하지 못했습니다. 잠시 뒤 다시 시도하세요."),
     );
   }
 
@@ -252,7 +251,7 @@ export function LearningClassesPage() {
   function persist(next: ClassEnrollmentState): boolean {
     setEnrollments(next);
     const saved = saveClassEnrollments(browserStorage(), next, enrollmentOwnerKey);
-    setWarning(saved ? "" : SAVE_WARNING);
+    setWarning(saved ? "" : learnStatusText("learn.status.classes.saveWarning", "수강 등록 기록을 이 기기에 저장하지 못했습니다. 새로고침하면 등록 내역이 사라질 수 있습니다."));
     return saved;
   }
 

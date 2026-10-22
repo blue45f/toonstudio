@@ -15,6 +15,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-vrm-panel-status-i18n";
+
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { STUDIO_Z_CLASS } from "../studio-z-index";
 import { useStudioModalSheet } from "../useStudioModalSheet";
@@ -135,6 +138,7 @@ function ArchiveAttestationLoadingDialog({
   readonly activeKey: number;
   readonly onCancel: () => void;
 }): ReactElement | null {
+  const t = useT();
   const dialogRef = useRef<HTMLElement>(null);
   const portalRootRef = useRef<HTMLElement | null>(
     typeof document === "undefined" ? null : document.body,
@@ -179,7 +183,7 @@ function ArchiveAttestationLoadingDialog({
           </span>
           <div className="min-w-0 flex-1">
             <h2 id="studio-vrm-archive-attestation-loading-title" className="text-sm font-bold text-fg">
-              VRM 이용 조건 불러오는 중
+              {t("studio.vrmPanelStatus.archiveAttestationHost.loadingTerms", "VRM 이용 조건 불러오는 중")}
             </h2>
             <p
               id="studio-vrm-archive-attestation-loading-description"

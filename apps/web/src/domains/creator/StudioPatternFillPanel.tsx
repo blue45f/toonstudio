@@ -14,6 +14,7 @@
  * 그리는 동안 3×3 고스트로 이음새를 보며 그리고 경계 교차 획은 타일 안
  * 조각으로 저장하는 패널 로컬 도구다 — 역시 문서에는 쓰지 않는다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Blend, RotateCcw, Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -211,7 +212,7 @@ function SeamlessTileSection({
         />
       ) : (
         <div className="rounded-lg border border-dashed border-line px-3 py-4 text-center text-[0.62rem] text-fg-3">
-          {status === "loading" ? "타일 픽셀을 분석하는 중..." : "이 환경에서는 타일 픽셀 분석을 사용할 수 없어요."}
+          {status === "loading" ? r3c07StatusText("studio.panelStatus.r3c07.patternFill.tileAnalyzing", "타일 픽셀을 분석하는 중...") : r3c07StatusText("studio.panelStatus.r3c07.patternFill.tileAnalysisUnavailable", "이 환경에서는 타일 픽셀 분석을 사용할 수 없어요.")}
         </div>
       )}
 
@@ -234,8 +235,8 @@ function SeamlessTileSection({
       <p className="text-[0.62rem] tabular-nums text-fg-3" role="status" aria-live="polite">
         {analysis == null
           ? status === "loading"
-            ? "이음새 점수를 계산하는 중..."
-            : "이음새 점수를 계산할 수 없어요."
+            ? r3c07StatusText("studio.panelStatus.r3c07.patternFill.seamComputing", "이음새 점수를 계산하는 중...")
+            : r3c07StatusText("studio.panelStatus.r3c07.patternFill.seamUnavailable", "이음새 점수를 계산할 수 없어요.")
           : analysis.after == null
             ? `이음새 점수 ${formatSeamScore(analysis.before)} — 변환하면 반복 경계가 부드러워져요.`
             : `이음새 점수 ${formatSeamScore(analysis.before)} → ${formatSeamScore(analysis.after)}`}
@@ -369,7 +370,7 @@ export function StudioPatternFillPanel({
         <PatternSwatchGrid current={current} patterns={visiblePatterns} onChange={onChange} />
       ) : (
         <div className="rounded-lg border border-dashed border-line px-3 py-4 text-center">
-          <p className="text-xs font-semibold text-fg-2">일치하는 패턴이 없습니다</p>
+          <p className="text-xs font-semibold text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.patternFill.patternsEmpty", "일치하는 패턴이 없습니다")}</p>
           <p className="mt-1 text-[0.62rem] text-fg-3">‘번개’, ‘벽돌’, ‘스파클’처럼 모양으로 찾아보세요.</p>
         </div>
       )}

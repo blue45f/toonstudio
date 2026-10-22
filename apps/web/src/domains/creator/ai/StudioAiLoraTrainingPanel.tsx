@@ -40,6 +40,7 @@ import {
   removeStudioLoraJob,
   saveStudioLoraJobs,
   studioLoraArchiveEntryFromDataUrl,
+  studioLoraJobErrorText,
   suggestStudioLoraTriggerWord,
   upsertStudioLoraJob,
   STUDIO_LORA_MAX_TRAINING_IMAGES,
@@ -63,7 +64,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-    reader.onerror = () => reject(reader.error ?? new Error("파일을 읽지 못했습니다."));
+    reader.onerror = () => reject(reader.error ?? new Error(text("파일을 읽지 못했습니다.")));
     reader.readAsDataURL(blob);
   });
 }
@@ -468,7 +469,7 @@ export function StudioAiLoraTrainingPanel({
                     {text(`학습 이미지 ${job.trainingImageCount}장`)}
                   </p>
                   {job.lastError ? (
-                    <p className="mt-1 text-[11px] leading-5 text-danger">{job.lastError}</p>
+                    <p className="mt-1 text-[11px] leading-5 text-danger">{studioLoraJobErrorText(job)}</p>
                   ) : null}
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     {job.status === "queued" || job.status === "training" ? (

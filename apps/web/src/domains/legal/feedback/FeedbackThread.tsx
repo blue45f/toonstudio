@@ -6,6 +6,7 @@ import type { FormEvent, KeyboardEvent } from "react";
 
 import { api, getApiErrorMessage } from "@/platform/api";
 import { useApp } from "@/shared/lib/store";
+import { legalStatusText } from "../legal-status-i18n";
 import { feedbackTimeLabel } from "@toonstudio/core/feedback";
 import {
   assertFeedbackComments,
@@ -320,7 +321,7 @@ export function FeedbackThread({
         setReplies(rows);
       })
       .catch(async (cause: unknown) => {
-        const message = await getApiErrorMessage(cause, "댓글을 불러오지 못했어요.");
+        const message = await getApiErrorMessage(cause, legalStatusText("legal.status.feedbackThread.loadFailed", "댓글을 불러오지 못했어요."));
         if (!controller.signal.aborted) setLoadError(message);
       })
       .finally(() => {
@@ -359,7 +360,7 @@ export function FeedbackThread({
       if (useApp.getState().userId !== userId) return;
       if (!isFeedbackComment(reply, postId)) {
         throw new Error(
-          "댓글 등록 결과를 확인하지 못했어요. 중복 등록을 피하려면 댓글 목록을 먼저 확인해 주세요.",
+          legalStatusText("legal.status.feedbackThread.submitUnconfirmed", "댓글 등록 결과를 확인하지 못했어요. 중복 등록을 피하려면 댓글 목록을 먼저 확인해 주세요."),
         );
       }
       setReplies((current) => {
@@ -373,7 +374,7 @@ export function FeedbackThread({
     } catch (cause) {
       setSendError(await getApiErrorMessage(
         cause,
-        "댓글을 보내지 못했어요. 입력 내용은 유지됩니다.",
+        legalStatusText("legal.status.feedbackThread.submitFailed", "댓글을 보내지 못했어요. 입력 내용은 유지됩니다."),
       ));
     } finally {
       busy.current = false;
@@ -385,7 +386,7 @@ export function FeedbackThread({
     <section className="fb-thread" aria-label="댓글과 운영자 답변">
       <h4>함께 나누는 의견</h4>
       {loading ? (
-        <p role="status" className="fb-caption">댓글을 불러오고 있어요.</p>
+        <p role="status" className="fb-caption">{legalStatusText("legal.status.feedbackThread.loading", "댓글을 불러오고 있어요.")}</p>
       ) : loadError ? (
         <div className="fb-error" role="alert">
           <p>{loadError}</p>
@@ -394,7 +395,7 @@ export function FeedbackThread({
             type="button"
             onClick={() => setTick((value) => value + 1)}
           >
-            댓글 다시 불러오기
+            {legalStatusText("legal.status.feedbackThread.reload", "댓글 다시 불러오기")}
           </button>
         </div>
       ) : replies.length ? (
@@ -421,7 +422,7 @@ export function FeedbackThread({
           ))}
         </ul>
       ) : (
-        <p className="fb-caption">아직 댓글이 없어요. 같은 경험이나 도움이 되는 정보를 남겨주세요.</p>
+        <p className="fb-caption">{legalStatusText("legal.status.feedbackThread.empty", "아직 댓글이 없어요. 같은 경험이나 도움이 되는 정보를 남겨주세요.")}</p>
       )}
 
       {userId ? (

@@ -1,3 +1,4 @@
+import { engagementStatusText } from "./engagement-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { CheckCircle2, Copy, ListChecks, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -88,8 +89,8 @@ export function PublicCollectionPage() {
       <Container size="prose" className="py-14">
         <div role="alert" className="rounded-3xl border border-bad/35 bg-card p-8 text-center">
           <TriangleAlert className="mx-auto size-11 text-bad" aria-hidden="true" />
-          <h1 className="mt-4 text-2xl font-black text-fg">공개 리스트를 열 수 없습니다</h1>
-          <p className="mt-2 text-sm leading-6 text-fg-2">링크가 손상되었거나 지원하지 않는 형식입니다.</p>
+          <h1 className="mt-4 text-2xl font-black text-fg">{engagementStatusText("engagement.status.publicCollection.openFailedTitle", "공개 리스트를 열 수 없습니다")}</h1>
+          <p className="mt-2 text-sm leading-6 text-fg-2">{engagementStatusText("engagement.status.publicCollection.openFailedDescription", "링크가 손상되었거나 지원하지 않는 형식입니다.")}</p>
           <Link href="/library?tab=collections" className={buttonClass({ className: "mt-6" })}>내 컬렉션 보기</Link>
         </div>
       </Container>
@@ -124,7 +125,7 @@ export function PublicCollectionPage() {
       </header>
 
       {loadError ? (
-        <div role="alert" className="mt-6 rounded-2xl border border-warn/35 bg-warn/10 p-4 text-sm text-fg-2">일부 작품 정보를 불러오지 못했습니다. 잠시 후 다시 열어 주세요.</div>
+        <div role="alert" className="mt-6 rounded-2xl border border-warn/35 bg-warn/10 p-4 text-sm text-fg-2">{engagementStatusText("engagement.status.publicCollection.partialLoadFailed", "일부 작품 정보를 불러오지 못했습니다. 잠시 후 다시 열어 주세요.")}</div>
       ) : null}
 
       {loading ? (
@@ -138,7 +139,7 @@ export function PublicCollectionPage() {
       ) : (
         <div className="mt-8 rounded-3xl border border-dashed border-line bg-card/50 p-12 text-center">
           <ListChecks className="mx-auto size-10 text-fg-3" aria-hidden="true" />
-          <h2 className="mt-4 font-black text-fg">현재 카탈로그에서 확인할 수 있는 작품이 없습니다</h2>
+          <h2 className="mt-4 font-black text-fg">{engagementStatusText("engagement.status.publicCollection.emptyTitle", "현재 카탈로그에서 확인할 수 있는 작품이 없습니다")}</h2>
           <p className="mt-2 text-sm text-fg-3">작품 식별자는 복제되며, 다시 카탈로그에 들어오면 내 컬렉션에서 확인할 수 있습니다.</p>
         </div>
       )}

@@ -1,6 +1,10 @@
 import type { StudioAdjustmentKind } from "../filter/studio-adjustment-effect-graph";
 
 import { convertStudioAdjustmentToPsd } from "./studio-psd-adjustment-export";
+import {
+  convertStudioMaskPixelsToPsdLayerMask,
+  decodeStudioMaskPixelsForPsd,
+} from "./studio-psd-adjustment-mask-export";
 import { groupPsdExportLayers, type StudioPsdFolder } from "./studio-psd-folder-structure";
 /**
  * Studio PSD Layer Export — 레이어별 PSD(.psd) 내보내기.
@@ -1122,12 +1126,14 @@ function withPsdExportLossDecisions(
       `Studio 그룹 ${groupCount.toLocaleString("ko-KR")}개를 PSD 폴더로 기록하고 가져온 원본 중첩 경로와 z-order를 유지합니다.`,
     ));
   }
-  const maskCount = capturedElements.filter((element) => !!element.maskSrc && element.maskEnabled !== false).length;
+  // 조정 레이어는 픽셀이 없어 마스크를 픽셀에 굽는 경로가 아니다 — 네이티브 마스크로
+  // 따로 기록하므로(exportPagePsd 의 조정 분기) 이 래스터화 집계에서 제외한다.
+  const maskCount = capturedElements.filter((element) => element.type !== "adjustment" && !!element.maskSrc && element.maskEnabled !== false).length;
   if (maskCount > 0) decisions.push(exportDecision(
     "layer-mask", "rasterized", maskCount,
     `레이어 마스크 ${maskCount.toLocaleString("ko-KR")}개의 현재 외관을 레이어 픽셀에 합성합니다. PSD에서 마스크를 따로 편집하려면 원본 프로젝트를 함께 보관하세요.`,
   ));
-  const disabledMaskCount = capturedElements.filter((element) => !!element.maskSrc && element.maskEnabled === false).length;
+  const disabledMaskCount = capturedElements.filter((element) => element.type !== "adjustment" && !!element.maskSrc && element.maskEnabled === false).length;
   if (disabledMaskCount > 0) decisions.push(exportDecision(
     "layer-mask", "dropped", disabledMaskCount,
     `비활성 레이어 마스크 ${disabledMaskCount.toLocaleString("ko-KR")}개는 화면처럼 적용하지 않으며 PSD 마스크 채널로 별도 저장하지 않습니다.`,
@@ -1358,6 +1364,8 @@ export async function exportPagePsd(
   let rasterTextCount = 0;
   let nativeAdjustmentCount = 0;
   let droppedAdjustmentCount = 0;
+  let nativeAdjustmentMaskCount = 0;
+  let disabledAdjustmentMaskCount = 0;
 
   for (let i = 0; i < elements.length; i++) {
     // 요소별 toCanvas() 래스터화 + writePsd() 압축은 전부 동기(CPU 바운드)라, 요소가 많은 페이지를
@@ -1376,7 +1384,7 @@ export async function exportPagePsd(
     if (el.type === "adjustment") {
       const converted = convertStudioAdjustmentToPsd(el.adjustment, el.parameters);
       if (converted.status === "converted") {
-        layers.push({
+        const layer: Layer = {
           name: label,
           left: 0,
           top: 0,
@@ -1384,7 +1392,35 @@ export async function exportPagePsd(
           blendMode: mapBlendMode(el.blendMode),
           clipping: !!(el.clipToBelow ?? el.clipBelow),
           adjustment: converted.adjustment,
-        });
+        };
+        // 가져올 때 래스터 마스크로 변환된 조정 마스크(maskSrc)는 네이티브 마스크로
+        // 되쓴다 — 픽셀에 굽는 대상이 아니라 레이어에 붙는 편집 가능한 채널이다.
+        // 변환에 실패하면 마스크 없이 내보내지 않고 중단한다: 마스크가 사라진 조정은
+        // 화면과 달리 전면 적용돼 결과가 달라지기 때문이다(래스터 마스크 캡처
+        // 경계를 찾지 못할 때 중단하는 것과 같은 규약).
+        if (el.maskSrc) {
+          assertPsdPixelBudget(capturedPixelBytes + psdWidth * psdHeight * 4);
+          let maskPixels: PixelData;
+          try {
+            maskPixels = await decodeStudioMaskPixelsForPsd(el.maskSrc, psdWidth, psdHeight);
+          } catch (err) {
+            throw new Error(
+              `${label}: 조정 레이어 마스크를 읽지 못해 PSD 내보내기를 중단했어요.`,
+              { cause: err },
+            );
+          }
+          const nativeMask = convertStudioMaskPixelsToPsdLayerMask(maskPixels, {
+            disabled: el.maskEnabled === false,
+          });
+          if (!nativeMask) {
+            throw new Error(`${label}: 조정 레이어 마스크를 PSD 네이티브 마스크로 변환하지 못해 내보내기를 중단했어요.`);
+          }
+          layer.mask = nativeMask;
+          capturedPixelBytes += psdWidth * psdHeight * 4;
+          if (el.maskEnabled === false) disabledAdjustmentMaskCount += 1;
+          else nativeAdjustmentMaskCount += 1;
+        }
+        layers.push(layer);
         capturedElements.push(el);
         nativeAdjustmentCount += 1;
       } else {
@@ -1604,6 +1640,22 @@ export async function exportPagePsd(
         "dropped",
         droppedAdjustmentCount,
         `PSD 대응 종류가 없는 조정 레이어 ${droppedAdjustmentCount.toLocaleString("ko-KR")}개는 조정 레이어로 기록하지 못했습니다.`,
+      )]
+      : []),
+    ...(nativeAdjustmentMaskCount > 0
+      ? [exportDecision(
+        "layer-mask",
+        "preserved",
+        nativeAdjustmentMaskCount,
+        `조정 레이어 마스크 ${nativeAdjustmentMaskCount.toLocaleString("ko-KR")}개를 PSD 네이티브 레이어 마스크로 기록합니다. 밀도·페더·벡터 구분은 가져올 때 픽셀에 반영된 상태 그대로입니다.`,
+      )]
+      : []),
+    ...(disabledAdjustmentMaskCount > 0
+      ? [exportDecision(
+        "layer-mask",
+        "preserved",
+        disabledAdjustmentMaskCount,
+        `비활성 조정 레이어 마스크 ${disabledAdjustmentMaskCount.toLocaleString("ko-KR")}개도 비활성 상태 그대로 PSD 네이티브 레이어 마스크로 기록합니다.`,
       )]
       : []),
   ];

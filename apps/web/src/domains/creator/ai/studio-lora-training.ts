@@ -7,7 +7,11 @@
  * - IN_PROGRESS → `training`
  * - COMPLETED + 결과에서 LoRA 파일 확인 → `completed` (모델이 캐릭터에 연결된 상태)
  * - 결과 조회가 오류 본문이거나 LoRA 파일이 없거나, 상태 조회가 404 → `failed`
- * - 네트워크 오류·5xx·미지 상태 → 상태를 바꾸지 않고 `lastError`만 남긴다
+ * - 네트워크 오류·5xx·미지 상태 → 상태를 바꾸지 않고 `lastError`만 남긴다.
+ *   `lastError`에는 해석된 문구가 아니라 studio.aiError.fal.* 키(코드)와
+ *   `lastErrorParams`를 저장하고, 표시 시점에 현재 로케일로 해석한다
+ *   (영속 코드화, 설계 §3.2-④). 구 레코드의 해석済 문자열은 표시측
+ *   헬퍼가 그대로 돌려준다.
  *   (일시 장애를 학습 실패로 단정하지 않기 위해서다)
  * - 이미 `completed`/`failed`인 잡은 새로고침해도 다시 조회하지 않는다.
  */
@@ -20,6 +24,7 @@ import {
   type StudioLoraClientDeps,
   type StudioLoraResult,
 } from "./studio-lora-fal";
+import { resolveAiErrorText } from "./studio-ai-error-i18n";
 
 export type StudioLoraJobKind = "character" | "style";
 export type StudioLoraJobStatus = "queued" | "training" | "completed" | "failed";
@@ -41,7 +46,23 @@ export interface StudioLoraTrainingJob {
   readonly trainingImageCount: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+  /**
+   * 마지막 오류 코드 — studio.aiError.fal.* 키를 저장한다(해석된 문구 아님).
+   * 구 레코드는 한국어 해석済 문자열이 들어 있을 수 있으며 표시측이
+   * 그대로 표시한다(하위호환). 보간 값은 lastErrorParams에 분리 저장한다.
+   */
   readonly lastError: string | null;
+  /** lastError 코드의 보간 파라미터({status} 등). 구 레코드에는 없을 수 있다. */
+  readonly lastErrorParams?: Readonly<Record<string, string | number>> | null;
+}
+
+/**
+ * 잡의 마지막 오류를 표시 시점 로케일로 해석한다. lastError가 코드(키)면
+ * 사전에서, 구 레코드의 해석済 문자열이면 그대로 돌려준다.
+ */
+export function studioLoraJobErrorText(job: StudioLoraTrainingJob): string | null {
+  if (!job.lastError) return null;
+  return resolveAiErrorText(job.lastError, job.lastErrorParams);
 }
 
 /** fal 학습 문서의 권고 하한 — "at least 4 images". 이보다 적으면 제출을 막는다. */
@@ -108,6 +129,7 @@ export function createStudioLoraJobRecord(options: {
     createdAt: options.nowIso,
     updatedAt: options.nowIso,
     lastError: null,
+    lastErrorParams: null,
   });
 }
 
@@ -263,6 +285,18 @@ function readJobString(record: Record<string, unknown>, key: string): string | n
   return typeof value === "string" ? value : null;
 }
 
+function readJobErrorParams(record: Record<string, unknown>): Readonly<Record<string, string | number>> | null {
+  const value = record["lastErrorParams"];
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const params: Record<string, string | number> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof entry === "string") params[key] = entry;
+    else if (typeof entry === "number" && Number.isFinite(entry)) params[key] = entry;
+    else return null;
+  }
+  return params;
+}
+
 function normalizeStudioLoraJob(value: unknown): StudioLoraTrainingJob | null {
   if (typeof value !== "object" || value === null) return null;
   const record = value as Record<string, unknown>;
@@ -299,6 +333,7 @@ function normalizeStudioLoraJob(value: unknown): StudioLoraTrainingJob | null {
     createdAt,
     updatedAt,
     lastError: readJobString(record, "lastError"),
+    lastErrorParams: readJobErrorParams(record),
   });
 }
 
@@ -415,7 +450,8 @@ export async function refreshStudioLoraJob(
         queried: true,
         job: withJobPatch(job, {
           status: "failed",
-          lastError: "fal에서 이 학습 요청을 찾을 수 없습니다(만료되었거나 취소됨).",
+          lastError: "studio.aiError.fal.jobRequestNotFound",
+          lastErrorParams: null,
         }, nowIso),
       },
     };
@@ -426,16 +462,17 @@ export async function refreshStudioLoraJob(
       data: {
         queried: true,
         job: withJobPatch(job, {
-          lastError: `fal 상태 조회가 거부됐습니다(HTTP ${httpStatus}). 잠시 뒤 다시 시도해 주세요.`,
+          lastError: "studio.aiError.fal.jobStatusRejected",
+          lastErrorParams: { status: httpStatus },
         }, nowIso),
       },
     };
   }
   if (status === "IN_QUEUE") {
-    return { ok: true, data: { queried: true, job: withJobPatch(job, { status: "queued", lastError: null }, nowIso) } };
+    return { ok: true, data: { queried: true, job: withJobPatch(job, { status: "queued", lastError: null, lastErrorParams: null }, nowIso) } };
   }
   if (status === "IN_PROGRESS") {
-    return { ok: true, data: { queried: true, job: withJobPatch(job, { status: "training", lastError: null }, nowIso) } };
+    return { ok: true, data: { queried: true, job: withJobPatch(job, { status: "training", lastError: null, lastErrorParams: null }, nowIso) } };
   }
   if (status === "COMPLETED") {
     const result = await fetchFalQueueResult(deps, apiKey, {
@@ -449,7 +486,8 @@ export async function refreshStudioLoraJob(
         data: {
           queried: true,
           job: withJobPatch(job, {
-            lastError: "학습은 끝났지만 결과를 가져오지 못했습니다. 다시 새로고침해 주세요.",
+            lastError: "studio.aiError.fal.jobResultFetchFailed",
+            lastErrorParams: null,
           }, nowIso),
         },
       };
@@ -461,7 +499,8 @@ export async function refreshStudioLoraJob(
           queried: true,
           job: withJobPatch(job, {
             status: "failed",
-            lastError: `fal 학습이 결과 없이 종료됐습니다(HTTP ${result.data.httpStatus}).`,
+            lastError: "studio.aiError.fal.jobEndedWithoutResult",
+            lastErrorParams: { status: result.data.httpStatus },
           }, nowIso),
         },
       };
@@ -474,7 +513,8 @@ export async function refreshStudioLoraJob(
           queried: true,
           job: withJobPatch(job, {
             status: "failed",
-            lastError: "fal 학습 결과에서 LoRA 파일을 찾지 못했습니다.",
+            lastError: "studio.aiError.fal.jobResultLoraMissing",
+            lastErrorParams: null,
           }, nowIso),
         },
       };
@@ -488,6 +528,7 @@ export async function refreshStudioLoraJob(
           loraFileUrl: parsed.loraFileUrl,
           configFileUrl: parsed.configFileUrl,
           lastError: null,
+          lastErrorParams: null,
         }, nowIso),
       },
     };
@@ -498,7 +539,8 @@ export async function refreshStudioLoraJob(
     data: {
       queried: true,
       job: withJobPatch(job, {
-        lastError: "fal이 알 수 없는 학습 상태를 돌려줬습니다. 잠시 뒤 다시 새로고침해 주세요.",
+        lastError: "studio.aiError.fal.jobUnknownStatus",
+        lastErrorParams: null,
       }, nowIso),
     },
   };

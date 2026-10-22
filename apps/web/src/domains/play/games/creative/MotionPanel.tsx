@@ -11,6 +11,7 @@ import { loadMotionImage } from "../../lab/motion-panel-image";
 import { cleanMotionCaption, MOTION_PRESETS, motionMoodDefaults } from "../../lab/motion-panel-model";
 import { recordResult } from "../../lab/play-storage";
 import { useMotionPanelClock } from "../../lab/useMotionPanelClock";
+import { playStatusText } from "../../play-status-i18n";
 import "../../motion-panel.css";
 
 export default function MotionPanel() {
@@ -26,7 +27,7 @@ export default function MotionPanel() {
     uploadRef.current?.abort(); const controller = new AbortController(); uploadRef.current = controller;
     setLoading(true); setMessage(""); clock.pause();
     try { const result = await loadMotionImage(file, controller.signal); if (!controller.signal.aborted) { setImage(result); setMessage("내 그림을 불러왔어요. 서버 전송이나 자동 저장 없이 이 화면에서만 사용해요."); } }
-    catch (cause) { if (!controller.signal.aborted) setMessage(cause instanceof Error ? cause.message : "이미지를 불러오지 못했어요."); }
+    catch (cause) { if (!controller.signal.aborted) setMessage(cause instanceof Error ? cause.message : playStatusText("play.status.motionPanel.imageLoadFailed", "이미지를 불러오지 못했어요.")); }
     finally { if (uploadRef.current === controller) setLoading(false); }
   };
   const resetImage = () => { uploadRef.current?.abort(); uploadRef.current = null; setLoading(false); setImage(null); clock.seek(0); setMessage("기본 그림으로 돌아왔어요. 불러온 이미지는 이 화면에서 제거했어요."); };
@@ -34,7 +35,7 @@ export default function MotionPanel() {
     if (!svgRef.current || exporting) return;
     const snapshot = svgRef.current.outerHTML; clock.pause(); setExporting(true); setMessage("");
     try { await downloadPng(snapshot, "toonstudio-motion-panel.png", 960, 600); setMessage("현재 장면을 PNG로 저장했어요. 영상 파일이 아닌 정지 이미지예요."); }
-    catch { setMessage("PNG 저장에 실패했어요. 다른 브라우저나 더 작은 이미지로 다시 시도해 주세요."); }
+    catch { setMessage(playStatusText("play.status.motionPanel.pngSaveFailed", "PNG 저장에 실패했어요. 다른 브라우저나 더 작은 이미지로 다시 시도해 주세요.")); }
     finally { setExporting(false); }
   };
   return <section className="motion-panel-lab" aria-label="모션 컷 제작 도구">
@@ -54,7 +55,7 @@ export default function MotionPanel() {
       {loading && <p role="status" className="play-note">내 기기에서 이미지를 준비하고 있어요…</p>}
     </div></div>
     <ComicDialogue cast={cast} label="편집실의 한마디">{MOTION_PRESETS.find((item) => item.id === preset)?.description} 내 그림과 대사는 이 화면에서만 유지돼요. 마음에 드는 순간은 PNG로 남겨 주세요.</ComicDialogue>
-    <div className="play-actions"><button type="button" className="play-button primary" disabled={exporting || loading} onClick={() => void savePng()}><Download size={16} />{exporting ? "PNG 만드는 중…" : "현재 컷 PNG 저장"}</button><button type="button" className="play-button" onClick={() => setMessage(recordResult({ id: `motion-${koreaDay()}-${preset}`, game: "motion-panel", label: `${MOTION_PRESETS.find((item) => item.id === preset)?.label} 완성` }) ? "오늘의 완성을 창작 기록에 남겼어요. 이미지와 대사는 저장하지 않아요." : "완료 기록을 저장하지 못했어요. PNG로 결과를 보관해 주세요.")}>완성 기록 남기기</button><Link className="play-button" to="/studio">스튜디오에서 이어 그리기 ↗</Link><SharePageButton path={`/play?game=motion-panel&cast=${cast}`} text="모션 컷 — 한 컷에 이야기의 리듬을" /></div>
+    <div className="play-actions"><button type="button" className="play-button primary" disabled={exporting || loading} onClick={() => void savePng()}><Download size={16} />{exporting ? "PNG 만드는 중…" : "현재 컷 PNG 저장"}</button><button type="button" className="play-button" onClick={() => setMessage(recordResult({ id: `motion-${koreaDay()}-${preset}`, game: "motion-panel", label: `${MOTION_PRESETS.find((item) => item.id === preset)?.label} 완성` }) ? "오늘의 완성을 창작 기록에 남겼어요. 이미지와 대사는 저장하지 않아요." : playStatusText("play.status.motionPanel.recordSaveFailed", "완료 기록을 저장하지 못했어요. PNG로 결과를 보관해 주세요."))}>완성 기록 남기기</button><Link className="play-button" to="/studio">스튜디오에서 이어 그리기 ↗</Link><SharePageButton path={`/play?game=motion-panel&cast=${cast}`} text="모션 컷 — 한 컷에 이야기의 리듬을" /></div>
     <p className="play-feedback" role="status">{message}</p>
     <p className="play-note">나가기·새로고침 시 이미지와 대사가 사라집니다. 별도의 저장 버튼을 누르기 전에는 기기에 저장하지 않아요. 기본 그림은 ToonStudio의 오리지널 안내 일러스트입니다.</p>
   </section>;

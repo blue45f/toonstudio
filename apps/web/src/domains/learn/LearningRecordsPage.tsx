@@ -5,6 +5,7 @@ import { getAuthUserId } from "@/domains/auth/public/session/auth-session-state"
 
 import { summarizeLearningProgress } from "./learning-backup";
 import { LearningRecordTools } from "./LearningRecordTools";
+import { learnStatusText } from "./learn-status-i18n";
 import { StreakRecoveryPanel } from "./StreakRecoveryPanel";
 import { useLearningProgress } from "./use-learning-progress";
 
@@ -38,7 +39,7 @@ export function LearningRecordsPage() {
       {store.warning && <p className="learn-caution" role="status">{store.warning}</p>}
       {!hasRecords && (
         <section className="learn-hero-note" aria-labelledby="learning-records-empty-title">
-          <h2 id="learning-records-empty-title">아직 기록된 학습이 없어요</h2>
+          <h2 id="learning-records-empty-title">{learnStatusText("learn.status.records.empty", "아직 기록된 학습이 없어요")}</h2>
           <p>레슨을 하나라도 시작하면 진행률과 메모가 이 기기에 자동 저장됩니다. 먼저 배울 강좌를 골라보세요. 아래 백업 도구로 기록을 파일로 내보낼 수도 있습니다.</p>
           <p className="learn-actions"><Link className="learn-primary" to="/learn">강좌 보러 가기</Link></p>
         </section>
@@ -49,7 +50,7 @@ export function LearningRecordsPage() {
       <section className="learn-caution">
         <h2>백업 전 알아두세요</h2>
         <p>파일에는 실습 메모가 포함됩니다. 공유 링크에는 기록을 넣지 않으며, 백업 파일은 신뢰하는 기기에만 보관하세요. 브라우저 기록 삭제와 비공개 창 종료 전에 직접 백업해야 합니다.</p>
-        <p>여러 탭에서 같은 메모를 동시에 편집하는 공동 작업 기능은 아닙니다. 저장 실패 중 다른 탭의 변경이 감지되면 덮어쓰지 않고 확인을 요청합니다.</p>
+        <p>{learnStatusText("learn.status.records.multiTabNotice", "여러 탭에서 같은 메모를 동시에 편집하는 공동 작업 기능은 아닙니다. 저장 실패 중 다른 탭의 변경이 감지되면 덮어쓰지 않고 확인을 요청합니다.")}</p>
       </section>
       <Link className="learn-back" to="/learn">← 강좌로 돌아가기</Link>
     </div>

@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, Download, Languages, LockKeyhole, WandSparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 
 import { completeAutomaticFreeText } from "../studio-server-ai-client";
 import { createOriginalSample, ORIGINAL_CONTENT_CREDIT, SAMPLE_WORKS, type ProcessStage } from "./ecosystem-content";
@@ -21,7 +22,7 @@ function samplePage(sampleId: string, stage: ProcessStage = "final") {
 function parseAiArray(value: string): unknown {
   const start = value.indexOf("[");
   const end = value.lastIndexOf("]");
-  if (start < 0 || end <= start) throw new Error("AI 응답에서 JSON 배열을 찾지 못했습니다.");
+  if (start < 0 || end <= start) throw new Error(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.aiJsonArrayNotFound", "AI 응답에서 JSON 배열을 찾지 못했습니다."));
   return JSON.parse(value.slice(start, end + 1)) as unknown;
 }
 
@@ -97,14 +98,14 @@ export function CreatorEcosystemWorkbench() {
             source: row.source, locale, text: value.text, approved: false, updatedAt: now } satisfies TranslationDraft;
         }),
       ]);
-      setNotice(`${translations.length}개 번역 초안을 받았습니다. 승인 전에는 원고에 적용하지 않습니다.`);
+      setNotice(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.translationDraftsReceived", { count: translations.length }, "${translations.length}개 번역 초안을 받았습니다. 승인 전에는 원고에 적용하지 않습니다."));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "번역 초안을 만들지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.translationDraftFailed", "번역 초안을 만들지 못했습니다."));
     } finally { setBusy(false); }
   };
   const applyTranslations = () => {
     const next = applyApprovedTranslations(pages, drafts, locale);
-    if (next === pages) { setNotice("원문과 일치하고 승인된 번역이 없습니다."); return; }
+    if (next === pages) { setNotice(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.noApprovedTranslation", "원문과 일치하고 승인된 번역이 없습니다.")); return; }
     setPages([...next]);
     setNotice(`${locale} 승인본을 원고 사본에 한 번의 변경으로 적용했습니다.`);
   };
@@ -117,11 +118,11 @@ export function CreatorEcosystemWorkbench() {
       if (next === pages) { setNotice("공개·승인 잠금 또는 동일 값 때문에 변경하지 않았습니다."); return; }
       setPages([...next]);
       setNotice("선택한 설정 사용 위치에만 변경했습니다. 잠긴 원고는 유지했습니다.");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "설정 변경을 적용하지 못했습니다."); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.worldChangeFailed", "설정 변경을 적용하지 못했습니다.")); }
   };
 
   const exportBeta = () => {
-    if (!rightsAcknowledged || !preview) { setError("공개 권한 확인과 미리보기가 필요합니다."); return; }
+    if (!rightsAcknowledged || !preview) { setError(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.publishCheckRequired", "공개 권한 확인과 미리보기가 필요합니다.")); return; }
     const packageId = crypto.randomUUID();
     const pack = BETA_PACKAGE_SCHEMA.parse({
       kind: "toonstudio-beta", version: 1, id: packageId, documentId: `sample:${sampleId}`,
@@ -161,7 +162,7 @@ export function CreatorEcosystemWorkbench() {
     </div>
     <div className="mt-6 grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]">
       <aside className="space-y-3">
-        {preview ? <img src={preview} alt={`${page.name ?? "예제 작품"} 현재 원고 미리보기`} className="max-h-[34rem] w-full rounded-2xl border border-line bg-card object-contain" /> : <div className="grid min-h-64 place-items-center rounded-2xl border border-line bg-card text-sm text-fg-3">미리보기를 만들 수 없습니다.</div>}
+        {preview ? <img src={preview} alt={`${page.name ?? "예제 작품"} 현재 원고 미리보기`} className="max-h-[34rem] w-full rounded-2xl border border-line bg-card object-contain" /> : <div className="grid min-h-64 place-items-center rounded-2xl border border-line bg-card text-sm text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.previewUnavailable", "미리보기를 만들 수 없습니다.")}</div>}
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
           <Link to={`/studio/canvas?sample=${encodeURIComponent(sampleId)}&tutorial=bubble`} className={`${BUTTON} bg-accent text-on-accent`}>편집기에서 안내 실습 <WandSparkles size={15} /></Link>
           <Link to="/studio/ecosystem/viewer" className={BUTTON}>검토·과정 패키지 열기 <ArrowRight size={15} /></Link>

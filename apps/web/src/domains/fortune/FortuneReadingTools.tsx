@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { Copy, Share2, PencilLine } from "lucide-react";
 import type { FortuneReading } from "@toonstudio/core/fortune";
 import { fortuneCreativeMission, fortunePublicShare } from "./fortune-cinematic-model";
+import { fortuneStatusText } from "./fortune-status-i18n";
 
 export function FortuneReadingTools({ reading }: { reading: FortuneReading }) {
   const [message, setMessage] = useState("");
@@ -17,7 +18,7 @@ export function FortuneReadingTools({ reading }: { reading: FortuneReading }) {
   const share = async () => {
     if (!navigator.share) { await copy(); return; }
     try { await navigator.share({ title: payload.title, text: payload.text, url: new URL(payload.path, window.location.origin).href }); setMessage("공유창으로 해석을 전달했어요."); }
-    catch (cause) { if (typeof cause === "object" && cause !== null && "name" in cause && cause.name === "AbortError") { setMessage("공유를 취소했어요."); return; } setFallback(payload.text); setMessage("이 브라우저에서는 공유창을 열 수 없어요. 아래 내용을 직접 복사해 주세요."); }
+    catch (cause) { if (typeof cause === "object" && cause !== null && "name" in cause && cause.name === "AbortError") { setMessage("공유를 취소했어요."); return; } setFallback(payload.text); setMessage(fortuneStatusText("fortune.status.readingTools.shareUnavailable", "이 브라우저에서는 공유창을 열 수 없어요. 아래 내용을 직접 복사해 주세요.")); }
   };
   return <section className="fo-reading-tools" aria-label="해석 복사 및 공유"><div className="fo-reading-tool-actions"><button type="button" className="fo-button" onClick={() => { void copy(); }}><Copy size={16} />해석 복사</button><button type="button" className="fo-button" onClick={() => { void share(); }}><Share2 size={16} />해석 공유</button></div><p className="fo-help">버튼을 누를 때만 복사하거나 기기의 공유창을 열어요. 생년월일·태어난 시각·꿈 원문은 제외됩니다.</p>{fallback && <label className="fo-share-fallback">직접 복사할 해석<textarea readOnly rows={5} value={fallback} onFocus={(event) => event.currentTarget.select()} /></label>}<p className="fo-tool-status" role="status">{message}</p></section>;
 }

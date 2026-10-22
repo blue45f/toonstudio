@@ -1,3 +1,4 @@
+import { communityStatusText } from "../community-status-i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Flame, Image as ImageIcon, MessagesSquare, RotateCcw } from "lucide-react";
 
@@ -147,13 +148,13 @@ export function CommunityActivityPreview() {
     try {
       const data = await api.get<{ items?: unknown }>(`/community/posts?${POOL_QUERIES[key]}`, {
         signal,
-        errorMessage: "커뮤니티 글을 불러오지 못했어요.",
+        errorMessage: communityStatusText("community.status.activity.loadFailed", "커뮤니티 글을 불러오지 못했어요."),
       });
       if (!Array.isArray(data.items)) throw new Error("invalid payload");
       setPools((current) => ({ ...current, [key]: { status: "ready", posts: data.items as FanCafePost[] } }));
     } catch (caught) {
       if ((caught as Error)?.name === "AbortError") return;
-      const message = await getApiErrorMessage(caught, "커뮤니티 글을 불러오지 못했어요.");
+      const message = await getApiErrorMessage(caught, communityStatusText("community.status.activity.loadFailed", "커뮤니티 글을 불러오지 못했어요."));
       setPools((current) => ({ ...current, [key]: { status: "error", posts: [], message } }));
     }
   }, []);

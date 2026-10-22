@@ -17,6 +17,9 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 import { cx } from "@/shared/lib/cx";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import type {
   StudioBg3dOutlinerItem,
   StudioBg3dSceneOutlinerController,
@@ -71,6 +74,7 @@ export function StudioBg3dSceneOutliner({
   variant = "panel",
   className,
 }: StudioBg3dSceneOutlinerProps) {
+  const t = useT();
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
   const rowButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const rows = useMemo(
@@ -241,11 +245,11 @@ export function StudioBg3dSceneOutliner({
       )}>
         {controller.items.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-3 py-4 text-xs leading-relaxed text-fg-3">
-            아직 장면 객체가 없습니다. 도형·템플릿·에셋을 추가하면 이곳에서 계층으로 관리할 수 있어요.
+            {t("studio.bg3dPanelStatus.sceneOutliner.objectsEmpty", "아직 장면 객체가 없습니다. 도형·템플릿·에셋을 추가하면 이곳에서 계층으로 관리할 수 있어요.")}
           </p>
         ) : controller.filteredItems.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-3 py-4 text-xs leading-relaxed text-fg-3">
-            검색 결과가 없습니다.
+            {t("studio.bg3dPanelStatus.sceneOutliner.searchEmpty", "검색 결과가 없습니다.")}
           </p>
         ) : (
           <ul className="space-y-1" role="tree" aria-label="3D 장면 객체">

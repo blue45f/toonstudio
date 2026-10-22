@@ -35,6 +35,7 @@
  * handleSavePlan 경로로 저장한다. 실집계가 없으면 카드는 빈 상태 안내만 낸다.
  */
 import { useEffect, useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
   STUDIO_PROJECT_DIAGNOSTIC_SOURCE_UPDATED_EVENT,
@@ -184,7 +185,7 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
   // 상태로 접는다 (episode-metrics-planning-feedback 명세의 호스트 패턴).
   const metricsResource = useApiResource<CreatorAnalyticsResponse>(
     "/api/creator/analytics?period=30d",
-    "회차 성과를 불러오지 못했습니다.",
+    r3c04StatusText("studio.r3c04Status.planning.storyPlanning.metricsLoadFailed", "회차 성과를 불러오지 못했습니다."),
   );
   const episodeMetrics = resolveEpisodeMetricsLoad(metricsResource);
 
@@ -365,10 +366,7 @@ function CharacterSheetSurface({ projectId }: { readonly projectId: string }) {
         onSaveRelation={handleSaveRelation}
       />
       {source.story.bible.characters.length === 0 && (
-        <p>
-          아직 등록된 캐릭터가 없어요. 원고나 스토리월드에서 캐릭터가 생기면,
-          여기서 성격·말투·관계를 시트로 적을 수 있어요.
-        </p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.storyPlanning.emptyCharacters", "아직 등록된 캐릭터가 없어요. 원고나 스토리월드에서 캐릭터가 생기면, 여기서 성격·말투·관계를 시트로 적을 수 있어요.")}</p>
       )}
     </div>
   );

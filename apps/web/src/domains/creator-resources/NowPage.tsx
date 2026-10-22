@@ -40,6 +40,7 @@ import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SiteSectionTabs, SiteTabPanel, type SiteSectionTab } from "@/domains/legal/public/site-section-tabs";
 import { useSiteTabAnchors, useSiteTabs } from "@/domains/legal/public/site-tabs";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { resourceStatusText } from "./resource-status-i18n";
 
 type CopyStatus = "idle" | "copied" | "error";
 type NowTab = "mission" | "plan" | "variation" | "archive";
@@ -128,7 +129,7 @@ export function NowPage() {
   const selectedOffset = requestedOffset >= 0 ? requestedOffset : 0;
   const [todayEntry] = archive;
   const selected = archive[selectedOffset] ?? todayEntry;
-  if (!selected || !todayEntry) throw new Error("오늘의 영감 아카이브가 비어 있습니다.");
+  if (!selected || !todayEntry) throw new Error(resourceStatusText("resources.status.now.archiveEmpty", "오늘의 영감 아카이브가 비어 있습니다."));
   const today = todayEntry.day;
   const theme = selected.theme;
   const mode = getMode(state.mode);
@@ -152,7 +153,7 @@ export function NowPage() {
       window.localStorage.setItem(NOW_STORAGE_KEY, serializeNowState(state));
       setStorageError("");
     } catch {
-      setStorageError("브라우저 저장 공간에 기록하지 못했습니다. 비공개 모드 또는 저장 용량을 확인하세요.");
+      setStorageError(resourceStatusText("resources.status.now.storageWriteFailed", "브라우저 저장 공간에 기록하지 못했습니다. 비공개 모드 또는 저장 용량을 확인하세요."));
     }
   }, [state]);
 

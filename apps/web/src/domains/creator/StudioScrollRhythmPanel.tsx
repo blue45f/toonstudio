@@ -4,6 +4,7 @@
  * 판정 문구는 쓰지 않는다. 표시되는 것은 수치·자기 평균 대비 배율·구간 위치뿐이며,
  * 띠나 구간 행을 누르면 해당 컷(비트)으로 이동만 한다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useMemo, type ReactElement } from "react";
 
 import {
@@ -39,7 +40,7 @@ export function StudioScrollRhythmPanel({
   if (!episode) {
     return (
       <section aria-label="스크롤 리듬" className="rounded-2xl border border-line bg-card/40 p-3">
-        <p className="text-xs text-fg-3">표시할 회차가 없습니다.</p>
+        <p className="text-xs text-fg-3">{r3c07StatusText("studio.panelStatus.r3c07.scrollRhythm.episodesEmpty", "표시할 회차가 없습니다.")}</p>
       </section>
     );
   }
@@ -157,7 +158,7 @@ export function StudioScrollRhythmPanel({
         </ul>
       ) : (
         <p className="mt-2 text-[11px] text-fg-3">
-          회차 평균보다 대사 비율이 두드러진 구간이나, 대사 없는 컷의 연속 구간이 없습니다.
+          {r3c07StatusText("studio.panelStatus.r3c07.scrollRhythm.segmentsEmpty", "회차 평균보다 대사 비율이 두드러진 구간이나, 대사 없는 컷의 연속 구간이 없습니다.")}
         </p>
       )}
     </section>

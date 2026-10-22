@@ -11,6 +11,7 @@
  * 둘 다 이 패널 밖에서 일어난다 — 이 패널은 "이미 놓인 핀들의 목록 관리 + 실행" 만 담당한다
  * (StudioPerspectivePanel 이 소실점 드래그를 오버레이에 맡기는 것과 동일 역할 분담).
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Check, RotateCcw, Trash2, Waypoints, X } from "lucide-react";
 import { useId } from "react";
 
@@ -157,7 +158,7 @@ export function StudioPuppetWarpPanel({
               title={busy
                 ? "현재 변형을 적용하는 중입니다."
                 : pins.length === 0
-                  ? "되돌릴 핀이 아직 없습니다."
+                  ? r3c07StatusText("studio.panelStatus.r3c07.puppetWarp.noPinsToReset", "되돌릴 핀이 아직 없습니다.")
                   : "핀은 그대로 두고 전부 원본 위치로 되돌립니다."}
             >
               <RotateCcw className="size-3.5" aria-hidden />

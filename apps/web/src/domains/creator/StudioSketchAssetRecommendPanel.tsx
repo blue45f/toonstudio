@@ -9,6 +9,7 @@
  * 닮은 소재가 없을 때의 안내 + 모양 이름 텍스트 검색 전환 버튼.
  * 데이터는 전부 props이며, 그리기 상태만 내부에 둔다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Eraser, PencilLine, Search, Shapes, Sparkles } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
@@ -107,13 +108,13 @@ export function StudioSketchAssetRecommendPanel({
       const used = await onUseItem(item);
       setNotice(
         used === false
-          ? "현재 캔버스에서는 이 소재를 사용할 수 없습니다."
+          ? r3c07StatusText("studio.panelStatus.r3c07.sketchRecommend.assetUnavailable", "현재 캔버스에서는 이 소재를 사용할 수 없습니다.")
           : item.useMode === "open"
             ? `${item.title} 제작 도구를 열었습니다.`
             : `${item.title}을(를) 배치했습니다.`,
       );
     } catch (cause: unknown) {
-      setNotice(cause instanceof Error ? cause.message : "소재를 사용하지 못했습니다.");
+      setNotice(cause instanceof Error ? cause.message : r3c07StatusText("studio.panelStatus.r3c07.sketchRecommend.useFailed", "소재를 사용하지 못했습니다."));
     } finally {
       setPendingId(null);
     }
@@ -240,7 +241,7 @@ export function StudioSketchAssetRecommendPanel({
                     aria-label={`${item.title} ${item.useLabel}`}
                     onClick={() => void handleUseItem(item)}
                   >
-                    {pendingId === item.id ? "처리 중…" : item.useLabel}
+                    {pendingId === item.id ? r3c07StatusText("studio.panelStatus.r3c07.sketchRecommend.processing", "처리 중…") : item.useLabel}
                   </button>
                 </article>
               );

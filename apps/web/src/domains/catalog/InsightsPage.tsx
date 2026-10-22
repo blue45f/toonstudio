@@ -1,3 +1,4 @@
+import { catalogStatusText } from "./catalog-status-i18n";
 import { AreaChart } from "./insights-components/area-chart";
 import { BarList } from "./insights-components/bar-list";
 import { CompareSplit } from "./insights-components/compare-split";
@@ -58,7 +59,7 @@ function InsightsPageHeading() {
 export function InsightsPage() {
   const { data, loading, error, reload } = useApiResource<InsightsData>(
     "/api/insights",
-    "인사이트 데이터를 불러오지 못했습니다."
+    catalogStatusText("catalog.status.insights.loadFailed", "인사이트 데이터를 불러오지 못했습니다.")
   );
 
   if (loading) {
@@ -74,7 +75,7 @@ export function InsightsPage() {
     return (
       <Container size="wide" className="py-10">
         <InsightsPageHeading />
-        <ErrorState title="인사이트 데이터를 불러오지 못했습니다." message={error} onRetry={reload} />
+        <ErrorState title={catalogStatusText("catalog.status.insights.loadFailed", "인사이트 데이터를 불러오지 못했습니다.")} message={error} onRetry={reload} />
       </Container>
     );
   }

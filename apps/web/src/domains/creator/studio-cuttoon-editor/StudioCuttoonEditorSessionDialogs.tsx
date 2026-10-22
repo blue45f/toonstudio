@@ -10,6 +10,7 @@ import { isEffectivelyLocked } from "../studio-layers";
 import { createStudioPixelEditCanvas, encodeStudioPixelEditResultPng, loadStudioPixelEditImage } from "../studio-legacy-editor-runtime-helpers";
 import { StudioFilterDialog, StudioLayerLiftDialog } from "../studio-page-lazy-ui";
 import type { El, ImageEl } from "../studio-element-model";
+import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSession) {
@@ -110,12 +111,12 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                 }
                 const selection = studioFilterSession.selection;
                 if (!selection) {
-                  setError("필터를 적용할 픽셀 영역을 먼저 선택하세요.");
+                  setError(editorShellStatusText("studio.editorShellStatus.session.filterSelectAreaFirst", "필터를 적용할 픽셀 영역을 먼저 선택하세요."));
                   return;
                 }
                 const target = elementById.get(studioFilterSession.elementId);
                 if (!target || target.type !== "image") {
-                  setError("필터 대상 이미지가 현재 페이지에 없습니다. 다시 선택해 주세요.");
+                  setError(editorShellStatusText("studio.editorShellStatus.session.filterTargetMissing", "필터 대상 이미지가 현재 페이지에 없습니다. 다시 선택해 주세요."));
                   return;
                 }
                 const applySessionId = studioFilterSession.id;
@@ -171,7 +172,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                   setError(
                     selectionFilterError instanceof Error
                       ? selectionFilterError.message
-                      : "선택 영역 필터 마스크를 만들지 못했습니다.",
+                      : editorShellStatusText("studio.editorShellStatus.session.filterMaskCreateFailed", "선택 영역 필터 마스크를 만들지 못했습니다."),
                   );
                 } finally {
                   if (applySessionId === studioFilterSessionIdRef.current) {
@@ -239,7 +240,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                 setError(
                   filterApplyError instanceof Error
                     ? filterApplyError.message
-                    : "페이지 필터 레이어를 적용하지 못했습니다."
+                    : editorShellStatusText("studio.editorShellStatus.session.filterLayerApplyFailed", "페이지 필터 레이어를 적용하지 못했습니다.")
                 );
               } finally {
                 if (applySessionId === studioFilterSessionIdRef.current) {

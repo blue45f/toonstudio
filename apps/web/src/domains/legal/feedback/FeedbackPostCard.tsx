@@ -11,6 +11,7 @@ import {
 } from "@toonstudio/core/feedback";
 import { isFeedbackEntry, isFeedbackVote } from "@toonstudio/core/feedback-response";
 import { api, getApiErrorMessage } from "@/platform/api";
+import { legalStatusText } from "../legal-status-i18n";
 
 function ProgressEditor({ post, readOnly, onUpdated }: { post: FeedbackEntry; readOnly: boolean; onUpdated: (patch: Partial<FeedbackEntry>) => void }) {
   const id = useId();
@@ -23,7 +24,7 @@ function ProgressEditor({ post, readOnly, onUpdated }: { post: FeedbackEntry; re
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (readOnly || busy.current || progress === post.progress) return;
-    if (note.trim().length < 2) { setError("사용자에게 공개할 처리 안내를 입력해 주세요."); return; }
+    if (note.trim().length < 2) { setError(legalStatusText("legal.status.feedbackPostCard.noteRequired", "사용자에게 공개할 처리 안내를 입력해 주세요.")); return; }
     const viewerId = useApp.getState().userId;
     busy.current = true; setSaving(true); setError("");
     try {
@@ -31,10 +32,10 @@ function ProgressEditor({ post, readOnly, onUpdated }: { post: FeedbackEntry; re
         progress, expectedProgress: post.progress, note,
       }, { timeout: 30_000, referrerPolicy: "no-referrer" });
       if (useApp.getState().userId !== viewerId) return;
-      if (!isFeedbackEntry(entry) || entry.id !== post.id) throw new Error("처리 상태 저장 결과를 확인하지 못했어요. 목록을 새로고침해 주세요.");
+      if (!isFeedbackEntry(entry) || entry.id !== post.id) throw new Error(legalStatusText("legal.status.feedbackPostCard.saveUnconfirmed", "처리 상태 저장 결과를 확인하지 못했어요. 목록을 새로고침해 주세요."));
       onUpdated({ progress: entry.progress, status: entry.status, answeredAt: entry.answeredAt, replyCount: entry.replyCount });
       setNote("");
-    } catch (cause) { setError(await getApiErrorMessage(cause, "처리 상태를 변경하지 못했어요.")); }
+    } catch (cause) { setError(await getApiErrorMessage(cause, legalStatusText("legal.status.feedbackPostCard.saveFailed", "처리 상태를 변경하지 못했어요."))); }
     finally { busy.current = false; setSaving(false); }
   };
   return <details className="fb-management">
@@ -43,7 +44,7 @@ function ProgressEditor({ post, readOnly, onUpdated }: { post: FeedbackEntry; re
       <label htmlFor={`${id}-progress`}>변경할 처리 상태</label><select id={`${id}-progress`} value={progress} onChange={(event) => setProgress(event.target.value as FeedbackProgress)} disabled={saving}>{FEEDBACK_PROGRESS.map((value) => <option key={value} value={value}>{FEEDBACK_PROGRESS_LABELS[value]}</option>)}</select>
       <label htmlFor={`${id}-note`}>공개 처리 안내</label><textarea id={`${id}-note`} value={note} onChange={(event) => setNote(event.target.value)} rows={3} maxLength={1000} disabled={saving} placeholder="검토 결과, 반영 범위 또는 보류 이유를 알려주세요." />
       <p className="fb-caption">상태와 안내는 공개 운영자 댓글로 함께 기록됩니다. 답변만으로 ‘반영 완료’가 되지는 않습니다.</p>
-      <button type="submit" disabled={saving || readOnly || progress === post.progress || note.trim().length < 2} className="fb-button">{saving ? "저장 중…" : "처리 상태 저장"}</button>
+      <button type="submit" disabled={saving || readOnly || progress === post.progress || note.trim().length < 2} className="fb-button">{saving ? legalStatusText("legal.status.feedbackPostCard.saving", "저장 중…") : "처리 상태 저장"}</button>
       {error && <p className="fb-error" role="alert">{error}</p>}
     </form>
   </details>;
@@ -69,9 +70,9 @@ export function FeedbackPostCard({ post, expanded, onToggle, userId, canManage, 
     busy.current = true; setVoting(true); setError("");
     try {
       const result = await api.post<unknown>(`/feedback/posts/${encodeURIComponent(post.id)}/vote`, { voted }, { timeout: 20_000, referrerPolicy: "no-referrer" });
-      if (!isFeedbackVote(result) || result.voted !== voted) throw new Error("공감 결과를 확인하지 못했어요. 목록을 새로고침해 주세요.");
+      if (!isFeedbackVote(result) || result.voted !== voted) throw new Error(legalStatusText("legal.status.feedbackPostCard.voteUnconfirmed", "공감 결과를 확인하지 못했어요. 목록을 새로고침해 주세요."));
       if (useApp.getState().userId === userId) onUpdated({ viewerVoted: result.voted, voteCount: result.voteCount });
-    } catch (cause) { setError(await getApiErrorMessage(cause, "공감을 반영하지 못했어요.")); }
+    } catch (cause) { setError(await getApiErrorMessage(cause, legalStatusText("legal.status.feedbackPostCard.voteFailed", "공감을 반영하지 못했어요."))); }
     finally { busy.current = false; setVoting(false); }
   };
   return <li className="fb-post" data-expanded={expanded || undefined}>

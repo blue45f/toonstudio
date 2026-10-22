@@ -9,6 +9,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { StudioBg3dInferenceMarker } from "./StudioBg3dInferenceMarker";
+
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
 import { formatStudioBg3dMeasurementLength } from "./studio-bg3d-measurement";
 
 import type { KeyboardEvent, MouseEvent } from "react";
@@ -40,6 +43,7 @@ export function StudioBg3dInferenceKeyboardPicker({
   onPick,
   limit = DEFAULT_LIMIT,
 }: StudioBg3dInferenceKeyboardPickerProps) {
+  const t = useT();
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -110,7 +114,7 @@ export function StudioBg3dInferenceKeyboardPicker({
         {open ? (
           candidates.length === 0 ? (
             <p role="status" className="rounded-lg border border-dashed border-line px-3 py-2 text-[0.68rem] text-fg-3">
-              고를 수 있는 점이 없습니다. 장면에 객체를 놓으면 끝점·중간점·중심이 여기에 나타납니다.
+              {t("studio.bg3dPanelStatus.inferenceKeyboardPicker.empty", "고를 수 있는 점이 없습니다. 장면에 객체를 놓으면 끝점·중간점·중심이 여기에 나타납니다.")}
             </p>
           ) : (
             <ul

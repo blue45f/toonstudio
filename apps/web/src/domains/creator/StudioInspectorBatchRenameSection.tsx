@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { AlertTriangle, ChevronDown, ListOrdered, Replace, Tag } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
@@ -90,7 +91,7 @@ export function StudioInspectorBatchRenameSection({
       return;
     }
     if (!commit(plan.next)) {
-      setStatus("현재 문서 상태에서는 이름을 변경할 수 없어요.");
+      setStatus(r3c07StatusText("studio.panelStatus.r3c07.inspectorBatchRename.renameUnavailable", "현재 문서 상태에서는 이름을 변경할 수 없어요."));
       return;
     }
     setStatus(`${plan.announcement} 완료`);

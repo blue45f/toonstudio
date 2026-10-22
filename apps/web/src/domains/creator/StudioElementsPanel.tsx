@@ -3,6 +3,7 @@
  * 2D: search + category chips + recent MRU. Placement via onAdd(svg, w, h, id).
  * 3D: searchable catalog (primitives / props / scene templates) → openTarget routing.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Box, Eye, Grip, MessageCircle, MousePointer2, Search, Sparkles, Star, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type DragEvent, type ReactElement } from "react";
 
@@ -467,7 +468,7 @@ export function StudioElementsPanel({
           >
             {objectItems.length === 0 ? (
               <div className="col-span-2 flex h-24 flex-col items-center justify-center rounded-lg border border-dashed border-line text-center">
-                <p className="text-xs font-semibold text-fg-2">검색 결과가 없습니다</p>
+                <p className="text-xs font-semibold text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.elements.searchEmpty", "검색 결과가 없습니다")}</p>
                 <p className="mt-1 text-[0.62rem] text-fg-3">
                   ‘검’, ‘교실’, ‘상자’처럼 소품·씬·도형 이름으로 찾아보세요.
                 </p>
@@ -580,7 +581,7 @@ export function StudioElementsPanel({
           <div id={resultsId} role="tabpanel" aria-labelledby={`${resultsId}-${category}`}>
             {items.length === 0 ? (
               <div className="flex h-24 flex-col items-center justify-center rounded-lg border border-dashed border-line text-center">
-                <p className="text-xs font-semibold text-fg-2">검색 결과가 없습니다</p>
+                <p className="text-xs font-semibold text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.elements.searchEmpty", "검색 결과가 없습니다")}</p>
                 <p className="mt-1 text-xs text-fg-3">검색어·형태·즐겨찾기 조건을 줄여보세요.</p>
                 <button type="button" onClick={resetCatalogFilters} className={`${STUDIO_CATALOG_CONTROL} mt-2`}>필터 초기화 · 전체 보기</button>
               </div>

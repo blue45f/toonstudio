@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Pin, PinOff, Search } from "lucide-react";
 import { useId } from "react";
 import { STUDIO_RAIL_TOOL_CATALOG, studioRailToolLabel, type StudioRailToolId } from "./studio-app-settings";
@@ -57,6 +58,6 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
         })}
       </section>;
     })}
-    {!STUDIO_RAIL_TOOL_CATALOG.some(({ id }) => matches(id)) ? <p role="status" className="py-4 text-sm text-fg-2">일치하는 도구가 없습니다. 이름이나 단축키를 바꿔 검색하세요.</p> : null}
+    {!STUDIO_RAIL_TOOL_CATALOG.some(({ id }) => matches(id)) ? <p role="status" className="py-4 text-sm text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.allToolsCatalog.searchEmpty", "일치하는 도구가 없습니다. 이름이나 단축키를 바꿔 검색하세요.")}</p> : null}
   </div>;
 }

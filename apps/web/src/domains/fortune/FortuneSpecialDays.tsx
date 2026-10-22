@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { readFortuneResponse, validatedFortuneExpiry } from "./fortune-response-lifetime";
 import { useFortuneExpiry } from "./useFortuneExpiry";
+import { fortuneStatusText } from "./fortune-status-i18n";
 import { FORTUNE_SPECIAL_DAY_CATEGORIES, FORTUNE_SPECIAL_DAY_LABELS, validateFortuneSpecialDays, type FortuneSpecialDayCategory } from "@toonstudio/core/fortune";
 
 const schema = z.object({ kind: z.literal("special-days"), month: z.string(), category: z.enum(FORTUNE_SPECIAL_DAY_CATEGORIES),
@@ -30,19 +31,19 @@ function SpecialDaysResult({ month, category }: { month: string; category: Fortu
       if (value.month !== month || value.category !== category || !validateFortuneSpecialDays(month, category, value.items)) throw new Error("context-mismatch");
       if (value.status === "local-fallback") {
         if (value.source !== "local" || value.items.length) throw new Error("source-mismatch");
-        setNotice(value.reason === "not-configured" ? "특일 데이터 연결은 아직 활성화되지 않았어요. 기본 달력은 계속 사용할 수 있어요." : "특일 데이터를 확인할 수 없어 기본 달력을 유지합니다.");
+        setNotice(value.reason === "not-configured" ? fortuneStatusText("fortune.status.specialDays.notConfigured", "특일 데이터 연결은 아직 활성화되지 않았어요. 기본 달력은 계속 사용할 수 있어요.") : fortuneStatusText("fortune.status.specialDays.unavailable", "특일 데이터를 확인할 수 없어 기본 달력을 유지합니다."));
       } else {
         if (value.source !== "kasi" || !value.checkedAt || !value.expiresAt || Date.parse(value.expiresAt) <= Date.now() || Date.parse(value.expiresAt) <= Date.parse(value.checkedAt)) throw new Error("expired-source");
         value.expiresAt = validatedFortuneExpiry(value);
         setResult(value);
       }
-    } catch { if (request === sequence.current) setNotice("특일 데이터를 확인할 수 없어 기본 달력을 유지합니다."); }
+    } catch { if (request === sequence.current) setNotice(fortuneStatusText("fortune.status.specialDays.unavailable", "특일 데이터를 확인할 수 없어 기본 달력을 유지합니다.")); }
     finally { window.clearTimeout(timer); if (request === sequence.current) setBusy(false); }
   };
   return <div aria-busy={busy}>
-    <button type="button" className="fo-button" disabled={busy} onClick={() => { void load(); }}>{busy ? "특일 데이터 확인 중…" : "특일 정보 확인"}</button>
+    <button type="button" className="fo-button" disabled={busy} onClick={() => { void load(); }}>{busy ? fortuneStatusText("fortune.status.specialDays.checking", "특일 데이터 확인 중…") : "특일 정보 확인"}</button>
     {busy && <button type="button" className="fo-button" onClick={cancel}>특일 조회 취소</button>}
-    <p role="status" aria-live="polite">{notice || (expired ? "특일 정보의 유효기간이 지났어요. 다시 확인해 주세요." : "")}</p>
+    <p role="status" aria-live="polite">{notice || (expired ? fortuneStatusText("fortune.status.specialDays.expired", "특일 정보의 유효기간이 지났어요. 다시 확인해 주세요.") : "")}</p>
     {result && !expired && <div>
       {result.items.length ? <ul>{result.items.map((item) => <li key={`${item.date}:${item.sequence}`}>
         <time dateTime={item.date}>{item.date}</time> · {item.name} {item.isHoliday && <strong>· 공공기관 휴일</strong>}

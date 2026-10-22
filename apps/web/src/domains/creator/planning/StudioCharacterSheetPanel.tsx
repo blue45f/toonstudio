@@ -13,6 +13,7 @@
  *   확인 결과는 콜백으로 올려 호스트가 withModelSheet 로 다시 저장한다.
  */
 import { useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { StudioStoryBible } from "../studio-story-bible";
 import { ModelSheetFreezePanel } from "../production-hub/ModelSheetFreezePanel";
 import type {
@@ -77,7 +78,7 @@ export function StudioCharacterSheetPanel({
       {sheet && (
         <article aria-label={`${sheet.character.name} 시트`}>
           <h2>{sheet.character.name}</h2>
-          {sheet.needsProfile && <p>아직 시트가 비어 있어요. 성격 한 줄부터 시작해 보세요.</p>}
+          {sheet.needsProfile && <p>{r3c04StatusText("studio.r3c04Status.planning.sheetPanel.emptyProfile", "아직 시트가 비어 있어요. 성격 한 줄부터 시작해 보세요.")}</p>}
           <ProfileForm
             key={sheet.character.id}
             characterId={sheet.character.id}
@@ -100,7 +101,7 @@ export function StudioCharacterSheetPanel({
                 </li>
               ))}
               {sheet.outgoing.length === 0 && sheet.incoming.length === 0 && (
-                <li>아직 적힌 관계가 없어요.</li>
+                <li>{r3c04StatusText("studio.r3c04Status.planning.sheetPanel.emptyRelations", "아직 적힌 관계가 없어요.")}</li>
               )}
             </ul>
             <RelationForm

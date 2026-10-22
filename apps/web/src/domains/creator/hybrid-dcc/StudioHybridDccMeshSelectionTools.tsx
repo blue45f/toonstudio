@@ -12,6 +12,7 @@ import {
   type StudioHybridDccSelectionComponent,
 } from "./studio-hybrid-dcc-selection-commands";
 import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
+import { subStatusText } from "../studio-sub-status-i18n";
 
 interface Props extends StudioHybridDccViewportProps {
   readonly scopeRef: RefObject<HTMLDivElement | null>;
@@ -53,20 +54,20 @@ export function StudioHybridDccMeshSelectionTools(props: Props) {
 
   const source = (): StudioHybridDccMeshSelectionSource => {
     if (blocked || !record || !componentSelection || componentSelection.mode === "object") {
-      throw new Error("편집 가능한 오브젝트의 점·선·면 모드에서 사용하세요.");
+      throw new Error(subStatusText("studio.subStatus.mesh.useInMode", "편집 가능한 오브젝트의 점·선·면 모드에서 사용하세요."));
     }
     const viewport = scopeRef.current?.querySelector('[data-studio-hybrid-dcc-viewport="true"]');
     if (viewport?.getAttribute("data-dragging") === "true" || viewport?.getAttribute("data-context-lost") === "true") {
-      throw new Error("진행 중인 변형이나 그래픽 중단이 끝난 뒤 선택하세요.");
+      throw new Error(subStatusText("studio.subStatus.mesh.afterInterruption", "진행 중인 변형이나 그래픽 중단이 끝난 뒤 선택하세요."));
     }
     const provenance = componentSelection.provenance;
     if (provenance?.assetId !== record.assetId || provenance.meshRevision !== record.revision
       || provenance.sourceHash !== record.meshHash) {
-      throw new Error("선택 원본이 변경되었습니다. 현재 메시에서 다시 선택하세요.");
+      throw new Error(subStatusText("studio.subStatus.mesh.sourceChanged", "선택 원본이 변경되었습니다. 현재 메시에서 다시 선택하세요."));
     }
     const snapshot = deriveStudioHybridDccViewportSnapshot(workspace, componentSelection.mode);
     if (!snapshot.assets.some(({ assetId }) => assetId === record.assetId)) {
-      throw new Error("숨겨졌거나 표시할 수 없는 메시에는 선택 명령을 적용하지 않습니다.");
+      throw new Error(subStatusText("studio.subStatus.mesh.hiddenMesh", "숨겨졌거나 표시할 수 없는 메시에는 선택 명령을 적용하지 않습니다."));
     }
     return { assetId: record.assetId, mesh: record.mesh, meshRevision: record.revision, sourceHash: record.meshHash };
   };
@@ -80,14 +81,14 @@ export function StudioHybridDccMeshSelectionTools(props: Props) {
     const steps = planStudioHybridDccSelectionDispatch(
       componentSelection.elementIds, checked.value.elementIds, Boolean(props.onClearComponentSelection),
     );
-    if (steps.length === 0) { setNotice("선택 변경이 없습니다."); return; }
+    if (steps.length === 0) { setNotice(subStatusText("studio.subStatus.mesh.noChange", "선택 변경이 없습니다.")); return; }
     // The shipping parent uses functional state updates, so React batches these in one event.
     // The bounded plan avoids unbounded O(selected × changes) immutable callback work.
     for (const step of steps) {
       if (step.operation === "clear") props.onClearComponentSelection?.();
       else props.onSelectComponent(selectionSource.assetId, componentSelection.mode, step.id, step.operation);
     }
-    setNotice(`${checked.value.elementIds.length.toLocaleString("ko-KR")}개 요소 선택을 요청했습니다. 메시 원본은 변경하지 않습니다.`);
+    setNotice(subStatusText("studio.subStatus.mesh.selected", { count: checked.value.elementIds.length.toLocaleString("ko-KR") }, "{count}개 요소 선택을 요청했습니다. 메시 원본은 변경하지 않습니다."));
   };
   const run = (command: StudioHybridDccSelectionCommand) => {
     if (blocked) return;
@@ -97,7 +98,7 @@ export function StudioHybridDccMeshSelectionTools(props: Props) {
       if (!componentSelection) return;
       const ids = runStudioHybridDccSelectionCommand(selectedSource.mesh, mode, componentSelection.elementIds, command);
       apply(selectedSource, ids);
-    } catch (problem) { setError(problem instanceof Error ? problem.message : "선택 명령을 실행하지 못했습니다."); setOpen(true); }
+    } catch (problem) { setError(problem instanceof Error ? problem.message : subStatusText("studio.subStatus.mesh.commandFailed", "선택 명령을 실행하지 못했습니다.")); setOpen(true); }
   };
   const shortcut = useEffectEvent((event: KeyboardEvent) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -129,7 +130,7 @@ export function StudioHybridDccMeshSelectionTools(props: Props) {
       </button>
       <div id={id} hidden={!open} className="space-y-3 border-t border-line p-3">
         <p className="text-xs leading-relaxed text-fg-3">점은 모서리로, 선은 공유 정점으로, 면은 공유 모서리로 연결됩니다. 겹쳐 보이기만 하는 별도 부품은 연결하지 않습니다.</p>
-        {blocked ? <p role="status" className="text-xs text-fg-3">오브젝트를 선택하고 1·2·3 키로 점·선·면 모드에 들어가세요. 읽기 전용·작업 중·조형 모드에서는 사용할 수 없습니다.</p> : null}
+        {blocked ? <p role="status" className="text-xs text-fg-3">{subStatusText("studio.subStatus.mesh.blockedGuide", "오브젝트를 선택하고 1·2·3 키로 점·선·면 모드에 들어가세요. 읽기 전용·작업 중·조형 모드에서는 사용할 수 없습니다.")}</p> : null}
         <fieldset disabled={Boolean(blocked)} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <legend className="sr-only">메시 선택 명령</legend>
           {COMMANDS.map(([command, label, description]) => (
@@ -146,17 +147,17 @@ export function StudioHybridDccMeshSelectionTools(props: Props) {
               if (!componentSelection || componentSelection.mode === "object") return;
               setSaved({ assetId: selectedSource.assetId, meshRevision: selectedSource.meshRevision,
                 sourceHash: selectedSource.sourceHash, mode: componentSelection.mode, ids: [...componentSelection.elementIds] });
-              setNotice("현재 선택을 기억했습니다. 같은 원본 버전과 선택 모드에서 복원할 수 있습니다.");
-            } catch (problem) { setError(problem instanceof Error ? problem.message : "선택을 기억하지 못했습니다."); }
+              setNotice(subStatusText("studio.subStatus.mesh.saved", "현재 선택을 기억했습니다. 같은 원본 버전과 선택 모드에서 복원할 수 있습니다."));
+            } catch (problem) { setError(problem instanceof Error ? problem.message : subStatusText("studio.subStatus.mesh.saveFailed", "선택을 기억하지 못했습니다.")); }
           }}>선택 기억</button>
           <button type="button" className={CONTROL} disabled={Boolean(blocked) || !savedMatches} onClick={() => {
             setError("");
             try { if (savedMatches && saved) apply(source(), saved.ids); }
-            catch (problem) { setError(problem instanceof Error ? problem.message : "선택을 복원하지 못했습니다."); }
+            catch (problem) { setError(problem instanceof Error ? problem.message : subStatusText("studio.subStatus.mesh.restoreFailed", "선택을 복원하지 못했습니다.")); }
           }}>기억한 선택 복원</button>
           <span className="self-center text-xs tabular-nums text-fg-3">현재 {componentSelection?.elementIds.length ?? 0}개 선택</span>
         </div>
-        {saved && !savedMatches ? <p className="text-xs text-fg-3">기억한 선택과 원본 버전 또는 모드가 달라 복원을 차단했습니다.</p> : null}
+        {saved && !savedMatches ? <p className="text-xs text-fg-3">{subStatusText("studio.subStatus.mesh.savedMismatch", "기억한 선택과 원본 버전 또는 모드가 달라 복원을 차단했습니다.")}</p> : null}
         <p className="text-[11px] leading-relaxed text-fg-3">캔버스: A 전체 · Alt+A 해제 · Ctrl+I 반전 · L 연결 · Ctrl+키패드 ± 확장/축소. 현재 연결 방식은 한 번에 최대 512개 변경을 지원하며 한도를 넘으면 일부만 선택하지 않고 중단합니다.</p>
         {error ? <p role="alert" className="text-xs text-fg-2">{error}</p> : null}
         {notice ? <p role="status" className="text-xs text-fg-2">{notice}</p> : null}

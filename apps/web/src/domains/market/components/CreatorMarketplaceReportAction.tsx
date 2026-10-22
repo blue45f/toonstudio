@@ -1,3 +1,4 @@
+import { marketStatusText } from "../market-status-i18n";
 import * as Dialog from "@radix-ui/react-dialog";
 import { CheckCircle2, Flag, LoaderCircle, X } from "lucide-react";
 import { useId, useRef, useState } from "react";
@@ -79,17 +80,17 @@ function CreatorMarketplaceReportActionState({
       : owner
         ? t("market.report.ownResource", "자신이 배포한 마켓 리소스는 신고할 수 없습니다.")
         : submission.kind === "success"
-          ? "신고가 접수되었습니다. 관리자 검수 전에는 공개 상태가 달라지지 않습니다."
+          ? marketStatusText("market.status.report.submittedNotice", "신고가 접수되었습니다. 관리자 검수 전에는 공개 상태가 달라지지 않습니다.")
           : submission.kind === "duplicate"
             ? "현재 패키지 릴리스 주기에서 이미 신고했습니다. 중복 신고는 새로 제출되지 않았습니다."
             : null;
 
   const triggerLabel = !ready
-    ? "세션 확인 중"
+    ? marketStatusText("market.status.report.sessionChecking", "세션 확인 중")
     : !authenticated
       ? "로그인 후 신고"
       : owner
-        ? "내 리소스 신고 불가"
+        ? marketStatusText("market.status.report.ownResourceUnavailable", "내 리소스 신고 불가")
         : submission.kind === "success"
           ? "신고 접수됨"
           : submission.kind === "duplicate"

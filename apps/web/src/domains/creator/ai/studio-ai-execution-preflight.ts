@@ -6,6 +6,7 @@
  * credential access, or model execution. Keep it safe to call during render.
  */
 import { STUDIO_AI_ASSIST_TOOLS, type StudioAiAssistToolId } from "./studio-ai-assist-ux";
+import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
 
 export const STUDIO_AI_EXECUTION_COST_CATEGORIES = [
   "클라우드 무료",
@@ -116,11 +117,8 @@ const TEXT_FALLBACK_RETRY_POLICY =
 const IMAGE_FALLBACK_RETRY_POLICY =
   "자동 fallback·자동 재시도 없음 · 실패 내용을 확인한 뒤 수동 재시도";
 
-const IMAGE_UNAVAILABLE_REASON =
-  "이미지 API가 연결되지 않아 실행할 수 없습니다. AI 어시스트 설정에서 키를 등록해 주세요.";
-
-const TEXT_UNAVAILABLE_REASON =
-  "텍스트 AI가 연결되지 않아 실행할 수 없습니다. 로그인하면 자동 무료 AI를 먼저 사용하며, 무료 경로를 사용할 수 없으면 통합 AI 설정에서 개인 클라우드 API 키와 모델을 연결하세요.";
+// unavailableReason 문구는 모듈 상수로 고정하면 로케일이 얼어붙으므로,
+// 계획 함수 안에서 aiErrorText로 호출 시점 로케일로 해석한다 (T4).
 
 function normalizeConnectionLabel(connectionLabel: string): string {
   const normalized = connectionLabel.replace(/\s+/g, " ").trim().slice(0, 120);
@@ -171,10 +169,10 @@ export function planStudioAiExecutionPreflight(
   if (!requiredConfigured) {
     unavailableReason =
       spec.requiredConnection === "image"
-        ? IMAGE_UNAVAILABLE_REASON
-        : TEXT_UNAVAILABLE_REASON;
+        ? aiErrorText("studio.aiError.preflight.imageUnavailable", "이미지 API가 연결되지 않아 실행할 수 없습니다. AI 어시스트 설정에서 키를 등록해 주세요.")
+        : aiErrorText("studio.aiError.preflight.textUnavailable", "텍스트 AI가 연결되지 않아 실행할 수 없습니다. 로그인하면 자동 무료 AI를 먼저 사용하며, 무료 경로를 사용할 수 없으면 통합 AI 설정에서 개인 클라우드 API 키와 모델을 연결하세요.");
   } else if (!input.connectionOk) {
-    unavailableReason = `연결 상태가 정상으로 확인되지 않았습니다 (${connectionLabel}). AI 어시스트 설정에서 다시 확인해 주세요.`;
+    unavailableReason = aiErrorText("studio.aiError.preflight.connectionUnverified", { connectionLabel }, "연결 상태가 정상으로 확인되지 않았습니다 ({connectionLabel}). AI 어시스트 설정에서 다시 확인해 주세요.");
   }
 
   return {

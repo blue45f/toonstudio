@@ -1,3 +1,4 @@
+import { authRestStatusText } from "./auth-rest-status-i18n";
 import { useEffect, useRef } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -39,7 +40,7 @@ export function GuestMigrationBridge() {
       // 되고 재시도도 일어나지 않는다. 세션을 유지하고 다시 시도할 수 있게
       // 되돌린 뒤, 실패를 사용자에게 알린다.
       migratedRef.current = false;
-      toast("게스트로 만든 내용을 계정으로 옮기지 못했어요. 잠시 뒤 다시 시도해 주세요.", {
+      toast(authRestStatusText("authRest.status.guestMigration.failed", "게스트로 만든 내용을 계정으로 옮기지 못했어요. 잠시 뒤 다시 시도해 주세요."), {
         tone: "error",
       });
     }

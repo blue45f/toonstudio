@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import type { PsdImportResult } from "./studio-psd-import";
 import {
   AlertTriangle,
@@ -457,7 +458,7 @@ export function StudioInterchangeLossPreviewDialog({
           {busy ? (
             <p className="mb-2 flex items-center gap-2 text-[0.68rem] font-semibold text-accent" role="status" aria-live="polite">
               <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
-              파일을 안전하게 가져오는 중입니다. 필요하면 아래에서 중단할 수 있어요.
+              {panelStatusText("studio.panelStatus.interchangeLoss.importing", "파일을 안전하게 가져오는 중입니다. 필요하면 아래에서 중단할 수 있어요.")}
             </p>
           ) : null}
           <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">

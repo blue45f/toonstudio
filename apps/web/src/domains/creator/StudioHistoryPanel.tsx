@@ -2,6 +2,7 @@
 // 항목 클릭으로 그 시점으로 즉시 점프한다(실행취소/다시실행 반복과 동일한 인덱스 이동).
 // 라벨·점프 계산은 studio-history-labels(순수), 인덱스 반영(setPagesHi)은 StudioPage(메인 루프)가 담당.
 // 자체완결 플로팅 패널: 캔버스 컨테이너(relative) 우측 상단에 떠 있고 Esc 로 닫힌다.
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { History as HistoryIcon, Paintbrush, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
@@ -139,7 +140,7 @@ export function StudioHistoryPanel({
                   aria-pressed={brushSourceIndex === entry.index}
                   title={
                     brushSourceAvailability && !brushSourceAvailability[entry.index]
-                      ? "이 시점엔 같은 레이어가 없어 지정할 수 없어요."
+                      ? r3c07StatusText("studio.panelStatus.r3c07.historyPanel.noSameLayer", "이 시점엔 같은 레이어가 없어 지정할 수 없어요.")
                       : brushSourceIndex === entry.index
                         ? "히스토리 브러시 소스로 지정됨"
                         : "이 시점을 히스토리 브러시 소스로 지정"

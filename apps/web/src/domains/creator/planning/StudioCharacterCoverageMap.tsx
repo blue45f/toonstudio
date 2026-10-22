@@ -19,6 +19,7 @@
  * 완전히 동일하다 (studio-episode-metrics-overlay.ts 의 정직성 규칙).
  */
 import { useMemo, useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { StudioStoryCharacter } from "../studio-story-bible";
 import {
   buildCharacterCoverage,
@@ -134,7 +135,7 @@ export function StudioCharacterCoverageMap({
       </header>
 
       {coverage.latestRecordedEpisodeNumber === null && (
-        <p>아직 등장 기록이 없어요. 회차마다 등장 캐릭터를 태그하면 여기에 쌓여요.</p>
+        <p>{r3c04StatusText("studio.r3c04Status.planning.coverage.emptyLatest", "아직 등장 기록이 없어요. 회차마다 등장 캐릭터를 태그하면 여기에 쌓여요.")}</p>
       )}
       {coverage.ignoredRecordCount > 0 && (
         <p>알 수 없는 캐릭터·회차를 가리키는 기록 {coverage.ignoredRecordCount}건은 빼고 집계했어요.</p>
@@ -300,7 +301,7 @@ export function StudioCharacterCoverageMap({
               )}
             </>
           ) : (
-            <p>아직 등장 기록이 없어요. 처음 등장하는 회차에서 태그하면 다음부터 요약이 쌓여요.</p>
+            <p>{r3c04StatusText("studio.r3c04Status.planning.coverage.emptySelected", "아직 등장 기록이 없어요. 처음 등장하는 회차에서 태그하면 다음부터 요약이 쌓여요.")}</p>
           )}
         </article>
       )}

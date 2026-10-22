@@ -14,6 +14,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
+
 import {
   buildStcShaperDraft,
   createManualStcProfile,
@@ -433,7 +435,7 @@ export function StudioStcGuidedFlowPanel(props: StudioStcGuidedFlowPanelProps) {
             onClick={() => void goNext()}
             className="rounded-full bg-accent px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
           >
-            {analyzing ? "특징을 읽는 중…" : flow.step === "photo" ? "특징 확인으로" : "초안 만들기"}
+            {analyzing ? r3c04StatusText("studio.r3c04Status.shaper.stcFlow.analyzing", "특징을 읽는 중…") : flow.step === "photo" ? "특징 확인으로" : "초안 만들기"}
           </button>
         ) : (
           <button

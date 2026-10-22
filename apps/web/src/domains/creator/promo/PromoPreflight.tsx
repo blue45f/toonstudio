@@ -1,4 +1,5 @@
 import type { PromoPreflightIssue } from "./promo-preflight";
+import { subStatusText } from "../studio-sub-status-i18n";
 
 /** 출력 전 점검 목록 — 점검 결과는 화면(단계 안내)과 공유하도록 호출자가 한 번 계산해 넘긴다. */
 export function PromoPreflight({ issues, disabled, onSeek }: {
@@ -13,6 +14,6 @@ export function PromoPreflight({ issues, disabled, onSeek }: {
         <span>{issue.message}</span>
         {frame !== undefined ? <button type="button" disabled={disabled} onClick={() => onSeek(frame)}>해당 장면 확인</button> : null}
       </li>;
-    })}</ul> : <p>자동 점검에서 주의사항이 발견되지 않았어요. 마지막으로 미리보기와 소리를 확인하세요.</p>}
+    })}</ul> : <p>{subStatusText("studio.subStatus.preflight.noIssues", "자동 점검에서 주의사항이 발견되지 않았어요. 마지막으로 미리보기와 소리를 확인하세요.")}</p>}
   </section>;
 }

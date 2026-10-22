@@ -17,6 +17,9 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { api } from "@/platform/api";
+import { useT } from "@/shared/lib/i18n";
+
+import "./ai-status-i18n";
 
 import {
   buildAiCapabilityRegistry,
@@ -62,6 +65,13 @@ const STATUS_LABELS: Readonly<Record<AiCapabilityAvailability, string>> = {
   unavailable: "현재 비활성",
   checking: "확인 중",
   local: "기기에서 사용",
+};
+const STATUS_LABEL_KEYS: Readonly<Record<AiCapabilityAvailability, string>> = {
+  ready: "shared.aiStatus.capability.ready",
+  "setup-required": "shared.aiStatus.capability.setupRequired",
+  unavailable: "shared.aiStatus.capability.unavailable",
+  checking: "shared.aiStatus.capability.checking",
+  local: "shared.aiStatus.capability.local",
 };
 const EXECUTION_LABELS: Readonly<Record<AiCapabilityExecution, string>> = {
   "service-cloud": "서비스 클라우드",
@@ -133,6 +143,7 @@ export function AiCapabilityStatusBoard({
   userInference,
   userThreeD,
 }: AiCapabilityStatusBoardProps) {
+  const t = useT();
   const aux = useUnifiedAiAuxSettings();
   const [remote, setRemote] = useState<RemoteState>({ mode: "checking" });
 
@@ -255,7 +266,7 @@ export function AiCapabilityStatusBoard({
                 </span>
                 <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-bold ${statusClasses(item.availability)}`}>
                   <StatusIcon status={item.availability} />
-                  {STATUS_LABELS[item.availability]}
+                  {t(STATUS_LABEL_KEYS[item.availability], STATUS_LABELS[item.availability])}
                 </span>
               </div>
               <h4 className="mt-3 font-bold">{item.title}</h4>

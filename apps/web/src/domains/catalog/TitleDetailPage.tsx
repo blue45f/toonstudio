@@ -1,3 +1,4 @@
+import { catalogStatusText } from "./catalog-status-i18n";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -87,7 +88,7 @@ export function TitleDetailPage() {
   const { slug } = useParams();
   const { data, loading, error, notFound, reload } = useApiResource<TitleDetailResponse>(
     slug ? `/api/titles/${encodeURIComponent(slug)}` : null,
-    "작품 상세 데이터를 불러오지 못했습니다."
+    catalogStatusText("catalog.status.titleDetail.loadFailed", "작품 상세 데이터를 불러오지 못했습니다.")
   );
   useDocumentTitle(data?.title?.title);
   // 시놉시스 원문은 저작권 리스크가 있어 관리자 킬스위치로 끌 수 있다(끄면 문단 자체를 숨김).
@@ -429,7 +430,7 @@ export function TitleDetailPage() {
             {reviewsAvailable ? (
               <span className="numeral text-lg text-fg-3">{reviews.length}</span>
             ) : (
-              <Badge tone="warn">현재 확인 불가</Badge>
+              <Badge tone="warn">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableBadge", "현재 확인 불가")}</Badge>
             )}
             {reviewsAvailable && reviews.length > 0 && (
               <span className="flex items-center gap-1.5 text-sm font-normal text-fg-3">
@@ -441,8 +442,8 @@ export function TitleDetailPage() {
       >
         {!reviewsAvailable ? (
           <div role="status" className="rounded-2xl border border-warn/35 bg-warn/10 p-6 text-sm text-fg-2">
-            <p className="font-semibold text-fg">리뷰 기능을 일시적으로 사용할 수 없습니다.</p>
-            <p className="mt-1 leading-relaxed">리뷰 목록이 비어 있다는 뜻은 아닙니다. 작품 정보와 다른 탐색 기능은 계속 사용할 수 있습니다.</p>
+            <p className="font-semibold text-fg">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableTitle", "리뷰 기능을 일시적으로 사용할 수 없습니다.")}</p>
+            <p className="mt-1 leading-relaxed">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableDescription", "리뷰 목록이 비어 있다는 뜻은 아닙니다. 작품 정보와 다른 탐색 기능은 계속 사용할 수 있습니다.")}</p>
             <Link href="/status" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-accent hover:text-accent-2">
               서비스 상태 확인
             </Link>

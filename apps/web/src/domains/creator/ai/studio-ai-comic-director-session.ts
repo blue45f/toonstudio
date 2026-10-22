@@ -6,6 +6,8 @@ import {
   type StudioToonAutomationDocument,
 } from "./studio-toon-automation";
 
+import { encodeAiErrorCode } from "./studio-ai-error-i18n-t4t5";
+
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 
 export type StudioAiComicDirectorStage =
@@ -509,9 +511,11 @@ export function reconcileStudioAiComicDirectorJobs(
     return {
       ...job,
       status: "unknown",
+      // 영속 필드 (T4): 문구 대신 코드를 저장하고 표시 시점에 해석한다.
+      // 이미 저장된 구 레코드의 한국어 문자열은 표시측 하위호환으로 그대로 표시된다.
       error:
         job.error
-        ?? "브라우저 연결이 끊긴 동안 공급자 완료 여부를 확인하지 못했습니다.",
+        ?? encodeAiErrorCode("studio.aiError.session.providerCompletionUnverified"),
       updatedAt: new Date(now).toISOString(),
     };
   });

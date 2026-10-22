@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Loader2, PenTool } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -52,7 +53,7 @@ export function StudioLineCleanupPanel({
       onResult(result);
     } catch (e) {
       if (!mountedRef.current) return;
-      setError(e instanceof Error ? e.message : "선화 정리에 실패했어요.");
+      setError(e instanceof Error ? e.message : r3c07StatusText("studio.panelStatus.r3c07.lineCleanup.cleanupFailed", "선화 정리에 실패했어요."));
     } finally {
       if (mountedRef.current) setBusy(false);
     }

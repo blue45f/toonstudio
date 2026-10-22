@@ -5,6 +5,8 @@
  * 읽지 않게 하려는 것이다.
  */
 import { RefreshCcw } from "lucide-react";
+import { useT } from "@/shared/lib/i18n";
+import "../storyworld-status-i18n";
 
 import type { StoryworldProject } from "../studio-storyworld-causality";
 import { formatCheckedAt } from "./studio-story-plausibility-display";
@@ -33,6 +35,8 @@ export interface ScopePanelProps {
 
 const SOURCE_STATUS_LABELS = { used: "사용함", empty: "비어 있음", unavailable: "연결 안 됨" } as const;
 
+const SOURCE_STATUS_KEYS = { used: "studio.storyworldStatus.scope.sourceUsed", empty: "studio.storyworldStatus.scope.sourceEmpty", unavailable: "studio.storyworldStatus.scope.sourceUnavailable" } as const;
+
 function toggle<T>(list: readonly T[], value: T): T[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 }
@@ -43,6 +47,7 @@ function meterTone(percent: number): string {
 
 export function StudioStoryPlausibilityScopePanel(props: ScopePanelProps) {
   const { project, scope, report, summary } = props;
+  const t = useT();
   const episodes = availableEpisodeNumbers(project);
   const activeScenes = project.scenes
     .filter((scene) => scene.disabled !== true)
@@ -76,7 +81,7 @@ export function StudioStoryPlausibilityScopePanel(props: ScopePanelProps) {
             회차 고르기
           </label>
           {episodes.length === 0 ? (
-            <p className="plausibility-hint">회차 번호가 있는 장면이 없어요. 원고에서 가져오면 회차가 채워져요.</p>
+            <p className="plausibility-hint">{t("studio.storyworldStatus.scope.noEpisodeScenes", "회차 번호가 있는 장면이 없어요. 원고에서 가져오면 회차가 채워져요.")}</p>
           ) : null}
           {scope.kind === "episodes" ? (
             <div aria-label="점검할 회차" className="plausibility-scope__list" role="group">
@@ -180,7 +185,7 @@ export function StudioStoryPlausibilityScopePanel(props: ScopePanelProps) {
           <table className="plausibility-table">
             <caption>범주별 감점 (감점 합계 {penaltyTotal}점)</caption>
             <thead>
-              <tr><th scope="col">범주</th><th scope="col">오류</th><th scope="col">경고</th><th scope="col">제안</th><th scope="col">감점</th></tr>
+              <tr><th scope="col">범주</th><th scope="col">{t("studio.storyworldStatus.scope.severityError", "오류")}</th><th scope="col">{t("studio.storyworldStatus.scope.severityWarning", "경고")}</th><th scope="col">{t("studio.storyworldStatus.scope.severitySuggestion", "제안")}</th><th scope="col">감점</th></tr>
             </thead>
             <tbody>
               {PLAUSIBILITY_CATEGORY_IDS.map((category) => {
@@ -208,7 +213,7 @@ export function StudioStoryPlausibilityScopePanel(props: ScopePanelProps) {
           <ul className="plausibility-sources">
             {report.sources.map((source) => (
               <li key={source.id}>
-                <strong>{source.label} · {SOURCE_STATUS_LABELS[source.status]}</strong>
+                <strong>{source.label} · {t(SOURCE_STATUS_KEYS[source.status], SOURCE_STATUS_LABELS[source.status])}</strong>
                 <span className="plausibility-hint">{source.detail}</span>
               </li>
             ))}

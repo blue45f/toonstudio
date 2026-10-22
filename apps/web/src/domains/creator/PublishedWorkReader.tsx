@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   BookOpenCheck,
   ChevronLeft,
@@ -113,7 +114,7 @@ function PagedPublishedWorkReader({
     >
       {pages.length === 0 ? (
         <p className="px-4 py-16 text-center text-sm text-fg-3">
-          표시할 페이지가 없습니다.
+          {r3c07StatusText("studio.panelStatus.r3c07.publishedReader.pagesEmpty", "표시할 페이지가 없습니다.")}
         </p>
       ) : (
         <>
@@ -131,7 +132,7 @@ function PagedPublishedWorkReader({
               className="max-h-[78vh] max-w-full rounded-lg object-contain shadow-lg"
               fallback={
                 <span className="grid aspect-[3/4] w-full max-w-xl place-items-center rounded-lg bg-raised/40 text-xs text-fg-3">
-                  이미지를 불러올 수 없습니다.
+                  {r3c07StatusText("studio.panelStatus.r3c07.publishedReader.imageLoadFailed", "이미지를 불러올 수 없습니다.")}
                 </span>
               }
             />

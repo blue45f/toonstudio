@@ -1,5 +1,8 @@
 import { Check } from "lucide-react";
 import { useId, useRef, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 /** One Tab stop per color set. Arrow navigation never applies a color. */
 export function StudioColorSwatches({ title, colors, value, onChoose }: {
@@ -8,6 +11,7 @@ export function StudioColorSwatches({ title, colors, value, onChoose }: {
   readonly value: string;
   readonly onChoose: (color: string) => void;
 }) {
+  const t = useT();
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const [focused, setFocused] = useState<string | null>(null);
@@ -41,6 +45,6 @@ export function StudioColorSwatches({ title, colors, value, onChoose }: {
           {color === value ? <Check size={16} aria-hidden className="mx-auto text-white [filter:drop-shadow(0_1px_1px_black)]" /> : null}
         </button>)}
       </div>
-    </> : <p className="text-xs leading-relaxed text-fg-2">{title === "최근 선택 색" ? "확정한 색상이 없습니다. 색을 적용하면 이곳에 쌓입니다." : "이 원고에 지정된 색상이 없습니다. 이미지의 색상 추출 결과는 별도로 표시됩니다."}</p>}
+    </> : <p className="text-xs leading-relaxed text-fg-2">{title === "최근 선택 색" ? t("studio.brushCanvasStatus.color.swatchesRecentEmpty", "확정한 색상이 없습니다. 색을 적용하면 이곳에 쌓입니다.") : t("studio.brushCanvasStatus.color.swatchesAuthoredEmpty", "이 원고에 지정된 색상이 없습니다. 이미지의 색상 추출 결과는 별도로 표시됩니다.")}</p>}
   </section>;
 }

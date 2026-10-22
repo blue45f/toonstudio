@@ -1,3 +1,4 @@
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import {
   Check,
   ChevronLeft,
@@ -160,7 +161,7 @@ export function StudioSimpleProductionWizard({
     const { draft: normalized, autoApplied } = applySimpleProductionDefaults(draft);
     setDraft(normalized);
     if (autoApplied.length > 0) {
-      setNotice("비어 있던 항목에 기본값이 자동 적용됐어요. 나중에 전문 에디터에서 바꿀 수 있습니다.");
+      setNotice(creatorRestStatusText("creatorRest.status.wizard.defaultsApplied", "비어 있던 항목에 기본값이 자동 적용됐어요. 나중에 전문 에디터에서 바꿀 수 있습니다."));
     } else {
       setNotice("");
     }
@@ -473,7 +474,7 @@ export function StudioSimpleProductionWizard({
               </p>
               {draft.dialogueScript.trim() === "" ? (
                 <p className="mt-2 rounded-xl border border-line bg-card px-3 py-2.5 text-xs font-semibold text-fg-2">
-                  지금은 비어 있어요. 다음으로 넘어가면 시작 대사가 기본값으로 자동 적용됩니다.
+                  {creatorRestStatusText("creatorRest.status.wizard.emptyDialogue", "지금은 비어 있어요. 다음으로 넘어가면 시작 대사가 기본값으로 자동 적용됩니다.")}
                 </p>
               ) : null}
             </div>

@@ -1,6 +1,7 @@
 import { Glasses } from "lucide-react";
 import { Component, lazy, Suspense, useState, type ReactNode } from "react";
 import type { SpatialReaderDirection } from "./spatial-reader-model";
+import { subStatusText } from "../studio-sub-status-i18n";
 
 const Reader = lazy(() => import("./SpatialWebtoonReader"));
 export interface SpatialWebtoonReaderLauncherProps {
@@ -11,7 +12,7 @@ class ReaderLoadBoundary extends Component<{ children: ReactNode; onClose: () =>
   static getDerivedStateFromError() { return { failed: true }; }
   render() {
     return this.state.failed ? <div role="alert" className="mt-3 text-sm text-fg-2">
-      공간 리더를 불러오지 못했습니다. 기존 작품 보기는 계속 사용할 수 있습니다. 다시 시도하려면 페이지를 새로 열어 주세요.
+      {subStatusText("studio.subStatus.launcher.loadFailed", "공간 리더를 불러오지 못했습니다. 기존 작품 보기는 계속 사용할 수 있습니다. 다시 시도하려면 페이지를 새로 열어 주세요.")}
       <button type="button" onClick={this.props.onClose} className="ml-2 min-h-11 rounded border border-line px-3">안내 닫기</button>
     </div> : this.props.children;
   }
@@ -26,7 +27,7 @@ export function SpatialWebtoonReaderLauncher(props: SpatialWebtoonReaderLauncher
       </div>
       <button type="button" onClick={() => setOpen(true)} className="min-h-11 rounded-lg border border-line bg-panel px-4 py-2 text-xs font-bold text-fg hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">공간 리더 열기</button>
     </div>
-    {open && <ReaderLoadBoundary onClose={() => setOpen(false)}><Suspense fallback={<p className="mt-3 text-xs text-fg-3" role="status">공간 리더를 여는 중입니다…</p>}>
+    {open && <ReaderLoadBoundary onClose={() => setOpen(false)}><Suspense fallback={<p className="mt-3 text-xs text-fg-3" role="status">{subStatusText("studio.subStatus.launcher.opening", "공간 리더를 여는 중입니다…")}</p>}>
       <Reader key={props.workId ?? "local"} {...props} onClose={() => setOpen(false)} />
     </Suspense></ReaderLoadBoundary>}
   </div>;

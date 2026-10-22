@@ -1,5 +1,6 @@
 // 창작 커뮤니티 공용 UI — 작품 카드(시리즈/챌린지 배지), 시리즈 카드, 시리즈 폼, 아바타.
 // CreateGalleryPage · CreateSeriesPage · CreateChallengesPage · UserProfilePage 에서 재사용한다.
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Bookmark, BookOpen, Eye, Heart, Layers, MessageCircle, PenLine, Trophy } from "lucide-react";
 import { useState } from "react";
 
@@ -248,7 +249,7 @@ export function SeriesForm({
       const saved = initial ? await updateSeries(initial.id, input) : await createSeries(input);
       onSaved(saved);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "시리즈를 저장하지 못했습니다.");
+      setError(err instanceof Error ? err.message : r3c07StatusText("studio.panelStatus.r3c07.communityUi.seriesSaveFailed", "시리즈를 저장하지 못했습니다."));
     } finally {
       setSubmitting(false);
     }

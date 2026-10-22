@@ -59,6 +59,7 @@ import {
   type StudioCommentsDocument,
 } from "./studio-comments";
 import { compileStudioReviewTask } from "./studio-review-task-compiler";
+import { frozenStatusText } from "./studio-frozen-status-i18n";
 import {
   actorInitial,
   fallbackAnchorLabel,
@@ -630,12 +631,12 @@ export function StudioCommentsPanel({
     ? null
     : mutationDisabledReason
       ?? (!capabilities.create
-        ? "현재 권한으로는 새 댓글을 남길 수 없어요."
+        ? frozenStatusText("studio.frozenStatus.comments.createDenied", "현재 권한으로는 새 댓글을 남길 수 없어요.")
         : saving
-          ? "댓글을 동기화하는 중이에요."
-          : "댓글 문서의 저장 한도에 도달했어요.");
+          ? frozenStatusText("studio.frozenStatus.comments.syncing", "댓글을 동기화하는 중이에요.")
+          : frozenStatusText("studio.frozenStatus.comments.storageLimit", "댓글 문서의 저장 한도에 도달했어요."));
   const currentSelectionCommentDisabledReason = !activeAnchor
-    ? "먼저 캔버스에서 페이지, 컷 또는 요소를 선택하세요."
+    ? frozenStatusText("studio.frozenStatus.comments.selectLocationFirst", "먼저 캔버스에서 페이지, 컷 또는 요소를 선택하세요.")
     : newThreadDisabledReason;
 
   const applyChange = async (
@@ -662,15 +663,15 @@ export function StudioCommentsPanel({
   const submitComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!capabilities.create) {
-      setError(mutationDisabledReason ?? "현재 권한으로는 새 댓글을 남길 수 없어요.");
+      setError(mutationDisabledReason ?? frozenStatusText("studio.frozenStatus.comments.createDenied", "현재 권한으로는 새 댓글을 남길 수 없어요."));
       return;
     }
     if (!composerAnchor) {
-      setError("댓글을 연결할 페이지, 컷 또는 요소를 먼저 선택해 주세요.");
+      setError(frozenStatusText("studio.frozenStatus.comments.selectAnchorFirst", "댓글을 연결할 페이지, 컷 또는 요소를 먼저 선택해 주세요."));
       return;
     }
     if (!isAnchorValid(composerAnchor)) {
-      setError("댓글을 연결한 위치가 삭제되었습니다. 새 위치를 선택해 주세요.");
+      setError(frozenStatusText("studio.frozenStatus.comments.anchorDeleted", "댓글을 연결한 위치가 삭제되었습니다. 새 위치를 선택해 주세요."));
       return;
     }
     const payloadSignature = JSON.stringify([
@@ -691,7 +692,7 @@ export function StudioCommentsPanel({
         }),
         readOnlyThreads
       ),
-      "댓글을 저장하지 못했어요."
+      frozenStatusText("studio.frozenStatus.comments.saveCommentFailed", "댓글을 저장하지 못했어요.")
     );
     if (saved) {
       focusReviewRail();
@@ -708,7 +709,7 @@ export function StudioCommentsPanel({
     event.preventDefault();
     if (replySubmitInFlightRef.current || sharedReply?.submitting) return;
     if (!capabilities.reply) {
-      setError(mutationDisabledReason ?? "현재 권한으로는 답글을 남길 수 없어요.");
+      setError(mutationDisabledReason ?? frozenStatusText("studio.frozenStatus.comments.replyDenied", "현재 권한으로는 답글을 남길 수 없어요."));
       return;
     }
     const body = sharedReply?.threadId === threadId ? sharedReply.body : replyBody;
@@ -721,7 +722,7 @@ export function StudioCommentsPanel({
           body: body.trim(),
           mutationId: sharedReply.mutationId,
         });
-        if (accepted === false) throw new Error("답글을 저장하지 못했어요.");
+        if (accepted === false) throw new Error(frozenStatusText("studio.frozenStatus.comments.saveReplyFailed", "답글을 저장하지 못했어요."));
         setError(null);
         focusReviewRail();
         return;
@@ -742,7 +743,7 @@ export function StudioCommentsPanel({
           }),
           readOnlyThreads
         ),
-        "답글을 저장하지 못했어요."
+        frozenStatusText("studio.frozenStatus.comments.saveReplyFailed", "답글을 저장하지 못했어요.")
       );
       if (saved) {
         focusReviewRail();
@@ -751,7 +752,7 @@ export function StudioCommentsPanel({
         pendingReplyIdRef.current = null;
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "답글을 저장하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.saveReplyFailed", "답글을 저장하지 못했어요."));
     } finally {
       replySubmitInFlightRef.current = false;
     }
@@ -761,7 +762,7 @@ export function StudioCommentsPanel({
     event.preventDefault();
     const displayName = assigneeName.trim().slice(0, STUDIO_COMMENTS_MAX_DISPLAY_NAME_LENGTH);
     if (!displayName) {
-      setError("담당자 표시 이름을 입력해 주세요.");
+      setError(frozenStatusText("studio.frozenStatus.comments.assigneeNameRequired", "담당자 표시 이름을 입력해 주세요."));
       return;
     }
     const assignee = displayName === currentActor.displayName
@@ -769,7 +770,7 @@ export function StudioCommentsPanel({
       : { displayName };
     const saved = await applyChange(
       () => assignStudioCommentThread(document, threadId, assignee),
-      "담당자를 지정하지 못했어요."
+      frozenStatusText("studio.frozenStatus.comments.assignFailed", "담당자를 지정하지 못했어요.")
     );
     if (saved) {
       focusReviewRail();
@@ -780,7 +781,7 @@ export function StudioCommentsPanel({
   const assignToCurrentActor = async (threadId: string) => {
     const saved = await applyChange(
       () => assignStudioCommentThread(document, threadId, currentActor),
-      "담당자를 지정하지 못했어요."
+      frozenStatusText("studio.frozenStatus.comments.assignFailed", "담당자를 지정하지 못했어요.")
     );
     if (saved) {
       focusReviewRail();
@@ -791,7 +792,7 @@ export function StudioCommentsPanel({
   const clearAssignee = async (threadId: string) => {
     const saved = await applyChange(
       () => assignStudioCommentThread(document, threadId, null),
-      "담당자 배정을 해제하지 못했어요."
+      frozenStatusText("studio.frozenStatus.comments.unassignFailed", "담당자 배정을 해제하지 못했어요.")
     );
     if (saved) {
       focusReviewRail();
@@ -820,7 +821,7 @@ export function StudioCommentsPanel({
       () => target.replyId
         ? editStudioCommentReply(document, target.threadId, target.replyId, { body: editBody })
         : editStudioCommentThread(document, target.threadId, { body: editBody }),
-      "댓글을 수정하지 못했어요."
+      frozenStatusText("studio.frozenStatus.comments.editFailed", "댓글을 수정하지 못했어요.")
     );
     if (saved) cancelEditing();
   };
@@ -830,7 +831,7 @@ export function StudioCommentsPanel({
       () => target.replyId
         ? removeStudioCommentReply(document, target.threadId, target.replyId)
         : removeStudioCommentThread(document, target.threadId),
-      "댓글을 삭제하지 못했어요."
+      frozenStatusText("studio.frozenStatus.comments.deleteFailed", "댓글을 삭제하지 못했어요.")
     );
     if (saved) {
       focusReviewRail();
@@ -849,10 +850,10 @@ export function StudioCommentsPanel({
     setReadMutation(threadId);
     try {
       const accepted = await onMarkThreadRead(threadId);
-      if (accepted === false) throw new Error("댓글을 읽음 처리하지 못했어요.");
+      if (accepted === false) throw new Error(frozenStatusText("studio.frozenStatus.comments.markReadFailed", "댓글을 읽음 처리하지 못했어요."));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "댓글을 읽음 처리하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.markReadFailed", "댓글을 읽음 처리하지 못했어요."));
     } finally {
       setReadMutation(null);
     }
@@ -863,10 +864,10 @@ export function StudioCommentsPanel({
     setReadMutation("all");
     try {
       const accepted = await onMarkAllRead();
-      if (accepted === false) throw new Error("모든 댓글을 읽음 처리하지 못했어요.");
+      if (accepted === false) throw new Error(frozenStatusText("studio.frozenStatus.comments.markAllReadFailed", "모든 댓글을 읽음 처리하지 못했어요."));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "모든 댓글을 읽음 처리하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatusText("studio.frozenStatus.comments.markAllReadFailed", "모든 댓글을 읽음 처리하지 못했어요."));
     } finally {
       setReadMutation(null);
     }
@@ -907,30 +908,30 @@ export function StudioCommentsPanel({
     }
   };
 
-  let emptyTitle = "이 조건에 맞는 댓글이 없어요";
-  let emptyDescription = "필터를 바꾸거나 새 댓글을 등록하면 여기에 표시됩니다.";
+  let emptyTitle = frozenStatusText("studio.frozenStatus.comments.emptyDefault", "이 조건에 맞는 댓글이 없어요");
+  let emptyDescription = frozenStatusText("studio.frozenStatus.comments.emptyDefaultDesc", "필터를 바꾸거나 새 댓글을 등록하면 여기에 표시됩니다.");
   if (normalizedQuery) {
-    emptyTitle = "검색 결과가 없어요";
-    emptyDescription = "다른 작성자 이름이나 댓글 문구로 다시 검색해 보세요.";
+    emptyTitle = frozenStatusText("studio.frozenStatus.comments.emptySearch", "검색 결과가 없어요");
+    emptyDescription = frozenStatusText("studio.frozenStatus.comments.emptySearchDesc", "다른 작성자 이름이나 댓글 문구로 다시 검색해 보세요.");
   } else if (filter === "mine") {
-    emptyTitle = "나와 관련된 댓글이 없어요";
-    emptyDescription = "내가 작성·답글·담당·멘션된 댓글을 한곳에 모아 보여 드립니다.";
+    emptyTitle = frozenStatusText("studio.frozenStatus.comments.emptyMine", "나와 관련된 댓글이 없어요");
+    emptyDescription = frozenStatusText("studio.frozenStatus.comments.emptyMineDesc", "내가 작성·답글·담당·멘션된 댓글을 한곳에 모아 보여 드립니다.");
   } else if (filter === "unread") {
-    emptyTitle = "새 피드백을 모두 확인했어요";
-    emptyDescription = "새 댓글이나 답글이 도착하면 여기에 모아 보여 드립니다.";
+    emptyTitle = frozenStatusText("studio.frozenStatus.comments.emptyUnreadTitle", "새 피드백을 모두 확인했어요");
+    emptyDescription = frozenStatusText("studio.frozenStatus.comments.emptyUnreadDesc", "새 댓글이나 답글이 도착하면 여기에 모아 보여 드립니다.");
   } else if (filter === "current" && !activeAnchor) {
-    emptyTitle = "선택한 위치가 없어요";
-    emptyDescription = "캔버스에서 페이지, 컷 또는 요소를 선택하거나 전체 댓글을 확인하세요.";
+    emptyTitle = frozenStatusText("studio.frozenStatus.comments.emptyCurrent", "선택한 위치가 없어요");
+    emptyDescription = frozenStatusText("studio.frozenStatus.comments.emptyCurrentDesc", "캔버스에서 페이지, 컷 또는 요소를 선택하거나 전체 댓글을 확인하세요.");
   } else if (filter === "current") {
-    emptyDescription = "이 위치의 첫 댓글을 위에서 남겨 보세요.";
+    emptyDescription = frozenStatusText("studio.frozenStatus.comments.emptyCurrentFirstDesc", "이 위치의 첫 댓글을 위에서 남겨 보세요.");
   }
 
   const activeAnchorLabel = activeAnchor
     ? getAnchorLabel(activeAnchor, anchorOptions)
-    : "선택한 위치 없음";
+    : frozenStatusText("studio.frozenStatus.comments.noSelection", "선택한 위치 없음");
   const composerAnchorLabel = composerAnchor
     ? composerAnchorLabelSnapshot ?? getAnchorLabel(composerAnchor, anchorOptions)
-    : "선택한 위치 없음";
+    : frozenStatusText("studio.frozenStatus.comments.noSelection", "선택한 위치 없음");
   const reviewRailClassName = composerExpanded
     ? "fixed inset-x-2 bottom-[calc(7rem+env(safe-area-inset-bottom))] z-[80] m-0 ml-0 flex max-h-[min(72dvh,34rem)] max-w-none flex-col overflow-hidden rounded-2xl border border-line bg-panel p-0 text-fg shadow-[0_-18px_48px_oklch(0.08_0.01_70/0.35)] outline-none sm:inset-x-auto sm:bottom-auto sm:right-3 sm:top-1/2 sm:w-[min(24rem,calc(100vw-1.5rem))] sm:-translate-y-1/2 sm:shadow-[0_18px_60px_oklch(0.08_0.01_70/0.48)]"
     : "fixed inset-x-2 bottom-[calc(7rem+env(safe-area-inset-bottom))] top-auto z-[80] m-0 ml-0 flex h-[min(62dvh,36rem)] max-h-none max-w-none flex-col overflow-hidden rounded-2xl border border-line bg-panel p-0 text-fg shadow-[0_-18px_48px_oklch(0.08_0.01_70/0.35)] outline-none sm:inset-y-3 sm:right-3 sm:left-auto sm:h-auto sm:w-[min(27rem,calc(100vw-1.5rem))] sm:rounded-2xl sm:border sm:shadow-[0_18px_60px_oklch(0.08_0.01_70/0.48)]";
@@ -1246,7 +1247,7 @@ export function StudioCommentsPanel({
             >
               <CircleDot size={14} className="mt-0.5 shrink-0" aria-hidden />
               <p className="min-w-0 flex-1">
-                팀 댓글 동기화 지연 · {syncError}
+                {frozenStatusText("studio.frozenStatus.comments.syncDelayed", { detail: syncError }, "팀 댓글 동기화 지연 · {detail}")}
               </p>
             </div>
           ) : null}
@@ -1258,7 +1259,7 @@ export function StudioCommentsPanel({
               <button
                 type="button"
                 onClick={() => setError(null)}
-                aria-label="오류 메시지 닫기"
+                aria-label={frozenStatusText("studio.frozenStatus.comments.closeError", "오류 메시지 닫기")}
                 className="grid size-11 shrink-0 place-items-center rounded-md hover:bg-bad/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:size-7"
               >
                 <X size={13} aria-hidden />
@@ -1316,13 +1317,13 @@ export function StudioCommentsPanel({
                 <button
                   type="button"
                   disabled={unreadCount === 0 || readMutation !== null}
-                  aria-label={readMutation === "all" ? "모든 댓글 읽음 처리 중" : "모든 댓글 읽음 처리"}
+                  aria-label={readMutation === "all" ? frozenStatusText("studio.frozenStatus.comments.markAllBusy", "모든 댓글 읽음 처리 중") : "모든 댓글 읽음 처리"}
                   onClick={() => void markAllRead()}
                   className={`${QUIET_BUTTON_CLASS} shrink-0 px-3 sm:px-2.5`}
                   title="현재 읽지 않은 팀 댓글을 모두 읽음 처리합니다"
                 >
                   <CheckCheck size={13} aria-hidden />
-                  <span className="sr-only sm:not-sr-only">{readMutation === "all" ? "처리 중" : "모두 읽음"}</span>
+                  <span className="sr-only sm:not-sr-only">{readMutation === "all" ? frozenStatusText("studio.frozenStatus.comments.processing", "처리 중") : "모두 읽음"}</span>
                 </button>
               ) : null}
               <label className="relative size-11 shrink-0 sm:h-8 sm:w-auto sm:min-w-32">
@@ -1469,18 +1470,18 @@ export function StudioCommentsPanel({
                   && studioCommentActorsRepresentSamePerson(thread.assignee, currentActor)
                 );
                 const taskConversionDisabledReason = isReadOnlyArchive
-                  ? "읽기 전용 보관 댓글은 작업으로 전환할 수 없습니다."
+                  ? frozenStatusText("studio.frozenStatus.comments.taskReadOnly", "읽기 전용 보관 댓글은 작업으로 전환할 수 없습니다.")
                   : thread.resolved
-                    ? "해결된 댓글은 다시 연 뒤 작업으로 전환할 수 있습니다."
+                    ? frozenStatusText("studio.frozenStatus.comments.taskResolved", "해결된 댓글은 다시 연 뒤 작업으로 전환할 수 있습니다.")
                     : assignedToCurrentActor
-                      ? "이미 내 작업으로 지정되어 있습니다."
+                      ? frozenStatusText("studio.frozenStatus.comments.taskAlreadyMine", "이미 내 작업으로 지정되어 있습니다.")
                       : !capabilities.assign
                         ? mutationDisabledReason
-                          ?? "현재 권한으로는 담당 작업을 지정할 수 없습니다."
+                          ?? frozenStatusText("studio.frozenStatus.comments.taskAssignDenied", "현재 권한으로는 담당 작업을 지정할 수 없습니다.")
                         : mutationDisabledReason
                           ? mutationDisabledReason
                           : saving || syncing
-                            ? "댓글을 동기화하는 동안 잠시 기다려 주세요."
+                            ? frozenStatusText("studio.frozenStatus.comments.taskSyncing", "댓글을 동기화하는 동안 잠시 기다려 주세요.")
                             : null;
                 const taskProposalId = `${titleId}-task-proposal-${thread.id}`;
                 const taskConversionHelpId = `${titleId}-task-conversion-help-${thread.id}`;
@@ -1757,7 +1758,7 @@ export function StudioCommentsPanel({
                             className={QUIET_BUTTON_CLASS}
                           >
                             <CheckCheck size={13} aria-hidden />
-                            {readMutation === thread.id ? "읽음 처리 중" : "읽음으로 표시"}
+                            {readMutation === thread.id ? frozenStatusText("studio.frozenStatus.comments.markReadBusy", "읽음 처리 중") : "읽음으로 표시"}
                           </button>
                         ) : null}
                         <button
@@ -1768,9 +1769,7 @@ export function StudioCommentsPanel({
                           onClick={() =>
                             setExpandedTaskThreadId(taskExpanded ? null : thread.id)
                           }
-                          className={`${QUIET_BUTTON_CLASS} ${
-                            taskExpanded ? "border-accent/50 bg-accent-soft text-accent" : ""
-                          }`}
+                          className={`${QUIET_BUTTON_CLASS} ${taskExpanded ? "border-accent/50 bg-accent-soft text-accent" : ""}`}
                         >
                           <ClipboardList size={13} aria-hidden />
                           작업 제안
@@ -1816,8 +1815,8 @@ export function StudioCommentsPanel({
                                 ? reopenStudioCommentThread(document, thread.id)
                                 : resolveStudioCommentThread(document, thread.id, currentActor),
                               thread.resolved
-                                ? "댓글을 다시 열지 못했어요."
-                                : "댓글을 해결 처리하지 못했어요."
+                                ? frozenStatusText("studio.frozenStatus.comments.reopenFailed", "댓글을 다시 열지 못했어요.")
+                                : frozenStatusText("studio.frozenStatus.comments.resolveFailed", "댓글을 해결 처리하지 못했어요.")
                             ).then((saved) => {
                               if (!saved) return;
                               focusReviewRail();

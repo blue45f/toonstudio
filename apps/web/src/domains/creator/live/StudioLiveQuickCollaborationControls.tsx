@@ -13,6 +13,7 @@ import {
 } from "react";
 
 import { STUDIO_LIVE_CURSOR_CHAT_MAX_LENGTH } from "./studio-live-chat-control";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 
 import type {
   StudioLiveAttentionRequest,
@@ -145,7 +146,7 @@ export function StudioLiveQuickCollaborationControls({
     const text = draft.trim();
     if (!text) return;
     if (!room.sendCursorChat(text)) {
-      announce("커서 메시지를 보내지 못했습니다.");
+      announce(creatorSub2StatusText("studio.creatorSub2.status.live.quick.cursorChatFailed", "커서 메시지를 보내지 못했습니다."));
       return;
     }
     setDraft("");
@@ -266,7 +267,7 @@ export function StudioLiveQuickCollaborationControls({
             announce(
               room.requestAttention()
                 ? "팀원에게 현재 작업 위치 초대를 보냈습니다."
-                : "현재 페이지 초대를 보내지 못했습니다."
+                : creatorSub2StatusText("studio.creatorSub2.status.live.quick.attentionFailed", "현재 페이지 초대를 보내지 못했습니다.")
             );
           }}
         >

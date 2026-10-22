@@ -1,3 +1,4 @@
+import { catalogStatusText } from "./catalog-status-i18n";
 import { PenLine, Search } from "lucide-react";
 import { useState } from "react";
 
@@ -97,7 +98,7 @@ export function AuthorsPage() {
       ) : filtered.length === 0 ? (
         <EmptyTeach
           icon={Search}
-          title={query ? `“${q.trim()}” 작가를 찾지 못했어요` : "등록된 작가가 없어요"}
+          title={query ? catalogStatusText("catalog.status.authors.searchEmpty", { query: q.trim() }, "“{query}” 작가를 찾지 못했어요") : catalogStatusText("catalog.status.authors.empty", "등록된 작가가 없어요")}
           desc={
             query
               ? "이름 철자를 확인하거나 더 짧은 키워드로 위 검색창에서 다시 찾아보세요."

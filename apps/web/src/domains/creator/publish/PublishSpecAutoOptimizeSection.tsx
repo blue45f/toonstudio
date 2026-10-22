@@ -10,6 +10,7 @@
  */
 
 import { useT } from "@/shared/lib/i18n";
+import { creatorSub2StatusText } from "../studio-creator-sub2-status-i18n-r3c13b";
 import "./publish-status-i18n";
 import { useMemo, useState } from "react";
 
@@ -148,7 +149,7 @@ export function PublishSpecAutoOptimizeSection({
       if (oversizedTotal > 0) {
         setStatus({
           tone: "warn",
-          text: `슬라이스 ${sliceTotal}장·썸네일 ${thumbnails.length}종을 저장했어요. 용량 한도를 넘긴 파일 ${oversizedTotal}개는 업로드 전 직접 확인해주세요.`,
+          text: creatorSub2StatusText("studio.creatorSub2.status.publish.spec.oversizedWarning", { sliceTotal, thumbCount: thumbnails.length, oversizedTotal }, `슬라이스 ${sliceTotal}장·썸네일 ${thumbnails.length}종을 저장했어요. 용량 한도를 넘긴 파일 ${oversizedTotal}개는 업로드 전 직접 확인해주세요.`),
         });
       } else {
         setStatus({

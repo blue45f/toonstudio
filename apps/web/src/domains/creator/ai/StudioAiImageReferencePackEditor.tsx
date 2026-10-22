@@ -94,6 +94,12 @@ const ROLE_PRESENTATION: Readonly<
   },
 };
 
+const ROLE_EMPTY_LABEL_KEYS: Readonly<Record<StudioAiImageReferenceRole, string>> = {
+  character: "studio.aiStatus.referencePack.emptyCharacter",
+  method: "studio.aiStatus.referencePack.emptyMethod",
+  style: "studio.aiStatus.referencePack.emptyStyle",
+};
+
 function normalizedSha256(value: string | undefined): string | null {
   if (!value) return null;
   const match = /^(?:sha256:)?([a-f0-9]{64})$/iu.exec(value.trim());
@@ -357,12 +363,12 @@ function ReferenceRoleSection({
     : loading
       ? t("studio.aiStatus.loadingProjectAssets", "프로젝트 에셋을 불러오는 중입니다.")
       : providerLimitReached
-        ? `AI 제공자 안전 한도 ${STUDIO_AI_IMAGE_REFERENCE_PROVIDER_SAFE_MAX}개에 도달했습니다. 기존 참조를 제거한 뒤 추가하세요.`
+        ? t("studio.aiStatus.referencePack.providerLimitReached", { max: STUDIO_AI_IMAGE_REFERENCE_PROVIDER_SAFE_MAX }, `AI 제공자 안전 한도 ${STUDIO_AI_IMAGE_REFERENCE_PROVIDER_SAFE_MAX}개에 도달했습니다. 기존 참조를 제거한 뒤 추가하세요.`)
         : roleLimitReached
-          ? `${presentation.eyebrow} 역할은 최대 ${STUDIO_AI_IMAGE_REFERENCE_LIMITS.maxReferencesPerRole}개까지 연결할 수 있습니다.`
+          ? t("studio.aiStatus.referencePack.roleLimitReached", { role: presentation.eyebrow, max: STUDIO_AI_IMAGE_REFERENCE_LIMITS.maxReferencesPerRole }, `${presentation.eyebrow} 역할은 최대 ${STUDIO_AI_IMAGE_REFERENCE_LIMITS.maxReferencesPerRole}개까지 연결할 수 있습니다.`)
           : availableOptions.length === 0
             ? t("studio.aiStatus.noMoreAssetsForRole", "이 역할에 새로 연결할 에셋이 없습니다.")
-            : "같은 이미지를 다른 역할에도 의도적으로 연결할 수 있습니다.";
+            : t("studio.aiStatus.referencePack.sameImageOtherRoles", "같은 이미지를 다른 역할에도 의도적으로 연결할 수 있습니다.");
 
   useEffect(() => {
     if (
@@ -423,7 +429,7 @@ function ReferenceRoleSection({
         </ul>
       ) : (
         <p className="mt-2.5 rounded-lg border border-dashed border-line px-2.5 py-3 text-center text-[0.68rem] text-fg-3">
-          {presentation.emptyLabel}
+          {t(ROLE_EMPTY_LABEL_KEYS[role], presentation.emptyLabel)}
         </p>
       )}
 
@@ -593,7 +599,7 @@ export function StudioAiImageReferencePackEditor({
       ) : null}
       {disabled ? (
         <p className="mt-2.5 rounded-lg border border-line bg-raised/60 px-3 py-2 text-[0.68rem] leading-relaxed text-fg-2">
-          읽기 전용 상태입니다. 현재 참조와 지침은 확인할 수 있지만 변경할 수 없습니다.
+          {t("studio.aiStatus.referencePack.readOnlyNotice", "읽기 전용 상태입니다. 현재 참조와 지침은 확인할 수 있지만 변경할 수 없습니다.")}
         </p>
       ) : null}
 

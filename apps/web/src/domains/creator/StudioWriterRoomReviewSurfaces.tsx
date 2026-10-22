@@ -26,6 +26,7 @@ import {
   type StudioWriterRoomSuggestionValue,
 } from "./studio-writer-room";
 import { STUDIO_WRITER_ROOM_STAGE_META } from "./studio-writer-room-ui";
+import { writerRoomReviewText } from "./studio-writer-room-review-status-i18n";
 
 import type { StudioCharacterBibleEntry } from "./studio-character-bible";
 
@@ -129,7 +130,7 @@ function formatSuggestionValue(
       .map((id) => characters.find((character) => character.id === id)?.name || id)
       .join(", ");
   }
-  return String(value) || "비어 있음";
+  return String(value) || writerRoomReviewText("studio.writerRoomReview.suggestion.emptyValue", "비어 있음");
 }
 
 interface StudioWriterRoomSuggestionsPanelProps {
@@ -164,7 +165,7 @@ export function StudioWriterRoomSuggestionsPanel({
       onChange(next);
       onError(null);
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "제안을 처리하지 못했어요.");
+      onError(cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.decideFailed", "제안을 처리하지 못했어요."));
     }
   };
 
@@ -180,7 +181,7 @@ export function StudioWriterRoomSuggestionsPanel({
       onChange(next);
       onError(null);
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "제안 묶음을 처리하지 못했어요.");
+      onError(cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.bulkDecideFailed", "제안 묶음을 처리하지 못했어요."));
     }
   };
 
@@ -208,7 +209,7 @@ export function StudioWriterRoomSuggestionsPanel({
                   onError(null);
                 } catch (cause) {
                   onError(
-                    cause instanceof Error ? cause.message : "마지막 결정을 되돌리지 못했어요."
+                    cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.suggestion.undoFailed", "마지막 결정을 되돌리지 못했어요.")
                   );
                 }
               }}
@@ -220,7 +221,7 @@ export function StudioWriterRoomSuggestionsPanel({
         </div>
         <p className="mt-2 flex items-start gap-1.5 text-[0.68rem] leading-relaxed text-fg-3">
           <CircleAlert size={13} className="mt-0.5 shrink-0 text-cool" aria-hidden />
-          AI 결과는 여기서 대기하며, 승인 버튼을 누르기 전에는 원고에 적용되지 않습니다.
+          {writerRoomReviewText("studio.writerRoomReview.suggestion.pendingNotice", "AI 결과는 여기서 대기하며, 승인 버튼을 누르기 전에는 원고에 적용되지 않습니다.")}
         </p>
         {pending.length > 1 && (
           <div className="mt-2 grid grid-cols-2 gap-1.5">
@@ -248,7 +249,7 @@ export function StudioWriterRoomSuggestionsPanel({
         {pending.length === 0 ? (
           <div className="px-5 py-10 text-center">
             <Sparkles size={21} className="mx-auto text-fg-3" aria-hidden />
-            <p className="mt-2 text-xs font-semibold text-fg-2">검토할 제안이 없습니다</p>
+            <p className="mt-2 text-xs font-semibold text-fg-2">{writerRoomReviewText("studio.writerRoomReview.suggestion.emptyTitle", "검토할 제안이 없습니다")}</p>
             <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">
               직접 작성하거나 상단의 AI 제안 받기로 현재 단계만 검토할 수 있어요.
             </p>
@@ -359,7 +360,7 @@ export function StudioWriterRoomCanvasPlanHandoff({
     try {
       await onApply();
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "컷 플랜을 캔버스에 적용하지 못했어요.");
+      onError(cause instanceof Error ? cause.message : writerRoomReviewText("studio.writerRoomReview.canvasPlan.applyFailed", "컷 플랜을 캔버스에 적용하지 못했어요."));
     } finally {
       applyInFlightRef.current = false;
       setRequestingApply(false);
@@ -404,8 +405,8 @@ export function StudioWriterRoomCanvasPlanHandoff({
               ? "1단계 기획부터 순서대로 채워 보세요. 5단계 컷 구성이 생기면 여기에서 새 페이지 계획으로 정리해 드려요."
               : ready
                 ? onApply
-                  ? "검토된 컷 순서대로 새 페이지를 만듭니다. 버튼을 누르기 전에는 캔버스를 바꾸지 않습니다."
-                  : "컷과 페이지 구성이 준비되었습니다. 캔버스 적용 연결은 아직 제공되지 않습니다."
+                  ? writerRoomReviewText("studio.writerRoomReview.canvasPlan.readyWithApply", "검토된 컷 순서대로 새 페이지를 만듭니다. 버튼을 누르기 전에는 캔버스를 바꾸지 않습니다.")
+                  : writerRoomReviewText("studio.writerRoomReview.canvasPlan.readyWithoutApply", "컷과 페이지 구성이 준비되었습니다. 캔버스 적용 연결은 아직 제공되지 않습니다.")
                 : "끊어진 참조나 빈 컷을 수정하면 안전한 새 페이지 계획으로 다시 계산됩니다."}
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.68rem] tabular-nums text-fg-3">

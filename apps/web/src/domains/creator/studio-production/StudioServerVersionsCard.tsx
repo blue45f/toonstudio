@@ -1,4 +1,5 @@
 import { RefreshCw, RotateCcw, Server } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -36,7 +37,7 @@ export function StudioServerVersionsCard({ scopeKey }: { readonly scopeKey: stri
     } catch (cause) {
       setState(null);
       setStatus("error");
-      setError(cause instanceof Error ? cause.message : "서버 원고 버전을 불러오지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.serverVersions.loadFailed", "서버 원고 버전을 불러오지 못했습니다."));
     }
   }, [scopeKey, workId]);
 
@@ -62,7 +63,7 @@ export function StudioServerVersionsCard({ scopeKey }: { readonly scopeKey: stri
       }
     } catch (cause) {
       setStatus("error");
-      setError(cause instanceof Error ? cause.message : "서버 원고 버전을 복원하지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.production.serverVersions.restoreFailed", "서버 원고 버전을 복원하지 못했습니다."));
     }
   };
 
@@ -127,9 +128,7 @@ export function StudioServerVersionsCard({ scopeKey }: { readonly scopeKey: stri
             </p>
           ) : null}
           {state.revisions.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-line p-5 text-sm text-fg-2">
-              저장된 서버 revision 이력이 없습니다.
-            </div>
+            <div className="rounded-xl border border-dashed border-line p-5 text-sm text-fg-2">{r3c04StatusText("studio.r3c04Status.production.serverVersions.empty", "저장된 서버 revision 이력이 없습니다.")}</div>
           ) : state.revisions.map((revision) => {
             const current = revision.revision === state.currentRevision;
             return (

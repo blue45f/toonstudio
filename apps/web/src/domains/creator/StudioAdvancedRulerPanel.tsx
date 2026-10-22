@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   Circle,
   CircleDot,
@@ -127,7 +128,7 @@ export function StudioAdvancedRulerPanel({
 }: StudioAdvancedRulerPanelProps): ReactElement {
   const selected = selectedRuler(document);
   const atLimit = document.rulers.length >= STUDIO_ADVANCED_RULER_MAX_COUNT;
-  const disabledTitle = disabledReason ?? "현재 문서에서는 자를 편집할 수 없습니다.";
+  const disabledTitle = disabledReason ?? r3c07StatusText("studio.panelStatus.r3c07.advancedRuler.editUnavailable", "현재 문서에서는 자를 편집할 수 없습니다.");
 
   return (
     <div className="space-y-2 border-t border-line/35 pt-2.5">

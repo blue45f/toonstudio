@@ -10,6 +10,7 @@
  *   텍스트로 보여준다 (빈 칸으로 숨기지 않는다).
  */
 import { useRef, useState, type ClipboardEvent, type FormEvent } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
   addMoodboardCard,
@@ -248,7 +249,7 @@ export function StudioMoodboardPanel({
               })}
             </ul>
             {board.columns.length > 0 && column.cardIds.length === 0 && (
-              <p>아직 카드가 없어요. 아래에서 첫 카드를 더해 보세요.</p>
+              <p>{r3c04StatusText("studio.r3c04Status.planning.moodboard.emptyCards", "아직 카드가 없어요. 아래에서 첫 카드를 더해 보세요.")}</p>
             )}
             {editable && (
               <AddCardForm
@@ -344,7 +345,7 @@ function AddCardForm({
     event.preventDefault();
     const value = draft.value.trim();
     if (!value) {
-      setError("카드 내용을 입력해 주세요.");
+      setError(r3c04StatusText("studio.r3c04Status.planning.moodboard.cardContentRequired", "카드 내용을 입력해 주세요."));
       return;
     }
     if (draft.kind === "link") {
@@ -372,7 +373,7 @@ function AddCardForm({
           : { id, kind: "note", text: value };
     const next = addMoodboardCard(board, columnId, card);
     if (next === board) {
-      setError("카드를 더할 수 없어요. 카드가 너무 많거나 이미 있는 카드예요.");
+      setError(r3c04StatusText("studio.r3c04Status.planning.moodboard.cardAddFailed", "카드를 더할 수 없어요. 카드가 너무 많거나 이미 있는 카드예요."));
       return;
     }
     setError("");

@@ -11,6 +11,7 @@ import { STUDIO_CANVAS_IMAGE_ACCEPT } from "../studio-legacy-editor-runtime-help
 import { StudioDestructiveConfirmHost } from "../StudioDestructiveConfirmHost";
 import { StudioVrmProjectArchiveAttestationHost } from "../vrm/StudioVrmProjectArchiveAttestationHost";
 import { StudioImportHandoffHost } from "./StudioImportHandoffHost";
+import { editorShellStatusText } from "../studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
@@ -81,8 +82,7 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
         className="mx-3 mt-2 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-danger/40 bg-danger-soft/20 px-3 py-2 text-xs text-danger"
       >
         <span className="min-w-0 flex-1 font-medium leading-relaxed">
-          이 기기에 복구 기록을 저장하지 못했습니다. 편집은 계속할 수 있지만, 탭을 닫기 전에
-          프로젝트를 저장하거나 완전한 사본을 받아 주세요.
+          {editorShellStatusText("studio.editorShellStatus.hosts.recoverySaveFailed", "이 기기에 복구 기록을 저장하지 못했습니다. 편집은 계속할 수 있지만, 탭을 닫기 전에 프로젝트를 저장하거나 완전한 사본을 받아 주세요.")}
         </span>
         <button
           type="button"

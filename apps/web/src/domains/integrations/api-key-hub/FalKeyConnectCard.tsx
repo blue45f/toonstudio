@@ -24,6 +24,7 @@ import {
 
 import { maskApiKey, validateApiKeyFormat } from "./api-key-hub-model";
 import { StoredKeyRow } from "./MaskedKeyField";
+import { integrationsStatusText } from "../integrations-status-i18n";
 
 const INPUT =
   "min-h-11 w-full rounded-xl border border-line bg-canvas px-3 py-2 font-mono text-sm text-fg outline-none transition-colors placeholder:font-sans placeholder:text-fg-3 focus:border-accent";
@@ -62,7 +63,7 @@ export function FalKeyConnectCard() {
   function disconnect() {
     if (!saveStudioFalApiKey(browserStudioFalSessionStorage(), "")) {
       setPhase("error");
-      setMessage("저장된 키를 지우지 못했습니다. 브라우저 저장소 상태를 확인하고 다시 시도하세요.");
+      setMessage(integrationsStatusText("integrations.status.fal.removeFailed", "저장된 키를 지우지 못했습니다. 브라우저 저장소 상태를 확인하고 다시 시도하세요."));
       return;
     }
     setStoredKey("");
@@ -85,14 +86,14 @@ export function FalKeyConnectCard() {
     const candidate = draft.trim();
     if (!saveStudioFalApiKey(browserStudioFalSessionStorage(), candidate)) {
       setPhase("error");
-      setMessage("이 탭에 키를 저장하지 못했습니다. 시크릿 모드이거나 저장 공간이 부족할 수 있어요.");
+      setMessage(integrationsStatusText("integrations.status.fal.saveFailed", "이 탭에 키를 저장하지 못했습니다. 시크릿 모드이거나 저장 공간이 부족할 수 있어요."));
       return;
     }
     setStoredKey(candidate);
     setDraft("");
     setPhase("success");
     setMessage(
-      "등록했습니다. 연결 테스트는 하지 않으며(학습·생성은 과금 호출이라 테스트로 부르지 않습니다), 첫 학습에서 키가 확인됩니다.",
+      integrationsStatusText("integrations.status.fal.registered", "등록했습니다. 연결 테스트는 하지 않으며(학습·생성은 과금 호출이라 테스트로 부르지 않습니다), 첫 학습에서 키가 확인됩니다."),
     );
   }
 
