@@ -7,6 +7,7 @@ import { STUDIO_VIEW_ACTION_HINTS } from "./studio-view-action-hints";
 
 const sourceFiles = [
   "./StudioToolBeltContent.tsx",
+  "./StudioToolBeltHints.ts",
   "./StudioToolBeltCanvasControls.tsx",
   "./StudioToolBeltQuickActions.tsx",
   "./StudioToolBeltCreateModeGroups.tsx",

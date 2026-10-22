@@ -265,11 +265,14 @@ describe("C2 시나리오 — 핀 → 할 일 자동 전환 왕복", () => {
     expect(reopened.workspace.tasks.find((entry) => entry.id === "pin-task:pin-thread-1")?.status).toBe("todo");
   });
 
-  it("계약 주의(현행 동작 고정): 담당자 변환 훅 없이 동기화하면 워크스페이스 직렬화가 거부하는 담당자 ID가 들어간다", () => {
-    // 실호스트는 resolveAssigneeId를 항상 주입하므로 운영 경로는 안전하다. 다만 모델 단독
-    // 호출(훅 누락)에서는 핀 담당자 ID가 그대로 assigneeIds에 실리고, 그 워크스페이스는
-    // serializeProductionWorkspace의 참조 검증(assigneeIds ⊆ 역할 배정)을 통과하지 못해
-    // 저장 단계에서 throw한다 — 이 현행 동작을 사실로서 고정해 둔다.
+  it("방어 고정: 담당자 변환 훅 없이 동기화해도 해석 불가능한 담당자 ID 때문에 직렬화가 깨지지 않는다", () => {
+    // 배경(2026-10-22 방어 전 현행 동작): 훅 누락 시 핀 담당자 ID(검수 배정 ID)가
+    // assigneeIds에 그대로 실리고, serializeProductionWorkspace의 참조 검증
+    // (assigneeIds ⊆ 역할 배정)을 통과하지 못해 저장 단계에서 throw했다.
+    // 이제 applyPinTaskSyncToWorkspace가 역할 배정에서 해석할 수 없는 ID를 경계에서
+    // 걸러낸다: assigneeIds는 비고, 버린 ID는 droppedAssigneeIds로 보고되며,
+    // 표시용 담당 이름은 남는다. 실호스트는 훅을 항상 주입하므로 이 방어는
+    // 훅을 빠뜨린 미래 호출자를 위한 것이다.
     let doc: StudioCommentsDocument = createEmptyStudioCommentsDocument();
     doc = addStudioCommentThread(doc, {
       id: "pin-thread-x",
@@ -282,7 +285,11 @@ describe("C2 시나리오 — 핀 → 할 일 자동 전환 왕복", () => {
     const workspace = createEmptyProductionWorkspace("work:hazard");
     const synced = applyPinTaskSyncToWorkspace(workspace, doc, { episodeId: "ep-1" });
     const task = synced.workspace.tasks.find((entry) => entry.id === "pin-task:pin-thread-x");
-    expect(task?.assigneeIds).toEqual(["artist-1"]);
-    expect(() => serializeProductionWorkspace(synced.workspace)).toThrow();
+    expect(task?.assigneeIds).toEqual([]);
+    expect(task?.owner).toBe("선화 작가");
+    expect(synced.result.droppedAssigneeIds).toEqual(["artist-1"]);
+    expect(() => serializeProductionWorkspace(synced.workspace)).not.toThrow();
+    const restored = parseProductionWorkspace(serializeProductionWorkspace(synced.workspace), "work:hazard");
+    expect(restored?.tasks.map((entry) => entry.id)).toEqual(["pin-task:pin-thread-x"]);
   });
 });

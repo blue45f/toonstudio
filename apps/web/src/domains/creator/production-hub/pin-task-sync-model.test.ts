@@ -217,6 +217,78 @@ describe("applyPinTaskSyncToWorkspace", () => {
     expect(again.result.changed).toBe(false);
     expect(again.workspace).toBe(restored);
   });
+
+  it("변환 훅 없이 담당 있는 핀을 동기화해도 직렬화가 깨지지 않고, 버린 ID를 결과로 보고한다", () => {
+    // 핀 담당자 ID는 검수 aggregate 배정 ID 공간이라, 역할 배정이 없는 워크스페이스에서는
+    // 해석할 수 없다. 예전에는 이 ID가 assigneeIds에 그대로 실려 직렬화(참조 검증)에서
+    // throw했다. 이제 경계에서 걸러 assigneeIds는 비우고, 버린 ID는 droppedAssigneeIds로
+    // 명시한다. 표시용 담당 이름(owner)은 남아 누가 담당이었는지는 사라지지 않는다.
+    const workspace = createEmptyProductionWorkspace("work:no-hook");
+    const document = makeDocument([
+      makeThread({ assignee: { id: "assignment-9", displayName: "이작가" } }),
+    ]);
+    const { workspace: synced, result } = applyPinTaskSyncToWorkspace(workspace, document);
+    expect(result.addedTaskIds).toEqual(["pin-task:thread-1"]);
+    expect(result.droppedAssigneeIds).toEqual(["assignment-9"]);
+    const task = synced.tasks.find((entry) => entry.id === "pin-task:thread-1");
+    expect(task?.assigneeIds).toEqual([]);
+    expect(task?.owner).toBe("이작가");
+
+    const restored = parseProductionWorkspace(serializeProductionWorkspace(synced), "work:no-hook");
+    expect(restored?.tasks.map((entry) => entry.id)).toEqual(["pin-task:thread-1"]);
+
+    // 재동기화는 멱등하게 유지되고, 버려지는 ID는 매 호출마다 다시 보고된다.
+    const again = applyPinTaskSyncToWorkspace(restored!, document);
+    expect(again.result.changed).toBe(false);
+    expect(again.result.droppedAssigneeIds).toEqual(["assignment-9"]);
+  });
+
+  it("훅이 없어도 역할 배정에서 해석되는 담당자 ID(배정 id·memberId)는 그대로 유지한다", () => {
+    const workspace = {
+      ...createEmptyProductionWorkspace("work:resolvable"),
+      roleAssignments: [
+        { id: "role-art", memberId: "member-art", displayName: "작화", roles: ["reviewer"] as const, hierarchyNodeId: null },
+      ],
+    };
+    const byAssignmentId = applyPinTaskSyncToWorkspace(workspace, makeDocument([
+      makeThread({ id: "thread-1", assignee: { id: "role-art", displayName: "작화" } }),
+    ]));
+    expect(byAssignmentId.result.droppedAssigneeIds).toEqual([]);
+    expect(byAssignmentId.workspace.tasks[0]?.assigneeIds).toEqual(["role-art"]);
+    expect(() => serializeProductionWorkspace(byAssignmentId.workspace)).not.toThrow();
+
+    const byMemberId = applyPinTaskSyncToWorkspace(workspace, makeDocument([
+      makeThread({ id: "thread-1", assignee: { id: "member-art", displayName: "작화" } }),
+    ]));
+    expect(byMemberId.result.droppedAssigneeIds).toEqual([]);
+    expect(byMemberId.workspace.tasks[0]?.assigneeIds).toEqual(["member-art"]);
+    expect(() => serializeProductionWorkspace(byMemberId.workspace)).not.toThrow();
+  });
+
+  it("이미 워크스페이스에 들어간 해석 불가능한 핀 담당자 ID도 다음 동기화에서 정리된다", () => {
+    const staleTask = buildPinTask(makeSource({ assigneeId: "assignment-9", assigneeName: "이작가" }));
+    const workspace = { ...createEmptyProductionWorkspace("work:stale"), tasks: [staleTask] };
+    const document = makeDocument([
+      makeThread({ assignee: { id: "assignment-9", displayName: "이작가" } }),
+    ]);
+    const { workspace: synced, result } = applyPinTaskSyncToWorkspace(workspace, document);
+    expect(result.changed).toBe(true);
+    expect(result.droppedAssigneeIds).toEqual(["assignment-9"]);
+    expect(synced.tasks[0]?.assigneeIds).toEqual([]);
+    expect(() => serializeProductionWorkspace(synced)).not.toThrow();
+  });
+
+  it("변환 훅이 주입된 경우에는 가드를 걸지 않아 훅 결과가 그대로 실린다", () => {
+    const workspace = createEmptyProductionWorkspace("work:with-hook");
+    const document = makeDocument([
+      makeThread({ assignee: { id: "assignment-9", displayName: "이작가" } }),
+    ]);
+    const { workspace: synced, result } = applyPinTaskSyncToWorkspace(workspace, document, {
+      resolveAssigneeId: (source) => (source.assigneeId ? `workspace-${source.assigneeId}` : null),
+    });
+    expect(result.droppedAssigneeIds).toEqual([]);
+    expect(synced.tasks[0]?.assigneeIds).toEqual(["workspace-assignment-9"]);
+  });
 });
 
 describe("summarizePinTasks / collectOpenPinTasks", () => {

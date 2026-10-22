@@ -24,7 +24,7 @@ const SECOND = CLASS_PRODUCTS[1];
 describe("클래스 카탈로그", () => {
   it("참조 무결성과 포인트 가격·주차 구조가 올바르다", () => {
     expect(validateClassCatalog()).toEqual([]);
-    expect(CLASS_PRODUCTS).toHaveLength(4);
+    expect(CLASS_PRODUCTS).toHaveLength(8);
     // 마스터클래스는 포인트 클래스, 작화·채색 클래스는 무료 클래스다.
     expect(FIRST.pointPrice).toBe(990);
     expect(SECOND.pointPrice).toBe(0);

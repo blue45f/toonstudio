@@ -580,6 +580,22 @@ describe("Catalog file, asset admission, and KMAS environment validation", () =>
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
+  it("accepts only on/off for the cover byte-optimize switch, read the way its policy reads it", () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+
+    expect(validateEnv({ NODE_ENV: "test", COVER_SERVER_TRANSCODE_OPTIMIZE: "on" }, logger)).toMatchObject({
+      COVER_SERVER_TRANSCODE_OPTIMIZE: "on",
+    });
+    expect(validateEnv({ NODE_ENV: "test", COVER_SERVER_TRANSCODE_OPTIMIZE: " ON " }, logger)).toMatchObject({
+      COVER_SERVER_TRANSCODE_OPTIMIZE: "on",
+    });
+    expect(validateEnv({ NODE_ENV: "test", COVER_SERVER_TRANSCODE_OPTIMIZE: "" }, logger)).not.toBeNull();
+    expect(logger.warn).not.toHaveBeenCalled();
+
+    expect(validateEnv({ NODE_ENV: "test", COVER_SERVER_TRANSCODE_OPTIMIZE: "true" }, logger)).toBeNull();
+    expect(logger.warn).toHaveBeenCalledOnce();
+  });
+
   it("normalizes the Lambda-injected POSIX ':UTC' timezone instead of warning on every cold start", () => {
     const logger = { warn: vi.fn(), error: vi.fn() };
 

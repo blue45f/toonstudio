@@ -16,3 +16,27 @@ export function coverServerTranscodeEnabled(
 ): boolean {
   return (env[COVER_SERVER_TRANSCODE_ENV] ?? "").trim().toLowerCase() === "on";
 }
+
+// 표지 바이트 최적화(cover-transcode.ts의 optimizeCoverBytes)를 쓸지 정하는 별도 정책.
+//
+// 위 변환(COVER_SERVER_TRANSCODE)은 "폭(w)이 지정됐고 업스트림이 더 큰 이미지를 준
+// 경우"만 줄인다. 그런데 폭이 없는 요청이거나 원본 폭이 이미 목표 이하인 표지는
+// 그 경로를 타지 못해, 예를 들어 320px인데 수백 KB인 불투명 PNG가 그대로 내려간다.
+// 바이트 최적화는 그 남은 경우에 디코드→재인코딩만으로 바이트를 줄이는 경로다
+// (불투명 PNG→JPEG q82, JPEG 재압축 — 원본보다 작아질 때만 채택).
+//
+// 별도 플래그로 분리한 이유: 이 경로는 폭 변환보다 적용 범위가 넓어(폭 없는 요청
+// 포함) 디코드를 거는 요청 수가 늘고, CPU 비용의 성격은 위 변환과 같다(메인 스레드
+// 동기 실행, 2026-10-16 사고와 같은 위험). 이미 변환을 켠 환경의 동작을 새 코드가
+// 몰래 바꾸지 않도록, 기본값은 끔으로 두고 소유자가 별도로 명시했을 때만 켠다.
+// 두 플래그가 모두 꺼져 있으면(기본) /api/cover 응답은 기존과 바이트·헤더·캐시
+// 정책까지 완전히 동일하다.
+
+export const COVER_SERVER_TRANSCODE_OPTIMIZE_ENV = "COVER_SERVER_TRANSCODE_OPTIMIZE";
+
+/** 환경변수를 호출 시점에 읽는다(테스트가 stubEnv 로 바꿀 수 있어야 한다). */
+export function coverTranscodeByteOptimizeEnabled(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  return (env[COVER_SERVER_TRANSCODE_OPTIMIZE_ENV] ?? "").trim().toLowerCase() === "on";
+}

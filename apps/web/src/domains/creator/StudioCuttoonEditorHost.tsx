@@ -1,4 +1,5 @@
 import { enterStudioSelectionTransform } from "./studio-transform-entry";
+import "./studio-host-status-i18n";
 import {
   formatI18nTemplate,
   getActiveI18nLocale,
@@ -191,6 +192,7 @@ import {
   useStudioUnifiedHistoryJournal,
 } from "./studio-cuttoon-editor/runtime/useStudioUnifiedHistoryJournal";
 import { useStudioPreferencesRuntime } from "./studio-cuttoon-editor/runtime/useStudioPreferencesRuntime";
+import { useStudioEpisodeStage } from "./studio-cuttoon-editor/runtime/useStudioEpisodeStage";
 import {
   useStudioVectorOperationRuntime,
 } from "./studio-cuttoon-editor/runtime/useStudioVectorOperationRuntime";
@@ -1585,6 +1587,8 @@ export function StudioCuttoonEditor({
   const closeStudioRightPanelForFocusMode = useCallback((): void => {
     setForceRightPanelOpen(false);
   }, []);
+  // 회차 단계 제안 소스: URL 명시 맥락이 있을 때만 정본 도출을 지연 조달하고, 없으면 null(연결 전과 동일).
+  const episodeStage = useStudioEpisodeStage(location.search, studioAuthUserId);
   const {
     appSettings,
     appSettingsInitialTab,
@@ -1617,7 +1621,7 @@ export function StudioCuttoonEditor({
     uiChromeExposure,
     workMode,
   } = useStudioPreferencesRuntime({
-    episodeStage: null,
+    episodeStage,
     taskWorkspace: studioRoute.documentWorkspace,
     applyMirroredSettings: applyMirroredStudioSettings,
     closeRightPanelForFocusMode: closeStudioRightPanelForFocusMode,
@@ -1936,7 +1940,7 @@ export function StudioCuttoonEditor({
         && !flushPendingStrokeCommitsRef.current()
       ) {
         setError(
-          "마지막 획을 원래 페이지에 확정하지 못해 페이지를 전환하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요."
+          t("studio.hostStatus.pageStrokeCommitFailed", "마지막 획을 원래 페이지에 확정하지 못해 페이지를 전환하지 않았어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.")
         );
         return false;
       }
@@ -2383,7 +2387,7 @@ export function StudioCuttoonEditor({
     setError(
       sourceHydrationPending
         ? workHydrationFailed
-          ? "원본 원고를 열지 못해 내보내기를 차단했어요. 다시 시도해 주세요."
+          ? t("studio.hostStatus.exportOriginalOpenFailed", "원본 원고를 열지 못해 내보내기를 차단했어요. 다시 시도해 주세요.")
           : "원본 원고를 모두 불러온 뒤 내보낼 수 있어요."
         : workHydrated
         ? "공동 문서를 열지 못해 내보내기를 차단했어요. 다시 불러온 뒤 시도해 주세요."
@@ -3048,7 +3052,7 @@ export function StudioCuttoonEditor({
         const projected = commentClient.studioTeamCommentsToLocalDocument(snapshot, {
           unfilteredSnapshotComplete: true,
         });
-        if (!projected) throw new Error("팀 댓글 전체 기록을 안전하게 투영하지 못했어요.");
+        if (!projected) throw new Error(t("studio.hostStatus.teamCommentsProjectFailed", "팀 댓글 전체 기록을 안전하게 투영하지 못했어요."));
         if (
           signal.aborted
           || studioTeamCommentsLoadGenerationRef.current !== generation
@@ -3109,7 +3113,7 @@ export function StudioCuttoonEditor({
         if (signal.aborted) return;
         setStudioTeamCommentCapabilities(null);
         setStudioCommentSyncError(
-          cause instanceof Error ? cause.message : "팀 댓글을 불러오지 못했어요."
+          cause instanceof Error ? cause.message : t("studio.hostStatus.teamCommentsLoadFailed", "팀 댓글을 불러오지 못했어요.")
         );
       }
     };
@@ -3474,7 +3478,7 @@ export function StudioCuttoonEditor({
       showLoadedStudioQuickAccessPalette();
     } catch (error) {
       console.error("Failed to load Studio Quick Access:", error);
-      announceDrawingShortcut("빠른 액세스를 불러오지 못했어요. 다시 시도해 주세요");
+      announceDrawingShortcut(t("studio.hostStatus.quickAccessLoadFailed", "빠른 액세스를 불러오지 못했어요. 다시 시도해 주세요"));
     } finally {
       if (requestEpoch === quickAccessLoadEpochRef.current) {
         setQuickAccessPaletteLoading(false);
@@ -4390,7 +4394,7 @@ export function StudioCuttoonEditor({
           ? collaborationAccessRef.current.locked
             ? collaborationLockMessage()
             : "이 작업면은 검토 잠금 상태예요. 잠금을 해제한 뒤 크기를 조절하세요."
-          : "크기를 조절할 수 없어요. 선택과 잠금·숨김 상태를 확인하세요."
+          : t("studio.hostStatus.resizeUnavailable", "크기를 조절할 수 없어요. 선택과 잠금·숨김 상태를 확인하세요.")
       );
       return false;
     }
@@ -4901,9 +4905,7 @@ export function StudioCuttoonEditor({
       .catch((err) => {
         if (!editorMountedRef.current || generation !== clipHydrationGenerationRef.current) return;
         setClipStorageState("unavailable");
-        setError(`SQLite/OPFS 클립 보관함을 열지 못했습니다. 기존 저장 키는 자동으로 읽지 않으며 현재 목록은 저장되지 않았습니다: ${
-          err instanceof Error ? err.message : String(err)
-        }`);
+        setError(t("studio.hostStatus.clipStorageOpenFailed", { detail: err instanceof Error ? err.message : String(err) }, "SQLite/OPFS 클립 보관함을 열지 못했습니다. 기존 저장 키는 자동으로 읽지 않으며 현재 목록은 저장되지 않았습니다: {detail}"));
         clipsLoadRef.current = null;
       });
     return () => {
@@ -5173,7 +5175,7 @@ export function StudioCuttoonEditor({
       })
       .catch(() => {
         if (active) {
-          setError("브러시 라이브러리를 열지 못했어요. 저장소 권한과 여유 공간을 확인해주세요.");
+          setError(t("studio.hostStatus.brushLibraryOpenFailed", "브러시 라이브러리를 열지 못했어요. 저장소 권한과 여유 공간을 확인해주세요."));
         }
       });
     return () => {
@@ -5212,7 +5214,7 @@ export function StudioCuttoonEditor({
       setPausedBrushDeleteId((current) => current === pending.id ? null : current);
       announceDrawingShortcut(`“${pending.deleted.brush.name}” 브러시를 복구했어요.`);
     } catch {
-      announceDrawingShortcut("브러시 삭제를 복구하지 못했어요. 저장소 권한과 여유 공간을 확인해주세요.");
+      announceDrawingShortcut(t("studio.hostStatus.brushDeleteRestoreFailed", "브러시 삭제를 복구하지 못했어요. 저장소 권한과 여유 공간을 확인해주세요."));
     }
   }
 
@@ -5324,7 +5326,7 @@ export function StudioCuttoonEditor({
       announceDrawingShortcut(
         code === "corrupt"
           ? "저장된 펜·지우개 설정 일부가 손상되어 안전한 기본값으로 복구했어요."
-          : "펜·지우개 설정을 로컬 SQLite에 저장하지 못했어요. 변경 사항을 유지하고 다시 시도할게요.",
+          : t("studio.hostStatus.penEraserSettingsSaveFailed", "펜·지우개 설정을 로컬 SQLite에 저장하지 못했어요. 변경 사항을 유지하고 다시 시도할게요."),
       );
     },
   );
@@ -5486,7 +5488,7 @@ export function StudioCuttoonEditor({
         await refreshSavedBrushesFromRepository(product);
       })
       .catch(() => {
-        announceDrawingShortcut("브러시는 적용했지만 SQLite 사용 기록을 남기지 못했어요.");
+        announceDrawingShortcut(t("studio.hostStatus.brushUsageRecordFailed", "브러시는 적용했지만 SQLite 사용 기록을 남기지 못했어요."));
       });
   }
 
@@ -5554,7 +5556,7 @@ export function StudioCuttoonEditor({
         stabilizer: snapshot.stabilizer,
       }),
       {
-        failureMessage: "최근 브러시 슬롯을 SQLite에 저장하지 못했어요.",
+        failureMessage: t("studio.hostStatus.brushRecentSlotSaveFailed", "최근 브러시 슬롯을 SQLite에 저장하지 못했어요."),
       },
     );
   }
@@ -5653,7 +5655,7 @@ export function StudioCuttoonEditor({
     afterInspectorCommit(() => {
       const launcher = resolveBrushMenuLauncher();
       if (!launcher) {
-        announceDrawingShortcut("브러시 목록을 열지 못했어요. 오른쪽 패널의 ‘브러시 목록’을 눌러 주세요.");
+        announceDrawingShortcut(t("studio.hostStatus.brushListOpenFailed", "브러시 목록을 열지 못했어요. 오른쪽 패널의 ‘브러시 목록’을 눌러 주세요."));
         return;
       }
       openBrushCatalogFromHelp(launcher);
@@ -5713,7 +5715,7 @@ export function StudioCuttoonEditor({
   function requestBrushPackImportFromMenu() {
     const input = brushPackImportInputRef.current;
     if (!input) {
-      setError("브러시 가져오기 입력을 아직 준비하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError(t("studio.hostStatus.brushImportInputNotReady", "브러시 가져오기 입력을 아직 준비하지 못했어요. 잠시 후 다시 시도해 주세요."));
       return;
     }
     input.click();
@@ -5730,7 +5732,7 @@ export function StudioCuttoonEditor({
     if (!file) return;
     const format = studioBrushPackFormatOf(file.name, file.type);
     if (format === null) {
-      setError("브러시 파일 형식을 알아보지 못했어요. .abr · .myb · .kpp · .sut · .sutg · .bundle · .json 파일을 선택해 주세요.");
+      setError(t("studio.hostStatus.brushFileFormatUnknown", "브러시 파일 형식을 알아보지 못했어요. .abr · .myb · .kpp · .sut · .sutg · .bundle · .json 파일을 선택해 주세요."));
       return;
     }
     if (format === "abr" || format === "json") {
@@ -5739,8 +5741,8 @@ export function StudioCuttoonEditor({
       openBrushLibraryFromMenu();
       announceDrawingShortcut(
         format === "abr"
-          ? "ABR 브러시 팩은 ‘내 브러시’의 가져오기에서 변환해요."
-          : "브러시 설정(.json)은 ‘내 브러시’의 가져오기에서 불러와요.",
+          ? t("studio.hostStatus.abrImportRedirect", "ABR 브러시 팩은 ‘내 브러시’의 가져오기에서 변환해요.")
+          : t("studio.hostStatus.brushJsonImportRedirect", "브러시 설정(.json)은 ‘내 브러시’의 가져오기에서 불러와요."),
       );
       return;
     }
@@ -5782,7 +5784,7 @@ export function StudioCuttoonEditor({
           break;
       }
       if (committed.saved.savedCount === 0) {
-        setError("브러시 파일에 새로 저장할 항목이 없어요.");
+        setError(t("studio.hostStatus.brushNoNewItems", "브러시 파일에 새로 저장할 항목이 없어요."));
         return;
       }
       await refreshSavedBrushesFromRepository(product);
@@ -5794,7 +5796,7 @@ export function StudioCuttoonEditor({
       openBrushLibraryFromMenu();
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "브러시 프리셋 파일을 가져오지 못했어요.",
+        caught instanceof Error ? caught.message : t("studio.hostStatus.brushPresetImportFailed", "브러시 프리셋 파일을 가져오지 못했어요."),
       );
     } finally {
       setBrushPackImporting(false);
@@ -5903,7 +5905,7 @@ export function StudioCuttoonEditor({
       && drawMode === "eraser"
       && isStudioBrushEraserAliasId(brush)
     ) {
-      announceDrawingShortcut("떡지우개는 저농도 합성을 위해 대칭을 함께 사용할 수 없어요.");
+      announceDrawingShortcut(t("studio.hostStatus.eraserSymmetryUnavailable", "떡지우개는 저농도 합성을 위해 대칭을 함께 사용할 수 없어요."));
       return;
     }
     setSymmetryType(next);
@@ -8092,7 +8094,7 @@ export function StudioCuttoonEditor({
 
   async function loadCommunityAssetContent(asset: SharedAssetCatalogItem) {
     if (sharedAssetContentInFlightRef.current.has(asset.id)) {
-      throw new Error("이 에셋 원본을 이미 불러오고 있습니다.");
+      throw new Error(t("studio.hostStatus.assetOriginalAlreadyLoading", "이 에셋 원본을 이미 불러오고 있습니다."));
     }
     sharedAssetContentInFlightRef.current.add(asset.id);
     try {
@@ -8250,7 +8252,7 @@ export function StudioCuttoonEditor({
         })) return;
         placeAt(src, width, height, isAnimatedGif, undefined, externalDropPoint);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "이미지를 추가하지 못했어요.");
+        setError(err instanceof Error ? err.message : t("studio.hostStatus.imageAddFailed", "이미지를 추가하지 못했어요."));
       }
       return;
     }
@@ -8277,7 +8279,7 @@ export function StudioCuttoonEditor({
       if (payload.source === "community") {
         const asset = shared.find((candidate) => candidate.id === payload.assetId);
         if (!asset) {
-          setError("공유 에셋 목록이 바뀌었습니다. 목록을 새로고침한 뒤 다시 시도해 주세요.");
+          setError(t("studio.hostStatus.sharedAssetListChanged", "공유 에셋 목록이 바뀌었습니다. 목록을 새로고침한 뒤 다시 시도해 주세요."));
           return;
         }
         const communityAssetCredit = createStudioCommunityAssetCredit({
@@ -8290,7 +8292,7 @@ export function StudioCuttoonEditor({
           containsAi: asset.containsAi,
         });
         if (!communityAssetCredit) {
-          setError("사용권을 확인할 수 없는 커뮤니티 에셋은 캔버스에 추가할 수 없습니다.");
+          setError(t("studio.hostStatus.communityAssetLicenseUnverified", "사용권을 확인할 수 없는 커뮤니티 에셋은 캔버스에 추가할 수 없습니다."));
           return;
         }
         const content = await loadCommunityAssetContent(asset);
@@ -8313,7 +8315,7 @@ export function StudioCuttoonEditor({
         placeAt(payload.src, payload.width, payload.height, false, undefined, assetDropPoint);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "공유 에셋 원본을 불러오지 못했어요.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.sharedAssetOriginalLoadFailed", "공유 에셋 원본을 불러오지 못했어요."));
     }
   };
 
@@ -8407,7 +8409,7 @@ export function StudioCuttoonEditor({
     hokusaiLiveOverlayVisibleRef.current = false;
     clearStudioHokusaiRetainedDraftPixels(state);
     setError(
-      `선택한 Hokusai 엔진을 유지하지 못해 이 획을 저장하지 않습니다. 다른 렌더러로 자동 전환하지 않습니다. ${reason}`,
+      t("studio.hostStatus.hokusaiEngineLost", { reason }, "선택한 Hokusai 엔진을 유지하지 못해 이 획을 저장하지 않습니다. 다른 렌더러로 자동 전환하지 않습니다. {reason}"),
     );
   }
 
@@ -8503,7 +8505,7 @@ export function StudioCuttoonEditor({
     } catch (cause) {
       failStudioHokusaiLiveStroke(
         state,
-        cause instanceof Error ? cause.message : "권위 샘플 전송에 실패했습니다.",
+        cause instanceof Error ? cause.message : t("studio.hostStatus.authoritySampleSendFailed", "권위 샘플 전송에 실패했습니다."),
       );
     }
   }
@@ -8580,7 +8582,7 @@ export function StudioCuttoonEditor({
           currentSurface.binding.projection,
         );
         if (presented.status !== "presented") {
-          failStudioHokusaiLiveStroke(state, "질감 프레임을 캔버스에 표시하지 못했습니다.");
+          failStudioHokusaiLiveStroke(state, t("studio.hostStatus.textureFramePresentFailed", "질감 프레임을 캔버스에 표시하지 못했습니다."));
           return;
         }
         if (frame.phase === "live") {
@@ -8612,7 +8614,7 @@ export function StudioCuttoonEditor({
         } catch (cause) {
           failStudioHokusaiLiveStroke(
             state,
-            cause instanceof Error ? cause.message : "초기 샘플 전송에 실패했습니다.",
+            cause instanceof Error ? cause.message : t("studio.hostStatus.initialSampleSendFailed", "초기 샘플 전송에 실패했습니다."),
           );
         }
       }
@@ -8620,7 +8622,7 @@ export function StudioCuttoonEditor({
       if (hokusaiLiveStrokeRef.current !== state || state.failed) return;
       failStudioHokusaiLiveStroke(
         state,
-        cause instanceof Error ? cause.message : "자연매체 Worker를 시작하지 못했습니다.",
+        cause instanceof Error ? cause.message : t("studio.hostStatus.naturalMediaWorkerStartFailed", "자연매체 Worker를 시작하지 못했습니다."),
       );
     });
     appendStudioHokusaiAuthoritativeSuffix(element, 0);
@@ -8761,7 +8763,7 @@ export function StudioCuttoonEditor({
     clearStudioLivingInkRetainedDraftPixels(state);
     void livingInkCoordinatorRef.current.cancelStroke(state.strokeId);
     setError(
-      `선택한 Living Ink 엔진을 유지하지 못해 이 획을 저장하지 않습니다. 다른 렌더러로 자동 전환하지 않습니다. ${reason}`,
+      t("studio.hostStatus.livingInkEngineLost", { reason }, "선택한 Living Ink 엔진을 유지하지 못해 이 획을 저장하지 않습니다. 다른 렌더러로 자동 전환하지 않습니다. {reason}"),
     );
   }
 
@@ -8826,8 +8828,8 @@ export function StudioCuttoonEditor({
       livingInkCanonicalHandoffTimerRef.current = null;
       if (!expected || livingInkCanonicalHandoffRef.current !== expected) return;
       const message = [
-        "수채 번짐 저장 PNG의 실제 바이트 해시와 메인 캔버스 표시 영수증을 확인하지 못했습니다.",
-        "물리 표면은 화면에 그대로 보존되며 실행 취소 후 다시 시도할 수 있습니다.",
+        t("studio.hostStatus.livingInkHashVerifyFailed", "수채 번짐 저장 PNG의 실제 바이트 해시와 메인 캔버스 표시 영수증을 확인하지 못했습니다."),
+        t("studio.hostStatus.livingInkSurfaceKept", "물리 표면은 화면에 그대로 보존되며 실행 취소 후 다시 시도할 수 있습니다."),
       ].join(" ");
       setError(message);
       void livingInkCoordinatorRef.current.failClosed(message);
@@ -9020,7 +9022,7 @@ export function StudioCuttoonEditor({
     ) {
       failStudioLivingInkStroke(
         state,
-        livingInkCoordinatorRef.current.capacityDiagnostic ?? "권위 샘플 전송에 실패했습니다.",
+        livingInkCoordinatorRef.current.capacityDiagnostic ?? t("studio.hostStatus.authoritySampleSendFailed", "권위 샘플 전송에 실패했습니다."),
       );
     }
   }
@@ -9072,7 +9074,7 @@ export function StudioCuttoonEditor({
       livingInkRejectedAuthorityRef.current = null;
       livingInkConfigRef.current = null;
       setLivingInkState("unavailable");
-      setLivingInkStateMessage(qualityFailure ?? "수채 번짐 필드를 만들 수 없습니다.");
+      setLivingInkStateMessage(qualityFailure ?? t("studio.hostStatus.livingInkFieldUnavailable", "수채 번짐 필드를 만들 수 없습니다."));
       if (qualityFailure) setError(qualityFailure);
       void livingInkCoordinatorRef.current.dispose();
       return;
@@ -9091,7 +9093,7 @@ export function StudioCuttoonEditor({
       livingInkConfigRef.current = null;
       setLivingInkState("failed");
       setLivingInkStateMessage(
-        "로컬 canonical 저장 뒤 Worker 상태 수락에 실패했습니다. PNG는 보존하고 다시 열기 전까지 물리 편집을 비활성화합니다.",
+        t("studio.hostStatus.livingInkWorkerAcceptFailed", "로컬 canonical 저장 뒤 Worker 상태 수락에 실패했습니다. PNG는 보존하고 다시 열기 전까지 물리 편집을 비활성화합니다."),
       );
       return;
     }
@@ -9157,7 +9159,7 @@ export function StudioCuttoonEditor({
       if (!ready && receipt) {
         livingInkAcceptedAuthorityRef.current = null;
         setError(
-          "저장된 수채 번짐 PNG는 그대로 보존했지만 GPU 상태 재열기 검증에 실패해 물·정착 편집을 비활성화했습니다.",
+          t("studio.hostStatus.livingInkGpuReopenVerifyFailed", "저장된 수채 번짐 PNG는 그대로 보존했지만 GPU 상태 재열기 검증에 실패해 물·정착 편집을 비활성화했습니다."),
         );
         return;
       }
@@ -9173,7 +9175,7 @@ export function StudioCuttoonEditor({
       if (!isCurrent() || (cause instanceof DOMException && cause.name === "AbortError")) return;
       const message = cause instanceof Error
         ? cause.message
-        : "수채 번짐 저장 PNG 무결성을 확인하지 못했습니다.";
+        : t("studio.hostStatus.livingInkPngIntegrityFailed", "수채 번짐 저장 PNG 무결성을 확인하지 못했습니다.");
       livingInkAcceptedAuthorityRef.current = null;
       livingInkRejectedAuthorityRef.current = null;
       livingInkConfigRef.current = null;
@@ -9248,7 +9250,7 @@ export function StudioCuttoonEditor({
     pendingCatalogInputRef.current ??= new StudioPendingCatalogInput((message) => announceDrawingShortcutRef.current(message), (gesture, restoredStrokeId) => {
       const record = serializeStudioCatalogInputRecovery(gesture, restoredStrokeId);
       void acquireStudioCatalogInputRecoveryRepository().then((repository) => repository.save(record)).catch(() => {
-        announceDrawingShortcutRef.current("브러시 원본 입력은 메모리에 보관했지만 기기 복구 저장을 마치지 못했어요.");
+        announceDrawingShortcutRef.current(t("studio.hostStatus.brushInputRecoverySaveFailed", "브러시 원본 입력은 메모리에 보관했지만 기기 복구 저장을 마치지 못했어요."));
       });
     });
     return pendingCatalogInputRef.current;
@@ -9276,7 +9278,7 @@ export function StudioCuttoonEditor({
       const records = await repository.loadUnrestored(catalogInputOwnerScope, autosaveKey);
       if (cancelled || !stageRef.current) return;
       pendingCatalogInput().restore(records.map((record) => restoreStudioCatalogInputRecovery(record, stageRef.current!, catalogInputScope)));
-    }).catch(() => { if (!cancelled) announceDrawingShortcutRef.current("보관된 브러시 입력을 읽지 못했어요. 원본 저장은 유지됩니다."); });
+    }).catch(() => { if (!cancelled) announceDrawingShortcutRef.current(t("studio.hostStatus.brushInputRecoveryReadFailed", "보관된 브러시 입력을 읽지 못했어요. 원본 저장은 유지됩니다.")); });
     return () => { cancelled = true; };
   }, [catalogInputOwnerScope, catalogInputScope, autosaveKey, pendingCatalogInput]);
   const pendingStrokeAdmissionRef = useRef<StudioPendingStrokeAdmissionQueue | null>(null);
@@ -9334,7 +9336,7 @@ export function StudioCuttoonEditor({
     setError(
       cause instanceof Error
         ? `실시간 획 전송: ${cause.message}`
-        : "실시간 획을 팀 문서에 추가하지 못했습니다."
+        : t("studio.hostStatus.liveStrokeTeamDocFailed", "실시간 획을 팀 문서에 추가하지 못했습니다.")
     );
   };
   const drawingCrdtPublisherRef = useRef<StudioCrdtLiveStrokePublisher<DrawEl>>(null as never);
@@ -9480,7 +9482,7 @@ export function StudioCuttoonEditor({
   ): void {
     rejectActiveSelectedLiveSurface(
       "WebGPU 라이브 잉크",
-      `선택한 엔진 상태: ${reason}. 같은 획을 Canvas2D나 Konva로 이어 그리지 않습니다.`,
+      t("studio.hostStatus.gpuLiveInkUnavailable", { reason }, "선택한 엔진 상태: {reason}. 같은 획을 Canvas2D나 Konva로 이어 그리지 않습니다."),
       strokeId,
     );
     // Pointer-up releases drawingRef before an asynchronous final receipt or watchdog failure.
@@ -9694,7 +9696,7 @@ export function StudioCuttoonEditor({
     setStudioCommentInteractionNotice(null);
     if (!canCreateStudioComment) {
       openStudioCommentInbox();
-      announceDrawingShortcut("댓글 작성 권한이 없어 검토함을 열었습니다");
+      announceDrawingShortcut(t("studio.hostStatus.commentPermissionInboxOpened", "댓글 작성 권한이 없어 검토함을 열었습니다"));
       return;
     }
     preloadStudioPointCommentComposer();
@@ -10108,7 +10110,7 @@ export function StudioCuttoonEditor({
           setError(
             cause instanceof Error
               ? `WebGPU 최종 획 동기화: ${cause.message}`
-              : "WebGPU 최종 획을 협업 문서에 동기화하지 못했습니다.",
+              : t("studio.hostStatus.webgpuStrokeSyncFailed", "WebGPU 최종 획을 협업 문서에 동기화하지 못했습니다."),
           );
           cancelRejectedSelectedGpuPendingStroke(strokeId, "crdt-sync-failed");
           return;
@@ -10883,7 +10885,7 @@ export function StudioCuttoonEditor({
         renderer.resetActive();
         rejectActiveSelectedLiveSurface(
           "습식 매체",
-          "활성 표면 또는 획 호환성이 사라졌습니다. 다른 렌더러로 전환하지 않습니다.",
+          t("studio.hostStatus.liveSurfaceLost", "활성 표면 또는 획 호환성이 사라졌습니다. 다른 렌더러로 전환하지 않습니다."),
           next.id,
         );
         return;
@@ -10898,7 +10900,7 @@ export function StudioCuttoonEditor({
         renderer.resetActive();
         rejectActiveSelectedLiveSurface(
           "습식 매체",
-          `선택 표면 오류: ${outcome.reason}. 다른 렌더러로 전환하지 않습니다.`,
+          t("studio.hostStatus.liveSurfaceError", { reason: outcome.reason }, "선택 표면 오류: {reason}. 다른 렌더러로 전환하지 않습니다."),
           next.id,
         );
         return;
@@ -10914,7 +10916,7 @@ export function StudioCuttoonEditor({
         renderer.resetActive();
         rejectActiveSelectedLiveSurface(
           "동적 브러시",
-          "활성 표면 또는 획 호환성이 사라졌습니다. 다른 렌더러로 전환하지 않습니다.",
+          t("studio.hostStatus.liveSurfaceLost", "활성 표면 또는 획 호환성이 사라졌습니다. 다른 렌더러로 전환하지 않습니다."),
           next.id,
         );
         return;
@@ -10926,7 +10928,7 @@ export function StudioCuttoonEditor({
         renderer.resetActive();
         rejectActiveSelectedLiveSurface(
           "동적 브러시",
-          `선택 표면 오류: ${outcome.reason}. 다른 렌더러로 전환하지 않습니다.`,
+          t("studio.hostStatus.liveSurfaceError", { reason: outcome.reason }, "선택 표면 오류: {reason}. 다른 렌더러로 전환하지 않습니다."),
           next.id,
         );
         return;
@@ -10942,7 +10944,7 @@ export function StudioCuttoonEditor({
         renderer.resetActive();
         rejectActiveSelectedLiveSurface(
           "리테인드 매체",
-          "활성 표면 또는 획 호환성이 사라졌습니다. 다른 렌더러로 전환하지 않습니다.",
+          t("studio.hostStatus.liveSurfaceLost", "활성 표면 또는 획 호환성이 사라졌습니다. 다른 렌더러로 전환하지 않습니다."),
           next.id,
         );
         return;
@@ -10954,7 +10956,7 @@ export function StudioCuttoonEditor({
         renderer.resetActive();
         rejectActiveSelectedLiveSurface(
           "리테인드 매체",
-          `선택 표면 오류: ${outcome.reason}. 다른 렌더러로 전환하지 않습니다.`,
+          t("studio.hostStatus.liveSurfaceError", { reason: outcome.reason }, "선택 표면 오류: {reason}. 다른 렌더러로 전환하지 않습니다."),
           next.id,
         );
         return;
@@ -12983,7 +12985,7 @@ export function StudioCuttoonEditor({
           durable: false,
           message: ownershipBusy
             ? STUDIO_WATERMARK_PREFERENCES_OWNERSHIP_BUSY_HINT
-            : `워터마크 설정 저장소를 불러오지 못했습니다. 현재 탭에서만 유지됩니다: ${detail}`,
+            : t("studio.hostStatus.watermarkLoadFailed", { detail }, "워터마크 설정 저장소를 불러오지 못했습니다. 현재 탭에서만 유지됩니다: {detail}"),
           cause,
         }));
       });
@@ -13710,7 +13712,7 @@ export function StudioCuttoonEditor({
     ).mutableDocument;
     const plan = planStudioTeamCommentMutation(previousMutableDocument, nextMutableDocument);
     if (!plan) {
-      throw new Error("팀 댓글에서 아직 지원하지 않는 변경이에요. 새 댓글·답글·해결 상태만 동기화할 수 있어요.");
+      throw new Error(t("studio.hostStatus.teamCommentUnsupportedChange", "팀 댓글에서 아직 지원하지 않는 변경이에요. 새 댓글·답글·해결 상태만 동기화할 수 있어요."));
     }
     return executeStudioTeamCommentMutationPlan(plan, requestedScope);
   }
@@ -13834,8 +13836,8 @@ export function StudioCuttoonEditor({
         setError(null);
       },
       onMissing: (kind) => setError(kind === "page"
-        ? "댓글이 연결된 페이지를 현재 문서에서 찾을 수 없어요."
-        : "댓글이 연결된 컷 또는 요소를 현재 문서에서 찾을 수 없어요."),
+        ? t("studio.hostStatus.commentPageNotFound", "댓글이 연결된 페이지를 현재 문서에서 찾을 수 없어요.")
+        : t("studio.hostStatus.commentTargetNotFound", "댓글이 연결된 컷 또는 요소를 현재 문서에서 찾을 수 없어요.")),
     }, current);
   }
   function selectStudioCommentAnchor(anchor: StudioCommentAnchor) {
@@ -14465,7 +14467,7 @@ const pixelToolArmed =
         if (runId !== pixelMagneticFieldRunIdRef.current) return;
         const reason = error instanceof Error && error.message.trim()
           ? error.message.trim()
-          : "자석 올가미 휘도장을 불러오지 못했습니다.";
+          : t("studio.hostStatus.magneticLassoFieldLoadFailed", "자석 올가미 휘도장을 불러오지 못했습니다.");
         pixelMagneticFieldStateRef.current = {
           status: "unavailable",
           key: magneticLassoFieldKey,
@@ -14604,7 +14606,7 @@ const cropArmed =
       return;
     }
     if (removed.outcome === "minimum-points") {
-      announceDrawingShortcut("말풍선 외곽선에는 최소 3개의 점이 필요합니다");
+      announceDrawingShortcut(t("studio.hostStatus.bubbleMinPoints", "말풍선 외곽선에는 최소 3개의 점이 필요합니다"));
     }
   }
 const smudgeArmed =
@@ -14806,7 +14808,7 @@ const puppetWarpArmed =
         if (!isStudioCuttoonSourceFormat(w.format)) {
           setWorkHydrationFailed(true);
           setWorkHydrationUnsupportedFormat(true);
-          setError("업로드형 작품은 컷툰 편집기로 열 수 없어요. 업로드 편집 화면에서 수정해 주세요.");
+          setError(t("studio.hostStatus.uploadWorkEditorBlocked", "업로드형 작품은 컷툰 편집기로 열 수 없어요. 업로드 편집 화면에서 수정해 주세요."));
           return;
         }
         const doc = w.doc as {
@@ -14970,7 +14972,7 @@ const puppetWarpArmed =
       .catch((e) => {
         if (!alive || controller.signal.aborted) return;
         setWorkHydrationFailed(true);
-        const message = e instanceof Error ? e.message : "원고를 불러오지 못했습니다.";
+        const message = e instanceof Error ? e.message : t("studio.hostStatus.workLoadFailed", "원고를 불러오지 못했습니다.");
         setWorkHydrationError(message);
         setError(message);
       });
@@ -15072,7 +15074,7 @@ const puppetWarpArmed =
       setLoading: setPanelLayoutsLoading,
       setError: setPanelLayoutsError,
       logLabel: "Failed to load studio panel layouts:",
-      errorMessage: "컷 레이아웃을 불러오지 못했습니다.",
+      errorMessage: t("studio.hostStatus.panelLayoutsLoadFailed", "컷 레이아웃을 불러오지 못했습니다."),
       load: () =>
         import("./studio-panel-layouts").then((mod) => () => {
           setPanelLayoutPresets(mod.PANEL_LAYOUTS);
@@ -15084,7 +15086,7 @@ const puppetWarpArmed =
       setLoading: setSceneTemplatesLoading,
       setError: setSceneTemplatesError,
       logLabel: "Failed to load studio scene templates:",
-      errorMessage: "장면 템플릿을 불러오지 못했습니다.",
+      errorMessage: t("studio.hostStatus.sceneTemplatesLoadFailed", "장면 템플릿을 불러오지 못했습니다."),
       load: () =>
         import("./studio-scene-templates").then((mod) => () => {
           setSceneTemplatePacks({
@@ -15099,7 +15101,7 @@ const puppetWarpArmed =
       setLoading: setSfxLoading,
       setError: setSfxError,
       logLabel: "Failed to load studio SFX presets:",
-      errorMessage: "효과음 프리셋을 불러오지 못했습니다.",
+      errorMessage: t("studio.hostStatus.sfxPresetsLoadFailed", "효과음 프리셋을 불러오지 못했습니다."),
       load: () =>
         import("./studio-sfx-presets").then((mod) => () => {
           setSfxPacks({
@@ -15114,7 +15116,7 @@ const puppetWarpArmed =
       setLoading: setStudioBgSceneAssetsLoading,
       setError: setStudioBgSceneAssetsError,
       logLabel: "Failed to load studio background scenes:",
-      errorMessage: "배경 씬을 불러오지 못했습니다.",
+      errorMessage: t("studio.hostStatus.bgScenesLoadFailed", "배경 씬을 불러오지 못했습니다."),
       load: () =>
         Promise.all([
           import("./studio-bg-scenes"),
@@ -15135,7 +15137,7 @@ const puppetWarpArmed =
       setLoading: setStudioStickerAssetsLoading,
       setError: setStudioStickerAssetsError,
       logLabel: "Failed to load studio sticker assets:",
-      errorMessage: "스티커 에셋을 불러오지 못했습니다.",
+      errorMessage: t("studio.hostStatus.stickerAssetsLoadFailed", "스티커 에셋을 불러오지 못했습니다."),
       load: () =>
         Promise.all([
           import("./studio-fx-assets"),
@@ -15158,7 +15160,7 @@ const puppetWarpArmed =
       setLoading: setStudioEmeresAssetsLoading,
       setError: setStudioEmeresAssetsError,
       logLabel: "Failed to load studio emeres templates:",
-      errorMessage: "이메레스 틀을 불러오지 못했습니다.",
+      errorMessage: t("studio.hostStatus.emeresFramesLoadFailed", "이메레스 틀을 불러오지 못했습니다."),
       load: () =>
         import("./studio-emeres-templates").then((emeres) => () => {
           setStudioOptionalAssets((prev) => ({
@@ -15405,7 +15407,7 @@ const puppetWarpArmed =
       setWriterRoom((current) => replaceStudioWriterRoomStage(current, review.stage, review.draft));
       setSharedDocumentNotice(null); setWriterRoomAiReview(null); setWriterRoomAiError(null);
     } catch {
-      if (canApplyStudioMutation(mutationTicket)) setWriterRoomAiError("작가실 적용 도구를 불러오지 못했습니다. 다시 시도해 주세요.");
+      if (canApplyStudioMutation(mutationTicket)) setWriterRoomAiError(t("studio.hostStatus.writerRoomToolsLoadFailed", "작가실 적용 도구를 불러오지 못했습니다. 다시 시도해 주세요."));
     } finally {
       if (canApplyStudioMutation(mutationTicket)) setWriterRoomAiBusy(false);
     }
@@ -15415,7 +15417,7 @@ const puppetWarpArmed =
   function applyWriterRoomCanvasPlan() {
     const plan = writerRoomCanvasPlan;
     if (!plan || !plan.applyReadiness.canApply || plan.pageGrouping.pages.length === 0) {
-      setError("컷 플랜의 연결 오류를 먼저 해결한 뒤 새 페이지를 만들어 주세요.");
+      setError(t("studio.hostStatus.cutPlanConnectionError", "컷 플랜의 연결 오류를 먼저 해결한 뒤 새 페이지를 만들어 주세요."));
       return;
     }
 
@@ -15433,7 +15435,7 @@ const puppetWarpArmed =
       setError(null);
       setWriterRoomOpen(false);
     } catch {
-      setError("컷 플랜을 페이지로 만드는 중 안전 검증에 실패했어요. 컷 연결을 확인한 뒤 다시 시도해 주세요.");
+      setError(t("studio.hostStatus.cutPlanSafetyCheckFailed", "컷 플랜을 페이지로 만드는 중 안전 검증에 실패했어요. 컷 연결을 확인한 뒤 다시 시도해 주세요."));
     }
   }
   const [aiBgPrompt, setAiBgPrompt] = useState("");
@@ -15548,7 +15550,7 @@ const puppetWarpArmed =
       await renameStudioAssetMutation(id, renamingAssetName);
       setRenamingAssetId(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "에셋 이름 변경 실패");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.assetRenameFailed", "에셋 이름 변경 실패"));
     }
   }
 
@@ -15560,7 +15562,7 @@ const puppetWarpArmed =
       return;
     }
     if (!isStudioAiConfigured(aiSettings)) {
-      setError("설정에서 사용자 API 키를 등록한 뒤 다시 시도해 주세요.");
+      setError(t("studio.hostStatus.apiKeyRequired", "설정에서 사용자 API 키를 등록한 뒤 다시 시도해 주세요."));
       return;
     }
     // 이미지 생성은 사용자가 선택한 BYOK 제공자만 사용한다. 키가 없거나 호출이 실패해도
@@ -15570,7 +15572,7 @@ const puppetWarpArmed =
   async function executeGenerateAsset(prompt: string) {
     if (collaborationAccessRef.current.locked) return;
     if (!isStudioAiConfigured(aiSettings)) {
-      setError("설정에서 사용자 API 키를 등록한 뒤 다시 시도해 주세요.");
+      setError(t("studio.hostStatus.apiKeyRequired", "설정에서 사용자 API 키를 등록한 뒤 다시 시도해 주세요."));
       return;
     }
     const mutationTicket = captureStudioMutationTicket();
@@ -15627,7 +15629,7 @@ const puppetWarpArmed =
         undefined,
         insertionPlacement
       )) {
-        setError("생성한 에셋은 라이브러리에 저장했지만 현재 캔버스에는 추가하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요.");
+        setError(t("studio.hostStatus.generatedAssetCanvasAddFailed", "생성한 에셋은 라이브러리에 저장했지만 현재 캔버스에는 추가하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
         return;
       }
       setAssetPrompt("");
@@ -15635,7 +15637,7 @@ const puppetWarpArmed =
       setMenu(null);
     } catch (err) {
       if (operationId) settleTrackedStudioAiOperation(operationId, { ok: false, code: "http_error" });
-      setError(err instanceof Error ? err.message : "AI 에셋 생성 실패");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.aiAssetGenerateFailed", "AI 에셋 생성 실패"));
     } finally {
       setAssetGenerating(false);
     }
@@ -15801,7 +15803,7 @@ const puppetWarpArmed =
       setShared(page.items);
       setSharedNextOffset(page.nextOffset);
     } catch (err) {
-      setSharedError(err instanceof Error ? err.message : "공유 에셋을 불러오지 못했어요.");
+      setSharedError(err instanceof Error ? err.message : t("studio.hostStatus.sharedAssetsLoadFailed", "공유 에셋을 불러오지 못했어요."));
       setShared([]);
       setSharedNextOffset(null);
     } finally {
@@ -15827,7 +15829,7 @@ const puppetWarpArmed =
       });
       setSharedNextOffset(page.nextOffset);
     } catch (err) {
-      setSharedError(err instanceof Error ? err.message : "다음 공유 에셋을 불러오지 못했어요.");
+      setSharedError(err instanceof Error ? err.message : t("studio.hostStatus.sharedAssetsNextLoadFailed", "다음 공유 에셋을 불러오지 못했어요."));
     } finally {
       setSharedLoadingMore(false);
     }
@@ -15855,7 +15857,7 @@ const puppetWarpArmed =
         if (controller.signal.aborted) return;
         setSharedError(caughtError instanceof Error
           ? caughtError.message
-          : "공유 에셋을 불러오지 못했어요.");
+          : t("studio.hostStatus.sharedAssetsLoadFailed", "공유 에셋을 불러오지 못했어요."));
         setShared([]);
         setSharedNextOffset(null);
       })
@@ -15914,10 +15916,10 @@ const puppetWarpArmed =
       if (controller.signal.aborted) return;
       const issue = caught instanceof Error && caught.message.trim()
         ? caught.message
-        : "계정 라이브러리 설치 확인을 동기화하지 못했습니다.";
+        : t("studio.hostStatus.accountInstallSyncFailed", "계정 라이브러리 설치 확인을 동기화하지 못했습니다.");
       setStudioMarketplaceCloudSyncRetry({ ...retry, issue });
       setStatusNotice(null);
-      setError(`${retry.record.name} · 로컬 설치는 유지됩니다. 계정 설치 확인 실패: ${issue}`);
+      setError(t("studio.hostStatus.accountInstallSyncFailedDetail", { name: retry.record.name, issue }, "{name} · 로컬 설치는 유지됩니다. 계정 설치 확인 실패: {issue}"));
     } finally {
       if (studioMarketplaceCloudSyncRetryControllerRef.current === controller) {
         studioMarketplaceCloudSyncRetryControllerRef.current = null;
@@ -16028,7 +16030,7 @@ const puppetWarpArmed =
                   guard.assertCurrent();
                   const issue = caught instanceof Error && caught.message.trim()
                     ? caught.message
-                    : "계정 라이브러리 설치 확인을 동기화하지 못했습니다.";
+                    : t("studio.hostStatus.accountInstallSyncFailed", "계정 라이브러리 설치 확인을 동기화하지 못했습니다.");
                   setStudioMarketplaceCloudSyncRetry({ record, pack, issue });
                   throw caught;
                 }
@@ -16080,13 +16082,7 @@ const puppetWarpArmed =
     } catch (caught) {
       if (!isCurrentOperation()) return;
       setStatusNotice(null);
-      setError(
-        `마켓 설치 도구를 준비하지 못했어요. ${
-          caught instanceof Error && caught.message
-            ? `${caught.message} `
-            : ""
-        }마켓 상세에서 ‘Studio에서 불러오기’를 다시 눌러 주세요.`,
-      );
+      setError(t("studio.hostStatus.marketInstallPrepareFailed", { detail: caught instanceof Error && caught.message ? `${caught.message} ` : "" }, "마켓 설치 도구를 준비하지 못했어요. {detail}마켓 상세에서 ‘Studio에서 불러오기’를 다시 눌러 주세요."));
     }
   });
   // 마운트 직후가 아니라 퀵스타트 코치와 같은 "부팅 완료" 게이트 뒤에서 연다 — 작업/자동저장
@@ -16135,7 +16131,7 @@ const puppetWarpArmed =
       setAssetTab("community");
       await loadSharedAssets();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "에셋을 공유하지 못했어요.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.assetShareFailed", "에셋을 공유하지 못했어요."));
     } finally {
       setPublishingId(null);
     }
@@ -16153,7 +16149,7 @@ const puppetWarpArmed =
       containsAi: asset.containsAi,
     });
     if (!communityAssetCredit) {
-      setError("사용권을 확인할 수 없는 커뮤니티 에셋은 캔버스에 추가할 수 없습니다.");
+      setError(t("studio.hostStatus.communityAssetLicenseUnverified", "사용권을 확인할 수 없는 커뮤니티 에셋은 캔버스에 추가할 수 없습니다."));
       return;
     }
     const mutationTicket = captureStudioMutationTicket();
@@ -16178,7 +16174,7 @@ const puppetWarpArmed =
       recordCommunityAssetUse(asset.id);
       setMenu(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "공유 에셋 원본을 불러오지 못했어요.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.sharedAssetOriginalLoadFailed", "공유 에셋 원본을 불러오지 못했어요."));
     }
   }
 
@@ -16189,7 +16185,7 @@ const puppetWarpArmed =
       removeAssetFavorite(createStudioAssetFavoriteId("community", id));
       await loadSharedAssets();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "공유 에셋을 삭제하지 못했어요.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.sharedAssetDeleteFailed", "공유 에셋을 삭제하지 못했어요."));
     }
   }
 
@@ -16208,7 +16204,7 @@ const puppetWarpArmed =
       announceDrawingShortcut("신고가 접수되었습니다. 검수 결과에 따라 공개 상태가 조정됩니다.");
       await loadSharedAssets();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "에셋을 신고하지 못했어요.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.assetReportFailed", "에셋을 신고하지 못했어요."));
     }
   }
 
@@ -16342,7 +16338,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (cause) {
       ecosystemSampleImportRef.current = sampleId;
-      setError(cause instanceof Error ? cause.message : "예제 작품을 불러오지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : t("studio.hostStatus.sampleWorkLoadFailed", "예제 작품을 불러오지 못했습니다."));
     }
   }, [autosaveChecked, commitPages, elements.length, hasAutosave, pages.length, params, remixId,
     setCurrentPageId, setQuickStartOpen, setTitle, sourceHydrationPending, workHydrated, workId]);
@@ -17058,7 +17054,7 @@ const puppetWarpArmed =
       }[plan.kind];
       announceDrawingShortcut(`편집 가능한 아이소메트릭 ${label} ${faces.length}개 면을 생성했습니다.`);
     } catch {
-      setError("아이소메트릭 입체 도구를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError(t("studio.hostStatus.isometricToolLoadFailed", "아이소메트릭 입체 도구를 불러오지 못했어요. 잠시 후 다시 시도해 주세요."));
     }
   }
 
@@ -17227,9 +17223,9 @@ const puppetWarpArmed =
     if (result.ok) {
       announceDrawingShortcut("비교 검수로 보냈어요. 회차 룸의 비교 탭 소스 풀에서 확인할 수 있어요.");
     } else if (result.reason === "image-too-large") {
-      setError("캔버스가 너무 커서 비교 검수로 보내지 못했습니다. 페이지를 나눠서 다시 시도하세요.");
+      setError(t("studio.hostStatus.reviewCanvasTooLarge", "캔버스가 너무 커서 비교 검수로 보내지 못했습니다. 페이지를 나눠서 다시 시도하세요."));
     } else {
-      setError("비교 검수로 보내지 못했습니다. 브라우저 저장 공간을 확인하세요.");
+      setError(t("studio.hostStatus.reviewSendFailed", "비교 검수로 보내지 못했습니다. 브라우저 저장 공간을 확인하세요."));
     }
   }
   function addEl(el: El): boolean {
@@ -17490,12 +17486,12 @@ const puppetWarpArmed =
     setError(null);
     try {
       const response = await fetch(resolveAssetUrl(asset.src), { headers: { Accept: asset.mimeType } });
-      if (!response.ok) throw new Error(`소재 파일을 불러오지 못했습니다. (${response.status})`);
+      if (!response.ok) throw new Error(t("studio.hostStatus.materialLoadFailedStatus", { status: response.status }, "소재 파일을 불러오지 못했습니다. ({status})"));
       const blob = await response.blob();
       await verifyStudioRasterAssetBlob(asset, blob);
       const src = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onerror = () => reject(new Error("소재 파일을 읽지 못했습니다."));
+        reader.onerror = () => reject(new Error(t("studio.hostStatus.materialFileReadFailed", "소재 파일을 읽지 못했습니다.")));
         reader.onload = () => resolve(String(reader.result));
         reader.readAsDataURL(blob);
       });
@@ -17537,7 +17533,7 @@ const puppetWarpArmed =
       setMenu(null);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "소재를 캔버스에 추가하지 못했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.materialCanvasAddFailed", "소재를 캔버스에 추가하지 못했습니다."));
       return false;
     } finally {
       setBuiltinRasterBusyId(null);
@@ -17930,7 +17926,7 @@ const puppetWarpArmed =
       } else {
         if (hasActiveDrawingPointerSession()) discardDrawingPointerSession();
         else discardStudioLivingInkStroke(livingInkStroke.strokeId);
-        announceDrawingShortcut("저장 중이던 수채 번짐 획을 취소했습니다");
+        announceDrawingShortcut(t("studio.hostStatus.livingInkStrokeSaveCanceled", "저장 중이던 수채 번짐 획을 취소했습니다"));
         return;
       }
     }
@@ -17945,7 +17941,7 @@ const puppetWarpArmed =
         // user action. Abort it instead of undoing an unrelated older history snapshot.
         if (hasActiveDrawingPointerSession()) discardDrawingPointerSession();
         else discardStudioHokusaiLiveStroke(hokusaiStroke.strokeId);
-        announceDrawingShortcut("저장 중이던 자연매체 획을 취소했습니다");
+        announceDrawingShortcut(t("studio.hostStatus.naturalMediaStrokeSaveCanceled", "저장 중이던 자연매체 획을 취소했습니다"));
         return;
       }
     }
@@ -18057,7 +18053,7 @@ const puppetWarpArmed =
     // `setPagesHi` 는 저장 중이면 거절한다. 거절될 갱신으로 ref 를 앞세우면 렌더 없이
     // ref 와 상태가 어긋난 채 남으므로, 커밋 경로와 같은 게이트를 먼저 통과시킨다.
     if (documentSaveInFlightRef.current) {
-      setError("저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요.");
+      setError(t("studio.hostStatus.savingWorkLocked", "저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요."));
       return;
     }
     pagesHiRef.current = nextIndex;
@@ -18896,7 +18892,7 @@ const puppetWarpArmed =
       result.data.height,
       requestProvenance
     )) {
-      setAiBgError("배경 이미지는 생성됐지만 현재 원고에 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요.");
+      setAiBgError(t("studio.hostStatus.bgApplyFailed", "배경 이미지는 생성됐지만 현재 원고에 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
       setAiBgBusy(false);
       return;
     }
@@ -18969,12 +18965,12 @@ const puppetWarpArmed =
     }
     const target = elementById.get(elId);
     if (!target || target.type !== "image") {
-      setAiColorizeError("채색 결과를 적용할 원본 이미지 레이어를 찾지 못했어요. 레이어를 다시 선택한 뒤 재시도해 주세요.");
+      setAiColorizeError(t("studio.hostStatus.colorizeSourceLayerNotFound", "채색 결과를 적용할 원본 이미지 레이어를 찾지 못했어요. 레이어를 다시 선택한 뒤 재시도해 주세요."));
       setAiColorizeBusy(false);
       return;
     }
     if (!patchEl(elId, { src: result.data.dataUrl, aiProvenance: requestProvenance })) {
-      setAiColorizeError("채색 결과는 생성됐지만 이미지 레이어에 적용하지 못했어요. 레이어 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요.");
+      setAiColorizeError(t("studio.hostStatus.colorizeApplyFailed", "채색 결과는 생성됐지만 이미지 레이어에 적용하지 못했어요. 레이어 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
       setAiColorizeBusy(false);
       return;
     }
@@ -19028,7 +19024,7 @@ const puppetWarpArmed =
       return;
     }
     if (!addRenderedImage(result.data.dataUrl, reference.width, reference.height, requestProvenance)) {
-      setAiCharacterError("캐릭터 이미지는 생성됐지만 현재 원고에 추가하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요.");
+      setAiCharacterError(t("studio.hostStatus.characterAddFailed", "캐릭터 이미지는 생성됐지만 현재 원고에 추가하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
       setAiCharacterBusy(false);
       return;
     }
@@ -19067,7 +19063,7 @@ const puppetWarpArmed =
     setScenarioBusy(true);
     setScenarioError(null);
     setScenarioProgress(null);
-    setScenarioStageLabel("장면 구성 생성 중…");
+    setScenarioStageLabel(t("studio.hostStatus.scenarioGenerating", "장면 구성 생성 중…"));
     const characterContext = buildStudioCharacterBiblePromptContext(characterBible);
     const pendingProvider = pendingTextAiProviderContext();
     const operationId = beginTrackedStudioAiOperation("scenario-text", {
@@ -19113,7 +19109,7 @@ const puppetWarpArmed =
         scenesResult.data.scenes
       );
       if (panels.length === 0) {
-        setScenarioError("생성된 장면이 없습니다. 스토리를 조금 더 자세히 입력해보세요.");
+        setScenarioError(t("studio.hostStatus.scenarioEmpty", "생성된 장면이 없습니다. 스토리를 조금 더 자세히 입력해보세요."));
         return;
       }
 
@@ -19345,13 +19341,13 @@ const puppetWarpArmed =
           : page
       );
       if (!commitPages(populatedPages)) {
-        setScenarioError("새 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요.");
+        setScenarioError(t("studio.hostStatus.scenarioNewPageApplyFailed", "새 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
         return;
       }
       setCurrentPageId(insertedPage.id);
     } else {
       if (!commit([...elements, ...newEls], { canvasH: Math.max(canvasH, scenarioResult.nextCanvasH) })) {
-        setScenarioError("현재 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요.");
+        setScenarioError(t("studio.hostStatus.scenarioCurrentPageApplyFailed", "현재 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
         return;
       }
     }
@@ -19510,11 +19506,7 @@ const puppetWarpArmed =
     } catch (e) {
       if (!editorMountedRef.current || generation !== aiPaletteSaveGenerationRef.current) return;
       setAiPaletteSuggestSavedMsg(null);
-      setAiPaletteSuggestError(
-        `SQLite/OPFS 팔레트 저장에 실패했습니다. 제안은 현재 탭 메모리에만 남고 라이브러리에는 저장되지 않았습니다: ${
-          e instanceof Error ? e.message : String(e)
-        }`
-      );
+      setAiPaletteSuggestError(t("studio.hostStatus.paletteSaveFailed", { detail: e instanceof Error ? e.message : String(e) }, "SQLite/OPFS 팔레트 저장에 실패했습니다. 제안은 현재 탭 메모리에만 남고 라이브러리에는 저장되지 않았습니다: {detail}"));
     }
   }
 
@@ -19727,7 +19719,7 @@ const puppetWarpArmed =
       return;
     }
     if (el.groupId) {
-      setError("그룹에 속한 요소는 이메레스로 저장할 수 없어요. 그룹을 해제한 뒤 다시 시도하세요.");
+      setError(t("studio.hostStatus.emeresGroupBlocked", "그룹에 속한 요소는 이메레스로 저장할 수 없어요. 그룹을 해제한 뒤 다시 시도하세요."));
       return;
     }
     const stage = stageRef.current;
@@ -19759,7 +19751,7 @@ const puppetWarpArmed =
       await getProductStudioEmeresSqliteRepository().save(created);
     } catch (err) {
       console.error("Failed to save emeres library item:", err);
-      setError("SQLite/OPFS 이메레스 보관함에 저장하지 못했습니다.");
+      setError(t("studio.hostStatus.emeresSaveFailed", "SQLite/OPFS 이메레스 보관함에 저장하지 못했습니다."));
     }
   }
   const emeresUnderlayCount = elements.filter((e) => e.emeresSourceId != null).length;
@@ -19783,9 +19775,9 @@ const puppetWarpArmed =
         const { planStudioIllustrationTemplateInsertion } = await import("./catalog/studio-illustration-template-insertion");
         if (!canApplyDeferredComipoAction(deferredAction)) return false;
         const plan = planStudioIllustrationTemplateInsertion(template.id, activeElementsRef.current, canvasH, uid, resolveAssetUrl);
-        if (!plan) throw new Error("장면 템플릿을 찾을 수 없습니다.");
+        if (!plan) throw new Error(t("studio.hostStatus.sceneTemplateNotFound", "장면 템플릿을 찾을 수 없습니다."));
         if (masterEditMode && plan.canvasH > canvasH) {
-          throw new Error("이 장면은 더 긴 캔버스가 필요합니다. 일반 페이지에 추가해 주세요.");
+          throw new Error(t("studio.hostStatus.sceneNeedsLongerCanvas", "이 장면은 더 긴 캔버스가 필요합니다. 일반 페이지에 추가해 주세요."));
         }
         if (!commit(plan.elements, { canvasH: plan.canvasH })) return false;
         setSelectedId(plan.firstElementId);
@@ -19800,7 +19792,7 @@ const puppetWarpArmed =
       if (!canApplyDeferredComipoAction(deferredAction)) return false;
       const result = runStudioPageAddSceneTemplate(studioInsertState(), template.id, uid);
       if (!result.ok) {
-        setError("장면을 이 컷에 맞출 수 없습니다.");
+        setError(t("studio.hostStatus.sceneFitFailed", "장면을 이 컷에 맞출 수 없습니다."));
         return false;
       }
       setMenu(null);
@@ -19810,7 +19802,7 @@ const puppetWarpArmed =
     } catch (error) {
       console.error("Failed to load the Studio scene insertion engine:", error);
       if (canApplyDeferredComipoAction(deferredAction)) {
-        setError(error instanceof Error ? error.message : "장면 배치 엔진을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        setError(error instanceof Error ? error.message : t("studio.hostStatus.sceneInsertEngineLoadFailed", "장면 배치 엔진을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."));
       }
       return false;
     } finally {
@@ -19829,7 +19821,7 @@ const puppetWarpArmed =
       if (!canApplyDeferredComipoAction(deferredAction)) return;
       const result = runStudioPageAddDialogueBubbles(studioInsertState(), script, uid);
       if (!result.ok) {
-        setError("대사를 컷 안에 배치하지 못했습니다. 대사 길이를 줄여 보세요.");
+        setError(t("studio.hostStatus.dialoguePlaceFailed", "대사를 컷 안에 배치하지 못했습니다. 대사 길이를 줄여 보세요."));
         return;
       }
       commit(result.elements as El[]);
@@ -19839,7 +19831,7 @@ const puppetWarpArmed =
     } catch (error) {
       console.error("Failed to load the Studio dialogue insertion engine:", error);
       if (canApplyDeferredComipoAction(deferredAction)) {
-        setError("대사 배치 엔진을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        setError(t("studio.hostStatus.dialogueEngineLoadFailed", "대사 배치 엔진을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."));
       }
     } finally {
       comipoActionBusyRef.current = false;
@@ -19905,7 +19897,7 @@ const puppetWarpArmed =
     if (translateBusy) return;
     const items = collectDialogueItems(pages); // v1: 항상 문서 전체(스코프 "현재 페이지만"은 없음).
     if (items.length === 0) {
-      setTranslateError("번역할 말풍선·텍스트가 없어요.");
+      setTranslateError(t("studio.hostStatus.translateNothingToTranslate", "번역할 말풍선·텍스트가 없어요."));
       return;
     }
     const chunks = chunkDialogueItemsForTranslation(items, cardContexts ? { contexts: cardContexts } : {});
@@ -20009,7 +20001,7 @@ const puppetWarpArmed =
           return "memory";
         } catch (cause) {
           if (editorMountedRef.current) {
-            setError(cause instanceof Error ? cause.message : "클립 변경을 적용하지 못했습니다.");
+            setError(cause instanceof Error ? cause.message : t("studio.hostStatus.clipChangeApplyFailed", "클립 변경을 적용하지 못했습니다."));
           }
           return "rejected";
         }
@@ -20047,14 +20039,12 @@ const puppetWarpArmed =
         } catch (validationError) {
           setError(validationError instanceof Error
             ? validationError.message
-            : "클립 변경을 적용하지 못했습니다.");
+            : t("studio.hostStatus.clipChangeApplyFailed", "클립 변경을 적용하지 못했습니다."));
           return "rejected";
         }
         clipMemoryModeRef.current = true;
         setClipStorageState("memory");
-        setError(`SQLite/OPFS 저장에 실패해 클립 변경을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라집니다: ${
-          cause instanceof Error ? cause.message : String(cause)
-        }`);
+        setError(t("studio.hostStatus.clipSaveFallback", { detail: cause instanceof Error ? cause.message : String(cause) }, "SQLite/OPFS 저장에 실패해 클립 변경을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라집니다: {detail}"));
         return "memory";
       }
     };
@@ -20250,7 +20240,7 @@ const puppetWarpArmed =
         } : {}),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "이미지 추가 실패");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.imageAddFailedShort", "이미지 추가 실패"));
     }
   }
 
@@ -20298,7 +20288,7 @@ const puppetWarpArmed =
       );
     } catch (err) {
       if (runId === pixelWandRunIdRef.current) {
-        setError(err instanceof Error ? err.message : "이 지점에서 선택할 영역을 찾지 못했어요.");
+        setError(err instanceof Error ? err.message : t("studio.hostStatus.selectionPointNotFound", "이 지점에서 선택할 영역을 찾지 못했어요."));
       }
     } finally {
       if (pixelWandActiveRunIdRef.current === runId) {
@@ -20384,7 +20374,7 @@ const puppetWarpArmed =
       );
     } catch (err) {
       if (runId === quickSelectRunIdRef.current) {
-        setError(err instanceof Error ? err.message : "문지른 자리에서 선택할 영역을 찾지 못했어요.");
+        setError(err instanceof Error ? err.message : t("studio.hostStatus.selectionRubAreaNotFound", "문지른 자리에서 선택할 영역을 찾지 못했어요."));
       }
     } finally {
       session.scanInFlight = false;
@@ -20429,7 +20419,7 @@ const puppetWarpArmed =
       });
       setColorRangeSamples((prev) => [...prev, sample].slice(-COLOR_RANGE_MAX_SAMPLES));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "이 지점에서 색을 추출하지 못했어요.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.colorPickFailed", "이 지점에서 색을 추출하지 못했어요."));
     }
   }
 
@@ -20480,7 +20470,7 @@ const puppetWarpArmed =
         runId === colorRangeRunIdRef.current
         && (err as { name?: string } | null)?.name !== "AbortError"
       ) {
-        setError(err instanceof Error ? err.message : "색상 범위 선택에 실패했어요.");
+        setError(err instanceof Error ? err.message : t("studio.hostStatus.colorRangeSelectFailed", "색상 범위 선택에 실패했어요."));
       }
     } finally {
       if (colorRangeAbortRef.current === controller) {
@@ -20526,7 +20516,7 @@ const puppetWarpArmed =
         encode: (out) => encodeStudioPixelEditResultPng(out as HTMLCanvasElement),
         yieldControl: yieldStudioPixelEditMainThread,
       });
-      if (!src) throw new Error("조정 캔버스를 만들지 못했습니다.");
+      if (!src) throw new Error(t("studio.hostStatus.adjustCanvasCreateFailed", "조정 캔버스를 만들지 못했습니다."));
       if (!canApplyStudioMutation(mutationTicket)) return;
       if (isLatestLayerContentMutationLocked(target.id)) return;
       if (!patchEl(target.id, { src } as Partial<El>)) return;
@@ -20535,7 +20525,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to apply pixel selection adjust:", err);
-      setError(err instanceof Error ? err.message : "선택 영역 조정에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.selectionAdjustFailed", "선택 영역 조정에 실패했습니다."));
     } finally {
       setPixelBusy(false);
     }
@@ -20569,7 +20559,7 @@ const puppetWarpArmed =
       await yieldStudioPixelEditMainThread();
       const extracted =
         mask && extractSelectionToCanvas(img, w, h, mask, bounds, createStudioPixelEditCanvas);
-      if (!extracted) throw new Error("선택 영역을 추출하지 못했습니다.");
+      if (!extracted) throw new Error(t("studio.hostStatus.selectionExtractFailed", "선택 영역을 추출하지 못했습니다."));
       await yieldStudioPixelEditMainThread();
       const src = await encodeStudioPixelEditResultPng(extracted.canvas as HTMLCanvasElement);
       // 원본 픽셀 박스 → 표시 정규화(반전 되돌림) → 페이지 좌표. 회전은 프레임이 흡수한다.
@@ -20606,7 +20596,7 @@ const puppetWarpArmed =
           planSelectionAdjust("delete"),
           createStudioPixelEditCanvas
         );
-        if (!cleared) throw new Error("원본에서 선택 영역을 지우지 못했습니다.");
+        if (!cleared) throw new Error(t("studio.hostStatus.selectionDeleteFromOriginalFailed", "원본에서 선택 영역을 지우지 못했습니다."));
         await yieldStudioPixelEditMainThread();
         cutSrc = await encodeStudioPixelEditResultPng(cleared as HTMLCanvasElement);
       }
@@ -20621,7 +20611,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to extract pixel selection:", err);
-      setError(err instanceof Error ? err.message : "선택 영역을 새 레이어로 만들지 못했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.selectionNewLayerFailed", "선택 영역을 새 레이어로 만들지 못했습니다."));
     } finally {
       setPixelBusy(false);
     }
@@ -20671,7 +20661,7 @@ const puppetWarpArmed =
         encode: (out) => encodeStudioPixelEditResultPng(out as HTMLCanvasElement),
         yieldControl: yieldStudioPixelEditMainThread,
       });
-      if (!src) throw new Error("변형 캔버스를 만들지 못했습니다.");
+      if (!src) throw new Error(t("studio.hostStatus.transformCanvasCreateFailed", "변형 캔버스를 만들지 못했습니다."));
       if (!canApplyStudioMutation(mutationTicket)) return;
       if (isLatestLayerContentMutationLocked(target.id)) return;
       // 협업 잠금/스냅샷 경합으로 커밋이 거절되면 마퀴만 먼저 움직여 픽셀과
@@ -20698,7 +20688,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to apply selection content transform:", err);
-      setError(err instanceof Error ? err.message : "선택 내용 변형에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.selectionTransformFailed", "선택 내용 변형에 실패했습니다."));
     } finally {
       setPixelBusy(false);
     }
@@ -20740,7 +20730,7 @@ const puppetWarpArmed =
         { yieldControl: yieldStudioPixelEditMainThread },
         createStudioPixelEditCanvas,
       );
-      if (!out) throw new Error("채우기 캔버스를 만들지 못했습니다.");
+      if (!out) throw new Error(t("studio.hostStatus.fillCanvasCreateFailed", "채우기 캔버스를 만들지 못했습니다."));
       await yieldStudioPixelEditMainThread();
       const src = await encodeStudioPixelEditResultPng(out as HTMLCanvasElement);
       if (!canApplyStudioMutation(mutationTicket)) return;
@@ -20751,7 +20741,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to apply content-aware fill:", err);
-      setError(err instanceof Error ? err.message : "콘텐츠 인식 채우기에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.contentAwareFillFailed", "콘텐츠 인식 채우기에 실패했습니다."));
     } finally {
       setPixelBusy(false);
     }
@@ -20832,7 +20822,7 @@ const puppetWarpArmed =
     } catch (err) {
       if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) return;
       console.error("Failed to apply liquify stroke:", err);
-      setError(err instanceof Error ? err.message : "리퀴파이 적용에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.liquifyApplyFailed", "리퀴파이 적용에 실패했습니다."));
     } finally {
       if (liquifyAbortRef.current === controller) {
         liquifyAbortRef.current = null;
@@ -21203,7 +21193,7 @@ const puppetWarpArmed =
     } catch (err) {
       if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) return;
       console.error("Failed to apply smudge stroke:", err);
-      setError(err instanceof Error ? err.message : "문지르기를 적용하지 못했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.smudgeApplyFailed", "문지르기를 적용하지 못했습니다."));
     } finally {
       if (smudgeAbortRef.current === controller) {
         smudgeAbortRef.current = null;
@@ -21239,7 +21229,7 @@ const puppetWarpArmed =
       const img = await loadStudioRetouchSourceImage(target.src, controller.signal);
       const { width: w, height: h } = studioRetouchSourceDimensions(img);
       const made = createStudioPixelEditCanvas(w, h);
-      if (!made) throw new Error("캔버스를 만들 수 없습니다.");
+      if (!made) throw new Error(t("studio.hostStatus.canvasCreateFailed", "캔버스를 만들 수 없습니다."));
       made.ctx.drawImage(img, 0, 0, w, h);
       const flipX = target.flipped ?? false;
       const flipY = target.flippedY ?? false;
@@ -21282,7 +21272,7 @@ const puppetWarpArmed =
     } catch (err) {
       if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) return;
       console.error("Failed to apply dodge/burn stroke:", err);
-      setError(err instanceof Error ? err.message : "닷지/번을 적용하지 못했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.dodgeBurnApplyFailed", "닷지/번을 적용하지 못했습니다."));
     } finally {
       if (dodgeBurnAbortRef.current === controller) {
         dodgeBurnAbortRef.current = null;
@@ -21378,7 +21368,7 @@ const puppetWarpArmed =
       const img = await loadStudioRetouchSourceImage(target.src, controller.signal);
       const { width: w, height: h } = studioRetouchSourceDimensions(img);
       const made = createStudioPixelEditCanvas(w, h);
-      if (!made) throw new Error("캔버스를 만들 수 없습니다.");
+      if (!made) throw new Error(t("studio.hostStatus.canvasCreateFailed", "캔버스를 만들 수 없습니다."));
       made.ctx.drawImage(img, 0, 0, w, h);
       const flipX = target.flipped ?? false;
       const flipY = target.flippedY ?? false;
@@ -21422,7 +21412,7 @@ const puppetWarpArmed =
     } catch (err) {
       if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) return;
       console.error("Failed to apply wet mix stroke:", err);
-      setError(err instanceof Error ? err.message : "혼색 브러시를 적용하지 못했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.wetMixApplyFailed", "혼색 브러시를 적용하지 못했습니다."));
     } finally {
       if (wetMixAbortRef.current === controller) {
         wetMixAbortRef.current = null;
@@ -21477,7 +21467,7 @@ const puppetWarpArmed =
         { points: pixelPoints, radiusPx, hardness: layerMaskHardness, strength: layerMaskStrength, mode: layerMaskPaintMode },
         createStudioPixelEditCanvas
       );
-      if (!out) throw new Error("마스크 결과를 만들지 못했습니다.");
+      if (!out) throw new Error(t("studio.hostStatus.maskResultCreateFailed", "마스크 결과를 만들지 못했습니다."));
       await yieldStudioPixelEditMainThread();
       const maskSrc = await encodeStudioPixelEditResultPng(out as HTMLCanvasElement);
       if (!canApplyStudioMutation(mutationTicket)) return;
@@ -21486,7 +21476,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to bake layer mask stroke:", err);
-      setError(err instanceof Error ? err.message : "마스크 적용에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.maskApplyFailed", "마스크 적용에 실패했습니다."));
     } finally {
       setLayerMaskBusy(false);
     }
@@ -21546,11 +21536,11 @@ const puppetWarpArmed =
         });
         if (!maskPlan) return;
         const selectionMask = rasterizeSelectionMask(maskPlan, createStudioPixelEditCanvas);
-        if (!selectionMask) throw new Error("선택 마스크를 만들지 못했습니다.");
+        if (!selectionMask) throw new Error(t("studio.hostStatus.selectionMaskCreateFailed", "선택 마스크를 만들지 못했습니다."));
         const mask = outside
           ? invertLayerMaskAlpha(selectionMask, w, h, createStudioPixelEditCanvas)
           : selectionMask;
-        if (!mask) throw new Error("마스크를 반전하지 못했습니다.");
+        if (!mask) throw new Error(t("studio.hostStatus.maskInvertFailed", "마스크를 반전하지 못했습니다."));
         await yieldStudioPixelEditMainThread();
         const maskSrc = await encodeStudioPixelEditResultPng(mask as HTMLCanvasElement);
         if (!canApplyStudioMutation(mutationTicket)) return;
@@ -21562,7 +21552,7 @@ const puppetWarpArmed =
         setError(null);
       } catch (err) {
         console.error("Failed to create layer mask from selection:", err);
-        setError(err instanceof Error ? err.message : "선택 영역으로 마스크를 만들지 못했습니다.");
+        setError(err instanceof Error ? err.message : t("studio.hostStatus.maskFromSelectionFailed", "선택 영역으로 마스크를 만들지 못했습니다."));
       }
     })();
   }
@@ -21640,7 +21630,7 @@ const puppetWarpArmed =
         { points: pixelPoints, radiusPx, hardness: filterMaskHardness, strength: filterMaskStrength, mode: filterMaskPaintMode },
         createStudioPixelEditCanvas
       );
-      if (!out) throw new Error("필터 마스크 결과를 만들지 못했습니다.");
+      if (!out) throw new Error(t("studio.hostStatus.filterMaskResultCreateFailed", "필터 마스크 결과를 만들지 못했습니다."));
       await yieldStudioPixelEditMainThread();
       const filterMaskSrc = await encodeStudioPixelEditResultPng(out as HTMLCanvasElement);
       if (!canApplyStudioMutation(mutationTicket)) return;
@@ -21649,7 +21639,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to bake filter mask stroke:", err);
-      setError(err instanceof Error ? err.message : "필터 마스크 적용에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.filterMaskApplyFailed", "필터 마스크 적용에 실패했습니다."));
     } finally {
       setFilterMaskBusy(false);
     }
@@ -21784,7 +21774,7 @@ const puppetWarpArmed =
     } catch (err) {
       if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) return;
       console.error("Failed to bake heal/clone stroke:", err);
-      setError(err instanceof Error ? err.message : "복구 브러시 적용에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.healBrushApplyFailed", "복구 브러시 적용에 실패했습니다."));
     } finally {
       if (healCloneAbortRef.current === controller) {
         healCloneAbortRef.current = null;
@@ -21807,7 +21797,7 @@ const puppetWarpArmed =
     if (!snapshot) return;
     const result = resolveHistoryBrushSource(snapshot, activePage.id, selected.id);
     if (!result.ok) {
-      setError("이 시점엔 같은 레이어가 없어 히스토리 브러시 소스로 지정할 수 없습니다.");
+      setError(t("studio.hostStatus.historyBrushSourceMissing", "이 시점엔 같은 레이어가 없어 히스토리 브러시 소스로 지정할 수 없습니다."));
       return;
     }
     setHistoryBrushSourceIndex(index);
@@ -21857,7 +21847,7 @@ const puppetWarpArmed =
         { radiusPx: radiusPxDevice, hardness: historyBrushHardness, opacity: historyBrushOpacity },
         createStudioPixelEditCanvas
       );
-      if (!out) throw new Error("히스토리 브러시 결과를 만들지 못했습니다.");
+      if (!out) throw new Error(t("studio.hostStatus.historyBrushResultCreateFailed", "히스토리 브러시 결과를 만들지 못했습니다."));
       await yieldStudioPixelEditMainThread();
       const src = await encodeStudioPixelEditResultPng(out as HTMLCanvasElement);
       if (!canApplyStudioMutation(mutationTicket)) return;
@@ -21866,7 +21856,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to bake history brush stroke:", err);
-      setError(err instanceof Error ? err.message : "히스토리 브러시 적용에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.historyBrushApplyFailed", "히스토리 브러시 적용에 실패했습니다."));
     } finally {
       setHistoryBrushBusy(false);
     }
@@ -21885,10 +21875,10 @@ const puppetWarpArmed =
     });
     if (!maskPlan) return undefined;
     const maskCanvas = rasterizeSelectionMask(maskPlan, createStudioPixelEditCanvas) as HTMLCanvasElement | null;
-    if (!maskCanvas) throw new Error("선택 영역 마스크를 만들지 못했습니다.");
+    if (!maskCanvas) throw new Error(t("studio.hostStatus.selectionAreaMaskCreateFailed", "선택 영역 마스크를 만들지 못했습니다."));
     try {
       const context = maskCanvas.getContext("2d", { willReadFrequently: true });
-      if (!context) throw new Error("선택 영역 마스크를 읽지 못했습니다.");
+      if (!context) throw new Error(t("studio.hostStatus.selectionAreaMaskReadFailed", "선택 영역 마스크를 읽지 못했습니다."));
       const rgba = context.getImageData(0, 0, width, height).data;
       const data = new Uint8Array(width * height);
       for (let position = 0; position < data.length; position++) data[position] = rgba[position * 4 + 3]!;
@@ -22005,7 +21995,7 @@ const puppetWarpArmed =
       && advancedFillSettings.referenceScope !== "current"
       && !flushPendingStrokeCommitsRef.current()
     ) {
-      const message = "마지막 선화를 문서에 확정하지 못했어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.";
+      const message = t("studio.hostStatus.lineArtCommitFailed", "마지막 선화를 문서에 확정하지 못했어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.");
       setAdvancedFillStatus(message);
       setError(message);
       return;
@@ -22022,7 +22012,7 @@ const puppetWarpArmed =
     let entry = resolveEntry();
     if (entry.mode === "virtual-vector-fill" || entry.mode === "unavailable") {
       if (!flushPendingStrokeCommitsRef.current()) {
-        const message = "마지막 선화를 문서에 확정하지 못했어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.";
+        const message = t("studio.hostStatus.lineArtCommitFailed", "마지막 선화를 문서에 확정하지 못했어요. 잠금·동기화 상태를 확인한 뒤 다시 시도해 주세요.");
         setAdvancedFillStatus(message);
         setError(message);
         return;
@@ -22091,7 +22081,7 @@ const puppetWarpArmed =
         ?? entry.vectorFailure.reason;
       // 단축키(G)로 들어온 경우 도구 행이 그대로라 "키를 먹었다"로 읽힌다. 사유 앞에 무엇이
       // 실패했는지 붙여, 키는 도착했고 채우기가 켜지지 못한 것임을 문장 자체로 알린다.
-      const message = `채우기 도구를 켜지 못했어요. ${reason}`;
+      const message = t("studio.hostStatus.fillToolEnableFailed", { reason }, "채우기 도구를 켜지 못했어요. {reason}");
       setAdvancedFillStatus(message);
       setError(message);
       announceDrawingShortcut(message);
@@ -22180,7 +22170,7 @@ const puppetWarpArmed =
           noClip: true,
         };
       } catch (error) {
-        const message = error instanceof Error ? error.message : "벡터 채색 레이어를 만들지 못했습니다.";
+        const message = error instanceof Error ? error.message : t("studio.hostStatus.vectorFillLayerCreateFailed", "벡터 채색 레이어를 만들지 못했습니다.");
         setAdvancedFillStatus(message);
         setError(message);
         return;
@@ -22380,9 +22370,9 @@ const puppetWarpArmed =
         flipX: target.flipped,
         flipY: target.flippedY,
       });
-      if (!plan) throw new Error("크롭 영역을 계산하지 못했습니다.");
+      if (!plan) throw new Error(t("studio.hostStatus.cropRegionCalcFailed", "크롭 영역을 계산하지 못했습니다."));
       const out = createStudioPixelEditCanvas(plan.source.sw, plan.source.sh);
-      if (!out) throw new Error("크롭 캔버스를 만들지 못했습니다.");
+      if (!out) throw new Error(t("studio.hostStatus.cropCanvasCreateFailed", "크롭 캔버스를 만들지 못했습니다."));
       out.ctx.drawImage(
         img,
         plan.source.sx,
@@ -22414,7 +22404,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to apply image crop:", err);
-      setError(err instanceof Error ? err.message : "이미지 크롭에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.imageCropFailed", "이미지 크롭에 실패했습니다."));
     } finally {
       setCropBusy(false);
     }
@@ -22439,7 +22429,7 @@ const puppetWarpArmed =
         flipX: target.flipped,
         flipY: target.flippedY,
       });
-      if (!out) throw new Error("퍼펫 워프 결과를 만들지 못했습니다.");
+      if (!out) throw new Error(t("studio.hostStatus.puppetWarpResultCreateFailed", "퍼펫 워프 결과를 만들지 못했습니다."));
       await yieldStudioPixelEditMainThread();
       const src = await encodeStudioPixelEditResultPng(out as HTMLCanvasElement);
       if (!canApplyStudioMutation(mutationTicket)) return;
@@ -22450,7 +22440,7 @@ const puppetWarpArmed =
       setError(null);
     } catch (err) {
       console.error("Failed to apply puppet warp:", err);
-      setError(err instanceof Error ? err.message : "퍼펫 워프 적용에 실패했습니다.");
+      setError(err instanceof Error ? err.message : t("studio.hostStatus.puppetWarpApplyFailed", "퍼펫 워프 적용에 실패했습니다."));
     } finally {
       setPuppetWarpBusy(false);
     }
@@ -22590,7 +22580,7 @@ const puppetWarpArmed =
     const discardedId = drawingRef.current?.id;
     if (discardedId && pendingStrokeAdmissionRef.current?.has(discardedId)) {
       if (drawingRef.current) pendingStrokeAdmissionRef.current.update(drawingRef.current);
-      pendingStrokeAdmissionRef.current.cancel(discardedId, "입력 준비 중 접촉이 중단되어 원본을 획 복구에 보관했습니다.");
+      pendingStrokeAdmissionRef.current.cancel(discardedId, t("studio.hostStatus.strokeRecoveryKept", "입력 준비 중 접촉이 중단되어 원본을 획 복구에 보관했습니다."));
       drawingRef.current = null;
       releaseDrawingPointerSession();
       stopQuickShapeTracking();
@@ -22973,7 +22963,7 @@ const puppetWarpArmed =
           setBubbleShapeSelectedPointIndex(Math.min(hitIdx, nextCount - 1));
           announceDrawingShortcut(`말풍선 외곽선 점 삭제 · ${nextCount}개`);
         } else if (removed.outcome === "minimum-points") {
-          announceDrawingShortcut("말풍선 외곽선에는 최소 3개의 점이 필요합니다");
+          announceDrawingShortcut(t("studio.hostStatus.bubbleMinPoints", "말풍선 외곽선에는 최소 3개의 점이 필요합니다"));
         }
         return true;
       }
@@ -24170,7 +24160,7 @@ function clearSelectionForEdit() {
     }
     const clipped = selected.clipBelow === true;
     if (!patchEl(selected.id, { clipBelow: !clipped } as Partial<El>)) {
-      setError("잠긴 레이어는 클리핑을 바꿀 수 없어요. 잠금을 해제한 뒤 다시 시도하세요.");
+      setError(t("studio.hostStatus.lockedLayerClippingBlocked", "잠긴 레이어는 클리핑을 바꿀 수 없어요. 잠금을 해제한 뒤 다시 시도하세요."));
       return;
     }
     setError(null);
@@ -24431,7 +24421,7 @@ function clearSelectionForEdit() {
       setError(
         preparationError instanceof Error
           ? preparationError.message
-          : "픽셀 선택용 래스터 복사본을 준비하지 못했습니다.",
+          : t("studio.hostStatus.pixelSelectionRasterPrepareFailed", "픽셀 선택용 래스터 복사본을 준비하지 못했습니다."),
       );
     } finally {
       if (runId === pixelMarqueeRasterPreparationRunIdRef.current) {
@@ -24837,7 +24827,7 @@ function clearSelectionForEdit() {
         )
         : currentStudioFilterPageRasterContext(layerName, rasterRuntime);
       if (!rasterRuntime.isStudioEditableRasterCopyPlanCurrent(planned.plan, latestContext.input)) {
-        throw new Error("필터 미리보기 준비 중 페이지가 바뀌었습니다. 최신 화면에서 다시 시도해 주세요.");
+        throw new Error(t("studio.hostStatus.filterPreviewPageChanged", "필터 미리보기 준비 중 페이지가 바뀌었습니다. 최신 화면에서 다시 시도해 주세요."));
       }
       const image = {
         ...rasterRuntime.materializeStudioEditableRasterCopy({
@@ -24872,7 +24862,7 @@ function clearSelectionForEdit() {
       setError(
         filterError instanceof Error
           ? filterError.message
-          : "현재 페이지의 필터 미리보기를 준비하지 못했습니다."
+          : t("studio.hostStatus.filterPreviewPrepareFailed", "현재 페이지의 필터 미리보기를 준비하지 못했습니다.")
       );
     } finally {
       if (runId === studioFilterPreparationRunIdRef.current) {
@@ -25096,7 +25086,7 @@ function clearSelectionForEdit() {
       setError(
         preparationError instanceof Error
           ? preparationError.message
-          : "편집용 래스터 복사본을 준비하지 못했습니다.",
+          : t("studio.hostStatus.editRasterPrepareFailed", "편집용 래스터 복사본을 준비하지 못했습니다."),
       );
     } finally {
       if (runId === studioFilterPreparationRunIdRef.current) {
@@ -25566,21 +25556,21 @@ function clearSelectionForEdit() {
           },
           requestProjectImport: () => {
             if (!projectImportInputRef.current) {
-              setError("프로젝트 가져오기 입력을 아직 준비하지 못했어요. 잠시 후 다시 시도해 주세요.");
+              setError(t("studio.hostStatus.projectImportInputNotReady", "프로젝트 가져오기 입력을 아직 준비하지 못했어요. 잠시 후 다시 시도해 주세요."));
               return;
             }
             projectImportInputRef.current.click();
           },
           requestInterchangeImport: () => {
             if (!interchangeImportInputRef.current) {
-              setError("ORA/CBZ/WILL 가져오기 입력을 아직 준비하지 못했어요. 잠시 후 다시 시도해 주세요.");
+              setError(t("studio.hostStatus.oraImportInputNotReady", "ORA/CBZ/WILL 가져오기 입력을 아직 준비하지 못했어요. 잠시 후 다시 시도해 주세요."));
               return;
             }
             interchangeImportInputRef.current.click();
           },
           requestPsdImport: () => {
             if (!psdImportInputRef.current) {
-              setError("PSD 가져오기 입력을 아직 준비하지 못했어요. 잠시 후 다시 시도해 주세요.");
+              setError(t("studio.hostStatus.psdImportInputNotReady", "PSD 가져오기 입력을 아직 준비하지 못했어요. 잠시 후 다시 시도해 주세요."));
               return;
             }
             psdImportInputRef.current.click();
@@ -25912,7 +25902,7 @@ function clearSelectionForEdit() {
   async function captureTimelapseStep(historyIndex: number, targetWidth: number): Promise<MotionCutImage> {
     const snapshot = pagesHistory[historyIndex];
     const targetPage = snapshot?.find((page) => page.id === currentPageId) ?? snapshot?.[0];
-    if (!targetPage) throw new Error("타임랩스로 캡처할 페이지를 찾을 수 없어요.");
+    if (!targetPage) throw new Error(t("studio.hostStatus.timelapsePageNotFound", "타임랩스로 캡처할 페이지를 찾을 수 없어요."));
     setPagesHi(historyIndex);
     setCurrentPageId(targetPage.id);
     const stage = await captureReadyStageForHistoryPage(targetPage, historyIndex);
@@ -25974,7 +25964,7 @@ function clearSelectionForEdit() {
     }
     const captured = await handleCapturePagesForPreset("current");
     const canvas = captured[0];
-    if (!canvas) throw new Error("벡터 PDF용 현재 페이지 캡처를 만들지 못했습니다.");
+    if (!canvas) throw new Error(t("studio.hostStatus.vectorPdfCaptureCreateFailed", "벡터 PDF용 현재 페이지 캡처를 만들지 못했습니다."));
     const pageGroups = activePage.groups ?? EMPTY_LAYER_GROUPS;
     const drawElements = activePage.elements.filter(
       (element): element is DrawEl =>
@@ -26319,7 +26309,7 @@ function clearSelectionForEdit() {
   ): boolean {
     if (!editorMountedRef.current) return false;
     if (documentSaveInFlightRef.current) {
-      setError("저장 중에는 프로젝트를 교체할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요.");
+      setError(t("studio.hostStatus.savingProjectSwitchBlocked", "저장 중에는 프로젝트를 교체할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요."));
       return false;
     }
     if (collaborationAccessRef.current.locked) {
@@ -26478,7 +26468,7 @@ function clearSelectionForEdit() {
       })
       .catch((cause) => {
         if (!requestIsCurrent()) return;
-        setServerRevisionError(cause instanceof Error ? cause.message : "서버 버전 목록을 불러오지 못했어요.");
+        setServerRevisionError(cause instanceof Error ? cause.message : t("studio.hostStatus.serverRevisionsLoadFailed", "서버 버전 목록을 불러오지 못했어요."));
       })
       .finally(() => {
         if (editorMountedRef.current && requestId === serverRevisionRequestRef.current) {
@@ -26534,7 +26524,7 @@ function clearSelectionForEdit() {
       setFxPanelOpen(true);
     } catch (cause) {
       if (requestIsCurrent()) {
-        setError(cause instanceof Error ? cause.message : "애니메이션 연출을 불러오지 못했어요.");
+        setError(cause instanceof Error ? cause.message : t("studio.hostStatus.animationFxLoadFailed", "애니메이션 연출을 불러오지 못했어요."));
       }
     } finally {
       if (ownerDetailAbortRef.current === controller) ownerDetailAbortRef.current = null;
@@ -26571,7 +26561,7 @@ function clearSelectionForEdit() {
       if (requestIsCurrent()) setServerRevisions(revisions);
     } catch (cause) {
       if (!requestIsCurrent()) return;
-      setServerRevisionError(cause instanceof Error ? cause.message : "서버 버전 목록을 불러오지 못했어요.");
+      setServerRevisionError(cause instanceof Error ? cause.message : t("studio.hostStatus.serverRevisionsLoadFailed", "서버 버전 목록을 불러오지 못했어요."));
     } finally {
       if (serverRevisionAbortRef.current === controller) serverRevisionAbortRef.current = null;
       if (editorMountedRef.current && requestId === serverRevisionRequestRef.current) {
@@ -27356,7 +27346,7 @@ function clearSelectionForEdit() {
         if (!application.ok) {
           await deleteStudioAssetMutation(saved.id).catch(() => undefined);
           setError(
-            "구도·카메라 참조가 가득 찼어요. AI 이미지 참조 팩의 Method 항목 하나를 제거한 뒤 다시 시도해 주세요.",
+            t("studio.hostStatus.aiReferencePackFull", "구도·카메라 참조가 가득 찼어요. AI 이미지 참조 팩의 Method 항목 하나를 제거한 뒤 다시 시도해 주세요."),
           );
           return false;
         }
@@ -27382,7 +27372,7 @@ function clearSelectionForEdit() {
         setError(
           cause instanceof Error
             ? cause.message
-            : "현재 3D 샷을 AI 구도 참조에 저장하지 못했어요.",
+            : t("studio.hostStatus.shotSaveToReferenceFailed", "현재 3D 샷을 AI 구도 참조에 저장하지 못했어요."),
         );
         return false;
       }
@@ -27486,7 +27476,7 @@ function clearSelectionForEdit() {
           if (selection) applyStudioBrushCatalogSelection(selection);
         })
         .catch(() => {
-          announceDrawingShortcut("브러시를 불러오지 못했어요. 앱 브러시에서 다시 선택해 주세요.");
+          announceDrawingShortcut(t("studio.hostStatus.brushLoadFailedSelectAgain", "브러시를 불러오지 못했어요. 앱 브러시에서 다시 선택해 주세요."));
         });
     },
     toggle: toggleBuiltInBrushCatalog,
@@ -27624,7 +27614,7 @@ function clearSelectionForEdit() {
       ? livingInkSelectionSnapshot(config)
       : null;
     if (scope === "selection" && !selection) {
-      setError("현재 수채 번짐 레이어에 사용할 수 있는 픽셀 선택이 없습니다.");
+      setError(t("studio.hostStatus.livingInkNoPixelSelection", "현재 수채 번짐 레이어에 사용할 수 있는 픽셀 선택이 없습니다."));
       return;
     }
     const routeKey = `studio-living-ink-action:${activePage.id}:${kind}:${uid()}`;
@@ -27711,7 +27701,7 @@ function clearSelectionForEdit() {
         livingInkAcceptedAuthorityRef.current = null;
         livingInkRejectedAuthorityRef.current = committedAuthority;
         const actionLabel = kind === "fix" ? "정착" : "지우기";
-        const message = `${actionLabel} PNG는 저장됐지만 물리 상태 고정에 실패해 재열기 전까지 편집을 비활성화합니다.`;
+        const message = t("studio.hostStatus.livingInkPngSavedStateFailed", { actionLabel }, "{actionLabel} PNG는 저장됐지만 물리 상태 고정에 실패해 재열기 전까지 편집을 비활성화합니다.");
         setError(message);
         void livingInkCoordinatorRef.current.failClosed(message);
       } else {
@@ -27780,7 +27770,7 @@ function clearSelectionForEdit() {
         }),
         {
           successMessage: `슬롯 ${index + 1}에 저장`,
-          failureMessage: `슬롯 ${index + 1}을 SQLite에 저장하지 못했어요.`,
+          failureMessage: t("studio.hostStatus.slotSaveFailed", { slot: index + 1 }, "슬롯 {slot}을 SQLite에 저장하지 못했어요."),
         },
       );
     },

@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { createStudioReferenceRebuildWorker } from "./studio-reference-rebuild-worker-client";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-bg3d-panel-status-i18n";
+
 const PRESETS = [
   ["school-room", "채광 교실"],
   ["school-desk", "책걸상 세트"],
@@ -19,6 +23,7 @@ type Props = {
 };
 
 export function StudioReferenceRebuildPresets({ disabled, onFile, onBusyChange }: Props) {
+  const t = useT();
   const [selected, setSelected] = useState<string>(PRESETS[0][0]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -50,33 +55,33 @@ export function StudioReferenceRebuildPresets({ disabled, onFile, onBusyChange }
     if (disabled || operation.current || !PRESETS.some(([id]) => id === selected)) return;
     const worker = createStudioReferenceRebuildWorker();
     if (!worker) {
-      setMessage("모델 생성 Worker를 열지 못했습니다. 검토실의 GLB 저장을 이용해 주세요.");
+      setMessage(t("studio.bg3dPanelStatus.referenceRebuild.workerOpenFailed", "모델 생성 Worker를 열지 못했습니다. 검토실의 GLB 저장을 이용해 주세요."));
       return;
     }
     setBusy(true);
     onBusyChange(true);
-    setMessage("브라우저에서 새 GLB 메시를 만드는 중입니다.");
+    setMessage(t("studio.bg3dPanelStatus.referenceRebuild.building", "브라우저에서 새 GLB 메시를 만드는 중입니다."));
     const fail = (detail: string): void => {
       if (operation.current?.worker !== worker) return;
       stop();
       setMessage(detail);
     };
-    const timer = setTimeout(() => fail("모델 생성 시간이 초과되었습니다. 다시 시도해 주세요."), 30_000);
+    const timer = setTimeout(() => fail(t("studio.bg3dPanelStatus.referenceRebuild.timeout", "모델 생성 시간이 초과되었습니다. 다시 시도해 주세요.")), 30_000);
     operation.current = { worker, timer };
-    worker.onerror = () => fail("모델 생성에 실패했습니다. 검토실에서 GLB를 저장해 가져올 수 있습니다.");
-    worker.onmessageerror = () => fail("생성 결과를 읽지 못했습니다. 다시 시도해 주세요.");
+    worker.onerror = () => fail(t("studio.bg3dPanelStatus.referenceRebuild.buildFailed", "모델 생성에 실패했습니다. 검토실에서 GLB를 저장해 가져올 수 있습니다."));
+    worker.onmessageerror = () => fail(t("studio.bg3dPanelStatus.referenceRebuild.resultReadFailed", "생성 결과를 읽지 못했습니다. 다시 시도해 주세요."));
     worker.onmessage = (event: MessageEvent<unknown>) => {
       if (operation.current?.worker !== worker) return;
       const data = event.data as { version?: unknown; type?: unknown; id?: unknown; bytes?: unknown } | null;
       if (!data || data.version !== 1 || data.type !== "built" || data.id !== selected
         || !(data.bytes instanceof ArrayBuffer) || data.bytes.byteLength < 24 || data.bytes.byteLength > MAX_BYTES) {
-        fail("유효한 GLB 생성 결과를 받지 못했습니다.");
+        fail(t("studio.bg3dPanelStatus.referenceRebuild.invalidResult", "유효한 GLB 생성 결과를 받지 못했습니다."));
         return;
       }
       const header = new DataView(data.bytes);
       if (header.getUint32(0, true) !== 0x46546c67 || header.getUint32(4, true) !== 2
         || header.getUint32(8, true) !== data.bytes.byteLength || latest.current.disabled) {
-        fail("모델을 전달할 수 없습니다. 진행 중인 작업이 끝난 뒤 다시 시도해 주세요.");
+        fail(t("studio.bg3dPanelStatus.referenceRebuild.deliverBlocked", "모델을 전달할 수 없습니다. 진행 중인 작업이 끝난 뒤 다시 시도해 주세요."));
         return;
       }
       const file = new File([data.bytes], `ToonStudio-${selected}-reference-rebuild.glb`, { type: "model/gltf-binary" });
@@ -85,7 +90,7 @@ export function StudioReferenceRebuildPresets({ disabled, onFile, onBusyChange }
         latest.current.onFile(file);
         setMessage("기존 가져오기 경로로 전달했습니다. 안전 검사와 저장 결과는 모델 목록에서 확인하세요.");
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : "모델을 전달하지 못했습니다.");
+        setMessage(error instanceof Error ? error.message : t("studio.bg3dPanelStatus.referenceRebuild.deliverFailed", "모델을 전달하지 못했습니다."));
       }
     };
     worker.postMessage({ version: 1, type: "build", id: selected });
@@ -110,7 +115,7 @@ export function StudioReferenceRebuildPresets({ disabled, onFile, onBusyChange }
         </label>
         <button type="button" disabled={disabled && !busy} onClick={() => { if (busy) { stop(); setMessage("모델 생성을 취소했습니다."); } else build(); }}
           className="min-h-11 w-full rounded-lg border border-accent/50 bg-accent-soft px-3 text-xs font-bold text-accent disabled:opacity-50">
-          {busy ? "생성 취소" : "GLB 생성 후 가져오기"}
+          {busy ? "생성 취소" : t("studio.bg3dPanelStatus.referenceRebuild.buildAndImport", "GLB 생성 후 가져오기")}
         </button>
         <a className="inline-flex min-h-11 items-center text-xs font-semibold text-accent underline"
           href={`/assets/reference-rebuild/index.html?asset=${encodeURIComponent(selected)}`} target="_blank" rel="noopener noreferrer">

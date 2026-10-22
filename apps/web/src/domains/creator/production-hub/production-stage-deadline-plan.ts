@@ -10,6 +10,13 @@
  * 게시를 미루거나 단계를 병행하지 않는 한 여유가 없다는 경고 대상이다.
  *
  * 게시일이 없으면 권장 마감을 지어내지 않고 unplanned로 정직하게 돌려준다.
+ *
+ * 수렴 경계 (2026-10-22 실측, rem-item2-calendar): 이 모듈의 역산(ms 감산)과
+ * D-day(ceil)는 production-release-calendar의 달력 감산·달력일 계산과 DST
+ * 경계·자정 경계에서 결과가 갈린다. 파이프라인이 작업 dueAt에 심는 날짜
+ * (production-episode-operations의 shiftIso, ms 산술)와 어긋나지 않게 하려면
+ * 이쪽 산술을 유지해야 하므로 달력 산술로 교체하지 않는다. 일치 구간과
+ * 차이 지점은 production-release-calendar-convergence.test.ts가 고정한다.
  */
 
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";

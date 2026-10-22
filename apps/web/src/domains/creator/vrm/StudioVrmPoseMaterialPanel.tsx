@@ -37,6 +37,12 @@ import type {
   StudioVrmPoseMaterialCaptureOptions,
 } from "./studio-vrm-pose-material-adapter";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-vrm-panel-status-i18n";
+
+type StatusT = ReturnType<typeof useT>;
+
 interface StudioVrmPoseMaterialPanelProps {
   readonly disabled: boolean;
   readonly activeMaterialId: string | null;
@@ -95,34 +101,34 @@ function canonicalizeMaterialName(value: string): string {
   return value.normalize("NFKC").trim().replace(/\s+/gu, " ");
 }
 
-function failureMessage(reason: StudioPoseMaterialLibraryFailureReason): string {
+function failureMessage(reason: StudioPoseMaterialLibraryFailureReason, t: StatusT): string {
   const messages: Record<StudioPoseMaterialLibraryFailureReason, string> = {
-    "storage-unavailable": "이 브라우저에서는 로컬 포즈 소재 저장소를 사용할 수 없습니다.",
-    "storage-read-error": "포즈 소재 저장소를 읽지 못했습니다.",
-    "storage-write-error": "브라우저 저장 공간에 포즈 소재를 쓰지 못했습니다.",
-    "library-corrupt": "기존 포즈 소재 데이터가 손상되어 원문 보호를 위해 변경을 막았습니다.",
-    "library-future": "더 최신 버전의 포즈 소재 데이터라 현재 버전에서는 읽기 전용입니다.",
-    "replace-requires-force": "기존 라이브러리를 교체하려면 명시적인 확인이 필요합니다.",
-    "invalid-library": "ToonStudio 포즈 소재 라이브러리 JSON 형식이 아닙니다.",
-    "invalid-material": "유효하지 않은 포즈 소재입니다.",
-    "invalid-id": "포즈 소재 식별자가 올바르지 않습니다.",
-    "duplicate-id": "같은 식별자의 포즈 소재가 중복되어 있습니다.",
-    "max-count": "포즈 소재는 이 기기에 최대 64개까지 저장할 수 있습니다.",
-    "max-bytes": "포즈 소재 라이브러리가 256 KiB 제한을 초과합니다.",
-    "not-found": "삭제할 포즈 소재를 찾지 못했습니다.",
+    "storage-unavailable": t("studio.vrmPanelStatus.poseMaterial.storageUnavailable", "이 브라우저에서는 로컬 포즈 소재 저장소를 사용할 수 없습니다."),
+    "storage-read-error": t("studio.vrmPanelStatus.poseMaterial.storageReadFailed", "포즈 소재 저장소를 읽지 못했습니다."),
+    "storage-write-error": t("studio.vrmPanelStatus.poseMaterial.storageWriteFailed", "브라우저 저장 공간에 포즈 소재를 쓰지 못했습니다."),
+    "library-corrupt": t("studio.vrmPanelStatus.poseMaterial.libraryCorrupt", "기존 포즈 소재 데이터가 손상되어 원문 보호를 위해 변경을 막았습니다."),
+    "library-future": t("studio.vrmPanelStatus.poseMaterial.libraryFuture", "더 최신 버전의 포즈 소재 데이터라 현재 버전에서는 읽기 전용입니다."),
+    "replace-requires-force": t("studio.vrmPanelStatus.poseMaterial.replaceRequiresForce", "기존 라이브러리를 교체하려면 명시적인 확인이 필요합니다."),
+    "invalid-library": t("studio.vrmPanelStatus.poseMaterial.invalidLibrary", "ToonStudio 포즈 소재 라이브러리 JSON 형식이 아닙니다."),
+    "invalid-material": t("studio.vrmPanelStatus.poseMaterial.invalidMaterial", "유효하지 않은 포즈 소재입니다."),
+    "invalid-id": t("studio.vrmPanelStatus.poseMaterial.invalidId", "포즈 소재 식별자가 올바르지 않습니다."),
+    "duplicate-id": t("studio.vrmPanelStatus.poseMaterial.duplicateId", "같은 식별자의 포즈 소재가 중복되어 있습니다."),
+    "max-count": t("studio.vrmPanelStatus.poseMaterial.maxCount", "포즈 소재는 이 기기에 최대 64개까지 저장할 수 있습니다."),
+    "max-bytes": t("studio.vrmPanelStatus.poseMaterial.maxBytes", "포즈 소재 라이브러리가 256 KiB 제한을 초과합니다."),
+    "not-found": t("studio.vrmPanelStatus.poseMaterial.notFound", "삭제할 포즈 소재를 찾지 못했습니다."),
   };
   return messages[reason];
 }
 
-function loadStatusMessage(status: StudioPoseMaterialLibraryLoadStatus): string {
+function loadStatusMessage(status: StudioPoseMaterialLibraryLoadStatus, t: StatusT): string {
   if (status === "future") {
-    return "더 최신 버전의 포즈 소재 저장소가 감지되었습니다. 기존 데이터를 덮어쓰지 않습니다.";
+    return t("studio.vrmPanelStatus.poseMaterial.loadFuture", "더 최신 버전의 포즈 소재 저장소가 감지되었습니다. 기존 데이터를 덮어쓰지 않습니다.");
   }
   if (status === "corrupt") {
-    return "손상된 포즈 소재 저장소가 감지되었습니다. 복구 전까지 기존 원문을 보존합니다.";
+    return t("studio.vrmPanelStatus.poseMaterial.loadCorrupt", "손상된 포즈 소재 저장소가 감지되었습니다. 복구 전까지 기존 원문을 보존합니다.");
   }
-  if (status === "read-error") return "포즈 소재 저장소를 읽지 못했습니다.";
-  if (status === "unavailable") return "이 브라우저에서는 포즈 소재를 기기에 저장할 수 없습니다.";
+  if (status === "read-error") return t("studio.vrmPanelStatus.poseMaterial.storageReadFailed", "포즈 소재 저장소를 읽지 못했습니다.");
+  if (status === "unavailable") return t("studio.vrmPanelStatus.poseMaterial.loadUnavailable", "이 브라우저에서는 포즈 소재를 기기에 저장할 수 없습니다.");
   return "";
 }
 
@@ -168,6 +174,7 @@ export function StudioVrmPoseMaterialPanel({
   storage,
   repository: repositoryOverride,
 }: StudioVrmPoseMaterialPanelProps) {
+  const t = useT();
   const nameInputId = useId();
   const captureScopeId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -184,13 +191,13 @@ export function StudioVrmPoseMaterialPanel({
       return {
         loadStatus: "missing",
         payload: EMPTY_STUDIO_POSE_MATERIAL_LIBRARY,
-        message: "SQLite/OPFS 포즈 소재를 불러오는 중입니다.",
+        message: t("studio.vrmPanelStatus.poseMaterial.hydrating", "SQLite/OPFS 포즈 소재를 불러오는 중입니다."),
         messageTone: "neutral",
         authority: "hydrating",
       };
     }
     const loaded = loadStudioPoseMaterialLibrary(storageAdapter);
-    const message = loadStatusMessage(loaded.status);
+    const message = loadStatusMessage(loaded.status, t);
     return {
       loadStatus: loaded.status,
       payload: loaded.payload,
@@ -237,9 +244,11 @@ export function StudioVrmPoseMaterialPanel({
       setPanelState({
         loadStatus: "read-error",
         payload: EMPTY_STUDIO_POSE_MATERIAL_LIBRARY,
-        message: `SQLite/OPFS 포즈 소재를 검증해 불러오지 못했습니다. 원문 보호를 위해 변경을 막았습니다: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        message: t(
+          "studio.vrmPanelStatus.poseMaterial.hydrationFailed",
+          { detail: error instanceof Error ? error.message : String(error) },
+          "SQLite/OPFS 포즈 소재를 검증해 불러오지 못했습니다. 원문 보호를 위해 변경을 막았습니다: {detail}",
+        ),
         messageTone: "error",
         authority: "memory",
       });
@@ -275,7 +284,7 @@ export function StudioVrmPoseMaterialPanel({
     if (!result.ok) {
       setPanelState((current) => ({
         ...current,
-        message: failureMessage(result.reason),
+        message: failureMessage(result.reason, t),
         messageTone: "error",
       }));
       return false;
@@ -287,7 +296,7 @@ export function StudioVrmPoseMaterialPanel({
       setPanelState({
         loadStatus: "loaded",
         payload: optimisticPayload,
-        message: "SQLite/OPFS에 저장하는 중입니다.",
+        message: t("studio.vrmPanelStatus.poseMaterial.savingToSqlite", "SQLite/OPFS에 저장하는 중입니다."),
         messageTone: "neutral",
         authority: "sqlite",
       });
@@ -309,9 +318,11 @@ export function StudioVrmPoseMaterialPanel({
         setPanelState({
           loadStatus: "loaded",
           payload: optimisticPayload,
-          message: `SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          message: t(
+            "studio.vrmPanelStatus.poseMaterial.saveFailedMemoryOnly",
+            { detail: error instanceof Error ? error.message : String(error) },
+            "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐: {detail}",
+          ),
           messageTone: "error",
           authority: "memory",
         });
@@ -333,7 +344,7 @@ export function StudioVrmPoseMaterialPanel({
     if (!name) {
       setPanelState((current) => ({
         ...current,
-        message: "포즈 소재 이름을 입력해 주세요.",
+        message: t("studio.vrmPanelStatus.poseMaterial.nameRequired", "포즈 소재 이름을 입력해 주세요."),
         messageTone: "warning",
       }));
       return;
@@ -348,7 +359,7 @@ export function StudioVrmPoseMaterialPanel({
     if (!material) {
       setPanelState((current) => ({
         ...current,
-        message: "현재 캐릭터의 normalized 포즈를 안전하게 읽지 못했습니다.",
+        message: t("studio.vrmPanelStatus.poseMaterial.captureFailed", "현재 캐릭터의 normalized 포즈를 안전하게 읽지 못했습니다."),
         messageTone: "error",
       }));
       return;
@@ -372,7 +383,7 @@ export function StudioVrmPoseMaterialPanel({
     if (!result) {
       setPanelState((current) => ({
         ...current,
-        message: "포즈 소재 적용에 실패해 캐릭터 상태를 변경하지 않았습니다.",
+        message: t("studio.vrmPanelStatus.poseMaterial.applyFailed", "포즈 소재 적용에 실패해 캐릭터 상태를 변경하지 않았습니다."),
         messageTone: "error",
       }));
       return;
@@ -418,7 +429,7 @@ export function StudioVrmPoseMaterialPanel({
     if (!result.ok) {
       setPanelState((current) => ({
         ...current,
-        message: failureMessage(result.reason),
+        message: failureMessage(result.reason, t),
         messageTone: "error",
       }));
       return;
@@ -438,7 +449,7 @@ export function StudioVrmPoseMaterialPanel({
     } catch {
       setPanelState((current) => ({
         ...current,
-        message: "포즈 소재 파일을 만들지 못했습니다.",
+        message: t("studio.vrmPanelStatus.poseMaterial.exportFileFailed", "포즈 소재 파일을 만들지 못했습니다."),
         messageTone: "error",
       }));
     }
@@ -453,7 +464,7 @@ export function StudioVrmPoseMaterialPanel({
       if (file.size > STUDIO_POSE_MATERIAL_LIBRARY_MAX_BYTES) {
         setPanelState((current) => ({
           ...current,
-          message: "가져올 JSON이 256 KiB 제한을 초과합니다.",
+          message: t("studio.vrmPanelStatus.poseMaterial.importTooLarge", "가져올 JSON이 256 KiB 제한을 초과합니다."),
           messageTone: "error",
         }));
         return;
@@ -483,7 +494,7 @@ export function StudioVrmPoseMaterialPanel({
     } catch {
       setPanelState((current) => ({
         ...current,
-        message: "포즈 소재 JSON 파일을 읽지 못했습니다.",
+        message: t("studio.vrmPanelStatus.poseMaterial.importReadFailed", "포즈 소재 JSON 파일을 읽지 못했습니다."),
         messageTone: "error",
       }));
     } finally {
@@ -620,7 +631,7 @@ export function StudioVrmPoseMaterialPanel({
 
       {panelState.payload.materials.length === 0 ? (
         <p className="mt-3 rounded-lg border border-dashed border-line/60 bg-card/25 px-3 py-4 text-center text-[0.68rem] text-fg-3">
-          저장된 범용 포즈 소재가 없습니다.
+          {t("studio.vrmPanelStatus.poseMaterial.empty", "저장된 범용 포즈 소재가 없습니다.")}
         </p>
       ) : (
         <div className="mt-3 space-y-2">

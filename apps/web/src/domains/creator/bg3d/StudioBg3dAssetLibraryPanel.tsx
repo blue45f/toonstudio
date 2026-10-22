@@ -13,6 +13,9 @@ import {
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-bg3d-panel-status-i18n";
 
 import {
   StudioBg3dAssetAiUseFields,
@@ -146,6 +149,7 @@ export function StudioBg3dAssetLibraryPanel({
   rightsLoadState = "ready",
   onPlaceWithRecipe,
 }: StudioBg3dAssetLibraryPanelProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AssetFilter>("all");
   const [classificationFilter, setClassificationFilter] =
@@ -224,7 +228,7 @@ export function StudioBg3dAssetLibraryPanel({
           ? "정규화 GLB 저장을 취소했습니다."
           : isKnownError
             ? cause.message
-            : "정규화 GLB를 저장하지 못했습니다. 라이브러리를 새로고침한 뒤 다시 시도해 주세요.",
+            : t("studio.bg3dPanelStatus.assetLibrary.downloadSaveFailed", "정규화 GLB를 저장하지 못했습니다. 라이브러리를 새로고침한 뒤 다시 시도해 주세요."),
       });
     } finally {
       if (downloadOperationRef.current?.revision === revision) {
@@ -360,9 +364,9 @@ export function StudioBg3dAssetLibraryPanel({
         {isUploading ? <X size={14} aria-hidden /> : <Upload size={14} aria-hidden />}
         {isUploading
           ? importProgress?.totalModels
-            ? `가져오기 취소 · ${importProgress.completedModels}/${importProgress.totalModels}`
-            : "가져오기 취소"
-          : "3D 모델 및 연결 파일 가져오기"}
+            ? t("studio.bg3dPanelStatus.assetLibrary.importCancelWithProgress", { completed: importProgress.completedModels, total: importProgress.totalModels }, "가져오기 취소 · {completed}/{total}")
+            : t("studio.bg3dPanelStatus.assetLibrary.importCancel", "가져오기 취소")
+          : t("studio.bg3dPanelStatus.assetLibrary.importModels", "3D 모델 및 연결 파일 가져오기")}
       </button>
       <details className="group mt-2 rounded-xl border border-line bg-card/60 open:bg-card">
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-bold text-fg marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9">
@@ -507,14 +511,14 @@ export function StudioBg3dAssetLibraryPanel({
       {libraryStatus === "error" ? (
         <p className="mt-2 rounded-xl border border-line bg-card/70 px-3 py-2 text-xs leading-relaxed text-fg-3" role="alert">
           <AlertTriangle className="mr-1 inline align-[-2px] text-accent" size={14} aria-hidden />
-          저장된 3D 모델 목록을 불러오지 못했습니다.
+          {t("studio.bg3dPanelStatus.assetLibrary.listLoadFailed", "저장된 3D 모델 목록을 불러오지 못했습니다.")}
         </p>
       ) : null}
 
       {libraryStatus === "degraded" ? (
         <p className="mt-2 rounded-xl border border-line bg-card/70 px-3 py-2 text-xs leading-relaxed text-fg-3" role="status">
           <AlertTriangle className="mr-1 inline align-[-2px] text-accent" size={14} aria-hidden />
-          번들 환경은 계속 사용할 수 있습니다. 로컬 3D 모델 저장소만 현재 사용할 수 없습니다.
+          {t("studio.bg3dPanelStatus.assetLibrary.degradedStorageUnavailable", "번들 환경은 계속 사용할 수 있습니다. 로컬 3D 모델 저장소만 현재 사용할 수 없습니다.")}
         </p>
       ) : null}
 
@@ -597,13 +601,13 @@ export function StudioBg3dAssetLibraryPanel({
       <div id={MODEL_RESULTS_ID} className="mt-3 grid grid-cols-2 gap-2">
         {libraryStatus === "loading" ? (
           <div className="col-span-2 rounded-xl border border-line bg-card/60 px-3 py-4 text-center text-xs text-fg-3">
-            저장된 3D 모델을 불러오는 중입니다.
+            {t("studio.bg3dPanelStatus.assetLibrary.listLoading", "저장된 3D 모델을 불러오는 중입니다.")}
           </div>
         ) : null}
 
         {libraryStatus === "ready" && entries.length === 0 ? (
           <div className="col-span-2 rounded-xl border border-dashed border-line bg-card/45 px-3 py-4 text-center text-xs leading-relaxed text-fg-3">
-            가져온 3D 모델이 아직 없습니다. GLB를 선택하거나 모델과 연결 리소스를 함께 선택해 보세요.
+            {t("studio.bg3dPanelStatus.assetLibrary.listEmpty", "가져온 3D 모델이 아직 없습니다. GLB를 선택하거나 모델과 연결 리소스를 함께 선택해 보세요.")}
           </div>
         ) : null}
 
@@ -743,7 +747,7 @@ export function StudioBg3dAssetLibraryPanel({
                   <button
                     type="button"
                     aria-label={`${entry.name} 삭제`}
-                    title={isRestoringScene ? "장면 원본 복원이 끝난 뒤 삭제할 수 있습니다." : undefined}
+                    title={isRestoringScene ? t("studio.bg3dPanelStatus.assetLibrary.deleteBlockedRestoring", "장면 원본 복원이 끝난 뒤 삭제할 수 있습니다.") : undefined}
                     className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-lg border border-line bg-panel px-1.5 text-[0.64rem] font-bold text-fg-3 transition-colors hover:bg-raised hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-8"
                     disabled={isDeleting || isExporting || isRestoringScene}
                     onClick={(event) => {

@@ -42,7 +42,12 @@ import {
   type StudioRecoveryScan,
 } from "./studio-recovery-guide";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "./studio-panel-status-i18n";
+
+type StatusT = ReturnType<typeof useT>;
 
 const RECENT_LOCAL_FILES_STORAGE_KEY =
   "toonstudio-studio-file-control-center:recent-files:v1";
@@ -193,20 +198,26 @@ async function readBrowserStorageHealth(): Promise<BrowserStorageHealth> {
   }
 }
 
-function formatDateTime(value: string | null): string {
+function formatDateTime(value: string | null, t: StatusT): string {
   if (!value) return "기록 없음";
   const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "시각 확인 불가";
+  if (!Number.isFinite(date.getTime())) {
+    return t("studio.panelStatus.fileCenter.dateTimeUnavailable", "시각 확인 불가");
+  }
   return new Intl.DateTimeFormat("ko-KR", {
     dateStyle: "short",
     timeStyle: "short",
   }).format(date);
 }
 
-function storageUsageLabel(health: BrowserStorageHealth): string {
-  if (health.status === "loading") return "저장소 확인 중";
+function storageUsageLabel(health: BrowserStorageHealth, t: StatusT): string {
+  if (health.status === "loading") {
+    return t("studio.panelStatus.fileCenter.storageChecking", "저장소 확인 중");
+  }
   if (health.status === "unsupported") return "브라우저 저장소 상태 API 미지원";
-  if (health.status === "error") return "브라우저 저장소 상태를 읽지 못함";
+  if (health.status === "error") {
+    return t("studio.panelStatus.fileCenter.storageReadFailed", "브라우저 저장소 상태를 읽지 못함");
+  }
   if (health.usage === null || health.quota === null || health.quota <= 0) {
     return "사용량 정보 없음";
   }
@@ -214,13 +225,17 @@ function storageUsageLabel(health: BrowserStorageHealth): string {
   return `${formatStudioFileBytes(health.usage)} / ${formatStudioFileBytes(health.quota)} · ${percent.toFixed(1)}%`;
 }
 
-function storageProtectionLabel(health: BrowserStorageHealth): string {
-  if (health.status === "loading") return "확인 중";
+function storageProtectionLabel(health: BrowserStorageHealth, t: StatusT): string {
+  if (health.status === "loading") {
+    return t("studio.panelStatus.fileCenter.checking", "확인 중");
+  }
   if (health.status === "unsupported") return "지원 안 함";
-  if (health.status === "error") return "확인 실패";
+  if (health.status === "error") {
+    return t("studio.panelStatus.fileCenter.checkFailed", "확인 실패");
+  }
   if (health.persisted === true) return "영구 보관 허용됨";
   if (health.persisted === false) return "브라우저 정리 대상일 수 있음";
-  return "권한 상태 확인 불가";
+  return t("studio.panelStatus.fileCenter.permissionUnknown", "권한 상태 확인 불가");
 }
 
 function actionStatusText(actionId: StudioFileControlActionId): string {
@@ -249,6 +264,7 @@ function FileReport({
   report: StudioFileCompatibilityReport;
   onOpenImporter: (actionId: StudioFileControlActionId) => void;
 }): ReactElement {
+  const t = useT();
   const riskItems = report.risks.slice(0, 3);
   const recommendations = report.recommendations.slice(0, 2);
   const actionId = report.actionId;
@@ -311,7 +327,10 @@ function FileReport({
         </button>
       ) : (
         <p className="mt-3 rounded-lg border border-line bg-raised px-3 py-2 text-[0.62rem] leading-relaxed text-fg-3">
-          이 파일은 여기서 직접 열지 않습니다. 위 변환 권장안을 적용한 사본을 준비하세요.
+          {t(
+            "studio.panelStatus.fileCenter.fileOpenDirectlyUnavailable",
+            "이 파일은 여기서 직접 열지 않습니다. 위 변환 권장안을 적용한 사본을 준비하세요.",
+          )}
         </p>
       )}
     </div>
@@ -319,6 +338,7 @@ function FileReport({
 }
 
 export function StudioFileControlCenter(): ReactElement {
+  const t = useT();
   const titleId = useId();
   const inputId = useId();
   const rootRef = useRef<HTMLElement | null>(null);
@@ -375,22 +395,41 @@ export function StudioFileControlCenter(): ReactElement {
     const root = rootRef.current;
     const action = studioFileControlAction(actionId);
     if (!root) {
-      setAnnouncement(`${action.label} 실행 위치를 찾지 못했습니다.`);
+      setAnnouncement(
+        t(
+          "studio.panelStatus.fileCenter.actionTargetNotFound",
+          { label: action.label },
+          "{label} 실행 위치를 찾지 못했습니다.",
+        ),
+      );
       return;
     }
     const target = actionButtonInProjectCenter(root, actionId);
     if (!target) {
-      setAnnouncement(`${action.label}의 기존 프로젝트 명령을 찾지 못했습니다.`);
+      setAnnouncement(
+        t(
+          "studio.panelStatus.fileCenter.actionCommandNotFound",
+          { label: action.label },
+          "{label}의 기존 프로젝트 명령을 찾지 못했습니다.",
+        ),
+      );
       return;
     }
     if (target.disabled || target.getAttribute("aria-disabled") === "true") {
       const reason = target.getAttribute("title");
-      setAnnouncement(reason || `${action.label}은 현재 문서 상태에서 사용할 수 없습니다.`);
+      setAnnouncement(
+        reason
+          || t(
+            "studio.panelStatus.fileCenter.actionUnavailableInState",
+            { label: action.label },
+            "{label}은 현재 문서 상태에서 사용할 수 없습니다.",
+          ),
+      );
       return;
     }
     target.click();
     setAnnouncement(actionStatusText(actionId));
-  }, []);
+  }, [t]);
 
   const inspectFile = useCallback((file: File) => {
     const nextReport = inspectStudioFileCandidate(file);
@@ -423,7 +462,12 @@ export function StudioFileControlCenter(): ReactElement {
       || !navigator.storage
       || typeof navigator.storage.persist !== "function"
     ) {
-      setAnnouncement("이 브라우저는 영구 저장소 요청을 지원하지 않습니다.");
+      setAnnouncement(
+        t(
+          "studio.panelStatus.fileCenter.persistUnsupported",
+          "이 브라우저는 영구 저장소 요청을 지원하지 않습니다.",
+        ),
+      );
       return;
     }
     setStorageBusy(true);
@@ -436,11 +480,16 @@ export function StudioFileControlCenter(): ReactElement {
       );
       setStorageHealth(await readBrowserStorageHealth());
     } catch {
-      setAnnouncement("브라우저 저장소 보호 요청을 완료하지 못했습니다.");
+      setAnnouncement(
+        t(
+          "studio.panelStatus.fileCenter.persistRequestFailed",
+          "브라우저 저장소 보호 요청을 완료하지 못했습니다.",
+        ),
+      );
     } finally {
       setStorageBusy(false);
     }
-  }, []);
+  }, [t]);
 
   const removeRecentFiles = useCallback(() => {
     clearRecentLocalFiles();
@@ -537,11 +586,11 @@ export function StudioFileControlCenter(): ReactElement {
               </dt>
               <dd className="mt-1 text-[0.72rem] font-black text-fg">
                 {recoveryScan.storageUnavailable
-                  ? "저장소 확인 불가"
+                  ? t("studio.panelStatus.fileCenter.storageUnavailable", "저장소 확인 불가")
                   : `${autosavesWithContent.length}개`}
               </dd>
               <dd className="mt-0.5 text-[0.58rem] text-fg-3">
-                최근 {formatDateTime(latestAutosave?.savedAt ?? null)}
+                최근 {formatDateTime(latestAutosave?.savedAt ?? null, t)}
               </dd>
             </div>
             <div className="rounded-lg bg-raised/70 p-2.5">
@@ -549,10 +598,10 @@ export function StudioFileControlCenter(): ReactElement {
                 <HardDrive size={12} aria-hidden /> 브라우저 보관 보호
               </dt>
               <dd className="mt-1 text-[0.68rem] font-black text-fg">
-                {storageProtectionLabel(storageHealth)}
+                {storageProtectionLabel(storageHealth, t)}
               </dd>
               <dd className="mt-0.5 text-[0.58rem] text-fg-3">
-                {storageUsageLabel(storageHealth)}
+                {storageUsageLabel(storageHealth, t)}
               </dd>
             </div>
           </dl>
@@ -645,7 +694,7 @@ export function StudioFileControlCenter(): ReactElement {
                     {file.name}
                   </p>
                   <p className="mt-0.5 text-[0.56rem] text-fg-3">
-                    {formatStudioFileBytes(file.sizeBytes)} · {formatDateTime(file.inspectedAt)}
+                    {formatStudioFileBytes(file.sizeBytes)} · {formatDateTime(file.inspectedAt, t)}
                   </p>
                 </div>
                 {file.actionId ? (
@@ -656,7 +705,11 @@ export function StudioFileControlCenter(): ReactElement {
                     onClick={() => {
                       if (file.actionId) invokeAction(file.actionId);
                     }}
-                    aria-label={`${file.name} 가져오기 선택기 열기`}
+                    aria-label={t(
+                      "studio.panelStatus.fileCenter.importerOpenAria",
+                      { name: file.name },
+                      "{name} 가져오기 선택기 열기",
+                    )}
                     className="shrink-0 rounded-md border border-line bg-card px-2 py-1.5 text-[0.57rem] font-bold text-fg-2 hover:bg-canvas focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
                     다시 선택
@@ -669,7 +722,8 @@ export function StudioFileControlCenter(): ReactElement {
           </ul>
         ) : (
           <div className="mt-2 flex items-center gap-2 rounded-lg bg-raised/70 px-3 py-2.5 text-[0.62rem] text-fg-3">
-            <TriangleAlert size={13} aria-hidden /> 아직 검사한 로컬 파일이 없습니다.
+            <TriangleAlert size={13} aria-hidden />{" "}
+            {t("studio.panelStatus.fileCenter.recentFilesEmpty", "아직 검사한 로컬 파일이 없습니다.")}
           </div>
         )}
       </div>

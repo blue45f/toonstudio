@@ -18,7 +18,9 @@ import { resolveVrmLibraryEntryDisplayName } from "./studio-vrm-display-name";
 import { StudioVrmCharacterPreviewImage } from "./StudioVrmCharacterPreviewImage";
 import { buildFallbackVrmLibraryThumbnail, type VrmLibraryEntry } from "./vrm-library";
 
-import { useI18n } from "@/shared/lib/i18n";
+import { useI18n, useT } from "@/shared/lib/i18n";
+
+import "../studio-vrm-panel-status-i18n";
 
 const LIBRARY_BATCH_SIZE = 12;
 /** Prefetch margin so the next batch starts before the user hits the list end. */
@@ -97,6 +99,7 @@ export function StudioVrmCharacterLibraryPanel({
   onVisibleWindowChange,
 }: StudioVrmCharacterLibraryPanelProps) {
   const locale = useI18n((state) => state.lang);
+  const t = useT();
   const [query, setQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(LIBRARY_BATCH_SIZE);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -333,7 +336,7 @@ export function StudioVrmCharacterLibraryPanel({
 
       {!hasUploadedModels ? (
         <div className="mt-3 rounded-xl border border-dashed border-line bg-card/45 px-3 py-3 text-xs leading-relaxed text-fg-3">
-          업로드한 캐릭터가 아직 없습니다. 루미로 바로 테스트하거나, 다양한 장르 캐릭터를 만들어 업로드하세요.
+          {t("studio.vrmPanelStatus.characterLibrary.uploadedEmpty", "업로드한 캐릭터가 아직 없습니다. 루미로 바로 테스트하거나, 다양한 장르 캐릭터를 만들어 업로드하세요.")}
         </div>
       ) : null}
 
@@ -385,7 +388,7 @@ export function StudioVrmCharacterLibraryPanel({
       <div className="mt-3 grid grid-cols-2 gap-2">
         {libraryStatus === "loading" ? (
           <div className="col-span-2 rounded-xl border border-line bg-card/60 px-3 py-4 text-center text-xs text-fg-3">
-            저장된 캐릭터를 불러오는 중입니다.
+            {t("studio.vrmPanelStatus.characterLibrary.loadingCharacters", "저장된 캐릭터를 불러오는 중입니다.")}
           </div>
         ) : null}
 
@@ -550,7 +553,7 @@ export function StudioVrmCharacterLibraryPanel({
         >
           <p className="text-center text-[0.68rem] text-fg-3" aria-live="polite">
             {isLoadingMore
-              ? "다음 캐릭터를 불러오는 중…"
+              ? t("studio.vrmPanelStatus.characterLibrary.loadingMore", "다음 캐릭터를 불러오는 중…")
               : canExpandLocal
                 ? `스크롤하면 자동으로 더 표시 · ${hiddenEntryCount}명 남음`
                 : "스크롤하면 저장된 캐릭터를 이어서 불러옵니다"}
@@ -574,7 +577,7 @@ export function StudioVrmCharacterLibraryPanel({
                   <span className="text-fg-3">· {hiddenEntryCount}명 남음</span>
                 </>
               )
-              : "저장된 캐릭터 다음 페이지 불러오기"}
+              : t("studio.vrmPanelStatus.characterLibrary.loadNextPage", "저장된 캐릭터 다음 페이지 불러오기")}
           </button>
         </div>
       ) : filteredEntries.length > LIBRARY_BATCH_SIZE ? (

@@ -176,8 +176,12 @@ export function StudioCustomFontsPanel({
       const failures = registrations.filter((result) => result.status === "failed");
       if (failures.length > 0) {
         setNotice(
-          `${page.fonts.length}개 글꼴의 OPFS 무결성은 확인했지만 ${failures.length}개는 `
-          + "이 브라우저 FontFace에 등록하지 못했어요.",
+          tText(
+            t,
+            `${page.fonts.length}개 글꼴의 OPFS 무결성은 확인했지만 ${failures.length}개는 이 브라우저 FontFace에 등록하지 못했어요.`,
+            "studio.customFonts.registerFailedMany",
+            { total: page.fonts.length, failed: failures.length },
+          ),
         );
       }
     }).catch((cause: unknown) => {
@@ -186,16 +190,26 @@ export function StudioCustomFontsPanel({
       const code = storageErrorCode(cause);
       if (code === "unavailable" || code === "quota-exceeded") {
         setStorageState("memory-only");
-        setNotice("SQLite/OPFS를 열지 못해 현재 탭 메모리만 사용합니다. 새로고침하면 사라져요.");
+        setNotice(
+          tText(
+            t,
+            "SQLite/OPFS를 열지 못해 현재 탭 메모리만 사용합니다. 새로고침하면 사라져요.",
+            "studio.customFonts.storageMemoryOnlyNotice",
+          ),
+        );
         return;
       }
       setStorageState("unavailable");
       setError(
-        "사용자 글꼴 manifest 또는 OPFS blob의 무결성을 확인하지 못해 일부 항목을 표시하지 않았습니다.",
+        tText(
+          t,
+          "사용자 글꼴 manifest 또는 OPFS blob의 무결성을 확인하지 못해 일부 항목을 표시하지 않았습니다.",
+          "studio.customFonts.hydrationIntegrityFailed",
+        ),
       );
     });
     return () => controller.abort();
-  }, [controlled, createFontFace, fontSet, loadRepository, repository]);
+  }, [controlled, createFontFace, fontSet, loadRepository, repository, t]);
 
   function enqueueMutation<T>(task: () => Promise<T>): Promise<T> {
     const run = mutationTailRef.current.then(task, task);
@@ -241,15 +255,30 @@ export function StudioCustomFontsPanel({
       setProductTotalEntries(page.totalEntries);
       setProductTotalBytes(page.totalBytes);
       if (failures > 0) {
-        setNotice(`${page.fonts.length}개를 더 확인했지만 ${failures}개는 FontFace에 등록하지 못했어요.`);
+        setNotice(
+          tText(
+            t,
+            `${page.fonts.length}개를 더 확인했지만 ${failures}개는 FontFace에 등록하지 못했어요.`,
+            "studio.customFonts.registerFailedMore",
+            { count: page.fonts.length, failed: failures },
+          ),
+        );
       }
     } catch (cause) {
       if (!mountedRef.current || generation !== hydrationGenerationRef.current) return;
       if (storageErrorCode(cause) === "aborted") return;
       setError(
         storageErrorCode(cause) === "invalid-cursor"
-          ? "글꼴 보관함이 바뀌어 목록 cursor가 만료됐어요. 패널을 다시 열어주세요."
-          : "사용자 글꼴 다음 page를 안전하게 읽지 못했습니다.",
+          ? tText(
+            t,
+            "글꼴 보관함이 바뀌어 목록 cursor가 만료됐어요. 패널을 다시 열어주세요.",
+            "studio.customFonts.cursorExpired",
+          )
+          : tText(
+            t,
+            "사용자 글꼴 다음 page를 안전하게 읽지 못했습니다.",
+            "studio.customFonts.nextPageReadFailed",
+          ),
       );
     } finally {
       if (mountedRef.current && generation === hydrationGenerationRef.current) {
@@ -293,9 +322,16 @@ export function StudioCustomFontsPanel({
       }
       if (file.size > MAX_CUSTOM_FONT_TOTAL_BYTES - usedBytes) {
         setError(
-          `보관함 용량이 ${formatCustomFontBytes(usedBytes)}/`
-          + `${formatCustomFontBytes(MAX_CUSTOM_FONT_TOTAL_BYTES)}라 `
-          + `${formatCustomFontBytes(file.size)}를 더 담을 수 없어요.`,
+          tText(
+            t,
+            `보관함 용량이 ${formatCustomFontBytes(usedBytes)}/${formatCustomFontBytes(MAX_CUSTOM_FONT_TOTAL_BYTES)}라 ${formatCustomFontBytes(file.size)}를 더 담을 수 없어요.`,
+            "studio.customFonts.capacityExceeded",
+            {
+              used: formatCustomFontBytes(usedBytes),
+              max: formatCustomFontBytes(MAX_CUSTOM_FONT_TOTAL_BYTES),
+              size: formatCustomFontBytes(file.size),
+            },
+          ),
         );
         return;
       }
@@ -327,8 +363,16 @@ export function StudioCustomFontsPanel({
       } else if (storageState === "unavailable" || storageState === "loading") {
         setError(
           storageState === "loading"
-            ? "사용자 글꼴 SQLite/OPFS 보관함을 확인하는 중이에요. 잠시 뒤 다시 시도해주세요."
-            : "사용자 글꼴 저장소 무결성을 확인할 수 없어 가져오기를 중단했습니다.",
+            ? tText(
+              t,
+              "사용자 글꼴 SQLite/OPFS 보관함을 확인하는 중이에요. 잠시 뒤 다시 시도해주세요.",
+              "studio.customFonts.storageCheckingImport",
+            )
+            : tText(
+              t,
+              "사용자 글꼴 저장소 무결성을 확인할 수 없어 가져오기를 중단했습니다.",
+              "studio.customFonts.storageIntegrityImportBlocked",
+            ),
         );
         return;
       } else if (storageState === "memory-only" || !repositoryRef.current) {
@@ -381,21 +425,38 @@ export function StudioCustomFontsPanel({
             // canonical library and report the failed write instead.
             setError(
               code === "quota-exceeded"
-                ? "기기 저장 공간이 부족해 글꼴을 담지 않았어요. 기존 보관함은 그대로 유지됩니다."
-                : "SQLite/OPFS 저장을 완료하지 못해 글꼴을 담지 않았어요. 기존 보관함은 그대로 유지됩니다.",
+                ? tText(
+                  t,
+                  "기기 저장 공간이 부족해 글꼴을 담지 않았어요. 기존 보관함은 그대로 유지됩니다.",
+                  "studio.customFonts.quotaExceededSave",
+                )
+                : tText(
+                  t,
+                  "SQLite/OPFS 저장을 완료하지 못해 글꼴을 담지 않았어요. 기존 보관함은 그대로 유지됩니다.",
+                  "studio.customFonts.durableSaveFailed",
+                ),
             );
             return;
           }
           setStorageState("unavailable");
           setError(
-            "사용자 글꼴 manifest 또는 OPFS blob이 손상되어 가져오기를 중단했습니다. 일부 데이터로 덮어쓰지 않았습니다.",
+            tText(
+              t,
+              "사용자 글꼴 manifest 또는 OPFS blob이 손상되어 가져오기를 중단했습니다. 일부 데이터로 덮어쓰지 않았습니다.",
+              "studio.customFonts.manifestCorruptImport",
+            ),
           );
           return;
         }
       }
       setNotice(
         storageState === "memory-only"
-          ? `“${storedFont.family}” 글꼴은 현재 탭 메모리에만 담았어요. 새로고침하면 사라져요.`
+          ? tText(
+            t,
+            `“${storedFont.family}” 글꼴은 현재 탭 메모리에만 담았어요. 새로고침하면 사라져요.`,
+            "studio.customFonts.memoryOnlySaved",
+            { fontName: storedFont.family },
+          )
           : registrationStatus === "unsupported"
           ? tText(
             t,
@@ -435,12 +496,24 @@ export function StudioCustomFontsPanel({
     }
     if (storageState === "memory-only") {
       setProductFonts((current) => removeCustomFont(current, font.id));
-      setNotice("현재 탭 메모리에서만 지웠어요. 이 상태는 새로고침 후 유지되지 않습니다.");
+      setNotice(
+        tText(
+          t,
+          "현재 탭 메모리에서만 지웠어요. 이 상태는 새로고침 후 유지되지 않습니다.",
+          "studio.customFonts.memoryOnlyDeleted",
+        ),
+      );
       return;
     }
     const durableRepository = repositoryRef.current;
     if (!durableRepository || storageState !== "sqlite-opfs") {
-      setError("사용자 글꼴 SQLite/OPFS 저장소를 사용할 수 없어 삭제하지 않았습니다.");
+      setError(
+        tText(
+          t,
+          "사용자 글꼴 SQLite/OPFS 저장소를 사용할 수 없어 삭제하지 않았습니다.",
+          "studio.customFonts.deleteStorageUnavailable",
+        ),
+      );
       return;
     }
     const generation = ++mutationGenerationRef.current;
@@ -456,17 +529,43 @@ export function StudioCustomFontsPanel({
       setNextPageCursor(page.nextCursor);
       setProductTotalEntries(page.totalEntries);
       setProductTotalBytes(page.totalBytes);
-      setNotice(`“${font.family}” 글꼴을 SQLite/OPFS 보관함에서 삭제했어요.`);
+      setNotice(
+        tText(
+          t,
+          `“${font.family}” 글꼴을 SQLite/OPFS 보관함에서 삭제했어요.`,
+          "studio.customFonts.deleteSuccess",
+          { fontName: font.family },
+        ),
+      );
       if (failures > 0) {
-        setNotice(`글꼴을 삭제했지만 새 page의 ${failures}개는 FontFace에 등록하지 못했어요.`);
+        setNotice(
+          tText(
+            t,
+            `글꼴을 삭제했지만 새 page의 ${failures}개는 FontFace에 등록하지 못했어요.`,
+            "studio.customFonts.deleteRegisterFailed",
+            { failed: failures },
+          ),
+        );
       }
     }).catch((cause: unknown) => {
       if (!mountedRef.current || generation !== mutationGenerationRef.current) return;
       if (storageErrorCode(cause) !== "corrupt") {
-        setError("사용자 글꼴을 기기 보관함에서 삭제하지 못해 목록을 유지했습니다.");
+        setError(
+          tText(
+            t,
+            "사용자 글꼴을 기기 보관함에서 삭제하지 못해 목록을 유지했습니다.",
+            "studio.customFonts.deleteFailedKeepList",
+          ),
+        );
       } else {
         setStorageState("unavailable");
-        setError("사용자 글꼴 저장소 무결성 오류로 삭제를 중단했습니다.");
+        setError(
+          tText(
+            t,
+            "사용자 글꼴 저장소 무결성 오류로 삭제를 중단했습니다.",
+            "studio.customFonts.deleteIntegrityFailed",
+          ),
+        );
       }
     }).finally(() => {
       if (!mountedRef.current || generation !== mutationGenerationRef.current) return;
@@ -493,13 +592,13 @@ export function StudioCustomFontsPanel({
 
       <p className="mb-2 text-[0.6rem] font-semibold text-fg-3" aria-live="polite">
         {storageState === "loading"
-          ? "SQLite/OPFS 사용자 글꼴 확인 중"
+          ? tText(t, "SQLite/OPFS 사용자 글꼴 확인 중", "studio.customFonts.storageCheckingBadge")
           : storageState === "sqlite-opfs"
             ? "이 기기 SQLite manifest · OPFS SHA-256 원본 저장"
             : storageState === "memory-only"
               ? "현재 탭 메모리 임시 · 새로고침 시 사라짐"
               : storageState === "unavailable"
-                ? "저장소 무결성 확인 실패 · 가져오기 중단"
+                ? tText(t, "저장소 무결성 확인 실패 · 가져오기 중단", "studio.customFonts.storageIntegrityBadge")
                 : "주입된 controlled 보관함"}
       </p>
 
@@ -672,7 +771,7 @@ export function StudioCustomFontsPanel({
               onClick={() => void loadNextProductPage()}
             >
               {pageBusy
-                ? "글꼴 더 불러오는 중"
+                ? tText(t, "글꼴 더 불러오는 중", "studio.customFonts.loadMoreLoading")
                 : `글꼴 더 보기 (${activeFonts.length.toLocaleString("ko-KR")}/${totalEntries.toLocaleString("ko-KR")})`}
             </button>
           )}

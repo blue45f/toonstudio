@@ -84,6 +84,30 @@ describe("PSD 조정 레이어 문서 적용", () => {
     expect(result.status.text).toContain("조정 레이어 1개도 함께 복원했어요");
   });
 
+  it("마스크가 있는 조정 명세는 maskSrc·maskEnabled가 AdjustmentEl까지 그대로 실린다", async () => {
+    const masked = {
+      ...levelsAdjustment,
+      maskSrc: "data:image/png;base64,ADJMASK",
+      maskEnabled: false as const,
+    };
+    const result = await prepareStudioDocumentInterchangeCommit({
+      kind: "psd",
+      fileName: "episode.psd",
+      preview: {} as never,
+      result: psdResult({
+        adjustmentLayers: [masked],
+        adjustmentReport: buildPsdAdjustmentImportReport([masked], []),
+      }) as never,
+    }, { ...baseOptions, pages: [page("anchor")], choice: "new-page" });
+
+    const adjustment = result.pages[1]!.elements[1] as unknown as Record<string, unknown>;
+    expect(adjustment).toMatchObject({
+      type: "adjustment",
+      maskSrc: "data:image/png;base64,ADJMASK",
+      maskEnabled: false,
+    });
+  });
+
   it("현재 페이지 방식: 기존 요소 뒤에 래스터·조정 상대 순서를 유지해 붙는다", async () => {
     const anchor = page("anchor");
     anchor.elements = [{ id: "existing", type: "image" } as never];

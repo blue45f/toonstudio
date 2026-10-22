@@ -23,6 +23,13 @@ import {
  *   바뀌면 1일로 세고, 서머타임(DST) 경계에서도 게시 시각(시:분)이 밀리지 않는다.
  * - 반환 Date는 입력의 로컬 시각(시:분:초)을 보존한다. 게시 시각 기본값 18:00은
  *   기존 suggestedReleaseAt 관례와 같지만, 이 모듈은 시각을 강제하지 않는다.
+ * - 타 모델과의 경계 (2026-10-22 수렴 실측, rem-item2-calendar): 게시 패널의
+ *   케이던스(studio-publish-schedule-model.computeCadenceOccurrences)는 IANA
+ *   시간대·복수 요일·"기준 시각 엄격히 이후" 의미라 이 모듈의 주간 함수와
+ *   결과가 갈리고, 단계별 마감 계획(production-stage-deadline-plan)의 역산은
+ *   파이프라인 dueAt 정합을 위해 ms 산술을 유지한다. 셋의 일치 구간과 차이
+ *   지점은 production-release-calendar-convergence.test.ts가 고정한다 —
+ *   어느 한쪽을 다른 쪽으로 교체할 때는 그 테스트부터 다시 볼 것.
  */
 
 /** 0=일요일 .. 6=토요일 (Date.getDay와 동일) */

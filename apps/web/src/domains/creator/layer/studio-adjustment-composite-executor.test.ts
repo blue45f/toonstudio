@@ -15,6 +15,7 @@ import {
   type AdjustmentElement,
 } from "./studio-adjustment-layer-elements";
 import {
+  adjustmentMaskCoverageFromImageData,
   applyAdjustmentKindPixels,
   compositeAdjustmentPixels,
   executeAdjustmentElComposite,
@@ -334,5 +335,98 @@ describe("executeAdjustmentElComposite — 순서·범위·비파괴", () => {
     expect(() => executeAdjustmentElComposite([rasterEl("a"), live], {
       width: 1, height: 1, renderContent: solidRenderer({ a: [1, 2, 3, 255] }).renderContent,
     })).toThrow(/studio-adjustment-layer-runtime/);
+  });
+});
+
+describe("color-balance preserveLuminosity — PSD 파라미터 종단", () => {
+  it("preserveLuminosity:true면 휘도를 보존하고, 없으면 기존 결과다", () => {
+    const preserved = makeImg([[128, 128, 128, 255]]);
+    expect(applyAdjustmentKindPixels(preserved, "color-balance", {
+      midtonesCyanRed: 100, midtonesMagentaGreen: 0, midtonesYellowBlue: 0,
+      preserveLuminosity: true,
+    })).toBe(true);
+    expect(pixelAt(preserved)).toEqual([197, 99, 99, 255]);
+    const plain = makeImg([[128, 128, 128, 255]]);
+    expect(applyAdjustmentKindPixels(plain, "color-balance", {
+      midtonesCyanRed: 100, midtonesMagentaGreen: 0, midtonesYellowBlue: 0,
+    })).toBe(true);
+    expect(pixelAt(plain)).toEqual([255, 128, 128, 255]);
+    const off = makeImg([[128, 128, 128, 255]]);
+    expect(applyAdjustmentKindPixels(off, "color-balance", {
+      midtonesCyanRed: 100, preserveLuminosity: false,
+    })).toBe(true);
+    expect(pixelAt(off)).toEqual([255, 128, 128, 255]);
+  });
+
+  it("compositeAdjustmentPixels 경로(블렌드·불투명도 합성)에서도 보존된다", () => {
+    const source = makeImg([[128, 128, 128, 255]]);
+    const el = adjustmentEl("cb", "color-balance", {
+      midtonesCyanRed: 100, preserveLuminosity: true,
+    });
+    const { imageData, applied } = compositeAdjustmentPixels(source, el);
+    expect(applied).toBe(true);
+    expect(pixelAt(imageData)).toEqual([197, 99, 99, 255]);
+  });
+});
+
+describe("마스크 커버리지 — compositeAdjustmentPixels", () => {
+  const maskOf = (values: readonly number[]) => ({
+    width: values.length,
+    height: 1,
+    data: new Uint8ClampedArray(values),
+  });
+
+  it("마스크 0인 픽셀은 조정 제외, 255인 픽셀은 전면 적용", () => {
+    const source = makeImg([[10, 20, 30, 255], [10, 20, 30, 255]]);
+    const { imageData, applied } = compositeAdjustmentPixels(
+      source, adjustmentEl("a", "invert"), maskOf([0, 255]));
+    expect(applied).toBe(true);
+    expect(pixelAt(imageData, 0)).toEqual([10, 20, 30, 255]);
+    expect(pixelAt(imageData, 1)).toEqual([245, 235, 225, 255]);
+  });
+
+  it("마스크 중간값은 opacity와 곱해진다 (255마스크·opacity 1 vs 128마스크)", () => {
+    const source = makeImg([[10, 10, 10, 255]]);
+    const { imageData } = compositeAdjustmentPixels(
+      source, adjustmentEl("a", "invert"), maskOf([128]));
+    // 반전 245와 원본 10을 128/255만큼 섞은 값.
+    expect(pixelAt(imageData)).toEqual([128, 128, 128, 255]);
+  });
+
+  it("마스크가 있어도 알파는 변하지 않고 입력 버퍼는 불변이다", () => {
+    const source = makeImg([[10, 20, 30, 128]]);
+    const before = [...source.data];
+    const { imageData } = compositeAdjustmentPixels(
+      source, adjustmentEl("a", "invert"), maskOf([255]));
+    expect(pixelAt(imageData)).toEqual([245, 235, 225, 128]);
+    expect([...source.data]).toEqual(before);
+  });
+
+  it("크기가 다른 마스크는 조용히 어긋나지 않고 실패로 닫는다", () => {
+    const source = makeImg([[10, 20, 30, 255]]);
+    expect(() => compositeAdjustmentPixels(
+      source, adjustmentEl("a", "invert"), maskOf([255, 255]))).toThrow(/마스크 크기 불일치/);
+  });
+
+  it("adjustmentMaskCoverageFromImageData는 알파를 커버리지로 뽑고 최근접 재투영한다", () => {
+    const maskImg = makeImg([[255, 255, 255, 0], [255, 255, 255, 200]]);
+    const same = adjustmentMaskCoverageFromImageData(maskImg);
+    expect([...same.data]).toEqual([0, 200]);
+    const widened = adjustmentMaskCoverageFromImageData(maskImg, 4, 1);
+    expect([...widened.data]).toEqual([0, 0, 200, 200]);
+  });
+
+  it("executeAdjustmentElComposite는 maskCoverageFor가 준 마스크를 조정 단계에 적용한다", () => {
+    const bottom = rasterEl("bottom");
+    const adj = adjustmentEl("adj", "invert");
+    const { imageData, trace } = executeAdjustmentElComposite([bottom, adj], {
+      width: 2,
+      height: 1,
+      renderContent: () => makeImg([[10, 20, 30, 255], [10, 20, 30, 255]]),
+      maskCoverageFor: (element) => element.id === "adj" ? maskOf([255, 0]) : undefined,
+    });
+    expect(pixelAt(imageData, 0)).toEqual([245, 235, 225, 255]);
+    expect(pixelAt(imageData, 1)).toEqual([10, 20, 30, 255]);
+    expect(trace).toEqual([{ layerId: "adj", kind: "invert", applied: true, clipToBelow: false }]);
   });
 });

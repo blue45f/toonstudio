@@ -73,6 +73,28 @@ describe("studio work-mode host wiring", () => {
     expect(belt).toContain('studioWorkModeAllowsRegion(props.workMode ?? "all", "quick-actions"');
   });
 
+  it("host feeds the preferences runtime from the canonical episode-stage source, not a fixed null", () => {
+    const host = read(HOST);
+    expect(host).not.toContain("episodeStage: null");
+    expect(host).toContain("useStudioEpisodeStage(location.search, studioAuthUserId)");
+    expect(host).toContain("episodeStage,");
+    const hook = read(
+      "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioEpisodeStage.ts",
+    );
+    // 식별자는 명시적 URL 회차 맥락에서만 읽고, 세션이 없으면 조달하지 않는다.
+    expect(hook).toContain("readStudioEpisodeStageContext");
+    expect(hook).toContain("loadStudioEpisodeStageIdLazy");
+    const source = read(
+      "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-episode-stage-source.ts",
+    );
+    // 제작 허브 모델은 동적 import로만 연다(시작 그래프 금지 도메인) — 정적 import가 생기면 실패한다.
+    expect(source).toContain('import("../../public/episode-stage")');
+    expect(source).not.toContain('from "../../public/episode-stage"');
+    expect(source).not.toContain('from "../../production-hub/');
+    expect(hook).not.toContain('from "../../production-hub/');
+    expect(hook).not.toContain('from "../../public/');
+  });
+
   it("folded strips keep an expand affordance that reuses the density expansion", () => {
     const workspace = read(WORKSPACE);
     expect(workspace).toContain("data-studio-tool-rail-folded");

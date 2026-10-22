@@ -46,6 +46,8 @@ export function psdAdjustmentElFromImported(
     ...(layer.blendMode ? { blendMode: layer.blendMode } : {}),
     ...(layer.hidden ? { hidden: true as const } : {}),
     ...(layer.clipBelow ? { clipBelow: true as const } : {}),
+    ...(layer.maskSrc ? { maskSrc: layer.maskSrc } : {}),
+    ...(layer.maskEnabled === false ? { maskEnabled: false as const } : {}),
     ...(layer.psdFolderPath ? { psdFolderPath: layer.psdFolderPath } : {}),
     ...(folderId ? { groupId: folderId, psdGroupId: folderId } : {}),
   } as El;

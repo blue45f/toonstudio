@@ -18,7 +18,10 @@ import {
 import { CreatorAiTrainingConsentField } from "./ai-training-consent/CreatorAiTrainingConsentField";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useT } from "@/shared/lib/i18n";
 import { cn, relativeDate } from "@/shared/lib/utils";
+
+import "./studio-panel-status-i18n";
 import {
   CREATOR_COMMUNITY_CONTENT_DESCRIPTORS,
   CREATOR_COMMUNITY_CONTENT_KINDS,
@@ -107,6 +110,7 @@ export function CreatorCommunityPublicationPanel({
   work: WorkDetail;
   onUpdated: (patch: Partial<WorkDetail>) => void;
 }) {
+  const t = useT();
   const initialMetadata = useMemo(
     () => readCreatorCommunityMetadata(work.doc, { format: work.format }),
     [work.doc, work.format],
@@ -149,7 +153,11 @@ export function CreatorCommunityPublicationPanel({
       })
       .catch((caught: unknown) => {
         if (!alive || controller.signal.aborted) return;
-        setError(caught instanceof Error ? caught.message : "발행 정보를 불러오지 못했습니다.");
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : t("studio.panelStatus.communityPublication.loadFailed", "발행 정보를 불러오지 못했습니다."),
+        );
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -158,7 +166,7 @@ export function CreatorCommunityPublicationPanel({
       alive = false;
       controller.abort();
     };
-  }, [open, work.id]);
+  }, [open, work.id, t]);
 
   async function saveMetadata() {
     if (saving) return;
@@ -176,7 +184,11 @@ export function CreatorCommunityPublicationPanel({
         revision: saved.revision ?? work.revision,
       });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "커뮤니티 설정을 저장하지 못했습니다.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : t("studio.panelStatus.communityPublication.settingsSaveFailed", "커뮤니티 설정을 저장하지 못했습니다."),
+      );
     } finally {
       setSaving(false);
     }
@@ -190,7 +202,11 @@ export function CreatorCommunityPublicationPanel({
       const created = await createWorkRelease(work.id);
       setReleases((current) => [created, ...current.filter((item) => item.id !== created.id)]);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "릴리스를 만들지 못했습니다.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : t("studio.panelStatus.communityPublication.releaseCreateFailed", "릴리스를 만들지 못했습니다."),
+      );
     } finally {
       setCreatingRelease(false);
     }
@@ -211,7 +227,11 @@ export function CreatorCommunityPublicationPanel({
       setExternal((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
       setExternalUrl("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "외부 게시 이력을 저장하지 못했습니다.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : t("studio.panelStatus.communityPublication.externalSaveFailed", "외부 게시 이력을 저장하지 못했습니다."),
+      );
     } finally {
       setSavingExternal(false);
     }
@@ -223,7 +243,11 @@ export function CreatorCommunityPublicationPanel({
       const removed = await removeExternalPublication(work.id, id);
       setExternal((current) => current.map((item) => (item.id === id ? removed : item)));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "외부 게시 이력을 정리하지 못했습니다.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : t("studio.panelStatus.communityPublication.externalRemoveFailed", "외부 게시 이력을 정리하지 못했습니다."),
+      );
     }
   }
 
@@ -439,7 +463,9 @@ export function CreatorCommunityPublicationPanel({
               className={buttonClass({ size: "sm", variant: "solid", className: "gap-1.5" })}
             >
               <Save size={14} />
-              {saving ? "저장 중…" : "작품 정보 저장"}
+              {saving
+                ? t("studio.panelStatus.communityPublication.saving", "저장 중…")
+                : "작품 정보 저장"}
             </button>
             <span className="text-[0.7rem] text-fg-3">
               저장은 공개가 아닙니다. 공개 범위는 기존 게시 설정에서만 변경됩니다.
@@ -461,7 +487,9 @@ export function CreatorCommunityPublicationPanel({
                 className={buttonClass({ size: "sm", variant: "outline", className: "ml-auto gap-1.5" })}
               >
                 <Plus size={14} />
-                {creatingRelease ? "생성 중…" : "현재 저장본 릴리스"}
+                {creatingRelease
+                  ? t("studio.panelStatus.communityPublication.creating", "생성 중…")
+                  : "현재 저장본 릴리스"}
               </button>
             </div>            {loading ? (
               <div className="skeleton mt-3 h-16 rounded-lg" aria-hidden />
@@ -488,7 +516,10 @@ export function CreatorCommunityPublicationPanel({
               </div>
             ) : (
               <p className="mt-3 rounded-lg border border-dashed border-line px-3 py-4 text-center text-xs text-fg-3">
-                아직 릴리스가 없습니다. 저장을 마친 뒤 현재 저장본을 고정해 보세요.
+                {t(
+                  "studio.panelStatus.communityPublication.releasesEmpty",
+                  "아직 릴리스가 없습니다. 저장을 마친 뒤 현재 저장본을 고정해 보세요.",
+                )}
               </p>
             )}
           </div>
@@ -597,6 +628,7 @@ export function CreatorWorkReportControl({
   workId: string;
   authenticated: boolean;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<WorkReportReason>("copyright");
   const [details, setDetails] = useState("");
@@ -613,7 +645,11 @@ export function CreatorWorkReportControl({
       setDetails("");
       setOpen(false);
     } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "신고를 접수하지 못했습니다.");
+      setMessage(
+        caught instanceof Error
+          ? caught.message
+          : t("studio.panelStatus.communityPublication.reportSubmitFailed", "신고를 접수하지 못했습니다."),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -669,7 +705,9 @@ export function CreatorWorkReportControl({
               disabled={submitting}
               className={buttonClass({ size: "sm", variant: "solid" })}
             >
-              {submitting ? "접수 중…" : "신고 접수"}
+              {submitting
+                ? t("studio.panelStatus.communityPublication.reportSubmitting", "접수 중…")
+                : "신고 접수"}
             </button>
           </div>
         </div>

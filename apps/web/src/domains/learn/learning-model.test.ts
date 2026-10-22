@@ -9,12 +9,12 @@ const termIds = TERMS.map((term) => term.id);
 const parse = (value: unknown) => parseProgress(JSON.stringify(value), LESSONS, termIds);
 
 describe("webtoon learning content contract", () => {
-  it("ships eighteen original lessons and fifty-four unique terms", () => {
-    assert.equal(LESSONS.length, 18);
-    assert.equal(TERMS.length, 54);
+  it("ships thirty-six original lessons and ninety unique terms", () => {
+    assert.equal(LESSONS.length, 36);
+    assert.equal(TERMS.length, 90);
     assert.equal(new Set(LESSONS.map((item) => item.id)).size, LESSONS.length);
     assert.equal(new Set(termIds).size, TERMS.length);
-    assert.equal(LESSONS.filter((item) => item.track === "studio").length, 5);
+    assert.equal(LESSONS.filter((item) => item.track === "studio").length, 12);
     assert.equal(new Set(LESSONS.map((item) => item.lab)).size, 6);
   });
   it("has valid source links, cross-links, exercises and quizzes for every lesson", () => {

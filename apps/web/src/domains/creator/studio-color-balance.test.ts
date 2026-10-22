@@ -277,3 +277,67 @@ describe("color balance hostile direct-call safety", () => {
     expect(balance.shadows[0]).toBeNaN();
   });
 });
+
+describe("preserveLuminosity (휘도 보존)", () => {
+  const luma = (px: number[]): number => 0.299 * px[0]! + 0.587 * px[1]! + 0.114 * px[2]!;
+
+  it("normalizeColorBalance는 boolean 플래그만 싣고, 미설정이면 키를 만들지 않는다", () => {
+    expect(normalizeColorBalance({ preserveLuminosity: true }).preserveLuminosity).toBe(true);
+    expect(normalizeColorBalance({ preserveLuminosity: false }).preserveLuminosity).toBe(false);
+    expect(normalizeColorBalance({})).toEqual(DEFAULT_COLOR_BALANCE);
+    expect("preserveLuminosity" in normalizeColorBalance({})).toBe(false);
+    expect(normalizeColorBalance({ preserveLuminosity: 1 as unknown as boolean }).preserveLuminosity)
+      .toBeUndefined();
+  });
+
+  it("켜면 쉬프트 후에도 휘도가 보존되고 색 방향은 유지된다 (회색 +R)", () => {
+    const img = makeImage(1, 1, [[128, 128, 128, 255]]);
+    applyColorBalance(img, {
+      shadows: [0, 0, 0], midtones: [100, 0, 0], highlights: [0, 0, 0],
+      preserveLuminosity: true,
+    });
+    // 쉬프트만이면 [255,128,128](휘도 166) — 보존하면 휘도 128 근처로 되돌리면서
+    // R>G=B 관계(붉은 방향)는 남는다.
+    expect(pixelAt(img, 0)).toEqual([197, 99, 99, 255]);
+    expect(Math.abs(luma(pixelAt(img, 0)) - 128)).toBeLessThanOrEqual(1);
+  });
+
+  it("끄거나 미설정이면 기존 동작 그대로다 (휘도가 오른다)", () => {
+    for (const flag of [false, undefined] as const) {
+      const img = makeImage(1, 1, [[128, 128, 128, 255]]);
+      applyColorBalance(img, {
+        shadows: [0, 0, 0], midtones: [100, 0, 0], highlights: [0, 0, 0],
+        ...(flag !== undefined ? { preserveLuminosity: flag } : {}),
+      });
+      expect(pixelAt(img, 0)).toEqual([255, 128, 128, 255]);
+    }
+  });
+
+  it("검은 픽셀은 휘도 0이 보존된다 (쉬프트가 밝기를 만들지 않는다)", () => {
+    const img = makeImage(1, 1, [[0, 0, 0, 255]]);
+    applyColorBalance(img, {
+      shadows: [100, 0, 0], midtones: [0, 0, 0], highlights: [0, 0, 0],
+      preserveLuminosity: true,
+    });
+    expect(pixelAt(img, 0)).toEqual([0, 0, 0, 255]);
+  });
+
+  it("쉬프트가 전부 0이면 플래그가 있어도 항등이다", () => {
+    const img = makeImage(1, 1, [[10, 20, 30, 40]]);
+    applyColorBalance(img, { ...DEFAULT_COLOR_BALANCE, preserveLuminosity: true });
+    expect(pixelAt(img, 0)).toEqual([10, 20, 30, 40]);
+  });
+
+  it("유색 픽셀도 휘도가 ±1 안에서 보존된다", () => {
+    const before = [80, 140, 200, 255];
+    const img = makeImage(1, 1, [before]);
+    applyColorBalance(img, {
+      shadows: [0, 0, 0], midtones: [40, -20, 10], highlights: [0, 0, 0],
+      preserveLuminosity: true,
+    });
+    const after = pixelAt(img, 0);
+    expect(Math.abs(luma(after) - luma(before))).toBeLessThanOrEqual(1);
+    expect(after[3]).toBe(255);
+    expect(after).not.toEqual(before);
+  });
+});

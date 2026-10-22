@@ -14,7 +14,13 @@ export const LEARNING_PATH_TINTS: Readonly<Record<string, string>> = {
   "story-direction": "oklch(0.60 0.18 305)",
   "visual-finish": "oklch(0.62 0.17 25)",
   "studio-quickstart": "oklch(0.64 0.15 165)",
-  "publish-ready": "oklch(0.66 0.16 75)",
+  "publish-ready": "oklch(0.66 0.16 75)",  "episode-production": "oklch(0.61 0.16 195)",
+  "character-consistency-path": "oklch(0.63 0.17 330)",
+  "review-and-finish": "oklch(0.62 0.15 140)",
+  "serial-operations": "oklch(0.60 0.17 280)",
+  "collaboration-production": "oklch(0.64 0.16 45)",
+  "classroom-teaching": "oklch(0.62 0.14 100)",
+  "advanced-craft": "oklch(0.59 0.18 10)",
 };
 
 export function learningPathTint(pathId: string): string | undefined {

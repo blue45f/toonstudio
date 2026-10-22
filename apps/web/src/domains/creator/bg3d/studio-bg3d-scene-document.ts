@@ -29,6 +29,11 @@ import { normalizeStudioBg3dHierarchyParents } from "./studio-bg3d-hierarchy";
 import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
 import { normalizeStudioBg3dModelTexturePaint } from "../studio-bg3d-model-texture-paint";
 import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
+import {
+  DEFAULT_STUDIO_BG3D_CAMERA_POSITION,
+  DEFAULT_STUDIO_BG3D_CAMERA_TARGET,
+  DEFAULT_STUDIO_BG3D_RAW_DOCUMENT,
+} from "./studio-bg3d-scene-document-defaults";
 
 import {
   DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE,
@@ -193,8 +198,6 @@ export {
 } from "./studio-bg3d-scene-document-types";
 
 
-const DEFAULT_CAMERA_POSITION: StudioBg3dVec3 = [4, 3, 6];
-const DEFAULT_CAMERA_TARGET: StudioBg3dVec3 = [0, 0.6, 0];
 const DEFAULT_ROTATION: StudioBg3dVec3 = [0, 0, 0];
 const DEFAULT_SCALE: StudioBg3dVec3 = [1, 1, 1];
 const MAX_WORLD_COORDINATE = 10_000;
@@ -223,143 +226,6 @@ const ATTACHMENT_SOURCE_SET = new Set<string>(["upload", "local-library", "bundl
 const RIGHTS_STATUS_SET = new Set<string>(["owned", "licensed", "public-domain", "unknown"]);
 const SHADOW_MAP_SIZES = [256, 512, 1024, 2048, 4096] as const;
 const UTF8_ENCODER = new TextEncoder();
-
-const DEFAULT_RAW_DOCUMENT = {
-  kind: STUDIO_BG3D_SCENE_DOCUMENT_KIND,
-  version: STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
-  camera: {
-    position: DEFAULT_CAMERA_POSITION,
-    target: DEFAULT_CAMERA_TARGET,
-    fovDegrees: 50,
-    projection: "perspective",
-    zoom: 1,
-    nearClip: STUDIO_BG3D_CAMERA_DEFAULT_NEAR_CLIP,
-    up: STUDIO_BG3D_CAMERA_DEFAULT_UP,
-  },
-  render: {
-    antialias: true,
-    shadows: true,
-    exposure: 1,
-    toneMapping: "neutral",
-    colorSpace: "srgb",
-  },
-  background: {
-    mode: "sky-preset",
-    color: "#ffffff",
-    skyPresetId: "blank",
-    panoramaRotation: 0,
-    fogEnabled: false,
-    fogColor: "#ffffff",
-    fogNear: 10,
-    fogFar: 50,
-  },
-  lighting: {
-    ambientColor: "#ffffff",
-    ambientIntensity: 0.75,
-    key: {
-      color: "#ffffff",
-      direction: [4, 6, 4],
-      intensity: 1.1,
-      castsShadow: true,
-    },
-    fill: {
-      color: "#ffffff",
-      direction: [-4, 3, -3],
-      intensity: 0.35,
-      castsShadow: false,
-    },
-    environment: {
-      source: "procedural",
-      assetId: null,
-      intensity: 1,
-      rotationDegrees: 0,
-      useAsBackground: false,
-    },
-  },
-  quality: {
-    desktop: {
-      targetFps: 60,
-      dprMin: 1,
-      dprMax: 2,
-      maxRenderPixels: 12_582_912,
-      shadows: true,
-      shadowMapSize: 2048,
-      textureScale: 1,
-      lodBias: 0,
-    },
-    mobile: {
-      targetFps: 30,
-      dprMin: 0.9,
-      dprMax: 1.5,
-      maxRenderPixels: 4_194_304,
-      shadows: true,
-      shadowMapSize: 2048,
-      textureScale: 1,
-      lodBias: 0,
-    },
-  },
-  output: {
-    transparentBackground: false,
-    exportHeight: 640,
-    line: {
-      enabled: true,
-      layerType: "raster",
-      color: "#000000",
-      widthPx: 1.75,
-      strength: 0.8,
-      accuracy: 0.75,
-      scaleAwareAccuracy: true,
-      exteriorOutlineStrength: 1,
-      depthEnabled: false,
-      depthStrength: 0.5,
-      depthOutlineOnly: true,
-      smoothing: 0.5,
-      textureLineEnabled: true,
-      textureLineStrength: 0.5,
-      creaseAngleDegrees: 20,
-      hiddenLineRemoval: true,
-    },
-    tone: {
-      // A 3D background should look like the shaded viewport when it is first inserted. Earlier
-      // defaults disabled this layer, so the LT exporter truthfully emitted only edge rasters and
-      // users saw an apparently broken wireframe. Dedicated line-art presets can still opt into
-      // `none`; the general-purpose default preserves the rendered material colors.
-      mode: "flat",
-      type: "color",
-      pattern: "dot",
-      levels: 4,
-      opacity: 1,
-      frequency: 60,
-      angleDegrees: 45,
-    },
-  },
-  budgets: {
-    complexity: {
-      maxNodes: 256,
-      maxTriangles: 2_000_000,
-      maxDrawCalls: 512,
-      maxMaterials: 256,
-      maxLights: 4,
-      maxAnimations: 64,
-      maxAnimationChannels: 1_024,
-      maxAnimationKeyframes: 1_000_000,
-      maxAnimationValues: 8_000_000,
-      maxSkins: 64,
-      maxJoints: 2_048,
-      maxMorphTargets: 256,
-      maxAccessorElements: 40_000_000,
-      maxDecodedGeometryBytes: 256 * 1024 * 1024,
-      maxModelBytes: 256 * 1024 * 1024,
-    },
-    textures: {
-      maxTextures: 128,
-      maxTotalBytes: 256 * 1024 * 1024,
-      maxDimension: 8192,
-    },
-  },
-  attachments: [],
-  nodes: [],
-} as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -607,13 +473,13 @@ function normalizeCamera(value: unknown): StudioBg3dCameraSettings {
   const candidate = hasCameraRecord ? value : {};
   let position = normalizedVec3(
     candidate.position,
-    DEFAULT_CAMERA_POSITION,
+    DEFAULT_STUDIO_BG3D_CAMERA_POSITION,
     -MAX_WORLD_COORDINATE,
     MAX_WORLD_COORDINATE
   );
   const target = normalizedVec3(
     candidate.target,
-    DEFAULT_CAMERA_TARGET,
+    DEFAULT_STUDIO_BG3D_CAMERA_TARGET,
     -MAX_WORLD_COORDINATE,
     MAX_WORLD_COORDINATE
   );
@@ -687,7 +553,7 @@ function normalizeBackground(value: unknown): StudioBg3dBackgroundSettings {
 
 function normalizeDirectionalLight(
   value: unknown,
-  fallback: (typeof DEFAULT_RAW_DOCUMENT.lighting)["key" | "fill"]
+  fallback: (typeof DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.lighting)["key" | "fill"]
 ): StudioBg3dDirectionalLightSettings {
   const candidate = isRecord(value) ? value : {};
   return {
@@ -703,15 +569,15 @@ function normalizeLighting(value: unknown): StudioBg3dLightingSettings {
   return {
     ambientColor: normalizedColor(candidate.ambientColor, "#ffffff"),
     ambientIntensity: boundedNumber(candidate.ambientIntensity, 0.75, 0, 10),
-    key: normalizeDirectionalLight(candidate.key, DEFAULT_RAW_DOCUMENT.lighting.key),
-    fill: normalizeDirectionalLight(candidate.fill, DEFAULT_RAW_DOCUMENT.lighting.fill),
+    key: normalizeDirectionalLight(candidate.key, DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.lighting.key),
+    fill: normalizeDirectionalLight(candidate.fill, DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.lighting.fill),
     environment: normalizeStudioBg3dEnvironmentSettings(candidate.environment),
   };
 }
 
 function normalizeQualityProfile(
   value: unknown,
-  fallback: (typeof DEFAULT_RAW_DOCUMENT.quality)["desktop" | "mobile"]
+  fallback: (typeof DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.quality)["desktop" | "mobile"]
 ): StudioBg3dQualityProfile {
   const candidate = isRecord(value) ? value : {};
   const dprMin = boundedNumber(candidate.dprMin, fallback.dprMin, 0.5, 3);
@@ -735,8 +601,8 @@ function normalizeQualityProfile(
 function normalizeQuality(value: unknown): StudioBg3dQualityProfiles {
   const candidate = isRecord(value) ? value : {};
   return {
-    desktop: normalizeQualityProfile(candidate.desktop, DEFAULT_RAW_DOCUMENT.quality.desktop),
-    mobile: normalizeQualityProfile(candidate.mobile, DEFAULT_RAW_DOCUMENT.quality.mobile),
+    desktop: normalizeQualityProfile(candidate.desktop, DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.quality.desktop),
+    mobile: normalizeQualityProfile(candidate.mobile, DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.quality.mobile),
   };
 }
 
@@ -833,7 +699,7 @@ function normalizeShotCameraOverride(value: unknown): StudioBg3dShotCameraOverri
   if (hasOwn(candidate, "position")) {
     result.position = normalizedVec3(
       candidate.position,
-      DEFAULT_CAMERA_POSITION,
+      DEFAULT_STUDIO_BG3D_CAMERA_POSITION,
       -MAX_WORLD_COORDINATE,
       MAX_WORLD_COORDINATE,
     );
@@ -841,7 +707,7 @@ function normalizeShotCameraOverride(value: unknown): StudioBg3dShotCameraOverri
   if (hasOwn(candidate, "target")) {
     result.target = normalizedVec3(
       candidate.target,
-      DEFAULT_CAMERA_TARGET,
+      DEFAULT_STUDIO_BG3D_CAMERA_TARGET,
       -MAX_WORLD_COORDINATE,
       MAX_WORLD_COORDINATE,
     );
@@ -937,7 +803,7 @@ function normalizeShotBackgroundOverride(value: unknown): StudioBg3dShotBackgrou
 
 function normalizeShotDirectionalLightOverride(
   value: unknown,
-  fallback: (typeof DEFAULT_RAW_DOCUMENT.lighting)["key" | "fill"],
+  fallback: (typeof DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.lighting)["key" | "fill"],
 ): StudioBg3dShotDirectionalLightOverride {
   const candidate = isRecord(value) ? value : {};
   const result: Record<string, unknown> = {};
@@ -966,13 +832,13 @@ function normalizeShotLightingOverride(value: unknown): StudioBg3dShotLightingOv
   if (hasOwn(candidate, "key")) {
     result.key = normalizeShotDirectionalLightOverride(
       candidate.key,
-      DEFAULT_RAW_DOCUMENT.lighting.key,
+      DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.lighting.key,
     );
   }
   if (hasOwn(candidate, "fill")) {
     result.fill = normalizeShotDirectionalLightOverride(
       candidate.fill,
-      DEFAULT_RAW_DOCUMENT.lighting.fill,
+      DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.lighting.fill,
     );
   }
   return result as StudioBg3dShotLightingOverride;
@@ -1031,91 +897,91 @@ function normalizeBudgets(value: unknown): StudioBg3dSceneBudgets {
     complexity: {
       maxNodes: boundedInteger(
         complexity.maxNodes,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxNodes,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxNodes,
         1,
         STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES
       ),
       maxTriangles: boundedInteger(
         complexity.maxTriangles,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxTriangles,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxTriangles,
         1_000,
         10_000_000
       ),
       maxDrawCalls: boundedInteger(
         complexity.maxDrawCalls,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxDrawCalls,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxDrawCalls,
         1,
         2_048
       ),
       maxMaterials: boundedInteger(
         complexity.maxMaterials,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxMaterials,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxMaterials,
         1,
         1_024
       ),
       maxLights: boundedInteger(
         complexity.maxLights,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxLights,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxLights,
         3,
         16
       ),
       maxAnimations: boundedInteger(
         complexity.maxAnimations,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAnimations,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAnimations,
         0,
         256
       ),
       maxAnimationChannels: boundedInteger(
         complexity.maxAnimationChannels,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAnimationChannels,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAnimationChannels,
         0,
         4_096
       ),
       maxAnimationKeyframes: boundedInteger(
         complexity.maxAnimationKeyframes,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAnimationKeyframes,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAnimationKeyframes,
         0,
         4_000_000
       ),
       maxAnimationValues: boundedInteger(
         complexity.maxAnimationValues,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAnimationValues,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAnimationValues,
         0,
         32_000_000
       ),
       maxSkins: boundedInteger(
         complexity.maxSkins,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxSkins,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxSkins,
         0,
         256
       ),
       maxJoints: boundedInteger(
         complexity.maxJoints,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxJoints,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxJoints,
         0,
         8_192
       ),
       maxMorphTargets: boundedInteger(
         complexity.maxMorphTargets,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxMorphTargets,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxMorphTargets,
         0,
         1_024
       ),
       maxAccessorElements: boundedInteger(
         complexity.maxAccessorElements,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAccessorElements,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAccessorElements,
         0,
         160_000_000
       ),
       maxDecodedGeometryBytes: boundedInteger(
         complexity.maxDecodedGeometryBytes,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxDecodedGeometryBytes,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxDecodedGeometryBytes,
         0,
         1024 * 1024 * 1024
       ),
       maxModelBytes: boundedInteger(
         complexity.maxModelBytes,
-        DEFAULT_RAW_DOCUMENT.budgets.complexity.maxModelBytes,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxModelBytes,
         1 * 1024 * 1024,
         512 * 1024 * 1024
       ),
@@ -1123,19 +989,19 @@ function normalizeBudgets(value: unknown): StudioBg3dSceneBudgets {
     textures: {
       maxTextures: boundedInteger(
         textures.maxTextures,
-        DEFAULT_RAW_DOCUMENT.budgets.textures.maxTextures,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.textures.maxTextures,
         0,
         256
       ),
       maxTotalBytes: boundedInteger(
         textures.maxTotalBytes,
-        DEFAULT_RAW_DOCUMENT.budgets.textures.maxTotalBytes,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.textures.maxTotalBytes,
         0,
         512 * 1024 * 1024
       ),
       maxDimension: boundedInteger(
         textures.maxDimension,
-        DEFAULT_RAW_DOCUMENT.budgets.textures.maxDimension,
+        DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.textures.maxDimension,
         256,
         8_192
       ),
@@ -1800,15 +1666,15 @@ function migrateSchemaV1Budgets(value: unknown): Record<string, unknown> | null 
     ...value,
     complexity: {
       ...complexity,
-      maxAnimations: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAnimations,
-      maxAnimationChannels: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAnimationChannels,
-      maxAnimationKeyframes: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAnimationKeyframes,
-      maxAnimationValues: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAnimationValues,
-      maxSkins: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxSkins,
-      maxJoints: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxJoints,
-      maxMorphTargets: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxMorphTargets,
-      maxAccessorElements: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxAccessorElements,
-      maxDecodedGeometryBytes: DEFAULT_RAW_DOCUMENT.budgets.complexity.maxDecodedGeometryBytes,
+      maxAnimations: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAnimations,
+      maxAnimationChannels: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAnimationChannels,
+      maxAnimationKeyframes: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAnimationKeyframes,
+      maxAnimationValues: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAnimationValues,
+      maxSkins: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxSkins,
+      maxJoints: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxJoints,
+      maxMorphTargets: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxMorphTargets,
+      maxAccessorElements: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxAccessorElements,
+      maxDecodedGeometryBytes: DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxDecodedGeometryBytes,
     },
   };
 }
@@ -1943,7 +1809,7 @@ function migrateDecodedSchemaPanoramaDocument(
 
 /** Returns a new, deeply frozen default document on every call. */
 export function createDefaultStudioBg3dSceneDocument(): StudioBg3dSceneDocument {
-  const document = normalizeDecodedCurrentDocument(DEFAULT_RAW_DOCUMENT);
+  const document = normalizeDecodedCurrentDocument(DEFAULT_STUDIO_BG3D_RAW_DOCUMENT);
   if (!document) throw new Error("Invalid internal Studio BG3D document defaults.");
   return document;
 }

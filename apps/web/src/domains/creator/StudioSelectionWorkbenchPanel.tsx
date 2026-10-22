@@ -55,7 +55,10 @@ import {
   type PixelSelection,
   type SelectionOperationMode,
 } from "./studio-selection-tools";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "./studio-panel-status-i18n";
 
 export type StudioSelectionWorkbenchCommitIntent =
   | "select-opaque"
@@ -136,6 +139,7 @@ export function StudioSelectionWorkbenchPanel({
   onSaveSelections,
   onCommitSelection,
 }: StudioSelectionWorkbenchPanelProps) {
+  const t = useT();
   const nameInputId = useId();
   const thresholdInputId = useId();
   const borderWidthInputId = useId();
@@ -206,7 +210,7 @@ export function StudioSelectionWorkbenchPanel({
     abortRef.current = controller;
     const session = createStudioColorRangeWorkerSession();
     setSourceJob("border");
-    setStatus("선택 영역의 테두리를 계산하고 있습니다.");
+    setStatus(t("studio.panelStatus.selectionWorkbench.borderComputing", "선택 영역의 테두리를 계산하고 있습니다."));
     try {
       const originalSize = imageSource
         ? await readStudioSelectionSourceSize(imageSource, controller.signal)
@@ -226,7 +230,7 @@ export function StudioSelectionWorkbenchPanel({
       onCommitSelection(result.selection, "border");
       setStatus(result.selection
         ? `${STUDIO_SELECTION_BORDER_PLACEMENTS.find((item) => item.id === borderPlacement)?.label} 테두리 ${effectiveBorderWidth}px를 선택했습니다. 선택 실행 취소로 복원할 수 있습니다.`
-        : "이미지 안에 남는 테두리 영역이 없습니다. 선택 실행 취소로 복원할 수 있습니다.");
+        : t("studio.panelStatus.selectionWorkbench.borderEmpty", "이미지 안에 남는 테두리 영역이 없습니다. 선택 실행 취소로 복원할 수 있습니다."));
     } catch (error) {
       if (!controller.signal.aborted) setStatus(studioSelectionSourceErrorMessage(error));
     } finally {
@@ -244,7 +248,11 @@ export function StudioSelectionWorkbenchPanel({
     const controller = new AbortController();
     abortRef.current = controller;
     setSourceJob(kind);
-    setStatus(kind === "subject" ? "기기에서 피사체를 분석하고 있습니다." : "레이어 투명도를 읽고 있습니다.");
+    setStatus(
+      kind === "subject"
+        ? t("studio.panelStatus.selectionWorkbench.subjectAnalyzing", "기기에서 피사체를 분석하고 있습니다.")
+        : t("studio.panelStatus.selectionWorkbench.opacityReading", "레이어 투명도를 읽고 있습니다."),
+    );
     try {
       if (kind === "opaque") {
         const next = await selectOpaqueFromImageSource({
@@ -273,11 +281,15 @@ export function StudioSelectionWorkbenchPanel({
         if (controller.signal.aborted || abortRef.current !== controller) return;
         onCommitSelection(result.selection, "select-subject");
         const transparency = result.sourceTransparencyApplied
-          ? "원본 투명도 결합"
-          : "보안 정책으로 원본 투명도 결합 생략";
+          ? t("studio.panelStatus.selectionWorkbench.transparencyApplied", "원본 투명도 결합")
+          : t("studio.panelStatus.selectionWorkbench.transparencySkipped", "보안 정책으로 원본 투명도 결합 생략");
         setStatus(
           result.selection
-            ? `AI 피사체 선택 완료 · ${result.receipt.activeDelegate} · ${transparency} · 이미지 업로드 없음`
+            ? t(
+              "studio.panelStatus.selectionWorkbench.subjectDoneNoUpload",
+              { delegate: result.receipt.activeDelegate, transparency },
+              "AI 피사체 선택 완료 · {delegate} · {transparency} · 이미지 업로드 없음",
+            )
             : "피사체 선택 결과가 비었습니다.",
         );
       }
@@ -300,7 +312,7 @@ export function StudioSelectionWorkbenchPanel({
     const generation = smoothGenerationRef.current + 1;
     smoothGenerationRef.current = generation;
     setSourceJob("smooth");
-    setStatus("선택 경계 정제기를 준비하고 있습니다.");
+    setStatus(t("studio.panelStatus.selectionWorkbench.refinementPreparing", "선택 경계 정제기를 준비하고 있습니다."));
     try {
       const { smoothPixelSelection } = await import("./studio-selection-refinement");
       if (smoothGenerationRef.current !== generation) return;
@@ -309,7 +321,7 @@ export function StudioSelectionWorkbenchPanel({
       setStatus(`선택 경계를 ${preset.label} 다듬었습니다.`);
     } catch {
       if (smoothGenerationRef.current === generation) {
-        setStatus("선택 경계 정제기를 불러오지 못했습니다. 다시 시도해 주세요.");
+        setStatus(t("studio.panelStatus.selectionWorkbench.refinementLoadFailed", "선택 경계 정제기를 불러오지 못했습니다. 다시 시도해 주세요."));
       }
     } finally {
       if (smoothGenerationRef.current === generation) setSourceJob(null);
@@ -323,12 +335,12 @@ export function StudioSelectionWorkbenchPanel({
         setStatus(successMessage);
         return true;
       } catch {
-        setStatus("작품에 선택을 저장하지 못했습니다. 기존 저장 선택을 유지했습니다.");
+        setStatus(t("studio.panelStatus.selectionWorkbench.saveToWorkFailed", "작품에 선택을 저장하지 못했습니다. 기존 저장 선택을 유지했습니다."));
         return false;
       }
     }
     if (!writeStudioSavedSelectionLibrary(resolvedStorage, scopeKey, next)) {
-      setStatus("브라우저 저장소를 사용할 수 없어 선택을 저장하지 못했습니다.");
+      setStatus(t("studio.panelStatus.selectionWorkbench.saveStorageUnavailable", "브라우저 저장소를 사용할 수 없어 선택을 저장하지 못했습니다."));
       return false;
     }
     setLibrary(next);
@@ -346,12 +358,18 @@ export function StudioSelectionWorkbenchPanel({
         selection,
       });
       const saved = next.items.find((item) => item.id === id);
-      if (!saved) throw new Error("새 선택을 저장 목록에 추가하지 못했습니다.");
+      if (!saved) {
+        throw new Error(t("studio.panelStatus.selectionWorkbench.saveListAddFailed", "새 선택을 저장 목록에 추가하지 못했습니다."));
+      }
       if (persistLibrary(next, `“${saved.name}” 선택을 이 기기에 저장했습니다.`)) {
         setName(`선택 ${next.items.length + 1}`);
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "선택을 저장하지 못했습니다.");
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : t("studio.panelStatus.selectionWorkbench.saveFailed", "선택을 저장하지 못했습니다."),
+      );
     }
   };
 
@@ -490,7 +508,7 @@ export function StudioSelectionWorkbenchPanel({
           {!borderGeometryValid
             ? "이미지의 너비와 높이를 지정한 뒤 테두리를 선택할 수 있습니다."
             : borderRaster.minimumWidthPx > STUDIO_SELECTION_BORDER_MAX_WIDTH_PX
-              ? "이미지가 너무 커서 테두리를 계산할 수 없습니다. 표시 크기를 줄여 주세요."
+              ? t("studio.panelStatus.selectionWorkbench.borderTooLarge", "이미지가 너무 커서 테두리를 계산할 수 없습니다. 표시 크기를 줄여 주세요.")
               : "원본 픽셀 경계로 계산 · 최소 1px · 현재 페더 유지"}
         </p>
       </div>
@@ -574,7 +592,11 @@ export function StudioSelectionWorkbenchPanel({
                     onCommitSelection(item.selection, "restore-saved");
                     setStatus(`“${item.name}” 선택을 불러왔습니다.`);
                   }}
-                  aria-label={`${item.name} 선택 불러오기`}
+                  aria-label={t(
+                    "studio.panelStatus.selectionWorkbench.restoreSelectionAria",
+                    { name: item.name },
+                    "{name} 선택 불러오기",
+                  )}
                 >
                   <span className="flex items-center gap-1.5 text-[0.67rem] font-medium text-fg-2">
                     <FolderOpen className="size-3.5 shrink-0" aria-hidden="true" />

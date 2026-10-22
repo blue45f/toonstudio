@@ -22,6 +22,7 @@ import {
   type StudioAiSettings,
 } from "../studio-ai-client";
 import type { CanonSheetDraft } from "./studio-character-canon";
+import { aiErrorText } from "../studio-ai-error-i18n";
 
 // ---------------------------------------------------------------------------
 // 단계
@@ -139,19 +140,19 @@ export async function runPhotoCharacterGeneration(
   generate: PhotoCharacterGenerateFn,
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   if (!input.photoDataUrl) {
-    return { ok: false, code: "invalid_input", error: "먼저 사진을 올려 주세요." };
+    return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.wizard.photoRequired", "먼저 사진을 올려 주세요.") };
   }
   const prompt = input.styleId
     ? buildPhotoCharacterGenerationPrompt(input.styleId, input.note)
     : null;
   if (!prompt) {
-    return { ok: false, code: "invalid_input", error: "스타일을 골라 주세요." };
+    return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.wizard.styleRequired", "스타일을 골라 주세요.") };
   }
   if (!isStudioAiConfigured(input.settings)) {
     return {
       ok: false,
       code: "not_configured",
-      error: "설정에서 API 키를 등록하세요.",
+      error: aiErrorText("studio.aiError.client.apiKeyRequired", "설정에서 API 키를 등록하세요."),
     };
   }
   return generate(input.settings, input.photoDataUrl, prompt, {

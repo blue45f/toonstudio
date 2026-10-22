@@ -15,6 +15,9 @@
  *    전용 엔진의 구조체로 번역해 위임한다(아래 번역 규칙 참조).
  *  - hsl: 마스터 색조/채도/명도만 적용한다(범위별 조정은 변환 단계 고지대로
  *    파라미터 보존 전용 — B4 대응표의 근사 판정과 일치).
+ *  - 마스크: 요소에 실물 마스크 픽셀(maskSrc에서 디코드한 커버리지)이
+ *    공급되면 픽셀별 반영 비율에 곱한다. maskHash만으로는 픽셀을 복원할
+ *    수 없어 적용 대상이 아니다(아래 AdjustmentMaskCoverage 참조).
  *  - 나머지 10종: 기존 `applyStudioAdjustmentPixels`에 그대로 위임한다.
  *    color-lookup은 내장 .cube 데이터가 있을 때만 true를 돌려주고, 없으면
  *    픽셀을 건드리지 않는다(파라미터만 보존 — 기존 고지 유지).
@@ -137,8 +140,9 @@ function applyCurvesFromPsdParameters(
 /**
  * PSD 색상 균형(`${band}CyanRed` 등) → 전용 엔진 구조체. 축이 1:1이다:
  * CyanRed 양수=빨강 증가, MagentaGreen 양수=초록 증가, YellowBlue 양수=파랑
- * 증가가 Studio 쉬프트(양수=그 채널 증가)와 같다. preserveLuminosity는
- * 파라미터로 보존되지만 Studio 엔진은 휘도 보존 옵션을 실행하지 않는다.
+ * 증가가 Studio 쉬프트(양수=그 채널 증가)와 같다. preserveLuminosity도
+ * 엔진 구조체로 그대로 옮긴다 — 엔진이 켜진 경우 쉬프트 후 원본 휘도를
+ * 복원한다(`studio-color-balance.ts`의 휘도 보존 규약 참조).
  */
 function colorBalanceFromPsdParameters(parameters: StudioAdjustmentParameters): ColorBalance {
   const band = (name: string): [number, number, number] => [
@@ -146,7 +150,14 @@ function colorBalanceFromPsdParameters(parameters: StudioAdjustmentParameters): 
     numParam(parameters, `${name}MagentaGreen`) ?? 0,
     numParam(parameters, `${name}YellowBlue`) ?? 0,
   ];
-  return { shadows: band("shadows"), midtones: band("midtones"), highlights: band("highlights") };
+  return {
+    shadows: band("shadows"),
+    midtones: band("midtones"),
+    highlights: band("highlights"),
+    ...(typeof parameters.preserveLuminosity === "boolean"
+      ? { preserveLuminosity: parameters.preserveLuminosity }
+      : {}),
+  };
 }
 
 /**
@@ -449,21 +460,74 @@ export interface CompositeAdjustmentResult {
   readonly applied: boolean;
 }
 
+// ── 레이어 마스크 커버리지 ────────────────────────────────────────────────────
+
+/**
+ * 조정 레이어 마스크의 픽셀 커버리지 — 픽셀당 1바이트(0=조정 제외, 255=전면
+ * 적용). 라이브 조정 런타임의 `StudioAdjustmentLayerMask`와 같은 규약이며,
+ * 실물 픽셀의 출처는 요소의 `maskSrc`(PSD 가져오기가 무손실 PNG로 보존한
+ * 마스크)다. `maskHash`는 해시 문자열일 뿐 픽셀을 가리키지 않아 여기서
+ * 해석하지 않는다 — 마스크 픽셀이 없는 조정은 마스크 없이 전체 적용된다.
+ */
+export interface AdjustmentMaskCoverage {
+  readonly width: number;
+  readonly height: number;
+  readonly data: Uint8ClampedArray;
+}
+
+/**
+ * 마스크 이미지(RGBA)의 알파 채널을 커버리지로 뽑는다 — Studio 마스크 PNG
+ * 규약이 "흰 RGB + 알파=가시성"이라 알파가 곧 커버리지다(라이브 조정 그룹의
+ * 마스크 렌더와 동일). 목표 크기가 다르면 최근접 샘플링으로 재투영하므로,
+ * 호출자는 미리보기 버퍼가 아니라 출력 밀도 크기 그대로 넘겨야 풀해상도
+ * 마스크가 된다.
+ */
+export function adjustmentMaskCoverageFromImageData(
+  imageData: StudioImageDataLike,
+  targetWidth: number = imageData.width,
+  targetHeight: number = imageData.height,
+): AdjustmentMaskCoverage {
+  const data = new Uint8ClampedArray(targetWidth * targetHeight);
+  for (let y = 0; y < targetHeight; y += 1) {
+    const srcY = Math.min(imageData.height - 1, Math.floor((y * imageData.height) / targetHeight));
+    for (let x = 0; x < targetWidth; x += 1) {
+      const srcX = Math.min(imageData.width - 1, Math.floor((x * imageData.width) / targetWidth));
+      data[y * targetWidth + x] = imageData.data[(srcY * imageData.width + srcX) * 4 + 3]!;
+    }
+  }
+  return { width: targetWidth, height: targetHeight, data };
+}
+
+function assertMaskSize(mask: AdjustmentMaskCoverage, source: StudioImageDataLike): void {
+  if (
+    mask.width !== source.width || mask.height !== source.height
+    || mask.data.length !== source.width * source.height
+  ) {
+    throw new Error(
+      `조정 합성 마스크 크기 불일치: ${mask.width}x${mask.height} vs ${source.width}x${source.height}`,
+    );
+  }
+}
+
 /**
  * 조정 레이어 1건을 아래쪽 합성 버퍼에 비파괴로 적용한다.
  * 입력 버퍼는 변형하지 않고 새 버퍼를 돌려준다: 복사본에 조정을 적용한 뒤
  * 조정 전 픽셀과 blendMode로 섞고, opacity만큼만 반영한다.
+ * 마스크 커버리지가 있으면 픽셀별 반영 비율이 opacity × mask/255가 된다
+ * (Photoshop 조정 레이어 마스크 의미론 — 마스크가 검은 곳은 조정 제외).
  */
 export function compositeAdjustmentPixels(
   source: StudioImageDataLike,
   el: AdjustmentElement,
+  mask?: AdjustmentMaskCoverage,
 ): CompositeAdjustmentResult {
+  if (mask) assertMaskSize(mask, source);
   const spec = adjustmentSpecFromEl(el);
   const output = cloneImageData(source);
   if (!spec.enabled || spec.opacity <= 0) return { imageData: output, applied: false };
   const applied = applyAdjustmentKindPixels(output, spec.adjustment, spec.parameters);
   if (!applied) return { imageData: cloneImageData(source), applied: false };
-  if (spec.opacity >= 1 && resolveAdjustmentCompositeBlendMode(spec.blendMode) === "normal") {
+  if (!mask && spec.opacity >= 1 && resolveAdjustmentCompositeBlendMode(spec.blendMode) === "normal") {
     return { imageData: output, applied: true };
   }
   const mode = resolveAdjustmentCompositeBlendMode(spec.blendMode);
@@ -476,9 +540,12 @@ export function compositeAdjustmentPixels(
       output.data[i]!, output.data[i + 1]!, output.data[i + 2]!,
     ];
     const blended = blendAdjustmentRgb(mode, base, candidate);
-    result.data[i] = base[0] + (blended[0] - base[0]) * spec.opacity;
-    result.data[i + 1] = base[1] + (blended[1] - base[1]) * spec.opacity;
-    result.data[i + 2] = base[2] + (blended[2] - base[2]) * spec.opacity;
+    const coverage = mask
+      ? spec.opacity * (mask.data[i / 4]! / 255)
+      : spec.opacity;
+    result.data[i] = base[0] + (blended[0] - base[0]) * coverage;
+    result.data[i + 1] = base[1] + (blended[1] - base[1]) * coverage;
+    result.data[i + 2] = base[2] + (blended[2] - base[2]) * coverage;
   }
   return { imageData: result, applied: true };
 }
@@ -534,6 +601,12 @@ export interface ExecuteAdjustmentCompositeInput {
   readonly height: number;
   /** 일반 요소 1개의 래스터를 돌려주는 렌더러(호스트/테스트가 제공). 크기는 페이지 전체여야 한다. */
   readonly renderContent: (element: El, index: number) => StudioImageDataLike;
+  /**
+   * 조정 요소의 마스크 커버리지 공급자(호스트/테스트가 제공). 합성 크기와
+   * 같은 width×height여야 하며, 마스크 픽셀이 없는 조정은 undefined —
+   * 그 조정은 마스크 없이 전체 적용된다(기존 동작).
+   */
+  readonly maskCoverageFor?: (element: AdjustmentElement) => AdjustmentMaskCoverage | undefined;
 }
 
 export interface ExecuteAdjustmentCompositeResult {
@@ -575,7 +648,11 @@ export function executeAdjustmentElComposite(
       }
       if (node.kind === "adjustment-el") {
         const inner = evaluate(node.children);
-        const { imageData, applied } = compositeAdjustmentPixels(inner, node.element);
+        const { imageData, applied } = compositeAdjustmentPixels(
+          inner,
+          node.element,
+          input.maskCoverageFor?.(node.element),
+        );
         trace.push({
           layerId: node.id,
           kind: node.element.adjustment,
