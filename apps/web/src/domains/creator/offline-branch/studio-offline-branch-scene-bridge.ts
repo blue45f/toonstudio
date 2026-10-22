@@ -6,6 +6,7 @@ import {
   studioLayerGroupToCrdtGroup,
 } from "../live/studio-crdt-page-bridge";
 import { studioDrawElementToCrdtStroke } from "../live/studio-crdt-draw-bridge";
+import { resolveStudioCrdtPageBridgeErrorFromCause } from "../status-i18n/studio-producer-error-i18n-live-crdt";
 import {
   decodeStudioOfflineBranchPayload,
   encodeStudioOfflineBranchPayload,
@@ -189,7 +190,8 @@ function planElementMutations(
       if (mutation) mutations.push(mutation);
     } catch (cause) {
       unsupported.push(
-        `${element.id}: ${cause instanceof Error ? cause.message : "오프라인 제안으로 변환하지 못했습니다."}`,
+        // A4 D4 (R13) 집계자 예외: unsupported는 문자열 배열 경계라, 구조화 오류는 코드가 문자열로 굳기 전인 이 누적 지점에서 해석한다(설계 §3.2).
+        `${element.id}: ${resolveStudioCrdtPageBridgeErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "오프라인 제안으로 변환하지 못했습니다.")}`,
       );
     }
   }
@@ -206,7 +208,7 @@ function planElementMutations(
       ));
     } catch (cause) {
       unsupported.push(
-        `${element.id}: ${cause instanceof Error ? cause.message : "오프라인 삭제 제안을 만들지 못했습니다."}`,
+        `${element.id}: ${resolveStudioCrdtPageBridgeErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "오프라인 삭제 제안을 만들지 못했습니다.")}`,
       );
     }
   }

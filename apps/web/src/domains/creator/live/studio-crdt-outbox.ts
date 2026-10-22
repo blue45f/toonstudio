@@ -69,6 +69,9 @@ interface StudioCrdtOutboxPersistenceAdapter {
 export interface StudioCrdtOutboxStatus {
   state: "durable" | "degraded";
   message: string;
+  /** A4 D4 (R13): degraded 원인이 구조화 오류일 때의 코드 상태 — binding은 코드만 중계한다(설계 §3.1). */
+  code?: StudioCrdtOutboxErrorCode;
+  params?: Readonly<Record<string, string>>;
 }
 
 export interface StudioCrdtOutbox {
@@ -116,55 +119,61 @@ function serializedDelegateState(delegate: StudioCrdtOutbox): SerializedDelegate
   return created;
 }
 
-export class StudioCrdtOutboxUnavailableError extends Error {
-  constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options);
-    this.name = "StudioCrdtOutboxUnavailableError";
-  }
+/**
+ * A4 D4 (R13): 생산자는 표시 문구 대신 구조화 코드+params만 방출한다(message = 코드).
+ * 문구 해석은 표시 지점에서만 한다(status-i18n/studio-producer-error-i18n-live-crdt.ts,
+ * 도메인 liveOutbox). 상태는 message 문자열 고정 경계라, 설계 §3.1대로 getStatus 생산
+ * 지점에서 코드 상태로 바꾸고 binding은 코드만 중계한다.
+ */
+export type StudioCrdtOutboxErrorCode =
+  | "persistence-timeout" | "persistence-corrupted" | "capacity-exceeded" | "persistence-unavailable" | "idb-unavailable" | "read-unavailable"
+  | "scope-mismatch" | "pending-scope-mismatch" | "retry-not-possible" | "request-failed" | "transaction-aborted" | "transaction-failed"
+  | "open-failed" | "upgrade-blocked" | "emergency-copy-invalid" | "invalid-limits" | "degraded-emergency-only" | "degraded-emergency-only-sqlite"
+  | "degraded-fallback-legacy" | "degraded-fallback-sqlite" | "degraded-fallback-serialized";
+
+export class StudioCrdtOutboxError extends Error {
+  constructor(readonly code: StudioCrdtOutboxErrorCode, readonly params?: Readonly<Record<string, string>>, cause?: unknown) { super(code, cause === undefined ? undefined : { cause }); this.name = "StudioCrdtOutboxError"; }
+}
+
+export class StudioCrdtOutboxUnavailableError extends StudioCrdtOutboxError {
+  constructor(code: StudioCrdtOutboxErrorCode, params?: Readonly<Record<string, string>>, cause?: unknown) { super(code, params, cause); this.name = "StudioCrdtOutboxUnavailableError"; }
 }
 
 /** Durable rows could exist but could not be enumerated, so an emergency subset is insufficient. */
 export class StudioCrdtOutboxReadUnavailableError extends StudioCrdtOutboxUnavailableError {
-  constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options);
-    this.name = "StudioCrdtOutboxReadUnavailableError";
-  }
+  constructor(cause?: unknown) { super("read-unavailable", undefined, cause); this.name = "StudioCrdtOutboxReadUnavailableError"; }
 }
 
 export class StudioCrdtOutboxTimeoutError extends StudioCrdtOutboxUnavailableError {
-  constructor() {
-    super("CRDT outbox 작업 시간이 초과됐습니다.");
-    this.name = "StudioCrdtOutboxTimeoutError";
-  }
+  constructor() { super("persistence-timeout"); this.name = "StudioCrdtOutboxTimeoutError"; }
 }
 
 /** A scoped row exists but cannot be trusted; falling back to an empty snapshot would lose work. */
-export class StudioCrdtOutboxCorruptionError extends Error {
-  constructor() {
-    super("CRDT outbox에 손상된 미승인 변경이 있어 원고를 안전하게 열 수 없습니다.");
-    this.name = "StudioCrdtOutboxCorruptionError";
-  }
+export class StudioCrdtOutboxCorruptionError extends StudioCrdtOutboxError {
+  constructor() { super("persistence-corrupted"); this.name = "StudioCrdtOutboxCorruptionError"; }
 }
 
 /** Queue limit is explicit backpressure; no existing or incoming message is silently evicted. */
-export class StudioCrdtOutboxCapacityError extends Error {
-  readonly entryCount: number;
-  readonly totalBytes: number;
-
-  constructor(entryCount: number, totalBytes: number) {
-    super(
-      `CRDT outbox 한도를 초과했습니다(${entryCount}개, ${totalBytes}바이트). ` +
-        "기존 변경은 삭제하지 않았습니다.",
-    );
+export class StudioCrdtOutboxCapacityError extends StudioCrdtOutboxError {
+  constructor(readonly entryCount: number, readonly totalBytes: number) {
+    super("capacity-exceeded", { entryCount: String(entryCount), totalBytes: String(totalBytes) });
     this.name = "StudioCrdtOutboxCapacityError";
-    this.entryCount = entryCount;
-    this.totalBytes = totalBytes;
   }
+}
+
+/** getStatus 생산 지점의 코드 상태 변환(설계 §3.1): 구조화 오류는 코드+params를 상태에 싣고, 하위 생산자의 비구조화 오류 메시지는 패스스루로 유지한다. */
+function degradedOutboxStatus(error: unknown, fallback: StudioCrdtOutboxErrorCode): StudioCrdtOutboxStatus {
+  if (error instanceof StudioCrdtOutboxError) {
+    return { state: "degraded", message: error.code, code: error.code, params: error.params };
+  }
+  return error instanceof Error && error.message.trim()
+    ? { state: "degraded", message: error.message }
+    : { state: "degraded", message: fallback, code: fallback };
 }
 
 function assertScope(scope: string): void {
   if (typeof scope !== "string") {
-    throw new Error("CRDT outbox scope가 문자열이 아닙니다.");
+    throw new StudioCrdtOutboxError("scope-mismatch");
   }
   const hasControlCharacter = [...scope].some((character) => {
     const codePoint = character.codePointAt(0) ?? 0;
@@ -175,7 +184,7 @@ function assertScope(scope: string): void {
     scope.length > MAX_SCOPE_LENGTH ||
     hasControlCharacter
   ) {
-    throw new Error("CRDT outbox scope가 비어 있거나 허용 길이·문자 범위를 벗어났습니다.");
+    throw new StudioCrdtOutboxError("pending-scope-mismatch");
   }
 }
 
@@ -208,7 +217,7 @@ function assertRetryMetadata(metadata: StudioCrdtOutboxRetryMetadata): void {
     metadata.errorMessage.length === 0 ||
     metadata.errorMessage.length > MAX_RETRY_ERROR_MESSAGE_LENGTH
   ) {
-    throw new Error("CRDT outbox retry metadata가 허용 범위를 벗어났습니다.");
+    throw new StudioCrdtOutboxError("retry-not-possible");
   }
 }
 
@@ -314,7 +323,7 @@ function serializeOutboxOperation<T>(
   const previous = operationTails.get(key) ?? Promise.resolve();
   const result = previous.then(() => {
     if (!allowWhileCircuitOpen && isCircuitOpen(key)) {
-      throw new StudioCrdtOutboxUnavailableError("CRDT outbox가 복구 대기 중입니다.");
+      throw new StudioCrdtOutboxUnavailableError("persistence-unavailable");
     }
     return new Promise<T>((resolve, reject) => {
       let settled = false;
@@ -358,15 +367,15 @@ function serializeOutboxOperation<T>(
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("IndexedDB 요청이 실패했습니다."));
+    request.onerror = () => reject(request.error ?? new StudioCrdtOutboxError("request-failed"));
   });
 }
 
 function transactionDone(transaction: IDBTransaction): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     transaction.oncomplete = () => resolve();
-    transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB 작업이 취소되었습니다."));
-    transaction.onerror = () => reject(transaction.error ?? new Error("IndexedDB 작업이 실패했습니다."));
+    transaction.onabort = () => reject(transaction.error ?? new StudioCrdtOutboxError("transaction-aborted"));
+    transaction.onerror = () => reject(transaction.error ?? new StudioCrdtOutboxError("transaction-failed"));
   });
 }
 
@@ -388,8 +397,8 @@ function openDatabase(): Promise<IDBDatabase | null> {
       }
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("CRDT outbox를 열지 못했습니다."));
-    request.onblocked = () => reject(new Error("CRDT outbox 업그레이드가 다른 탭에 의해 차단됐습니다."));
+    request.onerror = () => reject(request.error ?? new StudioCrdtOutboxError("open-failed"));
+    request.onblocked = () => reject(new StudioCrdtOutboxError("upgrade-blocked"));
   }).catch((error) => {
     databasePromise = null;
     throw error;
@@ -475,22 +484,12 @@ export class LegacyIndexedDbStudioCrdtOutbox implements StudioCrdtOutbox {
   }
 
   private markDegraded(error: unknown): void {
-    this.status = {
-      state: "degraded",
-      message:
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "오프라인 CRDT 보관함을 사용할 수 없어 같은 탭의 긴급 사본을 사용합니다.",
-    };
+    this.status = degradedOutboxStatus(error, "degraded-fallback-legacy");
   }
 
   private refreshMemoryDurability(scope: string, workId: string): void {
     if (scopedMemoryRows(scope, workId).some((row) => row.durable !== true)) {
-      this.markDegraded(
-        new StudioCrdtOutboxUnavailableError(
-          "일부 오프라인 변경은 아직 같은 탭의 긴급 사본에만 보관되어 있습니다."
-        )
-      );
+      this.markDegraded(new StudioCrdtOutboxUnavailableError("degraded-emergency-only"));
     } else {
       this.markDurable();
     }
@@ -561,7 +560,7 @@ export class LegacyIndexedDbStudioCrdtOutbox implements StudioCrdtOutbox {
     this.putEmergency(scope, request);
     const key = outboxKey(scope, request.workId, request.updateId);
     const row = memoryRows.get(key);
-    if (!row) throw new Error("CRDT outbox 긴급 사본을 만들지 못했습니다.");
+    if (!row) throw new StudioCrdtOutboxError("emergency-copy-invalid");
     let persisted = false;
     this.beginPersistentPut(key);
     try {
@@ -676,9 +675,7 @@ export class LegacyIndexedDbStudioCrdtOutbox implements StudioCrdtOutbox {
   private async requiredDatabase(): Promise<IDBDatabase> {
     const database = await openDatabase();
     if (database) return database;
-    throw new StudioCrdtOutboxUnavailableError(
-      "이 브라우저에서는 IndexedDB를 사용할 수 없어 같은 탭의 긴급 사본만 유지합니다."
-    );
+    throw new StudioCrdtOutboxUnavailableError("idb-unavailable");
   }
 
 }
@@ -810,7 +807,7 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
       maxBytes <= 0 ||
       maxBytes > STUDIO_CRDT_OUTBOX_MAX_BYTES_PER_WORK
     ) {
-      throw new Error("CRDT outbox limits는 V12 상한 안의 양의 정수여야 합니다.");
+      throw new StudioCrdtOutboxError("invalid-limits");
     }
     this.limits = { maxEntries, maxBytes };
   }
@@ -846,10 +843,7 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
     } catch (error) {
       this.markDegraded(error);
       if (isSqliteCorruption(error)) throw new StudioCrdtOutboxCorruptionError();
-      throw new StudioCrdtOutboxReadUnavailableError(
-        "SQLite/OPFS CRDT 보관함 전체를 읽지 못해 긴급 사본만으로 원고를 열 수 없습니다.",
-        { cause: error },
-      );
+      throw new StudioCrdtOutboxReadUnavailableError(error);
     }
     const durableRows: StoredStudioCrdtUpdate[] = [];
     for (const candidate of candidates) {
@@ -887,7 +881,7 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
     const key = outboxKey(scope, request.workId, request.updateId);
     if (emergencyAcknowledgedUpdates.has(key)) return;
     const row = memoryRows.get(key);
-    if (!row) throw new Error("CRDT outbox 긴급 사본을 만들지 못했습니다.");
+    if (!row) throw new StudioCrdtOutboxError("emergency-copy-invalid");
     const serialized = serializeRequest(row.request);
     try {
       const result = await (await this.database()).enqueueCrdtOutboxRecord(
@@ -973,22 +967,12 @@ export class SqliteStudioCrdtOutbox implements StudioCrdtOutbox {
   }
 
   private markDegraded(error: unknown): void {
-    this.status = {
-      state: "degraded",
-      message:
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "SQLite/OPFS CRDT 보관함을 사용할 수 없어 같은 탭 사본만 남았습니다.",
-    };
+    this.status = degradedOutboxStatus(error, "degraded-fallback-sqlite");
   }
 
   private refreshMemoryDurability(scope: string, workId: string): void {
     if (scopedMemoryRows(scope, workId).some((row) => row.durable !== true)) {
-      this.markDegraded(
-        new StudioCrdtOutboxUnavailableError(
-          "일부 공동 편집 변경은 아직 같은 탭의 긴급 사본에만 보관되어 있습니다.",
-        ),
-      );
+      this.markDegraded(new StudioCrdtOutboxUnavailableError("degraded-emergency-only-sqlite"));
     } else {
       this.markDurable();
     }
@@ -1036,13 +1020,7 @@ export class SerializedStudioCrdtOutbox implements StudioCrdtOutbox {
   }
 
   private markDegraded(error: unknown): void {
-    this.status = {
-      state: "degraded",
-      message:
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "오프라인 CRDT 보관함 대신 같은 탭의 긴급 사본을 사용합니다.",
-    };
+    this.status = degradedOutboxStatus(error, "degraded-fallback-serialized");
   }
 
   list(scope: string, workId: string): Promise<StudioCrdtUpdateRequest[]> {
@@ -1103,7 +1081,7 @@ export class SerializedStudioCrdtOutbox implements StudioCrdtOutbox {
   put(scope: string, request: StudioCrdtUpdateRequest): Promise<void> {
     this.delegate.putEmergency?.(scope, request);
     if (isCircuitOpen(scopeWorkKey(scope, request.workId))) {
-      const error = new StudioCrdtOutboxUnavailableError("CRDT outbox가 복구 대기 중입니다.");
+      const error = new StudioCrdtOutboxUnavailableError("persistence-unavailable");
       this.markDegraded(error);
       return Promise.reject(error);
     }
