@@ -171,7 +171,7 @@ describe("ClaudeAltTextDialog", () => {
       expect(screen.getByRole("button", { name: "클립보드에서 붙여 넣기" })).toBeTruthy();
       const run = screen.getByRole("button", { name: RUN }) as HTMLButtonElement;
       expect(run.disabled).toBe(true);
-      expect(run.getAttribute("aria-describedby")).toBe("claude-alt-need-hint");
+      expect(run.getAttribute("aria-describedby")).toBe(document.querySelector("[data-claude-need-hint]")?.id);
       expect(screen.getByText("먼저 설명할 이미지를 올려 주세요.")).toBeTruthy();
     });
 
@@ -407,7 +407,7 @@ describe("ClaudeAltTextDialog", () => {
       fireEvent.click(within(region).getByRole("button", { name: "대체 텍스트 복사" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
       expect(writeText).toHaveBeenLastCalledWith('그는 "안녕" & <인사>');
-      await screen.findByText("복사했어요.");
+      await waitFor(() => expect(within(region).getByRole("button", { name: "복사했어요." })).toBeTruthy());
 
       fireEvent.click(within(region).getByRole("button", { name: "alt 속성으로 복사" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
@@ -508,11 +508,13 @@ describe("ClaudeAltTextDialog", () => {
 
       fireEvent.click(screen.getByRole("button", { name: RUN }));
       await screen.findByRole("button", { name: "중단" });
-      expect(screen.getByText(/이미지를 보고 설명을 쓰는 중이에요\. 최대 1분 정도 걸려요\. · 0초 경과/)).toBeTruthy();
+      expect(screen.getByText(/이미지를 보고 설명을 쓰는 중이에요\. 보통 10~30초 걸려요\./)).toBeTruthy();
+      // 매초 바뀌는 경과 시간은 화면에만 보이고 안내 영역(role=status)에는 들어가지 않는다.
+      expect(screen.getByText(/0초 경과/).closest("[role=status]")).toBeNull();
 
       fireEvent.click(screen.getByRole("button", { name: "중단" }));
       expect(signal?.aborted).toBe(true);
-      await screen.findByText("설명 만들기를 중단했어요. 필요하면 다시 시도해 주세요.");
+      await screen.findByText("설명 만들기를 중단했어요. 이미 처리된 부분은 요금이 청구됐을 수 있어요. 필요하면 다시 시도해 주세요.");
       expect(screen.queryByRole("alert")).toBeNull();
     });
 
@@ -534,5 +536,101 @@ describe("ClaudeAltTextDialog", () => {
       expect(onClose).toHaveBeenCalledTimes(1);
       expect(signal?.aborted).toBe(true);
     });
+  });
+});
+
+describe("ClaudeAltTextDialog — 리뷰 반영", () => {
+  beforeEach(() => {
+    useI18n.setState({ lang: "ko" });
+    localStorage.clear();
+    sessionStorage.clear();
+    lockUserAi(false);
+    resetClaudeUsage();
+    resetClaudeBudgetForTests();
+    runAltText.mockReset();
+    runAltText.mockResolvedValue(outcome());
+    fakeDeps.size = { width: 800, height: 1_000 };
+    fakeDeps.revoked.length = 0;
+    fakeDeps.urls = 0;
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    lockUserAi(false);
+    resetClaudeUsage();
+    resetClaudeBudgetForTests();
+    useI18n.setState({ lang: INITIAL_LANGUAGE });
+  });
+
+  it("이미지를 올리기 전에는 '입력하면 계산해요'를 보여 주고 예산 경고를 띄우지 않는다", () => {
+    connectClaude();
+    setClaudeBudgetLimit(0.05);
+    renderDialog();
+
+    expect(document.querySelector("[data-claude-cap-chip]")?.textContent).toBe("입력하면 계산해요");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByLabelText("이번 한 번만 예산을 넘어도 진행해요")).toBeNull();
+  });
+
+  it("'이번 한 번만'을 고른 요청만 전송 계층에 예산 판정 건너뛰기를 알린다", async () => {
+    connectClaude();
+    setClaudeBudgetLimit(0.02);
+    renderDialog();
+    await chooseImage();
+
+    fireEvent.click(screen.getByLabelText("이번 한 번만 예산을 넘어도 진행해요"));
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    await screen.findByRole("region", { name: "대체 텍스트" });
+
+    expect(runAltText.mock.calls[0]?.[3]).toMatchObject({ budgetOverride: true });
+  });
+
+  it("결과를 고치는 칸에서는 Ctrl+Enter가 새 요청을 보내지 않고, 키를 누르고 있어도 반복해서 보내지 않는다", async () => {
+    connectClaude();
+    renderDialog();
+    await chooseImage();
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    const region = await screen.findByRole("region", { name: "대체 텍스트" });
+    expect(runAltText).toHaveBeenCalledTimes(1);
+
+    const field = within(region).getByLabelText("한 줄 대체 텍스트");
+    fireEvent.change(field, { target: { value: "내가 고친 글" } });
+    fireEvent.keyDown(field, { key: "Enter", ctrlKey: true });
+    expect(runAltText).toHaveBeenCalledTimes(1);
+    expect((within(region).getByLabelText("한 줄 대체 텍스트") as HTMLTextAreaElement).value).toBe("내가 고친 글");
+
+    const dialog = screen.getByRole("dialog", { name: "AI 대체 텍스트 도우미" });
+    fireEvent.keyDown(dialog, { key: "Enter", ctrlKey: true, repeat: true });
+    expect(runAltText).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(dialog, { key: "Enter", ctrlKey: true });
+    await waitFor(() => expect(runAltText).toHaveBeenCalledTimes(2));
+  });
+
+  it("복사에 실패하면 조용히 넘기지 않고 알린다", async () => {
+    connectClaude();
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
+    renderDialog();
+    await chooseImage();
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    const region = await screen.findByRole("region", { name: "대체 텍스트" });
+
+    fireEvent.click(within(region).getByRole("button", { name: "대체 텍스트 복사" }));
+
+    expect((await within(region).findByRole("alert")).textContent).toMatch(/복사하지 못했어요/);
+  });
+
+  it("줄어든 항목이 있으면 몇 곳인지 알린다", async () => {
+    connectClaude();
+    const trimmed = outcome("detailed");
+    runAltText.mockResolvedValue({ ...trimmed, view: { ...trimmed.view, trimmed: 2 } });
+    renderDialog();
+    await chooseImage();
+
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+    await screen.findByRole("region", { name: "대체 텍스트" });
+
+    expect(document.querySelector("[data-claude-trimmed]")?.textContent).toContain("2곳의 내용이 줄었어요");
   });
 });

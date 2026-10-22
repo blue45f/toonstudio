@@ -17,10 +17,12 @@
 import { z } from "zod";
 
 import { claudeModelSupportsEffort } from "@/shared/ai/claude/claude-models";
-import { cleanMultilineText, cleanSingleLineText } from "@/shared/ai/claude/claude-text";
+import { cleanMultilineTextDetailed, cleanSingleLineText, cleanSingleLineTextDetailed } from "@/shared/ai/claude/claude-text";
 
-import { estimateImageRequestCostCapUsd, type ArtDirectorImageInput } from "./claude-art-director";
+import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
 import { LOCALIZE_LANGUAGES, type LocalizeLanguageId } from "./claude-localize";
+
+import type { ArtDirectorImageInput } from "./claude-art-director";
 
 import type { ClaudeEffortDepth } from "@/shared/ai/claude/claude-effort-presets";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -89,6 +91,8 @@ export interface AltTextView {
   readonly long: string;
   readonly panels: readonly AltTextPanel[];
   readonly warnings: readonly string[];
+  /** 길이·개수 제한 때문에 줄이거나 버린 항목 수. 0이면 모델이 준 그대로다. 접근성 글에서는 조용히 잘리면 안 되므로 화면이 알린다. */
+  readonly trimmed: number;
 }
 
 const SYSTEM_PROMPT = [
@@ -101,6 +105,7 @@ const SYSTEM_PROMPT = [
   "- long: 장면(장소·분위기), 인물의 모습·행동·표정, 컷 사이의 흐름을 읽는 순서대로 서술한 한 문단입니다. 설명 범위가 brief이면 빈 문자열입니다.",
   "- panels: 설명 범위가 detailed일 때만 채웁니다. 독자가 읽는 순서대로 컷마다 description(그 컷에서 보이는 장면)과 text(그 컷에 보이는 대사·효과음 글자를 보이는 그대로. 말한 사람을 알 수 있으면 '이름: 대사')를 적으세요. 글자가 없으면 text는 빈 배열입니다. detailed가 아니면 빈 배열입니다.",
   "- 읽기 어려운 작은 글자, 가려진 부분, 판단하기 모호한 부분은 지어내지 말고 warnings에 적으세요(최대 3개).",
+  `- 길이 제한(넘으면 앱이 잘라 냅니다): short ${ALT_TEXT_LIMITS.maxShortChars}자(권장 ${ALT_TEXT_LIMITS.shortRecommended}자), long ${ALT_TEXT_LIMITS.maxLongChars}자, panels 최대 ${ALT_TEXT_LIMITS.maxPanels}컷, 컷 설명 ${ALT_TEXT_LIMITS.maxPanelChars}자, 컷마다 글자 최대 ${ALT_TEXT_LIMITS.maxTextLines}줄(줄마다 ${ALT_TEXT_LIMITS.maxTextChars}자), warnings 각 ${ALT_TEXT_LIMITS.maxWarningChars}자. 컷이 더 많으면 앞의 ${ALT_TEXT_LIMITS.maxPanels}컷만 쓰고 warnings에 나머지가 있다고 적으세요.`,
   "- 모든 문장은 사용자가 정한 출력 언어로 담담하고 간결하게 쓰세요. 감상평이나 평가는 넣지 마세요.",
 ].join("\n");
 
@@ -147,37 +152,64 @@ export function buildAltTextRequest(
   };
 }
 
-/** 이번 요청이 낼 수 있는 비용의 상한(USD). 단가를 모르는 모델은 null. */
+/**
+ * 이번 요청이 낼 수 있는 비용의 상한(USD). 실행 전 확인과 실제 실행이 같은 요청으로 이 함수를 불러 화면에 보인 값과 예산 판정에 쓰인 값이 같다.
+ * 단가를 모르는 모델이거나 이미지 크기가 이상하면 null.
+ */
 export function estimateAltTextCostCapUsd(
   model: string,
   image: { readonly width: number; readonly height: number },
   scope: AltTextScope,
+  context: Partial<Omit<AltTextContext, "scope">> = {},
 ): number | null {
-  return estimateImageRequestCostCapUsd(model, image, ALT_TEXT_MAX_OUTPUT_TOKENS[scope]);
+  const request = buildAltTextRequest(
+    model,
+    { mediaType: "image/png", data: "", width: image.width, height: image.height },
+    { language: "ko", ...context, scope },
+  );
+  return estimateStructuredCostCapUsd({ model, request, schema: AltTextSchema, image });
 }
 
-/** 모델 출력을 화면에 올릴 수 있는 형태로 검증·정리한다. 요청한 범위를 넘는 항목은 버린다. */
+/** 모델 출력을 화면에 올릴 수 있는 형태로 검증·정리한다. 요청한 범위를 넘는 항목은 버리고, 줄이거나 버린 것은 세어 둔다. */
 export function normalizeAltText(raw: AltTextRaw, scope: AltTextScope): AltTextView {
-  const panels = scope !== "detailed"
+  let trimmed = 0;
+  const clip = (clipped: boolean) => {
+    if (clipped) trimmed += 1;
+  };
+
+  const cleanedPanels = scope !== "detailed"
     ? []
     : raw.panels
       .map((panel, index) => ({ panel, index }))
       .filter(({ panel }) => Number.isFinite(panel.step))
       .sort((left, right) => left.panel.step - right.panel.step || left.index - right.index)
-      .map(({ panel }) => ({
-        description: cleanSingleLineText(panel.description, ALT_TEXT_LIMITS.maxPanelChars),
-        text: panel.text.map((line) => cleanSingleLineText(line, ALT_TEXT_LIMITS.maxTextChars)).filter(Boolean).slice(0, ALT_TEXT_LIMITS.maxTextLines),
-      }))
-      .filter((panel) => panel.description.length > 0)
-      .slice(0, ALT_TEXT_LIMITS.maxPanels)
-      .map((panel, position): AltTextPanel => ({ step: position + 1, ...panel }));
+      .map(({ panel }) => {
+        const description = cleanSingleLineTextDetailed(panel.description, ALT_TEXT_LIMITS.maxPanelChars);
+        const lines = panel.text.map((line) => cleanSingleLineTextDetailed(line, ALT_TEXT_LIMITS.maxTextChars)).filter((line) => line.text.length > 0);
+        return { description, lines };
+      })
+      .filter((panel) => panel.description.text.length > 0);
+  trimmed += Math.max(0, cleanedPanels.length - ALT_TEXT_LIMITS.maxPanels);
+  const panels = cleanedPanels.slice(0, ALT_TEXT_LIMITS.maxPanels).map((panel, position): AltTextPanel => {
+    clip(panel.description.clipped);
+    trimmed += Math.max(0, panel.lines.length - ALT_TEXT_LIMITS.maxTextLines);
+    const kept = panel.lines.slice(0, ALT_TEXT_LIMITS.maxTextLines);
+    for (const line of kept) clip(line.clipped);
+    return { step: position + 1, description: panel.description.text, text: kept.map((line) => line.text) };
+  });
 
-  return {
-    short: cleanSingleLineText(raw.short, ALT_TEXT_LIMITS.maxShortChars),
-    long: scope === "brief" ? "" : cleanMultilineText(raw.long, ALT_TEXT_LIMITS.maxLongChars),
-    panels,
-    warnings: raw.warnings.map((warning) => cleanSingleLineText(warning, ALT_TEXT_LIMITS.maxWarningChars)).filter(Boolean).slice(0, ALT_TEXT_LIMITS.maxWarnings),
-  };
+  const short = cleanSingleLineTextDetailed(raw.short, ALT_TEXT_LIMITS.maxShortChars);
+  clip(short.clipped);
+  const long = scope === "brief" ? { text: "", clipped: false } : cleanMultilineTextDetailed(raw.long, ALT_TEXT_LIMITS.maxLongChars);
+  clip(long.clipped);
+
+  const cleanedWarnings = raw.warnings.map((warning) => cleanSingleLineTextDetailed(warning, ALT_TEXT_LIMITS.maxWarningChars)).filter((warning) => warning.text.length > 0);
+  const uniqueWarnings = [...new Set(cleanedWarnings.map((warning) => warning.text))];
+  trimmed += Math.max(0, uniqueWarnings.length - ALT_TEXT_LIMITS.maxWarnings);
+  const warnings = uniqueWarnings.slice(0, ALT_TEXT_LIMITS.maxWarnings);
+  for (const warning of cleanedWarnings) if (warning.clipped && warnings.includes(warning.text)) clip(true);
+
+  return { short: short.text, long: long.text, panels, warnings, trimmed };
 }
 
 /** 사람이 세는 글자 수(코드 포인트 기준). 이모지·한자도 한 글자로 센다. */

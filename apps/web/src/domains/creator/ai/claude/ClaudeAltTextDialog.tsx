@@ -13,7 +13,7 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
 import { Accessibility, LoaderCircle, RefreshCw, Sparkles, Square } from "lucide-react";
-import { useCallback, useMemo, useState, type ClipboardEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useState, type ClipboardEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { CLAUDE_PRESET_IDS, resolveClaudePreset, type ClaudePresetId } from "@/shared/ai/claude/claude-effort-presets";
@@ -24,19 +24,20 @@ import { ClaudePreflight } from "@/shared/ai/claude/ClaudePreflight";
 import { useClaudeBudgetGuard } from "@/shared/ai/claude/use-claude-budget-guard";
 import { useClaudeRoute } from "@/shared/ai/claude/use-claude-route";
 import { useI18n, useT } from "@/shared/lib/i18n";
-import { cn } from "@/shared/lib/utils";
 
 import { estimateAltTextCostCapUsd, type AltTextContext } from "./claude-alt-text";
 import { initialAltTextForm, type AltTextForm } from "./claude-alt-text-form";
 import { runAltText, type AltTextRunResult } from "./claude-alt-text-run";
-import { firstImageFile } from "./claude-image-files";
+import { firstImageFile, pickDroppedFile } from "./claude-image-files";
 import { ClaudeAltTextResult } from "./ClaudeAltTextResult";
 import { ClaudeAltTextSetup } from "./ClaudeAltTextSetup";
 import { ClaudeDialogFrame, ClaudeShortcutHint } from "./ClaudeDialogFrame";
 import { ClaudeImageInputPane } from "./ClaudeImageInputPane";
+import { ClaudeTaskStatus } from "./ClaudeTaskStatus";
 import { useArtDirectorImage } from "./use-art-director-image";
 import { useClaudeTask } from "./use-claude-task";
 import { useRevealOnChange } from "./use-reveal-on-change";
+import { useRunFocus } from "./use-run-focus";
 
 /** 구간마다 따로 만든 결과와, 사용자가 그 위에 고쳐 쓴 글. */
 interface AltTextDraft {
@@ -66,6 +67,7 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
   // 실행이 끝날 때마다 하나씩 올라가는 표식. 결과가 나오면 좁은 화면에서도 결과가 보이도록 스크롤한다.
   const [finishedRuns, setFinishedRuns] = useState(0);
   const resultRef = useRevealOnChange<HTMLDivElement>(finishedRuns);
+  const hintId = `${useId()}-need-hint`;
 
   const { reset: resetTask } = task;
   const resetOutcome = useCallback(() => {
@@ -76,21 +78,28 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
   const image = useArtDirectorImage({ onSourceChange: resetOutcome });
   const { rendered, source, segmentIndex } = image;
   const running = task.running;
+  const { runRef, stopRef } = useRunFocus(running);
   const connectionModel = route?.model ?? "";
 
   const resolved = useMemo(
     () => resolveClaudePreset(form.presetId, connectionModel, { customModel: form.customModel, customDepth: form.customDepth }),
     [connectionModel, form.customDepth, form.customModel, form.presetId],
   );
+  // 비용 상한은 실제 요청과 같은 글(언어·장르·메모)로 잰다.
+  const costContext = useMemo(
+    () => ({ language: form.language, genre: form.genre, notes: form.notes }),
+    [form.genre, form.language, form.notes],
+  );
   const caps = useMemo(() => {
     const entries = CLAUDE_PRESET_IDS.map((id: ClaudePresetId) => {
       if (!rendered) return [id, undefined] as const;
       const preset = resolveClaudePreset(id, connectionModel, { customModel: form.customModel, customDepth: form.customDepth });
-      return [id, estimateAltTextCostCapUsd(preset.model, rendered.input, form.scope)] as const;
+      return [id, estimateAltTextCostCapUsd(preset.model, rendered.input, form.scope, costContext)] as const;
     });
     return Object.fromEntries(entries) as Record<ClaudePresetId, number | null | undefined>;
-  }, [connectionModel, form.customDepth, form.customModel, form.scope, rendered]);
-  const capUsd = rendered ? caps[form.presetId] ?? null : null;
+  }, [connectionModel, costContext, form.customDepth, form.customModel, form.scope, rendered]);
+  // 이미지가 아직 없으면 계산할 수 없다(undefined). "단가를 모른다"(null)와 구분해야 입력 전에 가짜 경고가 뜨지 않는다.
+  const capUsd = rendered ? caps[form.presetId] ?? null : undefined;
   const guard = useClaudeBudgetGuard(capUsd);
 
   const patchForm = useCallback((patch: Partial<AltTextForm>) => {
@@ -107,16 +116,24 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
 
   const canRun = Boolean(route && rendered && !image.preparing && !running && guard.allowed);
 
+  // 이미지를 올리면 올리기 구역이 사라지며 포커스가 body로 떨어진다. 바로 실행할 수 있게 실행 버튼으로 옮긴다.
+  const hasImage = Boolean(rendered);
+  useEffect(() => {
+    if (hasImage && document.activeElement === document.body) runRef.current?.focus({ preventScroll: true });
+  }, [hasImage, runRef]);
+
   const run = async () => {
     if (!canRun || !rendered) return;
     const claudeRoute = resolveClaudeRoute();
     const index = rendered.segment.index;
     const input = rendered.input;
     const context: AltTextContext = { scope: form.scope, language: form.language, depth: resolved.depth, genre: form.genre, notes: form.notes };
+    // 동의는 이 요청에 한 번만 쓴다. 보내기 전에 값을 읽어 전송 계층의 예산 판정에 넘기고 동의를 거둔다.
+    const budgetOverride = guard.overridden;
     guard.consumeOverride();
     const outcome = await task.start(async (signal) => {
       if (!claudeRoute) throw new Error(t("claudeAssist.common.needConnection"));
-      return runAltText(claudeRoute, input, context, { model: resolved.model, signal });
+      return runAltText(claudeRoute, input, context, { model: resolved.model, signal, budgetOverride });
     });
     if (!outcome) return;
     setDrafts((previous) => new Map(previous).set(index, { run: outcome, short: outcome.view.short, long: outcome.view.long }));
@@ -147,23 +164,23 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
 
   const footer = (
     <div className="flex flex-wrap items-center gap-3">
-      <button type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={!canRun} aria-describedby={needHint ? "claude-alt-need-hint" : undefined} onClick={() => void run()}>
+      <button ref={runRef} type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={!canRun} aria-describedby={needHint ? hintId : undefined} onClick={() => void run()}>
         {running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : draft ? <RefreshCw size={16} aria-hidden /> : <Sparkles size={16} aria-hidden />}
         {draft && !running ? t("claudeAssist.altText.rerun") : t("claudeAssist.altText.run")}
       </button>
       {running ? (
-        <button type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
+        <button ref={stopRef} type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
           <Square size={14} aria-hidden />
           {t("claudeAssist.common.stop")}
         </button>
       ) : null}
-      {capUsd !== null && rendered ? (
+      {typeof capUsd === "number" ? (
         <span className="text-xs font-semibold text-fg-2" data-claude-footer-cap="true">
           {t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) })}
         </span>
       ) : null}
       <span className="ml-auto flex items-center gap-3">
-        {needHint ? <span id="claude-alt-need-hint" className="text-xs text-fg-3">{needHint}</span> : null}
+        {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
         <ClaudeShortcutHint action={t("claudeAssist.common.shortcutRun")} />
       </span>
     </div>
@@ -178,6 +195,7 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
       description={t("claudeAssist.altText.description")}
       onClose={close}
       onPaste={onPaste}
+      onDropFiles={(files) => { const file = pickDroppedFile(files); if (file && !running) void load(file); }}
       onPrimaryShortcut={() => void run()}
       footer={footer}
     >
@@ -214,6 +232,9 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
             model={resolved.model}
             capUsd={capUsd}
             guard={guard}
+            summary={rendered
+              ? t("claudeAssist.altText.preflightTransfer", { width: rendered.input.width, height: rendered.input.height, size: sizeKb })
+              : t("claudeAssist.altText.preflightTransferNone")}
             rows={[
               {
                 label: t("claudeAssist.preflight.transfer"),
@@ -227,12 +248,18 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
             ]}
           />
 
-          <div role="status" aria-live="polite" className={cn("min-h-5 text-sm text-fg-2", running && "font-semibold")}>
-            {image.preparing ? t("claudeAssist.art.preparing") : null}
-            {running ? `${t("claudeAssist.altText.running")} · ${t("claudeAssist.common.elapsed", { seconds: task.elapsedSeconds })}` : null}
-            {task.state.status === "stopped" ? t("claudeAssist.altText.stopped") : null}
-            {task.state.status === "idle" && draft ? t("claudeAssist.altText.done") : null}
-          </div>
+          <ClaudeTaskStatus
+            running={running}
+            elapsedSeconds={task.elapsedSeconds}
+            runningText={t("claudeAssist.altText.running")}
+            message={image.preparing
+              ? t("claudeAssist.art.preparing")
+              : task.state.status === "stopped"
+                ? t("claudeAssist.altText.stopped")
+                : task.state.status === "idle" && draft
+                  ? t("claudeAssist.altText.done")
+                  : null}
+          />
           {task.state.status === "error" ? (
             <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
               {t("claudeAssist.altText.error", { message: task.state.message })}

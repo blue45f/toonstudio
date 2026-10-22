@@ -1,7 +1,7 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
 import { Check, Copy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useId } from "react";
 
 import { CLAUDE_BUTTON, CLAUDE_INPUT } from "@/shared/ai/claude/claude-ui";
 import { useClaudeUsageText } from "@/shared/ai/claude/use-claude-usage-text";
@@ -9,6 +9,9 @@ import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import { ALT_TEXT_LIMITS, altTextLength, altTextPanelsToPlain, altTextToHtmlAttribute } from "./claude-alt-text";
+
+import { ClaudeCopyStatus } from "./ClaudeCopyStatus";
+import { useCopyFeedback } from "./use-copy-feedback";
 
 import type { AltTextRunResult } from "./claude-alt-text-run";
 
@@ -45,16 +48,12 @@ function CopyButton({ kind, active, onCopy, labelKey }: {
 export function ClaudeAltTextResult({ run, short, long, onShort, onLong }: ClaudeAltTextResultProps) {
   const t = useT();
   const usageOf = useClaudeUsageText();
-  const [copied, setCopied] = useState<CopyKind | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const canCopy = typeof navigator !== "undefined" && typeof navigator.clipboard?.writeText === "function";
+  const idBase = useId();
+  const clipboard = useCopyFeedback<CopyKind>();
+  const { canCopy, copied } = clipboard;
   const { view } = run;
   const count = altTextLength(short);
   const over = count > ALT_TEXT_LIMITS.shortRecommended;
-
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
 
   const copy = (kind: CopyKind) => {
     const value = kind === "short"
@@ -64,20 +63,16 @@ export function ClaudeAltTextResult({ run, short, long, onShort, onLong }: Claud
         : kind === "long"
           ? long
           : altTextPanelsToPlain(view.panels);
-    void navigator.clipboard.writeText(value).then(() => {
-      setCopied(kind);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setCopied(null), 2_000);
-    }, () => undefined);
+    clipboard.copy(kind, value);
   };
 
   return (
-    <section aria-label={t("claudeAssist.altText.resultTitle")} className="space-y-4 rounded-2xl border border-line p-3" data-claude-alt-result="true">
+    <section aria-label={t("claudeAssist.altText.resultTitle")} className="space-y-4 rounded-2xl border border-line p-3" data-claude-alt-result="true" data-claude-shortcut-off="true">
       <h3 className="text-base font-bold text-fg">{t("claudeAssist.altText.resultTitle")}</h3>
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <label htmlFor="claude-alt-short" className="text-xs font-bold text-fg-2">{t("claudeAssist.altText.shortLabel")}</label>
+          <label htmlFor={`${idBase}-short`} className="text-xs font-bold text-fg-2">{t("claudeAssist.altText.shortLabel")}</label>
           <span
             data-claude-alt-count="true"
             className={cn("text-xs font-semibold", over ? "text-warn" : "text-fg-3")}
@@ -86,14 +81,14 @@ export function ClaudeAltTextResult({ run, short, long, onShort, onLong }: Claud
           </span>
         </div>
         <textarea
-          id="claude-alt-short"
+          id={`${idBase}-short`}
           className={cn(CLAUDE_INPUT, "min-h-16 resize-y text-sm", over && "border-warn")}
           value={short}
           rows={2}
-          aria-describedby="claude-alt-short-hint"
+          aria-describedby={`${idBase}-short-hint`}
           onChange={(event) => onShort(event.target.value.replace(/\s*\n\s*/gu, " "))}
         />
-        <p id="claude-alt-short-hint" className="text-xs text-fg-3">{t("claudeAssist.altText.shortHint")}</p>
+        <p id={`${idBase}-short-hint`} className="text-xs text-fg-3">{t("claudeAssist.altText.shortHint")}</p>
         {canCopy ? (
           <div className="flex flex-wrap gap-2">
             <CopyButton kind="short" active={copied} onCopy={copy} labelKey="claudeAssist.altText.copyShort" />
@@ -104,9 +99,9 @@ export function ClaudeAltTextResult({ run, short, long, onShort, onLong }: Claud
 
       {run.scope !== "brief" ? (
         <div className="space-y-1.5">
-          <label htmlFor="claude-alt-long" className="text-xs font-bold text-fg-2">{t("claudeAssist.altText.longLabel")}</label>
+          <label htmlFor={`${idBase}-long`} className="text-xs font-bold text-fg-2">{t("claudeAssist.altText.longLabel")}</label>
           <textarea
-            id="claude-alt-long"
+            id={`${idBase}-long`}
             className={cn(CLAUDE_INPUT, "min-h-28 resize-y text-sm leading-relaxed")}
             value={long}
             rows={5}
@@ -151,7 +146,14 @@ export function ClaudeAltTextResult({ run, short, long, onShort, onLong }: Claud
         </div>
       ) : null}
 
-      <p className="border-t border-line pt-2 text-xs text-fg-3">{usageOf(run)}</p>
+      <ClaudeCopyStatus copied={copied !== null} failed={clipboard.failed} />
+
+      <div className="space-y-1 border-t border-line pt-2 text-xs text-fg-3">
+        {view.trimmed > 0 ? (
+          <p className="font-semibold text-warn" data-claude-trimmed="true">{t("claudeAssist.common.trimmedNotice", { count: view.trimmed })}</p>
+        ) : null}
+        <p>{usageOf(run)}</p>
+      </div>
     </section>
   );
 }

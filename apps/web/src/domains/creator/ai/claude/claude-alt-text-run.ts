@@ -12,6 +12,7 @@ import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
 import {
   AltTextSchema,
   buildAltTextRequest,
+  estimateAltTextCostCapUsd,
   normalizeAltText,
   type AltTextContext,
   type AltTextView,
@@ -37,6 +38,8 @@ export interface AltTextRunOptions {
   /** 비우면 연결의 기본 모델을 쓴다. */
   readonly model?: string;
   readonly signal?: AbortSignal;
+  /** 사용자가 "이번 한 번만 예산을 넘어도 진행"을 직접 고른 요청이면 true. 전송 계층의 예산 판정을 건너뛴다. */
+  readonly budgetOverride?: boolean;
 }
 
 export async function runAltText(
@@ -50,7 +53,12 @@ export async function runAltText(
     route,
     buildAltTextRequest(requested, image, context),
     AltTextSchema,
-    { signal: options.signal },
+    {
+      signal: options.signal,
+      // 실행 전 확인에 보인 값과 같은 함수로 잰 상한이다. 전송 계층이 예산 판정과 진행 중 예약에 쓴다.
+      capUsd: estimateAltTextCostCapUsd(requested, image, context.scope, context),
+      budgetOverride: options.budgetOverride,
+    },
   );
   const model = message.model || requested;
   const usage = toClaudeTokenUsage(message.usage);

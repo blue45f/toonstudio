@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ALT_TEXT_MAX_OUTPUT_TOKENS, type AltTextRaw } from "./claude-alt-text";
+import { ALT_TEXT_MAX_OUTPUT_TOKENS, estimateAltTextCostCapUsd, type AltTextRaw } from "./claude-alt-text";
 import { runAltText } from "./claude-alt-text-run";
 
 const claudeParse = vi.hoisted(() => vi.fn());
@@ -52,7 +52,13 @@ describe("runAltText", () => {
     expect(params.model).toBe("claude-haiku-5-5");
     expect(params.output_config).toEqual({ effort: "low" });
     expect(params.max_tokens).toBe(ALT_TEXT_MAX_OUTPUT_TOKENS.detailed);
-    expect(options).toEqual({ signal: controller.signal });
+    // 전송 계층이 예산 판정·예약에 쓰도록, 실행 전 확인에 보인 값과 같은 함수로 잰 상한을 함께 넘긴다.
+    expect(options).toEqual({
+      signal: controller.signal,
+      capUsd: estimateAltTextCostCapUsd("claude-haiku-5-5", IMAGE, "detailed", { language: "en", depth: "low" }),
+      budgetOverride: undefined,
+    });
+    expect(options.capUsd).toBeGreaterThan(0);
     expect(result.model).toBe("claude-haiku-5-5");
     expect(result.view.panels).toHaveLength(1);
   });

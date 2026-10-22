@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
+
+import { claudeImageTokenBound, utf8Length } from "@/shared/ai/claude/claude-cost-cap";
 
 import {
   ALT_TEXT_LIMITS,
   ALT_TEXT_MAX_OUTPUT_TOKENS,
+  AltTextSchema,
   altTextLength,
   altTextPanelsToPlain,
   altTextToHtmlAttribute,
@@ -84,9 +88,23 @@ describe("estimateAltTextCostCapUsd", () => {
     expect(haiku ?? 0).toBeLessThan(detailed ?? 0);
   });
 
-  it("출력 상한과 이미지 토큰을 합친 값이다(Opus 5.5 $4/$20)", () => {
-    const inputTokens = Math.ceil((800 * 1_000) / 750) + 900;
-    expect(estimateAltTextCostCapUsd("claude-opus-5-5", IMAGE, "standard")).toBeCloseTo((inputTokens * 4 + ALT_TEXT_MAX_OUTPUT_TOKENS.standard * 20) / 1_000_000, 8);
+  it("고정 지시(캐시 쓰기 ×1.25)·글·스키마·이미지는 입력으로, 출력은 상한만큼 센다(Opus 5.5 $4/$20)", () => {
+    const request = buildAltTextRequest("claude-opus-5-5", { ...IMAGE, data: "" }, { scope: "standard", language: "ko" });
+    const system = Array.isArray(request.system) ? request.system[0]?.text ?? "" : "";
+    const content = request.messages[0]?.content;
+    const userText = Array.isArray(content) ? (content[1] as { text: string }).text : "";
+    const cached = utf8Length(system);
+    const plain = utf8Length(userText) + 100 + claudeImageTokenBound(800, 1_000) + utf8Length(JSON.stringify(z.toJSONSchema(AltTextSchema)));
+    expect(estimateAltTextCostCapUsd("claude-opus-5-5", IMAGE, "standard", { language: "ko" })).toBeCloseTo(
+      (plain * 4 + cached * 4 * 1.25 + ALT_TEXT_MAX_OUTPUT_TOKENS.standard * 20) / 1_000_000,
+      8,
+    );
+  });
+
+  it("출력 언어·메모가 길어지면 상한도 커진다 (실제 요청과 같은 글로 잰다)", () => {
+    const plain = estimateAltTextCostCapUsd("claude-opus-5-5", IMAGE, "brief", { language: "en" }) ?? 0;
+    const withNotes = estimateAltTextCostCapUsd("claude-opus-5-5", IMAGE, "brief", { language: "en", notes: "가".repeat(300), genre: "나".repeat(40) }) ?? 0;
+    expect(withNotes).toBeGreaterThan(plain);
   });
 
   it("단가를 모르는 모델이나 크기를 모르는 이미지는 null", () => {
@@ -175,5 +193,50 @@ describe("내보내기", () => {
       { step: 1, description: "비 오는 골목", text: [] },
       { step: 2, description: "우산을 내미는 손", text: ["같이 쓸래?", "…응"] },
     ])).toBe('1. 비 오는 골목\n2. 우산을 내미는 손\n   "같이 쓸래?"\n   "…응"');
+  });
+});
+
+describe("긴 결과를 조용히 자르지 않는다", () => {
+  it("고정 지시가 모델에게 길이·개수 한도를 알린다", () => {
+    const request = buildAltTextRequest("claude-opus-5-5", IMAGE, { scope: "detailed", language: "ko" });
+    const system = Array.isArray(request.system) ? request.system.map((block) => block.text).join("\n") : String(request.system);
+    expect(system).toContain(`long ${ALT_TEXT_LIMITS.maxLongChars}자`);
+    expect(system).toContain(`panels 최대 ${ALT_TEXT_LIMITS.maxPanels}컷`);
+    expect(system).toContain(`컷마다 글자 최대 ${ALT_TEXT_LIMITS.maxTextLines}줄`);
+    expect(system).toContain(`컷 설명 ${ALT_TEXT_LIMITS.maxPanelChars}자`);
+  });
+
+  it("한도 안의 결과는 줄어든 것이 없다고 알린다", () => {
+    expect(normalizeAltText(raw(), "detailed").trimmed).toBe(0);
+  });
+
+  it("길이·개수 때문에 줄이거나 버린 항목 수를 센다", () => {
+    const panels = Array.from({ length: 15 }, (_value, index) => ({
+      step: index + 1,
+      description: `컷 ${index + 1}`,
+      text: index === 0 ? Array.from({ length: 10 }, (_line, lineIndex) => `대사 ${lineIndex}`) : [],
+    }));
+    const view = normalizeAltText(raw({
+      long: "가".repeat(ALT_TEXT_LIMITS.maxLongChars + 100),
+      panels,
+      warnings: ["a", "b", "c", "d"],
+    }), "detailed");
+    // long 1(잘림) + 컷 3개(15 → 12) + 첫 컷의 글자 줄 2개(10 → 8) + 경고 1개(4 → 3)
+    expect(view.trimmed).toBe(1 + 3 + 2 + 1);
+    expect(view.panels).toHaveLength(ALT_TEXT_LIMITS.maxPanels);
+    expect(view.panels[0]?.text).toHaveLength(ALT_TEXT_LIMITS.maxTextLines);
+    expect(view.warnings).toHaveLength(ALT_TEXT_LIMITS.maxWarnings);
+  });
+
+  it("같은 경고는 한 번만 남긴다 (화면에서 키로 쓰인다)", () => {
+    const view = normalizeAltText(raw({ warnings: ["작은 글씨", "작은 글씨", "가려진 부분"] }), "brief");
+    expect(view.warnings).toEqual(["작은 글씨", "가려진 부분"]);
+  });
+
+  it("brief 범위에서 모델이 준 상세 설명·컷은 버려도 줄어든 것으로 세지 않는다", () => {
+    const view = normalizeAltText(raw(), "brief");
+    expect(view.long).toBe("");
+    expect(view.panels).toEqual([]);
+    expect(view.trimmed).toBe(0);
   });
 });
