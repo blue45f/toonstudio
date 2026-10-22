@@ -19,7 +19,7 @@
  */
 
 import { importAbr } from "./abr";
-import { stripTrailingNuls } from "./nul-text";
+import { stripTrailingNuls, utf16UnitsToString } from "./nul-text";
 
 import type { AbrComputedBrush } from "./abr";
 
@@ -177,7 +177,7 @@ function readUtf16Name(reader: RecordReader, fallback: string): string {
     chars.push(reader.u16());
   }
   // The trailing NUL is part of the stored length in real files.
-  return stripTrailingNuls(String.fromCharCode(...chars)) || fallback;
+  return stripTrailingNuls(utf16UnitsToString(chars)) || fallback;
 }
 
 /**
