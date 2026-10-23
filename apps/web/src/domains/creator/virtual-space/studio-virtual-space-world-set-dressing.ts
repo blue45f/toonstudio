@@ -83,7 +83,8 @@ function landmarkColliders(frame: StudioVirtualLandmarkFrame, x: number, y: numb
   if (frame === 12) return [rect(x - width * .42, y - height * .7, width * .84, height * .7)];
   if (frame === 8 || frame === 9) return [rect(x - width * .17, y - height * .18, width * .34, height * .16)];
   if (frame === 13) return [rect(x - width * .43, y - height * .32, width * .86, height * .26)];
-  if (frame === 7 || frame === 14) return [rect(x - width * .34, y - height * .3, width * .68, height * .25)];
+  if (frame === 7) return [rect(x - width * .36, y - height * .52, width * .72, height * .46)];
+  if (frame === 14) return [rect(x - width * .34, y - height * .3, width * .68, height * .25)];
   return [rect(x - width * .37, y - height * .3, width * .74, height * .27)];
 }
 

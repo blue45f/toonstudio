@@ -318,7 +318,7 @@ export class StudioLivingWorldRuntime {
     const season = studioTownSeasonAt();
     const foliageSlots = legacyScenery
       ? foliagePoints.map(([x, y]) => ({ x, y, width: 92, height: 46 }))
-      : ambient?.foliage ?? [];
+      : [];
     this.foliage = foliageSlots.map(({ x, y, width, height }, index) => {
       const sprite = scene.add.sprite(x, y, keys.foliage, index % 4)
         .setDisplaySize(width, height).setDepth(y + 850).setAlpha(style === "ink" ? 0.66 : 0.84);
@@ -338,14 +338,14 @@ export class StudioLivingWorldRuntime {
     // 날씨 파티클 엔진 출력으로 전담한다. 예전 드리프트 스프라이트는 두 벌이 되므로 두지 않는다.
     // 주야 전면 틴트 rectangle은 화면 전체를 뿌옇게 만들어 제거했다 — 밤 분위기는
     // 가로등·창문 같은 국소 광원(phaseGain)과 순찰 배우의 휴식 판정이 담당한다.
-    this.ambientActors = Array.from({ length: style === "sky-island" ? 10 : 6 }, (_, index) => {
-      const x = legacyScenery ? 80 + index * 119 : manifest.width * (index + 0.5) / (style === "sky-island" ? 10 : 6);
-      const y = legacyScenery ? 145 + (index % 4) * 173 : manifest.height * (0.15 + (index % 4) * 0.2);
+    this.ambientActors = legacyScenery ? Array.from({ length: style === "sky-island" ? 10 : 6 }, (_, index) => {
+      const x = 80 + index * 119;
+      const y = 145 + (index % 4) * 173;
       const body = scene.add.ellipse(x, y, 9, 5,
         style === "neon" ? 0x3ce6ff : style === "ink" ? 0x303039 : 0xffffff, 0.8).setDepth(30_000);
       const shadow = scene.add.ellipse(body.x, body.y + 20, 13, 4, 0x111827, 0.16).setDepth(29_999);
       return { body, shadow, baseY: body.y, speed: 0.018 + index * 0.0018, amplitude: 5 + index % 4 };
-    });
+    }) : [];
   }
 
   update(

@@ -2010,7 +2010,7 @@ export function StudioVirtualSpacePhaserCanvas({
             ? studioDayNightTimeOfDay(ambienceDayNight.now, ambienceDayNight.startMs, ambienceDayNight.cycleMs)
             : null,
           players: [currentPoint],
-          ambientActorsEnabled: currentQualityProfile.ambientActors,
+          ambientActorsEnabled: !campusScene && currentQualityProfile.ambientActors,
         });
         // 오브젝트 광원·가구 섀도우: 주야 사이클이 꺼져 있으면 실제 시계로 환경광을 대체한다.
         // 전면 틴트와 별개로, 광원 세기 계산에만 환경광 수치를 쓴다.
@@ -2611,8 +2611,9 @@ export function StudioVirtualSpacePhaserCanvas({
             focused: view.phase === "work" || view.phase === "inspect", away: view.phase === "rest", ghost: false,
           }));
           spriteCrossfades?.capture(npc.sprite);
+          const npcBaseFacing = !view.moving && !attached && view.phase === "wait" ? "down" : view.facing;
           applySpriteVisual(npc.sprite, npc.skin,
-            studioEmoteFacing(npcEmotePose) ?? (lookAtPlayer ? studioFacingToward(currentPoint.x - view.point.x, currentPoint.y - view.point.y) : view.facing),
+            studioEmoteFacing(npcEmotePose) ?? (lookAtPlayer ? studioFacingToward(currentPoint.x - view.point.x, currentPoint.y - view.point.y) : npcBaseFacing),
             npcEmote === "wave" && !view.moving && !attached ? "wave" : talking ? "talk" : view.animation);
           spriteCrossfades?.commit(npc.sprite, time, crossfadeEnabled);
           // 2차 모션 합성: 걷기는 접지 스쿼시·서브프레임 탄성, 대기는 상체 호흡·절차적 깜빡임.
@@ -2643,7 +2644,7 @@ export function StudioVirtualSpacePhaserCanvas({
           npc.label.setText(npcNameplate.text).setScale(Math.max(actorVisualScale < 1 ? 1 : 0, npcNameplate.scale) * overlayScale);
           const npcLabelOffset = npc.label.displayHeight + 6 * overlayScale;
           const npcLabelY = attached || actorVisualScale < 1 ? headY - npcLabelOffset : npcDisplay.y + 9;
-          const npcLabelVisible = npcNameplate.visible
+          const npcLabelVisible = npcNameplate.visible && npcNameplate.lod !== "dot"
             && (!mobileNameplates || importantNpc || Boolean(view.greeting) || view.id === nearestMobileNpcId);
           npc.label.setPosition(npcDisplay.x, npcLabelY)
             .setDepth(attached ? 160_000 : studioTownDepthForPoint(manifest, groundPoint, 1_002))

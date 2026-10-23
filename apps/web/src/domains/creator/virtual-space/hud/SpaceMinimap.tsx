@@ -113,7 +113,13 @@ export const SpaceMinimap = memo(function SpaceMinimap({
     const rect = event.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const viewport = createMinimapViewport(manifest.width, manifest.height, rect.width, rect.height, 0);
-    onMoveTo(clampStudioWorldPoint(manifest, minimapToWorld(viewport, { x: event.clientX - rect.left, y: event.clientY - rect.top })));
+    const rawPoint = minimapToWorld(viewport, { x: event.clientX - rect.left, y: event.clientY - rect.top });
+    const tappedZone = !full
+      ? zones.find((zone) =>
+        Math.abs(rawPoint.x - (zone.x + zone.width / 2)) <= zone.width * 0.26
+        && Math.abs(rawPoint.y - (zone.y + zone.height / 2)) <= zone.height * 0.26)
+      : undefined;
+    onMoveTo(clampStudioWorldPoint(manifest, tappedZone ? tappedZone.spawn : rawPoint));
   };
   // 미니맵 라벨이 232px 폭에서도 11px 이상이 되도록 월드 크기에 비례해 정한다.
   const labelSize = Math.max(manifest.width, manifest.height) / (full ? 48 : 20);

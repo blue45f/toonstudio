@@ -358,28 +358,28 @@ export const CAMPUS_OBJECTS: readonly StudioCampusObject[] = Object.freeze([
   O({ id: "lobby-wall-clock", kind: "wall-clock", x: 448, y: 210, width: 64, height: 64, wallMounted: true }),
   O({ id: "lobby-poster-west", kind: "wall-poster", x: 250, y: 208, width: 60, height: 72, wallMounted: true, variant: 0 }),
   O({ id: "lobby-poster-east", kind: "wall-poster", x: 646, y: 208, width: 60, height: 72, wallMounted: true, variant: 1 }),
-  O({ id: "lobby-phone-booth-west", kind: "phone-booth", x: 612, y: 648, width: 76, height: 122, collider: foot(612, 648, 68, 30) }),
-  O({ id: "lobby-phone-booth-east", kind: "phone-booth", x: 708, y: 648, width: 76, height: 122, collider: foot(708, 648, 68, 30), variant: 1 }),
-  O({ id: "lobby-water-cooler", kind: "water-cooler", x: 172, y: 660, width: 44, height: 62, collider: foot(172, 660, 34, 18) }),
+  O({ id: "lobby-phone-booth-west", kind: "phone-booth", x: 626, y: 616, width: 72, height: 112, collider: foot(626, 616, 64, 26) }),
+  O({ id: "lobby-phone-booth-east", kind: "phone-booth", x: 714, y: 616, width: 72, height: 112, collider: foot(714, 616, 64, 26), variant: 1 }),
+  O({ id: "lobby-water-cooler", kind: "water-cooler", x: 172, y: 628, width: 44, height: 62, collider: foot(172, 628, 34, 18) }),
   // 사무실 확장: 모니터 책상·포스터 (STUDIO)
-  O({ id: "studio-monitor-desk", kind: "desk-monitor", x: 1400, y: 580, width: 120, height: 76, collider: foot(1400, 580, 112, 26) }),
+  O({ id: "studio-monitor-desk", kind: "desk-monitor", x: 1416, y: 564, width: 112, height: 72, collider: foot(1416, 564, 104, 24) }),
   O({ id: "studio-poster-west", kind: "wall-poster", x: 1000, y: 208, width: 60, height: 72, wallMounted: true, variant: 2 }),
   O({ id: "studio-poster-east", kind: "wall-poster", x: 1432, y: 208, width: 60, height: 72, wallMounted: true, variant: 0 }),
   // 사무실 확장: 집중석 책상 열·구역 표지판 (CO-WORK)
-  O({ id: "cowork-focus-desk-west", kind: "desk-monitor", x: 1740, y: 648, width: 120, height: 76, collider: foot(1740, 648, 112, 26), variant: 1 }),
-  O({ id: "cowork-focus-desk-east", kind: "desk-monitor", x: 2228, y: 648, width: 120, height: 76, collider: foot(2228, 648, 112, 26) }),
-  O({ id: "cowork-focus-sign", kind: "area-sign", x: 1984, y: 592, width: 176, height: 100, collider: foot(1984, 592, 160, 18), labelKo: "집중석", labelEn: "FOCUS DESKS" }),
+  O({ id: "cowork-focus-desk-west", kind: "desk-monitor", x: 1740, y: 632, width: 112, height: 72, collider: foot(1740, 632, 104, 24), variant: 1 }),
+  O({ id: "cowork-focus-desk-east", kind: "desk-monitor", x: 2228, y: 632, width: 112, height: 72, collider: foot(2228, 632, 104, 24) }),
+  O({ id: "cowork-focus-sign", kind: "area-sign", x: 2116, y: 632, width: 112, height: 58, collider: foot(2116, 632, 96, 14), labelKo: "집중석", labelEn: "FOCUS DESKS" }),
   // 사무실 확장: 자판기·정수기·네온 사인·라운지 표지판 (CAFE)
   O({ id: "cafe-vending-machine", kind: "vending-machine", x: 2470, y: 320, width: 62, height: 104, collider: foot(2470, 320, 54, 22) }),
   O({ id: "cafe-water-cooler", kind: "water-cooler", x: 2906, y: 320, width: 44, height: 62, collider: foot(2906, 320, 34, 18) }),
   O({ id: "cafe-neon-sign", kind: "neon-sign", x: 2690, y: 200, width: 190, height: 64, wallMounted: true, labelKo: "카페", labelEn: "CAFE" }),
-  O({ id: "cafe-lounge-sign", kind: "area-sign", x: 2560, y: 600, width: 176, height: 100, collider: foot(2560, 600, 160, 18), labelKo: "라운지", labelEn: "LOUNGE" }),
+  O({ id: "cafe-lounge-sign", kind: "area-sign", x: 2512, y: 624, width: 112, height: 58, collider: foot(2512, 624, 96, 14), labelKo: "라운지", labelEn: "LOUNGE" }),
   // 사무실 확장: 회의실 벽시계 (TALK)
   O({ id: "talk-wall-clock", kind: "wall-clock", x: 448, y: 906, width: 64, height: 64, wallMounted: true }),
   // 사무실 확장: 아케이드 네온 사인 (GAME)
   O({ id: "game-neon-sign", kind: "neon-sign", x: 448, y: 1560, width: 220, height: 60, wallMounted: true, labelKo: "아케이드", labelEn: "ARCADE" }),
   // 사무실 확장: 자료실 표지판 (GALLERY)
-  O({ id: "gallery-archive-sign", kind: "area-sign", x: 2560, y: 1660, width: 176, height: 100, collider: foot(2560, 1660, 160, 18), labelKo: "자료실", labelEn: "ARCHIVE" }),
+  O({ id: "gallery-archive-sign", kind: "area-sign", x: 2560, y: 1656, width: 112, height: 58, collider: foot(2560, 1656, 96, 14), labelKo: "자료실", labelEn: "ARCHIVE" }),
   // 게이트 이름판. 포털(폭 104, 중심 x 134·2938)이 y 정렬로 판 위에 그려지므로 판이 포털 옆으로 비껴 서야 글자가 가려지지 않는다.
   // 판 폭 124의 안쪽 끝이 포털 바깥 가장자리(186·2886)에서 6px 떨어지게 둔다.
   O({ id: "gate-plate-tree-library", kind: "gate-plate", x: 254, y: 700, width: 124, height: 58, labelKo: "트리 라이브러리", labelEn: "TREE LIBRARY" }),
@@ -388,11 +388,11 @@ export const CAMPUS_OBJECTS: readonly StudioCampusObject[] = Object.freeze([
   O({ id: "gate-plate-production-control", kind: "gate-plate", x: 2818, y: 1340, width: 124, height: 58, labelKo: "프로덕션 관제실", labelEn: "CONTROL ROOM" }),
   // 전용 가로등(건물 생동감 트랙): 대로 가장자리에 세운다. 문·스폰·게이트와 겹치지 않는 좌표만
   // 골랐고, 무겹침은 building-life 테스트가 고정한다. 점등·빛 웅덩이는 런타임이 시간대와 잇는다.
-  O({ id: "lamp-avenue1-lobby-east", kind: "street-lamp", x: 576, y: 720, width: 46, height: 96, collider: foot(576, 720, 26, 12) }),
+  O({ id: "lamp-avenue1-lobby-east", kind: "street-lamp", x: 576, y: 748, width: 46, height: 96, collider: foot(576, 748, 26, 12) }),
   O({ id: "lamp-avenue1-studio-west", kind: "street-lamp", x: 1088, y: 824, width: 46, height: 96, collider: foot(1088, 824, 26, 12) }),
-  O({ id: "lamp-avenue1-plaza-north", kind: "street-lamp", x: 1472, y: 720, width: 46, height: 96, collider: foot(1472, 720, 26, 12) }),
+  O({ id: "lamp-avenue1-plaza-north", kind: "street-lamp", x: 1472, y: 748, width: 46, height: 96, collider: foot(1472, 748, 26, 12) }),
   O({ id: "lamp-avenue1-cowork-west", kind: "street-lamp", x: 1856, y: 824, width: 46, height: 96, collider: foot(1856, 824, 26, 12) }),
-  O({ id: "lamp-avenue1-cafe-west", kind: "street-lamp", x: 2240, y: 720, width: 46, height: 96, collider: foot(2240, 720, 26, 12) }),
+  O({ id: "lamp-avenue1-cafe-west", kind: "street-lamp", x: 2240, y: 748, width: 46, height: 96, collider: foot(2240, 748, 26, 12) }),
   O({ id: "lamp-avenue2-talk-east", kind: "street-lamp", x: 576, y: 1360, width: 46, height: 96, collider: foot(576, 1360, 26, 12) }),
   O({ id: "lamp-avenue2-terrace-west", kind: "street-lamp", x: 1088, y: 1464, width: 46, height: 96, collider: foot(1088, 1464, 26, 12) }),
   O({ id: "lamp-avenue2-plaza-south", kind: "street-lamp", x: 1472, y: 1360, width: 46, height: 96, collider: foot(1472, 1360, 26, 12) }),
@@ -525,58 +525,58 @@ const npc = (definition: StudioCampusNpc): StudioCampusNpc => Object.freeze(defi
  */
 export const CAMPUS_NPCS: readonly StudioCampusNpc[] = Object.freeze([
   npc({ id: "campus-guide", skinKey: "npc-concierge", roomId: "skyport", point: { x: 448, y: 420 }, facing: "down", speed: 60,
-    patrol: [{ x: 360, y: 640 }, { x: 540, y: 640 }], anchors: [
+    patrol: [{ x: 380, y: 480 }, { x: 516, y: 480 }], anchors: [
       anchor("campus-guide-desk", "skyport", 448, 404, "down", "work", "talk"),
-      anchor("campus-guide-door", "skyport", 540, 640, "down", "inspect", "idle"),
-      anchor("campus-guide-plaza", "creator-plaza", 1320, 1250, "right", "inspect", "talk"),
-      anchor("campus-guide-cafe", "creator-cafe", 2600, 650, "up", "rest", "idle"),
+      anchor("campus-guide-door", "skyport", 500, 560, "down", "inspect", "idle"),
+      anchor("campus-guide-plaza", "creator-plaza", 1320, 1250, "down", "inspect", "talk"),
+      anchor("campus-guide-cafe", "creator-cafe", 2600, 650, "down", "rest", "idle"),
     ] }),
-  npc({ id: "campus-artist", skinKey: "npc-artist", roomId: "personal-atelier", point: { x: 1330, y: 560 }, facing: "left", speed: 58,
-    patrol: [{ x: 1120, y: 560 }], anchors: [
-      anchor("campus-artist-set", "personal-atelier", 1216, 372, "up", "work", "draw"),
-      anchor("campus-artist-camera", "personal-atelier", 1360, 520, "left", "inspect", "review"),
+  npc({ id: "campus-artist", skinKey: "npc-artist", roomId: "personal-atelier", point: { x: 1330, y: 540 }, facing: "down", speed: 58,
+    patrol: [{ x: 1120, y: 540 }], anchors: [
+      anchor("campus-artist-set", "personal-atelier", 1216, 372, "down", "work", "draw"),
+      anchor("campus-artist-camera", "personal-atelier", 1350, 520, "down", "inspect", "review"),
       anchor("campus-artist-bench", "creator-plaza", 1150, 1318, "down", "rest", "sit", { x: 1150, y: 1290 }),
-      anchor("campus-artist-stage", "event-stage", 2400, 1110, "up", "inspect", "idle"),
+      anchor("campus-artist-stage", "event-stage", 2400, 1110, "down", "inspect", "idle"),
     ] }),
-  npc({ id: "campus-writer", skinKey: "npc-producer", roomId: "story-lab", point: { x: 1930, y: 330 }, facing: "up", speed: 57,
+  npc({ id: "campus-writer", skinKey: "npc-producer", roomId: "story-lab", point: { x: 1930, y: 330 }, facing: "down", speed: 57,
     patrol: [{ x: 2060, y: 330 }], anchors: [
-      anchor("campus-writer-board", "story-lab", 1940, 318, "up", "work", "draw"),
-      anchor("campus-writer-talk", "team-meeting", 580, 1060, "left", "inspect", "talk"),
-      anchor("campus-writer-cafe", "creator-cafe", 2780, 540, "left", "rest", "talk"),
-      anchor("campus-writer-plaza", "creator-plaza", 1620, 1250, "left", "rest", "talk"),
+      anchor("campus-writer-board", "story-lab", 1940, 318, "down", "work", "draw"),
+      anchor("campus-writer-talk", "team-meeting", 580, 1060, "down", "inspect", "talk"),
+      anchor("campus-writer-cafe", "creator-cafe", 2780, 540, "down", "rest", "talk"),
+      anchor("campus-writer-plaza", "creator-plaza", 1620, 1250, "down", "rest", "talk"),
     ] }),
-  npc({ id: "campus-archivist", skinKey: "npc-archivist", roomId: "story-lab", role: "librarian", point: { x: 1780, y: 320 }, facing: "up", speed: 54,
-    patrol: [{ x: 1800, y: 600 }], anchors: [
-      anchor("campus-archivist-shelf", "story-lab", 1790, 318, "up", "work", "review"),
-      anchor("campus-archivist-gallery", "review-gallery", 2650, 1690, "up", "inspect", "review"),
+  npc({ id: "campus-archivist", skinKey: "npc-archivist", roomId: "story-lab", role: "librarian", point: { x: 1780, y: 320 }, facing: "down", speed: 54,
+    patrol: [{ x: 1800, y: 580 }], anchors: [
+      anchor("campus-archivist-shelf", "story-lab", 1790, 318, "down", "work", "review"),
+      anchor("campus-archivist-gallery", "review-gallery", 2650, 1690, "down", "inspect", "review"),
       anchor("campus-archivist-terrace", "beach", 1560, 1580, "down", "rest", "idle"),
     ] }),
   npc({ id: "campus-cafe", skinKey: "npc-cafe", roomId: "creator-cafe", point: { x: 2690, y: 346 }, facing: "down", speed: 55,
     patrol: [{ x: 2600, y: 420 }, { x: 2800, y: 420 }], anchors: [
       anchor("campus-cafe-counter", "creator-cafe", 2690, 348, "down", "work", "talk"),
-      anchor("campus-cafe-tables", "creator-cafe", 2620, 560, "right", "inspect", "idle"),
+      anchor("campus-cafe-tables", "creator-cafe", 2620, 560, "down", "inspect", "idle"),
       anchor("campus-cafe-terrace", "beach", 1110, 1560, "down", "rest", "talk"),
     ] }),
-  npc({ id: "campus-security", skinKey: "npc-security", roomId: "team-meeting", point: { x: 300, y: 1060 }, facing: "right", speed: 58,
-    patrol: [{ x: 600, y: 1060 }], anchors: [
-      anchor("campus-security-door", "team-meeting", 300, 940, "down", "work", "idle"),
-      anchor("campus-security-table", "team-meeting", 448, 1240, "up", "inspect", "talk"),
+  npc({ id: "campus-security", skinKey: "npc-security", roomId: "team-meeting", point: { x: 380, y: 1040 }, facing: "down", speed: 58,
+    patrol: [{ x: 540, y: 1040 }], anchors: [
+      anchor("campus-security-door", "team-meeting", 380, 1020, "down", "work", "idle"),
+      anchor("campus-security-table", "team-meeting", 448, 1240, "down", "inspect", "talk"),
       anchor("campus-security-avenue", "campus-commons", 960, 1410, "down", "inspect", "idle"),
-      anchor("campus-security-arcade", "arcade", 448, 1640, "up", "rest", "idle"),
+      anchor("campus-security-arcade", "arcade", 448, 1640, "down", "rest", "idle"),
     ] }),
   npc({ id: "campus-host", skinKey: "npc-host", roomId: "event-stage", point: { x: 2560, y: 1110 }, facing: "down", speed: 62,
     patrol: [{ x: 2400, y: 1110 }, { x: 2720, y: 1110 }], anchors: [
       anchor("campus-host-stage", "event-stage", 2560, 1098, "down", "work", "talk"),
-      anchor("campus-host-plaza", "creator-plaza", 1560, 1290, "up", "inspect", "talk"),
-      anchor("campus-host-fountain", "creator-plaza", 1340, 1010, "down", "rest", "idle"),
-      anchor("campus-host-game", "arcade", 360, 1690, "up", "rest", "talk"),
+      anchor("campus-host-plaza", "creator-plaza", 1560, 1290, "down", "inspect", "talk"),
+      anchor("campus-host-fountain", "creator-plaza", 1310, 990, "down", "rest", "idle"),
+      anchor("campus-host-game", "arcade", 360, 1690, "down", "rest", "talk"),
     ] }),
-  npc({ id: "campus-editor", skinKey: "npc-editor", roomId: "review-gallery", point: { x: 2400, y: 1600 }, facing: "up", speed: 56,
+  npc({ id: "campus-editor", skinKey: "npc-editor", roomId: "review-gallery", point: { x: 2400, y: 1600 }, facing: "down", speed: 56,
     patrol: [{ x: 2700, y: 1640 }], anchors: [
-      anchor("campus-editor-wall", "review-gallery", 2420, 1606, "up", "work", "review"),
-      anchor("campus-editor-frames", "review-gallery", 2780, 1590, "up", "inspect", "review"),
+      anchor("campus-editor-wall", "review-gallery", 2420, 1606, "down", "work", "review"),
+      anchor("campus-editor-frames", "review-gallery", 2780, 1590, "down", "inspect", "review"),
       anchor("campus-editor-bench", "creator-plaza", 1794, 1318, "down", "rest", "sit", { x: 1794, y: 1290 }),
-      anchor("campus-editor-meeting", "team-meeting", 290, 1176, "right", "inspect", "talk"),
+      anchor("campus-editor-meeting", "team-meeting", 340, 1176, "down", "inspect", "talk"),
     ] }),
 ]);
 
@@ -678,7 +678,7 @@ export const CAMPUS_LIFE: StudioCampusLifeSlots = Object.freeze({
 });
 
 /** 광장 바닥 문구. */
-export const CAMPUS_PLAZA_MOTTO = Object.freeze({ x: 1472, y: 1318, textKo: "좋은 아이디어는 함께일 때 더 좋아요", textEn: "GOOD IDEAS BETTER TOGETHER" });
+export const CAMPUS_PLAZA_MOTTO = Object.freeze({ x: 1472, y: 1248, textKo: "좋은 아이디어는 함께일 때 더 좋아요", textEn: "GOOD IDEAS BETTER TOGETHER" });
 
 export function campusTileRect(rect: StudioCampusTileRect): StudioWorldRect {
   return {
