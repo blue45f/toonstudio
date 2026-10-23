@@ -12,11 +12,23 @@
 export const STUDIO_SPACE_EMOTE_IDS = [
   "wave", "heart", "party", "thumbs-up", "laugh", "clap", "wow", "think",
   "idea", "dance", "fireworks", "sparkles", "question", "exclaim", "coffee", "music", "sleep",
+  "calisthenics", "yoga", "kpop-dance", "shuffle",
 ] as const;
 
 export type StudioSpaceEmoteId = typeof STUDIO_SPACE_EMOTE_IDS[number];
 export type StudioSpaceEmoteExpression = "happy" | "wave" | "surprised" | "calm";
-export type StudioSpaceEmoteMotion = "pop" | "hop" | "shake" | "sway" | "dance" | "nod" | "doze";
+export type StudioSpaceEmoteMotion =
+  | "pop"
+  | "hop"
+  | "shake"
+  | "sway"
+  | "dance"
+  | "nod"
+  | "doze"
+  | "calisthenics"
+  | "yoga"
+  | "kpop-dance"
+  | "shuffle";
 export type StudioSpaceEmoteShortcut = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "Z" | "F";
 
 export interface StudioSpaceEmoteDefinition {
@@ -64,6 +76,10 @@ export const STUDIO_SPACE_EMOTES: readonly StudioSpaceEmoteDefinition[] = Object
   emote({ id: "coffee", labelKo: "커피 타임", labelEn: "Coffee break", glyph: "☕", shortcut: null, expression: "calm", motion: "sway", durationMs: 3_200 }),
   emote({ id: "music", labelKo: "음악 감상", labelEn: "Music", glyph: "🎵", shortcut: null, expression: "calm", motion: "sway", durationMs: 3_200 }),
   emote({ id: "sleep", labelKo: "졸려요", labelEn: "Sleepy", glyph: "😴", shortcut: null, expression: "calm", motion: "doze", durationMs: 4_000 }),
+  emote({ id: "calisthenics", labelKo: "아침 체조", labelEn: "Morning stretch", glyph: "🤸", shortcut: null, expression: "happy", motion: "calisthenics", durationMs: 4_000 }),
+  emote({ id: "yoga", labelKo: "요가 명상", labelEn: "Yoga flow", glyph: "🧘", shortcut: null, expression: "calm", motion: "yoga", durationMs: 4_000 }),
+  emote({ id: "kpop-dance", labelKo: "아이돌 군무", labelEn: "Idol dance", glyph: "🕺", shortcut: null, expression: "happy", motion: "kpop-dance", durationMs: 4_000 }),
+  emote({ id: "shuffle", labelKo: "셔플 그루브", labelEn: "Shuffle groove", glyph: "🪩", shortcut: null, expression: "happy", motion: "shuffle", durationMs: 4_000 }),
 ]);
 
 const EMOTE_BY_ID: ReadonlyMap<string, StudioSpaceEmoteDefinition> = new Map(

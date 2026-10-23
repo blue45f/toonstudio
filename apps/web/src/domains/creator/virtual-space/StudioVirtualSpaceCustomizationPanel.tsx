@@ -32,22 +32,68 @@ import type { StudioBuildPlacementPanelBinding } from "./studio-virtual-space-bu
 import { StudioVirtualSpaceTileEffectEditor } from "./StudioVirtualSpaceTileEffectEditor";
 import type { StudioTileEffectDefinition } from "./studio-virtual-space-tile-effects";
 import { DEFAULT_STUDIO_VIRTUAL_ART_STYLE, type StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
+import { studioSpaceTheme, type StudioSpaceThemeKey } from "./studio-virtual-space-theme";
+import { StudioVirtualSpaceThemePicker } from "./StudioVirtualSpaceThemePicker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
+import { STUDIO_VIRTUAL_CHARACTER_PRESETS } from "./studio-virtual-space-customization";
+import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
 import "./studio-virtual-space-decoration-editor.css";
 
 const ACCESSORY_LABELS = {
-  none: ["없음", "None"], headset: ["헤드셋", "Headset"], beret: ["베레모", "Beret"],
-  star: ["별 핀", "Star pin"], glasses: ["안경", "Glasses"],
+  none: ["없음", "None"],
+  headset: ["통화 헤드셋", "Headset"],
+  beret: ["작가 베레모", "Beret"],
+  star: ["별 핀", "Star pin"],
+  glasses: ["편집 안경", "Glasses"],
+  crown: ["MVP 왕관", "MVP crown"],
+  "cat-ears": ["네온 귀", "Neon ears"],
+  halo: ["검수 헤일로", "Halo ring"],
+  "flower-crown": ["웰니스 화관", "Flower wreath"],
+  "vr-visor": ["3D 바이저", "3D visor"],
+  "pen-wing": ["펜촉 날개", "Stylus wing"],
+  sprout: ["리프레시 새싹", "Sprout"],
 } as const;
 const AURA_LABELS = {
-  none: ["없음", "None"], sparkle: ["반짝임", "Sparkle"], focus: ["집중 오라", "Focus aura"], neon: ["네온", "Neon"],
+  none: ["없음", "None"],
+  sparkle: ["스타라이트", "Sparkle"],
+  focus: ["집중 딥워크", "Focus aura"],
+  neon: ["사이버 네온", "Neon"],
+  aurora: ["오로라 파동", "Aurora"],
+  prism: ["프리즘 검수", "Prism"],
+  flame: ["마감 불꽃", "Flame"],
+  lotus: ["요가 연꽃", "Lotus"],
 } as const;
 const TRAIL_LABELS = {
-  none: ["없음", "None"], petal: ["꽃잎", "Petals"], star: ["별빛", "Stars"], pixel: ["픽셀", "Pixels"],
+  none: ["없음", "None"],
+  petal: ["꽃잎", "Petals"],
+  star: ["별빛", "Stars"],
+  pixel: ["픽셀", "Pixels"],
+  "music-note": ["음표 리듬", "Music notes"],
+  "ink-drop": ["만년필 잉크", "Ink drops"],
+  rainbow: ["무지개 프리즘", "Rainbow"],
+  leaf: ["초록 잎사귀", "Leaves"],
 } as const;
 const NAMEPLATE_LABELS = {
-  violet: ["보라", "Violet"], rose: ["로즈", "Rose"], sky: ["하늘", "Sky"], amber: ["앰버", "Amber"],
+  violet: ["보라", "Violet"],
+  rose: ["로즈", "Rose"],
+  sky: ["하늘", "Sky"],
+  amber: ["앰버", "Amber"],
+  emerald: ["에메랄드", "Emerald"],
+  cyber: ["사이버 시안", "Cyber"],
+  gold: ["로열 골드", "Gold"],
+  obsidian: ["옵시디언", "Obsidian"],
 } as const;
+const WELLNESS_MOTION_ACTIONS: ReadonlyArray<{
+  readonly id: StudioSpaceEmoteId;
+  readonly icon: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}> = [
+  { id: "calisthenics", icon: "🤸", labelKo: "아침 체조", labelEn: "Morning stretch" },
+  { id: "yoga", icon: "🧘", labelKo: "요가 명상", labelEn: "Yoga flow" },
+  { id: "kpop-dance", icon: "🕺", labelKo: "아이돌 군무", labelEn: "Idol dance" },
+  { id: "shuffle", icon: "🪩", labelKo: "셔플 그루브", labelEn: "Shuffle groove" },
+];
 const PRESET_LABELS: Readonly<Record<StudioVirtualDecorPresetKey, readonly [string, string]>> = {
   minimal: ["미니멀", "Minimal"], "creator-garden": ["창작 정원", "Creator garden"],
   festival: ["페스티벌", "Festival"], "night-market": ["야시장", "Night market"],
@@ -74,9 +120,11 @@ const DECOR_LABELS = {
 
 export function StudioVirtualSpaceCustomizationPanel({
   nickname, character, decorations, selfPoint, onNickname, onCharacter, onDecorations, onSelectDistrict, world, artStyle = DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
-  tileEffects, onTileEffectsChange, placedFixtureRequests, onPlacedFixtureRequests, directPlacement,
+  spaceTheme, onSpaceThemeChange, tileEffects, onTileEffectsChange, placedFixtureRequests, onPlacedFixtureRequests, directPlacement, onTriggerEmote,
 }: {
   readonly artStyle?: StudioVirtualArtStyleKey;
+  readonly spaceTheme?: StudioSpaceThemeKey;
+  readonly onSpaceThemeChange?: (theme: StudioSpaceThemeKey) => void;
   readonly nickname: string;
   readonly character: StudioVirtualCharacterCustomization;
   readonly decorations: StudioVirtualDecorationState;
@@ -94,12 +142,15 @@ export function StudioVirtualSpaceCustomizationPanel({
   readonly onPlacedFixtureRequests?: (requests: readonly StudioBuildPlacementRequest[]) => void;
   /** 지도 직접 배치 세션 바인딩. 배치 패널로 그대로 전달된다. */
   readonly directPlacement?: StudioBuildPlacementPanelBinding;
+  /** 오피스 웰니스·댄스 모션을 즉시 실행하는 콜백. */
+  readonly onTriggerEmote?: (emoteId: StudioSpaceEmoteId) => void;
 }) {
   const bt = useBilingual("StudioVirtualSpaceCustomizationPanel");
   const [nicknameDraft, setNicknameDraft] = useState(nickname);
   useEffect(() => setNicknameDraft(nickname), [nickname]);
   const normalizedNickname = normalizeStudioVirtualSpaceNickname(nicknameDraft);
   const patchCharacter = (patch: Partial<StudioVirtualCharacterCustomization>) => onCharacter({ ...character, ...patch });
+  const activeTheme = spaceTheme ? studioSpaceTheme(spaceTheme) : null;
   const [notice, setNotice] = useState("");
   const [history, setHistory] = useState<{ past: StudioVirtualDecorationState[]; future: StudioVirtualDecorationState[] }>({ past: [], future: [] });
   const accepted = useRef(decorations);
@@ -136,11 +187,33 @@ export function StudioVirtualSpaceCustomizationPanel({
     accepted.current = next; onDecorations(next);
     setNotice(direction === "undo" ? bt("이전 배치로 되돌렸어요.", "Previous layout restored.") : bt("배치를 다시 적용했어요.", "Layout reapplied."));
   };
+  const applyThemeHarmony = () => {
+    if (!activeTheme) return;
+    const harmony = activeTheme.recommendedCharacterCustomization;
+    onCharacter({
+      ...character,
+      accessoryKey: harmony.accessory,
+      auraKey: harmony.aura,
+      trailKey: harmony.trail,
+      nameplateKey: harmony.nameplate,
+    });
+    const presetKey = activeTheme.recommendedDecorPreset;
+    commit(world ? studioVirtualDecorationPresetForWorld(presetKey, world, selfPoint)
+      : { ok: true, state: studioVirtualDecorationPreset(presetKey) });
+    setNotice(bt(`${activeTheme.labelKo} 테마에 맞춰 캐릭터 치장과 사무실 오브젝트를 조화롭게 배치했어요.`, `Applied ${activeTheme.labelEn} harmony for your character and studio layout.`));
+  };
   return <section className="vs2-panel studio-vspace-customization" data-space-interactive="true">
     <header>
       <div><p>BUILD & STYLE</p><h2>{bt("캐릭터·공간 꾸미기", "Character & space customization")}</h2></div>
       <Sparkles size={19} aria-hidden />
     </header>
+    {spaceTheme && onSpaceThemeChange ? <StudioVirtualSpaceThemePicker value={spaceTheme} onChange={onSpaceThemeChange} /> : null}
+    {activeTheme ? <div className="studio-vspace-customization-harmony">
+      <button type="button" className="space-link-row" data-theme-harmony-apply="true" onClick={applyThemeHarmony}>
+        <Sparkles size={16} aria-hidden />
+        {bt(`${activeTheme.labelKo} 맞춤 캐릭터·오피스 원클릭 코디`, `Apply ${activeTheme.labelEn} character & office harmony`)}
+      </button>
+    </div> : null}
     <fieldset className="studio-vspace-customization-identity">
       <legend>{bt("내 닉네임", "My nickname")}</legend>
       <form onSubmit={(event) => {
@@ -162,6 +235,50 @@ export function StudioVirtualSpaceCustomizationPanel({
           : bt("2~16자의 한글·영문·숫자·공백을 사용해 주세요.", "Use 2–16 letters, numbers or spaces.")}</small>
       </form>
     </fieldset>
+    <fieldset data-office-role-presets="true">
+      <legend>{bt("오피스 직군 · 워크모드 원클릭 코디", "Office role & work-mode presets")}</legend>
+      <div className="studio-vspace-customization-options">
+        {STUDIO_VIRTUAL_CHARACTER_PRESETS.map((preset) => {
+          const active =
+            character.accessoryKey === preset.customization.accessoryKey &&
+            character.auraKey === preset.customization.auraKey &&
+            character.trailKey === preset.customization.trailKey &&
+            character.nameplateKey === preset.customization.nameplateKey;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              data-office-preset-id={preset.id}
+              aria-pressed={active}
+              title={bt(preset.roleSummaryKo, preset.roleSummaryEn)}
+              onClick={() => {
+                onCharacter(preset.customization);
+                setNotice(bt(`${preset.labelKo} 코디를 적용했어요.`, `Applied ${preset.labelEn} outfit.`));
+              }}
+            >
+              {`${preset.icon} ${bt(preset.labelKo, preset.labelEn)}`}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+    {onTriggerEmote ? (
+      <fieldset data-office-wellness-stage="true">
+        <legend>{bt("오피스 웰니스 · 스트레칭 & 댄스 모션", "Office wellness · stretch & dance")}</legend>
+        <div className="studio-vspace-customization-options">
+          {WELLNESS_MOTION_ACTIONS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-wellness-motion={item.id}
+              onClick={() => onTriggerEmote(item.id)}
+            >
+              {`${item.icon} ${bt(item.labelKo, item.labelEn)}`}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    ) : null}
     <fieldset>
       <legend>{bt("액세서리", "Accessory")}</legend>
       <div className="studio-vspace-customization-options">

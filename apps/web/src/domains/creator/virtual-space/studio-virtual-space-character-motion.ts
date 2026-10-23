@@ -113,6 +113,10 @@ const EMOTE_EMOTION: Readonly<Record<StudioSpaceEmoteId, StudioEmotionKind>> = O
   "coffee": "neutral",
   "music": "neutral",
   "sleep": "sleep",
+  "calisthenics": "joy",
+  "yoga": "focus",
+  "kpop-dance": "joy",
+  "shuffle": "joy",
 });
 
 /** 이모트 → 감정. 없거나 모르면 neutral. */

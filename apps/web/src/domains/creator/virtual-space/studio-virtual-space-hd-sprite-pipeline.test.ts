@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import { resolveStudioMicroExpressionSpec } from "./studio-virtual-space-actor-aura-runtime";
 import {
+  resolveStudioHdActivityAura,
+  resolveStudioHdActorTint,
+  resolveStudioHdGroundContactSpec,
+  resolveStudioHdSpriteTier,
   snapStudioHdDisplayScale,
   studioHdBackdropImageSet,
   studioHdSpriteCssFilter,
   studioHdSpriteProfile,
-  resolveStudioHdSpriteTier,
 } from "./studio-virtual-space-hd-sprite-pipeline";
 
 describe("studio-virtual-space-hd-sprite-pipeline", () => {
@@ -62,5 +66,133 @@ describe("studio-virtual-space-hd-sprite-pipeline", () => {
     expect(studioHdSpriteCssFilter(ultra, false)).toContain("contrast");
     expect(studioHdBackdropImageSet("/a.webp")).toBe('url("/a.webp")');
     expect(studioHdBackdropImageSet("/a.webp", "/a-2x.webp")).toContain("2x");
+  });
+
+  it("시간대·방향·상태·테마 색온도에 따라 자연스러운 환경광 하모니 틴트를 산출한다", () => {
+    const dayTint = resolveStudioHdActorTint({ dayPhase: "day", facing: "down" });
+    const nightTint = resolveStudioHdActorTint({ dayPhase: "night", facing: "down" });
+    const backTint = resolveStudioHdActorTint({ dayPhase: "day", facing: "up" });
+    const ghostTint = resolveStudioHdActorTint({ dayPhase: "day", ghost: true });
+    const atelierTint = resolveStudioHdActorTint({ dayPhase: "day", spaceTheme: "webtoon-atelier", facing: "down" });
+    const celestialTint = resolveStudioHdActorTint({ dayPhase: "day", spaceTheme: "celestial-observatory", facing: "down" });
+
+    expect(dayTint).toBe(0xffffff);
+    expect(nightTint).not.toBe(dayTint);
+    expect(backTint).toBeLessThan(dayTint);
+    expect(ghostTint).toBe(0xc8e6ff);
+    expect(atelierTint).not.toBe(celestialTint);
+  });
+
+  it("보행 위상에 동기화된 이중 접지 그림자(Core AO + Penumbra) 스펙을 계산한다", () => {
+    const contact = resolveStudioHdGroundContactSpec({
+      distance: 0,
+      stride: 108,
+      moving: true,
+      seated: false,
+      ghost: false,
+      reducedMotion: false,
+      tier: "ultra",
+    });
+    const midAir = resolveStudioHdGroundContactSpec({
+      distance: 27,
+      stride: 108,
+      moving: true,
+      seated: false,
+      ghost: false,
+      reducedMotion: false,
+      tier: "ultra",
+    });
+    const seated = resolveStudioHdGroundContactSpec({
+      distance: 0,
+      stride: 108,
+      moving: false,
+      seated: true,
+      ghost: false,
+      reducedMotion: false,
+    });
+
+    expect(contact.visible).toBe(true);
+    expect(contact.coreAlpha).toBeGreaterThan(midAir.coreAlpha);
+    expect(contact.penumbraAlpha).toBeGreaterThan(midAir.penumbraAlpha);
+    expect(seated.visible).toBe(false);
+  });
+
+  it("집중·검토·회의 상태에만 공감각 바닥 오라를 켜고 일반 상태에서는 숨긴다", () => {
+    const idleAura = resolveStudioHdActivityAura({
+      activity: "available",
+      userStatus: null,
+      timeMs: 1000,
+      reducedMotion: false,
+    });
+    const focusAura = resolveStudioHdActivityAura({
+      activity: "focused",
+      userStatus: "focusing",
+      timeMs: 600,
+      reducedMotion: false,
+    });
+    const reviewAura = resolveStudioHdActivityAura({
+      activity: "reviewing",
+      userStatus: null,
+      timeMs: 600,
+      reducedMotion: true,
+    });
+
+    expect(idleAura.visible).toBe(false);
+    expect(focusAura.visible).toBe(true);
+    expect(focusAura.kind).toBe("focus");
+    expect(focusAura.colorHex).toBe(0x34d399);
+    expect(reviewAura.visible).toBe(true);
+    expect(reviewAura.kind).toBe("review");
+    expect(reviewAura.colorHex).toBe(0xfbbf24);
+  });
+
+  it("캐릭터 작은 얼굴에 감정·활동·상태별 마이크로 표정(홍조·눈가 반짝임) 스펙을 산출한다", () => {
+    const joy = resolveStudioMicroExpressionSpec({
+      reaction: "wave",
+      activity: "available",
+      userStatus: null,
+      moving: false,
+      seated: false,
+      ghost: false,
+      reducedMotion: false,
+      timeMs: 500,
+    });
+    const focus = resolveStudioMicroExpressionSpec({
+      reaction: null,
+      activity: "focused",
+      userStatus: "focused",
+      moving: false,
+      seated: true,
+      ghost: false,
+      reducedMotion: false,
+      timeMs: 500,
+    });
+    const away = resolveStudioMicroExpressionSpec({
+      reaction: null,
+      activity: "away",
+      userStatus: "on-break",
+      moving: false,
+      seated: false,
+      ghost: false,
+      reducedMotion: false,
+      timeMs: 500,
+    });
+    const ghost = resolveStudioMicroExpressionSpec({
+      reaction: "wave",
+      activity: "available",
+      userStatus: null,
+      moving: true,
+      seated: false,
+      ghost: true,
+      reducedMotion: false,
+      timeMs: 500,
+    });
+
+    expect(joy.visible).toBe(true);
+    expect(joy.kind).toBe("joy-sparkle");
+    expect(joy.cheekAlpha).toBeGreaterThan(0.35);
+    expect(focus.kind).toBe("focus-glint");
+    expect(away.kind).toBe("sleep-bubble");
+    expect(ghost.visible).toBe(false);
   });
 });
