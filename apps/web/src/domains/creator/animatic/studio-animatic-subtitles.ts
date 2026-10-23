@@ -239,11 +239,11 @@ function srtText(cue: StudioAnimaticSubtitleCue): string {
 }
 
 function escapeVttText(value: string): string {
+  // `>`를 `&gt;`로 치환하면 WebVTT 타임스탬프 화살표(`-->`)도 함께 `--&gt;`로 이스케이프된다.
   return value
     .replace(/&/gu, "&amp;")
     .replace(/</gu, "&lt;")
-    .replace(/>/gu, "&gt;")
-    .replace(/-->/gu, "--&gt;");
+    .replace(/>/gu, "&gt;");
 }
 
 function vttText(cue: StudioAnimaticSubtitleCue): string {

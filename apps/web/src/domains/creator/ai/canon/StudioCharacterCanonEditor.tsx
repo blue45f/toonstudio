@@ -78,6 +78,7 @@ export function StudioCharacterCanonEditor({
   const [referenceSource, setReferenceSource] = useState<CanonReferenceSource | null>(sheet?.referenceSource ?? null);
   const [referenceLabel, setReferenceLabel] = useState<string | null>(sheet?.referenceLabel ?? null);
   const [tab, setTab] = useState<ReferenceTab>("upload");
+  const [shaperUrl, setShaperUrl] = useState("");
   const [errors, setErrors] = useState<readonly string[]>([]);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -273,14 +274,16 @@ export function StudioCharacterCanonEditor({
                   id="canon-shaper-url"
                   type="url"
                   inputMode="url"
+                  value={shaperUrl}
+                  onChange={(event) => setShaperUrl(event.target.value)}
                   placeholder="https://…"
                   disabled={busy}
                   className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-panel px-2 text-xs text-fg outline-none focus:border-accent disabled:opacity-60"
                   onKeyDown={(event) => {
                     if (event.key !== "Enter") return;
-                    const input = event.currentTarget;
-                    if (input.value.trim()) {
-                      pickReference(input.value.trim(), "shaper", bt("3D 셰이퍼 스냅샷", "3D Shaper snapshot"));
+                    const trimmed = shaperUrl.trim();
+                    if (trimmed) {
+                      pickReference(trimmed, "shaper", bt("3D 셰이퍼 스냅샷", "3D Shaper snapshot"));
                     }
                   }}
                 />
@@ -288,9 +291,9 @@ export function StudioCharacterCanonEditor({
                   type="button"
                   disabled={busy}
                   onClick={() => {
-                    const input = document.getElementById("canon-shaper-url") as HTMLInputElement | null;
-                    if (input?.value.trim()) {
-                      pickReference(input.value.trim(), "shaper", bt("3D 셰이퍼 스냅샷", "3D Shaper snapshot"));
+                    const trimmed = shaperUrl.trim();
+                    if (trimmed) {
+                      pickReference(trimmed, "shaper", bt("3D 셰이퍼 스냅샷", "3D Shaper snapshot"));
                     }
                   }}
                   className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel px-3 text-xs font-semibold hover:bg-raised disabled:opacity-60"

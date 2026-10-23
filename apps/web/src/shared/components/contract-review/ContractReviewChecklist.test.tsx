@@ -34,7 +34,7 @@ afterEach(() => {
 });
 
 function group(titlePart: string): HTMLElement {
-  return screen.getByRole("radiogroup", { name: new RegExp(titlePart.replace(/[()]/gu, "\\$&"), "u") });
+  return screen.getByRole("radiogroup", { name: new RegExp(titlePart.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u") });
 }
 
 function choose(titlePart: string, answerName: string): void {

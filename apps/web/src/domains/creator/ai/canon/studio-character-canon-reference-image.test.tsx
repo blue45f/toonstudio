@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
+import { StudioCharacterCanonEditor } from "./StudioCharacterCanonEditor";
 import { isSafeReferenceImageUrl, safeReferenceImageSrc, toRenderableReferenceImageSrc } from "./reference-image-src";
+
+afterEach(() => {
+  cleanup();
+});
 
 const NUL = String.fromCharCode(0);
 const TAB = String.fromCharCode(9);
@@ -125,6 +131,23 @@ describe("sink 전달값 재조립", () => {
     ]) {
       expect(toRenderableReferenceImageSrc(hostile, base), String(hostile)).toBeNull();
     }
+  });
+
+  it("3D 셰이퍼 스냅샷 입력은 제어 상태로 반영되며 위험 스킴은 미리보기에 렌더하지 않는다", () => {
+    render(<StudioCharacterCanonEditor onSubmit={() => []} onCancel={() => undefined} />);
+    fireEvent.click(screen.getByRole("tab", { name: /3D 셰이퍼|3D Shaper/u }));
+    const input = screen.getByPlaceholderText("https://…");
+    const applyButton = screen.getByRole("button", { name: /적용|Apply/u });
+
+    fireEvent.change(input, { target: { value: "https://cdn.example.com/shaper-snap.png" } });
+    fireEvent.click(applyButton);
+    expect(screen.getByAltText(/선택된 레퍼런스|Selected reference/u).getAttribute("src")).toBe(
+      "https://cdn.example.com/shaper-snap.png",
+    );
+
+    fireEvent.change(input, { target: { value: "javascript:alert(1)" } });
+    fireEvent.click(applyButton);
+    expect(screen.queryByAltText(/선택된 레퍼런스|Selected reference/u)).toBeNull();
   });
 });
 });

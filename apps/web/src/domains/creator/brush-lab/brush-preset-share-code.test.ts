@@ -280,7 +280,7 @@ describe("공유 카드(이미지)", () => {
     expect(svg.startsWith("<svg")).toBe(true);
     expect(svg).toContain("나의 G펜 변형");
     const code = encodeBrushPresetShareCode(bundle);
-    const compactSvgText = svg.replace(/<[^>]+>/gu, "").replace(/\s+/gu, "");
+    const compactSvgText = svg.split(/<[^>]+>/gu).join("").replace(/\s+/gu, "");
     expect(compactSvgText).toContain(code.replace(/\s+/gu, ""));
     // 카드에서 텍스트만 뽑은(OCR·복사) 문자열도 같은 디코더로 설치된다.
     expect(decodeBrushPresetShareCode(compactSvgText).brush?.name).toBe("나의 G펜 변형");

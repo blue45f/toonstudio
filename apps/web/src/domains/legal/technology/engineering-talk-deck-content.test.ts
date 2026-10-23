@@ -115,7 +115,7 @@ function numberTokens(text: string): string[] {
 }
 
 const hasNumber = (source: string, token: string): boolean =>
-  new RegExp(`(?<![\\d.])${token.replace(/\./gu, "\\.")}(?![\\d])`, "u").test(source.replace(/(\d),(?=\d)/gu, "$1"));
+  new RegExp(`(?<![\\d.])${token.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}(?![\\d])`, "u").test(source.replace(/(\d),(?=\d)/gu, "$1"));
 
 describe("세미나 발표 원본: 구성과 시간표", () => {
   it("정확히 30분이고 첫 구간(표지·순서·문제)은 3분이다", () => {

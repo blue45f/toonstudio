@@ -84,10 +84,14 @@ const RASTER_DATA_IMAGE_URL_PATTERN =
 export function toRenderableReferenceImageSrc(value: string | null, base: string): string | null {
   const cleaned = safeReferenceImageSrc(value);
   if (cleaned === null) return null;
-  if (RASTER_DATA_IMAGE_URL_PATTERN.test(cleaned)) return cleaned;
   try {
     const url = new URL(cleaned, base);
-    if (url.protocol === "https:" || url.protocol === "http:" || url.protocol === "blob:") {
+    if (
+      url.protocol === "https:" ||
+      url.protocol === "http:" ||
+      url.protocol === "blob:" ||
+      (url.protocol === "data:" && RASTER_DATA_IMAGE_URL_PATTERN.test(url.href))
+    ) {
       return url.href;
     }
     return null;
