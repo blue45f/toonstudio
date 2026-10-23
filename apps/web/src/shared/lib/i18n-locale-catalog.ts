@@ -152,7 +152,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "ru": 0.9816,
   "si": 0.9797,
   "sk": 0.9742,
-  "sl": 0.2209,
+  "sl": 0.9746,
   "sq": 0.9758,
   "sr": 0.9789,
   "sv": 0.9711,
