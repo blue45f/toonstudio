@@ -907,3 +907,74 @@ code,
     color: HighlightText;
   }
 }
+
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
+p,
+li,
+dd {
+  text-wrap: pretty;
+}
+
+.lab-workflow-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+  background: var(--lab-panel);
+}
+
+.lab-workflow-step {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 999px;
+  background: var(--lab-raised);
+  color: var(--lab-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.lab-workflow-step--active {
+  border-color: var(--lab-accent);
+  background: rgba(124, 104, 236, 0.22);
+  color: var(--lab-fg);
+  font-weight: 600;
+}
+
+.lab-draw-size-chips {
+  margin-top: -2px;
+}
+
+.lab-draw-status-pill {
+  align-self: center;
+}
+
+.lab-draw-shortcut-hint {
+  align-self: center;
+  font-size: 0.82rem;
+}
+
+.lab-draw-hud-onboarding {
+  padding: 6px 10px;
+  border-left: 3px solid var(--lab-accent);
+  border-radius: 4px;
+  background: var(--lab-raised);
+  font-size: 0.85rem;
+}
+
+.lab-table th[title],
+.lab-stats dt[title] {
+  text-decoration: underline dotted var(--lab-muted);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+

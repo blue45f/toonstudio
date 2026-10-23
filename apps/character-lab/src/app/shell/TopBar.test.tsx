@@ -7,6 +7,7 @@ import { mockDiagnostics } from "../../testing/mock-engine";
 import { createMockEngineSession, createMockLabStore, MockLabProvider } from "../../testing/mock-store";
 
 import { detectQualityPreset, TopBar } from "./TopBar";
+import { createUiStateStore } from "./ui-state";
 import { createViewportRegistry } from "./viewport-registry";
 
 afterEach(cleanup);
@@ -81,6 +82,42 @@ describe("app/shell/TopBar", () => {
     });
     fireEvent.keyDown(window, { key: "z", ctrlKey: true });
     expect(store.dispatched).toHaveLength(2);
+  });
+
+  it("빠른 스타일 프리셋 버튼과 단축키·가이드 토글 및 숫자키 탭 전환이 동작한다", () => {
+    const store = createMockLabStore();
+    const ui = createUiStateStore();
+    render(
+      <MockLabProvider store={store} shell={{ ui }}>
+        <TopBar />
+      </MockLabProvider>,
+    );
+    expect(screen.getByRole("button", { name: "PBR 스튜디오" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "고품질 히어로" }));
+    expect(store.dispatched.at(-1)).toEqual({
+      type: "shading/set",
+      profile: { ...applyQualityPreset(createDefaultRecipe().shading, "hero"), mode: "toon" },
+    });
+
+    const helpBtn = screen.getByTestId("topbar-help-toggle");
+    expect(helpBtn.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByTestId("topbar-help-panel")).toBeNull();
+    fireEvent.click(helpBtn);
+    expect(helpBtn.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("topbar-help-panel")).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("topbar-help-panel")).toBeNull();
+
+    fireEvent.keyDown(window, { key: "?" });
+    expect(screen.getByTestId("topbar-help-panel")).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "3" });
+    expect(ui.getState().inspectorTab).toBe("pose");
+    fireEvent.keyDown(window, { key: "4" });
+    expect(ui.getState().inspectorTab).toBe("physics");
+    fireEvent.keyDown(window, { key: "9" });
+    expect(ui.getState().inspectorTab).toBe("export");
   });
 
   it("detectQualityPreset는 shadows/postfx/ibl만 비교한다", () => {

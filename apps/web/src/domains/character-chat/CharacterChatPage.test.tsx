@@ -105,4 +105,16 @@ describe("CharacterChatPage", () => {
     renderPage("/character-chat?work=no-such-work");
     expect(screen.getByText(/아직 캐릭터 챗을 열지 않았어요/)).toBeTruthy();
   });
+
+  it("추천 첫마디 칩을 누르면 입력창에 문구가 채워지고 캐릭터 검색으로 목록을 좁힌다", () => {
+    engineState.ready = true;
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "오늘 기분은 어때?" }));
+    const input = screen.getByLabelText("캐릭터에게 보낼 메시지") as HTMLTextAreaElement;
+    expect(input.value).toBe("오늘 기분은 어때?");
+
+    const searchInput = screen.getByRole("searchbox", { name: "대화할 캐릭터 검색" });
+    fireEvent.change(searchInput, { target: { value: "하루" } });
+    expect(screen.getByRole("button", { name: /하루/ })).toBeTruthy();
+  });
 });

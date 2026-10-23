@@ -103,6 +103,10 @@ export function StudioCuttoonEditorContextMenu(s: StudioCuttoonEditorViewSession
           setQuickShapeActive(true);
         }}
         onOpenQuickAccess={() => s.studioOptionsBarsHandlers.openQuickAccess?.({ x: contextMenu.x, y: contextMenu.y })}
+        onUndo={typeof s.undo === "function" ? () => s.undo() : undefined}
+        onRedo={typeof s.redo === "function" ? () => s.redo() : undefined}
+        onFlipHorizontal={typeof s.toggleCanvasFlipX === "function" ? () => s.toggleCanvasFlipX() : undefined}
+        onZoomReset={typeof s.zoomReset === "function" ? () => s.zoomReset() : undefined}
         onClose={() => setContextMenu((prev) => ({ ...prev, visible: false }))}
       />
   );

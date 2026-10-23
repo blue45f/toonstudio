@@ -229,7 +229,42 @@ export function CommunityPage() {
         </div>
       </Section>
 
-      <section className="mt-8 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
+      <section
+        aria-label="커뮤니티 빠른 길잡이"
+        data-testid="community-quick-guide"
+        className="mt-8 rounded-2xl border border-line bg-card/65 p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold text-fg">
+            처음 방문하셨나요? 관심 있는 활동부터 바로 참여해 보세요
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/community/reviews"
+              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+            >
+              작품 리뷰·감상평 보기
+              <ArrowRight size={12} aria-hidden="true" />
+            </Link>
+            <Link
+              href="/community/timelapse"
+              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+            >
+              작화 타임랩스 갤러리
+              <ArrowRight size={12} aria-hidden="true" />
+            </Link>
+            <Link
+              href="/community/promote/new"
+              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs font-bold text-accent transition-colors hover:bg-accent/15"
+            >
+              내 신작 홍보하기
+              <ArrowRight size={12} aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
         <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />
       </section>
 

@@ -1,8 +1,11 @@
 import { useMemo } from "react";
 import {
   Brush,
+  CheckCircle2,
+  CloudUpload,
   Command,
   FlipHorizontal2,
+  HelpCircle,
   Layers3,
   Maximize2,
   Minus,
@@ -11,6 +14,7 @@ import {
   Palette,
   Plus,
   Redo2,
+  ShieldAlert,
   SlidersHorizontal,
   Sparkles,
   Undo2,
@@ -29,6 +33,9 @@ import {
 
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
+const QUICK_STROKE_WIDTHS = [2, 5, 12, 28, 64] as const;
+const QUICK_OPACITIES = [1, 0.75, 0.5, 0.25] as const;
+const QUICK_STABILIZER_LEVELS = [0, 3, 7, 12, 15] as const;
 const SYMMETRY_CYCLE_ORDER = ["off", "vertical", "horizontal", "quadrant", "radial"] as const;
 
 function clamp(value: number, min: number, max: number): number {
@@ -62,6 +69,12 @@ function resolveNextSymmetryType(current: unknown): string {
   return SYMMETRY_CYCLE_ORDER[(index + 1) % SYMMETRY_CYCLE_ORDER.length] ?? "off";
 }
 
+function nextInCycle<T extends number>(list: readonly T[], current: number): T {
+  const idx = list.findIndex((item) => Math.abs(item - current) < 0.01);
+  if (idx < 0) return list[0];
+  return list[(idx + 1) % list.length];
+}
+
 /**
  * Compact application chrome for the drawing-focused presentation.
  *
@@ -72,11 +85,13 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
   const s = session;
   const brushName = s.activeCatalogBrush?.name ?? s.brush ?? "Brush";
   const strokeWidth = clamp(Math.round(Number(s.strokeWidth) || 8), 1, 200);
+  const currentWidth = Math.round(Number(s.strokeWidth) || 0);
   const opacityRatio = clamp(
     typeof s.brushOpacity === "number" && Number.isFinite(s.brushOpacity) ? s.brushOpacity : 1,
     0.05,
     1,
   );
+  const currentOpacity = typeof s.brushOpacity === "number" && Number.isFinite(s.brushOpacity) ? s.brushOpacity : 1;
   const stabilizer = clamp(typeof s.stabilizer === "number" && Number.isFinite(s.stabilizer) ? Math.round(s.stabilizer) : 0, 0, 100);
   const symmetryType = typeof s.symmetryType === "string" ? s.symmetryType : "off";
   const symmetryActive = symmetryType !== "off";
@@ -85,6 +100,18 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
   const zoomRatio = clamp(typeof s.zoom === "number" && Number.isFinite(s.zoom) ? s.zoom : 1, 0.1, 16);
   const zoomPercent = Math.round(zoomRatio * 100);
   const tx = (source: string) => translateCurrentStaticSourceText("StudioDrawingAppBar", "ko", source);
+
+  const isSyncBusy = Boolean(s.saving || s.collaborationOperationSyncPending);
+  const hasSyncError = Boolean(s.serverRevisionError);
+  const isOfflineProtected = Boolean(s.offlineSceneNotice);
+
+  const syncLabel = hasSyncError
+    ? tx("동기화 확인 필요")
+    : isOfflineProtected
+      ? tx("오프라인 보호 중")
+      : isSyncBusy
+        ? tx("실시간 저장 중…")
+        : tx("실시간 동기화됨");
 
   const cspScorecard = useMemo(
     () =>
@@ -191,9 +218,16 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             >
               <Minus size={11} aria-hidden="true" />
             </button>
-            <span className="min-w-11 px-1 text-center" data-testid="studio-appbar-stroke-width">
-              {strokeWidth} px
-            </span>
+            <button
+              type="button"
+              data-testid="drawing-appbar-size-cycle"
+              className="min-w-11 px-1 text-center transition-colors hover:text-fg"
+              aria-label={`${tx("브러시 크기 빠른 전환, 현재")} ${currentWidth} px`}
+              title={tx("클릭하여 자주 쓰는 브러시 크기(2·5·12·28·64px) 전환 · 단축키 [ / ]")}
+              onClick={() => s.setStrokeWidth?.(nextInCycle(QUICK_STROKE_WIDTHS, currentWidth))}
+            >
+              <span data-testid="studio-appbar-stroke-width">{strokeWidth} px</span>
+            </button>
             <button
               type="button"
               className="inline-flex size-6 items-center justify-center rounded-full text-fg-3 transition-colors hover:bg-raised hover:text-fg"
@@ -221,9 +255,16 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             >
               <Minus size={11} aria-hidden="true" />
             </button>
-            <span className="min-w-10 px-1 text-center" data-testid="studio-appbar-opacity">
-              {percent(opacityRatio)}
-            </span>
+            <button
+              type="button"
+              data-testid="drawing-appbar-opacity-cycle"
+              className="min-w-10 px-1 text-center transition-colors hover:text-fg"
+              aria-label={`${tx("브러시 불투명도 빠른 전환, 현재")} ${percent(currentOpacity)}`}
+              title={tx("클릭하여 불투명도(100%·75%·50%·25%) 빠른 전환")}
+              onClick={() => s.setBrushOpacity?.(nextInCycle(QUICK_OPACITIES, currentOpacity))}
+            >
+              <span data-testid="studio-appbar-opacity">{percent(opacityRatio)}</span>
+            </button>
             <button
               type="button"
               className="inline-flex size-6 items-center justify-center rounded-full text-fg-3 transition-colors hover:bg-raised hover:text-fg"
@@ -251,9 +292,16 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             >
               <Minus size={11} aria-hidden="true" />
             </button>
-            <span className="px-1 text-center" data-testid="studio-appbar-stabilizer">
-              Stabilizer {stabilizer}
-            </span>
+            <button
+              type="button"
+              data-testid="drawing-appbar-stabilizer-cycle"
+              className="px-1 text-center transition-colors hover:text-fg"
+              aria-label={`${tx("손떨림 보정 강도 빠른 전환, 현재")} Stabilizer ${stabilizer}`}
+              title={tx("클릭하여 손떨림 보정 단계(0·3·7·12·15) 빠른 전환")}
+              onClick={() => s.setStabilizer?.(nextInCycle(QUICK_STABILIZER_LEVELS, stabilizer))}
+            >
+              <span data-testid="studio-appbar-stabilizer">Stabilizer {stabilizer}</span>
+            </button>
             <button
               type="button"
               className="inline-flex size-6 items-center justify-center rounded-full text-fg-3 transition-colors hover:bg-raised hover:text-fg"
@@ -361,6 +409,35 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           >
             <span data-testid="studio-appbar-zoom-percent">{zoomPercent}%</span>
           </button>
+
+          {/* 원고 동기화 상태 버튼 */}
+          <button
+            type="button"
+            data-testid="drawing-appbar-sync-status"
+            aria-live="polite"
+            aria-label={`${tx("원고 동기화 상태")}: ${syncLabel}`}
+            title={tx("클릭하여 즉시 원고 저장·서버 동기화 플러시")}
+            onClick={() => s.requestSaveFlush?.()}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[0.65rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+              hasSyncError
+                ? "border-warn/45 bg-warn/10 text-warn"
+                : isOfflineProtected
+                  ? "border-cool/45 bg-cool/10 text-cool"
+                  : isSyncBusy
+                    ? "border-accent/45 bg-accent/10 text-accent"
+                    : "border-good/35 bg-good/10 text-good",
+            )}
+          >
+            {hasSyncError || isOfflineProtected ? (
+              <ShieldAlert size={12} aria-hidden="true" />
+            ) : isSyncBusy ? (
+              <CloudUpload size={12} aria-hidden="true" />
+            ) : (
+              <CheckCircle2 size={12} aria-hidden="true" />
+            )}
+            <span>{syncLabel}</span>
+          </button>
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1" aria-label={tx("드로잉 빠른 도구")}>
@@ -403,6 +480,17 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             onClick={() => s.setQuickAccessPaletteOpen?.((value: boolean) => !value)}
           >
             <Command size={17} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            data-testid="drawing-appbar-help-button"
+            className={cn(buttonClass({ variant: s.shortcutsOpen ? "solid" : "quiet", size: "icon" }))}
+            aria-pressed={Boolean(s.shortcutsOpen)}
+            aria-label={tx("단축키 및 입문 가이드")}
+            title={`${tx("단축키 및 클립스튜디오·프로크리에이트 이주 가이드")} · ?`}
+            onClick={() => s.setShortcutsOpen?.((value: boolean) => !value)}
+          >
+            <HelpCircle size={17} aria-hidden="true" />
           </button>
           <button
             type="button"

@@ -76,6 +76,31 @@ export function SearchPage() {
       <DiscoveryWorkspaceNav current="search" className="mb-6 sm:mb-8" />
 
       <div
+        role="group"
+        aria-label="인기 검색 키워드"
+        data-testid="search-quick-keywords"
+        className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-card/60 px-3.5 py-2.5"
+      >
+        <span className="text-xs font-bold text-fg-2">빠른 추천 검색:</span>
+        {[
+          { label: "#로맨스판타지", href: "/search?q=로맨스판타지" },
+          { label: "#사이다회귀", href: "/search?q=회귀" },
+          { label: "#일상힐링", href: "/search?q=일상" },
+          { label: "#학원액션", href: "/search?q=액션" },
+          { label: "#미스터리스릴러", href: "/search?q=스릴러" },
+          { label: "무료·기다무 작품만", href: "/search?pricing=free" },
+        ].map((chip) => (
+          <Link
+            key={chip.href}
+            href={chip.href}
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:bg-accent/10 hover:text-accent"
+          >
+            {chip.label}
+          </Link>
+        ))}
+      </div>
+
+      <div
         id="toonstudio-search-explorer-top"
         tabIndex={-1}
         className="search-page-results [scroll-margin-top:var(--site-header-sticky-offset)] outline-none"

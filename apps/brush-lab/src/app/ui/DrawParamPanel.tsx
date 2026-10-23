@@ -97,6 +97,13 @@ function Slider({ id, label, value, min, max, step, text, isDefault, disabled, o
  * 값은 `BrushParamPanel`과 같은 프로그램 오버라이드(`applyOverrides`)로 적용되고 `normalizeProgram`이 범위를 검증한다.
  * 같은 오버라이드를 편집하는 고급 슬라이더(경도·간격·산포·팁 …)는 접이식으로 `BrushParamFields`를 재사용한다.
  */
+const QUICK_BRUSH_SIZES = [
+  { sizePx: 4, label: "세필 4px" },
+  { sizePx: 12, label: "중필 12px" },
+  { sizePx: 32, label: "태필 32px" },
+  { sizePx: 64, label: "대붓 64px" },
+] as const;
+
 export function DrawParamPanel() {
   const { drawActions } = useLab();
   const presetId = useDrawSelector((s) => s.presetId);
@@ -142,6 +149,19 @@ export function DrawParamPanel() {
         isDefault={overrides.sizePx === undefined}
         onChange={(v) => set({ sizePx: v })}
       />
+      <div className="lab-draw-chips lab-draw-size-chips" role="group" aria-label="빠른 브러시 크기" data-testid="lab-draw-size-presets">
+        {QUICK_BRUSH_SIZES.map((preset) => (
+          <button
+            key={preset.sizePx}
+            type="button"
+            className="lab-draw-chip"
+            aria-pressed={sizePx === preset.sizePx}
+            onClick={() => set({ sizePx: preset.sizePx })}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
       <Slider
         id="lab-draw-opacity"
         label="불투명도"

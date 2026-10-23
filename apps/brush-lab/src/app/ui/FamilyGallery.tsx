@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { PRESET_CATALOG } from "../../engine/presets/catalog";
 import { useLab, useLabSelector } from "../shell/lab-context";
@@ -6,8 +6,24 @@ import { messageOf } from "../state/run-compare";
 
 import { PresetCard } from "./PresetCard";
 
+import type { BrushFamily } from "../../engine/presets/program-schema";
 import type { GalleryRenderer } from "../../platform/worker-client";
 import type { LabActions, LabStore } from "../state/lab-store";
+
+type GalleryGroupFilter = "all" | "ink" | "dry" | "wet" | "tone-fx" | "utility";
+
+const GALLERY_GROUPS: readonly {
+  id: GalleryGroupFilter;
+  label: string;
+  families?: readonly BrushFamily[];
+}[] = [
+  { id: "all", label: `전체 (${PRESET_CATALOG.length})` },
+  { id: "ink", label: "선화·잉크·볼펜", families: ["ink", "ballpoint", "hatch"] },
+  { id: "dry", label: "연필·목탄·건식", families: ["pencil", "charcoal", "chalk", "conte", "crayon"] },
+  { id: "wet", label: "수채·수묵·유화", families: ["watercolor", "sumi", "gouache", "oil", "acrylic"] },
+  { id: "tone-fx", label: "마커·망점·특수", families: ["marker", "halftone", "texture", "airbrush", "spray", "special"] },
+  { id: "utility", label: "문지르기·지우개", families: ["smudge", "eraser"] },
+];
 
 /** 동시에 띄우는 Worker 요청 수. Worker 1개이므로 큐 길이만 제한한다. */
 const GALLERY_CONCURRENCY = 2;
@@ -43,10 +59,18 @@ export async function renderGallery(
 export function FamilyGallery() {
   const { gallery, galleryError, store, actions } = useLab();
   const state = useLabSelector((s) => s.gallery);
+  const [groupFilter, setGroupFilter] = useState<GalleryGroupFilter>("all");
   useEffect(() => {
     if (!gallery || state.status !== "idle") return;
     void renderGallery(gallery, store, actions, PRESET_CATALOG.map((p) => p.id));
   }, [gallery, state.status, store, actions]);
+
+  const filteredPresets = useMemo(() => {
+    const group = GALLERY_GROUPS.find((g) => g.id === groupFilter);
+    if (!group?.families) return PRESET_CATALOG;
+    const allowed = new Set<BrushFamily>(group.families);
+    return PRESET_CATALOG.filter((p) => allowed.has(p.family));
+  }, [groupFilter]);
 
   const entries = Object.values(state.entries);
   const done = entries.filter((e) => e.status === "done").length;
@@ -72,13 +96,26 @@ export function FamilyGallery() {
           다시 렌더
         </button>
       </div>
+      <div className="lab-chip-row" role="group" aria-label="갤러리 매체군 빠른 필터">
+        {GALLERY_GROUPS.map((group) => (
+          <button
+            key={group.id}
+            type="button"
+            className="lab-chip"
+            aria-pressed={groupFilter === group.id}
+            onClick={() => setGroupFilter(group.id)}
+          >
+            {group.label}
+          </button>
+        ))}
+      </div>
       {!gallery ? (
         <p className="lab-error-list" role="alert">
           갤러리 렌더러 없음: {galleryError ?? "사유 없음"} (무음 대체 없음 — 메인 스레드로 대체 렌더하지 않는다)
         </p>
       ) : null}
       <div className="lab-gallery" role="list" aria-label="브러시 가족 갤러리">
-        {PRESET_CATALOG.map((preset) => (
+        {filteredPresets.map((preset) => (
           <div role="listitem" key={preset.id}>
             <PresetCard preset={preset} entry={state.entries[preset.id]} onOpen={open} />
           </div>

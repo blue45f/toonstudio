@@ -1,9 +1,11 @@
 import {
   ArrowRight,
   CalendarDays,
+  Clapperboard,
   Compass,
   HelpCircle,
   Library,
+  MessageCircle,
   MessagesSquare,
   NotebookPen,
   Search,
@@ -48,6 +50,17 @@ const QUICK_GENRE_COUNT = 8;
 /** 스냅샷 수치는 정확한 값이라 약식(6만) 대신 천 단위 구분으로 보여 준다. */
 const COUNT_FORMAT = new Intl.NumberFormat("en-US");
 
+const QUICK_DISCOVERY_PRESETS: readonly {
+  readonly href: string;
+  readonly label: readonly [string, string];
+}[] = [
+  { href: "/explore?status=ongoing&sort=popular", label: ["연재중 인기작", "Popular ongoing"] },
+  { href: "/explore?status=completed&sort=binge", label: ["완결 정주행", "Completed binge"] },
+  { href: "/explore?minRating=4.5&sort=rating", label: ["평점 4.5+ 명작", "4.5+ top rated"] },
+  { href: "/cuts", label: ["숏폼 컷츠", "Short-form Cuts"] },
+  { href: "/character-chat", label: ["AI 캐릭터 토크", "Character Talk"] },
+];
+
 // 아래 작품 레일은 라우트 본문과 분리해 첫 화면의 동기 모듈 그래프를 줄인다.
 const LazyDiscoverRecentShelf = lazyRetry(
   () => import("./DiscoverRecentShelf").then((module) => ({ default: module.DiscoverRecentShelf })),
@@ -82,6 +95,8 @@ const DESTINATIONS: readonly DiscoverDestination[] = [
   { href: "/random", icon: Shuffle, title: ["랜덤 발견", "Random discovery"], body: ["고르기 어려울 때 한 편씩 미리 보기", "Preview one pick at a time when choosing is hard"] },
   { href: "/compare", icon: Swords, title: ["두 작품 비교", "Compare two"], body: ["고민되는 두 작품의 지표와 제공처 비교", "Compare signals and availability for two stories"] },
   { href: "/library", icon: Library, title: ["내 서재", "My library"], body: ["저장·평가·읽기 상태로 돌아가기", "Return to saved, rated and in-progress stories"] },
+  { href: "/cuts", icon: Clapperboard, title: ["숏폼 컷츠", "Short-form Cuts"], body: ["짧은 세로형 클립으로 명장면 미리 보기", "Preview iconic scenes in vertical short clips"] },
+  { href: "/character-chat", icon: MessageCircle, title: ["캐릭터 토크", "Character Talk"], body: ["작가가 승인한 설정으로 작품 속 인물과 대화", "Chat with characters using author-approved canon"] },
   // 탐색에서 이어지는 다음 행동 — 작품을 보고 난 뒤 이야기를 나누거나, 내 장면의 참고자료를 찾는다.
   { href: "/community", icon: MessagesSquare, title: ["작품 이야기 나누기", "Talk about stories"], body: ["작품·작가·펜카페 커뮤니티에서 감상 나누기", "Share impressions in story, creator and pencafe communities"] },
   { href: "/research", icon: Telescope, title: ["참고자료 찾기", "Find references"], body: ["내 장면에 필요한 레퍼런스·3D 재료·폰트", "References, 3D materials and fonts for your scenes"], highlight: true },
@@ -221,6 +236,20 @@ export function DiscoverHubPage() {
                 <ArrowRight size={13} aria-hidden="true" />
               </Link>
             </li>
+          </ul>
+        </nav>
+        <nav aria-label={bt("상황별 빠른 탐색", "Quick discovery presets")} className="mt-2.5">
+          <ul className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
+            {QUICK_DISCOVERY_PRESETS.map((preset) => (
+              <li key={preset.href} className="shrink-0">
+                <Link
+                  href={preset.href}
+                  className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line/80 bg-panel/70 px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                >
+                  {bt(...preset.label)}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
         <CatalogSnapshotLine snapshot={home.data} loading={home.loading} onArt={!showSpotlight} />

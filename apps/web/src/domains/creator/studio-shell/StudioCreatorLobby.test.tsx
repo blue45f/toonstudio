@@ -211,4 +211,35 @@ describe("StudioCreatorLobby", () => {
     expect(hint?.textContent).toMatch(/제목 초안|draft title/u);
     expect(hint?.className).not.toContain("sr-only");
   });
+
+  it("renders the interactive 5-step webtoon workflow guide and filters by persona", () => {
+    renderHome();
+    const region = lobby();
+
+    expect(
+      within(region).getByRole("heading", {
+        name: /웹툰 제작 5단계 워크플로 가이드|5-Step Webtoon Production Workflow Guide/u,
+      }),
+    ).toBeTruthy();
+
+    for (const stepTitle of [
+      /1\. 기획·콘티|1\. Plan & Storyboard/u,
+      /2\. 캐릭터·배경 준비|2\. Characters & 3D Sets/u,
+      /3\. 원고 캔버스 작화|3\. Manuscript Canvas/u,
+      /4\. 에셋 Fit Lab|4\. Asset Fit Lab/u,
+      /5\. 검수·연재 발행|5\. Review & Publish/u,
+    ]) {
+      expect(within(region).getByRole("heading", { name: stepTitle })).toBeTruthy();
+    }
+
+    const beginnerBtn = within(region).getByRole("button", { name: /입문자 추천 코스|Beginner course/u });
+    fireEvent.click(beginnerBtn);
+    expect(beginnerBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(within(region).getAllByText(/입문 필수|Beginner core/u).length).toBeGreaterThan(0);
+
+    const proBtn = within(region).getByRole("button", { name: /숙련 작가 빠른 도구|Pro fast tools/u });
+    fireEvent.click(proBtn);
+    expect(proBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(within(region).getAllByText(/숙련 팁|Pro tip/u).length).toBeGreaterThan(0);
+  });
 });

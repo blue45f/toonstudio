@@ -12,9 +12,19 @@
  */
 
 import { SumiError } from "../core/errors";
+import { smoothColor } from "../pigment/krita-dynamics";
 import { kmMixRgb } from "../pigment/kubelka-munk";
 
 export type DabMode = "additive" | "multiply" | "erase";
+
+export interface EllipticalDabOptions {
+  /** 단축/장축 비율 (0, 1]. 1이면 정원, 작을수록 납작한 치즐/캘리그라피 팁. */
+  readonly aspect?: number;
+  /** 회전 각도(라디안). */
+  readonly angleRad?: number;
+  /** 픽셀 경계 날카로움 [0, 1]. 1에 가까울수록 픽셀아트/단단한 펜촉처럼 양자화됨. */
+  readonly sharpness?: number;
+}
 
 const SUPPORTED_MODES: readonly DabMode[] = ["additive", "multiply", "erase"];
 
@@ -27,43 +37,29 @@ function isDabMode(mode: unknown): mode is DabMode {
  * 중심 픽셀은 항상 1.0, 가장자리 밖은 0.0.
  */
 export function generateDabMask(size: number, hardness: number): Float32Array {
-  if (!Number.isFinite(size) || size < 1 || size !== Math.trunc(size)) {
-    throw new SumiError("kc-invalid-mask", "size는 1 이상의 정수여야 한다", { size });
-  }
-  if (!Number.isFinite(hardness) || hardness < 0 || hardness > 1) {
-    throw new SumiError("kc-invalid-mask", "hardness는 [0, 1]이어야 한다", { hardness });
-  }
-
-  const mask = new Float32Array(size * size);
-  const center = (size - 1) / 2;
-  const radius = size / 2;
-  const hard = Math.fround(hardness);
-  const soft = Math.fround(1 - hardness);
-
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const dx = x - center;
-      const dy = y - center;
-      const dist = Math.hypot(dx, dy);
-      const hardValue = dist <= radius ? 1 : 0;
-      const softValue = Math.max(0, 1 - dist / radius);
-      mask[y * size + x] = Math.fround(hard * hardValue + soft * softValue);
-    }
-  }
-  return mask;
+  return generateEllipticalDabMask(size, hardness);
 }
 
 /**
- * 이방성 회전 타원 dab 마스크(Anisotropic rotated elliptical dab mask + 선택적 가우시안 감쇠).
- * - aspectRatio: 장축/단축 비율(>= 1.0, 1.0이면 원형)
- * - angleRad: 장축 회전 각도(라디안)
- * - gaussianFalloff: true면 소프트 구간을 가우시안 벨 커브로 감쇠
+ * 타원형·회전·샤프니스/가우시안 감쇠 지원 dab 마스크(Krita AutoBrush 타원/각도/샤프니스 개념 재구현).
  */
 export function generateEllipticalDabMask(
   size: number,
   hardness: number,
-  aspectRatio = 1.0,
-  angleRad = 0.0,
+  options?: EllipticalDabOptions,
+): Float32Array;
+export function generateEllipticalDabMask(
+  size: number,
+  hardness: number,
+  aspectRatio?: number,
+  angleRad?: number,
+  gaussianFalloff?: boolean,
+): Float32Array;
+export function generateEllipticalDabMask(
+  size: number,
+  hardness: number,
+  optionsOrAspectRatio: EllipticalDabOptions | number = {},
+  angleRadArg = 0.0,
   gaussianFalloff = false,
 ): Float32Array {
   if (!Number.isFinite(size) || size < 1 || size !== Math.trunc(size)) {
@@ -72,41 +68,128 @@ export function generateEllipticalDabMask(
   if (!Number.isFinite(hardness) || hardness < 0 || hardness > 1) {
     throw new SumiError("kc-invalid-mask", "hardness는 [0, 1]이어야 한다", { hardness });
   }
-  if (!Number.isFinite(aspectRatio) || aspectRatio < 1) {
-    throw new SumiError("kc-invalid-mask", "aspectRatio는 1 이상이어야 한다", { aspectRatio });
+
+  if (typeof optionsOrAspectRatio === "number") {
+    const aspectRatio = optionsOrAspectRatio;
+    if (!Number.isFinite(aspectRatio) || aspectRatio < 1) {
+      throw new SumiError("kc-invalid-mask", "aspectRatio는 1 이상이어야 한다", { aspectRatio });
+    }
+    const mask = new Float32Array(size * size);
+    const center = (size - 1) / 2;
+    const radiusMajor = size / 2;
+    const radiusMinor = radiusMajor / aspectRatio;
+    const cosA = Math.cos(angleRadArg);
+    const sinA = Math.sin(angleRadArg);
+    const hard = Math.fround(hardness);
+    const soft = Math.fround(1 - hardness);
+
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        const dx = x - center;
+        const dy = y - center;
+        const rx = dx * cosA + dy * sinA;
+        const ry = -dx * sinA + dy * cosA;
+        const normDist = Math.hypot(
+          rx / Math.max(1e-6, radiusMajor),
+          ry / Math.max(1e-6, radiusMinor),
+        );
+        if (normDist > 1) {
+          mask[y * size + x] = 0;
+          continue;
+        }
+        const hardValue = 1;
+        const softValue = gaussianFalloff
+          ? Math.exp(-3.5 * normDist * normDist) * (1 - normDist)
+          : 1 - normDist;
+        mask[y * size + x] = Math.fround(hard * hardValue + soft * softValue);
+      }
+    }
+    return mask;
+  }
+
+  const options = optionsOrAspectRatio;
+  const aspect = options.aspect ?? 1;
+  if (!Number.isFinite(aspect) || aspect <= 0 || aspect > 1) {
+    throw new SumiError("kc-invalid-mask", "aspect는 (0, 1]이어야 한다", { aspect });
+  }
+  const angleRad = options.angleRad ?? 0;
+  const sharpness = options.sharpness ?? 0;
+  if (!Number.isFinite(sharpness) || sharpness < 0 || sharpness > 1) {
+    throw new SumiError("kc-invalid-mask", "sharpness는 [0, 1]이어야 한다", { sharpness });
   }
 
   const mask = new Float32Array(size * size);
   const center = (size - 1) / 2;
-  const radiusMajor = size / 2;
-  const radiusMinor = radiusMajor / aspectRatio;
-  const cosA = Math.cos(angleRad);
-  const sinA = Math.sin(angleRad);
+  const radius = size / 2;
   const hard = Math.fround(hardness);
   const soft = Math.fround(1 - hardness);
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
 
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const dx = x - center;
       const dy = y - center;
       const rx = dx * cosA + dy * sinA;
-      const ry = -dx * sinA + dy * cosA;
-      const normDist = Math.hypot(
-        rx / Math.max(1e-6, radiusMajor),
-        ry / Math.max(1e-6, radiusMinor),
-      );
-      if (normDist > 1) {
-        mask[y * size + x] = 0;
-        continue;
-      }
-      const hardValue = 1;
-      const softValue = gaussianFalloff
-        ? Math.exp(-3.5 * normDist * normDist) * (1 - normDist)
-        : 1 - normDist;
-      mask[y * size + x] = Math.fround(hard * hardValue + soft * softValue);
+      const ry = (-dx * sinA + dy * cosA) / aspect;
+      const dist = Math.hypot(rx, ry);
+      const hardValue = dist <= radius ? 1 : 0;
+      const softValue = Math.max(0, 1 - dist / radius);
+      const rawVal = Math.fround(hard * hardValue + soft * softValue);
+      const quantized = rawVal >= 0.5 ? 1 : 0;
+      mask[y * size + x] = Math.fround(rawVal * (1 - sharpness) + quantized * sharpness);
     }
   }
   return mask;
+}
+
+/**
+ * 캔버스 하부 영역의 평균 색을 샘플링해 K/S 안료 공간(smoothColor)에서 브러시 색과 스머지 혼색한다.
+ */
+export function smudgeDabColor(
+  canvas: Float32Array,
+  offsetX: number,
+  offsetY: number,
+  maskSize: number,
+  brushColor: readonly [number, number, number, number],
+  smudgeRate: number,
+): readonly [number, number, number, number] {
+  const rate = smudgeRate < 0 ? 0 : smudgeRate > 1 ? 1 : smudgeRate;
+  if (rate === 0) return brushColor;
+  const dim = Math.trunc(Math.sqrt(canvas.length / 4));
+  let rSum = 0;
+  let gSum = 0;
+  let bSum = 0;
+  let aSum = 0;
+  let count = 0;
+
+  for (let my = 0; my < maskSize; my += 1) {
+    const cy = offsetY + my;
+    if (cy < 0 || cy >= dim) continue;
+    for (let mx = 0; mx < maskSize; mx += 1) {
+      const cx = offsetX + mx;
+      if (cx < 0 || cx >= dim) continue;
+      const base = (cy * dim + cx) * 4;
+      const a = canvas[base + 3] ?? 0;
+      if (a > 0.001) {
+        rSum += Math.min(1, Math.max(0, canvas[base] ?? 0));
+        gSum += Math.min(1, Math.max(0, canvas[base + 1] ?? 0));
+        bSum += Math.min(1, Math.max(0, canvas[base + 2] ?? 0));
+        aSum += Math.min(1, Math.max(0, a));
+        count += 1;
+      }
+    }
+  }
+  if (count === 0) return brushColor;
+
+  const avg: readonly [number, number, number] = [rSum / count, gSum / count, bSum / count];
+  const [mr, mg, mb] = smoothColor(
+    [brushColor[0], brushColor[1], brushColor[2]],
+    avg,
+    rate,
+  );
+  const ma = Math.fround(brushColor[3] * (1 - rate) + (aSum / count) * rate);
+  return [mr, mg, mb, ma];
 }
 
 /**
@@ -242,4 +325,3 @@ export function applyDabPigmentMix(
     }
   }
 }
-

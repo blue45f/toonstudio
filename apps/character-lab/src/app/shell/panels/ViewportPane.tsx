@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 
-import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, isLabFailure } from "../../../contracts";
+import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
@@ -28,13 +28,13 @@ import { readProjectionPaint } from "../../../render/projection-paint";
 import { readViewportCamera } from "../../../render/viewport-camera";
 import { clientToRenderPixel } from "../../../render/viewport-math";
 import { describeEngineStatus } from "../engine-status-text";
-import { useApplyPlan, useDispatch, useEngineSession, useLabState, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";
+import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
 import { computeJointDrag, handlesKey, hudRows, jointLabelKo, resolveDragPivot, visibleHandles } from "./viewport-interactions";
 
 import type { DragPivot, JointDragOutcome } from "./viewport-interactions";
-import type { ApplyPlan, CameraFraming, CharacterEngine, HudSample, JointDragHandle, Pose, SkeletonData } from "../../../contracts";
+import type { ApplyPlan, CameraFraming, CharacterEngine, EngineBackend, HudSample, JointDragHandle, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -76,6 +76,7 @@ function failureText(error: unknown, fallback: string): string {
 
 export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVAL_MS }: ViewportPaneProps) {
   const labState = useLabState();
+  const store = useLabStore();
   const dispatch = useDispatch();
   const engineSession = useEngineSession();
   const registry = useViewportRegistry();
@@ -230,6 +231,40 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     },
     [engine],
   );
+
+  // ---- 빠른 시작 카드에서 엔진 명시 선택(자동 폴백 금지, ADR-0018)
+  const selectBackend = useCallback(
+    (backend: EngineBackend): void => {
+      const canvas = registry.claim();
+      if (!canvas) {
+        store.applyEvent({
+          type: "failure",
+          failure: failVisible("viewport-canvas-missing", "뷰포트 캔버스를 찾을 수 없어 엔진을 만들 수 없습니다. 뷰포트가 마운트된 뒤 다시 선택하세요."),
+        });
+        return;
+      }
+      void engineSession.select(backend, canvas);
+    },
+    [registry, store, engineSession],
+  );
+
+  // ---- 카메라 프레이밍 키보드 단축키(F: 전신, B: 상반신, C: 얼굴)
+  useEffect(() => {
+    if (!engine) return undefined;
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === "f") onFraming("full-body");
+      else if (key === "b") onFraming("bust");
+      else if (key === "c") onFraming("face");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [engine, onFraming]);
 
   // ---- 관절 드래그
   const cancelDrag = useCallback((): void => {
@@ -403,6 +438,50 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           </button>
         </span>
       </div>
+
+      {labState.engine.phase === "idle" ? (
+        <div
+          className="cl-viewport-onboarding"
+          data-testid="viewport-onboarding-card"
+          style={{ position: "absolute", inset: "52px 16px 56px 16px", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}
+        >
+          <div className="cl-viewport-onboarding-inner" style={{ pointerEvents: "auto" }}>
+            <h2 className="cl-viewport-onboarding-title">빠른 시작 3단계 가이드</h2>
+            <p className="cl-viewport-onboarding-desc">
+              렌더 엔진은 자동으로 시작되거나 대체되지 않습니다(ADR-0018). 아래 1단계 버튼으로 엔진을 먼저 시작하세요.
+            </p>
+            <ol className="cl-viewport-onboarding-steps">
+              <li>
+                <strong>1단계: 렌더 엔진 선택</strong> — 환경에 맞는 그래픽 백엔드를 직접 선택합니다.
+                <div className="cl-viewport-onboarding-actions" role="group" aria-label="빠른 엔진 시작">
+                  <button
+                    type="button"
+                    className="cl-button cl-button--primary"
+                    data-testid="onboarding-start-webgpu"
+                    onClick={() => selectBackend("webgpu")}
+                  >
+                    WebGPU로 시작
+                  </button>
+                  <button
+                    type="button"
+                    className="cl-button"
+                    data-testid="onboarding-start-webgl2"
+                    onClick={() => selectBackend("webgl2")}
+                  >
+                    WebGL2로 시작
+                  </button>
+                </div>
+              </li>
+              <li>
+                <strong>2단계: 좌측 15슬롯 외형 조합 &amp; 상단 빠른 테마 프리셋 적용</strong> — 체형·얼굴·헤어·의상 슬롯을 고르고 상단 스타일 프리셋으로 셰이딩 분위기를 바꿉니다.
+              </li>
+              <li>
+                <strong>3단계: 우측 인스펙터에서 체형·표정·포즈·렌더 조절 및 PNG/PSD/GLB 내보내기</strong> — 세부 슬라이더·관절 핸들·페인트 조절 후 결과물을 저장합니다.
+              </li>
+            </ol>
+          </div>
+        </div>
+      ) : null}
 
       {labState.engine.phase !== "ready" ? (
         <p className="cl-viewport-status" role="status" data-tone={engineText.tone} style={{ position: "absolute", left: 12, right: 12, bottom: 12, margin: 0 }}>

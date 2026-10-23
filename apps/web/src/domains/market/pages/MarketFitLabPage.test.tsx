@@ -128,6 +128,7 @@ describe("MarketFitLabPage", () => {
     render(<MemoryRouter><MarketFitLabPage /></MemoryRouter>);
 
     expect(screen.getByRole("heading", { name: "제작 적합성 랩" })).toBeTruthy();
+    expect(screen.getByTestId("market-fit-lab-guide")).toBeTruthy();
     expect(screen.getAllByTestId("fit-card").map((element) => element.textContent))
       .toEqual(["Ready", "Blocked"]);
     expect(screen.getByRole("button", { name: /조건 일치 1/ })).toBeTruthy();

@@ -36,5 +36,8 @@ describe("DiscoveryWorkspaceNav", () => {
     expect(recommend.getAttribute("href")).toContain("taste=");
     expect(recommend.getAttribute("href")).toContain("seed=work-1");
     expect(recommend.getAttribute("href")).not.toContain("view=list");
+    expect(screen.getByTestId("discovery-quick-surfaces")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "컷 쇼츠" }).getAttribute("href")).toBe("/cuts");
+    expect(screen.getByRole("link", { name: "웹툰 만들기" }).getAttribute("href")).toBe("/studio");
   });
 });

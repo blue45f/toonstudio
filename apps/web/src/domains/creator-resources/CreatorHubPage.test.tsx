@@ -245,4 +245,24 @@ describe("research command center", () => {
     expect(screen.getByRole("heading", { name: "자료를 장면 선택으로 바꾸는 판단 노트" })).toBeTruthy();
     expect(screen.getByTestId("location").textContent).toBe("/research?view=notes");
   });
+
+  it("공정별 맞춤 리소스 추천 선택기를 통해 현재 제작 단계에 맞는 도구와 레퍼런스 DB를 즉시 제안한다", () => {
+    renderPage("/research");
+
+    const recommender = screen.getByRole("region", {
+      name: "지금 어느 작업 단계이신가요? 공정별 맞춤 리소스 추천",
+    });
+    expect(recommender).toBeTruthy();
+    expect(within(recommender).getByRole("link", { name: /시대·복식·건축 고증 자료실/u }).getAttribute("href"))
+      .toBe("/research/assets");
+
+    fireEvent.click(within(recommender).getByRole("button", { name: "3D·배경" }));
+    expect(within(recommender).getByRole("link", { name: /3D 배경 스테이지 조립/u }).getAttribute("href"))
+      .toBe("/studio/bg3d");
+
+    fireEvent.click(within(recommender).getByRole("button", { name: "식자·편집" }));
+    expect(within(recommender).getByRole("link", { name: /상업 이용 가능 폰트·레터링/u }).getAttribute("href"))
+      .toBe("/research/fonts");
+  });
 });
+

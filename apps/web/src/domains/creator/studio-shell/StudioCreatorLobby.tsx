@@ -491,6 +491,219 @@ function StudioLobbyAiDirector() {
   );
 }
 
+type LobbyPersonaFilter = "all" | "beginner" | "pro";
+
+interface WorkflowGuideStep {
+  readonly id: string;
+  readonly stepNumber: number;
+  readonly titleKo: string;
+  readonly titleEn: string;
+  readonly descKo: string;
+  readonly descEn: string;
+  readonly beginnerTipKo: string;
+  readonly beginnerTipEn: string;
+  readonly proTipKo: string;
+  readonly proTipEn: string;
+  readonly href: string;
+  readonly ctaKo: string;
+  readonly ctaEn: string;
+  readonly personas: readonly ("beginner" | "pro")[];
+}
+
+const WORKFLOW_GUIDE_STEPS: readonly WorkflowGuideStep[] = [
+  {
+    id: "plan-storyboard",
+    stepNumber: 1,
+    titleKo: "1. 기획·콘티",
+    titleEn: "1. Plan & Storyboard",
+    descKo: "줄거리와 회차별 대본을 짜고 세로 스크롤 호흡에 맞춰 컷을 배치합니다.",
+    descEn: "Draft episode scripts and arrange panel pacing for vertical scroll.",
+    beginnerTipKo: "입문 팁: 한 줄 아이디어에서 출발해 4~8컷 단위로 대사 흐름부터 잡아보세요.",
+    beginnerTipEn: "Beginner tip: Start from a one-line idea and sketch 4–8 panel dialogue beats first.",
+    proTipKo: "숙련 팁: 스토리 랩 대본을 원고 컷 프레임으로 바로 연동해 시간을 아끼세요.",
+    proTipEn: "Pro tip: Sync Story Lab scripts directly into manuscript panel frames.",
+    href: "/story-lab",
+    ctaKo: "기획·콘티 시작",
+    ctaEn: "Start storyboard",
+    personas: ["beginner", "pro"],
+  },
+  {
+    id: "character-bg",
+    stepNumber: 2,
+    titleKo: "2. 캐릭터·배경 준비",
+    titleEn: "2. Characters & 3D Sets",
+    descKo: "주인공 표정·의상 시트를 고정하고 3D 공간에서 카메라 앵글을 잡습니다.",
+    descEn: "Lock character sheets and frame camera angles in 3D scenes.",
+    beginnerTipKo: "입문 팁: 기본 제공 3D 교실·거리 프리셋을 불러와 배경 작화 부담을 줄이세요.",
+    beginnerTipEn: "Beginner tip: Load built-in 3D classroom and street presets to simplify backgrounds.",
+    proTipKo: "숙련 팁: 은선 추출·툰 쉐이딩 프리셋을 저장해 전 회차의 배경 톤을 통일하세요.",
+    proTipEn: "Pro tip: Save hidden-line and toon-shader presets for series-wide consistency.",
+    href: "/studio/bg3d",
+    ctaKo: "캐릭터·3D 배경 준비",
+    ctaEn: "Prepare 3D & characters",
+    personas: ["beginner", "pro"],
+  },
+  {
+    id: "canvas-draw",
+    stepNumber: 3,
+    titleKo: "3. 원고 캔버스 작화",
+    titleEn: "3. Manuscript Canvas",
+    descKo: "① 콘티 → ② 선화 → ③ 채색 → ④ 후보정 → ⑤ 식자 모드로 도구를 전환하며 완성합니다.",
+    descEn: "Switch across Storyboard, Draw, Color, Post, and Lettering modes on the canvas.",
+    beginnerTipKo: "입문 팁: 세로 웹툰 기본 원고 템플릿을 고르면 표준 폭과 레이어 구조가 자동 설정됩니다.",
+    beginnerTipEn: "Beginner tip: Pick the vertical webtoon template for pre-built layers and safe margins.",
+    proTipKo: "숙련 팁: 클립스튜디오·프로크리에이트 호환 브러시와 참조 레이어 채우기를 활용하세요.",
+    proTipEn: "Pro tip: Use CSP/Procreate-style brushes and reference-layer fills.",
+    href: "/studio/new?kind=webtoon&template=webtoon-vertical",
+    ctaKo: "원고 캔버스 열기",
+    ctaEn: "Open manuscript canvas",
+    personas: ["beginner", "pro"],
+  },
+  {
+    id: "asset-fit-lab",
+    stepNumber: 4,
+    titleKo: "4. 에셋 Fit Lab",
+    titleEn: "4. Asset Fit Lab",
+    descKo: "마켓의 브러시·3D·색보정 소재가 내 원고 규격과 사용권 조건에 맞는지 사전 점검합니다.",
+    descEn: "Pre-check market brushes, 3D props, and color filters against your manuscript specs.",
+    beginnerTipKo: "입문 팁: 다운로드 전에 내 원고 위에서 호환성과 상업 연재 사용권을 먼저 확인하세요.",
+    beginnerTipEn: "Beginner tip: Verify compatibility and commercial rights on your canvas before installing.",
+    proTipKo: "숙련 팁: 후보 에셋 최대 4개를 나란히 비교해 팀 표준 소재팩을 확정하세요.",
+    proTipEn: "Pro tip: Compare up to 4 candidate assets side-by-side for team standardization.",
+    href: "/market/fit-lab",
+    ctaKo: "Fit Lab에서 시험하기",
+    ctaEn: "Test in Fit Lab",
+    personas: ["beginner", "pro"],
+  },
+  {
+    id: "review-publish",
+    stepNumber: 5,
+    titleKo: "5. 검수·연재 발행",
+    titleEn: "5. Review & Publish",
+    descKo: "모바일 가독성, 컷 간격, 에셋 출처 표기를 최종 점검하고 회차를 게시합니다.",
+    descEn: "Run final checks on mobile legibility, panel spacing, and credits before publishing.",
+    beginnerTipKo: "입문 팁: 마감 체크리스트를 따라 오탈자와 말풍선 잘림 여부를 한 번에 점검하세요.",
+    beginnerTipEn: "Beginner tip: Follow the finish checklist to catch typos and clipped speech balloons.",
+    proTipKo: "숙련 팁: 제작 관리 칸반에서 분업 공정 승인 상태와 버전 이력을 통합 관리하세요.",
+    proTipEn: "Pro tip: Manage multi-artist approvals and version history in Production Hub.",
+    href: "/production",
+    ctaKo: "검수·발행 관리",
+    ctaEn: "Review & publish",
+    personas: ["pro"],
+  },
+] as const;
+
+function StudioLobbyWorkflowGuide() {
+  const [persona, setPersona] = useState<LobbyPersonaFilter>("all");
+  const visibleSteps = useMemo(
+    () =>
+      persona === "all"
+        ? WORKFLOW_GUIDE_STEPS
+        : WORKFLOW_GUIDE_STEPS.filter((step) => step.personas.includes(persona)),
+    [persona],
+  );
+
+  return (
+    <section
+      className="studio-lobby-panel mt-4 rounded-3xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
+      aria-labelledby="studio-lobby-workflow-guide-title"
+      data-studio-workflow-guide={persona}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="studio-lobby-eyebrow">
+            <Sparkles size={12} aria-hidden="true" /> STEP-BY-STEP WORKFLOW
+          </p>
+          <h2 id="studio-lobby-workflow-guide-title" className="mt-1 text-base font-bold text-fg sm:text-lg">
+            {bi(
+              "웹툰 제작 5단계 워크플로 가이드 (처음 시작하는 분을 위한 추천 순서)",
+              "5-Step Webtoon Production Workflow Guide (Recommended order for beginners)",
+            )}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-fg-2">
+            {bi(
+              "막막할 때는 1단계부터 순서대로 따라가 보세요. 숙련 작가는 필요한 공정으로 바로 건너뛸 수 있습니다.",
+              "Follow from Step 1 if you are new, or jump straight to any stage if you are experienced.",
+            )}
+          </p>
+        </div>
+        <div
+          role="group"
+          aria-label={bi("작업자 맞춤 코스 선택", "Select creator workflow persona")}
+          className="flex flex-wrap gap-1.5"
+        >
+          {(
+            [
+              { id: "all", labelKo: "전체 보기", labelEn: "View all" },
+              { id: "beginner", labelKo: "입문자 추천 코스", labelEn: "Beginner course" },
+              { id: "pro", labelKo: "숙련 작가 빠른 도구", labelEn: "Pro fast tools" },
+            ] as const
+          ).map((option) => {
+            const active = persona === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={active}
+                data-workflow-persona={option.id}
+                onClick={() => setPersona(option.id)}
+                className={
+                  active
+                    ? "min-h-9 rounded-full bg-accent px-3 text-xs font-bold text-on-accent"
+                    : "min-h-9 rounded-full border border-line bg-panel px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+                }
+              >
+                {bi(option.labelKo, option.labelEn)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <ol className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+        {visibleSteps.map((step) => (
+          <li
+            key={step.id}
+            data-workflow-step={step.stepNumber}
+            className="flex flex-col justify-between rounded-2xl border border-line bg-panel/70 p-3.5"
+          >
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex rounded-full bg-accent/15 px-2 py-0.5 text-[0.68rem] font-extrabold text-accent">
+                  STEP {step.stepNumber}
+                </span>
+                {persona === "beginner" ? (
+                  <span className="text-[0.65rem] font-semibold text-accent">
+                    {bi("입문 필수", "Beginner core")}
+                  </span>
+                ) : null}
+              </div>
+              <h3 className="mt-2 text-sm font-bold text-fg">
+                {bi(step.titleKo, step.titleEn)}
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-fg-2">
+                {bi(step.descKo, step.descEn)}
+              </p>
+              <p className="mt-2 rounded-lg bg-card/90 px-2.5 py-1.5 text-[0.68rem] leading-4 text-fg-3">
+                {persona === "pro"
+                  ? bi(step.proTipKo, step.proTipEn)
+                  : bi(step.beginnerTipKo, step.beginnerTipEn)}
+              </p>
+            </div>
+            <Link
+              href={step.href}
+              className="mt-3 inline-flex min-h-9 items-center justify-between rounded-xl border border-line bg-card px-3 text-xs font-bold text-accent transition-colors hover:border-accent/50 hover:bg-raised"
+            >
+              <span>{bi(step.ctaKo, step.ctaEn)}</span>
+              <ArrowRight size={13} aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 /**
  * 작품 홈 첫 화면: 무엇을 만들지 → 이어서 할 작업 → 도움 받기 순서로 읽힌다.
  * 작품이 있으면 히어로를 줄여(`data-density="compact"`) 최근 프로젝트가 첫 화면 안에 들어오게 한다.
@@ -515,6 +728,7 @@ export function StudioCreatorLobby({
       aria-label={bi("툰스튜디오 크리에이터 로비", "ToonStudio creator lobby")}
     >
       <StudioLobbyHero />
+      <StudioLobbyWorkflowGuide />
       <div className="studio-lobby__grid">
         <StudioLobbyRecentShelf controller={controller} projects={recentProjects} temporaryCount={temporaryCount} />
         <StudioLobbyAiDirector />

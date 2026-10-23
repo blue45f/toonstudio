@@ -85,4 +85,26 @@ describe("StudioShortcutsHelp", () => {
     expect(html).toContain("1–6");
   });
 
+  it("입문자 필수 단축키 Top 8 치트시트와 클립스튜디오·프로크리에이트·포토샵 이주 팁을 표시한다", () => {
+    const html = renderToStaticMarkup(<StudioShortcutsHelp open onClose={() => undefined} />);
+    expect(html).toContain("입문자 필수 단축키 Top 8 치트시트");
+    for (const label of [
+      "브러시",
+      "지우개",
+      "선택/이동",
+      "대사/말풍선",
+      "캔버스 이동",
+      "스포이트",
+      "브러시 크기",
+      "입문/프로 화면 전환",
+    ]) {
+      expect(html).toContain(label);
+    }
+    expect(html).toContain("Ctrl+Shift+M");
+    expect(html).toContain("클립스튜디오·프로크리에이트·포토샵 사용자 이주 팁");
+    expect(html).toContain("QuickShape");
+    expect(html).toContain("클리핑 마스크");
+    expect(html).toContain("손떨림 보정");
+    expect(html).toContain("⌘K");
+  });
 });

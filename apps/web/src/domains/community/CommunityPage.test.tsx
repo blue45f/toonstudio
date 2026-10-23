@@ -53,6 +53,7 @@ describe("CommunityPage", () => {
     expect(screen.getByRole("link", { name: /창작자 갤러리/ }).getAttribute("href")).toBe("/showcase");
     // 홍보 공간은 텍스트 화살표 대신 같은 카드 문법으로 이어진다.
     expect(screen.getByRole("link", { name: /트레일러 상영관/ }).getAttribute("href")).toBe("/community/promote?kind=trailer");
+    expect(screen.getByTestId("community-quick-guide")).toBeTruthy();
     // 이모지 아이콘을 쓰지 않는다(사이트 공통 아이콘 문법).
     expect(document.body.textContent).not.toMatch(/[📚🖋☕🫧]/u);
   });

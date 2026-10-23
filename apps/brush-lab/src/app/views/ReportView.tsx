@@ -23,8 +23,31 @@ export function ReportView() {
       rawError = messageOf(error);
     }
   }
+  const cleanroomEngines = [
+    { name: "Krita Core 비등방 댑·스머지", desc: "타원 종횡비·회전각·픽셀 샤프니스 마스크 및 K/S 스머지" },
+    { name: "Libmypaint 대수 반경·저속 추적", desc: "exp(r_log) 반경, 미세/거시 속도 필터, 캔버스 안료 픽업" },
+    { name: "Perfect Freehand 캘리그라피", desc: "필압·속도 리본 폭 모듈레이션 및 예각 코너 보존" },
+    { name: "Kubelka-Munk K/S 안료 혼합", desc: "물리적 흡수·산란 스펙트럼 기반 감산 혼합" },
+    { name: "Rebelle 7 모세관 수채 확산", desc: "종이 요철 저항, 중력 기울기 이류, 꽃양배추 테두리·과립화" },
+    { name: "SAI / Lazy Nezumi 견인줄", desc: "가상 견인줄 데드존 코너 보존 및 S-1..S-7 고차 평활화" },
+  ] as const;
+
   return (
     <div className="lab-tabpanel">
+      <section className="lab-panel" aria-label="클린룸 내재화 브러시 엔진 아키텍처" data-testid="lab-cleanroom-engine-summary">
+        <h2>클린룸 내재화 6대 브러시 엔진 아키텍처</h2>
+        <p className="lab-muted">
+          외부 GPL·상용 런타임 의존성 없이 수학·물리 원리만으로 자체 내재화되어 라이선스 격리 및 결정론적 픽셀 검증을 통과한 엔진 모듈입니다.
+        </p>
+        <ul className="lab-form-grid">
+          {cleanroomEngines.map((engine) => (
+            <li key={engine.name} className="lab-field">
+              <strong>{engine.name}</strong>
+              <span className="lab-muted">{engine.desc}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
       <section className="lab-panel">
         <h2>세션 리포트 ({reports.length})</h2>
         {reports.length === 0 ? (

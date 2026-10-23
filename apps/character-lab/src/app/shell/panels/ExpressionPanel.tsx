@@ -126,6 +126,29 @@ export function ExpressionPanel() {
         <output htmlFor={`${ids}-influence`}>{percent(influence)}</output>
       </div>
 
+      <div
+        className="cl-expression-actions"
+        role="group"
+        aria-label="프리셋 빠른 강도"
+        data-testid="expression-quick-intensity"
+      >
+        {[
+          { label: "은은하게 35%", value: 0.35 },
+          { label: "자연스럽게 70%", value: 0.7 },
+          { label: "최대 100%", value: 1 },
+        ].map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            disabled={disabled || !currentPreset}
+            aria-pressed={Math.abs(influence - preset.value) < 0.01}
+            onClick={() => setPresetInfluence(preset.value)}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
       <div className="cl-expression-sliders" role="group" aria-label="FACS 슬라이더">
         {FACS_UNITS.map((unit) => {
           const value = recipe.expression[unit] ?? 0;

@@ -76,9 +76,10 @@ describe("MarketResourceCard", () => {
     expect(html).toContain("bg-accent");
     expect(html).toContain("text-on-accent");
     expect(html).toContain("찜하기");
-    // 카드 행동 다이어트: 비교 토글은 카드 기본 상태에 노출하지 않는다(상세에서 도달).
-    expect(html).not.toContain("비교 목록에 추가");
-    expect(html).not.toContain("비교 목록에서 제거");
+    expect(html).toContain("비교 목록에 추가");
+    expect(html).toContain("원고 위 시험 (Fit Lab)");
+    expect(html).toContain(`/market/fit-lab?slug=${encodeURIComponent(record.packageId)}`);
+    expect(html).toContain("Studio 즉시 호환");
     expect(html).not.toContain(">4.9<");
     expect(html).not.toContain("공식 인증 배급자");
     expect(html).not.toContain("text-white");

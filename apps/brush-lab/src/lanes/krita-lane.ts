@@ -5,7 +5,11 @@
  * registry.ts에는 등록하지 않는다(별도 PR로 등록). Node 환경에서 Lane 계약과 개념 수식만 검증한다.
  */
 
-import { applyDab, generateDabMask } from "../engine/brush-engine/krita-concepts";
+import {
+  applyDab,
+  generateEllipticalDabMask,
+  smudgeDabColor,
+} from "../engine/brush-engine/krita-concepts";
 import { SumiError } from "../engine/core/errors";
 import {
   defaultDynamicsConfig,
@@ -60,6 +64,9 @@ export class KritaLane implements BrushEngineLane {
   private height = 0;
   private seed = 0;
   private prevTMs = -1;
+  private prevX: number | null = null;
+  private prevY: number | null = null;
+  private currentProgram: BrushProgram | null = null;
   private canvas: Float32Array | null = null;
   private strokeCanvas: Float32Array | null = null;
   private currentColor: readonly [number, number, number, number] = [0, 0, 0, 1];
@@ -80,6 +87,9 @@ export class KritaLane implements BrushEngineLane {
     this.height = init.height;
     this.seed = init.seed;
     this.prevTMs = -1;
+    this.prevX = null;
+    this.prevY = null;
+    this.currentProgram = null;
     this.canvas = new Float32Array(init.width * init.height * 4);
     this.currentColor = [0, 0, 0, 1];
     this.state = defaultDynamicsState();
@@ -90,13 +100,16 @@ export class KritaLane implements BrushEngineLane {
     this.laneStats = emptyLaneStats();
   }
 
-  beginStroke(_program: BrushProgram, _seed: number, options?: StrokeOptions): void {
+  beginStroke(program: BrushProgram, _seed: number, options?: StrokeOptions): void {
     if (this.canvas === null) {
       throw new SumiError("kd-invalid-state", "init 먼저 호출해야 한다", { laneId: this.id });
     }
     this.active = true;
+    this.currentProgram = program;
     this.state = defaultDynamicsState();
     this.prevTMs = -1;
+    this.prevX = null;
+    this.prevY = null;
     // abort 시 문서를 beginStroke 직전으로 복원하기 위한 스냅샷(진행 중인 획만 버림).
     this.strokeCanvas = this.canvas.slice();
     this.currentColor = resolveStrokeColor({ color: options?.color }) ?? [0, 0, 0, 1];
@@ -107,25 +120,40 @@ export class KritaLane implements BrushEngineLane {
       throw new SumiError("kd-invalid-state", "beginStroke 먼저 호출해야 한다", { laneId: this.id });
     }
     let frameDabs = 0;
+    const tipAspect = this.currentProgram?.tip?.aspect;
+    const aspect = typeof tipAspect === "number" && tipAspect > 0 && tipAspect <= 1 ? tipAspect : 1;
+    const baseAngle = typeof this.currentProgram?.tip?.angleRad === "number" ? this.currentProgram.tip.angleRad : 0;
+    const isSmudge = this.currentProgram?.deposition?.model === "smudge";
+
     for (const sample of samples) {
       const dtMs = this.prevTMs < 0 ? 16 : Math.max(1, sample.tMs - this.prevTMs);
+      const dx = this.prevX === null ? 0 : sample.x - this.prevX;
+      const dy = this.prevY === null ? 0 : sample.y - this.prevY;
       this.prevTMs = sample.tMs;
+      this.prevX = sample.x;
+      this.prevY = sample.y;
       this.state = updateDynamics(
         this.state,
         {
           pressure: sample.pressure,
           tiltX: sample.tiltXDeg,
           tiltY: sample.tiltYDeg,
-          dx: 0,
-          dy: 0,
+          dx,
+          dy,
         },
         dtMs,
         this.config,
       );
-      const mask = generateDabMask(DAB_MASK_SIZE, maskHardness(this.state.pressure));
+      const mask = generateEllipticalDabMask(DAB_MASK_SIZE, maskHardness(this.state.pressure), {
+        aspect,
+        angleRad: baseAngle,
+      });
       const x = Math.round(sample.x);
       const y = Math.round(sample.y);
-      applyDab(mask, this.currentColor, this.canvas, x, y, "additive");
+      const dabColor = isSmudge
+        ? smudgeDabColor(this.canvas, x, y, DAB_MASK_SIZE, this.currentColor, 0.5)
+        : this.currentColor;
+      applyDab(mask, dabColor, this.canvas, x, y, "additive");
       frameDabs += 1;
     }
     this.dabCount += frameDabs;

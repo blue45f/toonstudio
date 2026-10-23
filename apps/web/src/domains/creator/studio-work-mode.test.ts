@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_WORK_MODES,
   STUDIO_WORK_MODE_EXPOSURE,
+  STUDIO_WORK_MODE_META,
   STUDIO_WORK_MODE_PIPELINE,
   loadStudioWorkModeState,
   nextStudioWorkMode,
@@ -154,5 +155,20 @@ describe("studio work mode state", () => {
   it("스토리지가 없어도 동작한다", () => {
     expect(loadStudioWorkModeState(null).mode).toBe("all");
     expect(saveStudioWorkModeState(null, loadStudioWorkModeState(null))).toBe(false);
+  });
+
+  it("모든 작업 모드에 단계 번호, 추천 단축키, 입문자 코칭 팁이 정의되어 있다", () => {
+    expect(STUDIO_WORK_MODE_META.all.pipelineStep).toBeUndefined();
+    expect(STUDIO_WORK_MODE_PIPELINE.map((mode) => STUDIO_WORK_MODE_META[mode].pipelineStep)).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
+    expect(STUDIO_WORK_MODE_PIPELINE.map((mode) => STUDIO_WORK_MODE_META[mode].stepBadge)).toEqual([
+      "①", "②", "③", "④", "⑤", "⑥",
+    ]);
+    for (const mode of STUDIO_WORK_MODES) {
+      const meta = STUDIO_WORK_MODE_META[mode];
+      expect(meta.recommendedShortcuts.length).toBeGreaterThanOrEqual(3);
+      expect(meta.beginnerTip.length).toBeGreaterThan(10);
+    }
   });
 });

@@ -122,4 +122,20 @@ describe("GalleryView", { timeout: 30_000 }, () => {
     expect((screen.getByRole("button", { name: "다시 렌더" }) as HTMLButtonElement).disabled).toBe(true);
     expect(store.get().gallery.status).toBe("idle");
   });
+
+  it("매체군 빠른 필터 칩으로 프리셋 목록을 즉시 좁히고 전체로 복원할 수 있다", () => {
+    const store = createLabStore({ tab: "gallery" });
+    renderGallery(store, null, "Worker 생성 실패(모의)");
+    const filterGroup = screen.getByRole("group", { name: "갤러리 매체군 빠른 필터" });
+    const list = screen.getByRole("list", { name: "브러시 가족 갤러리" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
+
+    fireEvent.click(within(filterGroup).getByRole("button", { name: "선화·잉크·볼펜" }));
+    const inkCount = within(list).getAllByRole("listitem").length;
+    expect(inkCount).toBeGreaterThan(0);
+    expect(inkCount).toBeLessThan(PRESET_CATALOG.length);
+
+    fireEvent.click(within(filterGroup).getByRole("button", { name: `전체 (${PRESET_CATALOG.length})` }));
+    expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
+  });
 });

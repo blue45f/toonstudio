@@ -56,4 +56,33 @@ describe('operating-mode administrator UI',()=>{
     await screen.findByText('관리자만 접근할 수 있습니다.');
     expect(screen.queryByRole('radio',{name:'유료 운영'})).toBeNull();
   });
+  it('tracks draft modifications, allows one-click reset, and supports quick reason templates & fingerprint autofill',async()=>{
+    mocks.load.mockResolvedValue({
+      policy:record(),
+      effective:resolveOperationPolicy(record(),'sha256:'+'b'.repeat(64),new Date()),
+      runtimeFingerprint:'sha256:'+'b'.repeat(64),
+      audit:[],
+    });
+    render(<OperationPolicyPanel/>);
+    await screen.findByText('현재: 무료 운영');
+    expect(screen.getByText('서버 저장본과 동일')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('radio',{name:/^유료 운영$/u}));
+    expect(screen.getByText('미저장 변경 1건')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button',{name:'초안 되돌리기'}));
+    expect(screen.getByText('서버 저장본과 동일')).toBeTruthy();
+
+    const fillButtons = screen.getAllByRole('button',{name:'현재 배포물 fingerprint 채우기'});
+    expect(fillButtons.length).toBeGreaterThan(0);
+    fireEvent.click(fillButtons[0]);
+    expect((screen.getAllByLabelText('검토 대상 SHA-256')[0] as HTMLInputElement).value).toBe('sha256:'+'b'.repeat(64));
+
+    fireEvent.click(screen.getByRole('button',{name:'무료 운영 한도 정기 점검'}));
+    expect((screen.getByLabelText('변경 사유 (5자 이상)') as HTMLTextAreaElement).value).toBe('무료 운영 한도 정기 점검');
+
+    fireEvent.keyDown(window,{key:'p',altKey:true});
+    await waitFor(()=>expect(mocks.preview).toHaveBeenCalledTimes(1));
+  });
 });
+

@@ -142,6 +142,40 @@ export function MarketFitLabPage() {
       </section>
 
       <Container size="wide" className="py-6 sm:py-8">
+        <section
+          aria-label={t("제작 적합성 3단계 점검 가이드", "3-step production fit check guide")}
+          data-testid="market-fit-lab-guide"
+          className="mb-5 grid gap-2.5 rounded-2xl border border-line bg-card/70 p-4 sm:grid-cols-3"
+        >
+          <div className="rounded-xl border border-line bg-panel/60 p-3">
+            <span className="text-[0.65rem] font-black uppercase tracking-wider text-accent">STEP 1 · 조건 지정</span>
+            <strong className="mt-1 block text-xs font-bold text-fg">
+              {t("내 원고 환경·사용권 기준 입력", "Set your studio & license rules")}
+            </strong>
+            <p className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
+              {t("Studio 버전, 렌더러(Canvas2D/WebGPU), 상업 연재 여부와 AI 포함 허용 기준을 맞춥니다.", "Configure Studio version, renderer, commercial use, and AI policy.")}
+            </p>
+          </div>
+          <div className="rounded-xl border border-line bg-panel/60 p-3">
+            <span className="text-[0.65rem] font-black uppercase tracking-wider text-accent">STEP 2 · 장면 합성</span>
+            <strong className="mt-1 block text-xs font-bold text-fg">
+              {t("실제 컷 위에서 올려보기", "Preview on a live webtoon cut")}
+            </strong>
+            <p className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
+              {t("카드의 '올려보기' 버튼을 눌러 내 원고 구도와 색감에 어울리는지 즉시 대조합니다.", "Click 'Preview' on any card to inspect composition and color harmony.")}
+            </p>
+          </div>
+          <div className="rounded-xl border border-line bg-panel/60 p-3">
+            <span className="text-[0.65rem] font-black uppercase tracking-wider text-accent">STEP 3 · 안심 도입</span>
+            <strong className="mt-1 block text-xs font-bold text-fg">
+              {t("'조건 일치' 에셋만 선별 적용", "Filter by 'Matches' & apply")}
+            </strong>
+            <p className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
+              {t("서버 manifest 검증을 통과한 에셋만 골라 버전 충돌이나 저작권 위험 없이 작업실로 가져갑니다.", "Import verified resources into Studio without version or license surprises.")}
+            </p>
+          </div>
+        </section>
+
         <MarketProductionProfileEditor
           profile={profile}
           onChange={updateProfile}

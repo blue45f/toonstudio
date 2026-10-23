@@ -285,6 +285,32 @@ export function CharacterChatThread({
             </button>
           </div>
         ) : null}
+        <div
+          role="group"
+          aria-label={t("추천 대화 시작 문구", "Suggested conversation starters")}
+          className="mb-2 flex flex-wrap items-center gap-1.5"
+        >
+          <span className="text-[0.68rem] font-semibold text-fg-3">
+            {t("추천 첫마디", "Icebreakers")}
+          </span>
+          {[
+            t("오늘 기분은 어때?", "How are you feeling today?"),
+            t("가장 아끼는 물건이 뭐야?", "What do you treasure most?"),
+            t("요즘 제일 신경 쓰이는 일 있어?", "Anything on your mind lately?"),
+          ].map((starter) => (
+            <button
+              key={starter}
+              type="button"
+              onClick={() => {
+                setDraft(starter);
+                inputRef.current?.focus();
+              }}
+              className="rounded-full border border-line bg-panel px-2.5 py-1 text-xs font-medium text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+            >
+              {starter}
+            </button>
+          ))}
+        </div>
         <form onSubmit={handleSubmit} className="flex items-end gap-2">
           <label className="sr-only" htmlFor={`character-chat-input-${profile.id}`}>
             {t("캐릭터에게 보낼 메시지", "Message to the character")}

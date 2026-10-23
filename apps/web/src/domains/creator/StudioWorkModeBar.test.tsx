@@ -56,4 +56,18 @@ describe("StudioWorkModeBar", () => {
     );
     expect(html).not.toContain("바꿀까요?");
   });
+
+  it("단계 번호(①~⑥)와 단계별 핵심 단축키 & 입문자 팁 코칭 스트립을 표시한다", () => {
+    const html = renderToStaticMarkup(
+      <StudioWorkModeBar mode="storyboard" onModeChange={() => undefined} />,
+    );
+    for (const badge of ["①", "②", "③", "④", "⑤", "⑥"]) {
+      expect(html).toContain(badge);
+    }
+    expect(html).toContain('data-work-mode="storyboard"');
+    expect(html).toContain("단계별 핵심 단축키 &amp; 입문자 팁");
+    expect(html).toContain("가이드 숨기기");
+    expect(html).toContain("<kbd");
+    expect(html).toContain("① 콘티 단계에서는 세부 묘사보다 세로 스크롤 호흡");
+  });
 });

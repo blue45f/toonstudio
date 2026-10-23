@@ -174,6 +174,20 @@ const SHORTCUT_HELP_COPY = {
     searchLabel: "단축키와 조작 검색",
     searchPlaceholder: "예: 채우기, 스머지, 확대, ⌘Z",
     clearSearch: "검색어 지우기",
+    top8Title: "입문자 필수 단축키 Top 8 치트시트",
+    top8Shortcuts: [
+      { key: "B", label: "브러시", detail: "선화·스케치" },
+      { key: "E", label: "지우개", detail: "선 정리" },
+      { key: "V", label: "선택/이동", detail: "컷·오브젝트" },
+      { key: "T", label: "대사/말풍선", detail: "식자 입력" },
+      { key: "Space", label: "캔버스 이동", detail: "드래그 팬" },
+      { key: "Alt", label: "스포이트", detail: "색상 추출" },
+      { key: "[ / ]", label: "브러시 크기", detail: "굵기 조절" },
+      { key: "Ctrl+Shift+M", label: "입문/프로 화면 전환", detail: "도구 밀도" },
+    ],
+    migrationTitle: "클립스튜디오·프로크리에이트·포토샵 사용자 이주 팁",
+    migrationBody:
+      "익숙한 타사 용어(QuickShape, 클리핑 마스크, 손떨림 보정, 액션, 벡터 지우개, 올가미 채우기)도 ⌘K 통합 명령 검색과 이 창에서 그대로 찾을 수 있어요.",
     familiarTitle: "먼저 알아두면 편한 기본 조작",
     allShortcuts: "전체 단축키",
     result: (count: number) => `검색 결과 ${count}개`,
@@ -207,6 +221,20 @@ const SHORTCUT_HELP_COPY = {
     searchLabel: "Search shortcuts and controls",
     searchPlaceholder: "Try fill, smudge, zoom, or ⌘Z",
     clearSearch: "Clear search",
+    top8Title: "Beginner Essential Top 8 Shortcuts Cheat Sheet",
+    top8Shortcuts: [
+      { key: "B", label: "Brush", detail: "Line & sketch" },
+      { key: "E", label: "Eraser", detail: "Clean lines" },
+      { key: "V", label: "Select / Move", detail: "Cuts & objects" },
+      { key: "T", label: "Dialogue / Balloon", detail: "Lettering" },
+      { key: "Space", label: "Pan Canvas", detail: "Hold & drag" },
+      { key: "Alt", label: "Eyedropper", detail: "Pick color" },
+      { key: "[ / ]", label: "Brush Size", detail: "Adjust width" },
+      { key: "Ctrl+Shift+M", label: "Simple / Pro UI Toggle", detail: "UI density" },
+    ],
+    migrationTitle: "Clip Studio, Procreate & Photoshop Migration Tip",
+    migrationBody:
+      "Familiar terms (QuickShape, Clipping Mask, Stabilization, Actions, Vector Eraser, Lasso Fill) work seamlessly via ⌘K Command Search and this help dialog.",
     familiarTitle: "Familiar controls to learn first",
     allShortcuts: "All shortcuts",
     result: (count: number) => `${count} search result${count === 1 ? "" : "s"}`,
@@ -446,30 +474,72 @@ export function StudioShortcutsHelp({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {!searching ? (
-            <section aria-labelledby="studio-familiar-operations-title">
-              <h3 id="studio-familiar-operations-title" className="text-[0.68rem] font-semibold text-fg-2">
-                {copy.familiarTitle}
-              </h3>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                {copy.operations.map((operation) => {
-                  const Icon = FAMILIAR_OPERATION_ICONS[operation.id];
-                  return (
-                    <article key={operation.id} className="rounded-xl border border-line/60 bg-card/70 p-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
-                          <Icon className="size-3.5" aria-hidden />
-                        </span>
-                        <h4 className="text-xs font-semibold text-fg">{operation.title}</h4>
+            <>
+              <section
+                aria-labelledby="studio-top8-cheatsheet-title"
+                data-studio-top8-cheatsheet="true"
+                className="mb-3 rounded-xl border border-accent/35 bg-accent-soft/20 p-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 id="studio-top8-cheatsheet-title" className="text-xs font-bold text-fg">
+                    {copy.top8Title}
+                  </h3>
+                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[0.62rem] font-semibold text-accent">
+                    TOP 8
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                  {copy.top8Shortcuts.map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex flex-col justify-between rounded-lg border border-line/70 bg-card px-2.5 py-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className="text-[0.7rem] font-bold text-fg">{item.label}</span>
+                        <kbd className="shrink-0 rounded border border-line bg-canvas px-1.5 py-0.5 font-mono text-[0.62rem] font-semibold text-accent">
+                          {item.key}
+                        </kbd>
                       </div>
-                      <p className="mt-2 text-[0.68rem] leading-relaxed text-fg-3">{operation.body}</p>
-                      <kbd className="mt-2 inline-flex rounded-md border border-line bg-canvas px-1.5 py-0.5 font-mono text-[0.62rem] text-fg-2">
-                        {operation.keys}
-                      </kbd>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
+                      <span className="mt-0.5 text-[0.62rem] text-fg-3">{item.detail}</span>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  data-studio-competitor-alias-tip="true"
+                  className="mt-2.5 rounded-lg border border-line/70 bg-panel/90 px-2.5 py-2"
+                >
+                  <p className="text-[0.68rem] font-bold text-fg">{copy.migrationTitle}</p>
+                  <p className="mt-0.5 text-[0.64rem] leading-relaxed text-fg-3">
+                    {copy.migrationBody}
+                  </p>
+                </div>
+              </section>
+
+              <section aria-labelledby="studio-familiar-operations-title">
+                <h3 id="studio-familiar-operations-title" className="text-[0.68rem] font-semibold text-fg-2">
+                  {copy.familiarTitle}
+                </h3>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  {copy.operations.map((operation) => {
+                    const Icon = FAMILIAR_OPERATION_ICONS[operation.id];
+                    return (
+                      <article key={operation.id} className="rounded-xl border border-line/60 bg-card/70 p-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+                            <Icon className="size-3.5" aria-hidden />
+                          </span>
+                          <h4 className="text-xs font-semibold text-fg">{operation.title}</h4>
+                        </div>
+                        <p className="mt-2 text-[0.68rem] leading-relaxed text-fg-3">{operation.body}</p>
+                        <kbd className="mt-2 inline-flex rounded-md border border-line bg-canvas px-1.5 py-0.5 font-mono text-[0.62rem] text-fg-2">
+                          {operation.keys}
+                        </kbd>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            </>
           ) : null}
 
           <section aria-labelledby="studio-shortcut-list-title" className={searching ? "" : "mt-4"}>

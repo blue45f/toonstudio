@@ -48,6 +48,13 @@ const TABS: readonly { id: LabTab; label: string }[] = [
   { id: "report", label: "리포트" },
 ];
 
+const WORKFLOW_STEPS: readonly { id: LabTab; label: string }[] = [
+  { id: "draw", label: "① 그리기: 실시간 손맛 샌드박스" },
+  { id: "gallery", label: "② 갤러리: 프리셋 카탈로그 & 추천 조합" },
+  { id: "compare", label: "③ A/B 비교: 레인 간 ΔE·성능 검증" },
+  { id: "report", label: "④ 리포트: JSON 인증서 다운로드" },
+];
+
 interface GallerySlot {
   renderer: GalleryRenderer | null;
   error: string | null;
@@ -136,6 +143,19 @@ export function BrushLabApp(props: BrushLabAppProps) {
           </p>
         </header>
         <CapabilityBanner />
+        <nav className="lab-workflow-bar" aria-label="브러시 실험실 워크플로 안내" data-testid="lab-workflow-bar">
+          {WORKFLOW_STEPS.map((step) => (
+            <button
+              key={step.id}
+              type="button"
+              className="lab-workflow-step"
+              aria-current={tab === step.id ? "step" : undefined}
+              onClick={() => actions.setTab(step.id)}
+            >
+              {step.label}
+            </button>
+          ))}
+        </nav>
         <div role="tablist" aria-label="브러시 랩 화면" className="lab-tabs" onKeyDown={onTabKeyDown}>
           {TABS.map((t) => (
             <button

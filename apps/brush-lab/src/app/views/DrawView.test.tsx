@@ -992,4 +992,30 @@ describe("DrawView", { timeout: 30_000 }, () => {
     // 유효하지 않은 프로그램은 레인에 가지 않고 마지막 유효 프로그램(연필 HB 기본)을 쓴다.
     expect(h.programs.at(-1)?.deposition.opacity).toBeLessThanOrEqual(1);
   });
+
+  it("빠른 브러시 크기 칩, [ / ] 단축키, 실시간 브러시 상태 배지 및 첫 획 전 HUD 온보딩·툴팁이 동작한다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+
+    // 첫 획 전 온보딩 문구 표시
+    expect(screen.getByTestId("lab-draw-hud-onboarding").textContent).toContain("첫 획을 그으면");
+    expect(screen.getByText("addSamples p50 / p95 (ms)").getAttribute("title")).toContain("중앙값");
+
+    // 빠른 브러시 크기 칩
+    const presets = screen.getByTestId("lab-draw-size-presets");
+    fireEvent.click(within(presets).getByRole("button", { name: "태필 32px" }));
+    expect(h.drawStore.get().overrides.sizePx).toBe(32);
+    expect(screen.getByTestId("lab-draw-brush-pill").textContent).toContain("브러시 32px");
+
+    // 단축키 [ / ] 크기 조절
+    fireEvent.keyDown(window, { key: "]" });
+    expect(h.drawStore.get().overrides.sizePx).toBe(36);
+    fireEvent.keyDown(window, { key: "[" });
+    expect(h.drawStore.get().overrides.sizePx).toBe(32);
+
+    // 첫 획 이후 온보딩 문구 사라짐
+    await drawStroke(h, stage, 1);
+    expect(screen.queryByTestId("lab-draw-hud-onboarding")).toBeNull();
+  });
 });
