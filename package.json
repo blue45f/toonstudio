@@ -49,7 +49,7 @@
     "lint:quick": "node scripts/lint-changed.mjs",
     "lint:quick:fix": "node scripts/lint-changed.mjs --fix",
     "lint:quick:staged": "node scripts/lint-changed.mjs --staged",
-    "typecheck": "node scripts/verify-workspace-package-links.mjs && NODE_OPTIONS='--max-old-space-size=12288' tsc -p tsconfig.json && pnpm --filter @webtoon-nest/api run typecheck",
+    "typecheck": "node scripts/verify-workspace-package-links.mjs && NODE_OPTIONS='--max-old-space-size=16384' tsc -p tsconfig.json --incremental false && pnpm --filter @webtoon-nest/api run typecheck",
     "typecheck:trace": "NODE_OPTIONS='--max-old-space-size=12288' tsc -p tsconfig.json --incremental false --generateTrace .tstrace",
     "typecheck:analyze-trace": "analyze-trace .tstrace",
     "typecheck:trace:report": "pnpm run typecheck:trace && pnpm run typecheck:analyze-trace",

@@ -45,7 +45,7 @@ BASE="${PRE_PUSH_BASE:-origin/main}"
 git rev-parse --verify --quiet "$BASE" >/dev/null || BASE=""
 
 pnpm run validate:architecture
-NODE_OPTIONS='--max-old-space-size=8192' pnpm run typecheck
+NODE_OPTIONS='--max-old-space-size=16384' pnpm run typecheck
 
 if [ -n "$BASE" ]; then
   node scripts/lint-changed.mjs "--base=$BASE"
