@@ -1,23 +1,26 @@
 /**
- * 홍보 영상 자료실의 브랜드 카테고리 보관 항목(17~19차 파도분) — 통합
+ * 홍보 영상 자료실의 브랜드 카테고리 보관 항목(17~20차 파도분) — 통합
  * 레지스트리 promo-video-library.ts가 소스 파일 800줄 상한에 닿아,
  * 페이지 카테고리(promo-video-library-pages.ts)와 같은 방식으로
  * 17차 파도에서 더한 브랜드 보관 항목 3편의 표시 항목을 이 파일로
- * 분리했고, 18차 파도 보관 항목 4편과 19차 파도 보관 항목 4편도 이어서
- * 여기에 둔다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
- * 배선하지 않은 자료실 보관분이다. 클립 규격의 정본은 brand-clips.ts다.
- * 18차 파도부터는 클립 길이가 편마다 달라, 길이를 항목마다 실측으로
- * 적는다.
+ * 분리했고, 18차 파도 보관 항목 4편과 19차 파도 보관 항목 4편, 20차 파도
+ * 보관 항목 3편도 이어서 여기에 둔다. 전부 생성형 AI로 만든 개념
+ * 영상이고, 아직 표면에 배선하지 않은 자료실 보관분이다. 클립 규격의
+ * 정본은 brand-clips.ts다. 18차 파도부터는 클립 길이가 편마다 달라,
+ * 길이를 항목마다 실측으로 적는다.
  */
 import {
   BRAND_CITY_DAWN_CLIP,
   BRAND_FOREST_LIGHT_CLIP,
+  BRAND_MOUNTAIN_LAKE_CLIP,
   BRAND_NEON_ALLEY_CLIP,
   BRAND_OCEAN_CLIP,
   BRAND_PAPER_CRAFT_CLIP,
   BRAND_SQUARE_BLOOM_CLIP,
+  BRAND_SQUARE_HONEYCOMB_CLIP,
   BRAND_SQUARE_INKDROP_CLIP,
   BRAND_SQUARE_WAVE_CLIP,
+  BRAND_WORKSHOP_CLIP,
   HOME_HERO_DUSK_CLIP,
   HOME_HERO_FOG_CLIP,
   HOME_HERO_SPRING_CLIP,
@@ -124,5 +127,26 @@ export const PROMO_VIDEO_BRAND_LIBRARY_ITEMS: readonly PromoVideoItem[] = [
   }, {
     title: "Square wave sting",
     body: "A 1:1 square brand sting of a wave rolling in — kept with the square sting set.",
+  }),
+  brandLibraryItem("brand-mountain-lake", BRAND_MOUNTAIN_LAKE_CLIP, "0:14", {
+    title: "산과 호수",
+    body: "산자락 아래 호수가 펼쳐지는 풍경을 그린 클립입니다.",
+  }, {
+    title: "Mountain lake",
+    body: "A lake spread out at the foot of the mountains.",
+  }),
+  brandLibraryItem("brand-workshop", BRAND_WORKSHOP_CLIP, "0:14", {
+    title: "작업 공방",
+    body: "도구가 놓인 작업 공방의 풍경을 그린 클립입니다.",
+  }, {
+    title: "The workshop",
+    body: "A workshop with its tools laid out.",
+  }),
+  brandLibraryItem("brand-square-honeycomb", BRAND_SQUARE_HONEYCOMB_CLIP, "0:14", {
+    title: "정사각 벌집 스팅",
+    body: "벌집 무늬가 빛나는 1:1 정사각 브랜드 스팅입니다. 정사각 스팅 세트와 함께 보관합니다.",
+  }, {
+    title: "Square honeycomb sting",
+    body: "A 1:1 square brand sting of a glowing honeycomb pattern — kept with the square sting set.",
   }),
 ];

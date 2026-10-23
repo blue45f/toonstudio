@@ -403,3 +403,34 @@ export const BRAND_SQUARE_WAVE_CLIP: BrandClip = {
   width: 768,
   height: 768,
 };
+
+/**
+ * 산과 호수 — 산자락 아래 호수가 펼쳐지는 풍경을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_MOUNTAIN_LAKE_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-21-mountainlake.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 작업 공방 — 도구가 놓인 작업 공방의 풍경을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_WORKSHOP_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-22-workshop.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 벌집 스팅 — 벌집 무늬가 빛나는 모습을 담은 1:1 정사각 브랜드
+ * 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_HONEYCOMB_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-honeycomb.mp4",
+  width: 768,
+  height: 768,
+};

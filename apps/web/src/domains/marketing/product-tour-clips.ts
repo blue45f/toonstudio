@@ -127,8 +127,8 @@ export const PRODUCT_TOUR_TRANSITION_BG3D_CLIP = {
 
 /**
  * 전환 클립의 세로(9:16) 변형 — 가로본 전환 3편을 세로로 다시 그린
- * 생성형 AI 영상 3편과, 19차 파도에서 세로로 새로 그린 나뭇잎 전환
- * 1편이다. 아직 표면에 배선하지 않아 홍보 영상 자료실의 투어
+ * 생성형 AI 영상 3편과, 19·20차 파도에서 세로로 새로 그린 나뭇잎·꽃잎
+ * 전환 2편이다. 아직 표면에 배선하지 않아 홍보 영상 자료실의 투어
  * 카테고리에만 수록하므로, 자료실 항목(PromoVideoItem) 모양으로 적는다.
  */
 export interface ProductTourTransitionVerticalItem {
@@ -211,6 +211,23 @@ export const PRODUCT_TOUR_TRANSITION_VERTICAL_ITEMS: readonly ProductTourTransit
     en: {
       title: "Transition · Leaves, vertical",
       body: "A transition of leaves drifting, drawn vertically (9:16).",
+    },
+    usage: TRANSITION_VERTICAL_USAGE,
+  },
+  {
+    id: "tour-transition-petals-vertical",
+    categoryId: "tour",
+    src: "/brand/product-tour/tour-transition-5-petals.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "전환 · 꽃잎 세로",
+      body: "꽃잎이 흩날리는 전환 장면을 세로(9:16)로 그린 변형입니다.",
+    },
+    en: {
+      title: "Transition · Petals, vertical",
+      body: "A transition of petals drifting, drawn vertically (9:16).",
     },
     usage: TRANSITION_VERTICAL_USAGE,
   },

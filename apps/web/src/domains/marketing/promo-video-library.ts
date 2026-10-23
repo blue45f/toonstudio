@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 171편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 178편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,26 +8,26 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 40편: 투어 쇼츠 섹션의 39편은 product-tour-shorts.ts
+ * - 쇼츠 42편: 투어 쇼츠 섹션의 41편은 product-tour-shorts.ts
  *   (PRODUCT_TOUR_SHORTS)를 참조하고, 자료실에만 보관하는 반응 쇼츠 1편은
  *   품질 메모와 함께 이 파일에 직접 적는다.
- * - 투어 도입·마무리·전환 10편: product-tour-clips.ts (전환 가로본 3편의 세로
- *   변형 4편과 마무리 배경의 세로 변형 1편은 같은 파일이 자료실 항목 모양으로 함께 정본을 맡는다)
+ * - 투어 도입·마무리·전환 11편: product-tour-clips.ts (전환 가로본 3편의 세로
+ *   변형 5편과 마무리 배경의 세로 변형 1편은 같은 파일이 자료실 항목 모양으로 함께 정본을 맡는다)
  * - 챕터 배경 루프 18편: 가로본 9편은 product-tour-clips.ts + 챕터 이름은
  *   product-tour-content.ts의 PRODUCT_TOUR.chapters이고, 세로 변형
  *   9편(가로 9챕터와 1:1)은 이 파일이 첫 레지스트리다
  *   (public/brand/promo-chapter-loops/).
- * - 브랜드 클립 36편: brand-clips.ts (배선 8편 + 자료실 보관 28편 — 밤 버전·비 오는
+ * - 브랜드 클립 39편: brand-clips.ts (배선 8편 + 자료실 보관 31편 — 밤 버전·비 오는
  *   날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로·창가의 고양이·정사각 스팅·와이드
  *   팬·비 히어로·눈 히어로·황금빛 노을·정사각 궤도 스팅·별빛·새벽 히어로·정사각 프리즘
- *   스팅·도서관·바다·안개 히어로·정사각 꽃 스팅·네온 골목·종이 모형 마을·황혼 히어로·정사각 잉크 스팅·숲빛·새벽 도시·봄 히어로·정사각 파도 스팅)
+ *   스팅·도서관·바다·안개 히어로·정사각 꽃 스팅·네온 골목·종이 모형 마을·황혼 히어로·정사각 잉크 스팅·숲빛·새벽 도시·봄 히어로·정사각 파도 스팅·산과 호수·작업 공방·정사각 벌집 스팅)
  * - 도구 클립 36편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약 카테고리
  *   7편 + 보류 1편)과 세로 변형 12편(TOOL_CLIPS_VERTICAL, 가로본과 1:1 대응), 그리고 제작
  *   과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계 매핑의 정본은
  *   public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라 여기서는 그 값을 옮겨 적고
  *   출처를 밝힌다), 정사각 변형 12편(TOOL_CLIPS_SQUARE, 가로본 12편과 1:1)
- * - 페이지 클립 31편: promo-video-library-pages.ts가 레지스트리다
- *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했고, 브랜드 보관 항목의 17~19차 파도분 11편도 promo-video-library-brand.ts로 분리했다.
+ * - 페이지 클립 32편: promo-video-library-pages.ts가 레지스트리다
+ *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했고, 브랜드 보관 항목의 17~20차 파도분 14편도 promo-video-library-brand.ts로 분리했다.
  */
 import {
   BRAND_CAT_CLIP,
@@ -96,11 +96,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 서른아홉 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 마흔한 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. Thirty-nine also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. Forty-one also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
     },
   },
   {
