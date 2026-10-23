@@ -78,11 +78,11 @@
   "search.explorer.time.hoursAgo": "{count} saat önce",
   "search.explorer.time.daysAgo": "{count} gün önce",
   "search.explorer.loadMore": "Daha fazla yükle",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "Popüler aramalar",
+  "search.explorer.suggestions.genres": "Önerilen türler",
+  "search.explorer.suggestions.searchFor": "{query} için ara",
+  "search.explorer.suggestions.genreFilter": "{genre} türüne göre daralt",
+  "search.explorer.suggestions.loading": "Önerilen aramalar yükleniyor",
+  "search.explorer.suggestions.error": "Önerilen aramalar yüklenemedi. Lütfen kısa bir süre sonra tekrar deneyin.",
+  "search.explorer.suggestions.empty": "Şu anda öneri yok. Bir başlık, yazar veya etiket yazmayı deneyin."
 }
