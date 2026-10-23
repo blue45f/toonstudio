@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 19편.
- * 열아홉 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 21편.
+ * 스물한 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~19편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~21편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -24,7 +24,9 @@ export interface ProductTourShort {
     | "expression-wardrobe"
     | "camera-angles"
     | "version-rewind"
-    | "manuscript-send";
+    | "manuscript-send"
+    | "serial-schedule"
+    | "desk-tour";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -317,6 +319,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Sending the finished pages",
       body: "The final moment a finished manuscript is sent off and lands in the series list.",
+    },
+  },
+  {
+    id: "serial-schedule",
+    src: "/brand/promo-shorts/shorts-21-schedule.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "색으로 채우는 연재 일정",
+      body: "빈 격자 칸이 하나씩 색으로 채워지며 다음 회차의 일정이 잡혀 가는 모습을 담았습니다.",
+    },
+    en: {
+      title: "A schedule filling with color",
+      body: "Empty grid cells filling with color one by one as the next episodes fall into place.",
+    },
+  },
+  {
+    id: "desk-tour",
+    src: "/brand/promo-shorts/shorts-22-desk-tour.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "책상 가까이, 줌인",
+      body: "조용한 방 전경에서 창작자의 책상 위로 천천히 다가가는 줌인 장면을 담았습니다.",
+    },
+    en: {
+      title: "Zooming in on the desk",
+      body: "A slow zoom from a quiet room's wide view down onto the creator's desk.",
     },
   },
 ];
