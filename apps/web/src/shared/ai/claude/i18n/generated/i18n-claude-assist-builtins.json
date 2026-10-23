@@ -136,7 +136,7 @@
     "claudeAssist.plan.make": "Make a plan (billed)",
     "claudeAssist.plan.planning": "Making a plan.",
     "claudeAssist.plan.stopped": "Planning was stopped. The part already processed may still have been billed. Try again when you are ready.",
-    "claudeAssist.plan.candidates": "Sent {count} available commands.",
+    "claudeAssist.plan.candidates": "Sent {count} commands. {usable} can be used right now.",
     "claudeAssist.plan.noCandidates": "No commands are available to the AI right now. Reopen this from the studio screen.",
     "claudeAssist.plan.intent": "What I understood",
     "claudeAssist.plan.stepsTitle": "Proposed steps",
@@ -245,7 +245,7 @@
     "claudeAssist.plan.runNow": "Run now",
     "claudeAssist.plan.menuOnly": "Use the menu",
     "claudeAssist.plan.followUpsTitle": "You could also ask",
-    "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} available commands",
+    "claudeAssist.plan.preflightTransferDo": "Your request and the names, descriptions and shortcuts of {count} studio commands, including which ones cannot be used right now",
     "claudeAssist.plan.preflightTransferAsk": "Your question and the names, descriptions and shortcuts of {count} studio features",
     "claudeAssist.plan.preflightTime": "Usually a few seconds to ten-odd. If it is not done after 3 minutes, it stops and tells you.",
     "claudeAssist.plan.preflightOutputDo": "One proposed order of commands (you confirm running separately)",
@@ -398,8 +398,13 @@
     "claudeAssist.art.coverageTruncated": "The image is very tall: only the top {covered}px ({percent}%) of its {total}px height can be split into sections. Crop the rest and upload it again.",
     "claudeAssist.localize.sameLanguage": "The source and target languages are the same. Change one of them.",
     "claudeAssist.localize.glossaryDuplicate": "{count} line(s) repeat a source term already listed above, so only the first one is used.",
-    "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). Translating about 25 at a time makes it less likely that the answer gets cut off, and the result is easier to check.",
-    "claudeAssist.localize.indexShifted": "Claude numbered the lines from 0, so they were shifted by one to line up. Please check that each source line and translation are paired correctly."
+    "claudeAssist.localize.manyLinesHint": "That is a lot of lines ({count}). They are sent in {chunks} batches one after another, and the cost cap covers all batches together.",
+    "claudeAssist.localize.indexShifted": "Claude numbered the lines from 0, so they were shifted by one to line up. Please check that each source line and translation are paired correctly.",
+    "claudeAssist.localize.runningChunks": "Translating. {done} of {total} batches are done.",
+    "claudeAssist.localize.partialNotice": "Only {done} of {total} batches were translated. Lines that were not translated are flagged. Running again translates everything from the start and is billed again.",
+    "claudeAssist.art.fromCanvas": "Use the canvas page",
+    "claudeAssist.art.fromCanvasBusy": "Rendering the current canvas page as an image.",
+    "claudeAssist.art.fromCanvasFailed": "Could not get the canvas page as an image. Try again in a moment or upload an image yourself."
   },
   "ko": {
     "claudeAssist.common.costNotice": "비용은 내 Anthropic 계정에 청구돼요. Claude 보조 기능은 요청을 자동으로 다시 보내거나 모델을 바꾸지 않아요.",
@@ -538,7 +543,7 @@
     "claudeAssist.plan.make": "계획 만들기 (요금 발생)",
     "claudeAssist.plan.planning": "계획을 만드는 중이에요.",
     "claudeAssist.plan.stopped": "계획 만들기를 중단했어요. 이미 처리된 부분은 요금이 청구됐을 수 있어요. 필요하면 다시 시도해 주세요.",
-    "claudeAssist.plan.candidates": "사용할 수 있는 명령 {count}개를 보냈어요.",
+    "claudeAssist.plan.candidates": "명령 {count}개를 보냈어요. 지금 쓸 수 있는 것은 {usable}개예요.",
     "claudeAssist.plan.noCandidates": "지금은 AI가 쓸 수 있는 명령이 없어요. 스튜디오 화면에서 다시 열어 주세요.",
     "claudeAssist.plan.intent": "이해한 요청",
     "claudeAssist.plan.stepsTitle": "제안한 단계",
@@ -647,7 +652,7 @@
     "claudeAssist.plan.runNow": "지금 실행",
     "claudeAssist.plan.menuOnly": "메뉴에서 직접 해요",
     "claudeAssist.plan.followUpsTitle": "이어서 물어볼 만한 질문",
-    "claudeAssist.plan.preflightTransferDo": "요청 문장과 사용할 수 있는 명령 {count}개의 이름·설명·단축키",
+    "claudeAssist.plan.preflightTransferDo": "요청 문장과 스튜디오 명령 {count}개의 이름·설명·단축키(지금 쓸 수 없는 명령 표시 포함)",
     "claudeAssist.plan.preflightTransferAsk": "질문과 스튜디오 기능 {count}개의 이름·설명·단축키",
     "claudeAssist.plan.preflightTime": "보통 몇 초에서 십여 초 걸려요. 3분이 지나도 끝나지 않으면 멈추고 알려 드려요.",
     "claudeAssist.plan.preflightOutputDo": "명령 순서 제안 한 건(실행은 따로 확인해요)",
@@ -800,7 +805,12 @@
     "claudeAssist.art.coverageTruncated": "이미지가 아주 길어 원본 세로 {total}px 중 위쪽 {covered}px({percent}%)만 구간으로 나눌 수 있어요. 나머지는 이미지를 잘라 다시 올려 주세요.",
     "claudeAssist.localize.sameLanguage": "원문 언어와 번역할 언어가 같아요. 하나를 바꿔 주세요.",
     "claudeAssist.localize.glossaryDuplicate": "같은 원문이 겹치는 {count}줄은 앞의 것만 써요.",
-    "claudeAssist.localize.manyLinesHint": "줄이 많아요({count}줄). 25줄 안팎으로 나눠 번역하면 응답이 길어져 잘릴 걱정이 적고 결과를 확인하기도 쉬워요.",
-    "claudeAssist.localize.indexShifted": "Claude가 번호를 0부터 매겨서 한 칸씩 밀어 맞췄어요. 줄마다 원문과 번역이 제대로 짝지어졌는지 확인해 주세요."
+    "claudeAssist.localize.manyLinesHint": "줄이 많아요({count}줄). {chunks}묶음으로 나눠 차례로 번역해요. 요금 상한은 모든 묶음을 합친 값이에요.",
+    "claudeAssist.localize.indexShifted": "Claude가 번호를 0부터 매겨서 한 칸씩 밀어 맞췄어요. 줄마다 원문과 번역이 제대로 짝지어졌는지 확인해 주세요.",
+    "claudeAssist.localize.runningChunks": "번역하는 중이에요. {done}/{total}묶음을 마쳤어요.",
+    "claudeAssist.localize.partialNotice": "{total}묶음 중 {done}묶음만 번역했어요. 번역하지 못한 줄은 표시돼 있어요. 다시 실행하면 처음부터 번역하고 요금이 다시 들어요.",
+    "claudeAssist.art.fromCanvas": "캔버스에서 가져오기",
+    "claudeAssist.art.fromCanvasBusy": "캔버스의 현재 페이지를 이미지로 만드는 중이에요.",
+    "claudeAssist.art.fromCanvasFailed": "캔버스를 이미지로 가져오지 못했어요. 잠시 뒤 다시 시도하거나 이미지를 직접 올려 주세요."
   }
 }

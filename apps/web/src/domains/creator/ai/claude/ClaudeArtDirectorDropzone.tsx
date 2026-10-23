@@ -1,6 +1,6 @@
 import "@/shared/ai/claude/claude-assist-i18n";
 
-import { ClipboardPaste, Image as ImageIcon, LoaderCircle } from "lucide-react";
+import { ClipboardPaste, Image as ImageIcon, LoaderCircle, PanelTop } from "lucide-react";
 import { useState, type DragEvent } from "react";
 
 import { CLAUDE_BUTTON, CLAUDE_PRIMARY_BUTTON } from "@/shared/ai/claude/claude-ui";
@@ -12,13 +12,17 @@ export interface ClaudeArtDirectorDropzoneProps {
   readonly onPick: () => void;
   readonly onPasteFromClipboard: () => void;
   readonly onDropFiles: (files: FileList | null | undefined) => void;
+  /** 스튜디오 캔버스의 현재 페이지를 바로 가져온다. 스튜디오가 켜져 있을 때만 넘긴다(없으면 단추가 없다). */
+  readonly onFromCanvas?: () => void;
+  /** 캔버스를 그림으로 만드는 중. */
+  readonly capturing?: boolean;
 }
 
 /**
- * 이미지를 올리는 큰 표적. 세 가지 길을 한곳에서 알려 준다: 파일 선택, 끌어다 놓기, 붙여 넣기(Ctrl/⌘+V 또는 버튼).
- * 스튜디오의 "이미지를 클립보드로" 명령과 이어지는 길도 한 줄로 안내한다(현재 페이지를 바로 가져오는 가장 짧은 경로).
+ * 이미지를 올리는 큰 표적. 길을 한곳에서 알려 준다: 파일 선택, 끌어다 놓기, 붙여 넣기(Ctrl/⌘+V 또는 버튼), 그리고 스튜디오 안에서는
+ * 캔버스의 현재 페이지를 바로 가져오는 단추. 스튜디오 밖에서는 "이미지를 클립보드로" 명령과 이어지는 길을 한 줄로 안내한다.
  */
-export function ClaudeArtDirectorDropzone({ preparing, onPick, onPasteFromClipboard, onDropFiles }: ClaudeArtDirectorDropzoneProps) {
+export function ClaudeArtDirectorDropzone({ preparing, onPick, onPasteFromClipboard, onDropFiles, onFromCanvas, capturing = false }: ClaudeArtDirectorDropzoneProps) {
   const t = useT();
   const [dragging, setDragging] = useState(false);
 
@@ -50,12 +54,18 @@ export function ClaudeArtDirectorDropzone({ preparing, onPick, onPasteFromClipbo
             {preparing ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : null}
             {t("claudeAssist.art.pick")}
           </button>
-          <button type="button" className={CLAUDE_BUTTON} disabled={preparing} onClick={onPasteFromClipboard}>
+          {onFromCanvas ? (
+            <button type="button" className={CLAUDE_BUTTON} disabled={preparing || capturing} onClick={onFromCanvas}>
+              {capturing ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <PanelTop size={16} aria-hidden />}
+              {t("claudeAssist.art.fromCanvas")}
+            </button>
+          ) : null}
+          <button type="button" className={CLAUDE_BUTTON} disabled={preparing || capturing} onClick={onPasteFromClipboard}>
             <ClipboardPaste size={16} aria-hidden />
             {t("claudeAssist.art.pasteFromClipboard")}
           </button>
         </div>
-        <p className="text-xs text-fg-3">{t("claudeAssist.art.studioCopyTip")}</p>
+        {onFromCanvas ? null : <p className="text-xs text-fg-3">{t("claudeAssist.art.studioCopyTip")}</p>}
       </div>
     </div>
   );
