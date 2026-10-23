@@ -6,11 +6,11 @@
   "common.search": "ຄົ້ນຫາ",
   "common.retry": "ພະຍາຍາມອີກຄັ້ງ",
   "common.retry.short": "ພະຍາຍາມອີກຄັ້ງ",
-  "common.backToTop": "ກັບຄືນໄປບ່ອນເທິງ",
-  "common.backToHome": "ກັບຄືນບ້ານ",
-  "common.loading.search": "ຊອກຫາ...",
-  "common.notFoundWithQuery": "ບໍ່ມີຜົນ ສໍາ ເລັດ ສໍາ ລັບ ' {query} '.",
-  "common.openSearch": "ຊອກຫາໃນ Search →",
+  "common.backToTop": "ກັບຄືນໄປເທິງສຸດ",
+  "common.backToHome": "ໄປໜ້າຫຼັກ",
+  "common.loading.search": "ກຳລັງຄົ້ນຫາ…",
+  "common.notFoundWithQuery": "ບໍ່ມີຜົນການຄົ້ນຫາສຳລັບ '{query}'.",
+  "common.openSearch": "ຄົ້ນຫາຕໍ່ໃນໜ້າຄົ້ນຫາ →",
   "common.loading.empty": "ບໍ່ມີຂໍ້ມູນທີ່ສົ່ງຄືນ.",
-  "common.retry.all": "ພະຍາຍາມອີກຄັ້ງ ຫຼື ກັບຄືນບ້ານ."
+  "common.retry.all": "ພະຍາຍາມອີກຄັ້ງ ຫຼື ກັບໄປໜ້າຫຼັກ."
 }

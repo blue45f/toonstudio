@@ -1,6 +1,6 @@
 {
-  "avatar.error.invalidType": "ຮູບແບບທີ່ບໍ່ໄດ້ຮັບການສະ ຫນັບ ສະ ຫນູນ.",
-  "avatar.error.processFailed": "ບໍ່ສາມາດຈັດການພາບໄດ້.",
+  "avatar.error.invalidType": "ປະເພດຮູບພາບທີ່ບໍ່ຮອງຮັບ.",
+  "avatar.error.processFailed": "ບໍ່ສາມາດປະມວນຜົນຮູບພາບໄດ້. ລອງໃໝ່ດ້ວຍຮູບພາບອື່ນ.",
   "avatar.processing": "ການປຸງແຕ່ງ ...",
   "avatar.select": "ປ່ຽນຮູບພາບ",
   "avatar.remove": "ລຶບຮູບພາບ",

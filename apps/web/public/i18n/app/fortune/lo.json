@@ -1,9 +1,9 @@
 {
-  "fortune.title": "Daily Webtoon Fortune · ToonStudio",
-  "fortune.subtitle": "Find the webtoon character that matches you and check today's fortune.",
-  "fortune.today": "Today's Fortune",
-  "fortune.zodiac": "Zodiac Fortune",
-  "fortune.saju": "Saju (Four Pillars)",
-  "fortune.compatibility": "Compatibility",
-  "fortune.tarot": "Today's Tarot"
+  "fortune.title": "ດວງປະຈຳວັນເວັບຕູນ · ToonStudio",
+  "fortune.subtitle": "ຊອກຫາຕົວລະຄອນເວັບຕູນທີ່ກົງກັບທ່ານ ແລະ ກວດດວງຂອງມື້ນີ້.",
+  "fortune.today": "ດວງຂອງມື້ນີ້",
+  "fortune.zodiac": "ດວງຕາມລາສີ",
+  "fortune.saju": "ຊາຈູ (ສີ່ເສົາຫຼັກ)",
+  "fortune.compatibility": "ຄວາມເຂົ້າກັນໄດ້",
+  "fortune.tarot": "ທາໂຣຕ໌ຂອງມື້ນີ້"
 }
