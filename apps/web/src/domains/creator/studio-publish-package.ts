@@ -245,7 +245,6 @@ export const STUDIO_PUBLISH_PLATFORM_PRESETS: Readonly<
     note: "Tapas 직접 게시가 아니며, 업로드 전 최신 콘텐츠·AI 정책을 반드시 직접 확인해야 합니다.",
   },
 };
-
 for (const preset of Object.values(STUDIO_PUBLISH_PLATFORM_PRESETS)) {
   Object.freeze(preset.episode.allowedMimeTypes);
   if (preset.episode.maxHeightByMimeType) Object.freeze(preset.episode.maxHeightByMimeType);
@@ -259,7 +258,6 @@ for (const preset of Object.values(STUDIO_PUBLISH_PLATFORM_PRESETS)) {
   Object.freeze(preset);
 }
 Object.freeze(STUDIO_PUBLISH_PLATFORM_PRESETS);
-
 export function getStudioPublishPlatformPreset(
   destination: StudioPublishPackageDestination
 ): StudioPublishPlatformPreset {
