@@ -11,7 +11,6 @@
  *   use-studio-copy-feedback   — await·타이머 정리·실패 상태까지 가진 복사(“복사됨”이 거짓말하지 않게)
  */
 import {
-  Clapperboard,
   Compass,
   MessageCircle,
   Palette,
@@ -48,7 +47,6 @@ import {
   type LightDirectionPreset,
   type AmbientLightingTemperature,
 } from "./studio-ai-shading-assist";
-import { StudioAiStoryboardDirector } from "./studio-ai-storyboard-director";
 import {
   StudioAiWebtoonStyleFilterEngine,
   type WebtoonArtStyleId,
@@ -56,6 +54,7 @@ import {
 
 import type { StudioAiSuitePromptHandoff } from "./studio-ai-suite-handoff";
 
+import { StudioAiStoryboardDirectorSection } from "./StudioAiStoryboardDirectorSection";
 import {
   StudioAiSuiteInputNeeded,
   StudioCopyTextButton,
@@ -148,18 +147,12 @@ export function StudioAiSuperSuiteModal({
   const rawPromptReady = rawPromptInput.trim().length >= MIN_IDEA_LENGTH;
 
   // Tab 4: Storyboard Director
-  const storyboardDirector = useMemo(() => new StudioAiStoryboardDirector(), []);
   const [scriptInput, setScriptInput] = useState(
     `주인공이 무너진 성벽 위에 서서 "드디어 찾았다..."라고 나지막이 읊조린다.
 성문 너머에서 거대한 마수가 포효하며 지면을 뒤흔든다.
 경악하는 기사단의 흔들리는 동공과 굳어버린 표정.
 주인공이 등 뒤의 대검을 뽑아들며 적을 향해 단독 돌진한다.`
   );
-  const storyboardResult = useMemo(
-    () => storyboardDirector.direct(scriptInput),
-    [storyboardDirector, scriptInput]
-  );
-  const scriptReady = storyboardResult.totalCuts > 0;
 
   // Tab 5: Emotion Bubble Matcher
   const bubbleMatcher = useMemo(() => new StudioAiEmotionBubbleMatcher(), []);
@@ -811,91 +804,14 @@ export function StudioAiSuperSuiteModal({
 
           {/* TAB 4: Storyboard Director */}
           {activeTab === "storyboard-director" && (
-            <div className="flex flex-col gap-4">
-              <div className={PANEL_CARD_CLASS}>
-                <label
-                  htmlFor={`${idPrefix}-script`}
-                  className="text-[0.75rem] font-bold text-fg"
-                >
-                  대본 / 시나리오 줄글 입력
-                </label>
-                <textarea
-                  id={`${idPrefix}-script`}
-                  rows={4}
-                  value={scriptInput}
-                  onChange={(e) => setScriptInput(e.target.value)}
-                  placeholder="한 줄이 한 컷이 됩니다. 장면을 줄바꿈으로 나눠 적어 주세요."
-                  aria-invalid={!scriptReady}
-                  aria-describedby={scriptReady ? undefined : `${idPrefix}-script-error`}
-                  className={cn(TEXT_FIELD_CLASS, "resize-none font-mono")}
-                />
-                {!scriptReady && (
-                  <p
-                    id={`${idPrefix}-script-error`}
-                    className="rounded-md border border-bad/35 bg-bad/10 px-2 py-1 text-[0.65rem] font-semibold text-bad"
-                  >
-                    대본이 비어 있어요. 컷으로 나눌 문장을 한 줄 이상 적어 주세요.
-                  </p>
-                )}
-              </div>
-
-              {/* Storyboard Cuts Table */}
-              {scriptReady ? (
-                <div className={PANEL_CARD_CLASS}>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[0.75rem] font-bold">
-                      자동 생성된 컷별 콘티 ({storyboardResult.totalCuts}개 컷)
-                    </span>
-                    <span className="font-mono text-[0.65rem] text-fg-3">
-                      예상 모바일 완독: 약 {storyboardResult.estimatedEpisodeReadingSec}초
-                    </span>
-                  </div>
-
-                  <ol className="flex list-none flex-col gap-2 p-0">
-                    {storyboardResult.cuts.map((cut) => (
-                      <li
-                        key={cut.cutNumber}
-                        className="flex flex-col gap-1.5 rounded-lg border border-line bg-card p-2.5 text-[0.68rem]"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-1.5">
-                          <div className="flex flex-wrap items-center gap-1.5 font-bold">
-                            <span className="rounded bg-accent-soft px-1.5 py-0.5 text-accent">
-                              컷 #{cut.cutNumber}
-                            </span>
-                            <span className="rounded bg-raised px-1.5 py-0.5 text-fg-2">
-                              {cut.shotScale} · {cut.cameraAngle}
-                            </span>
-                            <span className="rounded bg-good/10 px-1.5 py-0.5 text-good">
-                              감정: {cut.emotion}
-                            </span>
-                          </div>
-                          {cut.suggestedSfx && (
-                            <span className="rounded bg-accent-soft px-2 py-0.5 font-black text-accent">
-                              효과음: {cut.suggestedSfx}
-                            </span>
-                          )}
-                        </div>
-
-                        <p className="text-fg">{cut.summary}</p>
-                        {cut.dialogue && (
-                          <p className="border-l-2 border-accent pl-2 font-semibold text-accent">
-                            대사: &ldquo;{cut.dialogue}&rdquo;
-                          </p>
-                        )}
-                        <p className="text-[0.62rem] text-fg-3">
-                          배경 프롬프트: {cut.backgroundPrompt}
-                        </p>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              ) : (
-                <StudioAiSuiteInputNeeded
-                  icon={<Clapperboard size={20} aria-hidden />}
-                  description="대본 한 줄이 한 컷이 됩니다. 문장을 적으면 샷 사이즈·앵글·효과음을 배정해 드려요."
-                />
-              )}
-            </div>
+            <StudioAiStoryboardDirectorSection
+              idPrefix={idPrefix}
+              scriptInput={scriptInput}
+              onScriptInputChange={setScriptInput}
+              statusForCopy={clipboard.statusFor}
+              onCopy={clipboard.copy}
+              onApplyPrompt={onApplyPrompt}
+            />
           )}
 
           {/* TAB 5: Emotion Bubble Matcher */}
