@@ -12,8 +12,7 @@ import type { StudioReleaseSchedule } from "./studio-release-schedule";
 import type { StudioReleaseScheduleRuntime } from "./studio-release-schedule-loader";
 import type { StudioWriterRoomDocument } from "./studio-writer-room";
 import type {
-  StudioVrmProjectArchiveAttestationPlan,
-  StudioVrmProjectArchiveUseContextInput,
+  StudioVrmProjectArchiveAttestationPlan, StudioVrmProjectArchiveUseContextInput,
 } from "./vrm/studio-vrm-license-product-gate";
 import type { MutableRefObject } from "react";
 import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
