@@ -332,3 +332,68 @@ export function fitStudioStylusPressureProfile(
     ],
   });
 }
+
+export interface StylusDynamicResponseInput {
+  readonly pointerType?: unknown;
+  readonly rawPressure?: unknown;
+  /** 포인터 이동 속도 (px/ms, 0 이상). 마우스·고정 압력 터치에서 가상 필압 시뮬레이션에 사용. */
+  readonly velocityPxPerMs?: number;
+  /** 스타일러스 기울기 각도 (0..90 deg). 연필·목탄 눕혀 칠하기(Shading) 폭 확장에 사용. */
+  readonly tiltDeg?: number;
+  readonly profile?: StudioStylusPressureProfile;
+}
+
+export interface StylusDynamicResponseResult {
+  readonly effectivePressure: number;
+  readonly tiltBroadeningFactor: number;
+  readonly inkFlowModulation: number;
+  readonly sourceMode: "hardware-stylus" | "velocity-simulated";
+}
+
+/**
+ * 다기종(Apple Pencil·Wacom 스타일러스·터치·마우스) 통합 다이내믹 응답 평가기.
+ * - 하드웨어 펜/포스 터치: 데드존·포화·단조 3차 에르미트 필압 커브 적용
+ * - 일반 마우스/고정 0.5 터치: 이동 속도(velocityPxPerMs)에 반비례하는 가상 필압 테이퍼 시뮬레이션
+ * - 스타일러스 틸트(tiltDeg): 연필·목탄 쉐이딩 시 기울기에 따른 브러시 폭 확장 배율(1.0..2.35×) 계산
+ */
+export function evaluateStylusDynamicResponse(
+  input: StylusDynamicResponseInput,
+): StylusDynamicResponseResult {
+  const profile = input.profile ?? DEFAULT_STUDIO_STYLUS_PRESSURE_PROFILE;
+  const pointerType = typeof input.pointerType === "string" ? input.pointerType.toLowerCase() : "";
+  const raw = clamp01(input.rawPressure, 0.5);
+  const velocity = Math.max(0, finiteOr(input.velocityPxPerMs, 0));
+  const tiltDeg = clamp(finiteOr(input.tiltDeg, 0), 0, 85);
+
+  const hasHardwarePressure =
+    pointerType === "pen" || (pointerType === "touch" && raw !== 0.5 && raw > 0);
+
+  let effectivePressure: number;
+  let sourceMode: "hardware-stylus" | "velocity-simulated";
+  if (hasHardwarePressure) {
+    effectivePressure = studioStylusPressureProfileMap(raw, profile);
+    sourceMode = "hardware-stylus";
+  } else {
+    // 속도 기반 가상 필압 (느릴수록 진하고 두껍게, 빠를수록 날렵한 테이퍼)
+    const speedFactor = Math.exp(-velocity * 0.42);
+    const simulatedRaw = clamp01(0.22 + 0.66 * speedFactor, 0.5);
+    effectivePressure = studioStylusPressureProfileMap(simulatedRaw, profile);
+    sourceMode = "velocity-simulated";
+  }
+
+  // 틸트 폭 확장: 15° 이하에서는 1.0, 15°~85° 구간에서 최대 2.35× 확장
+  const tiltNormalized = clamp01((tiltDeg - 15) / 70);
+  const tiltBroadeningFactor = Number((1 + tiltNormalized * tiltNormalized * 1.35).toFixed(4));
+
+  // 잉크/안료 유량 변조: 필압이 높을수록 진하고, 극단적 틸트(쉐이딩)에서는 입자감을 위해 살짝 감쇠
+  const inkFlowModulation = Number(
+    clamp01(effectivePressure * (1 - tiltNormalized * 0.28) + 0.08).toFixed(4),
+  );
+
+  return Object.freeze({
+    effectivePressure: Number(effectivePressure.toFixed(4)),
+    tiltBroadeningFactor,
+    inkFlowModulation,
+    sourceMode,
+  });
+}

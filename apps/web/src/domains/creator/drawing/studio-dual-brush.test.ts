@@ -5,9 +5,13 @@ import {
   STUDIO_DUAL_BRUSH_TEXTURES,
   applyDualBrushStrength,
   blendDualBrushValue,
+  clearDualBrushTileCache,
+  compositeDualBrushFloatBuffer,
   generateTextureTile,
+  getCachedTextureTile,
   getDualBrushCombo,
   getDualBrushTexture,
+  getDualBrushTileCacheStats,
   validateDualBrushConfig,
   type StudioDualBrushConfig,
 } from "./studio-dual-brush";
@@ -166,5 +170,37 @@ describe("applyDualBrushStrength", () => {
     expect(applyDualBrushStrength(0.4, 0.9, 0)).toBeCloseTo(0.4, 5);
     expect(applyDualBrushStrength(0.4, 0.9, 1)).toBeCloseTo(0.9, 5);
     expect(applyDualBrushStrength(0.4, 0.9, 0.5)).toBeCloseTo(0.65, 5);
+  });
+});
+
+describe("getCachedTextureTile & compositeDualBrushFloatBuffer", () => {
+  it("메모이제이션 캐시가 동일 질감 타일 참조를 재사용하고 히트율을 기록한다", () => {
+    clearDualBrushTileCache();
+    const first = getCachedTextureTile("paper", { size: 32, seed: 99 });
+    const second = getCachedTextureTile("paper", { size: 32, seed: 99 });
+    expect(first).toBe(second);
+    const stats = getDualBrushTileCacheStats();
+    expect(stats.size).toBe(1);
+    expect(stats.hits).toBe(1);
+    expect(stats.misses).toBe(1);
+    expect(stats.hitRate).toBeCloseTo(0.5, 5);
+  });
+
+  it("linear-burn 및 hard-light 모드를 지원하고 순수 Float32 버퍼 합성을 수행한다", () => {
+    expect(blendDualBrushValue(0.6, 0.7, "linear-burn")).toBeCloseTo(0.3, 5);
+    expect(blendDualBrushValue(0.6, 0.25, "hard-light")).toBeCloseTo(0.3, 5);
+    expect(blendDualBrushValue(0.6, 0.75, "hard-light")).toBeCloseTo(0.8, 5);
+
+    const tile = getCachedTextureTile("canvas-weave", { size: 16, seed: 11 });
+    const mask = new Float32Array(16 * 16).fill(0.8);
+    mask[0] = 0;
+    const out = compositeDualBrushFloatBuffer(mask, tile, 16, 16, 16, {
+      blendMode: "linear-burn",
+      textureStrength: 0.7,
+      textureScale: 1,
+    });
+    expect(out[0]).toBe(0);
+    expect(out[5]).toBeGreaterThan(0);
+    expect(out[5]).toBeLessThan(0.8);
   });
 });

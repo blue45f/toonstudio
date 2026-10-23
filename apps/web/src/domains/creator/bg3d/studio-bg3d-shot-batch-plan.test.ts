@@ -440,10 +440,11 @@ describe("Studio BG3D shot batch plan v2", () => {
           : shot),
       },
     };
+    // 픽셀 예산 초과는 계획 오류 일반(planInvalid)이 아니라 전용 서브코드로 구분해 방출한다(A4 D4).
     await expect(createStudioBg3dShotBatchPlan(SHOTS, overBudget)).resolves.toMatchObject({
       ok: false,
       code: "invalid-capture",
-      subcode: "planInvalid",
+      subcode: "budgetExceeded",
     });
     const mismatchedEngineBase = options();
     await expect(createStudioBg3dShotBatchPlan(SHOTS, {

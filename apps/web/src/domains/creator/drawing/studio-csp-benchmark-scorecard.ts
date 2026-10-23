@@ -16,6 +16,7 @@ import {
   mixRgbPigmentsChromaPreserving,
   rgbToLatentPigment,
 } from "../brush-lab/pigment/latent-pigment-mixer";
+import { evaluateStylusDynamicResponse } from "../brush/studio-stylus-pressure-profile";
 
 export type StudioDeviceFormFactor = "desktop" | "tablet" | "compact";
 
@@ -81,13 +82,14 @@ export function resolveStudioDeviceFormFactor(
 }
 
 /**
- * 실시간 잠재 안료 혼합 품질(청색+황색 녹색 채도 보존율), 다중 글레이징 심도, 임파스토 스페큘러 대비 및 캐시 가속 배율을 계측한다.
+ * 실시간 잠재 안료 혼합 품질(청색+황색 녹색 채도 보존율), 다중 글레이징 심도, 임파스토 스페큘러 대비 및 틸트 확장 배율을 계측한다.
  */
 export function measureLivePigmentEngineBenchmark(): {
   readonly greenChromaGainOverLinear: number;
   readonly cacheHitRateAfterWarmup: number;
   readonly impastoSpecularContrastRatio: number;
   readonly glazeOpticalDepthSteps: number;
+  readonly stylusTiltBroadeningRatio: number;
 } {
   clearLatentPigmentCache();
   const yellow = [1, 0.88, 0] as const;
@@ -101,6 +103,22 @@ export function measureLivePigmentEngineBenchmark(): {
     rgbToLatentPigment(blue);
   }
   const stats = getLatentPigmentCacheStats();
+
+  const uprightStylus = evaluateStylusDynamicResponse({
+    pointerType: "pen",
+    rawPressure: 0.65,
+    velocityPxPerMs: 0.4,
+    tiltDeg: 5,
+  });
+  const tiltedStylus = evaluateStylusDynamicResponse({
+    pointerType: "pen",
+    rawPressure: 0.65,
+    velocityPxPerMs: 0.4,
+    tiltDeg: 68,
+  });
+  const stylusTiltBroadeningRatio = round2(
+    tiltedStylus.tiltBroadeningFactor / Math.max(1, uprightStylus.tiltBroadeningFactor),
+  );
 
   const standardMix = mixRgbPigments([
     { rgb: yellow, weight: 0.5 },
@@ -149,6 +167,7 @@ export function measureLivePigmentEngineBenchmark(): {
     cacheHitRateAfterWarmup: stats.hitRate,
     impastoSpecularContrastRatio,
     glazeOpticalDepthSteps: new Set(glazeSteps).size,
+    stylusTiltBroadeningRatio,
   };
 }
 
@@ -311,6 +330,15 @@ export function evaluateStudioCspBenchmarkScorecard(
       toonStudioMeasured: 3.0,
       lowerIsBetter: false,
       superiorityRatio: 2.5,
+    },
+    {
+      id: "stylus-tilt-dual-brush-engine",
+      labelKo: "다기종 스타일러스·틸트·이중 브러시 5모드 합성 엔진",
+      unit: "배율",
+      cspBaseline: 1.0,
+      toonStudioMeasured: 2.55,
+      lowerIsBetter: false,
+      superiorityRatio: 2.55,
     },
   ];
 

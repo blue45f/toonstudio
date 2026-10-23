@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
 /**
  * 실 브라우저에서 렌더된 프레임을 근거로 하는 Studio 3D 표면 전수 검증.
@@ -272,6 +272,23 @@ async function visiblePngDelta(page: Page, left: string, right: string): Promise
 /** 활성 백엔드 배지가 확정한 WebGPU 상태. "running" 에서만 <Canvas> 가 붙는다. */
 type Bg3dWebGpuState = "running" | "unavailable";
 
+/**
+ * 정밀 편집은 '컷 버전 · 원본 고정' 패널(`details`, 기본 펼침)을 작업공간 위에 열어 둔다. 본문이
+ * 화면 높이의 55% 까지 차지해서 1280×720 에서는 3D 뷰포트가 170px 남짓으로 눌리고, 뷰포트 한가운데에
+ * 놓이는 새 오브젝트가 다이얼로그 바깥으로 잘려 프레임이 바뀌지 않는다. 사용자가 하듯 요약줄을
+ * 눌러 접는다. 이 패널은 장면과 렌더러가 준비된 뒤에야 나타나므로 엔진을 고른 다음에 부른다.
+ * (패널 안에 'JSON 백업·가져오기' `details` 가 하나 더 있어 직계 요약줄만 집는다.)
+ */
+async function foldBg3dCutPanel(page: Page): Promise<void> {
+  const cutPanel = page.locator(`${BG3D_DIALOG} [data-testid="scene3d-cut-panel"]`);
+  // 렌더러 준비 대기라 이 스위트의 다른 BG3D 준비 대기(다이얼로그·엔진 배지)와 같은 예산을 준다.
+  await expect(cutPanel).toBeVisible({ timeout: 120_000 });
+  if (await cutPanel.getAttribute("open") !== null) {
+    await cutPanel.locator(":scope > summary").click();
+  }
+  await expect(cutPanel).not.toHaveAttribute("open");
+}
+
 /** 전용 headed browser lane에서 실제 native/SwiftShader WebGPU renderer를 고정한다. */
 async function forceBg3dWebGpu(page: Page): Promise<Bg3dWebGpuState> {
   const backend = page.locator('[data-testid="studio-bg3d-engine-active-backend"]').first();
@@ -322,6 +339,7 @@ async function forceBg3dWebGpu(page: Page): Promise<Bg3dWebGpuState> {
   await expect(backend).toHaveText(/WebGPU 사용 중/, { timeout: 120_000 });
   // A mounted canvas is what the rotation drag needs; the badge alone has been proven to lie.
   await expect(page.locator(`${BG3D_VIEWPORT} canvas`).first()).toBeVisible({ timeout: 120_000 });
+  await foldBg3dCutPanel(page);
   await page.getByRole("tab", { name: "도형", exact: true }).click();
   await page.waitForTimeout(1_000);
   return "running";
@@ -350,6 +368,7 @@ async function ensureBg3dWebGl2(page: Page): Promise<void> {
   await expect(webgl2Preference).toHaveAttribute("aria-pressed", "true");
   await expect(backend).toHaveText(/WebGL2 사용 중/, { timeout: 120_000 });
   await expect(page.locator('[data-testid="studio-bg3d-engine-unavailable"]')).toHaveCount(0);
+  await foldBg3dCutPanel(page);
   await page.getByRole("tab", { name: "도형", exact: true }).click();
   await page.waitForTimeout(1_000);
 }
@@ -459,8 +478,13 @@ async function waitForFrameChange(
  * 알림이 있고 없음에 따라 작업 영역 높이가 달라지고, 문서 스코프 스크린샷의 크기와 칸 배치가
  * 함께 움직인다. 알림의 존재 자체는 호출 전에 단언하고, 캡처 전에는 항상 같은 레이아웃으로 되돌린다.
  * 오류 배너는 닫지 않는다 — 그것은 실패 증거다.
+ *
+ * 포인터도 함께 치운다. 모달이 닫히면 그 밑에 있던 컨트롤(작업 패널 너비 손잡이 등)이 정지한
+ * 포인터 아래에 놓여 호버 툴팁을 띄우고, 툴팁이 그 밑 컨트롤('해제' 등)로 가는 클릭을 가로챈다.
+ * Playwright 는 가로막힌 클릭 앞에서 포인터를 옮기지 않으므로 사용자가 마우스를 움직이듯 먼저 치운다.
  */
 async function dismissStudioStatusNotices(page: Page): Promise<void> {
+  await page.mouse.move(0, 0);
   const dismiss = page.locator("[data-studio-status-notice-dismiss]");
   for (let attempt = 0; attempt < 5 && (await dismiss.count()) > 0; attempt += 1) {
     await dismiss.first().click();
@@ -519,14 +543,25 @@ function collectFatalErrors(page: Page): string[] {
   return fatal;
 }
 
+/**
+ * 레일 하단 설정 묶음(`data-studio-tool-rail-settings`)의 '전체 도구' 버튼.
+ *
+ * 이 묶음에는 '전체 도구'(대화상자를 여는 버튼)와 '도구막대 구성'(앱 설정의 도구막대 탭을 여는
+ * 버튼) 두 개가 있다. 예전 하네스는 묶음의 버튼이 하나뿐이라고 가정하고 role 만으로 집었는데,
+ * 지금은 그 질의가 둘로 풀려 strict mode 위반이 난다. 열려는 쪽은 언제나 '전체 도구'다.
+ */
+function railAllToolsTrigger(page: Page): Locator {
+  return page
+    .locator('[data-studio-tool-rail-settings="true"]')
+    .getByRole("button", { name: "전체 도구", exact: true });
+}
+
 async function openStudio(page: Page): Promise<void> {
   await page.goto("/studio/canvas?preset=illustration", { waitUntil: "domcontentloaded" });
   await expect(page.locator(STUDIO_DOCUMENT_SCOPE).first()).toBeVisible({
     timeout: 180_000,
   });
-  await expect(
-    page.locator('[data-studio-tool-rail-settings="true"]').getByRole("button").first(),
-  ).toBeVisible({ timeout: 180_000 });
+  await expect(railAllToolsTrigger(page)).toBeVisible({ timeout: 180_000 });
 }
 
 async function openStudio3dRailTool(
@@ -535,18 +570,25 @@ async function openStudio3dRailTool(
 ): Promise<void> {
   const tool = page.locator(`[data-studio-rail-tool-id="${toolId}"]`).first();
   if (!await tool.isVisible()) {
-    const toolbarSettings = page
-      .locator('[data-studio-tool-rail-settings="true"]')
-      .getByRole("button");
-    await expect(toolbarSettings).toBeVisible();
-    await toolbarSettings.click();
-    const hiddenTools = page.getByRole("dialog", { name: "숨긴 도구" });
-    await expect(hiddenTools).toBeVisible();
-    await hiddenTools.locator(`[data-studio-hidden-tool-id="${toolId}"]`).click();
-    await expect(hiddenTools).toBeHidden();
-    // Selection restores keyboard focus without reopening the settings coach.
-    // Do not dismiss it here: a coach covering the new launcher is a regression.
-    await expect(toolbarSettings).toBeFocused();
+    // 3D 도구는 기본 레일(선택·펜·지우개 …)에 고정되어 있지 않다. 사용자 경로는 '전체 도구'
+    // 대화상자를 열어 그 도구를 레일에 고정한 뒤 레일의 런처를 누르는 것이다 — 예전 '숨긴 도구'
+    // 대화상자의 항목 선택이 하던 일과 같고, 이 스위트가 레일 런처로 편집기를 다시 여는 단언
+    // ("메인 레일에서도 다시 열 수 있어야 한다")도 그 고정에 기댄다.
+    const allTools = railAllToolsTrigger(page);
+    await expect(allTools).toBeVisible();
+    await allTools.click();
+    const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
+    await expect(catalog).toBeVisible();
+    // 이름 쪽 버튼('… 사용')은 도구를 바로 실행하고, 같은 행의 '… 고정' 버튼이 레일 배치를
+    // 바꾼다. `data-studio-hidden-tool-id` 는 레일에 고정되지 않은 도구의 행에만 붙는다.
+    // 목록은 지연 로드되므로 auto-wait 하는 질의로만 집는다.
+    const hiddenToolRow = catalog.locator(`[data-studio-hidden-tool-id="${toolId}"]`).locator("..");
+    await hiddenToolRow.getByRole("button", { name: / 고정$/u }).click();
+    await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
+    await expect(catalog).toBeHidden();
+    // 닫으면 키보드 포커스가 '전체 도구' 버튼으로 돌아오되 코치(툴 힌트)는 다시 뜨지 않는다.
+    // 여기서 코치를 일부러 닫지 않는다: 새 런처를 코치가 가리면 그것이 회귀다.
+    await expect(allTools).toBeFocused();
   } else {
     await page.mouse.move(0, 0);
     await page.keyboard.press("Escape");
@@ -556,9 +598,29 @@ async function openStudio3dRailTool(
   await tool.click();
 }
 
+/**
+ * BG3D 편집기는 '장면 도우미'(간편, 장면 프리셋 중심)로 열린다. 이 스위트가 만지는 보기·도형·
+ * 레이어·에셋 탭과 도형 추가 버튼은 '정밀 편집' 작업공간에만 있으므로, 사용자가 하는 그대로 헤더의
+ * '3D 편집 모드' 묶음에서 '정밀 편집'을 눌러 넘어간다. 이미 정밀 모드면(닫았다 다시 열어도 모드가
+ * 유지되는 경우) 누르지 않는다. 이 전환 뒤에도 편집기는 같은 `studio-bg3d-dialog` 이다.
+ */
+async function selectBg3dProfessionalMode(page: Page): Promise<void> {
+  const dialog = page.locator(BG3D_DIALOG);
+  const professional = dialog
+    .getByRole("group", { name: "3D 편집 모드", exact: true })
+    .getByRole("button", { name: "정밀 편집", exact: true });
+  await expect(professional).toBeVisible();
+  if (await professional.getAttribute("aria-pressed") !== "true") {
+    await professional.click();
+  }
+  await expect(professional).toHaveAttribute("aria-pressed", "true");
+  await expect(dialog).toHaveAttribute("data-studio-bg3d-experience", "pro");
+}
+
 async function openBg3d(page: Page): Promise<void> {
   await openStudio3dRailTool(page, "bg3d");
   await expect(page.locator(BG3D_DIALOG)).toBeVisible({ timeout: 120_000 });
+  await selectBg3dProfessionalMode(page);
   await expect(page.locator(BG3D_VIEWPORT)).toBeVisible({ timeout: 60_000 });
   await page.waitForTimeout(6_000);
 }
@@ -575,6 +637,16 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
         receipt: null,
       };
     }, TEST_CREATOR_SESSION);
+    // 첫 저장이 끝나면 '게시 준비 제안' 카드(문서당 한 번만 뜨는 비모달 안내)가 문서 메뉴 아래에 떠서
+    // 그 밑에 놓인 컨트롤('해제' 등)로 가는 포인터를 가로챈다. 이 스위트가 판정하는 3D 렌더와는 무관한
+    // 안내라서 사용자가 하듯 ✕ 로 닫는다. 뜨는 시각이 저장 시점에 달려 있으므로 시각을 맞추지 않고,
+    // 카드가 동작을 막을 때만 닫는 locator handler 로 처리한다.
+    await page.addLocatorHandler(
+      page.locator('[data-studio-first-publish-suggestion="true"]'),
+      async (suggestion) => {
+        await suggestion.getByRole("button", { name: "게시 준비 제안 닫기" }).click();
+      },
+    );
   });
 
   test("3D 배경 편집기가 실제 3D 프레임을 그린다", async ({ page }) => {
@@ -816,10 +888,12 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
 
     // 레이어 트리에서 방금 삽입한 원본을 다시 선택하고 ID를 기록한다. 업데이트가 delete +
     // reinsert로 바뀌어도 단순 count=1은 통과하므로 동일 identity를 직접 고정한다.
-    await page.getByRole("tab", { name: "레이어", exact: true }).click();
+    // 레이어 내비게이터는 작업 패널 아래에 항상 붙어 있다 — 예전의 '레이어' 탭은 없어졌으므로
+    // 탭을 누르지 않고 트리가 보이는지만 확인한다.
     // The complete LT metadata path creates a dedicated "3D LT 배경" group. Match the child
     // raster row explicitly so the group treeitem cannot be mistaken for the persisted element.
     const layerTree = page.getByRole("tree", { name: "레이어 트리" });
+    await expect(layerTree).toBeVisible();
     const insertedLayer = layerTree.locator(
       '[data-studio-layer-row="true"][aria-label^="3D LT 배경 · 병합,"]',
     );
@@ -840,6 +914,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     // 원본 전달이 빠지면 빈 insert 장면과 "컬러 배경 추가" footer가 나타난다.
     await page.locator('[data-studio-rail-tool-id="bg3d"]').first().click();
     await expect(page.locator(BG3D_DIALOG)).toBeVisible({ timeout: 120_000 });
+    await selectBg3dProfessionalMode(page);
     // 편집기는 정확히 하나여야 한다. 두 번째 인스턴스가 붙으면 아래 단언들은 업데이트 편집기를
     // 보면서 닫기도 그쪽에만 걸리고, 남은 빈 insert 편집기 때문에 닫힘 단언이 계속 1을 본다 —
     // 러너에서 실제로 관측된 실패 모양이므로 원인 위치를 여기서 고정한다.
@@ -898,9 +973,10 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     );
     expect(compositeDelta.peakChannelDelta).toBeGreaterThan(3);
     expect(compositeDelta.changedPixels).toBeGreaterThan(100);
-    await expect(page.getByRole("tab", { name: "레이어 1" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "레이어 2" })).toHaveCount(0);
-    await page.getByRole("tab", { name: "레이어", exact: true }).click();
+    // 레이어 수는 내비게이터 머리글('레이어 N')이 보여 준다. 예전에는 '레이어 N' 탭이었다.
+    await expect(page.getByRole("heading", { name: "레이어 1", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "레이어 2", exact: true })).toHaveCount(0);
+    await expect(layerTree).toBeVisible();
     const updatedLayer = layerTree.locator(
       '[data-studio-layer-row="true"][aria-label^="3D LT 배경 · 병합,"]',
     );
@@ -937,6 +1013,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     // 통과하고 아래 raster만 같다면 metadata update와 image capture 사이 결함이다.
     await page.locator('[data-studio-rail-tool-id="bg3d"]').first().click();
     await expect(page.locator(BG3D_DIALOG)).toBeVisible({ timeout: 120_000 });
+    await selectBg3dProfessionalMode(page);
     // 편집기는 정확히 하나여야 한다. 두 번째 인스턴스가 붙으면 아래 단언들은 업데이트 편집기를
     // 보면서 닫기도 그쪽에만 걸리고, 남은 빈 insert 편집기 때문에 닫힘 단언이 계속 1을 본다 —
     // 러너에서 실제로 관측된 실패 모양이므로 원인 위치를 여기서 고정한다.
@@ -1033,7 +1110,10 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     // 삽입은 캡처 파이프라인과 체형·표면 페인트 상태가 모두 정착한 뒤에만 받아들여지고,
     // 거절은 다이얼로그 안 메시지로만 남는다. 그래서 한 번 눌러 보고, 닫히지 않으면 다시
     // 누른다 — 끝내 닫히지 않으면 그때의 다이얼로그 문구를 실패 메시지에 담는다.
-    const poserDialog = page.locator('[role="dialog"]');
+    // 닫힘 판정은 포저 다이얼로그 자체(`data-studio-vrm-dialog`)로 한다. 문서를 처음 고친 뒤에는 숨겨진
+    // '레이어 필터' 다이얼로그가 DOM 에 남으므로 `[role="dialog"]` 전체는 영원히 0 이 되지 않고, 삽입이
+    // 이미 받아들여진 뒤에도 없는 버튼을 다시 누르며 멈춘다.
+    const poserDialog = page.locator('[data-studio-vrm-dialog="true"]');
     let inserted = false;
     for (let attempt = 0; attempt < 3 && !inserted; attempt += 1) {
       await insert.click();

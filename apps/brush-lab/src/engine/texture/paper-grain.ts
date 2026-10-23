@@ -175,3 +175,46 @@ export function samplePaper(
     absorb: sampleChannel(field.absorb, field.size, tx, ty, bilinear),
   };
 }
+
+export interface PaperToothContactSample {
+  /** 건식·습식 매체가 종이 요철 봉우리(peak)에 걸려 묻어나는 유효 접촉 불투명도 (0..1). */
+  readonly contactAlpha: number;
+  /** 종이 골짜기(valley)에 침전·고이는 안료 보유량 (0..1). */
+  readonly valleyRetention: number;
+  /** 섬유 방향(dir)과 스트로크 진행 각도(strokeAngleRad) 간 이방성 마찰 계수 (0..1). */
+  readonly anisotropicDrag: number;
+}
+
+/**
+ * 종이 요철(Tooth) 물리 접촉 모델:
+ * 낮은 필압에서는 종이 봉우리(bump 높은 곳)만 스치며 건식 갈필(peak-skimming) 질감을 만들고,
+ * 높은 필압에서는 `pressureInfluence`에 따라 골짜기까지 메워지며(valley-filling) 농도가 포화된다.
+ */
+export function evaluatePaperToothContact(
+  field: PaperField,
+  x: number,
+  y: number,
+  pressure: number,
+  spec: PaperSpec,
+  strokeAngleRad = 0,
+): PaperToothContactSample {
+  if (!spec.enabled) {
+    return { contactAlpha: 1, valleyRetention: 0, anisotropicDrag: 0.5 };
+  }
+  const sample = samplePaper(field, x, y, spec);
+  const p = clamp01(pressure);
+  const influence = clamp01(spec.pressureInfluence);
+  // 낮은 압력일수록 문턱값(threshold)이 높아 봉우리 상단만 접촉
+  const threshold = clamp01((1 - p * influence) * (0.35 + spec.roughness * 0.45));
+  const rawContact = (sample.bump - threshold * 0.65) / Math.max(0.15, 1 - threshold * 0.55);
+  const contactAlpha = f(clamp01(rawContact * (0.45 + 0.55 * p)));
+  const valleyRetention = f(clamp01((1 - sample.bump) * sample.absorb * (0.35 + 0.65 * p)));
+  const crossFiber = Math.abs(Math.sin(strokeAngleRad - sample.dir));
+  const anisotropicDrag = f(clamp01(0.25 + crossFiber * 0.55 + spec.roughness * 0.2));
+
+  return {
+    contactAlpha,
+    valleyRetention,
+    anisotropicDrag,
+  };
+}
