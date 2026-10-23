@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  analyzeWebtoonDialogueReadability,
   buildDialogueSuggestPrompt,
+  buildGlobalLocalizedDialoguePreview,
   DIALOGUE_SUGGEST_MAX_PARSED,
   formatDialogueSuggestionLine,
   joinDialogueContextLines,
   parseDialogueSuggestResponse,
+  splitDialogueIntoWebtoonBubbles,
   type DialogueSuggestionCandidate,
 } from "./studio-dialogue-suggest";
 
@@ -162,3 +165,29 @@ describe("formatDialogueSuggestionLine", () => {
     expect(formatDialogueSuggestionLine(candidate)).toBe("안녕!");
   });
 });
+
+describe("analyzeWebtoonDialogueReadability, splitDialogueIntoWebtoonBubbles & buildGlobalLocalizedDialoguePreview", () => {
+  it("evaluates mobile readability, splits long lines into multiple speech bubbles, and builds global KO/EN/JA/ES previews", () => {
+    const shortLine = "이제 시작이야.";
+    const shortMetric = analyzeWebtoonDialogueReadability(shortLine);
+    expect(shortMetric.mobileReadabilityScore).toBeGreaterThanOrEqual(90);
+    expect(shortMetric.recommendedBubbleCount).toBe(1);
+
+    const longLine = "여기서 물러서면 우리가 지켜온 모든 약속이 사라지고 말 거야! 끝까지 함께 싸우자!";
+    const longMetric = analyzeWebtoonDialogueReadability(longLine);
+    expect(longMetric.recommendedBubbleCount).toBeGreaterThanOrEqual(2);
+
+    const bubbles = splitDialogueIntoWebtoonBubbles(longLine, 22);
+    expect(bubbles.length).toBeGreaterThanOrEqual(2);
+
+    const previews = buildGlobalLocalizedDialoguePreview("여기서 절대 물러설 곳은 없어.", {
+      speaker: "강진",
+      emotion: "rage",
+    });
+    expect(previews.map((p) => p.locale)).toEqual(["ko", "en", "ja", "es"]);
+    expect(previews.find((p) => p.locale === "en")?.localizedText).toContain("no turning back");
+  });
+});
+
+
+
