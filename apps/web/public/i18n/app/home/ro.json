@@ -1,10 +1,10 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "Povestele răspândite,",
-  "home.hero.titleShimmer": "Un singur indice",
+  "home.hero.titleLine1": "Povești răspândite,",
+  "home.hero.titleShimmer": "Un singur index",
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Caută prin Naver Webtoon, Series și Kakao Webtoon, apoi restrângeți rapid ce să citiți folosind semnale în timp real și preferințele cititorului.",
-  "home.hero.searchButton": "Titluri de căutare, creatori, etichete",
+  "home.hero.searchButton": "Căutați titluri, creatori, etichete",
   "home.hero.rankingButton": "Vedeți clasamentul unificat",
   "home.hero.studioLink": "Studioul Creatorului",
   "home.hero.createLink": "Tabla de creare",
@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "Platforme de publicare",
   "home.hero.stats.genres": "Spectrul de gen",
   "home.hero.stats.reviews": "Recenzii cititorilor",
-  "home.loadError": "Nu am putut încărca datele de acasă.",
+  "home.loadError": "Nu s-au putut încărca datele paginii principale.",
   "home.creatorTitle": "De la o idee la prima ta scenă"
 }

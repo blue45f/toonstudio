@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Copyright & Content Notificare",
+  "copyright.title": "Notă privind drepturile de autor și conținutul",
   "copyright.section1.title": "Surse de conținut și principii",
-  "copyright.section1.body": "ToonStudio este o platformă de indexare și descoperire care rezumă metadatele de catalog public (titluri, autori, genuri, etc.) din platformele de webtoon / webnovel.",
-  "copyright.section2.title": "Imagini de acoperire",
-  "copyright.section2.body": "Imaginile de acoperire sunt folosite ca miniature de identificare și de referință pentru acoperirea originală a platformei cu link-uri de sursă ori de câte ori este posibil.",
-  "copyright.section3.title": "Metrice & Transparență",
-  "copyright.section4.title": "Avisa privind drepturile",
+  "copyright.section1.body": "ToonStudio este o platformă de indexare și descoperire care rezumă metadatele publice ale catalogului (titluri, autori, genuri etc.) de pe platformele de webtoon/webnovel. Nu găzduiește și nu redistribuie conținutul principal al capitolelor; citirea este direcționată exclusiv prin linkuri oficiale.",
+  "copyright.section2.title": "Imagini de copertă",
+  "copyright.section2.body": "Imaginile de copertă servesc drept miniaturi de identificare și fac referire la copertele platformei originale, cu linkuri către sursă ori de câte ori este posibil. Afișarea poate fi dezactivată instantaneu la cererea titularilor de drepturi sau la actualizarea politicilor.",
+  "copyright.section3.title": "Indicatori și transparență",
+  "copyright.section4.title": "Notă privind drepturile",
   "copyright.section5.title": "Notificarea și eliminarea încălcării drepturilor de autor",
-  "copyright.section5.body": "Dacă credeți că metadatele sau acoperirile violează drepturile dvs., vă rugăm să trimiteți o anchetă cu titlu, URL și dovadă de proprietate.",
-  "copyright.leaveInquiry": "Împlini cererea →"
+  "copyright.section5.body": "Dacă credeți că metadatele sau copertele vă încalcă drepturile, vă rugăm să trimiteți o solicitare cu titlul, adresa URL și dovada dreptului de proprietate.",
+  "copyright.leaveInquiry": "Trimiteți o solicitare →"
 }
