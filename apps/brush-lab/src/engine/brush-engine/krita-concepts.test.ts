@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { SumiError } from "../core/errors";
 
-import { applyDab, generateDabMask, type DabMode } from "./krita-concepts";
+import {
+  applyDab,
+  applyDabPigmentMix,
+  generateDabMask,
+  generateEllipticalDabMask,
+  type DabMode,
+} from "./krita-concepts";
 
 describe("Krita dab mask applicator 개념", () => {
   it("generateDabMask(16, 1.0): 중심 1.0, 가장자리 0.0(hard edge)", () => {
@@ -82,4 +88,25 @@ describe("Krita dab mask applicator 개념", () => {
       SumiError,
     );
   });
+
+  it("generateEllipticalDabMask: 회전 타원 마스크가 이방성 종횡비와 가우시안 감쇠를 반영한다", () => {
+    const mask = generateEllipticalDabMask(17, 0.2, 2.5, 0, true);
+    expect(mask[8 * 17 + 8]).toBe(1);
+    // 장축(수평: y=8, x=14)은 단축(수직: y=14, x=8)보다 높은 마스크 값을 가진다
+    expect(mask[8 * 17 + 14]).toBeGreaterThan(mask[14 * 17 + 8]);
+    expect(() => generateEllipticalDabMask(17, 0.5, 0.5)).toThrow(SumiError);
+  });
+
+  it("applyDabPigmentMix: KM 색공간에서 캔버스 안료와 브러시 색상을 물리적으로 합성한다", () => {
+    const canvas = new Float32Array(2 * 2 * 4);
+    const mask = new Float32Array([1]);
+    // 1차 칠: 파랑
+    applyDabPigmentMix(mask, [0.05, 0.22, 0.85, 1] as const, canvas, 0, 0);
+    expect(canvas[3]).toBe(1);
+    // 2차 칠: 노랑 절반 혼합 → 녹색 채널 상승
+    const halfMask = new Float32Array([0.5]);
+    applyDabPigmentMix(halfMask, [0.95, 0.88, 0.1, 1] as const, canvas, 0, 0);
+    expect(canvas[1]).toBeGreaterThan(0.22);
+  });
 });
+

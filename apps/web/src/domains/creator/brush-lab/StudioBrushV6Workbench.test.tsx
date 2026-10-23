@@ -345,4 +345,12 @@ describe("V6 brush experiments in the workbench", () => {
     expect(localStorage.getItem("toonstudio.brush-program-v6:another")).toBe(before);
   });
 
+  it("renders the live CSP 2x benchmark scorecard card with internalized engine badges", () => {
+    render(<StudioBrushV6Workbench scope="test" />);
+    expect(screen.getByText("클립스튜디오(CSP) 대비 2× 벤치마크")).toBeTruthy();
+    expect(screen.getByText("2.0x 목표 달성")).toBeTruthy();
+    expect(screen.getByText(/7채널 잠재 안료 \+ Kubelka-Munk/u)).toBeTruthy();
+  });
+
 });
+

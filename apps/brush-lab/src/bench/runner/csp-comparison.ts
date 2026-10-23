@@ -20,13 +20,18 @@ import { PRESET_CATALOG } from "../../engine/presets/catalog";
 import { normalizeProgram } from "../../engine/presets/program-schema";
 import { LANE_REGISTRY, laneById } from "../../lanes/registry";
 import { buildAllFixtures } from "../fixtures/stroke-fixtures";
-import { cspOverallScore } from "../metrics/csp-baseline";
+import {
+  cspOverallScore,
+  cspScoreOf,
+  cspSuperiorityRatioOf,
+  type CspSuperiorityDimensionScores,
+} from "../metrics/csp-baseline";
 import { computeFamilyMetrics } from "../metrics/family-metrics";
 
 import { runFixture, type RunResult } from "./run-fixture";
 
 import type { Clock } from "../../engine/core/types";
-import type { BrushProgram, BrushFamily  } from "../../engine/presets/program-schema";
+import type { BrushProgram, BrushFamily } from "../../engine/presets/program-schema";
 import type { LaneId, LaneKind, LaneStatus } from "../../lanes/lane";
 import type { StrokeFixture } from "../fixtures/stroke-fixtures";
 
@@ -52,6 +57,8 @@ export interface CspMeasureResult {
   qualityScore: number | null;
   perfScore: number | null;
   overallScore: number | null;
+  /** CSP 기준선(1.0x) 대비 무제한 우위 배율(>= 2.0x 목표 검증용). */
+  superiorityRatio?: CspSuperiorityDimensionScores | null;
   /** 미지원 사유(null이면 지원). */
   unavailableReason: string | null;
 }
@@ -155,6 +162,7 @@ async function measureSingleEngine(
       qualityScore: null,
       perfScore: null,
       overallScore: null,
+      superiorityRatio: null,
       unavailableReason: msg,
     };
   }
@@ -179,10 +187,14 @@ async function measureSingleEngine(
       ? (result.receipt.dabCount * 1000) / result.elapsedMs
       : null;
 
-  // 품질 스코어: familyMetrics (Record<string, number | null> 키 기반)
-  const qualityScore = cspOverallScore(
+  // 품질 스코어: familyMetrics를 CSP 기준선 테이블로 정규화
+  const normalizedQualityScores = cspScoreOf(
+    preset.family,
+    TEST_CANVAS_SIZE,
+    TEST_CANVAS_SIZE,
     familyMetrics as Record<string, number | null>,
   );
+  const qualityScore = cspOverallScore(normalizedQualityScores);
 
   // 성능 스코어: frameP95Ms, dabsPerSecond
   const perfMetricsObj: Record<string, number | null> = {
@@ -190,12 +202,25 @@ async function measureSingleEngine(
     frameP95Ms,
     dabsPerSecond,
   };
-  const perfScoreVal = cspOverallScore(perfMetricsObj);
+  const normalizedPerfScores = cspScoreOf(
+    preset.family,
+    TEST_CANVAS_SIZE,
+    TEST_CANVAS_SIZE,
+    perfMetricsObj,
+  );
+  const perfScoreVal = cspOverallScore(normalizedPerfScores);
 
   const overallScore =
     qualityScore !== null && perfScoreVal !== null
       ? (qualityScore + perfScoreVal) / 2
       : qualityScore ?? perfScoreVal ?? null;
+
+  const superiorityRatio = cspSuperiorityRatioOf(
+    preset.family,
+    TEST_CANVAS_SIZE,
+    TEST_CANVAS_SIZE,
+    perfMetricsObj,
+  );
 
   return {
     laneId,
@@ -210,6 +235,7 @@ async function measureSingleEngine(
     qualityScore,
     perfScore: perfScoreVal,
     overallScore,
+    superiorityRatio,
     unavailableReason: null,
   };
 }
