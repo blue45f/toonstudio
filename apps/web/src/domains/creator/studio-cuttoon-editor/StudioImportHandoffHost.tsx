@@ -7,6 +7,7 @@ import {
   peekStudioImportHandoff,
   type StudioImportHandoffTarget,
 } from "../studio-import-handoff";
+import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { createStudioFileChangeEvent } from "./studio-synthetic-file-change-event";
 
 interface StudioImportHandoffHostProps {
@@ -72,7 +73,7 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       removeHandoffQuery();
       setStatus({
         state: "failed",
-        message: "가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다. 파일을 다시 선택해 주세요.",
+        message: editorShellStatusText("studio.editorShellStatus.importHandoff.handoffExpired", "가져올 파일 전달이 만료되었거나 새로고침으로 사라졌습니다. 파일을 다시 선택해 주세요."),
       });
       return;
     }
@@ -91,13 +92,13 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       void Promise.resolve(result).catch((error: unknown) => {
         setStatus({
           state: "failed",
-          message: error instanceof Error ? error.message : "파일 가져오기를 시작하지 못했습니다.",
+          message: error instanceof Error ? error.message : editorShellStatusText("studio.editorShellStatus.importHandoff.importStartFailed", "파일 가져오기를 시작하지 못했습니다."),
         });
       });
     } catch (error) {
       setStatus({
         state: "failed",
-        message: error instanceof Error ? error.message : "파일 가져오기를 시작하지 못했습니다.",
+        message: error instanceof Error ? error.message : editorShellStatusText("studio.editorShellStatus.importHandoff.importStartFailed", "파일 가져오기를 시작하지 못했습니다."),
       });
     }
   }, [props]);

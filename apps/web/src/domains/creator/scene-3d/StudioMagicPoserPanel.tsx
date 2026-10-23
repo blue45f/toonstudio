@@ -25,6 +25,7 @@ import {
   StudioToggleChip,
 } from "../studio-panel-ui";
 import { StudioPoseFirstRunGuide } from "./StudioPoseFirstRunGuide";
+import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 import {
   createStudioPoseHistory,
   describeStudioPoseHistory,
@@ -633,20 +634,20 @@ export function StudioMagicPoserPanel({
 
   function handleCopyPose(): void {
     if (!scene) {
-      setCloneNotice("3D 씬이 연결되지 않아 포즈를 복사할 수 없습니다.");
+      setCloneNotice(frozenStatus4Text("studio.frozenStatus4.magic.cloneNoScene", "3D 씬이 연결되지 않아 포즈를 복사할 수 없습니다."));
       return;
     }
     setClonedPose(cloneStudioMannequinPose(scene.getPose()));
-    setCloneNotice("현재 포즈를 복사했습니다. 붙여넣기로 언제든 되돌릴 수 있습니다.");
+    setCloneNotice(frozenStatus4Text("studio.frozenStatus4.magic.cloneCopied", "현재 포즈를 복사했습니다. 붙여넣기로 언제든 되돌릴 수 있습니다."));
   }
 
   function handlePastePose(): void {
     if (!clonedPose) {
-      setCloneNotice("먼저 포즈를 복사해 주세요.");
+      setCloneNotice(frozenStatus4Text("studio.frozenStatus4.magic.cloneCopyFirst", "먼저 포즈를 복사해 주세요."));
       return;
     }
     applyPoseToScene(cloneStudioMannequinPose(clonedPose));
-    setCloneNotice("복사한 포즈를 적용했습니다.");
+    setCloneNotice(frozenStatus4Text("studio.frozenStatus4.magic.clonePasted", "복사한 포즈를 적용했습니다."));
   }
 
   function handleApplyExpression(comboId: string): void {
@@ -660,10 +661,8 @@ export function StudioMagicPoserPanel({
   if (!scene) {
     return (
       <div className={cn("rounded-xl border border-dashed p-6 text-center", className)}>
-        <p className="text-sm font-semibold">3D 씬이 연결되지 않았습니다</p>
-        <p className="mt-1 text-xs text-fg-3">
-          데생 인형 씬이 준비되면 포즈·손·조명·카메라·체형·표정을 여기서 조절할 수 있습니다.
-        </p>
+        <p className="text-sm font-semibold">{frozenStatus4Text("studio.frozenStatus4.magic.emptyNoScene", "3D 씬이 연결되지 않았습니다")}</p>
+        <p className="mt-1 text-xs text-fg-3">{frozenStatus4Text("studio.frozenStatus4.magic.emptyNoSceneDesc", "데생 인형 씬이 준비되면 포즈·손·조명·카메라·체형·표정을 여기서 조절할 수 있습니다.")}</p>
       </div>
     );
   }
@@ -688,7 +687,7 @@ export function StudioMagicPoserPanel({
           type="button"
           onClick={handleUndoPose}
           disabled={!historyDescription.canUndo}
-          title={historyDescription.canUndo ? `이전 포즈로 되돌리기 (${historyDescription.undoCount}개)` : "되돌릴 변경이 없습니다"}
+          title={historyDescription.canUndo ? `이전 포즈로 되돌리기 (${historyDescription.undoCount}개)` : frozenStatus4Text("studio.frozenStatus4.magic.undoEmpty", "되돌릴 변경이 없습니다")}
           aria-label={`포즈 되돌리기${historyDescription.canUndo ? ` (${historyDescription.undoCount}개 가능)` : ""}`}
           className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -698,7 +697,7 @@ export function StudioMagicPoserPanel({
           type="button"
           onClick={handleRedoPose}
           disabled={!historyDescription.canRedo}
-          title={historyDescription.canRedo ? `다시 실행하기 (${historyDescription.redoCount}개)` : "다시 실행할 변경이 없습니다"}
+          title={historyDescription.canRedo ? `다시 실행하기 (${historyDescription.redoCount}개)` : frozenStatus4Text("studio.frozenStatus4.magic.redoEmpty", "다시 실행할 변경이 없습니다")}
           aria-label={`포즈 다시실행${historyDescription.canRedo ? ` (${historyDescription.redoCount}개 가능)` : ""}`}
           className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -738,8 +737,8 @@ export function StudioMagicPoserPanel({
           </div>
           <p role="status" className="mb-2 text-[0.66rem] text-fg-3">
             {lastPresetName
-              ? `적용된 포즈: ${lastPresetName} · 강도 ${intensity}%`
-              : "아직 적용된 포즈가 없습니다. 카드를 클릭해 보세요."}
+              ? frozenStatus4Text("studio.frozenStatus4.magic.poseApplied", { name: lastPresetName, intensity }, "적용된 포즈: {name} · 강도 {intensity}%")
+              : frozenStatus4Text("studio.frozenStatus4.magic.poseNone", "아직 적용된 포즈가 없습니다. 카드를 클릭해 보세요.")}
           </p>
           <StudioWebtoonPosePresetGrid onApplyPreset={handleApplyWebtoonPreset} />
         </section>
@@ -859,12 +858,12 @@ export function StudioMagicPoserPanel({
             ))}
           </div>
           {filteredHandPresets.length === 0 && (
-            <p className="mt-2 text-xs text-fg-3">검색 결과가 없습니다. 다른 단어로 검색해 보세요.</p>
+            <p className="mt-2 text-xs text-fg-3">{frozenStatus4Text("studio.frozenStatus4.magic.handSearchEmpty", "검색 결과가 없습니다. 다른 단어로 검색해 보세요.")}</p>
           )}
           <p role="status" className="mt-2 text-[0.66rem] text-fg-3">
             {lastHandName
-              ? `적용된 손: ${lastHandName} · ${handBoth ? "양손" : handSide === "left" ? "왼손" : "오른손"}${handMirrored ? " · 미러" : ""}`
-              : "아직 적용된 손 프리셋이 없습니다. 카드를 클릭해 보세요."}
+              ? frozenStatus4Text("studio.frozenStatus4.magic.handApplied", { name: lastHandName, side: handBoth ? frozenStatus4Text("studio.frozenStatus4.magic.sideBoth", "양손") : handSide === "left" ? frozenStatus4Text("studio.frozenStatus4.magic.sideLeft", "왼손") : frozenStatus4Text("studio.frozenStatus4.magic.sideRight", "오른손"), mirror: handMirrored ? frozenStatus4Text("studio.frozenStatus4.magic.mirrorFragment", " · 미러") : "" }, "적용된 손: {name} · {side}{mirror}")
+              : frozenStatus4Text("studio.frozenStatus4.magic.handNone", "아직 적용된 손 프리셋이 없습니다. 카드를 클릭해 보세요.")}
           </p>
           <div className="mt-2 space-y-1" onPointerDownCapture={resetHistoryGesture}>
             {STUDIO_HAND_FINGER_ORDER.map((finger) => (
@@ -915,8 +914,8 @@ export function StudioMagicPoserPanel({
           </dl>
           <p role="status" className="mt-2 text-[0.66rem] text-fg-3">
             {scene.setLightingRig
-              ? "조명 변경이 3D 뷰포트 조명에 실시간으로 반영됩니다."
-              : "이 호스트는 조명을 뷰포트에 연결하지 않아 LT 명암 힌트만 갱신됩니다."}
+              ? frozenStatus4Text("studio.frozenStatus4.magic.lightingLive", "조명 변경이 3D 뷰포트 조명에 실시간으로 반영됩니다.")
+              : frozenStatus4Text("studio.frozenStatus4.magic.lightingHintOnly", "이 호스트는 조명을 뷰포트에 연결하지 않아 LT 명암 힌트만 갱신됩니다.")}
           </p>
         </section>
       )}
@@ -966,7 +965,7 @@ export function StudioMagicPoserPanel({
                     onApplyCameraBookmark?.(bookmark);
                   }}
                   className="rounded border px-2 py-0.5 hover:border-accent"
-                  title={onApplyCameraBookmark ? "저장된 앵글로 카메라 이동" : "FOV만 복원 (씬 카메라 연동 없음)"}
+                  title={onApplyCameraBookmark ? "저장된 앵글로 카메라 이동" : frozenStatus4Text("studio.frozenStatus4.magic.bookmarkFovOnly", "FOV만 복원 (씬 카메라 연동 없음)")}
                 >
                   불러오기
                 </button>
@@ -982,7 +981,7 @@ export function StudioMagicPoserPanel({
             ))}
           </ul>
           {bookmarks.length === 0 && (
-            <p className="mt-2 text-xs text-fg-3">저장된 북마크가 없습니다. 위에서 이름을 입력하고 저장해 보세요.</p>
+            <p className="mt-2 text-xs text-fg-3">{frozenStatus4Text("studio.frozenStatus4.magic.bookmarksEmpty", "저장된 북마크가 없습니다. 위에서 이름을 입력하고 저장해 보세요.")}</p>
           )}
         </section>
       )}
@@ -1053,7 +1052,7 @@ export function StudioMagicPoserPanel({
           </div>
           {cloneNotice && <p className="mt-2 text-xs text-fg-3">{cloneNotice}</p>}
           {!clonedPose && !cloneNotice && (
-            <p className="mt-2 text-xs text-fg-3">아직 복사한 포즈가 없습니다.</p>
+            <p className="mt-2 text-xs text-fg-3">{frozenStatus4Text("studio.frozenStatus4.magic.cloneEmpty", "아직 복사한 포즈가 없습니다.")}</p>
           )}
         </section>
       )}
@@ -1120,7 +1119,7 @@ export function StudioMagicPoserPanel({
           </div>
           {!onApplyExpression && (
             <p className="mt-2 text-xs text-fg-3">
-              VRM 캐릭터가 연결되지 않아 표정이 3D에 반영되지 않습니다. 표정 스펙만 선택됩니다.
+              {frozenStatus4Text("studio.frozenStatus4.magic.expressionNoVrm", "VRM 캐릭터가 연결되지 않아 표정이 3D에 반영되지 않습니다. 표정 스펙만 선택됩니다.")}
             </p>
           )}
         </section>

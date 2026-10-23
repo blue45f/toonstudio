@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Տեքստային AI մատակարար",
   "studio.aiToolPopover.serverTextAiProviderAria": "Սերվերի տեքստային AI մատակարար",
   "studio.aiToolPopover.serverProviderAuto": "ավտոմատ միացում",
-  "studio.aiToolPopover.serverFallbackMessage": "Երբ մնացորդի/փաթեթի սահմանաչափը սպառվի, դուք կանցնեք այլ մատակարարի: Ընդհանուր սխալները ավտոմատ կերպով չեն ուղարկվում կրկնակի լիցքավորումը կանխելու համար:"
+  "studio.aiToolPopover.serverFallbackMessage": "Երբ մնացորդի/փաթեթի սահմանաչափը սպառվի, դուք կանցնեք այլ մատակարարի: Ընդհանուր սխալները ավտոմատ կերպով չեն ուղարկվում կրկնակի լիցքավորումը կանխելու համար:",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

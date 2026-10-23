@@ -18,6 +18,7 @@
  * 안전하다. StudioPageThumbnail 자신에는 h-full/w-full(고정 클래스, Tailwind 가 정상 생성)만
  * 넘겨 그 section 의 aspect-ratio 로 확정된 박스를 레터박스 없이 정확히 채우게 한다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Activity, LocateFixed, Pause, Play, Smartphone, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
@@ -153,7 +154,7 @@ function RhythmSummaryCard({
         </div>
         {analysis.insights.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-2.5 py-3 text-[0.68rem] leading-4 text-fg-3">
-            현재 분석 예산 안에서 큰 리듬 문제를 찾지 못했습니다.
+            {r3c07StatusText("studio.panelStatus.r3c07.scrollPreview.noIssues", "현재 분석 예산 안에서 큰 리듬 문제를 찾지 못했습니다.")}
           </p>
         ) : (
           analysis.insights.slice(0, 5).map((insight, index) => (
@@ -393,7 +394,7 @@ export function StudioScrollPreviewPanel({
             <div className="mx-auto shrink-0" style={{ width: framePx, maxWidth: "100%" }}>
               {pages.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-line px-3 py-8 text-center text-xs text-fg-4">
-                  표시할 페이지가 없어요.
+                  {r3c07StatusText("studio.panelStatus.r3c07.scrollPreview.pagesEmpty", "표시할 페이지가 없어요.")}
                 </p>
               ) : (
                 pages.map((page, index) => {

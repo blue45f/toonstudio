@@ -10,8 +10,12 @@ import type { CollaborationAction } from "../collaboration-application-panel";
 
 import Link from "@/shared/navigation/router-link";
 import { getApiErrorMessage } from "@/platform/api";
+import { translateNow, useT } from "@/shared/lib/i18n";
+
+import "../collaboration-account-status-i18n";
 
 export function HiringSubmissionPanel({ postId, postVersion, busy, act }: { postId: string; postVersion: number; busy: boolean; act: CollaborationAction }) {
+  const t = useT();
   const [resumes, setResumes] = useState<HiringResume[] | null>(null), [resumeId, setResumeId] = useState("");
   const [versions, setVersions] = useState<HiringResumeVersion[]>([]), [versionId, setVersionId] = useState("");
   const [indexes, setIndexes] = useState<number[]>([]), [message, setMessage] = useState(""), [contact, setContact] = useState("");
@@ -19,14 +23,14 @@ export function HiringSubmissionPanel({ postId, postVersion, busy, act }: { post
   const retry = useRef<{ digest: string; mutationId: string } | null>(null);
   useEffect(() => {
     const c = new AbortController();
-    void hiringClient.resumes(c.signal).then((v) => { if (!c.signal.aborted) { setResumes(v); setResumeError(""); } }).catch(async (e) => { const m = await getApiErrorMessage(e, "이력서를 불러오지 못했어요."); if (!c.signal.aborted) setResumeError(m); });
+    void hiringClient.resumes(c.signal).then((v) => { if (!c.signal.aborted) { setResumes(v); setResumeError(""); } }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringSubmission.resumesLoadFailed", "이력서를 불러오지 못했어요.")); if (!c.signal.aborted) setResumeError(m); });
     return () => c.abort();
   }, [refresh]);
   useEffect(() => {
     setVersions([]); setVersionId(""); setIndexes([]); setConsent(false); setVersionError("");
     if (!resumeId) return;
     const c = new AbortController();
-    void hiringClient.versions(resumeId, c.signal).then((v) => { if (!c.signal.aborted) { const owned = v.filter((version) => version.resumeId === resumeId); setVersions(owned); setVersionId(owned[0]?.id ?? ""); } }).catch(async (e) => { const m = await getApiErrorMessage(e, "버전을 불러오지 못했어요."); if (!c.signal.aborted) setVersionError(m); });
+    void hiringClient.versions(resumeId, c.signal).then((v) => { if (!c.signal.aborted) { const owned = v.filter((version) => version.resumeId === resumeId); setVersions(owned); setVersionId(owned[0]?.id ?? ""); } }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringSubmission.versionsLoadFailed", "버전을 불러오지 못했어요.")); if (!c.signal.aborted) setVersionError(m); });
     return () => c.abort();
   }, [resumeId, refresh]);
   const error = resumeError || versionError;
@@ -39,11 +43,11 @@ export function HiringSubmissionPanel({ postId, postVersion, busy, act }: { post
     await act(() => hiringClient.submit(postId, { ...value, mutationId: retry.current!.mutationId }), "선택한 버전으로 지원했어요. 이력서를 수정해도 제출 내용은 유지됩니다.");
   }
   return <section className="mb-6 space-y-4 rounded-2xl border border-accent/30 bg-panel p-6"><h2 className="text-xl font-bold">저장한 이력서로 지원하기</h2><Link href="/team/recruiting" className={collabButton}>이력서 작성·관리</Link>
-    {error && <CollabNotice error>{error}<button className={collabButton} onClick={() => setRefresh((v) => v + 1)}>다시 불러오기</button></CollabNotice>}
-    {!resumes && !error && <div role="status" aria-label="이력서를 불러오는 중" className="space-y-3" aria-hidden="true"><div className="skeleton h-24 rounded-xl" /><div className="skeleton h-24 rounded-xl" /></div>}
-    {resumes?.length === 0 && <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center"><p className="text-sm font-medium text-fg">저장한 이력서가 없어요.</p><p className="mt-1 text-xs leading-6 text-fg-3">이력서를 미리 작성해 두면 원하는 버전을 골라 제출할 수 있어요. 이력서 없이 간단 지원으로도 접수할 수 있습니다.</p><Link href="/team/recruiting" className={`${collabButton} mt-4`}>이력서 먼저 작성하기</Link></div>}
+    {error && <CollabNotice error>{error}<button className={collabButton} onClick={() => setRefresh((v) => v + 1)}>{t("collaboration.hiringSubmission.reload", "다시 불러오기")}</button></CollabNotice>}
+    {!resumes && !error && <div role="status" aria-label={t("collaboration.hiringSubmission.resumesLoading", "이력서를 불러오는 중")} className="space-y-3" aria-hidden="true"><div className="skeleton h-24 rounded-xl" /><div className="skeleton h-24 rounded-xl" /></div>}
+    {resumes?.length === 0 && <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center"><p className="text-sm font-medium text-fg">{t("collaboration.hiringSubmission.resumesEmpty", "저장한 이력서가 없어요.")}</p><p className="mt-1 text-xs leading-6 text-fg-3">이력서를 미리 작성해 두면 원하는 버전을 골라 제출할 수 있어요. 이력서 없이 간단 지원으로도 접수할 수 있습니다.</p><Link href="/team/recruiting" className={`${collabButton} mt-4`}>이력서 먼저 작성하기</Link></div>}
     {!!resumes?.length && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void submit(); }}><fieldset disabled={busy} className="space-y-4">
-      <CollabField label="제출할 이력서"><select required className={collabInput} value={resumeId} onChange={(e) => { setResumeId(e.target.value); setVersions([]); setVersionId(""); setIndexes([]); setConsent(false); }}><option value="">이력서 선택</option>{resumes.map((r) => <option key={r.id} value={r.id} disabled={r.submissionBlocked}>{r.title}{r.submissionBlocked ? " (권리 철회로 제출 불가)" : ""}</option>)}</select></CollabField>
+      <CollabField label="제출할 이력서"><select required className={collabInput} value={resumeId} onChange={(e) => { setResumeId(e.target.value); setVersions([]); setVersionId(""); setIndexes([]); setConsent(false); }}><option value="">이력서 선택</option>{resumes.map((r) => <option key={r.id} value={r.id} disabled={r.submissionBlocked}>{r.title}{r.submissionBlocked ? t("collaboration.hiringSubmission.submissionBlockedSuffix", " (권리 철회로 제출 불가)") : ""}</option>)}</select></CollabField>
       {selected && <><CollabField label="제출할 저장 버전"><select className={collabInput} value={versionId} onChange={(e) => { setVersionId(e.target.value); setIndexes([]); setConsent(false); }}>{versions.map((v) => <option key={v.id} value={v.id}>버전 {v.revision} · {new Date(v.createdAt).toLocaleString("ko-KR")}</option>)}</select></CollabField>
         <fieldset><legend className="font-semibold">함께 제출할 포트폴리오</legend>{selected.content.portfolio.map((p, i) => <label key={i} className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={indexes.includes(i)} onChange={() => { setIndexes(indexes.includes(i) ? indexes.filter((n) => n !== i) : [...indexes, i]); setConsent(false); }} />{p.title}</label>)}</fieldset>
         <details><summary className="cursor-pointer py-3 text-accent">제출 내용 미리보기</summary><ResumePreview content={{ ...selected.content, portfolio: indexes.map((i) => selected.content.portfolio[i]) }} /></details>
@@ -56,12 +60,13 @@ export function HiringSubmissionPanel({ postId, postVersion, busy, act }: { post
   </section>;
 }
 export function HiringSnapshotPanel({ postId, applicationId }: { postId: string; applicationId: string }) {
+  const t = useT();
   const [items, setItems] = useState<HiringApplicationSnapshot[] | null>(null), [opened, setOpened] = useState(false), [error, setError] = useState("");
   useEffect(() => {
     if (!opened) return;
     const c = new AbortController();
-    void hiringClient.snapshots(postId, applicationId, c.signal).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, "제출 이력서를 불러오지 못했어요."); if (!c.signal.aborted) setError(m); });
+    void hiringClient.snapshots(postId, applicationId, c.signal).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, translateNow("collaboration.hiringSnapshot.loadFailed", "제출 이력서를 불러오지 못했어요.")); if (!c.signal.aborted) setError(m); });
     return () => c.abort();
   }, [postId, applicationId, opened]);
-  return <div className="mt-4 space-y-3"><button type="button" className={collabButton} onClick={() => { setOpened(!opened); setItems(null); setError(""); }}>{opened ? "제출 이력서 닫기" : "제출 이력서 확인"}</button>{opened && <>{error && <CollabNotice error>{error}</CollabNotice>}{!items && !error && <div role="status" aria-label="제출 이력서를 불러오는 중" className="space-y-2" aria-hidden="true"><div className="skeleton h-20 rounded-xl" /><div className="skeleton h-20 rounded-xl" /></div>}{items?.length === 0 && <p className="text-sm">첨부한 저장 이력서가 없는 지원입니다.</p>}{items?.map((s) => <div key={s.id}><p className="my-2 text-sm">제출 버전 {s.resumeRevision} · {new Date(s.submittedAt).toLocaleString("ko-KR")}</p>{s.content ? <ResumePreview content={s.content} /> : <p className="text-sm">철회 또는 삭제로 제출본 내용이 지워졌어요.</p>}</div>)}</>}</div>;
+  return <div className="mt-4 space-y-3"><button type="button" className={collabButton} onClick={() => { setOpened(!opened); setItems(null); setError(""); }}>{opened ? "제출 이력서 닫기" : "제출 이력서 확인"}</button>{opened && <>{error && <CollabNotice error>{error}</CollabNotice>}{!items && !error && <div role="status" aria-label={t("collaboration.hiringSnapshot.loading", "제출 이력서를 불러오는 중")} className="space-y-2" aria-hidden="true"><div className="skeleton h-20 rounded-xl" /><div className="skeleton h-20 rounded-xl" /></div>}{items?.length === 0 && <p className="text-sm">첨부한 저장 이력서가 없는 지원입니다.</p>}{items?.map((s) => <div key={s.id}><p className="my-2 text-sm">제출 버전 {s.resumeRevision} · {new Date(s.submittedAt).toLocaleString("ko-KR")}</p>{s.content ? <ResumePreview content={s.content} /> : <p className="text-sm">철회 또는 삭제로 제출본 내용이 지워졌어요.</p>}</div>)}</>}</div>;
 }

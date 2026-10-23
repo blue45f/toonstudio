@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getApiErrorMessage } from "@/platform/api";
+import { r5IntegrationsStatusText } from "./r5-cat1-status-i18n";
 
 import { integrationPlatformClient } from "./integration-platform-client";
 import type { IntegrationCatalogResponse } from "./integration-platform-types";
@@ -19,7 +20,7 @@ export function useIntegrationCatalog() {
       })
       .catch(async (reason: unknown) => {
         if (!cancelled) {
-          setError(await getApiErrorMessage(reason, "연동 목록을 불러오지 못했습니다."));
+          setError(await getApiErrorMessage(reason, r5IntegrationsStatusText("r5cat1.integrations.catalog.loadFailed", "연동 목록을 불러오지 못했습니다.")));
         }
       });
     return () => {

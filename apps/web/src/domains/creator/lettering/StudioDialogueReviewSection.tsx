@@ -32,6 +32,9 @@ import {
 import { localeLabel } from "./studio-dialogue-translate";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 export type StudioDialogueReviewSectionProps = {
   pages: readonly DialogueReviewPageLike[];
@@ -81,6 +84,7 @@ export function StudioDialogueReviewSection({
   onStatusChange,
   onRevealCue,
 }: StudioDialogueReviewSectionProps) {
+  const t = useT();
   const [selectedLocale, setSelectedLocale] = useState<string | null>(null);
   const [editDrafts, setEditDrafts] = useState<ReadonlyMap<string, string>>(new Map());
 
@@ -130,8 +134,7 @@ export function StudioDialogueReviewSection({
     return (
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed text-fg-4">
-          아직 적용된 번역이 없어요. 먼저 번역을 생성해 적용하면 여기서 원문과 나란히 검수할 수
-          있어요.
+          {t("studio.brushCanvasStatus.lettering.reviewNoTranslationYet", "아직 적용된 번역이 없어요. 먼저 번역을 생성해 적용하면 여기서 원문과 나란히 검수할 수 있어요.")}
         </p>
       </div>
     );
@@ -181,7 +184,7 @@ export function StudioDialogueReviewSection({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
         {rows.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line px-2 py-4 text-center text-[0.66rem] leading-relaxed text-fg-4">
-            검수할 말풍선·텍스트가 없어요.
+            {t("studio.brushCanvasStatus.lettering.reviewEmpty", "검수할 말풍선·텍스트가 없어요.")}
           </p>
         ) : (
           <div className="space-y-2.5">
@@ -235,7 +238,7 @@ export function StudioDialogueReviewSection({
                           onChange={(e) => setDraft(row.id, e.target.value)}
                           disabled={row.locked}
                           rows={Math.min(4, Math.max(1, shownText.split("\n").length))}
-                          placeholder={untranslated ? "번역이 없어요 — 직접 입력해 저장할 수 있어요" : undefined}
+                          placeholder={untranslated ? t("studio.brushCanvasStatus.lettering.reviewNoTranslationPlaceholder", "번역이 없어요 — 직접 입력해 저장할 수 있어요") : undefined}
                           aria-label={`${group.pageIndex + 1}페이지 대사 번역`}
                           className="w-full resize-y rounded-lg border border-line bg-card px-2 py-1 text-[0.7rem] leading-snug text-fg outline-none transition-colors placeholder:text-fg-4 focus:border-accent/50 disabled:opacity-60"
                         />

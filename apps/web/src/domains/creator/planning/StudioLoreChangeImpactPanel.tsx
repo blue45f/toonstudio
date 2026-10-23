@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
   summarizeStudioLoreChangeImpacts,
@@ -89,7 +90,7 @@ export function StudioLoreChangeImpactPanel({
       <p>
         {summary.unacknowledgedCount > 0
           ? `미확인 ${summary.unacknowledgedCount}건 · 줄거리 ${summary.impactedSynopsisCount} · 대사 ${summary.impactedDialogueCount} · 다른 설정 ${summary.impactedLoreEntryCount}`
-          : "미확인 영향이 없어요."}{" "}
+          : r3c04StatusText("studio.r3c04Status.planning.loreImpact.noUnacknowledged", "미확인 영향이 없어요.")}{" "}
         설정을 바꿔도 작업이 막히지는 않아요. 대신 그 설정을 이미 쓴 곳을 모아 두니,
         한 번씩 눈으로 확인하고 넘기세요.
       </p>
@@ -109,8 +110,8 @@ export function StudioLoreChangeImpactPanel({
       {visible.length === 0 ? (
         <p>
           {notices.length === 0
-            ? "아직 영향을 주는 설정 변경이 없어요. 설정의 이름이나 규칙이 바뀌면, 그 설정을 참조하는 줄거리·대사·다른 설정이 여기에 쌓입니다."
-            : "미확인 영향이 없어요. 확인한 항목은 위 버튼으로 다시 볼 수 있어요."}
+            ? r3c04StatusText("studio.r3c04Status.planning.loreImpact.noChanges", "아직 영향을 주는 설정 변경이 없어요. 설정의 이름이나 규칙이 바뀌면, 그 설정을 참조하는 줄거리·대사·다른 설정이 여기에 쌓입니다.")
+            : r3c04StatusText("studio.r3c04Status.planning.loreImpact.noUnacknowledgedAck", "미확인 영향이 없어요. 확인한 항목은 위 버튼으로 다시 볼 수 있어요.")}
         </p>
       ) : (
         <ol aria-label="설정 변경 영향 알림">

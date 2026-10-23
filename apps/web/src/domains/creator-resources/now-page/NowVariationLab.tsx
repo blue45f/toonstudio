@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import { SiteRail } from "@/domains/legal/public/site-rail";
 import { cn } from "@/shared/lib/utils";
+import { resourceStatusText } from "../resource-status-i18n";
 
 import type { DailyTheme, DirectingMode, KstDay } from "../now";
 import { ACTION_BUTTON, PRIMARY_BUTTON, type SessionPreset } from "./config";
@@ -110,7 +111,7 @@ export function NowVariationLab({
       window.localStorage.setItem(NOW_VARIATION_STORAGE_KEY, serializeVariationState(state));
       setStorageError("");
     } catch {
-      setStorageError("변주 선택과 메모를 브라우저에 저장하지 못했습니다. 저장 공간 또는 비공개 모드를 확인하세요.");
+      setStorageError(resourceStatusText("resources.status.nowVariation.saveFailed", "변주 선택과 메모를 브라우저에 저장하지 못했습니다. 저장 공간 또는 비공개 모드를 확인하세요."));
     }
   }, [state]);
 
@@ -322,7 +323,7 @@ export function NowVariationLab({
             )}
             {copyStatus === "error" && (
               <p className="mt-3 text-sm font-semibold text-bad" role="alert">
-                선택안을 클립보드에 복사하지 못했습니다. 브라우저 권한을 확인하세요.
+                {resourceStatusText("resources.status.nowVariation.copyFailed", "선택안을 클립보드에 복사하지 못했습니다. 브라우저 권한을 확인하세요.")}
               </p>
             )}
           </article>

@@ -4,6 +4,7 @@
  * 코미포식)를 붙인다. 설정은 작품 doc의 `fx` 키에 저장되므로 백엔드 스키마 변경이 없다.
  * StudioPage는 건드리지 않고, 상세 페이지에서 추가 게시 설정으로 동작한다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Music4, Settings2, Target } from "lucide-react";
 import { useState, type MouseEvent } from "react";
 
@@ -107,7 +108,7 @@ export function WorkFxPanel({
       onUpdated(nextDoc, saved.revision);
       setSavedMsg(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "효과 설정을 저장하지 못했습니다.");
+      setError(err instanceof Error ? err.message : r3c07StatusText("studio.panelStatus.r3c07.workFx.saveFailed", "효과 설정을 저장하지 못했습니다."));
     } finally {
       setSaving(false);
     }
@@ -374,7 +375,7 @@ export function WorkFxPanel({
               </div>
               {marks.length === 0 ? (
                 <p className="mt-2 text-[0.72rem] text-fg-3">
-                  아직 마크가 없어요. 위 컷 이미지를 클릭해 첫 마크를 찍어보세요.
+                  {r3c07StatusText("studio.panelStatus.r3c07.workFx.marksEmpty", "아직 마크가 없어요. 위 컷 이미지를 클릭해 첫 마크를 찍어보세요.")}
                 </p>
               ) : (
                 <div className="mt-2 space-y-1.5">

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import {
   decideStudioOfflineAutomaticPreparation,
@@ -121,7 +122,7 @@ export function StudioOfflineRuntime() {
               phase: "error",
               message: cause instanceof Error
                 ? cause.message
-                : "오프라인 앱 자동 준비에 실패했습니다. 연결이 복구되면 다시 시도합니다.",
+                : creatorSub2StatusText("studio.creatorSub2.status.offline.runtime.prepareFailed", "오프라인 앱 자동 준비에 실패했습니다. 연결이 복구되면 다시 시도합니다."),
             });
           }
         } finally {

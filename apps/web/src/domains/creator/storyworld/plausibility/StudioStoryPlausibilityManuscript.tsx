@@ -7,6 +7,9 @@
  */
 import { FileUp, Merge, Scissors } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useT } from "@/shared/lib/i18n";
+import { r5CreatorStatusText } from "../../r5-cat1-status-i18n";
+import "../storyworld-status-i18n";
 
 import type { StoryworldProject } from "../studio-storyworld-causality";
 import {
@@ -67,6 +70,7 @@ function hasContent(project: StoryworldProject): boolean {
 
 export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
   const { project } = props;
+  const t = useT();
   const nameSources = props.nameSources ?? EMPTY_MANUSCRIPT_NAME_SOURCES;
   // 처음 보여 준 예시 이야기의 인물·장소는 작가의 원고와 상관이 없으므로 이름 찾기에 쓰지 않는다.
   const register = useMemo(
@@ -110,7 +114,7 @@ export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
       setStep("preview");
     } catch (caught) {
       if (controller.signal.aborted || (caught instanceof DOMException && caught.name === "AbortError")) return;
-      setError("원고를 읽는 중 문제가 생겼어요. 글을 확인하고 다시 시도해 주세요.");
+      setError(t("studio.storyworldStatus.manuscript.readFailed", "원고를 읽는 중 문제가 생겼어요. 글을 확인하고 다시 시도해 주세요."));
     } finally {
       if (controllerRef.current === controller) setBusy(false);
     }
@@ -133,7 +137,7 @@ export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
       setText(normalizeText(await file.text()));
       setError(null);
     } catch {
-      setError("파일을 읽지 못했어요. 텍스트(.txt, .md) 파일인지 확인해 주세요.");
+      setError(t("studio.storyworldStatus.manuscript.fileReadFailed", "파일을 읽지 못했어요. 텍스트(.txt, .md) 파일인지 확인해 주세요."));
     }
   };
 
@@ -172,13 +176,13 @@ export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
         ...(title.trim() ? { projectTitle: title.trim() } : {}),
         ...(withCopy ? { copyId } : {}),
       });
-      const skipped = result.skippedSceneCount > 0 ? ` 문서 한도 때문에 ${result.skippedSceneCount}개는 가져오지 못했어요. 원고를 나눠서 다시 가져와 주세요.` : "";
+      const skipped = result.skippedSceneCount > 0 ? t("studio.storyworldStatus.manuscript.scenesSkipped", { count: result.skippedSceneCount }, " 문서 한도 때문에 {count}개는 가져오지 못했어요. 원고를 나눠서 다시 가져와 주세요.") : "";
       props.onCreate(
         result.project,
         `장면 ${result.addedSceneIds.length}개를 만들었어요. 동기·원인·정보 칸은 비워 뒀으니 질문지로 채워 주세요.${skipped}`,
       );
     } catch (caught) {
-      setError(caught instanceof Error ? `초안을 만들지 못했어요. ${caught.message}` : "초안을 만들지 못했어요.");
+      setError(caught instanceof Error ? `${t("studio.storyworldStatus.manuscript.draftCreateFailed", "초안을 만들지 못했어요.")} ${caught.message}` : t("studio.storyworldStatus.manuscript.draftCreateFailed", "초안을 만들지 못했어요."));
       setBusy(false);
     }
   };
@@ -331,7 +335,7 @@ export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
             </div>
           ) : null}
           {mode === "replace" && props.isExampleSeed ? (
-            <p className="plausibility-hint">지금 설정은 처음 보여 드린 예시라서, 새로 시작해도 잃을 내 작업이 없어요.</p>
+            <p className="plausibility-hint">{r5CreatorStatusText("r5cat1.creator.plausibility.exampleSeedHint", "지금 설정은 처음 보여 드린 예시라서, 새로 시작해도 잃을 내 작업이 없어요.")}</p>
           ) : null}
           <label className="plausibility-field">
             <span>작품 이름 (선택)</span>
@@ -342,7 +346,7 @@ export function StudioStoryPlausibilityManuscript(props: ManuscriptFlowProps) {
           ) : null}
           {copyFailed ? (
             <div className="plausibility-banner plausibility-banner--warn" role="alert">
-              <p>원고 사본을 이 기기에 저장하지 못했어요. 사본 없이 만들면 ‘원고에서 보기’에서 장면의 앞부분 발췌만 볼 수 있고, 이름 표기 검사는 건너뛰어요.</p>
+              <p>{t("studio.storyworldStatus.manuscript.copySaveFailed", "원고 사본을 이 기기에 저장하지 못했어요. 사본 없이 만들면 ‘원고에서 보기’에서 장면의 앞부분 발췌만 볼 수 있고, 이름 표기 검사는 건너뛰어요.")}</p>
               <button className="storyworld-button" onClick={() => { void create(false); }} type="button">사본 없이 만들기</button>
               <button className="storyworld-button" onClick={() => { void create(true); }} type="button">다시 저장해 보기</button>
             </div>
@@ -377,6 +381,7 @@ function SceneRow({ draft, index, register, characterEntries, locationEntries, o
   readonly onMerge: () => void;
   readonly onSplit: (offset: number) => void;
 }) {
+  const t = useT();
   const refs = effectiveParticipantRefs(draft, register, override);
   const unresolved = unresolvedMatches(draft, override);
   const location = effectiveLocationName(draft, register, override);
@@ -397,7 +402,7 @@ function SceneRow({ draft, index, register, characterEntries, locationEntries, o
       <div className="plausibility-field">
         <span>등장인물</span>
         <div className="plausibility-chips">
-          {refs.length === 0 ? <span className="plausibility-hint">확정된 인물이 없어요</span> : null}
+          {refs.length === 0 ? <span className="plausibility-hint">{t("studio.storyworldStatus.manuscript.noConfirmedCharacters", "확정된 인물이 없어요")}</span> : null}
           {refs.map((ref) => (
             <button
               aria-label={`${nameOfRef(ref)} 빼기`}

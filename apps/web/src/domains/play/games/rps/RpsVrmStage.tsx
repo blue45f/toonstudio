@@ -6,6 +6,8 @@ import type { Hand, Outcome } from "./rps-logic";
 import type { VRM } from "@pixiv/three-vrm";
 
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
+
+import { playStatusText } from "../../play-status-i18n";
 import {
   applyExpressionWeightsToVrm,
   applyFingerRotations,
@@ -84,7 +86,7 @@ async function loadVrm(url: string): Promise<VRM> {
   const vrm = gltf.userData.vrm as VRM | undefined;
   if (!vrm) {
     VRMUtils.deepDispose(gltf.scene);
-    throw new Error("VRM 데이터를 찾지 못했습니다.");
+    throw new Error(playStatusText("play.status.rpsVrm.dataNotFound", "VRM 데이터를 찾지 못했습니다."));
   }
   if (vrm.meta.metaVersion === "0") VRMUtils.rotateVRM0(vrm);
   VRMUtils.removeUnnecessaryJoints?.(vrm.scene);

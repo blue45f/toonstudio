@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "የጽሑፍ AI አቅራቢ",
   "studio.aiToolPopover.serverTextAiProviderAria": "የአገልጋይ ጽሑፍ AI አቅራቢ",
   "studio.aiToolPopover.serverProviderAuto": "ራስ-ሰር መቀየር",
-  "studio.aiToolPopover.serverFallbackMessage": "የሒሳቡ/የጥቅል ገደቡ ሲያልቅ፣ ወደ ሌላ አቅራቢ ይቀየራሉ። ድርብ ባትሪ መሙላትን ለመከላከል አጠቃላይ ስህተቶች ወዲያውኑ አይላኩም።"
+  "studio.aiToolPopover.serverFallbackMessage": "የሒሳቡ/የጥቅል ገደቡ ሲያልቅ፣ ወደ ሌላ አቅራቢ ይቀየራሉ። ድርብ ባትሪ መሙላትን ለመከላከል አጠቃላይ ስህተቶች ወዲያውኑ አይላኩም።",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

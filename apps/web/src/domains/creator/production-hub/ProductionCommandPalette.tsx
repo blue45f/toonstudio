@@ -17,6 +17,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useT } from "@/shared/lib/i18n";
+
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -65,6 +67,7 @@ export function ProductionCommandPalette({
 }) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -222,7 +225,7 @@ export function ProductionCommandPalette({
                   </div>
                 );
               })}
-              {filtered.length === 0 ? <div className="p-8 text-center"><Settings className="mx-auto size-7 text-fg-3" aria-hidden="true" /><p className="mt-2 text-sm font-bold text-fg">검색 결과가 없습니다</p><p className="mt-1 text-xs text-fg-2">화면 이름, 회차 ID 또는 작업명을 입력하세요.</p></div> : null}
+              {filtered.length === 0 ? <div className="p-8 text-center"><Settings className="mx-auto size-7 text-fg-3" aria-hidden="true" /><p className="mt-2 text-sm font-bold text-fg">{t("productionHub.status.commandEmptySearch", "검색 결과가 없어요")}</p><p className="mt-1 text-xs text-fg-2">화면 이름, 회차 ID 또는 작업명을 입력하세요.</p></div> : null}
             </div>
             <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-panel px-4 py-2 text-[0.625rem] text-fg-3"><span>↑↓ 이동 · Enter 열기 · Esc 닫기</span><span>{aggregate.title}</span></footer>
           </section>

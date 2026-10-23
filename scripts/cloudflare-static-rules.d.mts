@@ -12,7 +12,7 @@ export interface CloudflareResponsePolicy {
   headers?: CloudflareResponseRule[];
 }
 
-export function withGodotInlineHashes(
+export function withInlineScriptHashes(
   responsePolicy: CloudflareResponsePolicy,
   root?: string,
 ): CloudflareResponsePolicy;

@@ -8,8 +8,7 @@
 
 import { resolveStudioCapturedBrushDynamicsPresetId } from "../brush/studio-brush-dynamics";
 import {
-  advanceStudioBrushVelocityPressure,
-  initializeStudioBrushVelocityPressure,
+  advanceStudioBrushVelocityPressure, initializeStudioBrushVelocityPressure,
   resolveStudioBrushReleasePressure,
 } from "../brush/studio-brush-velocity-pressure";
 import { isCompleteStudioDrawOp } from "../brush/studio-draw-completion";
@@ -199,6 +198,7 @@ import {
   snapshotStudioStagePointerBatchMapper,
   type StudioStagePointerBatchMapper,
 } from "../canvas/studio-stage-pointer-coordinate";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { resolveShiftFreehandTransition } from "../brush/studio-stroke-constrain";
 import {
   normalizeStudioStrokeGuideScale,
@@ -552,7 +552,7 @@ export function bindStudioCuttoonStagePointersRelease(
       if (work) await livingInkCoordinatorRef.current.rollbackFinishedStroke(work).catch(() => undefined);
       rejectStudioLivingInkFailedStroke(
         state,
-        cause instanceof Error ? cause.message : "최종 물리 프레임을 검증하지 못했습니다.",
+        cause instanceof Error ? cause.message : frozenStatus6Text("studio.frozenStatus6.pointersRelease.physicsFrameUnverified", "최종 물리 프레임을 검증하지 못했습니다."),
       );
     }
   }
@@ -625,7 +625,7 @@ export function bindStudioCuttoonStagePointersRelease(
       ) return;
       rejectStudioHokusaiFailedStroke(
         state,
-        cause instanceof Error ? cause.message : "최종 질감 결과를 검증하지 못했습니다.",
+        cause instanceof Error ? cause.message : frozenStatus6Text("studio.frozenStatus6.pointersRelease.textureResultUnverified", "최종 질감 결과를 검증하지 못했습니다."),
       );
     }
   }

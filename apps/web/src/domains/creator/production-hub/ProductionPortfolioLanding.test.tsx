@@ -142,7 +142,7 @@ describe("ProductionLandingPage portfolio", () => {
 
     expect(await screen.findByText("내 통합 작업함")).toBeTruthy();
     await waitFor(() => expect(api.getProductionProjectCollabRecord).toHaveBeenCalledWith("project-risk"));
-    expect(await screen.findByText(/아직 협업 알림이 없습니다/u)).toBeTruthy();
+    expect(await screen.findByText(/아직 협업 알림이 없어요/u)).toBeTruthy();
     expect(screen.queryByText("18화 12컷에서 나를 언급했어요")).toBeNull();
   });
 });

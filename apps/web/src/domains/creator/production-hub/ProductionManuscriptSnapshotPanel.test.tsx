@@ -231,7 +231,7 @@ describe("ProductionManuscriptSnapshotPanel", () => {
       fireEvent.click(screen.getByRole("button", { name: "복원하기" }));
 
       const alert = await screen.findByRole("alert");
-      expect(alert.textContent).toBe("Could not restore the snapshot.");
+      expect(alert.textContent).toBe("Could not restore the snapshot. Please try again in a moment.");
     } finally {
       act(() => useI18n.setState({ lang: previousLang }));
     }

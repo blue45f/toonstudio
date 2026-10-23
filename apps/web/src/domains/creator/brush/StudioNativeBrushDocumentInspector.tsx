@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import { prepareStudioNativeBrushDocumentCommit } from "./studio-native-brush-document-commit";
 import { planStudioNativeBrushDocument } from "./studio-native-brush-document-contract";
@@ -21,6 +24,7 @@ export interface StudioNativeBrushDocumentInspectorProps {
 }
 const CONTROL = "min-h-11 rounded-lg border border-line bg-card px-3 text-sm text-fg disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
 export default function StudioNativeBrushDocumentInspector(props: StudioNativeBrushDocumentInspectorProps) {
+  const t = useT();
   const { selected, documentWidth, documentHeight, pageId, masterEditMode, disabled, onPrepare } = props;
   const [engine, setEngine] = useState<NativeBrushProbeEngine>("libmypaint");
   const [style, setStyle] = useState<NativeBrushProbeStyle>("ink");
@@ -70,7 +74,7 @@ export default function StudioNativeBrushDocumentInspector(props: StudioNativeBr
     const plan = prepared.plan;
     if (!plan || disabled || masterEditMode || busy || !onPrepare || active.current) return;
     const commit = onPrepare({ pageId, masterEditMode, sourceElementId: plan.sourceElementId, sourceRevision: plan.sourceRevision }, prepareStudioNativeBrushDocumentCommit);
-    if (!commit) { setStatus("현재 문서 상태에서는 변환을 시작할 수 없습니다."); return; }
+    if (!commit) { setStatus(t("studio.brushCanvasStatus.brush.nativeCannotStart", "현재 문서 상태에서는 변환을 시작할 수 없습니다.")); return; }
     clearPreview();
     const controller = new AbortController(); active.current = controller;
     setBusy(true); setStatus(`${engine} 엔진으로 선택 획을 변환하고 있습니다.`);

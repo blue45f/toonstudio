@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Text AI Provider",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI Provider",
   "studio.aiToolPopover.serverProviderAuto": "comutare automată",
-  "studio.aiToolPopover.serverFallbackMessage": "Când limita de sold/pachet este epuizată, veți trece la alt furnizor. Erorile generale nu sunt retrimise automat pentru a preveni încărcarea dublă."
+  "studio.aiToolPopover.serverFallbackMessage": "Când limita de sold/pachet este epuizată, veți trece la alt furnizor. Erorile generale nu sunt retrimise automat pentru a preveni încărcarea dublă.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

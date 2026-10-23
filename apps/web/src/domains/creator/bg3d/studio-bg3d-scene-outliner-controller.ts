@@ -1,5 +1,6 @@
 import type { StudioBg3dResolvedHierarchy } from "./studio-bg3d-hierarchy";
 import type { StudioBg3dLayerListItem } from "./studio-bg3d-object-ops";
+import type { StudioBg3dOrganizationController } from "./studio-bg3d-organization-controller";
 
 export type StudioBg3dOutlinerSelectionMode = "replace" | "toggle";
 
@@ -20,6 +21,8 @@ export interface StudioBg3dSceneOutlinerController {
   readonly toggleLock: (item: StudioBg3dOutlinerItem) => void;
   readonly duplicate: (item: StudioBg3dOutlinerItem) => void;
   readonly remove: (item: StudioBg3dOutlinerItem) => void;
+  /** 태그·컴포넌트·장면 정보. 편집기가 연결하지 않은 화면(시험 등)에서는 없고, 없으면 해당 화면이 그려지지 않는다. */
+  readonly organization?: StudioBg3dOrganizationController;
 }
 
 export interface CreateStudioBg3dSceneOutlinerControllerInput {
@@ -36,6 +39,7 @@ export interface CreateStudioBg3dSceneOutlinerControllerInput {
   readonly onToggleLock: (item: StudioBg3dOutlinerItem) => void;
   readonly onDuplicate: (item: StudioBg3dOutlinerItem) => void;
   readonly onRemove: (item: StudioBg3dOutlinerItem) => void;
+  readonly organization?: StudioBg3dOrganizationController;
 }
 
 function enrichOutlinerItem(
@@ -91,5 +95,6 @@ export function createStudioBg3dSceneOutlinerController(
     toggleLock: input.onToggleLock,
     duplicate: input.onDuplicate,
     remove: input.onRemove,
+    ...(input.organization ? { organization: input.organization } : {}),
   });
 }

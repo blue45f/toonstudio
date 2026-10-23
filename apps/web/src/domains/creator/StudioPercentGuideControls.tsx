@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useId, useState } from "react";
 
 import { CANVAS_W } from "./studio-assets";
@@ -137,7 +138,7 @@ export function StudioPercentGuideControls({
       </form>
       {input.length > 0 && parsedPercent === null ? (
         <p role="alert" className="text-[0.62rem] leading-relaxed text-bad">
-          0보다 크고 100보다 작은 퍼센트를 입력해 주세요.
+          {r3c07StatusText("studio.panelStatus.r3c07.percentGuide.invalidRange", "0보다 크고 100보다 작은 퍼센트를 입력해 주세요.")}
         </p>
       ) : directPosition !== null ? (
         <p role="status" className="text-[0.62rem] tabular-nums text-fg-3">

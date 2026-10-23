@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { buildComputedAbr } from "../../../../tests/corpus/brushes/abr/synthetic-abr";
 import { AbrParseError, importAbr } from "../abr";
 import {
   MYB_SETTING_TABLE,
@@ -99,6 +100,18 @@ describe("myb v3 importer", () => {
     });
     expect(unmappedSettings).toEqual(["totally_made_up"]);
   });
+
+  it.each(["constructor", "toString", "hasOwnProperty", "valueOf"])(
+    "Object.prototype 의 속성 이름 %s 도 알 수 없는 설정으로 분류한다(표의 소유 속성만 읽는다)",
+    (name) => {
+      const { settingReports } = importMybBrush(mybBytes({ [name]: { base_value: 1, inputs: {} } }), "x", "x");
+      expect(reportFor(settingReports, name)).toEqual({
+        setting: name,
+        disposition: "parsed-inert",
+        note: "unknown setting name",
+      });
+    },
+  );
 
   it("derives spacing from dabs_per_actual_radius (the real libmypaint key)", () => {
     const result = importMybBrush(
@@ -252,6 +265,13 @@ function syntheticAbrV2(name: string): Uint8Array {
 }
 
 describe("abr importer (legacy v1/v2)", () => {
+  it("함수 인자 수 한도를 넘는 긴 UTF-16 이름도 예외 없이 읽는다", () => {
+    // `String.fromCharCode(...units)` 는 약 12만 개를 넘으면 스택 초과 RangeError 로 터졌다.
+    const name = "가".repeat(300_000);
+    const result = importAbr(buildComputedAbr({ version: 2, name, spacingPct: 25, angleDeg: 0, roundness: 50, diameterPx: 32 }));
+    expect(result.brushes[0]).toMatchObject({ kind: "computed", name });
+  });
+
   it("parses a computed brush with UTF-16 name from a v2 file", () => {
     const result = importAbr(syntheticAbrV2("G-Pen Round"));
     expect(result.version).toBe(2);

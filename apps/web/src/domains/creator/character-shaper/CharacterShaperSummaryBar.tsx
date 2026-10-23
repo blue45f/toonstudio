@@ -18,6 +18,8 @@ import type { VrmLibraryEntry } from "../vrm/vrm-library";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
+
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { cn } from "@/shared/lib/utils";
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
 
@@ -109,7 +111,7 @@ export function CharacterShaperSummaryBar({
   const changedSlots = diffCharacterRecipes(binding.baselineRecipe, binding.recipe);
   const changedCount = changedSlots.length;
   const slotLabel = (slot: CharacterSlotKind) => binding.catalog.slots.find((meta) => meta.id === slot)?.label ?? slot;
-  const changedTitle = changedCount > 0 ? `변경된 슬롯: ${changedSlots.map(slotLabel).join(", ")}` : "아직 바꾼 슬롯이 없습니다";
+  const changedTitle = changedCount > 0 ? `변경된 슬롯: ${changedSlots.map(slotLabel).join(", ")}` : r3c04StatusText("studio.r3c04Status.shaper.summaryBar.noChangedSlots", "아직 바꾼 슬롯이 없습니다");
   const styleText = summary.style.trim().length > 0 ? summary.style : "직접 조합";
   const recentLabel = binding.history.recentLabels[0] ?? null;
   const previewActive = binding.previewEntryId != null;
@@ -342,7 +344,7 @@ export function CharacterShaperSummaryBar({
       type="button"
       aria-pressed={binding.compareActive}
       aria-label="기준 상태와 비교 (누르고 있기)"
-      title={canCompare ? "누르고 있는 동안 열었을 때 상태를 보여줍니다" : "바꾼 슬롯이 없어 비교할 내용이 없습니다"}
+      title={canCompare ? "누르고 있는 동안 열었을 때 상태를 보여줍니다" : r3c04StatusText("studio.r3c04Status.shaper.summaryBar.compareEmpty", "바꾼 슬롯이 없어 비교할 내용이 없습니다")}
       disabled={!canCompare}
       data-character-shaper-compare="true"
       onPointerDown={handleComparePointerDown}
@@ -521,7 +523,7 @@ export function CharacterShaperSummaryBar({
                 {changedCount > 0 ? (
                   resetPanel
                 ) : (
-                  <p className="text-[0.72rem] text-fg-3">아직 바꾼 슬롯이 없습니다.</p>
+                  <p className="text-[0.72rem] text-fg-3">{r3c04StatusText("studio.r3c04Status.shaper.summaryBar.noChangedSlotsNotice", "아직 바꾼 슬롯이 없습니다.")}</p>
                 )}
               </div>
               <div className="border-t border-line pt-3">{savePanel}</div>

@@ -46,7 +46,7 @@ export function ProductionRiskResponseComposer({ aggregate, risk, action, actorA
       await execute({ type: "upsert-risk-response", response }, `${action.title} 대응안을 제안했습니다.`);
       onClose();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : t("productionHub.status.riskResponseSaveFailed", "대응안을 저장하지 못했습니다."));
+      setError(failure instanceof Error ? failure.message : t("productionHub.status.riskResponseSaveFailed", "대응안을 저장하지 못했어요. 잠시 후 다시 시도해 주세요."));
     } finally {
       savingRef.current = false; setSaving(false);
     }

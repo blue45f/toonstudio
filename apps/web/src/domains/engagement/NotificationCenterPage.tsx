@@ -1,3 +1,4 @@
+import { engagementStatusText } from "./engagement-status-i18n";
 import {
   Archive,
   BellRing,
@@ -341,15 +342,15 @@ export function NotificationCenterPage() {
         <div role="alert" className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-warn/30 bg-warn/10 p-4">
           <TriangleAlert size={18} className="shrink-0 text-warn" aria-hidden="true" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-fg">최신 알림을 불러오지 못했어요</p>
-            <p className="mt-0.5 text-xs text-fg-3">저장된 알림은 그대로 볼 수 있습니다. 네트워크를 확인하고 다시 시도해 주세요.</p>
+            <p className="text-sm font-bold text-fg">{engagementStatusText("engagement.status.notifications.loadLatestFailed", "최신 알림을 불러오지 못했어요")}</p>
+            <p className="mt-0.5 text-xs text-fg-3">{engagementStatusText("engagement.status.notifications.loadLatestHint", "저장된 알림은 그대로 볼 수 있습니다. 네트워크를 확인하고 다시 시도해 주세요.")}</p>
           </div>
           <button
             type="button"
             onClick={requestNotificationSyncRetry}
             className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
           >
-            <RefreshCw size={13} aria-hidden="true" /> 다시 시도
+            <RefreshCw size={13} aria-hidden="true" /> {engagementStatusText("engagement.status.notifications.retry", "다시 시도")}
           </button>
         </div>
       ) : null}
@@ -399,8 +400,8 @@ export function NotificationCenterPage() {
 
       {loading ? (
         <div className="mt-8 grid gap-3">
-          <LoadingState label="알림을 불러오는 중" className="rounded-2xl border border-line bg-card p-5" />
-          <LoadingState label="알림을 불러오는 중" className="rounded-2xl border border-line bg-card p-5" />
+          <LoadingState label={engagementStatusText("engagement.status.notifications.loading", "알림을 불러오는 중")} className="rounded-2xl border border-line bg-card p-5" />
+          <LoadingState label={engagementStatusText("engagement.status.notifications.loading", "알림을 불러오는 중")} className="rounded-2xl border border-line bg-card p-5" />
         </div>
       ) : disabledCategory ? (
         <div className="mt-8 rounded-3xl border border-dashed border-line bg-card/50 p-10 text-center">
@@ -419,7 +420,7 @@ export function NotificationCenterPage() {
           className="mt-8"
           art="notifications"
           icon={BellRing}
-          title={filter === "archived" ? "보관한 알림이 없습니다" : "아직 확인할 알림이 없습니다"}
+          title={filter === "archived" ? engagementStatusText("engagement.status.notifications.archivedEmpty", "보관한 알림이 없습니다") : engagementStatusText("engagement.status.notifications.empty", "아직 확인할 알림이 없습니다")}
           description={filter === "archived"
             ? "알림을 보관하면 나중에 다시 확인할 수 있습니다. 보관하지 않은 알림은 전체 탭에 남습니다."
             : "연재 알림을 켜거나 제작 프로젝트를 시작하면 출시 일정, 검수 요청과 제공처 변화를 이곳에서 한 번에 확인합니다."}

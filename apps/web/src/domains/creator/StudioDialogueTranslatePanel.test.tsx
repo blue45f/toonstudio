@@ -114,7 +114,7 @@ describe("StudioDialogueTranslatePanel translation-memory bridge", () => {
       status: "approved",
       now: 1,
     });
-    if (!created.ok) throw new Error(created.error);
+    if (!created.ok) throw new Error(created.error.code);
     const persistence = createStudioTranslationMemorySqlitePersistence({
       acquireDatabase: async () => database,
     });

@@ -38,7 +38,7 @@ describe("/studio asset-library V12 authority boundary", () => {
     expect(page).toContain("saveStudioAssetMutation");
     expect(page).toContain("deleteStudioAssetMutation");
     expect(page).toContain("renameStudioAssetMutation");
-    expect(page).toContain("SQLite/OPFS 에셋 보관함을 열지 못해 현재 탭 메모리만 사용합니다");
+    expect(page).toContain("SQLite/OPFS 소재 서재를 열지 못해 현재 탭 메모리만 사용합니다");
     expect(page).toContain("손상된 manifest나 누락된 blob을 일부만 불러오지 않았습니다");
     expect(page).not.toContain('const { saveAsset } = await import("./studio-asset-library");\n      await saveAsset({ name: file.name');
   });

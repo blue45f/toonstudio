@@ -78,11 +78,11 @@
   "search.explorer.time.minutesAgo": "{count}分鐘前",
   "search.explorer.time.daysAgo": "{count}天前",
   "search.explorer.time.hoursAgo": "{count}小時前",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "熱門搜尋",
+  "search.explorer.suggestions.genres": "推薦類型",
+  "search.explorer.suggestions.searchFor": "搜尋 {query}",
+  "search.explorer.suggestions.genreFilter": "按類型 {genre} 縮小範圍",
+  "search.explorer.suggestions.loading": "正在載入推薦搜尋",
+  "search.explorer.suggestions.error": "無法載入推薦搜尋。請稍後重試。",
+  "search.explorer.suggestions.empty": "目前沒有推薦搜尋。試著輸入作品、作者或標籤。"
 }

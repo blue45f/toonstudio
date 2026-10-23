@@ -34,6 +34,8 @@ import {
   type StudioTranslationMemoryStatus,
   type StudioTranslationMemoryStorage,
 } from "./studio-translation-memory";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
+import { resolveStudioTranslationMemoryCreateError, resolveStudioTranslationMemoryExportError, resolveStudioTranslationMemoryImportError } from "./status-i18n/studio-producer-error-i18n";
 import {
   createStudioTranslationMemorySqlitePersistence,
   type StudioTranslationMemoryPersistence,
@@ -330,9 +332,7 @@ export function StudioDialogueTranslationMemoryPanel({
         setLibrary({
           entries: [],
           status: "unavailable",
-          error: `SQLite 번역 메모리를 읽지 못했습니다: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          error: frozenStatus3Text("studio.frozenStatus3.tm.loadFailed", { detail: error instanceof Error ? error.message : String(error) }, "SQLite 번역 메모리를 읽지 못했습니다: {detail}"),
         });
         setHydrating(false);
       });
@@ -363,18 +363,11 @@ export function StudioDialogueTranslationMemoryPanel({
     allowInvalidRecovery = false,
   ): void {
     if (hydrating) {
-      setNotice({
-        tone: "warn",
-        message: "SQLite 번역 메모리를 불러온 뒤 저장할 수 있습니다.",
-      });
+      setNotice({ tone: "warn", message: frozenStatus3Text("studio.frozenStatus3.tm.saveAfterLoad", "SQLite 번역 메모리를 불러온 뒤 저장할 수 있습니다.") });
       return;
     }
     if (library.status === "invalid" && !allowInvalidRecovery) {
-      setNotice({
-        tone: "bad",
-        message:
-          "손상된 저장 데이터를 덮어쓰지 않았습니다. 검증된 JSON을 명시적으로 가져와 복구하세요.",
-      });
+      setNotice({ tone: "bad", message: frozenStatus3Text("studio.frozenStatus3.tm.invalidRecovery", "손상된 저장 데이터를 덮어쓰지 않았습니다. 검증된 JSON을 명시적으로 가져와 복구하세요.") });
       return;
     }
 
@@ -384,10 +377,7 @@ export function StudioDialogueTranslationMemoryPanel({
       pendingWritesRef.current += 1;
       setPersistenceBusy(true);
       setLibrary({ entries: next, status: "ok" });
-      setNotice({
-        tone: "good",
-        message: `${successMessage} SQLite에 저장 중입니다.`,
-      });
+      setNotice({ tone: "good", message: frozenStatus3Text("studio.frozenStatus3.tm.savingToSqlite", { message: successMessage }, "{message} SQLite에 저장 중입니다.") });
 
       const write = writeQueueRef.current.then(() =>
         authority.persistence.save(next)
@@ -406,26 +396,20 @@ export function StudioDialogueTranslationMemoryPanel({
             status: saved.ok ? "ok" : "unavailable",
             error: saved.error,
           }));
-          setNotice({
-            tone: saved.ok ? "good" : "warn",
-            message: saved.ok
-              ? successMessage
-              : `${successMessage} ${saved.error ?? "현재 탭에서만 유지됩니다."}`,
-          });
+          const noticeMessage = saved.ok ? successMessage : frozenStatus3Text("studio.frozenStatus3.tm.savedWithError", { message: successMessage, error: saved.error ?? frozenStatus3Text("studio.frozenStatus3.tm.tabOnlyFallback", "현재 탭에서만 유지됩니다.") }, "{message} {error}");
+          setNotice({ tone: saved.ok ? "good" : "warn", message: noticeMessage });
         })
         .catch((error: unknown) => {
           if (!mountedRef.current || generation !== saveGenerationRef.current) {
             return;
           }
-          const message = `SQLite 번역 메모리 저장을 완료하지 못했습니다: ${
-            error instanceof Error ? error.message : String(error)
-          }`;
+          const message = frozenStatus3Text("studio.frozenStatus3.tm.saveFailed", { detail: error instanceof Error ? error.message : String(error) }, "SQLite 번역 메모리 저장을 완료하지 못했습니다: {detail}");
           setLibrary((current) => ({
             entries: current.entries,
             status: "unavailable",
             error: message,
           }));
-          setNotice({ tone: "warn", message: `${successMessage} ${message}` });
+          setNotice({ tone: "warn", message: frozenStatus3Text("studio.frozenStatus3.tm.savedWithError", { message: successMessage, error: message }, "{message} {error}") });
         })
         .finally(() => {
           pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1);
@@ -445,12 +429,8 @@ export function StudioDialogueTranslationMemoryPanel({
       status: saved.ok ? "ok" : "unavailable",
       error: saved.error,
     });
-    setNotice({
-      tone: saved.ok ? "good" : "warn",
-      message: saved.ok
-        ? successMessage
-        : `${successMessage} ${saved.error ?? "현재 탭에서만 유지됩니다."}`,
-    });
+    const noticeMessage = saved.ok ? successMessage : frozenStatus3Text("studio.frozenStatus3.tm.savedWithError", { message: successMessage, error: saved.error ?? frozenStatus3Text("studio.frozenStatus3.tm.tabOnlyFallback", "현재 탭에서만 유지됩니다.") }, "{message} {error}");
+    setNotice({ tone: saved.ok ? "good" : "warn", message: noticeMessage });
   }
 
   function saveDraft(): void {
@@ -461,14 +441,14 @@ export function StudioDialogueTranslationMemoryPanel({
       glossaryRules: resolvedGlossaryRules,
     });
     if (!created.ok) {
-      setNotice({ tone: "bad", message: created.error });
+      setNotice({ tone: "bad", message: resolveStudioTranslationMemoryCreateError(created.error) });
       return;
     }
     const entry = matches.exact
       ? { ...created.entry, createdAt: matches.exact.entry.createdAt }
       : created.entry;
     const next = upsertStudioTranslationMemoryEntry(entriesRef.current, entry);
-    commitEntries(next, "번역 초안을 저장했습니다.");
+    commitEntries(next, frozenStatus3Text("studio.frozenStatus3.tm.draftSaved", "번역 초안을 저장했습니다."));
     setTranslationDraft("");
   }
 
@@ -482,18 +462,10 @@ export function StudioDialogueTranslationMemoryPanel({
       status
     );
     if (next === library.entries) {
-      setNotice({
-        tone: "warn",
-        message: "원문 변경 또는 용어집 충돌을 해소한 뒤 승인할 수 있습니다.",
-      });
+      setNotice({ tone: "warn", message: frozenStatus3Text("studio.frozenStatus3.tm.approveBlocked", "원문 변경 또는 용어집 충돌을 해소한 뒤 승인할 수 있습니다.") });
       return;
     }
-    commitEntries(
-      next,
-      status === "approved"
-        ? "번역을 승인했습니다."
-        : "번역을 검토됨 상태로 변경했습니다."
-    );
+    commitEntries(next, status === "approved" ? frozenStatus3Text("studio.frozenStatus3.tm.approved", "번역을 승인했습니다.") : frozenStatus3Text("studio.frozenStatus3.tm.reviewed", "번역을 검토됨 상태로 변경했습니다."));
   }
 
   function invalidate(entry: StudioTranslationMemoryEntry): void {
@@ -501,7 +473,7 @@ export function StudioDialogueTranslationMemoryPanel({
       entriesRef.current,
       entry.id
     );
-    commitEntries(next, "번역을 무효화하고 재검토 대상으로 표시했습니다.");
+    commitEntries(next, frozenStatus3Text("studio.frozenStatus3.tm.invalidated", "번역을 무효화하고 재검토 대상으로 표시했습니다."));
   }
 
   function reuse(
@@ -509,25 +481,16 @@ export function StudioDialogueTranslationMemoryPanel({
     reusable: boolean
   ): void {
     if (!reusable) {
-      setNotice({
-        tone: "warn",
-        message: "원문 변경 또는 용어집 충돌을 먼저 검토하세요.",
-      });
+      setNotice({ tone: "warn", message: frozenStatus3Text("studio.frozenStatus3.tm.reuseBlocked", "원문 변경 또는 용어집 충돌을 먼저 검토하세요.") });
       return;
     }
     onReuse(entry.translation, entry);
-    setNotice({
-      tone: "good",
-      message: "선택한 번역을 현재 대사에 재사용했습니다.",
-    });
+    setNotice({ tone: "good", message: frozenStatus3Text("studio.frozenStatus3.tm.reused", "선택한 번역을 현재 대사에 재사용했습니다.") });
   }
 
   async function importFile(file: File): Promise<void> {
     if (file.size > STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES) {
-      setNotice({
-        tone: "bad",
-        message: `가져오기 파일은 ${(STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES / 1_000_000).toFixed(1)}MB 이하여야 합니다.`,
-      });
+      setNotice({ tone: "bad", message: frozenStatus3Text("studio.frozenStatus3.tm.importTooLarge", { size: (STUDIO_TRANSLATION_MEMORY_MAX_IMPORT_BYTES / 1_000_000).toFixed(1) }, "가져오기 파일은 {size}MB 이하여야 합니다.") });
       return;
     }
     setImportBusy(true);
@@ -537,21 +500,16 @@ export function StudioDialogueTranslationMemoryPanel({
         entriesRef.current,
       );
       if (!imported.ok) {
-        setNotice({ tone: "bad", message: imported.error });
+        setNotice({ tone: "bad", message: resolveStudioTranslationMemoryImportError(imported.error) });
         return;
       }
       commitEntries(
         imported.entries,
-        `${imported.accepted.toLocaleString("ko-KR")}개 항목을 가져왔습니다. 중복 ${imported.duplicates.toLocaleString("ko-KR")}개·제외 ${(
-          imported.rejected + imported.truncated
-        ).toLocaleString("ko-KR")}개.`,
+        frozenStatus3Text("studio.frozenStatus3.tm.importSucceeded", { accepted: imported.accepted.toLocaleString("ko-KR"), duplicates: imported.duplicates.toLocaleString("ko-KR"), excluded: (imported.rejected + imported.truncated).toLocaleString("ko-KR") }, "{accepted}개 항목을 가져왔습니다. 중복 {duplicates}개·제외 {excluded}개."),
         true,
       );
     } catch {
-      setNotice({
-        tone: "bad",
-        message: "번역 메모리 파일을 읽지 못했습니다.",
-      });
+      setNotice({ tone: "bad", message: frozenStatus3Text("studio.frozenStatus3.tm.importReadFailed", "번역 메모리 파일을 읽지 못했습니다.") });
     } finally {
       setImportBusy(false);
     }
@@ -560,17 +518,14 @@ export function StudioDialogueTranslationMemoryPanel({
   function downloadExport(): void {
     const exported = exportStudioTranslationMemory(library.entries);
     if (!exported.ok) {
-      setNotice({ tone: "bad", message: exported.error });
+      setNotice({ tone: "bad", message: resolveStudioTranslationMemoryExportError(exported.error) });
       return;
     }
     if (
       typeof URL.createObjectURL !== "function"
       || typeof document === "undefined"
     ) {
-      setNotice({
-        tone: "warn",
-        message: "이 브라우저에서는 JSON 파일 다운로드를 시작할 수 없습니다.",
-      });
+      setNotice({ tone: "warn", message: frozenStatus3Text("studio.frozenStatus3.tm.downloadUnsupported", "이 브라우저에서는 JSON 파일 다운로드를 시작할 수 없습니다.") });
       return;
     }
     const url = URL.createObjectURL(
@@ -581,10 +536,7 @@ export function StudioDialogueTranslationMemoryPanel({
     anchor.download = "toonstudio-translation-memory-v1.json";
     anchor.click();
     URL.revokeObjectURL(url);
-    setNotice({
-      tone: "good",
-      message: `${(exported.bytes / 1_000).toFixed(1)}KB JSON을 내보냈습니다.`,
-    });
+    setNotice({ tone: "good", message: frozenStatus3Text("studio.frozenStatus3.tm.exported", { size: (exported.bytes / 1_000).toFixed(1) }, "{size}KB JSON을 내보냈습니다.") });
   }
 
   const storageUnavailable =
@@ -636,25 +588,11 @@ export function StudioDialogueTranslationMemoryPanel({
         >
           <p className="flex items-center gap-1 font-semibold">
             <HardDrive size={12} aria-hidden />
-            {hydrating
-              ? "SQLite 번역 메모리 불러오는 중"
-              : storageUnavailable
-                ? "현재 탭 메모리에서만 유지"
-                : library.status === "invalid"
-                  ? "SQLite 저장 데이터 손상"
-                : persistenceBusy
-                  ? "SQLite/OPFS에 저장 중"
-                  : authority.kind === "sqlite"
-                    ? "SQLite/OPFS에 로컬 저장"
-                    : "호스트 로컬 저장소 사용"}
+            {hydrating ? frozenStatus3Text("studio.frozenStatus3.tm.storageLoading", "SQLite 번역 메모리 불러오는 중") : storageUnavailable ? frozenStatus3Text("studio.frozenStatus3.tm.storageTabOnly", "현재 탭 메모리에서만 유지") : library.status === "invalid" ? frozenStatus3Text("studio.frozenStatus3.tm.storageInvalid", "SQLite 저장 데이터 손상") : persistenceBusy ? frozenStatus3Text("studio.frozenStatus3.tm.storageSaving", "SQLite/OPFS에 저장 중") : authority.kind === "sqlite" ? frozenStatus3Text("studio.frozenStatus3.tm.storageSqlite", "SQLite/OPFS에 로컬 저장") : frozenStatus3Text("studio.frozenStatus3.tm.storageHost", "호스트 로컬 저장소 사용")}
           </p>
           <p className="mt-0.5">
-            서버·팀원·다른 기기에는 자동 동기화하지 않습니다.
-            {hydrating
-              ? " 기존 저장 데이터를 확인하기 전에는 쓰기를 시작하지 않습니다."
-              : storageUnavailable
-              ? " 새로고침하면 사라질 수 있습니다."
-              : " 필요하면 JSON으로 직접 옮기세요."}
+            frozenStatus3Text("studio.frozenStatus3.tm.noteNoSync", "서버·팀원·다른 기기에는 자동 동기화하지 않습니다.")
+            {hydrating ? frozenStatus3Text("studio.frozenStatus3.tm.noteBeforeWrite", " 기존 저장 데이터를 확인하기 전에는 쓰기를 시작하지 않습니다.") : storageUnavailable ? frozenStatus3Text("studio.frozenStatus3.tm.noteMayDisappear", " 새로고침하면 사라질 수 있습니다.") : frozenStatus3Text("studio.frozenStatus3.tm.noteMoveByJson", " 필요하면 JSON으로 직접 옮기세요.")}
           </p>
           {library.error ? <p className="mt-1">{library.error}</p> : null}
         </div>
@@ -681,7 +619,7 @@ export function StudioDialogueTranslationMemoryPanel({
             </span>
           </div>
           <p className="mt-2 max-h-20 overflow-auto whitespace-pre-wrap text-[0.69rem] leading-relaxed text-fg">
-            {sourceText || "원문이 없습니다."}
+            {sourceText || frozenStatus3Text("studio.frozenStatus3.tm.emptyNoSource", "원문이 없습니다.")}
           </p>
         </section>
 
@@ -709,9 +647,7 @@ export function StudioDialogueTranslationMemoryPanel({
             />
           </section>
         ) : (
-          <p className="rounded-xl border border-dashed border-line px-3 py-3 text-center text-[0.67rem] leading-relaxed text-fg-3">
-            이 조건과 정확히 일치하는 로컬 번역이 없습니다.
-          </p>
+          <p className="rounded-xl border border-dashed border-line px-3 py-3 text-center text-[0.67rem] leading-relaxed text-fg-3">{frozenStatus3Text("studio.frozenStatus3.tm.emptyNoExactMatch", "이 조건과 정확히 일치하는 로컬 번역이 없습니다.")}</p>
         )}
 
         {matches.fuzzy.length > 0 ? (
@@ -843,7 +779,7 @@ export function StudioDialogueTranslationMemoryPanel({
               )}
             >
               <FileUp size={12} aria-hidden />
-              {importBusy ? "가져오는 중…" : "JSON 가져오기"}
+              {importBusy ? frozenStatus3Text("studio.frozenStatus3.tm.busyImporting", "가져오는 중…") : "JSON 가져오기"}
             </label>
             <button
               type="button"

@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -39,7 +40,7 @@ const SEVERITY_META: Readonly<
     badgeClassName: "border-bad/40 bg-bad/10 text-bad",
   },
   error: {
-    label: "오류",
+    label: panelStatusTextR4("studio.panelStatus.finishQuality.severityError", "오류"),
     icon: XCircle,
     className: "border-bad/30 bg-bad/5",
     badgeClassName: "border-bad/35 bg-bad/10 text-bad",
@@ -84,7 +85,7 @@ const STATUS_COPY: Readonly<
   },
   "needs-work": {
     title: "수정이 필요한 마감 항목이 있습니다",
-    description: "오류 위치로 이동해 원고와 검토 상태를 정리하세요.",
+    description: panelStatusTextR4("studio.panelStatus.finishQuality.needsWorkDescription", "오류 위치로 이동해 원고와 검토 상태를 정리하세요."),
     className: "border-bad/30 bg-bad/5",
     icon: XCircle,
   },
@@ -329,7 +330,7 @@ export function StudioFinishQualityView({
           <div>
             <CheckCircle2 size={22} aria-hidden className="mx-auto text-good" />
             <p className="mt-2 text-xs font-bold text-fg">
-              {result.issues.length === 0 ? "자동 검사에서 문제를 찾지 못했습니다" : "현재 필터에 맞는 문제가 없습니다"}
+              {result.issues.length === 0 ? panelStatusText("studio.panelStatus.finishQuality.noIssues", "자동 검사에서 문제를 찾지 못했습니다") : panelStatusText("studio.panelStatus.finishQuality.noFilteredIssues", "현재 필터에 맞는 문제가 없습니다")}
             </p>
           </div>
         </div>

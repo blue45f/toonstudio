@@ -27,6 +27,7 @@ import {
   type StudioLayerEffectsStack,
   type StudioReliefEffect,
 } from "./studio-layer-effects-stack";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 export interface StudioLayerEffectsStackPanelProps {
   readonly stack: StudioLayerEffectsStack;
@@ -108,7 +109,7 @@ export function StudioLayerEffectsStackPanel({
 
       {stack.effects.length === 0 ? (
         <div className="py-4 text-center text-[0.68rem] text-fg-3">
-          적용된 레이어 효과가 없습니다. 위의 버튼으로 효과를 추가하세요.
+          {subStatusText("studio.subStatus.effects.empty", "적용된 레이어 효과가 없습니다. 위의 버튼으로 효과를 추가하세요.")}
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">

@@ -18,9 +18,12 @@ import "@/shared/components/search-i18n";
 import "@/shared/components/share-i18n";
 import "@/domains/creator/studio-app-settings-center-i18n";
 import "@/domains/creator/panel-detect/panel-import-i18n";
+import "@/domains/creator/branching-cuttoon/branching-cuttoon-i18n";
+import "@/domains/creator/anchor-consistency/anchor-lab-i18n";
 import "@/domains/creator/reader-preview/reader-preview-i18n";
 import "@/domains/legal/creator-support-i18n";
 import "@/domains/legal/support-us-i18n";
+import "@/shared/ai/claude/claude-assist-i18n";
 
 function collectSourceI18nKeys(): Set<string> {
   // App-level integration covers all domains without a shared-to-domain import.

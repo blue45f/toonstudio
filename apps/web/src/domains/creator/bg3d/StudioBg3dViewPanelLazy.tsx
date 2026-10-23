@@ -23,7 +23,7 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
     <Suspense
       fallback={
         <div hidden={props.hidden}>
-          <StudioPanelLoading label={t("studio.canvas.panelLoading.viewTools", "보기 도구를 불러오는 중입니다.")} />
+          <StudioPanelLoading label={t("studio.canvas.panelLoading.viewTools", "보기 도구를 불러오는 중이에요.")} />
         </div>
       }
     >

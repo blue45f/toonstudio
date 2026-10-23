@@ -1,5 +1,8 @@
 import { AlertTriangle, CheckCircle2, ImagePlus, Loader2, Save, X } from "lucide-react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import {
   STUDIO_BG3D_CONTROL_BUTTON as CONTROL_BUTTON,
   studioBg3dClassNames as cx,
@@ -63,6 +66,7 @@ export function StudioBg3dActionFooter({
   toneOutputType,
   simpleMode = false,
 }: StudioBg3dActionFooterProps) {
+  const t = useT();
   const isPreparing = isCapturing || isRestoringScene || hasPendingClone || hasPendingSharedCharacter;
 
   return (
@@ -71,7 +75,7 @@ export function StudioBg3dActionFooter({
         <div role="alert" className="mx-4 mb-2 flex items-start gap-2 rounded-lg border border-bad/45 bg-[oklch(0.66_0.20_25/0.10)] px-3 py-2 text-xs leading-relaxed text-fg sm:mx-5">
           <AlertTriangle className="mt-0.5 shrink-0 text-bad" size={14} aria-hidden />
           <span>
-            {sceneRecoveryError ?? "검증된 모델의 렌더 인스턴스를 만들지 못했습니다. 기존 PNG를 보존하기 위해 저장을 막았습니다."}
+            {sceneRecoveryError ?? t("studio.bg3dPanelStatus.actionFooter.renderInstanceFailed", "검증된 모델의 렌더 인스턴스를 만들지 못했습니다. 기존 PNG를 보존하기 위해 저장을 막았습니다.")}
           </span>
         </div>
       ) : null}

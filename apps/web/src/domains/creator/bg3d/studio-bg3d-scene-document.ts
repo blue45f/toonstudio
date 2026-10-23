@@ -25,7 +25,15 @@ import {
   resolveStudioBg3dCameraUpVector,
 } from "./studio-bg3d-camera-orientation";
 import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
-import { normalizeStudioBg3dHierarchyParents } from "./studio-bg3d-hierarchy";
+import {
+  containsStudioBg3dControlCharacter as containsControlCharacter,
+  normalizeStudioBg3dDocumentText as normalizedText,
+  normalizeStudioBg3dHierarchyParents,
+  normalizeStudioBg3dNodeOrganization,
+  normalizeStudioBg3dSceneMeta,
+  normalizeStudioBg3dTags,
+  withStudioBg3dHiddenTags,
+} from "./studio-bg3d-hierarchy";
 import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
 import { normalizeStudioBg3dModelTexturePaint } from "../studio-bg3d-model-texture-paint";
 import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
@@ -152,7 +160,7 @@ export {
   type StudioBg3dMaterialOverride,
   type StudioBg3dModelAttachment,
   type StudioBg3dModelNode,
-  type StudioBg3dMorphLayer,
+  type StudioBg3dMorphLayer, type StudioBg3dNodeOrganization, type StudioBg3dComponentRef, type StudioBg3dSceneMeta,
   type StudioBg3dMorphWeightOverride,
   type StudioBg3dOutputSettings,
   type StudioBg3dParsedGlbMetrics,
@@ -208,9 +216,6 @@ const MAX_NODE_NAME_LENGTH = 80;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,79}$/u;
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const HEX_COLOR_PATTERN = /^#[a-f0-9]{6}$/iu;
-const EXTERNAL_REFERENCE_PATTERN = /(?:\b(?:blob|data|file|https?):|:\/\/|\bwww\.)/iu;
-const SENSITIVE_REFERENCE_PATTERN =
-  /(?:\b(?:api[-_ ]?key|access[-_ ]?token|secret|password)\b|(?:^|\s)sk-[A-Za-z0-9_-]{8,})/iu;
 const FORBIDDEN_ID_SET = new Set(["constructor", "prototype", "__proto__"]);
 const PRIMITIVE_KIND_SET = new Set<string>(STUDIO_BG3D_PRIMITIVE_KINDS);
 const BACKGROUND_MODE_SET = new Set<string>(["color", "sky-preset", "transparent"]);
@@ -379,33 +384,6 @@ function normalizedColor(value: unknown, fallback: string): string {
   return typeof value === "string" && HEX_COLOR_PATTERN.test(value)
     ? value.toLowerCase()
     : fallback;
-}
-
-function containsControlCharacter(value: string): boolean {
-  for (const character of value) {
-    const codePoint = character.codePointAt(0) ?? 0;
-    if (codePoint <= 0x1f || codePoint === 0x7f) return true;
-  }
-  return false;
-}
-
-function normalizedText(
-  value: unknown,
-  maximumLength: number,
-  rejectExternalReference = false
-): string | null {
-  if (typeof value !== "string" || containsControlCharacter(value)) return null;
-  const normalized = value.normalize("NFKC").trim().replace(/\s+/gu, " ");
-  if (
-    !normalized ||
-    Array.from(normalized).length > maximumLength ||
-    (rejectExternalReference &&
-      (EXTERNAL_REFERENCE_PATTERN.test(normalized) ||
-        SENSITIVE_REFERENCE_PATTERN.test(normalized)))
-  ) {
-    return null;
-  }
-  return normalized;
 }
 
 function normalizedId(value: unknown): string | null {
@@ -1304,6 +1282,8 @@ function normalizeNode(
     parentId: normalizedId(value.parentId) ?? null,
     // A node can never link to itself; dangling links are dropped by the sync pass, not here.
     ...(linkedSourceId && linkedSourceId !== id ? { linkedSourceId } : {}),
+    // 태그·컴포넌트 참조: 비어 있으면 키를 만들지 않아 이 필드를 모르는 기존 노드와 바이트가 같다.
+    ...normalizeStudioBg3dNodeOrganization(value),
   };
   if (value.kind === "primitive") {
     if (typeof value.primitiveKind !== "string" || !PRIMITIVE_KIND_SET.has(value.primitiveKind)) {
@@ -1420,6 +1400,7 @@ function normalizeShot(
     ...(hasOwn(value, "output")
       ? { output: normalizeShotOutputOverride(value.output) }
       : {}),
+    ...(hasOwn(value, "hiddenTags") ? { hiddenTags: normalizeStudioBg3dTags(value.hiddenTags, "scene") } : {}),
   };
 }
 
@@ -1505,6 +1486,7 @@ function normalizeDecodedCurrentDocument(
         return null;
       }
     }
+    const meta = normalizeStudioBg3dSceneMeta(value.meta);
     const normalized: StudioBg3dSceneDocument = {
       kind: STUDIO_BG3D_SCENE_DOCUMENT_KIND,
       version: STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
@@ -1520,6 +1502,7 @@ function normalizeDecodedCurrentDocument(
       ...(shots ? { shots } : {}),
       ...(activeShotId && shotIds.has(activeShotId) ? { activeShotId } : {}),
       ...(pinnedVersionedCut ? { pinnedVersionedCut } : {}),
+      ...(meta ? { meta } : {}),
     };
     if (canonicalDocumentByteLength(normalized) > STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES) {
       failBudget("document-byte-budget-exceeded");
@@ -1687,6 +1670,7 @@ function migrateSchemaV1Budgets(value: unknown): Record<string, unknown> | null 
 function migrateSchemaV2Nodes(value: readonly unknown[]): readonly unknown[] | null {
   const nodes: unknown[] = [];
   for (const node of value) {
+    if (isRecord(node) && (hasOwn(node, "tags") || hasOwn(node, "componentRef"))) return null;
     if (!isRecord(node) || node.kind !== "model" || !hasOwn(node, "constraints")) {
       nodes.push(node);
       continue;
@@ -1711,7 +1695,8 @@ function migrateDecodedSchemaV2Document(value: unknown): StudioBg3dSceneDocument
       hasOwn(value.camera, "up")
     )) ||
     hasOwn(value, "shots") ||
-    hasOwn(value, "activeShotId")
+    hasOwn(value, "activeShotId") ||
+    hasOwn(value, "meta")
   ) {
     return null;
   }
@@ -1732,14 +1717,15 @@ function migrateDecodedSchemaV1Document(value: unknown): StudioBg3dSceneDocument
       hasOwn(value.camera, "up")
     )) ||
     hasOwn(value, "shots") ||
-    hasOwn(value, "activeShotId")
+    hasOwn(value, "activeShotId") ||
+    hasOwn(value, "meta")
   ) {
     return null;
   }
   if (
     value.nodes.some((node) =>
       isRecord(node) && (
-        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
+        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints") || hasOwn(node, "tags") || hasOwn(node, "componentRef")
       ))
   ) return null;
   const budgets = migrateSchemaV1Budgets(value.budgets);
@@ -1771,7 +1757,7 @@ function migrateDecodedSchemaPanoramaDocument(
     value.version === STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION
     && value.nodes.some((node) =>
       isRecord(node) && (
-        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
+        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "modelTexturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints") || hasOwn(node, "tags") || hasOwn(node, "componentRef")
       ))
   ) {
     return null;
@@ -1785,7 +1771,7 @@ function migrateDecodedSchemaPanoramaDocument(
   }
   if (
     value.version !== STUDIO_BG3D_SCENE_DOCUMENT_VERSION &&
-    (hasOwn(value, "shots") || hasOwn(value, "activeShotId"))
+    (hasOwn(value, "shots") || hasOwn(value, "activeShotId") || hasOwn(value, "meta"))
   ) {
     return null;
   }
@@ -1939,6 +1925,8 @@ export function captureStudioBg3dShot(
       fill: { ...document.lighting.fill },
     },
     output: { ...shotOutput, line: { ...shotOutput.line }, tone: { ...shotOutput.tone } },
+    // 태그를 쓰는 장면의 컷은 숨긴 태그도 기억한다. 태그가 없는 장면의 컷은 예전과 바이트가 같다.
+    ...(document.meta?.hiddenTags || document.nodes.some((node) => node.tags) ? { hiddenTags: [...(document.meta?.hiddenTags ?? [])] } : {}),
   };
   return canonicalDocumentForShotHelper({
     ...withoutActiveShot(document),
@@ -2091,6 +2079,8 @@ export function applyStudioBg3dShot(
       const visible = visibleByNodeId.get(node.id);
       return visible === undefined ? node : { ...node, visible };
     }),
+    // 컷이 숨긴 태그를 기억하면 그대로 되돌린다(없으면 지금의 태그 가시성을 건드리지 않는다).
+    ...(shot.hiddenTags ? { meta: withStudioBg3dHiddenTags(document.meta, shot.hiddenTags) } : {}),
     activeShotId: shot.id,
   });
 }

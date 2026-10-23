@@ -1,3 +1,4 @@
+import { adminRestStatusText } from "../admin-rest-status-i18n";
 import { AlertTriangle, Gauge, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
@@ -156,7 +157,7 @@ export function WebVitalsDashboardPage() {
       </header>
 
       {loading && !data ? (
-        <div role="status" aria-label="성능 실측 불러오는 중" className="mt-6 space-y-4">
+        <div role="status" aria-label={adminRestStatusText("adminRest.status.webVitals.loading", "성능 실측 불러오는 중")} className="mt-6 space-y-4">
           {[0, 1].map((index) => (
             <div key={index} className="skeleton h-36 rounded-2xl" />
           ))}
@@ -171,7 +172,7 @@ export function WebVitalsDashboardPage() {
             onClick={() => reload()}
             className={`${buttonClass({ variant: "solid", size: "sm" })} mt-4`}
           >
-            다시 불러오기
+            {adminRestStatusText("adminRest.status.webVitals.retry", "다시 불러오기")}
           </button>
         </div>
       ) : data ? (

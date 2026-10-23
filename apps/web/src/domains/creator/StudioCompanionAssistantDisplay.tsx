@@ -23,6 +23,7 @@ import {
   WebtoonColorHarmonyAssistant,
   type SkinToneId,
 } from "./assistant/webtoon-color-harmony-assistant";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import {
   PERSPECTIVE_GUIDES,
   WebtoonCroquisPoseGuide,
@@ -76,6 +77,9 @@ export type AssistantDisplayTab =
   | "croquis-pose";
 
 type AssistantDataSource = "connected" | "manual" | "example";
+
+/** 삽입 결과는 표시 문구가 아니라 판별 가능한 상태값으로 들고, 문구는 렌더 시점에 리졸버로 만든다 (D2). */
+type InsertFeedback = { kind: "inserted" | "insertFailed"; text: string } | null;
 
 const TAB_ID_PREFIX = "companion-assistant";
 const SFX_PAGE_SIZE = 6;
@@ -313,7 +317,7 @@ export function StudioCompanionAssistantDisplay({
   const [sfxQuery, setSfxQuery] = useState("");
   const [sfxCategory, setSfxCategory] = useState<SfxCategory | "all">("all");
   const [sfxVisibleCount, setSfxVisibleCount] = useState(SFX_PAGE_SIZE);
-  const [insertFeedback, setInsertFeedback] = useState("");
+  const [insertFeedback, setInsertFeedback] = useState<InsertFeedback>(null);
   const sfxCopy = useStudioCopyFeedback();
   const filteredSfx = useMemo(
     () => sfxEngine.search(sfxQuery, sfxCategory === "all" ? undefined : sfxCategory),
@@ -325,21 +329,25 @@ export function StudioCompanionAssistantDisplay({
   }, [sfxCategory, sfxQuery]);
 
   useEffect(() => {
-    if (!insertFeedback) return;
-    const timeout = globalThis.setTimeout(() => setInsertFeedback(""), 1800);
+    if (insertFeedback === null) return;
+    const timeout = globalThis.setTimeout(() => setInsertFeedback(null), 1800);
     return () => globalThis.clearTimeout(timeout);
   }, [insertFeedback]);
 
   const visibleSfx = filteredSfx.slice(0, sfxVisibleCount);
   const hiddenSfxCount = filteredSfx.length - visibleSfx.length;
   const sfxIsFiltered = sfxQuery.trim().length > 0 || sfxCategory !== "all";
+  const copyText = sfxCopy.current ? (sfxEngine.getById(sfxCopy.current.id)?.text ?? sfxCopy.current.id) : "";
   const copyStatusMessage = !sfxCopy.current
     ? ""
-    : `“${sfxEngine.getById(sfxCopy.current.id)?.text ?? sfxCopy.current.id}” ${
-        sfxCopy.current.status === "copied"
-          ? "복사됨"
-          : "복사 실패 — 브라우저가 클립보드를 막았습니다"
-      }`;
+    : sfxCopy.current.status === "copied"
+      ? frozenStatus5Text("studio.frozenStatus5.assistant.sfxCopied", { text: copyText }, "“{text}” 복사됨")
+      : frozenStatus5Text("studio.frozenStatus5.assistant.sfxCopyFailed", { text: copyText }, "“{text}” 복사 실패 — 브라우저가 클립보드를 막았습니다");
+  const insertFeedbackMessage = insertFeedback === null
+    ? ""
+    : insertFeedback.kind === "inserted"
+      ? frozenStatus5Text("studio.frozenStatus5.assistant.inserted", { text: insertFeedback.text }, "“{text}”을 캔버스에 삽입했습니다")
+      : frozenStatus5Text("studio.frozenStatus5.assistant.insertFailed", { text: insertFeedback.text }, "“{text}” 삽입에 실패했습니다");
 
   const colorAssistant = useMemo(() => new WebtoonColorHarmonyAssistant(), []);
   const [selectedSkinTone, setSelectedSkinTone] = useState<SkinToneId>("warm-fair");
@@ -426,9 +434,9 @@ export function StudioCompanionAssistantDisplay({
     if (!onInsertSfxText) return;
     try {
       onInsertSfxText(text);
-      setInsertFeedback(`“${text}”을 캔버스에 삽입했습니다`);
+      setInsertFeedback({ kind: "inserted", text });
     } catch {
-      setInsertFeedback(`“${text}” 삽입에 실패했습니다`);
+      setInsertFeedback({ kind: "insertFailed", text });
     }
   }
 
@@ -794,7 +802,7 @@ export function StudioCompanionAssistantDisplay({
             </div>
           ) : (
             <div className="rounded-xl border border-good/35 bg-good/10 p-2.5 text-good">
-              <p className="font-bold">현재 입력에서는 긴 공백·과밀 경고가 없습니다.</p>
+              <p className="font-bold">{frozenStatus5Text("studio.frozenStatus5.assistant.noWarnings", "현재 입력에서는 긴 공백·과밀 경고가 없습니다.")}</p>
             </div>
           )}
 
@@ -875,7 +883,7 @@ export function StudioCompanionAssistantDisplay({
           {filteredSfx.length === 0 ? (
             <StudioEmptyState
               icon={<Search className="size-5" aria-hidden />}
-              title="검색 결과가 없습니다"
+              title={frozenStatus5Text("studio.frozenStatus5.assistant.sfxSearchEmpty", "검색 결과가 없습니다")}
               description="다른 낱말이나 태그로 찾아보세요. 예: 쿵, 심장, 번개, 문, 폭발."
               action={
                 sfxIsFiltered ? (
@@ -940,14 +948,14 @@ export function StudioCompanionAssistantDisplay({
                           type="button"
                           aria-label={
                             copyStatus === "copied"
-                              ? `${item.text} 복사됨`
+                              ? frozenStatus5Text("studio.frozenStatus5.assistant.sfxCopiedLabel", { text: item.text }, "{text} 복사됨")
                               : copyStatus === "failed"
-                                ? `${item.text} 복사 실패`
-                                : `${item.text} 복사`
+                                ? frozenStatus5Text("studio.frozenStatus5.assistant.sfxCopyFailedLabel", { text: item.text }, "{text} 복사 실패")
+                                : frozenStatus5Text("studio.frozenStatus5.assistant.sfxCopyLabel", { text: item.text }, "{text} 복사")
                           }
                           title="텍스트 복사"
                           onClick={() => {
-                            setInsertFeedback("");
+                            setInsertFeedback(null);
                             void sfxCopy.copy(item.id, item.text);
                           }}
                           className={cn(
@@ -988,17 +996,8 @@ export function StudioCompanionAssistantDisplay({
             </>
           )}
 
-          <p
-            role="status"
-            aria-live="polite"
-            className={cn(
-              "min-h-3 text-[0.6rem] font-semibold leading-tight",
-              sfxCopy.current?.status === "failed" || insertFeedback.includes("실패")
-                ? "text-bad"
-                : "text-good",
-            )}
-          >
-            {insertFeedback || copyStatusMessage}
+          <p role="status" aria-live="polite" className={cn("min-h-3 text-[0.6rem] font-semibold leading-tight", sfxCopy.current?.status === "failed" || insertFeedback?.kind === "insertFailed" ? "text-bad" : "text-good")}>
+            {insertFeedbackMessage || copyStatusMessage}
           </p>
         </div>
       ) : null}
@@ -1123,8 +1122,8 @@ export function StudioCompanionAssistantDisplay({
             <p role="status" aria-live="polite" className="mt-1 min-h-3 text-[0.6rem] font-semibold text-good">
               {colorCopy.current
                 ? colorCopy.current.status === "copied"
-                  ? "색상 코드를 복사했습니다"
-                  : "색상 코드 복사에 실패했습니다"
+                  ? frozenStatus5Text("studio.frozenStatus5.assistant.colorCopied", "색상 코드를 복사했습니다")
+                  : frozenStatus5Text("studio.frozenStatus5.assistant.colorCopyFailed", "색상 코드 복사에 실패했습니다")
                 : ""}
             </p>
           </div>

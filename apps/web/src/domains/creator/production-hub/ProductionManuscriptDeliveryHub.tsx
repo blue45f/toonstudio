@@ -24,6 +24,7 @@ import {
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { r5CreatorStatusText } from "../r5-cat1-status-i18n";
 
 import { StudioExportPanel } from "../studio-shell/StudioExportPanel";
 import {
@@ -364,7 +365,7 @@ function ProductionManuscriptDeliveryHubForActor({
         </span>}
       </div>
       <span className="sr-only" role="status" aria-live="polite">
-        {copyStatus === "copied" ? "현재 업무 화면 링크를 복사했습니다." : copyStatus === "error" ? t("productionHub.status.workScreenLinkCopyFailed", "현재 업무 화면 링크를 복사하지 못했습니다.") : ""}
+        {copyStatus === "copied" ? "현재 업무 화면 링크를 복사했어요." : copyStatus === "error" ? t("productionHub.status.workScreenLinkCopyFailed", "현재 업무 화면 링크를 복사하지 못했어요. 주소창의 주소를 직접 복사해 주세요.") : ""}
       </span>
     </section>
 
@@ -386,7 +387,7 @@ function ProductionManuscriptDeliveryHubForActor({
           ? "로그인한 계정으로 다시 확인해야 합니다"
           : "권한 확인 시간이 지나 공유·전달 도구를 닫았습니다"}</h3>
       <p className="mt-1 text-sm text-fg-2">{gateReason === "offline"
-        ? "현재 화면 링크는 복사할 수 있지만, 연결이 복구되어 서버 권한을 다시 읽기 전에는 외부 공유와 공식 전달을 실행하지 않습니다."
+        ? r5CreatorStatusText("r5cat1.creator.deliveryHub.offlineGate", "현재 화면 링크는 복사할 수 있지만, 연결이 복구되어 서버 권한을 다시 읽기 전에는 외부 공유와 공식 전달을 실행하지 않습니다.")
         : gateReason === "signed-out"
           ? "고정 검수본의 페이지, 공유 목록과 전달 기록은 로그인 후 서버에서 다시 확인합니다."
           : "고정 revision과 현재 계정 권한을 다시 확인하면 안전하게 이어서 작업할 수 있습니다."}</p>

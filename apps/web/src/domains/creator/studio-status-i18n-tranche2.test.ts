@@ -93,7 +93,7 @@ describe("studio status i18n tranche2", () => {
       expect(en[key], `en missing ${key}`).toBeTruthy();
       expect(HANGUL.test(en[key] ?? ""), `en value has Hangul: ${key}`).toBe(false);
     }
-    expect(ko["productionHub.status.snapshotSaveFailed"]).toBe("스냅샷을 저장하지 못했습니다.");
+    expect(ko["productionHub.status.snapshotSaveFailed"]).toBe("스냅샷을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
     expect(ko["productionHub.status.creatingDraft"]).toBe("초안 생성 중…");
   });
 

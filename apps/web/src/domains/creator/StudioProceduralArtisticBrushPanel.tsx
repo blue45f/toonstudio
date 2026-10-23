@@ -5,6 +5,7 @@
  * state. The parent translates these product-facing controls into a provider
  * request and commits a completed artifact as one canonical raster operation.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   Brush,
   Droplets,
@@ -127,7 +128,7 @@ function capabilityText(
     case "ready":
       return "전용 Worker에서 결정적 질감을 생성할 준비가 됐습니다.";
     case "unavailable":
-      return "이 환경에서는 전용 Worker 또는 WebGL2 질감 렌더링을 사용할 수 없습니다.";
+      return r3c07StatusText("studio.panelStatus.r3c07.proceduralBrushPanel.rendererUnavailable", "이 환경에서는 전용 Worker 또는 WebGL2 질감 렌더링을 사용할 수 없습니다.");
   }
 }
 
@@ -471,7 +472,7 @@ export function StudioProceduralArtisticBrushPanel({
           ) : (
             <Sparkles size={14} aria-hidden />
           )}
-          {busy ? "생성 중…" : "질감 생성"}
+          {busy ? r3c07StatusText("studio.panelStatus.r3c07.proceduralBrushPanel.generating", "생성 중…") : "질감 생성"}
         </button>
       </div>
     </section>

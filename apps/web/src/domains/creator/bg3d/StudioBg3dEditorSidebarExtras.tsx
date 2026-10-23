@@ -794,7 +794,7 @@ export function StudioBg3dEditorSidebarExtras({ h }) {
                 {modelsPanelActivated ? (
                   <Suspense
                     fallback={(
-                      <StudioPanelLoading labelKey="studio.canvas.panelLoading.assetLibrary3d" labelFallback="3D 에셋 라이브러리를 불러오는 중입니다." />
+                      <StudioPanelLoading labelKey="studio.canvas.panelLoading.assetLibrary3d" labelFallback="3D 소재 라이브러리를 불러오는 중이에요." />
                     )}
                   >
                     <LazyStudioBg3dAssetLibraryPanel

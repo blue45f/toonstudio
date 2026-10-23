@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -230,7 +231,7 @@ export function StudioPageReviewPanel({
         ? `이미 같은 설정인 ${bulkQueue.unchanged}개 페이지는 건너뛰었습니다.`
         : null,
       bulkQueue.skipped > 0
-        ? `변경 확인에 실패한 ${bulkQueue.skipped}개 페이지는 다시 확인해 주세요.`
+        ? r3c07StatusText("studio.panelStatus.r3c07.pageReview.recheckNeeded", { count: bulkQueue.skipped }, "변경 확인에 실패한 {count}개 페이지는 다시 확인해 주세요.")
         : null,
     ].filter(Boolean).join(" ");
     setAnnouncement(details || "선택한 페이지가 이미 같은 설정입니다.");
@@ -607,7 +608,7 @@ export function StudioPageReviewPanel({
         </ol>
       ) : (
         <div className="rounded-xl border border-dashed border-line bg-card/35 px-4 py-8 text-center">
-          <p className="text-sm font-bold text-fg">조건에 맞는 페이지가 없습니다.</p>
+          <p className="text-sm font-bold text-fg">{r3c07StatusText("studio.panelStatus.r3c07.pageReview.filterEmpty", "조건에 맞는 페이지가 없습니다.")}</p>
           <p className="mt-1 text-xs text-fg-3">검색어나 검토 상태 필터를 조정해 보세요.</p>
           <button
             type="button"

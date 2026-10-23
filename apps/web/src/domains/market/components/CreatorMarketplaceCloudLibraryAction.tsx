@@ -1,3 +1,4 @@
+import { marketStatusText } from "../market-status-i18n";
 import { Archive, ArchiveRestore, Cloud, LoaderCircle, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -49,7 +50,7 @@ function catalogStatus(item: CreatorMarketplaceCloudLibraryItem): string {
       "publisher-unavailable": "배급자 계정을 사용할 수 없음",
       removed: "현재 카탈로그에서 제거됨",
     }[item.catalog.reason];
-    return `카탈로그 사용 불가 · ${reason}`;
+    return marketStatusText("market.status.cloudLibrary.catalogUnavailable", { reason }, "카탈로그 사용 불가 · {reason}");
   }
   if (item.updateState === "account-confirmed-update-available") {
     return `계정 설치 확인 v${item.confirmation.state === "confirmed"
@@ -136,7 +137,7 @@ export function CreatorMarketplaceCloudLibraryAction({
         page.items.length > 1
         || page.items.some((candidate) => candidate.logicalPackId !== logicalPackId)
       ) {
-        throw new Error("계정 라이브러리 패키지 식별자가 일치하지 않습니다.");
+        throw new Error(marketStatusText("market.status.cloudLibrary.packIdMismatch", "계정 라이브러리 패키지 식별자가 일치하지 않습니다."));
       }
       const nextItem = page.items[0] ?? null;
       let nextTarget: CreatorMarketplaceAcquisitionTarget | null = null;
@@ -153,7 +154,7 @@ export function CreatorMarketplaceCloudLibraryAction({
           || nextTarget.kind !== record.kind
           || nextTarget.logicalPackId !== logicalPackId
         ) {
-          throw new Error("현재 획득 대상의 패키지 식별자가 상세 릴리스와 일치하지 않습니다.");
+          throw new Error(marketStatusText("market.status.cloudLibrary.targetPackIdMismatch", "현재 획득 대상의 패키지 식별자가 상세 릴리스와 일치하지 않습니다."));
         }
       }
       setItem(nextItem);
@@ -163,7 +164,7 @@ export function CreatorMarketplaceCloudLibraryAction({
       .catch((caught: unknown) => {
         if (!isCurrent()) return;
         setLoadState("error");
-        setError(errorMessage(caught, "계정 라이브러리 상태를 확인하지 못했습니다."));
+        setError(errorMessage(caught, marketStatusText("market.status.cloudLibrary.stateCheckFailed", "계정 라이브러리 상태를 확인하지 못했습니다.")));
         if (
           focusRestoreRef.current?.recordId === record.id
           && focusRestoreRef.current.logicalPackId === logicalPackId
@@ -256,7 +257,7 @@ export function CreatorMarketplaceCloudLibraryAction({
         );
         if (controller.signal.aborted || generationRef.current !== generation) return;
         if (next.logicalPackId !== logicalPackId) {
-          throw new Error("획득된 계정 라이브러리 패키지 식별자가 일치하지 않습니다.");
+          throw new Error(marketStatusText("market.status.cloudLibrary.acquiredPackIdMismatch", "획득된 계정 라이브러리 패키지 식별자가 일치하지 않습니다."));
         }
         setReceipt({
           libraryItemId: next.libraryItemId,
@@ -307,7 +308,7 @@ export function CreatorMarketplaceCloudLibraryAction({
           };
         }
       }
-      setError(errorMessage(caught, "계정 라이브러리 상태를 변경하지 못했습니다."));
+      setError(errorMessage(caught, marketStatusText("market.status.cloudLibrary.stateChangeFailed", "계정 라이브러리 상태를 변경하지 못했습니다.")));
     } finally {
       if (controllerRef.current === controller) controllerRef.current = null;
       if (!controller.signal.aborted && generationRef.current === generation) {
@@ -325,7 +326,7 @@ export function CreatorMarketplaceCloudLibraryAction({
     return (
       <div role="status" className="rounded-lg border border-line bg-panel px-3 py-2.5 text-xs text-fg-2">
         <LoaderCircle className="mr-1.5 inline h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-        계정 라이브러리 세션 확인 중
+        {marketStatusText("market.status.cloudLibrary.sessionChecking", "계정 라이브러리 세션 확인 중")}
       </div>
     );
   }
@@ -367,7 +368,7 @@ export function CreatorMarketplaceCloudLibraryAction({
         <Cloud className="h-3.5 w-3.5 text-cool" aria-hidden="true" />
         {!effective
           ? loadState === "loading"
-            ? "계정 라이브러리 확인 중"
+            ? marketStatusText("market.status.cloudLibrary.checking", "계정 라이브러리 확인 중")
             : "계정 라이브러리에 없음"
           : effective.membership === "active"
             ? "계정 라이브러리 · 활성"
@@ -439,7 +440,7 @@ export function CreatorMarketplaceCloudLibraryAction({
         {pending
           ? "계정 라이브러리 변경 중"
           : loadState === "loading"
-            ? "계정 라이브러리 확인 중"
+            ? marketStatusText("market.status.cloudLibrary.checking", "계정 라이브러리 확인 중")
             : actionLabel}
       </button>
     </div>

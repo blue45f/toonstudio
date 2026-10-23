@@ -5,6 +5,7 @@ import {
   Hourglass,
   Sunrise,
 } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useMemo } from "react";
 
 import {
@@ -83,7 +84,7 @@ function WaitingCard({ item }: { readonly item: RoleTodayQueueItem }) {
         <h4 className="break-words text-sm font-bold text-fg">{task.title}</h4>
         <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-warn/35 bg-warn/10 px-2 py-1 text-[0.65rem] font-bold text-warn">
           <Hourglass size={11} aria-hidden="true" />
-          대기 중
+          {r3c04StatusText("studio.r3c04Status.production.todayQueue.waiting", "대기 중")}
         </span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.7rem] text-fg-3">
@@ -174,8 +175,8 @@ export function CreatorRoleTodayQueue({
       {empty ? (
         <div className="mt-4 rounded-xl border border-dashed border-line p-5 text-center">
           <CheckCircle2 className="mx-auto size-7 text-good" aria-hidden="true" />
-          <p className="mt-2 text-sm font-bold text-fg">오늘 마감인 내 작업이 없습니다.</p>
-          <p className="mt-1 text-xs text-fg-3">앞 공정을 기다리는 작업도 없습니다. 아래 인박스에서 다음 작업을 확인하세요.</p>
+          <p className="mt-2 text-sm font-bold text-fg">{r3c04StatusText("studio.r3c04Status.production.todayQueue.emptyDueToday", "오늘 마감인 내 작업이 없습니다.")}</p>
+          <p className="mt-1 text-xs text-fg-3">{r3c04StatusText("studio.r3c04Status.production.todayQueue.emptyWaiting", "앞 공정을 기다리는 작업도 없습니다. 아래 인박스에서 다음 작업을 확인하세요.")}</p>
         </div>
       ) : (
         <div className="mt-4 space-y-4">

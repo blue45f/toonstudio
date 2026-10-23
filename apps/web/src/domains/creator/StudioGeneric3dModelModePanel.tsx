@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   Bone,
   Box,
@@ -326,7 +327,7 @@ export function StudioGeneric3dModelModePanel({
               <span> · {item.detail}</span>
             </li>
           )) : (
-            <li className="py-1 text-[0.66rem] text-good">확인된 제한 사항이 없습니다.</li>
+            <li className="py-1 text-[0.66rem] text-good">{r3c07StatusText("studio.panelStatus.r3c07.generic3dMode.noLimitations", "확인된 제한 사항이 없습니다.")}</li>
           )}
         </ul>
       </details>

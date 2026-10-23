@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Sms:a AI-leverantör",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI-leverantör",
   "studio.aiToolPopover.serverProviderAuto": "automatisk växling",
-  "studio.aiToolPopover.serverFallbackMessage": "När saldo-/paketgränsen är slut byter du till en annan leverantör. Allmänna fel skickas inte automatiskt igen för att förhindra dubbelladdning."
+  "studio.aiToolPopover.serverFallbackMessage": "När saldo-/paketgränsen är slut byter du till en annan leverantör. Allmänna fel skickas inte automatiskt igen för att förhindra dubbelladdning.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

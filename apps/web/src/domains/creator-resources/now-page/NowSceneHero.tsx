@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 
 import { cn } from "@/shared/lib/utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { resourceStatusText } from "../resource-status-i18n";
 
 import type { DailyTheme, DirectingMode, KstDay } from "../now";
 import { ACTION_BUTTON, PRIMARY_BUTTON } from "./config";
@@ -226,7 +227,7 @@ export function NowSceneHero({
           )}
           {(briefCopyStatus === "error" || linkCopyStatus === "error") && (
             <p className="mt-3 text-sm font-semibold text-bad" role="alert">
-              클립보드에 복사하지 못했습니다. 브라우저 권한을 확인하세요.
+              {resourceStatusText("resources.status.nowHero.copyFailed", "클립보드에 복사하지 못했습니다. 브라우저 권한을 확인하세요.")}
             </p>
           )}
         </div>

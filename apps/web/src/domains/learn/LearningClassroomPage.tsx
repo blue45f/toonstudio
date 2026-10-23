@@ -20,6 +20,7 @@ import {
 } from "./learning-classroom";
 import { CURATED_LEARNING_RESOURCES } from "./learning-resources";
 import { getLessonState } from "./learning-paths";
+import { learnStatusText } from "./learn-status-i18n";
 import { useLearningProgress } from "./use-learning-progress";
 
 type ClassroomTab = "curriculum" | "assignments" | "roadmap";
@@ -78,7 +79,7 @@ export function LearningClassroomPage() {
   function persist(next: ClassroomPlan) {
     const stamped = { ...next, updatedAt: new Date().toISOString() };
     setPlan(stamped);
-    setWarning(saveClassroomPlan(browserStorage(), stamped) ? "" : "이 기기에 수업 계획을 저장하지 못했습니다. 내보내기로 사본을 보관하세요.");
+    setWarning(saveClassroomPlan(browserStorage(), stamped) ? "" : learnStatusText("learn.status.classroom.planSaveFailed", "이 기기에 수업 계획을 저장하지 못했습니다. 내보내기로 사본을 보관하세요."));
   }
 
   function applyTemplate(templateId: ClassroomTemplateId) {
@@ -215,7 +216,7 @@ export function LearningClassroomPage() {
       setCurriculumContent("");
       setOpenWeeks(new Set([1]));
     } catch {
-      setWarning("수업 계획을 가져오지 못했습니다. ToonStudio Classroom JSON 형식을 확인하세요.");
+      setWarning(learnStatusText("learn.status.classroom.planImportFailed", "수업 계획을 가져오지 못했습니다. ToonStudio Classroom JSON 형식을 확인하세요."));
     }
   }
 
@@ -430,7 +431,7 @@ export function LearningClassroomPage() {
               </SiteDisclosure>
 
               <div className="academy-assignment-list">
-                {plan.assignments.length === 0 && <div className="learn-empty"><h3>아직 만든 과제가 없습니다.</h3><p>주차와 연결 강좌를 정해 첫 실습 과제를 추가해 보세요.</p></div>}
+                {plan.assignments.length === 0 && <div className="learn-empty"><h3>{learnStatusText("learn.status.classroom.assignmentsEmpty", "아직 만든 과제가 없습니다.")}</h3><p>주차와 연결 강좌를 정해 첫 실습 과제를 추가해 보세요.</p></div>}
                 {plan.assignments.map((assignment) => {
                   const linkedLesson = assignment.lessonId ? lessonById.get(assignment.lessonId) : null;
                   return (

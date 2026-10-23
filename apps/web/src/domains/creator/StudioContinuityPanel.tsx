@@ -34,6 +34,7 @@ import {
   type StudioRasterInspectionResult,
 } from "./studio-quality-raster-inspection";
 import { StudioFinishQualityView } from "./StudioFinishQualityView";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 
 import type { StudioCommentsDocument } from "./studio-comments";
 import type { StudioContinuityIssue } from "./studio-continuity";
@@ -576,10 +577,7 @@ export function StudioContinuityPanel({
             <ShieldCheck size={18} aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <h2
-              id="studio-quality-title"
-              className="text-base font-bold tracking-tight text-fg"
-            >
+            <h2 id="studio-quality-title" className="text-base font-bold tracking-tight text-fg">
               마감·품질 검사 센터
             </h2>
             <p
@@ -591,10 +589,10 @@ export function StudioContinuityPanel({
               통과시키지 않고 수동 확인으로 분리합니다.
             </p>
             <p className="mt-1 text-xs text-fg-3" role="status">
-              {!reviewStateReady ? "검토 기록을 불러오는 중…" : null}
-              {reviewStateReady && reviewPersistence === "saving" ? "검토 기록을 SQLite/OPFS에 저장 중…" : null}
-              {reviewStateReady && reviewPersistence === "saved" ? "검토 기록: SQLite/OPFS 저장됨" : null}
-              {reviewStateReady && reviewPersistence === "memory" ? "검토 기록은 현재 탭에만 보관됩니다. 저장된 원본은 변경하지 않습니다." : null}
+              {!reviewStateReady ? frozenStatus3Text("studio.frozenStatus3.cont.reviewLoading", "검토 기록을 불러오는 중…") : null}
+              {reviewStateReady && reviewPersistence === "saving" ? frozenStatus3Text("studio.frozenStatus3.cont.reviewSaving", "검토 기록을 SQLite/OPFS에 저장 중…") : null}
+              {reviewStateReady && reviewPersistence === "saved" ? frozenStatus3Text("studio.frozenStatus3.cont.reviewSaved", "검토 기록: SQLite/OPFS 저장됨") : null}
+              {reviewStateReady && reviewPersistence === "memory" ? frozenStatus3Text("studio.frozenStatus3.cont.reviewMemory", "검토 기록은 현재 탭에만 보관됩니다. 저장된 원본은 변경하지 않습니다.") : null}
             </p>
           </div>
           <div className="hidden shrink-0 items-center gap-2 lg:flex" aria-label="마감 검사 요약">
@@ -608,7 +606,7 @@ export function StudioContinuityPanel({
                   : "border-warning/40 bg-warning-soft/20 text-warning"
               }`}
             >
-              {ready ? "마감 준비 완료" : "확인 필요"}
+              {ready ? frozenStatus3Text("studio.frozenStatus3.cont.readyBadge", "마감 준비 완료") : frozenStatus3Text("studio.frozenStatus3.cont.reviewBadge", "확인 필요")}
             </span>
           </div>
           <button
@@ -666,24 +664,24 @@ export function StudioContinuityPanel({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-fg">
                   {ready
-                    ? "자동 검사와 최종 수동 확인을 모두 마쳤습니다"
+                    ? frozenStatus3Text("studio.frozenStatus3.cont.summaryAllDone", "자동 검사와 최종 수동 확인을 모두 마쳤습니다")
                     : !blockingReady
-                      ? `마감 전에 차단 ${openCounts.blocking}개·오류 ${openCounts.error}개를 해결하세요`
+                      ? frozenStatus3Text("studio.frozenStatus3.cont.summaryResolveBlocking", { blocking: openCounts.blocking, error: openCounts.error }, "마감 전에 차단 {blocking}개·오류 {error}개를 해결하세요")
                       : rasterPending
-                        ? "이미지 디코딩·해상도 검사가 끝날 때까지 마감 판정을 보류합니다"
+                        ? frozenStatus3Text("studio.frozenStatus3.cont.summaryRasterPending", "이미지 디코딩·해상도 검사가 끝날 때까지 마감 판정을 보류합니다")
                         : reviewOutstanding > 0
-                          ? `차단 오류는 없으며 경고·확인 ${reviewOutstanding}개를 판단해야 합니다`
-                          : `수동 확인 ${MANUAL_CHECKS.length - manualCompletedCount}개가 남았습니다`}
+                          ? frozenStatus3Text("studio.frozenStatus3.cont.summaryReviewOutstanding", { count: reviewOutstanding }, "차단 오류는 없으며 경고·확인 {count}개를 판단해야 합니다")
+                          : frozenStatus3Text("studio.frozenStatus3.cont.summaryManualRemaining", { count: MANUAL_CHECKS.length - manualCompletedCount }, "수동 확인 {count}개가 남았습니다")}
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-fg-2">
                   {report.checkedPageCount}페이지 · {report.checkedElementCount}요소 · 대사/텍스트{" "}
                   {report.checkedDialogueCount}개를 검사했습니다.{" "}
                   {rasterBusy
-                    ? `이미지 원본 ${rasterProgress.completed}/${rasterProgress.total} 검사 중입니다.`
+                    ? frozenStatus3Text("studio.frozenStatus3.cont.rasterProgress", { completed: rasterProgress.completed, total: rasterProgress.total }, "이미지 원본 {completed}/{total} 검사 중입니다.")
                     : rasterInspection?.status === "complete"
-                      ? `이미지 참조 ${rasterInspection.assetReferenceCount}개를 확인했습니다.`
+                      ? frozenStatus3Text("studio.frozenStatus3.cont.rasterChecked", { count: rasterInspection.assetReferenceCount }, "이미지 참조 {count}개를 확인했습니다.")
                       : rasterInspection?.status === "unavailable"
-                        ? "이 환경에서는 이미지 원본 해상도 검사를 실행할 수 없습니다."
+                        ? frozenStatus3Text("studio.frozenStatus3.cont.rasterUnavailable", "이 환경에서는 이미지 원본 해상도 검사를 실행할 수 없습니다.")
                         : ""}
                   {" "}경고·확인 항목은 의도된 연출이면 확인 처리할 수 있습니다.
                 </p>
@@ -854,7 +852,7 @@ export function StudioContinuityPanel({
                   <div className="max-w-sm">
                     <CheckCircle2 size={30} className="mx-auto text-good" aria-hidden />
                     <p className="mt-3 text-sm font-bold text-fg">
-                      현재 조건에 표시할 문제가 없습니다
+                      {frozenStatus3Text("studio.frozenStatus3.cont.emptyNoIssues", "현재 조건에 표시할 문제가 없습니다")}
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-fg-2">
                       모든 자동 검사가 끝났다면 오른쪽 최종 수동 체크리스트까지 완료해 실제 독자

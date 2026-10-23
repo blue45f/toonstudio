@@ -14,6 +14,7 @@ import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, 
 
 
 import { cn } from "@/shared/lib/utils";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 export interface StudioLayerNavigatorTreeProps {
   nodes: readonly StudioLayerNavigatorNode[];
@@ -111,12 +112,12 @@ export function StudioLayerNavigatorTree({
             <Layers3 size={22} className="mx-auto text-fg-3" aria-hidden />
           )}
           <p className="mt-2 text-xs font-semibold text-fg-2">
-            {filterActive ? "조건에 맞는 레이어가 없습니다" : "아직 레이어가 없습니다"}
+            {filterActive ? subStatusText("studio.subStatus.tree.searchEmpty", "조건에 맞는 레이어가 없습니다") : subStatusText("studio.subStatus.tree.noLayers", "아직 레이어가 없습니다")}
           </p>
           <p className="mt-1 text-[0.62rem] leading-relaxed text-fg-3">
             {filterActive
-              ? "검색어나 필터를 지우고 다시 확인해 보세요."
-              : "이미지, 말풍선, 텍스트 또는 선화를 추가하면 이곳에서 관리할 수 있어요."}
+              ? subStatusText("studio.subStatus.tree.searchEmptyDesc", "검색어나 필터를 지우고 다시 확인해 보세요.")
+              : subStatusText("studio.subStatus.tree.noLayersDesc", "이미지, 말풍선, 텍스트 또는 선화를 추가하면 이곳에서 관리할 수 있어요.")}
           </p>
           {filterActive ? (
             <button
@@ -340,7 +341,7 @@ export function StudioLayerNavigatorTree({
                     aria-hidden
                     className="shrink-0 rounded bg-raised px-1 py-0.5 text-[0.62rem] font-normal tabular-nums text-fg-3 lg:text-[0.56rem]"
                   >
-                    {node.empty ? "비어 있음" : `${node.entries.length}개`}
+                    {node.empty ? subStatusText("studio.subStatus.tree.emptyGroup", "비어 있음") : `${node.entries.length}개`}
                   </span>
                 </>
               )}

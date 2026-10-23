@@ -5,6 +5,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { hashStudioHybridDccObjectTransform, type StudioHybridDccObjectTransform } from "./studio-hybrid-dcc-object-transform";
 import { createStudioHybridDccTransformRuntime, type StudioHybridDccTransformRuntimeState } from "./studio-hybrid-dcc-transform-runtime";
 import { resolveStudioHybridDccGizmoSnaps, type StudioHybridDccViewportPreferences } from "./studio-hybrid-dcc-viewport-interaction";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 import type { StudioHybridDccTransformGestureSource } from "./studio-hybrid-dcc-transform-gesture";
 import type { Camera, Group, Scene } from "three";
@@ -36,9 +37,9 @@ function mountTransformControls(
     if (event.key !== "Escape" || event.isComposing || !runtime.active) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    cancel("변형을 취소했습니다. 원본과 되돌리기 기록은 변경되지 않았습니다.");
+    cancel(subStatusText("studio.subStatus.gizmo.cancelled", "변형을 취소했습니다. 원본과 되돌리기 기록은 변경되지 않았습니다."));
   };
-  const interrupted = () => cancel("중단된 변형을 취소하고 원본 위치로 복원했습니다.");
+  const interrupted = () => cancel(subStatusText("studio.subStatus.gizmo.interrupted", "중단된 변형을 취소하고 원본 위치로 복원했습니다."));
   const visibilityChanged = () => { if (canvas.ownerDocument.hidden) interrupted(); };
   host?.addEventListener("keydown", escape, true);
   host?.addEventListener("blur", interrupted);
@@ -49,7 +50,7 @@ function mountTransformControls(
   return {
     configure(mode: "translate" | "rotate" | "scale", space: "world" | "local",
       snaps: ReturnType<typeof resolveStudioHybridDccGizmoSnaps>) {
-      cancel("편집 대상이나 변환 설정이 바뀌어 진행 중인 드래그를 취소했습니다.");
+      cancel(subStatusText("studio.subStatus.gizmo.settingsChanged", "편집 대상이나 변환 설정이 바뀌어 진행 중인 드래그를 취소했습니다."));
       control.setMode(mode);
       control.setSpace(mode === "scale" ? "local" : space);
       control.setTranslationSnap(snaps.translationSnap);

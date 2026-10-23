@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import {
   inspectStudioOfflineDevice,
@@ -79,7 +80,7 @@ export function StudioOfflinePanel() {
     operation.current = true;
     setBusy(true);
     setPrepared(false);
-    setMessage("현재 버전의 편집 도구를 다시 확인하고 있습니다. 원고를 서버로 보내거나 화면을 새로고침하지 않습니다.");
+    setMessage(creatorSub2StatusText("studio.creatorSub2.status.offline.panel.rechecking", "현재 버전의 편집 도구를 다시 확인하고 있습니다. 원고를 서버로 보내거나 화면을 새로고침하지 않습니다."));
     try {
       const report = await prepareLoadedStudioOfflineResources();
       if (!mounted.current) return;
@@ -92,7 +93,7 @@ export function StudioOfflinePanel() {
       if (mounted.current) {
         setMessage(cause instanceof Error
           ? cause.message
-          : "오프라인 자동 준비에 실패했습니다. 연결이 복구되면 다시 시도합니다.");
+          : creatorSub2StatusText("studio.creatorSub2.status.offline.panel.prepareFailed", "오프라인 자동 준비에 실패했습니다. 연결이 복구되면 다시 시도합니다."));
       }
     } finally {
       operation.current = false;
@@ -109,7 +110,7 @@ export function StudioOfflinePanel() {
       if (!mounted.current) return;
       setMessage(granted === true
         ? "브라우저가 지속 저장을 허용했습니다. 사이트 데이터를 직접 지우면 원고도 삭제되므로 프로젝트 파일 백업은 함께 유지해 주세요."
-        : "브라우저가 지속 저장을 허용하지 않았거나 지원하지 않습니다. 로컬 자동 저장은 계속되지만 프로젝트 파일 백업을 권장합니다.");
+        : creatorSub2StatusText("studio.creatorSub2.status.offline.panel.persistDenied", "브라우저가 지속 저장을 허용하지 않았거나 지원하지 않습니다. 로컬 자동 저장은 계속되지만 프로젝트 파일 백업을 권장합니다."));
       await refresh();
     } finally {
       operation.current = false;
@@ -131,7 +132,7 @@ export function StudioOfflinePanel() {
     : connectivity.mode === "server-unavailable"
       ? "서버 장애 · 로컬 작업 중"
       : connectivity.mode === "reconnecting"
-        ? "서버 연결 확인 중"
+        ? creatorSub2StatusText("studio.creatorSub2.status.offline.panel.summaryReconnecting", "서버 연결 확인 중")
         : device?.navigationFallback
           ? "저장된 스튜디오 · 로컬 작업 중"
           : storageWarning
@@ -180,7 +181,7 @@ export function StudioOfflinePanel() {
               className="min-h-11 rounded-lg border border-line px-3 font-semibold disabled:opacity-50"
               aria-busy={busy}
             >
-              {busy ? "확인 중…" : ready ? "오프라인 준비 다시 확인" : "오프라인 준비 다시 시도"}
+              {busy ? creatorSub2StatusText("studio.creatorSub2.status.offline.panel.checking", "확인 중…") : ready ? creatorSub2StatusText("studio.creatorSub2.status.offline.panel.retryReady", "오프라인 준비 다시 확인") : creatorSub2StatusText("studio.creatorSub2.status.offline.panel.retry", "오프라인 준비 다시 시도")}
             </button>
             <button
               type="button"

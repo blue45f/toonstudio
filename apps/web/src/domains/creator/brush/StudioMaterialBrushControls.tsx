@@ -1,6 +1,9 @@
 import { StudioBrushTopologyControls } from "./StudioBrushTopologyControls";
 import { brushStudioV6Topology } from "../brush-lab/brush-studio-v6-topology-catalog";
 import { useId, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 import { useNavigate } from "react-router-dom";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
@@ -57,6 +60,7 @@ export function StudioMaterialBrushControls({ material, programSet, currentSnaps
   readonly currentSnapshot?: Pick<StudioBrushSnapshot, "strokeWidth" | "color" | "brushOpacity">;
   readonly onChange: (next: StudioBrushEngineProgramSet | null) => void;
 }) {
+  const t = useT();
   const instanceId = useId();
   const navigate = useNavigate();
   const [notice, setNotice] = useState("");
@@ -72,10 +76,10 @@ export function StudioMaterialBrushControls({ material, programSet, currentSnaps
       const key = `toonstudio.brush-program-v6:${encodeURIComponent(`brush:${editorId}`)}`;
       const serialized = serializeBrushStudioV6Authoring(program);
       window.localStorage.setItem(key, serialized);
-      if (window.localStorage.getItem(key) !== serialized) throw new Error("편집 설정의 저장 결과가 일치하지 않습니다.");
+      if (window.localStorage.getItem(key) !== serialized) throw new Error(t("studio.brushCanvasStatus.brush.materialSaveMismatch", "편집 설정의 저장 결과가 일치하지 않습니다."));
       navigate(`/studio/assets/brushes/${editorId}/edit`);
     } catch (error) {
-      setNotice(`브러시 편집기로 설정을 전달하지 못했습니다. ${error instanceof Error ? error.message : "현재 원고 설정은 유지됩니다."}`);
+      setNotice(t("studio.brushCanvasStatus.brush.materialTransferFailed", { detail: error instanceof Error ? error.message : t("studio.brushCanvasStatus.brush.materialSettingsKept", "현재 원고 설정은 유지됩니다.") }, "브러시 편집기로 설정을 전달하지 못했습니다. {detail}"));
     }
   };
 

@@ -59,7 +59,7 @@ export function ProductionQuickExportPanel({
       downloadProductionPageManifestArchive(result);
       setNotice(`${pages.length}페이지를 검증해 ${approvedForFinal ? "승인 FINAL" : "검수용"} CBZ로 저장했습니다.`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : i18nT("productionHub.status.quickExportFailed", "빠른 출력 파일을 만들지 못했습니다."));
+      setNotice(error instanceof Error ? error.message : i18nT("productionHub.status.quickExportFailed", "빠른 출력 파일을 만들지 못했어요. 잠시 후 다시 시도해 주세요."));
     } finally {
       setBusy(false);
     }

@@ -8,12 +8,16 @@ import { getApiErrorMessage } from "@/platform/api";
 import { collaborationClient } from "@/platform/collaboration-client";
 import { formatI18nTemplate, translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 import { saveCollaborationOnboarding } from "@/shared/lib/collaboration-onboarding";
+import { translateNow, useT } from "@/shared/lib/i18n";
+
+import "./collaboration-account-status-i18n";
 
 import { InterviewScheduleButton } from "./hiring/CreatorMeetingPanel";
 import { HiringSnapshotPanel, HiringSubmissionPanel } from "./hiring/HiringSubmissionPanel";
 
 export type CollaborationAction = (work: () => Promise<unknown>, success: string) => Promise<boolean>;
 export function ApplicationPanel({ data, userId, busy, act }: { data: CollaborationDetail; userId: string | null; busy: boolean; act: CollaborationAction }) {
+  const t = useT();
   const [message, setMessage] = useState("");
   const [contact, setContact] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
@@ -50,7 +54,7 @@ export function ApplicationPanel({ data, userId, busy, act }: { data: Collaborat
     <CollabField label="비공개 연락처" hint="이메일 또는 연락용 http/https 링크"><input disabled={busy} className={collabInput} required maxLength={250} value={contact} onChange={(event) => setContact(event.target.value)} autoComplete="off" /></CollabField>
     <CollabField label="포트폴리오 주소 (선택)"><input disabled={busy} type="url" className={collabInput} maxLength={500} value={portfolioUrl} onChange={(event) => setPortfolioUrl(event.target.value)} placeholder="https://" /></CollabField>
     {error && <CollabNotice error>{error}</CollabNotice>}
-    <button type="submit" disabled={busy} className={collabPrimary}>{busy ? "처리 중…" : "비공개 지원·제안 보내기"}</button>
+    <button type="submit" disabled={busy} className={collabPrimary}>{busy ? t("collaboration.application.processing", "처리 중…") : "비공개 지원·제안 보내기"}</button>
   </form></>;
 }
 const INVITE_SCOPE = "domains.collaboration.invite";
@@ -129,6 +133,7 @@ export function InviteNextStepsPanel({
 }
 
 export function ApplicationsPanel({ id, busy, act }: { id: string; busy: boolean; act: CollaborationAction }) {
+  const t = useT();
   const navigate = useNavigate();
   const [items, setItems] = useState<CollaborationApplication[] | null>(null);
   const [error, setError] = useState("");
@@ -136,9 +141,9 @@ export function ApplicationsPanel({ id, busy, act }: { id: string; busy: boolean
   useEffect(() => {
     const controller = new AbortController();
     void collaborationClient.applications(id, controller.signal).then((result) => {
-      if (!Array.isArray(result)) throw new Error("지원서 응답을 확인하지 못했어요.");
+      if (!Array.isArray(result)) throw new Error(translateNow("collaboration.application.responseUnconfirmed", "지원서 응답을 확인하지 못했어요."));
       if (!controller.signal.aborted) setItems(result);
-    }).catch(async (reason) => { const message = await getApiErrorMessage(reason, "지원서를 불러오지 못했어요."); if (!controller.signal.aborted) setError(message); });
+    }).catch(async (reason) => { const message = await getApiErrorMessage(reason, translateNow("collaboration.application.loadFailed", "지원서를 불러오지 못했어요.")); if (!controller.signal.aborted) setError(message); });
     return () => controller.abort();
   }, [id]);
   // 온보딩 문맥은 서버에 남은 지원 항목에서 언제든 다시 만들 수 있다 — 확정 직후의
@@ -187,8 +192,8 @@ export function ApplicationsPanel({ id, busy, act }: { id: string; busy: boolean
       onDismiss={() => setSelectedInvite(null)}
     /></div>}
     {error && <div className="mt-4"><CollabNotice error>{error}</CollabNotice></div>}
-    {!items && !error && <div role="status" aria-label="지원서를 불러오는 중" className="mt-5 space-y-4" aria-hidden="true"><div className="skeleton h-32 rounded-xl" /><div className="skeleton h-32 rounded-xl" /></div>}
-    {items?.length === 0 && <div className="mt-5 rounded-xl border border-dashed border-line px-4 py-8 text-center"><p className="text-sm font-medium text-fg">아직 접수된 지원서가 없어요.</p><p className="mt-1 text-xs leading-6 text-fg-3">공고를 공유하거나 작업 조건을 다듬어 첫 지원을 받아보세요.</p></div>}
+    {!items && !error && <div role="status" aria-label={t("collaboration.application.loading", "지원서를 불러오는 중")} className="mt-5 space-y-4" aria-hidden="true"><div className="skeleton h-32 rounded-xl" /><div className="skeleton h-32 rounded-xl" /></div>}
+    {items?.length === 0 && <div className="mt-5 rounded-xl border border-dashed border-line px-4 py-8 text-center"><p className="text-sm font-medium text-fg">{t("collaboration.application.empty", "아직 접수된 지원서가 없어요.")}</p><p className="mt-1 text-xs leading-6 text-fg-3">공고를 공유하거나 작업 조건을 다듬어 첫 지원을 받아보세요.</p></div>}
     <div className="mt-5 space-y-4">{items?.map((item) => <article key={item.id} className="rounded-xl border border-line p-5">
       <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-bold text-fg">{item.applicantName || "창작자"}</h3><span className="text-xs text-accent">{APPLICATION_STATUS[item.status]}</span></div>
       {item.status === "withdrawn" ? <p className="mt-3 text-sm text-fg-3">지원자가 철회하여 메시지와 연락처가 삭제되었어요.</p> : <>

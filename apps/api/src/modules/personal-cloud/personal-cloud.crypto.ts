@@ -59,7 +59,7 @@ export function encryptPersonalCloudSecret(
 ): string {
   const key = deriveEncryptionKey(secret, "personal cloud token encryption key");
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
   cipher.setAAD(Buffer.from(context, "utf8"));
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
@@ -87,7 +87,7 @@ export function decryptPersonalCloudSecret(
   if (iv.length !== 12 || tag.length !== 16 || ciphertext.length > 64 * 1024) {
     throw new Error("invalid personal cloud secret envelope");
   }
-  const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  const decipher = createDecipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
   decipher.setAAD(Buffer.from(context, "utf8"));
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");

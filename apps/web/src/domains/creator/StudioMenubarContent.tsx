@@ -55,6 +55,7 @@ import { createPortal } from "react-dom";
 
 import { STUDIO_CANVAS_WIDTH as CANVAS_W } from "./canvas/studio-canvas-constants";
 import { handleStudioHorizontalWheel } from "./studio-horizontal-wheel";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 import {
   STUDIO_UI_DENSITY_MODES,
   studioUiAdvancedToolsToggleLabel,
@@ -1356,7 +1357,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
       hint: MENUBAR_HINTS.undo,
       run: undo,
       disabled: undoDisabled,
-      unavailableReason: "되돌릴 편집 작업이 아직 없습니다.",
+      unavailableReason: frozenStatus3Text("studio.frozenStatus3.menubar.undoUnavailable", "되돌릴 편집 작업이 아직 없습니다."),
     },
     redo: {
       label: COMMAND_BAR_COMMAND_LABELS.redo,
@@ -1365,7 +1366,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
       hint: MENUBAR_HINTS.redo,
       run: redo,
       disabled: redoDisabled,
-      unavailableReason: "다시 적용할 편집 작업이 아직 없습니다.",
+      unavailableReason: frozenStatus3Text("studio.frozenStatus3.menubar.redoUnavailable", "다시 적용할 편집 작업이 아직 없습니다."),
     },
     save: {
       label: sharedNonOwner ? "공동 저장" : COMMAND_BAR_COMMAND_LABELS.save,
@@ -1380,7 +1381,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
       disabled: saving || collaborationDocumentLocked,
       unavailableReason: collaborationDocumentLocked
         ? collaborationLockMessage()
-        : "현재 저장 작업이 끝난 뒤 다시 시도하세요.",
+        : frozenStatus3Text("studio.frozenStatus3.menubar.saveBusyRetry", "현재 저장 작업이 끝난 뒤 다시 시도하세요."),
     },
     publish: {
       label: workId ? "공개 수정" : COMMAND_BAR_COMMAND_LABELS.publish,
@@ -1392,10 +1393,10 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
       run: () => void handleSave("published"),
       disabled: saving || collaborationDocumentLocked || sharedNonOwner,
       unavailableReason: sharedNonOwner
-        ? "공유 문서의 게시는 소유자만 할 수 있습니다."
+        ? frozenStatus3Text("studio.frozenStatus3.menubar.publishOwnerOnly", "공유 문서의 게시는 소유자만 할 수 있습니다.")
         : collaborationDocumentLocked
           ? collaborationLockMessage()
-          : "현재 저장 작업이 끝난 뒤 다시 시도하세요.",
+          : frozenStatus3Text("studio.frozenStatus3.menubar.saveBusyRetry", "현재 저장 작업이 끝난 뒤 다시 시도하세요."),
     },
     download: {
       label: COMMAND_BAR_COMMAND_LABELS.download,
@@ -1426,7 +1427,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
       hint: COMMAND_BAR_HINTS.zoomFit,
       run: () => zoomToFit?.(),
       disabled: typeof zoomToFit !== "function",
-      unavailableReason: "이 화면에는 화면 맞춤 명령이 아직 연결되지 않았습니다.",
+      unavailableReason: frozenStatus3Text("studio.frozenStatus3.menubar.fitNotConnected", "이 화면에는 화면 맞춤 명령이 아직 연결되지 않았습니다."),
     },
     assets: {
       label: COMMAND_BAR_COMMAND_LABELS.assets,
@@ -1831,7 +1832,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
                         data-studio-export-menu-panel="true"
                         className="fixed inset-x-2 top-12 z-[100] max-h-[calc(100dvh-4rem)] overflow-y-auto rounded-xl border border-line bg-panel p-3 text-xs text-fg-3 shadow-2xl sm:inset-x-auto sm:right-3 sm:w-72"
                       >
-                        내보내기 옵션을 여는 중...
+                        {frozenStatus3Text("studio.frozenStatus3.menubar.exportOpening", "내보내기 옵션을 여는 중...")}
                       </div>
                     }
                   >
@@ -2392,13 +2393,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
               title: sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장",
             }}
             disabled={saving || collaborationDocumentLocked}
-            unavailableReason={
-              collaborationDocumentLocked
-                ? collaborationLockMessage()
-                : saving
-                  ? "현재 저장 작업이 끝난 뒤 다시 시도하세요."
-                  : undefined
-            }
+            unavailableReason={collaborationDocumentLocked ? collaborationLockMessage() : saving ? frozenStatus3Text("studio.frozenStatus3.menubar.saveBusyRetry", "현재 저장 작업이 끝난 뒤 다시 시도하세요.") : undefined}
             preferredSide="bottom"
           >
             <button
@@ -2434,13 +2429,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
                 title: workId ? "공개 수정" : "게시하기",
               }}
               disabled={saving || collaborationDocumentLocked}
-              unavailableReason={
-                collaborationDocumentLocked
-                  ? collaborationLockMessage()
-                  : saving
-                    ? "현재 저장 작업이 끝난 뒤 다시 시도하세요."
-                    : undefined
-              }
+              unavailableReason={collaborationDocumentLocked ? collaborationLockMessage() : saving ? frozenStatus3Text("studio.frozenStatus3.menubar.saveBusyRetry", "현재 저장 작업이 끝난 뒤 다시 시도하세요.") : undefined}
               preferredSide="bottom"
             >
               <button

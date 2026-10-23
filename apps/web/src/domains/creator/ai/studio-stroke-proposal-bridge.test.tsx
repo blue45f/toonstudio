@@ -33,6 +33,17 @@ describe("shipped AI canvas append bridge", () => {
     expect(appendElement).not.toHaveBeenCalled();
   });
 
+  it("surfaces the coded no-stroke message instead of raw validation text (T5)", async () => {
+    const appendElement = vi.fn();
+    renderHook(() => useStudioAiCanvasBridge({ ownerId: "qa-owner", documentId: "qa-document", elements: [], appendElement }));
+    const state = renderHook(useStudioStrokeProposalBridgeSnapshot);
+    await act(requestStudioStrokeProposal);
+    // 브리지가 코드화한 오류는 지역화된 문구 그대로, 그 외 검증 원문은 일반 문구로 차단된다.
+    expect(state.result.current.error).toMatch(/최근 확정 획이 없어 제안할 수 없습니다\.|no recent committed strokes/i);
+    expect(state.result.current.proposal).toBeNull();
+    expect(appendElement).not.toHaveBeenCalled();
+  });
+
   it("appends a reviewed copy through the real callback without overwriting its source", async () => {
     const { original, appendElement, state } = setup();
     const before = JSON.stringify(original);

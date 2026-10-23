@@ -1,0 +1,495 @@
+import { readFileSync } from "node:fs";
+
+import { describe, expect, it } from "vitest";
+
+import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
+
+/**
+ * creator 루트 패널 전반부 로딩·실패·빈 상태 문구 i18n 키 이관 계약
+ * (A4 잔여 3라운드 c06, 32파일 중 이관 31파일·신규 키 177개).
+ *
+ * 표시 정본은 studio.panelStatus.* 키이며 등록은 형제 모듈
+ * studio-panel-status-i18n-r3c06.ts가 맡는다 (배치 1 모듈을 확장하면
+ * batch1 테스트의 키 개수 단언이 깨지는 것이 분리 근거다).
+ * StudioWriterRoomReviewSurfaces는 경계 계약 개정 별도 과제라 제외했고,
+ * StudioInspectorSelectionSection은 기존 studio.canvas.panelLoading.*
+ * 키 호출(tPanelLoading)로 이미 이관돼 있어 제외했다.
+ * 잔여 6건은 본문·분류 라벨·모듈 상수 맵으로 r3-c06.md에 근거를 남겼고,
+ * 탐지기 기대값으로 아래에 고정한다.
+ */
+
+const HANGUL = /[가-힣]/;
+
+function readSource(relativePath: string): string {
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf-8");
+}
+
+function parseRegisterModule(source: string): Record<"ko" | "en", Record<string, string>> {
+  const blocks: Record<string, Record<string, string>> = {};
+  const pattern = /registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g;
+  for (const match of source.matchAll(pattern)) {
+    const entries: Record<string, string> = {};
+    for (const entry of (match[2] ?? "").matchAll(/"([^"]+)":\s*"((?:[^"\\]|\\.)*)"/g)) {
+      entries[entry[1] ?? ""] = (entry[2] ?? "").replace(/\\(.)/g, "$1");
+    }
+    blocks[match[1] ?? ""] = { ...(blocks[match[1] ?? ""] ?? {}), ...entries };
+  }
+  return blocks as Record<"ko" | "en", Record<string, string>>;
+}
+
+function placeholders(text: string): string[] {
+  return [...text.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map((m) => m[1] ?? "").sort();
+}
+
+const R3C06_KEYS = [
+  "studio.panelStatus.assetQuality3d.backToAuto",
+  "studio.panelStatus.assetQuality3d.checkpointIncomplete",
+  "studio.panelStatus.assetQuality3d.checkpointSaveFailed",
+  "studio.panelStatus.assetQuality3d.emptySceneSkip",
+  "studio.panelStatus.assetQuality3d.gpuContextLost",
+  "studio.panelStatus.assetQuality3d.gpuDeviceError",
+  "studio.panelStatus.assetQuality3d.savingCheckpoint",
+  "studio.panelStatus.assetRights.externalEmpty",
+  "studio.panelStatus.assetRights.generating",
+  "studio.panelStatus.assetRights.manifestCreateFailed",
+  "studio.panelStatus.assetToolPopover.clipsEmpty",
+  "studio.panelStatus.assetToolPopover.emeresSiblingsEmpty",
+  "studio.panelStatus.assetToolPopover.searchEmpty",
+  "studio.panelStatus.autoActions.emptyHeading",
+  "studio.panelStatus.autoActions.fileReadFailed",
+  "studio.panelStatus.autoActions.stepsEmpty",
+  "studio.panelStatus.autoColorHints.applying",
+  "studio.panelStatus.autoColorHints.batchApplyFailed",
+  "studio.panelStatus.autoColorHints.copyFailed",
+  "studio.panelStatus.autoColorHints.newLayerPathMissing",
+  "studio.panelStatus.autoColorHints.noOperations",
+  "studio.panelStatus.autoColorHints.noPlan",
+  "studio.panelStatus.autoColorHints.planComputeFailed",
+  "studio.panelStatus.autoColorHints.planning",
+  "studio.panelStatus.bibleDocuments.beatsEmpty",
+  "studio.panelStatus.bibleDocuments.characterArcsEmpty",
+  "studio.panelStatus.bibleDocuments.factsEmpty",
+  "studio.panelStatus.bibleDocuments.synopsisEmpty",
+  "studio.panelStatus.bibleDocuments.threadsEmpty",
+  "studio.panelStatus.brandKit.fontsEmpty",
+  "studio.panelStatus.brandKit.kitsEmpty",
+  "studio.panelStatus.brandKit.loading",
+  "studio.panelStatus.brandKit.logoLoadFailed",
+  "studio.panelStatus.brandKit.logoLoading",
+  "studio.panelStatus.brandKit.logoLoadingTitle",
+  "studio.panelStatus.brandKit.mutationFailed",
+  "studio.panelStatus.brandKit.openFailed",
+  "studio.panelStatus.brandKit.paletteLoadFailed",
+  "studio.panelStatus.brandKit.palettesEmpty",
+  "studio.panelStatus.brandKit.retryAfterFix",
+  "studio.panelStatus.brandKit.saveFailedMemoryOnly",
+  "studio.panelStatus.brandKit.storageChecking",
+  "studio.panelStatus.brandKit.storageUnavailable",
+  "studio.panelStatus.browserTransfer.clipboardUnavailable",
+  "studio.panelStatus.bundleLibrary.insertCanvasUnavailable",
+  "studio.panelStatus.bundleLibrary.insertFailed",
+  "studio.panelStatus.bundleLibrary.inserting",
+  "studio.panelStatus.bundleLibrary.loadFailed",
+  "studio.panelStatus.bundleLibrary.loadingList",
+  "studio.panelStatus.bundleLibrary.reload",
+  "studio.panelStatus.bundleLibrary.reviewedEmpty",
+  "studio.panelStatus.bundleLibrary.searchEmpty",
+  "studio.panelStatus.canvasControls.documentLocked",
+  "studio.panelStatus.cc0Library.insertCanvasUnavailable",
+  "studio.panelStatus.cc0Library.insertFailed",
+  "studio.panelStatus.cc0Library.inserting",
+  "studio.panelStatus.cc0Library.loadFailed",
+  "studio.panelStatus.cc0Library.loadingList",
+  "studio.panelStatus.cc0Library.reload",
+  "studio.panelStatus.cc0Library.searchEmpty",
+  "studio.panelStatus.checkpoint.compareFailed",
+  "studio.panelStatus.checkpoint.localEmpty",
+  "studio.panelStatus.checkpoint.restoreFailed",
+  "studio.panelStatus.checkpoint.restoreFailedWithGuide",
+  "studio.panelStatus.checkpoint.revisionMismatch",
+  "studio.panelStatus.checkpoint.serverEmpty",
+  "studio.panelStatus.checkpoint.serverLoading",
+  "studio.panelStatus.colorPalette.analyzing",
+  "studio.panelStatus.colorPalette.copyAllFailed",
+  "studio.panelStatus.colorPalette.copyFailed",
+  "studio.panelStatus.colorPalette.extractFailed",
+  "studio.panelStatus.colorPalette.noColors",
+  "studio.panelStatus.colorPalette.saveFailed",
+  "studio.panelStatus.colorPalette.saving",
+  "studio.panelStatus.commandSearch.scopeEmpty",
+  "studio.panelStatus.commandSearch.searchEmpty",
+  "studio.panelStatus.commandSearch.unavailableBadge",
+  "studio.panelStatus.commandSearch.unavailableHint",
+  "studio.panelStatus.emeresLibrary.framesEmpty",
+  "studio.panelStatus.emeresLibrary.imageLoadFailed",
+  "studio.panelStatus.emeresLibrary.loading",
+  "studio.panelStatus.emeresLibrary.openFailed",
+  "studio.panelStatus.emeresLibrary.saveFailedMemoryOnly",
+  "studio.panelStatus.emeresLibrary.storageChecking",
+  "studio.panelStatus.emeresLibrary.storageUnavailable",
+  "studio.panelStatus.finishQuality.noFilteredIssues",
+  "studio.panelStatus.finishQuality.noIssues",
+  "studio.panelStatus.hokusaiNaturalMedia.checking",
+  "studio.panelStatus.hokusaiNaturalMedia.engineCheckFailed",
+  "studio.panelStatus.hokusaiNaturalMedia.transformFailed",
+  "studio.panelStatus.hokusaiNaturalMedia.unavailable",
+  "studio.panelStatus.interchangeLoss.importing",
+  "studio.panelStatus.localAssets.deleteFailed",
+  "studio.panelStatus.localAssets.deleting",
+  "studio.panelStatus.localAssets.emptyMine",
+  "studio.panelStatus.localAssets.insertFailed",
+  "studio.panelStatus.localAssets.insertUnavailable",
+  "studio.panelStatus.localAssets.loadingMine",
+  "studio.panelStatus.localAssets.remainingNotice",
+  "studio.panelStatus.localAssets.searchEmpty",
+  "studio.panelStatus.localizationQa.emptyDescription",
+  "studio.panelStatus.localizationQa.emptyTitle",
+  "studio.panelStatus.localizationQa.noAttributedCues",
+  "studio.panelStatus.localizationQa.noLegibilityCues",
+  "studio.panelStatus.motionExport.bgmMixFailed",
+  "studio.panelStatus.motionExport.creatingFile",
+  "studio.panelStatus.motionExport.exportFailed",
+  "studio.panelStatus.motionExport.noPages",
+  "studio.panelStatus.motionExport.preparingCuts",
+  "studio.panelStatus.motionExport.recording",
+  "studio.panelStatus.motionExport.unsupportedLong",
+  "studio.panelStatus.novelConvert.cannotMerge",
+  "studio.panelStatus.novelConvert.cannotSplit",
+  "studio.panelStatus.novelConvert.emptySource",
+  "studio.panelStatus.novelConvert.fileReadFailed",
+  "studio.panelStatus.novelConvert.sceneNoCuts",
+  "studio.panelStatus.proceduralBrush.cancelling",
+  "studio.panelStatus.proceduralBrush.checking",
+  "studio.panelStatus.proceduralBrush.generating",
+  "studio.panelStatus.proceduralBrush.renderCheckFailed",
+  "studio.panelStatus.proceduralBrush.textureCreateFailed",
+  "studio.panelStatus.proceduralBrush.unavailable",
+  "studio.panelStatus.proceduralBrush.workerUnavailable",
+  "studio.panelStatus.productionInsights.assetsEmpty",
+  "studio.panelStatus.productionInsights.structureEmpty",
+  "studio.panelStatus.rasterCrdt.orderMismatch",
+  "studio.panelStatus.rasterCrdt.presentationStopped",
+  "studio.panelStatus.rasterCrdt.replayFailed",
+  "studio.panelStatus.rasterCrdt.sourceChangedStopped",
+  "studio.panelStatus.rasterCrdt.sourceUnverifiable",
+  "studio.panelStatus.rasterVectorize.analyzingOutline",
+  "studio.panelStatus.rasterVectorize.convertFailed",
+  "studio.panelStatus.rasterVectorize.convertLayerFailed",
+  "studio.panelStatus.rasterVectorize.converting",
+  "studio.panelStatus.rasterVectorize.convertingLayer",
+  "studio.panelStatus.rasterVectorize.insertLayerFailed",
+  "studio.panelStatus.rasterVectorize.insertTraceFailed",
+  "studio.panelStatus.rasterVectorize.noOutline",
+  "studio.panelStatus.rasterVectorize.traceFailed",
+  "studio.panelStatus.rasterVectorize.tracing",
+  "studio.panelStatus.rasterVectorize.tracingFill",
+  "studio.panelStatus.rasterVectorize.vectorizing",
+  "studio.panelStatus.sceneBrowser.emptyDescription",
+  "studio.panelStatus.sceneBrowser.emptyTitle",
+  "studio.panelStatus.sceneBrowser.imageDelayed",
+  "studio.panelStatus.sceneBrowser.imageReload",
+  "studio.panelStatus.sceneBrowser.insertUnavailable",
+  "studio.panelStatus.sceneBrowser.loadFailedTitle",
+  "studio.panelStatus.sceneBrowser.loading",
+  "studio.panelStatus.sceneBrowser.loadingDescription",
+  "studio.panelStatus.scenePreview.loadFailedTitle",
+  "studio.panelStatus.scenePreview.retry",
+  "studio.panelStatus.scenePreview.retryKeepsSettings",
+  "studio.panelStatus.scenePreview.sizeMismatch",
+  "studio.panelStatus.scenePreview.timeoutDescription",
+  "studio.panelStatus.scenePreview.timeoutTitle",
+  "studio.panelStatus.threeDPreviewStack.mannequinLoading",
+  "studio.panelStatus.threeDPreviewStack.poserLoading",
+  "studio.panelStatus.threeDPreviewStack.scenarioLoading",
+  "studio.panelStatus.threeDPreviewStack.scrollPreviewLoading",
+  "studio.panelStatus.threeDPreviewStack.storyboardLoading",
+  "studio.panelStatus.threeDPreviewStack.timelapseLoading",
+  "studio.panelStatus.timelapse.capturing",
+  "studio.panelStatus.timelapse.creatingFile",
+  "studio.panelStatus.timelapse.emptyContent",
+  "studio.panelStatus.timelapse.exportFailed",
+  "studio.panelStatus.timelapse.masterEditBlocked",
+  "studio.panelStatus.timelapse.recording",
+  "studio.panelStatus.timelapse.recordingLocked",
+  "studio.panelStatus.timelapse.unsupported",
+  "studio.panelStatus.timelapse.unsupportedLong",
+  "studio.panelStatus.workspaceArrangement.changedDuringLoad",
+  "studio.panelStatus.workspaceArrangement.deviceEmptyOrUnreadable",
+  "studio.panelStatus.workspaceArrangement.deviceSaveUnconfirmed",
+  "studio.panelStatus.workspaceArrangement.deviceStorageUnavailable",
+  "studio.panelStatus.workspaceArrangement.tabEmpty",
+  "studio.panelStatus.workspaceArrangement.tabStorageUnavailable",
+] as const;
+
+const EXPECTED_KO: Readonly<Record<string, string>> = {
+  "studio.panelStatus.assetQuality3d.backToAuto": "자동 모드로 돌아왔습니다. 다음 모델 불러오기부터 안전 한도를 적용합니다.",
+  "studio.panelStatus.assetQuality3d.checkpointIncomplete": "장면 사본 저장을 완료하지 못해 자동 모드를 유지했습니다. 저장 공간과 장면 상태를 확인해 주세요.",
+  "studio.panelStatus.assetQuality3d.checkpointSaveFailed": "장면 사본을 저장하지 못했습니다. 고품질 설정은 적용하지 않았습니다.",
+  "studio.panelStatus.assetQuality3d.emptySceneSkip": " 현재 배경 장면이 비어 있어 사본 저장은 생략합니다.",
+  "studio.panelStatus.assetQuality3d.gpuContextLost": "GPU 연결이 끊겨 자동 모드로 돌아왔습니다. 저장한 장면 사본을 보존하고, 무거운 원본은 경량본으로 다시 가져오세요.",
+  "studio.panelStatus.assetQuality3d.gpuDeviceError": "GPU 장치 오류가 발생해 자동 모드로 돌아왔습니다. 장면 사본을 유지하고 경량본으로 다시 가져오세요.",
+  "studio.panelStatus.assetQuality3d.savingCheckpoint": "장면 사본 저장 중",
+  "studio.panelStatus.assetRights.externalEmpty": "기록된 외부 에셋이 없습니다",
+  "studio.panelStatus.assetRights.generating": "생성 중",
+  "studio.panelStatus.assetRights.manifestCreateFailed": "권리 명세 파일을 만들지 못했습니다.",
+  "studio.panelStatus.assetToolPopover.clipsEmpty": "저장된 클립이 없어요. 포즈 캐릭터나 말풍선 세트를 저장해 다른 컷·회차에서 재사용하세요.",
+  "studio.panelStatus.assetToolPopover.emeresSiblingsEmpty": "같은 카테고리의 다른 틀이 없어요.",
+  "studio.panelStatus.assetToolPopover.searchEmpty": "검색 결과가 없습니다.",
+  "studio.panelStatus.autoActions.emptyHeading": "Action Set을 불러오세요",
+  "studio.panelStatus.autoActions.fileReadFailed": "Action Set 파일을 읽지 못했습니다.",
+  "studio.panelStatus.autoActions.stepsEmpty": "아직 기록된 단계가 없어요. 패널을 닫고 레이어·레터링을 조작한 뒤, 이 패널을 다시 열어 확인하세요.",
+  "studio.panelStatus.autoColorHints.applying": "적용 중…",
+  "studio.panelStatus.autoColorHints.batchApplyFailed": "고급 채우기 배치를 적용하지 못했어요.",
+  "studio.panelStatus.autoColorHints.copyFailed": "클립보드에 복사하지 못했어요. 요약을 직접 선택해 복사하세요.",
+  "studio.panelStatus.autoColorHints.newLayerPathMissing": "새 채색 레이어 적용 경로가 연결되지 않았어요.",
+  "studio.panelStatus.autoColorHints.noOperations": "준비된 연산이 없어 적용할 수 없어요. 시드를 조정한 뒤 다시 계획하세요.",
+  "studio.panelStatus.autoColorHints.noPlan": "적용할 계획이 없어요. 먼저 힌트 계획을 실행하세요.",
+  "studio.panelStatus.autoColorHints.planComputeFailed": "자동 채색 힌트 계획을 계산하지 못했어요.",
+  "studio.panelStatus.autoColorHints.planning": "계획 계산 중…",
+  "studio.panelStatus.bibleDocuments.beatsEmpty": "아직 회차 비트가 없어요.",
+  "studio.panelStatus.bibleDocuments.characterArcsEmpty": "아직 캐릭터 아크가 없어요.",
+  "studio.panelStatus.bibleDocuments.factsEmpty": "아직 등록된 사실이 없어요.",
+  "studio.panelStatus.bibleDocuments.synopsisEmpty": "줄거리 소개가 아직 없어요.",
+  "studio.panelStatus.bibleDocuments.threadsEmpty": "아직 스레드가 없어요.",
+  "studio.panelStatus.brandKit.fontsEmpty": "일치하는 폰트가 없어요.",
+  "studio.panelStatus.brandKit.kitsEmpty": "저장된 브랜드 킷이 없어요. 이름과 팔레트·글꼴·로고를 골라 새로 만들어보세요.",
+  "studio.panelStatus.brandKit.loading": "불러오는 중…",
+  "studio.panelStatus.brandKit.logoLoadFailed": "로고 이미지를 불러오지 못했어요.",
+  "studio.panelStatus.brandKit.logoLoading": "로고 불러오는 중…",
+  "studio.panelStatus.brandKit.logoLoadingTitle": "로고를 불러오는 중이에요. 잠시만 기다려주세요.",
+  "studio.panelStatus.brandKit.mutationFailed": "브랜드 킷 변경을 적용하지 못했습니다.",
+  "studio.panelStatus.brandKit.openFailed": "SQLite/OPFS 브랜드 킷을 열지 못했습니다: {detail}. 기존 브라우저 키는 자동으로 읽지 않습니다.",
+  "studio.panelStatus.brandKit.paletteLoadFailed": "연결할 SQLite 팔레트를 불러오지 못했습니다: {detail}",
+  "studio.panelStatus.brandKit.palettesEmpty": "저장된 팔레트가 없어요. 먼저 팔레트 탭에서 만들어보세요.",
+  "studio.panelStatus.brandKit.retryAfterFix": "{message} 항목을 줄이거나 데이터를 고친 뒤 다시 시도해 주세요.",
+  "studio.panelStatus.brandKit.saveFailedMemoryOnly": "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라집니다: {detail}",
+  "studio.panelStatus.brandKit.storageChecking": "SQLite/OPFS 브랜드 킷 확인 중",
+  "studio.panelStatus.brandKit.storageUnavailable": "SQLite/OPFS 사용 불가 · 저장되지 않음",
+  "studio.panelStatus.browserTransfer.clipboardUnavailable": "클립보드를 사용할 수 없습니다. 입력란의 내용을 직접 선택해 복사해 주세요.",
+  "studio.panelStatus.bundleLibrary.insertCanvasUnavailable": "캔버스에 삽입하지 못했습니다. 편집 가능한 컷을 선택해 주세요.",
+  "studio.panelStatus.bundleLibrary.insertFailed": "에셋 삽입에 실패했습니다.",
+  "studio.panelStatus.bundleLibrary.inserting": "검증·삽입 중…",
+  "studio.panelStatus.bundleLibrary.loadFailed": "에셋 목록을 불러오지 못했습니다.",
+  "studio.panelStatus.bundleLibrary.loadingList": "에셋 목록을 불러오는 중입니다.",
+  "studio.panelStatus.bundleLibrary.reload": "다시 불러오기",
+  "studio.panelStatus.bundleLibrary.reviewedEmpty": "아직 검수가 끝난 번들 소품이 없습니다. 렌더와 검수가 끝나면 이곳에 표시됩니다.",
+  "studio.panelStatus.bundleLibrary.searchEmpty": "검색 결과가 없습니다. 검색어나 종류를 바꿔 주세요.",
+  "studio.panelStatus.canvasControls.documentLocked": "문서 설정이 잠겨 있어 패널 여백을 변경할 수 없어요.",
+  "studio.panelStatus.cc0Library.insertCanvasUnavailable": "캔버스에 삽입하지 못했습니다. 편집 가능한 컷을 선택해 주세요.",
+  "studio.panelStatus.cc0Library.insertFailed": "에셋 삽입에 실패했습니다.",
+  "studio.panelStatus.cc0Library.inserting": "검증·삽입 중…",
+  "studio.panelStatus.cc0Library.loadFailed": "에셋 목록을 불러오지 못했습니다.",
+  "studio.panelStatus.cc0Library.loadingList": "에셋 목록을 불러오는 중입니다.",
+  "studio.panelStatus.cc0Library.reload": "다시 불러오기",
+  "studio.panelStatus.cc0Library.searchEmpty": "검색 결과가 없습니다. 검색어나 스타일을 바꾸거나 조립부품 포함을 선택해 주세요.",
+  "studio.panelStatus.checkpoint.compareFailed": "서버 버전을 비교하지 못했어요.",
+  "studio.panelStatus.checkpoint.localEmpty": "아직 저장한 기록이 없어요",
+  "studio.panelStatus.checkpoint.restoreFailed": "서버 버전을 복원하지 못했어요.",
+  "studio.panelStatus.checkpoint.restoreFailedWithGuide": "서버 버전을 복원하지 못했어요. 아래 안내를 확인하고 다시 비교해 주세요.",
+  "studio.panelStatus.checkpoint.revisionMismatch": "요청한 revision과 서버가 반환한 revision이 달라 비교를 중단했습니다.",
+  "studio.panelStatus.checkpoint.serverEmpty": "아직 서버에 저장된 버전이 없어요",
+  "studio.panelStatus.checkpoint.serverLoading": "서버 버전을 불러오는 중…",
+  "studio.panelStatus.colorPalette.analyzing": "이미지의 고유 배색을 분석하는 중…",
+  "studio.panelStatus.colorPalette.copyAllFailed": "전체 복사 실패",
+  "studio.panelStatus.colorPalette.copyFailed": "복사 실패",
+  "studio.panelStatus.colorPalette.extractFailed": "색상 추출에 실패했어요.",
+  "studio.panelStatus.colorPalette.noColors": "추출할 색이 없어요(투명 이미지).",
+  "studio.panelStatus.colorPalette.saveFailed": "저장 실패 · 다시 시도",
+  "studio.panelStatus.colorPalette.saving": "팔레트 저장 중…",
+  "studio.panelStatus.commandSearch.scopeEmpty": "{scopeLabel} 범위에서 “{query}” 와 맞는 항목이 없습니다.",
+  "studio.panelStatus.commandSearch.searchEmpty": "“{query}” 와 맞는 기능을 찾지 못했습니다.",
+  "studio.panelStatus.commandSearch.unavailableBadge": "사용 불가",
+  "studio.panelStatus.commandSearch.unavailableHint": "현재 상태에서는 이 명령을 사용할 수 없습니다",
+  "studio.panelStatus.emeresLibrary.framesEmpty": "저장된 틀이 없어요. 위에서 이미지를 업로드하거나, 캔버스 요소를 우클릭해 저장해보세요.",
+  "studio.panelStatus.emeresLibrary.imageLoadFailed": "이미지를 불러오지 못했어요.",
+  "studio.panelStatus.emeresLibrary.loading": "불러오는 중…",
+  "studio.panelStatus.emeresLibrary.openFailed": "SQLite/OPFS 이메레스 보관함을 열지 못했습니다: {detail}",
+  "studio.panelStatus.emeresLibrary.saveFailedMemoryOnly": "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다: {detail}",
+  "studio.panelStatus.emeresLibrary.storageChecking": "SQLite/OPFS 보관함 확인 중",
+  "studio.panelStatus.emeresLibrary.storageUnavailable": "SQLite/OPFS 사용 불가 · 저장되지 않음",
+  "studio.panelStatus.finishQuality.noFilteredIssues": "현재 필터에 맞는 문제가 없습니다",
+  "studio.panelStatus.finishQuality.noIssues": "자동 검사에서 문제를 찾지 못했습니다",
+  "studio.panelStatus.hokusaiNaturalMedia.checking": "확인 중",
+  "studio.panelStatus.hokusaiNaturalMedia.engineCheckFailed": "Hokusai 자연매체 엔진을 확인하지 못했습니다.",
+  "studio.panelStatus.hokusaiNaturalMedia.transformFailed": "자연매체 획 변환에 실패했습니다.",
+  "studio.panelStatus.hokusaiNaturalMedia.unavailable": "사용 불가",
+  "studio.panelStatus.interchangeLoss.importing": "파일을 안전하게 가져오는 중입니다. 필요하면 아래에서 중단할 수 있어요.",
+  "studio.panelStatus.localAssets.deleteFailed": "에셋 삭제에 실패했습니다. 남아 있는 항목을 다시 시도해 주세요.",
+  "studio.panelStatus.localAssets.deleting": "에셋 원본을 삭제하는 중입니다.",
+  "studio.panelStatus.localAssets.emptyMine": "등록한 에셋이 없습니다. 탐색의 이미지 업로드로 추가해 주세요.",
+  "studio.panelStatus.localAssets.insertFailed": "이미지 삽입에 실패했습니다.",
+  "studio.panelStatus.localAssets.insertUnavailable": "이미지를 삽입하지 못했습니다. 편집 가능한 캔버스를 확인해 주세요.",
+  "studio.panelStatus.localAssets.loadingMine": "내 에셋을 불러오는 중입니다.",
+  "studio.panelStatus.localAssets.remainingNotice": " · {count}개는 보관함에 남아 있습니다. 오류 안내를 확인하고 다시 시도해 주세요.",
+  "studio.panelStatus.localAssets.searchEmpty": "검색 결과가 없습니다. 다른 이름이나 종류로 검색해 주세요.",
+  "studio.panelStatus.localizationQa.emptyDescription": "{count}개 대사에서 문체·넘침 문제를 찾지 못했습니다.",
+  "studio.panelStatus.localizationQa.emptyTitle": "지적할 곳이 없어요",
+  "studio.panelStatus.localizationQa.noAttributedCues": "화자가 지정된 대사가 없어 인물 카드 규칙을 한 건도 검사하지 못했어요. 인물 카드에서 대사 화자를 지정하세요. 인물 규칙 오류 0건을 \"통과\"로 읽지 마세요.",
+  "studio.panelStatus.localizationQa.noLegibilityCues": "명도 대비를 판정한 대사가 없습니다(반투명·그라데이션 채우기이거나 색을 읽지 못했습니다). 대비 미달 0개를 \"통과\"로 읽지 마세요.",
+  "studio.panelStatus.motionExport.bgmMixFailed": "영상을 저장했어요. 다만 배경음악 믹스에 실패해 무음으로 내보냈어요.",
+  "studio.panelStatus.motionExport.creatingFile": "영상 파일 생성 중…",
+  "studio.panelStatus.motionExport.exportFailed": "영상을 내보내지 못했어요.",
+  "studio.panelStatus.motionExport.noPages": "내보낼 컷(페이지)이 없어요.",
+  "studio.panelStatus.motionExport.preparingCuts": "컷 이미지 준비 중…",
+  "studio.panelStatus.motionExport.recording": "녹화 중… (실제 재생 시간만큼 걸려요)",
+  "studio.panelStatus.motionExport.unsupportedLong": "이 브라우저는 영상 녹화(MediaRecorder/WebM)를 지원하지 않아요. 크롬·엣지·파이어폭스에서 시도해주세요.",
+  "studio.panelStatus.novelConvert.cannotMerge": "종류가 다르거나 화자가 다른 대사는 합칠 수 없어요",
+  "studio.panelStatus.novelConvert.cannotSplit": "문장이 하나뿐이라 나눌 수 없어요",
+  "studio.panelStatus.novelConvert.emptySource": "변환할 소설 텍스트가 비어 있어요. 원고를 붙여넣거나 .txt 파일을 선택해 주세요.",
+  "studio.panelStatus.novelConvert.fileReadFailed": "파일을 읽지 못했어요. 텍스트(.txt) 파일인지 확인해 주세요.",
+  "studio.panelStatus.novelConvert.sceneNoCuts": "이 장면에는 컷이 없어요. 작가실에 반영하면 빈 장면으로 들어갑니다.",
+  "studio.panelStatus.proceduralBrush.cancelling": "취소하는 중",
+  "studio.panelStatus.proceduralBrush.checking": "확인 중",
+  "studio.panelStatus.proceduralBrush.generating": "생성 중",
+  "studio.panelStatus.proceduralBrush.renderCheckFailed": "렌더링 기능을 확인하지 못했습니다.",
+  "studio.panelStatus.proceduralBrush.textureCreateFailed": "절차적 질감을 생성하지 못했습니다.",
+  "studio.panelStatus.proceduralBrush.unavailable": "사용 불가",
+  "studio.panelStatus.proceduralBrush.workerUnavailable": "전용 GPU Worker를 사용할 수 없습니다.",
+  "studio.panelStatus.productionInsights.assetsEmpty": "집계할 이미지·소재 에셋이 없습니다. 에셋을 추가하고 AI 생성 또는 편집 표지를 남기면 출처 현황이 표시됩니다.",
+  "studio.panelStatus.productionInsights.structureEmpty": "아직 분석할 제작 구조가 없어요",
+  "studio.panelStatus.rasterCrdt.orderMismatch": "픽셀 재생 결과가 현재 벡터 원본 순서와 일치하지 않습니다.",
+  "studio.panelStatus.rasterCrdt.presentationStopped": "실시간 픽셀 표시가 안전하게 중단되었습니다 ({reason}).",
+  "studio.panelStatus.rasterCrdt.replayFailed": "실시간 픽셀 캔버스를 재생하지 못했습니다.",
+  "studio.panelStatus.rasterCrdt.sourceChangedStopped": "벡터 원본이 변경되어 안전한 픽셀 표시를 중단했습니다.",
+  "studio.panelStatus.rasterCrdt.sourceUnverifiable": "표시할 픽셀 작업의 벡터 원본을 확인할 수 없습니다.",
+  "studio.panelStatus.rasterVectorize.analyzingOutline": "외곽선을 분석하는 중…",
+  "studio.panelStatus.rasterVectorize.convertFailed": "이미지를 벡터로 변환하지 못했습니다.",
+  "studio.panelStatus.rasterVectorize.convertLayerFailed": "이미지를 벡터 레이어로 변환하지 못했습니다.",
+  "studio.panelStatus.rasterVectorize.converting": "변환 중…",
+  "studio.panelStatus.rasterVectorize.convertingLayer": "이미지를 벡터 레이어로 변환하는 중…",
+  "studio.panelStatus.rasterVectorize.insertLayerFailed": "벡터 레이어를 현재 문서에 추가하지 못했습니다.",
+  "studio.panelStatus.rasterVectorize.insertTraceFailed": "트레이싱 결과를 현재 문서에 추가하지 못했습니다.",
+  "studio.panelStatus.rasterVectorize.noOutline": "벡터 레이어로 만들 뚜렷한 윤곽을 찾지 못했어요. 대비가 더 높은 원본으로 다시 시도해 주세요.",
+  "studio.panelStatus.rasterVectorize.traceFailed": "이미지를 트레이싱하지 못했습니다.",
+  "studio.panelStatus.rasterVectorize.tracing": "트레이싱 중…",
+  "studio.panelStatus.rasterVectorize.tracingFill": "이미지를 채움 패스로 트레이싱하는 중…",
+  "studio.panelStatus.rasterVectorize.vectorizing": "벡터화 중…",
+  "studio.panelStatus.sceneBrowser.emptyDescription": "검색어나 필터를 바꾸거나 모든 장면으로 돌아가 보세요.",
+  "studio.panelStatus.sceneBrowser.emptyTitle": "조건에 맞는 배경이 없습니다.",
+  "studio.panelStatus.sceneBrowser.imageDelayed": "연결이 지연되었습니다. 다시 불러와 주세요.",
+  "studio.panelStatus.sceneBrowser.imageReload": "이미지 다시 불러오기",
+  "studio.panelStatus.sceneBrowser.insertUnavailable": "현재 편집 상태에서는 삽입할 수 없습니다. 미리보기는 사용할 수 있습니다.",
+  "studio.panelStatus.sceneBrowser.loadFailedTitle": "배경 목록을 불러오지 못했어요",
+  "studio.panelStatus.sceneBrowser.loading": "배경을 불러오는 중…",
+  "studio.panelStatus.sceneBrowser.loadingDescription": "검수된 2D 배경과 원본 크기 정보를 함께 불러오고 있습니다.",
+  "studio.panelStatus.scenePreview.loadFailedTitle": "원본을 불러오지 못했어요",
+  "studio.panelStatus.scenePreview.retry": "다시 불러오기",
+  "studio.panelStatus.scenePreview.retryKeepsSettings": "원본을 다시 불러오면 현재 미리보기 설정은 그대로 유지됩니다.",
+  "studio.panelStatus.scenePreview.sizeMismatch": "실제 이미지 크기({actualSize})가 검수 기록과 다릅니다. 이 파일은 재검수 전 삽입할 수 없습니다.",
+  "studio.panelStatus.scenePreview.timeoutDescription": "연결 상태를 확인한 뒤 원본을 다시 불러와 주세요.",
+  "studio.panelStatus.scenePreview.timeoutTitle": "이미지 연결 시간이 초과됐어요",
+  "studio.panelStatus.threeDPreviewStack.mannequinLoading": "3D 데생 인형을 여는 중",
+  "studio.panelStatus.threeDPreviewStack.poserLoading": "포저를 여는 중",
+  "studio.panelStatus.threeDPreviewStack.scenarioLoading": "시나리오 자동 생성 도구를 여는 중",
+  "studio.panelStatus.threeDPreviewStack.scrollPreviewLoading": "스크롤 미리보기를 여는 중",
+  "studio.panelStatus.threeDPreviewStack.storyboardLoading": "스토리보드 그리드를 여는 중",
+  "studio.panelStatus.threeDPreviewStack.timelapseLoading": "타임랩스 도구를 여는 중",
+  "studio.panelStatus.timelapse.capturing": "그리기 과정을 캡처하는 중… ({captured}/{total}단계)",
+  "studio.panelStatus.timelapse.creatingFile": "영상 파일 생성 중…",
+  "studio.panelStatus.timelapse.emptyContent": "아직 그린 내용이 없어요. 먼저 그림을 그려보세요.",
+  "studio.panelStatus.timelapse.exportFailed": "타임랩스 영상을 만들지 못했어요.",
+  "studio.panelStatus.timelapse.masterEditBlocked": "마스터 편집 중에는 타임랩스를 만들 수 없어요. 마스터 편집을 종료한 뒤 다시 시도해주세요.",
+  "studio.panelStatus.timelapse.recording": "영상으로 녹화하는 중…",
+  "studio.panelStatus.timelapse.recordingLocked": "녹화 중에는 캔버스를 편집할 수 없어요. 완료될 때까지 잠시만 기다려주세요.",
+  "studio.panelStatus.timelapse.unsupported": "이 브라우저는 MediaRecorder/WebM 영상 녹화를 지원하지 않아요.",
+  "studio.panelStatus.timelapse.unsupportedLong": "이 브라우저는 영상 녹화(MediaRecorder/WebM)를 지원하지 않아요. 크롬·엣지·파이어폭스에서 시도해주세요.",
+  "studio.panelStatus.workspaceArrangement.changedDuringLoad": "불러오는 동안 배치가 바뀌어 현재 배치를 유지했어요.",
+  "studio.panelStatus.workspaceArrangement.deviceEmptyOrUnreadable": "기기에 저장한 배치가 없거나 읽을 수 없어요.",
+  "studio.panelStatus.workspaceArrangement.deviceSaveUnconfirmed": "기기 저장을 확인하지 못했어요. 현재 배치는 유지됩니다.",
+  "studio.panelStatus.workspaceArrangement.deviceStorageUnavailable": "기기 저장소를 사용할 수 없어요. 탭 저장을 사용해 주세요.",
+  "studio.panelStatus.workspaceArrangement.tabEmpty": "이 탭에 저장한 배치가 없어요.",
+  "studio.panelStatus.workspaceArrangement.tabStorageUnavailable": "탭 저장 공간을 사용할 수 없어요.",
+};
+
+const CONSUMERS = [
+  "Studio2dSceneBrowser.tsx",
+  "Studio2dScenePreview.tsx",
+  "Studio3dAssetQualityPanel.tsx",
+  "StudioAssetRightsManifestPanel.tsx",
+  "StudioAssetToolPopoverBody.tsx",
+  "StudioAutoActionsPanel.tsx",
+  "StudioAutoColorHintsPanel.tsx",
+  "StudioBibleDocumentsPanel.tsx",
+  "StudioBrandKitPanel.tsx",
+  "StudioBrowserWorkspaceTransfer.tsx",
+  "StudioBundleAssetLibraryPanel.tsx",
+  "StudioCc0AssetLibraryPanel.tsx",
+  "StudioCheckpointPanel.tsx",
+  "StudioColorPalettePanel.tsx",
+  "StudioCommandSearchDialog.tsx",
+  "StudioEmeresLibraryPanel.tsx",
+  "StudioFinishQualityView.tsx",
+  "StudioHokusaiNaturalMediaInspectorSection.tsx",
+  "StudioInspectorCanvasControls.tsx",
+  "StudioInterchangeLossPreviewDialog.tsx",
+  "StudioLocalAssetManager.tsx",
+  "StudioLocalizationQaReport.tsx",
+  "StudioMotionExportPanel.tsx",
+  "StudioNovelConvertPanel.tsx",
+  "StudioProceduralArtisticBrushController.tsx",
+  "StudioProductionInsightsPanel.tsx",
+  "StudioRasterCrdtSurface.tsx",
+  "StudioRasterVectorizeButton.tsx",
+  "StudioThreeDPreviewPanelStack.tsx",
+  "StudioTimelapsePanel.tsx",
+  "StudioWorkspaceArrangementControls.tsx",
+] as const;
+
+/**
+ * 탐지기 잔여 허용 목록 — 3라운드의 잔여 6건(본문·분류 라벨·모듈 상수 맵,
+ * r3-c06.md 근거)은 4라운드에서 형제 모듈 studio-panel-status-i18n-r4.ts로
+ * 전량 이관돼 비었다 (studio-status-i18n-r4 계약과 짝).
+ */
+const EXPECTED_RESIDUALS: readonly { file: string; rule: string; snippet: string }[] = [];
+
+describe("studio panel status i18n r3c06", () => {
+  it("신규 모듈의 ko/en 키가 패리티를 이루고 신규 키 ko 원문·플레이스홀더가 정확하다", () => {
+    const blocks = parseRegisterModule(
+      `${readSource("studio-panel-status-i18n-r3c06.ts")}\n${readSource("status-i18n/studio-panel-status-i18n-r3c06-core.ts")}`,
+    );
+    expect(Object.keys(blocks.ko).sort()).toEqual(Object.keys(blocks.en).sort());
+    expect(Object.keys(blocks.ko).length).toBe(R3C06_KEYS.length);
+    for (const key of R3C06_KEYS) {
+      expect(blocks.ko[key], `ko missing ${key}`).toBe(EXPECTED_KO[key]);
+      expect(blocks.en[key], `en missing ${key}`).toBeTruthy();
+      expect(HANGUL.test(blocks.en[key] ?? ""), `en value has Hangul: ${key}`).toBe(false);
+      expect(placeholders(blocks.en[key] ?? ""), `placeholder mismatch ${key}`).toEqual(
+        placeholders(blocks.ko[key] ?? ""),
+      );
+    }
+  });
+
+  it("신규 키가 소비 파일에서 실제로 참조되고 미등록 참조가 없다", () => {
+    const consumerSource = CONSUMERS.map((file) => readSource(file)).join("\n");
+    const original = parseRegisterModule(readSource("studio-panel-status-i18n.ts"));
+    const r4 = parseRegisterModule(readSource("studio-panel-status-i18n-r4.ts"));
+    const registered = new Set([
+      ...Object.keys(original.ko),
+      ...R3C06_KEYS,
+      ...Object.keys(r4.ko),
+    ]);
+    for (const key of R3C06_KEYS) {
+      expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
+    }
+    const referenced = new Set(
+      [...consumerSource.matchAll(/"(studio\.panelStatus\.[A-Za-z0-9.]+)"/g)].map(
+        (match) => match[1] ?? "",
+      ),
+    );
+    for (const key of referenced) {
+      expect(registered.has(key), `dangling key reference: ${key}`).toBe(true);
+    }
+  });
+
+  it("이관 파일의 탐지기 위반이 없다 (4라운드에서 잔여 6건 전량 이관)", () => {
+    const actual: { file: string; rule: string; snippet: string }[] = [];
+    for (const file of CONSUMERS) {
+      for (const violation of scanHardcodedStatusStrings(readSource(file))) {
+        actual.push({ file, rule: violation.rule, snippet: violation.snippet });
+      }
+    }
+    const sortKey = (r: { file: string; rule: string; snippet: string }) =>
+      `${r.file}|${r.rule}|${r.snippet}`;
+    expect(actual.map(sortKey).sort()).toEqual(EXPECTED_RESIDUALS.map(sortKey).sort());
+  });
+});

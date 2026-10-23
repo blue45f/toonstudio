@@ -8,6 +8,7 @@ import {
   REQUIRED_DATABASE_MIGRATIONS,
   REQUIRED_DATABASE_RELATIONS,
 } from "./health-readiness.repository";
+import { ROLE_SEPARATION_ACL_FLAGS } from "./health-readiness-role-separation";
 
 const ASSET_PLATFORM_RELATIONS = [
   "creator_asset_artifact",
@@ -77,6 +78,102 @@ describe("PostgresHealthReadinessRepository", () => {
       expect(query).toHaveBeenCalledOnce();
     },
   );
+
+  describe("런타임 역할 분리(ROLE_SEPARATION_ACL_FLAGS)", () => {
+    const completeMigrations = { rows: [{ migrationIds: [...REQUIRED_DATABASE_MIGRATIONS] }] };
+    const withFlags = (flags: Record<string, boolean>) => ({
+      rows: [{ ...completeSchemaCatalog(), ...flags }],
+    });
+    const allSixFalse = Object.fromEntries(
+      ROLE_SEPARATION_ACL_FLAGS.map((flag) => [flag, false]),
+    );
+
+    it("여섯 개는 마켓플레이스 표의 ACL 검사 이름과 정확히 같다", () => {
+      expect([...ROLE_SEPARATION_ACL_FLAGS].sort()).toEqual([
+        "marketplaceCloudLibraryAclReady",
+        "marketplacePackageModerationAclReady",
+        "marketplacePublishGateAclReady",
+        "marketplaceReportAclReady",
+        "marketplaceReportGateAclReady",
+        "marketplaceResourceAclReady",
+      ]);
+    });
+
+    it.each(ROLE_SEPARATION_ACL_FLAGS)(
+      "기본(분리) 모드는 %s 가 false 이면 준비되지 않은 것으로 본다",
+      async (flag) => {
+        const query = vi.fn().mockResolvedValue(withFlags({ [flag]: false }));
+        const repository = new PostgresHealthReadinessRepository({ query } as never);
+        await expect(repository.isSchemaReady()).resolves.toBe(false);
+        expect(query).toHaveBeenCalledOnce();
+      },
+    );
+
+    it("roleMode 를 separated 로 명시해도 기본과 같다", async () => {
+      const query = vi.fn().mockResolvedValue(withFlags(allSixFalse));
+      const repository = new PostgresHealthReadinessRepository(
+        { query } as never,
+        "separated",
+      );
+      await expect(repository.isSchemaReady()).resolves.toBe(false);
+    });
+
+    it("single-owner 는 여섯 ACL 검사가 모두 false 여도 나머지가 충족되면 준비된 것으로 본다", async () => {
+      const query = vi
+        .fn()
+        .mockResolvedValueOnce(withFlags(allSixFalse))
+        .mockResolvedValueOnce(completeMigrations);
+      const repository = new PostgresHealthReadinessRepository(
+        { query } as never,
+        "single-owner",
+      );
+      await expect(repository.isSchemaReady()).resolves.toBe(true);
+      expect(query).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      "adminColumnsReady",
+      "authUserColumnsReady",
+      "authRuntimeDmlReady",
+      "personalCloudConnectionAclReady",
+      "marketplaceResourceLifecycleTriggerReady",
+      "marketplaceCloudLibraryTriggerReady",
+      "marketplacePackageModerationTriggerReady",
+      "marketplaceSearchGenerated",
+      "marketplaceSearchIndexReady",
+      "commentMutationMessageNullable",
+      "trigramExtensionReady",
+    ])("single-owner 라도 %s 가 false 이면 준비되지 않은 것으로 본다", async (flag) => {
+      const query = vi.fn().mockResolvedValue(withFlags({ ...allSixFalse, [flag]: false }));
+      const repository = new PostgresHealthReadinessRepository(
+        { query } as never,
+        "single-owner",
+      );
+      await expect(repository.isSchemaReady()).resolves.toBe(false);
+      expect(query).toHaveBeenCalledOnce();
+    });
+
+    it("single-owner 라도 필수 관계 누락과 마이그레이션 마커 누락은 거부한다", async () => {
+      const missingRelation = vi.fn().mockResolvedValue({
+        rows: [{
+          ...completeSchemaCatalog(),
+          ...allSixFalse,
+          relationNames: REQUIRED_DATABASE_RELATIONS.slice(1),
+        }],
+      });
+      await expect(
+        new PostgresHealthReadinessRepository({ query: missingRelation } as never, "single-owner").isSchemaReady(),
+      ).resolves.toBe(false);
+
+      const missingMarker = vi
+        .fn()
+        .mockResolvedValueOnce(withFlags(allSixFalse))
+        .mockResolvedValueOnce({ rows: [{ migrationIds: REQUIRED_DATABASE_MIGRATIONS.slice(1) }] });
+      await expect(
+        new PostgresHealthReadinessRepository({ query: missingMarker } as never, "single-owner").isSchemaReady(),
+      ).resolves.toBe(false);
+    });
+  });
 
   it("rejects otherwise complete infrastructure when administrator columns are missing", async () => {
     const query = vi.fn().mockResolvedValue({ rows: [{ ...completeSchemaCatalog(), adminColumnsReady: false }] });
@@ -404,9 +501,19 @@ describe("PostgresHealthReadinessRepository", () => {
         /\bCREATE TABLE(?: IF NOT EXISTS)? public\.([a-z_]+)/gu,
       ),
     ]).map((match) => match[1]!);
+    // Godot 공간 배치·배경 표(0106·0107)는 스키마 접두어 없이 따옴표 이름으로 선언한다.
+    const bareQuotedMigrationRelations = [
+      "../../platform/database/migrations/0106_studio_godot_space_layout.sql",
+      "../../platform/database/migrations/0107_studio_godot_space_background.sql",
+    ].flatMap((path) => [
+      ...readFileSync(new URL(path, import.meta.url), "utf8").matchAll(
+        /\bCREATE TABLE(?: IF NOT EXISTS)? "([^"]+)"/gu,
+      ),
+    ]).map((match) => match[1]!);
     const migrationRelations = [
       ...quotedMigrationRelations,
       ...unquotedMigrationRelations,
+      ...bareQuotedMigrationRelations,
     ];
     expect(migrationRelations.toSorted()).toEqual([
       ...ASSET_PLATFORM_RELATIONS,
@@ -416,6 +523,8 @@ describe("PostgresHealthReadinessRepository", () => {
       "membership_resource_state",
       "membership_resource_usage_event",
       "membership_reward_reversal",
+      "studio_godot_space_background",
+      "studio_godot_space_layout",
       "traffic_page_view",
       "traffic_session",
       "traffic_share_event",

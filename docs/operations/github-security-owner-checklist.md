@@ -1,6 +1,6 @@
 # GitHub 보안 설정 4건 — 소유자 확인 체크리스트와 기록 양식
 
-상태: **확인 대기 (2026-10-22 작성)** — 아래 4건은 저장소 소유자만 열 수 있는 GitHub Settings·Security 탭의 상태라, 코드와 파일만 보는 에이전트는 켜짐/꺼짐과 최근 실행 결과를 판정할 수 없다. 소유자가 이 문서를 따라 확인하고 §5 기록 양식을 채우면 그때 확정된다. 확인 전에는 어느 항목도 "켜져 있다"거나 "성공했다"고 쓰지 않는다.
+상태: **부분 확인 (2026-10-22)** — 설정 토글 5건과 CodeQL 실행 결과는 에이전트가 GitHub API로 직접 읽어 §1-b에 적었다. 알림 건수(Dependabot·Code scanning·Secret scanning)는 에이전트의 API 권한이 없어(403) 읽지 못했으므로 소유자만 확인할 수 있다. 소유자가 이 문서를 따라 §2의 건수를 확인하고 §5 기록 양식을 채우면 그때 확정된다. 읽지 못한 항목은 "켜져 있다"거나 "0건"이라고 쓰지 않는다.
 
 대상 저장소: `blue45f/toonstudio` (공개 저장소), 기본 브랜치 `main`.
 
@@ -12,6 +12,23 @@
 | `.github/dependabot.yml` | 실재. npm·cargo(3곳)·pip·github-actions 주간 버전 업데이트 PR 설정 | **버전 업데이트 PR 설정일 뿐**이다. 취약점 알림(Dependabot alerts)은 별도 토글이고 이 파일로 켜지지 않는다 (§2-2 확인 대상) |
 | `.github/secret_scanning.yml` | 실재하나 내용은 테스트 fixture 2개 파일의 스캔 제외(`paths-ignore`)뿐 | Secret scanning 자체의 활성화 증거가 **아니다** (§2-3 확인 대상) |
 | `SECURITY.md` | 실재. 비공개 제보 경로를 "소유자 활성화 필요"로 정직하게 표기済 (2026-10-22 H1 정합) | Private vulnerability reporting이 실제로 켜졌는지는 §2-4 확인 대상 |
+
+### 1-b. GitHub API로 읽은 설정과 실행 결과 (에이전트 실측, 2026-10-22)
+
+| 항목 | 읽은 값 | 읽은 방법 |
+| --- | --- | --- |
+| Dependabot security updates | `enabled` | 저장소 조회 응답의 `security_and_analysis.dependabot_security_updates` |
+| Secret scanning | `enabled` | 같은 응답의 `secret_scanning` |
+| Push protection | `enabled` | 같은 응답의 `secret_scanning_push_protection` |
+| Secret scanning 비제공자 패턴 · 유효성 검사 | 둘 다 `disabled` | 같은 응답의 `secret_scanning_non_provider_patterns`·`secret_scanning_validity_checks` |
+| Private vulnerability reporting | `{"enabled": true}` | 저장소의 `private-vulnerability-reporting` 조회 |
+| CodeQL | `main` push(`826b39a`, 06:09Z)와 같은 커밋의 주간 스케줄(08:36Z) 실행이 모두 `success`. 그 뒤 push 실행 2건(`9a8f607`·`1346e02`)은 `cancelled` | 워크플로 실행 목록 |
+
+- **읽지 못한 것**: Dependabot alerts 토글 자체, 열린 알림 건수와 심각도, Code scanning alerts 건수, Secret scanning alerts 건수. 해당 조회는 "Resource not accessible by integration"(403) 또는 프록시 차단으로 거절됐다. Dependabot security updates가 켜져 있으면 alerts도 켜져 있을 가능성이 높지만 이는 추정이고 §2-2에서 소유자가 확인한다.
+- **대체 점검(알림 목록을 대신하지 않는다)**: 의존성은 OSV 일괄 조회, 소스는 semgrep(`p/security-audit`·`p/owasp-top-ten`·`p/secrets` 등)으로 훑었다. 이번 점검 과정에서 고친 것은 AES-GCM 복호화 3곳의 인증 태그 길이 명시, 포맷 게이트웨이 입력 예외 4건, creator-inference의 `accelerate` 하한이다. GitHub Security 탭의 알림과 1:1로 일치한다고 주장하지 않는다.
+- **2차 대체 점검 (2026-10-22, 같은 403 제약)**: Cargo.lock 7개·pnpm/npm 잠금(패키지 1,990개)·Python 요구사항·GitHub Actions 참조 13개를 OSV로 전수 대조했다. npm은 `pnpm audit`과 같이 0건, Rust는 `paste`(RUSTSEC-2024-0436, 유지보수 중단 공지라 GHSA 없음)뿐이었다. 새로 고친 것은 `actions/download-artifact@v4` 2곳(GHSA-cxww-7g56-2vh6, 영향 범위가 4.0.0~4.1.2라 메이저만 적은 `@v4`는 영향권으로 평가될 수 있어 `@v6`으로 올림)과 `transformers` 하한(4.53.0, 같은 날 소유자 결정으로 5.x로 이행했다. 아래 항목)이다. PR 체크런의 코드 스캐닝 결과는 PR #2150 이후 278건에서 읽었다. 새 알림 없음 69건, 새 알림 있음 2건(#2318의 XSS·URL 리다이렉트·코드 새니타이징 5건, #2388의 `js/redos` 1건), CodeQL 체크 없음 43건, 판정 불가 164건(59%)이다. 새 알림 2건의 코드는 현재 `main`에서 이미 고쳐져 있다(CodeQL 재분석으로 닫혔는지는 확인하지 못함). 판정 불가 164건의 원인은 PR 자신의 CodeQL 분석이 PR이 병합·종료되기 전에 끝나지 못하는 것이다. 체크 요약의 문구는 "`main`에 있는 구성 N개를 이 PR에서 찾지 못했다"이고, 열린 PR 두 건에서 해당 구성의 잡이 진행 중이거나 대기 중임을 확인했다(JS/TS는 70~90분). 분석 잡 경고에 JS/TS 데이터베이스가 10,926 MB로 overlay 캐시 상한 7,500 MB를 넘어 캐시를 건너뛴다고 나온다. 증분 분석이 쓰이지 못해 PR 분석이 전체 분석으로 도는 것이 원인 후보이나 확인하지 못했다. 별개로 `main` push의 `codeql.yml` 실행은 `scripts/cleanup-superseded-actions-runs.mjs`의 "superseded" 취소 대상이었다. 보호 목록에 default setup과 `ci.yml`만 있어서 최근 30건 중 26건이 `cancelled`였고 기본 브랜치 알림이 갱신되지 못했다. 조치로 `codeql.yml`의 `main` push 실행을 보호하고 동시성 그룹으로 대기 실행을 합쳤다(#2428). 병합 뒤 실행 857이 5개 언어 모두 success로 끝났고, 실행 중인 분석이 이후 push와 cleanup에 취소되지 않았음을 확인했다(2026-10-22). 이 조치는 기본 브랜치 알림의 갱신을 고친 것이며 PR 단위 판정 불가를 줄이지는 않는다. 이 목록도 Security 탭과 1:1로 일치한다고 주장하지 않는다.
+- **`transformers` 5.x 이행 (소유자 결정, 2026-10-22)**: 4.x 전체가 GHSA 5건(GHSA-29pf-2h5f-8g72·GHSA-69w3-r845-3855·GHSA-fgcw-684q-jj6r·GHSA-x9r9-c232-4q39·GHSA-xrqw-3rrv-vx5w) 영향권이라 `transformers>=5.10.1,<6`, `huggingface-hub>=1.5,<2`로 올렸다. 5.10.1부터는 알려진 GHSA가 없다(OSV). 해석 결과는 `transformers` 5.20.2, `huggingface-hub` 1.33.0이다. CPU에서 `engines.py`·`local_dino.py`의 호출 모양을 소형 무작위 모델로 확인했고, 5.x에서 사라진 `ViTModel.encoder` 접근을 `local_dino.py`에서 고쳤다. 확인하지 못한 것은 실제 GPU 추론과 TripoSR upstream 코드의 호환이다(5.x에서 `transformers.pytorch_utils.find_pruneable_heads_and_indices`가 제거된 것은 확인함). 5.x로 만든 새 runtime image는 `gpu-smoke.py`로 세 엔진의 실제 추론을 검증한 뒤에만 승인한다.
+- **`fastapi`/`starlette` 상향 (2026-10-22)**: `fastapi==0.128.2`가 `starlette<0.51`로 막아 `starlette==0.50.0`에 머물렀고 GHSA 5건(GHSA-82w8-qh3p-5jfq 높음·GHSA-wqp7-x3pw-xc5r 높음·GHSA-86qp-5c8j-p5mr·GHSA-x746-7m8f-x49c 보통·GHSA-jp82-jpqv-5vv3 낮음)이 걸렸다. 수정본이 starlette 1.3.1 이상이라 `fastapi==0.161.0`, `starlette>=1.3.1,<2`로 올렸다(해석 결과 starlette 1.9.0). 해석된 83개 패키지에 알려진 GHSA가 없다. 서비스 테스트(CI 프로파일 47건·1건 건너뜀, `transformers` 5.x 전체 환경 48건)와 실제 서버 기동 스모크(인증 없음 401·잘못된 토큰 401·올바른 토큰 200·잘못된 owner 400)를 확인했다. `app.py`는 취약 경로(폼 파싱·`StaticFiles`·`HTTPEndpoint`·경로 기반 검사)를 쓰지 않아 실제 영향 가능성은 낮았다. 요구사항 파일에 직접 적히지 않은 전이 의존성이라 Dependabot 알림에는 나타나지 않을 수 있다.
 
 ## 2. 소유자가 확인할 4건
 

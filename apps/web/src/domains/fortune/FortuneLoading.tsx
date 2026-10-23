@@ -5,18 +5,20 @@ import type { FortuneTab } from "./FortunePage";
 
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 
+import { fortuneStatusText } from "./fortune-status-i18n";
+
 // 탭별 결과 형태에 맞춘 스켈레톤 로딩 — DESIGN.md "스켈레톤 로딩, 스피너 금지" 준수.
 // 캐릭터 아바타 글로우 + 단계별 카피로 'AI가 점치는 중' 의식을 연출한다.
 
 const STAGE_BY_TAB: Record<FortuneTab, string[]> = {
-  today: ["오늘의 기운을 살피는 중", "일진을 맞춰보는 중", "콘티를 그리는 중"],
-  monthly: ["이달의 흐름을 살피는 중", "월간 기운을 읽는 중", "콘티를 그리는 중"],
-  yearly: ["올해의 운을 살피는 중", "연간 흐름을 읽는 중", "콘티를 그리는 중"],
-  zodiac: ["별자리를 짚는 중", "별의 흐름을 읽는 중", "콘티를 그리는 중"],
-  saju: ["사주를 펼치는 중", "오행을 가늠하는 중", "콘티를 그리는 중"],
-  compatibility: ["두 기운을 포개는 중", "합·충을 살피는 중", "콘티를 그리는 중"],
-  prescription: ["마음을 들여다보는 중", "서가를 살피는 중", "처방을 적는 중"],
-  tarot: ["카드의 기운을 읽는 중", "메시지를 해석하는 중", "콘티를 그리는 중"],
+  today: [fortuneStatusText("fortune.status.loading.today.0", "오늘의 기운을 살피는 중"), fortuneStatusText("fortune.status.loading.today.1", "일진을 맞춰보는 중"), fortuneStatusText("fortune.status.loading.today.2", "콘티를 그리는 중")],
+  monthly: [fortuneStatusText("fortune.status.loading.monthly.0", "이달의 흐름을 살피는 중"), fortuneStatusText("fortune.status.loading.monthly.1", "월간 기운을 읽는 중"), fortuneStatusText("fortune.status.loading.monthly.2", "콘티를 그리는 중")],
+  yearly: [fortuneStatusText("fortune.status.loading.yearly.0", "올해의 운을 살피는 중"), fortuneStatusText("fortune.status.loading.yearly.1", "연간 흐름을 읽는 중"), fortuneStatusText("fortune.status.loading.yearly.2", "콘티를 그리는 중")],
+  zodiac: [fortuneStatusText("fortune.status.loading.zodiac.0", "별자리를 짚는 중"), fortuneStatusText("fortune.status.loading.zodiac.1", "별의 흐름을 읽는 중"), fortuneStatusText("fortune.status.loading.zodiac.2", "콘티를 그리는 중")],
+  saju: [fortuneStatusText("fortune.status.loading.saju.0", "사주를 펼치는 중"), fortuneStatusText("fortune.status.loading.saju.1", "오행을 가늠하는 중"), fortuneStatusText("fortune.status.loading.saju.2", "콘티를 그리는 중")],
+  compatibility: [fortuneStatusText("fortune.status.loading.compatibility.0", "두 기운을 포개는 중"), fortuneStatusText("fortune.status.loading.compatibility.1", "합·충을 살피는 중"), fortuneStatusText("fortune.status.loading.compatibility.2", "콘티를 그리는 중")],
+  prescription: [fortuneStatusText("fortune.status.loading.prescription.0", "마음을 들여다보는 중"), fortuneStatusText("fortune.status.loading.prescription.1", "서가를 살피는 중"), fortuneStatusText("fortune.status.loading.prescription.2", "처방을 적는 중")],
+  tarot: [fortuneStatusText("fortune.status.loading.tarot.0", "카드의 기운을 읽는 중"), fortuneStatusText("fortune.status.loading.tarot.1", "메시지를 해석하는 중"), fortuneStatusText("fortune.status.loading.tarot.2", "콘티를 그리는 중")],
 };
 
 function Box({ className, style }: { className?: string; style?: React.CSSProperties }) {

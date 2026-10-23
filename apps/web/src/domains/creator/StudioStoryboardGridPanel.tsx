@@ -23,6 +23,7 @@ import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import { storyboardTeamReviewInUse } from "./page/studio-storyboard-team-review";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import { requestStudioCreationMode, type StudioCreationMode } from "./studio-creation-mode";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeletePageRequest } from "./studio-destructive-command-catalog";
@@ -134,12 +135,7 @@ function MetricButton({ label, value, active = false, onClick, title }: MetricBu
       onClick={onClick}
       aria-pressed={active}
       title={title}
-      className={cn(
-        "min-w-[6.75rem] rounded-xl border px-3 py-2 text-left transition-colors",
-        active
-          ? "border-accent bg-accent-soft text-accent"
-          : "border-line bg-card/70 text-fg-2 hover:border-accent/50 hover:bg-raised/70",
-      )}
+      className={cn("min-w-[6.75rem] rounded-xl border px-3 py-2 text-left transition-colors", active ? "border-accent bg-accent-soft text-accent" : "border-line bg-card/70 text-fg-2 hover:border-accent/50 hover:bg-raised/70")}
     >
       <span className="block text-[10px] font-semibold uppercase tracking-wide text-fg-3">{label}</span>
       <strong className="mt-0.5 block text-sm text-fg">{value}</strong>
@@ -285,7 +281,7 @@ export function StudioStoryboardGridPanel({
     <div className="grid min-h-60 place-items-center rounded-2xl border border-dashed border-line bg-card/30 p-8 text-center">
       <div>
         <Search className="mx-auto mb-3 text-fg-3" size={28} aria-hidden />
-        <p className="text-sm font-semibold text-fg">조건에 맞는 페이지가 없습니다.</p>
+        <p className="text-sm font-semibold text-fg">{frozenStatus5Text("studio.frozenStatus5.storyboardGrid.pagesEmpty", "조건에 맞는 페이지가 없습니다.")}</p>
         <button
           type="button"
           onClick={() => {

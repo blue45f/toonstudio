@@ -1,3 +1,4 @@
+import { authRestStatusText } from "./auth-rest-status-i18n";
 import { useEffect, useRef, useState } from "react";
 
 import { signInWithGoogleIdToken } from "@/domains/auth/public/session/auth-session-store";
@@ -38,7 +39,7 @@ let activeCredentialHandler: ((credential?: string) => void) | null = null;
 
 function loadGoogleIdentityServices(): Promise<void> {
   if (typeof window === "undefined") {
-    return Promise.reject(new Error("Google 로그인은 브라우저에서만 사용할 수 있어요."));
+    return Promise.reject(new Error(authRestStatusText("authRest.status.google.browserOnly", "Google 로그인은 브라우저에서만 사용할 수 있어요.")));
   }
   if (window.google?.accounts?.id) return Promise.resolve();
   if (gisLoader) return gisLoader;
@@ -59,7 +60,7 @@ function loadGoogleIdentityServices(): Promise<void> {
       cleanup();
       if (!window.google?.accounts?.id) script.remove();
       gisLoader = null;
-      reject(new Error("Google 로그인 모듈을 불러오지 못했어요."));
+      reject(new Error(authRestStatusText("authRest.status.google.moduleLoadFailed", "Google 로그인 모듈을 불러오지 못했어요.")));
     };
     const onLoad = () => {
       if (!window.google?.accounts?.id) {
@@ -90,9 +91,9 @@ function loadGoogleIdentityServices(): Promise<void> {
 
 function initializeGoogleIdentity(clientId: string): void {
   const api = window.google?.accounts?.id;
-  if (!api) throw new Error("Google 로그인 모듈이 준비되지 않았어요.");
+  if (!api) throw new Error(authRestStatusText("authRest.status.google.moduleNotReady", "Google 로그인 모듈이 준비되지 않았어요."));
   if (initializedClientId && initializedClientId !== clientId) {
-    throw new Error("Google 로그인 설정이 변경되어 페이지를 새로고침해야 해요.");
+    throw new Error(authRestStatusText("authRest.status.google.configChanged", "Google 로그인 설정이 변경되어 페이지를 새로고침해야 해요."));
   }
   if (initializedClientId === clientId) return;
 
@@ -153,7 +154,7 @@ export function GoogleIdentityButton({
     const handleCredential = async (credential?: string) => {
       if (!active || inFlight) return;
       if (!credential) {
-        fail("signin", "Google 로그인 응답이 비어 있어요. 다시 시도해 주세요.");
+        fail("signin", authRestStatusText("authRest.status.google.emptyResponse", "Google 로그인 응답이 비어 있어요. 다시 시도해 주세요."));
         return;
       }
       inFlight = true;
@@ -171,12 +172,12 @@ export function GoogleIdentityButton({
         }
         fail(
           "signin",
-          result.error ?? "Google 계정을 확인하지 못했어요. 다시 시도해 주세요.",
+          result.error ?? authRestStatusText("authRest.status.google.accountCheckFailed", "Google 계정을 확인하지 못했어요. 다시 시도해 주세요."),
         );
       } catch {
         // Transport and custom account-link adapters may reject. Do not leave
         // the button submitting forever or expose credentials from raw errors.
-        fail("signin", "Google 로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.");
+        fail("signin", authRestStatusText("authRest.status.google.signInFailed", "Google 로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요."));
       } finally {
         inFlight = false;
       }
@@ -216,7 +217,7 @@ export function GoogleIdentityButton({
         const message =
           error instanceof Error
             ? error.message
-            : "Google 로그인을 불러오지 못했어요. 다시 시도해 주세요.";
+            : authRestStatusText("authRest.status.google.loadFailed", "Google 로그인을 불러오지 못했어요. 다시 시도해 주세요.");
         fail("load", message);
       });
 
@@ -245,7 +246,7 @@ export function GoogleIdentityButton({
           className="flex h-11 w-full animate-pulse items-center justify-center rounded-xl border border-line bg-card text-xs text-fg-3"
           role="status"
         >
-          Google 로그인 준비 중…
+          {authRestStatusText("authRest.status.google.preparing", "Google 로그인 준비 중…")}
         </div>
       )}
       {state.status === "submitting" && (
@@ -253,7 +254,7 @@ export function GoogleIdentityButton({
           className="absolute inset-0 flex items-center justify-center rounded-xl bg-card/80 text-xs font-semibold text-fg-2 backdrop-blur-[1px]"
           role="status"
         >
-          Google 계정 확인 중…
+          {authRestStatusText("authRest.status.google.checkingAccount", "Google 계정 확인 중…")}
         </div>
       )}
       {state.status === "error" && (
@@ -267,8 +268,8 @@ export function GoogleIdentityButton({
             className="mt-2 min-h-9 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             {state.phase === "load"
-              ? "Google 로그인 모듈 다시 불러오기"
-              : "Google로 다시 시도"}
+              ? authRestStatusText("authRest.status.google.retryLoadModule", "Google 로그인 모듈 다시 불러오기")
+              : authRestStatusText("authRest.status.google.retry", "Google로 다시 시도")}
           </button>
           {onRedirectFallback && (
             <button

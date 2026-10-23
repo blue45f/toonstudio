@@ -3,6 +3,7 @@ import { Download, Share2, Link2, X, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { FortuneShareCard } from "./FortuneShareCard";
+import { fortuneStatusText } from "./fortune-status-i18n";
 
 import type { FortuneResult, FortuneTab } from "./FortunePage";
 
@@ -87,7 +88,7 @@ export function FortuneShareModal({
       a.click();
     } catch (e) {
       console.error(e);
-      setError("이미지 저장에 실패했어요. 다시 시도해 주세요.");
+      setError(fortuneStatusText("fortune.status.shareModal.imageSaveFailed", "이미지 저장에 실패했어요. 다시 시도해 주세요."));
     } finally {
       setBusy(false);
     }
@@ -132,7 +133,7 @@ export function FortuneShareModal({
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      setError("링크 복사에 실패했어요.");
+      setError(fortuneStatusText("fortune.status.shareModal.linkCopyFailed", "링크 복사에 실패했어요."));
     }
   }
 

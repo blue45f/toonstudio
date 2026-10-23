@@ -8,6 +8,7 @@ import {
   createStudioAnimaticFromPages,
   studioAnimaticStorageKey,
 } from "./studio-animatic-timeline";
+import { resolveStudioAnimaticError } from "./status-i18n/studio-producer-error-i18n";
 
 import type { StudioLocalDatabase } from "./studio-local-database";
 
@@ -27,7 +28,7 @@ function authoredDocument(workScope = "episode-12") {
   const result = createStudioAnimaticFromPages([
     { id: "page-1", name: "도입", canvasH: 1_200, elements: [] },
   ], { workScope });
-  if (!result.ok) throw new Error(result.error);
+  if (!result.ok) throw new Error(resolveStudioAnimaticError(result.error));
   return result.document;
 }
 

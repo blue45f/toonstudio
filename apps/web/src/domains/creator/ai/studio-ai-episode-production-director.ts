@@ -78,6 +78,8 @@ export interface StudioAiEpisodeIssue {
   readonly resolution: string;
   readonly sceneNumber?: number;
   readonly cutNumber?: number;
+  /** 표시 시점 로케일 해석용 템플릿 파라미터 (T4 코드화) — 문구 자체는 id가 코드다. */
+  readonly params?: Readonly<Record<string, string | number>>;
 }
 
 export interface StudioAiEpisodeScenePlan {
@@ -148,24 +150,9 @@ interface ModeProfile {
 }
 
 const MODE_PROFILES: Readonly<Record<StudioAiProductionMode, ModeProfile>> = Object.freeze({
-  fast: {
-    label: "빠른 초안",
-    cutsPerBatch: 6,
-    workMultiplier: 1,
-    promptGuidance: "rough storyboard fidelity, clear silhouettes, economical detail",
-  },
-  balanced: {
-    label: "균형 제작",
-    cutsPerBatch: 4,
-    workMultiplier: 1.6,
-    promptGuidance: "production-ready webtoon panel, controlled detail, consistent anatomy",
-  },
-  quality: {
-    label: "품질 우선",
-    cutsPerBatch: 3,
-    workMultiplier: 2.6,
-    promptGuidance: "high-detail final webtoon panel, precise identity and prop continuity",
-  },
+  fast: { label: "빠른 초안", cutsPerBatch: 6, workMultiplier: 1, promptGuidance: "rough storyboard fidelity, clear silhouettes, economical detail" },
+  balanced: { label: "균형 제작", cutsPerBatch: 4, workMultiplier: 1.6, promptGuidance: "production-ready webtoon panel, controlled detail, consistent anatomy" },
+  quality: { label: "품질 우선", cutsPerBatch: 3, workMultiplier: 2.6, promptGuidance: "high-detail final webtoon panel, precise identity and prop continuity" },
 });
 
 const UNIVERSAL_NEGATIVE_PROMPT = [
@@ -644,6 +631,7 @@ export function planStudioAiEpisodeProduction(
       title: "회차가 매우 짧아요",
       description: `${allCuts.length}개 컷만 감지되어 도입·전개·후킹 리듬을 평가하기 어렵습니다.`,
       resolution: "의도한 티저가 아니라면 반응 컷이나 공간 전환 컷을 보강하세요.",
+      params: { count: allCuts.length },
     });
   }
 
@@ -714,6 +702,7 @@ export function planStudioAiEpisodeProduction(
       title: item.title,
       description: `${item.lock} 연속성 잠금은 켜져 있지만 비교할 기준이 없습니다.`,
       resolution: item.resolution,
+      params: { lock: item.lock },
     });
   }
 
@@ -727,6 +716,7 @@ export function planStudioAiEpisodeProduction(
         title: `${scene.title}의 생성 범위가 커요`,
         description: `${scene.cuts.length}개 컷이 한 장면에 몰려 있어 수정 시 재생성 범위가 커집니다.`,
         resolution: "행동 전환이나 장소 변화 지점에서 장면을 더 나누세요.",
+        params: { sceneTitle: scene.title, count: scene.cuts.length },
       });
     }
 
@@ -739,6 +729,7 @@ export function planStudioAiEpisodeProduction(
         title: `${scene.title}의 장소가 모호해요`,
         description: "회차에 장소 후보가 여러 개 있지만 이 장면에서 사용할 장소를 찾지 못했습니다.",
         resolution: "장면 제목이나 첫 문장에 장소를 명시하세요.",
+        params: { sceneTitle: scene.title },
       });
     }
 
@@ -752,6 +743,7 @@ export function planStudioAiEpisodeProduction(
         title: `${scene.title}의 시간대가 충돌할 수 있어요`,
         description: `한 장면에서 ${sceneTimes.join(" · ")} 표현이 함께 감지됐습니다.`,
         resolution: "시간 전환을 명시하거나 장면을 분리하고 광원 버전을 지정하세요.",
+        params: { sceneTitle: scene.title, times: sceneTimes.join(" · ") },
       });
     }
   }
@@ -771,6 +763,7 @@ export function planStudioAiEpisodeProduction(
         .map((conflict) => `${conflict.character}: ${conflict.costumes.join(" → ")}`)
         .join(" / ")}가 감지됐지만 환복·시간 전환 지시가 없습니다.`,
       resolution: "장면별 의상 버전을 붙이거나 환복 전환 문장을 추가하세요.",
+      params: { detail: costumeConflicts.map((conflict) => `${conflict.character}: ${conflict.costumes.join(" → ")}`).join(" / ") },
     });
   }
 
@@ -784,6 +777,7 @@ export function planStudioAiEpisodeProduction(
       title: `컷 ${cut.cutNumber}의 대사가 길어요`,
       description: `${[...cut.dialogue].length}자로 감지되어 모바일 말풍선과 표정 연출을 동시에 압박합니다.`,
       resolution: "두 말풍선이나 반응 컷으로 나누고 핵심 문장을 앞에 두세요.",
+      params: { count: [...cut.dialogue].length },
     });
   }
 
@@ -804,6 +798,7 @@ export function planStudioAiEpisodeProduction(
         title: `컷 ${current.cutNumber}까지 같은 샷이 반복돼요`,
         description: `${current.shotScale} 구도가 3컷 연속 이어져 스크롤 리듬이 평평해질 수 있습니다.`,
         resolution: "감정 클로즈업·공간 롱숏·행동 디테일 중 하나로 변주하세요.",
+        params: { shotScale: current.shotScale },
       });
     }
   }
@@ -819,6 +814,7 @@ export function planStudioAiEpisodeProduction(
         title: "카메라 변주가 적어요",
         description: `${uniqueShots.size}개 샷 크기와 ${uniqueAngles.size}개 앵글만 사용됩니다.`,
         resolution: "독자의 시선 이동이 필요한 핵심 비트에만 앵글 변화를 추가하세요.",
+        params: { shotCount: uniqueShots.size, angleCount: uniqueAngles.size },
       });
     }
   }
@@ -831,6 +827,7 @@ export function planStudioAiEpisodeProduction(
       title: "한 번에 계획하기엔 컷이 많아요",
       description: `${allCuts.length}개 컷은 수정·검수 범위가 커서 생성 실패의 영향이 커집니다.`,
       resolution: "회차를 파트로 나누거나 장면 단위로 생성·승인하세요.",
+      params: { count: allCuts.length },
     });
   }
 

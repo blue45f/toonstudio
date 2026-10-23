@@ -5,6 +5,7 @@ import {
   ListChecks,
   UserCheck,
 } from "lucide-react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { useMemo } from "react";
 
 import { PinTaskInboxSection } from "../production-hub/PinTaskInboxSection";
@@ -96,7 +97,7 @@ export function CreatorRoleTaskInbox({
       {items.length === 0 ? (
         <div className="mt-4 rounded-xl border border-dashed border-line p-5 text-center">
           <CheckCircle2 className="mx-auto size-7 text-good" aria-hidden="true" />
-          <p className="mt-2 text-sm font-bold text-fg">현재 직무에 연결된 미완료 작업이 없습니다.</p>
+          <p className="mt-2 text-sm font-bold text-fg">{r3c04StatusText("studio.r3c04Status.production.taskInbox.empty", "현재 직무에 연결된 미완료 작업이 없습니다.")}</p>
           <p className="mt-1 text-xs text-fg-3">역할을 배정하거나 새 작업을 만들면 이곳에 자동으로 정렬됩니다.</p>
         </div>
       ) : (

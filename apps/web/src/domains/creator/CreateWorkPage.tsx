@@ -29,6 +29,7 @@ import {
   resolveCreatorReaderPreviewMode,
 } from "./creator-public-reader-preview";
 import { SERIES_STATUS_LABEL } from "./creator-community-utils";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 import { resolveCreatorPublicationReaderPolicy } from "./creator-publication-reader";
 import { useCreatorPublicationPageMeta } from "./creator-publication-page-meta";
 import {
@@ -176,7 +177,7 @@ function WorkCommunityPanel({
       });
       setOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "설정을 저장하지 못했습니다.");
+      setError(err instanceof Error ? err.message : frozenStatus3Text("studio.frozenStatus3.work.settingsSaveFailed", "설정을 저장하지 못했습니다."));
     } finally {
       setSaving(false);
     }
@@ -277,7 +278,7 @@ function WorkComments({
       })
       .catch((cause: unknown) => {
         if (!alive || controller.signal.aborted) return;
-        setError(cause instanceof Error ? cause.message : "댓글을 불러오지 못했습니다.");
+        setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.work.commentsLoadFailed", "댓글을 불러오지 못했습니다."));
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -553,7 +554,7 @@ export function CreateWorkPage() {
       })
       .catch((err: unknown) => {
         if (!alive || controller.signal.aborted) return;
-        const message = err instanceof Error ? err.message : "창작물을 불러오지 못했습니다.";
+        const message = err instanceof Error ? err.message : frozenStatus3Text("studio.frozenStatus3.work.workLoadFailed", "창작물을 불러오지 못했습니다.");
         if (/\(404\)/.test(message)) setNotFound(true);
         else setError(message);
         setWork(null);
@@ -579,7 +580,7 @@ export function CreateWorkPage() {
       setWork((current) => (current ? { ...current, liked: result.liked, likes: result.likes } : current));
     } catch (err) {
       setWork((current) => (current ? { ...current, ...prev } : current));
-      setActionError(err instanceof Error ? err.message : "좋아요를 처리하지 못했습니다.");
+      setActionError(err instanceof Error ? err.message : frozenStatus3Text("studio.frozenStatus3.work.likeFailed", "좋아요를 처리하지 못했습니다."));
     } finally {
       setLiking(false);
     }
@@ -603,7 +604,7 @@ export function CreateWorkPage() {
       setWork((current) => current ? { ...current, ...result } : current);
     } catch (caught) {
       setWork((current) => current ? { ...current, ...previous } : current);
-      setActionError(caught instanceof Error ? caught.message : "북마크를 처리하지 못했습니다.");
+      setActionError(caught instanceof Error ? caught.message : frozenStatus3Text("studio.frozenStatus3.work.bookmarkFailed", "북마크를 처리하지 못했습니다."));
     } finally {
       setBookmarking(false);
     }
@@ -611,18 +612,14 @@ export function CreateWorkPage() {
 
   async function onDelete() {
     if (!work || deleting) return;
-    if (
-      !(await confirmStudioDestructiveAction(
-        studioDeleteWorkRequest(work.title || "이 창작물")
-      ))
-    ) return;
+    if (!(await confirmStudioDestructiveAction(studioDeleteWorkRequest(work.title || "이 창작물")))) return;
     setDeleting(true);
     setActionError(null);
     try {
       await deleteWork(work.id);
       navigate(SHOWCASE_HOME_PATH, { replace: true });
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "창작물을 삭제하지 못했습니다.");
+      setActionError(err instanceof Error ? err.message : frozenStatus3Text("studio.frozenStatus3.work.deleteFailed", "창작물을 삭제하지 못했습니다."));
       setDeleting(false);
     }
   }
@@ -677,7 +674,7 @@ export function CreateWorkPage() {
           <Eye size={17} className="shrink-0 text-accent" aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="font-bold text-fg">
-              {publicPreview ? "실제 비로그인 독자 응답으로 확인 중" : "독자 집중 보기"}
+              {publicPreview ? frozenStatus3Text("studio.frozenStatus3.work.readerChecking", "실제 비로그인 독자 응답으로 확인 중") : "독자 집중 보기"}
             </p>
             <p className="mt-0.5 text-xs leading-relaxed text-fg-3">
               {publicPreview

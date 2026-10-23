@@ -143,6 +143,35 @@ describe("StudioCommunityMarketplacePanel", () => {
     expect(source).toContain("releaseNotes");
   });
 
+  it("공개 재검증 실패 문장은 frozenD1 완결 키와 식별자로 생산한다 (D1 W2)", () => {
+    // 시그니처: 리터럴 라벨 대신 식별자 합집합을 넘긴다 (설계 §1.2).
+    expect(source).toContain('type PublicRevalidationAction = "localInstall" | "assetInsert";');
+    expect(source).toContain('"localInstall",');
+    expect(source).toContain('"assetInsert",');
+    expect(source).not.toContain("actionLabel: string");
+    // 액션 라벨은 frozenD1 라벨 키로 해석한다 (설계 §1.2). 이 라벨은 재검증 문장의 목적어 자리에만
+    // 들어가므로 목적격 조사까지 담는다("{action} 중단했습니다" → "로컬 설치를 중단했습니다").
+    expect(source).toContain('frozenD1Text("studio.frozenD1.community.actionLocalInstall", "로컬 설치를")');
+    expect(source).toContain('frozenD1Text("studio.frozenD1.community.actionAssetInsert", "에셋 삽입을")');
+    // 문장 생산 3곳은 완결 키 호출이며 ko 폴백이 §1.3 확정 문안과 바이트 일치한다.
+    expect(source).toContain('"studio.frozenD1.community.revalidationNotFound"');
+    expect(source).toContain(
+      '"{name}의 공개 상태를 더 이상 확인할 수 없어 {action} 중단했습니다. 관리자 숨김, 배급자 목록 내림 또는 배급자 계정 상태 변경일 수 있습니다. 공개 목록을 새로고침한 뒤 다시 시도해 주세요."',
+    );
+    expect(source).toContain('"studio.frozenD1.community.revalidationUnconfirmed"');
+    expect(source).toContain(
+      '"{name}의 현재 공개 상태를 다시 확인하지 못해 {action} 안전하게 중단했습니다. {detail} 다시 시도해 주세요."',
+    );
+    expect(source).toContain('frozenD1Text("studio.frozenD1.community.revalidationDetailFallback", "네트워크 상태를 확인해 주세요.")');
+    expect(source).toContain('"studio.frozenD1.community.revalidationEvidenceChanged"');
+    expect(source).toContain(
+      '"{name}의 현재 공개 릴리스 증거가 이 카드와 달라 {action} 중단했습니다. 공개 목록을 새로고침한 뒤 정확한 최신 릴리스에서 다시 시도해 주세요."',
+    );
+    // 구 절단 조립(조사 포함)은 남지 않는다.
+    expect(source).not.toContain("은(는) 더 이상 공개 상태");
+    expect(source).not.toContain("을(를) 안전하게 중단했습니다");
+  });
+
   it("에셋 메뉴가 커뮤니티 활성화 뒤 패널을 지연 로드하고 캔버스 삽입 콜백을 전달한다", () => {
     expect(assetMenuSource).not.toContain(
       'from "./StudioCommunityMarketplacePanel"',

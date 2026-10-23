@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { apiFetch } from "@/platform/api";
 import {
   RefreshCw,
@@ -322,8 +323,7 @@ export function RecommendView({
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-warn/40 bg-[oklch(0.82_0.15_80/0.08)] p-5 text-sm text-fg-2">
           <Sparkles size={18} className="shrink-0 text-warn" />
           <p className="flex-1">
-            추천을 불러오지 못했어요. 장르 선택은 그대로 두고 다시 시도할 수
-            있습니다.
+            {restStatusText("rest.status.recommend.loadFailed", "추천을 불러오지 못했어요. 장르 선택은 그대로 두고 다시 시도할 수 있습니다.")}
           </p>
           <button
             type="button"
@@ -331,7 +331,7 @@ export function RecommendView({
             className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <RefreshCw size={14} aria-hidden="true" />
-            다시 시도
+            {restStatusText("rest.status.common.retry", "다시 시도")}
           </button>
         </div>
       )}
@@ -484,7 +484,7 @@ export function RecommendView({
         )}
         {pickedLabelGenres.length > 0 && !loading && pickedRecs.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-line bg-card/40 px-6 py-10 text-center" role="status">
-            <p className="font-semibold text-fg">이 조합으로는 아직 추천이 없어요</p>
+            <p className="font-semibold text-fg">{restStatusText("rest.status.recommend.emptyCombo", "이 조합으로는 아직 추천이 없어요")}</p>
             <p className="mt-1 text-sm text-fg-3">장르를 하나 빼거나 위 필터를 넓히면 추천이 채워져요.</p>
           </div>
         ) : null}

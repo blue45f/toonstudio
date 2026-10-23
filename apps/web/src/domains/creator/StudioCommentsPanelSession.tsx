@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   StudioCommentsPanel,
   type StudioCommentsPanelSharedReplyController,
@@ -123,9 +124,9 @@ export function StudioCommentsPanelSession({
             assign: !collaborationDocumentLocked,
           }}
       mutationDisabledReason={workId && !studioTeamCommentCapabilities
-        ? "팀 댓글 권한과 기록을 확인하는 중이에요."
+        ? r3c07StatusText("studio.panelStatus.r3c07.commentsSession.checkingPermissions", "팀 댓글 권한과 기록을 확인하는 중이에요.")
         : workId && !studioTeamCommentCapabilities?.comment
-          ? "열람자는 댓글을 읽고 위치로 이동할 수 있지만 작성할 수는 없어요."
+          ? r3c07StatusText("studio.panelStatus.r3c07.commentsSession.viewerCannotWrite", "열람자는 댓글을 읽고 위치로 이동할 수 있지만 작성할 수는 없어요.")
           : undefined}
       syncError={studioCommentSyncError ?? undefined}
       syncing={studioTeamCommentsSyncing}

@@ -34,3 +34,21 @@ export const FORBIDDEN_DOMAINS = Object.freeze([
     "integrations", "creator-ecosystem", "creator-resources", "creator-mentor-chat", "character-interview",
   ].map((name) => ({ prefix: `${DOMAINS}/${name}`, reason: "app-domain" })),
 ]);
+
+const WEB_SRC = "apps/web/src";
+
+/**
+ * 지연 고정 파일. 진입 그래프(앱 셸·Studio 어댑터)에 정적으로 닿으면 안 되는 개별 파일이다.
+ * 폴더 단위인 금지 도메인과 달리 파일 하나씩 고정하고, 기준선에 도달 수를 기록하지 않는다 — 항상 0 이어야 한다.
+ * - status-dictionary-body: 상태 문구 사전 중 "지연 표면 전용 키"를 등록하는 본문 모듈. 진입 그래프에 닿는 소비 파일은
+ *   같은 이름에 `-core` 가 붙은 모듈(진입 그래프 소비 파일이 쓰는 키와 해석 헬퍼만 등록)만 import 하고, 본문 모듈은
+ *   지연 표면이 import 한다. 본문 모듈은 `-core` 를 함께 불러오므로 지연 소비 파일의 import 는 그대로다.
+ */
+export const PINNED_LAZY_FILES = Object.freeze([
+  `${WEB_SRC}/shared/rest-status-i18n.ts`,
+  `${WEB_SRC}/domains/auth/components/auth-rest-status-i18n.ts`,
+  `${WEB_SRC}/domains/creator/studio-panel-status-i18n-r3c06.ts`,
+  `${WEB_SRC}/domains/creator/studio-panel-status-i18n-r3c07.ts`,
+  `${WEB_SRC}/domains/creator/studio-vrm-panel-status-i18n.ts`,
+  `${WEB_SRC}/domains/creator/ai/studio-ai-error-i18n-t4t5.ts`,
+].map((file) => ({ file, reason: "status-dictionary-body" })));

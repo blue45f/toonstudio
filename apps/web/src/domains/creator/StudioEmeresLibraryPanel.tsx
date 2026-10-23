@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 // 이메레스 개인 보관함 패널 — studio-emeres-templates.ts(고정 카탈로그)의 "내가 만든 틀" 탭.
 // 캔버스 요소를 캡처하거나(우클릭 "이메레스로 저장" — 통합 문서 §3 참고) 이미지를 업로드해
 // 개인 스케치/사진 참고 틀로 저장·이름변경·삭제·분류하고, 캔버스에 다시 꺼내 쓴다.
@@ -111,9 +112,7 @@ export function StudioEmeresLibraryPanel({
       } catch (cause) {
         if (!active || !mountedRef.current || generation !== loadGenerationRef.current) return;
         setError(
-          `SQLite/OPFS 이메레스 보관함을 열지 못했습니다: ${
-            cause instanceof Error ? cause.message : String(cause)
-          }`,
+          panelStatusText("studio.panelStatus.emeresLibrary.openFailed", {"detail": cause instanceof Error ? cause.message : String(cause)}, "SQLite/OPFS 이메레스 보관함을 열지 못했습니다: {detail}"),
         );
         setStorageState("unavailable");
       }
@@ -158,9 +157,7 @@ export function StudioEmeresLibraryPanel({
       memoryModeRef.current = true;
       setStorageState("memory");
       setError(
-        `SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다: ${
-          cause instanceof Error ? cause.message : String(cause)
-        }`,
+        panelStatusText("studio.panelStatus.emeresLibrary.saveFailedMemoryOnly", {"detail": cause instanceof Error ? cause.message : String(cause)}, "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다: {detail}"),
       );
     } finally {
       if (mountedRef.current && generation === mutationGenerationRef.current) {
@@ -225,7 +222,7 @@ export function StudioEmeresLibraryPanel({
       setDraft(scaled);
       setDraftName(file.name.replace(/\.[^.]+$/, ""));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "이미지를 불러오지 못했어요.");
+      setError(err instanceof Error ? err.message : panelStatusText("studio.panelStatus.emeresLibrary.imageLoadFailed", "이미지를 불러오지 못했어요."));
     } finally {
       setDraftBusy(false);
     }
@@ -274,13 +271,13 @@ export function StudioEmeresLibraryPanel({
 
       <p className="text-[0.6rem] font-semibold text-fg-3" role="status">
         {storageState === "loading"
-          ? "SQLite/OPFS 보관함 확인 중"
+          ? panelStatusText("studio.panelStatus.emeresLibrary.storageChecking", "SQLite/OPFS 보관함 확인 중")
           : storageState === "sqlite"
             ? "이 기기 SQLite/OPFS 저장"
             : storageState === "memory"
               ? "현재 탭 메모리 임시 · 새로고침 시 사라짐"
               : storageState === "unavailable"
-                ? "SQLite/OPFS 사용 불가 · 저장되지 않음"
+                ? panelStatusText("studio.panelStatus.emeresLibrary.storageUnavailable", "SQLite/OPFS 사용 불가 · 저장되지 않음")
                 : "주입 저장소"}
       </p>
 
@@ -328,7 +325,7 @@ export function StudioEmeresLibraryPanel({
               && "pointer-events-none opacity-60"
           )}
         >
-          <ImagePlus size={11} /> {draftBusy ? "불러오는 중…" : "이미지 업로드"}
+          <ImagePlus size={11} /> {draftBusy ? panelStatusText("studio.panelStatus.emeresLibrary.loading", "불러오는 중…") : "이미지 업로드"}
           <input
             type="file"
             accept="image/*"
@@ -341,7 +338,7 @@ export function StudioEmeresLibraryPanel({
 
       {items.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line px-2 py-3 text-center text-[0.64rem] leading-relaxed text-fg-3">
-          저장된 틀이 없어요. 위에서 이미지를 업로드하거나, 캔버스 요소를 우클릭해 저장해보세요.
+          {panelStatusText("studio.panelStatus.emeresLibrary.framesEmpty", "저장된 틀이 없어요. 위에서 이미지를 업로드하거나, 캔버스 요소를 우클릭해 저장해보세요.")}
         </p>
       ) : (
         <div className="grid max-h-64 grid-cols-2 gap-1.5 overflow-y-auto pr-1">

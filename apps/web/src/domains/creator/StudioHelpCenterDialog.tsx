@@ -31,6 +31,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { checkBrowserCompatibility, getBrowserInfo } from "../../platform/browser/browser-check";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 
 import { getStudioGpuFabricCapabilities } from "./render/studio-gpu-fabric";
 import { studioBrowserStorageEstimator } from "./studio-browser-storage-estimator";
@@ -221,7 +222,7 @@ function useStudioDiagnostics(active: boolean) {
       .catch((cause: unknown) => {
         setAdapter({
           supported: false,
-          reason: cause instanceof Error ? cause.message : "어댑터 프로브 실패",
+          reason: cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.help.adapterProbeFailed", "어댑터 프로브 실패"),
         });
       })
       .finally(() => {
@@ -248,10 +249,7 @@ function CurrentToolPanel({ toolCommandId }: { toolCommandId: string | null }) {
 
   if (!help) {
     return (
-      <Callout tone="warn">
-        지금 어떤 도구가 캔버스를 쥐고 있는지 확인하지 못했습니다. 도구를 한 번
-        누른 뒤 다시 열어 주세요.
-      </Callout>
+      <Callout tone="warn">{frozenStatus3Text("studio.frozenStatus3.help.toolUnknown", "지금 어떤 도구가 캔버스를 쥐고 있는지 확인하지 못했습니다. 도구를 한 번 누른 뒤 다시 열어 주세요.")}</Callout>
     );
   }
 
@@ -270,7 +268,7 @@ function CurrentToolPanel({ toolCommandId }: { toolCommandId: string | null }) {
           ) : null}
         </div>
         <p className="mt-1 text-xs leading-relaxed text-fg-3">
-          {help.description ?? "카탈로그에 이 도구의 한 줄 설명이 아직 없습니다."}
+          {help.description ?? frozenStatus3Text("studio.frozenStatus3.help.toolDescriptionMissing", "카탈로그에 이 도구의 한 줄 설명이 아직 없습니다.")}
         </p>
       </div>
 
@@ -301,7 +299,7 @@ function CurrentToolPanel({ toolCommandId }: { toolCommandId: string | null }) {
 
       <SectionHeading>관련 명령 · 속성 · 패널</SectionHeading>
       {help.related.length === 0 ? (
-        <p className="text-xs text-fg-3">검색 색인이 찾은 관련 항목이 없습니다.</p>
+        <p className="text-xs text-fg-3">{frozenStatus3Text("studio.frozenStatus3.help.noRelatedItems", "검색 색인이 찾은 관련 항목이 없습니다.")}</p>
       ) : (
         <ul className="space-y-1">
           {help.related.map((item) => (
@@ -367,7 +365,7 @@ function TerminologyPanel() {
           .join(" · ")}
       </p>
       {rows.length === 0 ? (
-        <p className="text-xs text-fg-3">맞는 용어를 찾지 못했습니다.</p>
+        <p className="text-xs text-fg-3">{frozenStatus3Text("studio.frozenStatus3.help.noMatchingTerm", "맞는 용어를 찾지 못했습니다.")}</p>
       ) : (
         <>
           <ul className="space-y-1">
@@ -475,12 +473,9 @@ function RecoveryPanel() {
     <div className="space-y-3 text-sm text-fg">
       <SectionHeading>지금 남아 있는 것</SectionHeading>
       {!scan ? (
-        <p className="text-xs text-fg-3">브라우저 저장소를 읽는 중입니다…</p>
+        <p className="text-xs text-fg-3">{frozenStatus3Text("studio.frozenStatus3.help.storageReading", "브라우저 저장소를 읽는 중입니다…")}</p>
       ) : scan.storageUnavailable ? (
-        <Callout tone="warn">
-          브라우저 저장소를 읽지 못했습니다(사생활 보호 모드일 수 있습니다). 이
-          상태에서는 임시저장이 남지 않으니 작업을 파일로 내보내 두세요.
-        </Callout>
+        <Callout tone="warn">{frozenStatus3Text("studio.frozenStatus3.help.storageReadFailed", "브라우저 저장소를 읽지 못했습니다(사생활 보호 모드일 수 있습니다). 이 상태에서는 임시저장이 남지 않으니 작업을 파일로 내보내 두세요.")}</Callout>
       ) : (
         <dl className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-card">
           <div className="flex gap-3 px-2.5 py-1.5">
@@ -512,7 +507,7 @@ function RecoveryPanel() {
             <dt className="w-36 shrink-0 text-[0.7rem] text-fg-3">저장 권위</dt>
             <dd className="min-w-0 flex-1 text-xs text-fg">
               {reliability.save === null
-                ? "최근 저장 실패·강등 보고 없음"
+                ? frozenStatus3Text("studio.frozenStatus3.help.noSaveFailureReport", "최근 저장 실패·강등 보고 없음")
                 : `${reliability.save.level} · ${reliability.save.title}`}
               {reliability.save?.detail ? (
                 <span className="mt-0.5 block text-[0.66rem] text-fg-3">
@@ -765,8 +760,8 @@ function BugReportPanel({
             </button>
             <span role="status" aria-live="polite" className="self-center text-[0.7rem] text-fg-3">
               {copied === null
-                ? `오류 ${packaged.errors.length}건 · 진단 ${packaged.diagnostics.measuredCount}항목 실측`
-                : "클립보드에 복사했습니다."}
+                ? frozenStatus3Text("studio.frozenStatus3.help.bugReportSummary", { errors: packaged.errors.length, measured: packaged.diagnostics.measuredCount }, "오류 {errors}건 · 진단 {measured}항목 실측")
+                : frozenStatus3Text("studio.frozenStatus3.help.copiedToClipboard", "클립보드에 복사했습니다.")}
             </span>
           </div>
           <details className="rounded-lg border border-line bg-card">
@@ -899,8 +894,8 @@ export function StudioHelpCenterDialog({
                 {diagnostics.report === null ? (
                   <p className="text-xs text-fg-3">
                     {diagnostics.running
-                      ? "기기 능력을 측정하는 중입니다…"
-                      : "측정 결과를 만들지 못했습니다. ‘다시 측정’을 눌러 주세요."}
+                      ? frozenStatus3Text("studio.frozenStatus3.help.measuring", "기기 능력을 측정하는 중입니다…")
+                      : frozenStatus3Text("studio.frozenStatus3.help.measureFailed", "측정 결과를 만들지 못했습니다. ‘다시 측정’을 눌러 주세요.")}
                   </p>
                 ) : (
                   <>

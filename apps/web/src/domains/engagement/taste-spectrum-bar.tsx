@@ -1,3 +1,4 @@
+import { engagementStatusText } from "./engagement-status-i18n";
 import { genreColor, genreTextColor } from "@/shared/lib/genre-color";
 
 /**
@@ -15,7 +16,7 @@ export function TasteSpectrumBar({ genres }: { genres: readonly string[] }) {
         aria-label={
           genres.length > 0
             ? `고른 장르 ${genres.length}개로 채워진 취향 스펙트럼`
-            : "아직 고른 장르가 없어 비어 있는 취향 스펙트럼"
+            : engagementStatusText("engagement.status.tasteSpectrum.emptyAria", "아직 고른 장르가 없어 비어 있는 취향 스펙트럼")
         }
       >
         {genres.length === 0 ? (

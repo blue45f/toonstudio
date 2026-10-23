@@ -16,6 +16,15 @@ import {
 
 afterEach(cleanup);
 
+// 패널 제목 옆의 AI 연결 상태 배지도 role="status" 라서, 패널 자신의 안내(배지가 아닌 쪽)만 가려 읽는다.
+function panelStatus(): HTMLElement {
+  const found = screen
+    .getAllByRole("status")
+    .filter((node) => !node.hasAttribute("data-studio-ai-connection-status"));
+  expect(found).toHaveLength(1);
+  return found[0]!;
+}
+
 const HASH = `sha256:${"a".repeat(64)}`;
 const ASSETS: readonly StudioAiImageReferenceAssetOption[] = [
   {
@@ -322,7 +331,7 @@ describe("StudioAiImageReferencePackEditor", () => {
         onChange={vi.fn()}
       />,
     );
-    expect(screen.getByRole("status").textContent).toContain("불러오는 중");
+    expect(panelStatus().textContent).toContain("불러오는 중");
     expect(screen.getAllByRole("combobox").every((control) => control.hasAttribute("disabled"))).toBe(true);
 
     rerender(

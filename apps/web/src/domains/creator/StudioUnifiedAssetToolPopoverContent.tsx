@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Folder } from "lucide-react";
 
 import { STUDIO_RASTER_ASSETS } from "./render/studio-raster-assets";
@@ -141,7 +142,7 @@ function routeUnifiedAsset(
       toolBelt.setMenu(item.source.value.menu);
       return true;
     default:
-      throw new Error(`지원하지 않는 통합 에셋 종류입니다: ${item.id}`);
+      throw new Error(r3c07StatusText("studio.panelStatus.r3c07.unifiedPopover.unsupportedKind", { id: item.id }, "지원하지 않는 통합 에셋 종류입니다: {id}"));
   }
 }
 
@@ -194,7 +195,7 @@ function routeInsertAction(
       return true;
     default: {
       const neverAction: never = actionId;
-      throw new Error(`지원하지 않는 삽입 동작입니다: ${neverAction}`);
+      throw new Error(r3c07StatusText("studio.panelStatus.r3c07.unifiedPopover.unsupportedAction", { action: String(neverAction) }, "지원하지 않는 삽입 동작입니다: {action}"));
     }
   }
 }

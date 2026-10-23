@@ -15,6 +15,7 @@ import {
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { studioLiveParticipantColor } from "./studio-live-canvas-overlay-model";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import { useStudioLiveDisplaySync } from "./use-studio-live-display-sync";
 
 import type {
@@ -95,20 +96,27 @@ const ROLE_RANK: Readonly<Record<StudioLivePeer["role"], number>> = {
   viewer: 4,
 };
 
-const SYNC_PHASE_LABEL: Readonly<Record<StudioLiveSyncPhase, string>> = {
-  initializing: "보호 상태 확인 중",
-  synced: "서버 승인 완료",
-  syncing: "변경 동기화 중",
-  "offline-queued": "기기에 안전하게 보관 중",
-  retrying: "서버 연결 재시도 중",
-  repairing: "원고 복구 중",
-  "durability-risk": "저장 보호 확인 필요",
-  "read-only-follower": "다른 탭이 저장 담당",
-  "unsupported-jam": "저장 전 공동 작업 미지원",
-  "admission-denied": "작업실 참여 권한 없음",
-  revoked: "작품 권한 회수됨",
-  "recovery-required": "로컬 변경 복구 필요",
+const SYNC_PHASE_LABEL: Readonly<
+  Record<StudioLiveSyncPhase, { readonly key: string; readonly ko: string }>
+> = {
+  initializing: { key: "studio.creatorSub2.status.live.center.syncPhase.initializing", ko: "보호 상태 확인 중" },
+  synced: { key: "studio.creatorSub2.status.live.center.syncPhase.synced", ko: "서버 승인 완료" },
+  syncing: { key: "studio.creatorSub2.status.live.center.syncPhase.syncing", ko: "변경 동기화 중" },
+  "offline-queued": { key: "studio.creatorSub2.status.live.center.syncPhase.offlineQueued", ko: "기기에 안전하게 보관 중" },
+  retrying: { key: "studio.creatorSub2.status.live.center.syncPhase.retrying", ko: "서버 연결 재시도 중" },
+  repairing: { key: "studio.creatorSub2.status.live.center.syncPhase.repairing", ko: "원고 복구 중" },
+  "durability-risk": { key: "studio.creatorSub2.status.live.center.syncPhase.durabilityRisk", ko: "저장 보호 확인 필요" },
+  "read-only-follower": { key: "studio.creatorSub2.status.live.center.syncPhase.readOnlyFollower", ko: "다른 탭이 저장 담당" },
+  "unsupported-jam": { key: "studio.creatorSub2.status.live.center.syncPhase.unsupportedJam", ko: "저장 전 공동 작업 미지원" },
+  "admission-denied": { key: "studio.creatorSub2.status.live.center.syncPhase.admissionDenied", ko: "작업실 참여 권한 없음" },
+  revoked: { key: "studio.creatorSub2.status.live.center.syncPhase.revoked", ko: "작품 권한 회수됨" },
+  "recovery-required": { key: "studio.creatorSub2.status.live.center.syncPhase.recoveryRequired", ko: "로컬 변경 복구 필요" },
 };
+
+function syncPhaseLabel(phase: StudioLiveSyncPhase): string {
+  const entry = SYNC_PHASE_LABEL[phase];
+  return creatorSub2StatusText(entry.key, entry.ko);
+}
 
 const SECTION_TARGET_ID: Readonly<Record<StudioLiveCollaborationSection, string>> = {
   people: "studio-live-people-section",
@@ -144,9 +152,9 @@ function modeLabel(
   if (availability === "ready") {
     return mode === "server" ? "팀 서버 연결" : "이 기기 테스트 연결";
   }
-  if (availability === "connecting") return "연결 준비 중";
+  if (availability === "connecting") return creatorSub2StatusText("studio.creatorSub2.status.live.center.mode.connecting", "연결 준비 중");
   if (availability === "unsupported") return "브라우저 미지원";
-  if (availability === "error") return "연결 오류";
+  if (availability === "error") return creatorSub2StatusText("studio.creatorSub2.status.live.center.mode.error", "연결 오류");
   return "연결 대기";
 }
 
@@ -208,14 +216,14 @@ export function projectStudioLiveCollaborationAttention({
     return {
       tone: "bad",
       label: "작품 접근 권한이 회수되었습니다",
-      detail: "원고 변경과 공유 연결을 중단하고 서버 상태를 다시 확인합니다.",
+      detail: creatorSub2StatusText("studio.creatorSub2.status.live.center.revokedDetail", "원고 변경과 공유 연결을 중단하고 서버 상태를 다시 확인합니다."),
       target: "sync",
     };
   }
   if (availability === "error" || availability === "unsupported") {
     return {
       tone: "bad",
-      label: availability === "unsupported" ? "이 브라우저는 실시간 연결을 지원하지 않습니다" : "실시간 연결을 다시 확인해 주세요",
+      label: availability === "unsupported" ? creatorSub2StatusText("studio.creatorSub2.status.live.center.unsupportedBrowser", "이 브라우저는 실시간 연결을 지원하지 않습니다") : "실시간 연결을 다시 확인해 주세요",
       detail: modeLabel(availability, mode),
       target: "sync",
     };
@@ -238,7 +246,7 @@ export function projectStudioLiveCollaborationAttention({
   ) {
     return {
       tone: syncSnapshot.phase === "durability-risk" ? "bad" : "warn",
-      label: SYNC_PHASE_LABEL[syncSnapshot.phase],
+      label: syncPhaseLabel(syncSnapshot.phase),
       detail:
         syncSnapshot.pendingCount > 0
           ? `서버 승인을 기다리는 변경 ${syncSnapshot.pendingCount.toLocaleString("ko-KR")}개`
@@ -296,7 +304,7 @@ export function buildStudioLiveHandoffSummary({
     .filter((value): value is string => value !== null)
     .join(" · ");
   const followedPeer = peers.find((peer) => peer.sessionId === followingSessionId) ?? null;
-  const syncLabel = syncSnapshot ? SYNC_PHASE_LABEL[syncSnapshot.phase] : "보호 상태 정보 없음";
+  const syncLabel = syncSnapshot ? syncPhaseLabel(syncSnapshot.phase) : "보호 상태 정보 없음";
   const screenActivity =
     Number(screenState.localSharing) +
     screenState.shares.length +
@@ -465,8 +473,8 @@ export function StudioLiveCollaborationCommandCenter({
         : "확인"
     : "대기";
   const syncDetail = displaySyncSnapshot
-    ? SYNC_PHASE_LABEL[displaySyncSnapshot.phase]
-    : "보호 상태 준비 중";
+    ? syncPhaseLabel(displaySyncSnapshot.phase)
+    : creatorSub2StatusText("studio.creatorSub2.status.live.center.syncPreparing", "보호 상태 준비 중");
 
   const toggleRoster = () => {
     setRosterOpen((current) => {
@@ -495,7 +503,7 @@ export function StudioLiveCollaborationCommandCenter({
       );
       setCopyNotice("현재 협업 상태를 인계 요약으로 복사했습니다.");
     } catch {
-      setCopyNotice("인계 요약을 복사하지 못했습니다. 브라우저 클립보드 권한을 확인해 주세요.");
+      setCopyNotice(creatorSub2StatusText("studio.creatorSub2.status.live.center.copySummaryFailed", "인계 요약을 복사하지 못했습니다. 브라우저 클립보드 권한을 확인해 주세요."));
     } finally {
       setCopying(false);
       if (copyNoticeTimerRef.current !== null) clearTimeout(copyNoticeTimerRef.current);
@@ -725,7 +733,7 @@ export function StudioLiveCollaborationCommandCenter({
             </ul>
           ) : (
             <p className="mt-2 rounded-xl border border-dashed border-line px-3 py-4 text-center text-xs leading-relaxed text-fg-3">
-              현재 필터와 일치하는 참여 탭이 없습니다.
+              {creatorSub2StatusText("studio.creatorSub2.status.live.center.peersEmpty", "현재 필터와 일치하는 참여 탭이 없습니다.")}
             </p>
           )}
         </div>

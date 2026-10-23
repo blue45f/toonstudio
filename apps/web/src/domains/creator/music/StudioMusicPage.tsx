@@ -28,6 +28,8 @@ import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
 
 import { MusicExternalImportPanel } from "./MusicExternalImportPanel";
+import { StudioMusicPageError } from "./studio-music-page-error";
+import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 import { MusicOstFlow } from "./MusicOstFlow";
 import { MusicProviderToolkit } from "./MusicProviderToolkit";
 import { MusicPublicationHint, MusicPublicationPanel } from "./MusicPublicationPanel";
@@ -107,11 +109,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
     save: saveMusicTrack,
     remove: deleteMusicTrack,
   }));
-  const library = useSyncExternalStore(
-    recovery.subscribe,
-    recovery.getSnapshot,
-    recovery.getSnapshot,
-  );
+  const library = useSyncExternalStore(recovery.subscribe, recovery.getSnapshot, recovery.getSnapshot);
   const { tracks, savedIds, pendingIds } = library;
   const libraryLoading = Boolean(ownerId)
     && (library.loading || (!library.loaded && !library.loadError));
@@ -141,7 +139,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setStatusError("음악 서비스에 연결하지 못했습니다. 아직 생성 요청은 보내지 않았습니다.");
+          setStatusError(frozenStatus4Text("studio.frozenStatus4.music.statusConnectFailed", "음악 서비스에 연결하지 못했습니다. 아직 생성 요청은 보내지 않았습니다."));
         }
       });
     return () => controller.abort();
@@ -187,7 +185,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
 
   const applyTheme = (themeId: string) => {
     setBrief((previous) => applyMusicThemePack(previous, themeId));
-    setNotice("웹툰 테마의 분위기·악기·템포·감정 곡선을 적용했습니다. 장면에 맞게 세부 값을 조정하세요.");
+    setNotice(frozenStatus4Text("studio.frozenStatus4.music.themeApplied", "웹툰 테마의 분위기·악기·템포·감정 곡선을 적용했습니다. 장면에 맞게 세부 값을 조정하세요."));
     setError("");
   };
 
@@ -202,9 +200,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
         : "bgm",
       rightsConfirmed: false,
     }));
-    setNotice(vocals
-      ? "보컬 애니 OST 모드입니다. OP·ED·캐릭터 테마 프리셋과 AI 가사를 조합해 한 곡처럼 설계하세요."
-      : "장면 BGM 모드입니다. 대사와 독서를 방해하지 않는 연주 중심으로 생성합니다.");
+    setNotice(vocals ? frozenStatus4Text("studio.frozenStatus4.music.modeVocals", "보컬 애니 OST 모드입니다. OP·ED·캐릭터 테마 프리셋과 AI 가사를 조합해 한 곡처럼 설계하세요.") : frozenStatus4Text("studio.frozenStatus4.music.modeBgm", "장면 BGM 모드입니다. 대사와 독서를 방해하지 않는 연주 중심으로 생성합니다."));
     setError("");
   };
 
@@ -218,23 +214,23 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
       lyrics: previous.lyrics || lyricsDraft.current,
       rightsConfirmed: false,
     }));
-    setNotice(`${starter.label}의 곡 구조·보컬·악기·템포를 적용했습니다. 장면과 가사를 작품에 맞게 바꿔 주세요.`);
+    setNotice(frozenStatus4Text("studio.frozenStatus4.music.starterApplied", { label: starter.label }, "{label}의 곡 구조·보컬·악기·템포를 적용했습니다. 장면과 가사를 작품에 맞게 바꿔 주세요."));
     setError("");
   };
 
   const cancel = () => {
     pending.current?.abort();
-    setNotice("생성 응답 수신을 취소했습니다. 공급자가 이미 처리한 요청은 과금될 수 있으며 자동으로 다시 요청하지 않습니다.");
+    setNotice(frozenStatus4Text("studio.frozenStatus4.music.generationCancelled", "생성 응답 수신을 취소했습니다. 공급자가 이미 처리한 요청은 과금될 수 있으며 자동으로 다시 요청하지 않습니다."));
   };
 
   const cancelLyrics = () => {
     lyricsPending.current?.abort();
-    setNotice("AI 가사 초안 요청을 취소했습니다.");
+    setNotice(frozenStatus4Text("studio.frozenStatus4.music.lyricsCancelled", "AI 가사 초안 요청을 취소했습니다."));
   };
 
   const generateLyrics = async () => {
     if (lyricsPending.current || busy || !brief.scene.trim()) {
-      if (!brief.scene.trim()) setError("AI 가사 초안을 만들려면 장면 설명을 먼저 입력해 주세요.");
+      if (!brief.scene.trim()) setError(frozenStatus4Text("studio.frozenStatus4.music.lyricsNeedScene", "AI 가사 초안을 만들려면 장면 설명을 먼저 입력해 주세요."));
       return;
     }
     setError("");
@@ -256,10 +252,10 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
       const lyrics = normalizeGeneratedLyrics(result.data.content);
       lyricsDraft.current = lyrics;
       patch({ vocals: true, lyrics, rightsConfirmed: false });
-      setNotice(`AI 가사 초안을 만들었습니다 · ${result.data.provider} / ${result.data.model}. 작품 설정에 맞게 검토·수정하고 권리 확인을 다시 체크하세요.`);
+      setNotice(frozenStatus4Text("studio.frozenStatus4.music.lyricsCreated", { provider: result.data.provider, model: result.data.model }, "AI 가사 초안을 만들었습니다 · {provider} / {model}. 작품 설정에 맞게 검토·수정하고 권리 확인을 다시 체크하세요."));
     } catch (reason) {
       if (!controller.signal.aborted) {
-        setError(reason instanceof Error ? reason.message : "AI 가사 초안을 만들지 못했습니다.");
+        setError(reason instanceof Error ? reason.message : frozenStatus4Text("studio.frozenStatus4.music.lyricsFailed", "AI 가사 초안을 만들지 못했습니다."));
       }
     } finally {
       if (lyricsPending.current === controller) {
@@ -290,11 +286,11 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
     try {
       parsed = parseMusicBrief({ ...brief, workId, episodeId });
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "입력을 확인해 주세요.");
+      setError(reason instanceof Error ? reason.message : frozenStatus4Text("studio.frozenStatus4.music.checkInput", "입력을 확인해 주세요."));
       return;
     }
     if (currentLibrary.tracks.length >= 20) {
-      setError("보관함의 기존 곡을 다운로드한 뒤 삭제해 공간을 확보해 주세요. 최대 20곡입니다.");
+      setError(frozenStatus4Text("studio.frozenStatus4.music.libraryFull", "보관함의 기존 곡을 다운로드한 뒤 삭제해 공간을 확보해 주세요. 최대 20곡입니다."));
       return;
     }
     const controller = new AbortController();
@@ -316,18 +312,18 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
       try {
         await recovery.save(track.metadata.id);
         if (!controller.signal.aborted) {
-          setNotice("음원을 생성해 이 기기에 저장했습니다. 재생 버튼으로 들어보세요.");
+          setNotice(frozenStatus4Text("studio.frozenStatus4.music.generatedSaved", "음원을 생성해 이 기기에 저장했습니다. 재생 버튼으로 들어보세요."));
         }
       } catch (reason) {
         if (!controller.signal.aborted) {
-          setNotice(`음원은 생성됐지만 저장 완료를 확인하지 못했습니다. MP3를 먼저 다운로드하거나 같은 음원을 기기에 다시 저장해 주세요. ${reason instanceof Error ? reason.message : ""}`);
+          setNotice(frozenStatus4Text("studio.frozenStatus4.music.generatedSaveUnconfirmed", { detail: reason instanceof Error ? reason.message : "" }, "음원은 생성됐지만 저장 완료를 확인하지 못했습니다. MP3를 먼저 다운로드하거나 같은 음원을 기기에 다시 저장해 주세요. {detail}"));
         }
       }
     } catch (reason) {
       if (controller.signal.aborted) return;
       const message = await getApiErrorMessage(
         reason,
-        "음악 생성에 실패했습니다. 자동 재시도하지 않습니다.",
+        frozenStatus4Text("studio.frozenStatus4.music.generateFailed", "음악 생성에 실패했습니다. 자동 재시도하지 않습니다."),
       );
       if (!controller.signal.aborted) setError(message);
     } finally {
@@ -340,22 +336,22 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
   };
 
   const saveAgain = async (track: LocalMusicTrack) => {
-    if (pending.current) throw new Error("진행 중인 음악 생성을 마친 뒤 저장해 주세요.");
+    if (pending.current) throw new StudioMusicPageError("saveWhilePending");
     await recovery.save(track.metadata.id);
-    setNotice("기존 음원을 기기에 저장했습니다. 외부 AI 생성 요청은 보내지 않았습니다.");
+    setNotice(frozenStatus4Text("studio.frozenStatus4.music.savedExisting", "기존 음원을 기기에 저장했습니다. 외부 AI 생성 요청은 보내지 않았습니다."));
   };
 
   const remove = async (track: LocalMusicTrack) => {
-    if (pending.current) throw new Error("진행 중인 음악 생성을 마친 뒤 삭제해 주세요.");
+    if (pending.current) throw new StudioMusicPageError("deleteWhilePending");
     await recovery.remove(track.metadata.id);
-    setNotice("이 기기의 음원을 삭제했습니다.");
+    setNotice(frozenStatus4Text("studio.frozenStatus4.music.trackDeleted", "이 기기의 음원을 삭제했습니다."));
   };
 
   const refresh = async () => {
     if (pending.current) return;
     try {
       await recovery.load();
-      setNotice("보관함을 다시 확인했습니다. 저장되지 않은 음원도 화면에 유지됩니다.");
+      setNotice(frozenStatus4Text("studio.frozenStatus4.music.libraryRefreshed", "보관함을 다시 확인했습니다. 저장되지 않은 음원도 화면에 유지됩니다."));
     } catch {
       // The store exposes its read error without discarding existing output.
     }
@@ -365,10 +361,10 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
     const currentLibrary = recovery.getSnapshot();
     if (pending.current || lyricsPending.current || currentLibrary.loading || !currentLibrary.loaded
       || currentLibrary.loadError || currentLibrary.pendingIds.length) {
-      throw new Error("진행 중인 생성·저장을 마친 뒤 외부 음원을 가져와 주세요.");
+      throw new StudioMusicPageError("importWhilePending");
     }
     if (currentLibrary.tracks.length >= 20) {
-      throw new Error("보관함은 계정당 20곡까지입니다. 기존 음원을 다운로드한 뒤 삭제해 주세요.");
+      throw new StudioMusicPageError("libraryFull");
     }
     recovery.retain(track);
     setQuery("");
@@ -378,7 +374,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
     try {
       await recovery.save(track.metadata.id);
     } catch (reason) {
-      setNotice("파일은 화면에 유지되지만 기기 저장 완료를 확인하지 못했습니다. 먼저 음원 파일을 별도로 보관해 주세요.");
+      setNotice(frozenStatus4Text("studio.frozenStatus4.music.fileSaveUnconfirmed", "파일은 화면에 유지되지만 기기 저장 완료를 확인하지 못했습니다. 먼저 음원 파일을 별도로 보관해 주세요."));
       throw reason;
     } finally {
       setSavingTrack(false);
@@ -418,9 +414,9 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
 
   const routeScope = workId
     ? episodeId
-      ? `새 음악 연결 작품: ${workId} · 회차: ${episodeId}`
-      : `새 음악 연결 작품: ${workId}`
-    : "새 음악은 특정 작품에 연결하지 않습니다.";
+      ? frozenStatus4Text("studio.frozenStatus4.music.scopeLinkedEpisode", { work: workId, episode: episodeId }, "새 음악 연결 작품: {work} · 회차: {episode}")
+      : frozenStatus4Text("studio.frozenStatus4.music.scopeLinked", { work: workId }, "새 음악 연결 작품: {work}")
+    : frozenStatus4Text("studio.frozenStatus4.music.scopeUnlinked", "새 음악은 특정 작품에 연결하지 않습니다.");
 
   return (
     <div className="mx-auto w-full max-w-[92rem] space-y-7 break-keep px-4 py-6 text-fg sm:px-6 lg:py-10" data-testid="studio-music-page">
@@ -839,7 +835,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
             {notice ? <p className="mt-3 rounded-xl border border-line bg-panel/40 p-4 text-sm leading-relaxed">{notice}</p> : null}
           </div>
           {error ? <AiRecoveryNotice message={error} /> : null}
-          {libraryLoading ? <LoadingState label="기기 보관함을 여는 중" className="p-2" /> : null}
+          {libraryLoading ? <LoadingState label={frozenStatus4Text("studio.frozenStatus4.music.libraryOpening", "기기 보관함을 여는 중")} className="p-2" /> : null}
 
           {visibleTracks.map((track) => (
             <MusicTrackCard
@@ -853,7 +849,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
               onReuse={() => {
                 lyricsDraft.current = track.metadata.brief.lyrics;
                 setBrief(scopeMusicBrief(track.metadata.brief, workId, episodeId));
-                setNotice("이전 설정을 불러왔습니다. 내용을 수정한 뒤 생성하면 새로운 유료 요청이 접수됩니다.");
+                setNotice(frozenStatus4Text("studio.frozenStatus4.music.previousSettingsLoaded", "이전 설정을 불러왔습니다. 내용을 수정한 뒤 생성하면 새로운 유료 요청이 접수됩니다."));
                 formRef.current?.scrollIntoView({ block: "start" });
               }}
             />

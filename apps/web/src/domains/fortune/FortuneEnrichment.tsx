@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { readFortuneResponse, validatedFortuneExpiry } from "./fortune-response-lifetime";
 import { useFortuneExpiry } from "./useFortuneExpiry";
+import { fortuneStatusText } from "./fortune-status-i18n";
 import { localFortuneHoroscope, type FortuneReading, type FortunePeriod, type FortuneUnavailableReason } from "@toonstudio/core/fortune";
 
 const statusSchema = z.enum(["local", "external", "external-cache", "local-fallback"]);
@@ -10,13 +11,13 @@ const reasonSchema = z.enum(["not-configured", "rights-pending", "coordination-u
 const calendarSchema = z.object({ kind: z.literal("calendar"), month: z.string(), status: statusSchema, reason: reasonSchema.optional(), source: z.enum(["local", "kasi"]), checkedAt: z.string().datetime().optional(), expiresAt: z.string().datetime().optional(), policyRevision: z.string().max(100),
   checks: z.array(z.object({ date: z.string(), matches: z.boolean(), fields: z.array(z.enum(["lunar-date", "leap-month", "weekday"])).max(3) })).max(31) });
 const horoscopeSchema = z.object({ kind: z.literal("horoscope"), sign: z.string(), period: z.enum(["daily", "weekly", "monthly"]), referenceDate: z.string(), periodStart: z.string(), periodEndExclusive: z.string(), status: statusSchema, reason: reasonSchema.optional(), source: z.enum(["local", "free-horoscope"]), text: z.string().max(6000), language: z.enum(["ko", "en"]), sourceDate: z.string().optional(), checkedAt: z.string().datetime().optional(), expiresAt: z.string().datetime().optional(), policyRevision: z.string().max(100) });
-const reasons: Record<FortuneUnavailableReason, string> = {
-  "not-configured": "외부 데이터 연결은 아직 활성화되지 않았어요.",
-  "rights-pending": "외부 콘텐츠의 이용권한 확인 전입니다.",
-  "coordination-unavailable": "안전한 호출 한도를 확인할 수 없어 외부 연결을 쉬고 있어요.",
-  "budget-exhausted": "외부 데이터의 무료 호출 예산에 도달했어요.",
-  "provider-unavailable": "추가 데이터를 확인할 수 없어요.",
-  "historical-request": "이 기준 날짜에는 외부 추가 읽기를 제공하지 않아요.",
+const reasons: Record<FortuneUnavailableReason, { key: string; ko: string }> = {
+  "not-configured": { key: "fortune.status.enrichment.reason.notConfigured", ko: "외부 데이터 연결은 아직 활성화되지 않았어요." },
+  "rights-pending": { key: "fortune.status.enrichment.reason.rightsPending", ko: "외부 콘텐츠의 이용권한 확인 전입니다." },
+  "coordination-unavailable": { key: "fortune.status.enrichment.reason.coordinationUnavailable", ko: "안전한 호출 한도를 확인할 수 없어 외부 연결을 쉬고 있어요." },
+  "budget-exhausted": { key: "fortune.status.enrichment.reason.budgetExhausted", ko: "외부 데이터의 무료 호출 예산에 도달했어요." },
+  "provider-unavailable": { key: "fortune.status.enrichment.reason.providerUnavailable", ko: "추가 데이터를 확인할 수 없어요." },
+  "historical-request": { key: "fortune.status.enrichment.reason.historicalRequest", ko: "이 기준 날짜에는 외부 추가 읽기를 제공하지 않아요." },
 };
 const fieldNames = { "lunar-date": "음력 날짜", "leap-month": "윤달", weekday: "요일" };
 function FortuneEnrichmentContent({ reading }: { reading: FortuneReading }) {
@@ -60,7 +61,7 @@ function FortuneEnrichmentContent({ reading }: { reading: FortuneReading }) {
         else if (value.source !== "local" || value.language !== "ko") throw new Error("source-mismatch");
         setHoroscope(value);
       }
-    } catch { if (request === sequence.current) setNotice("추가 데이터를 확인할 수 없어 기본 로컬 해석을 유지합니다."); }
+    } catch { if (request === sequence.current) setNotice(fortuneStatusText("fortune.status.enrichment.loadFailedNotice", "추가 데이터를 확인할 수 없어 기본 로컬 해석을 유지합니다.")); }
     finally { window.clearTimeout(timer); if (request === sequence.current) setBusy(false); }
   };
   const reason = calendar?.reason ?? horoscope?.reason;
@@ -71,9 +72,9 @@ function FortuneEnrichmentContent({ reading }: { reading: FortuneReading }) {
     {local && <><div className="fo-reading-mode" aria-label="별자리 조회 기간">{(["daily", "weekly", "monthly"] as const).map((item, index) => <button key={item} type="button" className="fo-button" aria-pressed={period === item} onClick={() => { cancel(); setPeriod(item); setHoroscope(null); }}>{["일간", "주간", "월간"][index]}</button>)}</div>
       <p>한국 표준시 기준 {local.periodStart}부터 {local.periodEndExclusive} 직전까지 · 주간은 월요일 시작</p><p>{local.text}</p><small>ToonStudio 자체 한국어 편집 · {local.policyRevision}</small></>}
     <p className="fo-help">{month ? "선택한 달의 음양력·윤달·요일만 공공 데이터와 비교합니다. 생년월일·출생시간은 전송하지 않습니다." : "외부에는 별자리와 조회 기간만 전달합니다. 한국어 번역이나 예측 정확도 검증을 제공하는 기능은 아닙니다."}</p>
-    <button type="button" className="fo-button" disabled={busy || Boolean(external) || (!expired && calendar?.source === "kasi")} onClick={() => { void load(); }}>{busy ? "추가 데이터 확인 중…" : month ? "공공 데이터로 대조하기" : "외부 추가 읽기 확인"}</button>
+    <button type="button" className="fo-button" disabled={busy || Boolean(external) || (!expired && calendar?.source === "kasi")} onClick={() => { void load(); }}>{busy ? fortuneStatusText("fortune.status.enrichment.checking", "추가 데이터 확인 중…") : month ? "공공 데이터로 대조하기" : "외부 추가 읽기 확인"}</button>
     {busy && <button type="button" className="fo-button" onClick={cancel}>확인 취소</button>}
-    <div role="status" aria-live="polite">{notice || (expired ? "추가 데이터의 유효기간이 지났어요. 다시 확인해 주세요. 기본 해석은 유지됩니다." : reason ? `${reasons[reason]} 기본 로컬 해석은 계속 사용할 수 있어요.` : "")}</div>
+    <div role="status" aria-live="polite">{notice || (expired ? fortuneStatusText("fortune.status.enrichment.expired", "추가 데이터의 유효기간이 지났어요. 다시 확인해 주세요. 기본 해석은 유지됩니다.") : reason ? `${fortuneStatusText(reasons[reason].key, reasons[reason].ko)}${fortuneStatusText("fortune.status.enrichment.reasonSuffix", " 기본 로컬 해석은 계속 사용할 수 있어요.")}` : "")}</div>
     {!expired && calendar?.source === "kasi" && <div><p>{mismatches.length ? `${mismatches.length}일에 차이가 있어요. 기존 달력은 변경하지 않았습니다.` : `${calendar.checks.length}일의 음력 날짜·윤달·요일 대조 일치`}</p>
       {mismatches.length > 0 && <details><summary>차이 확인</summary>{mismatches.map((check) => <p key={check.date}>{check.date}: {check.fields.map((field) => fieldNames[field]).join(" · ")}</p>)}</details>}
       <p>대조 시각: <time>{calendar.checkedAt}</time> · {calendar.status === "external-cache" ? "서버 캐시" : "새 응답"}</p>

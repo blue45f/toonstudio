@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Matnli AI provayderi",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server matnli AI provayderi",
   "studio.aiToolPopover.serverProviderAuto": "avtomatik almashtirish",
-  "studio.aiToolPopover.serverFallbackMessage": "Balans/paket limiti tugagach, siz boshqa provayderga o'tasiz. Ikki marta zaryadlashni oldini olish uchun umumiy xatolar avtomatik ravishda qayta yuborilmaydi."
+  "studio.aiToolPopover.serverFallbackMessage": "Balans/paket limiti tugagach, siz boshqa provayderga o'tasiz. Ikki marta zaryadlashni oldini olish uchun umumiy xatolar avtomatik ravishda qayta yuborilmaydi.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

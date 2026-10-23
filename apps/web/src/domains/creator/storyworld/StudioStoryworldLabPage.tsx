@@ -34,6 +34,7 @@ import {
 } from "react";
 
 import { loadStoryworldIssueDispositions, saveStoryworldIssueDispositions } from "./disposition-store";
+import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { storyworldDraftStore } from "./draft-store";
 import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
 import { IssueList, IssuesTab } from "./StudioStoryworldIssues";
@@ -337,12 +338,12 @@ function MultiverseTab({ project, result }: {
             </Panel>
             <Panel title="새로 생긴 문제">
               {branch.addedIssueIds.length > 0
-                ? <div className="storyworld-code-list">{branch.addedIssueIds.map((id) => <p key={id}>{branchIssueMessageById.get(id) ?? "새로 확인할 점이 생겼습니다."}</p>)}</div>
+                ? <div className="storyworld-code-list">{branch.addedIssueIds.map((id) => <p key={id}>{branchIssueMessageById.get(id) ?? frozenStatus2Text("studio.frozenStatus2.world.issueAddedFallback", "새로 확인할 점이 생겼습니다.")}</p>)}</div>
                 : <EmptyState>새 문제 없음</EmptyState>}
             </Panel>
             <Panel title="해결된 문제">
               {branch.resolvedIssueIds.length > 0
-                ? <div className="storyworld-code-list">{branch.resolvedIssueIds.map((id) => <p key={id}>{baselineIssueMessageById.get(id) ?? "기존 문제가 사라졌습니다."}</p>)}</div>
+                ? <div className="storyworld-code-list">{branch.resolvedIssueIds.map((id) => <p key={id}>{baselineIssueMessageById.get(id) ?? frozenStatus2Text("studio.frozenStatus2.world.issueResolvedFallback", "기존 문제가 사라졌습니다.")}</p>)}</div>
                 : <EmptyState>해결된 문제 없음</EmptyState>}
             </Panel>
           </div>
@@ -580,7 +581,7 @@ export function StudioStoryworldLabPage(props: StudioStoryworldLabPageProps) {
     void storyworldDraftStore.load(key, parseStoryworldProject).then((project) => {
       if (active) setLoaded({ key, project: project ?? cloneDemoProject() });
     }).catch((caught: unknown) => {
-      if (active) setError(caught instanceof Error ? caught.message : "저장소를 열 수 없습니다.");
+      if (active) setError(caught instanceof Error ? caught.message : frozenStatus2Text("studio.frozenStatus2.world.storageOpenFailed", "저장소를 열 수 없습니다."));
     });
     return () => { active = false; };
   }, [key, attempt]);
@@ -589,7 +590,7 @@ export function StudioStoryworldLabPage(props: StudioStoryworldLabPageProps) {
       <div className="storyworld-main storyworld-recovery" aria-busy={error === null}>
         <h1>스토리월드 인과관계 랩</h1>
         <p role={error === null ? "status" : "alert"}>
-          {error === null ? "저장된 세계관 설정을 불러오는 중입니다." : "저장된 설정을 불러오지 못했습니다. 저장된 내용은 그대로 두었습니다. 아래 ‘다시 불러오기’를 눌러 주세요. 계속 실패하면 편집기로 돌아가 다시 시작할 수 있습니다."}
+          {error === null ? frozenStatus2Text("studio.frozenStatus2.world.loadingSettings", "저장된 세계관 설정을 불러오는 중입니다.") : frozenStatus2Text("studio.frozenStatus2.world.loadSettingsFailed", "저장된 설정을 불러오지 못했습니다. 저장된 내용은 그대로 두었습니다. 아래 ‘다시 불러오기’를 눌러 주세요. 계속 실패하면 편집기로 돌아가 다시 시작할 수 있습니다.")}
         </p>
         {error !== null ? <button className="storyworld-button" type="button" onClick={() => setAttempt((value) => value + 1)}>다시 불러오기</button> : null}
         <Link className="storyworld-button" href={editorHref(props.workId, props.remixSourceWorkId)}>Studio 편집기로 돌아가기</Link>
@@ -611,7 +612,7 @@ function StudioStoryworldLabEditor({
   const [settingsFocus, setSettingsFocus] = useState<StoryworldSettingsFocus | null>(null);
   const [issueDispositions, setIssueDispositions] = useState<StoryworldIssueDispositionDocument | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [statusText, setStatusText] = useState("세계관 점검 준비됨");
+  const [statusText, setStatusText] = useState(frozenStatus2Text("studio.frozenStatus2.world.initialStatus", "세계관 점검 준비됨"));
   const [importWizardOpen, setImportWizardOpen] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const result = useMemo(() => analyzeStoryworldProject(project), [project]);
@@ -645,17 +646,11 @@ function StudioStoryworldLabEditor({
       }
       if (!active) return;
       setSaveState("saved");
-      setStatusText(readinessProjected === null
-        ? workId
-          ? "예시 세계관은 저장했지만 실제 작품 준비도에는 반영하지 않았습니다."
-          : "이 기기에 세계관 설정을 저장했습니다."
-        : readinessProjected
-          ? "이 기기에 세계관 설정을 저장하고 작품 준비도에 반영했습니다."
-          : "세계관 설정은 저장했지만 작품 준비도에는 반영하지 못했습니다. 편집기로 돌아가 작품을 다시 연 뒤 확인해 주세요.");
+      setStatusText(readinessProjected === null ? (workId ? frozenStatus2Text("studio.frozenStatus2.world.savedExampleNotProjected", "예시 세계관은 저장했지만 실제 작품 준비도에는 반영하지 않았습니다.") : frozenStatus2Text("studio.frozenStatus2.world.savedToDevice", "이 기기에 세계관 설정을 저장했습니다.")) : readinessProjected ? frozenStatus2Text("studio.frozenStatus2.world.savedAndProjected", "이 기기에 세계관 설정을 저장하고 작품 준비도에 반영했습니다.") : frozenStatus2Text("studio.frozenStatus2.world.savedNotProjected", "세계관 설정은 저장했지만 작품 준비도에는 반영하지 못했습니다. 편집기로 돌아가 작품을 다시 연 뒤 확인해 주세요."));
     }).catch(() => {
       if (!active) return;
       setSaveState("error");
-      setStatusText("설정을 저장하지 못했습니다. 지금 고친 내용은 이 화면에만 남아 있으니, 화면을 닫기 전에 ‘설정 파일로 저장’으로 보관해 주세요.");
+      setStatusText(frozenStatus2Text("studio.frozenStatus2.world.saveFailed", "설정을 저장하지 못했습니다. 지금 고친 내용은 이 화면에만 남아 있으니, 화면을 닫기 전에 ‘설정 파일로 저장’으로 보관해 주세요."));
     });
     return () => { active = false; };
   }, [project, storageKey, workId]);
@@ -674,7 +669,7 @@ function StudioStoryworldLabEditor({
   const persistDispositions = (next: StoryworldIssueDispositionDocument) => {
     setIssueDispositions(next);
     void saveStoryworldIssueDispositions(next).catch(() => {
-      setStatusText("이슈 처리 상태를 저장하지 못했습니다. 현재 표시는 이 탭에만 남아 있습니다. 잠시 뒤 다시 눌러 주세요.");
+      setStatusText(frozenStatus2Text("studio.frozenStatus2.world.dispositionSaveFailed", "이슈 처리 상태를 저장하지 못했습니다. 현재 표시는 이 탭에만 남아 있습니다. 잠시 뒤 다시 눌러 주세요."));
     });
   };
 
@@ -700,28 +695,28 @@ function StudioStoryworldLabEditor({
 
   const reset = () => {
     setProject(cloneDemoProject());
-    setStatusText("예시 세계관으로 되돌렸습니다.");
+    setStatusText(frozenStatus2Text("studio.frozenStatus2.world.resetToExample", "예시 세계관으로 되돌렸습니다."));
   };
   const exportProject = () => {
     downloadJson(`${project.id}.storyworld.json`, project);
-    setStatusText("설정 파일을 저장했습니다. ‘설정 불러오기’에서 같은 파일을 골라 다시 불러올 수 있습니다.");
+    setStatusText(frozenStatus2Text("studio.frozenStatus2.world.fileSaved", "설정 파일을 저장했습니다. ‘설정 불러오기’에서 같은 파일을 골라 다시 불러올 수 있습니다."));
   };
   const exportReceipt = () => {
     downloadJson(`${project.id}.storyworld-receipt.json`, result.receipt);
-    setStatusText("점검 기록 파일을 저장했습니다.");
+    setStatusText(frozenStatus2Text("studio.frozenStatus2.world.receiptSaved", "점검 기록 파일을 저장했습니다."));
   };
   const importProject = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     try {
-      if (file.size > 1_000_000) throw new Error("스토리월드 JSON은 1MB 이하여야 합니다.");
+      if (file.size > 1_000_000) throw new Error(frozenStatus2Text("studio.frozenStatus2.world.fileTooLarge", "스토리월드 JSON은 1MB 이하여야 합니다."));
       const next = authoredStoryworldProject(parseStoryworldProject(await file.text()));
       setProject(next);
       setActiveTab("overview");
-      setStatusText(`‘${next.title}’ 설정을 불러와 다시 점검했습니다. 대시보드에서 결과를 확인하세요.`);
+      setStatusText(frozenStatus2Text("studio.frozenStatus2.world.importedSettings", { title: next.title }, "‘{title}’ 설정을 불러와 다시 점검했습니다. 대시보드에서 결과를 확인하세요."));
     } catch (caught) {
-      setStatusText(`불러오지 못했습니다. ${friendlyStoryworldFileError(caught)}`);
+      setStatusText(frozenStatus2Text("studio.frozenStatus2.world.importFailed", { detail: friendlyStoryworldFileError(caught) }, "불러오지 못했습니다. {detail}"));
     }
   };
 
@@ -741,7 +736,7 @@ function StudioStoryworldLabEditor({
         <div className="storyworld-topbar__actions">
           <span className={`storyworld-save-state storyworld-save-state--${saveState}`}>
             {saveState === "error" ? <AlertTriangle aria-hidden size={14} /> : <ShieldCheck aria-hidden size={14} />}
-            {saveState === "error" ? "저장 실패" : saveState === "saved" ? "로컬 저장됨" : "분석 중"}
+            {saveState === "error" ? frozenStatus2Text("studio.frozenStatus2.world.saveFailedBadge", "저장 실패") : saveState === "saved" ? frozenStatus2Text("studio.frozenStatus2.world.savedBadge", "로컬 저장됨") : frozenStatus2Text("studio.frozenStatus2.world.analyzingBadge", "분석 중")}
           </span>
           <button className="storyworld-button" onClick={() => setImportWizardOpen(true)} type="button"><Import aria-hidden size={16} /> 설정 불러오기</button>
           <button className="storyworld-button" onClick={exportProject} type="button"><Download aria-hidden size={16} /> 설정 파일로 저장</button>
@@ -810,7 +805,7 @@ function StudioStoryworldLabEditor({
           </div>
 
           {activeTab === "plausibility" ? (
-            <Suspense fallback={<p className="storyworld-empty" role="status">개연성 점검을 여는 중입니다.</p>}>
+            <Suspense fallback={<p className="storyworld-empty" role="status">{frozenStatus2Text("studio.frozenStatus2.world.plausibilityLoading", "개연성 점검을 여는 중입니다.")}</p>}>
               <StudioStoryPlausibilityHub
                 analysis={result}
                 continuityIssues={continuityIssues}
@@ -831,7 +826,7 @@ function StudioStoryworldLabEditor({
           {activeTab === "settings" ? (
             <StudioStoryworldSettings
               focusRequest={settingsFocus}
-              onChange={(next) => { setProject(authoredStoryworldProject(next)); setStatusText("설정을 저장했습니다."); }}
+              onChange={(next) => { setProject(authoredStoryworldProject(next)); setStatusText(frozenStatus2Text("studio.frozenStatus2.world.settingsSaved", "설정을 저장했습니다.")); }}
               project={project}
             />
           ) : null}
@@ -850,7 +845,7 @@ function StudioStoryworldLabEditor({
           {activeTab === "knowledge" ? <KnowledgeTab project={project} result={result} /> : null}
           {activeTab === "contracts" ? <ContractsTab result={result} /> : null}
           {activeTab === "capabilities" ? <CapabilitiesTab /> : null}
-          {activeTab === "json" ? <JsonTab onApply={(next) => { setProject(authoredStoryworldProject(next)); setStatusText("설정 변경을 적용해 다시 점검했습니다. 대시보드에서 결과를 확인하세요."); }} project={project} /> : null}
+          {activeTab === "json" ? <JsonTab onApply={(next) => { setProject(authoredStoryworldProject(next)); setStatusText(frozenStatus2Text("studio.frozenStatus2.world.appliedSettings", "설정 변경을 적용해 다시 점검했습니다. 대시보드에서 결과를 확인하세요.")); }} project={project} /> : null}
         </div>
       </div>
       <div aria-live="polite" className="storyworld-statusbar">

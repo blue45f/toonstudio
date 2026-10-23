@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
 import { useEffect, useId, useRef, useState } from "react";
 
 import {
@@ -57,7 +58,7 @@ export function StudioLocalAssetManager({ assets, loading, onDeleteAsset, onUseA
         if (!mountedRef.current) break;
         try { await onDeleteAsset(id); }
         catch (cause: unknown) {
-          if (mountedRef.current) setError(cause instanceof Error ? cause.message : "에셋 삭제에 실패했습니다. 남아 있는 항목을 다시 시도해 주세요.");
+          if (mountedRef.current) setError(cause instanceof Error ? cause.message : panelStatusText("studio.panelStatus.localAssets.deleteFailed", "에셋 삭제에 실패했습니다. 남아 있는 항목을 다시 시도해 주세요."));
         }
       }
       if (mountedRef.current) setSelected([]);
@@ -71,7 +72,7 @@ export function StudioLocalAssetManager({ assets, loading, onDeleteAsset, onUseA
     <section aria-label="내 에셋 관리" className="space-y-3" data-studio-local-asset-manager="true">
       <header className="rounded-xl border border-line bg-card p-3">
         <h3 className="text-sm font-bold text-fg">내 에셋 관리 · {assets.length}개</h3>
-        <p className="mt-1 text-xs leading-relaxed text-fg-3">현재 기기의 이미지 보관함입니다. 삭제에 실패한 원본은 목록에 유지합니다. 3D 렌더 이미지는 평면 이미지이며 3D 모델 원본과 별개입니다.</p>
+        <p className="mt-1 text-xs leading-relaxed text-fg-3">{panelStatusTextR4("studio.panelStatus.localAssets.libraryGuide", "현재 기기의 이미지 보관함입니다. 삭제에 실패한 원본은 목록에 유지합니다. 3D 렌더 이미지는 평면 이미지이며 3D 모델 원본과 별개입니다.")}</p>
         <button type="button" className={`${CONTROL} mt-2`} onClick={onOpen3d} disabled={pending}>3D 모델 원본 관리 열기</button>
       </header>
       <div className="grid grid-cols-[1fr_auto] gap-2">
@@ -89,19 +90,19 @@ export function StudioLocalAssetManager({ assets, loading, onDeleteAsset, onUseA
         <div className="flex gap-2"><button type="button" className={CONTROL} onClick={() => setConfirmation([])}>취소</button><button type="button" className={`${CONTROL} text-bad`} onClick={() => void confirmDelete()}>{confirmation.length}개 삭제 확인</button></div>
       </div>}
       {error && <p role="alert" className="text-xs text-bad">{error}</p>}
-      {pending ? <p role="status" className="text-xs text-fg-3">에셋 원본을 삭제하는 중입니다.</p> : lastRequested.length > 0 && <p role="status" aria-live="polite" className="text-xs text-fg-3">{deletion.removed}개 삭제 완료{deletion.remaining > 0 ? ` · ${deletion.remaining}개는 보관함에 남아 있습니다. 오류 안내를 확인하고 다시 시도해 주세요.` : ""}</p>}
-      {loading ? <p role="status" className="text-xs text-fg-3">내 에셋을 불러오는 중입니다.</p> : <>
+      {pending ? <p role="status" className="text-xs text-fg-3">{panelStatusText("studio.panelStatus.localAssets.deleting", "에셋 원본을 삭제하는 중입니다.")}</p> : lastRequested.length > 0 && <p role="status" aria-live="polite" className="text-xs text-fg-3">{deletion.removed}개 삭제 완료{deletion.remaining > 0 ? panelStatusText("studio.panelStatus.localAssets.remainingNotice", {"count": deletion.remaining}, " · {count}개는 보관함에 남아 있습니다. 오류 안내를 확인하고 다시 시도해 주세요.") : ""}</p>}
+      {loading ? <p role="status" className="text-xs text-fg-3">{panelStatusText("studio.panelStatus.localAssets.loadingMine", "내 에셋을 불러오는 중입니다.")}</p> : <>
         <p className="text-xs text-fg-3">검색 결과 {result.total}개 · {result.page + 1}/{result.pages}페이지</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{result.items.map((asset) => <article key={asset.id} className="min-w-0 rounded-xl border border-line bg-card p-2">
           <label className="flex min-h-11 items-center gap-2 text-xs text-fg-2"><input type="checkbox" aria-label={`${asset.name} 선택`} disabled={pending} checked={selectedIds.includes(asset.id)} onChange={(event) => setSelected((current) => event.target.checked ? [...new Set([...current, asset.id])] : current.filter((id) => id !== asset.id))} /><span className="truncate">{asset.name}</span></label>
           <img src={asset.dataUrl} alt={asset.name} loading="lazy" decoding="async" className="aspect-[4/3] w-full rounded-lg bg-raised object-contain" />
           <p className="my-2 text-[0.65rem] leading-relaxed text-fg-3">{studioLocalAssetKindLabel(asset)} · {asset.width}×{asset.height}</p>
           <div className="grid grid-cols-2 gap-1"><button type="button" className={CONTROL} disabled={pending} aria-label={`${asset.name} 삽입`} onClick={() => {
-            try { if (!onUseAsset(asset)) setError("이미지를 삽입하지 못했습니다. 편집 가능한 캔버스를 확인해 주세요."); }
-            catch (cause: unknown) { setError(cause instanceof Error ? cause.message : "이미지 삽입에 실패했습니다."); }
+            try { if (!onUseAsset(asset)) setError(panelStatusText("studio.panelStatus.localAssets.insertUnavailable", "이미지를 삽입하지 못했습니다. 편집 가능한 캔버스를 확인해 주세요.")); }
+            catch (cause: unknown) { setError(cause instanceof Error ? cause.message : panelStatusText("studio.panelStatus.localAssets.insertFailed", "이미지 삽입에 실패했습니다.")); }
           }}>삽입</button><button type="button" className={`${CONTROL} text-bad`} disabled={pending} aria-label={`${asset.name} 삭제`} onClick={() => requestDelete([asset.id])}>삭제</button></div>
         </article>)}</div>
-        {result.total === 0 && <p className="py-4 text-center text-xs text-fg-3">{assets.length === 0 ? "등록한 에셋이 없습니다. 탐색의 이미지 업로드로 추가해 주세요." : "검색 결과가 없습니다. 다른 이름이나 종류로 검색해 주세요."}</p>}
+        {result.total === 0 && <p className="py-4 text-center text-xs text-fg-3">{assets.length === 0 ? panelStatusText("studio.panelStatus.localAssets.emptyMine", "등록한 에셋이 없습니다. 탐색의 이미지 업로드로 추가해 주세요.") : panelStatusText("studio.panelStatus.localAssets.searchEmpty", "검색 결과가 없습니다. 다른 이름이나 종류로 검색해 주세요.")}</p>}
         {result.pages > 1 && <nav aria-label="내 에셋 페이지" className="flex justify-between gap-2"><button type="button" className={CONTROL} disabled={result.page === 0} onClick={() => setPage(result.page - 1)}>이전</button><button type="button" className={CONTROL} disabled={result.page + 1 >= result.pages} onClick={() => setPage(result.page + 1)}>다음</button></nav>}
       </>}
     </section>

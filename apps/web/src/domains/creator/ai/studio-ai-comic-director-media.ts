@@ -4,6 +4,7 @@ import {
   type StudioAiResult,
   type StudioAiSettings,
 } from "./studio-ai-client";
+import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
 
 import type {
   ScenarioImageLayerManifest,
@@ -81,7 +82,7 @@ export function inspectStudioAiComicRepairCapabilities(
       available: false,
       maskEdit: false,
       outpaint: false,
-      reason: "이미지 편집 API가 연결되지 않았습니다.",
+      reason: aiErrorText("studio.aiError.media.apiNotConnected", "이미지 편집 API가 연결되지 않았습니다."),
     };
   }
   if (!settings.imageEditPath.trim()) {
@@ -89,7 +90,7 @@ export function inspectStudioAiComicRepairCapabilities(
       available: false,
       maskEdit: false,
       outpaint: false,
-      reason: "현재 연결에 이미지 편집 경로가 없습니다.",
+      reason: aiErrorText("studio.aiError.media.editPathMissing", "현재 연결에 이미지 편집 경로가 없습니다."),
     };
   }
   return {
@@ -119,12 +120,12 @@ export async function repairStudioAiComicImageRegion(input: {
     return {
       ok: false,
       code: "not_configured",
-      error: capabilities.reason ?? "마스크 영역 수리를 사용할 수 없습니다.",
+      error: capabilities.reason ?? aiErrorText("studio.aiError.media.repairUnavailable", "마스크 영역 수리를 사용할 수 없습니다."),
     };
   }
   const prompt = input.prompt.normalize("NFKC").trim();
   if (!prompt) {
-    return { ok: false, code: "invalid_input", error: "수리 지시를 입력해 주세요." };
+    return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.media.repairPromptRequired", "수리 지시를 입력해 주세요.") };
   }
   let source: Blob;
   let mask: Blob;
@@ -135,14 +136,14 @@ export async function repairStudioAiComicImageRegion(input: {
     return {
       ok: false,
       code: "invalid_input",
-      error: error instanceof Error ? error.message : "수리 이미지 또는 마스크가 올바르지 않습니다.",
+      error: error instanceof Error ? error.message : aiErrorText("studio.aiError.media.repairImageOrMaskInvalid", "수리 이미지 또는 마스크가 올바르지 않습니다."),
     };
   }
   if (!source.type.startsWith("image/") || !mask.type.startsWith("image/")) {
     return {
       ok: false,
       code: "invalid_input",
-      error: "수리 원본과 마스크는 이미지여야 합니다.",
+      error: aiErrorText("studio.aiError.media.repairMustBeImages", "수리 원본과 마스크는 이미지여야 합니다."),
     };
   }
 
@@ -170,10 +171,10 @@ export async function repairStudioAiComicImageRegion(input: {
       code: "network_error",
       error:
         input.signal?.aborted
-          ? "수리 요청이 취소되었습니다."
+          ? aiErrorText("studio.aiError.media.repairRequestCancelled", "수리 요청이 취소되었습니다.")
           : error instanceof Error
             ? error.message
-            : "수리 요청에 실패했습니다.",
+            : aiErrorText("studio.aiError.media.repairRequestFailed", "수리 요청에 실패했습니다."),
     };
   }
 
@@ -181,18 +182,18 @@ export async function repairStudioAiComicImageRegion(input: {
   try {
     body = JSON.parse(await response.text());
   } catch {
-    return { ok: false, code: "parse_error", error: "수리 결과를 해석하지 못했습니다." };
+    return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.media.repairResultUnparseable", "수리 결과를 해석하지 못했습니다.") };
   }
   if (!response.ok) {
     return {
       ok: false,
       code: "http_error",
-      error: `수리 요청이 실패했습니다 (HTTP ${response.status}): ${responseError(body) ?? response.statusText}`,
+      error: aiErrorText("studio.aiError.media.repairRequestFailedWithStatus", { status: response.status, message: responseError(body) ?? response.statusText }, "수리 요청이 실패했습니다 (HTTP {status}): {message}"),
     };
   }
   const imageDataUrl = imageFromResponse(body);
   if (!imageDataUrl) {
-    return { ok: false, code: "parse_error", error: "수리 결과 이미지가 없습니다." };
+    return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.media.repairResultImageMissing", "수리 결과 이미지가 없습니다.") };
   }
   return {
     ok: true,
@@ -230,7 +231,7 @@ async function decodeImage(dataUrl: string): Promise<DecodedImage> {
       dispose: () => bitmap.close(),
     };
   }
-  if (typeof document === "undefined") throw new Error("이미지 분석은 브라우저에서만 사용할 수 있어요.");
+  if (typeof document === "undefined") throw new Error(aiErrorText("studio.aiError.media.analysisBrowserOnly", "이미지 분석은 브라우저에서만 사용할 수 있어요."));
   const objectUrl = URL.createObjectURL(blob);
   const image = new Image();
   image.decoding = "async";
@@ -245,7 +246,7 @@ async function decodeImage(dataUrl: string): Promise<DecodedImage> {
 }
 
 function canvas(width: number, height: number): HTMLCanvasElement {
-  if (typeof document === "undefined") throw new Error("이 작업은 브라우저에서만 사용할 수 있어요.");
+  if (typeof document === "undefined") throw new Error(aiErrorText("studio.aiError.media.workBrowserOnly", "이 작업은 브라우저에서만 사용할 수 있어요."));
   const element = document.createElement("canvas");
   element.width = width;
   element.height = height;
@@ -254,7 +255,7 @@ function canvas(width: number, height: number): HTMLCanvasElement {
 
 function context2d(element: HTMLCanvasElement): CanvasRenderingContext2D {
   const context = element.getContext("2d", { willReadFrequently: true });
-  if (!context) throw new Error("2D 이미지 처리 컨텍스트를 만들지 못했습니다.");
+  if (!context) throw new Error(aiErrorText("studio.aiError.media.context2dUnavailable", "2D 이미지 처리 컨텍스트를 만들지 못했습니다."));
   return context;
 }
 
@@ -309,7 +310,7 @@ export async function analyzeStudioAiComicCandidate(
         id: "resolution",
         severity: "review",
         category: "resolution",
-        message: `원본이 ${decoded.width}×${decoded.height}px입니다. 최종 원고 확대 전에 확인하세요.`,
+        message: aiErrorText("studio.aiError.media.findingResolution", { width: decoded.width, height: decoded.height }, "원본이 {width}×{height}px입니다. 최종 원고 확대 전에 확인하세요."),
       });
     }
     if (opaqueCoverage < 0.9) {
@@ -317,7 +318,7 @@ export async function analyzeStudioAiComicCandidate(
         id: "alpha",
         severity: "info",
         category: "alpha",
-        message: "투명 픽셀이 포함되어 있습니다. 합성 순서와 배경을 확인하세요.",
+        message: aiErrorText("studio.aiError.media.findingAlpha", "투명 픽셀이 포함되어 있습니다. 합성 순서와 배경을 확인하세요."),
       });
     }
     if (edgeOccupancy > 0.82) {
@@ -325,7 +326,7 @@ export async function analyzeStudioAiComicCandidate(
         id: "edge-clipping",
         severity: "review",
         category: "edge-clipping",
-        message: "불투명 피사체가 이미지 가장자리에 많이 닿아 있어 잘림을 확인해야 합니다.",
+        message: aiErrorText("studio.aiError.media.findingEdgeClipping", "불투명 피사체가 이미지 가장자리에 많이 닿아 있어 잘림을 확인해야 합니다."),
       });
     }
     if (contrast < 0.09) {
@@ -333,7 +334,7 @@ export async function analyzeStudioAiComicCandidate(
         id: "contrast",
         severity: "review",
         category: "contrast",
-        message: "명암 대비가 낮아 작은 화면에서 인물과 배경이 합쳐 보일 수 있습니다.",
+        message: aiErrorText("studio.aiError.media.findingContrast", "명암 대비가 낮아 작은 화면에서 인물과 배경이 합쳐 보일 수 있습니다."),
       });
     }
     if (nearBlack / sampleCount > 0.35 || nearWhite / sampleCount > 0.35) {
@@ -341,14 +342,14 @@ export async function analyzeStudioAiComicCandidate(
         id: "exposure",
         severity: "review",
         category: "exposure",
-        message: "매우 어둡거나 밝은 픽셀 비중이 높습니다. 디테일 손실을 확인하세요.",
+        message: aiErrorText("studio.aiError.media.findingExposure", "매우 어둡거나 밝은 픽셀 비중이 높습니다. 디테일 손실을 확인하세요."),
       });
     }
     findings.push({
       id: "semantic-unknown",
       severity: "info",
       category: "semantic-unknown",
-      message: "캐릭터 정체성·손·해부·이야기 정확성은 자동 픽셀 검사로 확정하지 않습니다.",
+      message: aiErrorText("studio.aiError.media.findingSemanticUnknown", "캐릭터 정체성·손·해부·이야기 정확성은 자동 픽셀 검사로 확정하지 않습니다."),
     });
     return {
       version: 1,
@@ -403,7 +404,7 @@ export async function decomposeStudioAiComicCandidate(input: {
   ]);
   try {
     if (source.width !== mask.width || source.height !== mask.height) {
-      throw new Error("레이어 분리 마스크 크기가 원본 이미지와 다릅니다.");
+      throw new Error(aiErrorText("studio.aiError.media.maskSizeMismatch", "레이어 분리 마스크 크기가 원본 이미지와 다릅니다."));
     }
     const sourceCanvas = canvas(source.width, source.height);
     const sourceContext = context2d(sourceCanvas);
@@ -458,7 +459,7 @@ export async function decomposeStudioAiComicCandidate(input: {
 export function singleLayerStudioAiComicManifest(
   sourceCandidateId: string,
   imageDataUrl: string,
-  limitation = "분리 가능한 공급자 레이어나 검토된 마스크가 없어 단일 장면 레이어로 유지합니다.",
+  limitation = aiErrorText("studio.aiError.media.singleLayerLimitation", "분리 가능한 공급자 레이어나 검토된 마스크가 없어 단일 장면 레이어로 유지합니다."),
 ): ScenarioImageLayerManifest {
   return {
     version: 1,

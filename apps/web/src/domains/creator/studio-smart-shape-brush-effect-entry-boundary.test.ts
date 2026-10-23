@@ -6,7 +6,8 @@ const page = readStudioCuttoonEditorSource();
 
 function functionSlice(name: string, nextName: string): string {
   const start = page.indexOf(`function ${name}`);
-  const end = page.indexOf(`function ${nextName}`, start + 1);
+  // `return …` 로 시작하면 함수가 아니라 그 문장을 끝 표지로 쓴다(핸들러가 분리돼 다음 함수가 이 파일에 없다).
+  const end = page.indexOf(nextName.startsWith("return ") ? nextName : `function ${nextName}`, start + 1);
   expect(start, `${name} must exist`).toBeGreaterThanOrEqual(0);
   expect(end, `${nextName} must follow ${name}`).toBeGreaterThan(start);
   return page.slice(start, end);
@@ -59,7 +60,7 @@ describe("StudioPage smart-shape selected-brush entry boundary", () => {
     expect(snapshot).toContain('brushEffectMode: "selected-brush" as const');
     expect(snapshot).toContain("brushEffectSource: quickShapeBrushEffectSourceRef.current");
 
-    const finish = functionSlice("finishDrawingPointer", "onStagePointerCancel");
+    const finish = functionSlice("finishDrawingPointer", "return finishDrawingPointer;");
     expectOrder(finish, [
       "const quickShapeSnapshot = snapshotQuickShapeTracking()",
       "planStudioDrawPointerRelease({",

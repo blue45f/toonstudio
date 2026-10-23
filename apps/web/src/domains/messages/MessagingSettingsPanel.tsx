@@ -8,11 +8,15 @@ import {
   type MessagingPreferences,
 } from "@/platform/messaging-client";
 import { LoadingState } from "@/shared/components/LoadingState";
+import { useT } from "@/shared/lib/i18n";
+
+import "./message-status-i18n";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
 import { UserAvatar } from "./MessagingUserAvatar";
 
 export function MessagingSettingsPanel({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const [preferences, setPreferences] = useState<MessagingPreferences | null>(null);
   const [blocks, setBlocks] = useState<MessagingBlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,11 +34,11 @@ export function MessagingSettingsPanel({ onClose }: { onClose: () => void }) {
       setPreferences(preferenceResult);
       setBlocks(blockResult.items);
     } catch (loadError) {
-      setError(await getApiErrorMessage(loadError, "메시지 설정을 불러오지 못했어요."));
+      setError(await getApiErrorMessage(loadError, t("messages.status.settings.loadFailed", "메시지 설정을 불러오지 못했어요.")));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -50,7 +54,7 @@ export function MessagingSettingsPanel({ onClose }: { onClose: () => void }) {
       setPreferences(await messagingClient.updatePreferences(input));
     } catch (updateError) {
       setPreferences(previous);
-      setError(await getApiErrorMessage(updateError, "메시지 설정을 저장하지 못했어요."));
+      setError(await getApiErrorMessage(updateError, t("messages.status.settings.saveFailed", "메시지 설정을 저장하지 못했어요.")));
     } finally {
       setSaving(false);
     }
@@ -61,7 +65,7 @@ export function MessagingSettingsPanel({ onClose }: { onClose: () => void }) {
       await messagingClient.unblockUser(userId);
       setBlocks((current) => current.filter((item) => item.user.id !== userId));
     } catch (unblockError) {
-      setError(await getApiErrorMessage(unblockError, "차단을 해제하지 못했어요."));
+      setError(await getApiErrorMessage(unblockError, t("messages.status.settings.unblockFailed", "차단을 해제하지 못했어요.")));
     }
   }
 
@@ -80,7 +84,7 @@ export function MessagingSettingsPanel({ onClose }: { onClose: () => void }) {
 
         {loading ? (
           <div className="grid min-h-64 place-items-center p-2">
-            <LoadingState variant="skeleton" label="메시지 설정을 불러오는 중" className="w-full" />
+            <LoadingState variant="skeleton" label={t("messages.status.settings.loading", "메시지 설정을 불러오는 중")} className="w-full" />
           </div>
         ) : (
           <div className="mt-6 space-y-5">
@@ -144,7 +148,7 @@ export function MessagingSettingsPanel({ onClose }: { onClose: () => void }) {
               <h3 className="font-semibold">차단한 회원</h3>
               <p className="mt-1 text-xs text-fg-2">차단한 회원과는 새 요청이나 메시지를 주고받을 수 없습니다.</p>
               {blocks.length === 0 ? (
-                <p className="mt-4 rounded-xl bg-panel px-4 py-5 text-center text-sm text-fg-2">차단한 회원이 없습니다.</p>
+                <p className="mt-4 rounded-xl bg-panel px-4 py-5 text-center text-sm text-fg-2">{t("messages.status.settings.blockedEmpty", "차단한 회원이 없습니다.")}</p>
               ) : (
                 <ul className="mt-4 divide-y divide-line">
                   {blocks.map((item) => (

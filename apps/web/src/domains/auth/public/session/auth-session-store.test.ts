@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { WRITE_TIMEOUT_MS } from "@/platform/api";
+
 import {
   getAuthSession,
   getAuthToken,
@@ -24,10 +26,15 @@ function deferred<T>() {
   return { promise, reject, resolve };
 }
 
-vi.mock("@/platform/api", () => ({
-  api: { raw: apiRaw },
-  apiPath: (path: string) => `/api${path}`,
-}));
+vi.mock("@/platform/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/platform/api")>();
+  return {
+    api: { raw: apiRaw },
+    apiPath: (path: string) => `/api${path}`,
+    // 상수만 실제 값을 빌려 쓴다 — 스토어가 거는 쓰기 상한을 테스트가 같은 값으로 단언하기 위해서다.
+    WRITE_TIMEOUT_MS: actual.WRITE_TIMEOUT_MS,
+  };
+});
 
 describe("auth session store", () => {
   beforeEach(() => {
@@ -361,6 +368,39 @@ describe("auth session store", () => {
     });
     expect(getAuthSession()?.user.id).toBe("new-account");
   });
+
+  it.each([
+    ["네트워크 단절", new TypeError("network unavailable")],
+    ["응답 시간 초과", new DOMException("timed out", "TimeoutError")],
+  ])(
+    "자격 증명 로그인 전송 실패(%s)는 throw가 아니라 연결 오류 결과로 돌아온다",
+    async (_label, failure) => {
+      apiRaw.mockRejectedValue(failure);
+
+      await expect(
+        signIn("credentials", {
+          email: "user@example.com",
+          password: "secret",
+        }),
+      ).resolves.toEqual({
+        ok: false,
+        error: "로그인 서버에 연결하지 못했어요. 네트워크를 확인한 뒤 다시 시도해 주세요.",
+        status: 0,
+        url: null,
+      });
+      // 공유 클라이언트의 timeout: false 기본값을 그대로 두면 오리진 무응답에서
+      // 요청이 끝나지 않으므로, 쓰기 기본 상한이 걸려 있어야 한다.
+      expect(apiRaw).toHaveBeenCalledWith(
+        "/api/auth/login",
+        expect.objectContaining({
+          method: "POST",
+          throwHttpErrors: false,
+          timeout: WRITE_TIMEOUT_MS,
+        }),
+      );
+      expect(getAuthSession()).toBeNull();
+    },
+  );
 
   it("로그아웃 도중 도착한 이전 인증 응답이 세션을 되살리지 않는다", async () => {
     persistSession({ user: { id: "signed-in-user" }, token: null });

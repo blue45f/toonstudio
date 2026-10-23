@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { Plus, Trash2, Pencil, Check, FolderHeart, Share2 } from "lucide-react";
 import { useState } from "react";
 
@@ -29,7 +30,7 @@ async function shareCollection(collection: ReturnType<typeof useApp.getState>["c
       createdAt: collection.createdAt,
     });
   } catch {
-    toast("공개 링크를 만들기에는 컬렉션이 너무 큽니다. 작품 수를 줄인 뒤 다시 시도해 주세요.", { tone: "error" });
+    toast(restStatusText("rest.status.libraryCollections.tooLarge", "공개 링크를 만들기에는 컬렉션이 너무 큽니다. 작품 수를 줄인 뒤 다시 시도해 주세요."), { tone: "error" });
     return;
   }
   const url = new URL(`/lists/${encodeURIComponent(publicCollectionSlug(collection.name))}`, window.location.origin);
@@ -124,7 +125,7 @@ export function CollectionsTab({
       {collections.length === 0 ? (
         <EmptyTeach
           icon={FolderHeart}
-          title="컬렉션이 없어요"
+          title={restStatusText("rest.status.libraryCollections.empty", "컬렉션이 없어요")}
           desc="나만의 테마로 작품을 묶어보세요. 작품 상세에서 컬렉션에 담을 수 있어요."
         />
       ) : (

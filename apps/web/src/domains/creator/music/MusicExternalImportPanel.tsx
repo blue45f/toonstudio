@@ -10,6 +10,8 @@ import {
   type MusicProviderId,
 } from "./studio-music-provider-catalog";
 import { importExternalMusicTrack } from "./studio-music-import";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
+import { resolveStudioMusicPageError } from "../status-i18n/studio-producer-error-i18n";
 
 interface MusicExternalImportPanelProps {
   readonly brief: MusicBrief;
@@ -44,19 +46,19 @@ export function MusicExternalImportPanel({
     if (disabled || busy) return;
     onError("");
     if (!ownerId) {
-      onError("외부 음원을 개인 보관함에 넣으려면 먼저 로그인해 주세요.");
+      onError(subStatusText("studio.subStatus.musicExt.loginRequired", "외부 음원을 개인 보관함에 넣으려면 먼저 로그인해 주세요."));
       return;
     }
     if (trackCount >= 20) {
-      onError("보관함은 최대 20곡입니다. 기존 음원을 다운로드한 뒤 삭제해 공간을 확보해 주세요.");
+      onError(subStatusText("studio.subStatus.musicExt.storageFull", "보관함은 최대 20곡입니다. 기존 음원을 다운로드한 뒤 삭제해 공간을 확보해 주세요."));
       return;
     }
     if (!file) {
-      onError("가져올 MP3 또는 WAV 파일을 선택해 주세요.");
+      onError(subStatusText("studio.subStatus.musicExt.fileRequired", "가져올 MP3 또는 WAV 파일을 선택해 주세요."));
       return;
     }
     if (!rightsConfirmed) {
-      onError("입력 자료 권리와 공급자 이용 조건을 확인해 주세요.");
+      onError(subStatusText("studio.subStatus.musicExt.rightsRequired", "입력 자료 권리와 공급자 이용 조건을 확인해 주세요."));
       return;
     }
 
@@ -67,9 +69,9 @@ export function MusicExternalImportPanel({
       setFile(null);
       setRightsConfirmed(false);
       setFileInputKey((value) => value + 1);
-      onNotice(`${provider.name} 결과를 검증해 이 기기 보관함에 저장했습니다.`);
+      onNotice(subStatusText("studio.subStatus.musicExt.saved", { provider: provider.name }, "{provider} 결과를 검증해 이 기기 보관함에 저장했습니다."));
     } catch (reason) {
-      onError(reason instanceof Error ? reason.message : "외부 음원을 가져오지 못했습니다.");
+      onError(resolveStudioMusicPageError(reason) ?? (reason instanceof Error ? reason.message : subStatusText("studio.subStatus.musicExt.importFailed", "외부 음원을 가져오지 못했습니다.")));
     } finally {
       setBusy(false);
     }
@@ -160,7 +162,7 @@ export function MusicExternalImportPanel({
           onClick={() => void importTrack()}
         >
           <ShieldCheck size={16} aria-hidden />
-          {busy ? "검증·저장 중…" : "검증 후 보관함에 가져오기"}
+          {busy ? subStatusText("studio.subStatus.musicExt.verifying", "검증·저장 중…") : "검증 후 보관함에 가져오기"}
         </button>
       </fieldset>
     </section>

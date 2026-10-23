@@ -43,6 +43,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { buildStudioToolHelp } from "./studio-current-tool-help";
+import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 import {
   searchStudioGuidedHelp,
   STUDIO_GUIDED_HELP_ARTICLE_BY_ID,
@@ -140,11 +141,9 @@ function SurfaceButton({
       type="button"
       onClick={onClick}
       data-active={active || undefined}
-      className={`flex min-h-11 w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-        active
+      className={`flex min-h-11 w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${active
           ? "border-accent/55 bg-accent-soft text-fg"
-          : "border-transparent text-fg-2 hover:border-line hover:bg-raised hover:text-fg"
-      }`}
+          : "border-transparent text-fg-2 hover:border-line hover:bg-raised hover:text-fg"}`}
     >
       <Icon size={17} aria-hidden className={active ? "text-accent" : "text-fg-3"} />
       <span className="min-w-0 flex-1">
@@ -172,7 +171,7 @@ function EmptySearch({ onOpenCommandSearch }: { onOpenCommandSearch: () => void 
   return (
     <div className="rounded-2xl border border-dashed border-line bg-card/40 px-4 py-8 text-center">
       <Search size={24} aria-hidden className="mx-auto text-fg-3" />
-      <h3 className="mt-3 text-sm font-semibold text-fg">작성형 가이드에서 찾지 못했습니다</h3>
+      <h3 className="mt-3 text-sm font-semibold text-fg">{frozenStatus5Text("studio.frozenStatus5.guidedHelp.notFound", "작성형 가이드에서 찾지 못했습니다")}</h3>
       <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-fg-3">
         F1 검색은 모든 명령·설정·패널·튜토리얼과 다른 앱에서 쓰던 용어를 함께 찾습니다.
       </p>

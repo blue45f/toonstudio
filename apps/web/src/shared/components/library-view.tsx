@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { Sparkles, BookHeart, Star, Compass, BellRing, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -204,7 +205,7 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
           {shelfTitles.length === 0 ? (
             <EmptyTeach
               icon={BookHeart}
-              title="아직 담은 작품이 없어요"
+              title={restStatusText("rest.status.library.emptyShelf", "아직 담은 작품이 없어요")}
               desc="작품 카드의 북마크나 상세 페이지의 상태 버튼으로 서재를 채워보세요."
               cta={{ label: "작품 탐색하기", href: "/explore" }}
             />
@@ -224,7 +225,7 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
           {ratedIds.length === 0 ? (
             <EmptyTeach
               icon={Star}
-              title="평가한 작품이 없어요"
+              title={restStatusText("rest.status.library.emptyRated", "평가한 작품이 없어요")}
               desc="별점을 남기면 취향 분석과 추천이 정교해집니다."
               cta={{ label: "평가하러 가기", href: "/ranking" }}
             />
@@ -381,7 +382,7 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
           {subTitles.length === 0 ? (
             <EmptyTeach
               icon={BellRing}
-              title="구독한 연재가 없어요"
+              title={restStatusText("rest.status.library.emptySubscriptions", "구독한 연재가 없어요")}
               desc="작품 상세에서 '연재 알림 받기'를 켜면 요일별 업데이트를 모아 보여드려요."
               cta={{ label: "연재 캘린더 보기", href: "/calendar" }}
             />

@@ -9,6 +9,17 @@ import {
   studioDialogueItemsToInterchange,
 } from "./studio-dialogue-interchange";
 
+/** R11 D4: 생산자는 표시 문구 대신 세부 코드를 방출한다 — message 단언을 detailCode 단언으로 교체. */
+const thrownDetailCode = (run: () => unknown): string => {
+  try {
+    run();
+  } catch (error) {
+    expect(error).toBeInstanceOf(StudioDialogueInterchangeError);
+    return (error as StudioDialogueInterchangeError).detailCode;
+  }
+  throw new Error("expected a StudioDialogueInterchangeError");
+};
+
 const document = {
   title: "첫 화",
   language: "ko-KR",
@@ -156,7 +167,7 @@ describe("studio dialogue interchange", () => {
       { page: 1, panel: 1, speaker: "하나", text: "안녕,\n세계", note: "작게" },
       { page: 2, panel: 3, speaker: "둘", text: "=위험한 수식" },
     ]);
-    expect(file.warnings.join(" ")).toContain("cue ID");
+    expect(file.warnings.map((warning) => warning.code)).toContain("fdxExportMetadataOmitted");
   });
 
   it("FDX는 알 수 없는 확장 subtree 안의 지원 모양 Paragraph를 해석하지 않는다", () => {
@@ -171,46 +182,46 @@ describe("studio dialogue interchange", () => {
   });
 
   it("FDX는 DTD/entity, 잘못된 구조와 XML DoS 예산 초과를 fail-closed한다", () => {
-    expect(() => parseStudioDialogueInterchange(
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       '<!DOCTYPE FinalDraft [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><FinalDraft><Content><Paragraph Type="Character"><Text>&xxe;</Text></Paragraph></Content></FinalDraft>'
-    )).toThrow(/DTD/u);
-    expect(() => parseStudioDialogueInterchange(
+    ))).toBe("fdxDtdUnsupported");
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       '<FinalDraft><Content><Paragraph Type="Character"><Text>A</Paragraph></Text></Content></FinalDraft>'
-    )).toThrow(/닫는 순서/u);
-    expect(() => parseStudioDialogueInterchange(
+    ))).toBe("fdxClosingOrder");
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       `<FinalDraft><Content><Extension>${"<x>".repeat(31)}${"</x>".repeat(31)}</Extension><Paragraph Type="Character"><Text>A</Text></Paragraph><Paragraph Type="Dialogue"><Text>B</Text></Paragraph></Content></FinalDraft>`
-    )).toThrow(/중첩 깊이/u);
+    ))).toBe("fdxDepth");
     const attributes = Array.from({ length: 32 }, (_, index) => ` a${index}="${index}"`).join("");
-    expect(() => parseStudioDialogueInterchange(
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       `<FinalDraft><Content><Paragraph Type="Character"${attributes}><Text>A</Text></Paragraph><Paragraph Type="Dialogue"><Text>B</Text></Paragraph></Content></FinalDraft>`
-    )).toThrow(/attribute 수/u);
-    expect(() => parseStudioDialogueInterchange(
+    ))).toBe("fdxAttributesPerElement");
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       '<FinalDraft bad="raw<value"><Content><Paragraph Type="Character"><Text>A</Text></Paragraph><Paragraph Type="Dialogue"><Text>B</Text></Paragraph></Content></FinalDraft>'
-    )).toThrow(/raw '<'/u);
-    expect(() => parseStudioDialogueInterchange(
+    ))).toBe("fdxAttributeRawLt");
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       "<FinalDraft><Content><Paragraph Type=\"Character\"><Text>A]]>B</Text></Paragraph><Paragraph Type=\"Dialogue\"><Text>C</Text></Paragraph></Content></FinalDraft>"
-    )).toThrow(/CDATA 종료/u);
-    expect(() => parseStudioDialogueInterchange(
+    ))).toBe("fdxCdataEndInText");
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       'prefix<FinalDraft><Content><Paragraph Type="Character"><Text>A</Text></Paragraph><Paragraph Type="Dialogue"><Text>B</Text></Paragraph></Content></FinalDraft>'
-    )).toThrow(/루트 앞/u);
+    ))).toBe("fdxTextBeforeRoot");
   });
 
   it("FDX는 Parenthetical/Dialogue 순서와 화자·메모 길이를 엄격하게 검증한다", () => {
-    expect(() => parseStudioDialogueInterchange(
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       '<FinalDraft><Content><Paragraph Type="Parenthetical"><Text>(혼잣말)</Text></Paragraph><Paragraph Type="Dialogue"><Text>안녕</Text></Paragraph></Content></FinalDraft>'
-    )).toThrow(/Character/u);
-    expect(() => parseStudioDialogueInterchange(
+    ))).toBe("fdxParentheticalWithoutCharacter");
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange(
       "fdx",
       `<FinalDraft><Content><Paragraph Type="Character"><Text>${"가".repeat(201)}</Text></Paragraph><Paragraph Type="Dialogue"><Text>안녕</Text></Paragraph></Content></FinalDraft>`
-    )).toThrow(/화자 길이/u);
+    ))).toBe("fdxCharacterTooLong");
   });
 
   it.each(["srt", "vtt"] as const)("%s는 타임코드와 화자를 왕복한다", (format) => {
@@ -229,7 +240,7 @@ describe("studio dialogue interchange", () => {
   it("시간이 없으면 자막에 결정적인 3초 구간을 배정하고 경고한다", () => {
     const file = serializeStudioDialogueInterchange("vtt", { cues: [{ page: 1, text: "안녕" }] });
     expect(file.text).toContain("00:00:00.000 --> 00:00:03.000");
-    expect(file.warnings.join(" ")).toContain("자동 배정");
+    expect(file.warnings.map((warning) => warning.code)).toContain("subtitleExportTimingsGenerated");
   });
 
   it("imports supported subtitle formatting and retains unknown markup as literal text", () => {
@@ -264,21 +275,19 @@ describe("studio dialogue interchange", () => {
 
   it("UTF-8 BOM을 제거하고 잘못된 UTF-8은 거부한다", () => {
     expect(decodeStudioDialogueInterchangeText(new TextEncoder().encode("\uFEFF안녕"))).toBe("안녕");
-    expect(() => decodeStudioDialogueInterchangeText(new Uint8Array([0xc3, 0x28]))).toThrowError(
-      StudioDialogueInterchangeError
-    );
+    expect(thrownDetailCode(() => decodeStudioDialogueInterchangeText(new Uint8Array([0xc3, 0x28])))).toBe("invalidUtf8");
   });
 
   it("CSV 미닫힌 quote, JSON 알 수 없는 cue 필드와 뒤집힌 시간은 fail-closed한다", () => {
-    expect(() => parseStudioDialogueInterchange("csv", 'page,text\n1,"열림')).toThrow(/따옴표/u);
-    expect(() => parseStudioDialogueInterchange("json", JSON.stringify({
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange("csv", 'page,text\n1,"열림'))).toBe("csvQuoteUnclosed");
+    expect(thrownDetailCode(() => parseStudioDialogueInterchange("json", JSON.stringify({
       schema: "toonstudio.dialogue-script",
       version: 1,
       cues: [{ page: 1, text: "x", javascript: "alert(1)" }],
-    }))).toThrow(/알 수 없는 필드/u);
-    expect(() => serializeStudioDialogueInterchange("json", {
+    })))).toBe("cueUnknownField");
+    expect(thrownDetailCode(() => serializeStudioDialogueInterchange("json", {
       cues: [{ page: 1, text: "x", startMs: 20, endMs: 10 }],
-    })).toThrow(/시간 범위/u);
+    }))).toBe("cueTimeRangeInvalid");
   });
 
   it("기존 dialogue batch items를 1-based 페이지/컷 cue로 바꾼다", () => {

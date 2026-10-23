@@ -1,3 +1,4 @@
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import { useId, useMemo, useState } from "react";
 
 import {
@@ -98,13 +99,13 @@ export function StudioSceneAssemblyPanel({
       });
       setNotice(
         outcome.usedFallback
-          ? "AI 구조화에 실패해 규칙 기반으로 초안을 만들었어요."
+          ? creatorRestStatusText("creatorRest.status.sceneAssembly.aiFallback", "AI 구조화에 실패해 규칙 기반으로 초안을 만들었어요.")
           : outcome.document.source === "fallback"
             ? "규칙 기반으로 장면 초안을 만들었어요. 슬롯을 확인하고 올려 주세요."
             : "장면 초안을 만들었어요. 슬롯을 확인하고 올려 주세요."
       );
     } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : "장면 초안을 만들지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : creatorRestStatusText("creatorRest.status.sceneAssembly.createFailed", "장면 초안을 만들지 못했습니다."));
     } finally {
       setBusy(null);
     }
@@ -118,7 +119,7 @@ export function StudioSceneAssemblyPanel({
       await onApply(draft.result);
       setNotice("장면 초안을 캔버스에 올렸습니다. 위치와 크기는 자유롭게 다듬어 주세요.");
     } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : "초안을 올리지 못했습니다.");
+      setError(cause instanceof Error ? cause.message : creatorRestStatusText("creatorRest.status.sceneAssembly.applyFailed", "초안을 올리지 못했습니다."));
     } finally {
       setBusy(null);
     }
@@ -212,7 +213,7 @@ export function StudioSceneAssemblyPanel({
                 {matchBySlot.get("background:0") ?? "매칭 자산 없음 (단색 프레임)"}
               </p>
             ) : (
-              <p className="mt-1 text-xs text-fg-3">문장에서 장소를 찾지 못했습니다. 단색 프레임으로 시작합니다.</p>
+              <p className="mt-1 text-xs text-fg-3">{creatorRestStatusText("creatorRest.status.sceneAssembly.noPlace", "문장에서 장소를 찾지 못했습니다. 단색 프레임으로 시작합니다.")}</p>
             )}
           </div>
 

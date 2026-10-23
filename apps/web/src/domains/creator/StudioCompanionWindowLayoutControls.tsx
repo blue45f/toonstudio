@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { CheckCircle2, MonitorCog, Save, Trash2, TriangleAlert } from "lucide-react";
 import { useId } from "react";
 
@@ -39,7 +40,7 @@ function describePersistence(
   if (status === "unsupported") {
     return {
       label: "자동 배치 미지원",
-      detail: "이 브라우저에서는 창 위치 자동 복원을 지원하지 않습니다.",
+      detail: r3c07StatusText("studio.panelStatus.r3c07.companionLayout.restoreUnsupported", "이 브라우저에서는 창 위치 자동 복원을 지원하지 않습니다."),
       warning: true,
     };
   }

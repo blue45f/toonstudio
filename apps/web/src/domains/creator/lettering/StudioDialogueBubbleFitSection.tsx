@@ -25,6 +25,9 @@ import {
 } from "./studio-dialogue-bubble-fit";
 
 import { cx } from "@/shared/lib/cx";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 export type StudioDialogueBubbleFitSectionProps = {
   /** 코어 사전 계산 결과의 경고 목록(페이지 순서). */
@@ -38,7 +41,7 @@ export type StudioDialogueBubbleFitSectionProps = {
 const KIND_LABEL: Record<BubbleFitWarningKind, string> = {
   overflow: "넘침 예상",
   shrink: "자동 축소 예정",
-  unmeasurable: "확인 불가",
+  unmeasurable: "확인 불가", // i18n-exempt: 렌더 지점 배지에서 studio.brushCanvasStatus.lettering.bubbleFitUnmeasurable 키로 해석한다
 };
 
 const KIND_BADGE_CLASS: Record<BubbleFitWarningKind, string> = {
@@ -52,6 +55,7 @@ export function StudioDialogueBubbleFitSection({
   summary,
   onSelectElement,
 }: StudioDialogueBubbleFitSectionProps) {
+  const t = useT();
   const groups = groupBubbleFitWarnings(warnings);
 
   return (
@@ -98,7 +102,7 @@ export function StudioDialogueBubbleFitSection({
                             KIND_BADGE_CLASS[warning.kind]
                           )}
                         >
-                          {KIND_LABEL[warning.kind]}
+                          {warning.kind === "unmeasurable" ? t("studio.brushCanvasStatus.lettering.bubbleFitUnmeasurable", "확인 불가") : KIND_LABEL[warning.kind]}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-[0.66rem] font-medium text-fg-2">
                           {warning.excerpt || "(빈 대사)"}

@@ -1,3 +1,4 @@
+import { restStatusText } from "../rest-status-i18n";
 import { ArrowUpRight, Clock3, CreditCard, Gift, Ticket } from "lucide-react";
 
 import { PRICING_TONE } from "./availability-utils";
@@ -129,7 +130,7 @@ export function AvailabilityRouter({
                 <ArrowUpRight size={14} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </span>
             ) : (
-              <span className="text-xs text-fg-3">링크 준비 중</span>
+              <span className="text-xs text-fg-3">{restStatusText("rest.status.availability.linkPreparing", "링크 준비 중")}</span>
             )}
           </>
         );

@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+
 import {
   STUDIO_BG3D_PROCEDURAL_STARTER_ASSETS,
   STUDIO_BG3D_PROCEDURAL_STARTER_CATEGORY_LABELS,
@@ -66,6 +69,7 @@ export function StudioBg3dProceduralStarterPanel({
   disabledReason = null,
   onInsert,
 }: StudioBg3dProceduralStarterPanelProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [category, setCategory] =
     useState<StudioBg3dProceduralStarterCategoryFilter>("all");
@@ -99,7 +103,7 @@ export function StudioBg3dProceduralStarterPanel({
     } catch {
       setNotice({
         tone: "error",
-        message: "블록아웃 프리셋을 추가하지 못했습니다. 장면 상태를 확인한 뒤 다시 시도해 주세요.",
+        message: t("studio.bg3dPanelStatus.proceduralStarter.addPresetFailed", "블록아웃 프리셋을 추가하지 못했습니다. 장면 상태를 확인한 뒤 다시 시도해 주세요."),
       });
     }
   };
@@ -206,7 +210,7 @@ export function StudioBg3dProceduralStarterPanel({
 
       {visibleAssets.length === 0 ? (
         <div className="mt-3 rounded-lg border border-dashed border-line bg-card/45 px-3 py-4 text-center text-xs leading-relaxed text-fg-3">
-          검색과 카테고리에 맞는 3D 에셋이 없습니다.
+          {t("studio.bg3dPanelStatus.proceduralStarter.noMatchingAssets", "검색과 카테고리에 맞는 3D 에셋이 없습니다.")}
           <button
             type="button"
             className="mt-2 min-h-11 w-full rounded-lg border border-line bg-panel px-3 text-xs font-bold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9"

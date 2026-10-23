@@ -5,6 +5,7 @@ import {
   type StudioAnimaticDocument,
   type StudioAnimaticPageLike,
 } from "../studio-animatic-timeline";
+import { resolveStudioAnimaticError } from "../status-i18n/studio-producer-error-i18n";
 import {
   applyStudioAnimaticSubtitleTiming,
   buildStudioAnimaticSubtitleFile,
@@ -39,7 +40,7 @@ const PAGES: StudioAnimaticPageLike[] = [
 
 function createDocument(): StudioAnimaticDocument {
   const created = createStudioAnimaticFromPages(PAGES, { workScope: "episode-01" });
-  if (!created.ok) throw new Error(created.error);
+  if (!created.ok) throw new Error(resolveStudioAnimaticError(created.error));
   return created.document;
 }
 
@@ -71,7 +72,7 @@ describe("animatic subtitle track build", () => {
 
   it("returns an empty track for an episode without dialogue", () => {
     const created = createStudioAnimaticFromPages([{ id: "p1", name: "무대사" }], { workScope: "ep-02" });
-    if (!created.ok) throw new Error(created.error);
+    if (!created.ok) throw new Error(resolveStudioAnimaticError(created.error));
     const track = buildStudioAnimaticSubtitleTrack(created.document);
     expect(track.ok).toBe(true);
     if (!track.ok) return;

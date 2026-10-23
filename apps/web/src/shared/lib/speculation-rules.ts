@@ -27,6 +27,9 @@ function sanitizeUrls(urls: readonly string[]): string[] {
   return [...seen];
 }
 
+/** 공개 페이지가 미리 준비하는 문서 이동 대상. 바꾸면 CSP 의 규칙 해시도 바뀐다(cloudflare-static-rules.mjs). */
+export const STUDIO_PRERENDER_URLS = ["/studio"] as const;
+
 export function buildSpeculationRules(urls: readonly string[]): SpeculationRules {
   return {
     prerender: [
@@ -49,6 +52,21 @@ export function isSpeculationRulesSupported(): boolean {
     // 감지 실패는 미지원과 동일하게 취급한다.
     return false;
   }
+}
+
+/**
+ * 프리렌더된 문서는 사용자가 실제로 이동해 활성화될 때까지 task 를 미룬다. 프리렌더가 아니면 곧바로(동기로)
+ * 실행하고, 활성화 없이 버려진 프리렌더에서는 끝내 실행하지 않는다.
+ *
+ * 스튜디오 문서는 그리는 순간 페이지뷰 전송, 로컬 SQLite 소유 잠금, 라이브러리 동기화가 시작된다. 숨은 문서가
+ * 그 잠금을 쥐면 이미 열린 편집기 탭이 세션 전용 저장으로 떨어지므로, 앱 부팅 전체를 이 경계 뒤에 둔다.
+ */
+export function runWhenDocumentActivated(task: () => void, doc: Document = document): void {
+  if ((doc as Document & { readonly prerendering?: boolean }).prerendering !== true) {
+    task();
+    return;
+  }
+  doc.addEventListener("prerenderingchange", () => task(), { once: true });
 }
 
 let installed = false;

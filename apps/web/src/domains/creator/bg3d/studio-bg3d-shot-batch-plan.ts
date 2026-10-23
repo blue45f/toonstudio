@@ -36,6 +36,7 @@ import type {
   StudioBg3dCaptureGraphicsApi,
 } from "./studio-bg3d-capture-adapter";
 import type { StudioBg3dShotBatchPass } from "./studio-bg3d-shot-batch-pass-catalog";
+import type { StudioBg3dShotBatchPlanErrorSubcode } from "./studio-bg3d-shot-batch-plan-error";
 
 export {
   STUDIO_BG3D_SHOT_BATCH_PASSES,
@@ -208,10 +209,11 @@ export type StudioBg3dShotBatchPlanErrorCode =
   | "empty-passes"
   | "file-budget";
 
+/** D4 생산자 계약: 실패는 표시 문구 대신 상위 코드+메시지 단위 서브코드로 방출한다. 표시는 표시 지점이 status-i18n/studio-producer-error-i18n 리졸버로 해석한다. */
 export interface StudioBg3dShotBatchPlanFailure {
   readonly ok: false;
   readonly code: StudioBg3dShotBatchPlanErrorCode;
-  readonly message: string;
+  readonly subcode: StudioBg3dShotBatchPlanErrorSubcode;
 }
 
 export interface StudioBg3dShotBatchPlanSuccess {
@@ -255,9 +257,9 @@ function hasExactKeys(value: unknown, expected: readonly string[]): boolean {
 
 function failure(
   code: StudioBg3dShotBatchPlanErrorCode,
-  message: string,
+  subcode: StudioBg3dShotBatchPlanErrorSubcode,
 ): StudioBg3dShotBatchPlanFailure {
-  return { ok: false, code, message };
+  return { ok: false, code, subcode };
 }
 
 function validShot(value: unknown): value is StudioBg3dShotBatchSourceShot {
@@ -300,18 +302,18 @@ function canonicalPasses(
 ): readonly StudioBg3dShotBatchPass[] | StudioBg3dShotBatchPlanFailure {
   const source = requested ?? ["lt-composite"];
   if (!Array.isArray(source)) {
-    return failure("invalid-pass", "컷 배치 출력 패스 형식이 올바르지 않습니다.");
+    return failure("invalid-pass", "passFormat");
   }
   if (source.length === 0) {
-    return failure("empty-passes", "컷 배치 출력 패스를 하나 이상 선택해 주세요.");
+    return failure("empty-passes", "emptyPasses");
   }
   const seen = new Set<StudioBg3dShotBatchPass>();
   for (const pass of source) {
     if (!isPass(pass)) {
-      return failure("invalid-pass", "지원하지 않는 컷 배치 출력 패스입니다.");
+      return failure("invalid-pass", "unsupportedPass");
     }
     if (seen.has(pass)) {
-      return failure("duplicate-pass", "컷 배치 출력 패스가 중복되었습니다.");
+      return failure("duplicate-pass", "duplicatePass");
     }
     seen.add(pass);
   }
@@ -763,12 +765,12 @@ export async function createStudioBg3dShotBatchPlan(
     shots.length > STUDIO_BG3D_SCENE_DOCUMENT_MAX_SHOTS ||
     shots.some((shot) => !validShot(shot))
   ) {
-    return failure("invalid-shots", "컷 배치 원본이 장면 문서 한도 또는 형식을 벗어났습니다.");
+    return failure("invalid-shots", "shotsOutOfBounds");
   }
   const shotById = new Map<string, StudioBg3dShotBatchSourceShot>();
   for (const shot of shots) {
     if (shotById.has(shot.id)) {
-      return failure("duplicate-shot-id", "컷 배치 원본에 중복 ID가 있습니다.");
+      return failure("duplicate-shot-id", "duplicateShotId");
     }
     shotById.set(shot.id, shot);
   }
@@ -778,14 +780,14 @@ export async function createStudioBg3dShotBatchPlan(
     options.sourceRevision.length < 1 ||
     new TextEncoder().encode(options.sourceRevision).byteLength > SOURCE_REVISION_MAX_BYTES
   ) {
-    return failure("invalid-source-revision", "컷 배치 장면 revision이 올바르지 않습니다.");
+    return failure("invalid-source-revision", "revisionFormat");
   }
   const parsedSourceRevision = parseStudioBg3dSceneDocument(options.sourceRevision);
   if (
     !parsedSourceRevision ||
     serializeStudioBg3dSceneDocument(parsedSourceRevision) !== options.sourceRevision
   ) {
-    return failure("invalid-source-revision", "컷 배치 장면 revision이 canonical JSON이 아닙니다.");
+    return failure("invalid-source-revision", "revisionNotCanonical");
   }
   const revisionShots = parsedSourceRevision.shots ?? [];
   if (
@@ -794,23 +796,23 @@ export async function createStudioBg3dShotBatchPlan(
       shot.id !== shots[index]?.id || shot.name !== shots[index]?.name
     )
   ) {
-    return failure("invalid-source-revision", "컷 배치 원본 컷이 canonical 장면 revision과 일치하지 않습니다.");
+    return failure("invalid-source-revision", "revisionMismatch");
   }
   if (!validScope(options.scope)) {
-    return failure("invalid-scope", "컷 배치 복구 소유 범위가 올바르지 않습니다.");
+    return failure("invalid-scope", "scopeInvalid");
   }
   if (options.layeredPsd !== undefined && typeof options.layeredPsd !== "boolean") {
-    return failure("invalid-pass", "컷 배치 PSD 옵션이 올바르지 않습니다.");
+    return failure("invalid-pass", "psdOptions");
   }
   if (options.contactSheet !== undefined && typeof options.contactSheet !== "boolean") {
-    return failure("invalid-pass", "컷 배치 콘택트 시트 옵션이 올바르지 않습니다.");
+    return failure("invalid-pass", "contactSheetOptions");
   }
   const exportHeight = options.exportHeight ?? "per-shot";
   if (
     exportHeight !== "per-shot" &&
     (!isStudioBg3dShotBatchIntegerInRange(exportHeight, 256, STUDIO_BG3D_SHOT_BATCH_PLAN_MAX_DIMENSION))
   ) {
-    return failure("invalid-pass", "컷 배치 고정 출력 높이가 올바르지 않습니다.");
+    return failure("invalid-pass", "fixedHeight");
   }
   const passes = canonicalPasses(options.passes);
   if ("ok" in passes) return passes;
@@ -820,28 +822,28 @@ export async function createStudioBg3dShotBatchPlan(
     options.capture.shots.length !== shots.length ||
     options.capture.shots.some((spec) => !validCaptureSpec(spec))
   ) {
-    return failure("invalid-capture", "컷 배치 캡처 계획이 올바르지 않습니다.");
+    return failure("invalid-capture", "planInvalid");
   }
   const captureByShotId = new Map<string, StudioBg3dShotBatchCaptureSpecInput>();
   /** Aspects observed from applied shot output when the owner omits exportAspectRatio. */
   const derivedAspects = new Set<number>();
   for (const capture of options.capture.shots) {
     if (captureByShotId.has(capture.shotId)) {
-      return failure("duplicate-capture-shot", "컷 배치 캡처 계획에 중복 컷이 있습니다.");
+      return failure("duplicate-capture-shot", "duplicateCaptureShot");
     }
     if (!shotById.has(capture.shotId)) {
-      return failure("missing-capture-shot", "컷 배치 캡처 계획이 원본 컷과 일치하지 않습니다.");
+      return failure("missing-capture-shot", "captureMismatch");
     }
     if (
       capture.width * capture.height > options.capture.owner.maxPixels ||
       capture.width > options.capture.owner.maxEdge ||
       capture.height > options.capture.owner.maxEdge
     ) {
-      return failure("invalid-capture", "컷 배치 캡처 계획이 선언한 기기 예산을 벗어났습니다.");
+      return failure("invalid-capture", "budgetExceeded");
     }
     const applied = applyStudioBg3dShot(parsedSourceRevision, capture.shotId);
     if (!applied) {
-      return failure("invalid-capture", "컷 배치 캡처 계획을 canonical 컷에 적용할 수 없습니다.");
+      return failure("invalid-capture", "applyFailed");
     }
     const requestedHeight = exportHeight === "per-shot"
       ? applied.output.exportHeight
@@ -872,11 +874,11 @@ export async function createStudioBg3dShotBatchPlan(
       capture.requestedHeight !== requestedHeight ||
       capture.wasReduced !== resolvedSize.wasReduced
     ) {
-      return failure("invalid-capture", "컷 배치 캡처 해상도가 canonical 출력 계획과 일치하지 않습니다.");
+      return failure("invalid-capture", "resolutionMismatch");
     }
     const includeDepth = studioBg3dShotBatchNeedsDepth(applied.output.line, passes);
     if (capture.includeDepth !== includeDepth) {
-      return failure("invalid-capture", "컷 배치 깊이 캡처가 canonical 출력 패스와 일치하지 않습니다.");
+      return failure("invalid-capture", "depthMismatch");
     }
     const background = createStudioBg3dCaptureBackgroundSnapshot({
       background: applied.background,
@@ -887,28 +889,28 @@ export async function createStudioBg3dShotBatchPlan(
       capture.background.color.toLowerCase() !== plannedBackground.color.toLowerCase() ||
       capture.background.alpha !== plannedBackground.alpha
     ) {
-      return failure("invalid-capture", "컷 배치 배경 캡처가 canonical 장면 배경과 일치하지 않습니다.");
+      return failure("invalid-capture", "backgroundMismatch");
     }
     captureByShotId.set(capture.shotId, capture);
   }
   if (shots.some((shot) => !captureByShotId.has(shot.id))) {
-    return failure("missing-capture-shot", "일부 컷의 고정 캡처 계획이 없습니다.");
+    return failure("missing-capture-shot", "captureMissing");
   }
 
   const requestedIds = options.selectedShotIds ?? shots.map(({ id }) => id);
   if (!Array.isArray(requestedIds) || requestedIds.some((id) => typeof id !== "string")) {
-    return failure("invalid-selection", "컷 배치 선택 형식이 올바르지 않습니다.");
+    return failure("invalid-selection", "selectionFormat");
   }
   if (requestedIds.length === 0) {
-    return failure("empty-selection", "렌더할 컷을 하나 이상 선택해 주세요.");
+    return failure("empty-selection", "emptySelection");
   }
   const selectedIds = new Set<string>();
   for (const id of requestedIds) {
     if (selectedIds.has(id)) {
-      return failure("duplicate-selection", "선택한 컷 ID가 중복되었습니다.");
+      return failure("duplicate-selection", "duplicateSelection");
     }
     if (!shotById.has(id)) {
-      return failure("unknown-selection", "장면에 없는 컷이 선택되었습니다.");
+      return failure("unknown-selection", "unknownSelection");
     }
     selectedIds.add(id);
   }
@@ -916,7 +918,7 @@ export async function createStudioBg3dShotBatchPlan(
   const selectedShots = shots.filter(({ id }) => selectedIds.has(id));
   const fileCount = selectedShots.length * passes.length;
   if (fileCount < 1 || fileCount > STUDIO_BG3D_SHOT_BATCH_MAX_FILES) {
-    return failure("file-budget", "컷 배치 출력 파일 수가 브라우저 안전 한도를 벗어났습니다.");
+    return failure("file-budget", "fileBudget");
   }
 
   const plannedShots: StudioBg3dShotBatchPlannedShot[] = selectedShots.map((shot, index) => {
@@ -951,10 +953,7 @@ export async function createStudioBg3dShotBatchPlan(
     options.capture.owner.exportAspectRatio === undefined &&
     derivedAspects.size > 1
   ) {
-    return failure(
-      "invalid-capture",
-      "컷 배치 캡처 비율이 컷마다 달라 고정 출력 계획을 만들 수 없습니다.",
-    );
+    return failure("invalid-capture", "aspectMismatch");
   }
   const stampedAspect =
     options.capture.owner.exportAspectRatio ??
@@ -969,7 +968,7 @@ export async function createStudioBg3dShotBatchPlan(
     sha256Hex(JSON.stringify(scope)),
   ]);
   if (!sourceDigest || !scopeDigest) {
-    return failure("digest-unavailable", "이 브라우저에서 안전한 SHA-256 컷 계획을 만들 수 없습니다.");
+    return failure("digest-unavailable", "planDigest");
   }
   const identity = canonicalRenderIdentity({
     sourceDigest,
@@ -982,11 +981,11 @@ export async function createStudioBg3dShotBatchPlan(
   });
   const planDigest = await sha256Hex(identity);
   if (!planDigest) {
-    return failure("digest-unavailable", "이 브라우저에서 안전한 SHA-256 컷 계획을 만들 수 없습니다.");
+    return failure("digest-unavailable", "planDigest");
   }
   const recoveryDigest = await sha256Hex(canonicalRecoveryIdentity(scopeDigest, planDigest));
   if (!recoveryDigest) {
-    return failure("digest-unavailable", "이 브라우저에서 안전한 SHA-256 복구 범위를 만들 수 없습니다.");
+    return failure("digest-unavailable", "recoveryScopeDigest");
   }
 
   return {

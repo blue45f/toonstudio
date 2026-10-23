@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   ChevronDown,
   ChevronUp,
@@ -213,7 +214,7 @@ export function StudioPageOrganizerToolbar({
             className="ml-auto inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-bad hover:bg-bad-soft/20 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Trash2 size={14} aria-hidden />
-            {bulkAction === "delete" ? "확인 중" : "일괄 삭제"}
+            {bulkAction === "delete" ? r3c07StatusText("studio.panelStatus.r3c07.pageOrganizerToolbar.checking", "확인 중") : "일괄 삭제"}
           </button>
         </div>
       ) : null}

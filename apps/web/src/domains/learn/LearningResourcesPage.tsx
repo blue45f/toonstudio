@@ -22,6 +22,7 @@ import {
   type ProductionStep,
 } from "./learning-resources";
 import { LEARNING_LEVELS, type LearningLevel } from "./learning-paths";
+import { learnStatusText } from "./learn-status-i18n";
 
 const LEVEL_LABELS: Readonly<Record<LearningLevel, string>> = {
   starter: "처음 시작",
@@ -185,7 +186,7 @@ export function LearningResourcesPage() {
         </div>
         {visibleResources.length > 0
           ? <div className="academy-resource-grid">{visibleResources.map((resource) => <ResourceCard key={resource.id} resource={resource} />)}</div>
-          : <div className="learn-empty"><h2>조건에 맞는 자료가 없습니다.</h2><p>직군이나 제작 단계 필터를 넓혀 보세요.</p><button type="button" onClick={() => setParams({})}>전체 자료 보기</button></div>}
+          : <div className="learn-empty"><h2>{learnStatusText("learn.status.resources.empty", "조건에 맞는 자료가 없습니다.")}</h2><p>직군이나 제작 단계 필터를 넓혀 보세요.</p><button type="button" onClick={() => setParams({})}>전체 자료 보기</button></div>}
       </section>
 
       <section className="academy-youtube-search" aria-labelledby="academy-youtube-title">
@@ -197,17 +198,17 @@ export function LearningResourcesPage() {
             <label htmlFor="academy-youtube-query">찾고 싶은 기술
               <input id="academy-youtube-query" value={youtubeQuery} maxLength={120} placeholder="예: 손 그리기, 액션 연출, 배경 투시" onChange={(event) => setYoutubeQuery(event.currentTarget.value)} />
             </label>
-            <button type="submit" disabled={youtubeQuery.trim().length < 2 || youtubeState === "loading"}>{youtubeState === "loading" ? "검색 중…" : "YouTube에서 찾기"}</button>
+            <button type="submit" disabled={youtubeQuery.trim().length < 2 || youtubeState === "loading"}>{youtubeState === "loading" ? learnStatusText("learn.status.resources.searching", "검색 중…") : "YouTube에서 찾기"}</button>
           </form>
         </div>
 
         <div className="academy-youtube-results" aria-live="polite">
           {youtubeState === "idle" && <p>검색어를 입력하면 YouTube의 공개 영상 메타데이터를 별도 영역에서 확인할 수 있습니다.</p>}
-          {youtubeState === "error" && <p>현재 API 검색을 사용할 수 없습니다. 잠시 후 다시 시도하거나 YouTube 검색으로 이동하세요.</p>}
+          {youtubeState === "error" && <p>{learnStatusText("learn.status.resources.apiUnavailable", "현재 API 검색을 사용할 수 없습니다. 잠시 후 다시 시도하거나 YouTube 검색으로 이동하세요.")}</p>}
           {youtubeResult && !youtubeResult.configured && (
             <div className="academy-youtube-fallback"><strong>YouTube API가 아직 연결되지 않았습니다.</strong><p>서비스 동작은 유지됩니다. API 키를 설정하기 전에는 외부 검색 페이지로 안전하게 연결합니다.</p><a href={youtubeResult.fallbackUrl} target="_blank" rel="noopener noreferrer">YouTube 검색 열기 ↗</a></div>
           )}
-          {youtubeResult?.configured && youtubeResult.items.length === 0 && <p>검색 결과를 가져오지 못했습니다. 검색어를 바꾸거나 직접 YouTube 검색을 열어보세요.</p>}
+          {youtubeResult?.configured && youtubeResult.items.length === 0 && <p>{learnStatusText("learn.status.resources.youtubeLoadFailed", "검색 결과를 가져오지 못했습니다. 검색어를 바꾸거나 직접 YouTube 검색을 열어보세요.")}</p>}
           {youtubeResult?.configured && youtubeResult.items.length > 0 && (
             <div className="academy-youtube-grid">
               {youtubeResult.items.map((video) => (

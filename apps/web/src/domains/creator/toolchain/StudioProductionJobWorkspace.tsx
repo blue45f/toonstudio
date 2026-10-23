@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -327,7 +328,7 @@ export function StudioProductionJobWorkspace({
   ]);
 
   const cancelJob = useCallback(async (job: StudioProductionJob): Promise<void> => {
-    if (!connection.client) throw new Error("로컬 실행기에 연결되어 있지 않습니다.");
+    if (!connection.client) throw new Error(creatorSub2StatusText("studio.creatorSub2.status.toolchain.jobWorkspace.runnerNotConnected", "로컬 실행기에 연결되어 있지 않습니다."));
     const snapshot = await connection.client.cancelJob(job.remoteId ?? job.id);
     await applySnapshot(snapshot);
   }, [applySnapshot, connection.client]);
@@ -342,7 +343,7 @@ export function StudioProductionJobWorkspace({
     outputId: string,
     name: string,
   ): Promise<void> => {
-    if (!connection.client) throw new Error("로컬 실행기에 연결되어 있지 않습니다.");
+    if (!connection.client) throw new Error(creatorSub2StatusText("studio.creatorSub2.status.toolchain.jobWorkspace.runnerNotConnected", "로컬 실행기에 연결되어 있지 않습니다."));
     const blob = await connection.client.downloadOutput(job.remoteId ?? job.id, outputId);
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement("a");

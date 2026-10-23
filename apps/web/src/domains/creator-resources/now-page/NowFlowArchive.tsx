@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/shared/lib/utils";
+import { resourceStatusText } from "../resource-status-i18n";
 
 import type { NowState } from "../now";
 import {
@@ -158,7 +159,7 @@ export function NowFlowArchive({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-line bg-panel p-8 text-center">
-          <p className="font-semibold text-fg">이 조건에 맞는 영감이 아직 없습니다.</p>
+          <p className="font-semibold text-fg">{resourceStatusText("resources.status.nowArchive.inspirationEmpty", "이 조건에 맞는 영감이 아직 없습니다.")}</p>
           <p className="mt-2 text-sm text-fg-3">오늘의 브리프를 저장하거나 5단계를 완주하면 여기에 모입니다.</p>
           <button type="button" className={`${ACTION_BUTTON} mt-4`} onClick={() => onArchiveFilterChange("all")}>
             전체 아카이브 보기

@@ -10,6 +10,7 @@ import {
   type ProductionProjectSummary,
 } from "@/domains/creator/public/production-projects";
 import { SummaryBufferShield } from "@/domains/creator/production-hub/SerializationBufferShield";
+import { integrationsStatusText } from "./integrations-status-i18n";
 
 /**
  * 연재 센터 첫 화면의 "내 작품 연재 현황".
@@ -48,7 +49,7 @@ export function SerialCenterOverview({
         if (active) setProjects(result.projects);
       })
       .catch(async (cause: unknown) => {
-        if (active) setError(await getApiErrorMessage(cause, "연재 현황을 불러오지 못했습니다."));
+        if (active) setError(await getApiErrorMessage(cause, integrationsStatusText("integrations.status.serial.loadFailed", "연재 현황을 불러오지 못했습니다.")));
       })
       .finally(() => {
         if (active) setLoading(false);

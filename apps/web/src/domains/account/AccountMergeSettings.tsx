@@ -9,6 +9,9 @@ import {
 import { useState } from "react";
 
 import { api, apiPath } from "@/platform/api";
+import { useT } from "@/shared/lib/i18n";
+
+import "../collaboration/collaboration-account-status-i18n";
 import { formatNumber } from "@toonstudio/core/format";
 
 type MergeProfilePreview = {
@@ -57,6 +60,7 @@ function providerLabel(provider: string): string {
 }
 
 export function AccountMergeSettings({ userId }: { userId: string | null }) {
+  const t = useT();
   const [issuedCode, setIssuedCode] = useState("");
   const [mergeCode, setMergeCode] = useState("");
   const [preview, setPreview] = useState<MergePreview | null>(null);
@@ -86,13 +90,13 @@ export function AccountMergeSettings({ userId }: { userId: string | null }) {
         error?: unknown;
       } | null>().catch(() => null);
       if (!response.ok || typeof payload?.token !== "string") {
-        setError(responseError(payload, "계정 통합 코드를 만들지 못했어요."));
+        setError(responseError(payload, t("account.merge.codeCreateFailed", "계정 통합 코드를 만들지 못했어요.")));
         return;
       }
       setIssuedCode(payload.token);
       setMessage("10분 동안 사용할 수 있는 통합 코드를 만들었어요. 코드를 복사한 뒤 주 계정으로 로그인해 주세요.");
     } catch {
-      setError("계정 통합 서버에 접속하지 못했어요.");
+      setError(t("account.merge.serverUnavailable", "계정 통합 서버에 접속하지 못했어요."));
     } finally {
       setBusy(null);
     }
@@ -111,7 +115,7 @@ export function AccountMergeSettings({ userId }: { userId: string | null }) {
   const loadPreview = async () => {
     const token = mergeCode.trim();
     if (!token) {
-      setError("보조 계정에서 만든 통합 코드를 입력해 주세요.");
+      setError(t("account.merge.codeRequired", "보조 계정에서 만든 통합 코드를 입력해 주세요."));
       return;
     }
     clearFeedback();
@@ -127,14 +131,14 @@ export function AccountMergeSettings({ userId }: { userId: string | null }) {
       });
       const payload = await response.json<(MergePreview & { error?: unknown }) | null>().catch(() => null);
       if (!response.ok || !payload?.source || !payload.target) {
-        setError(responseError(payload, "통합할 계정을 확인하지 못했어요."));
+        setError(responseError(payload, t("account.merge.previewFailed", "통합할 계정을 확인하지 못했어요.")));
         return;
       }
       setPreview(payload);
       setProfilePreference("target");
       setMessage("양쪽 계정 확인이 완료됐어요. 남길 프로필과 이전 내용을 확인해 주세요.");
     } catch {
-      setError("계정 통합 서버에 접속하지 못했어요.");
+      setError(t("account.merge.serverUnavailable", "계정 통합 서버에 접속하지 못했어요."));
     } finally {
       setBusy(null);
     }
@@ -167,7 +171,7 @@ export function AccountMergeSettings({ userId }: { userId: string | null }) {
       } | null>().catch(() => null);
       if (!response.ok) {
         setConfirming(false);
-        setError(responseError(payload, "계정을 통합하지 못했어요."));
+        setError(responseError(payload, t("account.merge.mergeFailed", "계정을 통합하지 못했어요.")));
         return;
       }
       const count = typeof payload?.transferredRecordCount === "number"
@@ -184,7 +188,7 @@ export function AccountMergeSettings({ userId }: { userId: string | null }) {
       }, 700);
     } catch {
       setConfirming(false);
-      setError("계정 통합 서버에 접속하지 못했어요.");
+      setError(t("account.merge.serverUnavailable", "계정 통합 서버에 접속하지 못했어요."));
     } finally {
       setBusy(null);
     }

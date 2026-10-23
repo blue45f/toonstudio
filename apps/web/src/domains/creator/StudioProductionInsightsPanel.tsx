@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
 import {
   AlertTriangle,
   BarChart3,
@@ -77,7 +78,7 @@ const ISSUE_SEVERITY_ROWS: ReadonlyArray<{
   label: string;
   className: string;
 }> = [
-  { severity: "error", label: "오류", className: "text-bad" },
+  { severity: "error", label: panelStatusTextR4("studio.panelStatus.productionInsights.severityError", "오류"), className: "text-bad" },
   { severity: "warning", label: "경고", className: "text-warn" },
   { severity: "info", label: "정보", className: "text-cool" },
 ];
@@ -279,7 +280,7 @@ export function StudioProductionInsightsPanel({
               <div className="max-w-md">
                 <FileStack size={28} className="mx-auto text-fg-3" aria-hidden />
                 <h3 id="production-insights-empty-title" className="mt-3 text-sm font-bold text-fg">
-                  아직 분석할 제작 구조가 없어요
+                  {panelStatusText("studio.panelStatus.productionInsights.structureEmpty", "아직 분석할 제작 구조가 없어요")}
                 </h3>
                 <p className="mt-1.5 text-xs leading-relaxed text-fg-3">
                   페이지에 컷, 대사, 내레이션이나 에셋을 추가하면 제작량과 검토 커버리지가 여기에 자동으로 나타납니다.
@@ -482,7 +483,7 @@ export function StudioProductionInsightsPanel({
 
                 {insights.assets.totalCount === 0 ? (
                   <p className="mt-3 rounded-xl border border-dashed border-line bg-card/25 px-3 py-5 text-center text-xs leading-relaxed text-fg-3">
-                    집계할 이미지·소재 에셋이 없습니다. 에셋을 추가하고 AI 생성 또는 편집 표지를 남기면 출처 현황이 표시됩니다.
+                    {panelStatusText("studio.panelStatus.productionInsights.assetsEmpty", "집계할 이미지·소재 에셋이 없습니다. 에셋을 추가하고 AI 생성 또는 편집 표지를 남기면 출처 현황이 표시됩니다.")}
                   </p>
                 ) : (
                   <div className="mt-3 rounded-xl border border-line bg-card/35 p-3.5">

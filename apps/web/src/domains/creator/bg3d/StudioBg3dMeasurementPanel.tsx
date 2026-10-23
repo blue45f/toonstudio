@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
+import { resolveStudioBg3dMeasurementError } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
+
 import {
   STUDIO_BG3D_CONTROL_BUTTON,
   STUDIO_BG3D_ICON_BUTTON,
@@ -108,6 +112,7 @@ export function StudioBg3dMeasurementPanel({
   onDocumentChange,
   onLengthLockChange,
 }: StudioBg3dMeasurementPanelProps) {
+  const t = useT();
   const [notice, setNotice] = useState<PanelNotice | null>(null);
   const distanceLabel = draftMeasurement
     ? formatStudioBg3dMeasurementLength(draftMeasurement.distanceMeters, document.unit)
@@ -125,7 +130,7 @@ export function StudioBg3dMeasurementPanel({
     successMessage?: string,
   ) => {
     if (!result.ok) {
-      setNotice({ tone: "error", message: result.message });
+      setNotice({ tone: "error", message: resolveStudioBg3dMeasurementError(result) });
       return;
     }
     onDocumentChange(result.document);
@@ -140,7 +145,7 @@ export function StudioBg3dMeasurementPanel({
       lockedLengthMeters,
     });
     if (!result.ok) {
-      setNotice({ tone: "error", message: result.message });
+      setNotice({ tone: "error", message: resolveStudioBg3dMeasurementError(result) });
       return;
     }
     onDocumentChange(result.document);
@@ -337,7 +342,7 @@ export function StudioBg3dMeasurementPanel({
 
       {resolvedGuides.length === 0 ? (
         <p className="mt-2 rounded-lg border border-dashed border-line px-3 py-3 text-center text-[0.68rem] leading-relaxed text-fg-3">
-          저장된 가이드가 없습니다. 자주 쓰는 벽 높이·문 폭·가구 간격을 남겨 보세요.
+          {t("studio.bg3dPanelStatus.measurement.guidesEmpty", "저장된 가이드가 없습니다. 자주 쓰는 벽 높이·문 폭·가구 간격을 남겨 보세요.")}
         </p>
       ) : (
         <ul className="mt-2 space-y-1.5" aria-label="영구 측정 가이드 목록">

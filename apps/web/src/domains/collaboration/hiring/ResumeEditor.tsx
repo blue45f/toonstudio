@@ -7,12 +7,17 @@ import { optionsOf } from "./hiring-form-values";
 
 import { ResumePreview } from "./ResumePreview";
 
+import { useT } from "@/shared/lib/i18n";
+
+import "../collaboration-account-status-i18n";
+
 import type { CreatorHiringRole, HiringResumeContent, HiringResumeInput } from "../../../../../../packages/contracts/src/creator-hiring";
 
 export function ChoiceSet({ label, options, value, onChange, max = 12 }: { label: string; options: Record<string, string>; value: string[]; onChange: (v: string[]) => void; max?: number }) {
   return <fieldset className="space-y-2"><legend className="font-semibold">{label} (최대 {max}개)</legend><div className="flex flex-wrap gap-3">{Object.entries(options).map(([key, name]) => <label key={key} className="flex min-h-11 items-center gap-2 rounded-lg border border-line px-3 text-sm"><input type="checkbox" checked={value.includes(key)} disabled={!value.includes(key) && value.length >= max} onChange={() => onChange(value.includes(key) ? value.filter((x) => x !== key) : [...value, key])} />{name}</label>)}</div></fieldset>;
 }
 export function ResumeEditor({ initial, busy, onSave, onCancel }: { initial: HiringResumeInput; busy: boolean; onSave: (input: HiringResumeInput) => void; onCancel: () => void }) {
+  const t = useT();
   const [draft, setDraft] = useState(initial);
   const [preview, setPreview] = useState(false);
   const content = draft.content;
@@ -53,7 +58,7 @@ export function ResumeEditor({ initial, busy, onSave, onCancel }: { initial: Hir
         </fieldset>;
       })}
       <button type="button" className={collabButton} disabled={content.portfolio.length >= 12} onClick={() => change("portfolio", [...content.portfolio, { title: "", url: "", contribution: "", permission: "owned" }])}>포트폴리오 추가</button>
-      <div className="flex gap-3"><button type="submit" className={collabPrimary}>{busy ? "저장 중…" : "새 버전으로 저장"}</button><button type="button" className={collabButton} onClick={onCancel}>닫기</button></div>
+      <div className="flex gap-3"><button type="submit" className={collabPrimary}>{busy ? t("collaboration.resumeEditor.saving", "저장 중…") : "새 버전으로 저장"}</button><button type="button" className={collabButton} onClick={onCancel}>닫기</button></div>
     </fieldset></form>}
   </section>;
 }

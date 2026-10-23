@@ -7,6 +7,7 @@ import { useI18n } from "@/shared/lib/i18n";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 import { IntegrationError, IntegrationLoading, IntegrationPage } from "./IntegrationUi";
+import { integrationsStatusText } from "./integrations-status-i18n";
 import { integrationPlatformClient } from "./integration-platform-client";
 import { downloadIntegrationJson } from "./integration-platform-storage";
 import type { DeveloperManifestResponse } from "./integration-platform-types";
@@ -115,7 +116,7 @@ export function DeveloperPlatformPage() {
     void integrationPlatformClient.developerManifest()
       .then((response) => { if (!cancelled) { setManifest(response); setError(null); } })
       .catch(async (reason: unknown) => {
-        if (!cancelled) setError(await getApiErrorMessage(reason, "개발자 계약을 불러오지 못했습니다."));
+        if (!cancelled) setError(await getApiErrorMessage(reason, integrationsStatusText("integrations.status.developer.loadFailed", "개발자 계약을 불러오지 못했습니다.")));
       });
     return () => { cancelled = true; };
   }, [reloadCount]);

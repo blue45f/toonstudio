@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { BookOpen, CircleCheck, ImageDown, Loader2, MousePointer2 } from "lucide-react";
 
 import {
@@ -57,7 +58,7 @@ export function StudioRetouchQuickGuide({
     ? help.busyMessage
     : state === "blocked"
       ? disabledReason
-        ?? "현재 상태에서는 편집용 이미지 복사본을 준비할 수 없습니다. 잠금과 표시할 내용을 확인하세요."
+        ?? r3c07StatusText("studio.panelStatus.r3c07.retouchGuide.copyUnavailable", "현재 상태에서는 편집용 이미지 복사본을 준비할 수 없습니다. 잠금과 표시할 내용을 확인하세요.")
       : state === "active"
         ? `${help.activeInstruction} 손을 떼면 한 획이 저장됩니다.`
         : `${help.summary} 도구를 켜면 바로 시작할 수 있습니다.`;

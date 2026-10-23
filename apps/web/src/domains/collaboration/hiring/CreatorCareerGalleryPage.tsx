@@ -18,6 +18,9 @@ import { Container } from "@/shared/components/section";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { translateNow, useT } from "@/shared/lib/i18n";
+
+import "../collaboration-account-status-i18n";
 
 const root = "/collaborations/career";
 
@@ -34,6 +37,7 @@ type RoleFilter = CreatorHiringRole | "all";
  * 카드 상단에 아트를 가장 크게 두고, 역할 필터 칩과 협업 기록 배지(상대방 확인)를 얹는다.
  */
 export function CreatorCareerGalleryPage() {
+  const t = useT();
   const [items, setItems] = useState<CreatorCareerPublic[] | null>(null);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
@@ -51,7 +55,7 @@ export function CreatorCareerGalleryPage() {
         }
       })
       .catch(async (caught) => {
-        const message = await getApiErrorMessage(caught, "전시를 불러오지 못했어요.");
+        const message = await getApiErrorMessage(caught, translateNow("collaboration.careerGallery.loadFailed", "전시를 불러오지 못했어요."));
         if (!controller.signal.aborted) setError(message);
       });
     return () => controller.abort();
@@ -94,13 +98,13 @@ export function CreatorCareerGalleryPage() {
             }}
           >
             <RotateCcw size={14} aria-hidden="true" />
-            다시 불러오기
+            {t("collaboration.careerGallery.reload", "다시 불러오기")}
           </button>
         </div>
       )}
 
       {items === null && !error && (
-        <div role="status" aria-label="전시를 불러오는 중" className="grid gap-4 md:grid-cols-2" aria-hidden="true">
+        <div role="status" aria-label={t("collaboration.careerGallery.loading", "전시를 불러오는 중")} className="grid gap-4 md:grid-cols-2" aria-hidden="true">
           <div className="skeleton h-40 rounded-xl" />
           <div className="skeleton h-40 rounded-xl" />
           <div className="skeleton h-40 rounded-xl" />
@@ -111,7 +115,7 @@ export function CreatorCareerGalleryPage() {
       {items?.length === 0 && (
         <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center">
           <img src="/images/empty-library.webp" alt="" aria-hidden="true" loading="lazy" decoding="async" className="mx-auto mb-4 h-32 w-full max-w-sm rounded-xl border border-line/60 object-cover" />
-          <p className="text-sm font-medium text-fg">공개된 포트폴리오가 아직 없어요.</p>
+          <p className="text-sm font-medium text-fg">{t("collaboration.careerGallery.empty", "공개된 포트폴리오가 아직 없어요.")}</p>
           <p className="mt-1 text-xs leading-6 text-fg-3">경력·포트폴리오 탭에서 경력을 작성하고 공개 전시를 켜면 이곳에 표시됩니다.</p>
         </div>
       )}
@@ -154,7 +158,7 @@ export function CreatorCareerGalleryPage() {
 
           {visibleItems.length === 0 ? (
             <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center">
-              <p className="text-sm font-medium text-fg">이 역할로 공개된 포트폴리오가 아직 없어요.</p>
+              <p className="text-sm font-medium text-fg">{t("collaboration.careerGallery.emptyForRole", "이 역할로 공개된 포트폴리오가 아직 없어요.")}</p>
               <p className="mt-1 text-xs leading-6 text-fg-3">다른 역할을 골라 보거나 전체 전시로 돌아가세요.</p>
               <button type="button" className={`${collabButton} mt-4`} onClick={() => setRoleFilter("all")}>
                 전체 전시 보기

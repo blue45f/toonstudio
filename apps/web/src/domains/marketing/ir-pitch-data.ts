@@ -82,7 +82,7 @@ export const CAPABILITIES = [
     href: "/studio/bg3d",
     chapterStart: 228,
     icon: Boxes,
-    stats: [{ ko: "테마 팩 42", en: "42 theme packs" }, { ko: "배치 가능 에셋 5,303", en: "5,303 placeable assets" }, { ko: "프리셋 9", en: "9 presets" }],
+    stats: [{ ko: "테마 팩 42", en: "42 theme packs" }, { ko: "배치 가능 에셋 14,928", en: "14,928 placeable assets" }, { ko: "프리셋 9", en: "9 presets" }],
     ko: { title: "3D 배경·가상 스튜디오", body: "상용 라이선스를 확보한 3D 에셋 번들을 배경 스튜디오에 연결해 뒀어요. 테마 팩 42종에서 골라 배치하고 카메라 구도를 잡으면, 그대로 컷의 밑그림이 됩니다. 가상 스튜디오는 클래식 2D 무대에서 내 캐릭터로 만나 함께 작업하는 공간이에요.", cta: "3D 배경 스튜디오" },
     en: { title: "3D sets & virtual studio", body: "We wired a commercially licensed 3D asset bundle into the background studio: pick from 42 theme packs, place what you need, frame the camera — and it becomes the base of your panel. The virtual studio is a classic 2D stage where you meet and work as your character.", cta: "Open the 3D studio" },
   },

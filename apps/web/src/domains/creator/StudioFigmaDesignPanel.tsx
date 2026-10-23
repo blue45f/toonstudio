@@ -3,6 +3,7 @@
  * until requested, preserving the inspector density budget while keeping DCC-grade transforms one
  * disclosure away.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -85,7 +86,7 @@ export function StudioFigmaDesignPanel({
   const multi = metrics.elementCount > 1;
   const precisionControls = metrics.precisionControls === true;
   const interactionDisabledReason = disabled
-    ? disabledReason ?? "현재 편집 상태에서는 선택 대상을 변경할 수 없어요."
+    ? disabledReason ?? r3c07StatusText("studio.panelStatus.r3c07.figmaDesign.selectionChangeUnavailable", "현재 편집 상태에서는 선택 대상을 변경할 수 없어요.")
     : null;
   const widthDisabled = disabled || (!precisionControls && multi) || !metrics.supportsWidth;
   const heightDisabled = disabled || (!precisionControls && multi) || !metrics.supportsHeight;
@@ -140,7 +141,7 @@ export function StudioFigmaDesignPanel({
           disabled={disabled || !metrics.supportsOpacity}
           disabledReason={
             interactionDisabledReason
-            ?? (metrics.supportsOpacity ? null : "프레임이 포함된 선택은 불투명도를 함께 바꿀 수 없어요.")
+            ?? (metrics.supportsOpacity ? null : r3c07StatusText("studio.panelStatus.r3c07.figmaDesign.opacityUnavailable", "프레임이 포함된 선택은 불투명도를 함께 바꿀 수 없어요."))
           }
           mixed={metrics.opacityMixed}
           step={1}

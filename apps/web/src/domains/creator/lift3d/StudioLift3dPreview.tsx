@@ -1,3 +1,4 @@
+import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
@@ -208,7 +209,7 @@ export function StudioLift3dPreview({ buffers, textureUrl, unlit }: StudioLift3d
       />
       {unsupported ? (
         <p className="absolute inset-0 grid place-items-center px-4 text-center text-xs text-fg-3">
-          이 브라우저에서는 3D 미리보기를 열 수 없습니다. GLB 파일 저장은 그대로 사용할 수 있습니다.
+          {creatorRestStatusText("creatorRest.status.lift3d.unsupported", "이 브라우저에서는 3D 미리보기를 열 수 없습니다. GLB 파일 저장은 그대로 사용할 수 있습니다.")}
         </p>
       ) : null}
     </div>

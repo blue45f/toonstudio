@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   ChevronDown,
   ChevronUp,
@@ -677,7 +678,7 @@ export function StudioInspectorPublishPanel({
               className: "mt-2 w-full pointer-coarse:min-h-11",
             })}
           >
-            {saving ? "저장 중…" : continueLabel}
+            {saving ? r3c07StatusText("studio.panelStatus.r3c07.inspectorUtility.saving", "저장 중…") : continueLabel}
           </button>
         </div>
       ) : null}

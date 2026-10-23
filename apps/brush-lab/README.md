@@ -295,7 +295,7 @@ SP-C의 지터(0.738 → 0.112)와 수치가 조금 다른 것은 이쪽이 앱�
 | libmypaint v1.6.1(wasm, 핀된 빌드) | 2768251d | ISC | 외부 엔진 비교 레인 `libmypaint`. 고지: `packages/studio-brush-platform/src/libmypaint/COPYING`(라이선스 원문)·`NOTICE`·`THIRD_PARTY_INVENTORY.json`·`INTEGRITY.sha256`, 빌드 소스 `bridge/` |
 | Hokusai 0.3.0(wasm, `studio-hokusai-wasm` 래퍼 pkg) | 0.3.0 | MIT OR Apache-2.0 (+ 전이 `unicode-ident` 데이터표 Unicode-3.0) | 외부 엔진 비교 레인 `hokusai`. 고지: `packages/studio-hokusai-wasm/pkg/LICENSE-APACHE`·`LICENSE-MIT`·`LICENSE-UNICODE`(저장소 루트 패키지 디렉터리에도 같은 3개)·`README.md`·`INTEGRITY.sha256`. 래퍼는 Hokusai 업스트림의 `hokusai-wasm`을 쓰지 않는다 |
 | vite / @vitejs/plugin-react | ^8.0.16 / ^6.0.2 | MIT | 정적 빌드·ES module worker |
-| vitest / jsdom / @testing-library/react | 4.1.11 / ^29 / ^16.3.2 | MIT | Node·jsdom 테스트 |
+| vitest / jsdom / @testing-library/react | 4.1.12 / ^29 / ^16.3.2 | MIT | Node·jsdom 테스트 |
 | typescript | ~6.0.3 | Apache-2.0 | typecheck(WebGPU 타입은 DOM lib 제공, `@webgpu/types` 미사용) |
 
 혼색 엔진의 스펙트럼 표(`engine/pigment/km-tables.ts`)는 spectral.js 3.0.0(MIT, 루트 의존·런타임 미사용) 파생 데이터이며 고지·생성 절차·재현 검사는 [docs/license-policy.md](docs/license-policy.md) 6절이 원장이다.

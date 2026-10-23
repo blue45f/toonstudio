@@ -4,10 +4,7 @@ import {
   cloneBgCustomModelInstances,
   type BgCustomModelInstance,
 } from "../studio-background-3d-model";
-import {
-  clonePrimitives,
-  type BgPrimitive,
-} from "../studio-background-3d-primitives";
+import { clonePrimitives, type BgPrimitive } from "../studio-background-3d-primitives";
 
 import {
   applyStudioBg3dViewportAfterTransition,
@@ -43,7 +40,6 @@ import {
   freezeStudioBg3dShotAnimationsForBatch,
   projectStudioBg3dShotVisibilityToRuntime,
 } from "./studio-bg3d-shot-runtime";
-
 import type { StudioBg3dCaptureAdapter } from "./studio-bg3d-capture-adapter";
 import type {
   StudioBg3dSharedCharacterCaptureAuthorityLease,
@@ -70,6 +66,10 @@ import type {
 import type { StudioBg3dShotBatchRuntime } from "./studio-bg3d-shot-batch-runtime-loader";
 import type { StudioBg3dShotContactSheetImage } from "./studio-bg3d-shot-contact-sheet-contract";
 import type { RefObject } from "react";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
+import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
+import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
 
 /** Live progress the editor renders while a shot batch renders, packages, and downloads. */
 export interface StudioBg3dShotBatchProgress {
@@ -203,7 +203,7 @@ export function createStudioBg3dShotBatchExportRunner(
 
   async function exportSavedShotsAsZip() {
     if (captureInFlightRef.current) {
-      setError("다른 3D 캡처가 진행 중입니다. 완료하거나 취소한 뒤 컷 배치 출력을 다시 실행해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.shotBatch.captureBusy", "다른 3D 캡처가 진행 중입니다. 완료하거나 취소한 뒤 컷 배치 출력을 다시 실행해 주세요."));
       return;
     }
     if (shotBatchBlockedReason) {
@@ -219,20 +219,20 @@ export function createStudioBg3dShotBatchExportRunner(
     const shots = currentDocument?.shots ?? [];
     if (!currentDocument) return;
     if (shots.length === 0) {
-      setError("일괄 렌더할 컷을 먼저 기록해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.shotBatch.recordShotsFirst", "일괄 렌더할 컷을 먼저 기록해 주세요."));
       return;
     }
     const batchSourceRevision = serializeStudioBg3dSceneDocument(currentDocument);
     if (!batchSourceRevision) {
-      setError("컷 배치 장면 revision을 안전하게 고정하지 못했습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.shotBatch.revisionPinFailed", "컷 배치 장면 revision을 안전하게 고정하지 못했습니다."));
       return;
     }
     if (!recoveryScope) {
-      setError("컷 배치 복구 범위를 준비하는 중입니다. 잠시 후 다시 실행해 주세요.");
+      setError(frozenStatus6Text("studio.frozenStatus6.shotBatch.recoveryScopePreparing", "컷 배치 복구 범위를 준비하는 중입니다. 잠시 후 다시 실행해 주세요."));
       return;
     }
     if (!captureRef.current.adapter || !originalViewportApi) {
-      setError("컷을 렌더할 3D 뷰포트가 아직 준비되지 않았습니다.");
+      setError(frozenStatus6Text("studio.frozenStatus6.shotBatch.viewportNotReady", "컷을 렌더할 3D 뷰포트가 아직 준비되지 않았습니다."));
       return;
     }
     const sharedCharacterAuthorityResult = acquireSharedCharacterCaptureAuthority();
@@ -253,7 +253,7 @@ export function createStudioBg3dShotBatchExportRunner(
         stage: "render",
         completed: 0,
         total: shotBatchSelectedIds.length,
-        label: "컷 출력 런타임 불러오는 중",
+        label: frozenStatus6Text("studio.frozenStatus6.shotBatch.runtimeLoading", "컷 출력 런타임 불러오는 중"),
       });
       setIsCapturing(true);
       setError(null);
@@ -278,13 +278,13 @@ export function createStudioBg3dShotBatchExportRunner(
     } catch (cause) {
       finishShotBatchBeforeSession(
         cause instanceof Error && cause.name === "AbortError"
-          ? "컷 일괄 렌더를 중단했습니다."
+          ? frozenStatus6Text("studio.frozenStatus6.shotBatch.aborted", "컷 일괄 렌더를 중단했습니다.")
           : "컷 일괄 출력 런타임을 불러오지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.",
       );
       return;
     }
     if (!componentActiveRef.current || controller.signal.aborted) {
-      finishShotBatchBeforeSession("컷 일괄 렌더를 중단했습니다.");
+      finishShotBatchBeforeSession(frozenStatus6Text("studio.frozenStatus6.shotBatch.aborted", "컷 일괄 렌더를 중단했습니다."));
       return;
     }
     const {
@@ -461,7 +461,7 @@ export function createStudioBg3dShotBatchExportRunner(
         contactSheet: shotBatchIncludeContactSheet,
         exportHeight: shotBatchExportHeight,
       });
-      if (!batchPlanResult.ok) throw new Error(batchPlanResult.message);
+      if (!batchPlanResult.ok) throw new StudioBg3dShotBatchPlanError(batchPlanResult.subcode);
       batchPlan = batchPlanResult.plan;
       assertStudioBg3dShotPsdCaptureSupported({
         includeLayeredPsd: batchPlan.includeLayeredPsd,
@@ -493,15 +493,14 @@ export function createStudioBg3dShotBatchExportRunner(
           setLineArtPreview(originalLineArtPreview);
           setIsCapturing(false);
           setShotBatchProgress(null);
-          setError(cause instanceof StudioBg3dShotBatchRecoveryError
-            ? cause.message
+          setError(resolveStudioBg3dShotBatchPlanErrorFromCause(cause) ?? (cause instanceof StudioBg3dShotBatchRecoveryError ? cause.message
             : cause instanceof Error && cause.name === "AbortError"
             ? recoveryAccessRevoked
-              ? "작품 열람 권한 또는 저장 대상이 변경되어 컷 일괄 렌더를 안전하게 중단했습니다."
-              : "컷 일괄 렌더를 중단했습니다."
+              ? frozenStatus6Text("studio.frozenStatus6.shotBatch.accessChangedAbort", "작품 열람 권한 또는 저장 대상이 변경되어 컷 일괄 렌더를 안전하게 중단했습니다.")
+              : frozenStatus6Text("studio.frozenStatus6.shotBatch.aborted", "컷 일괄 렌더를 중단했습니다.")
               : cause instanceof Error
                 ? cause.message
-                : "결정적 컷 계획을 만들지 못했습니다.");
+                : frozenStatus6Text("studio.frozenStatus6.shotBatch.planFailed", "결정적 컷 계획을 만들지 못했습니다.")));
           });
       }
       return;
@@ -981,9 +980,9 @@ export function createStudioBg3dShotBatchExportRunner(
         : recoverySession.degradedReason
           ? ` ${recoverySession.degradedReason}`
           : "";
-      const failureDetail = cause instanceof Error && cause.message.trim().length > 0
-        ? ` 원인: ${cause.message.trim()}`
-        : "";
+      const failureMessage = resolveBg3dShotBatchPublicPlanErrorFromCause(cause)
+        ?? (cause instanceof Error ? cause.message.trim() : "");
+      const failureDetail = failureMessage ? ` 원인: ${failureMessage}` : "";
       if (componentActiveRef.current) {
         if (aborted) {
           setError(
@@ -1051,7 +1050,7 @@ export function createStudioBg3dShotBatchExportRunner(
           setIsCapturing(false);
           setShotBatchProgress(null);
           if (restoreFailed) {
-            setError("컷 배치 후 원래 카메라 구도를 즉시 복원하지 못했습니다. viewport가 준비되면 자동으로 다시 적용합니다.");
+            setError(frozenStatus6Text("studio.frozenStatus6.shotBatch.cameraRestoreDeferred", "컷 배치 후 원래 카메라 구도를 즉시 복원하지 못했습니다. viewport가 준비되면 자동으로 다시 적용합니다."));
           }
         });
       }

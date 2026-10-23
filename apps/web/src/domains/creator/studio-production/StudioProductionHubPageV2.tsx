@@ -1,5 +1,6 @@
 import "../studio-shell/creator-workflow-surfaces.css";
 import { productionChecklistState } from "./studio-production-checklist";
+import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { StudioWorkSessionEntry } from "../work-session/StudioWorkSessionEntry";
 import {
   formatI18nTemplate,
@@ -147,15 +148,15 @@ function persistenceLabel(
 ): string {
   switch (state) {
     case "loading":
-      return "저장 상태 확인 중";
+      return frozenStatus3Text("studio.frozenStatus3.hub.persistenceLoading", "저장 상태 확인 중");
     case "saving":
-      return "저장 중";
+      return frozenStatus3Text("studio.frozenStatus3.hub.persistenceSaving", "저장 중");
     case "saved":
-      return mode === "server-work" ? "팀에 저장됨" : "이 기기에 저장됨";
+      return mode === "server-work" ? frozenStatus3Text("studio.frozenStatus3.hub.persistenceSavedTeam", "팀에 저장됨") : frozenStatus3Text("studio.frozenStatus3.hub.persistenceSavedDevice", "이 기기에 저장됨");
     case "demo":
-      return "샘플 · 저장 안 함";
+      return frozenStatus3Text("studio.frozenStatus3.hub.persistenceDemo", "샘플 · 저장 안 함");
     case "error":
-      return "저장을 확인해 주세요";
+      return frozenStatus3Text("studio.frozenStatus3.hub.persistenceError", "저장을 확인해 주세요");
   }
 }
 
@@ -441,9 +442,7 @@ function StudioProductionHubWorkspace({
       adoptWorkspace(createEmptyProductionWorkspace(scope.key));
       setServerCapabilities(null);
       setPersistence("error");
-      setLoadError(cause instanceof Error
-        ? cause.message
-        : "제작 운영 데이터를 불러오지 못했습니다.");
+      setLoadError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.hub.loadFailed", "제작 운영 데이터를 불러오지 못했습니다."));
     }
   }, [adoptWorkspace, mode, scope.key, serverWorkId]);
 
@@ -561,11 +560,11 @@ function StudioProductionHubWorkspace({
     message: string,
   ) => {
     if (persistence === "loading" || mutationPending.current) {
-      setNotice("저장 상태 확인 또는 이전 변경 저장이 끝난 뒤 다시 시도해 주세요.");
+      setNotice(frozenStatus3Text("studio.frozenStatus3.hub.waitForSave", "저장 상태 확인 또는 이전 변경 저장이 끝난 뒤 다시 시도해 주세요."));
       return;
     }
     if (!capabilities.canEdit || loadError) {
-      setNotice(loadError ?? "현재 모드에서는 변경할 수 없습니다.");
+      setNotice(loadError ?? frozenStatus3Text("studio.frozenStatus3.hub.cannotChangeInMode", "현재 모드에서는 변경할 수 없습니다."));
       return;
     }
     if (mode === "demo") {
@@ -575,7 +574,7 @@ function StudioProductionHubWorkspace({
         updatedAt: new Date().toISOString(),
       } as ProductionWorkspace;
       adoptWorkspace(next);
-      setNotice(`${message} 데모 변경은 저장되지 않습니다.`);
+      setNotice(frozenStatus3Text("studio.frozenStatus3.hub.demoNotSaved", { message }, "{message} 데모 변경은 저장되지 않습니다."));
       return;
     }
     mutationPending.current = true;
@@ -603,7 +602,7 @@ function StudioProductionHubWorkspace({
           sourceClientId: clientIdRef.current,
         }));
       } else {
-        setNotice("현재 모드에서는 제작 운영 데이터를 저장할 수 없습니다.");
+        setNotice(frozenStatus3Text("studio.frozenStatus3.hub.cannotSaveInMode", "현재 모드에서는 제작 운영 데이터를 저장할 수 없습니다."));
         setPersistence("error");
         return;
       }
@@ -616,9 +615,7 @@ function StudioProductionHubWorkspace({
         return;
       }
       setPersistence("error");
-      setNotice(cause instanceof Error
-        ? cause.message
-        : "제작 운영 데이터를 저장하지 못했습니다.");
+      setNotice(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.hub.saveFailed", "제작 운영 데이터를 저장하지 못했습니다."));
     } finally {
       mutationPending.current = false;
     }
@@ -694,7 +691,7 @@ function StudioProductionHubWorkspace({
   // 해석은 서버 조회가 필요해 실패하면 공지로 남긴다.
   const openPinTask = useCallback((task: ProductionTask) => {
     if (mode === "demo" || !serverWorkId) {
-      setNotice("검수 핀이 있는 회차로 이동하려면 저장된 작품에서 열어 주세요.");
+      setNotice(frozenStatus3Text("studio.frozenStatus3.hub.pinNeedsSavedWork", "검수 핀이 있는 회차로 이동하려면 저장된 작품에서 열어 주세요."));
       return;
     }
     void (async () => {
@@ -705,7 +702,7 @@ function StudioProductionHubWorkspace({
           ? productionEpisodeRoomPath(projectId, task.pinEpisodeId)
           : productionSurfacePath(projectId, "episodes"));
       } catch {
-        setNotice("연결된 제작 프로젝트를 찾지 못해 회차 룸으로 이동하지 못했습니다.");
+        setNotice(frozenStatus3Text("studio.frozenStatus3.hub.projectNotFound", "연결된 제작 프로젝트를 찾지 못해 회차 룸으로 이동하지 못했습니다."));
       }
     })();
   }, [mode, navigate, serverWorkId]);
@@ -949,7 +946,7 @@ function StudioProductionHubWorkspace({
           <Metric
             label={translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "진행률")}
             value={workspaceVerified ? `${progress}%` : "—"}
-            detail={!workspaceVerified ? "저장 상태 확인이 필요합니다." : workspace.tasks.length === 0
+            detail={!workspaceVerified ? frozenStatus3Text("studio.frozenStatus3.hub.verifySaveNeeded", "저장 상태 확인이 필요합니다.") : workspace.tasks.length === 0
               ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "제작 작업을 추가해 진행률을 관리하세요.")
               : formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "{v0}/{v1} 작업 완료"), { v0: String(completed), v1: String(workspace.tasks.length) })}
             tone={workspaceVerified && workspace.tasks.length > 0 && completed === workspace.tasks.length ? "success" : "neutral"}
@@ -957,20 +954,20 @@ function StudioProductionHubWorkspace({
           <Metric
             label={translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "먼저 해결할 항목")}
             value={workspaceVerified ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "{v0}건"), { v0: String(blocked) }) : "—"}
-            detail={!workspaceVerified ? "저장 상태 확인이 필요합니다." : blocked > 0 ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "다음 단계 전에 확인해 주세요") : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "진행을 막는 항목이 없습니다")}
+            detail={!workspaceVerified ? frozenStatus3Text("studio.frozenStatus3.hub.verifySaveNeeded", "저장 상태 확인이 필요합니다.") : blocked > 0 ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "다음 단계 전에 확인해 주세요") : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "진행을 막는 항목이 없습니다")}
             tone={!workspaceVerified ? "neutral" : blocked > 0 ? "danger" : "success"}
           />
           <Metric
             label={translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "확인할 의견")}
             value={workspaceVerified ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "{v0}건"), { v0: String(openBlockers + openMajor) }) : "—"}
-            detail={!workspaceVerified ? "저장 상태 확인이 필요합니다." : formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "중요 {v0} · 일반 {v1}"), { v0: String(openBlockers), v1: String(openMajor) })}
+            detail={!workspaceVerified ? frozenStatus3Text("studio.frozenStatus3.hub.verifySaveNeeded", "저장 상태 확인이 필요합니다.") : formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "중요 {v0} · 일반 {v1}"), { v0: String(openBlockers), v1: String(openMajor) })}
             tone={!workspaceVerified ? "neutral" : openBlockers > 0 ? "danger" : openMajor > 0 ? "warning" : "success"}
           />
           {showCollaborationUi ? (
             <Metric
               label={translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "참여자")}
               value={workspaceVerified ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "{v0}명"), { v0: String(workspace.members.length) }) : "—"}
-              detail={!workspaceVerified ? "저장 상태 확인이 필요합니다." : capabilities.serverAuthoritative ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "팀 권한에 따라 표시") : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "이 기기의 프로젝트 정보")}
+              detail={!workspaceVerified ? frozenStatus3Text("studio.frozenStatus3.hub.verifySaveNeeded", "저장 상태 확인이 필요합니다.") : capabilities.serverAuthoritative ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "팀 권한에 따라 표시") : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "이 기기의 프로젝트 정보")}
             />
           ) : null}
         </div>

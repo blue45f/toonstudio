@@ -7,6 +7,7 @@ import {
   spatialReaderCrops, spatialReaderKeyCommand, validateSpatialReaderFiles, SPATIAL_READER_DEFAULTS,
 } from "./spatial-reader-model";
 import "./spatial-reader.css";
+import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 import type { StudioWebXrMode, StudioWebXrSessionState, StudioWebXrSupportSnapshot } from "../studio-webxr-session";
 import type { SpatialImageSize, SpatialReaderCommand, SpatialReaderCursor, SpatialReaderDirection, SpatialReaderSettings } from "./spatial-reader-model";
 import type { SpatialReaderRuntime } from "./spatial-reader-runtime";
@@ -37,7 +38,7 @@ export default function SpatialWebtoonReader({ pages: initialPages = EMPTY_PAGES
   const [state, setState] = useState<StudioWebXrSessionState>({ status: "idle" });
   const [ready, setReady] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [message, setMessage] = useState("기기 지원을 확인합니다. 2D 읽기는 카메라·로그인 없이 사용할 수 있습니다.");
+  const [message, setMessage] = useState(subStatusText("studio.subStatus.spatial.checkingSupport", "기기 지원을 확인합니다. 2D 읽기는 카메라·로그인 없이 사용할 수 있습니다."));
   const [error, setError] = useState("");
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -88,7 +89,7 @@ export default function SpatialWebtoonReader({ pages: initialPages = EMPTY_PAGES
     let owned: SpatialReaderRuntime | null = null;
     if (!navigator.xr || globalThis.isSecureContext !== true) {
       setSupport({ ...UNSUPPORTED, secureContext: globalThis.isSecureContext === true });
-      setMessage(globalThis.isSecureContext !== true ? "AR/VR에는 HTTPS 보안 연결이 필요합니다. 여기서는 2D로 읽을 수 있습니다." : "이 브라우저에는 몰입형 WebXR이 없습니다. 헤드셋 없이 2D 읽기·구간 이동·설정 저장을 사용할 수 있습니다.");
+      setMessage(globalThis.isSecureContext !== true ? subStatusText("studio.subStatus.spatial.httpsRequired", "AR/VR에는 HTTPS 보안 연결이 필요합니다. 여기서는 2D로 읽을 수 있습니다.") : subStatusText("studio.subStatus.spatial.noWebXr", "이 브라우저에는 몰입형 WebXR이 없습니다. 헤드셋 없이 2D 읽기·구간 이동·설정 저장을 사용할 수 있습니다."));
       return;
     }
     void import("./spatial-reader-runtime").then(async ({ createSpatialReaderRuntime }) => {
@@ -105,9 +106,9 @@ export default function SpatialWebtoonReader({ pages: initialPages = EMPTY_PAGES
       const capabilities = await owned.inspectSupport();
       if (stopped) return;
       setSupport(capabilities); setReady(true);
-      setMessage(capabilities.immersiveAr === "unsupported" && capabilities.immersiveVr === "unsupported" ? "현재 연결된 기기에서 AR/VR을 시작할 수 없습니다. 2D 읽기는 그대로 사용할 수 있습니다." : "준비됐습니다. AR/VR 버튼을 눌러야 기기 권한을 요청합니다. 불편함이 느껴지면 즉시 종료하세요.");
+      setMessage(capabilities.immersiveAr === "unsupported" && capabilities.immersiveVr === "unsupported" ? subStatusText("studio.subStatus.spatial.cannotStart", "현재 연결된 기기에서 AR/VR을 시작할 수 없습니다. 2D 읽기는 그대로 사용할 수 있습니다.") : subStatusText("studio.subStatus.spatial.ready", "준비됐습니다. AR/VR 버튼을 눌러야 기기 권한을 요청합니다. 불편함이 느껴지면 즉시 종료하세요."));
     }).catch((cause: unknown) => {
-      if (!stopped) setError(cause instanceof Error ? cause.message : "공간 그래픽을 준비하지 못했습니다. 2D 읽기를 이용해 주세요.");
+      if (!stopped) setError(cause instanceof Error ? cause.message : subStatusText("studio.subStatus.spatial.graphicsFailed", "공간 그래픽을 준비하지 못했습니다. 2D 읽기를 이용해 주세요."));
     });
     return () => {
       stopped = true; runtimeRef.current = null;
@@ -124,7 +125,7 @@ export default function SpatialWebtoonReader({ pages: initialPages = EMPTY_PAGES
     setError(""); const runtime = runtimeRef.current;
     if (!runtime || !ready) return;
     // Invoke immediately from the button; the runtime loaded before user activation.
-    void runtime.start(mode).catch((cause: unknown) => setError(cause instanceof StudioWebXrSessionError ? studioWebXrSessionErrorMessage(cause.code) : cause instanceof Error ? cause.message : "기기 세션을 시작하지 못했습니다."));
+    void runtime.start(mode).catch((cause: unknown) => setError(cause instanceof StudioWebXrSessionError ? studioWebXrSessionErrorMessage(cause.code) : cause instanceof Error ? cause.message : subStatusText("studio.subStatus.spatial.sessionFailed", "기기 세션을 시작하지 못했습니다.")));
   };
   const importFiles = (files: FileList | null) => {
     if (!files || presenting || transitioning) return;
@@ -135,11 +136,11 @@ export default function SpatialWebtoonReader({ pages: initialPages = EMPTY_PAGES
     try { for (const file of sorted) urls.push(URL.createObjectURL(file)); }
     catch {
       urls.forEach((url) => URL.revokeObjectURL(url));
-      setError("로컬 이미지를 열지 못했습니다. 기존 읽기는 유지합니다."); return;
+      setError(subStatusText("studio.subStatus.spatial.localOpenFailed", "로컬 이미지를 열지 못했습니다. 기존 읽기는 유지합니다.")); return;
     }
     setSizes({}); setCursor({ page: 0, segment: 0 });
     setLocalTitle(`${sorted.length}장의 로컬 원고`); setLocalPages(urls); setError("");
-    setMessage("파일명 숫자 순서로 열었습니다. 이미지는 서버로 업로드하지 않으며 닫으면 임시 주소를 해제합니다.");
+    setMessage(subStatusText("studio.subStatus.spatial.openedByName", "파일명 숫자 순서로 열었습니다. 이미지는 서버로 업로드하지 않으며 닫으면 임시 주소를 해제합니다."));
   };
   const onReaderKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (event.ctrlKey || event.altKey || event.metaKey) return;
@@ -158,13 +159,13 @@ export default function SpatialWebtoonReader({ pages: initialPages = EMPTY_PAGES
       <div className="spatial-reader-layout">
         <div className="spatial-reader-main">
           <section className="spatial-reader-preview" aria-label="공간 웹툰 2D 읽기">
-            {pages.length === 0 ? <div className="spatial-reader-empty"><span aria-hidden>▤</span><h3>원고를 공간에 펼쳐 보세요</h3><p>이미지를 선택하면 바로 읽을 수 있습니다.<br />계정·API 키·유료 변환은 필요하지 않습니다.</p></div>
-              : !imageSource ? <p role="alert">지원하지 않는 이미지 주소입니다. 원본 보기로 돌아가 주세요.</p>
+            {pages.length === 0 ? <div className="spatial-reader-empty"><span aria-hidden>▤</span><h3>{subStatusText("studio.subStatus.spatial.emptyTitle", "원고를 공간에 펼쳐 보세요")}</h3><p>{subStatusText("studio.subStatus.spatial.emptyDesc", "이미지를 선택하면 바로 읽을 수 있습니다.")}<br />{subStatusText("studio.subStatus.spatial.emptyNoAccount", "계정·API 키·유료 변환은 필요하지 않습니다.")}</p></div>
+              : !imageSource ? <p role="alert">{subStatusText("studio.subStatus.spatial.unsupportedImage", "지원하지 않는 이미지 주소입니다. 원본 보기로 돌아가 주세요.")}</p>
               : <div className="spatial-reader-crop" style={{ aspectRatio: `${crop.width} / ${crop.height}`, width: `min(100%, ${480 * settings.scale}px)` }}>
                 <img key={`${current.page}:${pages[current.page]}`} src={imageSource} referrerPolicy="no-referrer" alt={`${displayTitle} ${current.page + 1}페이지 · ${current.segment + 1}구간`}
                   style={{ transform: `translateY(-${crop.y / (sizes[current.page]?.height ?? crop.height) * 100}%)` }}
                   onLoad={(event) => { const img = event.currentTarget; setSizes((old) => old[current.page]?.width === img.naturalWidth && old[current.page]?.height === img.naturalHeight ? old : { ...old, [current.page]: { width: img.naturalWidth, height: img.naturalHeight } }); }}
-                  onError={() => setError("원본 이미지를 불러오지 못했습니다. 네트워크 또는 이미지 파일을 확인해 주세요.")} />
+                  onError={() => setError(subStatusText("studio.subStatus.spatial.imageLoadFailed", "원본 이미지를 불러오지 못했습니다. 네트워크 또는 이미지 파일을 확인해 주세요."))} />
               </div>}
           </section>
           <canvas ref={canvasRef} className="spatial-reader-xr-canvas" aria-hidden="true" />
@@ -184,11 +185,11 @@ export default function SpatialWebtoonReader({ pages: initialPages = EMPTY_PAGES
                   <button type="button" onClick={() => command("recenter")} disabled={transitioning}>중앙 정렬 / 다시 배치</button>
                   <button type="button" onClick={() => command("smaller")} disabled={transitioning}>축소</button>
                   <button type="button" onClick={() => command("larger")} disabled={transitioning}>확대</button>
-                  <button type="button" className="spatial-reader-primary" onClick={() => { void runtimeRef.current?.end().catch(() => setError("기기 시스템 메뉴에서 XR을 종료해 주세요.")); }} disabled={transitioning}>XR 종료 · 2D로 돌아가기</button>
+                  <button type="button" className="spatial-reader-primary" onClick={() => { void runtimeRef.current?.end().catch(() => setError(subStatusText("studio.subStatus.spatial.xrEndFailed", "기기 시스템 메뉴에서 XR을 종료해 주세요."))); }} disabled={transitioning}>XR 종료 · 2D로 돌아가기</button>
                 </> : <>
                   <button type="button" className="spatial-reader-primary" onClick={() => start("immersive-ar")} disabled={!ready || !pages.length || transitioning || closing || support?.immersiveAr === "unsupported"}>AR로 읽기</button>
                   <button type="button" className="spatial-reader-primary" onClick={() => start("immersive-vr")} disabled={!ready || !pages.length || transitioning || closing || support?.immersiveVr === "unsupported"}>VR로 읽기</button>
-                  <span className="spatial-reader-quiet">{transitioning ? "기기 권한 확인 중…" : "현재 화면: 2D 읽기"}</span>
+                  <span className="spatial-reader-quiet">{transitioning ? subStatusText("studio.subStatus.spatial.checkingPermission", "기기 권한 확인 중…") : subStatusText("studio.subStatus.spatial.currentMode2d", "현재 화면: 2D 읽기")}</span>
                 </>}
               </div>
               <p className="spatial-reader-message" role="status">{message}</p>

@@ -23,6 +23,9 @@ import {
 } from "lucide-react";
 
 import { StudioToggleChip } from "../studio-panel-ui";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import type { BubbleQuickTransformAction } from "./studio-bubble-quick-transform";
 import type { ReactElement } from "react";
@@ -90,6 +93,7 @@ export function StudioBubbleShapePanel({
   quickTransformFlipDisabled = false,
   quickTransformUnavailableReasons = {},
 }: StudioBubbleShapePanelProps): ReactElement {
+  const t = useT();
   const quickTransformStatusMessages = Array.from(
     new Set([
       ...Object.values(quickTransformUnavailableReasons).filter(
@@ -217,7 +221,7 @@ export function StudioBubbleShapePanel({
                   onClick={onRemovePoint}
                   title={
                     pointCount <= 3
-                      ? "말풍선 외곽선에는 최소 3개의 점이 필요합니다."
+                      ? t("studio.brushCanvasStatus.lettering.bubbleShapeMinPoints", "말풍선 외곽선에는 최소 3개의 점이 필요합니다.")
                       : selectedPointIndex === null
                         ? "캔버스에서 삭제할 점을 먼저 선택하세요."
                         : `선택한 ${selectedPointIndex + 1}번 점을 삭제합니다.`

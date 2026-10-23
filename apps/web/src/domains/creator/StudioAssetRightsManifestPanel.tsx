@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -308,7 +309,7 @@ export function StudioAssetRightsManifestPanel({
       setExportStatus(
         error instanceof Error
           ? error.message
-          : "권리 명세 파일을 만들지 못했습니다."
+          : panelStatusText("studio.panelStatus.assetRights.manifestCreateFailed", "권리 명세 파일을 만들지 못했습니다.")
       );
     } finally {
       setExporting(null);
@@ -367,7 +368,7 @@ export function StudioAssetRightsManifestPanel({
           <SummaryMetric label="고유 에셋" value={result.manifest.summary.assetCount} />
           <SummaryMetric label="사용 위치" value={result.manifest.summary.placementCount} />
           <SummaryMetric
-            label="차단 오류"
+            label={panelStatusTextR4("studio.panelStatus.assetRights.blockingError", "차단 오류")}
             value={result.manifest.summary.errorCount}
             tone={result.manifest.summary.errorCount > 0 ? "bad" : "neutral"}
           />
@@ -443,7 +444,7 @@ export function StudioAssetRightsManifestPanel({
             ) : (
               <EmptyState
                 icon={<ShieldCheck size={18} aria-hidden />}
-                title="기록된 외부 에셋이 없습니다"
+                title={panelStatusText("studio.panelStatus.assetRights.externalEmpty", "기록된 외부 에셋이 없습니다")}
                 description="작품 에셋 사용 투영을 연결하면 버전과 페이지 위치가 여기에 나타납니다."
               />
             )}
@@ -536,7 +537,7 @@ export function StudioAssetRightsManifestPanel({
                 onClick={() => void exportManifest("json")}
               >
                 <FileJson2 size={15} aria-hidden />
-                {exporting === "json" ? "생성 중" : "JSON"}
+                {exporting === "json" ? panelStatusText("studio.panelStatus.assetRights.generating", "생성 중") : "JSON"}
                 <Download size={13} aria-hidden />
               </button>
               <button
@@ -546,7 +547,7 @@ export function StudioAssetRightsManifestPanel({
                 onClick={() => void exportManifest("csv")}
               >
                 <FileSpreadsheet size={15} aria-hidden />
-                {exporting === "csv" ? "생성 중" : "CSV"}
+                {exporting === "csv" ? panelStatusText("studio.panelStatus.assetRights.generating", "생성 중") : "CSV"}
                 <Download size={13} aria-hidden />
               </button>
             </div>

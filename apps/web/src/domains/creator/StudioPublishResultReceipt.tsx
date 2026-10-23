@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   CalendarClock,
   CheckCircle2,
@@ -142,15 +143,15 @@ export function StudioPublishResultReceipt({
         </div>
         <div>
           <dt className="text-fg-3">저장 revision</dt>
-          <dd className="numeral mt-0.5 font-semibold text-fg">{revision ?? "확인 중"}</dd>
+          <dd className="numeral mt-0.5 font-semibold text-fg">{revision ?? r3c07StatusText("studio.panelStatus.r3c07.publishReceipt.checking", "확인 중")}</dd>
         </div>
         <div>
           <dt className="text-fg-3">공개 범위</dt>
-          <dd className="mt-0.5 font-semibold text-fg">{details?.visibility ?? "확인 중"}</dd>
+          <dd className="mt-0.5 font-semibold text-fg">{details?.visibility ?? r3c07StatusText("studio.panelStatus.r3c07.publishReceipt.checking", "확인 중")}</dd>
         </div>
         <div>
           <dt className="text-fg-3">페이지</dt>
-          <dd className="numeral mt-0.5 font-semibold text-fg">{details?.pages.length ?? "확인 중"}</dd>
+          <dd className="numeral mt-0.5 font-semibold text-fg">{details?.pages.length ?? r3c07StatusText("studio.panelStatus.r3c07.publishReceipt.checking", "확인 중")}</dd>
         </div>
         {details ? (
           <div className="min-w-0 sm:col-span-2">

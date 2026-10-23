@@ -1,6 +1,8 @@
 import { Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
 
 import { formatI18nTemplate, translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
+import "../studio-bg3d-panel-status-i18n";
 import { cx } from "@/shared/lib/cx";
 
 import type { Bg3dTemplateLibraryEntry } from "./studio-bg3d-template-library-loader";
@@ -43,6 +45,7 @@ export function StudioBg3dUserTemplateLibraryPanel({
   onDelete,
   onRetry,
 }: StudioBg3dUserTemplateLibraryPanelProps) {
+  const t = useT();
   const busy = applyingTemplateId !== null;
 
   return (
@@ -86,7 +89,7 @@ export function StudioBg3dUserTemplateLibraryPanel({
           role="status"
           className="mb-3 rounded-xl border border-line bg-card/60 px-3 py-4 text-center text-xs text-fg-3"
         >
-          템플릿을 불러오는 중입니다.
+          {t("studio.bg3dPanelStatus.userTemplateLibrary.loadingList", "템플릿을 불러오는 중입니다.")}
         </div>
       ) : null}
       {status === "error" ? (
@@ -95,7 +98,7 @@ export function StudioBg3dUserTemplateLibraryPanel({
           className="mb-3 rounded-xl border border-danger/40 bg-danger/5 px-3 py-3 text-xs leading-relaxed text-fg-2"
         >
           <p>
-            {notice?.message ?? "템플릿 목록을 불러오지 못했습니다."}
+            {notice?.message ?? t("studio.bg3dPanelStatus.userTemplateLibrary.listLoadFailed", "템플릿 목록을 불러오지 못했습니다.")}
           </p>
           <button
             type="button"
@@ -103,7 +106,7 @@ export function StudioBg3dUserTemplateLibraryPanel({
             onClick={onRetry}
           >
             <RefreshCw size={13} aria-hidden />
-            다시 불러오기
+            {t("studio.bg3dPanelStatus.userTemplateLibrary.reload", "다시 불러오기")}
           </button>
         </div>
       ) : null}
@@ -118,7 +121,7 @@ export function StudioBg3dUserTemplateLibraryPanel({
       ) : null}
       {status === "ready" && entries.length === 0 ? (
         <div className="rounded-xl border border-dashed border-line bg-card/45 px-3 py-4 text-center text-xs leading-relaxed text-fg-3">
-          저장된 템플릿이 없습니다.
+          {t("studio.bg3dPanelStatus.userTemplateLibrary.savedEmpty", "저장된 템플릿이 없습니다.")}
         </div>
       ) : null}
 

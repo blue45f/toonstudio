@@ -17,6 +17,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { createCharacterExportPreflight, formatCharacterBytes } from "../export/character-export-preflight";
 import { STUDIO_FOCUS_RING } from "../../studio-panel-ui";
+import { creatorSub2StatusText } from "../../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 import {
   CHARACTER_SHAPER_TABLET_QUERY,
   CHARACTER_SHAPER_TOUCH_LANDSCAPE_QUERY,
@@ -372,7 +373,7 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
       if (runtimeTestAbortRef.current !== controller || controller.signal.aborted) return;
       setRuntimeTestStatus("failed");
       setRuntimeTestMessage(
-        error instanceof Error ? error.message : "브라우저 3D 코어 검증에 실패했습니다.",
+        error instanceof Error ? error.message : creatorSub2StatusText("studio.creatorSub2.status.character.workbench.runtimeTestFailed", "브라우저 3D 코어 검증에 실패했습니다."),
       );
     } finally {
       if (runtimeTestAbortRef.current === controller) runtimeTestAbortRef.current = null;
@@ -445,7 +446,7 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
           <button type="button" className={BUTTON} disabled={workbench.presets.length === 0} onClick={() => downloadText(workbench.exportPresets(), "toonstudio-character-presets.json")}><Download size={14} aria-hidden />백업</button>
         </div>
         {workbench.presetStoreMessage ? <p role="alert" className="text-[0.66rem] text-bad">{workbench.presetStoreMessage}</p> : null}
-        {workbench.presets.length === 0 ? <p className="text-[0.68rem] text-fg-3">저장한 프리셋이 없습니다.</p> : (
+        {workbench.presets.length === 0 ? <p className="text-[0.68rem] text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.character.workbench.presetsEmpty", "저장한 프리셋이 없습니다.")}</p> : (
           <ul className="space-y-2">
             {workbench.presets.map((preset) => (
               <li key={preset.presetId} className="flex items-center gap-2 rounded-xl border border-line bg-panel/70 p-2">

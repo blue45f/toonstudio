@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Penyedia AI Teks",
   "studio.aiToolPopover.serverTextAiProviderAria": "Penyedia AI Teks Server",
   "studio.aiToolPopover.serverProviderAuto": "peralihan otomatis",
-  "studio.aiToolPopover.serverFallbackMessage": "Jika saldo/batas paket sudah habis, Anda akan beralih ke operator lain. Kesalahan umum tidak dikirim ulang secara otomatis untuk mencegah pengisian ganda."
+  "studio.aiToolPopover.serverFallbackMessage": "Jika saldo/batas paket sudah habis, Anda akan beralih ke operator lain. Kesalahan umum tidak dikirim ulang secara otomatis untuk mencegah pengisian ganda.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

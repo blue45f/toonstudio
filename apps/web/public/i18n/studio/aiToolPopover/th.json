@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ผู้ให้บริการข้อความ AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "ผู้ให้บริการข้อความ AI เซิร์ฟเวอร์",
   "studio.aiToolPopover.serverProviderAuto": "การสลับอัตโนมัติ",
-  "studio.aiToolPopover.serverFallbackMessage": "เมื่อยอดคงเหลือ/แพ็กเกจหมด คุณจะเปลี่ยนไปใช้บริการจากผู้ให้บริการรายอื่น ข้อผิดพลาดทั่วไปจะไม่ถูกส่งใหม่โดยอัตโนมัติเพื่อป้องกันการชาร์จซ้ำซ้อน"
+  "studio.aiToolPopover.serverFallbackMessage": "เมื่อยอดคงเหลือ/แพ็กเกจหมด คุณจะเปลี่ยนไปใช้บริการจากผู้ให้บริการรายอื่น ข้อผิดพลาดทั่วไปจะไม่ถูกส่งใหม่โดยอัตโนมัติเพื่อป้องกันการชาร์จซ้ำซ้อน",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

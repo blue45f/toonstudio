@@ -16,7 +16,7 @@ afterEach(cleanup);
 
 function draft() {
   const result = measureStudioBg3dWorldPoints([0, 0, 0], [3, 4, 0]);
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(result.code);
   return result.measurement;
 }
 
@@ -25,7 +25,7 @@ function inference() {
     startWorld: [0, 0, 0],
     endWorld: [3, 4, 0],
   });
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(result.code);
   return result;
 }
 
@@ -38,7 +38,7 @@ function withGuide(): StudioBg3dMeasurementDocument {
       lockedLengthMeters: 2.5,
     },
   );
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new Error(result.code);
   return result.document;
 }
 

@@ -4,6 +4,7 @@ import {
   type StudioBg3dArtifactCaptureRequestV2,
   type StudioBg3dArtifactCaptureResultV2,
 } from "./studio-bg3d-artifact-capture-v2";
+import { bakeStudioBg3dTagVisibilityIntoDocument } from "./studio-bg3d-hierarchy";
 import {
   normalizeStudioBg3dPhysicsWorld,
   type StudioBg3dPhysicsWorld,
@@ -64,7 +65,8 @@ export function createStudioBg3dRuntimeSnapshot(
   document: StudioBg3dSceneDocument,
   verificationByAttachmentId: ReadonlyMap<string, StudioBg3dGlbValidationSuccess>,
 ): StudioBg3dRuntimeSnapshot {
-  const canonicalDocumentJson = serializeStudioBg3dSceneDocument(document);
+  // 특화 런타임은 문서의 노드 visible 만 읽으므로 숨긴 태그를 사본에 굽는다(저장 문서는 그대로).
+  const canonicalDocumentJson = serializeStudioBg3dSceneDocument(bakeStudioBg3dTagVisibilityIntoDocument(document));
   if (!canonicalDocumentJson || !parseStudioBg3dSceneDocument(canonicalDocumentJson)) {
     throw new StudioBg3dRuntimeBoundaryError("invalid-snapshot");
   }

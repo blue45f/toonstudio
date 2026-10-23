@@ -35,6 +35,23 @@ describe("site route authority", () => {
     expect(resolveSiteRouteAuthority("/automation")?.tier).toBe("labs");
   });
 
+  it("declares the character anchor lab as an experimental labs authority with a keyed title", () => {
+    const lab = resolveSiteRouteAuthority("/studio/anchor-lab");
+    expect(lab).toMatchObject({
+      id: "studio-anchor-lab",
+      kind: "static",
+      canonicalPath: "/studio/anchor-lab",
+      titleKey: "route.anchorLab",
+      maturity: "experimental",
+      tier: "labs",
+      access: "public",
+      projectContext: "none",
+    });
+    expect(lab?.label.ko).toBe("캐릭터 앵커 연구실");
+    expect(resolveSiteRouteAuthority("/studio/anchor-lab/")?.id).toBe("studio-anchor-lab");
+    expect(SITE_ROUTE_AUTHORITIES.filter((route) => route.tier === "labs").map((route) => route.id)).toContain("studio-anchor-lab");
+  });
+
   it("provides every current primary navigation destination", () => {
     expect(SITE_PRIMARY_ROUTE_IDS.map((id) => primarySiteRouteAuthority(id).canonicalPath))
       .toEqual([

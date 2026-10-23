@@ -133,7 +133,9 @@ describe("Studio options-bars module boundary", () => {
       "react",
       "../studio-panel-ui",
       "@/shared/lib/lazy-retry",
+      "@/shared/lib/i18n",
       "@/shared/lib/utils",
+      "../studio-brush-canvas-status-i18n",
     ]);
     expect(optionsBars.allImports).not.toContain("./brush/StudioDrawingInputDeck");
     expect(optionsBars.source).not.toContain("<StudioDrawingInputDeck");
@@ -185,7 +187,7 @@ describe("Studio options-bars module boundary", () => {
     for (const contract of [
       "assignStudioBrushSlot(prev, index",
       "commitStudioBrushSlotsMutation(",
-      "failureMessage: `슬롯 ${index + 1}을 SQLite에 저장하지 못했어요.`,",
+      'failureMessage: t("studio.hostStatus.slotSaveFailed", { slot: index + 1 }, "슬롯 {slot}을 SQLite에 저장하지 못했어요."),',
       "studioBrushSlotAt(brushSlotsState, index)",
       "loadStudioBrushStudio();",
       "setMobileSheet(",

@@ -52,6 +52,11 @@ describe("route title resolution", () => {
     expect(resolveRouteTitle("/studio/ai-lab", translate)).toBe("외부 AI Runtime · 개발자 프리뷰");
   });
 
+  it("titles the character anchor lab with a key from the shell route namespace", () => {
+    expect(resolveRouteTitle("/studio/anchor-lab", translate)).toBe("route.anchorLab");
+    expect(resolveRouteTitle("/studio/anchor-lab/", translate)).toBe("route.anchorLab");
+  });
+
   it("retains useful dynamic labels for creator pages", () => {
     expect(resolveRouteTitle("/author/%EA%B9%80%ED%9D%AC%EC%A4%80", translate)).toBe("김희준");
   });

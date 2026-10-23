@@ -9,6 +9,7 @@ import {
   STUDIO_SERVICE_WORKER_RUNTIME_LIMITS,
   classifyStudioServiceWorkerRequest,
   isStudioServiceWorkerCachedResponseUsable,
+  isStudioServiceWorkerSpaFallbackForAsset,
   isStudioServiceWorkerMessage,
   isStudioServiceWorkerResponseCacheable,
   isStudioServiceWorkerWorkerAssetUrl,
@@ -97,6 +98,14 @@ describe("classifyStudioServiceWorkerRequest", () => {
       ["/assets/studio/cc0-20260906/manifest.json", "catalog-data"],
       ["/assets/studio/cc0-20260906/manifest.json?v=diversity-20260913", "catalog-data"],
       ["/assets/studio/cc0-20260906/assets/example/model.glb", "immutable-asset"],
+      // 번들 배포 인덱스는 가용성 신호라 캐시하지 않고, sha256 내용 주소 GLB는 immutable이다.
+      ["/assets/studio/bundle-v2/manifest.json", "passthrough"],
+      ["/assets/studio/bundle-v2/manifest.json?v=1", "passthrough"],
+      [`/assets/studio/bundle-v2/${"a".repeat(64)}.glb`, "immutable-asset"],
+      // 렌더 매니페스트는 권리 원장 스탬프를 싣는 게이트라 철회·개방이 바로 닿도록 캐시하지 않고, 이미지는 그대로 immutable이다.
+      ["/assets/studio/bundle-renders-v1/manifest.json", "passthrough"],
+      ["/assets/studio/bundle-renders-v1/manifest.json?v=bundle-renders-v1", "passthrough"],
+      ["/assets/studio/bundle-renders-v1/assets/cbv1-045-food-props-render-001/prop.webp", "immutable-asset"],
       ["/assets/canvaskit-DB1zH3nD.wasm", "heavy-asset"],
       ["/assets/tag2pix-X1y2Z3.onnx", "heavy-asset"],
       ["/assets/sqlite3-opfs-abc123.wasm", "heavy-asset"],
@@ -120,6 +129,15 @@ describe("classifyStudioServiceWorkerRequest", () => {
     for (const [pathname, expected] of cases) {
       expect(classifyStudioServiceWorkerRequest(facts(pathname))).toBe(expected);
     }
+  });
+
+  it("never replays the bundle deploy index, even for a navigation to it", () => {
+    expect(
+      classifyStudioServiceWorkerRequest(
+        facts("/assets/studio/bundle-v2/manifest.json", { mode: "navigate" }),
+      ),
+    ).toBe("passthrough");
+    expect(studioServiceWorkerStrategy("passthrough")).toBe("network-only");
   });
 
   it("keeps the worker script itself off the cache path", () => {
@@ -253,6 +271,20 @@ describe("cached response usability (self-healing CORP guard)", () => {
         crossOriginResourcePolicy: "same-origin",
       }),
     ).toBe(true);
+  });
+
+  it("treats the SPA shell under an asset URL as a fallback, never as the asset", () => {
+    const html = "text/html; charset=utf-8";
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "immutable-asset", url: `${ORIGIN}/assets/3d/sofa.glb`, contentType: html })).toBe(true);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "static-media", url: `${ORIGIN}/vrm/hero.vrm`, contentType: html })).toBe(true);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "heavy-asset", url: `${ORIGIN}/assets/model.onnx`, contentType: html })).toBe(true);
+    // 진짜 HTML 파일, HTML 이 아닌 자산, 자산이 아닌 경로는 건드리지 않는다.
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "immutable-asset", url: `${ORIGIN}/assets/docs/page.html`, contentType: html })).toBe(false);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "immutable-asset", url: `${ORIGIN}/assets/3d/sofa.glb`, contentType: "model/gltf-binary" })).toBe(false);
+    expect(isStudioServiceWorkerSpaFallbackForAsset({ routeClass: "navigation", url: `${ORIGIN}/studio`, contentType: html })).toBe(false);
+    expect(
+      isStudioServiceWorkerCachedResponseUsable({ routeClass: "immutable-asset", url: `${ORIGIN}/assets/3d/sofa.glb`, status: 200, contentType: html }),
+    ).toBe(false);
   });
 
   it("does not demand CORP from ordinary scripts", () => {

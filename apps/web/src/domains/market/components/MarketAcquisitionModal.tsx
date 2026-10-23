@@ -1,3 +1,4 @@
+import { marketStatusText } from "../market-status-i18n";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -198,7 +199,7 @@ export function MarketAcquisitionModal({
       ) return;
       setError(caught instanceof Error && caught.message.trim()
         ? caught.message
-        : "내 에셋에 추가하지 못했습니다. 현재 에셋은 계정에 보관되지 않았습니다.");
+        : marketStatusText("market.status.acquisition.addFailed", "내 에셋에 추가하지 못했습니다. 현재 에셋은 계정에 보관되지 않았습니다."));
     } finally {
       if (acquisitionAbortRef.current === controller) {
         acquisitionAbortRef.current = null;
@@ -300,7 +301,7 @@ export function MarketAcquisitionModal({
       ) return;
       setError(caught instanceof Error && caught.message.trim()
         ? caught.message
-        : "포인트 구매를 마치지 못했습니다. 차감한 포인트는 되돌렸습니다.");
+        : marketStatusText("market.status.acquisition.purchaseFailed", "포인트 구매를 마치지 못했습니다. 차감한 포인트는 되돌렸습니다."));
     } finally {
       if (acquisitionAbortRef.current === controller) {
         acquisitionAbortRef.current = null;
@@ -379,11 +380,11 @@ export function MarketAcquisitionModal({
               <span className="text-xs font-semibold text-fg">이용 비용</span>
               <span className={quoteError && !quote && !quoteLoading ? "text-sm font-extrabold text-bad" : "text-sm font-extrabold text-good"}>
                 {quoteLoading
-                  ? "확인 중…"
+                  ? marketStatusText("market.status.acquisition.checking", "확인 중…")
                   : quote?.checkoutRequired
                     ? new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW", maximumFractionDigits: 0 }).format(quote.amount)
                     : quoteError
-                      ? "확인 불가"
+                      ? marketStatusText("market.status.acquisition.checkUnavailable", "확인 불가")
                       : "무료"}
               </span>
             </div>
@@ -475,7 +476,7 @@ export function MarketAcquisitionModal({
             >
               <Download className="size-4" aria-hidden="true" />
               <span>{submitting
-                ? "현재 버전 확인 중…"
+                ? marketStatusText("market.status.acquisition.versionChecking", "현재 버전 확인 중…")
                 : versionNotice
                   ? `현재 v${activeRecord.resourceVersion} 조건 확인 후 추가`
                   : quote?.checkoutRequired

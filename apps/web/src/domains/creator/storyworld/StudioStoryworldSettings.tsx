@@ -11,6 +11,8 @@
  */
 import { BookOpenCheck, Clapperboard, Film, Plus, Save, Trash2, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "./storyworld-status-i18n";
 
 import { EMPHASIS_PRESETS, REVEAL_PRESETS } from "../studio-motion-fx";
 import type {
@@ -71,10 +73,11 @@ function CheckList({ legend, options, selected, onToggle }: {
   readonly selected: readonly string[];
   readonly onToggle: (id: string, checked: boolean) => void;
 }) {
+  const t = useT();
   return (
     <fieldset className="storyworld-settings-fieldset">
       <legend>{legend}</legend>
-      {options.length === 0 ? <p className="storyworld-settings-hint">선택할 항목이 없습니다.</p> : null}
+      {options.length === 0 ? <p className="storyworld-settings-hint">{t("studio.storyworldStatus.settings.noSelectableItems", "선택할 항목이 없습니다.")}</p> : null}
       <div className="storyworld-settings-checks">
         {options.map((option) => (
           <label key={option.id}>

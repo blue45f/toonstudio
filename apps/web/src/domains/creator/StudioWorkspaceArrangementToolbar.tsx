@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
 import { LayoutGrid } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 
@@ -63,9 +64,9 @@ export function StudioWorkspaceArrangementToolbar({ disabled = false }: { readon
       className="pointer-events-auto fixed bottom-3 right-3 z-[69] hidden w-max max-w-[calc(100vw-1.5rem)] flex-col gap-1 rounded-xl border border-line-strong bg-panel/95 p-1.5 text-fg shadow-xl lg:flex"
     >
       <button ref={launcher} type="button" disabled={busy} aria-busy={busy} aria-pressed={false} className={`inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg disabled:cursor-wait disabled:opacity-40 ${STUDIO_FOCUS_RING}`} onClick={() => void open()}>
-        <LayoutGrid size={15} aria-hidden />{busy ? "배치 도구 여는 중…" : "배치 편집"}
+        <LayoutGrid size={15} aria-hidden />{busy ? r3c07StatusText("studio.panelStatus.r3c07.workspaceArrangementToolbar.opening", "배치 도구 여는 중…") : "배치 편집"}
       </button>
-      {failed && <p role="status" className="px-2 text-xs">배치 도구를 불러오지 못했어요. 다시 눌러 주세요. 현재 원고와 배치는 유지됩니다.</p>}
+      {failed && <p role="status" className="px-2 text-xs">{r3c07StatusText("studio.panelStatus.r3c07.workspaceArrangementToolbar.loadFailed", "배치 도구를 불러오지 못했어요. 다시 눌러 주세요. 현재 원고와 배치는 유지됩니다.")}</p>}
     </div>
   );
 }

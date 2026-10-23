@@ -31,6 +31,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { loadImageFileForCanvas } from "./canvas/studio-canvas-image-io";
+import { frozenStatusText } from "./studio-frozen-status-i18n";
 import {
   canonicalizeStudioAssetContentHash,
   ensureStudioAssetContentHash,
@@ -577,7 +578,7 @@ export function StudioReferencePanel({
       .catch(() => {
         if (requestIdRef.current !== requestId) return;
         setLibraryStatus("error");
-        setLibraryError("에셋 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        setLibraryError(frozenStatusText("studio.frozenStatus.reference.libraryLoadFailed", "에셋 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."));
       });
     return () => {
       if (requestIdRef.current === requestId) requestIdRef.current += 1;
@@ -598,12 +599,12 @@ export function StudioReferencePanel({
     }
     if (!selectedColorSource) {
       setColorAnalysisStatus("error");
-      setColorAnalysisError("원본 에셋을 찾을 수 없어 색상을 분석할 수 없습니다.");
+      setColorAnalysisError(frozenStatusText("studio.frozenStatus.reference.sourceNotFound", "원본 에셋을 찾을 수 없어 색상을 분석할 수 없습니다."));
       return;
     }
     if (!isStudioReferenceLocalRasterDataUrl(selectedColorSource)) {
       setColorAnalysisStatus("error");
-      setColorAnalysisError("로컬 PNG, JPG, WebP 또는 GIF 참고 이미지에서만 색상을 추출할 수 있습니다.");
+      setColorAnalysisError(frozenStatusText("studio.frozenStatus.reference.localRasterOnly", "로컬 PNG, JPG, WebP 또는 GIF 참고 이미지에서만 색상을 추출할 수 있습니다."));
       return;
     }
 
@@ -625,7 +626,7 @@ export function StudioReferencePanel({
         if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
         setColorAnalysisStatus("error");
         setColorAnalysisError(
-          error instanceof Error ? error.message : "참고 이미지 색상 분석에 실패했습니다."
+          error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.reference.colorAnalysisFailed", "참고 이미지 색상 분석에 실패했습니다.")
         );
       });
 
@@ -681,7 +682,7 @@ export function StudioReferencePanel({
       })
       .catch(() => {
         if (!isReferenceImportActive(ticket)) return;
-        setLibraryError("이전 참고 이미지의 콘텐츠 해시를 계산하지 못했습니다.");
+        setLibraryError(frozenStatusText("studio.frozenStatus.reference.legacyHashFailed", "이전 참고 이미지의 콘텐츠 해시를 계산하지 못했습니다."));
       });
   }, [assets, libraryStatus, open, preferencesAuthority, settings.assetId, settings.flipped]);
 
@@ -844,7 +845,7 @@ export function StudioReferencePanel({
       }
     } catch {
       if (!isReferenceImportActive(ticket)) return;
-      setLibraryError("이미지를 레퍼런스 캔버스에 추가할 수 없습니다. 콘텐츠 해시 지원을 확인해 주세요.");
+      setLibraryError(frozenStatusText("studio.frozenStatus.reference.addToBoardFailed", "이미지를 레퍼런스 캔버스에 추가할 수 없습니다. 콘텐츠 해시 지원을 확인해 주세요."));
     } finally {
       if (importGenerationRef.current === ticket.generation && mountedRef.current) {
         assetAddInFlightRef.current = false;
@@ -856,12 +857,12 @@ export function StudioReferencePanel({
   async function importRemoteReference(): Promise<void> {
     if (importInFlightRef.current || assetAddInFlightRef.current) return;
     if (latestDocumentRef.current.items.length >= STUDIO_REFERENCE_BOARD_MAX_ITEMS) {
-      setImportStatus(`레퍼런스 캔버스에는 최대 ${STUDIO_REFERENCE_BOARD_MAX_ITEMS}개까지 추가할 수 있습니다.`);
+      setImportStatus(frozenStatusText("studio.frozenStatus.reference.boardLimit", { max: STUDIO_REFERENCE_BOARD_MAX_ITEMS }, "레퍼런스 캔버스에는 최대 {max}개까지 추가할 수 있습니다."));
       return;
     }
     const sourceUrl = remoteUrl.trim();
     if (!sourceUrl) {
-      setImportStatus("가져올 공개 이미지 URL을 입력해 주세요.");
+      setImportStatus(frozenStatusText("studio.frozenStatus.reference.urlRequired", "가져올 공개 이미지 URL을 입력해 주세요."));
       return;
     }
 
@@ -872,7 +873,7 @@ export function StudioReferencePanel({
     importInFlightRef.current = true;
     setImportingRemote(true);
     setLibraryError(null);
-    setImportStatus("공개 URL과 이미지 형식을 안전하게 확인하고 있습니다…");
+    setImportStatus(frozenStatusText("studio.frozenStatus.reference.checkingUrl", "공개 URL과 이미지 형식을 안전하게 확인하고 있습니다…"));
     try {
       const imported = await importStudioRemoteReferenceImage(sourceUrl, controller.signal);
       if (!isReferenceImportActive(ticket)) return;
@@ -897,27 +898,22 @@ export function StudioReferencePanel({
       if (!isReferenceImportActive(ticket)) return;
       const current = latestDocumentRef.current;
       const item = buildReferenceItem(asset, current.items.length);
-      if (!item) throw new Error("원격 참고 이미지의 콘텐츠 식별자를 만들지 못했습니다.");
+      if (!item) throw new Error(frozenStatusText("studio.frozenStatus.reference.remoteIdFailed", "원격 참고 이미지의 콘텐츠 식별자를 만들지 못했습니다."));
       const next = addStudioReferenceBoardItem(current, item);
-      if (next === current) throw new Error("레퍼런스 캔버스에 이미지를 추가할 수 없습니다.");
+      if (next === current) throw new Error(frozenStatusText("studio.frozenStatus.reference.addFailed", "레퍼런스 캔버스에 이미지를 추가할 수 없습니다."));
       if (!emitDocumentChange(next)) {
-        setImportStatus("현재 문서가 잠겨 있어 레퍼런스 캔버스에는 추가하지 못했습니다. 이미지는 개인 에셋에 저장했습니다.");
+        setImportStatus(frozenStatusText("studio.frozenStatus.reference.lockedSavedPersonal", "현재 문서가 잠겨 있어 레퍼런스 캔버스에는 추가하지 못했습니다. 이미지는 개인 에셋에 저장했습니다."));
         return;
       }
       setSelectedItemId(item.id);
       setInspectorOpen(false);
       setPickerOpen(false);
       setRemoteUrl("");
-      setImportStatus(`${asset.name} 원격 참고 이미지를 추가했습니다.`);
+      setImportStatus(frozenStatusText("studio.frozenStatus.reference.remoteAdded", { name: asset.name }, "{name} 원격 참고 이미지를 추가했습니다."));
     } catch (error: unknown) {
       if (!isReferenceImportActive(ticket)) return;
-      setImportStatus(
-        controller.signal.aborted
-          ? "원격 참고 이미지 가져오기를 취소했습니다."
-          : error instanceof Error
-            ? error.message
-            : "원격 참고 이미지를 가져오지 못했습니다."
-      );
+      setImportStatus(controller.signal.aborted ? frozenStatusText("studio.frozenStatus.reference.remoteCancelled", "원격 참고 이미지 가져오기를 취소했습니다.")
+        : error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.reference.remoteFailed", "원격 참고 이미지를 가져오지 못했습니다."));
     } finally {
       if (remoteImportAbortRef.current === controller) remoteImportAbortRef.current = null;
       if (importGenerationRef.current === ticket.generation) {
@@ -933,9 +929,9 @@ export function StudioReferencePanel({
     const plan = planStudioReferenceImports(sourceFiles, remainingSlots);
     if (plan.files.length === 0) {
       if (plan.overflow.length > 0 || remainingSlots <= 0) {
-        setImportStatus(`레퍼런스 캔버스에는 최대 ${STUDIO_REFERENCE_BOARD_MAX_ITEMS}개까지 추가할 수 있습니다.`);
+        setImportStatus(frozenStatusText("studio.frozenStatus.reference.boardLimit", { max: STUDIO_REFERENCE_BOARD_MAX_ITEMS }, "레퍼런스 캔버스에는 최대 {max}개까지 추가할 수 있습니다."));
       } else if (sourceFiles.length > 0) {
-        setImportStatus("PNG, JPG, WebP 또는 GIF 이미지 파일만 가져올 수 있습니다.");
+        setImportStatus(frozenStatusText("studio.frozenStatus.reference.imageTypesOnly", "PNG, JPG, WebP 또는 GIF 이미지 파일만 가져올 수 있습니다."));
       }
       return;
     }
@@ -943,14 +939,14 @@ export function StudioReferencePanel({
     try {
       assertStudioReferenceImportBatch(plan.files);
     } catch (error: unknown) {
-      setImportStatus(error instanceof Error ? error.message : "참고 이미지 안전 한도를 확인해 주세요.");
+      setImportStatus(error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.reference.safetyLimit", "참고 이미지 안전 한도를 확인해 주세요."));
       return;
     }
 
     const ticket = beginReferenceImport();
     importInFlightRef.current = true;
     setImportingFiles(true);
-    setImportStatus("참고 이미지를 안전하게 처리하고 있습니다…");
+    setImportStatus(frozenStatusText("studio.frozenStatus.reference.processingFiles", "참고 이미지를 안전하게 처리하고 있습니다…"));
     setLibraryError(null);
     const savedAssets: StudioAsset[] = [];
     const failures: string[] = [];
@@ -972,7 +968,7 @@ export function StudioReferencePanel({
           savedAssets.push(asset);
         } catch (error: unknown) {
           if (!isReferenceImportActive(ticket)) return;
-          failures.push(error instanceof Error ? error.message : `${file.name} 파일을 가져오지 못했습니다.`);
+          failures.push(error instanceof Error ? error.message : frozenStatusText("studio.frozenStatus.reference.fileImportFailed", { name: file.name }, "{name} 파일을 가져오지 못했습니다."));
         }
       }
 
@@ -992,7 +988,7 @@ export function StudioReferencePanel({
         if (next.items.length >= STUDIO_REFERENCE_BOARD_MAX_ITEMS) break;
         const item = buildReferenceItem(asset, next.items.length);
         if (!item) {
-          failures.push(`${asset.name} 콘텐츠 식별자를 만들지 못했습니다.`);
+          failures.push(frozenStatusText("studio.frozenStatus.reference.contentIdFailed", { name: asset.name }, "{name} 콘텐츠 식별자를 만들지 못했습니다."));
           continue;
         }
         const withItem = addStudioReferenceBoardItem(next, item);
@@ -1012,14 +1008,14 @@ export function StudioReferencePanel({
         + plan.overflow.length
         + Math.max(0, savedAssets.length - addedItems.length);
       if (!accepted) {
-        setImportStatus("현재 문서가 잠겨 있어 레퍼런스 캔버스에는 추가하지 못했습니다. 파일은 개인 에셋에 저장했습니다.");
+        setImportStatus(frozenStatusText("studio.frozenStatus.reference.lockedSavedFiles", "현재 문서가 잠겨 있어 레퍼런스 캔버스에는 추가하지 못했습니다. 파일은 개인 에셋에 저장했습니다."));
       } else if (addedItems.length === 0) {
-        setImportStatus(failures[0] ?? "가져올 수 있는 참고 이미지가 없습니다.");
+        setImportStatus(failures[0] ?? frozenStatusText("studio.frozenStatus.reference.noImportable", "가져올 수 있는 참고 이미지가 없습니다."));
       } else {
         const details = [
-          `${addedItems.length}개 참고 이미지를 추가했습니다.`,
-          failures.length > 0 ? `${failures.length}개 실패: ${failures[0]}` : null,
-          skippedCount > 0 ? `${skippedCount}개는 형식 또는 보드 한도로 건너뛰었습니다.` : null,
+          frozenStatusText("studio.frozenStatus.reference.addedCount", { count: addedItems.length }, "{count}개 참고 이미지를 추가했습니다."),
+          failures.length > 0 ? frozenStatusText("studio.frozenStatus.reference.failureCount", { count: failures.length, first: failures[0] ?? "" }, "{count}개 실패: {first}") : null,
+          skippedCount > 0 ? frozenStatusText("studio.frozenStatus.reference.skippedCount", { count: skippedCount }, "{count}개는 형식 또는 보드 한도로 건너뛰었습니다.") : null,
         ].filter(Boolean);
         setImportStatus(details.join(" "));
       }
@@ -1069,7 +1065,7 @@ export function StudioReferencePanel({
     onRegisterPaletteColorRef.current?.(hex);
     setRegisteredPaletteColors((previous) => registerStudioReferencePickedColor(previous, hex).colors);
     setPickedColor(hex);
-    setColorInteractionStatus(`${hex} 색상을 기본색으로 선택했습니다.`);
+    setColorInteractionStatus(frozenStatusText("studio.frozenStatus.reference.colorPicked", { hex }, "{hex} 색상을 기본색으로 선택했습니다."));
   }
 
   function sampleReferenceItemAtPoint(
@@ -1087,12 +1083,12 @@ export function StudioReferencePanel({
       || cache.source !== asset.dataUrl
       || colorAnalysisStatus !== "ready"
     ) {
-      setColorInteractionStatus("선택 이미지의 색상 분석이 끝난 뒤 다시 시도해 주세요.");
+      setColorInteractionStatus(frozenStatusText("studio.frozenStatus.reference.waitColorAnalysis", "선택 이미지의 색상 분석이 끝난 뒤 다시 시도해 주세요."));
       return;
     }
     const boardRect = board.getBoundingClientRect();
     if (boardRect.width <= 0 || boardRect.height <= 0) {
-      setColorInteractionStatus("레퍼런스 캔버스 크기를 확인하지 못했습니다.");
+      setColorInteractionStatus(frozenStatusText("studio.frozenStatus.reference.boardSizeUnknown", "레퍼런스 캔버스 크기를 확인하지 못했습니다."));
       return;
     }
     const displayWidth = item.asset.width ?? asset.width ?? cache.raster.width;
@@ -1394,17 +1390,17 @@ export function StudioReferencePanel({
       applyArrangedDocument(
         next,
         sort === "name"
-          ? "레퍼런스 높이를 맞추고 이름순으로 정돈했습니다."
+          ? frozenStatusText("studio.frozenStatus.reference.arrangedName", "레퍼런스 높이를 맞추고 이름순으로 정돈했습니다.")
           : sort === "size"
-            ? "레퍼런스 높이를 맞추고 크기순으로 정돈했습니다."
-            : "레퍼런스를 한눈에 비교할 수 있도록 정돈했습니다.",
+            ? frozenStatusText("studio.frozenStatus.reference.arrangedSize", "레퍼런스 높이를 맞추고 크기순으로 정돈했습니다.")
+            : frozenStatusText("studio.frozenStatus.reference.arrangedDefault", "레퍼런스를 한눈에 비교할 수 있도록 정돈했습니다."),
       );
       return;
     }
     const request = arrangeHueRequestRef.current + 1;
     arrangeHueRequestRef.current = request;
     setArrangeBusy(true);
-    setImportStatus("대표 색상을 읽어 정돈하고 있어요.");
+    setImportStatus(frozenStatusText("studio.frozenStatus.reference.arranging", "대표 색상을 읽어 정돈하고 있어요."));
     void resolveDominantHues()
       .then((hues) => {
         if (arrangeHueRequestRef.current !== request) return;
@@ -1417,13 +1413,13 @@ export function StudioReferencePanel({
         applyArrangedDocument(
           next,
           hues.size < total
-            ? `레퍼런스 높이를 맞추고 대표 색상순으로 정돈했습니다. 색상을 구하지 못한 ${total - hues.size}장은 뒤에 뒀어요.`
-            : "레퍼런스 높이를 맞추고 대표 색상순으로 정돈했습니다.",
+            ? frozenStatusText("studio.frozenStatus.reference.arrangedHuePartial", { missing: total - hues.size }, "레퍼런스 높이를 맞추고 대표 색상순으로 정돈했습니다. 색상을 구하지 못한 {missing}장은 뒤에 뒀어요.")
+            : frozenStatusText("studio.frozenStatus.reference.arrangedHue", "레퍼런스 높이를 맞추고 대표 색상순으로 정돈했습니다."),
         );
       })
       .catch(() => {
         if (arrangeHueRequestRef.current === request) {
-          setImportStatus("대표 색상을 읽지 못해 정돈을 취소했어요. 잠시 후 다시 시도해 주세요.");
+          setImportStatus(frozenStatusText("studio.frozenStatus.reference.arrangeFailed", "대표 색상을 읽지 못해 정돈을 취소했어요. 잠시 후 다시 시도해 주세요."));
         }
       })
       .finally(() => {
@@ -1638,7 +1634,7 @@ export function StudioReferencePanel({
             className="ml-auto rounded-md border border-accent/45 bg-accent-soft px-1.5 py-0.5 font-semibold text-accent hover:border-accent"
             onClick={() => {
               onCopyToEpisodeBoard();
-              setImportStatus("이 회차 팀 보드로 복사했어요. 팀원이 같은 보드를 열 수 있어요.");
+              setImportStatus(frozenStatusText("studio.frozenStatus.reference.copiedToTeamBoard", "이 회차 팀 보드로 복사했어요. 팀원이 같은 보드를 열 수 있어요."));
             }}
           >
             이 회차 보드로 복사
@@ -1727,7 +1723,7 @@ export function StudioReferencePanel({
                   ? eyedropperActive && isSelected
                     ? `${label} — 클릭해서 원본 색상 추출`
                     : `${label} — 드래그해서 이동`
-                  : `${label} — 원본 에셋을 찾을 수 없음`}
+                  : frozenStatusText("studio.frozenStatus.reference.itemNotFoundTitle", { label }, "{label} — 원본 에셋을 찾을 수 없음")}
                 className={cx(
                   "group absolute grid touch-none select-none place-items-center border bg-card/20 p-0 outline-none",
                   eyedropperActive && isSelected && "cursor-crosshair",
@@ -1945,7 +1941,7 @@ export function StudioReferencePanel({
             </label>
             <div className="min-h-0 flex-1 overflow-y-auto">
               {libraryStatus === "loading" ? (
-                <div className="space-y-1.5" aria-label="에셋 목록 불러오는 중">
+                <div className="space-y-1.5" aria-label={frozenStatusText("studio.frozenStatus.reference.loadingAssets", "에셋 목록 불러오는 중")}>
                   {Array.from({ length: 6 }, (_, index) => (
                     <div key={index} className="h-14 animate-pulse rounded-lg border border-line bg-card" />
                   ))}
@@ -1959,12 +1955,12 @@ export function StudioReferencePanel({
                     className={cx(CONTROL_BUTTON, "border-line bg-card text-fg-2 hover:bg-raised")}
                     onClick={retryLoadAssets}
                   >
-                    다시 시도
+                    frozenStatusText("studio.frozenStatus.reference.retry", "다시 시도")
                   </button>
                 </div>
               ) : assets.length === 0 ? (
                 <p className="px-3 py-7 text-center text-[0.68rem] leading-relaxed text-fg-3">
-                  저장된 에셋이 없어요. 위 버튼에서 바로 가져오거나 캔버스에 파일을 놓아 주세요.
+                  {frozenStatusText("studio.frozenStatus.reference.emptyAssets", "저장된 에셋이 없어요. 위 버튼에서 바로 가져오거나 캔버스에 파일을 놓아 주세요.")}
                 </p>
               ) : filteredAssets.length === 0 ? (
                 <p className="px-3 py-7 text-center text-[0.68rem] text-fg-3">
@@ -2095,7 +2091,7 @@ export function StudioReferencePanel({
               title={
                 effectiveSelectedAsset
                   ? "선택한 이미지를 현재 페이지의 비출력 가이드로 사용합니다."
-                  : "이 기기에서 원본 에셋을 찾을 수 없습니다."
+                  : frozenStatusText("studio.frozenStatus.reference.assetNotFoundOnDevice", "이 기기에서 원본 에셋을 찾을 수 없습니다.")
               }
               onClick={() => {
                 if (!effectiveSelectedAsset || !onStartDrawingPractice) return;
@@ -2115,12 +2111,12 @@ export function StudioReferencePanel({
                 title={
                   effectiveSelectedAsset
                     ? "선택한 이미지를 비교 검수 소스 풀에 넣습니다."
-                    : "이 기기에서 원본 에셋을 찾을 수 없습니다."
+                    : frozenStatusText("studio.frozenStatus.reference.assetNotFoundOnDevice", "이 기기에서 원본 에셋을 찾을 수 없습니다.")
                 }
                 onClick={() => {
                   if (!effectiveSelectedAsset) return;
                   onSendItemToCompare(effectiveSelectedItem, effectiveSelectedAsset);
-                  setImportStatus("비교 검수 소스 풀에 보냈어요. 검수실 비교 탭에서 나란히 볼 수 있어요.");
+                  setImportStatus(frozenStatusText("studio.frozenStatus.reference.sentToComparePool", "비교 검수 소스 풀에 보냈어요. 검수실 비교 탭에서 나란히 볼 수 있어요."));
                 }}
               >
                 <Columns2 size={13} aria-hidden /> 비교 검수 소스로 보내기
@@ -2258,7 +2254,7 @@ export function StudioReferencePanel({
 
                 {colorAnalysisStatus === "ready" && paletteColors.length === 0 ? (
                   <p role="status" className="mt-2 text-[0.64rem] leading-relaxed text-fg-3">
-                    불투명한 픽셀이 없어 추출할 주요 색상이 없습니다.
+                    {frozenStatusText("studio.frozenStatus.reference.noDominantColor", "불투명한 픽셀이 없어 추출할 주요 색상이 없습니다.")}
                   </p>
                 ) : null}
 

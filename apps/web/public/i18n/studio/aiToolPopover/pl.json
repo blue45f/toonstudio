@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Dostawca tekstu AI",
   "studio.aiToolPopover.serverTextAiProviderAria": "Dostawca tekstu AI na serwerze",
   "studio.aiToolPopover.serverProviderAuto": "automatyczne przełączanie",
-  "studio.aiToolPopover.serverFallbackMessage": "Po wyczerpaniu limitu salda/pakietu przejdziesz do innego dostawcy. Błędy ogólne nie są automatycznie wysyłane ponownie, aby zapobiec podwójnemu obciążeniu."
+  "studio.aiToolPopover.serverFallbackMessage": "Po wyczerpaniu limitu salda/pakietu przejdziesz do innego dostawcy. Błędy ogólne nie są automatycznie wysyłane ponownie, aby zapobiec podwójnemu obciążeniu.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

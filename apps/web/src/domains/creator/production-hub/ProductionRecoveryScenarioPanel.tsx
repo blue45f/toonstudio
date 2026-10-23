@@ -209,7 +209,7 @@ export function ProductionRecoveryScenarioPanel({
     } catch (cause) {
       setOperationError(cause instanceof Error
         ? cause.message
-        : i18nT("productionHub.status.recoveryApplyFailed", "복구 계획을 적용하지 못했습니다."));
+        : i18nT("productionHub.status.recoveryApplyFailed", "복구 계획을 적용하지 못했어요. 잠시 후 다시 시도해 주세요."));
     } finally {
       setApplyingScenarioId(null);
     }
@@ -234,7 +234,7 @@ export function ProductionRecoveryScenarioPanel({
     } catch (cause) {
       setOperationError(cause instanceof Error
         ? cause.message
-        : i18nT("productionHub.status.recoveryRevertFailed", "다른 변경이 있어 복구 계획을 되돌리지 못했습니다."));
+        : i18nT("productionHub.status.recoveryRevertFailed", "다른 변경이 있어 복구 계획을 되돌리지 못했어요. 변경 내용을 확인한 뒤 다시 시도해 주세요."));
     } finally {
       setUndoing(false);
     }

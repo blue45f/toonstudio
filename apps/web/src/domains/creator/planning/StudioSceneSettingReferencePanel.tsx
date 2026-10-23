@@ -13,6 +13,7 @@
  * - 끊긴 참조(삭제된 캐릭터·장소 id)는 숨기지 않고 한 줄로 알린다.
  */
 import { useState } from "react";
+import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import { STUDIO_LORE_KIND_LABELS } from "./studio-world-lore";
 import {
@@ -114,16 +115,10 @@ export function StudioSceneSettingReferencePanel({
       ) : reference.isEmpty ? (
         <div>
           {hasAnyLoreEntries ? (
-            <p>
-              이 장면과 이어진 설정이 아직 없어요. 장면에 장소와 등장 캐릭터를 지정하면
-              연결된 설정이 자동으로 모입니다.
-            </p>
+            <p>{r3c04StatusText("studio.r3c04Status.planning.sceneSetting.noLinked", "이 장면과 이어진 설정이 아직 없어요. 장면에 장소와 등장 캐릭터를 지정하면 연결된 설정이 자동으로 모입니다.")}</p>
           ) : (
             <>
-              <p>
-                아직 적어 둔 설정이 없어요. 세계관 설정을 먼저 세워 두면, 작업 화면에서
-                장면마다 이어진 설정이 자동으로 곁에 나타납니다.
-              </p>
+              <p>{r3c04StatusText("studio.r3c04Status.planning.sceneSetting.emptySettings", "아직 적어 둔 설정이 없어요. 세계관 설정을 먼저 세워 두면, 작업 화면에서 장면마다 이어진 설정이 자동으로 곁에 나타납니다.")}</p>
               {loreHubHref && (
                 <p>
                   <a href={loreHubHref}>설정 허브에서 첫 설정 만들기</a>
@@ -141,7 +136,7 @@ export function StudioSceneSettingReferencePanel({
                 <p>
                   {reference.location.name}
                   {reference.locationEntry === null
-                    ? " — 이 장소의 상세 설정은 아직 없어요."
+                    ? r3c04StatusText("studio.r3c04Status.planning.sceneSetting.locationDetailEmpty", " — 이 장소의 상세 설정은 아직 없어요.")
                     : ""}
                 </p>
               ) : (

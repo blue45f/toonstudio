@@ -4,6 +4,7 @@
  * 기준점 핸들 드래그는 StudioIsometricGridOverlay(Konva, Stage 트리 안에 있어야 해서
  * 별도 파일)가 담당한다. 슬라이더는 로컬 draft/선택적 preview와 최종 커밋을 분리한다.
  */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Box, RotateCcw } from "lucide-react";
 import { useState, type ReactElement } from "react";
 
@@ -422,7 +423,7 @@ export function StudioIsometricGridPanel({
             >
               <Box className="size-3" aria-hidden />
               {primitiveInsertPending
-                ? "생성 중…"
+                ? r3c07StatusText("studio.panelStatus.r3c07.isometricGrid.generating", "생성 중…")
                 : onInsertPrimitive
                 ? `${PRIMITIVE_KIND_LABELS[primitiveKind]} 생성`
                 : "입체 상자 생성"}

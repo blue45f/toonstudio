@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { CREATOR_HIRING_MODELS, CREATOR_HIRING_ROLES, HIRING_FORMATS, HIRING_TOOLS } from "../../../../../../packages/contracts/src/creator-hiring";
 import { CollabField, collabButton, collabInput, collabPrimary } from "../collaboration-ui";
+import { r5CollaborationStatusText } from "../r5-cat1-status-i18n";
 
 import { ChoiceSet } from "./ResumeEditor";
 import { compensationLabels, dateInput, optionsOf, policyLabels, rateLabels } from "./hiring-form-values";
@@ -25,7 +26,7 @@ export function HiringSlotEditor({ initial, busy, onSave, onCancel }: { initial:
     {["employment", "freelance-task"].includes(terms.model) && <p className="text-sm">고용과 작업 의뢰는 유급 조건만 저장할 수 있습니다.</p>}
     {terms.compensation === "paid" && <div className="grid gap-4 sm:grid-cols-2">{(["minRate", "maxRate"] as const).map((key) => <CollabField key={key} label={key === "minRate" ? "최소 단가 (원)" : "최대 단가 (원)"}><input type="number" required min={1} max={1000000000} className={collabInput} value={terms[key]} onChange={(e) => change(key, Number(e.target.value))} /></CollabField>)}</div>}
     {select("단가 기준", "rateUnit", rateLabels)}
-    {terms.compensation === "revenue-share" && <p className="text-sm">수익 분배 조건의 배분율·정산 기준을 검증하는 기능은 아직 지원하지 않아 저장·확정할 수 없습니다.</p>}
+    {terms.compensation === "revenue-share" && <p className="text-sm">{r5CollaborationStatusText("r5cat1.collaboration.hiringSlot.revenueShareUnsupported", "수익 분배 조건의 배분율·정산 기준을 검증하는 기능은 아직 지원하지 않아 저장·확정할 수 없습니다.")}</p>}
     <ChoiceSet label="필요한 도구" options={optionsOf(HIRING_TOOLS)} value={terms.tools} onChange={(v) => change("tools", v)} />
     <ChoiceSet label="납품 형식" options={optionsOf(HIRING_FORMATS)} value={terms.formats} onChange={(v) => change("formats", v)} />
     <CollabField label="포함된 수정 횟수"><input type="number" required min={0} max={30} className={collabInput} value={terms.revisionRounds} onChange={(e) => change("revisionRounds", Number(e.target.value))} /></CollabField>

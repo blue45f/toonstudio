@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 import { studioDeleteProductionBibleEntryRequest } from "./studio-destructive-command-catalog";
 import {
   addStudioProductionBibleEntry,
@@ -326,38 +327,18 @@ function persistenceCopy(
   persistence: StudioProductionBiblePanelPersistence | undefined
 ): { label: string; tone: string } {
   if (!persistence) {
-    return {
-      label: "SQLite/OPFS 상태 확인 중 · 서버 동기화 없음",
-      tone: "border-warn/35 bg-warn/10 text-warn",
-    };
+    return { label: frozenStatus3Text("studio.frozenStatus3.bible.persistenceChecking", "SQLite/OPFS 상태 확인 중 · 서버 동기화 없음"), tone: "border-warn/35 bg-warn/10 text-warn" };
   }
   if (persistence.backend === "unavailable") {
-    return {
-      label: "SQLite/OPFS 사용 불가 · 저장되지 않음",
-      tone: "border-bad/35 bg-bad/10 text-bad",
-    };
+    return { label: frozenStatus3Text("studio.frozenStatus3.bible.persistenceUnavailable", "SQLite/OPFS 사용 불가 · 저장되지 않음"), tone: "border-bad/35 bg-bad/10 text-bad" };
   }
   if (persistence.backend === "memory") {
-    return {
-      label: "메모리 임시 · 새로고침 전까지",
-      tone: "border-bad/35 bg-bad/10 text-bad",
-    };
+    return { label: frozenStatus3Text("studio.frozenStatus3.bible.persistenceMemory", "메모리 임시 · 새로고침 전까지"), tone: "border-bad/35 bg-bad/10 text-bad" };
   }
   if (persistence.backend === "sqlite") {
-    return {
-      label: persistence.persisted
-        ? "이 기기 SQLite/OPFS 저장 · 서버 동기화 없음"
-        : "SQLite/OPFS 준비 · 첫 변경 시 저장",
-      tone: "border-good/35 bg-good/10 text-good",
-    };
+    return { label: persistence.persisted ? frozenStatus3Text("studio.frozenStatus3.bible.persistenceSaved", "이 기기 SQLite/OPFS 저장 · 서버 동기화 없음") : frozenStatus3Text("studio.frozenStatus3.bible.persistenceReady", "SQLite/OPFS 준비 · 첫 변경 시 저장"), tone: "border-good/35 bg-good/10 text-good" };
   }
-  return {
-    label:
-      persistence.backend === "legacy-indexeddb"
-        ? "명시적으로 가져온 레거시 IndexedDB · V12 제품 저장 아님"
-        : "명시적으로 가져온 레거시 localStorage · V12 제품 저장 아님",
-    tone: "border-warn/35 bg-warn/10 text-warn",
-  };
+  return { label: persistence.backend === "legacy-indexeddb" ? frozenStatus3Text("studio.frozenStatus3.bible.persistenceLegacyIdb", "명시적으로 가져온 레거시 IndexedDB · V12 제품 저장 아님") : frozenStatus3Text("studio.frozenStatus3.bible.persistenceLegacyLocal", "명시적으로 가져온 레거시 localStorage · V12 제품 저장 아님"), tone: "border-warn/35 bg-warn/10 text-warn" };
 }
 
 export function StudioProductionBiblePanelSurface({
@@ -460,7 +441,7 @@ export function StudioProductionBiblePanelSurface({
       setError(null);
       setNotice(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "프로덕션 바이블을 저장하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.saveFailed", "프로덕션 바이블을 저장하지 못했어요."));
     }
   };
 
@@ -477,7 +458,7 @@ export function StudioProductionBiblePanelSurface({
       );
       setFilter(kind);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : `${kindLabel(kind)}을(를) 추가하지 못했어요.`);
+      setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.addFailed", { kind: kindLabel(kind) }, "{kind}을(를) 추가하지 못했어요."));
     }
   };
 
@@ -495,7 +476,7 @@ export function StudioProductionBiblePanelSurface({
         id
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "항목을 복제하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.duplicateFailed", "항목을 복제하지 못했어요."));
     }
   };
 
@@ -517,15 +498,15 @@ export function StudioProductionBiblePanelSurface({
   const copyExport = async () => {
     try {
       if (!globalThis.navigator?.clipboard?.writeText) {
-        throw new Error("이 브라우저에서 클립보드 복사를 지원하지 않아요.");
+        throw new Error(frozenStatus3Text("studio.frozenStatus3.bible.clipboardUnsupported", "이 브라우저에서 클립보드 복사를 지원하지 않아요."));
       }
       await globalThis.navigator.clipboard.writeText(
         serializeStudioProductionBible(bible, true)
       );
-      setNotice("정규화된 JSON을 클립보드에 복사했어요.");
+      setNotice(frozenStatus3Text("studio.frozenStatus3.bible.copySucceeded", "정규화된 JSON을 클립보드에 복사했어요."));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "JSON을 복사하지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.copyFailed", "JSON을 복사하지 못했어요."));
     }
   };
 
@@ -536,11 +517,9 @@ export function StudioProductionBiblePanelSurface({
       if (!parsed.ok) throw new Error(parsed.error);
       const merged = mergeStudioProductionBibles(bible, parsed.bible);
       applyChange(merged.bible, merged.addedIds[0] ?? merged.updatedIds[0]);
-      setNotice(
-        `${merged.addedIds.length}개 자료 추가 · ${merged.updatedIds.length}개 자료 병합 · ${merged.promiseAddedIds.length}개 약속 추가 · ${merged.promiseUpdatedIds.length}개 약속 병합 · ${merged.kindConflictIds.length}개 종류 충돌 보존`
-      );
+      setNotice(frozenStatus3Text("studio.frozenStatus3.bible.importSucceeded", { added: merged.addedIds.length, updated: merged.updatedIds.length, promisesAdded: merged.promiseAddedIds.length, promisesUpdated: merged.promiseUpdatedIds.length, conflicts: merged.kindConflictIds.length }, "{added}개 자료 추가 · {updated}개 자료 병합 · {promisesAdded}개 약속 추가 · {promisesUpdated}개 약속 병합 · {conflicts}개 종류 충돌 보존"));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "JSON을 가져오지 못했어요.");
+      setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.importFailed", "JSON을 가져오지 못했어요."));
     } finally {
       if (importInputRef.current) importInputRef.current.value = "";
     }
@@ -738,7 +717,7 @@ export function StudioProductionBiblePanelSurface({
                 <div>
                   <BookMarked size={21} className="mx-auto text-fg-3" aria-hidden />
                   <p className="mt-2 text-xs font-semibold text-fg-2">
-                    {bible.entries.length === 0 ? "첫 항목을 추가하세요" : "조건에 맞는 항목이 없어요"}
+                    {bible.entries.length === 0 ? frozenStatus3Text("studio.frozenStatus3.bible.emptyFirst", "첫 항목을 추가하세요") : frozenStatus3Text("studio.frozenStatus3.bible.emptyNoMatch", "조건에 맞는 항목이 없어요")}
                   </p>
                   <p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">
                     장면은 장소와 소품을 연결하는 허브가 됩니다.
@@ -1001,7 +980,7 @@ export function StudioProductionBiblePanelSurface({
                   label="연결 장소"
                   value={selectedEntry.linkedLocationIds}
                   options={locations}
-                  emptyHint="등록된 다른 장소가 없습니다."
+                  emptyHint={frozenStatus3Text("studio.frozenStatus3.bible.emptyNoLocations", "등록된 다른 장소가 없습니다.")}
                   onChange={(linkedLocationIds) => patchEntry({ linkedLocationIds })}
                 />
                 <LinkField
@@ -1009,7 +988,7 @@ export function StudioProductionBiblePanelSurface({
                   label="연결 소품"
                   value={selectedEntry.linkedPropIds}
                   options={props}
-                  emptyHint="등록된 다른 소품이 없습니다."
+                  emptyHint={frozenStatus3Text("studio.frozenStatus3.bible.emptyNoProps", "등록된 다른 소품이 없습니다.")}
                   onChange={(linkedPropIds) => patchEntry({ linkedPropIds })}
                 />
                 <LinkField

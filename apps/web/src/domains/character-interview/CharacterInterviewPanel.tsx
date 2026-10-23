@@ -15,6 +15,7 @@
  * 에러는 원인과 다시 시도를, 빈 상태는 근거 카드 + 질문 칩으로 안내한다.
  */
 
+import { restStatusText } from "../../shared/rest-status-i18n";
 import { BookOpen, Save, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -189,8 +190,7 @@ export function CharacterInterviewPanel(props: CharacterInterviewPanelProps) {
       <section className="rounded-2xl border border-line bg-card p-5">
         <h2 className="text-base font-black text-fg">캐릭터 인터뷰</h2>
         <p className="mt-2 text-sm leading-relaxed text-fg-2">
-          아직 캐릭터가 없어요. 스토리 바이블에 캐릭터를 먼저 만들면 그 캐릭터와 인터뷰할 수
-          있어요.
+          {restStatusText("rest.status.characterInterview.empty", "아직 캐릭터가 없어요. 스토리 바이블에 캐릭터를 먼저 만들면 그 캐릭터와 인터뷰할 수 있어요.")}
         </p>
       </section>
     );
@@ -257,8 +257,7 @@ export function CharacterInterviewPanel(props: CharacterInterviewPanelProps) {
           </div>
           {!canon.grounding.grounded ? (
             <p role="alert" className="mt-2 text-xs leading-relaxed text-warn">
-              성격과 말투가 시트에 있어야 인터뷰를 시작할 수 있어요. 비어 있는 항목을 먼저
-              채워 주세요 — 근거 없는 답은 설정 검증이 되지 않아요.
+              {restStatusText("rest.status.characterInterview.groundingMissing", "성격과 말투가 시트에 있어야 인터뷰를 시작할 수 있어요. 비어 있는 항목을 먼저 채워 주세요 — 근거 없는 답은 설정 검증이 되지 않아요.")}
             </p>
           ) : null}
         </div>

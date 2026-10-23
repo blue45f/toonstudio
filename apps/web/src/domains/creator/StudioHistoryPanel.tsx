@@ -2,6 +2,7 @@
 // 항목 클릭으로 그 시점으로 즉시 점프한다(실행취소/다시실행 반복과 동일한 인덱스 이동).
 // 라벨·점프 계산은 studio-history-labels(순수), 인덱스 반영(setPagesHi)은 StudioPage(메인 루프)가 담당.
 // 자체완결 플로팅 패널: 캔버스 컨테이너(relative) 우측 상단에 떠 있고 Esc 로 닫힌다.
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { History as HistoryIcon, Paintbrush, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
@@ -60,6 +61,22 @@ export function StudioHistoryPanel({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // 열기 직전에 포커스를 가졌던 요소(여는 단추)를 기억했다가, 패널이 사라지면서 포커스가 문서 본문으로 떨어졌을 때만
+  // 돌려준다(WCAG 2.4.3 포커스 순서). 아래 효과가 포커스를 옮기기 전에 읽어야 해서 그 효과보다 위에 둔다.
+  // 개발 모드(StrictMode)는 효과를 마운트→정리→마운트로 두 번 돌리는데, 두 번째 마운트 때는 이미 포커스가 패널 안
+  // 이라 그대로 읽으면 사라질 요소를 여는 단추로 착각한다. 그래서 처음 읽은 값만 ref 에 남긴다.
+  const openerRef = useRef<Element | null | undefined>(undefined);
+  useEffect(() => {
+    if (openerRef.current === undefined) openerRef.current = document.activeElement;
+    return () => {
+      const opener = openerRef.current;
+      const active = document.activeElement;
+      if (opener instanceof HTMLElement && opener.isConnected && (active === null || active === document.body)) {
+        opener.focus({ preventScroll: true });
+      }
+    };
+  }, []);
 
   // 현재 단계 버튼 — 열릴 때 1회 포커스(키보드 사용자), 이후 ⌘Z 진행 중에는 훔치지 않는다.
   const currentItemRef = useRef<HTMLButtonElement>(null);
@@ -139,7 +156,7 @@ export function StudioHistoryPanel({
                   aria-pressed={brushSourceIndex === entry.index}
                   title={
                     brushSourceAvailability && !brushSourceAvailability[entry.index]
-                      ? "이 시점엔 같은 레이어가 없어 지정할 수 없어요."
+                      ? r3c07StatusText("studio.panelStatus.r3c07.historyPanel.noSameLayer", "이 시점엔 같은 레이어가 없어 지정할 수 없어요.")
                       : brushSourceIndex === entry.index
                         ? "히스토리 브러시 소스로 지정됨"
                         : "이 시점을 히스토리 브러시 소스로 지정"

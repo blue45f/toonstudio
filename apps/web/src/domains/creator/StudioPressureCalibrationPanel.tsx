@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   useMemo,
   useRef,
@@ -314,7 +315,7 @@ export function StudioPressureCalibrationPanel({
               disabled={recommendation === null}
               title={
                 recommendation === null
-                  ? "서로 다른 압력의 유효 샘플이 8개 이상 필요합니다"
+                  ? r3c07StatusText("studio.panelStatus.r3c07.pressureCalibration.samplesRequired", "서로 다른 압력의 유효 샘플이 8개 이상 필요합니다")
                   : `권장 감마 ${recommendation.toFixed(2)} 적용`
               }
               className={cn(

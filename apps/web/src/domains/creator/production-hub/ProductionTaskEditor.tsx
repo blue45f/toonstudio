@@ -512,7 +512,7 @@ export function ProductionTaskEditor({ aggregate, task, isNew, canEdit, execute,
         ) : null}
         <div className={cn("mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5", drawer && "sticky bottom-0 z-10 -mx-4 bg-card px-4 pb-3 sm:-mx-5 sm:px-5")}>
           <p className="text-xs leading-5 text-fg-3">
-            {issues[0] ?? (dirty ? "저장하지 않은 변경 있음" : "작업 설명은 자동 저장되지 않습니다.")}
+            {issues[0] ?? (dirty ? productionText("저장하지 않은 변경 있음") : productionText("작업 설명은 자동 저장되지 않습니다."))}
           </p>
           {editable ? (
             <button

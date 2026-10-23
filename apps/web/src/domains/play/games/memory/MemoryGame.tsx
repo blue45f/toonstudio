@@ -13,6 +13,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { GameHelp } from "../../GameHelp";
 import { PlayCover } from "../../PlayCover";
 import { PlayGameError, PlayGameSkeleton } from "../GameStates";
+import { playStatusText } from "../../play-status-i18n";
 import { usePlayTitles } from "../../use-play-catalog";
 import { recordResult } from "../../lab/play-storage";
 
@@ -196,7 +197,7 @@ export function MemoryGame({ onExit }: PlayGameProps) {
   const restart = () => setSeed((s) => s + 1);
 
   if (loading || (!ready && !error)) {
-    return <PlayGameSkeleton label="웹툰 카드를 불러오는 중" layout="board" />;
+    return <PlayGameSkeleton label={playStatusText("play.status.memory.loadingCards", "웹툰 카드를 불러오는 중")} layout="board" />;
   }
 
   if (error && !ready) {

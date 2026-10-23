@@ -45,6 +45,7 @@ import {
 } from "./studio-draft-save-outbox";
 import { studioSaveIntentScopeKey, type StudioSaveIntentScope } from "./studio-durable-save-intent";
 import { useStudioDurableSaveIntent } from "./use-studio-durable-save-intent";
+import { frozenStatus4Text } from "./studio-frozen4-status-i18n";
 import { STUDIO_SERVER_AUTOSAVE_IDLE_MS } from "./studio-page-editor-runtime-contracts";
 import { useStudioReliabilityStatus } from "./use-studio-reliability-status";
 import {
@@ -149,7 +150,7 @@ function readOutboxStorage(): StudioDraftSaveOutboxStorage | null {
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message.trim().slice(0, 500);
   if (typeof error === "string" && error.trim()) return error.trim().slice(0, 500);
-  return "서버 초안 저장 요청을 완료하지 못했습니다.";
+  return frozenStatus4Text("studio.frozenStatus4.draft.serverSaveFailed", "서버 초안 저장 요청을 완료하지 못했습니다.");
 }
 
 function safeCount(value: number): number {
@@ -181,13 +182,13 @@ function newestRevisionCreatedAt(
 function leadershipBasisLabel(basis: StudioDraftSaveLeadershipView["basis"] | null): string {
   switch (basis) {
     case "web-lock":
-      return "문서 잠금으로 조정";
+      return frozenStatus4Text("studio.frozenStatus4.draft.basisLock", "문서 잠금으로 조정");
     case "promoted-after-handover":
-      return "이전 탭에서 인계";
+      return frozenStatus4Text("studio.frozenStatus4.draft.basisHandover", "이전 탭에서 인계");
     case "locks-unavailable":
-      return "단독 탭 기준";
+      return frozenStatus4Text("studio.frozenStatus4.draft.basisSolo", "단독 탭 기준");
     default:
-      return "담당 확인 중";
+      return frozenStatus4Text("studio.frozenStatus4.draft.basisChecking", "담당 확인 중");
   }
 }
 
@@ -376,16 +377,14 @@ export function StudioDraftSaveCenter({
     setDeferredSaveQueuedAt(queuedAt);
     setDeferredSaveDurable(durable);
     setDeferredSave(true);
-    setOutboxWarning(durable
-      ? null
-      : "저장 예약을 새로고침 복구 영역에 기록하지 못했습니다. 이 탭을 유지하고 연결 후 다시 저장해 주세요.");
+    setOutboxWarning(durable ? null : frozenStatus4Text("studio.frozenStatus4.draft.outboxRecordFailed", "저장 예약을 새로고침 복구 영역에 기록하지 못했습니다. 이 탭을 유지하고 연결 후 다시 저장해 주세요."));
   }, [hasServerDocument, outboxWorkId, rememberDurableIntent, serverRevision]);
 
   const clearDeferredSave = useCallback((surfaceFailure = false): boolean => {
     const cleared = outboxWorkId === null
       || clearStudioDraftSaveOutbox({ storage: readOutboxStorage(), workId: outboxWorkId });
     if (!cleared && surfaceFailure) {
-      setOutboxWarning("서버 저장 예약을 정리하지 못했습니다. 중복 저장은 revision 검증으로 차단되지만 새로고침 전에 상태를 다시 확인해 주세요.");
+      setOutboxWarning(frozenStatus4Text("studio.frozenStatus4.draft.outboxClearFailed", "서버 저장 예약을 정리하지 못했습니다. 중복 저장은 revision 검증으로 차단되지만 새로고침 전에 상태를 다시 확인해 주세요."));
       return false;
     }
     setDeferredSave(false);
@@ -404,9 +403,7 @@ export function StudioDraftSaveCenter({
     } catch (cause) {
       const serverUnavailable = reportStudioServerRequestFailure(cause);
       if (restoreDeferredOnFailure || serverUnavailable) queueDeferredSave();
-      setManualSaveError(serverUnavailable
-        ? "서버에 연결할 수 없어 이 기기에 저장 예약을 보관했습니다. 연결이 복구되면 자동으로 다시 저장합니다."
-        : errorMessage(cause));
+      setManualSaveError(serverUnavailable ? frozenStatus4Text("studio.frozenStatus4.draft.offlineKept", "서버에 연결할 수 없어 이 기기에 저장 예약을 보관했습니다. 연결이 복구되면 자동으로 다시 저장합니다.") : errorMessage(cause));
       setOpen(true);
       return false;
     }
@@ -727,7 +724,7 @@ export function StudioDraftSaveCenter({
               <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">서버 버전</dt>
               <dd className="mt-1 flex items-center justify-center gap-1 text-sm font-black">
                 {serverRevisionLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-label="버전 기록 불러오는 중" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-label={frozenStatus4Text("studio.frozenStatus4.draft.revisionsLoading", "버전 기록 불러오는 중")} />
                 ) : `${serverRevisions.length}개`}
               </dd>
             </div>
@@ -759,7 +756,7 @@ export function StudioDraftSaveCenter({
           ) : null}
 
           {durableSaveIntent.enabled && (durableSaveIntent.entry || durableSaveIntent.phase === "writing" || durableSaveIntent.error) ? (
-            <Suspense fallback={<p role="status">저장 대기 안내 여는 중…</p>}>
+            <Suspense fallback={<p role="status">{frozenStatus4Text("studio.frozenStatus4.draft.intentOpening", "저장 대기 안내 여는 중…")}</p>}>
               <StudioDurableSaveIntentPanel state={durableSaveIntent} saving={saving} deferredSave={deferredSave} />
             </Suspense>
           ) : null}
@@ -772,7 +769,7 @@ export function StudioDraftSaveCenter({
 
           {serverRevisionError ? (
             <p role="status" className="mt-3 rounded-xl border border-warning/40 bg-warning-soft/25 p-2.5 text-xs font-semibold leading-relaxed text-warning">
-              서버 버전 기록을 불러오지 못했습니다. 현재 편집 내용은 그대로 두고 체크포인트 패널에서 다시 시도할 수 있습니다.
+              {frozenStatus4Text("studio.frozenStatus4.draft.revisionsLoadFailed", "서버 버전 기록을 불러오지 못했습니다. 현재 편집 내용은 그대로 두고 체크포인트 패널에서 다시 시도할 수 있습니다.")}
             </p>
           ) : null}
 

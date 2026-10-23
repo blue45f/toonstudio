@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { useState, type ReactElement } from "react";
 
 import { findStoredBrushSnapshotForMarketplace } from "./marketplace-brush-publish-snapshot";
@@ -88,7 +89,7 @@ export function MarketplaceBrushPublishShortcut({
       target.searchParams.set("returnTo", `${window.location.pathname}${window.location.search}`);
       window.location.assign(`${target.pathname}${target.search}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "마켓 게시 초안을 만들지 못했습니다.");
+      setMessage(error instanceof Error ? error.message : r3c07StatusText("studio.panelStatus.r3c07.marketplaceBrushShortcut.draftFailed", "마켓 게시 초안을 만들지 못했습니다."));
       setBusy(false);
     }
   };
@@ -119,7 +120,7 @@ export function MarketplaceBrushPublishShortcut({
           disabled={busy}
           className="min-h-11 shrink-0 rounded-xl bg-accent px-4 text-xs font-bold text-on-accent disabled:cursor-wait disabled:opacity-60"
         >
-          {busy ? "준비 중" : "등록 준비"}
+          {busy ? r3c07StatusText("studio.panelStatus.r3c07.marketplaceBrushShortcut.preparing", "준비 중") : "등록 준비"}
         </button>
       </div>
     </aside>

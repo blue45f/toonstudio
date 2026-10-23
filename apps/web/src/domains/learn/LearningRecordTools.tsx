@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { hasLearningActivity, MAX_LEARNING_BACKUP_BYTES, readLearningBackup, summarizeLearningProgress, writeLearningBackup, type BackupPreview } from "./learning-backup";
 import { LESSONS, TERMS } from "./learning-content";
+import { learnStatusText } from "./learn-status-i18n";
+import { r5LearnStatusText } from "./r5-cat1-status-i18n";
 
 import type { LearningStore } from "./use-learning-progress";
 
@@ -38,7 +40,7 @@ export function LearningRecordTools({ store }: { store: LearningStore }) {
       anchor.click();
       setMessage("백업 파일을 준비했습니다. 브라우저의 다운로드 목록을 확인하세요. 개인 메모가 포함되므로 안전하게 보관하세요.");
     } catch {
-      setMessage("백업 파일을 만들지 못했습니다. 실습 메모를 직접 복사해 보관하세요. 기존 기록은 변경하지 않았습니다.");
+      setMessage(learnStatusText("learn.status.recordTools.backupCreateFailed", "백업 파일을 만들지 못했습니다. 실습 메모를 직접 복사해 보관하세요. 기존 기록은 변경하지 않았습니다."));
     } finally {
       anchor?.remove();
       if (url) {
@@ -66,7 +68,7 @@ export function LearningRecordTools({ store }: { store: LearningStore }) {
       setMessage("파일을 확인했습니다. 아직 기록에 적용하지 않았습니다. 아래 내용을 확인한 후 복원하세요.");
     } catch (error) {
       if (active.current && generation === readGeneration.current) {
-        setMessage(error instanceof Error ? error.message : "백업 파일을 읽지 못했습니다.");
+        setMessage(error instanceof Error ? error.message : learnStatusText("learn.status.recordTools.backupReadFailed", "백업 파일을 읽지 못했습니다."));
       }
     } finally {
       if (active.current && generation === readGeneration.current) setBusy(false);
@@ -86,7 +88,7 @@ export function LearningRecordTools({ store }: { store: LearningStore }) {
     if (fileInput.current) fileInput.current.value = "";
     setMessage(saved
       ? "기존 학습 기록은 유지하고 새 강좌 기록과 북마크를 복원했습니다."
-      : "복원 내용을 이 화면에 반영했지만 기기에 저장하지 못했습니다. 화면의 저장 경고를 확인하고 백업을 보관하세요.");
+      : learnStatusText("learn.status.recordTools.restoreSaveFailed", "복원 내용을 이 화면에 반영했지만 기기에 저장하지 못했습니다. 화면의 저장 경고를 확인하고 백업을 보관하세요."));
   }
 
   return (
@@ -99,7 +101,7 @@ export function LearningRecordTools({ store }: { store: LearningStore }) {
       <p>다른 기기로 옮기거나 브라우저 데이터를 지우기 전에 백업하세요. 메모가 포함된 JSON 파일이며 서버로 전송하지 않습니다.</p>
       <div className="learn-actions">
         <button type="button" onClick={exportBackup}>학습 기록 백업</button>
-        {store.dirty && !store.conflict && <button type="button" onClick={() => { const saved = store.retrySave(); setMessage(saved ? "기기에 다시 저장했습니다." : "저장하지 못했습니다. 경고를 확인하고 백업 파일을 보관하세요."); }}>기기에 다시 저장</button>}
+        {store.dirty && !store.conflict && <button type="button" onClick={() => { const saved = store.retrySave(); setMessage(saved ? "기기에 다시 저장했습니다." : learnStatusText("learn.status.recordTools.saveFailed", "저장하지 못했습니다. 경고를 확인하고 백업 파일을 보관하세요.")); }}>기기에 다시 저장</button>}
       </div>
       <details className="learn-backup-details">
         <summary>백업 파일에서 복원</summary>
@@ -122,11 +124,11 @@ export function LearningRecordTools({ store }: { store: LearningStore }) {
       {store.conflict && (
         <div className="learn-caution">
           <h3>다른 탭의 기록과 충돌했습니다</h3>
-          <p>동시에 편집한 기록을 자동 병합하지 않습니다. 먼저 이 화면의 기록과 다른 탭의 기록을 각각 백업하세요.</p>
+          <p>{r5LearnStatusText("r5cat1.learn.recordTools.conflictBody", "동시에 편집한 기록을 자동 병합하지 않습니다. 먼저 이 화면의 기록과 다른 탭의 기록을 각각 백업하세요.")}</p>
           {confirmRevision === null ? <button type="button" onClick={() => setConfirmRevision(store.revision)}>이 화면 기록으로 저장…</button> : (
             <div role="group" aria-label="충돌 기록 저장 확인">
               <p>다른 탭이 저장한 학습 기록을 이 화면의 기록으로 대체합니다. 백업을 보관했는지 확인하세요.</p>
-              <div className="learn-actions"><button type="button" onClick={() => { const saved = store.confirmCurrentRecord(confirmRevision); setConfirmRevision(null); setMessage(saved ? "확인한 이 화면의 기록을 기기에 저장했습니다." : "그동안 기록이 바뀌었거나 저장하지 못했습니다. 내용을 다시 확인하세요."); }}>확인한 기록으로 저장</button><button type="button" onClick={() => setConfirmRevision(null)}>기록 저장 취소</button></div>
+              <div className="learn-actions"><button type="button" onClick={() => { const saved = store.confirmCurrentRecord(confirmRevision); setConfirmRevision(null); setMessage(saved ? "확인한 이 화면의 기록을 기기에 저장했습니다." : learnStatusText("learn.status.recordTools.confirmSaveFailed", "그동안 기록이 바뀌었거나 저장하지 못했습니다. 내용을 다시 확인하세요.")); }}>확인한 기록으로 저장</button><button type="button" onClick={() => setConfirmRevision(null)}>기록 저장 취소</button></div>
             </div>
           )}
         </div>

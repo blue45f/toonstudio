@@ -11,6 +11,7 @@
  *
  * 본문은 서버가 새니타이즈해 내려주지만, 브라우저에서도 허용된 태그만 React 노드로 변환한다.
  */
+import { restStatusText } from "../../../shared/rest-status-i18n";
 import { createChangelogClient, type ChangelogEntry, type ChangelogEntryTag } from "@heejun/deskcloud";
 import { Megaphone, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
@@ -239,10 +240,10 @@ export function NativeChangelog() {
                   <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-bad/15 text-bad">
                     <Megaphone size={24} aria-hidden="true" />
                   </span>
-                  <p className="text-sm text-fg-2">소식을 불러오지 못했어요.</p>
+                  <p className="text-sm text-fg-2">{restStatusText("rest.status.changelog.loadFailed", "소식을 불러오지 못했어요.")}</p>
                   <div className="mt-4">
                     <Button size="sm" onClick={load}>
-                      다시 시도
+                      {restStatusText("rest.status.common.retry", "다시 시도")}
                     </Button>
                   </div>
                 </div>
@@ -253,7 +254,7 @@ export function NativeChangelog() {
                   <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-raised text-fg-3">
                     <Sparkles size={24} aria-hidden="true" />
                   </span>
-                  <p className="text-sm text-fg-2">아직 게시된 소식이 없어요.</p>
+                  <p className="text-sm text-fg-2">{restStatusText("rest.status.changelog.empty", "아직 게시된 소식이 없어요.")}</p>
                 </div>
               )}
 

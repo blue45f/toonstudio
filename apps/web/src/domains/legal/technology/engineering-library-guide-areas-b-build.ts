@@ -106,8 +106,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
         "Packs screen code into hashed files and splits heavy engines into lazy chunks. The React Compiler transform and the Service Worker build also run in this build.",
       ),
       why: t(
-        "큰 엔진을 이름 붙인 청크로 나누고 지연 로드 경계를 설정으로 고정할 수 있어, 첫 화면 번들 검사를 빌드 결과(manifest)로 자동화합니다. 번들러는 Rolldown 1.0.3(전이 의존성)입니다.",
-        "Large engines can be split into named chunks and lazy-load boundaries fixed in config, so the first-screen bundle check runs automatically on the build output (the manifest). The bundler is Rolldown 1.0.3, a transitive dependency.",
+        "큰 엔진을 이름 붙인 청크로 나누고 지연 로드 경계를 설정으로 고정할 수 있어, 첫 화면 번들 검사를 빌드 결과(manifest)로 자동화합니다. 번들러는 Rolldown 1.2.14(전이 의존성)입니다.",
+        "Large engines can be split into named chunks and lazy-load boundaries fixed in config, so the first-screen bundle check runs automatically on the build output (the manifest). The bundler is Rolldown 1.2.14, a transitive dependency.",
       ),
       cost: t(
         "React Compiler 변환이 빌드 시간의 91%를 쓴 측정(2026-08-08, 이후 StudioPage 분할 전)이 있고, 청크 이름을 잘못 붙이면 공유 코드가 한 덩어리가 되어 되돌린 적이 두 번 있습니다. Vite를 다른 번들러와 비교한 문서는 못 찾았습니다.",

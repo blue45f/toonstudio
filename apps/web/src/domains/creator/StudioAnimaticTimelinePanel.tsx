@@ -29,6 +29,8 @@ import {
   createStudioAnimaticSqlitePersistence,
   type StudioAnimaticPersistencePort,
 } from "./studio-animatic-sqlite-persistence";
+import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
+import { resolveStudioAnimaticError } from "./status-i18n/studio-producer-error-i18n";
 import {
   addStudioAnimaticCue,
   createStudioAnimaticFromPages,
@@ -125,7 +127,7 @@ function initializePanelState(input: {
       return {
         document: null,
         storageStatus: "empty",
-        documentError: validated.error,
+        documentError: resolveStudioAnimaticError(validated.error),
       };
     }
     if (
@@ -156,7 +158,7 @@ function initializePanelState(input: {
     document: created.ok ? created.document : null,
     storageStatus: loaded.status,
     storageError: loaded.error,
-    documentError: created.ok ? undefined : created.error,
+    documentError: created.ok ? undefined : resolveStudioAnimaticError(created.error),
   };
 }
 
@@ -259,9 +261,7 @@ export function StudioAnimaticTimelinePanel({
     void persistenceTarget.load(workScope).catch((error: unknown) => ({
       document: null,
       status: "unavailable" as const,
-      error: `SQLite 애니매틱 읽기를 완료하지 못했습니다: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      error: frozenStatus3Text("studio.frozenStatus3.anim.loadFailed", { detail: error instanceof Error ? error.message : String(error) }, "SQLite 애니매틱 읽기를 완료하지 못했습니다: {detail}"),
     })).then((loaded) => {
       if (!active || generation !== persistenceGenerationRef.current) return;
       if (loaded.document) {
@@ -395,16 +395,14 @@ export function StudioAnimaticTimelinePanel({
       setPanelState({ document, storageStatus: "ok" });
       onDocumentChange?.(document);
       setPersistenceBusy(true);
-      setNotice({ tone: "good", message: `${successMessage} 로컬 SQL에 저장 중…` });
+      setNotice({ tone: "good", message: frozenStatus3Text("studio.frozenStatus3.anim.savingToLocalSql", { message: successMessage }, "{message} 로컬 SQL에 저장 중…") });
       const write = persistenceQueueRef.current.then(async () => {
         try {
           return await persistenceTarget.save(document);
         } catch (error) {
           return {
             ok: false,
-            error: `SQLite 애니매틱 저장을 완료하지 못했습니다: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
+            error: frozenStatus3Text("studio.frozenStatus3.anim.saveFailed", { detail: error instanceof Error ? error.message : String(error) }, "SQLite 애니매틱 저장을 완료하지 못했습니다: {detail}"),
           };
         }
       });
@@ -417,12 +415,8 @@ export function StudioAnimaticTimelinePanel({
           storageStatus: saved.ok ? "ok" : "unavailable",
           storageError: saved.error,
         });
-        setNotice({
-          tone: saved.ok ? "good" : "warn",
-          message: saved.ok
-            ? successMessage
-            : `${successMessage} ${saved.error ?? "현재 탭에서만 유지됩니다."}`,
-        });
+        const noticeMessage = saved.ok ? successMessage : frozenStatus3Text("studio.frozenStatus3.anim.savedWithError", { message: successMessage, error: saved.error ?? frozenStatus3Text("studio.frozenStatus3.anim.tabOnlyFallback", "현재 탭에서만 유지됩니다.") }, "{message} {error}");
+        setNotice({ tone: saved.ok ? "good" : "warn", message: noticeMessage });
       });
       return;
     }
@@ -433,12 +427,8 @@ export function StudioAnimaticTimelinePanel({
       storageError: saved.error,
     });
     onDocumentChange?.(document);
-    setNotice({
-      tone: saved.ok ? "good" : "warn",
-      message: saved.ok
-        ? successMessage
-        : `${successMessage} ${saved.error ?? "현재 탭에서만 유지됩니다."}`,
-    });
+    const noticeMessage = saved.ok ? successMessage : frozenStatus3Text("studio.frozenStatus3.anim.savedWithError", { message: successMessage, error: saved.error ?? frozenStatus3Text("studio.frozenStatus3.anim.tabOnlyFallback", "현재 탭에서만 유지됩니다.") }, "{message} {error}");
+    setNotice({ tone: saved.ok ? "good" : "warn", message: noticeMessage });
   }
 
   function updateDocument(
@@ -448,10 +438,7 @@ export function StudioAnimaticTimelinePanel({
     if (!animatic) return;
     const next = updater(animatic);
     if (next === animatic) {
-      setNotice({
-        tone: "warn",
-        message: "길이·프레임·항목 예산을 넘는 변경은 적용하지 않았습니다.",
-      });
+      setNotice({ tone: "warn", message: frozenStatus3Text("studio.frozenStatus3.anim.budgetBlocked", "길이·프레임·항목 예산을 넘는 변경은 적용하지 않았습니다.") });
       return;
     }
     commitDocument(next, successMessage);
@@ -460,16 +447,13 @@ export function StudioAnimaticTimelinePanel({
   function resetFromPages(): void {
     const created = createStudioAnimaticFromPages(pages, { workScope });
     if (!created.ok) {
-      setNotice({ tone: "bad", message: created.error });
+      setNotice({ tone: "bad", message: resolveStudioAnimaticError(created.error) });
       return;
     }
     setSelectedSegmentId(created.document.segments[0]?.id ?? null);
     setPlayheadMs(0);
     setPlaying(false);
-    commitDocument(
-      created.document,
-      "현재 페이지·컷 순서로 애니매틱을 다시 구성했습니다."
-    );
+    commitDocument(created.document, frozenStatus3Text("studio.frozenStatus3.anim.rebuilt", "현재 페이지·컷 순서로 애니매틱을 다시 구성했습니다."));
   }
 
   function scrub(nextMs: number): void {
@@ -502,35 +486,29 @@ export function StudioAnimaticTimelinePanel({
 
   async function importFile(file: File): Promise<void> {
     if (file.size > STUDIO_ANIMATIC_MAX_IMPORT_BYTES) {
-      setNotice({
-        tone: "bad",
-        message: `가져오기 파일은 ${(STUDIO_ANIMATIC_MAX_IMPORT_BYTES / 1_000).toFixed(0)}KB 이하여야 합니다.`,
-      });
+      setNotice({ tone: "bad", message: frozenStatus3Text("studio.frozenStatus3.anim.importTooLarge", { size: (STUDIO_ANIMATIC_MAX_IMPORT_BYTES / 1_000).toFixed(0) }, "가져오기 파일은 {size}KB 이하여야 합니다.") });
       return;
     }
     setImportBusy(true);
     try {
       const imported = importStudioAnimaticDocument(await file.text());
       if (!imported.ok) {
-        setNotice({ tone: "bad", message: imported.error });
+        setNotice({ tone: "bad", message: resolveStudioAnimaticError(imported.error) });
         return;
       }
       if (
         studioAnimaticStorageKey(imported.document.workScope)
         !== studioAnimaticStorageKey(workScope)
       ) {
-        setNotice({
-          tone: "bad",
-          message: "다른 작품 범위의 애니매틱은 이 타임라인에 가져올 수 없습니다.",
-        });
+        setNotice({ tone: "bad", message: frozenStatus3Text("studio.frozenStatus3.anim.otherScope", "다른 작품 범위의 애니매틱은 이 타임라인에 가져올 수 없습니다.") });
         return;
       }
       setSelectedSegmentId(imported.document.segments[0]?.id ?? null);
       setPlayheadMs(0);
       setPlaying(false);
-      commitDocument(imported.document, "애니매틱 JSON을 가져왔습니다.");
+      commitDocument(imported.document, frozenStatus3Text("studio.frozenStatus3.anim.imported", "애니매틱 JSON을 가져왔습니다."));
     } catch {
-      setNotice({ tone: "bad", message: "애니매틱 파일을 읽지 못했습니다." });
+      setNotice({ tone: "bad", message: frozenStatus3Text("studio.frozenStatus3.anim.importReadFailed", "애니매틱 파일을 읽지 못했습니다.") });
     } finally {
       setImportBusy(false);
     }
@@ -540,17 +518,14 @@ export function StudioAnimaticTimelinePanel({
     if (!animatic) return;
     const exported = exportStudioAnimaticDocument(animatic);
     if (!exported.ok) {
-      setNotice({ tone: "bad", message: exported.error });
+      setNotice({ tone: "bad", message: resolveStudioAnimaticError(exported.error) });
       return;
     }
     if (
       typeof URL.createObjectURL !== "function"
       || typeof document === "undefined"
     ) {
-      setNotice({
-        tone: "warn",
-        message: "이 브라우저에서는 JSON 다운로드를 시작할 수 없습니다.",
-      });
+      setNotice({ tone: "warn", message: frozenStatus3Text("studio.frozenStatus3.anim.downloadUnsupported", "이 브라우저에서는 JSON 다운로드를 시작할 수 없습니다.") });
       return;
     }
     const url = URL.createObjectURL(
@@ -561,10 +536,7 @@ export function StudioAnimaticTimelinePanel({
     anchor.download = "toonstudio-animatic-v1.json";
     anchor.click();
     URL.revokeObjectURL(url);
-    setNotice({
-      tone: "good",
-      message: `${(exported.bytes / 1_000).toFixed(1)}KB 애니매틱 JSON을 내보냈습니다.`,
-    });
+    setNotice({ tone: "good", message: frozenStatus3Text("studio.frozenStatus3.anim.exported", { size: (exported.bytes / 1_000).toFixed(1) }, "{size}KB 애니매틱 JSON을 내보냈습니다.") });
   }
 
   const storageUnavailable = workspaceStatus ? Boolean(workspaceStatus.error) : panelState.storageStatus === "unavailable"
@@ -609,7 +581,7 @@ export function StudioAnimaticTimelinePanel({
         {workspaceControls}
         {workspaceStatus ? (
           <p role="status" className="text-[0.7rem] text-fg-3">
-            {workspaceStatus.error ?? (workspaceStatus.busy ? "스토리보드와 미디어를 준비하고 저장하는 중…" : "스토리보드와 미디어를 이 기기에 저장했습니다.")}
+            {workspaceStatus.error ?? (workspaceStatus.busy ? frozenStatus3Text("studio.frozenStatus3.anim.workspaceBusy", "스토리보드와 미디어를 준비하고 저장하는 중…") : frozenStatus3Text("studio.frozenStatus3.anim.workspaceSaved", "스토리보드와 미디어를 이 기기에 저장했습니다."))}
           </p>
         ) : (
         <div
@@ -624,11 +596,7 @@ export function StudioAnimaticTimelinePanel({
         >
           <p className="flex items-center gap-1 font-semibold">
             <VolumeX size={12} aria-hidden />
-            {storageUnavailable
-              ? "현재 탭의 무음 미리보기"
-              : persistenceTarget
-                ? "로컬 SQL 무음 미리보기"
-                : "브라우저 로컬 무음 미리보기"}
+            {storageUnavailable ? frozenStatus3Text("studio.frozenStatus3.anim.storageModeTab", "현재 탭의 무음 미리보기") : persistenceTarget ? frozenStatus3Text("studio.frozenStatus3.anim.storageModeSql", "로컬 SQL 무음 미리보기") : frozenStatus3Text("studio.frozenStatus3.anim.storageModeBrowser", "브라우저 로컬 무음 미리보기")}
           </p>
           <p className="mt-0.5">
             음성통화·서버 스트리밍·AI 요청 없이 타이밍 메타데이터만
@@ -698,9 +666,7 @@ export function StudioAnimaticTimelinePanel({
                     )}
                   </div>
                 ) : (
-                  <div className="grid h-full place-items-center text-xs text-fg-3">
-                    미리 볼 페이지·컷이 없습니다.
-                  </div>
+                  <div className="grid h-full place-items-center text-xs text-fg-3">{frozenStatus3Text("studio.frozenStatus3.anim.emptyNoPreview", "미리 볼 페이지·컷이 없습니다.")}</div>
                 )}
                 {sample ? (
                   <div className="pointer-events-none absolute inset-x-2 bottom-2 flex flex-wrap items-center justify-between gap-1 rounded-lg bg-panel/85 px-2 py-1 text-[0.6rem] tabular-nums text-fg-2 backdrop-blur">
@@ -850,7 +816,7 @@ export function StudioAnimaticTimelinePanel({
                           cue {segment.cues.length}개 ·{" "}
                           {segmentPlan
                             ? `${segmentPlan.startFrame + 1}–${segmentPlan.endFrame + 1}f`
-                            : "예산 초과"}
+                            : frozenStatus3Text("studio.frozenStatus3.anim.budgetExceeded", "예산 초과")}
                         </span>
                         {segment.cues.map((cue) => (
                           <span
@@ -1319,7 +1285,7 @@ export function StudioAnimaticTimelinePanel({
               )}
             >
               <FileUp size={12} aria-hidden />
-              {importBusy ? "가져오는 중…" : "JSON 가져오기"}
+              {importBusy ? frozenStatus3Text("studio.frozenStatus3.anim.busyImporting", "가져오는 중…") : "JSON 가져오기"}
             </label>
             <button
               type="button"

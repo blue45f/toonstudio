@@ -18,6 +18,9 @@ import {
 } from "react";
 
 import { SwitchIndicator } from "@/shared/components/ui/switch";
+import { useT } from "@/shared/lib/i18n";
+
+import "../studio-brush-canvas-status-i18n";
 
 import {
   closeStudioViewInspectionPanel,
@@ -319,6 +322,7 @@ export function StudioViewInspectorHud({
   onRotateRight,
   onToggleFlip,
 }: StudioViewInspectorHudProps) {
+  const t = useT();
   const snapshot = useSyncExternalStore(
     subscribeStudioViewInspection,
     getStudioViewInspectionSnapshot,
@@ -361,7 +365,7 @@ export function StudioViewInspectorHud({
   const selectionDisabledReason =
     viewDisabledReason ??
     (selectionCount === 0
-      ? "선택한 개체가 없어 맞춤 확대를 사용할 수 없습니다."
+      ? t("studio.brushCanvasStatus.canvas.noSelectionFit", "선택한 개체가 없어 맞춤 확대를 사용할 수 없습니다.")
       : null);
 
   if (

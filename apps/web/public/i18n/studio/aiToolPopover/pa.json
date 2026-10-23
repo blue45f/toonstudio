@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "AI ਪ੍ਰਦਾਨਕ ਨੂੰ ਟੈਕਸਟ ਕਰੋ",
   "studio.aiToolPopover.serverTextAiProviderAria": "ਸਰਵਰ ਟੈਕਸਟ AI ਪ੍ਰਦਾਤਾ",
   "studio.aiToolPopover.serverProviderAuto": "ਆਟੋਮੈਟਿਕ ਸਵਿਚਿੰਗ",
-  "studio.aiToolPopover.serverFallbackMessage": "ਜਦੋਂ ਬਕਾਇਆ/ਪੈਕੇਜ ਦੀ ਸੀਮਾ ਖਤਮ ਹੋ ਜਾਂਦੀ ਹੈ, ਤਾਂ ਤੁਸੀਂ ਕਿਸੇ ਹੋਰ ਪ੍ਰਦਾਤਾ 'ਤੇ ਜਾਓਗੇ। ਡਬਲ ਚਾਰਜਿੰਗ ਨੂੰ ਰੋਕਣ ਲਈ ਆਮ ਤਰੁੱਟੀਆਂ ਆਪਣੇ ਆਪ ਨਹੀਂ ਭੇਜੀਆਂ ਜਾਂਦੀਆਂ ਹਨ।"
+  "studio.aiToolPopover.serverFallbackMessage": "ਜਦੋਂ ਬਕਾਇਆ/ਪੈਕੇਜ ਦੀ ਸੀਮਾ ਖਤਮ ਹੋ ਜਾਂਦੀ ਹੈ, ਤਾਂ ਤੁਸੀਂ ਕਿਸੇ ਹੋਰ ਪ੍ਰਦਾਤਾ 'ਤੇ ਜਾਓਗੇ। ਡਬਲ ਚਾਰਜਿੰਗ ਨੂੰ ਰੋਕਣ ਲਈ ਆਮ ਤਰੁੱਟੀਆਂ ਆਪਣੇ ਆਪ ਨਹੀਂ ਭੇਜੀਆਂ ਜਾਂਦੀਆਂ ਹਨ।",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

@@ -434,7 +434,7 @@ describe("StudioCustomFontsPanel", () => {
       />,
     );
 
-    expect((await screen.findByRole("alert")).textContent).toMatch(/일부 항목을 표시하지 않았습니다/u);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/일부 항목을 표시하지 않았어요/u);
     expect(importInput().disabled).toBe(true);
     expect(screen.getByText(/저장소 무결성 확인 실패/u)).toBeTruthy();
   });

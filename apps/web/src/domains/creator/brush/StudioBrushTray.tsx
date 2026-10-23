@@ -36,7 +36,10 @@ import type {
   StudioQuickBrushSource,
 } from "../studio-creative-ux";
 
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
+
+import "../studio-brush-canvas-status-i18n";
 
 export interface StudioBrushTrayProps {
   activeBrushId: string;
@@ -192,6 +195,7 @@ export function StudioBrushTray({
   className,
   "aria-label": ariaLabel = "빠른 보조 도구 — 즐겨찾기, 최근 사용, 추천",
 }: StudioBrushTrayProps): ReactElement {
+  const t = useT();
   const [focusedBrushId, setFocusedBrushId] = useState<string | null>(null);
   const [deferredCatalogItems, setDeferredCatalogItems] =
     useState<readonly StudioBrushTrayItem[] | null>(null);
@@ -285,8 +289,7 @@ export function StudioBrushTray({
     >
       {proMetadataFailed ? (
         <span role="status" className="sr-only">
-          프로 브러시 정보를 불러오지 못해 코어 브러시를 표시합니다. 라이브러리를 열어 다시
-          시도할 수 있습니다.
+          {t("studio.brushCanvasStatus.brush.trayProMetadataFailed", "프로 브러시 정보를 불러오지 못해 코어 브러시를 표시합니다. 라이브러리를 열어 다시 시도할 수 있습니다.")}
         </span>
       ) : null}
       <div

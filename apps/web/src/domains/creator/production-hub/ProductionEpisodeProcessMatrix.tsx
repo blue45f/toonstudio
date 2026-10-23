@@ -207,7 +207,7 @@ export function ProductionEpisodeProcessMatrix({
       setSelected(new Set());
       setNotice(`${seededUpdates.length}개 셀의 담당자·기한·상태를 저장했습니다.`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : t("productionHub.status.episodeProcessSaveFailed", "회차·공정 업무를 저장하지 못했습니다."));
+      setNotice(error instanceof Error ? error.message : t("productionHub.status.episodeProcessSaveFailed", "회차·공정 업무를 저장하지 못했어요. 잠시 후 다시 시도해 주세요."));
     } finally {
       setBusy(false);
     }
@@ -234,7 +234,7 @@ export function ProductionEpisodeProcessMatrix({
         <p className="max-w-3xl text-xs leading-5 text-fg-2">검수 제출 기준으로 나눈 차수(1차·2차·수정본)를 공정별로 나란히 비교합니다. 요약과 상세를 함께 스크롤할 수 있습니다.</p>
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold text-fg-2"><input type="checkbox" checked={compareScrollLinked} onChange={(event) => setCompareScrollLinked(event.target.checked)} className="size-5 accent-accent" /> 스크롤 동기화</label>
       </div>
-      {compareColumns.length === 0 ? <p className="mt-3 rounded-2xl border border-line bg-panel p-4 text-xs text-fg-2" role="status">{t("productionHub.status.noCompareRounds", "비교할 차수 기록이 없습니다. 리비전이 쌓이면 1차·2차·수정본으로 나뉘어 표시됩니다.")}</p> : <>
+      {compareColumns.length === 0 ? <p className="mt-3 rounded-2xl border border-line bg-panel p-4 text-xs text-fg-2" role="status">{t("productionHub.status.noCompareRounds", "비교할 차수 기록이 없어요. 리비전이 쌓이면 1차·2차·수정본으로 나뉘어 표시돼요.")}</p> : <>
         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Wide comparison strip needs keyboard scrolling. */}
         <div ref={compareStripRef} onScroll={handleCompareScroll("strip")} className="mt-3 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-line [contain:inline-size]" role="region" aria-label="차수 요약" tabIndex={0}>
           <table className="min-w-[60rem] border-collapse text-left text-xs">

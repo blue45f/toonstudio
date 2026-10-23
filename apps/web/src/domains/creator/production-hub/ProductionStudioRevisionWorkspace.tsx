@@ -311,7 +311,7 @@ export function ProductionStudioRevisionWorkspace({
                     : !assignment
                       ? t("productionHub.revisionWorkspace.emptyActiveAssignment", "현재 관점에서 사용할 활성 역할 배정이 없습니다.")
                       : !canEdit
-                        ? t("productionHub.status.linkingRequiresEditPermission", "편집 권한이 있어야 revision을 연결할 수 있습니다.")
+                        ? t("productionHub.status.linkingRequiresEditPermission", "편집 권한이 있어야 revision을 연결할 수 있어요.")
                         : "다른 revision을 연결하는 중입니다."}
                 </p>
               ) : null}

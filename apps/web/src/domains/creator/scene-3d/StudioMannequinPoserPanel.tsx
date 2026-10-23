@@ -42,6 +42,7 @@ import { createPortal } from "react-dom";
 
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
 import { studioDiscardUnpersistedMannequinStateRequest } from "../studio-destructive-command-catalog";
+import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import {
   StudioPanelChip,
   StudioSectionHeader,
@@ -514,7 +515,7 @@ export function StudioMannequinJointSection({
         </div>
       ) : (
         <p className="rounded-lg border border-dashed border-line/70 bg-card/60 p-3 text-[0.7rem] leading-relaxed text-fg-3">
-          선택된 관절이 없습니다. 뷰포트의 마네킹을 클릭하면 해당 부위 관절이 선택됩니다.
+          {frozenStatus2Text("studio.frozenStatus2.mannequin.noJointSelected", "선택된 관절이 없습니다. 뷰포트의 마네킹을 클릭하면 해당 부위 관절이 선택됩니다.")}
         </p>
       )}
     </div>
@@ -658,7 +659,7 @@ export function StudioMannequinCameraSection({
               onClick={onToggleHandTracking}
               aria-pressed={handTracking}
               aria-busy={handTrackingLoading}
-              title="웹캠에서 손을 인식해 손목 방향을 실시간으로 반영합니다. 손 인식 엔진 준비에 실패해도 신체 동작 인식은 계속됩니다."
+              title={frozenStatus2Text("studio.frozenStatus2.mannequin.handTrackingTitle", "웹캠에서 손을 인식해 손목 방향을 실시간으로 반영합니다. 손 인식 엔진 준비에 실패해도 신체 동작 인식은 계속됩니다.")}
               className={buttonClass({
                 size: "sm",
                 variant: handTracking ? "solid" : "quiet",
@@ -671,7 +672,7 @@ export function StudioMannequinCameraSection({
                 <Hand size={13} aria-hidden />
               )}
               {handTrackingLoading
-                ? "손 인식 준비 중"
+                ? frozenStatus2Text("studio.frozenStatus2.mannequin.handPreparing", "손 인식 준비 중")
                 : handTracking
                   ? "라이브 손 트래킹 ON"
                   : "라이브 손 트래킹"}
@@ -1266,9 +1267,7 @@ export function StudioMannequinPoserPanel({
               if (streak >= STUDIO_MANNEQUIN_HAND_MAX_FRAME_FAILURES) {
                 releaseHandTrackingResources();
                 setHandTracking(false);
-                setHandTrackingError(
-                  "실시간 손 인식이 반복적으로 실패해 손 추적을 중단했습니다. 신체 동작 인식은 계속됩니다.",
-                );
+                setHandTrackingError(frozenStatus2Text("studio.frozenStatus2.mannequin.handTrackingStopped", "실시간 손 인식이 반복적으로 실패해 손 추적을 중단했습니다. 신체 동작 인식은 계속됩니다."));
               }
             }
           }
@@ -1323,11 +1322,7 @@ export function StudioMannequinPoserPanel({
     // hydration is pending (or after it failed) could replace an unknown existing snapshot with
     // the component's initial defaults.
     if (!hydrationSafeForFinalFlushRef.current) {
-      setError(
-        persistenceStatus === "memory-only"
-          ? "기존 SQLite 상태를 확인하지 못해 저장하거나 닫을 수 없습니다. JSON으로 내보낸 뒤 다시 열어 주세요."
-          : "기존 SQLite 상태를 불러오는 중입니다. 완료된 뒤 다시 시도해 주세요.",
-      );
+      setError(persistenceStatus === "memory-only" ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteUnknownSave", "기존 SQLite 상태를 확인하지 못해 저장하거나 닫을 수 없습니다. JSON으로 내보낸 뒤 다시 열어 주세요.") : frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoadingRetry", "기존 SQLite 상태를 불러오는 중입니다. 완료된 뒤 다시 시도해 주세요."));
       return false;
     }
     const generation = persistenceGenerationRef.current + 1;
@@ -1344,13 +1339,12 @@ export function StudioMannequinPoserPanel({
           return true;
         }
       }
-      throw new Error("저장 중 포즈가 계속 변경되어 안정된 스냅샷을 만들지 못했습니다.");
+      throw new Error(frozenStatus2Text("studio.frozenStatus2.mannequin.snapshotUnstable", "저장 중 포즈가 계속 변경되어 안정된 스냅샷을 만들지 못했습니다."));
     } catch (cause) {
       if (mountedRef.current && persistenceGenerationRef.current === generation) {
         setPersistenceStatus("memory-only");
-        setError(
-          `SQLite/OPFS에 데생 인형 상태를 저장하지 못했습니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐. JSON 내보내기로 보존한 뒤 다시 닫아 주세요: ${getErrorText(cause, "저장소 오류")}`,
-        );
+        const detail = getErrorText(cause, frozenStatus2Text("studio.frozenStatus2.mannequin.storageError", "저장소 오류"));
+        setError(frozenStatus2Text("studio.frozenStatus2.mannequin.saveFailed", { detail }, "SQLite/OPFS에 데생 인형 상태를 저장하지 못했습니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐. JSON 내보내기로 보존한 뒤 다시 닫아 주세요: {detail}"));
       }
       return false;
     }
@@ -1358,11 +1352,7 @@ export function StudioMannequinPoserPanel({
 
   const closeWithPersist = useCallback(() => {
     if (!hydrationSafeForFinalFlushRef.current) {
-      setError(
-        persistenceStatus === "memory-only"
-          ? "기존 SQLite 상태를 확인하지 못해 닫기 저장을 수행할 수 없습니다. JSON으로 내보낸 뒤 다시 열어 주세요."
-          : "기존 SQLite 상태를 불러오는 중입니다. 완료된 뒤 다시 닫아 주세요.",
-      );
+      setError(persistenceStatus === "memory-only" ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteUnknownCloseSave", "기존 SQLite 상태를 확인하지 못해 닫기 저장을 수행할 수 없습니다. JSON으로 내보낸 뒤 다시 열어 주세요.") : frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoadingRetryClose", "기존 SQLite 상태를 불러오는 중입니다. 완료된 뒤 다시 닫아 주세요."));
       return;
     }
     releaseWebcamResources();
@@ -1421,9 +1411,8 @@ export function StudioMannequinPoserPanel({
     }).catch((cause: unknown) => {
       if (!active || !mountedRef.current || hydrationGenerationRef.current !== generation) return;
       setPersistenceStatus("memory-only");
-      setError(
-        `SQLite/OPFS에서 데생 인형 상태를 불러오지 못해 기본값을 현재 탭 메모리에만 유지합니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐: ${getErrorText(cause, "저장소 오류")}`,
-      );
+      const detail = getErrorText(cause, frozenStatus2Text("studio.frozenStatus2.mannequin.storageError", "저장소 오류"));
+      setError(frozenStatus2Text("studio.frozenStatus2.mannequin.loadFailed", { detail }, "SQLite/OPFS에서 데생 인형 상태를 불러오지 못해 기본값을 현재 탭 메모리에만 유지합니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐: {detail}"));
     });
     return () => {
       active = false;
@@ -1457,7 +1446,7 @@ export function StudioMannequinPoserPanel({
       sceneRef.current = handle;
       setSceneError(null);
     } catch (cause) {
-      setSceneError(getErrorText(cause, "3D 데생 인형 씬을 초기화하지 못했습니다. WebGL 지원을 확인하세요."));
+      setSceneError(getErrorText(cause, frozenStatus2Text("studio.frozenStatus2.mannequin.sceneInitFailed", "3D 데생 인형 씬을 초기화하지 못했습니다. WebGL 지원을 확인하세요.")));
       return;
     }
 
@@ -1844,7 +1833,7 @@ export function StudioMannequinPoserPanel({
       a.click();
       URL.revokeObjectURL(url);
     } catch (cause) {
-      setError(getErrorText(cause, "PSD 내보내기를 실패했습니다."));
+      setError(getErrorText(cause, frozenStatus2Text("studio.frozenStatus2.mannequin.psdFailed", "PSD 내보내기를 실패했습니다.")));
     } finally {
       setCapturing(false);
     }
@@ -1854,11 +1843,7 @@ export function StudioMannequinPoserPanel({
     const handle = sceneRef.current;
     if (!handle || capturing) return;
     if (!hydrationSafeForFinalFlushRef.current) {
-      setError(
-        persistenceStatus === "memory-only"
-          ? "기존 SQLite 상태를 확인하지 못해 캡처를 삽입할 수 없습니다. JSON으로 내보낸 뒤 다시 열어 주세요."
-          : "기존 SQLite 상태를 불러오는 중입니다. 완료된 뒤 다시 캡처해 주세요.",
-      );
+      setError(persistenceStatus === "memory-only" ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteUnknownCapture", "기존 SQLite 상태를 확인하지 못해 캡처를 삽입할 수 없습니다. JSON으로 내보낸 뒤 다시 열어 주세요.") : frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoadingRetryCapture", "기존 SQLite 상태를 불러오는 중입니다. 완료된 뒤 다시 캡처해 주세요."));
       return;
     }
     setCapturing(true);
@@ -1868,11 +1853,11 @@ export function StudioMannequinPoserPanel({
         const result = await handle.captureDataUrl(captureScale);
         const accepted = await onInsert(result);
         if (accepted === false) {
-          throw new Error("편집 중 문서가 바뀌어 캡처를 삽입하지 않았습니다. 현재 페이지에서 다시 시도해 주세요.");
+          throw new Error(frozenStatus2Text("studio.frozenStatus2.mannequin.docChanged", "편집 중 문서가 바뀌어 캡처를 삽입하지 않았습니다. 현재 페이지에서 다시 시도해 주세요."));
         }
         if (await persistState()) onClose();
       } catch (cause) {
-        setError(getErrorText(cause, "3D 데생 인형 캡처를 추가하지 못했습니다."));
+        setError(getErrorText(cause, frozenStatus2Text("studio.frozenStatus2.mannequin.captureFailed", "3D 데생 인형 캡처를 추가하지 못했습니다.")));
       } finally {
         setCapturing(false);
       }
@@ -1920,11 +1905,11 @@ export function StudioMannequinPoserPanel({
               )}
             >
               {persistenceStatus === "loading"
-                ? "SQLite 불러오는 중"
+                ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoading", "SQLite 불러오는 중")
                 : persistenceStatus === "saving"
-                  ? "SQLite 저장 중"
+                  ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteSaving", "SQLite 저장 중")
                   : persistenceStatus === "memory-only"
-                    ? "현재 탭 메모리 임시"
+                    ? frozenStatus2Text("studio.frozenStatus2.mannequin.memoryOnlyTab", "현재 탭 메모리 임시")
                     : ""}
             </span>
             <div className="hidden items-center gap-1 sm:flex">
@@ -2040,7 +2025,7 @@ export function StudioMannequinPoserPanel({
                 type="button"
                 onClick={handleUndoPose}
                 disabled={!poseHistoryDescription.canUndo}
-                title={poseHistoryDescription.canUndo ? `이전 포즈로 되돌리기 (${poseHistoryDescription.undoCount}개)` : "되돌릴 변경이 없습니다"}
+                title={poseHistoryDescription.canUndo ? `이전 포즈로 되돌리기 (${poseHistoryDescription.undoCount}개)` : frozenStatus2Text("studio.frozenStatus2.mannequin.undoUnavailable", "되돌릴 변경이 없습니다")}
                 aria-label={`되돌리기${poseHistoryDescription.canUndo ? ` (${poseHistoryDescription.undoCount}개 가능)` : ""}`}
                 className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -2050,7 +2035,7 @@ export function StudioMannequinPoserPanel({
                 type="button"
                 onClick={handleRedoPose}
                 disabled={!poseHistoryDescription.canRedo}
-                title={poseHistoryDescription.canRedo ? `다시 실행하기 (${poseHistoryDescription.redoCount}개)` : "다시 실행할 변경이 없습니다"}
+                title={poseHistoryDescription.canRedo ? `다시 실행하기 (${poseHistoryDescription.redoCount}개)` : frozenStatus2Text("studio.frozenStatus2.mannequin.redoUnavailable", "다시 실행할 변경이 없습니다")}
                 aria-label={`다시실행${poseHistoryDescription.canRedo ? ` (${poseHistoryDescription.redoCount}개 가능)` : ""}`}
                 className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
               >

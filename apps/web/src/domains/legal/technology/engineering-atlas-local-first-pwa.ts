@@ -227,8 +227,8 @@ export const SERVICE_WORKER_APP_SHELL_POLICY: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "‘대형 WASM은 캐시하지 않는다’고 말하지 마세요. 프리캐시에서만 빠지고 런타임 heavy 버킷에는 담깁니다. docs/studio-service-worker.md의 ‘critical 10 URL / 975 KiB’는 낡은 수치이고 코드의 예산은 2.25 MiB, 정적 critical URL은 23개입니다. 첫 방문 오프라인은 지원하지 않으며, Service Worker는 운영 빌드에서만 등록됩니다.",
-      "Do not say ‘large WASM is not cached’: it is left out of the precache only and does land in the runtime heavy bucket. The ‘critical 10 URLs / 975 KiB’ in docs/studio-service-worker.md is stale; the code budget is 2.25 MiB with 23 static critical URLs. Offline on a first visit is unsupported, and the Service Worker registers only in production builds.",
+      "‘대형 WASM은 캐시하지 않는다’고 말하지 마세요. 프리캐시에서만 빠지고 런타임 heavy 버킷에는 담깁니다. docs/studio-service-worker.md의 ‘critical 10 URL / 975 KiB’는 낡은 수치이고 코드의 예산은 2.5 MiB, 정적 critical URL은 23개입니다. 첫 방문 오프라인은 지원하지 않으며, Service Worker는 운영 빌드에서만 등록됩니다.",
+      "Do not say ‘large WASM is not cached’: it is left out of the precache only and does land in the runtime heavy bucket. The ‘critical 10 URLs / 975 KiB’ in docs/studio-service-worker.md is stale; the code budget is 2.5 MiB with 23 static critical URLs. Offline on a first visit is unsupported, and the Service Worker registers only in production builds.",
     ),
   },
   technologies: ["Service Worker", "Cache Storage", "Navigation Preload", "Vite"],
@@ -701,12 +701,12 @@ export const PRECACHE_BUDGET_OFFLINE_CORE: EngineeringAtlasEntry = {
       "‘Just pre-download the whole app’ looks simple but is risky. This app’s build folder (dist/assets) is about 240 MB according to a code comment, so quietly shipping megabytes to a visitor who only came to browse slows the first visit. ToonStudio does the opposite: it sets budget numbers for how much a first-time visitor pre-downloads, and going over fails the build, not the deployment.",
     ),
     t(
-      "동작은 두 갈래입니다. 빌드 시점: 앱 시작 파일의 정적 import 묶음과 고정 파일 23개를 critical(2.25 MiB 이하), 번역 사전 52개를 warm(512 KiB 이하)으로 계획하고, 스튜디오 전용 ‘오프라인 드로잉 팩’은 1,024개·32 MiB 이하여야 합니다. 하나라도 넘으면 빌드가 실패합니다. 사용 시점: 스튜디오를 한 번 연 뒤 브라우저가 한가할 때 조건(온라인·보이는 탭·데이터 절약 꺼짐·저장 공간 90% 미만)이 맞으면 팩을 하나씩 내려받고, 다 쓴 뒤 전체를 다시 읽어 확인합니다.",
-      "It works on two fronts. At build time: the static import closure of the app entry plus 23 fixed files form the critical tier (at most 2.25 MiB) and 52 translation dictionaries the warm tier (at most 512 KiB), while the studio-only ‘offline drawing pack’ must stay within 1,024 files and 32 MiB. Exceeding any limit fails the build. At run time: once the studio has been opened, when the browser is idle and conditions hold (online, visible tab, data saver off, storage under 90%), the pack is downloaded one file at a time and then the whole set is read back to verify it.",
+      "동작은 두 갈래입니다. 빌드 시점: 앱 시작 파일의 정적 import 묶음과 고정 파일 23개를 critical(2.5 MiB 이하), 번역 사전 52개를 warm(512 KiB 이하)으로 계획하고, 스튜디오 전용 ‘오프라인 드로잉 팩’은 1,024개·32 MiB 이하여야 합니다. 하나라도 넘으면 빌드가 실패합니다. 사용 시점: 스튜디오를 한 번 연 뒤 브라우저가 한가할 때 조건(온라인·보이는 탭·데이터 절약 꺼짐·저장 공간 90% 미만)이 맞으면 팩을 하나씩 내려받고, 다 쓴 뒤 전체를 다시 읽어 확인합니다.",
+      "It works on two fronts. At build time: the static import closure of the app entry plus 23 fixed files form the critical tier (at most 2.5 MiB) and 52 translation dictionaries the warm tier (at most 512 KiB), while the studio-only ‘offline drawing pack’ must stay within 1,024 files and 32 MiB. Exceeding any limit fails the build. At run time: once the studio has been opened, when the browser is idle and conditions hold (online, visible tab, data saver off, storage under 90%), the pack is downloaded one file at a time and then the whole set is read back to verify it.",
     ),
     t(
-      "업계 관행은 ‘앱 셸만 프리캐시하고 나머지는 쓰면서 캐시’입니다. 이 경계를 문서가 아니라 숫자로 못 박아 두면 여러 커밋에 걸친 조용한 증가가 빌드에서 드러납니다. 실제로 코드 주석에는 2026-10-01 측정에서 시작 파일 묶음이 기존 2 MiB 한도를 0.11% 넘어(2,099,509 B) 한도를 2.25 MiB로 조정한 기록이 있습니다. 빌드 ID도 시계가 아니라 내용 해시라서, 달라진 것이 없으면 같은 워커를 다시 설치하지 않습니다.",
-      "The common practice is to precache only the app shell and cache the rest as it is used. Pinning that boundary in numbers rather than prose makes a quiet increase over many commits show up in the build. A code comment records that a 2026-10-01 measurement put the entry closure 0.11% over the old 2 MiB limit (2,099,509 B), and the limit was set to 2.25 MiB. The build ID is also a content hash, not a clock, so nothing is reinstalled when nothing changed.",
+      "업계 관행은 ‘앱 셸만 프리캐시하고 나머지는 쓰면서 캐시’입니다. 이 경계를 문서가 아니라 숫자로 못 박아 두면 여러 커밋에 걸친 조용한 증가가 빌드에서 드러납니다. 실제로 코드 주석에는 2026-10-01 측정에서 시작 파일 묶음이 기존 2 MiB 한도를 0.11% 넘어(2,099,509 B) 한도를 2.25 MiB로 조정한 기록이 있고, 2026-10-22에는 상태 문구 사전이 앱 셸에 들어와 2,365,965 B로 다시 넘어 2.5 MiB로 올렸습니다. 빌드 ID도 시계가 아니라 내용 해시라서, 달라진 것이 없으면 같은 워커를 다시 설치하지 않습니다.",
+      "The common practice is to precache only the app shell and cache the rest as it is used. Pinning that boundary in numbers rather than prose makes a quiet increase over many commits show up in the build. A code comment records that a 2026-10-01 measurement put the entry closure 0.11% over the old 2 MiB limit (2,099,509 B), and the limit was set to 2.25 MiB; on 2026-10-22 status-copy dictionaries entered the app shell, the closure reached 2,365,965 B, and the limit was raised to 2.5 MiB. The build ID is also a content hash, not a clock, so nothing is reinstalled when nothing changed.",
     ),
     t(
       "한계: 첫 방문 오프라인은 지원하지 않고, 모든 브러시·폰트·3D 모델이 오프라인으로 준비되는 것은 아닙니다. ‘팩 준비 완료’는 앱 코드가 기기에 있다는 뜻이지 ‘작품이 저장됐다’는 뜻이 아닙니다. 그리고 이 팩은 브라우저 저장소 안에 있으므로, 사이트 데이터를 지우면 함께 사라지고 다시 준비해야 합니다.",
@@ -714,7 +714,7 @@ export const PRECACHE_BUDGET_OFFLINE_CORE: EngineeringAtlasEntry = {
     ),
   ],
   keyPoints: [
-    t("critical ≤ 2.25 MiB, warm ≤ 512 KiB, 팩 ≤ 32 MiB", "critical ≤ 2.25 MiB, warm ≤ 512 KiB, pack ≤ 32 MiB"),
+    t("critical ≤ 2.5 MiB, warm ≤ 512 KiB, 팩 ≤ 32 MiB", "critical ≤ 2.5 MiB, warm ≤ 512 KiB, pack ≤ 32 MiB"),
     t("한도를 넘으면 배포가 아니라 빌드가 실패", "Going over fails the build, not the deployment"),
     t("준비 조건 판단은 순수 함수, 완료는 전체 재읽기로 확인", "Readiness is a pure function; completion is verified by re-reading everything"),
   ],
@@ -790,7 +790,7 @@ export const PRECACHE_BUDGET_OFFLINE_CORE: EngineeringAtlasEntry = {
       title: t("예산 게이트: 넘으면 빌드를 멈춘다", "A budget gate: stop the build when over"),
       language: "ts",
       ...sampleLines([
-        ["const BUDGET = { criticalBytes: 9 * 256 * 1024, warmBytes: 512 * 1024 } as const; // 2.25 MiB · 512 KiB", "const BUDGET = { criticalBytes: 9 * 256 * 1024, warmBytes: 512 * 1024 } as const; // 2.25 MiB and 512 KiB"],
+        ["const BUDGET = { criticalBytes: 10 * 256 * 1024, warmBytes: 512 * 1024 } as const; // 2.5 MiB · 512 KiB", "const BUDGET = { criticalBytes: 10 * 256 * 1024, warmBytes: 512 * 1024 } as const; // 2.5 MiB and 512 KiB"],
         "",
         "export function checkBudget(critical: number, warm: number): string[] {",
         "  const violations: string[] = [];",
@@ -885,13 +885,13 @@ export const PRECACHE_BUDGET_OFFLINE_CORE: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "수치는 코드가 기준입니다: critical 예산 2.25 MiB, 정적 critical URL 23개(docs/studio-service-worker.md의 ‘10 URL / 975 KiB’는 낡음). ‘스튜디오 라우트 5.4 MB / 194 청크’와 ‘dist/assets 약 240 MB’는 코드 주석에서 가져온 값이며 이번 검토에서 재측정하지 못했습니다. 큰 WASM은 프리캐시에서 빠질 뿐 런타임 heavy 버킷에는 담깁니다. 자동 준비를 건너뛰는 사유는 코드 기준 7가지입니다.",
-      "Numbers follow the code: a critical budget of 2.25 MiB and 23 static critical URLs (the ‘10 URLs / 975 KiB’ in docs/studio-service-worker.md is stale). ‘Studio route 5.4 MB / 194 chunks’ and ‘dist/assets about 240 MB’ come from code comments and were not re-measured in this review. Large WASM leaves the precache but does land in the runtime heavy bucket. By the code there are seven reasons for skipping automatic preparation.",
+      "수치는 코드가 기준입니다: critical 예산 2.5 MiB, 정적 critical URL 23개(docs/studio-service-worker.md의 ‘10 URL / 975 KiB’는 낡음). ‘스튜디오 라우트 5.4 MB / 194 청크’와 ‘dist/assets 약 240 MB’는 코드 주석에서 가져온 값이며 이번 검토에서 재측정하지 못했습니다. 큰 WASM은 프리캐시에서 빠질 뿐 런타임 heavy 버킷에는 담깁니다. 자동 준비를 건너뛰는 사유는 코드 기준 7가지입니다.",
+      "Numbers follow the code: a critical budget of 2.5 MiB and 23 static critical URLs (the ‘10 URLs / 975 KiB’ in docs/studio-service-worker.md is stale). ‘Studio route 5.4 MB / 194 chunks’ and ‘dist/assets about 240 MB’ come from code comments and were not re-measured in this review. Large WASM leaves the precache but does land in the runtime heavy bucket. By the code there are seven reasons for skipping automatic preparation.",
     ),
   },
   technologies: ["Service Worker", "Cache Storage", "Vite", "WASM"],
   facts: [
-    { value: "2.25 MiB · 512 KiB", label: t("critical · warm 프리캐시 예산(초과 시 빌드 실패)", "critical and warm precache budgets (build fails when exceeded)"), source: `${SW}/studio-service-worker-precache-plan.ts` },
+    { value: "2.5 MiB · 512 KiB", label: t("critical · warm 프리캐시 예산(초과 시 빌드 실패)", "critical and warm precache budgets (build fails when exceeded)"), source: `${SW}/studio-service-worker-precache-plan.ts` },
     { value: "23", label: t("정적 critical URL 수", "Number of static critical URLs"), source: `${SW}/studio-service-worker-precache-plan.ts` },
     { value: "1,024개 · 32 MiB", label: t("오프라인 드로잉 팩 상한(초과 시 빌드 실패)", "Offline drawing pack limit (build fails when exceeded)"), source: "apps/web/vite.config.ts" },
     { value: "90%", label: t("저장 공간 사용률이 이 값 이상이면 자동 준비를 건너뜀", "Automatic preparation is skipped at or above this storage use"), source: `${CREATOR}/offline/studio-offline-automation.ts` },

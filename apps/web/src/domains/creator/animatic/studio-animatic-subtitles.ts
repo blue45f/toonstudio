@@ -402,7 +402,7 @@ export function parseStudioAnimaticSubtitles(
   format?: StudioAnimaticSubtitleFormat
 ): { readonly ok: true; readonly format: StudioAnimaticSubtitleFormat; readonly cues: readonly StudioAnimaticSubtitleDraft[] } | StudioAnimaticFailure {
   if (typeof raw !== "string" || raw.trim().length === 0) {
-    return { ok: false, error: "자막 파일 내용이 비어 있습니다." };
+    return { ok: false, error: { code: "subtitlesEmpty" } };
   }
   const resolved: StudioAnimaticSubtitleFormat =
     format ?? (/^\uFEFF?WEBVTT/iu.test(raw.trimStart()) ? "vtt" : "srt");
@@ -431,7 +431,7 @@ export function parseStudioAnimaticSubtitles(
     drafts.push({ startMs, endMs, text, speaker });
   }
   if (drafts.length === 0) {
-    return { ok: false, error: "자막 파일에서 읽을 수 있는 큐가 없습니다." };
+    return { ok: false, error: { code: "subtitlesNoCues" } };
   }
   return { ok: true, format: resolved, cues: drafts.sort((a, b) => a.startMs - b.startMs) };
 }

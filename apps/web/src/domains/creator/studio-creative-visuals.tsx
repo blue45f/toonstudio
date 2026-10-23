@@ -3,17 +3,18 @@
  * mini illustrations for tools, not brand clones. Pure presentation.
  */
 /* eslint-disable react-refresh/only-export-components -- shape kind maps + picker kinds shared with StudioPage / options bar */
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { STUDIO_DRAW_SHAPE_PICKER_KINDS as DRAW_SHAPE_PICKER_KINDS } from "./brush/studio-draw-hud";
 import { StudioToolHintTarget } from "./StudioToolHint";
 
 import { StudioStarterCardArt, type StudioStarterArtId } from "./studio-creative-starter-art";
 
-export { StudioStarterCardArt, type StudioStarterArtId };
-
 import type { StudioToolHintSpec } from "./studio-tool-hints";
 import type { ReactElement } from "react";
 
 import { cn } from "@/shared/lib/utils";
+
+export { StudioStarterCardArt, type StudioStarterArtId };
 
 /** Re-export pure kind list for pickers (SSOT: studio-draw-hud). */
 export const STUDIO_DRAW_SHAPE_PICKER_KINDS = DRAW_SHAPE_PICKER_KINDS;
@@ -56,12 +57,9 @@ const SHAPE_PICKER_TIP_BY_KIND: Readonly<Record<string, string>> = {
   polygon: "변 수를 먼저 정하면 반복 배경과 소품 형태를 빠르게 만들 수 있어요.",
 };
 
-const SHAPE_PICKER_DEFAULT_UNAVAILABLE_REASON =
-  "현재 작업 상태에서는 이 도형을 사용할 수 없습니다.";
-
 function shapePickerUnavailableReason(item: StudioShapePickerItem): string | undefined {
   if (!item.disabled) return undefined;
-  return item.unavailableReason ?? SHAPE_PICKER_DEFAULT_UNAVAILABLE_REASON;
+  return item.unavailableReason ?? r3c07StatusText("studio.panelStatus.r3c07.creativeVisuals.shapeUnavailable", "현재 작업 상태에서는 이 도형을 사용할 수 없습니다.");
 }
 
 /** Shared semantic contract for both the inspector grid and compact shape strip. */
@@ -404,8 +402,8 @@ export function StudioOpacityGlyph({
       className={cn("text-current", className)}
       data-studio-opacity-glyph="true"
     >
-      <rect x={1} y={1} width={12} height={12} rx={2} fill="oklch(0.35 0.01 70 / 0.45)" />
-      <path d="M1 1 H7 V7 H1 Z M7 7 H13 V13 H7 Z" fill="oklch(0.55 0.01 70 / 0.35)" />
+      <rect x={1} y={1} width={12} height={12} rx={2} fill="var(--color-line-strong)" fillOpacity={0.45} />
+      <path d="M1 1 H7 V7 H1 Z M7 7 H13 V13 H7 Z" fill="var(--color-fg-2)" fillOpacity={0.35} />
       <rect
         x={1}
         y={1}

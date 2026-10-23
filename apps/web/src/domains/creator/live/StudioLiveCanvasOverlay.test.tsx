@@ -555,8 +555,11 @@ describe("StudioLiveCanvasOverlay", () => {
     expect(point.getAttribute("aria-roledescription")).toBe("이동 가능한 위치 댓글 핀");
     expect(point.getAttribute("aria-keyshortcuts")).toContain("Alt+ArrowLeft");
     expect(point.getAttribute("aria-keyshortcuts")).toContain("Alt+Shift+ArrowDown");
-    expect(point.getAttribute("aria-label")).toContain("드래그 또는 Alt와 방향키로 위치 이동.");
-    expect(point.title).toContain("드래그 또는 Alt+방향키로 위치 이동");
+    // D1 T-L4/T-L6 승격: reanchorable 절단편(7번 자리)과 title을 전체 문자열로 단언.
+    expect(point.getAttribute("aria-label")).toBe(
+      "검토 위치. 댓글 핀 1/3. 최근 작성자 민지. 최근 댓글 이 위치를 확인해 주세요. 미해결 대화 1개. 모두 읽음. 드래그 또는 Alt와 방향키로 위치 이동. Enter 키로 대화 열기."
+    );
+    expect(point.title).toBe("검토 위치 · 드래그 또는 Alt+방향키로 위치 이동 · 클릭으로 열기");
     expect(point.className).toContain("size-11");
     expect(point.className).toContain("touch-none");
     expect(cluster.getAttribute("data-studio-comment-pin-reanchorable")).toBeNull();
@@ -639,7 +642,10 @@ describe("StudioLiveCanvasOverlay", () => {
     fireEvent.pointerMove(pin, { pointerId: 11, clientX: 360, clientY: 410 });
 
     expect(pin.getAttribute("data-studio-comment-pin-reanchoring")).toBe("true");
-    expect(pin.getAttribute("aria-label")).toContain("댓글 위치 이동 중.");
+    // D1 T-L4 승격: reanchoring 절단편이 7번 자리(Enter 직전)에 있는 전체 라벨 단언.
+    expect(pin.getAttribute("aria-label")).toBe(
+      "검토 위치. 댓글 핀 1/1. 최근 작성자 민지. 최근 댓글 이 위치를 확인해 주세요. 미해결 대화 1개. 모두 읽음. 댓글 위치 이동 중. Enter 키로 대화 열기."
+    );
     expect(pin.getAttribute("data-studio-comment-pin-anchor-x")).toBe("0.6500");
     expect(pin.getAttribute("data-studio-comment-pin-anchor-y")).toBe("0.6000");
     expect(document.querySelector('[data-studio-comment-pin-drag-origin="true"]')).not.toBeNull();
@@ -950,8 +956,12 @@ describe("StudioLiveCanvasOverlay", () => {
     const cluster = screen.getByRole<HTMLButtonElement>("button", { name: /댓글 핀 2\/2/u });
 
     expect(point.getAttribute("data-studio-comment-pin-reanchorable")).toBeNull();
-    expect(point.getAttribute("aria-label")).toContain("위치 이동 불가 동기화가 끝난 뒤 이동할 수 있어요.");
-    expect(point.title).toContain("위치 이동 불가");
+    // D1 T-L4/T-L5①/T-L6 승격: 종결형 reason에 마침표가 중복되지 않는 전체 라벨과
+    // blocked title 완결 문자열을 단언한다.
+    expect(point.getAttribute("aria-label")).toBe(
+      "검토 위치. 댓글 핀 1/2. 최근 작성자 민지. 최근 댓글 이 위치를 확인해 주세요. 미해결 대화 1개. 모두 읽음. 위치 이동 불가 동기화가 끝난 뒤 이동할 수 있어요. Enter 키로 대화 열기."
+    );
+    expect(point.title).toBe("검토 위치 · 위치 이동 불가: 동기화가 끝난 뒤 이동할 수 있어요. · 클릭으로 열기");
     fireEvent.keyDown(point, { key: "ArrowLeft", altKey: true });
     expect(onCommentPinReanchor).not.toHaveBeenCalled();
     expect(screen.getByRole("status").textContent).toContain("동기화가 끝난 뒤 이동할 수 있어요");
@@ -969,6 +979,132 @@ describe("StudioLiveCanvasOverlay", () => {
 
     fireEvent.click(point);
     expect(onCommentPinClick).toHaveBeenCalledOnce();
+  });
+
+  it("omits missing author and body fragments without breaking order or punctuation (D1 T-L2)", () => {
+    render(
+      <StudioLiveCanvasOverlay
+        canvasWidth={800}
+        canvasHeight={1_200}
+        cursors={[]}
+        commentPins={[{
+          key: "bare",
+          anchor: { type: "page", pageId: "page-1" },
+          count: 2,
+          label: "2페이지",
+          x: 100,
+          y: 100,
+        }]}
+        onCommentPinClick={noop}
+      />
+    );
+    const pin = screen.getByRole<HTMLButtonElement>("button", { name: /2페이지/u });
+    const label = pin.getAttribute("aria-label");
+    expect(label).toBe("2페이지. 댓글 핀 1/1. 미해결 대화 2개. 모두 읽음. Enter 키로 대화 열기.");
+    expect(label).not.toContain("최근 작성자");
+    expect(label).not.toContain("최근 댓글");
+    expect(label).not.toContain("읽지 않은 대화");
+    expect(label).not.toContain("..");
+    expect(label).not.toContain("  ");
+  });
+
+  it("places the all-read fragment in its fixed slot when nothing is unread (D1 T-L3)", () => {
+    render(
+      <StudioLiveCanvasOverlay
+        canvasWidth={800}
+        canvasHeight={1_200}
+        cursors={[]}
+        commentPins={[movablePointPin()]}
+        onCommentPinClick={noop}
+      />
+    );
+    const pin = screen.getByRole<HTMLButtonElement>("button", { name: /검토 위치/u });
+    const label = pin.getAttribute("aria-label");
+    expect(label).toBe(
+      "검토 위치. 댓글 핀 1/1. 최근 작성자 민지. 최근 댓글 이 위치를 확인해 주세요. 미해결 대화 1개. 모두 읽음. Enter 키로 대화 열기."
+    );
+    expect(label).not.toContain("읽지 않은 대화");
+  });
+
+  it("adds exactly one period to an unterminated reanchor reason (D1 T-L5)", () => {
+    render(
+      <StudioLiveCanvasOverlay
+        canvasWidth={800}
+        canvasHeight={1_200}
+        cursors={[]}
+        commentPins={[movablePointPin()]}
+        onCommentPinClick={noop}
+        onCommentPinReanchor={vi.fn()}
+        commentPinReanchorDisabledReason="동기화 중"
+      />
+    );
+    const pin = screen.getByRole<HTMLButtonElement>("button", { name: /검토 위치/u });
+    const label = pin.getAttribute("aria-label");
+    expect(label).toBe(
+      "검토 위치. 댓글 핀 1/1. 최근 작성자 민지. 최근 댓글 이 위치를 확인해 주세요. 미해결 대화 1개. 모두 읽음. 위치 이동 불가 동기화 중. Enter 키로 대화 열기."
+    );
+    expect(label).not.toContain("동기화 중..");
+    expect(pin.title).toBe("검토 위치 · 위치 이동 불가: 동기화 중 · 클릭으로 열기");
+  });
+
+  it("does not append a period after a body truncated with an ellipsis (D1 T-L5)", () => {
+    render(
+      <StudioLiveCanvasOverlay
+        canvasWidth={800}
+        canvasHeight={1_200}
+        cursors={[]}
+        commentPins={[{
+          key: "long-body",
+          anchor: { type: "page", pageId: "page-1" },
+          count: 1,
+          previewBody: "가".repeat(100),
+          label: "긴 핀",
+          x: 100,
+          y: 100,
+        }]}
+        onCommentPinClick={noop}
+      />
+    );
+    const pin = screen.getByRole<HTMLButtonElement>("button", { name: /긴 핀/u });
+    const label = pin.getAttribute("aria-label");
+    expect(label).toBe(
+      `긴 핀. 댓글 핀 1/1. 최근 댓글 ${"가".repeat(95)}… 미해결 대화 1개. 모두 읽음. Enter 키로 대화 열기.`
+    );
+    expect(label).not.toContain("….");
+  });
+
+  it("renders complete fallback titles for opened and unread pins (D1 T-L6)", () => {
+    render(
+      <StudioLiveCanvasOverlay
+        canvasWidth={800}
+        canvasHeight={1_200}
+        cursors={[]}
+        commentPins={[
+          {
+            key: "opened-unread",
+            anchor: { type: "page", pageId: "page-1" },
+            count: 3,
+            unreadCount: 2,
+            label: "3페이지",
+            x: 100,
+            y: 100,
+          },
+          {
+            key: "opened-read",
+            anchor: { type: "page", pageId: "page-1" },
+            count: 1,
+            label: "4페이지",
+            x: 200,
+            y: 100,
+          },
+        ]}
+        onCommentPinClick={noop}
+      />
+    );
+    const unread = screen.getByRole<HTMLButtonElement>("button", { name: /3페이지/u });
+    const opened = screen.getByRole<HTMLButtonElement>("button", { name: /4페이지/u });
+    expect(unread.title).toBe("3페이지 · 읽지 않음 2개 · 열림 3개");
+    expect(opened.title).toBe("4페이지 · 열림 1개");
   });
 
   it("keeps exactly one surviving comment pin in the tab order as pins change", async () => {

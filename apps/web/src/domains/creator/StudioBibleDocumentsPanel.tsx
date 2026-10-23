@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import { AlertTriangle, BookOpenCheck, Clapperboard, Megaphone, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -42,7 +43,7 @@ function SeasonArcBoard({ document }: { readonly document: StudioSeasonArcBibleD
       <div>
         <h5 className="text-xs font-black text-fg">캐릭터별 원하는 것 / 필요한 것</h5>
         {document.characterArcs.length === 0 ? (
-          <p className="mt-1 text-xs text-fg-3">아직 캐릭터 아크가 없어요.</p>
+          <p className="mt-1 text-xs text-fg-3">{panelStatusText("studio.panelStatus.bibleDocuments.characterArcsEmpty", "아직 캐릭터 아크가 없어요.")}</p>
         ) : (
           <ul className="mt-1.5 space-y-1.5">
             {document.characterArcs.map((arc) => (
@@ -59,7 +60,7 @@ function SeasonArcBoard({ document }: { readonly document: StudioSeasonArcBibleD
       <div>
         <h5 className="text-xs font-black text-fg">전 회차 스레드</h5>
         {document.threads.length === 0 ? (
-          <p className="mt-1 text-xs text-fg-3">아직 스레드가 없어요.</p>
+          <p className="mt-1 text-xs text-fg-3">{panelStatusText("studio.panelStatus.bibleDocuments.threadsEmpty", "아직 스레드가 없어요.")}</p>
         ) : (
           <ul className="mt-1.5 space-y-1">
             {document.threads.map((thread) => (
@@ -78,7 +79,7 @@ function SeasonArcBoard({ document }: { readonly document: StudioSeasonArcBibleD
       <div>
         <h5 className="text-xs font-black text-fg">회차별 비트 보드</h5>
         {board.length === 0 ? (
-          <p className="mt-1 text-xs text-fg-3">아직 회차 비트가 없어요.</p>
+          <p className="mt-1 text-xs text-fg-3">{panelStatusText("studio.panelStatus.bibleDocuments.beatsEmpty", "아직 회차 비트가 없어요.")}</p>
         ) : (
           <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1">
             {board.map((column) => (
@@ -220,7 +221,7 @@ export function StudioBibleDocumentsPanel({
                 {document.purpose === "pitch" ? (
                   <div className="mt-2 space-y-1 text-xs leading-relaxed text-fg-2">
                     <p className="font-semibold text-fg">{document.logline || "로그라인 미작성"}</p>
-                    <p>{document.synopsis || "줄거리 소개가 아직 없어요."}</p>
+                    <p>{document.synopsis || panelStatusText("studio.panelStatus.bibleDocuments.synopsisEmpty", "줄거리 소개가 아직 없어요.")}</p>
                     {document.hookPoints.length > 0 ? <p>매력 포인트: {document.hookPoints.join(" · ")}</p> : null}
                     {document.toneKeywords.length > 0 ? <p>톤: {document.toneKeywords.join(", ")}</p> : null}
                     {document.targetAudience ? <p>대상: {document.targetAudience}</p> : null}
@@ -231,7 +232,7 @@ export function StudioBibleDocumentsPanel({
 
                 {document.purpose === "continuity-db" ? (
                   document.facts.length === 0 ? (
-                    <p className="mt-2 text-xs text-fg-3">아직 등록된 사실이 없어요.</p>
+                    <p className="mt-2 text-xs text-fg-3">{panelStatusText("studio.panelStatus.bibleDocuments.factsEmpty", "아직 등록된 사실이 없어요.")}</p>
                   ) : (
                     <ul className="mt-2 space-y-1">
                       {document.facts.map((fact) => (

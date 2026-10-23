@@ -10,6 +10,8 @@
  *   시각을 보여주지 않고 "아직 없음"으로 표시한다.
  */
 
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
+import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
 import {
   CheckCircle2,
   Clock,
@@ -65,7 +67,7 @@ function cloudStatusCopy(
   connectivity: StudioConnectivitySnapshot | null,
 ): string {
   if (connectivity?.mode === "server-unavailable") {
-    return "서버에 연결할 수 없어요. 작업은 이 기기에 보관 중이고, 연결이 돌아오면 자동으로 동기화해요.";
+    return r3c07StatusText("studio.panelStatus.r3c07.saveSync.serverUnavailable", "서버에 연결할 수 없어요. 작업은 이 기기에 보관 중이고, 연결이 돌아오면 자동으로 동기화해요.");
   }
   if (connectivity?.mode === "reconnecting") {
     return "서버 연결을 다시 확인하고 있어요.";
@@ -100,7 +102,7 @@ export function StudioSaveSyncStatusCenter({
     : view.kind === "server-unavailable"
       ? "서버 연결 안 됨 · 이 기기에 보관 중"
       : view.kind === "reconnecting"
-        ? "연결 다시 확인 중"
+        ? r3c07StatusText("studio.panelStatus.r3c07.saveSync.reconnecting", "연결 다시 확인 중")
         : view.kind === "offline" || status.cloudSyncStatus === "offline"
           ? "오프라인 · 이 기기에 보관 중"
           : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
@@ -212,7 +214,7 @@ export function StudioSaveSyncStatusCenter({
                   <p className="mt-0.5 leading-relaxed text-fg-3">
                     {status.lastCheckpointAt > 0
                       ? `마지막 복구 지점은 ${new Date(status.lastCheckpointAt).toLocaleTimeString()}에 만들어졌어요.`
-                      : "아직 만들어진 복구 지점이 없어요. 아래에서 지금 만들 수 있어요."}
+                      : r3c07StatusText("studio.panelStatus.r3c07.saveSync.checkpointsEmpty", "아직 만들어진 복구 지점이 없어요. 아래에서 지금 만들 수 있어요.")}
                   </p>
                 </div>
               </div>
@@ -227,7 +229,7 @@ export function StudioSaveSyncStatusCenter({
                 className="flex min-h-9 items-center gap-1.5 rounded-lg border border-danger/40 bg-raised px-2.5 text-[0.72rem] font-semibold text-danger hover:bg-danger/10 pointer-coarse:min-h-11"
               >
                 <RotateCcw className="size-3.5" aria-hidden />
-                <span>지금 다시 시도</span>
+                <span>{r4CreatorStatusText("r4cat1.creator.saveSync.retryNow", "지금 다시 시도")}</span>
               </button>
             ) : null}
             {view.canRecheckConnection && onRecheckConnection ? (
@@ -282,7 +284,7 @@ export function StudioSaveSyncStatusCenter({
                   {diagnosticsCopyStatus === "copied"
                     ? "진단 정보를 복사했어요"
                     : diagnosticsCopyStatus === "failed"
-                      ? "진단 정보를 복사하지 못했어요"
+                      ? r3c07StatusText("studio.panelStatus.r3c07.saveSync.diagnosticsCopyFailed", "진단 정보를 복사하지 못했어요")
                       : "진단 정보 복사"}
                 </span>
               </button>

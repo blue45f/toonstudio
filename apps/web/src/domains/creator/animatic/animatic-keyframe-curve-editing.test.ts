@@ -12,6 +12,7 @@ import {
   validateStudioAnimaticDocument,
   type StudioAnimaticDocument,
 } from "../studio-animatic-timeline";
+import { resolveStudioAnimaticError } from "../status-i18n/studio-producer-error-i18n";
 import { cameraKeyframesToTracks, sampleCameraTracksAt } from "./animatic-keyframe-model";
 import {
   EASING_PRESETS,
@@ -26,7 +27,7 @@ import {
 
 function createDocument(): StudioAnimaticDocument {
   const created = createStudioAnimaticFromPages([{ id: "page-1", name: "오프닝", canvasH: 1200 }], { workScope: "episode-1" });
-  if (!created.ok) throw new Error(created.error);
+  if (!created.ok) throw new Error(resolveStudioAnimaticError(created.error));
   return created.document;
 }
 
@@ -92,7 +93,7 @@ describe("animatic custom curve wiring", () => {
     document = setStudioAnimaticCameraEndpoint(document, segmentId, "end", { panXPercent: 100 });
     document = patchStudioAnimaticCameraKeyframe(document, segmentId, 1, { curve: [...curve] });
     const planned = planStudioAnimaticPreview(document, false);
-    if (!planned.ok) throw new Error(planned.error);
+    if (!planned.ok) throw new Error(resolveStudioAnimaticError(planned.error));
     const mid = sampleStudioAnimaticPreview(document, planned.plan, planned.plan.totalDurationMs / 2, false)!;
     // 강하게 뒤로 쏠린 곡선이라 중간 지점 pan은 선형(50)보다 훨씬 작다.
     expect(mid.camera.panXPercent).toBeLessThan(25);
@@ -119,9 +120,9 @@ describe("animatic custom curve wiring", () => {
     const segmentId = document.segments[0]!.id;
     document = patchStudioAnimaticCameraKeyframe(document, segmentId, 1, { curve: [0.15, 1.3, 0.7, -0.2] });
     const exported = exportStudioAnimaticDocument(document);
-    if (!exported.ok) throw new Error(exported.error);
+    if (!exported.ok) throw new Error(resolveStudioAnimaticError(exported.error));
     const imported = importStudioAnimaticDocument(exported.json);
-    if (!imported.ok) throw new Error(imported.error);
+    if (!imported.ok) throw new Error(resolveStudioAnimaticError(imported.error));
     expect(imported.document.segments[0]!.cameraKeyframes[1]).toMatchObject({
       easing: "custom",
       curve: [0.15, 1.3, 0.7, -0.2],

@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
   Move,
   Settings2,
@@ -485,7 +486,7 @@ export function StudioQuickActionsMenu({
                       {actionPresentation.label}
                     </span>
                     <span className="max-w-full truncate text-[0.58rem] font-medium leading-tight opacity-75">
-                      {disabled ? "사용 불가" : slotPresentation.label}
+                      {disabled ? r3c07StatusText("studio.panelStatus.r3c07.quickActions.unavailable", "사용 불가") : slotPresentation.label}
                     </span>
                   </button>
                 </div>

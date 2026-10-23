@@ -1,3 +1,4 @@
+import { restStatusText } from "../../shared/rest-status-i18n-core";
 import { AlertTriangle, Download, Monitor, RefreshCw, WifiOff } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
@@ -185,7 +186,7 @@ export class ErrorBoundary extends Component<Props, State> {
             >
               <AlertTriangle size={24} className="mx-auto mb-3 text-bad" />
               <p className="text-sm font-medium text-fg">{analysis.message}</p>
-              <p className="mt-1 text-sm text-fg-2">자동으로 복구하지 못했어요. 네트워크 연결을 확인한 뒤 다시 시도해 주세요.</p>
+              <p className="mt-1 text-sm text-fg-2">{restStatusText("rest.status.errors.autoRecoverFailed", "자동으로 복구하지 못했어요. 네트워크 연결을 확인한 뒤 다시 시도해 주세요.")}</p>
               <div className="mt-5 flex items-center justify-center gap-2">
                 <button
                   type="button"
@@ -216,7 +217,7 @@ export class ErrorBoundary extends Component<Props, State> {
           >
             <AlertTriangle size={24} className="mx-auto mb-3 text-bad" />
             <p className="text-sm font-medium text-fg">{analysis.message}</p>
-            <p className="mt-1 text-sm text-fg-2">다시 시도하거나 홈으로 이동해 주세요.</p>
+            <p className="mt-1 text-sm text-fg-2">{restStatusText("rest.status.errors.retryOrHome", "다시 시도하거나 홈으로 이동해 주세요.")}</p>
             <div className="mt-5 flex items-center justify-center gap-2">
               <button
                 type="button"
@@ -224,7 +225,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-[0.7rem] border border-line-strong/90 px-3 text-[0.8125rem] font-medium text-fg transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo hover:border-accent/70 hover:bg-accent-soft/80 hover:text-accent active:scale-[0.985] active:bg-accent active:text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 <RefreshCw size={14} />
-                다시 시도
+                {restStatusText("rest.status.common.retry", "다시 시도")}
               </button>
               <a
                 href="/"

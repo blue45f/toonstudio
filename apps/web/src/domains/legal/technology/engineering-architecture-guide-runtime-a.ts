@@ -193,7 +193,7 @@ export const BROWSER_STUDIO_SECTION: ArchitectureGuideSection = {
   ),
   facts: [
     {
-      value: "69",
+      value: "70",
       label: t("앱 코드의 Worker 스크립트(*.worker.ts) 파일 수", "Worker scripts (*.worker.ts) in the app code"),
       source: "apps/web/src",
     },
@@ -284,8 +284,8 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
       "Typing a web address first fetches the files that make up the page. Built in advance, those files are identical for everyone, so a computing server need not produce them each time. ToonStudio uses this: Cloudflare hands out page files directly, and only person-specific work such as sign-in, saving and community goes to the server (the Core API).",
     ),
     t(
-      "Cloudflare 의 Static Assets 가 SPA 와 정적 카탈로그를 직접 응답하고, 얇은 Worker 는 지정한 27개 경로 패턴(API 4·링크 미리보기 16·대형 파일 7)만 먼저 받습니다. 동적 요청은 7갈래(코어·커뮤니티·플레이·관리자·실시간·공개 읽기·대형 파일) 중 한 곳으로만 전달하고, 필수 원점이 없으면 503 으로 닫고, 전용 원점이 없는 일부 갈래는 코어 원점으로 대체합니다.",
-      "Cloudflare Static Assets answers the SPA and static catalogs itself, while a thin Worker takes only 27 listed path patterns first (4 API, 16 link-preview, 7 large-file). A dynamic request is forwarded to exactly one of seven routes (core, community, playground, admin, realtime, public read, large file), a missing required origin is closed with a 503, and some routes without a dedicated origin fall back to the core origin.",
+      "Cloudflare 의 Static Assets 가 SPA 와 정적 카탈로그를 직접 응답하고, 얇은 Worker 는 지정한 55개 경로 패턴(API 4·링크 미리보기 16·대형 파일 7·R2 미디어 28)만 먼저 받습니다. 동적 요청은 7갈래(코어·커뮤니티·플레이·관리자·실시간·공개 읽기·대형 파일) 중 한 곳으로만 전달하고, 필수 원점이 없으면 503 으로 닫고, 전용 원점이 없는 일부 갈래는 코어 원점으로 대체합니다.",
+      "Cloudflare Static Assets answers the SPA and static catalogs itself, while a thin Worker takes only 55 listed path patterns first (4 API, 16 link-preview, 7 large-file, 28 R2 media). A dynamic request is forwarded to exactly one of seven routes (core, community, playground, admin, realtime, public read, large file), a missing required origin is closed with a 503, and some routes without a dedicated origin fall back to the core origin.",
     ),
     t(
       "대가는 서버 쪽에 있습니다. Core API 는 무료 플랜의 Render 서비스라 쉬는 동안 잠들 수 있어 깨우는 첫 요청이 느립니다. 그래서 생존 점검(live)은 Cloudflare 가 직접 답해 서버를 깨우지 않습니다. 다만 앱 안의 기능 배지는 capabilities 를 부르므로 화면을 열면 서버와 DB 가 깨어날 수 있습니다. 운영 대시보드의 실제 상태와 사용량은 이 페이지에서 확인하지 못했습니다.",
@@ -359,13 +359,13 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
     },
   ],
   pitfall: t(
-    "'정적 요청은 Worker 를 거치지 않는다'에는 예외가 있습니다(먼저 실행하는 27개 경로: 링크 미리보기 크롤러·대형 파일 등). 운영 대시보드와 실제 사용량은 확인하지 못했고 코드·설정만 근거입니다.",
-    "'Static requests never touch the Worker' has exceptions: the 27 worker-first paths such as link-preview crawlers and large files. The production dashboard and real usage were not checked; only code and configuration back this section.",
+    "'정적 요청은 Worker 를 거치지 않는다'에는 예외가 있습니다(먼저 실행하는 55개 경로: 링크 미리보기 크롤러·대형 파일·R2 미디어 등). 운영 대시보드와 실제 사용량은 확인하지 못했고 코드·설정만 근거입니다.",
+    "'Static requests never touch the Worker' has exceptions: the 55 worker-first paths such as link-preview crawlers, large files and R2 media. The production dashboard and real usage were not checked; only code and configuration back this section.",
   ),
   facts: [
     {
-      value: "27",
-      label: t("Worker 가 먼저 받는 경로 패턴(API 4·미리보기 16·대형 파일 6)", "Path patterns the Worker handles first (4 API, 16 preview, 6 large file)"),
+      value: "55",
+      label: t("Worker 가 먼저 받는 경로 패턴(API 4·미리보기 16·대형 파일 7·R2 미디어 28)", "Path patterns the Worker handles first (4 API, 16 preview, 7 large file, 28 R2 media)"),
       source: "deploy/cloudflare-static/wrangler.jsonc",
     },
     {

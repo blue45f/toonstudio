@@ -6,11 +6,12 @@ import { fileURLToPath } from "node:url";
 
 import { runCli, writeTree } from "./lib/code-structure-gates-test-support.mjs";
 import { buildEagerGraph, resolveStudioEntries, STUDIO_ADAPTER_ENTRY } from "./lib/studio-eager-graph.mjs";
-import { FORBIDDEN_DOMAINS, TOTAL_BYTES_TOLERANCE } from "./lib/studio-eager-graph-policy.mjs";
+import { FORBIDDEN_DOMAINS, PINNED_LAZY_FILES, TOTAL_BYTES_TOLERANCE } from "./lib/studio-eager-graph-policy.mjs";
 import {
   BaselineError, evaluateRatchet, listIncreases, measureGraph, tightenBaseline, updateBaseline, validateBaseline,
 } from "./lib/studio-eager-graph-ratchet.mjs";
 import { createModuleResolver } from "./lib/studio-eager-graph-resolve.mjs";
+import { formatViolation } from "./lib/studio-eager-graph-report.mjs";
 import { scanModuleEdges } from "./lib/studio-eager-graph-scan.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
@@ -283,6 +284,62 @@ test("래칫: 정적 import 한 줄이 시장 도메인을 끌어오면 금지 �
   assert.deepEqual(forbidden.added[0].gateway, { from: `${CREATOR}/host.ts`, to: `${CREATOR}/probe.ts` });
 });
 
+const PINNED_FIXTURE = [{ file: `${CREATOR}/dictionary-body.ts`, reason: "status-dictionary-body" }];
+
+/** host.ts 가 consumer.ts 를 정적으로 불러오게 하고, consumer.ts 의 본문 접근 방식(정적/지연)을 바꿔 쓴다. */
+function wireDictionaryConsumer(root, consumerSource) {
+  writeTree(root, {
+    [`${CREATOR}/consumer.ts`]: consumerSource,
+    [`${CREATOR}/host.ts`]: readFileSync(path.join(root, `${CREATOR}/host.ts`), "utf8").replace(
+      'import { z } from "zod";', 'import { z } from "zod";\nimport { consumer } from "./consumer";',
+    ).replace("[panelLoader,", "[consumer, panelLoader,"),
+  });
+}
+
+test("래칫: 지연 고정 파일은 코어만 정적으로 쓰고 본문을 import() 로만 닿으면 통과한다", (t) => {
+  const root = createFixture(t, {
+    [`${CREATOR}/dictionary-body.ts`]: 'export const body = "지연 표면 전용 본문";\n',
+    [`${CREATOR}/dictionary-core.ts`]: 'export const core = "코어";\n',
+  });
+  const { baseline } = baselineFor(root);
+  wireDictionaryConsumer(root, [
+    'import { core } from "./dictionary-core";',
+    'export const loadBody = () => import("./dictionary-body");',
+    "export const consumer = core;",
+    "",
+  ].join("\n"));
+  const { graph, measurement } = snapshotOf(root);
+  const { violations } = evaluateRatchet({ measurement, baseline, graph, pinnedLazy: PINNED_FIXTURE });
+  assert.deepEqual(violations.filter((violation) => violation.kind === "pinned-lazy"), []);
+  assert.equal(graph.modules.has(`${CREATOR}/dictionary-body.ts`), false);
+});
+
+test("래칫: 지연 고정 파일이 정적으로 닿으면 기준선 없이도 위반이고 원인 import 와 최단 경로를 보고한다", (t) => {
+  const root = createFixture(t, {
+    [`${CREATOR}/dictionary-body.ts`]: 'export const body = "지연 표면 전용 본문";\n',
+  });
+  const { baseline } = baselineFor(root);
+  wireDictionaryConsumer(root, [
+    'import { body } from "./dictionary-body";',
+    "export const consumer = body;",
+    "",
+  ].join("\n"));
+  const { graph, measurement } = snapshotOf(root);
+  const { violations } = evaluateRatchet({ measurement, baseline, graph, pinnedLazy: PINNED_FIXTURE });
+  const pinned = violations.find((violation) => violation.kind === "pinned-lazy");
+  assert.deepEqual(pinned.items.map((item) => item.file), [`${CREATOR}/dictionary-body.ts`]);
+  assert.equal(pinned.items[0].reason, "status-dictionary-body");
+  assert.deepEqual(pinned.items[0].path, [
+    STUDIO_ADAPTER_ENTRY, `${CREATOR}/host.ts`, `${CREATOR}/consumer.ts`, `${CREATOR}/dictionary-body.ts`,
+  ]);
+  assert.deepEqual(pinned.items[0].gateway, { from: `${CREATOR}/host.ts`, to: `${CREATOR}/consumer.ts` });
+
+  const report = formatViolation(pinned).join("\n");
+  assert.match(report, /지연 고정 파일이 진입 그래프에 정적으로 닿음/u);
+  assert.match(report, new RegExp(`${CREATOR}/dictionary-body\\.ts`, "u"));
+  assert.match(report, /-core 가 붙은 모듈/u);
+});
+
 test("기준선 modules 는 진입점 소속 비트를 기록한다(1=앱 셸, 2=Studio 어댑터)", (t) => {
   const root = createFixture(t);
   const { baseline } = baselineFor(root);
@@ -526,6 +583,21 @@ test("정책: 금지 도메인 접두어는 모두 실제 디렉터리이고 중
     assert.ok(baseline.forbiddenDomains[prefix], `기준선에 금지 도메인 ${prefix} 가 없습니다`);
   }
   assert.deepEqual(Object.keys(baseline.forbiddenDomains).sort(), [...prefixes].sort(), "정책에서 빠진 도메인이 기준선에 남아 있습니다");
+});
+
+test("정책: 지연 고정 파일은 실제 파일이고 중복이 없으며 코어를 불러오고 커밋된 기준선에서 도달하지 않는다", () => {
+  const files = PINNED_LAZY_FILES.map((item) => item.file);
+  assert.ok(files.length > 0);
+  assert.equal(new Set(files).size, files.length, "지연 고정 파일은 중복되지 않아야 합니다");
+  const baseline = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, BASELINE_FILE), "utf8"));
+  for (const file of files) {
+    const absolute = path.join(REPOSITORY_ROOT, file);
+    assert.equal(statSync(absolute).isFile(), true, `${file} 는 실제 파일이어야 합니다`);
+    assert.equal(Object.hasOwn(baseline.modules, file), false, `${file} 가 기준선의 진입 그래프 도달 모듈에 들어 있습니다`);
+    const coreSpecifier = readFileSync(absolute, "utf8").match(/^export \{[^}]*\} from "(\.[^"]+-core)";$/mu)?.[1];
+    assert.ok(coreSpecifier, `${file} 는 \`-core\` 모듈을 re-export 해 코어 키까지 함께 등록해야 합니다`);
+    assert.equal(statSync(path.resolve(path.dirname(absolute), `${coreSpecifier}.ts`)).isFile(), true, `${file} 의 코어 모듈이 없습니다: ${coreSpecifier}`);
+  }
 });
 
 test("진입점: Studio 어댑터 경로는 번들 게이트의 studioEntry 와 같고 기준선 진입점과 일치한다", () => {

@@ -7,11 +7,15 @@ import type { AutomaticInvitationState } from "./hiring-automation-client";
 import type { HiringSlot } from "../../../../../../packages/contracts/src/creator-hiring";
 
 import { getApiErrorMessage } from "@/platform/api";
+import { translateNow, useT } from "@/shared/lib/i18n";
+
+import "../collaboration-account-status-i18n";
 
 export function HiringAutomationPanel({ slot, postVersion }: { slot: HiringSlot; postVersion: number }) {
   return <AutomaticCampaign key={`${slot.postId}:${slot.id}:${slot.revision}:${postVersion}`} slot={slot} postVersion={postVersion} />;
 }
 function AutomaticCampaign({ slot, postVersion }: { slot: HiringSlot; postVersion: number }) {
+  const t = useT();
   const [state, setState] = useState<AutomaticInvitationState | null>(null);
   const [reload, setReload] = useState(0);
   const [consent, setConsent] = useState(false);
@@ -33,7 +37,7 @@ function AutomaticCampaign({ slot, postVersion }: { slot: HiringSlot; postVersio
           timer = setTimeout(() => { if (document.visibilityState === "visible") void read(); }, 15000);
         }
       } catch (cause) {
-        const message = await getApiErrorMessage(cause, "자동 초대 상태를 확인하지 못했어요.");
+        const message = await getApiErrorMessage(cause, translateNow("collaboration.hiringAutomation.statusUnconfirmed", "자동 초대 상태를 확인하지 못했어요."));
         if (!controller.signal.aborted) { setState(null); setError(message); }
       }
     }
@@ -56,7 +60,7 @@ function AutomaticCampaign({ slot, postVersion }: { slot: HiringSlot; postVersio
       setNotice(action === "start" ? "자동 초대를 예약했어요. 초대는 지원·채용 확정이 아닙니다." : "자동 초대와 유효한 대기 초대를 중지했어요.");
       setReload((value) => value + 1);
     } catch (cause) {
-      const message = await getApiErrorMessage(cause, "요청 결과를 확인하지 못했어요. 다시 시도해 주세요.");
+      const message = await getApiErrorMessage(cause, t("collaboration.hiringAutomation.resultUnconfirmedRetry", "요청 결과를 확인하지 못했어요. 다시 시도해 주세요."));
       if (mutation.current === controller && !controller.signal.aborted) setError(message);
     } finally {
       if (mutation.current === controller) { mutation.current = null; setBusy(false); }
@@ -64,7 +68,7 @@ function AutomaticCampaign({ slot, postVersion }: { slot: HiringSlot; postVersio
   }
   const active = state?.job && ["queued", "processing"].includes(state.job.status);
   const canStart = Boolean(state?.enabled && !active && state.job?.status !== "completed");
-  const labels = { queued: "실행 대기", processing: "초대 처리 중", completed: "두 차례 처리 완료", failed: "재시도 한도 도달", stopped: "중지", expired: "만료" };
+  const labels = { queued: t("collaboration.hiringAutomation.state.queued", "실행 대기"), processing: t("collaboration.hiringAutomation.state.processing", "초대 처리 중"), completed: t("collaboration.hiringAutomation.state.completed", "두 차례 처리 완료"), failed: t("collaboration.hiringAutomation.state.failed", "재시도 한도 도달"), stopped: t("collaboration.hiringAutomation.state.stopped", "중지"), expired: t("collaboration.hiringAutomation.state.expired", "만료") };
   return <section aria-label="자동 급구 초대" className="space-y-3 border-t border-line pt-4">
     <h4 className="font-bold">긴급 후보 초대 · 자동 실행</h4>
     <p className="text-sm">현재 조건으로 1차 최대 5명, 5분 뒤 2차 최대 10명에게 사이트 내 초대를 보냅니다. 후보의 최신 동의와 작업 여력을 확인하며 문자·메일이나 유료 제공자는 사용하지 않습니다.</p>

@@ -36,6 +36,8 @@ jobs:
     steps:
       # Related tests validate tracked documentation evidence; retain docs.
       # 환경 팩·VRM 카탈로그·썸네일 무결성 시험도 related 로 걸리므로 그 시험이 디스크에서 읽는 자산(3D 환경 GLB, 캐릭터 썸네일, 해당 VRM 폴더)을 함께 받는다. 전체 VRM 폴더 같은 무관한 자산 트리는 받지 않는다.
+      # 일러스트 팩 무결성 시험(studio-illustration-pack)은 원본 PNG·SOURCE.json·PROMPTS.json 을 디스크에서 읽는다(약 33 MB).
+      # Creator Bundle 테마 팩·권리 원장 시험은 공개 JSON 두 개(theme-packs.json, 공식 81팩 카탈로그 manifest.json)를 디스크에서 읽는다.
       - name: Checkout focused ToonStudio source
         uses: actions/checkout@v7
         with:
@@ -55,8 +57,11 @@ jobs:
             /apps/web/public/assets/3d/environments/expansion-v1/library_reading_room.glb
             /apps/web/public/assets/3d/environments/expansion-v1/thumbnails/library_reading_room.png
             /apps/web/public/assets/3d/environments/mcp-free-v1/
+            /apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json
+            /apps/web/public/assets/virtual-studio/bundle-v1/manifest.json
             /apps/web/public/assets/3d/ENVIRONMENT_LICENSES.md
             /apps/web/public/assets/studio/cc0-20260906/manifest.json
+            /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
             /apps/web/public/assets/virtual-studio/world/default-world.json
             /apps/web/public/assets/virtual-studio/world-v2/characters/pixel-maker/
             /apps/web/public/assets/virtual-studio/living-town-v6/imagegen25-character/
@@ -66,6 +71,7 @@ jobs:
             /apps/web/public/assets/virtual-studio/experience-v8/
             /apps/web/public/assets/virtual-studio/cinematic-v9/
             /apps/web/public/assets/create/creator-board-hero.png
+            /apps/web/public/assets/studio/illustration-20260926/
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-boardroom-vertical-depth/background.png
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-cherry-path-vertical-depth/background.png
             /apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-palace-courtyard-vertical-depth/background.png

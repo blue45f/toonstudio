@@ -1,3 +1,4 @@
+import { restStatusText } from "../../../shared/rest-status-i18n";
 import { AlertCircle, AlertTriangle, Compass, Globe, Monitor, RefreshCw, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -91,7 +92,7 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
               <AlertCircle size={12} /> 브라우저 호환성 안내
             </span>
             <h3 id="browser-compat-title" className="mt-2 text-xl font-bold tracking-tight text-fg sm:text-2xl">
-              최신 브라우저 업데이트가 필요합니다
+              {restStatusText("rest.status.browserCompat.title", "최신 브라우저 업데이트가 필요합니다")}
             </h3>
           </div>
         </div>
@@ -183,7 +184,7 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
             {copyState === "copied"
               ? "주소 복사됨!"
               : copyState === "failed"
-                ? "복사할 수 없어요 — 주소창에서 직접 복사해 주세요"
+                ? restStatusText("rest.status.browserCompat.copyFailed", "복사할 수 없어요 — 주소창에서 직접 복사해 주세요")
                 : "접속 주소 복사"}
           </button>
 

@@ -508,4 +508,23 @@ describe("StudioUnifiedAssetWorkspace", () => {
     expect(await screen.findByText("현재 캔버스 상태에서는 이 에셋을 사용할 수 없습니다.")).toBeTruthy();
     expect(screen.queryByText("교실 의자 편집 도구를 열었습니다.")).toBeNull();
   });
+
+  it("숨겨진 이미지 가져오기 입력에도 화면 낭독기가 읽을 이름이 있다", () => {
+    render(
+      <StudioUnifiedAssetWorkspace
+        items={items}
+        legacyContent={<div>기존 보관함</div>}
+        onUseItem={vi.fn()}
+        onUseAction={vi.fn()}
+        onUploadImage={vi.fn()}
+        onOpenAi={vi.fn()}
+      />,
+    );
+
+    // 빠른 삽입 줄(onUseAction 이 있을 때만 그려진다) 안의 sr-only + tabIndex -1 파일 입력도 label 규칙(axe critical)의 대상이다. 접근성 이름이 없으면 낭독기가 "편집 가능" 으로만 읽는다.
+    const input = screen.getByLabelText("이미지 소재 업로드");
+    if (!(input instanceof HTMLInputElement)) throw new Error("이미지 가져오기 입력이 파일 입력이 아니에요");
+    expect(input.type).toBe("file");
+    expect(input.accept).toBe("image/*");
+  });
 });

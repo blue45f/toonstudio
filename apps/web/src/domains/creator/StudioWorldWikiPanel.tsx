@@ -1,3 +1,4 @@
+import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Eye, EyeOff, Globe, Lock, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -122,7 +123,7 @@ export function StudioWorldWikiPanel({
         <section aria-label="항목별 공개 범위" className="space-y-2">
           {sources.length === 0 ? (
             <div className="rounded-lg border border-dashed border-line bg-card/50 px-4 py-6 text-center">
-              <p className="text-sm font-semibold text-fg">공개할 설정 항목이 아직 없어요</p>
+              <p className="text-sm font-semibold text-fg">{r3c07StatusText("studio.panelStatus.r3c07.worldWiki.sourcesEmpty", "공개할 설정 항목이 아직 없어요")}</p>
               <p className="mx-auto mt-1 max-w-[52ch] text-xs leading-relaxed text-fg-3">
                 장면·장소·소품이나 캐릭터를 먼저 등록하면, 여기서 항목별로 공개 범위를
                 정할 수 있어요.

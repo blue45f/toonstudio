@@ -1,4 +1,5 @@
 import { roundStudioBg3dNumber as round } from "./studio-bg3d-editor-ui";
+import { r5CreatorStatusText } from "../r5-cat1-status-i18n";
 import {
   resolveStudioBg3dInteriorSuppression,
   studioBg3dLineNeedsDepth,
@@ -118,7 +119,7 @@ export function StudioBg3dLtLineDetailControls({
           description={
             depthCaptured
               ? "앞 물체에 가려지는 쪽에 생기는 이중선을 앞 물체의 윤곽선 한 줄로 합쳐요."
-              : "깊이 정보가 있을 때만 적용돼요. 지금은 깊이를 캡처하지 않아 효과가 없어요. ‘깊이선 검출’이나 ‘내부선 억제’를 켜면 함께 캡처해요."
+              : r5CreatorStatusText("r5cat1.creator.bg3dLt.noDepthCaptured", "깊이 정보가 있을 때만 적용돼요. 지금은 깊이를 캡처하지 않아 효과가 없어요. ‘깊이선 검출’이나 ‘내부선 억제’를 켜면 함께 캡처해요.")
           }
           disabled={!ltLineSettings.enabled}
           onChange={(hiddenLineRemoval) => updateLtLineSettings({ hiddenLineRemoval })}

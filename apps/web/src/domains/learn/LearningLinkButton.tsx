@@ -1,5 +1,7 @@
 import { useId, useState } from "react";
 
+import { learnStatusText } from "./learn-status-i18n";
+
 export function LearningLinkButton({ makePath }: { makePath: () => string }) {
   const id = useId();
   const [manualUrl, setManualUrl] = useState("");
@@ -13,7 +15,7 @@ export function LearningLinkButton({ makePath }: { makePath: () => string }) {
       setMessage("현재 예제 설정과 설명 단계의 링크를 복사했습니다. 개인 메모와 학습 기록은 포함하지 않습니다.");
     } catch {
       setManualUrl(url);
-      setMessage(url ? "자동 복사를 사용할 수 없습니다. 아래 링크를 선택해 직접 복사하세요." : "공유 링크를 만들지 못했습니다. 강좌 주소를 확인하세요.");
+      setMessage(url ? learnStatusText("learn.status.linkButton.copyUnavailable", "자동 복사를 사용할 수 없습니다. 아래 링크를 선택해 직접 복사하세요.") : learnStatusText("learn.status.linkButton.linkCreateFailed", "공유 링크를 만들지 못했습니다. 강좌 주소를 확인하세요."));
     }
   }
   return (

@@ -19,6 +19,7 @@ import {
 } from "./ci-core-regression-shards.mjs";
 
 import { resolveRequiredTargets } from "./run-core-vitest.mjs";
+import { SERIAL_TEST_FILES } from "../vitest.serial-test-files.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
@@ -288,4 +289,17 @@ test("제작 공정과 시각적 작업 보드 검증은 필수 product shard에
     assert.equal(shardForTarget(target), "product");
     assert.deepEqual(SHARD_NAMES.filter((name) => targetIsCovered(target, execution[name])), ["product"], target);
   }
+});
+
+test("필수 목록의 시험 파일은 루트 Vitest 설정이 제외하지 않아 실제로 수집된다", () => {
+  // 제외된 파일을 필수 목록에 올리면 `vitest run <파일>` 이 조용히 0개를 수집해, 게이트가 이름만 있고 돌지 않는다.
+  const config = readFileSync(new URL("../vitest.config.ts", import.meta.url), "utf8");
+  const block = config.match(/\.\.\.configDefaults\.exclude,([\s\S]*?)\.\.\.SERIAL_TEST_FILES/u)?.[1];
+  assert.ok(block, "루트 Vitest 제외 목록을 찾지 못했습니다. 이 시험의 파서를 설정 구조에 맞추세요.");
+  const excluded = new Set([
+    ...[...block.matchAll(/"([^"]+)"/gu)].map((match) => match[1]).filter((entry) => !/[*?[\]{}]/u.test(entry)),
+    ...SERIAL_TEST_FILES,
+  ]);
+  assert.ok(excluded.has("scripts/local-test-stack.test.mjs"), "제외 목록 파서가 파일 항목을 읽지 못했습니다.");
+  assert.deepEqual(REQUIRED_VITEST_TARGETS.filter((target) => excluded.has(target)), []);
 });

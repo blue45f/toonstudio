@@ -1,3 +1,4 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import {
   AlertTriangle,
   BookmarkPlus,
@@ -314,7 +315,7 @@ export function StudioCheckpointPanel({
       ]);
       if (!requestIsCurrent()) return;
       if (targetDetail.revision !== targetRevision || baseDetail.revision !== baseRevision) {
-        throw new Error("요청한 revision과 서버가 반환한 revision이 달라 비교를 중단했습니다.");
+        throw new Error(panelStatusText("studio.panelStatus.checkpoint.revisionMismatch", "요청한 revision과 서버가 반환한 revision이 달라 비교를 중단했습니다."));
       }
       const comparison = await runStudioRevisionComparison(
         {
@@ -339,7 +340,7 @@ export function StudioCheckpointPanel({
       controller.abort();
       if (!shouldReport) return;
       if (cause instanceof Error && cause.name === "AbortError" && requestWasAborted) return;
-      setComparisonError(cause instanceof Error ? cause.message : "서버 버전을 비교하지 못했어요.");
+      setComparisonError(cause instanceof Error ? cause.message : panelStatusText("studio.panelStatus.checkpoint.compareFailed", "서버 버전을 비교하지 못했어요."));
     } finally {
       if (comparisonAbortRef.current === controller) comparisonAbortRef.current = null;
       // 실패 시 sibling fetch/Worker를 취소하기 위해 catch에서 abort하더라도, 여전히 같은
@@ -379,11 +380,11 @@ export function StudioCheckpointPanel({
         resetServerComparison();
       } else {
         setShowServerRestoreError(true);
-        setComparisonError("서버 버전을 복원하지 못했어요. 아래 안내를 확인하고 다시 비교해 주세요.");
+        setComparisonError(panelStatusText("studio.panelStatus.checkpoint.restoreFailedWithGuide", "서버 버전을 복원하지 못했어요. 아래 안내를 확인하고 다시 비교해 주세요."));
       }
     } catch (cause) {
       setShowServerRestoreError(true);
-      setComparisonError(cause instanceof Error ? cause.message : "서버 버전을 복원하지 못했어요.");
+      setComparisonError(cause instanceof Error ? cause.message : panelStatusText("studio.panelStatus.checkpoint.restoreFailed", "서버 버전을 복원하지 못했어요."));
     } finally {
       setServerRestoreBusy(false);
     }
@@ -548,7 +549,7 @@ export function StudioCheckpointPanel({
             <div className="grid min-h-48 place-items-center rounded-xl border border-dashed border-line bg-card/30 px-4 text-center">
               <div>
                 <History size={24} className="mx-auto text-fg-3" aria-hidden />
-                <p className="mt-2 text-sm font-semibold text-fg-2">아직 저장한 기록이 없어요</p>
+                <p className="mt-2 text-sm font-semibold text-fg-2">{panelStatusText("studio.panelStatus.checkpoint.localEmpty", "아직 저장한 기록이 없어요")}</p>
                 <p className="mt-1 text-xs text-fg-3">큰 편집이나 AI 적용 전에 하나 만들어 두면 안전합니다.</p>
               </div>
             </div>
@@ -603,13 +604,13 @@ export function StudioCheckpointPanel({
               </div>
               {serverLoading && serverRevisions.length === 0 ? (
                 <div className="grid min-h-48 place-items-center text-center text-xs text-fg-3">
-                  <div><RefreshCw size={22} className="mx-auto mb-2 animate-spin" aria-hidden />서버 버전을 불러오는 중…</div>
+                  <div><RefreshCw size={22} className="mx-auto mb-2 animate-spin" aria-hidden />{panelStatusText("studio.panelStatus.checkpoint.serverLoading", "서버 버전을 불러오는 중…")}</div>
                 </div>
               ) : serverRevisions.length === 0 ? (
                 <div className="grid min-h-48 place-items-center rounded-xl border border-dashed border-line bg-card/30 px-4 text-center">
                   <div>
                     <Cloud size={24} className="mx-auto text-fg-3" aria-hidden />
-                    <p className="mt-2 text-sm font-semibold text-fg-2">아직 서버에 저장된 버전이 없어요</p>
+                    <p className="mt-2 text-sm font-semibold text-fg-2">{panelStatusText("studio.panelStatus.checkpoint.serverEmpty", "아직 서버에 저장된 버전이 없어요")}</p>
                     <p className="mt-1 text-xs text-fg-3">로그인한 작품을 저장하면 자동 revision이 생성됩니다.</p>
                   </div>
                 </div>

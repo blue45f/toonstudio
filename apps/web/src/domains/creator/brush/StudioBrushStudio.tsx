@@ -33,6 +33,7 @@ import { createPortal } from "react-dom";
 
 import { MarketplaceBrushStudioBridge } from "../MarketplaceBrushStudioBridge";
 import { BRUSH_PRESETS } from "../studio-brush";
+import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   STUDIO_FOCUS_RING,
   StudioContextPill,
@@ -608,7 +609,7 @@ export function StudioBrushTipImportControls({
         ) : (
           <ImagePlus size={16} className="text-accent" aria-hidden />
         )}
-        {importing ? "펜촉 변환 중…" : customActive ? "다른 PNG로 교체" : "PNG 펜촉 가져오기"}
+        {importing ? frozenStatus5Text("studio.frozenStatus5.brushStudio.tipImporting", "펜촉 변환 중…") : customActive ? "다른 PNG로 교체" : "PNG 펜촉 가져오기"}
       </button>
     </div>
   );
@@ -903,12 +904,9 @@ export function StudioBrushStudio({
       const profile = await resolveDefaultRestoreProfile();
       if (restoreRequestRef.current !== requestId) return;
       if (!profile) {
-        setRestoreSession({
-          status: "unavailable",
-          message: currentSnapshot.sourcePresetId
-            ? "가져온 브러시는 저장된 브러시 라이브러리에서 다시 적용해 원본 설정으로 돌아갈 수 있습니다."
-            : "이 브러시의 검증된 기본 프로필을 찾지 못했습니다.",
-        });
+        setRestoreSession({ status: "unavailable", message: currentSnapshot.sourcePresetId
+          ? frozenStatus5Text("studio.frozenStatus5.brushStudio.restoreGuidance", "가져온 브러시는 저장된 브러시 라이브러리에서 다시 적용해 원본 설정으로 돌아갈 수 있습니다.")
+          : frozenStatus5Text("studio.frozenStatus5.brushStudio.restoreProfileNotFound", "이 브러시의 검증된 기본 프로필을 찾지 못했습니다.") });
         return;
       }
       const transaction = planStudioBrushDefaultRestore(currentSnapshot, profile);
@@ -921,7 +919,7 @@ export function StudioBrushStudio({
       if (restoreRequestRef.current !== requestId) return;
       setRestoreSession({
         status: "unavailable",
-        message: "기본 프로필을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        message: frozenStatus5Text("studio.frozenStatus5.brushStudio.restoreLoadFailed", "기본 프로필을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."),
       });
     } finally {
       if (restoreRequestRef.current === requestId) setRestoreLoading(false);
@@ -1335,7 +1333,7 @@ export function StudioBrushStudio({
         ))}
       </ol>
       <StudioBrushComposerIntro />
-      <Suspense fallback={<p role="status">엔진 시험 도구를 불러오는 중…</p>}>
+      <Suspense fallback={<p role="status">{frozenStatus5Text("studio.frozenStatus5.brushStudio.engineToolsLoading", "엔진 시험 도구를 불러오는 중…")}</p>}>
         <StudioNativeBrushEngineProbe color={color} strokeWidth={strokeWidth} />
       </Suspense>
       <StudioBrushEngineStackPanel
@@ -1501,7 +1499,7 @@ export function StudioBrushStudio({
             ) : (
               <RotateCcw size={15} aria-hidden />
             )}
-            {restoreLoading ? "기본값 불러오는 중" : "이 브러시 기본값 복원"}
+            {restoreLoading ? frozenStatus5Text("studio.frozenStatus5.brushStudio.restoringDefaults", "기본값 불러오는 중") : "이 브러시 기본값 복원"}
           </button>
         </div>
       )}

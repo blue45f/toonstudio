@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Tekst AI-provider",
   "studio.aiToolPopover.serverTextAiProviderAria": "Servertekst AI-provider",
   "studio.aiToolPopover.serverProviderAuto": "automatisch schakelen",
-  "studio.aiToolPopover.serverFallbackMessage": "Wanneer het saldo/pakketlimiet is opgebruikt, stapt u over naar een andere aanbieder. Algemene fouten worden niet automatisch kwalijk genomen om dubbele kosten te voorkomen."
+  "studio.aiToolPopover.serverFallbackMessage": "Wanneer het saldo/pakketlimiet is opgebruikt, stapt u over naar een andere aanbieder. Algemene fouten worden niet automatisch kwalijk genomen om dubbele kosten te voorkomen.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

@@ -1,3 +1,5 @@
+import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
+import { r5CreatorStatusText } from "./r5-cat1-status-i18n";
 import { useId, useState } from "react";
 import {
   decodeStudioBrowserWorkspace, encodeStudioBrowserWorkspace,
@@ -20,7 +22,7 @@ export function StudioBrowserWorkspaceTransfer({ profile, onImport, editorHref, 
       await navigator.clipboard.writeText(value);
       setNotice({ text: "복사했습니다. 다른 브라우저에서 붙여넣어 주세요.", error: false });
     } catch {
-      setNotice({ text: "클립보드를 사용할 수 없습니다. 입력란의 내용을 직접 선택해 복사해 주세요.", error: true });
+      setNotice({ text: panelStatusText("studio.panelStatus.browserTransfer.clipboardUnavailable", "클립보드를 사용할 수 없습니다. 입력란의 내용을 직접 선택해 복사해 주세요."), error: true });
     }
   }
   function importProfile() {
@@ -70,8 +72,7 @@ export function StudioBrowserWorkspaceTransfer({ profile, onImport, editorHref, 
           </div>
         ) : (
           <p className="text-xs leading-relaxed text-fg-3">
-            로컬·새 원고는 주소만으로 다른 브라우저에 옮길 수 없습니다.
-            기본 편집기에서 프로젝트 파일로 내보낸 뒤 다른 브라우저에서 가져와 주세요.
+            {r5CreatorStatusText("r5cat1.creator.browserTransfer.localOnlyNotice", "로컬·새 원고는 주소만으로 다른 브라우저에 옮길 수 없습니다. 기본 편집기에서 프로젝트 파일로 내보낸 뒤 다른 브라우저에서 가져와 주세요.")}
           </p>
         )}
         {notice ? <p role={notice.error ? "alert" : "status"} className="text-xs leading-relaxed text-fg-2">{notice.text}</p> : null}

@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import { StudioAnimaticCanvas } from "./StudioAnimaticCanvas";
 import { StudioAnimaticKeyframeLane } from "./StudioAnimaticKeyframeLane";
@@ -88,7 +89,7 @@ export function StudioAnimaticWorkspaceControls({ workspace, images, selectedSho
     </details> : null}
     <details className="rounded-xl border border-line p-3">
       <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">자막 트랙 · {subtitleTrack.length}개 대사</summary>
-      {subtitleTrack.length === 0 ? <p className="text-sm text-fg-3">이 회차에는 아직 대사가 없습니다. 컷에 말풍선 대사를 넣으면 자막이 자동으로 만들어집니다.</p> : <>
+      {subtitleTrack.length === 0 ? <p className="text-sm text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.animatic.workspaceControls.subtitlesEmpty", "이 회차에는 아직 대사가 없습니다. 컷에 말풍선 대사를 넣으면 자막이 자동으로 만들어집니다.")}</p> : <>
         <ul className="space-y-2">
           {subtitleTrack.map((cue, index) => <li key={cue.id} className="grid gap-2 rounded-lg border border-line p-2 sm:grid-cols-[1fr_7rem_7rem]">
             <span className="min-w-0 truncate text-sm">{cue.speaker ? `${cue.speaker}: ` : ""}{cue.text}</span>

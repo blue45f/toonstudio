@@ -36,6 +36,7 @@ import type {
   StudioProjectArchiveDocumentReference,
   StudioProjectArchiveImportedAttachment,
 } from "../studio-project-archive";
+import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 /**
  * Portable VRM archive bridge.
@@ -394,33 +395,32 @@ function diagnosticForMissing(
     code: StudioVrmProjectLibraryDiagnosticCode;
     message: string;
   }> = {
-    "bytes-invalid": {
-      code: "LOCAL_MODEL_BYTES_INVALID",
-      message: "로컬 VRM이 GLB/VRM 안전 검사를 통과하지 못해 archive에 포함하지 않았습니다.",
+    "bytes-invalid": { code: "LOCAL_MODEL_BYTES_INVALID",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.bytesInvalid", "로컬 VRM이 GLB/VRM 안전 검사를 통과하지 못해 archive에 포함하지 않았습니다."),
     },
     "hash-mismatch": {
       code: "LOCAL_MODEL_HASH_MISMATCH",
-      message: "로컬 VRM의 실제 SHA-256이 장면 문서의 모델 해시와 일치하지 않습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.hashMismatch", "로컬 VRM의 실제 SHA-256이 장면 문서의 모델 해시와 일치하지 않습니다."),
     },
     "license-restricted": {
       code: "LOCAL_MODEL_LICENSE_RESTRICTED",
-      message: "VRM 이용 조건이 프로젝트 archive 재배포를 허용하지 않아 모델 파일을 포함하지 않았습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.licenseRestricted", "VRM 이용 조건이 프로젝트 archive 재배포를 허용하지 않아 모델 파일을 포함하지 않았습니다."),
     },
     "metadata-conflict": {
       code: "LOCAL_MODEL_METADATA_CONFLICT",
-      message: "같은 VRM 해시를 참조하는 장면들의 모델 크기 또는 MIME 정보가 충돌합니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.metadataConflict", "같은 VRM 해시를 참조하는 장면들의 모델 크기 또는 MIME 정보가 충돌합니다."),
     },
     "mime-mismatch": {
       code: "LOCAL_MODEL_MIME_MISMATCH",
-      message: "로컬 VRM의 검증된 MIME 정보가 VRM 라이브러리 계약과 일치하지 않습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.mimeMismatch", "로컬 VRM의 검증된 MIME 정보가 VRM 라이브러리 계약과 일치하지 않습니다."),
     },
     "not-found": {
       code: "LOCAL_MODEL_NOT_FOUND",
-      message: "장면이 가리키는 VRM을 이 기기의 검증 라이브러리에서 찾지 못했습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.notFound", "장면이 가리키는 VRM을 이 기기의 검증 라이브러리에서 찾지 못했습니다."),
     },
     "size-mismatch": {
       code: "LOCAL_MODEL_SIZE_MISMATCH",
-      message: "로컬 VRM의 실제 크기가 장면 문서의 모델 크기와 일치하지 않습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.sizeMismatch", "로컬 VRM의 실제 크기가 장면 문서의 모델 크기와 일치하지 않습니다."),
     },
   };
   return {
@@ -576,27 +576,27 @@ function diagnosticForImportedFailure(
   }> = {
     "bytes-invalid": {
       code: "ATTACHMENT_BYTES_INVALID",
-      message: "archive의 VRM attachment가 GLB/VRM 안전 검사를 통과하지 못했습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.attachmentBytesInvalid", "archive의 VRM attachment가 GLB/VRM 안전 검사를 통과하지 못했습니다."),
     },
     "hash-mismatch": {
       code: "ATTACHMENT_HASH_MISMATCH",
-      message: "archive VRM attachment의 실제 SHA-256이 장면 문서와 일치하지 않습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.attachmentHashMismatch", "archive VRM attachment의 실제 SHA-256이 장면 문서와 일치하지 않습니다."),
     },
     "metadata-mismatch": {
       code: "ATTACHMENT_METADATA_MISMATCH",
-      message: "archive VRM attachment가 장면 문서의 모델 해시 위치와 안전하게 연결되지 않았습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.attachmentMetadataMismatch", "archive VRM attachment가 장면 문서의 모델 해시 위치와 안전하게 연결되지 않았습니다."),
     },
     "mime-mismatch": {
       code: "ATTACHMENT_MIME_MISMATCH",
-      message: "archive attachment의 kind 또는 MIME이 VRM 계약과 일치하지 않습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.attachmentMimeMismatch", "archive attachment의 kind 또는 MIME이 VRM 계약과 일치하지 않습니다."),
     },
     missing: {
       code: "ATTACHMENT_MISSING",
-      message: "가져온 archive에 장면이 사용하는 VRM attachment가 없습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.attachmentMissing", "가져온 archive에 장면이 사용하는 VRM attachment가 없습니다."),
     },
     "size-mismatch": {
       code: "ATTACHMENT_METADATA_MISMATCH",
-      message: "archive VRM attachment의 실제 크기가 장면 문서와 일치하지 않습니다.",
+      message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.attachmentSizeMismatch", "archive VRM attachment의 실제 크기가 장면 문서와 일치하지 않습니다."),
     },
   };
   return { ...details[failure], hash, pointers };
@@ -633,7 +633,7 @@ export async function restoreStudioVrmProjectArchiveImport(
       unresolved.push(hash);
       diagnostics.push({
         code: "LOCAL_MODEL_METADATA_CONFLICT",
-        message: "같은 VRM 해시를 참조하는 장면들의 모델 크기 또는 MIME 정보가 충돌합니다.",
+        message: frozenStatus6Text("studio.frozenStatus6.vrmLibrary.metadataConflict", "같은 VRM 해시를 참조하는 장면들의 모델 크기 또는 MIME 정보가 충돌합니다."),
         hash,
         pointers,
       });

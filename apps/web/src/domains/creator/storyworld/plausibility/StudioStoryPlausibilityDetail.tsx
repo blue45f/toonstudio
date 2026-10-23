@@ -7,6 +7,8 @@
  */
 import { BookOpenText, Check, Clock3, Undo2, X } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+import { useT } from "@/shared/lib/i18n";
+import "../storyworld-status-i18n";
 
 import type { StoryworldProject, StoryworldQuestionId } from "../studio-storyworld-causality";
 import { ConfidenceBadge, SeverityBadge } from "./StudioStoryPlausibilityParts";
@@ -48,6 +50,12 @@ const RECORD_HINTS: Readonly<Record<Exclude<PlausibilityDispositionStatus, "igno
   deferred: "지금은 두고 나중에 볼게요. 점수에는 계속 반영돼요.",
 };
 
+const RECORD_HINT_KEYS: Readonly<Record<Exclude<PlausibilityDispositionStatus, "ignored">, string>> = {
+  resolved: "studio.storyworldStatus.detail.hintResolved",
+  intended: "studio.storyworldStatus.detail.hintIntended",
+  deferred: "studio.storyworldStatus.detail.hintDeferred",
+};
+
 function DispositionControls({ finding, handled, readOnly, onSet, onClear }: {
   readonly finding: PlausibilityFinding;
   readonly handled: PlausibilityHandledFinding | null;
@@ -55,6 +63,7 @@ function DispositionControls({ finding, handled, readOnly, onSet, onClear }: {
   readonly onSet: PlausibilityDetailProps["onSetDisposition"];
   readonly onClear: PlausibilityDetailProps["onClearDisposition"];
 }) {
+  const t = useT();
   const [pending, setPending] = useState<Exclude<PlausibilityDispositionStatus, "ignored"> | null>(null);
   const [note, setNote] = useState("");
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -119,7 +128,7 @@ function DispositionControls({ finding, handled, readOnly, onSet, onClear }: {
       {readOnly ? <p className="plausibility-hint">예시 이야기에서는 처리 기록을 남기지 않아요.</p> : null}
       {pending !== null ? (
         <>
-          <p className="plausibility-hint" id={`pl-note-hint-${finding.id}`}>{RECORD_HINTS[pending]}</p>
+          <p className="plausibility-hint" id={`pl-note-hint-${finding.id}`}>{t(RECORD_HINT_KEYS[pending], RECORD_HINTS[pending])}</p>
           <label>
             <span className="plausibility-hint">사유 (선택, 최대 300자)</span>
             <textarea

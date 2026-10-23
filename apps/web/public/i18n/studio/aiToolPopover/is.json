@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Sendi gervigreindarskilaboð",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI veitandi",
   "studio.aiToolPopover.serverProviderAuto": "sjálfvirk skipti",
-  "studio.aiToolPopover.serverFallbackMessage": "Þegar staða/pakkamörk eru uppurin muntu skipta yfir í annan þjónustuaðila. Almennar villur eru ekki sendar aftur sjálfkrafa til að koma í veg fyrir tvöfalda hleðslu."
+  "studio.aiToolPopover.serverFallbackMessage": "Þegar staða/pakkamörk eru uppurin muntu skipta yfir í annan þjónustuaðila. Almennar villur eru ekki sendar aftur sjálfkrafa til að koma í veg fyrir tvöfalda hleðslu.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

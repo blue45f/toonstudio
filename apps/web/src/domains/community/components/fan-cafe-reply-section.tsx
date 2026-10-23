@@ -1,3 +1,4 @@
+import { communityStatusText } from "../community-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { CornerDownRight, MessageCircle, RefreshCw, Send, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -104,10 +105,10 @@ function FanPostReplySectionContent({
         .then(async (res) => {
           const data = await safeParseJson<unknown>(res);
           if (!res.ok) {
-            throw new Error(resolveApiError(data, "댓글을 불러오지 못했습니다."));
+            throw new Error(resolveApiError(data, communityStatusText("community.status.fanCafeReply.loadFailed", "댓글을 불러오지 못했습니다.")));
           }
           if (!data || !Array.isArray(data)) {
-            throw new Error("댓글 응답이 유효하지 않습니다.");
+            throw new Error(communityStatusText("community.status.fanCafeReply.invalidResponse", "댓글 응답이 유효하지 않습니다."));
           }
           return ensureArray<FanCafeReply>(data);
         })
@@ -119,7 +120,7 @@ function FanPostReplySectionContent({
         })
         .catch((err) => {
           if ((err as Error).name === "AbortError") return;
-          setError(err instanceof Error ? err.message : "댓글을 불러오지 못했습니다.");
+          setError(err instanceof Error ? err.message : communityStatusText("community.status.fanCafeReply.loadFailed", "댓글을 불러오지 못했습니다."));
         })
         .finally(() => {
           if (!controller.signal.aborted) {
@@ -180,11 +181,11 @@ function FanPostReplySectionContent({
       const data = await safeParseJson<unknown>(res);
       if (!activeRef.current) return;
       if (!res.ok) {
-        setError(resolveApiError(data, "댓글을 저장하지 못했습니다. 입력 내용은 유지됩니다."));
+        setError(resolveApiError(data, communityStatusText("community.status.fanCafeReply.saveFailed", "댓글을 저장하지 못했습니다. 입력 내용은 유지됩니다.")));
         return;
       }
       if (!data || typeof data !== "object" || !("id" in data) || typeof data.id !== "string" || !("author" in data) || !data.author) {
-        setError("댓글 응답이 유효하지 않습니다.");
+        setError(communityStatusText("community.status.fanCafeReply.invalidResponse", "댓글 응답이 유효하지 않습니다."));
         return;
       }
       const created = data as FanCafeReply;
@@ -198,7 +199,7 @@ function FanPostReplySectionContent({
       setLoaded(true);
       setNotice("댓글을 등록했습니다.");
     } catch {
-      if (activeRef.current) setError("댓글을 저장하지 못했습니다. 입력 내용은 유지됩니다.");
+      if (activeRef.current) setError(communityStatusText("community.status.fanCafeReply.saveFailed", "댓글을 저장하지 못했습니다. 입력 내용은 유지됩니다."));
     } finally {
       pendingWritesRef.current.delete(draftKey);
       if (activeRef.current) setSubmittingReplies((current) => ({ ...current, [draftKey]: false }));
@@ -226,12 +227,12 @@ function FanPostReplySectionContent({
       const data = await safeParseJson<unknown>(res);
       if (!activeRef.current) return;
       if (!res.ok) {
-        setError(resolveApiError(data, "댓글을 삭제하지 못했습니다."));
+        setError(resolveApiError(data, communityStatusText("community.status.fanCafeReply.deleteFailed", "댓글을 삭제하지 못했습니다.")));
         return;
       }
       const result = (data ?? {}) as { deleted?: boolean; soft?: boolean };
       if (!result.deleted) {
-        setError("댓글을 삭제하지 못했습니다.");
+        setError(communityStatusText("community.status.fanCafeReply.deleteFailed", "댓글을 삭제하지 못했습니다."));
         return;
       }
       setReplies((current) => (result.soft ? maskReplyNode(current, replyId) : removeReplyNode(current, replyId)));
@@ -239,7 +240,7 @@ function FanPostReplySectionContent({
       setReplySyncAt(new Date().toISOString());
       setNotice("댓글을 삭제했습니다.");
     } catch {
-      if (activeRef.current) setError("댓글을 삭제하지 못했습니다.");
+      if (activeRef.current) setError(communityStatusText("community.status.fanCafeReply.deleteFailed", "댓글을 삭제하지 못했습니다."));
     } finally {
       pendingWritesRef.current.delete(`delete:${replyId}`);
     }
@@ -252,7 +253,7 @@ function FanPostReplySectionContent({
     <div className={cn("min-w-0 flex flex-col gap-3", className)} role="region" aria-label="댓글 대화">
       <p role="status" className="text-xs text-fg-3">{notice}</p>
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-canvas/25 px-3 py-2 text-xs text-fg-3">
-        <span>동기화 {replySyncAt ? new Date(replySyncAt).toLocaleTimeString() : "대기 중"}</span>
+        <span>동기화 {replySyncAt ? new Date(replySyncAt).toLocaleTimeString() : communityStatusText("community.status.fanCafeReply.syncWaiting", "대기 중")}</span>
         <div className="flex flex-wrap items-center gap-2">
           <label className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 transition-colors hover:bg-raised/70">
             <input
@@ -334,7 +335,7 @@ function FanPostReplySectionContent({
             onClick={refreshReplies}
             className="rounded-lg border border-bad/30 px-2 py-1 font-medium"
           >
-            댓글 목록 다시 불러오기
+            {communityStatusText("community.status.fanCafeReply.reloadList", "댓글 목록 다시 불러오기")}
           </button>
         </div>
       ) : null}
@@ -507,7 +508,7 @@ export function FanPostReplyItem({
                     className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-accent px-2.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <Send size={12} />
-                    {isSubmitting ? "저장 중..." : "등록"}
+                    {isSubmitting ? communityStatusText("community.status.fanCafeReply.saving", "저장 중...") : "등록"}
                   </button>
                 </div>
               </div>

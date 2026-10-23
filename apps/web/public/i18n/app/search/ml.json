@@ -78,11 +78,11 @@
   "search.explorer.time.hoursAgo": "{count} മണിക്കൂർ മുമ്പ്",
   "search.explorer.time.daysAgo": "{count} d മുമ്പ്",
   "search.explorer.loadMore": "കൂടുതല് ലോഡ് ചെയ്യുക",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "ജനപ്രിയ തിരയലുകൾ",
+  "search.explorer.suggestions.genres": "ശുപാർശ ചെയ്യുന്ന വിഭാഗങ്ങൾ",
+  "search.explorer.suggestions.searchFor": "{query} തിരയുക",
+  "search.explorer.suggestions.genreFilter": "{genre} വിഭാഗം ഉപയോഗിച്ച് ചുരുക്കുക",
+  "search.explorer.suggestions.loading": "നിർദ്ദേശിച്ച തിരയലുകൾ ലോഡ് ചെയ്യുന്നു",
+  "search.explorer.suggestions.error": "നിർദ്ദേശിച്ച തിരയലുകൾ ലോഡ് ചെയ്യാനായില്ല. അൽപ്പസമയത്തിനു ശേഷം വീണ്ടും ശ്രമിക്കുക.",
+  "search.explorer.suggestions.empty": "ഇപ്പോൾ നിർദ്ദേശങ്ങളില്ല. ഒരു ശീർഷകം, രചയിതാവ്, അല്ലെങ്കിൽ ടാഗ് ടൈപ്പ് ചെയ്ത് നോക്കുക."
 }

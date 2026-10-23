@@ -22,5 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Text AI Provider",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI Provider",
   "studio.aiToolPopover.serverProviderAuto": "awtomatikong paglipat",
-  "studio.aiToolPopover.serverFallbackMessage": "Kapag naubos na ang limitasyon sa balanse/package, lilipat ka sa ibang provider. Ang mga pangkalahatang error ay hindi awtomatikong ipinadala upang maiwasan ang dobleng pagsingil."
+  "studio.aiToolPopover.serverFallbackMessage": "Kapag naubos na ang limitasyon sa balanse/package, lilipat ka sa ibang provider. Ang mga pangkalahatang error ay hindi awtomatikong ipinadala upang maiwasan ang dobleng pagsingil.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
 }

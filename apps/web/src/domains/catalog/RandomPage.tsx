@@ -1,3 +1,4 @@
+import { catalogStatusText } from "./catalog-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { ArrowRight, RefreshCw, Shuffle, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -99,8 +100,8 @@ export function RandomPage() {
           <ActionableEmptyState
             art="search"
             icon={Shuffle}
-            title="조건에 맞는 작품이 없어요"
-            description="지금 조건으로는 뽑을 작품이 없어요. 조건을 바꾸면 새 작품을 만날 수 있어요."
+            title={catalogStatusText("catalog.status.random.emptyTitle", "조건에 맞는 작품이 없어요")}
+            description={catalogStatusText("catalog.status.random.emptyDescription", "지금 조건으로는 뽑을 작품이 없어요. 조건을 바꾸면 새 작품을 만날 수 있어요.")}
             primary={{ href: exploreHref, label: "탐색에서 조건 바꾸기" }}
           >
             <button type="button" onClick={reroll} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}>
@@ -111,8 +112,8 @@ export function RandomPage() {
       ) : phase === "failed" ? (
         <div className="mx-auto mt-8 max-w-lg">
           <ErrorState
-            title="랜덤 작품을 불러오지 못했어요"
-            message="네트워크나 서버 문제로 데이터를 가져오지 못했습니다. 잠시 뒤 다시 시도해 보세요."
+            title={catalogStatusText("catalog.status.random.loadFailedTitle", "랜덤 작품을 불러오지 못했어요")}
+            message={catalogStatusText("catalog.status.random.loadFailedMessage", "네트워크나 서버 문제로 데이터를 가져오지 못했습니다. 잠시 뒤 다시 시도해 보세요.")}
             onRetry={reroll}
           />
           <Link href={exploreHref} className="mt-3 flex min-h-11 items-center justify-center gap-1.5 text-sm font-semibold text-fg-3 hover:text-accent">
