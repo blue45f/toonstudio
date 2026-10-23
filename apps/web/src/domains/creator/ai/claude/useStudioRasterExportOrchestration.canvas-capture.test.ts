@@ -2,8 +2,8 @@
 import { cleanup, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getStudioCanvasCapture, resetStudioCanvasCaptureForTests } from "./ai/claude/claude-canvas-capture-registry";
-import { useStudioRasterExportOrchestration } from "./useStudioRasterExportOrchestration";
+import { getStudioCanvasCapture, resetStudioCanvasCaptureForTests } from "./claude-canvas-capture-registry";
+import { useStudioRasterExportOrchestration } from "../../useStudioRasterExportOrchestration";
 
 describe("내보내기 훅 → Claude 보조 캔버스 캡처 등록", () => {
   afterEach(() => {

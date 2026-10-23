@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { lockUserAi, setUserAiConfiguration } from "@/shared/ai/user-ai-store";
 import { EMPTY_AI_CONNECTION } from "@/shared/ai/user-ai-types";
 
-import { StudioCommandSearchHost } from "./StudioCommandSearchHost";
+import { StudioCommandSearchHost } from "../../StudioCommandSearchHost";
 
 const FAKE_KEY = "sk-test-mobile-entry-0000";
 
