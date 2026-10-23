@@ -42,7 +42,7 @@ describe("스튜디오 캔버스 캡처 저장소", () => {
     const { result } = renderHook(() => useStudioCanvasCaptureAvailable());
     expect(result.current).toBe(false);
 
-    let uninstall = () => undefined;
+    let uninstall: () => void = () => undefined;
     act(() => { uninstall = installStudioCanvasCapture(vi.fn()); });
     expect(result.current).toBe(true);
 

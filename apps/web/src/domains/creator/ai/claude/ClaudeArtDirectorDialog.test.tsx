@@ -746,7 +746,7 @@ describe("ClaudeArtDirectorDialog — 리뷰 반영", () => {
       const capture = vi.fn().mockResolvedValue(canvas);
       canvasToImageFile.mockResolvedValue(pngFile(800, 1_000, "canvas-page.png"));
       renderDialog();
-      let uninstall = () => undefined;
+      let uninstall: () => void = () => undefined;
       act(() => { uninstall = installStudioCanvasCapture(capture); });
 
       const button = await screen.findByRole("button", { name: "캔버스에서 가져오기" });
