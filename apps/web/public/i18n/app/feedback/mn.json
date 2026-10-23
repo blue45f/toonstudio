@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "nnnnnnnnnn",
+  "feedback.loadError": "Санал хүсэлтийн судалгааг ачаалж чадсангүй. Түр хүлээгээд дахин оролдоно уу.",
   "feedback.thankYou": "Үнэ цэнэтэй санал хүсэлтээ өгсөнд баярлалаа!",
   "feedback.anonymousNote": "Таны хариултууд нууцлагдмал байна.",
-  "feedback.notAtAll": "Absolutely not",
-  "feedback.definitely": "Definitely"
+  "feedback.notAtAll": "Огт үгүй",
+  "feedback.definitely": "Мэдээж"
 }

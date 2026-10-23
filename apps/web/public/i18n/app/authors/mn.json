@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "AUTHOR'S DIRECTORY",
-  "authors.title": "Autors",
-  "authors.desc": "Click on an author to see their titles, ratings, and fan cafe in one place.",
+  "authors.eyebrow": "AUTHOR DIRECTORY",
+  "authors.title": "Зохиогчид",
+  "authors.desc": "Бүтээлийн тоогоор эрэмбэлсэн зохиогчид. Зохиогчийг товшиж бүтээл, үнэлгээ болон фэн кафег нь нэг дороос хараарай.",
   "authors.search": "Зохиогчийн нэрийг хайх",
-  "authors.error": "n't able to load the author list.",
-  "authors.empty": "no matching author.",
-  "authors.allOf": "of",
-  "authors.topOf": "top",
+  "authors.error": "Зохиогчдын жагсаалтыг ачаалж чадсангүй. Түр хүлээгээд дахин оролдоно уу.",
+  "authors.empty": " — тохирох зохиогч алга.",
+  "authors.allOf": "-аас",
+  "authors.topOf": "· шилдэг",
   "authors.people": "",
-  "authors.works": "works",
-  "authors.views": "views",
+  "authors.works": " бүтээл",
+  "authors.views": "үзэлт",
   "authors.pencafe": "Зохиогчийн фэн кафе",
-  "authors.stats": "Шилдэг{total}зохиогчдоос {shown}-г харуулсан.",
-  "authors.noName": "Creator"
+  "authors.stats": "Нийт {total} зохиогчоос шилдэг {shown}-г харуулж байна",
+  "authors.noName": "Бүтээгч"
 }
