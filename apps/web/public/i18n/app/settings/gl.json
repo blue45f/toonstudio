@@ -1,7 +1,7 @@
 {
   "settings.eyebrow": "CONFIGURACIÓN",
   "settings.title": "Configuración",
-  "settings.subtitle": "Almacenar as preferencias de pantalla e filtro ou restablecer. Todas as configuracións son guardadas só neste navegador.",
+  "settings.subtitle": "Almacenar as preferencias de pantalla e filtro ou restablecer. Todas as configuracións son gardadas só neste navegador.",
   "settings.section.display": "Pantalla",
   "settings.section.filters": "Filtros",
   "settings.section.age": "Verificación de idade",
@@ -17,7 +17,7 @@
   "settings.filters.remember": "Recordar filtros",
   "settings.filters.remember.desc": "Mantén o ranking, recomendacións e filtros de calendario durante as visitas.",
   "settings.filters.clear": "Filtros salvos limpos",
-  "settings.filters.clear.desc": "Eliminar os filtros guardados de todas as páxinas.",
+  "settings.filters.clear.desc": "Eliminar os filtros gardados de todas as páxinas.",
   "settings.filters.saved": "Salvado",
   "settings.filters.clearNow": "Filtros transparentes",
   "settings.age.title": "Visibilidade do distintivo para adultos",

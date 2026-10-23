@@ -3,7 +3,7 @@
   "account.tabs.activity": "Atividade",
   "account.tabs.profile": "Profisso",
   "account.signIn.title": "Inscrição obrigatória",
-  "account.signIn.message": "Por favor, entre para ver as suas postagens, atividades e perfil.",
+  "account.signIn.message": "Por favor, entre para ver as suas publicações, atividades e perfil.",
   "account.signIn.cta": "Inscreva-se",
   "account.posts.errorTitle": "Não conseguiu carregar os seus postos.",
   "account.posts.emptyTitle": "Ainda não foram publicadas obras.",
@@ -41,6 +41,6 @@
   "account.profile.loadingError": "Não consegui carregá-lo.",
   "account.page.eyebrow": "A MINHA conta",
   "account.page.title": "O meu perfil",
-  "account.page.subtitle": "Verifique as suas postagens e atividades e gerencie os detalhes do seu perfil.",
+  "account.page.subtitle": "Verifique as suas publicações e atividades e gira os detalhes do seu perfil.",
   "account.page.tabsAria": "Os segmentos de perfil"
 }
