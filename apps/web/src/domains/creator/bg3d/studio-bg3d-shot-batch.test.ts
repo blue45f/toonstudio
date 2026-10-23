@@ -479,16 +479,23 @@ describe("Studio BG3D shot batch archive", () => {
   it("rejects forged Plan digests and a source revision that does not own sourceDigest", async () => {
     const { plan, sourceRevision } = await privatePlanV2();
     const forged = { ...plan, planDigest: "c".repeat(64) };
+    // 공개 투영 검증 실패는 표시 문구가 아니라 구조화 코드를 방출한다(A4 D4, TypeError 계약은 유지).
+    const publicPlanDigestInvalid = {
+      name: "StudioBg3dShotBatchPublicPlanError",
+      code: "publicPlanDigestInvalid",
+    };
     await expect(projectStudioBg3dShotBatchPlanForPublicArchive(forged, {
       appProfileId: STUDIO_BG3D_SHOT_BATCH_APP_IMPLEMENTATION_PROFILE_V1,
       sourceRevision,
-    })).rejects.toThrow("digest");
+    })).rejects.toMatchObject(publicPlanDigestInvalid);
 
     const other = await privatePlanV2({ contactSheet: true });
-    await expect(projectStudioBg3dShotBatchPlanForPublicArchive(plan, {
+    const mismatched = projectStudioBg3dShotBatchPlanForPublicArchive(plan, {
       appProfileId: STUDIO_BG3D_SHOT_BATCH_APP_IMPLEMENTATION_PROFILE_V1,
       sourceRevision: other.sourceRevision.replace("첫 컷", "다른 컷"),
-    })).rejects.toThrow("digest");
+    });
+    await expect(mismatched).rejects.toMatchObject(publicPlanDigestInvalid);
+    await expect(mismatched).rejects.toBeInstanceOf(TypeError);
   });
 
   it("rehashes the public render identity at the final archive boundary", async () => {
