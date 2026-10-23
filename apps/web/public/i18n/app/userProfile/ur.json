@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "پروفائل کا مواد",
   "userProfile.refresh": "تازہ کاری",
   "userProfile.emptyReviews": "اس صارف کی جانب سے ابھی تک کوئی جائزہ نہیں شائع ہوا۔",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "تخلیق شدہ کام لوڈ نہیں ہو سکے۔ براہ کرم دوبارہ کوشش کریں۔",
+  "userProfile.series.error": "سیریز لوڈ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
+  "userProfile.emptyReviewsHint": "اپنی پسندیدہ تخلیق پر پہلا جائزہ چھوڑیں۔",
+  "userProfile.emptyReviewsCta": "عنوانات دیکھیں"
 }
