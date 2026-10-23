@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "লেখক পৰিচালনা",
+  "authors.eyebrow": "লেখক নিৰ্দেশিকা",
   "authors.title": "লেখক",
-  "authors.desc": "লেখকৰ সংখ্যা অনুসাৰে তালিকাত থকা লেখকৰ নাম, ৰেটিং আৰু ফেন কেফে এক ঠাইত চাবৰ বাবে লেখকৰ নামত ক্লিক কৰক।",
-  "authors.search": "অনুসন্ধানকাৰীৰ নাম",
-  "authors.error": "লেখকৰ তালিকাখন লোড কৰিব নোৱাৰিলে।",
-  "authors.empty": "একেটা লেখক নাই।",
+  "authors.desc": "কৰ্মৰ সংখ্যা অনুসৰি ৰেংক কৰা লেখকসকল। এজন লেখকক টেপ কৰি তেওঁৰ শীৰ্ষক, ৰেটিং আৰু ফেন কেফে একে ঠাইতে চাওক।",
+  "authors.search": "লেখকৰ নাম অনুসন্ধান কৰক",
+  "authors.error": "লেখকৰ তালিকাখন লোড কৰিব পৰা নগ'ল। অনুগ্ৰহ কৰি অলপ পিছত পুনৰ চেষ্টা কৰক।",
+  "authors.empty": " — মিল থকা লেখক নাই।",
   "authors.allOf": "ৰ",
   "authors.topOf": "· ওপৰৰ",
   "authors.people": "",
-  "authors.works": "কাম",
+  "authors.works": " কাম",
   "authors.views": "দৃশ্যসমূহ",
   "authors.pencafe": "সৃষ্টিকৰ্তা অনুৰাগী কেফে",
-  "authors.stats": "{shown}ৰ ভিতৰত শীৰ্ষ {total} লেখক",
+  "authors.stats": "{total} লেখকৰ ভিতৰত শীৰ্ষ {shown}",
   "authors.noName": "সৃষ্টিকৰ্তা"
 }

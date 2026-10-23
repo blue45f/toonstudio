@@ -8,9 +8,9 @@
   "common.retry.short": "পুনৰ চেষ্টা কৰক",
   "common.backToTop": "ওপৰলৈ ঘূৰি যাওক",
   "common.backToHome": "ঘৰলৈ যোৱা",
-  "common.loading.search": "অনুসন্ধান কৰা...",
-  "common.notFoundWithQuery": "' {query} ' ৰ কোনো ফলাফল পোৱা নগ'ল।",
-  "common.openSearch": "অনুসন্ধান কৰক →",
+  "common.loading.search": "অনুসন্ধান কৰা…",
+  "common.notFoundWithQuery": "'{query}'ৰ বাবে কোনো ফলাফল নাই।",
+  "common.openSearch": "অনুসন্ধানত বিচাৰক →",
   "common.loading.empty": "কোনো তথ্য ঘূৰাই দিয়া হোৱা নাই।",
   "common.retry.all": "পুনৰ চেষ্টা কৰক অথবা ঘৰলৈ ঘূৰি যাওক।"
 }

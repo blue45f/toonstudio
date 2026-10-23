@@ -3,7 +3,7 @@
   "apiError.adminRequired": "প্ৰশাসনিক অনুমতিসমূহ পৰীক্ষা কৰিব নোৱাৰিলে।",
   "apiError.adminOnlyPage": "এই পৃষ্ঠাটো প্ৰশাসকসকলৰ বাবে সীমাবদ্ধ।",
   "apiError.notFound": "বিচৰা বস্তুটো পোৱা নাযায়।",
-  "apiError.unsupportedType": "সমৰ্থিত নহয়।",
-  "apiError.inactiveAccount": "নিষ্ক্ৰিয় একাউন্টসমূহ প্ৰশাসকৰ বৈশিষ্ট্য ব্যৱহাৰ কৰিব নোৱাৰে।",
-  "apiError.settlementFailed": "নিষ্পত্তি প্ৰক্ৰিয়া ব্যর্থ।"
+  "apiError.unsupportedType": "সমৰ্থিত নহোৱা বিষয়বস্তুৰ প্ৰকাৰ।",
+  "apiError.inactiveAccount": "নিষ্ক্ৰিয় একাউণ্টসমূহে প্ৰশাসকৰ বৈশিষ্ট্য ব্যৱহাৰ কৰিব নোৱাৰে।",
+  "apiError.settlementFailed": "নিষ্পত্তি প্ৰক্ৰিয়াকৰণ বিফল হ'ল। অনুগ্ৰহ কৰি অলপ পিছত পুনৰ চেষ্টা কৰক।"
 }

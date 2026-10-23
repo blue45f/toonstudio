@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "সাধাৰণ অনুসন্ধান",
+  "contact.body": "সেৱা ব্যৱহাৰ, একাউণ্ট আৰু তথ্য প্ৰদৰ্শনৰ বিষয়ে সাধাৰণ অনুসন্ধান পঠিয়াওক।",
+  "contact.bizTitle": "ব্যৱসায় আৰু অংশীদাৰিত্ব অনুসন্ধান",
+  "contact.bizBody": "বিজ্ঞাপন, প্লেটফৰ্ম সংহতি আৰু বিষয়বস্তু অংশীদাৰিত্বকে ধৰি ব্যৱসায়িক প্ৰস্তাৱ দাখিল কৰক।",
+  "contact.bugTitle": "বাগ প্ৰতিবেদন",
+  "contact.bugBody": "ত্ৰুটি, বিন্যাসৰ সমস্যা বা তথ্য প্ৰদৰ্শনৰ অস্বাভাৱিকতা জনাওক।"
 }
