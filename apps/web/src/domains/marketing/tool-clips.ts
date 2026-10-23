@@ -33,8 +33,9 @@
  * 표면에는 배선하지 않고 홍보 영상 자료실에만 수록한다(TOOL_CLIPS_VERTICAL).
  *
  * 정사각 변형은 12차 파도에서 캔버스 1편을 먼저 만들고, 13차 파도에서
- * 셰이퍼·3D 배경 2편을 더했다. 소셜 피드에 바로 얹는 1:1 소재로, 이쪽도
- * 자료실에만 수록한다(TOOL_CLIPS_SQUARE).
+ * 셰이퍼·3D 배경 2편, 14차 파도에서 스토리·컷툰·AI 변환실·배우기·협업·
+ * 제작 관리 6편을 더해 9편이 됐다. 소셜 피드에 바로 얹는 1:1 소재로,
+ * 이쪽도 자료실에만 수록한다(TOOL_CLIPS_SQUARE).
  */
 export interface ToolClip {
   readonly src: string;
@@ -141,4 +142,10 @@ export const TOOL_CLIPS_SQUARE: readonly ToolSquareClip[] = [
   { toolId: "canvas", src: "/brand/tool-clips/tool-canvas-square.mp4", width: 768, height: 768 },
   { toolId: "shaper", src: "/brand/tool-clips/tool-shaper-square.mp4", width: 768, height: 768 },
   { toolId: "bg3d", src: "/brand/tool-clips/tool-bg3d-square.mp4", width: 768, height: 768 },
+  { toolId: "story", src: "/brand/tool-clips/tool-story-square.mp4", width: 768, height: 768 },
+  { toolId: "comic", src: "/brand/tool-clips/tool-comic-square.mp4", width: 768, height: 768 },
+  { toolId: "ailab", src: "/brand/tool-clips/tool-ailab-square.mp4", width: 768, height: 768 },
+  { toolId: "learn", src: "/brand/tool-clips/tool-learn-square.mp4", width: 768, height: 768 },
+  { toolId: "collab", src: "/brand/tool-clips/tool-collab-square.mp4", width: 768, height: 768 },
+  { toolId: "production", src: "/brand/tool-clips/tool-production-square.mp4", width: 768, height: 768 },
 ];

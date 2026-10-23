@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 123편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 131편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,7 +8,7 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 28편: 투어 쇼츠 섹션의 27편은 product-tour-shorts.ts
+ * - 쇼츠 30편: 투어 쇼츠 섹션의 29편은 product-tour-shorts.ts
  *   (PRODUCT_TOUR_SHORTS)를 참조하고, 자료실에만 보관하는 반응 쇼츠 1편은
  *   품질 메모와 함께 이 파일에 직접 적는다.
  * - 투어 도입·마무리·전환 5편: product-tour-clips.ts
@@ -20,12 +20,13 @@
  *   밤 버전·비 오는 날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로·
  *   창가의 고양이·정사각 스팅·와이드 팬·비 히어로·눈 히어로·황금빛 노을·
  *   정사각 궤도 스팅)
- * - 도구 클립 27편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
+ * - 도구 클립 33편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
  *   카테고리 7편 + 보류 1편)과 세로 변형 12편(TOOL_CLIPS_VERTICAL, 가로본과 1:1 대응), 그리고
  *   제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계
  *   매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
- *   여기서는 그 값을 옮겨 적고 출처를 밝힌다), 정사각 변형 3편
- *   (TOOL_CLIPS_SQUARE, 캔버스·셰이퍼·3D 배경 1:1)
+ *   여기서는 그 값을 옮겨 적고 출처를 밝힌다), 정사각 변형 9편
+ *   (TOOL_CLIPS_SQUARE, 캔버스·셰이퍼·3D 배경·스토리·컷툰·AI 변환실·
+ *   배우기·협업·제작 관리 1:1)
  * - 페이지 클립 24편: promo-video-library-pages.ts가 레지스트리다
  *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했다.
  */
@@ -89,11 +90,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 스물일곱 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 스물아홉 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. Twenty-seven also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. Twenty-nine also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
     },
   },
   {
