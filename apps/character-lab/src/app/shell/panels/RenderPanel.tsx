@@ -186,6 +186,30 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         </p>
       )}
 
+      <div className="cl-render-row" role="group" aria-label="웹툰 조명 분위기 프리셋" data-testid="render-mood-presets">
+        <button
+          type="button"
+          className="cl-preset-chip"
+          onClick={() => set({ mode: "toon", toon: { ...shading.toon, rampSteps: 2, rim: false, outline: "hull" } })}
+        >
+          낮 일상 웹툰 (2단 셀)
+        </button>
+        <button
+          type="button"
+          className="cl-preset-chip"
+          onClick={() => set({ mode: "toon", toon: { ...shading.toon, rampSteps: 3, rim: true, outline: "hull" } })}
+        >
+          드라마틱 역광 (3단·림라이트)
+        </button>
+        <button
+          type="button"
+          className="cl-preset-chip"
+          onClick={() => set({ mode: "pbr", ibl: { ...shading.ibl, enabled: true, intensity: 1.35 } })}
+        >
+          PBR 스튜디오 조명
+        </button>
+      </div>
+
       <div className="cl-render-row" role="group" aria-label="셰이딩 모드">
         <button type="button" aria-pressed={!isToon} onClick={() => set({ mode: "pbr" })}>
           PBR

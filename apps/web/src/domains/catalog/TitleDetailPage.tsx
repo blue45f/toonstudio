@@ -282,7 +282,7 @@ export function TitleDetailPage() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-6 sm:mt-14 lg:grid-cols-[1fr_20rem] lg:items-start">
+      <div id="title-episodes-anchor" className="mt-10 grid scroll-mt-24 gap-6 sm:mt-14 lg:grid-cols-[1fr_20rem] lg:items-start">
         <TitleEpisodeSection title={title} episodes={episodes} />
         <div className="flex flex-col gap-4">
           {/* 회차 빈 상태의 "다른 플랫폼 더 보기"가 도착하는 앵커 지점 (D-9) */}
@@ -399,6 +399,7 @@ export function TitleDetailPage() {
 
       <TitleFanWorks titleId={title.id} />
 
+      <div id="title-character-talk" className="scroll-mt-24">
       <Section
         className="mt-10 sm:mt-14"
         eyebrow="CHARACTER TALK"
@@ -420,7 +421,9 @@ export function TitleDetailPage() {
           </Link>
         </div>
       </Section>
+      </div>
 
+      <div id="title-reviews" className="scroll-mt-24">
       <Section
         className="mt-10 sm:mt-14"
         eyebrow="REVIEWS"
@@ -479,6 +482,7 @@ export function TitleDetailPage() {
           </div>
         )}
       </Section>
+      </div>
 
       {byAuthor.length > 0 && (
         <Section

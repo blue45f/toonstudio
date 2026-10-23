@@ -225,6 +225,15 @@ describe("shading/set 명령", () => {
     fireEvent.change(screen.getByLabelText("톤맵"), { target: { value: "bogus" } });
     expect(view.dispatched).toEqual([]);
   });
+
+  it("웹툰 조명 분위기 프리셋 클릭 시 셰이딩 모드와 툰/IBL 옵션이 한 번에 dispatch된다", () => {
+    const view = renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "드라마틱 역광 (3단·림라이트)" }));
+    expect(lastProfile(view.dispatched)).toEqual({
+      mode: "toon",
+      toon: { ...DEFAULT_SHADING.toon, rampSteps: 3, rim: true, outline: "hull" },
+    });
+  });
 });
 
 describe("엔진 기능 상태·HUD", () => {

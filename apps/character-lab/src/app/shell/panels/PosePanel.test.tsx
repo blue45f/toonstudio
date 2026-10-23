@@ -172,6 +172,15 @@ describe("PosePanel IK", () => {
     expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", expected[1].toFixed(3));
     expect(expected[1]).toBeLessThan(1.2);
   });
+
+  it("IK 빠른 위치 이동 버튼이 목표 좌표를 10cm 단위로 이동시킨다", () => {
+    setup();
+    setTarget("0.200", "1.000", "0.100");
+    fireEvent.click(screen.getByRole("button", { name: "위로 +10cm" }));
+    expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", "1.100");
+    fireEvent.click(screen.getByRole("button", { name: "앞으로 +10cm" }));
+    expect(screen.getByLabelText("목표 Z")).toHaveProperty("value", "0.200");
+  });
 });
 
 describe("PosePanel 관절 제한·초기화", () => {

@@ -156,6 +156,25 @@ export function PhysicsPanel({ schedule = rafScheduler }: PhysicsPanelProps) {
         {status.text}
       </p>
       {state.physics && state.physics.status === "unavailable" ? <p className="cl-physics-reason">선택한 provider는 사용할 수 없습니다. 다른 provider를 직접 선택하세요(자동 대체 없음).</p> : null}
+      <div className="cl-physics-row" role="group" aria-label="빠른 안정화 프리셋" data-testid="physics-step-presets">
+        {(
+          [
+            { id: "quick-15", label: "빠른 확인 (15스텝)", value: 15 },
+            { id: "standard-60", label: "표준 안정화 (60스텝)", value: 60 },
+            { id: "full-120", label: "완전 정착 (120스텝)", value: 120 },
+          ] as const
+        ).map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="cl-preset-chip"
+            aria-pressed={steps === preset.value}
+            onClick={() => setSteps(clampSteps(preset.value))}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
       <div className="cl-physics-row">
         <label htmlFor={`${ids}-steps`}>정착 스텝(최대 {SETTLE_DEFAULTS.maxSteps})</label>
         <input id={`${ids}-steps`} type="number" min={0} max={SETTLE_DEFAULTS.maxSteps} step={1} value={steps} onChange={(event) => setSteps(clampSteps(Number(event.target.value)))} />

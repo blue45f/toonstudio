@@ -273,6 +273,18 @@ describe("ExportPanel", () => {
     expect(screen.queryByRole("list", { name: "레시피 불러오기 안내" })).toBeNull();
   });
 
+  it("빠른 해상도 프리셋 버튼을 클릭하면 너비와 높이 입력값이 즉시 변경된다", () => {
+    render(
+      <MockLabProvider>
+        <ExportPanel session={createPaintSession({ layerSize: 8 })} />
+      </MockLabProvider>,
+    );
+    const group = screen.getByTestId("export-resolution-presets");
+    fireEvent.click(within(group).getByRole("button", { name: "웹툰 컷 (800×1200)" }));
+    expect((screen.getByLabelText("너비(px)") as HTMLInputElement).value).toBe("800");
+    expect((screen.getByLabelText("높이(px)") as HTMLInputElement).value).toBe("1200");
+  });
+
   it("readTextFile은 File 내용을 읽는다", async () => {
     const file = new File(["안녕"], "hello.txt", { type: "text/plain" });
     expect(await readTextFile(file)).toBe("안녕");

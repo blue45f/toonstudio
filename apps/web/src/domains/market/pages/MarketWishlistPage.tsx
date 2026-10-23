@@ -79,6 +79,30 @@ export function MarketWishlistPage() {
         />
       ) : (
         <section aria-label={bt("찜한 소재 목록", "Saved materials")}>
+          <div
+            data-testid="market-wishlist-quick-actions"
+            role="group"
+            aria-label={bt("찜 목록 빠른 도구", "Wishlist quick tools")}
+            className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel/60 px-4 py-3"
+          >
+            <span className="text-xs font-semibold text-fg-2">
+              {bt("찜한 에셋을 구매하기 전에 내 원고 컷에서 시험하거나 스펙을 나란히 비교해 보세요.", "Before buying saved assets, test them on your manuscript cut or compare specs side by side.")}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/market/fit-lab"
+                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-9" })}
+              >
+                {bt("원고 위 시험 (Fit Lab)", "Test in Fit Lab")}
+              </Link>
+              <Link
+                href="/market/compare"
+                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-9" })}
+              >
+                {bt("에셋 나란히 비교", "Compare side by side")}
+              </Link>
+            </div>
+          </div>
           <ul aria-label={bt("찜한 소재 목록", "Saved materials")} className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {wishlistIds.slice(0, visibleCount).map((id, index) => (
               <li key={id} aria-label={bt(`찜한 소재 ${index + 1}`, `Saved material ${index + 1}`)} className="min-w-0" {...introItemProps(index)}>

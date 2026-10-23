@@ -94,6 +94,36 @@ export function MarketResourceDetailPage() {
         />
       ) : (
         <div className="mt-6 space-y-6">
+          <div
+            data-testid="market-detail-quick-actions"
+            role="group"
+            aria-label={t("리소스 빠른 실행 도구", "Resource quick actions")}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/60 px-4 py-3"
+          >
+            <span className="text-xs font-semibold text-fg-2">
+              {t("이 에셋을 내 원고 환경에서 바로 점검하거나 비교해 보세요", "Test or compare this asset directly in your manuscript workflow")}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/market/fit-lab?slug=${encodeURIComponent(record.id)}`}
+                className="inline-flex min-h-9 items-center rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent transition-opacity hover:opacity-90"
+              >
+                {t("원고 위 시험 (Fit Lab)", "Test in Fit Lab")}
+              </Link>
+              <Link
+                href="/market/compare"
+                className="inline-flex min-h-9 items-center rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:border-accent/50"
+              >
+                {t("비교함 열기", "Open Compare")}
+              </Link>
+              <Link
+                href={`/market/browse?kind=${encodeURIComponent(record.kind)}`}
+                className="inline-flex min-h-9 items-center rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg"
+              >
+                {t("같은 종류 에셋 더 보기", "More of this kind")}
+              </Link>
+            </div>
+          </div>
           <FriendlyQuickGuide
             title={t("이 리소스를 쓰기 전에 3가지만 확인하세요", "Check these 3 things before using this resource")}
             description={t("좋아 보이는 리소스라도 프로젝트 조건과 사용권이 맞아야 안전하게 사용할 수 있습니다.", "Even a great-looking resource is only safe to use when it fits your project conditions and license.")}

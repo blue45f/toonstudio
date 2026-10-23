@@ -146,6 +146,67 @@ export function CreateStartPage() {
       </header>
 
       <section
+        data-testid="create-start-persona-guide"
+        aria-label={bt("상황별 추천 시작 방법", "Recommended start by situation")}
+        className="mt-6 rounded-2xl border border-line bg-card/70 p-4 sm:p-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-accent">
+            {bt("10초 상황별 맞춤 시작 가이드", "10-Second Quick Start Guide")}
+          </p>
+          <span className="text-xs text-fg-3">
+            {bt("어떤 방식이 맞을지 고민된다면 내 현재 상황을 골라보세요", "Not sure where to begin? Pick what matches you best")}
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <Link
+            href={`/create?intent=${MY_STORY_INTENT}`}
+            className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"
+          >
+            <span className="text-xs font-bold text-fg">
+              {bt("그림·스토리 모두 처음이에요", "New to both drawing & story")}
+            </span>
+            <span className="mt-1.5 text-[11px] font-semibold text-accent">
+              {bt("질문 답변형 초안 생성 →", "Generate draft via Q&A →")}
+            </span>
+          </Link>
+          <Link
+            href="/studio/new?lane=blank"
+            className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"
+          >
+            <span className="text-xs font-bold text-fg">
+              {bt("일단 펜으로 바로 그리고 싶어요", "Just want to start drawing now")}
+            </span>
+            <span className="mt-1.5 text-[11px] font-semibold text-accent">
+              {bt("하얀 캔버스 즉시 열기 →", "Open blank canvas now →")}
+            </span>
+          </Link>
+          <Link
+            href="/studio/templates"
+            className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"
+          >
+            <span className="text-xs font-bold text-fg">
+              {bt("웹툰·인스타툰 규격이 헷갈려요", "Unsure about canvas specs")}
+            </span>
+            <span className="mt-1.5 text-[11px] font-semibold text-accent">
+              {bt("표준 규격 프리셋 선택 →", "Pick standard spec preset →")}
+            </span>
+          </Link>
+          <Link
+            href="/studio/import"
+            className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"
+          >
+            <span className="text-xs font-bold text-fg">
+              {bt("클튜·포토샵 작업 파일이 있어요", "Have Clip Studio / PSD files")}
+            </span>
+            <span className="mt-1.5 text-[11px] font-semibold text-accent">
+              {bt("외부 작업 파일 열기 →", "Open external work files →")}
+            </span>
+          </Link>
+        </div>
+      </section>
+
+      <section
         aria-labelledby="create-start-my-story-title"
         className="mt-8 rounded-2xl border border-accent/40 bg-accent-soft p-5 sm:p-6"
       >

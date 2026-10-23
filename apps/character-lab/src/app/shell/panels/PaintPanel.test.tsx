@@ -179,4 +179,17 @@ describe("PaintPanel", () => {
       expect(screen.queryByRole("list", { name: "어긋날 수 있는 레이어" })).toBeNull();
     });
   });
+
+  it("빠른 브러시 프리셋 클릭 시 크기·불투명도·경도가 한 번에 변경된다", () => {
+    const session = createPaintSession({ layerSize: 64 });
+    render(
+      <MockLabProvider>
+        <PaintPanel session={session} />
+      </MockLabProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "세밀 선화 (4px)" }));
+    expect(session.getState().brush).toMatchObject({ radiusPx: 4, opacity: 1, hardness: 0.92 });
+    fireEvent.click(screen.getByRole("button", { name: "부드러운 음영 (36px)" }));
+    expect(session.getState().brush).toMatchObject({ radiusPx: 36, opacity: 0.45, hardness: 0.25 });
+  });
 });
