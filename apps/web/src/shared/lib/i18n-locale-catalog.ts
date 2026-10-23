@@ -94,7 +94,7 @@ export const APP_I18N_ASSET_LOCALES = [
  */
 export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> = {
   "af": 0.2217,
-  "am": 0.2248,
+  "am": 0.9808,
   "ar": 0.9808,
   "as": 0.2237,
   "az": 0.2229,
@@ -167,7 +167,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "vi": 0.9898,
   "zh": 0.9863,
   "zh-hant": 0.9863,
-  "zu": 0.2256,
+  "zu": 0.9808,
 };
 
 /**
