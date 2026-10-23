@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Tidak dapat memuat naik pemberitahuan.",
+  "notify.loadError": "Tidak dapat memuatkan pemberitahuan. Sila cuba lagi sebentar lagi.",
   "notify.empty": "Tiada pemberitahuan baru."
 }

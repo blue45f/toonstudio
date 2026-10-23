@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Dipenuhi",
-  "review.progress.binge": "Menggoda",
-  "review.progress.upcoming": "Diperancangan",
-  "review.progress.abandoned": "Diturunkan",
+  "review.progress.complete": "Selesai",
+  "review.progress.binge": "Sedang menonton maraton",
+  "review.progress.upcoming": "Dirancang",
+  "review.progress.abandoned": "Ditinggalkan",
   "review.progress.unknown": "Kemajuan tersembunyi",
   "review.spoilerRevealLabel": "Tunjukkan spoiler"
 }

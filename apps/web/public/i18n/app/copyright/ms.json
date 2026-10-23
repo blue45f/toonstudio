@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Hak cipta & Kandungan Pemberitahuan",
+  "copyright.title": "Notis Hak Cipta & Kandungan",
   "copyright.section1.title": "Sumber Kandungan & Prinsip",
-  "copyright.section1.body": "ToonStudio adalah platform indeks dan penemuan yang meringkaskan metadata katalog awam (judul, penulis, genre, dll) dari platform webtoon / novel web. Ia tidak menjadi tuan rumah atau mendistribusikan semula kandungan bab utama; bacaan hanya diarahkan melalui pautan rasmi.",
+  "copyright.section1.body": "ToonStudio ialah platform indeks dan penemuan yang meringkaskan metadata katalog awam (tajuk, penulis, genre, dll.) daripada platform webtoon/novel web. Platform ini tidak mengehos atau mengedarkan semula kandungan bab utama; pembacaan hanya diarahkan melalui pautan rasmi.",
   "copyright.section2.title": "Imej sampul",
-  "copyright.section2.body": "Imej sampul berfungsi sebagai pengenalan gambar kecil dan rujukan sampul platform asal dengan pautan sumber apabila mungkin. Penampilan boleh dipadamkan dengan serta-merta atas permintaan pemegang hak atau kemas kini dasar.",
-  "copyright.section3.title": "Metrik & Transparansi",
+  "copyright.section2.body": "Imej sampul berfungsi sebagai lakaran kecil pengenalan dan merujuk sampul platform asal dengan pautan sumber apabila boleh. Paparan boleh dilumpuhkan serta-merta atas permintaan pemegang hak atau kemas kini dasar.",
+  "copyright.section3.title": "Metrik & Ketelusan",
   "copyright.section4.title": "Pemberitahuan Hak",
-  "copyright.section5.title": "Pemberitahuan Pelanggaran Hak Cipta & Penghapusan",
-  "copyright.section5.body": "Sekiranya anda percaya metadata atau liputan melanggar hak anda, sila hantar pertanyaan dengan tajuk, URL, dan bukti pemilikan.",
-  "copyright.leaveInquiry": "Sediakan Penyelidikan →"
+  "copyright.section5.title": "Notis Pelanggaran Hak Cipta & Penurunan Kandungan",
+  "copyright.section5.body": "Sekiranya anda percaya metadata atau imej sampul melanggar hak anda, sila hantar pertanyaan dengan tajuk, URL dan bukti pemilikan.",
+  "copyright.leaveInquiry": "Hantar pertanyaan →"
 }
