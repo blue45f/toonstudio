@@ -1,0 +1,265 @@
+#!/usr/bin/env node
+// 3D 렌더 게이트 기준선 스윕 러너 — 기존 게이트를 코드 변경 없이 하나씩(직렬) 돌려
+// 선언된 GPU 레인·통과/실패/멈춤·실제 어댑터 문자열을 증거로 남긴다. 헤드풀 브라우저는 띄우지 않는다.
+//   node sweep.mjs --tree <체크아웃> --out <증거 폴더> [--only id1,id2]
+import { spawn, execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, writeFileSync, closeSync } from "node:fs";
+import http from "node:http";
+import net from "node:net";
+import { join, relative } from "node:path";
+
+const arg = (name, fallback = null) => {
+  const index = process.argv.indexOf(`--${name}`);
+  return index === -1 ? fallback : process.argv[index + 1];
+};
+const TREE = arg("tree");
+const OUT = arg("out");
+const ONLY = (arg("only") ?? "").split(",").filter(Boolean);
+if (!TREE || !OUT) throw new Error("--tree 와 --out 이 필요하다");
+const LOGS = join(OUT, "logs");
+const ART = join(OUT, "artifacts");
+for (const dir of [OUT, LOGS, ART]) mkdirSync(dir, { recursive: true });
+const RESULTS_PATH = join(OUT, "results.json");
+const PROGRESS_PATH = join(OUT, "progress.log");
+
+const progress = (message) => {
+  const line = `${new Date().toISOString()} ${message}\n`;
+  process.stderr.write(line);
+  writeFileSync(PROGRESS_PATH, line, { flag: "a" });
+};
+
+const SAFE_ENV_KEYS = ["PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "SHELL", "USER", "LOGNAME", "PNPM_HOME", "COREPACK_HOME", "XDG_CACHE_HOME"];
+const baseEnv = Object.fromEntries(SAFE_ENV_KEYS.flatMap((key) => (process.env[key] === undefined ? [] : [[key, process.env[key]]])));
+
+const freePort = () => new Promise((resolve, reject) => {
+  const server = net.createServer();
+  server.listen(0, "127.0.0.1", () => {
+    const { port } = server.address();
+    server.close(() => resolve(port));
+  });
+  server.on("error", reject);
+});
+
+const art = (name) => join(ART, name);
+const CFT_EXE = process.env.CFT_EXE ?? join(process.env.HOME ?? "", "Library/Caches/ms-playwright/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing");
+const GATES = [
+  { id: "quality-soak-smoke", script: "(tsx) verify-studio-3d-quality-soak.mts", cmd: ["pnpm", "exec", "tsx", "scripts/verify-studio-3d-quality-soak.mts"],
+    env: { TOONSPECTRUM_SOAK_3D_MINUTES: "0.1", TOONSPECTRUM_SOAK_3D_OUT: art("quality-soak") }, timeoutSec: 420,
+    declaredLane: "기본 launch(채널·플래그 없음) + 실GPU 렌더러 정규식 단언(apple|nvidia|amd|intel|…)", notes: "0.1분 스모크 — 30분 통과로 보고하지 않는다" },
+  { id: "scene3d-capture-resources", script: "verify:studio-scene3d-capture-resources", cmd: ["node", "scripts/verify-studio-scene3d-capture-resources.mjs"],
+    env: { TOONSPECTRUM_VERIFY_DIR: art("scene3d-capture-resources") }, timeoutSec: 600,
+    declaredLane: "SCENE3D_CAPTURE_GPU_LANE 기본 hardware (--enable-unsafe-webgpu)" },
+  { id: "scene3d-specialists-browser", script: "verify:studio-3d-specialists:browser", cmd: ["node", "scripts/verify-studio-scene3d-specialists.mjs"],
+    env: { TOONSPECTRUM_VERIFY_DIR: art("scene3d-specialists") }, timeoutSec: 900,
+    declaredLane: "SCENE3D_SPECIALISTS_GPU_LANE 미설정 = hardware" },
+  { id: "scene3d-tiled-browser", script: "verify:studio-3d-tiled:browser", cmd: ["node", "scripts/verify-studio-scene3d-tiled-output.mjs"],
+    env: { TOONSPECTRUM_VERIFY_DIR: art("scene3d-tiled") }, timeoutSec: 900,
+    declaredLane: "SCENE3D_CAPTURE_GPU_LANE 기본 hardware" },
+  { id: "scene3d-inplace-browser", script: "verify:studio-3d-inplace:browser", cmd: ["node", "scripts/verify-studio-scene3d-inplace.mjs"],
+    env: { TOONSPECTRUM_VERIFY_DIR: art("scene3d-inplace") }, timeoutSec: 900,
+    declaredLane: "swiftshader 고정(--use-angle=swiftshader)" },
+  { id: "character-shaper", script: "verify:studio-character-shaper", cmd: ["pnpm", "exec", "tsx", "scripts/verify-studio-character-shaper.mts"],
+    env: { TOONSPECTRUM_CHARACTER_SHAPER_VERIFY_DIR: art("character-shaper") }, timeoutSec: 900,
+    declaredLane: "TOONSPECTRUM_CHARACTER_GPU_LANE 기본 native(darwin) — 플래그 --no-sandbox 뿐, executablePath=/opt/pw-browsers/chromium 없으면 Playwright 번들" },
+  { id: "character-production-framing", script: "verify:studio-character-production-framing", cmd: ["pnpm", "exec", "tsx", "scripts/verify-character-production-framing.mts"],
+    needsPreview: true, env: { TOONSPECTRUM_VERIFY_DIR: art("character-production-framing") }, timeoutSec: 600,
+    declaredLane: "native(darwin): --use-angle=metal --ignore-gpu-blocklist --enable-gpu, 렌더러 실GPU 단언" },
+  { id: "bg3d-physics", script: "verify:studio-bg3d-physics", cmd: ["pnpm", "exec", "tsx", "scripts/verify-studio-bg3d-physics.mts"],
+    env: { TOONSPECTRUM_BG3D_PHYSICS_VERIFY_DIR: art("bg3d-physics") }, timeoutSec: 900,
+    declaredLane: "기본 launch + --no-sandbox, WebGL2 명시 선택" },
+  { id: "bg3d-inapp-editor", script: "verify:studio-bg3d-inapp-editor", cmd: ["pnpm", "exec", "tsx", "scripts/verify-studio-bg3d-inapp-editor.mts"],
+    env: { TOONSPECTRUM_BG3D_INAPP_VERIFY_DIR: art("bg3d-inapp-editor") }, timeoutSec: 900,
+    declaredLane: "기본 launch + --no-sandbox (GPU 플래그 없음)" },
+  { id: "studio-3d-console", script: "verify:studio-3d-console", cmd: ["pnpm", "exec", "tsx", "scripts/verify-studio-3d-console.mts"],
+    env: {}, timeoutSec: 1800,
+    declaredLane: "darwin: STUDIO_3D_WEBGPU_DARWIN_NATIVE_LAUNCH_ARGS(WebGPU 샤드) + channel chromium(콘솔 패스)" },
+  { id: "studio-3d-visual-e2e", script: "verify:studio-3d-visual", cmd: ["pnpm", "exec", "playwright", "test", "e2e/studio-3d-visual-verification.spec.ts"],
+    env: {}, timeoutSec: 1800,
+    declaredLane: "playwright.config.ts: channel chrome + SwiftShader 플래그(--use-angle=swiftshader) 고정" },
+  { id: "web-authoring-e2e", script: "verify:studio-3d-web-authoring:browser", cmd: ["pnpm", "exec", "playwright", "test", "--config", "playwright.studio-web-authoring.config.ts"],
+    env: {}, timeoutSec: 1800,
+    declaredLane: "playwright.studio-web-authoring.config.ts: channel chrome + SwiftShader 플래그 고정" },
+  { id: "character-lab-browser-probe", script: "character-lab browser-probe", prep: ["pnpm", "--filter", "@toonstudio/character-lab", "build"],
+    cmd: ["node", "apps/character-lab/scripts/browser-probe.mjs", "--out", art("character-lab/probe.json"), "--shots", art("character-lab/shots")],
+    env: { CHARACTER_LAB_BROWSER_PROBE: "1" }, timeoutSec: 900,
+    declaredLane: "--software 미지정 = 기본 launch(--enable-unsafe-webgpu --ignore-gpu-blocklist), 백엔드 webgpu·webgl2 각각" },
+  { id: "character-lab-browser-probe-metal", script: "character-lab browser-probe (CHARACTER_LAB_CHROMIUM_PATH=Chrome for Testing)",
+    cmd: ["node", "apps/character-lab/scripts/browser-probe.mjs", "--out", art("character-lab-metal/probe.json"), "--shots", art("character-lab-metal/shots")],
+    env: { CHARACTER_LAB_BROWSER_PROBE: "1", CHARACTER_LAB_CHROMIUM_PATH: CFT_EXE }, timeoutSec: 900,
+    declaredLane: "전체 Chrome for Testing 를 명시(CHARACTER_LAB_CHROMIUM_PATH) = macOS 네이티브 Metal 레인, 백엔드 webgpu·webgl2 각각",
+    notes: "기본 실행(headless shell)은 소프트웨어 어댑터라 WebGPU 가 차단된다 — 이 항목이 실GPU 레인" },
+  { id: "vrm-hand-visual-audit", script: "(tsx) verify-vrm-hand-visual-audit.mts", cmd: ["pnpm", "exec", "tsx", "scripts/verify-vrm-hand-visual-audit.mts"],
+    env: {}, timeoutSec: 900,
+    declaredLane: "swiftshader 고정(--use-angle=swiftshader)" },
+  { id: "bg3d-webgpu-engine", script: "verify:studio-bg3d-webgpu-engine", cmd: ["node", "scripts/verify-studio-bg3d-webgpu-engine.mjs"],
+    env: { TOONSPECTRUM_BG3D_WEBGPU_VERIFY_DIR: art("bg3d-webgpu-engine") }, timeoutSec: 900,
+    declaredLane: "swiftshader-determinism 고정(GPU_LANE 상수) — macOS 에서 requestDevice 가 걸릴 수 있다는 주석 있음" },
+];
+const NOT_RUN = [
+  { id: "bg3d-webgpu-rotation", script: "verify:studio-bg3d-webgpu-rotation", reason: "playwright.config.ts 의 gizmo 레인은 headless:false(헤드풀 창)다. 사용자 화면을 점유하므로 D14 결정 전에는 돌리지 않는다." },
+  { id: "bg3d-webgpu-rotation-dev", script: "verify:studio-bg3d-webgpu-rotation:dev", reason: "위와 같은 헤드풀 gizmo 레인(dev 서버판)." },
+  { id: "character-lab-kit-preview", script: "character-lab scripts/kit-preview.mjs", reason: "독립 게이트가 아니라 GLB 경로를 받는 도구이고 WebGL2 SwiftShader 플래그가 고정이다." },
+];
+
+function listProcesses() {
+  const text = execFileSync("ps", ["-axo", "pid=,ppid=,command="], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+  return text.split("\n").filter(Boolean).map((line) => {
+    const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/u);
+    return match ? { pid: Number(match[1]), ppid: Number(match[2]), command: match[3] } : null;
+  }).filter(Boolean);
+}
+const STRAY_PATTERN = /ms-playwright|playwright_chromiumdev_profile|\/ts-sweep\/|chrome-headless-shell/u;
+function killStrays(before) {
+  const killed = [];
+  for (const proc of listProcesses()) {
+    if (before.has(proc.pid) || proc.pid === process.pid || !STRAY_PATTERN.test(proc.command)) continue;
+    try { process.kill(proc.pid, "SIGKILL"); killed.push(proc.pid); } catch { /* 이미 종료 */ }
+  }
+  return killed;
+}
+const killGroup = (pid, signal) => { try { process.kill(-pid, signal); } catch { /* 이미 종료 */ } };
+
+function runProcess({ cmd, env, timeoutSec, logPath }) {
+  return new Promise((resolve) => {
+    const fd = openSync(logPath, "w");
+    const started = Date.now();
+    const child = spawn(cmd[0], cmd.slice(1), { cwd: TREE, env: { ...baseEnv, ...env }, stdio: ["ignore", fd, fd], detached: true });
+    let timedOut = false;
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      closeSync(fd);
+      resolve({ ...result, timedOut, durationSec: Math.round((Date.now() - started) / 100) / 10 });
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      killGroup(child.pid, "SIGTERM");
+      setTimeout(() => killGroup(child.pid, "SIGKILL"), 10_000);
+    }, timeoutSec * 1000);
+    child.on("error", (error) => finish({ exitCode: null, signal: null, spawnError: String(error.message) }));
+    child.on("exit", (code, signal) => finish({ exitCode: code, signal }));
+  });
+}
+
+const redact = (text) => text
+  .replaceAll(TREE, "<sweep-tree>")
+  .replaceAll(OUT, "<sweep-out>")
+  .replaceAll(process.env.HOME ?? "/nonexistent-home", "~");
+const tailLines = (path, count) => {
+  try { return redact(readFileSync(path, "utf8")).trimEnd().split("\n").slice(-count); } catch { return []; }
+};
+
+const ADAPTER_PATTERNS = [
+  /ANGLE \((?:Apple|Google|Intel|NVIDIA|AMD|ATI|Microsoft)[^)]*\)[^"\\\n]{0,80}/gu,
+  /SwiftShader[^"\\\n,]{0,60}/giu,
+  /Apple M\d[^"\\\n,]{0,20}/gu,
+  /"(?:renderer|unmaskedRenderer|rendererString|adapterDescription|description|architecture|vendor|gpuLane|lane|actualDevice)"\s*:\s*"[^"]{1,120}"/gu,
+];
+function collectAdapterEvidence(texts) {
+  const found = new Set();
+  for (const text of texts) {
+    for (const pattern of ADAPTER_PATTERNS) {
+      for (const match of text.matchAll(pattern)) {
+        found.add(redact(match[0]).trim());
+        if (found.size >= 24) return [...found];
+      }
+    }
+  }
+  return [...found];
+}
+function walkFiles(dir, limit = 400) {
+  const files = [];
+  const stack = [dir];
+  while (stack.length > 0 && files.length < limit) {
+    const current = stack.pop();
+    let entries;
+    try { entries = readdirSync(current, { withFileTypes: true }); } catch { continue; }
+    for (const entry of entries) {
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) stack.push(full); else files.push(full);
+    }
+  }
+  return files;
+}
+function artifactSummary(dir) {
+  if (!existsSync(dir)) return { files: [], jsonTexts: [] };
+  const files = walkFiles(dir);
+  const jsonTexts = [];
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try { if (statSync(file).size <= 2_000_000) jsonTexts.push(readFileSync(file, "utf8")); } catch { /* 건너뜀 */ }
+  }
+  return { files: files.map((file) => relative(dir, file)).sort(), jsonTexts };
+}
+
+async function startPreview() {
+  const port = await freePort();
+  const logPath = join(LOGS, `preview-${port}.log`);
+  const fd = openSync(logPath, "w");
+  const child = spawn("pnpm", ["exec", "vite", "preview", "--config", "apps/web/vite.config.ts", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
+    { cwd: TREE, env: baseEnv, stdio: ["ignore", fd, fd], detached: true });
+  const origin = `http://127.0.0.1:${port}`;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const ok = await new Promise((resolve) => {
+      const request = http.get(`${origin}/`, (response) => { response.resume(); resolve(response.statusCode === 200); });
+      request.on("error", () => resolve(false));
+      request.setTimeout(2000, () => { request.destroy(); resolve(false); });
+    });
+    if (ok) return { origin, stop: () => { killGroup(child.pid, "SIGTERM"); setTimeout(() => killGroup(child.pid, "SIGKILL"), 3000); closeSync(fd); } };
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  killGroup(child.pid, "SIGKILL");
+  throw new Error("vite preview 가 60초 안에 응답하지 않았다");
+}
+
+const results = existsSync(RESULTS_PATH) ? JSON.parse(readFileSync(RESULTS_PATH, "utf8")).gates ?? [] : [];
+const saveResults = () => writeFileSync(RESULTS_PATH, `${JSON.stringify({
+  generatedAt: new Date().toISOString(), platform: process.platform, arch: process.arch,
+  treeHead: (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: TREE, encoding: "utf8" }).trim(); } catch { return null; } })(),
+  gates: results, notRun: NOT_RUN,
+}, null, 2)}\n`);
+
+for (const gate of GATES) {
+  if (ONLY.length > 0 && !ONLY.includes(gate.id)) continue;
+  progress(`START ${gate.id}`);
+  const before = new Set(listProcesses().map((proc) => proc.pid));
+  const entry = { id: gate.id, script: gate.script, command: gate.cmd.join(" "), envOverrides: Object.keys(gate.env ?? {}), declaredLane: gate.declaredLane, notes: gate.notes ?? null };
+  let preview = null;
+  try {
+    if (gate.prep) {
+      const prep = await runProcess({ cmd: gate.prep, env: {}, timeoutSec: 600, logPath: join(LOGS, `${gate.id}.prep.log`) });
+      entry.prep = { command: gate.prep.join(" "), exitCode: prep.exitCode, durationSec: prep.durationSec };
+      if (prep.exitCode !== 0) { entry.outcome = "prep-failed"; }
+    }
+    if (entry.outcome !== "prep-failed") {
+      const env = { ...(gate.env ?? {}) };
+      if (gate.needsPreview) { preview = await startPreview(); env.TOONSPECTRUM_VERIFY_ORIGIN = preview.origin; }
+      const logPath = join(LOGS, `${gate.id}.log`);
+      const run = await runProcess({ cmd: gate.cmd, env, timeoutSec: gate.timeoutSec, logPath });
+      entry.exitCode = run.exitCode;
+      entry.signal = run.signal ?? null;
+      entry.durationSec = run.durationSec;
+      entry.timeoutSec = gate.timeoutSec;
+      entry.outcome = run.spawnError ? "error" : run.timedOut ? "hang" : run.exitCode === 0 ? "pass" : "fail";
+      const { files, jsonTexts } = artifactSummary(art(gate.id === "character-lab-browser-probe" ? "character-lab" : gate.id));
+      entry.artifactFileCount = files.length;
+      entry.artifactSample = files.slice(0, 12);
+      entry.adapterEvidence = collectAdapterEvidence([readFileSync(logPath, "utf8"), ...jsonTexts]);
+      entry.logTail = tailLines(logPath, 14);
+    }
+  } catch (error) {
+    entry.outcome = "error";
+    entry.error = redact(String(error?.message ?? error));
+  } finally {
+    preview?.stop();
+    entry.strayProcessesKilled = killStrays(before).length;
+  }
+  const index = results.findIndex((existing) => existing.id === entry.id);
+  if (index === -1) results.push(entry); else results[index] = entry;
+  saveResults();
+  progress(`END   ${gate.id} -> ${entry.outcome} (${entry.durationSec ?? "-"}s)`);
+}
+saveResults();
+progress("SWEEP-DONE");

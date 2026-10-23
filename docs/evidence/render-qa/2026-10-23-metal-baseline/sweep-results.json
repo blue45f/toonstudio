@@ -1,0 +1,571 @@
+{
+  "generatedAt": "2026-10-23T01:36:14.569Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "treeHead": "db522ce2bcbbe273eb66105a1521aebcbd7963ac",
+  "gates": [
+    {
+      "id": "quality-soak-smoke",
+      "script": "(tsx) verify-studio-3d-quality-soak.mts",
+      "command": "pnpm exec tsx scripts/verify-studio-3d-quality-soak.mts",
+      "declaredLane": "기본 launch(채널·플래그 없음) + 실GPU 렌더러 정규식 단언(apple|nvidia|amd|intel|…)",
+      "outcome": "pass",
+      "exitCode": 0,
+      "durationSec": 24.3,
+      "timeoutSec": 420,
+      "cause": {
+        "kind": "pass",
+        "actualLane": "Metal (ANGLE Metal Renderer: Apple M2 Max)",
+        "summaryKo": "0.1분 스모크 4주기·컨텍스트 손실 0·정리 완료. result.json 상태는 smoke-passed-duration-not-qualified 라 30분 soak 통과 증거가 아니다.",
+        "checked": "result.json 의 gpu.renderer, cycles, cleanupComplete 를 직접 읽음",
+        "declaredShort": "기본(실GPU 렌더러 단언)",
+        "actualShort": "Metal (Apple M2 Max)",
+        "noteShort": "0.1분 스모크 4주기, 30분 통과 아님"
+      },
+      "adapterEvidence": [
+        "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "\"renderer\": \"ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)\"",
+        "\"vendor\": \"Google Inc. (Apple)\""
+      ],
+      "artifactCount": 1088,
+      "logTail": [
+        "[studio-3d-quality-soak] initializing cycles=0 elapsedMs=0",
+        "[studio-3d-quality-soak] running cycles=3 elapsedMs=62.110000014305115",
+        "[studio-3d-quality-soak] SMOKE ONLY <sweep-out>/artifacts/quality-soak/result.json"
+      ],
+      "notes": "0.1분 스모크 — 30분 통과로 보고하지 않는다"
+    },
+    {
+      "id": "scene3d-capture-resources",
+      "script": "verify:studio-scene3d-capture-resources",
+      "command": "node scripts/verify-studio-scene3d-capture-resources.mjs",
+      "declaredLane": "SCENE3D_CAPTURE_GPU_LANE 기본 hardware (--enable-unsafe-webgpu)",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 121.3,
+      "timeoutSec": 600,
+      "cause": {
+        "kind": "gate-drift",
+        "actualLane": "미확인 (페이지가 증명을 내기 전에 멈춤)",
+        "summaryKo": "하니스 페이지가 react 모듈을 못 불러온다: 'The requested module .../react/index.js does not provide an export named default'. optimizeDeps.include 에 react 가 없어 `window.__scene3dCaptureProof` 가 끝내 생기지 않고 120초 뒤 waitForFunction 타임아웃. GPU 와 무관한 하니스 결함이다.",
+        "checked": "같은 게이트의 계측 사본(콘솔·pageerror 출력, 대기 45초)을 저장소 밖에서 돌려 pageerror 를 직접 확인, 사본은 삭제",
+        "declaredShort": "hardware(기본)",
+        "actualShort": "미확인(페이지가 먼저 죽음)",
+        "noteShort": "react 모듈 로드 실패 → 120초 타임아웃"
+      },
+      "adapterEvidence": [],
+      "artifactCount": 12,
+      "logTail": [
+        "    ^",
+        "",
+        "page.waitForFunction: Timeout 120000ms exceeded.",
+        "    at <sweep-tree>/scripts/verify-studio-scene3d-capture-resources.mjs:43:14 {",
+        "  log: [],",
+        "  name: 'TimeoutError'",
+        "}",
+        "Node.js v24.16.0"
+      ],
+      "notes": null
+    },
+    {
+      "id": "scene3d-specialists-browser",
+      "script": "verify:studio-3d-specialists:browser",
+      "command": "node scripts/verify-studio-scene3d-specialists.mjs",
+      "declaredLane": "SCENE3D_SPECIALISTS_GPU_LANE 미설정 = hardware",
+      "outcome": "pass",
+      "exitCode": 0,
+      "durationSec": 17.8,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "pass",
+        "actualLane": "SwiftShader (ANGLE Vulkan SwiftShader, WebGL2)",
+        "summaryKo": "선언은 hardware(SCENE3D_SPECIALISTS_GPU_LANE 미설정)지만 launch 에 executablePath·channel 이 없어 기본 headless shell 로 떠 실제 렌더러는 SwiftShader 다. 통과는 하되 Metal 증거가 아니다.",
+        "checked": "로그의 렌더러 문자열 (ANGLE SwiftShader), 레인 프로브의 기본 headless shell 결과와 일치",
+        "declaredShort": "hardware(기본)",
+        "actualShort": "SwiftShader",
+        "noteShort": "선언과 실제가 다름"
+      },
+      "adapterEvidence": [
+        "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "SwiftShader Device (LLVM 10.0.0) (0x0000C0DE))",
+        "SwiftShader driver)",
+        "\"renderer\": \"Spark 2.2.0 / Three WebGL2\""
+      ],
+      "artifactCount": 88,
+      "logTail": [
+        "  \"productionWorkerCspApplied\": false,",
+        "  \"requestedGpuLane\": \"default\",",
+        "  \"errors\": [],",
+        "  \"warnings\": [",
+        "    \"BVH: \\\"maxLeafSize\\\" option has been deprecated. Use \\\"targetLeafSize\\\", instead.\",",
+        "    \"BVH: \\\"maxLeafSize\\\" option has been deprecated. Use \\\"targetLeafSize\\\", instead.\"",
+        "  ]",
+        "}"
+      ],
+      "notes": null
+    },
+    {
+      "id": "scene3d-tiled-browser",
+      "script": "verify:studio-3d-tiled:browser",
+      "command": "node scripts/verify-studio-scene3d-tiled-output.mjs",
+      "declaredLane": "SCENE3D_CAPTURE_GPU_LANE 기본 hardware",
+      "outcome": "pass",
+      "exitCode": 0,
+      "durationSec": 17.7,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "pass",
+        "actualLane": "Metal WebGPU 어댑터 (vendor apple, architecture metal-3, isFallbackAdapter false)",
+        "summaryKo": "lane=hardware, status ok. 이번 스윕에서 실GPU 어댑터 증거가 JSON 으로 남은 두 게이트 중 하나다(다른 하나는 console 게이트의 WebGPU 샤드).",
+        "checked": "산출 JSON 의 vendor·architecture·isFallbackAdapter·lane 필드",
+        "declaredShort": "hardware(기본)",
+        "actualShort": "Metal WebGPU (apple/metal-3)",
+        "noteShort": "isFallbackAdapter false"
+      },
+      "adapterEvidence": [
+        "\"vendor\": \"apple\"",
+        "\"architecture\": \"metal-3\"",
+        "\"isFallbackAdapter\": false",
+        "\"lane\": \"hardware\""
+      ],
+      "artifactCount": 27,
+      "logTail": [
+        "    \"isFallbackAdapter\": false",
+        "  \"productionWorker\": null,",
+        "  \"lane\": \"hardware\",",
+        "  \"browserVersion\": \"156.0.8078.4\",",
+        "  \"workerCspApplied\": false,",
+        "  \"errors\": [],",
+        "  \"warnings\": []",
+        "}"
+      ],
+      "notes": null
+    },
+    {
+      "id": "scene3d-inplace-browser",
+      "script": "verify:studio-3d-inplace:browser",
+      "command": "node scripts/verify-studio-scene3d-inplace.mjs",
+      "declaredLane": "swiftshader 고정(--use-angle=swiftshader)",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 11.7,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "gate-drift",
+        "actualLane": "SwiftShader (스크립트에 --use-angle=swiftshader 고정)",
+        "summaryKo": "안쪽 specialists 작업(lod)은 status ok 인데 바깥 게이트가 콘솔 오류 3건(404)을 실패로 센다. 404 의 정체는 /assets/3d/environments/bundle-v1/theme-packs.json — 하니스 Vite 서버가 publicDir:false 라 새로 생긴 런타임 fetch 를 못 채운다.",
+        "checked": "같은 게이트의 계측 사본(response ≥ 400 출력)을 저장소 밖에서 돌려 URL 확인, 사본은 삭제. theme-packs.json 은 2026-10-21·22 Creator Bundle 작업에서 생긴 파일",
+        "declaredShort": "swiftshader 고정",
+        "actualShort": "SwiftShader",
+        "noteShort": "theme-packs.json 404 3건을 오류로 셈"
+      },
+      "adapterEvidence": [],
+      "artifactCount": 48,
+      "logTail": [
+        "    \"Failed to load resource: the server responded with a status of 404 (Not Found)\",",
+        "    \"Failed to load resource: the server responded with a status of 404 (Not Found)\"",
+        "  ],",
+        "  \"warnings\": [",
+        "    \"[.WebGL-0x1040043e400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels\",",
+        "    \"[.WebGL-0x1040043e400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)\"",
+        "  ]",
+        "}"
+      ],
+      "notes": null
+    },
+    {
+      "id": "character-shaper",
+      "script": "verify:studio-character-shaper",
+      "command": "pnpm exec tsx scripts/verify-studio-character-shaper.mts",
+      "declaredLane": "TOONSPECTRUM_CHARACTER_GPU_LANE 기본 native(darwin) — 플래그 --no-sandbox 뿐, executablePath=/opt/pw-browsers/chromium 없으면 Playwright 번들",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 50.8,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "gate-drift",
+        "actualLane": "Metal (ANGLE Metal Renderer: Apple M2 Max), lane native, 화면에 캐릭터가 실제로 그려짐",
+        "summaryKo": "렌더러 증명과 뷰포트 픽셀 검사(고유 색 427)까지 통과한 뒤 `[data-character-shaper-rail] button` 중 '헤어' 를 못 찾아 30초 타임아웃. 데스크톱의 주 카테고리 레일은 `data-character-shaper-rail` 속성을 모바일일 때만 단다(CharacterShaperCategoryRail.tsx:47) — UI 개편 뒤 게이트가 낡았다.",
+        "checked": "남긴 스크린샷에서 한글 UI·캐릭터·상단 카테고리 탭(얼굴·헤어·의상·체형·포즈·소품) 확인, 소스에서 속성 조건 확인",
+        "declaredShort": "native(darwin 기본)",
+        "actualShort": "Metal WebGL2 (Apple M2 Max)",
+        "noteShort": "'헤어' 레일 버튼을 못 찾음"
+      },
+      "adapterEvidence": [
+        "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "\"renderer\": \"ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)\"",
+        "\"lane\": \"native\""
+      ],
+      "artifactCount": 3,
+      "logTail": [
+        "  - waiting for locator('[data-character-shaper=\"true\"] [data-character-shaper-rail] button').filter({ hasText: '헤어' }).first()",
+        "",
+        "    at main (<sweep-tree>/scripts/verify-studio-character-shaper.mts:377:20) {",
+        "  log: [",
+        "    `  - waiting for locator('[data-character-shaper=\"true\"] [data-character-shaper-rail] button').filter({ hasText: '헤어' }).first()`",
+        "  ],",
+        "  name: 'TimeoutError'",
+        "}"
+      ],
+      "notes": null
+    },
+    {
+      "id": "character-production-framing",
+      "script": "verify:studio-character-production-framing",
+      "command": "pnpm exec tsx scripts/verify-character-production-framing.mts",
+      "declaredLane": "native(darwin): --use-angle=metal --ignore-gpu-blocklist --enable-gpu, 렌더러 실GPU 단언",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 39.6,
+      "timeoutSec": 600,
+      "cause": {
+        "kind": "gate-drift",
+        "actualLane": "Metal (ANGLE Metal Renderer: Apple M2 Max), gpuLane native",
+        "summaryKo": "렌더러 단언까지 통과한 뒤 getByLabel('파일 내보내기 해상도') 를 30초 동안 못 찾는다. 이 select 는 출력 도크(CharacterShaperOutputDock.tsx:426) 안에 있고 개편된 화면에서는 '출력 설정' 을 열어야 보인다 — 게이트가 그 단계를 모른다.",
+        "checked": "evidence JSON 의 error, 소스의 aria-label 위치. '출력 설정' 을 열어야 한다는 점은 스크린샷 하단 막대로 추정(직접 클릭해 보지는 않음)",
+        "declaredShort": "native",
+        "actualShort": "Metal WebGL2 (Apple M2 Max)",
+        "noteShort": "'파일 내보내기 해상도'를 못 찾음"
+      },
+      "adapterEvidence": [
+        "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "\"renderer\": \"ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)\"",
+        "\"gpuLane\": \"native\""
+      ],
+      "artifactCount": 2,
+      "logTail": [
+        "  \"origin\": \"http://127.0.0.1:64992\",",
+        "  \"browser\": \"156.0.8078.4\",",
+        "  \"renderer\": \"ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)\",",
+        "  \"gpuLane\": \"native\",",
+        "  \"status\": \"failed\",",
+        "  \"error\": \"locator.selectOption: Timeout 30000ms exceeded.\\nCall log:\\n  - waiting for locator('[data-character-shaper=\\\"true\\\"]').getByLabel('파일 내보내기 해상도')\\n\\n    at <anonymous> (<sweep-tree>/scripts/verify-character-production-framing.mt",
+        "  \"errors\": []",
+        "}"
+      ],
+      "notes": null
+    },
+    {
+      "id": "bg3d-physics",
+      "script": "verify:studio-bg3d-physics",
+      "command": "pnpm exec tsx scripts/verify-studio-bg3d-physics.mts",
+      "declaredLane": "기본 launch + --no-sandbox, WebGL2 명시 선택",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 53.4,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "gate-drift",
+        "actualLane": "기본 headless shell 구성이라 SwiftShader 로 추정 (GL 을 쓰기 전에 실패해 렌더러 기록 없음)",
+        "summaryKo": "세 사례(desktop·mobile-390·mobile-320) 모두 `[data-studio-creative-starter=\"true\"]` 가 5초 안에 안 보인다. 진단 프로브에서도 `/studio/canvas?preset=illustration` 8초 뒤 시작 패널이 0개였다(이 게이트의 진입 URL 과 같은 조건은 아니다). 야간 CI 도 같은 지점에서 같은 실패.",
+        "checked": "야간 CI 런 39863986390 의 실패 메시지와 문자열 단위로 같음",
+        "declaredShort": "기본 launch (WebGL2)",
+        "actualShort": "SwiftShader로 추정(기록 없음)",
+        "noteShort": "creative-starter 안 보임(CI 동일)"
+      },
+      "adapterEvidence": [],
+      "artifactCount": 4,
+      "logTail": [
+        "    }",
+        "  ]",
+        "}",
+        "[verify-bg3d-physics] FATAL: Error: 3 BG3D physics browser case(s) failed: desktop, mobile-390, mobile-320",
+        "    at assertCondition (<sweep-tree>/scripts/verify-studio-bg3d-physics.mts:138:25)",
+        "    at main (<sweep-tree>/scripts/verify-studio-bg3d-physics.mts:741:5)",
+        "    at runNextTicks (node:internal/process/task_queues:65:5)",
+        "    at process.processImmediate (node:internal/timers:472:9)"
+      ],
+      "notes": null
+    },
+    {
+      "id": "bg3d-inapp-editor",
+      "script": "verify:studio-bg3d-inapp-editor",
+      "command": "pnpm exec tsx scripts/verify-studio-bg3d-inapp-editor.mts",
+      "declaredLane": "기본 launch + --no-sandbox (GPU 플래그 없음)",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 345.1,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "gate-drift",
+        "actualLane": "기본 headless shell 구성이라 SwiftShader 로 추정 (렌더러 기록 없음)",
+        "summaryKo": "다섯 프로필 모두 3D 편집기를 못 연다: `#bg3d-tab-view` 가 30초 안에 안 보인다. 야간 CI 도 같은 지점에서 같은 실패. 3D 진입 경로가 접힘(고급 도구)·레일 변경으로 바뀐 것과 같은 계열로 보이나 이 게이트의 진입 코드는 따로 확인하지 않았다(추정).",
+        "checked": "야간 CI 런 39863986390 의 실패 메시지와 같음",
+        "declaredShort": "기본 launch",
+        "actualShort": "SwiftShader로 추정(기록 없음)",
+        "noteShort": "#bg3d-tab-view 안 보임(CI 동일)"
+      },
+      "adapterEvidence": [
+        "\"architecture\": \"arm64\""
+      ],
+      "artifactCount": 7,
+      "logTail": [
+        "  \"failures\": [",
+        "    \"kakaotalk-android-360: could not drive the 3D editor: locator.waitFor: Timeout 30000ms exceeded.\\nCall log:\\n  - waiting for locator('#bg3d-tab-view').first() to be visible\\n\",",
+        "    \"instagram-ios-390: could not drive the 3D editor: locator.waitFor: Timeout 30000ms exceeded.\\nCall log:\\n  - waiting for locator('#bg3d-tab-view').first() to be visible\\n\",",
+        "    \"naver-android-412: could not drive the 3D editor: locator.waitFor: Timeout 30000ms exceeded.\\nCall log:\\n  - waiting for locator('#bg3d-tab-view').first() to be visible\\n\",",
+        "    \"framing-desktop: locator.waitFor: Timeout 30000ms exceeded.\\nCall log:\\n  - waiting for locator('#bg3d-tab-view').first() to be visible\\n\",",
+        "    \"framing-mobile: locator.waitFor: Timeout 30000ms exceeded.\\nCall log:\\n  - waiting for locator('#bg3d-tab-view').first() to be visible\\n\"",
+        "  \"evidenceDirectory\": \"<sweep-out>/artifacts/bg3d-inapp-editor\"",
+        "}"
+      ],
+      "notes": null
+    },
+    {
+      "id": "studio-3d-console",
+      "script": "verify:studio-3d-console",
+      "command": "pnpm exec tsx scripts/verify-studio-3d-console.mts",
+      "declaredLane": "darwin: STUDIO_3D_WEBGPU_DARWIN_NATIVE_LAUNCH_ARGS(WebGPU 샤드) + channel chromium(콘솔 패스)",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 54.7,
+      "timeoutSec": 1800,
+      "cause": {
+        "kind": "gate-drift",
+        "actualLane": "WebGPU 샤드: Metal 네이티브(apple/metal-3, isFallbackAdapter false) — 헤드풀 Chromium; 콘솔 패스: channel chromium",
+        "summaryKo": "WebGPU 증명 샤드 2개(babylon-artifact-parity, magic-layer-alignment)는 Metal 에서 PASS. 그 뒤 Studio 콘솔 패스가 메뉴 `삽입` 안의 '인물·포즈 편집'을 못 찾아 30초 타임아웃. 현재 삽입 메뉴는 기본 항목(말풍선·텍스트·대사 일괄 편집…·대사 번역…·현지화 QA…)과 '고급 도구 펼치기 (7개)'뿐이고, 펼치면 요소·도형·장면 도우미·기본 데생 인형·인물·포즈 편집·캐릭터 만들기·정밀 3D 모델링…이 나온다 — 점진 공개로 바뀌었는데 게이트가 접힘을 펴지 않는다. 야간 CI 도 같은 지점에서 같은 실패. 이 게이트는 darwin 에서 WebGPU 샤드를 headless:false(창이 뜸)로 띄운다.",
+        "checked": "로그의 shard PASS 줄·adapter 진단 JSON, 소스의 launch 옵션(verify-studio-3d-console.mts:3207-3215), 야간 CI 로그, 빌드된 앱의 삽입 메뉴 DOM 을 직접 열어 덤프(펼치기 전후)",
+        "declaredShort": "darwin 네이티브 (WebGPU 샤드)",
+        "actualShort": "WebGPU 샤드 Metal, 헤드풀 창",
+        "noteShort": "샤드 2 PASS 뒤 삽입 메뉴 3D 항목이 접힘 안(CI 동일)"
+      },
+      "adapterEvidence": [
+        "\"architecture\":\"metal-3\"",
+        "\"isFallbackAdapter\":false",
+        "\"vendor\":\"apple\""
+      ],
+      "artifactCount": 0,
+      "logTail": [
+        "[verify-studio-3d-console] static preview backend unavailable (not an API readiness pass): Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://127.0.0.1:65341/api/studio-realtime/tickets",
+        "[verify-studio-3d-console] static preview backend unavailable (not an API readiness pass): Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://127.0.0.1:65341/api/health/capabilities",
+        "locator.click: Timeout 30000ms exceeded.",
+        "Call log:",
+        "  - waiting for locator('[role=\"menu\"][aria-label=\"삽입\"]').getByRole('menuitem', { name: '인물·포즈 편집', exact: true })",
+        "",
+        "    at run (<sweep-tree>/scripts/verify-studio-3d-console.mts:1078:80)",
+        "    at async main (<sweep-tree>/scripts/verify-studio-3d-console.mts:3321:5)"
+      ],
+      "notes": null
+    },
+    {
+      "id": "studio-3d-visual-e2e",
+      "script": "verify:studio-3d-visual",
+      "command": "pnpm exec playwright test e2e/studio-3d-visual-verification.spec.ts",
+      "declaredLane": "playwright.config.ts: channel chrome + SwiftShader 플래그(--use-angle=swiftshader) 고정",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 101.5,
+      "timeoutSec": 1800,
+      "cause": {
+        "kind": "gate-drift",
+        "actualLane": "playwright.config.ts: channel chrome + SwiftShader 플래그 고정 (WebGL2 소프트웨어)",
+        "summaryKo": "8개 중 7개 실패·1개 건너뜀. 7개 모두 같은 지점(openStudio3dRailTool, spec:541)에서 `[data-studio-tool-rail-settings] button` 이 2개로 풀려 strict mode violation 이다 — 현재 레일 설정에는 '전체 도구'·'도구막대 구성' 두 버튼이 있고, 기본 레일의 도구는 select·pen·eraser·fill·marquee-rect·smart-shape·text·image·transform·lasso 뿐이라 3D 도구(bg3d·vrm3d·mannequin3d·hybrid-dcc)는 기본 레일에 없다. 야간 CI(studio-3d-visual)도 exit 1.",
+        "checked": "리스트 리포터 출력(7건 모두 같은 오류 헤드라인), 빌드된 앱의 레일 DOM 덤프(버튼 2개·도구 id 10개), 야간 CI 종료 코드",
+        "declaredShort": "SwiftShader 고정 (config)",
+        "actualShort": "SwiftShader (기록 없음)",
+        "noteShort": "7/8 실패, 레일 설정 버튼 2개 strict(CI 동일)"
+      },
+      "adapterEvidence": [],
+      "artifactCount": 0,
+      "logTail": [
+        "    [chromium] › e2e/studio-3d-visual-verification.spec.ts:580:7 › Studio 3D 표면 실 브라우저 시각 검증 › 3D 배경 편집기가 실제 3D 프레임을 그린다 ",
+        "    [chromium] › e2e/studio-3d-visual-verification.spec.ts:677:7 › Studio 3D 표면 실 브라우저 시각 검증 › 절차형 에셋과 선화 미리보기가 프레임을 바꾼다 ",
+        "    [chromium] › e2e/studio-3d-visual-verification.spec.ts:707:7 › Studio 3D 표면 실 브라우저 시각 검증 › 3D 웹툰 프로 툴(20종)이 열리고 벤치마크 기능(필터·집중선·착지락·말풍선·셰이퍼)이 오류 없이 동작한다 ",
+        "    [chromium] › e2e/studio-3d-visual-verification.spec.ts:752:7 › Studio 3D 표면 실 브라우저 시각 검증 › 3D 배경이 기본 진입 경로에서 캔버스에 실제로 붙는다 @slow ",
+        "    [chromium] › e2e/studio-3d-visual-verification.spec.ts:1006:7 › Studio 3D 표면 실 브라우저 시각 검증 › 3D 캐릭터가 렌더되고 포즈가 캔버스에 붙는다 ",
+        "    [chromium] › e2e/studio-3d-visual-verification.spec.ts:1056:7 › Studio 3D 표면 실 브라우저 시각 검증 › 3D 데생 인형이 렌더되고 캔버스로 캡처된다 ",
+        "    [chromium] › e2e/studio-3d-visual-verification.spec.ts:1093:7 › Studio 3D 표면 실 브라우저 시각 검증 › Hybrid 3D DCC 진입은 언제나 보이는 결과를 남긴다 ",
+        "  1 skipped"
+      ],
+      "notes": null
+    },
+    {
+      "id": "web-authoring-e2e",
+      "script": "verify:studio-3d-web-authoring:browser",
+      "command": "pnpm exec playwright test --config playwright.studio-web-authoring.config.ts",
+      "declaredLane": "playwright.studio-web-authoring.config.ts: channel chrome + SwiftShader 플래그 고정",
+      "outcome": "pass",
+      "exitCode": 0,
+      "durationSec": 60.4,
+      "timeoutSec": 1800,
+      "cause": {
+        "kind": "pass",
+        "actualLane": "SwiftShader (playwright.studio-web-authoring.config.ts 가 channel chrome + SwiftShader 플래그를 고정)",
+        "summaryKo": "통과(60초). 시스템 Google Chrome 을 헤드리스로 띄웠다. 이 게이트는 설계상 소프트웨어 렌더러이므로 Metal 증거가 아니다.",
+        "checked": "프로세스 목록에서 /Applications/Google Chrome.app 헤드리스 실행 확인, 설정 파일의 플래그",
+        "declaredShort": "SwiftShader 고정 (config)",
+        "actualShort": "SwiftShader (설정 고정)",
+        "noteShort": "시스템 Chrome 헤드리스"
+      },
+      "adapterEvidence": [],
+      "artifactCount": 0,
+      "logTail": [
+        "[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4001",
+        "[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)",
+        "[WebServer] 10:26:09 AM [vite] http proxy error: /api/studio-ai/status",
+        "[WebServer] 10:26:14 AM [vite] http proxy error: /api/studio-ai/status",
+        "[WebServer] 10:26:14 AM [vite] http proxy error: /api/health/capabilities",
+        "  ✓  1 [chromium] › e2e/studio-3d-web-authoring-v3.spec.ts:12:5 › Character Platform V3 executes its authoring core inside the browser (57.9s)",
+        "",
+        "  1 passed (59.8s)"
+      ],
+      "notes": null
+    },
+    {
+      "id": "character-lab-browser-probe",
+      "script": "character-lab browser-probe",
+      "command": "node apps/character-lab/scripts/browser-probe.mjs --out <sweep-out>/artifacts/character-lab/probe.json --shots <sweep-out>/artifacts/character-lab/shots",
+      "declaredLane": "--software 미지정 = 기본 launch(--enable-unsafe-webgpu --ignore-gpu-blocklist), 백엔드 webgpu·webgl2 각각",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 235,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "partial",
+        "actualLane": "기본 headless shell: WebGL2=SwiftShader, WebGPU=소프트웨어 폴백 어댑터(앱이 사유와 함께 차단)",
+        "summaryKo": "통과 10·실패 1·건너뜀 1. WebGPU 는 [webgpu-fallback-adapter] 로 막히는 것이 앱 정책대로의 정상 결과이고 그 뒤 WebGPU 썸네일·PNG 단계는 건너뜀(이 구성으로는 랩의 WebGPU 경로를 못 본다). WebGL2 는 SwiftShader 로 ready, 썸네일 6개·PNG 검사 통과. 실패 1건은 '레시피 저장→실행 취소→파일 불러오기 왕복' 단계에서 `.cl-slot-card:not([aria-pressed=\"true\"]):not(:disabled)` 첫 카드의 getAttribute 가 180초 타임아웃 — 카드 선택자가 맞는 요소를 못 잡는 것으로 보인다(추정, 두 레인에서 같은 단계가 실패). HUD 에 'Babylon 9.19 WebGL2'와 'Babylon 9.31.0'이 나란히 찍힌다(라벨 불일치, 별도 PR 로 수정).",
+        "checked": "프로브 로그·probe.json steps, 레인 프로브의 기본 headless shell 결과와 일치, 프로브 소스의 해당 단계(browser-probe.mjs:362-380)",
+        "declaredShort": "기본 launch",
+        "actualShort": "WebGL2 SwiftShader · WebGPU 폴백 차단",
+        "noteShort": "통과 10·실패 1·건너뜀 1"
+      },
+      "adapterEvidence": [
+        "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver) · Babylon 9.31.0",
+        "SwiftShader Device (LLVM 10.0.0) (0x0000C0DE))",
+        "SwiftShader driver) · Babylon 9.31.0"
+      ],
+      "artifactCount": 6,
+      "logTail": [
+        "[character-lab-probe] ok   WebGL2 명시 선택: ready 또는 사유가 보이는 failed(자동 대체 없음) — ready — 활성 엔진 Babylon 9.19 WebGL2 · backend webgl2 · Google Inc. (Google) ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader ",
+        "[character-lab-probe] ok   WebGL2 썸네일: pending이 모두 끝나고 failed 0 — 완료 6",
+        "[character-lab-probe] ok   WebGL2 PBR lit 투명 PNG: 모서리 알파 0·투명 RGB 0·면적 ≥ 1.5% — character-plan-0-b-1024x1024.png 1024×1024 면적 12.0%",
+        "[character-lab-probe] ok   WebGL2 툰 lit 투명 PNG: 모서리 알파 0·투명 RGB 0·면적 ≥ 1.5% — character-plan-1-b-1024x1024.png 1024×1024 면적 12.3%",
+        "[character-lab-probe] ok   WebGL2 슬롯 카드 클릭 = history 1단계, 실행 취소 = 1단계 되돌림 — 깊이 1→2→1",
+        "[character-lab-probe] ok   페이지 오류(pageerror) 없음 — 0건",
+        "[character-lab-probe] 리포트: <sweep-out>/artifacts/character-lab/probe.json",
+        "[character-lab-probe] 요약: 통과 10 · 실패 1 · 건너뜀 1"
+      ],
+      "notes": null
+    },
+    {
+      "id": "vrm-hand-visual-audit",
+      "script": "(tsx) verify-vrm-hand-visual-audit.mts",
+      "command": "pnpm exec tsx scripts/verify-vrm-hand-visual-audit.mts",
+      "declaredLane": "swiftshader 고정(--use-angle=swiftshader)",
+      "outcome": "pass",
+      "exitCode": 0,
+      "durationSec": 108,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "pass",
+        "actualLane": "SwiftShader (스크립트에 --use-angle=swiftshader 고정)",
+        "summaryKo": "통과(108초). 손 시각 감사 캡처를 남겼다(인물·좌우 손 그리드 PNG). 설계상 소프트웨어 렌더러다. 이 게이트의 전용 CI(character-contact-naturalness)는 최근 런이 성공이다.",
+        "checked": "산출 PNG 목록, 최근 CI 런 결과 조회",
+        "declaredShort": "swiftshader 고정",
+        "actualShort": "SwiftShader",
+        "noteShort": "손 캡처 PNG 산출"
+      },
+      "adapterEvidence": [],
+      "artifactCount": 0,
+      "logTail": [
+        "VRM hand visual audit: <sweep-tree>/artifacts/vrm-hand-visual-audit"
+      ],
+      "notes": null
+    },
+    {
+      "id": "bg3d-webgpu-engine",
+      "script": "verify:studio-bg3d-webgpu-engine",
+      "command": "node scripts/verify-studio-bg3d-webgpu-engine.mjs",
+      "declaredLane": "swiftshader-determinism 고정(GPU_LANE 상수) — macOS 에서 requestDevice 가 걸릴 수 있다는 주석 있음",
+      "outcome": "pass",
+      "exitCode": 0,
+      "durationSec": 14.9,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "pass",
+        "actualLane": "SwiftShader WebGPU (vendor google, architecture swiftshader, isFallbackAdapter true) — 전체 Chrome for Testing",
+        "summaryKo": "통과(14.9초). 결정성 레인(swiftshader-determinism)이며 macOS 의 CfT 156 에서 requestDevice 가 걸리지 않았다 — 콘솔 게이트 주석의 'macOS 에서 SwiftShader 어댑터를 강제하면 requestDevice 가 걸린다(Chromium 151)'는 이 버전에서 재현되지 않는다. 야간 CI 에서도 이 게이트만 통과했다.",
+        "checked": "산출 JSON 의 executionEvidence.webgpu, 레인 프로브의 chromium-full-swiftshader-webgpu 결과와 일치, 야간 CI 런의 실패 요약에 빠져 있음",
+        "declaredShort": "swiftshader-determinism",
+        "actualShort": "SwiftShader WebGPU (google/swiftshader)",
+        "noteShort": "macOS 에서 requestDevice ok"
+      },
+      "adapterEvidence": [
+        "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "swiftshader",
+        "swiftshader-determinism",
+        "SwiftShader Device (LLVM 10.0.0) (0x0000C0DE))",
+        "SwiftShader driver)",
+        "\"lane\": \"swiftshader-determinism\"",
+        "\"vendor\": \"google\"",
+        "\"architecture\": \"swiftshader\"",
+        "\"isFallbackAdapter\": true",
+        "\"vendor\": \"Google Inc. (Google)\"",
+        "\"renderer\": \"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)\""
+      ],
+      "artifactCount": 23,
+      "logTail": [
+        "      },",
+        "      \"pageErrors\": [],",
+        "      \"requestFailures\": []",
+        "    }",
+        "  ],",
+        "  \"failures\": [],",
+        "  \"evidenceDirectory\": \"<sweep-out>/artifacts/bg3d-webgpu-engine\"",
+        "}"
+      ],
+      "notes": null
+    },
+    {
+      "id": "character-lab-browser-probe-metal",
+      "script": "character-lab browser-probe (CHARACTER_LAB_CHROMIUM_PATH=Chrome for Testing)",
+      "command": "node apps/character-lab/scripts/browser-probe.mjs --out <sweep-out>/artifacts/character-lab-metal/probe.json --shots <sweep-out>/artifacts/character-lab-metal/shots",
+      "declaredLane": "전체 Chrome for Testing 를 명시(CHARACTER_LAB_CHROMIUM_PATH) = macOS 네이티브 Metal 레인, 백엔드 webgpu·webgl2 각각",
+      "outcome": "fail",
+      "exitCode": 1,
+      "durationSec": 214.6,
+      "timeoutSec": 900,
+      "cause": {
+        "kind": "partial",
+        "actualLane": "Metal: WebGPU adapter apple/metal-3(ready), WebGL2 ANGLE Metal Renderer Apple M2 Max, software=false",
+        "summaryKo": "통과 14·실패 1·건너뜀 0. 캐릭터 랩의 실GPU 두 백엔드를 이번에 처음 같은 실행에서 확인했다: WebGPU·WebGL2 모두 ready, 썸네일 각 6개 완료, PBR·툰 투명 PNG(모서리 알파 0·투명 RGB 0·면적 12.2~12.8%)·슬롯 카드 history 통과, 페이지 오류 0건. 실패 1건은 소프트웨어 구성과 같은 '레시피 저장→불러오기 왕복' 단계(카드 선택자 getAttribute 180초 타임아웃)다. 이 결과는 체크리스트 '브라우저 검증' 열에 아직 기록하지 않았다.",
+        "checked": "probe.json 의 14개 단계 이름·세부, HUD 가 보고한 어댑터 문자열",
+        "declaredShort": "전체 CfT 명시 (Metal)",
+        "actualShort": "Metal WebGPU+WebGL2 (apple/metal-3)",
+        "noteShort": "통과 14·실패 1, 실패는 레시피 왕복"
+      },
+      "adapterEvidence": [
+        "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version) · Babylon 9.31.0"
+      ],
+      "artifactCount": 8,
+      "logTail": [
+        "[character-lab-probe] ok   WebGL2 명시 선택: ready 또는 사유가 보이는 failed(자동 대체 없음) — ready — 활성 엔진 Babylon 9.19 WebGL2 · backend webgl2 · Google Inc. (Apple) ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version) · Babylon 9.31.0",
+        "[character-lab-probe] ok   WebGL2 썸네일: pending이 모두 끝나고 failed 0 — 완료 6",
+        "[character-lab-probe] ok   WebGL2 PBR lit 투명 PNG: 모서리 알파 0·투명 RGB 0·면적 ≥ 1.5% — character-plan-4-b-1024x1024.png 1024×1024 면적 12.2%",
+        "[character-lab-probe] ok   WebGL2 툰 lit 투명 PNG: 모서리 알파 0·투명 RGB 0·면적 ≥ 1.5% — character-plan-5-b-1024x1024.png 1024×1024 면적 12.6%",
+        "[character-lab-probe] ok   WebGL2 슬롯 카드 클릭 = history 1단계, 실행 취소 = 1단계 되돌림 — 깊이 3→4→3",
+        "[character-lab-probe] ok   페이지 오류(pageerror) 없음 — 0건",
+        "[character-lab-probe] 리포트: <sweep-out>/artifacts/character-lab-metal/probe.json",
+        "[character-lab-probe] 요약: 통과 14 · 실패 1 · 건너뜀 0"
+      ],
+      "notes": "기본 실행(headless shell)은 소프트웨어 어댑터라 WebGPU 가 차단된다 — 이 항목이 실GPU 레인"
+    }
+  ],
+  "notRun": [
+    {
+      "id": "bg3d-webgpu-rotation",
+      "script": "verify:studio-bg3d-webgpu-rotation",
+      "reason": "playwright.config.ts 의 gizmo 레인은 headless:false(헤드풀 창)다. 사용자 화면을 점유하므로 D14 결정 전에는 돌리지 않는다."
+    },
+    {
+      "id": "bg3d-webgpu-rotation-dev",
+      "script": "verify:studio-bg3d-webgpu-rotation:dev",
+      "reason": "위와 같은 헤드풀 gizmo 레인(dev 서버판)."
+    },
+    {
+      "id": "character-lab-kit-preview",
+      "script": "character-lab scripts/kit-preview.mjs",
+      "reason": "독립 게이트가 아니라 GLB 경로를 받는 도구이고 WebGL2 SwiftShader 플래그가 고정이다."
+    }
+  ]
+}

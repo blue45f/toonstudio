@@ -1,0 +1,71 @@
+{
+  "starter": [],
+  "betaNoticeHost": 0,
+  "railSettingsButtons": [
+    {
+      "name": "전체 도구",
+      "visible": true
+    },
+    {
+      "name": "도구막대 구성",
+      "visible": true
+    }
+  ],
+  "railToolIds": [
+    "select",
+    "pen",
+    "eraser",
+    "fill",
+    "marquee-rect",
+    "smart-shape",
+    "text",
+    "image",
+    "transform",
+    "lasso"
+  ],
+  "menubarButtons": [
+    "파일",
+    "편집",
+    "보기",
+    "캔버스",
+    "삽입",
+    "레이어",
+    "창작",
+    "효과",
+    "도움말",
+    "AI 도우미"
+  ],
+  "insertTriggerCount": 1,
+  "menus": [
+    {
+      "label": "삽입",
+      "items": [
+        "말풍선",
+        "텍스트",
+        "대사 일괄 편집…",
+        "대사 번역 · 다국어…",
+        "현지화 QA · 넘침·문체 검사…",
+        "고급 도구 펼치기 (7개)"
+      ]
+    }
+  ],
+  "menusAfterExpand": [
+    {
+      "label": "삽입",
+      "items": [
+        "말풍선",
+        "텍스트",
+        "대사 일괄 편집…",
+        "대사 번역 · 다국어…",
+        "현지화 QA · 넘침·문체 검사…",
+        "고급 도구 접기",
+        "요소 · 도형",
+        "장면 도우미",
+        "기본 데생 인형",
+        "인물·포즈 편집",
+        "캐릭터 만들기",
+        "정밀 3D 모델링…"
+      ]
+    }
+  ]
+}
