@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { StudioProductionBibleError } from "./studio-production-bible-error";
+import { StudioProductionBibleError, type StudioProductionBibleImportError } from "./studio-production-bible-error";
 import { resolveStudioProductionBibleImportError } from "./status-i18n/studio-producer-error-i18n-bible";
 import {
   createEmptyStudioPromisePayoffLedger,

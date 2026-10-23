@@ -56,7 +56,7 @@ describe("studio document interchange commit runtime", () => {
         sourceWidth: 1_080,
         sourceHeight: 1_920,
         scale: 0.5,
-        skipped: ["텍스트 래스터화"],
+        skipped: [{ code: "passthrough", params: { name: "텍스트", detail: "래스터화" } }],
       },
     }, {
       pages: source,

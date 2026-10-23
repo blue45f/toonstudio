@@ -3824,7 +3824,7 @@ describe("프레임·이미지 직렬화", () => {
       page([{ id: "f3", type: "frame", x: 0, y: 0, width: 300, height: 200, bg: "https://cdn.example.com/bg.png" }])
     );
     expect(result.svg).toContain('preserveAspectRatio="xMidYMid slice"');
-    expect(result.skipped.some((s) => s.id === "f3" && s.mode === "approximated" && s.label.includes("외부 주소"))).toBe(true);
+    expect(result.skipped.some((s) => s.id === "f3" && s.mode === "approximated" && typeof s.label === "string" && s.label.includes("외부 주소"))).toBe(true);
   });
 
   it("이미지 — 회전·기울이기·반전·둥근 모서리·그림자를 벡터 속성으로 담는다", () => {
@@ -3864,7 +3864,7 @@ describe("프레임·이미지 직렬화", () => {
     const result = exportPageToSvg(
       page([{ id: "i2", type: "image", src: "data:image/png;base64,AAA", x: 0, y: 0, width: 10, height: 10, rotation: 0, brightness: 0.4 }])
     );
-    expect(result.skipped.some((s) => s.id === "i2" && s.label.includes("픽셀 필터"))).toBe(true);
+    expect(result.skipped.some((s) => s.id === "i2" && typeof s.label === "string" && s.label.includes("픽셀 필터"))).toBe(true);
   });
 
   it("순서형 스마트 필터 스택도 원본 근사 경고 대상에서 빠지지 않는다", () => {
@@ -3889,7 +3889,7 @@ describe("프레임·이미지 직렬화", () => {
     }]));
 
     expect(result.skipped.some((skip) =>
-      skip.id === "i-smart" && skip.label.includes("픽셀 필터")
+      skip.id === "i-smart" && typeof skip.label === "string" && skip.label.includes("픽셀 필터")
     )).toBe(true);
   });
 
@@ -3897,7 +3897,7 @@ describe("프레임·이미지 직렬화", () => {
     const result = exportPageToSvg(
       page([{ id: "i3", type: "image", src: "https://cdn.example.com/a.png", x: 0, y: 0, width: 10, height: 10, rotation: 0 }])
     );
-    expect(result.skipped.some((s) => s.id === "i3" && s.label.includes("외부 주소"))).toBe(true);
+    expect(result.skipped.some((s) => s.id === "i3" && typeof s.label === "string" && s.label.includes("외부 주소"))).toBe(true);
   });
 });
 

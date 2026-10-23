@@ -15,6 +15,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { readPsd, writePsd, type Layer, type PixelData, type Psd } from "ag-psd";
 
+import { resolveStudioPsdSkipEntry } from "../status-i18n/studio-producer-error-i18n-psd-import";
 import {
   importPsdFile,
   type PsdImportedElement,
@@ -301,7 +302,7 @@ describe("B. 제품 가져오기 (importPsdFile)", () => {
     expect(decisionOf(result, "adjustment-layer", "preserved")?.count).toBe(1);
     expect(decisionOf(result, "adjustment-layer", "dropped")).toBeUndefined();
     // 건너뜀 고지에는 더는 조정 레이어가 없고 레이어 효과(KG-2)만 남는다.
-    expect(result.skipped).toEqual(["그림자 레이어: 레이어 스타일(그림자 등)은 반영되지 않아요"]);
+    expect(result.skipped.map(resolveStudioPsdSkipEntry)).toEqual(["그림자 레이어: 레이어 스타일(그림자 등)은 반영되지 않아요"]);
   });
 
   it("text-basic — 래스터가 보존되고 단순 서식만 숨은 편집본이 생긴다", async () => {
@@ -324,7 +325,7 @@ describe("B. 제품 가져오기 (importPsdFile)", () => {
     const result = await importFixture(fixtureById("empty-doc"));
     expect(result.elements).toEqual([]);
     // 레이어 없는 문서를 ag-psd로 읽으면 크기 0인 빈 레이어 기록 1개가 잡혀 그 건너뜀만 고지된다.
-    expect(result.skipped).toEqual(["레이어 1: 크기가 0이라 건너뜀"]);
+    expect(result.skipped.map(resolveStudioPsdSkipEntry)).toEqual(["레이어 1: 크기가 0이라 건너뜀"]);
   });
 });
 
@@ -536,7 +537,7 @@ describe("known-gap — 현재 손실되는 속성 (개선되면 이 절을 갱�
 
   it("KG-2 레이어 효과는 파라미터가 소실되고 고지만 남는다", async () => {
     const { first, exportedBytes } = await roundtrip(fixtureById("adjustment-effects"));
-    expect(first.skipped.some((line) => line.startsWith("그림자 레이어: 레이어 스타일"))).toBe(true);
+    expect(first.skipped.map(resolveStudioPsdSkipEntry).some((line) => line.startsWith("그림자 레이어: 레이어 스타일"))).toBe(true);
     expect(decisionOf(first, "layer-effects", "dropped")?.count).toBe(1);
     const tree = summarizePsd(readFixtureBytes(exportedBytes));
     const flat = tree.map((layer) => layer.name);
@@ -548,15 +549,15 @@ describe("known-gap — 현재 손실되는 속성 (개선되면 이 절을 갱�
   it("KG-3 Canvas에 없는 블렌드 모드(dissolve)는 일반 합성으로 강등된다", async () => {
     const { first, second } = await roundtrip(fixtureById("blend-opacity"));
     expect(elementByName(first, "디졸브").blendMode).toBeUndefined();
-    expect(first.skipped).toContain("디졸브: dissolve 블렌드 모드는 일반 합성으로 가져왔어요.");
+    expect(first.skipped.map(resolveStudioPsdSkipEntry)).toContain("디졸브: dissolve 블렌드 모드는 일반 합성으로 가져왔어요.");
     expect(decisionOf(first, "blend-mode", "dropped")?.count).toBe(1);
     expect(elementByName(second, "디졸브").blendMode).toBeUndefined();
   });
 
   it("KG-4 그룹 블렌드·불투명도는 그룹 속성으로 왕복되지 않고 자식에 평탄화된다", async () => {
     const { first, exportedBytes } = await roundtrip(fixtureById("groups-nested"));
-    expect(first.skipped.some((line) => line.includes("multiply 격리 합성"))).toBe(true);
-    expect(first.skipped.some((line) => line.includes("그룹 불투명도"))).toBe(true);
+    expect(first.skipped.map(resolveStudioPsdSkipEntry).some((line) => line.includes("multiply 격리 합성"))).toBe(true);
+    expect(first.skipped.map(resolveStudioPsdSkipEntry).some((line) => line.includes("그룹 불투명도"))).toBe(true);
     const tree = summarizePsd(readFixtureBytes(exportedBytes));
     // 재내보내기 그룹은 전부 pass through·불투명도 1로 기록된다 (groupPsdExportLayers 규약).
     expect(tree[0]?.blendMode).toBe("pass through");
@@ -569,7 +570,7 @@ describe("known-gap — 현재 손실되는 속성 (개선되면 이 절을 갱�
     const result = await importFixture(fixtureById("group-mask"));
     expect(result.elements.map((element) => element.name)).toEqual(["그룹 안"]);
     expect(elementByName(result, "그룹 안").maskSrc).toBeUndefined();
-    expect(result.skipped.some((line) => line.includes("그룹 마스크"))).toBe(true);
+    expect(result.skipped.map(resolveStudioPsdSkipEntry).some((line) => line.includes("그룹 마스크"))).toBe(true);
   });
 
   it("KG-6 숨긴 레이어는 가져와지지만 내보내기에서 제외된다", async () => {

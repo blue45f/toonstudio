@@ -19,8 +19,8 @@ import {
 } from "@/shared/lib/i18n";
 import type {
   StudioSketchFeatureSummary,
-  StudioSketchGuidance,
   StudioSketchRecommendationReason,
+  StudioSketchSearchGuidance as StudioSketchGuidance,
   StudioSketchShapeKind,
 } from "../studio-sketch-asset-recommend";
 
@@ -113,8 +113,8 @@ const LABEL_KEYS: Readonly<Record<StudioSketchShapeKind, string>> = {
   star: "studio.producerError.sketch.label.star",
   heart: "studio.producerError.sketch.label.heart",
   line: "studio.producerError.sketch.label.line",
-  closedShape: "studio.producerError.sketch.label.closedShape",
-  curve: "studio.producerError.sketch.label.curve",
+  blob: "studio.producerError.sketch.label.closedShape",
+  "open-curve": "studio.producerError.sketch.label.curve",
   scribble: "studio.producerError.sketch.label.scribble",
 };
 
@@ -127,8 +127,8 @@ const LABEL_KO: Readonly<Record<StudioSketchShapeKind, string>> = {
   star: "별",
   heart: "하트",
   line: "선",
-  closedShape: "닫힌 모양",
-  curve: "곡선",
+  blob: "닫힌 모양",
+  "open-curve": "곡선",
   scribble: "자유 낙서",
 };
 
