@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Nisam mogao učitati ažuriranja.",
+  "changelog.loadError": "Nije uspjelo učitavanje ažuriranja. Pokušajte ponovno za trenutak.",
   "changelog.empty": "Još nema dnevnika ažuriranja."
 }

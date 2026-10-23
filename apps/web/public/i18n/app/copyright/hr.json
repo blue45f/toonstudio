@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Copyright & Content Obaveštenje",
+  "copyright.title": "Autorska prava i obavijest o sadržaju",
   "copyright.section1.title": "Izvori sadržaja i načela",
-  "copyright.section1.body": "ToonStudio je indeksna i otkrića platforma koja podsjeća metadane javnog kataloga (naslovi, autori, žanri itd.) iz webtoon / webnovel platformi.",
-  "copyright.section2.title": "Slika za naslovnicu",
-  "copyright.section2.body": "Slika za naslovnicu služi kao identifikacijska miniatura i referentna originalna platforma pokriva s izvornim linkovima kad god je to moguće.",
+  "copyright.section1.body": "ToonStudio je platforma za indeksiranje i otkrivanje koja sažima javne metapodatke kataloga (naslove, autore, žanrove itd.) s platformi za webtoon i web romane. Ne hostira niti redistribuira sadržaj glavnih poglavlja; čitanje se odvija isključivo putem službenih poveznica.",
+  "copyright.section2.title": "Slike naslovnica",
+  "copyright.section2.body": "Slike naslovnica služe kao identifikacijske minijature i, kad god je to moguće, upućuju na izvorne naslovnice platforme s poveznicama na izvor. Prikaz se može odmah onemogućiti na zahtjev nositelja prava ili zbog ažuriranja pravila.",
   "copyright.section3.title": "Metrike i transparentnost",
-  "copyright.section4.title": "Prijava o pravima",
-  "copyright.section5.title": "Prijava o kršenju autorskog prava i ukidanje",
-  "copyright.section5.body": "Ako smatrate da metapodatki ili pokrivači krše vaše prava, molimo vas da podnesete upitnik s naslovom, URL-om i dokazom vlasništva.",
-  "copyright.leaveInquiry": "Podnesite istragu →"
+  "copyright.section4.title": "Obavijest o pravima",
+  "copyright.section5.title": "Obavijest o kršenju autorskih prava i uklanjanje sadržaja",
+  "copyright.section5.body": "Ako smatrate da metapodaci ili naslovnice krše vaša prava, pošaljite upit s naslovom, URL-om i dokazom o vlasništvu.",
+  "copyright.leaveInquiry": "Pošaljite upit →"
 }
