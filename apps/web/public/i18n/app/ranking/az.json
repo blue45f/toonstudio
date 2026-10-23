@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Göstərmə nəticələrinin bölünməsi",
-  "ranking.metric.views": "Görüşlər",
-  "ranking.why": "Niyə?",
-  "ranking.breakdownTitle": "Məqsədlərin bölüşdürülməsi",
-  "ranking.totalScore": "Ümumi nəticə",
-  "ranking.breakdownDescription": "Əks ağırlığı və başlıq xüsusi normalaşdırma ilə hesablanır."
+  "ranking.detailTitle": "Xal bölgüsünə bax",
+  "ranking.metric.views": "Baxışlar",
+  "ranking.why": "Niyə",
+  "ranking.breakdownTitle": "Xal bölgüsü",
+  "ranking.totalScore": "Cəmi xal",
+  "ranking.breakdownDescription": "Ox çəkiləri və əsərə xas normallaşdırma ilə hesablanır."
 }

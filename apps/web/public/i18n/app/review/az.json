@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Tamamlanmışdır",
-  "review.progress.binge": "Çırpışmaq",
-  "review.progress.upcoming": "Planlaşdırılmış",
-  "review.progress.abandoned": "Çıxdı",
-  "review.progress.unknown": "Gizli irəliləyiş",
-  "review.spoilerRevealLabel": "Spoiler göstərin"
+  "review.progress.complete": "Bitirdim",
+  "review.progress.binge": "Ardıcıl oxuyuram",
+  "review.progress.upcoming": "Planlaşdırılır",
+  "review.progress.abandoned": "Yarımçıq qoydum",
+  "review.progress.unknown": "İrəliləyiş gizlidir",
+  "review.spoilerRevealLabel": "Spoyleri göstər"
 }

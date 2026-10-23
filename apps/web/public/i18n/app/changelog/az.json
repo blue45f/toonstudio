@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "Yeniləmələri yükləyə bilmədim.",
-  "changelog.empty": "Hələ ki, heç bir yenilik qeydləri yerləşdirilməyib."
+  "changelog.loadError": "Yeniliklər yüklənə bilmədi. Bir az sonra yenidən cəhd edin.",
+  "changelog.empty": "Hələ yenilik qeydi paylaşılmayıb."
 }

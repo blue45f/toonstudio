@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "Yazıçı direktoru",
-  "authors.title": "Yazıçılar",
-  "authors.desc": "Müəlliflər əsərlərinin sayına görə sıralanır.",
-  "authors.search": "Axtarış müəllifin adı",
-  "authors.error": "Müəlliflər siyahısını yükləyə bilmədim.",
-  "authors.empty": "uyğun müəllif yoxdur.",
-  "authors.allOf": "üçün",
-  "authors.topOf": "· üst",
+  "authors.eyebrow": "AUTHOR DIRECTORY",
+  "authors.title": "Müəlliflər",
+  "authors.desc": "Müəlliflər əsərlərinin sayına görə sıralanır. Müəllifə toxunun — əsərlərini, reytinqlərini və fan kafesini bir yerdə görün.",
+  "authors.search": "Müəllif adı axtar",
+  "authors.error": "Müəlliflər siyahısı yüklənə bilmədi. Bir az sonra yenidən cəhd edin.",
+  "authors.empty": " — uyğun müəllif yoxdur.",
+  "authors.allOf": "cəmi",
+  "authors.topOf": "· ilk",
   "authors.people": "",
-  "authors.works": "işləri",
-  "authors.views": "baxışlar",
+  "authors.works": " əsər",
+  "authors.views": "baxış",
   "authors.pencafe": "Yaradıcı fan kafesi",
-  "authors.stats": "{total} müəlliflərindən ən yaxşı {shown}",
-  "authors.noName": "Yaratıcı"
+  "authors.stats": "{total} müəllifdən ilk {shown}",
+  "authors.noName": "Yaradıcı"
 }

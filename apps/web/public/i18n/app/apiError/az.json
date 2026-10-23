@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Giriş tələb olunur.",
-  "apiError.adminRequired": "Admin icazələri yoxlanılmadı.",
-  "apiError.adminOnlyPage": "Bu səhifə administratorlara məhdudlaşdırılıb.",
-  "apiError.notFound": "İstənilən maddə tapılmadı.",
+  "apiError.loginRequired": "Daxil olmaq tələb olunur.",
+  "apiError.adminRequired": "Admin icazələri yoxlanıla bilmədi.",
+  "apiError.adminOnlyPage": "Bu səhifə yalnız administratorlar üçündür.",
+  "apiError.notFound": "Tələb olunan element tapılmadı.",
   "apiError.unsupportedType": "Dəstəklənməyən məzmun növü.",
-  "apiError.inactiveAccount": "Aktiv olmayan hesablar administrator xüsusiyyətlərindən istifadə edə bilməz.",
-  "apiError.settlementFailed": "Hesablaşma prosesinin icrası uğursuz oldu."
+  "apiError.inactiveAccount": "Qeyri-aktiv hesablar administrator funksiyalarından istifadə edə bilməz.",
+  "apiError.settlementFailed": "Hesablaşma emal edilə bilmədi. Bir az sonra yenidən cəhd edin."
 }

@@ -1,6 +1,6 @@
 {
-  "ageGate.title": "Yetkinlərin məzmununu yoxlamaq",
-  "ageGate.description": "19 yaşınız və ya daha böyük olduğunuzu təsdiq etmək üçün doğum tarixinizi daxil edin.",
+  "ageGate.title": "Yetkin məzmunu yoxlaması",
+  "ageGate.description": "19 yaş və ya daha böyük olduğunuzu təsdiqləmək üçün doğum tarixinizi daxil edin.",
   "ageGate.birthDateLabel": "Doğum tarixi",
   "ageGate.birthYearLabel": "Doğum ili",
   "ageGate.birthYearPlaceholder": "İl",
@@ -11,7 +11,7 @@
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Siz yaş tələblərinə cavab verməmisiniz.",
-  "ageGate.cancel": "İndirim",
-  "ageGate.confirm": "təsdiqləyin"
+  "ageGate.deniedMessage": "Yaş tələbinə cavab vermədiniz.",
+  "ageGate.cancel": "Ləğv et",
+  "ageGate.confirm": "Təsdiqlə"
 }
