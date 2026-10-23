@@ -546,3 +546,61 @@ export function oilLayerHasPaint(state: WetState): boolean {
   }
   return false;
 }
+
+/**
+ * 팔레트 나이프 스크레이프(Palette Knife Scrape & Ridge Pile-up):
+ * 나이프 날 중심(centerX, centerY, 반경 radius)의 젖은 물감을 진행 방향(angleRad)과 측면 가장자리로 밀어내어
+ * 안쪽은 바닥 릴리프(base)가 드러나도록 얇아지고 가장자리에는 부피 보존 둑(Ridge)이 쌓이게 한다.
+ */
+export function scrapeOilWindow(
+  win: OilWindow,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleRad: number,
+  scrapeStrength = 0.72,
+  mixing = 0.55,
+): void {
+  const { w, h } = win;
+  const n = w * h;
+  if (n === 0 || !(radius > 0)) return;
+  const clampedStrength = Math.max(0, Math.min(0.95, scrapeStrength));
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
+  const stepX = Math.round(cosA) as -1 | 0 | 1;
+  const stepY = Math.round(sinA) as -1 | 0 | 1;
+  const primaryDx: -1 | 0 | 1 = stepX === 0 && stepY === 0 ? 1 : stepX;
+  const primaryDy: -1 | 0 | 1 = stepX === 0 && stepY === 0 ? 0 : stepY;
+
+  const amount = new Float32Array(n);
+  const dirX = new Int8Array(n);
+  const dirY = new Int8Array(n);
+
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const dx = x - centerX;
+      const dy = y - centerY;
+      const dist = Math.hypot(dx, dy);
+      if (dist > radius) continue;
+      const o = y * w + x;
+      const radialFalloff = 1 - (dist / radius) * 0.65;
+      amount[o] = f(clampedStrength * radialFalloff);
+      // 나이프 중심선 기준 바깥쪽 가장자리는 측면으로도 일부 밀어내어 둑을 만든다
+      const cross = -dx * sinA + dy * cosA;
+      if (Math.abs(cross) > radius * 0.45 && primaryDx !== 0 && primaryDy === 0) {
+        dirX[o] = primaryDx;
+        dirY[o] = 0;
+      } else {
+        dirX[o] = primaryDx;
+        dirY[o] = primaryDy;
+      }
+    }
+  }
+
+  // 다중 패스 gather 이동으로 중앙의 젖은 물감을 가장자리 둑으로 밀어낸다(총 부피 및 색 질량 보존)
+  const passes = Math.max(1, Math.min(4, Math.round(radius * 0.4)));
+  for (let p = 0; p < passes; p += 1) {
+    pushOilWindow(win, amount, dirX, dirY, mixing);
+  }
+}
+

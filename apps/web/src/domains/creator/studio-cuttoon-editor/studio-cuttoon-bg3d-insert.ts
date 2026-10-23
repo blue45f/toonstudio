@@ -150,9 +150,9 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       });
       if (!realtimePlan.ok) {
         setError("code" in realtimePlan
-          ? "subcode" in realtimePlan
-            ? resolveStudioBg3dLtLayerPlanError(realtimePlan)
-            : resolveStudioShared3dVisibilityError(realtimePlan)
+          ? realtimePlan.code === "captureReceiptInvalid" || realtimePlan.code === "capturedLayerChanged"
+            ? resolveStudioShared3dVisibilityError(realtimePlan)
+            : resolveStudioBg3dLtLayerPlanError(realtimePlan)
           : realtimePlan.message);
         return false;
       }

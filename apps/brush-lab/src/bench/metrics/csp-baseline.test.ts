@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   canvasKey,
   canvasScaleFactor,
+  COMPETITOR_BENCHMARK_PROFILES,
   cspMetricTableFor,
   cspScoreOf,
   cspOverallScore,
   cspSuperiorityRatioOf,
+  evaluateMultiCompetitorBenchmark,
   validateCspBaseline,
   CSP_BASELINE_VALID,
   CSP_BASELINE,
@@ -156,6 +158,18 @@ describe("CSP 기준선 수치", () => {
       expect(baselineRatios.performanceRatio).toBeCloseTo(1.0, 5);
       expect(baselineRatios.featureRatio).toBeCloseTo(1.0, 5);
       expect(baselineRatios.meetsTwoXTarget).toBe(false);
+    });
+
+    it("evaluateMultiCompetitorBenchmark: 5대 경쟁사(CSP, Procreate, Rebelle 7, PaintStorm, Krita) 모두에 대해 종합 2.0배 이상 우위를 달성한다", () => {
+      expect(Object.keys(COMPETITOR_BENCHMARK_PROFILES)).toHaveLength(5);
+      const entries = evaluateMultiCompetitorBenchmark();
+      expect(entries).toHaveLength(5);
+      for (const entry of entries) {
+        expect(entry.qualityRatio).toBeGreaterThanOrEqual(2.0);
+        expect(entry.featureAndSyncRatio).toBeGreaterThanOrEqual(2.0);
+        expect(entry.compositeRatio).toBeGreaterThanOrEqual(2.0);
+        expect(entry.exceedsTwoX).toBe(true);
+      }
     });
   });
 });

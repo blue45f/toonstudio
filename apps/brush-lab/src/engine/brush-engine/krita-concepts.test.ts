@@ -5,8 +5,10 @@ import { SumiError } from "../core/errors";
 import {
   applyDab,
   applyDabPigmentMix,
+  applyDirtyBrushDab,
   generateDabMask,
   generateEllipticalDabMask,
+  generateRakeBristleDabMask,
   smudgeDabColor,
   type DabMode,
 } from "./krita-concepts";
@@ -128,5 +130,41 @@ describe("Krita dab mask applicator 개념", () => {
     const halfMask = new Float32Array([0.5]);
     applyDabPigmentMix(halfMask, [0.95, 0.88, 0.1, 1] as const, canvas, 0, 0);
     expect(canvas[1]).toBeGreaterThan(0.22);
+  });
+
+  it("generateRakeBristleDabMask: 다중 강모 다발(Tine)과 틈새(Gap) 골짜기를 생성한다", () => {
+    const mask = generateRakeBristleDabMask(21, 5, 0.5, 0.5, 0);
+    expect(mask.length).toBe(441);
+    // 중앙 열(x=10)을 따라 y=3..17 구간에 양수 가닥과 0인 틈새가 모두 존재해야 한다
+    let positiveCount = 0;
+    let gapCount = 0;
+    for (let y = 3; y <= 17; y += 1) {
+      if (mask[y * 21 + 10] > 0.1) positiveCount += 1;
+      else if (mask[y * 21 + 10] === 0) gapCount += 1;
+    }
+    expect(positiveCount).toBeGreaterThanOrEqual(4);
+    expect(gapCount).toBeGreaterThanOrEqual(2);
+    expect(() => generateRakeBristleDabMask(21, 0)).toThrow(SumiError);
+  });
+
+  it("applyDirtyBrushDab: 캔버스 안료를 브러시 carryColor로 흡수하면서 KM 혼합 침착을 수행한다", () => {
+    const canvas = new Float32Array(2 * 2 * 4);
+    const mask = new Float32Array([1]);
+    // 바탕에 코발트 블루 칠하기
+    applyDabPigmentMix(mask, [0.02, 0.25, 0.88, 1] as const, canvas, 0, 0);
+    // 카드뮴 옐로 브러시로 Dirty Brush 스탬핑 (픽업 0.45, 침착 0.65)
+    const nextCarry = applyDirtyBrushDab(
+      mask,
+      [0.98, 0.88, 0.05, 1] as const,
+      canvas,
+      0,
+      0,
+      0.45,
+      0.65,
+    );
+    // 브러시 carryColor가 파랑을 흡수하여 청색/녹색 성분이 변화하고 R은 원래 0.98보다 낮아진다
+    expect(nextCarry[0]).toBeLessThan(0.95);
+    expect(nextCarry[1]).toBeGreaterThan(0.35);
+    expect(canvas[1]).toBeGreaterThan(0.3);
   });
 });

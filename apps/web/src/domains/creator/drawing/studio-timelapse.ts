@@ -334,3 +334,143 @@ export function formatTimelapseTime(ms: number): string {
   const milli = total % 1000;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(milli).padStart(3, "0")}`;
 }
+
+/* ------------------------------------------------------------------ */
+/* 실시간 동기화(CRDT/WebSocket) & 타임랩스 양자화 차분(Delta) 코덱      */
+/* ------------------------------------------------------------------ */
+
+export interface CompactStrokeDeltaPacket {
+  readonly id: string;
+  readonly c: string;
+  readonly w: number;
+  readonly t0: number;
+  readonly t1: number;
+  /**
+   * 4-튜플 평탄화 정수 배열:
+   * [dt_0, x0_q100, y0_q100, p0_q1000, dt_1, dx1_q100, dy1_q100, dp1_q1000, ...]
+   */
+  readonly d: ReadonlyArray<number>;
+}
+
+/**
+ * 스트로크 샘플 시퀀스를 서브픽셀(0.01px) 및 필압(0.001) 정밀도의 1차 차분(First-order Delta)
+ * 정수 패킷으로 인코딩해 실시간 서버 동기화 및 타임랩스 직렬화 페이로드를 대폭 절감한다.
+ */
+export function encodeTimelapseStrokeDelta(
+  stroke: TimelapseStroke,
+): CompactStrokeDeltaPacket {
+  const d: number[] = [];
+  let prevT = Math.round(stroke.startedAtMs);
+  let prevXq = 0;
+  let prevYq = 0;
+  let prevPq = 500;
+
+  for (let i = 0; i < stroke.samples.length; i += 1) {
+    const s = stroke.samples[i]!;
+    const t = Math.round(s.timeMs);
+    const xq = Math.round(s.x * 100);
+    const yq = Math.round(s.y * 100);
+    const pq = Math.round(Math.max(0, Math.min(1, s.pressure ?? 0.5)) * 1000);
+
+    if (i === 0) {
+      d.push(t - prevT, xq, yq, pq);
+    } else {
+      d.push(t - prevT, xq - prevXq, yq - prevYq, pq - prevPq);
+    }
+    prevT = t;
+    prevXq = xq;
+    prevYq = yq;
+    prevPq = pq;
+  }
+
+  return {
+    id: stroke.id,
+    c: stroke.color,
+    w: Math.round(stroke.width * 100) / 100,
+    t0: Math.round(stroke.startedAtMs),
+    t1: Math.round(stroke.endedAtMs),
+    d: Object.freeze(d),
+  };
+}
+
+/**
+ * 양자화 차분 스트로크 패킷을 원본 TimelapseStroke로 복원한다.
+ */
+export function decodeTimelapseStrokeDelta(
+  packet: CompactStrokeDeltaPacket,
+): TimelapseStroke {
+  const samples: TimelapseStrokeSample[] = [];
+  let curT = packet.t0;
+  let curXq = 0;
+  let curYq = 0;
+  let curPq = 500;
+
+  for (let i = 0; i + 3 < packet.d.length; i += 4) {
+    const dt = packet.d[i]!;
+    const dx = packet.d[i + 1]!;
+    const dy = packet.d[i + 2]!;
+    const dp = packet.d[i + 3]!;
+
+    curT += dt;
+    if (i === 0) {
+      curXq = dx;
+      curYq = dy;
+      curPq = dp;
+    } else {
+      curXq += dx;
+      curYq += dy;
+      curPq += dp;
+    }
+
+    samples.push({
+      timeMs: curT,
+      x: curXq / 100,
+      y: curYq / 100,
+      pressure: Math.max(0, Math.min(1, curPq / 1000)),
+    });
+  }
+
+  return {
+    id: packet.id,
+    color: packet.c,
+    width: packet.w,
+    startedAtMs: packet.t0,
+    endedAtMs: packet.t1,
+    samples: Object.freeze(samples),
+  };
+}
+
+/**
+ * 원본 JSON 직렬화 대비 양자화 차분 패킷의 페이로드 압축 배율과 최대 복원 좌표 오차를 계측한다.
+ */
+export function measureStrokeDeltaCompression(stroke: TimelapseStroke): {
+  readonly rawJsonBytes: number;
+  readonly compactJsonBytes: number;
+  readonly compressionRatio: number;
+  readonly maxCoordinateErrorPx: number;
+} {
+  const rawJsonBytes = JSON.stringify(stroke).length;
+  const packet = encodeTimelapseStrokeDelta(stroke);
+  const compactJsonBytes = JSON.stringify(packet).length;
+  const decoded = decodeTimelapseStrokeDelta(packet);
+
+  let maxError = 0;
+  const len = Math.min(stroke.samples.length, decoded.samples.length);
+  for (let i = 0; i < len; i += 1) {
+    const orig = stroke.samples[i]!;
+    const rec = decoded.samples[i]!;
+    const err = Math.hypot(orig.x - rec.x, orig.y - rec.y);
+    if (err > maxError) maxError = err;
+  }
+
+  return {
+    rawJsonBytes,
+    compactJsonBytes,
+    compressionRatio:
+      compactJsonBytes > 0
+        ? Math.round((rawJsonBytes / compactJsonBytes) * 100) / 100
+        : 1,
+    maxCoordinateErrorPx: Math.round(maxError * 10000) / 10000,
+  };
+}
+

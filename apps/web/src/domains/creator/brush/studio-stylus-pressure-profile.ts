@@ -336,9 +336,7 @@ export function fitStudioStylusPressureProfile(
 export interface StylusDynamicResponseInput {
   readonly pointerType?: unknown;
   readonly rawPressure?: unknown;
-  /** 포인터 이동 속도 (px/ms, 0 이상). 마우스·고정 압력 터치에서 가상 필압 시뮬레이션에 사용. */
   readonly velocityPxPerMs?: number;
-  /** 스타일러스 기울기 각도 (0..90 deg). 연필·목탄 눕혀 칠하기(Shading) 폭 확장에 사용. */
   readonly tiltDeg?: number;
   readonly profile?: StudioStylusPressureProfile;
 }
@@ -350,12 +348,6 @@ export interface StylusDynamicResponseResult {
   readonly sourceMode: "hardware-stylus" | "velocity-simulated";
 }
 
-/**
- * 다기종(Apple Pencil·Wacom 스타일러스·터치·마우스) 통합 다이내믹 응답 평가기.
- * - 하드웨어 펜/포스 터치: 데드존·포화·단조 3차 에르미트 필압 커브 적용
- * - 일반 마우스/고정 0.5 터치: 이동 속도(velocityPxPerMs)에 반비례하는 가상 필압 테이퍼 시뮬레이션
- * - 스타일러스 틸트(tiltDeg): 연필·목탄 쉐이딩 시 기울기에 따른 브러시 폭 확장 배율(1.0..2.35×) 계산
- */
 export function evaluateStylusDynamicResponse(
   input: StylusDynamicResponseInput,
 ): StylusDynamicResponseResult {
@@ -364,36 +356,108 @@ export function evaluateStylusDynamicResponse(
   const raw = clamp01(input.rawPressure, 0.5);
   const velocity = Math.max(0, finiteOr(input.velocityPxPerMs, 0));
   const tiltDeg = clamp(finiteOr(input.tiltDeg, 0), 0, 85);
-
-  const hasHardwarePressure =
-    pointerType === "pen" || (pointerType === "touch" && raw !== 0.5 && raw > 0);
-
-  let effectivePressure: number;
-  let sourceMode: "hardware-stylus" | "velocity-simulated";
-  if (hasHardwarePressure) {
-    effectivePressure = studioStylusPressureProfileMap(raw, profile);
-    sourceMode = "hardware-stylus";
-  } else {
-    // 속도 기반 가상 필압 (느릴수록 진하고 두껍게, 빠를수록 날렵한 테이퍼)
-    const speedFactor = Math.exp(-velocity * 0.42);
-    const simulatedRaw = clamp01(0.22 + 0.66 * speedFactor, 0.5);
-    effectivePressure = studioStylusPressureProfileMap(simulatedRaw, profile);
-    sourceMode = "velocity-simulated";
-  }
-
-  // 틸트 폭 확장: 15° 이하에서는 1.0, 15°~85° 구간에서 최대 2.35× 확장
-  const tiltNormalized = clamp01((tiltDeg - 15) / 70);
-  const tiltBroadeningFactor = Number((1 + tiltNormalized * tiltNormalized * 1.35).toFixed(4));
-
-  // 잉크/안료 유량 변조: 필압이 높을수록 진하고, 극단적 틸트(쉐이딩)에서는 입자감을 위해 살짝 감쇠
-  const inkFlowModulation = Number(
-    clamp01(effectivePressure * (1 - tiltNormalized * 0.28) + 0.08).toFixed(4),
-  );
-
+  const hasHw = pointerType === "pen" || (pointerType === "touch" && raw !== 0.5 && raw > 0);
+  const effectivePressure = hasHw
+    ? studioStylusPressureProfileMap(raw, profile)
+    : studioStylusPressureProfileMap(clamp01(0.22 + 0.66 * Math.exp(-velocity * 0.42), 0.5), profile);
+  const tiltNorm = clamp01((tiltDeg - 15) / 70);
   return Object.freeze({
     effectivePressure: Number(effectivePressure.toFixed(4)),
-    tiltBroadeningFactor,
-    inkFlowModulation,
-    sourceMode,
+    tiltBroadeningFactor: Number((1 + tiltNorm * tiltNorm * 1.35).toFixed(4)),
+    inkFlowModulation: Number(clamp01(effectivePressure * (1 - tiltNorm * 0.28) + 0.08).toFixed(4)),
+    sourceMode: hasHw ? "hardware-stylus" : "velocity-simulated",
   });
 }
+
+export interface NormalizedHardwareStylusPacket {
+  readonly pointerType: "pen" | "touch" | "mouse";
+  readonly pressure: number;
+  readonly tiltXDeg: number;
+  readonly tiltYDeg: number;
+  readonly tiltMagnitudeDeg: number;
+  readonly altitudeRad: number;
+  readonly azimuthRad: number;
+  readonly twistDeg: number;
+  readonly tangentialPressure: number;
+}
+
+export function normalizeHardwareStylusPacket(
+  rawEvent: unknown,
+): NormalizedHardwareStylusPacket {
+  const src = rawEvent && typeof rawEvent === "object" ? (rawEvent as Record<string, unknown>) : {};
+  const rawType = typeof src.pointerType === "string" ? src.pointerType.toLowerCase() : "mouse";
+  const pointerType: "pen" | "touch" | "mouse" =
+    rawType === "pen" || rawType === "touch" ? rawType : "mouse";
+  const pressure = clamp01(src.pressure, 0.5);
+  const hasSpherical =
+    typeof src.altitudeAngle === "number" &&
+    Number.isFinite(src.altitudeAngle) &&
+    typeof src.azimuthAngle === "number" &&
+    Number.isFinite(src.azimuthAngle);
+
+  let tiltXDeg = clamp(finiteOr(src.tiltX, 0), -89, 89);
+  let tiltYDeg = clamp(finiteOr(src.tiltY, 0), -89, 89);
+  let altitudeRad = Math.PI / 2;
+  let azimuthRad = 0;
+
+  if (hasSpherical && tiltXDeg === 0 && tiltYDeg === 0) {
+    altitudeRad = clamp(Number(src.altitudeAngle), 0.01, Math.PI / 2);
+    azimuthRad = ((Number(src.azimuthAngle) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const cotAlt = 1 / Math.max(1e-4, Math.tan(altitudeRad));
+    tiltXDeg = clamp((Math.atan(cotAlt * Math.cos(azimuthRad)) * 180) / Math.PI, -89, 89);
+    tiltYDeg = clamp((Math.atan(cotAlt * Math.sin(azimuthRad)) * 180) / Math.PI, -89, 89);
+  } else if (tiltXDeg !== 0 || tiltYDeg !== 0) {
+    const tanX = Math.tan((tiltXDeg * Math.PI) / 180);
+    const tanY = Math.tan((tiltYDeg * Math.PI) / 180);
+    azimuthRad = ((Math.atan2(tanY, tanX) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    altitudeRad = Math.atan(1 / Math.max(1e-6, Math.hypot(tanX, tanY)));
+  }
+
+  return Object.freeze({
+    pointerType,
+    pressure: Number(pressure.toFixed(4)),
+    tiltXDeg: Number(tiltXDeg.toFixed(2)),
+    tiltYDeg: Number(tiltYDeg.toFixed(2)),
+    tiltMagnitudeDeg: Number(clamp(90 - (altitudeRad * 180) / Math.PI, 0, 89).toFixed(2)),
+    altitudeRad: Number(altitudeRad.toFixed(4)),
+    azimuthRad: Number(azimuthRad.toFixed(4)),
+    twistDeg: Number((((finiteOr(src.twist, 0) % 360) + 360) % 360).toFixed(2)),
+    tangentialPressure: Number(clamp(finiteOr(src.tangentialPressure, 0), -1, 1).toFixed(4)),
+  });
+}
+
+export interface BarrelRollCalligraphicOptions {
+  readonly strokeDirectionRad?: number;
+  readonly nibAngleDeg?: number;
+  readonly nibAspectRatio?: number;
+}
+
+export interface BarrelRollCalligraphicResponse {
+  readonly effectiveNibAngleRad: number;
+  readonly widthScale: number;
+  readonly edgeSharpness: number;
+  readonly tangentialFlowScale: number;
+}
+
+export function evaluateBarrelRollCalligraphicResponse(
+  packet: NormalizedHardwareStylusPacket,
+  options: BarrelRollCalligraphicOptions = {},
+): BarrelRollCalligraphicResponse {
+  const strokeDirectionRad = finiteOr(options.strokeDirectionRad, 0);
+  const nibAngleRad = (finiteOr(options.nibAngleDeg, 0) * Math.PI) / 180;
+  const aspect = clamp(finiteOr(options.nibAspectRatio, 3.2), 1, 8);
+  const effectiveNibAngleRad =
+    nibAngleRad +
+    (packet.twistDeg * Math.PI) / 180 +
+    packet.azimuthRad * clamp01(packet.tiltMagnitudeDeg / 75) * 0.25;
+  const crossProjection = Math.abs(Math.sin(strokeDirectionRad - effectiveNibAngleRad));
+  const minW = 1 / aspect;
+  return Object.freeze({
+    effectiveNibAngleRad: Number(effectiveNibAngleRad.toFixed(4)),
+    widthScale: Number((minW + (1 - minW) * crossProjection).toFixed(4)),
+    edgeSharpness: Number(clamp01(0.55 + (1 - crossProjection) * 0.42).toFixed(4)),
+    tangentialFlowScale: Number(clamp(1 + packet.tangentialPressure * 0.65, 0.25, 1.75).toFixed(4)),
+  });
+}
+
+

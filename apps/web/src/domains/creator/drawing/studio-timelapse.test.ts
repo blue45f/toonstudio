@@ -5,6 +5,8 @@ import {
   TIMELAPSE_PLAYBACK_RATES,
   advanceTimelapsePlayback,
   createTimelapseSession,
+  decodeTimelapseStrokeDelta,
+  encodeTimelapseStrokeDelta,
   endTimelapseSession,
   estimateTimelapseExportSize,
   formatBytes,
@@ -14,6 +16,7 @@ import {
   getTimelapseProgress,
   getTimelapseStats,
   getVisibleStrokes,
+  measureStrokeDeltaCompression,
   recordStroke,
   validateTimelapseStroke,
   type TimelapseStroke,
@@ -211,3 +214,31 @@ describe("getMediaRecorderExportGuide", () => {
     expect(en.join(" ")).toContain("captureStream");
   });
 });
+
+describe("encodeTimelapseStrokeDelta / decodeTimelapseStrokeDelta", () => {
+  it("양자화 1차 차분 코덱이 서브픽셀(<= 0.015px) 정밀도로 복원하고 2.2배 이상의 페이로드 압축률을 달성한다", () => {
+    const stroke: TimelapseStroke = {
+      id: "stroke-sync-01",
+      color: "#1e293b",
+      width: 6.5,
+      startedAtMs: 1200,
+      endedAtMs: 1680,
+      samples: Array.from({ length: 60 }, (_, idx) => ({
+        timeMs: 1200 + idx * 8,
+        x: 120.24 + idx * 1.37 + Math.sin(idx * 0.2) * 0.45,
+        y: 240.68 + idx * 0.92 + Math.cos(idx * 0.2) * 0.35,
+        pressure: 0.25 + (idx / 60) * 0.65,
+      })),
+    };
+
+    const packet = encodeTimelapseStrokeDelta(stroke);
+    const decoded = decodeTimelapseStrokeDelta(packet);
+    expect(decoded.id).toBe(stroke.id);
+    expect(decoded.samples).toHaveLength(stroke.samples.length);
+
+    const metrics = measureStrokeDeltaCompression(stroke);
+    expect(metrics.compressionRatio).toBeGreaterThanOrEqual(2.2);
+    expect(metrics.maxCoordinateErrorPx).toBeLessThanOrEqual(0.015);
+  });
+});
+
