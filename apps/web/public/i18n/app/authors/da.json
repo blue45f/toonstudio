@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "Forfatterskontoret",
+  "authors.eyebrow": "FORFATTEROVERSIGT",
   "authors.title": "Forfattere",
-  "authors.desc": "Knap på en forfatter for at se deres titler, anmeldelser og fancafé på ét sted.",
+  "authors.desc": "Forfattere rangeret efter antal værker. Tryk på en forfatter for at se deres titler, bedømmelser og fancafé samlet ét sted.",
   "authors.search": "Søg forfatternavn",
-  "authors.error": "Jeg kunne ikke lade op på forfatterlisten.",
-  "authors.empty": "ingen tilsvarende forfatter.",
+  "authors.error": "Forfatterlisten kunne ikke indlæses. Prøv igen om et øjeblik.",
+  "authors.empty": " — ingen matchende forfatter.",
   "authors.allOf": "af",
-  "authors.topOf": "· øverste",
+  "authors.topOf": "· øverst",
   "authors.people": "",
-  "authors.works": "værker",
-  "authors.views": "udsigter",
-  "authors.pencafe": "Skaber fan cafe",
+  "authors.works": " værker",
+  "authors.views": "visninger",
+  "authors.pencafe": "Skaberens fancafé",
   "authors.stats": "Top {shown} ud af {total} forfattere",
-  "authors.noName": "Skaberen"
+  "authors.noName": "Skaber"
 }

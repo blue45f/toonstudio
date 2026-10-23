@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Logg er nødvendig.",
+  "apiError.loginRequired": "Log ind er påkrævet.",
   "apiError.adminRequired": "Admin-tilladelser kunne ikke verificeres.",
   "apiError.adminOnlyPage": "Denne side er begrænset til administratorer.",
-  "apiError.notFound": "Den ønskede vare kunne ikke findes.",
-  "apiError.unsupportedType": "Ikke-understøttet indholdstype",
-  "apiError.inactiveAccount": "Inaktivt konto kan ikke bruge administratorfunktioner.",
-  "apiError.settlementFailed": "Afviklingsprocessen mislykkedes."
+  "apiError.notFound": "Det ønskede element kunne ikke findes.",
+  "apiError.unsupportedType": "Ikke-understøttet indholdstype.",
+  "apiError.inactiveAccount": "Inaktive konti kan ikke bruge administratorfunktioner.",
+  "apiError.settlementFailed": "Afregningen mislykkedes. Prøv igen om et øjeblik."
 }

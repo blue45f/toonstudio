@@ -1,14 +1,14 @@
 {
   "control.language.label": "Sprog",
-  "control.language.group.translated": "Oversættelser med høj omsætning",
+  "control.language.group.translated": "Oversættelser med høj dækning",
   "control.language.group.englishBase": "Automatisk oversættelse · Engelsk fallback",
-  "control.sound.enable": "Aktivere lydeffekter",
+  "control.sound.enable": "Aktivér lydeffekter",
   "control.sound.disable": "Deaktiver lydeffekter",
   "control.theme.dark": "Skift til lystilstand",
-  "control.theme.light": "Skift til mørk modus",
-  "control.settings.open": "Åbne indstillinger",
-  "control.settings.close": "Tæt indstillinger",
+  "control.theme.light": "Skift til mørk tilstand",
+  "control.settings.open": "Åbn indstillinger",
+  "control.settings.close": "Luk indstillinger",
   "control.cluster.settings": "Lyd, tema, sprogkontrol",
-  "control.cluster.open": "Åbne indstillinger",
+  "control.cluster.open": "Åbn indstillinger",
   "control.cluster.tooltip": "Lyd, tema og sprogindstillinger"
 }

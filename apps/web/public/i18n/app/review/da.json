@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Udfyldt",
-  "review.progress.binge": "Binge",
-  "review.progress.upcoming": "Planlægning",
-  "review.progress.abandoned": "Faldt",
-  "review.progress.unknown": "Fremskridt skjult",
+  "review.progress.complete": "Færdiglæst",
+  "review.progress.binge": "Maratonlæsning",
+  "review.progress.upcoming": "Planlagt",
+  "review.progress.abandoned": "Droppet",
+  "review.progress.unknown": "Status skjult",
   "review.spoilerRevealLabel": "Vis spoiler"
 }

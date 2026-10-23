@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Jeg kunne ikke lade meddelelser.",
-  "notify.empty": "Ingen nye meddelelser."
+  "notify.loadError": "Notifikationer kunne ikke indlæses. Prøv igen om et øjeblik.",
+  "notify.empty": "Ingen nye notifikationer."
 }
