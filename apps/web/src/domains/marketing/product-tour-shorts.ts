@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 15편.
- * 열다섯 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 19편.
+ * 열아홉 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~15편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~19편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -20,7 +20,11 @@ export interface ProductTourShort {
     | "compare-review"
     | "device-handoff"
     | "asset-library"
-    | "tone-finish";
+    | "tone-finish"
+    | "expression-wardrobe"
+    | "camera-angles"
+    | "version-rewind"
+    | "manuscript-send";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -253,6 +257,66 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Texture from screentones",
       body: "Screentones and effect lines settle onto a black-and-white panel until the scene gains texture.",
+    },
+  },
+  {
+    id: "expression-wardrobe",
+    src: "/brand/promo-shorts/shorts-16-expression.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "표정도, 의상도 한 번에",
+      body: "같은 캐릭터의 표정과 의상을 차례로 바꿔 보며 장면에 맞는 얼굴과 옷차림을 고르는 모습을 담았습니다.",
+    },
+    en: {
+      title: "Faces and outfits, swapped",
+      body: "One character cycling through expressions and outfits while the creator picks the right look for the scene.",
+    },
+  },
+  {
+    id: "camera-angles",
+    src: "/brand/promo-shorts/shorts-17-camera.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "앵글은 카메라로 찾는다",
+      body: "3D 배경 공간 안에서 카메라를 이리저리 움직이며 컷마다 맞는 앵글을 찾는 과정을 담았습니다.",
+    },
+    en: {
+      title: "Finding the angle",
+      body: "A camera moving through a 3D background set, hunting for the angle each panel needs.",
+    },
+  },
+  {
+    id: "version-rewind",
+    src: "/brand/promo-shorts/shorts-19-rewind.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "아니면, 되돌리면 된다",
+      body: "작업 버전을 거슬러 올라가 마음에 들던 단계로 되돌리는 모습을 담았습니다.",
+    },
+    en: {
+      title: "Not right? Rewind",
+      body: "Stepping back through versions of a work to return to the stage that felt right.",
+    },
+  },
+  {
+    id: "manuscript-send",
+    src: "/brand/promo-shorts/shorts-20-send.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "완성 원고, 보내는 순간",
+      body: "마침표를 찍은 원고를 전송해 연재 목록에 올리는 마지막 순간을 담았습니다.",
+    },
+    en: {
+      title: "Sending the finished pages",
+      body: "The final moment a finished manuscript is sent off and lands in the series list.",
     },
   },
 ];
