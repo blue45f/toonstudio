@@ -1,9 +1,9 @@
 {
   "ageGate.title": "Suaugusiųjų turinio patikrinimas",
-  "ageGate.description": "Įveskite gimimo datą, kad įsitikintumėte, kad esate 19 metų ar vyresni.",
+  "ageGate.description": "Įveskite gimimo datą, kad patvirtintumėte, jog jums yra 19 metų ar daugiau.",
   "ageGate.birthDateLabel": "Gimimo data",
   "ageGate.birthYearLabel": "Gimimo metai",
-  "ageGate.birthYearPlaceholder": "Metė",
+  "ageGate.birthYearPlaceholder": "Metai",
   "ageGate.birthMonthLabel": "Gimimo mėnuo",
   "ageGate.birthMonthPlaceholder": "Mėnuo",
   "ageGate.birthDayLabel": "Gimimo diena",
@@ -13,5 +13,5 @@
   "ageGate.daySuffix": "",
   "ageGate.deniedMessage": "Jūs neatitinkate amžiaus reikalavimo.",
   "ageGate.cancel": "Atšaukti",
-  "ageGate.confirm": "Įsteigimas"
+  "ageGate.confirm": "Patvirtinti"
 }

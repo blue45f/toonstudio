@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Užbaigtas",
-  "review.progress.binge": "Žvailėjimas",
+  "review.progress.complete": "Baigta",
+  "review.progress.binge": "Maratonas",
   "review.progress.upcoming": "Planuojama",
-  "review.progress.abandoned": "Išleistas",
-  "review.progress.unknown": "Paslėpta pažanga",
-  "review.spoilerRevealLabel": "Parodykite spoilerį"
+  "review.progress.abandoned": "Nutraukta",
+  "review.progress.unknown": "Skaitymo eiga paslėpta",
+  "review.spoilerRevealLabel": "Rodyti spoilerį"
 }

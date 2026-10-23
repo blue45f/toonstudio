@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Perkrauname naujausią versiją...",
-  "error.chunkRetryFailed": "Iš naujo, bet problema lieka, patikrinkite ryšį ir pabandykite dar kartą.",
+  "error.reloading": "Įkeliama naujausia versija…",
+  "error.chunkRetryFailed": "Atnaujinta vieną kartą, bet problema išlieka. Patikrinkite ryšį ir bandykite dar kartą.",
   "error.reloadButton": "Perkrauti puslapį",
-  "error.goHome": "Eik namo",
+  "error.goHome": "Grįžti į pradžią",
   "error.retryDesc": "Prašau bandyti dar kartą arba grįžti į pagrindinį puslapį."
 }

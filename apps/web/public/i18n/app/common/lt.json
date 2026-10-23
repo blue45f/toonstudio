@@ -1,16 +1,16 @@
 {
-  "common.loading": "Įkrovimas",
-  "common.loading.short": "Įkrovimas",
+  "common.loading": "Įkeliama",
+  "common.loading.short": "Įkeliama",
   "common.close": "Uždaryti",
   "common.open": "Atidaryti",
-  "common.search": "Ieškoti",
-  "common.retry": "Paskambinkite.",
-  "common.retry.short": "Paskambinkite.",
-  "common.backToTop": "Grįžk į viršūnę.",
-  "common.backToHome": "Eik namo.",
-  "common.loading.search": "Ieškojame...",
-  "common.notFoundWithQuery": "Nėra rezultatų \" {query} \".",
-  "common.openSearch": "Ieškokite →",
-  "common.loading.empty": "Nieko duomenų negrįžta.",
-  "common.retry.all": "Pabandyk dar kartą arba grįžk namo."
+  "common.search": "Paieška",
+  "common.retry": "Bandykite dar kartą",
+  "common.retry.short": "Bandykite dar kartą",
+  "common.backToTop": "Grįžti į viršų",
+  "common.backToHome": "Grįžti į pradžią",
+  "common.loading.search": "Ieškoma…",
+  "common.notFoundWithQuery": "Rezultatų pagal '{query}' nėra.",
+  "common.openSearch": "Rasti paieškoje →",
+  "common.loading.empty": "Jokių duomenų negauta.",
+  "common.retry.all": "Bandykite dar kartą arba grįžkite į pradžią."
 }
