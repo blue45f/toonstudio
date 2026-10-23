@@ -1,7 +1,7 @@
 {
-  "error.reloading": "So'nggi versiyani qayta yuklash...",
-  "error.chunkRetryFailed": "Bir marta yangilandi, lekin muammo davom etadi. Iltimos, bog'lanishingizni tekshiring va yana urinib ko'ring.",
+  "error.reloading": "Soʻnggi versiya qayta yuklanmoqda…",
+  "error.chunkRetryFailed": "Bir marta yangilandi, lekin muammo davom etmoqda. Iltimos, ulanishingizni tekshirib, yana urinib koʻring.",
   "error.reloadButton": "Sahifani qayta yuklash",
-  "error.goHome": "Uyga qayt",
-  "error.retryDesc": "Iltimos, yana urinib ko'ring yoki bosh sahifaga qayting."
+  "error.goHome": "Bosh sahifaga",
+  "error.retryDesc": "Iltimos, yana urinib koʻring yoki bosh sahifaga qayting."
 }

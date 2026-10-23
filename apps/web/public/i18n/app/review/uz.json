@@ -1,8 +1,8 @@
 {
-  "review.progress.complete": "Bajarilgan",
-  "review.progress.binge": "Qichqiriq",
+  "review.progress.complete": "Yakunlangan",
+  "review.progress.binge": "Ketma-ket koʻrish",
   "review.progress.upcoming": "Rejalashtirilgan",
-  "review.progress.abandoned": "Chiqindi",
-  "review.progress.unknown": "Yashirin rivojlanish",
-  "review.spoilerRevealLabel": "Spoiler koʻrsatish"
+  "review.progress.abandoned": "Tashlab ketilgan",
+  "review.progress.unknown": "Jarayon yashirin",
+  "review.spoilerRevealLabel": "Spoylerni koʻrsatish"
 }

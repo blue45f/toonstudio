@@ -1,10 +1,10 @@
 {
-  "ad.creativeFallbackAlt": "Sponsorlangan rasm",
-  "ad.slotAriaLabel": "Reklamalar uchun joy",
-  "ad.slotLabel": "Sponsorlash",
-  "ad.slotTitle": "Sponsorlangan tarkib",
-  "ad.ctaDetails": "Xatalarni koʻrish",
-  "ad.placeholderAriaLabel": "Reklama joyini saqlovchi",
-  "ad.placeholderText": "Hech qanday sponsorlashtirilgan tarkib mavjud emas.",
+  "ad.creativeFallbackAlt": "Homiy tasviri",
+  "ad.slotAriaLabel": "Reklama oʻrni",
+  "ad.slotLabel": "Homiy tavsiyasi",
+  "ad.slotTitle": "Homiy kontenti",
+  "ad.ctaDetails": "Batafsil koʻrish",
+  "ad.placeholderAriaLabel": "Reklama oʻrni belgisi",
+  "ad.placeholderText": "Homiy kontenti mavjud emas.",
   "ad.tag": "Reklama"
 }

@@ -1,14 +1,14 @@
 {
   "control.language.label": "Til",
   "control.language.group.translated": "Yuqori qamrovli tarjimalar",
-  "control.language.group.englishBase": "Avtomatik tarjima · Ingliz tilidagi fallback",
-  "control.sound.enable": "Tovush effektlarini qo'llash",
-  "control.sound.disable": "Tovush effektlarini oʻchirib tashlash",
-  "control.theme.dark": "Yorug'lik rejasiga o'tish",
-  "control.theme.light": "Quruq rejimga oʻtish",
-  "control.settings.open": "Ochiq moslamalar",
-  "control.settings.close": "Oʻchirish moslamalari",
-  "control.cluster.settings": "Ovoz, mavzu, til nazoratlari",
-  "control.cluster.open": "Ochiq moslamalar",
-  "control.cluster.tooltip": "Ovoz, mavzu va til sozlari"
+  "control.language.group.englishBase": "Avtomatik tarjima · Ingliz tili zaxira sifatida",
+  "control.sound.enable": "Tovush effektlarini yoqish",
+  "control.sound.disable": "Tovush effektlarini oʻchirish",
+  "control.theme.dark": "Yorugʻ rejimga oʻtish",
+  "control.theme.light": "Qorongʻi rejimga oʻtish",
+  "control.settings.open": "Sozlamalarni ochish",
+  "control.settings.close": "Sozlamalarni yopish",
+  "control.cluster.settings": "Tovush, mavzu va til sozlamalari",
+  "control.cluster.open": "Sozlamalarni ochish",
+  "control.cluster.tooltip": "Tovush, mavzu va til sozlamalari"
 }

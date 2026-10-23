@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "MUQOVASI DIREKTORIyasi",
+  "authors.eyebrow": "MUALLIFLAR KATALOGI",
   "authors.title": "Mualliflar",
-  "authors.desc": "Mualliflarning asarlari soni bo'yicha joylashtirilgan mualliflar.",
-  "authors.search": "Qidiruv muallifining nomi",
-  "authors.error": "Mualliflar ro'yxatini yuklab bo'lmadi.",
-  "authors.empty": "teng muallif yo'q.",
-  "authors.allOf": "(o'z ichiga",
+  "authors.desc": "Mualliflar asarlar soni boʻyicha tartiblangan. Muallifning asarlari, baholari va muxlislar kafesini bir joyda koʻrish uchun uni bosing.",
+  "authors.search": "Muallif ismini qidirish",
+  "authors.error": "Mualliflar roʻyxatini yuklab boʻlmadi. Iltimos, birozdan soʻng yana urinib koʻring.",
+  "authors.empty": " — mos muallif yoʻq.",
+  "authors.allOf": "jami",
   "authors.topOf": "· yuqori",
   "authors.people": "",
-  "authors.works": "ishlar",
-  "authors.views": "koʻrinish",
-  "authors.pencafe": "Yaratuvchi fan kafesi",
-  "authors.stats": "{total}mualliflaridan ko‘rsatilgan {shown}",
-  "authors.noName": "Yaratuvchi"
+  "authors.works": " asar",
+  "authors.views": " koʻrish",
+  "authors.pencafe": "Ijodkor muxlislari kafesi",
+  "authors.stats": "Jami {total} muallifdan yuqori {shown} tasi",
+  "authors.noName": "Ijodkor"
 }

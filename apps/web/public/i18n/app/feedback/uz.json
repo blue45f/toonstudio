@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Qaytarib olish so'rovini yuklab bo'lmadi.",
-  "feedback.thankYou": "Qimmatbaho fikrlaringiz uchun rahmat!",
-  "feedback.anonymousNote": "Sizning javoblaringiz anonim saqlanadi.",
-  "feedback.notAtAll": "Hech qachon",
+  "feedback.loadError": "Fikr-mulohaza soʻrovnomasini yuklab boʻlmadi. Iltimos, birozdan soʻng yana urinib koʻring.",
+  "feedback.thankYou": "Qimmatli fikringiz uchun rahmat!",
+  "feedback.anonymousNote": "Javoblaringiz qatʻiy anonim saqlanadi.",
+  "feedback.notAtAll": "Umuman yoʻq",
   "feedback.definitely": "Albatta"
 }
