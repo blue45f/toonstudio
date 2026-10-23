@@ -5,7 +5,7 @@
  * 티키타카 대사·효과음(SFX) 교차 추천 + 4막 스토리라인 클리프행어·스크롤 유지율 진단 +
  * 컷별 구도 와이어프레임 프리뷰 및 글로벌 K-콘텐츠 연재 지표를 통합 제공하는 UI 카드 컴포넌트.
  */
-import { Award, Layers, MessageSquareQuote, Sparkles, Wand2 } from "lucide-react";
+import { Award, Database, Globe, Layers, MessageSquareQuote, Sparkles, Wand2 } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
 import type { CharacterVoiceArchetype } from "../lettering/studio-dialogue-suggest";
@@ -13,7 +13,14 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import type { StoryboardArtistStyleBinding } from "./studio-ai-storyboard-director";
 import { PANEL_CARD_CLASS } from "./studio-ai-super-suite-options";
-import { runWebtoonStoryboardMasterPipeline } from "./studio-webtoon-storyboard-pipeline";
+import {
+  analyzeArtistDatasetSamples,
+  type ArtistTrainingSampleShotType,
+} from "./studio-artist-style-dna";
+import {
+  buildGlobalKWebtoonExportBundle,
+  runWebtoonStoryboardMasterPipeline,
+} from "./studio-webtoon-storyboard-pipeline";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -26,6 +33,17 @@ const VOICE_ARCHETYPE_OPTIONS: readonly {
   { id: "warm-healer", label: "다정한 조력자 (해요체)" },
   { id: "cynical-rival", label: "냉소적 라이벌 (반말)" },
   { id: "noble-formal", label: "로판·사극 귀족 (격식체)" },
+];
+
+const DATASET_SHOT_OPTIONS: readonly {
+  readonly id: ArtistTrainingSampleShotType;
+  readonly label: string;
+}[] = [
+  { id: "close-up", label: "표정 클로즈업" },
+  { id: "bust", label: "반신 바스트" },
+  { id: "full-body", label: "전신 등신대" },
+  { id: "action", label: "역동 액션" },
+  { id: "background", label: "배경 세계관" },
 ];
 
 export interface StudioWebtoonMasterPipelineCardProps {
@@ -48,6 +66,50 @@ export function StudioWebtoonMasterPipelineCard({
   onApplyScript,
 }: StudioWebtoonMasterPipelineCardProps): ReactElement {
   const [voiceArchetype, setVoiceArchetype] = useState<CharacterVoiceArchetype>("cold-strategist");
+  const [selectedShotTypes, setSelectedShotTypes] = useState<readonly ArtistTrainingSampleShotType[]>([
+    "close-up",
+    "bust",
+    "full-body",
+    "action",
+  ]);
+
+  const datasetSamples = useMemo(
+    () =>
+      selectedShotTypes.map((shotType, idx) => ({
+        id: `sim-sample-${idx + 1}`,
+        width: 1024,
+        height: 1280,
+        shotType,
+        lineDensity:
+          activeArtistStyle?.lineWeight === "bold"
+            ? 0.82
+            : activeArtistStyle?.lineWeight === "fine"
+              ? 0.28
+              : 0.52,
+        shadingContrast:
+          activeArtistStyle?.shadingMode === "hatching"
+            ? 0.78
+            : activeArtistStyle?.shadingMode === "soft-gradient"
+              ? 0.36
+              : 0.66,
+        colorSaturation:
+          activeArtistStyle?.paletteMood === "noir"
+            ? 0.38
+            : activeArtistStyle?.paletteMood === "pastel"
+              ? 0.45
+              : 0.75,
+      })),
+    [selectedShotTypes, activeArtistStyle],
+  );
+
+  const datasetReport = useMemo(
+    () =>
+      analyzeArtistDatasetSamples(datasetSamples, {
+        artistLabel: activeArtistStyle?.artistLabel ?? "작가 커스텀 화풍 모델",
+        triggerWord: activeArtistStyle?.triggerWord ?? "custom_artist_style",
+      }),
+    [datasetSamples, activeArtistStyle],
+  );
 
   const masterOutput = useMemo(
     () =>
@@ -58,12 +120,15 @@ export function StudioWebtoonMasterPipelineCard({
           coreConflict,
         },
         voiceArchetype,
+        artistTrainingSamples: datasetSamples,
         artistStyle: activeArtistStyle,
         creatorLevel,
         targetLocale,
       }),
-    [scriptInput, storyGenre, coreConflict, voiceArchetype, activeArtistStyle, creatorLevel, targetLocale],
+    [scriptInput, storyGenre, coreConflict, voiceArchetype, datasetSamples, activeArtistStyle, creatorLevel, targetLocale],
   );
+
+  const exportBundle = useMemo(() => buildGlobalKWebtoonExportBundle(masterOutput), [masterOutput]);
 
   const {
     cliffhangerDiagnostic,
@@ -227,6 +292,70 @@ export function StudioWebtoonMasterPipelineCard({
           </div>
         </details>
       ) : null}
+
+      {/* 작가 학습 데이터셋 큐레이션 & 화풍 DNA 자동 추론 시뮬레이터 + 글로벌 K-웹툰 플랫폼 규격 */}
+      <details
+        name={`${storyGenre}-master-pipeline-disclosure`}
+        className="rounded-lg border border-line bg-card p-2 text-[0.64rem]"
+      >
+        <summary className="cursor-pointer font-bold text-fg-2">
+          <span className="inline-flex items-center gap-1">
+            <Database size={12} className="text-accent" aria-hidden="true" />
+            작가 학습 데이터셋 준비도 ({datasetReport.readinessScore}점 · 샷 다양성{" "}
+            {Math.round(datasetReport.shotCoverage.diversityRatio * 100)}%) & 글로벌 플랫폼 규격
+          </span>
+        </summary>
+        <div className="mt-2 flex flex-col gap-1.5 text-[0.61rem]">
+          <div className="flex flex-wrap gap-1" role="group" aria-label="학습 데이터셋 샷 구성 선택">
+            {DATASET_SHOT_OPTIONS.map((shot) => {
+              const active = selectedShotTypes.includes(shot.id);
+              return (
+                <button
+                  key={shot.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() =>
+                    setSelectedShotTypes((prev) =>
+                      prev.includes(shot.id)
+                        ? prev.length > 1
+                          ? prev.filter((id) => id !== shot.id)
+                          : prev
+                        : [...prev, shot.id],
+                    )
+                  }
+                  className={cn(
+                    "rounded border px-2 py-0.5 text-[0.59rem] font-semibold",
+                    STUDIO_EASE,
+                    STUDIO_FOCUS_RING,
+                    active
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line bg-raised text-fg-3 hover:bg-card",
+                  )}
+                >
+                  {shot.label}
+                </button>
+              );
+            })}
+          </div>
+          <p data-testid="dataset-dna-auto-caption" className="font-mono text-[0.58rem] text-fg-2">
+            자동 학습 캡션 예시: {datasetReport.autoCaptions[0]?.caption}
+          </p>
+          <p className="text-fg-3">{datasetReport.coachingTips[0]}</p>
+          <div className="border-t border-line pt-1.5">
+            <span className="inline-flex items-center gap-1 font-bold text-fg-2">
+              <Globe size={11} className="text-accent" aria-hidden="true" /> 글로벌 연재 플랫폼 출고 규격:
+            </span>
+            <ul className="mt-0.5 grid grid-cols-1 gap-1 sm:grid-cols-3">
+              {exportBundle.platformSpecs.map((spec) => (
+                <li key={spec.platformId} className="rounded bg-raised px-1.5 py-1 text-[0.58rem]">
+                  <strong className="text-accent">{spec.platformLabel}</strong> ({spec.recommendedWidthPx}×
+                  {spec.maxSliceHeightPx}px): {spec.typesettingRule}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </details>
     </section>
   );
 }

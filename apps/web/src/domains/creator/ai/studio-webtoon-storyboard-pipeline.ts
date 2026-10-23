@@ -335,3 +335,88 @@ export function runWebtoonStoryboardMasterPipeline(
     creatorEcosystemReport,
   });
 }
+
+export interface GlobalKWebtoonPlatformSpec {
+  readonly platformId: "naver-webtoon-global" | "line-manga-piccoma" | "tapas-manta";
+  readonly platformLabel: string;
+  readonly targetLocales: readonly ("ko" | "en" | "ja" | "es")[];
+  readonly recommendedWidthPx: number;
+  readonly maxSliceHeightPx: number;
+  readonly typesettingRule: string;
+}
+
+export interface GlobalKWebtoonExportBundle {
+  readonly artistModelSummary: string;
+  readonly totalCuts: number;
+  readonly platformSpecs: readonly GlobalKWebtoonPlatformSpec[];
+  readonly productionSheetMarkdown: string;
+}
+
+export const GLOBAL_K_WEBTOON_PLATFORM_SPECS: readonly GlobalKWebtoonPlatformSpec[] = Object.freeze([
+  {
+    platformId: "naver-webtoon-global",
+    platformLabel: "NAVER WEBTOON Global (KO/EN/ES)",
+    targetLocales: Object.freeze(["ko", "en", "es"] as const),
+    recommendedWidthPx: 800,
+    maxSliceHeightPx: 1280,
+    typesettingRule: "가로쓰기 중앙 정렬 · 영문/스페인어 번역 시 말풍선 가로폭 35~42% 여유 확보",
+  },
+  {
+    platformId: "line-manga-piccoma",
+    platformLabel: "LINE Manga & Piccoma (JA)",
+    targetLocales: Object.freeze(["ja"] as const),
+    recommendedWidthPx: 800,
+    maxSliceHeightPx: 1280,
+    typesettingRule: "일본어 세로쓰기(타테구미) 겸용 세로 타원형 말풍선 여백 확보",
+  },
+  {
+    platformId: "tapas-manta",
+    platformLabel: "Tapas & Manta (North America)",
+    targetLocales: Object.freeze(["en"] as const),
+    recommendedWidthPx: 940,
+    maxSliceHeightPx: 1280,
+    typesettingRule: "북미 모바일 가독성 기준 1말풍선 22단어 이내 · 효과음(SFX) 병기 권장",
+  },
+]);
+
+/**
+ * 마스터 파이프라인 실행 결과를 전문 작화팀·어시스턴트·글로벌 번역 식자팀에 즉시 전달할 수 있는
+ * K-웹툰 통합 프로덕션 시트(`GlobalKWebtoonExportBundle`)로 직렬화한다.
+ */
+export function buildGlobalKWebtoonExportBundle(
+  output: WebtoonStoryboardMasterOutput,
+): GlobalKWebtoonExportBundle {
+  const { resolvedArtistStyle, artistStyleDna, storylineArc, cliffhangerDiagnostic, enrichedCuts } =
+    output;
+  const artistModelSummary = `${resolvedArtistStyle.artistLabel} (${resolvedArtistStyle.triggerWord}) · ${artistStyleDna.summaryKo}`;
+
+  const cutLines = enrichedCuts.map((item) => {
+    const cut = item.cutPlan;
+    const enEntry = item.localizedDialogues.find((d) => d.locale === "en");
+    const jaEntry = item.localizedDialogues.find((d) => d.locale === "ja");
+    return [
+      `### CUT #${cut.cutNumber} [${cut.shotScale} / ${cut.cameraAngle}] (감정: ${cut.emotion}, 말풍선: ${item.emotionBubble.recommendedBubbleShape})`,
+      `- 지문/요약: ${cut.summary}`,
+      `- 화풍 프롬프트: ${cut.artistStylePrompt ?? cut.backgroundPrompt}`,
+      `- EN 식자: ${enEntry?.localizedText ?? "-"}`,
+      `- JA 식자: ${jaEntry?.localizedText ?? "-"}`,
+    ].join("\n");
+  });
+
+  const productionSheetMarkdown = [
+    `# 글로벌 K-웹툰 프로덕션 스토리보드 시트 (${storylineArc.genre})`,
+    `- 작가 그림체 모델: ${artistModelSummary}`,
+    `- 4막 페이싱: ${storylineArc.pacingSummary}`,
+    `- 클리프행어 훅 강도: ${cliffhangerDiagnostic.hookPowerScore}점 / 스크롤 유지율: ${cliffhangerDiagnostic.scrollRetentionScore}점`,
+    "",
+    ...cutLines,
+  ].join("\n");
+
+  return Object.freeze({
+    artistModelSummary,
+    totalCuts: enrichedCuts.length,
+    platformSpecs: GLOBAL_K_WEBTOON_PLATFORM_SPECS,
+    productionSheetMarkdown,
+  });
+}
+

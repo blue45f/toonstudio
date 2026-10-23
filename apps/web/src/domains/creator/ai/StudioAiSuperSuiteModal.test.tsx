@@ -441,6 +441,7 @@ describe("StudioAiSuperSuiteModal — 고도화 콘티 디렉터 (그림체·스
     expect(screen.getByTestId("cut-global-locale-preview-1").textContent).toContain("EN");
 
     expect(screen.getByTestId("studio-webtoon-master-pipeline-card")).toBeTruthy();
+    expect(screen.getByTestId("dataset-dna-auto-caption").textContent).toContain("자동 학습 캡션 예시:");
     fireEvent.click(screen.getByRole("button", { name: "로판·사극 귀족 (격식체)" }));
     fireEvent.click(screen.getByTestId("apply-voice-exchange-script-btn"));
     expect(scriptTextarea.value).toContain("가문의 이름으로 끝까지 책임을 묻겠습니다");

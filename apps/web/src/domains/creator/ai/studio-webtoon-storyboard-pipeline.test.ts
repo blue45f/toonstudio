@@ -8,6 +8,7 @@ import {
 import { analyzeArtistDatasetSamples } from "./studio-artist-style-dna";
 import { ROUGH_SKETCH_STROKE_TEMPLATES } from "./studio-rough-sketch-analyzer";
 import {
+  buildGlobalKWebtoonExportBundle,
   renderStoryboardCutWireframeDataUrl,
   runWebtoonStoryboardMasterPipeline,
 } from "./studio-webtoon-storyboard-pipeline";
@@ -165,7 +166,7 @@ describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", (
     expect(output.creatorEcosystemReport.globalKContentPlatformScore).toBeGreaterThanOrEqual(80);
   });
 
-  it("컷 와이어프레임 SVG Data URL 렌더러가 샷 스케일과 효과음을 반영한 유효한 SVG를 생성한다", () => {
+  it("컷 와이어프레임 SVG Data URL 렌더러와 글로벌 K-웹툰 프로덕션 번들이 유효한 규격을 생성한다", () => {
     const output = runWebtoonStoryboardMasterPipeline({
       scriptText: '[익스트림 클로즈업] 시우: "절대 물러서지 않아!!"',
       artistPresetId: "k-action-sharp",
@@ -173,5 +174,15 @@ describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", (
     const cut = output.directingResult.cuts[0]!;
     const wireframeUrl = renderStoryboardCutWireframeDataUrl(cut);
     expect(wireframeUrl).toMatch(/^data:image\/svg\+xml;base64,/u);
+
+    const bundle = buildGlobalKWebtoonExportBundle(output);
+    expect(bundle.totalCuts).toBe(1);
+    expect(bundle.platformSpecs.map((p) => p.platformId)).toEqual([
+      "naver-webtoon-global",
+      "line-manga-piccoma",
+      "tapas-manta",
+    ]);
+    expect(bundle.productionSheetMarkdown).toContain("# 글로벌 K-웹툰 프로덕션 스토리보드 시트");
+    expect(bundle.productionSheetMarkdown).toContain("EN 식자:");
   });
 });
