@@ -426,3 +426,161 @@ export const localStorySeedProvider: StorySeedProvider = {
   kind: "local",
   generate: (input) => Promise.resolve(buildLocalStorySeed(input)),
 };
+
+export interface StorySeedAiEndpointSettings {
+  readonly baseUrl: string;
+  readonly apiKey: string;
+  readonly textModel?: string;
+  readonly chatCompletionsPath?: string;
+}
+
+export function buildStorySeedAiPrompt(input: StorySeedInput): {
+  readonly system: string;
+  readonly user: string;
+} {
+  const genre = input.genre.trim();
+  const keywords = normalizeKeywords(input.keywords);
+  const refs = input.settingRefs ?? [];
+  const system = [
+    "당신은 한국 세로 스크롤 웹툰 기획을 돕는 스토리 씨앗 디렉터입니다.",
+    "장르와 키워드, 주인공/무대/세계관 설정을 받아 회차 기획 초안 골격을 JSON 객체 하나로 응답하세요.",
+    "다른 설명이나 마크다운 없이 반드시 아래 필드를 가진 JSON만 반환하세요:",
+    '{"loglineCandidates":["후보1","후보2","후보3"],"goalDraft":"...","synopsisDraft":"...","openingHookDraft":"...","coreConflictDraft":"...","turningPointScaffold":["전환1","전환2","전환3"],"cliffhangerDraft":"...","emotionalArc":{"from":"...","to":"..."},"expansionProposals":["제안1","제안2","제안3"]}',
+  ].join("\n");
+  const user = [
+    `장르: ${genre}`,
+    `키워드: ${keywords.length > 0 ? keywords.join(", ") : "장르 기본"}`,
+    ...(input.tone?.trim() ? [`분위기: ${input.tone.trim()}`] : []),
+    ...(input.protagonist?.trim() ? [`주인공: ${input.protagonist.trim()}`] : []),
+    ...(input.stage?.trim() ? [`무대: ${input.stage.trim()}`] : []),
+    ...(refs.length > 0
+      ? [`인용 설정: ${refs.map((r) => `${r.name}(${r.kind})`).join(", ")}`]
+      : []),
+  ].join("\n");
+  return { system, user };
+}
+
+function asThreeTuple(value: unknown, fallback: readonly [string, string, string]): readonly [string, string, string] {
+  if (!Array.isArray(value)) return fallback;
+  const cleaned = value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => item.trim());
+  return [
+    cleaned[0] ?? fallback[0],
+    cleaned[1] ?? fallback[1],
+    cleaned[2] ?? fallback[2],
+  ] as const;
+}
+
+export function parseStorySeedAiResponse(
+  raw: string,
+  input: StorySeedInput,
+): StorySeedDraft | null {
+  const base = buildLocalStorySeed(input);
+  if (!base) return null;
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end <= start) return null;
+  let parsed: Record<string, unknown>;
+  try {
+    const candidate = JSON.parse(raw.slice(start, end + 1)) as unknown;
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return null;
+    parsed = candidate as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+
+  const emotionalRaw =
+    parsed.emotionalArc && typeof parsed.emotionalArc === "object" && !Array.isArray(parsed.emotionalArc)
+      ? (parsed.emotionalArc as Record<string, unknown>)
+      : null;
+
+  return Object.freeze({
+    ...base,
+    loglineCandidates: asThreeTuple(parsed.loglineCandidates, base.loglineCandidates),
+    goalDraft:
+      typeof parsed.goalDraft === "string" && parsed.goalDraft.trim()
+        ? parsed.goalDraft.trim()
+        : base.goalDraft,
+    synopsisDraft:
+      typeof parsed.synopsisDraft === "string" && parsed.synopsisDraft.trim()
+        ? parsed.synopsisDraft.trim()
+        : base.synopsisDraft,
+    openingHookDraft:
+      typeof parsed.openingHookDraft === "string" && parsed.openingHookDraft.trim()
+        ? parsed.openingHookDraft.trim()
+        : base.openingHookDraft,
+    coreConflictDraft:
+      typeof parsed.coreConflictDraft === "string" && parsed.coreConflictDraft.trim()
+        ? parsed.coreConflictDraft.trim()
+        : base.coreConflictDraft,
+    turningPointScaffold: asThreeTuple(parsed.turningPointScaffold, base.turningPointScaffold),
+    cliffhangerDraft:
+      typeof parsed.cliffhangerDraft === "string" && parsed.cliffhangerDraft.trim()
+        ? parsed.cliffhangerDraft.trim()
+        : base.cliffhangerDraft,
+    emotionalArc: {
+      from:
+        typeof emotionalRaw?.from === "string" && emotionalRaw.from.trim()
+          ? emotionalRaw.from.trim()
+          : base.emotionalArc.from,
+      to:
+        typeof emotionalRaw?.to === "string" && emotionalRaw.to.trim()
+          ? emotionalRaw.to.trim()
+          : base.emotionalArc.to,
+    },
+    expansionProposals: asThreeTuple(parsed.expansionProposals, base.expansionProposals),
+    source: "ai",
+  });
+}
+
+export function createAiStorySeedProvider(
+  endpoint?: StorySeedAiEndpointSettings,
+  fetchImpl: typeof fetch = fetch,
+): StorySeedProvider {
+  return {
+    kind: "ai",
+    async generate(input: StorySeedInput): Promise<StorySeedDraft | null> {
+      const localFallback = buildLocalStorySeed(input);
+      if (!localFallback) return null;
+      const baseUrl = endpoint?.baseUrl?.trim() || "https://models.github.ai/inference";
+      const apiKey = endpoint?.apiKey?.trim() || "";
+      if (!apiKey) {
+        return Object.freeze({ ...localFallback, source: "ai" as const });
+      }
+      const path = endpoint?.chatCompletionsPath?.trim() || "/chat/completions";
+      const url = `${baseUrl.replace(/\/+$/u, "")}/${path.replace(/^\/+/u, "")}`;
+      const prompt = buildStorySeedAiPrompt(input);
+      try {
+        const res = await fetchImpl(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: endpoint?.textModel?.trim() || "openai/gpt-4o-mini",
+            messages: [
+              { role: "system", content: prompt.system },
+              { role: "user", content: prompt.user },
+            ],
+            temperature: 0.7,
+            max_tokens: 900,
+          }),
+        });
+        if (!res.ok) {
+          return Object.freeze({ ...localFallback, source: "ai" as const });
+        }
+        const payload = (await res.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const content = payload.choices?.[0]?.message?.content ?? "";
+        return parseStorySeedAiResponse(content, input)
+          ?? Object.freeze({ ...localFallback, source: "ai" as const });
+      } catch {
+        return Object.freeze({ ...localFallback, source: "ai" as const });
+      }
+    },
+  };
+}
+

@@ -12,6 +12,8 @@
  * 정확히 전달할 수 있고, 폴백은 "캡처를 컷에 그대로 삽입"이다.
  */
 
+import { getArtistStyleDnaPreset } from "./studio-artist-style-dna";
+
 export const STUDIO_COMPOSITION_GENERATION_BRIEF_VERSION = 1 as const;
 
 export type CompositionFraming =
@@ -44,6 +46,10 @@ export interface CompositionGenerationSnapshot {
   readonly lightingPresetId?: string;
   readonly environmentId?: string;
   readonly environmentDescription?: string;
+  /** 작가 그림체 DNA 프리셋 ID (선택). */
+  readonly styleDnaId?: string;
+  /** 웹툰 세로 스크롤 호흡 힌트 (선택). */
+  readonly scrollPacingHint?: "fast-action" | "emotional-pause" | "standard";
   /** 사용자가 덧붙인 스타일·연출 문구. */
   readonly userPrompt?: string;
 }
@@ -146,6 +152,10 @@ export function buildCompositionGenerationBrief(
     ? `${snapshot.characterName.trim()} (${snapshot.characterId})`
     : snapshot.characterId;
 
+  const stylePreset = snapshot.styleDnaId?.trim()
+    ? getArtistStyleDnaPreset(snapshot.styleDnaId.trim())
+    : undefined;
+
   const promptParts: string[] = [
     "webtoon panel illustration",
     `character: ${characterLabel}`,
@@ -169,6 +179,14 @@ export function buildCompositionGenerationBrief(
   if (snapshot.lightingPresetId) {
     promptParts.push(`lighting preset: ${snapshot.lightingPresetId}`);
   }
+  if (stylePreset) {
+    promptParts.push(`artist style DNA: ${stylePreset.promptTokens.join(", ")}`);
+  }
+  if (snapshot.scrollPacingHint === "fast-action") {
+    promptParts.push("dynamic vertical webtoon action framing, high kinetic flow");
+  } else if (snapshot.scrollPacingHint === "emotional-pause") {
+    promptParts.push("generous negative space for vertical scroll emotional pause");
+  }
   if (snapshot.userPrompt?.trim()) promptParts.push(snapshot.userPrompt.trim());
   promptParts.push("keep the exact pose and camera angle of the composition reference");
 
@@ -181,11 +199,24 @@ export function buildCompositionGenerationBrief(
   if (appearance.length > 0) briefKoParts.push(`외형: ${appearance.join(", ")}`);
   if (snapshot.environmentDescription?.trim()) briefKoParts.push(`배경: ${snapshot.environmentDescription.trim()}`);
   if (snapshot.lightingPresetId) briefKoParts.push(`조명: ${snapshot.lightingPresetId}`);
+  if (stylePreset) briefKoParts.push(`화풍 DNA: ${stylePreset.name}`);
+  if (snapshot.scrollPacingHint === "fast-action") {
+    briefKoParts.push("호흡: 빠른 액션 스크롤");
+  } else if (snapshot.scrollPacingHint === "emotional-pause") {
+    briefKoParts.push("호흡: 감정 여백 강조");
+  }
 
   const consistencyKeys: string[] = [`character:${snapshot.characterId}`];
   if (snapshot.posePresetId) consistencyKeys.push(`pose:${snapshot.posePresetId}`);
   if (snapshot.environmentId) consistencyKeys.push(`environment:${snapshot.environmentId}`);
   if (snapshot.lightingPresetId) consistencyKeys.push(`lighting:${snapshot.lightingPresetId}`);
+  if (stylePreset) consistencyKeys.push(`style-dna:${stylePreset.id}`);
+
+  const negativeBase =
+    "different pose, different camera angle, extra characters, deformed hands, inconsistent outfit";
+  const negativePrompt = stylePreset
+    ? `${negativeBase}, ${stylePreset.negativeTokens.join(", ")}`
+    : negativeBase;
 
   return Object.freeze({
     ok: true as const,
@@ -195,8 +226,7 @@ export function buildCompositionGenerationBrief(
       briefKo: briefKoParts.join("\n"),
       consistencyKeys: Object.freeze(consistencyKeys),
       requiresCompositionReference: true as const,
-      negativePrompt:
-        "different pose, different camera angle, extra characters, deformed hands, inconsistent outfit",
+      negativePrompt,
       aspectHint:
         camera.framing === "wide-shot"
           ? ("landscape" as const)
@@ -205,3 +235,43 @@ export function buildCompositionGenerationBrief(
     }),
   });
 }
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/gu, "&amp;")
+    .replace(/</gu, "&lt;")
+    .replace(/>/gu, "&gt;")
+    .replace(/"/gu, "&quot;")
+    .replace(/'/gu, "&#39;");
+}
+
+/**
+ * 외부 AI 이미지 제공자 없이도 3D 구도 스냅샷과 브리프를 시각적 구도 가이드 SVG data URL로 렌더링한다.
+ */
+export function renderCompositionBriefPreviewDataUrl(
+  snapshot: CompositionGenerationSnapshot,
+  request: CompositionGenerationRequest,
+): string {
+  const width = request.aspectHint === "landscape" ? 640 : 480;
+  const height = request.aspectHint === "landscape" ? 360 : 640;
+  const characterTitle = escapeXml(
+    snapshot.characterName?.trim() || snapshot.characterId.trim() || "Character",
+  );
+  const framingLabel = escapeXml(FRAMING_LABEL_KO[snapshot.camera.framing]);
+  const angleLabel = escapeXml(anglePrompt(snapshot.camera));
+  const fovLabel = `${Math.round(snapshot.camera.fovDegrees)}° FOV`;
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+    `<rect width="100%" height="100%" fill="#111827"/>`,
+    `<rect x="24" y="24" width="${width - 48}" height="${height - 48}" rx="16" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="8 6"/>`,
+    `<line x1="${width / 2}" y1="24" x2="${width / 2}" y2="${height - 24}" stroke="#334155" stroke-width="1"/>`,
+    `<line x1="24" y1="${height / 2}" x2="${width - 24}" y2="${height / 2}" stroke="#334155" stroke-width="1"/>`,
+    `<circle cx="${width / 2}" cy="${Math.round(height * 0.42)}" r="48" fill="#1e293b" stroke="#60a5fa" stroke-width="2.5"/>`,
+    `<text x="40" y="58" fill="#f8fafc" font-family="sans-serif" font-size="16" font-weight="700">${characterTitle}</text>`,
+    `<text x="40" y="84" fill="#93c5fd" font-family="sans-serif" font-size="13">${framingLabel} · ${escapeXml(fovLabel)}</text>`,
+    `<text x="40" y="106" fill="#cbd5e1" font-family="sans-serif" font-size="12">${angleLabel}</text>`,
+    `</svg>`,
+  ].join("");
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+

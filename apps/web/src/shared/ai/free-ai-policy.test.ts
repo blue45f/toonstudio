@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertFreeAiConnection,
+  createGithubModelsFreeConnection,
   FREE_AI_PRESETS,
   freeAiConnectionPolicyIssue,
   inferLegacyUserAiCostPolicy,
@@ -58,6 +59,12 @@ describe("cloud-only AI connection policy", () => {
 
   it("restricts automatic free-tier mode to reviewed official text endpoints", () => {
     expect(() => assertFreeAiConnection(connection, "text")).not.toThrow();
+    expect(() =>
+      assertFreeAiConnection(
+        createGithubModelsFreeConnection("test-gh-token", "openai/gpt-4o-mini"),
+        "text",
+      ),
+    ).not.toThrow();
     expect(() => assertFreeAiConnection({
       ...connection,
       baseUrl: "https://router.huggingface.co/v1",

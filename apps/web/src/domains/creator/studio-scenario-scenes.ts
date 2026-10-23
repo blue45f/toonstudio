@@ -238,3 +238,69 @@ export function parseScenarioScenesResponse(
   const characterDescription = typeof obj.characterDescription === "string" ? obj.characterDescription.trim() : "";
   return { ok: true, data: { characterDescription, scenes } };
 }
+
+/**
+ * 외부 AI 응답이 실패하거나 로컬 즉시 생성이 필요할 때, 스토리 텍스트와 캐릭터 바이블 문맥을 바탕으로
+ * 기승전결 beatType·배경 imagePrompt·대사·연속성(continuity) 메타데이터가 완비된 ScenarioScenesPlan을 결정적으로 생성한다.
+ */
+export function buildLocalScenarioScenesPlan(
+  storyText: string,
+  sceneCountHint?: number,
+  characterContext = "",
+): ScenarioScenesPlan {
+  const cleanedStory = storyText.replace(/\s+/gu, " ").trim() || "주인공이 낯선 사건의 중심에 서게 된다.";
+  const cleanedChar = characterContext.replace(/\s+/gu, " ").trim();
+  const count = isValidSceneCountHint(sceneCountHint) ? Math.round(sceneCountHint) : 4;
+  const beats: readonly ScenarioBeatType[] = ["setup", "inciting", "escalation", "climax", "resolution", "turn", "transition"];
+  const clauses = cleanedStory
+    .split(/(?<=[.!?…])\s+|[\n,;]+/u)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const location =
+    /학교|교실|복도/u.test(cleanedStory)
+      ? "학교 교실"
+      : /던전|성채|전장|숲/u.test(cleanedStory)
+        ? "고대 유적 던전"
+        : /옥상|거리|골목|도시/u.test(cleanedStory)
+          ? "도심 골목"
+          : "사건 현장";
+  const time = /밤|새벽|어둠|달빛/u.test(cleanedStory) ? "밤" : /노을|저녁|황혼/u.test(cleanedStory) ? "저녁" : "낮";
+
+  const scenes: ScenarioSceneDraft[] = Array.from({ length: count }, (_, idx) => {
+    const beatType = beats[idx % beats.length] ?? "transition";
+    const clause = clauses[idx % Math.max(1, clauses.length)] ?? cleanedStory;
+    const summary = `${idx + 1}컷 (${beatType}): ${clause.slice(0, 120)}`;
+    const shotLabel =
+      idx === 0
+        ? "와이드 에스태블리싱 샷, 공간 깊이감 강조"
+        : idx === count - 1
+          ? "극적인 클로즈업, 여운을 남기는 역광 연출"
+          : "미디엄 쓰리쿼터 샷, 시선 대립 구도";
+    return {
+      beatType,
+      summary,
+      imagePrompt: `${location}, ${time}, ${shotLabel}, ${clause.slice(0, 100)}`,
+      dialogue:
+        idx === 0
+          ? `(조용한 긴장감이 흐르는 ${location})\n주인공: 여기서부터 진짜 시작이야.`
+          : idx === count - 1
+            ? `주인공: 끝까지 확인해 보겠어.\n(다음 화로 이어지는 강렬한 시선)`
+            : `주인공: 지금 눈앞의 단서를 놓치면 안 돼.`,
+      continuity: {
+        characterNames: ["주인공"],
+        location,
+        time,
+        costumes: { 주인공: cleanedChar ? cleanedChar.slice(0, 40) : "기본 시그니처 의상" },
+      },
+    };
+  });
+
+  return {
+    characterDescription: cleanedChar
+      ? cleanedChar.slice(0, 160)
+      : "선명한 눈매와 개성 있는 실루엣을 가진 웹툰 주인공, 시그니처 일상복 차림",
+    scenes,
+  };
+}
+
