@@ -26,6 +26,7 @@ export const STUDIO_OBJECT_INSERT_CATALOG_VERSION =
 
 export type StudioObjectInsertKind =
   | "bg3d-primitive"
+  | "bg3d-scene-prop"
   | "vrm-prop"
   | "bg3d-scene-template";
 
@@ -36,6 +37,7 @@ export type StudioObjectInsertOpenTarget =
 
 export type StudioObjectInsertFamily =
   | "primitive"
+  | "scene-furniture"
   | "prop-hand"
   | "prop-head"
   | "prop-body"
@@ -75,6 +77,14 @@ export interface StudioObjectInsertPlacementPlan {
   readonly existingCountHint: number;
 }
 
+/** Refined-v8 scene furniture GLBs with rendered thumbnails for 3D scene/room layout. */
+const REFINED_V8_SCENE_FURNITURE_INDEX = Object.freeze([
+  { id: "blackboard", label: "교실 칠판 · 개선형", keywords: ["blackboard", "칠판", "학교", "교실", "보드"], hint: "Blender PBR 개선형 교실 칠판 GLB." },
+  { id: "desk", label: "학생·사무 책상 · 개선형", keywords: ["desk", "책상", "학교", "오피스", "가구"], hint: "Blender PBR 개선형 학생·오피스 책상 GLB." },
+  { id: "chair", label: "학생·카페 의자 · 개선형", keywords: ["chair", "의자", "학교", "카페", "가구"], hint: "Blender PBR 개선형 학생·카페 의자 GLB." },
+  { id: "sofa", label: "라운지 소파 · 개선형", keywords: ["sofa", "소파", "거실", "라운지", "가구"], hint: "Blender PBR 개선형 라운지 소파 GLB." },
+] as const);
+
 /** Lightweight scene-template index (mirrors BG_SCENE_TEMPLATES labels; Three-free). */
 const SCENE_TEMPLATE_INDEX = Object.freeze([
   { id: "classroom", category: "interior", label: "교실", keywords: ["school", "학교", "칠판"], assetUrl: "/assets/3d/environments/refined-v6/classroom_art_studio.glb", thumbnailUrl: "/assets/3d/environments/refined-v6/passes/classroom_art_studio/beauty0001.png" },
@@ -111,6 +121,7 @@ const SCENE_FAMILY: Record<string, StudioObjectInsertFamily> = {
 
 const SCENE_FAMILY_LABEL: Record<StudioObjectInsertFamily, string> = {
   primitive: "기본 입체",
+  "scene-furniture": "배경 가구",
   "prop-hand": "손 소품",
   "prop-head": "머리 소품",
   "prop-body": "몸 소품",
@@ -222,7 +233,34 @@ function buildCatalog(): readonly StudioObjectInsertItem[] {
     });
   });
 
-  return Object.freeze([...primitives, ...props, ...scenes]);
+  const sceneFurniture = REFINED_V8_SCENE_FURNITURE_INDEX.map((item) =>
+    Object.freeze({
+      id: `obj-furniture-${item.id}_v8`,
+      kind: "bg3d-scene-prop" as const,
+      sourceId: `${item.id}_v8`,
+      label: item.label,
+      family: "scene-furniture" as const,
+      familyLabel: SCENE_FAMILY_LABEL["scene-furniture"],
+      keywords: Object.freeze([
+        item.id,
+        `${item.id}_v8`,
+        item.label,
+        ...item.keywords,
+        "가구",
+        "소품",
+        "배경",
+        "3d",
+      ]),
+      hint: item.hint,
+      openTarget: "bg3d-editor" as const,
+      defaultWidth: 360,
+      defaultHeight: 360,
+      assetUrl: `/assets/3d/refined-v8/${item.id}.glb`,
+      thumbnailUrl: `/assets/3d/refined-v8/thumbnails/${item.id}.png`,
+    }),
+  );
+
+  return Object.freeze([...primitives, ...sceneFurniture, ...props, ...scenes]);
 }
 
 let cachedCatalog: readonly StudioObjectInsertItem[] | null = null;

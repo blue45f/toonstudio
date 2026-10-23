@@ -11,11 +11,13 @@ import {
   STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   STUDIO_BG3D_ENVIRONMENT_CYCLES_PASSES,
   STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS,
+  buildStudioBg3dCyclesCompositorLayerPlan,
   getStudioBg3dEnvironmentAsset,
   getStudioBg3dEnvironmentAssetByHash,
   getStudioBg3dEnvironmentCyclesPasses,
   isStudioBg3dEnvironmentAssetId,
   resolveStudioBg3dCc0CounterpartEnvironment,
+  resolveStudioBg3dEnvironmentUrl,
 } from "./studio-bg3d-environment-catalog";
 import {
   DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
@@ -93,6 +95,13 @@ describe("Studio revised environment delivery v6", () => {
         normal: "16",
         ao: "8",
       });
+      const plan = buildStudioBg3dCyclesCompositorLayerPlan(v6.id);
+      expect(plan).toHaveLength(4);
+      expect(plan?.map((layer) => layer.pass)).toEqual(["beauty", "ao", "normal", "depth"]);
+      expect(plan?.[0]).toMatchObject({ pass: "beauty", blendMode: "normal", opacity: 1, visible: true, url: byV6Id!.files.beautyUrl });
+      expect(plan?.[1]).toMatchObject({ pass: "ao", blendMode: "multiply", opacity: 0.35, visible: true, url: byV6Id!.files.aoUrl });
+      expect(plan?.[2]).toMatchObject({ pass: "normal", visible: false, url: byV6Id!.files.normalUrl });
+      expect(plan?.[3]).toMatchObject({ pass: "depth", visible: false, url: byV6Id!.files.depthUrl });
       for (const passUrl of [
         byV6Id!.files.beautyUrl,
         byV6Id!.files.depthUrl,
@@ -104,6 +113,7 @@ describe("Studio revised environment delivery v6", () => {
         expect(png.byteLength).toBeGreaterThan(1024);
       }
     }
+    expect(buildStudioBg3dCyclesCompositorLayerPlan("non-existent-env")).toBeNull();
   });
 
   it("resolves all 10 self-authored CC0 webtoon environments (authored-v1) and maps Tripo MCP environments to their CC0 counterparts", async () => {
@@ -138,6 +148,10 @@ describe("Studio revised environment delivery v6", () => {
       expect(counterpart!.provenance.license).toBe("CC0-1.0");
       expect(counterpart!.url).toBe(`/assets/3d/environments/authored-v1/${mcpAsset.fileName}`);
       expect(counterpart!.sha256).not.toBe(mcpAsset.sha256);
+
+      expect(resolveStudioBg3dEnvironmentUrl(mcpAsset.id)).toBe(mcpAsset.url);
+      expect(resolveStudioBg3dEnvironmentUrl(mcpAsset.id, { preferCc0Counterpart: true })).toBe(counterpart!.url);
+      expect(resolveStudioBg3dEnvironmentUrl(mcpAsset.url, { preferCc0Counterpart: true })).toBe(counterpart!.url);
     }
   });
 });

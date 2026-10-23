@@ -76,6 +76,17 @@ describe("studio object insert catalog (Canva-style 3D elements)", () => {
       expect(placement?.openTarget).toBe("vrm-poser");
       expect(findStudioObjectInsertItem(`obj-prop-blender_${name}`)).toBeNull();
     }
+    for (const name of ["blackboard", "desk", "chair", "sofa"]) {
+      const id = `obj-furniture-${name}_v8`;
+      const entry = findStudioObjectInsertItem(id);
+      expect(entry?.kind).toBe("bg3d-scene-prop");
+      expect(entry?.family).toBe("scene-furniture");
+      expect(entry?.assetUrl).toBe(`/assets/3d/refined-v8/${name}.glb`);
+      expect(entry?.thumbnailUrl).toBe(`/assets/3d/refined-v8/thumbnails/${name}.png`);
+      const placement = planStudioObjectInsertPlacement({ itemId: id, canvasWidth: 800, canvasHeight: 1200 });
+      expect(placement?.sourceId).toBe(`${name}_v8`);
+      expect(placement?.openTarget).toBe("bg3d-editor");
+    }
   });
 
   it("filters by query and family with contrasting results", () => {

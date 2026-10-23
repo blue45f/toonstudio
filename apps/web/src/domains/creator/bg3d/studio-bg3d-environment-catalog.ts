@@ -603,26 +603,15 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1 = Object.freeze([
 
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1 = Object.freeze(
   authoredV1Manifest.assets.map((asset) => defineEnvironment({
-    id: asset.id,
-    name: asset.name,
-    description: asset.description,
-    theme: asset.theme as StudioBg3dEnvironmentTheme,
-    tags: asset.tags,
+    id: asset.id, name: asset.name, description: asset.description,
+    theme: asset.theme as StudioBg3dEnvironmentTheme, tags: asset.tags,
     fileName: asset.fileName as `${string}.glb`,
     url: asset.url as `/assets/3d/environments/${string}.glb`,
     thumbnailUrl: asset.thumbnailUrl as `/assets/3d/environments/${string}.png`,
-    byteSize: asset.byteSize,
-    sha256: asset.sha256 as `sha256:${string}`,
+    byteSize: asset.byteSize, sha256: asset.sha256 as `sha256:${string}`,
     bounds: asset.bounds as [number, number, number],
-    camera: {
-      position: asset.camera.position as [number, number, number],
-      target: asset.camera.target as [number, number, number],
-      fovDegrees: asset.camera.fovDegrees,
-    },
-  }, Object.freeze({
-    ...V3_PROVENANCE,
-    generator: "scripts/generate_self_authored_environment_pack_v1.py",
-  }))),
+    camera: { position: asset.camera.position as [number, number, number], target: asset.camera.target as [number, number, number], fovDegrees: asset.camera.fovDegrees },
+  }, Object.freeze({ ...V3_PROVENANCE, generator: "scripts/generate_self_authored_environment_pack_v1.py" }))),
 );
 
 export const STUDIO_BG3D_ENVIRONMENT_ASSETS = Object.freeze([
@@ -651,12 +640,7 @@ export interface StudioBg3dEnvironmentCyclesPasses {
     readonly normalUrl: `/assets/3d/environments/refined-v6/passes/${string}/normal0001.png`;
     readonly aoUrl: `/assets/3d/environments/refined-v6/passes/${string}/ao0001.png`;
   };
-  readonly colorDepth: {
-    readonly beauty: "8";
-    readonly depth: "16";
-    readonly normal: "16";
-    readonly ao: "8";
-  };
+  readonly colorDepth: { readonly beauty: "8"; readonly depth: "16"; readonly normal: "16"; readonly ao: "8" };
   readonly depthRange: readonly [number, number];
   readonly normalRange: readonly [number, number];
   readonly resolution: readonly [number, number];

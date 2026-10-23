@@ -259,7 +259,7 @@ function objectDescriptor(item: StudioObjectInsertItem): StudioCharmDescriptor |
     section: "object3d",
     label: item.label,
     keywords: [item.id, item.sourceId, item.familyLabel, ...item.keywords],
-    preview: { type: "icon", icon: "object3d" },
+    preview: item.thumbnailUrl ? { type: "image", src: item.thumbnailUrl } : { type: "icon", icon: "object3d" },
     action: {
       type: "open-3d",
       itemId: item.id,
