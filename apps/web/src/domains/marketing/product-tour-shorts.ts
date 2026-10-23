@@ -1,9 +1,9 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 39편.
- * 서른아홉 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 41편.
+ * 마흔한 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
  * 1~4편은 29초 안팎, 5~36편은 14초 안팎, 37편은 11초 안팎, 38편은 8초
- * 안팎, 39·40편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 안팎, 39~42편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -45,7 +45,9 @@ export interface ProductTourShort {
     | "coffee"
     | "rain-ink"
     | "morning-desk"
-    | "book-stack";
+    | "book-stack"
+    | "tea-cup"
+    | "candlelight";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -638,6 +640,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "A stack of books",
       body: "A stack of books piled at the corner of the desk — caught up close.",
+    },
+  },
+  {
+    id: "tea-cup",
+    src: "/brand/promo-shorts/shorts-41-teacup.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "김 오르는 찻잔",
+      body: "작업 책상 위에서 김이 천천히 오르는 찻잔을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "A teacup, still steaming",
+      body: "Steam curling slowly off a teacup on the work desk — caught up close.",
+    },
+  },
+  {
+    id: "candlelight",
+    src: "/brand/promo-shorts/shorts-42-candlelight.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "촛불 아래의 책상",
+      body: "촛불이 흔들리는 빛 아래의 작업 책상을 가까이에서 담았습니다.",
+    },
+    en: {
+      title: "The desk by candlelight",
+      body: "The work desk in the flickering light of a candle — caught up close.",
     },
   },
 ];
