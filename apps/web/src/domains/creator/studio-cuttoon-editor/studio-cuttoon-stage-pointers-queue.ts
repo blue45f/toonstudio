@@ -606,6 +606,7 @@ export function bindStudioCuttoonStagePointersQueue(
       if (
         controller.signal.aborted ||
         (cause instanceof DOMException && cause.name === "AbortError") ||
+        (typeof cause === "object" && cause !== null && (cause as { code?: unknown }).code === "aborted") ||
         !scopeIsCurrent()
       ) return;
       setError(resolveStudioRasterPatchPublishNotice(cause));

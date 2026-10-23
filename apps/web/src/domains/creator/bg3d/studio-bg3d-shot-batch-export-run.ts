@@ -67,10 +67,10 @@ import type { StudioBg3dShotBatchRuntime } from "./studio-bg3d-shot-batch-runtim
 import type { StudioBg3dShotContactSheetImage } from "./studio-bg3d-shot-contact-sheet-contract";
 import type { RefObject } from "react";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
 import { resolveStudioBg3dShotBatchPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
 import { resolveStudioBg3dShotBatchRecoveryDegradedReason, resolveStudioBg3dShotBatchRecoveryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import { StudioBg3dShotBatchPlanError } from "./studio-bg3d-shot-batch-plan-error";
-import { resolveBg3dShotBatchPublicPlanErrorFromCause } from "../status-i18n/studio-producer-error-i18n";
 import { resolveBg3dShotBatchArchiveErrorFromCause } from "../status-i18n/studio-producer-error-i18n-bg3d-shot-batch-archive";
 
 /** Live progress the editor renders while a shot batch renders, packages, and downloads. */
@@ -950,8 +950,7 @@ export function createStudioBg3dShotBatchExportRunner(
             else if (budgetExceeded) failureCode = "artifact-budget-exceeded";
             else if (cause instanceof Error && cause.message.includes("복원")) {
               failureCode = "scene-restore-failed";
-            } else if (cause instanceof Error && (cause.message.includes("PNG") ||
-              (cause instanceof StudioBg3dShotBatchRecoveryError && cause.subcode.toLowerCase().includes("png")))) {
+            } else if (cause instanceof Error && (cause.message.includes("PNG") || (cause instanceof StudioBg3dShotBatchRecoveryError && cause.subcode.toLowerCase().includes("png")))) {
               failureCode = "encode-failed";
             }
             await shotBatchRecoveryStore.failShot(recoverySession, activeRunToken, failureCode);

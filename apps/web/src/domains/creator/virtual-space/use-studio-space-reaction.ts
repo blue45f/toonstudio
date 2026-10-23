@@ -7,6 +7,8 @@ import {
   type StudioVirtualSpacePresenceController,
   type StudioVirtualSpaceSnapshot,
 } from "./studio-virtual-space-presence";
+import { playStudioSfxSound } from "./studio-virtual-space-sound-engine";
+import { studioEmoteSfxKind } from "./studio-virtual-space-sound-synth";
 
 /**
  * 이모트 리액션 송신. 컨트롤러가 있으면 presence로 보내고, 없으면 로컬
@@ -29,6 +31,7 @@ export function useStudioSpaceReaction(input: {
 
   const sendReaction = useCallback((reaction: StudioSpaceEmoteId) => {
     engineBridge.requestEmote(reaction);
+    playStudioSfxSound(studioEmoteSfxKind(reaction), 0.9);
     markCoach("emoted");
     const controller = controllerRef.current;
     if (controller) {

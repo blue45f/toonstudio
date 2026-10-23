@@ -46,6 +46,7 @@ const CONSUMERS = [
   "StudioReferencePanel.tsx",
   "brush/StudioBrushLibraryPanel.tsx",
   "export/StudioExportMenuPanel.tsx",
+  "export/studio-interchange-display-message.ts",
 ] as const;
 const MIGRATED_FILES = CONSUMERS;
 
@@ -56,6 +57,7 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "StudioReferencePanel.tsx": 2352,
   "brush/StudioBrushLibraryPanel.tsx": 1328,
   "export/StudioExportMenuPanel.tsx": 1941,
+  "export/studio-interchange-display-message.ts": 26,
 };
 
 const blocks = parseRegisterModule(readSource(MODULE_FILE));

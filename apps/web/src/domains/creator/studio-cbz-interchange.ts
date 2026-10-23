@@ -1,3 +1,4 @@
+import { cbzError, type StudioCbzWarningVariant } from "./export/studio-cbz-interchange-error";
 import {
   buildStudioPackageArchiveBlob,
   buildStudioPackageArchiveBytes,
@@ -121,10 +122,8 @@ export type StudioCbzWarningCode =
   | "PAGE_COUNT_MISMATCH";
 
 /** 같은 경고 코드라도 방출 지점마다 원문이 달라 리졸버 키를 가르는 접미사. */
-import { StudioCbzError, cbzError } from "./studio-cbz-interchange-error";
-import type { StudioCbzErrorVariant, StudioCbzWarningVariant } from "./studio-cbz-interchange-error";
-export { StudioCbzError } from "./studio-cbz-interchange-error";
-export type { StudioCbzErrorVariant, StudioCbzWarningVariant } from "./studio-cbz-interchange-error";
+export { StudioCbzError } from "./export/studio-cbz-interchange-error";
+export type { StudioCbzErrorVariant, StudioCbzWarningVariant } from "./export/studio-cbz-interchange-error";
 
 /**
  * A4 D4 (R12): 생산자는 표시 문구 대신 구조화 코드+variant+params만 방출한다.

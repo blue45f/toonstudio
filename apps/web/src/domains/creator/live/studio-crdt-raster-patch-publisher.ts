@@ -196,7 +196,7 @@ function fail(code: StudioRasterPatchPublicationErrorCode, params?: Readonly<Rec
 }
 
 function abortError(signal: AbortSignal): Error {
-  return signal.reason instanceof Error ? signal.reason : new StudioRasterPatchPublicationError("aborted");
+  return signal.reason instanceof StudioRasterPatchPublicationError ? signal.reason : new StudioRasterPatchPublicationError("aborted", undefined, signal.reason);
 }
 
 function throwIfAborted(signal: AbortSignal): void {

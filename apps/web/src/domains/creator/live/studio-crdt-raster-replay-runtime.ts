@@ -587,7 +587,7 @@ export async function decodeStudioRasterPngInBrowser(
   } catch (error) {
     if (signal.aborted) throw abortError(signal);
     if (error instanceof StudioRasterReplayRuntimeError) throw error;
-    fail("browser-png-decode-failed", { assetId: reference.assetId }, error);
+    return fail("browser-png-decode-failed", { assetId: reference.assetId }, error);
   } finally {
     bitmap?.close();
   }

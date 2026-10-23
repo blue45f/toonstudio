@@ -121,9 +121,10 @@ describe("Virtual Studio safe customization", () => {
     expect(parseStudioVirtualDecorationState(state)).not.toBeNull();
   });
 
-  it("오피스 직군·워크모드 코디 프리셋 6종과 신규 액세서리·오라·트레일·명찰을 모두 검증하고 저장한다", async () => {
-    const { STUDIO_VIRTUAL_CHARACTER_PRESETS } = await import("./studio-virtual-space-customization");
-    expect(STUDIO_VIRTUAL_CHARACTER_PRESETS).toHaveLength(6);
+  it("오피스 직군·워크모드 코디 프리셋 8종과 16종 액세서리·오라·트레일·명찰을 모두 검증하고 저장한다", async () => {
+    const { STUDIO_VIRTUAL_ACCESSORY_KEYS, STUDIO_VIRTUAL_CHARACTER_PRESETS } = await import("./studio-virtual-space-customization");
+    expect(STUDIO_VIRTUAL_ACCESSORY_KEYS).toHaveLength(16);
+    expect(STUDIO_VIRTUAL_CHARACTER_PRESETS).toHaveLength(8);
     for (const preset of STUDIO_VIRTUAL_CHARACTER_PRESETS) {
       expect(parseStudioVirtualCharacterCustomization(preset.customization)).toEqual(preset.customization);
       expect(writeStudioVirtualCharacterCustomization(preset.customization)).toBe(true);

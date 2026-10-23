@@ -75,6 +75,10 @@ describe("studio emote playback schedule", () => {
     expect(studioEmoteBodyMotion("yoga", 500, 4_000, false).bodyY).toBeLessThan(-4);
     expect(Math.abs(studioEmoteBodyMotion("kpop-dance", 160, 4_000, false).bodyX)).toBeGreaterThan(1);
     expect(Math.abs(studioEmoteBodyMotion("shuffle", 140, 4_000, false).bodyX)).toBeGreaterThan(1);
+    expect(Math.abs(studioEmoteBodyMotion("neck-stretch", 300, 3_600, false).bodyAngle)).toBeGreaterThan(2);
+    expect(Math.abs(studioEmoteBodyMotion("tai-chi", 450, 4_000, false).bodyX)).toBeGreaterThan(2);
+    expect(studioEmoteBodyMotion("cheers", 90, 3_000, false).bodyY).toBeLessThan(-2);
+    expect(Math.abs(studioEmoteBodyMotion("moonwalk", 100, 4_000, false).bodyX)).toBeGreaterThan(2);
   });
 
   it("표정 있는 이모트는 표정을 함께 알려 준다", () => {
@@ -84,6 +88,8 @@ describe("studio emote playback schedule", () => {
     expect(studioEmotePose(startStudioEmotePlayback("dance", 0), 10, false)?.expression).toBeNull();
     expect(studioEmotePose(startStudioEmotePlayback("calisthenics", 0), 10, false)?.expression).toBe("happy");
     expect(studioEmotePose(startStudioEmotePlayback("yoga", 0), 10, false)?.expression).toBe("calm");
+    expect(studioEmotePose(startStudioEmotePlayback("cheers", 0), 10, false)?.expression).toBe("happy");
+    expect(studioEmotePose(startStudioEmotePlayback("moonwalk", 0), 10, false)?.expression).toBe("happy");
   });
 
   it("Phaser 색 정수를 #rrggbb로 바꾼다", () => {

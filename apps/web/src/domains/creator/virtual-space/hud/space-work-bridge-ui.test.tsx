@@ -59,4 +59,31 @@ describe("SpaceFocusChip", () => {
     fireEvent.click(screen.getByRole("button", { name: "계속" }));
     expect(onResume).toHaveBeenCalledOnce();
   });
+
+  it("휴식 구간에서는 진행률·완료 세션 배지와 원클릭 체조·요가 버튼을 제공한다", () => {
+    const onEmote = vi.fn();
+    const session = {
+      ...createStudioFocusSession(25 * 60_000),
+      phase: "break" as const,
+      startedAt: T0,
+      endsAt: T0 + 5 * 60_000,
+      completedCount: 3,
+    };
+    const { container } = render(
+      <SpaceFocusChip
+        session={session}
+        now={T0 + 2.5 * 60_000}
+        onPause={vi.fn()}
+        onResume={vi.fn()}
+        onStop={vi.fn()}
+        onEmote={onEmote}
+      />,
+    );
+    expect(container.querySelector("[data-focus-progress='50']")).toBeTruthy();
+    expect(container.querySelector("[data-completed-sessions='3']")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /체조/ }));
+    expect(onEmote).toHaveBeenCalledWith("calisthenics");
+    fireEvent.click(screen.getByRole("button", { name: /요가/ }));
+    expect(onEmote).toHaveBeenCalledWith("yoga");
+  });
 });

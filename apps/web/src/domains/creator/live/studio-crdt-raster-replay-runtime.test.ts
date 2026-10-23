@@ -780,7 +780,7 @@ describe("studio raster CRDT replay runtime", () => {
         pngChunk("IDAT", Uint8Array.of(0x78, 0x01, 1)),
         pngChunk("IEND", new Uint8Array()),
       ],
-      "invalid_png_chunk_type",
+      "invalid-png-chunk-type",
     ],
     [
       "unknown critical chunk",

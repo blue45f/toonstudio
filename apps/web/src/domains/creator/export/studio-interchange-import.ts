@@ -3,8 +3,6 @@ import { uid } from "../studio-id";
 import { createBlankPage } from "../studio-pages";
 import { STUDIO_PROJECT_MAX_PAGES } from "../studio-project-file";
 
-import { resolveStudioCbzErrorFromCause } from "../status-i18n/studio-producer-error-i18n-interchange-cbz";
-import { resolveStudioOpenRasterErrorFromCause } from "../status-i18n/studio-producer-error-i18n-interchange-ora";
 import { resolveStudioPsdImportErrorFromCause } from "../status-i18n/studio-producer-error-i18n-psd-import";
 import { resolveStudioWillV1ImportErrorFromCause } from "../status-i18n/studio-producer-error-i18n-will-import";
 import { loadStudioPsdImportModule } from "./studio-document-export-loaders";
@@ -242,7 +240,15 @@ export function createStudioInterchangeImportOrchestration(
     } catch (cause) {
       if (controller.signal.aborted || documentImportEpochRef.current !== importEpoch) return;
       // A4 D4 (R12): cbz/ora 생산자는 구조화 코드만 방출하므로 표시 지점인 이 catch에서
-      // 덕 타이핑 리졸버로 해석한다. 타 생산자 오류는 기존 message 경로를 유지한다.
+      // 지연 로드한 덕 타이핑 리졸버로 해석한다. 타 생산자 오류는 기존 message 경로를 유지한다.
+      const [
+        { resolveStudioCbzErrorFromCause },
+        { resolveStudioOpenRasterErrorFromCause },
+      ] = await Promise.all([
+        import("../status-i18n/studio-producer-error-i18n-interchange-cbz"),
+        import("../status-i18n/studio-producer-error-i18n-interchange-ora"),
+      ]);
+      if (controller.signal.aborted || documentImportEpochRef.current !== importEpoch) return;
       const message = resolveStudioCbzErrorFromCause(cause)
         ?? resolveStudioOpenRasterErrorFromCause(cause)
         ?? resolveStudioWillV1ImportErrorFromCause(cause)

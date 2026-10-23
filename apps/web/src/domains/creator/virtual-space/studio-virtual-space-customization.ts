@@ -14,6 +14,10 @@ export const STUDIO_VIRTUAL_ACCESSORY_KEYS = [
   "vr-visor",
   "pen-wing",
   "sprout",
+  "coffee-cup",
+  "deadline-fire",
+  "music-beam",
+  "angel-wings",
 ] as const;
 export const STUDIO_VIRTUAL_AURA_KEYS = [
   "none",
@@ -121,6 +125,24 @@ export const STUDIO_VIRTUAL_CHARACTER_PRESETS: readonly StudioVirtualCharacterPr
     roleSummaryKo: "에피소드 완결·런칭 기념 황금 왕관 & 음표 코디",
     roleSummaryEn: "Golden crown & music notes for episode launch",
     customization: Object.freeze({ accessoryKey: "crown", auraKey: "sparkle", trailKey: "music-note", nameplateKey: "gold" }),
+  }),
+  Object.freeze({
+    id: "coffee-brainer",
+    icon: "☕",
+    labelKo: "기획 작가 · 커피 브레이너",
+    labelEn: "Story Writer · Coffee Brainer",
+    roleSummaryKo: "스토리 브레인스토밍·대사 집필용 커피잔 & 스타라이트 코디",
+    roleSummaryEn: "Floating coffee mug & starlight for story brainstorming",
+    customization: Object.freeze({ accessoryKey: "coffee-cup", auraKey: "sparkle", trailKey: "ink-drop", nameplateKey: "rose" }),
+  }),
+  Object.freeze({
+    id: "crunch-guardian",
+    icon: "🪽",
+    labelKo: "크런치 수호천사 · QA",
+    labelEn: "Crunch Guardian · QA",
+    roleSummaryKo: "마감 전 최종 검수·무결성 수호용 천사 날개 & 집중 오라 코디",
+    roleSummaryEn: "Guardian wings & focus aura for final release QA",
+    customization: Object.freeze({ accessoryKey: "angel-wings", auraKey: "focus", trailKey: "rainbow", nameplateKey: "obsidian" }),
   }),
 ]);
 
@@ -391,4 +413,8 @@ export const STUDIO_VIRTUAL_ACCESSORY_FRAME: Readonly<Record<StudioVirtualAccess
   "vr-visor": 0,
   "pen-wing": 0,
   sprout: 0,
+  "coffee-cup": 0,
+  "deadline-fire": 0,
+  "music-beam": 0,
+  "angel-wings": 0,
 });

@@ -1,3 +1,4 @@
+import { oraError, StudioOpenRasterError, type StudioOpenRasterWarning } from "./export/studio-openraster-interchange-error";
 import {
   buildStudioPackageArchiveBlob,
   buildStudioPackageArchiveBytes,
@@ -128,11 +129,9 @@ export type StudioOpenRasterWarningCode =
   | "UNSUPPORTED_XML_ELEMENT";
 
 /** 같은 경고 코드라도 방출 지점마다 원문이 달라 리졸버 키를 가르는 접미사. */
-import { StudioOpenRasterError, oraError } from "./studio-openraster-interchange-error";
-import type { StudioOpenRasterErrorVariant, StudioOpenRasterWarning, StudioOpenRasterWarningVariant } from "./studio-openraster-interchange-error";
-export type { StudioOpenRasterWarning } from "./studio-openraster-interchange-error";
-export { StudioOpenRasterError } from "./studio-openraster-interchange-error";
-export type { StudioOpenRasterErrorVariant, StudioOpenRasterWarningVariant } from "./studio-openraster-interchange-error";
+export type { StudioOpenRasterWarning } from "./export/studio-openraster-interchange-error";
+export { StudioOpenRasterError } from "./export/studio-openraster-interchange-error";
+export type { StudioOpenRasterErrorVariant, StudioOpenRasterWarningVariant } from "./export/studio-openraster-interchange-error";
 
 
 export type StudioOpenRasterGroupIsolation = "isolate" | "auto";
