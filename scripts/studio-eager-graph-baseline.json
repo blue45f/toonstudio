@@ -9,17 +9,17 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1605,
-    "bytes": 19874481
+    "modules": 1618,
+    "bytes": 20139449
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
-      "modules": 225,
-      "bytes": 1185169
+      "modules": 226,
+      "bytes": 1189015
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1419,
-      "bytes": 19028339
+      "modules": 1431,
+      "bytes": 19290251
     }
   },
   "forbiddenDomains": {
@@ -60,7 +60,7 @@
     },
     "apps/web/src/domains/creator/bg3d": {
       "modules": 18,
-      "bytes": 288340,
+      "bytes": 288050,
       "files": [
         "apps/web/src/domains/creator/bg3d/StudioBg3dRetainedOwnerRouteBridge.tsx",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts",
@@ -354,7 +354,7 @@
   "folders": {
     "apps/web/src/app": {
       "modules": 9,
-      "bytes": 45756
+      "bytes": 46278
     },
     "apps/web/src/app/components": {
       "modules": 1,
@@ -365,8 +365,8 @@
       "bytes": 13865
     },
     "apps/web/src/app/routes": {
-      "modules": 46,
-      "bytes": 168617
+      "modules": 47,
+      "bytes": 170059
     },
     "apps/web/src/app/spatial-campus": {
       "modules": 3,
@@ -374,7 +374,7 @@
     },
     "apps/web/src/domains/auth": {
       "modules": 16,
-      "bytes": 65803
+      "bytes": 66580
     },
     "apps/web/src/domains/character-chat": {
       "modules": 1,
@@ -382,15 +382,15 @@
     },
     "apps/web/src/domains/creator": {
       "modules": 564,
-      "bytes": 8540840
+      "bytes": 8542347
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
       "bytes": 2781
     },
     "apps/web/src/domains/creator/ai": {
-      "modules": 23,
-      "bytes": 235679
+      "modules": 26,
+      "bytes": 247165
     },
     "apps/web/src/domains/creator/assistant": {
       "modules": 3,
@@ -398,7 +398,7 @@
     },
     "apps/web/src/domains/creator/bg3d": {
       "modules": 18,
-      "bytes": 288340
+      "bytes": 288050
     },
     "apps/web/src/domains/creator/browser-translate": {
       "modules": 1,
@@ -406,15 +406,15 @@
     },
     "apps/web/src/domains/creator/brush": {
       "modules": 148,
-      "bytes": 2502666
+      "bytes": 2505695
     },
     "apps/web/src/domains/creator/brush-lab": {
       "modules": 29,
-      "bytes": 264811
+      "bytes": 273399
     },
     "apps/web/src/domains/creator/canvas": {
       "modules": 61,
-      "bytes": 669831
+      "bytes": 669998
     },
     "apps/web/src/domains/creator/catalog": {
       "modules": 2,
@@ -445,8 +445,8 @@
       "bytes": 8051
     },
     "apps/web/src/domains/creator/drawing": {
-      "modules": 2,
-      "bytes": 40663
+      "modules": 3,
+      "bytes": 54946
     },
     "apps/web/src/domains/creator/ecosystem": {
       "modules": 1,
@@ -458,11 +458,11 @@
     },
     "apps/web/src/domains/creator/export": {
       "modules": 6,
-      "bytes": 58132
+      "bytes": 58879
     },
     "apps/web/src/domains/creator/filter": {
       "modules": 11,
-      "bytes": 159765
+      "bytes": 161122
     },
     "apps/web/src/domains/creator/generic-3d-model": {
       "modules": 1,
@@ -482,7 +482,7 @@
     },
     "apps/web/src/domains/creator/lettering": {
       "modules": 18,
-      "bytes": 248576
+      "bytes": 269450
     },
     "apps/web/src/domains/creator/lift3d": {
       "modules": 1,
@@ -490,7 +490,7 @@
     },
     "apps/web/src/domains/creator/live": {
       "modules": 50,
-      "bytes": 792267
+      "bytes": 791320
     },
     "apps/web/src/domains/creator/localization": {
       "modules": 2,
@@ -553,12 +553,12 @@
       "bytes": 31191
     },
     "apps/web/src/domains/creator/status-i18n": {
-      "modules": 7,
-      "bytes": 142633
+      "modules": 12,
+      "bytes": 318625
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 79,
-      "bytes": 977248
+      "bytes": 992787
     },
     "apps/web/src/domains/creator/studio-production": {
       "modules": 1,
@@ -613,8 +613,8 @@
       "bytes": 2562
     },
     "apps/web/src/shared/ai": {
-      "modules": 8,
-      "bytes": 94499
+      "modules": 11,
+      "bytes": 103289
     },
     "apps/web/src/shared/ambient": {
       "modules": 12,
@@ -626,7 +626,7 @@
     },
     "apps/web/src/shared/components": {
       "modules": 50,
-      "bytes": 210844
+      "bytes": 210862
     },
     "apps/web/src/shared/hooks": {
       "modules": 2,
@@ -638,7 +638,7 @@
     },
     "apps/web/src/shared/lib": {
       "modules": 74,
-      "bytes": 274546
+      "bytes": 275633
     },
     "apps/web/src/shared/navigation": {
       "modules": 3,
@@ -720,6 +720,7 @@
     "apps/web/src/app/routes/groups/legal-route-pages.ts": 1,
     "apps/web/src/app/routes/groups/legal.routes.tsx": 1,
     "apps/web/src/app/routes/groups/market.routes.tsx": 1,
+    "apps/web/src/app/routes/groups/marketing-route-pages.ts": 1,
     "apps/web/src/app/routes/groups/marketing.routes.tsx": 1,
     "apps/web/src/app/routes/groups/monetization.routes.tsx": 1,
     "apps/web/src/app/routes/groups/newsletter.routes.tsx": 1,
@@ -813,6 +814,9 @@
     "apps/web/src/domains/creator/a11y/use-studio-window-keyboard-focus.ts": 2,
     "apps/web/src/domains/creator/ai/StudioAiProjectHandoffHost.tsx": 2,
     "apps/web/src/domains/creator/ai/answer-tuning.ts": 2,
+    "apps/web/src/domains/creator/ai/claude/ClaudeAssistDialogHostEntry.tsx": 2,
+    "apps/web/src/domains/creator/ai/claude/claude-assist-dialog-store.ts": 2,
+    "apps/web/src/domains/creator/ai/claude/claude-canvas-capture-registry.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-asset-image-request.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-assist-ux.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-client.ts": 2,
@@ -1113,6 +1117,7 @@
     "apps/web/src/domains/creator/contracts/studio-comments-primitives.ts": 2,
     "apps/web/src/domains/creator/contracts/studio-live-adjustment-contract.ts": 2,
     "apps/web/src/domains/creator/creator-studio-links.ts": 2,
+    "apps/web/src/domains/creator/drawing/studio-csp-benchmark-scorecard.ts": 2,
     "apps/web/src/domains/creator/drawing/studio-perspective-guide.ts": 2,
     "apps/web/src/domains/creator/drawing/studio-perspective-pen-snap.ts": 2,
     "apps/web/src/domains/creator/ecosystem/ecosystem-content.ts": 2,
@@ -1365,6 +1370,11 @@
     "apps/web/src/domains/creator/status-i18n/studio-host-reason-i18n.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c06-core.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c07-core.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-bg3d-lt.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-glb.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-crdt.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-raster.ts": 2,
+    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-room.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-vrm-panel-status-i18n-core.ts": 2,
     "apps/web/src/domains/creator/studio-2d-source-size.ts": 2,
     "apps/web/src/domains/creator/studio-active-stroke-lifecycle.ts": 2,
@@ -1998,11 +2008,14 @@
     "apps/web/src/platform/browser/storage-migrate.ts": 1,
     "apps/web/src/platform/runtime-api-base.ts": 3,
     "apps/web/src/shared/ai/ai-host-policy.ts": 2,
+    "apps/web/src/shared/ai/claude/claude-protocol.ts": 2,
     "apps/web/src/shared/ai/free-ai-policy.ts": 2,
     "apps/web/src/shared/ai/free-ai-runtime-budget.ts": 2,
     "apps/web/src/shared/ai/unified-ai-settings.ts": 2,
+    "apps/web/src/shared/ai/user-ai-bounded-read.ts": 2,
     "apps/web/src/shared/ai/user-ai-crypto.ts": 2,
     "apps/web/src/shared/ai/user-ai-store.ts": 2,
+    "apps/web/src/shared/ai/user-ai-transport-error.ts": 2,
     "apps/web/src/shared/ai/user-ai-transport.ts": 2,
     "apps/web/src/shared/ai/user-ai-types.ts": 2,
     "apps/web/src/shared/ambient/PageIntroMotif.tsx": 1,
@@ -2330,6 +2343,14 @@
       "increases": [
         "총 정적 도달 원본 +253.6 KiB",
         "앱 셸 폐포 +4.0 KiB"
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "reason": "i18n 12~13라운드 producerError 사전(live-raster/live-room/glb/live-crdt) 정적 도달 기준선 반영",
+      "increases": [
+        "총 정적 도달 원본 +258.8 KiB",
+        "앱 셸 폐포 +3.8 KiB"
       ]
     }
   ]
