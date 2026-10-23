@@ -1,4 +1,5 @@
 import { panelStatusText } from "./studio-panel-status-i18n-r3c06"; import { panelStatusTextR4 } from "./studio-panel-status-i18n-r4";
+import { r45CreatorStatusText } from "./r45-cat1-status-i18n";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -90,7 +91,7 @@ const STATUS_COPY: Readonly<
     icon: XCircle,
   },
   review: {
-    title: "자동 검사는 통과했고 사람의 최종 확인이 필요합니다",
+    title: r45CreatorStatusText("r45cat1.creator.finishQuality.reviewTitle", "자동 검사는 통과했고 사람의 최종 확인이 필요합니다"),
     description: "경고는 연출 의도와 실제 독자 화면을 기준으로 판단하세요.",
     className: "border-warning/35 bg-warning-soft/15",
     icon: AlertTriangle,

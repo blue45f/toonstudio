@@ -1,4 +1,5 @@
 import { engagementStatusText } from "./engagement-status-i18n";
+import { r45EngagementStatusText } from "./r45-cat1-status-i18n";
 import {
   Archive,
   BellRing,
@@ -384,8 +385,8 @@ export function NotificationCenterPage() {
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-panel/60 px-4 py-3">
           <p className="min-w-0 flex-1 text-xs leading-5 text-fg-2">
             {showRoleFiltered
-              ? `직군 알림 설정으로 숨길 제작 알림 ${roleHiddenCount}건을 함께 표시하고 있습니다.`
-              : `직군 알림 설정으로 제작 알림 ${roleHiddenCount}건이 숨겨져 있습니다. 숨긴 알림은 삭제되지 않습니다.`}
+              ? r45EngagementStatusText("r45cat1.engagement.notificationCenter.roleHiddenShowing", { count: roleHiddenCount }, "직군 알림 설정으로 숨길 제작 알림 {count}건을 함께 표시하고 있습니다.")
+              : r45EngagementStatusText("r45cat1.engagement.notificationCenter.roleHiddenNotice", { count: roleHiddenCount }, "직군 알림 설정으로 제작 알림 {count}건이 숨겨져 있습니다. 숨긴 알림은 삭제되지 않습니다.")}
           </p>
           <button
             type="button"
