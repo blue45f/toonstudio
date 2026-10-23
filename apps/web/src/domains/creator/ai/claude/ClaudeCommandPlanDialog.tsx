@@ -35,7 +35,7 @@ import {
 
 import { clearRecentRequests, pushRecentRequest, recentRequests } from "./claude-assist-recents";
 import { candidatesFromStudioBindings, knowledgeFromStudioCatalog } from "./claude-command-candidates";
-import { executeCommandPlanSteps, type CommandStepResult } from "./claude-command-plan";
+import { COMMAND_PLAN_LIMITS, executeCommandPlanSteps, type CommandStepResult } from "./claude-command-plan";
 import {
   estimateCommandAnswerCostCapUsd,
   estimateCommandPlanCostCapUsd,
@@ -224,7 +224,14 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
           ? t("claudeAssist.art.needBudget")
           : null;
 
-  const transferText = t(mode === "do" ? "claudeAssist.plan.preflightTransferDo" : "claudeAssist.plan.preflightTransferAsk", { count: itemCount });
+  // 실행 모드는 지금 쓸 수 없는 명령의 이름도 함께 보낸다(캐시가 상태에 흔들리지 않게). 보낸 수와 쓸 수 있는 수를 나눠 알린다.
+  const sentCount = Math.min(candidates.length, COMMAND_PLAN_LIMITS.maxCandidates);
+  const transferText = t(mode === "do" ? "claudeAssist.plan.preflightTransferDo" : "claudeAssist.plan.preflightTransferAsk", { count: mode === "do" ? sentCount : knowledge.length });
+  const countText = itemCount === 0
+    ? t("claudeAssist.plan.noCandidates")
+    : mode === "do"
+      ? t("claudeAssist.plan.candidates", { count: sentCount, usable: usableCount })
+      : t("claudeAssist.plan.knowledgeCount", { count: knowledge.length });
   const showPlanResult = outcome?.kind === "plan" && mode === "do";
   const showAnswerResult = outcome?.kind === "answer" && mode === "explain";
   const primary = readyToRun ? "run" : "ask";
@@ -304,7 +311,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
             clearRecentRequests(mode);
             setRecents([]);
           }}
-          itemCount={itemCount}
+          countText={countText}
           textareaRef={textareaRef}
         />
 

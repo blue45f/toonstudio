@@ -12,6 +12,7 @@
  */
 
 import { SumiError } from "../core/errors";
+import { kmMixRgb } from "../pigment/kubelka-munk";
 
 export type DabMode = "additive" | "multiply" | "erase";
 
@@ -46,6 +47,62 @@ export function generateDabMask(size: number, hardness: number): Float32Array {
       const dist = Math.hypot(dx, dy);
       const hardValue = dist <= radius ? 1 : 0;
       const softValue = Math.max(0, 1 - dist / radius);
+      mask[y * size + x] = Math.fround(hard * hardValue + soft * softValue);
+    }
+  }
+  return mask;
+}
+
+/**
+ * 이방성 회전 타원 dab 마스크(Anisotropic rotated elliptical dab mask + 선택적 가우시안 감쇠).
+ * - aspectRatio: 장축/단축 비율(>= 1.0, 1.0이면 원형)
+ * - angleRad: 장축 회전 각도(라디안)
+ * - gaussianFalloff: true면 소프트 구간을 가우시안 벨 커브로 감쇠
+ */
+export function generateEllipticalDabMask(
+  size: number,
+  hardness: number,
+  aspectRatio = 1.0,
+  angleRad = 0.0,
+  gaussianFalloff = false,
+): Float32Array {
+  if (!Number.isFinite(size) || size < 1 || size !== Math.trunc(size)) {
+    throw new SumiError("kc-invalid-mask", "size는 1 이상의 정수여야 한다", { size });
+  }
+  if (!Number.isFinite(hardness) || hardness < 0 || hardness > 1) {
+    throw new SumiError("kc-invalid-mask", "hardness는 [0, 1]이어야 한다", { hardness });
+  }
+  if (!Number.isFinite(aspectRatio) || aspectRatio < 1) {
+    throw new SumiError("kc-invalid-mask", "aspectRatio는 1 이상이어야 한다", { aspectRatio });
+  }
+
+  const mask = new Float32Array(size * size);
+  const center = (size - 1) / 2;
+  const radiusMajor = size / 2;
+  const radiusMinor = radiusMajor / aspectRatio;
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
+  const hard = Math.fround(hardness);
+  const soft = Math.fround(1 - hardness);
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const dx = x - center;
+      const dy = y - center;
+      const rx = dx * cosA + dy * sinA;
+      const ry = -dx * sinA + dy * cosA;
+      const normDist = Math.hypot(
+        rx / Math.max(1e-6, radiusMajor),
+        ry / Math.max(1e-6, radiusMinor),
+      );
+      if (normDist > 1) {
+        mask[y * size + x] = 0;
+        continue;
+      }
+      const hardValue = 1;
+      const softValue = gaussianFalloff
+        ? Math.exp(-3.5 * normDist * normDist) * (1 - normDist)
+        : 1 - normDist;
       mask[y * size + x] = Math.fround(hard * hardValue + soft * softValue);
     }
   }
@@ -126,3 +183,63 @@ export function applyDab(
     }
   }
 }
+
+/**
+ * Kubelka-Munk(kmMixRgb) 색공간에서 dab 마스크 가중치로 캔버스 픽셀과 브러시 안료를 혼합한다.
+ */
+export function applyDabPigmentMix(
+  mask: Float32Array,
+  color: readonly [number, number, number, number],
+  canvas: Float32Array,
+  offsetX: number,
+  offsetY: number,
+): void {
+  if (!Number.isFinite(offsetX) || !Number.isFinite(offsetY)) {
+    throw new SumiError("kc-invalid-offset", "offsetX/offsetY는 유한값이어야 한다", {
+      offsetX,
+      offsetY,
+    });
+  }
+  const dim = Math.sqrt(canvas.length / 4);
+  if (!Number.isFinite(dim) || dim !== Math.trunc(dim)) {
+    throw new SumiError("kc-invalid-canvas", "canvas는 정사각형 RGBA interleaved 버퍼여야 한다", {
+      length: canvas.length,
+    });
+  }
+  const maskSize = Math.sqrt(mask.length);
+  if (!Number.isFinite(maskSize) || maskSize !== Math.trunc(maskSize)) {
+    throw new SumiError("kc-invalid-mask", "mask는 정사각형이어야 한다", { length: mask.length });
+  }
+
+  const brushAlpha = Math.max(0, Math.min(1, color[3]));
+  for (let my = 0; my < maskSize; my += 1) {
+    const cy = offsetY + my;
+    if (cy < 0 || cy >= dim) continue;
+    const maskRow = my * maskSize;
+    for (let mx = 0; mx < maskSize; mx += 1) {
+      const cx = offsetX + mx;
+      if (cx < 0 || cx >= dim) continue;
+      const m = mask[maskRow + mx] * brushAlpha;
+      if (m <= 0) continue;
+      const base = (cy * dim + cx) * 4;
+      const dstA = canvas[base + 3];
+      if (dstA <= 1e-6) {
+        canvas[base] = Math.fround(color[0]);
+        canvas[base + 1] = Math.fround(color[1]);
+        canvas[base + 2] = Math.fround(color[2]);
+        canvas[base + 3] = Math.fround(m);
+      } else {
+        const [r, g, b] = kmMixRgb(
+          [canvas[base], canvas[base + 1], canvas[base + 2]],
+          [color[0], color[1], color[2]],
+          m,
+        );
+        canvas[base] = r;
+        canvas[base + 1] = g;
+        canvas[base + 2] = b;
+        canvas[base + 3] = Math.fround(Math.min(1, dstA + m * (1 - dstA)));
+      }
+    }
+  }
+}
+

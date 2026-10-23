@@ -1,5 +1,6 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
+import { installStudioCanvasCapture } from "./ai/claude/claude-canvas-capture-registry";
 import {
   shouldDrawWatermark,
   watermarkPlacement,
@@ -132,5 +133,16 @@ export function useStudioRasterExportOrchestration(
   input: StudioRasterExportIntentInput,
 ): StudioRasterExportOrchestration {
   const operationInFlightRef = useRef(false);
-  return createStudioRasterExportIntentController(input, operationInFlightRef);
+  const orchestration = createStudioRasterExportIntentController(input, operationInFlightRef);
+  // Claude 보조(아트 디렉터·대체 텍스트)가 "캔버스에서 가져오기"로 현재 페이지를 쓸 수 있게, 에디터가 켜져 있는 동안 같은 캡처 경로를 건넨다.
+  // 매 렌더 새로 만들어지는 컨트롤러의 최신 값을 ref로 읽어, 등록은 한 번만 하고 늘 지금 페이지를 찍는다.
+  const latest = useRef(orchestration);
+  useEffect(() => {
+    latest.current = orchestration;
+  });
+  useEffect(
+    () => installStudioCanvasCapture(async () => (await latest.current.handleCapturePagesForPreset("current"))[0] ?? null),
+    [],
+  );
+  return orchestration;
 }

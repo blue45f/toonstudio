@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+// 게이트 실패의 공통 원인(Studio 크롬 변경)을 확인하는 일회성 진단: 메뉴 '삽입'·도구 레일 설정·시작 패널의 실제 DOM 을 덤프한다.
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import http from "node:http";
+import net from "node:net";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+const TREE = process.env.SWEEP_TREE;
+const OUT = process.env.TRIAGE_OUT;
+if (!TREE || !OUT) throw new Error("SWEEP_TREE, TRIAGE_OUT 필요");
+mkdirSync(OUT, { recursive: true });
+const require = createRequire(join(TREE, "package.json"));
+const { chromium } = require("playwright");
+
+const port = await new Promise((resolve) => {
+  const server = net.createServer();
+  server.listen(0, "127.0.0.1", () => { const { port: p } = server.address(); server.close(() => resolve(p)); });
+});
+const preview = spawn("pnpm", ["exec", "vite", "preview", "--config", "apps/web/vite.config.ts", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
+  { cwd: TREE, stdio: "ignore", detached: true });
+const origin = `http://127.0.0.1:${port}`;
+for (let i = 0; i < 60; i += 1) {
+  const ok = await new Promise((resolve) => {
+    const req = http.get(`${origin}/`, (res) => { res.resume(); resolve(res.statusCode === 200); });
+    req.on("error", () => resolve(false));
+  });
+  if (ok) break;
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+const browser = await chromium.launch({ headless: true, channel: "chromium", args: ["--no-sandbox"] });
+const report = {};
+try {
+  const context = await browser.newContext({ locale: "ko-KR", viewport: { width: 1440, height: 1000 } });
+  const page = await context.newPage();
+  await page.goto(`${origin}/studio/canvas?preset=illustration`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(8000);
+  await page.screenshot({ path: join(OUT, "01-initial.png") });
+  report.starter = await page.locator('[data-studio-creative-starter="true"]').evaluateAll((els) => els.map((el) => ({ visible: !!(el.offsetWidth || el.offsetHeight), collapsed: el.getAttribute("data-studio-quickstart-collapsed"), box: el.getBoundingClientRect().toJSON() })));
+  report.betaNoticeHost = await page.locator('[data-studio-beta-notice-host="true"]').count();
+  report.railSettingsButtons = await page.locator('[data-studio-tool-rail-settings="true"]').getByRole("button").evaluateAll((els) => els.map((el) => ({ name: el.getAttribute("aria-label") ?? el.textContent?.trim().slice(0, 40), visible: !!(el.offsetWidth || el.offsetHeight) })));
+  report.railToolIds = await page.locator("[data-studio-rail-tool-id]").evaluateAll((els) => els.map((el) => el.getAttribute("data-studio-rail-tool-id")));
+  report.menubarButtons = await page.getByRole("menubar").getByRole("menuitem").evaluateAll((els) => els.map((el) => el.textContent?.trim().slice(0, 20))).catch(() => null);
+  const insertTrigger = page.getByRole("menuitem", { name: "삽입", exact: true }).first();
+  report.insertTriggerCount = await page.getByRole("menuitem", { name: "삽입", exact: true }).count();
+  if (report.insertTriggerCount > 0) {
+    await insertTrigger.click();
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: join(OUT, "02-insert-menu.png") });
+    report.menus = await page.locator('[role="menu"]').evaluateAll((els) => els.map((el) => ({ label: el.getAttribute("aria-label"), items: [...el.querySelectorAll('[role="menuitem"]')].map((item) => item.textContent?.trim().replace(/\s+/g, " ").slice(0, 40)) })));
+  }
+  const expander = page.getByRole("menuitem", { name: /고급 도구 펼치기/u }).first();
+  if (await expander.count() > 0) {
+    await expander.click();
+    await page.waitForTimeout(800);
+    report.menusAfterExpand = await page.locator('[role="menu"]').evaluateAll((els) => els.map((el) => ({ label: el.getAttribute("aria-label"), items: [...el.querySelectorAll('[role="menuitem"]')].map((item) => item.textContent?.trim().replace(/\s+/g, " ").slice(0, 40)) })));
+    await page.screenshot({ path: join(OUT, "03-insert-menu-expanded.png") });
+  }
+  writeFileSync(join(OUT, "ui-triage.json"), `${JSON.stringify(report, null, 2)}\n`);
+  console.log(JSON.stringify(report, null, 2));
+} finally {
+  await browser.close();
+  try { process.kill(-preview.pid, "SIGTERM"); } catch { /* 이미 종료 */ }
+}

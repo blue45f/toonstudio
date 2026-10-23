@@ -26,6 +26,8 @@ export function candidatesFromStudioBindings(
     result.push({
       commandId: binding.commandId,
       label: binding.label || label?.label || binding.commandId,
+      // 메뉴 이름은 상태에 따라 바뀔 수 있어(켜기/끄기) 프롬프트에는 카탈로그의 고정 이름을 싣는다.
+      ...(label?.label ? { stableLabel: label.label } : {}),
       ...(label?.description ? { description: label.description } : {}),
       ...(aliases.length > 0 ? { aliases: [...new Set(aliases)] } : {}),
       ...(entry?.shortcut ? { shortcut: entry.shortcut } : {}),

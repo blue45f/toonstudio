@@ -59,6 +59,7 @@ function result(raw: LocalizeRaw = RAW): LocalizeRunResult {
     model: "claude-opus-5-5",
     usage: { inputTokens: 900, outputTokens: 400, cacheReadTokens: 0, cacheWriteTokens: 0 },
     estimatedUsd: 0.012,
+    chunks: { total: 1, done: 1 },
   };
 }
 
@@ -681,5 +682,91 @@ describe("ClaudeLocalizeDialog — 리뷰 반영", () => {
     await act(async () => { finish(result()); });
     await screen.findByRole("region", { name: "번역 결과" });
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /다시 번역하기/ })));
+  });
+
+  describe("긴 입력을 묶음으로 나눠 보내기", () => {
+    const LONG = Array.from({ length: 40 }, (_, index) => `대사 ${index + 1}`);
+
+    function chunkResult(upTo: number, extra: Partial<LocalizeRunResult["chunks"]> = {}, total = 2): LocalizeRunResult {
+      const raw: LocalizeRaw = {
+        items: Array.from({ length: upTo }, (_, index) => ({ index: index + 1, translation: `T${index + 1}`, shorter: null, note: null })),
+        warnings: [],
+      };
+      return {
+        view: normalizeLocalizeResult(raw, { lines: LONG.slice(0, upTo) }),
+        model: "claude-opus-5-5",
+        usage: { inputTokens: 900, outputTokens: 400, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        estimatedUsd: 0.012,
+        chunks: { total, done: upTo > 20 ? 2 : 1, ...extra },
+      };
+    }
+
+    it("25줄을 넘으면 몇 묶음으로 나눠 보내는지와 상한이 모든 묶음의 합이라는 것을 알린다", () => {
+      connectClaude();
+      renderDialog();
+      typeLines(LONG);
+
+      const hint = document.querySelector("[data-claude-many-lines]");
+      expect(hint?.textContent).toBe("줄이 많아요(40줄). 2묶음으로 나눠 차례로 번역해요. 요금 상한은 모든 묶음을 합친 값이에요.");
+      typeLines(LINES);
+      expect(document.querySelector("[data-claude-many-lines]")).toBeNull();
+    });
+
+    it("묶음이 끝날 때마다 끝난 줄을 먼저 보여 주고, 진행 상황을 알린다", async () => {
+      connectClaude();
+      let finish: (value: LocalizeRunResult) => void = () => undefined;
+      runLocalize.mockImplementation((_route, _input, options: { onProgress: (partial: LocalizeRunResult) => void }) => new Promise<LocalizeRunResult>((resolve) => {
+        finish = resolve;
+        options.onProgress(chunkResult(20));
+      }));
+      renderDialog();
+      typeLines(LONG);
+
+      fireEvent.click(screen.getByRole("button", { name: RUN }));
+
+      const region = await screen.findByRole("region", { name: "번역 결과" });
+      expect(within(region).getByText("T20")).toBeTruthy();
+      expect(document.querySelector("[data-claude-task-status] [role=status]")?.textContent).toBe("번역하는 중이에요. 1/2묶음을 마쳤어요.");
+      expect(screen.queryByText(/묶음만 번역했어요/)).toBeNull();
+
+      await act(async () => { finish(chunkResult(40, { done: 2 })); });
+      await waitFor(() => expect(within(screen.getByRole("region", { name: "번역 결과" })).getByText("T40")).toBeTruthy());
+      expect(screen.queryByText(/묶음만 번역했어요/)).toBeNull();
+    });
+
+    it("둘째 묶음에서 멈추면 번역한 줄은 남기고 나머지는 빠졌다고 표시하며 이유를 알린다", async () => {
+      connectClaude();
+      runLocalize.mockResolvedValue(chunkResult(20, { done: 1, error: "연결이 불안정해요. 잠시 뒤 다시 시도해 주세요." }));
+      renderDialog();
+      typeLines(LONG);
+
+      await runAndWait();
+
+      const region = screen.getByRole("region", { name: "번역 결과" });
+      expect(within(region).getByText("T20")).toBeTruthy();
+      expect(within(region).getAllByText("이 줄은 번역이 오지 않았어요. 직접 적거나 다시 번역해 주세요.")).toHaveLength(20);
+      const partial = document.querySelector("[data-claude-localize-partial]") as HTMLElement;
+      expect(partial.textContent).toContain("2묶음 중 1묶음만 번역했어요.");
+      expect(within(partial).getByRole("alert").textContent).toContain("연결이 불안정해요. 잠시 뒤 다시 시도해 주세요.");
+    });
+
+    it("중단하면 그때까지 끝난 묶음의 번역은 남는다", async () => {
+      connectClaude();
+      runLocalize.mockImplementation((_route, _input, options: { onProgress: (partial: LocalizeRunResult) => void; signal: AbortSignal }) => new Promise<LocalizeRunResult>((_resolve, reject) => {
+        options.onProgress(chunkResult(20));
+        options.signal.addEventListener("abort", () => reject(new Error("취소했어요.")));
+      }));
+      renderDialog();
+      typeLines(LONG);
+
+      fireEvent.click(screen.getByRole("button", { name: RUN }));
+      const region = await screen.findByRole("region", { name: "번역 결과" });
+      fireEvent.click(screen.getByRole("button", { name: "중단" }));
+
+      await waitFor(() => expect(document.querySelector("[data-claude-localize-partial]")).not.toBeNull());
+      expect(within(screen.getByRole("region", { name: "번역 결과" })).getByText("T20")).toBeTruthy();
+      expect(document.querySelector("[data-claude-localize-partial]")?.textContent).toContain("2묶음 중 1묶음만 번역했어요.");
+      expect(region.isConnected).toBe(true);
+    });
   });
 });

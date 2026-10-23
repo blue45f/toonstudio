@@ -70,6 +70,34 @@ describe("캐릭터 캐논 시트 모델", () => {
     expect(sheet.referenceImage).toBeNull();
   });
 
+  it("서빙을 내린 차단 아바타 썸네일을 레퍼런스로 든 저장본은 레퍼런스 없는 시트로 복구한다", () => {
+    const stale = {
+      id: "stale-1",
+      name: "하린",
+      appearance: "갈색 단발",
+      referenceImage: "/assets/3d/characters/thumbnails/refined-v2/avatar-a.png",
+      referenceSource: "avatar",
+      referenceLabel: "기본 아바타 · 하린",
+    };
+    const kept = {
+      id: "kept-1",
+      name: "시온",
+      appearance: "은발",
+      referenceImage: "/assets/3d/characters/thumbnails/refined-v2/shion.png",
+      referenceSource: "avatar",
+      referenceLabel: "기본 아바타 · 시온",
+    };
+    const loaded = parseCharacterCanonDocument(JSON.stringify({ sheets: [stale, kept], usage: [] }));
+    expect(loaded.sheets[0]).toMatchObject({ id: "stale-1", referenceImage: null, referenceSource: null, referenceLabel: null });
+    expect(loaded.sheets[1]).toMatchObject({ id: "kept-1", referenceImage: kept.referenceImage, referenceSource: "avatar", referenceLabel: kept.referenceLabel });
+
+    const rebuilt = buildCharacterCanonSheet(
+      draft({ referenceImage: "/assets/3d/characters/thumbnails/noa.png", referenceSource: "avatar", referenceLabel: "기본 아바타 · 노아" }),
+      { id: "sheet-2" },
+    );
+    expect(rebuilt).toMatchObject({ referenceImage: null, referenceSource: null, referenceLabel: null });
+  });
+
   it("깨진 저장값을 만나도 빈 문서로 복구된다", () => {
     expect(parseCharacterCanonDocument(null)).toEqual(
       emptyCharacterCanonDocument(),

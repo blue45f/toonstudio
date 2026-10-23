@@ -1,5 +1,6 @@
 import { ArrowRight, Boxes, Brush, ChevronRight, Map as MapIcon, Users, type LucideIcon } from "lucide-react";
 
+import { useReducedMotionPreference } from "@/shared/ambient/useAmbientExperience";
 import Link from "@/shared/navigation/router-link";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -16,6 +17,7 @@ const ICONS: Readonly<Record<HomeCoreStudioId, LucideIcon>> = {
 /** 드로잉·3D·협업·가상 스튜디오를 홈 첫 화면 가까이에서 바로 여는 입구. */
 export function HomeCoreStudios() {
   const bi = useBilingualLocalizer("domains.marketing.HomeCoreStudios");
+  const reducedMotion = useReducedMotionPreference();
   return (
     <section className="rd-core-studios" aria-labelledby="rd-core-studios-title">
       <div className="rd-core-heading">
@@ -33,7 +35,8 @@ export function HomeCoreStudios() {
             : null;
           return (
             <li key={studio.id} className="rd-core-card" data-core-studio={studio.id}>
-              {backdrop ? (
+              {/* 움직임 최소화를 선호하면 영상 요소를 만들지 않는다 — CSS 로 숨기기만 하면 <video> 와 내려받기가 남는다. */}
+              {backdrop && !reducedMotion ? (
                 <div className="rd-core-card-media" aria-hidden="true">
                   <video
                     autoPlay

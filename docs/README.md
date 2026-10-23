@@ -51,10 +51,10 @@ Studio는 다음 문서를 추가로 본다.
 2. [`reports/character-lab-engine-alternatives-2026-10-01.md`](reports/character-lab-engine-alternatives-2026-10-01.md) — 엔진 대안 비교(역사 자료)
 3. [`engines/labs-brush-engine-references-2026-10-01.md`](engines/labs-brush-engine-references-2026-10-01.md), [`engines/labs-character-engine-references-2026-10-01.md`](engines/labs-character-engine-references-2026-10-01.md) — 채택 기법·참고 코드·논문·라이선스·수치 목표 원장
 
-Godot의 Studio 3D 적용 가능성 평가(2026-10-15, 제안 상태이며 현재 기능이 아니다)는 다음 문서를 추가로 본다.
+Godot의 Studio 3D 적용 가능성 평가(2026-10-15)는 역사 자료다. 2026-10-21 소유자 결정(PR #2354)으로 운영 Godot 섬이 제거돼 ADR-0028 은 Superseded 이고 현재 기능이 아니다. 다음 문서를 추가로 본다.
 
-1. [`reports/godot-3d-evaluation-2026-10-15.md`](reports/godot-3d-evaluation-2026-10-15.md) — 3D 한계 진단, 적용 모드 비교, 측정 해석(`target` 평가 보고서)
-2. [`adr/0028-godot-3d-adoption-modes.md`](adr/0028-godot-3d-adoption-modes.md) — 모드별 채택 조건·롤백·공급망(Proposed)
+1. [`reports/godot-3d-evaluation-2026-10-15.md`](reports/godot-3d-evaluation-2026-10-15.md) — 3D 한계 진단, 적용 모드 비교, 측정 해석(`target` 평가 보고서, 2026-10-15 시점)
+2. [`adr/0028-godot-3d-adoption-modes.md`](adr/0028-godot-3d-adoption-modes.md) — 모드별 채택 조건·롤백·공급망(Superseded, 모드 B~D 보류)
 3. [`evidence/godot-3d-poc/2026-10-15/README.md`](evidence/godot-3d-poc/2026-10-15/README.md) — 측정 원본 JSON과 읽는 법
 4. [`../tools/godot-3d-poc/README.md`](../tools/godot-3d-poc/README.md) — PoC 재현 순서(운영 연결·배포 없음)
 

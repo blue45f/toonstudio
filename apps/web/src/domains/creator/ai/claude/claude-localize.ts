@@ -348,11 +348,42 @@ const SYSTEM_RULES = [
   `- warnings에는 문맥이 모자라 모호했던 점 등 전체 주의사항을 최대 ${LOCALIZE_LIMITS.maxWarnings}개 한국어 해요체로 적으세요.`,
 ].join("\n");
 
-/** 모델에 보낼 요청. 말풍선은 번호를 붙여 `자료` 구역에만 둔다. */
-export function buildLocalizeRequest(
+/**
+ * 한 번에 보내는 줄 수의 상한. 넘으면 같은 크기의 묶음으로 나눠 차례로 보낸다.
+ * 줄이 많고 깊이가 높으면 사고 토큰이 늘어 응답이 잘릴 수 있는데(2026-10-22 실측), 묶음이 작으면 한 요청의 출력이 상한 안에 든다.
+ */
+export const LOCALIZE_CHUNK_LINES = 25;
+
+/** 묶음의 앞쪽에서 번역하지 않고 문맥으로만 딸려 보내는 앞 줄 수. 묶음 경계에서 말투·지칭이 끊기지 않게 한다. */
+export const LOCALIZE_CONTEXT_LINES = 3;
+
+/** 입력 줄 `[start, end)`(0부터) 구간. */
+export interface LocalizeChunk {
+  readonly start: number;
+  readonly end: number;
+}
+
+/** 줄 수를 `LOCALIZE_CHUNK_LINES` 이하로 균등하게 나눈다(26줄이면 13+13). 0줄이면 빈 목록. */
+export function planLocalizeChunks(lineCount: number): LocalizeChunk[] {
+  if (!(lineCount > 0)) return [];
+  const count = Math.ceil(lineCount / LOCALIZE_CHUNK_LINES);
+  const base = Math.floor(lineCount / count);
+  const extra = lineCount % count;
+  const chunks: LocalizeChunk[] = [];
+  let start = 0;
+  for (let position = 0; position < count; position += 1) {
+    const size = base + (position < extra ? 1 : 0);
+    chunks.push({ start, end: start + size });
+    start += size;
+  }
+  return chunks;
+}
+
+function buildRequest(
   model: string,
   input: LocalizeInput,
   depth: ClaudeEffortDepth,
+  extraHeader: readonly string[],
 ): Anthropic.MessageCreateParamsNonStreaming {
   const ratio = LOCALIZE_BUDGET_RATIO[input.budget];
   const header = [
@@ -369,6 +400,7 @@ export function buildLocalizeRequest(
   if (input.glossary.length > 0) {
     header.push("용어집(원문 = 번역):", ...input.glossary.map((entry) => `- ${cleanSingleLineText(entry.source, LOCALIZE_LIMITS.maxTermChars)} = ${cleanSingleLineText(entry.target, LOCALIZE_LIMITS.maxTermChars)}`));
   }
+  header.push(...extraHeader);
   const body = input.lines.map((line, index) => `${index + 1}. ${cleanSingleLineText(line, LOCALIZE_LIMITS.maxLineChars)}`);
   return {
     model,
@@ -378,6 +410,34 @@ export function buildLocalizeRequest(
     // `effort`를 모르는 모델(구형 Sonnet·Haiku)에 보내면 400이라 지원이 확인된 모델에만 싣는다.
     ...(claudeModelSupportsEffort(model) ? { output_config: { effort: depth } } : {}),
   };
+}
+
+/** 모델에 보낼 요청(전체 줄을 한 번에). 말풍선은 번호를 붙여 `자료` 구역에만 둔다. */
+export function buildLocalizeRequest(
+  model: string,
+  input: LocalizeInput,
+  depth: ClaudeEffortDepth,
+): Anthropic.MessageCreateParamsNonStreaming {
+  return buildRequest(model, input, depth, []);
+}
+
+/**
+ * 묶음 하나의 요청. 번호는 묶음 안에서 1부터 다시 매기고, 전체에서의 위치와 앞 문맥(번역 대상 아님)을 알려 준다.
+ * 묶음이 전체와 같으면(한 번에 보내는 경우) `buildLocalizeRequest`와 같은 요청이다.
+ */
+export function buildLocalizeChunkRequest(
+  model: string,
+  input: LocalizeInput,
+  depth: ClaudeEffortDepth,
+  chunk: LocalizeChunk,
+): Anthropic.MessageCreateParamsNonStreaming {
+  if (chunk.start === 0 && chunk.end >= input.lines.length) return buildLocalizeRequest(model, input, depth);
+  const context = input.lines.slice(Math.max(0, chunk.start - LOCALIZE_CONTEXT_LINES), chunk.start);
+  const extra = [`분량: 전체 ${input.lines.length}줄 중 ${chunk.start + 1}~${chunk.end}번째 줄입니다. 번호는 이 묶음 안에서 1부터 다시 매깁니다.`];
+  if (context.length > 0) {
+    extra.push("앞 문맥(번역하지 말고 말투·지칭을 이어 가는 데만 쓰세요):", ...context.map((line) => `- ${cleanSingleLineText(line, LOCALIZE_LIMITS.maxLineChars)}`));
+  }
+  return buildRequest(model, { ...input, lines: input.lines.slice(chunk.start, chunk.end) }, depth, extra);
 }
 
 /* ------------------------------------------------------------------ 결과 검증 */
@@ -466,6 +526,30 @@ export function normalizeLocalizeResult(raw: LocalizeRaw, input: Pick<LocalizeIn
   for (const warning of cleanedWarnings) if (warning.clipped && warnings.includes(warning.text)) clip(true);
 
   return { lines, warnings, discarded, indexShifted, trimmed };
+}
+
+/** 묶음별 결과를 전체 줄 번호로 합친다. 경고는 겹치는 것을 한 번만 남기고 상한을 지킨다. */
+export function mergeLocalizeViews(
+  parts: ReadonlyArray<{ readonly chunk: LocalizeChunk; readonly view: LocalizeResultView }>,
+): LocalizeResultView {
+  const lines = parts.flatMap(({ chunk, view }) => view.lines.map((line) => ({ ...line, index: chunk.start + line.index })));
+  const allWarnings = [...new Set(parts.flatMap(({ view }) => view.warnings))];
+  return {
+    lines,
+    warnings: allWarnings.slice(0, LOCALIZE_LIMITS.maxWarnings),
+    discarded: parts.reduce((sum, { view }) => sum + view.discarded, 0),
+    indexShifted: parts.some(({ view }) => view.indexShifted),
+    trimmed: parts.reduce((sum, { view }) => sum + view.trimmed, 0) + Math.max(0, allWarnings.length - LOCALIZE_LIMITS.maxWarnings),
+  };
+}
+
+/** 아직 번역하지 못한 줄(멈추거나 실패해 남은 줄)을 "빠졌어요"로 채워 모든 입력 줄이 보이게 한다. */
+export function withMissingLocalizeLines(view: LocalizeResultView, sourceLines: readonly string[]): LocalizeResultView {
+  const have = new Map(view.lines.map((line) => [line.index, line]));
+  const lines = sourceLines.map((source, position): LocalizedLine => (
+    have.get(position + 1) ?? { index: position + 1, source, translation: "", shorter: null, note: null, missing: true }
+  ));
+  return { ...view, lines };
 }
 
 /* ------------------------------------------------------------------ 내보내기 */
