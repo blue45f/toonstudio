@@ -18,6 +18,6 @@
   "auth.callback.message.done": "Завершено реєстрацію, скоро перенаправляємо.",
   "auth.callback.message.doneDemo": "Демо-запис завершений.",
   "auth.callback.demo.message": "Ви зареєстровані з демо-аккаунтом.",
-  "auth.callback.backToLogin": "Back to sign in",
-  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
+  "auth.callback.backToLogin": "Назад до входу",
+  "auth.callback.slowHelp": "Це триває довше, ніж зазвичай. Якщо цей екран залишиться, поверніться до входу та спробуйте знову."
 }

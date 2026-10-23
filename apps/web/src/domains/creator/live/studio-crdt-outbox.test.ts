@@ -35,7 +35,7 @@ describe("Studio CRDT durable outbox", () => {
     const workId = "memory-work-a";
     const pending = request(workId, "11111111-1111-4111-8111-111111111111");
 
-    await expect(outbox.put(scope, pending)).rejects.toThrow("IndexedDB");
+    await expect(outbox.put(scope, pending)).rejects.toThrow("idb-unavailable");
     await expect(outbox.list(scope, workId)).resolves.toEqual([pending]);
     expect(outbox.getStatus()).toMatchObject({ state: "degraded" });
 
@@ -103,7 +103,7 @@ describe("Studio CRDT durable outbox", () => {
     const writing = previous.put("timeout-user-a", pending);
     const listing = replacement.list("timeout-user-a", pending.workId);
 
-    await expect(writing).rejects.toThrow("시간이 초과");
+    await expect(writing).rejects.toThrow("persistence-timeout");
     await expect(listing).resolves.toEqual([]);
     expect(replacement.getStatus()).toMatchObject({ state: "durable" });
     expect(listCalls).toBe(1);
@@ -210,7 +210,7 @@ describe("Studio CRDT durable outbox", () => {
     await putStarted;
     const removing = outbox.remove("late-user-a", pending.workId, pending.updateId);
 
-    await expect(writing).rejects.toThrow("시간이 초과");
+    await expect(writing).rejects.toThrow("persistence-timeout");
     await expect(removing).resolves.toBeUndefined();
     clock.mockReturnValue(startedAt + 5 * 60_000 + 1);
     releasePut();
@@ -239,7 +239,7 @@ describe("Studio CRDT durable outbox", () => {
     const removing = previous.remove("remove-timeout-user-a", pending.workId, pending.updateId);
     const listing = replacement.list("remove-timeout-user-a", pending.workId);
 
-    await expect(removing).rejects.toThrow("시간이 초과");
+    await expect(removing).rejects.toThrow("persistence-timeout");
     await expect(listing).resolves.toEqual([]);
     expect(listCalls).toBe(1);
   });
@@ -277,7 +277,7 @@ describe("Studio CRDT durable outbox", () => {
     const replacement = new SerializedStudioCrdtOutbox(delegate, { timeoutMs: 100 });
 
     const removing = previous.remove("late-remove-user-a", pending.workId, pending.updateId);
-    await expect(removing).rejects.toThrow("시간이 초과");
+    await expect(removing).rejects.toThrow("persistence-timeout");
     releaseRemove();
     await removeCompleted;
     await Promise.resolve();
@@ -503,7 +503,7 @@ describe("Studio CRDT durable outbox", () => {
 
     const writing = previous.put(scope, pending);
     await delayedPut;
-    await expect(writing).rejects.toThrow("시간이 초과");
+    await expect(writing).rejects.toThrow("persistence-timeout");
     await replacement.remove(scope, pending.workId, pending.updateId);
     expect([...rows.values()][0]).toMatchObject({ kind: "tombstone" });
 

@@ -69,7 +69,7 @@ export type StudioAtelierOmniTier =
   | "surge"
   | "apex-quantum";
 
-/** 가상 오피스 6대 핵심 역량 지수(5대 기본 역량 각 0~400점 + 자율 리듬 0~400점). */
+/** 가상 오피스 7대 핵심 역량 지수(각 0~400점). */
 export interface StudioAtelierPulseDimensions {
   /** 가상 오피스 구역·책상 정착 및 공간 활용도 (0~400) */
   readonly officePresence: number;
@@ -83,6 +83,8 @@ export interface StudioAtelierPulseDimensions {
   readonly atelierAesthetics: number;
   /** 자율 오피스 루틴·맥락 전환·지속 몰입 리듬 지수 (0~400) */
   readonly autonomousRhythm: number;
+  /** 에피소드 마감·콘티·작화 추진 가속도 (0~400) */
+  readonly creativeVelocity: number;
 }
 
 export interface StudioAtelierPulseSnapshot {
@@ -93,18 +95,24 @@ export interface StudioAtelierPulseSnapshot {
   readonly hyperScore: number;
   /** 200% 추가 고도화된 옴니 아틀리에 4.0 총점 (0~4,000, 기본 200점 대비 20.0x). */
   readonly omniScore: number;
+  /** 궁극의 퀀텀 아틀리에 5.0 총점 (0~10,000, 기본 200점 대비 50.0x). */
+  readonly quantumScore: number;
   /** 옴니 아틀리에 등급 (seed | flow | surge | apex-quantum). */
   readonly omniTier: StudioAtelierOmniTier;
   /** 시너지 배율 (1.0x ~ 10.0x). */
   readonly comboMultiplier: number;
   /** 옴니 시너지 배율 (2.0x ~ 20.0x). */
   readonly omniMultiplier: number;
+  /** 퀀텀 시너지 배율 (5.0x ~ 50.0x). */
+  readonly quantumMultiplier: number;
   readonly badgeKo: string;
   readonly badgeEn: string;
   readonly hyperBadgeKo: string;
   readonly hyperBadgeEn: string;
   readonly omniBadgeKo: string;
   readonly omniBadgeEn: string;
+  readonly quantumBadgeKo: string;
+  readonly quantumBadgeEn: string;
   readonly headlineKo: string;
   readonly headlineEn: string;
   readonly sublineKo: string;
@@ -241,8 +249,10 @@ export function computeStudioAtelierPulse(
   const synergyScore = clampScore200(rawScore);
   const hyperScore = synergyScore * 10;
   const omniScore = hyperScore * 2;
+  const quantumScore = synergyScore * 50;
   const comboMultiplier = Number((hyperScore / 200).toFixed(1));
   const omniMultiplier = Number((omniScore / 200).toFixed(1));
+  const quantumMultiplier = Number((quantumScore / 200).toFixed(1));
   const omniTier: StudioAtelierOmniTier =
     omniScore >= 3600
       ? "apex-quantum"
@@ -258,6 +268,7 @@ export function computeStudioAtelierPulse(
     wellnessVitality: clampDimension400(input.focusPhase === "break" ? 400 : 310 + (input.selfSeated ? 45 : 30) + (sameZonePeerCount > 0 ? 45 : 25)),
     atelierAesthetics: clampDimension400(320 + (creativeRoom || syncRoom ? 50 : 25) + (input.selfSeated || selfFocusing || selfReviewingOrMeeting ? 30 : 15)),
     autonomousRhythm: clampDimension400(260 + (input.selfSeated ? 45 : 0) + (selfFocusing || selfReviewingOrMeeting ? 55 : 0) + Math.min(40, (sameZonePeerCount + nearbyPeerCount) * 20)),
+    creativeVelocity: clampDimension400(250 + (creativeRoom || syncRoom ? 55 : 20) + (selfFocusing || selfReviewingOrMeeting ? 55 : 0) + Math.min(40, (focusedPeerCount + reviewingPeerCount) * 20)),
   });
 
   // 1) Ensemble Sync: 회의·검토·스포트라이트 또는 근처 동료와 합평 공명 중
@@ -271,15 +282,19 @@ export function computeStudioAtelierPulse(
       synergyScore,
       hyperScore,
       omniScore,
+      quantumScore,
       omniTier,
       comboMultiplier,
       omniMultiplier,
+      quantumMultiplier,
       badgeKo: `앙상블 공명 ${synergyScore}`,
       badgeEn: `Ensemble ${synergyScore}`,
       hyperBadgeKo: `앙상블 오피스 ${hyperScore.toLocaleString("en-US")}pt`,
       hyperBadgeEn: `Ensemble Office ${hyperScore.toLocaleString("en-US")}pt`,
       omniBadgeKo: `옴니 앙상블 ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
       omniBadgeEn: `Omni Ensemble ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
+      quantumBadgeKo: `퀀텀 앙상블 ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
+      quantumBadgeEn: `Quantum Ensemble ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
       headlineKo: "크리에이티브 앙상블 동기화 중",
       headlineEn: "Creative ensemble in sync",
       sublineKo:
@@ -312,15 +327,19 @@ export function computeStudioAtelierPulse(
       synergyScore,
       hyperScore,
       omniScore,
+      quantumScore,
       omniTier,
       comboMultiplier,
       omniMultiplier,
+      quantumMultiplier,
       badgeKo: `창작 파동 ${synergyScore}`,
       badgeEn: `Surge ${synergyScore}`,
       hyperBadgeKo: `하이퍼 포지 ${hyperScore.toLocaleString("en-US")}pt`,
       hyperBadgeEn: `Hyper Forge ${hyperScore.toLocaleString("en-US")}pt`,
       omniBadgeKo: `옴니 포지 ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
       omniBadgeEn: `Omni Forge ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
+      quantumBadgeKo: `퀀텀 포지 ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
+      quantumBadgeEn: `Quantum Forge ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
       headlineKo: "스토리포지 창작 파동 최고조",
       headlineEn: "Story-Forge creative surge",
       sublineKo: `동료 ${focusedPeerCount + 1}명이 함께 몰입하며 마스터피스 원고를 빚어내고 있어요.`,
@@ -344,15 +363,19 @@ export function computeStudioAtelierPulse(
       synergyScore,
       hyperScore,
       omniScore,
+      quantumScore,
       omniTier,
       comboMultiplier,
       omniMultiplier,
+      quantumMultiplier,
       badgeKo: `집중 몰입 ${synergyScore}`,
       badgeEn: `Flow ${synergyScore}`,
       hyperBadgeKo: `딥워크 오피스 ${hyperScore.toLocaleString("en-US")}pt`,
       hyperBadgeEn: `Deep-Work Office ${hyperScore.toLocaleString("en-US")}pt`,
       omniBadgeKo: `옴니 플로우 ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
       omniBadgeEn: `Omni Flow ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
+      quantumBadgeKo: `퀀텀 플로우 ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
+      quantumBadgeEn: `Quantum Flow ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
       headlineKo: "아틀리에 딥워크 몰입 기류",
       headlineEn: "Atelier deep-work flow",
       sublineKo:
@@ -387,15 +410,19 @@ export function computeStudioAtelierPulse(
     synergyScore,
     hyperScore,
     omniScore,
+    quantumScore,
     omniTier,
     comboMultiplier,
     omniMultiplier,
+    quantumMultiplier,
     badgeKo: `아틀리에 ${synergyScore}`,
     badgeEn: `Atelier ${synergyScore}`,
     hyperBadgeKo: `아틀리에 오피스 ${hyperScore.toLocaleString("en-US")}pt`,
     hyperBadgeEn: `Atelier Office ${hyperScore.toLocaleString("en-US")}pt`,
     omniBadgeKo: `옴니 아틀리에 ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
     omniBadgeEn: `Omni Atelier ${omniScore.toLocaleString("en-US")}pt (${omniMultiplier}x)`,
+    quantumBadgeKo: `퀀텀 아틀리에 ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
+    quantumBadgeEn: `Quantum Atelier ${quantumScore.toLocaleString("en-US")}pt (${quantumMultiplier}x)`,
     headlineKo: "공감각 아틀리에 탐색 호흡",
     headlineEn: "Synesthetic atelier exploration",
     sublineKo:

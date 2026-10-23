@@ -55,5 +55,7 @@ describe("가상 스튜디오 제작 동선", () => {
     expect(screen.getByText(/^작업 중 ·/u)).toBeTruthy();
     expect(screen.getByText(/^입력 자료 대기 ·/u)).toBeTruthy();
     expect(screen.queryByText(/in-progress/u)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "최우선 공정 바로 안내" }));
+    expect(onGuide).toHaveBeenLastCalledWith("story");
   });
 });

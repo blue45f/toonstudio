@@ -59,6 +59,11 @@ import {
   parseZipEntries,
   readVerifiedEntry,
 } from "./studio-project-archive-zip";
+import {
+  audioMimeType,
+  normalizeMimeType,
+  rasterMimeType,
+} from "./studio-project-archive-mime";
 
 /**
  * Self-contained ToonStudio project archive.
@@ -678,14 +683,30 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return prototype === Object.prototype || prototype === null;
 }
 
+/**
+ * 한도 라벨 코드 (A4 D4 R13) — 생산자는 라벨 원문 대신 코드만 운반하고,
+ * 표시 라벨은 status-i18n 리졸버의 `studio.producerError.projectArchive.label.*` 키가 해석한다.
+ */
+type StudioProjectArchiveLimitLabelCode =
+  | "archive"
+  | "attachment"
+  | "attachmentTotal"
+  | "projectJson"
+  | "manifestJson"
+  | "attachmentCount"
+  | "referenceCount"
+  | "path"
+  | "jsonDepth"
+  | "jsonNodeCount";
+
 function resolvePositiveLimit(
   value: number | undefined,
   hardMaximum: number,
-  label: string
+  labelCode: StudioProjectArchiveLimitLabelCode
 ): number {
   if (value === undefined) return hardMaximum;
   if (!Number.isSafeInteger(value) || value <= 0 || value > hardMaximum) {
-    fail("ARCHIVE_INVALID", "limitInvalid", {}, { label });
+    fail("ARCHIVE_INVALID", "limitInvalid", {}, { labelCode });
   }
   return value;
 }
@@ -705,42 +726,42 @@ function resolveLimits(value: Partial<StudioProjectArchiveLimits> | undefined): 
     maxTotalAttachmentBytes: resolvePositiveLimit(
       value?.maxTotalAttachmentBytes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxTotalAttachmentBytes,
-      "attachment 합계"
+      "attachmentTotal"
     ),
     maxProjectBytes: resolvePositiveLimit(
       value?.maxProjectBytes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxProjectBytes,
-      "project.json"
+      "projectJson"
     ),
     maxManifestBytes: resolvePositiveLimit(
       value?.maxManifestBytes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxManifestBytes,
-      "manifest.json"
+      "manifestJson"
     ),
     maxAttachments: resolvePositiveLimit(
       value?.maxAttachments,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxAttachments,
-      "attachment 수"
+      "attachmentCount"
     ),
     maxReferences: resolvePositiveLimit(
       value?.maxReferences,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxReferences,
-      "문서 참조 수"
+      "referenceCount"
     ),
     maxPathBytes: resolvePositiveLimit(
       value?.maxPathBytes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxPathBytes,
-      "경로"
+      "path"
     ),
     maxDepth: resolvePositiveLimit(
       value?.maxDepth,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxDepth,
-      "JSON 깊이"
+      "jsonDepth"
     ),
     maxJsonNodes: resolvePositiveLimit(
       value?.maxJsonNodes,
       STUDIO_PROJECT_ARCHIVE_LIMITS.maxJsonNodes,
-      "JSON 노드 수"
+      "jsonNodeCount"
     ),
   };
 }
@@ -933,50 +954,6 @@ async function sha256Bytes(bytes: Uint8Array): Promise<string> {
       })();
   const digest = await globalThis.crypto.subtle.digest("SHA-256", digestInput);
   return [...new Uint8Array(digest)].map((item) => item.toString(16).padStart(2, "0")).join("");
-}
-
-function normalizeMimeType(value: unknown): string {
-  if (typeof value !== "string") return "";
-  return value.trim().toLowerCase().split(";", 1)[0] ?? "";
-}
-
-function hasBytes(bytes: Uint8Array, offset: number, expected: readonly number[]): boolean {
-  return expected.every((value, index) => bytes[offset + index] === value);
-}
-
-function rasterMimeType(bytes: Uint8Array): string | null {
-  if (bytes.length >= 8 && hasBytes(bytes, 0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
-    return "image/png";
-  }
-  if (bytes.length >= 3 && hasBytes(bytes, 0, [0xff, 0xd8, 0xff])) return "image/jpeg";
-  if (bytes.length >= 6) {
-    const signature = String.fromCharCode(...bytes.slice(0, 6));
-    if (signature === "GIF87a" || signature === "GIF89a") return "image/gif";
-  }
-  if (
-    bytes.length >= 12
-    && String.fromCharCode(...bytes.slice(0, 4)) === "RIFF"
-    && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP"
-  ) {
-    return "image/webp";
-  }
-  return null;
-}
-
-function audioMimeType(bytes: Uint8Array): string | null {
-  if (
-    bytes.length >= 12
-    && String.fromCharCode(...bytes.slice(0, 4)) === "RIFF"
-    && String.fromCharCode(...bytes.slice(8, 12)) === "WAVE"
-  ) return "audio/wav";
-  if (bytes.length >= 4 && String.fromCharCode(...bytes.slice(0, 4)) === "OggS") return "audio/ogg";
-  if (bytes.length >= 4 && String.fromCharCode(...bytes.slice(0, 4)) === "fLaC") return "audio/flac";
-  if (bytes.length >= 3 && String.fromCharCode(...bytes.slice(0, 3)) === "ID3") return "audio/mpeg";
-  if (bytes.length >= 2 && bytes[0] === 0xff && (bytes[1] & 0xf6) === 0xf0) return "audio/aac";
-  if (bytes.length >= 2 && bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0) return "audio/mpeg";
-  if (bytes.length >= 12 && String.fromCharCode(...bytes.slice(4, 8)) === "ftyp") return "audio/mp4";
-  if (bytes.length >= 4 && hasBytes(bytes, 0, [0x1a, 0x45, 0xdf, 0xa3])) return "audio/webm";
-  return null;
 }
 
 function glbJson(bytes: Uint8Array): Record<string, unknown> | null {

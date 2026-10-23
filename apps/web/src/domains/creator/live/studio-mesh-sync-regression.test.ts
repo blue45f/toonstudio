@@ -267,7 +267,7 @@ describe("mesh document synchronization regressions", () => {
   it("never treats a peer snapshot as an authoritative REST save fence", async () => {
     const binding = bind(new DocumentRoom(document()), document());
     await binding.start();
-    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("서버 승인");
+    await expect(binding.flushAndWaitForAuthoritativeAck()).rejects.toThrow("save-before-server-ack-blocked-local");
   });
 
   it("restarts sync after a peer opens during an in-flight snapshot", async () => {

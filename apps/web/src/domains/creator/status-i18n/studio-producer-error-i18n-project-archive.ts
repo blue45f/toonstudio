@@ -7,6 +7,8 @@
  * 같은 진단 코드에 문구가 여러 종이면 variant로 분해했고, 동적 삽입(label·kind·collection·detail)은 params로 받는다.
  * detail params는 하위 생산자(package-archive·linked-3d pass)의 원문 패스스루다 — 그 생산자 구간 전환 전까지 문장 골격만 코드화한다.
  * ko 값은 이관 전 생산자 원문과 글자 단위 동일하고, en은 신규 번역이다.
+ * 한도 라벨(R13): 생산자(resolvePositiveLimit)는 {labelCode}만 운반하고, 표시 라벨은 아래 label.* 키로 해석해 {label} 자리에 넣는다.
+ * canonical JSON 계열 variant(canonicalJsonParseFailed 등)의 {label}은 파일명(manifest.json) 원문이라 코드화 대상이 아니다.
  */
 
 import {
@@ -112,6 +114,16 @@ registerI18nLocaleEntries("ko", {
   "studio.producerError.projectArchive.external-project-dependency.referenceBoardBytesAbsent": "참고 보드 이미지 바이트가 project archive에 포함되지 않았습니다.",
   "studio.producerError.projectArchive.hash-mismatch.projectHashFailed": "project.json SHA-256 무결성 검사가 실패했습니다.",
   "studio.producerError.projectArchive.hash-mismatch.attachmentHashFailed": "attachment SHA-256 무결성 검사가 실패했습니다.",
+  "studio.producerError.projectArchive.label.archive": "archive",
+  "studio.producerError.projectArchive.label.attachment": "attachment",
+  "studio.producerError.projectArchive.label.attachmentTotal": "attachment 합계",
+  "studio.producerError.projectArchive.label.projectJson": "project.json",
+  "studio.producerError.projectArchive.label.manifestJson": "manifest.json",
+  "studio.producerError.projectArchive.label.attachmentCount": "attachment 수",
+  "studio.producerError.projectArchive.label.referenceCount": "문서 참조 수",
+  "studio.producerError.projectArchive.label.path": "경로",
+  "studio.producerError.projectArchive.label.jsonDepth": "JSON 깊이",
+  "studio.producerError.projectArchive.label.jsonNodeCount": "JSON 노드 수",
   "studio.producerError.projectArchive.manifest-invalid.attachmentOrderInvalid": "manifest attachment 목록이 canonical 경로 순서가 아닙니다.",
   "studio.producerError.projectArchive.manifest-invalid.attachmentPathDuplicated": "manifest attachment 경로 또는 해시가 중복되었습니다.",
   "studio.producerError.projectArchive.manifest-invalid.attachmentKindOrderInvalid": "manifest attachment 종류가 canonical 순서가 아닙니다.",
@@ -283,6 +295,16 @@ registerI18nLocaleEntries("en", {
   "studio.producerError.projectArchive.external-project-dependency.referenceBoardBytesAbsent": "The reference board image bytes are not included in the project archive.",
   "studio.producerError.projectArchive.hash-mismatch.projectHashFailed": "The project.json SHA-256 integrity check failed.",
   "studio.producerError.projectArchive.hash-mismatch.attachmentHashFailed": "The attachment SHA-256 integrity check failed.",
+  "studio.producerError.projectArchive.label.archive": "archive",
+  "studio.producerError.projectArchive.label.attachment": "attachment",
+  "studio.producerError.projectArchive.label.attachmentTotal": "total attachments",
+  "studio.producerError.projectArchive.label.projectJson": "project.json",
+  "studio.producerError.projectArchive.label.manifestJson": "manifest.json",
+  "studio.producerError.projectArchive.label.attachmentCount": "attachment count",
+  "studio.producerError.projectArchive.label.referenceCount": "document reference count",
+  "studio.producerError.projectArchive.label.path": "path",
+  "studio.producerError.projectArchive.label.jsonDepth": "JSON depth",
+  "studio.producerError.projectArchive.label.jsonNodeCount": "JSON node count",
   "studio.producerError.projectArchive.manifest-invalid.attachmentOrderInvalid": "The manifest attachment list is not in canonical path order.",
   "studio.producerError.projectArchive.manifest-invalid.attachmentPathDuplicated": "A manifest attachment path or hash is duplicated.",
   "studio.producerError.projectArchive.manifest-invalid.attachmentKindOrderInvalid": "The manifest attachment kinds are not in canonical order.",
@@ -550,6 +572,42 @@ function projectArchiveErrorKey(code: string, variant: string): string {
   return `studio.producerError.projectArchive.${code.toLowerCase().replaceAll("_", "-")}.${variant}`;
 }
 
+/** 한도 라벨 코드별 ko 원문 — 미등록 로케일·미해석 시 폴백이며 이관 전 생산자 라벨과 글자 단위 동일하다. */
+const PROJECT_ARCHIVE_LABEL_KO: Readonly<Record<string, string>> = {
+  archive: "archive",
+  attachment: "attachment",
+  attachmentTotal: "attachment 합계",
+  projectJson: "project.json",
+  manifestJson: "manifest.json",
+  attachmentCount: "attachment 수",
+  referenceCount: "문서 참조 수",
+  path: "경로",
+  jsonDepth: "JSON 깊이",
+  jsonNodeCount: "JSON 노드 수",
+};
+
+function projectArchiveLabelKey(labelCode: string): string {
+  return `studio.producerError.projectArchive.label.${labelCode}`;
+}
+
+/**
+ * 한도 라벨 해석 (A4 D4 R13): 생산자가 운반한 {labelCode}를 label.* 키의 표시 라벨로 바꿔
+ * {label} 자리에 넣는다. labelCode가 없으면 params를 그대로 둔다 — canonical JSON 계열
+ * variant의 {label}(manifest.json 파일명 원문)이 그 경로다. 알 수 없는 코드는 코드 원문을
+ * 라벨로 쓰는 방어 경로를 탄다.
+ */
+function withProjectArchiveLabel(
+  params?: Readonly<Record<string, string>>,
+): Readonly<Record<string, string>> | undefined {
+  if (!params?.labelCode) return params;
+  const { labelCode, ...rest } = params;
+  const label = resolveProducerError(
+    projectArchiveLabelKey(labelCode),
+    PROJECT_ARCHIVE_LABEL_KO[labelCode] ?? labelCode,
+  );
+  return { ...rest, label };
+}
+
 /** 표시 지점 전용 해석 (project-archive 오류·진단): 생산자가 방출한 구조화 코드를 현재 로케일 문구로 바꾼다. */
 export function resolveStudioProjectArchiveError(
   error: Pick<StudioProjectArchiveError, "code" | "variant" | "params">,
@@ -558,7 +616,7 @@ export function resolveStudioProjectArchiveError(
   return resolveProducerError(
     projectArchiveErrorKey(error.code, error.variant),
     PROJECT_ARCHIVE_ERROR_KO[lookup] ?? lookup,
-    error.params,
+    withProjectArchiveLabel(error.params),
   );
 }
 
