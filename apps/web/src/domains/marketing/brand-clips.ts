@@ -361,3 +361,45 @@ export const BRAND_SQUARE_INKDROP_CLIP: BrandClip = {
   width: 768,
   height: 768,
 };
+
+/**
+ * 숲에 드는 빛 — 숲 사이로 햇빛이 드는 풍경을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_FOREST_LIGHT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-19-forestlight.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 새벽의 도시 — 새벽빛이 번지는 도시 풍경을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_CITY_DAWN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-20-citydawn.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 봄의 히어로 무드 — 봄빛이 드는 스튜디오 파노라마를 그린 생성형 AI
+ * 영상이다. 낮·노을·밤·비·눈·새벽·안개·황혼 파노라마와 한 세트로, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_SPRING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-spring.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 파도 스팅 — 파도가 밀려오는 모습을 담은 1:1 정사각 브랜드
+ * 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_WAVE_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-wave.mp4",
+  width: 768,
+  height: 768,
+};
