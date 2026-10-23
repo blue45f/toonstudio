@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { PAGE_GRADE_PRESETS, type PageGrade } from "./studio-page-grade";
 import { formatNumber } from "@toonstudio/core/format";
+import { StudioAutoActionValidationError } from "./studio-auto-actions-error";
 
 export const STUDIO_AUTO_ACTION_SET_KIND = "toonstudio-studio-auto-actions" as const;
 export const STUDIO_AUTO_ACTION_SET_VERSION = 1 as const;
@@ -322,7 +323,6 @@ export type {
   StudioAutoActionValidationDetail,
   StudioAutoActionValidationErrorCode,
 } from "./studio-auto-actions-error";
-import { StudioAutoActionValidationError } from "./studio-auto-actions-error";
 
 class StudioAutoActionPageTransformError extends Error {
   readonly failure: StudioAutoActionFailure;

@@ -77,7 +77,10 @@ describe("native brush source through existing storage and JSON owners", () => {
     expect(createHash("sha256").update(decodeStudioBrushOriginalSource(restored.originalSource)).digest("hex"))
       .toBe(brush.originalSource.sha256);
     expect(() => importBrushFromJson(" ".repeat(2 * 1024 * 1024)
-      + writeBrushJson(createBrush("legacy", DEFAULT_STUDIO_BRUSH_SNAPSHOT)))).toThrow(/2MB/u);
+      + writeBrushJson(createBrush("legacy", DEFAULT_STUDIO_BRUSH_SNAPSHOT)))).toThrow(expect.objectContaining({
+      name: "StudioBrushLibraryError",
+      code: "plainSettingsTooLarge",
+    }));
   });
   it("keeps ordinary JSON format and drawing values unchanged", () => {
     const brush = createBrush("기존", DEFAULT_STUDIO_BRUSH_SNAPSHOT);

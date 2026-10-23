@@ -11,14 +11,20 @@ describe("brush archive transport uses the same bounded UTF-8 contract", () => {
   it("does not export settings that its own importer would reject for size", () => {
     const brush = createBrush("가".repeat(Math.ceil(BRUSH_SOURCE_SETTINGS_MAX_CHARACTERS / 3)), DEFAULT_STUDIO_BRUSH_SNAPSHOT);
     const before = { ...brush };
-    expect(() => writeBrushJson(brush)).toThrow(/크기|2M/u);
+    expect(() => writeBrushJson(brush)).toThrow(expect.objectContaining({
+      name: "StudioBrushLibraryError",
+      code: "settingsTooLarge",
+    }));
     expect(brush).toEqual(before);
   });
   it("rejects oversized UTF-8 before JSON parsing, even below the character bound", () => {
     const text = JSON.stringify("가".repeat(Math.ceil(BRUSH_SOURCE_ARCHIVE_MAX_BYTES / 3)));
     expect(text.length).toBeLessThan(BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS);
     const parse = vi.spyOn(JSON, "parse");
-    expect(() => importBrushFromJson(text)).toThrow(/크기/u);
+    expect(() => importBrushFromJson(text)).toThrow(expect.objectContaining({
+      name: "StudioBrushLibraryError",
+      code: "archiveBytesTooLarge",
+    }));
     expect(parse).not.toHaveBeenCalled();
   });
   it("keeps normal settings bytes and source-free schema unchanged", () => {

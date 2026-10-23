@@ -1,14 +1,14 @@
 import { studioReviewTaskReferenceSchema, studioReviewTaskReferencesAreValid, type StudioReviewTaskReference } from "@toonstudio/studio-project-model";
 import type { StudioLocalDatabase } from "../studio-local-database";
 import { StudioProductionWorkspaceError } from "./studio-production-workspace-error";
-
-export { StudioProductionWorkspaceError } from "./studio-production-workspace-error";
-export type { StudioProductionWorkspaceErrorCode } from "./studio-production-workspace-error";
 import {
   parsePitchDocument,
   pitchDocumentHasContent,
   type ProductionPitchDocument,
 } from "./studio-pitch-document";
+
+export { StudioProductionWorkspaceError } from "./studio-production-workspace-error";
+export type { StudioProductionWorkspaceErrorCode } from "./studio-production-workspace-error";
 
 export const STUDIO_PRODUCTION_NAMESPACE = "studio-production-command-center-v1";
 export const STUDIO_PRODUCTION_WORKSPACE_VERSION = 3 as const;
