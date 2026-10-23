@@ -158,8 +158,8 @@ export interface StudioEraseToIntersectionOptions {
 }
 
 export type StudioVectorEraseReasonCode = "tooFewPoints" | "zeroLength" | "hitNotFound" | "hitTooFar" | "tooComplex";
-export type StudioEraseToIntersectionResult = | { ok: false; reason: string; reasonCode: StudioVectorEraseReasonCode }
-  | {
+export type StudioVectorEraseReasonParams = Readonly<Record<string, string>>;
+export type StudioEraseToIntersectionResult = | { ok: false; reason: string; reasonCode: StudioVectorEraseReasonCode; params?: StudioVectorEraseReasonParams } | {
       ok: true;
       /** 0개(전부 지움) · 1개(한쪽만 남음/닫힌 고리) · 2개(가운데 구간을 지움). */
       pieces: StudioStrokePiece[];

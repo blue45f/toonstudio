@@ -21,7 +21,7 @@ describe("studio document interchange preview adapters", () => {
       sourceWidth: 2_160,
       sourceHeight: 4_000,
       scale: 0.5,
-      skipped: ["텍스트 레이어를 래스터화했습니다."],
+      skipped: [{ code: "passthrough", params: { name: "텍스트 레이어", detail: "래스터화했습니다." } }],
     } satisfies PsdImportResult, OPTIONS);
     const summary = summarizeStudioInterchangeLoss(preview);
 
@@ -32,7 +32,7 @@ describe("studio document interchange preview adapters", () => {
       severity: "warning",
     });
     expect(summary.findings.find((finding) => finding.category === "editability")?.notes).toContain(
-      "텍스트 레이어를 래스터화했습니다.",
+      "텍스트 레이어: 래스터화했습니다.",
     );
   });
 

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { resolveStudioPsdSkipEntry } from "./status-i18n/studio-producer-error-i18n-psd-import";
 import {
   flattenPsdLayers,
   importPsdFile,
@@ -82,11 +83,11 @@ describe("PSD/PSB clean-room header preflight", () => {
     expect(preflightPsdImport(psdHeader({ version: 2 }), "large.psb")).toMatchObject({
       canImport: false,
       header: { container: "psb" },
-      blockingReasons: [expect.stringContaining("PSB")],
+      blockingReasons: [expect.objectContaining({ code: "blockedPsb" })],
     });
     expect(preflightPsdImport(psdHeader({ bitsPerChannel: 16 }))).toMatchObject({
       canImport: false,
-      blockingReasons: [expect.stringContaining("16bit")],
+      blockingReasons: [expect.objectContaining({ code: "blockedBitDepth" })],
     });
     expect(preflightPsdImport(psdHeader({ colorMode: 4 }))).toMatchObject({
       canImport: false,
@@ -242,7 +243,7 @@ describe("psdImportResultMessage", () => {
       sourceWidth: 1,
       sourceHeight: 1,
       scale: 1,
-      skipped: ["a", "b"],
+      skipped: [{ code: "emptyBounds", params: { name: "a" } }, { code: "emptyBounds", params: { name: "b" } }],
     });
     expect(msg).toBe("PSD 준비 완료 — 레이어 0개 · 알림 2건");
   });
@@ -363,7 +364,7 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     // 조정 레이어 자체는 복원되고 마스크만 빠진다 — 침묵하지 않는다.
     expect(broken.adjustmentLayers?.[0]?.kind).toBe("invert");
     expect(broken.adjustmentLayers?.[0]?.maskSrc).toBeUndefined();
-    expect(broken.skipped.join(" ")).toContain("손상조정");
+    expect(broken.skipped.map(resolveStudioPsdSkipEntry).join(" ")).toContain("손상조정");
   });
 
   it("전수 대응 4종(흑백·포토 필터·선택 색상·컬러 룩업)도 조정 레이어로 복원된다", async () => {
@@ -380,8 +381,8 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     // Studio z-order(뒤→앞) 기준 stackIndex가 flatten 순서를 그대로 반영한다.
     expect(result.adjustmentLayers?.map((layer) => layer.stackIndex)).toEqual([0, 1, 2, 3]);
     // 데이터 없는 컬러 룩업과 근사인 선택 색상은 침묵하지 않고 메모가 알림에 남는다.
-    expect(result.skipped.join(" ")).toContain("파라미터만 보존");
-    expect(result.skipped.join(" ")).toContain("선택 색상");
+    expect(result.skipped.map(resolveStudioPsdSkipEntry).join(" ")).toContain("파라미터만 보존");
+    expect(result.skipped.map(resolveStudioPsdSkipEntry).join(" ")).toContain("선택 색상");
   });
 
   it("알 수 없는 조정 종류는 종류·사유와 함께 제외가 보고된다", async () => {
@@ -554,7 +555,7 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     expect(result.elements[0].src).toBeTruthy();
     expect(result.elements[0].maskSrc).toBeUndefined();
     expect(result.elements[0].maskEnabled).toBeUndefined();
-    expect(result.skipped).toEqual([
+    expect(result.skipped.map(resolveStudioPsdSkipEntry)).toEqual([
       "손상: 마스크 픽셀 데이터가 없거나 손상되어 원본 레이어를 가리지 않고 가져왔어요.",
     ]);
   });
@@ -578,9 +579,9 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
         warnings: [],
       })),
     );
-    expect(result.skipped.join(" ")).toContain("벡터 전용 마스크는 래스터 픽셀이 없어");
-    expect(result.skipped.join(" ")).toContain("벡터 마스크를 편집 가능한 단일 래스터 마스크로 근사");
-    expect(result.skipped.join(" ")).toContain("픽셀·벡터 이중 마스크");
+    expect(result.skipped.map(resolveStudioPsdSkipEntry).join(" ")).toContain("벡터 전용 마스크는 래스터 픽셀이 없어");
+    expect(result.skipped.map(resolveStudioPsdSkipEntry).join(" ")).toContain("벡터 마스크를 편집 가능한 단일 래스터 마스크로 근사");
+    expect(result.skipped.map(resolveStudioPsdSkipEntry).join(" ")).toContain("픽셀·벡터 이중 마스크");
   });
 
   it("realMask를 단일 authoritative source로 전달하고 primary는 parameter/fallback으로만 유지한다", async () => {
@@ -608,7 +609,7 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
   it("레이어가 하나도 없으면 안내 메시지를 남긴다", async () => {
     const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(samplePsd([])));
     expect(result.elements).toEqual([]);
-    expect(result.skipped).toEqual(["PSD에서 가져올 레이어를 찾지 못했어요."]);
+    expect(result.skipped.map(resolveStudioPsdSkipEntry)).toEqual(["PSD에서 가져올 레이어를 찾지 못했어요."]);
   });
 
   it("legacy downscaleImpl을 호출하지 않고 원본 PNG를 보존한다", async () => {
@@ -707,17 +708,17 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     const psd = samplePsd([leaf({ name: "빈 레이어", canvas: fakeCanvas("data:,") })]);
     const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(psd));
     expect(result.elements).toEqual([]);
-    expect(result.skipped).toEqual(["빈 레이어: 래스터 PNG가 비어 있어 건너뜀"]);
+    expect(result.skipped.map(resolveStudioPsdSkipEntry)).toEqual(["빈 레이어: 래스터 PNG가 비어 있어 건너뜀"]);
   });
 
-  it("readPsd 파싱이 실패하면 한국어 메시지로 throw 한다", async () => {
+  it("readPsd 파싱이 실패하면 parseFailed 구조화 코드로 throw 한다", async () => {
     const badDeps: PsdImportDeps = {
       readPsdImpl: () => {
         throw new Error("broken");
       },
     };
     await expect(importPsdFile(new File([], "t.psd"), 720, badDeps)).rejects.toThrow(
-      "PSD 파일을 해석하지 못했어요"
+      "parseFailed"
     );
   });
 
