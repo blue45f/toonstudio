@@ -29,8 +29,11 @@ export function StudioVirtualSpaceTodayBoard({ snapshot, workId, onRefresh, onGu
   const bt = useBilingual("StudioVirtualSpaceTodayBoard");
   const locale = bt("ko-KR", "en-US");
   const aggregate = snapshot.project?.aggregate;
+  const totalTasks = aggregate?.tasks.length ?? 0;
   const openTasks = (aggregate?.tasks ?? []).filter((task) => !CLOSED.has(task.status));
+  const completionRatePercent = totalTasks > 0 ? Math.round(((totalTasks - openTasks.length) / totalTasks) * 100) : 100;
   const nextTasks = [...openTasks].sort((a, b) => (a.dueAt ? new Date(a.dueAt).getTime() : Infinity) - (b.dueAt ? new Date(b.dueAt).getTime() : Infinity)).slice(0, 4);
+  const topTask = nextTasks[0] ?? null;
   const reviews = openTasks.filter((task) => ACTIVE_REVIEW.has(task.status));
   const calendar = [...snapshot.calendar].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()).slice(0, 3);
   return <section className="vs2-panel studio-vspace-today-board" aria-label={bt("오늘의 스튜디오 보드", "Studio today board")} data-space-interactive="true">
@@ -39,12 +42,25 @@ export function StudioVirtualSpaceTodayBoard({ snapshot, workId, onRefresh, onGu
     {snapshot.phase === "loading" ? <p role="status">{bt("일정과 작업을 불러오는 중…", "Loading schedule and work…")}</p> : null}
     {snapshot.phase === "unavailable" ? <div className="studio-vspace-empty-state"><TriangleAlert size={18} aria-hidden /><p>{bt("이 작품에 연결된 프로덕션 프로젝트가 아직 없어요. 공간 이동과 제작 도구는 계속 사용할 수 있어요.", "This work is not linked to a production project yet. Spatial navigation and creation tools remain available.")}</p></div> : null}
     {aggregate ? <>
-      <div className="studio-vspace-today-metrics">
+      <div className="studio-vspace-today-metrics" data-completion-rate={completionRatePercent}>
         <span><ClipboardList size={15} aria-hidden /><b>{openTasks.length}</b>{bt("진행 작업", "open tasks")}</span>
         <span><CheckCircle2 size={15} aria-hidden /><b>{reviews.length}</b>{bt("검수 대기", "reviews")}</span>
         <span><CalendarClock size={15} aria-hidden /><b>{calendar.length}</b>{bt("예정 일정", "events")}</span>
       </div>
-      <h3>{bt("다음 작업", "Next work")}</h3>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <h3>{bt("다음 작업", "Next work")}</h3>
+        {topTask && onGuide ? (
+          <button
+            type="button"
+            className="vs2-focus-chip"
+            onClick={() => onGuide(studioVirtualProductionDestination(topTask))}
+            aria-label={bt("최우선 공정 바로 안내", "Guide to top-priority task")}
+          >
+            <Route size={13} aria-hidden />
+            {bt("⚡ 최우선 공정 안내", "⚡ Top task route")}
+          </button>
+        ) : null}
+      </div>
       <div className="studio-vspace-today-list">{nextTasks.length ? nextTasks.map((task) => {
         const destination = studioVirtualProductionDestination(task);
         const destinationLabel = bt(...STUDIO_VIRTUAL_PRODUCTION_DESTINATIONS[destination]);
