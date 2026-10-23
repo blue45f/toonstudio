@@ -1,14 +1,14 @@
 {
   "control.language.label": "Јазици",
+  "control.language.group.translated": "Преводи со висока покриеност",
+  "control.language.group.englishBase": "Автоматски превод · англиски fallback",
   "control.sound.enable": "Обезбедување на звучни ефекти",
   "control.sound.disable": "Деактивирајте звучни ефекти",
   "control.theme.dark": "Префрлајте се на светлински режим",
   "control.theme.light": "Преминете на темен режим",
   "control.settings.open": "Отворени поставки",
-  "control.settings.close": "Завршени настройки",
+  "control.settings.close": "Затвори поставки",
   "control.cluster.settings": "Звук, тема, контроле на јазикот",
   "control.cluster.open": "Отворени поставки",
-  "control.cluster.tooltip": "Звукот, темата и јазичните поставки",
-  "control.language.group.translated": "Преводи со висока покриеност",
-  "control.language.group.englishBase": "Автоматски превод · англиски fallback"
+  "control.cluster.tooltip": "Звукот, темата и јазичните поставки"
 }

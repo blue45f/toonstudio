@@ -22,7 +22,7 @@
   "account.activity.recentNoText": "Само рангирање",
   "account.activity.storageHint": "Активностите се чуваат во овој прелистувач (и во вашата сметка кога се пријавувате). Полна листа е достапна во {link} .",
   "account.profile.photoTitle": "Фотографија на профилот",
-  "account.profile.photoDesc": "Оваа слика се појавува каде што се прикажува вашето име, како коментари и меню.",
+  "account.profile.photoDesc": "Оваа слика се појавува каде што се прикажува вашето име, како во коментарите и менијата.",
   "account.profile.nameLabel": "Име",
   "account.profile.namePlaceholder": "Име на екранот",
   "account.profile.bioLabel": "Био",

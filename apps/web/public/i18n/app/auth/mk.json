@@ -1,8 +1,8 @@
 {
-  "auth.menu.triggerLabel": "Меню на сметките",
+  "auth.menu.triggerLabel": "Мени на сметката",
   "auth.menu.adminPanel": "Конзола за администратори",
   "auth.menu.profile": "Мојот профил",
-  "auth.menu.settings": "Настройки",
+  "auth.menu.settings": "Поставки",
   "auth.menu.signOut": "Подпишете се.",
   "auth.menu.fallbackName": "Читател",
   "auth.callback.message.working": "Окончаваме пријавување...",
@@ -18,6 +18,6 @@
   "auth.callback.message.done": "Завршена регистрација.",
   "auth.callback.message.doneDemo": "Демо пријавување завршено.",
   "auth.callback.demo.message": "Се пријавувате со демо сметка.",
-  "auth.callback.backToLogin": "Back to sign in",
-  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
+  "auth.callback.backToLogin": "Назад кон најавувањето",
+  "auth.callback.slowHelp": "Ова трае подолго од вообичаено. Ако овој екран остане, вратете се на најавувањето и обидете се повторно."
 }
