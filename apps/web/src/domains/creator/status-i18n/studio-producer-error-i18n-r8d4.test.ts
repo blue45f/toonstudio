@@ -183,6 +183,7 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
       "./studio-producer-error-i18n-scroll-rhythm.ts",
       "./studio-producer-error-i18n-sketch.ts",
       "./studio-producer-error-i18n-vector.ts",
+      "./studio-producer-error-i18n-linked3d.ts",
     ].map((rel) => readFileSync(new URL(rel, import.meta.url), "utf-8")).join("\n");
     const blocks: Record<string, string[]> = {};
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
@@ -195,11 +196,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     // R13: projectArchive 라벨 10 + liveCrdt 47(outbox 21·pageBridge 19·scene 7) + liveRoom 68(room 59·protocol 3·p2p 6)이 더해졌다 — 전체 누적 983키.
     // R14: storyworld 55 + license 19 + personalCloud 22 + vrmPaint 87 + vrmLibrary 34 + brush 30 + comments 60 + bg3dLt 확장 25(detach 23·shared3d 2) + projectArchive cause 11이 더해졌다 — 전체 누적 1,326키.
     // R15: exports 51 + exports-raster 58 + asset-library 66 + autosave 17 + opfs-recovery 84 + publish 51 + community-pack 42 + psd-import 85 + will-import 26 + generic3d 69 + shortcut 40 + bible 16 + revision-compare 33 + auto-actions 21 + path-boolean 15 + production 10 + promise 20 + scroll-rhythm 38 + sketch 31 + vector 34가 더해졌다 — 전체 누적 2,133키.
+    // R17: linked3d 23(템플릿 18 + save-projection 접두 2·고정 3)이 더해졌다 — 전체 누적 2,156키.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(2133);
+    expect(accumulated.ko).toHaveLength(2156);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });

@@ -4,6 +4,10 @@ import {
   validateStudioLinked3dReservedPageState,
 } from "./studio-linked-3d-render-document";
 import { migrateStudioShared3dStageCollectionDocument } from "./studio-shared-3d-stage-collection";
+import {
+  resolveStudioLinked3dError,
+  resolveStudioLinked3dSaveProjectionText,
+} from "./status-i18n/studio-producer-error-i18n-linked3d";
 
 import type { El } from "./studio-element-model";
 import type { PageState } from "./studio-page-state";
@@ -27,7 +31,7 @@ export function normalizeStudioLinked3dSaveProjection({
       elements: master.elements,
     });
     if (!reservedMasterState.ok) {
-      throw new Error("문서 마스터의 연결형 3D reserved 상태를 저장할 수 없어요.");
+      throw new Error(resolveStudioLinked3dSaveProjectionText("masterReservedUnsavable"));
     }
   }
 
@@ -37,20 +41,21 @@ export function normalizeStudioLinked3dSaveProjection({
       ? undefined
       : migrateStudioShared3dStageCollectionDocument(page.shared3dStage);
     if (page.shared3dStage !== undefined && !shared3dStage) {
-      throw new Error("페이지 공유 3D 장면 연결이 손상되어 저장하지 않았어요.");
+      throw new Error(resolveStudioLinked3dSaveProjectionText("sharedStageCorrupt"));
     }
     const linked3dRender = page.linked3dRender === undefined
       ? undefined
       : parseStudioLinked3dRenderDocument(page.linked3dRender);
     if (page.linked3dRender !== undefined && !linked3dRender) {
-      throw new Error("페이지 연결형 3D 렌더 인덱스가 손상되어 저장하지 않았어요.");
+      throw new Error(resolveStudioLinked3dSaveProjectionText("renderIndexCorrupt"));
     }
     const reservedState = validateStudioLinked3dReservedPageState({
       value: linked3dRender,
       elements: page.elements,
     });
     if (!reservedState.ok) {
-      throw new Error(`페이지 연결형 3D reserved 상태가 달라 저장하지 않았어요: ${reservedState.message}`);
+      // 집계자 예외 (A4 D4 R17 설계 §6.3): throw 문구가 표시 계약이라 합성 지점에서 해석한다. ko 합성은 전환 전과 글자 단위 동일하다.
+      throw new Error(`${resolveStudioLinked3dSaveProjectionText("reservedStatePrefix")} ${resolveStudioLinked3dError(reservedState)}`);
     }
     if (linked3dRender) {
       const validation = validateStudioLinked3dRenderDocumentAgainstPage({
@@ -59,7 +64,7 @@ export function normalizeStudioLinked3dSaveProjection({
         shared3dStage: shared3dStage ?? undefined,
       });
       if (!validation.ok) {
-        throw new Error(`페이지 연결형 3D 렌더 권위가 달라 저장하지 않았어요: ${validation.message}`);
+        throw new Error(`${resolveStudioLinked3dSaveProjectionText("authorityPrefix")} ${resolveStudioLinked3dError(validation)}`);
       }
     }
     if (shared3dStage === undefined && linked3dRender === undefined) return page;

@@ -40,6 +40,8 @@ export interface StudioScene3dLinkedLayerBridgeFailure {
   readonly ok: false;
   readonly code: StudioScene3dLinkedLayerBridgeFailureCode;
   readonly message: string;
+  /** 하위 linked 검증의 detail·params 보존 (A4 D4 R17 설계 §6.3): 표시 변경 없이 소실만 막는다. */
+  readonly params?: Readonly<Record<string, string>>;
 }
 
 export interface StudioScene3dLinkedLayerRoundTrip {
@@ -65,8 +67,18 @@ type LinkedLayerElement = StudioLinked3dRenderElementLike & StudioShared3dStageE
 function failure(
   code: StudioScene3dLinkedLayerBridgeFailureCode,
   message: string,
+  params?: Readonly<Record<string, string>>,
 ): StudioScene3dLinkedLayerBridgeFailure {
-  return Object.freeze({ ok: false as const, code, message });
+  return params
+    ? Object.freeze({ ok: false as const, code, message, params })
+    : Object.freeze({ ok: false as const, code, message });
+}
+
+/** linked 검증 실패의 detail(+params)을 브리지 failure params로 보존한다 — detail이 없는 방출은 detail 키를 만들지 않는다. */
+function linkedDetailParams(
+  crossReference: { readonly detail: string; readonly params?: Readonly<Record<string, string>> },
+): Readonly<Record<string, string>> {
+  return Object.freeze({ detail: crossReference.detail, ...crossReference.params });
 }
 
 export function resolveStudioScene3dLinkedLayerRoundTrip(input: {
@@ -92,11 +104,13 @@ export function resolveStudioScene3dLinkedLayerRoundTrip(input: {
       return failure(
         "shot-mismatch",
         "Canvas에 연결된 Shot과 SceneDocument의 활성 Shot이 다릅니다.",
+        linkedDetailParams(crossReference),
       );
     }
     return failure(
       "page-cross-reference-invalid",
       "Canvas 레이어·3D Stage·pass receipt 교차참조가 일치하지 않습니다.",
+      linkedDetailParams(crossReference),
     );
   }
   const sceneLookup = resolveCanonicalStudioBg3dSceneForBundle(input.elements, input.bundleId);
