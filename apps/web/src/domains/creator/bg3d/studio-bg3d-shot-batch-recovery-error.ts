@@ -107,6 +107,22 @@ export type StudioBg3dShotBatchRecoveryErrorSubcode =
   | "corrupt.sqliteAcquireJobMissing"
   | "corrupt.sqliteJobPlanMismatch";
 
+/**
+ * A4 D4 (R16): degradedReason 구조화 사유 — 세션·요약 객체가 문자열 대신 이 객체를 싣고,
+ * 표시는 표시 지점에서만 리졸버(resolveStudioBg3dShotBatchRecoveryDegradedReason)로 해석한다.
+ * 전 사유 정적 문구라 params는 현재 쓰지 않지만, 계약 형태는 다른 D4 채널과 같은 {code, params}로 둔다.
+ */
+export type StudioBg3dShotBatchRecoveryDegradedReasonCode =
+  | "indexedDbUnavailable"
+  | "quotaExceeded"
+  | "indexedDbError"
+  | "webLocksUnavailable";
+
+export interface StudioBg3dShotBatchRecoveryDegradedReason {
+  readonly code: StudioBg3dShotBatchRecoveryDegradedReasonCode;
+  readonly params?: Readonly<Record<string, string>>;
+}
+
 export class StudioBg3dShotBatchRecoveryError extends Error {
   readonly code: StudioBg3dShotBatchRecoveryErrorCode;
   readonly subcode: StudioBg3dShotBatchRecoveryErrorSubcode;

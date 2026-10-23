@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useId } from "react";
 import { StudioBg3dPsdOutputNotice } from "./StudioBg3dPsdOutputNotice";
-
+import { resolveStudioBg3dShotBatchRecoveryDegradedReason } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import {
   STUDIO_BG3D_CAMERA_DEFAULT_NEAR_CLIP,
   STUDIO_BG3D_CAMERA_MAX_DUTCH_ROLL_DEGREES,
@@ -127,7 +127,7 @@ interface StudioBg3dViewPanelContext {
   readonly isBatchRenderingShots: boolean;
   readonly Loader2: typeof import("lucide-react").Loader2;
   readonly Save: typeof import("lucide-react").Save;
-  readonly shotBatchRecoverySummary: { readonly completedShots: number; readonly totalShots: number; readonly mode: "durable" | "memory"; readonly downloadRequested?: boolean; readonly degradedReason?: string | null; } | null;
+  readonly shotBatchRecoverySummary: { readonly completedShots: number; readonly totalShots: number; readonly mode: "durable" | "memory"; readonly downloadRequested?: boolean; readonly degradedReason?: import("./studio-bg3d-shot-batch-recovery-error").StudioBg3dShotBatchRecoveryDegradedReason | null; } | null;
   readonly shotBatchProgress: { readonly stage: "render" | "contact" | "archive"; readonly completed: number; readonly total: number; readonly label: string; } | null;
   readonly shotBatchExcludedIds: Set<string>;
   readonly applySavedShot: (shotId: string) => void;
@@ -877,7 +877,7 @@ export function StudioBg3dViewPanel({
                           : translateCurrentStaticSourceText("domains.creator.bg3d.StudioBg3dViewPanelContent", "ko", " 다운로드 요청 뒤 현재 탭을 유지하는 동안 최대 24시간 다시 패키징할 수 있습니다. 새로고침하거나 탭을 닫으면 사라집니다.")
                         : ""}
                       {shotBatchRecoverySummary.degradedReason
-                        ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.bg3d.StudioBg3dViewPanelContent", "ko", " {v0} 새로고침 전에 ZIP을 저장해 주세요."), { v0: String(shotBatchRecoverySummary.degradedReason) })
+                        ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.bg3d.StudioBg3dViewPanelContent", "ko", " {v0} 새로고침 전에 ZIP을 저장해 주세요."), { v0: resolveStudioBg3dShotBatchRecoveryDegradedReason(shotBatchRecoverySummary.degradedReason) })
                         : ""}
                     </p>
                   ) : null}

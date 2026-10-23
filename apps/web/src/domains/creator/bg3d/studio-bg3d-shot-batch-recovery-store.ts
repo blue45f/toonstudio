@@ -7,7 +7,6 @@
  */
 
 import { acquireStudioLocalDatabase } from "../studio-local-database-runtime";
-import { resolveStudioBg3dShotBatchRecoveryDegradedReason } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import { createStudioOpfsAssetStore } from "../studio-opfs-asset-store";
 import { createStudioOpfsNativeFileSystem } from "../studio-opfs-filesystem";
 import { compareStudioValidationStrings } from "../studio-validation-string-order";
@@ -30,7 +29,7 @@ import {
   verifyStudioBg3dShotBatchSourceRevision,
   type StudioBg3dShotBatchPlan,
 } from "./studio-bg3d-shot-batch-plan";
-import { StudioBg3dShotBatchRecoveryError } from "./studio-bg3d-shot-batch-recovery-error";
+import { StudioBg3dShotBatchRecoveryError, type StudioBg3dShotBatchRecoveryDegradedReason } from "./studio-bg3d-shot-batch-recovery-error";
 import {
   createStudioBg3dShotBatchQueue,
   failStudioBg3dShotBatchQueueItem,
@@ -102,6 +101,8 @@ export type StudioBg3dShotBatchRecoveryPersistence = "granted" | "not-granted" |
 // 이 모듈에서는 그 클래스로 {code, subcode}만 방출하고 표시 문구는 갖지 않는다.
 export { StudioBg3dShotBatchRecoveryError } from "./studio-bg3d-shot-batch-recovery-error";
 export type {
+  StudioBg3dShotBatchRecoveryDegradedReason,
+  StudioBg3dShotBatchRecoveryDegradedReasonCode,
   StudioBg3dShotBatchRecoveryErrorCode,
   StudioBg3dShotBatchRecoveryErrorSubcode,
 } from "./studio-bg3d-shot-batch-recovery-error";
@@ -149,11 +150,12 @@ export interface StudioBg3dShotBatchRecoverySession {
   mode: StudioBg3dShotBatchRecoveryMode;
   persistence: StudioBg3dShotBatchRecoveryPersistence;
   /**
-   * 집계자 예외 (A4 D4, R12): 이 필드는 문자열로 고정된 저장값이다. 요약 타입·호스트 상태·
-   * 패널까지 소비처가 넓어 {code}로 바꾸지 않고, 생산 지점(acquire·degrade 경계)에서만
-   * resolveStudioBg3dShotBatchRecoveryDegradedReason으로 해석해 저장한다(생산 시점 로케일 고정).
+   * 표시 시점 해석 (A4 D4, R16 (a) 전환 — R12 집계자 예외를 대체): 이 필드는 {code, params}
+   * 구조화 사유이며 표시 문구를 갖지 않는다. 생산 지점(acquire·degrade 경계)은 코드만 싣고,
+   * 표시는 표시 지점에서만 resolveStudioBg3dShotBatchRecoveryDegradedReason으로 해석한다.
+   * 이 필드는 영속 레코드(Job·Lease·Artifact·SQLite catalog)에 포함되지 않는 세션 전용 값이다.
    */
-  degradedReason: string | null;
+  degradedReason: StudioBg3dShotBatchRecoveryDegradedReason | null;
   queue: StudioBg3dShotBatchQueue;
   revision: number;
   fence: number;
@@ -1947,7 +1949,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
   private memoryAcquire(
     plan: StudioBg3dShotBatchPlan,
     sourceRevision: string,
-    reason: string | null,
+    reason: StudioBg3dShotBatchRecoveryDegradedReason | null,
   ): StudioBg3dShotBatchRecoverySession {
     const now = this.now();
     purgeExpiredMemoryRecords(now);
@@ -2044,7 +2046,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         verifiedPlan,
         sourceRevision,
         verifiedPlan.scope.durability === "durable"
-          ? resolveStudioBg3dShotBatchRecoveryDegradedReason("indexedDbUnavailable")
+          ? { code: "indexedDbUnavailable" }
           : null,
       );
       throwIfAborted(options.signal);
@@ -2152,7 +2154,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
       const session = this.memoryAcquire(
         verifiedPlan,
         sourceRevision,
-        resolveStudioBg3dShotBatchRecoveryDegradedReason("quotaExceeded"),
+        { code: "quotaExceeded" },
       );
       throwIfAborted(options.signal);
       this.startHeartbeat(session);
@@ -2359,8 +2361,8 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
     session.mode = "memory";
     session.persistence = "unknown";
     session.degradedReason = isQuotaError(cause)
-      ? resolveStudioBg3dShotBatchRecoveryDegradedReason("quotaExceeded")
-      : resolveStudioBg3dShotBatchRecoveryDegradedReason("indexedDbError");
+      ? { code: "quotaExceeded" }
+      : { code: "indexedDbError" };
     session.fence = lease.fence;
     session.leaseToken = lease.leaseToken;
     session.artifactStorageBytes = artifactStorageBytes;
@@ -3206,8 +3208,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
     if (plan.scope.durability !== "durable" || !this.runExclusive) {
       const memory = await this.delegate.acquire(plan, sourceRevision, options);
       if (plan.scope.durability === "durable") {
-        memory.degradedReason =
-          resolveStudioBg3dShotBatchRecoveryDegradedReason("webLocksUnavailable");
+        memory.degradedReason = { code: "webLocksUnavailable" };
       }
       this.startHeartbeat(memory);
       return memory;
