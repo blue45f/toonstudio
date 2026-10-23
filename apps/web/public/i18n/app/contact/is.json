@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "Almenn fyrirspurn",
+  "contact.body": "Sendu almennar fyrirspurnir um notkun þjónustunnar, reikninga og birtingu gagna.",
+  "contact.bizTitle": "Viðskipta- og samstarfsfyrirspurnir",
+  "contact.bizBody": "Sendu viðskiptatillögur, þar á meðal um auglýsingar, samþættingu vettvanga og efnissamstarf.",
+  "contact.bugTitle": "Villutilkynning",
+  "contact.bugBody": "Tilkynntu villur, útlitsvandamál eða frávik í birtingu gagna."
 }

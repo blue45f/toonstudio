@@ -1,17 +1,17 @@
 {
-  "ageGate.title": "Forrit um innihald fullorðinna",
-  "ageGate.description": "Færðu inn fæðingardaginn til að staðfesta að þú ert 19 ára eða eldri.",
+  "ageGate.title": "Aldursathugun fyrir efni fyrir fullorðna",
+  "ageGate.description": "Sláðu inn fæðingardaginn þinn til að staðfesta að þú sért 19 ára eða eldri.",
   "ageGate.birthDateLabel": "Fæðingardagur",
   "ageGate.birthYearLabel": "Fæðingarár",
   "ageGate.birthYearPlaceholder": "Ár",
-  "ageGate.birthMonthLabel": "Fæðingarmálið",
+  "ageGate.birthMonthLabel": "Fæðingarmánuður",
   "ageGate.birthMonthPlaceholder": "Mánuður",
   "ageGate.birthDayLabel": "Fæðingardagur",
-  "ageGate.birthDayPlaceholder": "Dagurinn",
+  "ageGate.birthDayPlaceholder": "Dagur",
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Þú fullnægtist ekki aldursskilyrđunum.",
-  "ageGate.cancel": "Aflýsingu",
-  "ageGate.confirm": "Staðfesting"
+  "ageGate.deniedMessage": "Þú uppfylltir ekki aldursskilyrðið.",
+  "ageGate.cancel": "Hætta við",
+  "ageGate.confirm": "Staðfesta"
 }

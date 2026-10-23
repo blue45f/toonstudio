@@ -1,4 +1,4 @@
 {
-  "notify.loadError": "Ég gat ekki hlaðið upp tilkynningar.",
+  "notify.loadError": "Ekki tókst að hlaða tilkynningum. Vinsamlegast reyndu aftur eftir smástund.",
   "notify.empty": "Engar nýjar tilkynningar."
 }

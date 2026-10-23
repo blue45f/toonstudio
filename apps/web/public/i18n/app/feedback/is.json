@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Ég gat ekki hlaðið inn umsögn.",
-  "feedback.thankYou": "Ūakka ūér fyrir gjörsamlega ummæliđ!",
-  "feedback.anonymousNote": "Svör þínar eru einmitt nafnlausar.",
-  "feedback.notAtAll": "Nei, alls ekki.",
-  "feedback.definitely": "Áreiðanlega."
+  "feedback.loadError": "Ekki tókst að hlaða endurgjafakönnun. Vinsamlegast reyndu aftur eftir smástund.",
+  "feedback.thankYou": "Takk fyrir dýrmæta endurgjöf þína!",
+  "feedback.anonymousNote": "Svör þín eru stranglega nafnlaus.",
+  "feedback.notAtAll": "Alls ekki",
+  "feedback.definitely": "Klárlega"
 }

@@ -1,14 +1,14 @@
 {
-  "control.language.label": "Tölur",
-  "control.language.group.translated": "Þýðingar með mikilli umfjöllun",
-  "control.language.group.englishBase": "Sjálfvirk þýðing · Íslenska fallback",
-  "control.sound.enable": "Að leyfa hljóðvirkni",
-  "control.sound.disable": "Slökktu á hljóðvirkni",
-  "control.theme.dark": "Skipta yfir í ljósleiða",
-  "control.theme.light": "Skipta yfir í dökk stæði",
-  "control.settings.open": "Opið stillingar",
-  "control.settings.close": "Lögð upp",
-  "control.cluster.settings": "Hljóð, þema, tungumálstýringar",
-  "control.cluster.open": "Opið stillingar",
-  "control.cluster.tooltip": "Hljóð, þema og tungumál"
+  "control.language.label": "Tungumál",
+  "control.language.group.translated": "Þýðingar með góða þekju",
+  "control.language.group.englishBase": "Sjálfvirk þýðing · enska sem vara",
+  "control.sound.enable": "Kveikja á hljóðáhrifum",
+  "control.sound.disable": "Slökkva á hljóðáhrifum",
+  "control.theme.dark": "Skipta yfir í ljósan ham",
+  "control.theme.light": "Skipta yfir í dökkan ham",
+  "control.settings.open": "Opna stillingar",
+  "control.settings.close": "Loka stillingum",
+  "control.cluster.settings": "Stýringar fyrir hljóð, þema og tungumál",
+  "control.cluster.open": "Opna stillingar",
+  "control.cluster.tooltip": "Stillingar fyrir hljóð, þema og tungumál"
 }
