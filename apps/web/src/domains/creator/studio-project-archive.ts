@@ -1580,7 +1580,7 @@ function linked3dArchiveCoverage(
     return assertStudioLinked3dPassProjectArchiveEvidence(project, evidence);
   } catch (cause) {
     if (!(cause instanceof StudioLinked3dPassProjectArchiveError)) throw cause;
-    const causeParams = cause.variant ? { causeCode: cause.code, causeVariant: cause.variant } : { detail: cause.message };
+    const causeParams: Readonly<Record<string, string>> = cause.variant ? { causeCode: cause.code, causeVariant: cause.variant } : { detail: cause.message };
     if (cause.code === "attachment-missing") fail("ATTACHMENT_MISSING", "fromLinked3d", {}, causeParams);
     if (cause.code === "attachment-mismatch") {
       fail("DOCUMENT_REFERENCE_MISMATCH", "fromLinked3d", {}, causeParams);

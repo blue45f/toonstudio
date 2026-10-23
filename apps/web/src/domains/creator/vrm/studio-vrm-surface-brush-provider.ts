@@ -27,7 +27,7 @@ import type {
   StudioVrmTexturePaintRayHit,
   StudioVrmTexturePaintRuntime,
   StudioVrmTexturePaintRuntimeError,
-  type StudioVrmTexturePaintRuntimeErrorCode,
+  StudioVrmTexturePaintRuntimeErrorCode,
   StudioVrmTexturePaintSurfaceProjection,
   StudioVrmTexturePaintSurfaceSession,
 } from "./studio-vrm-texture-paint-runtime";
