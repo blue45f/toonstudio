@@ -32,7 +32,10 @@ const RESULT_PATH = join(OUT_DIR, "character-shaper-evidence.json");
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
 const MOBILE_HINT_KEY = "toonstudio-studio-mobile-hint-dismissed";
 const DIALOG = '[data-character-shaper="true"]';
-const RAIL = `${DIALOG} [data-character-shaper-rail] button`;
+// 개편된 데스크톱 화면은 상단 카테고리 탭(얼굴·헤어·의상·체형·포즈·소품)으로 고르고, 부위가 둘 이상인 카테고리는
+// 그 아래 세부 부위 탭(의상 → 상의·하의·신발)이 따로 나온다. data-character-shaper-rail 은 모바일 가로 레일 전용이다.
+const CATEGORY_RAIL = `${DIALOG} [data-character-category-rail="desktop"]`;
+const SUBSLOT_TABS = `${DIALOG} [data-character-subslot-tabs]`;
 const GRID = `${DIALOG} [data-character-shaper-grid] [data-character-slot-card]`;
 
 const SWIFTSHADER_ARGS = [
@@ -312,6 +315,28 @@ async function comparePngWithPsdBeauty(page: Page, path: string, rgba: Uint8Clam
     encodedBeauty: Buffer.from(rgba.buffer, rgba.byteOffset, rgba.byteLength).toString("base64"), width, height });
 }
 
+/** 상단 카테고리 탭을 눌러 그 카테고리의 첫 부위 선반이 뜰 때까지 기다린다. */
+async function selectCategory(page: Page, category: string, firstSlot: string): Promise<void> {
+  await page.locator(`${CATEGORY_RAIL} [data-character-category="${category}"]`).click();
+  await page.locator(`${DIALOG} [data-character-shaper-shelf="${firstSlot}"]`).waitFor({ timeout: 30_000 });
+}
+
+/** 세부 부위 탭(예: 의상 → 상의)을 눌러 그 부위 선반이 뜰 때까지 기다린다. */
+async function selectSubslot(page: Page, slot: string): Promise<void> {
+  await page.locator(`${SUBSLOT_TABS} [data-character-slot="${slot}"]`).click();
+  await page.locator(`${DIALOG} [data-character-shaper-shelf="${slot}"]`).waitFor({ timeout: 30_000 });
+}
+
+/**
+ * 파일 해상도·PNG/PSD 비율·구도 가이드는 도크의 '출력 설정' 시트 안에 접혀 있다(data-character-output-settings 토글,
+ * aria-expanded 로 상태를 알린다). 시트는 바깥을 누르면 닫히므로 해상도를 읽거나 바꾸기 전마다 이 헬퍼로 펼친다.
+ */
+async function openOutputSettings(page: Page): Promise<void> {
+  const trigger = page.locator(`${DIALOG} [data-character-output-settings="true"]`);
+  if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.click();
+  await page.locator(`${DIALOG} [data-character-export-sheet]`).waitFor({ state: "visible", timeout: 30_000 });
+}
+
 async function openShaper(page: Page, origin: string): Promise<void> {
   await page.goto(`${origin}/studio/character`, { waitUntil: "domcontentloaded", timeout: 180_000 });
   await page.waitForSelector(DIALOG, { timeout: 300_000 });
@@ -372,9 +397,8 @@ async function main(): Promise<void> {
     );
     evidence.beforeStats = { ...before, tiles: undefined };
 
-    // Slot rail → hair → first available card
-    const railHair = page.locator(RAIL).filter({ hasText: "헤어" }).first();
-    await railHair.click();
+    // 카테고리 탭 → 헤어 → first available card
+    await selectCategory(page, "hair", "hair");
     await page.screenshot({ path: join(OUT_DIR, "character-desktop-hair.png") });
     const hairCard = page.locator(`${GRID}:not([aria-disabled="true"])`).nth(1);
     await hairCard.click();
@@ -382,10 +406,13 @@ async function main(): Promise<void> {
     const afterHair = await viewportStats(page);
     evidence.hairPeakTileDelta = peakTileDelta(before, afterHair);
 
-    const railTop = page.locator(RAIL).filter({ hasText: "상의" }).first();
-    await railTop.click();
+    await selectCategory(page, "outfit", "top");
+    await selectSubslot(page, "top");
     const topCard = page.locator(`${GRID}[data-character-slot-card="top:tshirt"]`);
     invariant(await topCard.count() === 0, "unreviewed procedural garments must not be offered by default");
+    // 데스크톱 선반은 compact 배치라 검색 옆 '필터' 를 펼쳐야 '실험 의상 표시' 가 보인다(점진 공개).
+    const filterToggle = page.locator(`${DIALOG} [data-character-shaper-shelf="top"]`).getByRole("button", { name: /^필터/u });
+    if ((await filterToggle.getAttribute("aria-expanded")) !== "true") await filterToggle.click();
     await page.getByRole("button", { name: "실험 의상 표시", exact: true }).click();
     await topCard.click();
     evidence.experimentalGarmentOptIn = true;
@@ -399,13 +426,12 @@ async function main(): Promise<void> {
     // Preserve a real experimental garment artifact above, then explicitly restore the native
     // outfit/hair for publication output. Opt-in geometry is not a curated asset-quality receipt.
     await page.locator(`${GRID}[data-character-slot-card="top:original"]`).click();
-    await railHair.click();
+    await selectCategory(page, "hair", "hair");
     await page.locator(`${GRID}[data-character-slot-card="hair:original"]`).click();
     await page.waitForTimeout(2_000);
     evidence.publicationAppearance = "native-model-outfit-and-hair";
 
-    const railPose = page.locator(RAIL).filter({ hasText: "포즈" }).first();
-    await railPose.click();
+    await selectCategory(page, "pose", "pose");
     await page.screenshot({ path: join(OUT_DIR, "character-desktop-pose.png") });
 
     const nameGaps = await accessibleNameGaps(page);
@@ -421,6 +447,7 @@ async function main(): Promise<void> {
     }
     const pngButton = page.getByRole("button", { name: "PNG 저장" }).first();
     const resolution = page.getByRole("combobox", { name: "파일 내보내기 해상도" });
+    await openOutputSettings(page);
     invariant(await resolution.inputValue() === "2048", "character export must default to a 2048 px long edge");
     const pngDownloadPromise = page.waitForEvent("download", { timeout: 120_000 });
     await pngButton.click();
@@ -446,6 +473,7 @@ async function main(): Promise<void> {
 
     // Cancel through the real DOM handler after rendering has started and before the final tile.
     // A MutationObserver catches the actual progress paint without adding artificial GPU delays.
+    await openOutputSettings(page);
     await resolution.selectOption("4096");
     const cancelledDownloads: string[] = [];
     const onCancelledDownload = (download: Download) => cancelledDownloads.push(download.suggestedFilename());
@@ -506,6 +534,7 @@ async function main(): Promise<void> {
     invariant(await pngButton.isEnabled(), "4K export did not release the editor capture lock");
 
     // PSD export uses the same 2048px request as the first PNG for direct composition comparison.
+    await openOutputSettings(page);
     await resolution.selectOption("2048");
     const psdButton = page.getByRole("button", { name: /PSD/ }).first();
     const downloadPromise = page.waitForEvent("download", { timeout: 120_000 });

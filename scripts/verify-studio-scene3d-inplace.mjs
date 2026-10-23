@@ -14,7 +14,7 @@ import { join, resolve, extname } from "node:path";
 import { chromium } from "playwright";
 import react from "@vitejs/plugin-react";
 import { createServer } from "vite";
-import { REPO_ROOT, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
+import { REPO_ROOT, WEB_PUBLIC, WEB_VITE_ALIASES } from "./lib/repo-paths.mjs";
 const output =
   process.env.TOONSPECTRUM_VERIFY_DIR ??
   mkdtempSync(join(tmpdir(), "scene3d-inplace-"));
@@ -38,6 +38,17 @@ const csp = production
       ?.trim()
   : null;
 if (production && !csp) throw new Error("Production CSP is missing.");
+// 제품은 Creator Bundle 테마 팩 카탈로그를 정적 자산으로 서빙하고, 모델 라이브러리는 해시로 모델을 찾을 때
+// 이 파일을 fetch 한다(bg3d-model-library.ts → loadStudioBg3dBundleThemePackRecordByHash). publicDir:false
+// 하니스는 이 URL 이 404 라 콘솔 오류 3건이 생겨 바깥 게이트가 실패했다. 오류를 제외하지 않고, 공개 폴더
+// 전체가 아니라 정확히 이 파일 하나만 같은 URL 로 서빙해 제품과 같은 응답을 준다. 프로덕션 워커 모드(CI)는
+// 아래 /assets/ 분기가 dist 의 같은 파일을 서빙하므로 이 파일을 쓰지 않는다.
+const THEME_PACKS_PATH = "/assets/3d/environments/bundle-v1/theme-packs.json";
+const themePacksFile = join(WEB_PUBLIC, THEME_PACKS_PATH);
+if (!production && !existsSync(themePacksFile))
+  throw new Error(
+    `번들 테마 팩 카탈로그가 체크아웃에 없습니다(희소 체크아웃에서 apps/web/public/assets 를 뺐다면 이 파일을 다시 넣어야 합니다): ${themePacksFile}`,
+  );
 const errors = [];
 const warnings = [];
 const server = await createServer({
@@ -96,6 +107,11 @@ const server = await createServer({
             );
             res.setHeader("Content-Security-Policy", csp);
             createReadStream(file).pipe(res);
+            return;
+          }
+          if (path === THEME_PACKS_PATH) {
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.end(readFileSync(themePacksFile));
             return;
           }
           if (path !== "/__scene3d_inplace__") return next();
