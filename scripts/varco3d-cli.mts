@@ -29,6 +29,7 @@ import {
   VARCO3D_MCP_SETUP_DOC_URL,
 } from "./lib/varco3d-catalog.mts";
 import {
+  callVarco3dMcpTool,
   encodeMultipartFormData,
   inferImageMimeType,
   inspectMcpSetup,
@@ -55,6 +56,7 @@ import {
 } from "./lib/varco3d-worldbuild.mts";
 
 export {
+  callVarco3dMcpTool,
   type DccBridgeName,
   encodeMultipartFormData,
   inferImageMimeType,
@@ -380,6 +382,8 @@ export async function executeVarco3dCli(
         apiBase: config.apiBase,
         apiKeyConfigured: config.apiKeyConfigured,
         apiKeySource: config.apiKeySource,
+        mcpOAuthConfigured: config.mcpOAuthConfigured,
+        mcpOAuthSource: config.mcpOAuthSource,
         mcp: inspectMcpSetup(config),
         dccBridges: await probeDccBridges(fetchImpl),
         endpoints: {
@@ -400,6 +404,31 @@ export async function executeVarco3dCli(
 
   if (parsed.command === "auth-check") {
     return probeNcOpenApiAuth(config, fetchImpl);
+  }
+
+  if (parsed.command === "mcp-status") {
+    if (!config.mcpOAuthConfigured) {
+      return {
+        exitCode: 1,
+        output: {
+          mcpUrl: config.mcpUrl,
+          mcpOAuthConfigured: false,
+          mcpOAuthSource: config.mcpOAuthSource,
+        },
+      };
+    }
+    const acct = await callVarco3dMcpTool(config, "get_account_and_pricing", {}, fetchImpl);
+    const sessions = await callVarco3dMcpTool(config, "list_flow_sessions", {}, fetchImpl);
+    return {
+      exitCode: acct.ok ? 0 : 1,
+      output: {
+        mcpUrl: config.mcpUrl,
+        mcpOAuthConfigured: true,
+        mcpOAuthSource: config.mcpOAuthSource,
+        account: acct.data ?? { raw: acct.rawText },
+        flowSessions: sessions.data?.sessions ?? [],
+      },
+    };
   }
 
   if (parsed.command === "catalog" || parsed.command === "capabilities") {

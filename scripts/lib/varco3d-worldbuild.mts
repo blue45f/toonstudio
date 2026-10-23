@@ -10,6 +10,7 @@ import { join, resolve } from "node:path";
 import { deflateSync } from "node:zlib";
 
 import {
+  callVarco3dMcpTool,
   encodeMultipartFormData,
   requestVarco3dJson,
   type Varco3dResolvedConfig,
@@ -418,9 +419,10 @@ export interface WorldbuildAssetResult {
   readonly category: "background-prop" | "character-part";
   readonly labelKo: string;
   readonly status: "submitted-varco-api" | "synthesized-fallback-on-402" | "planned-dry-run";
-  readonly providerAttempted: "nc-openapi" | "studio" | "none";
+  readonly providerAttempted: "nc-openapi" | "studio" | "mcp" | "none";
   readonly httpStatusCode: number | null;
   readonly taskUuid: string | null;
+  readonly mcpUploadedUrl?: string | null;
   readonly glbPath: string;
   readonly bytesWritten: number;
 }
@@ -472,6 +474,7 @@ export async function runVarco3dWorldbuildBatch(
         outputDir: resolvedOutDir,
         totalAssets: filtered.length,
         apiKeyConfigured: options.config.apiKeyConfigured,
+        mcpOAuthConfigured: options.config.mcpOAuthConfigured,
         note: "실제 VARCO 3D 크레딧 소진 루프 및 GLB 에셋 생성을 실행하려면 --confirm 플래그를 추가하세요.",
         assets: filtered.map((spec) => ({
           id: spec.id,
@@ -482,6 +485,7 @@ export async function runVarco3dWorldbuildBatch(
           providerAttempted: "none",
           httpStatusCode: null,
           taskUuid: null,
+          mcpUploadedUrl: null,
           glbPath: join(resolvedOutDir, `${spec.id}.glb`),
           bytesWritten: 0,
         })),
@@ -492,6 +496,30 @@ export async function runVarco3dWorldbuildBatch(
   mkdirSync(resolvedOutDir, { recursive: true });
   const refDir = join(resolvedOutDir, "reference-images");
   mkdirSync(refDir, { recursive: true });
+
+  let mcpAccountTier: string | null = null;
+  let mcpActiveFlowId: string | null = null;
+  if (options.config.mcpOAuthConfigured && options.config.mcpOAuthToken) {
+    try {
+      const acct = await callVarco3dMcpTool(options.config, "get_account_and_pricing", {}, fetchImpl);
+      if (typeof acct.data?.tier === "string") {
+        mcpAccountTier = acct.data.tier;
+      }
+      const sessionsResp = await callVarco3dMcpTool(options.config, "list_flow_sessions", {}, fetchImpl);
+      const sessions = Array.isArray(sessionsResp.data?.sessions)
+        ? (sessionsResp.data.sessions as readonly Record<string, unknown>[])
+        : [];
+      const firstSession = sessions[0];
+      if (firstSession) {
+        const fid = firstSession.flowId ?? firstSession.workflowId ?? firstSession.id;
+        if (typeof fid === "string" && fid.trim()) {
+          mcpActiveFlowId = fid.trim();
+        }
+      }
+    } catch {
+      // ignore MCP probe failure during batch fallback
+    }
+  }
 
   let creditsExhausted = false;
   let creditsExhaustedAtAssetId: string | null = null;
@@ -504,11 +532,91 @@ export async function runVarco3dWorldbuildBatch(
 
   const results: WorldbuildAssetResult[] = [];
 
-  for (const spec of filtered) {
+  for (let idx = 0; idx < filtered.length; idx += 1) {
+    const spec = filtered[idx]!;
+    const refPngBytes = synthesizeReferencePngBytes(spec);
     const refPngPath = join(refDir, `${spec.id}.png`);
-    writeFileSync(refPngPath, synthesizeReferencePngBytes(spec));
+    writeFileSync(refPngPath, refPngBytes);
     const glbPath = join(resolvedOutDir, `${spec.id}.glb`);
     const glbBytes = synthesizeDeterministicGlb(spec);
+
+    let mcpUploadedUrl: string | null = null;
+    if (options.config.mcpOAuthConfigured && options.config.mcpOAuthToken) {
+      try {
+        const up = await callVarco3dMcpTool(
+          options.config,
+          "upload_image",
+          { data: refPngBytes.toString("base64") },
+          fetchImpl,
+        );
+        if (typeof up.data?.url === "string") {
+          mcpUploadedUrl = up.data.url;
+        }
+        if (mcpUploadedUrl && mcpActiveFlowId) {
+          const imgNode = await callVarco3dMcpTool(
+            options.config,
+            "create_node",
+            {
+              flowId: mcpActiveFlowId,
+              type: "ImageInput",
+              position: { x: 100, y: 120 + idx * 280 },
+              intrinsic: { value: [{ type: "image", url: mcpUploadedUrl }] },
+            },
+            fetchImpl,
+          );
+          const genNode = await callVarco3dMcpTool(
+            options.config,
+            "create_node",
+            {
+              flowId: mcpActiveFlowId,
+              type: "Generate3D",
+              position: { x: 480, y: 120 + idx * 280 },
+            },
+            fetchImpl,
+          );
+          const imgNodeId = typeof imgNode.data?.nodeId === "string" ? imgNode.data.nodeId : null;
+          const genNodeId = typeof genNode.data?.nodeId === "string" ? genNode.data.nodeId : null;
+          if (imgNodeId && genNodeId) {
+            await callVarco3dMcpTool(
+              options.config,
+              "connect_edge",
+              {
+                flowId: mcpActiveFlowId,
+                from: { nodeId: imgNodeId, portName: "out" },
+                to: { nodeId: genNodeId, portName: "image" },
+              },
+              fetchImpl,
+            );
+            const runResp = await callVarco3dMcpTool(
+              options.config,
+              "run_flow",
+              { flowId: mcpActiveFlowId, scope: [genNodeId] },
+              fetchImpl,
+            );
+            if (runResp.ok) {
+              writeFileSync(glbPath, glbBytes);
+              apiSubmittedCount += 1;
+              results.push({
+                id: spec.id,
+                universeId: spec.universeId,
+                category: spec.category,
+                labelKo: spec.labelKo,
+                status: "submitted-varco-api",
+                providerAttempted: "mcp",
+                httpStatusCode: 200,
+                taskUuid: String(runResp.data?.executionId ?? genNodeId),
+                mcpUploadedUrl,
+                glbPath,
+                bytesWritten: glbBytes.byteLength,
+              });
+              continue;
+            }
+          }
+        }
+      } catch {
+        // continue to OpenAPI / fallback
+      }
+    }
 
     if (!creditsExhausted && options.config.apiKeyConfigured && options.config.apiKey) {
       const fields: Record<string, string> =
@@ -550,7 +658,6 @@ export async function runVarco3dWorldbuildBatch(
           payload.error ?? payload.message ?? "No available credits to process the request",
         );
 
-        // nc-openapi에서 402가 발생하면 studio 엔드포인트도 1회 교차 확인해 잔여 크레딧이 있는지 끝까지 점검한다.
         if (provider === "nc-openapi" && !studioFallbackChecked) {
           studioFallbackChecked = true;
           const studioMultipart = encodeMultipartFormData(
@@ -582,6 +689,7 @@ export async function runVarco3dWorldbuildBatch(
           providerAttempted: provider,
           httpStatusCode: statusCode,
           taskUuid: null,
+          mcpUploadedUrl,
           glbPath,
           bytesWritten: glbBytes.byteLength,
         });
@@ -606,6 +714,7 @@ export async function runVarco3dWorldbuildBatch(
           providerAttempted: provider,
           httpStatusCode: statusCode,
           taskUuid,
+          mcpUploadedUrl,
           glbPath,
           bytesWritten: glbBytes.byteLength,
         });
@@ -613,7 +722,6 @@ export async function runVarco3dWorldbuildBatch(
       }
     }
 
-    // 크레딧 소진 이후 남은 에셋은 불필요한 유료 API 재호출 없이 결정적 GLB로 즉시 합성
     writeFileSync(glbPath, glbBytes);
     fallbackSynthesizedCount += 1;
     results.push({
@@ -625,6 +733,7 @@ export async function runVarco3dWorldbuildBatch(
       providerAttempted: "none",
       httpStatusCode: creditsExhaustedHttpStatus,
       taskUuid: null,
+      mcpUploadedUrl,
       glbPath,
       bytesWritten: glbBytes.byteLength,
     });
@@ -644,6 +753,8 @@ export async function runVarco3dWorldbuildBatch(
     creditsExhaustedMessage,
     studioFallbackChecked,
     studioFallbackStatusCode,
+    mcpAccountTier,
+    mcpActiveFlowId,
     assets: results,
   };
 
@@ -658,3 +769,4 @@ export async function runVarco3dWorldbuildBatch(
     },
   };
 }
+

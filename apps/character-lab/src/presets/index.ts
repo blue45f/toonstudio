@@ -25,10 +25,15 @@ export {
   applyShaperFineSlidersToRecipe,
   blendWebtoonUniverseRecipes,
   composeWebtoonUniverseRecipe,
+  resolveCharacterLabVarco3dPreviewSettings,
   webtoonUniverseShaperPreset,
+  type CharacterLabVarco3dEnvironmentId,
+  type CharacterLabVarco3dMapChannel,
+  type CharacterLabVarco3dPreviewSettings,
   type ComposeWebtoonUniverseRecipeResult,
   type ShaperFineSliderPatch,
   type Varco3dLabAccessoryBinding,
   type WebtoonUniverseShaperId,
   type WebtoonUniverseShaperPreset,
 } from "./webtoon-universe-shaper";
+

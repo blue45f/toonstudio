@@ -28,6 +28,9 @@ export interface Varco3dResolvedConfig {
   readonly apiKey: string;
   readonly apiKeyConfigured: boolean;
   readonly apiKeySource: string;
+  readonly mcpOAuthToken: string;
+  readonly mcpOAuthConfigured: boolean;
+  readonly mcpOAuthSource: string;
   readonly repoRoot: string;
   readonly homeDir: string;
 }
@@ -65,6 +68,37 @@ export function parseEnvFile(filePath: string): Record<string, string> {
   return result;
 }
 
+function resolveMcpOAuthToken(
+  env: Readonly<Record<string, string | undefined>>,
+  homeDir: string,
+): { readonly mcpOAuthToken: string; readonly mcpOAuthConfigured: boolean; readonly mcpOAuthSource: string } {
+  const fromEnv = env.VARCO_3D_MCP_OAUTH_TOKEN?.trim();
+  if (fromEnv) {
+    return {
+      mcpOAuthToken: fromEnv,
+      mcpOAuthConfigured: true,
+      mcpOAuthSource: "env:VARCO_3D_MCP_OAUTH_TOKEN",
+    };
+  }
+  const oauthPath = resolve(homeDir, ".config/varco3d/mcp-oauth.json");
+  if (existsSync(oauthPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(oauthPath, "utf8")) as { accessToken?: string };
+      const token = parsed.accessToken?.trim();
+      if (token) {
+        return {
+          mcpOAuthToken: token,
+          mcpOAuthConfigured: true,
+          mcpOAuthSource: "file:mcp-oauth.json",
+        };
+      }
+    } catch {
+      // ignore malformed oauth file
+    }
+  }
+  return { mcpOAuthToken: "", mcpOAuthConfigured: false, mcpOAuthSource: "missing" };
+}
+
 export function loadVarco3dConfig(options: LoadConfigOptions = {}): Varco3dResolvedConfig {
   const env = options.env ?? process.env;
   const repoRoot = options.repoRoot ?? REPO_ROOT;
@@ -85,6 +119,7 @@ export function loadVarco3dConfig(options: LoadConfigOptions = {}): Varco3dResol
     env.VARCO_3D_MCP_URL ??
     VARCO3D_DEFAULT_MCP_URL
   ).replace(/\/+$/u, "");
+  const oauthMeta = resolveMcpOAuthToken(env, homeDir);
 
   for (const keyName of VARCO3D_API_KEY_NAMES) {
     const fromEnv = env[keyName]?.trim();
@@ -96,6 +131,7 @@ export function loadVarco3dConfig(options: LoadConfigOptions = {}): Varco3dResol
         apiKey: fromEnv,
         apiKeyConfigured: true,
         apiKeySource: `env:${keyName}`,
+        ...oauthMeta,
         repoRoot,
         homeDir,
       };
@@ -123,6 +159,7 @@ export function loadVarco3dConfig(options: LoadConfigOptions = {}): Varco3dResol
           apiKey: val,
           apiKeyConfigured: true,
           apiKeySource: `file:${basename(filePath)}:${keyName}`,
+          ...oauthMeta,
           repoRoot,
           homeDir,
         };
@@ -137,6 +174,7 @@ export function loadVarco3dConfig(options: LoadConfigOptions = {}): Varco3dResol
     apiKey: "",
     apiKeyConfigured: false,
     apiKeySource: "missing",
+    ...oauthMeta,
     repoRoot,
     homeDir,
   };
@@ -473,3 +511,73 @@ export async function probeNcOpenApiAuth(
     },
   };
 }
+
+export async function callVarco3dMcpTool(
+  config: Varco3dResolvedConfig,
+  toolName: string,
+  args: Readonly<Record<string, unknown>> = {},
+  fetchImpl: typeof fetch = fetch,
+): Promise<{
+  readonly statusCode: number;
+  readonly ok: boolean;
+  readonly rawText: string;
+  readonly data: Record<string, unknown> | null;
+}> {
+  if (!config.mcpOAuthConfigured || !config.mcpOAuthToken) {
+    throw new Error(
+      "VARCO 3D MCP OAuth 토큰이 설정되어 있지 않습니다 (~/.config/varco3d/mcp-oauth.json 또는 VARCO_3D_MCP_OAUTH_TOKEN).",
+    );
+  }
+  const response = await fetchImpl(config.mcpUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.mcpOAuthToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: Date.now(),
+      method: "tools/call",
+      params: {
+        name: toolName,
+        arguments: args,
+      },
+    }),
+  });
+  const bodyText = await response.text();
+  const dataLines = bodyText
+    .split(/\r?\n/u)
+    .filter((line) => line.startsWith("data: "))
+    .map((line) => {
+      try {
+        return JSON.parse(line.slice(6)) as {
+          result?: { isError?: boolean; content?: readonly { type?: string; text?: string }[] };
+          error?: { message?: string };
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+
+  const lastMessage = dataLines[dataLines.length - 1];
+  const contentText = lastMessage?.result?.content?.[0]?.text ?? bodyText.trim();
+  const isError = Boolean(lastMessage?.result?.isError || lastMessage?.error);
+  let parsedData: Record<string, unknown> | null = null;
+  try {
+    const candidate = JSON.parse(contentText) as unknown;
+    if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
+      parsedData = candidate as Record<string, unknown>;
+    }
+  } catch {
+    parsedData = null;
+  }
+  return {
+    statusCode: response.status,
+    ok: response.ok && !isError,
+    rawText: contentText,
+    data: parsedData,
+  };
+}
+

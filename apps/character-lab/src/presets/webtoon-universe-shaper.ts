@@ -518,3 +518,72 @@ export function blendWebtoonUniverseRecipes(
   if (!fineResult.ok) return fineResult;
   return { ok: true, recipe: fineResult.recipe, preset: dominantPreset };
 }
+
+/** 캐릭터 랩용 VARCO 3D 4종 HDRI 환경 프리셋 ID. */
+export type CharacterLabVarco3dEnvironmentId =
+  | "lebombo"
+  | "venice_sunset"
+  | "studio_small"
+  | "daylight";
+
+/** 캐릭터 랩용 VARCO 3D PBR 맵 채널 인스펙터 모드. */
+export type CharacterLabVarco3dMapChannel =
+  | "baseColor"
+  | "normal"
+  | "roughness"
+  | "metallic"
+  | "occlusion";
+
+export interface CharacterLabVarco3dPreviewSettings {
+  readonly presetId: WebtoonUniverseShaperId;
+  readonly environmentId: CharacterLabVarco3dEnvironmentId;
+  readonly lightingRotationDeg: number;
+  readonly isTextureOn: boolean;
+  readonly isNormalMapOn: boolean;
+  readonly isPbrOn: boolean;
+  readonly isWireframeOn: boolean;
+  readonly isUvSeamOn: boolean;
+  readonly isBoneOn: boolean;
+  readonly mapPreviewMode: CharacterLabVarco3dMapChannel | null;
+  readonly pivotToBottom: boolean;
+}
+
+const UNIVERSE_DEFAULT_ENVIRONMENT: Readonly<
+  Record<WebtoonUniverseShaperId, { readonly environmentId: CharacterLabVarco3dEnvironmentId; readonly lightingRotationDeg: number }>
+> = Object.freeze({
+  "school-romance": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 35 }),
+  "romance-fantasy-noble": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 45 }),
+  "murim-swordsman": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 60 }),
+  "modern-noir-specialist": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 300 }),
+  "hunter-awakener": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 315 }),
+  "cyberpunk-runner": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 285 }),
+  "medical-drama-surgeon": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 25 }),
+  "sd-daily-mascot": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 15 }),
+});
+
+
+/**
+ * 세계관 셰이퍼 프리셋에 최적화된 VARCO 3D 프리뷰·인스펙터 초기 설정을 반환합니다.
+ */
+export function resolveCharacterLabVarco3dPreviewSettings(
+  id: WebtoonUniverseShaperId,
+  overrides?: Partial<Omit<CharacterLabVarco3dPreviewSettings, "presetId">>,
+): CharacterLabVarco3dPreviewSettings {
+  const defaults = UNIVERSE_DEFAULT_ENVIRONMENT[id];
+  const rawDeg = overrides?.lightingRotationDeg ?? defaults.lightingRotationDeg;
+  const normalizedDeg = ((Math.round(rawDeg) % 360) + 360) % 360;
+  return Object.freeze({
+    presetId: id,
+    environmentId: overrides?.environmentId ?? defaults.environmentId,
+    lightingRotationDeg: normalizedDeg,
+    isTextureOn: overrides?.isTextureOn ?? true,
+    isNormalMapOn: overrides?.isNormalMapOn ?? true,
+    isPbrOn: overrides?.isPbrOn ?? true,
+    isWireframeOn: overrides?.isWireframeOn ?? false,
+    isUvSeamOn: overrides?.isUvSeamOn ?? false,
+    isBoneOn: overrides?.isBoneOn ?? false,
+    mapPreviewMode: overrides?.mapPreviewMode ?? null,
+    pivotToBottom: overrides?.pivotToBottom ?? true,
+  });
+}
+

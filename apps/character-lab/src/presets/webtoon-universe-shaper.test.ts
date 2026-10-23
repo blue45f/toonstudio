@@ -12,6 +12,7 @@ import {
   applyShaperFineSlidersToRecipe,
   blendWebtoonUniverseRecipes,
   composeWebtoonUniverseRecipe,
+  resolveCharacterLabVarco3dPreviewSettings,
   webtoonUniverseShaperPreset,
 } from "./webtoon-universe-shaper";
 
@@ -82,4 +83,22 @@ describe("presets/webtoon-universe-shaper", () => {
     expect(fineAdjusted.recipe.shading.look.ramp.softness).toBe(0.4);
     expect(fineAdjusted.recipe.shading.look.rim.strength).toBe(1.4);
   });
+
+  it("세계관별 VARCO 3D 프리뷰·인스펙터(HDRI 환경·360도 조명 회전·PBR 채널·오버레이) 기본값을 계산한다", () => {
+    const murimPreview = resolveCharacterLabVarco3dPreviewSettings("murim-swordsman");
+    expect(murimPreview.environmentId).toBe("venice_sunset");
+    expect(murimPreview.lightingRotationDeg).toBe(60);
+    expect(murimPreview.pivotToBottom).toBe(true);
+
+    const overridden = resolveCharacterLabVarco3dPreviewSettings("cyberpunk-runner", {
+      lightingRotationDeg: -30,
+      mapPreviewMode: "roughness",
+      isWireframeOn: true,
+    });
+    expect(overridden.lightingRotationDeg).toBe(330);
+    expect(overridden.mapPreviewMode).toBe("roughness");
+    expect(overridden.isWireframeOn).toBe(true);
+  });
 });
+
+
