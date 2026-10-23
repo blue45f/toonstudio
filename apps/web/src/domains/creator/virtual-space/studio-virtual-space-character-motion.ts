@@ -117,6 +117,10 @@ const EMOTE_EMOTION: Readonly<Record<StudioSpaceEmoteId, StudioEmotionKind>> = O
   "yoga": "focus",
   "kpop-dance": "joy",
   "shuffle": "joy",
+  "neck-stretch": "focus",
+  "tai-chi": "focus",
+  "cheers": "joy",
+  "moonwalk": "joy",
 });
 
 /** 이모트 → 감정. 없거나 모르면 neutral. */

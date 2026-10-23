@@ -15,6 +15,10 @@ export const STUDIO_AMBIENT_TRACKS = [
     sha256: "4f659f68cf5219007d0bb0969a1862491ceee4057fda4c491c6001e8608fa2cb" },
   { id: "synth-wind", kind: "synth", labelKo: "바람 소리", labelEn: "Wind (synthesized)", duration: 8, synth: "wind" },
   { id: "synth-room", kind: "synth", labelKo: "실내 공기감", labelEn: "Room tone (synthesized)", duration: 8, synth: "room" },
+  { id: "synth-ocean", kind: "synth", labelKo: "노을 하버 파도 소리", labelEn: "Harbor waves (synthesized)", duration: 10, synth: "ocean" },
+  { id: "synth-hearth", kind: "synth", labelKo: "코지 원목 벽난로 온기", labelEn: "Cozy hearth warmth (synthesized)", duration: 8, synth: "hearth" },
+  { id: "synth-focus-stream", kind: "synth", labelKo: "딥워크 시냇물·브라운 노이즈", labelEn: "Deep-work stream (synthesized)", duration: 8, synth: "focus-stream" },
+  { id: "synth-atelier-breeze", kind: "synth", labelKo: "가든 테라스 산들바람", labelEn: "Garden terrace breeze (synthesized)", duration: 8, synth: "atelier-breeze" },
 ] as const;
 export type StudioAmbientTrack = typeof STUDIO_AMBIENT_TRACKS[number];
 export type StudioAmbientTrackId = StudioAmbientTrack["id"];

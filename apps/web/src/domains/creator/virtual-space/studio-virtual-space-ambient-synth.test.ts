@@ -30,9 +30,12 @@ describe("generateStudioAmbientSamples", () => {
     expect(Array.from(a.left)).not.toEqual(Array.from(a.right));
   });
 
-  it("루프 경계가 이어진다: 마지막 샘플과 첫 샘플의 점프가 신호 크기에 비해 작다", () => {
-    for (const kind of ["wind", "room"] as const) {
-      const { left } = generateStudioAmbientSamples(kind, 8000, 4);
+  it("루프 경계가 이어진다: 모든 합성 사운드스케이프의 마지막 샘플과 첫 샘플 점프가 신호 크기에 비해 작다", () => {
+    for (const kind of ["wind", "room", "ocean", "hearth", "focus-stream", "atelier-breeze"] as const) {
+      const { left, right } = generateStudioAmbientSamples(kind, 8000, 4);
+      expect(left.every((value) => Number.isFinite(value))).toBe(true);
+      expect(right.every((value) => Number.isFinite(value))).toBe(true);
+      expect(rms(left)).toBeCloseTo(studioAmbientSynthSpec(kind).targetRms, 2);
       const jump = Math.abs(left[0]! - left[left.length - 1]!);
       expect(jump).toBeLessThan(rms(left) * 1.5);
       const peak = Math.max(...Array.from(left, (value) => Math.abs(value)));
