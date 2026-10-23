@@ -23,7 +23,7 @@
     "rootScale": 1
   },
   "provenance": {
-    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종은 상업 이용 증빙이 확정되지 않아 2026-10-14 이 키트에서 제외했습니다. 2026-10-15에는 출처 기록이 없던 남성 변형 15종을 메시 통계(정점·삼각형 수)와 생성 기록으로 대조해 같은 생성물의 남성 베이스 리타깃으로 판정하고 추가로 제외했습니다(제외 총 48종). 제외한 변형은 파츠마다 미제공 사유로 선언했고, GLB 파일은 저장소에서 삭제합니다. 제외 기록·생성 id·복원 조건은 apps/character-lab/docs/hyper3d-terms-record.md §9~§11에 남겼습니다. 원본 파츠 기록: 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered)은 tools/blender/character_kit/forge_hair가 이 저장소에서 절차 생성한 원본(license original)이며 Hyper3D 생성물이 아닙니다. forge 원본 파츠 18종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음).",
+    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종은 상업 이용 증빙이 확정되지 않아 2026-10-14 이 키트에서 제외했습니다. 2026-10-15에는 출처 기록이 없던 남성 변형 15종을 메시 통계(정점·삼각형 수)와 생성 기록으로 대조해 같은 생성물의 남성 베이스 리타깃으로 판정하고 추가로 제외했습니다(제외 총 48종). 제외한 변형은 파츠마다 미제공 사유로 선언했고, GLB 파일은 저장소에서 삭제합니다. 제외 기록·생성 id·복원 조건은 apps/character-lab/docs/hyper3d-terms-record.md §9~§11에 남겼습니다. 원본 파츠 기록: 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered)은 tools/blender/character_kit/forge_hair가 이 저장소에서 절차 생성한 원본(license original)이며 Hyper3D 생성물이 아닙니다. forge 원본 파츠 19종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/blazer, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음).",
     "noticeFile": "NOTICE.md",
     "sources": [
       {
@@ -41,7 +41,7 @@
         "name": "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채 5종·소품·forge 파츠·텍스처)",
         "license": "original",
         "derivative": false,
-        "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다. 외부 에셋·생성 AI를 쓰지 않았습니다. 파츠: build_irises — 홍채 5종(irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight): 베이스 눈 크기·위치에 맞춰 홍채 디스크·동공·캐치라이트를 절차 생성; proc_accessories — 소품 3종(accessory/choker, accessory/earrings, accessory/glasses): 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성; forge_hair — 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered): 베이스 머리 형상에서 가닥 청크(띠 그룹 스윕·두피 덮개·UV 램프)를 절차 생성(2026-10-23, Hyper3D 생성물 아님). forge 원본 파츠 18종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음)."
+        "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다. 외부 에셋·생성 AI를 쓰지 않았습니다. 파츠: build_irises — 홍채 5종(irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight): 베이스 눈 크기·위치에 맞춰 홍채 디스크·동공·캐치라이트를 절차 생성; proc_accessories — 소품 3종(accessory/choker, accessory/earrings, accessory/glasses): 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성; forge_hair — 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered): 베이스 머리 형상에서 가닥 청크(띠 그룹 스윕·두피 덮개·UV 램프)를 절차 생성(2026-10-23, Hyper3D 생성물 아님). forge 원본 파츠 19종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/blazer, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음)."
       }
     ]
   },
@@ -398,6 +398,14 @@
       "doubleSided": true
     },
     "ts_top_shirt": {
+      "role": "top",
+      "tint": {
+        "mode": "recolor",
+        "colorKey": "top"
+      },
+      "doubleSided": true
+    },
+    "ts_top_blazer": {
       "role": "top",
       "tint": {
         "mode": "recolor",
@@ -2562,8 +2570,8 @@
     "female": {
       "file": {
         "path": "bases/female.glb",
-        "bytes": 12254384,
-        "sha256": "c69647ac5dae0db38fc6ba01a05ad7244abc5e2f1d05ea5be123fd4b3c885750"
+        "bytes": 11781396,
+        "sha256": "372ae569189318a60bd662676cd426fd7ca703e601e72e533c5f14cec446a033"
       },
       "heightM": 1.6465,
       "boundsM": {
@@ -2993,8 +3001,8 @@
     "male": {
       "file": {
         "path": "bases/male.glb",
-        "bytes": 11871864,
-        "sha256": "c10c40473332530235f379e4f23216dbf9b0d9af18db8e48e565c1a4e7eb963b"
+        "bytes": 11420344,
+        "sha256": "ba963ac48d802762aa4ddebc2b4545948b75e9c725a52252ebf643a60535a189"
       },
       "heightM": 1.6444,
       "boundsM": {
@@ -4662,11 +4670,85 @@
     {
       "id": "top/blazer",
       "slot": "top",
-      "variants": {},
-      "unavailable": {
-        "female": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다.",
-        "male": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-      }
+      "variants": {
+        "female": {
+          "file": {
+            "path": "parts/female/top/blazer.glb",
+            "bytes": 1413092,
+            "sha256": "a972efa318086ebf35e2ccf302032acc0d1a33cbdf86f8e5d0e1f748043631a3"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_blazer",
+              "role": "top",
+              "material": "ts_top_blazer",
+              "triangles": 16408,
+              "vertices": 10228,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        },
+        "male": {
+          "file": {
+            "path": "parts/male/top/blazer.glb",
+            "bytes": 1391580,
+            "sha256": "b157087ed2b2ce5c60a76feb3b5469a7418b9cd314eff2e2057b18a21facf815"
+          },
+          "meshes": [
+            {
+              "node": "TS_Top_blazer",
+              "role": "top",
+              "material": "ts_top_blazer",
+              "triangles": 16179,
+              "vertices": 10024,
+              "skinned": true,
+              "morphs": [
+                "param:height:+",
+                "param:height:-",
+                "param:legLength:+",
+                "param:legLength:-",
+                "param:armLength:+",
+                "param:armLength:-",
+                "param:shoulderWidth:+",
+                "param:shoulderWidth:-",
+                "param:neckLength:+",
+                "param:neckLength:-",
+                "param:headSize:+",
+                "param:headSize:-",
+                "param:hip:+",
+                "param:hip:-",
+                "param:waist:+",
+                "param:waist:-",
+                "param:chestDepth:+",
+                "param:chestDepth:-"
+              ]
+            }
+          ],
+          "hides": []
+        }
+      },
+      "unavailable": {}
     },
     {
       "id": "top/sailor",
@@ -5173,8 +5255,8 @@
         "female": {
           "file": {
             "path": "parts/female/shoes/sneakers.glb",
-            "bytes": 557496,
-            "sha256": "30fa82a1a8f81083253186aa92634961d579b48c00b64a42d3272e570bac02aa"
+            "bytes": 522484,
+            "sha256": "67bed26b4928e91a3d8fb807f9b4cc3f276307fb8f1e076bdb8a5eb112087fbb"
           },
           "meshes": [
             {
@@ -5211,8 +5293,8 @@
         "male": {
           "file": {
             "path": "parts/male/shoes/sneakers.glb",
-            "bytes": 557304,
-            "sha256": "01db7c9e2f04b36e6b02123660803cbc1edbf8dadf814e354de88dd583bc7f37"
+            "bytes": 522296,
+            "sha256": "2045211e52aaa1df3b3b8d0fca410a2f473aedd45aa824e9b730c567c716a349"
           },
           "meshes": [
             {
@@ -5256,8 +5338,8 @@
         "female": {
           "file": {
             "path": "parts/female/shoes/loafers.glb",
-            "bytes": 401824,
-            "sha256": "81f567499fac1654977f961c287d6e9073bdc1de049c220fe6349c96ea64d5b5"
+            "bytes": 374012,
+            "sha256": "b743f577b23fab24ade5c9f0f4689c05e1ee96b04a388d2d3bda0ee9a1340979"
           },
           "meshes": [
             {
@@ -5294,8 +5376,8 @@
         "male": {
           "file": {
             "path": "parts/male/shoes/loafers.glb",
-            "bytes": 401600,
-            "sha256": "e1b7688cb9440cec0bbfd1f36bade8378ca6eb51b33008946765423489373759"
+            "bytes": 373792,
+            "sha256": "c77055abedead74692570b1c1b5e36e60310acf1edf0efd112c040a7c25a7f46"
           },
           "meshes": [
             {
@@ -5339,8 +5421,8 @@
         "female": {
           "file": {
             "path": "parts/female/shoes/boots.glb",
-            "bytes": 505400,
-            "sha256": "c764bf746b526b7782a39a8feba0876cda329023592ff2441857096a877fcd84"
+            "bytes": 473412,
+            "sha256": "55f48cf805b2e02ec482c3612a836d069ec731321ddf3bb731ad55b164dea48f"
           },
           "meshes": [
             {
@@ -5380,8 +5462,8 @@
         "male": {
           "file": {
             "path": "parts/male/shoes/boots.glb",
-            "bytes": 505620,
-            "sha256": "e9f2247969d4859da2b3399ec956931e5ab02a674e91e0c29ce4c78f3567f6cb"
+            "bytes": 473636,
+            "sha256": "cefec369eae61c3224562eacd84c10f03e168bd11ec0a59cf8e31b1d6b89d03d"
           },
           "meshes": [
             {
@@ -5428,8 +5510,8 @@
         "female": {
           "file": {
             "path": "parts/female/shoes/sandals.glb",
-            "bytes": 419668,
-            "sha256": "b1913bce18ff997190c9da77c6627364a5cd5a53c9a37c03801c94eaca0f1bf8"
+            "bytes": 394436,
+            "sha256": "50b10ca27102a942d84cccb7d000899cb98ac92171b93699576550a33c59d9cd"
           },
           "meshes": [
             {
@@ -5466,8 +5548,8 @@
         "male": {
           "file": {
             "path": "parts/male/shoes/sandals.glb",
-            "bytes": 419728,
-            "sha256": "041d1310c058effe7499b6f22e308e79471f14c3c1ef72adc47a24f3df6dbf7a"
+            "bytes": 394492,
+            "sha256": "2cf894b9febeea836c27bf51e64e6c00c0264b0d8c009b0782a6487f4520c399"
           },
           "meshes": [
             {
@@ -5511,8 +5593,8 @@
         "female": {
           "file": {
             "path": "parts/female/accessory/glasses.glb",
-            "bytes": 415504,
-            "sha256": "5450af5d785390dbf74dd9ac18b731d103cdede2f6517a603fd4de8c8f22aa7a"
+            "bytes": 406424,
+            "sha256": "e49407aaa1743640fac3ac5c05a28403a1cdad54ba57b55143fa130ad52c45c2"
           },
           "meshes": [
             {
@@ -5565,8 +5647,8 @@
         "male": {
           "file": {
             "path": "parts/male/accessory/glasses.glb",
-            "bytes": 416228,
-            "sha256": "f93a651355c16ae41c5a3e9f87356e6d786a5cacd80c98b525712f84d2844f0c"
+            "bytes": 407148,
+            "sha256": "d836fc593ce9e7d8f89c102566617a04824ec0040baaa60c4df61996789ecc55"
           },
           "meshes": [
             {
@@ -5626,8 +5708,8 @@
         "female": {
           "file": {
             "path": "parts/female/accessory/ribbon.glb",
-            "bytes": 575944,
-            "sha256": "84a30d3414f1be898ee1ac84c292b74ae986a7d94cf4186d2c723e9feae325e6"
+            "bytes": 558012,
+            "sha256": "9bd7788968b13f6a230fecdb1d7c8b9192a3015e8165e8bad5be694277d2d01a"
           },
           "meshes": [
             {
@@ -5668,8 +5750,8 @@
         "male": {
           "file": {
             "path": "parts/male/accessory/ribbon.glb",
-            "bytes": 576028,
-            "sha256": "d9c9781bd962246c7d3df69eed3e734965d5baa274a6f29bf0d5c41e86688175"
+            "bytes": 558096,
+            "sha256": "fbb119f8b75ece7da8df2156ef8459b6ebf589080bbe98d0ebb6daefb60384ce"
           },
           "meshes": [
             {
@@ -5717,8 +5799,8 @@
         "female": {
           "file": {
             "path": "parts/female/accessory/cap.glb",
-            "bytes": 840776,
-            "sha256": "68285d5acc11acdc79524af5524d596b489e39cd74bd92b8f1df6e539b53ddb8"
+            "bytes": 815820,
+            "sha256": "eb4b182c05a4e739d0e87f802ad80d87e2881e1fd264a5c0efb6bb84e62023f5"
           },
           "meshes": [
             {
@@ -5759,8 +5841,8 @@
         "male": {
           "file": {
             "path": "parts/male/accessory/cap.glb",
-            "bytes": 841028,
-            "sha256": "81da443be215bbf845fa6139f2ee3b40e883705fad3706f6465c48739833e88c"
+            "bytes": 816072,
+            "sha256": "7723150fb3d13d14376e5bc339f246f629892516a9023cc9b3a1565026c7f860"
           },
           "meshes": [
             {
@@ -5871,8 +5953,8 @@
         "female": {
           "file": {
             "path": "parts/female/accessory/choker.glb",
-            "bytes": 94088,
-            "sha256": "13410c33ead2b5e7c968ddedd63ed10e22b028d148f0ac659f66ee89f34b9341"
+            "bytes": 91276,
+            "sha256": "bc6af25e87608374e7bede255e3774b83e9fef41f0f3435ea5b7f8b56a86aff6"
           },
           "meshes": [
             {
@@ -5907,8 +5989,8 @@
         "male": {
           "file": {
             "path": "parts/male/accessory/choker.glb",
-            "bytes": 94200,
-            "sha256": "7bfa63179eaca98c227a20327d7249e19f3df797e7b009c6c2dca0eea997a0cb"
+            "bytes": 91392,
+            "sha256": "b5a2a718cb0f6fb99cdc8eb3b26079c870465416aa4ce7fa2b88143cf0912286"
           },
           "meshes": [
             {
@@ -5950,8 +6032,8 @@
         "female": {
           "file": {
             "path": "parts/female/accessory/headphones.glb",
-            "bytes": 746668,
-            "sha256": "36f840eec84a553b2bf3f9da4e8e9249292513e69de226f668bc5450d3700265"
+            "bytes": 723944,
+            "sha256": "7fd5501943b7a8973cd190760526b912de0f8e1425315f07fda131a6a036ac7c"
           },
           "meshes": [
             {
@@ -5992,8 +6074,8 @@
         "male": {
           "file": {
             "path": "parts/male/accessory/headphones.glb",
-            "bytes": 747312,
-            "sha256": "46a07cd619e02805b787f0f0f449725276b9456d5a7cec4be345493ef0aef28b"
+            "bytes": 724588,
+            "sha256": "8391850d9d8a5bc51c66856d327a535fdc12ed224fe11e35a56944c1bb5578b6"
           },
           "meshes": [
             {
@@ -7261,11 +7343,7 @@
         "status": "available"
       },
       "top": {
-        "status": "partial",
-        "reasonKo": "제공 4/5종, 미제공: blazer",
-        "unavailablePresets": {
-          "top/blazer": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-        }
+        "status": "available"
       },
       "bottom": {
         "status": "available"
@@ -7312,11 +7390,7 @@
         "status": "available"
       },
       "top": {
-        "status": "partial",
-        "reasonKo": "제공 4/5종, 미제공: blazer",
-        "unavailablePresets": {
-          "top/blazer": "Hyper3D(Rodin) 파생 파츠입니다. 상업 이용 증빙이 확정되지 않아 2026-10-14 키트에서 제외했습니다. 증빙이 확정되면 복원할 수 있습니다."
-        }
+        "status": "available"
       },
       "bottom": {
         "status": "available"

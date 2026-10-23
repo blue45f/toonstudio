@@ -35,19 +35,19 @@
       "metrics": {
         "parts": 32,
         "female.hair": 7,
-        "female.top": 4,
+        "female.top": 5,
         "female.bottom": 5,
         "female.shoes": 4,
         "female.accessory": 6,
         "female.irises": 5,
-        "female.provided": 31,
+        "female.provided": 32,
         "male.hair": 7,
-        "male.top": 4,
+        "male.top": 5,
         "male.bottom": 5,
         "male.shoes": 4,
         "male.accessory": 6,
         "male.irises": 5,
-        "male.provided": 31
+        "male.provided": 32
       }
     },
     "characterLab.artStyles": {

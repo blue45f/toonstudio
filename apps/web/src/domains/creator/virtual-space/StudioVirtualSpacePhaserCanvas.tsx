@@ -2010,7 +2010,7 @@ export function StudioVirtualSpacePhaserCanvas({
             ? studioDayNightTimeOfDay(ambienceDayNight.now, ambienceDayNight.startMs, ambienceDayNight.cycleMs)
             : null,
           players: [currentPoint],
-          ambientActorsEnabled: !campusScene && currentQualityProfile.ambientActors,
+          ambientActorsEnabled: !campusRuntime && currentQualityProfile.ambientActors,
         });
         // 오브젝트 광원·가구 섀도우: 주야 사이클이 꺼져 있으면 실제 시계로 환경광을 대체한다.
         // 전면 틴트와 별개로, 광원 세기 계산에만 환경광 수치를 쓴다.

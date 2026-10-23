@@ -132,7 +132,7 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
   { id: "gallery-bench", url: "/assets/3d/neom_bench_prop.glb", x: 2560, y: 1760, heightMeters: 0.95, rotationY: Math.PI },
 ]);
 
-/** NPC 및 플레이어용 VRM 3D 캐릭터 에셋 매핑. */
+/** NPC 및 플레이어용 VRM 0.0 정규화 아바타 에셋 매핑. */
 export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
   "/vrm/Sendagaya_Shibu.vrm",
   "/vrm/Sendagaya_Shino.vrm",
@@ -141,21 +141,19 @@ export const STUDIO_THREE_VRM_URLS: readonly string[] = Object.freeze([
   "/vrm/Anna.vrm",
   "/vrm/Erika.vrm",
   "/vrm/Olivia.vrm",
-  "/vrm/Avatar_Orion.vrm",
-  "/vrm/Seed_san.vrm",
 ]);
 
-const ZONE_FLOOR_COLORS: Readonly<Record<string, { readonly floor: number; readonly accent: number; readonly wall: number }>> = Object.freeze({
-  skyport: { floor: 0xf4ece1, accent: 0x3b82f6, wall: 0xe5dccf },
-  "personal-atelier": { floor: 0xede3d5, accent: 0x8b5cf6, wall: 0xdfd3c3 },
-  "story-lab": { floor: 0xe6ecf5, accent: 0x06b6d4, wall: 0xd5dfed },
-  "creator-cafe": { floor: 0xf5e6d8, accent: 0xf59e0b, wall: 0xe8d3bf },
-  "team-meeting": { floor: 0xe2e8f0, accent: 0x10b981, wall: 0xcbd5e1 },
-  "creator-plaza": { floor: 0xe8efe6, accent: 0x22c55e, wall: 0xd4e2d0 },
-  "event-stage": { floor: 0x1e1b4b, accent: 0xec4899, wall: 0x312e81 },
-  arcade: { floor: 0x1e293b, accent: 0x38bdf8, wall: 0x334155 },
-  beach: { floor: 0xf7eedc, accent: 0x14b8a6, wall: 0xe6d7be },
-  "review-gallery": { floor: 0xf8fafc, accent: 0xa855f7, wall: 0xe2e8f0 },
+const ZONE_FLOOR_COLORS: Readonly<Record<string, { readonly floor: number; readonly accent: number; readonly wall: number; readonly rug: number }>> = Object.freeze({
+  skyport: { floor: 0xf4ece1, accent: 0x3b82f6, wall: 0xe5dccf, rug: 0xdbeafe },
+  "personal-atelier": { floor: 0xede3d5, accent: 0x8b5cf6, wall: 0xdfd3c3, rug: 0xede9fe },
+  "story-lab": { floor: 0xe6ecf5, accent: 0x06b6d4, wall: 0xd5dfed, rug: 0xcffafe },
+  "creator-cafe": { floor: 0xf5e6d8, accent: 0xf59e0b, wall: 0xe8d3bf, rug: 0xfef3c7 },
+  "team-meeting": { floor: 0xe2e8f0, accent: 0x10b981, wall: 0xcbd5e1, rug: 0xd1fae5 },
+  "creator-plaza": { floor: 0xe8efe6, accent: 0x22c55e, wall: 0xd4e2d0, rug: 0xdcfce7 },
+  "event-stage": { floor: 0x1e1b4b, accent: 0xec4899, wall: 0x312e81, rug: 0x311042 },
+  arcade: { floor: 0x1e293b, accent: 0x38bdf8, wall: 0x334155, rug: 0x0f172a },
+  beach: { floor: 0xf7eedc, accent: 0x14b8a6, wall: 0xe6d7be, rug: 0xccfbf1 },
+  "review-gallery": { floor: 0xf8fafc, accent: 0xa855f7, wall: 0xe2e8f0, rug: 0xf3e8ff },
 });
 
 export interface StudioThreeActorNode {
@@ -167,12 +165,57 @@ export interface StudioThreeActorNode {
   readonly leftArm: THREE.Mesh;
   readonly rightArm: THREE.Mesh;
   readonly ring: THREE.Mesh;
+  vrmLeftUpperLeg?: THREE.Object3D;
+  vrmRightUpperLeg?: THREE.Object3D;
+  vrmLeftUpperArm?: THREE.Object3D;
+  vrmRightUpperArm?: THREE.Object3D;
   targetX: number;
   targetZ: number;
   currentYaw: number;
   targetYaw: number;
   moving: boolean;
   vrmLoaded: boolean;
+}
+
+function createArchitecturalTileTexture(
+  baseHex: string,
+  lineHex: string,
+  subLineHex: string,
+  repeatX: number,
+  repeatY: number,
+): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.fillStyle = baseHex;
+  ctx.fillRect(0, 0, 256, 256);
+
+  ctx.strokeStyle = subLineHex;
+  ctx.lineWidth = 2;
+  for (let i = 64; i < 256; i += 64) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, 256);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(256, i);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = lineHex;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, 253, 253);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeatX, repeatY);
+  return tex;
 }
 
 /**
@@ -298,12 +341,14 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
   baseMesh.receiveShadow = true;
   scene.add(baseMesh);
 
-  // 레이캐스트용 투명 바닥 평면
+  // 레이캐스트용 바닥 평면 (석재 프롬나드 타일 텍스처)
+  const walkwayTex = createArchitecturalTileTexture("#dde5ee", "#c2cedb", "#cfd9e5", 32, 20);
   const floorGeo = new THREE.PlaneGeometry(campusW, campusH);
   floorGeo.rotateX(-Math.PI / 2);
   const floorMat = new THREE.MeshStandardMaterial({
-    color: 0xdbe4ee,
-    roughness: 0.82,
+    color: 0xffffff,
+    map: walkwayTex,
+    roughness: 0.78,
     metalness: 0.04,
   });
   const floorMesh = new THREE.Mesh(floorGeo, floorMat);
@@ -312,18 +357,14 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
   floorMesh.name = "campus-walkable-floor";
   scene.add(floorMesh);
 
-  // 2. 산책로 그리드 라인 (깔끔한 건축 바닥 줄눈)
-  const grid = new THREE.GridHelper(campusW, 48, 0x94a3b8, 0xcbd5e1);
-  grid.position.set(campusW / 2, 0.008, campusH / 2);
-  if (grid.material instanceof THREE.Material) {
-    grid.material.transparent = true;
-    grid.material.opacity = 0.28;
-  }
-  scene.add(grid);
-
-  // 3. 10개 구역별 건축 바닥 슬래브 및 반투명 유리·목재 파티션 벽
+  // 2. 10개 구역별 건축 바닥 슬래브, 인테리어 러그 및 유리·목재 파티션 벽
   for (const zone of CAMPUS_ZONES) {
-    const palette = ZONE_FLOOR_COLORS[zone.roomId] ?? { floor: 0xf1f5f9, accent: 0x6366f1, wall: 0xe2e8f0 };
+    const palette = ZONE_FLOOR_COLORS[zone.roomId] ?? {
+      floor: 0xf1f5f9,
+      accent: 0x6366f1,
+      wall: 0xe2e8f0,
+      rug: 0xe0e7ff,
+    };
     const zx = zone.tiles.column * 64 * STUDIO_THREE_SCALE;
     const zz = zone.tiles.row * 64 * STUDIO_THREE_SCALE;
     const zw = zone.tiles.width * 64 * STUDIO_THREE_SCALE;
@@ -331,11 +372,21 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
     const cx = zx + zw / 2;
     const cz = zz + zh / 2;
 
+    const isDarkZone = zone.roomId === "event-stage" || zone.roomId === "arcade";
+    const roomTex = createArchitecturalTileTexture(
+      isDarkZone ? "#1e293b" : "#f5efe6",
+      isDarkZone ? "#334155" : "#e2d6c5",
+      isDarkZone ? "#263348" : "#ebe2d4",
+      Math.max(4, Math.round(zw / 2.2)),
+      Math.max(4, Math.round(zh / 2.2)),
+    );
+
     // 구역 바닥
     const roomFloorGeo = new THREE.BoxGeometry(zw - 0.3, 0.06, zh - 0.3);
     const roomFloorMat = new THREE.MeshStandardMaterial({
       color: palette.floor,
-      roughness: zone.roomId === "event-stage" || zone.roomId === "arcade" ? 0.38 : 0.65,
+      map: roomTex,
+      roughness: isDarkZone ? 0.38 : 0.58,
       metalness: 0.08,
     });
     const roomFloor = new THREE.Mesh(roomFloorGeo, roomFloorMat);
@@ -343,25 +394,56 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
     roomFloor.receiveShadow = true;
     scene.add(roomFloor);
 
+    // 실내 중앙 인테리어 러그 또는 광장 원형 메달리온
+    if (zone.roomId === "creator-plaza") {
+      const plazaCircleGeo = new THREE.CircleGeometry(Math.min(zw, zh) * 0.32, 48);
+      plazaCircleGeo.rotateX(-Math.PI / 2);
+      const plazaCircleMat = new THREE.MeshStandardMaterial({
+        color: 0xd1fae5,
+        roughness: 0.65,
+        metalness: 0.05,
+      });
+      const plazaCircle = new THREE.Mesh(plazaCircleGeo, plazaCircleMat);
+      plazaCircle.position.set(cx, 0.068, cz);
+      plazaCircle.receiveShadow = true;
+      scene.add(plazaCircle);
+    } else {
+      const rugGeo = new THREE.BoxGeometry(zw * 0.56, 0.018, zh * 0.48);
+      const rugMat = new THREE.MeshStandardMaterial({
+        color: palette.rug,
+        roughness: 0.82,
+        metalness: 0.02,
+      });
+      const rug = new THREE.Mesh(rugGeo, rugMat);
+      rug.position.set(cx, 0.066, cz + 0.3);
+      rug.receiveShadow = true;
+      scene.add(rug);
+    }
+
     // 구역 테두리 액센트 스트립
-    const borderGeo = new THREE.BoxGeometry(zw, 0.04, 0.14);
+    const borderGeo = new THREE.BoxGeometry(zw, 0.05, 0.16);
     const borderMat = new THREE.MeshStandardMaterial({
       color: palette.accent,
       emissive: palette.accent,
-      emissiveIntensity: 0.22,
+      emissiveIntensity: 0.25,
       roughness: 0.3,
     });
     const northStrip = new THREE.Mesh(borderGeo, borderMat);
-    northStrip.position.set(cx, 0.06, zz + 0.07);
+    northStrip.position.set(cx, 0.065, zz + 0.08);
     scene.add(northStrip);
 
     // 실내 구역은 북쪽 백월 + 좌우 파티션 월을 세워 입체적인 오피스 아키텍처를 표현한다
-    if (zone.walls.length > 0) {
+    if (zone.walled) {
       const wallHeight = 2.65;
       const wallMat = new THREE.MeshStandardMaterial({
         color: palette.wall,
-        roughness: 0.6,
+        roughness: 0.55,
         metalness: 0.06,
+      });
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        roughness: 0.35,
+        metalness: 0.45,
       });
       const glassMat = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
@@ -371,7 +453,7 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
         transmission: 0.4,
       });
 
-      // 북쪽 벽
+      // 북쪽 벽 + 상단 몰딩 캡
       const northWallGeo = new THREE.BoxGeometry(zw, wallHeight, 0.24);
       const northWall = new THREE.Mesh(northWallGeo, wallMat);
       northWall.position.set(cx, wallHeight / 2, zz + 0.12);
@@ -379,8 +461,13 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
       northWall.receiveShadow = true;
       scene.add(northWall);
 
+      const capGeo = new THREE.BoxGeometry(zw + 0.08, 0.09, 0.3);
+      const northCap = new THREE.Mesh(capGeo, frameMat);
+      northCap.position.set(cx, wallHeight + 0.045, zz + 0.12);
+      scene.add(northCap);
+
       // 좌·우 하프 글래스 파티션
-      const sideWallGeo = new THREE.BoxGeometry(0.2, wallHeight * 0.65, zh * 0.72);
+      const sideWallGeo = new THREE.BoxGeometry(0.18, wallHeight * 0.65, zh * 0.72);
       for (const sideX of [zx + 0.1, zx + zw - 0.1]) {
         const sideWall = new THREE.Mesh(sideWallGeo, glassMat);
         sideWall.position.set(sideX, (wallHeight * 0.65) / 2, cz - zh * 0.08);
@@ -389,7 +476,7 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
     }
   }
 
-  // 4. 남쪽 테라스 석호(Lagoon) 수면
+  // 3. 남쪽 테라스 석호(Lagoon) 수면
   const waterMeshes: THREE.Mesh[] = [];
   const waterMat = new THREE.MeshStandardMaterial({
     color: 0x38bdf8,
@@ -411,6 +498,52 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
   }
 
   return { floorMesh, waterMeshes };
+}
+
+/**
+ * VRM 0.0 휴머노이드 본을 찾아 T-포즈 양팔을 자연스러운 차렷/아틀리에 자세로 내리고
+ * 보행 애니메이션용 상완·대퇴 본 참조를 연결한다.
+ */
+function applyNaturalVrmPosture(node: StudioThreeActorNode, vrmScene: THREE.Object3D): void {
+  let leftUpperArm: THREE.Object3D | undefined;
+  let rightUpperArm: THREE.Object3D | undefined;
+  let leftLowerArm: THREE.Object3D | undefined;
+  let rightLowerArm: THREE.Object3D | undefined;
+  let leftUpperLeg: THREE.Object3D | undefined;
+  let rightUpperLeg: THREE.Object3D | undefined;
+
+  vrmScene.traverse((child) => {
+    const n = child.name;
+    if (!n) return;
+    if (/J_Bip_L_UpperArm|LeftArm$/i.test(n)) leftUpperArm = child;
+    else if (/J_Bip_R_UpperArm|RightArm$/i.test(n)) rightUpperArm = child;
+    else if (/J_Bip_L_LowerArm|LeftForeArm$/i.test(n)) leftLowerArm = child;
+    else if (/J_Bip_R_LowerArm|RightForeArm$/i.test(n)) rightLowerArm = child;
+    else if (/J_Bip_L_UpperLeg|LeftUpLeg$/i.test(n)) leftUpperLeg = child;
+    else if (/J_Bip_R_UpperLeg|RightUpLeg$/i.test(n)) rightUpperLeg = child;
+  });
+
+  // T-pose 양팔을 몸통 옆 자연스러운 각도(약 68도)로 내리고 팔꿈치를 살짝 굽힌다
+  if (leftUpperArm) {
+    leftUpperArm.rotation.z = 1.18;
+    leftUpperArm.rotation.x = 0.06;
+    node.vrmLeftUpperArm = leftUpperArm;
+  }
+  if (rightUpperArm) {
+    rightUpperArm.rotation.z = -1.18;
+    rightUpperArm.rotation.x = 0.06;
+    node.vrmRightUpperArm = rightUpperArm;
+  }
+  if (leftLowerArm) {
+    leftLowerArm.rotation.y = -0.18;
+    leftLowerArm.rotation.z = 0.08;
+  }
+  if (rightLowerArm) {
+    rightLowerArm.rotation.y = 0.18;
+    rightLowerArm.rotation.z = -0.08;
+  }
+  if (leftUpperLeg) node.vrmLeftUpperLeg = leftUpperLeg;
+  if (rightUpperLeg) node.vrmRightUpperLeg = rightUpperLeg;
 }
 
 /**
@@ -496,12 +629,19 @@ export function loadStudioThreeAssets(
             child.frustumCulled = false;
           }
         });
+        // VRM 0.0 기본 정면(-Z)을 Three.js +Z("down") 정면으로 회전
+        vrmScene.rotation.y = Math.PI;
+        applyNaturalVrmPosture(node, vrmScene);
+        vrmScene.updateMatrixWorld(true);
+
         const box = new THREE.Box3().setFromObject(vrmScene);
         const size = new THREE.Vector3();
         box.getSize(size);
         const targetHeight = 1.65;
         const scale = targetHeight / Math.max(0.1, size.y);
         vrmScene.scale.setScalar(scale);
+        vrmScene.updateMatrixWorld(true);
+
         const scaledBox = new THREE.Box3().setFromObject(vrmScene);
         const center = new THREE.Vector3();
         scaledBox.getCenter(center);

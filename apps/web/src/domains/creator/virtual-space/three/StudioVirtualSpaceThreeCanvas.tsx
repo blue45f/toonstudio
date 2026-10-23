@@ -294,13 +294,30 @@ export function StudioVirtualSpaceThreeCanvas({
         destMarker.visible = false;
         const p3 = worldToThree(currentPoint, 0);
         selfNode.group.position.copy(p3);
+        const zoomFactor = Math.max(0.65, Math.min(1.65, bridge.userZoom.get()));
+        camera.position.set(p3.x, 9.2 / zoomFactor, p3.z + 11.4 / zoomFactor);
       }
 
       const requestedMove = bridge.consumeMoveTarget();
       if (requestedMove) {
-        moveDestination = clampStudioWorldPoint(manifest, requestedMove);
-        destMarker.position.copy(worldToThree(moveDestination, 0.04));
-        destMarker.visible = true;
+        const clampedTarget = clampStudioWorldPoint(manifest, requestedMove);
+        const targetDist = Math.hypot(clampedTarget.x - currentPoint.x, clampedTarget.y - currentPoint.y);
+        const fromZone = studioWorldRoomAt(manifest, currentPoint);
+        const toZone = studioWorldRoomAt(manifest, clampedTarget);
+        // 미니맵·디렉터리에서 다른 구역이나 원거리 지점을 클릭한 경우 즉시 해당 구역으로 이동
+        if (targetDist > 420 || (toZone && toZone !== fromZone)) {
+          currentPoint = clampedTarget;
+          moveDestination = null;
+          destMarker.visible = false;
+          const p3 = worldToThree(currentPoint, 0);
+          selfNode.group.position.copy(p3);
+          const zoomFactor = Math.max(0.65, Math.min(1.65, bridge.userZoom.get()));
+          camera.position.set(p3.x, 9.2 / zoomFactor, p3.z + 11.4 / zoomFactor);
+        } else {
+          moveDestination = clampedTarget;
+          destMarker.position.copy(worldToThree(moveDestination, 0.04));
+          destMarker.visible = true;
+        }
       }
 
       // 키보드 + 조이스틱 벡터 계산
@@ -397,22 +414,38 @@ export function StudioVirtualSpaceThreeCanvas({
         node.group.rotation.y = node.currentYaw;
       }
 
-      // 모든 캐릭터 팔다리 스윙 & 호흡 애니메이션
+      // 모든 캐릭터 팔다리 스윙 & 호흡 애니메이션 (VRM 본 및 폴백 메쉬 모두 지원)
       const walkPhase = now * 0.011;
       for (const node of actorNodes.values()) {
         if (node.moving) {
-          const swing = Math.sin(walkPhase) * 0.45;
+          const swing = Math.sin(walkPhase) * 0.42;
           node.leftLeg.rotation.x = swing;
           node.rightLeg.rotation.x = -swing;
-          node.leftArm.rotation.x = -swing * 0.7;
-          node.rightArm.rotation.x = swing * 0.7;
-          node.rigGroup.position.y = Math.abs(Math.cos(walkPhase)) * 0.06;
+          node.leftArm.rotation.x = -swing * 0.65;
+          node.rightArm.rotation.x = swing * 0.65;
+          if (node.vrmLeftUpperLeg) node.vrmLeftUpperLeg.rotation.x = swing * 0.65;
+          if (node.vrmRightUpperLeg) node.vrmRightUpperLeg.rotation.x = -swing * 0.65;
+          if (node.vrmLeftUpperArm) node.vrmLeftUpperArm.rotation.x = 0.06 - swing * 0.45;
+          if (node.vrmRightUpperArm) node.vrmRightUpperArm.rotation.x = 0.06 + swing * 0.45;
+          node.rigGroup.position.y = Math.abs(Math.cos(walkPhase)) * 0.045;
         } else {
           node.leftLeg.rotation.x = THREE.MathUtils.lerp(node.leftLeg.rotation.x, 0, 0.2);
           node.rightLeg.rotation.x = THREE.MathUtils.lerp(node.rightLeg.rotation.x, 0, 0.2);
           node.leftArm.rotation.x = THREE.MathUtils.lerp(node.leftArm.rotation.x, 0, 0.2);
           node.rightArm.rotation.x = THREE.MathUtils.lerp(node.rightArm.rotation.x, 0, 0.2);
-          node.rigGroup.position.y = Math.sin(now * 0.003) * 0.02;
+          if (node.vrmLeftUpperLeg) {
+            node.vrmLeftUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperLeg.rotation.x, 0, 0.2);
+          }
+          if (node.vrmRightUpperLeg) {
+            node.vrmRightUpperLeg.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperLeg.rotation.x, 0, 0.2);
+          }
+          if (node.vrmLeftUpperArm) {
+            node.vrmLeftUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmLeftUpperArm.rotation.x, 0.06, 0.2);
+          }
+          if (node.vrmRightUpperArm) {
+            node.vrmRightUpperArm.rotation.x = THREE.MathUtils.lerp(node.vrmRightUpperArm.rotation.x, 0.06, 0.2);
+          }
+          node.rigGroup.position.y = Math.sin(now * 0.003) * 0.015;
         }
       }
 
@@ -423,15 +456,15 @@ export function StudioVirtualSpaceThreeCanvas({
 
       // 카메라 추종 (유저 줌 및 팬 반영)
       const zoomFactor = Math.max(0.65, Math.min(1.65, bridge.userZoom.get()));
-      const camDist = 14.5 / zoomFactor;
-      const camHeight = 12.2 / zoomFactor;
+      const camDist = 11.4 / zoomFactor;
+      const camHeight = 9.2 / zoomFactor;
       const desiredCamPos = new THREE.Vector3(
         selfNode.group.position.x,
         camHeight,
         selfNode.group.position.z + camDist,
       );
-      camera.position.lerp(desiredCamPos, 0.14);
-      camera.lookAt(selfNode.group.position.x, 0.9, selfNode.group.position.z - 1.2);
+      camera.position.lerp(desiredCamPos, 0.16);
+      camera.lookAt(selfNode.group.position.x, 0.95, selfNode.group.position.z - 0.8);
 
       // 구역 진입·근접 상호작용·상호작용 키 처리
       const zoneChanged = zoneTracker.next(currentPoint);
@@ -496,11 +529,12 @@ export function StudioVirtualSpaceThreeCanvas({
 
       renderer.render(scene, camera);
 
-      // HTML 오버레이 이름표 및 구역 헤더 투영 (100ms 간격)
+      // HTML 오버레이 이름표 및 구역 헤더 투영 (90ms 간격)
       if (now - lastOverlaySync >= 90) {
         lastOverlaySync = now;
         const w = renderer.domElement.clientWidth;
         const h = renderer.domElement.clientHeight;
+        const isEn = typeof document !== "undefined" && document.documentElement.lang?.startsWith("en");
         const projected: ProjectedOverlayItem[] = [];
 
         const projectPoint = (vec: THREE.Vector3): { x: number; y: number; visible: boolean } => {
@@ -516,7 +550,7 @@ export function StudioVirtualSpaceThreeCanvas({
         };
 
         // 내 캐릭터 이름표
-        const selfHead = projectPoint(new THREE.Vector3(selfNode.group.position.x, 2.05, selfNode.group.position.z));
+        const selfHead = projectPoint(new THREE.Vector3(selfNode.group.position.x, 1.98, selfNode.group.position.z));
         if (selfHead.visible) {
           projected.push({
             id: "self",
@@ -536,11 +570,11 @@ export function StudioVirtualSpaceThreeCanvas({
           const def = npcDefinitions.find((item) => item.id === npc.id);
           if (!node || !def) continue;
           const label = studioNpcLabel(def);
-          const head = projectPoint(new THREE.Vector3(node.group.position.x, 2.05, node.group.position.z));
+          const head = projectPoint(new THREE.Vector3(node.group.position.x, 1.98, node.group.position.z));
           if (head.visible) {
             projected.push({
               id: `npc:${npc.id}`,
-              label: bt(label.ko, label.en),
+              label: isEn ? label.en : label.ko,
               kind: "npc",
               x: head.x,
               y: head.y,
@@ -552,14 +586,16 @@ export function StudioVirtualSpaceThreeCanvas({
         for (const zone of CAMPUS_ZONES) {
           const zx = (zone.tiles.column + zone.tiles.width / 2) * 64;
           const zy = zone.tiles.row * 64 + 32;
-          if (Math.hypot(zx - currentPoint.x, zy - currentPoint.y) > 980) continue;
-          const signPos = projectPoint(worldToThree({ x: zx, y: zy }, zone.walls.length > 0 ? 2.95 : 1.6));
+          if (Math.hypot(zx - currentPoint.x, zy - currentPoint.y) > 920) continue;
+          const signPos = projectPoint(worldToThree({ x: zx, y: zy }, zone.walled ? 2.95 : 1.55));
           if (signPos.visible) {
             const roomDef = manifest.rooms?.find((room) => room.id === zone.roomId);
+            const koLabel = roomDef?.labelKo ?? zone.labelKo;
+            const enLabel = roomDef?.labelEn ?? zone.labelEn;
             projected.push({
               id: `zone:${zone.roomId}`,
               label: zone.signEn,
-              sublabel: roomDef ? bt(roomDef.labelKo, roomDef.labelEn) : zone.signEn,
+              sublabel: isEn ? enLabel : koLabel,
               kind: "zone",
               x: signPos.x,
               y: signPos.y,

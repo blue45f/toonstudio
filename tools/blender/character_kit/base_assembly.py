@@ -1482,11 +1482,29 @@ _SHORT = 5122
 QUANT_SCALE = 32767.0
 
 
+def quantize_weights(weights: np.ndarray) -> np.ndarray:
+    """가중치(합 1, (N,4))를 정규화 UNSIGNED_SHORT로: 합이 정확히 65535가 되게 나머지를 가장 큰 가중치에 더한다(검증기 V8 합 허용 오차 안)."""
+    w = np.clip(np.asarray(weights, dtype=np.float64), 0.0, 1.0)
+    w = w / np.maximum(w.sum(axis=1, keepdims=True), 1e-12)
+    q = np.floor(w * 65535.0).astype(np.int64)
+    rest = 65535 - q.sum(axis=1)
+    top = np.argmax(w, axis=1)
+    q[np.arange(len(q)), top] += rest
+    return q.astype(np.uint16)
+
+
 class QuantizedGlbWriter(glbwriter.GlbWriter):
-    """morph 타깃 accessor를 정규화 SHORT(`KHR_mesh_quantization`)로 쓰는 작성기.
+    """morph 타깃 accessor를 정규화 SHORT(`KHR_mesh_quantization`), WEIGHTS_0을 정규화 UNSIGNED_SHORT로 쓰는 작성기.
 
     위치·법선 델타를 1/32767 단위로 양자화한다(위치는 0.03 mm 해상도). 조밀 accessor는 VEC3 SHORT(6바이트)를 4바이트 경계에 맞춰 8바이트
     간격으로 두고, 0이 아닌 정점이 95 % 미만이면 sparse(인덱스 + 6바이트 값)로 쓴다. 확장은 `extensionsUsed`·`extensionsRequired`에 선언한다."""
+
+    def add_accessor(self, array: np.ndarray, *args: Any, **kwargs: Any) -> int:  # type: ignore[override]
+        array = np.asarray(array)
+        if array.dtype == np.float32 and array.ndim == 2 and array.shape[1] == 4 and not kwargs.get("normalized"):
+            kwargs["normalized"] = True
+            return super().add_accessor(quantize_weights(array), *args, **kwargs)
+        return super().add_accessor(array, *args, **kwargs)
 
     def add_morph_accessor(self, delta: np.ndarray, *, sparse_threshold: float = 0.95) -> int:  # type: ignore[override]
         quantized = np.clip(np.rint(np.asarray(delta, dtype=np.float64) * QUANT_SCALE), -32767, 32767).astype(np.int16)

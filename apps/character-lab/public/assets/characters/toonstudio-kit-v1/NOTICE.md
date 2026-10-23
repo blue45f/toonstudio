@@ -23,9 +23,9 @@
 - `build_irises`: 홍채 5종(irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight) — 베이스 눈 크기·위치에 맞춰 홍채 디스크·동공·캐치라이트를 절차 생성.
 - `proc_accessories`: 소품 6종(accessory/cap, accessory/choker, accessory/earrings, accessory/glasses, accessory/headphones, accessory/ribbon) — 베이스의 눈·귀·목 위치에서 테·고리·띠를 계산해 절차 생성.
 - `forge_hair`: 헤어 7종(hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered) — 베이스 머리 형상에서 가닥 청크(띠 그룹 스윕·두피 덮개·UV 램프)를 절차 생성(2026-10-23, Hyper3D 생성물 아님).
-- `forge_garments`: 하의 5종·상의 4종(bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, top/hoodie, top/sailor, top/shirt, top/tee) — 베이스 몸 표면에서 의상 셸을 절차 생성(Hyper3D 생성물 아님).
+- `forge_garments`: 하의 5종·상의 5종(bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, top/blazer, top/hoodie, top/sailor, top/shirt, top/tee) — 베이스 몸 표면에서 의상 셸을 절차 생성(Hyper3D 생성물 아님).
 - `forge_shoes`: 신발 4종(shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers) — 베이스 발 형상에서 신발을 절차 생성(Hyper3D 생성물 아님).
-- forge 원본 파츠 18종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음). 생성 기록·검사 수치는 각 포지의 build-report.json에 있다.
+- forge 원본 파츠 19종(accessory/cap, accessory/choker, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/blazer, top/hoodie, top/sailor, top/shirt, top/tee)은 tools/blender/character_kit의 forge 도구가 베이스 정점에서 계산해 절차 생성한 원본이다(외부 에셋·생성 AI 없음). 생성 기록·검사 수치는 각 포지의 build-report.json에 있다.
 
 ## 원천 3 — Hyper3D(Rodin Gen-2.5) 생성물의 파생 파츠 (license: hyper3d-rodin-output) — 2026-10-14 키트에서 제외
 
@@ -313,7 +313,7 @@
 ## 들어 있는 파일
 
 - 베이스: `bases/female.glb`, `bases/male.glb`
-- 파츠(현재 제공 31종, 변형 파일 62개): accessory/cap, accessory/choker, accessory/earrings, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered, irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/hoodie, top/sailor, top/shirt, top/tee
+- 파츠(현재 제공 32종, 변형 파일 64개): accessory/cap, accessory/choker, accessory/earrings, accessory/glasses, accessory/headphones, accessory/ribbon, bottom/jeans, bottom/long-skirt, bottom/pleated-skirt, bottom/shorts, bottom/slacks, hair/action-pony, hair/hime-cut, hair/romance-long, hair/short-layered, hair/soft-bob, hair/twin-tail, hair/wolf-layered, irises/cat, irises/round-large, irises/round-small, irises/soft-gradient, irises/star-highlight, shoes/boots, shoes/loafers, shoes/sandals, shoes/sneakers, top/blazer, top/hoodie, top/sailor, top/shirt, top/tee
 - 제외한 Hyper3D 파생 변형 48개(출처 33종분 + 남성 리타깃 15종)의 GLB 파일은 저장소에 없다.
 - 아직 없는 프리셋은 `kit.json`의 `parts[].unavailable`에 한글 사유가 있다. 이 절은 `forge_install.py`가 `kit.json`에서 다시 센다.
 
