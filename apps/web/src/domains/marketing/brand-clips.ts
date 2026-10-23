@@ -15,6 +15,31 @@
  * brand-7-night-studio(밤의 스튜디오)는 낮 파노라마(home-hero-day)의 짝으로
  * 만든 변형이라 아직 표면에 배선하지 않고 홍보 영상 자료실에만 수록한다
  * (BRAND_NIGHT_STUDIO_CLIP).
+ *
+ * 자료실 보관 전용 변형 6편도 이 파일이 정본이다: 비 오는 날·주말 아침·
+ * 책상 클로즈업·창가의 고양이 스튜디오와, 낮 파노라마의 짝인 밤·노을
+ * 히어로 무드.
+ *
+ * 12차 파도에서 자료실 보관 전용 3편을 더했다: 정사각 브랜드 스팅,
+ * 스튜디오 와이드 팬, 비 오는 날의 히어로 무드(파노라마 세트의 네 번째).
+ *
+ * 13차 파도에서 자료실 보관 전용 3편을 더했다: 눈 오는 날의 히어로
+ * 무드(파노라마 세트의 다섯 번째), 황금빛 노을의 스튜디오, 정사각
+ * 궤도 스팅.
+ *
+ * 15차 파도에서 자료실 보관 전용 3편을 더했다: 별빛 아래의 스튜디오,
+ * 새벽의 히어로 무드(파노라마 세트의 여섯 번째), 정사각 프리즘 스팅.
+ *
+ * 16차 파도에서 자료실 보관 전용 1편을 더했다: 높은 책장이 있는
+ * 도서관 무드.
+ *
+ * 17차 파도에서 자료실 보관 전용 3편을 더했다: 바다의 스튜디오,
+ * 안개의 히어로 무드(파노라마 세트의 일곱 번째), 정사각 꽃 스팅.
+ *
+ * 18차 파도에서 자료실 보관 전용 4편을 더했다: 네온 빛 골목, 종이
+ * 모형 마을, 해 질 녘의 히어로 무드(파노라마 세트의 여덟 번째),
+ * 정사각 잉크 스팅. 이 파도부터 클립 길이가 14초로 고정되지 않아
+ * 편마다 다르다(8~11초 안팎) — 길이는 자료실 항목에 실측으로 적는다.
  */
 export interface BrandClip {
   readonly src: string;
@@ -90,5 +115,452 @@ export const HOME_CORE_STUDIO_3D_BACKDROP_CLIP = {
 export const BRAND_NIGHT_STUDIO_CLIP: BrandClip = {
   src: "/brand/brand-clips/brand-7-night-studio.mp4",
   width: 1344,
+  height: 768,
+};
+
+/**
+ * 비 오는 날의 스튜디오 — 빗소리가 창을 두드리는 날의 작업실을 그린
+ * 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_RAINY_STUDIO_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-8-rainy-studio.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 주말 아침의 스튜디오 — 느긋한 주말 아침 빛이 드는 작업실을 그린
+ * 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_WEEKEND_MORNING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-9-weekend-morning.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 책상 클로즈업 — 펜과 태블릿, 원고가 놓인 책상을 가까이에서 담은
+ * 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_DESK_CLOSEUP_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-10-desk-closeup.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 밤의 히어로 무드 — 낮 파노라마(STUDIO_INTRO_CLOSING_CLIP)의 밤 버전으로
+ * 그린 생성형 AI 영상이다. 히어로 자리의 분위기 교체 소재로, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_NIGHT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-night.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 노을의 히어로 무드 — 낮·밤 파노라마와 한 세트로, 노을빛이 드는 스튜디오를
+ * 그린 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만
+ * 수록한다.
+ */
+export const HOME_HERO_EVENING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-evening.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 창가의 고양이 — 창가에 앉아 작업실을 내려다보는 고양이를 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_CAT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-11-cat.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 브랜드 스팅 — 소셜 포스트와 카드에 붙이는 1:1 정사각 스팅으로
+ * 그린 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만
+ * 수록한다.
+ */
+export const BRAND_SQUARE_STING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-sting.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 스튜디오 와이드 팬 — 작업실을 넓게 가로지르며 도는 파노라마 팬 장면을
+ * 그린 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만
+ * 수록한다.
+ */
+export const BRAND_WIDE_PAN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-12-wide-pan.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 비의 히어로 무드 — 비 내리는 창 너머의 스튜디오 파노라마를 그린 생성형
+ * AI 영상이다. 낮·노을·밤 파노라마와 한 세트로, 아직 표면에 배선하지 않아
+ * 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_RAIN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-rain.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 눈의 히어로 무드 — 눈 내리는 창 너머의 스튜디오 파노라마를 그린 생성형
+ * AI 영상이다. 낮·노을·밤·비 파노라마와 한 세트로, 아직 표면에 배선하지
+ * 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_SNOW_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-snow.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 황금빛 노을의 스튜디오 — 노을이 황금빛으로 번지는 시간의 작업실을 그린
+ * 생성형 AI 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만
+ * 수록한다.
+ */
+export const BRAND_GOLDEN_HOUR_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-13-golden-hour.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 궤도 스팅 — 빛의 궤도가 감도는 1:1 정사각 브랜드 스팅으로 그린
+ * 생성형 AI 영상이다. 정사각 스팅의 짝으로, 아직 표면에 배선하지 않아
+ * 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_ORBIT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-orbit.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 별빛 아래의 스튜디오 — 별이 빛나는 밤하늘 아래 작업실을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_STARLIGHT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-14-starlight.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 새벽의 히어로 무드 — 새벽빛이 드는 스튜디오 파노라마를 그린 생성형 AI
+ * 영상이다. 낮·노을·밤·비·눈 파노라마와 한 세트로, 아직 표면에 배선하지
+ * 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_DAWN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-dawn.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 프리즘 스팅 — 프리즘을 지난 빛이 색으로 갈라지는 1:1 정사각
+ * 브랜드 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_PRISM_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-prism.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 도서관 무드 — 높은 책장과 사다리가 있는 도서관을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_LIBRARY_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-15-library.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 바다의 스튜디오 — 파도가 닿는 바다 앞 작업실을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_OCEAN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-16-ocean.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 안개의 히어로 무드 — 안개 낀 창 너머의 스튜디오 파노라마를 그린 생성형
+ * AI 영상이다. 낮·노을·밤·비·눈·새벽 파노라마와 한 세트로, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_FOG_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-fog.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 꽃 스팅 — 꽃이 피어나는 모습을 담은 1:1 정사각 브랜드 스팅으로
+ * 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직 표면에 배선하지
+ * 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_BLOOM_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-bloom.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 네온 빛 골목 — 네온 빛이 골목에 번지는 밤 풍경을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_NEON_ALLEY_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-17-neonalley.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 종이 모형 마을 — 종이로 접어 만든 작은 마을 모형을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_PAPER_CRAFT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-18-papercraft.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 해 질 녘의 히어로 무드 — 해가 지는 빛이 드는 스튜디오 파노라마를 그린
+ * 생성형 AI 영상이다. 낮·노을·밤·비·눈·새벽·안개 파노라마와 한 세트로,
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_DUSK_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-dusk.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 잉크 스팅 — 물에 잉크 한 방울이 번지는 모습을 담은 1:1 정사각
+ * 브랜드 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_INKDROP_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-inkdrop.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 숲에 드는 빛 — 숲 사이로 햇빛이 드는 풍경을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_FOREST_LIGHT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-19-forestlight.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 새벽의 도시 — 새벽빛이 번지는 도시 풍경을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_CITY_DAWN_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-20-citydawn.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 봄의 히어로 무드 — 봄빛이 드는 스튜디오 파노라마를 그린 생성형 AI
+ * 영상이다. 낮·노을·밤·비·눈·새벽·안개·황혼 파노라마와 한 세트로, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_SPRING_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-spring.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 파도 스팅 — 파도가 밀려오는 모습을 담은 1:1 정사각 브랜드
+ * 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_WAVE_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-wave.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 산과 호수 — 산자락 아래 호수가 펼쳐지는 풍경을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_MOUNTAIN_LAKE_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-21-mountainlake.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 작업 공방 — 도구가 놓인 작업 공방의 풍경을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_WORKSHOP_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-22-workshop.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 벌집 스팅 — 벌집 무늬가 빛나는 모습을 담은 1:1 정사각 브랜드
+ * 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_HONEYCOMB_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-honeycomb.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 강가의 바위 — 강물이 바위 사이를 흐르는 풍경을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_RIVER_ROCKS_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-23-riverrocks.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 눈 덮인 들판 — 눈이 소복이 쌓인 들판의 풍경을 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SNOWFIELD_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-24-snowfield.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 항구의 히어로 무드 — 항구가 내려다보이는 스튜디오 파노라마를 그린
+ * 생성형 AI 영상이다. 낮·노을·밤·비·눈·새벽·안개·황혼·봄 파노라마와
+ * 한 세트로, 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ * 일부 프레임에 먼 돛대와 왼쪽 가장자리에 잘린 구조물이 보여 자료실
+ * 항목에 품질 메모를 붙인다.
+ */
+export const HOME_HERO_HARBOR_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-harbor.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 테라조 스팅 — 테라조 무늬가 번지는 모습을 담은 1:1 정사각
+ * 브랜드 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께,
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_TERRAZZO_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-terrazzo.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 가을 길 — 단풍이 물든 길을 그린 생성형 AI 영상이다. 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_AUTUMN_ROAD_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-25-autumnroad.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 모래 언덕 — 바람결이 남은 모래 언덕을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_DUNES_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-26-dunes.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 초원의 히어로 무드 — 초원이 펼쳐지는 스튜디오 파노라마를 그린
+ * 생성형 AI 영상이다. 낮·노을·밤·비·눈·새벽·안개·황혼·봄·항구
+ * 파노라마와 한 세트로, 아직 표면에 배선하지 않아 홍보 영상
+ * 자료실에만 수록한다.
+ */
+export const HOME_HERO_MEADOW_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-meadow.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 용암 스팅 — 용암이 흐르는 모습을 담은 1:1 정사각 브랜드
+ * 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_LAVA_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-lava.mp4",
+  width: 768,
+  height: 768,
+};
+
+/**
+ * 폭포 — 물줄기가 떨어지는 폭포의 풍경을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_WATERFALL_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-27-waterfall.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 대나무숲 — 바람에 흔들리는 대나무숲을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_BAMBOO_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-28-bamboo.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 절벽 바다의 히어로 무드 — 절벽과 바다가 내려다보이는 스튜디오
+ * 파노라마를 그린 생성형 AI 영상이다. 낮·노을·밤·비·눈·새벽·안개·
+ * 황혼·봄·항구·초원 파노라마와 한 세트로, 아직 표면에 배선하지 않아
+ * 홍보 영상 자료실에만 수록한다.
+ */
+export const HOME_HERO_CLIFF_SEA_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-cliffsea.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 수정 스팅 — 수정 결정이 빛나는 모습을 담은 1:1 정사각 브랜드
+ * 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_GEODE_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-geode.mp4",
+  width: 768,
   height: 768,
 };
