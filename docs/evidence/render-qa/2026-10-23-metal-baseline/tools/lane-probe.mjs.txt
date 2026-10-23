@@ -1,0 +1,155 @@
+#!/usr/bin/env node
+// GPU 레인 증명 프로브 — 같은 Mac 에서 Playwright 가 고르는 렌더러가 실제로 무엇인지 레인별로 기록한다.
+// 부모 모드(기본): 레인마다 자식 프로세스를 띄우고 하드 타임아웃으로 감시한다(requestDevice 가 걸려도 부모는 산다).
+// 자식 모드(--one <laneId>): 한 레인으로 브라우저를 띄워 WebGL2/WebGPU 어댑터를 읽고 JSON 한 줄을 출력한다.
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import http from "node:http";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const SWEEP_TREE = process.env.SWEEP_TREE;
+if (!SWEEP_TREE) throw new Error("SWEEP_TREE 환경변수가 필요하다 (Playwright 를 해석할 체크아웃)");
+const require = createRequire(join(SWEEP_TREE, "package.json"));
+const { chromium } = require("playwright");
+
+const SWIFTSHADER_WEBGPU_ARGS = [
+  "--no-sandbox", "--enable-unsafe-webgpu", "--enable-features=CDPScreenshotNewSurface,Vulkan",
+  "--use-vulkan=swiftshader", "--use-webgpu-adapter=swiftshader", "--use-gpu-in-tests",
+  "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader",
+];
+
+const LANES = [
+  { id: "pw-headless-shell-default", launch: { headless: true },
+    note: "chromium.launch({ headless: true }) — Playwright 기본(headless shell)" },
+  { id: "chromium-full-default", launch: { headless: true, channel: "chromium", args: ["--no-sandbox"] },
+    note: "channel: chromium + --no-sandbox — console 게이트의 일반 패스, character-shaper native 레인" },
+  { id: "chromium-full-darwin-native", launch: { headless: true, channel: "chromium", args: ["--no-sandbox", "--enable-unsafe-webgpu", "--use-gpu-in-tests"] },
+    note: "STUDIO_3D_WEBGPU_DARWIN_NATIVE_LAUNCH_ARGS (console 게이트 WebGPU 샤드)" },
+  { id: "chromium-full-metal-explicit", launch: { headless: true, channel: "chromium", args: ["--no-sandbox", "--enable-unsafe-webgpu", "--use-gpu-in-tests", "--use-angle=metal", "--disable-software-rasterizer"] },
+    note: "Metal 을 명시한 레인" },
+  { id: "chromium-full-swiftshader-webgl", launch: { headless: true, channel: "chromium", args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] },
+    note: "playwright.config.ts SOFTWARE_GPU_ARGS 와 같은 WebGL 소프트웨어 레인" },
+  { id: "chromium-full-swiftshader-webgpu", launch: { headless: true, channel: "chromium", args: SWIFTSHADER_WEBGPU_ARGS },
+    note: "STUDIO_3D_WEBGPU_SWIFTSHADER_LAUNCH_ARGS — macOS 에서 requestDevice 가 걸린다는 주석(Chromium 151)의 재측정" },
+  { id: "system-chrome-native", launch: { headless: true, channel: "chrome", args: ["--no-sandbox", "--enable-unsafe-webgpu"] },
+    note: "시스템 Google Chrome (playwright.config.ts 기본 채널)" },
+];
+
+async function probeOne(laneId) {
+  const lane = LANES.find((candidate) => candidate.id === laneId);
+  if (!lane) throw new Error(`알 수 없는 레인: ${laneId}`);
+  const server = http.createServer((_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.end("<!doctype html><title>lane-probe</title><body></body>");
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+  const startedAt = Date.now();
+  let browser;
+  try {
+    browser = await chromium.launch(lane.launch);
+    const page = await (await browser.newContext()).newPage();
+    await page.goto(`http://127.0.0.1:${port}/`);
+    const probe = await page.evaluate(async () => {
+      const out = { secureContext: window.isSecureContext, userAgent: navigator.userAgent, webgl2: null, webgpu: null };
+      try {
+        const gl = document.createElement("canvas").getContext("webgl2");
+        if (gl) {
+          const ext = gl.getExtension("WEBGL_debug_renderer_info");
+          out.webgl2 = {
+            vendor: ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR),
+            renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+            version: gl.getParameter(gl.VERSION),
+          };
+        } else out.webgl2 = { unavailable: true };
+      } catch (error) { out.webgl2 = { error: String(error) }; }
+      try {
+        if (!navigator.gpu) out.webgpu = { unavailable: "navigator.gpu 없음" };
+        else {
+          const timeout = (ms, label) => new Promise((resolve) => setTimeout(() => resolve(label), ms));
+          const adapter = await Promise.race([navigator.gpu.requestAdapter(), timeout(15000, "timeout-15s")]);
+          if (adapter === "timeout-15s") out.webgpu = { requestAdapter: "timeout-15s" };
+          else if (!adapter) out.webgpu = { requestAdapter: "null" };
+          else {
+            const info = adapter.info ?? (adapter.requestAdapterInfo ? await adapter.requestAdapterInfo() : {});
+            out.webgpu = {
+              vendor: info.vendor, architecture: info.architecture, device: info.device, description: info.description,
+              isFallbackAdapter: adapter.isFallbackAdapter, featureCount: adapter.features.size,
+            };
+            out.webgpu.requestDevice = await Promise.race([
+              adapter.requestDevice().then(() => "ok", (error) => `error: ${error.message}`),
+              timeout(15000, "timeout-15s"),
+            ]);
+          }
+        }
+      } catch (error) { out.webgpu = { error: String(error) }; }
+      return out;
+    });
+    return { laneId, status: "probed", browserVersion: browser.version(), elapsedMs: Date.now() - startedAt, ...probe };
+  } catch (error) {
+    return { laneId, status: "error", message: String(error?.message ?? error).split("\n")[0], elapsedMs: Date.now() - startedAt };
+  } finally {
+    await browser?.close().catch(() => undefined);
+    server.close();
+  }
+}
+
+function killGroup(pid, signal) {
+  try { process.kill(-pid, signal); } catch { /* 이미 종료 */ }
+}
+
+function runLaneInChild(lane, hardTimeoutMs) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "--one", lane.id], {
+      env: process.env, stdio: ["ignore", "pipe", "pipe"], detached: true,
+    });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    const timer = setTimeout(() => {
+      timedOut = true;
+      killGroup(child.pid, "SIGTERM");
+      setTimeout(() => killGroup(child.pid, "SIGKILL"), 5000);
+    }, hardTimeoutMs);
+    child.on("exit", () => {
+      clearTimeout(timer);
+      const line = stdout.trim().split("\n").filter(Boolean).at(-1) ?? "";
+      let parsed = null;
+      try { parsed = JSON.parse(line); } catch { /* 아래에서 처리 */ }
+      if (timedOut) resolve({ laneId: lane.id, status: "hang", hardTimeoutMs, note: lane.note, partial: parsed });
+      else if (parsed) resolve({ ...parsed, note: lane.note, launch: lane.launch });
+      else resolve({ laneId: lane.id, status: "error", message: stderr.trim().split("\n").slice(-2).join(" | ") || "출력 없음", note: lane.note });
+    });
+  });
+}
+
+const oneIndex = process.argv.indexOf("--one");
+if (oneIndex !== -1) {
+  const result = await probeOne(process.argv[oneIndex + 1]);
+  console.log(JSON.stringify(result));
+  process.exit(0);
+} else {
+  const outIndex = process.argv.indexOf("--out");
+  const outPath = outIndex === -1 ? null : process.argv[outIndex + 1];
+  const results = [];
+  for (const lane of LANES) {
+    console.error(`[lane-probe] ${lane.id} ...`);
+    const result = await runLaneInChild(lane, 75_000);
+    console.error(`[lane-probe] ${lane.id} -> ${result.status}`);
+    results.push(result);
+  }
+  const report = {
+    generatedAt: new Date().toISOString(),
+    platform: process.platform, arch: process.arch,
+    playwrightChromium: chromium.executablePath(),
+    lanes: results,
+  };
+  if (outPath) {
+    mkdirSync(dirname(outPath), { recursive: true });
+    writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
+  } else console.log(JSON.stringify(report, null, 2));
+}
