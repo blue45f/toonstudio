@@ -20,8 +20,8 @@
   "userProfile.tabsLabel": "محتوای پروفایل",
   "userProfile.refresh": "تازه کردن",
   "userProfile.emptyReviews": "هنوز هیچ بررسی ای از این کاربر منتشر نشده است.",
-  "userProfile.works.error": "Unable to load created works. Please try again.",
-  "userProfile.series.error": "Unable to load series. Please try again.",
-  "userProfile.emptyReviewsHint": "Leave the first review on a title you love.",
-  "userProfile.emptyReviewsCta": "Browse titles"
+  "userProfile.works.error": "آثار ساخته‌شده بارگذاری نشدند. لطفاً دوباره تلاش کنید.",
+  "userProfile.series.error": "مجموعه‌ها بارگذاری نشدند. لطفاً دوباره تلاش کنید.",
+  "userProfile.emptyReviewsHint": "اولین بررسی را روی عنوانی که دوست دارید بگذارید.",
+  "userProfile.emptyReviewsCta": "مرور عنوان‌ها"
 }

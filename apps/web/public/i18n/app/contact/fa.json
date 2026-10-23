@@ -1,8 +1,8 @@
 {
-  "contact.title": "General Inquiry",
-  "contact.body": "Send general inquiries about using the service, accounts, and data display.",
-  "contact.bizTitle": "Business & Partnership Inquiries",
-  "contact.bizBody": "Submit business proposals including advertising, platform integrations, and content partnerships.",
-  "contact.bugTitle": "Bug Report",
-  "contact.bugBody": "Report errors, layout problems, or data display anomalies."
+  "contact.title": "پرسش عمومی",
+  "contact.body": "پرسش‌های عمومی درباره استفاده از سرویس، حساب‌ها و نمایش داده را ارسال کنید.",
+  "contact.bizTitle": "پرسش‌های تجاری و مشارکت",
+  "contact.bizBody": "پیشنهادهای تجاری شامل تبلیغات، یکپارچه‌سازی پلتفرم و مشارکت‌های محتوایی را ارسال کنید.",
+  "contact.bugTitle": "گزارش اشکال",
+  "contact.bugBody": "خطاها، مشکلات چیدمان یا ناهنجاری‌های نمایش داده را گزارش کنید."
 }
