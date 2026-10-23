@@ -411,3 +411,200 @@ export function synthesizeLocalStyleModelPreviewDataUrl(options: {
     height,
   });
 }
+
+export type ArtistTrainingSampleShotType =
+  | "close-up"
+  | "bust"
+  | "full-body"
+  | "action"
+  | "background";
+
+export interface ArtistStyleTrainingSample {
+  readonly id: string;
+  readonly width: number;
+  readonly height: number;
+  readonly shotType?: ArtistTrainingSampleShotType;
+  /** 선화 밀도 (0..1, 높을수록 굵거나 해칭/붓터치가 강한 선화). */
+  readonly lineDensity?: number;
+  /** 명암 대비 강도 (0..1, 높을수록 셀 음영/강한 키아로스쿠로). */
+  readonly shadingContrast?: number;
+  /** 채도 평균 (0..1, 높을수록 선명한 컬러, 낮을수록 모노크롬/파스텔). */
+  readonly colorSaturation?: number;
+  /** 작가 또는 기존 메타데이터가 남긴 설명 캡션. */
+  readonly caption?: string;
+}
+
+export interface ArtistDatasetShotCoverage {
+  readonly hasCloseUp: boolean;
+  readonly hasBust: boolean;
+  readonly hasFullBody: boolean;
+  readonly hasAction: boolean;
+  readonly hasBackground: boolean;
+  readonly diversityRatio: number;
+}
+
+export interface ArtistDatasetAnalysisReport {
+  readonly sampleCount: number;
+  readonly readinessScore: number;
+  readonly inferredTraits: {
+    readonly lineWeight: StudioArtistLineWeight;
+    readonly shadingMode: StudioArtistShadingMode;
+    readonly paletteMood: StudioArtistPaletteMood;
+  };
+  readonly shotCoverage: ArtistDatasetShotCoverage;
+  readonly autoCaptions: readonly {
+    readonly sampleId: string;
+    readonly caption: string;
+  }[];
+  readonly coachingTips: readonly string[];
+  readonly synthesizedStyleBinding: StoryboardArtistStyleBinding;
+  readonly dnaProfile: ArtistStyleDnaProfile;
+}
+
+/**
+ * 웹툰 작가가 학습 데이터로 제공한 원고/일러스트 샘플 목록을 정밀 분석해
+ * 1) 선화·명암·색감 화풍 DNA(`inferredTraits`)를 자동 추출하고,
+ * 2) 샷 다양성(클로즈업·바스트·전신·액션·배경)과 해상도 적합도를 평가해 `readinessScore`(0..100)를 산출하며,
+ * 3) 각 샘플별 LoRA 학습용 트리거 워드 캡션(`autoCaptions`)과 즉시 스토리보드에 바인딩 가능한
+ *    `synthesizedStyleBinding` 및 `dnaProfile`을 생성한다.
+ */
+export function analyzeArtistDatasetSamples(
+  samples: readonly ArtistStyleTrainingSample[],
+  options: {
+    readonly artistLabel?: string;
+    readonly triggerWord?: string;
+    readonly modelId?: string;
+  } = {},
+): ArtistDatasetAnalysisReport {
+  const artistLabel = options.artistLabel?.trim() || "작가 커스텀 화풍 모델";
+  const triggerWord =
+    options.triggerWord?.trim() ||
+    `artist_${artistLabel.replace(/[^a-zA-Z0-9가-힣]/gu, "_").slice(0, 16)}_style`;
+
+  const count = samples.length;
+  const avgLine =
+    count > 0
+      ? samples.reduce((acc, s) => acc + (s.lineDensity ?? 0.5), 0) / count
+      : 0.5;
+  const avgContrast =
+    count > 0
+      ? samples.reduce((acc, s) => acc + (s.shadingContrast ?? 0.55), 0) / count
+      : 0.55;
+  const avgSat =
+    count > 0
+      ? samples.reduce((acc, s) => acc + (s.colorSaturation ?? 0.65), 0) / count
+      : 0.65;
+
+  const lineWeight: StudioArtistLineWeight =
+    avgLine >= 0.76
+      ? "bold"
+      : avgLine >= 0.62
+        ? "brush"
+        : avgLine <= 0.36
+          ? "fine"
+          : "balanced";
+
+  const shadingMode: StudioArtistShadingMode =
+    avgContrast >= 0.74 && avgLine >= 0.6
+      ? "hatching"
+      : avgContrast >= 0.64
+        ? "cel"
+        : avgContrast <= 0.42
+          ? "soft-gradient"
+          : "painterly";
+
+  const paletteMood: StudioArtistPaletteMood =
+    avgSat <= 0.2
+      ? "monochrome"
+      : avgContrast >= 0.72 && avgSat <= 0.48
+        ? "noir"
+        : avgSat <= 0.52
+          ? "pastel"
+          : "vibrant";
+
+  const shotTypes = new Set(samples.map((s) => s.shotType ?? "bust"));
+  const hasCloseUp = shotTypes.has("close-up");
+  const hasBust = shotTypes.has("bust");
+  const hasFullBody = shotTypes.has("full-body");
+  const hasAction = shotTypes.has("action");
+  const hasBackground = shotTypes.has("background");
+  const coveredCount = [hasCloseUp, hasBust, hasFullBody, hasAction, hasBackground].filter(Boolean).length;
+  const diversityRatio = Number((coveredCount / 5).toFixed(2));
+
+  const highResCount = samples.filter((s) => Math.min(s.width, s.height) >= 768).length;
+  const highResRatio = count > 0 ? highResCount / count : 0;
+
+  const countScore = Math.min(45, count * 9);
+  const diversityScore = Math.round(diversityRatio * 35);
+  const resScore = Math.round(highResRatio * 20);
+  const readinessScore = count === 0 ? 0 : Math.min(100, Math.max(25, countScore + diversityScore + resScore));
+
+  const coachingTips: string[] = [];
+  if (count < 4) {
+    coachingTips.push(
+      `현재 학습 샘플이 ${count}장입니다. 표정 클로즈업·반신·전신 원고를 최소 4~8장 제공하면 작가 고유 필압과 눈매 특징이 훨씬 정교하게 학습됩니다.`,
+    );
+  }
+  if (!hasFullBody) {
+    coachingTips.push(
+      "전신(full-body) 비율 샘플을 1장 이상 추가하면 롱샷·액션 컷에서 캐릭터 등신대와 체형 일관성이 크게 향상됩니다.",
+    );
+  }
+  if (!hasCloseUp) {
+    coachingTips.push(
+      "얼굴 클로즈업(close-up) 샘플을 추가하면 감정 연기 컷에서 작가 특유의 눈동자 하이라이트와 속눈썹 선화가 선명하게 보존됩니다.",
+    );
+  }
+  if (highResRatio < 1 && count > 0) {
+    coachingTips.push(
+      "일부 샘플의 단변 해상도가 768px 미만입니다. 고해상도 원고 클롭본을 사용하면 세필 선화 디테일 손실을 막을 수 있습니다.",
+    );
+  }
+  if (coachingTips.length === 0) {
+    coachingTips.push(
+      "학습 데이터셋의 해상도·샷 다양성·화풍 밀도가 모두 최상급입니다. 즉시 작가 전용 그림체 모델을 생성해 전 회차 스토리보드에 연결할 수 있습니다.",
+    );
+  }
+
+  const synthesizedStyleBinding: StoryboardArtistStyleBinding = Object.freeze({
+    modelId: options.modelId?.trim() || `custom-dataset-${triggerWord}`,
+    artistLabel,
+    triggerWord,
+    lineWeight,
+    shadingMode,
+    paletteMood,
+  });
+
+  const dnaProfile = buildArtistStyleDnaProfile(synthesizedStyleBinding);
+  const traitDesc = describeStudioArtistStyleTraits({ lineWeight, shadingMode, paletteMood });
+
+  const autoCaptions = Object.freeze(
+    samples.map((sample) => {
+      const shotTag = sample.shotType ?? "bust";
+      const customNote = sample.caption?.trim() ? `, ${sample.caption.trim()}` : "";
+      return Object.freeze({
+        sampleId: sample.id,
+        caption: `${triggerWord}, ${shotTag} webtoon framing, ${traitDesc}${customNote}`,
+      });
+    }),
+  );
+
+  return Object.freeze({
+    sampleCount: count,
+    readinessScore,
+    inferredTraits: Object.freeze({ lineWeight, shadingMode, paletteMood }),
+    shotCoverage: Object.freeze({
+      hasCloseUp,
+      hasBust,
+      hasFullBody,
+      hasAction,
+      hasBackground,
+      diversityRatio,
+    }),
+    autoCaptions,
+    coachingTips: Object.freeze(coachingTips),
+    synthesizedStyleBinding,
+    dnaProfile,
+  });
+}
+
