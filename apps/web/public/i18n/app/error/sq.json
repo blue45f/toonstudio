@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Reloading latest version...",
-  "error.chunkRetryFailed": "Rifreskuar një herë, por problemi vazhdon.Ju lutemi kontrolloni lidhjen tuaj dhe provoni përsëri.",
+  "error.reloading": "Po ringarkohet versioni më i fundit…",
+  "error.chunkRetryFailed": "U rifreskua një herë, por problemi vazhdon. Kontrolloni lidhjen tuaj dhe provoni sërish.",
   "error.reloadButton": "Rifresko faqen",
-  "error.goHome": "Go Home",
-  "error.retryDesc": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️"
+  "error.goHome": "Shko në faqen kryesore",
+  "error.retryDesc": "Provo sërish ose kthehu në faqen kryesore."
 }

@@ -1,9 +1,9 @@
 {
-  "avatar.error.invalidType": "Type image non supported.",
-  "avatar.error.processFailed": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "avatar.processing": "Processing...",
+  "avatar.error.invalidType": "Lloji i imazhit nuk mbështetet.",
+  "avatar.error.processFailed": "Nuk mund të përpunohej imazhi. Provo sërish me një imazh tjetër.",
+  "avatar.processing": "Po përpunohet…",
   "avatar.select": "Ndrysho imazhin",
   "avatar.remove": "Hiq imazhin",
-  "avatar.uploadHint": "Only JPG, PNG, and WEBP images are supported, then cut for preview.",
+  "avatar.uploadHint": "Mbështeten vetëm imazhet JPG, PNG dhe WEBP, pastaj priten për parapamje.",
   "avatar.changeAria": "Ndrysho imazhin e profilit"
 }

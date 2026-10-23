@@ -1,14 +1,14 @@
 {
   "control.language.label": "Gjuha",
   "control.language.group.translated": "Përkthime me mbulim të lartë",
-  "control.language.group.englishBase": "Përkthim automatik · kthim në anglisht",
+  "control.language.group.englishBase": "Përkthim automatik · anglishtja si rezervë",
   "control.sound.enable": "Aktivizo efektet zanore",
   "control.sound.disable": "Çaktivizo efektet e zërit",
   "control.theme.dark": "Kalo në modalitetin e dritës",
   "control.theme.light": "Kalo në modalitetin e errët",
-  "control.settings.open": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
+  "control.settings.open": "Hap cilësimet",
   "control.settings.close": "Mbyll cilësimet",
   "control.cluster.settings": "Tingulli, tema, kontrollet e gjuhës",
-  "control.cluster.open": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
+  "control.cluster.open": "Hap cilësimet",
   "control.cluster.tooltip": "Cilësimet e zërit, temës dhe gjuhës"
 }

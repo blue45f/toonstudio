@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "AUTHOR'S DIRECTORY",
-  "authors.title": "Autors",
-  "authors.desc": "Tap an author to see their titles, ratings, and fan cafe in one place.",
+  "authors.eyebrow": "DREJTORIA E AUTORËVE",
+  "authors.title": "Autorët",
+  "authors.desc": "Autorët të renditur sipas numrit të veprave. Prekni një autor për të parë titujt, vlerësimet dhe kafenenë e fansave të tij në një vend.",
   "authors.search": "Kërkoni emrin e autorit",
-  "authors.error": "ntntntntntntntntntntntnt",
-  "authors.empty": "no matching author.",
+  "authors.error": "Nuk mund të ngarkohej lista e autorëve. Provo sërish pas pak.",
+  "authors.empty": " — asnjë autor që përputhet.",
   "authors.allOf": "e",
-  "authors.topOf": "top",
+  "authors.topOf": "· më të mirët",
   "authors.people": "",
-  "authors.works": "works",
-  "authors.views": "pikëpamjet",
+  "authors.works": " vepra",
+  "authors.views": "shikime",
   "authors.pencafe": "Kafene për fansat e krijuesve",
-  "authors.stats": "{shown} kryesor nga autorët {total}",
-  "authors.noName": "Krijuesi"
+  "authors.stats": "{shown} më të mirët nga {total} autorë",
+  "authors.noName": "Krijues"
 }

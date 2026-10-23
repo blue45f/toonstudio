@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "nt loadingntntntntntntntntntntntnt",
+  "feedback.loadError": "Nuk mund të ngarkohej sondazhi i reagimeve. Provo sërish pas pak.",
   "feedback.thankYou": "Faleminderit për komentet tuaja të vlefshme!",
   "feedback.anonymousNote": "Përgjigjet tuaja mbahen rreptësisht anonime.",
-  "feedback.notAtAll": "Absolutely not",
+  "feedback.notAtAll": "Aspak",
   "feedback.definitely": "Patjetër"
 }
