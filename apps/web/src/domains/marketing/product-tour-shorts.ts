@@ -1,8 +1,8 @@
 /**
- * 제품 투어 페이지 하단의 세로 쇼츠 21편.
- * 스물한 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
+ * 제품 투어 페이지 하단의 세로 쇼츠 23편.
+ * 스물세 편 모두 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
  * 화면에서도 그 성격을 밝힌다(섹션 안내 문구와 카드의 '개념 영상' 배지).
- * 1~4편은 29초 안팎, 5~21편은 14초 안팎이라 길이를 편마다 따로 적는다.
+ * 1~4편은 29초 안팎, 5~23편은 14초 안팎이라 길이를 편마다 따로 적는다.
  */
 export interface ProductTourShort {
   readonly id:
@@ -26,7 +26,9 @@ export interface ProductTourShort {
     | "version-rewind"
     | "manuscript-send"
     | "serial-schedule"
-    | "desk-tour";
+    | "desk-tour"
+    | "pastel-colors"
+    | "night-deadline";
   readonly src: string;
   readonly width: number;
   readonly height: number;
@@ -349,6 +351,36 @@ export const PRODUCT_TOUR_SHORTS: readonly ProductTourShort[] = [
     en: {
       title: "Zooming in on the desk",
       body: "A slow zoom from a quiet room's wide view down onto the creator's desk.",
+    },
+  },
+  {
+    id: "pastel-colors",
+    src: "/brand/promo-shorts/shorts-23-pastel.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "색연필 파스텔의 결",
+      body: "색연필과 파스텔이 종이 위를 스치며 부드러운 색이 한 겹씩 번져 나가는 채색 과정을 담았습니다.",
+    },
+    en: {
+      title: "Pastel, layer by layer",
+      body: "Colored pencils and pastels sweeping across paper as soft color blooms layer by layer.",
+    },
+  },
+  {
+    id: "night-deadline",
+    src: "/brand/promo-shorts/shorts-24-nightwork.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "밤의 마감 작업",
+      body: "고요한 밤 램프 불빛 아래 마지막 컷을 다듬으며 마감을 향해 가는 작업의 공기를 담았습니다.",
+    },
+    en: {
+      title: "Night work, deadline bound",
+      body: "A quiet night under lamplight, polishing the last panels on the way to a deadline.",
     },
   },
 ];
