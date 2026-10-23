@@ -7,6 +7,7 @@
  */
 
 import { acquireStudioLocalDatabase } from "../studio-local-database-runtime";
+import { resolveStudioBg3dShotBatchRecoveryDegradedReason } from "../status-i18n/studio-producer-error-i18n-shot-batch-recovery";
 import { createStudioOpfsAssetStore } from "../studio-opfs-asset-store";
 import { createStudioOpfsNativeFileSystem } from "../studio-opfs-filesystem";
 import { compareStudioValidationStrings } from "../studio-validation-string-order";
@@ -29,6 +30,7 @@ import {
   verifyStudioBg3dShotBatchSourceRevision,
   type StudioBg3dShotBatchPlan,
 } from "./studio-bg3d-shot-batch-plan";
+import { StudioBg3dShotBatchRecoveryError } from "./studio-bg3d-shot-batch-recovery-error";
 import {
   createStudioBg3dShotBatchQueue,
   failStudioBg3dShotBatchQueueItem,
@@ -96,24 +98,13 @@ const FAILURE_CODES = new Set<StudioBg3dShotBatchFailureCode>([
 
 export type StudioBg3dShotBatchRecoveryMode = "durable" | "memory";
 export type StudioBg3dShotBatchRecoveryPersistence = "granted" | "not-granted" | "unknown";
-export type StudioBg3dShotBatchRecoveryErrorCode =
-  | "busy"
-  | "lease-lost"
-  | "cas-conflict"
-  | "corrupt"
-  | "budget-exceeded"
-  | "access-denied"
-  | "storage-unavailable";
-
-export class StudioBg3dShotBatchRecoveryError extends Error {
-  readonly code: StudioBg3dShotBatchRecoveryErrorCode;
-
-  constructor(code: StudioBg3dShotBatchRecoveryErrorCode, message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "StudioBg3dShotBatchRecoveryError";
-    this.code = code;
-  }
-}
+// A4 D4 (R12): 오류 클래스와 서브코드 union은 경량 모듈로 분리됐다(계획 오류와 같은 관례).
+// 이 모듈에서는 그 클래스로 {code, subcode}만 방출하고 표시 문구는 갖지 않는다.
+export { StudioBg3dShotBatchRecoveryError } from "./studio-bg3d-shot-batch-recovery-error";
+export type {
+  StudioBg3dShotBatchRecoveryErrorCode,
+  StudioBg3dShotBatchRecoveryErrorSubcode,
+} from "./studio-bg3d-shot-batch-recovery-error";
 
 export interface StudioBg3dShotBatchRunToken {
   readonly shotId: string;
@@ -157,6 +148,11 @@ export interface StudioBg3dShotBatchRecoverySession {
   readonly ownerId: string;
   mode: StudioBg3dShotBatchRecoveryMode;
   persistence: StudioBg3dShotBatchRecoveryPersistence;
+  /**
+   * 집계자 예외 (A4 D4, R12): 이 필드는 문자열로 고정된 저장값이다. 요약 타입·호스트 상태·
+   * 패널까지 소비처가 넓어 {code}로 바꾸지 않고, 생산 지점(acquire·degrade 경계)에서만
+   * resolveStudioBg3dShotBatchRecoveryDegradedReason으로 해석해 저장한다(생산 시점 로케일 고정).
+   */
   degradedReason: string | null;
   queue: StudioBg3dShotBatchQueue;
   revision: number;
@@ -323,7 +319,7 @@ function randomId(prefix: string): string {
   if (!cryptoApi) {
     throw new StudioBg3dShotBatchRecoveryError(
       "storage-unavailable",
-      "보안 난수 생성기를 사용할 수 없어 컷 배치 lease를 만들 수 없습니다.",
+      "storageUnavailable.randomUnavailable",
     );
   }
   try {
@@ -340,7 +336,7 @@ function randomId(prefix: string): string {
   } catch (cause) {
     throw new StudioBg3dShotBatchRecoveryError(
       "storage-unavailable",
-      "보안 난수 생성기를 사용할 수 없어 컷 배치 lease를 만들 수 없습니다.",
+      "storageUnavailable.randomUnavailable",
       { cause },
     );
   }
@@ -448,7 +444,7 @@ function withArtifactStorageBytes(record: ArtifactRecordWithoutStorageBytes): Ar
   if (storageBytes === null) {
     throw new StudioBg3dShotBatchRecoveryError(
       "budget-exceeded",
-      "컷 artifact 메타데이터가 복구 저장 예산을 벗어났습니다.",
+      "budgetExceeded.artifactMetadata",
     );
   }
   return { ...record, storageBytes };
@@ -506,7 +502,7 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
     } catch (cause) {
       reject(new StudioBg3dShotBatchRecoveryError(
         "storage-unavailable",
-        "컷 배치 IndexedDB를 열 수 없습니다.",
+        "storageUnavailable.indexedDbOpenFailed",
         { cause },
       ));
       return;
@@ -528,14 +524,14 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
     };
     request.onerror = () => reject(new StudioBg3dShotBatchRecoveryError(
       "storage-unavailable",
-      "컷 배치 IndexedDB를 열 수 없습니다.",
+      "storageUnavailable.indexedDbOpenFailed",
       { cause: request.error ?? undefined },
     ));
     request.onblocked = () => {
       blocked = true;
       reject(new StudioBg3dShotBatchRecoveryError(
         "storage-unavailable",
-        "다른 탭이 컷 배치 저장소 업그레이드를 막고 있습니다.",
+        "storageUnavailable.upgradeBlocked",
       ));
     };
     request.onsuccess = () => {
@@ -770,7 +766,7 @@ function newJob(
   if (jobStorageBytes === null) {
     throw new StudioBg3dShotBatchRecoveryError(
       "budget-exceeded",
-      "컷 배치 Job 메타데이터가 복구 저장 예산을 벗어났습니다.",
+      "budgetExceeded.jobMetadata",
     );
   }
   return {
@@ -845,7 +841,7 @@ function assertAuthorizationReceipt(
   ) {
     throw new StudioBg3dShotBatchRecoveryError(
       "access-denied",
-      "컷 artifact 커밋 권한 영수증이 만료되었거나 현재 편집 범위와 다릅니다.",
+      "accessDenied.receiptExpired",
     );
   }
 }
@@ -862,13 +858,13 @@ function assertLeaseAndRevision(
   ) {
     throw new StudioBg3dShotBatchRecoveryError(
       "lease-lost",
-      "다른 탭이 이 컷 배치 복구 작업을 이어받았습니다.",
+      "leaseLost.takenOver",
     );
   }
   if (job.revision !== session.revision) {
     throw new StudioBg3dShotBatchRecoveryError(
       "cas-conflict",
-      "컷 배치 복구 상태가 다른 탭에서 변경되었습니다.",
+      "casConflict.stateChanged",
     );
   }
 }
@@ -893,7 +889,7 @@ async function verifyArtifactRecords(
 ): Promise<ArtifactRecord[]> {
   throwIfAborted(signal);
   if (values.length !== job.artifactKeys.length) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 artifact 목록이 손상되었습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.artifactList");
   }
   const records: ArtifactRecord[] = [];
   const seenShotIds = new Set<string>();
@@ -904,7 +900,7 @@ async function verifyArtifactRecords(
       "kind", "version", "artifactKey", "recoveryKey", "shotId", "artifacts",
       "storageBytes", "createdAt",
     ])) {
-      throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 artifact 레코드가 손상되었습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.artifactRecord");
     }
     const record = value as ArtifactRecord;
     if (
@@ -916,14 +912,14 @@ async function verifyArtifactRecords(
       !Number.isSafeInteger(record.createdAt) || record.createdAt < 0 ||
       !Number.isSafeInteger(record.storageBytes) || record.storageBytes < 1
     ) {
-      throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 artifact 소유권이 손상되었습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.artifactOwnership");
     }
     seenShotIds.add(record.shotId);
     const { storageBytes: _storageBytes, ...withoutStorageBytes } = record;
     if (estimateArtifactStorageBytes(withoutStorageBytes) !== record.storageBytes) {
       throw new StudioBg3dShotBatchRecoveryError(
         "corrupt",
-        "저장된 컷 artifact 메타데이터 원장이 손상되었습니다.",
+        "corrupt.artifactMetadataLedger",
       );
     }
     throwIfAborted(signal);
@@ -942,7 +938,7 @@ async function verifyArtifactRecords(
       if (isAbortError(cause)) throw cause;
       throw new StudioBg3dShotBatchRecoveryError(
         "corrupt",
-        "저장된 컷 배치 artifact 무결성 검증에 실패했습니다.",
+        "corrupt.artifactIntegrityFailed",
         { cause },
       );
     }
@@ -954,13 +950,13 @@ async function verifyArtifactRecords(
   const storageBytes = records.reduce((total, record) => total + record.storageBytes, 0);
   if (bytes !== job.totalArtifactBytes || count !== job.artifactCount ||
     storageBytes !== job.artifactStorageBytes) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 artifact 사용량 원장이 손상되었습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.artifactUsageLedger");
   }
   const succeededIds = new Set(job.queue.items
     .filter(({ status }) => status === "succeeded")
     .map(({ shotId }) => shotId));
   if (records.length !== succeededIds.size || records.some(({ shotId }) => !succeededIds.has(shotId))) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "완료된 컷과 저장 artifact가 일치하지 않습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.completedShotArtifactMismatch");
   }
   throwIfAborted(signal);
   return records;
@@ -1265,7 +1261,7 @@ function parseSqliteCatalog(raw: string | null): SqliteRecoveryCatalog {
   }
   if (new TextEncoder().encode(raw).byteLength >
     STUDIO_BG3D_SHOT_BATCH_RECOVERY_ORIGIN_MAX_BYTES) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 SQLite catalog가 한도를 벗어났습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.catalogOversized");
   }
   let parsed: unknown;
   try {
@@ -1273,12 +1269,12 @@ function parseSqliteCatalog(raw: string | null): SqliteRecoveryCatalog {
   } catch (cause) {
     throw new StudioBg3dShotBatchRecoveryError(
       "corrupt",
-      "컷 배치 SQLite catalog JSON이 손상되었습니다.",
+      "corrupt.catalogJson",
       { cause },
     );
   }
   if (!exactKeys(parsed, ["kind", "version", "revision", "updatedAt", "entries"])) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 SQLite catalog 필드가 손상되었습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.catalogFields");
   }
   const catalog = parsed as SqliteRecoveryCatalog;
   if (catalog.kind !== SQLITE_CATALOG_KIND || catalog.version !== SQLITE_CATALOG_VERSION ||
@@ -1286,11 +1282,11 @@ function parseSqliteCatalog(raw: string | null): SqliteRecoveryCatalog {
     !Array.isArray(catalog.entries) ||
     catalog.entries.length > STUDIO_BG3D_SHOT_BATCH_RECOVERY_MAX_JOBS ||
     !catalog.entries.every(isSqliteRecoveryCatalogEntry)) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 SQLite catalog가 유효하지 않습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.catalogInvalid");
   }
   const keys = catalog.entries.map(({ job }) => job.recoveryKey);
   if (new Set(keys).size !== keys.length) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 SQLite catalog Job 키가 중복되었습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.catalogDuplicateJobKey");
   }
   const artifactBytes = catalog.entries.reduce(
     (total, entry) => total + entry.job.totalArtifactBytes,
@@ -1304,7 +1300,7 @@ function parseSqliteCatalog(raw: string | null): SqliteRecoveryCatalog {
     serializeSqliteCatalog(catalog) !== raw) {
     throw new StudioBg3dShotBatchRecoveryError(
       "corrupt",
-      "컷 배치 SQLite catalog 원장 또는 canonical 직렬화가 손상되었습니다.",
+      "corrupt.catalogLedgerOrSerialization",
     );
   }
   return catalog;
@@ -1329,7 +1325,7 @@ function acquireProductRecoveryAssetStore(): Promise<StudioOpfsAssetStore> {
     if (!storage || typeof storage.getDirectory !== "function") {
       throw new StudioBg3dShotBatchRecoveryError(
         "storage-unavailable",
-        "OPFS를 사용할 수 없어 컷 배치 바이너리를 저장할 수 없습니다.",
+        "storageUnavailable.opfsUnavailable",
       );
     }
     return createStudioOpfsAssetStore({
@@ -1373,14 +1369,14 @@ async function putVerifiedBlob(
   const bytes = new Uint8Array(await awaitWithAbort(blob.arrayBuffer(), signal));
   throwIfAborted(signal);
   if (bytes.byteLength !== receipt.byteSize) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 artifact 바이트 원장이 변경되었습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.byteLedgerChanged");
   }
   const written = await store.put(bytes, { mime: blob.type });
   const expectedHash = `sha256:${receipt.sha256}` as const;
   if (written.ref.hash !== expectedHash || written.ref.bytes !== receipt.byteSize) {
     throw new StudioBg3dShotBatchRecoveryError(
       "corrupt",
-      "OPFS CAS가 컷 artifact SHA-256 영수증과 다른 주소를 반환했습니다.",
+      "corrupt.casAddressMismatch",
     );
   }
   return { hash: expectedHash, byteSize: receipt.byteSize, mime: blob.type };
@@ -1396,7 +1392,7 @@ async function persistSqliteArtifactRecord(
   for (const image of record.artifacts.images) {
     const receipt = receipts.get(`${record.shotId}:${image.pass}`);
     if (!receipt || receipt.kind !== "png") {
-      throw new StudioBg3dShotBatchRecoveryError("corrupt", "PNG artifact 영수증이 없습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.pngReceiptMissing");
     }
     images.push({
       shotId: image.shotId,
@@ -1413,7 +1409,7 @@ async function persistSqliteArtifactRecord(
   for (const psd of record.artifacts.layeredPsds) {
     const receipt = receipts.get(`${record.shotId}:layered-psd`);
     if (!receipt || receipt.kind !== "psd") {
-      throw new StudioBg3dShotBatchRecoveryError("corrupt", "PSD artifact 영수증이 없습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.psdReceiptMissing");
     }
     layeredPsds.push({
       shotId: psd.shotId,
@@ -1442,7 +1438,7 @@ async function persistSqliteArtifactRecord(
     createdAt: record.createdAt,
   };
   if (!isSqliteRecoveryArtifactRecord(persisted)) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 artifact CAS envelope 생성에 실패했습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.casEnvelopeFailed");
   }
   return persisted;
 }
@@ -1455,7 +1451,7 @@ async function readVerifiedCasBlob(
 ): Promise<Blob> {
   throwIfAborted(signal);
   if (ref.hash !== `sha256:${receipt.sha256}` || ref.byteSize !== receipt.byteSize) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 artifact CAS 참조가 영수증과 다릅니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.casReferenceMismatch");
   }
   let bytes: Uint8Array | null;
   try {
@@ -1463,13 +1459,13 @@ async function readVerifiedCasBlob(
   } catch (cause) {
     throw new StudioBg3dShotBatchRecoveryError(
       "corrupt",
-      "컷 artifact OPFS CAS 검증에 실패했습니다.",
+      "corrupt.casVerificationFailed",
       { cause },
     );
   }
   throwIfAborted(signal);
   if (!bytes || bytes.byteLength !== ref.byteSize) {
-    throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 artifact OPFS CAS 바이트가 없거나 잘렸습니다.");
+    throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.casBytesMissing");
   }
   return new Blob([Uint8Array.from(bytes).buffer], { type: ref.mime });
 }
@@ -1488,7 +1484,7 @@ async function hydrateSqliteArtifactRecords(
     for (const image of record.artifacts.images) {
       const receipt = receipts.get(`${record.shotId}:${image.pass}`);
       if (!receipt || receipt.kind !== "png") {
-        throw new StudioBg3dShotBatchRecoveryError("corrupt", "저장된 PNG artifact 영수증이 없습니다.");
+        throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.storedPngReceiptMissing");
       }
       images.push({
         shotId: image.shotId,
@@ -1505,7 +1501,7 @@ async function hydrateSqliteArtifactRecords(
     for (const psd of record.artifacts.layeredPsds) {
       const receipt = receipts.get(`${record.shotId}:layered-psd`);
       if (!receipt || receipt.kind !== "psd") {
-        throw new StudioBg3dShotBatchRecoveryError("corrupt", "저장된 PSD artifact 영수증이 없습니다.");
+        throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.storedPsdReceiptMissing");
       }
       layeredPsds.push({
         shotId: psd.shotId,
@@ -1700,7 +1696,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
           (rawUsage === undefined && rawJobs.length > 0)) {
           throw new StudioBg3dShotBatchRecoveryError(
             "corrupt",
-            "만료된 컷 배치 복구 데이터를 안전하게 정리할 수 없습니다.",
+            "corrupt.expiredCleanupUnsafe",
           );
         }
         const parsedJobs = rawJobs as JobRecord[];
@@ -1728,7 +1724,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         if ([...declaredArtifactKeys].some((key) => !actualStringKeys.has(key))) {
           throw new StudioBg3dShotBatchRecoveryError(
             "corrupt",
-            "컷 배치 Job이 참조하는 artifact가 저장소에 없습니다.",
+            "corrupt.jobArtifactMissing",
           );
         }
         const orphanArtifactKeys = parsedArtifacts
@@ -1744,7 +1740,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
             storageBytes !== job.artifactStorageBytes) {
             throw new StudioBg3dShotBatchRecoveryError(
               "corrupt",
-              "컷 배치 artifact와 Job 사용량 원장이 일치하지 않습니다.",
+              "corrupt.artifactJobUsageMismatch",
             );
           }
         }
@@ -1758,7 +1754,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
           retainedJobCount > STUDIO_BG3D_SHOT_BATCH_RECOVERY_MAX_JOBS) {
           throw new StudioBg3dShotBatchRecoveryError(
             "corrupt",
-            "컷 배치 복구 저장소 사용량이 origin 예산을 벗어났습니다.",
+            "corrupt.usageOriginBudgetExceeded",
           );
         }
         const usage = rawUsage === undefined ? emptyUsage(now) : rawUsage;
@@ -1793,7 +1789,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         if (cause instanceof StudioBg3dShotBatchRecoveryError) throw cause;
         throw new StudioBg3dShotBatchRecoveryError(
           "storage-unavailable",
-          "만료된 컷 배치 복구 데이터를 정리하지 못했습니다.",
+          "storageUnavailable.expiredCleanupFailed",
           { cause },
         );
       }
@@ -1858,23 +1854,23 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         const created = rawJob === undefined;
         let job = created ? newJob(plan, sourceRevision, now) : rawJob as JobRecord;
         if (!isJobRecord(job, plan)) {
-          throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 복구 Job이 손상되었습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.jobCorrupt");
         }
         if (job.sourceRevision !== sourceRevision) {
-          throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 source snapshot이 현재 계획과 다릅니다.");
+          throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.sourceSnapshotMismatch");
         }
         const existingLease = rawLease === undefined ? null : rawLease;
         if (existingLease !== null && !isLeaseRecord(existingLease, plan.resumeKey)) {
-          throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 복구 lease가 손상되었습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.leaseCorrupt");
         }
         if (existingLease && existingLease.expiresAt > now && existingLease.ownerId !== this.ownerId) {
           throw new StudioBg3dShotBatchRecoveryError(
             "busy",
-            "다른 탭에서 같은 컷 배치 작업을 실행 중입니다.",
+            "busy.otherTab",
           );
         }
         if (rawUsage !== undefined && !isUsageRecord(rawUsage)) {
-          throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 저장소 사용량 원장이 손상되었습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.storageUsageLedger");
         }
         const usage = rawUsage === undefined ? emptyUsage(now) : rawUsage;
         let nextUsage = usage;
@@ -1884,7 +1880,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
               STUDIO_BG3D_SHOT_BATCH_RECOVERY_ORIGIN_MAX_BYTES) {
             throw new StudioBg3dShotBatchRecoveryError(
               "budget-exceeded",
-              "컷 배치 복구 Job 수 또는 구조체 사용량이 origin 예산을 벗어났습니다.",
+              "budgetExceeded.jobCountOrigin",
             );
           }
           nextUsage = {
@@ -1939,7 +1935,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         if (cause instanceof StudioBg3dShotBatchRecoveryError || isAbortError(cause)) throw cause;
         throw new StudioBg3dShotBatchRecoveryError(
           "storage-unavailable",
-          "컷 배치 복구 저장소를 읽을 수 없습니다.",
+          "storageUnavailable.storeReadFailed",
           { cause },
         );
       } finally {
@@ -1964,17 +1960,17 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
           STUDIO_BG3D_SHOT_BATCH_RECOVERY_ORIGIN_MAX_BYTES) {
         throw new StudioBg3dShotBatchRecoveryError(
           "budget-exceeded",
-          "현재 탭의 컷 배치 복구 Job 수 또는 구조체 사용량이 origin 예산을 벗어났습니다.",
+          "budgetExceeded.memoryJobCountOrigin",
         );
       }
       record = { job, lease: null, artifacts: new Map() };
       memoryRecords.set(plan.resumeKey, record);
     }
     if (!isJobRecord(record.job, plan) || record.job.sourceRevision !== sourceRevision) {
-      throw new StudioBg3dShotBatchRecoveryError("corrupt", "메모리 컷 배치 복구 Job이 손상되었습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.memoryJobCorrupt");
     }
     if (record.lease && record.lease.expiresAt > now && record.lease.ownerId !== this.ownerId) {
-      throw new StudioBg3dShotBatchRecoveryError("busy", "같은 탭의 다른 편집기가 컷 배치를 실행 중입니다.");
+      throw new StudioBg3dShotBatchRecoveryError("busy", "busy.sameTabEditor");
     }
     const fence = (record.lease?.fence ?? 0) + 1;
     const lease: LeaseRecord = {
@@ -2039,7 +2035,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
       verifyStudioBg3dShotBatchSourceRevision(verifiedPlan, sourceRevision),
       options.signal,
     )) {
-      throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 Plan 또는 source snapshot 검증에 실패했습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.planVerificationFailed");
     }
     throwIfAborted(options.signal);
     const factory = this.factory();
@@ -2048,7 +2044,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         verifiedPlan,
         sourceRevision,
         verifiedPlan.scope.durability === "durable"
-          ? "IndexedDB를 사용할 수 없어 현재 탭 메모리로 복구 범위를 낮췄습니다."
+          ? resolveStudioBg3dShotBatchRecoveryDegradedReason("indexedDbUnavailable")
           : null,
       );
       throwIfAborted(options.signal);
@@ -2114,7 +2110,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
           )) {
           throw new StudioBg3dShotBatchRecoveryError(
             "corrupt",
-            "저장된 컷 배치 Plan 또는 source snapshot digest가 손상되었습니다.",
+            "corrupt.planDigestCorrupt",
           );
         }
         throwIfAborted(options.signal);
@@ -2156,7 +2152,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
       const session = this.memoryAcquire(
         verifiedPlan,
         sourceRevision,
-        "브라우저 저장 용량이 부족해 현재 탭 메모리로 복구 범위를 낮췄습니다.",
+        resolveStudioBg3dShotBatchRecoveryDegradedReason("quotaExceeded"),
       );
       throwIfAborted(options.signal);
       this.startHeartbeat(session);
@@ -2167,19 +2163,19 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
   private memoryRecord(session: StudioBg3dShotBatchRecoverySession): MemoryRecord {
     const record = memoryRecords.get(session.plan.resumeKey);
     if (!record || !record.lease) {
-      throw new StudioBg3dShotBatchRecoveryError("lease-lost", "메모리 컷 배치 lease가 없습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("lease-lost", "leaseLost.memoryMissing");
     }
     if (record.lease.ownerId !== session.ownerId ||
       record.lease.leaseToken !== session.leaseToken || record.lease.fence !== session.fence) {
       throw new StudioBg3dShotBatchRecoveryError(
         "lease-lost",
-        "같은 탭의 다른 편집기가 메모리 컷 배치를 이어받았습니다.",
+        "leaseLost.memoryTakenOver",
       );
     }
     if (record.job.revision !== session.revision) {
       throw new StudioBg3dShotBatchRecoveryError(
         "cas-conflict",
-        "메모리 컷 배치 복구 상태가 변경되었습니다.",
+        "casConflict.memoryStateChanged",
       );
     }
     const now = this.now();
@@ -2208,7 +2204,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
     throwIfAborted(signal);
     const factory = this.factory();
     if (!factory) {
-      throw new StudioBg3dShotBatchRecoveryError("storage-unavailable", "IndexedDB가 사라졌습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("storage-unavailable", "storageUnavailable.indexedDbGone");
     }
     return withDatabase(factory, async (database) => {
       const transaction = readwriteTransaction(database);
@@ -2228,7 +2224,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         throwIfAborted(signal);
         if (!isJobRecord(rawJob, session.plan) || !isLeaseRecord(rawLease, session.plan.resumeKey) ||
           !isUsageRecord(rawUsage)) {
-          throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 복구 저장소가 손상되었습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.storeCorrupt");
         }
         const now = this.now();
         assertLeaseAndRevision(session, rawJob, rawLease, now);
@@ -2262,7 +2258,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         if (cause instanceof StudioBg3dShotBatchRecoveryError || isAbortError(cause)) throw cause;
         throw new StudioBg3dShotBatchRecoveryError(
           "storage-unavailable",
-          "컷 배치 복구 트랜잭션에 실패했습니다.",
+          "storageUnavailable.transactionFailed",
           { cause },
         );
       } finally {
@@ -2295,7 +2291,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         existing.lease.leaseToken !== session.leaseToken)) {
       throw new StudioBg3dShotBatchRecoveryError(
         "busy",
-        "같은 탭의 다른 편집기가 메모리 컷 배치를 실행 중입니다.",
+        "busy.memoryOtherEditor",
       );
     }
     const records = new Map<string, ArtifactRecord>();
@@ -2325,7 +2321,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         pendingArtifactStorageBytes > STUDIO_BG3D_SHOT_BATCH_RECOVERY_ORIGIN_MAX_BYTES) {
       throw new StudioBg3dShotBatchRecoveryError(
         "budget-exceeded",
-        "현재 탭의 컷 배치 복구 메모리가 origin 예산을 벗어났습니다.",
+        "budgetExceeded.memoryOrigin",
       );
     }
     this.stopHeartbeat(session.plan.resumeKey);
@@ -2363,8 +2359,8 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
     session.mode = "memory";
     session.persistence = "unknown";
     session.degradedReason = isQuotaError(cause)
-      ? "브라우저 저장 용량이 부족해 현재 탭 메모리로 복구 범위를 낮췄습니다."
-      : "IndexedDB 오류로 현재 탭 메모리에서만 복구합니다.";
+      ? resolveStudioBg3dShotBatchRecoveryDegradedReason("quotaExceeded")
+      : resolveStudioBg3dShotBatchRecoveryDegradedReason("indexedDbError");
     session.fence = lease.fence;
     session.leaseToken = lease.leaseToken;
     session.artifactStorageBytes = artifactStorageBytes;
@@ -2379,7 +2375,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
     pendingArtifactStorageBytes = 0,
   ): Promise<JobRecord> {
     if (session.released) {
-      throw new StudioBg3dShotBatchRecoveryError("lease-lost", "이미 해제된 컷 배치 session입니다.");
+      throw new StudioBg3dShotBatchRecoveryError("lease-lost", "leaseLost.sessionReleased");
     }
     if (session.mode === "memory") return await memory();
     try {
@@ -2435,7 +2431,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
   ): Promise<StudioBg3dShotBatchRunToken> {
     const runId = randomId("bg3d-batch-run");
     const nextQueue = startStudioBg3dShotBatchQueueItem(session.queue, shotId);
-    if (!nextQueue) throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "컷 시작 전이가 올바르지 않습니다.");
+    if (!nextQueue) throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "casConflict.startTransition");
     const activeRun: ActiveRun = { shotId, runId, fence: session.fence };
     const nextJob = await this.mutateWithDegradation(
       session,
@@ -2474,7 +2470,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
     if (!session.activeRun || session.activeRun.shotId !== token.shotId ||
       session.activeRun.runId !== token.runId || session.activeRun.fence !== token.fence ||
       session.revision !== token.revision) {
-      throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "오래된 컷 실행 결과를 커밋할 수 없습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "casConflict.staleCommit");
     }
   }
 
@@ -2510,13 +2506,13 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         typeof receipt.isLocallyCurrent !== "function") {
         throw new StudioBg3dShotBatchRecoveryError(
           "access-denied",
-          "현재 작품 접근 권한으로 컷 artifact를 커밋할 수 없습니다.",
+          "accessDenied.scopeDenied",
         );
       }
       if (usedAuthorizationReceipts.has(receipt)) {
         throw new StudioBg3dShotBatchRecoveryError(
           "access-denied",
-          "컷 artifact 커밋 권한 영수증을 다시 사용할 수 없습니다.",
+          "accessDenied.receiptReused",
         );
       }
       usedAuthorizationReceipts.add(receipt);
@@ -2527,7 +2523,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
       return assertCurrent;
     };
     const nextQueue = succeedStudioBg3dShotBatchQueueItem(session.queue, token.shotId);
-    if (!nextQueue) throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "컷 완료 전이가 올바르지 않습니다.");
+    if (!nextQueue) throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "casConflict.completeTransition");
     const key = artifactKey(session.plan.resumeKey, token.shotId);
     const createdAt = this.now();
     const record = withArtifactStorageBytes({
@@ -2547,10 +2543,10 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         return this.durableMutate(session, ({ job, usage, now }) => {
           if (!job.activeRun || job.activeRun.runId !== token.runId ||
             job.activeRun.fence !== token.fence || job.activeRun.shotId !== token.shotId) {
-            throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "컷 실행 fence가 변경되었습니다.");
+            throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "casConflict.fenceChanged");
           }
           if (job.artifactKeys.includes(key)) {
-            throw new StudioBg3dShotBatchRecoveryError("corrupt", "같은 컷 artifact가 이미 저장되어 있습니다.");
+            throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.duplicateArtifact");
           }
           const totalArtifactBytes = job.totalArtifactBytes + verified.totalBytes;
           const artifactCount = job.artifactCount + verified.artifactCount;
@@ -2560,7 +2556,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
           if (totalArtifactBytes > STUDIO_BG3D_SHOT_BATCH_MAX_TOTAL_BYTES) {
             throw new StudioBg3dShotBatchRecoveryError(
               "budget-exceeded",
-              "현재 컷 배치 artifact가 Job 저장 예산을 벗어났습니다.",
+              "budgetExceeded.artifactJobStorage",
             );
           }
           if (originBytes + originStructuredBytes >
@@ -2601,7 +2597,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         assertCurrentAuthorization?.();
         const memory = this.memoryRecord(session);
         if (memory.job.artifactKeys.includes(key)) {
-          throw new StudioBg3dShotBatchRecoveryError("corrupt", "같은 컷 artifact가 이미 저장되어 있습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.duplicateArtifact");
         }
         const totalArtifactBytes = memory.job.totalArtifactBytes + verified.totalBytes;
         const artifactStorageBytes = memory.job.artifactStorageBytes + record.storageBytes;
@@ -2609,7 +2605,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
           memoryStorageBytesExcluding(session.plan.resumeKey) + totalArtifactBytes +
             memory.job.jobStorageBytes + artifactStorageBytes >
             STUDIO_BG3D_SHOT_BATCH_RECOVERY_ORIGIN_MAX_BYTES) {
-          throw new StudioBg3dShotBatchRecoveryError("budget-exceeded", "컷 배치 메모리 예산을 벗어났습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("budget-exceeded", "budgetExceeded.memoryExceeded");
         }
         memory.artifacts.set(key, record);
         memory.job = copyJob(memory.job, {
@@ -2643,7 +2639,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
   ): Promise<void> {
     this.assertRun(session, token);
     const nextQueue = failStudioBg3dShotBatchQueueItem(session.queue, token.shotId, failureCode);
-    if (!nextQueue) throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "컷 실패 전이가 올바르지 않습니다.");
+    if (!nextQueue) throw new StudioBg3dShotBatchRecoveryError("cas-conflict", "casConflict.failTransition");
     const nextJob = await this.mutateWithDegradation(
       session,
       () => this.durableMutate(session, ({ job, now }) => ({
@@ -2703,7 +2699,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
     if (!queueIsComplete(session.queue) || session.activeRun !== null) {
       throw new StudioBg3dShotBatchRecoveryError(
         "cas-conflict",
-        "모든 컷 artifact가 완료되기 전에는 다운로드 보존 상태로 전환할 수 없습니다.",
+        "casConflict.downloadGate",
       );
     }
     const nextJob = await this.mutateWithDegradation(
@@ -2747,7 +2743,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         const raw = await requestResult<unknown>(store.get(session.plan.resumeKey));
         if (!isLeaseRecord(raw, session.plan.resumeKey) || raw.ownerId !== session.ownerId ||
           raw.leaseToken !== session.leaseToken || raw.fence !== session.fence) {
-          throw new StudioBg3dShotBatchRecoveryError("lease-lost", "컷 배치 lease를 갱신할 수 없습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("lease-lost", "leaseLost.renewFailed");
         }
         const now = this.now();
         await requestResult(store.put({
@@ -2762,7 +2758,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         if (cause instanceof StudioBg3dShotBatchRecoveryError) throw cause;
         throw new StudioBg3dShotBatchRecoveryError(
           "storage-unavailable",
-          "컷 배치 lease를 갱신하지 못했습니다.",
+          "storageUnavailable.leaseRenewFailed",
           { cause },
         );
       }
@@ -2812,7 +2808,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
     const factory = this.factory();
     if (!factory) throw new StudioBg3dShotBatchRecoveryError(
       "storage-unavailable",
-      "IndexedDB가 없어 durable 컷 배치 복구 데이터를 삭제할 수 없습니다.",
+      "storageUnavailable.indexedDbMissingForDiscard",
     );
     await withDatabase(factory, async (database) => {
       const transaction = readwriteTransaction(database);
@@ -2829,7 +2825,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
         ]);
         if (!isJobRecord(rawJob, session.plan) || !isLeaseRecord(rawLease, session.plan.resumeKey) ||
           !isUsageRecord(rawUsage)) {
-          throw new StudioBg3dShotBatchRecoveryError("corrupt", "삭제할 컷 배치 복구 Job이 손상되었습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.discardJobCorrupt");
         }
         assertLeaseAndRevision(session, rawJob, rawLease, this.now());
         const structuredBytes = rawJob.jobStorageBytes + rawJob.artifactStorageBytes;
@@ -2838,7 +2834,7 @@ class LegacyIndexedDbStudioBg3dShotBatchRecoveryStore
           rawUsage.structuredBytes < structuredBytes || rawUsage.jobCount < 1) {
           throw new StudioBg3dShotBatchRecoveryError(
             "corrupt",
-            "컷 배치 복구 사용량 원장이 삭제 대상보다 작습니다.",
+            "corrupt.usageLedgerTooSmallForDiscard",
           );
         }
         await Promise.all([
@@ -2931,7 +2927,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       if (cause instanceof StudioBg3dShotBatchRecoveryError) throw cause;
       throw new StudioBg3dShotBatchRecoveryError(
         "storage-unavailable",
-        "공유 V12 SQLite에서 컷 배치 복구 catalog를 읽지 못했습니다.",
+        "storageUnavailable.sqliteCatalogReadFailed",
         { cause },
       );
     }
@@ -2953,7 +2949,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       if (isQuotaError(cause)) throw cause;
       throw new StudioBg3dShotBatchRecoveryError(
         "storage-unavailable",
-        "공유 V12 SQLite에 컷 배치 복구 catalog를 커밋하지 못했습니다.",
+        "storageUnavailable.sqliteCatalogCommitFailed",
         { cause },
       );
     }
@@ -3020,7 +3016,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
     records: readonly ArtifactRecord[],
   ): StudioBg3dShotBatchRecoverySession {
     if (!entry.lease) {
-      throw new StudioBg3dShotBatchRecoveryError("lease-lost", "컷 배치 SQLite lease가 없습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("lease-lost", "leaseLost.sqliteMissing");
     }
     assertLeaseAndRevision(source, entry.job, entry.lease, this.now());
     const aggregate = aggregateArtifacts(records);
@@ -3066,7 +3062,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       if (!artifact) {
         throw new StudioBg3dShotBatchRecoveryError(
           "corrupt",
-          "컷 배치 Job이 참조하는 신규 artifact가 메모리에 없습니다.",
+          "corrupt.newArtifactMissingInMemory",
         );
       }
       artifacts.push(await persistSqliteArtifactRecord(artifact, assetStore, signal));
@@ -3077,7 +3073,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       artifacts,
     };
     if (!isSqliteRecoveryCatalogEntry(entry)) {
-      throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 SQLite entry 생성에 실패했습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.sqliteEntryCreateFailed");
     }
     return entry;
   }
@@ -3103,7 +3099,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       typeof receipt.isLocallyCurrent !== "function") {
       throw new StudioBg3dShotBatchRecoveryError(
         "access-denied",
-        "현재 작품 접근 권한으로 컷 artifact를 커밋할 수 없습니다.",
+        "accessDenied.scopeDenied",
       );
     }
     assertAuthorizationReceipt(receipt, this.now());
@@ -3125,7 +3121,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
     if (!this.runExclusive) {
       throw new StudioBg3dShotBatchRecoveryError(
         "storage-unavailable",
-        "Web Locks가 없어 SQLite 컷 배치 CAS를 안전하게 실행할 수 없습니다.",
+        "storageUnavailable.webLocksUnavailable",
       );
     }
     return this.runExclusive(async () => {
@@ -3143,9 +3139,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
         entry.job.sourceRevision !== session.sourceRevision) {
         throw new StudioBg3dShotBatchRecoveryError(
           entry ? "corrupt" : "lease-lost",
-          entry
-            ? "컷 배치 SQLite Job이 현재 Plan과 다릅니다."
-            : "컷 배치 SQLite Job이 없거나 만료되었습니다.",
+          entry ? "corrupt.sqliteJobPlanMismatch" : "leaseLost.sqliteJobMissingOrExpired",
         );
       }
       const records = await this.artifactRecordsForActiveSession(
@@ -3213,7 +3207,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       const memory = await this.delegate.acquire(plan, sourceRevision, options);
       if (plan.scope.durability === "durable") {
         memory.degradedReason =
-          "Web Locks가 없어 공유 SQLite의 탭 간 CAS를 보장할 수 없어 현재 탭 메모리에서만 복구합니다.";
+          resolveStudioBg3dShotBatchRecoveryDegradedReason("webLocksUnavailable");
       }
       this.startHeartbeat(memory);
       return memory;
@@ -3223,7 +3217,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       verifyStudioBg3dShotBatchSourceRevision(verifiedPlan, sourceRevision),
       options.signal,
     )) {
-      throw new StudioBg3dShotBatchRecoveryError("corrupt", "컷 배치 Plan 또는 source snapshot 검증에 실패했습니다.");
+      throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.planVerificationFailed");
     }
     const session = await this.runExclusive(async () => {
       throwIfAborted(options.signal);
@@ -3242,7 +3236,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
           existing.job.sourceRevision !== sourceRevision) {
           throw new StudioBg3dShotBatchRecoveryError(
             "corrupt",
-            "저장된 컷 배치 SQLite Job이 현재 Plan 또는 source snapshot과 다릅니다.",
+            "corrupt.sqliteJobMismatch",
           );
         }
         await assetStore.setOwnerRefs(
@@ -3262,7 +3256,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
         const acquired = await this.delegate.acquire(verifiedPlan, sourceRevision, options);
         const updatedRecord = installed.target();
         if (!updatedRecord) {
-          throw new StudioBg3dShotBatchRecoveryError("corrupt", "SQLite acquire 결과 Job이 없습니다.");
+          throw new StudioBg3dShotBatchRecoveryError("corrupt", "corrupt.sqliteAcquireJobMissing");
         }
         const replacement = await this.entryFromMemoryRecord(
           updatedRecord,
@@ -3351,7 +3345,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       const record = memoryRecords.get(session.plan.resumeKey);
       if (!record?.lease || record.lease.ownerId !== session.ownerId ||
         record.lease.leaseToken !== session.leaseToken || record.lease.fence !== session.fence) {
-        throw new StudioBg3dShotBatchRecoveryError("lease-lost", "메모리 컷 배치 lease를 갱신할 수 없습니다.");
+        throw new StudioBg3dShotBatchRecoveryError("lease-lost", "leaseLost.memoryRenewFailed");
       }
       const now = this.now();
       record.lease = { ...record.lease, heartbeatAt: now, expiresAt: now + STUDIO_BG3D_SHOT_BATCH_RECOVERY_LEASE_MS };
@@ -3365,7 +3359,7 @@ class SqliteOpfsStudioBg3dShotBatchRecoveryStore
       if (!entry?.lease || entry.lease.ownerId !== session.ownerId ||
         entry.lease.leaseToken !== session.leaseToken || entry.lease.fence !== session.fence ||
         entry.job.revision !== session.revision || entry.lease.expiresAt <= this.now()) {
-        throw new StudioBg3dShotBatchRecoveryError("lease-lost", "SQLite 컷 배치 lease를 갱신할 수 없습니다.");
+        throw new StudioBg3dShotBatchRecoveryError("lease-lost", "leaseLost.sqliteRenewFailed");
       }
       const now = this.now();
       const nextEntry: SqliteRecoveryCatalogEntry = {

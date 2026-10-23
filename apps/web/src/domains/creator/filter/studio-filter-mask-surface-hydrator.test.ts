@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import {
   StudioFilterMaskSurfaceHydrator,
 } from "./studio-filter-mask-surface-hydrator";
+import {
+  StudioRasterReplayRuntimeError,
+} from "../live/studio-crdt-raster-replay-runtime";
 
 import {
   STUDIO_RASTER_CRDT_VERSION,
@@ -219,5 +222,45 @@ describe("StudioFilterMaskSurfaceHydrator", () => {
     expect(createObjectUrl).not.toHaveBeenCalled();
     expect(revokeObjectUrl).not.toHaveBeenCalled();
     hydrator.dispose();
+  });
+
+  it("classifies replay failures by structured code, not message text (A4 D4 R12)", async () => {
+    const scenarios = [
+      {
+        error: new StudioRasterReplayRuntimeError("resident-memory-budget"),
+        code: "resource",
+        message: "표시 타일, 디코드 자산, 동시 다운로드 및 해시 복사본이 래스터 재생 메모리 예산을 초과했습니다.",
+      },
+      {
+        error: new StudioRasterReplayRuntimeError("asset-download-failed", { assetId: "asset-1" }),
+        code: "network",
+        message: "래스터 자산 asset-1 다운로드에 실패했습니다.",
+      },
+      {
+        error: new StudioRasterReplayRuntimeError("invalid-png-signature", { assetId: "asset-1" }),
+        code: "invalid",
+        message: "래스터 자산 asset-1에 PNG 서명이 없습니다.",
+      },
+    ] as const;
+    for (const scenario of scenarios) {
+      const hydrator = new StudioFilterMaskSurfaceHydrator({
+        replay: vi.fn(async () => {
+          throw scenario.error;
+        }),
+        materializePng: vi.fn(async () => new Blob(["png"], { type: "image/png" })),
+        createObjectUrl: vi.fn(() => "blob:must-not-exist"),
+      });
+      hydrator.setScope("work-a", {
+        getRasterOperationLogAsync: vi.fn(async () => log()),
+      });
+      hydrator.observe([SURFACE_ID]);
+      await vi.waitFor(() => expect(hydrator.get(SURFACE_ID)?.status).toBe("error"));
+      expect(hydrator.get(SURFACE_ID)).toMatchObject({
+        status: "error",
+        code: scenario.code,
+        message: scenario.message,
+      });
+      hydrator.dispose();
+    }
   });
 });

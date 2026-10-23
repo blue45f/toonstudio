@@ -71,16 +71,16 @@ function crc32(bytes: Uint8Array): number {
 export function createZipReader(source: StudioPackageArchiveSource, limits: StudioProjectArchiveLimits): ZipReader {
   if (source instanceof Blob) {
     if (source.size <= 0 || source.size > limits.maxArchiveBytes) {
-      fail("ARCHIVE_SIZE_LIMIT", "프로젝트 archive 크기가 안전 한도를 넘었습니다.");
+      fail("ARCHIVE_SIZE_LIMIT", "archiveTooLarge");
     }
     return {
       size: source.size,
       async read(offset, length) {
         if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > source.size) {
-          fail("ARCHIVE_INVALID", "ZIP 데이터 범위가 올바르지 않습니다.");
+          fail("ARCHIVE_INVALID", "zipRangeInvalid");
         }
         const bytes = new Uint8Array(await source.slice(offset, offset + length).arrayBuffer());
-        if (bytes.byteLength !== length) fail("ARCHIVE_INVALID", "ZIP 데이터를 모두 읽지 못했습니다.");
+        if (bytes.byteLength !== length) fail("ARCHIVE_INVALID", "zipReadIncomplete");
         return bytes;
       },
       slice(offset, length, mimeType) {
@@ -89,19 +89,19 @@ export function createZipReader(source: StudioPackageArchiveSource, limits: Stud
     };
   }
   if (!(source instanceof Uint8Array) && !(source instanceof ArrayBuffer)) {
-    fail("ARCHIVE_INVALID", "지원하지 않는 프로젝트 archive 바이트 형식입니다.");
+    fail("ARCHIVE_INVALID", "unsupportedArchiveBytes");
   }
   const bytes = source instanceof Uint8Array
     ? source.slice()
     : new Uint8Array(source.slice(0));
   if (bytes.byteLength <= 0 || bytes.byteLength > limits.maxArchiveBytes) {
-    fail("ARCHIVE_SIZE_LIMIT", "프로젝트 archive 크기가 안전 한도를 넘었습니다.");
+    fail("ARCHIVE_SIZE_LIMIT", "archiveTooLarge");
   }
   return {
     size: bytes.byteLength,
     async read(offset, length) {
       if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > bytes.byteLength) {
-        fail("ARCHIVE_INVALID", "ZIP 데이터 범위가 올바르지 않습니다.");
+        fail("ARCHIVE_INVALID", "zipRangeInvalid");
       }
       return bytes.slice(offset, offset + length);
     },
@@ -121,7 +121,7 @@ function validateImportedPath(value: string, limits: StudioProjectArchiveLimits)
     || /^[A-Za-z]:/u.test(value)
     || textEncoder.encode(value).byteLength > limits.maxPathBytes
   ) {
-    fail("PATH_INVALID", "ZIP 안에 안전하지 않은 파일 경로가 있습니다.", { path: value });
+    fail("PATH_INVALID", "zipUnsafePath", { path: value });
   }
   const segments = value.split("/");
   if (segments.some((segment) =>
@@ -131,29 +131,29 @@ function validateImportedPath(value: string, limits: StudioProjectArchiveLimits)
     || segment.trim() !== segment
     || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(segment)
   )) {
-    fail("PATH_INVALID", "ZIP 파일 경로에 순회 또는 빈 구간이 있습니다.", { path: value });
+    fail("PATH_INVALID", "zipPathTraversal", { path: value });
   }
   return value;
 }
 
 export async function parseZipEntries(reader: ZipReader, limits: StudioProjectArchiveLimits): Promise<ParsedZipEntry[]> {
-  if (reader.size < ZIP_EOCD_BYTES) fail("ARCHIVE_INVALID", "ZIP 종료 레코드를 찾을 수 없습니다.");
+  if (reader.size < ZIP_EOCD_BYTES) fail("ARCHIVE_INVALID", "zipEndRecordMissing");
   const eocdOffset = reader.size - ZIP_EOCD_BYTES;
   const eocd = await reader.read(eocdOffset, ZIP_EOCD_BYTES);
   if (uint32(eocd, 0) !== ZIP_EOCD_SIGNATURE || uint16(eocd, 20) !== 0) {
-    fail("ARCHIVE_INVALID", "주석 또는 후행 데이터가 있는 ZIP은 가져올 수 없습니다.");
+    fail("ARCHIVE_INVALID", "zipTrailingData");
   }
   if (uint16(eocd, 4) !== 0 || uint16(eocd, 6) !== 0) {
-    fail("ARCHIVE_INVALID", "분할 ZIP은 가져올 수 없습니다.");
+    fail("ARCHIVE_INVALID", "zipSplitUnsupported");
   }
   const entryCount = uint16(eocd, 10);
   if (entryCount !== uint16(eocd, 8) || entryCount < 2 || entryCount > limits.maxAttachments + 2) {
-    fail("ZIP_ENTRY_COUNT_LIMIT", "ZIP 파일 수가 프로젝트 archive 안전 한도를 벗어났습니다.");
+    fail("ZIP_ENTRY_COUNT_LIMIT", "entryCountExceeded");
   }
   const centralBytes = uint32(eocd, 12);
   const centralOffset = uint32(eocd, 16);
   if (centralOffset + centralBytes !== eocdOffset || centralBytes > entryCount * (ZIP_CENTRAL_HEADER_BYTES + limits.maxPathBytes)) {
-    fail("ARCHIVE_INVALID", "ZIP 중앙 디렉터리 범위가 올바르지 않습니다.");
+    fail("ARCHIVE_INVALID", "zipCentralRangeInvalid");
   }
   const central = await reader.read(centralOffset, centralBytes);
   const entries: ParsedZipEntry[] = [];
@@ -167,7 +167,7 @@ export async function parseZipEntries(reader: ZipReader, limits: StudioProjectAr
   );
   for (let index = 0; index < entryCount; index += 1) {
     if (cursor + ZIP_CENTRAL_HEADER_BYTES > central.length || uint32(central, cursor) !== ZIP_CENTRAL_SIGNATURE) {
-      fail("ARCHIVE_INVALID", "ZIP 중앙 디렉터리 항목이 손상되었습니다.");
+      fail("ARCHIVE_INVALID", "zipCentralEntryCorrupt");
     }
     const flags = uint16(central, cursor + 8);
     const method = uint16(central, cursor + 10);
@@ -180,30 +180,30 @@ export async function parseZipEntries(reader: ZipReader, limits: StudioProjectAr
     const localHeaderOffset = uint32(central, cursor + 42);
     const next = cursor + ZIP_CENTRAL_HEADER_BYTES + nameBytes + extraBytes + commentBytes;
     if (next > central.length || flags !== ZIP_UTF8_FLAG || extraBytes !== 0 || commentBytes !== 0) {
-      fail("ARCHIVE_INVALID", "ZIP 플래그, extra field 또는 comment가 허용된 형식이 아닙니다.");
+      fail("ARCHIVE_INVALID", "zipFlagsUnsupported");
     }
     if (method !== ZIP_STORE_METHOD) {
       if (uncompressedBytes > Math.max(compressedBytes * 10, maxZipEntryBytes)) {
-        fail("ZIP_BOMB", "압축 해제 크기가 비정상적으로 큰 ZIP 항목을 차단했습니다.");
+        fail("ZIP_BOMB", "entryRatioBlocked");
       }
-      fail("ZIP_COMPRESSION_UNSUPPORTED", "압축된 ZIP 항목은 프로젝트 archive에서 지원하지 않습니다.");
+      fail("ZIP_COMPRESSION_UNSUPPORTED", "compressedEntryUnsupported");
     }
     if (compressedBytes !== uncompressedBytes || uncompressedBytes > maxZipEntryBytes) {
-      fail("ZIP_BOMB", "ZIP 항목의 압축 또는 크기 선언이 안전하지 않습니다.");
+      fail("ZIP_BOMB", "entryDeclarationUnsafe");
     }
     totalUncompressed += uncompressedBytes;
     if (totalUncompressed > limits.maxArchiveBytes) {
-      fail("ZIP_BOMB", "ZIP 전체 해제 크기가 안전 한도를 넘었습니다.");
+      fail("ZIP_BOMB", "totalDecompressedTooLarge");
     }
     let path: string;
     try {
       path = fatalTextDecoder.decode(central.subarray(cursor + ZIP_CENTRAL_HEADER_BYTES, cursor + ZIP_CENTRAL_HEADER_BYTES + nameBytes));
     } catch {
-      fail("PATH_INVALID", "ZIP 파일명이 올바른 UTF-8이 아닙니다.");
+      fail("PATH_INVALID", "zipNameNotUtf8");
     }
     path = validateImportedPath(path, limits);
     const comparisonKey = path.toLowerCase();
-    if (seen.has(comparisonKey)) fail("DUPLICATE_PATH", "ZIP 안에 중복 파일 경로가 있습니다.", { path });
+    if (seen.has(comparisonKey)) fail("DUPLICATE_PATH", "zipDuplicatePath", { path });
     seen.add(comparisonKey);
 
     const localHeader = await reader.read(localHeaderOffset, ZIP_LOCAL_HEADER_BYTES + nameBytes);
@@ -217,15 +217,15 @@ export async function parseZipEntries(reader: ZipReader, limits: StudioProjectAr
       || uint16(localHeader, 26) !== nameBytes
       || uint16(localHeader, 28) !== 0
     ) {
-      fail("ARCHIVE_INVALID", "ZIP local header와 중앙 디렉터리가 일치하지 않습니다.", { path });
+      fail("ARCHIVE_INVALID", "zipLocalCentralMismatch", { path });
     }
     let localName: string;
     try {
       localName = fatalTextDecoder.decode(localHeader.subarray(ZIP_LOCAL_HEADER_BYTES));
     } catch {
-      fail("PATH_INVALID", "ZIP local 파일명이 올바른 UTF-8이 아닙니다.", { path });
+      fail("PATH_INVALID", "zipLocalNameNotUtf8", { path });
     }
-    if (localName !== path) fail("ARCHIVE_INVALID", "ZIP local 파일명이 중앙 디렉터리와 다릅니다.", { path });
+    if (localName !== path) fail("ARCHIVE_INVALID", "zipLocalNameMismatch", { path });
     entries.push({
       path,
       crc32: expectedCrc,
@@ -236,23 +236,23 @@ export async function parseZipEntries(reader: ZipReader, limits: StudioProjectAr
     });
     cursor = next;
   }
-  if (cursor !== central.length) fail("ARCHIVE_INVALID", "ZIP 중앙 디렉터리 뒤에 해석되지 않은 데이터가 있습니다.");
+  if (cursor !== central.length) fail("ARCHIVE_INVALID", "zipCentralTrailingData");
   const localOrder = [...entries].sort((left, right) => left.localHeaderOffset - right.localHeaderOffset);
   let expectedOffset = 0;
   for (const entry of localOrder) {
     if (entry.localHeaderOffset !== expectedOffset || entry.dataOffset + entry.compressedBytes > centralOffset) {
-      fail("ARCHIVE_INVALID", "ZIP local 항목 사이에 숨겨진 데이터나 겹침이 있습니다.", { path: entry.path });
+      fail("ARCHIVE_INVALID", "zipLocalHiddenData", { path: entry.path });
     }
     expectedOffset = entry.dataOffset + entry.compressedBytes;
   }
-  if (expectedOffset !== centralOffset) fail("ARCHIVE_INVALID", "ZIP local 데이터와 중앙 디렉터리 사이에 숨겨진 데이터가 있습니다.");
+  if (expectedOffset !== centralOffset) fail("ARCHIVE_INVALID", "zipLocalCentralGap");
   return entries;
 }
 
 export async function readVerifiedEntry(reader: ZipReader, entry: ParsedZipEntry): Promise<Uint8Array> {
   const bytes = await reader.read(entry.dataOffset, entry.uncompressedBytes);
   if (crc32(bytes) !== entry.crc32) {
-    fail("CRC_MISMATCH", "ZIP 항목의 CRC-32 무결성 검사가 실패했습니다.", { path: entry.path });
+    fail("CRC_MISMATCH", "zipEntryCrcFailed", { path: entry.path });
   }
   return bytes;
 }

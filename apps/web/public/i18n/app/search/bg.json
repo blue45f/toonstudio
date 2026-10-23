@@ -78,11 +78,11 @@
   "search.explorer.time.hoursAgo": "преди {count}h",
   "search.explorer.time.daysAgo": "Преди {count}д",
   "search.explorer.loadMore": "Натоварвай още",
-  "search.explorer.suggestions.popular": "Popular searches",
-  "search.explorer.suggestions.genres": "Recommended genres",
-  "search.explorer.suggestions.searchFor": "Search for {query}",
-  "search.explorer.suggestions.genreFilter": "Narrow by genre {genre}",
-  "search.explorer.suggestions.loading": "Loading suggested searches",
-  "search.explorer.suggestions.error": "Couldn't load suggested searches. Please try again in a moment.",
-  "search.explorer.suggestions.empty": "No suggestions right now. Try typing a title, author, or tag."
+  "search.explorer.suggestions.popular": "Популярни търсения",
+  "search.explorer.suggestions.genres": "Препоръчани жанрове",
+  "search.explorer.suggestions.searchFor": "Търси {query}",
+  "search.explorer.suggestions.genreFilter": "Стесни по жанр {genre}",
+  "search.explorer.suggestions.loading": "Зареждане на предложените търсения",
+  "search.explorer.suggestions.error": "Предложените търсения не можаха да се заредят. Опитайте отново след малко.",
+  "search.explorer.suggestions.empty": "В момента няма предложения. Опитайте да въведете заглавие, автор или таг."
 }

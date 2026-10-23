@@ -6,6 +6,20 @@ import type {
   StudioProjectArchiveOrchestrationInput,
 } from "./studio-project-archive-orchestration-runtime";
 
+async function resolveProjectArchiveErrorOrFallback(
+  error: unknown,
+  fallback: string,
+): Promise<string> {
+  if (typeof error === "object" && error !== null && "code" in error && "variant" in error) {
+    const { resolveStudioProjectArchiveErrorFromCause } = await import(
+      "./status-i18n/studio-producer-error-i18n-project-archive"
+    );
+    const resolved = resolveStudioProjectArchiveErrorFromCause(error);
+    if (resolved) return resolved;
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
 export interface StudioProjectArchiveOrchestration {
   readonly handleExportProject: () => Promise<void>;
   readonly handleExportProjectArchive: () => Promise<void>;
@@ -75,7 +89,10 @@ export function createStudioProjectArchiveIntentController(
         });
       } catch (error) {
         input.setError(
-          error instanceof Error ? error.message : "프로젝트 내보내기 도구를 불러오지 못했어요.",
+          await resolveProjectArchiveErrorOrFallback(
+            error,
+            "프로젝트 내보내기 도구를 불러오지 못했어요.",
+          ),
         );
       }
     },
@@ -93,8 +110,10 @@ export function createStudioProjectArchiveIntentController(
           }
         });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "프로젝트 archive 도구를 불러오지 못했어요.";
+        const message = await resolveProjectArchiveErrorOrFallback(
+          error,
+          "프로젝트 archive 도구를 불러오지 못했어요.",
+        );
         input.setProjectArchiveStatus({ tone: "bad", text: message });
         input.setError(message);
       }
@@ -117,13 +136,13 @@ export function createStudioProjectArchiveIntentController(
           }
         });
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : studioProjectArchiveImportCopy(
-                "프로젝트 불러오기 도구를 불러오지 못했어요.",
-                "Couldn't load the project import tool.",
-              );
+        const message = await resolveProjectArchiveErrorOrFallback(
+          error,
+          studioProjectArchiveImportCopy(
+            "프로젝트 불러오기 도구를 불러오지 못했어요.",
+            "Couldn't load the project import tool.",
+          ),
+        );
         input.setProjectArchiveStatus({ tone: "bad", text: message });
         input.setError(message);
       }
@@ -146,8 +165,10 @@ export function createStudioProjectArchiveIntentController(
           }
         });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "프로젝트 archive 도구를 불러오지 못했어요.";
+        const message = await resolveProjectArchiveErrorOrFallback(
+          error,
+          "프로젝트 archive 도구를 불러오지 못했어요.",
+        );
         input.setProjectArchiveStatus({ tone: "bad", text: message });
         input.setError(message);
       }
