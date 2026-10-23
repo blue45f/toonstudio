@@ -1,16 +1,19 @@
 /**
- * 홍보 영상 자료실의 브랜드 카테고리 보관 항목(17~21차 파도분) — 통합
+ * 홍보 영상 자료실의 브랜드 카테고리 보관 항목(17~22차 파도분) — 통합
  * 레지스트리 promo-video-library.ts가 소스 파일 800줄 상한에 닿아,
  * 페이지 카테고리(promo-video-library-pages.ts)와 같은 방식으로
  * 17차 파도에서 더한 브랜드 보관 항목 3편의 표시 항목을 이 파일로
  * 분리했고, 18차 파도 보관 항목 4편과 19차 파도 보관 항목 4편, 20차 파도
- * 보관 항목 3편, 21차 파도 보관 항목 4편도 이어서 여기에 둔다. 전부
+ * 보관 항목 3편, 21차 파도 보관 항목 4편, 22차 파도 보관 항목 4편도
+ * 이어서 여기에 둔다. 전부
  * 생성형 AI로 만든 개념 영상이고, 아직 표면에 배선하지 않은 자료실
  * 보관분이다. 클립 규격의 정본은 brand-clips.ts다. 18차 파도부터는
  * 클립 길이가 편마다 달라, 길이를 항목마다 실측으로 적는다.
  */
 import {
+  BRAND_AUTUMN_ROAD_CLIP,
   BRAND_CITY_DAWN_CLIP,
+  BRAND_DUNES_CLIP,
   BRAND_FOREST_LIGHT_CLIP,
   BRAND_MOUNTAIN_LAKE_CLIP,
   BRAND_NEON_ALLEY_CLIP,
@@ -21,12 +24,14 @@ import {
   BRAND_SQUARE_BLOOM_CLIP,
   BRAND_SQUARE_HONEYCOMB_CLIP,
   BRAND_SQUARE_INKDROP_CLIP,
+  BRAND_SQUARE_LAVA_CLIP,
   BRAND_SQUARE_TERRAZZO_CLIP,
   BRAND_SQUARE_WAVE_CLIP,
   BRAND_WORKSHOP_CLIP,
   HOME_HERO_DUSK_CLIP,
   HOME_HERO_FOG_CLIP,
   HOME_HERO_HARBOR_CLIP,
+  HOME_HERO_MEADOW_CLIP,
   HOME_HERO_SPRING_CLIP,
   type BrandClip,
 } from "./brand-clips";
@@ -185,5 +190,33 @@ export const PROMO_VIDEO_BRAND_LIBRARY_ITEMS: readonly PromoVideoItem[] = [
   }, {
     title: "Square terrazzo sting",
     body: "A 1:1 square brand sting of a terrazzo pattern spreading — kept with the square sting set.",
+  }),
+  brandLibraryItem("brand-autumn-road", BRAND_AUTUMN_ROAD_CLIP, "0:14", {
+    title: "가을 길",
+    body: "단풍이 물든 가을 길을 그린 클립입니다.",
+  }, {
+    title: "Autumn road",
+    body: "A road lined with autumn colors.",
+  }),
+  brandLibraryItem("brand-dunes", BRAND_DUNES_CLIP, "0:14", {
+    title: "모래 언덕",
+    body: "바람결이 남은 모래 언덕을 그린 클립입니다.",
+  }, {
+    title: "Dunes",
+    body: "Sand dunes with the marks of the wind.",
+  }),
+  brandLibraryItem("brand-home-hero-meadow", HOME_HERO_MEADOW_CLIP, "0:14", {
+    title: "초원의 파노라마",
+    body: "초원이 펼쳐지는 스튜디오 파노라마입니다. 낮·노을·밤·비·눈·새벽·안개·황혼·봄·항구 파노라마와 한 세트로 보관합니다.",
+  }, {
+    title: "Meadow panorama",
+    body: "A studio panorama looking out over a meadow, kept as a set with the day, evening, night, rain, snow, dawn, fog, dusk, spring and harbor panoramas.",
+  }),
+  brandLibraryItem("brand-square-lava", BRAND_SQUARE_LAVA_CLIP, "0:14", {
+    title: "정사각 용암 스팅",
+    body: "용암이 흐르는 1:1 정사각 브랜드 스팅입니다. 정사각 스팅 세트와 함께 보관합니다.",
+  }, {
+    title: "Square lava sting",
+    body: "A 1:1 square brand sting of lava flowing — kept with the square sting set.",
   }),
 ];

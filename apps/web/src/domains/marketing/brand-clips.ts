@@ -478,3 +478,46 @@ export const BRAND_SQUARE_TERRAZZO_CLIP: BrandClip = {
   width: 768,
   height: 768,
 };
+
+/**
+ * 가을 길 — 단풍이 물든 길을 그린 생성형 AI 영상이다. 아직 표면에
+ * 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_AUTUMN_ROAD_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-25-autumnroad.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 모래 언덕 — 바람결이 남은 모래 언덕을 그린 생성형 AI 영상이다.
+ * 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_DUNES_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-26-dunes.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 초원의 히어로 무드 — 초원이 펼쳐지는 스튜디오 파노라마를 그린
+ * 생성형 AI 영상이다. 낮·노을·밤·비·눈·새벽·안개·황혼·봄·항구
+ * 파노라마와 한 세트로, 아직 표면에 배선하지 않아 홍보 영상
+ * 자료실에만 수록한다.
+ */
+export const HOME_HERO_MEADOW_CLIP: BrandClip = {
+  src: "/brand/brand-clips/home-hero-meadow.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 정사각 용암 스팅 — 용암이 흐르는 모습을 담은 1:1 정사각 브랜드
+ * 스팅으로 그린 생성형 AI 영상이다. 정사각 스팅 세트와 함께, 아직
+ * 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_SQUARE_LAVA_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-square-lava.mp4",
+  width: 768,
+  height: 768,
+};
