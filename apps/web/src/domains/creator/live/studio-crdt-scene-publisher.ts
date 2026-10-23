@@ -15,8 +15,6 @@ import {
 import { StudioCrdtScenePublishError } from "./studio-crdt-scene-publisher-error";
 import { studioCrdtLayerGroupKey } from "./studio-crdt-scene-schema";
 
-export { StudioCrdtScenePublishError, type StudioCrdtScenePublishErrorCode } from "./studio-crdt-scene-publisher-error";
-
 import type {
   StudioCrdtDocument,
   StudioCrdtDrawStrokePayload,
@@ -25,6 +23,8 @@ import type {
   StudioCrdtSceneElementInput,
   StudioCrdtStrokePayloadKey,
 } from "./studio-crdt-document";
+
+export { StudioCrdtScenePublishError, type StudioCrdtScenePublishErrorCode } from "./studio-crdt-scene-publisher-error";
 
 export interface StudioCrdtOrderMove {
   id: string;

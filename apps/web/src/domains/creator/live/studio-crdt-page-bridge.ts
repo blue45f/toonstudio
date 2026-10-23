@@ -39,8 +39,6 @@ import {
 } from "./studio-crdt-scene-schema";
 import { jsonObject, jsonValue } from "./studio-crdt-json-value";
 import { StudioCrdtPageBridgeError } from "./studio-crdt-page-bridge-error";
-
-export { StudioCrdtPageBridgeError, type StudioCrdtPageBridgeErrorCode } from "./studio-crdt-page-bridge-error";
 import type { StudioCrdtCompatibleOrderedPage } from "./studio-crdt-page-payload";
 
 import type {
@@ -66,6 +64,7 @@ import {
   studioWorkAssetSourceUri,
 } from "@/shared/lib/studio-work-asset-contract";
 
+export { StudioCrdtPageBridgeError, type StudioCrdtPageBridgeErrorCode } from "./studio-crdt-page-bridge-error";
 export {
   isStudioCrdtPayloadSceneElementType,
   isStudioCrdtSceneElementType,

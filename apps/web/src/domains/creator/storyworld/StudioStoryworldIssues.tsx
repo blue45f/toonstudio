@@ -26,8 +26,6 @@ import {
   resolveStoryworldIssue,
   resolveStoryworldRepairProposal,
 } from "../status-i18n/studio-producer-error-i18n-storyworld";
-
-export { resolveStoryworldIssue };
 import { AXIS_LABELS, SEVERITY_LABELS, severityIcon } from "./studio-storyworld-lab-display";
 
 function IssueDispositionControls({ issueKey, dispositions, onSet, onClear }: {

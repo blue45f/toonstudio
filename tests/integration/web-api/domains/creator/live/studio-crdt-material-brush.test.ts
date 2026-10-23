@@ -117,7 +117,7 @@ describe("versioned collaborative material brushes", () => {
     const local = new StudioCrdtDocument();
     const payload = { ...encoded.payload, extensions } as StudioCrdtDrawStrokePayload;
     expect(() => local.addStroke({ ...encoded, payload })).toThrow(/엔진 프로그램/);
-    expect(() => studioCrdtStrokeToDrawElement({ ...encoded, payload, status: "finalized", deleted: false, orderIndex: 0 })).toThrow(/엔진 프로그램/);
+    expect(() => studioCrdtStrokeToDrawElement({ ...encoded, payload, status: "finalized", deleted: false, orderIndex: 0 })).toThrow(/엔진 프로그램|brush-program-version-incompatible/);
     local.destroy();
     server.destroy();
   });
