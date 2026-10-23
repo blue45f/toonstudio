@@ -1,16 +1,16 @@
 {
-  "common.loading": "Lasku",
-  "common.loading.short": "Lasku",
+  "common.loading": "Ladataan",
+  "common.loading.short": "Ladataan",
   "common.close": "Sulje",
   "common.open": "Avaa",
   "common.search": "Hae",
   "common.retry": "Yritä uudelleen.",
   "common.retry.short": "Yritä uudelleen.",
-  "common.backToTop": "Takaisin yläkertaan .",
+  "common.backToTop": "Takaisin ylös",
   "common.backToHome": "Mene kotiin.",
   "common.loading.search": "Etsitään...",
-  "common.notFoundWithQuery": "{query}: lle ei ole tuloksia.",
-  "common.openSearch": "Etsi se etsimällä →",
+  "common.notFoundWithQuery": "Ei tuloksia haulle '{query}'.",
+  "common.openSearch": "Etsi hausta →",
   "common.loading.empty": "Ei tietoja palautettu.",
   "common.retry.all": "Yritä uudestaan tai mene kotiin."
 }

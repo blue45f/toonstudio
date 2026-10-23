@@ -1,12 +1,12 @@
 {
-  "copyright.title": "Oikeus- ja sisällön ilmoitus",
+  "copyright.title": "Tekijänoikeus- ja sisältöilmoitus",
   "copyright.section1.title": "Sisällönlähteet ja periaatteet",
   "copyright.section1.body": "ToonStudio on indeksin ja löytöalan alusto, joka yhteenvetoi julkisia kataloogien metatietoja ( otsikot, tekijät, genrejä jne.) webtoon- ja webnovel-alustoista. Se ei toimi pääkirjojen sisällön vastaanottamiseksi tai jakelussa uudelleen; lukemista ohjattiin yksinomaan virallisten linkkien kautta.",
-  "copyright.section2.title": "Peitevalokuvat",
-  "copyright.section2.body": "Peitevalokuvat ovat tunnistuskuvia ja viittaus alkuperäiseen alustan peitevalokuviin, joissa on mahdollisuuksien mukaan lähteen linkit.",
-  "copyright.section3.title": "Metrikit ja läpinäkyvyys",
+  "copyright.section2.title": "Kansikuvat",
+  "copyright.section2.body": "Kansikuvat toimivat tunnistuspikkukuvina ja viittaavat alkuperäisiin alustan kansiin lähdelinkeillä aina kun mahdollista. Näyttäminen voidaan poistaa käytöstä välittömästi oikeudenhaltijan pyynnöstä tai käytännön päivittyessä.",
+  "copyright.section3.title": "Mittarit ja läpinäkyvyys",
   "copyright.section4.title": "Oikeuksien ilmoitus",
-  "copyright.section5.title": "Oikeusoikeuksien rikkomisesta ilmoitus ja poistaminen",
-  "copyright.section5.body": "Jos uskot, että metatiedot tai peitteet rikkoo oikeuksiasi, lähetä kysely, jossa on otsikko, URL ja omistuksen todistus.",
-  "copyright.leaveInquiry": "• Ehdotus:"
+  "copyright.section5.title": "Tekijänoikeusloukkausilmoitus ja poistopyyntö",
+  "copyright.section5.body": "Jos uskot metatietojen tai kansien loukkaavan oikeuksiasi, lähetä tiedustelu, jossa on teoksen nimi, URL-osoite ja todiste omistajuudesta.",
+  "copyright.leaveInquiry": "Lähetä tiedustelu →"
 }

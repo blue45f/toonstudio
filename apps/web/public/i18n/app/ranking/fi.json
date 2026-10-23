@@ -1,8 +1,8 @@
 {
   "ranking.detailTitle": "Näytä pisteiden jakautuminen",
-  "ranking.metric.views": "Näytyksiä",
+  "ranking.metric.views": "Katselukerrat",
   "ranking.why": "Miksi?",
-  "ranking.breakdownTitle": "Arvonlaskelu",
+  "ranking.breakdownTitle": "Pisteiden erittely",
   "ranking.totalScore": "Kokonaispiste",
-  "ranking.breakdownDescription": "Laskettu akselin painot ja otsikon erityinen normaalitointi."
+  "ranking.breakdownDescription": "Laskettu akselipainoilla ja teoskohtaisella normalisoinnilla."
 }

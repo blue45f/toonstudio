@@ -1,7 +1,7 @@
 {
-  "lang.ko": "Korealainen",
+  "lang.ko": "Korea",
   "lang.en": "Englanti",
-  "lang.switch": "Kielenkäyttö",
-  "lang.auto": "Autot",
-  "lang.change": "Muuttaudu kieli"
+  "lang.switch": "Kieli",
+  "lang.auto": "Automaattinen",
+  "lang.change": "Vaihda kieli"
 }

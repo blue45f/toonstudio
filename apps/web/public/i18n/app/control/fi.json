@@ -1,14 +1,14 @@
 {
-  "control.language.label": "Kielenkäyttö",
-  "control.language.group.translated": "Yli- ja laaja-alainen käännös",
-  "control.language.group.englishBase": "Automaattinen käännös · Englanti fallback",
-  "control.sound.enable": "Päästäkää ääniteokset",
-  "control.sound.disable": "Äänilähetysten poistaminen",
+  "control.language.label": "Kieli",
+  "control.language.group.translated": "Laajan kattavuuden käännökset",
+  "control.language.group.englishBase": "Automaattinen käännös · englanti varakielenä",
+  "control.sound.enable": "Ota äänitehosteet käyttöön",
+  "control.sound.disable": "Poista äänitehosteet käytöstä",
   "control.theme.dark": "Vaihda valonmuotoon",
   "control.theme.light": "Vaihda pimeään tilaan",
-  "control.settings.open": "Avoimet asetukset",
-  "control.settings.close": "Lähetysasetukset",
+  "control.settings.open": "Avaa asetukset",
+  "control.settings.close": "Sulje asetukset",
   "control.cluster.settings": "Äänet, teema, kieliohjaus",
-  "control.cluster.open": "Avoimet asetukset",
-  "control.cluster.tooltip": "Sounituotteet, teemat ja kieliasetukset"
+  "control.cluster.open": "Avaa asetukset",
+  "control.cluster.tooltip": "Ääni-, teema- ja kieliasetukset"
 }

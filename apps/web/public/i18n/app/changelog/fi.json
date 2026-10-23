@@ -1,4 +1,4 @@
 {
-  "changelog.loadError": "- En saanut päivitykset.",
-  "changelog.empty": "- Ei päivitysten päivityksiä."
+  "changelog.loadError": "Päivityksiä ei voitu ladata. Yritä hetken kuluttua uudelleen.",
+  "changelog.empty": "Päivityslokeja ei ole vielä julkaistu."
 }
