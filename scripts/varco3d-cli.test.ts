@@ -133,6 +133,24 @@ describe("varco3d-cli", () => {
     };
     expect(saved.mcpServers["varco-3d"]?.url).toBe(VARCO3D_DEFAULT_MCP_URL);
 
+    const claudeDesktopRes = await executeVarco3dCli(
+      ["mcp-setup", "--target", "claude-desktop", "--write"],
+      { env: {}, cwd: home, repoRoot: home, homeDir: home },
+    );
+    expect(claudeDesktopRes.exitCode).toBe(0);
+    expect(claudeDesktopRes.output.updated).toBe(true);
+    const claudeDesktopPath = join(
+      home,
+      "Library/Application Support/Claude/claude_desktop_config.json",
+    );
+    const savedDesktop = JSON.parse(readFileSync(claudeDesktopPath, "utf8")) as {
+      mcpServers: Record<string, { command: string; args: string[] }>;
+    };
+    expect(savedDesktop.mcpServers["varco-3d"]).toEqual({
+      command: "npx",
+      args: ["-y", "mcp-remote", VARCO3D_DEFAULT_MCP_URL],
+    });
+
     const claudeAppRes = await executeVarco3dCli(
       ["mcp-setup", "--target", "claude-app"],
       { env: {}, cwd: home, repoRoot: home, homeDir: home },

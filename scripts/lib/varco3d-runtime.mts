@@ -228,17 +228,42 @@ export function inspectMcpSetup(config: Varco3dResolvedConfig): Record<string, u
       antigravityRegistered = false;
     }
   }
+  const claudeDesktopConfigPath = resolve(
+    config.homeDir,
+    "Library/Application Support/Claude/claude_desktop_config.json",
+  );
+  let claudeDesktopRegistered = false;
+  if (existsSync(claudeDesktopConfigPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(claudeDesktopConfigPath, "utf8")) as {
+        mcpServers?: Record<string, { command?: string; args?: readonly string[] }>;
+      };
+      const entry = parsed.mcpServers?.["varco-3d"];
+      claudeDesktopRegistered = Boolean(entry && Array.isArray(entry.args) && entry.args.includes(config.mcpUrl));
+    } catch {
+      claudeDesktopRegistered = false;
+    }
+  }
+  const blenderAddonPath = resolve(
+    config.homeDir,
+    "Library/Application Support/Blender/5.2/extensions/user_default/varco3d_bridge_for_blender/__init__.py",
+  );
   const localCliBinaryPath = resolve(config.homeDir, ".local/bin/varco3d");
   return {
     endpoint: config.mcpUrl,
     setupDocUrl: VARCO3D_MCP_SETUP_DOC_URL,
     antigravityConfigPath,
     antigravityRegistered,
+    claudeDesktopConfigPath,
+    claudeDesktopRegistered,
+    blenderAddonPath,
+    blenderAddonInstalled: existsSync(blenderAddonPath),
     localCliBinaryPath,
     localCliInstalled: existsSync(localCliBinaryPath),
     claudeDesktopAppConnector: VARCO3D_CLAUDE_APP_CONNECTOR_GUIDE,
     commands: {
       antigravity: "pnpm run varco3d -- mcp-setup --target antigravity --write",
+      claudeDesktop: "pnpm run varco3d -- mcp-setup --target claude-desktop --write",
       claudeDesktopApp: "pnpm run varco3d -- mcp-setup --target claude-app",
       claude: `claude mcp add --transport http varco-3d ${config.mcpUrl}`,
       codex: `codex mcp add varco-3d --url ${config.mcpUrl} --oauth-resource ${config.mcpUrl} && codex mcp login varco-3d`,
@@ -268,6 +293,39 @@ export function writeAntigravityMcpConfig(
       ? { ...(rootObj.mcpServers as Record<string, unknown>) }
       : {};
   existingServers["varco-3d"] = { url: config.mcpUrl };
+  rootObj.mcpServers = existingServers;
+  writeFileSync(targetPath, `${JSON.stringify(rootObj, null, 2)}\n`, "utf8");
+  return { updated: true, path: targetPath, url: config.mcpUrl };
+}
+
+export function writeClaudeDesktopMcpConfig(
+  config: Varco3dResolvedConfig,
+): Record<string, unknown> {
+  const targetPath = resolve(
+    config.homeDir,
+    "Library/Application Support/Claude/claude_desktop_config.json",
+  );
+  mkdirSync(dirname(targetPath), { recursive: true });
+  let rootObj: Record<string, unknown> = {};
+  if (existsSync(targetPath)) {
+    const raw = readFileSync(targetPath, "utf8").trim();
+    if (raw) {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        rootObj = { ...(parsed as Record<string, unknown>) };
+      }
+    }
+  }
+  const existingServers =
+    rootObj.mcpServers &&
+    typeof rootObj.mcpServers === "object" &&
+    !Array.isArray(rootObj.mcpServers)
+      ? { ...(rootObj.mcpServers as Record<string, unknown>) }
+      : {};
+  existingServers["varco-3d"] = {
+    command: "npx",
+    args: ["-y", "mcp-remote", config.mcpUrl],
+  };
   rootObj.mcpServers = existingServers;
   writeFileSync(targetPath, `${JSON.stringify(rootObj, null, 2)}\n`, "utf8");
   return { updated: true, path: targetPath, url: config.mcpUrl };

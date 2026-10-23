@@ -23,6 +23,12 @@ import {
 } from "./studio-3d-generation-postgres-store";
 import { createHyper3dRodinProvider } from "./studio-hyper3d-rodin-provider";
 import { STUDIO_3D_GENERATION_PROVIDER_CONTRACT_VERSION } from "./studio-3d-generation-provider";
+import {
+  createVarco3dProvider,
+  VARCO_3D_PROVIDER_ID,
+  type Varco3dFetch,
+  type Varco3dSurface,
+} from "./studio-varco3d-provider";
 
 export interface Studio3dGenerationBinaryInput {
   readonly filename: string;
@@ -91,7 +97,7 @@ function providerIdentity(value: unknown, depth = 0): unknown | undefined {
   if (depth > 8 || !value || typeof value !== "object") return undefined;
   const object = value as Record<string, unknown>;
   const keys = Object.keys(object).map((key) => key.toLowerCase());
-  if (keys.some((key) => key === "taskid" || key === "task_id" || key === "uuid")) return value;
+  if (keys.some((key) => key === "taskid" || key === "task_id" || key === "uuid" || key === "taskuuid")) return value;
   for (const entry of Object.values(object)) {
     const found = providerIdentity(entry, depth + 1);
     if (found) return found;
@@ -193,6 +199,7 @@ export class Studio3dGenerationService {
   readonly #artifactStore: Studio3dGenerationArtifactStore;
   readonly #identityStore: Studio3dGenerationProviderIdentityStore;
   readonly #ledger: Studio3dGenerationJobLedger;
+  #varcoFetch: Varco3dFetch | undefined;
 
   constructor() {
     const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -218,11 +225,18 @@ export class Studio3dGenerationService {
     );
   }
 
+  setVarco3dFetchForTesting(fetchImpl: Varco3dFetch | undefined): void {
+    this.#varcoFetch = fetchImpl;
+  }
+
   status() {
+    const hyper3dConfigured = Boolean(process.env.HYPER3D_API_KEY?.trim() || process.env.RODIN_API_KEY?.trim());
+    const varcoConfigured = Boolean(process.env.VARCO_3D_API_KEY?.trim() || process.env.OPENAPI_KEY?.trim());
     return Object.freeze({
-      configured: operatorAiFundingEnabled() && Boolean(process.env.HYPER3D_API_KEY?.trim() || process.env.RODIN_API_KEY?.trim()),
+      configured: operatorAiFundingEnabled() && (hyper3dConfigured || varcoConfigured),
       durable: Boolean(process.env.DATABASE_URL?.trim()),
       provider: "hyper3d-rodin",
+      supportedProviders: Object.freeze(["hyper3d-rodin", VARCO_3D_PROVIDER_ID]),
       modes: Object.freeze(["text-to-3d", "image-to-3d", "multiview-to-3d", "texture-only"]),
       apiKeyExposedToClient: false,
       inputTransport: "inline-json",
@@ -231,7 +245,39 @@ export class Studio3dGenerationService {
     });
   }
 
-  #provider(providerApiKey?: string): Studio3dProviderRuntime {
+  #resolveProviderId(requestedProvider?: unknown, providerApiKey?: string): "hyper3d-rodin" | typeof VARCO_3D_PROVIDER_ID {
+    if (requestedProvider === VARCO_3D_PROVIDER_ID || requestedProvider === "varco3d") {
+      return VARCO_3D_PROVIDER_ID;
+    }
+    if (providerApiKey?.trim().startsWith("varco:")) {
+      return VARCO_3D_PROVIDER_ID;
+    }
+    const hyper3dEnv = Boolean(process.env.HYPER3D_API_KEY?.trim() || process.env.RODIN_API_KEY?.trim());
+    const varcoEnv = Boolean(process.env.VARCO_3D_API_KEY?.trim() || process.env.OPENAPI_KEY?.trim());
+    if (!providerApiKey?.trim() && operatorAiFundingEnabled() && !hyper3dEnv && varcoEnv) {
+      return VARCO_3D_PROVIDER_ID;
+    }
+    return "hyper3d-rodin";
+  }
+
+  #provider(
+    providerApiKey?: string,
+    providerId: string = "hyper3d-rodin",
+    surfaceOption?: unknown,
+  ): Studio3dProviderRuntime {
+    if (providerId === VARCO_3D_PROVIDER_ID) {
+      const apiKey = providerApiKey?.trim()
+        || (operatorAiFundingEnabled()
+          ? process.env.VARCO_3D_API_KEY?.trim() || process.env.OPENAPI_KEY?.trim()
+          : undefined);
+      if (!apiKey) throw new ServiceUnavailableException("VARCO 3D is not configured.");
+      const surface: Varco3dSurface = surfaceOption === "studio" ? "studio" : "nc-openapi";
+      return createVarco3dProvider({
+        apiKey,
+        surface,
+        ...(this.#varcoFetch ? { fetchImpl: this.#varcoFetch } : {}),
+      }) as unknown as Studio3dProviderRuntime;
+    }
     const apiKey = providerApiKey?.trim()
       || (operatorAiFundingEnabled()
         ? process.env.HYPER3D_API_KEY?.trim() || process.env.RODIN_API_KEY?.trim()
@@ -240,9 +286,10 @@ export class Studio3dGenerationService {
     return createHyper3dRodinProvider({ apiKey }) as unknown as Studio3dProviderRuntime;
   }
 
-  #request(input: Studio3dGenerationCreateInput, requestId: string): {
+  #request(input: Studio3dGenerationCreateInput, requestId: string, providerApiKey?: string): {
     readonly providerRequest: unknown;
     readonly summary: Studio3dGenerationJobRequestSummary;
+    readonly providerId: "hyper3d-rodin" | typeof VARCO_3D_PROVIDER_ID;
   } {
     const encodedInputCharacters = (input.images ?? []).reduce((total, item) => total + (typeof item.dataBase64 === "string" ? item.dataBase64.length : 0), 0)
       + (typeof input.model?.dataBase64 === "string" ? input.model.dataBase64.length : 0);
@@ -266,7 +313,11 @@ export class Studio3dGenerationService {
     if (prompt && prompt.length > 1_024) throw new RangeError("3D generation prompt exceeds 1024 characters.");
     const options = Object.freeze({ ...(input.options ?? {}) });
     const transport = input.transport ?? "server";
+    const providerId = this.#resolveProviderId(options.provider, providerApiKey);
+    const defaultModel = providerId === VARCO_3D_PROVIDER_ID ? "VARCO 3D" : "Rodin Gen-2.5";
+    const defaultTier = providerId === VARCO_3D_PROVIDER_ID ? "VARCO-3D-v2" : "Gen-2.5-Medium";
     return Object.freeze({
+      providerId,
       providerRequest: Object.freeze({
         schemaVersion: STUDIO_3D_GENERATION_PROVIDER_CONTRACT_VERSION,
         requestId,
@@ -281,9 +332,9 @@ export class Studio3dGenerationService {
         ...(prompt ? { promptHash: sha256(prompt) } : {}),
         inputContentHashes: Object.freeze(images.map((image) => sha256(image.bytes))),
         ...(model ? { sourceAssetRevisionId: sha256(model.bytes) } : {}),
-        provider: "hyper3d-rodin",
-        model: String(options.tier ?? "Rodin Gen-2.5"),
-        tier: String(options.tier ?? "Gen-2.5-Medium"),
+        provider: providerId,
+        model: String(options.tier ?? defaultModel),
+        tier: String(options.tier ?? defaultTier),
         ...(options.meshMode ? { meshMode: String(options.meshMode) } : {}),
         ...(typeof options.targetFaceCount === "number" ? { targetFaceCount: options.targetFaceCount } : {}),
         ...(options.material ? { material: String(options.material) } : {}),
@@ -305,7 +356,7 @@ export class Studio3dGenerationService {
     signal: AbortSignal = new AbortController().signal,
   ): Promise<Studio3dGenerationJobRecord> {
     const requestId = `studio-3d-${sha256(`${userId}\u0000${idempotencyKey}`).slice(0, 24)}`;
-    const { providerRequest, summary } = this.#request(input, requestId);
+    const { providerRequest, summary, providerId } = this.#request(input, requestId, providerApiKey);
     const created = await this.#ledger.create({
       userId,
       idempotencyKey,
@@ -319,11 +370,15 @@ export class Studio3dGenerationService {
       state: "uploading",
     });
     try {
-      const submission = await this.#provider(providerApiKey).submit(providerRequest, signal);
+      const submission = await this.#provider(
+        providerApiKey,
+        providerId,
+        input.options?.surface,
+      ).submit(providerRequest, signal);
       const identity = providerIdentity(submission) ?? submission;
       const subscriptionKey = providerIdentityString(identity, ["subscriptionkey", "subscription_key"]) ?? "provider-managed";
-      const taskId = providerIdentityString(identity, ["taskid", "task_id", "uuid"]);
-      if (!taskId) throw new TypeError("Hyper3D submission did not return a task identity.");
+      const taskId = providerIdentityString(identity, ["taskid", "task_id", "uuid", "taskuuid"]);
+      if (!taskId) throw new TypeError("3D provider submission did not return a task identity.");
       record = await this.#ledger.recordProviderIdentity({
         jobId: record.id,
         expectedGeneration: record.generation,
@@ -363,7 +418,7 @@ export class Studio3dGenerationService {
     const sealed = await this.#identityStore.get(record.id);
     if (!sealed) throw new ServiceUnavailableException("3D generation provider identity is unavailable.");
     const identity = openIdentity(sealed);
-    const provider = this.#provider(providerApiKey);
+    const provider = this.#provider(providerApiKey, record.request.provider);
     const progress = await provider.poll(identity, signal);
     const state = providerState(progress);
     if (/fail|error|reject|violation/iu.test(state)) {
@@ -393,7 +448,7 @@ export class Studio3dGenerationService {
     }
     const artifacts = await provider.download(identity, signal);
     const binary = modelBinary(artifacts);
-    if (!binary) throw new TypeError("Hyper3D download did not include a model binary.");
+    if (!binary) throw new TypeError("3D provider download did not include a model binary.");
     assertGlb(binary.bytes);
     record = await this.#ledger.transition({
       jobId: record.id,
@@ -431,7 +486,7 @@ export class Studio3dGenerationService {
     const sealed = await this.#identityStore.get(record.id);
     record = await this.#ledger.requestCancellation(record.id);
     if (sealed) {
-      const provider = this.#provider(providerApiKey);
+      const provider = this.#provider(providerApiKey, record.request.provider);
       if (provider.cancel) {
         try {
           await provider.cancel(openIdentity(sealed));

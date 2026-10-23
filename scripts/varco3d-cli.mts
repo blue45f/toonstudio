@@ -43,6 +43,7 @@ import {
   validatePolygonCount,
   type Varco3dResolvedConfig,
   writeAntigravityMcpConfig,
+  writeClaudeDesktopMcpConfig,
 } from "./lib/varco3d-runtime.mts";
 
 export {
@@ -449,6 +450,9 @@ export async function executeVarco3dCli(
     }
     if (target === "antigravity" && shouldWrite) {
       return { exitCode: 0, output: writeAntigravityMcpConfig(config) };
+    }
+    if (target === "claude-desktop" && shouldWrite) {
+      return { exitCode: 0, output: writeClaudeDesktopMcpConfig(config) };
     }
     if ((target === "claude" || target === "codex") && shouldWrite) {
       const args =
