@@ -3,15 +3,15 @@
   "home.hero.titleLine1": "Razpršene zgodbe,",
   "home.hero.titleShimmer": "En sam indeks",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Preiskajte na spletnem mestu Naver, seriji in Kakao, nato hitro omejite, kaj naj berejo z uporabo signalov v realnem času in preferenc bralca.",
-  "home.hero.searchButton": "Iskanje naslovov, ustvarjalcev, oznake",
-  "home.hero.rankingButton": "Ogled enotnega razvrščanja",
+  "home.hero.description": "Iščite po Naver Webtoon, Series in Kakao Webtoon, nato pa s signali v realnem času in željami bralcev hitro zožite, kaj boste brali.",
+  "home.hero.searchButton": "Iščite naslove, ustvarjalce, oznake",
+  "home.hero.rankingButton": "Ogled enotne lestvice",
   "home.hero.studioLink": "Studio ustvarjalcev",
-  "home.hero.createLink": "Ustvarjalna plošča",
+  "home.hero.createLink": "Oglasna deska ustvarjalcev",
   "home.hero.stats.titles": "Naslovi",
-  "home.hero.stats.platforms": "Publikacijske platforme",
+  "home.hero.stats.platforms": "Platforme za objavljanje",
   "home.hero.stats.genres": "Spektrum žanrov",
   "home.hero.stats.reviews": "Pregledi bralcev",
-  "home.loadError": "Nisem mogel naložiti podatkov o domu.",
-  "home.creatorTitle": "Od ideje do prve scene."
+  "home.loadError": "Podatkov za domačo stran ni bilo mogoče naložiti.",
+  "home.creatorTitle": "Od ideje do prvega prizora"
 }

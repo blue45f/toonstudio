@@ -1,16 +1,16 @@
 {
-  "authors.eyebrow": "PISKAVNI PISKAV",
+  "authors.eyebrow": "IMENIK AVTORJEV",
   "authors.title": "Avtorji",
-  "authors.desc": "Avtorje, razvrščeni po številu dela.",
-  "authors.search": "Ime avtorja iskanja",
-  "authors.error": "Nisem mogel naložiti seznama avtorjev.",
-  "authors.empty": "ni primerljivega pisatelja.",
-  "authors.allOf": "iz:",
-  "authors.topOf": "· zgornji",
+  "authors.desc": "Avtorji, razvrščeni po številu del. Tapnite avtorja, da na enem mestu vidite njegove naslove, ocene in kavarno za oboževalce.",
+  "authors.search": "Iskanje po imenu avtorja",
+  "authors.error": "Seznama avtorjev ni bilo mogoče naložiti. Poskusite znova čez trenutek.",
+  "authors.empty": " — ni ustreznega avtorja.",
+  "authors.allOf": "od",
+  "authors.topOf": "· na vrhu",
   "authors.people": "",
-  "authors.works": "dela",
+  "authors.works": " del",
   "authors.views": "pogledi",
-  "authors.pencafe": "Ustvarjalni oboževalni kavarni",
-  "authors.stats": "Najboljši avtorji {shown} od avtorjev {total}",
-  "authors.noName": "Stvoritelj"
+  "authors.pencafe": "Kavarna za oboževalce ustvarjalca",
+  "authors.stats": "Najboljših {shown} od {total} avtorjev",
+  "authors.noName": "Ustvarjalec"
 }
