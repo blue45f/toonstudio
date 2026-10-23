@@ -70,6 +70,24 @@ describe("claude-webtoon-storyboard-assist (Claude API 및 보조 기능 통합 
 
   it("hydrateDefaultEnvClaudeConnection이 명시적 토큰으로 Anthropic 연결을 메모리에 등록한다", () => {
     expect(getUserAiSnapshot().configuration.connections).toHaveLength(0);
+    setUserAiConfiguration({
+      ...structuredClone(EMPTY_AI_CONFIGURATION),
+      connections: [
+        {
+          ...structuredClone(EMPTY_AI_CONNECTION),
+          id: "custom-openai",
+          label: "Custom OpenAI Path",
+          baseUrl: "https://models.github.ai/inference/api.anthropic.com",
+          apiKey: "ghp_test_token_0000",
+          textModel: "openai/gpt-4o-mini",
+          imageModel: "",
+          costPolicy: "provider-free-tier",
+          priority: 10,
+          apiKeys: undefined,
+          models: undefined,
+        },
+      ],
+    });
     const hydrated = hydrateDefaultEnvClaudeConnection("test-env-claude-token", "claude-haiku-5-5");
     expect(hydrated).toBe(true);
     const conn = getUserAiSnapshot().configuration.connections.find(
