@@ -30,7 +30,11 @@
  *    - 장식용 프리뷰 `<img>`는 `alt=""`, 장식용 다이얼 `<svg>`는 `aria-hidden="true"`, 모든 액션 버튼은 `type="button"` 고정
  */
 
-import type { StudioMannequinVec3 } from "./studio-mannequin-model";
+export interface StudioMannequinVec3 {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
 
 /** PBR 개별 맵 채널 프리뷰 모드 (`null`이면 일반/클레이 셰이딩). */
 export type StudioVarco3dMapPreviewMode = "baseColor" | "normal" | "roughness" | "metallic" | "occlusion";

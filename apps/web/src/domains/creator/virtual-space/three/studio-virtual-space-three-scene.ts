@@ -433,7 +433,7 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
     scene.add(northStrip);
 
     // 실내 구역은 북쪽 백월 + 좌우 파티션 월을 세워 입체적인 오피스 아키텍처를 표현한다
-    if (zone.walled) {
+    if (zone.walls.length > 0) {
       const wallHeight = 2.65;
       const wallMat = new THREE.MeshStandardMaterial({
         color: palette.wall,
@@ -504,7 +504,7 @@ export function buildStudioThreeCampusArchitecture(scene: THREE.Scene): {
  * VRM 0.0 휴머노이드 본을 찾아 T-포즈 양팔을 자연스러운 차렷/아틀리에 자세로 내리고
  * 보행 애니메이션용 상완·대퇴 본 참조를 연결한다.
  */
-function applyNaturalVrmPosture(node: StudioThreeActorNode, vrmScene: THREE.Object3D): void {
+export function applyNaturalVrmPosture(node: StudioThreeActorNode, vrmScene: THREE.Object3D): void {
   let leftUpperArm: THREE.Object3D | undefined;
   let rightUpperArm: THREE.Object3D | undefined;
   let leftLowerArm: THREE.Object3D | undefined;

@@ -122,7 +122,7 @@ export function StudioVirtualSpaceThreeCanvas({
     const width = Math.max(320, container.clientWidth || window.innerWidth);
     const height = Math.max(240, container.clientHeight || window.innerHeight);
 
-    const camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 220);
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.5, 220);
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -136,11 +136,11 @@ export function StudioVirtualSpaceThreeCanvas({
     canvasMount.appendChild(renderer.domElement);
 
     // 2. 건축 조명 (Hemisphere + Directional Sun + Warm Fill)
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 0.95);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 0.98);
     hemiLight.position.set(0, 40, 0);
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.35);
+    const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.38);
     dirLight.position.set(36, 48, 28);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.set(2048, 2048);
@@ -169,6 +169,9 @@ export function StudioVirtualSpaceThreeCanvas({
     selfNode.targetZ = selfPos3.z;
     scene.add(selfNode.group);
     actorNodes.set("self", selfNode);
+
+    camera.position.set(selfPos3.x, 9.2, selfPos3.z + 11.4);
+    camera.lookAt(selfPos3.x, 0.95, selfPos3.z - 0.8);
 
     // 캠퍼스 NPC 8명 배치
     const npcDefinitions = manifest.npcs ?? [];
@@ -587,11 +590,11 @@ export function StudioVirtualSpaceThreeCanvas({
           const zx = (zone.tiles.column + zone.tiles.width / 2) * 64;
           const zy = zone.tiles.row * 64 + 32;
           if (Math.hypot(zx - currentPoint.x, zy - currentPoint.y) > 920) continue;
-          const signPos = projectPoint(worldToThree({ x: zx, y: zy }, zone.walled ? 2.95 : 1.55));
+          const signPos = projectPoint(worldToThree({ x: zx, y: zy }, zone.walls.length > 0 ? 2.95 : 1.55));
           if (signPos.visible) {
             const roomDef = manifest.rooms?.find((room) => room.id === zone.roomId);
-            const koLabel = roomDef?.labelKo ?? zone.labelKo;
-            const enLabel = roomDef?.labelEn ?? zone.labelEn;
+            const koLabel = roomDef?.labelKo ?? zone.signEn;
+            const enLabel = roomDef?.labelEn ?? zone.signEn;
             projected.push({
               id: `zone:${zone.roomId}`,
               label: zone.signEn,
