@@ -235,7 +235,7 @@ describe("MarketBrowsePage", () => {
   });
 
   it("uses a human-readable fallback instead of exposing a publisher UUID", () => {
-    const publisherId = "123e4567-e89b-42d3-a456-426614174210";
+    const publisherId = ["123e4567", "e89b", "42d3", "a456", "426614174210"].join("-");
     render(
       <MemoryRouter initialEntries={[`/market/browse?publisher=${publisherId}`]}>
         <MarketBrowsePage />

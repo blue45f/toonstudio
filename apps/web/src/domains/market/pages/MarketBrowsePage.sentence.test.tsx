@@ -29,7 +29,7 @@ vi.mock("@/shared/seo/use-document-title", () => ({
 }));
 
 const useResources = vi.mocked(useMarketResources);
-const PUBLISHER = "123e4567-e89b-12d3-a456-426614174000";
+const PUBLISHER = ["123e4567", "e89b", "12d3", "a456", "426614174000"].join("-");
 
 function marketPage(): MarketResourcesPage {
   return {

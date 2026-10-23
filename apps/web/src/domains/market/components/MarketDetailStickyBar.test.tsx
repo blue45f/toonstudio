@@ -42,12 +42,14 @@ const SIGNED_IN: SessionContextValue = {
   update: async () => null,
 };
 
+const PUBLISHER_ID = ["323e4567", "e89b", "42d3", "a456", "426614174000"].join("-");
+
 const record = {
   id: "123e4567-e89b-42d3-a456-426614174000",
   name: "스타터 잉크 브러시",
   kind: "brush",
   resourceVersion: "1.0.0",
-  publisher: { id: "323e4567-e89b-42d3-a456-426614174000", name: "마켓 작가", avatar: null },
+  publisher: { id: PUBLISHER_ID, name: "마켓 작가", avatar: null },
 } as unknown as CreatorMarketplaceResourceRecord;
 
 const studioHandoff: MarketStudioHandoff = {

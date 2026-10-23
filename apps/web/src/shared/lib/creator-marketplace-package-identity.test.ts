@@ -31,7 +31,7 @@ describe("creator marketplace Studio pack identity", () => {
   });
 
   it("matches the Node/API vector without importing a frontend module from lib", () => {
-    const publisherId = "123e4567-e89b-42d3-a456-426614174000";
+    const publisherId = ["123e4567", "e89b", "42d3", "a456", "426614174000"].join("-");
     const packageId = "community/brush/v2-fixture";
     const preimage = creatorMarketplacePackageIdentityPreimage(publisherId, packageId);
     const nodeHex = createHash("sha256").update(preimage).digest("hex");

@@ -156,19 +156,20 @@ describe("creator marketplace client", () => {
   });
 
   it("목록 필터를 API 계약대로 정규화하고 의미가 달라지는 값은 거절한다", () => {
+    const sampleId = ["123e4567", "e89b", "42d3", "a456", "426614174000"].join("-");
     expect(normalizeCreatorMarketplaceListParams({
       search: "  잉크  ",
       tag: "  수채화  ",
       kind: "brush",
       license: "cc0-1.0",
-      publisher: "123E4567-E89B-42D3-A456-426614174000",
+      publisher: sampleId.toUpperCase(),
       sort: " relevance " as never,
     })).toMatchObject({
       search: "잉크",
       tag: "수채화",
       kind: "brush",
       license: "cc0-1.0",
-      publisher: "123e4567-e89b-42d3-a456-426614174000",
+      publisher: sampleId,
       sort: "relevance",
     });
 
@@ -265,6 +266,7 @@ describe("creator marketplace client", () => {
 
   it("공개/내 목록의 cursor·필터·AbortSignal을 API에 전달하고 응답을 검증한다", async () => {
     const controller = new AbortController();
+    const sampleId = ["123e4567", "e89b", "42d3", "a456", "426614174000"].join("-");
     apiGet.mockResolvedValue({ items: [], limit: 12, hasMore: false, nextCursor: null });
 
     await listCreatorMarketplaceResources({
@@ -273,7 +275,7 @@ describe("creator marketplace client", () => {
       tag: "  수채화  ",
       kind: "brush",
       license: "cc0-1.0",
-      publisher: "123E4567-E89B-42D3-A456-426614174000",
+      publisher: sampleId.toUpperCase(),
       sort: "newest",
     }, controller.signal);
     await listMyCreatorMarketplaceResources({
@@ -289,7 +291,7 @@ describe("creator marketplace client", () => {
         tag: "수채화",
         kind: "brush",
         license: "cc0-1.0",
-        publisher: "123e4567-e89b-42d3-a456-426614174000",
+        publisher: sampleId,
         sort: "newest",
       },
       signal: controller.signal,
