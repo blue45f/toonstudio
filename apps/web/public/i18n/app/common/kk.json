@@ -1,16 +1,16 @@
 {
-  "common.loading": "Жүк салу",
-  "common.loading.short": "Жүк салу",
+  "common.loading": "Жүктелуде",
+  "common.loading.short": "Жүктелуде",
   "common.close": "Жабу",
-  "common.open": "Aшу",
-  "common.search": "Издеу",
+  "common.open": "Ашу",
+  "common.search": "Іздеу",
   "common.retry": "Қайталап көріңіз",
   "common.retry.short": "Қайталап көріңіз",
   "common.backToTop": "Жоғарыға қайта оралу",
-  "common.backToHome": "Үйге бар",
-  "common.loading.search": "іздеу...",
-  "common.notFoundWithQuery": "\" {query} \" деген тесттің нәтижесі жоқ.",
+  "common.backToHome": "Басты бетке өту",
+  "common.loading.search": "Ізделуде…",
+  "common.notFoundWithQuery": "'{query}' бойынша нәтиже жоқ.",
   "common.openSearch": "Іздеу арқылы табу →",
-  "common.loading.empty": "Деректер қайтарылмайды.",
-  "common.retry.all": "Қайталап көріңіз немесе үйге қайтыңыз."
+  "common.loading.empty": "Деректер қайтарылмады.",
+  "common.retry.all": "Қайталап көріңіз немесе басты бетке оралыңыз."
 }

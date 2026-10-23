@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Қайталама сауалнамасын жүктей алмадым.",
-  "feedback.thankYou": "Құрбатпаған пікірлеріңіз үшін рахмет!",
+  "feedback.loadError": "Пікір сауалнамасын жүктеу мүмкін болмады. Сәлден кейін қайталап көріңіз.",
+  "feedback.thankYou": "Бағалы пікіріңіз үшін рахмет!",
   "feedback.anonymousNote": "Сіздің жауаптарыңыз жасырын сақталады.",
   "feedback.notAtAll": "Жоқ, мүлдем емес.",
-  "feedback.definitely": "Әрине ,"
+  "feedback.definitely": "Әрине"
 }

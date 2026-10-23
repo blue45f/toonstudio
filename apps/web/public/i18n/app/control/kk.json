@@ -1,14 +1,14 @@
 {
   "control.language.label": "Тіл",
-  "control.language.group.translated": "Көберек аудармалар",
-  "control.language.group.englishBase": "Автоматты аударма · ағылшынша аударма",
-  "control.sound.enable": "Дыбыс әсерін рұқсат ету",
+  "control.language.group.translated": "Қамтуы жоғары аудармалар",
+  "control.language.group.englishBase": "Автоматты аударма · ағылшын тіліне қайту",
+  "control.sound.enable": "Дыбыс эффектілерін қосу",
   "control.sound.disable": "Дыбыс эффекттерін өшіру",
   "control.theme.dark": "Жарық режиміне ауысу",
   "control.theme.light": "Қараңғы режимге ауысу",
-  "control.settings.open": "Ашық параметрлер",
-  "control.settings.close": "Жақын орнату",
-  "control.cluster.settings": "Дыбыс, тақырып, тілдік басқару",
-  "control.cluster.open": "Ашық параметрлер",
-  "control.cluster.tooltip": "Дыбыс, тақырып және тіл параметрлері"
+  "control.settings.open": "Баптауларды ашу",
+  "control.settings.close": "Баптауларды жабу",
+  "control.cluster.settings": "Дыбыс, тақырып және тілді басқару элементтері",
+  "control.cluster.open": "Баптауларды ашу",
+  "control.cluster.tooltip": "Дыбыс, тақырып және тіл баптаулары"
 }

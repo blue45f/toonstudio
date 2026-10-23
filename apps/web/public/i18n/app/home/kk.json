@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "Тарасып жатқан әңгімелер,",
+  "home.hero.titleLine1": "Шашыраған әңгімелер,",
   "home.hero.titleShimmer": "Бір индекс",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Naver Webtoon, Series және Kakao Webtoon-ті іздеңіз, содан кейін нақты уақыт сигналдары мен оқырманның таңдауларын қолдана отырып, не оқу керектігін тез қысқартыңыз.",
-  "home.hero.searchButton": "Іздеу атаулары, жасаушылар, тегтер",
+  "home.hero.description": "Naver Webtoon, Series және Kakao Webtoon бойынша іздеңіз, содан кейін нақты уақыт сигналдары мен оқырман талғамдарын пайдаланып, оқитыныңызды тез таңдаңыз.",
+  "home.hero.searchButton": "Туындыларды, авторларды, тегтерді іздеу",
   "home.hero.rankingButton": "Бірыңғай рейтингті қарау",
   "home.hero.studioLink": "Жаратушы студиясы",
   "home.hero.createLink": "Жаратушы тақтасы",
-  "home.hero.stats.titles": "Атауы",
+  "home.hero.stats.titles": "Туындылар",
   "home.hero.stats.platforms": "Баспа платформалары",
   "home.hero.stats.genres": "Жанрлық спектр",
   "home.hero.stats.reviews": "Оқырманның пікірлері",
-  "home.loadError": "Үй деректерін жүктей алмадым.",
+  "home.loadError": "Басты бет деректерін жүктеу мүмкін болмады.",
   "home.creatorTitle": "Бір идеядан бастап алғашқы сахнаға дейін"
 }
