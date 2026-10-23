@@ -7,7 +7,8 @@ diffusers==0.38.0
 # 4.x 는 GHSA-29pf-2h5f-8g72·GHSA-fgcw-684q-jj6r·GHSA-x9r9-c232-4q39·GHSA-69w3-r845-3855 와
 # GHSA-xrqw-3rrv-vx5w(수정본 5.10.0 은 철회되어 5.10.1 부터) 영향권이라 5.x 로 올렸다. 5.x 는 huggingface-hub 1.5 이상이 필요하다.
 # 이 파일은 GPU 자격 검증을 마친 lock 이 아니다. 5.x 로 만든 새 runtime image 는 gpu-smoke.py 로
-# 세 엔진의 실제 추론을 검증한 뒤에만 승인한다. TripoSR upstream 코드와의 호환은 그 검증에서 확인한다.
+# 세 엔진의 실제 추론을 검증한 뒤에만 승인한다. CPU 에서는 TripoSR upstream main 의 이미지 토크나이저와
+# diffusers SDXL ControlNet·Wan I2V 호출 모양이 5.x 에서 도는 것까지 확인했다(2026-10-23).
 transformers>=5.10.1,<6
 # Security floor: GHSA-4j2p-28q2-5m79 (sharded checkpoint weight_map 경로 순회, 1.14.0 까지 영향).
 accelerate>=1.15.0,<2
@@ -15,6 +16,9 @@ accelerate>=1.15.0,<2
 safetensors>=0.8,<1
 # transformers 5.x 가 1.5 이상을 요구하고 diffusers 0.38 이 2.0 미만만 허용한다.
 huggingface-hub>=1.5,<2
+# Wan I2V 의 프롬프트 정리(diffusers pipeline_wan_i2v.basic_clean)가 ftfy.fix_text 를 직접 부른다. diffusers 는
+# ftfy 를 test·dev extra 로만 두므로 빠지면 첫 Wan 작업이 NameError: name 'ftfy' is not defined 로 실패한다.
+ftfy>=6.3.1,<7
 sentencepiece>=0.2.2,<1
 numpy>=1.26,<3
 imageio[ffmpeg]>=2.34,<3

@@ -186,6 +186,16 @@ def test_deleted_receipt_erases_private_payload_and_files(client, runtime):
     assert not (runtime.root / job).exists()
 
 
+def _declared_requirements(manifest):
+    from packaging.requirements import Requirement
+
+    return [
+        Requirement(line.strip())
+        for line in Path(__file__).with_name(manifest).read_text().splitlines()
+        if line.strip() and not line.lstrip().startswith(('#', '-'))
+    ]
+
+
 @pytest.mark.parametrize(('manifest', 'package', 'patched', 'vulnerable'), [
     ('requirements-models.txt', 'diffusers', '0.38.0', '0.37.0'),
     ('requirements-models.txt', 'safetensors', '0.8.0', '0.7.0'),
@@ -197,17 +207,17 @@ def test_deleted_receipt_erases_private_payload_and_files(client, runtime):
 ])
 def test_dependency_security_floor(manifest, package, patched, vulnerable):
     """Keep patched constraints without installing GPU packages or downloading models."""
-    from packaging.requirements import Requirement
-
-    requirements = [
-        Requirement(line.strip())
-        for line in Path(__file__).with_name(manifest).read_text().splitlines()
-        if line.strip() and not line.lstrip().startswith(('#', '-'))
-    ]
-    matches = [requirement for requirement in requirements if requirement.name == package]
+    matches = [requirement for requirement in _declared_requirements(manifest) if requirement.name == package]
     assert len(matches) == 1, f'{manifest} must declare {package} exactly once'
     assert patched in matches[0].specifier
     assert vulnerable not in matches[0].specifier
+
+
+def test_wan_prompt_cleaning_dependency_is_declared():
+    """diffusers 의 Wan I2V 는 프롬프트 정리에 ftfy 를 직접 부르지만 필수 의존성으로 끌어오지 않는다(test·dev extra 뿐)."""
+    matches = [requirement for requirement in _declared_requirements('requirements-models.txt') if requirement.name == 'ftfy']
+    assert len(matches) == 1, 'requirements-models.txt must declare ftfy exactly once'
+    assert '6.3.1' in matches[0].specifier
 
 
 def test_local_dino_tokenizer_works_with_transformers_5(tmp_path, monkeypatch):
