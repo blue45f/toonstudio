@@ -17,7 +17,7 @@ import {
   isMotionExportSupported,
   loadMotionCutImages,
   pickMotionVideoMime,
-  recommendVideoBitsPerSecond,
+  recommendVideoBitsPerSecond, resolveStudioMotionExportErrorFromCause,
   type MotionCutImage,
   type MotionExportDeps,
   type MotionExportProgress,
@@ -26,7 +26,7 @@ import {
 
 import type { StudioAnimFrame } from "../studio-frame-animation";
 
-export { isMotionExportCancelled, isMotionExportSupported, loadMotionCutImages };
+export { isMotionExportCancelled, isMotionExportSupported, loadMotionCutImages, resolveStudioMotionExportErrorFromCause };
 export type {
   MotionCutImage,
   MotionExportProgress,

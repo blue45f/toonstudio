@@ -14,10 +14,12 @@ import {
   type StudioPublishPackageAiTraining,
   type StudioPublishPackageRights,
 } from "./publish-package/rights";
+import { StudioPublishPackageError } from "./studio-publish-package-error";
 import { normalizeStudioReviewPdfProfileId } from "./studio-review-pdf-profile";
 
 import type { StudioReviewPdfProfileId } from "./studio-review-pdf-profile";
 import { formatNumber } from "@toonstudio/core/format";
+export { StudioPublishPackageError, type StudioPublishPackageErrorCode } from "./studio-publish-package-error";
 
 export const STUDIO_PUBLISH_PACKAGE_SCHEMA = "toonstudio.publish-package" as const;
 export const STUDIO_PUBLISH_PACKAGE_VERSION = 1 as const;
@@ -398,7 +400,7 @@ export type StudioPublishPackageIssueCode =
 export interface StudioPublishPackageIssue {
   code: StudioPublishPackageIssueCode;
   severity: StudioPublishPackageIssueSeverity;
-  message: string;
+  params?: Readonly<Record<string, string>>; // A4 D4 (R15): 표시 문구 대신 코드+params만 방출
   path?: string;
 }
 
@@ -566,7 +568,7 @@ function decodeJson(value: unknown, label: string): unknown {
   try {
     return JSON.parse(value) as unknown;
   } catch {
-    throw new Error(`${label} JSON을 읽을 수 없습니다.`);
+    throw new StudioPublishPackageError("jsonReadFailed", { label });
   }
 }
 
@@ -583,7 +585,7 @@ function rejectFutureVersion(record: Record<string, unknown>, label: string): vo
     Number.isFinite(numericVersion) &&
     numericVersion > STUDIO_PUBLISH_PACKAGE_VERSION
   ) {
-    throw new Error(`이 ${label}은(는) 더 최신 버전에서 만들어졌습니다.`);
+    throw new StudioPublishPackageError("newerVersion", { label });
   }
 }
 
@@ -711,10 +713,10 @@ function validPositiveInteger(value: unknown, max: number): value is number {
 function makeIssue(
   severity: StudioPublishPackageIssueSeverity,
   code: StudioPublishPackageIssueCode,
-  message: string,
+  params?: Readonly<Record<string, string>>,
   path?: string
 ): StudioPublishPackageIssue {
-  return path ? { code, severity, message, path } : { code, severity, message };
+  return { code, severity, ...(params !== undefined ? { params } : {}), ...(path !== undefined ? { path } : {}) };
 }
 
 function outputMimeForSettings(
@@ -795,7 +797,7 @@ export function studioPublishThumbnailFileName(input: {
 }): string {
   const preset = getStudioPublishPlatformPreset(input.destination);
   const spec = preset.thumbnails.find((candidate) => candidate.slot === input.slot);
-  if (!spec) throw new Error("선택한 목적지에서 지원하지 않는 썸네일 종류예요.");
+  if (!spec) throw new StudioPublishPackageError("unsupportedThumbnail");
   return artifactFileName(
     thumbnailBaseName(input.seriesTitle, input.episodeNumber, input.destination, spec),
     input.mimeType
@@ -990,7 +992,7 @@ function validateCanvases(
       makeIssue(
         "warning",
         "CANVAS_METADATA_MISSING",
-        "원본 캔버스 메타데이터가 없어 리샘플링 필요 여부를 확인할 수 없습니다.",
+        undefined,
         "canvases"
       )
     );
@@ -1001,7 +1003,7 @@ function validateCanvases(
       makeIssue(
         "error",
         "CANVAS_LIMIT_EXCEEDED",
-        `캔버스는 최대 ${formatNumber(STUDIO_PUBLISH_PACKAGE_LIMITS.maxCanvases)}개까지 검증할 수 있습니다.`,
+        { max: formatNumber(STUDIO_PUBLISH_PACKAGE_LIMITS.maxCanvases) },
         "canvases"
       )
     );
@@ -1010,10 +1012,10 @@ function validateCanvases(
     const path = `canvases[${index}]`;
     const id = normalizeText(canvas.id, STUDIO_PUBLISH_PACKAGE_LIMITS.maxIdCodeUnits);
     if (!id) {
-      issues.push(makeIssue("error", "CANVAS_ID_REQUIRED", "캔버스 식별자가 비어 있습니다.", `${path}.id`));
+      issues.push(makeIssue("error", "CANVAS_ID_REQUIRED", undefined, `${path}.id`));
     } else if (canvasIds.has(id)) {
       issues.push(
-        makeIssue("error", "CANVAS_ID_DUPLICATE", `캔버스 식별자가 중복되었습니다: ${id}`, `${path}.id`)
+        makeIssue("error", "CANVAS_ID_DUPLICATE", { id }, `${path}.id`)
       );
     } else {
       canvasIds.add(id);
@@ -1023,7 +1025,7 @@ function validateCanvases(
         makeIssue(
           "warning",
           "CANVAS_DIMENSIONS_MISSING",
-          "캔버스 크기 정보가 없어 출력 배율을 확인할 수 없습니다.",
+          undefined,
           canvas.width === undefined ? `${path}.width` : `${path}.height`
         )
       );
@@ -1037,7 +1039,7 @@ function validateCanvases(
         makeIssue(
           "error",
           "CANVAS_DIMENSIONS_INVALID",
-          "캔버스 폭과 높이는 유효한 양의 정수여야 합니다.",
+          undefined,
           path
         )
       );
@@ -1048,7 +1050,7 @@ function validateCanvases(
         makeIssue(
           "warning",
           "CANVAS_RESAMPLE_REQUIRED",
-          `원본 폭 ${formatNumber(canvas.width)}px를 최종 폭 ${formatNumber(preset.episode.targetWidth)}px로 리샘플해야 합니다.`,
+          { width: formatNumber(canvas.width), targetWidth: formatNumber(preset.episode.targetWidth) },
           `${path}.width`
         )
       );
@@ -1058,7 +1060,7 @@ function validateCanvases(
         makeIssue(
           "warning",
           "CANVAS_VERTICAL_RECOMMENDED",
-          "세로 스크롤 게시처에서는 세로형 캔버스와 모바일 미리보기를 권장합니다.",
+          undefined,
           path
         )
       );
@@ -1068,7 +1070,7 @@ function validateCanvases(
         makeIssue(
           "warning",
           "CANVAS_PIXEL_AREA_LARGE",
-          "원본 캔버스 픽셀 수가 커 브라우저 렌더링 메모리를 많이 사용할 수 있습니다. 분할 렌더를 사용하세요.",
+          undefined,
           path
         )
       );
@@ -1088,7 +1090,7 @@ function validateEpisodeImages(
   const artifacts: StudioPublishArtifactPlan[] = [];
   if (images.length === 0) {
     issues.push(
-      makeIssue("error", "EPISODE_IMAGES_REQUIRED", "게시할 회차 이미지가 한 장 이상 필요합니다.", "episodeImages")
+      makeIssue("error", "EPISODE_IMAGES_REQUIRED", undefined, "episodeImages")
     );
     return { artifacts };
   }
@@ -1104,7 +1106,7 @@ function validateEpisodeImages(
       makeIssue(
         "error",
         "EPISODE_IMAGE_LIMIT_EXCEEDED",
-        `회차 이미지가 검증 가능한 최대 ${formatNumber(max)}장을 넘었습니다.`,
+        { max: formatNumber(max) },
         "episodeImages"
       )
     );
@@ -1117,9 +1119,9 @@ function validateEpisodeImages(
     const path = `episodeImages[${index}]`;
     const id = normalizeText(image.id, STUDIO_PUBLISH_PACKAGE_LIMITS.maxIdCodeUnits);
     if (!id) {
-      issues.push(makeIssue("error", "IMAGE_ID_REQUIRED", "이미지 식별자가 비어 있습니다.", `${path}.id`));
+      issues.push(makeIssue("error", "IMAGE_ID_REQUIRED", undefined, `${path}.id`));
     } else if (ids.has(id)) {
-      issues.push(makeIssue("error", "IMAGE_ID_DUPLICATE", `이미지 식별자가 중복되었습니다: ${id}`, `${path}.id`));
+      issues.push(makeIssue("error", "IMAGE_ID_DUPLICATE", { id }, `${path}.id`));
     } else {
       ids.add(id);
     }
@@ -1132,7 +1134,7 @@ function validateEpisodeImages(
         makeIssue(
           "warning",
           "IMAGE_SOURCE_UNKNOWN",
-          "이미지가 현재 원본 캔버스 목록과 연결되지 않습니다.",
+          undefined,
           `${path}.sourceCanvasId`
         )
       );
@@ -1143,7 +1145,7 @@ function validateEpisodeImages(
         makeIssue(
           "warning",
           "IMAGE_MIME_MISSING",
-          "출력 형식 정보가 없어 설정의 기본 형식으로 파일명을 계획했습니다.",
+          undefined,
           `${path}.mimeType`
         )
       );
@@ -1152,7 +1154,7 @@ function validateEpisodeImages(
         makeIssue(
           "error",
           "IMAGE_MIME_UNSUPPORTED",
-          `${preset.label} 회차 이미지는 ${preset.episode.allowedMimeTypes.join(", ")} 형식만 허용합니다.`,
+          { label: preset.label, formats: preset.episode.allowedMimeTypes.join(", ") },
           `${path}.mimeType`
         )
       );
@@ -1162,7 +1164,7 @@ function validateEpisodeImages(
         makeIssue(
           "warning",
           "IMAGE_DIMENSIONS_MISSING",
-          "최종 이미지 크기 정보가 없어 게시처 규격을 확인할 수 없습니다.",
+          undefined,
           image.width === undefined ? `${path}.width` : `${path}.height`
         )
       );
@@ -1171,7 +1173,7 @@ function validateEpisodeImages(
       !validPositiveInteger(image.height, STUDIO_PUBLISH_PACKAGE_LIMITS.maxCanvasDimension)
     ) {
       issues.push(
-        makeIssue("error", "IMAGE_DIMENSIONS_INVALID", "이미지 폭과 높이가 유효하지 않습니다.", path)
+        makeIssue("error", "IMAGE_DIMENSIONS_INVALID", undefined, path)
       );
     } else {
       if (preset.episode.targetWidth && image.width !== preset.episode.targetWidth) {
@@ -1179,7 +1181,7 @@ function validateEpisodeImages(
           makeIssue(
             "error",
             "IMAGE_WIDTH_MISMATCH",
-            `최종 이미지 폭은 ${formatNumber(preset.episode.targetWidth)}px여야 합니다.`,
+            { width: formatNumber(preset.episode.targetWidth) },
             `${path}.width`
           )
         );
@@ -1191,7 +1193,7 @@ function validateEpisodeImages(
           makeIssue(
             "error",
             "IMAGE_HEIGHT_EXCEEDED",
-            `이 형식의 이미지 높이는 ${formatNumber(maxHeight)}px 이하여야 합니다.`,
+            { maxHeight: formatNumber(maxHeight) },
             `${path}.height`
           )
         );
@@ -1204,7 +1206,7 @@ function validateEpisodeImages(
           makeIssue(
             "warning",
             "IMAGE_BYTE_SIZE_MISSING",
-            "파일 용량 정보가 없어 게시처의 개별 파일 제한을 확인할 수 없습니다.",
+            undefined,
             `${path}.byteSize`
           )
         );
@@ -1212,7 +1214,7 @@ function validateEpisodeImages(
     } else if (!validPositiveInteger(image.byteSize, STUDIO_PUBLISH_PACKAGE_LIMITS.maxByteSize)) {
       allBytesKnown = false;
       issues.push(
-        makeIssue("error", "IMAGE_BYTE_SIZE_INVALID", "파일 용량 정보가 유효하지 않습니다.", `${path}.byteSize`)
+        makeIssue("error", "IMAGE_BYTE_SIZE_INVALID", undefined, `${path}.byteSize`)
       );
     } else {
       knownBytes += image.byteSize;
@@ -1224,7 +1226,7 @@ function validateEpisodeImages(
           makeIssue(
             "error",
             "IMAGE_FILE_TOO_LARGE",
-            `개별 파일은 ${formatNumber((preset.episode.maxBytesExclusive / MB))}MB 미만이어야 합니다.`,
+            { maxMb: formatNumber(preset.episode.maxBytesExclusive / MB) },
             `${path}.byteSize`
           )
         );
@@ -1236,7 +1238,7 @@ function validateEpisodeImages(
         makeIssue(
           "warning",
           "CHECKSUM_INVALID",
-          "SHA-256 값이 올바르지 않아 공개 manifest에서 제외했습니다.",
+          undefined,
           `${path}.sha256`
         )
       );
@@ -1266,7 +1268,7 @@ function validateEpisodeImages(
         makeIssue(
           "warning",
           "EPISODE_TOTAL_SIZE_UNVERIFIED",
-          "일부 파일 용량이 없어 회차 전체 용량 제한을 확인할 수 없습니다.",
+          undefined,
           "episodeImages"
         )
       );
@@ -1275,7 +1277,7 @@ function validateEpisodeImages(
         makeIssue(
           "error",
           "EPISODE_TOTAL_SIZE_EXCEEDED",
-          `회차 전체 파일은 ${formatNumber((preset.episode.maxEpisodeBytesExclusive / MB))}MB 미만이어야 합니다.`,
+          { maxMb: formatNumber(preset.episode.maxEpisodeBytesExclusive / MB) },
           "episodeImages"
         )
       );
@@ -1297,7 +1299,7 @@ function validateThumbnails(
       makeIssue(
         "error",
         "THUMBNAIL_LIMIT_EXCEEDED",
-        `썸네일은 최대 ${STUDIO_PUBLISH_PACKAGE_LIMITS.maxThumbnails}개까지 검증할 수 있습니다.`,
+        { max: String(STUDIO_PUBLISH_PACKAGE_LIMITS.maxThumbnails) },
         "thumbnails"
       )
     );
@@ -1316,7 +1318,7 @@ function validateThumbnails(
         makeIssue(
           "warning",
           "THUMBNAIL_SLOT_UNSUPPORTED",
-          `${preset.label} 패키지에서 사용하지 않는 썸네일 종류입니다: ${thumbnail.slot}`,
+          { label: preset.label, slot: thumbnail.slot },
           `${path}.slot`
         )
       );
@@ -1328,7 +1330,7 @@ function validateThumbnails(
         makeIssue(
           "error",
           "THUMBNAIL_SLOT_DUPLICATE",
-          `같은 썸네일 종류가 중복되었습니다: ${thumbnail.slot}`,
+          { slot: thumbnail.slot },
           `${path}.slot`
         )
       );
@@ -1349,7 +1351,7 @@ function validateThumbnails(
           makeIssue(
             "error",
             "THUMBNAIL_REQUIRED",
-            `${spec.label} 이미지가 필요합니다.`,
+            { label: spec.label },
             `thumbnails.${slot}`
           )
         );
@@ -1381,7 +1383,7 @@ function validateThumbnails(
         makeIssue(
           "warning",
           "THUMBNAIL_MIME_MISSING",
-          "썸네일 형식 정보가 없어 기본 형식으로 파일명을 계획했습니다.",
+          undefined,
           `${path}.mimeType`
         )
       );
@@ -1390,7 +1392,7 @@ function validateThumbnails(
         makeIssue(
           "error",
           "THUMBNAIL_MIME_UNSUPPORTED",
-          `${spec.label}은(는) ${spec.allowedMimeTypes.join(", ")} 형식만 허용합니다.`,
+          { label: spec.label, formats: spec.allowedMimeTypes.join(", ") },
           `${path}.mimeType`
         )
       );
@@ -1400,7 +1402,7 @@ function validateThumbnails(
         makeIssue(
           "warning",
           "THUMBNAIL_DIMENSIONS_MISSING",
-          "썸네일 크기 정보가 없어 정확한 크기를 확인할 수 없습니다.",
+          undefined,
           thumbnail.width === undefined ? `${path}.width` : `${path}.height`
         )
       );
@@ -1412,7 +1414,7 @@ function validateThumbnails(
         makeIssue(
           "error",
           "THUMBNAIL_DIMENSIONS_INVALID",
-          "썸네일 폭과 높이가 유효하지 않습니다.",
+          undefined,
           path
         )
       );
@@ -1421,7 +1423,7 @@ function validateThumbnails(
         makeIssue(
           "error",
           "THUMBNAIL_DIMENSIONS_MISMATCH",
-          `${spec.label}은(는) ${formatNumber(spec.width)}×${formatNumber(spec.height)}px여야 합니다.`,
+          { label: spec.label, width: formatNumber(spec.width), height: formatNumber(spec.height) },
           path
         )
       );
@@ -1432,7 +1434,7 @@ function validateThumbnails(
           makeIssue(
             "warning",
             "THUMBNAIL_BYTE_SIZE_MISSING",
-            "썸네일 파일 용량이 없어 제한을 확인할 수 없습니다.",
+            undefined,
             `${path}.byteSize`
           )
         );
@@ -1442,7 +1444,7 @@ function validateThumbnails(
         makeIssue(
           "error",
           "THUMBNAIL_BYTE_SIZE_INVALID",
-          "썸네일 파일 용량이 유효하지 않습니다.",
+          undefined,
           `${path}.byteSize`
         )
       );
@@ -1451,7 +1453,7 @@ function validateThumbnails(
         makeIssue(
           "error",
           "THUMBNAIL_FILE_TOO_LARGE",
-          `${spec.label}은(는) ${formatNumber((spec.maxBytesExclusive / KB))}KB 미만이어야 합니다.`,
+          { label: spec.label, maxKb: formatNumber(spec.maxBytesExclusive / KB) },
           `${path}.byteSize`
         )
       );
@@ -1462,7 +1464,7 @@ function validateThumbnails(
         makeIssue(
           "warning",
           "CHECKSUM_INVALID",
-          "SHA-256 값이 올바르지 않아 공개 manifest에서 제외했습니다.",
+          undefined,
           `${path}.sha256`
         )
       );
@@ -1503,9 +1505,7 @@ function validateThumbnails(
       makeIssue(
         preset.requiresCurrentPolicyReview ? "error" : "warning",
         "THUMBNAIL_CONTENT_REVIEW_REQUIRED",
-        preset.requiresCurrentPolicyReview
-          ? "정식 게시 패키지 전 썸네일의 전 연령 노출 적합성, 텍스트 잘림, 안전 영역을 직접 확인해야 합니다."
-          : "썸네일의 전 연령 노출 적합성, 텍스트 잘림, 안전 영역을 사람이 직접 확인하세요.",
+        { variant: preset.requiresCurrentPolicyReview ? "formal" : "casual" },
         "settings.thumbnailSafetyConfirmed"
       )
     );
@@ -1539,7 +1539,7 @@ function validateArtifactNames(
         makeIssue(
           "error",
           "ARTIFACT_FILENAME_COLLISION",
-          `패키지 안에서 파일명이 충돌합니다: ${artifact.fileName}`,
+          { fileName: artifact.fileName },
           `artifacts[${index}].fileName`
         )
       );
@@ -1557,12 +1557,12 @@ export function planStudioPublishPackage(input: StudioPublishPackagePlanInput): 
   const episodeTitle = normalizeText(input.episodeTitle, STUDIO_PUBLISH_PACKAGE_LIMITS.maxTitleCodeUnits);
   if (!seriesTitle) {
     issues.push(
-      makeIssue("error", "SERIES_TITLE_REQUIRED", "시리즈 제목을 입력해 주세요.", "seriesTitle")
+      makeIssue("error", "SERIES_TITLE_REQUIRED", undefined, "seriesTitle")
     );
   }
   if (!episodeTitle) {
     issues.push(
-      makeIssue("error", "EPISODE_TITLE_REQUIRED", "회차 제목을 입력해 주세요.", "episodeTitle")
+      makeIssue("error", "EPISODE_TITLE_REQUIRED", undefined, "episodeTitle")
     );
   }
   if (
@@ -1574,7 +1574,7 @@ export function planStudioPublishPackage(input: StudioPublishPackagePlanInput): 
       makeIssue(
         "error",
         "EPISODE_NUMBER_INVALID",
-        "회차 번호는 1 이상 999,999 이하의 정수여야 합니다.",
+        undefined,
         "episodeNumber"
       )
     );
@@ -1600,7 +1600,7 @@ export function planStudioPublishPackage(input: StudioPublishPackagePlanInput): 
         makeIssue(
           "warning",
           "CREDITS_EMPTY",
-          "출처·라이선스 파일을 포함하도록 설정했지만 입력된 내용이 없습니다.",
+          undefined,
           "creditsText"
         )
       );
@@ -1612,7 +1612,7 @@ export function planStudioPublishPackage(input: StudioPublishPackagePlanInput): 
         makeIssue(
           "error",
           "AI_DISCLOSURE_REQUIRED",
-          "AI 보조 또는 생성 사용 범위를 설명하는 공개 문구가 필요합니다.",
+          undefined,
           "settings.aiDisclosure"
         )
       );
@@ -1629,7 +1629,7 @@ export function planStudioPublishPackage(input: StudioPublishPackagePlanInput): 
       makeIssue(
         "error",
         "TAPAS_AI_GENERATED_CONTENT_PROHIBITED",
-        "현재 벤치마크한 Tapas 정책에서는 AI 생성 콘텐츠 게시가 금지됩니다. 최신 원문 정책을 직접 확인하세요.",
+        undefined,
         "settings.aiUsage"
       )
     );
@@ -1639,7 +1639,7 @@ export function planStudioPublishPackage(input: StudioPublishPackagePlanInput): 
       makeIssue(
         "error",
         "POLICY_REVIEW_REQUIRED",
-        `${preset.label} 정식 게시 패키지 전 최신 업로드·콘텐츠 정책을 직접 확인해야 합니다.`,
+        { label: preset.label },
         "settings.policyReviewConfirmed"
       )
     );

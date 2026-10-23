@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import { StudioPromisePayoffError } from "./studio-promise-payoff-ledger-error";
+
+export { StudioPromisePayoffError } from "./studio-promise-payoff-ledger-error";
+export type { StudioPromisePayoffErrorCode } from "./studio-promise-payoff-ledger-error";
+
 export const STUDIO_PROMISE_PAYOFF_LEDGER_VERSION = 1 as const;
 export const STUDIO_PROMISE_PAYOFF_MAX_ENTRIES = 240;
 export const STUDIO_PROMISE_PAYOFF_MAX_LINKS = 32;
@@ -167,7 +172,8 @@ export interface StudioPromisePayoffWarning {
   readonly code: StudioPromisePayoffWarningCode;
   readonly severity: StudioPromisePayoffWarningSeverity;
   readonly entryId: string;
-  readonly message: string;
+  /** A4 D4 (R15): 표시 문구 대신 해석용 params만 싣는다(리졸버 promise 구간). */
+  readonly params: Readonly<Record<string, string>>;
 }
 
 export interface StudioPromisePayoffSummary {
@@ -452,7 +458,7 @@ export function nextStudioPromisePayoffEntryId(
     const candidate = `${safePrefix}-${index}`;
     if (!used.has(candidate)) return candidate;
   }
-  throw new Error("약속 원장에 사용할 안정 ID를 만들 수 없어요.");
+  throw new StudioPromisePayoffError("idCreationFailed");
 }
 
 export function nextStudioPromisePayoffLinkId(
@@ -472,7 +478,7 @@ export function nextStudioPromisePayoffLinkId(
     )}${suffix}`;
     if (!used.has(candidate)) return candidate;
   }
-  throw new Error("약속 연결에 사용할 안정 ID를 만들 수 없어요.");
+  throw new StudioPromisePayoffError("linkIdCreationFailed");
 }
 
 export function setStudioPromisePayoffCurrentEpisode(
@@ -481,7 +487,7 @@ export function setStudioPromisePayoffCurrentEpisode(
 ): StudioPromisePayoffLedger {
   const ledger = normalizeStudioPromisePayoffLedger(value);
   const normalized = normalizeEpisode(currentEpisode, null);
-  if (normalized === null) throw new Error("현재 작업 회차를 1 이상의 정수로 입력하세요.");
+  if (normalized === null) throw new StudioPromisePayoffError("invalidEpisode");
   if (normalized === ledger.currentEpisode) return ledger;
   return canonicalLedger(normalized, ledger.entries);
 }
@@ -492,11 +498,11 @@ export function addStudioPromisePayoffEntry(
 ): StudioPromisePayoffLedger {
   const ledger = normalizeStudioPromisePayoffLedger(value);
   if (ledger.entries.length >= STUDIO_PROMISE_PAYOFF_MAX_ENTRIES) {
-    throw new Error(`약속 원장은 최대 ${STUDIO_PROMISE_PAYOFF_MAX_ENTRIES}개까지 저장할 수 있어요.`);
+    throw new StudioPromisePayoffError("tooManyEntries", { max: String(STUDIO_PROMISE_PAYOFF_MAX_ENTRIES) });
   }
   const id = normalizeId(input.id) || nextStudioPromisePayoffEntryId(ledger);
   if (ledger.entries.some((entry) => entry.id === id)) {
-    throw new Error("이미 사용 중인 약속 원장 ID예요.");
+    throw new StudioPromisePayoffError("duplicateId");
   }
   const entry = normalizeEntry({
     id,
@@ -514,7 +520,7 @@ export function addStudioPromisePayoffEntry(
     payoff: input.payoff ?? null,
     intentionalNonPayoffReason: input.intentionalNonPayoffReason ?? "",
   });
-  if (!entry) throw new Error("약속 원장 항목을 정규화하지 못했어요.");
+  if (!entry) throw new StudioPromisePayoffError("normalizeFailed");
   return canonicalLedger(ledger.currentEpisode, [...ledger.entries, entry]);
 }
 
@@ -524,16 +530,16 @@ export function patchStudioPromisePayoffEntry(
   patch: StudioPromisePayoffEntryPatch
 ): StudioPromisePayoffLedger {
   const ledger = normalizeStudioPromisePayoffLedger(value);
-  if (!isRecord(patch)) throw new Error("올바르지 않은 약속 원장 수정 내용이에요.");
+  if (!isRecord(patch)) throw new StudioPromisePayoffError("invalidPatch");
   for (const field of Object.keys(patch)) {
     if (!ENTRY_PATCH_FIELDS.has(field)) {
-      throw new Error(`수정할 수 없는 약속 원장 필드예요: ${field}`);
+      throw new StudioPromisePayoffError("forbiddenField", { field });
     }
   }
   const index = ledger.entries.findIndex((entry) => entry.id === entryId);
   if (index < 0) return ledger;
   const next = normalizeEntry({ ...ledger.entries[index], ...patch });
-  if (!next) throw new Error("약속 원장 항목을 정규화하지 못했어요.");
+  if (!next) throw new StudioPromisePayoffError("normalizeFailed");
   if (JSON.stringify(next) === JSON.stringify(ledger.entries[index])) return ledger;
   const entries = ledger.entries.slice();
   entries[index] = next;
@@ -579,78 +585,53 @@ export function diagnoseStudioPromisePayoffLedger(
     entry: StudioPromisePayoffEntry,
     code: StudioPromisePayoffWarningCode,
     severity: StudioPromisePayoffWarningSeverity,
-    message: string
-  ) => warnings.push({ code, severity, entryId: entry.id, message });
+    params: Readonly<Record<string, string>>
+  ) => warnings.push({ code, severity, entryId: entry.id, params });
 
   for (const entry of ledger.entries) {
     const label = entry.title || entry.id;
     if (!entry.seed) {
-      add(entry, "MISSING_SEED", "high", `“${label}”의 첫 약속 회차·컷이 연결되지 않았습니다.`);
+      add(entry, "MISSING_SEED", "high", { label });
     }
     if (
       (entry.status === "foreshadow" || entry.status === "partial-payoff")
       && entry.foreshadows.length === 0
     ) {
-      add(entry, "MISSING_FORESHADOW", "normal", `“${label}”의 중간 단서가 아직 연결되지 않았습니다.`);
+      add(entry, "MISSING_FORESHADOW", "normal", { label });
     }
     if (
       (entry.status === "partial-payoff" || entry.status === "payoff")
       && !entry.payoff
     ) {
-      add(entry, "MISSING_PAYOFF", "high", `“${label}”의 회수 회차·컷이 연결되지 않았습니다.`);
+      add(entry, "MISSING_PAYOFF", "high", { label });
     }
     if (
       entry.status === "intentional-non-payoff"
       && !entry.intentionalNonPayoffReason
     ) {
-      add(
-        entry,
-        "MISSING_INTENTIONAL_REASON",
-        "high",
-        `“${label}”을 의도적으로 미회수한 이유를 기록하세요.`
-      );
+      add(entry, "MISSING_INTENTIONAL_REASON", "high", { label });
     }
 
     const deadline = studioPromisePayoffDeadlineState(entry, ledger.currentEpisode);
     if (deadline === "unscheduled") {
-      add(entry, "UNSCHEDULED_PAYOFF", "low", `“${label}”의 회수 예정 회차가 없습니다.`);
+      add(entry, "UNSCHEDULED_PAYOFF", "low", { label });
     } else if (deadline === "due-soon") {
-      add(
-        entry,
-        "DUE_SOON",
-        "normal",
-        `“${label}”의 회수 마감이 ${entry.dueEpisode}화로 가까워졌습니다.`
-      );
+      add(entry, "DUE_SOON", "normal", { label, dueEpisode: String(entry.dueEpisode) });
     } else if (deadline === "due-now") {
-      add(entry, "DUE_NOW", "high", `“${label}”의 회수 마감이 현재 ${ledger.currentEpisode}화입니다.`);
+      add(entry, "DUE_NOW", "high", { label, currentEpisode: String(ledger.currentEpisode) });
     } else if (deadline === "overdue") {
-      add(
-        entry,
-        "OVERDUE",
-        "critical",
-        `“${label}”의 회수 마감 ${entry.dueEpisode}화가 지났습니다.`
-      );
+      add(entry, "OVERDUE", "critical", { label, dueEpisode: String(entry.dueEpisode) });
     }
 
     if (entry.seed && entry.payoff && entry.payoff.episode < entry.seed.episode) {
-      add(entry, "PAYOFF_BEFORE_SEED", "high", `“${label}”의 회수 회차가 첫 약속보다 앞섭니다.`);
+      add(entry, "PAYOFF_BEFORE_SEED", "high", { label });
     }
     for (const clue of entry.foreshadows) {
       if (entry.seed && clue.episode < entry.seed.episode) {
-        add(
-          entry,
-          "FORESHADOW_BEFORE_SEED",
-          "normal",
-          `“${label}”의 ${clue.episode}화 단서가 첫 약속보다 앞섭니다.`
-        );
+        add(entry, "FORESHADOW_BEFORE_SEED", "normal", { label, episode: String(clue.episode) });
       }
       if (entry.payoff && clue.episode > entry.payoff.episode) {
-        add(
-          entry,
-          "FORESHADOW_AFTER_PAYOFF",
-          "normal",
-          `“${label}”의 ${clue.episode}화 단서가 회수 뒤에 놓였습니다.`
-        );
+        add(entry, "FORESHADOW_AFTER_PAYOFF", "normal", { label, episode: String(clue.episode) });
       }
     }
   }
@@ -660,7 +641,7 @@ export function diagnoseStudioPromisePayoffLedger(
       WARNING_SEVERITY_ORDER[left.severity] - WARNING_SEVERITY_ORDER[right.severity]
       || compareText(left.entryId, right.entryId)
       || compareText(left.code, right.code)
-      || compareText(left.message, right.message)
+      || compareText(JSON.stringify(left.params), JSON.stringify(right.params))
   );
 }
 
@@ -682,7 +663,9 @@ export interface StudioPromisePayoffRecapCandidate {
   readonly appearanceEpisode: number;
   readonly gapEpisodes: number;
   readonly severity: StudioPromisePayoffWarningSeverity;
-  readonly message: string;
+  /** A4 D4 (R15): 표시 문구 대신 코드+params만 싣는다(리졸버 promise.recapGap). */
+  readonly code: "recapGap";
+  readonly params: Readonly<Record<string, string>>;
 }
 
 export interface StudioPromisePayoffRecapOptions {
@@ -751,10 +734,13 @@ export function findStudioPromisePayoffRecapCandidates(
         appearanceEpisode,
         gapEpisodes,
         severity: gapEpisodes >= minGap * 2 ? "high" : "normal",
-        message:
-          `“${label}”: 마지막 설명은 ${lastExplainedEpisode}화, 다음 등장은 `
-          + `${appearanceEpisode}화로 ${gapEpisodes}화 간격입니다. `
-          + "처음 보는 독자를 위해 짧은 리캡을 검토하세요.",
+        code: "recapGap",
+        params: {
+          label,
+          lastExplainedEpisode: String(lastExplainedEpisode),
+          appearanceEpisode: String(appearanceEpisode),
+          gapEpisodes: String(gapEpisodes),
+        },
       });
       break;
     }

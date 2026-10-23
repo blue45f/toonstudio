@@ -21,6 +21,11 @@ import {
   type StudioFilterPackKind,
   type StudioFilterPackValues,
 } from "./filter/studio-filter-pack";
+import {
+  StudioCommunityPackMigrationError,
+  type StudioCommunityPackMigrationReason,
+  type StudioCommunityPackReasonCode,
+} from "./studio-community-pack-legacy-migration-error";
 import { projectCreatorMarketplaceRecordToStudioPack } from "./studio-community-marketplace";
 
 import type { StudioCreatorPackDefinition } from "./studio-creator-pack-catalog";
@@ -47,6 +52,7 @@ import {
 } from "@/platform/creator-marketplace-client";
 
 export const STUDIO_CREATOR_PACK_SQLITE_NAMESPACE = "studio-creator-pack-v12";
+export { StudioCommunityPackMigrationError, type StudioCommunityPackMigrationReason, type StudioCommunityPackReasonCode, type StudioCommunityPackThrowCode } from "./studio-community-pack-legacy-migration-error";
 
 type MigratableKind = "brush" | "filter" | "palette";
 
@@ -68,7 +74,7 @@ export type StudioCommunityPackLegacyMigrationResult =
     }>
   | Readonly<{
       status: "conflict" | "repair-required";
-      reason: string;
+      reason: StudioCommunityPackMigrationReason;
     }>;
 
 export interface StudioCommunityPackLegacyMigrationOptions {
@@ -196,11 +202,8 @@ function groupLegacyRows<Row extends { readonly id: string }>(
     }));
 }
 
-function issue(
-  status: "conflict" | "repair-required",
-  reason: string,
-): StudioCommunityPackLegacyMigrationResult {
-  return { status, reason };
+function issue(status: "conflict" | "repair-required", code: StudioCommunityPackReasonCode): StudioCommunityPackLegacyMigrationResult {
+  return { status, reason: { code } };
 }
 
 function sameJson(left: unknown, right: unknown): boolean {
@@ -253,7 +256,7 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
 ): Promise<
   | { readonly status: "none" }
   | { readonly status: "candidate"; readonly candidate: VerifiedLegacyCandidate<Row> }
-  | { readonly status: "conflict" | "repair-required"; readonly reason: string }
+  | { readonly status: "conflict" | "repair-required"; readonly reason: StudioCommunityPackMigrationReason }
 > {
   const source = currentPack.marketplaceSource!;
   const matches: VerifiedLegacyCandidate<Row>[] = [];
@@ -264,7 +267,7 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
     if (!group.legacyPackageId) {
       return {
         status: "conflict",
-        reason: "레거시 Creator Pack UUID가 서로 다른 로컬 package ID로 중복되어 있습니다.",
+        reason: { code: "legacyDuplicateUuid" },
       };
     }
     options.assertCurrent();
@@ -277,7 +280,7 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
       options.assertCurrent();
       return {
         status: "repair-required",
-        reason: "레거시 Creator Pack 릴리스 식별자를 서버에서 확인할 수 없어 자동 이전하지 않았습니다.",
+        reason: { code: "legacyIdentityUnverifiable" },
       };
     }
     options.assertCurrent();
@@ -287,7 +290,7 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
     ) {
       return {
         status: "conflict",
-        reason: "로컬 레거시 UUID와 서버 릴리스 식별자가 정확히 일치하지 않습니다.",
+        reason: { code: "legacyIdMismatch" },
       };
     }
     if (
@@ -297,13 +300,13 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
     if (identity.kind !== currentPack.metadata.kind) {
       return {
         status: "conflict",
-        reason: "같은 Creator Market package의 로컬 종류와 서버 종류가 일치하지 않습니다.",
+        reason: { code: "legacyKindMismatch" },
       };
     }
     if (identity.availability !== "listed") {
       return {
         status: "repair-required",
-        reason: "같은 Creator Market package의 레거시 릴리스가 현재 공개 설치 대상이 아니어서 자동 이전하지 않았습니다.",
+        reason: { code: "legacyNotListed" },
       };
     }
     let record: CreatorMarketplaceResourceRecord;
@@ -315,7 +318,7 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
       options.assertCurrent();
       return {
         status: "repair-required",
-        reason: "레거시 Creator Pack 릴리스를 서버에서 확인할 수 없어 자동 이전하지 않았습니다.",
+        reason: { code: "legacyRecordUnverifiable" },
       };
     }
     options.assertCurrent();
@@ -328,7 +331,7 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
     ) {
       return {
         status: "conflict",
-        reason: "레거시 릴리스 식별자와 공개 릴리스의 정확한 메타데이터가 일치하지 않습니다.",
+        reason: { code: "legacyMetaMismatch" },
       };
     }
     const projection = projectCreatorMarketplaceRecordToStudioPack(record);
@@ -340,7 +343,7 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
     ) {
       return {
         status: "conflict",
-        reason: "서버 릴리스를 현재 Studio 논리 팩으로 안전하게 투영할 수 없습니다.",
+        reason: { code: "legacyProjectionUnsafe" },
       };
     }
     matches.push({ group, record, pack: projection.pack });
@@ -349,7 +352,7 @@ async function resolveMatchingCandidate<Row extends { readonly id: string }>(
   if (matches.length !== 1) {
     return {
       status: "conflict",
-      reason: "같은 논리 팩에 속한 레거시 릴리스가 둘 이상 설치되어 자동 병합하지 않았습니다.",
+      reason: { code: "legacyMultipleInstalled" },
     };
   }
   return { status: "candidate", candidate: matches[0]! };
@@ -362,13 +365,13 @@ function verifyReceipt(
   kind: "brush" | "palette",
 ): StudioCreatorPackSqliteReceipt | StudioCommunityPackLegacyMigrationResult {
   if (raw === null) {
-    return issue("repair-required", "레거시 Creator Pack 설치 영수증이 없습니다.");
+    return issue("repair-required", "receiptMissing");
   }
   let receipt: StudioCreatorPackSqliteReceipt;
   try {
     receipt = parseStudioCreatorPackSqliteReceipt(raw, kind)!;
   } catch {
-    return issue("repair-required", "레거시 Creator Pack 설치 영수증이 손상되었습니다.");
+    return issue("repair-required", "receiptCorrupt");
   }
   const normalizedVersion = normalizeCreatorMarketplaceLegacySemver(
     receipt.packageVersion,
@@ -381,7 +384,7 @@ function verifyReceipt(
     || !Number.isSafeInteger(receipt.updatedAt)
     || receipt.updatedAt < 0
   ) {
-    return issue("conflict", "레거시 Creator Pack 영수증이 서버 릴리스와 일치하지 않습니다.");
+    return issue("conflict", "receiptMismatch");
   }
   return receipt;
 }
@@ -507,11 +510,11 @@ async function migrateBrush(
     studioCreatorPackReceiptKey("brush", currentPack.metadata.id),
   );
   if (logicalRows.length > 0 || logicalReceiptRaw !== null) {
-    return issue("conflict", "논리 ID와 레거시 ID의 브러시 설치가 동시에 존재합니다.");
+    return issue("conflict", "brushLogicalConflict");
   }
   const rowsById = candidateRowsByEntry(candidate);
   if (!rowsById) {
-    return issue("repair-required", "레거시 브러시 행이 서버 entry 집합과 완전하게 일치하지 않습니다.");
+    return issue("repair-required", "brushRowsMismatch");
   }
   const oldPack = legacyPack(candidate.pack, candidate.group.legacyPackageId);
   const oldRows: StudioSavedBrush[] = [];
@@ -521,7 +524,7 @@ async function migrateBrush(
     const row = rowsById.get(oldId)!;
     const expected = brushFromEntry(oldPack, index, row);
     if (!sameJson(row, expected)) {
-      return issue("conflict", "레거시 브러시 정의가 서버 릴리스와 일치하지 않습니다.");
+      return issue("conflict", "brushDefinitionMismatch");
     }
     oldRows.push(row);
     newRows.push(brushFromEntry(candidate.pack, index, row));
@@ -542,7 +545,7 @@ async function migrateBrush(
   );
   if (!("version" in receipt)) return receipt;
   if (!product.compareAndRestoreInstallSnapshot || !product.insertMissingInstallSnapshot) {
-    return issue("repair-required", "브러시 저장소가 안전한 원자 이전을 지원하지 않습니다.");
+    return issue("repair-required", "brushStoreUnsupported");
   }
   const newReceiptKey = studioCreatorPackReceiptKey("brush", candidate.pack.metadata.id);
   const newReceiptRaw = serializeStudioCreatorPackSqliteReceipt({
@@ -583,7 +586,7 @@ async function migrateBrush(
         : [],
     );
     if (restoreOld.conflictIds.length > 0 || removeNew.conflictIds.length > 0) {
-      throw new Error("브러시 레거시 이전 rollback이 새 사용자 변경과 충돌했습니다.");
+      throw new StudioCommunityPackMigrationError("brushRollbackConflict");
     }
     const restoredOld = await Promise.all(
       removedOldRows.map((row) => product.repository.getById(row.id)),
@@ -592,14 +595,14 @@ async function migrateBrush(
       restoredOld.some((row, index) =>
         row === null || !sameJson(row, removedOldRows[index]))
     ) {
-      throw new Error("브러시 레거시 이전 rollback을 완전하게 검증하지 못했습니다.");
+      throw new StudioCommunityPackMigrationError("brushRollbackUnverified");
     }
   };
   try {
     options.assertCurrent();
     for (const row of newRows) {
       if (await product.insertMissingInstallSnapshot([row]) !== 1) {
-        throw new Error("논리 ID 브러시가 이전 중 먼저 생성되어 덮어쓰지 않았습니다.");
+        throw new StudioCommunityPackMigrationError("brushLogicalIdPrecreated");
       }
       createdNewRows.push(row);
       options.assertCurrent();
@@ -612,7 +615,7 @@ async function migrateBrush(
     }]);
     createdNewReceipt = receiptWrite.restoredIds.includes(newReceiptIdentity);
     if (receiptWrite.conflictIds.length > 0 || !createdNewReceipt) {
-      throw new Error("논리 ID 브러시 영수증이 이전 중 먼저 생성되어 덮어쓰지 않았습니다.");
+      throw new StudioCommunityPackMigrationError("brushReceiptPrecreated");
     }
     options.assertCurrent();
     const verifiedNew = await Promise.all(
@@ -625,7 +628,7 @@ async function migrateBrush(
     if (
       verifiedReceipt !== newReceiptRaw
       || verifiedNew.some((row, index) => row === null || !sameJson(row, newRows[index]))
-    ) throw new Error("새 논리 ID 브러시를 완전하게 검증하지 못했습니다.");
+    ) throw new StudioCommunityPackMigrationError("brushMigratedUnverified");
     const removed = await product.compareAndRestoreInstallSnapshot(
       oldRows.map((row) => ({ id: row.id, expected: row, restore: null })),
       [{
@@ -643,7 +646,7 @@ async function migrateBrush(
       || removedOldRows.length !== oldRows.length
       || !removedOldReceipt
     ) {
-      throw new Error("레거시 브러시가 이전 중 변경되어 제거하지 않았습니다.");
+      throw new StudioCommunityPackMigrationError("brushLegacyChanged");
     }
     options.assertCurrent();
     const oldRemaining = await Promise.all(
@@ -652,14 +655,14 @@ async function migrateBrush(
     if (
       oldRemaining.some((row) => row !== null)
       || await database.kvGet(STUDIO_CREATOR_PACK_SQLITE_NAMESPACE, oldReceiptKey) !== null
-    ) throw new Error("레거시 브러시 제거를 완전하게 검증하지 못했습니다.");
+    ) throw new StudioCommunityPackMigrationError("brushLegacyRemovalUnverified");
   } catch (error) {
     try {
       await rollback();
     } catch (rollbackError) {
       throw new AggregateError(
         [error, rollbackError],
-        "브러시 레거시 이전 rollback 실패",
+        "brushRollbackFailed",
         { cause: rollbackError },
       );
     }
@@ -689,11 +692,11 @@ async function migrateFilter(
   if (resolved.status !== "candidate") return resolved;
   const candidate = resolved.candidate;
   if (allRows.some((row) => row.id.startsWith(logicalPrefix(currentPack)))) {
-    return issue("conflict", "논리 ID와 레거시 ID의 필터 설치가 동시에 존재합니다.");
+    return issue("conflict", "filterLogicalConflict");
   }
   const rowsById = candidateRowsByEntry(candidate);
   if (!rowsById) {
-    return issue("repair-required", "레거시 필터 행이 서버 entry 집합과 완전하게 일치하지 않습니다.");
+    return issue("repair-required", "filterRowsMismatch");
   }
   const oldPack = legacyPack(candidate.pack, candidate.group.legacyPackageId);
   const oldRows: StudioFilterLibraryPreset[] = [];
@@ -708,20 +711,20 @@ async function migrateFilter(
         !== candidate.pack.metadata.version
       || row.packageFingerprint !== candidate.pack.metadata.packageFingerprint
     ) {
-      return issue("conflict", "레거시 필터 영수증 필드가 서버 릴리스와 일치하지 않습니다.");
+      return issue("conflict", "filterReceiptMismatch");
     }
     const expected = {
       ...filterFromEntry(oldPack, index, row),
       packageVersion: row.packageVersion,
     };
     if (!sameJson(row, expected)) {
-      return issue("conflict", "레거시 필터 정의가 서버 릴리스와 일치하지 않습니다.");
+      return issue("conflict", "filterDefinitionMismatch");
     }
     oldRows.push(row);
     newRows.push(filterFromEntry(candidate.pack, index, row));
   }
   if (!product.compareAndRestoreInstallSnapshot || !product.insertMissingInstallSnapshot) {
-    return issue("repair-required", "필터 저장소가 안전한 원자 이전을 지원하지 않습니다.");
+    return issue("repair-required", "filterStoreUnsupported");
   }
   const createdNewRows: StudioFilterLibraryPreset[] = [];
   let removedOldRows: StudioFilterLibraryPreset[] = [];
@@ -731,7 +734,7 @@ async function migrateFilter(
       createdNewRows.map((row) => ({ id: row.id, expected: row, restore: null })),
     );
     if (removeNew.conflictIds.length > 0) {
-      throw new Error("필터 레거시 이전 rollback이 새 사용자 변경과 충돌했습니다.");
+      throw new StudioCommunityPackMigrationError("filterRollbackConflict");
     }
     const restoredOld = await Promise.all(
       removedOldRows.map((row) => product.repository.getById(row.id)),
@@ -740,14 +743,14 @@ async function migrateFilter(
       restoredOld.some((row, index) =>
         row === null || !sameJson(row, removedOldRows[index]))
     ) {
-      throw new Error("필터 레거시 이전 rollback을 완전하게 검증하지 못했습니다.");
+      throw new StudioCommunityPackMigrationError("filterRollbackUnverified");
     }
   };
   try {
     options.assertCurrent();
     for (const row of newRows) {
       if (await product.insertMissingInstallSnapshot([row]) !== 1) {
-        throw new Error("논리 ID 필터가 이전 중 먼저 생성되어 덮어쓰지 않았습니다.");
+        throw new StudioCommunityPackMigrationError("filterLogicalIdPrecreated");
       }
       createdNewRows.push(row);
       options.assertCurrent();
@@ -756,7 +759,7 @@ async function migrateFilter(
       newRows.map((row) => product.repository.getById(row.id)),
     );
     if (verifiedNew.some((row, index) => row === null || !sameJson(row, newRows[index]))) {
-      throw new Error("새 논리 ID 필터를 완전하게 검증하지 못했습니다.");
+      throw new StudioCommunityPackMigrationError("filterMigratedUnverified");
     }
     const removed = await product.compareAndRestoreInstallSnapshot(
       oldRows.map((row) => ({ id: row.id, expected: row, restore: null })),
@@ -767,14 +770,14 @@ async function migrateFilter(
       removed.conflictIds.length > 0
       || removedOldRows.length !== oldRows.length
     ) {
-      throw new Error("레거시 필터가 이전 중 변경되어 제거하지 않았습니다.");
+      throw new StudioCommunityPackMigrationError("filterLegacyChanged");
     }
     options.assertCurrent();
     const oldRemaining = await Promise.all(
       oldRows.map((row) => product.repository.getById(row.id)),
     );
     if (oldRemaining.some((row) => row !== null)) {
-      throw new Error("레거시 필터 제거를 완전하게 검증하지 못했습니다.");
+      throw new StudioCommunityPackMigrationError("filterLegacyRemovalUnverified");
     }
   } catch (error) {
     try {
@@ -782,7 +785,7 @@ async function migrateFilter(
     } catch (rollbackError) {
       throw new AggregateError(
         [error, rollbackError],
-        "필터 레거시 이전 rollback 실패",
+        "filterRollbackFailed",
         { cause: rollbackError },
       );
     }
@@ -818,11 +821,11 @@ async function migratePalette(
     newReceiptKey,
   );
   if (logicalRows.length > 0 || logicalReceiptRaw !== null) {
-    return issue("conflict", "논리 ID와 레거시 ID의 팔레트 설치가 동시에 존재합니다.");
+    return issue("conflict", "paletteLogicalConflict");
   }
   const rowsById = candidateRowsByEntry(candidate);
   if (!rowsById) {
-    return issue("repair-required", "레거시 팔레트 행이 서버 entry 집합과 완전하게 일치하지 않습니다.");
+    return issue("repair-required", "paletteRowsMismatch");
   }
   const oldPack = legacyPack(candidate.pack, candidate.group.legacyPackageId);
   const oldRows: StudioNamedPalette[] = [];
@@ -831,7 +834,7 @@ async function migratePalette(
     const oldId = runtimeItemId(candidate.group.legacyPackageId, entry.id);
     const row = rowsById.get(oldId)!;
     if (!sameJson(row, paletteFromEntry(oldPack, index, row))) {
-      return issue("conflict", "레거시 팔레트 정의가 서버 릴리스와 일치하지 않습니다.");
+      return issue("conflict", "paletteDefinitionMismatch");
     }
     oldRows.push(row);
     newRows.push(paletteFromEntry(candidate.pack, index, row));
@@ -909,7 +912,7 @@ async function migratePalette(
         STUDIO_CREATOR_PACK_SQLITE_NAMESPACE,
         oldReceiptKey,
       ) !== null
-    ) throw new Error("팔레트 레거시 이전을 완전하게 검증하지 못했습니다.");
+    ) throw new StudioCommunityPackMigrationError("paletteMigratedUnverified");
   } catch (error) {
     try {
       const rollbackRows = await repository.list();
@@ -933,10 +936,7 @@ async function migratePalette(
           && rollbackOldReceipt === null
           && rollbackNewReceipt === newReceiptRaw;
         if (!stillMigrated) {
-          throw new Error(
-            "팔레트 레거시 이전 rollback이 새 사용자 변경과 충돌했습니다.",
-            { cause: error },
-          );
+          throw new StudioCommunityPackMigrationError("paletteRollbackConflict", { cause: error });
         }
         await repository.commitBatch({
           upsert: oldRows,
@@ -976,7 +976,7 @@ async function migratePalette(
     } catch (rollbackError) {
       throw new AggregateError(
         [error, rollbackError],
-        "팔레트 레거시 이전 rollback 실패",
+        "paletteRollbackFailed",
         { cause: rollbackError },
       );
     }

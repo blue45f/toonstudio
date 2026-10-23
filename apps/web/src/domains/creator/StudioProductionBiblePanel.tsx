@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
 import { studioDeleteProductionBibleEntryRequest } from "./studio-destructive-command-catalog";
@@ -48,6 +47,7 @@ import {
   type StudioProductionBiblePersistenceBackend,
 } from "./studio-production-bible";
 import { createEmptyStudioPromisePayoffLedger } from "./studio-promise-payoff-ledger";
+import { resolveStudioProductionBibleErrorFromCause, resolveStudioProductionBibleImportError, resolveStudioProductionBibleIssue } from "./status-i18n/studio-producer-error-i18n-bible";
 import { StudioPromisePayoffLedgerPanel } from "./StudioPromisePayoffLedgerPanel";
 import { StudioWorldWikiPanel } from "./StudioWorldWikiPanel";
 import {
@@ -441,7 +441,7 @@ export function StudioProductionBiblePanelSurface({
       setError(null);
       setNotice(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.saveFailed", "프로덕션 바이블을 저장하지 못했어요."));
+      setError(resolveStudioProductionBibleErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.saveFailed", "프로덕션 바이블을 저장하지 못했어요.")));
     }
   };
 
@@ -458,7 +458,7 @@ export function StudioProductionBiblePanelSurface({
       );
       setFilter(kind);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.addFailed", { kind: kindLabel(kind) }, "{kind}을(를) 추가하지 못했어요."));
+      setError(resolveStudioProductionBibleErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.addFailed", { kind: kindLabel(kind) }, "{kind}을(를) 추가하지 못했어요.")));
     }
   };
 
@@ -476,7 +476,7 @@ export function StudioProductionBiblePanelSurface({
         id
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.duplicateFailed", "항목을 복제하지 못했어요."));
+      setError(resolveStudioProductionBibleErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : frozenStatus3Text("studio.frozenStatus3.bible.duplicateFailed", "항목을 복제하지 못했어요.")));
     }
   };
 
@@ -514,7 +514,7 @@ export function StudioProductionBiblePanelSurface({
     if (!file) return;
     try {
       const parsed = parseStudioProductionBibleImport(await file.text());
-      if (!parsed.ok) throw new Error(parsed.error);
+      if (!parsed.ok) { setError(resolveStudioProductionBibleImportError(parsed.error)); return; }
       const merged = mergeStudioProductionBibles(bible, parsed.bible);
       applyChange(merged.bible, merged.addedIds[0] ?? merged.updatedIds[0]);
       setNotice(frozenStatus3Text("studio.frozenStatus3.bible.importSucceeded", { added: merged.addedIds.length, updated: merged.updatedIds.length, promisesAdded: merged.promiseAddedIds.length, promisesUpdated: merged.promiseUpdatedIds.length, conflicts: merged.kindConflictIds.length }, "{added}개 자료 추가 · {updated}개 자료 병합 · {promisesAdded}개 약속 추가 · {promisesUpdated}개 약속 병합 · {conflicts}개 종류 충돌 보존"));
@@ -883,7 +883,7 @@ export function StudioProductionBiblePanelSurface({
                         key={`${issue.field}:${issue.referenceId}`}
                         className="text-[0.68rem] leading-relaxed text-fg-2"
                       >
-                        {issue.message}
+                        {resolveStudioProductionBibleIssue(issue)}
                       </li>
                     ))}
                   </ul>

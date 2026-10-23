@@ -29,6 +29,17 @@ import {
   type WorkFxSettings,
 } from "../studio-motion-fx";
 
+import { MotionExportCodecUnavailableError, StudioMotionExportError } from "./studio-motion-export-error";
+
+export { MotionExportCodecUnavailableError } from "./studio-motion-export-error";
+export type {
+  MotionExportCodecUnavailableErrorCode,
+  StudioMotionExportErrorCode,
+} from "./studio-motion-export-error";
+// 표시 지점 편의 재수출 (A4 D4, R15): 패널·프레임 패널이 이 모듈 경유로
+// 리졸버를 함께 받는다 — animatic 생산자의 리졸버 import 전례와 같은 결합.
+export { resolveStudioMotionExportErrorFromCause } from "../status-i18n/studio-producer-error-i18n-exports";
+
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.min(1, Math.max(0, n));
@@ -340,27 +351,8 @@ export const MOTION_VIDEO_MIME_CANDIDATES = [
 
 export type MotionVideoMime = (typeof MOTION_VIDEO_MIME_CANDIDATES)[number];
 
-export class MotionExportCodecUnavailableError extends Error {
-  readonly selectedMime: string;
-  readonly recorderMime: string;
-  readonly reason: "codec-identity" | "container-magic";
-
-  constructor(input: {
-    selectedMime: string;
-    recorderMime: string;
-    reason: "codec-identity" | "container-magic";
-  }) {
-    super(
-      input.reason === "codec-identity"
-        ? "선택한 WebM 코덱과 MediaRecorder의 실제 코덱 영수증이 일치하지 않아 저장하지 않았어요."
-        : "MediaRecorder 결과가 유효한 WebM 컨테이너가 아니어서 저장하지 않았어요.",
-    );
-    this.name = "MotionExportCodecUnavailableError";
-    this.selectedMime = input.selectedMime;
-    this.recorderMime = input.recorderMime;
-    this.reason = input.reason;
-  }
-}
+// MotionExportCodecUnavailableError는 studio-motion-export-error.ts로 추출했다
+// (A4 D4, R15 — 구조화 코드 방출 + 소스 크기 래칫 대응, 위에서 재수출).
 
 function normalizeMotionVideoMime(mime: string): MotionVideoMime | null {
   const match = mime.trim().match(
@@ -626,7 +618,7 @@ function defaultLoadCutImage(url: string): Promise<MotionCutImage> {
     img.crossOrigin = "anonymous";
     img.onload = () =>
       resolve({ source: img, width: img.naturalWidth || 1, height: img.naturalHeight || 1 });
-    img.onerror = () => reject(new Error("컷 이미지를 불러오지 못했어요. 잠시 후 다시 시도해주세요."));
+    img.onerror = () => reject(new StudioMotionExportError("cutImageLoadFailed"));
     img.src = url;
   });
 }
@@ -864,16 +856,16 @@ async function runMotionExport(
   state: MotionRunState
 ): Promise<MotionExportResult> {
   const { plan } = request;
-  if (plan.cuts.length === 0 || plan.durationSec <= 0) throw new Error("내보낼 컷(페이지)이 없어요.");
+  if (plan.cuts.length === 0 || plan.durationSec <= 0) throw new StudioMotionExportError("noCuts");
   if (request.images.length < plan.cuts.length) {
-    throw new Error("컷 이미지 수가 플랜과 맞지 않아요. 다시 시도해주세요.");
+    throw new StudioMotionExportError("imageCountMismatch");
   }
   const mimeType = pickMotionVideoMime(deps.isMimeSupported);
-  if (!mimeType) throw new Error("이 브라우저는 WebM 영상 인코딩을 지원하지 않아요.");
+  if (!mimeType) throw new StudioMotionExportError("webmUnsupported");
 
   const canvas = deps.createCanvas(plan.width, plan.height);
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("캔버스 컨텍스트를 만들지 못했어요.");
+  if (!ctx) throw new StudioMotionExportError("canvasContextFailed");
 
   const ambientPreset = findAmbientPreset(plan.ambient);
   // 리더(AmbientCanvas)와 같은 시드 — 영상과 인앱 감상의 입자 배치가 일치한다.
@@ -1020,8 +1012,8 @@ async function runMotionExport(
     }
     await stopped;
     if (state.cancelled) throw new MotionExportCancelledError();
-    if (recorderError) throw new Error("영상 인코딩 중 오류가 발생했어요. 다시 시도해주세요.");
-    if (chunks.length === 0) throw new Error("녹화된 영상 데이터가 없어요. 다시 시도해주세요.");
+    if (recorderError) throw new StudioMotionExportError("recorderFailed");
+    if (chunks.length === 0) throw new StudioMotionExportError("noRecordedData");
     const encoded = await materializeExactMotionWebm(chunks, mimeType, recorder.mimeType ?? "");
     return {
       blob: encoded.blob,

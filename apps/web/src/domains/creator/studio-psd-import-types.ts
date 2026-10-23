@@ -9,6 +9,12 @@ import type { Layer, Psd, ReadOptions } from "ag-psd";
 
 import type { StudioPsdFolder } from "./export/studio-psd-folder-structure";
 import type {
+  PsdAlternativeCode,
+  PsdBlockingReason,
+  PsdImportSkipEntry,
+  PsdLossDecisionCode,
+} from "./studio-psd-import-error";
+import type {
   StudioPsdAdjustmentConversion,
   StudioPsdConvertedAdjustment,
 } from "./studio-psd-adjustment-import";
@@ -108,8 +114,9 @@ export interface PsdImportResult {
   sourceHeight: number;
   /** 실제 적용된 배치 스케일(targetWidth / sourceWidth, 확대는 하지 않음 — 상한 1). */
   scale: number;
-  /** 재현 불가/제외 항목 고지 — studio-psd-export.ts 의 skipped 와 동일한 정직성 규약. */
-  skipped: string[];
+  /** 재현 불가/제외 항목 고지 — studio-psd-export.ts 의 skipped 와 동일한 정직성 규약.
+   * A4 D4 (R15): 문자열이 아니라 {code, params} 고지 항목을 싣고 preview에서 해석한다. */
+  skipped: readonly PsdImportSkipEntry[];
   /** PSD 전용 구조화 손실 명세. skipped의 사람용 상세와 달리 기능별 보존 수준을 집계한다. */
   lossManifest?: PsdInterchangeLossManifest;
   /** 인코딩된 PNG data URL(레이어·마스크·합성본)이 결과에 상주하는 메모리 회계.
@@ -173,7 +180,13 @@ export interface PsdInterchangeLossDecision {
   readonly feature: PsdInterchangeFeature;
   readonly disposition: PsdInterchangeDisposition;
   readonly count: number;
-  readonly message: string;
+  /** A4 D4 (R15): 가져오기 생산자는 코드+params만 싣고 message는 두지 않는다.
+   * 내보내기 생산자(studio-psd-export.ts)의 결정은 기존대로 message를 싣는다 —
+   * preview는 code가 있으면 코드로, 없으면 message로 해석한다. */
+  readonly code?: PsdLossDecisionCode;
+  readonly params?: Readonly<Record<string, string>>;
+  readonly message?: string;
+  readonly alternativeCode?: PsdAlternativeCode;
   readonly alternative?: string;
 }
 
@@ -207,7 +220,8 @@ export interface PsdImportPreflight {
   readonly canImport: boolean;
   readonly header: PsdHeaderInfo;
   readonly lossManifest: PsdInterchangeLossManifest;
-  readonly blockingReasons: readonly string[];
+  /** A4 D4 (R15): {code, params} 사유 항목 — 합성·표시 경계에서 해석한다. */
+  readonly blockingReasons: readonly PsdBlockingReason[];
 }
 
 // ── 테스트 주입 지점 — studio-brand-kit.ts 류 DI 패턴 ────────────────────────

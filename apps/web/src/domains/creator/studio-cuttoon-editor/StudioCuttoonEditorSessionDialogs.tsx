@@ -196,6 +196,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                   return;
                 }
                 const rasterRuntime = await import("../render/studio-raster-edit-preparation");
+                const { resolveStudioRasterEditReason, resolveStudioRasterEditErrorFromCause } = await import("../status-i18n/studio-producer-error-i18n-exports-raster");
                 if (applySessionId !== studioFilterSessionIdRef.current) return;
                 const currentContext = currentStudioFilterPageRasterContext(
                   studioFilterSession.plan.name,
@@ -214,7 +215,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
                   destinationElements: currentContext.destinationElements,
                 });
                 if (!applied.ok) {
-                  setError(applied.reason);
+                  setError(resolveStudioRasterEditReason(applied.reason));
                   closeStudioFilterDialog();
                   return;
                 }
@@ -239,7 +240,7 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
               } catch (filterApplyError) {
                 setError(
                   filterApplyError instanceof Error
-                    ? filterApplyError.message
+                    ? (resolveStudioRasterEditErrorFromCause(filterApplyError) ?? filterApplyError.message)
                     : editorShellStatusText("studio.editorShellStatus.session.filterLayerApplyFailed", "페이지 필터 레이어를 적용하지 못했습니다.")
                 );
               } finally {

@@ -150,19 +150,19 @@ describe("Studio advanced fill entry boundary", () => {
 
     expect(advancedFillRunSource).toContain("describeStudioAdvancedFillVectorReferenceExclusion,");
     expect(run).toContain(
-      "vectorReferenceExclusion = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan)",
+      "vectorReferenceExclusion = exclusionNotice ? resolveStudioVectorFillExclusionNotice(exclusionNotice) : null",
     );
     // 실패 코드를 골라 살려두던 게이트는 남아 있으면 안 된다.
     expect(run).not.toContain('vectorPlan.code !== "no-visible-vector-draw"');
     // 계획 실패로 던지는 자리는 벡터 대상 경로 한 곳뿐이어야 한다.
-    expect(run.match(/throw new Error\(vectorPlan\.reason\)/g)).toHaveLength(1);
+    expect(run.match(/throw new StudioVectorReferenceError\(vectorPlan\.code, vectorPlan\.detail, vectorPlan\.params\)/g)).toHaveLength(1);
     // 제외 사실은 결과 문구에 실려 상태줄로 나간다 — 미리보기 문구에도 같이 남아야
     // 적용을 누르기 직전까지 무엇이 빠진 경계인지 보인다.
     expect(run).toContain("const previewMessage = withVectorExclusionNotice(previewSummary.message)");
     expect(run).toContain("message: previewMessage,");
     expect(run).toContain("setAdvancedFillStatus(previewMessage)");
     // 벡터 대상 경로에서는 참조가 경계 그 자체라 예전처럼 실패해야 한다.
-    expect(run).toContain("if (!vectorPlan.ok) throw new Error(vectorPlan.reason);");
+    expect(run).toContain("if (!vectorPlan.ok) throw new StudioVectorReferenceError(vectorPlan.code, vectorPlan.detail, vectorPlan.params);");
   });
 
   // 선화를 빼면 참조가 0이 되는 페이지(대상 래스터 하나 + 선화)가 흔하다. 참조 범위는 대상
@@ -202,19 +202,19 @@ describe("Studio advanced fill entry boundary", () => {
 
     expect(advancedFillRunSource).toContain("describeStudioAdvancedFillVectorReferenceExclusion,");
     expect(run).toContain(
-      "vectorReferenceExclusion = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan)",
+      "vectorReferenceExclusion = exclusionNotice ? resolveStudioVectorFillExclusionNotice(exclusionNotice) : null",
     );
     // 실패 코드를 골라 살려두던 게이트는 남아 있으면 안 된다.
     expect(run).not.toContain('vectorPlan.code !== "no-visible-vector-draw"');
     // 계획 실패로 던지는 자리는 벡터 대상 경로 한 곳뿐이어야 한다.
-    expect(run.match(/throw new Error\(vectorPlan\.reason\)/g)).toHaveLength(1);
+    expect(run.match(/throw new StudioVectorReferenceError\(vectorPlan\.code, vectorPlan\.detail, vectorPlan\.params\)/g)).toHaveLength(1);
     // 제외 사실은 결과 문구에 실려 상태줄로 나간다 — 미리보기 문구에도 같이 남아야
     // 적용을 누르기 직전까지 무엇이 빠진 경계인지 보인다.
     expect(run).toContain("const previewMessage = withVectorExclusionNotice(previewSummary.message)");
     expect(run).toContain("message: previewMessage,");
     expect(run).toContain("setAdvancedFillStatus(previewMessage)");
     // 벡터 대상 경로에서는 참조가 경계 그 자체라 예전처럼 실패해야 한다.
-    expect(run).toContain("if (!vectorPlan.ok) throw new Error(vectorPlan.reason);");
+    expect(run).toContain("if (!vectorPlan.ok) throw new StudioVectorReferenceError(vectorPlan.code, vectorPlan.detail, vectorPlan.params);");
   });
 
   // 선화를 빼면 참조가 0이 되는 페이지(대상 래스터 하나 + 선화)가 흔하다. 참조 범위는 대상

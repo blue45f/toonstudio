@@ -90,13 +90,13 @@ describe("PSD/PSB clean-room header preflight", () => {
     });
     expect(preflightPsdImport(psdHeader({ colorMode: 4 }))).toMatchObject({
       canImport: false,
-      blockingReasons: [expect.stringContaining("CMYK")],
+      blockingReasons: [expect.objectContaining({ code: "blockedColorMode" })],
     });
     expect(preflightPsdImport(
       psdHeader({ width: PSD_IMPORT_MAX_DIMENSION_PX + 1 }),
     )).toMatchObject({
       canImport: false,
-      blockingReasons: [expect.stringContaining("안전 한 변")],
+      blockingReasons: [expect.objectContaining({ code: "blockedDimension" })],
     });
   });
 
@@ -107,7 +107,8 @@ describe("PSD/PSB clean-room header preflight", () => {
       expect.objectContaining({
         feature: "color-space",
         disposition: "rasterized",
-        message: expect.stringContaining("Grayscale"),
+        code: "decisionColorSpaceConverted",
+        params: expect.objectContaining({ colorMode: expect.stringContaining("Grayscale") }),
       }),
     ]));
     expect(preflight.lossManifest.target).toMatchObject({
@@ -390,7 +391,10 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     const result = await importPsdFile(new File([], "t.psd"), 720, depsFor(psd));
     expect(result.adjustmentLayers).toBeUndefined();
     expect(result.skipped).toHaveLength(1);
-    expect(result.skipped[0]).toContain("mystery");
+    expect(result.skipped[0]).toMatchObject({
+      code: "adjustmentUnsupported",
+      params: { psdType: "mystery" },
+    });
     expect(result.lossManifest?.decisions).toEqual(expect.arrayContaining([
       expect.objectContaining({
         feature: "adjustment-layer",
@@ -428,8 +432,9 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     const adjustmentDecision = result.lossManifest?.decisions.find(
       (decision) => decision.feature === "adjustment-layer" && decision.disposition === "preserved",
     );
-    expect(adjustmentDecision?.message).toContain("파라미터만 보존 1개");
-    expect(adjustmentDecision?.message).toContain("픽셀에 적용되지 않습니다");
+    expect(adjustmentDecision?.code).toBe("decisionAdjustmentPreserved");
+    expect(adjustmentDecision?.params?.fidelitySummary).toContain("파라미터만 보존 1개");
+    expect(adjustmentDecision?.params?.caveat).toBe("approx");
   });
 
   it("text/smart object/effects/group losses are aggregated without parsing skipped strings", async () => {
@@ -482,9 +487,9 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
     expect(result.skipped).toHaveLength(3);
     expect(result.skipped).toEqual(
       expect.arrayContaining([
-        "이펙트있음: 레이어 스타일(그림자 등)은 반영되지 않아요",
-        "스마트오브젝트: 스마트 오브젝트는 편집 가능한 원본이 아니라 미리보기 이미지로 가져왔어요",
-        "텍스트: 복잡한 문자 서식은 원본 이미지로 유지해요. 문자 편집 정보는 함께 보관한 PSD에서 다시 열 수 있어요",
+        expect.objectContaining({ code: "effectsNotReflected", params: { name: "이펙트있음" } }),
+        expect.objectContaining({ code: "smartObjectPreview", params: { name: "스마트오브젝트" } }),
+        expect.objectContaining({ code: "textComplexPreserved", params: { name: "텍스트" } }),
       ])
     );
   });
@@ -723,7 +728,7 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
         parsed = true;
         return samplePsd([]);
       },
-    })).rejects.toThrow("PSB(대용량 문서)");
+    })).rejects.toThrow("psbUnsupported");
     expect(parsed).toBe(false);
   });
 
@@ -752,20 +757,20 @@ describe("importPsdFile (원본 PNG 보존, 마스크 및 손실 보고)", () =>
         return new ArrayBuffer(0);
       },
     } as unknown as File;
-    await expect(importPsdFile(oversized, 720)).rejects.toThrow("최대 128MB");
+    await expect(importPsdFile(oversized, 720)).rejects.toThrow("fileTooLarge");
     expect(reads).toBe(0);
 
     const mismatched = {
       size: 0,
       arrayBuffer: async () => ({ byteLength: PSD_IMPORT_MAX_FILE_BYTES + 1 }) as ArrayBuffer,
     } as unknown as File;
-    await expect(importPsdFile(mismatched, 720)).rejects.toThrow("최대 128MB");
+    await expect(importPsdFile(mismatched, 720)).rejects.toThrow("fileTooLarge");
   });
 
-  it("file.arrayBuffer 자체가 실패해도 한국어 메시지로 throw 한다", async () => {
+  it("file.arrayBuffer 자체가 실패하면 fileReadFailed 구조화 코드로 throw 한다", async () => {
     const brokenFile = { arrayBuffer: () => Promise.reject(new Error("disk error")) } as unknown as File;
     await expect(importPsdFile(brokenFile, 720, { readPsdImpl: () => samplePsd([]) })).rejects.toThrow(
-      "PSD 파일을 읽지 못했어요"
+      "fileReadFailed"
     );
   });
 });

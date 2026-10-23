@@ -608,7 +608,7 @@ describe("Studio community legacy pack identity migration", () => {
       acquireFilterRepository: () => Promise.resolve(faultingFilter),
       loadCreatorMarketplaceResourceIdentity: async () => identity(record),
       loadCreatorMarketplaceResource: async () => record,
-    })).rejects.toThrow("이전 중 변경");
+    })).rejects.toThrow("filterLegacyChanged");
     for (const entry of current.entries) {
       expect(await target.filter.repository.getById(itemId(
         legacy.metadata.id,
@@ -672,7 +672,7 @@ describe("Studio community legacy pack identity migration", () => {
         await target.palette.rename(oldId, "API 확인 중 사용자가 수정한 팔레트");
         return record;
       },
-    })).rejects.toThrow("팔레트 레거시 이전 rollback 실패");
+    })).rejects.toThrow("paletteRollbackFailed");
 
     expect(await readItem("palette", target, oldId)).toMatchObject({
       name: "API 확인 중 사용자가 수정한 팔레트",

@@ -157,8 +157,8 @@ export interface StudioEraseToIntersectionOptions {
   readonly maxSegmentPairs?: number;
 }
 
-export type StudioEraseToIntersectionResult =
-  | { ok: false; reason: string }
+export type StudioVectorEraseReasonCode = "tooFewPoints" | "zeroLength" | "hitNotFound" | "hitTooFar" | "tooComplex";
+export type StudioEraseToIntersectionResult = | { ok: false; reason: string; reasonCode: StudioVectorEraseReasonCode }
   | {
       ok: true;
       /** 0개(전부 지움) · 1개(한쪽만 남음/닫힌 고리) · 2개(가운데 구간을 지움). */
@@ -861,15 +861,15 @@ export function planStudioEraseToIntersection(
 ): StudioEraseToIntersectionResult {
   const geo = buildStrokeGeometry(target.points);
   if (!geo) {
-    return { ok: false, reason: "점이 2개 이상인 자유선에서만 교점까지 지울 수 있어요." };
+    return { ok: false, reason: "tooFewPoints", reasonCode: "tooFewPoints" };
   }
   if (geo.totalLength <= 0) {
-    return { ok: false, reason: "길이가 없는 선이라 지울 구간을 찾을 수 없어요." };
+    return { ok: false, reason: "zeroLength", reasonCode: "zeroLength" };
   }
 
   const hitLocation = resolveHitLocation(geo, hit);
   if (!hitLocation) {
-    return { ok: false, reason: "선 위의 지점을 찾을 수 없어요." };
+    return { ok: false, reason: "hitNotFound", reasonCode: "hitNotFound" };
   }
   const hitTolerance = options?.hitTolerancePx;
   if (
@@ -877,7 +877,7 @@ export function planStudioEraseToIntersection(
     Number.isFinite(hitTolerance) &&
     hitLocation.distancePx > hitTolerance
   ) {
-    return { ok: false, reason: "선에서 너무 떨어진 곳이에요. 선 위를 눌러 주세요." };
+    return { ok: false, reason: "hitTooFar", reasonCode: "hitTooFar" };
   }
 
   const tuning = resolveTuning(options);
@@ -896,7 +896,7 @@ export function planStudioEraseToIntersection(
     mergeDistancePx
   );
   if (!outcome.ok) {
-    return { ok: false, reason: "선이 너무 복잡해서 교점을 계산하지 못했어요." };
+    return { ok: false, reason: "tooComplex", reasonCode: "tooComplex" };
   }
   const cuts = sortAndMergeCuts(outcome.cuts, mergeDistancePx);
   const attributes = densifyAttributes(target.attributes, geo.pointCount);

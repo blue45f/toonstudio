@@ -22,7 +22,6 @@ import {
   studioPathBooleanPieceToDrawElSeed,
   studioPathBooleanUnavailableReason,
   studioShapeToPolygon,
-  type StudioPathBooleanCombineResult,
   type StudioPathBooleanOp,
   type StudioPathBooleanShapeSpec,
 } from "./studio-path-boolean";
@@ -34,6 +33,10 @@ import type { DrawEl, El } from "./studio-element-model";
 import type { PageState } from "./studio-page-state";
 import type { StudioQualityWorkerClient } from "./studio-quality-worker-client";
 import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
+import {
+  resolveStudioPathBooleanReasonCode,
+  resolveStudioPathBooleanResult,
+} from "./status-i18n/studio-producer-error-i18n-path-boolean";
 
 /**
  * Editor surface the async vector commands operate on. Values are captured per render (the
@@ -381,7 +384,7 @@ export function createStudioPageVectorOps(
       .filter((el): el is El => Boolean(el));
     const gate = studioPathBooleanUnavailableReason(selectionEls);
     if (gate) {
-      setError(gate);
+      setError(resolveStudioPathBooleanReasonCode(gate) ?? gate);
       return;
     }
     if (
@@ -443,7 +446,7 @@ export function createStudioPageVectorOps(
       const client = pathBooleanClientRef.current
         ?? new qualityModule.StudioQualityWorkerClient();
       pathBooleanClientRef.current = client;
-      const result: StudioPathBooleanCombineResult =
+      const result =
         await combineStudioShapesWithCanvasKit(
           client,
           baseSpec,
@@ -459,7 +462,7 @@ export function createStudioPageVectorOps(
         return;
       }
       if (!result.ok) {
-        setError(result.reason);
+        setError(resolveStudioPathBooleanResult(result));
         return;
       }
 
@@ -493,11 +496,9 @@ export function createStudioPageVectorOps(
       const latestSelectionEls = selectedIds
         .map((id) => latestElements.find((element) => element.id === id))
         .filter((element): element is El => Boolean(element));
-      const latestGate = studioPathBooleanUnavailableReason(
-        latestSelectionEls
-      );
+      const latestGate = studioPathBooleanUnavailableReason(latestSelectionEls);
       if (latestGate) {
-        setError(latestGate);
+        setError(resolveStudioPathBooleanReasonCode(latestGate) ?? latestGate);
         return;
       }
       const pieceEls = result.output.pieces.map((piece) => ({
@@ -610,7 +611,7 @@ export function createStudioPageVectorOps(
       .filter((el): el is El => Boolean(el));
     const gate = studioPathBooleanUnavailableReason(selectionEls);
     if (gate) {
-      setError(gate);
+      setError(resolveStudioPathBooleanReasonCode(gate) ?? gate);
       return;
     }
     if (
@@ -672,7 +673,7 @@ export function createStudioPageVectorOps(
     } as const;
     setPathBooleanBusy(true);
     try {
-      const result: StudioPathBooleanCombineResult = combineStudioShapesSync(
+      const result = combineStudioShapesSync(
         baseSpec,
         topSpec,
         op,
@@ -685,7 +686,7 @@ export function createStudioPageVectorOps(
         return;
       }
       if (!result.ok) {
-        setError(result.reason);
+        setError(resolveStudioPathBooleanResult(result));
         return;
       }
 
@@ -719,11 +720,9 @@ export function createStudioPageVectorOps(
       const latestSelectionEls = selectedIds
         .map((id) => latestElements.find((element) => element.id === id))
         .filter((element): element is El => Boolean(element));
-      const latestGate = studioPathBooleanUnavailableReason(
-        latestSelectionEls
-      );
+      const latestGate = studioPathBooleanUnavailableReason(latestSelectionEls);
       if (latestGate) {
-        setError(latestGate);
+        setError(resolveStudioPathBooleanReasonCode(latestGate) ?? latestGate);
         return;
       }
       const pieceEls = result.output.pieces.map((piece) => ({

@@ -23,6 +23,7 @@ import {
   STUDIO_EDITABLE_RASTER_SELECTION_TOOL_KINDS,
   summarizeStudioRasterPreparationSources,
 } from "./studio-raster-edit-preparation";
+import { resolveStudioRasterEditReason } from "../status-i18n/studio-producer-error-i18n-exports-raster";
 
 import type { El } from "../studio-element-model";
 import type { StudioVectorReferencePreparedExport } from "../studio-vector-fill-reference";
@@ -492,7 +493,7 @@ describe("editable raster copy planning", () => {
     expect(hide).toMatchObject({
       ok: false,
       code: "source-locked",
-      reason: expect.stringMatching(/잠금/u),
+      reason: expect.objectContaining({ code: "sourceLocked" }),
     });
   });
 
@@ -691,7 +692,7 @@ describe("editable raster copy planning", () => {
     })).toMatchObject({
       ok: false,
       code: "source-selection-mismatch",
-      reason: expect.stringMatching(/hidden|숨김/u),
+      reason: expect.objectContaining({ code: "sourceSelectionMismatch.empty" }),
     });
   });
 
@@ -732,9 +733,9 @@ describe("editable raster copy planning", () => {
       includeBackground: false,
     });
     expect(unsupported).toMatchObject({ ok: false, code: "unsupported-fidelity" });
-    expect(unsupported.ok ? "" : unsupported.reason).toContain("원본은 그대로 유지했습니다");
-    expect(unsupported.ok ? "" : unsupported.reason).toContain("‘클립 선화’");
-    expect(unsupported.ok ? "" : unsupported.reason).not.toContain("병합");
+    expect(unsupported.ok ? "" : resolveStudioRasterEditReason(unsupported.reason)).toContain("원본은 그대로 유지했습니다");
+    expect(unsupported.ok ? "" : resolveStudioRasterEditReason(unsupported.reason)).toContain("‘클립 선화’");
+    expect(unsupported.ok ? "" : resolveStudioRasterEditReason(unsupported.reason)).not.toContain("병합");
 
     expect(planStudioEditableRasterCopy({
       pageId: "page-1",
@@ -745,7 +746,7 @@ describe("editable raster copy planning", () => {
     })).toEqual({
       ok: false,
       code: "document-locked",
-      reason: "검토 잠금을 해제하세요.",
+      reason: { code: "documentLocked", params: { message: "검토 잠금을 해제하세요." } },
     });
   });
 
@@ -918,9 +919,9 @@ describe("Worker-fused editable raster preparation", () => {
     }, async () => prepared, render);
 
     expect(result).toMatchObject({ ok: false, code: "unsupported-fidelity" });
-    expect(result.ok ? "" : result.reason).toContain("‘클립 선화’");
-    expect(result.ok ? "" : result.reason).toContain("원본은 그대로 유지했습니다");
-    expect(result.ok ? "" : result.reason).not.toMatch(/지우개|병합/u);
+    expect(result.ok ? "" : resolveStudioRasterEditReason(result.reason)).toContain("‘클립 선화’");
+    expect(result.ok ? "" : resolveStudioRasterEditReason(result.reason)).toContain("원본은 그대로 유지했습니다");
+    expect(result.ok ? "" : resolveStudioRasterEditReason(result.reason)).not.toMatch(/지우개|병합/u);
     expect(render).not.toHaveBeenCalled();
   });
 

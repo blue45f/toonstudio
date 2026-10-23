@@ -295,7 +295,7 @@ describe("revision comparison Worker strict-CSP bootstrap", () => {
     });
     const rejection = expect(pending).rejects.toMatchObject({
       name: "StudioRevisionCompareWorkerError",
-      message: "버전 비교 Worker 실행에 실패했습니다.",
+      message: "workerFailed",
     });
     const nativeWorker = await harness.constructed;
     await nativeWorker.posted;
@@ -343,7 +343,7 @@ describe("revision comparison Worker strict-CSP bootstrap", () => {
     const harness = installWorkerLifecycleHarness();
     const pending = runStudioRevisionComparison(revisionComparisonInput());
     const rejection = expect(pending).rejects.toThrow(
-      "버전 비교 시간이 너무 오래 걸려 중단했습니다."
+      "workerTimeout"
     );
     const nativeWorker = await harness.constructed;
     await nativeWorker.posted;

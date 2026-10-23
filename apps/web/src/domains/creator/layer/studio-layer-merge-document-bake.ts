@@ -11,6 +11,7 @@ import {
   materializeStudioEditableRasterCopy,
   planStudioEditableRasterCopy,
   renderStudioEditableRasterCopy,
+  type StudioRasterEditReason,
   type StudioEditableRasterCopyInput,
   type StudioEditableRasterCopyPlan,
   type StudioEditableRasterCopyPlanResult,
@@ -53,7 +54,8 @@ export type StudioDocumentMergeBakePlanResult =
   | {
       readonly ok: false;
       readonly code: "invalid-merge-plan" | Extract<StudioEditableRasterCopyPlanResult, { ok: false }>["code"];
-      readonly reason: string;
+      // 자체 사유는 문자열, 래스터 계획 패스스루 사유는 구조화 코드다 (A4 D4, R15).
+      readonly reason: string | StudioRasterEditReason;
     };
 
 function rasterCopyInput(input: StudioDocumentMergeBakeInput): StudioEditableRasterCopyInput {

@@ -8,6 +8,7 @@
  */
 
 import { buildVectorPdf } from "../render/studio-canvaskit-pdf-vector";
+import { resolveStudioPdfVectorErrorFromCause } from "../status-i18n/studio-producer-error-i18n-exports-raster";
 import { auditStudioIccProfilePolicy } from "../studio-icc-profile-policy";
 import {
   preflightStudioPdfConformance,
@@ -138,7 +139,7 @@ export async function exportStudioPdfConformanceCandidate(
   } catch (error) {
     return failure(
       "writer-rejected",
-      error instanceof Error ? error.message : "PDF writer가 문서를 거부했어요.",
+      resolveStudioPdfVectorErrorFromCause(error) ?? (error instanceof Error ? error.message : "PDF writer가 문서를 거부했어요."),
       { iccPolicy: iccPolicy.receipt },
     );
   }

@@ -2,6 +2,7 @@
 // 상태는 컴포넌트가 소유하고, 렌더마다 이 팩토리에 현재 값·세터를 주입해 추출 전과
 // 동일한 클로저 의미를 유지한다(studio-drawing-assist-handlers 와 같은 관례).
 import { sanitizeStudioPublishFileStem } from "./studio-publish-package";
+import { resolveStudioAutoActionValidationErrorFromCause } from "./status-i18n/studio-producer-error-i18n-auto-actions";
 
 import type {
   StudioAutoActionExecutionProgress,
@@ -72,7 +73,7 @@ export function createStudioAutoActionsController<TMutationTicket>(
       const { createDefaultStudioAutoActionSet } = await import("./studio-auto-actions");
       setAutoActionSet(createDefaultStudioAutoActionSet());
     } catch (cause) {
-      setAutoActionError(cause instanceof Error ? cause.message : "기본 Auto Action을 불러오지 못했어요.");
+      setAutoActionError(resolveStudioAutoActionValidationErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "기본 Auto Action을 불러오지 못했어요."));
     }
   }
 
@@ -103,7 +104,7 @@ export function createStudioAutoActionsController<TMutationTicket>(
       setAutoActionSet(imported);
       setAutoActionStatus(`${fileName.replace(/[\\/:*?"<>|]+/g, "-").slice(0, 80) || "Action Set"} 검증 완료`);
     } catch (cause) {
-      setAutoActionError(cause instanceof Error ? cause.message : "Action Set을 가져오지 못했어요.");
+      setAutoActionError(resolveStudioAutoActionValidationErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "Action Set을 가져오지 못했어요."));
     }
   }
 
@@ -121,7 +122,7 @@ export function createStudioAutoActionsController<TMutationTicket>(
         `${fileStem}.toonaction.json`
       );
     } catch (cause) {
-      setAutoActionError(cause instanceof Error ? cause.message : "Action Set을 내보내지 못했어요.");
+      setAutoActionError(resolveStudioAutoActionValidationErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "Action Set을 내보내지 못했어요."));
     }
   }
 
@@ -141,7 +142,7 @@ export function createStudioAutoActionsController<TMutationTicket>(
       );
     } catch (cause) {
       setAutoActionPlan(null);
-      setAutoActionError(cause instanceof Error ? cause.message : "Auto Action 영향을 계산하지 못했어요.");
+      setAutoActionError(resolveStudioAutoActionValidationErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "Auto Action 영향을 계산하지 못했어요."));
     }
   }
 
@@ -205,7 +206,7 @@ export function createStudioAutoActionsController<TMutationTicket>(
       setError(null);
     } catch (cause) {
       if (controller.signal.aborted) return;
-      setAutoActionError(cause instanceof Error ? cause.message : "Auto Action 실행에 실패했어요.");
+      setAutoActionError(resolveStudioAutoActionValidationErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "Auto Action 실행에 실패했어요."));
     } finally {
       if (autoActionAbortRef.current === controller) autoActionAbortRef.current = null;
       setAutoActionBusy(false);

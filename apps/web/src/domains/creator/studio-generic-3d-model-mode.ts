@@ -9,7 +9,18 @@ import type {
 import type { StudioBg3dObjWorkerCanonicalResult } from "./bg3d/studio-bg3d-obj-worker-protocol";
 import type { StudioBg3dAttachmentRights } from "./bg3d/studio-bg3d-scene-document";
 import { STUDIO_GENERIC_3D_SOURCE_FORMATS, type StudioGeneric3dSourceFormat } from "./generic-3d-model/studio-generic-3d-source-formats";
+import type {
+  StudioGeneric3dAdmissionMessageCode,
+  StudioGeneric3dCapabilityDetailCode,
+  StudioGeneric3dLimitationDetailCode,
+} from "./studio-generic-3d-model-mode-codes";
 import { resolveStudioBg3dGlbError } from "./status-i18n/studio-producer-error-i18n-glb";
+
+export type {
+  StudioGeneric3dAdmissionMessageCode,
+  StudioGeneric3dCapabilityDetailCode,
+  StudioGeneric3dLimitationDetailCode,
+} from "./studio-generic-3d-model-mode-codes";
 
 export { STUDIO_GENERIC_3D_SOURCE_FORMATS };
 export type { StudioGeneric3dSourceFormat };
@@ -81,23 +92,27 @@ export interface StudioGeneric3dAdmissionManifest {
   readonly canonicalValidation: "passed" | "pending" | "blocked";
   readonly profile: "mobile" | "desktop" | null;
   readonly code: string;
-  readonly message: string;
+  /** A4 D4 (R15): 표시 문구 대신 코드+params만 싣는다 — Panel이 리졸버로 해석한다. */
+  readonly messageCode: StudioGeneric3dAdmissionMessageCode;
+  readonly messageParams?: Readonly<Record<string, string>>;
   readonly contentHash: `sha256:${string}` | null;
   readonly byteSize: number | null;
 }
 
 export interface StudioGeneric3dCapability {
   readonly id: StudioGeneric3dCapabilityId;
-  readonly label: string;
   readonly availability: StudioGeneric3dCapabilityAvailability;
-  readonly detail: string;
+  /** A4 D4 (R15): 라벨은 id가 곧 코드라 리졸버 라벨 표가 소유하고, 상세는 코드+params만 싣는다. */
+  readonly detailCode: StudioGeneric3dCapabilityDetailCode;
+  readonly detailParams?: Readonly<Record<string, string>>;
 }
 
 export interface StudioGeneric3dLimitation {
   readonly code: StudioGeneric3dLimitationCode;
   readonly severity: "info" | "warning" | "blocking";
-  readonly title: string;
-  readonly detail: string;
+  /** A4 D4 (R15): 제목은 code가 곧 코드라 리졸버가 소유하고, 상세는 코드+params만 싣는다. */
+  readonly detailCode: StudioGeneric3dLimitationDetailCode;
+  readonly detailParams?: Readonly<Record<string, string>>;
 }
 
 export interface StudioGeneric3dModelManifest {
@@ -161,34 +176,18 @@ const SOURCE_FORMATS = new Set<string>(STUDIO_GENERIC_3D_SOURCE_FORMATS);
 const MAX_TEXT_CODE_POINTS = 160;
 const MAX_HINTS = 4_096;
 
-const CAPABILITY_LABELS: Readonly<Record<StudioGeneric3dCapabilityId, string>> = Object.freeze({
-  "root-transform": "전체 이동·회전·크기",
-  "part-transform": "부위별 조작",
-  "bone-pose": "본 포즈",
-  "skinned-deformation": "스킨 변형",
-  "animation-playback": "애니메이션 재생",
-  "morph-expression": "표정·모프",
-  "pose-proxy": "포즈 프록시",
-  "material-editing": "재질 편집",
-  "normal-map": "노멀맵 표현",
-  "surface-snap": "표면 스냅",
-});
-
-export const STUDIO_GENERIC_3D_CLASSIFICATION_LABELS: Readonly<
-  Record<StudioGeneric3dClassification, string>
-> = Object.freeze({
-  character: "캐릭터",
-  creature: "크리처",
-  prop: "소품",
-});
-
-export const STUDIO_GENERIC_3D_RIG_LABELS: Readonly<Record<StudioGeneric3dRigStatus, string>> =
-  Object.freeze({
-    skinned: "스킨 리그",
-    rigged: "본 리그",
-    static: "정적 모델",
-    unverified: "구조 확인 전",
-  });
+const CAPABILITY_IDS: readonly StudioGeneric3dCapabilityId[] = Object.freeze([
+  "root-transform",
+  "part-transform",
+  "bone-pose",
+  "skinned-deformation",
+  "animation-playback",
+  "morph-expression",
+  "pose-proxy",
+  "material-editing",
+  "normal-map",
+  "surface-snap",
+]);
 
 function normalizeText(value: unknown, fallback: string | null = null): string | null {
   if (typeof value !== "string") return fallback;
@@ -350,9 +349,19 @@ function rigStatus(
 function capability(
   id: StudioGeneric3dCapabilityId,
   availability: StudioGeneric3dCapabilityAvailability,
-  detail: string,
+  detailCode: StudioGeneric3dCapabilityDetailCode,
+  detailParams?: Readonly<Record<string, string>>,
 ): StudioGeneric3dCapability {
-  return Object.freeze({ id, label: CAPABILITY_LABELS[id], availability, detail });
+  return Object.freeze({
+    id,
+    availability,
+    detailCode,
+    ...(detailParams !== undefined ? { detailParams } : {}),
+  });
+}
+
+function countParam(value: number): Readonly<Record<string, string>> {
+  return { count: value.toLocaleString("ko-KR") };
 }
 
 function createCapabilities(
@@ -361,73 +370,64 @@ function createCapabilities(
   admission: StudioGeneric3dAdmissionManifest,
 ): readonly StudioGeneric3dCapability[] {
   if (admission.status !== "ready") {
-    const reason = admission.status === "blocked"
-      ? "안전 검사를 통과해야 사용할 수 있습니다."
-      : "변환된 GLB의 최종 안전 검사를 기다리고 있습니다.";
-    return Object.freeze(
-      (Object.keys(CAPABILITY_LABELS) as StudioGeneric3dCapabilityId[]).map((id) =>
-        capability(id, "unavailable", reason),
-      ),
-    );
+    const reason: StudioGeneric3dCapabilityDetailCode = admission.status === "blocked"
+      ? "blocked"
+      : "pending";
+    return Object.freeze(CAPABILITY_IDS.map((id) => capability(id, "unavailable", reason)));
   }
 
   const hasRig = rig === "skinned" || rig === "rigged";
   return Object.freeze([
-    capability("root-transform", "available", "모델 전체를 이동·회전·크기 조절할 수 있습니다."),
+    capability("root-transform", "available", "rootTransform"),
     capability(
       "part-transform",
       structure.parts > 1 && structure.partTransformsSupported ? "available" : "unavailable",
       structure.parts > 1 && structure.partTransformsSupported
-        ? `${structure.parts.toLocaleString("ko-KR")}개 부위를 개별 선택할 수 있습니다.`
+        ? "partAvailable"
         : structure.parts > 1
-          ? `${structure.parts.toLocaleString("ko-KR")}개 부위를 감지했지만 이 장면 형식은 부위별 변환을 아직 저장하지 않습니다.`
-        : "분리된 부위가 없어 전체 모델만 조작할 수 있습니다.",
+          ? "partNotStored"
+          : "partSingle",
+      structure.parts > 1 ? countParam(structure.parts) : undefined,
     ),
     capability(
       "bone-pose",
       hasRig ? "available" : "unavailable",
-      hasRig
-        ? `${structure.bones.toLocaleString("ko-KR")}개 본을 포즈 대상으로 사용할 수 있습니다.`
-        : "본 구조가 없어 메시를 관절처럼 구부릴 수 없습니다.",
+      hasRig ? "boneAvailable" : "boneUnavailable",
+      hasRig ? countParam(structure.bones) : undefined,
     ),
     capability(
       "skinned-deformation",
       rig === "skinned" ? "available" : "unavailable",
-      rig === "skinned"
-        ? "스킨 웨이트가 연결되어 본 회전이 메시를 변형합니다."
-        : "스킨 웨이트가 확인되지 않았습니다.",
+      rig === "skinned" ? "skinnedAvailable" : "skinnedUnavailable",
     ),
     capability(
       "animation-playback",
       structure.animations > 0 ? "available" : "unavailable",
-      structure.animations > 0
-        ? `${structure.animations.toLocaleString("ko-KR")}개 애니메이션 클립을 재생할 수 있습니다.`
-        : "내장 애니메이션 클립이 없습니다.",
+      structure.animations > 0 ? "animationAvailable" : "animationUnavailable",
+      structure.animations > 0 ? countParam(structure.animations) : undefined,
     ),
     capability(
       "morph-expression",
       structure.morphTargets > 0 ? "available" : "unavailable",
-      structure.morphTargets > 0
-        ? `${structure.morphTargets.toLocaleString("ko-KR")}개 모프 타깃을 조절할 수 있습니다.`
-        : "표정 또는 형태용 모프 타깃이 없습니다.",
+      structure.morphTargets > 0 ? "morphAvailable" : "morphUnavailable",
+      structure.morphTargets > 0 ? countParam(structure.morphTargets) : undefined,
     ),
     capability(
       "pose-proxy",
       hasRig ? "available" : "limited",
       hasRig
-        ? "본 프록시가 실제 리그를 조작합니다."
+        ? "poseRig"
         : structure.parts > 1 && structure.partTransformsSupported
-          ? "부위 노드를 프록시로 움직일 수 있지만 스킨 변형은 적용되지 않습니다."
+          ? "poseParts"
           : structure.parts > 1
-            ? "부위 구조는 감지됐지만 현재 장면 형식에서는 가이드로만 표시합니다."
-            : "가이드 프록시만 제공됩니다. 단일 정적 메시는 변형되지 않습니다.",
+            ? "poseGuideOnly"
+            : "poseStatic",
     ),
     capability(
       "material-editing",
       structure.materials > 0 ? "available" : "unavailable",
-      structure.materials > 0
-        ? `${structure.materials.toLocaleString("ko-KR")}개 재질을 조정할 수 있습니다.`
-        : "편집 가능한 재질이 확인되지 않았습니다.",
+      structure.materials > 0 ? "materialAvailable" : "materialUnavailable",
+      structure.materials > 0 ? countParam(structure.materials) : undefined,
     ),
     capability(
       "normal-map",
@@ -437,22 +437,31 @@ function createCapabilities(
           ? "limited"
           : "unavailable",
       (structure.normalMaps ?? 0) > 0
-        ? "노멀 또는 범프 텍스처를 유지합니다."
+        ? "normalAvailable"
         : structure.normalMaps === null
-          ? "검증 메트릭만으로 노멀맵 슬롯을 확정할 수 없어 렌더러 로드 후 확인합니다."
-          : "노멀 또는 범프 텍스처가 없습니다.",
+          ? "normalUnknown"
+          : "normalUnavailable",
     ),
-    capability("surface-snap", "available", "바닥과 다른 3D 표면에 모델을 스냅할 수 있습니다."),
+    capability("surface-snap", "available", "surfaceSnap"),
   ]);
 }
 
 function limitation(
   code: StudioGeneric3dLimitationCode,
   severity: StudioGeneric3dLimitation["severity"],
-  title: string,
-  detail: string,
+  detailParams?: Readonly<Record<string, string>>,
 ): StudioGeneric3dLimitation {
-  return Object.freeze({ code, severity, title, detail });
+  return Object.freeze({
+    code,
+    severity,
+    detailCode: code,
+    ...(detailParams !== undefined ? { detailParams } : {}),
+  });
+}
+
+/** admission 표시 문구(패스스루 채널)를 limitation 상세 params로 옮긴다 — blocked admission은 항상 패스스루다. */
+function admissionText(admission: StudioGeneric3dAdmissionManifest): string {
+  return admission.messageParams?.text ?? "";
 }
 
 function createLimitations(input: {
@@ -464,98 +473,38 @@ function createLimitations(input: {
 }): readonly StudioGeneric3dLimitation[] {
   const result: StudioGeneric3dLimitation[] = [];
   if (input.admission.status === "blocked") {
-    result.push(limitation(
-      "validation-blocked",
-      "blocking",
-      "안전 검사 실패",
-      input.admission.message,
-    ));
+    result.push(limitation("validation-blocked", "blocking", { text: admissionText(input.admission) }));
   } else if (input.admission.status === "canonical-validation-pending") {
-    result.push(limitation(
-      "canonical-validation-pending",
-      "blocking",
-      "최종 GLB 검사 대기",
-      "OBJ 구조 검사는 통과했지만 변환된 GLB의 해시·기기 예산 검사가 남아 있습니다.",
-    ));
+    result.push(limitation("canonical-validation-pending", "blocking"));
   }
   if (input.rig === "static") {
-    result.push(limitation(
-      "static-no-deformation",
-      "info",
-      "정적 모델",
-      "루트·분리 부위는 조작할 수 있지만 관절 기반 메시 변형은 지원하지 않습니다.",
-    ));
+    result.push(limitation("static-no-deformation", "info"));
   }
   if (input.structure.parts <= 1) {
-    result.push(limitation(
-      "single-part-model",
-      "info",
-      "단일 부위",
-      "모델 내부에 따로 선택할 부위가 없어 전체 변환만 적용됩니다.",
-    ));
+    result.push(limitation("single-part-model", "info"));
   } else if (!input.structure.partTransformsSupported) {
-    result.push(limitation(
-      "part-transform-runtime-unavailable",
-      "info",
-      "부위 구조는 읽기 전용",
-      "부위는 감지했지만 현재 장면 문서가 내부 노드 변환을 저장하지 않아 전체 모델과 본만 조작합니다.",
-    ));
+    result.push(limitation("part-transform-runtime-unavailable", "info"));
   }
   if (input.structure.animations === 0) {
-    result.push(limitation(
-      "missing-animation",
-      "info",
-      "애니메이션 없음",
-      "재생 가능한 내장 애니메이션 클립이 없습니다.",
-    ));
+    result.push(limitation("missing-animation", "info"));
   }
   if (input.structure.morphTargets === 0) {
-    result.push(limitation(
-      "missing-morph-targets",
-      "info",
-      "표정 모프 없음",
-      "표정이나 형태를 바꾸는 모프 타깃이 없습니다.",
-    ));
+    result.push(limitation("missing-morph-targets", "info"));
   }
   if (input.sourceFormat === "obj") {
-    result.push(limitation(
-      "missing-mtl",
-      "warning",
-      "MTL 미연결",
-      "OBJ와 함께 MTL·텍스처를 선택해야 원본 재질을 보존할 수 있습니다.",
-    ));
+    result.push(limitation("missing-mtl", "warning"));
   }
   if (input.structure.normalMaps === null) {
-    result.push(limitation(
-      "normal-map-unknown",
-      "info",
-      "노멀맵 로드 후 확인",
-      "GLB 검증기는 텍스처 예산만 확인하므로 실제 재질 슬롯은 렌더러 로드 후 판별합니다.",
-    ));
+    result.push(limitation("normal-map-unknown", "info"));
   }
   if (input.rights.reviewRequired) {
-    result.push(limitation(
-      "rights-review",
-      "warning",
-      "이용 권리 확인 필요",
-      "상업 공개나 팀 공유 전에 원본 모델의 라이선스와 출처를 확인해 주세요.",
-    ));
+    result.push(limitation("rights-review", "warning"));
   }
   if (!input.rights.commercialUse) {
-    result.push(limitation(
-      "commercial-use-restricted",
-      "warning",
-      "상업 이용 미확인",
-      "이 권리 기록으로는 상업 작품 사용을 승인하지 않습니다.",
-    ));
+    result.push(limitation("commercial-use-restricted", "warning"));
   }
   if (input.rights.teamShareAllowed === false) {
-    result.push(limitation(
-      "team-share-restricted",
-      "warning",
-      "팀 원본 공유 제한",
-      "협업자에게 원본 모델 파일을 재배포할 수 없는 권리 기록입니다.",
-    ));
+    result.push(limitation("team-share-restricted", "warning"));
   }
   return Object.freeze(result);
 }
@@ -637,7 +586,9 @@ function glbAdmission(validation: StudioBg3dGlbValidationResult): StudioGeneric3
       canonicalValidation: "blocked",
       profile: null,
       code: validation.code,
-      message: resolveStudioBg3dGlbError(validation), // A4 D4 (R11): admission.message는 문자열 고정 집계 경계라 여기서 해석(집계자 예외)
+      // A4 D4 (R11·R15): GLB 실패 문구는 검증자 코드라 이 경계에서 해석해 패스스루 params로 싣는 집계자 예외를 유지한다.
+      messageCode: "passthrough" as const,
+      messageParams: { text: resolveStudioBg3dGlbError(validation) },
       contentHash: null,
       byteSize: null,
     });
@@ -648,7 +599,8 @@ function glbAdmission(validation: StudioBg3dGlbValidationResult): StudioGeneric3
     canonicalValidation: "passed",
     profile: validation.profile,
     code: validation.code,
-    message: validation.message,
+    messageCode: "passthrough" as const,
+    messageParams: { text: validation.message },
     contentHash: validation.verifiedSha256,
     byteSize: validation.metrics.byteSize,
   });
@@ -699,7 +651,8 @@ export function createStudioGeneric3dVerifiedManifest(
     canonicalValidation: "passed",
     profile: input.profile,
     code: "valid",
-    message: input.message ?? "저장된 GLB의 무결성·구조·기기 예산 검사를 통과했습니다.",
+    messageCode: input.message !== undefined ? "passthrough" as const : "verifiedPassed" as const,
+    ...(input.message !== undefined ? { messageParams: { text: input.message } } : {}),
     contentHash: input.contentHash,
     byteSize: input.metrics.byteSize,
   });
@@ -738,7 +691,7 @@ function objAdmission(
       canonicalValidation: "pending",
       profile: null,
       code: "canonical-validation-pending",
-      message: "OBJ 구조 검사를 통과했습니다. 변환된 GLB의 최종 안전 검사가 필요합니다.",
+      messageCode: "objPending" as const,
       contentHash: null,
       byteSize: null,
     });
@@ -797,5 +750,5 @@ export function getStudioGeneric3dCapability(
   id: StudioGeneric3dCapabilityId,
 ): StudioGeneric3dCapability {
   return manifest.capabilities.find((item) => item.id === id)
-    ?? capability(id, "unavailable", "이 모델의 기능 정보를 확인할 수 없습니다.");
+    ?? capability(id, "unavailable", "unknown");
 }

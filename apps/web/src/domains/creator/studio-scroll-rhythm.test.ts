@@ -33,7 +33,6 @@ describe("analyzeStudioScrollRhythm", () => {
       flatRhythmPageCount: 0,
       ending: {
         mode: "none",
-        label: "엔딩 비트 없음",
         trailingWhitespacePx: 0,
         trailingWhitespaceScreens: 0,
       },

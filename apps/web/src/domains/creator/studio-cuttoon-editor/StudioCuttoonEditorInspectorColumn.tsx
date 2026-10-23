@@ -14,6 +14,7 @@ import { LazyStudioInspectorAside } from "../studio-inspector-aside-loader";
 import { StudioInspectorAsideFallback } from "../studio-mobile-dock-presets";
 import { STUDIO_MOBILE_EDITING_DOCK_UI } from "../studio-mobile-dock-presets-config";
 import { StudioMobileEditingDock } from "../studio-mobile-editing-dock-loader";
+import { resolveStudioPathBooleanReasonCode } from "../status-i18n/studio-producer-error-i18n-path-boolean";
 import { studioPathBooleanUnavailableReason } from "../studio-path-boolean";
 import { canRedoPixelSelectionHistory, canUndoPixelSelectionHistory } from "../studio-pixel-selection-session-history";
 import { StudioPanelResizeHandle } from "../StudioPanelResizeHandle";
@@ -583,9 +584,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           filterMaskPaintMode={filterMaskPaintMode}
           filterMaskRadius={filterMaskRadius}
           filterMaskStrength={filterMaskStrength}
-          selectedImageHasActiveFilters={
-            selected?.type === "image" ? hasActiveImageFilters(selected) : false
-          }
+          selectedImageHasActiveFilters={selected?.type === "image" ? hasActiveImageFilters(selected) : false}
           layerMaskBusy={layerMaskBusy}
           layerMaskHardness={layerMaskHardness}
           layerMaskPaintActive={layerMaskPaintActive}
@@ -819,15 +818,15 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           setExtendedBlendMode={setExtendedBlendMode}
           setExtendedBlendOpacity={setExtendedBlendOpacity}
           pathBooleanBusy={pathBooleanBusy}
-          pathBooleanUnavailableReason={studioPathBooleanUnavailableReason(
-            marqueeIds.map((id) => elementById.get(id)).filter((el): el is El => Boolean(el))
+          pathBooleanUnavailableReason={resolveStudioPathBooleanReasonCode(
+            studioPathBooleanUnavailableReason(
+              marqueeIds.map((id) => elementById.get(id)).filter((el): el is El => Boolean(el)),
+            ),
           )}
           applyPathBooleanCombine={(op) => void applyPathBooleanCombine(op)}
           applyPathBooleanCombineSync={(op) => void applyPathBooleanCombineSync(op)}
           paperVectorRefinementBusy={paperVectorRefinementBusy}
-          paperVectorRefinementUnavailableReason={
-            paperVectorRefinementUnavailableReason
-          }
+          paperVectorRefinementUnavailableReason={paperVectorRefinementUnavailableReason}
           applyPaperVectorRefinement={(operation) => {
             void applyPaperVectorRefinement(operation);
           }}
