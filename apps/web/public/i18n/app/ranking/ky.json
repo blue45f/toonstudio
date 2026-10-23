@@ -1,8 +1,8 @@
 {
-  "ranking.detailTitle": "Скорлордун бөлүнүшү",
-  "ranking.metric.views": "Көрсөтмөлөр",
-  "ranking.why": "Эмне үчүн ?",
-  "ranking.breakdownTitle": "Скорлордун бөлүнүшү",
+  "ranking.detailTitle": "Упайлардын бөлүнүшүн көрүү",
+  "ranking.metric.views": "Көрүүлөр",
+  "ranking.why": "Эмне үчүн?",
+  "ranking.breakdownTitle": "Упайлардын бөлүнүшү",
   "ranking.totalScore": "Жалпы балл",
-  "ranking.breakdownDescription": "Темирдин салмагы жана атайын нормалдаштыруу менен эсептелген."
+  "ranking.breakdownDescription": "Ок салмактары жана аталышка мүнөздүү нормалдаштыруу менен эсептелет."
 }
