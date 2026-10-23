@@ -1,11 +1,11 @@
 /**
  * 홍보 영상 자료실의 페이지 카테고리 레지스트리 — 페이지 표면을 위해 만든
- * 클립 18편의 정본이다 (public/brand/page-clips/).
+ * 클립 20편의 정본이다 (public/brand/page-clips/).
  *
  * promo-video-library.ts가 소스 파일 800줄 상한에 닿아 페이지 카테고리만
  * 이 파일로 분리했다. 전부 생성형 AI로 만든 개념 영상이고, 아직 표면에
  * 배선하지 않은 자료실 보관분이다. 홈 무드는 결함본을 교체한 v2가 정본이며
- * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 5편을 함께 둔다.
+ * 계절 변형 4편(봄·여름·가을·겨울)과 세로 변형 7편을 함께 둔다.
  */
 import type { PromoVideoItem } from "./promo-video-library";
 
@@ -217,5 +217,19 @@ export const PROMO_VIDEO_PAGE_ITEMS: readonly PromoVideoItem[] = [
     "0:14",
     { title: "투어 마무리 · 세로", body: "제품 투어의 마무리 장면을 세로(9:16)로 다시 그린 변형입니다." },
     { title: "Tour closing · Vertical", body: "The product tour's closing scene redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "pricing-vertical",
+    "page-pricing-vertical.mp4",
+    "0:14",
+    { title: "요금 안내 무드 · 세로", body: "요금 안내 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "Pricing mood · Vertical", body: "The pricing clip redrawn vertically (9:16)." },
+  ),
+  pageVerticalItem(
+    "workflow-vertical",
+    "page-workflow-vertical.mp4",
+    "0:14",
+    { title: "제작 과정 무드 · 세로", body: "제작 과정 가로본을 세로(9:16)로 다시 그린 변형입니다." },
+    { title: "Workflow mood · Vertical", body: "The workflow clip redrawn vertically (9:16)." },
   ),
 ];

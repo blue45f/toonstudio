@@ -24,7 +24,7 @@ const COPY = {
   ko: {
     pageTitle: "홍보 영상 자료실",
     metaDescription:
-      "툰스튜디오 홍보에 쓰는 생성형 AI 영상 91편을 카테고리별로 모았습니다. 미리 보고 원본을 내려받아 쇼츠와 마케팅 소재로 활용하세요.",
+      "툰스튜디오 홍보에 쓰는 생성형 AI 영상 99편을 카테고리별로 모았습니다. 미리 보고 원본을 내려받아 쇼츠와 마케팅 소재로 활용하세요.",
     imageAlt: "툰스튜디오 홍보 영상 자료실",
     back: "서비스 소개",
     eyebrow: "PROMO VIDEO LIBRARY",
@@ -50,7 +50,7 @@ const COPY = {
   en: {
     pageTitle: "Promo Video Library",
     metaDescription:
-      "All 91 AI-generated ToonStudio promo clips in one library, organized by category. Preview each clip and download the originals for shorts and marketing use.",
+      "All 99 AI-generated ToonStudio promo clips in one library, organized by category. Preview each clip and download the originals for shorts and marketing use.",
     imageAlt: "ToonStudio promo video library",
     back: "About ToonStudio",
     eyebrow: "PROMO VIDEO LIBRARY",
@@ -145,7 +145,7 @@ export function PromoVideoLibraryPage() {
   const facts = [
     `${PROMO_VIDEO_ITEMS.length}${copy.clipsUnit}`,
     `${PROMO_VIDEO_CATEGORIES.length}${bi("개 카테고리", " categories")}`,
-    bi("세로 쇼츠 20편 포함", "20 vertical shorts included"),
+    bi("세로 쇼츠 22편 포함", "22 vertical shorts included"),
     bi("전부 생성형 AI 개념 영상", "All AI-generated concept clips"),
   ];
 

@@ -1,6 +1,6 @@
 /**
  * 홍보 영상 자료실(/promo-library)의 통합 레지스트리 — 지금까지 만든 홍보
- * 영상 91편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
+ * 영상 99편을 카테고리별로 모아, 나중에 쇼츠·마케팅 소재로 꺼내 쓸 수 있게
  * 한곳에서 관리한다.
  *
  * 전부 생성형 AI로 만든 개념 영상이라 실제 제품 화면 캡처가 아니다.
@@ -8,24 +8,27 @@
  *
  * src·규격·배선처의 정본은 기존 레지스트리고, 이 파일은 그 매핑을 참조해
  * 자료실 표시용 제목·설명·활용 상태만 덧붙인다:
- * - 쇼츠 20편: 투어 쇼츠 섹션의 19편은 product-tour-shorts.ts
+ * - 쇼츠 22편: 투어 쇼츠 섹션의 21편은 product-tour-shorts.ts
  *   (PRODUCT_TOUR_SHORTS)를 참조하고, 자료실에만 보관하는 반응 쇼츠 1편은
  *   품질 메모와 함께 이 파일에 직접 적는다.
  * - 투어 도입·마무리·전환 5편: product-tour-clips.ts
- * - 챕터 배경 루프 10편: 가로본 9편은 product-tour-clips.ts + 챕터 이름은
- *   product-tour-content.ts의 PRODUCT_TOUR.chapters이고, 작화 챕터의
- *   세로 변형 1편은 이 파일이 첫 레지스트리다 (public/brand/promo-chapter-loops/).
- * - 브랜드 클립 14편: brand-clips.ts (배선 8편 + 자료실 보관 6편 —
- *   밤 버전·비 오는 날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로)
+ * - 챕터 배경 루프 13편: 가로본 9편은 product-tour-clips.ts + 챕터 이름은
+ *   product-tour-content.ts의 PRODUCT_TOUR.chapters이고, 세로 변형
+ *   4편(기획·작화·컷과 말풍선·3D)은 이 파일이 첫 레지스트리다
+ *   (public/brand/promo-chapter-loops/).
+ * - 브랜드 클립 15편: brand-clips.ts (배선 8편 + 자료실 보관 7편 —
+ *   밤 버전·비 오는 날·주말 아침·책상 클로즈업·밤 히어로·노을 히어로·
+ *   창가의 고양이)
  * - 도구 클립 24편: tool-clips.ts의 가로본 12편(제작 허브 1편 + 기능 요약
  *   카테고리 7편 + 보류 1편)과 세로 변형 12편(TOOL_CLIPS_VERTICAL, 가로본과 1:1 대응), 그리고
  *   제작 과정 단계 패널로 재배선한 3편(comic·shaper·publish — src·단계
  *   매핑의 정본은 public/workflow-stages.ts의 WORKFLOW_STAGE_CLIPS라
  *   여기서는 그 값을 옮겨 적고 출처를 밝힌다)
- * - 페이지 클립 18편: promo-video-library-pages.ts가 레지스트리다
+ * - 페이지 클립 20편: promo-video-library-pages.ts가 레지스트리다
  *   (public/brand/page-clips/). 이 파일이 800줄 상한에 닿아 분리했다.
  */
 import {
+  BRAND_CAT_CLIP,
   BRAND_DESK_CLOSEUP_CLIP,
   BRAND_FILM_CLOSING_CLIP,
   BRAND_FILM_SCENE_CLIPS,
@@ -76,11 +79,11 @@ export const PROMO_VIDEO_CATEGORIES: readonly PromoVideoCategory[] = [
     id: "shorts",
     ko: {
       title: "세로 쇼츠",
-      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 열아홉 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
+      body: "소셜과 짧은 홍보에 바로 쓰는 세로(9:16) 쇼츠입니다. 스물한 편은 제품 투어 페이지의 쇼츠 섹션에도 걸려 있고, 한 편은 품질 메모와 함께 자료실에만 보관합니다.",
     },
     en: {
       title: "Vertical shorts",
-      body: "Vertical (9:16) shorts ready for social and quick promos. Nineteen also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
+      body: "Vertical (9:16) shorts ready for social and quick promos. Twenty-one also run in the shorts section of the product tour page, and one is kept in the library only with a quality note.",
     },
   },
   {
@@ -317,6 +320,24 @@ const chapterLoops: readonly PromoVideoItem[] = [
     ];
   }),
   {
+    // 챕터 루프 세로 변형 — 기획 챕터 가로본의 세로 짝이다.
+    id: "chapter-loop-plan-vertical",
+    categoryId: "chapter-loops",
+    src: "/brand/promo-chapter-loops/chapter-plan-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "아이디어와 기획 · 배경 루프 세로",
+      body: "기획 챕터의 가로 배경 루프를 세로(9:16)로 다시 그린 변형입니다. 세로 표면용 소재로 보관합니다.",
+    },
+    en: {
+      title: "Ideas and planning · Backdrop loop, vertical",
+      body: "The planning chapter's horizontal backdrop loop redrawn vertically (9:16), kept as material for vertical surfaces.",
+    },
+    usage: LIBRARY_ONLY,
+  },
+  {
     // 챕터 루프 세로 변형의 시작 — 작화 챕터 가로본의 세로 짝이다.
     id: "chapter-loop-draw-vertical",
     categoryId: "chapter-loops",
@@ -331,6 +352,42 @@ const chapterLoops: readonly PromoVideoItem[] = [
     en: {
       title: "Drawing and brushes · Backdrop loop, vertical",
       body: "The drawing chapter's horizontal backdrop loop redrawn vertically (9:16), kept as material for vertical surfaces.",
+    },
+    usage: LIBRARY_ONLY,
+  },
+  {
+    // 챕터 루프 세로 변형 — 컷과 말풍선 챕터 가로본의 세로 짝이다.
+    id: "chapter-loop-comic-vertical",
+    categoryId: "chapter-loops",
+    src: "/brand/promo-chapter-loops/chapter-comic-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "컷과 말풍선 · 배경 루프 세로",
+      body: "컷과 말풍선 챕터의 가로 배경 루프를 세로(9:16)로 다시 그린 변형입니다. 세로 표면용 소재로 보관합니다.",
+    },
+    en: {
+      title: "Panels and dialogue · Backdrop loop, vertical",
+      body: "The panels-and-dialogue chapter's horizontal backdrop loop redrawn vertically (9:16), kept as material for vertical surfaces.",
+    },
+    usage: LIBRARY_ONLY,
+  },
+  {
+    // 챕터 루프 세로 변형 — 3D 챕터 가로본의 세로 짝이다.
+    id: "chapter-loop-three-d-vertical",
+    categoryId: "chapter-loops",
+    src: "/brand/promo-chapter-loops/chapter-three-d-vertical.mp4",
+    width: 768,
+    height: 1344,
+    durationLabel: "0:14",
+    ko: {
+      title: "캐릭터·포즈·3D 장면 · 배경 루프 세로",
+      body: "3D 챕터의 가로 배경 루프를 세로(9:16)로 다시 그린 변형입니다. 세로 표면용 소재로 보관합니다.",
+    },
+    en: {
+      title: "Characters, posing and 3D · Backdrop loop, vertical",
+      body: "The 3D chapter's horizontal backdrop loop redrawn vertically (9:16), kept as material for vertical surfaces.",
     },
     usage: LIBRARY_ONLY,
   },
@@ -529,6 +586,21 @@ const brand: readonly PromoVideoItem[] = [
     en: {
       title: "Evening panorama",
       body: "A studio panorama in evening glow, kept as a set with the day and night panoramas.",
+    },
+    usage: LIBRARY_ONLY,
+  },
+  {
+    id: "brand-window-cat",
+    categoryId: "brand",
+    ...BRAND_CAT_CLIP,
+    durationLabel: "0:14",
+    ko: {
+      title: "창가의 고양이",
+      body: "창가에 앉아 작업실을 내려다보는 고양이를 그린 클립입니다.",
+    },
+    en: {
+      title: "A cat by the window",
+      body: "A cat sitting by the window, watching over the studio below.",
     },
     usage: LIBRARY_ONLY,
   },

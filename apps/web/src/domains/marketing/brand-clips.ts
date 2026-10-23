@@ -16,8 +16,9 @@
  * 만든 변형이라 아직 표면에 배선하지 않고 홍보 영상 자료실에만 수록한다
  * (BRAND_NIGHT_STUDIO_CLIP).
  *
- * 자료실 보관 전용 변형 5편도 이 파일이 정본이다: 비 오는 날·주말 아침·
- * 책상 클로즈업 스튜디오와, 낮 파노라마의 짝인 밤·노을 히어로 무드.
+ * 자료실 보관 전용 변형 6편도 이 파일이 정본이다: 비 오는 날·주말 아침·
+ * 책상 클로즈업·창가의 고양이 스튜디오와, 낮 파노라마의 짝인 밤·노을
+ * 히어로 무드.
  */
 export interface BrandClip {
   readonly src: string;
@@ -144,6 +145,16 @@ export const HOME_HERO_NIGHT_CLIP: BrandClip = {
  */
 export const HOME_HERO_EVENING_CLIP: BrandClip = {
   src: "/brand/brand-clips/home-hero-evening.mp4",
+  width: 1344,
+  height: 768,
+};
+
+/**
+ * 창가의 고양이 — 창가에 앉아 작업실을 내려다보는 고양이를 그린 생성형 AI
+ * 영상이다. 아직 표면에 배선하지 않아 홍보 영상 자료실에만 수록한다.
+ */
+export const BRAND_CAT_CLIP: BrandClip = {
+  src: "/brand/brand-clips/brand-11-cat.mp4",
   width: 1344,
   height: 768,
 };
