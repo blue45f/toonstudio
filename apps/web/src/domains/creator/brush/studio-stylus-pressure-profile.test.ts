@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   DEFAULT_STUDIO_STYLUS_PRESSURE_PROFILE,
+  evaluateBarrelRollCalligraphicResponse,
   evaluateStylusDynamicResponse,
   fitStudioStylusPressureProfile,
+  normalizeHardwareStylusPacket,
   normalizeStudioStylusPressureProfile,
   resolveStudioStylusPressureInput,
   STUDIO_STYLUS_PRESSURE_PROFILE_POINT_LIMIT,
@@ -174,5 +176,46 @@ describe("studio stylus pressure profile", () => {
     expect(slowMouse.sourceMode).toBe("velocity-simulated");
     expect(slowMouse.effectivePressure).toBeGreaterThan(fastMouse.effectivePressure);
     expect(slowMouse.tiltBroadeningFactor).toBe(1);
+  });
+
+  it("normalizes 6-DoF hardware stylus packets across tiltX/Y and spherical altitude/azimuth and evaluates barrel-roll calligraphy", () => {
+    const fromTilt = normalizeHardwareStylusPacket({
+      pointerType: "pen",
+      pressure: 0.8,
+      tiltX: 45,
+      tiltY: 0,
+      twist: 90,
+      tangentialPressure: 0.5,
+    });
+    expect(fromTilt.pointerType).toBe("pen");
+    expect(fromTilt.tiltMagnitudeDeg).toBeCloseTo(45, 1);
+    expect(fromTilt.twistDeg).toBe(90);
+    expect(fromTilt.tangentialPressure).toBe(0.5);
+
+    const fromSpherical = normalizeHardwareStylusPacket({
+      pointerType: "pen",
+      pressure: 0.8,
+      altitudeAngle: Math.PI / 4,
+      azimuthAngle: 0,
+      twist: 0,
+    });
+    expect(fromSpherical.tiltXDeg).toBeCloseTo(45, 1);
+    expect(fromSpherical.tiltYDeg).toBeCloseTo(0, 1);
+
+    // 스트로크 방향(0 rad)과 펜촉 방향(90 deg = PI/2 rad)이 수직일 때 최대 폭(1.0), 평행(0 deg)일 때 최소 폭(1/aspect)
+    const broadStroke = evaluateBarrelRollCalligraphicResponse(fromTilt, {
+      strokeDirectionRad: 0,
+      nibAngleDeg: 0,
+      nibAspectRatio: 4,
+    });
+    const hairlineStroke = evaluateBarrelRollCalligraphicResponse(fromSpherical, {
+      strokeDirectionRad: 0,
+      nibAngleDeg: 0,
+      nibAspectRatio: 4,
+    });
+    expect(broadStroke.widthScale).toBeGreaterThan(0.95);
+    expect(hairlineStroke.widthScale).toBeCloseTo(0.25, 2);
+    expect(hairlineStroke.edgeSharpness).toBeGreaterThan(broadStroke.edgeSharpness);
+    expect(broadStroke.tangentialFlowScale).toBeGreaterThan(1.2);
   });
 });

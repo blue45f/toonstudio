@@ -18,6 +18,7 @@ import {
   oilLayerHasPaint,
   oilWetVolume,
   pushOilWindow,
+  scrapeOilWindow,
   stepOil,
   storeOilWindow,
   updateOilCarry,
@@ -420,5 +421,24 @@ describe("유화 붓: 픽업·점도 전단·스머지 상호작용(Surface)", (
     const program = pushProgram(0.5);
     expect(program.paper.enabled).toBe(false);
     expect(program.wet?.medium).toBe("oil");
+  });
+
+  it("scrapeOilWindow(팔레트 나이프 스크레이프): 총 물감 부피를 보존하면서 긁힌 중심부는 얇아지고 진행 방향 앞쪽에 둑(Ridge)이 쌓인다", () => {
+    const win = emptyWindow(24, 24);
+    slab(win, 5, 5, 18, 18, 1.4, [0.75, 0.25, 0.15]);
+    const vBefore = volumeOf(win);
+    const centerBefore = win.height[11 * 24 + 10] ?? 0;
+
+    // (10, 11) 중심에서 +x 방향(0 rad)으로 반경 4.5 나이프 스크레이프
+    scrapeOilWindow(win, 10, 11, 4.5, 0, 0.75, 0.5);
+
+    const vAfter = volumeOf(win);
+    const centerAfter = win.height[11 * 24 + 10] ?? 0;
+    // 진행 방향 앞쪽 가장자리(x = 14..15)에 물감이 쌓여 원래 두께(1.4)보다 높아진다
+    const ridgeAhead = Math.max(win.height[11 * 24 + 14] ?? 0, win.height[11 * 24 + 15] ?? 0);
+
+    expect(vAfter).toBeCloseTo(vBefore, 3);
+    expect(centerAfter).toBeLessThan(centerBefore);
+    expect(ridgeAhead).toBeGreaterThan(1.4);
   });
 });

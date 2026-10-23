@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_SCREENTONE_LIMITS,
   STUDIO_SCREENTONE_PRESETS,
+  buildAntiAliasedScreentoneTile,
   buildScreentoneTile,
+  evaluateScreentoneMoireSuppression,
   hexToRgb,
   measureScreentoneCoverage,
   validateScreentoneConfig,
@@ -124,3 +126,40 @@ describe("hexToRgb", () => {
     expect(hexToRgb("zzz")).toEqual([0, 0, 0]);
   });
 });
+
+describe("evaluateScreentoneMoireSuppression / buildAntiAliasedScreentoneTile", () => {
+  it("줌 축소 시 나이퀴스트 모아레 에일리어싱 위험도와 안티에일리어싱 대역폭이 증가한다", () => {
+    const highZoom = evaluateScreentoneMoireSuppression(
+      { pattern: "dot", density: 40, lines: 48, angleDeg: 45 },
+      2.0,
+    );
+    const lowZoom = evaluateScreentoneMoireSuppression(
+      { pattern: "dot", density: 40, lines: 48, angleDeg: 45 },
+      0.35,
+    );
+    expect(lowZoom.aliasingRisk).toBeGreaterThan(highZoom.aliasingRisk);
+    expect(lowZoom.antiAliasBandWidthPx).toBeGreaterThan(highZoom.antiAliasBandWidthPx);
+    expect(lowZoom.recommendedRosetteAngleDeg).toBe(45);
+  });
+
+  it("서브픽셀 AA 스크린톤 타일은 경계 그레이스케일(0 < v < 1)을 포함하고 수직 그라데이션 에칭을 지원한다", () => {
+    const aaTile = buildAntiAliasedScreentoneTile(
+      { pattern: "dot", density: 45, lines: 16, angleDeg: 45 },
+      { size: 96, zoomScale: 0.5, gradientDirection: "vertical", gradientStrength: 0.7 },
+    );
+    let fractionalSamples = 0;
+    let topHalfSum = 0;
+    let bottomHalfSum = 0;
+    const halfIdx = (96 * 96) / 2;
+    for (let i = 0; i < aaTile.length; i += 1) {
+      const v = aaTile[i]!;
+      if (v > 0.02 && v < 0.98) fractionalSamples += 1;
+      if (i < halfIdx) topHalfSum += v;
+      else bottomHalfSum += v;
+    }
+    expect(fractionalSamples).toBeGreaterThan(50);
+    // 수직 그라데이션(상단 에칭 감쇠 → 하단 진함)
+    expect(bottomHalfSum).toBeGreaterThan(topHalfSum * 1.25);
+  });
+});
+

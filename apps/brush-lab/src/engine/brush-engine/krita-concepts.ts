@@ -325,3 +325,154 @@ export function applyDabPigmentMix(
     }
   }
 }
+
+/**
+ * 갈퀴/팬 강모(Rake Bristle) 다중 가닥 분할 dab 마스크.
+ * - size: 정사각형 마스크 변 길이(>= 1 정수)
+ * - tineCount: 갈라진 강모 다발(Tine) 수(1..32)
+ * - tineGapRatio: 가닥 사이 빈 틈 비율(0..0.85)
+ * - hardness: 각 가닥의 엣지 경도(0..1)
+ * - angleRad: 진행 방향 회전 각도(라디안)
+ */
+export function generateRakeBristleDabMask(
+  size: number,
+  tineCount: number,
+  tineGapRatio = 0.35,
+  hardness = 0.6,
+  angleRad = 0,
+): Float32Array {
+  if (!Number.isFinite(size) || size < 1 || size !== Math.trunc(size)) {
+    throw new SumiError("kc-invalid-mask", "size는 1 이상의 정수여야 한다", { size });
+  }
+  if (!Number.isFinite(tineCount) || tineCount < 1 || tineCount > 64 || tineCount !== Math.trunc(tineCount)) {
+    throw new SumiError("kc-invalid-mask", "tineCount는 1..64 정수여야 한다", { tineCount });
+  }
+  if (!Number.isFinite(tineGapRatio) || tineGapRatio < 0 || tineGapRatio > 0.85) {
+    throw new SumiError("kc-invalid-mask", "tineGapRatio는 [0, 0.85]여야 한다", { tineGapRatio });
+  }
+  if (!Number.isFinite(hardness) || hardness < 0 || hardness > 1) {
+    throw new SumiError("kc-invalid-mask", "hardness는 [0, 1]이어야 한다", { hardness });
+  }
+
+  const mask = new Float32Array(size * size);
+  const center = (size - 1) / 2;
+  const radius = size / 2;
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
+  const activeFraction = 1 - tineGapRatio;
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const dx = x - center;
+      const dy = y - center;
+      const dist = Math.hypot(dx, dy) / Math.max(1e-6, radius);
+      if (dist > 1) {
+        mask[y * size + x] = 0;
+        continue;
+      }
+      // 스트로크 진행 방향에 수직인 횡단 좌표 [-1, 1]
+      const crossCoord = (-dx * sinA + dy * cosA) / Math.max(1e-6, radius);
+      const u = Math.max(0, Math.min(0.999999, (crossCoord + 1) * 0.5));
+      const tinePhase = (u * tineCount) % 1;
+      const distFromTineCenter = Math.abs(tinePhase - 0.5) * 2;
+      if (distFromTineCenter > activeFraction) {
+        mask[y * size + x] = 0;
+        continue;
+      }
+      const normalizedTineRadius = distFromTineCenter / Math.max(1e-6, activeFraction);
+      const tineProfile =
+        hardness + (1 - hardness) * Math.cos(normalizedTineRadius * Math.PI * 0.5);
+      const radialEnvelope = hardness * 1 + (1 - hardness) * (1 - dist * 0.75);
+      mask[y * size + x] = Math.fround(Math.max(0, Math.min(1, tineProfile * radialEnvelope)));
+    }
+  }
+  return mask;
+}
+
+/**
+ * 양방향 오염 브러시(Dirty Brush): 캔버스의 기존 안료를 pickupRate 비율로 브러시 carryColor에 흡수하면서,
+ * 동시에 진화한 브러시 안료를 depositRate 비율로 캔버스에 KM 색공간 합성한다.
+ * 반환값: 다음 dab으로 전달될 갱신된 [r, g, b, a] 브러시 안료 상태.
+ */
+export function applyDirtyBrushDab(
+  mask: Float32Array,
+  carryColor: readonly [number, number, number, number],
+  canvas: Float32Array,
+  offsetX: number,
+  offsetY: number,
+  pickupRate = 0.25,
+  depositRate = 0.75,
+): [number, number, number, number] {
+  if (!Number.isFinite(offsetX) || !Number.isFinite(offsetY)) {
+    throw new SumiError("kc-invalid-offset", "offsetX/offsetY는 유한값이어야 한다", {
+      offsetX,
+      offsetY,
+    });
+  }
+  const dim = Math.sqrt(canvas.length / 4);
+  if (!Number.isFinite(dim) || dim !== Math.trunc(dim)) {
+    throw new SumiError("kc-invalid-canvas", "canvas는 정사각형 RGBA interleaved 버퍼여야 한다", {
+      length: canvas.length,
+    });
+  }
+  const maskSize = Math.sqrt(mask.length);
+  if (!Number.isFinite(maskSize) || maskSize !== Math.trunc(maskSize)) {
+    throw new SumiError("kc-invalid-mask", "mask는 정사각형이어야 한다", { length: mask.length });
+  }
+
+  const safePickup = Math.max(0, Math.min(1, pickupRate));
+  const safeDeposit = Math.max(0, Math.min(1, depositRate));
+  const brushAlpha = Math.max(0, Math.min(1, carryColor[3]));
+
+  let sumWeight = 0;
+  let sumR = 0;
+  let sumG = 0;
+  let sumB = 0;
+
+  for (let my = 0; my < maskSize; my += 1) {
+    const cy = offsetY + my;
+    if (cy < 0 || cy >= dim) continue;
+    const maskRow = my * maskSize;
+    for (let mx = 0; mx < maskSize; mx += 1) {
+      const cx = offsetX + mx;
+      if (cx < 0 || cx >= dim) continue;
+      const m = mask[maskRow + mx];
+      if (m <= 0) continue;
+      const base = (cy * dim + cx) * 4;
+      const dstA = canvas[base + 3];
+      if (dstA > 1e-6) {
+        const w = m * dstA;
+        sumWeight += w;
+        sumR += canvas[base] * w;
+        sumG += canvas[base + 1] * w;
+        sumB += canvas[base + 2] * w;
+      }
+    }
+  }
+
+  let nextCarry: [number, number, number] = [carryColor[0], carryColor[1], carryColor[2]];
+  if (sumWeight > 1e-6 && safePickup > 0) {
+    const avgCanvasRgb: [number, number, number] = [
+      sumR / sumWeight,
+      sumG / sumWeight,
+      sumB / sumWeight,
+    ];
+    nextCarry = kmMixRgb(nextCarry, avgCanvasRgb, safePickup);
+  }
+
+  applyDabPigmentMix(
+    mask,
+    [nextCarry[0], nextCarry[1], nextCarry[2], Math.fround(brushAlpha * safeDeposit)],
+    canvas,
+    offsetX,
+    offsetY,
+  );
+
+  return [
+    Math.fround(nextCarry[0]),
+    Math.fround(nextCarry[1]),
+    Math.fround(nextCarry[2]),
+    Math.fround(brushAlpha),
+  ];
+}
+

@@ -71,3 +71,5 @@ export * from "./wet/wet-reference";
 export * from "./presets/catalog";
 export * from "./presets/families";
 export * from "./presets/program-schema";
+export * from "./brush-engine/krita-concepts";
+

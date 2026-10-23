@@ -234,3 +234,135 @@ export function hexToRgb(hex: string): readonly [number, number, number] {
   const v = parseInt(m[1], 16);
   return [((v >> 16) & 255) as number, ((v >> 8) & 255) as number, (v & 255) as number] as const;
 }
+
+/* ------------------------------------------------------------------ */
+/* 주파수 적응형 모아레(Moiré) 억제 및 서브픽셀 AA / 그라데이션 에칭 톤   */
+/* ------------------------------------------------------------------ */
+
+export interface ScreentoneMoireAnalysis {
+  readonly screenPitchPx: number;
+  readonly aliasingRisk: number;
+  readonly antiAliasBandWidthPx: number;
+  readonly recommendedRosetteAngleDeg: 15 | 45 | 75;
+}
+
+/**
+ * 캔버스 줌 배율과 선 수(LPI)·각도에 따른 나이퀴스트 모아레 간섭 위험도 및
+ * 최적 서브픽셀 스무스스텝 안티에일리어싱 대역폭을 계산한다.
+ */
+export function evaluateScreentoneMoireSuppression(
+  config: ScreentoneConfig,
+  zoomScale = 1,
+): ScreentoneMoireAnalysis {
+  const safeZoom = Math.max(0.1, Math.min(8, Number.isFinite(zoomScale) ? zoomScale : 1));
+  const baseTileSize = 120;
+  const rawPitch = baseTileSize / Math.max(8, config.lines);
+  const screenPitchPx = Math.round(rawPitch * safeZoom * 100) / 100;
+
+  // 화면 픽셀 주기가 4px 미만으로 좁아질수록 나이퀴스트 에일리어싱 위험 상승
+  const pitchRisk = Math.max(0, Math.min(1, (4.2 - screenPitchPx) / 3.2));
+  const candidates: readonly (15 | 45 | 75)[] = [15, 45, 75];
+  let nearestAngle: 15 | 45 | 75 = 45;
+  let minDiff = Infinity;
+  const normAngle = ((config.angleDeg % 90) + 90) % 90;
+  for (const c of candidates) {
+    const d = Math.abs(normAngle - c);
+    if (d < minDiff) {
+      minDiff = d;
+      nearestAngle = c;
+    }
+  }
+  const angleRisk = Math.max(0, Math.min(0.25, (minDiff / 45) * 0.2));
+  const aliasingRisk = Math.round(Math.min(1, pitchRisk * 0.85 + angleRisk) * 1000) / 1000;
+  const antiAliasBandWidthPx =
+    Math.round((0.65 / safeZoom + aliasingRisk * 0.95) * 1000) / 1000;
+
+  return {
+    screenPitchPx,
+    aliasingRisk,
+    antiAliasBandWidthPx,
+    recommendedRosetteAngleDeg: nearestAngle,
+  };
+}
+
+export interface BuildAntiAliasedScreentoneOptions {
+  readonly size?: number;
+  readonly zoomScale?: number;
+  readonly gradientDirection?: "none" | "vertical" | "radial";
+  /** 0..1 그라데이션·에칭 감쇠 강도 */
+  readonly gradientStrength?: number;
+}
+
+function smoothstepEdge(edge0: number, edge1: number, x: number): number {
+  const span = Math.max(1e-5, edge1 - edge0);
+  const t = Math.max(0, Math.min(1, (x - edge0) / span));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * 서브픽셀 부호 거리(SDF) 스무스스텝 안티에일리어싱과 연속 그라데이션(에칭 톤) 농도 변조를 결합한
+ * 모아레 억제형 고품질 스크린톤 부동소수점 타일을 생성한다.
+ */
+export function buildAntiAliasedScreentoneTile(
+  config: ScreentoneConfig,
+  options: BuildAntiAliasedScreentoneOptions = {},
+): Float32Array {
+  const size = Math.max(16, Math.min(512, Math.floor(options.size ?? 120)));
+  const tile = new Float32Array(size * size);
+  const baseDensity = Math.max(0.02, Math.min(0.95, config.density / 100));
+  const spacing = size / Math.max(8, config.lines);
+  const angle = (config.angleDeg * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const cx = size / 2;
+  const cy = size / 2;
+
+  const moire = evaluateScreentoneMoireSuppression(config, options.zoomScale ?? 1);
+  const aaHalfWidth = Math.min(spacing * 0.35, moire.antiAliasBandWidthPx * 0.5);
+  const gradDir = options.gradientDirection ?? "none";
+  const gradStrength = Math.max(0, Math.min(1, options.gradientStrength ?? 0));
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      let localMod = 1;
+      if (gradDir === "vertical" && gradStrength > 0) {
+        const vNorm = y / Math.max(1, size - 1);
+        localMod = 1 - gradStrength * (1 - vNorm);
+      } else if (gradDir === "radial" && gradStrength > 0) {
+        const rNorm = Math.min(1, Math.hypot(x - cx, y - cy) / (size * 0.5));
+        localMod = 1 - gradStrength * rNorm;
+      }
+      const density = Math.max(0.01, Math.min(0.95, baseDensity * localMod));
+
+      const dx = x - cx;
+      const dy = y - cy;
+      const rx = dx * cos - dy * sin;
+      const ry = dx * sin + dy * cos;
+
+      let coverage: number;
+      if (config.pattern === "dot") {
+        const radius = spacing * Math.sqrt(density / Math.PI);
+        const gx = Math.round(rx / spacing) * spacing;
+        const gy = Math.round(ry / spacing) * spacing;
+        const dist = Math.hypot(rx - gx, ry - gy);
+        coverage = 1 - smoothstepEdge(radius - aaHalfWidth, radius + aaHalfWidth, dist);
+      } else if (config.pattern === "line") {
+        const halfWidth = (spacing * density) * 0.5;
+        const gx = Math.round(rx / spacing) * spacing;
+        const dist = Math.abs(rx - gx);
+        coverage = 1 - smoothstepEdge(halfWidth - aaHalfWidth, halfWidth + aaHalfWidth, dist);
+      } else {
+        const halfWidth = (spacing * density) * 0.25;
+        const gx = Math.round(rx / spacing) * spacing;
+        const gy = Math.round(ry / spacing) * spacing;
+        const c1 = 1 - smoothstepEdge(halfWidth - aaHalfWidth, halfWidth + aaHalfWidth, Math.abs(rx - gx));
+        const c2 = 1 - smoothstepEdge(halfWidth - aaHalfWidth, halfWidth + aaHalfWidth, Math.abs(ry - gy));
+        coverage = Math.max(c1, c2);
+      }
+
+      tile[y * size + x] = coverage;
+    }
+  }
+  return tile;
+}
+
