@@ -38,15 +38,15 @@ const REFERENCE_LOCALE = "en";
  * 로케일은 영어 원문 폴백을 받는다(I18N_GUIDE §3) — 번역된 값은 그대로여서 ko·en 을 뺀 73개 로케일의
  * 비율이 0.40~0.44 로 내려가 모두 하한(0.5) 아래다. 이 상태를 숨기지 않고 목록으로 고정한다.
  * 목록은 줄어들기만 해야 한다. 번역이 채워져 하한을 넘은 로케일은 목록에서 빼야 테스트가 통과하고(`ja`·`zh`·`de`·`fr`·
- * `zh-hant`·`es`·`gu`·`hi`·`ml`·`mr` 은 검수 번역 반영으로 하한을 넘어 2026-10-22 에, `or`·`pa`·`ru`·`bg`·`bn`·`el`·`uk`·`id`·`vi`·`th`·`pt` 는 2026-10-23 에 뺐다),
+ * `zh-hant`·`es`·`gu`·`hi`·`ml`·`mr` 은 검수 번역 반영으로 하한을 넘어 2026-10-22 에, `or`·`pa`·`ru`·`bg`·`bn`·`el`·`uk`·`id`·`vi`·`th`·`pt`·`fil`·`ur` 는 2026-10-23 에 뺐다),
  * 새 로케일이나 ko·en 이 하한 아래로 내려가면 목록에 더하지 말고 원인을 고친다.
  */
 const BELOW_TRANSLATED_FLOOR: readonly string[] = [
   "af", "am", "ar", "as", "az", "be", "bs", "ca", "cs", "da",
-  "et", "eu", "fa", "fi", "fil", "gl", "he", "hr", "hu", "hy", "is",
+  "et", "eu", "fa", "fi", "gl", "he", "hr", "hu", "hy", "is",
   "it", "ka", "kk", "km", "kn", "ky", "lo", "lt", "lv", "mk", "mn", "ms",
   "my", "ne", "nl", "no", "pl", "ro", "si", "sk", "sl", "sq", "sr",
-  "sv", "sw", "ta", "te", "tr", "ur", "uz", "zu",
+  "sv", "sw", "ta", "te", "tr", "uz", "zu",
 ];
 /** The app-shell key surface every published dictionary was authored against. */
 const BASELINE_APP_KEY_COUNT = 525;
