@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Titular da conta",
   "revenue.payout.holderPlaceholder": "Nome do titular",
   "revenue.payout.mockNote": "Por agora é unha solicitude simulada. Os pagamentos reais procésanse a través do sistema de liquidación do servidor.",
+  "revenue.payout.notAvailableBody": "As solicitudes de pagamento aínda non se están a recibir de verdade, e os datos da conta que introduzas non se gardan. Cando se abran as solicitudes, poderás solicitalo aquí mesmo e seguir o historial e o estado da túa solicitude.",
+  "revenue.payout.notAvailableTitle": "As solicitudes de pagamento aínda non están dispoñibles",
   "revenue.payout.submit": "Solicitar o pagamento",
   "revenue.payout.title": "Pagamento",
   "revenue.settlement.belowMinimum": "Dispoñible a partir de {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Acceso anticipado",
   "revenue.source.market": "Vendas no mercado",
   "revenue.source.membership": "Subscrición de membro",
-  "revenue.source.tips": "Propinas",
-  "revenue.payout.notAvailableBody": "As solicitudes de pagamento aínda non se están a recibir de verdade, e os datos da conta que introduzas non se gardan. Cando se abran as solicitudes, poderás solicitalo aquí mesmo e seguir o historial e o estado da túa solicitude.",
-  "revenue.payout.notAvailableTitle": "As solicitudes de pagamento aínda non están dispoñibles"
+  "revenue.source.tips": "Propinas"
 }

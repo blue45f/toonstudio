@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Създадени произведения",
   "userProfile.tabs.series": "Серия",
   "userProfile.works.empty": "Този потребител все още няма публични произведения.",
+  "userProfile.works.error": "Създадените произведения не можаха да се заредят. Опитайте отново.",
   "userProfile.series.empty": "Този потребител все още няма серия.",
+  "userProfile.series.error": "Поредиците не можаха да се заредят. Опитайте отново.",
   "userProfile.fetchError": "Не мога да зареждам профила.",
   "userProfile.authorFallback": "Потребител",
   "userProfile.metaTemplate": "Профил на {author} · Прегледи на {reviews} · Работи на {works} · аварийни оценки на {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Съдържание на профила",
   "userProfile.refresh": "Обновяване",
   "userProfile.emptyReviews": "Още не е публикуван от този потребител.",
-  "userProfile.works.error": "Създадените произведения не можаха да се заредят. Опитайте отново.",
-  "userProfile.series.error": "Поредиците не можаха да се заредят. Опитайте отново.",
   "userProfile.emptyReviewsHint": "Оставете първия отзив за заглавие, което обичате.",
   "userProfile.emptyReviewsCta": "Разгледайте заглавията"
 }

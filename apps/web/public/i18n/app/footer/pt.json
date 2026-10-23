@@ -30,6 +30,7 @@
   "footer.link.news": "Notícias de novelas para o Toon & Web",
   "footer.link.about": "Sobre o ToonStudio",
   "footer.link.guide": "Política de classificação",
+  "footer.link.features": "Todas as funcionalidades num relance",
   "footer.link.sitemap": "Mapa do local",
   "footer.link.settings": "Configurações",
   "footer.link.support": "Apoio",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "Serviço de hospedagem",
   "footer.business.serviceType": "Tipo de plataforma",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Todos os direitos reservados.",
-  "footer.logoTag": "Crie a sua próxima história",
-  "footer.link.features": "Todas as funcionalidades num relance"
+  "footer.logoTag": "Crie a sua próxima história"
 }

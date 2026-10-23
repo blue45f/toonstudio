@@ -30,6 +30,7 @@
   "footer.link.news": "টুন & ওয়েব উপন্যাস সংবাদ",
   "footer.link.about": "ToonStudio সম্পর্কে",
   "footer.link.guide": "র্যাঙ্কিং নীতি",
+  "footer.link.features": "সব বৈশিষ্ট্য এক নজরে",
   "footer.link.sitemap": "সাইটম্যাপ",
   "footer.link.settings": "সেটিংস",
   "footer.link.support": "সমর্থন",
@@ -48,6 +49,5 @@
   "footer.business.hosting": "হোস্টিং পরিষেবা",
   "footer.business.serviceType": "প্ল্যাটফর্মের ধরন",
   "footer.copyrightLine": "© {year} ToonStudio (বেটা) । সমস্ত অধিকার সংরক্ষিত।",
-  "footer.logoTag": "আপনার পরবর্তী গল্প তৈরি করুন",
-  "footer.link.features": "সব বৈশিষ্ট্য এক নজরে"
+  "footer.logoTag": "আপনার পরবর্তী গল্প তৈরি করুন"
 }

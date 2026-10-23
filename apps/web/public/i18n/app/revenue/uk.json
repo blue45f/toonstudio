@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Власник рахунку",
   "revenue.payout.holderPlaceholder": "Ім’я власника",
   "revenue.payout.mockNote": "Поки що це пробний запит. Реальні виплати обробляє серверний конвеєр розрахунків.",
+  "revenue.payout.notAvailableBody": "Запити виплат поки фактично не приймаються, і жодні введені вами дані рахунку не зберігаються. Коли запити відкриються, ви зможете подати заявку просто тут і відстежувати історію та статус запитів.",
+  "revenue.payout.notAvailableTitle": "Запити виплат поки недоступні",
   "revenue.payout.submit": "Запитати виплату",
   "revenue.payout.title": "Виплата",
   "revenue.settlement.belowMinimum": "Доступно від {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Ранній доступ",
   "revenue.source.market": "Продажі на маркеті",
   "revenue.source.membership": "Членство",
-  "revenue.source.tips": "Чайові",
-  "revenue.payout.notAvailableBody": "Запити виплат поки фактично не приймаються, і жодні введені вами дані рахунку не зберігаються. Коли запити відкриються, ви зможете подати заявку просто тут і відстежувати історію та статус запитів.",
-  "revenue.payout.notAvailableTitle": "Запити виплат поки недоступні"
+  "revenue.source.tips": "Чайові"
 }

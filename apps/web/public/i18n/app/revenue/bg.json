@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "Титуляр на сметката",
   "revenue.payout.holderPlaceholder": "Име на титуляря",
   "revenue.payout.mockNote": "Засега това е пробна заявка. Реалните изплащания се обработват от сървърния конвейер за разплащания.",
+  "revenue.payout.notAvailableBody": "Заявките за изплащане все още всъщност не се приемат и всички данни за сметка, които въведете, не се съхраняват. Когато заявките се отворят, ще можете да кандидатствате точно тук и да следите историята и състоянието на заявките си.",
+  "revenue.payout.notAvailableTitle": "Заявките за изплащане все още не са налични",
   "revenue.payout.submit": "Заявете изплащане",
   "revenue.payout.title": "Изплащане",
   "revenue.settlement.belowMinimum": "Налично от {min}",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "Ранен достъп",
   "revenue.source.market": "Продажби на пазара",
   "revenue.source.membership": "Членство",
-  "revenue.source.tips": "Бакшиши",
-  "revenue.payout.notAvailableBody": "Заявките за изплащане все още всъщност не се приемат и всички данни за сметка, които въведете, не се съхраняват. Когато заявките се отворят, ще можете да кандидатствате точно тук и да следите историята и състоянието на заявките си.",
-  "revenue.payout.notAvailableTitle": "Заявките за изплащане все още не са налични"
+  "revenue.source.tips": "Бакшиши"
 }

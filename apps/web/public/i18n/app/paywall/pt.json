@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "Acesso antecipado de {days} dias para apoiantes",
   "paywall.creatorPage.preview": "Pré-visualização",
   "paywall.creatorPage.save": "Guardar política",
+  "paywall.creatorPage.statusDaysRange": "acesso antecipado {min}–{max} dias",
+  "paywall.creatorPage.statusDaysSingle": "acesso antecipado {days} dias",
+  "paywall.creatorPage.statusSummary": "{total} políticas · {active} ativas",
   "paywall.creatorPage.subtitle": "Configure o acesso antecipado: apoiantes primeiro, gratuito para todos após N dias.",
   "paywall.creatorPage.title": "Acesso antecipado",
   "paywall.creatorPage.titleIdLabel": "ID do título",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Pré-visualização da vista do leitor",
   "paywall.titleNotice.body": "Este título é lançado para apoiantes com {days} dias de antecedência. Torna-se gratuito se aguardar.",
   "paywall.titleNotice.label": "Aviso de acesso antecipado",
-  "paywall.titleNotice.title": "Acesso antecipado para apoiantes em vigor",
-  "paywall.creatorPage.statusDaysRange": "acesso antecipado {min}–{max} dias",
-  "paywall.creatorPage.statusDaysSingle": "acesso antecipado {days} dias",
-  "paywall.creatorPage.statusSummary": "{total} políticas · {active} ativas"
+  "paywall.titleNotice.title": "Acesso antecipado para apoiantes em vigor"
 }

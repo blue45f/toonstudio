@@ -59,6 +59,13 @@
   "search.explorer.recent.clearAll": "Звісніть все.",
   "search.explorer.recent.delete": "Знімайте останній запит {query}",
   "search.explorer.recent.searchAgain": "Пошук знову з останніх ключових слів",
+  "search.explorer.suggestions.popular": "Популярні запити",
+  "search.explorer.suggestions.genres": "Рекомендовані жанри",
+  "search.explorer.suggestions.searchFor": "Шукати {query}",
+  "search.explorer.suggestions.genreFilter": "Звузити за жанром {genre}",
+  "search.explorer.suggestions.loading": "Завантаження рекомендованих запитів",
+  "search.explorer.suggestions.error": "Не вдалося завантажити рекомендовані запити. Спробуйте ще раз за мить.",
+  "search.explorer.suggestions.empty": "Зараз рекомендацій немає. Спробуйте ввести назву, автора або тег.",
   "search.explorer.catalog.label": "Каталог",
   "search.explorer.catalog.empty": "Каталог порожній",
   "search.explorer.currentFilter": "Поточні фільтри",
@@ -77,12 +84,5 @@
   "search.explorer.time.minutesAgo": "{count} м тому",
   "search.explorer.time.hoursAgo": "{count}h тому",
   "search.explorer.time.daysAgo": "{count} d тому",
-  "search.explorer.loadMore": "Погрузка більше",
-  "search.explorer.suggestions.popular": "Популярні запити",
-  "search.explorer.suggestions.genres": "Рекомендовані жанри",
-  "search.explorer.suggestions.searchFor": "Шукати {query}",
-  "search.explorer.suggestions.genreFilter": "Звузити за жанром {genre}",
-  "search.explorer.suggestions.loading": "Завантаження рекомендованих запитів",
-  "search.explorer.suggestions.error": "Не вдалося завантажити рекомендовані запити. Спробуйте ще раз за мить.",
-  "search.explorer.suggestions.empty": "Зараз рекомендацій немає. Спробуйте ввести назву, автора або тег."
+  "search.explorer.loadMore": "Погрузка більше"
 }

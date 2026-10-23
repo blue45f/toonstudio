@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Членове",
   "membership.creatorPage.statMonthly": "Общо месечни абонаменти",
   "membership.creatorPage.statTiers": "Активни нива",
+  "membership.creatorPage.statusActive": "{count} нива са на живо на екрана за записване на читатели",
   "membership.creatorPage.subtitle": "Създавайте нива за членство на фенове и следете приходите от месечни абонаменти.",
   "membership.creatorPage.tierList": "Нива на членство",
   "membership.creatorPage.tierMembers": "{count} членове",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "Сумата, която феновете плащат всеки месец.",
   "membership.tierEditor.priceLabel": "Месечна цена (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Запазете",
-  "membership.creatorPage.statusActive": "{count} нива са на живо на екрана за записване на читатели"
+  "membership.tierEditor.save": "Запазете"
 }

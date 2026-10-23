@@ -1,5 +1,7 @@
 {
   "control.language.label": "Γλώσσα",
+  "control.language.group.translated": "Μεταφράσεις υψηλής κάλυψης",
+  "control.language.group.englishBase": "Ατομική μετάφραση · Αγγλικά fallback",
   "control.sound.enable": "Επιτρέψτε ηχητικές επιδράσεις",
   "control.sound.disable": "Αποσπάστε τις ακουστικές επιδράσεις",
   "control.theme.dark": "Επενδύστε τη λειτουργία φωτός",
@@ -8,7 +10,5 @@
   "control.settings.close": "Κλειστικές ρυθμίσεις",
   "control.cluster.settings": "Ηχητικό, θεματικό, γλωσσικό έλεγχο",
   "control.cluster.open": "Άνοιξη ρυθμίσεων",
-  "control.cluster.tooltip": "Ηχητικές, θεματικές και γλωσσικές ρυθμίσεις",
-  "control.language.group.translated": "Μεταφράσεις υψηλής κάλυψης",
-  "control.language.group.englishBase": "Ατομική μετάφραση · Αγγλικά fallback"
+  "control.cluster.tooltip": "Ηχητικές, θεματικές και γλωσσικές ρυθμίσεις"
 }

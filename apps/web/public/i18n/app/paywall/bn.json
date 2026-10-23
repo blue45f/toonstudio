@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "{days} দিনের সমর্থক আগাম অ্যাক্সেস",
   "paywall.creatorPage.preview": "প্রিভিউ",
   "paywall.creatorPage.save": "নীতি সংরক্ষণ করুন",
+  "paywall.creatorPage.statusDaysRange": "আগাম অ্যাক্সেস {min}–{max} দিন",
+  "paywall.creatorPage.statusDaysSingle": "আগাম অ্যাক্সেস {days} দিন",
+  "paywall.creatorPage.statusSummary": "{total}টি নীতি · {active}টি চালু",
   "paywall.creatorPage.subtitle": "আগাম অ্যাক্সেস সেট করুন: সমর্থকরা আগে, N দিন পরে সবার জন্য বিনামূল্যে।",
   "paywall.creatorPage.title": "আগাম অ্যাক্সেস",
   "paywall.creatorPage.titleIdLabel": "শিরোনাম ID",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "পাঠকের দৃশ্য প্রিভিউ",
   "paywall.titleNotice.body": "এই শিরোনামটি সমর্থকদের জন্য {days} দিন আগে প্রকাশিত হয়। অপেক্ষা করলে এটি বিনামূল্যে হয়ে যায়।",
   "paywall.titleNotice.label": "আগাম অ্যাক্সেস বিজ্ঞপ্তি",
-  "paywall.titleNotice.title": "সমর্থক আগাম অ্যাক্সেস কার্যকর আছে",
-  "paywall.creatorPage.statusDaysRange": "আগাম অ্যাক্সেস {min}–{max} দিন",
-  "paywall.creatorPage.statusDaysSingle": "আগাম অ্যাক্সেস {days} দিন",
-  "paywall.creatorPage.statusSummary": "{total}টি নীতি · {active}টি চালু"
+  "paywall.titleNotice.title": "সমর্থক আগাম অ্যাক্সেস কার্যকর আছে"
 }

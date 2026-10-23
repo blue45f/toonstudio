@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "Ранен достъп за поддръжници от {days} дни",
   "paywall.creatorPage.preview": "Предварителен преглед",
   "paywall.creatorPage.save": "Запазете политиката",
+  "paywall.creatorPage.statusDaysRange": "ранен достъп {min}–{max} дни",
+  "paywall.creatorPage.statusDaysSingle": "ранен достъп {days} дни",
+  "paywall.creatorPage.statusSummary": "{total} политики · {active} вкл.",
   "paywall.creatorPage.subtitle": "Настройте ранен достъп: първо поддръжниците, безплатно за всички след N дни.",
   "paywall.creatorPage.title": "Ранен достъп",
   "paywall.creatorPage.titleIdLabel": "ID на заглавието",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Предварителен преглед от гледна точка на читателя",
   "paywall.titleNotice.body": "Това заглавие излиза за поддръжниците {days} дни по-рано. Става безплатно, ако изчакате.",
   "paywall.titleNotice.label": "Известие за ранен достъп",
-  "paywall.titleNotice.title": "Ранният достъп за поддръжници е в сила",
-  "paywall.creatorPage.statusDaysRange": "ранен достъп {min}–{max} дни",
-  "paywall.creatorPage.statusDaysSingle": "ранен достъп {days} дни",
-  "paywall.creatorPage.statusSummary": "{total} политики · {active} вкл."
+  "paywall.titleNotice.title": "Ранният достъп за поддръжници е в сила"
 }

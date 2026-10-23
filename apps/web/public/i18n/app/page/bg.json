@@ -1,7 +1,4 @@
 {
-  "page.notFound.title": "Страница не е открита",
-  "page.notFound.message": "Проверете URL-то отново или разгледайте заглавия от началната страница.",
-  "page.notFound.home": "Върни се у дома.",
   "page.events.board.community": "Табло на общността",
   "page.events.board.official": "Официални събития",
   "page.events.board.title": "Списък със събития",
@@ -30,9 +27,12 @@
   "page.events.hero.primary": "Вижте предимствата на бетата",
   "page.events.hero.secondary": "Табло за събития на общността",
   "page.events.hero.title": "Табло за събития",
+  "page.notFound.home": "Върни се у дома.",
+  "page.notFound.message": "Проверете URL-то отново или разгледайте заглавия от началната страница.",
   "page.notFound.quip.1": "А? Този панел все още не е нарисуван!",
   "page.notFound.quip.2": "Заблудихте се, преди мастилото дори да е изсъхнало.",
   "page.notFound.quip.3": "До среща в следващия епизод… вероятно!",
   "page.notFound.quip.4": "Художникът рисува тази страница точно сега.",
-  "page.notFound.tapHint": "Докоснете числата"
+  "page.notFound.tapHint": "Докоснете числата",
+  "page.notFound.title": "Страница не е открита"
 }

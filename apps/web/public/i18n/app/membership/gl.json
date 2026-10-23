@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "Membros",
   "membership.creatorPage.statMonthly": "Ingresos mensuais recorrentes",
   "membership.creatorPage.statTiers": "Niveis activos",
+  "membership.creatorPage.statusActive": "{count} niveis están publicados na pantalla de rexistro de lectura",
   "membership.creatorPage.subtitle": "Crea niveis de subscrición para seguidoras e seguidores e fai seguimento dos ingresos mensuais.",
   "membership.creatorPage.tierList": "Niveis de subscrición",
   "membership.creatorPage.tierMembers": "{count} membros",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "O importe que pagan cada mes as persoas seguidoras.",
   "membership.tierEditor.priceLabel": "Prezo mensual (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Gardar",
-  "membership.creatorPage.statusActive": "{count} niveis están publicados na pantalla de rexistro de lectura"
+  "membership.tierEditor.save": "Gardar"
 }

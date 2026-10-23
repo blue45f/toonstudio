@@ -32,6 +32,8 @@
   "revenue.payout.holderLabel": "অ্যাকাউন্ট ধারক",
   "revenue.payout.holderPlaceholder": "ধারকের নাম",
   "revenue.payout.mockNote": "আপাতত এটি একটি মক অনুরোধ। প্রকৃত পরিশোধ ব্যাকএন্ড নিষ্পত্তি পাইপলাইন দ্বারা প্রক্রিয়া করা হয়।",
+  "revenue.payout.notAvailableBody": "পরিশোধের অনুরোধ এখনো প্রকৃতপক্ষে গ্রহণ করা হচ্ছে না, এবং আপনি যে অ্যাকাউন্টের বিবরণ লিখবেন তা সংরক্ষণ করা হয় না। অনুরোধ খুললে, আপনি এখান থেকেই আবেদন করতে পারবেন এবং আপনার অনুরোধের ইতিহাস ও অবস্থা ট্র্যাক করতে পারবেন।",
+  "revenue.payout.notAvailableTitle": "পরিশোধের অনুরোধ এখনো পাওয়া যাচ্ছে না",
   "revenue.payout.submit": "পরিশোধের অনুরোধ করুন",
   "revenue.payout.title": "পরিশোধ",
   "revenue.settlement.belowMinimum": "{min} থেকে পাওয়া যায়",
@@ -47,7 +49,5 @@
   "revenue.source.early-access": "আগাম অ্যাক্সেস",
   "revenue.source.market": "মার্কেট বিক্রি",
   "revenue.source.membership": "মেম্বারশিপ",
-  "revenue.source.tips": "টিপ",
-  "revenue.payout.notAvailableBody": "পরিশোধের অনুরোধ এখনো প্রকৃতপক্ষে গ্রহণ করা হচ্ছে না, এবং আপনি যে অ্যাকাউন্টের বিবরণ লিখবেন তা সংরক্ষণ করা হয় না। অনুরোধ খুললে, আপনি এখান থেকেই আবেদন করতে পারবেন এবং আপনার অনুরোধের ইতিহাস ও অবস্থা ট্র্যাক করতে পারবেন।",
-  "revenue.payout.notAvailableTitle": "পরিশোধের অনুরোধ এখনো পাওয়া যাচ্ছে না"
+  "revenue.source.tips": "টিপ"
 }

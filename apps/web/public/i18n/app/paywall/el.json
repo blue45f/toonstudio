@@ -20,6 +20,9 @@
   "paywall.creatorPage.policySummary": "Πρώιμη πρόσβαση υποστηρικτών {days} ημερών",
   "paywall.creatorPage.preview": "Προεπισκόπηση",
   "paywall.creatorPage.save": "Αποθήκευση πολιτικής",
+  "paywall.creatorPage.statusDaysRange": "πρώιμη πρόσβαση {min}–{max} ημέρες",
+  "paywall.creatorPage.statusDaysSingle": "πρώιμη πρόσβαση {days} ημέρες",
+  "paywall.creatorPage.statusSummary": "{total} πολιτικές · {active} ενεργές",
   "paywall.creatorPage.subtitle": "Ρυθμίστε την πρώιμη πρόσβαση: πρώτα οι υποστηρικτές, δωρεάν για όλους μετά από N ημέρες.",
   "paywall.creatorPage.title": "Πρώιμη πρόσβαση",
   "paywall.creatorPage.titleIdLabel": "ID τίτλου",
@@ -44,8 +47,5 @@
   "paywall.preview.title": "Προεπισκόπηση όψης αναγνώστη",
   "paywall.titleNotice.body": "Αυτός ο τίτλος κυκλοφορεί στους υποστηρικτές {days} ημέρες νωρίτερα. Γίνεται δωρεάν αν περιμένετε.",
   "paywall.titleNotice.label": "Ειδοποίηση πρώιμης πρόσβασης",
-  "paywall.titleNotice.title": "Πρώιμη πρόσβαση υποστηρικτών σε ισχύ",
-  "paywall.creatorPage.statusDaysRange": "πρώιμη πρόσβαση {min}–{max} ημέρες",
-  "paywall.creatorPage.statusDaysSingle": "πρώιμη πρόσβαση {days} ημέρες",
-  "paywall.creatorPage.statusSummary": "{total} πολιτικές · {active} ενεργές"
+  "paywall.titleNotice.title": "Πρώιμη πρόσβαση υποστηρικτών σε ισχύ"
 }

@@ -4,7 +4,9 @@
   "userProfile.tabs.works": "Obras criadas",
   "userProfile.tabs.series": "Série",
   "userProfile.works.empty": "Este utilizador ainda não tem obras públicas.",
+  "userProfile.works.error": "Não foi possível carregar as obras criadas. Tente novamente.",
   "userProfile.series.empty": "Este utilizador ainda não tem série.",
+  "userProfile.series.error": "Não foi possível carregar as séries. Tente novamente.",
   "userProfile.fetchError": "Não conseguimos carregar o perfil.",
   "userProfile.authorFallback": "Utilizador",
   "userProfile.metaTemplate": "{author} perfil · {reviews} avaliações · {works} trabalhos · avg classificação {avg}  ToonStudio.",
@@ -20,8 +22,6 @@
   "userProfile.tabsLabel": "Conteúdo do perfil",
   "userProfile.refresh": "Refrescamento",
   "userProfile.emptyReviews": "Ainda não foram publicadas avaliações por este utilizador.",
-  "userProfile.works.error": "Não foi possível carregar as obras criadas. Tente novamente.",
-  "userProfile.series.error": "Não foi possível carregar as séries. Tente novamente.",
   "userProfile.emptyReviewsHint": "Deixe a primeira avaliação sobre um título de que goste.",
   "userProfile.emptyReviewsCta": "Explorar títulos"
 }

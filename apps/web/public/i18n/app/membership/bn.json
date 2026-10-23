@@ -14,6 +14,7 @@
   "membership.creatorPage.statMembers": "সদস্য",
   "membership.creatorPage.statMonthly": "মাসিক মোট সাবস্ক্রিপশন ফি",
   "membership.creatorPage.statTiers": "সক্রিয় টিয়ার",
+  "membership.creatorPage.statusActive": "পাঠক সাইন-আপ পর্দায় {count}টি টিয়ার লাইভ আছে",
   "membership.creatorPage.subtitle": "ভক্ত মেম্বারশিপ টিয়ার তৈরি করুন এবং মাসিক সাবস্ক্রিপশন আয় ট্র্যাক করুন।",
   "membership.creatorPage.tierList": "মেম্বারশিপ টিয়ার",
   "membership.creatorPage.tierMembers": "{count} জন সদস্য",
@@ -78,6 +79,5 @@
   "membership.tierEditor.priceHint": "ভক্তরা প্রতি মাসে যে পরিমাণ অর্থ দেন।",
   "membership.tierEditor.priceLabel": "মাসিক মূল্য (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "সংরক্ষণ করুন",
-  "membership.creatorPage.statusActive": "পাঠক সাইন-আপ পর্দায় {count}টি টিয়ার লাইভ আছে"
+  "membership.tierEditor.save": "সংরক্ষণ করুন"
 }
