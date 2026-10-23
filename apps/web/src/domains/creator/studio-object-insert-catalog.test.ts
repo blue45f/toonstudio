@@ -1,3 +1,6 @@
+import { statSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { PRIMITIVE_DEFS } from "./studio-background-3d-metadata";
@@ -41,6 +44,23 @@ describe("studio object insert catalog (Canva-style 3D elements)", () => {
     expect(scenes.every((item) => item.openTarget === "bg3d-templates")).toBe(
       true,
     );
+    expect(scenes.every((item) => Boolean(item.assetUrl && item.thumbnailUrl))).toBe(true);
+
+    const publicRoot = process.cwd().endsWith("/apps/web")
+      ? join(process.cwd(), "public")
+      : join(process.cwd(), "apps/web/public");
+    for (const item of items) {
+      if (item.assetUrl) {
+        const stat = statSync(join(publicRoot, item.assetUrl));
+        expect(stat.isFile(), item.assetUrl).toBe(true);
+        expect(stat.size, item.assetUrl).toBeGreaterThan(1024);
+      }
+      if (item.thumbnailUrl) {
+        const stat = statSync(join(publicRoot, item.thumbnailUrl));
+        expect(stat.isFile(), item.thumbnailUrl).toBe(true);
+        expect(stat.size, item.thumbnailUrl).toBeGreaterThan(1024);
+      }
+    }
   });
 
   it("inserts explicit refined revisions without relabeling persisted legacy prop IDs", () => {
@@ -49,6 +69,8 @@ describe("studio object insert catalog (Canva-style 3D elements)", () => {
       const entry = findStudioObjectInsertItem(id);
       expect(entry?.sourceId).toBe(`blender_${name}_v8`);
       expect(entry?.label).toContain("개선형");
+      expect(entry?.assetUrl).toBe(`/assets/3d/refined-v8/${name}.glb`);
+      expect(entry?.thumbnailUrl).toBe(`/assets/3d/refined-v8/thumbnails/${name}.png`);
       const placement = planStudioObjectInsertPlacement({ itemId: id, canvasWidth: 800, canvasHeight: 1200 });
       expect(placement?.sourceId).toBe(`blender_${name}_v8`);
       expect(placement?.openTarget).toBe("vrm-poser");

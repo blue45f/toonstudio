@@ -7,6 +7,7 @@
  */
 
 import refinedV6Manifest from "../../../../public/assets/3d/environments/refined-v6/manifest.json";
+import refinedV6RenderPassesReport from "../../../../public/assets/3d/environments/refined-v6/render-passes-report.json";
 import expansionV1Manifest from "../../../../public/assets/3d/environments/expansion-v1/manifest.json";
 import webtoonV7Manifest from "../../../../public/assets/3d/environments/webtoon-v7/manifest.json";
 import authoredV1Manifest from "../../../../public/assets/3d/environments/authored-v1/manifest.json";
@@ -631,6 +632,97 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS = Object.freeze([
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
 ]);
 
+/** 100% CC0-1.0 자체 제작/CC0 합성 환경 에셋 카탈로그 (31종: V6 12 + Expansion 6 + Webtoon V7 3 + Authored V1 10). */
+export const STUDIO_BG3D_CC0_ENVIRONMENT_ASSETS = Object.freeze([
+  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
+  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
+  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
+  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
+]);
+
+export interface StudioBg3dEnvironmentCyclesPasses {
+  readonly environmentId: string;
+  readonly stem: string;
+  readonly engine: "CYCLES";
+  readonly directoryUrl: `/assets/3d/environments/refined-v6/passes/${string}`;
+  readonly files: {
+    readonly beautyUrl: `/assets/3d/environments/refined-v6/passes/${string}/beauty0001.png`;
+    readonly depthUrl: `/assets/3d/environments/refined-v6/passes/${string}/depth0001.png`;
+    readonly normalUrl: `/assets/3d/environments/refined-v6/passes/${string}/normal0001.png`;
+    readonly aoUrl: `/assets/3d/environments/refined-v6/passes/${string}/ao0001.png`;
+  };
+  readonly colorDepth: {
+    readonly beauty: "8";
+    readonly depth: "16";
+    readonly normal: "16";
+    readonly ao: "8";
+  };
+  readonly depthRange: readonly [number, number];
+  readonly normalRange: readonly [number, number];
+  readonly resolution: readonly [number, number];
+  readonly samples: number;
+}
+
+const RAW_CYCLES_PASSES = refinedV6RenderPassesReport as Readonly<Record<string, {
+  readonly engine: string;
+  readonly directory: string;
+  readonly files: { readonly beauty: string; readonly depth: string; readonly normal: string; readonly ao: string };
+  readonly colorDepth: { readonly beauty: string; readonly depth: string; readonly normal: string; readonly ao: string };
+  readonly depthRange: readonly number[];
+  readonly normalRange: readonly number[];
+  readonly resolution: readonly number[];
+  readonly samples: number;
+}>>;
+
+export const STUDIO_BG3D_ENVIRONMENT_CYCLES_PASSES: readonly StudioBg3dEnvironmentCyclesPasses[] = Object.freeze(
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_V6.map((asset): StudioBg3dEnvironmentCyclesPasses => {
+    const stem = asset.fileName.replace(/\.glb$/u, "");
+    const entry = RAW_CYCLES_PASSES[stem];
+    if (!entry) throw new Error(`Missing Cycles render pass report for V6 environment: ${stem}`);
+    const base = "/assets/3d/environments/refined-v6" as const;
+    return Object.freeze({
+      environmentId: asset.id,
+      stem,
+      engine: "CYCLES",
+      directoryUrl: `${base}/${entry.directory}` as `/assets/3d/environments/refined-v6/passes/${string}`,
+      files: Object.freeze({
+        beautyUrl: `${base}/${entry.files.beauty}` as `/assets/3d/environments/refined-v6/passes/${string}/beauty0001.png`,
+        depthUrl: `${base}/${entry.files.depth}` as `/assets/3d/environments/refined-v6/passes/${string}/depth0001.png`,
+        normalUrl: `${base}/${entry.files.normal}` as `/assets/3d/environments/refined-v6/passes/${string}/normal0001.png`,
+        aoUrl: `${base}/${entry.files.ao}` as `/assets/3d/environments/refined-v6/passes/${string}/ao0001.png`,
+      }),
+      colorDepth: Object.freeze({
+        beauty: entry.colorDepth.beauty as "8",
+        depth: entry.colorDepth.depth as "16",
+        normal: entry.colorDepth.normal as "16",
+        ao: entry.colorDepth.ao as "8",
+      }),
+      depthRange: Object.freeze([entry.depthRange[0] ?? 0.1, entry.depthRange[1] ?? 150]) as readonly [number, number],
+      normalRange: Object.freeze([entry.normalRange[0] ?? -1, entry.normalRange[1] ?? 1]) as readonly [number, number],
+      resolution: Object.freeze([entry.resolution[0] ?? 1000, entry.resolution[1] ?? 750]) as readonly [number, number],
+      samples: entry.samples,
+    });
+  }),
+);
+
+const CYCLES_PASSES_BY_KEY = new Map<string, StudioBg3dEnvironmentCyclesPasses>(
+  STUDIO_BG3D_ENVIRONMENT_CYCLES_PASSES.flatMap((passes) => [
+    [passes.environmentId, passes] as const,
+    [passes.environmentId.replace(/-v6$/u, "-v1"), passes] as const,
+    [passes.stem, passes] as const,
+    [`${passes.stem}.glb`, passes] as const,
+  ]),
+);
+
+const AUTHORED_V1_BY_KEY = new Map(
+  STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1.flatMap((asset) => [
+    [asset.id, asset] as const,
+    [asset.fileName, asset] as const,
+    [asset.fileName.replace(/\.glb$/u, ""), asset] as const,
+    [asset.sha256, asset] as const,
+  ]),
+);
+
 const RESOLVABLE_ENVIRONMENT_ASSETS = [
   ...STUDIO_BG3D_LEGACY_ENVIRONMENT_ASSETS,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS,
@@ -640,7 +732,10 @@ const ENVIRONMENT_BY_ID = new Map(
   RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.id, asset] as const),
 );
 const ENVIRONMENT_BY_HASH = new Map(
-  RESOLVABLE_ENVIRONMENT_ASSETS.map((asset) => [asset.sha256, asset] as const),
+  [
+    ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
+    ...RESOLVABLE_ENVIRONMENT_ASSETS,
+  ].map((asset) => [asset.sha256, asset] as const),
 );
 
 export function getStudioBg3dEnvironmentAsset(
@@ -658,3 +753,24 @@ export function getStudioBg3dEnvironmentAssetByHash(
 export function isStudioBg3dEnvironmentAssetId(id: string): boolean {
   return ENVIRONMENT_BY_ID.has(id);
 }
+
+/** V6 환경 ID, 레거시 V1 ID, 또는 파일 스템으로 Cycles 멀티패스(beauty/depth/normal/ao) 정보를 조회한다. */
+export function getStudioBg3dEnvironmentCyclesPasses(
+  environmentIdOrStem: string,
+): StudioBg3dEnvironmentCyclesPasses | null {
+  return CYCLES_PASSES_BY_KEY.get(environmentIdOrStem.trim()) ?? null;
+}
+
+/** Tripo MCP 환경(`*-mcp-v1`), 해시, 또는 파일명을 자체 제작 CC0(`authored-v1`) 대응 환경으로 변환한다. */
+export function resolveStudioBg3dCc0CounterpartEnvironment(
+  idOrFileName: string,
+): StudioBg3dEnvironmentAsset | null {
+  const trimmed = idOrFileName.trim();
+  const authored = AUTHORED_V1_BY_KEY.get(trimmed);
+  if (authored) return authored;
+  const asset = ENVIRONMENT_BY_ID.get(trimmed) ?? ENVIRONMENT_BY_HASH.get(trimmed as `sha256:${string}`);
+  if (!asset) return null;
+  if (asset.provenance.license === "CC0-1.0") return asset;
+  return AUTHORED_V1_BY_KEY.get(asset.fileName) ?? null;
+}
+

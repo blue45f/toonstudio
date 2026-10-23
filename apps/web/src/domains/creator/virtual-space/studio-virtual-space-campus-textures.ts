@@ -324,16 +324,15 @@ export function campusGatePlateTexture(scene: CampusTextureScene, labelKo: strin
 export function campusAreaSignTexture(scene: CampusTextureScene, labelKo: string, labelEn: string, width: number, height: number, style: StudioVirtualArtStyleKey): string {
   return createCanvasTexture(scene, `campus-area-sign-${labelEn}-${width}x${height}-${style}`, width, height, (context) => {
     const wood = campusStyleColor(CAMPUS_ART.woodDark, style);
-    const plateHeight = Math.round(height * 0.58);
-    campusSoftGroundShadow(context, CAMPUS_ART.shadow, width / 2, height - 3, width / 2 - 14, 5, 0.25);
-    rect(context, wood, width / 2 - 4, plateHeight - 2, 8, height - plateHeight - 2);
-    rect(context, campusShade(wood, 0.3), width / 2 - 4, plateHeight - 2, 2, height - plateHeight - 2);
-    roundRect(context, CAMPUS_ART.shadow, 3, 5, width - 4, plateHeight - 2, 9, 0.3);
-    roundRect(context, CAMPUS_ART.navy, 1, 1, width - 4, plateHeight - 2, 9);
-    strokeRoundRect(context, CAMPUS_ART.gold, 4, 4, width - 10, plateHeight - 8, 7, 1.5, 0.95);
-    for (const x of [10, width - 14]) ellipse(context, CAMPUS_ART.gold, x + 1, plateHeight / 2, 2, 2, 0.9);
-    fittedText(context, labelEn, width / 2 - 1, plateHeight * 0.38, 22, 15, width - 36, CAMPUS_ART.cream, 900);
-    fittedText(context, labelKo, width / 2 - 1, plateHeight * 0.74, 12, 11, width - 32, campusShade(CAMPUS_ART.cream, -0.1), 700);
+    const plateHeight = Math.round(height * 0.64);
+    campusSoftGroundShadow(context, CAMPUS_ART.shadow, width / 2, height - 3, width / 2 - 16, 4, 0.22);
+    rect(context, wood, width / 2 - 3, plateHeight - 2, 6, height - plateHeight - 2);
+    rect(context, campusShade(wood, 0.3), width / 2 - 3, plateHeight - 2, 2, height - plateHeight - 2);
+    roundRect(context, CAMPUS_ART.shadow, 5, 4, width - 8, plateHeight - 2, 8, 0.26);
+    roundRect(context, CAMPUS_ART.navy, 3, 2, width - 8, plateHeight - 2, 8);
+    strokeRoundRect(context, CAMPUS_ART.gold, 5, 4, width - 12, plateHeight - 6, 6, 1.4, 0.92);
+    fittedText(context, labelEn, width / 2 - 1, plateHeight * 0.39, 13, 10, width - 22, CAMPUS_ART.gold, 900);
+    fittedText(context, labelKo, width / 2 - 1, plateHeight * 0.74, 11, 10, width - 22, CAMPUS_ART.cream, 800);
   });
 }
 

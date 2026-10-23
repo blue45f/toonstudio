@@ -1,4 +1,4 @@
-import { ArrowLeft, Lock, Search, Sparkles } from "lucide-react";
+import { ArrowLeft, Box, Layers, Lock, Search, Sparkles } from "lucide-react";
 import { memo, type CSSProperties } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -16,7 +16,7 @@ export interface SpaceLocationZone {
 }
 
 /**
- * 좌상단 위치 칩: 나가기 · 공간명 · 현재 구역 · 프라이빗 배지 · (프로젝트) 연결 상태 · 아틀리에 펄스 공명 배지 · 퀵 파인더.
+ * 좌상단 위치 칩: 나가기 · 공간명 · 현재 구역 · 프라이빗 배지 · (프로젝트) 연결 상태 · 아틀리에 펄스 공명 배지 · 3D/2D 엔진 전환 · 퀵 파인더.
  * 모바일에서는 같은 정보를 한 줄 알약으로 줄여 보여 준다.
  */
 export const SpaceLocationChip = memo(function SpaceLocationChip({
@@ -24,18 +24,22 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
   zone,
   connection,
   pulse,
+  engineMode,
   compact = false,
   onExit,
   onQuickAction,
+  onToggleEngineMode,
   onOpenSearch,
 }: {
   readonly spaceName: string;
   readonly zone: SpaceLocationZone;
   readonly connection?: SpaceConnectionStatus | null;
   readonly pulse?: StudioAtelierPulseSnapshot | null;
+  readonly engineMode?: "2d" | "3d";
   readonly compact?: boolean;
   readonly onExit: () => void;
   readonly onQuickAction?: () => void;
+  readonly onToggleEngineMode?: () => void;
   readonly onOpenSearch?: () => void;
 }) {
   const bt = useBilingual("SpaceLocationChip");
@@ -109,6 +113,24 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
         </span>
       );
     })() : null}
+    {onToggleEngineMode && engineMode ? (
+      <button
+        type="button"
+        className="space-location__engine-toggle"
+        data-engine-mode={engineMode}
+        onClick={onToggleEngineMode}
+        aria-pressed={engineMode === "3d"}
+        aria-label={engineMode === "3d"
+          ? bt("현재 3D 스튜디오 공간 · 클릭하여 2D 캠퍼스로 전환", "Currently 3D Studio Space · Click to switch to 2D Campus")
+          : bt("현재 2D 캠퍼스 · 클릭하여 3D 스튜디오 공간으로 전환", "Currently 2D Campus · Click to switch to 3D Studio Space")}
+        title={engineMode === "3d"
+          ? bt("3D 스튜디오 (Three.js + GLB/VRM) 활성 · 2D 캠퍼스로 전환", "3D Studio (Three.js + GLB/VRM) active · Switch to 2D Campus")
+          : bt("3D 스튜디오 (Three.js + GLB/VRM) 공간으로 전환", "Switch to 3D Studio (Three.js + GLB/VRM) Space")}
+      >
+        {engineMode === "3d" ? <Box size={13} aria-hidden /> : <Layers size={13} aria-hidden />}
+        <span>{engineMode === "3d" ? bt("3D 공간", "3D Space") : bt("3D 전환", "3D View")}</span>
+      </button>
+    ) : null}
     {connection && !compact ? <span className="space-location__connection" data-tone={connection.tone}>
       <span className="space-location__dot" aria-hidden />{connection.label}
     </span> : null}

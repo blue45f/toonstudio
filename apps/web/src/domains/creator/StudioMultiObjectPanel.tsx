@@ -10,7 +10,10 @@ import { Copy, GripVertical, Layers, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import {
+  STUDIO_REFINED_V8_PROP_CATALOG,
   STUDIO_ROOM_LAYOUT_PRESETS,
+  STUDIO_SCENE_PROP_LAYOUT_PRESETS,
+  findStudio3DPropCatalogEntry,
   type Studio3DObjectInstance,
 } from "./studio-multi-object-layout";
 import {
@@ -36,16 +39,44 @@ export interface StudioMultiObjectPanelProps {
   readonly onSnapToFloor: (id: string) => void;
   /** 룸 프리셋 적용 콜백. */
   readonly onApplyRoomPreset: (presetId: string) => void;
+  /** 카탈로그 소품 개별 추가 콜백(선택). */
+  readonly onAddCatalogProp?: (propId: string) => void;
 }
 
 export function StudioMultiObjectPanel({
   objects,
+  onObjectsChange,
   onDuplicate,
   onRemove,
   onSnapToFloor,
   onApplyRoomPreset,
+  onAddCatalogProp,
 }: StudioMultiObjectPanelProps): ReactElement {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const handleAddProp = (propId: string) => {
+    if (onAddCatalogProp) {
+      onAddCatalogProp(propId);
+      return;
+    }
+    const entry = findStudio3DPropCatalogEntry(propId);
+    if (!entry) return;
+    const offset = ((objects.length % 5) - 2) * 0.25;
+    const instance: Studio3DObjectInstance = {
+      id: `obj_${entry.id}_${objects.length + 1}`,
+      modelUrl: entry.modelUrl,
+      name: entry.name,
+      position: [
+        Math.round((entry.defaultPosition[0] + offset) * 100) / 100,
+        entry.defaultPosition[1],
+        entry.defaultPosition[2],
+      ],
+      rotation: entry.defaultRotation,
+      scale: entry.defaultScale,
+      visible: true,
+    };
+    onObjectsChange([...objects, instance]);
+  };
 
   return (
     <div className="space-y-3">
@@ -69,6 +100,55 @@ export function StudioMultiObjectPanel({
             >
               {preset.label.split("(")[0]?.trim() ?? preset.label}
             </StudioPanelChip>
+          ))}
+        </div>
+      </div>
+
+      {/* 웹툰 테마 씬 프리셋 */}
+      <div className="space-y-1">
+        <span className="text-xs font-semibold text-fg-2">
+          웹툰 테마 씬 프리셋 ({STUDIO_SCENE_PROP_LAYOUT_PRESETS.length})
+        </span>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="웹툰 테마 씬 프리셋">
+          {STUDIO_SCENE_PROP_LAYOUT_PRESETS.map((preset) => (
+            <StudioPanelChip
+              key={preset.id}
+              onClick={() => onApplyRoomPreset(preset.id)}
+              title={preset.label}
+            >
+              {preset.label.split("(")[0]?.trim() ?? preset.label}
+            </StudioPanelChip>
+          ))}
+        </div>
+      </div>
+
+      {/* 개선형 3D 소품 카탈로그 (refined-v8 썸네일) */}
+      <div className="space-y-1">
+        <span className="text-xs font-semibold text-fg-2">
+          개선형 3D 소품 카탈로그 ({STUDIO_REFINED_V8_PROP_CATALOG.length})
+        </span>
+        <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="개선형 3D 소품 카탈로그">
+          {STUDIO_REFINED_V8_PROP_CATALOG.map((prop) => (
+            <button
+              key={prop.id}
+              type="button"
+              onClick={() => handleAddProp(prop.id)}
+              title={prop.name}
+              className="flex flex-col items-center gap-1 rounded-md border border-line/60 bg-card/50 p-1.5 text-[0.65rem] text-fg-2 transition-colors hover:border-accent/60 hover:bg-card"
+            >
+              {prop.thumbnailUrl ? (
+                <img
+                  src={prop.thumbnailUrl}
+                  alt={prop.name}
+                  loading="lazy"
+                  decoding="async"
+                  width={48}
+                  height={48}
+                  className="h-10 w-10 rounded object-contain"
+                />
+              ) : null}
+              <span className="w-full truncate text-center">{prop.name.replace(" (v8)", "")}</span>
+            </button>
           ))}
         </div>
       </div>
