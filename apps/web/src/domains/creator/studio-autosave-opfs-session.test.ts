@@ -647,7 +647,7 @@ describe("Studio autosave OPFS authority reconciliation", () => {
     );
 
     expect(failure).toBeInstanceOf(StudioAutosaveDurabilityError);
-    expect(failure).toHaveProperty("message", expect.stringContaining("메모리에 남아"));
+    expect(failure).toHaveProperty("code", "durabilityFailed");
     expect(setItem).not.toHaveBeenCalled();
     expect(storage.getItem(key)).toBeNull();
     expect(causes).toHaveLength(1);

@@ -396,13 +396,14 @@ describe("runStudioRevisionComparison", () => {
     };
     let factoryCalls = 0;
 
-    await expect(runStudioRevisionComparison(oversized, {
+    const failure = await runStudioRevisionComparison(oversized, {
       executionBackend: "worker",
       workerFactory: () => {
         factoryCalls += 1;
         return new HangingWorker();
       },
-    })).rejects.toThrow(/페이지·마스터 요소 수/);
+    }).then(() => null, (cause: unknown) => cause);
+    expect(failure).toMatchObject({ code: "complexityExceeded", labelCode: "elements" });
     expect(factoryCalls).toBe(0);
   });
 
@@ -421,15 +422,16 @@ describe("runStudioRevisionComparison", () => {
     const cyclicTarget = cyclic.targetSnapshot as { doc: Record<string, unknown> };
     cyclicTarget.doc.extension = loop;
 
-    for (const unsafe of [deep, cyclic]) {
+    for (const [unsafe, labelCode] of [[deep, "depth"], [cyclic, "circular"]] as const) {
       let factoryCalls = 0;
-      await expect(runStudioRevisionComparison(unsafe, {
+      const failure = await runStudioRevisionComparison(unsafe, {
         executionBackend: "worker",
         workerFactory: () => {
           factoryCalls += 1;
           return new HangingWorker();
         },
-      })).rejects.toThrow(/안전 한도/);
+      }).then(() => null, (cause: unknown) => cause);
+      expect(failure).toMatchObject({ code: "complexityExceeded", labelCode });
       expect(factoryCalls).toBe(0);
     }
   });
@@ -442,9 +444,9 @@ describe("runStudioRevisionComparison", () => {
         STUDIO_REVISION_COMPARE_MAX_INDIVIDUAL_STRING_CODE_UNITS + 1
       )}`;
 
-    await expect(
-      runStudioRevisionComparison(oversized, { executionBackend: "direct" })
-    ).rejects.toThrow(/개별 문자열/);
+    const failure = await runStudioRevisionComparison(oversized, { executionBackend: "direct" })
+      .then(() => null, (cause: unknown) => cause);
+    expect(failure).toMatchObject({ code: "complexityExceeded", labelCode: "individualString" });
   });
 
   it("keeps the product callsite on the explicit Worker backend", () => {
