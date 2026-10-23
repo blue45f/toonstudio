@@ -81,4 +81,36 @@ describe("StudioNaturalMediaShowcase", () => {
       expect(svg.querySelector("path")).toBeTruthy();
     }
   });
+
+  it("웹툰 공정 필터와 이중 브러시 추천 조합 원탭 적용이 정상 동작한다", () => {
+    const onSelectBrush = vi.fn();
+    const onApplyDualBrushCombo = vi.fn();
+    const { container } = render(
+      <StudioNaturalMediaShowcase
+        {...props({ onSelectBrush, onApplyDualBrushCombo })}
+      />,
+    );
+
+    const section = container.querySelector("section");
+    expect(section?.style.containerType).toBe("inline-size");
+
+    // 선화 필터 클릭 시 선화 브러시만 표시
+    const lineartFilter = container.querySelector('[data-studio-craft-filter="lineart"]') as HTMLButtonElement | null;
+    expect(lineartFilter).not.toBeNull();
+    fireEvent.click(lineartFilter!);
+    expect(lineartFilter?.getAttribute("aria-pressed")).toBe("true");
+
+    // 전체 공정 복귀
+    const allFilter = container.querySelector('[data-studio-craft-filter="all"]') as HTMLButtonElement | null;
+    fireEvent.click(allFilter!);
+
+    // 이중 브러시 조합 클릭 시 기반 브러시 선택 및 콜백 호출
+    const comboBtn = container.querySelector('[data-studio-dual-brush-combo="marker-canvas"]') as HTMLButtonElement | null;
+    expect(comboBtn).not.toBeNull();
+    fireEvent.click(comboBtn!);
+    expect(onApplyDualBrushCombo).toHaveBeenCalledTimes(1);
+    expect(onSelectBrush).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: "marker" }),
+    );
+  });
 });
