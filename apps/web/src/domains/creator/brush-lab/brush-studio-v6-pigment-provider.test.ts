@@ -5,7 +5,9 @@ import {
   BrushStudioV6PigmentProviderUnavailableError,
   brushStudioV6PigmentProviderForNode,
   createBrushStudioV6PigmentPalette,
+  mixBrushStudioV6PigmentChromaPreserving,
   mixBrushStudioV6PigmentColors,
+  simulateLatentPigmentGlaze,
 } from "./brush-studio-v6-pigment-provider";
 
 describe("V6 pigment providers", () => {
@@ -57,5 +59,21 @@ describe("V6 pigment providers", () => {
       "#ffffff",
       "unknown-provider" as never,
     )).toThrow(BrushStudioV6PigmentProviderUnavailableError);
+  });
+
+  it("mixes yellow and blue with commercial-safe chroma preservation and simulates multi-coat glazing", () => {
+    const mixed = mixBrushStudioV6PigmentChromaPreserving("#ffe600", "#0047db", 0.5);
+    const parsed = Number.parseInt(mixed.slice(1), 16);
+    const r = parsed >>> 16;
+    const g = (parsed >>> 8) & 0xff;
+    const b = parsed & 0xff;
+    expect(g).toBeGreaterThan(r);
+    expect(g).toBeGreaterThan(b);
+
+    const glazeSteps = simulateLatentPigmentGlaze("#f8e16c", "#1d4ed8", 4, 0.35);
+    expect(glazeSteps).toHaveLength(5);
+    expect(glazeSteps[0]).toBe("#f8e16c");
+    expect(Object.isFrozen(glazeSteps)).toBe(true);
+    expect(new Set(glazeSteps).size).toBeGreaterThan(3);
   });
 });

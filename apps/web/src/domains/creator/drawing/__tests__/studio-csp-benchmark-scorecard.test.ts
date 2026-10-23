@@ -18,6 +18,8 @@ describe("studio-csp-benchmark-scorecard (클립스튜디오 대비 2배 우위 
     const pigment = measureLivePigmentEngineBenchmark();
     expect(pigment.greenChromaGainOverLinear).toBeGreaterThanOrEqual(2.0);
     expect(pigment.cacheHitRateAfterWarmup).toBeGreaterThan(0.7);
+    expect(pigment.impastoSpecularContrastRatio).toBeGreaterThanOrEqual(2.15);
+    expect(pigment.glazeOpticalDepthSteps).toBeGreaterThanOrEqual(5);
   });
 
   it("데스크톱·태블릿·모바일 모든 기기 프로파일에서 성능·품질·기능·종합 점수가 CSP 대비 2.0배 이상을 달성한다", () => {
