@@ -17,7 +17,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
-    "incremental": true,
+    "incremental": false,
     "paths": {
       "@/*": [
         "./apps/web/src/*"
