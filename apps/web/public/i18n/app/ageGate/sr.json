@@ -1,7 +1,7 @@
 {
-  "ageGate.title": "Проверење садржаја за одрасле",
-  "ageGate.description": "Устави датум рођења како би се потврдио да сте старији од 19 година.",
-  "ageGate.birthDateLabel": "Дата рођења",
+  "ageGate.title": "Провера садржаја за одрасле",
+  "ageGate.description": "Унесите датум рођења да бисте потврдили да имате 19 или више година.",
+  "ageGate.birthDateLabel": "Датум рођења",
   "ageGate.birthYearLabel": "Година рођења",
   "ageGate.birthYearPlaceholder": "Година",
   "ageGate.birthMonthLabel": "Месец рођења",
@@ -11,7 +11,7 @@
   "ageGate.yearSuffix": "",
   "ageGate.monthSuffix": "",
   "ageGate.daySuffix": "",
-  "ageGate.deniedMessage": "Не сте испунили захтев старости.",
-  "ageGate.cancel": "Откупи",
+  "ageGate.deniedMessage": "Нисте испунили услов у погледу старости.",
+  "ageGate.cancel": "Откажи",
   "ageGate.confirm": "Потврди"
 }

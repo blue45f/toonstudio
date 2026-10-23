@@ -1,10 +1,10 @@
 {
   "ad.creativeFallbackAlt": "Спонцорисана слика",
-  "ad.slotAriaLabel": "Рекламски слот",
-  "ad.slotLabel": "Спонцорирани",
-  "ad.slotTitle": "Спонцориран садржај",
+  "ad.slotAriaLabel": "Место за оглас",
+  "ad.slotLabel": "Спонзорисано",
+  "ad.slotTitle": "Спонзорисан садржај",
   "ad.ctaDetails": "Погледајте детаље",
-  "ad.placeholderAriaLabel": "Успоредни за оглас",
+  "ad.placeholderAriaLabel": "Резервисано место за оглас",
   "ad.placeholderText": "Нема спонзорисаног садржаја.",
   "ad.tag": "Реклама"
 }

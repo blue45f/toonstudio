@@ -1,7 +1,7 @@
 {
-  "feedback.loadError": "Не могу да загрутим анкету о повратности.",
-  "feedback.thankYou": "Хвала вам за вашу драгоцену повратну пажњу!",
-  "feedback.anonymousNote": "Ваши одговори су остали анонимни.",
-  "feedback.notAtAll": "Нису уопште",
-  "feedback.definitely": "- Определено."
+  "feedback.loadError": "Учитавање анкете о повратним информацијама није успело. Покушајте поново за који тренутак.",
+  "feedback.thankYou": "Хвала вам на драгоценим повратним информацијама!",
+  "feedback.anonymousNote": "Ваши одговори остају строго анонимни.",
+  "feedback.notAtAll": "Уопште не",
+  "feedback.definitely": "Свакако"
 }
